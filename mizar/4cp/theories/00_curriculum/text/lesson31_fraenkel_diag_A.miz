@@ -1,0 +1,44 @@
+:: Lesson 31A (NEGATIVE): Fraenkel — `means` with existence outside correctness
+
+environ
+ vocabularies XBOOLE_0, ZFMISC_1, TARSKI;
+ notations XBOOLE_0, ZFMISC_1;
+ constructors ZFMISC_1;
+ theorems TARSKI;
+
+begin
+
+definition
+  let X be set;
+  func diag_bad(X) -> set means  :: placement yields 72/302
+  :DefBad:
+  for z being object holds z in it iff ex x being object st x in X & z = [x,x];
+  existence
+  proof
+    set D = { [x,x] where x is object : x in X };
+    take D;
+    let z be object;
+    hereby
+      assume z in D;
+      then ex x being object st x in X & z = [x,x];
+      hence ex x being object st x in X & z = [x,x];
+    end;
+    assume ex x being object st x in X & z = [x,x];
+    then ex x being object st x in X & z = [x,x];
+    hence z in D;
+  end;
+  uniqueness
+  proof
+    let A,B be set;
+    assume
+    A1: for z being object holds z in A iff ex x being object st x in X & z = [x,x] and
+    A2: for z being object holds z in B iff ex x being object st x in X & z = [x,x];
+    for z being object holds (z in A iff z in B)
+    proof
+      let z be object;
+      thus z in A iff ex x being object st x in X & z = [x,x] by A1
+        .= z in B by A2;
+    end;
+    hence A = B by TARSKI:2;
+  end;
+end;

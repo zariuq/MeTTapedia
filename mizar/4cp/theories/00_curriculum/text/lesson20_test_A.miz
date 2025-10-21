@@ -1,0 +1,29 @@
+:: Lesson 20 TEST (NEGATIVE): Prove set equality without double inclusion
+:: Demonstrates Error 4 - inference not accepted (incomplete proof)
+:: Expected error: 4 (equality needs both directions or TARSKI:2)
+
+environ
+ vocabularies LESSON20, XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ :: Missing: theorems TARSKI;
+
+begin
+
+definition
+  let X be set;
+  func self X -> set equals
+  :Def:
+  X;
+  coherence;
+end;
+
+theorem ThBadEquality:
+  for X, Y being set st X c= Y & Y c= X holds X = Y
+proof
+  let X, Y be set;
+  assume X c= Y & Y c= X;
+  :: Missing proof steps - need TARSKI:2 or explicit reasoning
+  thus thesis;
+  :: Error 4 - this inference not accepted
+end;

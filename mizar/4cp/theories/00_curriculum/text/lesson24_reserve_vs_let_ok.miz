@@ -1,0 +1,23 @@
+:: Lesson 24B (POSITIVE): reserve vs. let — use local binders for clarity
+:: Prefer explicit `let`/`for` binders in theorems. Reserve only when it
+:: actually improves readability and does not hide missing quantifiers.
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+
+begin
+
+theorem
+  for x being set holds x = x
+proof
+  let x be set;  :: explicit, local binder keeps the goal clear
+  thus thesis;
+end;
+
+end;
+::>,216
+::>
+::> 216: Unexpected "end"

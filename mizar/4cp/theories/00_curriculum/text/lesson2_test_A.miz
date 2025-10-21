@@ -1,0 +1,28 @@
+:: Lesson 2 TEST (NEGATIVE): Functor without coherence
+:: Demonstrates Error 73 - missing correctness condition
+:: Expected error: 73 (coherence required for equals)
+
+environ
+ vocabularies LESSON2, XBOOLE_0;
+::>                 *801
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+
+begin
+
+definition
+  func empty_set -> set equals
+  :Def1:
+  {};
+  coherence;
+end;
+
+definition
+  let X be set;
+  func double X -> set equals
+  :Def2:
+  X \/ X;
+  :: Missing coherence here - should cause Error 73
+end;
+::>
+::> 801: Cannot find vocabulary file

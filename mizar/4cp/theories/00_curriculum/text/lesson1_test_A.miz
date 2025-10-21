@@ -1,0 +1,26 @@
+:: Lesson 1 TEST (NEGATIVE): Predicate without vocabulary entry
+:: Demonstrates Error 301 - predicate symbol expected
+:: Expected error: 301 (missing Rpredicate_name in .voc)
+
+environ
+ vocabularies LESSON1, XBOOLE_0;
+::>                 *801
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+
+begin
+
+definition
+  let X be set;
+  pred X is_empty means
+  X = {};
+end;
+
+definition
+  let X, Y be set;
+  pred X is_disjoint_from Y means
+  :: This predicate is NOT in lesson1.voc
+  X /\ Y = {};
+end;
+::>
+::> 801: Cannot find vocabulary file

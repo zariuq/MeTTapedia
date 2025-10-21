@@ -1,0 +1,43 @@
+:: Lesson 30 (POSITIVE): symmetry via relations (library-only, ultra minimal)
+
+environ
+  vocabularies TARSKI, ZFMISC_1, RELAT_1, RELAT_2;
+  notations TARSKI, ZFMISC_1, RELAT_1, RELAT_2, RELSET_1, FUNCT_2, MARGREL1;
+  constructors TARSKI, ZFMISC_1, RELAT_1, RELAT_2, RELSET_1, FUNCT_2, MARGREL1;
+  requirements SUBSET, BOOLE;
+  definitions FUNCT_2, MARGREL1, RELAT_2;
+  theorems XTUPLE_0, ZFMISC_1, RELSET_1, RELAT_2;
+
+begin
+
+theorem
+  for X being set, F being Function of [:X,X:], BOOLEAN st
+  (for a,b being object st a in X & b in X holds F.[a,b] = F.[b,a]) holds
+  ex R being Relation of X st
+    (for a,b being object st a in X & b in X holds
+      [a,b] in R iff F.[a,b] = TRUE) &
+    R is symmetric
+proof
+  let X be set, F be Function of [:X,X:], BOOLEAN;
+  assume A0: for a,b being object st a in X & b in X holds F.[a,b] = F.[b,a];
+  set S = { [a,b] where a,b is object : a in X & b in X & F.[a,b] = TRUE };
+  A1: S c= [:X,X:]
+  proof
+    let z be object; assume z in S;
+    then ex a,b being object st a in X & b in X & z = [a,b] & F.[a,b] = TRUE;
+    hence z in [:X,X:] by ZFMISC_1:87;
+  end;
+  reconsider R = S as Relation of X by A1, RELSET_1:1;
+  take R;
+  thus for a,b being object st a in X & b in X holds
+    [a,b] in R iff F.[a,b] = TRUE;
+  thus R is symmetric
+  proof
+    let x,y be object;
+    assume x in X & y in X & [x,y] in R;
+    then ex a,b being object st a in X & b in X & [x,y] = [a,b] & F.[a,b] = TRUE;
+    then F.[y,x] = F.[x,y] & F.[x,y] = TRUE by A0;
+    then F.[y,x] = TRUE;
+    hence [y,x] in R;
+  end;
+end;

@@ -1,0 +1,24 @@
+:: Lesson 29: Structures & selectors (minimal, selectors sanity)
+
+environ
+ vocabularies XBOOLE_0, STRUCT_0;
+ notations STRUCT_0;
+ constructors STRUCT_0;
+
+begin
+
+definition
+  struct PairStr
+::>     *304
+  (# first  -> set,
+     second -> set #);
+end;
+
+theorem
+  for a,b being set holds
+    the first of PairStr(# first-> a, second-> b #) = a &
+::>            *306
+    the second of PairStr(# first-> a, second-> b #) = b;
+::>
+::> 304: Structure symbol expected
+::> 306: Attribute symbol expected

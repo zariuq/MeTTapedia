@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<Environ aid="FPARITY">
+ <Directive name="vocabularies" argnr="9">
+  <Ident name="HIDDEN" line="1" col="1"/>
+  <Ident name="FPARITY" line="4" col="9"/>
+  <Ident name="SUBSET_1" line="4" col="29"/>
+  <Ident name="NUMBERS" line="4" col="38"/>
+  <Ident name="NAT_1" line="4" col="45"/>
+  <Ident name="INT_1" line="4" col="52"/>
+  <Ident name="CARD_1" line="5" col="18"/>
+  <Ident name="XBOOLEAN" line="5" col="36"/>
+  <Ident name="MARGREL1" line="5" col="46"/>
+ </Directive>
+ <Directive name="notations" argnr="13">
+  <Ident name="HIDDEN" line="1" col="1"/>
+  <Ident name="XBOOLE_0" line="7" col="10"/>
+  <Ident name="SUBSET_1" line="7" col="20"/>
+  <Ident name="NUMBERS" line="7" col="29"/>
+  <Ident name="XCMPLX_0" line="7" col="39"/>
+  <Ident name="XXREAL_0" line="7" col="49"/>
+  <Ident name="ORDINAL1" line="7" col="59"/>
+  <Ident name="INT_1" line="7" col="66"/>
+  <Ident name="NAT_1" line="7" col="73"/>
+  <Ident name="CARD_1" line="8" col="8"/>
+  <Ident name="CARD_2" line="8" col="16"/>
+  <Ident name="XBOOLEAN" line="8" col="26"/>
+  <Ident name="MARGREL1" line="8" col="36"/>
+ </Directive>
+ <Directive name="definitions" argnr="0">
+ </Directive>
+ <Directive name="theorems" argnr="5">
+  <Ident name="INT_1" line="16" col="7"/>
+  <Ident name="NAT_D" line="16" col="14"/>
+  <Ident name="CARD_1" line="16" col="22"/>
+  <Ident name="CARD_2" line="16" col="30"/>
+  <Ident name="MARGREL1" line="16" col="40"/>
+ </Directive>
+ <Directive name="schemes" argnr="0">
+ </Directive>
+ <Directive name="registrations" argnr="3">
+  <Ident name="INT_1" line="12" col="7"/>
+  <Ident name="NAT_1" line="12" col="14"/>
+  <Ident name="XBOOLEAN" line="12" col="24"/>
+ </Directive>
+ <Directive name="constructors" argnr="8">
+  <Ident name="HIDDEN" line="1" col="1"/>
+  <Ident name="XXREAL_0" line="10" col="10"/>
+  <Ident name="INT_1" line="10" col="17"/>
+  <Ident name="NAT_1" line="10" col="24"/>
+  <Ident name="NAT_D" line="10" col="31"/>
+  <Ident name="CARD_1" line="10" col="39"/>
+  <Ident name="CARD_2" line="10" col="47"/>
+  <Ident name="XBOOLEAN" line="10" col="57"/>
+ </Directive>
+ <Directive name="requirements" argnr="6">
+  <Ident name="HIDDEN" line="1" col="1"/>
+  <Ident name="REAL" line="14" col="6"/>
+  <Ident name="NUMERALS" line="14" col="16"/>
+  <Ident name="SUBSET" line="14" col="24"/>
+  <Ident name="BOOLE" line="14" col="31"/>
+  <Ident name="ARITHM" line="14" col="39"/>
+ </Directive>
+ <Directive name="equalities" argnr="0">
+ </Directive>
+ <Directive name="expansions" argnr="0">
+ </Directive>
+</Environ>

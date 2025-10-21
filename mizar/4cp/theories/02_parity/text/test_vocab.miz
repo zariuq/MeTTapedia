@@ -1,0 +1,8 @@
+environ
+vocabularies FINITE_P;
+::>                 *801
+
+begin
+end;
+::>
+::> 801: Cannot find vocabulary file

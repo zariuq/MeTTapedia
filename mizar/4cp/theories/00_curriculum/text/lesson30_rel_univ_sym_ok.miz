@@ -1,0 +1,19 @@
+:: Lesson 30 (POSITIVE): symmetry on the universal relation (library-only)
+
+environ
+  vocabularies ZFMISC_1, TARSKI;
+  notations   ZFMISC_1, TARSKI;
+  constructors ZFMISC_1, TARSKI;
+  theorems    ZFMISC_1;
+
+begin
+
+theorem
+  for X being set, x,y being object st x in X & y in X holds
+    ([x,y] in [:X,X:] implies [y,x] in [:X,X:])
+proof
+  let X be set, x,y be object;
+  assume x in X & y in X;
+  then [y,x] in [:X,X:] by ZFMISC_1:87;
+  hence thesis;
+end;

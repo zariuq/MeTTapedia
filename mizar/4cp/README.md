@@ -39,9 +39,16 @@ theories/
     dict/
       [corresponding .voc files]
 
-docs/                        # Documentation
-how_to_miz.md                # Complete Mizar lessons and patterns
+docs/                        # Documentation (canonical set only)
 ```
+
+## Canonical Docs
+
+- LLM Context Pack: `docs/LLM_CONTEXT_PACK.txt`
+- How‑To: `docs/HOWTO_Mizar.md`
+- QuickStart: `docs/QuickStart.md`
+- Curriculum: `docs/CURRICULUM.md`
+- Error Zoo: `docs/ERROR_ZOO.md`
 
 ## Current Status
 
@@ -69,20 +76,17 @@ See [STATUS.md](STATUS.md) for detailed error breakdown.
 - Standard MML (Mizar Mathematical Library)
 
 ### Compilation
-All files now use standard Mizar text/dict structure:
+Key patterns (generic):
 
 ```bash
-# Compile from within text/ directories
-cd theories/02_main_theorems/text
-mizf span_constructive
+# From repo root (path keeps dict/ visible)
+mizf theories/<module>/text/<file>.miz
 
-# Compile all files
-cd theories/01_chain_algebra/text && mizf chain_dot_constructive
-cd theories/02_parity/text && mizf face_boundary && mizf set_parity
-cd theories/02_main_theorems/text && mizf span_constructive && mizf strong_dual && mizf kempe_purification && mizf disk_kempe_closure && mizf tait_equivalence
+# Or from module root (folder with both text/ and dict/)
+cd theories/<module> && mizf text/<file>.miz
 ```
 
-See [COMPILATION.md](COMPILATION.md) for detailed compilation instructions.
+See `docs/QuickStart.md` for details and batch examples.
 
 ## Mathematical Foundations
 
@@ -117,11 +121,10 @@ See [COMPILATION.md](COMPILATION.md) for detailed compilation instructions.
 
 ## Recent Updates
 
-**October 2025**: Fixed all Error 72/73 (Correctness condition errors)
-- Updated to use `correctness` keyword (required in modern Mizar)
-- Converted `coherence` to `correctness` across all definitions
-- Added `correctness;` to mode definitions
-- Wrapped existence/uniqueness blocks in `correctness proof ... end;`
+**October 2025**: Correctness/coherence rules clarified
+- Use `coherence;` for functors defined with `equals`.
+- Use `correctness` (with existence/uniqueness) for `means` definitions.
+- Modes require `correctness;`.
 
 **Directory Restructure**: Reorganized to standard Mizar text/dict layout
 - `.miz` files now in `text/` subdirectories

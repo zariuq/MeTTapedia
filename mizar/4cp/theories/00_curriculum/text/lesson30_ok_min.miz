@@ -1,0 +1,17 @@
+:: Lesson 30 (POSITIVE): tuple application sanity (library-only)
+
+environ
+  vocabularies TARSKI, ZFMISC_1, SUBSET_1, FUNCT_1, FUNCT_2, MARGREL1;
+  notations   TARSKI, ZFMISC_1, SUBSET_1, FUNCT_1, FUNCT_2, MARGREL1;
+  constructors TARSKI, ZFMISC_1, FUNCT_1, FUNCT_2, MARGREL1;
+  requirements SUBSET, BOOLE;
+
+begin
+
+theorem
+  for X being set holds
+  for F being Function of [:X,X:], BOOLEAN holds
+  for a,b being Element of X holds
+    F.[a,b] = F.[a,b];
+
+end;

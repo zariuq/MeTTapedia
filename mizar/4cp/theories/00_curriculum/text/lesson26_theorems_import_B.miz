@@ -1,0 +1,22 @@
+:: Lesson 26B (POSITIVE): Minimal theorems import — include `theorems TARSKI;`
+:: Demonstrates referencing a named theorem in `by` with minimal imports.
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+ theorems TARSKI;
+
+begin
+
+theorem
+  for A,B being set holds
+    ((for x being object holds x in A iff x in B) implies A = B)
+proof
+  let A,B be set;
+  assume H: for x being object holds x in A iff x in B;
+  thus A = B by TARSKI:2;
+end;
+
+end;

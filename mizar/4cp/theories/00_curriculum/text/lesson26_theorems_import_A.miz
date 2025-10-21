@@ -1,0 +1,22 @@
+:: Lesson 26A (NEGATIVE): Minimal theorems import — missing TARSKI in `theorems`
+:: Proves set equality by elementwise equivalence but omits `theorems TARSKI;`
+:: Expect Error 192 (inaccessible theorem) at `by TARSKI:2`.
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+
+begin
+
+theorem
+  for A,B being set holds
+    ((for x being object holds x in A iff x in B) implies A = B)
+proof
+  let A,B be set;
+  assume H: for x being object holds x in A iff x in B;
+  thus A = B by TARSKI:2;  ::> *192
+end;
+
+end;

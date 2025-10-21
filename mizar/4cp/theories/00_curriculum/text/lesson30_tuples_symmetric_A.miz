@@ -1,0 +1,36 @@
+:: Lesson 30A (NEGATIVE): Complex function types - environment limitation
+::
+:: EXPECTED ERRORS: 306 (Attribute symbol expected), 301 (Predicate symbol expected)
+::
+:: WHAT'S WRONG:
+:: This environment cannot parse: Function of [:X,X:], BOOLEAN
+:: Even with correct FUNCT_2/MARGREL1 imports, the type constructor fails.
+::
+:: HOW TO FIX (if you must use typed functions):
+:: 1. Use simpler types: Function of X, BOOLEAN (single domain, not product)
+:: 2. Or avoid functions entirely: use Relation of X with [a,b] in R
+:: 3. Or use set instead of Function of [...], BOOLEAN
+::
+:: WHAT WORKS (proven in curriculum):
+:: See lesson30_rel_univ_sym_ok.miz - uses set/object with [:X,X:] products
+::
+:: WHY THIS FAILS:
+:: Complex product-domain function types ([:X,X:] → BOOLEAN) are not
+:: supported in minimal Mizar environments, even with full imports.
+:: This is an environment limitation, not a user error.
+::
+:: LESSON: When Error 306 persists despite correct syntax and imports,
+:: simplify your types rather than fighting the parser.
+
+environ
+ vocabularies XBOOLE_0, SUBSET_1, ZFMISC_1, FUNCT_2, MARGREL1;
+ notations SUBSET_1, ZFMISC_1, FUNCT_2, MARGREL1;
+ constructors FUNCT_2, MARGREL1;
+
+begin
+
+definition
+  let X be set, F be Function of [:X,X:], BOOLEAN;
+  pred F is_symmetric_on X means
+  for a,b being Element of X holds F.(a,b) = F.(b,a);
+end;

@@ -1,0 +1,16 @@
+:: Lesson 29A (NEGATIVE): selector misuse (mimics structure-style call)
+
+environ
+ vocabularies XBOOLE_0, ZFMISC_1;
+ notations XBOOLE_0, ZFMISC_1;
+ constructors ZFMISC_1;
+
+begin
+
+definition
+  let P be object;
+  pred BadEqualPair(P) means
+  :DefBad:
+  first(P) = second(P);  :: misuse: structure selectors not available
+end;
+

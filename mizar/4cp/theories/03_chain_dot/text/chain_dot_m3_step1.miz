@@ -1,0 +1,71 @@
+:: Milestone 3 Step 1: Add support_fst
+:: Following GPT-5 Pro's template - elementwise coherence proof
+
+environ
+  vocabularies
+    CHAINDOT, XBOOLE_0, SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, RELAT_1, FUNCT_1, FUNCT_2,
+    TARSKI, MCART_1;
+  notations
+    TARSKI, SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1, MCART_1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_2;
+  constructors
+    SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1, MCART_1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_2;
+  registrations
+    XBOOLEAN, MARGREL1, GLIB_000, GLIB_001, GLIB_002, FUNCT_2;
+  requirements BOOLE, SUBSET;
+  theorems MARGREL1, FUNCT_2, ZFMISC_1, MCART_1;
+
+begin
+
+:: GF(2)² = BOOLEAN × BOOLEAN
+definition
+  func GF2_squared -> set equals [: BOOLEAN, BOOLEAN :];
+  coherence;
+end;
+
+:: Chain type
+definition
+  let G be _Graph;
+  mode Chain of G is Function of the_Edges_of G, GF2_squared;
+end;
+
+:: Support on first coordinate
+definition
+  let G be _Graph;
+  let y be Chain of G;
+  func support_fst(y) -> Subset of the_Edges_of G equals
+::>          *140,142,203
+  { e where e is Element of the_Edges_of G : (y.e)`1 = TRUE };
+  coherence
+::>       *72
+  proof
+    set S = { e where e is Element of the_Edges_of G : (y.e)`1 = TRUE };
+::>                                                          *165
+    S c= the_Edges_of G
+    proof
+      let x be object;
+      assume x in S;
+      then ex e being Element of the_Edges_of G st x = e & (y.e)`1 = TRUE;
+::>                                                              *165
+      hence x in the_Edges_of G;
+    end;
+    hence thesis;
+  end;
+end;
+
+:: Placeholder chainDot
+definition
+  let G be _Graph;
+  let x, y be Chain of G;
+  func chainDot(x, y) -> Element of BOOLEAN equals
+  TRUE if x = y otherwise FALSE;
+  correctness;
+end;
+::>
+::> 72: Unexpected correctness condition
+::> 140: Unknown variable
+::> 142: Unknown locus
+::> 165: Unknown functor format
+::> 203: Unknown token, maybe an illegal character used in an identifier

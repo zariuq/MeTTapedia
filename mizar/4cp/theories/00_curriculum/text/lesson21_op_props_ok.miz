@@ -1,0 +1,90 @@
+:: Lesson 21B (POSITIVE): Infix Operator (+) for Union — proved properties
+:: Working version: defines an infix operator (+) by equality with union
+:: and proves commutativity, associativity, and idempotence as theorems.
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+ theorems XBOOLE_0, TARSKI;
+
+begin
+
+definition
+  let A,B be set;
+  func A (+) B -> set equals
+  :DefPlus:
+  A \/ B;
+  coherence;
+end;
+
+theorem
+  for A,B being set holds A (+) B = B (+) A
+proof
+  let A,B be set;
+  for x being object holds (x in A (+) B iff x in B (+) A)
+  proof
+    let x be object;
+    hereby
+      assume x in A (+) B; then
+      x in A \/ B by DefPlus; then
+      x in A or x in B by XBOOLE_0:def 3; then
+      x in B or x in A;
+      hence x in B (+) A by DefPlus, XBOOLE_0:def 3;
+    end;
+    assume x in B (+) A; then
+    x in B \/ A by DefPlus; then
+    x in B or x in A by XBOOLE_0:def 3; then
+    x in A or x in B;
+    hence x in A (+) B by DefPlus, XBOOLE_0:def 3;
+  end;
+  hence thesis by TARSKI:2;
+end;
+
+theorem
+  for A,B,C being set holds (A (+) B) (+) C = A (+) (B (+) C)
+proof
+  let A,B,C be set;
+  for x being object holds (x in (A (+) B) (+) C iff x in A (+) (B (+) C))
+  proof
+    let x be object;
+    hereby
+      assume x in (A (+) B) (+) C; then
+      x in (A \/ B) \/ C by DefPlus; then
+      x in A \/ B or x in C by XBOOLE_0:def 3; then
+      x in A or x in B or x in C by XBOOLE_0:def 3; then
+      x in A or x in (B \/ C) by XBOOLE_0:def 3;
+      hence x in A (+) (B (+) C) by DefPlus, XBOOLE_0:def 3;
+    end;
+    assume x in A (+) (B (+) C); then
+    x in A \/ (B \/ C) by DefPlus; then
+    x in A or x in (B \/ C) by XBOOLE_0:def 3; then
+    x in A or x in B or x in C by XBOOLE_0:def 3; then
+    x in (A \/ B) or x in C by XBOOLE_0:def 3;
+    hence x in (A (+) B) (+) C by DefPlus, XBOOLE_0:def 3;
+  end;
+  hence thesis by TARSKI:2;
+end;
+
+theorem
+  for A being set holds A (+) A = A
+proof
+  let A be set;
+  for x being object holds (x in A (+) A iff x in A)
+  proof
+    let x be object;
+    hereby
+      assume x in A (+) A; then
+      x in A \/ A by DefPlus; then
+      x in A or x in A by XBOOLE_0:def 3;
+      hence x in A;
+    end;
+    assume x in A; then
+    x in A \/ A by XBOOLE_0:def 3;
+    hence x in A (+) A by DefPlus;
+  end;
+  hence thesis by TARSKI:2;
+end;
+
+end;

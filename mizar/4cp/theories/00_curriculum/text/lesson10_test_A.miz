@@ -1,0 +1,21 @@
+:: Lesson 10 TEST (NEGATIVE): Invalid use of hereby without proper structure
+:: Demonstrates Error 4 - inference not accepted
+:: Expected error: 4 or structural error
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+
+begin
+
+theorem
+  for X being set holds X = X iff X = X
+proof
+  let X be set;
+  hereby
+    :: Empty hereby block without proper forward direction
+  end;
+  :: Missing backward direction entirely
+  thus thesis;
+end;

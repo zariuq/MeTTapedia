@@ -1,0 +1,83 @@
+:: M3 Step 1: support_fst using decomposition pattern (avoiding direct projections)
+
+environ
+  vocabularies
+    CHAINDOT, XBOOLE_0, SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, RELAT_1, FUNCT_1, FUNCT_2,
+    TARSKI, MCART_1;
+  notations
+    TARSKI, SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1, MCART_1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2;
+  constructors
+    SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1, MCART_1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2;
+  registrations
+    XBOOLEAN, MARGREL1, MCART_1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2;
+  requirements BOOLE, SUBSET;
+  theorems MARGREL1, FUNCT_1, FUNCT_2, ZFMISC_1, MCART_1;
+
+begin
+
+:: GF(2)² = BOOLEAN × BOOLEAN
+definition
+  func GF2_squared -> set equals [: BOOLEAN, BOOLEAN :];
+  coherence;
+end;
+
+:: Chain type
+definition
+  let G be _Graph;
+  mode Chain of G is Function of the_Edges_of G, GF2_squared;
+end;
+
+:: Support using means (decompose pairs, avoid projection in Fraenkel)
+definition
+  let G be _Graph;
+  let y be Chain of G;
+  func support_fst(y) -> Subset of the_Edges_of G means
+::>          *140,142,203
+  for e being object holds
+    e in it iff ex b1, b2 being Element of BOOLEAN st
+      e in the_Edges_of G & y.e = [b1, b2] & b1 = TRUE;
+::>       *72
+  existence
+  proof
+::>                                          *103
+    defpred P[object] means
+      ex b1, b2 being Element of BOOLEAN st y.$1 = [b1, b2] & b1 = TRUE;
+::>              *203
+    consider S being set such that
+::>                      *4
+    A1: for x being object holds x in S iff x in the_Edges_of G & P[x]
+      from XBOOLE_0:sch 1;
+    S c= the_Edges_of G by A1;
+    then reconsider S as Subset of the_Edges_of G;
+    take S;
+::>        *72
+    thus thesis by A1;
+  end;
+  uniqueness
+  proof
+    let S1, S2 be Subset of the_Edges_of G;
+::>                            *103
+    assume A1: for e being object holds
+      e in S1 iff ex b1, b2 being Element of BOOLEAN st
+        e in the_Edges_of G & y.e = [b1, b2] & b1 = TRUE;
+::>                            *103
+    assume A2: for e being object holds
+::>                         *203
+      e in S2 iff ex b1, b2 being Element of BOOLEAN st
+        e in the_Edges_of G & y.e = [b1, b2] & b1 = TRUE;
+    thus S1 = S2 from SUBSET_1:sch 2(A1, A2);
+  end;
+end;
+
+:: Placeholder chainDot
+definition
+  let G be _Graph;
+  let x, y be Chain of G;
+  func chainDot(x, y) -> Element of BOOLEAN equals
+  TRUE if x = y otherwise FALSE;
+  correctness;
+end;

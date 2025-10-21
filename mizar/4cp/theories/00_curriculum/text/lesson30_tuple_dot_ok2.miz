@@ -1,0 +1,14 @@
+:: Lesson 30 (POSITIVE): tuple application on BOOLEAN — sanity
+
+environ
+  vocabularies ZFMISC_1, FUNCT_2, MARGREL1;
+  notations   ZFMISC_1, FUNCT_2, MARGREL1;
+  constructors FUNCT_2, MARGREL1;
+
+begin
+
+theorem
+  for F being Function of [:BOOLEAN,BOOLEAN:], BOOLEAN
+  for a,b being Element of BOOLEAN holds F.(a,b) = F.(a,b);
+
+end;

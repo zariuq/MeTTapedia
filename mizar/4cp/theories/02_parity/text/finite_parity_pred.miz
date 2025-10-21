@@ -1,0 +1,286 @@
+:: Finite parity (build artifact for GF(2) algebra)
+:: Mirrors theories/02_parity/text/finite_parity_core.miz so downstream files
+:: can depend on a stable, library-only parity API.
+
+environ
+  vocabularies NUMBERS, NAT_1, FINSET_1, CARD_1, XBOOLE_0,
+               SUBSET_1, TARSKI, XBOOLEAN;
+  notations   TARSKI, XBOOLE_0, SUBSET_1, ORDINAL1, NUMBERS,
+               NAT_1, CARD_1, FINSET_1, XBOOLEAN;
+  constructors NAT_D, CARD_1, FINSET_1, XBOOLEAN, MARGREL1;
+  registrations XBOOLE_0, SUBSET_1, FINSET_1, NAT_1, CARD_1;
+  requirements SUBSET, BOOLE, NUMERALS, ARITHM;
+  theorems     NAT_1, NAT_D, CARD_1, CARD_2, FINSET_1,
+               XBOOLE_0, XBOOLE_1, MARGREL1, XBOOLEAN;
+
+begin
+
+definition
+  let n be Nat;
+  pred n is_odd means :Def_is_odd:
+::>       *301
+  n mod 2 = 1;
+  pred n is_even means :Def_is_even:
+::>    *140,142,301
+  n mod 2 = 0;
+end;
+
+registration
+  cluster 0 -> even for Nat;
+::>                   *223
+  coherence
+  proof
+    0 mod 2 = 0 by NAT_D:26;
+::> *165 *321
+    hence thesis by Def_is_even;
+::>                    *203
+  end;
+  cluster 1 -> odd for Nat;
+::>     *96          *223
+  coherence
+  proof
+    1 mod 2 = 1 by NAT_D:24;
+::>  *321
+    hence thesis by Def_is_odd;
+::>                    *203
+  end;
+end;
+
+theorem Th_even_or_odd:
+::>       *203
+  for n being Nat holds n is_even or n is_odd
+proof
+  let n be Nat;
+  n mod 2 = 0 or n mod 2 = 1 by NAT_D:12;
+::>*321
+  then n is_even or n is_odd by Def_is_even, Def_is_odd;
+::>        *203
+  hence thesis;
+end;
+
+definition
+  let n be Nat;
+  func parity(n) -> Element of BOOLEAN equals :Def_parity:
+::>         *140,142,302
+  TRUE if n is_odd otherwise FALSE;
+  coherence;
+::>       *72
+end;
+
+theorem Th_parity0:
+::>       *203
+  parity(0) = FALSE
+proof
+  0 is_even;
+::>   *203
+  hence thesis by Def_parity;
+::>                  *203
+end;
+
+theorem Th_parity1:
+::>       *203
+  parity(1) = TRUE
+proof
+  1 is_odd;
+::>   *203
+  hence thesis by Def_parity;
+::>                  *203
+end;
+
+definition
+  let X be finite set;
+  func parity X -> Element of BOOLEAN equals parity(card X);
+::>         *140,142,302
+  coherence;
+::>       *72
+end;
+
+theorem Th_parity_empty:
+::>       *203
+  parity {} = FALSE
+proof
+  card {} = 0 by CARD_1:27;
+  hence thesis by Th_parity0;
+::>                 *203
+end;
+
+theorem Th_parity_singleton:
+::>       *203
+  for x being object holds parity {x} = TRUE
+proof
+  let x be object;
+  card {x} = 1 by CARD_1:30;
+  hence thesis by Th_parity1;
+::>                 *203
+end;
+
+theorem Th_parity_add:
+::>       *203
+  for m, n being Nat holds
+    parity(m + n) = parity(m) 'xor' parity(n)
+proof
+  let m, n be Nat;
+  per cases by Th_even_or_odd;
+::>              *203
+  suppose A1: m is_even;
+::>               *203
+    per cases by Th_even_or_odd;
+::>                *203
+    suppose A2: n is_even;
+::>                 *203
+      m mod 2 = 0 & n mod 2 = 0 by A1, A2, Def_is_even;
+::>    *321
+      then (m + n) mod 2 = (0 + 0) mod 2 by NAT_D:66
+::>           *203
+                        .= 0 by NAT_D:26;
+      then (m + n) is_even by Def_is_even;
+::>           *203
+      then parity(m + n) = FALSE by Def_parity;
+::>                 *203
+      hence thesis by A1, A2, Def_parity, MARGREL1:67;
+::>                              *203
+    end;
+    suppose A2: n is_odd;
+::>                 *203
+      m mod 2 = 0 & n mod 2 = 1 by A1, A2, Def_is_even, Def_is_odd;
+::>    *321
+      then (m + n) mod 2 = (0 + 1) mod 2 by NAT_D:66
+::>           *203
+                        .= 1 by NAT_D:24;
+      then (m + n) is_odd by Def_is_odd;
+::>           *203
+      then parity(m + n) = TRUE by Def_parity;
+::>                 *203
+      hence thesis by A1, A2, Def_parity, MARGREL1:67;
+::>                              *203
+    end;
+  end;
+  suppose A1: m is_odd;
+::>               *203
+    per cases by Th_even_or_odd;
+::>                *203
+    suppose A2: n is_even;
+::>                 *203
+      m mod 2 = 1 & n mod 2 = 0 by A1, A2, Def_is_odd, Def_is_even;
+::>    *321
+      then (m + n) mod 2 = (1 + 0) mod 2 by NAT_D:66
+::>           *203
+                        .= 1 by NAT_D:24;
+      then (m + n) is_odd by Def_is_odd;
+::>           *203
+      then parity(m + n) = TRUE by Def_parity;
+::>                 *203
+      hence thesis by A1, A2, Def_parity, MARGREL1:67;
+::>                              *203
+    end;
+    suppose A2: n is_odd;
+::>                 *203
+      m mod 2 = 1 & n mod 2 = 1 by A1, A2, Def_is_odd;
+::>    *321
+      then (m + n) mod 2 = (1 + 1) mod 2 by NAT_D:66
+::>           *203
+                        .= 0 by NAT_D:25;
+      then (m + n) is_even by Def_is_even;
+::>           *203
+      then parity(m + n) = FALSE by Def_parity;
+::>                 *203
+      hence thesis by A1, A2, Def_parity, MARGREL1:68;
+::>                              *203
+    end;
+  end;
+end;
+
+theorem Th_parity_symdiff:
+::>       *203
+  for A, B being finite set holds
+    parity (A \+\ B) = parity A 'xor' parity B
+proof
+  let A, B be finite set;
+  set AB = A /\ B;
+  reconsider pAB = card AB as Nat;
+  reconsider pA = card (A \ B), pB = card (B \ A) as Nat;
+  A1: card A = pA + pAB by CARD_2:44;
+::>               *203
+  A2: card B = pB + pAB by CARD_2:44;
+::>               *203
+  A3: (A \ B) misses (B \ A) by XBOOLE_1:82;
+  A4: card (A \+\ B) = pA + pB by A3, CARD_2:40;
+::>                       *203
+
+  parity (A \+\ B)
+::>    *148
+    = parity(pA + pB) by A4
+::>        *148 *203
+   .= parity pA 'xor' parity pB by Th_parity_add;
+  then A5: parity (A \+\ B)
+::>             *148
+           = parity(card (A \ B)) 'xor' parity(card (B \ A));
+::>               *148                       *148
+
+  parity A = parity(card (A \ B) + pAB) by A1
+::>     *321
+          .= parity(card (A \ B)) 'xor' parity pAB by Th_parity_add;
+  then A6: parity A
+::>              *321
+           = parity(card (A \ B)) 'xor' parity(card AB);
+
+  parity B = parity(card (B \ A) + pAB) by A2
+::>     *321
+          .= parity(card (B \ A)) 'xor' parity pAB by Th_parity_add;
+  then A7: parity B
+::>              *321
+           = parity(card (B \ A)) 'xor' parity(card AB);
+
+  parity A 'xor' parity B
+::>     *321
+    = (parity(card (A \ B)) 'xor' parity(card AB)) 'xor'
+      (parity(card (B \ A)) 'xor' parity(card AB)) by A6, A7
+   .= parity(card (A \ B)) 'xor' parity(card (B \ A)) 'xor'
+      (parity(card AB) 'xor' parity(card AB)) by MARGREL1:64, MARGREL1:66
+   .= parity(card (A \ B)) 'xor' parity(card (B \ A)) 'xor' FALSE
+      by MARGREL1:68
+   .= parity(card (A \ B)) 'xor' parity(card (B \ A)) by MARGREL1:67
+   .= parity (A \+\ B) by A5;
+  hence thesis;
+end;
+
+theorem Th_parity_union_disjoint:
+::>       *203
+  for A, B being finite set st A misses B holds
+    parity (A \/ B) = parity A 'xor' parity B
+proof
+  let A, B be finite set;
+  assume A1: A misses B;
+  A \+\ B = A \/ B by A1, XBOOLE_1:82;
+::>                 *4
+  hence thesis by Th_parity_symdiff;
+::>                 *203
+end;
+
+theorem Th_parity_self_xor:
+::>       *203
+  for A being finite set holds
+    parity A 'xor' parity A = FALSE
+proof
+  let A be finite set;
+  thus thesis by MARGREL1:68;
+::>                        *190
+end;
+
+end;
+::>,216
+::>
+::> 4: This inference is not accepted
+::> 72: Unexpected correctness condition
+::> 96: Only standard functors and selectors can be used in a functorial cluster registration
+::> 140: Unknown variable
+::> 142: Unknown locus
+::> 148: Unknown private functor
+::> 165: Unknown functor format
+::> 190: Inaccessible theorem
+::> 203: Unknown token, maybe an illegal character used in an identifier
+::> 216: Unexpected "end"
+::> 223: Adjective cluster expected
+::> 301: Predicate symbol expected
+::> 302: Functor symbol expected
+::> 321: Predicate symbol or "is" expected

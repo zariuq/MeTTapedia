@@ -1,0 +1,23 @@
+:: Lesson 15A TEST (NEGATIVE): Backtick accessor without proper type
+:: Demonstrates Error 103 - unknown functor (dot/backtick needs typed context)
+:: Expected error: 103 (backtick needs Element of [:X,Y:] type)
+
+environ
+ vocabularies LSN15A, XBOOLE_0, SUBSET_1, ZFMISC_1, MCART_1, XTUPLE_0;
+ notations XBOOLE_0, SUBSET_1, ZFMISC_1, MCART_1, XTUPLE_0;
+ constructors XBOOLE_0, SUBSET_1, ZFMISC_1, MCART_1, XTUPLE_0;
+ registrations XBOOLE_0, SUBSET_1, ZFMISC_1, MCART_1, XTUPLE_0;
+ requirements SUBSET;
+
+begin
+
+theorem ThBadAccessor:
+  for c being object st c in [:BOOLEAN, BOOLEAN:]
+  holds c`1 in BOOLEAN
+  :: c is just 'object', not 'Element of [:BOOLEAN, BOOLEAN:]'
+  :: Backtick accessor needs the product type - Error 103
+proof
+  let c be object;
+  assume c in [:BOOLEAN, BOOLEAN:];
+  hence thesis by MCART_1:10;
+end;

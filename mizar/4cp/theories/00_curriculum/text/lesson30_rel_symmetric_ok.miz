@@ -1,0 +1,25 @@
+:: Lesson 30 (POSITIVE): symmetry via relations (library-only)
+
+environ
+  vocabularies XBOOLE_0, ZFMISC_1, RELAT_1, RELAT_2;
+  notations   XBOOLE_0, ZFMISC_1, RELAT_1, RELAT_2;
+  constructors XBOOLE_0, ZFMISC_1, RELAT_1, RELAT_2;
+
+begin
+
+theorem
+  for X being set
+  for R being Relation of X st R is symmetric
+  for x,y being Element of X holds
+    [x,y] in R implies [y,x] in R
+proof
+  let X be set;
+  let R be Relation of X;
+  assume A0: R is symmetric;
+  let x,y be Element of X;
+  assume [x,y] in R;
+  then [y,x] in R by A0, RELAT_2:def 11;
+  hence thesis;
+end;
+
+end;

@@ -1,0 +1,19 @@
+:: Lesson 28B (POSITIVE): Numeric literals with minimal requirements
+:: Adds `requirements NUMERALS` so numerals like 0 parse and type-check.
+
+environ
+ vocabularies XBOOLE_0, NUMBERS;
+ notations XBOOLE_0, NUMBERS;
+ constructors NUMBERS, XBOOLE_0;
+ registrations XBOOLE_0;
+ requirements NUMERALS;
+
+begin
+
+theorem
+  0 = 0
+proof
+  thus thesis;
+end;
+
+end;

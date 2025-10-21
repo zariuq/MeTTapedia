@@ -1,0 +1,432 @@
+:: T2.5 - Lemma 4.1(b): Non-zero chain has witness
+:: For any non-zero chain x, exists y such that chainDot(x, y) = TRUE
+
+environ
+  vocabularies
+    CHAINDOT, XBOOLE_0, SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, TARSKI, FUNCT_1, FUNCT_2,
+    RELAT_1, NUMBERS, NAT_1, CARD_1, FINSET_1, XTUPLE_0;
+  notations
+    TARSKI, XBOOLE_0, SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2, RELAT_1,
+    NUMBERS, NAT_1, CARD_1, FINSET_1, XTUPLE_0;
+  constructors
+    SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2,
+    NAT_1, NAT_D, CARD_1, FINSET_1, XTUPLE_0;
+  registrations
+    XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2,
+    NAT_1, CARD_1, FINSET_1, XTUPLE_0;
+  requirements BOOLE, SUBSET, NUMERALS, ARITHM, REAL;
+  theorems XBOOLE_0, XBOOLE_1, FUNCT_1, FUNCT_2, ZFMISC_1, MARGREL1,
+    CARD_1, NAT_D, XTUPLE_0, TARSKI;
+  schemes FUNCT_2;
+
+begin
+
+reserve G for _Graph;
+reserve x, y for Chain of G;
+::>                  *151,183
+
+:: ============================================================================
+:: Helper: Parity of sum
+:: ============================================================================
+
+theorem Th_nat_parity_add:
+::>       *203
+  for m, n being Nat holds
+  nat_parity(m + n) = (nat_parity m) 'xor' (nat_parity n)
+proof
+  let m, n be Nat;
+::>             *151
+  per cases;
+  suppose A1: m mod 2 = 1 & n mod 2 = 1;
+::>            *321
+    then (m + n) mod 2 = (1 + 1) mod 2 by NAT_D:66
+::>         *203
+                       .= 2 mod 2
+                       .= 0 by NAT_D:25;
+    then nat_parity(m + n) = FALSE;
+::>               *165*203
+    nat_parity m = TRUE & nat_parity n = TRUE by A1;
+::>          *165                  *165
+    then (nat_parity m) 'xor' (nat_parity n) = FALSE by MARGREL1:68;
+::>                *165                 *165                      *192
+    hence thesis;
+  end;
+  suppose A2: m mod 2 = 1 & n mod 2 = 0;
+::>            *321
+    then (m + n) mod 2 = (1 + 0) mod 2 by NAT_D:66
+::>         *203
+                       .= 1 mod 2
+                       .= 1 by NAT_D:24;
+    then nat_parity(m + n) = TRUE;
+::>               *165*203
+    nat_parity m = TRUE & nat_parity n = FALSE by A2;
+::>          *165                  *165
+    then (nat_parity m) 'xor' (nat_parity n) = TRUE by MARGREL1:67;
+::>                *165                 *165                     *192
+    hence thesis;
+  end;
+  suppose A3: m mod 2 = 0 & n mod 2 = 1;
+::>            *321
+    then (m + n) mod 2 = (0 + 1) mod 2 by NAT_D:66
+::>         *203
+                       .= 1 mod 2
+                       .= 1 by NAT_D:24;
+    then nat_parity(m + n) = TRUE;
+::>               *165*203
+    nat_parity m = FALSE & nat_parity n = TRUE by A3;
+::>          *165                   *165
+    then (nat_parity m) 'xor' (nat_parity n) = TRUE by MARGREL1:67;
+::>                *165                 *165                     *192
+    hence thesis;
+  end;
+  suppose A4: m mod 2 = 0 & n mod 2 = 0;
+::>            *321
+    then (m + n) mod 2 = (0 + 0) mod 2 by NAT_D:66
+::>         *203
+                       .= 0 mod 2
+                       .= 0 by NAT_D:26;
+    then nat_parity(m + n) = FALSE;
+::>               *165*203
+    nat_parity m = FALSE & nat_parity n = FALSE by A4;
+::>          *165                   *165
+    then (nat_parity m) 'xor' (nat_parity n) = FALSE by MARGREL1:67;
+::>                *165                 *165                      *192
+    hence thesis;
+  end;
+end;
+
+:: ============================================================================
+:: Lemma 4.1(a): Non-zero color has witness
+:: ============================================================================
+
+:: First, we need the color witness lemma
+theorem Lemma_4_1a_exists_dot_one:
+::>          *203
+  for c being Element of GF2_squared st c <> zero_color
+  ex d being Element of GF2_squared st (c (.) d) = TRUE
+proof
+  let c be Element of GF2_squared;
+::>                             *165
+  assume A1: c <> zero_color;
+::>                        *165
+
+  :: c is a pair [c1, c2] where at least one component is TRUE
+  consider c1, c2 being Element of BOOLEAN such that
+  A2: c = [c1, c2] by MARGREL1:1;
+
+  A3: c <> [FALSE, FALSE] by A1;
+  then A4: c1 <> FALSE or c2 <> FALSE by A2, XTUPLE_0:1;
+  then c1 = TRUE or c2 = TRUE;
+::>                         *4,4
+
+  per cases;
+::>       *4,4
+  suppose B1: c1 = TRUE;
+    :: Take d = [TRUE, FALSE]
+    reconsider d = [TRUE, FALSE] as Element of GF2_squared by ZFMISC_1:def 2;
+::>                                                      *165
+    take d;
+    thus c (.) d = (c1 '&' TRUE) 'xor' (c2 '&' FALSE) by A2
+::>         *165,321
+                 .= TRUE 'xor' FALSE by B1, MARGREL1:16
+                 .= TRUE by MARGREL1:67;
+  end;
+  suppose B2: c2 = TRUE & c1 = FALSE;
+    :: Take d = [FALSE, TRUE]
+    reconsider d = [FALSE, TRUE] as Element of GF2_squared by ZFMISC_1:def 2;
+::>                                                      *165
+    take d;
+    thus c (.) d = (c1 '&' FALSE) 'xor' (c2 '&' TRUE) by A2
+::>         *165,321
+                 .= FALSE 'xor' TRUE by B2, MARGREL1:16
+                 .= TRUE by MARGREL1:67;
+  end;
+end;
+
+:: ============================================================================
+:: Lemma 4.1(b): Non-zero chain has witness chain
+:: ============================================================================
+
+:: A chain is non-zero if it differs from zero_chain somewhere
+definition
+  let G be _Graph;
+  let x be Chain of G;
+::>            *151,183
+  attr x is non-zero means
+::>        *306
+  ex e being Element of the_Edges_of G st x.e <> zero_color;
+end;
+
+:: Main lemma: non-zero chain has a witness
+theorem Lemma_4_1b_exists_chain_dot_one:
+::>          *203
+  for x being Chain of G st x is non-zero
+  ex y being Chain of G st chainDot(x, y) = TRUE
+proof
+  let x be Chain of G;
+::>            *151,183
+  assume x is non-zero;
+::>              *203
+  then consider e0 being Element of the_Edges_of G such that
+::>                            *143              *143
+  A1: x.e0 <> zero_color;
+::>                    *165
+
+  :: By Lemma 4.1(a), get witness color v where (x.e0) (.) v = TRUE
+  consider v being Element of GF2_squared such that
+::>                                     *165
+  A2: (x.e0) (.) v = TRUE by A1, Lemma_4_1a_exists_dot_one;
+::>         *321
+
+  :: Construct witness chain y: v at e0, zero_color elsewhere
+  defpred P[Element of the_Edges_of G, Element of GF2_squared] means
+::>               *143              *143                    *165
+    ($1 = e0 implies $2 = v) & ($1 <> e0 implies $2 = zero_color);
+::>                                                            *165
+
+  A3: for e being Element of the_Edges_of G
+      ex c being Element of GF2_squared st P[e, c]
+::>                                   *165
+  proof
+    let e be Element of the_Edges_of G;
+    per cases;
+    suppose e = e0;
+      take v;
+      thus thesis;
+    end;
+    suppose e <> e0;
+      take zero_color;
+::>                 *165
+      thus thesis;
+    end;
+  end;
+
+  consider y being Function of the_Edges_of G, GF2_squared such that
+::>                       *143              *143         *165
+  A4: for e being Element of the_Edges_of G holds P[e, y.e]
+    from FUNCT_2:sch 3(A3);
+
+  reconsider y as Chain of G;
+::>                   *151,183
+  take y;
+
+  :: Decompose (x.e0) (.) v to see which component gives TRUE
+  consider x1, x2 being Element of BOOLEAN such that
+  A5: x.e0 = [x1, x2] by MARGREL1:1;
+  consider v1, v2 being Element of BOOLEAN such that
+  A6: v = [v1, v2] by MARGREL1:1;
+
+  A7: (x.e0) (.) v = (x1 '&' v1) 'xor' (x2 '&' v2) by A5, A6;
+::>         *321
+  then A8: (x1 '&' v1) = TRUE or (x2 '&' v2) = TRUE by A2, MARGREL1:67, MARGREL1:68;
+::>                                                                    *307   *200
+
+  :: Case analysis on which component gives TRUE
+  per cases by A8;
+  suppose B1: (x1 '&' v1) = TRUE;
+    then B2: x1 = TRUE & v1 = TRUE by MARGREL1:def 19;
+::>                                 *4,4
+
+    :: Show e0 in support_fst(x) and e0 in support_fst(y)
+    B3: e0 in support_fst x by A5, B2;
+::>                     *165
+    B4: e0 in support_fst y by A4, A6, B2;
+::>                     *165
+
+    :: support_fst(y) = {e0} because y.e = zero_color for e <> e0
+    B5: support_fst y = {e0}
+::>               *165
+    proof
+      thus support_fst y c= {e0}
+::>                  *165
+      proof
+        let z be object;
+        assume z in support_fst y;
+::>                           *165
+        then consider e being Element of the_Edges_of G such that
+::>                                 *143              *143
+        B5a: z = e & (y.e)`1 <> FALSE;
+::>                       *165
+        B5b: e = e0 by A4, B5a;
+        thus z in {e0} by B5a, B5b, TARSKI:def 1;
+      end;
+      thus {e0} c= support_fst y
+::>                          *165
+      proof
+        let z be object;
+        assume z in {e0};
+        then B5c: z = e0 by TARSKI:def 1;
+        y.e0 = v by A4;
+        then (y.e0)`1 = v1 by A6, XTUPLE_0:1;
+::>                *165
+        then (y.e0)`1 <> FALSE by B2;
+::>                *165
+        then e0 in support_fst y;
+::>                          *165
+        hence z in support_fst y by B5c;
+::>                          *165
+      end;
+    end;
+
+    :: Therefore support_fst(x) /\ support_fst(y) = {e0}
+    B6: support_fst x /\ support_fst y = {e0}
+::>               *166
+    proof
+      thus support_fst x /\ support_fst y c= {e0}
+::>                  *166
+      proof
+        let z be object;
+        assume z in support_fst x /\ support_fst y;
+::>                           *166
+        then z in support_fst y by XBOOLE_0:def 4;
+::>                         *165
+        hence z in {e0} by B5;
+      end;
+      thus {e0} c= support_fst x /\ support_fst y
+::>                          *166
+      proof
+        let z be object;
+        assume z in {e0};
+        then z = e0 by TARSKI:def 1;
+        then z in support_fst x & z in support_fst y by B3, B4;
+::>                         *165                 *165
+        hence z in support_fst x /\ support_fst y by XBOOLE_0:def 4;
+::>                          *166
+      end;
+    end;
+
+    :: card({e0}) = 1, so nat_parity(1) = TRUE
+    B7: card {e0} = 1 by CARD_1:30;
+    B8: 1 mod 2 = 1 by NAT_D:24;
+::>      *321
+    B9: nat_parity(card(support_fst x /\ support_fst y)) = TRUE by B6, B7, B8;
+::>              *165             *166
+
+    :: Therefore chainDot(x, y) = TRUE
+    set a = card(support_fst x /\ support_fst y);
+::>                        *166
+    set b = card(support_snd x /\ support_snd y);
+::>                        *166
+    consider n being Nat such that
+::>                    *151
+    B10: n = a + b & chainDot(x, y) = nat_parity n;
+::>            *203
+
+    thus chainDot(x, y) = nat_parity n by B10
+::>             *165               *165
+      .= (nat_parity a) 'xor' (nat_parity b) by Th_nat_parity_add
+::>                *165                 *165      *203
+      .= TRUE 'xor' (nat_parity b) by B9
+      .= TRUE by MARGREL1:67, MARGREL1:68;
+  end;
+  suppose B11: (x2 '&' v2) = TRUE;
+    then B12: x2 = TRUE & v2 = TRUE by MARGREL1:def 19;
+::>                                  *4,4
+
+    :: Similar proof for second component
+    B13: e0 in support_snd x by A5, B12;
+::>                      *165
+    B14: e0 in support_snd y by A4, A6, B12;
+::>                      *165
+
+    B15: support_snd y = {e0}
+::>                *165
+    proof
+      thus support_snd y c= {e0}
+::>                  *165
+      proof
+        let z be object;
+        assume z in support_snd y;
+::>                           *165
+        then consider e being Element of the_Edges_of G such that
+::>                                 *143              *143
+        B15a: z = e & (y.e)`2 <> FALSE;
+::>                        *165
+        B15b: e = e0 by A4, B15a;
+        thus z in {e0} by B15a, B15b, TARSKI:def 1;
+      end;
+      thus {e0} c= support_snd y
+::>                          *165
+      proof
+        let z be object;
+        assume z in {e0};
+        then B15c: z = e0 by TARSKI:def 1;
+        y.e0 = v by A4;
+        then (y.e0)`2 = v2 by A6, XTUPLE_0:1;
+::>                *165
+        then (y.e0)`2 <> FALSE by B12;
+::>                *165
+        then e0 in support_snd y;
+::>                          *165
+        hence z in support_snd y by B15c;
+::>                          *165
+      end;
+    end;
+
+    B16: support_snd x /\ support_snd y = {e0}
+::>                *166
+    proof
+      thus support_snd x /\ support_snd y c= {e0}
+::>                  *166
+      proof
+        let z be object;
+        assume z in support_snd x /\ support_snd y;
+::>                           *166
+        then z in support_snd y by XBOOLE_0:def 4;
+::>                         *165
+        hence z in {e0} by B15;
+      end;
+      thus {e0} c= support_snd x /\ support_snd y
+::>                          *166
+      proof
+        let z be object;
+        assume z in {e0};
+        then z = e0 by TARSKI:def 1;
+        then z in support_snd x & z in support_snd y by B13, B14;
+::>                         *165                 *165
+        hence z in support_snd x /\ support_snd y by XBOOLE_0:def 4;
+::>                          *166
+      end;
+    end;
+
+    B17: card {e0} = 1 by CARD_1:30;
+    B18: 1 mod 2 = 1 by NAT_D:24;
+::>       *321
+    B19: nat_parity(card(support_snd x /\ support_snd y)) = TRUE by B16, B17, B18;
+::>               *165             *166                                       *200,308
+
+    set a = card(support_fst x /\ support_fst y);
+    set b = card(support_snd x /\ support_snd y);
+::>                        *166
+    consider n being Nat such that
+::>                    *151
+    B20: n = a + b & chainDot(x, y) = nat_parity n;
+::>          *140,203
+
+    thus chainDot(x, y) = nat_parity n by B20
+::>             *165               *165
+      .= (nat_parity a) 'xor' (nat_parity b) by Th_nat_parity_add
+::>                *165,140             *165      *203
+      .= (nat_parity a) 'xor' TRUE by B19
+      .= TRUE by MARGREL1:67, MARGREL1:68;
+  end;
+end;
+::>
+::> 4: This inference is not accepted
+::> 140: Unknown variable
+::> 143: No implicit qualification
+::> 151: Unknown mode format
+::> 165: Unknown functor format
+::> 166: Unknown functor format
+::> 183: Accessible mode format has empty list of arguments
+::> 192: Inaccessible theorem
+::> 200: Too long source line
+::> 203: Unknown token, maybe an illegal character used in an identifier
+::> 306: Attribute symbol expected
+::> 307: Numeral expected
+::> 308: Identifier or theorem file name expected
+::> 321: Predicate symbol or "is" expected

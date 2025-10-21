@@ -1,0 +1,13 @@
+:: nat probe
+
+environ
+  vocabularies XBOOLE_0, SUBSET_1, TARSKI, NAT_1, ORDINAL1;
+  notations   TARSKI, XBOOLE_0, SUBSET_1, NAT_1, ORDINAL1;
+  constructors NAT_1, ORDINAL1;
+  registrations XBOOLE_0, SUBSET_1, ORDINAL1, NAT_1;
+
+begin
+
+theorem
+  for n being natural number holds n = n;
+

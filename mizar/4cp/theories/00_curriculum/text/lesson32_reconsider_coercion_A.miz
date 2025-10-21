@@ -1,0 +1,10 @@
+:: Lesson 32A (NEGATIVE): notations imported but unused (830)
+
+environ
+ vocabularies XBOOLE_0, SUBSET_1;
+ notations SUBSET_1;  :: unused notations → 830 in some toolchains
+
+begin
+
+theorem
+  for X being set holds X = X;

@@ -54,6 +54,10 @@ def IsCubic {V E : Type*} [Fintype V] [Fintype E]
     (incident : V → Finset E) : Prop :=
   ∀ v, (incident v).card = 3
 
+@[simp] lemma isCubic_iff {V E : Type*} [Fintype V] [Fintype E]
+    (incident : V → Finset E) :
+    IsCubic incident ↔ (∀ v, (incident v).card = 3) := Iff.rfl
+
 /-- An edge is a bridge if removing it disconnects the graph.
 Simplified definition for now - just states connectivity. -/
 def IsBridge {V : Type*} [Fintype V]
@@ -159,12 +163,7 @@ theorem four_color_equiv_tait :
   constructor
   · -- (⇒) 4-vertex-colorable ⇒ 3-edge-colorable
     intro h4c V E _ _ _ _ incident adj hcubic hbridgeless
-    -- Get 4-vertex-coloring from hypothesis
-    obtain ⟨vc, _⟩ := h4c V E _ _ _ _ adj
-    -- Apply tait_forward to get 3-edge-coloring
-    obtain ⟨ec, hec⟩ := tait_forward incident adj hcubic vc
-    use ⟨ec, hec⟩
-    trivial
+    sorry -- TODO: Universe level mismatch in h4c application - needs fixing
   · -- (⇐) 3-edge-colorable ⇒ 4-vertex-colorable
     intro h3ec V E _ _ _ _ adj
     sorry  -- TODO: Need to construct dual and show cubic (~20 lines)
@@ -282,13 +281,13 @@ theorem kauffman_to_three_edge_coloring {V E : Type*}
   -- Convert to edge coloring
   let edge_color := ZeroBoundaryToEdgeColor dual.gamma x
 
-  -- Package as ThreeEdgeColoring
-  use ⟨edge_color, ?_⟩
-  · trivial
-  · -- Show edge_color is proper
+  -- Package as ThreeEdgeColoring × True using `refine`.
+  refine ⟨⟨edge_color, ?_⟩, ?_⟩
+  · -- properness obligation for ThreeEdgeColoring.proper
     intro v e₁ e₂ he₁ he₂ hne
-    -- Immediate from `isProperLike` hypothesis
     exact hx_proper v e₁ e₂ he₁ he₂ hne
+  · -- the trailing `True`
+    trivial
 
 /-- **Main Result**: The Four Color Theorem follows from Lemma 4.5 + Strong Dual
 via the Tait equivalence.

@@ -1,0 +1,130 @@
+=============================================================================
+MIZAR ADVANCED PATTERNS - MINI CURRICULUM
+=============================================================================
+
+Lesson 1: ARTICLES DIRECTIVE (Importing User Files)
+---------------------------------------------------
+Problem: We want to use GF2_squared, Chain, zero_color from face_boundary.miz
+
+Solution:
+environ
+  vocabularies ..., FACEBDRY;      :: Tell Mizar vocabulary exists
+  notations ..., FACEBDRY;         :: Import notation
+  constructors ..., FACEBDRY;      :: Import constructors
+  registrations ..., FACEBDRY;     :: Import registrations
+  theorems ..., FACEBDRY;          :: Import theorems
+
+  articles FACEBDRY;               :: ← KEY: Import the ARTICLE!
+
+begin
+:: Now GF2_squared, Chain, zero_color are available!
+
+Example:
+definition
+  let c be Element of GF2_squared;  :: ← Now recognized!
+  :: ...
+end;
+
+---
+
+Lesson 2: RESERVE STATEMENT (Cleaner Code)
+---------------------------------------------------
+Problem: We write "for G being _Graph" everywhere
+
+Bad:
+theorem Th1:
+  for G being _Graph
+  for c1, c2 being Element of GF2_squared
+  holds ...
+
+theorem Th2:
+  for G being _Graph
+  for c being Element of GF2_squared
+  holds ...
+
+Solution with RESERVE:
+reserve G for _Graph,
+        c, c1, c2 for Element of GF2_squared,
+        y, z for Chain of G;
+
+theorem Th1:
+  for c1, c2 holds ...    :: ← G is implicit!
+
+theorem Th2:
+  for c holds ...
+
+When to use:
+- Variables used in MANY theorems (G, c, etc.)
+- Types that are verbose (Element of GF2_squared)
+
+When NOT to use:
+- One-off variables
+- Complex dependent types
+
+---
+
+Lesson 3: CLUSTERS (Automatic Type Registration)
+---------------------------------------------------
+Problem: Mizar doesn't know zero_chain(G) is a Chain
+
+Solution:
+registration
+  let G be _Graph;
+  cluster zero_chain(G) -> Chain of G;
+  coherence by Def_zero_chain;
+end;
+
+Now Mizar automatically knows:
+  set z = zero_chain(G);
+  :: Mizar infers: z is Chain of G (no need to state it!)
+
+---
+
+Lesson 4: IDENTIFY (Definitional Equality)
+---------------------------------------------------
+Problem: Two expressions mean the same thing but Mizar doesn't know
+
+Example:
+identify zero_chain(G) with (the_Edges_of G) --> zero_color;
+
+Now Mizar treats them as interchangeable in proofs!
+
+---
+
+Lesson 5: RECONSIDER (Type Coercion)
+---------------------------------------------------
+We've used this! Forces type conversion:
+
+proof
+  let x be object;
+  assume x in zero_boundary_set(G);
+  then ex y being Chain of G st x = y & ...
+  then reconsider x as Chain of G;  :: ← Now x has type Chain of G
+  :: ...
+end;
+
+---
+
+Lesson 6: DEFFUNC and DEFPRED (Local Definitions)
+---------------------------------------------------
+We've used these!
+
+deffunc F(Nat) = 2 * $1 + 1;      :: Local function
+defpred P[Nat] means $1 is even;  :: Local predicate
+
+Used in:
+- Schemes (FUNCT_2:sch 4)
+- Set comprehensions
+
+---
+
+SUMMARY: Usage Frequency
+---------------------------------------------------
+✓ Always use: vocabularies, notations, constructors, registrations
+✓ Import files: articles (when building on other .miz files)
+✓ Common vars: reserve (for G, c, etc. in many theorems)
+✓ Optional: clusters (for automatic type inference)
+✓ Rare: identify (usually not needed)
+✓ As needed: reconsider, deffunc, defpred
+
+=============================================================================

@@ -1,0 +1,228 @@
+:: M3 Step 1 VERIFIED: support_fst with pair decomposition
+:: Compiles with 0 errors
+:: Key: FUNCT_1 required in notations, constructors, registrations, theorems
+
+environ
+  vocabularies
+    CHAINDOT, XBOOLE_0, SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, RELAT_1, FUNCT_1, FUNCT_2,
+    TARSKI, MCART_1,
+    NUMBERS, NAT_1, INT_1, XXREAL_0, ORDINAL1, CARD_1, FINSET_1;
+  notations
+    TARSKI, SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1, MCART_1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2,
+    NUMBERS, INT_1, NAT_1, CARD_1, FINSET_1;
+  constructors
+    SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1, MCART_1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2,
+    XXREAL_0, INT_1, NAT_1, NAT_D, CARD_1, FINSET_1;
+  registrations
+    XBOOLEAN, MARGREL1, MCART_1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2,
+    INT_1, NAT_1, CARD_1, FINSET_1;
+  requirements BOOLE, SUBSET, REAL, NUMERALS, ARITHM;
+  theorems MARGREL1, FUNCT_1, FUNCT_2, ZFMISC_1, MCART_1, RELAT_1,
+    INT_1, NAT_D, CARD_1, FINSET_1;
+  schemes FUNCT_2;
+
+begin
+
+:: ============================================================================
+:: M2 BASELINE (verified)
+:: ============================================================================
+
+:: GF(2)² = BOOLEAN × BOOLEAN
+definition
+  func GF2_squared -> set equals [: BOOLEAN, BOOLEAN :];
+  coherence;
+end;
+
+:: Chain type
+definition
+  let G be _Graph;
+  mode Chain of G is Function of the_Edges_of G, GF2_squared;
+end;
+
+:: ============================================================================
+:: M3 STEP 1: support_fst (verified)
+:: ============================================================================
+
+:: Support on first coordinate
+:: Uses pair decomposition to avoid direct tuple projection in definition
+definition
+  let G be _Graph;
+  let y be Chain of G;
+  func support_fst(y) -> Subset of the_Edges_of G means
+  for e being object holds
+    e in it iff ex b1, b2 being Element of BOOLEAN st
+      e in the_Edges_of G & y.e = [b1, b2] & b1 = TRUE;
+  existence
+  proof
+    defpred P[object] means
+      ex b1, b2 being Element of BOOLEAN st y.$1 = [b1, b2] & b1 = TRUE;
+    consider S being set such that
+    A1: for x being object holds x in S iff x in the_Edges_of G & P[x]
+      from XBOOLE_0:sch 1;
+    S c= the_Edges_of G by A1;
+    then reconsider S as Subset of the_Edges_of G;
+    take S;
+    thus thesis by A1;
+  end;
+  uniqueness
+  proof
+    let S1, S2 be Subset of the_Edges_of G;
+    assume A1: for e being object holds
+      e in S1 iff ex b1, b2 being Element of BOOLEAN st
+        e in the_Edges_of G & y.e = [b1, b2] & b1 = TRUE;
+    assume A2: for e being object holds
+      e in S2 iff ex b1, b2 being Element of BOOLEAN st
+        e in the_Edges_of G & y.e = [b1, b2] & b1 = TRUE;
+    thus S1 = S2 from SUBSET_1:sch 2(A1, A2);
+  end;
+end;
+
+:: ============================================================================
+:: M3 STEP 2: support_snd (adding)
+:: ============================================================================
+
+:: Support on second coordinate
+definition
+  let G be _Graph;
+  let y be Chain of G;
+  func support_snd(y) -> Subset of the_Edges_of G means
+  for e being object holds
+    e in it iff ex b1, b2 being Element of BOOLEAN st
+      e in the_Edges_of G & y.e = [b1, b2] & b2 = TRUE;
+  existence
+  proof
+    defpred P[object] means
+      ex b1, b2 being Element of BOOLEAN st y.$1 = [b1, b2] & b2 = TRUE;
+    consider S being set such that
+    A1: for x being object holds x in S iff x in the_Edges_of G & P[x]
+      from XBOOLE_0:sch 1;
+    S c= the_Edges_of G by A1;
+    then reconsider S as Subset of the_Edges_of G;
+    take S;
+    thus thesis by A1;
+  end;
+  uniqueness
+  proof
+    let S1, S2 be Subset of the_Edges_of G;
+    assume A1: for e being object holds
+      e in S1 iff ex b1, b2 being Element of BOOLEAN st
+        e in the_Edges_of G & y.e = [b1, b2] & b2 = TRUE;
+    assume A2: for e being object holds
+      e in S2 iff ex b1, b2 being Element of BOOLEAN st
+        e in the_Edges_of G & y.e = [b1, b2] & b2 = TRUE;
+    thus S1 = S2 from SUBSET_1:sch 2(A1, A2);
+  end;
+end;
+
+:: ============================================================================
+:: M3 STEP 3: Color operations (adding)
+:: ============================================================================
+
+:: Zero color [FALSE, FALSE]
+definition
+  func zero_color -> Element of GF2_squared equals [FALSE, FALSE];
+  coherence by ZFMISC_1:def 2;
+end;
+
+:: Color addition (componentwise XOR in GF(2)²)
+definition
+  let c1, c2 be Element of GF2_squared;
+  func c1 (+) c2 -> Element of GF2_squared means
+  ex a1, a2, b1, b2 being Element of BOOLEAN st
+    c1 = [a1, a2] & c2 = [b1, b2] &
+    it = [a1 'xor' b1, a2 'xor' b2];
+  existence
+  proof
+    consider a1, a2 being object such that
+    A1: c1 = [a1, a2] by RELAT_1:1;
+    reconsider a1, a2 as Element of BOOLEAN by A1, ZFMISC_1:def 2;
+    consider b1, b2 being object such that
+    A2: c2 = [b1, b2] by RELAT_1:1;
+    reconsider b1, b2 as Element of BOOLEAN by A2, ZFMISC_1:def 2;
+    reconsider r = [a1 'xor' b1, a2 'xor' b2] as Element of GF2_squared
+      by ZFMISC_1:def 2;
+    take r;
+    thus thesis by A1, A2;
+  end;
+  uniqueness;
+end;
+
+:: ============================================================================
+:: M3 STEP 3b: Chain operations (zero and addition)
+:: ============================================================================
+
+:: Zero chain: all edges map to zero_color
+definition
+  let G be _Graph;
+  func zero_chain(G) -> Chain of G equals
+  (the_Edges_of G) --> zero_color;
+  coherence;
+end;
+
+:: Chain addition: pointwise color addition
+definition
+  let G be _Graph;
+  let x, y be Chain of G;
+  func x (+) y -> Chain of G means
+  for e being Element of the_Edges_of G holds
+    it.e = (x.e) (+) (y.e);
+  existence
+  proof
+    deffunc F(Element of the_Edges_of G) = (x.$1) (+) (y.$1);
+    consider f being Function of the_Edges_of G, GF2_squared such that
+    A1: for e being Element of the_Edges_of G holds f.e = F(e)
+      from FUNCT_2:sch 4;
+    take f;
+    thus thesis by A1;
+  end;
+  uniqueness
+  proof
+    let f1, f2 be Chain of G;
+    assume A1: for e being Element of the_Edges_of G holds f1.e = (x.e) (+) (y.e);
+    assume A2: for e being Element of the_Edges_of G holds f2.e = (x.e) (+) (y.e);
+    for e being Element of the_Edges_of G holds f1.e = f2.e by A1, A2;
+    hence f1 = f2 by FUNCT_2:113;
+  end;
+end;
+
+:: ============================================================================
+:: M3 STEP 4a: Parity function on naturals (adding)
+:: ============================================================================
+
+:: Parity: odd -> TRUE, even -> FALSE
+definition
+  let n be Nat;
+  func nat_parity(n) -> Element of BOOLEAN equals
+  TRUE if n mod 2 = 1 otherwise FALSE;
+  correctness;
+end;
+
+:: ============================================================================
+:: M3 STEP 4c: Real chainDot with parity formula (implementing)
+:: ============================================================================
+
+:: chainDot(x,y) = parity(|support_fst(x) ∩ support_fst(y)|
+::                       + |support_snd(x) ∩ support_snd(y)|)
+definition
+  let G be _Graph;
+  let x, y be Chain of G;
+  func chainDot(x, y) -> Element of BOOLEAN means
+  ex n being Nat st
+    n = card(support_fst(x) /\ support_fst(y))
+      + card(support_snd(x) /\ support_snd(y)) &
+    it = nat_parity(n);
+  existence
+  proof
+    set n = card(support_fst(x) /\ support_fst(y))
+          + card(support_snd(x) /\ support_snd(y));
+    reconsider n as Nat;
+    reconsider r = nat_parity(n) as Element of BOOLEAN;
+    take r, n;
+    thus thesis;
+  end;
+  uniqueness;
+end;

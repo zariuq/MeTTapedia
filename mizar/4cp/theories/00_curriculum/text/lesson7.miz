@@ -1,0 +1,57 @@
+::Lesson 7: Parametric Clusters and Type Propagation
+::
+:: Goal: Show how registrations with parameters enable automatic type inference
+:: These patterns are EVERYWHERE in the MML - absolutely essential!
+::
+:: KEY PATTERN: let X be PropertyType; cluster Operation(X) -> ResultProperty
+:: This says: "for any X with PropertyType, Operation(X) has ResultProperty"
+
+environ
+ vocabularies LESSON7, XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+
+begin
+
+:: EXAMPLE 1: Parametric cluster with union
+:: Pattern from struct_0.miz: "union with non-empty stays non-empty"
+
+registration
+  let D be non empty set;
+  let X be set;
+  cluster D \/ X -> non empty;
+  coherence
+  proof
+    D \/ X <> {};
+    hence thesis;
+  end;
+end;
+
+:: EXAMPLE 2: Symmetric version
+registration
+  let X be set;
+  let D be non empty set;
+  cluster X \/ D -> non empty;
+  coherence
+  proof
+    X \/ D <> {};
+    hence thesis;
+  end;
+end;
+
+:: Now these work automatically!
+theorem Th1:
+  for D being non empty set, X being set holds D \/ X is non empty
+proof
+  let D be non empty set;
+  let X be set;
+  thus thesis;  :: Automatic from registration 1
+end;
+
+theorem Th2:
+  for A, B being non empty set holds A \/ B is non empty
+proof
+  let A, B be non empty set;
+  thus thesis;  :: Automatic from registration 1
+end;

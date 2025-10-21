@@ -1,0 +1,309 @@
+:: Lesson 19: The Dot Notation - Function Application Made Fun!
+::
+:: Goal: Master the . (dot) operator for function application
+:: Fun Example: Mood Maps on Graphs (vertices → happy/sad moods)
+::
+:: Key Discovery: From MML survey (bcialg_6, conlat_1, field_12, fomodel3, etc.)
+:: The dot is Mizar's function application: f.x means "value of f at x"
+::
+:: Why Error 103 happens: Mizar must SEE that f is function-like at that point!
+:: Solution: Use typed quantification in means clauses
+
+environ
+ vocabularies XBOOLE_0, SUBSET_1, FUNCT_1, FUNCT_2, RELAT_1, ZFMISC_1,
+      TARSKI, XBOOLEAN, MARGREL1, STRUCT_0, GRAPH_1, LSN19;
+ notations TARSKI, XBOOLE_0, SUBSET_1, FUNCT_1, FUNCT_2, RELAT_1,
+      ZFMISC_1, XBOOLEAN, MARGREL1, STRUCT_0, GRAPH_1;
+ constructors XBOOLE_0, SUBSET_1, FUNCT_1, FUNCT_2, RELAT_1, ZFMISC_1,
+      XBOOLEAN, MARGREL1, STRUCT_0, GRAPH_1;
+ registrations XBOOLE_0, SUBSET_1, FUNCT_1, FUNCT_2, RELAT_1, ZFMISC_1,
+      XBOOLEAN, MARGREL1, STRUCT_0, GRAPH_1;
+ requirements SUBSET, BOOLE;
+ theorems FUNCT_1, FUNCT_2, XBOOLE_0, TARSKI, ZFMISC_1;
+
+begin
+
+:: ============================================================================
+:: Setup: Mood = BOOLEAN (TRUE = happy, FALSE = sad)
+:: ============================================================================
+
+:: We'll use BOOLEAN as our "mood space":
+:: - TRUE = happy mood
+:: - FALSE = sad mood
+::
+:: A MoodMap assigns each vertex a mood!
+
+:: ============================================================================
+:: Pattern 1: Simple function application in theorem
+:: ============================================================================
+
+:: The dot works great in theorems when types are visible!
+
+theorem ThDotInTheorem:
+  for X being non empty set
+  for f being Function of X, BOOLEAN
+  for x being Element of X
+  holds f.x in BOOLEAN
+proof
+  let X be non empty set;
+  let f be Function of X, BOOLEAN;
+  let x be Element of X;
+  f.x in BOOLEAN;  :: Type system knows this automatically!
+  hence thesis;
+end;
+
+:: ============================================================================
+:: Pattern 2: Define operation using dot in means clause
+:: ============================================================================
+
+:: This is the KEY pattern from the MML survey!
+:: The magic: "for x being Element of X holds it.x = ..."
+
+definition
+  let X be non empty set;
+  let m be Function of X, BOOLEAN;
+  func FlipMood(m) -> Function of X, BOOLEAN means
+  :DefFlipMood:
+  for x being Element of X holds it.x = 'not' (m.x);
+  ::                               ^^^^        ^^^
+  ::                            These dots work because:
+  ::                            - it : Function of X, BOOLEAN (from return type)
+  ::                            - m  : Function of X, BOOLEAN (from parameter)
+  ::                            - x  : Element of X (from quantification)
+  existence
+  proof
+    deffunc F(Element of X) = 'not' (m.$1);
+    consider h being Function of X, BOOLEAN such that
+    A1: for x being Element of X holds h.x = F(x) from FUNCT_2:sch 4;
+    take h;
+    thus thesis by A1;
+  end;
+  uniqueness by FUNCT_2:def 8;
+end;
+
+theorem ThFlipMoodHappy:
+  for X being non empty set
+  for m being Function of X, BOOLEAN
+  for x being Element of X
+  holds m.x = TRUE iff FlipMood(m).x = FALSE
+proof
+  let X be non empty set;
+  let m be Function of X, BOOLEAN;
+  let x be Element of X;
+  FlipMood(m).x = 'not' (m.x) by DefFlipMood;
+  hence thesis;
+end;
+
+:: ============================================================================
+:: Pattern 3: Binary operation combining two functions
+:: ============================================================================
+
+:: This pattern appears in span_constructive.miz:90 for chain XOR!
+
+definition
+  let X be non empty set;
+  let m1, m2 be Function of X, BOOLEAN;
+  func MoodXOR(m1, m2) -> Function of X, BOOLEAN means
+  :DefMoodXOR:
+  for x being Element of X holds it.x = (m1.x) 'xor' (m2.x);
+  ::                               ^^^^   ^^^^^        ^^^^^
+  ::                            THREE dots, all work perfectly!
+  existence
+  proof
+    deffunc F(Element of X) = (m1.$1) 'xor' (m2.$1);
+    consider h being Function of X, BOOLEAN such that
+    A1: for x being Element of X holds h.x = F(x) from FUNCT_2:sch 4;
+    take h;
+    thus thesis by A1;
+  end;
+  uniqueness by FUNCT_2:def 8;
+end;
+
+theorem ThMoodXORSame:
+  for X being non empty set
+  for m being Function of X, BOOLEAN
+  for x being Element of X
+  holds MoodXOR(m, m).x = FALSE
+proof
+  let X be non empty set;
+  let m be Function of X, BOOLEAN;
+  let x be Element of X;
+  MoodXOR(m, m).x = (m.x) 'xor' (m.x) by DefMoodXOR;
+  hence thesis;  :: x 'xor' x = FALSE always!
+end;
+
+:: ============================================================================
+:: Pattern 4: Graph-specific example (realistic!)
+:: ============================================================================
+
+:: Now use actual Graph infrastructure from GRAPH_1
+
+reserve G for Graph;
+reserve v for Vertex of G;
+
+:: A VertexMood is a function from vertices to moods
+
+definition
+  let G be Graph;
+  mode VertexMood of G is Function of the carrier of G, BOOLEAN;
+end;
+
+:: Check if all vertices are happy
+
+definition
+  let G be Graph;
+  let m be VertexMood of G;
+  attr m is all_happy means
+  :DefAllHappy:
+  for v being Vertex of G holds m.v = TRUE;
+  ::                              ^^^
+  ::                           Dot works! v : Vertex of G = Element of carrier
+end;
+
+:: Create the "always happy" mood
+
+definition
+  let G be Graph;
+  func AlwaysHappy(G) -> VertexMood of G equals
+  [:the carrier of G, {TRUE}:];
+  coherence;
+end;
+
+theorem ThAlwaysHappyIsHappy:
+  for G being Graph holds AlwaysHappy(G) is all_happy
+proof
+  let G be Graph;
+  let v be Vertex of G;
+  AlwaysHappy(G).v = TRUE by FUNCT_2:7;
+  hence thesis by DefAllHappy;
+end;
+
+:: ============================================================================
+:: Pattern 5: Combining moods on two graphs
+:: ============================================================================
+
+:: If two graphs have same vertex set, we can compare their moods!
+
+definition
+  let X be non empty set;
+  let m1, m2 be Function of X, BOOLEAN;
+  pred m1 agrees_with m2 means
+  :DefAgrees:
+  for x being Element of X holds m1.x = m2.x;
+  ::                               ^^^^^   ^^^^^
+  ::                            Both dots work in predicate!
+end;
+
+theorem ThFlipNeverAgrees:
+  for X being non empty set
+  for m being Function of X, BOOLEAN
+  st X is non empty
+  holds not m agrees_with FlipMood(m)
+proof
+  let X be non empty set;
+  let m be Function of X, BOOLEAN;
+  assume X is non empty;
+  then consider x being object such that
+  A1: x in X by XBOOLE_0:def 1;
+  reconsider x as Element of X by A1;
+  FlipMood(m).x = 'not' (m.x) by DefFlipMood;
+  then m.x <> FlipMood(m).x;
+  hence thesis by DefAgrees;
+end;
+
+:: ============================================================================
+:: Key Lessons: When does the dot work?
+:: ============================================================================
+
+:: ✅ DOT WORKS WHEN:
+::    - Left side: f has visible type "Function of A, B"
+::    - Right side: x has visible type "Element of A" (or x in A)
+::    - Context: Mizar can SEE both types at that point!
+::
+:: ✅ IN MEANS CLAUSES:
+::    Use "for x being Element of X holds it.x = ..."
+::    The typed quantification makes types visible!
+::
+:: ✅ IN THEOREMS:
+::    Declare types in let/for: "let f be Function of X, Y"
+::    Then f.x works everywhere in the proof!
+::
+:: ❌ DOT FAILS (Error 103) WHEN:
+::    - Type is hidden behind non-expandable mode
+::    - Missing "Element of" quantification
+::    - f declared but type not visible at use site
+::
+:: 🔧 FIX FOR ERROR 103:
+::    1. Use "Function of A, B" directly in definition header
+::    2. Or use expandable mode: "mode M is Function of A, B"
+::    3. Add typed quantification: "for x being Element of A"
+::    4. Ensure FUNCT_1, FUNCT_2 in notations/constructors
+
+:: ============================================================================
+:: Real-World Application: Chain Algebra (from your 4CP codebase!)
+:: ============================================================================
+
+:: This is EXACTLY the pattern from span_constructive.miz:90:
+::
+::   definition
+::     let G be Graph, c1, c2 be Chain of G;
+::     func c1 (+) c2 -> Chain of G means
+::     for e being Element of the_Edges_of G holds it.e = (c1.e) (+) (c2.e);
+::     existence proof ... end;
+::     uniqueness;
+::   end;
+::
+:: Why it works:
+:: - e : Element of the_Edges_of G (typed quantification!)
+:: - it : Chain of G (return type visible)
+:: - c1, c2 : Chain of G (parameter types visible)
+:: - Chain of G expands to Function type (or is used correctly)
+::
+:: The three dots it.e, c1.e, c2.e all work perfectly!
+
+:: ============================================================================
+:: Advanced: Multi-argument functions (from field_12.miz:1127)
+:: ============================================================================
+
+:: For binary operations, use tuples: it.(a,b) means it.[a,b]
+
+definition
+  let X be non empty set;
+  let f be Function of [:X, X:], BOOLEAN;
+  pred f is_symmetric means
+  for x, y being Element of X holds f.(x,y) = f.(y,x);
+  ::                                   ^^^^^     ^^^^^
+  ::                                Tuple application!
+  :: Note: f.(x,y) is sugar for f.[x,y]
+end;
+
+:: ============================================================================
+:: Summary Pattern for Function Definitions
+:: ============================================================================
+
+:: FOR: Function operation f : A → B
+::
+:: definition
+::   let A be non empty set;
+::   let f be Function of A, SomeType;
+::   func OperationName(f) -> Function of A, ResultType means
+::   :DefLabel:
+::   for x being Element of A holds it.x = <expression using f.x>;
+::   ::                               ^^^^               ^^^
+::   ::                            These dots work!
+::   existence
+::   proof
+::     deffunc F(Element of A) = <expression using $1>;
+::     consider h being Function of A, ResultType such that
+::     for x being Element of A holds h.x = F(x) from FUNCT_2:sch 4;
+::     take h;
+::     thus thesis;
+::   end;
+::   uniqueness by FUNCT_2:def 8;  :: Extensional equality
+:: end;
+
+:: File demonstrates the dot notation with fun mood maps on graphs!
+:: Pattern verified from: bcialg_6.miz, conlat_1.miz, field_12.miz,
+::                        fomodel3.miz, normsp_0.miz, msscyc_2.miz
+::
+:: And it matches YOUR working code in span_constructive.miz! :)

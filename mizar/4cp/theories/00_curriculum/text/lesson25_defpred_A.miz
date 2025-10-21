@@ -1,0 +1,21 @@
+:: Lesson 25A (NEGATIVE): defpred misuse — references an undeclared set
+:: Shows a common pitfall: using defpred with a free symbol (A) not introduced.
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+
+begin
+
+theorem
+  ex x being object st x = x
+proof
+  :: Missing: no `let A be set;` but A appears in the defpred body
+  defpred P[object] means $1 in A;  :: A is unknown here (140)
+  take the set;  :: dummy witness, line will not be reached if above fails
+  thus thesis;
+end;
+
+end;

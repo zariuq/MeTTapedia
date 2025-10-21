@@ -1,0 +1,23 @@
+:: Lesson 25B (POSITIVE): defpred — clean, local predicate template
+:: Demonstrates defpred alongside a standard existence proof.
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+
+begin
+
+theorem
+  for A being set holds (ex x being object st x in A) implies A <> {}
+proof
+  let A be set;
+  assume H: ex x being object st x in A;
+  defpred P[object] means $1 in A;
+  consider x being object such that
+    A1: P[x] by H;
+  thus A <> {} by A1;
+end;
+
+end;

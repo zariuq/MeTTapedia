@@ -1,0 +1,34 @@
+:: Lesson 31: Fraenkel comprehension — diagonal set
+
+environ
+ vocabularies LESSON31, XBOOLE_0, ZFMISC_1;
+ notations XBOOLE_0, ZFMISC_1;
+ constructors ZFMISC_1;
+
+begin
+
+definition
+  let X be set;
+  func diag X -> set equals
+  :DefDiag:
+  { [x,x] where x is object : x in X };
+  coherence;
+end;
+
+theorem
+  for X being set, z being object holds
+    z in diag X iff ex x being object st x in X & z = [x,x]
+proof
+  let X be set, z be object;
+  thus z in diag X implies ex x being object st x in X & z = [x,x]
+  proof
+    assume z in diag X;
+    then consider x being object such that
+      A1: x in X & z = [x,x] by DefDiag;
+    take x; thus x in X & z = [x,x] by A1;
+  end;
+  assume ex x being object st x in X & z = [x,x];
+  then consider x being object such that
+    B1: x in X & z = [x,x];
+  thus z in diag X by B1, DefDiag;
+end;

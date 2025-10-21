@@ -1,0 +1,91 @@
+:: Lesson 30 (POSITIVE): symmetry via relations (library-only)
+
+environ
+  vocabularies TARSKI, ZFMISC_1, RELAT_1, RELAT_2;
+  notations   TARSKI, ZFMISC_1, RELAT_1, RELAT_2, FUNCT_2, MARGREL1;
+  constructors TARSKI, ZFMISC_1, RELAT_1, RELAT_2, FUNCT_2, MARGREL1;
+  requirements SUBSET, BOOLE;
+  theorems XTUPLE_0, RELAT_2;
+
+begin
+
+theorem
+  for X being non empty set,
+      F being Function of [:X,X:], BOOLEAN holds
+  ( (for a,b being Element of X holds F.(a,b) = F.(b,a)) iff
+    (ex R being Relation of X st
+       (for a,b being Element of X holds
+          ([a,b] in R iff F.(a,b) = TRUE)) &
+       R is symmetric) )
+proof
+  let X be non empty set, F be Function of [:X,X:], BOOLEAN;
+
+  :: (=>) pointwise symmetry implies symmetric characteristic relation
+  assume A0: for a,b being Element of X holds F.(a,b) = F.(b,a);
+  set S = { [a,b] where a,b is Element of X : F.(a,b) = TRUE };
+  A1: S c= [:X,X:]
+  proof
+    let z be object; assume z in S;
+    then ex a,b being Element of X st z = [a,b] & F.(a,b) = TRUE;
+    hence z in [:X,X:];
+  end;
+  reconsider R = S as Relation of X by A1, RELSET_1:1;
+  thus (ex R being Relation of X st
+          (for a,b being Element of X holds
+             ([a,b] in R iff F.(a,b) = TRUE)) &
+          R is symmetric)
+  proof
+    take R;
+    thus for a,b being Element of X holds
+           ([a,b] in R iff F.(a,b) = TRUE)
+    proof
+      let a,b be Element of X;
+      hereby
+        assume [a,b] in R;
+        then consider u,v being Element of X such that
+          H0: [a,b] = [u,v] & F.(u,v) = TRUE;
+        thus F.(a,b) = TRUE by H0, XTUPLE_0:1;
+      end;
+      assume F.(a,b) = TRUE;
+      thus [a,b] in R;
+    end;
+    thus R is symmetric
+    proof
+      let x,y be object;
+      assume x in X & y in X & [x,y] in R;
+      then consider a,b being Element of X such that
+        H1: [x,y] = [a,b] & F.(a,b) = TRUE;
+      have F.(b,a) = TRUE by A0, H1, XTUPLE_0:1;
+      hence [y,x] in R by H1, XTUPLE_0:1;
+    end;
+  end;
+
+  :: (<=) symmetric relation yields pointwise equality
+  given R being Relation of X such that
+  A2: for a,b being Element of X holds
+        ([a,b] in R iff F.(a,b) = TRUE) and
+  A3: R is symmetric;
+  let a,b be Element of X;
+  per cases;
+  suppose F.(a,b) = TRUE;
+    then [a,b] in R by A2;
+    then [b,a] in R by A3, RELAT_2:def 3;
+    hence F.(a,b) = F.(b,a) by A2;
+  end;
+  suppose F.(a,b) <> TRUE;
+    thus F.(a,b) = F.(b,a)
+    proof
+      per cases;
+      suppose F.(b,a) = TRUE;
+        then [b,a] in R by A2;
+        then [a,b] in R by A3, RELAT_2:def 3;
+        hence contradiction by A2, ‹F.(a,b) <> TRUE›;
+      end;
+      suppose F.(b,a) <> TRUE;
+        thus thesis;
+      end;
+    end;
+  end;
+end;
+
+end;

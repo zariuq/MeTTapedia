@@ -1,0 +1,35 @@
+:: Lesson 30 (POSITIVE): tuple application — BINOP_1-style (mode + attr)
+
+environ
+  vocabularies L30, SUBSET_1, ZFMISC_1, FUNCT_2, MARGREL1;
+  notations   SUBSET_1, ZFMISC_1, FUNCT_2, MARGREL1;
+  constructors ZFMISC_1, FUNCT_2, MARGREL1;
+  requirements SUBSET, BOOLE;
+
+begin
+
+definition
+  let X be non empty set;
+  mode BoolOp of X is Function of [:X,X:], BOOLEAN;
+  correctness;
+end;
+
+definition
+  let X be non empty set;
+  let F be BoolOp of X;
+  attr F is symm means
+  for a,b being Element of X holds F.[a,b] = F.[b,a];
+end;
+
+theorem
+  for X being non empty set,
+      F being BoolOp of X st F is symm
+  for x being Element of X holds F.[x,x] = F.[x,x]
+proof
+  let X be non empty set, F be BoolOp of X;
+  assume F is symm;
+  let x be Element of X;
+  thus F.[x,x] = F.[x,x];
+end;
+
+end;

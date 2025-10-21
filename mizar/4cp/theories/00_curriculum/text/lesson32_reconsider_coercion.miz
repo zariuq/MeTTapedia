@@ -1,0 +1,18 @@
+:: Lesson 32: Reconsider — coercing to a specific type in proofs
+
+environ
+ vocabularies XBOOLE_0, SUBSET_1;
+ notations SUBSET_1;
+ constructors SUBSET_1;
+
+begin
+
+theorem
+  for X being set, x being object st x in X holds
+  ex y being Element of X st y = x
+proof
+  let X be set, x be object;
+  assume A1: x in X;
+  reconsider y = x as Element of X by A1;
+  take y; thus y = x;
+end;

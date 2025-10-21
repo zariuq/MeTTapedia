@@ -1,0 +1,37 @@
+:: Lesson 21A (NEGATIVE): Infix Operator with Declared Properties — bad local vocabulary
+:: This article intentionally uses a local vocabulary name (LESSON21)
+:: without providing dict/LESSON21.voc. If you compile from inside
+:: text/ (cd text && mizf lesson21_op_props), you will hit Error 801
+:: (cannot find vocabulary file). Compile from module root to avoid 801,
+:: but it will still fail due to missing vocabulary.
+
+environ
+ vocabularies LESSON21, XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+
+begin
+
+definition
+  let A,B be set;
+  func A (+) B -> set equals
+  :DefPlus:
+  A \/ B;
+  coherence;
+  commutativity;
+  associativity;
+  idempotence;
+end;
+
+theorem
+  for A,B being set holds A (+) B = B (+) A
+proof let A,B be set; thus thesis; end;
+
+theorem
+  for A,B,C being set holds (A (+) B) (+) C = A (+) (B (+) C)
+proof let A,B,C be set; thus thesis; end;
+
+theorem
+  for A being set holds A (+) A = A
+proof let A be set; thus thesis; end;

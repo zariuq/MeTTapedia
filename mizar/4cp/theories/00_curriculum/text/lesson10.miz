@@ -1,0 +1,212 @@
+::Lesson 10: Complex Proof Patterns - REALISTIC EXAMPLES
+::
+:: Goal: Master advanced proof tactics with meaningful theorems
+:: Patterns: hereby, per cases, given - applied to real problems
+::
+:: WHY THIS MATTERS FOR 4CP:
+:: - Graph colorability requires case analysis (per cases)
+:: - Existential witnesses need extraction (given, consider)
+:: - Bidirectional equivalences are common (hereby for iff)
+
+environ
+ vocabularies LESSON10, XBOOLE_0, SUBSET_1, TARSKI, ZFMISC_1;
+ notations XBOOLE_0, SUBSET_1, TARSKI, ZFMISC_1;
+ constructors XBOOLE_0, SUBSET_1, TARSKI, ZFMISC_1;
+ registrations XBOOLE_0, SUBSET_1, ZFMISC_1;
+ requirements SUBSET, BOOLE;
+
+begin
+
+:: ====================
+:: PATTERN 1: hereby (Bidirectional Proofs)
+:: ====================
+:: Real theorem: Set union commutativity characterization
+
+theorem Th1:
+  for X, Y being set holds X \/ Y = Y \/ X
+proof
+  let X, Y be set;
+  thus X \/ Y c= Y \/ X
+  proof
+    let x be object;
+    assume x in X \/ Y;
+    hence x in Y \/ X;
+  end;
+  thus Y \/ X c= X \/ Y
+  proof
+    let x be object;
+    assume x in Y \/ X;
+    hence x in X \/ Y;
+  end;
+end;
+
+:: ====================
+:: PATTERN 2: per cases (Real Case Analysis)
+:: ====================
+:: Real theorem: Union with subset
+
+theorem Th2:
+  for X, Y being set st Y c= X holds X \/ Y = X
+proof
+  let X, Y be set;
+  assume
+A1: Y c= X;
+  thus X \/ Y c= X
+  proof
+    let x be object;
+    assume x in X \/ Y;
+    per cases;
+    suppose x in X;
+      hence x in X;
+    end;
+    suppose x in Y;
+      hence x in X by A1;
+    end;
+  end;
+  thus X c= X \/ Y
+  proof
+    let x be object;
+    assume x in X;
+    hence x in X \/ Y;
+  end;
+end;
+
+:: ====================
+:: PATTERN 3: given (Existential Extraction)
+:: ====================
+:: Real theorem: Non-empty has element
+
+theorem Th3:
+  for X being set st (ex x being object st x in X) holds X <> {}
+proof
+  let X be set;
+  given x being object such that
+A1: x in X;
+  assume X = {};
+  then not x in X;
+  hence contradiction by A1;
+end;
+
+:: ====================
+:: PATTERN 4: hereby with per cases (Combined)
+:: ====================
+:: Real theorem: Intersection characterization
+
+theorem Th4:
+  for X, Y being set holds
+    X /\ Y = {} iff (for x being object holds not (x in X & x in Y))
+proof
+  let X, Y be set;
+  hereby
+    assume X /\ Y = {};
+    let x be object;
+    assume x in X & x in Y;
+    then x in X /\ Y;
+    hence contradiction;
+  end;
+  assume
+A1: for x being object holds not (x in X & x in Y);
+  assume X /\ Y <> {};
+  then consider x being object such that
+A2: x in X /\ Y;
+  x in X & x in Y by A2;
+  hence contradiction by A1;
+end;
+
+:: ====================
+:: PATTERN 5: Complex Case Analysis
+:: ====================
+:: Real theorem: Set trichotomy
+
+theorem Th5:
+  for X being set holds X = {} or ex x being object st x in X
+proof
+  let X be set;
+  per cases;
+  suppose X = {};
+    hence thesis;
+  end;
+  suppose X <> {};
+    then ex x being object st x in X;
+    hence thesis;
+  end;
+end;
+
+:: ====================
+:: KEY LESSONS FOR 4CP
+:: ====================
+::
+:: 1. hereby FOR BIDIRECTIONAL PROOFS
+::    - Common pattern: "A iff B"
+::    - First direction: hereby ... end;
+::    - Second direction: assume B; prove A
+::    - Example: Graph planarity equivalences
+::
+:: 2. per cases FOR CASE ANALYSIS
+::    - Exhaustive case splitting
+::    - Each case: suppose ... hence thesis; end;
+::    - Example: Colorability depends on structure
+::    - Example: Edge cases (empty, single vertex, etc.)
+::
+:: 3. given FOR WITNESS EXTRACTION
+::    - Extracts from "ex x st P[x]" assumptions
+::    - Syntax: given x being TYPE such that LABEL: PROP;
+::    - Example: Extract vertex from non-empty graph
+::    - Example: Extract edge witnesses in planarity proofs
+::
+:: 4. COMBINED PATTERNS
+::    - hereby with per cases inside
+::    - per cases with given in each branch
+::    - Complex reasoning mirrors mathematical practice
+::
+:: ====================
+:: COMPARISON TO TRIVIAL VERSION
+:: ====================
+::
+:: Old Lesson 10 (trivial):
+::   theorem: X = X proof thus thesis; end;
+::
+:: New Lesson 10 (realistic):
+::   - Union commutativity (Th1)
+::   - Subset union (Th2)
+::   - Non-empty characterization (Th3)
+::   - Intersection emptiness (Th4)
+::   - Set trichotomy (Th5)
+::
+:: These are REAL theorems you'd prove in graph theory!
+::
+:: ====================
+:: 4CP APPLICATION EXAMPLES
+:: ====================
+::
+:: Graph Colorability (per cases):
+::   per cases;
+::   suppose G is_3_colorable;
+::     hence G is planar_4_colorable;
+::   end;
+::   suppose G is not 3_colorable;
+::     :: prove using reduction
+::   end;
+::
+:: Planarity Witness (given):
+::   given embedding being PlanarEmbedding of G such that
+::   A1: embedding is valid;
+::   :: prove properties using A1
+::
+:: Equivalence (hereby):
+::   theorem: G is planar iff ex embedding st embedding is valid
+::   proof
+::     hereby
+::       assume G is planar;
+::       :: construct embedding witness
+::     end;
+::     assume ex embedding st embedding is valid;
+::     :: prove planarity
+::   end;
+::
+:: ====================
+:: NEXT: Lesson 12
+:: ====================
+:: Now that we have realistic proof patterns, Lesson 12 will
+:: combine these with actual MML GRAPH_1 structures to prove
+:: real graph theory theorems!

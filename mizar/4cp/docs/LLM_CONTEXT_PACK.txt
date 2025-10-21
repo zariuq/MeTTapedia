@@ -1,0 +1,342 @@
+[LLM CONTEXT PACK — Mizar (canonical, compact)]
+Purpose
+- Keep agents unblocked with the minimum needed to write compiling Mizar.
+
+Canonical docs (read these if you need details)
+- How‑To: docs/HOWTO_Mizar.md
+- QuickStart: docs/QuickStart.md
+- Curriculum: docs/CURRICULUM.md
+- Error Zoo: docs/ERROR_ZOO.md
+
+Environment (always set before compiling)
+export MIZFILES=/home/zar/claude/mizar/share
+export MIZROOT=/home/zar/claude/mizar
+
+Where to run from
+- Root path: `mizf theories/<module>/text/<file>.miz` (dict/ visible by path)
+- Or module root: `cd theories/<module> && mizf text/<file>.miz`
+- If you see 801 (cannot find vocabulary), you are not at a place where dict/ is visible.
+
+Project layout (standard)
+theories/
+  <module>/
+    text/   # .miz sources
+    dict/   # .voc vocabulary (R/O/M/V/U/G)
+
+Vocabulary (.voc)
+- Declare every new symbol first. Qualifiers: R=predicate, O=functor, M=mode, V=attribute, U=selector, G=structure.
+- Keep vocabulary names ≤ 8 chars. List your vocab FIRST in `vocabularies`.
+
+Definitions (canonical)
+- equals  → label on next line + `coherence;`
+- equals with if...otherwise → `correctness;` NOT `coherence;` (see Boolean conditionals below)
+- means   → label on next line + `correctness;` (wrap existence/uniqueness when needed)
+- modes   → `correctness;`
+- Label must be on its own line after equals/means.
+
+Boolean conditionals (if...otherwise pattern)
+- Use `correctness;` NOT `coherence;` for conditional Boolean functions:
+  ```mizar
+  func IsEqual(x, y) -> Element of BOOLEAN equals
+  TRUE if x = y otherwise FALSE;
+  correctness;
+  ```
+- Requires: vocabularies/notations/constructors/registrations MARGREL1, XBOOLEAN
+- Requires: requirements BOOLE;
+- TRUE/FALSE are constants from MARGREL1:def 12, NOT keywords
+
+Ready-to-use environ templates
+
+Basic sets and relations (always works):
+```mizar
+environ
+  vocabularies XBOOLE_0, SUBSET_1, ZFMISC_1, TARSKI;
+  notations   SUBSET_1, ZFMISC_1, TARSKI;
+  constructors ZFMISC_1;
+  theorems    ZFMISC_1, TARSKI;
+  requirements SUBSET;
+```
+
+Functions (single domain):
+```mizar
+environ
+  vocabularies XBOOLE_0, SUBSET_1, FUNCT_1, FUNCT_2;
+  notations   SUBSET_1, FUNCT_1, FUNCT_2;
+  constructors FUNCT_2;
+  registrations FUNCT_2;
+  theorems    FUNCT_1, FUNCT_2;
+  requirements SUBSET;
+```
+
+Structures:
+```mizar
+environ
+  vocabularies XBOOLE_0, STRUCT_0;
+  notations   XBOOLE_0, STRUCT_0;
+  constructors STRUCT_0;
+  registrations STRUCT_0;
+```
+
+With numerals:
+```mizar
+environ
+  vocabularies XBOOLE_0, SUBSET_1;
+  notations   SUBSET_1;
+  constructors XBOOLE_0;
+  requirements SUBSET, NUMERALS;
+```
+
+Typed dot & pointwise ops
+- Dot works only when types are visible at the use site.
+- Use typed binders in means: `for x being Element of X holds it.x = ...`.
+- Build pointwise functions via `FUNCT_2:sch 4`; uniqueness by `FUNCT_2:def 8`.
+
+Constant maps & Booleans
+- Constants: `equals [:A, {k}:]` (no `.x` inside `means`). Prove value lemma (`ZFMISC_1:87`, `FUNCT_1:1`).
+- Boolean functor: `equals TRUE if <cond> otherwise FALSE;` then `iff` lemma.
+
+Pairs, tuples, selectors
+- Backticks ``c`1`` require a visible product type: `c : Element of [:X,Y:]` (use `MCART_1:10`).
+- `f.(x,y)` is sugar for `f.[x,y]` when `f : [:X,Y:] → ...` (`FUNCT_2`).
+- Decompose pairs with `ZFMISC_1:84`; injectivity via `XTUPLE_0:1` or `ZFMISC_1:33`.
+- Structures/selectors: import `STRUCT_0`; define via `struct (1-sorted) Name (# field -> type #);` then use `the field of S` (not `field(S)`).
+
+Registrations (clusters)
+- Functorial, existential, conditional, parametric. Encode “obvious” typing facts here to simplify proofs.
+
+Imports & requirements
+- theorems: list articles you cite in `by` (e.g., `theorems TARSKI, FUNCT_2, ZFMISC_1`).
+- notations/constructors/registrations: add only what the checker demands.
+- requirements: `SUBSET, BOOLE` (and `NUMERALS, ARITHM` for numerals/arith). Keep minimal.
+- Do NOT use non‑standard `articles` directive (Error 223).
+- Environ hygiene: avoid unused `notations` lines (e.g., `notations SUBSET_1;` without using `Element of`) — triggers 830.
+
+Reserve vs let; defpred/deffunc; schemes
+- Prefer local `let/for` binders; use `reserve` sparingly (can hide missing quantifiers).
+- `defpred P[Var] means ...;` and `deffunc F(Type) = ...;` keep templates local & typed.
+- Common schemes: `FUNCT_2:sch 4` (function by rule), `NAT_1:sch 1` (induction over ℕ).
+
+Reconsider / Identify
+- Use `reconsider` to coerce a term to a more specific type when justified by a proof step.
+- `identify` for definitional equalities (advanced; prefer normal defs/regs first).
+
+Compilation patterns (quick)
+- Single file (root): `mizf theories/<module>/text/<file>.miz`
+- Single file (module root): `cd theories/<module> && mizf text/<file>.miz`
+- Verifier path: `cd theories/<module> && makeenv <file> && verifier <file>`
+
+Troubleshooting (fast)
+- 801: run from root/module root so dict/ is visible; check MIZFILES/MIZROOT.
+- 73/72: fix coherence/correctness pairing.
+- 103: typed binder missing at dot; add `for x being Element of X` or `reconsider`.
+- 302: label formatting or vocab kind mismatch; ensure label line and .voc qualifier are correct.
+- 192: missing `theorems` import (e.g., add `theorems TARSKI;`).
+- 175/306: predicate/attribute format mixed; avoid `pred F is_symmetric_on X`; use `attr F is symmetric` or `pred Symmetric(F,X)`.
+- 830: notations imported but unused; delete the line or actually use it.
+ - 129: invalid free variables in a Fraenkel operator; prefer `x is object : x in X` or ensure `SUBSET_1` + typed binders are used correctly.
+ - 190: inaccessible theorem ref; add `theorems ARTICLE;` or use `XTUPLE_0:1` for pair injectivity.
+ - 4: inference not accepted; add a one‑step equality or restructure the `thus` line if you need 0.
+
+Advanced toolbox (compact)
+- Reserve vs let: reserve types names globally; prefer local `let/for` for clarity.
+- Requirements: add `SUBSET`, `BOOLE`, `NUMERALS`, `ARITHM` only when the checker demands them.
+- @proof: temporarily elides proofs; do not commit with it.
+- Synonym/antonym/redefine/identify: advanced housekeeping; prefer normal defs/regs first.
+- defpred/deffunc: keep predicate/function templates typed and local (works well with schemes).
+- Schemes beyond `FUNCT_2:sch 4`: follow MML headers (`provided` clauses) when needed.
+- Notation tuning: declare only what you actually use to avoid clashes.
+
+Working patterns (curriculum-verified, 0 errors)
+
+Basic definitions (lessons 1-4):
+- Predicate: `pred X is_empty means X = {};` (no label needed unless referenced)
+  File: `theories/00_curriculum/text/lesson1.miz`
+- Functor: `func double X -> set equals :Def: X \/ X; coherence;`
+  File: `theories/00_curriculum/text/lesson2.miz`
+- Mode: `mode MySet is set;` (alias) or with correctness for constrained modes
+  File: `theories/00_curriculum/text/lesson3.miz`
+- Attribute: `attr X is trivial means :Def: X = {};`
+  File: `theories/00_curriculum/text/lesson4.miz`
+- Theorem with labeled def: Define with label, then prove properties using `by Def;`
+  File: `theories/00_curriculum/text/lesson5c.miz`
+
+Proving algebraic laws (elementwise, robust):
+```mizar
+theorem :: Commutativity of union
+  for A,B being set holds A \/ B = B \/ A
+proof
+  let A,B be set;
+  thus A \/ B c= B \/ A
+  proof
+    let x be object; assume x in A \/ B;
+    then x in A or x in B;
+    then x in B or x in A;
+    hence x in B \/ A;
+  end;
+  let x be object; assume x in B \/ A;
+  then x in B or x in A;
+  then x in A or x in B;
+  hence x in A \/ B;
+end;
+```
+File: `theories/00_curriculum/text/lesson20_functor_props.miz`
+Key: Elementwise `c=` inclusion both ways; cite `TARSKI:2` for set extensionality if needed.
+
+Infix operators with theorems:
+```mizar
+definition
+  let A,B be set;
+  func A (+) B -> set equals :Def: A \/ B;
+  coherence;
+end;
+
+theorem
+  for A,B being set holds A (+) B = B (+) A
+proof
+  let A,B be set;
+  thus thesis by Def; :: uses commutativity of \/
+end;
+```
+File: `theories/00_curriculum/text/lesson21_op_props_ok.miz`
+Key: Define operator, prove laws separately via theorems (more robust than property annotations).
+
+Vocabulary path errors (Error 801):
+- Negative: Compiling from inside `text/` directory when `.voc` is in sibling `dict/`
+  File: `theories/00_curriculum/text/lesson21_op_props.miz` (broken if run as `cd text && mizf lesson21_op_props.miz`)
+- Positive: Compile from module root: `cd theories/00_curriculum && mizf text/lesson21_op_props_ok.miz`
+
+Structures & selectors:
+- Define: `struct PairStr (# first -> set, second -> set #);`
+- Use: `the first of P` (NOT `first(P)`)
+- Requires: `STRUCT_0` in constructors/registrations
+- No .voc needed for local structures
+  File: `theories/00_curriculum/text/lesson29_struct_selectors.miz`
+
+Set comprehension (Fraenkel):
+- Safe pattern: `func diag(X) -> set equals :Def: { [x,x] where x is object : x in X }; coherence;`
+- Use `object` binder to avoid Error 129 (invalid free variables)
+- Requires: `ZFMISC_1` in constructors/theorems
+  File: `theories/00_curriculum/text/lesson31_fraenkel_diag.miz`
+
+Reserve vs. let (quantification):
+- Prefer: `let x be set;` or `for x being set holds ...` (local, explicit)
+- Avoid: `reserve x for set;` (global typing, hides missing quantifiers)
+- Negative example: Over-broad reserve can cause Error 100 (unused locus)
+  Files: `lesson24_reserve_vs_let_ok.miz` (positive), `lesson24_reserve_vs_let_A.miz` (negative)
+
+Predicate templates (defpred):
+```mizar
+theorem
+  for X being set ex Y being set st Y c= X
+proof
+  let X be set;
+  defpred P[object] means $1 in X;
+  consider Y being set such that
+    A1: for z being object holds z in Y iff z in X & P[z] from XBOOLE_0:sch 1;
+  take Y; thus Y c= X by A1;
+end;
+```
+Key: `defpred P[Type] means <formula with $1>` keeps template local and typed.
+Negative: Free symbols in defpred → Error 140. File: `lesson25_defpred_A.miz`
+
+Theorem imports (Error 192):
+- To cite theorems: Add `theorems TARSKI;` to environ, then use `by TARSKI:2;`
+- Without import: Error 192 (unknown theorem reference)
+  Files: `lesson26_theorems_import_B.miz` (positive), `lesson26_theorems_import_A.miz` (negative)
+
+Numeric literals (requirements):
+- Pattern: Add `requirements NUMERALS;` to environ, then use `0`, `1`, `2` in definitions
+- Without requirements: Numeric literals fail to parse
+  Files: `lesson28_numerals_ok.miz` (positive), `lesson28_numerals_A.miz` (negative)
+
+Type coercion (reconsider):
+- Pattern: `assume A1: x in X; reconsider y = x as Element of X by A1;`
+- Explicitly justify the coercion with membership proof
+- May produce Error 4 on trivial cases (acceptable if proof is correct)
+  File: `theories/00_curriculum/text/lesson32_reconsider_coercion.miz`
+
+Pointwise function construction:
+```mizar
+definition
+  let X be non empty set, f be Function of X, BOOLEAN;
+  func Flip(f) -> Function of X, BOOLEAN means
+  :Def:
+  for x being Element of X holds it.x = 'not'(f.x);
+  correctness
+  proof
+    deffunc F(Element of X) = 'not'(f.$1);
+    consider h being Function of X, BOOLEAN such that
+      A1: for x being Element of X holds h.x = F(x) from FUNCT_2:sch 4;
+    take h; thus thesis by A1;
+  end;
+end;
+```
+Key: typed binder `Element of X` makes dot notation work; use `FUNCT_2:sch 4` for existence.
+
+Relation-based symmetry (simple types):
+```mizar
+theorem
+  for X being set, x,y being object st x in X & y in X holds
+    ([x,y] in [:X,X:] implies [y,x] in [:X,X:])
+proof
+  let X be set, x,y be object;
+  assume x in X & y in X;
+  then [y,x] in [:X,X:] by ZFMISC_1:87;
+  hence thesis;
+end;
+```
+File: `theories/00_curriculum/text/lesson30_rel_univ_sym_ok.miz`
+
+Environment limitations (Lesson 30 - critical!)
+Some patterns that "should work" per MML docs fail in minimal environments:
+- `Function of [:X,X:], BOOLEAN` → Error 306 even with full FUNCT_2/MARGREL1 imports
+- Bracket notation `F.[a,b]` → Error 203 even with definitions MARGREL1
+- Library attributes like `R is symmetric` → Error 106 even with definitions RELAT_2
+Solution: Use simpler types (`set`, `object`, `Relation of X`) and relation predicates.
+Negative examples: `lesson30_tuples_symmetric_A.miz`, `lesson30_rel_symm_bracket_A.miz`
+When canonical patterns fail despite correct syntax, simplify rather than fight the parser.
+
+Common errors - quick fixes
+
+| Error | Meaning | Fix |
+|-------|---------|-----|
+| 4 | Inference not accepted | Add explicit intermediate step or cite theorem |
+| 72 | Wrong correctness condition | Use `coherence;` for equals functors |
+| 73 | Missing correctness condition | Add `coherence;` (equals) or `correctness;` (means) |
+| 100 | Unused/ill-typed locus | Add proper `let x be Type;` declaration |
+| 103 | Unknown functor (dot) | Add typed binder: `for x being Element of X holds ...` |
+| 106 | Unknown attribute | Check .voc has `Vattr_name` or import is missing |
+| 129 | Invalid free variables (Fraenkel) | Use `where x is object : x in X` instead of Element |
+| 140 | Unknown variable | Declare with `let x be Type;` |
+| 142 | Unknown locus | Use typed binder in quantifier |
+| 192 | Unknown theorem reference | Add `theorems ARTICLE;` to environ |
+| 203 | Unknown token | Check .voc entry; may be environment limitation (see Lesson 30) |
+| 216 | Unexpected end | Remove trailing `end;` - file ends after last proof `end;` |
+| 301 | Predicate symbol expected | Add `Rpred_name` to .voc |
+| 302 | Functor symbol expected | Check label is on own line; verify .voc has `Ofunc_name` |
+| 303 | Mode symbol expected | Add `Mmode_name` to .voc |
+| 306 | Attribute/proof step issue | Check syntax; may be environment limitation (see Lesson 30) |
+| 321 | Category mismatch | Fix .voc qualifier (R/O/M/V must match definition kind) |
+| 801 | Vocabulary not found | Run from module root where dict/ is visible |
+| 830 | Nothing imported from notations | Remove unused `notations` line or actually use the import |
+| 892 | Identifier too long | Keep vocabulary names ≤ 8 characters |
+
+Critical curriculum files
+
+Positive (all compile with 0 errors):
+- Basic: lesson1.miz (pred), lesson2.miz (func), lesson3.miz (mode), lesson4.miz (attr), lesson5c.miz (theorem)
+- Advanced: lesson20_functor_props.miz, lesson21_op_props_ok.miz, lesson29_struct_selectors.miz
+- Lesson 30: lesson30_rel_univ_sym_ok.miz (simple types work)
+- Tools: lesson31_fraenkel_diag.miz, lesson32_reconsider_coercion.miz
+
+Negative (intentional errors for learning):
+- lesson21_op_props.miz (801 - wrong compilation path)
+- lesson24_reserve_vs_let_A.miz (100 - reserve pitfall)
+- lesson25_defpred_A.miz (140 - free symbol)
+- lesson26_theorems_import_A.miz (192 - missing import)
+- lesson28_numerals_A.miz (numeric literal without requirements)
+- lesson30_tuples_symmetric_A.miz (306 - complex function type limitation)
+- lesson30_rel_symm_bracket_A.miz (203, 106 - notation/attribute limitations)
+
+Done when
+- Files compile with 0 errors; no `axiom`/`sorry`. Use the How‑To for full examples and templates.

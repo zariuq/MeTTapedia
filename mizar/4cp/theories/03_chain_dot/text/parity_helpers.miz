@@ -1,0 +1,95 @@
+:: Parity helpers for bilinearity proofs
+:: nat_parity of sum and symmetric difference
+
+environ
+  vocabularies
+    CHAINDOT, XBOOLE_0, SUBSET_1, NUMBERS, NAT_1, INT_1,
+    FINSET_1, CARD_1, CARD_2, XBOOLEAN, MARGREL1, XXREAL_0, ORDINAL1;
+  notations
+    XBOOLE_0, SUBSET_1, NAT_1, INT_1, FINSET_1, CARD_1, CARD_2,
+    XBOOLEAN, MARGREL1, NUMBERS;
+  constructors
+    NAT_1, INT_1, NAT_D, FINSET_1, CARD_1, CARD_2,
+    XBOOLEAN, MARGREL1, XXREAL_0;
+  registrations
+    NAT_1, INT_1, FINSET_1, CARD_1, XBOOLEAN, MARGREL1;
+  requirements
+    SUBSET, BOOLE, NUMERALS, ARITHM, REAL;
+  theorems
+    CARD_1, CARD_2, XBOOLE_1, NAT_D, INT_1, MARGREL1;
+
+begin
+
+reserve A, B for finite set;
+reserve m, n for Nat;
+
+:: ============================================================================
+:: nat_parity of sum (Boolean XOR of parities)
+:: ============================================================================
+
+theorem Th_nat_parity_add:
+  nat_parity(m + n) = (nat_parity m) 'xor' (nat_parity n)
+proof
+  :: (m+n) mod 2 = ((m mod 2) + (n mod 2)) mod 2 by NAT_D:66
+  :: nat_parity k = TRUE iff k mod 2 = 1
+  :: Case analysis on m mod 2, n mod 2
+
+  per cases;
+  suppose A1: m mod 2 = 1 & n mod 2 = 1;
+    then (m + n) mod 2 = (1 + 1) mod 2 by NAT_D:66
+                       .= 2 mod 2
+                       .= 0 by NAT_D:25;
+    then nat_parity(m + n) = FALSE;
+    nat_parity m = TRUE & nat_parity n = TRUE by A1;
+    then (nat_parity m) 'xor' (nat_parity n) = FALSE by MARGREL1:68;
+    hence thesis;
+  end;
+  suppose A2: m mod 2 = 1 & n mod 2 = 0;
+    then (m + n) mod 2 = (1 + 0) mod 2 by NAT_D:66
+                       .= 1 mod 2
+                       .= 1 by NAT_D:24;
+    then nat_parity(m + n) = TRUE;
+    nat_parity m = TRUE & nat_parity n = FALSE by A2;
+    then (nat_parity m) 'xor' (nat_parity n) = TRUE by MARGREL1:67;
+    hence thesis;
+  end;
+  suppose A3: m mod 2 = 0 & n mod 2 = 1;
+    then (m + n) mod 2 = (0 + 1) mod 2 by NAT_D:66
+                       .= 1 mod 2
+                       .= 1 by NAT_D:24;
+    then nat_parity(m + n) = TRUE;
+    nat_parity m = FALSE & nat_parity n = TRUE by A3;
+    then (nat_parity m) 'xor' (nat_parity n) = TRUE by MARGREL1:67;
+    hence thesis;
+  end;
+  suppose A4: m mod 2 = 0 & n mod 2 = 0;
+    then (m + n) mod 2 = (0 + 0) mod 2 by NAT_D:66
+                       .= 0 mod 2
+                       .= 0 by NAT_D:25;
+    then nat_parity(m + n) = FALSE;
+    nat_parity m = FALSE & nat_parity n = FALSE by A4;
+    then (nat_parity m) 'xor' (nat_parity n) = FALSE by MARGREL1:68;
+    hence thesis;
+  end;
+end;
+
+:: ============================================================================
+:: Δ-parity (Boolean XOR of set parities)
+:: ============================================================================
+
+theorem Th_nat_parity_symdiff:
+  nat_parity(card(A \+\ B)) = (nat_parity(card A)) 'xor' (nat_parity(card B))
+proof
+  set a = card(A \ B);
+  set b = card(B \ A);
+  set i = card(A /\ B);
+
+  A1: card(A \+\ B) = a + b by CARD_2:40;
+  A2: card A = a + i & card B = b + i by CARD_2:44;
+
+  thus nat_parity(card(A \+\ B))
+     = nat_parity(a + b) by A1
+    .= (nat_parity a) 'xor' (nat_parity b) by Th_nat_parity_add
+    .= (nat_parity(a + i)) 'xor' (nat_parity(b + i)) by Th_nat_parity_add
+    .= (nat_parity(card A)) 'xor' (nat_parity(card B)) by A2;
+end;

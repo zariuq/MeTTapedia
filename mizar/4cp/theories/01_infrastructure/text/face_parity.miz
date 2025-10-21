@@ -1,0 +1,29 @@
+:: Face parity: B_face in zero_boundary; leaf/peel support steps
+:: This article pulls in GLIB cycle and degree infrastructure so we can
+:: show that a cycle boundary induces degree 2 at each vertex in the
+:: edge-induced subgraph, yielding even parity.
+
+environ
+
+ vocabularies NUMBERS, SUBSET_1, XBOOLE_0, TARSKI, RELAT_1, FUNCT_1,
+      FINSET_1, CARD_1, NAT_1, FINSEQ_1,
+      GLIB_000, GLIB_001, GLIB_002, GLIB_006, GLIB_009, GLIB_012;
+ notations TARSKI, XBOOLE_0, SUBSET_1, ORDINAL1, NUMBERS, NAT_1,
+      RELAT_1, FUNCT_1, FINSET_1, CARD_1, FINSEQ_1,
+      GLIB_000, GLIB_001, GLIB_006, GLIB_009, GLIB_012;
+ constructors NAT_1, FINSET_1, FINSEQ_1, RELSET_1,
+      GLIB_000, GLIB_001, GLIB_006, GLIB_009, GLIB_012;
+ registrations XBOOLE_0, SUBSET_1, RELAT_1, FUNCT_1, ORDINAL1,
+      FINSET_1, CARD_1, NAT_1, FINSEQ_1,
+      GLIB_000, GLIB_001, GLIB_006, GLIB_009, GLIB_012;
+ requirements ARITHM, BOOLE, NUMERALS, SUBSET;
+ definitions TARSKI;
+theorems GLIB_000, GLIB_001;
+
+begin
+
+:: GLIB cycle infrastructure smoke test
+:: Cycle-like implies closed and Path-like via GLIB_001 cluster
+
+:: These properties follow automatically from cluster registration
+:: GLIB_001:3293: cluster Cycle-like -> closed Path-like non trivial

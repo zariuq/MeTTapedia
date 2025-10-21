@@ -1,0 +1,165 @@
+:: Lesson 14: Boolean Operations and Pair Projections
+::
+:: Goal: Learn the WORKING patterns for BOOLEAN and pairs
+:: Key insights:
+:: - BOOLEAN type exists from MARGREL1
+:: - Boolean operators 'xor', '&', 'or' work on Element of BOOLEAN
+:: - Pairs from [: A, B :] can be destructured with ZFMISC_1:84
+:: - To define operations, use existential decomposition pattern
+
+environ
+ vocabularies LESSON14, XBOOLE_0, SUBSET_1, MARGREL1, ZFMISC_1, MCART_1,
+      XBOOLEAN;
+ notations XBOOLE_0, SUBSET_1, MARGREL1, ZFMISC_1, MCART_1, XBOOLEAN;
+ constructors XBOOLE_0, SUBSET_1, MARGREL1, ZFMISC_1, MCART_1, XBOOLEAN;
+ registrations XBOOLE_0, SUBSET_1, MARGREL1, ZFMISC_1, MCART_1, XBOOLEAN;
+ requirements SUBSET, BOOLE;
+ definitions XBOOLE_0;
+ theorems ZFMISC_1, MCART_1, MARGREL1, XBOOLEAN;
+
+begin
+
+:: ============================================================================
+:: Part 1: BOOLEAN type
+:: ============================================================================
+
+definition
+  func BoolPair -> set equals
+  [: BOOLEAN, BOOLEAN :];
+  coherence;
+end;
+
+registration
+  cluster BoolPair -> non empty finite;
+  coherence
+  proof
+    [: BOOLEAN, BOOLEAN :] is non empty finite;
+    hence thesis;
+  end;
+end;
+
+:: ============================================================================
+:: Part 2: THE KEY PATTERN - Existential Decomposition
+:: ============================================================================
+
+:: To work with pairs, we MUST decompose them using ZFMISC_1:84:
+:: "for z being object st z in [: X, Y :]
+::  ex x, y being object st x in X & y in Y & z = [x, y]"
+
+theorem Th_decompose:
+  for p being Element of BoolPair
+  ex b1, b2 being Element of BOOLEAN st p = [b1, b2]
+proof
+  let p be Element of BoolPair;
+  p in [: BOOLEAN, BOOLEAN :];
+  then consider b1, b2 being object such that
+  A1: b1 in BOOLEAN & b2 in BOOLEAN & p = [b1, b2] by ZFMISC_1:84;
+  reconsider b1, b2 as Element of BOOLEAN by A1;
+  take b1, b2;
+  thus thesis by A1;
+end;
+
+:: ============================================================================
+:: Part 3: Defining Operations on Pairs
+:: ============================================================================
+
+:: Pattern: Use "means" with existential characterization
+
+definition
+  let p1, p2 be Element of BoolPair;
+  func pair_xor(p1, p2) -> Element of BoolPair means
+  :Def1:
+  ex b1, b2, c1, c2 being Element of BOOLEAN st
+    p1 = [b1, b2] & p2 = [c1, c2] &
+    it = [b1 'xor' c1, b2 'xor' c2];
+  existence
+  proof
+    consider b1, b2 being Element of BOOLEAN such that
+    A1: p1 = [b1, b2] by Th_decompose;
+    consider c1, c2 being Element of BOOLEAN such that
+    A2: p2 = [c1, c2] by Th_decompose;
+    set result = [b1 'xor' c1, b2 'xor' c2];
+    b1 'xor' c1 in BOOLEAN & b2 'xor' c2 in BOOLEAN;
+    then result in [: BOOLEAN, BOOLEAN :] by ZFMISC_1:87;
+    then reconsider result as Element of BoolPair;
+    take result;
+    take b1, b2, c1, c2;
+    thus thesis by A1, A2;
+  end;
+  uniqueness
+  proof
+    let r1, r2 be Element of BoolPair;
+    assume A1: ex b1, b2, c1, c2 being Element of BOOLEAN st
+      p1 = [b1, b2] & p2 = [c1, c2] & r1 = [b1 'xor' c1, b2 'xor' c2];
+    assume A2: ex b1, b2, c1, c2 being Element of BOOLEAN st
+      p1 = [b1, b2] & p2 = [c1, c2] & r2 = [b1 'xor' c1, b2 'xor' c2];
+    consider b1, b2, c1, c2 being Element of BOOLEAN such that
+    A3: p1 = [b1, b2] & p2 = [c1, c2] & r1 = [b1 'xor' c1, b2 'xor' c2]
+      by A1;
+    consider b1', b2', c1', c2' being Element of BOOLEAN such that
+    A4: p1 = [b1', b2'] & p2 = [c1', c2'] & r2 = [b1' 'xor' c1', b2' 'xor' c2']
+      by A2;
+    b1 = b1' & b2 = b2' by A3, A4, ZFMISC_1:33;
+    then c1 = c1' & c2 = c2' by A3, A4, ZFMISC_1:33;
+    hence r1 = r2 by A3, A4;
+  end;
+end;
+
+:: ============================================================================
+:: Part 4: Boolean AND operation
+:: ============================================================================
+
+definition
+  let p1, p2 be Element of BoolPair;
+  func pair_and(p1, p2) -> Element of BoolPair means
+  :Def2:
+  ex b1, b2, c1, c2 being Element of BOOLEAN st
+    p1 = [b1, b2] & p2 = [c1, c2] &
+    it = [b1 '&' c1, b2 '&' c2];
+  existence
+  proof
+    consider b1, b2 being Element of BOOLEAN such that
+    A1: p1 = [b1, b2] by Th_decompose;
+    consider c1, c2 being Element of BOOLEAN such that
+    A2: p2 = [c1, c2] by Th_decompose;
+    set result = [b1 '&' c1, b2 '&' c2];
+    b1 '&' c1 in BOOLEAN & b2 '&' c2 in BOOLEAN;
+    then result in [: BOOLEAN, BOOLEAN :] by ZFMISC_1:87;
+    then reconsider result as Element of BoolPair;
+    take result;
+    take b1, b2, c1, c2;
+    thus thesis by A1, A2;
+  end;
+  uniqueness
+  proof
+    let r1, r2 be Element of BoolPair;
+    assume A1: ex b1, b2, c1, c2 being Element of BOOLEAN st
+      p1 = [b1, b2] & p2 = [c1, c2] & r1 = [b1 '&' c1, b2 '&' c2];
+    assume A2: ex b1, b2, c1, c2 being Element of BOOLEAN st
+      p1 = [b1, b2] & p2 = [c1, c2] & r2 = [b1 '&' c1, b2 '&' c2];
+    consider b1, b2, c1, c2 being Element of BOOLEAN such that
+    A3: p1 = [b1, b2] & p2 = [c1, c2] & r1 = [b1 '&' c1, b2 '&' c2]
+      by A1;
+    consider b1', b2', c1', c2' being Element of BOOLEAN such that
+    A4: p1 = [b1', b2'] & p2 = [c1', c2'] & r2 = [b1' '&' c1', b2' '&' c2']
+      by A2;
+    b1 = b1' & b2 = b2' by A3, A4, ZFMISC_1:33;
+    then c1 = c1' & c2 = c2' by A3, A4, ZFMISC_1:33;
+    hence r1 = r2 by A3, A4;
+  end;
+end;
+
+:: ============================================================================
+:: KEY TAKEAWAYS:
+:: ============================================================================
+
+:: 1. BOOLEAN from MARGREL1 works as a type
+:: 2. Boolean operators 'xor', '&', 'or' work on Element of BOOLEAN
+:: 3. To define operations on pairs:
+::    a) Use "means" with existential formula
+::    b) Decompose input pairs with Th_decompose (or inline ZFMISC_1:84)
+::    c) Build result pair with [b1 op c1, b2 op c2]
+::    d) Prove existence using decomposition + ZFMISC_1:87
+::    e) Prove uniqueness using ZFMISC_1:33 (pair injectivity)
+:: 4. Projection syntax p`1, p`2 does NOT work directly!
+:: 5. Must always decompose pairs explicitly

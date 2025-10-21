@@ -1,0 +1,22 @@
+:: Lesson 24A (NEGATIVE): reserve vs. let — over-broad reservation hides missing quantifier
+:: Demonstrates how global `reserve` can mask missing quantifiers and cause issues
+:: such as unused loci (100) or too-implicit statements.
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+
+begin
+
+reserve x for set;  :: global reservation (use sparingly)
+
+theorem
+  x = x
+proof
+  :: x comes from a global reservation; no explicit binder is visible.
+  thus thesis;
+end;
+
+end;

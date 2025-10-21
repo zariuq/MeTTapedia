@@ -1,0 +1,45 @@
+:: Lesson 23A (NEGATIVE): Unary Projectivity — Idempotent Cap with a Fixed Set
+:: This article is intentionally broken to demonstrate common pitfalls
+:: (unknown vocabulary/tokens, inaccessible theorems, line length, etc.).
+:: See lesson23_projective_cap_ok.miz for the working version.
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+ theorems XBOOLE_0;
+
+begin
+
+:: For a fixed set U, define cap_with(A,U) = A /\ U
+definition
+  let A, U be set;
+  func cap_with(A, U) -> set equals
+  A /\ U;
+  coherence;
+end;
+
+:: Projectivity (idempotence) of cap_with on U:
+::   cap_with(cap_with(A,U), U) = cap_with(A,U)
+theorem
+  for A, U being set holds cap_with(cap_with(A,U), U) = cap_with(A,U)
+proof
+  let A, U be set;
+  for x being object holds (x in cap_with(cap_with(A,U), U) iff x in cap_with(A,U))
+  proof
+    let x be object;
+    hereby
+      assume x in cap_with(cap_with(A,U), U);
+      then x in (A /\ U) & x in U by XBOOLE_0:def 4, XBOOLE_0:def 10;
+      then x in A & x in U by XBOOLE_0:def 4;
+      hence x in cap_with(A,U) by XBOOLE_0:def 10, XBOOLE_0:def 4;
+    end;
+    assume x in cap_with(A,U);
+    then x in A /\ U by XBOOLE_0:def 10;
+    then x in A & x in U by XBOOLE_0:def 4;
+    then x in (A /\ U) & x in U by XBOOLE_0:def 4;
+    hence x in cap_with(cap_with(A,U), U) by XBOOLE_0:def 10, XBOOLE_0:def 4;
+  end;
+  hence thesis by XBOOLE_0:def 10;
+end;

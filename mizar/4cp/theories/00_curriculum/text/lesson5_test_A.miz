@@ -1,0 +1,22 @@
+:: Lesson 5 TEST (NEGATIVE): Theorem without proper import
+:: Demonstrates Error 192 - unknown theorem reference
+:: Expected error: 192 (TARSKI not in theorems directive)
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ :: Missing: theorems TARSKI;
+
+begin
+
+theorem
+  for X, Y being set holds X \/ Y = Y \/ X
+proof
+  let X, Y be set;
+  thus X \/ Y = Y \/ X by TARSKI:2;
+::>                             *330
+  :: TARSKI:2 not accessible - Error 192
+end;
+::>
+::> 330: Unexpected end of an item (perhaps ";" missing)

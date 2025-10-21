@@ -1,0 +1,196 @@
+::Lesson 9: Structures with Selectors - REALISTIC GRAPH THEORY
+::
+:: Goal: Build realistic graph structures suitable for 4-Color Theorem
+:: Key: Multi-field structures with functions between fields
+::
+:: WHY THIS MATTERS FOR 4CP:
+:: - Graphs need vertices, edges, AND incidence relations
+:: - Graph operations preserve structure
+:: - Properties propagate through selectors
+
+environ
+ vocabularies LESSON9, XBOOLE_0, SUBSET_1, STRUCT_0, ZFMISC_1, FUNCT_1,
+      RELAT_1;
+ notations XBOOLE_0, SUBSET_1, STRUCT_0, ZFMISC_1, FUNCT_1, RELAT_1,
+      FUNCT_2;
+ constructors XBOOLE_0, SUBSET_1, STRUCT_0, ZFMISC_1, FUNCT_1, FUNCT_2;
+ registrations XBOOLE_0, SUBSET_1, STRUCT_0, ZFMISC_1, FUNCT_1, RELAT_1;
+
+begin
+
+:: ====================
+:: REALISTIC GRAPH STRUCTURE
+:: ====================
+:: Pattern from MML's GRAPH_1: vertices + edges + incidence
+:: This is what 4CP formalization actually needs!
+
+definition
+  struct IncidenceGraph
+  (# vertices -> set,
+     edges -> set,
+     incidence -> Relation of the edges, the vertices #);
+end;
+
+:: MODES: Type aliases for graph elements
+
+definition
+  let G be IncidenceGraph;
+  mode Vertex of G is Element of the vertices of G;
+  mode Edge of G is Element of the edges of G;
+end;
+
+:: SELECTORS: Access components cleanly
+
+definition
+  let G be IncidenceGraph;
+  func Vertices(G) -> set equals
+  the vertices of G;
+  coherence;
+
+  func Edges(G) -> set equals
+  the edges of G;
+  coherence;
+
+  func Incidence(G) -> Relation of the edges of G, the vertices of G equals
+  the incidence of G;
+  coherence;
+end;
+
+:: ATTRIBUTES: Graph properties based on structure
+
+definition
+  let G be IncidenceGraph;
+  attr G is vertex-empty means
+  :Def4:
+  the vertices of G is empty;
+
+  attr G is edge-empty means
+  :Def5:
+  the edges of G is empty;
+
+  attr G is simple means
+  :Def6:
+  the vertices of G <> {} & the edges of G <> {};
+end;
+
+:: REGISTRATION: Prove empty graph exists
+
+registration
+  cluster strict vertex-empty edge-empty for IncidenceGraph;
+  existence
+  proof
+    set R = {} the Relation of {}, {};
+    take G = IncidenceGraph(#{}, {}, R#);
+    thus G is strict;
+    thus the vertices of G is empty;
+    thus the edges of G is empty;
+  end;
+end;
+
+:: REGISTRATION: Simple graphs exist
+
+registration
+  cluster strict simple for IncidenceGraph;
+  existence
+  proof
+    set V = {0};
+    set E = {1};
+    set R = {} the Relation of E, V;
+    take G = IncidenceGraph(#V, E, R#);
+    thus G is strict;
+    thus the vertices of G <> {} & the edges of G <> {} by Def6;
+  end;
+end;
+
+:: THEOREM: Field equality implies structure equality
+
+theorem Th1:
+  for G1, G2 being IncidenceGraph st
+    the vertices of G1 = the vertices of G2 &
+    the edges of G1 = the edges of G2 &
+    the incidence of G1 = the incidence of G2
+  holds G1 = G2
+proof
+  let G1, G2 be IncidenceGraph;
+  assume the vertices of G1 = the vertices of G2 &
+         the edges of G1 = the edges of G2 &
+         the incidence of G1 = the incidence of G2;
+  thus G1 = G2;
+end;
+
+:: THEOREM: Properties via attributes
+
+theorem Th2:
+  for G being IncidenceGraph st G is simple
+  holds Vertices(G) <> {} & Edges(G) <> {}
+proof
+  let G be IncidenceGraph;
+  assume G is simple;
+  then the vertices of G <> {} & the edges of G <> {} by Def6;
+  hence Vertices(G) <> {} & Edges(G) <> {};
+end;
+
+:: THEOREM: Conditional properties
+
+theorem Th3:
+  for G being IncidenceGraph st G is vertex-empty
+  holds Vertices(G) = {}
+proof
+  let G be IncidenceGraph;
+  assume G is vertex-empty;
+  then the vertices of G is empty by Def4;
+  hence Vertices(G) = {};
+end;
+
+:: ====================
+:: KEY LESSONS FOR 4CP
+:: ====================
+::
+:: 1. MULTI-FIELD STRUCTURES: Not just sets, but sets + relations
+::    - vertices and edges are separate
+::    - incidence relates them
+::
+:: 2. MODES: Type aliases make code readable
+::    - `Vertex of G` instead of `Element of the vertices of G`
+::    - `Edge of G` instead of `Element of the edges of G`
+::
+:: 3. SELECTORS: Functional access to fields
+::    - `Vertices(G)` is cleaner than `the vertices of G`
+::    - Enables composition: `card Vertices(G)`
+::
+:: 4. ATTRIBUTES: Semantic properties
+::    - `simple` means non-empty vertices and edges
+::    - `vertex-empty` is explicit emptiness
+::
+:: 5. REGISTRATIONS: Prove instances exist!
+::    - Empty graphs exist
+::    - Simple graphs exist
+::    - Type system now knows these are valid
+::
+:: ====================
+:: COMPARISON TO MML GRAPH_1
+:: ====================
+::
+:: This lesson uses:
+::   IncidenceGraph(# vertices, edges, incidence #)
+::
+:: MML GRAPH_1 uses:
+::   MultiGraphStruct(# carrier, carrier', Source, Target #)
+::   where Source, Target are Functions (not just Relations)
+::
+:: MML is more sophisticated:
+::   - Source, Target are FUNCTIONS (deterministic)
+::   - Supports directed graphs natively
+::   - Has dom/cod functors for edge endpoints
+::
+:: This lesson is pedagogical:
+::   - Uses Relation (simpler than Function)
+::   - Shows the structure pattern
+::   - Prepares for Lesson 12 (actual GRAPH_1 usage)
+::
+:: ====================
+:: NEXT: Lesson 12
+:: ====================
+:: Lesson 12 will import actual GRAPH_1 from MML and prove
+:: real theorems using MultiGraphStruct, dom, cod, etc.
+:: This is where 4CP formalization truly begins!

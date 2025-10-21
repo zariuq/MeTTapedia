@@ -1,0 +1,22 @@
+:: Lesson 3 TEST (NEGATIVE): Mode with wrong vocabulary qualifier
+:: Demonstrates Error 321 - category mismatch
+:: Expected error: 321 (vocabulary says O but definition uses M)
+
+environ
+ vocabularies XBOOLE_0, LESSON3;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+
+begin
+
+:: This will fail if lesson3.voc has wrong qualifier
+:: (e.g., Obadfunc instead of Mbadfunc for a mode)
+
+mode EmptySet is empty set;
+
+mode BadMode -> set means
+:: If lesson3.voc has Obadfunc (functor) instead of Mbadfunc (mode)
+:: then using badfunc as mode will cause Error 321
+:Def:
+it = {};
+correctness;

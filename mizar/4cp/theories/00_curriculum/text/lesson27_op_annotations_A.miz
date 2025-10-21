@@ -1,0 +1,24 @@
+:: Lesson 27A (NEGATIVE): Operator annotations — missing facts in scope
+:: Declares (+) with algebraic properties but omits helpful theorem imports,
+:: leading to property verification failures in some setups.
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+
+begin
+
+definition
+  let A,B be set;
+  func A (+) B -> set equals
+  :DefPlus:
+  A \/ B;
+  coherence;
+  commutativity;   :: may fail to verify in minimal env
+  associativity;   ::> *192
+  idempotence;     ::> *192
+end;
+
+end;

@@ -1,0 +1,36 @@
+:: Lesson 30 (POSITIVE): tuple application — symmetry predicate (library-only)
+
+environ
+  vocabularies XBOOLE_0, SUBSET_1, TARSKI, ZFMISC_1,
+               FUNCT_1, FUNCT_2, RELAT_1, XBOOLEAN, MARGREL1, STRUCT_0;
+  notations   XBOOLE_0, SUBSET_1, TARSKI, ZFMISC_1,
+               FUNCT_1, FUNCT_2, RELAT_1, XBOOLEAN, MARGREL1, STRUCT_0;
+  constructors XBOOLE_0, SUBSET_1, TARSKI, ZFMISC_1,
+               FUNCT_1, FUNCT_2, RELAT_1, XBOOLEAN, MARGREL1, STRUCT_0;
+  registrations XBOOLE_0, SUBSET_1, FUNCT_1, FUNCT_2, RELAT_1, ZFMISC_1,
+               XBOOLEAN, MARGREL1, STRUCT_0;
+  requirements SUBSET, BOOLE;
+
+begin
+
+definition
+  let X be non empty set;
+  let F be Function of [:X,X:], BOOLEAN;
+  pred SymmetricOn(F,X) means
+  for a,b being Element of X holds F.[a,b] = F.[b,a];
+end;
+
+:: sanity: if SymmetricOn holds, diagonal equality is trivial
+
+theorem
+  for X being non empty set, F being Function of [:X,X:], BOOLEAN st
+    SymmetricOn(F,X)
+  for x being Element of X holds F.[x,x] = F.[x,x]
+proof
+  let X be non empty set, F be Function of [:X,X:], BOOLEAN;
+  assume SymmetricOn(F,X);
+  let x be Element of X;
+  thus F.[x,x] = F.[x,x];
+end;
+
+end;

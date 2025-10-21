@@ -1,0 +1,23 @@
+:: Lesson 22: Connectedness idea — Universal Relation Example (clean)
+
+environ
+ vocabularies XBOOLE_0, ZFMISC_1, TARSKI;
+ notations XBOOLE_0, ZFMISC_1, TARSKI;
+ constructors XBOOLE_0, ZFMISC_1, TARSKI;
+ registrations XBOOLE_0, ZFMISC_1;
+ theorems ZFMISC_1;
+
+begin
+
+:: For any set S, the universal relation relates any two elements in both directions
+theorem
+  for S being set holds
+  for x, y being object st x in S & y in S holds
+    [x,y] in [:S, S:] or [y,x] in [:S, S:]
+proof
+  let S be set;
+  let x, y be object;
+  assume x in S & y in S;
+  then [x,y] in [:S, S:] by ZFMISC_1:87;
+  hence thesis;
+end;

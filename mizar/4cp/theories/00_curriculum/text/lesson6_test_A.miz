@@ -1,0 +1,33 @@
+:: Lesson 6 TEST (NEGATIVE): Registration without coherence
+:: Demonstrates Error 73 - missing coherence in cluster
+:: Expected error: 73 or similar registration error
+
+environ
+ vocabularies LESSON6, XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+
+begin
+
+definition
+  let X be set;
+  attr X is trivial means
+  :Def1:
+  X = {};
+end;
+
+registration
+  cluster trivial for set;
+  existence
+  proof
+    take {};
+    thus {} is trivial;
+  end;
+end;
+
+:: Missing coherence for functorial cluster
+registration
+  cluster {} -> trivial;
+  :: Missing coherence - Error 73
+end;

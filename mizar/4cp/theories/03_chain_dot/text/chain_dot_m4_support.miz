@@ -1,0 +1,222 @@
+:: M4 Step 1: Support under chain sum (symmetric difference lemmas)
+:: These identities are the key for bilinearity
+
+environ
+  vocabularies
+    CHAINDOT, XBOOLE_0, SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, TARSKI, FUNCT_1, FUNCT_2,
+    RELAT_1, XTUPLE_0;
+  notations
+    TARSKI, XBOOLE_0, SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2, RELAT_1, XTUPLE_0;
+  constructors
+    SUBSET_1, ZFMISC_1, XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2, XTUPLE_0;
+  registrations
+    XBOOLEAN, MARGREL1,
+    GLIB_000, GLIB_001, GLIB_002, FUNCT_1, FUNCT_2, XTUPLE_0;
+  requirements BOOLE, SUBSET;
+  theorems XBOOLE_0, XBOOLE_1, ZFMISC_1, MARGREL1, FUNCT_2, RELAT_1, XTUPLE_0;
+
+begin
+
+reserve G for _Graph;
+reserve x, y for Chain of G;
+reserve e for Element of the_Edges_of G;
+
+:: ============================================================================
+:: Support of chain sum is symmetric difference of supports
+:: ============================================================================
+
+theorem Th_support_fst_symdiff:
+  support_fst(x (+) y) = support_fst(x) \+\ support_fst(y)
+proof
+  set L = support_fst(x (+) y);
+  set R = support_fst(x) \+\ support_fst(y);
+
+  for z being object holds z in L iff z in R
+  proof
+    let z be object;
+    hereby
+      assume z in L;
+      then consider b1, b2 being Element of BOOLEAN such that
+      A1: z in the_Edges_of G & ((x (+) y).z) = [b1, b2] & b1 = TRUE;
+      reconsider e1 = z as Element of the_Edges_of G by A1;
+
+      :: Decompose x.e1 and y.e1
+      consider a1, a2 being object such that
+      A2: (x.e1) = [a1, a2] by RELAT_1:1;
+      reconsider a1, a2 as Element of BOOLEAN by A2, ZFMISC_1:def 2;
+
+      consider c1, c2 being object such that
+      A3: (y.e1) = [c1, c2] by RELAT_1:1;
+      reconsider c1, c2 as Element of BOOLEAN by A3, ZFMISC_1:def 2;
+
+      :: By chain (+) definition
+      A4: ((x (+) y).e1) = ((x.e1) (+) (y.e1));
+
+      :: By color (+) definition
+      consider d1, d2, e1', e2' being Element of BOOLEAN such that
+      A5: (x.e1) = [d1, d2] & (y.e1) = [e1', e2'] &
+          ((x.e1) (+) (y.e1)) = [d1 'xor' e1', d2 'xor' e2'];
+
+      d1 = a1 & d2 = a2 by A2, A5, XTUPLE_0:1;
+      then e1' = c1 & e2' = c2 by A3, A5, XTUPLE_0:1;
+      then A6: ((x (+) y).e1) = [a1 'xor' c1, a2 'xor' c2] by A4, A5;
+
+      b1 = a1 'xor' c1 & b2 = a2 'xor' c2 by A1, A6, XTUPLE_0:1;
+      then A7: a1 'xor' c1 = TRUE by A1;
+
+      :: XOR = TRUE means exactly one is TRUE
+      (a1 = TRUE & c1 = FALSE) or (a1 = FALSE & c1 = TRUE) by A7, MARGREL1:67, MARGREL1:68;
+      then (e1 in support_fst(x) & not e1 in support_fst(y)) or
+           (not e1 in support_fst(x) & e1 in support_fst(y))
+        by A2, A3;
+      hence z in R by XBOOLE_0:def 3;
+    end;
+    assume z in R;
+    then z in (support_fst(x) \ support_fst(y)) \/ (support_fst(y) \ support_fst(x))
+      by XBOOLE_0:def 3;
+    then A8: (z in support_fst(x) & not z in support_fst(y)) or
+         (z in support_fst(y) & not z in support_fst(x))
+      by XBOOLE_0:def 5;
+
+    per cases by A8;
+    suppose A9: z in support_fst(x) & not z in support_fst(y);
+      then z in the_Edges_of G;
+      then reconsider e1 = z as Element of the_Edges_of G;
+
+      consider a1, a2 being Element of BOOLEAN such that
+      A10: e1 in the_Edges_of G & (x.e1) = [a1, a2] & a1 = TRUE by A9;
+
+      consider c1, c2 being object such that
+      A11: (y.e1) = [c1, c2] by RELAT_1:1;
+      reconsider c1, c2 as Element of BOOLEAN by A11, ZFMISC_1:def 2;
+
+      not (ex b1, b2 being Element of BOOLEAN st
+           e1 in the_Edges_of G & (y.e1) = [b1, b2] & b1 = TRUE) by A9;
+      then c1 = FALSE by A11;
+
+      then ((x.e1) (+) (y.e1)) = [a1 'xor' FALSE, a2 'xor' c2] by A10, A11;
+      then ((x (+) y).e1) = [TRUE, a2 'xor' c2] by A10, MARGREL1:66;
+
+      hence z in L by A10;
+    end;
+    suppose A12: not z in support_fst(x) & z in support_fst(y);
+      :: Symmetric to previous case
+      then z in the_Edges_of G;
+      then reconsider e1 = z as Element of the_Edges_of G;
+
+      consider c1, c2 being Element of BOOLEAN such that
+      A13: e1 in the_Edges_of G & (y.e1) = [c1, c2] & c1 = TRUE by A12;
+
+      consider a1, a2 being object such that
+      A14: (x.e1) = [a1, a2] by RELAT_1:1;
+      reconsider a1, a2 as Element of BOOLEAN by A14, ZFMISC_1:def 2;
+
+      not (ex b1, b2 being Element of BOOLEAN st
+           e1 in the_Edges_of G & (x.e1) = [b1, b2] & b1 = TRUE) by A12;
+      then a1 = FALSE by A14;
+
+      then ((x.e1) (+) (y.e1)) = [FALSE 'xor' c1, a2 'xor' c2] by A14, A13;
+      then ((x (+) y).e1) = [TRUE, a2 'xor' c2] by A13, MARGREL1:65;
+
+      hence z in L by A13;
+    end;
+  end;
+  hence thesis by TARSKI:2;
+end;
+
+theorem Th_support_snd_symdiff:
+  support_snd(x (+) y) = support_snd(x) \+\ support_snd(y)
+proof
+  set L = support_snd(x (+) y);
+  set R = support_snd(x) \+\ support_snd(y);
+
+  for z being object holds z in L iff z in R
+  proof
+    let z be object;
+    hereby
+      assume z in L;
+      then consider b1, b2 being Element of BOOLEAN such that
+      A1: z in the_Edges_of G & ((x (+) y).z) = [b1, b2] & b2 = TRUE;
+      reconsider e1 = z as Element of the_Edges_of G by A1;
+
+      consider a1, a2 being object such that
+      A2: (x.e1) = [a1, a2] by RELAT_1:1;
+      reconsider a1, a2 as Element of BOOLEAN by A2, ZFMISC_1:def 2;
+
+      consider c1, c2 being object such that
+      A3: (y.e1) = [c1, c2] by RELAT_1:1;
+      reconsider c1, c2 as Element of BOOLEAN by A3, ZFMISC_1:def 2;
+
+      A4: ((x (+) y).e1) = ((x.e1) (+) (y.e1));
+
+      consider d1, d2, e1', e2' being Element of BOOLEAN such that
+      A5: (x.e1) = [d1, d2] & (y.e1) = [e1', e2'] &
+          ((x.e1) (+) (y.e1)) = [d1 'xor' e1', d2 'xor' e2'];
+
+      d1 = a1 & d2 = a2 by A2, A5, XTUPLE_0:1;
+      then e1' = c1 & e2' = c2 by A3, A5, XTUPLE_0:1;
+      then A6: ((x (+) y).e1) = [a1 'xor' c1, a2 'xor' c2] by A4, A5;
+
+      b1 = a1 'xor' c1 & b2 = a2 'xor' c2 by A1, A6, XTUPLE_0:1;
+      then A7: a2 'xor' c2 = TRUE by A1;
+
+      (a2 = TRUE & c2 = FALSE) or (a2 = FALSE & c2 = TRUE) by A7, MARGREL1:67, MARGREL1:68;
+      then (e1 in support_snd(x) & not e1 in support_snd(y)) or
+           (not e1 in support_snd(x) & e1 in support_snd(y))
+        by A2, A3;
+      hence z in R by XBOOLE_0:def 3;
+    end;
+    assume z in R;
+    then z in (support_snd(x) \ support_snd(y)) \/ (support_snd(y) \ support_snd(x))
+      by XBOOLE_0:def 3;
+    then A8: (z in support_snd(x) & not z in support_snd(y)) or
+         (z in support_snd(y) & not z in support_snd(x))
+      by XBOOLE_0:def 5;
+
+    per cases by A8;
+    suppose A9: z in support_snd(x) & not z in support_snd(y);
+      then z in the_Edges_of G;
+      then reconsider e1 = z as Element of the_Edges_of G;
+
+      consider a1, a2 being Element of BOOLEAN such that
+      A10: e1 in the_Edges_of G & (x.e1) = [a1, a2] & a2 = TRUE by A9;
+
+      consider c1, c2 being object such that
+      A11: (y.e1) = [c1, c2] by RELAT_1:1;
+      reconsider c1, c2 as Element of BOOLEAN by A11, ZFMISC_1:def 2;
+
+      not (ex b1, b2 being Element of BOOLEAN st
+           e1 in the_Edges_of G & (y.e1) = [b1, b2] & b2 = TRUE) by A9;
+      then c2 = FALSE by A11;
+
+      then ((x.e1) (+) (y.e1)) = [a1 'xor' c1, a2 'xor' FALSE] by A10, A11;
+      then ((x (+) y).e1) = [a1 'xor' c1, TRUE] by A10, MARGREL1:66;
+
+      hence z in L by A10;
+    end;
+    suppose A12: not z in support_snd(x) & z in support_snd(y);
+      then z in the_Edges_of G;
+      then reconsider e1 = z as Element of the_Edges_of G;
+
+      consider c1, c2 being Element of BOOLEAN such that
+      A13: e1 in the_Edges_of G & (y.e1) = [c1, c2] & c2 = TRUE by A12;
+
+      consider a1, a2 being object such that
+      A14: (x.e1) = [a1, a2] by RELAT_1:1;
+      reconsider a1, a2 as Element of BOOLEAN by A14, ZFMISC_1:def 2;
+
+      not (ex b1, b2 being Element of BOOLEAN st
+           e1 in the_Edges_of G & (x.e1) = [b1, b2] & b2 = TRUE) by A12;
+      then a2 = FALSE by A14;
+
+      then ((x.e1) (+) (y.e1)) = [a1 'xor' c1, FALSE 'xor' c2] by A14, A13;
+      then ((x (+) y).e1) = [a1 'xor' c1, TRUE] by A13, MARGREL1:65;
+
+      hence z in L by A13;
+    end;
+  end;
+  hence thesis by TARSKI:2;
+end;

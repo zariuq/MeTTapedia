@@ -1,0 +1,26 @@
+:: Lesson 4 TEST (NEGATIVE): Attribute without label
+:: Demonstrates Error 302 - functor symbol expected (label formatting)
+:: Expected error: 302 (label must be on its own line)
+
+environ
+ vocabularies LESSON4, XBOOLE_0;
+::>                 *801
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+
+begin
+
+definition
+  let X be set;
+  attr X is trivial means
+  :Def1:
+  X = {};
+end;
+
+definition
+  let X be set;
+  attr X is_small means :Def2: X = {};
+  :: Label on same line as 'means' - should cause Error 302
+end;
+::>
+::> 801: Cannot find vocabulary file

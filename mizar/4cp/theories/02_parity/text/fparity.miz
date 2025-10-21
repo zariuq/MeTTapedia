@@ -1,0 +1,42 @@
+environ
+
+vocabularies
+  FPARITY, XBOOLE_0, SUBSET_1, NUMBERS, NAT_1, INT_1, XXREAL_0,
+  ORDINAL1, CARD_1, CARD_2, XBOOLEAN, MARGREL1;
+notations
+  XBOOLE_0, SUBSET_1, NUMBERS, XCMPLX_0, XXREAL_0, ORDINAL1, INT_1, NAT_1,
+::>                                   *830
+  CARD_1, CARD_2, XBOOLEAN, MARGREL1;
+constructors
+  XXREAL_0, INT_1, NAT_1, NAT_D, CARD_1, CARD_2, XBOOLEAN;
+registrations
+  INT_1, NAT_1, XBOOLEAN;
+requirements
+  REAL, NUMERALS, SUBSET, BOOLE, ARITHM;
+theorems
+  INT_1, NAT_D, CARD_1, CARD_2, MARGREL1;
+
+begin
+
+:: ---- (A) Parity of finite sets as attributes (mod-2 view)
+definition
+  let X be set;
+  attr X is even_card means
+  :: card X mod 2 = 0;
+    ex n being Nat st n = card X & n mod 2 = 0;
+  attr X is odd_card means
+  :: card X mod 2 = 1;
+    ex n being Nat st n = card X & n mod 2 = 1;
+end;
+
+:: ---- (B) Boolean parity on naturals (equals + coherence)
+definition
+  let n be Nat;
+  func parity(n) -> Element of BOOLEAN equals
+    TRUE if n mod 2 = 1 otherwise FALSE;
+  coherence;
+end;
+
+end;
+::>
+::> 830: Nothing imported from notations

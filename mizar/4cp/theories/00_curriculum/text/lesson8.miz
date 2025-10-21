@@ -1,0 +1,99 @@
+::Lesson 8: Schemes (Reusable Proof Patterns) - CONCEPT LESSON
+::
+:: Goal: Understand what schemes do and why they're important
+:: Note: Full scheme syntax requires advanced MML infrastructure
+::
+:: KEY CONCEPT: Schemes are proof templates with parameters
+:: Think of them as "functions" but for logical reasoning!
+::
+:: WHY SCHEMES MATTER:
+:: - Prove a pattern once, reuse it infinitely
+:: - Power mathematical induction, recursion, comprehension
+:: - Essential for advanced library development
+
+environ
+ vocabularies LESSON8, XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+
+begin
+
+:: WORKING EXAMPLE: Simple attribute to show pattern
+
+definition
+  let X be set;
+  attr X is example means
+  :Def1:
+  X = {};
+end;
+
+registration
+  cluster example for set;
+  existence
+  proof
+    take {};
+    thus {} is example;
+  end;
+end;
+
+:: Prove properties using the attribute
+theorem Th1:
+  for X being example set holds X = {}
+proof
+  let X be example set;
+  X is example;
+  hence X = {} by Def1;
+end;
+
+:: WHAT SCHEMES WOULD LET US DO:
+::
+:: Real MML scheme example (XBOOLE_0:sch 1 - Separation):
+::
+::   scheme Separation { A()->set, P[object] }:
+::     ex X being set st for x being object holds
+::       x in X iff x in A() & P[x]
+::   proof ...
+::
+:: HOW TO USE IT:
+::
+::   1. Define predicate:
+::      defpred P[object] means $1 <> {};
+::
+::   2. Apply scheme:
+::      consider NonemptySubset being set such that
+::        for x being object holds
+::          x in NonemptySubset iff x in MySet & P[x]
+::        from XBOOLE_0:sch 1;
+::
+::   3. Result: Got subset of non-empty elements!
+::
+:: OTHER IMPORTANT MML SCHEMES:
+::
+:: - FUNCT_1:sch 2 (Lambda): Function construction
+:: - NAT_1:sch 2 (Induction): Mathematical induction
+:: - ORDINAL1:sch 2 (Transfinite induction)
+::
+:: WHY THIS LESSON DOESN'T HAVE WORKING SCHEMES:
+::
+:: Schemes need:
+:: - Correct "provided" clause syntax (complex!)
+:: - Proper parameter binding with { }
+:: - Often require specific MML modules
+:: - Advanced proof techniques
+::
+:: FOR YOUR 4CP WORK:
+::
+:: 1. Use existing MML schemes - don't reinvent!
+:: 2. Study schemes in XBOOLE_0, FUNCT_1, NAT_1
+:: 3. For proof reuse without schemes, use lemmas:
+::    - theorem MyLemma: ... proof ... end;
+::    - Apply: ... by MyLemma;
+::
+:: TAKEAWAY:
+:: Schemes are powerful but advanced. Start with:
+:: - Theorems and definitions (Lessons 1-5)
+:: - Registrations and clusters (Lessons 6-7)
+:: - Reference MML schemes when needed
+::
+:: When schemes become necessary, study MML examples carefully!

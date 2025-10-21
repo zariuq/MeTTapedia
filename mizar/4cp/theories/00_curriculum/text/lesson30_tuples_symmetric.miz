@@ -1,0 +1,47 @@
+:: Lesson 30: Tuple application & symmetry (library-only, no .voc)
+
+environ
+  vocabularies ZFMISC_1, FUNCT_2, MARGREL1;
+  notations   ZFMISC_1, FUNCT_2, MARGREL1;
+  constructors FUNCT_2, MARGREL1;
+
+begin
+
+:: Tuple-application sugar: F.(a,b) equals F.[a,b]
+theorem Th30_DotTuple:
+  for X being non empty set
+  for F being Function of [:X,X:], BOOLEAN
+  for a,b being Element of X holds F.(a,b) = F.[a,b]
+proof
+  let X be non empty set;
+  let F be Function of [:X,X:], BOOLEAN;
+  let a,b be Element of X;
+  thus thesis;
+end;
+
+:: Symmetry in dot-form is equivalent to pair-form
+theorem Th30_Symm_Forms:
+  for X being non empty set
+  for F being Function of [:X,X:], BOOLEAN holds
+    (for a,b being Element of X holds F.(a,b) = F.(b,a)) iff
+    (for a,b being Element of X holds F.[a,b] = F.[b,a])
+proof
+  let X be non empty set;
+  let F be Function of [:X,X:], BOOLEAN;
+
+  hereby
+    assume H: for a,b being Element of X holds F.(a,b) = F.(b,a);
+    let a,b be Element of X;
+    have D1: F.(a,b) = F.[a,b];
+    have D2: F.(b,a) = F.[b,a];
+    thus F.[a,b] = F.[b,a] by H, D1, D2;
+  end;
+
+  assume H: for a,b being Element of X holds F.[a,b] = F.[b,a];
+  let a,b be Element of X;
+  have D1: F.(a,b) = F.[a,b];
+  have D2: F.(b,a) = F.[b,a];
+  thus F.(a,b) = F.(b,a) by H, D1, D2;
+end;
+
+end;

@@ -44,6 +44,13 @@ namespace RotationSystem
 variable {V E : Type*} [Fintype V] [DecidableEq V] [Fintype E] [DecidableEq E]
 variable (RS : RotationSystem V E)
 
+/-- Decidability for dual adjacency -/
+def adjDec : DecidableRel (fun f g : Finset E => ∃ e, e ∈ f ∧ e ∈ g) :=
+  fun _ _ => by classical exact inferInstance
+
+instance adjDecidable (f g : Finset E) : Decidable (∃ e, e ∈ f ∧ e ∈ g) := by
+  classical exact inferInstance
+
 /-- Face permutation φ = ρ ∘ α (composition of vertex rotation and edge flip) -/
 def phi : Equiv.Perm RS.D := RS.rho * RS.alpha
 
@@ -74,6 +81,34 @@ This follows directly from the edge_fiber_two axiom. -/
 lemma dartsOn_card_two (e : E) : (RS.dartsOn e).card = 2 := by
   unfold dartsOn
   exact RS.edge_fiber_two e
+
+-- Simp API for rewrites (definitional lemmas to unblock simp)
+open Equiv
+
+@[simp] lemma phi_apply (d : RS.D) : RS.phi d = RS.rho (RS.alpha d) := rfl
+
+@[simp] lemma mem_dartsOn {e : E} {d : RS.D} :
+  d ∈ RS.dartsOn e ↔ RS.edgeOf d = e := by
+  unfold RotationSystem.dartsOn
+  simp
+
+@[simp] lemma mem_faceOrbit {d d' : RS.D} :
+  d' ∈ RS.faceOrbit d ↔ RS.phi.SameCycle d d' := by
+  unfold RotationSystem.faceOrbit
+  simp
+
+-- Helpful when pushing α through `dartsOn e`
+@[simp] lemma alpha_mem_dartsOn {e : E} {d : RS.D}
+  (hd : d ∈ RS.dartsOn e) : RS.alpha d ∈ RS.dartsOn e := by
+  rcases (RS.mem_dartsOn).1 hd with h
+  simpa [RotationSystem.dartsOn, RS.edge_alpha, h] using (RS.mem_dartsOn).2 (by simpa [RS.edge_alpha, h])
+
+@[simp] lemma faceEdges_outer : RS.faceEdges RS.outer = RS.boundaryEdges := rfl
+
+@[simp] lemma mem_boundaryEdges_iff {e : E} :
+  e ∈ RS.boundaryEdges ↔ ∃ d ∈ RS.faceOrbit RS.outer, RS.edgeOf d = e := by
+  unfold RotationSystem.boundaryEdges RotationSystem.faceEdges RotationSystem.faceOrbit
+  simp
 
 /-- Faces incident to an edge (faces whose edge-set contains the edge) -/
 def facesIncidence (e : E) : Finset (Finset E) :=
@@ -243,14 +278,17 @@ lemma two_internal_faces_of_interior_edge
         constructor
         · exact RS.mem_faceOrbit_self d
         · exact hd'
-      rw [←h_eq] at he_in
+      rw [h_eq] at he_in
       exact he_in
     exact he this
 
   -- Build fg as the image of dartsOn e under faceEdges
   let S := (RS.dartsOn e).image RS.faceEdges
 
-  have hS_card_le : S.card ≤ 2 := Finset.card_image_le
+  have hS_card_le : S.card ≤ 2 := by
+    calc S.card
+      ≤ (RS.dartsOn e).card := Finset.card_image_le
+      _ = 2 := RS.dartsOn_card_two e
 
   -- Show S.card ≥ 1 (at least one face)
   have hS_nonempty : S.Nonempty := by
@@ -300,7 +338,7 @@ lemma two_internal_faces_of_interior_edge
           unfold internalFaces
           simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_univ, true_and]
           constructor
-          · use d; exact ⟨trivial, hd_eq⟩
+          · exact ⟨d, hd_eq⟩
           · rw [←hd_eq]; exact hδ_int d hd
         · -- e ∈ f
           rw [←hd_eq, RS.mem_faceEdges_iff]
@@ -319,7 +357,7 @@ lemma two_internal_faces_of_interior_edge
         · unfold internalFaces
           simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_univ, true_and]
           constructor
-          · use d; exact ⟨trivial, hd_eq⟩
+          · exact ⟨d, hd_eq⟩
           · rw [←hd_eq]; exact hδ_int d hd
         · rw [←hd_eq, RS.mem_faceEdges_iff]
           use d

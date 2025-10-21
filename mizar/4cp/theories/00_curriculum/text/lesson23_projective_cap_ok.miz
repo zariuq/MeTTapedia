@@ -1,0 +1,46 @@
+:: Lesson 23B (POSITIVE): Projectivity (Idempotence) of Cap with a Fixed Set
+:: Defines cap_with(A,U) = A /\ U and proves
+::   cap_with(cap_with(A,U), U) = cap_with(A,U)
+
+environ
+ vocabularies XBOOLE_0, TARSKI;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+ theorems TARSKI, XBOOLE_0;
+
+begin
+
+definition
+  let A, U be set;
+  func cap_with(A, U) -> set equals
+  :DefCap:
+  A /\ U;
+  coherence;
+end;
+
+theorem
+  for A, U being set holds cap_with(cap_with(A,U), U) = cap_with(A,U)
+proof
+  let A, U be set;
+  :: Prove extensional equality via elementwise equivalence
+  :: and then use TARSKI:2
+  for x being object holds (x in cap_with(cap_with(A,U), U) iff x in cap_with(A,U))
+  proof
+    let x be object;
+    hereby
+      assume x in cap_with(cap_with(A,U), U);
+      then x in (A /\ U) & x in U by XBOOLE_0:def 4, XBOOLE_0:def 4;
+      then x in A & x in U by XBOOLE_0:def 4;
+      hence x in cap_with(A,U) by XBOOLE_0:def 4;
+    end;
+    assume x in cap_with(A,U);
+    then x in A /\ U by DefCap;
+    then x in A & x in U by XBOOLE_0:def 4;
+    then x in (A /\ U) & x in U by XBOOLE_0:def 4;
+    hence x in cap_with(cap_with(A,U), U) by XBOOLE_0:def 4;
+  end;
+  hence thesis by TARSKI:2;
+end;
+
+end;

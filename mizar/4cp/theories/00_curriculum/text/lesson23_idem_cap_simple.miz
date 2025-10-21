@@ -1,0 +1,32 @@
+:: Lesson 23: Idempotence of Intersection with a Fixed Set (clean)
+
+environ
+ vocabularies XBOOLE_0;
+ notations XBOOLE_0;
+ constructors XBOOLE_0;
+ registrations XBOOLE_0;
+ theorems XBOOLE_0, TARSKI;
+
+begin
+
+theorem
+  for A, U being set holds (A /\ U) /\ U = A /\ U
+proof
+  let A, U be set;
+  for x being object holds (x in (A /\ U) /\ U iff x in A /\ U)
+  proof
+    let x be object;
+    hereby
+      assume x in (A /\ U) /\ U;
+      then x in A /\ U & x in U by XBOOLE_0:def 4;
+      then x in A & x in U by XBOOLE_0:def 4;
+      hence x in A /\ U by XBOOLE_0:def 4;
+    end;
+    assume x in A /\ U;
+    then x in A & x in U by XBOOLE_0:def 4;
+    then x in A /\ U & x in U by XBOOLE_0:def 4;
+    hence x in (A /\ U) /\ U by XBOOLE_0:def 4;
+  end;
+  hence thesis by TARSKI:2;
+end;
+
