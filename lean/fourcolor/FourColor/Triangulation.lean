@@ -266,6 +266,171 @@ def swap (α β x : Color) : Color :=
     swap α β x = x := by
   simp [swap, hα, hβ]
 
+/-- Helper: In ZMod 2, adding to itself gives zero. -/
+lemma F2_add_self (a : F2) : a + a = 0 := by
+  -- Use decidability of ZMod 2
+  fin_cases a <;> decide
+
+/-- Helper: In ZMod 2, doubling gives zero. -/
+lemma F2_two_mul (a : F2) : 2 * a = 0 := by
+  rw [two_mul]
+  exact F2_add_self a
+
+/-- Delta for swap: add α+β on {α,β}, else add 0. -/
+def delta (α β x : Color) : Color :=
+  if x = α ∨ x = β then α + β else (0, 0)
+
+/-- Key algebraic identity: swap equals addition by delta.
+    This is the foundation of the even-incidence swap principle. -/
+lemma swap_eq_add_delta (α β x : Color) :
+    swap α β x = x + delta α β x := by
+  unfold swap delta
+  by_cases hα : x = α
+  · rw [if_pos hα, if_pos (Or.inl hα), hα]
+    -- β = α + (α + β) in F₂²
+    ext
+    · show β.1 = α.1 + (α.1 + β.1)
+      rw [← add_assoc, F2_add_self, zero_add]
+    · show β.2 = α.2 + (α.2 + β.2)
+      rw [← add_assoc, F2_add_self, zero_add]
+  · by_cases hβ : x = β
+    · rw [if_neg hα, if_pos hβ, if_pos (Or.inr hβ), hβ]
+      -- α = β + (α + β) in F₂²
+      ext
+      · show α.1 = β.1 + (α.1 + β.1)
+        rw [add_comm α.1, ← add_assoc, F2_add_self, zero_add]
+      · show α.2 = β.2 + (α.2 + β.2)
+        rw [add_comm α.2, ← add_assoc, F2_add_self, zero_add]
+    · rw [if_neg hα, if_neg hβ, if_neg]
+      simp
+      intro h; cases h <;> contradiction
+
+/-- In F₂², summing a value an even number of times gives zero. -/
+lemma nsmul_even_eq_zero {c : Color} {n : ℕ} (h : Even n) :
+    n • c = (0, 0) := by
+  rcases h with ⟨k, rfl⟩
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    show (k + 1 + (k + 1)) • c = (0, 0)
+    -- Simplify: (k+1 + (k+1)) = (k+k) + 2
+    have : k + 1 + (k + 1) = k + k + 2 := by omega
+    rw [this, add_nsmul, ih]
+    ext <;> simp [F2_two_mul]
+
+/-- Sum of constant over a finset equals card • constant. -/
+lemma sum_const {E : Type*} [Fintype E] [DecidableEq E]
+    (S : Finset E) (c : Color) :
+    ∑ _e ∈ S, c = S.card • c := by
+  induction S using Finset.induction with
+  | empty => simp
+  | insert e S he ih =>
+    rw [Finset.sum_insert he, ih, Finset.card_insert_of_notMem he]
+    show c + S.card • c = (S.card + 1) • c
+    rw [add_comm (c : Color), add_nsmul, one_nsmul, add_comm]
+
+/-- Sum at a vertex is preserved if the swap set has even αβ-incidence.
+    This is the key lemma for Kempe chain switches. -/
+lemma swap_preserves_vertex_sum
+    {E V : Type*} [Fintype E] [DecidableEq E] [Fintype V]
+    (incident : V → Finset E)
+    (x : E → Color) (C : Finset E) (α β : Color)
+    (even_at : ∀ v : V, Even ((C ∩ incident v).filter (fun e => x e = α ∨ x e = β)).card) :
+  ∀ v, ∑ e ∈ incident v, x e
+      = ∑ e ∈ incident v, (if e ∈ C then swap α β (x e) else x e) := by
+  intro v
+  let S := (C ∩ incident v).filter (fun e => x e = α ∨ x e = β)
+
+  -- Each swapped term equals original + conditional delta
+  have h_swap : ∀ e, (if e ∈ C then swap α β (x e) else x e)
+                   = x e + (if e ∈ C ∧ (x e = α ∨ x e = β) then α + β else (0, 0)) := by
+    intro e
+    by_cases he : e ∈ C
+    · simp [he, swap_eq_add_delta, delta]
+    · simp [he]
+
+  calc
+    ∑ e ∈ incident v, x e
+      = (∑ e ∈ incident v, x e) + (0, 0) := by
+          simp
+    _ = (∑ e ∈ incident v, x e) + S.card • (α + β) := by
+          rw [nsmul_even_eq_zero (even_at v)]
+    _ = (∑ e ∈ incident v, x e) + (∑ e ∈ S, (α + β)) := by
+          rw [sum_const]
+    _ = (∑ e ∈ incident v, x e) + (∑ e ∈ incident v, (if e ∈ C ∧ (x e = α ∨ x e = β) then α + β else (0, 0))) := by
+          congr 1
+          -- S = (C ∩ incident v).filter (fun e => x e = α ∨ x e = β)
+          -- Need to show: ∑ e ∈ S, (α + β) = ∑ e ∈ incident v, if e ∈ C ∧ (x e = α ∨ x e = β) then α + β else 0
+          -- The key insight: the RHS sums only over elements where the condition holds,
+          -- which is exactly the set S
+          have h_eq : ∑ e ∈ incident v, (if e ∈ C ∧ (x e = α ∨ x e = β) then α + β else (0, 0))
+                    = ∑ e ∈ S, (α + β) := by
+            -- Rewrite if-then-else with explicit zero
+            have : (fun e => if e ∈ C ∧ (x e = α ∨ x e = β) then α + β else (0, 0))
+                 = (fun e => if e ∈ C ∧ (x e = α ∨ x e = β) then α + β else 0) := by
+              funext e; split_ifs <;> rfl
+            rw [this]
+            -- Use Finset.sum_filter
+            rw [← Finset.sum_filter]
+            -- Now show the filtered set equals S
+            congr 1
+            -- filter (incident v) (fun e => e ∈ C ∧ (x e = α ∨ x e = β)) = S
+            -- S = (C ∩ incident v).filter (fun e => x e = α ∨ x e = β)
+            ext e
+            simp only [Finset.mem_filter, Finset.mem_inter, S]
+            tauto
+          rw [h_eq]
+    _ = ∑ e ∈ incident v, (x e + (if e ∈ C ∧ (x e = α ∨ x e = β) then α + β else (0, 0))) := by
+          rw [Finset.sum_add_distrib]
+    _ = ∑ e ∈ incident v, (if e ∈ C then swap α β (x e) else x e) := by
+          congr 1; funext e; exact (h_swap e).symm
+
+/-- Predicate version of swap_preserves_vertex_sum.
+
+    Takes a predicate `p : E → Prop` instead of a Finset `C`. The proof structure
+    is identical, but uses `p e` instead of `e ∈ C`.
+
+    This eliminates the need to filter on non-decidable predicates!
+-/
+lemma swap_preserves_vertex_sum_pred
+    {E V : Type*} [Fintype E] [DecidableEq E] [Fintype V]
+    (incident : V → Finset E)
+    (x : E → Color) (p : E → Prop) [DecidablePred p] (α β : Color)
+    (even_at : ∀ v : V, Even ((incident v).filter (fun e => p e ∧ (x e = α ∨ x e = β))).card) :
+  ∀ v, ∑ e ∈ incident v, x e
+      = ∑ e ∈ incident v, (if p e then swap α β (x e) else x e) := by
+  intro v
+  let S := (incident v).filter (fun e => p e ∧ (x e = α ∨ x e = β))
+
+  -- Each swapped term equals original + conditional delta
+  have h_swap : ∀ e, (if p e then swap α β (x e) else x e)
+                   = x e + (if p e ∧ (x e = α ∨ x e = β) then α + β else (0, 0)) := by
+    intro e
+    by_cases he : p e
+    · simp [he, swap_eq_add_delta, delta]
+    · simp [he]
+
+  calc
+    ∑ e ∈ incident v, x e
+      = (∑ e ∈ incident v, x e) + (0, 0) := by simp
+    _ = (∑ e ∈ incident v, x e) + S.card • (α + β) := by
+          rw [nsmul_even_eq_zero (even_at v)]
+    _ = (∑ e ∈ incident v, x e) + (∑ e ∈ S, (α + β)) := by
+          rw [sum_const]
+    _ = (∑ e ∈ incident v, x e) + (∑ e ∈ incident v, (if p e ∧ (x e = α ∨ x e = β) then α + β else (0, 0))) := by
+          congr 1
+          have h_eq : ∑ e ∈ incident v, (if p e ∧ (x e = α ∨ x e = β) then α + β else (0, 0))
+                    = ∑ e ∈ S, (α + β) := by
+            have : (fun e => if p e ∧ (x e = α ∨ x e = β) then α + β else (0, 0))
+                 = (fun e => if p e ∧ (x e = α ∨ x e = β) then α + β else 0) := by
+              funext e; split_ifs <;> rfl
+            rw [this, ← Finset.sum_filter]
+          rw [h_eq]
+    _ = ∑ e ∈ incident v, (x e + (if p e ∧ (x e = α ∨ x e = β) then α + β else (0, 0))) := by
+          rw [Finset.sum_add_distrib]
+    _ = ∑ e ∈ incident v, (if p e then swap α β (x e) else x e) := by
+          congr 1; funext e; exact (h_swap e).symm
+
 end Color
 
 /-- Convenient shorthand for the two-element set `{α, β}`. -/
@@ -991,7 +1156,15 @@ lemma sum_faceBoundary_erase {γ : Color} {faces : Finset (Finset E)} {face : Fi
 
 end FaceBoundaryHelpers
 
-/-- Data needed to perform the leaf-peeling induction for Lemma 4.5. -/
+/-- **LEGACY**: Data for leaf-peeling induction with single-face peels.
+
+**Prefer `LeafPeelSumData`** for new code. The aggregated multi-face approach in `LeafPeelSumData`
+directly matches Goertzel v3 (§4.2, Lemma 4.8) and avoids the need to factorize aggregated
+toggles into strict single-face cuts. This structure is retained for compatibility and
+alternative proof strategies, but the main proof pipeline uses `LeafPeelSumData.peel_sum`.
+
+See `LeafPeelSumData` for the preferred aggregated-peel approach. -/
+
 structure LeafPeelData (V E : Type*) [Fintype V] [DecidableEq V]
     [Fintype E] [DecidableEq E] where
   zero : ZeroBoundaryData V E
