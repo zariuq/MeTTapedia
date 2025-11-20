@@ -1,0 +1,84 @@
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[version=4]{mhchem}
+\usepackage{stmaryrd}
+\usepackage{graphicx}
+\usepackage[export]{adjustbox}
+\graphicspath{ {./images/} }
+
+\title{On the Ramsey number $R(3,6)$ }
+
+\author{David Cariolaro\\
+Institute of Mathematics\\
+Academia Sinica\\
+Nankang, Taipei 115\\
+Taiwan\\
+cariolaro@math.sinica.edu.tw}
+\date{}
+
+
+\begin{document}
+\maketitle
+Dedicated to Professor G.L. Cariolaro on the occasion of his 70th birthday.
+
+\begin{abstract}
+We give an easy proof for $R(3,6)=18$.
+\end{abstract}
+
+\section*{1 Introduction}
+The Ramsey number $R(k, l)$ is defined as the least positive integer $n$ with the property that every graph on $n$ vertices either contains $k$ mutually adjacent vertices or $l$ mutually nonadjacent vertices. A graph on $R(k, l)-1$ vertices which contains neither $k$ mutually adjacent vertices nor $l$ mutually nonadjacent vertices is called $R(k, l)$ critical.
+
+Ramsey numbers are generally difficult to compute and only very few are known (see [7]). Most proofs of either exact or approximate estimation of Ramsey numbers involve computer computations. As far as we know there exist computer-free proofs of exact values of (nontrivial) Ramsey numbers only for $R(3,3)=6, R(3,4)=9$, $R(3,5)=14, R(3,6)=18, R(3,7)=23$ and $R(4,4)=18$.\\
+We shall here only be concerned with the Ramsey number $R(3,6)$. The proofs concerning $R(3,6)$ known to the author are either not elementary [3], not immediately accessible [5] or in Hungarian [6].\\
+We will provide an elementary proof for $R(3,6)=18$, which is shorter and simpler than all those mentioned above. Informally speaking, this says that, given 18 arbitrary people, there are either 3 who are mutually acquainted or there are 6 who are mutually strangers to each other, but the same fact does not necessarily hold if we replace the number 18 by 17 .
+
+\section*{2 The main result}
+We let $|G|$ denote the order (number of vertices) of graph $G$ and, if $S \subset V(G)$, we let $N(S)$ denote the set of vertices which are adjacent to at least one vertex in $S$,\\
+\includegraphics[max width=\textwidth, center]{2025_02_07_b1cb8ce31b5aabf14429g-2}
+
+Figure 1: The existence of this graph proves that $R(3,6) \geq 18$.\\
+and $N[S]=S \cup N(S)$.\\
+An $I S$ is an independent set of vertices and a $k-I S$ is an IS of size $k$.\\
+Theorem $1 \quad R(3,6)=18$.\\[0pt]
+Proof. It may be checked (with a bit of patience) that the graph in Fig. 1 (taken from [3]) is a triangle-free graph of order 17 with no independent set of size 6 , therefore proving the inequality $R(3,6) \geq 18$. Thus we are left only with the proof that $R(3,6) \leq 18$.\\
+Let $G$ be a triangle-free graph with 18 vertices. We shall prove that $G$ contains a 6 -IS. Arguing by contradiction, assume that $G$ does not have a 6 -IS.\\
+Claim 1: $G$ is 5-regular.\\
+Since $G$ is triangle-free, for any vertex $v, N(v)$ is an IS, and hence $|N(v)| \leq 5$, i.e. $\operatorname{deg}(v) \leq 5$. Suppose now that $\operatorname{deg}(v)<5$. Let $H=G-N[v]$. Clearly $|H| \geq 13$. If $|H| \geq 14=R(3,5)$, then $H$ has a 5 -IS, which together with $v$ forms a 6 -IS, giving a contradiction. Therefore $|H|=13$, and hence $\operatorname{deg}(v)=4$. Then $H$ is the (unique) $R(3,5)$-critical graph and is in particular 4-regular. Let $t \in N(v)$. Then $t$ has (by the first part of the proof) at least 3 neighbours $t_{1}, t_{2}, t_{3}$ in $H$, each of which is independent from $N(v) \backslash\{t\}$ (because $t_{1}, t_{2}, t_{3}$ have 4 neighbours in $H$ and one more neighbour in $\{t\})$. Hence $(N(v) \backslash\{t\}) \cup\left\{t_{1}, t_{2}, t_{3}\right\}$ is a 6 -IS, giving a contradiction.\\
+Claim 2: For any vertex $v$ there are exactly 4 non-neighbours $p_{i}$ of $v$ such that $\left|N\left(p_{i}\right) \cap N(v)\right|=1$ and 8 non-neighbours $q_{i}$ of $v$ such that $\left|N\left(q_{i}\right) \cap N(v)\right|=$ 2. Moreover the $p_{i}$ 's share 4 distinct neighbours with $v$ and the $q_{i}$ 's share 8 distinct pairs of neighbours with $v$.\\
+Let $u, v$ be nonadjacent. We first prove that $1 \leq|N(u) \cap N(v)| \leq 2$. If $\mid N(u) \cap$ $N(v) \mid=0$ then, in particular, $v$ is independent from $N(u)$, so that the set $\{v\} \cup N(u)$ is a 6 -IS. Thus $|N(u) \cap N(v)| \geq 1$. Now suppose that $|N(u) \cap N(v)| \geq 3$. Let $H=G-N[u, v]$. Then $|H| \geq 9=R(3,4)$ so that, since $H$ is triangle-free, there is in $H$ a 4-IS. This, together with $u$ and $v$, gives a 6-IS. Thus $1 \leq|N(u) \cap N(v)| \leq 2$.
+
+Let now $H=G-N[v]$. It is easy to see that there are exactly 20 edges between $H$ and $N[v]$. Simply counting those vertices in $H$ that send 2 edges to $N[v]$ and those that send only 1 , we get the first part of the Claim.\\
+For the second part, suppose that the vertices $p_{1}, p_{2}$ are adjacent to the same vertex $u \in N(v)$. Then in particular the set $\left\{p_{1}, p_{2}\right\} \cup(N(v) \backslash\{u\})$ is a 6-IS, contradicting the assumption. Thus each of $p_{1}, p_{2}, p_{3}, p_{4}$ is joined to a distinct vertex of $N(v)$. Finally, suppose that $q_{1}, q_{2} \in V(H)$ are joined to the same pair $\{x, y\} \subset N(v)$. Then in particular the nonadjacent vertices $x, y$ have the common neighbours $\left\{v, q_{1}, q_{2}\right\}$, contradicting the first part of Claim 2.\\
+Claim 3: With the notations of Claim 2, $\left\{p_{1}, p_{2}, p_{3}, p_{4}\right\}$ induce a 4 -cycle in $G$.\\
+Label the vertices of $G$ in such a way that $N(v)=\left\{t, s_{1}, s_{2}, s_{3}, s_{4}\right\}$, where, using Claim 2, we assume that $s_{1} p_{1}, s_{2} p_{2}, s_{3} p_{3}, s_{4} p_{4}$ are the only edges between the $p_{i}$ 's and $N(v)$. Notice that no $p_{i}$ is a neighbour of $t$ because the $p_{i}$ 's, by Claim 2 , share only one neighbour with $v$. Rename the $q_{i}$ 's as follows: let $N(t) \backslash\{v\}=\left\{t_{1}, t_{2}, t_{3}, t_{4}\right\}$ and let the remaining $q_{i}$ 's be $w_{1}, w_{2}, w_{3}, w_{4}$. Thus $V(G)=\left\{v, t, s_{1}, s_{2}, s_{3}, s_{4}, t_{1}, t_{2}, t_{3}, t_{4}, p_{1}\right.$, $\left.p_{2}, p_{3}, p_{4}, w_{1}, w_{2}, w_{3}, w_{4}\right\}$.\\
+Each of the $s_{i}$ 's sends exactly 1 edge to $v, 1$ edge to the $p_{i}$ 's, 1 edge to the $t_{i}$ 's and hence 2 edges to the $w_{i}$ 's. Moreover there cannot be two $s_{i}$ 's, say $s_{1}, s_{2}$, which are joined to the same pair, say $\left\{w_{1}, w_{2}\right\}$ of $w_{i}$ 's, otherwise $s_{1}, s_{2}$ would share the 3 neighbours $\left\{v, w_{1}, w_{2}\right\}$, contradicting Claim 2 . Similarly no $w_{i}$ is adjacent to more than two $s_{i}$ 's, since otherwise the pair $\left\{v, w_{i}\right\}$ would share too many neighbours.\\
+Now suppose that two of the $s_{i}$ 's, say $s_{1}, s_{2}$, are adjacent to the same $w_{i}$, say $w_{1}$. None of the vertices $p_{1}, p_{2}, s_{1}, s_{2}, w_{1}$ is joined to any of the three independent vertices $\left\{s_{3}, s_{4}, t\right\}$, so that, to avoid a 6-IS, the subgraph induced by $\left\{p_{1}, p_{2}, s_{1}, s_{2}, w_{1}\right\}$ cannot contain a 3 -IS, and hence (to avoid triangles) must be a 5 -cycle. Thus, in particular, $p_{1}$ and $p_{2}$ are adjacent. A similar argument can be repeated for any pair of vertices in $\left\{s_{1}, s_{2}, s_{3}, s_{4}\right\}$ which have a $w_{i}$ as common neighbour, and since there are exactly 4 such pairs there are exactly 4 edges in the subgraph induced by $\left\{p_{1}, p_{2}, p_{3}, p_{4}\right\}$, and hence (to avoid triangles) this subgraph is a 4 -cycle, thus proving Claim 3.
+
+\section*{Final step}
+Without loss of generality we assume that $p_{1} p_{2} p_{3} p_{4} p_{1}$ is the 4 -cycle induced by $\left\{p_{1}, p_{2}, p_{3}, p_{4}\right\}$ in $G$. Each $p_{i}$ shares at least one neighbour with $t$ by Claim 2. Furthermore, by Claim 2 and the fact that $G$ is triangle-free, the $p_{i}$ 's do not have common neighbours except in $\left\{p_{1}, p_{2}, p_{3}, p_{4}\right\}$. Thus each of the $p_{i}$ 's is joined to a single distinct $t_{i}$, and we shall assume (by possibly relabelling the $t_{i}$ 's) that $p_{i} t_{i} \in E(G)$ for each $i=1,2,3,4$.\\
+There are exactly 4 edges between the $p_{i}$ 's and the $w_{i}$ 's and (by possibly relabelling the $w_{i}$ 's) we can assume that they are the edges $p_{i} w_{i}, i=1,2,3,4$.\\
+The vertices $v$ and $w_{1}$ share exactly two neighbours and the only possible candidates are in $\left\{s_{2}, s_{3}, s_{4}\right\}$. Similarly $t$ and $w_{1}$ share exactly two neighbours and the only possible candidates are in $\left\{t_{2}, t_{3}, t_{4}\right\}$.
+
+Hence there is an $i \neq 1$ such that the vertex $w_{1}$ is joined to $s_{i}$ and $t_{i}$. If $i=2$ or $i=4$, the vertices $p_{i}$ and $w_{1}$ have 3 common neighbours, which contradicts Claim 2. Hence $i=3$. By symmetry, we can further assume that $w_{1} s_{2} \in E(G)$. Hence, by the above remark, $w_{1} t_{4} \in E(G)$.\\
+Consider now the vertex $s_{2}$. We proved above that each $s_{i}$ is adjacent to exactly one $t_{i}$. It cannot be $s_{2} t_{2} \in E(G)$ to avoid the triangle $s_{2} p_{2} t_{2}$. Similarly it cannot be $s_{2} t_{3} \in E(G)$ to avoid the triangle $s_{2} w_{1} t_{3}$ and it cannot be $s_{2} t_{4} \in E(G)$ to avoid the triangle $s_{2} w_{1} t_{4}$. Thus the only possibility is that $s_{2} t_{1} \in E(G)$. But now $s_{2}$ and $p_{1}$ have the three common neighbours $\left\{p_{2}, w_{1}, t_{1}\right\}$, which contradicts Claim 2. This contradiction completes the proof.
+
+\section*{3 Acknowledgements}
+An early version of this proof was first written by the author as a Research Report at Aalborg University in 1999 ([1]). The author wishes to thank Prof. L.D. Andersen and Prof. P.D. Vestergaard for their support and Aalborg University for its hospitality in the academic year 1998-1999.
+
+The author is also indebted to Prof. Yusheng Li for his encouragement and comments which stimulated the author to write the present version of the paper.
+
+\section*{References}
+[1] D. Cariolaro, On the Ramsey number $R(3,6)$, Research Report R-99-2012, Aalborg University, Denmark, 1999.\\[0pt]
+[2] R.L. Graham, B.L. Rothschild and J.H. Spencer, Ramsey Theory, John Wiley \& Sons, 1990.\\[0pt]
+[3] J.E. Graver and J. Yackel, Some graph theoretic results associated with Ramsey's Theorem, J. Combin. Theory 4 (1968), 125-175.\\[0pt]
+[4] R.E. Greenwood and A.M. Gleason, Combinatorial Relations and Chromatic Graphs, Canad. J. Math. 7 (1955), 1-7.\\[0pt]
+[5] J.G. Kalbfleish, Chromatic graphs and Ramsey's Theorem, Ph.D. thesis, University of Waterloo, 1966.\\[0pt]
+[6] G. Kéry, Ramsey egy graftelmaleti, Mat. Lapok 15 (1964), 204-224.\\[0pt]
+[7] S.P. Radziszowski, Small Ramsey Numbers, Electronic J. Combinatorics, Dynamic Survey 1, (1994).
+
+
+\end{document}

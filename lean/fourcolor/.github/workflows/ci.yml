@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  hygiene-checks:
+    name: Hygiene Checks
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check version pins
+      run: |
+        chmod +x scripts/enforce-pins.sh
+        ./scripts/enforce-pins.sh
+
+    - name: Check axiom/sorry hygiene
+      run: |
+        chmod +x scripts/no-axioms-or-sorries.sh
+        ./scripts/no-axioms-or-sorries.sh --all
+
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: hygiene-checks
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Lean
+      uses: leanprover/lean-action@v1
+      with:
+        auto-config: false
+
+    - name: Restore mathlib cache
+      run: |
+        cd .lake/packages/mathlib
+        lake exe cache get!
+
+    - name: Build project
+      run: lake build
+
+    - name: Verify build status
+      run: |
+        echo "Build completed successfully!"
+        echo "Documented sorries remaining:"
+        grep -r "sorry" FourColor --include="*.lean" | wc -l || echo "0"

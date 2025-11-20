@@ -119,4 +119,31 @@ lemma face_containing_interior_edge_is_internal (RS : RotationSystem V E)
   -- or provide hf_is_face explicitly via face_containing_interior_edge_is_internal_with_witness
   sorry -- TODO: Callers should use version with witness or from_adj variant
 
+/-- Cardinality of a face orbit equals cardinality of its edge set for internal faces.
+    For internal faces in a planar graph, `edgeOf` is injective on the orbit
+    because planarity implies `d` and `alpha d` cannot be in the same face. -/
+lemma card_faceOrbit_eq_card_faceEdges_of_internal (PG : PlanarGeometry V E)
+    {d : PG.toRotationSystem.D}
+    (h_int : PG.toRotationSystem.faceEdges d ≠ PG.toRotationSystem.boundaryEdges) :
+    (PG.toRotationSystem.faceOrbit d).card = (PG.toRotationSystem.faceEdges d).card := by
+  classical
+  -- faceEdges is image of faceOrbit under edgeOf
+  rw [RotationSystem.faceEdges]
+  symm
+  rw [Finset.card_image_iff]
+  intros x hx y hy h_eq
+  -- If x, y in orbit have same edge, then y = x or y = alpha x
+  have h_fiber := PG.toRotationSystem.edge_fiber_two_cases h_eq rfl
+  rcases h_fiber with rfl | rfl
+  · rfl
+  · -- If y = alpha x, then x and alpha x are in same face orbit.
+    -- Since face is internal, edge is not boundary.
+    have he_not_boundary : PG.toRotationSystem.edgeOf x ∉ PG.toRotationSystem.boundaryEdges := by
+      apply RotationSystem.edge_of_internal_face_not_boundary PG
+      · exact Finset.mem_image_of_mem _ hx
+      · exact h_int
+    -- Contradiction with planarity
+    have h_contra := RotationSystem.alpha_not_in_same_faceOrbit_of_interior PG he_not_boundary hx
+    contradiction
+
 end FourColor.Geometry.PlanarityHelpers

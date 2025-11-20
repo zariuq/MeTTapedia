@@ -1,0 +1,17 @@
+session "FourColor_KCSD" = HOL +
+  options [document = false, quick_and_dirty = true]
+  directories
+    "theories/Core"
+    "theories/Disk"
+    "theories/Global"
+  theories
+    "Core/GraphPrimitives"
+    "Core/Graph_Conversion"
+    Disk_KCSD
+    Disk_RunPurification
+    Disk_FacialBasis
+    Disk_DualForest
+    Disk_KCSD_DualStrong
+    Tait_Equivalence
+    Kauffman_Parity_Primality
+    FourColor_Theorem

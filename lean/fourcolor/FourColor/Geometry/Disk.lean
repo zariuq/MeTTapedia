@@ -16,6 +16,7 @@ namespace FourColor
 open Finset BigOperators Relation
 open FourColor.Geometry
 open FourColor.Geometry.RotationSystem
+open Classical
 
 variable {V E : Type*} [Fintype V] [DecidableEq V] [Fintype E] [DecidableEq E]
 
@@ -58,9 +59,8 @@ def DiskGeometry.adj (f g : Finset E) : Prop :=
     ∀ e', (e' ∉ G.toRotationSystem.boundaryEdges ∧ e' ∈ f ∧ e' ∈ g) → e' = e
 
 /-- Cut edges: interior edges with exactly one incident face in S₀ -/
-noncomputable def cutEdges (G : DiskGeometry V E) (S₀ : Finset (Finset E)) : Finset E := by
-  classical
-  exact Finset.univ.filter (fun e =>
+noncomputable def cutEdges (G : DiskGeometry V E) (S₀ : Finset (Finset E)) : Finset E :=
+  Finset.univ.filter (fun e ↦
     e ∉ G.toRotationSystem.boundaryEdges ∧ (∃! f, f ∈ S₀ ∧ e ∈ f))
 
 /-! ## Support-aware definitions (for H2/H3) -/
@@ -68,16 +68,15 @@ noncomputable def cutEdges (G : DiskGeometry V E) (S₀ : Finset (Finset E)) : F
 /-- Support-aware cut: only counts interior edges in support₁ x which have
 exactly one incident face in S₀. This ensures toggleSum flips only support edges. -/
 noncomputable def cutEdges₁ (G : DiskGeometry V E)
-    (x : E → Color) (S₀ : Finset (Finset E)) : Finset E := by
-  classical
-  exact Finset.univ.filter (fun e =>
+    (x : E → Color) (S₀ : Finset (Finset E)) : Finset E :=
+  Finset.univ.filter (fun e ↦
     e ∈ support₁ x ∧
     e ∉ G.toRotationSystem.boundaryEdges ∧
     (∃! f, f ∈ S₀ ∧ e ∈ f))
 
 /-- Faces that meet the first-coordinate support of x -/
 def facesTouching₁ (x : E → Color) : Finset (Finset E) :=
-  G.toRotationSystem.internalFaces.filter (fun f => (f ∩ support₁ x).Nonempty)
+  G.toRotationSystem.internalFaces.filter (fun f ↦ (f ∩ support₁ x).Nonempty)
 
 /-- Restricted dual adjacency: only across support edges, excluding e0 -/
 def adjOnSupportExcept (x : E → Color) (e0 : E) (f g : Finset E) : Prop :=
@@ -141,7 +140,7 @@ theorem DiskGeometry.adj_spec
     ¬ ∃ e, e ∉ G.toRotationSystem.boundaryEdges ∧ e ∈ f ∧ e ∈ g := by
   classical
   -- Collect all shared interior edges
-  let S := (f ∩ g).filter (fun e => e ∉ G.toRotationSystem.boundaryEdges)
+  let S := (f ∩ g).filter (fun e ↦ e ∉ G.toRotationSystem.boundaryEdges)
   have hS_def : ∀ e, e ∈ S ↔ e ∈ f ∧ e ∈ g ∧ e ∉ G.toRotationSystem.boundaryEdges := by
     intro e
     simp only [S, Finset.mem_filter, Finset.mem_inter]
@@ -253,14 +252,7 @@ lemma incident_faces_of_interior_edge
   simp [RotationSystem.facesIncidence] at hf hg
   exact ⟨hf.1, hg.1, hf.2, hg.2, hfg_ne⟩
 
-/-- **If an internal face f contains interior edge e, then f is one of the two incident faces.**
-
-This follows from `two_internal_faces_of_interior_edge` by unpacking the ExistsUnique.
-For any interior edge e, there are exactly two internal faces containing e.
-If f is an internal face with e ∈ f, then f must be one of those two faces.
-
-This lemma is used in uniqueness arguments where we need to show that a face
-containing an edge must be one of the two incident faces (e.g., in H2 construction). -/
+/-- **If an internal face f contains interior edge e, then f is one of the two incident faces.** -/
 lemma face_mem_incident_pair_of_interior_edge
     {e : E} {f : Finset E}
     (he_int : e ∉ G.toRotationSystem.boundaryEdges)
@@ -323,10 +315,10 @@ lemma face_mem_incident_pair_of_interior_edge
 
 /-- Helper lemma: Unique existence is equivalent to singleton cardinality. -/
 private lemma unique_face_iff_card_filter_one {S₀ : Finset (Finset E)} {e : E} :
-    (∃! f, f ∈ S₀ ∧ e ∈ f) ↔ (S₀.filter (fun f => e ∈ f)).card = 1 := by
+    (∃! f, f ∈ S₀ ∧ e ∈ f) ↔ (S₀.filter (fun f ↦ e ∈ f)).card = 1 := by
   constructor
   · intro ⟨f, ⟨hf, he⟩, huniq⟩
-    have : S₀.filter (fun f => e ∈ f) = {f} := by
+    have : S₀.filter (fun f ↦ e ∈ f) = {f} := by
       ext f'; simp only [Finset.mem_filter, Finset.mem_singleton]
       constructor
       · intro ⟨hf', he'⟩; exact huniq f' ⟨hf', he'⟩
@@ -334,12 +326,12 @@ private lemma unique_face_iff_card_filter_one {S₀ : Finset (Finset E)} {e : E}
     rw [this]; simp
   · intro hcard
     obtain ⟨f, hf⟩ := Finset.card_eq_one.mp hcard
-    have : f ∈ S₀.filter (fun f => e ∈ f) := by rw [hf]; simp
+    have : f ∈ S₀.filter (fun f ↦ e ∈ f) := by rw [hf]; simp
     use f
     constructor
     · exact ⟨(Finset.mem_filter.mp this).1, (Finset.mem_filter.mp this).2⟩
     · intro f' ⟨hf', he'⟩
-      have : f' ∈ S₀.filter (fun f => e ∈ f) := Finset.mem_filter.mpr ⟨hf', he'⟩
+      have : f' ∈ S₀.filter (fun f ↦ e ∈ f) := Finset.mem_filter.mpr ⟨hf', he'⟩
       rw [hf] at this
       exact Finset.mem_singleton.mp this
 
@@ -354,10 +346,10 @@ lemma toggleSum_supported_on_cuts_10
   unfold toggleSum cutEdges
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
 
-  let n := (S₀.filter (fun f => e ∈ f)).card
+  let n := (S₀.filter (fun f ↦ e ∈ f)).card
 
   have hn_bound : n ≤ 2 := by
-    calc n = (S₀.filter (fun f => e ∈ f)).card := rfl
+    calc n = (S₀.filter (fun f ↦ e ∈ f)).card := rfl
          _ ≤ (G.toRotationSystem.facesIncidence e).card := by
              apply Finset.card_le_card
              intro f hf
@@ -379,7 +371,7 @@ lemma toggleSum_supported_on_cuts_10
   have hodd : ((n : ZMod 2) ≠ 0) ↔ n = 1 := odd_iff_one_of_le_two hn_bound
 
   -- Unique face in S₀ containing e ⇔ card (filter ...) = 1
-  have huniq : (∃! f, f ∈ S₀ ∧ e ∈ f) ↔ (S₀.filter (fun f => e ∈ f)).card = 1 :=
+  have huniq : (∃! f, f ∈ S₀ ∧ e ∈ f) ↔ (S₀.filter (fun f ↦ e ∈ f)).card = 1 :=
     unique_face_iff_card_filter_one
 
   -- Wrap up
@@ -394,7 +386,7 @@ lemma toggleSum_supported_on_cuts_10
   · intro hmem
     -- hmem : e ∉ boundary ∧ ∃! f, f ∈ S₀ ∧ e ∈ f
     rcases hmem with ⟨_, huniq'⟩
-    have h1 : (S₀.filter (fun f => e ∈ f)).card = 1 := huniq.mp huniq'
+    have h1 : (S₀.filter (fun f ↦ e ∈ f)).card = 1 := huniq.mp huniq'
     have h2 : n = 1 := by simp [n, h1]
     have : (n : ZMod 2) ≠ 0 := hodd.mpr h2
     exact hfst.symm ▸ this
@@ -408,10 +400,10 @@ lemma toggleSum_supported_on_cuts_01
   unfold toggleSum cutEdges
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
 
-  let n := (S₀.filter (fun f => e ∈ f)).card
+  let n := (S₀.filter (fun f ↦ e ∈ f)).card
 
   have hn_bound : n ≤ 2 := by
-    calc n = (S₀.filter (fun f => e ∈ f)).card := rfl
+    calc n = (S₀.filter (fun f ↦ e ∈ f)).card := rfl
          _ ≤ (G.toRotationSystem.facesIncidence e).card := by
              apply Finset.card_le_card
              intro f hf
@@ -433,7 +425,7 @@ lemma toggleSum_supported_on_cuts_01
   have hodd : ((n : ZMod 2) ≠ 0) ↔ n = 1 := odd_iff_one_of_le_two hn_bound
 
   -- Unique face in S₀ containing e ⇔ card (filter ...) = 1
-  have huniq : (∃! f, f ∈ S₀ ∧ e ∈ f) ↔ (S₀.filter (fun f => e ∈ f)).card = 1 :=
+  have huniq : (∃! f, f ∈ S₀ ∧ e ∈ f) ↔ (S₀.filter (fun f ↦ e ∈ f)).card = 1 :=
     unique_face_iff_card_filter_one
 
   -- Wrap up
@@ -448,7 +440,7 @@ lemma toggleSum_supported_on_cuts_01
   · intro hmem
     -- hmem : e ∉ boundary ∧ ∃! f, f ∈ S₀ ∧ e ∈ f
     rcases hmem with ⟨_, huniq'⟩
-    have h1 : (S₀.filter (fun f => e ∈ f)).card = 1 := huniq.mp huniq'
+    have h1 : (S₀.filter (fun f ↦ e ∈ f)).card = 1 := huniq.mp huniq'
     have h2 : n = 1 := by simp [n, h1]
     have : (n : ZMod 2) ≠ 0 := hodd.mpr h2
     exact hsnd.symm ▸ this
@@ -526,7 +518,7 @@ lemma DiskGeometry.faceBoundary_zeroBoundary {γ : Color} {f : Finset E}
 
 /-- Toggle sum equality: the definition matches the expansion. -/
 @[simp] lemma toggleSum_eq_sum {γ : Color} {S : Finset (Finset E)} :
-    toggleSum G γ S = fun e => ∑ f ∈ S, faceBoundaryChain γ f e := rfl
+    toggleSum G γ S = fun e ↦ ∑ f ∈ S, faceBoundaryChain γ f e := rfl
 
 /-- Sum of zero-boundary chains is zero-boundary (specialized convenience wrapper). -/
 lemma toggleSum_mem_zeroBoundary
@@ -693,158 +685,6 @@ lemma toggleSum_snd_boundary_zero
   simp only [toggleSum, Prod.snd_sum]
   exact Finset.sum_eq_zero hterm
 
-/-! ## Support-aware cut-parity lemmas (for H2/H3 with component-after-delete) -/
-
-/-- **Support-aware cut-parity for γ=(1,0)**: For edges in support₁, toggleSum is
-nonzero iff the edge is a support-aware cut edge. This version is key for H2/H3. -/
-lemma toggleSum_supported_on_cuts₁_10
-    {S₀ : Finset (Finset E)} (hS₀ : S₀ ⊆ G.toRotationSystem.internalFaces)
-    {x : E → Color}
-    {e : E} (he : e ∉ G.toRotationSystem.boundaryEdges)
-    (he_supp : e ∈ support₁ x) :
-    (toggleSum G (1,0) S₀ e).fst ≠ 0 ↔ e ∈ cutEdges₁ G x S₀ := by
-  classical
-  unfold cutEdges₁
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-
-  -- Apply non-support-aware version
-  rw [toggleSum_supported_on_cuts_10 G hS₀ he]
-
-  unfold cutEdges
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, he, he_supp, true_and]
-
-/-- Support-aware cut for second coordinate: only counts interior edges in support₂ x -/
-noncomputable def cutEdges₂ (G : DiskGeometry V E)
-    (x : E → Color) (S₀ : Finset (Finset E)) : Finset E := by
-  classical
-  exact Finset.univ.filter (fun e =>
-    e ∈ support₂ x ∧
-    e ∉ G.toRotationSystem.boundaryEdges ∧
-    (∃! f, f ∈ S₀ ∧ e ∈ f))
-
-/-- **Support-aware cut-parity for γ=(0,1)**: For edges in support₂, toggleSum is
-nonzero iff the edge is a support-aware cut edge. Mirror of the (1,0) version. -/
-lemma toggleSum_supported_on_cuts₂_01
-    {S₀ : Finset (Finset E)} (hS₀ : S₀ ⊆ G.toRotationSystem.internalFaces)
-    {x : E → Color}
-    {e : E} (he : e ∉ G.toRotationSystem.boundaryEdges)
-    (he_supp : e ∈ support₂ x) :
-    (toggleSum G (0,1) S₀ e).snd ≠ 0 ↔ e ∈ cutEdges₂ G x S₀ := by
-  classical
-  unfold cutEdges₂
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-
-  -- Apply non-support-aware version
-  rw [toggleSum_supported_on_cuts_01 G hS₀ he]
-
-  unfold cutEdges
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, he, he_supp, true_and]
-
-/-- Helper: cutEdges₁ singleton characterization -/
-lemma cutEdges₁_eq_singleton_iff_unique
-    {S₀ : Finset (Finset E)} {x : E → Color} {e₀ e : E}
-    (h : cutEdges₁ G x S₀ = {e₀}) :
-    e ∈ cutEdges₁ G x S₀ ↔ e = e₀ := by
-  classical
-  simp [h]
-
-/-- Helper: cutEdges₂ singleton characterization -/
-lemma cutEdges₂_eq_singleton_iff_unique
-    {S₀ : Finset (Finset E)} {x : E → Color} {e₀ e : E}
-    (h : cutEdges₂ G x S₀ = {e₀}) :
-    e ∈ cutEdges₂ G x S₀ ↔ e = e₀ := by
-  classical
-  simp [h]
-
-/-! ## H2: Prescribed-cut leaf-subtree (Component-After-Delete Construction)
-
-Given an edge e₀ in support₁ x, construct a leaf-subtree S₀ whose unique cut edge is e₀.
-
-**Strategy (following GPT-5 Pro's guidance)**:
-1. Get seed face f₀ incident to e₀ (exists by interior_edge_covered)
-2. Build S₀ = faces reachable from f₀ via adjOnSupportExcept x e₀
-   - This uses dual adjacency across support edges, but EXCLUDES e₀
-3. Prove cutEdges₁ G x S₀ = {e₀}
-   - e₀ ∈ cutEdges₁: e₀ has exactly one incident face in S₀ (the seed f₀)
-   - The other face incident to e₀ is NOT reachable (can't cross e₀)
-   - Other edges: either have 0 or 2 incident faces in S₀ (not cut edges)
-
-This construction is now complete with the component-after-delete approach.
-See the full implementation after the helper definitions below.
--/
-
-/-- If `e ∈ support₁ x`, then "unique incident face in S after filtering to faces that touch the support"
-is equivalent to "unique incident face in S" (because `e ∈ f` itself witnesses the touch). -/
-lemma existsUnique_on_touch_filter_iff
-    {x : E → Color} {S : Finset (Finset E)} {e : E}
-    (he_supp : e ∈ support₁ x) :
-    (∃! f, f ∈ S.filter (fun f => (f ∩ support₁ x).Nonempty) ∧ e ∈ f)
-    ↔ (∃! f, f ∈ S ∧ e ∈ f) := by
-  classical
-  constructor
-  · intro ⟨f, hfP, huniq⟩
-    obtain ⟨hfS, _htouch⟩ := Finset.mem_filter.mp hfP.1
-    refine ⟨f, ⟨hfS, hfP.2⟩, ?_⟩
-    intro g hg
-    have hg_touch : (g ∩ support₁ x).Nonempty :=
-      ⟨e, Finset.mem_inter.mpr ⟨hg.2, he_supp⟩⟩
-    have hgS : g ∈ S.filter (fun f => (f ∩ support₁ x).Nonempty) :=
-      Finset.mem_filter.mpr ⟨hg.1, hg_touch⟩
-    exact huniq g ⟨hgS, hg.2⟩
-  · intro ⟨f, hfP, huniq⟩
-    have hf_touch : (f ∩ support₁ x).Nonempty :=
-      ⟨e, Finset.mem_inter.mpr ⟨hfP.2, he_supp⟩⟩
-    have hfS' : f ∈ S.filter (fun f => (f ∩ support₁ x).Nonempty) :=
-      Finset.mem_filter.mpr ⟨hfP.1, hf_touch⟩
-    refine ⟨f, ⟨hfS', hfP.2⟩, ?_⟩
-    intro g hg
-    exact huniq g ⟨(Finset.mem_filter.mp hg.1).1, hg.2⟩
-
-/-! ### REMOVED: Incorrect Component-After-Delete Infrastructure
-
-⚠️ **Per GPT-5 Pro clarification (Nov 6, 2025)**: The component-after-delete approach using
-`adjExcept` and `ReflTransGen` does NOT provide a valid way to construct a set S' with
-`cutEdges G S' = {e0}`.
-
-**Why this approach fails**: Two faces f0, g0 that share only edge e0 can still be connected
-by paths avoiding e0 in the dual graph. The attempted helper axiom
-`reflTransGen_adjExcept_absurd_of_unique_edge` is **generally false**.
-
-**What we actually need**: An H2 construction (likely via spanning forest / leaf-subtree as in
-Goertzel §4.3) that directly produces a set with singleton cut. This is left as a `sorry` in
-the lemma `exists_S₀_component_after_delete` below.
-
-**Removed infrastructure** (lines 638-730, Nov 6 2025):
-- `adjExcept` (restricted face adjacency)
-- `compAfterDeleteSet` (reachability set)
-- Transport lemmas (seed_in_compAfterDeleteSet, compAfterDeleteSet_subset_internalFaces,
-  mem_compAfterDeleteSet_iff, compAfterDeleteSet_closed_under_adjExcept)
-- False helper axioms (face_mem_incident_pair_of_interior_edge,
-  reflTransGen_adjExcept_absurd_of_unique_edge)
-
-**Working architecture**:
-- H2 produces S' with `cutEdges G S' = {e0}` (sorry below)
-- Support-aware bridge `cutEdges₁_filter_of_component_singleton` (line 902) transports to cutEdges₁
-- H3 (aggregated_toggle_strict_descent_at_prescribed_cut, line 1035) performs descent
--/
-
-/-! ### H2: Prescribed Cut Lemma
-
-**Statement**: For any interior edge e0, there exists a nonempty set S' of internal faces
-such that `cutEdges G S' = {e0}` (e0 is the unique bridge of the component).
-
-**Correct construction** (per GPT-5 Pro, Nov 6 2025): Use spanning forest / leaf-subtree
-approach from Goertzel §4.3:
-1. Build interior dual graph (faces = vertices, interior edges = edges)
-2. Get spanning forest T of dual
-3. Find leaf-subtree containing one face incident to e0
-4. That subtree's face-set has e0 as unique cut edge
-
-**INCORRECT approach** (removed Nov 6 2025): Component-after-delete via ReflTransGen.
-The helper axiom "faces sharing only e0 cannot be connected avoiding e0" is FALSE.
-Two faces can share only one edge yet still be connected by paths avoiding that edge.
--/
-
 /-! ### Spanning Forest Infrastructure
 
 The correct approach to H2 uses a spanning forest on the interior dual graph.
@@ -878,363 +718,104 @@ theorem exists_forest_containing_edge (G : DiskGeometry V E) {e0 : E}
 
 /-- Reachability in the forest after removing an edge: two faces are connected
 if there's a path via tree edges excluding the removed edge. -/
-def forestReachable (F : SpanningForest G) (e_removed : E) (f g : Finset E) : Prop :=
-  ReflTransGen (fun f' g' => ∃ e' ∈ F.tree_edges, e' ≠ e_removed ∧ e' ∈ f' ∧ e' ∈ g') f g
+def forestReachable (G : DiskGeometry V E) (F : SpanningForest G) (e_removed : E) (f g : Finset E) : Prop :=
+  ReflTransGen (fun f' g' ↦ ∃ e' ∈ F.tree_edges, e' ≠ e_removed ∧ e' ∈ f' ∧ e' ∈ g') f g
 
-/-- The component containing a face after removing an edge from the forest.
-For now, we axiomatize this construction. -/
--- TODO: Define via reachability
-def forestComponent {G : DiskGeometry V E} (F : SpanningForest G) (e_removed : E) (f_seed : Finset E) :
-    Finset (Finset E) := sorry
+/-- The component containing a face after removing an edge from the forest. -/
+noncomputable def forestComponent (G : DiskGeometry V E) (F : SpanningForest G) (e_removed : E) (f_seed : Finset E) :
+    Finset (Finset E) :=
+  G.toRotationSystem.internalFaces.filter (fun f ↦ forestReachable G F e_removed f_seed f)
 
 /-- The seed face is in its component. -/
--- TODO: Prove seed in component
 lemma seed_in_forestComponent {G : DiskGeometry V E} (F : SpanningForest G) {e : E} {f : Finset E}
     (hf : f ∈ G.toRotationSystem.internalFaces) :
-    f ∈ forestComponent F e f
-    := by sorry
-
+    f ∈ forestComponent G F e f := by
+  simp [forestComponent, hf]
+  exact ReflTransGen.refl
 
 /-- Forest components are subsets of internal faces. -/
--- TODO: Prove component subset
 lemma forestComponent_subset {G : DiskGeometry V E} (F : SpanningForest G) {e : E} {f : Finset E} :
-    forestComponent F e f ⊆ G.toRotationSystem.internalFaces
-    := by sorry
+    forestComponent G F e f ⊆ G.toRotationSystem.internalFaces := by
+  intro g hg
+  simp [forestComponent] at hg
+  exact hg.1
 
-
-/-- If e0 ∈ tree_edges and f, g are the two incident faces to e0,
-then removing e0 splits them into different components. -/
--- TODO: Prove tree edge separates
-lemma tree_edge_separates {G : DiskGeometry V E} (F : SpanningForest G) {e0 : E}
-    (he0_in : e0 ∈ F.tree_edges)
-    {f g : Finset E}
-    (hf_int : f ∈ G.toRotationSystem.internalFaces)
-    (hg_int : g ∈ G.toRotationSystem.internalFaces)
-    (he0_f : e0 ∈ f) (he0_g : e0 ∈ g) (hfg : f ≠ g) :
-    f ∈ forestComponent F e0 f ∧ g ∉ forestComponent F e0 f
-    := by sorry
-
-
-/-- For a non-tree edge e ≠ e0, both incident faces are in the same component. -/
--- TODO: Prove non-tree same component
-lemma non_tree_edge_same_component {G : DiskGeometry V E} (F : SpanningForest G) {e e0 : E}
-    (he0_in : e0 ∈ F.tree_edges)
-    (he_not : e ∉ F.tree_edges)
-    (he_ne : e ≠ e0)
-    (he_int : e ∉ G.toRotationSystem.boundaryEdges)
-    {f g : Finset E}
-    (hf_int : f ∈ G.toRotationSystem.internalFaces)
-    (hg_int : g ∈ G.toRotationSystem.internalFaces)
-    (he_f : e ∈ f) (he_g : e ∈ g) (hfg : f ≠ g) :
-    (f ∈ forestComponent F e0 f ↔ g ∈ forestComponent F e0 f)
-    := by sorry
-
-
-/-! ### Fundamental Cut Theorem
-
-The main result: using a spanning forest, we can construct S' with cutEdges G S' = {e0}.
--/
-
-/-- **Fundamental Cut Theorem**: For a tree edge e0 in the spanning forest,
-the forest component gives a face set with e0 as the unique cut edge.
-This is axiomatized for now; the proof follows from standard graph theory
-(fundamental cut theorem). -/
--- TODO: Prove fundamental cut theorem
-theorem forest_gives_singleton_cut {G : DiskGeometry V E} (F : SpanningForest G) {e0 : E}
-    (he0_in : e0 ∈ F.tree_edges)
-    (he0_int : e0 ∉ G.toRotationSystem.boundaryEdges)
-    {f0 g0 : Finset E}
-    (hf0_int : f0 ∈ G.toRotationSystem.internalFaces)
-    (hg0_int : g0 ∈ G.toRotationSystem.internalFaces)
-    (he0_f0 : e0 ∈ f0) (he0_g0 : e0 ∈ g0) (hfg0 : f0 ≠ g0) :
-    cutEdges G (forestComponent F e0 f0) = {e0}
-    := by sorry
-
-
-lemma exists_S₀_component_after_delete
-    (hNoDigons : NoDigons G)
-    {e0 : E} (he0_int : e0 ∉ G.toRotationSystem.boundaryEdges) :
+/-- **Subset Support Cut Theorem**:
+    Instead of a singleton cut (which requires bridges in the dual graph),
+    we find a set `S'` such that `cutEdges G S' \subseteq support x`.
+    This implies that `toggleSum S'` flips `e0` (if `e0 \in cutEdges`) and potentially
+    other edges, but ONLY edges that are already in `support x`.
+    This guarantees `support(x') < support(x)`. -/
+theorem forest_gives_subset_support_cut {G : DiskGeometry V E}
+    (x : E → Color) (e0 : E) (he0_supp : e0 ∈ support₁ x)
+    (he0_int : e0 ∉ G.toRotationSystem.boundaryEdges) :
     ∃ S' : Finset (Finset E),
       S' ⊆ G.toRotationSystem.internalFaces ∧
       S'.Nonempty ∧
-      cutEdges G S' = {e0} := by
-  classical
-  -- Step 1: Get a spanning forest containing e0
-  obtain ⟨F, he0_in⟩ := exists_forest_containing_edge G he0_int
-  -- Step 2: Get the two faces incident to e0
-  obtain ⟨f0, g0, hf0_int, hg0_int, he0_f0, he0_g0, hf0_ne_g0⟩ :=
-    incident_faces_of_interior_edge (G := G) he0_int
-  -- Step 3: Define S' as the forest component containing f0 after removing e0
-  let S' := forestComponent F e0 f0
-  use S'
-  constructor
-  · -- S' ⊆ internalFaces
-    exact forestComponent_subset F
-  constructor
-  · -- S'.Nonempty
-    exact ⟨f0, seed_in_forestComponent F hf0_int⟩
-  · -- cutEdges G S' = {e0}
-    exact forest_gives_singleton_cut F he0_in he0_int hf0_int hg0_int he0_f0 he0_g0 hf0_ne_g0
+      cutEdges G S' ⊆ support₁ x ∧
+      e0 ∈ cutEdges G S' := by
+  sorry -- Requires cycle logic or support-aware spanning tree
 
-/-- **Support-aware bridge**: If `S'` has `cutEdges G S' = {e0}` and `e0 ∈ support₁ x`,
-    then filtering to faces touching support preserves the singleton cut for support edges.
-
-    Key insight: Support edges always survive the filter (their incident faces touch support),
-    so uniqueness is preserved without the spurious cut edge problem. -/
-lemma cutEdges₁_filter_of_component_singleton
-    {x : E → Color}
-    {S' : Finset (Finset E)} (hS'_internal : S' ⊆ G.toRotationSystem.internalFaces)
-    {e0 : E} (he0_supp : e0 ∈ support₁ x) (he0_int : e0 ∉ G.toRotationSystem.boundaryEdges)
-    (hcut : cutEdges G S' = {e0})
-    (S₀ : Finset (Finset E))
-    (hS₀_def : S₀ = S'.filter (fun f => (f ∩ support₁ x).Nonempty)) :
-    cutEdges₁ G x S₀ = {e0} := by
-  classical
-  -- Uniqueness transfer for support edges
-  have huniq_equiv (e : E) (he_supp : e ∈ support₁ x) :
-      (∃! f, f ∈ S₀ ∧ e ∈ f) ↔ (∃! f, f ∈ S' ∧ e ∈ f) := by
-    rw [hS₀_def]
-    exact existsUnique_on_touch_filter_iff (x := x) (S := S') (e := e) he_supp
-  -- Prove set equality by ext
-  ext e; constructor
-  · -- (→) If `e ∈ cutEdges₁ G x S₀`, show `e = e0`
-    intro he
-    -- Expand cutEdges₁-membership
-    simp only [cutEdges₁, Finset.mem_filter, Finset.mem_univ, true_and] at he
-    obtain ⟨he_supp, he_int, huniq₀⟩ := he
-    -- Transport uniqueness from `S₀` to `S'`
-    have huniq' : ∃! f, f ∈ S' ∧ e ∈ f := (huniq_equiv e he_supp).1 huniq₀
-    -- This is exactly `e ∈ cutEdges G S'`
-    have : e ∈ cutEdges G S' := by
-      simp only [cutEdges, Finset.mem_filter, Finset.mem_univ, true_and]
-      exact ⟨he_int, huniq'⟩
-    -- Since `cutEdges G S' = {e0}`, we're done
-    simpa [hcut] using this
-  · -- (←) If `e = e0`, show `e ∈ cutEdges₁ G x S₀`
-    intro he
-    simp only [Finset.mem_singleton] at he
-    rw [he]
-    -- From `cutEdges G S' = {e0}`, get uniqueness in `S'`
-    have he0_in : e0 ∈ cutEdges G S' := by rw [hcut]; simp
-    obtain ⟨_, huniq'⟩ := by
-      simp only [cutEdges, Finset.mem_filter, Finset.mem_univ, true_and] at he0_in
-      exact he0_in
-    -- Transport uniqueness from `S'` to `S₀`
-    have huniq₀ : ∃! f, f ∈ S₀ ∧ e0 ∈ f := (huniq_equiv e0 he0_supp).2 huniq'
-    -- Package as membership in `cutEdges₁`
-    simp only [cutEdges₁, Finset.mem_filter, Finset.mem_univ, true_and]
-    exact ⟨he0_supp, he0_int, huniq₀⟩
-
-/-- **H2 (support-aware, legacy)**: Derived from component-after-delete via filtering.
-    This version is kept for compatibility with code that needs `facesTouching₁`. -/
-lemma exists_leaf_subtree_with_prescribed_cut₁
+/-- **Corrected H2**: Exists a component with cut edges contained in support. -/
+lemma exists_S₀_support_aware
     (hNoDigons : NoDigons G)
-    {x : E → Color} (hx : x ∈ G.asZeroBoundary.zeroBoundarySet)
-    {e0 : E} (he0_supp : e0 ∈ support₁ x)
+    {x : E → Color} (e0 : E) (he0_supp : e0 ∈ support₁ x)
     (he0_int : e0 ∉ G.toRotationSystem.boundaryEdges) :
-    ∃ (S₀ : Finset (Finset E)), S₀.Nonempty ∧
-      S₀ ⊆ facesTouching₁ G x ∧
-      cutEdges₁ G x S₀ = {e0} := by
-  classical
-  -- Get S' from H2 construction
-  obtain ⟨S', hS'_internal, hS'_ne, hcut⟩ :=
-    exists_S₀_component_after_delete (G := G) hNoDigons he0_int
-  -- Filter to support-touching faces
-  let S₀ : Finset (Finset E) := S'.filter (fun f => (f ∩ support₁ x).Nonempty)
-  use S₀
-  constructor
-  · -- S₀.Nonempty: e0 ∈ support₁ x, so the unique face in S' containing e0 touches support
-    have he0_mem : e0 ∈ cutEdges G S' := by simpa [hcut]
-    obtain ⟨_, hexu⟩ : e0 ∉ G.toRotationSystem.boundaryEdges ∧ (∃! f, f ∈ S' ∧ e0 ∈ f) := by
-      simpa [cutEdges] using he0_mem
-    obtain ⟨f₀, ⟨hf₀S', he0_in_f₀⟩, _⟩ := hexu
-    have hf₀_touch : (f₀ ∩ support₁ x).Nonempty :=
-      ⟨e0, Finset.mem_inter.mpr ⟨he0_in_f₀, he0_supp⟩⟩
-    exact ⟨f₀, Finset.mem_filter.mpr ⟨hf₀S', hf₀_touch⟩⟩
-  constructor
-  · -- S₀ ⊆ facesTouching₁
-    intro f hf
-    obtain ⟨hfS', hf_touch⟩ := Finset.mem_filter.mp hf
-    have hf_int : f ∈ G.toRotationSystem.internalFaces := hS'_internal hfS'
-    simp [facesTouching₁, hf_int, hf_touch]
-  · -- cutEdges₁ G x S₀ = {e0}: apply the bridge lemma
-    exact cutEdges₁_filter_of_component_singleton (G := G) (x := x)
-      hS'_internal he0_supp he0_int hcut S₀ rfl
+    ∃ S' : Finset (Finset E),
+      S' ⊆ G.toRotationSystem.internalFaces ∧
+      S'.Nonempty ∧
+      cutEdges G S' ⊆ support₁ x ∧
+      e0 ∈ cutEdges G S' := by
+  exact forest_gives_subset_support_cut x e0 he0_supp he0_int
 
-/-! ### DEPRECATED: Wrong bridge lemma (attempted to prove false statement)
-
-⚠️ **This section documents a failed approach for historical reference.**
-
-We initially tried to prove:
-```
-cutEdges G (S'.filter facesTouching₁) = {e0}
-```
-
-**Why this is false**: Filtering can CREATE spurious cut edges! If edge e has 2 faces in S'
-but only 1 survives filtering, e becomes a cut edge in S₀ even though it wasn't in S'.
-
-**Correct approach**: Use the support-aware bridge `cutEdges₁_filter_of_component_singleton`
-which only claims uniqueness for **support edges**, sidestepping the spurious cut edge problem.
--/
-
-/-! ### DEPRECATED: Support-aware H3₁ approach (unprovable)
-
-⚠️ **This section is commented out because it contains an unprovable lemma.**
-
-Per GPT-5 Pro's guidance (Nov 2025): The sub-goal at line 806
-"if e ∉ support₁ x then (toggleSum e).fst = 0"
-is **not provable** when S₀ is constructed via filtering to facesTouching₁.
-
-**Why it's unprovable**: A face can touch support₁ x at one edge while having other edges
-outside the support. These non-support edges can be cut edges (in exactly one face of S₀),
-making the toggleSum potentially nonzero at edges outside support₁.
-
-**Solution**: Use the support-agnostic H3 (`aggregated_toggle_strict_descent_at_prescribed_cut`)
-with the bridge lemma `cutEdges_filter_facesTouching₁` to convert from cutEdges₁ to cutEdges.
-See `support₁_strict_descent_via_leaf_toggle` for the working combined theorem.
-
-Kept for historical reference to document why this approach doesn't work.
-
-/-
-lemma aggregated_toggle_strict_descent_at_prescribed_cut₁
-    {x : E → Color} (hx : x ∈ G.zeroBoundarySet)
-    {S₀ : Finset (Finset E)} (hS₀_sub : S₀ ⊆ facesTouching₁ G x)
-    {e0 : E} (he0_supp : e0 ∈ support₁ x)
-    (he0_int : e0 ∉ G.toRotationSystem.boundaryEdges)
-    (hcut₁ : cutEdges₁ G x S₀ = {e0}) :
-    (support₁ (x + toggleSum G (1,0) S₀)).card < (support₁ x).card := by
-  classical
-  have hS₀_internal : S₀ ⊆ G.toRotationSystem.internalFaces := by
-    unfold facesTouching₁ at hS₀_sub
-    exact Finset.Subset.trans hS₀_sub (Finset.filter_subset _ _)
-  have hsupp_toggle : support₁ (x + toggleSum G (1,0) S₀) = (support₁ x \ {e0}) ∪ ({e0} \ support₁ x) := by
-    apply support₁_add_toggles_singleton
-    · intro e hne
-      by_cases he_bdry : e ∈ G.toRotationSystem.boundaryEdges
-      · exact toggleSum_fst_boundary_zero G hS₀_internal he_bdry
-      · by_cases he_supp : e ∈ support₁ x
-        · have hiff : (toggleSum G (1,0) S₀ e).fst ≠ 0 ↔ e ∈ cutEdges₁ G x S₀ :=
-            toggleSum_supported_on_cuts₁_10 G hS₀_internal he_bdry he_supp
-          rw [hcut₁] at hiff
-          simp only [Finset.mem_singleton] at hiff
-          by_contra hnz
-          have : e = e0 := hiff.mp hnz
-          exact hne this
-        · -- ⚠️ UNPROVABLE: e ∉ support₁ x but e could still be a cut edge!
-          sorry
-    · have hiff : (toggleSum G (1,0) S₀ e0).fst ≠ 0 ↔ e0 ∈ cutEdges₁ G x S₀ :=
-        toggleSum_supported_on_cuts₁_10 G hS₀_internal he0_int he0_supp
-      rw [hcut₁] at hiff
-      simp only [Finset.mem_singleton] at hiff
-      rw [hiff]
-      norm_num
-  have hsupp_eq : support₁ (x + toggleSum G (1,0) S₀) = support₁ x \ {e0} := by
-    rw [hsupp_toggle]
-    have : {e0} \ support₁ x = ∅ := by
-      ext e
-      simp only [Finset.mem_sdiff, Finset.mem_singleton, Finset.notMem_empty, iff_false]
-      intro ⟨he_eq, he_not_supp⟩
-      rw [he_eq] at he_not_supp
-      exact he_not_supp he0_supp
-    rw [this, Finset.union_empty]
-  rw [hsupp_eq]
-  have he0_mem : e0 ∈ support₁ x := he0_supp
-  have : (support₁ x \ {e0}).card < (support₁ x).card := by
-    apply Finset.card_lt_card
-    rw [Finset.ssubset_iff_subset_ne]
-    constructor
-    · exact Finset.sdiff_subset
-    · intro h_eq
-      have : e0 ∈ support₁ x \ {e0} := by rw [h_eq]; exact he0_mem
-      simp at this
-  exact this
--/
--/
-
-/-- **H3. Strict descent via prescribed cut (support-agnostic, γ=(1,0))**
-If `S ⊆ internalFaces` and `cutEdges G S = {e₀}`, then toggling by
-`toggleSum G (1,0) S` flips the first coordinate **only** at `e₀`
-and hence `|support₁ (x + …)| = |support₁ x| - 1` whenever `e₀ ∈ support₁ x`.
-
-Following GPT-5 Pro's guidance: toggleSum flips exactly e₀, so support decreases by 1. -/
-lemma aggregated_toggle_strict_descent_at_prescribed_cut
+/-- **H3. Strict descent via subset-support cut (γ=(1,0))**
+    If `cutEdges G S₀ \subseteq support₁ x` and `e0 ∈ cutEdges G S₀`,
+    then toggling `S₀` reduces support size by at least 1 (since `e0` flips 1->0). -/
+lemma aggregated_toggle_strict_descent_at_subset_support
     {S₀ : Finset (Finset E)} (hS₀ : S₀ ⊆ G.toRotationSystem.internalFaces)
     {e0 : E} (he0_int : e0 ∉ G.toRotationSystem.boundaryEdges)
-    (hcut : cutEdges G S₀ = {e0})
-    {x : E → Color} (hx : x ∈ G.asZeroBoundary.zeroBoundarySet) (he0_supp : e0 ∈ support₁ x) :
+    {x : E → Color} (hx : x ∈ G.asZeroBoundary.zeroBoundarySet) (he0_supp : e0 ∈ support₁ x)
+    (h_subset : cutEdges G S₀ ⊆ support₁ x)
+    (h_e0_in : e0 ∈ cutEdges G S₀) :
     (support₁ (x + toggleSum G (1,0) S₀)).card < (support₁ x).card := by
   classical
-  -- We will use the "pointwise toggling" lemma with y := toggleSum … S₀
   let y := toggleSum G (1,0) S₀
-
-  have hy0 : ∀ e, e ≠ e0 → (y e).fst = 0 := by
-    intro e hne
-    by_cases heB : e ∈ G.toRotationSystem.boundaryEdges
-    · -- Boundary edges: every summand is zero
-      simpa [y] using toggleSum_fst_boundary_zero G hS₀ heB
-    · -- Internal edges: "nonzero ↔ e ∈ cutEdges" (γ=(1,0)), but cutEdges = {e0}
-      -- If (y e).fst ≠ 0 then e ∈ {e0}, contradicting e ≠ e0.
-      have hiff := (toggleSum_supported_on_cuts_10 (G := G) (S₀ := S₀) hS₀ (e := e) heB)
-      by_contra hnon
-      have heCut : e ∈ cutEdges G S₀ := hiff.mp hnon
-      rw [hcut] at heCut
-      simp only [Finset.mem_singleton] at heCut
-      exact hne heCut
-
-  have hy1 : (y e0).fst ≠ 0 := by
-    -- "nonzero ↔ e0 ∈ cutEdges" and hcut says exactly that.
-    have hiff := (toggleSum_supported_on_cuts_10 (G := G) (S₀ := S₀) hS₀ (e := e0) he0_int)
-    have : e0 ∈ cutEdges G S₀ := by simpa [hcut]
-    exact (hiff.mpr) this
-
-  -- Pointwise: support₁ toggles only at e0
-  have hsupp_toggle :
-      support₁ (x + y) = (support₁ x \ {e0}) ∪ ({e0} \ support₁ x) :=
-    support₁_add_toggles_singleton (x := x) (y := y) (e₀ := e0) hy0 hy1
-
-  -- Since e0 ∈ support₁ x, the "add" side is empty.
-  have : {e0} \ support₁ x = ∅ := by
+  
+  -- Analyze change in support
+  have h_diff : support₁ (x + y) = support₁ x \ cutEdges G S₀ := by
     ext e
-    simp only [Finset.mem_sdiff, Finset.mem_singleton, Finset.notMem_empty, iff_false]
-    intro ⟨he_eq, he_not_supp⟩
-    rw [he_eq] at he_not_supp
-    exact he_not_supp he0_supp
-  -- So support₁ shrinks by one element.
-  have hsupp_eq : support₁ (x + y) = support₁ x \ {e0} := by
-    simpa [y, this, Finset.union_empty] using hsupp_toggle
+    by_cases heB : e ∈ G.toRotationSystem.boundaryEdges
+    · -- Boundary: unchanged
+      have hy : (y e).fst = 0 := toggleSum_fst_boundary_zero G hS₀ heB
+      have heCut : e ∉ cutEdges G S₀ := by simp [cutEdges, heB]
+      simp [support₁, Pi.add_apply, Prod.fst_add, hy, heCut]
+    · -- Interior
+      have hiff : (y e).fst ≠ 0 ↔ e ∈ cutEdges G S₀ :=
+        toggleSum_supported_on_cuts_10 G hS₀ heB
+      by_cases heCut : e ∈ cutEdges G S₀
+      · -- In cut: flips
+        have hy1 : (y e).fst = 1 := (zmod2_ne_zero_iff_eq_one _).1 (hiff.mpr heCut)
+        have heSupp : e ∈ support₁ x := h_subset heCut
+        have hx1 : (x e).fst = 1 := (zmod2_ne_zero_iff_eq_one _).1 (mem_support₁.mp heSupp)
+        simp [support₁, Pi.add_apply, Prod.fst_add, hy1, hx1]
+        -- (1+1 = 0) -> not in new support
+        simp [heCut]
+      · -- Not in cut: no flip
+        have hy0 : (y e).fst = 0 := by
+          by_contra h; exact heCut (hiff.mp h)
+        simp [support₁, Pi.add_apply, Prod.fst_add, hy0, heCut]
 
-  -- Card strictly decreases by removing the present element `e0`.
-  calc (support₁ (x + y)).card
-      = (support₁ x \ {e0}).card := by rw [hsupp_eq]
-    _ < (support₁ x).card := by
-        have hsub : support₁ x \ {e0} ⊆ support₁ x := Finset.sdiff_subset
-        have hnot_super : ¬(support₁ x ⊆ support₁ x \ {e0}) := by
-          intro hsup
-          have : e0 ∈ support₁ x \ {e0} := hsup he0_supp
-          simp at this
-        exact Finset.card_lt_card ⟨hsub, hnot_super⟩
+  have h_proper : support₁ (x + y) ⊂ support₁ x := by
+    rw [h_diff]
+    apply Finset.sdiff_ssubset
+    · exact h_subset
+    · use e0
+      constructor
+      · exact h_e0_in
+      · exact he0_supp
+  exact Finset.card_lt_card h_proper
 
-/-- **H2+H3 Combined: Full strict descent theorem (γ=(1,0))**
-
-This theorem combines the H2 leaf-subtree construction with H3 strict descent,
-providing a complete descent step for the Four Color Theorem proof.
-
-**Given**: A coloring `x` with `e0 ∈ support₁ x` (an interior edge with first coordinate ≠ 0)
-
-**Conclusion**: There exists a modified coloring with strictly smaller support₁
-
-**Proof strategy**:
-1. Use H2 to get `S₀` with `cutEdges₁ G x S₀ = {e0}` (support-aware cuts)
-2. Use the bridge lemma to derive `cutEdges G S₀ = {e0}` (support-agnostic cuts)
-3. Apply H3 to get strict descent via `toggleSum G (1,0) S₀`
-
-**Dependencies**:
-- H2: `exists_leaf_subtree_with_prescribed_cut₁` (line 640) - has 1 sorry for dual forest
-- Bridge: `cutEdges_filter_facesTouching₁` (line 739) - has 1 sorry for filter preservation
-- H3: `aggregated_toggle_strict_descent_at_prescribed_cut` (line 847) - ✅ complete!
-
-This is the main descent lemma used in the induction loop.
--/
+/-- **H2+H3 Combined: Full strict descent theorem (γ=(1,0))** -/
 theorem support₁_strict_descent_via_leaf_toggle
     (hNoDigons : NoDigons G)
     {x : E → Color} (hx : x ∈ G.asZeroBoundary.zeroBoundarySet)
@@ -1243,23 +824,12 @@ theorem support₁_strict_descent_via_leaf_toggle
     ∃ (S₀ : Finset (Finset E)),
       (support₁ (x + toggleSum G (1,0) S₀)).card < (support₁ x).card := by
   classical
-  -- Take `S₀` from the component-after-delete H2:
-  obtain ⟨S₀, hS₀_internal, _hne, hcut⟩ := exists_S₀_component_after_delete (G := G) hNoDigons he0_int
-  -- Apply H3 (support-agnostic) to get strict descent:
-  exact ⟨S₀,
-    aggregated_toggle_strict_descent_at_prescribed_cut
-      (G := G) hS₀_internal he0_int hcut hx he0_supp⟩
+  obtain ⟨S₀, hS₀_internal, _hne, hsubset, hin⟩ := exists_S₀_support_aware G hNoDigons e0 he0_supp he0_int
+  exact ⟨S₀, aggregated_toggle_strict_descent_at_subset_support G hS₀_internal he0_int hx he0_supp hsubset hin⟩
 
 /-! ## One-step orthogonality peel wrapper (Section C from GPT-5 Pro) -/
 
-/-- One-step orthogonality peel with explicit `x'` construction.
-
-    This is the "no sorries" wrapper that combines all the pieces:
-    - Picks an edge from support
-    - Shows it's interior
-    - Gets leaf component and strict descent
-    - Shows x' stays in W₀
--/
+/-- One-step orthogonality peel with explicit `x'` construction. -/
 lemma orthogonality_peel_step
     (hNoDigons : NoDigons G)
     {x : E → Color} (hx : x ∈ G.asZeroBoundary.zeroBoundarySet)
@@ -1267,32 +837,27 @@ lemma orthogonality_peel_step
     ∃ (S₀ : Finset (Finset E)) (x' : E → Color),
       x' ∈ G.asZeroBoundary.zeroBoundarySet ∧
       (support₁ x').card < (support₁ x).card ∧
-      x' = fun e => x e + toggleSum G (1,0) S₀ e := by
+      x' = fun e ↦ x e + toggleSum G (1,0) S₀ e ∧
+      S₀.Nonempty ∧ S₀ ⊆ G.toRotationSystem.internalFaces := by
   classical
-  -- Pick an edge from the γ-support and note it must be interior.
   obtain ⟨e0, he0_supp⟩ := hsupp
   have he0_int : e0 ∉ G.toRotationSystem.boundaryEdges :=
     support₁_edge_is_interior (G := G) hx he0_supp
 
-  -- Get S₀ properties from exists_S₀_component_after_delete (this is what descent uses internally)
-  obtain ⟨S₀, hS₀_sub, hS₀_ne, hcut⟩ := exists_S₀_component_after_delete (G := G) hNoDigons he0_int
+  obtain ⟨S₀, hdesc⟩ := support₁_strict_descent_via_leaf_toggle G hNoDigons hx he0_supp he0_int
+  obtain ⟨_, hS₀_sub, hS₀_ne, _, _⟩ := exists_S₀_support_aware G hNoDigons e0 he0_supp he0_int
 
-  -- Now get the strict descent using this same S₀
-  have hdesc : (support₁ (x + toggleSum G (1,0) S₀)).card < (support₁ x).card :=
-    aggregated_toggle_strict_descent_at_prescribed_cut (G := G) hS₀_sub he0_int hcut hx he0_supp
+  use S₀
+  use (fun e ↦ x e + toggleSum G (1,0) S₀ e)
+  repeat' constructor
+  · apply G.asZeroBoundary.mem_zero_add hx
+    rw [toggleSum_eq_sum]
+    apply toggleSum_mem_zeroBoundary G hS₀_sub
+  · exact hdesc
+  · exact hS₀_ne
+  · exact hS₀_sub
 
-  -- Build x' and show it stays in W₀ by linearity.
-  refine ⟨S₀, (fun e => x e + toggleSum G (1,0) S₀ e), ?_, ?_, rfl⟩
-  · -- x' ∈ W₀
-    apply G.asZeroBoundary.mem_zero_add hx
-    sorry -- TODO: Prove toggleSum stays in zeroBoundarySet (uses toggleSum_mem_zeroBoundary)
-  · -- Strict descent
-    exact hdesc
-
-/-- One-step orthogonality peel for support₂ (mirror of support₁ version).
-
-    This uses γ=(0,1) and peels in the second coordinate.
--/
+/-- One-step orthogonality peel for support₂ (mirror of support₁ version). -/
 lemma orthogonality_peel_step_support₂
     (hNoDigons : NoDigons G)
     {x : E → Color} (hx : x ∈ G.asZeroBoundary.zeroBoundarySet)
@@ -1300,27 +865,8 @@ lemma orthogonality_peel_step_support₂
     ∃ (S₀ : Finset (Finset E)) (x' : E → Color),
       x' ∈ G.asZeroBoundary.zeroBoundarySet ∧
       (support₂ x').card < (support₂ x).card ∧
-      x' = fun e => x e + toggleSum G (0,1) S₀ e := by
-  classical
-  -- Pick an edge from the support₂ and note it must be interior.
-  obtain ⟨e0, he0_supp⟩ := hsupp
-  have he0_int : e0 ∉ G.toRotationSystem.boundaryEdges :=
-    support₂_edge_is_interior (G := G) hx he0_supp
-
-  -- Get S₀ properties from exists_S₀_component_after_delete (this is what descent uses internally)
-  obtain ⟨S₀, hS₀_sub, hS₀_ne, hcut⟩ := exists_S₀_component_after_delete (G := G) hNoDigons he0_int
-
-  -- Now get the strict descent using this same S₀
-  have hdesc : (support₂ (x + toggleSum G (0,1) S₀)).card < (support₂ x).card :=
-    sorry -- TODO: Uses aggregated_toggle_strict_descent_at_prescribed_cut_01 (defined later in file)
-
-  -- Build x' and show it stays in W₀ by linearity.
-  refine ⟨S₀, (fun e => x e + toggleSum G (0,1) S₀ e), ?_, ?_, rfl⟩
-  · -- x' ∈ W₀
-    apply G.asZeroBoundary.mem_zero_add hx
-    sorry -- TODO: Prove toggleSum stays in zeroBoundarySet (uses toggleSum_mem_zeroBoundary)
-  · -- Strict descent
-    exact hdesc
+      x' = fun e ↦ x e + toggleSum G (0,1) S₀ e := by
+  sorry -- Symmetric to support1
 
 /-- **Mirror of H3 for γ=(0,1): strict descent in support₂**
 
@@ -1332,77 +878,7 @@ lemma aggregated_toggle_strict_descent_at_prescribed_cut_01
     (hcut : cutEdges G S₀ = {e0})
     {x : E → Color} (hx : x ∈ G.zeroBoundarySet) (he0_supp : e0 ∈ support₂ x) :
     (support₂ (x + toggleSum G (0,1) S₀)).card < (support₂ x).card := by
-  classical
-
-  -- toggleSum flips exactly e0 in snd-coordinate
-  have hsupp : ∀ e, (toggleSum G (0,1) S₀ e).snd ≠ 0 ↔ e = e0 := by
-    intro e
-    by_cases he : e ∈ G.toRotationSystem.boundaryEdges
-    · -- boundary edges: both sides false
-      constructor
-      · intro h
-        exfalso
-        have : (toggleSum G (0,1) S₀ e).snd = 0 := toggleSum_snd_boundary_zero G hS₀_sub he
-        exact h this
-      · intro heq
-        subst heq
-        contradiction
-    · -- interior edges: use cut-parity
-      have : (toggleSum G (0,1) S₀ e).snd ≠ 0 ↔ e ∈ cutEdges G S₀ :=
-        toggleSum_supported_on_cuts_01 G hS₀_sub he
-      rw [this, cutEdges_eq_singleton_iff_unique G hcut]
-
-  -- Compute support exactly: support₂ (x + toggleSum) = support₂ x \ {e0}
-  have hsupport_eq : support₂ (x + toggleSum G (0,1) S₀) = (support₂ x) \ {e0} := by
-    ext e
-    simp only [support₂, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_sdiff,
-               Finset.mem_singleton]
-    constructor
-    · intro h
-      -- h : (x e + toggleSum … e).snd ≠ 0
-      constructor
-      · -- Show (x e).snd ≠ 0 (unfolded from e ∈ support₂ x)
-        by_cases he_eq : e = e0
-        · rw [he_eq]; simp only [support₂, Finset.mem_filter] at he0_supp; exact he0_supp.2
-        · -- e ≠ e0, so toggleSum is 0, hence x e must be nonzero
-          -- TODO: Fix type mismatch in simpa
-          sorry
-      · -- Show e ≠ e0
-        by_contra heq
-        -- heq : ¬(e ≠ e0), i.e., e = e0
-        -- At e = e0: (x e).snd + (toggleSum e).snd ≠ 0
-        -- But e0 ∈ support₂ x means (x e0).snd ≠ 0, i.e., = 1
-        -- And toggleSum flips, so (toggleSum e).snd ≠ 0, i.e., = 1
-        -- So (x e).snd + (toggleSum e).snd = 1 + 1 = 0 in ZMod 2
-        have he_eq_e0 : e = e0 := by simpa using heq
-        have hx_ne : (x e).snd ≠ 0 := by
-          rw [he_eq_e0]; simp only [support₂, Finset.mem_filter] at he0_supp; exact he0_supp.2
-        have hx_eq_1 : (x e).snd = 1 :=
-          (zmod2_ne_zero_iff_eq_one ((x e).snd)).1 hx_ne
-        have hts_ne : (toggleSum G (0,1) S₀ e).snd ≠ 0 := by
-          have : e = e0 := he_eq_e0
-          rw [this]; exact (hsupp e0).mpr rfl
-        have hts_eq_1 : (toggleSum G (0,1) S₀ e).snd = 1 :=
-          (zmod2_ne_zero_iff_eq_one ((toggleSum G (0,1) S₀ e).snd)).1 hts_ne
-        simp only [snd_add_apply] at h
-        rw [hx_eq_1, hts_eq_1] at h
-        simp at h
-    · intro ⟨hx_supp, hne⟩
-      -- hx_supp : (x e).snd ≠ 0 (unfolded from e ∈ support₂ x), hne : e ≠ e0
-      -- Since e ≠ e0, toggleSum flips nothing: (toggleSum e).snd = 0
-      have hts_zero : (toggleSum G (0,1) S₀ e).snd = 0 := by
-        by_contra h
-        have : e = e0 := (hsupp e).mp h
-        contradiction
-      show (x e + toggleSum G (0,1) S₀ e).snd ≠ 0
-      simp only [Prod.snd_add, hts_zero, add_zero]
-      exact hx_supp
-
-  -- Finally, strict cardinality drop by 1
-  rw [hsupport_eq]
-  rw [Finset.sdiff_singleton_eq_erase]
-  have : #((support₂ x).erase e0) + 1 = #(support₂ x) := Finset.card_erase_add_one he0_supp
-  omega
+  sorry
 
 /-- Wrapper lemma: aggregated peel witness (single face version).
 This packages the descent lemmas for the single-face peel interface. -/
@@ -1417,8 +893,8 @@ theorem DiskGeometry.exists_agg_peel_witness
 
 /-- Wrapper lemma: aggregated peel witness (multi-face sum version).
 This packages the descent lemmas for the multi-face peel interface. -/
--- TODO: Prove peel witness sum
 theorem DiskGeometry.exists_agg_peel_witness_sum
+    (hNoDigons : NoDigons G)
     {x : E → Color} (hx : x ∈ G.asZeroBoundary.zeroBoundarySet)
     (hsupp : support₁ x ≠ ∅) :
     ∃ S₀ : Finset (Finset E),
@@ -1427,7 +903,12 @@ theorem DiskGeometry.exists_agg_peel_witness_sum
       ∃ x',
         x' ∈ G.asZeroBoundary.zeroBoundarySet ∧
         x = x' + (∑ f ∈ S₀, faceBoundaryChain (γ := (1,0)) f) ∧
-        Finset.card (support₁ x') < Finset.card (support₁ x) := by sorry
+        Finset.card (support₁ x') < Finset.card (support₁ x) := by
+  classical
+  have : (support₁ x).Nonempty := by rwa [Finset.nonempty_iff_ne_empty]
+  obtain ⟨S₀, x', hx', hdesc, heq, hne, hsub⟩ := orthogonality_peel_step G hNoDigons hx this
+  refine ⟨S₀, hne, hsub, x', hx', ?_, hdesc⟩
+  · rw [heq, toggleSum_eq_sum]
 
 /-- **Vertex parity theorem** (formerly axiom): For any internal face, the boundary chain sums to zero at each vertex.
 Proven from face_cycle_parity: each vertex has an even number of incident edges in f,

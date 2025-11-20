@@ -1,0 +1,19 @@
+# Lean build artifacts
+/.lake
+/lake-packages
+/build
+
+# Temporary files
+*.tmp
+*.bak
+*_OLD.lean
+
+# Snapshot files (generated documentation)
+all_Lean_*.txt
+
+# Editor files
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
