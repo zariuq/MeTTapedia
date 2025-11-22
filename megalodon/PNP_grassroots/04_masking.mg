@@ -253,16 +253,26 @@ Axiom tau_i_toggles_witness : forall m :e omega, forall i :e m,
 
 (* H_m forms a group under mask_compose *)
 (* Associativity follows from associativity of permutation composition and XOR *)
+(* Axiomatized: full proof requires showing that the semidirect product structure
+   (π₁∘π₂, σ₁ ⊕ (σ₂∘π₁⁻¹)) is associative, which involves:
+   - Associativity of permutation composition (standard result)
+   - Associativity of XOR (proven in preamble)
+   - Compatibility of the action with composition *)
 Axiom mask_compose_assoc : forall m h1 h2 h3,
   Mask m h1 -> Mask m h2 -> Mask m h3 ->
   mask_compose m (mask_compose m h1 h2) h3 =
   mask_compose m h1 (mask_compose m h2 h3).
 
 (* Identity: perm_id ∘ π = π and 0 ⊕ σ = σ *)
-Axiom mask_id_left : forall m h :e omega,
+(* Axiomatized: proof requires showing perm_compose with perm_id is identity
+   and sign_xor with sign_zero is identity, which follow from their definitions
+   but require equational reasoning infrastructure *)
+Axiom mask_id_left : forall m :e omega, forall h,
   Mask m h -> mask_compose m (mask_id m) h = h.
 
-(* Left inverse: π⁻¹ ∘ π = id and (σ ∘ π) ⊕ σ cancels appropriately *)
-Axiom mask_inv_left : forall m h :e omega,
+(* Left inverse: π⁻¹ ∘ π = id and sign composition cancels *)
+(* Axiomatized: proof requires showing perm_inv is a proper inverse
+   and the sign components cancel under the semidirect product structure *)
+Axiom mask_inv_left : forall m :e omega, forall h,
   Mask m h -> mask_compose m (mask_inv m h) h = mask_id m.
 
