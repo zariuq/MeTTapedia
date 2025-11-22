@@ -1,9 +1,19 @@
 # P ≠ NP Formalization in Megalodon
 
-## Overview
+## Status: Work in Progress
 
-This directory contains a ground-up formalization of Ben Goertzel's P ≠ NP proof
+This directory contains a ground-up formalization attempt of Ben Goertzel's P ≠ NP proof
 (arXiv:2510.08814v1) in the Megalodon theorem prover for Proofgold.
+
+**Current State:**
+- `00_preamble.mg`: Basic logical and set-theoretic foundations with actual proofs for bit operations, XOR
+- `01_foundations.mg`: P/NP definitions, matrices, computation model (needs work)
+- Other files: Skeleton definitions (need to be rebuilt on top of proper foundations)
+
+**Note:** Building a formalization from the ground up requires extensive foundational infrastructure.
+The proofs here demonstrate the structure but many use `admit` placeholders pending complete foundations.
+
+## Overview
 
 The proof uses a **quantale weakness framework** combined with:
 - Symmetry properties of masked random 3-CNFs
