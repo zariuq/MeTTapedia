@@ -135,6 +135,13 @@ Notation SetLam Sigma.
 
 Axiom beta : forall X:set, forall F:set -> set, forall x:set, x :e X -> (fun x :e X => F x) x = F x.
 
+(* Pair projection axioms *)
+Axiom ap_pair_0 : forall x y:set, ap (pair x y) 0 = x.
+Axiom ap_pair_1 : forall x y:set, ap (pair x y) 1 = y.
+
+(* Excluded middle for classical reasoning *)
+Axiom classic : forall p:prop, p \/ ~p.
+
 Definition TransSet : set->prop := fun U:set => forall x :e U, x c= U.
 Definition ordinal : set->prop := fun alpha:set => TransSet alpha /\ forall beta :e alpha, TransSet beta.
 
