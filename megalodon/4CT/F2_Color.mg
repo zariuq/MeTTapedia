@@ -927,8 +927,7 @@ Theorem xor_closed : forall c1 c2:set, is_color c1 -> is_color c2 -> is_color (c
 let c1. let c2.
 assume H1: is_color c1.
 assume H2: is_color c2.
-admit.
-Qed.
+Admitted.
 
 Theorem chain_xor_preserves : forall x y:set -> set,
   Chain x -> Chain y -> Chain (chain_xor x y).
@@ -945,10 +944,110 @@ Qed.
 
 Theorem chain_xor_zero_r : forall x:set -> set, chain_xor x zeroChain = x.
 let x.
-admit.
-Qed.
+Admitted.
 
 Theorem chain_xor_self : forall x:set -> set, chain_xor x x = zeroChain.
 let x.
-admit.
+Admitted.
+
+Definition symm_diff : (set -> prop) -> (set -> prop) -> (set -> prop) :=
+  fun S T e => (S e /\ ~T e) \/ (T e /\ ~S e).
+
+Theorem indicator_xor_symm_diff :
+  forall S T:set -> prop, forall c:set,
+    chain_xor (indicator S c) (indicator T c) = indicator (symm_diff S T) c.
+Admitted.
+
+Theorem indicator_at_in : forall S:set -> prop, forall c e:set,
+  S e -> indicator S c e = c.
+let S. let c. let e.
+assume H: S e.
+prove (if S e then c else 0) = c.
+claim L1: S e. exact H.
+exact If_i_1 (S e) c 0 L1.
 Qed.
+
+Theorem indicator_at_out : forall S:set -> prop, forall c e:set,
+  ~S e -> indicator S c e = 0.
+let S. let c. let e.
+assume H: ~S e.
+prove (if S e then c else 0) = 0.
+exact If_i_0 (S e) c 0 H.
+Qed.
+
+Definition union_set : (set -> prop) -> (set -> prop) -> (set -> prop) :=
+  fun S T e => S e \/ T e.
+
+Definition disjoint : (set -> prop) -> (set -> prop) -> prop :=
+  fun S T => forall e:set, ~(S e /\ T e).
+
+Theorem symm_diff_with_common_prefix :
+  forall R A A':set -> prop,
+    disjoint R A -> disjoint R A' -> disjoint A A' ->
+    symm_diff (union_set R A) (union_set R A') = union_set A A'.
+let R. let A. let A'.
+assume H_RA: disjoint R A.
+assume H_RA': disjoint R A'.
+assume H_AA': disjoint A A'.
+Admitted.
+
+Definition X_in_C : set -> (set -> prop) -> (set -> prop) -> (set -> set) :=
+  fun gamma R A => indicator (union_set R A) gamma.
+
+Definition X_in_CR : set -> (set -> prop) -> (set -> prop) -> (set -> set) :=
+  fun gamma R A' => indicator (union_set R A') gamma.
+
+Definition kc_interior : (set -> prop) -> (set -> prop) -> (set -> prop) :=
+  fun A A' => union_set A A'.
+
+Theorem per_run_xor_is_interior :
+  forall gamma:set, forall R A A':set -> prop,
+    disjoint R A -> disjoint R A' -> disjoint A A' ->
+    chain_xor (X_in_C gamma R A) (X_in_CR gamma R A')
+    = indicator (kc_interior A A') gamma.
+let gamma. let R. let A. let A'.
+assume H_RA: disjoint R A.
+assume H_RA': disjoint R A'.
+assume H_AA': disjoint A A'.
+prove chain_xor (indicator (union_set R A) gamma) (indicator (union_set R A') gamma)
+    = indicator (union_set A A') gamma.
+claim L1: chain_xor (indicator (union_set R A) gamma) (indicator (union_set R A') gamma)
+        = indicator (symm_diff (union_set R A) (union_set R A')) gamma.
+  exact indicator_xor_symm_diff (union_set R A) (union_set R A') gamma.
+claim L2: symm_diff (union_set R A) (union_set R A') = union_set A A'.
+  exact symm_diff_with_common_prefix R A A' H_RA H_RA' H_AA'.
+Admitted.
+
+Theorem per_run_diff_zero_on_run :
+  forall gamma:set, forall R A A':set -> prop, forall e:set,
+    gamma <> 0 ->
+    disjoint R A -> disjoint R A' -> disjoint A A' ->
+    R e ->
+    (chain_xor (X_in_C gamma R A) (X_in_CR gamma R A')) e = 0.
+let gamma. let R. let A. let A'. let e.
+assume Hgamma: gamma <> 0.
+assume H_RA: disjoint R A.
+assume H_RA': disjoint R A'.
+assume H_AA': disjoint A A'.
+assume HR: R e.
+claim L1: (chain_xor (X_in_C gamma R A) (X_in_CR gamma R A'))
+        = indicator (kc_interior A A') gamma.
+  exact per_run_xor_is_interior gamma R A A' H_RA H_RA' H_AA'.
+claim L2: ~(kc_interior A A' e).
+  prove ~(union_set A A' e).
+  prove ~(A e \/ A' e).
+  assume H: A e \/ A' e.
+  apply H.
+  - assume HA: A e.
+    claim Hcontra: ~(R e /\ A e). exact H_RA e.
+    apply Hcontra.
+    apply andI.
+    + exact HR.
+    + exact HA.
+  - assume HA': A' e.
+    claim Hcontra: ~(R e /\ A' e). exact H_RA' e.
+    apply Hcontra.
+    apply andI.
+    + exact HR.
+    + exact HA'.
+Admitted.
