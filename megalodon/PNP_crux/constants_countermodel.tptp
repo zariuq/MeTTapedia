@@ -1,0 +1,70 @@
+% TPTP Problem: Find Countermodel for P!=NP Constants
+%
+% We try to find values where the contradiction FAILS
+% i.e., eta * t <= c_const despite all constraints being satisfied
+%
+% If Vampire finds SAT: There exist bad constants (proof might fail)
+% If Vampire finds UNSAT: No bad constants exist (proof is robust)
+
+% ============================================================
+% SIMPLIFIED MODEL (integers only for ATP)
+% ============================================================
+
+tff(m_type, type, m: $int).
+tff(t_type, type, t: $int).
+tff(c4_type, type, c4: $int).
+tff(gamma_num_type, type, gamma_num: $int).  % gamma as fraction: gamma_num/100
+tff(eta_num_type, type, eta_num: $int).      % eta as fraction: eta_num/100
+tff(c_const_type, type, c_const: $int).
+tff(epsilon_inv_type, type, epsilon_inv: $int).  % 1/epsilon
+
+% ============================================================
+% CONSTRAINTS FROM THE PROOF
+% ============================================================
+
+% m is reasonably large
+tff(m_range, axiom, $greater(m, 100) & $less(m, 10000)).
+
+% t = c4 * m with c4 in reasonable range
+tff(c4_range, axiom, $greatereq(c4, 1) & $lesseq(c4, 10)).
+tff(t_def, axiom, t = $product(c4, m)).
+
+% gamma between 0.1 and 0.9 (as percentage: 10-90)
+tff(gamma_range, axiom, $greatereq(gamma_num, 10) & $lesseq(gamma_num, 90)).
+
+% epsilon = 1/epsilon_inv, and epsilon_inv >= sqrt(m)
+% For m=100, sqrt(m)=10; for m=10000, sqrt(m)=100
+tff(epsilon_small, axiom, $greater(epsilon_inv, 10)).
+
+% eta ≈ gamma * (1 - 2/epsilon_inv)
+% Simplified: eta_num >= gamma_num - 2*gamma_num/epsilon_inv
+% For large epsilon_inv, eta_num ≈ gamma_num
+tff(eta_approx, axiom,
+    $greater($product(eta_num, epsilon_inv),
+             $difference($product(gamma_num, epsilon_inv),
+                        $product(2, gamma_num)))).
+
+% c_const is from self-reduction: reasonably small
+tff(c_const_range, axiom, $greatereq(c_const, 1) & $lesseq(c_const, 1000)).
+
+% ============================================================
+% NEGATION OF CONTRADICTION (looking for countermodel)
+% ============================================================
+
+% Contradiction requires: eta * t > c_const
+% i.e., (eta_num/100) * t > c_const
+% i.e., eta_num * t > 100 * c_const
+
+% We negate this to look for a countermodel:
+tff(contradiction_fails, axiom,
+    $lesseq($product(eta_num, t), $product(100, c_const))).
+
+% ============================================================
+% QUESTION: Is there a satisfying assignment?
+% ============================================================
+
+% If SAT: We found values where proof constants don't work
+% If UNSAT: The proof constants always work (given constraints)
+
+tff(goal, conjecture, $false).
+

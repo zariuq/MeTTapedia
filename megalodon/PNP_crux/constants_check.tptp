@@ -1,0 +1,111 @@
+% TPTP Problem: Verify P!=NP Proof Constants
+% Based on Goertzel arXiv:2510.08814
+%
+% Key constraint: eta * t > c for the contradiction
+% Where:
+%   t = c4 * m (number of blocks)
+%   eta = gamma * (1 - 2*epsilon) (effective per-block lower bound)
+%   c = O(1) (upper bound from self-reduction)
+%   epsilon = m^{-beta'} (advantage from sparsification)
+
+% ============================================================
+% SORT DECLARATIONS
+% ============================================================
+
+% Natural numbers (we use integers for simplicity)
+tff(nat_type, type, nat: $tType).
+
+% Real numbers for probabilities and constants
+tff(real_type, type, r: $tType).
+
+% ============================================================
+% CONSTANT DECLARATIONS
+% ============================================================
+
+% m: number of variables (large)
+tff(m_decl, type, m: $int).
+
+% t: number of blocks, t = c4 * m
+tff(t_decl, type, t: $int).
+tff(c4_decl, type, c4: $int).
+
+% gamma: fraction of local blocks (0 < gamma <= 1)
+tff(gamma_decl, type, gamma: $real).
+
+% delta: description length fraction
+tff(delta_decl, type, delta: $real).
+
+% eta: per-block complexity lower bound
+tff(eta_decl, type, eta: $real).
+
+% c: upper bound constant from P=NP
+tff(c_const_decl, type, c_const: $int).
+
+% alpha: clause density
+tff(alpha_decl, type, alpha: $real).
+
+% beta_prime: sparsification exponent
+tff(beta_prime_decl, type, beta_prime: $real).
+
+% epsilon: advantage bound, epsilon = m^{-beta'}
+tff(epsilon_decl, type, epsilon: $real).
+
+% ============================================================
+% AXIOMS: Parameter Constraints
+% ============================================================
+
+% m is large
+tff(m_large, axiom, $greater(m, 1000)).
+
+% t = c4 * m where c4 >= 1
+tff(t_def, axiom, t = $product(c4, m)).
+tff(c4_pos, axiom, $greatereq(c4, 1)).
+
+% gamma is a positive constant < 1
+tff(gamma_pos, axiom, $greater(gamma, 0.0)).
+tff(gamma_lt_1, axiom, $less(gamma, 1.0)).
+
+% delta is small positive constant
+tff(delta_pos, axiom, $greater(delta, 0.0)).
+tff(delta_lt_1, axiom, $less(delta, 1.0)).
+
+% alpha (clause density) is positive constant
+tff(alpha_pos, axiom, $greater(alpha, 0.0)).
+tff(alpha_bounded, axiom, $less(alpha, 10.0)).
+
+% beta_prime is positive (sparsification works)
+tff(beta_prime_pos, axiom, $greater(beta_prime, 0.0)).
+
+% epsilon = m^{-beta'} is small for large m
+% Approximation: epsilon < 1/sqrt(m) for beta' > 0.5
+tff(epsilon_small, axiom, $less(epsilon, $quotient(1.0, $to_real(m)))).
+
+% ============================================================
+% AXIOMS: Key Proof Bounds
+% ============================================================
+
+% Per-bit success rate is 1/2 + epsilon
+% Over gamma*t bits, success rate is (1/2 + epsilon)^{gamma*t}
+% Taking log: gamma*t * log(1/2 + epsilon) ≈ -gamma*t * (1 - 2*epsilon)
+
+% Effective eta = gamma * (1 - 2*epsilon) ≈ gamma for small epsilon
+tff(eta_approx, axiom,
+    $greater(eta, $product(gamma, $difference(1.0, $product(2.0, epsilon))))).
+
+% The upper bound constant c from self-reduction
+% Self-reduction: SAT solver + binary search loop
+% Claim: c = O(1), but actually might be O(log m) for loop
+tff(c_const_bound, axiom, $lesseq(c_const, 100)).
+
+% ============================================================
+% CONJECTURE: Does the contradiction work?
+% ============================================================
+
+% Lower bound: K_poly >= eta * t
+% Upper bound: K_poly <= c_const
+% Contradiction requires: eta * t > c_const
+
+% Main question: For what values does eta * t > c_const?
+tff(contradiction_holds, conjecture,
+    $greater($product(eta, $to_real(t)), $to_real(c_const))).
+
