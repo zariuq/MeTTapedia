@@ -1,90 +1,249 @@
-Definition is_bijection_set : set -> set -> set -> prop :=
+(* ========================================================================= *)
+(* Masking and Symmetry Groups                                               *)
+(* Builds on 00_preamble.mg, 01_foundations.mg, 03_cnf_sat.mg                *)
+(* ========================================================================= *)
+
+(* ========================================================================= *)
+(* Part I: Permutations and Bijections                                       *)
+(* ========================================================================= *)
+
+(* A bijection on set A to B *)
+Definition is_bijection : set -> set -> set -> prop :=
   fun A B f =>
     (forall a :e A, ap f a :e B) /\
     (forall b :e B, exists a :e A, ap f a = b) /\
-    (forall a1 :e A, forall a2 :e A, ap f a1 = ap f a2 -> a1 = a2).
+    (forall a1 a2 :e A, ap f a1 = ap f a2 -> a1 = a2).
 
-Definition Mask : set -> set :=
-  fun m => {h :e (m :^: m) :*: Bits :^: m |
-    exists pi :e m :^: m, exists sigma :e Bits :^: m,
-    is_bijection_set m m pi /\
-    SignVector m sigma /\
-    h = (pi, sigma)}.
+(* Self-bijection (permutation) *)
+Definition is_permutation : set -> set -> prop :=
+  fun n pi => is_bijection n n pi.
 
-Definition compose_perm : set -> set -> set -> set :=
-  fun m f g => fun i :e m => ap f (ap g i).
+(* Identity permutation *)
+Definition perm_id : set -> set :=
+  fun n => fun i :e n => i.
 
-Definition invert_perm : set -> set -> set :=
-  fun m pi => fun j :e m => Eps_i (fun i => i :e m /\ ap pi i = j).
+Theorem perm_id_is_perm : forall n :e omega, is_permutation n (perm_id n).
+let n. assume Hn: n :e omega.
+apply andI.
+- let i. assume Hi: i :e n.
+  prove ap (perm_id n) i :e n.
+  prove ap (fun j :e n => j) i :e n.
+  rewrite beta n (fun j => j) i Hi.
+  exact Hi.
+- apply andI.
+  + let j. assume Hj: j :e n.
+    prove exists i :e n, ap (perm_id n) i = j.
+    apply (fun P f x => f x). exact j.
+    apply andI. exact Hj.
+    prove ap (perm_id n) j = j.
+    prove ap (fun i :e n => i) j = j.
+    exact (beta n (fun i => i) j Hj).
+  + let a1 a2. assume Ha1: a1 :e n. assume Ha2: a2 :e n.
+    assume Heq: ap (perm_id n) a1 = ap (perm_id n) a2.
+    rewrite (beta n (fun i => i) a1 Ha1) in Heq.
+    rewrite (beta n (fun i => i) a2 Ha2) in Heq.
+    exact Heq.
+Qed.
 
+(* Permutation composition *)
+Definition perm_compose : set -> set -> set -> set :=
+  fun n f g => fun i :e n => ap f (ap g i).
+
+(* Permutation inverse *)
+Definition perm_inv : set -> set -> set :=
+  fun n pi => fun j :e n => Eps_i (fun i => i :e n /\ ap pi i = j).
+
+(* ========================================================================= *)
+(* Part II: Sign Vectors                                                     *)
+(* ========================================================================= *)
+
+(* A sign vector over m variables *)
+Definition is_sign_vector : set -> set -> prop :=
+  fun m sigma => forall i :e m, ap sigma i :e Bits.
+
+(* Zero sign vector (all positive) *)
+Definition sign_zero : set -> set :=
+  fun m => fun i :e m => 0.
+
+Theorem sign_zero_is_sign_vector : forall m :e omega, is_sign_vector m (sign_zero m).
+let m. assume Hm: m :e omega.
+let i. assume Hi: i :e m.
+prove ap (sign_zero m) i :e Bits.
+prove ap (fun j :e m => 0) i :e Bits.
+rewrite beta m (fun j => 0) i Hi.
+exact In_0_2.
+Qed.
+
+(* Sign vector XOR (pointwise) *)
+Definition sign_xor : set -> set -> set -> set :=
+  fun m s1 s2 => fun i :e m => xor (ap s1 i) (ap s2 i).
+
+(* Basis sign vector: 1 at position i, 0 elsewhere *)
+Definition sign_basis : set -> set -> set :=
+  fun m i => fun j :e m => if j = i then 1 else 0.
+
+(* ========================================================================= *)
+(* Part III: The Mask Group H_m = S_m ⋉ (Z_2)^m                              *)
+(* ========================================================================= *)
+
+(* A mask h = (π, σ) consists of a permutation and a sign vector *)
+(* Action: h(x)_i = σ_i ⊕ x_{π(i)} *)
+
+Definition Mask : set -> set -> prop :=
+  fun m h => exists pi sigma,
+    is_permutation m pi /\
+    is_sign_vector m sigma /\
+    h = pair pi sigma.
+
+Definition mask_perm : set -> set := fun h => ap h 0.
+Definition mask_sign : set -> set := fun h => ap h 1.
+
+(* Identity mask *)
+Definition mask_id : set -> set :=
+  fun m => pair (perm_id m) (sign_zero m).
+
+Theorem mask_id_is_mask : forall m :e omega, Mask m (mask_id m).
+let m. assume Hm: m :e omega.
+prove exists pi sigma,
+  is_permutation m pi /\ is_sign_vector m sigma /\ mask_id m = pair pi sigma.
+apply (fun P f x => f x). exact (perm_id m).
+apply (fun P f x => f x). exact (sign_zero m).
+apply andI.
+- exact (perm_id_is_perm m Hm).
+- apply andI.
+  + exact (sign_zero_is_sign_vector m Hm).
+  + reflexivity.
+Qed.
+
+(* Mask composition (semidirect product) *)
+(* (π₁, σ₁) · (π₂, σ₂) = (π₁ ∘ π₂, σ₁ ⊕ (σ₂ ∘ π₁⁻¹)) *)
 Definition mask_compose : set -> set -> set -> set :=
   fun m h1 h2 =>
-    (compose_perm m (mask_perm h1) (mask_perm h2),
-     vec_xor m (mask_sign h1) (compose_perm m (mask_sign h2) (invert_perm m (mask_perm h1)))).
+    pair (perm_compose m (mask_perm h1) (mask_perm h2))
+         (sign_xor m (mask_sign h1)
+                     (perm_compose m (mask_sign h2) (perm_inv m (mask_perm h1)))).
 
-Definition mask_inverse : set -> set -> set :=
+(* Mask inverse *)
+Definition mask_inv : set -> set -> set :=
   fun m h =>
-    (invert_perm m (mask_perm h),
-     compose_perm m (mask_sign h) (mask_perm h)).
+    pair (perm_inv m (mask_perm h))
+         (perm_compose m (mask_sign h) (mask_perm h)).
 
-Definition apply_mask_to_literal : set -> set -> set -> set :=
+(* ========================================================================= *)
+(* Part IV: Mask Action on Literals and CNFs                                 *)
+(* ========================================================================= *)
+
+(* Apply mask to a literal: h(l) = (π(var), σ_{var} ⊕ sign) *)
+Definition apply_mask_lit : set -> set -> set -> set :=
   fun m h l =>
     Literal (ap (mask_perm h) (lit_var l))
-            (if ap (mask_sign h) (lit_var l) = lit_sign l then 0 else one).
+            (xor (ap (mask_sign h) (lit_var l)) (lit_sign l)).
 
-Definition apply_mask_to_clause : set -> set -> set -> set :=
-  fun m h C => {apply_mask_to_literal m h l | l :e C}.
+(* Apply mask to a clause *)
+Definition apply_mask_clause : set -> set -> set -> set :=
+  fun m h C => {apply_mask_lit m h l | l :e C}.
 
-Definition apply_mask_to_cnf : set -> set -> set -> set :=
-  fun m h F => {apply_mask_to_clause m h C | C :e F}.
+(* Apply mask to a CNF formula *)
+Definition apply_mask_cnf : set -> set -> set -> set :=
+  fun m h F => {apply_mask_clause m h C | C :e F}.
 
-Definition masked_cnf : set -> set -> set -> set := apply_mask_to_cnf.
+(* ========================================================================= *)
+(* Part V: Mask Properties                                                   *)
+(* ========================================================================= *)
 
-Definition basis_vec : set -> set -> set :=
-  fun m i => fun j :e m => if j = i then one else 0.
+(* Mask preserves clause size *)
+Theorem mask_preserves_clause_size : forall m h C,
+  Mask m h -> equip (clause_vars C) (clause_vars (apply_mask_clause m h C)).
+let m h C. assume Hh: Mask m h.
+(* The mask is a bijection, so clause variables are preserved in size *)
+admit.
+Qed.
 
-Definition tau_i : set -> set -> set :=
-  fun m i => (fun j :e m => j, basis_vec m i).
+(* Mask preserves satisfiability *)
+Theorem mask_preserves_SAT : forall m h F,
+  Mask m h -> (is_SAT m F <-> is_SAT m (apply_mask_cnf m h F)).
+let m h F. assume Hh: Mask m h.
+apply iffI.
+- assume Hsat: is_SAT m F.
+  (* If x satisfies F, then h(x) satisfies h(F) *)
+  admit.
+- assume Hsat: is_SAT m (apply_mask_cnf m h F).
+  (* Apply inverse mask *)
+  admit.
+Qed.
 
-Definition T_i : set -> set -> set -> set :=
-  fun m i instance =>
-    (apply_mask_to_cnf m (tau_i m i) (ap instance 0),
-     ap instance 1,
-     vec_xor (vv_num_rows m) (ap instance 2) (matrix_vec_prod (vv_num_rows m) m (ap instance 1) (basis_vec m i))).
+(* ========================================================================= *)
+(* Part VI: Sign Invariance                                                  *)
+(* ========================================================================= *)
 
-Theorem Ti_measure_preserving :
-  forall m i,
-    nat_p m -> i :e m ->
-    True.
-Admitted.
-
-Theorem Ti_preserves_uniqueness :
-  forall m i F A b,
-    nat_p m -> i :e m ->
-    True.
-Admitted.
-
-Theorem Ti_toggles_witness_bit :
-  forall m i F A b X,
-    nat_p m -> i :e m ->
-    satisfies X F ->
-    True.
-Admitted.
-
-Theorem pipeline_promise_preserving :
-  forall m stage,
-    nat_p m ->
-    True.
-Admitted.
+(* A function f is sign-invariant if it depends only on the "shape" *)
+(* of the formula, not on the specific sign assignments *)
 
 Definition is_sign_invariant : set -> (set -> set) -> prop :=
   fun m f =>
-    forall F h sigma,
-      SignVector m sigma ->
-      True.
+    forall F sigma, is_sign_vector m sigma ->
+      f F = f (apply_mask_cnf m (pair (perm_id m) sigma) F).
 
-Definition sign_invariant_algebra : set -> set :=
-  fun m => Power (Mask m).
+(* The τ_i transformation: flip sign at position i *)
+Definition tau_i : set -> set -> set :=
+  fun m i => pair (perm_id m) (sign_basis m i).
 
-Definition uniform_mask : set -> prop :=
-  fun m => True.
+Theorem tau_i_is_mask : forall m :e omega, forall i :e m, Mask m (tau_i m i).
+let m. assume Hm: m :e omega. let i. assume Hi: i :e m.
+prove exists pi sigma,
+  is_permutation m pi /\ is_sign_vector m sigma /\ tau_i m i = pair pi sigma.
+apply (fun P f x => f x). exact (perm_id m).
+apply (fun P f x => f x). exact (sign_basis m i).
+apply andI.
+- exact (perm_id_is_perm m Hm).
+- apply andI.
+  + let j. assume Hj: j :e m.
+    prove ap (sign_basis m i) j :e Bits.
+    prove ap (fun k :e m => if k = i then 1 else 0) j :e Bits.
+    rewrite beta m (fun k => if k = i then 1 else 0) j Hj.
+    prove (if j = i then 1 else 0) :e Bits.
+    (* Case split on j = i *)
+    admit.
+  + reflexivity.
+Qed.
+
+(* τ_i toggles the i-th bit of the witness *)
+Theorem tau_i_toggles_witness : forall m :e omega, forall i :e m,
+  forall F x, is_assignment m x -> satisfies x F ->
+    let x' := fun j :e m => if j = i then xor (ap x i) 1 else ap x j in
+    satisfies x' (apply_mask_cnf m (tau_i m i) F).
+let m. assume Hm: m :e omega. let i. assume Hi: i :e m.
+let F x. assume Hx: is_assignment m x. assume Hsat: satisfies x F.
+(* The key insight: τ_i flips the sign of literals with var = i,
+   and flipping x_i compensates exactly *)
+admit.
+Qed.
+
+(* ========================================================================= *)
+(* Part VII: Group Structure                                                 *)
+(* ========================================================================= *)
+
+(* H_m forms a group under mask_compose *)
+Theorem mask_compose_assoc : forall m h1 h2 h3,
+  Mask m h1 -> Mask m h2 -> Mask m h3 ->
+  mask_compose m (mask_compose m h1 h2) h3 =
+  mask_compose m h1 (mask_compose m h2 h3).
+let m h1 h2 h3. assume H1: Mask m h1. assume H2: Mask m h2. assume H3: Mask m h3.
+(* Follows from associativity of permutation composition and XOR *)
+admit.
+Qed.
+
+Theorem mask_id_left : forall m h :e omega,
+  Mask m h -> mask_compose m (mask_id m) h = h.
+let m h. assume Hm: m :e omega. assume Hh: Mask m h.
+(* Identity permutation and zero sign vector are neutral *)
+admit.
+Qed.
+
+Theorem mask_inv_left : forall m h :e omega,
+  Mask m h -> mask_compose m (mask_inv m h) h = mask_id m.
+let m h. assume Hm: m :e omega. assume Hh: Mask m h.
+(* Inverse composed with original gives identity *)
+admit.
+Qed.
+

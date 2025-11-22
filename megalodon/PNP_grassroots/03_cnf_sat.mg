@@ -1,101 +1,244 @@
+(* ========================================================================= *)
+(* CNF and SAT Formalization                                                 *)
+(* Builds on 00_preamble.mg, 01_foundations.mg                               *)
+(* ========================================================================= *)
+
+(* ========================================================================= *)
+(* Part I: Literals and Signs                                                *)
+(* ========================================================================= *)
+
+(* A literal is a pair (variable, sign) where sign ∈ {0,1} *)
+(* sign = 0 means positive, sign = 1 means negative *)
+
 Definition Literal : set -> set -> set :=
-  fun var sign => (var, sign).
+  fun var sign => pair var sign.
 
 Definition lit_var : set -> set := fun l => ap l 0.
 Definition lit_sign : set -> set := fun l => ap l 1.
 
 Definition pos_lit : set -> set := fun v => Literal v 0.
-Definition neg_lit : set -> set := fun v => Literal v one.
+Definition neg_lit : set -> set := fun v => Literal v 1.
 
+(* Flip a literal's sign *)
 Definition flip_lit : set -> set :=
-  fun l => Literal (lit_var l) (if lit_sign l = 0 then one else 0).
+  fun l => Literal (lit_var l) (xor (lit_sign l) 1).
 
-Definition Clause : set -> prop :=
-  fun C => forall l :e C, exists v :e omega, exists s :e two, l = Literal v s.
+(* A literal is well-formed if variable ∈ ω and sign ∈ {0,1} *)
+Definition is_literal : set -> set -> prop :=
+  fun m l => lit_var l :e m /\ lit_sign l :e Bits.
 
-Definition CNF : set -> prop :=
-  fun F => forall C :e F, Clause C.
+Theorem pos_lit_is_literal : forall m v, v :e m -> is_literal m (pos_lit v).
+let m v. assume Hv: v :e m.
+apply andI.
+- prove lit_var (pos_lit v) :e m.
+  prove ap (pair v 0) 0 :e m.
+  admit. (* Requires pair projection axioms *)
+- prove lit_sign (pos_lit v) :e Bits.
+  prove ap (pair v 0) 1 :e Bits.
+  admit. (* Requires pair projection axioms *)
+Qed.
 
-Definition kCNF : set -> set -> prop :=
-  fun k F => CNF F /\ forall C :e F, equip k C.
+Theorem neg_lit_is_literal : forall m v, v :e m -> is_literal m (neg_lit v).
+let m v. assume Hv: v :e m.
+apply andI.
+- prove lit_var (neg_lit v) :e m.
+  admit.
+- prove lit_sign (neg_lit v) :e Bits.
+  admit.
+Qed.
 
-Definition ThreeCNF : set -> prop := kCNF three.
+(* ========================================================================= *)
+(* Part II: Clauses                                                          *)
+(* ========================================================================= *)
 
-Definition num_vars_clause : set -> set :=
-  fun C => {lit_var l | l :e C}.
+(* A clause is a finite set of literals (disjunction) *)
+Definition is_clause : set -> set -> prop :=
+  fun m C => forall l :e C, is_literal m l.
 
-Definition Assignment : set -> set -> prop :=
-  fun m x => forall i :e m, ap x i :e two.
+(* Empty clause (always false) *)
+Definition empty_clause : set := Empty.
 
+Theorem empty_clause_is_clause : forall m, is_clause m empty_clause.
+let m.
+let l. assume Hl: l :e empty_clause.
+prove is_literal m l.
+apply False_rect.
+exact (EmptyE l Hl).
+Qed.
+
+(* ========================================================================= *)
+(* Part III: CNF Formulas                                                    *)
+(* ========================================================================= *)
+
+(* A CNF formula is a set of clauses (conjunction of disjunctions) *)
+Definition is_CNF : set -> set -> prop :=
+  fun m F => forall C :e F, is_clause m C.
+
+(* k-CNF: each clause has exactly k literals *)
+Definition is_kCNF : set -> set -> set -> prop :=
+  fun k m F => is_CNF m F /\ forall C :e F, equip k C.
+
+Definition is_3CNF : set -> set -> prop := is_kCNF 3.
+
+(* Empty formula (always true, vacuously satisfied) *)
+Definition empty_CNF : set := Empty.
+
+Theorem empty_CNF_is_CNF : forall m, is_CNF m empty_CNF.
+let m.
+let C. assume HC: C :e empty_CNF.
+apply False_rect.
+exact (EmptyE C HC).
+Qed.
+
+(* ========================================================================= *)
+(* Part IV: Assignments and Evaluation                                       *)
+(* ========================================================================= *)
+
+(* An assignment over m variables is a function m -> {0,1} *)
+Definition is_assignment : set -> set -> prop :=
+  fun m x => forall i :e m, ap x i :e Bits.
+
+(* Evaluate a literal under an assignment *)
+(* Returns 1 (true) if variable value matches expected value for satisfaction *)
+(* For positive literal (sign=0): satisfied if x[v] = 1 *)
+(* For negative literal (sign=1): satisfied if x[v] = 0 *)
 Definition eval_lit : set -> set -> set :=
   fun x l =>
-    if ap x (lit_var l) = lit_sign l then 0 else one.
+    let v := lit_var l in
+    let s := lit_sign l in
+    (* positive (s=0): satisfied when x[v]=1, i.e., xor x[v] s = 1 *)
+    (* negative (s=1): satisfied when x[v]=0, i.e., xor x[v] s = 1 *)
+    xor (ap x v) s.
 
+(* A clause is satisfied if at least one literal evaluates to 1 *)
 Definition satisfies_clause : set -> set -> prop :=
-  fun x C => exists l :e C, eval_lit x l = one.
+  fun x C => exists l :e C, eval_lit x l = 1.
 
+(* A CNF formula is satisfied if all clauses are satisfied *)
 Definition satisfies : set -> set -> prop :=
   fun x F => forall C :e F, satisfies_clause x C.
 
+(* The set of satisfying assignments *)
 Definition SAT_solutions : set -> set -> set :=
-  fun m F => {x :e Bits :^: m | Assignment m x /\ satisfies x F}.
+  fun m F => {x :e Bits :^: m | is_assignment m x /\ satisfies x F}.
 
+(* ========================================================================= *)
+(* Part V: SAT, UNSAT, USAT Predicates                                       *)
+(* ========================================================================= *)
+
+(* Formula is satisfiable *)
 Definition is_SAT : set -> set -> prop :=
-  fun m F => exists x, Assignment m x /\ satisfies x F.
+  fun m F => exists x, is_assignment m x /\ satisfies x F.
 
+(* Formula is unsatisfiable *)
 Definition is_UNSAT : set -> set -> prop :=
   fun m F => ~is_SAT m F.
 
+(* Formula has a unique satisfying assignment *)
 Definition is_USAT : set -> set -> prop :=
-  fun m F => equip one (SAT_solutions m F).
+  fun m F => equip 1 (SAT_solutions m F).
 
+(* The unique witness (when it exists) *)
 Definition unique_witness : set -> set -> set :=
   fun m F => Eps_i (fun x => x :e SAT_solutions m F).
 
-Definition clause_density : set := four.
+(* ========================================================================= *)
+(* Part VI: Basic Properties                                                 *)
+(* ========================================================================= *)
 
+(* Empty formula is always satisfiable *)
+Theorem empty_CNF_is_SAT : forall m :e omega, is_SAT m empty_CNF.
+let m. assume Hm: m :e omega.
+prove exists x, is_assignment m x /\ satisfies x empty_CNF.
+(* The zero assignment satisfies the empty formula *)
+claim Hzero: is_assignment m (zero_vector m).
+{ let i. assume Hi: i :e m.
+  prove ap (zero_vector m) i :e Bits.
+  rewrite beta m (fun _ => 0) i Hi.
+  exact In_0_2. }
+claim Hsat: satisfies (zero_vector m) empty_CNF.
+{ let C. assume HC: C :e empty_CNF.
+  apply False_rect.
+  exact (EmptyE C HC). }
+apply (fun P f x => f x). exact (zero_vector m).
+apply andI.
+- exact Hzero.
+- exact Hsat.
+Qed.
+
+(* Formula containing empty clause is unsatisfiable *)
+Theorem empty_clause_makes_UNSAT : forall m F,
+  empty_clause :e F -> is_UNSAT m F.
+let m F. assume Hempty: empty_clause :e F.
+prove ~is_SAT m F.
+assume Hsat: is_SAT m F.
+apply Hsat. let x. assume Hx: is_assignment m x /\ satisfies x F.
+apply Hx. assume _ Hxsat: satisfies x F.
+claim H: satisfies_clause x empty_clause.
+{ exact (Hxsat empty_clause Hempty). }
+prove False.
+apply H. let l. assume Hl: l :e empty_clause /\ eval_lit x l = 1.
+apply Hl. assume Hle: l :e empty_clause. assume _.
+exact (EmptyE l Hle).
+Qed.
+
+(* ========================================================================= *)
+(* Part VII: Random 3-CNF Parameters                                         *)
+(* ========================================================================= *)
+
+(* Clause density α: ratio of clauses to variables *)
+(* For random 3-SAT, α ≈ 4.267 is the satisfiability threshold *)
+Parameter clause_density_alpha : set.
+Axiom alpha_positive : 0 :e clause_density_alpha.
+
+(* Number of clauses in a random (α,m)-3CNF: α*m *)
+Definition num_clauses : set -> set :=
+  fun m => clause_density_alpha * m.
+
+(* ========================================================================= *)
+(* Part VIII: Variable Graph Structure                                       *)
+(* ========================================================================= *)
+
+(* Variables appearing in a clause *)
 Definition clause_vars : set -> set :=
   fun C => {lit_var l | l :e C}.
 
-Definition is_3uniform : set -> set -> prop :=
-  fun m F =>
-    forall C :e F, equip three (clause_vars C) /\
-                   forall l :e C, lit_var l :e m.
+(* The factor graph of a CNF: bipartite graph (variables, clauses, edges) *)
+(* Edge (v, C) exists iff variable v appears in clause C *)
+Definition factor_edges : set -> set :=
+  fun F => {(v, C) | C :e F, exists l :e C, lit_var l = v}.
 
-Definition FactorEdges : set -> set :=
-  fun F => {vC :e Power (Union F) :*: F |
-            exists v :e omega, exists C :e F,
-            vC = (v, C) /\ (exists l :e C, lit_var l = v)}.
-
+(* Degree of a variable: number of clauses containing it *)
 Definition var_degree : set -> set -> set :=
   fun F v => {C :e F | exists l :e C, lit_var l = v}.
 
-Definition is_tree : set -> prop :=
-  fun G => True.
+(* r-neighborhood: clauses within distance r from a variable *)
+(* (Requires graph infrastructure) *)
 
-Theorem local_tree_likeness :
-  forall alpha m c3,
-    nat_p alpha ->
-    nat_p c3 ->
-    0 :e c3 ->
-    True.
-Admitted.
+(* ========================================================================= *)
+(* Part IX: SAT Language and Complexity                                      *)
+(* ========================================================================= *)
 
-Theorem pattern_probability_bound :
-  forall alpha m c3 T,
-    nat_p alpha ->
-    nat_p c3 ->
-    0 :e c3 ->
-    True.
-Admitted.
-
+(* SAT as a language (set of satisfiable formulas) *)
 Definition SAT_language : set -> set :=
   fun m => {F :e Power (Power omega) | is_SAT m F}.
 
-Theorem SAT_in_NP : forall m, inNP (SAT_language m).
-Admitted.
+(* 3-SAT language *)
+Definition ThreeSAT_language : set -> set :=
+  fun m => {F :e Power (Power omega) | is_3CNF m F /\ is_SAT m F}.
 
-Theorem SAT_NP_complete : forall L,
-  inNP L ->
-  True.
-Admitted.
+(* SAT is in NP: nondeterministically guess assignment, verify in polytime *)
+Theorem SAT_in_NP : forall m :e omega, inNP (SAT_language m).
+let m. assume Hm: m :e omega.
+(* The verifier checks if the given assignment satisfies the formula *)
+(* Running time: O(|F| * m) which is polynomial *)
+admit. (* Requires computation model *)
+Qed.
+
+(* Cook-Levin: SAT is NP-complete *)
+(* This is a fundamental result - stated as axiom for now *)
+Axiom Cook_Levin : forall m :e omega, NP_complete (SAT_language m).
+
+(* 3-SAT is also NP-complete (by reduction from SAT) *)
+Axiom ThreeSAT_NP_complete : forall m :e omega, NP_complete (ThreeSAT_language m).
+
