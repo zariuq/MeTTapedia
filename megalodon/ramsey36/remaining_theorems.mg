@@ -51,13 +51,44 @@ and use that they form a triangle to contradict triangle_free.
 This requires more set theory infrastructure (equip_3_witness or similar).
 *)
 
-(* For triangle_free_no_3clique, we need a lemma about 3-element sets *)
-(* This is more complex - needs equip 3 X to give a,b,c :e X with a<>b<>c<>a *)
-(* Leaving as aby for now - the main work was no6indep proofs *)
+(* For triangle_free_no_3clique, we use the bijection from equip *)
+(* equip 3 X means there's a bijection f: {0,1,2} -> X *)
+(* So X = {f(0), f(1), f(2)} with all distinct *)
+
+(* Helper: extract elements from a 3-element set via bijection *)
+(* We need: equip 3 X -> exists a b c, a :e X /\ b :e X /\ c :e X /\ a<>b /\ b<>c /\ a<>c *)
 
 Theorem triangle_free_no_3clique : forall V:set, forall R:set -> set -> prop,
   triangle_free V R ->
   ~(exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y)).
+let V. let R: set -> set -> prop.
+assume Htf: triangle_free V R.
+(* Htf: forall x :e V, forall y :e V, forall z :e V, R x y -> R y z -> R x z -> False *)
+assume H: exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
+prove False.
+apply H.
+let X.
+assume HX: X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
+(* Extract the three parts *)
+claim HXV: X c= V.
+  exact andEL (X c= V) (equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y)) HX.
+claim HXrest: equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
+  exact andER (X c= V) (equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y)) HX.
+claim HXeq: equip 3 X.
+  exact andEL (equip 3 X) (forall x :e X, forall y :e X, x <> y -> R x y) HXrest.
+claim HXclique: forall x :e X, forall y :e X, x <> y -> R x y.
+  exact andER (equip 3 X) (forall x :e X, forall y :e X, x <> y -> R x y) HXrest.
+(* From equip 3 X, get bijection f: 3 -> X *)
+(* 3 = {0, 1, 2} *)
+(* Let a = f 0, b = f 1, c = f 2 *)
+(* Then a, b, c are all in X and all distinct *)
+(* And since R is total on distinct pairs of X: R a b, R b c, R a c *)
+(* But Htf says no triangle, contradiction *)
+(*
+   For now, use equip_bij to extract the bijection, then apply it.
+   This requires more infrastructure - leaving with aby for now
+   but the structure is clear.
+*)
 aby.
 Qed.
 
