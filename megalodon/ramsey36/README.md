@@ -18,8 +18,8 @@ This directory contains a formalization of the Ramsey number R(3,6) = 18 in the 
 | `Adj17_not_indep_*` (12376 subsets) | **Generated** | 198K lines, each 6-subset has edge |
 | `Adj17_no_6_indep` | **Structure done** | Uses cases axiom + 12376 lemmas |
 | `lower_bound` | **Kernel verified** | Uses admitted helper lemmas |
-| `triangle_free_no_3clique` | Admitted | Helper: triangle_free => no 3-clique |
-| `no_k_indep_no_indep_set` | Admitted | Helper: no_k_indep => no k-indep set |
+| `triangle_free_no_3clique` | **Kernel verified** | Uses equip_bij + bijection injectivity |
+| `no_k_indep_no_indep_set` | **Kernel verified** | Uses and3E + is_indep_set definition |
 | `upper_bound` | **Proof done** | Uses xm + helper lemmas |
 | `Ramsey_3_6_eq_18` | Compiles | Uses bounds |
 
@@ -35,6 +35,7 @@ This directory contains a formalization of the Ramsey number R(3,6) = 18 in the 
 - `adj17_selfloop_and_nonedge_proofs.mg` - Self-loops + non-edges + paths (~30K lines)
 - `adj17_triangle_free_proof.mg` - 4913 tf_x_y_z case lemmas (~25K lines)
 - `adj17_no6indep_proof.mg` - 12376 subset lemmas + main theorem (~198K lines)
+- `remaining_theorems.mg` - Kernel-verified helper theorems (triangle_free_no_3clique, no_k_indep_no_indep_set)
 - `neq_lemmas.mg` - Additional inequality lemmas for 10-16
 - `cases17_axiom.mg` - Case analysis axioms for ordinals 10-18
 
@@ -121,10 +122,21 @@ The proof uses excluded middle (`xm`) and double negation elimination (`dneg`):
 5. If both triangle-free and no_k_indep: contradiction via `good_graph_contradiction`
 6. If not no_k_indep: extract 6-indep set via `indep_witness_from_neg`
 
+### Kernel-Verified Helper Lemmas
+
+1. `triangle_free_no_3clique` - If triangle_free V R holds, then no 3-clique exists
+   - Uses `equip_bij` to extract bijection f: 3 → X
+   - Proves f(0), f(1), f(2) are distinct via injectivity
+   - Applies triangle_free to derive contradiction
+
+2. `no_k_indep_no_indep_set` - If no_k_indep V R k holds, then no k-element independent set exists
+   - Uses `and3E` to extract triple conjunction components
+   - Constructs is_indep_set witness and derives contradiction
+
 ### Remaining Helper Lemmas (Admitted)
 
-1. `triangle_witness_from_neg` - Convert ~triangle_free to 3-clique existence
-2. `indep_witness_from_neg` - Convert ~no_k_indep to k-indep set existence
+1. `triangle_witness_from_neg` - Convert ~triangle_free to 3-clique existence (requires classical logic)
+2. `indep_witness_from_neg` - Convert ~no_k_indep to k-indep set existence (requires classical logic)
 3. `good_graph_contradiction` - No symmetric R on 18 can be both triangle-free and have no 6-indep set
 
 The `good_graph_contradiction` is the core mathematical result requiring:
