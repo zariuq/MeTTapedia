@@ -1,0 +1,11 @@
+# Megalodon build artifacts and source (downloaded separately)
+bin/
+src/
+secp256k1/
+examples/
+*.tgz
+makebytecode
+makeopt
+INSTALL
+LICENSE
+README
