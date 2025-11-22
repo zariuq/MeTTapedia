@@ -42,6 +42,9 @@ Definition hamming_weight : set -> set -> set :=
 Definition hamming_dist : set -> set -> set -> set :=
   fun n s1 s2 => nat_primrec 0 (fun i acc => if ap s1 i = ap s2 i then acc else ordsucc acc) n.
 
+Definition SignVector : set -> set -> prop :=
+  fun n s => BitString n s.
+
 Definition is_injective : set -> (set -> set) -> prop :=
   fun A f => forall a1 a2 :e A, f a1 = f a2 -> a1 = a2.
 
