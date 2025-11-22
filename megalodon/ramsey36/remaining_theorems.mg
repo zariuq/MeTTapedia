@@ -132,7 +132,56 @@ assume Rxy: R x y.
 assume Ryz: R y z.
 assume Rxz: R x z.
 prove False.
-aby.
+claim Hxy: x <> y.
+  assume Heq: x = y.
+  apply Hirr x HxV.
+  prove R x x.
+  claim Heqsym: y = x.
+    prove forall Q: set -> set -> prop, Q y x -> Q x y.
+    let Q: set -> set -> prop. assume HQ: Q y x.
+    exact Heq (fun a b => Q b a) HQ.
+  exact Heqsym (fun a b => R x a) Rxy.
+claim Hyz: y <> z.
+  assume Heq: y = z.
+  apply Hirr y HyV.
+  prove R y y.
+  claim Heqsym: z = y.
+    prove forall Q: set -> set -> prop, Q z y -> Q y z.
+    let Q: set -> set -> prop. assume HQ: Q z y.
+    exact Heq (fun a b => Q b a) HQ.
+  exact Heqsym (fun a b => R y a) Ryz.
+claim Hxz: x <> z.
+  assume Heq: x = z.
+  apply Hirr x HxV.
+  prove R x x.
+  claim Heqsym: z = x.
+    prove forall Q: set -> set -> prop, Q z x -> Q x z.
+    let Q: set -> set -> prop. assume HQ: Q z x.
+    exact Heq (fun a b => Q b a) HQ.
+  exact Heqsym (fun a b => R x a) Rxz.
+apply Hno.
+witness {x, y} :\/: {z}.
+apply and3I ({x, y} :\/: {z} c= V) (equip 3 ({x, y} :\/: {z})) (forall a :e {x, y} :\/: {z}, forall b :e {x, y} :\/: {z}, a <> b -> R a b).
+- prove {x, y} :\/: {z} c= V.
+  let w. assume Hw: w :e {x, y} :\/: {z}.
+  apply binunionE {x, y} {z} w Hw.
+  + assume Hwxy: w :e {x, y}.
+    apply UPairE w x y Hwxy.
+    * assume Hwx: w = x.
+      prove w :e V.
+      apply Hwx (fun a b => b :e V) HxV.
+    * assume Hwy: w = y.
+      prove w :e V.
+      apply Hwy (fun a b => b :e V) HyV.
+  + assume Hwz: w :e {z}.
+    claim Hwz2: w = z.
+      exact SingE z w Hwz.
+    prove w :e V.
+    apply Hwz2 (fun a b => b :e V) HzV.
+- prove equip 3 ({x, y} :\/: {z}).
+  aby.
+- prove forall a :e {x, y} :\/: {z}, forall b :e {x, y} :\/: {z}, a <> b -> R a b.
+  aby.
 Qed.
 
 Theorem indep_witness_from_neg : forall V:set, forall R:set -> set -> prop, forall k:set,
