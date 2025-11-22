@@ -111,20 +111,3 @@ claim Rac: R (f 0) (f 2).
   exact HXclique (f 0) Ha (f 2) Hc Hac.
 exact Htf (f 0) HaV (f 1) HbV (f 2) HcV Rab Rbc Rac.
 Qed.
-
-Theorem triangle_witness_from_neg : forall V:set, forall R:set -> set -> prop,
-  ~triangle_free V R ->
-  exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
-aby.
-Qed.
-
-Theorem indep_witness_from_neg : forall V:set, forall R:set -> set -> prop, forall k:set,
-  ~no_k_indep V R k ->
-  exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y).
-aby.
-Qed.
-
-Theorem good_graph_contradiction : forall R:set -> set -> prop,
-  (forall x y, R x y -> R y x) -> triangle_free 18 R -> no_k_indep 18 R 6 -> False.
-aby.
-Qed.
