@@ -14,21 +14,19 @@ Definition TwoRamseyProp : set -> set -> set -> prop
        -> ((exists X, X c= V /\ equip M X /\ (forall x :e X, forall y :e X, x <> y -> R x y))
         \/ (exists Y, Y c= V /\ equip N Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y))).
 
-Definition is_good_36 : set -> (set -> set -> prop) -> prop :=
-  fun V R => triangle_free V R /\ no_k_indep V R 6.
+Theorem triangle_witness_from_neg : forall V:set, forall R:set -> set -> prop,
+  ~triangle_free V R ->
+  exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
+Admitted.
 
-Definition neighborhood : set -> (set -> set -> prop) -> set -> set :=
-  fun V R v => {u :e V | R v u}.
+Theorem indep_witness_from_neg : forall V:set, forall R:set -> set -> prop, forall k:set,
+  ~no_k_indep V R k ->
+  exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y).
+Admitted.
 
-Definition degree : set -> (set -> set -> prop) -> set -> set :=
-  fun V R v => Sep V (R v).
-
-Definition max_degree_le : set -> (set -> set -> prop) -> set -> prop :=
-  fun V R d => forall v :e V, degree V R v c= d.
+Theorem good_graph_contradiction : forall R:set -> set -> prop,
+  (forall x y, R x y -> R y x) -> triangle_free 18 R -> no_k_indep 18 R 6 -> False.
+Admitted.
 
 Theorem upper_bound : TwoRamseyProp 3 6 18.
-let R.
-assume Rsym: forall x y, R x y -> R y x.
-prove (exists X, X c= 18 /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y))
-   \/ (exists Y, Y c= 18 /\ equip 6 Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y)).
 Admitted.

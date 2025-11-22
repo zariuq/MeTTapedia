@@ -12,24 +12,28 @@ This directory contains a formalization of the Ramsey number R(3,6) = 18 in the 
 | `neq_lemmas` (10-16) | **Kernel verified** | Extends preamble |
 | `Adj17_not_i_j` (190 non-edges) | **Kernel verified** | ~11s, all non-edge proofs |
 | `Adj17_path_i_j_k` (316 paths) | **Kernel verified** | Triangle-free witnesses |
-| `Adj17_triangle_free` | **Reconstruction WIP** | Need to connect path lemmas to set quantifiers |
+| `Adj17_triangle_free` | **Reconstruction WIP** | Needs 4913-case analysis (see below) |
 | `Adj17_no_6_indep` | **ATP verified** | Vampire ~7s, 12376 6-subsets to check |
-| `lower_bound` | **Proof structure done** | Uses helper lemmas |
+| `lower_bound` | **Kernel verified** | Uses admitted helper lemmas |
 | `triangle_free_no_3clique` | Admitted | Helper: triangle_free => no 3-clique |
 | `no_k_indep_no_indep_set` | Admitted | Helper: no_k_indep => no k-indep set |
-| `upper_bound` | TODO | Requires Cariolaro Claims 1-3 (see below) |
+| `upper_bound` | **Structure done** | Needs helper lemmas discharged |
 | `Ramsey_3_6_eq_18` | Compiles | Uses bounds |
 
 ## Files
 
 - `ramsey36_mizar.mg` - Main proof file (Mizar theory)
 - `lower_bound_proof.mg` - Kernel-verified lower_bound proof structure
+- `upper_bound_proof.mg` - Upper bound proof structure (helper lemmas admitted)
 - `adj17_with_sym.mg` - Kernel-verified Adj17_sym proof (2572 lines)
 - `adj17_all_proofs.mg` - Combined proofs: sym + neq + non-edges + paths (30554 lines)
 - `adj17_nonedge_proofs.mg` - Non-edge and path lemma proofs
 - `neq_lemmas.mg` - Additional inequality lemmas for 10-16
 - `gen_adj17_nonedge_proofs.py` - Proof generator for non-edges and paths
+- `gen_adj17_nonedge_and_paths.py` - Alternative generator (same functionality)
 - `gen_adj17_proofs.py` - Original proof generator (edge theorems)
+- `gen_adj17_triangle_free.py` - Analysis script for triangle_free case counts
+- `gen_adj17_no6indep.py` - Analysis script for 6-independence verification
 
 ## ATP Verification Results
 
@@ -74,8 +78,24 @@ Key definitions from the preamble:
 ## Reconstruction TODO
 
 The ATP-verified theorems need kernel reconstruction:
-1. `Adj17_triangle_free`: 316 two-edge paths, each showing ~Adj17(x,z)
-2. `Adj17_no_6_indep`: 12,376 6-subsets, each showing ∃ edge
+
+### Adj17_triangle_free (17³ = 4913 cases)
+
+The theorem `forall x y z :e 17, Adj17 x y -> Adj17 y z -> Adj17 x z -> False` requires:
+- Case analysis on (x, y, z) triples
+- For each case, use the appropriate non-edge lemma (`Adj17_not_i_j`)
+
+Case breakdown:
+- Self-loop cases (x=y or y=z or x=z): 833 (trivial by reflexivity contradiction)
+- H1 contradiction (x-y not edge): 2850 cases
+- H2 contradiction (y-z not edge): 914 cases
+- H3 contradiction (x-z not edge): 316 cases (use path lemmas)
+
+**Blocker**: Megalodon's preamble only has `cases_n` up to n=9. Need `cases_17` axiom or ordinal induction.
+
+### Adj17_no_6_indep (12,376 6-subsets)
+
+Each 6-subset must be shown to contain at least one edge. The witness edge for each subset is computed by `gen_adj17_no6indep.py`.
 
 Both require handling left-associative nested disjunctions in Megalodon.
 
