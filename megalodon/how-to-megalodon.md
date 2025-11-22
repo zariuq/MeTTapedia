@@ -179,6 +179,47 @@ apply andER A B H.  (* gets B from A /\ B *)
 3. Include preamble with `-I` flag
 4. Use `(* comments *)` for documentation
 
+## Important Gotchas
+
+1. **No comments at file start** - Files must start with `Definition` or `Theorem`, not `(* *)` comments
+2. **No `_` placeholders** - Unlike Coq, you cannot use `_` for implicit arguments
+3. **Use `reflexivity`** for equality proofs like `0 = 0`
+4. **Use `claim`** for local lemmas within a proof
+
+## If-Then-Else Proofs
+
+Key axioms for conditional reasoning:
+- `If_i_1 : forall p:prop, forall x y:set, p -> (if p then x else y) = x`
+- `If_i_0 : forall p:prop, forall x y:set, ~p -> (if p then x else y) = y`
+
+Pattern for nested if-then-else:
+```
+claim L1: ~(1 = 0). exact neq_1_0.
+claim L2: 1 = 1. reflexivity.
+apply eq_i_tra (if 1 = 0 then x else y) (y) result.
+- exact If_i_0 (1 = 0) x y L1.
+- (* continue with inner if *)
+```
+
+## Transitivity Chains
+
+Use `eq_i_tra` to chain equalities:
+```
+apply eq_i_tra A B C.
+- (* prove A = B *)
+- (* prove B = C *)
+(* concludes A = C *)
+```
+
+## Sub-proofs with Braces
+
+For parallel sub-goals, use `{ }`:
+```
+apply eq_i_tra A B C.
+{ (* prove A = B *) }
+{ (* prove B = C *) }
+```
+
 ## Tips
 
 1. **Verify often** - Run megalodon after each theorem
@@ -186,6 +227,7 @@ apply andER A B H.  (* gets B from A /\ B *)
 3. **Use prove** - Clarify goals for yourself
 4. **Check preamble** - Many useful lemmas already exist
 5. **Exit code 0 = success** - No output usually means it worked
+6. **Read error messages carefully** - They tell you expected vs actual types
 
 ## Resources
 
