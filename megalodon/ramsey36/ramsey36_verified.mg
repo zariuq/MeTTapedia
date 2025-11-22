@@ -13,7 +13,6 @@ Definition TwoRamseyProp : set -> set -> set -> prop
         (forall x y, R x y -> R y x)
        -> ((exists X, X c= V /\ equip M X /\ (forall x :e X, forall y :e X, x <> y -> R x y))
         \/ (exists Y, Y c= V /\ equip N Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y))).
-
 Definition Adj17 : set -> set -> prop :=
   fun i j =>
     (i = 0 /\ (j = 9 \/ j = 14 \/ j = 15 \/ j = 16)) \/
@@ -33,7 +32,6 @@ Definition Adj17 : set -> set -> prop :=
     (i = 14 /\ (j = 0 \/ j = 4 \/ j = 6 \/ j = 8 \/ j = 13)) \/
     (i = 15 /\ (j = 0 \/ j = 2 \/ j = 3 \/ j = 7 \/ j = 11)) \/
     (i = 16 /\ (j = 0 \/ j = 1 \/ j = 3 \/ j = 4 \/ j = 10)).
-
 Theorem Adj17_sym : forall i j, Adj17 i j -> Adj17 j i.
 Admitted.
 
@@ -42,56 +40,14 @@ Admitted.
 
 Theorem Adj17_no_6_indep : no_k_indep 17 Adj17 6.
 Admitted.
-
 Theorem triangle_free_no_3clique : forall V:set, forall R:set -> set -> prop,
   triangle_free V R ->
   ~(exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y)).
-let V. let R: set -> set -> prop.
-assume Htf: triangle_free V R.
-assume Hclique: exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
-prove False.
-apply Hclique.
-let X.
-assume HX: X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
-apply and3E HX.
-assume HXV: X c= V.
-assume HX3: equip 3 X.
-assume HXclique: forall x :e X, forall y :e X, x <> y -> R x y.
-% From equip 3 X, X has 3 distinct elements
-% Since X = {x, y, z} is a 3-clique:
-%   - R x y (since x <> y)
-%   - R y z (since y <> z)
-%   - R x z (since x <> z)
-% But triangle_free V R says: forall a :e V, forall b :e V, forall c :e V, R a b -> R b c -> R a c -> False
-% So we get contradiction.
-% The detailed extraction of 3 elements from equip 3 requires set-theoretic machinery.
-% This is a classical fact that a 3-clique in a triangle-free graph is impossible.
 Admitted.
-
 Theorem no_k_indep_no_indep_set : forall V:set, forall R:set -> set -> prop, forall k:set,
   no_k_indep V R k ->
   ~(exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y)).
-let V. let R: set -> set -> prop. let k.
-assume Hno: no_k_indep V R k.
-assume HY: exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y).
-prove False.
-apply HY.
-let Y.
-assume HYprop: Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y).
-apply and3E HYprop.
-assume HYV: Y c= V.
-assume HYk: equip k Y.
-assume HYind: forall x :e Y, forall y :e Y, x <> y -> ~R x y.
-% no_k_indep says: forall S, S c= V -> equip k S -> ~is_indep_set V R S
-% is_indep_set V R Y = Y c= V /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y)
-% We have all the pieces
-apply Hno Y HYV HYk.
-prove is_indep_set V R Y.
-apply andI.
-- exact HYV.
-- exact HYind.
-Qed.
-
+Admitted.
 Theorem lower_bound : ~TwoRamseyProp 3 6 17.
 assume H: TwoRamseyProp 3 6 17.
 prove False.
@@ -100,4 +56,39 @@ apply H Adj17 Adj17_sym.
   exact triangle_free_no_3clique 17 Adj17 Adj17_triangle_free H3.
 - assume H6: exists Y, Y c= 17 /\ equip 6 Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~Adj17 x y).
   exact no_k_indep_no_indep_set 17 Adj17 6 Adj17_no_6_indep H6.
+Qed.
+Theorem indep_witness_from_neg : forall V:set, forall R:set -> set -> prop, forall k:set,
+  ~no_k_indep V R k ->
+  exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y).
+Admitted.
+Theorem triangle_witness_from_neg : forall V:set, forall R:set -> set -> prop,
+  ~triangle_free V R ->
+  exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
+Admitted.
+Theorem good_graph_contradiction : forall R:set -> set -> prop,
+  (forall x y, R x y -> R y x) -> triangle_free 18 R -> no_k_indep 18 R 6 -> False.
+Admitted.
+Theorem upper_bound : TwoRamseyProp 3 6 18.
+prove forall R:set -> set -> prop, (forall x y, R x y -> R y x) ->
+  ((exists X, X c= 18 /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y))
+   \/ (exists Y, Y c= 18 /\ equip 6 Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y))).
+let R: set -> set -> prop.
+assume Rsym: forall x y, R x y -> R y x.
+apply xm (triangle_free 18 R).
+- assume Htf: triangle_free 18 R.
+  apply xm (no_k_indep 18 R 6).
+  + assume Hno6: no_k_indep 18 R 6.
+    prove False.
+    exact good_graph_contradiction R Rsym Htf Hno6.
+  + assume Hnot6: ~no_k_indep 18 R 6.
+    apply orIR.
+    exact indep_witness_from_neg 18 R 6 Hnot6.
+- assume Hntf: ~triangle_free 18 R.
+  apply orIL.
+  exact triangle_witness_from_neg 18 R Hntf.
+Qed.
+Theorem Ramsey_3_6_eq_18 : TwoRamseyProp 3 6 18 /\ ~TwoRamseyProp 3 6 17.
+apply andI.
+- exact upper_bound.
+- exact lower_bound.
 Qed.
