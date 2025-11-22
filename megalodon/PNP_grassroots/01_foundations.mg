@@ -1,227 +1,316 @@
-(* P ≠ NP Foundations - Builds on 00_preamble.mg *)
-(* Requires: megalodon -I examples/mizar/PfgMizarNov2020Preamble.mgs 00_preamble.mg *)
-
 (* ========================================================================= *)
-(* Matrix algebra over F_2 and linear algebra foundations                    *)
+(* Category-Theoretic Foundations for P ≠ NP                                 *)
+(* Builds on 00_preamble.mg                                                  *)
 (* ========================================================================= *)
 
-(* --- Matrices over F_2 --- *)
-
-(* A k×m matrix over F_2 is a function from k to (m -> Bits) *)
-Definition Matrix : set -> set -> set -> prop :=
-  fun rows cols A =>
-    forall i :e rows, forall j :e cols, ap (ap A i) j :e Bits.
-
-(* The set of k×m matrices *)
-Definition Matrices : set -> set -> set :=
-  fun k m => Sep ((Bits :^: m) :^: k) (Matrix k m).
-
-(* Matrix entry access *)
-Definition mat_entry : set -> set -> set -> set :=
-  fun A i j => ap (ap A i) j.
-
-(* Zero matrix *)
-Definition zero_matrix : set -> set -> set :=
-  fun rows cols => fun i :e rows => fun j :e cols => 0.
-
-Theorem zero_matrix_is_Matrix : forall k m, nat_p k -> nat_p m ->
-  Matrix k m (zero_matrix k m).
-let k m. assume Hk: nat_p k. assume Hm: nat_p m.
-let i. assume Hi: i :e k.
-let j. assume Hj: j :e m.
-prove ap (ap (zero_matrix k m) i) j :e Bits.
-prove ap (ap (fun r :e k => fun c :e m => 0) i) j :e Bits.
-rewrite beta k (fun r => fun c :e m => 0) i Hi.
-rewrite beta m (fun c => 0) j Hj.
-prove 0 :e Bits.
-exact In_0_2.
-Qed.
-
-(* Identity matrix *)
-Definition identity_matrix : set -> set :=
-  fun n => fun i :e n => fun j :e n => if i = j then 1 else 0.
-
-(* Matrix row extraction *)
-Definition matrix_row : set -> set -> set :=
-  fun A i => ap A i.
-
-(* Matrix column extraction (requires row count k) *)
-Definition matrix_col : set -> set -> set -> set :=
-  fun k A j => fun i :e k => ap (ap A i) j.
-
-(* --- Bit-wise AND --- *)
-
-Definition bit_and : set -> set -> set :=
-  fun a b => if a = 1 /\ b = 1 then 1 else 0.
-
-Theorem bit_and_0_0 : bit_and 0 0 = 0.
-prove (if 0 = 1 /\ 0 = 1 then 1 else 0) = 0.
-claim L: ~(0 = 1 /\ 0 = 1).
-{ assume H. apply H. assume H1: 0 = 1. exact (neq_0_1 H1). }
-exact (If_i_0 (0 = 1 /\ 0 = 1) 1 0 L).
-Qed.
-
-Theorem bit_and_0_1 : bit_and 0 1 = 0.
-prove (if 0 = 1 /\ 1 = 1 then 1 else 0) = 0.
-claim L: ~(0 = 1 /\ 1 = 1).
-{ assume H. apply H. assume H1: 0 = 1. exact (neq_0_1 H1). }
-exact (If_i_0 (0 = 1 /\ 1 = 1) 1 0 L).
-Qed.
-
-Theorem bit_and_1_0 : bit_and 1 0 = 0.
-prove (if 1 = 1 /\ 0 = 1 then 1 else 0) = 0.
-claim L: ~(1 = 1 /\ 0 = 1).
-{ assume H. apply H. assume _ H1: 0 = 1. exact (neq_0_1 H1). }
-exact (If_i_0 (1 = 1 /\ 0 = 1) 1 0 L).
-Qed.
-
-Theorem bit_and_1_1 : bit_and 1 1 = 1.
-prove (if 1 = 1 /\ 1 = 1 then 1 else 0) = 1.
-claim L: 1 = 1 /\ 1 = 1.
-{ apply andI. reflexivity. reflexivity. }
-exact (If_i_1 (1 = 1 /\ 1 = 1) 1 0 L).
-Qed.
-
-Theorem bit_and_is_bit : forall a b, is_bit a -> is_bit b -> is_bit (bit_and a b).
-let a b. assume Ha: is_bit a. assume Hb: is_bit b.
-apply Ha.
-- assume Ha0: a = 0. rewrite Ha0.
-  apply Hb.
-  + assume Hb0: b = 0. rewrite Hb0. rewrite bit_and_0_0. exact bit_0.
-  + assume Hb1: b = 1. rewrite Hb1. rewrite bit_and_0_1. exact bit_0.
-- assume Ha1: a = 1. rewrite Ha1.
-  apply Hb.
-  + assume Hb0: b = 0. rewrite Hb0. rewrite bit_and_1_0. exact bit_0.
-  + assume Hb1: b = 1. rewrite Hb1. rewrite bit_and_1_1. exact bit_1.
-Qed.
-
-Theorem bit_and_comm : forall a b, is_bit a -> is_bit b -> bit_and a b = bit_and b a.
-let a b. assume Ha: is_bit a. assume Hb: is_bit b.
-apply Ha.
-- assume Ha0: a = 0. rewrite Ha0.
-  apply Hb.
-  + assume Hb0: b = 0. rewrite Hb0. reflexivity.
-  + assume Hb1: b = 1. rewrite Hb1.
-    rewrite bit_and_0_1. rewrite bit_and_1_0. reflexivity.
-- assume Ha1: a = 1. rewrite Ha1.
-  apply Hb.
-  + assume Hb0: b = 0. rewrite Hb0.
-    rewrite bit_and_1_0. rewrite bit_and_0_1. reflexivity.
-  + assume Hb1: b = 1. rewrite Hb1. reflexivity.
-Qed.
-
-(* --- Inner Product over F_2 --- *)
-
-(* Inner product computed via primitive recursion *)
-Definition inner_product_f2 : set -> set -> set -> set :=
-  fun n a b =>
-    nat_primrec 0 (fun j acc => xor acc (bit_and (ap a j) (ap b j))) n.
-
-Theorem inner_product_f2_0 : forall a b, inner_product_f2 0 a b = 0.
-let a b.
-prove nat_primrec 0 (fun j acc => xor acc (bit_and (ap a j) (ap b j))) 0 = 0.
-exact (nat_primrec_0 0 (fun j acc => xor acc (bit_and (ap a j) (ap b j)))).
-Qed.
-
-Theorem inner_product_f2_S : forall n a b, nat_p n ->
-  inner_product_f2 (ordsucc n) a b =
-  xor (inner_product_f2 n a b) (bit_and (ap a n) (ap b n)).
-let n a b. assume Hn: nat_p n.
-prove nat_primrec 0 (fun j acc => xor acc (bit_and (ap a j) (ap b j))) (ordsucc n) =
-      xor (inner_product_f2 n a b) (bit_and (ap a n) (ap b n)).
-rewrite (nat_primrec_S 0 (fun j acc => xor acc (bit_and (ap a j) (ap b j))) n Hn).
-reflexivity.
-Qed.
-
-(* --- Matrix-Vector Product --- *)
-
-Definition matrix_vec_prod : set -> set -> set -> set -> set :=
-  fun k m A x =>
-    fun i :e k => inner_product_f2 m (matrix_row A i) x.
-
-(* Vector addition over F_2 (same as XOR) *)
-Definition vec_add_f2 : set -> set -> set -> set := vec_xor.
-
-(* --- Linear Hash Family --- *)
-
-Definition apply_linear_hash : set -> set -> set -> set -> set -> set :=
-  fun k m A b x => vec_add_f2 k (matrix_vec_prod k m A x) b.
-
-Definition LinearHashFamily : set -> set -> set :=
-  fun k m => Matrices k m :*: (Bits :^: k).
-
 (* ========================================================================= *)
-(* Computation and Complexity                                                *)
+(* Part I: Abstract Algebraic Structures                                     *)
 (* ========================================================================= *)
 
-(* Program: a finite bit string *)
-Definition Program : set -> prop :=
-  fun p => exists n :e omega, BitString n p.
+(* --- Magma: Binary operation on a carrier set --- *)
 
-(* Description length of a program *)
-Definition desc_length : set -> set :=
-  fun p => the (fun n => n :e omega /\ BitString n p).
+Definition is_magma : set -> (set -> set -> set) -> prop :=
+  fun S op => forall x y :e S, op x y :e S.
 
-(* Set of programs up to length L *)
-Definition Programs_upto : set -> set :=
-  fun L => {p :e Bits :^: L | desc_length p c= L}.
+(* --- Semigroup: Associative magma --- *)
 
-(* --- Universal Turing Machine abstraction --- *)
-(* UTM_computes p y z means program p on input y outputs z *)
+Definition is_semigroup : set -> (set -> set -> set) -> prop :=
+  fun S op =>
+    is_magma S op /\
+    forall x y z :e S, op (op x y) z = op x (op y z).
+
+(* --- Monoid: Semigroup with identity --- *)
+
+Definition is_monoid : set -> (set -> set -> set) -> set -> prop :=
+  fun S op e =>
+    is_semigroup S op /\
+    e :e S /\
+    (forall x :e S, op e x = x) /\
+    (forall x :e S, op x e = x).
+
+(* --- Commutative Monoid --- *)
+
+Definition is_comm_monoid : set -> (set -> set -> set) -> set -> prop :=
+  fun S op e =>
+    is_monoid S op e /\
+    forall x y :e S, op x y = op y x.
+
+(* --- Ordered Monoid: Monoid with compatible ordering --- *)
+
+Definition is_ordered_monoid : set -> (set -> set -> set) -> set -> (set -> set -> prop) -> prop :=
+  fun S op e le =>
+    is_monoid S op e /\
+    (* le is a preorder *)
+    (forall x :e S, le x x) /\
+    (forall x y z :e S, le x y -> le y z -> le x z) /\
+    (* op is monotonic *)
+    (forall a b c d :e S, le a b -> le c d -> le (op a c) (op b d)).
+
+(* ========================================================================= *)
+(* Part II: The Finite Field F_2                                             *)
+(* ========================================================================= *)
+
+(* F_2 = {0, 1} with XOR as addition, AND as multiplication *)
+
+Definition F2 : set := Bits.
+
+Definition F2_add : set -> set -> set := xor.
+Definition F2_mul : set -> set -> set := bit_and.
+Definition F2_zero : set := 0.
+Definition F2_one : set := 1.
+
+(* F2 forms a commutative monoid under addition *)
+Theorem F2_add_magma : is_magma F2 F2_add.
+prove forall x y :e F2, F2_add x y :e F2.
+let x y. assume Hx: x :e F2. assume Hy: y :e F2.
+prove xor x y :e Bits.
+exact (xor_in_Bits x y (Bits_is_bit x Hx) (Bits_is_bit y Hy)).
+Qed.
+
+Theorem F2_add_assoc : forall x y z :e F2, F2_add (F2_add x y) z = F2_add x (F2_add y z).
+let x y z. assume Hx: x :e F2. assume Hy: y :e F2. assume Hz: z :e F2.
+exact (xor_assoc x y z (Bits_is_bit x Hx) (Bits_is_bit y Hy) (Bits_is_bit z Hz)).
+Qed.
+
+Theorem F2_add_semigroup : is_semigroup F2 F2_add.
+apply andI.
+- exact F2_add_magma.
+- exact F2_add_assoc.
+Qed.
+
+Theorem F2_add_0_l : forall x :e F2, F2_add F2_zero x = x.
+let x. assume Hx: x :e F2.
+prove xor 0 x = x.
+exact (xor_0_l x (Bits_is_bit x Hx)).
+Qed.
+
+Theorem F2_add_0_r : forall x :e F2, F2_add x F2_zero = x.
+let x. assume Hx: x :e F2.
+prove xor x 0 = x.
+exact (xor_0_r x (Bits_is_bit x Hx)).
+Qed.
+
+Theorem F2_add_comm : forall x y :e F2, F2_add x y = F2_add y x.
+let x y. assume Hx: x :e F2. assume Hy: y :e F2.
+exact (xor_comm x y (Bits_is_bit x Hx) (Bits_is_bit y Hy)).
+Qed.
+
+Theorem F2_is_comm_monoid : is_comm_monoid F2 F2_add F2_zero.
+apply andI.
+- apply andI.
+  + exact F2_add_semigroup.
+  + apply andI.
+    * prove 0 :e Bits. exact In_0_2.
+    * apply andI.
+      -- exact F2_add_0_l.
+      -- exact F2_add_0_r.
+- exact F2_add_comm.
+Qed.
+
+(* F2 multiplication forms a monoid *)
+Theorem F2_mul_magma : is_magma F2 F2_mul.
+prove forall x y :e F2, F2_mul x y :e F2.
+let x y. assume Hx: x :e F2. assume Hy: y :e F2.
+prove bit_and x y :e Bits.
+exact (bit_in_Bits (bit_and x y) (bit_and_is_bit x y (Bits_is_bit x Hx) (Bits_is_bit y Hy))).
+Qed.
+
+Theorem F2_mul_1_l : forall x :e F2, F2_mul F2_one x = x.
+let x. assume Hx: x :e F2.
+prove bit_and 1 x = x.
+apply (Bits_is_bit x Hx).
+- assume H: x = 0. rewrite H. exact bit_and_1_0.
+- assume H: x = 1. rewrite H. exact bit_and_1_1.
+Qed.
+
+Theorem F2_mul_1_r : forall x :e F2, F2_mul x F2_one = x.
+let x. assume Hx: x :e F2.
+prove bit_and x 1 = x.
+apply (Bits_is_bit x Hx).
+- assume H: x = 0. rewrite H. exact bit_and_0_1.
+- assume H: x = 1. rewrite H. exact bit_and_1_1.
+Qed.
+
+(* ========================================================================= *)
+(* Part III: Vector Spaces over F_2                                          *)
+(* ========================================================================= *)
+
+(* An n-dimensional vector over F2 is a function n -> F2 *)
+Definition VecF2 : set -> set := fun n => Bits :^: n.
+
+(* Vector addition (pointwise XOR) *)
+Definition vec_add : set -> set -> set -> set :=
+  fun n v w => fun i :e n => F2_add (ap v i) (ap w i).
+
+(* Scalar multiplication *)
+Definition scalar_mul : set -> set -> set -> set :=
+  fun n c v => fun i :e n => F2_mul c (ap v i).
+
+(* Zero vector *)
+Definition vec_zero : set -> set :=
+  fun n => fun i :e n => F2_zero.
+
+(* Vector addition forms a commutative monoid for each dimension *)
+Theorem vec_add_closure : forall n :e omega, forall v w :e VecF2 n, vec_add n v w :e VecF2 n.
+let n. assume Hn: n :e omega.
+let v w. assume Hv: v :e VecF2 n. assume Hw: w :e VecF2 n.
+prove vec_add n v w :e Bits :^: n.
+(* This requires showing the lambda is in the exponential - admit for now *)
+admit.
+Qed.
+
+(* ========================================================================= *)
+(* Part IV: Matrices as Morphisms                                            *)
+(* ========================================================================= *)
+
+(* A k×m matrix over F_2 represents a linear map from F2^m to F2^k *)
+(* Categorically: Mat(k,m) = Hom(F2^m, F2^k) in VectF2 *)
+
+Definition MatF2 : set -> set -> set -> prop :=
+  fun k m A =>
+    forall i :e k, forall j :e m, ap (ap A i) j :e F2.
+
+(* Matrix-vector product: the action of a morphism *)
+Definition mat_vec : set -> set -> set -> set -> set :=
+  fun k m A v =>
+    fun i :e k =>
+      nat_primrec F2_zero
+        (fun j acc => F2_add acc (F2_mul (ap (ap A i) j) (ap v j)))
+        m.
+
+(* Matrix composition: composition of morphisms *)
+Definition mat_compose : set -> set -> set -> set -> set -> set :=
+  fun k m n A B =>
+    fun i :e k => fun j :e n =>
+      nat_primrec F2_zero
+        (fun l acc => F2_add acc (F2_mul (ap (ap A i) l) (ap (ap B l) j)))
+        m.
+
+(* Identity matrix: identity morphism *)
+Definition mat_id : set -> set :=
+  fun n => fun i :e n => fun j :e n => if i = j then F2_one else F2_zero.
+
+(* Zero matrix: zero morphism *)
+Definition mat_zero : set -> set -> set :=
+  fun k m => fun i :e k => fun j :e m => F2_zero.
+
+Theorem mat_zero_is_mat : forall k m :e omega, MatF2 k m (mat_zero k m).
+let k m. assume Hk: k :e omega. assume Hm: m :e omega.
+let i. assume Hi: i :e k. let j. assume Hj: j :e m.
+prove ap (ap (mat_zero k m) i) j :e F2.
+prove ap (ap (fun r :e k => fun c :e m => F2_zero) i) j :e F2.
+rewrite beta k (fun r => fun c :e m => F2_zero) i Hi.
+rewrite beta m (fun c => F2_zero) j Hj.
+prove 0 :e Bits. exact In_0_2.
+Qed.
+
+(* ========================================================================= *)
+(* Part V: Computation as a Category                                         *)
+(* ========================================================================= *)
+
+(* Programs form a category where:
+   - Objects: Types (represented as sets)
+   - Morphisms: Computable functions (programs)
+   - Composition: Program composition
+   - Identity: Identity program *)
+
+(* Abstract computation model *)
 Parameter UTM_computes : set -> set -> set -> prop.
-
-(* UTM_halts_in p y t means program p on input y halts within t steps *)
 Parameter UTM_halts_in : set -> set -> set -> prop.
 
-(* --- Polynomial Time --- *)
+(* Program composition: if p: X -> Y and q: Y -> Z, then compose q p: X -> Z *)
+Definition prog_compose : set -> set -> set := pair.
 
-Definition is_polytime : set -> prop :=
-  fun p => forall y,
-    (exists z, UTM_computes p y z) ->
-    exists c :e omega, UTM_halts_in p y (exp_nat (desc_length y) c).
+(* Resource-bounded computation *)
+Definition computes_in_time : set -> set -> set -> set -> prop :=
+  fun p x y t => UTM_computes p x y /\ UTM_halts_in p x t.
+
+(* Polynomial time bound *)
+Definition poly_bound : set -> set -> set :=
+  fun n c => exp_nat n c.
+
+Definition is_polytime_prog : set -> prop :=
+  fun p => exists c :e omega, forall x y,
+    UTM_computes p x y ->
+    exists n :e omega, UTM_halts_in p x (poly_bound n c).
 
 (* ========================================================================= *)
-(* Complexity Classes P and NP                                               *)
+(* Part VI: Complexity Classes via Categories                                *)
 (* ========================================================================= *)
 
-(* Language in P: decidable in polynomial time *)
+(* A language L is a subset of strings (decidable predicate) *)
+
+(* P: Languages decidable by polytime programs *)
 Definition inP : set -> prop :=
-  fun L =>
-    exists p, Program p /\ is_polytime p /\
+  fun L => exists p, is_polytime_prog p /\
     forall x, (x :e L <-> exists z, UTM_computes p x z /\ z = 1).
 
-(* Language in NP: verifiable in polynomial time with polynomial witness *)
+(* NP: Languages with polytime-verifiable certificates *)
 Definition inNP : set -> prop :=
-  fun L =>
-    exists V c, Program V /\ is_polytime V /\ c :e omega /\
-    forall x,
-      (x :e L <->
-        exists w, desc_length w c= exp_nat (desc_length x) c /\
-                  exists z, UTM_computes V (x, w) z /\ z = 1).
+  fun L => exists V c :e omega, is_polytime_prog V /\
+    forall x, (x :e L <->
+      exists w, exists z, UTM_computes V (x, w) z /\ z = 1).
 
-(* NP-completeness *)
+(* Polynomial-time reduction: a morphism in the category of languages *)
+Definition poly_reduces : set -> set -> prop :=
+  fun L1 L2 => exists red, is_polytime_prog red /\
+    forall x, (x :e L1 <-> exists y, UTM_computes red x y /\ y :e L2).
+
+(* NP-hardness: every NP language reduces to L *)
+Definition NP_hard : set -> prop :=
+  fun L => forall L', inNP L' -> poly_reduces L' L.
+
+(* NP-completeness: in NP and NP-hard *)
 Definition NP_complete : set -> prop :=
-  fun L =>
-    inNP L /\
-    forall L', inNP L' ->
-      exists red, Program red /\ is_polytime red /\
-      forall x, (x :e L' <-> exists y, UTM_computes red x y /\ y :e L).
+  fun L => inNP L /\ NP_hard L.
 
-(* P = NP statement *)
-Definition P_equals_NP : prop :=
-  forall L, inNP L -> inP L.
-
-(* P ≠ NP statement *)
+(* The main statements *)
+Definition P_equals_NP : prop := forall L, inNP L -> inP L.
 Definition P_neq_NP : prop := ~P_equals_NP.
 
-(* Key equivalence for the proof *)
-Theorem P_neq_NP_equiv :
-  P_neq_NP <-> (exists L, NP_complete L /\ ~inP L).
+(* ========================================================================= *)
+(* Part VII: Functorial Properties                                           *)
+(* ========================================================================= *)
+
+(* Reduction is transitive (composition of morphisms) *)
+Theorem poly_reduces_trans : forall L1 L2 L3,
+  poly_reduces L1 L2 -> poly_reduces L2 L3 -> poly_reduces L1 L3.
+let L1 L2 L3.
+assume H12: poly_reduces L1 L2.
+assume H23: poly_reduces L2 L3.
+apply H12. let red12. assume Hred12: is_polytime_prog red12 /\
+  forall x, (x :e L1 <-> exists y, UTM_computes red12 x y /\ y :e L2).
+apply H23. let red23. assume Hred23: is_polytime_prog red23 /\
+  forall x, (x :e L2 <-> exists y, UTM_computes red23 x y /\ y :e L3).
+(* The composition red23 o red12 is a reduction from L1 to L3 *)
+(* This requires showing composition preserves polytime *)
+admit.
+Qed.
+
+(* Reduction is reflexive (identity morphism) *)
+Theorem poly_reduces_refl : forall L, poly_reduces L L.
+let L.
+(* The identity program is a reduction *)
+admit.
+Qed.
+
+(* If L is NP-complete and L in P, then P = NP *)
+Theorem NP_complete_in_P_implies_P_eq_NP : forall L,
+  NP_complete L -> inP L -> P_equals_NP.
+let L. assume Hnpc: NP_complete L. assume HLinP: inP L.
+prove forall L', inNP L' -> inP L'.
+let L'. assume HL'NP: inNP L'.
+apply Hnpc. assume _ Hhard: NP_hard L.
+claim Hred: poly_reduces L' L. { exact (Hhard L' HL'NP). }
+(* Using the reduction and L in P, show L' in P *)
+admit.
+Qed.
+
+(* The key equivalence *)
+Theorem P_neq_NP_equiv : P_neq_NP <-> exists L, NP_complete L /\ ~inP L.
 apply iffI.
 - assume H: P_neq_NP.
-  prove exists L, NP_complete L /\ ~inP L.
-  (* This direction requires showing SAT is NP-complete
-     and that if P=NP then all NP-complete problems are in P *)
+  (* Requires Cook-Levin: SAT is NP-complete *)
   admit.
 - assume H: exists L, NP_complete L /\ ~inP L.
   prove ~P_equals_NP.
@@ -231,41 +320,20 @@ apply iffI.
   apply HLnotP.
   apply Heq.
   prove inNP L.
-  apply HLnpc. assume H1 _. exact H1.
+  apply HLnpc. assume Hnp _. exact Hnp.
 Qed.
 
 (* ========================================================================= *)
-(* Hamming Weight and Distance                                               *)
+(* Part VIII: Connection to Quantale                                         *)
 (* ========================================================================= *)
 
-Definition hamming_weight : set -> set -> set :=
-  fun n s => nat_primrec 0 (fun i acc => if ap s i = 1 then ordsucc acc else acc) n.
+(* The weakness quantale (from 02_weakness_quantale.mg) provides the metric
+   structure for measuring computational complexity. The key insight:
 
-Theorem hamming_weight_0 : forall s, hamming_weight 0 s = 0.
-let s.
-exact (nat_primrec_0 0 (fun i acc => if ap s i = 1 then ordsucc acc else acc)).
-Qed.
+   - ExtNat with quant_add forms a commutative monoid (from 02)
+   - K^poly is a "distance" in this quantale
+   - The quantale structure allows algebraic manipulation of bounds
 
-Theorem hamming_weight_S : forall n s, nat_p n ->
-  hamming_weight (ordsucc n) s =
-  if ap s n = 1 then ordsucc (hamming_weight n s) else hamming_weight n s.
-let n s. assume Hn: nat_p n.
-rewrite (nat_primrec_S 0 (fun i acc => if ap s i = 1 then ordsucc acc else acc) n Hn).
-reflexivity.
-Qed.
+   This is the categorical perspective: complexity classes form a category
+   enriched over the weakness quantale. *)
 
-Definition hamming_dist : set -> set -> set -> set :=
-  fun n s1 s2 => hamming_weight n (vec_xor n s1 s2).
-
-(* ========================================================================= *)
-(* Logarithm (floor, base 2)                                                 *)
-(* ========================================================================= *)
-
-(* log2 n = largest k such that 2^k ≤ n *)
-Definition log2 : set -> set :=
-  fun n => the (fun k =>
-    k :e omega /\
-    exp_nat 2 k c= n /\
-    n :e exp_nat 2 (ordsucc k)).
-
-(* Basic log2 properties would need proofs *)

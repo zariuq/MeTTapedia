@@ -281,6 +281,90 @@ apply orE (a = 0) (a = 1) (xor a a = 0).
 - exact Ha.
 Qed.
 
+Theorem xor_in_Bits : forall a b, is_bit a -> is_bit b -> xor a b :e Bits.
+let a b. assume Ha: is_bit a. assume Hb: is_bit b.
+exact (bit_in_Bits (xor a b) (xor_is_bit a b Ha Hb)).
+Qed.
+
+Theorem xor_0_l : forall a, is_bit a -> xor 0 a = a.
+let a. assume Ha: is_bit a.
+apply Ha.
+- assume H: a = 0. rewrite H. exact xor_0_0.
+- assume H: a = 1. rewrite H. exact xor_0_1.
+Qed.
+
+Theorem xor_assoc : forall a b c, is_bit a -> is_bit b -> is_bit c ->
+  xor (xor a b) c = xor a (xor b c).
+let a b c. assume Ha: is_bit a. assume Hb: is_bit b. assume Hc: is_bit c.
+apply Ha.
+- assume Ha0: a = 0. rewrite Ha0.
+  apply Hb.
+  + assume Hb0: b = 0. rewrite Hb0.
+    apply Hc.
+    * assume Hc0: c = 0. rewrite Hc0. rewrite xor_0_0. rewrite xor_0_0. rewrite xor_0_0. reflexivity.
+    * assume Hc1: c = 1. rewrite Hc1. rewrite xor_0_0. rewrite xor_0_1. rewrite xor_0_1. reflexivity.
+  + assume Hb1: b = 1. rewrite Hb1.
+    apply Hc.
+    * assume Hc0: c = 0. rewrite Hc0. rewrite xor_0_1. rewrite xor_1_0. rewrite xor_1_0. reflexivity.
+    * assume Hc1: c = 1. rewrite Hc1. rewrite xor_0_1. rewrite xor_1_1. rewrite xor_1_1. rewrite xor_0_0. reflexivity.
+- assume Ha1: a = 1. rewrite Ha1.
+  apply Hb.
+  + assume Hb0: b = 0. rewrite Hb0.
+    apply Hc.
+    * assume Hc0: c = 0. rewrite Hc0. rewrite xor_1_0. rewrite xor_1_0. rewrite xor_0_0. reflexivity.
+    * assume Hc1: c = 1. rewrite Hc1. rewrite xor_1_0. rewrite xor_1_1. rewrite xor_0_1. rewrite xor_1_0. reflexivity.
+  + assume Hb1: b = 1. rewrite Hb1.
+    apply Hc.
+    * assume Hc0: c = 0. rewrite Hc0. rewrite xor_1_1. rewrite xor_0_0. rewrite xor_1_0. rewrite xor_1_0. reflexivity.
+    * assume Hc1: c = 1. rewrite Hc1. rewrite xor_1_1. rewrite xor_0_1. rewrite xor_1_1. rewrite xor_1_0. reflexivity.
+Qed.
+
+(* --- Bit-wise AND for F_2 multiplication --- *)
+
+Definition bit_and : set -> set -> set :=
+  fun a b => if a = 1 /\ b = 1 then 1 else 0.
+
+Theorem bit_and_0_0 : bit_and 0 0 = 0.
+prove (if 0 = 1 /\ 0 = 1 then 1 else 0) = 0.
+claim L: ~(0 = 1 /\ 0 = 1).
+{ assume H. apply H. assume H1: 0 = 1. exact (neq_0_1 H1). }
+exact (If_i_0 (0 = 1 /\ 0 = 1) 1 0 L).
+Qed.
+
+Theorem bit_and_0_1 : bit_and 0 1 = 0.
+prove (if 0 = 1 /\ 1 = 1 then 1 else 0) = 0.
+claim L: ~(0 = 1 /\ 1 = 1).
+{ assume H. apply H. assume H1: 0 = 1. exact (neq_0_1 H1). }
+exact (If_i_0 (0 = 1 /\ 1 = 1) 1 0 L).
+Qed.
+
+Theorem bit_and_1_0 : bit_and 1 0 = 0.
+prove (if 1 = 1 /\ 0 = 1 then 1 else 0) = 0.
+claim L: ~(1 = 1 /\ 0 = 1).
+{ assume H. apply H. assume _ H1: 0 = 1. exact (neq_0_1 H1). }
+exact (If_i_0 (1 = 1 /\ 0 = 1) 1 0 L).
+Qed.
+
+Theorem bit_and_1_1 : bit_and 1 1 = 1.
+prove (if 1 = 1 /\ 1 = 1 then 1 else 0) = 1.
+claim L: 1 = 1 /\ 1 = 1.
+{ apply andI. reflexivity. reflexivity. }
+exact (If_i_1 (1 = 1 /\ 1 = 1) 1 0 L).
+Qed.
+
+Theorem bit_and_is_bit : forall a b, is_bit a -> is_bit b -> is_bit (bit_and a b).
+let a b. assume Ha: is_bit a. assume Hb: is_bit b.
+apply Ha.
+- assume Ha0: a = 0. rewrite Ha0.
+  apply Hb.
+  + assume Hb0: b = 0. rewrite Hb0. rewrite bit_and_0_0. exact bit_0.
+  + assume Hb1: b = 1. rewrite Hb1. rewrite bit_and_0_1. exact bit_0.
+- assume Ha1: a = 1. rewrite Ha1.
+  apply Hb.
+  + assume Hb0: b = 0. rewrite Hb0. rewrite bit_and_1_0. exact bit_0.
+  + assume Hb1: b = 1. rewrite Hb1. rewrite bit_and_1_1. exact bit_1.
+Qed.
+
 Definition BitString : set -> set -> prop :=
   fun n s => forall i :e n, ap s i :e Bits.
 
