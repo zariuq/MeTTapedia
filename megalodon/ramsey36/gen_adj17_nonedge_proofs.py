@@ -82,11 +82,13 @@ def gen_vertex_clause(v, i_val, j_val):
 # Non-edge proof: ~Adj17 i j
 # ---------------------------------------------------------------------------
 
-def gen_not_adj_proof(vertex_i, vertex_j):
+def gen_not_adj_proof(vertex_i, vertex_j, include_self_loops=False):
     """
     Generate proof of ~Adj17 vertex_i vertex_j where (vertex_i, vertex_j) is not an edge.
+
+    With include_self_loops=True, also generates proofs for vertex_i == vertex_j.
     """
-    if vertex_i == vertex_j:
+    if vertex_i == vertex_j and not include_self_loops:
         return None
     if is_edge(vertex_i, vertex_j):
         return None
@@ -247,12 +249,23 @@ def gen_path_lemma(i, j, k):
 # Main
 # ---------------------------------------------------------------------------
 
+import sys
+
 def main():
+    include_self_loops = "--with-self-loops" in sys.argv
+
     all_chunks = []
 
-    print("(* Auto-generated Megalodon proofs for Adj17 non-edges and path lemmas *)")
-    print("(* This file requires: adj17_with_sym.mg, neq_lemmas.mg *)")
-    print("")
+    # No comments in output - Megalodon Mizar mode doesn't support (* *) syntax
+
+    # 0. Self-loop proofs (if requested)
+    selfloop_count = 0
+    if include_self_loops:
+        for i in VERTICES:
+            proof = gen_not_adj_proof(i, i, include_self_loops=True)
+            if proof is not None:
+                all_chunks.append(proof)
+                selfloop_count += 1
 
     # 1. Non-edge proofs
     nonedge_count = 0
@@ -278,8 +291,11 @@ def main():
                     all_chunks.append(lemma)
                     path_count += 1
 
-    print(f"(* Generated {nonedge_count} non-edge proofs and {path_count} path lemmas *)")
-    print("")
+    # Print summary to stderr, not stdout
+    if include_self_loops:
+        sys.stderr.write(f"Generated {selfloop_count} self-loop proofs, {nonedge_count} non-edge proofs, and {path_count} path lemmas\n")
+    else:
+        sys.stderr.write(f"Generated {nonedge_count} non-edge proofs and {path_count} path lemmas\n")
 
     for chunk in all_chunks:
         print(chunk)
