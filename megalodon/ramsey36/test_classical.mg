@@ -113,34 +113,24 @@ exact Htf (f 0) HaV (f 1) HbV (f 2) HcV Rab Rbc Rac.
 Qed.
 
 Theorem triangle_witness_from_neg : forall V:set, forall R:set -> set -> prop,
+  (forall x :e V, ~R x x) ->
   ~triangle_free V R ->
   exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
-aby.
-Qed.
-
-Theorem indep_witness_from_neg : forall V:set, forall R:set -> set -> prop, forall k:set,
-  ~no_k_indep V R k ->
-  exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y).
-let V. let R: set -> set -> prop. let k.
-assume Hnot: ~no_k_indep V R k.
-prove exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y).
-apply dneg (exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y)).
-assume Hcontra: ~(exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y)).
-apply Hnot.
-prove no_k_indep V R k.
-prove forall S, S c= V -> equip k S -> ~is_indep_set V R S.
-let S. assume HSV: S c= V. assume HSeq: equip k S.
-assume Hindep: is_indep_set V R S.
-apply Hcontra.
-witness S.
-apply and3I (S c= V) (equip k S) (forall x :e S, forall y :e S, x <> y -> ~R x y).
-- exact HSV.
-- exact HSeq.
-- prove forall x :e S, forall y :e S, x <> y -> ~R x y.
-  exact andER (S c= V) (forall x :e S, forall y :e S, x <> y -> ~R x y) Hindep.
-Qed.
-
-Theorem good_graph_contradiction : forall R:set -> set -> prop,
-  (forall x y, R x y -> R y x) -> triangle_free 18 R -> no_k_indep 18 R 6 -> False.
+let V. let R: set -> set -> prop.
+assume Hirr: forall x :e V, ~R x x.
+assume Hntf: ~triangle_free V R.
+prove exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
+apply dneg (exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y)).
+assume Hno: ~(exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y)).
+prove False.
+apply Hntf.
+prove triangle_free V R.
+let x. assume HxV: x :e V.
+let y. assume HyV: y :e V.
+let z. assume HzV: z :e V.
+assume Rxy: R x y.
+assume Ryz: R y z.
+assume Rxz: R x z.
+prove False.
 aby.
 Qed.
