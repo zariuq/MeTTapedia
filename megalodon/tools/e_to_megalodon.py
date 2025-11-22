@@ -354,6 +354,10 @@ def generate_megalodon_proof(steps: List[ProofStep]) -> str:
         output.append(generate_megalodon_disjunction_elim(steps, analysis))
         output.append("")
         output.append(generate_megalodon_orE_proof(steps))
+        output.append("")
+        resolution = generate_resolution_analysis(steps)
+        if resolution:
+            output.append(resolution)
 
     # Also output step-by-step analysis
     output.append("")
@@ -533,6 +537,53 @@ def generate_megalodon_direct_contradiction(steps: List[ProofStep]) -> str:
         output.append("")
         output.append("prove False.")
         output.append(f"exact {neg_name} {pos_name}.")
+        output.append("")
+
+    return '\n'.join(output)
+
+
+def generate_resolution_analysis(steps: List[ProofStep]) -> str:
+    """
+    Analyze resolution steps (spm, rw) to help with Megalodon translation.
+    """
+    output = []
+    output.append("(* === Resolution proof analysis === *)")
+    output.append("")
+
+    # Build dependency graph
+    step_map = {s.name: s for s in steps}
+
+    # Find resolution steps
+    resolution_steps = [s for s in steps if s.inference in ['spm', 'rw', 'sr']]
+
+    if not resolution_steps:
+        return None
+
+    output.append(f"(* Found {len(resolution_steps)} resolution steps *)")
+    output.append("")
+
+    for step in resolution_steps:
+        output.append(f"(* {step.name}: {step.formula[:60]}{'...' if len(step.formula) > 60 else ''} *)")
+        output.append(f"(*   Rule: {step.inference} *)")
+        output.append(f"(*   From: {step.parents} *)")
+
+        # Try to explain the step
+        if step.inference == 'spm':
+            output.append("(*   Superposition: resolves two clauses by unification *)")
+        elif step.inference == 'rw':
+            output.append("(*   Rewrite: applies an equality to rewrite term *)")
+        elif step.inference == 'sr':
+            output.append("(*   Subsumption resolution: removes subsumed literals *)")
+
+        # Megalodon hint
+        f = step.formula.strip()
+        if '|' in f:
+            output.append("(*   Megalodon: may need orE or case analysis *)")
+        elif f.startswith('~'):
+            output.append("(*   Megalodon: negation - may use apply or exact *)")
+        else:
+            output.append("(*   Megalodon: positive fact - may use exact *)")
+
         output.append("")
 
     return '\n'.join(output)
