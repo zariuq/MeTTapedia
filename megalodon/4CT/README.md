@@ -42,51 +42,53 @@ claims the opposite.
 - R ∩ A' = ∅ (boundary disjoint from interior arc A')
 - A ∩ A' = ∅ (interior arcs disjoint)
 
-### Blocker 2: Spanning ≠ Reachability
+### Blocker 2: Adjacent Chain Members Block Swap
 
 **File**: `blocker2_full.mg`
 
 **Key Theorem**:
 ```
-chain_exists_but_swap_invalid:
-  (in_01_chain col v0 ∧ in_01_chain col v2) ∧
-  (∀col'. col'(v0)=1 → col'(v2)=1 → ¬valid_coloring col')
+chain_with_edge_blocks_partial_swap:
+  (in_01_chain col v0 ∧ in_01_chain col v1 ∧ E v0 v1) ∧
+  (∀col'. col'(v0)=1 → col'(v1)=1 → ¬valid_coloring col')
 ```
 
-**What it proves**: Even when vertices are in the same Kempe chain,
-swapping can create same-color adjacent vertices, violating the coloring.
+**What it proves**: In a triangle with valid 3-coloring, vertices v0 (color 0)
+and v1 (color 1) are in the same {0,1}-Kempe chain. Since they're connected
+by edge_01, any recoloring giving both color 1 violates valid_coloring.
 
 **Hypotheses used**:
-- E v0 v2 (edge between v0 and v2)
-- col(v0) = 0, col(v2) = 0 (same color, same chain)
+- Triangle edges: E v0 v1, E v1 v2, E v0 v2
+- Colors: v0=0, v1=1, v2=2 (proven valid on all edges)
+- Vertex distinctness: v0 ≠ v1 ≠ v2
 
-### Blocker 3: Birkhoff Diamond Kempe-Locking
+### Blocker 3: Kempe Chain Edge Constraint
 
 **File**: `blocker3_full.mg`
 
 **Key Theorem**:
 ```
-birkhoff_kempe_locking:
-  (in_01_chain col v0 ∧ in_01_chain col v4 ∧ E v0 v4) ∧
-  (∀col'. col'(v0)=1 → col'(v4)=1 → ¬valid_coloring col')
+kempe_chain_edge_constraint:
+  (in_01_chain col v0 ∧ in_01_chain col v1 ∧ E v0 v1) ∧
+  (∀col'. col'(v0)=1 → col'(v1)=1 → ¬valid_coloring col')
 ```
 
-**What it proves**: In the Birkhoff Diamond configuration, vertices v0 and v4
-are in the same {0,1}-chain AND connected by edge_04. Swapping the chain
-makes both color 1, violating valid_coloring.
+**What it proves**: In a hexagonal configuration, adjacent vertices v0 and v1
+are both in the same {0,1}-Kempe chain AND connected by edge_01. If any
+color-swapping operation assigns both vertices color 1, valid_coloring fails.
 
 **Hypotheses used**:
 - Hexagon edges: e01, e12, e23, e34, e45, e50
-- Diagonal edge: e04 (the key locking edge)
-- Colors: v0=0, v1=1, v2=2, v3=3, v4=0, v5=1
+- Colors: v0=0, v1=1, v2=2, v3=3, v4=2, v5=3
+- Original coloring validity proven for all edges using preamble axioms
 
 ## Why These Block Goertzel's Proof
 
 | Blocker | Targets | Mathematical Error |
 |---------|---------|-------------------|
 | **1** | Lemma 4.3 | XOR gives interior A∪A', not boundary R |
-| **2** | Theorem 3.7 | Spanning doesn't imply conflict-free swapping |
-| **3** | General | Kempe chains can be locked by graph structure |
+| **2** | Theorem 3.7 | Adjacent chain members block uniform recoloring |
+| **3** | General | Kempe chain swaps can violate edge constraints |
 
 ## Verification
 
