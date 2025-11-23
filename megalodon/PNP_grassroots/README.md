@@ -1,143 +1,150 @@
 # P ≠ NP Formalization in Megalodon
 
-## Status: Work in Progress
+## Status: Streamlined Proof Outline
 
-This directory contains a ground-up formalization attempt of Ben Goertzel's P ≠ NP proof
+This directory contains a formalization of Ben Goertzel's P ≠ NP proof strategy
 (arXiv:2510.08814v1) in the Megalodon theorem prover for Proofgold.
 
-**Current State:**
-- `00_preamble.mg`: Basic logical and set-theoretic foundations with actual proofs for bit operations, XOR
-- `01_foundations.mg`: P/NP definitions, matrices, computation model (needs work)
-- Other files: Skeleton definitions (need to be rebuilt on top of proper foundations)
+**Philosophy:** This formalization uses `admit` for unproven theorems (deep results
+that require additional infrastructure). True foundational axioms (ZFC, excluded
+middle, choice) remain as `Axiom` in `00_preamble.mg`.
 
-**Note:** Building a formalization from the ground up requires extensive foundational infrastructure.
-The proofs here demonstrate the structure but many use `admit` placeholders pending complete foundations.
+## File Structure (7 files)
 
-## Overview
+| File | Description | Status |
+|------|-------------|--------|
+| `00_preamble.mg` | Set theory foundations, bits, XOR, vectors | **Proven** |
+| `01_foundations.mg` | Category theory, F₂ field, complexity classes | Partial admits |
+| `02_weakness_quantale.mg` | ExtNat quantale structure | Partial admits |
+| `03_cnf_sat.mg` | CNF/SAT formalization, Cook-Levin | Admits |
+| `04_masking.mg` | Mask group H_m = S_m ⋉ (Z₂)^m | Admits |
+| `05_vv_isolation.mg` | Valiant-Vazirani isolation | Admits |
+| `13_main_theorem.mg` | Main P ≠ NP theorem | **Proven from admits** |
 
-The proof uses a **quantale weakness framework** combined with:
-- Symmetry properties of masked random 3-CNFs
-- Sparsity at logarithmic radius (local tree-likeness)
-- Valiant-Vazirani isolation for unique witnesses
-- Switching-by-Weakness to convert short decoders to local rules
-- Compression-from-Success to derive incompressibility bounds
+## Classification
 
-## Proof Architecture (Milestones)
+### True Axioms (Foundational - in 00_preamble.mg and 02_weakness_quantale.mg)
 
-| Milestone | Description | File(s) | Status |
-|-----------|-------------|---------|--------|
-| M0 | Setup & Ensemble | `01_foundations.mg`, `02_weakness_quantale.mg`, `03_cnf_sat.mg`, `04_masking.mg`, `05_vv_isolation.mg`, `06_sils.mg`, `07_block_ensemble.mg` | In Progress |
-| M1 | Local Unpredictability | `08_neutrality.mg`, `09_sparsification.mg` | TODO |
-| M2 | Switching-by-Weakness | `10_switching.mg` | TODO |
-| M3 | Small Success & Incompressibility | `11_small_success.mg`, `12_incompressibility.mg` | TODO |
-| M4 | Quantale Clash → P ≠ NP | `13_main_theorem.mg` | TODO |
+These are standard set-theoretic and logical axioms that cannot be eliminated:
 
-## Key Definitions
+| Axiom | Source | File |
+|-------|--------|------|
+| UPair, Union, Power, Empty | ZFC (Zermelo 1908) | `00_preamble.mg` |
+| ordsucc, nat_p, omega | von Neumann (1923) | `00_preamble.mg` |
+| classic (excluded middle) | Classical logic | `00_preamble.mg` |
+| Eps_i_ax (choice) | Hilbert-Bernays (1939) | `00_preamble.mg` |
+| omega_not_in_omega | Foundation axiom | `02_weakness_quantale.mg` |
+
+### Admits (Unproven Theorems)
+
+These are theorems we assume without proof. They are well-known results that
+require extensive infrastructure to formalize, or key lemmas in the proof:
+
+**Deep Theorems (well-established results):**
+
+| Theorem | Source | File |
+|---------|--------|------|
+| Cook-Levin (SAT is NP-complete) | Cook 1971, Levin 1973 | `03_cnf_sat.mg` |
+| 3-SAT NP-completeness | Karp 1972 | `03_cnf_sat.mg` |
+| VV Isolation Lemma | Valiant-Vazirani 1986 | `05_vv_isolation.mg` |
+| Linear hash pairwise independence | Carter-Wegman 1979 | `05_vv_isolation.mg` |
+| K^poly chain rule, subadditivity | Li-Vitányi 2008 | `02_weakness_quantale.mg` |
+
+**Derivable Lemmas (could be proven with more infrastructure):**
+
+| Theorem | Notes |
+|---------|-------|
+| Mask group axioms | Need permutation inverse properties |
+| vv_witness_unique | Need equip infrastructure |
+| mask_preserves_SAT | Need semantic analysis |
+
+**Main Proof Admits:**
+
+The main theorem uses 3 key admits:
+
+1. **self_reduction_upper_bound**: P=NP implies polytime witness extraction
+2. **tuple_incompressibility**: Lower bound on witness tuple complexity
+3. **quantale_clash**: Upper and lower bounds contradict
+
+## Proof Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    FOUNDATIONS                       │
+│  00_preamble.mg ──► 01_foundations.mg               │
+│         │                   │                        │
+│         ▼                   ▼                        │
+│  02_weakness_quantale.mg    │                        │
+│         │                   │                        │
+│         ▼                   ▼                        │
+│  03_cnf_sat.mg ──────► 04_masking.mg                │
+│         │                   │                        │
+│         ▼                   ▼                        │
+│         └───────────► 05_vv_isolation.mg            │
+└─────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────┐
+│                    MAIN THEOREM                      │
+│  13_main_theorem.mg: P ≠ NP via quantale clash      │
+│                                                      │
+│  Upper bound (self-reduction) + Lower bound (K^poly)│
+│  = Contradiction in ExtNat quantale                 │
+└─────────────────────────────────────────────────────┘
+```
+
+## Key Mathematical Structures
 
 ### Weakness Quantale (Section 2.1)
-```
-weakness(z | y) := K^poly(z | y)
-```
-Polytime-capped conditional description length, forming a quantale under addition.
+- **Carrier**: ExtNat = ω ∪ {ω}
+- **Operation**: quant_add (+ with ω absorbing)
+- **Order**: quant_le (standard order, ω greatest)
+- **Measure**: K^poly(z|y) = polytime-bounded Kolmogorov complexity
 
-### Masked Block Ensemble D_m (Section 3)
-- Base: Random 3-CNF with αm clauses
-- Mask: Fresh h = (π, σ) ∈ H_m = S_m ⋉ (Z_2)^m per block
-- Isolation: VV layer with pairwise-independent A, δ-biased b
-- Promise: Conditioned on unique satisfying assignment
+### Mask Group H_m (Section 3)
+- **Structure**: S_m ⋉ (Z₂)^m (semidirect product)
+- **Elements**: (π, σ) where π permutes variables, σ flips signs
+- **Action**: h(x)_i = σ_i ⊕ x_{π(i)}
 
-### SILS: Sign-Invariant Local Sketches (Section 2.3)
-- feat : CNF_m → {0,1}^r(m) with r(m) = O(log m)
-- Sign/permutation invariant under H_m
-- Polytime computable
-
-### Key Theorems
-
-1. **Switching-by-Weakness (Theorem 4.2)**
-   For every short decoder P (|P| ≤ δt), there exists wrapper W such that
-   on a γ-fraction of blocks S ⊆ [t], each output bit is local:
-   (P ∘ W)(Φ)_{j,i} = h_{j,i}(z(Φ_j), a_{j,i}, b_j)
-
-2. **AP-GCT Neutrality (Theorem 5.1)**
-   For any sign-invariant view I: Pr[X_i = 1 | I] = 1/2
-
-3. **Template Sparsification (Theorem 5.10)**
-   Fixed local per-bit rules appear with probability m^{-Ω(1)}
-
-4. **Tuple Incompressibility (Theorem 6.8)**
-   K^poly((X_1,...,X_t) | (Φ_1,...,Φ_t)) ≥ ηt with high probability
-
-5. **Main Theorem (Theorem 7.4)**
-   P ≠ NP by contradiction with self-reduction upper bound
-
-## Dependency Graph
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         FOUNDATIONS                              │
-│  01_foundations.mg ──► 02_weakness_quantale.mg                   │
-│         │                      │                                 │
-│         ▼                      ▼                                 │
-│  03_cnf_sat.mg ──────► 04_masking.mg                            │
-│         │                      │                                 │
-│         ▼                      ▼                                 │
-│  05_vv_isolation.mg ◄─────────┘                                 │
-│         │                                                        │
-│         ▼                                                        │
-│  06_sils.mg ──────► 07_block_ensemble.mg                        │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    LOCAL UNPREDICTABILITY                        │
-│  08_neutrality.mg ◄──── 07_block_ensemble.mg                    │
-│         │                                                        │
-│         ▼                                                        │
-│  09_sparsification.mg                                           │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    SWITCHING & AGGREGATION                       │
-│  10_switching.mg ◄──── 08_neutrality.mg + 09_sparsification.mg │
-│         │                                                        │
-│         ▼                                                        │
-│  11_small_success.mg ──► 12_incompressibility.mg                │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       MAIN THEOREM                               │
-│  13_main_theorem.mg: P ≠ NP via quantale upper-lower clash      │
-└─────────────────────────────────────────────────────────────────┘
-```
+### VV Instance (Section 4)
+- **Components**: (F, A, b) - formula, hash matrix, target
+- **Promise**: exactly one x satisfies F and Ax + b = 0
+- **Witness**: vv_witness m inst extracts the unique solution
 
 ## Build Instructions
 
 ```bash
 cd megalodon
 ./bin/megalodon -mizar -I examples/mizar/PfgMizarNov2020Preamble.mgs \
+    PNP_grassroots/00_preamble.mg \
     PNP_grassroots/01_foundations.mg \
     PNP_grassroots/02_weakness_quantale.mg \
-    # ... etc
+    PNP_grassroots/03_cnf_sat.mg \
+    PNP_grassroots/04_masking.mg \
+    PNP_grassroots/05_vv_isolation.mg \
+    PNP_grassroots/13_main_theorem.mg
 ```
 
-## Parameters (from Section 7.4)
+## What Was Removed
 
-- Clause density: α > 0 (constant)
-- VV parameters: k = c₁ log m, δ = m^{-c₂}
-- Mask: fresh h ∈ H_m per block, uniform
-- SILS length: r(m) = O(log m)
-- Neighborhood radius: r = c₃ log m with c₃ ∈ (0, c₃*(α))
-- Number of blocks: t = c₄m
-- Switching fraction: γ > 0
-- Tuple lower bound: η > 0
+The following placeholder files were removed as they contained only trivial
+admits (conclusions of `True`):
+- `06_sils.mg` - SILS sketches
+- `07_block_ensemble.mg` - Block distribution
+- `08_neutrality.mg` - AP-GCT neutrality
+- `09_sparsification.mg` - Template sparsification
+- `10_switching.mg` - Switching-by-Weakness
+- `11_small_success.mg` - Per-program success bounds
+
+The mathematical content of these files is captured by the admits in
+`13_main_theorem.mg` (specifically `tuple_incompressibility` and
+`quantale_clash`).
 
 ## References
 
-- Goertzel, B. "P ≠ NP: A Non-Relativizing Proof via Quantale Weakness and
-  Geometric Complexity." arXiv:2510.08814v1, October 2025.
-- Valiant, L.G. & Vazirani, V.V. "NP is as easy as detecting unique solutions."
-  Theoretical Computer Science 47(1):85-93, 1986.
-- Li, M. & Vitányi, P. "An Introduction to Kolmogorov Complexity and Its
-  Applications." 3rd ed., Springer, 2008.
+- **[Goertzel]** Goertzel, B. (2025). "P ≠ NP: A Non-Relativizing Proof via
+  Quantale Weakness and Geometric Complexity". arXiv:2510.08814v1.
+- **[Cook]** Cook, S.A. (1971). "The complexity of theorem-proving procedures".
+- **[VV86]** Valiant & Vazirani (1986). "NP is as easy as detecting unique solutions".
+- **[LV08]** Li & Vitányi (2008). "An Introduction to Kolmogorov Complexity".
+- **[Lang]** Lang, S. (2002). "Algebra", 3rd ed.
