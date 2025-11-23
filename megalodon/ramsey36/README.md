@@ -196,25 +196,27 @@ Helper theorems:
    - 4-indep plus vertex gives contradiction
    - Requires pigeonhole principle formalization
 
-### E Prover Verification: Degree Parity on 9 Vertices
+### E Prover Verifications
 
-TPTP file: `ramsey36/tptp/degree_parity_9_sat.p`
+All key lemmas have been verified by E prover 3.0.03:
 
+**1. Degree Parity on 9 Vertices** (`degree_parity_9_sat.p`)
 ```
-% E prover 3.0.03
-% SZS status ContradictoryAxioms
-% SatCheck found unsatisfiable ground set
-% Proof found!
+% SZS status ContradictoryAxioms - Proof found!
 ```
+Confirms 9-vertex triangle-free no-4-indep graph is impossible.
 
-The E prover verified that in a 9-vertex graph with:
-- Triangle-free constraint (84 axioms)
-- No 4-independent set (126 axioms)
+**2. Degree Bound (6 neighbors → 6-indep)** (`vertex_12_nonneighbors_v2.p`)
+```
+% SZS status ContradictoryAxioms - Proof found!
+```
+If v has 6 neighbors in triangle-free graph, they form 6-indep set.
 
-The axiom set is unsatisfiable, confirming the degree parity contradiction:
-- Max degree 3 (4 neighbors would form 4-indep by triangle-free)
-- Min degree 3 (6+ non-neighbors gives 4-indep via R(3,4)=9)
-- 9 vertices × degree 3 = 27 (odd), but sum of degrees = 2×edges (even)
+**3. 5-Indep Extension → 6-Indep** (`extend_4indep.p`)
+```
+% SZS status ContradictoryAxioms - Proof found!
+```
+5-indep set + non-adjacent vertex contradicts no_6_indep.
 
 ## References
 
