@@ -233,6 +233,160 @@ exact neighborhood_indep V R Hsym Htf v Hv x (HSV x Hx) y (HSV y Hy)
       (Hadj x Hx) (Hadj y Hy) Hneq.
 Qed.
 
+Theorem equip_4_quad : forall a b c d: set,
+  a <> b -> a <> c -> a <> d -> b <> c -> b <> d -> c <> d ->
+  equip 4 (({a, b} :\/: {c}) :\/: {d}).
+let a. let b. let c. let d.
+assume Hab: a <> b. assume Hac: a <> c. assume Had: a <> d.
+assume Hbc: b <> c. assume Hbd: b <> d. assume Hcd: c <> d.
+set S := ({a, b} :\/: {c}) :\/: {d}.
+set f := fun n:set => if n = 0 then a else (if n = 1 then b else (if n = 2 then c else d)).
+claim H00: 0 = 0. prove forall Q: set -> set -> prop, Q 0 0 -> Q 0 0. let Q. assume HQ. exact HQ.
+claim H11: 1 = 1. prove forall Q: set -> set -> prop, Q 1 1 -> Q 1 1. let Q. assume HQ. exact HQ.
+claim H22: 2 = 2. prove forall Q: set -> set -> prop, Q 2 2 -> Q 2 2. let Q. assume HQ. exact HQ.
+claim H33: 3 = 3. prove forall Q: set -> set -> prop, Q 3 3 -> Q 3 3. let Q. assume HQ. exact HQ.
+claim Hf0: f 0 = a. exact If_i_1 (0 = 0) a (if 0 = 1 then b else (if 0 = 2 then c else d)) H00.
+claim Hf1: f 1 = b.
+  claim Hstep1: (if 1 = 0 then a else (if 1 = 1 then b else (if 1 = 2 then c else d))) = (if 1 = 1 then b else (if 1 = 2 then c else d)).
+    exact If_i_0 (1 = 0) a (if 1 = 1 then b else (if 1 = 2 then c else d)) neq_1_0.
+  claim Hstep2: (if 1 = 1 then b else (if 1 = 2 then c else d)) = b. exact If_i_1 (1 = 1) b (if 1 = 2 then c else d) H11.
+  exact eq_i_tra (if 1 = 0 then a else (if 1 = 1 then b else (if 1 = 2 then c else d))) (if 1 = 1 then b else (if 1 = 2 then c else d)) b Hstep1 Hstep2.
+claim Hf2: f 2 = c.
+  claim Hstep1: (if 2 = 0 then a else (if 2 = 1 then b else (if 2 = 2 then c else d))) = (if 2 = 1 then b else (if 2 = 2 then c else d)).
+    exact If_i_0 (2 = 0) a (if 2 = 1 then b else (if 2 = 2 then c else d)) neq_2_0.
+  claim Hstep2: (if 2 = 1 then b else (if 2 = 2 then c else d)) = (if 2 = 2 then c else d). exact If_i_0 (2 = 1) b (if 2 = 2 then c else d) neq_2_1.
+  claim Hstep3: (if 2 = 2 then c else d) = c. exact If_i_1 (2 = 2) c d H22.
+  claim Hmid: (if 2 = 0 then a else (if 2 = 1 then b else (if 2 = 2 then c else d))) = (if 2 = 2 then c else d).
+    exact eq_i_tra (if 2 = 0 then a else (if 2 = 1 then b else (if 2 = 2 then c else d))) (if 2 = 1 then b else (if 2 = 2 then c else d)) (if 2 = 2 then c else d) Hstep1 Hstep2.
+  exact eq_i_tra (if 2 = 0 then a else (if 2 = 1 then b else (if 2 = 2 then c else d))) (if 2 = 2 then c else d) c Hmid Hstep3.
+claim Hf3: f 3 = d.
+  claim Hstep1: (if 3 = 0 then a else (if 3 = 1 then b else (if 3 = 2 then c else d))) = (if 3 = 1 then b else (if 3 = 2 then c else d)).
+    exact If_i_0 (3 = 0) a (if 3 = 1 then b else (if 3 = 2 then c else d)) neq_3_0.
+  claim Hstep2: (if 3 = 1 then b else (if 3 = 2 then c else d)) = (if 3 = 2 then c else d). exact If_i_0 (3 = 1) b (if 3 = 2 then c else d) neq_3_1.
+  claim Hstep3: (if 3 = 2 then c else d) = d. exact If_i_0 (3 = 2) c d neq_3_2.
+  claim Hmid: (if 3 = 0 then a else (if 3 = 1 then b else (if 3 = 2 then c else d))) = (if 3 = 2 then c else d).
+    exact eq_i_tra (if 3 = 0 then a else (if 3 = 1 then b else (if 3 = 2 then c else d))) (if 3 = 1 then b else (if 3 = 2 then c else d)) (if 3 = 2 then c else d) Hstep1 Hstep2.
+  exact eq_i_tra (if 3 = 0 then a else (if 3 = 1 then b else (if 3 = 2 then c else d))) (if 3 = 2 then c else d) d Hmid Hstep3.
+claim HaS: a :e S. apply binunionI1 ({a, b} :\/: {c}) {d} a. apply binunionI1 {a, b} {c} a. exact UPairI1 a b.
+claim Hf0S: f 0 :e S. exact Hf0 (fun x y => y :e S) HaS.
+claim HbS: b :e S. apply binunionI1 ({a, b} :\/: {c}) {d} b. apply binunionI1 {a, b} {c} b. exact UPairI2 a b.
+claim Hf1S: f 1 :e S. exact Hf1 (fun x y => y :e S) HbS.
+claim HcS: c :e S. apply binunionI1 ({a, b} :\/: {c}) {d} c. apply binunionI2 {a, b} {c} c. exact SingI c.
+claim Hf2S: f 2 :e S. exact Hf2 (fun x y => y :e S) HcS.
+claim HdS: d :e S. apply binunionI2 ({a, b} :\/: {c}) {d} d. exact SingI d.
+claim Hf3S: f 3 :e S. exact Hf3 (fun x y => y :e S) HdS.
+apply bij_equip 4 S f.
+apply and3I (forall u :e 4, f u :e S) (forall u v :e 4, f u = f v -> u = v) (forall w :e S, exists u :e 4, f u = w).
+- let u. assume Hu: u :e 4. exact cases_4 u Hu (fun i => f i :e S) Hf0S Hf1S Hf2S Hf3S.
+- let u. assume Hu: u :e 4. let v. assume Hv: v :e 4. assume Hfuv: f u = f v.
+  claim Hcase0: f 0 = f v -> 0 = v.
+    assume H0v: f 0 = f v.
+    claim Hcase00: f 0 = f 0 -> 0 = 0. assume HH. exact H00.
+    claim Hcase01: f 0 = f 1 -> 0 = 1.
+      assume H01: f 0 = f 1. prove False.
+      claim Ha_eq_b: a = b. claim H3: a = f 0. prove forall Q: set -> set -> prop, Q a (f 0) -> Q (f 0) a. let Q. assume HQ. exact Hf0 (fun x y => Q y x) HQ.
+        claim H4: f 0 = b. exact eq_i_tra (f 0) (f 1) b H01 Hf1. exact eq_i_tra a (f 0) b H3 H4.
+      exact Hab Ha_eq_b.
+    claim Hcase02: f 0 = f 2 -> 0 = 2.
+      assume H02: f 0 = f 2. prove False.
+      claim Ha_eq_c: a = c. claim H3: a = f 0. prove forall Q: set -> set -> prop, Q a (f 0) -> Q (f 0) a. let Q. assume HQ. exact Hf0 (fun x y => Q y x) HQ.
+        claim H4: f 0 = c. exact eq_i_tra (f 0) (f 2) c H02 Hf2. exact eq_i_tra a (f 0) c H3 H4.
+      exact Hac Ha_eq_c.
+    claim Hcase03: f 0 = f 3 -> 0 = 3.
+      assume H03: f 0 = f 3. prove False.
+      claim Ha_eq_d: a = d. claim H3: a = f 0. prove forall Q: set -> set -> prop, Q a (f 0) -> Q (f 0) a. let Q. assume HQ. exact Hf0 (fun x y => Q y x) HQ.
+        claim H4: f 0 = d. exact eq_i_tra (f 0) (f 3) d H03 Hf3. exact eq_i_tra a (f 0) d H3 H4.
+      exact Had Ha_eq_d.
+    exact cases_4 v Hv (fun j => f 0 = f j -> 0 = j) Hcase00 Hcase01 Hcase02 Hcase03 H0v.
+  claim Hcase1: f 1 = f v -> 1 = v.
+    assume H1v: f 1 = f v.
+    claim Hcase10: f 1 = f 0 -> 1 = 0.
+      assume H10: f 1 = f 0. prove False.
+      claim Hb_eq_a: b = a. claim H3: b = f 1. prove forall Q: set -> set -> prop, Q b (f 1) -> Q (f 1) b. let Q. assume HQ. exact Hf1 (fun x y => Q y x) HQ.
+        claim H4: f 1 = a. exact eq_i_tra (f 1) (f 0) a H10 Hf0. exact eq_i_tra b (f 1) a H3 H4.
+      claim Ha_eq_b: a = b. prove forall Q: set -> set -> prop, Q a b -> Q b a. let Q. assume HQ. exact Hb_eq_a (fun x y => Q y x) HQ.
+      exact Hab Ha_eq_b.
+    claim Hcase11: f 1 = f 1 -> 1 = 1. assume HH. exact H11.
+    claim Hcase12: f 1 = f 2 -> 1 = 2.
+      assume H12: f 1 = f 2. prove False.
+      claim Hb_eq_c: b = c. claim H3: b = f 1. prove forall Q: set -> set -> prop, Q b (f 1) -> Q (f 1) b. let Q. assume HQ. exact Hf1 (fun x y => Q y x) HQ.
+        claim H4: f 1 = c. exact eq_i_tra (f 1) (f 2) c H12 Hf2. exact eq_i_tra b (f 1) c H3 H4.
+      exact Hbc Hb_eq_c.
+    claim Hcase13: f 1 = f 3 -> 1 = 3.
+      assume H13: f 1 = f 3. prove False.
+      claim Hb_eq_d: b = d. claim H3: b = f 1. prove forall Q: set -> set -> prop, Q b (f 1) -> Q (f 1) b. let Q. assume HQ. exact Hf1 (fun x y => Q y x) HQ.
+        claim H4: f 1 = d. exact eq_i_tra (f 1) (f 3) d H13 Hf3. exact eq_i_tra b (f 1) d H3 H4.
+      exact Hbd Hb_eq_d.
+    exact cases_4 v Hv (fun j => f 1 = f j -> 1 = j) Hcase10 Hcase11 Hcase12 Hcase13 H1v.
+  claim Hcase2: f 2 = f v -> 2 = v.
+    assume H2v: f 2 = f v.
+    claim Hcase20: f 2 = f 0 -> 2 = 0.
+      assume H20: f 2 = f 0. prove False.
+      claim Hc_eq_a: c = a. claim H3: c = f 2. prove forall Q: set -> set -> prop, Q c (f 2) -> Q (f 2) c. let Q. assume HQ. exact Hf2 (fun x y => Q y x) HQ.
+        claim H4: f 2 = a. exact eq_i_tra (f 2) (f 0) a H20 Hf0. exact eq_i_tra c (f 2) a H3 H4.
+      claim Ha_eq_c: a = c. prove forall Q: set -> set -> prop, Q a c -> Q c a. let Q. assume HQ. exact Hc_eq_a (fun x y => Q y x) HQ.
+      exact Hac Ha_eq_c.
+    claim Hcase21: f 2 = f 1 -> 2 = 1.
+      assume H21: f 2 = f 1. prove False.
+      claim Hc_eq_b: c = b. claim H3: c = f 2. prove forall Q: set -> set -> prop, Q c (f 2) -> Q (f 2) c. let Q. assume HQ. exact Hf2 (fun x y => Q y x) HQ.
+        claim H4: f 2 = b. exact eq_i_tra (f 2) (f 1) b H21 Hf1. exact eq_i_tra c (f 2) b H3 H4.
+      claim Hb_eq_c: b = c. prove forall Q: set -> set -> prop, Q b c -> Q c b. let Q. assume HQ. exact Hc_eq_b (fun x y => Q y x) HQ.
+      exact Hbc Hb_eq_c.
+    claim Hcase22: f 2 = f 2 -> 2 = 2. assume HH. exact H22.
+    claim Hcase23: f 2 = f 3 -> 2 = 3.
+      assume H23: f 2 = f 3. prove False.
+      claim Hc_eq_d: c = d. claim H3: c = f 2. prove forall Q: set -> set -> prop, Q c (f 2) -> Q (f 2) c. let Q. assume HQ. exact Hf2 (fun x y => Q y x) HQ.
+        claim H4: f 2 = d. exact eq_i_tra (f 2) (f 3) d H23 Hf3. exact eq_i_tra c (f 2) d H3 H4.
+      exact Hcd Hc_eq_d.
+    exact cases_4 v Hv (fun j => f 2 = f j -> 2 = j) Hcase20 Hcase21 Hcase22 Hcase23 H2v.
+  claim Hcase3: f 3 = f v -> 3 = v.
+    assume H3v: f 3 = f v.
+    claim Hcase30: f 3 = f 0 -> 3 = 0.
+      assume H30: f 3 = f 0. prove False.
+      claim Hd_eq_a: d = a. claim H3: d = f 3. prove forall Q: set -> set -> prop, Q d (f 3) -> Q (f 3) d. let Q. assume HQ. exact Hf3 (fun x y => Q y x) HQ.
+        claim H4: f 3 = a. exact eq_i_tra (f 3) (f 0) a H30 Hf0. exact eq_i_tra d (f 3) a H3 H4.
+      claim Ha_eq_d: a = d. prove forall Q: set -> set -> prop, Q a d -> Q d a. let Q. assume HQ. exact Hd_eq_a (fun x y => Q y x) HQ.
+      exact Had Ha_eq_d.
+    claim Hcase31: f 3 = f 1 -> 3 = 1.
+      assume H31: f 3 = f 1. prove False.
+      claim Hd_eq_b: d = b. claim H3: d = f 3. prove forall Q: set -> set -> prop, Q d (f 3) -> Q (f 3) d. let Q. assume HQ. exact Hf3 (fun x y => Q y x) HQ.
+        claim H4: f 3 = b. exact eq_i_tra (f 3) (f 1) b H31 Hf1. exact eq_i_tra d (f 3) b H3 H4.
+      claim Hb_eq_d: b = d. prove forall Q: set -> set -> prop, Q b d -> Q d b. let Q. assume HQ. exact Hd_eq_b (fun x y => Q y x) HQ.
+      exact Hbd Hb_eq_d.
+    claim Hcase32: f 3 = f 2 -> 3 = 2.
+      assume H32: f 3 = f 2. prove False.
+      claim Hd_eq_c: d = c. claim H3: d = f 3. prove forall Q: set -> set -> prop, Q d (f 3) -> Q (f 3) d. let Q. assume HQ. exact Hf3 (fun x y => Q y x) HQ.
+        claim H4: f 3 = c. exact eq_i_tra (f 3) (f 2) c H32 Hf2. exact eq_i_tra d (f 3) c H3 H4.
+      claim Hc_eq_d: c = d. prove forall Q: set -> set -> prop, Q c d -> Q d c. let Q. assume HQ. exact Hd_eq_c (fun x y => Q y x) HQ.
+      exact Hcd Hc_eq_d.
+    claim Hcase33: f 3 = f 3 -> 3 = 3. assume HH. exact H33.
+    exact cases_4 v Hv (fun j => f 3 = f j -> 3 = j) Hcase30 Hcase31 Hcase32 Hcase33 H3v.
+  exact cases_4 u Hu (fun i => f i = f v -> i = v) Hcase0 Hcase1 Hcase2 Hcase3 Hfuv.
+- let w. assume Hw: w :e S.
+  claim Hcasea: w = a -> exists u :e 4, f u = w.
+    assume Hwa: w = a. witness 0.
+    claim Haw: a = w. prove forall Q: set -> set -> prop, Q a w -> Q w a. let Q. assume HQ. exact Hwa (fun x y => Q y x) HQ.
+    exact andI (0 :e 4) (f 0 = w) In_0_4 (eq_i_tra (f 0) a w Hf0 Haw).
+  claim Hcaseb: w = b -> exists u :e 4, f u = w.
+    assume Hwb: w = b. witness 1.
+    claim Hbw: b = w. prove forall Q: set -> set -> prop, Q b w -> Q w b. let Q. assume HQ. exact Hwb (fun x y => Q y x) HQ.
+    exact andI (1 :e 4) (f 1 = w) In_1_4 (eq_i_tra (f 1) b w Hf1 Hbw).
+  claim Hcasec: w = c -> exists u :e 4, f u = w.
+    assume Hwc: w = c. witness 2.
+    claim Hcw: c = w. prove forall Q: set -> set -> prop, Q c w -> Q w c. let Q. assume HQ. exact Hwc (fun x y => Q y x) HQ.
+    exact andI (2 :e 4) (f 2 = w) In_2_4 (eq_i_tra (f 2) c w Hf2 Hcw).
+  claim Hcased: w = d -> exists u :e 4, f u = w.
+    assume Hwd: w = d. witness 3.
+    claim Hdw: d = w. prove forall Q: set -> set -> prop, Q d w -> Q w d. let Q. assume HQ. exact Hwd (fun x y => Q y x) HQ.
+    exact andI (3 :e 4) (f 3 = w) In_3_4 (eq_i_tra (f 3) d w Hf3 Hdw).
+  apply binunionE ({a, b} :\/: {c}) {d} w Hw.
+  + assume Hwabc: w :e ({a, b} :\/: {c}).
+    apply binunionE {a, b} {c} w Hwabc.
+    * assume Hwab: w :e {a, b}. apply UPairE w a b Hwab. exact Hcasea. exact Hcaseb.
+    * assume Hwc: w :e {c}. exact Hcasec (SingE c w Hwc).
+  + assume Hwd: w :e {d}. exact Hcased (SingE d w Hwd).
+Qed.
+
 Theorem four_neighbors_give_4indep : forall V:set, forall R:set -> set -> prop,
   (forall x y, R x y -> R y x) ->
   triangle_free V R ->
@@ -240,7 +394,73 @@ Theorem four_neighbors_give_4indep : forall V:set, forall R:set -> set -> prop,
     n1 <> n2 -> n1 <> n3 -> n1 <> n4 -> n2 <> n3 -> n2 <> n4 -> n3 <> n4 ->
     R v n1 -> R v n2 -> R v n3 -> R v n4 ->
     exists S, S c= V /\ equip 4 S /\ is_indep_set V R S.
-Admitted.
+let V. let R: set -> set -> prop.
+assume Hsym: forall x y, R x y -> R y x.
+assume Htf: triangle_free V R.
+let v. assume Hv: v :e V.
+let n1. assume Hn1: n1 :e V.
+let n2. assume Hn2: n2 :e V.
+let n3. assume Hn3: n3 :e V.
+let n4. assume Hn4: n4 :e V.
+assume H12: n1 <> n2. assume H13: n1 <> n3. assume H14: n1 <> n4.
+assume H23: n2 <> n3. assume H24: n2 <> n4. assume H34: n3 <> n4.
+assume Rv1: R v n1. assume Rv2: R v n2. assume Rv3: R v n3. assume Rv4: R v n4.
+set S := ({n1, n2} :\/: {n3}) :\/: {n4}.
+witness S.
+apply and3I (S c= V) (equip 4 S) (is_indep_set V R S).
+- prove S c= V.
+  let w. assume Hw: w :e S.
+  apply binunionE ({n1, n2} :\/: {n3}) {n4} w Hw.
+  + assume Hw123: w :e ({n1, n2} :\/: {n3}).
+    apply binunionE {n1, n2} {n3} w Hw123.
+    * assume Hw12: w :e {n1, n2}.
+      apply UPairE w n1 n2 Hw12.
+      - assume Hwn1: w = n1. exact Hwn1 (fun a b => b :e V) Hn1.
+      - assume Hwn2: w = n2. exact Hwn2 (fun a b => b :e V) Hn2.
+    * assume Hw3: w :e {n3}. claim Hwn3: w = n3. exact SingE n3 w Hw3. exact Hwn3 (fun a b => b :e V) Hn3.
+  + assume Hw4: w :e {n4}. claim Hwn4: w = n4. exact SingE n4 w Hw4. exact Hwn4 (fun a b => b :e V) Hn4.
+- prove equip 4 S.
+  exact equip_4_quad n1 n2 n3 n4 H12 H13 H14 H23 H24 H34.
+- prove is_indep_set V R S.
+  apply andI (S c= V) (forall x :e S, forall y :e S, x <> y -> ~R x y).
+  + let w. assume Hw: w :e S.
+    apply binunionE ({n1, n2} :\/: {n3}) {n4} w Hw.
+    * assume Hw123: w :e ({n1, n2} :\/: {n3}).
+      apply binunionE {n1, n2} {n3} w Hw123.
+      - assume Hw12: w :e {n1, n2}. apply UPairE w n1 n2 Hw12.
+        + assume Hwn1: w = n1. exact Hwn1 (fun a b => b :e V) Hn1.
+        + assume Hwn2: w = n2. exact Hwn2 (fun a b => b :e V) Hn2.
+      - assume Hw3: w :e {n3}. claim Hwn3: w = n3. exact SingE n3 w Hw3. exact Hwn3 (fun a b => b :e V) Hn3.
+    * assume Hw4: w :e {n4}. claim Hwn4: w = n4. exact SingE n4 w Hw4. exact Hwn4 (fun a b => b :e V) Hn4.
+  + prove forall x :e S, forall y :e S, x <> y -> ~R x y.
+    exact neighbors_form_indep V R Hsym Htf v Hv S
+      (fun w Hw =>
+        binunionE ({n1, n2} :\/: {n3}) {n4} w Hw (w :e V)
+          (fun Hw123 => binunionE {n1, n2} {n3} w Hw123 (w :e V)
+            (fun Hw12 => UPairE w n1 n2 Hw12 (w :e V)
+              (fun Hwn1 => Hwn1 (fun a b => b :e V) Hn1)
+              (fun Hwn2 => Hwn2 (fun a b => b :e V) Hn2))
+            (fun Hw3 => (SingE n3 w Hw3) (fun a b => b :e V) Hn3))
+          (fun Hw4 => (SingE n4 w Hw4) (fun a b => b :e V) Hn4))
+      (fun w Hw =>
+        binunionE ({n1, n2} :\/: {n3}) {n4} w Hw (R v w)
+          (fun Hw123 => binunionE {n1, n2} {n3} w Hw123 (R v w)
+            (fun Hw12 => UPairE w n1 n2 Hw12 (R v w)
+              (fun Hwn1 =>
+                let Hn1w : n1 = w := (fun Q HQ => Hwn1 (fun a b => Q b a) HQ)
+                in Hn1w (fun a b => R v a) Rv1)
+              (fun Hwn2 =>
+                let Hn2w : n2 = w := (fun Q HQ => Hwn2 (fun a b => Q b a) HQ)
+                in Hn2w (fun a b => R v a) Rv2))
+            (fun Hw3 =>
+              let Hwn3 := SingE n3 w Hw3 in
+              let Hn3w : n3 = w := (fun Q HQ => Hwn3 (fun a b => Q b a) HQ)
+              in Hn3w (fun a b => R v a) Rv3))
+          (fun Hw4 =>
+            let Hwn4 := SingE n4 w Hw4 in
+            let Hn4w : n4 = w := (fun Q HQ => Hwn4 (fun a b => Q b a) HQ)
+            in Hn4w (fun a b => R v a) Rv4)).
+Qed.
 
 Theorem six_nonneighbors_contradiction_on_9 : forall V:set, forall R:set -> set -> prop,
   (forall x y, R x y -> R y x) ->

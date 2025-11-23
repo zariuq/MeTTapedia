@@ -167,9 +167,10 @@ The theorem `has_triangle_or_4indep_on_9` uses the clever degree/parity argument
 
 Helper theorems:
 - `neighbors_form_indep` - **Kernel verified**: In triangle-free graph, neighbors of v are independent
-- `four_neighbors_give_4indep` - **Admitted**: 4 distinct neighbors form a 4-independent set
+- `equip_4_quad` - **Kernel verified**: 4 distinct elements form a set with equip 4
+- `four_neighbors_give_4indep` - **Kernel verified**: 4 distinct neighbors form a 4-independent set
 - `six_nonneighbors_contradiction_on_9` - **Admitted**: R(3,3) on 6 non-neighbors
-- `degree_parity_contradiction_on_9` - **Admitted**: Parity argument (requires arithmetic)
+- `degree_parity_contradiction_on_9` - **Admitted**: Verified by E prover, needs Megalodon translation
 
 ### Remaining Admitted Lemmas (require cardinality/TPTP reasoning)
 
@@ -194,6 +195,26 @@ Helper theorems:
 6. `can_extend_4indep_with_nonneighbor` - **Admitted** (requires counting)
    - 4-indep plus vertex gives contradiction
    - Requires pigeonhole principle formalization
+
+### E Prover Verification: Degree Parity on 9 Vertices
+
+TPTP file: `ramsey36/tptp/degree_parity_9_sat.p`
+
+```
+% E prover 3.0.03
+% SZS status ContradictoryAxioms
+% SatCheck found unsatisfiable ground set
+% Proof found!
+```
+
+The E prover verified that in a 9-vertex graph with:
+- Triangle-free constraint (84 axioms)
+- No 4-independent set (126 axioms)
+
+The axiom set is unsatisfiable, confirming the degree parity contradiction:
+- Max degree 3 (4 neighbors would form 4-indep by triangle-free)
+- Min degree 3 (6+ non-neighbors gives 4-indep via R(3,4)=9)
+- 9 vertices × degree 3 = 27 (odd), but sum of degrees = 2×edges (even)
 
 ## References
 
