@@ -129,3 +129,22 @@ This follows from:
 With alpha = 4, d = 12, log(d) ≈ 3.58
 Need 2c*3.58 < 1, i.e., c < 0.14
 Paper uses c = 0.1, giving m^{-0.28} cycle probability.
+
+tree_probability.mg - Probability bounds (VERIFIED SYNTAX)
+  - degree_3cnf: 3*alpha for clause density alpha
+  - times_2: 2*n helper
+  - neighborhood_size: d^r vertices at radius r
+  - cycle_probability_exponent: d^{2r} collision bound
+  - subcritical_radius: condition for tree-likeness
+  - log_base_2: logarithm approximation
+  - critical_constant: c such that 2c*log(d) < log(m)
+  - tree_failure_probability: m^{-(1 - 2c*log(d))}
+  - tree_prob_constant_degree: existence of good c
+  - tree_likeness_whp: main theorem statement
+
+The mathematical argument:
+1. Random 3-CNF has degree d = 3*alpha
+2. Radius-r neighborhood has ~d^r vertices
+3. Collision probability ~d^{2r}/m = m^{2c*log(d) - 1}
+4. For c < 1/(2*log(d)), this → 0 as m → ∞
+5. By Markov, tree probability → 1
