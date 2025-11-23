@@ -1,0 +1,207 @@
+STEELMANNING THE SWITCHING LEMMA - POTENTIAL FAILURE POINTS
+============================================================
+
+The Switching-by-Weakness lemma (Theorem 4.2) is THE CRUX.
+Here we identify where the Admitted proofs could ACTUALLY FAIL.
+
+============================================================
+FAILURE POINT 1: HYPOTHESIS CLASS SIZE |H|
+============================================================
+
+The paper says H contains "simple" functions on O(log m) bits.
+
+CRITICAL QUESTION: What is |H| exactly?
+
+Option A: All Boolean functions on O(log m) bits
+  |H| = 2^{2^{O(log m)}} = 2^{m^{O(1)}} = EXPONENTIAL
+  ERM CANNOT generalize with poly(m) samples!
+  STATUS: BREAKS THE PROOF
+
+Option B: Circuits of size poly(log m)
+  |H| = 2^{poly(log m) * log(poly(log m))}
+      = 2^{O((log m)^c * c*log(log m))}
+      = 2^{O((log m)^{c+1})} for circuits of size (log m)^c
+
+  If c = 1: |H| = 2^{O(log^2 m)} = m^{O(log m)} = QUASI-POLYNOMIAL
+  If c = 0.5: |H| = 2^{O(log^{1.5} m)} = still super-polynomial
+
+  For ERM with t samples to generalize to error epsilon:
+    Need t >= O(log|H| / epsilon^2)
+    Need t >= O((log m)^{c+1} / epsilon^2)
+
+  Paper has t = m^epsilon for small epsilon.
+  This gives t >= O((log m)^{c+1}) when epsilon = 1/poly(log m).
+
+  But we need epsilon = Omega(1) for the contradiction!
+
+  STATUS: POTENTIAL ISSUE - needs epsilon = O(1/sqrt(log m)) at least
+
+Option C: Only circuits of size O(log m)
+  |H| = 2^{O(log m * log(log m))} = poly(m) * polylog factors
+  ERM CAN generalize with poly(m) samples
+  STATUS: WORKS, but is this what the paper uses?
+
+VERDICT: The proof DEPENDS on |H| = poly(m), but the paper's
+         definition might give quasi-polynomial |H|.
+
+============================================================
+FAILURE POINT 2: CALIBRATION LEMMA ASSUMPTIONS
+============================================================
+
+The calibration lemma claims:
+  If D has success rho on true labels X,
+  then ERM predictor h has success rho - o(1) on X.
+
+This requires surrogate labels Y~ to approximate X.
+
+Y~_{j,i} = majority_{T in family} D(T(instance_j))_i
+
+CRITICAL QUESTION: Why does majority approximate truth?
+
+Case 1: D is "local" (uses only local features)
+  - T changes the instance but preserves local structure
+  - D(T(instance)) depends only on local view
+  - Local view has consistent structure across T's
+  - Majority should match D's local output
+  STATUS: Plausible but needs proof
+
+Case 2: D is "global" (uses non-local features)
+  - T changes the global structure
+  - D(T(instance)) varies wildly across T's
+  - Majority approaches 1/2 by symmetry
+  - This is exactly what neutrality predicts!
+  STATUS: This is the desired behavior
+
+SUBTLE ISSUE: What if D is PARTIALLY local?
+  - D uses local features for some bits, global for others
+  - Majority captures local part, averages out global part
+  - ERM finds the local part
+  - Is the local part sufficient for the contradiction?
+
+VERDICT: The calibration argument is SUBTLE. It essentially
+         assumes a clean local/global dichotomy. Mixed cases
+         might weaken the bounds.
+
+============================================================
+FAILURE POINT 3: WRAPPER ENCODING COST
+============================================================
+
+Claimed: K_poly(D.W) <= K_poly(D) + O(log m)
+
+The wrapper D.W must encode:
+  1. The original decoder D: K_poly(D) bits
+  2. Seed for symmetrization family: O(log m) bits
+  3. "Run ERM on hypothesis space H": O(1) bits
+  4. Training/test split specification: ???
+  5. How to access training labels: ???
+
+ISSUE 4: Training/test split
+  - If fixed (e.g., first half): O(1) bits - OK
+  - If random: need O(log m) seed - OK
+  - If adaptive: could need O(t) bits - BREAKS PROOF
+
+ISSUE 5: Accessing training labels
+  - Labels are D's outputs on symmetrized instances
+  - Computing these requires running D on poly(m) instances
+  - Each run takes poly(m) time
+  - Total: poly(m) * poly(m) = poly(m) time - OK
+
+But wait - the wrapper must STORE the training labels!
+  - t training instances
+  - m bits per instance (the surrogate label vector)
+  - Total storage: O(t * m) bits
+
+This is NOT O(log m)!
+
+POSSIBLE FIX: Don't store labels, recompute on demand.
+  - Each test query recomputes relevant training labels
+  - This is poly(m) per query
+  - K_poly allows poly(m) runtime, so OK
+
+VERDICT: Needs careful analysis. The wrapper might need to
+         recompute rather than store training data.
+
+============================================================
+FAILURE POINT 4: SIGN-INVARIANCE OF LOCALITY
+============================================================
+
+The neutrality argument requires sign-invariant predicates.
+
+CRITICAL QUESTION: Is "depends only on local view" sign-invariant?
+
+Local view = the log-radius neighborhood of variable i
+
+Under T_j transformation:
+  - sigma_j flips (sign at position j changes)
+  - Formula structure might change depending on sigma
+
+If local view INCLUDES sign information:
+  - Flipping sigma_j changes the local view at j
+  - Local predictors are NOT sign-invariant
+  - Neutrality doesn't apply!
+  STATUS: POTENTIAL ISSUE
+
+If local view is sign-AGNOSTIC (only structure):
+  - Flipping sigma_j doesn't change the structure
+  - Local predictors ARE sign-invariant
+  - Neutrality applies
+  STATUS: This is what we need
+
+VERDICT: The paper must define "local view" carefully to
+         exclude sign information. Otherwise neutrality fails.
+
+============================================================
+FAILURE POINT 5: THE DELTA CONSTANT
+============================================================
+
+The contradiction requires: delta * t > O(log m)
+
+Where delta = per-bit advantage of decoder over random guessing.
+
+CRITICAL QUESTION: Is delta = Omega(1)?
+
+For a perfect decoder: delta = 1/2 (always correct)
+For random guessing: delta = 0
+
+The paper claims: if SAT in P, then exists decoder with delta = Omega(1).
+
+But the decoder must find THE SPECIFIC RANDOM WITNESS, not just
+any satisfying assignment!
+
+The D_m distribution:
+  - Formula F is random 3-CNF
+  - Witness w is uniform random satisfying assignment
+  - Instance encodes (F, w) in some way
+
+If the encoding makes w easy to recover: delta = Omega(1)
+If the encoding hides w: delta might be small
+
+VERDICT: Depends on the specific D_m construction. The paper's
+         construction must ensure delta = Omega(1).
+
+============================================================
+OVERALL ASSESSMENT
+============================================================
+
+CRITICAL CONCERNS (could break the proof):
+1. |H| might be quasi-polynomial, not polynomial
+2. "Local view" must be sign-agnostic for neutrality
+
+MODERATE CONCERNS (need careful verification):
+3. Calibration lemma for mixed local/global decoders
+4. Wrapper encoding when recomputing vs storing labels
+
+LOW CONCERNS (likely OK with care):
+5. Training/test split specification
+6. Delta being constant
+
+LIKELIHOOD OF FAILURE: NOT NEAR ZERO
+
+I estimate 20-40% chance that one of these failure points
+is fatal, primarily:
+- The |H| size issue (quasi-poly vs poly)
+- The sign-invariance of locality issue
+
+These are exactly what a rigorous formal proof must address!
+
+============================================================
