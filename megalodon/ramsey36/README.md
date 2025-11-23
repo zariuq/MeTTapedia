@@ -29,7 +29,8 @@ This directory contains a formalization of the Ramsey number R(3,6) = 18 in the 
 - `ramsey36_mizar.mg` - Main proof file (Mizar theory)
 - `lower_bound_proof.mg` - Kernel-verified lower_bound proof structure
 - `upper_bound_proof.mg` - Upper bound proof with classical logic (xm, dneg)
-- `good_graph_proof.mg` - Kernel-verified helper lemmas for upper bound (~700 lines)
+- `good_graph_proof.mg` - Kernel-verified helper lemmas for upper bound (~800 lines)
+  - Key theorems: `equip_subset`, `non_neighbors_contain_4indep`, `triangle_free_Subq`
 - `adj17_with_sym.mg` - Kernel-verified Adj17_sym proof (2572 lines)
 - `adj17_all_proofs.mg` - Combined proofs: sym + neq + non-edges + paths (30554 lines)
 - `adj17_nonedge_proofs.mg` - Non-edge and path lemma proofs
@@ -170,15 +171,28 @@ Helper theorems:
 - `six_nonneighbors_contradiction_on_9` - **Admitted**: R(3,3) on 6 non-neighbors
 - `degree_parity_contradiction_on_9` - **Admitted**: Parity argument (requires arithmetic)
 
-### Remaining Admitted Lemmas (require cardinality reasoning)
+### Remaining Admitted Lemmas (require cardinality/TPTP reasoning)
 
-1. `non_neighbors_contain_4indep` - 12 non-neighbors contain 4-indep
-   - Uses R(3,4) on 9-element subset extraction
+1. `non_neighbors_contain_4indep` - **Kernel verified**
+   - Given 12 non-neighbors, extract 4-indep subset
+   - Uses `equip_subset` to get 9-element subset, then `triangle_free_9_has_4indep`
 
-2. `vertex_has_12_nonneighbors` - Every vertex has 12+ non-neighbors
+2. `equip_subset` - **Kernel verified**
+   - If k c= n and equip n U, then exists T c= U with equip k T
+   - Key building block for cardinality reasoning
+
+3. `triangle_free_Subq` - **Kernel verified**
+   - Triangle-free property restricts to subsets
+
+4. `is_indep_set_enlarge` - **Kernel verified**
+   - Independent sets in V remain independent in W when V c= W
+
+5. `vertex_has_12_nonneighbors` - **Admitted** (requires counting)
+   - Every vertex has 12+ non-neighbors
    - Requires cardinality arithmetic: 18 - 1 - 5 = 12
 
-3. `can_extend_4indep_with_nonneighbor` - 4-indep plus vertex gives contradiction
+6. `can_extend_4indep_with_nonneighbor` - **Admitted** (requires counting)
+   - 4-indep plus vertex gives contradiction
    - Requires pigeonhole principle formalization
 
 ## References
