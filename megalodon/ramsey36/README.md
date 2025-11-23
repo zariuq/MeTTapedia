@@ -29,6 +29,7 @@ This directory contains a formalization of the Ramsey number R(3,6) = 18 in the 
 - `ramsey36_mizar.mg` - Main proof file (Mizar theory)
 - `lower_bound_proof.mg` - Kernel-verified lower_bound proof structure
 - `upper_bound_proof.mg` - Upper bound proof with classical logic (xm, dneg)
+- `good_graph_proof.mg` - Kernel-verified helper lemmas for upper bound (~700 lines)
 - `adj17_with_sym.mg` - Kernel-verified Adj17_sym proof (2572 lines)
 - `adj17_all_proofs.mg` - Combined proofs: sym + neq + non-edges + paths (30554 lines)
 - `adj17_nonedge_proofs.mg` - Non-edge and path lemma proofs
@@ -133,15 +134,41 @@ The proof uses excluded middle (`xm`) and double negation elimination (`dneg`):
    - Uses `and3E` to extract triple conjunction components
    - Constructs is_indep_set witness and derives contradiction
 
-### Remaining Helper Lemmas (Admitted)
+### Kernel-Verified Helper Lemmas (in good_graph_proof.mg)
 
-1. `triangle_witness_from_neg` - Convert ~triangle_free to 3-clique existence (requires classical logic)
-2. `indep_witness_from_neg` - Convert ~no_k_indep to k-indep set existence (requires classical logic)
-3. `good_graph_contradiction` - No symmetric R on 18 can be both triangle-free and have no 6-indep set
+1. `triangle_witness_from_neg` - **Kernel verified** (355 lines)
+   - Convert ~triangle_free to 3-clique existence using dneg
+   - Constructs bijection f: 3 -> {x,y,z} for equip proof
+   - Handles all 9 clique cases via Leibniz equality
 
-The `good_graph_contradiction` is the core mathematical result requiring:
-- Formalization of degree counting
-- Case analysis for triangle-free graphs with bounded independent sets
+2. `indep_witness_from_neg` - **Kernel verified**
+   - Convert ~no_k_indep to k-indep set existence using dneg
+
+3. `indep_add_vertex` - **Kernel verified**
+   - If S is k-indep and v is non-adjacent to all of S, then S ∪ {v} is (k+1)-indep
+
+4. `neighborhood_indep` - **Kernel verified**
+   - In triangle-free graph, neighbors of any vertex form independent set
+
+5. `degree_bound_6` - **Kernel verified**
+   - Triangle-free + no 6-indep implies max degree < 6
+
+6. `good_graph_contradiction` - Structure complete, uses admitted sub-lemmas
+   - Derives False from triangle_free 18 R and no_k_indep 18 R 6
+
+### Remaining Admitted Lemmas (require cardinality reasoning)
+
+1. `has_triangle_or_4indep_on_9` - R(3,4) = 9 base case
+   - Requires 729+ case analysis or clever combinatorial argument
+
+2. `non_neighbors_contain_4indep` - 12 non-neighbors contain 4-indep
+   - Uses R(3,4) on 9-element subset extraction
+
+3. `vertex_has_12_nonneighbors` - Every vertex has 12+ non-neighbors
+   - Requires cardinality arithmetic: 18 - 1 - 5 = 12
+
+4. `can_extend_4indep_with_nonneighbor` - 4-indep plus vertex gives contradiction
+   - Requires pigeonhole principle formalization
 
 ## References
 
