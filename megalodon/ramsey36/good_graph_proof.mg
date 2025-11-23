@@ -294,6 +294,7 @@ Definition TwoRamseyProp : set -> set -> set -> prop
 
 Theorem triangle_witness_from_neg : forall V:set, forall R:set -> set -> prop,
   (forall x :e V, ~R x x) ->
+  (forall x y, R x y -> R y x) ->
   ~triangle_free V R ->
   exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
 Admitted.
@@ -351,5 +352,5 @@ apply xm (triangle_free 18 R).
     exact indep_witness_from_neg 18 R 6 Hnot6.
 - assume Hntf: ~triangle_free 18 R.
   apply orIL.
-  exact triangle_witness_from_neg 18 R Rirrefl Hntf.
+  exact triangle_witness_from_neg 18 R Rirrefl Rsym Hntf.
 Qed.
