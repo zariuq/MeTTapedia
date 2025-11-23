@@ -217,59 +217,187 @@ VERDICT: Depends on the specific D_m construction. The paper's
          construction must ensure delta = Omega(1).
 
 ============================================================
-OVERALL ASSESSMENT (UPDATED AFTER COMPLETE FORMALIZATION)
+NEW CRUXES FROM GPT-5.1 PRO ANALYSIS (HIGHER PRIORITY)
 ============================================================
 
-**ALL CRITICAL CONCERNS RESOLVED:**
+After deeper analysis, four NEW cruxes have been identified that
+are MORE SERIOUS than our earlier concerns. These supersede the
+previous assessment.
 
-1. Sign-invariance of locality: RESOLVED ✓
-   The paper explicitly defines SILS (Sign-Invariant Local Sketch)
-   to be sign-agnostic by construction. Neutrality applies.
-   See sign_invariance_resolved.mg for formalization.
+============================================================
+**CRUX #1: T_i DOES NOT PRESERVE u - STRUCTURAL BUG**
+============================================================
 
-2. Hypothesis class size |H|: RESOLVED ✓
-   Even with quasi-polynomial |H| = 2^{polylog(m)}, the linear
-   sample count t = Θ(m) ensures ERM generalization.
-   Error ε = O((log m)^k / sqrt(m)) → 0 as m → ∞.
-   See hypothesis_class_analysis.mg for formalization.
+**Location:** Lemma 4.8, Appendix A.17 (Calibration Lemma)
 
-3. Calibration lemma for mixed decoders: RESOLVED ✓
-   Local/global dichotomy is EXHAUSTIVE:
-   - Local bits: h matches D, but neutrality → 1/2
-   - Global bits: symmetrization → 1/2
-   See calibration_lemma.mg for formalization.
+**The Claim (from paper):**
+  For fixed u = (z, a_i, b), the involution T_i bijects
+  (X_i=0, Y_i=y) ↔ (X_i=1, Y_i=1-y) WITHOUT CHANGING u.
 
-4. Wrapper encoding cost: RESOLVED ✓
-   Wrapper recomputes labels on demand (not stores).
-   Encoding: K_poly(D) + O(log m) bits.
-   Runtime: poly(m) per query (allowed by K_poly).
-   See wrapper_encoding.mg for formalization.
+**The Bug:**
+  T_i : (F^h, A, b) → (F^{τ_i h}, A, b ⊕ A·e_i)
 
-**LOW CONCERNS (likely OK with care):**
-5. Training/test split specification: O(1) bits (fixed split)
-6. Delta being constant: depends on D_m construction
+  - z (SILS) is preserved: ✓
+  - a_i = A·e_i is preserved: ✓
+  - b is changed to b ⊕ a_i: ✗ **NOT PRESERVED!**
 
-**REVISED LIKELIHOOD OF FAILURE: < 5%**
+Therefore u = (z, a_i, b) is NOT preserved by T_i.
 
-After formalizing ALL identified concerns:
-- Sign-invariance: Paper's SILS definition resolves this ✓
-- |H| size: t = Θ(m) >> log|H| ensures generalization ✓
-- Calibration: Local/global dichotomy is exhaustive ✓
-- Wrapper encoding: Recompute on demand works ✓
+**Why This Matters:**
+  The "one-line calibration" argument literally says T_i keeps u fixed.
+  If u changes, the conditional distribution (X_i, Y_i | u) is NOT
+  symmetric under the claimed bijection.
 
-The proof structure appears SOUND. The remaining work is:
-1. Filling in Admitted proofs with measure theory
-2. Verifying D_m construction gives δ = Ω(1)
-3. Careful bookkeeping of constants
+**Possible Fixes:**
+  1. Condition on u' = (z, a_i) instead of u = (z, a_i, b)
+  2. Argue that adding b doesn't introduce extra bias
 
-**KEY INSIGHTS FROM FORMALIZATION:**
+**STATUS: CRITICAL BUG - needs resolution**
 
-1. t = c₄m (linear samples) is crucial for ERM generalization
-2. SILS definition makes local view sign-invariant by construction
-3. Local/global dichotomy is exhaustive: no "escape route" for D
-4. Wrapper can recompute instead of store (poly time allowed)
+See crux1_calibration_bug.mg for formalization.
+
+============================================================
+**CRUX #2: SPARSIFICATION AFTER UNIQUENESS CONDITIONING**
+============================================================
+
+**Location:** Lemma 5.8, Theorem 5.10, Appendix A.13-A.15
+
+**The Gap:**
+  - Tree-likeness proofs (Theorem 3.11, A.13) are for UNCONDITIONED
+    masked random 3-CNF
+  - But D_m is conditioned on Unq(Φ) - unique satisfiability
+  - The paper doesn't prove sparsification holds AFTER conditioning
+
+**Why Uniqueness Conditioning Could Break Things:**
+  - Uniqueness is a GLOBAL event (depends on whole formula)
+  - Uniqueness is RARE in base distribution
+  - Conditioning could heavily bias local neighborhoods toward
+    "uniquifying" structure (extra cycles, constraints)
+
+**The Missing Lemma:**
+  Need to prove: For any fixed radius-r chart C,
+    Pr_{Φ∼D_m}[(Φ,i) matches C] ≤ m^{O(1)} · Pr_{uncond}[(Φ,i) matches C]
+
+  If this polynomial distortion doesn't hold, Lemma 5.8 fails under D_m.
+
+**Attack Vectors:**
+  1. Empirical: Sample m=30-60, compare local structure between
+     unconditional vs USAT-conditioned formulas
+  2. Theoretical: Prove local-global approximate independence
+
+**STATUS: CRITICAL GAP - needs investigation**
+
+See crux2_uniqueness_conditioning.mg for formalization.
+
+============================================================
+**CRUX #3: FULL SWITCHING-BY-WEAKNESS (Theorem 4.2 / Prop A.5)**
+============================================================
+
+**Key Moving Parts:**
+  1. W_sym: symmetrization using O(log²(mt)) sign flips
+  2. W_ERM: train/test split, plug-in majority rule
+  3. Claims exact success preservation (Lemma 4.3, A.2)
+
+**What to Verify:**
+  - Independence structure: test blocks are i.i.d. D_m AFTER fixing W
+  - Quantifier order: for every P, there exists W with |W| = O(log m)
+  - No hidden dependence between training/test given P
+
+**Potential Issue:**
+  ERM generalization uses independence of training blocks.
+  Need to verify no accidental use of training-test independence
+  in a way that becomes false after fixing W for that P.
+
+**STATUS: NEEDS CAREFUL FORMALIZATION**
+
+============================================================
+**CRUX #4: K_poly UNION BOUND QUANTIFIERS (Section 6)**
+============================================================
+
+**The Counting Issue:**
+  - Union bound over all P of length ≤ δt
+  - But effective decoders are P' = P ∘ W_ERM
+  - Length: |P'| ≤ |P| + O(log m + log t)
+
+**Need to Check:**
+  - Either union bound over P' directly (with adjusted δ')
+  - Or show composed decoders correspond to ≤ 2^{K+O(1)} base programs
+
+**Potential Bug:**
+  Hidden factor of 2 in exponent if P vs P∘W not tracked cleanly.
+
+**STATUS: LOW PRIORITY (likely fixable with constant adjustment)
+
+============================================================
+DE-PRIORITIZED CONCERNS (from earlier analysis)
+============================================================
+
+The following are now LESS CRITICAL given the v11 structure:
+
+1. "Local ≠ Simple" / ACC⁰ expressiveness
+   - Sparsification works for ALL u-measurable rules, not just ACC⁰
+   - "No counting over hypothesis class required" (A.15)
+
+2. Polynomial neighborhood size vs K_poly
+   - K_poly counts description length, not runtime
+   - Radius O(log m) neighborhoods are compatible
+
+3. Raw calibration sample complexity numbers
+   - The real issue is structural (Crux #1), not variance
+
+============================================================
+OVERALL ASSESSMENT (UPDATED WITH NEW CRUXES)
+============================================================
+
+**TWO CRITICAL ISSUES IDENTIFIED:**
+
+1. **CRUX #1: T_i does NOT preserve u = (z, a_i, b)** - CRITICAL
+   The calibration lemma claims T_i fixes u, but b → b ⊕ a_i.
+   This is a STRUCTURAL BUG in the proof as written.
+   See crux1_calibration_bug.mg for formalization.
+
+2. **CRUX #2: Sparsification under uniqueness conditioning** - CRITICAL
+   Proofs are for unconditioned 3-CNF, but D_m conditions on Unq(Φ).
+   Missing proof that local structure is preserved under conditioning.
+   See crux2_uniqueness_conditioning.mg for formalization.
+
+**LOWER PRIORITY ISSUES:**
+
+3. CRUX #3: Full SW formalization (independence structure)
+4. CRUX #4: K_poly union bound (likely fixable with constants)
+
+**EARLIER CONCERNS (NOW DE-PRIORITIZED):**
+
+5. Sign-invariance: RESOLVED via SILS ✓
+6. |H| size: RESOLVED via t=Θ(m) ✓
+7. Wrapper encoding: RESOLVED via recompute ✓
+8. ACC⁰ expressiveness: NOT LOAD-BEARING in v11 ✓
+
+**REVISED LIKELIHOOD OF FAILURE: 30-50%**
+
+The GPT-5.1 Pro analysis identified CONCRETE structural issues:
+- Crux #1: T_i provably does NOT preserve b component of u
+- Crux #2: No proof of local-global independence under conditioning
+
+If Crux #1 or #2 cannot be fixed, the proof fails as written.
+The fixes may exist (remove b from u, or prove conditioning lemma),
+but they are not in the current paper.
+
+**NEXT STEPS (CRUX-FIRST):**
+
+1. Calibration structural check (Crux #1):
+   - Try to prove Pr[X_i=1|u] = Pr[Y_i=1|u] with u=(z,a_i,b)
+   - If stuck, search for counterexamples on small instances
+
+2. Uniqueness-conditioning vs sparsification (Crux #2):
+   - Prove local neighborhoods retain m^{-Ω(1)} under USAT conditioning
+   - Run simulations comparing local structure
+
+3. If #1 and #2 pass, formalize SW and union bound (#3, #4)
 
 **VERIFIED FILES:**
+- crux1_calibration_bug.mg (NEW)
+- crux2_uniqueness_conditioning.mg (NEW)
 - sign_invariance_resolved.mg
 - hypothesis_class_analysis.mg
 - calibration_lemma.mg
@@ -277,5 +405,6 @@ The proof structure appears SOUND. The remaining work is:
 
 Sources:
 - arXiv:2510.08814 (Goertzel's paper)
+- GPT-5.1 Pro analysis (via Mitchell Porter / Shtetl-Optimized)
 
 ============================================================
