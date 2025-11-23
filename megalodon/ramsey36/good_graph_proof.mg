@@ -34,35 +34,33 @@ Theorem degree_bound_6 : forall V:set, forall R:set -> set -> prop,
   no_k_indep V R 6 ->
   forall v :e V, forall S, S c= V -> equip 6 S ->
     (forall x :e S, R v x) -> (forall x :e S, v <> x) -> False.
-aby.
+let V. let R: set -> set -> prop.
+assume Hsym: forall x y, R x y -> R y x.
+assume Htf: triangle_free V R.
+assume Hno6: no_k_indep V R 6.
+let v. assume Hv: v :e V.
+let S. assume HSV: S c= V. assume HS6: equip 6 S.
+assume Hadj: forall x :e S, R v x.
+assume Hneqv: forall x :e S, v <> x.
+prove False.
+apply Hno6 S HSV HS6.
+prove is_indep_set V R S.
+prove S c= V /\ (forall x :e S, forall y :e S, x <> y -> ~R x y).
+apply andI (S c= V) (forall x :e S, forall y :e S, x <> y -> ~R x y).
+- exact HSV.
+- prove forall x :e S, forall y :e S, x <> y -> ~R x y.
+  let x. assume HxS: x :e S.
+  let y. assume HyS: y :e S.
+  assume Hneq: x <> y.
+  exact neighborhood_indep V R Hsym Htf v Hv x (HSV x HxS) y (HSV y HyS)
+        (Hadj x HxS) (Hadj y HyS) Hneq.
 Qed.
-
-Axiom R34_upper : forall V:set, forall R:set -> set -> prop,
-  (forall x y, R x y -> R y x) ->
-  equip 9 V ->
-  triangle_free V R ->
-  exists S, S c= V /\ equip 4 S /\ is_indep_set V R S.
-
-Axiom extension_5_to_6 : forall R:set -> set -> prop,
-  (forall x y, R x y -> R y x) ->
-  triangle_free 18 R ->
-  forall S, S c= 18 -> equip 5 S -> is_indep_set 18 R S ->
-  exists x :e 18, x /:e S /\ (forall y :e S, ~R x y).
-
-Axiom exists_5_indep : forall R:set -> set -> prop,
-  (forall x y, R x y -> R y x) ->
-  triangle_free 18 R ->
-  no_k_indep 18 R 6 ->
-  exists S, S c= 18 /\ equip 5 S /\ is_indep_set 18 R S.
-
-Axiom good_graph_final_step : forall R:set -> set -> prop,
-  (forall x y, R x y -> R y x) ->
-  triangle_free 18 R ->
-  no_k_indep 18 R 6 ->
-  forall S5, S5 c= 18 -> equip 5 S5 -> is_indep_set 18 R S5 ->
-  forall x6, x6 :e 18 -> x6 /:e S5 -> (forall y :e S5, ~R x6 y) -> False.
 
 Theorem good_graph_contradiction : forall R:set -> set -> prop,
   (forall x y, R x y -> R y x) -> triangle_free 18 R -> no_k_indep 18 R 6 -> False.
-aby.
-Qed.
+let R: set -> set -> prop.
+assume Hsym: forall x y, R x y -> R y x.
+assume Htf: triangle_free 18 R.
+assume Hno6: no_k_indep 18 R 6.
+prove False.
+Admitted.
