@@ -148,3 +148,44 @@ The mathematical argument:
 3. Collision probability ~d^{2r}/m = m^{2c*log(d) - 1}
 4. For c < 1/(2*log(d)), this → 0 as m → ∞
 5. By Markov, tree probability → 1
+
+PHASE 3: SWITCHING-BY-WEAKNESS (THE CRUX)
+==========================================
+
+switching_crux.mg - The heart of Theorem 4.2 (VERIFIED SYNTAX)
+
+Key definitions:
+  - Decoder: function from instances to bits
+  - K_poly_le: K_poly complexity bound
+  - local_view: log-radius neighborhood
+  - depends_only_on: locality of decoder at position i
+  - per_bit_local: local at all positions
+  - Wrapper: the transformation D → D.W
+  - hypothesis_space: 2^{2^r} local functions
+  - wrapper_is_local: wrapped decoder is local
+  - calibration_holds: ERM training succeeds
+  - sign_invariant_predicate: property unchanged by T_i
+  - final_contradiction: delta*t > O(log m) is impossible
+
+The Switching-by-Weakness argument:
+1. If D has K_poly(D) ≤ k, then D.W has K_poly(D.W) ≤ k + O(log m)
+2. D.W runs ERM on surrogate labels from symmetrized instances
+3. By calibration, ERM finds h that matches D's local behavior
+4. D.W = h on gamma fraction of blocks
+5. h is local (depends only on log-radius neighborhood)
+6. By neutrality, local predictors have success ≤ 1/2 per bit
+7. But satisfying decoder needs success > 1/2 + delta
+8. Contradiction: delta*t bits require K_poly ≥ delta*t > O(log m)
+
+THE CRUX QUESTION:
+Does the wrapper encoding truly stay within O(log m) bits?
+- Seed for symmetrization family: O(log m) ✓
+- ERM algorithm: O(1) (built-in) ✓
+- Hypothesis space H: implicitly defined ✓
+- Total: O(log m) ✓
+
+The formalization captures the STRUCTURE of the argument.
+Filling in the Admitted proofs requires:
+1. Probabilistic analysis of ERM generalization
+2. Measure theory for the D_m distribution
+3. Detailed bit-counting for K_poly bounds
