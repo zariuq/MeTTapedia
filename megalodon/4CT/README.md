@@ -1,103 +1,112 @@
-# Formal Refutation of Goertzel's 4CT Proof - VERIFIED
+# Formal Refutation of Goertzel's 4CT Proof - KERNEL VERIFIED
 
 ## Summary
 
 This directory contains **kernel-verified proofs** in Megalodon demonstrating
-that Ben Goertzel's claimed proof of the Four Color Theorem (v1-v3, 2025)
-contains a fundamental mathematical error in Lemma 4.3.
+that a claimed proof of the Four Color Theorem using face generators and
+Kempe chain operations contains a fundamental mathematical error. All proofs
+pass Megalodon kernel verification with **Exit: 0**.
 
-## Verified Files (Exit: 0)
+## Core Result
 
-All proofs pass Megalodon kernel verification.
-
-| File | Description | Lines |
-|------|-------------|-------|
-| `xor_self_inverse.mg` | XOR self-inverse: c XOR c = 0 for all colors | ~40 |
-| `xor_full.mg` | Complete F2^2 XOR operation table (16 cases) | ~420 |
-| `symm_diff.mg` | Symmetric difference theorems | ~35 |
-| `blocker1.mg` | **BLOCKER 1 PROOF** | ~70 |
-
-## The Bug (Blocker 1)
-
-### What Goertzel Claims (Lemma 4.3)
-
-For face generator X^f_{αβ}(C) and Kempe cycle D = R ∪ A ∪ A':
-```
-X^f_{αβ}(C) ⊕ X^f_{αβ}(C^R) = γ · 1_R    (CLAIMED)
-```
-This claims the XOR isolates the **boundary run R**.
-
-### What Is Actually True (Proven in blocker1.mg)
+**Lemma 4.3 is false**: The claimed equality
 
 ```
-X^f_{αβ}(C) ⊕ X^f_{αβ}(C^R) = γ · 1_{A∪A'}    (ACTUAL)
+X^f_{αβ}(C) ⊕ X^f_{αβ}(C^R) = γ · 1_R  (boundary)
 ```
-The XOR gives the **interior arcs A ∪ A'**, NOT the boundary run R.
 
-### Key Theorems Proven
+is wrong. The correct result is:
 
-From `blocker1.mg`:
+```
+X^f_{αβ}(C) ⊕ X^f_{αβ}(C^R) = γ · 1_{A∪A'}  (interior)
+```
 
-1. **per_run_xor_domain**: For any x in the symmetric difference (R∪A) △ (R∪A'),
-   x must be in A ∪ A' (interior only).
+This is because R is common to both (R∪A) and (R∪A'), so it **cancels** in
+the symmetric difference. The error is the **exact opposite** of the claim.
 
-2. **boundary_not_in_xor**: If x is in R (boundary), then x is NOT in the
-   symmetric difference (R∪A) △ (R∪A').
+## Verified Files
 
-**The paper has it exactly backwards.**
+| File | Status | Description |
+|------|--------|-------------|
+| `lemma43_refutation.mg` | ✓ VERIFIED | **CORE**: Symmetric diff gives interior, not boundary |
+| `cascade_analysis.mg` | ✓ VERIFIED | **CORE**: Cascade failure and impossibility theorem |
+| `blocker1_full.mg` | ✓ VERIFIED | Complete IFF characterization |
+| `blocker2_full.mg` | ✓ VERIFIED | Edge constraint proof |
+| `blocker3_full.mg` | ✓ VERIFIED | Kempe chain constraint proof |
+| `xor_full.mg` | ✓ VERIFIED | Complete F₂² XOR table (16 cases) |
+| `symm_diff.mg` | ✓ VERIFIED | Symmetric difference theorems |
+| `blocker1.mg` | ✓ VERIFIED | Per-run XOR domain |
+| `blocker2.mg` | ✓ VERIFIED | Chain existence pattern |
+| `blocker3_birkhoff.mg` | ✓ VERIFIED | Birkhoff Diamond pattern |
+| `xor_self_inverse.mg` | ✓ VERIFIED | XOR self-inverse: c ⊕ c = 0 |
 
-## Why This Happens
+## Key Theorems
 
-For run R with Kempe cycle D = R ∪ A ∪ A':
-- In coloring C: contribution is on R∪A
-- In coloring C^R (after swap): contribution is on R∪A'
-- XOR = symmetric difference: (R∪A) △ (R∪A')
+### From `lemma43_refutation.mg`:
 
-Computing the symmetric difference:
-- **On R**: Both sets contain R, so R **cancels** (contributes 0)
-- **On A**: Only (R∪A) contains A, so A **survives**
-- **On A'**: Only (R∪A') contains A', so A' **survives**
+```megalodon
+Theorem symm_diff_RA_RAp_forward :
+  forall x:set, x :e (RA :\: RAp) :\/: (RAp :\: RA) -> x :e interior.
 
-Result: (R∪A) △ (R∪A') = A ∪ A' = D \ R
+Theorem symm_diff_RA_RAp_backward :
+  forall x:set, x :e interior -> x :e (RA :\: RAp) :\/: (RAp :\: RA).
 
-## Verification Commands
+Theorem boundary_not_in_symm_diff :
+  forall x:set, x :e R -> ~(x :e (RA :\: RAp) :\/: (RAp :\: RA)).
+```
+
+### From `cascade_analysis.mg`:
+
+```megalodon
+Theorem goertzel_claim_false :
+  ~(symm_diff_result = R).
+
+Theorem lemma44_instantiation_impossible :
+  ~(forall x:set, x :e symm_diff_result <-> x :e R).
+```
+
+## Why This Error Is Fatal
+
+1. **Lemma 4.3 is wrong**: XOR gives interior, not boundary
+2. **Lemma 4.4 cannot be instantiated**: The SwitchData requirement fails
+3. **Span argument collapses**: Without 4.3/4.4, theorems 4.8-4.10 don't follow
+4. **Entire proof avenue blocked**: The purification mechanism cannot work
+
+## Verification
 
 ```bash
-cd /home/user/ai-agents/megalodon
+cd megalodon
 
-# Verify XOR self-inverse
-./bin/megalodon -I examples/egal/PfgEMay2021Preamble.mgs 4CT/xor_self_inverse.mg
+# Verify core theorems
+./bin/megalodon -I examples/egal/PfgEMay2021Preamble.mgs 4CT/lemma43_refutation.mg
+./bin/megalodon -I examples/egal/PfgEMay2021Preamble.mgs 4CT/cascade_analysis.mg
 
-# Verify full XOR table
-./bin/megalodon -I examples/egal/PfgEMay2021Preamble.mgs 4CT/xor_full.mg
-
-# Verify symmetric difference
-./bin/megalodon -I examples/egal/PfgEMay2021Preamble.mgs 4CT/symm_diff.mg
-
-# Verify BLOCKER 1
-./bin/megalodon -I examples/egal/PfgEMay2021Preamble.mgs 4CT/blocker1.mg
+# Verify all files
+for f in 4CT/*.mg; do
+  ./bin/megalodon -I examples/egal/PfgEMay2021Preamble.mgs "$f" && echo "$f: VERIFIED"
+done
 ```
 
-Exit code 0 = kernel verified.
+## Paper
 
-## Old/Unverified Files
+The LaTeX paper `paper.tex` provides a complete mathematical exposition:
 
-Files with `.old` extension are previous attempts that did not verify.
-They should be ignored - only `.mg` files pass the kernel.
+```bash
+cd 4CT
+pdflatex paper.tex
+```
 
 ## What This Does NOT Claim
 
-1. **NOT** "The Four Color Theorem is false"
-   - The 4CT is TRUE (Appel-Haken 1976, computer-verified)
-   - We only show THIS PARTICULAR PROOF is invalid
+1. **NOT** "The Four Color Theorem is false" - The 4CT is TRUE
+2. **NOT** "No algebraic proof can work" - Different approaches may succeed
+3. **NOT** "The abstract lemmas are wrong" - They're valid, just not instantiable
 
-2. **NOT** "No algebraic proof of 4CT can work"
-   - Different approaches may succeed
-   - We only block the specific per-run purification mechanism
+We **only** claim: This specific purification mechanism with these specific
+face generator definitions cannot work due to the symmetric difference error.
 
 ## References
 
-1. **Goertzel, B.** (2025). "A Spencer-Brown/Kauffman-Style Proof of the
-   Four-Color Theorem via Disk Kempe-Closure Spanning and Local Reachability"
-
-2. **Megalodon theorem prover**: http://grid01.ciirc.cvut.cz/~chad/
+1. Appel, K. and Haken, W. (1976). "Every planar map is four colorable."
+2. Gonthier, G. (2008). "Formal proof—the four-color theorem."
+3. Heawood, P.J. (1890). "Map colour theorem." (Identified Kempe's error)

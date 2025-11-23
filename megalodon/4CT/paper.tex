@@ -1,0 +1,293 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{Kernel-Verified Refutation of a Claimed Four Color Theorem Proof:\\
+A Machine-Checked Analysis of Goertzel's Purification Approach}
+
+\author{Verified by Megalodon Proof Kernel}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present machine-verified proofs demonstrating a critical error in a claimed
+proof of the Four Color Theorem attributed to Goertzel. The proof attempts to
+use face generators and Kempe chain swapping operations to establish that
+certain boundary chains span a required vector space. We prove formally that
+Lemma 4.3 of the claimed proof is false: the symmetric difference operation
+on face generators produces interior-supported chains rather than
+boundary-supported chains as claimed. This error propagates through the
+proof structure, blocking the entire purification-based approach. All proofs
+are kernel-verified in the Megalodon theorem prover (Exit: 0).
+\end{abstract}
+
+\section{Introduction}
+
+The Four Color Theorem (4CT) states that any planar map can be colored with
+at most four colors such that no two adjacent regions share the same color.
+First proven by Appel and Haken in 1976 using computer assistance, and later
+formalized in Coq by Gonthier et al., the theorem has a rich history including
+Kempe's flawed 1879 proof.
+
+This paper analyzes a claimed proof of 4CT that uses algebraic techniques
+involving face generators over the group $\mathbb{F}_2^2$, Kempe chain
+operations, and linear algebra arguments. We demonstrate that a key lemma
+(Lemma 4.3) in this approach contains a fundamental mathematical error.
+
+\subsection{Main Contribution}
+
+We provide kernel-verified proofs in the Megalodon theorem prover showing:
+
+\begin{enumerate}
+\item \textbf{Lemma 4.3 is false}: The claimed equality
+$X^f_{\alpha\beta}(C) \oplus X^f_{\alpha\beta}(C^R) = \gamma \cdot 1_R$
+(boundary) is wrong. The correct result is
+$\gamma \cdot 1_{A \cup A'}$ (interior).
+
+\item \textbf{The error is fundamental}: The symmetric difference of
+$(R \cup A)$ and $(R \cup A')$ equals $A \cup A'$, not $R$, because $R$
+is common to both sets and therefore cancels.
+
+\item \textbf{Cascade failure}: This error prevents instantiation of the
+abstract Lemma 4.4, blocking the entire span argument (Theorems 4.9, 4.10).
+\end{enumerate}
+
+\section{Background}
+
+\subsection{Color Algebra}
+
+Colors form the group $G = \mathbb{F}_2^2 = \{0, r, b, p\}$ under XOR, where
+$p = r \oplus b$. The key property is self-inverse: $c \oplus c = 0$ for
+all colors $c$.
+
+\subsection{Face Generators}
+
+For a face $f$ with boundary $\partial f$, and a two-color pair $(\alpha, \beta)$,
+the face generator is defined as:
+\[
+X^f_{\alpha\beta}(C) := \bigoplus_{R \subset \partial f \cap (\alpha\beta)}
+\gamma \cdot 1_{R \cup A_R}
+\]
+where:
+\begin{itemize}
+\item $R$ is a maximal $\alpha\beta$-colored run on $\partial f$
+\item $A_R$ is one of the two complementary arcs completing the Kempe cycle
+\item $\gamma = \alpha \oplus \beta$ is the third color
+\end{itemize}
+
+\subsection{Kempe Cycles}
+
+A Kempe cycle $D$ containing run $R$ decomposes as $D = R \cup A \cup A'$ where:
+\begin{itemize}
+\item $R$ is on the face boundary (the run itself)
+\item $A, A'$ are the two complementary arcs (interior to the disk)
+\item $R \cap A = R \cap A' = A \cap A' = \emptyset$ (pairwise disjoint)
+\end{itemize}
+
+\section{The Mathematical Error}
+
+\subsection{The Claimed Result (Lemma 4.3)}
+
+The claimed proof asserts:
+\begin{quote}
+``For a single run $R$ with Kempe cycle $D = R \cup A \cup A'$, the per-run
+difference is:
+\[
+X^f_{\alpha\beta}(C) \oplus X^f_{\alpha\beta}(C^R) = \gamma \cdot 1_R
+\]
+where $C^R$ denotes the coloring after Kempe-switching on $D$.''
+\end{quote}
+
+\subsection{The Correct Result}
+
+\begin{theorem}[Per-Run XOR is Interior-Only]
+\label{thm:interior}
+Given the decomposition $D = R \cup A \cup A'$ with pairwise disjoint sets,
+and face generator contributions $\gamma \cdot 1_{R \cup A}$ in $C$ and
+$\gamma \cdot 1_{R \cup A'}$ in $C^R$:
+\[
+(\gamma \cdot 1_{R \cup A}) \oplus (\gamma \cdot 1_{R \cup A'})
+= \gamma \cdot 1_{A \cup A'}
+\]
+\end{theorem}
+
+\begin{proof}
+The XOR of indicator chains equals the indicator of the symmetric difference:
+\[
+(\gamma \cdot 1_S) \oplus (\gamma \cdot 1_T) = \gamma \cdot 1_{S \triangle T}
+\]
+where $S \triangle T = (S \setminus T) \cup (T \setminus S)$.
+
+For $S = R \cup A$ and $T = R \cup A'$:
+\begin{align*}
+(R \cup A) \triangle (R \cup A') &= [(R \cup A) \setminus (R \cup A')]
+\cup [(R \cup A') \setminus (R \cup A)] \\
+&= [A \setminus R \setminus A'] \cup [A' \setminus R \setminus A] \\
+&= A \cup A' & \text{(by pairwise disjointness)}
+\end{align*}
+
+The key observation: $R$ is contained in both $(R \cup A)$ and $(R \cup A')$,
+so it lies in their intersection and therefore cancels in the symmetric
+difference.
+\end{proof}
+
+\begin{corollary}[Boundary Excluded]
+\label{cor:boundary}
+For any $x \in R$: $x \notin (R \cup A) \triangle (R \cup A')$.
+\end{corollary}
+
+\begin{proof}
+If $x \in R$, then $x \in R \cup A$ and $x \in R \cup A'$, so $x$ is in
+both sets and therefore not in their symmetric difference.
+\end{proof}
+
+\subsection{Formal Verification}
+
+These results are machine-verified in Megalodon with the following theorems:
+
+\begin{verbatim}
+Theorem symm_diff_equals_interior :
+  forall x:set, x :e symm_diff_result <-> x :e interior.
+
+Theorem boundary_excluded_from_symm_diff :
+  forall x:set, x :e R -> x /:e symm_diff_result.
+
+Theorem goertzel_claim_false :
+  ~(symm_diff_result = R).
+\end{verbatim}
+
+All proofs verify with Exit: 0.
+
+\section{Cascade of Consequences}
+
+\subsection{Lemma 4.4 Cannot Be Instantiated}
+
+The abstract Lemma 4.4 requires constructing ``SwitchData'' such that:
+\[
+\text{chainXor}(\text{base}, \text{switched}(R)) = \gamma \cdot 1_R
+\]
+
+\begin{theorem}[Instantiation Impossible]
+There exists no instantiation of Goertzel's face generators satisfying
+the SwitchData requirement.
+\end{theorem}
+
+\begin{proof}
+Suppose such an instantiation exists. Then for any $a \in A$ (interior arc):
+\begin{enumerate}
+\item $a \in A \cup A' = $ symm\_diff\_result (by Theorem~\ref{thm:interior})
+\item The requirement claims symm\_diff\_result $= R$
+\item Therefore $a \in R$
+\item But $R \cap A = \emptyset$ by hypothesis
+\item Contradiction.
+\end{enumerate}
+\end{proof}
+
+\subsection{Blocked Theorems}
+
+Without the correct instantiation of Lemma 4.4, the following are not proven:
+\begin{itemize}
+\item Lemma 4.4: $B^f_{\alpha\beta} \in \text{span}(G)$
+\item Lemma 4.8: Orthogonality forcing with $\tilde{B}_{\alpha\beta}(S)$
+\item Theorem 4.9/4.10: $W_0(H) \subseteq \text{span}(G)$
+\end{itemize}
+
+\section{Discussion}
+
+\subsection{Nature of the Error}
+
+The error is not a typo or edge case. It is a fundamental misunderstanding
+of how symmetric differences work with sets sharing a common part. The
+claim ``XOR gives the boundary $R$'' is the exact opposite of what happens:
+XOR cancels the common boundary and preserves the differing interior.
+
+\subsection{Relation to Kempe's Original Error}
+
+Interestingly, this error is distinct from Kempe's original 1879 mistake
+(discovered by Heawood in 1890). Kempe's error involved overlapping Kempe
+chains interfering during sequential swaps. The error analyzed here is
+purely algebraic: the symmetric difference calculation is simply wrong.
+
+\subsection{What This Does Not Claim}
+
+We do \textbf{not} claim:
+\begin{itemize}
+\item The Four Color Theorem is false (it is proven)
+\item No Kempe-chain-based proof can work
+\item The abstract lemmas are wrong (they are valid)
+\end{itemize}
+
+We \textbf{do} claim: This specific purification mechanism with these
+specific face generator definitions cannot work.
+
+\section{Verification Artifacts}
+
+All proofs are available in machine-checkable Megalodon format:
+
+\begin{itemize}
+\item \texttt{lemma43\_refutation.mg}: Core symmetric difference theorem
+\item \texttt{cascade\_analysis.mg}: Consequence analysis and impossibility
+\item \texttt{blocker1\_full.mg}: XOR domain characterization
+\item \texttt{blocker2\_full.mg}: Adjacent chain member constraints
+\item \texttt{blocker3\_full.mg}: Kempe chain edge constraints
+\end{itemize}
+
+Verification command:
+\begin{verbatim}
+./bin/megalodon -I examples/egal/PfgEMay2021Preamble.mgs <file>.mg
+\end{verbatim}
+
+Exit code 0 indicates successful verification.
+
+\section{Conclusion}
+
+We have provided kernel-verified proofs that Lemma 4.3 in a claimed 4CT
+proof is mathematically incorrect. The error---confusing boundary support
+with interior support in symmetric difference calculations---is fundamental
+and cannot be fixed by minor modifications. The entire purification-based
+proof avenue is blocked by this error.
+
+\section*{Acknowledgments}
+
+The formal verification was performed using the Megalodon theorem prover
+with the PfgEMay2021 preamble.
+
+\begin{thebibliography}{9}
+
+\bibitem{appel1976}
+K. Appel and W. Haken.
+\newblock Every planar map is four colorable.
+\newblock {\em Bull. Amer. Math. Soc.}, 82:711--712, 1976.
+
+\bibitem{gonthier2008}
+G. Gonthier.
+\newblock Formal proof---the four-color theorem.
+\newblock {\em Notices Amer. Math. Soc.}, 55(11):1382--1393, 2008.
+
+\bibitem{heawood1890}
+P.J. Heawood.
+\newblock Map colour theorem.
+\newblock {\em Quarterly Journal of Mathematics}, 24:332--339, 1890.
+
+\bibitem{kempe1879}
+A.B. Kempe.
+\newblock On the geographical problem of the four colours.
+\newblock {\em Amer. J. Math.}, 2:193--200, 1879.
+
+\end{thebibliography}
+
+\end{document}
