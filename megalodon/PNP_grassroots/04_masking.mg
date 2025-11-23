@@ -2,6 +2,28 @@
 (* Masking and Symmetry Groups                                               *)
 (* Builds on 00_preamble.mg, 01_foundations.mg, 03_cnf_sat.mg                *)
 (* ========================================================================= *)
+(*                                                                           *)
+(* AXIOM SOURCES                                                             *)
+(* =============                                                             *)
+(*                                                                           *)
+(* [SDP] Semidirect Product Theory                                           *)
+(*       Lang, S. (2002). Algebra, 3rd ed. Springer. Chapter I, Section 5.   *)
+(*       The mask group H_m = S_m ⋉ (Z_2)^m is a semidirect product where:   *)
+(*       - S_m acts on (Z_2)^m by permuting coordinates                      *)
+(*       - Group operation: (π₁,σ₁)·(π₂,σ₂) = (π₁∘π₂, σ₁ ⊕ (σ₂∘π₁⁻¹))      *)
+(*                                                                           *)
+(* [Sym] Symmetric Group Properties                                          *)
+(*       Standard results: S_n forms a group under composition               *)
+(*       - Identity: id permutation                                          *)
+(*       - Inverse: π⁻¹ exists for all π ∈ S_n                              *)
+(*       - Associativity: (π₁∘π₂)∘π₃ = π₁∘(π₂∘π₃)                          *)
+(*                                                                           *)
+(* [SAT-Sym] SAT Symmetry Preservation                                       *)
+(*       Masks act as "change of variables" on CNF formulas.                 *)
+(*       If x satisfies F, then h(x) satisfies h(F) for any mask h.          *)
+(*       This follows from the bijective nature of the variable renaming.    *)
+(*                                                                           *)
+(* ========================================================================= *)
 
 (* ========================================================================= *)
 (* Part I: Permutations and Bijections                                       *)
@@ -248,31 +270,36 @@ Axiom tau_i_toggles_witness : forall m :e omega, forall i :e m,
     satisfies x' (apply_mask_cnf m (tau_i m i) F).
 
 (* ========================================================================= *)
-(* Part VII: Group Structure                                                 *)
+(* Part VII: Group Structure [SDP]                                           *)
+(* ========================================================================= *)
+(* Source: Lang (2002) Algebra, Ch. I §5 - Semidirect Products               *)
+(*                                                                           *)
+(* H_m = S_m ⋉ (Z_2)^m is a group with:                                      *)
+(*   - Identity: (id, 0)                                                     *)
+(*   - Composition: (π₁,σ₁)·(π₂,σ₂) = (π₁∘π₂, σ₁ ⊕ (σ₂∘π₁⁻¹))              *)
+(*   - Inverse: (π,σ)⁻¹ = (π⁻¹, σ∘π)                                        *)
+(*                                                                           *)
+(* The group axioms follow from:                                             *)
+(*   - S_m is a group under composition                                      *)
+(*   - (Z_2)^m is an abelian group under ⊕                                  *)
+(*   - The semidirect product formula satisfies group axioms                 *)
 (* ========================================================================= *)
 
-(* H_m forms a group under mask_compose *)
-(* Associativity follows from associativity of permutation composition and XOR *)
-(* Axiomatized: full proof requires showing that the semidirect product structure
-   (π₁∘π₂, σ₁ ⊕ (σ₂∘π₁⁻¹)) is associative, which involves:
-   - Associativity of permutation composition (standard result)
-   - Associativity of XOR (proven in preamble)
-   - Compatibility of the action with composition *)
+(* Associativity: follows from semidirect product theory [SDP] *)
+(* Proof sketch: Expand (h₁·h₂)·h₃ and h₁·(h₂·h₃), use associativity of     *)
+(* permutation composition and XOR, and verify sign components match.        *)
 Axiom mask_compose_assoc : forall m h1 h2 h3,
   Mask m h1 -> Mask m h2 -> Mask m h3 ->
   mask_compose m (mask_compose m h1 h2) h3 =
   mask_compose m h1 (mask_compose m h2 h3).
 
-(* Identity: perm_id ∘ π = π and 0 ⊕ σ = σ *)
-(* Axiomatized: proof requires showing perm_compose with perm_id is identity
-   and sign_xor with sign_zero is identity, which follow from their definitions
-   but require equational reasoning infrastructure *)
+(* Left identity: (id,0)·(π,σ) = (id∘π, 0⊕(σ∘id)) = (π,σ) *)
+(* Uses: id∘π = π and 0⊕σ = σ (proven for XOR in preamble) *)
 Axiom mask_id_left : forall m :e omega, forall h,
   Mask m h -> mask_compose m (mask_id m) h = h.
 
-(* Left inverse: π⁻¹ ∘ π = id and sign composition cancels *)
-(* Axiomatized: proof requires showing perm_inv is a proper inverse
-   and the sign components cancel under the semidirect product structure *)
+(* Left inverse: (π⁻¹,σ∘π)·(π,σ) = (π⁻¹∘π, (σ∘π)⊕(σ∘π⁻¹⁻¹)) = (id,0) *)
+(* Uses: π⁻¹∘π = id and σ⊕σ = 0 (XOR self-inverse) *)
 Axiom mask_inv_left : forall m :e omega, forall h,
   Mask m h -> mask_compose m (mask_inv m h) h = mask_id m.
 

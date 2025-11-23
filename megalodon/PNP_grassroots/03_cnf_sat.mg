@@ -233,16 +233,27 @@ Definition SAT_language : set -> set :=
 Definition ThreeSAT_language : set -> set :=
   fun m => {F :e Power (Power omega) | is_3CNF m F /\ is_SAT m F}.
 
-(* SAT is in NP: nondeterministically guess assignment, verify in polytime *)
-(* The verifier checks if the given assignment satisfies the formula *)
-(* Running time: O(|F| * m) which is polynomial *)
-(* Axiomatized as this is a well-known result requiring full computation model *)
+(* ========================================================================= *)
+(* SAT Complexity Results                                                    *)
+(* ========================================================================= *)
+(* These are fundamental complexity-theoretic results. See 01_foundations.mg *)
+(* for the full Cook-Levin citation.                                          *)
+(* ========================================================================= *)
+
+(* SAT ∈ NP: Nondeterministically guess assignment, verify in O(|F|·m) *)
+(* Verification: iterate through clauses, check each has a true literal. *)
 Axiom SAT_in_NP : forall m :e omega, inNP (SAT_language m).
 
-(* Cook-Levin: SAT is NP-complete *)
-(* This is a fundamental result - stated as axiom for now *)
+(* Cook-Levin Theorem: SAT is NP-complete *)
+(* Source: Cook (1971), Levin (1973) - see 01_foundations.mg for full citation *)
+(* This concrete version works with SAT_language over m variables. *)
 Axiom Cook_Levin : forall m :e omega, NP_complete (SAT_language m).
 
-(* 3-SAT is also NP-complete (by reduction from SAT) *)
+(* 3-SAT is NP-complete by reduction from SAT *)
+(* Source: Karp, R.M. (1972). "Reducibility among combinatorial problems". *)
+(*         In: Complexity of Computer Computations, Plenum Press, 85-103.    *)
+(* The reduction replaces each clause (l₁ ∨ ... ∨ lₖ) with k > 3 by:        *)
+(* (l₁ ∨ l₂ ∨ y₁) ∧ (¬y₁ ∨ l₃ ∨ y₂) ∧ ... ∧ (¬yₖ₋₃ ∨ lₖ₋₁ ∨ lₖ)         *)
+(* using fresh auxiliary variables y₁, ..., yₖ₋₃.                           *)
 Axiom ThreeSAT_NP_complete : forall m :e omega, NP_complete (ThreeSAT_language m).
 

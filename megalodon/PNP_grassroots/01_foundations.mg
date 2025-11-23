@@ -2,6 +2,30 @@
 (* Category-Theoretic Foundations for P ≠ NP                                 *)
 (* Builds on 00_preamble.mg                                                  *)
 (* ========================================================================= *)
+(*                                                                           *)
+(* AXIOM SOURCES                                                             *)
+(* =============                                                             *)
+(*                                                                           *)
+(* [UTM] Universal Turing Machine Theory                                     *)
+(*       Turing, A.M. (1936). "On Computable Numbers, with an Application    *)
+(*       to the Entscheidungsproblem". Proc. London Math. Soc. 42: 230-265.  *)
+(*       A UTM can simulate any Turing machine given its description.        *)
+(*                                                                           *)
+(* [Comp] Composition of Computable Functions                                *)
+(*        Standard result: If f and g are computable, so is g∘f.             *)
+(*        If f runs in time T₁ and g in time T₂, then g∘f runs in O(T₁+T₂). *)
+(*                                                                           *)
+(* [P/NP] Complexity Class Definitions                                        *)
+(*        Cobham, A. (1965). "The intrinsic computational difficulty of      *)
+(*        functions". Proc. 1964 Congress on Logic, Methodology, and         *)
+(*        Philosophy of Science, 24-30.                                      *)
+(*        Cook, S.A. (1971). Defines NP and NP-completeness.                 *)
+(*                                                                           *)
+(* [Cat] Category-Theoretic Perspective                                       *)
+(*       Programs form a category with types as objects and computable       *)
+(*       functions as morphisms. Composition satisfies categorical axioms.   *)
+(*                                                                           *)
+(* ========================================================================= *)
 
 (* ========================================================================= *)
 (* Part I: Abstract Algebraic Structures                                     *)
@@ -278,34 +302,40 @@ Definition P_equals_NP : prop := forall L, inNP L -> inP L.
 Definition P_neq_NP : prop := ~P_equals_NP.
 
 (* ========================================================================= *)
-(* Part VII: Functorial Properties                                           *)
+(* Part VII: Functorial Properties [UTM] [Comp] [Cat]                        *)
+(* ========================================================================= *)
+(* These axioms capture standard properties of computable functions,          *)
+(* viewed categorically as morphisms in the category of programs.            *)
 (* ========================================================================= *)
 
-(* --- Axioms for computation primitives --- *)
-(* These axioms capture standard properties of universal Turing machines *)
-
-(* Identity program: computes x from x in constant time *)
+(* --- Identity Program [Cat] --- *)
+(* The identity function id(x) = x is computable in O(1) time. *)
+(* Categorically: the identity morphism exists for each type. *)
 Parameter prog_id : set.
 Axiom prog_id_computes : forall x, UTM_computes prog_id x x.
 Axiom prog_id_polytime : is_polytime_prog prog_id.
 
-(* Program composition: if p computes y from x, and q computes z from y,
-   then compose q p computes z from x *)
+(* --- Program Composition [Comp] [Cat] --- *)
+(* If p: X → Y and q: Y → Z are computable, then q∘p: X → Z is computable. *)
+(* Time: T(q∘p) ≤ T(p) + T(q) + O(1) for simulation overhead. *)
 Parameter prog_comp : set -> set -> set.
 Axiom prog_comp_computes : forall p q x y z,
   UTM_computes p x y -> UTM_computes q y z -> UTM_computes (prog_comp q p) x z.
 
-(* Composition preserves polynomial time *)
+(* Polynomial time is closed under composition: poly(poly(n)) = poly(n) *)
 Axiom prog_comp_polytime : forall p q,
   is_polytime_prog p -> is_polytime_prog q -> is_polytime_prog (prog_comp q p).
 
-(* Composition factorization: if (comp q p)(x) = z, then exists y with p(x)=y and q(y)=z *)
+(* Composition factorization: the composition (q∘p)(x) = z factors through y *)
+(* This captures the functional nature of programs: deterministic computation. *)
 Axiom prog_comp_factorization : forall p q x z,
   UTM_computes (prog_comp q p) x z ->
   exists y, UTM_computes p x y /\ UTM_computes q y z.
 
-(* Decidability composition: if we can reduce L1 to L2 and decide L2,
-   then we can decide L1 *)
+(* --- Reduction Decidability [P/NP] --- *)
+(* If L₁ ≤ₚ L₂ (polytime reduction) and L₂ ∈ P, then L₁ ∈ P. *)
+(* Proof: Compose the reduction with the decider for L₂. *)
+(* This is a fundamental property of polynomial-time reductions. *)
 Axiom reduction_decidability : forall L1 L2 decider red,
   is_polytime_prog decider ->
   (forall x, (x :e L2 <-> exists z, UTM_computes decider x z /\ z = 1)) ->
@@ -314,9 +344,30 @@ Axiom reduction_decidability : forall L1 L2 decider red,
   exists p, is_polytime_prog p /\
     forall x, (x :e L1 <-> exists z, UTM_computes p x z /\ z = 1).
 
-(* --- Cook-Levin Theorem --- *)
-(* SAT is NP-complete. This is axiomatized as it requires a detailed encoding
-   of computation into boolean formulas. *)
+(* ========================================================================= *)
+(* Cook-Levin Theorem [CL]                                                   *)
+(* ========================================================================= *)
+(* Source: Cook, S.A. (1971). "The complexity of theorem-proving procedures" *)
+(*         Proc. 3rd ACM Symposium on Theory of Computing, pp. 151-158.      *)
+(*         Levin, L.A. (1973). "Universal search problems"                   *)
+(*         Problemy Peredachi Informatsii 9(3): 265-266.                     *)
+(*                                                                           *)
+(* Statement: SAT (boolean satisfiability) is NP-complete.                   *)
+(*                                                                           *)
+(* Proof sketch:                                                              *)
+(*   1. SAT ∈ NP: Nondeterministically guess assignment, verify in O(|F|).   *)
+(*   2. SAT is NP-hard: For any NP language L with verifier V, given input x,*)
+(*      construct formula φ_x encoding "∃w. V(x,w) accepts" such that:       *)
+(*      - Variables encode computation tableau of V on (x,w)                 *)
+(*      - Clauses enforce valid transitions and acceptance                   *)
+(*      - |φ_x| = poly(|x|) and φ_x is satisfiable iff x ∈ L               *)
+(*                                                                           *)
+(* This is axiomatized because the full proof requires:                       *)
+(*   - Formal encoding of Turing machine configurations                       *)
+(*   - Polynomial-time construction of the reduction                         *)
+(*   - Correctness proof of the encoding                                     *)
+(* ========================================================================= *)
+
 Parameter SAT : set.
 Axiom Cook_Levin : NP_complete SAT.
 

@@ -2,6 +2,25 @@
 (* Valiant-Vazirani Isolation Lemma                                          *)
 (* Builds on 00_preamble.mg, 01_foundations.mg, 03_cnf_sat.mg                *)
 (* ========================================================================= *)
+(*                                                                           *)
+(* AXIOM SOURCES                                                             *)
+(* =============                                                             *)
+(*                                                                           *)
+(* [VV86] Valiant, L.G. & Vazirani, V.V. (1986). "NP is as easy as detecting *)
+(*        unique solutions". Theoretical Computer Science 47: 85-93.         *)
+(*        DOI: 10.1016/0304-3975(86)90135-0                                  *)
+(*                                                                           *)
+(*        Main result (Isolation Lemma): For any nonempty set S ⊆ {0,1}^n,  *)
+(*        a random affine hash h: {0,1}^n → {0,1}^k with k ≈ log|S|         *)
+(*        isolates S (i.e., |{x ∈ S : h(x) = 0}| = 1) with prob ≥ 1/8.      *)
+(*                                                                           *)
+(* [PWI] Pairwise Independence of Linear Hash Functions                      *)
+(*       Carter, J.L. & Wegman, M.N. (1979). "Universal classes of hash      *)
+(*       functions". Journal of Computer and System Sciences 18(2): 143-154. *)
+(*       The family {h_{A,b}(x) = Ax + b : A ∈ F_2^{k×n}, b ∈ F_2^k}        *)
+(*       is 2-universal (pairwise independent).                              *)
+(*                                                                           *)
+(* ========================================================================= *)
 
 (* The VV lemma: with good probability, a random linear hash isolates
    a unique solution from a satisfiable formula. This is crucial for
@@ -43,6 +62,9 @@ Definition is_pairwise_independent : set -> set -> set -> prop :=
     True.
 
 (* The linear hash family {h_{A,b} : A ∈ F_2^{k×m}, b ∈ F_2^k} is pairwise independent *)
+(* Source: [PWI] Carter-Wegman 1979, Theorem 3. *)
+(* Proof sketch: For distinct x₁, x₂ ∈ F_2^m, the system Ax₁+b=y₁, Ax₂+b=y₂ has *)
+(* a unique solution (A,b) for any target (y₁,y₂), giving uniform distribution. *)
 Axiom linear_hash_pairwise_independent :
   forall k m :e omega, is_pairwise_independent k m (Bits :^: (k * m) :*: Bits :^: k).
 
@@ -68,6 +90,18 @@ Definition vv_num_rows : set -> set :=
     nat_primrec 0 (fun _ acc => ordsucc acc) m. (* Placeholder: use m for now *)
 
 (* The classical VV statement (probabilistic) *)
+(* Source: [VV86] Valiant-Vazirani 1986, Theorem 1. *)
+(*                                                                             *)
+(* Full statement: Let S ⊆ {0,1}^n be nonempty. For k = ⌈log₂|S|⌉ + 2,        *)
+(* Pr_{A,b}[|{x ∈ S : Ax + b = 0}| = 1] ≥ 1/8.                                *)
+(*                                                                             *)
+(* Proof outline:                                                              *)
+(*   1. By pairwise independence, E[|S ∩ h⁻¹(0)|] = |S|/2^k ∈ [1/4, 1/2]     *)
+(*   2. Var[|S ∩ h⁻¹(0)|] ≤ E by pairwise independence                        *)
+(*   3. Chebyshev gives Pr[|S ∩ h⁻¹(0)| ∈ {1}] ≥ 1/8                         *)
+(*                                                                             *)
+(* This axiom captures the existential guarantee; the probability bound       *)
+(* requires measure theory infrastructure beyond our current scope.           *)
 Axiom VV_isolation_lemma :
   forall m :e omega, forall S c= Bits :^: m,
     S <> Empty ->
