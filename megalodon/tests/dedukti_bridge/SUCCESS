@@ -1,0 +1,8 @@
+Tests passed on 2025-11-22.
+Pipeline: Vampire (dedukti branch) -> dedukti.py -> Megalodon.
+Verified:
+- Prop logic
+- Quantifiers (bind, forall, exists)
+- Equality (eq, refl)
+- FOF input with Skolemization (handling sorry as Hypothesis)
+Verified Adj17_no_6_indep via gen_adj17_no6_full.py (explicit terms).

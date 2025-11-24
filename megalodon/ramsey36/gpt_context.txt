@@ -1,0 +1,1266 @@
+=== FILES FOR GPT-5.1 Pro: Megalodon R(3,6) Proof Reconstruction ===
+
+TASK: Generate a Python script to create Megalodon kernel proofs for:
+1. ~Adj17 i j for all 190 non-edges (needed for triangle-free)
+2. Adj17_triangle_free theorem (316 two-edge paths to check)
+
+KEY BREAKTHROUGH: The 3-disjunct negation proof works! (see test_simple_or3.mg below)
+
+CHALLENGE: Scale from 3 disjuncts to 17 disjuncts (left-associative nesting)
+
+================================================================================
+FILE: test_simple_or3.mg (WORKING PATTERN - 3 disjuncts)
+================================================================================
+Definition SimpleAdj : set -> set -> prop :=
+  fun i j =>
+    (i = 0 /\ j = 1) \/
+    (i = 1 /\ j = 0) \/
+    (i = 2 /\ j = 3).
+
+Theorem SimpleAdj_not_0_0 : ~SimpleAdj 0 0.
+assume H: SimpleAdj 0 0.
+prove False.
+apply H.
+- assume H1.
+  apply H1.
+  + assume HD0.
+    apply HD0.
+    assume Heq1: 0 = 0.
+    assume Heq2: 0 = 1.
+    exact neq_0_1 Heq2.
+  + assume HD1.
+    apply HD1.
+    assume Heq1: 0 = 1.
+    assume Heq2: 0 = 0.
+    exact neq_0_1 Heq1.
+- assume HD2.
+  apply HD2.
+  assume Heq1: 0 = 2.
+  assume Heq2: 0 = 3.
+  exact neq_0_2 Heq1.
+Qed.
+
+================================================================================
+FILE: adj17_with_sym.mg (first 200 lines - positive adjacency proof pattern)
+================================================================================
+Definition Adj17 : set -> set -> prop :=
+  fun i j =>
+    (i = 0 /\ (j = 9 \/ j = 14 \/ j = 15 \/ j = 16)) \/
+    (i = 1 /\ (j = 7 \/ j = 11 \/ j = 13 \/ j = 16)) \/
+    (i = 2 /\ (j = 8 \/ j = 10 \/ j = 12 \/ j = 15)) \/
+    (i = 3 /\ (j = 6 \/ j = 8 \/ j = 13 \/ j = 15 \/ j = 16)) \/
+    (i = 4 /\ (j = 5 \/ j = 7 \/ j = 12 \/ j = 14 \/ j = 16)) \/
+    (i = 5 /\ (j = 4 \/ j = 9 \/ j = 10 \/ j = 11 \/ j = 13)) \/
+    (i = 6 /\ (j = 3 \/ j = 10 \/ j = 11 \/ j = 12 \/ j = 14)) \/
+    (i = 7 /\ (j = 1 \/ j = 4 \/ j = 9 \/ j = 10 \/ j = 15)) \/
+    (i = 8 /\ (j = 2 \/ j = 3 \/ j = 9 \/ j = 11 \/ j = 14)) \/
+    (i = 9 /\ (j = 0 \/ j = 5 \/ j = 7 \/ j = 8 \/ j = 12)) \/
+    (i = 10 /\ (j = 2 \/ j = 5 \/ j = 6 \/ j = 7 \/ j = 16)) \/
+    (i = 11 /\ (j = 1 \/ j = 5 \/ j = 6 \/ j = 8 \/ j = 15)) \/
+    (i = 12 /\ (j = 2 \/ j = 4 \/ j = 6 \/ j = 9 \/ j = 13)) \/
+    (i = 13 /\ (j = 1 \/ j = 3 \/ j = 5 \/ j = 12 \/ j = 14)) \/
+    (i = 14 /\ (j = 0 \/ j = 4 \/ j = 6 \/ j = 8 \/ j = 13)) \/
+    (i = 15 /\ (j = 0 \/ j = 2 \/ j = 3 \/ j = 7 \/ j = 11)) \/
+    (i = 16 /\ (j = 0 \/ j = 1 \/ j = 3 \/ j = 4 \/ j = 10)).
+
+Theorem Adj17_0_9 : Adj17 0 9.
+prove (0 = 0 /\ (9 = 9 \/ 9 = 14 \/ 9 = 15 \/ 9 = 16)) \/
+    (0 = 1 /\ (9 = 7 \/ 9 = 11 \/ 9 = 13 \/ 9 = 16)) \/
+    (0 = 2 /\ (9 = 8 \/ 9 = 10 \/ 9 = 12 \/ 9 = 15)) \/
+    (0 = 3 /\ (9 = 6 \/ 9 = 8 \/ 9 = 13 \/ 9 = 15 \/ 9 = 16)) \/
+    (0 = 4 /\ (9 = 5 \/ 9 = 7 \/ 9 = 12 \/ 9 = 14 \/ 9 = 16)) \/
+    (0 = 5 /\ (9 = 4 \/ 9 = 9 \/ 9 = 10 \/ 9 = 11 \/ 9 = 13)) \/
+    (0 = 6 /\ (9 = 3 \/ 9 = 10 \/ 9 = 11 \/ 9 = 12 \/ 9 = 14)) \/
+    (0 = 7 /\ (9 = 1 \/ 9 = 4 \/ 9 = 9 \/ 9 = 10 \/ 9 = 15)) \/
+    (0 = 8 /\ (9 = 2 \/ 9 = 3 \/ 9 = 9 \/ 9 = 11 \/ 9 = 14)) \/
+    (0 = 9 /\ (9 = 0 \/ 9 = 5 \/ 9 = 7 \/ 9 = 8 \/ 9 = 12)) \/
+    (0 = 10 /\ (9 = 2 \/ 9 = 5 \/ 9 = 6 \/ 9 = 7 \/ 9 = 16)) \/
+    (0 = 11 /\ (9 = 1 \/ 9 = 5 \/ 9 = 6 \/ 9 = 8 \/ 9 = 15)) \/
+    (0 = 12 /\ (9 = 2 \/ 9 = 4 \/ 9 = 6 \/ 9 = 9 \/ 9 = 13)) \/
+    (0 = 13 /\ (9 = 1 \/ 9 = 3 \/ 9 = 5 \/ 9 = 12 \/ 9 = 14)) \/
+    (0 = 14 /\ (9 = 0 \/ 9 = 4 \/ 9 = 6 \/ 9 = 8 \/ 9 = 13)) \/
+    (0 = 15 /\ (9 = 0 \/ 9 = 2 \/ 9 = 3 \/ 9 = 7 \/ 9 = 11)) \/
+    (0 = 16 /\ (9 = 0 \/ 9 = 1 \/ 9 = 3 \/ 9 = 4 \/ 9 = 10)).
+apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. 
+apply andI.
+- reflexivity.
+- apply orIL. apply orIL. apply orIL. reflexivity.
+Qed.
+
+Theorem Adj17_0_14 : Adj17 0 14.
+prove (0 = 0 /\ (14 = 9 \/ 14 = 14 \/ 14 = 15 \/ 14 = 16)) \/
+    (0 = 1 /\ (14 = 7 \/ 14 = 11 \/ 14 = 13 \/ 14 = 16)) \/
+    (0 = 2 /\ (14 = 8 \/ 14 = 10 \/ 14 = 12 \/ 14 = 15)) \/
+    (0 = 3 /\ (14 = 6 \/ 14 = 8 \/ 14 = 13 \/ 14 = 15 \/ 14 = 16)) \/
+    (0 = 4 /\ (14 = 5 \/ 14 = 7 \/ 14 = 12 \/ 14 = 14 \/ 14 = 16)) \/
+    (0 = 5 /\ (14 = 4 \/ 14 = 9 \/ 14 = 10 \/ 14 = 11 \/ 14 = 13)) \/
+    (0 = 6 /\ (14 = 3 \/ 14 = 10 \/ 14 = 11 \/ 14 = 12 \/ 14 = 14)) \/
+    (0 = 7 /\ (14 = 1 \/ 14 = 4 \/ 14 = 9 \/ 14 = 10 \/ 14 = 15)) \/
+    (0 = 8 /\ (14 = 2 \/ 14 = 3 \/ 14 = 9 \/ 14 = 11 \/ 14 = 14)) \/
+    (0 = 9 /\ (14 = 0 \/ 14 = 5 \/ 14 = 7 \/ 14 = 8 \/ 14 = 12)) \/
+    (0 = 10 /\ (14 = 2 \/ 14 = 5 \/ 14 = 6 \/ 14 = 7 \/ 14 = 16)) \/
+    (0 = 11 /\ (14 = 1 \/ 14 = 5 \/ 14 = 6 \/ 14 = 8 \/ 14 = 15)) \/
+    (0 = 12 /\ (14 = 2 \/ 14 = 4 \/ 14 = 6 \/ 14 = 9 \/ 14 = 13)) \/
+    (0 = 13 /\ (14 = 1 \/ 14 = 3 \/ 14 = 5 \/ 14 = 12 \/ 14 = 14)) \/
+    (0 = 14 /\ (14 = 0 \/ 14 = 4 \/ 14 = 6 \/ 14 = 8 \/ 14 = 13)) \/
+    (0 = 15 /\ (14 = 0 \/ 14 = 2 \/ 14 = 3 \/ 14 = 7 \/ 14 = 11)) \/
+    (0 = 16 /\ (14 = 0 \/ 14 = 1 \/ 14 = 3 \/ 14 = 4 \/ 14 = 10)).
+apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. 
+apply andI.
+- reflexivity.
+- apply orIL. apply orIL. apply orIR. reflexivity.
+Qed.
+
+Theorem Adj17_0_15 : Adj17 0 15.
+prove (0 = 0 /\ (15 = 9 \/ 15 = 14 \/ 15 = 15 \/ 15 = 16)) \/
+    (0 = 1 /\ (15 = 7 \/ 15 = 11 \/ 15 = 13 \/ 15 = 16)) \/
+    (0 = 2 /\ (15 = 8 \/ 15 = 10 \/ 15 = 12 \/ 15 = 15)) \/
+    (0 = 3 /\ (15 = 6 \/ 15 = 8 \/ 15 = 13 \/ 15 = 15 \/ 15 = 16)) \/
+    (0 = 4 /\ (15 = 5 \/ 15 = 7 \/ 15 = 12 \/ 15 = 14 \/ 15 = 16)) \/
+    (0 = 5 /\ (15 = 4 \/ 15 = 9 \/ 15 = 10 \/ 15 = 11 \/ 15 = 13)) \/
+    (0 = 6 /\ (15 = 3 \/ 15 = 10 \/ 15 = 11 \/ 15 = 12 \/ 15 = 14)) \/
+    (0 = 7 /\ (15 = 1 \/ 15 = 4 \/ 15 = 9 \/ 15 = 10 \/ 15 = 15)) \/
+    (0 = 8 /\ (15 = 2 \/ 15 = 3 \/ 15 = 9 \/ 15 = 11 \/ 15 = 14)) \/
+    (0 = 9 /\ (15 = 0 \/ 15 = 5 \/ 15 = 7 \/ 15 = 8 \/ 15 = 12)) \/
+    (0 = 10 /\ (15 = 2 \/ 15 = 5 \/ 15 = 6 \/ 15 = 7 \/ 15 = 16)) \/
+    (0 = 11 /\ (15 = 1 \/ 15 = 5 \/ 15 = 6 \/ 15 = 8 \/ 15 = 15)) \/
+    (0 = 12 /\ (15 = 2 \/ 15 = 4 \/ 15 = 6 \/ 15 = 9 \/ 15 = 13)) \/
+    (0 = 13 /\ (15 = 1 \/ 15 = 3 \/ 15 = 5 \/ 15 = 12 \/ 15 = 14)) \/
+    (0 = 14 /\ (15 = 0 \/ 15 = 4 \/ 15 = 6 \/ 15 = 8 \/ 15 = 13)) \/
+    (0 = 15 /\ (15 = 0 \/ 15 = 2 \/ 15 = 3 \/ 15 = 7 \/ 15 = 11)) \/
+    (0 = 16 /\ (15 = 0 \/ 15 = 1 \/ 15 = 3 \/ 15 = 4 \/ 15 = 10)).
+apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. 
+apply andI.
+- reflexivity.
+- apply orIL. apply orIR. reflexivity.
+Qed.
+
+Theorem Adj17_0_16 : Adj17 0 16.
+prove (0 = 0 /\ (16 = 9 \/ 16 = 14 \/ 16 = 15 \/ 16 = 16)) \/
+    (0 = 1 /\ (16 = 7 \/ 16 = 11 \/ 16 = 13 \/ 16 = 16)) \/
+    (0 = 2 /\ (16 = 8 \/ 16 = 10 \/ 16 = 12 \/ 16 = 15)) \/
+    (0 = 3 /\ (16 = 6 \/ 16 = 8 \/ 16 = 13 \/ 16 = 15 \/ 16 = 16)) \/
+    (0 = 4 /\ (16 = 5 \/ 16 = 7 \/ 16 = 12 \/ 16 = 14 \/ 16 = 16)) \/
+    (0 = 5 /\ (16 = 4 \/ 16 = 9 \/ 16 = 10 \/ 16 = 11 \/ 16 = 13)) \/
+    (0 = 6 /\ (16 = 3 \/ 16 = 10 \/ 16 = 11 \/ 16 = 12 \/ 16 = 14)) \/
+    (0 = 7 /\ (16 = 1 \/ 16 = 4 \/ 16 = 9 \/ 16 = 10 \/ 16 = 15)) \/
+    (0 = 8 /\ (16 = 2 \/ 16 = 3 \/ 16 = 9 \/ 16 = 11 \/ 16 = 14)) \/
+    (0 = 9 /\ (16 = 0 \/ 16 = 5 \/ 16 = 7 \/ 16 = 8 \/ 16 = 12)) \/
+    (0 = 10 /\ (16 = 2 \/ 16 = 5 \/ 16 = 6 \/ 16 = 7 \/ 16 = 16)) \/
+    (0 = 11 /\ (16 = 1 \/ 16 = 5 \/ 16 = 6 \/ 16 = 8 \/ 16 = 15)) \/
+    (0 = 12 /\ (16 = 2 \/ 16 = 4 \/ 16 = 6 \/ 16 = 9 \/ 16 = 13)) \/
+    (0 = 13 /\ (16 = 1 \/ 16 = 3 \/ 16 = 5 \/ 16 = 12 \/ 16 = 14)) \/
+    (0 = 14 /\ (16 = 0 \/ 16 = 4 \/ 16 = 6 \/ 16 = 8 \/ 16 = 13)) \/
+    (0 = 15 /\ (16 = 0 \/ 16 = 2 \/ 16 = 3 \/ 16 = 7 \/ 16 = 11)) \/
+    (0 = 16 /\ (16 = 0 \/ 16 = 1 \/ 16 = 3 \/ 16 = 4 \/ 16 = 10)).
+apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. 
+apply andI.
+- reflexivity.
+- apply orIR. reflexivity.
+Qed.
+
+Theorem Adj17_1_7 : Adj17 1 7.
+prove (1 = 0 /\ (7 = 9 \/ 7 = 14 \/ 7 = 15 \/ 7 = 16)) \/
+    (1 = 1 /\ (7 = 7 \/ 7 = 11 \/ 7 = 13 \/ 7 = 16)) \/
+    (1 = 2 /\ (7 = 8 \/ 7 = 10 \/ 7 = 12 \/ 7 = 15)) \/
+    (1 = 3 /\ (7 = 6 \/ 7 = 8 \/ 7 = 13 \/ 7 = 15 \/ 7 = 16)) \/
+    (1 = 4 /\ (7 = 5 \/ 7 = 7 \/ 7 = 12 \/ 7 = 14 \/ 7 = 16)) \/
+    (1 = 5 /\ (7 = 4 \/ 7 = 9 \/ 7 = 10 \/ 7 = 11 \/ 7 = 13)) \/
+    (1 = 6 /\ (7 = 3 \/ 7 = 10 \/ 7 = 11 \/ 7 = 12 \/ 7 = 14)) \/
+    (1 = 7 /\ (7 = 1 \/ 7 = 4 \/ 7 = 9 \/ 7 = 10 \/ 7 = 15)) \/
+    (1 = 8 /\ (7 = 2 \/ 7 = 3 \/ 7 = 9 \/ 7 = 11 \/ 7 = 14)) \/
+    (1 = 9 /\ (7 = 0 \/ 7 = 5 \/ 7 = 7 \/ 7 = 8 \/ 7 = 12)) \/
+    (1 = 10 /\ (7 = 2 \/ 7 = 5 \/ 7 = 6 \/ 7 = 7 \/ 7 = 16)) \/
+    (1 = 11 /\ (7 = 1 \/ 7 = 5 \/ 7 = 6 \/ 7 = 8 \/ 7 = 15)) \/
+    (1 = 12 /\ (7 = 2 \/ 7 = 4 \/ 7 = 6 \/ 7 = 9 \/ 7 = 13)) \/
+    (1 = 13 /\ (7 = 1 \/ 7 = 3 \/ 7 = 5 \/ 7 = 12 \/ 7 = 14)) \/
+    (1 = 14 /\ (7 = 0 \/ 7 = 4 \/ 7 = 6 \/ 7 = 8 \/ 7 = 13)) \/
+    (1 = 15 /\ (7 = 0 \/ 7 = 2 \/ 7 = 3 \/ 7 = 7 \/ 7 = 11)) \/
+    (1 = 16 /\ (7 = 0 \/ 7 = 1 \/ 7 = 3 \/ 7 = 4 \/ 7 = 10)).
+apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIR.
+apply andI.
+- reflexivity.
+- apply orIL. apply orIL. apply orIL. reflexivity.
+Qed.
+
+Theorem Adj17_1_11 : Adj17 1 11.
+prove (1 = 0 /\ (11 = 9 \/ 11 = 14 \/ 11 = 15 \/ 11 = 16)) \/
+    (1 = 1 /\ (11 = 7 \/ 11 = 11 \/ 11 = 13 \/ 11 = 16)) \/
+    (1 = 2 /\ (11 = 8 \/ 11 = 10 \/ 11 = 12 \/ 11 = 15)) \/
+    (1 = 3 /\ (11 = 6 \/ 11 = 8 \/ 11 = 13 \/ 11 = 15 \/ 11 = 16)) \/
+    (1 = 4 /\ (11 = 5 \/ 11 = 7 \/ 11 = 12 \/ 11 = 14 \/ 11 = 16)) \/
+    (1 = 5 /\ (11 = 4 \/ 11 = 9 \/ 11 = 10 \/ 11 = 11 \/ 11 = 13)) \/
+    (1 = 6 /\ (11 = 3 \/ 11 = 10 \/ 11 = 11 \/ 11 = 12 \/ 11 = 14)) \/
+    (1 = 7 /\ (11 = 1 \/ 11 = 4 \/ 11 = 9 \/ 11 = 10 \/ 11 = 15)) \/
+    (1 = 8 /\ (11 = 2 \/ 11 = 3 \/ 11 = 9 \/ 11 = 11 \/ 11 = 14)) \/
+    (1 = 9 /\ (11 = 0 \/ 11 = 5 \/ 11 = 7 \/ 11 = 8 \/ 11 = 12)) \/
+    (1 = 10 /\ (11 = 2 \/ 11 = 5 \/ 11 = 6 \/ 11 = 7 \/ 11 = 16)) \/
+    (1 = 11 /\ (11 = 1 \/ 11 = 5 \/ 11 = 6 \/ 11 = 8 \/ 11 = 15)) \/
+    (1 = 12 /\ (11 = 2 \/ 11 = 4 \/ 11 = 6 \/ 11 = 9 \/ 11 = 13)) \/
+    (1 = 13 /\ (11 = 1 \/ 11 = 3 \/ 11 = 5 \/ 11 = 12 \/ 11 = 14)) \/
+    (1 = 14 /\ (11 = 0 \/ 11 = 4 \/ 11 = 6 \/ 11 = 8 \/ 11 = 13)) \/
+    (1 = 15 /\ (11 = 0 \/ 11 = 2 \/ 11 = 3 \/ 11 = 7 \/ 11 = 11)) \/
+    (1 = 16 /\ (11 = 0 \/ 11 = 1 \/ 11 = 3 \/ 11 = 4 \/ 11 = 10)).
+apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIR.
+apply andI.
+- reflexivity.
+- apply orIL. apply orIL. apply orIR. reflexivity.
+Qed.
+
+Theorem Adj17_1_13 : Adj17 1 13.
+prove (1 = 0 /\ (13 = 9 \/ 13 = 14 \/ 13 = 15 \/ 13 = 16)) \/
+    (1 = 1 /\ (13 = 7 \/ 13 = 11 \/ 13 = 13 \/ 13 = 16)) \/
+    (1 = 2 /\ (13 = 8 \/ 13 = 10 \/ 13 = 12 \/ 13 = 15)) \/
+    (1 = 3 /\ (13 = 6 \/ 13 = 8 \/ 13 = 13 \/ 13 = 15 \/ 13 = 16)) \/
+    (1 = 4 /\ (13 = 5 \/ 13 = 7 \/ 13 = 12 \/ 13 = 14 \/ 13 = 16)) \/
+    (1 = 5 /\ (13 = 4 \/ 13 = 9 \/ 13 = 10 \/ 13 = 11 \/ 13 = 13)) \/
+    (1 = 6 /\ (13 = 3 \/ 13 = 10 \/ 13 = 11 \/ 13 = 12 \/ 13 = 14)) \/
+    (1 = 7 /\ (13 = 1 \/ 13 = 4 \/ 13 = 9 \/ 13 = 10 \/ 13 = 15)) \/
+    (1 = 8 /\ (13 = 2 \/ 13 = 3 \/ 13 = 9 \/ 13 = 11 \/ 13 = 14)) \/
+    (1 = 9 /\ (13 = 0 \/ 13 = 5 \/ 13 = 7 \/ 13 = 8 \/ 13 = 12)) \/
+    (1 = 10 /\ (13 = 2 \/ 13 = 5 \/ 13 = 6 \/ 13 = 7 \/ 13 = 16)) \/
+    (1 = 11 /\ (13 = 1 \/ 13 = 5 \/ 13 = 6 \/ 13 = 8 \/ 13 = 15)) \/
+    (1 = 12 /\ (13 = 2 \/ 13 = 4 \/ 13 = 6 \/ 13 = 9 \/ 13 = 13)) \/
+    (1 = 13 /\ (13 = 1 \/ 13 = 3 \/ 13 = 5 \/ 13 = 12 \/ 13 = 14)) \/
+    (1 = 14 /\ (13 = 0 \/ 13 = 4 \/ 13 = 6 \/ 13 = 8 \/ 13 = 13)) \/
+    (1 = 15 /\ (13 = 0 \/ 13 = 2 \/ 13 = 3 \/ 13 = 7 \/ 13 = 11)) \/
+    (1 = 16 /\ (13 = 0 \/ 13 = 1 \/ 13 = 3 \/ 13 = 4 \/ 13 = 10)).
+apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIL. apply orIR.
+apply andI.
+- reflexivity.
+- apply orIL. apply orIR. reflexivity.
+Qed.
+
+Theorem Adj17_1_16 : Adj17 1 16.
+prove (1 = 0 /\ (16 = 9 \/ 16 = 14 \/ 16 = 15 \/ 16 = 16)) \/
+    (1 = 1 /\ (16 = 7 \/ 16 = 11 \/ 16 = 13 \/ 16 = 16)) \/
+    (1 = 2 /\ (16 = 8 \/ 16 = 10 \/ 16 = 12 \/ 16 = 15)) \/
+    (1 = 3 /\ (16 = 6 \/ 16 = 8 \/ 16 = 13 \/ 16 = 15 \/ 16 = 16)) \/
+    (1 = 4 /\ (16 = 5 \/ 16 = 7 \/ 16 = 12 \/ 16 = 14 \/ 16 = 16)) \/
+    (1 = 5 /\ (16 = 4 \/ 16 = 9 \/ 16 = 10 \/ 16 = 11 \/ 16 = 13)) \/
+    (1 = 6 /\ (16 = 3 \/ 16 = 10 \/ 16 = 11 \/ 16 = 12 \/ 16 = 14)) \/
+    (1 = 7 /\ (16 = 1 \/ 16 = 4 \/ 16 = 9 \/ 16 = 10 \/ 16 = 15)) \/
+    (1 = 8 /\ (16 = 2 \/ 16 = 3 \/ 16 = 9 \/ 16 = 11 \/ 16 = 14)) \/
+    (1 = 9 /\ (16 = 0 \/ 16 = 5 \/ 16 = 7 \/ 16 = 8 \/ 16 = 12)) \/
+    (1 = 10 /\ (16 = 2 \/ 16 = 5 \/ 16 = 6 \/ 16 = 7 \/ 16 = 16)) \/
+
+================================================================================
+FILE: neq_lemmas.mg (inequality lemmas for 10-16)
+================================================================================
+Theorem neq_10_0 : 10 <> 0.
+exact neq_ordsucc_0 9.
+Qed.
+
+Theorem neq_10_1 : 10 <> 1.
+apply ordsucc_inj_contra 9 0 neq_9_0.
+Qed.
+
+Theorem neq_10_2 : 10 <> 2.
+apply ordsucc_inj_contra 9 1 neq_9_1.
+Qed.
+
+Theorem neq_10_3 : 10 <> 3.
+apply ordsucc_inj_contra 9 2 neq_9_2.
+Qed.
+
+Theorem neq_10_4 : 10 <> 4.
+apply ordsucc_inj_contra 9 3 neq_9_3.
+Qed.
+
+Theorem neq_10_5 : 10 <> 5.
+apply ordsucc_inj_contra 9 4 neq_9_4.
+Qed.
+
+Theorem neq_10_6 : 10 <> 6.
+apply ordsucc_inj_contra 9 5 neq_9_5.
+Qed.
+
+Theorem neq_10_7 : 10 <> 7.
+apply ordsucc_inj_contra 9 6 neq_9_6.
+Qed.
+
+Theorem neq_10_8 : 10 <> 8.
+apply ordsucc_inj_contra 9 7 neq_9_7.
+Qed.
+
+Theorem neq_10_9 : 10 <> 9.
+apply ordsucc_inj_contra 9 8 neq_9_8.
+Qed.
+
+
+
+Theorem neq_11_0 : 11 <> 0.
+exact neq_ordsucc_0 10.
+Qed.
+
+Theorem neq_11_1 : 11 <> 1.
+apply ordsucc_inj_contra 10 0 neq_10_0.
+Qed.
+
+Theorem neq_11_2 : 11 <> 2.
+apply ordsucc_inj_contra 10 1 neq_10_1.
+Qed.
+
+Theorem neq_11_3 : 11 <> 3.
+apply ordsucc_inj_contra 10 2 neq_10_2.
+Qed.
+
+Theorem neq_11_4 : 11 <> 4.
+apply ordsucc_inj_contra 10 3 neq_10_3.
+Qed.
+
+Theorem neq_11_5 : 11 <> 5.
+apply ordsucc_inj_contra 10 4 neq_10_4.
+Qed.
+
+Theorem neq_11_6 : 11 <> 6.
+apply ordsucc_inj_contra 10 5 neq_10_5.
+Qed.
+
+Theorem neq_11_7 : 11 <> 7.
+apply ordsucc_inj_contra 10 6 neq_10_6.
+Qed.
+
+Theorem neq_11_8 : 11 <> 8.
+apply ordsucc_inj_contra 10 7 neq_10_7.
+Qed.
+
+Theorem neq_11_9 : 11 <> 9.
+apply ordsucc_inj_contra 10 8 neq_10_8.
+Qed.
+
+Theorem neq_11_10 : 11 <> 10.
+apply ordsucc_inj_contra 10 9 neq_10_9.
+Qed.
+
+
+Theorem neq_12_0 : 12 <> 0.
+exact neq_ordsucc_0 11.
+Qed.
+
+Theorem neq_12_1 : 12 <> 1.
+apply ordsucc_inj_contra 11 0 neq_11_0.
+Qed.
+
+Theorem neq_12_2 : 12 <> 2.
+apply ordsucc_inj_contra 11 1 neq_11_1.
+Qed.
+
+Theorem neq_12_3 : 12 <> 3.
+apply ordsucc_inj_contra 11 2 neq_11_2.
+Qed.
+
+Theorem neq_12_4 : 12 <> 4.
+apply ordsucc_inj_contra 11 3 neq_11_3.
+Qed.
+
+Theorem neq_12_5 : 12 <> 5.
+apply ordsucc_inj_contra 11 4 neq_11_4.
+Qed.
+
+Theorem neq_12_6 : 12 <> 6.
+apply ordsucc_inj_contra 11 5 neq_11_5.
+Qed.
+
+Theorem neq_12_7 : 12 <> 7.
+apply ordsucc_inj_contra 11 6 neq_11_6.
+Qed.
+
+Theorem neq_12_8 : 12 <> 8.
+apply ordsucc_inj_contra 11 7 neq_11_7.
+Qed.
+
+Theorem neq_12_9 : 12 <> 9.
+apply ordsucc_inj_contra 11 8 neq_11_8.
+Qed.
+
+Theorem neq_12_10 : 12 <> 10.
+apply ordsucc_inj_contra 11 9 neq_11_9.
+Qed.
+
+Theorem neq_12_11 : 12 <> 11.
+apply ordsucc_inj_contra 11 10 neq_11_10.
+Qed.
+
+
+Theorem neq_13_0 : 13 <> 0. exact neq_ordsucc_0 12. Qed.
+Theorem neq_13_1 : 13 <> 1. apply ordsucc_inj_contra 12 0 neq_12_0. Qed.
+Theorem neq_13_2 : 13 <> 2. apply ordsucc_inj_contra 12 1 neq_12_1. Qed.
+Theorem neq_13_3 : 13 <> 3. apply ordsucc_inj_contra 12 2 neq_12_2. Qed.
+Theorem neq_13_4 : 13 <> 4. apply ordsucc_inj_contra 12 3 neq_12_3. Qed.
+Theorem neq_13_5 : 13 <> 5. apply ordsucc_inj_contra 12 4 neq_12_4. Qed.
+Theorem neq_13_6 : 13 <> 6. apply ordsucc_inj_contra 12 5 neq_12_5. Qed.
+Theorem neq_13_7 : 13 <> 7. apply ordsucc_inj_contra 12 6 neq_12_6. Qed.
+Theorem neq_13_8 : 13 <> 8. apply ordsucc_inj_contra 12 7 neq_12_7. Qed.
+Theorem neq_13_9 : 13 <> 9. apply ordsucc_inj_contra 12 8 neq_12_8. Qed.
+Theorem neq_13_10 : 13 <> 10. apply ordsucc_inj_contra 12 9 neq_12_9. Qed.
+Theorem neq_13_11 : 13 <> 11. apply ordsucc_inj_contra 12 10 neq_12_10. Qed.
+Theorem neq_13_12 : 13 <> 12. apply ordsucc_inj_contra 12 11 neq_12_11. Qed.
+
+
+Theorem neq_14_0 : 14 <> 0. exact neq_ordsucc_0 13. Qed.
+Theorem neq_14_1 : 14 <> 1. apply ordsucc_inj_contra 13 0 neq_13_0. Qed.
+Theorem neq_14_2 : 14 <> 2. apply ordsucc_inj_contra 13 1 neq_13_1. Qed.
+Theorem neq_14_3 : 14 <> 3. apply ordsucc_inj_contra 13 2 neq_13_2. Qed.
+Theorem neq_14_4 : 14 <> 4. apply ordsucc_inj_contra 13 3 neq_13_3. Qed.
+Theorem neq_14_5 : 14 <> 5. apply ordsucc_inj_contra 13 4 neq_13_4. Qed.
+Theorem neq_14_6 : 14 <> 6. apply ordsucc_inj_contra 13 5 neq_13_5. Qed.
+Theorem neq_14_7 : 14 <> 7. apply ordsucc_inj_contra 13 6 neq_13_6. Qed.
+Theorem neq_14_8 : 14 <> 8. apply ordsucc_inj_contra 13 7 neq_13_7. Qed.
+Theorem neq_14_9 : 14 <> 9. apply ordsucc_inj_contra 13 8 neq_13_8. Qed.
+Theorem neq_14_10 : 14 <> 10. apply ordsucc_inj_contra 13 9 neq_13_9. Qed.
+Theorem neq_14_11 : 14 <> 11. apply ordsucc_inj_contra 13 10 neq_13_10. Qed.
+Theorem neq_14_12 : 14 <> 12. apply ordsucc_inj_contra 13 11 neq_13_11. Qed.
+Theorem neq_14_13 : 14 <> 13. apply ordsucc_inj_contra 13 12 neq_13_12. Qed.
+
+
+Theorem neq_15_0 : 15 <> 0. exact neq_ordsucc_0 14. Qed.
+Theorem neq_15_1 : 15 <> 1. apply ordsucc_inj_contra 14 0 neq_14_0. Qed.
+Theorem neq_15_2 : 15 <> 2. apply ordsucc_inj_contra 14 1 neq_14_1. Qed.
+Theorem neq_15_3 : 15 <> 3. apply ordsucc_inj_contra 14 2 neq_14_2. Qed.
+Theorem neq_15_4 : 15 <> 4. apply ordsucc_inj_contra 14 3 neq_14_3. Qed.
+Theorem neq_15_5 : 15 <> 5. apply ordsucc_inj_contra 14 4 neq_14_4. Qed.
+Theorem neq_15_6 : 15 <> 6. apply ordsucc_inj_contra 14 5 neq_14_5. Qed.
+Theorem neq_15_7 : 15 <> 7. apply ordsucc_inj_contra 14 6 neq_14_6. Qed.
+Theorem neq_15_8 : 15 <> 8. apply ordsucc_inj_contra 14 7 neq_14_7. Qed.
+Theorem neq_15_9 : 15 <> 9. apply ordsucc_inj_contra 14 8 neq_14_8. Qed.
+Theorem neq_15_10 : 15 <> 10. apply ordsucc_inj_contra 14 9 neq_14_9. Qed.
+Theorem neq_15_11 : 15 <> 11. apply ordsucc_inj_contra 14 10 neq_14_10. Qed.
+Theorem neq_15_12 : 15 <> 12. apply ordsucc_inj_contra 14 11 neq_14_11. Qed.
+Theorem neq_15_13 : 15 <> 13. apply ordsucc_inj_contra 14 12 neq_14_12. Qed.
+Theorem neq_15_14 : 15 <> 14. apply ordsucc_inj_contra 14 13 neq_14_13. Qed.
+
+
+Theorem neq_16_0 : 16 <> 0. exact neq_ordsucc_0 15. Qed.
+Theorem neq_16_1 : 16 <> 1. apply ordsucc_inj_contra 15 0 neq_15_0. Qed.
+Theorem neq_16_2 : 16 <> 2. apply ordsucc_inj_contra 15 1 neq_15_1. Qed.
+Theorem neq_16_3 : 16 <> 3. apply ordsucc_inj_contra 15 2 neq_15_2. Qed.
+Theorem neq_16_4 : 16 <> 4. apply ordsucc_inj_contra 15 3 neq_15_3. Qed.
+Theorem neq_16_5 : 16 <> 5. apply ordsucc_inj_contra 15 4 neq_15_4. Qed.
+Theorem neq_16_6 : 16 <> 6. apply ordsucc_inj_contra 15 5 neq_15_5. Qed.
+Theorem neq_16_7 : 16 <> 7. apply ordsucc_inj_contra 15 6 neq_15_6. Qed.
+Theorem neq_16_8 : 16 <> 8. apply ordsucc_inj_contra 15 7 neq_15_7. Qed.
+Theorem neq_16_9 : 16 <> 9. apply ordsucc_inj_contra 15 8 neq_15_8. Qed.
+Theorem neq_16_10 : 16 <> 10. apply ordsucc_inj_contra 15 9 neq_15_9. Qed.
+Theorem neq_16_11 : 16 <> 11. apply ordsucc_inj_contra 15 10 neq_15_10. Qed.
+Theorem neq_16_12 : 16 <> 12. apply ordsucc_inj_contra 15 11 neq_15_11. Qed.
+Theorem neq_16_13 : 16 <> 13. apply ordsucc_inj_contra 15 12 neq_15_12. Qed.
+Theorem neq_16_14 : 16 <> 14. apply ordsucc_inj_contra 15 13 neq_15_13. Qed.
+Theorem neq_16_15 : 16 <> 15. apply ordsucc_inj_contra 15 14 neq_15_14. Qed.
+
+================================================================================
+FILE: gen_not_adj.py (partial generator - shows graph data)
+================================================================================
+#!/usr/bin/env python3
+"""Generate Megalodon proofs for ~Adj17 i j (non-edges)."""
+
+# The Graver-Yackel 17-vertex graph edges (directed, both directions)
+EDGES = {
+    0: [9, 14, 15, 16],
+    1: [7, 11, 13, 16],
+    2: [8, 10, 12, 15],
+    3: [6, 8, 13, 15, 16],
+    4: [5, 7, 12, 14, 16],
+    5: [4, 9, 10, 11, 13],
+    6: [3, 10, 11, 12, 14],
+    7: [1, 4, 9, 10, 15],
+    8: [2, 3, 9, 11, 14],
+    9: [0, 5, 7, 8, 12],
+    10: [2, 5, 6, 7, 16],
+    11: [1, 5, 6, 8, 15],
+    12: [2, 4, 6, 9, 13],
+    13: [1, 3, 5, 12, 14],
+    14: [0, 4, 6, 8, 13],
+    15: [0, 2, 3, 7, 11],
+    16: [0, 1, 3, 4, 10],
+}
+
+# Build adjacency set for quick lookup
+ADJ_SET = set()
+for i, neighbors in EDGES.items():
+    for j in neighbors:
+        ADJ_SET.add((i, j))
+
+def is_edge(i, j):
+    return (i, j) in ADJ_SET
+
+def get_neq_lemma(a, b):
+    """Get the inequality lemma name for a <> b (i.e., a = b -> False)."""
+    return f"neq_{a}_{b}"
+
+def generate_disjunct_proof(vertex_i, vertex_j, disjunct_idx, indent):
+    """Generate proof for a single disjunct being false.
+
+    Disjunct form: (vertex_i = idx /\ (vertex_j = n1 \/ vertex_j = n2 \/ ...))
+    """
+    idx = disjunct_idx
+    neighbors = EDGES[idx]
+    lines = []
+
+    # First conjunct: vertex_i = idx
+    if vertex_i == idx:
+        # First conjunct is true, need to refute second conjunct (the inner disjunction)
+        lines.append(f"{indent}assume Heq_i: {vertex_i} = {idx}.")
+
+        # Inner disjunction: vertex_j = n1 \/ vertex_j = n2 \/ ...
+        # This is also left-associative
+        num_neighbors = len(neighbors)
+
+        if num_neighbors == 4:
+            # Structure: ((n0 \/ n1) \/ n2) \/ n3
+            lines.append(f"{indent}assume Hj.")
+            lines.append(f"{indent}apply Hj.")
+
+            # Level 1: ((n0 \/ n1) \/ n2) vs n3
+            lines.append(f"{indent}- assume Hj1.")
+            lines.append(f"{indent}  apply Hj1.")
+            # Level 2: (n0 \/ n1) vs n2
+            lines.append(f"{indent}  + assume Hj2.")
+            lines.append(f"{indent}    apply Hj2.")
+            # Level 3: n0 vs n1
+            lines.append(f"{indent}    * assume Heq: {vertex_j} = {neighbors[0]}.")
+            lines.append(f"{indent}      exact {get_neq_lemma(vertex_j, neighbors[0])} Heq.")
+            lines.append(f"{indent}    * assume Heq: {vertex_j} = {neighbors[1]}.")
+            lines.append(f"{indent}      exact {get_neq_lemma(vertex_j, neighbors[1])} Heq.")
+            # Back to level 2: n2
+            lines.append(f"{indent}  + assume Heq: {vertex_j} = {neighbors[2]}.")
+            lines.append(f"{indent}    exact {get_neq_lemma(vertex_j, neighbors[2])} Heq.")
+            # Back to level 1: n3
+            lines.append(f"{indent}- assume Heq: {vertex_j} = {neighbors[3]}.")
+            lines.append(f"{indent}  exact {get_neq_lemma(vertex_j, neighbors[3])} Heq.")
+
+        elif num_neighbors == 5:
+            # Structure: (((n0 \/ n1) \/ n2) \/ n3) \/ n4
+            lines.append(f"{indent}assume Hj.")
+            lines.append(f"{indent}apply Hj.")
+
+            # Level 1: (((n0 \/ n1) \/ n2) \/ n3) vs n4
+            lines.append(f"{indent}- assume Hj1.")
+            lines.append(f"{indent}  apply Hj1.")
+            # Level 2: ((n0 \/ n1) \/ n2) vs n3
+            lines.append(f"{indent}  + assume Hj2.")
+            lines.append(f"{indent}    apply Hj2.")
+            # Level 3: (n0 \/ n1) vs n2
+            lines.append(f"{indent}    * assume Hj3.")
+            lines.append(f"{indent}      apply Hj3.")
+            # Level 4: n0 vs n1
+            lines.append(f"{indent}      @ assume Heq: {vertex_j} = {neighbors[0]}.")
+            lines.append(f"{indent}        exact {get_neq_lemma(vertex_j, neighbors[0])} Heq.")
+            lines.append(f"{indent}      @ assume Heq: {vertex_j} = {neighbors[1]}.")
+            lines.append(f"{indent}        exact {get_neq_lemma(vertex_j, neighbors[1])} Heq.")
+            # Back to level 3: n2
+            lines.append(f"{indent}    * assume Heq: {vertex_j} = {neighbors[2]}.")
+            lines.append(f"{indent}      exact {get_neq_lemma(vertex_j, neighbors[2])} Heq.")
+            # Back to level 2: n3
+            lines.append(f"{indent}  + assume Heq: {vertex_j} = {neighbors[3]}.")
+            lines.append(f"{indent}    exact {get_neq_lemma(vertex_j, neighbors[3])} Heq.")
+            # Back to level 1: n4
+            lines.append(f"{indent}- assume Heq: {vertex_j} = {neighbors[4]}.")
+            lines.append(f"{indent}  exact {get_neq_lemma(vertex_j, neighbors[4])} Heq.")
+        else:
+            raise ValueError(f"Unexpected number of neighbors: {num_neighbors}")
+
+    else:
+        # First conjunct is false: vertex_i <> idx
+        lines.append(f"{indent}assume Heq_i: {vertex_i} = {idx}.")
+        lines.append(f"{indent}assume _.")
+        lines.append(f"{indent}exact {get_neq_lemma(vertex_i, idx)} Heq_i.")
+
+    return lines
+
+def generate_not_adj_proof(i, j):
+    """Generate a complete proof of ~Adj17 i j."""
+    if is_edge(i, j):
+        return None  # Can't prove ~Adj17 for an edge
+
+    lines = []
+    lines.append(f"Theorem Adj17_not_{i}_{j} : ~Adj17 {i} {j}.")
+    lines.append(f"assume H: Adj17 {i} {j}.")
+    lines.append("prove False.")
+    lines.append("apply H.")
+
+    # 17 disjuncts, left-associative: ((((... \/ D14) \/ D15) \/ D16)
+    # After apply H: 16 nested levels of bullets
+    # - First bullet: (((... \/ D14) \/ D15) -> False
+    # - Last bullet: D16 -> False
+
+    # We'll use a recursive structure with bullet characters
+    # Megalodon supports: - + * @ (maybe more?)
+
+    bullet_chars = ['-', '+', '*', '@', '#', '$', '%', '^', '&', '!', '~', '`', ':', ';', '<', '>']
+
+    # Generate the nested structure
+    # For 17 disjuncts (indices 0-16), we have 16 binary or operations
+    # The tree structure is:
+    #   ((((((((((((((((D0 \/ D1) \/ D2) \/ D3) \/ D4) \/ D5) \/ D6) \/ D7) \/ D8) \/ D9) \/ D10) \/ D11) \/ D12) \/ D13) \/ D14) \/ D15) \/ D16
+
+    def gen_or_elim(level, disjunct_indices, indent):
+        """Generate proof for eliminating a left-associative disjunction."""
+        result = []
+
+        if len(disjunct_indices) == 1:
+            # Base case: single disjunct (a conjunction)
+            idx = disjunct_indices[0]
+            result.append(f"{indent}assume Hd{idx}.")
+            result.append(f"{indent}apply Hd{idx}.")
+            result.extend(generate_disjunct_proof(i, j, idx, indent))
+            return result
+
+        # Recursive case: split into left (all but last) and right (last)
+        left_indices = disjunct_indices[:-1]
+        right_idx = disjunct_indices[-1]
+
+        bullet = bullet_chars[level % len(bullet_chars)]
+
+        # Left branch (the nested disjunction)
+        result.append(f"{indent}{bullet} assume Hleft.")
+        result.append(f"{indent}  apply Hleft.")
+        result.extend(gen_or_elim(level + 1, left_indices, indent + "  "))
+
+        # Right branch (single disjunct)
+        result.append(f"{indent}{bullet} assume Hd{right_idx}.")
+        result.append(f"{indent}  apply Hd{right_idx}.")
+        result.extend(generate_disjunct_proof(i, j, right_idx, indent + "  "))
+
+        return result
+
+    lines.extend(gen_or_elim(0, list(range(17)), ""))
+    lines.append("Qed.")
+    lines.append("")
+
+    return "\n".join(lines)
+
+def main():
+    # Generate all non-edge proofs
+    all_proofs = []
+    count = 0
+
+    for i in range(17):
+        for j in range(17):
+            if i != j and not is_edge(i, j):
+                proof = generate_not_adj_proof(i, j)
+                if proof:
+                    all_proofs.append(proof)
+                    count += 1
+
+    print(f"(* Generated {count} non-edge proofs *)")
+    print("")
+    for proof in all_proofs:
+        print(proof)
+
+if __name__ == "__main__":
+    main()
+
+================================================================================
+FILE: how-to-megalodon.md (tactics reference - first 350 lines)
+================================================================================
+# How to Megalodon
+
+> LLM Context Refresher for Megalodon theorem proving
+
+## Overview
+
+**Megalodon** is an interactive theorem prover and proof checker developed by CIIRC/CTU. Its primary purpose is creating **Proofgold documents** - blockchain-verified mathematical proofs with cryptocurrency bounties.
+
+**Location:** `/home/zar/claude/megalodon/`
+**Executable:** `./bin/megalodon`
+**Sources:** `./src`
+**Examples:** `./examples`
+
+## Building (if needed)
+
+```bash
+cd megalodon
+./makeopt          # Optimized native build (preferred)
+# fallback:
+./makebytecode     # Bytecode build
+```
+
+Requires OCaml. No `make` needed.
+
+## Quick Reference
+
+```bash
+# Check a file (silent = success)
+./bin/megalodon file.mg
+
+# With preamble (signature file)
+./bin/megalodon -I preamble.mgs file.mg
+
+# Different theories
+./bin/megalodon -hf file.mg          # HF theory
+./bin/megalodon -mizar file.mg       # Mizar theory
+./bin/megalodon -hoas file.mg        # HOAS theory
+# (default is Egal theory)
+
+# Export to Proofgold format
+./bin/megalodon -pfg file.mg > file.pfg
+
+# Export ATP problems (for hammer)
+./bin/megalodon -fof prefix file.mg   # First-order
+./bin/megalodon -th0 prefix file.mg   # Higher-order
+
+# Verbose output
+./bin/megalodon -reporteachitem file.mg
+
+# Check syntax errors
+./bin/megalodon file.mg 2>&1 | head
+```
+
+## Supported Theories
+
+| Theory | Flag | Description |
+|--------|------|-------------|
+| **Egal** | (default) | Higher-order Tarski-Grothendieck Set Theory (classical) |
+| **Mizar** | `-mizar` | HOTG with Mizar's axioms |
+| **HF** | `-hf` | Hereditarily finite sets |
+| **HOAS** | `-hoas` | Higher-order abstract syntax (intuitionistic) |
+
+Most set-theory and Ramsey examples use Egal.
+
+## Type System
+
+### Built-in Types
+- `prop` - Propositions (type of logical formulas)
+- `set` - Sets (the domain of set theory)
+- `SType` - Meta-type for simple types (used in polymorphic definitions)
+
+### Type Constructors
+```
+A -> B           Function type (A to B)
+(set->prop)      Predicates on sets
+(set->set)       Functions on sets
+```
+
+## Syntax Reference
+
+### Declarations
+
+```megalodon
+(* Parameter - declared constant without definition *)
+Parameter name : type.
+
+(* Axiom - assumed proposition *)
+Axiom name : prop.
+
+(* Definition - constant with definition *)
+Definition name : type := term.
+
+(* Theorem/Lemma/Corollary - proves a proposition *)
+Theorem name : prop.
+<proof>
+Qed.
+
+Lemma name : prop.
+<proof>
+Qed.
+
+(* Conjecture - unproven proposition (for bounties) *)
+Conjecture name : prop.
+Admitted.
+```
+
+### File Metadata (for Proofgold)
+
+```megalodon
+Title "My Document".
+Author "Name".
+Salt "random string".
+Treasure <amount>.
+
+(* Control definition visibility *)
+Opaque name.      (* Don't unfold in proofs *)
+Transparent name. (* Allow unfolding *)
+```
+
+### Sections (for polymorphism)
+
+```megalodon
+Section MySection.
+Variable A : SType.           (* Type variable *)
+Variable x : A.               (* Term variable *)
+Hypothesis H : P x.           (* Local hypothesis *)
+
+Definition foo : A -> A := fun y => y.
+End MySection.
+(* foo now has type: forall A:SType, A -> A *)
+```
+
+### Notation
+
+```megalodon
+(* Prefix operator *)
+Prefix ~ 700 := not.                    (* ~P *)
+
+(* Infix operator *)
+Infix /\ 780 left := and.              (* P /\ Q *)
+Infix \/ 785 left := or.               (* P \/ Q *)
+Infix -> 790 right := imp.             (* P -> Q, built-in *)
+Infix <-> 805 := iff.                  (* P <-> Q *)
+Infix = 502 := eq.                     (* x = y *)
+
+(* Binder notation *)
+Binder+ exists , := ex.                (* exists x, P x *)
+Binder+ exists , := ex; and.           (* exists x :e X, P x *)
+
+(* Unicode aliases - special comment syntax *)
+(* Unicode ~ "00ac" *)                 (* Allows using ¬ *)
+(* Unicode /\ "2227" *)                (* Allows using ∧ *)
+(* Unicode \/ "2228" *)                (* Allows using ∨ *)
+(* Unicode <-> "2194" *)               (* Allows using ↔ *)
+(* Unicode exists "2203" *)            (* Allows using ∃ *)
+(* Unicode Union "22C3" *)             (* Allows using ⋃ *)
+(* Unicode Power "1D4AB" *)            (* Allows using 𝒫 *)
+
+(* Set membership shortcuts *)
+x :e X                                 (* x ∈ X, In x X *)
+X c= Y                                 (* X ⊆ Y, Subq X Y *)
+{F x | x :e A}                         (* Replacement *)
+```
+
+### Terms
+
+```megalodon
+(* Lambda abstraction *)
+fun x:A => body
+fun x y:A => body                      (* Multiple args *)
+fun (x:A) (y:B) => body
+
+(* Application *)
+f x
+f x y                                  (* f applied to x, then to y *)
+
+(* Quantifiers *)
+forall x:A, P x
+forall x y:A, P x y
+forall x :e X, P x                     (* Bounded quantifier *)
+exists x:A, P x
+exists x :e X, P x                     (* Bounded existential *)
+
+(* Local definitions in proofs *)
+set name := term.
+set name:type := term.                 (* With explicit type *)
+```
+
+## Proof Tactics
+
+### Basic Tactics
+
+| Tactic | Usage | Description |
+|--------|-------|-------------|
+| `exact` | `exact term.` | Provide exact proof term |
+| `let` | `let x.` or `let x:A.` | Introduce universally quantified variable |
+| `assume` | `assume H: P.` | Introduce hypothesis (for implication) |
+| `apply` | `apply H.` | Apply theorem/hypothesis; generates subgoals |
+| `prove` | `prove P.` | State current goal (documentation/debugging) |
+| `witness` | `witness t.` | Provide existential witness |
+| `claim` | `claim L: P. { proof }` | Prove local lemma |
+| `reflexivity` | `reflexivity.` | Prove `x = x` |
+| `symmetry` | `symmetry.` | Swap sides of equality goal |
+| `set` | `set y := t.` | Local definition |
+
+### Rewriting
+
+```megalodon
+rewrite H.                    (* Rewrite using H: a = b, left to right *)
+rewrite <- H.                 (* Rewrite right to left *)
+rewrite H at 2.               (* Rewrite only 2nd occurrence *)
+```
+
+### Case Analysis
+
+```megalodon
+(* Disjunction elimination - use bullets *)
+apply H.                      (* H : A \/ B *)
+- prove P.                    (* Case A *)
+  <proof>
+- prove P.                    (* Case B *)
+  <proof>
+
+(* Conjunction elimination *)
+apply H.                      (* H : A /\ B *)
+assume HA: A.
+assume HB: B.
+<proof>
+
+(* Classical case split using excluded middle *)
+apply xm P.                   (* xm : forall P, P \/ ~P *)
+- assume HP: P.
+  <proof when P holds>
+- assume HnP: ~P.
+  <proof when ~P holds>
+```
+
+### Structured Proofs
+
+```megalodon
+Theorem example : forall A B:prop, A -> B -> A /\ B.
+let A B.                      (* Introduce A, B *)
+assume HA: A.                 (* Introduce hypothesis *)
+assume HB: B.
+claim L: A.                   (* Local lemma *)
+{ exact HA. }
+apply andI.                   (* Apply conjunction intro *)
+- exact L.                    (* First subgoal *)
+- exact HB.                   (* Second subgoal *)
+Qed.
+```
+
+## Common Patterns
+
+### Church Encodings (Egal Theory)
+
+```megalodon
+(* Propositions are encoded via their elimination principles *)
+Definition True : prop := forall p:prop, p -> p.
+Definition False : prop := forall p:prop, p.
+Definition not : prop -> prop := fun A => A -> False.
+Definition and : prop -> prop -> prop :=
+  fun A B => forall p:prop, (A -> B -> p) -> p.
+Definition or : prop -> prop -> prop :=
+  fun A B => forall p:prop, (A -> p) -> (B -> p) -> p.
+Definition ex : (A->prop)->prop :=
+  fun Q => forall P:prop, (forall x:A, Q x -> P) -> P.
+```
+
+### Standard Theorems
+
+```megalodon
+(* Introduction rules *)
+Theorem andI : forall A B:prop, A -> B -> A /\ B.
+exact (fun A B a b p H => H a b).
+Qed.
+
+Theorem orIL : forall A B:prop, A -> A \/ B.
+exact (fun A B a p H1 H2 => H1 a).
+Qed.
+
+Theorem orIR : forall A B:prop, B -> A \/ B.
+exact (fun A B b p H1 H2 => H2 b).
+Qed.
+
+(* Elimination rules *)
+Theorem andEL : forall A B:prop, A /\ B -> A.
+exact (fun A B H => H A (fun a b => a)).
+Qed.
+
+Theorem FalseE : False -> forall p:prop, p.
+exact (fun H => H).
+Qed.
+
+(* Excluded middle (classical, in Egal preambles) *)
+Axiom xm : forall P:prop, P \/ ~P.
+```
+
+### Set Theory Basics
+
+```megalodon
+Parameter In : set -> set -> prop.        (* Membership *)
+Parameter Empty : set.                     (* Empty set *)
+Parameter Union : set -> set.              (* Union *)
+Parameter Power : set -> set.              (* Power set *)
+
+Axiom EmptyAx : ~exists x:set, x :e Empty.
+Axiom UnionEq : forall X x, x :e Union X <-> exists Y, x :e Y /\ Y :e X.
+Axiom PowerEq : forall X Y:set, Y :e Power X <-> Y c= X.
+
+Definition Subq : set -> set -> prop := fun A B => forall x :e A, x :e B.
+Infix c= 502 := Subq.
+
+(* Typical proof pattern: subset transitivity *)
+Theorem Subq_tra : forall X Y Z:set, X c= Y -> Y c= Z -> X c= Z.
+let X Y Z.
+assume H1: X c= Y.
+assume H2: Y c= Z.
+let x.
+assume Hx: x :e X.
+prove x :e Z.
+apply H2.
+prove x :e Y.
+apply H1.
+exact Hx.
+Qed.
+```
+
+## File Organization
+
+### Main File (.mg)
+Contains definitions, theorems with proofs, and conjectures.
+
+### Signature File (.mgs)
+Contains definitions, parameters, and axioms **WITHOUT proofs**. Used as preamble with `-I` flag.
+
+**Important:** `.mgs` files cannot contain `Theorem` proofs. Only declarations.
+
+```bash
+./bin/megalodon -I preamble.mgs main.mg
+```
+
+### Proofgold References
+
+```megalodon
+(* Reference to previously defined object by Merkle root *)
+(* Parameter ordsucc "9db634da..." "65d8837d..." *)
+Parameter ordsucc : set->set.
+```
+
+
+================================================================================
+FILE: adj17_triangle_free.tptp (Vampire proved this - "no triangles")
+================================================================================
+% Adj17 definition (17-vertex Graver-Yackel graph)
+fof(adj17_def, axiom,
+    ! [X, Y] : (adj17(X, Y) <=>
+        ((X = c0 & (Y = c9 | Y = c14 | Y = c15 | Y = c16)) |
+         (X = c1 & (Y = c7 | Y = c11 | Y = c13 | Y = c16)) |
+         (X = c2 & (Y = c8 | Y = c10 | Y = c12 | Y = c15)) |
+         (X = c3 & (Y = c6 | Y = c8 | Y = c13 | Y = c15 | Y = c16)) |
+         (X = c4 & (Y = c5 | Y = c7 | Y = c12 | Y = c14 | Y = c16)) |
+         (X = c5 & (Y = c4 | Y = c9 | Y = c10 | Y = c11 | Y = c13)) |
+         (X = c6 & (Y = c3 | Y = c10 | Y = c11 | Y = c12 | Y = c14)) |
+         (X = c7 & (Y = c1 | Y = c4 | Y = c9 | Y = c10 | Y = c15)) |
+         (X = c8 & (Y = c2 | Y = c3 | Y = c9 | Y = c11 | Y = c14)) |
+         (X = c9 & (Y = c0 | Y = c5 | Y = c7 | Y = c8 | Y = c12)) |
+         (X = c10 & (Y = c2 | Y = c5 | Y = c6 | Y = c7 | Y = c16)) |
+         (X = c11 & (Y = c1 | Y = c5 | Y = c6 | Y = c8 | Y = c15)) |
+         (X = c12 & (Y = c2 | Y = c4 | Y = c6 | Y = c9 | Y = c13)) |
+         (X = c13 & (Y = c1 | Y = c3 | Y = c5 | Y = c12 | Y = c14)) |
+         (X = c14 & (Y = c0 | Y = c4 | Y = c6 | Y = c8 | Y = c13)) |
+         (X = c15 & (Y = c0 | Y = c2 | Y = c3 | Y = c7 | Y = c11)) |
+         (X = c16 & (Y = c0 | Y = c1 | Y = c3 | Y = c4 | Y = c10))))).
+
+% All constants are distinct
+fof(distinct, axiom, 
+    c0 != c1 & c0 != c2 & c0 != c3 & c0 != c4 & c0 != c5 & c0 != c6 & c0 != c7 & c0 != c8 & 
+    c0 != c9 & c0 != c10 & c0 != c11 & c0 != c12 & c0 != c13 & c0 != c14 & c0 != c15 & c0 != c16 &
+    c1 != c2 & c1 != c3 & c1 != c4 & c1 != c5 & c1 != c6 & c1 != c7 & c1 != c8 &
+    c1 != c9 & c1 != c10 & c1 != c11 & c1 != c12 & c1 != c13 & c1 != c14 & c1 != c15 & c1 != c16 &
+    c2 != c3 & c2 != c4 & c2 != c5 & c2 != c6 & c2 != c7 & c2 != c8 &
+    c2 != c9 & c2 != c10 & c2 != c11 & c2 != c12 & c2 != c13 & c2 != c14 & c2 != c15 & c2 != c16 &
+    c3 != c4 & c3 != c5 & c3 != c6 & c3 != c7 & c3 != c8 &
+    c3 != c9 & c3 != c10 & c3 != c11 & c3 != c12 & c3 != c13 & c3 != c14 & c3 != c15 & c3 != c16 &
+    c4 != c5 & c4 != c6 & c4 != c7 & c4 != c8 &
+    c4 != c9 & c4 != c10 & c4 != c11 & c4 != c12 & c4 != c13 & c4 != c14 & c4 != c15 & c4 != c16 &
+    c5 != c6 & c5 != c7 & c5 != c8 &
+    c5 != c9 & c5 != c10 & c5 != c11 & c5 != c12 & c5 != c13 & c5 != c14 & c5 != c15 & c5 != c16 &
+    c6 != c7 & c6 != c8 &
+    c6 != c9 & c6 != c10 & c6 != c11 & c6 != c12 & c6 != c13 & c6 != c14 & c6 != c15 & c6 != c16 &
+    c7 != c8 &
+    c7 != c9 & c7 != c10 & c7 != c11 & c7 != c12 & c7 != c13 & c7 != c14 & c7 != c15 & c7 != c16 &
+    c8 != c9 & c8 != c10 & c8 != c11 & c8 != c12 & c8 != c13 & c8 != c14 & c8 != c15 & c8 != c16 &
+    c9 != c10 & c9 != c11 & c9 != c12 & c9 != c13 & c9 != c14 & c9 != c15 & c9 != c16 &
+    c10 != c11 & c10 != c12 & c10 != c13 & c10 != c14 & c10 != c15 & c10 != c16 &
+    c11 != c12 & c11 != c13 & c11 != c14 & c11 != c15 & c11 != c16 &
+    c12 != c13 & c12 != c14 & c12 != c15 & c12 != c16 &
+    c13 != c14 & c13 != c15 & c13 != c16 &
+    c14 != c15 & c14 != c16 &
+    c15 != c16).
+
+% Triangle-free: no x,y,z with all three edges
+fof(triangle_free, conjecture,
+    ! [X, Y, Z] : ~(adj17(X, Y) & adj17(Y, Z) & adj17(X, Z))).
+
+================================================================================
+FILE: adj17_no6indep.tptp (Vampire proved this in ~7s - "no 6-independent set")
+================================================================================
+% No 6-independent set in the 17-vertex Graver-Yackel graph
+% Simplified: just edges and the negated conjecture
+
+% Edges (symmetric - each edge in both directions)
+fof(e0_9, axiom, edge(c0,c9) & edge(c9,c0)).
+fof(e0_14, axiom, edge(c0,c14) & edge(c14,c0)).
+fof(e0_15, axiom, edge(c0,c15) & edge(c15,c0)).
+fof(e0_16, axiom, edge(c0,c16) & edge(c16,c0)).
+fof(e1_7, axiom, edge(c1,c7) & edge(c7,c1)).
+fof(e1_11, axiom, edge(c1,c11) & edge(c11,c1)).
+fof(e1_13, axiom, edge(c1,c13) & edge(c13,c1)).
+fof(e1_16, axiom, edge(c1,c16) & edge(c16,c1)).
+fof(e2_8, axiom, edge(c2,c8) & edge(c8,c2)).
+fof(e2_10, axiom, edge(c2,c10) & edge(c10,c2)).
+fof(e2_12, axiom, edge(c2,c12) & edge(c12,c2)).
+fof(e2_15, axiom, edge(c2,c15) & edge(c15,c2)).
+fof(e3_6, axiom, edge(c3,c6) & edge(c6,c3)).
+fof(e3_8, axiom, edge(c3,c8) & edge(c8,c3)).
+fof(e3_13, axiom, edge(c3,c13) & edge(c13,c3)).
+fof(e3_15, axiom, edge(c3,c15) & edge(c15,c3)).
+fof(e3_16, axiom, edge(c3,c16) & edge(c16,c3)).
+fof(e4_5, axiom, edge(c4,c5) & edge(c5,c4)).
+fof(e4_7, axiom, edge(c4,c7) & edge(c7,c4)).
+fof(e4_12, axiom, edge(c4,c12) & edge(c12,c4)).
+fof(e4_14, axiom, edge(c4,c14) & edge(c14,c4)).
+fof(e4_16, axiom, edge(c4,c16) & edge(c16,c4)).
+fof(e5_9, axiom, edge(c5,c9) & edge(c9,c5)).
+fof(e5_10, axiom, edge(c5,c10) & edge(c10,c5)).
+fof(e5_11, axiom, edge(c5,c11) & edge(c11,c5)).
+fof(e5_13, axiom, edge(c5,c13) & edge(c13,c5)).
+fof(e6_10, axiom, edge(c6,c10) & edge(c10,c6)).
+fof(e6_11, axiom, edge(c6,c11) & edge(c11,c6)).
+fof(e6_12, axiom, edge(c6,c12) & edge(c12,c6)).
+fof(e6_14, axiom, edge(c6,c14) & edge(c14,c6)).
+fof(e7_9, axiom, edge(c7,c9) & edge(c9,c7)).
+fof(e7_10, axiom, edge(c7,c10) & edge(c10,c7)).
+fof(e7_15, axiom, edge(c7,c15) & edge(c15,c7)).
+fof(e8_9, axiom, edge(c8,c9) & edge(c9,c8)).
+fof(e8_11, axiom, edge(c8,c11) & edge(c11,c8)).
+fof(e8_14, axiom, edge(c8,c14) & edge(c14,c8)).
+fof(e9_12, axiom, edge(c9,c12) & edge(c12,c9)).
+fof(e10_16, axiom, edge(c10,c16) & edge(c16,c10)).
+fof(e11_15, axiom, edge(c11,c15) & edge(c15,c11)).
+fof(e12_13, axiom, edge(c12,c13) & edge(c13,c12)).
+fof(e13_14, axiom, edge(c13,c14) & edge(c14,c13)).
+
+% Distinct vertices
+fof(distinct_01, axiom, c0 != c1).
+fof(distinct_02, axiom, c0 != c2).
+fof(distinct_03, axiom, c0 != c3).
+fof(distinct_04, axiom, c0 != c4).
+fof(distinct_05, axiom, c0 != c5).
+fof(distinct_06, axiom, c0 != c6).
+fof(distinct_07, axiom, c0 != c7).
+fof(distinct_08, axiom, c0 != c8).
+fof(distinct_09, axiom, c0 != c9).
+fof(distinct_010, axiom, c0 != c10).
+fof(distinct_011, axiom, c0 != c11).
+fof(distinct_012, axiom, c0 != c12).
+fof(distinct_013, axiom, c0 != c13).
+fof(distinct_014, axiom, c0 != c14).
+fof(distinct_015, axiom, c0 != c15).
+fof(distinct_016, axiom, c0 != c16).
+fof(distinct_12, axiom, c1 != c2).
+fof(distinct_13, axiom, c1 != c3).
+fof(distinct_14, axiom, c1 != c4).
+fof(distinct_15, axiom, c1 != c5).
+fof(distinct_16, axiom, c1 != c6).
+fof(distinct_17, axiom, c1 != c7).
+fof(distinct_18, axiom, c1 != c8).
+fof(distinct_19, axiom, c1 != c9).
+fof(distinct_110, axiom, c1 != c10).
+fof(distinct_111, axiom, c1 != c11).
+fof(distinct_112, axiom, c1 != c12).
+fof(distinct_113, axiom, c1 != c13).
+fof(distinct_114, axiom, c1 != c14).
+fof(distinct_115, axiom, c1 != c15).
+fof(distinct_116, axiom, c1 != c16).
+fof(distinct_23, axiom, c2 != c3).
+fof(distinct_24, axiom, c2 != c4).
+fof(distinct_25, axiom, c2 != c5).
+fof(distinct_26, axiom, c2 != c6).
+fof(distinct_27, axiom, c2 != c7).
+fof(distinct_28, axiom, c2 != c8).
+fof(distinct_29, axiom, c2 != c9).
+fof(distinct_210, axiom, c2 != c10).
+fof(distinct_211, axiom, c2 != c11).
+fof(distinct_212, axiom, c2 != c12).
+fof(distinct_213, axiom, c2 != c13).
+fof(distinct_214, axiom, c2 != c14).
+fof(distinct_215, axiom, c2 != c15).
+fof(distinct_216, axiom, c2 != c16).
+fof(distinct_34, axiom, c3 != c4).
+fof(distinct_35, axiom, c3 != c5).
+fof(distinct_36, axiom, c3 != c6).
+fof(distinct_37, axiom, c3 != c7).
+fof(distinct_38, axiom, c3 != c8).
+fof(distinct_39, axiom, c3 != c9).
+fof(distinct_310, axiom, c3 != c10).
+fof(distinct_311, axiom, c3 != c11).
+fof(distinct_312, axiom, c3 != c12).
+fof(distinct_313, axiom, c3 != c13).
+fof(distinct_314, axiom, c3 != c14).
+fof(distinct_315, axiom, c3 != c15).
+fof(distinct_316, axiom, c3 != c16).
+fof(distinct_45, axiom, c4 != c5).
+fof(distinct_46, axiom, c4 != c6).
+fof(distinct_47, axiom, c4 != c7).
+fof(distinct_48, axiom, c4 != c8).
+fof(distinct_49, axiom, c4 != c9).
+fof(distinct_410, axiom, c4 != c10).
+fof(distinct_411, axiom, c4 != c11).
+fof(distinct_412, axiom, c4 != c12).
+fof(distinct_413, axiom, c4 != c13).
+fof(distinct_414, axiom, c4 != c14).
+fof(distinct_415, axiom, c4 != c15).
+fof(distinct_416, axiom, c4 != c16).
+fof(distinct_56, axiom, c5 != c6).
+fof(distinct_57, axiom, c5 != c7).
+fof(distinct_58, axiom, c5 != c8).
+fof(distinct_59, axiom, c5 != c9).
+fof(distinct_510, axiom, c5 != c10).
+fof(distinct_511, axiom, c5 != c11).
+fof(distinct_512, axiom, c5 != c12).
+fof(distinct_513, axiom, c5 != c13).
+fof(distinct_514, axiom, c5 != c14).
+fof(distinct_515, axiom, c5 != c15).
+fof(distinct_516, axiom, c5 != c16).
+fof(distinct_67, axiom, c6 != c7).
+fof(distinct_68, axiom, c6 != c8).
+fof(distinct_69, axiom, c6 != c9).
+fof(distinct_610, axiom, c6 != c10).
+fof(distinct_611, axiom, c6 != c11).
+fof(distinct_612, axiom, c6 != c12).
+fof(distinct_613, axiom, c6 != c13).
+fof(distinct_614, axiom, c6 != c14).
+fof(distinct_615, axiom, c6 != c15).
+fof(distinct_616, axiom, c6 != c16).
+fof(distinct_78, axiom, c7 != c8).
+fof(distinct_79, axiom, c7 != c9).
+fof(distinct_710, axiom, c7 != c10).
+fof(distinct_711, axiom, c7 != c11).
+fof(distinct_712, axiom, c7 != c12).
+fof(distinct_713, axiom, c7 != c13).
+fof(distinct_714, axiom, c7 != c14).
+fof(distinct_715, axiom, c7 != c15).
+fof(distinct_716, axiom, c7 != c16).
+fof(distinct_89, axiom, c8 != c9).
+fof(distinct_810, axiom, c8 != c10).
+fof(distinct_811, axiom, c8 != c11).
+fof(distinct_812, axiom, c8 != c12).
+fof(distinct_813, axiom, c8 != c13).
+fof(distinct_814, axiom, c8 != c14).
+fof(distinct_815, axiom, c8 != c15).
+fof(distinct_816, axiom, c8 != c16).
+fof(distinct_910, axiom, c9 != c10).
+fof(distinct_911, axiom, c9 != c11).
+fof(distinct_912, axiom, c9 != c12).
+fof(distinct_913, axiom, c9 != c13).
+fof(distinct_914, axiom, c9 != c14).
+fof(distinct_915, axiom, c9 != c15).
+fof(distinct_916, axiom, c9 != c16).
+fof(distinct_1011, axiom, c10 != c11).
+fof(distinct_1012, axiom, c10 != c12).
+fof(distinct_1013, axiom, c10 != c13).
+fof(distinct_1014, axiom, c10 != c14).
+fof(distinct_1015, axiom, c10 != c15).
+fof(distinct_1016, axiom, c10 != c16).
+fof(distinct_1112, axiom, c11 != c12).
+fof(distinct_1113, axiom, c11 != c13).
+fof(distinct_1114, axiom, c11 != c14).
+fof(distinct_1115, axiom, c11 != c15).
+fof(distinct_1116, axiom, c11 != c16).
+fof(distinct_1213, axiom, c12 != c13).
+fof(distinct_1214, axiom, c12 != c14).
+fof(distinct_1215, axiom, c12 != c15).
+fof(distinct_1216, axiom, c12 != c16).
+fof(distinct_1314, axiom, c13 != c14).
+fof(distinct_1315, axiom, c13 != c15).
+fof(distinct_1316, axiom, c13 != c16).
+fof(distinct_1415, axiom, c14 != c15).
+fof(distinct_1416, axiom, c14 != c16).
+fof(distinct_1516, axiom, c15 != c16).
+
+% Closed world: domain is exactly these 17 vertices
+fof(domain_closed, axiom, ![X] : (X = c0 | X = c1 | X = c2 | X = c3 | X = c4 | X = c5 | X = c6 | X = c7 | X = c8 | X = c9 | X = c10 | X = c11 | X = c12 | X = c13 | X = c14 | X = c15 | X = c16)).
+
+% Conjecture: no 6-independent set exists
+% For any 6 distinct vertices, at least one pair is connected
+fof(no_6_indep, conjecture,
+    ![A,B,C,D,E,F] : (
+      (A != B & A != C & A != D & A != E & A != F &
+       B != C & B != D & B != E & B != F &
+       C != D & C != E & C != F &
+       D != E & D != F &
+       E != F) =>
+      (edge(A,B) | edge(A,C) | edge(A,D) | edge(A,E) | edge(A,F) |
+       edge(B,C) | edge(B,D) | edge(B,E) | edge(B,F) |
+       edge(C,D) | edge(C,E) | edge(C,F) |
+       edge(D,E) | edge(D,F) |
+       edge(E,F)))).

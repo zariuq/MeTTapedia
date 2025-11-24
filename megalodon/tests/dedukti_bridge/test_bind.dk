@@ -1,0 +1,2 @@
+P : Set -> Prop.
+def allP : Prop := bind Set (x: Set => P x).

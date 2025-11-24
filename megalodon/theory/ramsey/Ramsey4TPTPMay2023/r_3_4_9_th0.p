@@ -1,0 +1,49 @@
+thf(rtp,type,(r : ($i > ($i > $o)))).
+thf(v0tp,type,(v0 : $i)).
+thf(v1tp,type,(v1 : $i)).
+thf(v2tp,type,(v2 : $i)).
+thf(v3tp,type,(v3 : $i)).
+thf(v4tp,type,(v4 : $i)).
+thf(v5tp,type,(v5 : $i)).
+thf(v6tp,type,(v6 : $i)).
+thf(v7tp,type,(v7 : $i)).
+thf(v8tp,type,(v8 : $i)).
+thf(rsym,axiom,(! [X:$i] : (! [Y:$i] : (~(r @ X @ Y) | (r @ Y @ X))))).
+thf(rno3cl,axiom,(! [X:$i] : (! [Y:$i] : (! [Z:$i] : ((X = Y) | (X = Z) | (Y = Z) | ~(r @ X @ Y) | ~(r @ X @ Z) | ~(r @ Y @ Z)))))).
+thf(rno4acl,axiom,(! [X:$i] : (! [Y:$i] : (! [Z:$i] : (! [W:$i] : ((X = Y) | (X = Z) | (X = W) | (Y = Z) | (Y = W) | (Z = W) | (r @ X @ Y) | (r @ X @ Z) | (r @ X @ W) | (r @ Y @ Z) | (r @ Y @ W) | (r @ Z @ W))))))).
+thf(v0nv1,axiom,(v0 != v1)).
+thf(v0nv2,axiom,(v0 != v2)).
+thf(v1nv2,axiom,(v1 != v2)).
+thf(v0nv3,axiom,(v0 != v3)).
+thf(v1nv3,axiom,(v1 != v3)).
+thf(v2nv3,axiom,(v2 != v3)).
+thf(v0nv4,axiom,(v0 != v4)).
+thf(v1nv4,axiom,(v1 != v4)).
+thf(v2nv4,axiom,(v2 != v4)).
+thf(v3nv4,axiom,(v3 != v4)).
+thf(v0nv5,axiom,(v0 != v5)).
+thf(v1nv5,axiom,(v1 != v5)).
+thf(v2nv5,axiom,(v2 != v5)).
+thf(v3nv5,axiom,(v3 != v5)).
+thf(v4nv5,axiom,(v4 != v5)).
+thf(v0nv6,axiom,(v0 != v6)).
+thf(v1nv6,axiom,(v1 != v6)).
+thf(v2nv6,axiom,(v2 != v6)).
+thf(v3nv6,axiom,(v3 != v6)).
+thf(v4nv6,axiom,(v4 != v6)).
+thf(v5nv6,axiom,(v5 != v6)).
+thf(v0nv7,axiom,(v0 != v7)).
+thf(v1nv7,axiom,(v1 != v7)).
+thf(v2nv7,axiom,(v2 != v7)).
+thf(v3nv7,axiom,(v3 != v7)).
+thf(v4nv7,axiom,(v4 != v7)).
+thf(v5nv7,axiom,(v5 != v7)).
+thf(v6nv7,axiom,(v6 != v7)).
+thf(v0nv8,axiom,(v0 != v8)).
+thf(v1nv8,axiom,(v1 != v8)).
+thf(v2nv8,axiom,(v2 != v8)).
+thf(v3nv8,axiom,(v3 != v8)).
+thf(v4nv8,axiom,(v4 != v8)).
+thf(v5nv8,axiom,(v5 != v8)).
+thf(v6nv8,axiom,(v6 != v8)).
+thf(v7nv8,axiom,(v7 != v8)).

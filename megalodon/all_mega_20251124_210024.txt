@@ -1,0 +1,655 @@
+================================================================================
+MEGALODON CONTEXT DUMP FOR GPT-5.1
+Generated: $(date)
+Purpose: Get help with nested Church-encoded disjunction elimination syntax
+================================================================================
+
+
+=== FILE: how-to-megalodon.md (excerpts) ===
+# How to Megalodon
+
+A practical guide for writing kernel-verified proofs in Megalodon (for Proofgold).
+
+## Quick Start
+
+```bash
+# Build Megalodon (requires OCaml)
+cd /home/user/megalodon
+./makeopt
+
+# Verify a proof file
+/home/user/megalodon/bin/megalodon -mizar \
+  -I /home/user/megalodon/examples/mizar/PfgMizarNov2020Preamble.mgs \
+  your_file.mg
+
+# Exit code 0 = kernel verified!
+```
+
+## Basic Syntax
+
+### Definitions
+
+```
+Definition name : type := body.
+```
+
+Examples:
+```
+Definition True : prop := forall p:prop, p -> p.
+Definition False : prop := forall p:prop, p.
+Definition not : prop -> prop := fun A:prop => A -> False.
+Definition and : prop -> prop -> prop := fun A B:prop => forall p:prop, (A -> B -> p) -> p.
+Definition or : prop -> prop -> prop := fun A B:prop => forall p:prop, (A -> p) -> (B -> p) -> p.
+```
+
+### Types
+
+- `prop` - propositions
+- `set` - ZF sets (ordinals like 0, 1, 2, ... are sets)
+- `SType` - simple types (for polymorphism)
+- `A -> B` - function type
+
+### Parameters and Axioms
+
+```
+Parameter name : type.
+Axiom name : proposition.
+```
+
+
+... (skipping to Important Gotchas) ...
+## Important Gotchas
+
+1. **NO COMMENT-ONLY LINES IN MIZAR MODE** - In `-mizar` mode, files MUST NOT start with comment-only lines (lines starting with `%`). This causes "lexing: empty token" errors. Start directly with `Definition` or `Theorem`. Inline comments (e.g., `assume H. % this is ok`) are fine, but standalone comment lines at the file start or between top-level declarations will break the lexer.
+
+2. **Argument order for `forall x :e V` telescopes** - When applying a function with type `forall a b c :e V, ...`, arguments must be interleaved with membership proofs: `f a Ha b Hb c Hc ...` NOT `f a b c Ha Hb Hc ...`. The telescope `forall x :e V` desugars to `forall x, x :e V -> ...`.
+
+3. **No `_` placeholders in `-mizar` mode** - Unlike standard mode, Mizar mode does not accept `_` for implicit arguments in function applications. You must provide all arguments explicitly or use the proof branching syntax (`-`, `+`, `*`, etc.).
+
+4. **Use `reflexivity`** for equality proofs like `0 = 0`
+
+5. **Use `claim`** for local lemmas within a proof
+
+## If-Then-Else Proofs
+
+Key axioms for conditional reasoning:
+- `If_i_1 : forall p:prop, forall x y:set, p -> (if p then x else y) = x`
+- `If_i_0 : forall p:prop, forall x y:set, ~p -> (if p then x else y) = y`
+
+Pattern for nested if-then-else:
+```
+claim L1: ~(1 = 0). exact neq_1_0.
+claim L2: 1 = 1. reflexivity.
+apply eq_i_tra (if 1 = 0 then x else y) (y) result.
+- exact If_i_0 (1 = 0) x y L1.
+- (* continue with inner if *)
+```
+
+## Transitivity Chains
+
+Use `eq_i_tra` to chain equalities:
+```
+apply eq_i_tra A B C.
+- (* prove A = B *)
+- (* prove B = C *)
+(* concludes A = C *)
+```
+
+## Sub-proofs with Braces
+
+For parallel sub-goals, use `{ }`:
+```
+apply eq_i_tra A B C.
+
+... (skipping to Common Patterns) ...
+## Common Patterns
+
+### Case Analysis on Disjunction
+
+```
+Theorem example : A \/ B -> C.
+assume H: A \/ B.
+prove C.
+apply orE A B C _ _ H.
+- assume HA: A.
+  (* prove C *)
+- assume HB: B.
+  (* prove C *)
+Qed.
+```
+
+### Using andI/andEL/andER
+
+```
+(* Conjunction introduction *)
+apply andI.
+- prove A. ...
+- prove B. ...
+
+(* Conjunction elimination *)
+apply andEL A B H.  (* gets A from A /\ B *)
+apply andER A B H.  (* gets B from A /\ B *)
+```
+
+=== FILE: examples/egal/PfgEMay2021Preamble.mgs (or definition) ===
+Definition or : prop -> prop -> prop := fun A B:prop => forall p:prop, (A -> p) -> (B -> p) -> p.
+
+(* Unicode \/ "2228" *)
+Infix \/ 785 left := or.
+
+Definition iff : prop -> prop -> prop := fun A B:prop => and (A -> B) (B -> A).
+--
+Definition ordinal : set->prop := fun (alpha:set) => TransSet alpha /\ forall beta :e alpha, TransSet beta.
+
+Axiom ordinal_TransSet : forall alpha:set, ordinal alpha -> TransSet alpha.
+
+Axiom ordinal_In_TransSet : forall alpha:set, ordinal alpha -> forall beta :e alpha, TransSet beta.
+
+Axiom orE : forall (A B C:prop), (A -> C) -> (B -> C) -> A \/ B -> C.
+
+Section PropN.
+Axiom orIL : forall (A B : prop), A -> A \/ B.
+
+Axiom orIR : forall (A B : prop), B -> A \/ B.
+Axiom orIR : forall (A B : prop), B -> A \/ B.
+
+Axiom orE : forall (A B C:prop), (A -> C) -> (B -> C) -> A \/ B -> C.
+
+=== FILE: ramsey36/lower_bound_proof.mg (working example) ===
+Definition triangle_free : set -> (set -> set -> prop) -> prop :=
+  fun V R => forall x :e V, forall y :e V, forall z :e V, R x y -> R y z -> R x z -> False.
+
+Definition is_indep_set : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R S => S c= V /\ (forall x :e S, forall y :e S, x <> y -> ~R x y).
+
+Definition no_k_indep : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R k => forall S, S c= V -> equip k S -> ~is_indep_set V R S.
+
+Definition TwoRamseyProp : set -> set -> set -> prop
+ := fun M N V =>
+      forall R:set -> set -> prop,
+        (forall x y, R x y -> R y x)
+       -> ((exists X, X c= V /\ equip M X /\ (forall x :e X, forall y :e X, x <> y -> R x y))
+        \/ (exists Y, Y c= V /\ equip N Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y))).
+
+Definition Adj17 : set -> set -> prop :=
+  fun i j =>
+    (i = 0 /\ (j = 9 \/ j = 14 \/ j = 15 \/ j = 16)) \/
+    (i = 1 /\ (j = 7 \/ j = 11 \/ j = 13 \/ j = 16)) \/
+    (i = 2 /\ (j = 8 \/ j = 10 \/ j = 12 \/ j = 15)) \/
+    (i = 3 /\ (j = 6 \/ j = 8 \/ j = 13 \/ j = 15 \/ j = 16)) \/
+    (i = 4 /\ (j = 5 \/ j = 7 \/ j = 12 \/ j = 14 \/ j = 16)) \/
+    (i = 5 /\ (j = 4 \/ j = 9 \/ j = 10 \/ j = 11 \/ j = 13)) \/
+    (i = 6 /\ (j = 3 \/ j = 10 \/ j = 11 \/ j = 12 \/ j = 14)) \/
+    (i = 7 /\ (j = 1 \/ j = 4 \/ j = 9 \/ j = 10 \/ j = 15)) \/
+    (i = 8 /\ (j = 2 \/ j = 3 \/ j = 9 \/ j = 11 \/ j = 14)) \/
+    (i = 9 /\ (j = 0 \/ j = 5 \/ j = 7 \/ j = 8 \/ j = 12)) \/
+    (i = 10 /\ (j = 2 \/ j = 5 \/ j = 6 \/ j = 7 \/ j = 16)) \/
+    (i = 11 /\ (j = 1 \/ j = 5 \/ j = 6 \/ j = 8 \/ j = 15)) \/
+    (i = 12 /\ (j = 2 \/ j = 4 \/ j = 6 \/ j = 9 \/ j = 13)) \/
+    (i = 13 /\ (j = 1 \/ j = 3 \/ j = 5 \/ j = 12 \/ j = 14)) \/
+    (i = 14 /\ (j = 0 \/ j = 4 \/ j = 6 \/ j = 8 \/ j = 13)) \/
+    (i = 15 /\ (j = 0 \/ j = 2 \/ j = 3 \/ j = 7 \/ j = 11)) \/
+    (i = 16 /\ (j = 0 \/ j = 1 \/ j = 3 \/ j = 4 \/ j = 10)).
+
+Theorem Adj17_sym : forall i j, Adj17 i j -> Adj17 j i.
+Admitted.
+
+Theorem Adj17_triangle_free : triangle_free 17 Adj17.
+Admitted.
+
+Theorem Adj17_no_6_indep : no_k_indep 17 Adj17 6.
+Admitted.
+
+Theorem triangle_free_no_3clique : forall V:set, forall R:set -> set -> prop,
+  triangle_free V R ->
+  ~(exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y)).
+let V. let R: set -> set -> prop.
+assume Htf: triangle_free V R.
+assume H: exists X, X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
+prove False.
+apply H.
+let X.
+assume HX: X c= V /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> R x y).
+claim HXV: X c= V.
+  apply and3E (X c= V) (equip 3 X) (forall x :e X, forall y :e X, x <> y -> R x y) HX.
+  assume H1: X c= V. assume H2: equip 3 X. assume H3: forall x :e X, forall y :e X, x <> y -> R x y.
+  exact H1.
+claim HXeq: equip 3 X.
+  apply and3E (X c= V) (equip 3 X) (forall x :e X, forall y :e X, x <> y -> R x y) HX.
+  assume H1: X c= V. assume H2: equip 3 X. assume H3: forall x :e X, forall y :e X, x <> y -> R x y.
+  exact H2.
+claim HXclique: forall x :e X, forall y :e X, x <> y -> R x y.
+  apply and3E (X c= V) (equip 3 X) (forall x :e X, forall y :e X, x <> y -> R x y) HX.
+  assume H1: X c= V. assume H2: equip 3 X. assume H3: forall x :e X, forall y :e X, x <> y -> R x y.
+  exact H3.
+apply equip_bij 3 X HXeq.
+let f: set -> set.
+assume Hbij: bij 3 X f.
+claim HfX: forall u :e 3, f u :e X.
+  apply and3E (forall u :e 3, f u :e X) (forall u v :e 3, f u = f v -> u = v) (forall w :e X, exists u :e 3, f u = w) Hbij.
+  assume H1: forall u :e 3, f u :e X. assume H2: forall u v :e 3, f u = f v -> u = v. assume H3: forall w :e X, exists u :e 3, f u = w.
+  exact H1.
+claim Hinj: forall u v :e 3, f u = f v -> u = v.
+  apply and3E (forall u :e 3, f u :e X) (forall u v :e 3, f u = f v -> u = v) (forall w :e X, exists u :e 3, f u = w) Hbij.
+  assume H1: forall u :e 3, f u :e X. assume H2: forall u v :e 3, f u = f v -> u = v. assume H3: forall w :e X, exists u :e 3, f u = w.
+  exact H2.
+claim Ha: f 0 :e X.
+  exact HfX 0 In_0_3.
+claim Hb: f 1 :e X.
+  exact HfX 1 In_1_3.
+claim Hc: f 2 :e X.
+  exact HfX 2 In_2_3.
+claim HaV: f 0 :e V.
+  exact HXV (f 0) Ha.
+claim HbV: f 1 :e V.
+  exact HXV (f 1) Hb.
+claim HcV: f 2 :e V.
+  exact HXV (f 2) Hc.
+claim Hab: f 0 <> f 1.
+  assume Heq: f 0 = f 1.
+  claim H01: 0 = 1.
+    exact Hinj 0 In_0_3 1 In_1_3 Heq.
+  exact neq_0_1 H01.
+claim Hbc: f 1 <> f 2.
+  assume Heq: f 1 = f 2.
+  claim H12: 1 = 2.
+    exact Hinj 1 In_1_3 2 In_2_3 Heq.
+  exact neq_1_2 H12.
+claim Hac: f 0 <> f 2.
+  assume Heq: f 0 = f 2.
+  claim H02: 0 = 2.
+    exact Hinj 0 In_0_3 2 In_2_3 Heq.
+  exact neq_0_2 H02.
+claim Rab: R (f 0) (f 1).
+  exact HXclique (f 0) Ha (f 1) Hb Hab.
+claim Rbc: R (f 1) (f 2).
+  exact HXclique (f 1) Hb (f 2) Hc Hbc.
+claim Rac: R (f 0) (f 2).
+  exact HXclique (f 0) Ha (f 2) Hc Hac.
+exact Htf (f 0) HaV (f 1) HbV (f 2) HcV Rab Rbc Rac.
+Qed.
+
+Theorem no_k_indep_no_indep_set : forall V:set, forall R:set -> set -> prop, forall k:set,
+  no_k_indep V R k ->
+  ~(exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y)).
+let V. let R: set -> set -> prop. let k.
+assume Hno: no_k_indep V R k.
+assume Hex: exists Y, Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y).
+prove False.
+apply Hex.
+let Y.
+assume HY: Y c= V /\ equip k Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y).
+claim HYsub: Y c= V.
+  apply and3E (Y c= V) (equip k Y) (forall x :e Y, forall y :e Y, x <> y -> ~R x y) HY.
+  assume H1: Y c= V.
+  assume H2: equip k Y.
+  assume H3: forall x :e Y, forall y :e Y, x <> y -> ~R x y.
+  exact H1.
+claim HYequip: equip k Y.
+  apply and3E (Y c= V) (equip k Y) (forall x :e Y, forall y :e Y, x <> y -> ~R x y) HY.
+  assume H1: Y c= V.
+  assume H2: equip k Y.
+  assume H3: forall x :e Y, forall y :e Y, x <> y -> ~R x y.
+  exact H2.
+claim HYindep: forall x :e Y, forall y :e Y, x <> y -> ~R x y.
+  apply and3E (Y c= V) (equip k Y) (forall x :e Y, forall y :e Y, x <> y -> ~R x y) HY.
+  assume H1: Y c= V.
+  assume H2: equip k Y.
+  assume H3: forall x :e Y, forall y :e Y, x <> y -> ~R x y.
+  exact H3.
+claim HYis: is_indep_set V R Y.
+  prove Y c= V /\ (forall x :e Y, forall y :e Y, x <> y -> ~R x y).
+  exact andI (Y c= V) (forall x :e Y, forall y :e Y, x <> y -> ~R x y) HYsub HYindep.
+claim Hnot: ~is_indep_set V R Y.
+  exact Hno Y HYsub HYequip.
+exact Hnot HYis.
+Qed.
+
+Theorem lower_bound : ~TwoRamseyProp 3 6 17.
+assume H: TwoRamseyProp 3 6 17.
+prove False.
+apply H Adj17 Adj17_sym.
+- assume H3: exists X, X c= 17 /\ equip 3 X /\ (forall x :e X, forall y :e X, x <> y -> Adj17 x y).
+  exact triangle_free_no_3clique 17 Adj17 Adj17_triangle_free H3.
+- assume H6: exists Y, Y c= 17 /\ equip 6 Y /\ (forall x :e Y, forall y :e Y, x <> y -> ~Adj17 x y).
+  exact no_k_indep_no_indep_set 17 Adj17 6 Adj17_no_6_indep H6.
+Qed.
+
+=== FILE: ramsey36/good_graph_proof.mg (working example, LARGE) ===
+Definition triangle_free : set -> (set -> set -> prop) -> prop :=
+  fun V R => forall x :e V, forall y :e V, forall z :e V, R x y -> R y z -> R x z -> False.
+
+Definition is_indep_set : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R S => S c= V /\ (forall x :e S, forall y :e S, x <> y -> ~R x y).
+
+Definition no_k_indep : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R k => forall S, S c= V -> equip k S -> ~is_indep_set V R S.
+
+Theorem equip_subset : forall n k U:set,
+  k c= n ->
+  equip n U ->
+  exists T:set, T c= U /\ equip k T.
+let n. let k. let U.
+assume Hkn: k c= n.
+assume Heq: equip n U.
+apply equip_bij n U Heq.
+let f: set -> set.
+assume Hbij: bij n U f.
+set T := {f i | i :e k}.
+witness T.
+prove T c= U /\ equip k T.
+apply and3E (forall u :e n, f u :e U) (forall u v :e n, f u = f v -> u = v) (forall w :e U, exists u :e n, f u = w) Hbij (T c= U /\ equip k T).
+assume HfU: forall u :e n, f u :e U.
+assume Hinj: forall u v :e n, f u = f v -> u = v.
+assume Hsurj: forall w :e U, exists u :e n, f u = w.
+apply andI (T c= U) (equip k T).
+- prove T c= U.
+  let y. assume Hy: y :e T.
+  apply ReplE_impred k f y Hy (y :e U).
+  let i. assume Hi: i :e k.
+  assume Hyi: y = f i.
+  prove y :e U.
+  claim Hin: i :e n. exact Hkn i Hi.
+  claim HfiU: f i :e U. exact HfU i Hin.
+  exact Hyi (fun a b => b :e U) HfiU.
+- prove equip k T.
+  apply bij_equip k T f.
+  prove bij k T f.
+  apply and3I (forall u :e k, f u :e T) (forall u v :e k, f u = f v -> u = v) (forall w :e T, exists u :e k, f u = w).
+  + prove forall u :e k, f u :e T.
+    let u. assume Hu: u :e k.
+    exact ReplI k f u Hu.
+  + prove forall u v :e k, f u = f v -> u = v.
+    let u. assume Hu: u :e k.
+    let v. assume Hv: v :e k.
+    assume Hfuv: f u = f v.
+    exact Hinj u (Hkn u Hu) v (Hkn v Hv) Hfuv.
+  + prove forall w :e T, exists u :e k, f u = w.
+    let w. assume Hw: w :e T.
+    apply ReplE_impred k f w Hw (exists u :e k, f u = w).
+    let i. assume Hi: i :e k.
+    assume Hwi: w = f i.
+    witness i.
+    prove i :e k /\ f i = w.
+    claim Hfiw: f i = w.
+      prove forall Q: set -> set -> prop, Q (f i) w -> Q w (f i).
+      let Q: set -> set -> prop. assume HQ: Q (f i) w.
+      exact Hwi (fun a b => Q b a) HQ.
+    exact andI (i :e k) (f i = w) Hi Hfiw.
+Qed.
+
+Theorem neighborhood_indep : forall V:set, forall R:set -> set -> prop,
+  (forall x y, R x y -> R y x) ->
+  triangle_free V R ->
+  forall v :e V, forall a b :e V, R v a -> R v b -> a <> b -> ~R a b.
+let V. let R: set -> set -> prop.
+assume Hsym: forall x y, R x y -> R y x.
+assume Htf: triangle_free V R.
+let v. assume Hv: v :e V.
+let a. assume Ha: a :e V.
+let b. assume Hb: b :e V.
+assume Hva: R v a.
+assume Hvb: R v b.
+assume Hab_neq: a <> b.
+assume Hab: R a b.
+prove False.
+apply Htf v Hv a Ha b Hb.
+- exact Hva.
+- exact Hab.
+- exact Hvb.
+Qed.
+
+Theorem degree_bound_6 : forall V:set, forall R:set -> set -> prop,
+  (forall x y, R x y -> R y x) ->
+  triangle_free V R ->
+  no_k_indep V R 6 ->
+  forall v :e V, forall S, S c= V -> equip 6 S ->
+    (forall x :e S, R v x) -> (forall x :e S, v <> x) -> False.
+let V. let R: set -> set -> prop.
+assume Hsym: forall x y, R x y -> R y x.
+assume Htf: triangle_free V R.
+assume Hno6: no_k_indep V R 6.
+let v. assume Hv: v :e V.
+let S. assume HSV: S c= V. assume HS6: equip 6 S.
+assume Hadj: forall x :e S, R v x.
+assume Hneqv: forall x :e S, v <> x.
+prove False.
+apply Hno6 S HSV HS6.
+prove is_indep_set V R S.
+prove S c= V /\ (forall x :e S, forall y :e S, x <> y -> ~R x y).
+apply andI (S c= V) (forall x :e S, forall y :e S, x <> y -> ~R x y).
+- exact HSV.
+- prove forall x :e S, forall y :e S, x <> y -> ~R x y.
+  let x. assume HxS: x :e S.
+  let y. assume HyS: y :e S.
+  assume Hneq: x <> y.
+  exact neighborhood_indep V R Hsym Htf v Hv x (HSV x HxS) y (HSV y HyS)
+        (Hadj x HxS) (Hadj y HyS) Hneq.
+Qed.
+
+Theorem non_neighbors_triangle_free : forall V:set, forall R:set -> set -> prop,
+  triangle_free V R ->
+  forall T:set, T c= V ->
+  triangle_free T R.
+let V. let R: set -> set -> prop.
+assume Htf: triangle_free V R.
+let T. assume HTV: T c= V.
+prove triangle_free T R.
+prove forall x :e T, forall y :e T, forall z :e T, R x y -> R y z -> R x z -> False.
+let x. assume Hx: x :e T.
+let y. assume Hy: y :e T.
+let z. assume Hz: z :e T.
+assume Rxy: R x y.
+assume Ryz: R y z.
+assume Rxz: R x z.
+exact Htf x (HTV x Hx) y (HTV y Hy) z (HTV z Hz) Rxy Ryz Rxz.
+Qed.
+
+Theorem indep_subset_extends : forall V:set, forall R:set -> set -> prop, forall S T:set,
+  is_indep_set V R S ->
+  T c= S ->
+  is_indep_set V R T.
+let V. let R: set -> set -> prop. let S. let T.
+assume HS: is_indep_set V R S.
+assume HTS: T c= S.
+prove is_indep_set V R T.
+prove T c= V /\ (forall x :e T, forall y :e T, x <> y -> ~R x y).
+claim HSV: S c= V.
+  exact andEL (S c= V) (forall x :e S, forall y :e S, x <> y -> ~R x y) HS.
+claim HSindep: forall x :e S, forall y :e S, x <> y -> ~R x y.
+  exact andER (S c= V) (forall x :e S, forall y :e S, x <> y -> ~R x y) HS.
+apply andI (T c= V) (forall x :e T, forall y :e T, x <> y -> ~R x y).
+- prove T c= V.
+  let t. assume Ht: t :e T.
+  exact HSV t (HTS t Ht).
+- prove forall x :e T, forall y :e T, x <> y -> ~R x y.
+  let x. assume Hx: x :e T.
+  let y. assume Hy: y :e T.
+  assume Hneq: x <> y.
+  exact HSindep x (HTS x Hx) y (HTS y Hy) Hneq.
+Qed.
+
+Theorem indep_add_vertex : forall V:set, forall R:set -> set -> prop, forall S:set, forall v:set,
+  is_indep_set V R S ->
+  v :e V ->
+  v /:e S ->
+  (forall x :e S, ~R v x) ->
+  (forall x :e S, ~R x v) ->
+  is_indep_set V R (S :\/: {v}).
+let V. let R: set -> set -> prop. let S. let v.
+assume HS: is_indep_set V R S.
+assume HvV: v :e V.
+assume HvnotS: v /:e S.
+assume Hvnonadj: forall x :e S, ~R v x.
+assume Hnonadjv: forall x :e S, ~R x v.
+prove is_indep_set V R (S :\/: {v}).
+prove (S :\/: {v}) c= V /\ (forall x :e (S :\/: {v}), forall y :e (S :\/: {v}), x <> y -> ~R x y).
+claim HSV: S c= V.
+  exact andEL (S c= V) (forall x :e S, forall y :e S, x <> y -> ~R x y) HS.
+claim HSindep: forall x :e S, forall y :e S, x <> y -> ~R x y.
+  exact andER (S c= V) (forall x :e S, forall y :e S, x <> y -> ~R x y) HS.
+apply andI ((S :\/: {v}) c= V) (forall x :e (S :\/: {v}), forall y :e (S :\/: {v}), x <> y -> ~R x y).
+- prove (S :\/: {v}) c= V.
+  let z. assume Hz: z :e S :\/: {v}.
+  apply binunionE S {v} z Hz.
+  + assume HzS: z :e S.
+    exact HSV z HzS.
+  + assume Hzv: z :e {v}.
+    claim Hzeqv: z = v. exact SingE v z Hzv.
+    rewrite Hzeqv.
+    exact HvV.
+- prove forall x :e (S :\/: {v}), forall y :e (S :\/: {v}), x <> y -> ~R x y.
+  let x. assume Hx: x :e S :\/: {v}.
+  let y. assume Hy: y :e S :\/: {v}.
+  assume Hneq: x <> y.
+  prove ~R x y.
+  assume Hxy: R x y.
+  apply binunionE S {v} x Hx.
+  + assume HxS: x :e S.
+    apply binunionE S {v} y Hy.
+    * assume HyS: y :e S.
+      apply HSindep x HxS y HyS Hneq.
+      exact Hxy.
+    * assume Hyv: y :e {v}.
+      claim Hyeqv: y = v. exact SingE v y Hyv.
+      apply Hnonadjv x HxS.
+      rewrite <- Hyeqv.
+      exact Hxy.
+  + assume Hxv: x :e {v}.
+... (truncated, file is 1187 lines) ...
+
+=== FILE: ramsey36/vertex_degree_bound.mg (CURRENT PROBLEM) ===
+Theorem vertex_6_neighbors_contradiction:
+  forall R : set -> set -> prop,
+  forall V : set,
+  forall v n1 n2 n3 n4 n5 n6 : set,
+  (forall x y :e V, R x y -> R y x) ->
+  (forall x y z :e V, R x y -> R y z -> R x z -> False) ->
+  (forall a b c d e f :e V,
+    a <> b -> a <> c -> a <> d -> a <> e -> a <> f ->
+    b <> c -> b <> d -> b <> e -> b <> f ->
+    c <> d -> c <> e -> c <> f ->
+    d <> e -> d <> f ->
+    e <> f ->
+    (R a b \/ R a c \/ R a d \/ R a e \/ R a f \/
+     R b c \/ R b d \/ R b e \/ R b f \/
+     R c d \/ R c e \/ R c f \/
+     R d e \/ R d f \/
+     R e f)) ->
+  v :e V -> n1 :e V -> n2 :e V -> n3 :e V -> n4 :e V -> n5 :e V -> n6 :e V ->
+  n1 <> n2 -> n1 <> n3 -> n1 <> n4 -> n1 <> n5 -> n1 <> n6 ->
+  n2 <> n3 -> n2 <> n4 -> n2 <> n5 -> n2 <> n6 ->
+  n3 <> n4 -> n3 <> n5 -> n3 <> n6 ->
+  n4 <> n5 -> n4 <> n6 ->
+  n5 <> n6 ->
+  R v n1 -> R v n2 -> R v n3 -> R v n4 -> R v n5 -> R v n6 ->
+  False.
+let R V v n1 n2 n3 n4 n5 n6.
+assume Hsym : forall x y :e V, R x y -> R y x.
+assume Htf : forall x y z :e V, R x y -> R y z -> R x z -> False.
+assume Hno6 : forall a b c d e f :e V,
+  a <> b -> a <> c -> a <> d -> a <> e -> a <> f ->
+  b <> c -> b <> d -> b <> e -> b <> f ->
+  c <> d -> c <> e -> c <> f ->
+  d <> e -> d <> f ->
+  e <> f ->
+  (R a b \/ R a c \/ R a d \/ R a e \/ R a f \/
+   R b c \/ R b d \/ R b e \/ R b f \/
+   R c d \/ R c e \/ R c f \/
+   R d e \/ R d f \/
+   R e f).
+assume Hv : v :e V.
+assume Hn1 : n1 :e V.
+assume Hn2 : n2 :e V.
+assume Hn3 : n3 :e V.
+assume Hn4 : n4 :e V.
+assume Hn5 : n5 :e V.
+assume Hn6 : n6 :e V.
+assume Hd12 : n1 <> n2.
+assume Hd13 : n1 <> n3.
+assume Hd14 : n1 <> n4.
+assume Hd15 : n1 <> n5.
+assume Hd16 : n1 <> n6.
+assume Hd23 : n2 <> n3.
+assume Hd24 : n2 <> n4.
+assume Hd25 : n2 <> n5.
+assume Hd26 : n2 <> n6.
+assume Hd34 : n3 <> n4.
+assume Hd35 : n3 <> n5.
+assume Hd36 : n3 <> n6.
+assume Hd45 : n4 <> n5.
+assume Hd46 : n4 <> n6.
+assume Hd56 : n5 <> n6.
+assume Hvn1 : R v n1.
+assume Hvn2 : R v n2.
+assume Hvn3 : R v n3.
+assume Hvn4 : R v n4.
+assume Hvn5 : R v n5.
+assume Hvn6 : R v n6.
+claim Ledge : R n1 n2 \/ R n1 n3 \/ R n1 n4 \/ R n1 n5 \/ R n1 n6 \/ R n2 n3 \/ R n2 n4 \/ R n2 n5 \/ R n2 n6 \/ R n3 n4 \/ R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6.
+{ exact (Hno6 n1 Hn1 n2 Hn2 n3 Hn3 n4 Hn4 n5 Hn5 n6 Hn6 Hd12 Hd13 Hd14 Hd15 Hd16 Hd23 Hd24 Hd25 Hd26 Hd34 Hd35 Hd36 Hd45 Hd46 Hd56). }
+claim C12 : R n1 n2 -> False.
+{ assume H12. exact (Htf v Hv n1 Hn1 n2 Hn2 Hvn1 H12 Hvn2). }
+claim C13 : R n1 n3 -> False.
+{ assume H13. exact (Htf v Hv n1 Hn1 n3 Hn3 Hvn1 H13 Hvn3). }
+claim C14 : R n1 n4 -> False.
+{ assume H14. exact (Htf v Hv n1 Hn1 n4 Hn4 Hvn1 H14 Hvn4). }
+claim C15 : R n1 n5 -> False.
+{ assume H15. exact (Htf v Hv n1 Hn1 n5 Hn5 Hvn1 H15 Hvn5). }
+claim C16 : R n1 n6 -> False.
+{ assume H16. exact (Htf v Hv n1 Hn1 n6 Hn6 Hvn1 H16 Hvn6). }
+claim C23 : R n2 n3 -> False.
+{ assume H23. exact (Htf v Hv n2 Hn2 n3 Hn3 Hvn2 H23 Hvn3). }
+claim C24 : R n2 n4 -> False.
+{ assume H24. exact (Htf v Hv n2 Hn2 n4 Hn4 Hvn2 H24 Hvn4). }
+claim C25 : R n2 n5 -> False.
+{ assume H25. exact (Htf v Hv n2 Hn2 n5 Hn5 Hvn2 H25 Hvn5). }
+claim C26 : R n2 n6 -> False.
+{ assume H26. exact (Htf v Hv n2 Hn2 n6 Hn6 Hvn2 H26 Hvn6). }
+claim C34 : R n3 n4 -> False.
+{ assume H34. exact (Htf v Hv n3 Hn3 n4 Hn4 Hvn3 H34 Hvn4). }
+claim C35 : R n3 n5 -> False.
+{ assume H35. exact (Htf v Hv n3 Hn3 n5 Hn5 Hvn3 H35 Hvn5). }
+claim C36 : R n3 n6 -> False.
+{ assume H36. exact (Htf v Hv n3 Hn3 n6 Hn6 Hvn3 H36 Hvn6). }
+claim C45 : R n4 n5 -> False.
+{ assume H45. exact (Htf v Hv n4 Hn4 n5 Hn5 Hvn4 H45 Hvn5). }
+claim C46 : R n4 n6 -> False.
+{ assume H46. exact (Htf v Hv n4 Hn4 n6 Hn6 Hvn4 H46 Hvn6). }
+claim C56 : R n5 n6 -> False.
+{ assume H56. exact (Htf v Hv n5 Hn5 n6 Hn6 Hvn5 H56 Hvn6). }
+exact (Ledge False C12 (fun H : R n1 n3 \/ R n1 n4 \/ R n1 n5 \/ R n1 n6 \/ R n2 n3 \/ R n2 n4 \/ R n2 n5 \/ R n2 n6 \/ R n3 n4 \/ R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H False C13 (fun H2 : R n1 n4 \/ R n1 n5 \/ R n1 n6 \/ R n2 n3 \/ R n2 n4 \/ R n2 n5 \/ R n2 n6 \/ R n3 n4 \/ R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H2 False C14 (fun H3 : R n1 n5 \/ R n1 n6 \/ R n2 n3 \/ R n2 n4 \/ R n2 n5 \/ R n2 n6 \/ R n3 n4 \/ R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H3 False C15 (fun H4 : R n1 n6 \/ R n2 n3 \/ R n2 n4 \/ R n2 n5 \/ R n2 n6 \/ R n3 n4 \/ R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H4 False C16 (fun H5 : R n2 n3 \/ R n2 n4 \/ R n2 n5 \/ R n2 n6 \/ R n3 n4 \/ R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H5 False C23 (fun H6 : R n2 n4 \/ R n2 n5 \/ R n2 n6 \/ R n3 n4 \/ R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H6 False C24 (fun H7 : R n2 n5 \/ R n2 n6 \/ R n3 n4 \/ R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H7 False C25 (fun H8 : R n2 n6 \/ R n3 n4 \/ R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H8 False C26 (fun H9 : R n3 n4 \/ R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H9 False C34 (fun H10 : R n3 n5 \/ R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H10 False C35 (fun H11 : R n3 n6 \/ R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H11 False C36 (fun H12 : R n4 n5 \/ R n4 n6 \/ R n5 n6 =>
+  H12 False C45 (fun H13 : R n4 n6 \/ R n5 n6 =>
+  H13 False C46 C56)))))))))))))).
+Qed.
+
+=== ERROR OUTPUT ===
+Failure at line 113 char 34: Proof term proves (((_8 _5) _4) -> #5bf697cb0d1cdefbe881504469f6c48cc388994115b82514dfc4fb5e67ac1a87) but expected to prove (((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((#cfe97741543f37f0262568fe55abbab5772999079ff734a49f37ed123e4363d7 ((_8 _5) _4)) ((_8 _5) _3))) ((_8 _5) _2))) ((_8 _5) _1))) ((_8 _5) _0))) ((_8 _4) _3))) ((_8 _4) _2))) ((_8 _4) _1))) ((_8 _4) _0))) ((_8 _3) _2))) ((_8 _3) _1))) ((_8 _3) _0))) ((_8 _2) _1))) ((_8 _2) _0)) -> #5bf697cb0d1cdefbe881504469f6c48cc388994115b82514dfc4fb5e67ac1a87)
+
+=== CONTEXT: What we're trying to prove ===
+
+The proof is 98% complete. We have:
+1. Applied no_6_indep to get a 15-way disjunction: R n1 n2 \/ R n1 n3 \/ ... \/ R n5 n6
+2. Proven that each of the 15 cases leads to False (claims C12, C13, ..., C56)
+3. Need to eliminate the disjunction to conclude False
+
+The disjunction is Church-encoded as:
+  Definition or : prop -> prop -> prop := 
+    fun A B:prop => forall p:prop, (A -> p) -> (B -> p) -> p.
+
+So a proof of A \/ B is a function that takes a goal p, a proof A -> p, a proof B -> p, 
+and produces p.
+
+Current attempt (line 100-113) uses nested lambdas but gets type error.

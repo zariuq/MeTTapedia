@@ -1,0 +1,185 @@
+% Running in auto input_syntax mode. Trying TPTP
+% Refutation found. Thanks to Tanya!
+% SZS status ContradictoryAxioms for test_11_two_color_triangle
+% SZS output start Proof for test_11_two_color_triangle
+
+(; Prop ;)
+Prop : Type.
+def Prf : (Prop -> Type).
+true : Prop.
+[] Prf true --> (r : Prop -> ((Prf r) -> (Prf r))).
+false : Prop.
+[] Prf false --> (r : Prop -> (Prf r)).
+not : (Prop -> Prop).
+[p] Prf (not p) --> ((Prf p) -> (r : Prop -> (Prf r))).
+and : (Prop -> (Prop -> Prop)).
+[p, q] Prf (and p q) --> (r : Prop -> (((Prf p) -> ((Prf q) -> (Prf r))) -> (Prf r))).
+or : (Prop -> (Prop -> Prop)).
+[p, q] Prf (or p q) --> (((Prf p) -> (Prf false)) -> (((Prf q) -> (Prf false)) -> (Prf false))).
+imp : (Prop -> (Prop -> Prop)).
+[p, q] Prf (imp p q) --> ((Prf p) -> (Prf q)).
+iff : Prop -> Prop -> Prop.
+[p, q] Prf (iff p q) --> (Prf (and (imp p q) (imp q p))).
+
+(; Set ;)
+Set : Type.
+injective El : (Set -> Type).
+iota : Set.
+inhabit : A : Set -> El A.
+
+(; Equality ;)
+def eq : a : Set -> El a -> El a -> Prop.
+[a, x, y] Prf (eq a x y) --> p : (El a -> Prop) -> Prf (p x) -> Prf (p y).
+def refl : (a : Set) -> x : (El a) -> Prf (eq a x x).
+[a, x] refl a x --> p : ((El a) -> Prop) => t : Prf (p x) => t.
+def comm : (a : Set) -> x : (El a) -> y : (El a) -> Prf (eq a x y) -> Prf (eq a y x).
+[a, x, y] comm a x y --> e : (Prf (eq a x y)) => p : ((El a) -> Prop) => e (z : (El a) => imp (p z) (p x)) (t : (Prf (p x)) => t).
+def comml : (a : Set) -> x : (El a) -> y : (El a) -> (Prf (eq a x y) -> Prf false) -> (Prf (eq a y x) -> Prf false).
+[a, x, y] comml a x y --> l : (Prf (eq a x y) -> Prf false) => e : Prf (eq a y x) => l (comm a y x e).
+def comml_not : (a : Set) -> x : (El a) -> y : (El a) -> (Prf (not (eq a x y)) -> Prf false) -> (Prf (not (eq a y x)) -> Prf false).
+[a, x, y] comml_not a x y --> l : ((Prf (eq a x y) -> Prf false) -> Prf false) => ne : (Prf (eq a y x) -> Prf false) => l (e : Prf (eq a x y) => ne (comm a x y e)).
+
+(; Quant ;)
+forall : (a : Set -> (((El a) -> Prop) -> Prop)).
+[a, p] Prf (forall a p) --> (x : (El a) -> (Prf (p x))).
+exists : (a : Set -> (((El a) -> Prop) -> Prop)).
+[a, p] Prf (exists a p) --> (r : Prop -> ((x : (El a) -> ((Prf (p x)) -> (Prf r))) -> (Prf r))).
+
+(; polymorphic quantifier ;)
+forall_poly : (Set -> Prop) -> Prop.
+[p] Prf (forall_poly p) --> a : Set -> Prf (p a).
+
+(; Classic ;)
+def cPrf : (Prop -> Type) := (p : Prop => (Prf (not (not p)))).
+def cand : (Prop -> (Prop -> Prop)) := (p : Prop => (q : Prop => (and (not (not p)) (not (not q))))).
+def cor : (Prop -> (Prop -> Prop)) := (p : Prop => (q : Prop => (or (not (not p)) (not (not q))))).
+def cimp : (Prop -> (Prop -> Prop)) := (p : Prop => (q : Prop => (imp (not (not p)) (not (not q))))).
+def cforall : (a : Set -> (((El a) -> Prop) -> Prop)) := (a : Set => (p : ((El a) -> Prop) => (forall a (x : (El a) => (not (not (p x))))))).
+def cexists : (a : Set -> (((El a) -> Prop) -> Prop)) := (a : Set => (p : ((El a) -> Prop) => (exists a (x : (El a) => (not (not (p x))))))).
+
+(; Clauses ;)
+def prop_clause : Type.
+def ec : prop_clause.
+def cons : (Prop -> (prop_clause -> prop_clause)).
+def clause : Type.
+def cl : (prop_clause -> clause).
+def bind : (A : Set -> (((El A) -> clause) -> clause)).
+def bind_poly : (Set -> clause) -> clause.
+def Prf_prop_clause : (prop_clause -> Type).
+
+[] Prf_prop_clause ec --> (Prf false).
+[p, c] Prf_prop_clause (cons p c) --> ((Prf p -> Prf false) -> (Prf_prop_clause c)).
+def Prf_clause : (clause -> Type).
+[c] Prf_clause (cl c) --> (Prf_prop_clause c).
+[A, f] Prf_clause (bind A f) --> (x : (El A) -> (Prf_clause (f x))).
+[f] Prf_clause (bind_poly f) --> (alpha : Set -> (Prf_clause (f alpha))).
+
+def av_clause : Type.
+def acl : clause -> av_clause.
+def if : Prop -> av_clause -> av_clause.
+def Prf_av_clause : av_clause -> Type.
+
+[c] Prf_av_clause (acl c) --> Prf_clause c.
+[sp, c] Prf_av_clause (if sp c) --> (Prf (not sp) -> Prf false) -> Prf_av_clause c.
+
+(;----------------------------------------------------------------------------;)
+
+{|a|}: El iota.
+{|b|}: El iota.
+{|c|}: El iota.
+{|red|}: El iota -> Prop.
+{|blue|}: El iota -> Prop.
+{|edge|}: El iota -> El iota -> Prop.
+{|axiom_1_coloring_a|}: Prf (or ({|red|} {|a|}) ({|blue|} {|a|})).
+def deduction1: Prf (or ({|red|} {|a|}) ({|blue|} {|a|})) := {|axiom_1_coloring_a|}.
+{|axiom_2_coloring_b|}: Prf (or ({|red|} {|b|}) ({|blue|} {|b|})).
+def deduction2: Prf (or ({|red|} {|b|}) ({|blue|} {|b|})) := {|axiom_2_coloring_b|}.
+{|axiom_3_coloring_c|}: Prf (or ({|red|} {|c|}) ({|blue|} {|c|})).
+def deduction3: Prf (or ({|red|} {|c|}) ({|blue|} {|c|})) := {|axiom_3_coloring_c|}.
+{|axiom_7_edge_ab|}: Prf ({|edge|} {|a|} {|b|}).
+def deduction7: Prf ({|edge|} {|a|} {|b|}) := {|axiom_7_edge_ab|}.
+{|axiom_8_edge_bc|}: Prf ({|edge|} {|b|} {|c|}).
+def deduction8: Prf ({|edge|} {|b|} {|c|}) := {|axiom_8_edge_bc|}.
+{|axiom_9_edge_ca|}: Prf ({|edge|} {|c|} {|a|}).
+def deduction9: Prf ({|edge|} {|c|} {|a|}) := {|axiom_9_edge_ca|}.
+{|axiom_13_edge_constraint1|}: Prf (imp ({|edge|} {|a|} {|b|}) (and (or (not ({|red|} {|a|})) (not ({|red|} {|b|}))) (or (not ({|blue|} {|a|})) (not ({|blue|} {|b|}))))).
+def deduction13: Prf (imp ({|edge|} {|a|} {|b|}) (and (or (not ({|red|} {|a|})) (not ({|red|} {|b|}))) (or (not ({|blue|} {|a|})) (not ({|blue|} {|b|}))))) := {|axiom_13_edge_constraint1|}.
+{|axiom_14_edge_constraint2|}: Prf (imp ({|edge|} {|b|} {|c|}) (and (or (not ({|red|} {|b|})) (not ({|red|} {|c|}))) (or (not ({|blue|} {|b|})) (not ({|blue|} {|c|}))))).
+def deduction14: Prf (imp ({|edge|} {|b|} {|c|}) (and (or (not ({|red|} {|b|})) (not ({|red|} {|c|}))) (or (not ({|blue|} {|b|})) (not ({|blue|} {|c|}))))) := {|axiom_14_edge_constraint2|}.
+{|axiom_15_edge_constraint3|}: Prf (imp ({|edge|} {|c|} {|a|}) (and (or (not ({|red|} {|c|})) (not ({|red|} {|a|}))) (or (not ({|blue|} {|c|})) (not ({|blue|} {|a|}))))).
+def deduction15: Prf (imp ({|edge|} {|c|} {|a|}) (and (or (not ({|red|} {|c|})) (not ({|red|} {|a|}))) (or (not ({|blue|} {|c|})) (not ({|blue|} {|a|}))))) := {|axiom_15_edge_constraint3|}.
+sorry25: Prf (imp ({|edge|} {|a|} {|b|}) (and (or (not ({|red|} {|a|})) (not ({|red|} {|b|}))) (or (not ({|blue|} {|a|})) (not ({|blue|} {|b|}))))) -> Prf (or (not ({|edge|} {|a|} {|b|})) (and (or (not ({|red|} {|a|})) (not ({|red|} {|b|}))) (or (not ({|blue|} {|a|})) (not ({|blue|} {|b|}))))).
+#PRINT "sorry: ennf transformation".
+def deduction25: Prf (or (not ({|edge|} {|a|} {|b|})) (and (or (not ({|red|} {|a|})) (not ({|red|} {|b|}))) (or (not ({|blue|} {|a|})) (not ({|blue|} {|b|}))))) := sorry25 deduction13.
+sorry26: Prf (imp ({|edge|} {|b|} {|c|}) (and (or (not ({|red|} {|b|})) (not ({|red|} {|c|}))) (or (not ({|blue|} {|b|})) (not ({|blue|} {|c|}))))) -> Prf (or (not ({|edge|} {|b|} {|c|})) (and (or (not ({|red|} {|b|})) (not ({|red|} {|c|}))) (or (not ({|blue|} {|b|})) (not ({|blue|} {|c|}))))).
+#PRINT "sorry: ennf transformation".
+def deduction26: Prf (or (not ({|edge|} {|b|} {|c|})) (and (or (not ({|red|} {|b|})) (not ({|red|} {|c|}))) (or (not ({|blue|} {|b|})) (not ({|blue|} {|c|}))))) := sorry26 deduction14.
+sorry27: Prf (imp ({|edge|} {|c|} {|a|}) (and (or (not ({|red|} {|c|})) (not ({|red|} {|a|}))) (or (not ({|blue|} {|c|})) (not ({|blue|} {|a|}))))) -> Prf (or (not ({|edge|} {|c|} {|a|})) (and (or (not ({|red|} {|c|})) (not ({|red|} {|a|}))) (or (not ({|blue|} {|c|})) (not ({|blue|} {|a|}))))).
+#PRINT "sorry: ennf transformation".
+def deduction27: Prf (or (not ({|edge|} {|c|} {|a|})) (and (or (not ({|red|} {|c|})) (not ({|red|} {|a|}))) (or (not ({|blue|} {|c|})) (not ({|blue|} {|a|}))))) := sorry27 deduction15.
+sorry28: Prf (or ({|red|} {|a|}) ({|blue|} {|a|})) -> Prf_clause (cl (cons ({|blue|} {|a|}) (cons ({|red|} {|a|}) ec))).
+#PRINT "sorry: cnf transformation".
+def deduction28: Prf_clause (cl (cons ({|blue|} {|a|}) (cons ({|red|} {|a|}) ec))) := sorry28 deduction1.
+sorry29: Prf (or ({|red|} {|b|}) ({|blue|} {|b|})) -> Prf_clause (cl (cons ({|blue|} {|b|}) (cons ({|red|} {|b|}) ec))).
+#PRINT "sorry: cnf transformation".
+def deduction29: Prf_clause (cl (cons ({|blue|} {|b|}) (cons ({|red|} {|b|}) ec))) := sorry29 deduction2.
+sorry30: Prf (or ({|red|} {|c|}) ({|blue|} {|c|})) -> Prf_clause (cl (cons ({|blue|} {|c|}) (cons ({|red|} {|c|}) ec))).
+#PRINT "sorry: cnf transformation".
+def deduction30: Prf_clause (cl (cons ({|blue|} {|c|}) (cons ({|red|} {|c|}) ec))) := sorry30 deduction3.
+sorry34: Prf ({|edge|} {|a|} {|b|}) -> Prf_clause (cl (cons ({|edge|} {|a|} {|b|}) ec)).
+#PRINT "sorry: cnf transformation".
+def deduction34: Prf_clause (cl (cons ({|edge|} {|a|} {|b|}) ec)) := sorry34 deduction7.
+sorry35: Prf ({|edge|} {|b|} {|c|}) -> Prf_clause (cl (cons ({|edge|} {|b|} {|c|}) ec)).
+#PRINT "sorry: cnf transformation".
+def deduction35: Prf_clause (cl (cons ({|edge|} {|b|} {|c|}) ec)) := sorry35 deduction8.
+sorry36: Prf ({|edge|} {|c|} {|a|}) -> Prf_clause (cl (cons ({|edge|} {|c|} {|a|}) ec)).
+#PRINT "sorry: cnf transformation".
+def deduction36: Prf_clause (cl (cons ({|edge|} {|c|} {|a|}) ec)) := sorry36 deduction9.
+sorry40: Prf (or (not ({|edge|} {|a|} {|b|})) (and (or (not ({|red|} {|a|})) (not ({|red|} {|b|}))) (or (not ({|blue|} {|a|})) (not ({|blue|} {|b|}))))) -> Prf_clause (cl (cons (not ({|red|} {|b|})) (cons (not ({|red|} {|a|})) (cons (not ({|edge|} {|a|} {|b|})) ec)))).
+#PRINT "sorry: cnf transformation".
+def deduction40: Prf_clause (cl (cons (not ({|red|} {|b|})) (cons (not ({|red|} {|a|})) (cons (not ({|edge|} {|a|} {|b|})) ec)))) := sorry40 deduction25.
+sorry41: Prf (or (not ({|edge|} {|a|} {|b|})) (and (or (not ({|red|} {|a|})) (not ({|red|} {|b|}))) (or (not ({|blue|} {|a|})) (not ({|blue|} {|b|}))))) -> Prf_clause (cl (cons (not ({|blue|} {|b|})) (cons (not ({|blue|} {|a|})) (cons (not ({|edge|} {|a|} {|b|})) ec)))).
+#PRINT "sorry: cnf transformation".
+def deduction41: Prf_clause (cl (cons (not ({|blue|} {|b|})) (cons (not ({|blue|} {|a|})) (cons (not ({|edge|} {|a|} {|b|})) ec)))) := sorry41 deduction25.
+sorry42: Prf (or (not ({|edge|} {|b|} {|c|})) (and (or (not ({|red|} {|b|})) (not ({|red|} {|c|}))) (or (not ({|blue|} {|b|})) (not ({|blue|} {|c|}))))) -> Prf_clause (cl (cons (not ({|red|} {|c|})) (cons (not ({|red|} {|b|})) (cons (not ({|edge|} {|b|} {|c|})) ec)))).
+#PRINT "sorry: cnf transformation".
+def deduction42: Prf_clause (cl (cons (not ({|red|} {|c|})) (cons (not ({|red|} {|b|})) (cons (not ({|edge|} {|b|} {|c|})) ec)))) := sorry42 deduction26.
+sorry43: Prf (or (not ({|edge|} {|b|} {|c|})) (and (or (not ({|red|} {|b|})) (not ({|red|} {|c|}))) (or (not ({|blue|} {|b|})) (not ({|blue|} {|c|}))))) -> Prf_clause (cl (cons (not ({|blue|} {|c|})) (cons (not ({|blue|} {|b|})) (cons (not ({|edge|} {|b|} {|c|})) ec)))).
+#PRINT "sorry: cnf transformation".
+def deduction43: Prf_clause (cl (cons (not ({|blue|} {|c|})) (cons (not ({|blue|} {|b|})) (cons (not ({|edge|} {|b|} {|c|})) ec)))) := sorry43 deduction26.
+sorry44: Prf (or (not ({|edge|} {|c|} {|a|})) (and (or (not ({|red|} {|c|})) (not ({|red|} {|a|}))) (or (not ({|blue|} {|c|})) (not ({|blue|} {|a|}))))) -> Prf_clause (cl (cons (not ({|red|} {|a|})) (cons (not ({|red|} {|c|})) (cons (not ({|edge|} {|c|} {|a|})) ec)))).
+#PRINT "sorry: cnf transformation".
+def deduction44: Prf_clause (cl (cons (not ({|red|} {|a|})) (cons (not ({|red|} {|c|})) (cons (not ({|edge|} {|c|} {|a|})) ec)))) := sorry44 deduction27.
+sorry45: Prf (or (not ({|edge|} {|c|} {|a|})) (and (or (not ({|red|} {|c|})) (not ({|red|} {|a|}))) (or (not ({|blue|} {|c|})) (not ({|blue|} {|a|}))))) -> Prf_clause (cl (cons (not ({|blue|} {|a|})) (cons (not ({|blue|} {|c|})) (cons (not ({|edge|} {|c|} {|a|})) ec)))).
+#PRINT "sorry: cnf transformation".
+def deduction45: Prf_clause (cl (cons (not ({|blue|} {|a|})) (cons (not ({|blue|} {|c|})) (cons (not ({|edge|} {|c|} {|a|})) ec)))) := sorry45 deduction27.
+def sp1 : Prop :=  (imp (not ({|edge|} {|c|} {|a|})) false).
+def sp2 : Prop :=  (imp (not ({|red|} {|c|})) false).
+def sp3 : Prop :=  (imp (not ({|red|} {|a|})) false).
+def deduction58 : Prf_av_clause (acl (cl (cons (not sp3) (cons (not sp2) (cons (not sp1) ec))))) := nnsp3 : (Prf (not sp3) -> Prf false) => nnsp2 : (Prf (not sp2) -> Prf false) => nnsp1 : (Prf (not sp1) -> Prf false) => nnsp3 (0x57ba551c2630 : (Prf (not ({|red|} {|a|})) -> Prf false) => nnsp2 (0x57ba551c24f0 : (Prf (not ({|red|} {|c|})) -> Prf false) => nnsp1 (0x57ba551c2370 : (Prf (not ({|edge|} {|c|} {|a|})) -> Prf false) => deduction44 0x57ba551c2630 0x57ba551c24f0 0x57ba551c2370))).
+def sp4 : Prop :=  (imp (not ({|blue|} {|c|})) false).
+def sp5 : Prop :=  (imp (not ({|blue|} {|a|})) false).
+def deduction67 : Prf_av_clause (acl (cl (cons (not sp5) (cons (not sp4) (cons (not sp1) ec))))) := nnsp5 : (Prf (not sp5) -> Prf false) => nnsp4 : (Prf (not sp4) -> Prf false) => nnsp1 : (Prf (not sp1) -> Prf false) => nnsp5 (0x57ba551c25b0 : (Prf (not ({|blue|} {|a|})) -> Prf false) => nnsp4 (0x57ba551c24b0 : (Prf (not ({|blue|} {|c|})) -> Prf false) => nnsp1 (0x57ba551c2370 : (Prf (not ({|edge|} {|c|} {|a|})) -> Prf false) => deduction45 0x57ba551c25b0 0x57ba551c24b0 0x57ba551c2370))).
+def sp6 : Prop :=  (imp (not ({|edge|} {|b|} {|c|})) false).
+def sp7 : Prop :=  (imp (not ({|red|} {|b|})) false).
+def deduction76 : Prf_av_clause (acl (cl (cons (not sp7) (cons (not sp6) (cons (not sp2) ec))))) := nnsp7 : (Prf (not sp7) -> Prf false) => nnsp6 : (Prf (not sp6) -> Prf false) => nnsp2 : (Prf (not sp2) -> Prf false) => nnsp2 (0x57ba551c24f0 : (Prf (not ({|red|} {|c|})) -> Prf false) => nnsp7 (0x57ba551c25f0 : (Prf (not ({|red|} {|b|})) -> Prf false) => nnsp6 (0x57ba551c23b0 : (Prf (not ({|edge|} {|b|} {|c|})) -> Prf false) => deduction42 0x57ba551c24f0 0x57ba551c25f0 0x57ba551c23b0))).
+def sp8 : Prop :=  (imp (not ({|blue|} {|b|})) false).
+def deduction81 : Prf_av_clause (acl (cl (cons (not sp8) (cons (not sp6) (cons (not sp4) ec))))) := nnsp8 : (Prf (not sp8) -> Prf false) => nnsp6 : (Prf (not sp6) -> Prf false) => nnsp4 : (Prf (not sp4) -> Prf false) => nnsp4 (0x57ba551c24b0 : (Prf (not ({|blue|} {|c|})) -> Prf false) => nnsp8 (0x57ba551c2570 : (Prf (not ({|blue|} {|b|})) -> Prf false) => nnsp6 (0x57ba551c23b0 : (Prf (not ({|edge|} {|b|} {|c|})) -> Prf false) => deduction43 0x57ba551c24b0 0x57ba551c2570 0x57ba551c23b0))).
+def sp9 : Prop :=  (imp (not ({|edge|} {|a|} {|b|})) false).
+def deduction86 : Prf_av_clause (acl (cl (cons (not sp9) (cons (not sp7) (cons (not sp3) ec))))) := nnsp9 : (Prf (not sp9) -> Prf false) => nnsp7 : (Prf (not sp7) -> Prf false) => nnsp3 : (Prf (not sp3) -> Prf false) => nnsp7 (0x57ba551c25f0 : (Prf (not ({|red|} {|b|})) -> Prf false) => nnsp3 (0x57ba551c2630 : (Prf (not ({|red|} {|a|})) -> Prf false) => nnsp9 (0x57ba551c23f0 : (Prf (not ({|edge|} {|a|} {|b|})) -> Prf false) => deduction40 0x57ba551c25f0 0x57ba551c2630 0x57ba551c23f0))).
+def deduction87 : Prf_av_clause (acl (cl (cons (not sp9) (cons (not sp8) (cons (not sp5) ec))))) := nnsp9 : (Prf (not sp9) -> Prf false) => nnsp8 : (Prf (not sp8) -> Prf false) => nnsp5 : (Prf (not sp5) -> Prf false) => nnsp8 (0x57ba551c2570 : (Prf (not ({|blue|} {|b|})) -> Prf false) => nnsp5 (0x57ba551c25b0 : (Prf (not ({|blue|} {|a|})) -> Prf false) => nnsp9 (0x57ba551c23f0 : (Prf (not ({|edge|} {|a|} {|b|})) -> Prf false) => deduction41 0x57ba551c2570 0x57ba551c25b0 0x57ba551c23f0))).
+def deduction103 : Prf_av_clause (acl (cl (cons sp1 ec))) := nnsp1 : (Prf sp1 -> Prf false) => nnsp1 (0x57ba551c27f0 : (Prf ({|edge|} {|c|} {|a|}) -> Prf false) => deduction36 0x57ba551c27f0).
+def deduction104 : Prf_av_clause (acl (cl (cons sp6 ec))) := nnsp6 : (Prf sp6 -> Prf false) => nnsp6 (0x57ba551c2830 : (Prf ({|edge|} {|b|} {|c|}) -> Prf false) => deduction35 0x57ba551c2830).
+def deduction105 : Prf_av_clause (acl (cl (cons sp9 ec))) := nnsp9 : (Prf sp9 -> Prf false) => nnsp9 (0x57ba551c2870 : (Prf ({|edge|} {|a|} {|b|}) -> Prf false) => deduction34 0x57ba551c2870).
+def deduction109 : Prf_av_clause (acl (cl (cons sp4 (cons sp2 ec)))) := nnsp4 : (Prf sp4 -> Prf false) => nnsp2 : (Prf sp2 -> Prf false) => nnsp4 (0x57ba551c28f0 : (Prf ({|blue|} {|c|}) -> Prf false) => nnsp2 (0x57ba551c2930 : (Prf ({|red|} {|c|}) -> Prf false) => deduction30 0x57ba551c28f0 0x57ba551c2930)).
+def deduction110 : Prf_av_clause (acl (cl (cons sp8 (cons sp7 ec)))) := nnsp8 : (Prf sp8 -> Prf false) => nnsp7 : (Prf sp7 -> Prf false) => nnsp8 (0x57ba551c2970 : (Prf ({|blue|} {|b|}) -> Prf false) => nnsp7 (0x57ba551c29b0 : (Prf ({|red|} {|b|}) -> Prf false) => deduction29 0x57ba551c2970 0x57ba551c29b0)).
+def deduction111 : Prf_av_clause (acl (cl (cons sp5 (cons sp3 ec)))) := nnsp5 : (Prf sp5 -> Prf false) => nnsp3 : (Prf sp3 -> Prf false) => nnsp5 (0x57ba551c29f0 : (Prf ({|blue|} {|a|}) -> Prf false) => nnsp3 (0x57ba551c2a70 : (Prf ({|red|} {|a|}) -> Prf false) => deduction28 0x57ba551c29f0 0x57ba551c2a70)).
+% SZS output end Proof for test_11_two_color_triangle
+% ------------------------------
+% Version: Vampire 4.9 (Release build, commit 1e3e2d36b on 2025-03-16 07:25:11 +0000)
+% Termination reason: Refutation
+
+% Time elapsed: 0.001 s
+% Peak memory usage: 12 MB
+% ------------------------------
+% ------------------------------

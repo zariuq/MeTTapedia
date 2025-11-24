@@ -1,0 +1,112 @@
+% Running in auto input_syntax mode. Trying TPTP
+% Refutation found. Thanks to Tanya!
+% SZS status Theorem for test_eq_func
+% SZS output start Proof for test_eq_func
+
+(; Prop ;)
+Prop : Type.
+def Prf : (Prop -> Type).
+true : Prop.
+[] Prf true --> (r : Prop -> ((Prf r) -> (Prf r))).
+false : Prop.
+[] Prf false --> (r : Prop -> (Prf r)).
+not : (Prop -> Prop).
+[p] Prf (not p) --> ((Prf p) -> (r : Prop -> (Prf r))).
+and : (Prop -> (Prop -> Prop)).
+[p, q] Prf (and p q) --> (r : Prop -> (((Prf p) -> ((Prf q) -> (Prf r))) -> (Prf r))).
+or : (Prop -> (Prop -> Prop)).
+[p, q] Prf (or p q) --> (((Prf p) -> (Prf false)) -> (((Prf q) -> (Prf false)) -> (Prf false))).
+imp : (Prop -> (Prop -> Prop)).
+[p, q] Prf (imp p q) --> ((Prf p) -> (Prf q)).
+iff : Prop -> Prop -> Prop.
+[p, q] Prf (iff p q) --> (Prf (and (imp p q) (imp q p))).
+
+(; Set ;)
+Set : Type.
+injective El : (Set -> Type).
+iota : Set.
+inhabit : A : Set -> El A.
+
+(; Equality ;)
+def eq : a : Set -> El a -> El a -> Prop.
+[a, x, y] Prf (eq a x y) --> p : (El a -> Prop) -> Prf (p x) -> Prf (p y).
+def refl : (a : Set) -> x : (El a) -> Prf (eq a x x).
+[a, x] refl a x --> p : ((El a) -> Prop) => t : Prf (p x) => t.
+def comm : (a : Set) -> x : (El a) -> y : (El a) -> Prf (eq a x y) -> Prf (eq a y x).
+[a, x, y] comm a x y --> e : (Prf (eq a x y)) => p : ((El a) -> Prop) => e (z : (El a) => imp (p z) (p x)) (t : (Prf (p x)) => t).
+def comml : (a : Set) -> x : (El a) -> y : (El a) -> (Prf (eq a x y) -> Prf false) -> (Prf (eq a y x) -> Prf false).
+[a, x, y] comml a x y --> l : (Prf (eq a x y) -> Prf false) => e : Prf (eq a y x) => l (comm a y x e).
+def comml_not : (a : Set) -> x : (El a) -> y : (El a) -> (Prf (not (eq a x y)) -> Prf false) -> (Prf (not (eq a y x)) -> Prf false).
+[a, x, y] comml_not a x y --> l : ((Prf (eq a x y) -> Prf false) -> Prf false) => ne : (Prf (eq a y x) -> Prf false) => l (e : Prf (eq a x y) => ne (comm a x y e)).
+
+(; Quant ;)
+forall : (a : Set -> (((El a) -> Prop) -> Prop)).
+[a, p] Prf (forall a p) --> (x : (El a) -> (Prf (p x))).
+exists : (a : Set -> (((El a) -> Prop) -> Prop)).
+[a, p] Prf (exists a p) --> (r : Prop -> ((x : (El a) -> ((Prf (p x)) -> (Prf r))) -> (Prf r))).
+
+(; polymorphic quantifier ;)
+forall_poly : (Set -> Prop) -> Prop.
+[p] Prf (forall_poly p) --> a : Set -> Prf (p a).
+
+(; Classic ;)
+def cPrf : (Prop -> Type) := (p : Prop => (Prf (not (not p)))).
+def cand : (Prop -> (Prop -> Prop)) := (p : Prop => (q : Prop => (and (not (not p)) (not (not q))))).
+def cor : (Prop -> (Prop -> Prop)) := (p : Prop => (q : Prop => (or (not (not p)) (not (not q))))).
+def cimp : (Prop -> (Prop -> Prop)) := (p : Prop => (q : Prop => (imp (not (not p)) (not (not q))))).
+def cforall : (a : Set -> (((El a) -> Prop) -> Prop)) := (a : Set => (p : ((El a) -> Prop) => (forall a (x : (El a) => (not (not (p x))))))).
+def cexists : (a : Set -> (((El a) -> Prop) -> Prop)) := (a : Set => (p : ((El a) -> Prop) => (exists a (x : (El a) => (not (not (p x))))))).
+
+(; Clauses ;)
+def prop_clause : Type.
+def ec : prop_clause.
+def cons : (Prop -> (prop_clause -> prop_clause)).
+def clause : Type.
+def cl : (prop_clause -> clause).
+def bind : (A : Set -> (((El A) -> clause) -> clause)).
+def bind_poly : (Set -> clause) -> clause.
+def Prf_prop_clause : (prop_clause -> Type).
+
+[] Prf_prop_clause ec --> (Prf false).
+[p, c] Prf_prop_clause (cons p c) --> ((Prf p -> Prf false) -> (Prf_prop_clause c)).
+def Prf_clause : (clause -> Type).
+[c] Prf_clause (cl c) --> (Prf_prop_clause c).
+[A, f] Prf_clause (bind A f) --> (x : (El A) -> (Prf_clause (f x))).
+[f] Prf_clause (bind_poly f) --> (alpha : Set -> (Prf_clause (f alpha))).
+
+def av_clause : Type.
+def acl : clause -> av_clause.
+def if : Prop -> av_clause -> av_clause.
+def Prf_av_clause : av_clause -> Type.
+
+[c] Prf_av_clause (acl c) --> Prf_clause c.
+[sp, c] Prf_av_clause (if sp c) --> (Prf (not sp) -> Prf false) -> Prf_av_clause c.
+
+(;----------------------------------------------------------------------------;)
+
+{|a|}: El iota.
+{|b|}: El iota.
+{|p|}: Prop.
+{|axiom_2_c2|}: Prf {|p|}.
+def deduction2: Prf {|p|} := {|axiom_2_c2|}.
+{|axiom_4_|}: Prf (not {|p|}).
+def deduction4: Prf (not {|p|}) := {|axiom_4_|}.
+sorry5: Prf (not {|p|}) -> Prf (not {|p|}).
+#PRINT "sorry: flattening".
+def deduction5: Prf (not {|p|}) := sorry5 deduction4.
+sorry7: Prf {|p|} -> Prf_clause (cl (cons {|p|} ec)).
+#PRINT "sorry: cnf transformation".
+def deduction7: Prf_clause (cl (cons {|p|} ec)) := sorry7 deduction2.
+sorry8: Prf (not {|p|}) -> Prf_clause (cl (cons (not {|p|}) ec)).
+#PRINT "sorry: cnf transformation".
+def deduction8: Prf_clause (cl (cons (not {|p|}) ec)) := sorry8 deduction5.
+def deduction9: Prf_clause (cl ec) := deduction7 (tp: (Prf {|p|}) => deduction8 (tnp: Prf (not {|p|}) => (tnp tp))).
+% SZS output end Proof for test_eq_func
+% ------------------------------
+% Version: Vampire 4.9 (Release build, commit 1e3e2d36b on 2025-03-16 07:25:11 +0000)
+% Termination reason: Refutation
+
+% Time elapsed: 0.0000 s
+% Peak memory usage: 12 MB
+% ------------------------------
+% ------------------------------

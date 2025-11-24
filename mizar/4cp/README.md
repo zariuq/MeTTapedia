@@ -1,5 +1,18 @@
 # Four Color Theorem - Algebraic Formalization in Mizar
 
+> 🛑 **PROJECT STATUS**: ON HOLD - FATAL FLAW IN PROOF APPROACH (2025-11-24)
+>
+> **A fundamental mathematical error has been discovered in Lemma 4.3 of Goertzel's proof:**
+> - **Claimed**: `X^f_{αβ}(C) ⊕ X^f_{αβ}(C^R) = γ · 1_R` (boundary)
+> - **Actual**: `X^f_{αβ}(C) ⊕ X^f_{αβ}(C^R) = γ · 1_{A∪A'}` (interior)
+>
+> **Verification**: Kernel-verified refutation in `/home/zar/claude/megalodon/4CT/`
+>
+> **Impact**: The Kempe purification mechanism (Lemmas 4.2-4.4) cannot work as claimed.
+> This formalization project is on hold pending alternative proof approaches.
+
+---
+
 A novel algebraic formalization of the Four Color Theorem using Ben Goertzel's GF(2)² chain algebra approach.
 
 ## Overview

@@ -1,0 +1,15 @@
+% Running in auto input_syntax mode. Trying TPTP
+% SZS status CounterSatisfiable for test_14_cprf
+% # SZS output start Saturation.
+cnf(u8,axiom,
+    ~p).
+
+% # SZS output end Saturation.
+% ------------------------------
+% Version: Vampire 4.9 (Release build, commit 1e3e2d36b on 2025-03-16 07:25:11 +0000)
+% Termination reason: Satisfiable
+
+% Time elapsed: 0.0000 s
+% Peak memory usage: 12 MB
+% ------------------------------
+% ------------------------------

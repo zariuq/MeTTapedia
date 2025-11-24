@@ -76,8 +76,49 @@ Verified computationally:
 
 ```bash
 cd megalodon
-./bin/megalodon -mizar -I examples/mizar/PfgMizarNov2020Preamble.mgs ramsey36/ramsey36_mizar.mg
+# Canonical lower-bound verification (includes all helper lemmas)
+./bin/megalodon -mizar -I examples/mizar/PfgMizarNov2020Preamble.mgs ramsey36/R36_complete_proof.mg
+
+# (Optional) legacy wrapper
+./bin/megalodon -mizar -I examples/mizar/PfgMizarNov2020Preamble.mgs ramsey36/lower_bound_proof.mg
+
+# Upper bound (still contains admits; see good_graph_proof.mg)
+./bin/megalodon -mizar -I examples/mizar/PfgMizarNov2020Preamble.mgs ramsey36/upper_bound_proof.mg
+
+# Cardinality/PHP helper lemmas (new, axiomatized scaffolding for now)
+./bin/megalodon -mizar -I examples/mizar/PfgMizarNov2020Preamble.mgs ramsey36/cardinal_tools.mg
 ```
+
+ATP sanity checks for the hard counting steps:
+
+```bash
+cd ramsey36/tptp
+vampire --mode casc degree_parity_9_sat.p           # degree parity contradiction on 9 vertices
+vampire --mode casc vertex_12_nonneighbors_v2.p     # 12 non-neighbors per vertex
+vampire --mode casc extend_4indep.p                 # extension of 4-indep to 6-indep
+```
+
+### Imported ATP proof (Dedukti → Megalodon)
+
+We translated `degree_parity_9_sat.p` through Vampire’s Dedukti output and `dedukti.py` into a kernel-checked Megalodon file:
+
+```bash
+# Re-check imported proof
+./bin/megalodon -mizar \
+  -I examples/mizar/PfgMizarNov2020Preamble.mgs \
+  -I tests/dedukti_bridge/dk_prelude.mg \
+  ramsey36/atp_imports/degree_parity_9_sat.mg
+```
+
+Pipeline used:
+
+```bash
+cd ramsey36/tptp
+vampire -p dedukti --proof_extra full degree_parity_9_sat.p > /tmp/degree_parity_9_sat.dk
+python3 /home/zar/claude/tools/dedukti.py /tmp/degree_parity_9_sat.dk > /tmp/degree_parity_9_sat.mg
+```
+
+The Megalodon file produced is stored at `ramsey36/atp_imports/degree_parity_9_sat.mg`.
 
 ## Theory
 

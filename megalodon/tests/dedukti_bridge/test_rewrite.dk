@@ -1,0 +1,4 @@
+f : Set -> Set.
+a : Set.
+[x] f x --> x.
+def c : Set := f a.

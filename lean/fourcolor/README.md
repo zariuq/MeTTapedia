@@ -1,5 +1,21 @@
 # Four Color Theorem - Lean 4 Formalization
 
+> 🛑 **PROJECT STATUS**: BLOCKED - FATAL FLAW DISCOVERED (2025-11-24)
+>
+> **A fundamental mathematical error has been found in Lemma 4.3 of the proof approach.**
+>
+> The claimed equality `X^f_{αβ}(C) ⊕ X^f_{αβ}(C^R) = γ · 1_R` (boundary) is **false**.
+> The correct result is `X^f_{αβ}(C) ⊕ X^f_{αβ}(C^R) = γ · 1_{A∪A'}` (interior).
+>
+> **Verification**: Kernel-verified refutation in `/home/zar/claude/megalodon/4CT/`
+>
+> **Impact**: The purification mechanism cannot work. Lemmas 4.4, 4.8-4.10 are blocked.
+>
+> **Value**: This formalization contains valuable proof architecture and infrastructure
+> that may be useful for alternative approaches or educational purposes.
+
+---
+
 A Lean 4 formalization of the Four Color Theorem using the **Kauffman/Spencer-Brown** boundary algebra approach following **Ben Goertzel's** modern treatment.
 
 ## Toolchain & Pins

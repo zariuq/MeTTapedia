@@ -1,0 +1,2 @@
+Section DeduktiProof.
+End DeduktiProof.

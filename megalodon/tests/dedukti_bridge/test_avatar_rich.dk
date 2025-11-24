@@ -1,0 +1,36 @@
+% Running in auto input_syntax mode. Trying TPTP
+% SZS status Satisfiable for test_avatar_rich
+% # SZS output start Saturation.
+cnf(u13,axiom,
+    ~b).
+
+cnf(u16,axiom,
+    d).
+
+cnf(u25,axiom,
+    ~p).
+
+cnf(u29,axiom,
+    ~q).
+
+cnf(u34,axiom,
+    r).
+
+cnf(c7,axiom,
+    ~c).
+
+cnf(c6,axiom,
+    ~a).
+
+cnf(c8,axiom,
+    ~e).
+
+% # SZS output end Saturation.
+% ------------------------------
+% Version: Vampire 4.9 (Release build, commit 1e3e2d36b on 2025-03-16 07:25:11 +0000)
+% Termination reason: Satisfiable
+
+% Time elapsed: 0.0000 s
+% Peak memory usage: 12 MB
+% ------------------------------
+% ------------------------------

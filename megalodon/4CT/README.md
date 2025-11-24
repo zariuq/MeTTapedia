@@ -1,4 +1,10 @@
-# Formal Refutation of Goertzel's 4CT Proof - KERNEL VERIFIED
+# Formal Refutation of Goertzel's 4CT Proof - VERIFIED FALSE
+
+> ⚠️ **PROJECT STATUS**: GOERTZEL'S PROOF VERIFIED FALSE (2025-11-24)
+>
+> This refutation is **final and kernel-verified**. Lemma 4.3 is proven mathematically
+> incorrect. All dependent 4CP formalization projects have been updated to reflect
+> this fundamental error in the proof approach.
 
 ## Summary
 
