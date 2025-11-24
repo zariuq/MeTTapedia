@@ -604,6 +604,64 @@ eprover --cpu-limit=60 --auto --tstp-format -s problem.fof.p
 vampire -t 60 problem.fof.p
 ```
 
+### Getting Dedukti Proofs from Vampire
+
+**Workflow:** Megalodon hammer → TPTP → Vampire Dedukti output → analyze → translate to Megalodon
+
+When ATP provers succeed, you can extract the full proof in Dedukti format to guide your Megalodon formalization:
+
+```bash
+# Generate Dedukti proof (both flags required!)
+vampire -t 60 --proof dedukti --proof_extra full problem.fof.p > problem.dk
+
+# Constraint: --proof dedukti REQUIRES --proof_extra full
+# Without --proof_extra full, Vampire errors:
+#   "User error: Broken Constraint: if proof(dedukti) is equal to dedukti
+#    then proof_extra(off) is equal to full"
+```
+
+**Dedukti Output Structure:**
+
+The `.dk` file contains a resolution-based proof with:
+- **Clausification steps**: CNF transformation of the original problem
+- **Resolution inferences**: Systematic literal elimination via resolution
+- **Final empty clause**: The contradiction proving the conjecture
+
+Example structure:
+```dedukti
+def cnf123: Prf_clause (bind iota (x : El iota => ...)) := ...
+def deduction456: Prf_clause ... := resolution cnf123 cnf789 ...
+def bot: Prf_clause (EpsC) := resolution ... (final empty clause)
+```
+
+**Using Dedukti as Translation Guide:**
+
+The Dedukti proof shows the **proof strategy** used by the ATP prover:
+1. Which hypotheses were actually used (premise selection)
+2. Which instantiations were critical (from resolution steps)
+3. What intermediate lemmas emerged (from deduction steps)
+4. The logical flow to contradiction
+
+**Translation workflow:**
+1. Identify the key resolution steps in the Dedukti proof
+2. Understand which original hypotheses were combined
+3. Translate the ATP's clausification back to natural Megalodon proof structure
+4. Use the resolution tree as a roadmap for `apply`, `claim`, and case analysis
+
+**Example: vertex_degree_bound.mg**
+
+The successful pattern for translating ATP proofs to Megalodon:
+- ATP proof showed which graph axioms were needed
+- Resolution steps revealed the critical case splits
+- Dedukti instantiations guided the `let` and `assume` structure
+- Final proof was 141 lines, kernel-verified
+
+**Practical Notes:**
+- Dedukti proofs can be hundreds of lines (vertex_12_nonneighbors_v2.dk: 265 lines)
+- Don't translate literally - extract the **proof insight**
+- Resolution-based proofs often reveal simpler natural deduction structure
+- If Dedukti shows pure graph reasoning (no cardinality arithmetic), the Megalodon proof should too
+
 **Critical Notes:**
 - Use simple output prefixes (no `/` in path) to avoid TPTP naming issues
   - Bad: `./bin/megalodon -fof /tmp/output ...` → creates `conj_/tmp/output_50` (invalid!)

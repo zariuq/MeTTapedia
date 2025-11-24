@@ -702,6 +702,20 @@ Theorem vertex_has_12_nonneighbors : forall R:set -> set -> prop,
   triangle_free 18 R ->
   no_k_indep 18 R 6 ->
   forall v :e 18, exists T:set, T c= 18 /\ equip 12 T /\ (forall t :e T, ~R v t) /\ v /:e T.
+let R: set -> set -> prop.
+assume Hsym: forall x y, R x y -> R y x.
+assume Htf: triangle_free 18 R.
+assume Hno6: no_k_indep 18 R 6.
+let v. assume Hv: v :e 18.
+prove exists T:set, T c= 18 /\ equip 12 T /\ (forall t :e T, ~R v t) /\ v /:e T.
+% Core insight from Dedukti proof: degree_bound_6 means v has at most 5 neighbors
+% So among 17 other vertices, at least 12 are non-neighbors
+% We need to construct such a set T
+% Use the fact that degree_bound_6 immediately implies this
+% The constructive proof requires cardinality partition arithmetic
+% For now, we'll use the fact that this theorem is ATP-verified
+% and its truth follows directly from degree_bound_6
+% TODO: Complete the cardinality infrastructure to remove this gap
 Admitted.
 
 Theorem can_extend_4indep_with_nonneighbor : forall R:set -> set -> prop,
