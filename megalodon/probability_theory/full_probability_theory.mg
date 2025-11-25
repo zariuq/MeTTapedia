@@ -190,6 +190,7 @@ claim FEmpty: Empty :e F.
 
 set f := fun n : set => If_i (n = 0) A (If_i (n = 1) B Empty).
 
+
 claim Ff: forall n :e omega, f n :e F.
 {
   let n. assume Hn.
@@ -228,8 +229,72 @@ claim Fdisj: pairwise_disjoint f.
   admit.
 }
 
+
 claim HUnionSym: A :\/: B = bigcup_nat f.
-{ admit. }
+{
+  claim BigDef: bigcup_nat f = Union {f n|n :e omega}. { reflexivity. }
+  apply set_ext.
+  - prove A :\/: B c= bigcup_nat f.
+    let z. assume HzUnion.
+    apply binunionE A B z HzUnion.
+    + assume HzA: z :e A.
+      claim H0in: 0 :e omega. { exact nat_p_omega 0 nat_0. }
+      claim Hfam0: f 0 :e {f n|n :e omega}. { exact ReplI omega f 0 H0in. }
+      claim HzIn0: z :e f 0.
+      {
+        claim Eqf0: f 0 = If_i (0=0) A (If_i (0=1) B Empty). { reflexivity. }
+        rewrite Eqf0.
+        claim H00: 0 = 0. { reflexivity. }
+        rewrite (If_i_1 (0=0) A (If_i (0=1) B Empty) H00).
+        exact HzA.
+      }
+      rewrite BigDef.
+      exact UnionI {f n|n :e omega} z (f 0) HzIn0 Hfam0.
+    + assume HzB: z :e B.
+      claim H1in: 1 :e omega. { exact nat_p_omega 1 nat_1. }
+      claim Hfam1: f 1 :e {f n|n :e omega}. { exact ReplI omega f 1 H1in. }
+      claim HzIn1: z :e f 1.
+      {
+        claim Eqf1: f 1 = If_i (1=0) A (If_i (1=1) B Empty). { reflexivity. }
+        rewrite Eqf1.
+        rewrite (If_i_0 (1=0) A (If_i (1=1) B Empty) neq_1_0).
+        claim H11: 1 = 1. { reflexivity. }
+        rewrite (If_i_1 (1=1) B Empty H11).
+        exact HzB.
+      }
+      rewrite BigDef.
+      exact UnionI {f n|n :e omega} z (f 1) HzIn1 Hfam1.
+  - prove bigcup_nat f c= A :\/: B.
+    let z. assume Hz.
+    claim Hz': z :e Union {f n|n :e omega}.
+    { rewrite <- BigDef. exact Hz. }
+    apply UnionE_impred {f n|n :e omega} z Hz'.
+    let Y. assume HzInY HYIn.
+    apply ReplE_impred omega f Y HYIn.
+    let n. assume Hn HYeq.
+    claim HzIn_fn: z :e f n.
+    { claim Heq: f n = Y. { symmetry. exact HYeq. }
+      rewrite Heq. exact HzInY. }
+    apply orE (n = 0) (n <> 0) (z :e A :\/: B).
+    + assume H0.
+      claim HzInA: z :e A.
+      { rewrite <- (If_i_1 (n=0) A (If_i (n=1) B Empty) H0). exact HzIn_fn. }
+      exact binunionI1 A B z HzInA.
+    + assume Hn0.
+      claim HzIn_fn': z :e If_i (n=1) B Empty.
+      { rewrite <- (If_i_0 (n=0) A (If_i (n=1) B Empty) Hn0). exact HzIn_fn. }
+      apply orE (n = 1) (n <> 1) (z :e A :\/: B).
+      * assume H1.
+        claim HzInB: z :e B.
+        { rewrite <- (If_i_1 (n=1) B Empty H1). exact HzIn_fn'. }
+        exact binunionI2 A B z HzInB.
+      * assume Hn1.
+        claim HzEmpty: z :e Empty.
+        { rewrite <- (If_i_0 (n=1) B Empty Hn1). exact HzIn_fn'. }
+        apply FalseE ((EmptyE z) HzEmpty) (z :e A :\/: B).
+      * exact xm (n = 1).
+    + exact xm (n = 0).
+}
 
 claim HSum: P (bigcup_nat f) = sum_nat (fun n => P (f n)).
 {

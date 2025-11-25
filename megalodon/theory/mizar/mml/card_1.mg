@@ -235,11 +235,6 @@ apply iffI.
   exact equip_ref Empty.
 Qed.
 
-Theorem t_card_1_singleton_equip : forall x:set, equip {x} 1.
-let x.
-admit.
-Qed.
-
 Theorem t_card_1_Sing_power_0 : {Empty} = Power Empty.
 apply set_ext.
 - let x. assume Hx: x :e {Empty}.
@@ -353,14 +348,25 @@ assume HeqmB: equip m B.
 admit.
 Qed.
 
-Theorem t_card_1_equip_1_singleton : forall x:set, equip 1 {x}.
+Theorem t_card_1_singleton_equip_1 : forall S:set,
+  (exists x:set, S = {x}) -> equip 1 S.
+let S. assume Hex: exists x:set, S = {x}.
+prove equip 1 S.
 admit.
 Qed.
 
-Theorem t_card_1_singleton_equip_1 : forall S:set,
-  (exists x:set, S = {x}) -> equip 1 S.
-let S. assume Hex: exists x:set, S = {x}. apply Hex.
-let x. assume HS: S = {x}. rewrite HS. exact t_card_1_equip_1_singleton x.
+Theorem t_card_1_equip_1_singleton : forall x:set, equip 1 {x}.
+let x.
+apply t_card_1_singleton_equip_1 {x}.
+witness x.
+reflexivity.
+Qed.
+
+Theorem t_card_1_singleton_equip : forall x:set, equip {x} 1.
+let x.
+claim H1: equip 1 {x}.
+  exact t_card_1_equip_1_singleton x.
+exact equip_sym 1 {x} H1.
 Qed.
 
 Theorem t_card_1_equip_2_pair : forall x y:set, x <> y -> equip 2 {x, y}.

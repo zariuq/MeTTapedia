@@ -1625,7 +1625,12 @@ Definition outerplanar_graph : set -> (set -> set -> prop) -> prop :=
 
 Theorem outerplanar_embedding_planar : forall V:set, forall R:set -> set -> prop, forall E:set,
   planar_embedding V R E -> planar_graph V R.
-Admitted.
+let V. let R. let E.
+assume Hemb: planar_embedding V R E.
+prove exists E0:set, planar_embedding V R E0.
+  witness E.
+  exact Hemb.
+Qed.
 
 Theorem planar_induced_subgraph_planar : forall V:set, forall R:set -> set -> prop,
   planar_graph V R ->
@@ -1641,7 +1646,10 @@ Admitted.
 
 Theorem outerplanar_is_planar : forall V:set, forall R:set -> set -> prop,
   outerplanar_graph V R -> planar_graph V R.
-Admitted.
+let V. let R.
+assume Hout: outerplanar_graph V R.
+exact Hout.
+Qed.
 
 Theorem planar_no_k33_or_k5_minor : forall V:set, forall R:set -> set -> prop,
   planar_graph V R -> True.
@@ -1797,7 +1805,10 @@ Definition hamiltonian_graph : set -> (set -> set -> prop) -> prop :=
 
 Theorem cycle_graph_is_hamiltonian : forall V:set, forall R:set -> set -> prop,
   cycle_graph V R -> hamiltonian_graph V R.
-Admitted.
+let V. let R.
+assume Hcyc: cycle_graph V R.
+exact Hcyc.
+Qed.
 
 Theorem dirac_condition_implies_hamiltonian : forall V:set, forall R:set -> set -> prop,
   simple_graph V R -> True.

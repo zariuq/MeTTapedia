@@ -23,9 +23,6 @@ Axiom equip_Subq_exists : forall k n V:set,
   equip n V ->
   exists U:set, U c= V /\ equip k U.
 
-Axiom nat_trichotomy_6 : forall n:set,
-  nat_p n -> n :e 6 \/ n = 6 \/ 6 c= n.
-
 Axiom disjoint_union_equip : forall V N Non:set, forall n m:set,
   nat_p n -> nat_p m ->
   N c= V -> Non c= V ->
@@ -83,7 +80,7 @@ claim Hadd: n + m = 17.
     exact disjoint_union_equip V N Non n m Hn_nat Hm_nat HNV HNonV Hpart Hdisj HeqN HeqNon.
   admit.
 claim Hn_bound: n :e 6.
-  admit.
+  exact no_6subset_bound_5 N n Hn_nat HeqN Hno6.
 claim H12_m: 12 c= m.
   exact arithmetic_bound_17_5_12 n m Hn_nat Hm_nat Hn_bound Hadd.
 exact equip_Subq_exists 12 m Non H12_m HeqNon.
