@@ -61,7 +61,21 @@ Theorem ordsucc_setminus_singleton_inside : forall n v:set,
   ordinal n ->
   v :e n ->
   equip n (ordsucc n :\: {v}).
-Admitted.
+let n v.
+assume Hn: ordinal n.
+assume Hv: v :e n.
+prove equip n (ordsucc n :\: {v}).
+prove exists f:set -> set, bij n (ordsucc n :\: {v}) f.
+set f := fun x :set => if x :e v then x else ordsucc x.
+witness f.
+apply bijI.
+- prove forall u :e n, f u :e ordsucc n :\: {v}.
+  admit.
+- prove forall u v :e n, f u = f v -> u = v.
+  admit.
+- prove forall w :e ordsucc n :\: {v}, exists u :e n, f u = w.
+  admit.
+Qed.
 
 Theorem ordsucc_setminus_singleton_base : forall n:set,
   ordinal n -> ordsucc n :\: {n} = n.
