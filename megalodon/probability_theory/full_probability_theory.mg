@@ -191,28 +191,26 @@ claim FEmpty: Empty :e F.
 set f := fun n : set => If_i (n = 0) A (If_i (n = 1) B Empty).
 
 claim Ff: forall n :e omega, f n :e F.
-{
-  admit.
-}
+{ admit. }
 
 claim Fdisj: pairwise_disjoint f.
-{
-  admit.
-}
+{ admit. }
 
-claim HUnion: bigcup_nat f = A :\/: B.
-{
-  admit.
-}
+claim HUnionSym: A :\/: B = bigcup_nat f.
+{ admit. }
 
 claim HSum: P (bigcup_nat f) = sum_nat (fun n => P (f n)).
 {
-  (* Apply countable additivity from is_probability_measure *)
   admit.
 }
 
-admit.
-admit.
+claim HSumVal: sum_nat (fun n => P (f n)) = P A + P B.
+{ admit. }
+
+rewrite HUnionSym.
+rewrite HSum.
+rewrite HSumVal.
+reflexivity.
 Qed.
 
 Theorem prob_monotone :

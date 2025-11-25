@@ -57,6 +57,12 @@ Theorem ordsucc_setminus_singleton : forall n k:set,
   equip k (n :\: {k}).
 Admitted.
 
+Theorem ordsucc_setminus_singleton_inside : forall n v:set,
+  ordinal n ->
+  v :e n ->
+  equip n (ordsucc n :\: {v}).
+Admitted.
+
 Theorem ordsucc_setminus_singleton_base : forall n:set,
   ordinal n -> ordsucc n :\: {n} = n.
 let n.
@@ -94,7 +100,20 @@ Qed.
 Theorem complement_card_18 : forall v:set,
   v :e 18 ->
   equip 17 (18 :\: {v}).
-Admitted.
+let v.
+assume Hv: v :e 18.
+prove equip 17 (18 :\: {v}).
+apply ordsuccE 17 v Hv.
+- assume Hv17: v :e 17.
+  exact ordsucc_setminus_singleton_inside 17 v (nat_p_ordinal 17 nat_p_17) Hv17.
+- assume Hv_eq: v = 17.
+  rewrite Hv_eq.
+  claim H18_eq: 18 :\: {17} = 17.
+    prove ordsucc 17 :\: {17} = 17.
+    exact ordsucc_setminus_singleton_base 17 (nat_p_ordinal 17 nat_p_17).
+  rewrite H18_eq.
+  exact equip_ref 17.
+Qed.
 
 Theorem complement_card_sub : forall n k:set, forall S:set,
   nat_p n ->
@@ -231,6 +250,14 @@ apply ordsuccE 13 g Hg14.
   rewrite <- Hg_eq.
   exact Hx.
 Qed.
+
+Theorem nat_sum_17_bound : forall d g:set,
+  nat_p d ->
+  nat_p g ->
+  d + g = 17 ->
+  g c= 13 ->
+  4 c= d.
+Admitted.
 
 Theorem nat_17_minus_lt_14_implies_ge_4 : forall d g:set,
   nat_p d ->
