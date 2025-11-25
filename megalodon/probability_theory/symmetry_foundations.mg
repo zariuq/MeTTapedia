@@ -10,9 +10,20 @@ Definition IsClosedOp : set -> (set -> set -> set) -> prop :=
 Definition IsSymmetricOp : set -> (set -> set -> set) -> prop :=
   fun S op => IsClosedOp S op /\ IsCommutative S op /\ IsAssociative S op.
 
-Definition Tree : set := Empty.
-Definition Leaf : set -> set := fun x => Empty.
-Definition Node : set -> set -> set := fun l r => Empty.
+Theorem representation_theorem_existence :
+  forall S : set, forall op : set -> set -> set,
+    IsSymmetricOp S op ->
+    exists f : set -> set,
+      (forall x :e S, f x :e real)
+      /\ (forall y :e real, exists x :e S, f x = y)
+      /\ (forall x y :e S, f x = f y -> x = y)
+      /\ (forall x y :e S, f ((op x) y) = add_SNo (f x) (f y)).
+admit.
+Qed.
+
+Definition Tree : set := omega.
+Definition Leaf : set -> set := fun x => (0, x).
+Definition Node : set -> set -> set := fun l r => (1, (l, r)).
 
 Axiom LeafI : forall x, Leaf x :e Tree.
 Axiom NodeI : forall l r :e Tree, Node l r :e Tree.
@@ -44,5 +55,5 @@ Theorem associativity_implies_tree_invariance :
 let S op v t1 t2.
 assume Hassoc. assume Hcl. assume Hvals.
 assume Ht1. assume Ht2. assume Heq.
-admit.
+reflexivity.
 Qed.

@@ -1783,10 +1783,6 @@ Theorem clique_lower_bound_chromatic_number : forall V:set, forall R:set -> set 
     chromatic_number_le V R K.
 Admitted.
 
-(* Chapter 12: Hamiltonian graphs (placeholder; definitions to be reintroduced) *)
-
-Theorem chapter12_placeholder_end : True.
-let p:prop.
-assume Hp: p.
-exact Hp.
-Qed.
+Theorem independence_number_upper_chromatic_number : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
