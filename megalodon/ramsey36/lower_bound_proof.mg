@@ -65,7 +65,7 @@ claim HXclique: forall x :e X, forall y :e X, x <> y -> R x y.
   apply and3E (X c= V) (equip 3 X) (forall x :e X, forall y :e X, x <> y -> R x y) HX.
   assume H1: X c= V. assume H2: equip 3 X. assume H3: forall x :e X, forall y :e X, x <> y -> R x y.
   exact H3.
-apply equip_bij 3 X HXeq.
+apply HXeq.
 let f: set -> set.
 assume Hbij: bij 3 X f.
 claim HfX: forall u :e 3, f u :e X.

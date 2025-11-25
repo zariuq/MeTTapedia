@@ -18,7 +18,6 @@ failed=0
 for file in "${files[@]}"; do
   echo -n "Testing $file ... "
   if ./bin/megalodon -I Megalodon/examples/egal/PfgEAug2022Preamble.mgs \
-                     ramsey36/ramsey36_egal_preamble.mgs \
                      "$file" > /dev/null 2>&1; then
     echo "✅ PASS"
     ((passed++))

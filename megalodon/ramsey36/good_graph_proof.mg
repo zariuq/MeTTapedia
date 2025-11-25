@@ -14,7 +14,7 @@ Theorem equip_subset : forall n k U:set,
 let n. let k. let U.
 assume Hkn: k c= n.
 assume Heq: equip n U.
-apply equip_bij n U Heq.
+apply Heq.
 let f: set -> set.
 assume Hbij: bij n U f.
 set T := {f i | i :e k}.
@@ -35,7 +35,8 @@ apply andI (T c= U) (equip k T).
   claim HfiU: f i :e U. exact HfU i Hin.
   exact Hyi (fun a b => b :e U) HfiU.
 - prove equip k T.
-  apply bij_equip k T f.
+  prove exists g : set -> set, bij k T g.
+  witness f.
   prove bij k T f.
   apply and3I (forall u :e k, f u :e T) (forall u v :e k, f u = f v -> u = v) (forall w :e T, exists u :e k, f u = w).
   + prove forall u :e k, f u :e T.
@@ -275,7 +276,10 @@ claim HcS: c :e S. apply binunionI1 ({a, b} :\/: {c}) {d} c. apply binunionI2 {a
 claim Hf2S: f 2 :e S. exact Hf2 (fun x y => y :e S) HcS.
 claim HdS: d :e S. apply binunionI2 ({a, b} :\/: {c}) {d} d. exact SingI d.
 claim Hf3S: f 3 :e S. exact Hf3 (fun x y => y :e S) HdS.
-apply bij_equip 4 S f.
+prove equip 4 S.
+prove exists g : set -> set, bij 4 S g.
+witness f.
+prove bij 4 S f.
 apply and3I (forall u :e 4, f u :e S) (forall u v :e 4, f u = f v -> u = v) (forall w :e S, exists u :e 4, f u = w).
 - let u. assume Hu: u :e 4. exact cases_4 u Hu (fun i => f i :e S) Hf0S Hf1S Hf2S Hf3S.
 - let u. assume Hu: u :e 4. let v. assume Hv: v :e 4. assume Hfuv: f u = f v.
@@ -708,14 +712,6 @@ assume Htf: triangle_free 18 R.
 assume Hno6: no_k_indep 18 R 6.
 let v. assume Hv: v :e 18.
 prove exists T:set, T c= 18 /\ equip 12 T /\ (forall t :e T, ~R v t) /\ v /:e T.
-% Core insight from Dedukti proof: degree_bound_6 means v has at most 5 neighbors
-% So among 17 other vertices, at least 12 are non-neighbors
-% We need to construct such a set T
-% Use the fact that degree_bound_6 immediately implies this
-% The constructive proof requires cardinality partition arithmetic
-% For now, we'll use the fact that this theorem is ATP-verified
-% and its truth follows directly from degree_bound_6
-% TODO: Complete the cardinality infrastructure to remove this gap
 Admitted.
 
 Theorem can_extend_4indep_with_nonneighbor : forall R:set -> set -> prop,
@@ -730,6 +726,18 @@ Theorem can_extend_4indep_with_nonneighbor : forall R:set -> set -> prop,
     is_indep_set 18 R S ->
     v /:e S ->
     False.
+let R: set -> set -> prop.
+assume Hsym: forall x y, R x y -> R y x.
+assume Htf: triangle_free 18 R.
+assume Hno6: no_k_indep 18 R 6.
+let v. assume Hv: v :e 18.
+let S. assume HS18: S c= 18.
+assume HS4: equip 4 S.
+assume Hvs_nonadj1: forall s :e S, ~R v s.
+assume Hvs_nonadj2: forall s :e S, ~R s v.
+assume HS_indep: is_indep_set 18 R S.
+assume Hv_notin_S: v /:e S.
+prove False.
 Admitted.
 
 Theorem nat_p_17 : nat_p 17.
@@ -906,7 +914,9 @@ apply and3I ({x, y} :\/: {z} c= V) (equip 3 ({x, y} :\/: {z})) (forall a :e {x, 
     exact SingI z.
   claim Hf2S: f 2 :e S.
     exact Hf2 (fun a b => b :e S) HzS.
-  apply bij_equip 3 S f.
+  prove equip 3 S.
+  prove exists g : set -> set, bij 3 S g.
+  witness f.
   prove bij 3 S f.
   apply and3I (forall u :e 3, f u :e S) (forall u v :e 3, f u = f v -> u = v) (forall w :e S, exists u :e 3, f u = w).
   + prove forall u :e 3, f u :e S.

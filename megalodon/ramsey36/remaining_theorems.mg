@@ -65,7 +65,7 @@ claim HXclique: forall x :e X, forall y :e X, x <> y -> R x y.
   apply and3E (X c= V) (equip 3 X) (forall x :e X, forall y :e X, x <> y -> R x y) HX.
   assume H1: X c= V. assume H2: equip 3 X. assume H3: forall x :e X, forall y :e X, x <> y -> R x y.
   exact H3.
-apply equip_bij 3 X HXeq.
+apply HXeq.
 let f: set -> set.
 assume Hbij: bij 3 X f.
 claim HfX: forall u :e 3, f u :e X.
@@ -230,7 +230,8 @@ apply and3I ({x, y} :\/: {z} c= V) (equip 3 ({x, y} :\/: {z})) (forall a :e {x, 
     exact SingI z.
   claim Hf2S: f 2 :e S.
     exact Hf2 (fun a b => b :e S) HzS.
-  apply bij_equip 3 S f.
+  prove exists g : set -> set, bij 3 S g.
+  witness f.
   prove bij 3 S f.
   apply and3I (forall u :e 3, f u :e S) (forall u v :e 3, f u = f v -> u = v) (forall w :e S, exists u :e 3, f u = w).
   + prove forall u :e 3, f u :e S.
