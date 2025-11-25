@@ -9,3 +9,6 @@ makeopt
 INSTALL
 LICENSE
 README
+
+# Block all markdown files (use git add -f for legitimate READMEs)
+*.md
