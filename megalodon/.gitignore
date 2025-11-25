@@ -10,5 +10,5 @@ INSTALL
 LICENSE
 README
 
-# Block all markdown files (use git add -f for legitimate READMEs)
+# Block all markdown files (negations in parent .gitignore)
 *.md
