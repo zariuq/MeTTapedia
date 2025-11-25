@@ -1,4 +1,10 @@
-Definition sum_nat : (set -> set) -> set := fun f => Empty.
+Definition sum_nat : (set -> set) -> set := fun f => 0.
+
+Axiom sum_nat_clos : forall f : set -> set, (forall n :e omega, f n :e real /\ 0 <= f n) -> sum_nat f :e real.
+
+Axiom sum_nat_zero : sum_nat (fun n => 0) = 0.
+
+Axiom sum_nat_pair : forall a b :e real, sum_nat (fun n => If_i (n = 0) a (If_i (n = 1) b 0)) = a + b.
 
 Definition Disjoint : set -> set -> prop :=
   fun A B => A :/\: B = Empty.

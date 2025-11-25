@@ -47,6 +47,12 @@ exact nat_trans 13 nat_p_13 4
   x Hx.
 Qed.
 
+Theorem disjoint_union_sing_5 : forall v:set, forall S:set,
+  v /:e S ->
+  equip 5 S ->
+  equip 6 ({v} :\/: S).
+Admitted.
+
 Theorem degree_lower_bound_4_kruger : forall R:set -> set -> prop,
   (forall x y, R x y -> R y x) ->
   triangle_free 18 R ->

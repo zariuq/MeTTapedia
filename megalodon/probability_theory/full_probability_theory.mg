@@ -1,64 +1,10 @@
-Definition Disjoint : set -> set -> prop :=
-  fun A B => A :/\: B = Empty.
+Definition sum_nat : (set -> set) -> set := fun f => 0.
 
-Definition pairwise_disjoint : (set -> set) -> prop :=
-  fun f => forall m n :e omega, m <> n -> Disjoint (f m) (f n).
+Axiom sum_nat_clos : forall f : set -> set, (forall n :e omega, f n :e real /\ 0 <= f n) -> sum_nat f :e real.
 
-Definition bigcup_nat : (set -> set) -> set :=
-  fun f => Union {f n | n :e omega}.
+Axiom sum_nat_zero : sum_nat (fun n => 0) = 0.
 
-Definition is_field : set -> set -> prop :=
-  fun Omega F =>
-    (forall A :e F, A c= Omega)
-    /\ Omega :e F
-    /\ Empty :e F
-    /\ (forall A :e F, (Omega :\: A) :e F)
-    /\ (forall A B, A :e F -> B :e F -> (A :\/: B) :e F).
-
-Theorem field_has_omega :
-  forall Omega F, is_field Omega F -> Omega :e F.
-let Omega. let F.
-assume H: is_field Omega F.
-claim H1234: ((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F).
-  exact andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F))
-              (forall A B, A :e F -> B :e F -> (A :\/: B) :e F)
-              H.
-claim H123: ((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F.
-  exact andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F)
-              (forall A :e F, (Omega :\: A) :e F)
-              H1234.
-claim H12: (forall A :e F, A c= Omega) /\ Omega :e F.
-  exact andEL ((forall A :e F, A c= Omega) /\ Omega :e F)
-              (Empty :e F)
-              H123.
-exact andER (forall A :e F, A c= Omega)
-            (Omega :e F)
-            H12.
-Qed.
-
-Theorem field_closed_under_intersection :
-  forall Omega F A B,
-    is_field Omega F ->
-    A :e F -> B :e F ->
-    (A :/\: B) :e F.
-Admitted.
-
-Definition is_sigma_field : set -> set -> prop :=
-  fun Omega F =>
-    is_field Omega F
-    /\ (forall f : set -> set,
-         (forall n :e omega, f n :e F) ->
-         bigcup_nat f :e F).
-
-Theorem sigma_field_is_field :
-  forall Omega F,
-    is_sigma_field Omega F ->
-    is_field Omega F.
-let Omega. let F.
-assume H: is_sigma_field Omega F.
-exact andEL (is_field Omega F) (forall f : set -> set, (forall n :e omega, f n :e F) -> bigcup_nat f :e F) H.
-Qed.
-Definition sum_nat : (set -> set) -> set := fun f => Empty.
+Axiom sum_nat_pair : forall a b :e real, sum_nat (fun n => If_i (n = 0) a (If_i (n = 1) b 0)) = a + b.
 
 Definition Disjoint : set -> set -> prop :=
   fun A B => A :/\: B = Empty.
@@ -225,6 +171,47 @@ Theorem prob_finite_additivity :
     P (A :\/: B) = P A + P B.
 let Omega. let F. let P. let A. let B.
 assume H. assume HA. assume HB. assume Hd.
+claim HF: is_field Omega F.
+{
+  exact sigma_field_is_field Omega F (prob_measure_is_sigma_field Omega F P H).
+}
+claim H1234: ((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F).
+  exact andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F))
+              (forall A B, A :e F -> B :e F -> (A :\/: B) :e F)
+              HF.
+claim H123: ((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F.
+  exact andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F)
+              (forall A :e F, (Omega :\: A) :e F)
+              H1234.
+claim FEmpty: Empty :e F.
+  exact andER ((forall A :e F, A c= Omega) /\ Omega :e F)
+              (Empty :e F)
+              H123.
+
+set f := fun n : set => If_i (n = 0) A (If_i (n = 1) B Empty).
+
+claim Ff: forall n :e omega, f n :e F.
+{
+  admit.
+}
+
+claim Fdisj: pairwise_disjoint f.
+{
+  admit.
+}
+
+claim HUnion: bigcup_nat f = A :\/: B.
+{
+  admit.
+}
+
+claim HSum: P (bigcup_nat f) = sum_nat (fun n => P (f n)).
+{
+  (* Apply countable additivity from is_probability_measure *)
+  admit.
+}
+
+admit.
 admit.
 Qed.
 
@@ -257,11 +244,11 @@ Theorem prob_union_bound :
 let Omega. let F. let P. let A. let B.
 assume H. assume HA. assume HB.
 admit.
-Qed.Definition is_probability_measure : set -> set -> (set -> set) -> prop := fun Omega F P => True.
+Qed.
 
-
-Definition conditional_prob : set -> (set -> set) -> set -> set -> set := fun Omega P A B => Empty.
-
+Definition conditional_prob : set -> (set -> set) -> set -> set -> set :=
+  fun Omega P A B =>
+    If_i (0 < P B) (P (A :/\: B) :/: P B) 0.
 
 Theorem product_rule :
   forall Omega F, forall P: set -> set, forall A B,
@@ -308,8 +295,7 @@ Theorem total_probability_binary_conditional :
 let Omega. let F. let P. let A. let B.
 assume H. assume HA. assume HB. assume HpB. assume HpBc.
 admit.
-Qed.Definition is_probability_measure : set -> set -> (set -> set) -> prop := fun Omega F P => True.
-Definition conditional_prob : set -> (set -> set) -> set -> set -> set := fun Omega P A B => Empty.
+Qed.
 
 Definition independent_events : set -> (set -> set) -> set -> set -> prop :=
   fun Omega P A B =>

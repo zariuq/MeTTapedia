@@ -114,6 +114,12 @@ Theorem disjoint_union_card : forall n m A B:set,
   exists p:set, nat_p p /\ equip p (A :\/: B).
 Admitted.
 
+Theorem disjoint_union_sing_5 : forall v:set, forall S:set,
+  v /:e S ->
+  equip 5 S ->
+  equip 6 ({v} :\/: S).
+Admitted.
+
 Theorem partition_3_card : forall V A B C:set, forall n a b c:set,
   nat_p n ->
   nat_p a ->

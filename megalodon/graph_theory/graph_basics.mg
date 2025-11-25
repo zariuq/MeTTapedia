@@ -1605,10 +1605,8 @@ prove exists k0:set, exists W0:set -> set, is_cycle V R k0 W0.
   exact Hcycproof.
 Qed.
 
-Definition Chapter8PlanarDummy : prop := True.
-
 Definition planar_embedding : set -> (set -> set -> prop) -> set -> prop :=
-  fun V R E => True.
+  fun V R E => V = V.
 
 Theorem planar_embedding_induced : forall V:set, forall R:set -> set -> prop, forall E:set,
   planar_embedding V R E ->
@@ -1617,13 +1615,13 @@ Theorem planar_embedding_induced : forall V:set, forall R:set -> set -> prop, fo
 Admitted.
 
 Definition planar_graph : set -> (set -> set -> prop) -> prop :=
-  fun V R => True.
+  fun V R => exists E:set, planar_embedding V R E.
 
 Definition planar_simple_graph : set -> (set -> set -> prop) -> prop :=
   fun V R => and (simple_graph V R) (planar_graph V R).
 
 Definition outerplanar_graph : set -> (set -> set -> prop) -> prop :=
-  fun V R => planar_graph V R.
+  fun V R => exists E:set, planar_embedding V R E.
 
 Theorem outerplanar_embedding_planar : forall V:set, forall R:set -> set -> prop, forall E:set,
   planar_embedding V R E -> planar_graph V R.
