@@ -258,6 +258,101 @@ apply set_ext.
   exact SingI Empty.
 Qed.
 
+Theorem t_card_1_equip_nat_finite : forall S n:set,
+  nat_p n -> equip n S -> finite S.
+let S n.
+assume Hn: nat_p n.
+assume Heq: equip n S.
+prove exists m :e omega, equip S m.
+witness n.
+apply andI.
+- exact nat_p_omega n Hn.
+- exact equip_sym n S Heq.
+Qed.
+
+Theorem t_card_1_finite_equip_nat : forall S:set,
+  finite S -> exists n:set, nat_p n /\ equip n S.
+let S.
+assume Hf: finite S.
+prove exists n:set, nat_p n /\ equip n S.
+apply Hf.
+let n. assume Hn: n :e omega /\ equip S n.
+claim Hn_omega: n :e omega.
+  exact andEL (n :e omega) (equip S n) Hn.
+claim HeqSn: equip S n.
+  exact andER (n :e omega) (equip S n) Hn.
+witness n.
+apply andI.
+- exact omega_nat_p n Hn_omega.
+- exact equip_sym S n HeqSn.
+Qed.
+
+Theorem t_card_1_equip_subset_le : forall S T k m:set,
+  S c= T -> nat_p k -> nat_p m -> equip k S -> equip m T -> k c= m.
+let S T k m.
+assume HST: S c= T.
+assume Hk: nat_p k.
+assume Hm: nat_p m.
+assume HkS: equip k S.
+assume HmT: equip m T.
+admit.
+Qed.
+
+Theorem t_card_1_equip_Empty_0 : equip 0 Empty.
+exact equip_ref Empty.
+Qed.
+
+Theorem t_card_1_equip_0_Empty : forall S:set,
+  equip 0 S -> S = Empty.
+let S.
+assume H: equip 0 S.
+claim HeqS0: equip S 0.
+  exact equip_sym 0 S H.
+exact equip_empty_eq S HeqS0.
+Qed.
+
+Theorem t_card_1_nonempty_not_0 : forall S:set, forall x:set,
+  x :e S -> ~ equip 0 S.
+let S x.
+assume Hx: x :e S.
+assume Heq: equip 0 S.
+claim HS: S = Empty.
+  exact t_card_1_equip_0_Empty S Heq.
+claim HxE: x :e Empty.
+  rewrite <- HS.
+  exact Hx.
+apply EmptyAx.
+witness x.
+exact HxE.
+Qed.
+
+Theorem t_card_1_equip_disjoint_union : forall A B n m:set,
+  nat_p n -> nat_p m ->
+  equip n A -> equip m B ->
+  (forall x, x :e A -> x /:e B) ->
+  exists p:set, nat_p p /\ equip p (A :\/: B).
+let A B n m.
+assume Hn: nat_p n.
+assume Hm: nat_p m.
+assume HeqnA: equip n A.
+assume HeqmB: equip m B.
+assume Hdisj: forall x, x :e A -> x /:e B.
+admit.
+Qed.
+
+Theorem t_card_1_equip_setminus : forall A B n m:set,
+  B c= A -> nat_p n -> nat_p m ->
+  equip n A -> equip m B ->
+  exists d:set, nat_p d /\ equip d (A :\: B).
+let A B n m.
+assume HBA: B c= A.
+assume Hn: nat_p n.
+assume Hm: nat_p m.
+assume HeqnA: equip n A.
+assume HeqmB: equip m B.
+admit.
+Qed.
+
 Theorem card_1_compiles : True.
 exact TrueI.
 Qed.
