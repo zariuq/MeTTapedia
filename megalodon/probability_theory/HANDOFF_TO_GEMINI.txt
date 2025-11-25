@@ -1,0 +1,205 @@
+================================================================================
+PROBABILITY THEORY FORMALIZATION - HANDOFF TO GEMINI
+================================================================================
+
+LOCATION: /home/zar/claude/megalodon/probability_theory/
+
+This directory contains everything Gemini needs to formalize probability theory
+in Megalodon's Egal mode, following Billingsley's "Probability and Measure".
+
+================================================================================
+FILES CREATED
+================================================================================
+
+1. START_HERE.md (4.7K)
+   → Quick start guide - Gemini should read this FIRST
+   → Immediate action items and workflow
+
+2. GEMINI_FORMALIZATION_PROMPT.md (13K) ⭐ MAIN GUIDE
+   → Comprehensive formalization instructions
+   → Phase-by-phase breakdown (4 phases)
+   → Megalodon syntax reference
+   → Success criteria and rules
+   → THIS IS THE PRIMARY INSTRUCTION FILE
+
+3. EGAL_QUICK_REFERENCE.md (7.2K)
+   → Megalodon Egal syntax patterns
+   → Common proof tactics
+   → Debugging tips
+   → Example complete proofs
+
+4. STARTER_TEMPLATE.mg (4.8K)
+   → Working Megalodon code template
+   → Helper definitions (setminus, setunion, etc.)
+   → First few theorems with proof sketches
+   → Gemini copies this to 01_sigma_algebras.mg to begin
+
+5. PROGRESS.md (4.7K)
+   → Progress tracker - Gemini updates this after each milestone
+   → Checklist of definitions and theorems
+   → Admitted axioms log
+
+6. README.md (3.3K)
+   → Project overview
+   → Directory structure
+   → Verification commands
+
+================================================================================
+PROMPT FOR GEMINI
+================================================================================
+
+Copy this to Gemini:
+
+---BEGIN PROMPT---
+
+I need you to formalize probability theory in the Megalodon proof assistant.
+
+**Location**: /home/zar/claude/megalodon/probability_theory/
+
+**Your instructions**: Read these files in order:
+1. START_HERE.md - Quick start
+2. GEMINI_FORMALIZATION_PROMPT.md - Main detailed instructions
+3. EGAL_QUICK_REFERENCE.md - Syntax reference
+
+**First task**: 
+1. Copy STARTER_TEMPLATE.mg to 01_sigma_algebras.mg
+2. Complete the proof of `field_closed_under_intersection`
+3. Verify it compiles with megalodon
+4. Update PROGRESS.md
+
+**Verification command**:
+```bash
+cd /home/zar/claude/megalodon/probability_theory
+/home/zar/claude/megalodon/bin/megalodon -egal \
+  -I /home/zar/claude/megalodon/Megalodon/examples/egal/PfgEAug2022Preamble.mgs \
+  01_sigma_algebras.mg
+```
+
+Exit code 0 = success!
+
+**Reference**: Billingsley "Probability and Measure" at:
+/home/zar/claude/literature/Probability_Theory/Probability_and_Measure_Third_Edition_Patrick_Billingsley.pdf
+
+**Philosophy**: Prove what you can, admit what you must, document everything.
+Build incrementally. Verify after each change. Update PROGRESS.md regularly.
+
+**Goal**: Complete 4 phases:
+1. σ-algebras (01_sigma_algebras.mg)
+2. Probability measures (02_probability_measures.mg)
+3. Conditional probability (03_conditional_probability.mg)
+4. Independence (04_independence.mg)
+
+Start with Phase 1. Read GEMINI_FORMALIZATION_PROMPT.md for full details.
+
+---END PROMPT---
+
+================================================================================
+WHAT GEMINI WILL DO
+================================================================================
+
+Phase 1: σ-Algebras (01_sigma_algebras.mg)
+  - Define fields, σ-fields
+  - Prove closure properties
+  - Reference: Billingsley §2 pages 18-22
+
+Phase 2: Probability Measures (02_probability_measures.mg)
+  - Define probability spaces (Ω, F, P)
+  - Kolmogorov axioms
+  - Basic theorems (monotonicity, complement rule)
+  - Reference: Billingsley §2 pages 22-27
+
+Phase 3: Conditional Probability (03_conditional_probability.mg)
+  - P(A|B) = P(A∩B)/P(B)
+  - Product rule
+  - Bayes' theorem
+  - Reference: Billingsley §4 pages 51-53
+
+Phase 4: Independence (04_independence.mg)
+  - Independent events
+  - Mutual independence
+  - Borel-Cantelli lemmas
+  - Reference: Billingsley §4 pages 55-59
+
+================================================================================
+EXPECTED OUTPUT FROM GEMINI
+================================================================================
+
+After completion, you should have:
+
+/home/zar/claude/megalodon/probability_theory/
+├── 01_sigma_algebras.mg          ✅ Verified
+├── 02_probability_measures.mg    ✅ Verified  
+├── 03_conditional_probability.mg ✅ Verified
+├── 04_independence.mg            ✅ Verified
+├── PROGRESS.md                   ✅ Updated with all completed items
+└── examples/
+    ├── coin_flip.mg              ✅ Concrete example
+    └── dice.mg                   ✅ Concrete example
+
+Each .mg file should:
+- Compile without errors (exit code 0)
+- Have clear definitions
+- Have proved theorems (or admitted with TODO)
+- Include comments explaining mathematical intuition
+
+PROGRESS.md should show:
+- All definitions marked [x]
+- All theorems marked [x] PROVED or [x] ADMITTED
+- List of admitted axioms with priorities
+- Session notes documenting progress
+
+================================================================================
+VERIFICATION
+================================================================================
+
+To verify all files:
+```bash
+cd /home/zar/claude/megalodon/probability_theory
+for f in 01_*.mg 02_*.mg 03_*.mg 04_*.mg; do
+  echo "=== Verifying $f ==="
+  /home/zar/claude/megalodon/bin/megalodon -egal \
+    -I /home/zar/claude/megalodon/Megalodon/examples/egal/PfgEAug2022Preamble.mgs \
+    "$f" && echo "✅ PASS" || echo "❌ FAIL"
+done
+```
+
+================================================================================
+SUCCESS METRICS
+================================================================================
+
+Minimum viable formalization:
+- ✅ σ-fields defined and basic properties proved
+- ✅ Probability spaces defined (Kolmogorov axioms)
+- ✅ Sum rule, product rule, Bayes' theorem formalized
+- ✅ Independence defined
+- ✅ At least 1 concrete example (coin flip or dice)
+
+Stretch goals:
+- Prove all theorems (minimize admitted axioms)
+- Borel-Cantelli lemmas
+- Product measures
+- Multiple examples
+
+================================================================================
+WHY THIS MATTERS
+================================================================================
+
+This formalization supports the Knuth-Skilling papers:
+- "The symmetrical foundation of Measure, Probability and Quantum theories"
+- "The Arithmetic of Uncertainty unifies Quantum Formalism and Relativistic Spacetime"
+
+These papers derive quantum mechanics and relativity from probability theory
+founded on symmetry principles. This formalization provides the mathematical
+foundation for that derivation.
+
+================================================================================
+NEXT STEPS AFTER GEMINI COMPLETES
+================================================================================
+
+1. Review the formalization
+2. Fill in any admitted axioms
+3. Add more examples
+4. Move to Phase 2: Complex number formalization
+5. Eventually: Hilbert spaces, Born rule, quantum formalism
+
+================================================================================

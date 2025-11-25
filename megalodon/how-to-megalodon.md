@@ -940,3 +940,77 @@ Qed.
 - Proofgold: https://proofgold.org
 - Freek's 100 Theorems: http://www.cs.ru.nl/~freek/100/
 - Brown & Pak "A Tale of Two Set Theories" (CICM 2019)
+
+---
+
+## Appendix: Recent Syntax Findings (Verified Nov 2025)
+
+### ✅ VERIFIED: Comments at File Start
+
+Comments at the very beginning cause syntax errors.
+
+**Wrong**:
+```megalodon
+(* My File *)          (* ❌ Syntax error *)
+Definition A ...
+```
+
+**Correct**:
+```megalodon
+Definition DummyStart : prop := True.
+
+(* Now safe to comment *)
+Definition A ...
+```
+
+**Related**: Comments also need following definitions - see "Parser Rules" section above.
+
+### ❌ CORRECTED: Claim Blocks
+
+Gemini reported that braces need newlines, but **claim blocks don't use braces at all**.
+
+**Correct syntax**:
+```megalodon
+claim H: proposition.
+  proof_term.
+```
+
+Example from verified code:
+```megalodon
+claim H_sub: forall A :e F, A c= Omega.
+  exact andEL (forall A :e F, A c= Omega) (Omega :e F) H12.
+```
+
+**Note**: Claims use indentation, not braces.
+
+### ✅ VERIFIED: Equality Tactics
+
+- `reflexivity` works for proving `x = x`
+- `exact eq_ref type term` also works when `eq_ref` is in scope
+- Both are valid for equality proofs
+
+### ✅ VERIFIED: If-Then-Else
+
+Standard syntax works:
+```megalodon
+Definition f : set -> set :=
+  fun n => if (n = 0) then 1 else 2.
+```
+
+Complex nesting also supported. `If_i` form is available but optional.
+
+### ✅ VERIFIED: Parameters vs Definitions
+
+- `Parameter name : type.` - Undefined constant (no body)
+- `Definition name : type := body.` - Defined term
+
+"Unknown id" errors often indicate syntax problems earlier in file (especially comment-related).
+
+### File Concatenation Best Practices
+
+When creating combined files (e.g., `full_*.mg`):
+1. Verify each standalone file first
+2. Watch for duplicate definitions
+3. Remember comments need following definitions (see above)
+4. Test after each addition
+

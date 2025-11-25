@@ -9,10 +9,16 @@ Definition Adj8 : set -> set -> prop :=
     (i = 6 /\ (j = 2 \/ j = 5 \/ j = 7)) \/
     (i = 7 /\ (j = 0 \/ j = 3 \/ j = 6)).
 
+Axiom neq_0_7 : 0 <> 7.
+Axiom neq_2_6 : 2 <> 6.
+Axiom neq_3_7 : 3 <> 7.
+Axiom neq_5_6 : 5 <> 6.
+Axiom neq_6_7 : 6 <> 7.
+
 Theorem Adj8_sym : forall i j, Adj8 i j -> Adj8 j i.
 Admitted.
 
-Theorem Adj8_irref : forall i, ~Adj8 i i.
+Theorem Adj8_irref : forall i:set, ~Adj8 i i.
 Admitted.
 
 Theorem Adj8_triangle_free : forall x y z :e 8, Adj8 x y -> Adj8 y z -> Adj8 x z -> False.
