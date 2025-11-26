@@ -49,6 +49,7 @@ Axiom real_pos_neq0 : forall x, 0 < x -> x <> 0.
 
 Axiom eq_refl_set : forall x:set, x = x.
 Axiom eq_sym : forall x y, x = y -> y = x.
+Axiom eq_trans : forall x y z, x = y -> y = z -> x = z.
 Axiom func_congr : forall f : set -> set, forall x y : set, x = y -> f x = f y.
 
 Definition is_field : set -> set -> prop :=
@@ -78,6 +79,48 @@ claim H12: (forall A :e F, A c= Omega) /\ Omega :e F.
 exact andER (forall A :e F, A c= Omega)
             (Omega :e F)
             H12.
+Qed.
+
+Theorem field_complement_closed :
+  forall Omega F A,
+    is_field Omega F ->
+    A :e F ->
+    (Omega :\: A) :e F.
+let Omega. let F. let A.
+assume HF. assume HA.
+claim H1234: ((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F).
+  exact andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F))
+              (forall A B, A :e F -> B :e F -> (A :\/: B) :e F)
+              HF.
+claim Hcompl: forall A :e F, (Omega :\: A) :e F.
+  exact andER (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F)
+              (forall A :e F, (Omega :\: A) :e F)
+              H1234.
+exact Hcompl A HA.
+Qed.
+
+Theorem field_subset :
+  forall Omega F A,
+    is_field Omega F ->
+    A :e F ->
+    A c= Omega.
+let Omega. let F. let A.
+assume HF. assume HA.
+claim H1234: ((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F).
+  exact andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F))
+              (forall A B, A :e F -> B :e F -> (A :\/: B) :e F)
+              HF.
+claim H123: ((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F.
+  exact andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F)
+              (forall A :e F, (Omega :\: A) :e F)
+              H1234.
+claim H12: (forall A :e F, A c= Omega) /\ Omega :e F.
+  exact andEL ((forall A :e F, A c= Omega) /\ Omega :e F)
+              (Empty :e F)
+              H123.
+claim Hsub: forall A :e F, A c= Omega.
+  exact andEL (forall A :e F, A c= Omega) (Omega :e F) H12.
+exact Hsub A HA.
 Qed.
 
 Theorem field_closed_under_intersection :
@@ -174,6 +217,9 @@ Definition is_probability_measure : set -> set -> (set -> set) -> prop :=
          (forall n :e omega, f n :e F) ->
          pairwise_disjoint f ->
          P (bigcup_nat f) = sum_nat (fun n => P (f n)))))).
+
+Axiom prob_value_real :
+  forall Omega F, forall P: set -> set, is_probability_measure Omega F P -> forall A :e F, P A :e real.
 
 Theorem prob_measure_is_sigma_field :
   forall Omega F, forall P: set -> set,
@@ -884,7 +930,7 @@ Definition conditional_prob : set -> (set -> set) -> set -> set -> set :=
     If_i (0 < P B) (P (A :/\: B) :/: P B) 0.
 
 Axiom conditional_prob_real :
-  forall Omega P A B, conditional_prob Omega P A B :e real.
+  forall Omega, forall P: set -> set, forall A B, conditional_prob Omega P A B :e real.
 
 Theorem product_rule :
   forall Omega F, forall P: set -> set, forall A B,
@@ -908,10 +954,18 @@ claim Hsigma: is_sigma_field Omega F.
   exact prob_measure_is_sigma_field Omega F P H.
 claim Hfield: is_field Omega F.
   exact sigma_field_is_field Omega F Hsigma.
+claim Hrest: (forall A :e F, P A :e real /\ 0 <= P A)
+             /\ (P Omega = 1 /\ (P Empty = 0
+             /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))).
+  exact andER (is_sigma_field Omega F)
+              ((forall A :e F, P A :e real /\ 0 <= P A)
+              /\ (P Omega = 1 /\ (P Empty = 0
+              /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))))
+              H.
 claim Hnonneg: forall X :e F, P X :e real /\ 0 <= P X.
   exact andEL (forall A :e F, P A :e real /\ 0 <= P A)
               (P Omega = 1 /\ (P Empty = 0 /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n)))))
-              (andER (is_sigma_field Omega F) ((forall A :e F, P A :e real /\ 0 <= P A) /\ (P Omega = 1 /\ (P Empty = 0 /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))) H)).
+              Hrest.
 claim HAnB_in: (A :/\: B) :e F.
   exact field_closed_under_intersection Omega F A B Hfield HA HB.
 claim HPAB_real: P (A :/\: B) :e real.
@@ -921,9 +975,8 @@ claim HPB_real: P B :e real.
 claim HPB_neq0: P B <> 0.
   exact real_pos_neq0 (P B) Hp.
 claim Hmuldiv: P B * (P (A :/\: B) :/: P B) = P (A :/\: B).
-  exact real_mul_div_left (P (A :/\: B)) (P B) HPB_neq0.
-rewrite <- Hmuldiv.
-reflexivity.
+  exact real_mul_div_left (P (A :/\: B)) HPAB_real (P B) HPB_real HPB_neq0.
+exact eq_sym (P B * (P (A :/\: B) :/: P B)) (P (A :/\: B)) Hmuldiv.
 Qed.
 
 Theorem bayes_theorem :
@@ -940,20 +993,41 @@ claim Eq1: P (A :/\: B) = P B * conditional_prob Omega P A B.
 claim Eq2raw: P (B :/\: A) = P A * conditional_prob Omega P B A.
   exact product_rule Omega F P B A H HB HA HpA.
 claim Eq2: P (A :/\: B) = P A * conditional_prob Omega P B A.
-  { rewrite binintersect_com in Eq2raw. exact Eq2raw. }
+  {
+    rewrite <- Eq2raw.
+    rewrite binintersect_com.
+    reflexivity.
+  }
 claim Heq: P B * conditional_prob Omega P A B = P A * conditional_prob Omega P B A.
   { rewrite <- Eq1. exact Eq2. }
 claim HPB_neq0: P B <> 0.
   exact real_pos_neq0 (P B) HpB.
+claim Hrest: (forall A :e F, P A :e real /\ 0 <= P A)
+             /\ (P Omega = 1 /\ (P Empty = 0
+             /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))).
+  exact andER (is_sigma_field Omega F)
+              ((forall A :e F, P A :e real /\ 0 <= P A)
+              /\ (P Omega = 1 /\ (P Empty = 0
+              /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))))
+              H.
+claim Hnonneg: forall X :e F, P X :e real /\ 0 <= P X.
+  exact andEL (forall A :e F, P A :e real /\ 0 <= P A)
+              (P Omega = 1 /\ (P Empty = 0 /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n)))))
+              Hrest.
+claim HPB_real: P B :e real.
+  exact andEL (P B :e real) (0 <= P B) (Hnonneg B HB).
+claim HPA_real: P A :e real.
+  exact andEL (P A :e real) (0 <= P A) (Hnonneg A HA).
 claim Hcomm: conditional_prob Omega P A B * P B = P B * conditional_prob Omega P A B.
   exact real_mul_comm (conditional_prob Omega P A B) (P B).
 claim Heq': conditional_prob Omega P A B * P B = P A * conditional_prob Omega P B A.
   { rewrite Hcomm. exact Heq. }
-claim Hdiv: (conditional_prob Omega P A B * P B) :/: P B = conditional_prob Omega P A B.
-  exact real_mul_div_cancel_right (conditional_prob Omega P A B) (P B) HPB_neq0.
-claim Hres: conditional_prob Omega P A B = (P A * conditional_prob Omega P B A) :/: P B.
-  { rewrite <- Heq'. exact Hdiv. }
-exact Hres.
+claim Hdiv: conditional_prob Omega P A B = (conditional_prob Omega P A B * P B) :/: P B.
+  exact eq_sym ((conditional_prob Omega P A B * P B) :/: P B) (conditional_prob Omega P A B) (real_mul_div_cancel_right (conditional_prob Omega P A B) (conditional_prob_real Omega P A B) (P B) HPB_real HPB_neq0).
+rewrite Hdiv.
+rewrite Heq'.
+rewrite real_mul_comm (conditional_prob Omega P B A) (P A).
+reflexivity.
 Qed.
 
 Theorem total_probability_binary :
@@ -969,23 +1043,36 @@ claim Hsigma: is_sigma_field Omega F.
   exact prob_measure_is_sigma_field Omega F P H.
 claim Hfield: is_field Omega F.
   exact sigma_field_is_field Omega F Hsigma.
+claim H1234: ((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F).
+  exact andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F))
+              (forall A B, A :e F -> B :e F -> (A :\/: B) :e F)
+              Hfield.
+claim H123: ((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F.
+  exact andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F)
+              (forall A :e F, (Omega :\: A) :e F)
+              H1234.
+claim H12: (forall A :e F, A c= Omega) /\ Omega :e F.
+  exact andEL ((forall A :e F, A c= Omega) /\ Omega :e F)
+              (Empty :e F)
+              H123.
+claim HsubAll: forall X :e F, X c= Omega.
+  exact andEL (forall A :e F, A c= Omega) (Omega :e F) H12.
 claim Hcompl: forall X :e F, (Omega :\: X) :e F.
   exact andER (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F)
               (forall A :e F, (Omega :\: A) :e F)
-              (andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F))
-                     (forall A B, A :e F -> B :e F -> (A :\/: B) :e F)
-                     Hfield).
-claim HsubAll: forall X :e F, X c= Omega.
-  exact andEL (forall A :e F, A c= Omega) (Omega :e F)
-              (andEL ((forall A :e F, A c= Omega) /\ Omega :e F)
-                    (Empty :e F)
-                    (andEL (((forall A :e F, A c= Omega) /\ Omega :e F) /\ Empty :e F /\ (forall A :e F, (Omega :\: A) :e F))
-                           (forall A B, A :e F -> B :e F -> (A :\/: B) :e F)
-                           Hfield)).
+              H1234.
+claim HrestP: (forall A :e F, P A :e real /\ 0 <= P A)
+             /\ (P Omega = 1 /\ (P Empty = 0
+             /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))).
+  exact andER (is_sigma_field Omega F)
+              ((forall A :e F, P A :e real /\ 0 <= P A)
+              /\ (P Omega = 1 /\ (P Empty = 0
+              /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))))
+              H.
 claim Hnonneg: forall X :e F, P X :e real /\ 0 <= P X.
   exact andEL (forall A :e F, P A :e real /\ 0 <= P A)
               (P Omega = 1 /\ (P Empty = 0 /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n)))))
-              (andER (is_sigma_field Omega F) ((forall A :e F, P A :e real /\ 0 <= P A) /\ (P Omega = 1 /\ (P Empty = 0 /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))) H)).
+              HrestP.
 claim HBc_in: (Omega :\: B) :e F.
   exact Hcompl B HB.
 claim HA_inter_B: (A :/\: B) :e F.
@@ -997,11 +1084,16 @@ claim Hdisj: Disjoint (A :/\: B) (A :/\: (Omega :\: B)).
   claim Hsub: (A :/\: B) :/\: (A :/\: (Omega :\: B)) c= Empty.
   {
     let z. assume Hz.
-    claim HzB: z :e B. exact binintersectE1 B (A :/\: (Omega :\: B)) z (binintersectE2 (A :/\: B) (A :/\: (Omega :\: B)) z Hz).
+    claim HzInAB: z :e A :/\: B.
+      exact binintersectE1 (A :/\: B) (A :/\: (Omega :\: B)) z Hz.
+    claim HzB: z :e B.
+      exact binintersectE2 A B z HzInAB.
     claim HzNotB: z /:e B.
     {
+      claim HzInABc: z :e A :/\: (Omega :\: B).
+        exact binintersectE2 (A :/\: B) (A :/\: (Omega :\: B)) z Hz.
       claim HzInBc: z :e Omega :\: B.
-        exact binintersectE2 A (Omega :\: B) z (binintersectE2 (A :/\: B) (A :/\: (Omega :\: B)) z Hz).
+        exact binintersectE2 A (Omega :\: B) z HzInABc.
       exact setminusE2 Omega B z HzInBc.
     }
     exact FalseE (HzNotB HzB) (z :e Empty).
@@ -1035,8 +1127,17 @@ claim Hunion: (A :/\: B) :\/: (A :/\: (Omega :\: B)) = A.
 }
 claim Hfinadd: P ((A :/\: B) :\/: (A :/\: (Omega :\: B))) = P (A :/\: B) + P (A :/\: (Omega :\: B)).
   exact prob_finite_additivity Omega F P (A :/\: B) (A :/\: (Omega :\: B)) H HA_inter_B HA_inter_Bc Hdisj.
-rewrite Hunion in Hfinadd.
-exact Hfinadd.
+claim HfinaddA: P A = P (A :/\: B) + P (A :/\: (Omega :\: B)).
+{
+  claim HPcongr: P ((A :/\: B) :\/: (A :/\: (Omega :\: B))) = P A.
+    exact func_congr P ((A :/\: B) :\/: (A :/\: (Omega :\: B))) A Hunion.
+  exact eq_trans (P A)
+                 (P ((A :/\: B) :\/: (A :/\: (Omega :\: B))))
+                 (P (A :/\: B) + P (A :/\: (Omega :\: B)))
+                 (eq_sym (P ((A :/\: B) :\/: (A :/\: (Omega :\: B)))) (P A) HPcongr)
+                 Hfinadd.
+}
+exact HfinaddA.
 Qed.
 
 Theorem total_probability_binary_conditional :
@@ -1048,6 +1149,32 @@ Theorem total_probability_binary_conditional :
     P A = conditional_prob Omega P A B * P B + conditional_prob Omega P A (Omega :\: B) * P (Omega :\: B).
 let Omega. let F. let P. let A. let B.
 assume H. assume HA. assume HB. assume HpB. assume HpBc.
+claim Hsigma: is_sigma_field Omega F.
+  exact prob_measure_is_sigma_field Omega F P H.
+claim Hfield: is_field Omega F.
+  exact sigma_field_is_field Omega F Hsigma.
+claim Hrest: (forall A :e F, P A :e real /\ 0 <= P A)
+             /\ (P Omega = 1 /\ (P Empty = 0
+             /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))).
+  exact andER (is_sigma_field Omega F)
+              ((forall A :e F, P A :e real /\ 0 <= P A)
+              /\ (P Omega = 1 /\ (P Empty = 0
+              /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))))
+              H.
+claim Hnonneg: forall X :e F, P X :e real /\ 0 <= P X.
+  exact andEL (forall A :e F, P A :e real /\ 0 <= P A)
+              (P Omega = 1 /\ (P Empty = 0 /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n)))))
+              Hrest.
+claim HBc_in: (Omega :\: B) :e F.
+  exact field_complement_closed Omega F B Hfield HB.
+claim HPB_real: P B :e real.
+  exact prob_value_real Omega F P H B HB.
+claim HPBc_real: P (Omega :\: B) :e real.
+  exact prob_value_real Omega F P H (Omega :\: B) HBc_in.
+claim HPAB_real: P (A :/\: B) :e real.
+  exact prob_value_real Omega F P H (A :/\: B) (field_closed_under_intersection Omega F A B Hfield HA HB).
+claim HPABc_real: P (A :/\: (Omega :\: B)) :e real.
+  exact prob_value_real Omega F P H (A :/\: (Omega :\: B)) (field_closed_under_intersection Omega F A (Omega :\: B) Hfield HA HBc_in).
 claim Eqbase: P A = P (A :/\: B) + P (A :/\: (Omega :\: B)).
   exact total_probability_binary Omega F P A B H HA HB HpB HpBc.
 claim EqCondB: conditional_prob Omega P A B = P (A :/\: B) :/: P B.
@@ -1072,13 +1199,13 @@ claim HmulB: conditional_prob Omega P A B * P B = P (A :/\: B).
   {
     rewrite EqCondB.
     rewrite real_mul_comm.
-    exact real_mul_div_left (P (A :/\: B)) (P B) HPB_neq0.
+    exact real_mul_div_left (P (A :/\: B)) HPAB_real (P B) HPB_real HPB_neq0.
   }
 claim HmulBc: conditional_prob Omega P A (Omega :\: B) * P (Omega :\: B) = P (A :/\: (Omega :\: B)).
   {
     rewrite EqCondBc.
     rewrite real_mul_comm.
-    exact real_mul_div_left (P (A :/\: (Omega :\: B))) (P (Omega :\: B)) HPBc_neq0.
+    exact real_mul_div_left (P (A :/\: (Omega :\: B))) HPABc_real (P (Omega :\: B)) HPBc_real HPBc_neq0.
   }
 rewrite Eqbase.
 rewrite <- HmulB.
@@ -1089,6 +1216,18 @@ Qed.
 Definition independent_events : set -> (set -> set) -> set -> set -> prop :=
   fun Omega P A B =>
     P (A :/\: B) = P A * P B.
+
+Theorem independent_events_elim :
+  forall Omega, forall P: set -> set, forall A B,
+    independent_events Omega P A B ->
+    P (A :/\: B) = P A * P B.
+let Omega. let P. let A. let B. assume H. exact H. Qed.
+
+Theorem independent_events_intro :
+  forall Omega, forall P: set -> set, forall A B,
+    P (A :/\: B) = P A * P B ->
+    independent_events Omega P A B.
+let Omega. let P. let A. let B. assume H. exact H. Qed.
 
 Definition independent_events_3 : set -> (set -> set) -> set -> set -> set -> prop :=
   fun Omega P A B C =>
@@ -1103,12 +1242,15 @@ Theorem independence_sym :
     independent_events Omega P B A.
 let Omega. let P. let A. let B.
 assume H.
-claim Eq: P (B :/\: A) = P (A :/\: B).
-  { rewrite binintersect_com. reflexivity. }
-rewrite Eq.
-rewrite H.
-rewrite real_mul_comm.
-reflexivity.
+claim Heq: P (A :/\: B) = P A * P B.
+  exact independent_events_elim Omega P A B H.
+claim Hgoal: P (B :/\: A) = P B * P A.
+{
+  rewrite binintersect_com.
+  rewrite real_mul_comm.
+  exact Heq.
+}
+exact independent_events_intro Omega P B A Hgoal.
 Qed.
 
 Theorem independent_implies_conditional :
@@ -1127,17 +1269,17 @@ claim EqCond: conditional_prob Omega P A B = P (A :/\: B) :/: P B.
     rewrite (If_i_1 (0 < P B) (P (A :/\: B) :/: P B) 0 Hp).
     reflexivity.
   }
-claim Hsigma: is_sigma_field Omega F.
-  exact prob_measure_is_sigma_field Omega F P H.
-claim Hnonneg: forall X :e F, P X :e real /\ 0 <= P X.
-  exact andEL (forall A :e F, P A :e real /\ 0 <= P A)
-              (P Omega = 1 /\ (P Empty = 0 /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n)))))
-              (andER (is_sigma_field Omega F) ((forall A :e F, P A :e real /\ 0 <= P A) /\ (P Omega = 1 /\ (P Empty = 0 /\ (forall f : set -> set, (forall n :e omega, f n :e F) -> pairwise_disjoint f -> P (bigcup_nat f) = sum_nat (fun n => P (f n))))) H)).
 claim HPB_neq0: P B <> 0.
   exact real_pos_neq0 (P B) Hp.
+claim HPA_real: P A :e real.
+  exact prob_value_real Omega F P H A HA.
+claim HPB_real: P B :e real.
+  exact prob_value_real Omega F P H B HB.
+claim HindEq: P (A :/\: B) = P A * P B.
+  exact independent_events_elim Omega P A B Hind.
 rewrite EqCond.
-rewrite Hind.
-exact real_mul_div_cancel_right (P A) (P B) HPB_neq0.
+rewrite HindEq.
+exact real_mul_div_cancel_right (P A) HPA_real (P B) HPB_real HPB_neq0.
 Qed.
 
 Theorem independent_complement :
@@ -1148,5 +1290,102 @@ Theorem independent_complement :
     independent_events Omega P A (Omega :\: B).
 let Omega. let F. let P. let A. let B.
 assume H. assume HA. assume HB. assume Hind.
-admit.
+claim Hsigma: is_sigma_field Omega F.
+  exact prob_measure_is_sigma_field Omega F P H.
+claim Hfield: is_field Omega F.
+  exact sigma_field_is_field Omega F Hsigma.
+claim HBc_in: (Omega :\: B) :e F.
+  exact field_complement_closed Omega F B Hfield HB.
+claim HsubAll: forall X :e F, X c= Omega.
+{
+  let X. assume HX.
+  exact field_subset Omega F X Hfield HX.
+}
+claim HA_inter_B: (A :/\: B) :e F.
+  exact field_closed_under_intersection Omega F A B Hfield HA HB.
+claim HA_inter_Bc: (A :/\: (Omega :\: B)) :e F.
+  exact field_closed_under_intersection Omega F A (Omega :\: B) Hfield HA HBc_in.
+claim Hdisj: Disjoint (A :/\: B) (A :/\: (Omega :\: B)).
+  {
+    claim Hsub: (A :/\: B) :/\: (A :/\: (Omega :\: B)) c= Empty.
+    {
+      let z. assume Hz.
+      claim HzInAB: z :e A :/\: B.
+        exact binintersectE1 (A :/\: B) (A :/\: (Omega :\: B)) z Hz.
+      claim HzB: z :e B.
+        exact binintersectE2 A B z HzInAB.
+      claim HzNotB: z /:e B.
+      {
+        claim HzInABc: z :e A :/\: (Omega :\: B).
+          exact binintersectE2 (A :/\: B) (A :/\: (Omega :\: B)) z Hz.
+        claim HzInBc: z :e Omega :\: B.
+          exact binintersectE2 A (Omega :\: B) z HzInABc.
+        exact setminusE2 Omega B z HzInBc.
+      }
+      exact FalseE (HzNotB HzB) (z :e Empty).
+    }
+  exact Empty_Subq_eq ((A :/\: B) :/\: (A :/\: (Omega :\: B))) Hsub.
+}
+claim Hunion: (A :/\: B) :\/: (A :/\: (Omega :\: B)) = A.
+{
+  apply set_ext.
+  - let z. assume Hz.
+    apply binunionE (A :/\: B) (A :/\: (Omega :\: B)) z Hz.
+    + assume Hz1: z :e A :/\: B.
+      exact binintersectE1 A B z Hz1.
+    + assume Hz2: z :e A :/\: (Omega :\: B).
+      exact binintersectE1 A (Omega :\: B) z Hz2.
+  - let z. assume HzA: z :e A.
+    apply orE (z :e B) (z /:e B) (z :e (A :/\: B) :\/: (A :/\: (Omega :\: B))).
+    + assume HzB: z :e B.
+      apply binunionI1 (A :/\: B) (A :/\: (Omega :\: B)) z.
+      exact binintersectI A B z HzA HzB.
+    + assume HzNotB: z /:e B.
+      claim HzOmega: z :e Omega.
+        exact HsubAll A HA z HzA.
+      claim HzBc: z :e Omega :\: B.
+        exact setminusI Omega B z HzOmega HzNotB.
+      apply binunionI2 (A :/\: B) (A :/\: (Omega :\: B)) z.
+      exact binintersectI A (Omega :\: B) z HzA HzBc.
+    + exact xm (z :e B).
+}
+claim Hfinadd: P A = P (A :/\: B) + P (A :/\: (Omega :\: B)).
+{
+  claim Hsum: P ((A :/\: B) :\/: (A :/\: (Omega :\: B))) = P (A :/\: B) + P (A :/\: (Omega :\: B)).
+    exact prob_finite_additivity Omega F P (A :/\: B) (A :/\: (Omega :\: B)) H HA_inter_B HA_inter_Bc Hdisj.
+  claim HPcongr: P ((A :/\: B) :\/: (A :/\: (Omega :\: B))) = P A.
+    exact func_congr P ((A :/\: B) :\/: (A :/\: (Omega :\: B))) A Hunion.
+  exact eq_trans (P A)
+                 (P ((A :/\: B) :\/: (A :/\: (Omega :\: B))))
+                 (P (A :/\: B) + P (A :/\: (Omega :\: B)))
+                 (eq_sym (P ((A :/\: B) :\/: (A :/\: (Omega :\: B)))) (P A) HPcongr)
+                 Hsum.
+}
+claim HPA_real: P A :e real.
+  exact prob_value_real Omega F P H A HA.
+claim HPB_real: P B :e real.
+  exact prob_value_real Omega F P H B HB.
+claim HindEq: P (A :/\: B) = P A * P B.
+  exact independent_events_elim Omega P A B Hind.
+claim HPBc: P (Omega :\: B) = 1 + - (P B).
+  exact prob_complement Omega F P B H HB.
+claim Hleft: P A + - (P (A :/\: B)) = P (A :/\: (Omega :\: B)).
+{
+  exact real_add_left_cancel (P A) (P (A :/\: B)) (P (A :/\: (Omega :\: B))) Hfinadd.
+}
+claim Hright: P A + - (P A * P B) = P A * (1 + - (P B)).
+{
+  rewrite real_mul_add_distr.
+  rewrite real_mul_one_r.
+  rewrite real_mul_neg.
+  reflexivity.
+}
+claim Htarget: P (A :/\: (Omega :\: B)) = P A * P (Omega :\: B).
+{
+  rewrite <- Hleft.
+  rewrite HindEq.
+  rewrite HPBc.
+  exact Hright.
+}
+exact independent_events_intro Omega P A (Omega :\: B) Htarget.
 Qed.

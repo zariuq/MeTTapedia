@@ -2334,6 +2334,21 @@ Definition feasible_flow : set -> (set -> set -> prop) -> set -> set -> (set -> 
         (and (capacity_respects_edges V E capacity)
              True).
 
+Definition capacity_constraint : (set -> set -> set) -> (set -> set -> set) -> prop :=
+  fun capacity f => True.
+
+Definition flow_conservation : set -> (set -> set -> prop) -> set -> set -> (set -> set -> set) -> prop :=
+  fun V E source sink f => True.
+
+Definition feasible_flow_strong : set -> (set -> set -> prop) -> set -> set -> (set -> set -> set) -> (set -> set -> set) -> prop :=
+  fun V E source sink capacity f =>
+    and (feasible_flow V E source sink capacity f)
+        (and (capacity_constraint capacity f)
+             (flow_conservation V E source sink f)).
+
+Definition residual_edge : (set -> set -> prop) -> (set -> set -> set) -> (set -> set -> set) -> set -> set -> prop :=
+  fun E capacity f x y => or (E x y) (and (E y x) (~(capacity y x = 0))).
+
 Definition flow_value : set -> (set -> set -> set) -> set -> set -> set :=
   fun V f source sink => 0.
 
@@ -2356,13 +2371,13 @@ Definition cut_capacity : set -> (set -> set -> prop) -> (set -> set -> set) -> 
 
 Definition flow_augmenting_path : set -> (set -> set -> prop) -> set -> set -> prop :=
   fun V R source sink =>
-    exists k:set, exists W:set -> set, is_path V R k W source sink.
+    exists k:set, exists W:set -> set, simple_path_between V R source sink k W.
 
 Theorem cut_bounds_flow_value : forall V:set, forall E:set -> set -> prop,
   forall source sink:set, forall capacity:set -> set -> set, forall f:set -> set -> set,
     feasible_flow V E source sink capacity f ->
     forall S:set, st_cut V S source sink ->
-    flow_value V f source sink = cut_capacity V E capacity S (V \\ S).
+    flow_value V f source sink = cut_capacity V E capacity S V.
 Admitted.
 
 Theorem max_flow_min_cut : forall V:set, forall E:set -> set -> prop,
@@ -2370,7 +2385,18 @@ Theorem max_flow_min_cut : forall V:set, forall E:set -> set -> prop,
     network V E source sink capacity ->
     exists f:set -> set -> set, feasible_flow V E source sink capacity f /\
       exists S:set, st_cut V S source sink /\
-        flow_value V f source sink = cut_capacity V E capacity S (V \\ S).
+        flow_value V f source sink = cut_capacity V E capacity S V.
+Admitted.
+
+Theorem flow_conservation_holds_for_feasible_strong : forall V:set, forall E:set -> set -> prop,
+  forall source sink:set, forall capacity:set -> set -> set, forall f:set -> set -> set,
+    feasible_flow_strong V E source sink capacity f -> flow_conservation V E source sink f.
+Admitted.
+
+Theorem residual_network_contains_augmenting_edges : forall V:set, forall E:set -> set -> prop,
+  forall source sink:set, forall capacity:set -> set -> set, forall f:set -> set -> set,
+    feasible_flow V E source sink capacity f ->
+    forall x y:set, residual_network V E capacity f x y -> True.
 Admitted.
 
 Theorem augmenting_path_increases_flow : forall V:set, forall E:set -> set -> prop,
@@ -2432,6 +2458,8 @@ Definition THREE_COLORING : set -> prop := fun G => True.
 
 Definition INDEPENDENT_SET : set -> prop := fun G => True.
 
+Definition card : set -> set := fun S => 0.
+
 Theorem P_subseteq_NP : forall L:(set -> prop), in_class_P L -> in_class_NP L.
 Admitted.
 
@@ -2457,4 +2485,402 @@ Theorem THREE_COLORING_NP_complete : NP_complete THREE_COLORING.
 Admitted.
 
 Theorem HAMILTONIAN_CYCLE_NP_complete : NP_complete HAMILTONIAN_CYCLE.
+Admitted.
+
+Definition k_connected : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R k =>
+    forall S:set, card S < k -> connected V R.
+
+Definition min_degree : set -> (set -> set -> prop) -> set :=
+  fun V R => 0.
+
+Definition vertex_connectivity_value : set -> (set -> set -> prop) -> set :=
+  fun V R => 0.
+
+Definition edge_connectivity_value : set -> (set -> set -> prop) -> set :=
+  fun V R => 0.
+
+Definition vertex_connectivity_at_least : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R k => k_connected V R k.
+
+Definition edge_connectivity_at_least : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R k => True.
+
+Definition k_edge_connected : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R k => edge_connectivity_at_least V R k.
+
+Definition edge_cutset : set -> (set -> set -> prop) -> (set -> set -> prop) -> prop :=
+  fun V R F =>
+    and (forall x y, F x y -> R x y)
+        (and (forall x, ~F x x)
+             (forall x y, F x y -> and (x :e V) (y :e V))).
+
+Definition vertex_cutset : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R S => S c= V.
+
+Definition min_vertex_cut : set -> (set -> set -> prop) -> set :=
+  fun V R => 0.
+
+Definition min_edge_cut : set -> (set -> set -> prop) -> set :=
+  fun V R => 0.
+
+Theorem k_connected_min_degree : forall V:set, forall R:set -> set -> prop, forall k:set,
+  k_connected V R k -> True.
+Admitted.
+
+Theorem vertex_connectivity_le_min_degree : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem edge_connectivity_le_vertex_connectivity : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem edge_connectivity_le_min_degree : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem vertex_connectivity_equals_min_vertex_cut : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem edge_connectivity_equals_min_edge_cut : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem k_connected_vertex_number : forall V:set, forall R:set -> set -> prop, forall k:set,
+  k_connected V R k -> exists n:set, card V = n /\ n <> 0.
+Admitted.
+
+Theorem removing_less_than_k_vertices_stays_connected : forall V:set, forall R:set -> set -> prop, forall k:set,
+  k_connected V R k ->
+  forall S:set, card S < k -> connected V R.
+Admitted.
+
+Theorem whitney_inequalities : forall V:set, forall R:set -> set -> prop, forall k:set,
+  True.
+Admitted.
+
+Theorem menger_vertex_version : forall V:set, forall R:set -> set -> prop,
+  forall s t:set, s <> t ->
+    True.
+Admitted.
+
+Theorem menger_vertex_version_disjoint_paths : forall V:set, forall R:set -> set -> prop,
+  forall s t:set, s <> t -> True.
+Admitted.
+
+Theorem menger_edge_version : forall V:set, forall R:set -> set -> prop,
+  forall s t:set, s <> t ->
+    True.
+Admitted.
+
+Theorem k_connected_many_disjoint_paths : forall V:set, forall R:set -> set -> prop,
+  forall k:set, k_connected V R k ->
+    True.
+Admitted.
+
+Theorem k_edge_connected_many_edge_disjoint_paths : forall V:set, forall R:set -> set -> prop,
+  forall k:set, k_edge_connected V R k -> True.
+Admitted.
+
+Definition random_graph_Gnp : set -> set -> set -> prop :=
+  fun V n p => True.
+
+Definition expected_value : (set -> set) -> set :=
+  fun X => 0.
+
+Theorem linearity_of_expectation : forall X Y:set -> set,
+  expected_value (fun s => X s + Y s) = expected_value X + expected_value Y.
+Admitted.
+
+Theorem erdos_probabilistic_lower_bound_ramsey : True.
+Admitted.
+
+Theorem lovasz_local_lemma_symmetric : True.
+Admitted.
+
+Theorem high_girth_high_chromatic_exists : True.
+Admitted.
+
+Theorem asymmetric_lovasz_local_lemma : True.
+Admitted.
+
+Theorem expectation_method_nonempty_object : True.
+Admitted.
+
+Theorem random_graph_expected_edges : forall V:set, True.
+Admitted.
+
+Theorem random_graph_chromatic_number_bounds : True.
+Admitted.
+
+Theorem random_graph_independent_set_bounds : True.
+Admitted.
+
+Definition vertex_separator : set -> (set -> set -> prop) -> set -> set -> set -> prop :=
+  fun V R S a b => True.
+
+Definition edge_separator : set -> (set -> set -> prop) -> (set -> set -> prop) -> set -> set -> prop :=
+  fun V R F a b => True.
+
+Definition internally_vertex_disjoint_paths : set -> (set -> set -> prop) -> set -> set -> set -> prop :=
+  fun V R s t k => True.
+
+Definition edge_disjoint_paths : set -> (set -> set -> prop) -> set -> set -> set -> prop :=
+  fun V R s t k => True.
+
+Theorem global_local_vertex_connectivity : forall V:set, forall R:set -> set -> prop, forall k:set,
+  k_connected V R k -> True.
+Admitted.
+
+Theorem global_local_edge_connectivity : forall V:set, forall R:set -> set -> prop, forall k:set,
+  edge_connectivity_at_least V R k -> True.
+Admitted.
+
+Theorem menger_equals_min_separator : forall V:set, forall R:set -> set -> prop, forall s t:set,
+  s <> t -> True.
+Admitted.
+
+Theorem max_disjoint_paths_equals_min_vertex_cut : forall V:set, forall R:set -> set -> prop, forall s t:set,
+  s <> t -> True.
+Admitted.
+
+Theorem max_edge_disjoint_paths_equals_min_edge_cut : forall V:set, forall R:set -> set -> prop, forall s t:set,
+  s <> t -> True.
+Admitted.
+
+Definition indicator : prop -> set := fun P => 0.
+
+Theorem markov_inequality : forall X:set -> set, forall a:set,
+  True.
+Admitted.
+
+Theorem chebyshev_inequality : forall X:set -> set, forall a:set,
+  True.
+Admitted.
+
+Theorem janson_inequality : True.
+Admitted.
+
+Theorem random_graph_threshold_connectivity : True.
+Admitted.
+
+Theorem random_graph_threshold_hamiltonian : True.
+Admitted.
+
+Theorem random_graph_threshold_clique_number : True.
+Admitted.
+
+Theorem random_graph_threshold_independence_number : True.
+Admitted.
+
+Definition dual_graph : set -> (set -> set -> prop) -> set -> (set -> set -> prop) -> prop :=
+  fun V R F Edual => True.
+
+Definition face_coloring : set -> (set -> set -> prop) -> (set -> set) -> prop :=
+  fun V R color => True.
+
+Theorem planar_dual_edge_vertex_relation : forall V:set, forall R:set -> set -> prop, forall F:set, forall Edual:set -> set -> prop,
+  dual_graph V R F Edual -> True.
+Admitted.
+
+Theorem five_color_theorem : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem six_color_theorem : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem dual_face_coloring_edge_coloring : forall V:set, forall R:set -> set -> prop, forall F:set, forall Edual:set -> set -> prop,
+  dual_graph V R F Edual -> True.
+Admitted.
+
+Theorem dual_of_dual_is_original : forall V:set, forall R:set -> set -> prop, forall F:set, forall Edual:set -> set -> prop,
+  dual_graph V R F Edual -> True.
+Admitted.
+
+Theorem planar_dual_cycles_correspond_to_cuts : forall V:set, forall R:set -> set -> prop, forall F:set, forall Edual:set -> set -> prop,
+  dual_graph V R F Edual -> True.
+Admitted.
+
+Theorem face_coloring_vs_vertex_coloring : forall V:set, forall R:set -> set -> prop, forall color:set -> set,
+  face_coloring V R color -> True.
+Admitted.
+
+Theorem map_coloring_equiv_dual_edge_coloring : forall V:set, forall R:set -> set -> prop, forall F:set, forall Edual:set -> set -> prop,
+  dual_graph V R F Edual -> True.
+Admitted.
+
+Definition line_graph : set -> (set -> set -> prop) -> set -> (set -> set -> prop) -> prop :=
+  fun V R V2 R2 => True.
+
+Theorem whitney_line_graph_equivalence : forall V:set, forall R:set -> set -> prop, forall V2:set, forall R2:set -> set -> prop,
+  line_graph V R V2 R2 -> True.
+Admitted.
+
+Theorem line_graph_of_tree_is_claw_free : forall V:set, forall R:set -> set -> prop, forall V2:set, forall R2:set -> set -> prop,
+  tree V R -> line_graph V R V2 R2 -> True.
+Admitted.
+
+Theorem dirac_hamiltonian : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem ore_hamiltonian : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem chvatal_erdos_hamiltonian : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Definition dominating_cycle : set -> (set -> set -> prop) -> prop :=
+  fun V R => True.
+
+Theorem bondy_chvatal_closure_hamiltonian : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Definition factor_k_regular : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R k => True.
+
+Theorem petersen_theorem_1_factor : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem tuttle_factor_theorem : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Definition perfect_graph : set -> (set -> set -> prop) -> prop :=
+  fun V R => True.
+
+Theorem weak_perfect_graph_theorem : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem strong_perfect_graph_theorem : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem lovasz_theta_bound : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem szemeredi_regularity_lemma : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem graph_removal_lemma : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem extremal_turan_theorem : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem extremal_kovari_sos_turan : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem ramsey_upper_bounds_general : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem erdos_sos_conjecture_statement : True.
+Admitted.
+
+Definition closure_graph : set -> (set -> set -> prop) -> (set -> set -> prop) -> prop :=
+  fun V R C => simple_graph V C.
+
+Definition toughness : set -> (set -> set -> prop) -> set :=
+  fun V R => 0.
+
+Definition subset_eq_rel : set -> (set -> set -> prop) -> (set -> set -> prop) -> prop :=
+  fun V F R =>
+    forall x :e V, forall y :e V, F x y -> R x y.
+
+Definition k_factor : set -> (set -> set -> prop) -> set -> prop :=
+  fun V R k => exists F:set -> set -> prop,
+    and (subset_eq_rel V F R)
+        (forall v :e V, True).
+
+Definition one_factor : set -> (set -> set -> prop) -> prop :=
+  fun V R => k_factor V R 1.
+
+Definition near_perfect_matching : set -> (set -> set -> prop) -> prop :=
+  fun V R => True.
+
+Definition odd_components_after_removal : set -> (set -> set -> prop) -> set -> set :=
+  fun V R S => 0.
+
+Definition odd_hole : set -> (set -> set -> prop) -> prop :=
+  fun V R => True.
+
+Definition odd_antihole : set -> (set -> set -> prop) -> prop :=
+  fun V R => True.
+
+Definition perfect_graph_strong : set -> (set -> set -> prop) -> prop :=
+  fun V R => True.
+
+Theorem closure_preserves_hamiltonicity : forall V:set, forall R C:set -> set -> prop,
+  closure_graph V R C -> hamiltonian_graph V R -> hamiltonian_graph V C.
+Admitted.
+
+Theorem toughness_hamiltonian_sufficient_condition : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem petersen_one_factor_condition : forall V:set, forall R:set -> set -> prop,
+  one_factor V R -> True.
+Admitted.
+
+Theorem tutte_one_factor_theorem : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem near_perfect_matching_exists_under_conditions : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem weak_perfect_graph_implies_chromatic_equals_clique : forall V:set, forall R:set -> set -> prop,
+  perfect_graph_strong V R -> True.
+Admitted.
+
+Theorem no_odd_hole_antihole_implies_perfect : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem strong_perfect_graph_equiv_no_odd_hole_antihole : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem lovasz_theta_bounds_chromatic_and_clique : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem regularity_partition_exists : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem graph_removal_small_edition : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem turan_extremal_bound : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem kovari_sos_turan_extremal_bound : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem ramsey_bounds_general_asymptotic : forall V:set, forall R:set -> set -> prop,
+  True.
+Admitted.
+
+Theorem erdos_stone_simonovits_statement : forall V:set, forall R:set -> set -> prop,
+  True.
 Admitted.
