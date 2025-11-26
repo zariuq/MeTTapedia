@@ -64,18 +64,19 @@ lemma ramsey_two_right {m : ℕ} (hm : 2 ≤ m) : ramseyNumber m 2 = m := by
       · right
         rcases not_forall.1 hK with ⟨v, hv⟩
         rcases not_forall.1 hv with ⟨w, hw⟩
-        have hneq : v ≠ w := by
-          by_contra h; subst h; exact (hw.elim (by intro h'; exact h' rfl))
-        have hnotadj : ¬ G.Adj v w := by
-          by_contra h'; exact hw h'
+        -- Extract that v ≠ w and ¬G.Adj v w from hw
+        -- hw : ¬(v ≠ w → G.Adj v w) means the implication is false
+        -- An implication is false iff premise is true and conclusion is false
+        push_neg at hw
+        obtain ⟨hneq, hnotadj⟩ := hw
         refine ⟨{v, w}, ?_⟩
         constructor
         · intro x hx y hy hxy
           simp [Finset.mem_insert, Finset.mem_singleton] at hx hy
           rcases hx with rfl | rfl <;> rcases hy with rfl | rfl <;> try contradiction
           · exact hnotadj
-          · exact G.adj_symm hnotadj
-        · simp [Finset.card_insert_of_not_mem, Finset.card_singleton, hneq]
+          · exact mt G.adj_symm hnotadj
+        · simp [Finset.card_insert_of_notMem, Finset.card_singleton, hneq]
   -- m is a lower bound for S: any n in S has n ≥ m
   have h_lb : ∀ ⦃n⦄, n ∈ S → m ≤ n := by
     intro n hn
@@ -91,22 +92,30 @@ lemma ramsey_two_right {m : ℕ} (hm : 2 ≤ m) : ramseyNumber m 2 = m := by
       · intro s hs
         -- no m-clique: card s = m > n
         have hcard := hs.2
-        have hle : s.card ≤ n := Finset.card_le_univ (s := s)
+        have hle : s.card ≤ n := by
+          calc s.card ≤ Fintype.card (Fin n) := Finset.card_le_univ (α := Fin n) (s := s)
+            _ = n := Fintype.card_fin n
         linarith
       · intro s hs
         -- no 2-indep set: complete graph has all edges between distinct vertices
         rcases hs with ⟨hindep, hcard⟩
         have htwo : s.card = 2 := hcard
         -- any two distinct vertices are adjacent
-        obtain ⟨x, hx, y, hy, hxy, hcard2⟩ := Finset.card_eq_two.mp htwo
+        obtain ⟨x, y, hxy, rfl⟩ := Finset.card_eq_two.mp htwo
         have : (completeGraph (Fin n)).Adj x y := by
           dsimp [completeGraph]; exact hxy
         -- contradict independence
-        have hind := hindep hx hy hxy
+        have hind := hindep (Finset.mem_insert_self x {y})
+                            (Finset.mem_insert_of_mem (Finset.mem_singleton_self y))
+                            hxy
         exact (hind this).elim
     exact h_no (hprop G)
   -- Conclude sInf S = m
-  have h_upper : ramseyNumber m 2 ≤ m := csInf_le ⟨m, h_mem⟩ h_mem
+  have h_upper : ramseyNumber m 2 ≤ m := by
+    apply csInf_le
+    · use m
+      exact fun _ hn => h_lb hn
+    · exact h_mem
   have h_lower : m ≤ ramseyNumber m 2 := by
     -- since m is a lower bound of S
     apply le_csInf
@@ -115,46 +124,6 @@ lemma ramsey_two_right {m : ℕ} (hm : 2 ≤ m) : ramseyNumber m 2 = m := by
       exact h_lb hn
   exact le_antisymm h_upper h_lower
 
-/-! ## Generic Ramsey facts -/
-
-lemma ramsey_two_right {m : ℕ} (hm : 2 ≤ m) : ramseyNumber m 2 = m := by
-  -- Witness for upper bound: n = m is in the defining set
-  have h_mem : m ∈ {n : ℕ |
-      n > 0 ∧ ∀ (G : SimpleGraph (Fin n)) [DecidableRel G.Adj], HasRamseyProperty m 2 G} := by
-    constructor
-    · exact Nat.lt_of_lt_of_le (by decide : 0 < 2) hm
-    · intro G
-      classical
-      by_cases hK : ∀ v w, v ≠ w → G.Adj v w
-      · -- G is complete: has a clique of size m
-        left
-        refine ⟨Finset.univ, ?_⟩
-        constructor
-        · intro x hx y hy hxy; simpa using hK x y hxy
-        · simp
-      · -- There is a non-edge: gives a 2-independent set
-        rcases not_forall.1 hK with ⟨v, hv⟩
-        rcases not_forall.1 hv with ⟨w, hw⟩
-        have hneq : v ≠ w := by
-          by_contra h; subst h; exact (hw.elim (by intro h'; exact h' rfl))
-        have hnotadj : ¬ G.Adj v w := by
-          by_contra h'; exact hw h'
-        right
-        refine ⟨{v, w}, ?_⟩
-        constructor
-        · intro x hx y hy hxy
-          simp [Finset.mem_insert, Finset.mem_singleton] at hx hy
-          rcases hx with rfl | rfl <;> rcases hy with rfl | rfl <;> try contradiction
-          · exact hnotadj
-          · exact G.adj_symm hnotadj
-        · simp [Finset.card_insert_of_not_mem, Finset.card_singleton, hneq]
-  -- Upper bound from the witness
-  have h_upper : ramseyNumber m 2 ≤ m :=
-    csInf_le (by exact ⟨m, h_mem⟩) h_mem
-  -- Lower bound: sInf of a set containing m is ≥ m
-  have h_lower : m ≤ ramseyNumber m 2 :=
-    le_csInf (by exact ⟨m, h_mem⟩) (by intro n hn; exact Nat.zero_le _)
-  exact le_antisymm h_upper h_lower
 /-! ## Helper Lemmas -/
 
 lemma triangleFree_iff_cliqueFree_three {G : SimpleGraph V} :
