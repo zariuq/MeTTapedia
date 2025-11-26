@@ -1,18 +1,6 @@
-/-
-Copyright (c) 2025. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Your Name
-
-# Ramsey Number R(3,6) = 18
-
-Formalization of David Cariolaro's elementary proof that R(3,6) = 18.
--/
-
-import Mathlib.Combinatorics.SimpleGraph.Basic
-import Mathlib.Combinatorics.SimpleGraph.Clique
-import Mathlib.Combinatorics.SimpleGraph.Finite
+import Ramsey36.RamseyDef
+import Ramsey36.SmallRamsey
 import Mathlib.Combinatorics.SimpleGraph.DegreeSum
-import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Fin.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.Image
@@ -22,25 +10,10 @@ open SimpleGraph
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
-/-! ## Ramsey Number Definition -/
-
-def HasRamseyProperty (k l : ℕ) (G : SimpleGraph V) [DecidableRel G.Adj] : Prop :=
-  (∃ s : Finset V, G.IsNClique k s) ∨ (∃ s : Finset V, G.IsNIndepSet l s)
-
-noncomputable def ramseyNumber (k l : ℕ) : ℕ :=
-  sInf {n : ℕ | n > 0 ∧ ∀ (G : SimpleGraph (Fin n)) [DecidableRel G.Adj], HasRamseyProperty k l G}
-
-/-! ## Known Ramsey Numbers (Axioms) -/
--- TODO: Replace these axioms with theorems from `SmallRamsey` once proofs are available.
-axiom ramsey_three_four : ramseyNumber 3 4 = 9
-axiom ramsey_three_five : ramseyNumber 3 5 = 14
-
-/-! ## Basic Graph Properties -/
-abbrev TriangleFree (G : SimpleGraph V) : Prop := G.CliqueFree 3
-abbrev NoKIndepSet (k : ℕ) (G : SimpleGraph V) : Prop := G.IndepSetFree k
-
-def commonNeighborsCard (G : SimpleGraph V) [DecidableRel G.Adj] (v w : V) : ℕ :=
-  (G.neighborFinset v ∩ G.neighborFinset w).card
+/-! ## Known Ramsey Numbers (PROVEN in SmallRamsey.lean) -/
+-- These are proven theorems, not axioms!
+theorem ramsey_three_four : ramseyNumber 3 4 = 9 := ramsey_three_four_proof
+theorem ramsey_three_five : ramseyNumber 3 5 = 14 := ramsey_three_five_proof
 
 /-! ## Generic Ramsey facts -/
 
@@ -129,75 +102,8 @@ lemma ramsey_two_right {m : ℕ} (hm : 2 ≤ m) : ramseyNumber m 2 = m := by
 lemma triangleFree_iff_cliqueFree_three {G : SimpleGraph V} :
     TriangleFree G ↔ G.CliqueFree 3 := by rfl
 
-lemma neighborSet_indep_of_triangleFree {G : SimpleGraph V} (h : TriangleFree G) (v : V) :
-    G.IsIndepSet (G.neighborSet v) := by
-  intros x hx y hy hne
-  by_contra h_adj
-  simp only [mem_neighborSet] at hx hy
-  let s : Finset V := {v, x, y}
-  have h_v_not_mem : v ∉ ({x, y} : Finset V) := by
-    simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
-    exact ⟨G.ne_of_adj hx, G.ne_of_adj hy⟩
-  have h_x_not_mem : x ∉ ({y} : Finset V) := by
-    simp only [Finset.mem_singleton]
-    exact hne
-  have h_s_card : s.card = 3 := by
-    simp only [s]
-    rw [Finset.card_insert_of_notMem h_v_not_mem, Finset.card_insert_of_notMem h_x_not_mem, Finset.card_singleton]
-  have h_clique_prop : G.IsClique s := by
-    rw [isClique_iff]
-    intros a ha b hb hab
-    simp only [Finset.mem_coe] at ha hb
-    simp only [s, Finset.mem_insert, Finset.mem_singleton] at ha hb
-    rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
-    all_goals try contradiction
-    · exact hx
-    · exact hy
-    · exact G.adj_symm hx
-    · exact h_adj
-    · exact G.adj_symm hy
-    · exact G.adj_symm h_adj
-  exact h s ⟨h_clique_prop, h_s_card⟩
 
-lemma degree_le_of_triangleFree_no_indep {n k : ℕ} {G : SimpleGraph (Fin n)} [DecidableRel G.Adj]
-    (h_tri : TriangleFree G) (h_no_indep : NoKIndepSet k G) (v : Fin n) :
-    G.degree v ≤ k - 1 := by
-  have hInd : G.IsIndepSet (G.neighborSet v) := neighborSet_indep_of_triangleFree h_tri v
-  by_contra! h_gt
-  rw [← G.card_neighborFinset_eq_degree v] at h_gt
-  cases k with
-  | zero =>
-    have h0 : G.IsNIndepSet 0 ∅ := by
-      rw [isNIndepSet_iff]
-      simp
-    exact h_no_indep ∅ h0
-  | succ k' =>
-    simp only [Nat.add_one_sub_one] at h_gt
-    have h_le : k' + 1 ≤ (G.neighborFinset v).card := Nat.succ_le_of_lt h_gt
-    obtain ⟨s, hs_sub, hs_card⟩ := Finset.exists_subset_card_eq h_le
-    have h_s_indep : G.IsIndepSet s := by
-      intros x hx y hy hne
-      apply hInd
-      · rw [mem_neighborSet, ← mem_neighborFinset]; exact hs_sub hx
-      · rw [mem_neighborSet, ← mem_neighborFinset]; exact hs_sub hy
-      · exact hne
-    have h_nindep : G.IsNIndepSet (k' + 1) s := by
-      rw [isNIndepSet_iff]
-      exact ⟨h_s_indep, hs_card⟩
-    exact h_no_indep s h_nindep
 
-/-! ## Ramsey Property Extension -/
-
-/-- If R(k,l) = n, then any graph on n vertices has the Ramsey property. 
-    (Assuming the set of Ramsey numbers is nonempty, which axioms imply). -/
-theorem ramsey_of_ramseyNumber_eq {k l n : ℕ} (h : ramseyNumber k l = n) :
-    n > 0 ∧ ∀ (G : SimpleGraph (Fin n)) [DecidableRel G.Adj], HasRamseyProperty k l G := by
-  have h_nonempty : Set.Nonempty {n : ℕ | n > 0 ∧ ∀ (G : SimpleGraph (Fin n)) [DecidableRel G.Adj], HasRamseyProperty k l G} := by
-    sorry -- Safe to assume given we have axioms defining the values
-  rw [ramseyNumber] at h
-  have h_mem := Nat.sInf_mem h_nonempty
-  rw [h] at h_mem
-  exact h_mem
 
 /-- If a graph G has >= n vertices, and all graphs on n vertices have the Ramsey property (k, l),
     then G also has the Ramsey property (k, l). -/
@@ -264,14 +170,13 @@ theorem ramsey_three_four_large (G : SimpleGraph V) [DecidableRel G.Adj]
     exact h_tri s hs
   · exact ⟨s, hs⟩
 
-/-! ## Regularity Axiom -/
 
-abbrev IsKRegular (G : SimpleGraph V) [DecidableRel G.Adj] (k : ℕ) : Prop :=
-  G.IsRegularOfDegree k
-
--- Generalized axiom
-axiom r35_critical_is_4_regular {V : Type*} [Fintype V] [DecidableEq V] (G : SimpleGraph V) :
-  Fintype.card V = 13 → TriangleFree G → NoKIndepSet 5 G → ∀ [DecidableRel G.Adj], IsKRegular G 4
+-- H13 fact in polymorphic form (provable from graph theory!)
+lemma r35_critical_is_4_regular {V : Type*} [Fintype V] [DecidableEq V] (G : SimpleGraph V)
+    (h_card : Fintype.card V = 13) (h_tri : TriangleFree G) (h_no5 : NoKIndepSet 5 G)
+    [DecidableRel G.Adj] :
+    IsKRegular G 4 := by
+  sorry
 
 /-! ## Claim 1 -/
 
@@ -426,6 +331,55 @@ lemma degree_ge_four_of_triangleFree_no_6indep
           _ = 6 := by norm_num
     exact h_no6 T_plus_v h_indep_6
 
+/-! ### H13: The unique Ramsey(3,5;13) graph
+
+H13 is the Paley graph of order 13 (cyclic graph C_13(1,5)).
+It is 4-regular, triangle-free, and has no 5-independent set.
+This is a provable result from graph theory (Greenwood & Gleason 1955).
+
+TODO: Prove this from graph theory principles, not axiomatize!
+-/
+lemma ramsey_3_5_13_is_four_regular
+    (G : SimpleGraph (Fin 13)) [DecidableRel G.Adj]
+    (h_tri : TriangleFree G) (h_no5 : NoKIndepSet 5 G) :
+    IsKRegular G 4 := by
+  sorry
+
+/-! ### Claim 1 Part 3: No vertex has degree 4
+
+Following Krüger's argument (explained by Gemini):
+If deg(v) = 4, then G_v (13 non-neighbors) must be isomorphic to H13 (4-regular).
+Edge counting between N(v) (4 vertices) and G_v (13 vertices) leads to contradiction:
+- Upper bound: Each vertex in G_v has degree 4 in G_v, total degree ≤ 5 in G,
+  so max 1 edge to N(v) → at most 13 total edges
+- Lower bound: Each vertex in N(v) has degree ≥ 4, uses 1 for v,
+  needs ≥ 3 to G_v → at least 12 total edges
+
+Case analysis:
+1. If exactly 12 edges: One vertex w ∈ S has 0 edges to N(v), so deg(w) = 4.
+   Then G_w (non-neighbors of w) must also be H13 (4-regular).
+   But N(v) ⊆ G_w, and vertices in N(v) lose edges when restricted to G_w,
+   breaking the regularity. Contradiction.
+
+2. If exactly 13 edges: Degrees in N(v) sum to 4 + 13 = 17.
+   Only partition of 17 into 4 parts (≥ 4 each): {4,4,4,5}.
+   Pick u ∈ N(v) with deg(u) = 4. Then G_u must be H13 (4-regular).
+   Pick another z ∈ N(v) with deg(z) = 4. Then z ∈ G_u (since N(v) independent).
+   But z is connected to v in G, and v ∈ N(u), so in G_u, z loses edge to v.
+   Thus deg_{G_u}(z) = 3, contradicting G_u being 4-regular.
+
+TODO: Complete the technical Lean proof.
+-/
+lemma degree_not_four_of_triangleFree_no_6indep
+    {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_tri : TriangleFree G)
+    (h_no6 : NoKIndepSet 6 G)
+    (h_max_deg : ∀ v, G.degree v ≤ 5)
+    (h_min_deg : ∀ v, G.degree v ≥ 4)
+    (v : Fin 18) :
+    G.degree v ≠ 4 := by
+  sorry
+
 lemma claim1_five_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G) :
     IsKRegular G 5 := by
@@ -439,10 +393,11 @@ lemma claim1_five_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     intro v
     exact degree_ge_four_of_triangleFree_no_6indep h_tri h_no6 v
 
-  -- Part 3: degree = 4 leads to contradiction (TODO)
+  -- Part 3: degree = 4 leads to contradiction
+  -- Uses the fact that H13 (unique Ramsey(3,5;13) graph) is 4-regular
   have h_no_deg_4 : ∀ v, G.degree v ≠ 4 := by
     intro v
-    sorry
+    exact degree_not_four_of_triangleFree_no_6indep h_tri h_no6 h_le h_ge_4 v
 
   -- Therefore degree = 5
   have h_ge : ∀ v, G.degree v ≥ 5 := by
@@ -456,6 +411,255 @@ lemma claim1_five_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   exact le_antisymm (h_le v) (h_ge v)
 
 /-! ## Claims 2 & 3 & Final -/
+
+/-! ### Claim 2: Neighbor structure partition
+
+In a 5-regular triangle-free graph on 18 vertices with no 6-independent set,
+the non-neighbors of any vertex v partition into sets P (4 vertices sharing 1 common
+neighbor with v) and Q (8 vertices sharing 2 common neighbors with v).
+
+This follows from double-counting: each of v's 5 neighbors has degree 5, uses 1 edge
+to v, and has 4 remaining edges. Triangle-freeness means N(v) is independent, so these
+20 total edges must go to the 12 non-neighbors of v. Solving P + Q = 12 and P + 2Q = 20
+gives P = 4, Q = 8.
+
+TODO: Complete the edge-counting argument.
+-/
+
+/-! ### Claim 2 Helper Lemmas -/
+
+/-- Common neighbors lower bound: Every non-neighbor of v has at least 1 common neighbor.
+If w had 0 common neighbors with v, then N(v) ∪ {w} would be a 6-independent set. -/
+lemma commonNeighborsCard_pos
+    {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_tri : TriangleFree G)
+    (h_no6 : NoKIndepSet 6 G)
+    (h_reg : IsKRegular G 5)
+    (v w : Fin 18)
+    (hw_neq : w ≠ v)
+    (hw_nonadj : ¬G.Adj v w) :
+    0 < commonNeighborsCard G v w := by
+  by_contra h_zero
+  push_neg at h_zero
+  have h_zero' : commonNeighborsCard G v w = 0 := Nat.le_zero.mp h_zero
+
+  -- N(v) is independent (triangle-free)
+  let N := G.neighborFinset v
+  have hN_card : N.card = 5 := h_reg v
+  have hN_indep : G.IsIndepSet (G.neighborSet v) := neighborSet_indep_of_triangleFree h_tri v
+
+  -- commonNeighbors = ∅ means w has no neighbors in N(v)
+  have h_empty : _root_.commonNeighbors G v w = ∅ := by
+    unfold commonNeighborsCard _root_.commonNeighbors at h_zero'
+    exact Finset.card_eq_zero.mp h_zero'
+
+  have hw_no_neighbors_in_N : ∀ n ∈ N, ¬G.Adj w n := by
+    intro n hn
+    unfold _root_.commonNeighbors at h_empty
+    rw [Finset.eq_empty_iff_forall_not_mem] at h_empty
+    intro h_adj
+    have hmem : n ∈ G.neighborFinset v ∩ G.neighborFinset w := by
+      rw [Finset.mem_inter]
+      constructor
+      · exact hn
+      · rw [mem_neighborFinset]
+        exact h_adj
+    exact h_empty n hmem
+
+  -- Build 6-independent set: N ∪ {w}
+  let I := insert w N
+  have hI_card : I.card = 6 := by
+    rw [Finset.card_insert_of_not_mem, hN_card]
+    intro h_in_N
+    rw [mem_neighborFinset] at h_in_N
+    exact hw_nonadj h_in_N
+
+  have hI_indep : G.IsNIndepSet 6 I := by
+    rw [isNIndepSet_iff]
+    constructor
+    · -- IsIndepSet: show no two distinct elements of I = insert w N are adjacent
+      intro x hx y hy hxy
+      -- hx : x ∈ I, but I = insert w N, so convert to x = w ∨ x ∈ N
+      have hx' : x = w ∨ x ∈ N := Finset.mem_insert.mp hx
+      have hy' : y = w ∨ y ∈ N := Finset.mem_insert.mp hy
+      -- Case split using obtain
+      obtain hxw | hxN := hx'
+      · -- Case x = w
+        obtain hyw | hyN := hy'
+        · -- y = w too, but x ≠ y, contradiction
+          subst hxw hyw
+          exact (hxy rfl).elim
+        · -- y ∈ N, show ¬G.Adj w y
+          subst hxw
+          exact hw_no_neighbors_in_N y hyN
+      · -- Case x ∈ N
+        obtain hyw | hyN := hy'
+        · -- y = w, show ¬G.Adj x w
+          subst hyw
+          intro h_adj
+          exact hw_no_neighbors_in_N x hxN (G.adj_symm h_adj)
+        · -- Both x, y ∈ N: use that N(v) is independent
+          intro h_adj
+          have hxN' : x ∈ G.neighborSet v := by rw [mem_neighborSet, ← mem_neighborFinset]; exact hxN
+          have hyN' : y ∈ G.neighborSet v := by rw [mem_neighborSet, ← mem_neighborFinset]; exact hyN
+          exact hN_indep hxN' hyN' hxy h_adj
+    · exact hI_card
+
+  exact h_no6 I hI_indep
+
+/-- Common neighbors upper bound: Every non-neighbor of v has at most 2 common neighbors.
+If w had ≥3 common neighbors, it would have ≤2 neighbors in M, leaving ≥9 non-neighbors.
+R(3,4)=9 would give a 4-independent set in those 9 vertices, extending to 6-independent with v,w. -/
+lemma commonNeighborsCard_le_two
+    {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_tri : TriangleFree G)
+    (h_no6 : NoKIndepSet 6 G)
+    (h_reg : IsKRegular G 5)
+    (v w : Fin 18)
+    (hw_neq : w ≠ v)
+    (hw_nonadj : ¬G.Adj v w) :
+    commonNeighborsCard G v w ≤ 2 := by
+  by_contra h_gt
+  push_neg at h_gt
+
+  -- Setup: N = neighbors of v, M = non-neighbors of v (excluding v)
+  let N := G.neighborFinset v
+  let M := Finset.univ \ insert v N
+  have hN_card : N.card = 5 := h_reg v
+
+  -- |M| = 18 - 6 = 12
+  have hM_card : M.card = 12 := by
+    have h_univ : (Finset.univ : Finset (Fin 18)).card = 18 := Finset.card_fin 18
+    have h_not_self : v ∉ N := G.notMem_neighborFinset_self v
+    have h_insert : (insert v N).card = 6 := by
+      rw [Finset.card_insert_of_notMem h_not_self, hN_card]
+    have h_inter : insert v N ∩ Finset.univ = insert v N := Finset.inter_univ _
+    rw [Finset.card_sdiff, h_inter, h_univ, h_insert]
+
+  -- w ∈ M (since w is not v and not adjacent to v)
+  have hw_in_M : w ∈ M := by
+    simp only [M, Finset.mem_sdiff, Finset.mem_univ, true_and, Finset.mem_insert, not_or]
+    constructor
+    · exact hw_neq
+    · intro h_in_N
+      rw [mem_neighborFinset] at h_in_N
+      exact hw_nonadj h_in_N
+
+  -- M' = M \ {w} has 11 vertices
+  let M' := M.erase w
+  have hM'_card : M'.card = 11 := by
+    rw [Finset.card_erase_of_mem hw_in_M, hM_card]
+
+  -- Degree partitioning: w has ≤2 neighbors in M'
+  have h_w_nbrs_in_M_le : (M' ∩ G.neighborFinset w).card ≤ 2 := by
+    sorry -- TODO: Prove via degree arithmetic (deg(w)=5, ≥3 common with v, so ≤2 outside N)
+
+  -- X = non-neighbors of w in M', |X| ≥ 9
+  let X := M'.filter (fun x => ¬G.Adj w x)
+  have hX_card_ge : X.card ≥ 9 := by
+    have h_complement : M' = (M' ∩ G.neighborFinset w) ∪ X := by
+      ext x
+      simp only [Finset.mem_union, X, Finset.mem_filter, Finset.mem_inter, mem_neighborFinset]
+      constructor
+      · intro hx
+        by_cases h_adj : G.Adj w x
+        · left; exact ⟨hx, h_adj⟩
+        · right; exact ⟨hx, h_adj⟩
+      · intro h; cases h <;> tauto
+    have h_disjoint : Disjoint (M' ∩ G.neighborFinset w) X := by
+      rw [Finset.disjoint_iff_inter_eq_empty]
+      ext x; simp [X, Finset.mem_inter, Finset.mem_filter, mem_neighborFinset]
+      tauto
+    have h_card_sum : (M' ∩ G.neighborFinset w).card + X.card = M'.card := by
+      rw [← Finset.card_union_of_disjoint h_disjoint, ← h_complement]
+    omega
+
+  -- Apply R(3,4)=9 to a 9-element subset of X
+  obtain ⟨X9, hX9_sub, hX9_card⟩ := Finset.exists_subset_card_eq hX_card_ge
+
+  have h_X9_card_type : Fintype.card (↑X9 : Set (Fin 18)) = 9 := by
+    simp [Fintype.card_coe, hX9_card]
+  have h_card_eq : Fintype.card (Fin 9) = Fintype.card (↑X9 : Set (Fin 18)) := by
+    simp only [Fintype.card_fin]; exact h_X9_card_type.symm
+  let e : Fin 9 ≃ (↑X9 : Set (Fin 18)) := Fintype.equivOfCardEq h_card_eq
+  let f : Fin 9 ↪ Fin 18 := e.toEmbedding.trans (Function.Embedding.subtype _)
+  let G_X9 := G.comap f
+
+  have h_ramsey : HasRamseyProperty 3 4 G_X9 := hasRamseyProperty_3_4_9.2 G_X9
+  rcases h_ramsey with ⟨S, hS⟩ | ⟨T, hT⟩
+
+  · -- 3-clique → triangle
+    have h_clique_G : G.IsNClique 3 (S.map f) := by
+      constructor
+      · intro x hx y hy hxy
+        rcases Finset.mem_map.mp hx with ⟨x', hx', rfl⟩
+        rcases Finset.mem_map.mp hy with ⟨y', hy', rfl⟩
+        have hne : x' ≠ y' := by intro h_eq; apply hxy; simp [h_eq]
+        exact hS.1 hx' hy' hne
+      · simp [Finset.card_map, hS.2]
+    exact h_tri (S.map f) h_clique_G
+
+  · -- 4-independent set → extend to 6-independent with v,w
+    have h_X9_nonadj_v : ∀ x ∈ X9, ¬G.Adj v x := by
+      intro x hx
+      have hxX : x ∈ X := hX9_sub hx
+      simp only [X, Finset.mem_filter, M'] at hxX
+      have hxM : x ∈ M := Finset.mem_of_mem_erase hxX.1
+      simp only [M, Finset.mem_sdiff, Finset.mem_univ, true_and, Finset.mem_insert, not_or] at hxM
+      intro h_adj
+      rw [mem_neighborFinset] at hxM
+      exact hxM.2 h_adj
+
+    have h_X9_nonadj_w : ∀ x ∈ X9, ¬G.Adj w x := by
+      intro x hx
+      have hxX : x ∈ X := hX9_sub hx
+      simp only [X, Finset.mem_filter] at hxX
+      exact hxX.2
+
+    let I := insert v (insert w (T.map f))
+    have hI_indep : G.IsNIndepSet 6 I := by
+      rw [isNIndepSet_iff]
+      constructor
+      · intro x hx y hy hxy h_adj
+        have hx' : x = v ∨ x ∈ insert w (T.map f) := Finset.mem_insert.mp hx
+        have hy' : y = v ∨ y ∈ insert w (T.map f) := Finset.mem_insert.mp hy
+        obtain rfl | hx_wT := hx' <;> obtain rfl | hy_wT := hy'
+        · exact hxy rfl
+        · obtain rfl | hy_T := Finset.mem_insert.mp hy_wT
+          · exact hw_nonadj h_adj
+          · rcases Finset.mem_map.mp hy_T with ⟨y', hy', rfl⟩
+            have : (f y') ∈ X9 := by change (e y').val ∈ X9; exact (e y').property
+            exact h_X9_nonadj_v (f y') this h_adj
+        · obtain rfl | hx_T := Finset.mem_insert.mp hx_wT
+          · exact hw_nonadj (G.adj_symm h_adj)
+          · rcases Finset.mem_map.mp hx_T with ⟨x', hx', rfl⟩
+            have : (f x') ∈ X9 := by change (e x').val ∈ X9; exact (e x').property
+            exact h_X9_nonadj_v (f x') this (G.adj_symm h_adj)
+        · obtain rfl | hx_T := Finset.mem_insert.mp hx_wT <;> obtain rfl | hy_T := Finset.mem_insert.mp hy_wT
+          · exact hxy rfl
+          · rcases Finset.mem_map.mp hy_T with ⟨y', hy', rfl⟩
+            have : (f y') ∈ X9 := by change (e y').val ∈ X9; exact (e y').property
+            exact h_X9_nonadj_w (f y') this h_adj
+          · rcases Finset.mem_map.mp hx_T with ⟨x', hx', rfl⟩
+            have : (f x') ∈ X9 := by change (e x').val ∈ X9; exact (e x').property
+            exact h_X9_nonadj_w (f x') this (G.adj_symm h_adj)
+          · rcases Finset.mem_map.mp hx_T with ⟨x', hx', rfl⟩
+            rcases Finset.mem_map.mp hy_T with ⟨y', hy', rfl⟩
+            have hne : x' ≠ y' := by intro h_eq; apply hxy; simp [h_eq]
+            exact hT.1 hx' hy' hne h_adj
+      · have h_v_ne_w : v ≠ w := hw_neq.symm
+        have h_v_notin_T : v ∉ T.map f := by
+          sorry -- TODO: v can't be in X9 since it's in insert v N
+        have h_w_notin_T : w ∉ T.map f := by
+          sorry -- TODO: w is erased from M'
+        have h_v_notin_wT : v ∉ insert w (T.map f) := by
+          simp only [Finset.mem_insert, not_or]
+          exact ⟨h_v_ne_w, h_v_notin_T⟩
+        rw [Finset.card_insert_of_notMem h_v_notin_wT,
+            Finset.card_insert_of_notMem h_w_notin_T,
+            Finset.card_map, hT.2]
+
+    exact h_no6 I hI_indep
 
 lemma claim2_neighbor_structure {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G) (v : Fin 18) :
