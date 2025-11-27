@@ -3767,7 +3767,8 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- Step 13: The S-W bipartite graph is connected (single 8-cycle)
   -- We could prove this by showing any 2-regular bipartite graph with equal-sized parts is connected
   -- Or by direct construction showing we can walk from any s to any other s through W
-  have hSW_connected : sorry := by sorry -- Connectedness of S-W bipartite graph
+  have hSW_connected : True := by
+    sorry -- Connectedness of S-W bipartite graph (deferred)
 
   -- Since S-W is 2-regular bipartite and connected, it's a single cycle of length 8
   -- The cycle alternates between S and W vertices
