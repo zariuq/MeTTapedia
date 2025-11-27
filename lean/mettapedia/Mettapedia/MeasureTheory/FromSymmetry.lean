@@ -81,7 +81,7 @@ theorem unnormalized_combine_is_add {α : Type*}
 /-! ## σ-additivity from continuity (core Knuth–Skilling insight) -/
 
 theorem sigma_additive_from_continuity {α : Type*}
-    [CompleteLattice α]
+    [CompleteBooleanAlgebra α]
     (μ : UnnormalizedValuation α)
     (cox : UnnormalizedCox α μ)
     (continuity : ∀ (s : ℕ → α), Monotone s →
@@ -89,55 +89,171 @@ theorem sigma_additive_from_continuity {α : Type*}
     ∀ (f : ℕ → α), (∀ i j, i ≠ j → Disjoint (f i) (f j)) →
       μ.val (⨆ i, f i) = ∑' i, μ.val (f i) := by
   /-
-  Strategy (Knuth-Skilling's KEY insight):
-  1. Define partial unions s_n := ⨆ i ≤ n, f i (finite union)
-  2. Show s is monotone in n
-  3. ⨆ n, s_n = ⨆ i, f i by lattice algebra
-  4. Finite additivity gives μ(s_n) = Σ_{i≤n} μ(f i)
-  5. Continuity: μ(⨆ n, s_n) = lim_{n→∞} μ(s_n)
-  6. Therefore: μ(⨆ i, f i) = Σ'_{i} μ(f i)
+  PROOF STRATEGY (Knuth-Skilling's KEY insight):
+
+  The key idea: σ-additivity is DERIVED from continuity + finite additivity.
+
+  Steps:
+  1. Define partial finite unions s_n := f 0 ⊔ f 1 ⊔ ... ⊔ f n (recursive definition)
+  2. Prove s is monotone: s_n ≤ s_{n+1} by construction
+  3. Prove ⨆ n, s_n = ⨆ i, f_i (lattice algebra)
+  4. Prove finite additivity: μ(s_n) = ∑_{i=0}^n μ(f_i)
+     - By induction on n
+     - Base: μ(s_0) = μ(f_0)
+     - Step: μ(s_{n+1}) = μ(s_n ⊔ f_{n+1})
+                         = μ(s_n) + μ(f_{n+1})  [by combine_fn = (+)]
+                         = ∑_{i=0}^n μ(f_i) + μ(f_{n+1})  [by IH]
+                         = ∑_{i=0}^{n+1} μ(f_i)
+     - Need disjointness: s_n ⊥ f_{n+1} follows from pairwise disjoint f
+  5. Apply continuity: μ(⨆ n, s_n) = ⨆ n, μ(s_n)
+     - This uses the continuity hypothesis
+     - Plus: ENNReal values preserve suprema under Tendsto
+  6. Connect to infinite series:
+     - ⨆ n, μ(s_n) = ⨆ n, ∑_{i=0}^n μ(f_i)  [by step 4]
+                    = ∑' i, μ(f_i)           [ENNReal.tsum_eq_iSup_nat]
+
+  Combining: μ(⨆ i, f_i) = μ(⨆ n, s_n)  [step 3]
+                         = ⨆ n, μ(s_n)  [step 5]
+                         = ∑' i, μ(f_i)  [step 6]
+
+  Technical challenge: Lean's `let rec` doesn't unfold easily in proofs.
+  Solution: Define s as auxiliary recursive function, or use Finset.sup directly.
+
+  Key lemmas needed:
+  - unnormalized_combine_is_add (already proven!)
+  - Finset.sum_range_succ
+  - ENNReal.tsum_eq_iSup_nat
+  - Monotone.map_iSup_of_continuousAt or similar
+
+  This proof is the CORE MATHEMATICAL CONTENT of the Knuth-Skilling paper's
+  measure theory section. It shows σ-additivity is not an axiom but a
+  THEOREM derived from symmetry + continuity.
   -/
+  classical
   intro f hf_disj
 
-  -- Step 1: Define partial finite unions
-  let s : ℕ → α := fun n => ⨆ i : Fin (n + 1), f i
+  -- Partial finite suprema: `s (n+1) = s n ⊔ f (n+1)`
+  let s : ℕ → α :=
+    Nat.rec (f 0) (fun n sn => sn ⊔ f (n + 1))
+  have s_zero : s 0 = f 0 := rfl
+  have s_succ : ∀ n, s (n + 1) = s n ⊔ f (n + 1) := fun _ => rfl
 
-  -- Step 2: s is monotone
+  -- Monotonicity of `s`.
+  have hs_step : ∀ n, s n ≤ s (n + 1) := by
+    intro n
+    simpa [s_succ] using (le_sup_left : s n ≤ s n ⊔ f (n + 1))
   have hs_mono : Monotone s := by
-    intro m n hmn
-    simp only [s]
-    apply iSup_le
+    -- Monotonicity follows from the step inequality.
+    exact monotone_nat_of_le_succ hs_step
+
+  -- Each `f i` sits inside `s i`.
+  have hf_le_s : ∀ i, f i ≤ s i := by
     intro i
-    have hi : i.val < n + 1 := by omega
-    apply le_iSup_of_le ⟨i.val, hi⟩
-    rfl
+    induction i with
+    | zero => simpa [s_zero]
+    | succ k hk =>
+        have : f (k + 1) ≤ s k ⊔ f (k + 1) := le_sup_right
+        simpa [s_succ] using this
 
-  -- Step 3: ⨆ n, s_n = ⨆ i, f i
-  have hs_sup : ⨆ n, s n = ⨆ i, f i := by
+  -- Supremum of partial unions coincides with supremum of the whole family.
+  have hs_sup : (⨆ n, s n) = ⨆ i, f i := by
     apply le_antisymm
-    · apply iSup_le; intro n
-      apply iSup_le; intro i
-      apply le_iSup (f := f)
-    · apply iSup_le; intro i
-      apply le_iSup_of_le i
-      apply le_iSup (f := fun (j : Fin (i + 1)) => f j) ⟨i, Nat.lt_succ_self i⟩
+    · -- `s n` is built from earlier `f i`, so it is bounded by `⨆ i, f i`.
+      have hs_le : ∀ n, s n ≤ ⨆ i, f i := by
+        intro n
+        induction n with
+        | zero => exact le_iSup (fun i => f i) 0
+        | succ k hk =>
+            calc
+              s (k + 1) = s k ⊔ f (k + 1) := s_succ k
+              _ ≤ (⨆ i, f i) ⊔ (⨆ i, f i) := sup_le_sup hk (le_iSup (fun i => f i) (k + 1))
+              _ = ⨆ i, f i := by simpa [sup_eq_left]
+      exact iSup_le hs_le
+    · -- Conversely, each `f i` is contained in `s i`, hence under the `iSup`.
+      refine iSup_le ?_
+      intro i
+      exact le_iSup_of_le i (hf_le_s i)
 
-  -- Step 4: Finite additivity for each s_n (using unnormalized_combine_is_add)
-  have hs_finite_add : ∀ n, μ.val (s n) = ∑ i : Fin (n + 1), μ.val (f i) := by
-    sorry  -- TODO: Prove by induction using combine_fn = (+)
+  -- Disjointness: prefixes stay disjoint from any later element.
+  have hs_disj_future : ∀ n m, n < m → Disjoint (s n) (f m) := by
+    intro n
+    induction n with
+    | zero =>
+        intro m hm
+        have hneq : 0 ≠ m := Nat.ne_of_lt hm
+        simpa [s_zero] using hf_disj 0 m hneq
+    | succ k hk =>
+        intro m hm
+        have hkm : k < m := Nat.lt_trans (Nat.lt_succ_self _) hm
+        have hdisj_sk : Disjoint (s k) (f m) := hk m hkm
+        have hdisj_fk : Disjoint (f (k + 1)) (f m) := hf_disj (k + 1) m (Nat.ne_of_lt hm)
+        have hsup : Disjoint (s k ⊔ f (k + 1)) (f m) :=
+          (disjoint_sup_left (a := s k) (b := f (k + 1)) (c := f m)).2
+            ⟨hdisj_sk, hdisj_fk⟩
+        simpa [s_succ] using hsup
+  have hs_disj : ∀ k, Disjoint (s k) (f (k + 1)) := by
+    intro k
+    exact hs_disj_future k (k + 1) (Nat.lt_succ_self _)
 
-  -- Step 5 & 6: Apply continuity to get σ-additivity
-  -- The continuity hypothesis gives: lim_{n→∞} μ(s_n) = μ(⨆ n, s_n)
-  -- Finite additivity gives: μ(s_n) = Σ_{i≤n} μ(f_i)
-  -- Therefore: μ(⨆ i, f_i) = lim_{n→∞} Σ_{i≤n} μ(f_i) = Σ'_{i} μ(f_i)
-  calc μ.val (⨆ i, f i)
-      = μ.val (⨆ n, s n) := by rw [← hs_sup]
-    _ = ∑' i, μ.val (f i) := by
-        -- TODO: Complete proof using:
-        -- 1. continuity s hs_mono gives Tendsto (μ.val ∘ s) atTop (𝓝 (μ.val (⨆ n, s n)))
-        -- 2. hs_finite_add gives μ.val (s n) = Σ_{i : Fin (n+1)} μ.val (f i)
-        -- 3. Connect finite sum to infinite series via ENNReal.tendsto_nat_tsum
-        sorry
+  -- Finite additivity on the partial suprema.
+  have hs_finite_add :
+      ∀ n, μ.val (s n) = (Finset.range (n + 1)).sum (fun i => μ.val (f i)) := by
+    intro n
+    induction n with
+    | zero =>
+        simp [s_zero, Finset.sum_range_one]
+    | succ k hk =>
+        have hdisj : Disjoint (s k) (f (k + 1)) := hs_disj k
+        calc
+          μ.val (s (k + 1))
+              = μ.val (s k ⊔ f (k + 1)) := by simp [s_succ]
+          _ = μ.val (s k) + μ.val (f (k + 1)) := by
+                simpa [unnormalized_combine_is_add μ cox, s_succ] using
+                  cox.combine_val (a := s k) (b := f (k + 1)) hdisj
+          _ = (Finset.range (k + 1)).sum (fun i => μ.val (f i)) + μ.val (f (k + 1)) := by
+                simp [hk]
+          _ = (Finset.range (k + 2)).sum (fun i => μ.val (f i)) := by
+                simp [Finset.sum_range_succ, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+
+  -- Continuity identifies the supremum of values with the value of the supremum.
+  have hμ_mono : Monotone (μ.val ∘ s) := μ.monotone.comp hs_mono
+  have hlimit_eq : μ.val (⨆ n, s n) = ⨆ n, μ.val (s n) :=
+    tendsto_nhds_unique (continuity s hs_mono) (tendsto_atTop_iSup hμ_mono)
+
+  -- Identify the limit of finite sums with the infinite sum.
+  let b : ℕ → ℝ≥0∞ := fun n => (Finset.range n).sum (fun i => μ.val (f i))
+  have hb_step : ∀ n, b n ≤ b (n + 1) := by
+    intro n
+    have h := add_le_add_left (show 0 ≤ μ.val (f n) from zero_le _) (b n)
+    have hb : b (n + 1) = b n + μ.val (f n) := by
+      simp [b, Finset.sum_range_succ, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+    simpa [hb] using h
+  have hb_mono : Monotone b := monotone_nat_of_le_succ hb_step
+  have hb_shift : (⨆ n, b (n + 1)) = ⨆ n, b n := by
+    apply le_antisymm
+    · refine iSup_le ?_
+      intro n
+      exact le_iSup_of_le (n + 1) le_rfl
+    · refine iSup_le ?_
+      intro n
+      exact le_trans (hb_mono (Nat.le_succ n)) (le_iSup_of_le n le_rfl)
+  have htsum :
+      (∑' i, μ.val (f i)) = ⨆ n, b (n + 1) := by
+    have hbase := ENNReal.tsum_eq_iSup_nat (f := fun n => μ.val (f n))
+    calc
+      (∑' i, μ.val (f i)) = ⨆ n, b n := by simpa [b]
+      _ = ⨆ n, b (n + 1) := hb_shift.symm
+
+  -- Assemble the chain of equalities.
+  calc
+    μ.val (⨆ i, f i)
+        = μ.val (⨆ n, s n) := by simpa [hs_sup]
+    _ = ⨆ n, μ.val (s n) := hlimit_eq
+    _ = ⨆ n, b (n + 1) := by
+          classical
+          refine iSup_congr fun n => ?_
+          simpa [b] using hs_finite_add n
+    _ = ∑' i, μ.val (f i) := htsum.symm
 
 /-! ## Constructing a Mathlib measure from a symmetric valuation -/
 

@@ -4,6 +4,7 @@ import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import Mathlib.Data.Fin.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.Image
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Tactic
 
 open SimpleGraph
@@ -730,7 +731,268 @@ lemma claim2_neighbor_structure {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       P.card = 4 ∧ Q.card = 8 ∧
       (∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) ∧
       (∀ q ∈ Q, ¬G.Adj v q ∧ commonNeighborsCard G v q = 2) := by
-  sorry
+  classical
+  -- Setup: N = neighbors of v, M = non-neighbors of v
+  let N := G.neighborFinset v
+  let M := Finset.univ \ insert v N
+  have hN_card : N.card = 5 := h_reg v
+  have hv_notin_N : v ∉ N := G.notMem_neighborFinset_self v
+
+  -- |M| = 12 (same proof as in commonNeighborsCard_le_two)
+  have hM_card : M.card = 12 := by
+    have h_univ : (Finset.univ : Finset (Fin 18)).card = 18 := Finset.card_fin 18
+    rw [Finset.card_sdiff (Finset.subset_univ _)]
+    rw [h_univ, Finset.card_insert_of_notMem hv_notin_N, hN_card]
+
+  -- Define P and Q by filtering M
+  let P := M.filter (fun w => commonNeighborsCard G v w = 1)
+  let Q := M.filter (fun w => commonNeighborsCard G v w = 2)
+
+  -- Key fact: every w in M has exactly 1 or 2 common neighbors
+  have h_M_bounds : ∀ w ∈ M, commonNeighborsCard G v w = 1 ∨ commonNeighborsCard G v w = 2 := by
+    intro w hwM
+    -- w is in M = univ \ insert v N, so w ≠ v and w ∉ N
+    have hw_props : w ∈ Finset.univ ∧ w ∉ insert v N := Finset.mem_sdiff.mp hwM
+    have hw_ne_v : w ≠ v := by
+      intro h
+      have : w ∉ insert v N := hw_props.2
+      simp [h] at this
+    have hw_nonadj : ¬G.Adj v w := by
+      intro h_adj
+      have : w ∉ insert v N := hw_props.2
+      rw [mem_neighborFinset] at h_adj
+      simp [h_adj] at this
+    -- Apply our proven bounds
+    have h_pos := commonNeighborsCard_pos h_tri h_no6 h_reg v w hw_ne_v hw_nonadj
+    have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg v w hw_ne_v hw_nonadj
+    omega
+
+  -- P and Q partition M
+  have hPQ_union : P ∪ Q = M := by
+    ext w
+    simp only [P, Q, Finset.mem_union, Finset.mem_filter]
+    constructor
+    · intro h
+      cases h with
+      | inl hp => exact hp.1
+      | inr hq => exact hq.1
+    · intro hwM
+      have := h_M_bounds w hwM
+      cases this with
+      | inl h1 => left; exact ⟨hwM, h1⟩
+      | inr h2 => right; exact ⟨hwM, h2⟩
+
+  have hPQ_disj : Disjoint P Q := by
+    rw [Finset.disjoint_iff_inter_eq_empty]
+    ext w
+    simp only [P, Q, Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty, iff_false]
+    intro ⟨⟨_, h1⟩, ⟨_, h2⟩⟩
+    rw [h1] at h2
+    norm_num at h2
+
+  have hPQ_card_sum : P.card + Q.card = 12 := by
+    rw [← Finset.card_union_of_disjoint hPQ_disj, hPQ_union, hM_card]
+
+  -- Edge counting argument via double-counting
+  -- Sum of commonNeighborsCard over M equals 20
+  -- (each neighbor of v has degree 5, uses 1 edge on v, 0 on other neighbors, 4 on M)
+  have h_sum_eq_20 : M.sum (fun w => commonNeighborsCard G v w) = 20 := by
+    -- Count edges between N and M from both sides
+    -- From M side: ∑_{w ∈ M} |N ∩ neighbors(w)| = ∑_{w ∈ M} commonNeighborsCard(v,w)
+    -- From N side: ∑_{n ∈ N} |neighbors(n) ∩ M|
+
+    -- Key: common neighbors of v and w are exactly N ∩ neighbors(w)
+    have h_common_eq : ∀ w ∈ M, commonNeighborsCard G v w =
+        (N.filter (fun n => G.Adj n w)).card := by
+      intro w hwM
+      unfold commonNeighborsCard _root_.commonNeighbors
+      congr 1
+      ext n
+      simp only [Set.mem_inter_iff, Set.mem_setOf_eq, mem_neighborFinset, Finset.mem_filter]
+      constructor
+      · intro h
+        obtain ⟨hn1, hn2⟩ := h
+        exact ⟨hn1, G.adj_comm.mp hn2⟩
+      · intro h
+        obtain ⟨hn, hadj⟩ := h
+        exact ⟨hn, G.adj_comm.mp hadj⟩
+
+    -- Rewrite LHS using this
+    have h_rewrite : M.sum (fun w => commonNeighborsCard G v w) =
+        M.sum (fun w => (N.filter (fun n => G.Adj n w)).card) := by
+      congr 1
+      ext w
+      by_cases hw : w ∈ M
+      · exact h_common_eq w hw
+      · simp [hw]
+    rw [h_rewrite]
+
+    -- Now apply double-counting: this equals ∑_{n ∈ N} |neighbors(n) ∩ M|
+    rw [show M.sum (fun w => (N.filter (fun n => G.Adj n w)).card) =
+            N.sum (fun n => (M.filter (fun w => G.Adj n w)).card) by
+      -- Double-counting edges between N and M
+      -- Define edge set E = {(n,w) : n ∈ N, w ∈ M, Adj n w}
+      classical
+      let E := (N ×ˢ M).filter (fun p => G.Adj p.1 p.2)
+
+      -- Count E by first coordinate: ∑_{w ∈ M} |{n ∈ N : Adj n w}|
+      have h_from_M : M.sum (fun w => (N.filter (fun n => G.Adj n w)).card) = E.card := by
+        rw [card_eq_sum_card_fiberwise (f := Prod.snd) (t := M)]
+        · congr 1
+          ext w
+          simp only [E, mem_filter, mem_product]
+        · intros p hp
+          obtain ⟨n, w⟩ := p
+          simp only [E, mem_filter, mem_product] at hp
+          exact hp.1.2
+
+      -- Count E by second coordinate: ∑_{n ∈ N} |{w ∈ M : Adj n w}|
+      have h_from_N : N.sum (fun n => (M.filter (fun w => G.Adj n w)).card) = E.card := by
+        rw [card_eq_sum_card_fiberwise (f := Prod.fst) (t := N)]
+        · congr 1
+          ext n
+          simp only [E, mem_filter, mem_product]
+        · intros p hp
+          obtain ⟨n, w⟩ := p
+          simp only [E, mem_filter, mem_product] at hp
+          exact hp.1.1
+
+      omega
+    ]
+
+    -- Each n ∈ N has degree 5, adjacent to v, not adjacent to other neighbors (triangle-free)
+    -- So n has exactly 4 neighbors in M
+    have h_deg_in_M : ∀ n ∈ N, (M.filter (fun w => G.Adj n w)).card = 4 := by
+      intro n hnN
+      -- n has degree 5
+      have h_deg_n : (G.neighborFinset n).card = 5 := h_reg n
+      -- Partition neighbors of n: {v} ∪ (N \ {n}) ∪ (M ∩ neighbors(n))
+      -- v ∈ neighbors(n) since n ∈ N
+      have hn_adj_v : G.Adj n v := by
+        rw [mem_neighborFinset] at hnN
+        exact G.adj_comm.mp hnN
+      -- N \ {n} and M are disjoint from v
+      -- neighbors(n) ∩ (N \ {n}) = ∅ by triangle-free
+      have h_no_nbr_in_N : ∀ m ∈ N, m ≠ n → ¬G.Adj n m := by
+        intros m hmN hne
+        intro h_adj
+        -- Would form triangle: v-n-m-v
+        have h_adj_mv : G.Adj m v := by
+          rw [mem_neighborFinset] at hmN
+          exact G.adj_comm.mp hmN
+        exact h_tri v n m hn_adj_v h_adj (G.adj_comm.mp h_adj_mv)
+      -- Count: neighbors(n) = {v} ∪ (M ∩ neighbors(n))
+      have h_partition : G.neighborFinset n = insert v ((M.filter (fun w => G.Adj n w)).image id) := by
+        ext w
+        simp only [mem_neighborFinset, mem_insert, mem_image, mem_filter, id_eq, exists_prop, exists_eq_right]
+        constructor
+        · intro hw_adj
+          by_cases hw_eq_v : w = v
+          · left; exact hw_eq_v
+          · right
+            constructor
+            · -- w ∈ M
+              simp only [M, mem_sdiff, mem_univ, mem_insert, true_and]
+              constructor
+              · exact hw_eq_v
+              · intro hw_in_N
+                -- If w ∈ N, then n-w edge contradicts triangle-free (since both n,w ∈ N)
+                have : w ≠ n := by
+                  intro heq
+                  subst heq
+                  exact G.loopless n hw_adj
+                exact h_no_nbr_in_N w hw_in_N this hw_adj
+            · exact hw_adj
+        · intro h
+          cases h with
+          | inl hw_v => subst hw_v; exact hn_adj_v
+          | inr h_right =>
+            obtain ⟨_, hw_adj⟩ := h_right
+            exact hw_adj
+      rw [h_partition, card_insert_of_notMem, card_image_of_injective] at h_deg_n
+      · omega
+      · intros x y; simp only [id_eq, imp_self]
+      · simp only [mem_image, mem_filter, id_eq, exists_prop, exists_eq_right, not_and]
+        intro h_contr
+        have : v ∈ M := h_contr hn_adj_v
+        simp only [M, mem_sdiff, mem_insert, mem_univ, true_and] at this
+        simp at this
+
+    -- Sum equals 5 * 4 = 20
+    have h_all_4 : N.sum (fun n => (M.filter (fun w => G.Adj n w)).card) = N.sum (fun _ => 4) := by
+      apply sum_congr rfl h_deg_in_M
+    rw [h_all_4]
+    -- ∑ n ∈ N, 4 = 5 * 4 = 20
+    rw [show N.sum (fun _ : Fin 18 => (4 : ℕ)) = N.card * 4 by
+      induction' N using Finset.induction with x s hx ih
+      · simp
+      · rw [sum_insert hx, card_insert_of_notMem hx, ih]
+        ring
+    ]
+    rw [hN_card]; norm_num
+
+  -- Split sum over P and Q
+  have h_sum_split : M.sum (fun w => commonNeighborsCard G v w) =
+                      P.sum (fun w => commonNeighborsCard G v w) +
+                      Q.sum (fun w => commonNeighborsCard G v w) := by
+    rw [← hPQ_union]
+    exact Finset.sum_union hPQ_disj
+
+  -- On P, commonNeighborsCard = 1
+  have h_sum_P : P.sum (fun w => commonNeighborsCard G v w) = P.card := by
+    have : ∀ w ∈ P, commonNeighborsCard G v w = 1 := by
+      intro w hw
+      exact (Finset.mem_filter.mp hw).2
+    simp only [this, Finset.sum_const, nsmul_eq_mul, mul_one]
+
+  -- On Q, commonNeighborsCard = 2
+  have h_sum_Q : Q.sum (fun w => commonNeighborsCard G v w) = 2 * Q.card := by
+    have : ∀ w ∈ Q, commonNeighborsCard G v w = 2 := by
+      intro w hw
+      exact (Finset.mem_filter.mp hw).2
+    simp only [this, Finset.sum_const, nsmul_eq_mul]
+
+  -- Linear system: P.card + 2*Q.card = 20
+  have h_linear : P.card + 2 * Q.card = 20 := by
+    calc P.card + 2 * Q.card
+        = P.sum (fun w => commonNeighborsCard G v w) +
+          Q.sum (fun w => commonNeighborsCard G v w) := by rw [h_sum_P, h_sum_Q]
+      _ = M.sum (fun w => commonNeighborsCard G v w) := by rw [← h_sum_split]
+      _ = 20 := h_sum_eq_20
+
+  -- Solve the system
+  have hP_card : P.card = 4 := by omega
+  have hQ_card : Q.card = 8 := by omega
+
+  -- Build the result
+  use P, Q
+  refine ⟨hP_card, hQ_card, ?_, ?_⟩
+  -- Prove properties of P
+  · intro p hp
+    have hpM : p ∈ M := (Finset.mem_filter.mp hp).1
+    have hp_eq1 : commonNeighborsCard G v p = 1 := (Finset.mem_filter.mp hp).2
+    have hp_props : p ∈ Finset.univ ∧ p ∉ insert v N := Finset.mem_sdiff.mp hpM
+    have hp_nonadj : ¬G.Adj v p := by
+      intro h_adj
+      have : p ∉ insert v N := hp_props.2
+      have h_in_N : p ∈ N := by
+        rw [mem_neighborFinset]
+        exact h_adj
+      simp [h_in_N] at this
+    exact ⟨hp_nonadj, hp_eq1⟩
+  -- Prove properties of Q
+  · intro q hq
+    have hqM : q ∈ M := (Finset.mem_filter.mp hq).1
+    have hq_eq2 : commonNeighborsCard G v q = 2 := (Finset.mem_filter.mp hq).2
+    have hq_props : q ∈ Finset.univ ∧ q ∉ insert v N := Finset.mem_sdiff.mp hqM
+    have hq_nonadj : ¬G.Adj v q := by
+      intro h_adj
+      have : q ∉ insert v N := hq_props.2
+      have h_in_N : q ∈ N := by
+        rw [mem_neighborFinset]
+        exact h_adj
+      simp [h_in_N] at this
+    exact ⟨hq_nonadj, hq_eq2⟩
 
 lemma claim3_four_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
