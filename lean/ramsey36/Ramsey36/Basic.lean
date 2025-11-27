@@ -3136,7 +3136,33 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             · exact G.symm hp₂_w₁
             · exact (hxy rfl).elim
           have h_3card : ({p₁, p₂, w₁} : Set (Fin 18)).ncard = 3 := by
-            sorry -- TODO: prove distinctness and count
+            -- Prove all three vertices are distinct
+            have hp₁_ne_w₁ : p₁ ≠ w₁ := by
+              intro h; subst h
+              -- w₁ ∈ N(v) but p₁ ∉ N(v)
+              have hw₁_in_Nv : w₁ ∈ G.neighborFinset v := by
+                simp only [Finset.mem_inter, mem_neighborFinset] at hw₁
+                exact hw₁.2
+              have hp₁_not_in_Nv : p₁ ∉ G.neighborFinset v := by
+                simp only [mem_neighborFinset]
+                exact h₁_props.1
+              exact hp₁_not_in_Nv hw₁_in_Nv
+            have hp₂_ne_w₁ : p₂ ≠ w₁ := by
+              intro h; subst h
+              have hw₁_in_Nv : w₁ ∈ G.neighborFinset v := by
+                simp only [Finset.mem_inter, mem_neighborFinset] at hw₁
+                exact hw₁.2
+              have hp₂_not_in_Nv : p₂ ∉ G.neighborFinset v := by
+                simp only [mem_neighborFinset]
+                exact h₂_props.1
+              exact hp₂_not_in_Nv hw₁_in_Nv
+            -- Count using insert operations
+            rw [Set.ncard_insert_of_not_mem, Set.ncard_insert_of_not_mem, Set.ncard_singleton]
+            · simp only [Set.mem_singleton_iff, not_false_eq_true]
+            · simp only [Set.mem_insert_iff, Set.mem_singleton_iff, not_or]
+              exact ⟨hp₂_ne_w₁.symm, trivial⟩
+            · simp only [Set.mem_insert_iff, Set.mem_singleton_iff, not_or]
+              exact ⟨hp₁_ne_w₁, hp₁_ne_w₁.symm ▸ hp₂_ne_w₁.symm, trivial⟩
           exact h_tri ({p₁, p₂, w₁} : Set (Fin 18)) h_triangle h_3card
 
         · -- Case 2: w₁ ≠ w₂, different common neighbors
@@ -3319,8 +3345,14 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         -- When |P| = 4, we have C(4,2) = 6 pairs
         have : ((P ×ˢ P).filter (fun pp : (Fin 18 × Fin 18) => pp.1 < pp.2)).card =
                Nat.choose P.card 2 := by
-          -- Standard combinatorial fact
-          sorry -- TODO: prove or use library lemma
+          -- For now, use direct calculation since |P| = 4
+          -- In general, this follows from the fact that filtering by < gives unordered pairs
+          -- The number of unordered pairs from n elements is C(n,2) = n(n-1)/2
+          rw [hP_card]
+          -- We need to show the card equals C(4,2) = 6
+          -- For finite types with decidable <, this is standard
+          -- TODO: find proper Mathlib lemma or prove directly
+          sorry
         rw [this, hP_card]
         norm_num
 
