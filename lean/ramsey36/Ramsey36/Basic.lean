@@ -3398,8 +3398,15 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   let W := Q.filter (fun q => ¬G.Adj t q)
 
   -- Step 7: Show each si has exactly 3 Q-neighbors
-  -- (This requires detailed vertex classification - deferred for now)
+  -- Simpler approach: s1's neighbors partition by location
+  -- Degree 5 = |N(s1) ∩ {v}| + |N(s1) ∩ (N(v)\{v,s1})| + |N(s1) ∩ M|
+  --         = 1 + 0 (triangle-free) + |N(s1) ∩ M|
+  -- M = P ∪ Q, and s1 can only be adjacent to p1 in P (by uniqueness)
+  -- So: 5 = 1 + |N(s1) ∩ {p1}| + |N(s1) ∩ Q| = 1 + 1 + |N(s1) ∩ Q|
   have hs1_Q_nbrs : (Q.filter (G.Adj s1)).card = 3 := by
+    -- For the more technical argument, we need to show the partition and count carefully
+    -- This requires substantial setup, so we defer to sorry for now
+    -- The key insight is correct: degree 5 - v - p1 = 3 Q-neighbors
     sorry -- s1 has degree 5 = 1(v) + 1(p1) + 3(Q)
 
   have hs2_Q_nbrs : (Q.filter (G.Adj s2)).card = 3 := by
@@ -3753,30 +3760,70 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     exact hs_two_W_filt
 
   -- Step 12: S-W forms 2-regular bipartite graph
-  -- Each s ∈ S has exactly 2 W-neighbors (proven)
-  -- Each w ∈ W has exactly 2 S-neighbors (proven)
+  -- Each s ∈ S has exactly 2 W-neighbors (hS_two_W_nbrs)
+  -- Each w ∈ W has exactly 2 S-neighbors (hW_two_S_nbrs)
   -- |S| = 4, |W| = 4, so this is a 2-regular bipartite graph on 4+4 vertices
-  -- By standard graph theory, this is a single 8-cycle (or two disjoint 4-cycles, but connectedness forces single cycle)
 
-  -- Step 13: Extract 4 consecutive pairs of s-vertices that share w-neighbors
-  -- The 8-cycle alternates: s₁ - w₁ - s₂ - w₂ - s₃ - w₃ - s₄ - w₄ - s₁
-  -- Consecutive s-pairs sharing a w: (s₁,s₂) share w₁, (s₂,s₃) share w₂, (s₃,s₄) share w₃, (s₄,s₁) share w₄
+  -- Step 13: The S-W bipartite graph is connected (single 8-cycle)
+  -- We could prove this by showing any 2-regular bipartite graph with equal-sized parts is connected
+  -- Or by direct construction showing we can walk from any s to any other s through W
+  have hSW_connected : sorry := by sorry -- Connectedness of S-W bipartite graph
 
-  -- For each pair (sᵢ, sⱼ) sharing w ∈ W, apply existing lemma:
-  -- `p_adjacent_of_shared_w` shows pᵢ and pⱼ must be adjacent in P
-  -- (This uses five_cycle_structure: {pᵢ, pⱼ, sᵢ, sⱼ, w} is 2-regular → pᵢ~pⱼ since sᵢ,sⱼ not adjacent)
+  -- Since S-W is 2-regular bipartite and connected, it's a single cycle of length 8
+  -- The cycle alternates between S and W vertices
 
-  -- Therefore: 4 distinct pairs → 4 distinct edges in E_P
-  -- So |E_P| ≥ 4
+  -- Step 14: Extract shared W-neighbors
+  -- For any two distinct s ∈ S, if they share a common W-neighbor w,
+  -- then (s, w, s') forms part of the 8-cycle
+  -- There are exactly 4 such shared W-neighbors (one for each adjacent pair in the cycle)
 
-  -- The detailed cycle extraction and pair verification requires:
-  -- 1. Prove the 2-regular bipartite graph is connected (single 8-cycle)
-  -- 2. Extract vertices in cycle order
-  -- 3. Identify the 4 shared W-neighbors
-  -- 4. Apply p_adjacent_of_shared_w to each pair
-  -- 5. Show the 4 edges are distinct
+  -- Strategy: Since each s has 2 W-neighbors and |S| = 4, there are 4×2 = 8 total s-w edges
+  -- Since each w has 2 S-neighbors and |W| = 4, there are 4×2 = 8 total w-s edges (matches!)
+  -- The 8-cycle structure means there are exactly 4 pairs of S-vertices that share a W-neighbor
 
-  sorry -- Complete cycle analysis (~80 lines remaining)
+  -- For each such pair (sᵢ, sⱼ) sharing w, we have:
+  -- {pᵢ, pⱼ, sᵢ, sⱼ, w} forms a 5-vertex induced subgraph
+  -- This subgraph is 2-regular (each vertex has degree 2 in it)
+  -- By existing lemma p_adjacent_of_shared_w, this forces pᵢ ~ pⱼ
+
+  -- We need to show:
+  -- a) There exist 4 distinct pairs (s,s') that share W-neighbors
+  -- b) The corresponding p-pairs give 4 distinct edges in E_P
+  -- c) Therefore |E_P| ≥ 4
+
+  -- Part a: Extract 4 shared-W pairs from cycle structure
+  have h_four_pairs : ∃ (pairs : Finset (Finset (Fin 18))),
+      pairs.card = 4 ∧
+      ∀ pair ∈ pairs, ∃ s1 s2 w,
+        pair = {s1, s2} ∧
+        s1 ∈ S ∧ s2 ∈ S ∧ s1 ≠ s2 ∧
+        w ∈ W ∧
+        G.Adj s1 w ∧ G.Adj s2 w := by
+    sorry -- Extract 4 pairs from 8-cycle structure
+
+  obtain ⟨pairs, hpairs_card, hpairs_prop⟩ := h_four_pairs
+
+  -- Part b: Each pair forces a P-edge
+  have h_pairs_force_P_edges : ∀ pair ∈ pairs,
+      ∃ s1 s2 w p1_vertex p2_vertex,
+        pair = {s1, s2} ∧
+        s1 ∈ S ∧ s2 ∈ S ∧ s1 ≠ s2 ∧
+        w ∈ W ∧
+        G.Adj s1 w ∧ G.Adj s2 w ∧
+        p1_vertex ∈ P ∧ p2_vertex ∈ P ∧
+        G.Adj s1 p1_vertex ∧ G.Adj s2 p2_vertex ∧
+        G.Adj p1_vertex p2_vertex := by
+    sorry -- Apply p_adjacent_of_shared_w to each pair
+
+  -- Part c: The 4 P-edges are distinct
+  have h_distinct_P_edges : (E_P.filter (fun e =>
+      ∃ pair ∈ pairs, ∃ s1 s2 w p1_vertex p2_vertex,
+        pair = {s1, s2} ∧
+        ((e.1 = p1_vertex ∧ e.2 = p2_vertex) ∨ (e.1 = p2_vertex ∧ e.2 = p1_vertex))
+      )).card ≥ 4 := by
+    sorry -- Distinctness of P-edges from distinct pairs
+
+  omega -- 4 ≤ E_P.card
 
 /-- P is 2-regular: each p ∈ P has exactly 2 neighbors in P.
 This is the key structural lemma that implies P is a 4-cycle.
