@@ -1710,13 +1710,61 @@ lemma s_has_three_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have h_pos := commonNeighborsCard_pos h_tri h_no6 h_reg v w hw_ne_v.symm hw_nonadj_v
       -- Upper bound: at most 2
       have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg v w hw_ne_v.symm hw_nonadj_v
-      -- Must be 1 or 2; ruling out 1 requires additional structure from claim2
-      -- Specifically: if commonNeighborsCard = 1, then w ∈ P (by partition definition)
-      -- But P.card = 4 and each element of P has a unique s-partner
-      -- The fact that s has 3 neighbors outside {v,p} and they all must be in Q
-      -- follows from degree counting and the P/Q partition properties
-      -- For now, we note this follows from the overall structure
-      sorry
+      -- Must be 1 or 2; show it's not 1
+      by_contra h_not_2
+      push_neg at h_not_2
+      have hw_common1 : commonNeighborsCard G v w = 1 := by omega
+
+      -- If commonCard = 1, then w would have a unique s-partner in N(v)
+      -- But w is adjacent to s (since w is s's neighbor outside {v,p})
+      -- And s is already p's partner (given hs_adj_p)
+      -- We'll show w ≠ p and derive contradiction via partner uniqueness
+
+      have hw_ne_p : w ≠ p := by
+        intro h_eq
+        subst h_eq
+        -- w = p, but w ∈ neighborFinset s \ {v, p}
+        simp only [Finset.mem_sdiff, mem_neighborFinset, Finset.mem_insert, Finset.mem_singleton, not_or] at hw
+        exact hw.2.2 rfl
+
+      -- w and p are both adjacent to s and both non-adjacent to v
+      -- Both have commonNeighborsCard = 1 with v
+      -- By P_partner_in_N, each has a unique partner in N(v), and both have s
+      -- So w = p by uniqueness, contradicting w ≠ p
+
+      -- Get p's unique partner
+      have hp_partner := P_partner_in_N h_reg h_tri v p hp_nonadj_v hp_common1
+      obtain ⟨s_p, ⟨hs_p_in_N, hs_p_adj_p⟩, hs_p_unique⟩ := hp_partner
+
+      -- Get w's unique partner
+      have hw_partner := P_partner_in_N h_reg h_tri v w hw_nonadj_v hw_common1
+      obtain ⟨s_w, ⟨hs_w_in_N, hs_w_adj_w⟩, hs_w_unique⟩ := hw_partner
+
+      -- Both s_p and s are partners of p, so s_p = s by uniqueness
+      have hs_p_eq : s_p = s := by
+        apply hs_p_unique
+        exact ⟨hs_in_N, hs_adj_p⟩
+
+      -- Both s_w and s are partners of w, so s_w = s by uniqueness
+      have hs_w_eq : s_w = s := by
+        apply hs_w_unique
+        have : s ∈ G.neighborFinset v ∧ G.Adj s w := by
+          constructor
+          · exact hs_in_N
+          · exact hw_adj
+        exact this
+
+      -- Since both p and w have s as their unique partner,
+      -- and the partner mapping is injective (each s has at most one p-partner),
+      -- we would have p = w, contradicting hw_ne_p
+
+      -- Actually, we need to show injectivity in the other direction:
+      -- if two different non-neighbors of v have the same unique partner, contradiction
+      -- This follows from degree constraints: s has degree 5, connects to v and at most 4 others
+      -- But the uniqueness from P_partner_in_N is in the "exists unique s for each p" direction
+      -- The reverse (at most one p for each s) requires additional argument
+
+      sorry -- Complete injectivity argument: s cannot be unique partner for both w and p
     exact hQ_complete w hw_nonadj_v hw_common
 
   -- Q.filter (G.Adj s) contains exactly the 3 neighbors of s outside {v, p}
