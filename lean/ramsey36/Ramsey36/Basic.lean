@@ -1921,9 +1921,39 @@ lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- If p has ≥3 P-neighbors, it has ≤1 Q-neighbor
   have hp_tot_deg : G.degree p = 5 := h_reg p
 
-  -- This creates an imbalance in the global counting
-  -- The detailed contradiction comes from Q structure
-  sorry
+  -- Get p's properties
+  have ⟨hp_nonadj_v, hp_common1⟩ := hP_props p hp
+
+  -- p has exactly 1 neighbor in N(v)
+  have hp_N_count : (G.neighborFinset p ∩ (G.neighborFinset v)).card = 1 := by
+    unfold commonNeighborsCard commonNeighbors at hp_common1
+    exact hp_common1
+
+  -- So p has 4 neighbors in M = non-neighbors of v
+  let M := Finset.univ \ insert v (G.neighborFinset v)
+  have hp_M_count : (G.neighborFinset p ∩ M).card = 4 := by
+    have h_partition : G.neighborFinset p =
+        (G.neighborFinset p ∩ (G.neighborFinset v)) ∪ (G.neighborFinset p ∩ M) := by
+      ext x
+      simp only [M, Finset.mem_union, Finset.mem_inter, Finset.mem_sdiff, Finset.mem_univ,
+                 Finset.mem_insert, mem_neighborFinset]
+      tauto
+    have h_disj : Disjoint (G.neighborFinset p ∩ (G.neighborFinset v)) (G.neighborFinset p ∩ M) := by
+      rw [Finset.disjoint_iff_inter_eq_empty]
+      simp only [M, Finset.inter_assoc, Finset.inter_sdiff_self, Finset.inter_empty]
+    rw [h_partition, Finset.card_union_of_disjoint h_disj, hp_N_count, G.card_neighborFinset_eq_degree,
+        hp_tot_deg] at this
+    omega
+
+  -- p's neighbors in M = P ∪ Q, and p has ≥3 in P, so ≤1 in Q
+  -- This violates the global balance from s_has_three_Q_neighbors
+  -- Each s ∈ N(v) contributes 3 edges to Q, total 15 edges from N(v) to Q
+  -- P has only 4 vertices, each contributing ≤1 edge to Q, total ≤4 edges
+  -- But 15 > 4, so Q must have edges from outside P, contradiction
+
+  -- Detailed argument requires analyzing the full S-P-Q structure
+  -- This is a complex combinatorial counting argument
+  sorry -- Contradiction from global P-Q edge balance
 
 /-- P is 2-regular: each p ∈ P has exactly 2 neighbors in P.
 This is the key structural lemma that implies P is a 4-cycle.
