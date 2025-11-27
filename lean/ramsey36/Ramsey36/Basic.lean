@@ -3397,7 +3397,12 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         = (({s1, s2, s3, s4} : Finset (Fin 18)).sum (fun s => (Q.filter (G.Adj s)).card)) := by rfl
       _ = (Q.filter (G.Adj s1)).card + (Q.filter (G.Adj s2)).card +
           (Q.filter (G.Adj s3)).card + (Q.filter (G.Adj s4)).card := by
-          sorry -- Expand sum over 4-element set
+          simp only [Finset.sum_insert, Finset.mem_insert, Finset.mem_singleton,
+                     Finset.sum_singleton, not_or, and_self]
+          have ⟨h12, h13, h14, h23, h24, h34⟩ := hs_distinct
+          constructor; · exact h12
+          constructor; · constructor; · exact h13; · exact h23
+          constructor; · constructor; · constructor; · exact h14; · exact h24; · exact h34
       _ = 3 + 3 + 3 + 3 := by rw [hs1_Q_nbrs, hs2_Q_nbrs, hs3_Q_nbrs, hs4_Q_nbrs]
       _ = 12 := by norm_num
 
@@ -3422,7 +3427,53 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               · -- x ∈ N(v) but x ∉ {s1,s2,s3,s4}, so x must be the 5th element
                 right
                 -- N(v) has card 5, S has card 4, S ⊆ N(v), so there's exactly one element left
-                sorry -- Use cardinality to show x = t
+                -- x and t are both in N(v) \ S, which has card 1, so x = t
+                have hx_not_S : x ∉ S := by
+                  simp only [S, Finset.mem_insert, Finset.mem_singleton, not_or]
+                  exact ⟨hx_s1, hx_s2, hx_s3, hx_s4⟩
+                have h_sdiff_card : (G.neighborFinset v \ S).card = 1 := by
+                  have : (G.neighborFinset v \ S).card = (G.neighborFinset v).card - S.card := by
+                    apply Finset.card_sdiff hS_subset_N
+                  rw [hN_card, hS_card] at this
+                  omega
+                have hx_in_sdiff : x ∈ G.neighborFinset v \ S := by
+                  simp only [Finset.mem_sdiff]
+                  exact ⟨hx, hx_not_S⟩
+                have ht_in_sdiff : t ∈ G.neighborFinset v \ S := by
+                  simp only [Finset.mem_sdiff]
+                  exact ⟨ht_in_N, ht_not_S⟩
+                -- Both x and t are in a 1-element set, so they're equal
+                have : G.neighborFinset v \ S = {t} := by
+                  ext y
+                  simp only [Finset.mem_sdiff, Finset.mem_singleton]
+                  constructor
+                  · intro ⟨hy_N, hy_not_S⟩
+                    have : {t} ⊆ G.neighborFinset v \ S := by
+                      intro z hz
+                      simp only [Finset.mem_singleton] at hz
+                      rw [hz]
+                      exact ht_in_sdiff
+                    have h_card : ({t} : Finset (Fin 18)).card = 1 := Finset.card_singleton t
+                    have : G.neighborFinset v \ S ⊆ {t} := by
+                      rw [← h_card]
+                      intro z hz
+                      have : (G.neighborFinset v \ S).card = 1 := h_sdiff_card
+                      have : G.neighborFinset v \ S = {t} := by
+                        apply Finset.eq_of_subset_of_card_le
+                        · intro z hz
+                          simp only [Finset.mem_singleton] at hz
+                          rw [hz]
+                          exact ht_in_sdiff
+                        · rw [h_sdiff_card, h_card]
+                      rw [this] at hz
+                      exact hz
+                    exact this ⟨hy_N, hy_not_S⟩
+                  · intro hy_eq
+                    rw [hy_eq]
+                    exact ht_in_sdiff
+                rw [this] at hx_in_sdiff
+                simp only [Finset.mem_singleton] at hx_in_sdiff
+                exact hx_in_sdiff
       · intro h
         rcases h with (rfl | rfl | rfl | rfl) | rfl
         · exact hs1_in_N
@@ -3447,7 +3498,13 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         -- ∑_{n ∈ N(v)} |{q ∈ Q : n~q}| = ∑_{q ∈ Q} |{n ∈ N(v) : n~q}|
         calc ((G.neighborFinset v).sum (fun n => (Q.filter (G.Adj n)).card))
             = (Q.sum (fun q => ((G.neighborFinset v).filter (G.Adj q)).card)) := by
-              sorry -- Finset.sum_comm with indicators
+              -- Double counting: both sides count edges between N(v) and Q
+              conv_lhs => arg 2; ext n; rw [Finset.card_eq_sum_ones]
+              conv_rhs => arg 2; ext q; rw [Finset.card_eq_sum_ones]
+              rw [Finset.sum_comm]
+              congr 1; ext q
+              congr 1; ext n
+              simp only [Finset.mem_filter, and_comm]
           _ = (Q.sum (fun q => (G.neighborFinset q ∩ G.neighborFinset v).card)) := by
               congr 1; ext q
               congr 1
@@ -3633,7 +3690,13 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have h_ST_from_S : (S.sum (fun s => (T.filter (G.Adj s)).card)) = 4 := by
       calc S.sum (fun s => (T.filter (G.Adj s)).card)
           = T.sum (fun q => (S.filter (G.Adj q)).card) := by
-              sorry -- Finset.sum_comm with indicator functions
+              -- Double counting: both sides count edges between S and T
+              conv_lhs => arg 2; ext s; rw [Finset.card_eq_sum_ones]
+              conv_rhs => arg 2; ext q; rw [Finset.card_eq_sum_ones]
+              rw [Finset.sum_comm]
+              congr 1; ext q
+              congr 1; ext s
+              simp only [Finset.mem_filter, and_comm]
         _ = T.sum (fun q => ((G.neighborFinset q) ∩ S).card) := by
               congr 1; ext q
               congr 1
