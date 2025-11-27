@@ -2385,10 +2385,61 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                          Q.sum (fun q => ((G.neighborFinset v).filter (G.Adj q)).card) +
                          2 * E_Q.card := by
     -- Each q's neighbors partition into: P, N(v), Q, and {v}
-    -- But q ∉ N(v) means q not adjacent to v
-    -- So q's neighbors are in P ∪ N(v) ∪ Q
-    -- The sum over Q-neighbors counts each internal Q-edge twice
-    sorry -- Standard degree partition argument
+    -- But q ∉ N(v) means q not adjacent to v (since q ∈ Q ⊆ M)
+    -- So q's neighbors are in P ∪ N(v) ∪ Q (disjoint)
+
+    -- First, show ∑ Q-neighbors over Q = 2 * E_Q.card
+    have h_Q_internal : Q.sum (fun q => (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card) = 2 * E_Q.card := by
+      -- Standard handshaking for Q subgraph
+      -- This is the same double-counting as in handshaking lemma
+      let ordered_pairs := Finset.univ.filter (fun (e : Fin 18 × Fin 18) =>
+        e.1 ∈ Q ∧ e.2 ∈ Q ∧ e.1 ≠ e.2 ∧ G.Adj e.1 e.2)
+
+      have h_lhs : Q.sum (fun q => (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card) = ordered_pairs.card := by
+        rw [← Finset.card_sigma]
+        congr
+        ext ⟨q, q'⟩
+        simp only [Finset.mem_filter, Finset.mem_sigma, Finset.mem_univ, true_and]
+
+      have h_rhs : ordered_pairs.card = 2 * E_Q.card := by
+        -- Each unordered edge contributes 2 ordered pairs
+        sorry -- Fiber partition similar to handshaking lemma
+
+      rw [h_lhs, h_rhs]
+
+    -- Now show degree(q) = P-neighbors + N(v)-neighbors + Q-neighbors for each q
+    have h_partition_q : ∀ q ∈ Q, G.degree q =
+        (P.filter (G.Adj q)).card +
+        ((G.neighborFinset v).filter (G.Adj q)).card +
+        (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card := by
+      intro q hq
+      -- q's neighbors partition into P, N(v), Q
+      have hq_not_adj_v : ¬G.Adj v q := by
+        have := hQ_props.1 q
+        simp only [Finset.mem_filter] at this
+        have ⟨hq_in_M, hq_comm2⟩ := this hq
+        simp only [M, Finset.mem_sdiff, Finset.mem_insert, mem_neighborFinset] at hq_in_M
+        push_neg at hq_in_M
+        exact hq_in_M.2.2
+
+      sorry -- Standard partition argument: neighbors(q) ⊆ P ∪ N(v) ∪ Q
+
+    -- Sum over all q ∈ Q
+    calc Q.sum (fun q => G.degree q)
+        = Q.sum (fun q => (P.filter (G.Adj q)).card +
+                          ((G.neighborFinset v).filter (G.Adj q)).card +
+                          (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card) := by
+            apply Finset.sum_congr rfl
+            intro q hq
+            exact h_partition_q q hq
+      _ = Q.sum (fun q => (P.filter (G.Adj q)).card) +
+          Q.sum (fun q => ((G.neighborFinset v).filter (G.Adj q)).card) +
+          Q.sum (fun q => (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card) := by
+            rw [Finset.sum_add_distrib, Finset.sum_add_distrib]
+      _ = Q.sum (fun q => (P.filter (G.Adj q)).card) +
+          Q.sum (fun q => ((G.neighborFinset v).filter (G.Adj q)).card) +
+          2 * E_Q.card := by
+            rw [h_Q_internal]
 
   have h_equation : 40 = 16 + 16 + 2 * E_Q.card := by
     rw [← h_Q_degree_sum, ← h_PQ_edges, ← h_NQ_edges, h_deg_partition]
