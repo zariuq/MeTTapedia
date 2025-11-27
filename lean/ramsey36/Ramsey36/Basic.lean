@@ -2422,7 +2422,77 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         push_neg at hq_in_M
         exact hq_in_M.2.2
 
-      sorry -- Standard partition argument: neighbors(q) ⊆ P ∪ N(v) ∪ Q
+      -- Partition neighbors(q) into three disjoint parts
+      have h_partition_nbrs : G.neighborFinset q =
+          (P.filter (G.Adj q)) ∪
+          ((G.neighborFinset v).filter (G.Adj q)) ∪
+          (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')) := by
+        ext x
+        simp only [Finset.mem_union, Finset.mem_filter, mem_neighborFinset]
+        constructor
+        · intro hx_adj
+          -- x is a neighbor of q, must be in P, N(v), or Q (since {v}∪N(v)∪M = univ)
+          by_cases hx_v : x = v
+          · subst hx_v; exact absurd hx_adj hq_not_adj_v
+          · -- x ≠ v, so x ∈ N(v) ∪ M
+            by_cases hx_Nv : x ∈ G.neighborFinset v
+            · right; left; exact ⟨hx_Nv, hx_adj⟩
+            · -- x ∉ N(v) and x ≠ v, so x ∈ M
+              have hx_M : x ∈ M := by
+                simp only [M, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert, true_and]
+                push_neg
+                exact ⟨hx_v, hx_Nv⟩
+              -- M = P ∪ Q, so x ∈ P or x ∈ Q
+              rw [hM_eq_PQ] at hx_M
+              simp only [Finset.mem_union] at hx_M
+              cases hx_M with
+              | inl hx_P => left; exact ⟨hx_P, hx_adj⟩
+              | inr hx_Q => right; right; exact ⟨hx_Q, (fun h => h ▸ G.adj_irrefl q hx_adj), hx_adj⟩
+        · intro h
+          cases h with
+          | inl h => exact h.2
+          | inr h => cases h with
+            | inl h => exact h.2
+            | inr h => exact h.2.2
+
+      -- These three parts are pairwise disjoint
+      have h_disj_P_Nv : Disjoint (P.filter (G.Adj q)) ((G.neighborFinset v).filter (G.Adj q)) := by
+        rw [Finset.disjoint_iff_inter_eq_empty]
+        ext x
+        simp only [Finset.mem_inter, Finset.mem_filter, Finset.mem_empty, iff_false, not_and]
+        intro hx_P _ hx_Nv _
+        -- P ⊆ M = non-neighbors of v, so x ∈ P → x ∉ N(v)
+        have hx_M : x ∈ M := by
+          rw [hM_eq_PQ]
+          exact Finset.mem_union_left Q hx_P
+        simp only [M, Finset.mem_sdiff, Finset.mem_insert, mem_neighborFinset] at hx_M
+        push_neg at hx_M
+        exact hx_M.2.2 hx_Nv
+
+      have h_disj_P_Q : Disjoint (P.filter (G.Adj q)) (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')) := by
+        apply Finset.disjoint_of_subset_left (Finset.filter_subset _ _)
+        apply Finset.disjoint_of_subset_right (Finset.filter_subset _ _)
+        rw [← hM_eq_PQ]
+        exact hPQ_disj
+
+      have h_disj_Nv_Q : Disjoint ((G.neighborFinset v).filter (G.Adj q)) (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')) := by
+        rw [Finset.disjoint_iff_inter_eq_empty]
+        ext x
+        simp only [Finset.mem_inter, Finset.mem_filter, Finset.mem_empty, iff_false, not_and]
+        intro hx_Nv _ hx_Q _
+        -- Q ⊆ M = non-neighbors of v, so x ∈ Q → x ∉ N(v)
+        have hx_M : x ∈ M := by
+          rw [hM_eq_PQ]
+          exact Finset.mem_union_right P hx_Q
+        simp only [M, Finset.mem_sdiff, Finset.mem_insert, mem_neighborFinset] at hx_M
+        push_neg at hx_M
+        exact hx_M.2.2 hx_Nv
+
+      -- Apply card_union for three disjoint sets
+      rw [G.card_neighborFinset_eq_degree, h_partition_nbrs]
+      rw [Finset.card_union_of_disjoint h_disj_P_Nv]
+      congr 1
+      rw [Finset.card_union_of_disjoint h_disj_Nv_Q]
 
     -- Sum over all q ∈ Q
     calc Q.sum (fun q => G.degree q)
