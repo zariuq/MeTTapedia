@@ -3266,9 +3266,6 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (hP_props : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) :
     4 ≤ (Finset.filter (fun e : Fin 18 × Fin 18 =>
       e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 < e.2 ∧ G.Adj e.1 e.2) Finset.univ).card := by
-  -- This is a substantial structural result requiring the S-W bipartite graph analysis
-  -- For now, we establish this using the invariant E_Q - E_P = 4 and bounds
-
   -- Get Q from claim2
   obtain ⟨P', Q, hP'_card, hQ_card, hP'_props, hQ_props⟩ :=
     claim2_neighbor_structure h_reg h_tri h_no6 v
@@ -3276,25 +3273,108 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   let E_P := Finset.filter (fun e : Fin 18 × Fin 18 =>
     e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 < e.2 ∧ G.Adj e.1 e.2) Finset.univ
 
-  -- Key fact: E_Q - E_P = 4 (from global degree constraint)
-  -- We'll prove this holds regardless of P's internal structure
+  -- Step 1: Show P = P' (both characterized by commonCard = 1, both have card 4)
+  have hP_eq_P' : P = P' := by
+    have hP_subset_P' : P ⊆ P' := by
+      intro p hp
+      have ⟨hp_nonadj, hp_comm⟩ := hP_props p hp
+      let M := Finset.univ \ insert v (G.neighborFinset v)
+      have hp_in_M : p ∈ M := by
+        simp only [M, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert, mem_neighborFinset, true_and]
+        push_neg
+        exact ⟨fun h => (h ▸ hp_nonadj (G.adj_irrefl v)), hp_nonadj⟩
+      exact Finset.mem_filter.mpr ⟨hp_in_M, hp_comm⟩
+    exact Finset.eq_of_subset_of_card_le hP_subset_P' (by omega : P.card ≤ P'.card)
 
-  -- Step 1: Each p ∈ P has degree 5, with 1 to N(v), so 4 to M = P∪Q
-  -- Sum: 16 = 2*E_P + E_(P,Q)
+  -- Step 2: Each q ∈ Q has exactly 2 neighbors in N(v) (from commonNeighborsCard = 2)
+  have hQ_two_nbrs : ∀ q ∈ Q, (G.neighborFinset q ∩ G.neighborFinset v).card = 2 := by
+    intro q hq
+    have ⟨_, hq_comm2⟩ := hQ_props q hq
+    exact hq_comm2
 
-  -- Step 2: Each q ∈ Q has degree 5, with 2 to N(v), so 3 to M = P∪Q
-  -- Sum: 24 = E_(P,Q) + 2*E_Q
+  -- Step 3: Extract 4 vertices from P
+  have h_nonempty : P.Nonempty := Finset.card_pos.mp (by omega : 0 < P.card)
+  obtain ⟨p1, hp1⟩ := h_nonempty
+  obtain ⟨p2, hp2⟩ := Finset.card_pos.mp (by have := Finset.card_erase_of_mem hp1; omega : 0 < (P.erase p1).card)
+  have hp2_P : p2 ∈ P := (Finset.mem_erase.mp hp2).2
+  have hp12_ne : p1 ≠ p2 := (Finset.mem_erase.mp hp2).1.symm
 
-  -- Step 3: From these equations: E_Q - E_P = 4
+  obtain ⟨p3, hp3⟩ := Finset.card_pos.mp (by
+    have h1 := Finset.card_erase_of_mem hp1
+    have h2 := Finset.card_erase_of_mem hp2
+    omega : 0 < ((P.erase p1).erase p2).card)
+  have hp3_P : p3 ∈ P := (Finset.mem_erase.mp (Finset.mem_erase.mp hp3).2).2
+  have hp13_ne : p1 ≠ p3 := (Finset.mem_erase.mp (Finset.mem_erase.mp hp3).2).1.symm
+  have hp23_ne : p2 ≠ p3 := (Finset.mem_erase.mp hp3).1.symm
 
-  -- Step 4: We know E_P ≥ 2 (from P_has_at_least_two_edges)
-  -- We know E_P ≤ 4 (from P_has_at_most_four_edges)
+  obtain ⟨p4, hp4⟩ := Finset.card_pos.mp (by
+    have h1 := Finset.card_erase_of_mem hp1
+    have h2 := Finset.card_erase_of_mem hp2
+    have h3 := Finset.card_erase_of_mem hp3
+    omega : 0 < (((P.erase p1).erase p2).erase p3).card)
+  have hp4_P : p4 ∈ P := (Finset.mem_erase.mp (Finset.mem_erase.mp (Finset.mem_erase.mp hp4).2).2).2
+  have hp14_ne : p1 ≠ p4 := (Finset.mem_erase.mp (Finset.mem_erase.mp (Finset.mem_erase.mp hp4).2).2).1.symm
+  have hp24_ne : p2 ≠ p4 := (Finset.mem_erase.mp (Finset.mem_erase.mp hp4).2).1.symm
+  have hp34_ne : p3 ≠ p4 := (Finset.mem_erase.mp hp4).1.symm
 
-  -- Step 5: For the full proof, we'd show E_P ∈ {2,3} leads to contradictions
-  -- with the S-W structure, leaving only E_P = 4
+  -- Step 4: Get s-partners for each p
+  have ⟨hp1_nonadj, hp1_comm1⟩ := hP_props p1 hp1
+  have ⟨hp2_nonadj, hp2_comm1⟩ := hP_props p2 hp2_P
+  have ⟨hp3_nonadj, hp3_comm1⟩ := hP_props p3 hp3_P
+  have ⟨hp4_nonadj, hp4_comm1⟩ := hP_props p4 hp4_P
 
-  -- For now, we assert this key bound which enables the case eliminations
-  sorry
+  obtain ⟨s1, ⟨hs1_in_N, hs1_adj_p1⟩, hs1_unique⟩ := P_partner_in_N h_reg h_tri v p1 hp1_nonadj hp1_comm1
+  obtain ⟨s2, ⟨hs2_in_N, hs2_adj_p2⟩, hs2_unique⟩ := P_partner_in_N h_reg h_tri v p2 hp2_nonadj hp2_comm1
+  obtain ⟨s3, ⟨hs3_in_N, hs3_adj_p3⟩, hs3_unique⟩ := P_partner_in_N h_reg h_tri v p3 hp3_nonadj hp3_comm1
+  obtain ⟨s4, ⟨hs4_in_N, hs4_adj_p4⟩, hs4_unique⟩ := P_partner_in_N h_reg h_tri v p4 hp4_nonadj hp4_comm1
+
+  -- Step 5: Identify the 5th vertex in N(v) (call it t)
+  -- N(v) = {s1, s2, s3, s4, t} where t is the remaining vertex
+  have hN_card : (G.neighborFinset v).card = 5 := h_reg v
+
+  -- S-partners are distinct (proven elsewhere in claim3_four_cycle)
+  have hs_distinct : s1 ≠ s2 ∧ s1 ≠ s3 ∧ s1 ≠ s4 ∧ s2 ≠ s3 ∧ s2 ≠ s4 ∧ s3 ≠ s4 := by
+    sorry -- Distinctness from uniqueness
+
+  -- The 5th element t exists
+  let S := ({s1, s2, s3, s4} : Finset (Fin 18))
+  have hS_subset_N : S ⊆ G.neighborFinset v := by
+    intro x hx
+    simp only [S, Finset.mem_insert, Finset.mem_singleton] at hx
+    rcases hx with rfl | rfl | rfl | rfl
+    · exact hs1_in_N
+    · exact hs2_in_N
+    · exact hs3_in_N
+    · exact hs4_in_N
+
+  have hS_card : S.card = 4 := by
+    simp only [S, Finset.card_insert_of_not_mem, Finset.card_singleton]
+    · omega
+    all_goals { simp; tauto }
+
+  have h_exists_t : ∃ t, t ∈ G.neighborFinset v ∧ t ∉ S := by
+    have : S.card < (G.neighborFinset v).card := by omega
+    have : S ⊂ G.neighborFinset v := Finset.ssubset_iff_subset_ne.mpr ⟨hS_subset_N, by
+      intro h; rw [h, hS_card] at hN_card; omega⟩
+    obtain ⟨t, ht_N, ht_not_S⟩ := Finset.exists_of_ssubset this
+    exact ⟨t, ht_N, ht_not_S⟩
+
+  obtain ⟨t, ht_in_N, ht_not_S⟩ := h_exists_t
+
+  -- Step 6: Partition Q based on adjacency to t
+  -- T = q's adjacent to t, W = q's not adjacent to t
+  let T := Q.filter (G.Adj t)
+  let W := Q.filter (fun q => ¬G.Adj t q)
+
+  -- For the full S-W proof, we'd need to:
+  -- 1. Show |T| = 4, |W| = 4
+  -- 2. Show S-W bipartite graph is 2-regular (each s connects to 2 w's, each w to 2 s's)
+  -- 3. Deduce it forms a single 8-cycle
+  -- 4. Extract 4 consecutive pairs from the cycle
+  -- 5. Apply p_adjacent_of_shared_w to get 4 edges in P
+
+  -- This is substantial work (~100+ lines). For now, assert the result.
+  sorry -- Complete T-W partition + S-W cycle + pair extraction + adjacency application
 
 /-- P is 2-regular: each p ∈ P has exactly 2 neighbors in P.
 This is the key structural lemma that implies P is a 4-cycle.
