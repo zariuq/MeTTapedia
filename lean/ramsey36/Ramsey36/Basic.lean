@@ -1761,9 +1761,12 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   sorry
 
 /-- The induced subgraph on P has at most 4 edges (P is not K₄).
-Proof: If P were K₄ (6 edges), then each p would have 3 P-neighbors.
-With 1 N(v)-neighbor, each p would have only 1 Q-neighbor.
-But the S-W structure requires each p to have at least 2 Q-neighbors. -/
+Proof: If P had ≥ 5 edges, handshaking gives sum of P-degrees ≥ 10.
+With 4 vertices, some p has ≥ 3 P-neighbors, leaving ≤ 1 Q-neighbor.
+But global counting requires each vertex to "share load" with Q.
+
+**OT view**: The coupling can't be too concentrated on P!
+-/
 lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
     (v : Fin 18) (P : Finset (Fin 18))
@@ -1771,14 +1774,53 @@ lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (hP_props : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) :
     (Finset.filter (fun e : Fin 18 × Fin 18 => e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 < e.2 ∧ G.Adj e.1 e.2)
       Finset.univ).card ≤ 4 := by
-  -- Each p has degree 5, exactly 1 neighbor in N(v) (its s-partner)
-  -- So each p has 4 neighbors outside N(v) ∪ {v}, i.e., in P ∪ Q
-  -- If P were complete, each p has 3 P-neighbors and 1 Q-neighbor
-  -- The detailed argument shows this violates the W-sharing structure
+  by_contra h_not
+  push_neg at h_not
+
+  -- If ≥ 5 edges in P, then by handshaking, sum of degrees in P is ≥ 10
+  let E_P := Finset.filter (fun e : Fin 18 × Fin 18 => e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 < e.2 ∧ G.Adj e.1 e.2) Finset.univ
+  have hE_P : E_P.card ≥ 5 := h_not
+
+  -- Handshaking: sum of P-degrees = 2 × |E_P|
+  have h_sum_deg : (P.sum (fun p => (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card)) = 2 * E_P.card := by
+    -- Each edge counted twice in the sum
+    sorry
+
+  have : 2 * E_P.card ≥ 10 := by omega
+
+  -- So some p ∈ P has ≥ 3 P-neighbors (pigeonhole)
+  have : ∃ p ∈ P, (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card ≥ 3 := by
+    by_contra h_all_le_2
+    push_neg at h_all_le_2
+    have : P.sum (fun p => (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card) ≤ P.sum (fun _ => 2) := by
+      apply Finset.sum_le_sum
+      intro p hp
+      exact h_all_le_2 p hp
+    simp only [Finset.sum_const, smul_eq_mul, hP_card] at this
+    have : 2 * E_P.card ≤ 8 := by
+      calc 2 * E_P.card
+          = P.sum (fun p => (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card) := h_sum_deg.symm
+        _ ≤ 8 := this
+    omega
+
+  obtain ⟨p, hp, hp_deg_3⟩ := this
+
+  -- p has degree 5 total, 1 to N(v), so 4 to P∪Q
+  -- If p has ≥3 P-neighbors, it has ≤1 Q-neighbor
+  have hp_tot_deg : G.degree p = 5 := h_reg p
+
+  -- This creates an imbalance in the global counting
+  -- The detailed contradiction comes from Q structure
   sorry
 
 /-- P is 2-regular: each p ∈ P has exactly 2 neighbors in P.
-This is the key structural lemma that implies P is a 4-cycle. -/
+This is the key structural lemma that implies P is a 4-cycle.
+
+**OT Perspective**: This is mass conservation for the coupling!
+- Each p "transports" 4 units of mass to P∪Q
+- The 2-regular structure is the unique balanced coupling
+- Double-counting = verifying mass from both marginals
+-/
 lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
     (v : Fin 18) (P : Finset (Fin 18))
@@ -1786,18 +1828,148 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (hP_props : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) :
     ∀ p ∈ P, (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card = 2 := by
   intro p hp
-  -- Each p has degree 5
-  -- 1 neighbor in N(v) (the s-partner)
-  -- 4 neighbors in P ∪ Q
-  -- The S-W structure forces exactly 2 of these to be in P
 
-  -- Lower bound: if p had ≤1 P-neighbors, it would have ≥3 Q-neighbors
-  -- This leads to contradiction via the W-structure constraints
+  -- Key: p has degree 5, with 1 neighbor in N(v) and 4 in P∪Q
+  have hp_deg : G.degree p = 5 := h_reg p
+  have ⟨hp_nonadj_v, hp_common1⟩ := hP_props p hp
 
-  -- Upper bound: if p had ≥3 P-neighbors, it would have ≤1 Q-neighbor
-  -- This also leads to contradiction
+  -- Get p's unique s-partner in N(v)
+  obtain ⟨s, ⟨hs_in_N, hs_adj_p⟩, hs_unique⟩ :=
+    P_partner_in_N h_reg h_tri v p hp_nonadj_v hp_common1
 
-  sorry
+  -- Get the Q set from claim2 (we'll need it for counting)
+  -- But we work directly with the given P
+  obtain ⟨P', Q, hP'_card, hQ_card, hP'_props, hQ_props⟩ :=
+    claim2_neighbor_structure h_reg h_tri h_no6 v
+
+  -- P must equal P' (both have same characterization and cardinality)
+  -- For now, we'll use Q from claim2 and work with our given P
+
+  -- Count P-neighbors and Q-neighbors of p
+  let P_nbrs := P.filter (fun q => q ≠ p ∧ G.Adj p q)
+
+  -- Since p ∈ P and P consists of non-neighbors of v with commonCard=1,
+  -- and Q consists of non-neighbors with commonCard=2, we know p's neighbors
+  -- (except v's neighbors) are in P ∪ Q
+  let N := G.neighborFinset v
+  let M := Finset.univ \ insert v N
+
+  -- p ∈ M since p is not adjacent to v
+  have hp_in_M : p ∈ M := by
+    simp only [M, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert, true_and, not_or]
+    constructor
+    · intro heq; subst heq; exact hp_nonadj_v (G.refl v)
+    · intro hp_in_N; rw [mem_neighborFinset] at hp_in_N; exact hp_nonadj_v hp_in_N
+
+  -- Every non-neighbor of v has commonNeighborsCard ∈ {1, 2}
+  -- So Q is exactly M \ P
+  have hQ_def : Q = M.filter (fun w => commonNeighborsCard G v w = 2) := by
+    -- This follows from claim2's construction
+    sorry
+
+  let Q_nbrs := (M \ P).filter (G.Adj p)
+
+  -- Establish: |P_nbrs| + |Q_nbrs| = 4
+  have h_sum_4 : P_nbrs.card + Q_nbrs.card = 4 := by
+    -- p's neighbors partition into: {s}, P_nbrs, Q_nbrs
+    -- Total degree = 5 = 1 + |P_nbrs| + |Q_nbrs|
+    have h_nbrs_disjoint : Disjoint ({s} : Finset (Fin 18)) (P_nbrs ∪ Q_nbrs) := by
+      rw [Finset.disjoint_iff_inter_eq_empty]
+      ext x
+      simp only [Finset.mem_inter, Finset.mem_singleton, Finset.mem_union, P_nbrs, Q_nbrs,
+                 Finset.mem_filter, Finset.not_mem_empty, iff_false, not_and]
+      intro hx_eq
+      subst hx_eq
+      intro h
+      cases h with
+      | inl h_in_P =>
+        have ⟨hs_in_P, hs_ne_p, _⟩ := h_in_P
+        -- s ∈ N(v) but P consists of non-neighbors of v
+        have ⟨hp_nonadj, _⟩ := hP_props s hs_in_P
+        rw [mem_neighborFinset] at hs_in_N
+        exact hp_nonadj hs_in_N
+      | inr h_in_Q =>
+        -- s ∈ N(v) but Q consists of non-neighbors of v with common 2
+        have ⟨hq_nonadj, _⟩ := hQ_props s h_in_Q
+        rw [mem_neighborFinset] at hs_in_N
+        exact hq_nonadj hs_in_N
+
+    have h_PQ_disjoint : Disjoint P_nbrs Q_nbrs := by
+      rw [Finset.disjoint_iff_inter_eq_empty]
+      ext x
+      simp only [P_nbrs, Q_nbrs, Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty,
+                 iff_false, not_and]
+      intro hx_in_P _ _
+      intro hx_in_Q
+      -- x can't be in both P and Q (disjoint by claim2)
+      have hPQ_disj : Disjoint P' Q := by
+        -- This follows from claim2 structure
+        sorry
+      rw [← hP_eq_P'] at hx_in_P
+      rw [Finset.disjoint_left] at hPQ_disj
+      exact hPQ_disj hx_in_P hx_in_Q
+
+    have h_total : ({s} ∪ P_nbrs ∪ Q_nbrs).card = 5 := by
+      calc ({s} ∪ P_nbrs ∪ Q_nbrs).card
+          = ({s} ∪ (P_nbrs ∪ Q_nbrs)).card := by rw [Finset.union_assoc]
+        _ = 1 + (P_nbrs ∪ Q_nbrs).card := by
+            rw [Finset.card_union_of_disjoint h_nbrs_disjoint, Finset.card_singleton]
+        _ = 1 + P_nbrs.card + Q_nbrs.card := by
+            rw [Finset.card_union_of_disjoint h_PQ_disjoint]
+        _ = (G.neighborFinset p).card := by
+            -- This should equal degree of p
+            sorry
+      rw [G.card_neighborFinset_eq_degree] at this
+      simpa [hp_deg] using this
+
+    omega
+
+  -- The crucial uniform bound: show |P_nbrs| = 2 by eliminating other cases
+  -- Case |P_nbrs| = 0: p has 4 Q-neighbors
+  have h_not_0 : P_nbrs.card ≠ 0 := by
+    intro h0
+    have h_Q_4 : Q_nbrs.card = 4 := by omega
+    -- If p has 4 Q-neighbors but P has 4 elements and at least 2 edges...
+    -- This leads to contradiction via edge counting
+    -- Using P_has_at_least_two_edges
+    sorry
+
+  -- Case |P_nbrs| = 1: p has 3 Q-neighbors
+  have h_not_1 : P_nbrs.card ≠ 1 := by
+    intro h1
+    have h_Q_3 : Q_nbrs.card = 3 := by omega
+    -- Global counting: if all 4 p's had ≤1 P-neighbor, then |E(P)| ≤ 2
+    -- But P_has_at_least_two_edges gives contradiction
+    sorry
+
+  -- Case |P_nbrs| = 3: p has 1 Q-neighbor
+  have h_not_3 : P_nbrs.card ≠ 3 := by
+    intro h3
+    have h_Q_1 : Q_nbrs.card = 1 := by omega
+    -- If all p's had ≥3 P-neighbors, then |E(P)| ≥ 6
+    -- But P_has_at_most_four_edges gives contradiction
+    sorry
+
+  -- Case |P_nbrs| = 4: p has 0 Q-neighbors
+  have h_not_4 : P_nbrs.card ≠ 4 := by
+    intro h4
+    have h_Q_0 : Q_nbrs.card = 0 := by omega
+    -- P has only 4 vertices, so p can't have 4 P-neighbors (would need p adj to itself)
+    have : P_nbrs ⊆ P.erase p := by
+      intro x hx
+      simp only [P_nbrs, Finset.mem_filter] at hx
+      simp only [Finset.mem_erase]
+      exact ⟨hx.2.1, hx.1⟩
+    have h_erase_card : (P.erase p).card = 3 := by
+      rw [Finset.card_erase_of_mem hp, hP_card]
+    have : P_nbrs.card ≤ 3 := by
+      calc P_nbrs.card
+          ≤ (P.erase p).card := Finset.card_le_card this
+        _ = 3 := h_erase_card
+    omega
+
+  -- Therefore |P_nbrs| = 2
+  omega
 
 /-- A 2-regular graph on 4 vertices is a 4-cycle (C₄).
 This is a graph-theoretic fact: 4 vertices with each having degree 2
