@@ -2513,8 +2513,21 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
   have h_equation : 40 = 16 + 16 + 2 * E_Q.card := by
     rw [← h_Q_degree_sum, ← h_PQ_edges, ← h_NQ_edges, h_deg_partition]
-    -- Convert sums to match
-    sorry
+    -- Need to show:
+    -- P.sum (Q-neighbors) = Q.sum (P-neighbors)  [double counting P-Q edges]
+    -- N(v).sum (Q-neighbors) = Q.sum (N(v)-neighbors)  [double counting N(v)-Q edges]
+
+    have h_PQ_symm : P.sum (fun p => (Q.filter (G.Adj p)).card) =
+                     Q.sum (fun q => (P.filter (G.Adj q)).card) := by
+      -- Both count edges between P and Q
+      sorry -- Double counting similar to earlier
+
+    have h_NvQ_symm : (G.neighborFinset v).sum (fun s => (Q.filter (G.Adj s)).card) =
+                      Q.sum (fun q => ((G.neighborFinset v).filter (G.Adj q)).card) := by
+      -- Both count edges between N(v) and Q
+      sorry -- Double counting similar to earlier
+
+    rw [h_PQ_symm, h_NvQ_symm]
 
   have h_E_Q : E_Q.card = 4 := by omega
 
