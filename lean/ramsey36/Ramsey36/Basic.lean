@@ -2258,7 +2258,25 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have : (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ P).card) =
              P.sum (fun p => (G.neighborFinset p ∩ G.neighborFinset v).card) := by
         -- Both count pairs (s, p) with s ∈ N(v), p ∈ P, G.Adj s p
-        sorry -- Standard double counting lemma
+        -- Express as indicator functions and use sum commutativity
+        have h1 : (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ P).card) =
+                  (G.neighborFinset v).sum (fun s => P.sum (fun p => if G.Adj s p then 1 else 0)) := by
+          congr 1; ext s
+          rw [Finset.card_eq_sum_ones]
+          congr 1; ext p
+          simp only [Finset.sum_filter, Finset.mem_inter, mem_neighborFinset]
+
+        have h2 : P.sum (fun p => (G.neighborFinset p ∩ G.neighborFinset v).card) =
+                  P.sum (fun p => (G.neighborFinset v).sum (fun s => if G.Adj s p then 1 else 0)) := by
+          congr 1; ext p
+          rw [Finset.card_eq_sum_ones]
+          congr 1; ext s
+          simp only [Finset.sum_filter, Finset.mem_inter, mem_neighborFinset]
+          by_cases h : G.Adj s p
+          · simp [h, G.symm h]
+          · simp [h]; intro h'; exact h (G.symm h')
+
+        rw [h1, h2, Finset.sum_comm]
       rw [this]
       calc P.sum (fun p => (G.neighborFinset p ∩ G.neighborFinset v).card)
           = P.sum (fun _ => 1) := by
@@ -2280,7 +2298,55 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             · intro ⟨h_adj, hx⟩; exact ⟨hx, G.symm h_adj⟩
       _ = (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ M).card) -
           (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ P).card) := by
-            sorry -- M = P ∪ Q (disjoint), so M-neighbors = P-neighbors + Q-neighbors
+            -- M = P' ∪ Q (disjoint), and P = P', so M = P ∪ Q
+            -- For each s: M-neighbors = P-neighbors ∪ Q-neighbors (disjoint)
+            -- So |Q-neighbors| = |M-neighbors| - |P-neighbors|
+
+            -- First establish P = P' (both characterized by commonCard = 1, both have card 4)
+            have hP_subset_P' : P ⊆ P' := by
+              intro p hp
+              have ⟨hp_not_adj, hp_comm⟩ := hP_props p hp
+              have hp_in_M : p ∈ M := by
+                simp only [M, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert,
+                          mem_neighborFinset, true_and]
+                push_neg
+                exact ⟨fun h => (h ▸ hp_not_adj (G.adj_irrefl v)), hp_not_adj⟩
+              exact Finset.mem_filter.mpr ⟨hp_in_M, hp_comm⟩
+
+            have hP_eq_P' : P = P' := by
+              apply Finset.eq_of_subset_of_card_le hP_subset_P'
+              rw [hP_card, hP'_card]
+
+            -- Now show M = P ∪ Q using hP_eq_P' and hPQ_partition
+            have hM_eq_PQ : M = P ∪ Q := by
+              rw [hP_eq_P']
+              exact hPQ_partition
+
+            -- For each s, partition M-neighbors
+            have h_partition_s : ∀ s ∈ G.neighborFinset v,
+                (G.neighborFinset s ∩ M).card =
+                (G.neighborFinset s ∩ P).card + (G.neighborFinset s ∩ Q).card := by
+              intro s hs
+              have : G.neighborFinset s ∩ M =
+                     (G.neighborFinset s ∩ P) ∪ (G.neighborFinset s ∩ Q) := by
+                rw [hM_eq_PQ, Finset.inter_union_distrib_left]
+              have h_disj : Disjoint (G.neighborFinset s ∩ P) (G.neighborFinset s ∩ Q) := by
+                rw [← hP_eq_P']
+                apply Finset.disjoint_of_subset_left (Finset.inter_subset_right _ _)
+                apply Finset.disjoint_of_subset_right (Finset.inter_subset_right _ _)
+                exact hPQ_disj
+              rw [this, Finset.card_union_of_disjoint h_disj]
+
+            -- Sum over all s
+            have : (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ M).card) =
+                   (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ P).card +
+                                                       (G.neighborFinset s ∩ Q).card) := by
+              apply Finset.sum_congr rfl
+              intro s hs
+              exact h_partition_s s hs
+
+            rw [this, Finset.sum_add_distrib]
+            omega
       _ = 20 - 4 := by rw [h_M_sum, h_P_sum]
       _ = 16 := by norm_num
 
