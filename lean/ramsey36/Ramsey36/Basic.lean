@@ -1,5 +1,6 @@
 import Ramsey36.RamseyDef
 import Ramsey36.SmallRamsey
+import FiveCycleLemma
 import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import Mathlib.Data.Fin.Basic
 import Mathlib.Data.Finset.Card
@@ -999,7 +1000,34 @@ lemma claim3_four_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (v : Fin 18) (P : Finset (Fin 18))
     (hP : P.card = 4 ∧ ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) :
     ∃ (p1 p2 p3 p4 : Fin 18), P = {p1, p2, p3, p4} ∧ G.Adj p1 p2 := by
-  sorry
+  obtain ⟨hP_card, hP_props⟩ := hP
+
+  -- Extract the 4 vertices from P
+  have : ∃ (p1 p2 p3 p4 : Fin 18), P = {p1, p2, p3, p4} := by
+    sorry  -- TODO: extract 4 distinct elements from finset of card 4
+
+  obtain ⟨p1, p2, p3, p4, hP_eq⟩ := this
+
+  -- Now prove at least one edge exists among them
+  use p1, p2, p3, p4, hP_eq
+
+  -- Prove by contradiction: if no edges, get a 6-independent set
+  by_contra h_no_edges
+
+  -- If no edges in P, then P is independent
+  have hP_indep : IsKIndepSet 4 P := by
+    constructor
+    · exact hP_card
+    · intros x hx y hy hxy
+      intro h_adj
+      -- x and y are in P, so they must be among {p1, p2, p3, p4}
+      rw [hP_eq] at hx hy
+      simp only [mem_insert, mem_singleton] at hx hy
+      -- All pairs from {p1, p2, p3, p4} are non-adjacent by h_no_edges
+      sorry  -- TODO: formalize this
+
+  -- Extend to 6-independent set - contradiction!
+  sorry  -- TODO: complete construction
 
 lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G) :
