@@ -2962,15 +2962,158 @@ lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     -- So among {a, b, c}, there are ≥ 5-3 = 2 edges
     -- With 3 vertices and 2 edges, forms a triangle
 
-    -- Count edges among {a, b, c}
-    let abc_edges := E_P.filter (fun e => e.1 ∈ ({a, b, c} : Finset (Fin 18)) ∧ e.2 ∈ ({a, b, c} : Finset (Fin 18)))
+    -- Key insight: ANY edge among {a,b,c} forms a triangle with v
+    -- We check all three possible edges
 
-    -- Use pigeonhole: 3 vertices with 2 edges must form triangle
-    -- Since 3 vertices can have at most C(3,2) = 3 edges total
-    -- With 2 edges, either forms triangle or misses 1 edge
-    -- But we can show must form triangle by case analysis
+    by_cases hab_case : G.Adj a b
+    · -- Triangle: {v, a, b}
+      exact ⟨v, a, b, hv, ha, hb, hav_ne.symm, hab_ne, (hav_ne.symm.trans hab_ne).symm,
+             G.symm hav_adj, hab_case, G.symm hbv_adj⟩
 
-    sorry -- Complete the pigeonhole argument: 3 vertices, 2 edges → triangle
+    by_cases hbc_case : G.Adj b c
+    · -- Triangle: {v, b, c}
+      exact ⟨v, b, c, hv, hb, hc, hbv_ne.symm, hbc_ne, (hbv_ne.symm.trans hbc_ne).symm,
+             G.symm hbv_adj, hbc_case, G.symm hcv_adj⟩
+
+    by_cases hac_case : G.Adj a c
+    · -- Triangle: {v, a, c}
+      exact ⟨v, a, c, hv, ha, hc, hav_ne.symm, hac_ne, (hav_ne.symm.trans hac_ne).symm,
+             G.symm hav_adj, hac_case, G.symm hcv_adj⟩
+
+    -- If no edges among {a,b,c}, derive contradiction from edge count
+    -- We have v with 3 neighbors {a,b,c}, but no edges among {a,b,c}
+    -- So edges involving v are exactly: v-a, v-b, v-c (3 edges from v's degree)
+    -- Plus any edges not involving v or {a,b,c} (but v has degree ≥3, so these are a,b,c)
+
+    -- Actually P might have a 4th vertex. Let me reconsider.
+    -- We extracted a, b, c as 3 neighbors of v where v has degree ≥3
+    -- But P has 4 vertices total, so P contains v, a, b, c (and possibly equals this)
+
+    -- The edges of E_P (edges with both endpoints in P) include:
+    -- - v-a, v-b, v-c (we know these exist)
+    -- - possibly edges among {a,b,c} (but we've ruled these out)
+    -- - possibly edges involving a 4th vertex in P
+
+    -- But by h_deg_3, v has degree ≥3 in P, meaning ≥3 P-neighbors
+    -- We extracted exactly 3: a, b, c
+    -- So v's P-neighbors are exactly {a, b, c}
+
+    -- If P = {v, a, b, c}, then E_P contains only edges with both ends in {v,a,b,c}
+    -- With no edges among {a,b,c}, only edges are v-a, v-b, v-c (3 edges)
+    -- But E_P.card ≥ 5, contradiction!
+
+    -- Key: P = {v, a, b, c} since |P| = 4 and all four are in P
+    have hP_vabc : P = {v, a, b, c} := by
+      -- P has 4 elements, and v, a, b, c are 4 distinct elements of P
+      have h_distinct : v ≠ a ∧ v ≠ b ∧ v ≠ c ∧ a ≠ b ∧ a ≠ c ∧ b ≠ c := by
+        exact ⟨hav_ne.symm, hbv_ne.symm, hcv_ne.symm, hab_ne, hac_ne, hbc_ne⟩
+      have h_four_in_P : {v, a, b, c} ⊆ P := by
+        intro x
+        simp only [Finset.mem_insert, Finset.mem_singleton]
+        intro h
+        cases h with
+        | inl h => exact h ▸ hv
+        | inr h => cases h with
+          | inl h => exact h ▸ ha
+          | inr h => cases h with
+            | inl h => exact h ▸ hb
+            | inr h => exact h ▸ hc
+      have h_card_four : ({v, a, b, c} : Finset (Fin 18)).card = 4 := by
+        simp only [Finset.card_insert_of_not_mem]
+        · simp
+        · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
+          exact ⟨h_distinct.2.2.1, h_distinct.2.2.2.1, h_distinct.2.2.2.2.1⟩
+        · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
+          exact ⟨h_distinct.2.1, h_distinct.2.2.2.2.2⟩
+        · simp only [Finset.mem_singleton]
+          exact h_distinct.1
+      exact Finset.eq_of_subset_of_card_le h_four_in_P (ge_of_eq (h_card_four.trans hP_card.symm))
+
+    -- Now compute degree sum: v has degree 3, a,b,c each have degree 1
+    have h_deg_sum_bound : P.sum (fun p => (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card) ≤ 6 := by
+      rw [hP_vabc]
+      simp only [Finset.sum_insert, Finset.sum_singleton]
+
+      -- degree(v) in P = 3 (neighbors are a, b, c)
+      have hv_deg : ({v, a, b, c} : Finset (Fin 18)).filter (fun q => q ≠ v ∧ G.Adj v q) = {a, b, c} := by
+        ext x
+        simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+        constructor
+        · intro ⟨hx, hx_ne, hx_adj⟩
+          cases hx with
+          | inl h => exact absurd h hx_ne
+          | inr h => cases h with
+            | inl h => left; exact h
+            | inr h => cases h with
+              | inl h => right; left; exact h
+              | inr h => right; right; exact h
+        · intro hx
+          cases hx with
+          | inl h => exact ⟨Or.inr (Or.inl h), h ▸ hav_ne.symm, h ▸ G.symm hav_adj⟩
+          | inr h => cases h with
+            | inl h => exact ⟨Or.inr (Or.inr (Or.inl h)), h ▸ hbv_ne.symm, h ▸ G.symm hbv_adj⟩
+            | inr h => exact ⟨Or.inr (Or.inr (Or.inr h)), h ▸ hcv_ne.symm, h ▸ G.symm hcv_adj⟩
+
+      -- degree(a) in P ≤ 1 (only v, since no a-b, a-c edges)
+      have ha_deg : ({v, a, b, c} : Finset (Fin 18)).filter (fun q => q ≠ a ∧ G.Adj a q) ⊆ {v} := by
+        intro x
+        simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+        intro ⟨hx, hx_ne, hx_adj⟩
+        cases hx with
+        | inl h => exact h
+        | inr h => cases h with
+          | inl h => exact absurd h hx_ne
+          | inr h => cases h with
+            | inl h => exact absurd (hab_case (h ▸ hx_adj)) (not_false)
+            | inr h => exact absurd (hac_case (h ▸ hx_adj)) (not_false)
+
+      -- Similarly for b and c
+      have hb_deg : ({v, a, b, c} : Finset (Fin 18)).filter (fun q => q ≠ b ∧ G.Adj b q) ⊆ {v} := by
+        intro x
+        simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+        intro ⟨hx, hx_ne, hx_adj⟩
+        cases hx with
+        | inl h => exact h
+        | inr h => cases h with
+          | inl h => exact absurd (hab_case (h ▸ G.symm hx_adj)) (not_false)
+          | inr h => cases h with
+            | inl h => exact absurd h hx_ne
+            | inr h => exact absurd (hbc_case (h ▸ hx_adj)) (not_false)
+
+      have hc_deg : ({v, a, b, c} : Finset (Fin 18)).filter (fun q => q ≠ c ∧ G.Adj c q) ⊆ {v} := by
+        intro x
+        simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+        intro ⟨hx, hx_ne, hx_adj⟩
+        cases hx with
+        | inl h => exact h
+        | inr h => cases h with
+          | inl h => exact absurd (hac_case (h ▸ G.symm hx_adj)) (not_false)
+          | inr h => cases h with
+            | inl h => exact absurd (hbc_case (h ▸ G.symm hx_adj)) (not_false)
+            | inr h => exact absurd h hx_ne
+
+      rw [hv_deg]
+      have : ({a, b, c} : Finset (Fin 18)).card = 3 := by
+        simp [h_distinct.2.2.2.1, h_distinct.2.2.2.2.1, h_distinct.2.2.2.2.2]
+      calc 3 + (({v, a, b, c} : Finset (Fin 18)).filter (fun q => q ≠ a ∧ G.Adj a q)).card +
+               (({v, a, b, c} : Finset (Fin 18)).filter (fun q => q ≠ b ∧ G.Adj b q)).card +
+               (({v, a, b, c} : Finset (Fin 18)).filter (fun q => q ≠ c ∧ G.Adj c q)).card
+          ≤ 3 + 1 + 1 + 1 := by
+              have : (({v, a, b, c} : Finset (Fin 18)).filter (fun q => q ≠ a ∧ G.Adj a q)).card ≤ 1 :=
+                Finset.card_le_card ha_deg
+              have : (({v, a, b, c} : Finset (Fin 18)).filter (fun q => q ≠ b ∧ G.Adj b q)).card ≤ 1 :=
+                Finset.card_le_card hb_deg
+              have : (({v, a, b, c} : Finset (Fin 18)).filter (fun q => q ≠ c ∧ G.Adj c q)).card ≤ 1 :=
+                Finset.card_le_card hc_deg
+              omega
+        _ = 6 := by norm_num
+
+    have : 2 * E_P.card ≤ 6 := by
+      calc 2 * E_P.card
+          = P.sum (fun p => (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card) := h_sum_deg.symm
+        _ ≤ 6 := h_deg_sum_bound
+
+    omega  -- Contradicts hE_P : E_P.card ≥ 5
 
   obtain ⟨a, b, c, ha, hb, hc, hab_ne, hbc_ne, hac_ne, hab, hbc, hac⟩ := h_triangle
 
