@@ -2899,9 +2899,52 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have hq_Nv_count : (G.neighborFinset q ∩ G.neighborFinset v).card = 2 := by
         unfold commonNeighborsCard commonNeighbors at hq_props
         exact hq_props.2
-      -- q's neighbors partition into: {v} (size 0), N(v) (size 2), M (size 3)
+      -- q's neighbors partition into: N(v) (size 2) and M (size 3)
       -- M-neighbors = P-neighbors + Q-neighbors
-      sorry -- TODO: detailed partition proof
+
+      -- Define M locally
+      let M := Finset.univ \ insert v (G.neighborFinset v)
+
+      -- First: q has 3 M-neighbors
+      have hq_M_count : (G.neighborFinset q ∩ M).card = 3 := by
+        -- Partition q's neighbors into N(v) and M
+        have h_partition : G.neighborFinset q = (G.neighborFinset q ∩ G.neighborFinset v) ∪
+                                                 (G.neighborFinset q ∩ M) := by
+          ext x
+          simp only [M, Finset.mem_union, Finset.mem_inter, Finset.mem_sdiff, Finset.mem_univ,
+                    Finset.mem_insert, mem_neighborFinset]
+          tauto
+        have h_disj : Disjoint (G.neighborFinset q ∩ G.neighborFinset v) (G.neighborFinset q ∩ M) := by
+          rw [Finset.disjoint_iff_inter_eq_empty]
+          simp only [M, Finset.inter_assoc, Finset.inter_sdiff_self, Finset.inter_empty]
+        calc (G.neighborFinset q ∩ M).card
+            = G.degree q - (G.neighborFinset q ∩ G.neighborFinset v).card := by
+                rw [← h_partition, Finset.card_union_of_disjoint h_disj]
+                omega
+          _ = 5 - 2 := by rw [hq_deg, hq_Nv_count]
+          _ = 3 := by norm_num
+
+      -- Get P', Q_local from claim2 to establish M = P ∪ Q structure
+      obtain ⟨P', Q_local, hP'_card, hQ_local_card, hP'_props, hQ_local_props⟩ :=
+        claim2_neighbor_structure h_reg h_tri h_no6 v
+
+      -- M = P' ∪ Q_local (partition)
+      have hM_partition : M = P' ∪ Q_local := by
+        ext x
+        simp only [M, P', Q_local, Finset.mem_union, Finset.mem_filter, Finset.mem_sdiff,
+                  Finset.mem_univ, Finset.mem_insert, true_and]
+        constructor
+        · intro ⟨hx_univ, hx_not⟩
+          sorry -- TODO: use commonNeighborsCard bounds
+        · intro hx
+          sorry -- TODO: reverse direction
+
+      -- M-neighbors split into P'-neighbors and Q_local-neighbors
+      have h_M_split : G.neighborFinset q ∩ M =
+                       (G.neighborFinset q ∩ P') ∪ (G.neighborFinset q ∩ Q_local) := by
+        rw [hM_partition, Finset.inter_union_distrib_left]
+
+      sorry -- TODO: show P = P', Q = Q_local, then compute card
 
     -- Key insight: since sum = 16 and all ≥ 2, all must be exactly 2
     have h_all_exactly_2 : ∀ q ∈ Q, (P.filter (G.Adj q)).card = 2 := by
