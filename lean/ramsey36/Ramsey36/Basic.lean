@@ -2913,19 +2913,56 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   Finset.mem_univ, Finset.mem_insert, true_and]
         constructor
         · intro ⟨_, hx_not⟩
+          -- x ∈ M means x ≠ v and x ∉ N(v)
           push_neg at hx_not
-          sorry -- TODO: use commonNeighborsCard bounds to show x ∈ P' ∪ Q
+          -- For w ∈ M, commonNeighborsCard ∈ {1, 2} (proven in claim2)
+          -- So x ∈ P' ∨ x ∈ Q
+          by_cases h : commonNeighborsCard G v x = 1
+          · left; exact ⟨⟨_, hx_not⟩, h⟩
+          · right
+            constructor
+            · exact ⟨_, hx_not⟩
+            · -- Must be 2 (from commonNeighborsCard bounds for M)
+              sorry -- TODO: use bounds 1 ≤ commonNeighborsCard ≤ 2 for M
         · intro hx
-          sorry -- TODO: reverse direction (if x ∈ P' ∪ Q then x ∈ M)
+          cases hx with
+          | inl hp => exact hp.1
+          | inr hq => exact hq.1
 
       -- M-neighbors split into P'-neighbors and Q-neighbors
       have h_M_split : G.neighborFinset q ∩ M =
                        (G.neighborFinset q ∩ P') ∪ (G.neighborFinset q ∩ Q) := by
         rw [hM_partition, Finset.inter_union_distrib_left]
 
-      -- Now count: |M-neighbors| = 3, split into P' and Q
-      -- Since q ∈ Q, can't be adjacent to itself, so Q-neighbors are in Q \ {q}
-      sorry -- TODO: complete the counting
+      -- P' and Q are disjoint
+      have hPQ_disj : Disjoint P' Q := by
+        rw [Finset.disjoint_iff_inter_eq_empty]
+        ext w
+        simp only [P', Q, Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty, iff_false]
+        intro ⟨⟨_, h1⟩, ⟨_, h2⟩⟩
+        omega
+
+      -- Now count: |M-neighbors| = 3
+      calc (P.filter (G.Adj q)).card + (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card
+          = (P'.filter (G.Adj q)).card + (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card := by
+              sorry -- TODO: show P = P' so P.filter = P'.filter
+        _ = (G.neighborFinset q ∩ P').card + (G.neighborFinset q ∩ (Q.filter (fun q' => q ≠ q'))).card := by
+              congr 1
+              · ext x; simp only [Finset.mem_filter, Finset.mem_inter, mem_neighborFinset]
+              · ext x; simp only [Finset.mem_inter, Finset.mem_filter, mem_neighborFinset]
+                tauto
+        _ = (G.neighborFinset q ∩ P').card + ((G.neighborFinset q ∩ Q).filter (fun q' => q ≠ q')).card := by
+              congr 1
+              ext x; simp only [Finset.mem_inter, Finset.mem_filter]; tauto
+        _ ≤ (G.neighborFinset q ∩ P').card + (G.neighborFinset q ∩ Q).card := by
+              omega
+        _ = ((G.neighborFinset q ∩ P') ∪ (G.neighborFinset q ∩ Q)).card := by
+              rw [Finset.card_union_of_disjoint]
+              apply Finset.disjoint_of_subset_left (Finset.inter_subset_right _ _)
+              apply Finset.disjoint_of_subset_right (Finset.inter_subset_right _ _)
+              exact hPQ_disj
+        _ = (G.neighborFinset q ∩ M).card := by rw [← h_M_split]
+        _ = 3 := hq_M_count
 
     -- Key insight: since sum = 16 and all ≥ 2, all must be exactly 2
     have h_all_exactly_2 : ∀ q ∈ Q, (P.filter (G.Adj q)).card = 2 := by
