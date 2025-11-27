@@ -4514,7 +4514,138 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         exact h_tri {p, q1, q2} this
 
       -- So E_P consists only of edges from p to others: exactly 3 edges
-      sorry -- Final edge enumeration
+      -- Each edge connects p to some q ∈ P_nbrs
+      -- Bijection: E_P ↔ P_nbrs via e ↦ (the endpoint that's not p)
+
+      -- First, show every edge in E_P involves p
+      have h_all_edges_use_p : ∀ e ∈ E_P, e.1 = p ∨ e.2 = p := by
+        intro e he
+        simp only [E_P, Finset.mem_filter, Finset.mem_univ, true_and] at he
+        let ⟨he1_P, he2_P, he_lt, he_adj⟩ := he
+        by_cases h1 : e.1 = p
+        · left; exact h1
+        by_cases h2 : e.2 = p
+        · right; exact h2
+        · -- Neither endpoint is p, so both in P_nbrs, contradiction
+          exfalso
+          exact h_others_indep e.1 he1_P e.2 he2_P h1 h2 (Nat.ne_of_lt he_lt) he_adj
+
+      -- Define function: edge → the non-p endpoint
+      let edge_to_nbr : (e : Fin 18 × Fin 18) → e ∈ E_P → Fin 18 :=
+        fun e he =>
+          if h : e.1 = p then e.2 else e.1
+
+      -- Show this maps into P_nbrs
+      have h_maps_to_nbrs : ∀ e (he : e ∈ E_P), edge_to_nbr e he ∈ P_nbrs := by
+        intro e he
+        simp only [edge_to_nbr]
+        simp only [E_P, Finset.mem_filter, Finset.mem_univ, true_and] at he
+        let ⟨he1_P, he2_P, he_lt, he_adj⟩ := he
+        by_cases h : e.1 = p
+        · simp [h]
+          simp only [P_nbrs, Finset.mem_filter]
+          constructor; · exact he2_P
+          constructor
+          · intro h2; subst h2; exact Nat.lt_irrefl e.2 he_lt
+          · rw [← h]; exact he_adj
+        · simp [h]
+          have : e.2 = p := by
+            cases h_all_edges_use_p e he with
+            | inl h1 => exact absurd h1 h
+            | inr h2 => exact h2
+          simp only [P_nbrs, Finset.mem_filter]
+          constructor; · exact he1_P
+          constructor; · exact h
+          · rw [← this]; exact he_adj
+
+      -- Count: |E_P| = |P_nbrs| = 3
+      have : E_P.card = P_nbrs.card := by
+        -- Show the map is surjective: every q ∈ P_nbrs comes from some edge
+        have h_surj : ∀ q ∈ P_nbrs, ∃ e (he : e ∈ E_P), edge_to_nbr e he = q := by
+          intro q hq
+          simp only [P_nbrs, Finset.mem_filter] at hq
+          let ⟨hq_P, hq_ne, hq_adj⟩ := hq
+          -- Edge is either (p, q) or (q, p) depending on ordering
+          by_cases h_ord : p < q
+          · use (p, q)
+            constructor
+            · simp only [E_P, Finset.mem_filter, Finset.mem_univ, true_and]
+              exact ⟨hp, hq_P, h_ord, hq_adj⟩
+            · simp [edge_to_nbr, h_ord]
+          · -- q < p (since q ≠ p)
+            have h_ord' : q < p := Nat.lt_of_le_of_ne (Nat.le_of_not_lt h_ord) (Ne.symm hq_ne)
+            use (q, p)
+            constructor
+            · simp only [E_P, Finset.mem_filter, Finset.mem_univ, true_and]
+              exact ⟨hq_P, hp, h_ord', hq_adj⟩
+            · simp [edge_to_nbr, hq_ne]
+        -- Show the map is injective: different edges map to different neighbors
+        have h_inj : ∀ e1 e2 (he1 : e1 ∈ E_P) (he2 : e2 ∈ E_P),
+            edge_to_nbr e1 he1 = edge_to_nbr e2 he2 → e1 = e2 := by
+          intro e1 e2 he1 he2 h_eq
+          -- Both edges involve p and the same other endpoint
+          -- So they must be the same edge (canonically ordered)
+          simp only [E_P, Finset.mem_filter, Finset.mem_univ, true_and] at he1 he2
+          let q := edge_to_nbr e1 he1
+          have hq1 : q = edge_to_nbr e1 he1 := rfl
+          have hq2 : q = edge_to_nbr e2 he2 := h_eq
+          -- e1 and e2 both connect p and q with e.1 < e.2
+          -- Unpack e1
+          by_cases h1a : e1.1 = p
+          · have : e1.2 = q := by simp [edge_to_nbr, h1a] at hq1; exact hq1
+            by_cases h2a : e2.1 = p
+            · have : e2.2 = q := by simp [edge_to_nbr, h2a] at hq2; exact hq2
+              simp [‹e1.1 = p›, ‹e1.2 = q›, ‹e2.1 = p›, ‹e2.2 = q›]
+            · have : e2.1 = q := by simp [edge_to_nbr, h2a] at hq2; exact hq2
+              have : e2.2 = p := by
+                cases h_all_edges_use_p e2 he2 with
+                | inl h => exact absurd h h2a
+                | inr h => exact h
+              -- e1 = (p, q) and e2 = (q, p), but both satisfy e.1 < e.2
+              -- So p < q and q < p, contradiction
+              simp [‹e1.1 = p›, ‹e1.2 = q›, ‹e2.1 = q›, ‹e2.2 = p›] at he1 he2
+              omega
+          · have : e1.1 = q := by simp [edge_to_nbr, h1a] at hq1; exact hq1
+            have : e1.2 = p := by
+              cases h_all_edges_use_p e1 he1 with
+              | inl h => exact absurd h h1a
+              | inr h => exact h
+            by_cases h2a : e2.1 = p
+            · have : e2.2 = q := by simp [edge_to_nbr, h2a] at hq2; exact hq2
+              -- e1 = (q, p) and e2 = (p, q), contradiction as above
+              simp [‹e1.1 = q›, ‹e1.2 = p›, ‹e2.1 = p›, ‹e2.2 = q›] at he1 he2
+              omega
+            · have : e2.1 = q := by simp [edge_to_nbr, h2a] at hq2; exact hq2
+              have : e2.2 = p := by
+                cases h_all_edges_use_p e2 he2 with
+                | inl h => exact absurd h h2a
+                | inr h => exact h
+              simp [‹e1.1 = q›, ‹e1.2 = p›, ‹e2.1 = q›, ‹e2.2 = p›]
+        -- Conclude bijection: surjection + injection on finite sets → equal cardinality
+        -- Build image set
+        let img := E_P.attach.image (fun ⟨e, he⟩ => edge_to_nbr e he)
+        -- Image equals P_nbrs by surjection
+        have h_img_eq : img = P_nbrs := by
+          ext q
+          simp only [img, Finset.mem_image, Finset.mem_attach]
+          constructor
+          · intro ⟨⟨e, he⟩, _, h_eq⟩
+            rw [← h_eq]
+            exact h_maps_to_nbrs e he
+          · intro hq
+            obtain ⟨e, he, h_eq⟩ := h_surj q hq
+            exact ⟨⟨e, he⟩, Finset.mem_attach _ ⟨e, he⟩, h_eq⟩
+        -- Injection means |image| = |domain|
+        have h_inj' : (E_P.attach.image (fun ⟨e, he⟩ => edge_to_nbr e he)).card = E_P.attach.card := by
+          apply Finset.card_image_of_injective
+          intro ⟨e1, he1⟩ ⟨e2, he2⟩ h_eq
+          have : e1 = e2 := h_inj e1 e2 he1 he2 h_eq
+          simp [this]
+        calc E_P.card
+            = E_P.attach.card := Finset.card_attach.symm
+          _ = img.card := h_inj'.symm
+          _ = P_nbrs.card := by rw [h_img_eq]
+      rw [this, h3]
 
     -- But we need E_P ≥ 4 from the S-W structure
     have h_E_P_ge_4 : E_P.card ≥ 4 := P_has_at_least_four_edges h_reg h_tri h_no6 v P hP_card hP_props
