@@ -3250,6 +3250,52 @@ lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
   exact h_tri T hT_clique
 
+/-- P has at least 4 edges (from S-W structure forcing 4 pairs adjacent).
+This is the key lower bound that, combined with E_P ≤ 4, forces P to be exactly a 4-cycle.
+
+**Proof Strategy**: From the global degree constraint E_Q - E_P = 4 and structural properties:
+- Each q ∈ Q has exactly 2 neighbors in N(v)
+- This creates pairs of s's sharing Q-neighbors
+- By S-W bipartite 2-regular structure, at least 4 such pairs exist
+- Each pair forces an edge in P via `p_adjacent_of_shared_w`
+-/
+lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
+    (v : Fin 18) (P : Finset (Fin 18))
+    (hP_card : P.card = 4)
+    (hP_props : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) :
+    4 ≤ (Finset.filter (fun e : Fin 18 × Fin 18 =>
+      e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 < e.2 ∧ G.Adj e.1 e.2) Finset.univ).card := by
+  -- This is a substantial structural result requiring the S-W bipartite graph analysis
+  -- For now, we establish this using the invariant E_Q - E_P = 4 and bounds
+
+  -- Get Q from claim2
+  obtain ⟨P', Q, hP'_card, hQ_card, hP'_props, hQ_props⟩ :=
+    claim2_neighbor_structure h_reg h_tri h_no6 v
+
+  let E_P := Finset.filter (fun e : Fin 18 × Fin 18 =>
+    e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 < e.2 ∧ G.Adj e.1 e.2) Finset.univ
+
+  -- Key fact: E_Q - E_P = 4 (from global degree constraint)
+  -- We'll prove this holds regardless of P's internal structure
+
+  -- Step 1: Each p ∈ P has degree 5, with 1 to N(v), so 4 to M = P∪Q
+  -- Sum: 16 = 2*E_P + E_(P,Q)
+
+  -- Step 2: Each q ∈ Q has degree 5, with 2 to N(v), so 3 to M = P∪Q
+  -- Sum: 24 = E_(P,Q) + 2*E_Q
+
+  -- Step 3: From these equations: E_Q - E_P = 4
+
+  -- Step 4: We know E_P ≥ 2 (from P_has_at_least_two_edges)
+  -- We know E_P ≤ 4 (from P_has_at_most_four_edges)
+
+  -- Step 5: For the full proof, we'd show E_P ∈ {2,3} leads to contradictions
+  -- with the S-W structure, leaving only E_P = 4
+
+  -- For now, we assert this key bound which enables the case eliminations
+  sorry
+
 /-- P is 2-regular: each p ∈ P has exactly 2 neighbors in P.
 This is the key structural lemma that implies P is a 4-cycle.
 
@@ -3433,37 +3479,65 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have h_not_0 : P_nbrs.card ≠ 0 := by
     intro h0
     have h_Q_4 : Q_nbrs.card = 4 := by omega
-    -- If p has 4 Q-neighbors but P has 4 elements and at least 2 edges...
-    -- This leads to contradiction via edge counting
-    -- Using P_has_at_least_two_edges
-    sorry
+
+    let E_P := Finset.univ.filter (fun e : Fin 18 × Fin 18 =>
+      e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 < e.2 ∧ G.Adj e.1 e.2)
+
+    -- If p has 0 P-neighbors, all E_P edges are among the other 3 vertices
+    -- Maximum is K_3 (complete triangle) with 3 edges
+    have h_E_P_le_3 : E_P.card ≤ 3 := by
+      -- p contributes 0 to edge count
+      -- Other 3 vertices can have at most C(3,2) = 3 edges
+      sorry -- Detailed edge counting
+
+    -- But we need E_P ≥ 4 from the S-W structure
+    have h_E_P_ge_4 : E_P.card ≥ 4 := P_has_at_least_four_edges h_reg h_tri h_no6 v P hP_card hP_props
+
+    -- Contradiction: 3 < 4
+    omega
 
   -- Case |P_nbrs| = 1: p has 3 Q-neighbors
   have h_not_1 : P_nbrs.card ≠ 1 := by
     intro h1
     have h_Q_3 : Q_nbrs.card = 3 := by omega
-    -- Global counting: if all 4 p's had ≤1 P-neighbor, then |E(P)| ≤ 2
-    -- But P_has_at_least_two_edges gives contradiction
-    sorry
+
+    let E_P := Finset.univ.filter (fun e : Fin 18 × Fin 18 =>
+      e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 < e.2 ∧ G.Adj e.1 e.2)
+
+    -- If all 4 p's had ≤1 P-neighbor, then E_P ≤ 2 (at most 2K_2 graph)
+    have h_E_P_le_2 : E_P.card ≤ 2 := by
+      -- Handshaking: 2*E_P = sum of P-degrees
+      -- If each p has ≤1 P-neighbor: sum ≤ 4, so E_P ≤ 2
+      sorry -- Needs global reasoning about all p's
+
+    -- But we need E_P ≥ 4 from the S-W structure
+    have h_E_P_ge_4 : E_P.card ≥ 4 := P_has_at_least_four_edges h_reg h_tri h_no6 v P hP_card hP_props
+
+    -- Contradiction: 2 < 4
+    omega
 
   -- Case |P_nbrs| = 3: p has 1 Q-neighbor
   have h_not_3 : P_nbrs.card ≠ 3 := by
     intro h3
     have h_Q_1 : Q_nbrs.card = 1 := by omega
-    -- If p has 3 P-neighbors, we can apply P_has_at_most_four_edges
-    -- to derive a contradiction via edge counting
 
     -- Define the edge set
     let E_P := Finset.univ.filter (fun e : Fin 18 × Fin 18 =>
       e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 < e.2 ∧ G.Adj e.1 e.2)
 
-    -- By P_has_at_most_four_edges, E_P.card ≤ 4
-    have h_edge_bound := P_has_at_most_four_edges h_reg h_tri h_no6 v P hP_card hP_props
+    -- Key insight: if p has 3 P-neighbors {p2, p3, p4}, then by triangle-free,
+    -- {p2, p3, p4} are pairwise non-adjacent, so E_P has only the 3 edges from p
+    have h_E_P_eq_3 : E_P.card = 3 := by
+      -- P = {p, p2, p3, p4} where p connects to all others
+      -- Triangle-free forces {p2, p3, p4} independent
+      -- So edges are exactly {(p,p2), (p,p3), (p,p4)}
+      sorry -- Detailed edge counting
 
-    -- But if p has 3 P-neighbors and the structure is uniform (by symmetry),
-    -- then we would have more than 4 edges
-    -- This requires analyzing the global degree sequence
-    sorry -- Use edge bound + degree counting to derive contradiction
+    -- But we need E_P ≥ 4 from the S-W structure
+    have h_E_P_ge_4 : E_P.card ≥ 4 := P_has_at_least_four_edges h_reg h_tri h_no6 v P hP_card hP_props
+
+    -- Contradiction: 3 < 4
+    omega
 
   -- Case |P_nbrs| = 4: p has 0 Q-neighbors
   have h_not_4 : P_nbrs.card ≠ 4 := by
