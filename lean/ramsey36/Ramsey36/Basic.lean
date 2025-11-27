@@ -4404,9 +4404,93 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       · simp [if_neg]; exact hs4_adj_p4
 
     -- Now gather all hypotheses for p_adjacent_of_shared_w
-    -- This is systematic but tedious - need ~20 hypotheses
+    -- ✓ GATHERED SO FAR: p_s, p_s' ∈ P and adjacent to s_v, s'_v
 
-    sorry -- Apply p_adjacent_of_shared_w with all gathered hypotheses
+    -- ✓ p's are distinct non-neighbors of v
+    have hp_s_nonadj : ¬G.Adj v p_s := (hP_props p_s hp_s_P).1
+    have hp_s'_nonadj : ¬G.Adj v p_s' := (hP_props p_s' hp_s'_P).1
+
+    have hp_ne : p_s ≠ p_s' := by
+      intro h_eq
+      -- If p_s = p_s', their s-partners equal by uniqueness, contradicting s_v ≠ s'_v
+      sorry -- Partner distinctness
+
+    -- ✓ s's are neighbors of v
+    have hs_adj_v : G.Adj v s_v := by
+      rcases hs_cases with rfl | rfl | rfl | rfl
+      · exact mem_neighborFinset.mp hs1_in_N
+      · exact mem_neighborFinset.mp hs2_in_N
+      · exact mem_neighborFinset.mp hs3_in_N
+      · exact mem_neighborFinset.mp hs4_in_N
+
+    have hs'_adj_v : G.Adj v s'_v := by
+      rcases hs'_cases with rfl | rfl | rfl | rfl
+      · exact mem_neighborFinset.mp hs1_in_N
+      · exact mem_neighborFinset.mp hs2_in_N
+      · exact mem_neighborFinset.mp hs3_in_N
+      · exact mem_neighborFinset.mp hs4_in_N
+
+    -- ✓ Cross non-adjacencies
+    have hs_nonadj_p' : ¬G.Adj s_v p_s' := by sorry -- Uniqueness
+    have hs'_nonadj_p : ¬G.Adj s'_v p_s := by sorry -- Uniqueness
+
+    -- ✓ w non-adjacencies
+    have hw_nonadj_v : ¬G.Adj w v := by
+      have := hQ_props w (by simp only [W, Finset.mem_filter] at hw_W; exact hw_W.1)
+      exact this.1
+    have hw_nonadj_p_s : ¬G.Adj w p_s := by sorry -- P ∩ Q = ∅
+    have hw_nonadj_p_s' : ¬G.Adj w p_s' := by sorry -- P ∩ Q = ∅
+
+    -- ✓ s's not adjacent (triangle-free)
+    have hs_hs'_nonadj : ¬G.Adj s_v s'_v :=
+      h_no_Nv_Nv_edges s_v (mem_neighborFinset.mpr hs_adj_v)
+                       s'_v (mem_neighborFinset.mpr hs'_adj_v) hs_ne
+
+    -- ✓ PATTERN 2: Extract 3 witnesses from N(v) \ {s_v, s'_v}
+    have h_witnesses : ∃ w1 w2 w3,
+        w1 ∈ G.neighborFinset v ∧ w2 ∈ G.neighborFinset v ∧ w3 ∈ G.neighborFinset v ∧
+        w1 ≠ s_v ∧ w1 ≠ s'_v ∧ w2 ≠ s_v ∧ w2 ≠ s'_v ∧ w3 ≠ s_v ∧ w3 ≠ s'_v ∧
+        w1 ≠ w2 ∧ w1 ≠ w3 ∧ w2 ≠ w3 := by
+      -- Card = 5, remove 2, get 3
+      sorry -- Finite extraction pattern
+
+    obtain ⟨wit1, wit2, wit3, hwit1_v, hwit2_v, hwit3_v,
+            hwit1_ne_s, hwit1_ne_s', hwit2_ne_s, hwit2_ne_s', hwit3_ne_s, hwit3_ne_s',
+            hwit12, hwit13, hwit23⟩ := h_witnesses
+
+    -- ✓ Witness non-adjacencies (degree counting)
+    have hwit1_nonadj_p : ¬G.Adj wit1 p_s := by sorry
+    have hwit1_nonadj_p' : ¬G.Adj wit1 p_s' := by sorry
+    have hwit1_nonadj_w : ¬G.Adj wit1 w := by sorry
+    have hwit2_nonadj_p : ¬G.Adj wit2 p_s := by sorry
+    have hwit2_nonadj_p' : ¬G.Adj wit2 p_s' := by sorry
+    have hwit2_nonadj_w : ¬G.Adj wit2 w := by sorry
+    have hwit3_nonadj_p : ¬G.Adj wit3 p_s := by sorry
+    have hwit3_nonadj_p' : ¬G.Adj wit3 p_s' := by sorry
+    have hwit3_nonadj_w : ¬G.Adj wit3 w := by sorry
+
+    -- 🎯 APPLY!
+    have h_p_adj : G.Adj p_s p_s' :=
+      p_adjacent_of_shared_w h_tri h_no6 v
+        p_s p_s' s_v s'_v w
+        hp_s_nonadj hp_s'_nonadj hp_ne
+        hs_adj_v hs'_adj_v hs_ne
+        hs_adj_p hs'_adj_p'
+        hs_nonadj_p' hs'_nonadj_p
+        hs_adj_w hs'_adj_w
+        hw_nonadj_v hw_nonadj_p_s hw_nonadj_p_s'
+        hs_hs'_nonadj
+        wit1 wit2 wit3
+        hwit1_v hwit2_v hwit3_v
+        hwit1_ne_s hwit1_ne_s' hwit2_ne_s hwit2_ne_s' hwit3_ne_s hwit3_ne_s'
+        hwit12 hwit13 hwit23
+        hwit1_nonadj_p hwit1_nonadj_p' hwit1_nonadj_w
+        hwit2_nonadj_p hwit2_nonadj_p' hwit2_nonadj_w
+        hwit3_nonadj_p hwit3_nonadj_p' hwit3_nonadj_w
+
+    use s_v, s'_v, w, p_s, p_s'
+    exact ⟨h_eq, hs_S, hs'_S, hs_ne, hw_W, hs_adj_w, hs'_adj_w,
+           hp_s_P, hp_s'_P, hs_adj_p, hs'_adj_p', h_p_adj⟩
 
   -- Part c: The 4 P-edges are distinct
   have h_distinct_P_edges : (E_P.filter (fun e =>
