@@ -10,8 +10,12 @@ Key insight: Probability DERIVED from symmetry, not axiomatized!
 import Mathlib.Order.Lattice
 import Mathlib.Data.Real.Basic
 import Mathlib.Tactic
+import Mathlib.MeasureTheory.Measure.Count
+import Mathlib.Data.Fintype.Prod
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
+
+open MeasureTheory
 
 open Classical
 
@@ -385,20 +389,88 @@ theorem mutual_implies_pairwise (v : Valuation α) (s : Finset α)
         Finset.prod_singleton, Finset.not_mem_singleton.mpr hab] at this
   exact this
 
-/-- The converse does NOT hold in general.
-There exist pairwise independent events that are not mutually independent.
+/-! ## Counterexample: Pairwise ≠ Mutual Independence
+
+The converse does NOT hold in general: there exist pairwise independent events
+that are not mutually independent.
 
 Classic example: Roll two fair dice. Let A = "first die is odd", B = "second die is odd",
 C = "sum is odd". Then A, B, C are pairwise independent but not mutually independent.
+
+To prove this connection to standard probability, we first define a bridge from
+Mathlib's measure theory to the Knuth-Skilling framework.
 -/
-example : ∃ (α : Type*) (_ : PlausibilitySpace α) (v : Valuation α) (s : Finset α),
+
+/-- Bridge: Standard probability measure → Knuth-Skilling Valuation.
+
+This proves that Mathlib's measure theory satisfies our axioms!
+-/
+def valuationFromProbabilityMeasure {Ω : Type*} [MeasurableSpace Ω]
+    (μ : Measure Ω) [IsProbabilityMeasure μ] :
+    Valuation {s : Set Ω // MeasurableSet s} where
+  val s := (μ s.val).toReal
+  monotone := by
+    intro a b h
+    apply ENNReal.toReal_mono (measure_ne_top μ b.val)
+    exact measure_mono h
+  val_bot := by simp
+  val_top := by simp [measure_univ]
+
+example : ∃ (α : Type) (_ : PlausibilitySpace α) (v : Valuation α) (s : Finset α),
     PairwiseIndependent v s ∧ ¬ MutuallyIndependent v s := by
-  -- Classical XOR counterexample: Bool × Bool with uniform distribution.
-  -- Construction: A = "first bit true", B = "second bit true", C = "XOR true"
-  -- Each pair is independent (P(X∩Y) = P(X)·P(Y) = 1/4),
-  -- but triple is not (P(A∩B∩C) = 0 ≠ 1/8 = P(A)·P(B)·P(C)).
-  -- Full formal construction requires finite probability space setup.
-  sorry
+  -- XOR counterexample using explicit finite counting
+  -- Sample space: Bool × Bool (four outcomes)
+  let Ω := Bool × Bool
+
+  -- Event lattice: all subsets of Ω
+  let α := Set Ω
+
+  -- All subsets of a finite type are finite
+  haveI : ∀ (s : Set Ω), Fintype s := fun s => Set.fintypeSubset (Set.univ : Set Ω) (by simp)
+
+  -- Uniform probability valuation: P(S) = |S|/4
+  letI v : Valuation α :=
+    { val := fun s => (Fintype.card s : ℝ) / 4
+      monotone := by
+        intro a b hab
+        apply div_le_div_of_nonneg_right _ (by norm_num : (0 : ℝ) ≤ 4)
+        -- TODO: Need Fintype lemma showing a ⊆ b → card a ≤ card b
+        -- This is clearly true for finite sets but Lean API is elusive
+        sorry
+      val_bot := by
+        -- TODO: Show (Fintype.card ∅ : ℝ) / 4 = 0
+        -- Clearly 0/4 = 0 but need right Fintype.card_empty lemma
+        sorry
+      val_top := by
+        -- TODO: Show (Fintype.card (univ : Set (Bool × Bool)) : ℝ) / 4 = 1
+        -- Clearly |univ| = 4 for Bool × Bool, so 4/4 = 1
+        sorry }
+
+  -- Define events
+  let A : α := {x | x.1 = true}      -- First coin heads: P(A) = 2/4 = 1/2
+  let B : α := {x | x.2 = true}      -- Second coin heads: P(B) = 2/4 = 1/2
+  let C : α := {x | x.1 ≠ x.2}       -- Coins disagree (XOR): P(C) = 2/4 = 1/2
+
+  use α, inferInstance, v, {A, B, C}
+  constructor
+  · -- Prove PairwiseIndependent: v(X ⊓ Y) = v(X) · v(Y) for all distinct pairs
+    intro s hs s' hs' h_distinct
+    -- TODO: Case analysis on which pair (s, s') from {A, B, C}
+    -- For each of the 6 ordered pairs (excluding equal):
+    -- - (A, B): A ∩ B = {(T,T)}, so |A∩B| = 1, thus P(A∩B) = 1/4 = (2/4)·(2/4)
+    -- - (A, C): A ∩ C = {(T,F)}, so |A∩C| = 1, thus P(A∩C) = 1/4 = (2/4)·(2/4)
+    -- - (B, C): B ∩ C = {(F,T)}, so |B∩C| = 1, thus P(B∩C) = 1/4 = (2/4)·(2/4)
+    -- (plus symmetric cases B,A), (C,A), (C,B))
+    -- Each case: compute Fintype.card explicitly and verify 1/4 = 1/2 · 1/2
+    sorry
+  · -- Prove ¬ MutuallyIndependent
+    intro h_mutual
+    -- TODO: Apply h_mutual to the triple {A, B, C} and derive contradiction
+    -- Key computation: A ∩ B ∩ C = {(T,T)} ∩ {(T,F), (F,T)} = ∅
+    -- So v(A ∩ B ∩ C) = |∅|/4 = 0/4 = 0
+    -- But v(A)·v(B)·v(C) = (2/4)·(2/4)·(2/4) = 8/64 = 1/8
+    -- Since 0 ≠ 1/8, we have a contradiction
+    sorry
 
 /-! ### Conditional Probability Properties
 
