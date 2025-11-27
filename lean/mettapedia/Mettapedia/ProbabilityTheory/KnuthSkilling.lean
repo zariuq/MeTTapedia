@@ -282,9 +282,18 @@ We derive that N(x) = 1 - x from functional equation properties.
 /-- Negation data: function N for evaluating complements.
 This parallels the combine_fn S for disjunction.
 
-**Note**: The linearity N(x) = 1 - x is not derivable from involutive + antitone alone
-(there exist pathological non-continuous involutions on [0,1]). Following the paper's
-approach, we require continuity/regularity to force the unique solution N(x) = 1 - x. -/
+**IMPORTANT**: The linearity N(x) = 1 - x is NOT derivable from
+continuity + involutive + antitone + boundary conditions alone!
+Counterexample: N(x) = (1 - x^p)^{1/p} for any p > 0 satisfies all these
+properties but N(x) ≠ 1 - x unless p = 1. See `involution_counterexample` below.
+
+However, linearity IS derivable from:
+- `negate_val` (consistency with complements) PLUS
+- `CoxConsistency` (which gives the sum rule via `complement_rule`)
+
+For standalone `NegationData` without `CoxConsistency`, we include `negate_linear`
+as an axiom. When combined with `CoxConsistency` in `CoxConsistencyFull`,
+it becomes derivable (see `negate_linear_from_cox`). -/
 structure NegationData (α : Type*) [PlausibilitySpace α]
     [ComplementedLattice α] (v : Valuation α) where
   /-- The negation function N from Cox's theorem -/
@@ -300,34 +309,104 @@ structure NegationData (α : Type*) [PlausibilitySpace α]
   negate_one : negate 1 = 0
   /-- N(N(x)) = x (involutive: complement of complement is original) -/
   negate_involutive : ∀ x, negate (negate x) = x
-  /-- Regularity condition: N is continuous (forces unique solution N(x) = 1 - x) -/
+  /-- Regularity condition: N is continuous -/
   negate_continuous : Continuous negate
-  /-- The derived linearity: N(x) = 1 - x on [0,1]
-  This is now provable from the above conditions (continuity + involutive + antitone). -/
+  /-- Linearity: N(x) = 1 - x on [0,1].
+  This is NOT derivable from continuity + involutive + antitone alone
+  (see counterexample below), but IS derivable when combined with CoxConsistency. -/
   negate_linear : ∀ x, 0 ≤ x → x ≤ 1 → negate x = 1 - x
 
-/-- Main theorem: N must be the linear function N(x) = 1 - x.
-
-Proof strategy: N is an involutive antitone function on [0,1] that swaps 0 ↔ 1.
-The key steps are:
-1. From N(N(x)) = x and N antitone: N is bijective and self-inverse
-2. From N(0) = 1, N(1) = 0: N swaps endpoints
-3. For any x: consider y = N(x), then N(y) = N(N(x)) = x
-4. Antitone + involutive + endpoint-swapping → N(x) = 1 - x
-
-The full proof requires showing that any continuous involutive antitone map
-fixing 0 ↔ 1 is linear. This can be done via:
-- Bisection argument (like combine_double)
-- Or: derivative analysis (N'(x) = -1 from involutive property)
--/
+/-- Extract linearity from NegationData. -/
 theorem negate_is_linear (nd : NegationData α v) :
     ∀ x, 0 ≤ x → x ≤ 1 → nd.negate x = 1 - x :=
   nd.negate_linear
+
+/-! ### Counterexample: Involution Properties Don't Imply Linearity
+
+The function N(x) = √(1 - x²) satisfies:
+- Continuous ✓
+- Antitone ✓
+- Involutive: N(N(x)) = √(1 - (1-x²)) = √(x²) = |x| = x for x ∈ [0,1] ✓
+- N(0) = 1, N(1) = 0 ✓
+
+But N(1/2) = √(3/4) = √3/2 ≈ 0.866 ≠ 0.5 = 1 - 1/2.
+
+This shows that linearity does NOT follow from these properties alone.
+It DOES follow when combined with CoxConsistency (sum rule) via complement_rule.
+-/
+
+/-- The p-norm involution: N_p(x) = (1 - x^p)^{1/p} for p > 0.
+For p = 1: N₁(x) = 1 - x (linear)
+For p = 2: N₂(x) = √(1 - x²) (not linear)
+For p → ∞: N_∞(x) → max(1-x, 0) ∨ similar -/
+noncomputable def pNormInvolution (p : ℝ) (hp : 0 < p) (x : ℝ) : ℝ :=
+  (1 - x ^ p) ^ (1 / p)
+
+/-- The p-norm involution satisfies N(0) = 1. -/
+lemma pNormInvolution_zero (p : ℝ) (hp : 0 < p) :
+    pNormInvolution p hp 0 = 1 := by
+  simp [pNormInvolution, hp, Real.zero_rpow (ne_of_gt hp)]
+
+/-- The p-norm involution satisfies N(1) = 0. -/
+lemma pNormInvolution_one (p : ℝ) (hp : 0 < p) :
+    pNormInvolution p hp 1 = 0 := by
+  simp [pNormInvolution, Real.zero_rpow (one_div_ne_zero (ne_of_gt hp))]
+
+/-- The p-norm involution is involutive on [0,1]. -/
+lemma pNormInvolution_involutive (p : ℝ) (hp : 0 < p) (x : ℝ)
+    (hx0 : 0 ≤ x) (hx1 : x ≤ 1) :
+    pNormInvolution p hp (pNormInvolution p hp x) = x := by
+  simp only [pNormInvolution]
+  have h1 : 0 ≤ 1 - x ^ p := by
+    have hxp : x ^ p ≤ 1 := by
+      apply Real.rpow_le_one hx0 hx1 (le_of_lt hp)
+    linarith
+  have h2 : (1 - x ^ p) ^ (1 / p) ^ p = 1 - x ^ p := by
+    rw [← Real.rpow_natCast, ← Real.rpow_mul h1]
+    simp [hp, ne_of_gt hp]
+  rw [h2]
+  ring_nf
+  have hxp_nn : 0 ≤ x ^ p := Real.rpow_nonneg hx0 p
+  have h3 : (1 - (1 - x ^ p)) ^ (1 / p) = (x ^ p) ^ (1 / p) := by ring_nf
+  rw [h3, ← Real.rpow_mul hxp_nn]
+  simp [hp, ne_of_gt hp, Real.rpow_one, hx0]
+
+/-- The p=2 involution (√(1-x²)) is NOT linear: N(1/2) ≠ 1/2. -/
+theorem involution_counterexample :
+    pNormInvolution 2 (by norm_num : (0 : ℝ) < 2) (1/2) ≠ 1 - 1/2 := by
+  simp only [pNormInvolution]
+  -- N(1/2) = (1 - (1/2)²)^{1/2} = (3/4)^{1/2} = √(3/4) ≈ 0.866
+  -- But 1 - 1/2 = 1/2 = 0.5
+  -- So we need √(3/4) ≠ 1/2, i.e., 3/4 ≠ 1/4
+  norm_num
+  rw [Real.sqrt_ne_iff']
+  · left; norm_num
+  · norm_num
 
 /-- Extended Cox consistency including negation function -/
 structure CoxConsistencyFull (α : Type*) [PlausibilitySpace α]
     [ComplementedLattice α] (v : Valuation α) extends
     CoxConsistency α v, NegationData α v
+
+/-- KEY THEOREM: In `CoxConsistencyFull`, negation linearity is DERIVABLE!
+
+When we have both:
+- `negate_val`: v(b) = negate(v(a)) for complements a, b
+- `complement_rule` (from CoxConsistency): v(b) = 1 - v(a) for complements
+
+Then for any complementary pair (a, b):
+  negate(v(a)) = v(b) = 1 - v(a)
+
+This shows negate(x) = 1 - x for all x in the range of the valuation. -/
+theorem negate_linear_from_cox (hCF : CoxConsistencyFull α v)
+    (a b : α) (h_disj : Disjoint a b) (h_top : a ⊔ b = ⊤) :
+    hCF.negate (v.val a) = 1 - v.val a := by
+  -- From NegationData.negate_val: v(b) = negate(v(a))
+  have h1 : v.val b = hCF.negate (v.val a) := hCF.negate_val a b h_disj h_top
+  -- From complement_rule (using CoxConsistency): v(b) = 1 - v(a)
+  have h2 : v.val b = 1 - v.val a := complement_rule v hCF.toCoxConsistency a b h_disj h_top
+  -- Combine: negate(v(a)) = 1 - v(a)
+  rw [← h1, h2]
 
 /-- Sum rule: For disjoint events, v(a ⊔ b) = v(a) + v(b).
 This is now a THEOREM, not an axiom! It follows from combine_fn_is_add. -/
