@@ -434,17 +434,17 @@ example : ∃ (α : Type) (_ : PlausibilitySpace α) (v : Valuation α) (s : Fin
       monotone := by
         intro a b hab
         apply div_le_div_of_nonneg_right _ (by norm_num : (0 : ℝ) ≤ 4)
-        -- TODO: Need Fintype lemma showing a ⊆ b → card a ≤ card b
-        -- This is clearly true for finite sets but Lean API is elusive
-        sorry
+        apply Nat.cast_le.mpr
+        apply Fintype.card_le_of_embedding
+        exact Set.embeddingOfSubset a b hab
       val_bot := by
-        -- TODO: Show (Fintype.card ∅ : ℝ) / 4 = 0
-        -- Clearly 0/4 = 0 but need right Fintype.card_empty lemma
-        sorry
+        rw [Fintype.card_eq_zero]
+        · simp
+        · rw [← Set.isEmpty_coe_sort]; simp
       val_top := by
-        -- TODO: Show (Fintype.card (univ : Set (Bool × Bool)) : ℝ) / 4 = 1
-        -- Clearly |univ| = 4 for Bool × Bool, so 4/4 = 1
-        sorry }
+        rw [Fintype.card_congr (Equiv.Set.univ (Bool × Bool))]
+        simp only [Fintype.card_prod, Fintype.card_bool]
+        norm_num }
 
   -- Define events
   let A : α := {x | x.1 = true}      -- First coin heads: P(A) = 2/4 = 1/2

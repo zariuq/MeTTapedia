@@ -1621,6 +1621,264 @@ lemma p_adjacent_of_shared_w {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   simp only [mem_filter] at hp2_in_filter
   exact hp2_in_filter.2
 
+/-! ### Helper lemmas for the 4-cycle structure -/
+
+/-- Each s ∈ N(v) has exactly 3 neighbors in Q (non-neighbors of v).
+This is because s has degree 5, with 1 edge to v and 1 edge to its p-partner,
+and s is not adjacent to any other s (N(v) is independent) or other p (cross non-adjacency). -/
+lemma s_has_three_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
+    (v s p : Fin 18)
+    (hs_adj_v : G.Adj v s) (hs_adj_p : G.Adj s p)
+    (hp_nonadj_v : ¬G.Adj v p) (hvp_ne : v ≠ p)
+    (Q : Finset (Fin 18))
+    (hQ_def : ∀ q, q ∈ Q ↔ ¬G.Adj v q ∧ commonNeighborsCard G v q = 2)
+    (hQ_complete : ∀ q, ¬G.Adj v q → commonNeighborsCard G v q = 2 → q ∈ Q) :
+    (Q.filter (G.Adj s)).card = 3 := by
+  -- s has degree 5 (from regularity)
+  have hs_deg : G.degree s = 5 := h_reg s
+
+  -- s's neighbors include v and p
+  have hv_nbr : v ∈ G.neighborFinset s := by rw [mem_neighborFinset]; exact G.symm hs_adj_v
+  have hp_nbr : p ∈ G.neighborFinset s := by rw [mem_neighborFinset]; exact hs_adj_p
+
+  -- The neighbors of s are: v, p, and 3 others
+  -- These 3 others must be in Q (non-neighbors of v with 2 common neighbors)
+
+  -- For now, we use the degree constraint directly
+  -- Full proof would show the 3 remaining neighbors are exactly the Q-neighbors
+  sorry
+
+/-- The induced subgraph on P has at least 2 edges (P is not too sparse).
+This follows from the S-W structure: at least 2 pairs of s's share W-neighbors. -/
+lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
+    (v : Fin 18) (P : Finset (Fin 18))
+    (hP_card : P.card = 4)
+    (hP_props : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) :
+    2 ≤ (P.filter (fun p₁ => (P.filter (fun p₂ => p₁ ≠ p₂ ∧ G.Adj p₁ p₂)).Nonempty)).card := by
+  -- The S-W bipartite graph has at least 2 connected components means at least 2 pairs
+  -- share W-neighbors, giving at least 2 P-edges by p_adjacent_of_shared_w
+  sorry
+
+/-- The induced subgraph on P has at most 4 edges (P is not K₄).
+Proof: If P were K₄ (6 edges), then each p would have 3 P-neighbors.
+With 1 N(v)-neighbor, each p would have only 1 Q-neighbor.
+But the S-W structure requires each p to have at least 2 Q-neighbors. -/
+lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
+    (v : Fin 18) (P : Finset (Fin 18))
+    (hP_card : P.card = 4)
+    (hP_props : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) :
+    (Finset.filter (fun e : Fin 18 × Fin 18 => e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 < e.2 ∧ G.Adj e.1 e.2)
+      Finset.univ).card ≤ 4 := by
+  -- Each p has degree 5, exactly 1 neighbor in N(v) (its s-partner)
+  -- So each p has 4 neighbors outside N(v) ∪ {v}, i.e., in P ∪ Q
+  -- If P were complete, each p has 3 P-neighbors and 1 Q-neighbor
+  -- The detailed argument shows this violates the W-sharing structure
+  sorry
+
+/-- P is 2-regular: each p ∈ P has exactly 2 neighbors in P.
+This is the key structural lemma that implies P is a 4-cycle. -/
+lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
+    (v : Fin 18) (P : Finset (Fin 18))
+    (hP_card : P.card = 4)
+    (hP_props : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) :
+    ∀ p ∈ P, (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card = 2 := by
+  intro p hp
+  -- Each p has degree 5
+  -- 1 neighbor in N(v) (the s-partner)
+  -- 4 neighbors in P ∪ Q
+  -- The S-W structure forces exactly 2 of these to be in P
+
+  -- Lower bound: if p had ≤1 P-neighbors, it would have ≥3 Q-neighbors
+  -- This leads to contradiction via the W-structure constraints
+
+  -- Upper bound: if p had ≥3 P-neighbors, it would have ≤1 Q-neighbor
+  -- This also leads to contradiction
+
+  sorry
+
+/-- A 2-regular graph on 4 vertices is a 4-cycle (C₄).
+This is a graph-theoretic fact: 4 vertices with each having degree 2
+forms a single cycle of length 4. -/
+lemma two_regular_four_vertices_is_cycle
+    {α : Type*} [DecidableEq α] [Fintype α]
+    (P : Finset α) (hP_card : P.card = 4)
+    (adj : α → α → Prop) [DecidableRel adj]
+    (h_symm : ∀ x y, adj x y → adj y x)
+    (h_irrefl : ∀ x, ¬adj x x)
+    (h_2reg : ∀ p ∈ P, (P.filter (fun q => q ≠ p ∧ adj p q)).card = 2) :
+    ∃ (p1 p2 p3 p4 : α),
+      p1 ≠ p2 ∧ p1 ≠ p3 ∧ p1 ≠ p4 ∧ p2 ≠ p3 ∧ p2 ≠ p4 ∧ p3 ≠ p4 ∧
+      P = {p1, p2, p3, p4} ∧
+      adj p1 p2 ∧ adj p2 p3 ∧ adj p3 p4 ∧ adj p4 p1 ∧
+      ¬adj p1 p3 ∧ ¬adj p2 p4 := by
+  classical
+  -- pick an arbitrary vertex p1
+  obtain ⟨p1, hp1P⟩ : ∃ p, p ∈ P := by
+    have : 0 < P.card := by simpa [hP_card] using (by decide : (0 : ℕ) < 4)
+    simpa [Finset.card_pos] using this
+
+  -- neighbors of p1 inside P: exactly two, call them p2 and p4
+  set N1 : Finset α := P.filter (fun q => q ≠ p1 ∧ adj p1 q)
+  have hN1_card : N1.card = 2 := h_2reg _ hp1P
+  obtain ⟨p2, p4, hp2p4, hN1_eq⟩ := Finset.card_eq_two.mp hN1_card
+  have hp2N1 : p2 ∈ N1 := by simpa [hN1_eq] using Finset.mem_insert_self _ _
+  have hp4N1 : p4 ∈ N1 := by
+    have : p4 ∈ ({p2, p4} : Finset α) := by simp [hp2p4]
+    simpa [hN1_eq] using this
+  have hp2P : p2 ∈ P := (Finset.mem_filter.mp hp2N1).1
+  have hp4P : p4 ∈ P := (Finset.mem_filter.mp hp4N1).1
+  have hp1p2 : adj p1 p2 := (Finset.mem_filter.mp hp2N1).2.2
+  have hp1p4 : adj p1 p4 := (Finset.mem_filter.mp hp4N1).2.2
+  have hp2ne1 : p2 ≠ p1 := (Finset.mem_filter.mp hp2N1).2.1
+  have hp4ne1 : p4 ≠ p1 := (Finset.mem_filter.mp hp4N1).2.1
+  have hp1ne2 : p1 ≠ p2 := hp2ne1.symm
+  have hp1ne4 : p1 ≠ p4 := hp4ne1.symm
+  have hp2ne4 : p2 ≠ p4 := hp2p4
+
+  -- the remaining vertex p3 is extracted by erasing p1,p2,p4
+  set P0 : Finset α := P.erase p1
+  set P1 : Finset α := P0.erase p2
+  set P2 : Finset α := P1.erase p4
+  have hP0_card : P0.card = 3 := by simp [P0, hp1P, hP_card]
+  have hp2P0 : p2 ∈ P0 := by simpa [P0, Finset.mem_erase, hp2ne1] using hp2P
+  have hP1_card : P1.card = 2 := by simp [P1, hp2P0, hP0_card]
+  have hp4P1 : p4 ∈ P1 := by
+    have hp4P0 : p4 ∈ P0 := by simpa [P0, Finset.mem_erase, hp4ne1] using hp4P
+    simpa [P1, Finset.mem_erase, hp2ne4.symm] using hp4P0
+  have hP2_card : P2.card = 1 := by simp [P2, hp4P1, hP1_card]
+  obtain ⟨p3, hP2_eq⟩ := Finset.card_eq_one.mp hP2_card
+  have hp3P2 : p3 ∈ P2 := by simpa [hP2_eq]
+  have hp3P1 : p3 ∈ P1 := Finset.mem_of_subset (Finset.erase_subset _ _) hp3P2
+  have hp3P0 : p3 ∈ P0 := Finset.mem_of_subset (Finset.erase_subset _ _) hp3P1
+  have hp3P : p3 ∈ P := Finset.mem_of_subset (Finset.erase_subset _ _) hp3P0
+  have hp3ne4 : p3 ≠ p4 := (Finset.mem_erase.mp (by simpa [P2] using hp3P2)).1
+  have hp3ne2 : p3 ≠ p2 := (Finset.mem_erase.mp (by simpa [P1] using hp3P1)).1
+  have hp3ne1 : p3 ≠ p1 := (Finset.mem_erase.mp (by simpa [P0] using hp3P0)).1
+
+  -- p3 is not adjacent to p1, otherwise it would be in N1
+  have h_not_adj_13 : ¬adj p1 p3 := by
+    intro h
+    have : p3 ∈ N1 := Finset.mem_filter.mpr ⟨hp3P, hp3ne1, h⟩
+    have : p3 ∈ ({p2, p4} : Finset α) := by simpa [hN1_eq] using this
+    rcases Finset.mem_insert.mp this with h' | h'
+    · exact hp3ne2 h'
+    · simp only [Finset.mem_singleton] at h'; exact hp3ne4 h'
+
+  -- describe P.erase p3 explicitly
+  have hP_erase3_card : (P.erase p3).card = 3 := by simp [hp3P, hP_card]
+  have hsubset_erase3 : ({p1, p2, p4} : Finset α) ⊆ P.erase p3 := by
+    intro x hx
+    rcases Finset.mem_insert.mp hx with rfl | hx
+    · exact Finset.mem_erase.mpr ⟨hp3ne1.symm, hp1P⟩
+    rcases Finset.mem_insert.mp hx with rfl | hx
+    · exact Finset.mem_erase.mpr ⟨hp3ne2.symm, hp2P⟩
+    · simp only [Finset.mem_singleton] at hx; subst hx
+      exact Finset.mem_erase.mpr ⟨hp3ne4.symm, hp4P⟩
+  have h_card_three : ({p1, p2, p4} : Finset α).card = 3 := by
+    simp [hp1ne2, hp1ne4, hp2ne4]
+  have hErase3_eq : P.erase p3 = {p1, p2, p4} := by
+    have hle : (P.erase p3).card ≤ ({p1, p2, p4} : Finset α).card := by
+      simp only [hP_erase3_card, h_card_three]; rfl
+    exact (Finset.eq_of_subset_of_card_le hsubset_erase3 hle).symm
+
+  -- neighbors of p3: they live in {p2,p4} since p1 is not adjacent
+  set N3 : Finset α := P.filter (fun q => q ≠ p3 ∧ adj p3 q)
+  have hN3_card : N3.card = 2 := h_2reg _ hp3P
+  have hN3_subset : N3 ⊆ ({p2, p4} : Finset α) := by
+    intro x hx
+    have hx_ne : x ≠ p3 := (Finset.mem_filter.mp hx).2.1
+    have hxP : x ∈ P := (Finset.mem_filter.mp hx).1
+    have hx_in_erase : x ∈ P.erase p3 := by simp [Finset.mem_erase, hx_ne, hxP]
+    have hx_in_set : x ∈ ({p1, p2, p4} : Finset α) := by simpa [hErase3_eq] using hx_in_erase
+    rcases Finset.mem_insert.mp hx_in_set with hx1 | hx_rest
+    · subst hx1
+      have h_adj := (Finset.mem_filter.mp hx).2.2
+      exact (h_not_adj_13 (h_symm _ _ h_adj)).elim
+    rcases Finset.mem_insert.mp hx_rest with hx2 | hx3
+    · subst hx2; simp
+    · simp only [Finset.mem_singleton] at hx3; subst hx3; simp
+  have hN3_eq : N3 = ({p2, p4} : Finset α) := by
+    apply Finset.eq_of_subset_of_card_le hN3_subset
+    have hcard : ({p2, p4} : Finset α).card = 2 := by simp [hp2ne4]
+    have : N3.card ≤ ({p2, p4} : Finset α).card := by
+      have : N3.card = 2 := hN3_card
+      have : N3.card ≤ 2 := by omega
+      simpa [hcard] using this
+    simpa [hN3_card, hcard] using this
+  have hp3p2 : adj p3 p2 := by
+    have : p2 ∈ N3 := by simpa [hN3_eq] using Finset.mem_insert_self _ _
+    exact (Finset.mem_filter.mp this).2.2
+  have hp3p4 : adj p3 p4 := by
+    have : p4 ∈ N3 := by
+      have : p4 ∈ ({p2, p4} : Finset α) := by simp
+      simpa [hN3_eq] using this
+    exact (Finset.mem_filter.mp this).2.2
+
+  -- neighbors of p2: must be p1 and p3, ruling out p4
+  set N2 : Finset α := P.filter (fun q => q ≠ p2 ∧ adj p2 q)
+  have hN2_card : N2.card = 2 := h_2reg _ hp2P
+  have hp1N2 : p1 ∈ N2 := Finset.mem_filter.mpr ⟨hp1P, hp1ne2, h_symm _ _ hp1p2⟩
+  have hp3N2 : p3 ∈ N2 := Finset.mem_filter.mpr ⟨hp3P, hp3ne2, h_symm _ _ hp3p2⟩
+  have hN2_subset : ({p1, p3} : Finset α) ⊆ N2 := by
+    intro x hx
+    rcases Finset.mem_insert.mp hx with rfl | hx
+    · exact hp1N2
+    · simp only [Finset.mem_singleton] at hx; subst hx; exact hp3N2
+  have h_not_adj_24 : ¬adj p2 p4 := by
+    intro h
+    have hp4N2 : p4 ∈ N2 := Finset.mem_filter.mpr ⟨hp4P, hp2ne4.symm, h⟩
+    have hsub : ({p1, p3, p4} : Finset α) ⊆ N2 := by
+      intro x hx
+      rcases Finset.mem_insert.mp hx with rfl | hx
+      · exact hp1N2
+      rcases Finset.mem_insert.mp hx with rfl | hx
+      · exact hp3N2
+      · simp only [Finset.mem_singleton] at hx; subst hx; exact hp4N2
+    have hcard : ({p1, p3, p4} : Finset α).card = 3 := by
+      have hp1ne3 : p1 ≠ p3 := hp3ne1.symm
+      have hp1ne4' : p1 ≠ p4 := hp1ne4
+      have hp3ne4' : p3 ≠ p4 := hp3ne4
+      simp [hp1ne3, hp1ne4', hp3ne4']
+    have : 3 ≤ N2.card := by
+      have := Finset.card_le_card hsub
+      simp only [hcard] at this
+      exact this
+    have : (N2.card) ≠ 2 := by omega
+    exact this hN2_card
+  have hN2_eq : N2 = ({p1, p3} : Finset α) := by
+    have hcard : ({p1, p3} : Finset α).card = 2 := by
+      have hp1ne3 : p1 ≠ p3 := hp3ne1.symm
+      simp [hp1ne3]
+    have hle : N2.card ≤ ({p1, p3} : Finset α).card := by
+      simp only [hN2_card, hcard]; rfl
+    exact (Finset.eq_of_subset_of_card_le hN2_subset hle).symm
+
+  have hp2p3 : adj p2 p3 := h_symm _ _ hp3p2
+  have hp4p3 : adj p4 p3 := h_symm _ _ hp3p4
+  have hp4p1 : adj p4 p1 := h_symm _ _ hp1p4
+
+  -- P equals the four-element set
+  have hsubset : ({p1, p2, p3, p4} : Finset α) ⊆ P := by
+    intro x hx
+    rcases Finset.mem_insert.mp hx with rfl | hx
+    · exact hp1P
+    rcases Finset.mem_insert.mp hx with rfl | hx
+    · exact hp2P
+    rcases Finset.mem_insert.mp hx with rfl | hx
+    · exact hp3P
+    · simp only [Finset.mem_singleton] at hx; subst hx; exact hp4P
+  have h_card_four : ({p1, p2, p3, p4} : Finset α).card = 4 := by
+    simp [hp1ne2, hp3ne1.symm, hp1ne4, hp3ne2.symm, hp2ne4, hp3ne4]
+  have hP_eq : P = {p1, p2, p3, p4} :=
+    (Finset.eq_of_subset_of_card_le hsubset (by simp [h_card_four, hP_card])).symm
+
+  refine ⟨p1, p2, p3, p4, hp1ne2, hp3ne1.symm, hp1ne4, hp3ne2.symm, hp2ne4, hp3ne4, hP_eq,
+    hp1p2, hp2p3, hp3p4, hp4p1, h_not_adj_13, h_not_adj_24⟩
+
 /-- P induces a 4-cycle: exactly 4 edges forming a cycle.
 
 From Cariolaro's proof:
@@ -1856,11 +2114,11 @@ lemma claim3_four_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
   -- N \ S has exactly 1 element
   have h_diff : (N \ S).card = 1 := by
-    rw [Finset.card_sdiff_of_subset hS_sub_N, hN_card, hS_card]
+    simp only [Finset.card_sdiff_of_subset hS_sub_N, hN_card, hS_card]
 
   -- Extract t from N \ S
   have h_nonempty_diff : (N \ S).Nonempty := by
-    rw [← card_pos]; omega
+    rw [← card_pos, h_diff]; norm_num
 
   obtain ⟨t, ht_in_diff⟩ := h_nonempty_diff
   have ht_in_N : t ∈ N := mem_sdiff.mp ht_in_diff |>.1
@@ -1950,14 +2208,84 @@ lemma claim3_four_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     have : s4 = s3 := hs3_unique s4 h43_in
     exact hs34_ne this.symm
 
-  -- TODO: The remaining proof requires:
-  -- 1. Degree counting to identify edge structure between S and Q
-  -- 2. Finding pairs of s's that share W-neighbors
-  -- 3. Applying p_adjacent_of_shared_w to get edges in P
-  -- 4. Showing exactly 4 edges form C4
-  -- This is extensive (~200-300 lines) and requires careful bookkeeping
+  -- The remaining proof uses degree counting to establish P forms a C4.
+  --
+  -- Key structure:
+  -- - Each s_i has degree 5: edges to v, p_i, and 3 vertices in Q
+  -- - N(v) = {t, s1, s2, s3, s4} is independent (triangle-free)
+  -- - Q splits into T (4 vertices adjacent to t) and W (4 vertices not adjacent to t)
+  -- - Each q ∈ T has 2 N(v)-neighbors: t and exactly 1 s_i
+  -- - Each q ∈ W has 2 N(v)-neighbors: exactly 2 s_i's
+  -- - So edges S→T = 4, edges S→W = 8
+  -- - Each s has 1 T-neighbor and 2 W-neighbors (uniform distribution)
+  -- - The S-W bipartite graph is 2-regular, forming an 8-cycle
+  -- - Consecutive s's in this cycle share a W-neighbor
+  -- - By p_adjacent_of_shared_w, consecutive p's are adjacent
+  -- - This gives exactly 4 P-edges forming C4
 
-  sorry
+  -- Step 5: Show each s has exactly 2 neighbors in P ∪ Q that are NOT adjacent to v
+  -- More precisely: show the S-W structure forces P to be 2-regular
+
+  -- We use a counting argument:
+  -- - Each p_i has degree 5, with exactly 1 neighbor in N(v) (which is s_i)
+  -- - So p_i has 4 neighbors in V \ (N(v) ∪ {v}) = P ∪ Q
+  -- - Sum over P: 4 × 4 = 16 = 2|E(P)| + |E(P,Q)|
+
+  -- Each q ∈ Q has degree 5, with exactly 2 neighbors in N(v)
+  -- So q has 3 neighbors in P ∪ Q
+  -- Sum over Q: 8 × 3 = 24 = |E(P,Q)| + 2|E(Q)|
+
+  -- Total edges in P∪Q: From 16 = 2|E(P)| + |E(P,Q)| and 24 = |E(P,Q)| + 2|E(Q)|
+  -- Adding: 40 = 2|E(P)| + 2|E(P,Q)| + 2|E(Q)| = 2(|E(P)| + |E(P,Q)| + |E(Q)|)
+  -- So |E(P∪Q)| = 20
+
+  -- From 16 = 2|E(P)| + |E(P,Q)|:
+  -- If |E(P)| = 4 (C4), then |E(P,Q)| = 8, and |E(Q)| = 20 - 4 - 8 = 8
+
+  -- The constraint that P is 2-regular (|E(P)| = 4) comes from the S-W structure:
+  -- The S-W bipartite graph being a single 8-cycle forces exactly 4 pairs of s's
+  -- to share W-neighbors (consecutive in the cycle).
+
+  -- For now, we establish the result using the counting constraints and
+  -- the existence of shared W-neighbors (which follows from pigeonhole).
+
+  -- The key insight: by five_cycle_structure, for any pair (s_i, s_j) sharing
+  -- a W-neighbor w, the set {p_i, p_j, s_i, s_j, w} is 2-regular, forcing p_i-p_j adjacent.
+
+  -- We can show at least 4 such pairs exist (forming C4), and the diagonal
+  -- pairs (s_1,s_3) and (s_2,s_4) don't share W-neighbors.
+
+  -- Step 5a: Establish that P has exactly 4 edges (is 2-regular)
+  -- This follows from: each p has deg 5, 1 neighbor in N(v), and the S-W
+  -- structure ensures exactly 4 P-pairs share W-neighbors.
+
+  -- Due to the complexity of explicitly constructing W vertices and proving
+  -- the bipartite structure, we use the established degree constraints.
+
+  -- First, let's show there exist w's that give us the cycle edges.
+  -- This is implicit in the degree counting, but making it explicit requires
+  -- extracting 8 Q-vertices and analyzing their S-neighbors.
+
+  -- The labeling step: order p1,p2,p3,p4 so the cycle is p1-p2-p3-p4-p1
+  -- We can always do this since we're proving existence of such an ordering.
+
+  -- For the result, we just need to show SOME 4-cycle labeling exists.
+  -- Let's prove adjacencies exist by contradiction and degree counting.
+
+  -- Step 5: Use the helper lemmas to establish P is a 4-cycle
+
+  -- First, show P is 2-regular (each p has exactly 2 P-neighbors)
+  have hP_2reg : ∀ p ∈ P, (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card = 2 :=
+    P_is_two_regular h_reg h_tri h_no6 v P hP_card hP_props
+
+  -- A 2-regular graph on 4 vertices is a 4-cycle
+  have h_cycle := two_regular_four_vertices_is_cycle P hP_card G.Adj
+    (fun _ _ h => G.symm h)
+    G.loopless
+    hP_2reg
+
+  -- The cycle structure gives us the result directly
+  exact h_cycle
 
 /-- Final step of Cariolaro's proof: derive contradiction from the 4-cycle structure.
 
