@@ -2976,9 +2976,37 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have h_partition := h_deg_partition q hq
       -- From partition: |N_P(q)| + |N_Q(q)| = 3
       -- We know |N_P(q)| ≥ 2, so |N_P(q)| ∈ {2, 3}
-      -- If any q has |N_P(q)| = 3, then sum > 16 (since others ≥ 2)
-      -- So all must have exactly 2
-      sorry -- TODO: formalize this argument using sum constraint
+      have h_le_3 : (P.filter (G.Adj q)).card ≤ 3 := by omega
+      -- If |N_P(q)| = 3, that contradicts sum = 16
+      by_contra h_not_2
+      push_neg at h_not_2
+      have h_eq_3 : (P.filter (G.Adj q)).card = 3 := by omega
+      -- Then sum ≥ 3 + 7×2 = 17
+      have h_sum_bound : Q.sum (fun q' => (P.filter (G.Adj q')).card) ≥ 17 := by
+        calc Q.sum (fun q' => (P.filter (G.Adj q')).card)
+            = (P.filter (G.Adj q)).card + (Q.filter (fun q' => q' ≠ q)).sum (fun q' => (P.filter (G.Adj q')).card) := by
+                rw [← Finset.sum_erase_add _ _ hq]
+                congr 1
+                ext q'; simp only [Finset.mem_filter, Finset.mem_erase, ne_eq]
+          _ = 3 + (Q.filter (fun q' => q' ≠ q)).sum (fun q' => (P.filter (G.Adj q')).card) := by
+                rw [h_eq_3]
+          _ ≥ 3 + (Q.filter (fun q' => q' ≠ q)).sum (fun _ => 2) := by
+                apply add_le_add_left
+                apply Finset.sum_le_sum
+                intro q' hq'
+                simp only [Finset.mem_filter] at hq'
+                exact h_case q' hq'.1
+          _ = 3 + (Q.filter (fun q' => q' ≠ q)).card * 2 := by
+                rw [Finset.sum_const, smul_eq_mul, mul_comm]
+          _ = 3 + 7 * 2 := by
+                have : (Q.filter (fun q' => q' ≠ q)).card = 7 := by
+                  rw [Finset.card_erase_of_mem hq, hQ_card]
+                  norm_num
+                rw [this]
+          _ = 17 := by norm_num
+      -- But sum = 16, contradiction
+      rw [h_QP_edges] at h_sum_bound
+      omega
 
     -- Each q has exactly 1 Q-neighbor (Q is a perfect matching!)
     have h_Q_matching : ∀ q ∈ Q, (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card = 1 := by
