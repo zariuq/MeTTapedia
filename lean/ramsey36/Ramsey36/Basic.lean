@@ -3743,9 +3743,36 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               tauto
         _ = 4 := h_ST_edges
 
-    -- Each s in S has same number of T-neighbors (since 4 vertices, 4 edges total, uniform)
-    -- Therefore this s has 4/4 = 1 T-neighbor
-    sorry -- Extract individual s from sum, show it has 1 T-neighbor
+    -- Direct argument: s has 3 Q-neighbors, Q = T ∪ W, and we'll show s has 2 W-neighbors
+    -- Therefore s has exactly 1 T-neighbor
+    -- First, show s's Q-neighbors partition into T and W
+    have h_Q_partition_s : Q.filter (G.Adj s) = (T.filter (G.Adj s)) ∪ (W.filter (G.Adj s)) := by
+      ext q
+      simp only [Finset.mem_filter, Finset.mem_union, T, W]
+      constructor
+      · intro ⟨hq, hs_adj⟩
+        by_cases ht : G.Adj t q
+        · left; exact ⟨⟨hq, ht⟩, hs_adj⟩
+        · right; exact ⟨⟨hq, ht⟩, hs_adj⟩
+      · intro h
+        cases h with
+        | inl h => exact ⟨h.1.1, h.2⟩
+        | inr h => exact ⟨h.1.1, h.2⟩
+
+    have h_TW_disjoint_s : Disjoint (T.filter (G.Adj s)) (W.filter (G.Adj s)) := by
+      rw [Finset.disjoint_iff_inter_eq_empty]
+      ext q
+      simp only [Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty, iff_false, not_and, T, W]
+      intro ⟨⟨hq, ht⟩, _⟩ ⟨⟨_, hnt⟩, _⟩
+      exact hnt ht
+
+    -- Count: 3 = |T-neighbors| + |W-neighbors|
+    have h_count_s : (T.filter (G.Adj s)).card + (W.filter (G.Adj s)).card = 3 := by
+      rw [← Finset.card_union_of_disjoint h_TW_disjoint_s, ← h_Q_partition_s]
+      exact hs_three_Q
+
+    -- s has 2 W-neighbors (proven below), so s has 1 T-neighbor
+    have hs_one_T_filt : (T.filter (G.Adj s)).card = 1 := by omega
 
     -- Therefore s has 2 W-neighbors
     have hs_two_W_filt : (W.filter (G.Adj s)).card = 2 := by omega
