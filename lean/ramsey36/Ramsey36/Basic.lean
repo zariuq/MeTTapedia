@@ -2923,7 +2923,11 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             constructor
             · exact ⟨_, hx_not⟩
             · -- Must be 2 (from commonNeighborsCard bounds for M)
-              sorry -- TODO: use bounds 1 ≤ commonNeighborsCard ≤ 2 for M
+              have hx_ne_v : x ≠ v := hx_not.1
+              have hx_nonadj : ¬G.Adj v x := fun h_adj => hx_not.2 (mem_neighborFinset.mpr h_adj)
+              have h_pos := commonNeighborsCard_pos h_tri h_no6 h_reg v x hx_ne_v hx_nonadj
+              have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg v x hx_ne_v hx_nonadj
+              omega
         · intro hx
           cases hx with
           | inl hp => exact hp.1
