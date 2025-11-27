@@ -349,6 +349,29 @@ theorem product_rule_ks (_hC : CoxConsistency α v) (a b : α) (hB : v.val b ≠
     v.val (a ⊓ b) = (v.val (a ⊓ b) / v.val b) * v.val b := by field_simp [hB]
     _ = Valuation.condVal v a b * v.val b := by simp [Valuation.condVal, hB]
 
+/-- **Bayes' Theorem** (derived from symmetry).
+
+The product rule gives: v(a ⊓ b) = v(a|b) · v(b).
+Since a ⊓ b = b ⊓ a (commutativity of lattice meet), we also have:
+v(b ⊓ a) = v(b|a) · v(a).
+
+Therefore: v(a|b) · v(b) = v(b|a) · v(a), which rearranges to:
+**v(a|b) = v(b|a) · v(a) / v(b)**
+
+This is the "Fundamental Theorem of Rational Inference" (Eq. 20 in Skilling-Knuth).
+Bayesian inference isn't an "interpretation" — it's a mathematical necessity once
+you accept the symmetry of conjunction (A ∧ B = B ∧ A).
+-/
+theorem bayes_theorem_ks (_hC : CoxConsistency α v) (a b : α)
+    (ha : v.val a ≠ 0) (hb : v.val b ≠ 0) :
+    Valuation.condVal v a b = Valuation.condVal v b a * v.val a / v.val b := by
+  -- Expand conditional probability definitions
+  simp only [Valuation.condVal, ha, hb, dite_false]
+  -- Use commutativity: a ⊓ b = b ⊓ a
+  rw [inf_comm]
+  -- Field algebra: v(a ⊓ b)/v(b) = (v(a ⊓ b)/v(a)) · v(a)/v(b)
+  field_simp
+
 /-- Complement rule: For any element a, if b is its complement (disjoint and a ⊔ b = ⊤),
 then v(b) = 1 - v(a).
 
@@ -829,6 +852,79 @@ theorem ks_implies_kolmogorov (hC : CoxConsistency α v) :
   · exact v.nonneg
   · exact v.val_top
 
+/-! ## Inclusion-Exclusion (2 events)
+
+The classic formula P(A ∪ B) = P(A) + P(B) - P(A ∩ B).
+-/
+
+/-- Inclusion-exclusion for two events: P(A ∪ B) = P(A) + P(B) - P(A ∩ B).
+
+This is the formula everyone learns in their first probability course!
+We derive it from the sum rule by partitioning A ∪ B = A ∪ (Aᶜ ∩ B). -/
+theorem inclusion_exclusion_two (hC : CoxConsistency α v) (a b : α) :
+    v.val (a ⊔ b) = v.val a + v.val b - v.val (a ⊓ b) := by
+  -- Use exists_isCompl to get a complement of a
+  obtain ⟨ac, hac⟩ := exists_isCompl a
+  -- ac is the complement of a: a ⊓ ac = ⊥ and a ⊔ ac = ⊤
+  have hinf : a ⊓ ac = ⊥ := hac.inf_eq_bot
+  have hsup : a ⊔ ac = ⊤ := hac.sup_eq_top
+  -- Define diff = ac ⊓ b (the "set difference" b \ a)
+  let diff := ac ⊓ b
+  -- Step 1: a and diff are disjoint
+  have hdisj : Disjoint a diff := by
+    rw [disjoint_iff]
+    -- a ⊓ (ac ⊓ b) = (a ⊓ ac) ⊓ b = ⊥ ⊓ b = ⊥
+    calc a ⊓ (ac ⊓ b)
+        = (a ⊓ ac) ⊓ b := (inf_assoc a ac b).symm
+      _ = ⊥ ⊓ b := by rw [hinf]
+      _ = ⊥ := inf_comm ⊥ b ▸ inf_bot_eq b
+  -- Step 2: a ⊔ b = a ⊔ diff
+  have hunion : a ⊔ b = a ⊔ diff := by
+    -- a ⊔ b = a ⊔ (b ⊓ ⊤) = a ⊔ (b ⊓ (a ⊔ ac)) = a ⊔ ((b ⊓ a) ⊔ (b ⊓ ac))
+    --       = (a ⊔ (b ⊓ a)) ⊔ (b ⊓ ac) = a ⊔ (b ⊓ ac) = a ⊔ (ac ⊓ b) = a ⊔ diff
+    calc a ⊔ b
+        = a ⊔ (b ⊓ ⊤) := by rw [inf_top_eq]
+      _ = a ⊔ (b ⊓ (a ⊔ ac)) := by rw [hsup]
+      _ = a ⊔ ((b ⊓ a) ⊔ (b ⊓ ac)) := by rw [inf_sup_left]
+      _ = (a ⊔ (b ⊓ a)) ⊔ (b ⊓ ac) := (sup_assoc a (b ⊓ a) (b ⊓ ac)).symm
+      _ = (a ⊔ (a ⊓ b)) ⊔ (b ⊓ ac) := by rw [inf_comm b a]
+      _ = a ⊔ (b ⊓ ac) := by rw [sup_inf_self]
+      _ = a ⊔ (ac ⊓ b) := by rw [inf_comm b ac]
+  -- Step 3: b = (a ⊓ b) ⊔ diff (partition of b)
+  have hb_part : b = (a ⊓ b) ⊔ diff := by
+    calc b = b ⊓ ⊤ := (inf_top_eq b).symm
+         _ = b ⊓ (a ⊔ ac) := by rw [hsup]
+         _ = (b ⊓ a) ⊔ (b ⊓ ac) := inf_sup_left b a ac
+         _ = (a ⊓ b) ⊔ (ac ⊓ b) := by rw [inf_comm b a, inf_comm b ac]
+  -- Step 4: (a ⊓ b) and diff are disjoint
+  have hdisj_b : Disjoint (a ⊓ b) diff := by
+    rw [disjoint_iff]
+    -- (a ⊓ b) ⊓ (ac ⊓ b) = (a ⊓ ac) ⊓ b (by AC)
+    -- Step-by-step: (a⊓b)⊓(ac⊓b) = a⊓(b⊓(ac⊓b)) = a⊓((b⊓ac)⊓b) = a⊓(b⊓ac⊓b)
+    --             = a⊓(ac⊓b⊓b) = a⊓(ac⊓b) = (a⊓ac)⊓b
+    calc (a ⊓ b) ⊓ (ac ⊓ b)
+        = a ⊓ (b ⊓ (ac ⊓ b)) := inf_assoc a b (ac ⊓ b)
+      _ = a ⊓ ((b ⊓ ac) ⊓ b) := by rw [← inf_assoc b ac b]
+      _ = a ⊓ ((ac ⊓ b) ⊓ b) := by rw [inf_comm b ac]
+      _ = a ⊓ (ac ⊓ (b ⊓ b)) := by rw [inf_assoc ac b b]
+      _ = a ⊓ (ac ⊓ b) := by rw [inf_idem]
+      _ = (a ⊓ ac) ⊓ b := (inf_assoc a ac b).symm
+      _ = ⊥ ⊓ b := by rw [hinf]
+      _ = ⊥ := inf_comm ⊥ b ▸ inf_bot_eq b
+  -- Step 5: Apply sum rules and combine
+  have hsum_union := sum_rule v hC hdisj
+  have hsum_b := sum_rule v hC hdisj_b
+  -- From hb_part: v(b) = v(a ⊓ b) + v(diff)
+  have hv_diff : v.val diff = v.val b - v.val (a ⊓ b) := by
+    have := congrArg v.val hb_part
+    rw [hsum_b] at this
+    linarith
+  -- From hunion and hsum_union: v(a ⊔ b) = v(a) + v(diff)
+  calc v.val (a ⊔ b) = v.val (a ⊔ diff) := by rw [hunion]
+    _ = v.val a + v.val diff := hsum_union
+    _ = v.val a + (v.val b - v.val (a ⊓ b)) := by rw [hv_diff]
+    _ = v.val a + v.val b - v.val (a ⊓ b) := by ring
+
 /-! ## Summary: What We've Derived from Symmetry
 
 This file formalizes Knuth & Skilling's "Symmetrical Foundation" approach to probability.
@@ -846,37 +942,31 @@ The key insight: **Probability theory EMERGES from symmetry, it's not axiomatize
 ### What We DERIVED (Theorems, not axioms):
 
 #### Core Probability Rules:
-- ✅ **combine_fn = addition**: S(x,y) = x + y (PROVEN via regraduation)
-- ✅ **Sum rule**: P(A ⊔ B) = P(A) + P(B) for disjoint A, B (PROVEN)
-- ✅ **Product rule**: P(A ⊓ B) = P(A|B) · P(B) (PROVEN, algebraic)
-- ✅ **Complement rule**: P(Aᶜ) = 1 - P(A) (PROVEN using sum_rule)
-- ⚠️ **Negation function**: N(x) = 1 - x (structure complete, proof strategy documented)
+- ✅ **combine_fn = addition**: S(x,y) = x + y (`combine_fn_is_add`)
+- ✅ **Sum rule**: P(A ⊔ B) = P(A) + P(B) for disjoint A, B (`sum_rule`)
+- ✅ **Product rule**: P(A ⊓ B) = P(A|B) · P(B) (algebraic, `product_rule_ks`)
+- ✅ **Bayes' theorem**: P(A|B) = P(B|A) · P(A) / P(B) (`bayes_theorem_ks`)
+- ✅ **Complement rule**: P(Aᶜ) = 1 - P(A) (`complement_rule`)
 
 #### Independence:
-- ✅ **Definition**: P(A ∩ B) = P(A) · P(B) (defined, not axiomatized!)
-- ✅ **"No information"**: Independent ↔ P(A|B) = P(A) (characterized)
-- ✅ **Symmetry**: Independent(A,B) ↔ Independent(B,A) (PROVEN)
-- ✅ **Pairwise vs Mutual**: Two notions, mutual ⇒ pairwise (structure defined)
-- ⚠️ **Implication proof**: Complete proof strategy documented
+- ✅ **Definition**: P(A ∩ B) = P(A) · P(B) (`Independent`)
+- ✅ **Characterization**: Independent ↔ P(A|B) = P(A) (`independence_iff_cond_eq`)
+- ✅ **Symmetry**: Independent(A,B) ↔ Independent(B,A) (`independent_comm`)
+- ✅ **Pairwise vs Mutual**: Mutual ⇒ pairwise (`mutual_implies_pairwise`)
+- ✅ **Counterexample**: Pairwise ⇏ mutual (`xorPairwiseIndependent`, `xorNotMutuallyIndependent`)
 
 #### Advanced Properties:
-- ⚠️ **Chain rule**: P(A ∩ B ∩ C) = P(A|B∩C) · P(B|C) · P(C) (structure + strategy)
-- ⚠️ **Law of total probability**: Partition formula (structure + strategy)
+- ✅ **Chain rule**: P(A ∩ B ∩ C) = P(A|B∩C) · P(B|C) · P(C) (`chain_rule_three`)
+- ✅ **Law of total probability**: Partition formula (`law_of_total_prob_binary`)
+- ✅ **Inclusion-exclusion**: P(A ∪ B) = P(A) + P(B) - P(A ∩ B) (`inclusion_exclusion_two`)
 
 #### Connection to Standard Foundations:
-- ✅ **Kolmogorov axioms**: Sum rule + non-negativity + normalization (PROVEN)
-  - Shows Cox ⇒ Kolmogorov (equivalence!)
+- ✅ **Kolmogorov axioms**: Sum rule + non-negativity + normalization (`ks_implies_kolmogorov`)
+- ✅ **Mathlib bridge**: Standard measures satisfy our axioms (`valuationFromProbabilityMeasure`)
 
-### Strategic Sorries (6 total):
-All have detailed proof strategies documented:
-1. `negate_is_linear` (line 242): N(x) = 1 - x from involutive + antitone
-2. `independence_iff_cond_eq` (line 317): Field arithmetic
-3. `mutual_implies_pairwise` (line 369): Finset construction
-4. Counterexample (line 375): Classic 3-event example
-5. `chain_rule_three` (line 404): Iterated product_rule
-6. `law_of_total_prob_binary` (line 421): Partition + sum_rule
+### Status: COMPLETE (Zero Sorries!)
 
-### What Makes This Special:
+All theorems fully proven. The formalization demonstrates:
 
 **Traditional approach (Kolmogorov)**:
 - AXIOM: P(A ⊔ B) = P(A) + P(B) for disjoint A, B
@@ -894,21 +984,20 @@ that plausibility assignments be consistent with symmetry principles. This is de
 than Kolmogorov's axioms!
 
 ### File Statistics:
-- **Total lines**: ~440
+- **Total lines**: ~1000
 - **Structures**: 5 (PlausibilitySpace, Valuation, Regraduation, CoxConsistency, NegationData)
-- **Theorems proven**: 10+ (combine_fn_is_add, sum_rule, product_rule, complement_rule, ...)
+- **Theorems proven**: 25+ (all core probability rules, independence, XOR counterexample)
 - **Definitions**: 8 (Independent, PairwiseIndependent, MutuallyIndependent, condVal, ...)
-- **Strategic sorries**: 6 (all documented with proof strategies)
-
-### Coverage:
-- **Knuth & Skilling (2018) Probability Section**: ~40% complete
-- **Next**: Measure theory (Week 2), σ-additivity from continuity
+- **Sorries**: 0
 
 ### References:
 - Skilling & Knuth (2018): "The symmetrical foundation of Measure, Probability and Quantum theories"
   arXiv:1712.09725, Annalen der Physik
 - Cox's Theorem (1946): Original derivation of probability from functional equations
 - Jaynes (2003): "Probability Theory: The Logic of Science" (philosophical context)
+
+---
+**"Symmetry begets probability."** — Knuth & Skilling, formalized in Lean 4.
 -/
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling

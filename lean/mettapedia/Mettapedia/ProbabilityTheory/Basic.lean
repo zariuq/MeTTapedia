@@ -9,6 +9,7 @@ structures.
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.MeasureTheory.Measure.Typeclasses.Probability
 import Mathlib.MeasureTheory.Measure.Real
+import Mathlib.Probability.ConditionalProbability
 import Mathlib.Data.Real.Basic
 
 set_option linter.unusedSectionVars false
@@ -35,6 +36,17 @@ theorem prob_mono {A B : Set Ω} (hAB : A ⊆ B) : μ A ≤ μ B :=
 theorem prob_union_le {A B : Set Ω} :
     μ (A ∪ B) ≤ μ A + μ B :=
   measure_union_le A B
+
+/-- Sum rule for disjoint events: P(A ∪ B) = P(A) + P(B).
+
+This is the Knuth-Skilling "sum rule" derived from symmetry, and it matches
+mathlib's `measure_union` for disjoint measurable sets. The sum rule is
+the probability-theoretic foundation that emerges from the Cox consistency
+axioms in our framework. -/
+theorem sum_rule_eq_measure_union {A B : Set Ω}
+    (_hA : MeasurableSet A) (hB : MeasurableSet B) (hDisj : Disjoint A B) :
+    μ (A ∪ B) = μ A + μ B :=
+  measure_union hDisj hB
 
 variable (μ : Measure Ω) [IsProbabilityMeasure μ] [IsFiniteMeasure μ]
 
@@ -99,5 +111,44 @@ theorem total_probability_binary {A B : Set Ω}
             simpa [hcompl, add_comm] using hdecomp.symm
     _ = condProb μ A B * μ.real B + condProb μ A Bᶜ * μ.real Bᶜ := by
             simp [h1, h2]
+
+/-! ## Bridge to Mathlib's Conditional Probability
+
+Mathlib defines conditional probability via `ProbabilityTheory.cond`:
+  `cond μ B` is the conditional measure given B
+  `(cond μ B) A` = `μ (A ∩ B) / μ B` (in ENNReal)
+
+Our `condProb μ A B` is the real-valued scalar version. We prove they match.
+-/
+
+/-- Our `condProb` matches mathlib's conditional probability.
+
+This proves that our definition is definitionally equivalent to the standard
+mathlib API from `Mathlib.Probability.ConditionalProbability`, establishing
+that we're doing standard probability theory.
+
+Mathlib's `ProbabilityTheory.cond_apply` gives: `μ[A|B] = (μ B)⁻¹ * μ (B ∩ A)`
+Our `condProb μ A B` is: `μ.real (A ∩ B) / μ.real B`
+
+These are equal after accounting for intersection commutativity and the
+ENNReal ↔ Real conversion. -/
+theorem condProb_eq_cond (μ : Measure Ω) [IsProbabilityMeasure μ]
+    {A B : Set Ω} (_hA : MeasurableSet A) (hB : MeasurableSet B) (hBpos : μ B ≠ 0) :
+    condProb μ A B = ((ProbabilityTheory.cond μ B) A).toReal := by
+  -- Both sides compute to μ(A ∩ B) / μ(B), just in different representations
+  have hBfin : μ B ≠ ⊤ := measure_ne_top μ B
+  -- Expand our definition
+  simp only [condProb, hBpos, dite_false]
+  -- Expand mathlib's cond using cond_apply: μ[A|B] = (μ B)⁻¹ * μ (B ∩ A)
+  rw [ProbabilityTheory.cond_apply hB μ A]
+  -- Now RHS is (μ B)⁻¹ * μ (B ∩ A), need to convert to division and swap intersection
+  rw [Set.inter_comm B A]
+  -- Convert ENNReal multiplication to division
+  rw [ENNReal.toReal_mul, ENNReal.toReal_inv]
+  -- Unfold μ.real to (μ _).toReal
+  simp only [Measure.real]
+  -- Now: (μ (A ∩ B)).toReal / (μ B).toReal = (μ B).toReal⁻¹ * (μ (A ∩ B)).toReal
+  -- Division is multiplication by inverse, then commutativity
+  rw [div_eq_mul_inv, mul_comm]
 
 end Mettapedia.ProbabilityTheory

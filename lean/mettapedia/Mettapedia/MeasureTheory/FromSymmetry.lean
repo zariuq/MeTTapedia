@@ -141,7 +141,7 @@ theorem sigma_additive_from_continuity {α : Type*}
   -- Monotonicity of `s`.
   have hs_step : ∀ n, s n ≤ s (n + 1) := by
     intro n
-    simpa [s_succ] using (le_sup_left : s n ≤ s n ⊔ f (n + 1))
+    simp only [s_succ, le_sup_left]
   have hs_mono : Monotone s := by
     -- Monotonicity follows from the step inequality.
     exact monotone_nat_of_le_succ hs_step
@@ -150,10 +150,10 @@ theorem sigma_additive_from_continuity {α : Type*}
   have hf_le_s : ∀ i, f i ≤ s i := by
     intro i
     induction i with
-    | zero => simpa [s_zero]
+    | zero => simp only [s_zero, le_refl]
     | succ k hk =>
         have : f (k + 1) ≤ s k ⊔ f (k + 1) := le_sup_right
-        simpa [s_succ] using this
+        simp only [s_succ, this]
 
   -- Supremum of partial unions coincides with supremum of the whole family.
   have hs_sup : (⨆ n, s n) = ⨆ i, f i := by
@@ -167,7 +167,7 @@ theorem sigma_additive_from_continuity {α : Type*}
             calc
               s (k + 1) = s k ⊔ f (k + 1) := s_succ k
               _ ≤ (⨆ i, f i) ⊔ (⨆ i, f i) := sup_le_sup hk (le_iSup (fun i => f i) (k + 1))
-              _ = ⨆ i, f i := by simpa [sup_eq_left]
+              _ = ⨆ i, f i := by simp only [sup_idem]
       exact iSup_le hs_le
     · -- Conversely, each `f i` is contained in `s i`, hence under the `iSup`.
       refine iSup_le ?_
@@ -201,7 +201,7 @@ theorem sigma_additive_from_continuity {α : Type*}
     intro n
     induction n with
     | zero =>
-        simp [s_zero, Finset.sum_range_one]
+        simp only [s_zero, Finset.sum_range_succ, Finset.sum_range_zero, zero_add]
     | succ k hk =>
         have hdisj : Disjoint (s k) (f (k + 1)) := hs_disj k
         calc
@@ -213,7 +213,7 @@ theorem sigma_additive_from_continuity {α : Type*}
           _ = (Finset.range (k + 1)).sum (fun i => μ.val (f i)) + μ.val (f (k + 1)) := by
                 simp [hk]
           _ = (Finset.range (k + 2)).sum (fun i => μ.val (f i)) := by
-                simp [Finset.sum_range_succ, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                simp only [Finset.sum_range_succ]
 
   -- Continuity identifies the supremum of values with the value of the supremum.
   have hμ_mono : Monotone (μ.val ∘ s) := μ.monotone.comp hs_mono
@@ -224,10 +224,10 @@ theorem sigma_additive_from_continuity {α : Type*}
   let b : ℕ → ℝ≥0∞ := fun n => (Finset.range n).sum (fun i => μ.val (f i))
   have hb_step : ∀ n, b n ≤ b (n + 1) := by
     intro n
-    have h := add_le_add_left (show 0 ≤ μ.val (f n) from zero_le _) (b n)
     have hb : b (n + 1) = b n + μ.val (f n) := by
-      simp [b, Finset.sum_range_succ, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
-    simpa [hb] using h
+      simp only [b, Finset.sum_range_succ]
+    rw [hb]
+    exact le_add_of_nonneg_right (zero_le _)
   have hb_mono : Monotone b := monotone_nat_of_le_succ hb_step
   have hb_shift : (⨆ n, b (n + 1)) = ⨆ n, b n := by
     apply le_antisymm
@@ -247,7 +247,7 @@ theorem sigma_additive_from_continuity {α : Type*}
   -- Assemble the chain of equalities.
   calc
     μ.val (⨆ i, f i)
-        = μ.val (⨆ n, s n) := by simpa [hs_sup]
+        = μ.val (⨆ n, s n) := by simp only [hs_sup]
     _ = ⨆ n, μ.val (s n) := hlimit_eq
     _ = ⨆ n, b (n + 1) := by
           classical
