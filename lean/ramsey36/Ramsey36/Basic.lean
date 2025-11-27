@@ -4412,8 +4412,16 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
     have hp_ne : p_s ≠ p_s' := by
       intro h_eq
-      -- If p_s = p_s', their s-partners equal by uniqueness, contradicting s_v ≠ s'_v
-      sorry -- Partner distinctness
+      -- If p_s = p_s', then both s_v and s'_v are adjacent to the same p
+      subst h_eq
+      -- s_v adjacent to p_s', s'_v adjacent to p_s' = p_s
+      -- By h_s_unique_P_partner: each p ∈ P has unique s-partner in N(v)
+      -- So s_v = s'_v, contradicting hs_ne
+      have : s'_v = s_v := by
+        have hs_v_in_N : s_v ∈ G.neighborFinset v := mem_neighborFinset.mpr hs_adj_v
+        have hs'_v_in_N : s'_v ∈ G.neighborFinset v := mem_neighborFinset.mpr hs'_adj_v
+        exact h_s_unique_P_partner s_v p_s' hs_v_in_N hp_s'_P hs_adj_p s'_v hs'_v_in_N hs'_adj_p'
+      exact hs_ne this.symm
 
     -- ✓ s's are neighbors of v
     have hs_adj_v : G.Adj v s_v := by
@@ -4431,8 +4439,18 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       · exact mem_neighborFinset.mp hs4_in_N
 
     -- ✓ Cross non-adjacencies
-    have hs_nonadj_p' : ¬G.Adj s_v p_s' := by sorry -- Uniqueness
-    have hs'_nonadj_p : ¬G.Adj s'_v p_s := by sorry -- Uniqueness
+    have hs_nonadj_p' : ¬G.Adj s_v p_s' := by
+      intro h_adj
+      -- s_v is adjacent to both p_s and p_s', but uniqueness says only one
+      have hs_v_in_N : s_v ∈ G.neighborFinset v := mem_neighborFinset.mpr hs_adj_v
+      have : p_s' = p_s := h_s_unique_P_partner s_v p_s hs_v_in_N hp_s_P hs_adj_p p_s' hp_s'_P h_adj
+      exact hp_ne this.symm
+    have hs'_nonadj_p : ¬G.Adj s'_v p_s := by
+      intro h_adj
+      -- s'_v is adjacent to both p_s' and p_s, but uniqueness says only one
+      have hs'_v_in_N : s'_v ∈ G.neighborFinset v := mem_neighborFinset.mpr hs'_adj_v
+      have : p_s = p_s' := h_s_unique_P_partner s'_v p_s' hs'_v_in_N hp_s'_P hs'_adj_p' p_s hp_s_P h_adj
+      exact hp_ne this
 
     -- ✓ w non-adjacencies
     have hw_nonadj_v : ¬G.Adj w v := by
@@ -4476,23 +4494,280 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               rw [Finset.card_erase_of_mem this]
           _ = 5 - 1 - 1 := by rw [h_card]
           _ = 3 := by norm_num
-      -- Extract using card = 3
-      sorry -- Use Finset.card_eq_three or similar
+      -- Extract 3 elements using nonempty + erase pattern
+      have h_nonempty : witnesses.Nonempty := by
+        rw [Finset.card_pos]
+        rw [h_wit_card]
+        norm_num
+      obtain ⟨w1, hw1⟩ := h_nonempty
+      -- Erase w1 to get 2-element set
+      have h_erase1_card : (witnesses.erase w1).card = 2 := by
+        have : w1 ∈ witnesses := hw1
+        rw [Finset.card_erase_of_mem this, h_wit_card]
+        norm_num
+      have h_erase1_nonempty : (witnesses.erase w1).Nonempty := by
+        rw [Finset.card_pos, h_erase1_card]
+        norm_num
+      obtain ⟨w2, hw2⟩ := h_erase1_nonempty
+      -- Erase w2 to get 1-element set
+      have h_erase2_card : ((witnesses.erase w1).erase w2).card = 1 := by
+        have : w2 ∈ witnesses.erase w1 := hw2
+        rw [Finset.card_erase_of_mem this, h_erase1_card]
+        norm_num
+      have h_erase2_nonempty : ((witnesses.erase w1).erase w2).Nonempty := by
+        rw [Finset.card_pos, h_erase2_card]
+        norm_num
+      obtain ⟨w3, hw3⟩ := h_erase2_nonempty
+      -- Verify properties
+      have hw1_v : w1 ∈ G.neighborFinset v := by
+        have : w1 ∈ witnesses := hw1
+        simp only [witnesses, Finset.mem_erase] at this
+        exact this.2.2
+      have hw2_v : w2 ∈ G.neighborFinset v := by
+        have : w2 ∈ witnesses.erase w1 := hw2
+        simp only [Finset.mem_erase] at this
+        have : w2 ∈ witnesses := this.2
+        simp only [witnesses, Finset.mem_erase] at this
+        exact this.2.2
+      have hw3_v : w3 ∈ G.neighborFinset v := by
+        have : w3 ∈ (witnesses.erase w1).erase w2 := hw3
+        simp only [Finset.mem_erase] at this
+        have : w3 ∈ witnesses := this.2.2
+        simp only [witnesses, Finset.mem_erase] at this
+        exact this.2.2
+      have hw1_ne_s : w1 ≠ s_v := by
+        have : w1 ∈ witnesses := hw1
+        simp only [witnesses, Finset.mem_erase] at this
+        exact this.2.1
+      have hw1_ne_s' : w1 ≠ s'_v := by
+        have : w1 ∈ witnesses := hw1
+        simp only [witnesses, Finset.mem_erase] at this
+        exact this.1
+      have hw2_ne_s : w2 ≠ s_v := by
+        have : w2 ∈ witnesses.erase w1 := hw2
+        have : w2 ∈ witnesses := Finset.mem_of_mem_erase this
+        simp only [witnesses, Finset.mem_erase] at this
+        exact this.2.1
+      have hw2_ne_s' : w2 ≠ s'_v := by
+        have : w2 ∈ witnesses.erase w1 := hw2
+        have : w2 ∈ witnesses := Finset.mem_of_mem_erase this
+        simp only [witnesses, Finset.mem_erase] at this
+        exact this.1
+      have hw3_ne_s : w3 ≠ s_v := by
+        have : w3 ∈ (witnesses.erase w1).erase w2 := hw3
+        have : w3 ∈ witnesses := by
+          have : w3 ∈ witnesses.erase w1 := Finset.mem_of_mem_erase this
+          exact Finset.mem_of_mem_erase this
+        simp only [witnesses, Finset.mem_erase] at this
+        exact this.2.1
+      have hw3_ne_s' : w3 ≠ s'_v := by
+        have : w3 ∈ (witnesses.erase w1).erase w2 := hw3
+        have : w3 ∈ witnesses := by
+          have : w3 ∈ witnesses.erase w1 := Finset.mem_of_mem_erase this
+          exact Finset.mem_of_mem_erase this
+        simp only [witnesses, Finset.mem_erase] at this
+        exact this.1
+      have hw12 : w1 ≠ w2 := by
+        have : w2 ∈ witnesses.erase w1 := hw2
+        exact (Finset.mem_erase.mp this).1.symm
+      have hw13 : w1 ≠ w3 := by
+        have : w3 ∈ (witnesses.erase w1).erase w2 := hw3
+        have : w3 ∈ witnesses.erase w1 := Finset.mem_of_mem_erase this
+        exact (Finset.mem_erase.mp this).1.symm
+      have hw23 : w2 ≠ w3 := by
+        have : w3 ∈ (witnesses.erase w1).erase w2 := hw3
+        exact (Finset.mem_erase.mp this).1.symm
+      exact ⟨w1, w2, w3, hw1_v, hw2_v, hw3_v,
+             hw1_ne_s, hw1_ne_s', hw2_ne_s, hw2_ne_s', hw3_ne_s, hw3_ne_s',
+             hw12, hw13, hw23⟩
 
     obtain ⟨wit1, wit2, wit3, hwit1_v, hwit2_v, hwit3_v,
             hwit1_ne_s, hwit1_ne_s', hwit2_ne_s, hwit2_ne_s', hwit3_ne_s, hwit3_ne_s',
             hwit12, hwit13, hwit23⟩ := h_witnesses
 
-    -- ✓ Witness non-adjacencies (degree counting)
-    have hwit1_nonadj_p : ¬G.Adj wit1 p_s := by sorry
-    have hwit1_nonadj_p' : ¬G.Adj wit1 p_s' := by sorry
-    have hwit1_nonadj_w : ¬G.Adj wit1 w := by sorry
-    have hwit2_nonadj_p : ¬G.Adj wit2 p_s := by sorry
-    have hwit2_nonadj_p' : ¬G.Adj wit2 p_s' := by sorry
-    have hwit2_nonadj_w : ¬G.Adj wit2 w := by sorry
-    have hwit3_nonadj_p : ¬G.Adj wit3 p_s := by sorry
-    have hwit3_nonadj_p' : ¬G.Adj wit3 p_s' := by sorry
-    have hwit3_nonadj_w : ¬G.Adj wit3 w := by sorry
+    -- ✓ Witness non-adjacencies (uniqueness + degree counting)
+    have hwit1_nonadj_p : ¬G.Adj wit1 p_s := by
+      intro h_adj
+      -- wit1 is in N(v) and adjacent to p_s, so it's an s-partner of p_s
+      -- But s_v is the unique s-partner of p_s, so wit1 = s_v
+      have : wit1 = s_v := h_s_unique_P_partner s_v p_s
+        (mem_neighborFinset.mpr hs_adj_v) hp_s_P hs_adj_p wit1 hwit1_v h_adj
+      exact hwit1_ne_s this
+    have hwit1_nonadj_p' : ¬G.Adj wit1 p_s' := by
+      intro h_adj
+      have : wit1 = s'_v := h_s_unique_P_partner s'_v p_s'
+        (mem_neighborFinset.mpr hs'_adj_v) hp_s'_P hs'_adj_p' wit1 hwit1_v h_adj
+      exact hwit1_ne_s' this
+    have hwit1_nonadj_w : ¬G.Adj wit1 w := by
+      intro h_adj
+      -- w ∈ W, so w has exactly 2 S-neighbors: {s_v, s'_v}
+      -- wit1 ∈ N(v) \ {s_v, s'_v}
+      -- Case 1: If wit1 ∈ S, then wit1 ∈ {s_v, s'_v} (from w's S-neighbors), contradiction
+      -- Case 2: If wit1 = t, then w ~ t, but w ∈ W means w ↛ t, contradiction
+      -- w is not adjacent to t (by definition of W)
+      have hw_nonadj_t : ¬G.Adj w t := by
+        simp only [W, Finset.mem_filter] at hw_W
+        exact hw_W.2
+      -- N(v) = S ∪ {t}, and wit1 ∈ N(v) \ {s_v, s'_v}
+      -- If wit1 ~ w, since wit1 ∈ N(v) and w has S-neighbors = {s_v, s'_v}:
+      by_cases h_wit1_in_S : wit1 ∈ S
+      · -- wit1 ∈ S and wit1 ~ w means wit1 ∈ {s_v, s'_v}
+        have : wit1 ∈ G.neighborFinset w ∩ S := Finset.mem_inter.mpr ⟨mem_neighborFinset.mpr h_adj, h_wit1_in_S⟩
+        -- But we know w has exactly 2 S-neighbors: {s_v, s'_v}
+        obtain ⟨_, _, _, _, _, hs_adj, hs'_adj, h_eq⟩ := h_w_has_two_S w (by simp only [W, Finset.mem_filter] at hw_W; exact hw_W.1)
+        rw [h_eq] at this
+        simp only [Finset.mem_insert, Finset.mem_singleton] at this
+        rcases this with h_eq1 | h_eq2
+        · exact hwit1_ne_s h_eq1
+        · exact hwit1_ne_s' h_eq2
+      · -- wit1 ∉ S, so wit1 = t (since N(v) = S ∪ {t})
+        have : wit1 = t := by
+          have : wit1 ∈ G.neighborFinset v \ S := Finset.mem_sdiff.mpr ⟨hwit1_v, h_wit1_in_S⟩
+          -- N(v) \ S = {t}
+          have h_N_minus_S : G.neighborFinset v \ S = {t} := by
+            ext x
+            simp only [Finset.mem_sdiff, Finset.mem_singleton]
+            constructor
+            · intro ⟨hx_N, hx_not_S⟩
+              -- N(v) has 5 elements, S has 4, and S ⊆ N(v)
+              -- So N(v) \ S has 1 element, which must be t
+              by_contra h_ne_t
+              have : x ∈ S := by
+                by_contra hx_not_S'
+                -- x ∈ N(v) \ S and x ≠ t, but N(v) \ S should only have t
+                have hx_in_N : x ∈ G.neighborFinset v := hx_N
+                have : x = t ∨ x ∈ S := by
+                  have h_decomp : G.neighborFinset v = S ∪ {t} := by
+                    ext y
+                    simp only [Finset.mem_union, Finset.mem_singleton]
+                    constructor
+                    · intro hy_N
+                      by_cases hy_S : y ∈ S
+                      · left; exact hy_S
+                      · right
+                        -- y ∈ N(v) \ S, and we know t ∈ N(v) \ S
+                        -- We need to show y = t
+                        -- Actually this requires that |N(v) \ S| = 1
+                        have h_card : (G.neighborFinset v \ S).card = 1 := by
+                          calc (G.neighborFinset v \ S).card
+                              = (G.neighborFinset v).card - S.card := Finset.card_sdiff hS_subset_N
+                            _ = 5 - 4 := by rw [hN_card, hS_card]
+                            _ = 1 := by norm_num
+                        have : {t} ⊆ G.neighborFinset v \ S := by
+                          intro z hz
+                          simp only [Finset.mem_singleton] at hz
+                          subst hz
+                          exact Finset.mem_sdiff.mpr ⟨ht_in_N, ht_not_S⟩
+                        have : (G.neighborFinset v \ S) = {t} := by
+                          apply Finset.eq_of_subset_of_card_le this
+                          rw [h_card, Finset.card_singleton]
+                        rw [this] at hy_N
+                        simp only [Finset.mem_sdiff, Finset.mem_singleton] at hy_N
+                        exact hy_N.1
+                    · intro hy
+                      rcases hy with hy_S | hy_t
+                      · have : y ∈ G.neighborFinset v := hS_subset_N hy_S
+                        exact this
+                      · subst hy_t; exact ht_in_N
+                  rw [h_decomp] at hx_in_N
+                  simp only [Finset.mem_union, Finset.mem_singleton] at hx_in_N
+                  exact hx_in_N
+                rcases this with h_t | h_S
+                · exact h_ne_t h_t
+                · exact hx_not_S h_S
+              exact hx_not_S this
+            · intro h_eq
+              subst h_eq
+              exact ⟨ht_in_N, ht_not_S⟩
+          rw [h_N_minus_S] at this
+          simp only [Finset.mem_singleton] at this
+          exact this
+        rw [this] at h_adj
+        exact hw_nonadj_t h_adj
+    have hwit2_nonadj_p : ¬G.Adj wit2 p_s := by
+      intro h_adj
+      have : wit2 = s_v := h_s_unique_P_partner s_v p_s
+        (mem_neighborFinset.mpr hs_adj_v) hp_s_P hs_adj_p wit2 hwit2_v h_adj
+      exact hwit2_ne_s this
+    have hwit2_nonadj_p' : ¬G.Adj wit2 p_s' := by
+      intro h_adj
+      have : wit2 = s'_v := h_s_unique_P_partner s'_v p_s'
+        (mem_neighborFinset.mpr hs'_adj_v) hp_s'_P hs'_adj_p' wit2 hwit2_v h_adj
+      exact hwit2_ne_s' this
+    have hwit2_nonadj_w : ¬G.Adj wit2 w := by
+      intro h_adj
+      have hw_nonadj_t : ¬G.Adj w t := by
+        simp only [W, Finset.mem_filter] at hw_W
+        exact hw_W.2
+      by_cases h_wit2_in_S : wit2 ∈ S
+      · have : wit2 ∈ G.neighborFinset w ∩ S := Finset.mem_inter.mpr ⟨mem_neighborFinset.mpr h_adj, h_wit2_in_S⟩
+        obtain ⟨_, _, _, _, _, _, _, h_eq⟩ := h_w_has_two_S w (by simp only [W, Finset.mem_filter] at hw_W; exact hw_W.1)
+        rw [h_eq] at this
+        simp only [Finset.mem_insert, Finset.mem_singleton] at this
+        rcases this with h_eq1 | h_eq2
+        · exact hwit2_ne_s h_eq1
+        · exact hwit2_ne_s' h_eq2
+      · have : wit2 = t := by
+          have : wit2 ∈ G.neighborFinset v \ S := Finset.mem_sdiff.mpr ⟨hwit2_v, h_wit2_in_S⟩
+          have h_N_minus_S : G.neighborFinset v \ S = {t} := by
+            apply Finset.eq_of_subset_of_card_le
+            · intro z hz
+              simp only [Finset.mem_singleton] at hz
+              subst hz
+              exact Finset.mem_sdiff.mpr ⟨ht_in_N, ht_not_S⟩
+            · have h_card : (G.neighborFinset v \ S).card = 1 := by
+                calc (G.neighborFinset v \ S).card
+                    = (G.neighborFinset v).card - S.card := Finset.card_sdiff hS_subset_N
+                  _ = 5 - 4 := by rw [hN_card, hS_card]
+                  _ = 1 := by norm_num
+              rw [h_card, Finset.card_singleton]
+          rw [h_N_minus_S] at this
+          simp only [Finset.mem_singleton] at this
+          exact this
+        rw [this] at h_adj
+        exact hw_nonadj_t h_adj
+    have hwit3_nonadj_p : ¬G.Adj wit3 p_s := by
+      intro h_adj
+      have : wit3 = s_v := h_s_unique_P_partner s_v p_s
+        (mem_neighborFinset.mpr hs_adj_v) hp_s_P hs_adj_p wit3 hwit3_v h_adj
+      exact hwit3_ne_s this
+    have hwit3_nonadj_p' : ¬G.Adj wit3 p_s' := by
+      intro h_adj
+      have : wit3 = s'_v := h_s_unique_P_partner s'_v p_s'
+        (mem_neighborFinset.mpr hs'_adj_v) hp_s'_P hs'_adj_p' wit3 hwit3_v h_adj
+      exact hwit3_ne_s' this
+    have hwit3_nonadj_w : ¬G.Adj wit3 w := by
+      intro h_adj
+      have hw_nonadj_t : ¬G.Adj w t := by
+        simp only [W, Finset.mem_filter] at hw_W
+        exact hw_W.2
+      by_cases h_wit3_in_S : wit3 ∈ S
+      · have : wit3 ∈ G.neighborFinset w ∩ S := Finset.mem_inter.mpr ⟨mem_neighborFinset.mpr h_adj, h_wit3_in_S⟩
+        obtain ⟨_, _, _, _, _, _, _, h_eq⟩ := h_w_has_two_S w (by simp only [W, Finset.mem_filter] at hw_W; exact hw_W.1)
+        rw [h_eq] at this
+        simp only [Finset.mem_insert, Finset.mem_singleton] at this
+        rcases this with h_eq1 | h_eq2
+        · exact hwit3_ne_s h_eq1
+        · exact hwit3_ne_s' h_eq2
+      · have : wit3 = t := by
+          have : wit3 ∈ G.neighborFinset v \ S := Finset.mem_sdiff.mpr ⟨hwit3_v, h_wit3_in_S⟩
+          have h_N_minus_S : G.neighborFinset v \ S = {t} := by
+            apply Finset.eq_of_subset_of_card_le
+            · intro z hz
+              simp only [Finset.mem_singleton] at hz
+              subst hz
+              exact Finset.mem_sdiff.mpr ⟨ht_in_N, ht_not_S⟩
+            · have h_card : (G.neighborFinset v \ S).card = 1 := by
+                calc (G.neighborFinset v \ S).card
+                    = (G.neighborFinset v).card - S.card := Finset.card_sdiff hS_subset_N
+                  _ = 5 - 4 := by rw [hN_card, hS_card]
+                  _ = 1 := by norm_num
+              rw [h_card, Finset.card_singleton]
+          rw [h_N_minus_S] at this
+          simp only [Finset.mem_singleton] at this
+          exact this
+        rw [this] at h_adj
+        exact hw_nonadj_t h_adj
 
     -- 🎯 APPLY!
     have h_p_adj : G.Adj p_s p_s' :=
@@ -4523,7 +4798,113 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         pair = {s1, s2} ∧
         ((e.1 = p1_vertex ∧ e.2 = p2_vertex) ∨ (e.1 = p2_vertex ∧ e.2 = p1_vertex))
       )).card ≥ 4 := by
-    sorry -- Distinctness of P-edges from distinct pairs
+    -- Strategy: Map each pair to its corresponding P-edge and show injection
+    -- Build the set of P-edges corresponding to pairs
+    let pair_to_edge : ∀ pair ∈ pairs, Fin 18 × Fin 18 := fun pair hpair =>
+      let ⟨s_v, s'_v, w, p_s, p_s', h_props⟩ := h_pairs_force_P_edges pair hpair
+      (p_s, p_s')
+
+    -- The image of this function has the same cardinality as pairs (by injection)
+    have h_inj : ∀ (pair1 : {p // p ∈ pairs}) (pair2 : {p // p ∈ pairs}),
+        pair_to_edge pair1.val pair1.property = pair_to_edge pair2.val pair2.property →
+        pair1 = pair2 := by
+      intro ⟨pair1, hpair1⟩ ⟨pair2, hpair2⟩ h_eq
+      -- Unpack both pairs
+      obtain ⟨s1_v, s1'_v, w1, p1_s, p1_s', h_eq1, hs1_S, hs1'_S, hs1_ne, hw1_W,
+              hs1_adj_w1, hs1'_adj_w1, hp1_s_P, hp1_s'_P, hs1_adj_p1, hs1'_adj_p1', h_p1_adj⟩ :=
+        h_pairs_force_P_edges pair1 hpair1
+      obtain ⟨s2_v, s2'_v, w2, p2_s, p2_s', h_eq2, hs2_S, hs2'_S, hs2_ne, hw2_W,
+              hs2_adj_w2, hs2'_adj_w2, hp2_s_P, hp2_s'_P, hs2_adj_p2, hs2'_adj_p2', h_p2_adj⟩ :=
+        h_pairs_force_P_edges pair2 hpair2
+
+      -- The edges are equal means (p1_s, p1_s') = (p2_s, p2_s')
+      simp only [pair_to_edge] at h_eq
+      -- So p1_s = p2_s and p1_s' = p2_s'
+      have hp_eq : p1_s = p2_s ∧ p1_s' = p2_s' := by
+        exact ⟨h_eq.1, h_eq.2⟩
+
+      -- By uniqueness of s-partners: if p1_s = p2_s, then their s-partners are equal
+      -- s1_v is the s-partner of p1_s, s2_v is the s-partner of p2_s
+      -- So s1_v = s2_v
+      have hs_eq : s1_v = s2_v := by
+        have h_unique1 : ∀ s' ∈ G.neighborFinset v, G.Adj s' p1_s → s' = s1_v := by
+          intro s' hs'_in_N hs'_adj_p1
+          exact h_s_unique_P_partner s1_v p1_s (mem_neighborFinset.mpr (by
+            rcases hs1_S with h | h | h | h
+            · rw [h]; exact mem_neighborFinset.mp hs1_in_N
+            · rw [h]; exact mem_neighborFinset.mp hs2_in_N
+            · rw [h]; exact mem_neighborFinset.mp hs3_in_N
+            · rw [h]; exact mem_neighborFinset.mp hs4_in_N)) hp1_s_P hs1_adj_p1 s' hs'_in_N hs'_adj_p1
+        rw [hp_eq.1] at h_unique1
+        apply h_unique1
+        · have : s2_v ∈ S := hs2_S
+          rcases this with h | h | h | h
+          · rw [h]; exact hs1_in_N
+          · rw [h]; exact hs2_in_N
+          · rw [h]; exact hs3_in_N
+          · rw [h]; exact hs4_in_N
+        · exact hs2_adj_p2
+
+      have hs'_eq : s1'_v = s2'_v := by
+        have h_unique1 : ∀ s' ∈ G.neighborFinset v, G.Adj s' p1_s' → s' = s1'_v := by
+          intro s' hs'_in_N hs'_adj_p1'
+          exact h_s_unique_P_partner s1'_v p1_s' (mem_neighborFinset.mpr (by
+            rcases hs1'_S with h | h | h | h
+            · rw [h]; exact mem_neighborFinset.mp hs1_in_N
+            · rw [h]; exact mem_neighborFinset.mp hs2_in_N
+            · rw [h]; exact mem_neighborFinset.mp hs3_in_N
+            · rw [h]; exact mem_neighborFinset.mp hs4_in_N)) hp1_s'_P hs1'_adj_p1' s' hs'_in_N hs'_adj_p1'
+        rw [hp_eq.2] at h_unique1
+        apply h_unique1
+        · have : s2'_v ∈ S := hs2'_S
+          rcases this with h | h | h | h
+          · rw [h]; exact hs1_in_N
+          · rw [h]; exact hs2_in_N
+          · rw [h]; exact hs3_in_N
+          · rw [h]; exact hs4_in_N
+        · exact hs2'_adj_p2'
+
+      -- So pair1 = {s1_v, s1'_v} = {s2_v, s2'_v} = pair2
+      simp only [Subtype.mk.injEq]
+      rw [h_eq1, h_eq2, hs_eq, hs'_eq]
+
+    -- Therefore the image has cardinality 4
+    have h_image_card : (Finset.univ.image (fun (pair : {p // p ∈ pairs}) =>
+        pair_to_edge pair.val pair.property)).card = 4 := by
+      rw [Finset.card_image_of_injective _ h_inj]
+      simp only [Finset.card_attach]
+      exact hpairs_card
+
+    -- All elements of the image are in the filtered E_P
+    have h_image_subset : (Finset.univ.image (fun (pair : {p // p ∈ pairs}) =>
+        pair_to_edge pair.val pair.property)) ⊆ E_P.filter (fun e =>
+        ∃ pair ∈ pairs, ∃ s1 s2 w p1_vertex p2_vertex,
+          pair = {s1, s2} ∧
+          ((e.1 = p1_vertex ∧ e.2 = p2_vertex) ∨ (e.1 = p2_vertex ∧ e.2 = p1_vertex))) := by
+      intro e he
+      simp only [Finset.mem_image, Finset.mem_univ, true_and, Subtype.exists] at he
+      obtain ⟨pair, hpair, _, h_e_eq⟩ := he
+      simp only [Finset.mem_filter]
+      constructor
+      · -- e ∈ E_P
+        obtain ⟨s_v, s'_v, w, p_s, p_s', _, _, _, _, _, _, _, hp_s_P, hp_s'_P, _, _, h_p_adj⟩ :=
+          h_pairs_force_P_edges pair hpair
+        simp only [pair_to_edge] at h_e_eq
+        rw [← h_e_eq]
+        simp only [E_P, Finset.mem_filter, Finset.mem_product]
+        exact ⟨⟨hp_s_P, hp_s'_P⟩, h_p_adj⟩
+      · -- Exists condition
+        obtain ⟨s_v, s'_v, w, p_s, p_s', h_eq, hs_S, hs'_S, hs_ne, hw_W, hs_adj_w, hs'_adj_w,
+                hp_s_P, hp_s'_P, hs_adj_p, hs'_adj_p', h_p_adj⟩ :=
+          h_pairs_force_P_edges pair hpair
+        use pair, hpair, s_v, s'_v, w, p_s, p_s'
+        simp only [pair_to_edge] at h_e_eq
+        rw [← h_e_eq]
+        exact ⟨h_eq, Or.inl ⟨rfl, rfl⟩⟩
+
+    calc (E_P.filter _).card
+        ≥ (Finset.univ.image _).card := Finset.card_le_card h_image_subset
+      _ = 4 := h_image_card
 
   omega -- 4 ≤ E_P.card
 
