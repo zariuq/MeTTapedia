@@ -2403,7 +2403,91 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
       have h_rhs : ordered_pairs.card = 2 * E_Q.card := by
         -- Each unordered edge contributes 2 ordered pairs
-        sorry -- Fiber partition similar to handshaking lemma
+        -- Define the "canonical form" map: ordered pair → unordered edge
+        let toEdge := fun (p : Fin 18 × Fin 18) =>
+          if p.1 < p.2 then p else (p.2, p.1)
+
+        -- Each edge in E_Q has exactly 2 preimages in ordered_pairs
+        have h_fiber_2 : ∀ e ∈ E_Q, (ordered_pairs.filter (fun p => toEdge p = e)).card = 2 := by
+          intro e he
+          simp only [E_Q, Finset.mem_filter, Finset.mem_univ, true_and] at he
+          obtain ⟨he_Q1, he_Q2, he_lt, he_adj⟩ := he
+          have h_ne : e.1 ≠ e.2 := ne_of_lt he_lt
+
+          -- Show the fiber equals {(e.1, e.2), (e.2, e.1)}
+          have h_eq : ordered_pairs.filter (fun p => toEdge p = e) = {(e.1, e.2), (e.2, e.1)} := by
+            ext p
+            simp only [ordered_pairs, toEdge, Finset.mem_filter, Finset.mem_univ, Finset.mem_insert,
+                       Finset.mem_singleton, true_and]
+            constructor
+            · intro ⟨⟨hp1, hp2, hp_ne, hp_adj⟩, hp_toEdge⟩
+              by_cases h : p.1 < p.2
+              · simp [h] at hp_toEdge
+                left
+                exact hp_toEdge
+              · simp [h] at hp_toEdge
+                right
+                ext <;> simp [hp_toEdge]
+            · intro hp
+              cases hp with
+              | inl hp_eq =>
+                -- p = (e.1, e.2)
+                subst hp_eq
+                constructor
+                · exact ⟨he_Q1, he_Q2, h_ne, he_adj⟩
+                · simp [toEdge, he_lt]
+              | inr hp_eq =>
+                -- p = (e.2, e.1)
+                subst hp_eq
+                constructor
+                · exact ⟨he_Q2, he_Q1, h_ne.symm, G.symm he_adj⟩
+                · simp [toEdge, he_lt]
+                  omega
+
+          rw [h_eq, Finset.card_insert_of_notMem, Finset.card_singleton]
+          · norm_num
+          · simp only [Finset.mem_singleton, Prod.ext_iff, not_and]
+            intro h1
+            exact ne_of_lt he_lt h1
+
+        -- All ordered pairs map to edges in E_Q
+        have h_partition : ∀ p ∈ ordered_pairs, toEdge p ∈ E_Q := by
+          intro p hp
+          simp only [ordered_pairs, Finset.mem_filter, Finset.mem_univ, true_and] at hp
+          obtain ⟨hp1, hp2, hp_ne, hp_adj⟩ := hp
+          simp only [E_Q, toEdge, Finset.mem_filter, Finset.mem_univ, true_and]
+          by_cases h : p.1 < p.2
+          · simp [h]
+            exact ⟨hp1, hp2, h, hp_adj⟩
+          · simp [h]
+            push_neg at h
+            have : p.2 < p.1 := by
+              cases' Ne.lt_or_lt hp_ne with hlt hlt
+              · exact hlt
+              · exact absurd hlt h
+            exact ⟨hp2, hp1, this, G.symm hp_adj⟩
+
+        -- Use fiber partition to count
+        calc ordered_pairs.card
+            = (E_Q.sum fun e => (ordered_pairs.filter (fun p => toEdge p = e)).card) := by
+                rw [← Finset.card_biUnion]
+                · congr 1
+                  ext p
+                  simp only [Finset.mem_biUnion, Finset.mem_filter]
+                  exact ⟨fun hp => ⟨toEdge p, h_partition p hp, hp, rfl⟩,
+                         fun ⟨e, _, hp, _⟩ => hp⟩
+                · intros e1 he1 e2 he2 hne
+                  rw [Finset.disjoint_iff_inter_eq_empty]
+                  ext p
+                  simp only [Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty, iff_false, not_and]
+                  intro _ h1 _ h2
+                  exact hne (h1.trans h2.symm)
+          _ = E_Q.sum (fun _ => 2) := by
+                apply Finset.sum_congr rfl
+                intros e he
+                exact h_fiber_2 e he
+          _ = 2 * E_Q.card := by
+                rw [Finset.sum_const, smul_eq_mul]
 
       rw [h_lhs, h_rhs]
 
@@ -2519,13 +2603,41 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
     have h_PQ_symm : P.sum (fun p => (Q.filter (G.Adj p)).card) =
                      Q.sum (fun q => (P.filter (G.Adj q)).card) := by
-      -- Both count edges between P and Q
-      sorry -- Double counting similar to earlier
+      -- Both count edges between P and Q using indicator functions
+      have h1 : P.sum (fun p => (Q.filter (G.Adj p)).card) =
+                P.sum (fun p => Q.sum (fun q => if G.Adj p q then 1 else 0)) := by
+        congr 1; ext p
+        rw [Finset.card_eq_sum_ones]
+        congr 1; ext q
+        simp only [Finset.sum_filter, Finset.mem_filter]
+
+      have h2 : Q.sum (fun q => (P.filter (G.Adj q)).card) =
+                Q.sum (fun q => P.sum (fun p => if G.Adj p q then 1 else 0)) := by
+        congr 1; ext q
+        rw [Finset.card_eq_sum_ones]
+        congr 1; ext p
+        simp only [Finset.sum_filter, Finset.mem_filter]
+
+      rw [h1, h2, Finset.sum_comm]
 
     have h_NvQ_symm : (G.neighborFinset v).sum (fun s => (Q.filter (G.Adj s)).card) =
                       Q.sum (fun q => ((G.neighborFinset v).filter (G.Adj q)).card) := by
-      -- Both count edges between N(v) and Q
-      sorry -- Double counting similar to earlier
+      -- Both count edges between N(v) and Q using indicator functions
+      have h1 : (G.neighborFinset v).sum (fun s => (Q.filter (G.Adj s)).card) =
+                (G.neighborFinset v).sum (fun s => Q.sum (fun q => if G.Adj s q then 1 else 0)) := by
+        congr 1; ext s
+        rw [Finset.card_eq_sum_ones]
+        congr 1; ext q
+        simp only [Finset.sum_filter, Finset.mem_filter]
+
+      have h2 : Q.sum (fun q => ((G.neighborFinset v).filter (G.Adj q)).card) =
+                Q.sum (fun q => (G.neighborFinset v).sum (fun s => if G.Adj s q then 1 else 0)) := by
+        congr 1; ext q
+        rw [Finset.card_eq_sum_ones]
+        congr 1; ext s
+        simp only [Finset.sum_filter, Finset.mem_filter]
+
+      rw [h1, h2, Finset.sum_comm]
 
     rw [h_PQ_symm, h_NvQ_symm]
 
