@@ -2848,7 +2848,20 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       -- q_sparse has a unique P-neighbor p_sparse
       have h_exists_p : ∃ p ∈ P, G.Adj p q_sparse ∧
                                    ∀ p' ∈ P, G.Adj p' q_sparse → p' = p := by
-        sorry -- TODO: extract unique neighbor from card = 1
+        -- Card = 1 means there exists a unique element
+        obtain ⟨p, hp⟩ := Finset.card_eq_one.mp hq_sparse_exactly_1
+        use p
+        have hp_mem : p ∈ P.filter (G.Adj q_sparse) := by rw [hp]; simp
+        constructor
+        · simp only [Finset.mem_filter] at hp_mem; exact hp_mem.1
+        constructor
+        · simp only [Finset.mem_filter] at hp_mem; exact hp_mem.2
+        · intro p' hp'_mem hp'_adj
+          have hp'_in_filter : p' ∈ P.filter (G.Adj q_sparse) := by
+            simp only [Finset.mem_filter]; exact ⟨hp'_mem, hp'_adj⟩
+          rw [hp] at hp'_in_filter
+          simp at hp'_in_filter
+          exact hp'_in_filter
 
       obtain ⟨p_sparse, hp_sparse_mem, hp_sparse_adj, hp_sparse_unique⟩ := h_exists_p
 
@@ -3217,8 +3230,13 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   intro hx_P
                   -- P and Q are disjoint
                   have : Disjoint P Q := by
-                    rw [← hP_eq_P', ← h_M_eq]
-                    sorry -- TODO: P and Q partition M
+                    rw [← hP_eq_P']
+                    -- P' and Q are disjoint since they partition M with different commonNeighborsCard
+                    rw [Finset.disjoint_iff_inter_eq_empty]
+                    ext w
+                    simp only [P', Q, Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty, iff_false]
+                    intro ⟨⟨_, h1⟩, ⟨_, h2⟩⟩
+                    omega
                   exact Finset.disjoint_left.mp this hx_P hx_Q
                 rw [← h_split_M, Finset.card_union_of_disjoint h_disj_M]
                 omega
@@ -3607,11 +3625,40 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   push_neg
                   constructor
                   · intro h; subst h
+                    -- q₁ ∈ Q ⊆ M, but v ∉ M, contradiction
                     have : q₁ ∈ Q := hq₁_Q
-                    sorry -- TODO: v ≠ q₁
+                    have hv_not_M : v ∉ M := by
+                      simp only [M, Finset.mem_sdiff, Finset.mem_insert, not_and, not_not]
+                      intro _; left; rfl
+                    simp only [Q, Finset.mem_filter] at this
+                    exact hv_not_M this.1
                   · intro h; exact h_p₁_q₁ (G.symm h)  -- contradiction would mean q₁ ∈ N(v)
-                have hv_q₂ : ¬G.Adj v q₂ := sorry -- similar
-                have hv_q₃ : ¬G.Adj v q₃ := sorry -- similar
+                have hv_q₂ : ¬G.Adj v q₂ := by
+                  apply hv_M
+                  simp only [Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert, mem_neighborFinset, true_and]
+                  push_neg
+                  constructor
+                  · intro h; subst h
+                    have : q₂ ∈ Q := hq₂_Q
+                    have hv_not_M : v ∉ M := by
+                      simp only [M, Finset.mem_sdiff, Finset.mem_insert, not_and, not_not]
+                      intro _; left; rfl
+                    simp only [Q, Finset.mem_filter] at this
+                    exact hv_not_M this.1
+                  · intro h; exact h_p₁_q₂ (G.symm h)
+                have hv_q₃ : ¬G.Adj v q₃ := by
+                  apply hv_M
+                  simp only [Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert, mem_neighborFinset, true_and]
+                  push_neg
+                  constructor
+                  · intro h; subst h
+                    have : q₃ ∈ Q := hq₃_Q
+                    have hv_not_M : v ∉ M := by
+                      simp only [M, Finset.mem_sdiff, Finset.mem_insert, not_and, not_not]
+                      intro _; left; rfl
+                    simp only [Q, Finset.mem_filter] at this
+                    exact hv_not_M this.1
+                  · intro h; exact h_p₁_q₃ (G.symm h)
 
                 -- P is independent
                 have h_p₁_p₂ : ¬G.Adj p₁ p₂ := h_P_indep p₁ hp₁_mem p₂ hp₂_mem hp_ne
@@ -3670,18 +3717,55 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   intro h; subst h
                   exact hp₂_props.1 (G.adj_irrefl v)
                 have hv_ne_q₁ : v ≠ q₁ := by
-                  sorry -- v ∈ {v}, q₁ ∈ Q ⊆ M, v ∉ M
-                have hv_ne_q₂ : v ≠ q₂ := sorry
-                have hv_ne_q₃ : v ≠ q₃ := sorry
+                  intro h; subst h
+                  -- q₁ ∈ Q ⊆ M, but v ∉ M
+                  have hv_not_M : v ∉ M := by
+                    simp only [M, Finset.mem_sdiff, Finset.mem_insert, not_and, not_not]
+                    intro _; left; rfl
+                  simp only [Q, Finset.mem_filter] at hq₁_Q
+                  exact hv_not_M hq₁_Q.1
+                have hv_ne_q₂ : v ≠ q₂ := by
+                  intro h; subst h
+                  have hv_not_M : v ∉ M := by
+                    simp only [M, Finset.mem_sdiff, Finset.mem_insert, not_and, not_not]
+                    intro _; left; rfl
+                  simp only [Q, Finset.mem_filter] at hq₂_Q
+                  exact hv_not_M hq₂_Q.1
+                have hv_ne_q₃ : v ≠ q₃ := by
+                  intro h; subst h
+                  have hv_not_M : v ∉ M := by
+                    simp only [M, Finset.mem_sdiff, Finset.mem_insert, not_and, not_not]
+                    intro _; left; rfl
+                  simp only [Q, Finset.mem_filter] at hq₃_Q
+                  exact hv_not_M hq₃_Q.1
 
                 have hp₁_ne_p₂ : p₁ ≠ p₂ := hp_ne
+                -- P ∩ Q = ∅ (disjoint partition of M)
+                have hPQ_disj : Disjoint P Q := by
+                  rw [← hP_eq_P']
+                  rw [Finset.disjoint_iff_inter_eq_empty]
+                  ext w
+                  simp only [P', Q, Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty, iff_false]
+                  intro ⟨⟨_, h1⟩, ⟨_, h2⟩⟩
+                  omega
                 have hp₁_ne_q₁ : p₁ ≠ q₁ := by
-                  sorry -- p₁ ∈ P, q₁ ∈ Q, P ∩ Q = ∅
-                have hp₁_ne_q₂ : p₁ ≠ q₂ := sorry
-                have hp₁_ne_q₃ : p₁ ≠ q₃ := sorry
-                have hp₂_ne_q₁ : p₂ ≠ q₁ := sorry
-                have hp₂_ne_q₂ : p₂ ≠ q₂ := sorry
-                have hp₂_ne_q₃ : p₂ ≠ q₃ := sorry
+                  intro h; subst h
+                  exact Finset.disjoint_left.mp hPQ_disj hp₁_mem hq₁_Q
+                have hp₁_ne_q₂ : p₁ ≠ q₂ := by
+                  intro h; subst h
+                  exact Finset.disjoint_left.mp hPQ_disj hp₁_mem hq₂_Q
+                have hp₁_ne_q₃ : p₁ ≠ q₃ := by
+                  intro h; subst h
+                  exact Finset.disjoint_left.mp hPQ_disj hp₁_mem hq₃_Q
+                have hp₂_ne_q₁ : p₂ ≠ q₁ := by
+                  intro h; subst h
+                  exact Finset.disjoint_left.mp hPQ_disj hp₂_mem hq₁_Q
+                have hp₂_ne_q₂ : p₂ ≠ q₂ := by
+                  intro h; subst h
+                  exact Finset.disjoint_left.mp hPQ_disj hp₂_mem hq₂_Q
+                have hp₂_ne_q₃ : p₂ ≠ q₃ := by
+                  intro h; subst h
+                  exact Finset.disjoint_left.mp hPQ_disj hp₂_mem hq₃_Q
 
                 have hq₁_ne_q₂ : q₁ ≠ q₂ := by
                   intro h; subst h
