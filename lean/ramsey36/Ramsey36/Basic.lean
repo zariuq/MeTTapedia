@@ -3015,13 +3015,28 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have h_partition := h_deg_partition q hq
       omega
 
-    -- Count non-adjacencies: each q has 2 P-non-neighbors
-    -- Sum = 8 × 2 = 16
-    -- By pigeonhole, some p has ≥ 4 Q-non-neighbors
+    -- Count non-adjacencies: each q has 2 P-non-neighbors, each p has 4 Q-non-neighbors
+    -- Key insight: EVERY p has exactly 4 Q-non-neighbors!
+    have h_p_has_4_nonneighbors : ∀ p ∈ P, (Q.filter (fun q => ¬G.Adj p q)).card = 4 := by
+      intro p hp
+      -- p has deg 5 = 1(N(v)) + 0(P) + 4(Q), so p has 4 Q-neighbors
+      -- Thus 8 - 4 = 4 Q-non-neighbors
+      sorry -- TODO: prove p has 4 Q-neighbors
 
-    -- Use E_Q = 4 to find 2 independent vertices in Q
-    -- Then try to combine with P to form 6-IS
-    sorry -- TODO: pigeonhole + independent set construction
+    -- For any p, Q_p := {q ∈ Q : q ↛ p} has 4 vertices from a perfect matching (4 edges total)
+    -- Q_p has at most 2 edges, so it has an IS of size ≥ 2
+    --
+    -- CREATIVE CHALLENGE: Does choosing 2 independent q's from Q_p give us a clean 6-IS?
+    -- {v} ∪ (P \ {p}) ∪ {2 independent vertices from Q_p}
+    --
+    -- Problem: The 2 Q vertices might be adjacent to OTHER vertices in P \ {p}!
+    --
+    -- Need to either:
+    -- 1. Choose p cleverly so Q_p's IS avoids other P vertices
+    -- 2. Use a different construction entirely
+    -- 3. Show this case is impossible (derive different contradiction)
+
+    sorry -- TODO: This needs creative insight about structure!
 
 /-- The induced subgraph on P has at most 4 edges (P is not K₄).
 Proof: If P had ≥ 5 edges, handshaking gives sum of P-degrees ≥ 10.
