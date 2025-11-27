@@ -1788,7 +1788,94 @@ lemma s_has_three_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         simp [this]
 
       have hI_indep : G.IsIndepSet (I : Set (Fin 18)) := by
-        sorry -- I is independent: p,w non-adj (shown), N(v)\{s} is independent, cross non-adjacencies
+        intro x hx y hy hxy h_adj
+        simp only [I, Finset.mem_coe, Finset.mem_insert, Finset.mem_sdiff, mem_neighborFinset,
+                   Finset.mem_singleton] at hx hy
+        -- I = {p} ∪ {w} ∪ (N(v) \ {s})
+        -- Need to show no edges within I
+        rcases hx with rfl | rfl | ⟨hx_N, hx_ne_s⟩
+        · -- x = p
+          rcases hy with rfl | rfl | ⟨hy_N, hy_ne_s⟩
+          · exact absurd rfl hxy  -- p = y
+          · exact hpw_nonadj h_adj  -- y = w, shown non-adj
+          · -- y ∈ N(v) \ {s}, but p non-adj to v, so p non-adj to all N(v)
+            have : ¬G.Adj p y := by
+              intro h
+              have hy_in_common : y ∈ G.neighborFinset v ∩ G.neighborFinset p := by
+                simp [mem_neighborFinset, hy_N, h]
+              have : (G.neighborFinset v ∩ G.neighborFinset p).card ≥ 1 := by
+                apply Finset.one_le_card_iff_ne_empty.mpr
+                intro h_empty
+                rw [h_empty] at hy_in_common
+                exact Finset.not_mem_empty y hy_in_common
+              unfold commonNeighborsCard commonNeighbors at hp_common1
+              omega
+            exact this h_adj
+        · -- x = w
+          rcases hy with rfl | rfl | ⟨hy_N, hy_ne_s⟩
+          · exact hpw_nonadj (G.symm h_adj)  -- y = p
+          · exact absurd rfl hxy  -- w = y
+          · -- y ∈ N(v) \ {s}, w non-adj to all N(v) except s (has commonCard = 1)
+            have : ¬G.Adj w y := by
+              intro h
+              have : y = s := by
+                have hy_in_common : y ∈ G.neighborFinset v ∩ G.neighborFinset w := by
+                  simp [mem_neighborFinset, hy_N, h]
+                have : (G.neighborFinset v ∩ G.neighborFinset w).card = 1 := hw_common1
+                rw [Finset.card_eq_one] at this
+                obtain ⟨z, hz⟩ := this
+                have hy_eq_z : y = z := by
+                  have : y ∈ ({z} : Finset (Fin 18)) := by rw [← hz]; exact hy_in_common
+                  simp at this
+                  exact this
+                have hs_eq_z : s = z := by
+                  have : s ∈ ({z} : Finset (Fin 18)) := by
+                    rw [← hz]
+                    simp [mem_neighborFinset, hs_in_N, hw_adj]
+                  simp at this
+                  exact this
+                exact hy_eq_z.trans hs_eq_z.symm
+              exact hy_ne_s this
+            exact this h_adj
+        · -- x ∈ N(v) \ {s}
+          rcases hy with rfl | rfl | ⟨hy_N, hy_ne_s⟩
+          · -- y = p, symmetric to earlier case
+            have : ¬G.Adj y x := by
+              intro h
+              have hx_in_common : x ∈ G.neighborFinset v ∩ G.neighborFinset y := by
+                simp [mem_neighborFinset, hx_N, h]
+              unfold commonNeighborsCard commonNeighbors at hp_common1
+              have : (G.neighborFinset v ∩ G.neighborFinset y).card ≥ 1 := by
+                apply Finset.one_le_card_iff_ne_empty.mpr
+                intro h_empty
+                rw [h_empty] at hx_in_common
+                exact Finset.not_mem_empty x hx_in_common
+              omega
+            exact this (G.symm h_adj)
+          · -- y = w, symmetric
+            have : ¬G.Adj y x := by
+              intro h
+              have : x = s := by
+                have hx_in_common : x ∈ G.neighborFinset v ∩ G.neighborFinset y := by
+                  simp [mem_neighborFinset, hx_N, h]
+                have : (G.neighborFinset v ∩ G.neighborFinset y).card = 1 := hw_common1
+                rw [Finset.card_eq_one] at this
+                obtain ⟨z, hz⟩ := this
+                have hx_eq_z : x = z := by
+                  have : x ∈ ({z} : Finset (Fin 18)) := by rw [← hz]; exact hx_in_common
+                  simp at this; exact this
+                have hs_eq_z : s = z := by
+                  have : s ∈ ({z} : Finset (Fin 18)) := by
+                    rw [← hz]; simp [mem_neighborFinset, hs_in_N, hw_adj]
+                  simp at this; exact this
+                exact hx_eq_z.trans hs_eq_z.symm
+              exact hx_ne_s this
+            exact this (G.symm h_adj)
+          · -- x, y both in N(v) \ {s}, use triangle-free
+            have hN_indep := neighborSet_indep_of_triangleFree h_tri v
+            have hx_in_Nv : x ∈ (G.neighborFinset v : Set (Fin 18)) := by simp [mem_neighborFinset, hx_N]
+            have hy_in_Nv : y ∈ (G.neighborFinset v : Set (Fin 18)) := by simp [mem_neighborFinset, hy_N]
+            exact hN_indep hx_in_Nv hy_in_Nv hxy h_adj
 
       exact h_no6 I ⟨hI_indep, hI_card⟩
     exact hQ_complete w hw_nonadj_v hw_common
