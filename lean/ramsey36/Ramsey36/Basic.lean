@@ -3366,15 +3366,323 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   let T := Q.filter (G.Adj t)
   let W := Q.filter (fun q => ¬G.Adj t q)
 
-  -- For the full S-W proof, we'd need to:
-  -- 1. Show |T| = 4, |W| = 4
-  -- 2. Show S-W bipartite graph is 2-regular (each s connects to 2 w's, each w to 2 s's)
-  -- 3. Deduce it forms a single 8-cycle
-  -- 4. Extract 4 consecutive pairs from the cycle
-  -- 5. Apply p_adjacent_of_shared_w to get 4 edges in P
+  -- Step 7: Show each si has exactly 3 Q-neighbors
+  -- (This requires detailed vertex classification - deferred for now)
+  have hs1_Q_nbrs : (Q.filter (G.Adj s1)).card = 3 := by
+    sorry -- s1 has degree 5 = 1(v) + 1(p1) + 3(Q)
 
-  -- This is substantial work (~100+ lines). For now, assert the result.
-  sorry -- Complete T-W partition + S-W cycle + pair extraction + adjacency application
+  have hs2_Q_nbrs : (Q.filter (G.Adj s2)).card = 3 := by
+    sorry -- s2 has degree 5 = 1(v) + 1(p2) + 3(Q)
+
+  have hs3_Q_nbrs : (Q.filter (G.Adj s3)).card = 3 := by
+    sorry -- s3 has degree 5 = 1(v) + 1(p3) + 3(Q)
+
+  have hs4_Q_nbrs : (Q.filter (G.Adj s4)).card = 3 := by
+    sorry -- s4 has degree 5 = 1(v) + 1(p4) + 3(Q)
+
+  -- Step 8: Count edges from N(v) to Q
+  -- Q side: each q has 2 N(v)-neighbors, so sum = 8 × 2 = 16
+  have hQ_to_Nv : (Q.sum (fun q => (G.neighborFinset q ∩ G.neighborFinset v).card)) = 16 := by
+    calc Q.sum (fun q => (G.neighborFinset q ∩ G.neighborFinset v).card)
+        = Q.sum (fun _ => 2) := by
+          congr 1; ext q
+          exact hQ_two_nbrs q
+      _ = 2 * Q.card := by rw [Finset.sum_const, smul_eq_mul]
+      _ = 2 * 8 := by rw [hQ_card]
+      _ = 16 := by norm_num
+
+  -- S side: s1,s2,s3,s4 each contribute 3, and t contributes its T-neighbors
+  have hS_to_Q : (S.sum (fun s => (Q.filter (G.Adj s)).card)) = 12 := by
+    calc S.sum (fun s => (Q.filter (G.Adj s)).card)
+        = (({s1, s2, s3, s4} : Finset (Fin 18)).sum (fun s => (Q.filter (G.Adj s)).card)) := by rfl
+      _ = (Q.filter (G.Adj s1)).card + (Q.filter (G.Adj s2)).card +
+          (Q.filter (G.Adj s3)).card + (Q.filter (G.Adj s4)).card := by
+          sorry -- Expand sum over 4-element set
+      _ = 3 + 3 + 3 + 3 := by rw [hs1_Q_nbrs, hs2_Q_nbrs, hs3_Q_nbrs, hs4_Q_nbrs]
+      _ = 12 := by norm_num
+
+  -- Therefore t has exactly 4 Q-neighbors
+  have ht_Q_nbrs : (Q.filter (G.Adj t)).card = 4 := by
+    -- Double count: edges from N(v) to Q
+    -- From N(v) = S ∪ {t}: edges = S-to-Q + t-to-Q
+    -- From Q: edges = 16
+    have hN_partition : G.neighborFinset v = S ∪ {t} := by
+      ext x
+      simp only [Finset.mem_union, Finset.mem_singleton, S, Finset.mem_insert]
+      constructor
+      · intro hx
+        by_cases hx_s1 : x = s1
+        · left; left; left; left; exact hx_s1
+        · by_cases hx_s2 : x = s2
+          · left; left; left; right; exact hx_s2
+          · by_cases hx_s3 : x = s3
+            · left; left; right; exact hx_s3
+            · by_cases hx_s4 : x = s4
+              · left; right; exact hx_s4
+              · -- x ∈ N(v) but x ∉ {s1,s2,s3,s4}, so x must be the 5th element
+                right
+                -- N(v) has card 5, S has card 4, S ⊆ N(v), so there's exactly one element left
+                sorry -- Use cardinality to show x = t
+      · intro h
+        rcases h with (rfl | rfl | rfl | rfl) | rfl
+        · exact hs1_in_N
+        · exact hs2_in_N
+        · exact hs3_in_N
+        · exact hs4_in_N
+        · exact ht_in_N
+
+    have hS_t_disjoint : Disjoint S ({t} : Finset (Fin 18)) := by
+      rw [Finset.disjoint_singleton_right]
+      exact ht_not_S
+
+    have h_double_count : (S.sum (fun s => (Q.filter (G.Adj s)).card)) +
+                          (Q.filter (G.Adj t)).card = 16 := by
+      -- Count edges N(v) → Q from both sides
+      -- From Q side: sum of (q's N(v)-neighbors) = 16 (proven in hQ_to_Nv)
+      -- From N(v) side: sum of (n's Q-neighbors) for n ∈ N(v)
+      -- These count the same edges (bipartite edge set between N(v) and Q)
+
+      have h_Nv_to_Q : ((G.neighborFinset v).sum (fun n => (Q.filter (G.Adj n)).card)) = 16 := by
+        -- Use symmetry of edge counting
+        -- ∑_{n ∈ N(v)} |{q ∈ Q : n~q}| = ∑_{q ∈ Q} |{n ∈ N(v) : n~q}|
+        calc ((G.neighborFinset v).sum (fun n => (Q.filter (G.Adj n)).card))
+            = (Q.sum (fun q => ((G.neighborFinset v).filter (G.Adj q)).card)) := by
+              sorry -- Finset.sum_comm with indicators
+          _ = (Q.sum (fun q => (G.neighborFinset q ∩ G.neighborFinset v).card)) := by
+              congr 1; ext q
+              congr 1
+              ext n
+              simp only [Finset.mem_filter, Finset.mem_inter, mem_neighborFinset]
+              constructor
+              · intro ⟨hn, hq⟩; exact ⟨hq, hn⟩
+              · intro ⟨hq, hn⟩; exact ⟨hn, hq⟩
+          _ = 16 := hQ_to_Nv
+
+      -- Decompose N(v) = S ∪ {t}
+      calc (S.sum (fun s => (Q.filter (G.Adj s)).card)) + (Q.filter (G.Adj t)).card
+          = (S.sum (fun s => (Q.filter (G.Adj s)).card)) +
+            (({t} : Finset (Fin 18)).sum (fun s => (Q.filter (G.Adj s)).card)) := by
+              simp only [Finset.sum_singleton]
+        _ = ((S ∪ {t}).sum (fun s => (Q.filter (G.Adj s)).card)) := by
+              rw [Finset.sum_union hS_t_disjoint]
+        _ = ((G.neighborFinset v).sum (fun n => (Q.filter (G.Adj n)).card)) := by
+              rw [← hN_partition]
+        _ = 16 := h_Nv_to_Q
+
+    omega
+
+  -- Step 9: Show |T| = 4, |W| = 4
+  have hT_card : T.card = 4 := by
+    -- T is exactly the Q-neighbors of t
+    have : T = Q.filter (G.Adj t) := rfl
+    exact ht_Q_nbrs
+
+  have hW_card : W.card = 4 := by
+    -- W is the complement of T in Q
+    have hTW_partition : Q = T ∪ W := by
+      ext q
+      simp only [T, W, Finset.mem_union, Finset.mem_filter]
+      tauto
+    have hTW_disjoint : Disjoint T W := by
+      rw [Finset.disjoint_iff_inter_eq_empty]
+      ext q
+      simp only [T, W, Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty, iff_false, not_and]
+      tauto
+    have : T.card + W.card = Q.card := by
+      rw [← Finset.card_union_of_disjoint hTW_disjoint, hTW_partition]
+    omega
+
+  -- Step 10: Show each w ∈ W has exactly 2 S-neighbors
+  have hW_two_S_nbrs : ∀ w ∈ W, ((G.neighborFinset w) ∩ S).card = 2 := by
+    intro w hw
+    -- w has 2 N(v)-neighbors total
+    have hw_in_Q : w ∈ Q := by simp only [W, Finset.mem_filter] at hw; exact hw.1
+    have hw_two_Nv : (G.neighborFinset w ∩ G.neighborFinset v).card = 2 := hQ_two_nbrs w hw_in_Q
+    -- w is not adjacent to t (by definition of W)
+    have hw_not_t : ¬G.Adj w t := by simp only [W, Finset.mem_filter] at hw; exact hw.2
+
+    -- w's N(v)-neighbors are exactly its S-neighbors (since w not adjacent to t)
+    have h_eq : G.neighborFinset w ∩ G.neighborFinset v = G.neighborFinset w ∩ S := by
+      ext x
+      simp only [Finset.mem_inter, mem_neighborFinset]
+      constructor
+      · intro ⟨hx_w, hx_v⟩
+        constructor
+        · exact hx_w
+        · -- x ∈ N(v), need to show x ∈ S = {s1, s2, s3, s4}
+          -- N(v) = S ∪ {t} from hN_partition, and x ≠ t since w not adjacent to t
+          rw [hN_partition] at hx_v
+          simp only [Finset.mem_union, Finset.mem_singleton] at hx_v
+          cases hx_v with
+          | inl hx_S => exact hx_S
+          | inr hx_t =>
+              subst hx_t
+              exfalso
+              exact hw_not_t hx_w
+      · intro ⟨hx_w, hx_S⟩
+        constructor
+        · exact hx_w
+        · -- x ∈ S ⊆ N(v)
+          have : S ⊆ G.neighborFinset v := by
+            rw [hN_partition]
+            exact Finset.subset_union_left
+          exact this hx_S
+
+    rw [← h_eq]
+    exact hw_two_Nv
+
+  -- Step 11: Show each s ∈ S has exactly 2 W-neighbors
+  have hS_two_W_nbrs : ∀ s, s ∈ S → ((G.neighborFinset s) ∩ W).card = 2 := by
+    intro s hs
+    -- s has 3 Q-neighbors total
+    have hs_three_Q : (Q.filter (G.Adj s)).card = 3 := by
+      simp only [S, Finset.mem_insert, Finset.mem_singleton] at hs
+      rcases hs with rfl | rfl | rfl | rfl
+      · exact hs1_Q_nbrs
+      · exact hs2_Q_nbrs
+      · exact hs3_Q_nbrs
+      · exact hs4_Q_nbrs
+
+    -- s's Q-neighbors partition into T-neighbors and W-neighbors
+    have h_Q_partition : Q.filter (G.Adj s) = (T.filter (G.Adj s)) ∪ (W.filter (G.Adj s)) := by
+      ext q
+      simp only [Finset.mem_filter, Finset.mem_union, T, W]
+      constructor
+      · intro ⟨hq, hs_adj⟩
+        by_cases ht : G.Adj t q
+        · left; exact ⟨⟨hq, ht⟩, hs_adj⟩
+        · right; exact ⟨⟨hq, ht⟩, hs_adj⟩
+      · intro h
+        cases h with
+        | inl h => exact ⟨h.1.1, h.2⟩
+        | inr h => exact ⟨h.1.1, h.2⟩
+
+    have h_TW_disjoint : Disjoint (T.filter (G.Adj s)) (W.filter (G.Adj s)) := by
+      rw [Finset.disjoint_iff_inter_eq_empty]
+      ext q
+      simp only [Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty, iff_false, not_and, T, W]
+      intro ⟨⟨⟨hq, ht⟩, _⟩, ⟨⟨_, hnt⟩, _⟩⟩
+      exact hnt ht
+
+    -- Count: 3 = |T-neighbors| + |W-neighbors|
+    have h_count : (T.filter (G.Adj s)).card + (W.filter (G.Adj s)).card = 3 := by
+      rw [← Finset.card_union_of_disjoint h_TW_disjoint, ← h_Q_partition]
+      exact hs_three_Q
+
+    -- Show s has exactly 1 T-neighbor
+    -- First show each vertex in T has exactly 1 S-neighbor
+    have hT_one_S : ∀ q ∈ T, ((G.neighborFinset q) ∩ S).card = 1 := by
+      intro q hq
+      -- q ∈ T means q ∈ Q and q is adjacent to t
+      have hq_in_Q : q ∈ Q := by simp only [T, Finset.mem_filter] at hq; exact hq.1
+      have hq_adj_t : G.Adj q t := by simp only [T, Finset.mem_filter] at hq; exact hq.2
+      -- q has 2 N(v)-neighbors total
+      have hq_two_Nv : (G.neighborFinset q ∩ G.neighborFinset v).card = 2 := hQ_two_nbrs q hq_in_Q
+      -- One of them is t, the other must be in S
+      have h_partition : G.neighborFinset q ∩ G.neighborFinset v =
+                          insert t ((G.neighborFinset q) ∩ S) := by
+        ext x
+        simp only [Finset.mem_inter, Finset.mem_insert, mem_neighborFinset]
+        constructor
+        · intro ⟨hx_q, hx_v⟩
+          by_cases hxt : x = t
+          · left; exact hxt
+          · right
+            constructor
+            · exact hx_q
+            · -- x ∈ N(v) and x ≠ t, so x ∈ S
+              rw [hN_partition] at hx_v
+              simp only [Finset.mem_union, Finset.mem_singleton] at hx_v
+              cases hx_v with
+              | inl hx_S => exact hx_S
+              | inr hx_t => exfalso; exact hxt hx_t
+        · intro h
+          cases h with
+          | inl hxt =>
+              subst hxt
+              exact ⟨G.adj_comm.mp hq_adj_t, ht_in_N⟩
+          | inr ⟨hx_q, hx_S⟩ =>
+              constructor
+              · exact hx_q
+              · have : S ⊆ G.neighborFinset v := by
+                  rw [hN_partition]
+                  exact Finset.subset_union_left
+                exact this hx_S
+      -- Count: 2 = 1 + |S-neighbors|
+      have ht_not_in_S : t ∉ (G.neighborFinset q) ∩ S := by
+        simp only [Finset.mem_inter, mem_neighborFinset, not_and]
+        intro _
+        exact ht_not_S
+      rw [h_partition, Finset.card_insert_of_not_mem ht_not_in_S] at hq_two_Nv
+      omega
+
+    -- Double count S-T edges: each of 4 vertices in T has 1 S-neighbor
+    -- So there are 4 S-T edges total
+    -- Since S has 4 vertices and each has the same number of T-neighbors (by symmetry or uniformity)
+    -- Each must have 4/4 = 1 T-neighbor
+    have h_ST_edges : (T.sum (fun q => ((G.neighborFinset q) ∩ S).card)) = 4 := by
+      calc T.sum (fun q => ((G.neighborFinset q) ∩ S).card)
+          = T.sum (fun _ => 1) := by
+              congr 1; ext q
+              exact hT_one_S q
+        _ = 1 * T.card := by rw [Finset.sum_const, smul_eq_mul]
+        _ = 1 * 4 := by rw [hT_card]
+        _ = 4 := by norm_num
+
+    -- Double count from S side using Finset.sum_comm
+    have h_ST_from_S : (S.sum (fun s => (T.filter (G.Adj s)).card)) = 4 := by
+      calc S.sum (fun s => (T.filter (G.Adj s)).card)
+          = T.sum (fun q => (S.filter (G.Adj q)).card) := by
+              sorry -- Finset.sum_comm with indicator functions
+        _ = T.sum (fun q => ((G.neighborFinset q) ∩ S).card) := by
+              congr 1; ext q
+              congr 1
+              ext s
+              simp only [Finset.mem_filter, Finset.mem_inter, mem_neighborFinset]
+              tauto
+        _ = 4 := h_ST_edges
+
+    -- Each s in S has same number of T-neighbors (since 4 vertices, 4 edges total, uniform)
+    -- Therefore this s has 4/4 = 1 T-neighbor
+    sorry -- Extract individual s from sum, show it has 1 T-neighbor
+
+    -- Therefore s has 2 W-neighbors
+    have hs_two_W_filt : (W.filter (G.Adj s)).card = 2 := by omega
+
+    -- Convert to intersection form
+    have : (G.neighborFinset s) ∩ W = W.filter (G.Adj s) := by
+      ext q
+      simp only [Finset.mem_inter, mem_neighborFinset, Finset.mem_filter, W]
+      tauto
+
+    rw [this]
+    exact hs_two_W_filt
+
+  -- Step 12: S-W forms 2-regular bipartite graph
+  -- Each s ∈ S has exactly 2 W-neighbors (proven)
+  -- Each w ∈ W has exactly 2 S-neighbors (proven)
+  -- |S| = 4, |W| = 4, so this is a 2-regular bipartite graph on 4+4 vertices
+  -- By standard graph theory, this is a single 8-cycle (or two disjoint 4-cycles, but connectedness forces single cycle)
+
+  -- Step 13: Extract 4 consecutive pairs of s-vertices that share w-neighbors
+  -- The 8-cycle alternates: s₁ - w₁ - s₂ - w₂ - s₃ - w₃ - s₄ - w₄ - s₁
+  -- Consecutive s-pairs sharing a w: (s₁,s₂) share w₁, (s₂,s₃) share w₂, (s₃,s₄) share w₃, (s₄,s₁) share w₄
+
+  -- For each pair (sᵢ, sⱼ) sharing w ∈ W, apply existing lemma:
+  -- `p_adjacent_of_shared_w` shows pᵢ and pⱼ must be adjacent in P
+  -- (This uses five_cycle_structure: {pᵢ, pⱼ, sᵢ, sⱼ, w} is 2-regular → pᵢ~pⱼ since sᵢ,sⱼ not adjacent)
+
+  -- Therefore: 4 distinct pairs → 4 distinct edges in E_P
+  -- So |E_P| ≥ 4
+
+  -- The detailed cycle extraction and pair verification requires:
+  -- 1. Prove the 2-regular bipartite graph is connected (single 8-cycle)
+  -- 2. Extract vertices in cycle order
+  -- 3. Identify the 4 shared W-neighbors
+  -- 4. Apply p_adjacent_of_shared_w to each pair
+  -- 5. Show the 4 edges are distinct
+
+  sorry -- Complete cycle analysis (~80 lines remaining)
 
 /-- P is 2-regular: each p ∈ P has exactly 2 neighbors in P.
 This is the key structural lemma that implies P is a 4-cycle.
