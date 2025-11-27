@@ -2051,34 +2051,238 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             -- P (given) and P' both have card 4 and same characterization, so likely equal
             -- But we can work directly: p's M-neighbors not in P must be elsewhere in M
 
-            -- Key: M-neighbors of p = P-neighbors of p ∪ Q-neighbors of p (disjoint)
-            -- We know P-neighbors = 0, so M-neighbors = Q-neighbors
+            -- Key insight: P = P' (both characterized by commonCard = 1, card = 4)
+            -- Since P' and Q partition M, and p has no P-neighbors, p's M-neighbors are Q-neighbors
+
+            -- First show p ∈ P'
+            have hp_in_P' : p ∈ P' := by
+              have hp_not_adj_v : ¬G.Adj v p := (hP_props p hp).1
+              have hp_in_M : p ∈ M := by
+                simp only [M, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert,
+                          mem_neighborFinset, true_and]
+                push_neg
+                constructor
+                · intro h; subst h; exact hp_not_adj_v (G.adj_irrefl v)
+                · exact hp_not_adj_v
+              exact Finset.mem_filter.mpr ⟨hp_in_M, hp_common1⟩
+
+            -- P' and Q partition M (disjoint union)
+            have hPQ_partition : M = P' ∪ Q := by
+              ext x
+              simp only [Finset.mem_union, Finset.mem_filter]
+              constructor
+              · intro hx
+                have := hQ_props.2 x hx
+                cases this with
+                | inl h => left; exact ⟨hx, h⟩
+                | inr h => right; exact ⟨hx, h⟩
+              · intro hx
+                cases hx with
+                | inl h => exact h.1
+                | inr h => exact h.1
+
+            have hPQ_disj : Disjoint P' Q := by
+              rw [Finset.disjoint_iff_inter_eq_empty]
+              ext x
+              simp only [Finset.mem_inter, Finset.mem_filter, Finset.mem_empty, iff_false, not_and]
+              intro _ h1 _ h2
+              omega
+
+            -- p's M-neighbors split into P'-neighbors and Q-neighbors
+            have h_M_split : G.neighborFinset p ∩ M =
+                             (G.neighborFinset p ∩ P') ∪ (G.neighborFinset p ∩ Q) := by
+              rw [hPQ_partition, Finset.inter_union_distrib_left]
+
+            -- p has no P'-neighbors (since P = P' and P is independent)
+            have hp_no_P'_neighbors : (G.neighborFinset p ∩ P').card = 0 := by
+              apply Finset.card_eq_zero.mpr
+              rw [Finset.eq_empty_iff_forall_not_mem]
+              intro x
+              simp only [Finset.mem_inter, mem_neighborFinset, not_and]
+              intro h_adj
+              intro hx_P'
+              -- x ∈ P', p ∈ P with P = P' (both char by commonCard=1, card=4)
+              -- But P independent means no edges within P'
+              -- Need: P = P' to apply independence
+              -- For now: use that if x ∈ P', then x has commonCard=1
+              -- And p ∈ P also has commonCard=1
+              -- Both are in M with same characterization
+
+              -- Actually, use hp_P_count directly: p has no P-neighbors
+              -- Need to show x ∈ P if x ∈ P'...
+              -- This requires P = P', which needs uniqueness of characterization
+
+              -- Alternative: x ∈ P' means x ∈ M with commonCard=1
+              -- p ∈ P means p ∈ M with commonCard=1
+              -- For p to have an edge to x, both must be degree 5
+              -- p: 1 to N(v), 0 to P (indep), so 4 to Q
+              -- If x ∈ P' and Adj p x, then x should be counted in p's degree
+
+              -- Simpler: show x ∈ P using characterization
+              have hx_char : x ∈ M ∧ commonNeighborsCard G v x = 1 :=
+                Finset.mem_filter.mp hx_P'
+              have hx_not_adj_v : ¬G.Adj v x := by
+                simp only [M, Finset.mem_sdiff, Finset.mem_insert, mem_neighborFinset] at hx_char
+                push_neg at hx_char
+                exact hx_char.1.2.2
+              have hx_in_P : x ∈ P := by
+                -- x has same props as P elements: non-adj to v, commonCard = 1
+                -- If x ∉ P, then P ∪ {x} would have card ≥ 5
+                -- But M has only finitely many elements with commonCard = 1
+                -- And that's exactly P' with card 4
+                -- Since P also has card 4 with same characterization, P = P'
+                -- So x ∈ P' → x ∈ P
+
+                -- Direct approach: assume x ∉ P, derive contradiction
+                by_contra hx_not_P
+                -- x ∈ P' \ P, but P and P' both have card 4 and same characterization
+                -- This means P ≠ P', which requires showing P = P'
+
+                -- For now, use the fact directly that P is independent
+                -- If Adj p x and x ∈ P, we get contradiction from hp_P_count
+                -- But x might not be in P...
+
+                -- Let's use a different approach:
+                -- Claim: P = P' (both are M.filter (commonCard = 1))
+                -- We showed p ∈ P', and |P| = |P'| = 4
+                -- For any p' ∈ P, p' ∈ P' by characterization
+                have hP_subset_P' : P ⊆ P' := by
+                  intro p' hp'
+                  have ⟨hp'_not_adj, hp'_comm⟩ := hP_props p' hp'
+                  have hp'_in_M : p' ∈ M := by
+                    simp only [M, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert,
+                              mem_neighborFinset, true_and]
+                    push_neg
+                    exact ⟨fun h => (h ▸ hp'_not_adj (G.adj_irrefl v)), hp'_not_adj⟩
+                  exact Finset.mem_filter.mpr ⟨hp'_in_M, hp'_comm⟩
+                have hP_eq_P' : P = P' := Finset.eq_of_subset_of_card_le hP_subset_P'
+                  (le_of_eq (hP_card.trans hP'_card.symm))
+                rw [← hP_eq_P'] at hx_P'
+                exact hx_not_P hx_P'
+
+              -- Now x ∈ P and p ∈ P, with P independent
+              exact h_P_indep (Finset.mem_coe.mpr hp) (Finset.mem_coe.mpr hx_in_P)
+                (by intro h; subst h; exact G.adj_irrefl p h_adj) h_adj
+
+            -- Therefore p's M-neighbors = p's Q-neighbors
             calc (Q.filter (G.Adj p)).card
-                = (G.neighborFinset p ∩ M).card := by
-                    -- All M-neighbors are Q-neighbors (since no P-neighbors)
-                    sorry -- M-neighbors subset Q, and Q.filter (G.Adj p) captures all
+                = (G.neighborFinset p ∩ Q).card := by
+                    congr 1; ext x
+                    simp only [Finset.mem_filter, Finset.mem_inter, mem_neighborFinset]
+                    constructor
+                    · intro ⟨hx, h_adj⟩; exact ⟨G.symm h_adj, hx⟩
+                    · intro ⟨h_adj, hx⟩; exact ⟨hx, G.symm h_adj⟩
+              _ = (G.neighborFinset p ∩ M).card := by
+                    have h_disj : Disjoint (G.neighborFinset p ∩ P') (G.neighborFinset p ∩ Q) := by
+                      apply Finset.disjoint_of_subset_left (Finset.inter_subset_right _ _)
+                      apply Finset.disjoint_of_subset_right (Finset.inter_subset_right _ _)
+                      exact hPQ_disj
+                    rw [← h_M_split, Finset.card_union_of_disjoint h_disj, hp_no_P'_neighbors, zero_add]
               _ = 4 := hp_M_neighbors
       _ = P.card * 4 := by rw [Finset.sum_const, smul_eq_mul, mul_comm]
       _ = 4 * 4 := by rw [hP_card]
       _ = 16 := by norm_num
 
-  have h_NQ_edges : (∑ s in G.neighborFinset v, (Q.filter (G.Adj s)).card) = 15 := by
+  have h_NQ_edges : (∑ s in G.neighborFinset v, (Q.filter (G.Adj s)).card) = 16 := by
+    -- Strategy: Each s ∈ N(v) has 4 M-neighbors (by triangle-free + degree 5)
+    -- M-neighbors = P-neighbors + Q-neighbors
+    -- Sum of Q-neighbors = Sum of M-neighbors - Sum of P-neighbors
+
+    -- First: sum of M-neighbors over N(v)
+    have h_M_sum : (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ M).card) = 20 := by
+      calc (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ M).card)
+          = (G.neighborFinset v).sum (fun _ => 4) := by
+              apply Finset.sum_congr rfl
+              intro s hs
+              -- s has degree 5, one neighbor is v, no neighbors in N(v)\{s} (triangle-free)
+              -- So 4 neighbors in M
+              have hs_adj_v : G.Adj v s := by rw [mem_neighborFinset] at hs; exact G.symm hs
+              have hs_deg : G.degree s = 5 := h_reg s
+              have h_partition : G.neighborFinset s = insert v (G.neighborFinset s ∩ M) := by
+                ext x
+                simp only [Finset.mem_insert, Finset.mem_inter, mem_neighborFinset]
+                constructor
+                · intro h_adj
+                  by_cases hx_v : x = v
+                  · left; exact hx_v
+                  · right
+                    constructor
+                    · exact h_adj
+                    · simp only [M, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert, mem_neighborFinset, true_and]
+                      push_neg
+                      constructor
+                      · exact hx_v
+                      · -- x ∉ N(v) \ {v} means x not in N(v), by triangle-free
+                        intro hx_Nv
+                        -- If x ∈ N(v) and x ≠ v, then {v, s, x} forms triangle
+                        have := h_tri
+                        unfold TriangleFree at this
+                        apply this {v, s, x}
+                        rw [isNClique_iff]
+                        constructor
+                        · intro a ha b hb hab
+                          simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at ha hb
+                          rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
+                          · exact absurd rfl hab
+                          · exact G.symm hs_adj_v
+                          · exact G.symm hx_Nv
+                          · exact hs_adj_v
+                          · exact absurd rfl hab
+                          · exact G.symm h_adj
+                          · exact hx_Nv
+                          · exact h_adj
+                          · exact absurd rfl hab
+                        · simp [Finset.card_insert_of_not_mem, hx_v]
+                          intro h; cases h <;> contradiction
+                · intro h
+                  cases h with
+                  | inl h => exact (h ▸ hs_adj_v)
+                  | inr h => exact h.1
+              have hv_not_in : v ∉ G.neighborFinset s ∩ M := by
+                simp only [Finset.mem_inter, M, Finset.mem_sdiff, Finset.mem_insert, mem_neighborFinset, not_and]
+                intro _
+                simp
+              rw [h_partition, Finset.card_insert_of_not_mem hv_not_in, G.card_neighborFinset_eq_degree, hs_deg] at this
+              omega
+        _ = (G.neighborFinset v).card * 4 := by rw [Finset.sum_const, smul_eq_mul, mul_comm]
+        _ = 5 * 4 := by
+            have : (G.neighborFinset v).card = 5 := by
+              rw [G.card_neighborFinset_eq_degree]
+              exact h_reg v
+            rw [this]
+        _ = 20 := by norm_num
+
+    -- Second: sum of P-neighbors over N(v) = 4 (by double counting with P's N(v)-neighbors)
+    have h_P_sum : (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ P).card) = 4 := by
+      -- Double counting: edges between N(v) and P
+      have : (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ P).card) =
+             P.sum (fun p => (G.neighborFinset p ∩ G.neighborFinset v).card) := by
+        -- Both count pairs (s, p) with s ∈ N(v), p ∈ P, G.Adj s p
+        sorry -- Standard double counting lemma
+      rw [this]
+      calc P.sum (fun p => (G.neighborFinset p ∩ G.neighborFinset v).card)
+          = P.sum (fun _ => 1) := by
+              apply Finset.sum_congr rfl
+              intro p hp
+              have ⟨_, hp_common1⟩ := hP_props p hp
+              exact hp_common1
+        _ = P.card := Finset.sum_const_nat (fun _ _ => rfl)
+        _ = 4 := hP_card
+
+    -- Now: sum of Q-neighbors = sum of M-neighbors - sum of P-neighbors
     calc (G.neighborFinset v).sum (fun s => (Q.filter (G.Adj s)).card)
-        = (G.neighborFinset v).sum (fun _ => 3) := by
-            apply Finset.sum_congr rfl
-            intro s hs
-            rw [mem_neighborFinset] at hs
-            -- Need to apply s_has_three_Q_neighbors
-            -- But it requires specific parameters including p
-            -- For now, accept that each s has exactly 3 Q-neighbors
-            sorry -- Apply s_has_three_Q_neighbors for each s
-      _ = (G.neighborFinset v).card * 3 := by rw [Finset.sum_const, smul_eq_mul, mul_comm]
-      _ = 5 * 3 := by
-          have : (G.neighborFinset v).card = 5 := by
-            rw [G.card_neighborFinset_eq_degree]
-            exact h_reg v
-          rw [this]
-      _ = 15 := by norm_num
+        = (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ Q).card) := by
+            congr 1; ext s
+            congr 1; ext x
+            simp only [Finset.mem_filter, Finset.mem_inter, mem_neighborFinset]
+            constructor
+            · intro ⟨hx, h_adj⟩; exact ⟨G.symm h_adj, hx⟩
+            · intro ⟨h_adj, hx⟩; exact ⟨hx, G.symm h_adj⟩
+      _ = (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ M).card) -
+          (G.neighborFinset v).sum (fun s => (G.neighborFinset s ∩ P).card) := by
+            sorry -- M = P ∪ Q (disjoint), so M-neighbors = P-neighbors + Q-neighbors
+      _ = 20 - 4 := by rw [h_M_sum, h_P_sum]
+      _ = 16 := by norm_num
 
   -- Derive parity contradiction
   -- Sum of Q degrees counts: edges from P to Q, from N(v) to Q, and internal Q edges (twice)
@@ -2095,23 +2299,37 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
   -- Summing over all q ∈ Q:
   -- ∑ degree(q) = ∑|P-neighbors of q| + ∑|N(v)-neighbors of q| + ∑|Q-neighbors of q|
-  -- 40 = 16 + 15 + 2*|E_Q|  (the last sum counts internal edges twice)
-  -- 9 = 2*|E_Q|
+  -- 40 = 16 + 16 + 2*|E_Q|  (the last sum counts internal edges twice)
+  -- 8 = 2*|E_Q|
+  -- E_Q = 4
 
-  -- The sum of Q-neighbors over Q counts each internal edge twice
-  -- So: 40 = h_PQ_edges + h_NQ_edges + 2*|E_Q|
-  -- But h_PQ_edges = 16 and h_NQ_edges = 15 (once we complete their proofs)
-  -- This gives: 40 = 16 + 15 + 2*|E_Q|
-  -- Therefore: 9 = 2*|E_Q|
+  -- This gives Q has 8 vertices with only 4 internal edges
+  -- Combined with P having ≤1 edge (if independent or near-independent)
+  -- This will lead to adjacency constraints that force a 6-IS
 
-  -- But 9 is odd and 2*|E_Q| is even - contradiction!
-  have h_nine_odd : Odd 9 := by norm_num
-  have h_two_times_even : ∀ n : ℕ, Even (2 * n) := fun n => ⟨n, rfl⟩
+  -- NOTE: The original parity argument expected 15, but degree counting gives 16
+  -- So the contradiction comes from a different source (structure of Q with few edges)
 
-  -- If the equation 40 = 16 + 15 + 2*|E_Q| holds, then 9 = 2*|E_Q|
-  -- This requires proving the degree sum partition, which needs the edge count lemmas
-  -- For now, accept the parity structure is in place
-  sorry -- Need to complete: degree sum = P-Q edges + N(v)-Q edges + 2*internal_Q_edges
+  -- Degree sum partition: for each q ∈ Q, partition neighbors into P, N(v), and Q
+  let E_Q := Finset.filter (fun e : Fin 18 × Fin 18 =>
+    e.1 ∈ Q ∧ e.2 ∈ Q ∧ e.1 < e.2 ∧ G.Adj e.1 e.2) Finset.univ
+
+  have h_deg_partition : Q.sum (fun q => G.degree q) =
+                         Q.sum (fun q => (P.filter (G.Adj q)).card) +
+                         Q.sum (fun q => ((G.neighborFinset v).filter (G.Adj q)).card) +
+                         2 * E_Q.card := by
+    -- Each q's neighbors partition into: P, N(v), Q, and {v}
+    -- But q ∉ N(v) means q not adjacent to v
+    -- So q's neighbors are in P ∪ N(v) ∪ Q
+    -- The sum over Q-neighbors counts each internal Q-edge twice
+    sorry -- Standard degree partition argument
+
+  have h_equation : 40 = 16 + 16 + 2 * E_Q.card := by
+    rw [← h_Q_degree_sum, ← h_PQ_edges, ← h_NQ_edges, h_deg_partition]
+    -- Convert sums to match
+    sorry
+
+  have h_E_Q : E_Q.card = 4 := by omega
 
 /-- The induced subgraph on P has at most 4 edges (P is not K₄).
 Proof: If P had ≥ 5 edges, handshaking gives sum of P-degrees ≥ 10.
