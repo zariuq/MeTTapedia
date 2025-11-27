@@ -2856,25 +2856,78 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
         contradiction
 
-    · -- Subcase 1b: q has exactly 1 P-neighbor
-      sorry -- TODO: Handle subcase 1b
+    · -- Subcase 1b: q_sparse has exactly 1 P-neighbor
+      -- We have hq_sparse_bound : (P.filter (G.Adj q_sparse)).card ≤ 1
+      -- And ¬h_subcase means (P.filter (G.Adj q_sparse)).card ≠ 0
+      -- So (P.filter (G.Adj q_sparse)).card = 1
+
+      have hq_sparse_exactly_1 : (P.filter (G.Adj q_sparse)).card = 1 := by
+        omega
+
+      -- q_sparse has a unique P-neighbor p_sparse
+      have h_exists_p : ∃ p ∈ P, G.Adj p q_sparse ∧
+                                   ∀ p' ∈ P, G.Adj p' q_sparse → p' = p := by
+        sorry -- TODO: extract unique neighbor from card = 1
+
+      obtain ⟨p_sparse, hp_sparse_mem, hp_sparse_adj, hp_sparse_unique⟩ := h_exists_p
+
+      -- Strategy: Look for another q' ∈ Q \ {q_sparse} with 0 P-neighbors
+      -- If found, apply Case 1a logic to q'
+      by_cases h_exists_another_0 : ∃ q' ∈ Q, q' ≠ q_sparse ∧
+                                                (P.filter (G.Adj q')).card = 0
+      · -- Found q' with 0 P-neighbors
+        obtain ⟨q', hq'_mem, hq'_ne, hq'_no_P⟩ := h_exists_another_0
+        -- Apply Case 1a logic to q'
+        sorry -- TODO: same construction as Case 1a with q'
+
+      · -- No other q with 0 P-neighbors
+        -- All q ∈ Q \ {q_sparse} have ≥ 1 P-neighbor
+        -- Use sparsity of Q (E_Q = 4) to find independent vertices
+        sorry -- TODO: use Q sparsity to find 2 independent vertices avoiding P
 
   · -- Case 2: All q have ≥ 2 P-neighbors
     push_neg at h_case
     -- h_case : ∀ q ∈ Q, 2 ≤ (P.filter (G.Adj q)).card
 
-    -- Key insight: since sum = 16 and all ≥ 2, combined with degree constraints,
-    -- we deduce all q have exactly 2 P-neighbors
+    -- First establish degree partition for q ∈ Q
+    have h_deg_partition : ∀ q ∈ Q, (P.filter (G.Adj q)).card +
+                                      (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card = 3 := by
+      intro q hq
+      -- q has degree 5: 2 to N(v), rest to M = P ∪ Q
+      have hq_deg : G.degree q = 5 := h_reg q
+      have hq_props := hQ_props q hq
+      have hq_Nv_count : (G.neighborFinset q ∩ G.neighborFinset v).card = 2 := by
+        unfold commonNeighborsCard commonNeighbors at hq_props
+        exact hq_props.2
+      -- q's neighbors partition into: {v} (size 0), N(v) (size 2), M (size 3)
+      -- M-neighbors = P-neighbors + Q-neighbors
+      sorry -- TODO: detailed partition proof
 
-    -- For now, use pigeonhole on non-adjacencies even without proving "exactly 2"
-    -- Count: sum of |{p ∈ P : q ↛ p}| over q ∈ Q
-    -- If q has k P-neighbors, it has 4-k P-non-neighbors
-    -- Sum over Q of P-neighbors = 16
-    -- So sum over Q of P-non-neighbors = 8×4 - 16 = 32 - 16 = 16
+    -- Key insight: since sum = 16 and all ≥ 2, all must be exactly 2
+    have h_all_exactly_2 : ∀ q ∈ Q, (P.filter (G.Adj q)).card = 2 := by
+      intro q hq
+      have h_ge_2 := h_case q hq
+      have h_partition := h_deg_partition q hq
+      -- From partition: |N_P(q)| + |N_Q(q)| = 3
+      -- We know |N_P(q)| ≥ 2, so |N_P(q)| ∈ {2, 3}
+      -- If any q has |N_P(q)| = 3, then sum > 16 (since others ≥ 2)
+      -- So all must have exactly 2
+      sorry -- TODO: formalize this argument using sum constraint
 
-    -- By pigeonhole on P: some p has ≥ ⌈16/4⌉ = 4 Q-non-neighbors
+    -- Each q has exactly 1 Q-neighbor (Q is a perfect matching!)
+    have h_Q_matching : ∀ q ∈ Q, (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card = 1 := by
+      intro q hq
+      have h_2 := h_all_exactly_2 q hq
+      have h_partition := h_deg_partition q hq
+      omega
 
-    sorry -- TODO: Complete case 2 with pigeonhole + perfect matching argument
+    -- Count non-adjacencies: each q has 2 P-non-neighbors
+    -- Sum = 8 × 2 = 16
+    -- By pigeonhole, some p has ≥ 4 Q-non-neighbors
+
+    -- Use E_Q = 4 to find 2 independent vertices in Q
+    -- Then try to combine with P to form 6-IS
+    sorry -- TODO: pigeonhole + independent set construction
 
 /-- The induced subgraph on P has at most 4 edges (P is not K₄).
 Proof: If P had ≥ 5 edges, handshaking gives sum of P-degrees ≥ 10.
