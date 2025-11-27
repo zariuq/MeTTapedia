@@ -1969,9 +1969,28 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       | inr hy_P =>
         exact h_P_indep hx_P hy_P hxy h_adj
 
-  -- Get Q from claim2_neighbor_structure
+  -- Get P' and Q from claim2_neighbor_structure
   obtain ⟨P', Q, hP'_card, hQ_card, hP'_props, hQ_props⟩ :=
     claim2_neighbor_structure h_reg h_tri h_no6 v
+
+  -- CRITICAL: Prove P = P' once and for all
+  -- Both are 4-element subsets of M characterized by commonNeighborsCard = 1
+  let M := Finset.univ \ insert v (G.neighborFinset v)
+
+  have hP_eq_P' : P = P' := by
+    -- P ⊆ P': each p ∈ P satisfies the P' membership criterion
+    have hP_subset : P ⊆ P' := by
+      intro p hp
+      have ⟨hp_nonadj, hp_comm⟩ := hP_props p hp
+      simp only [P', M, Finset.mem_filter, Finset.mem_sdiff, Finset.mem_univ,
+                Finset.mem_insert, mem_neighborFinset, true_and]
+      constructor
+      · push_neg
+        exact ⟨fun h => by subst h; exact hp_nonadj (G.adj_irrefl v),
+               fun h => hp_nonadj (G.symm h)⟩
+      · exact hp_comm
+    -- |P| = |P'| = 4, so equality by cardinality
+    exact Finset.eq_of_subset_of_card_le hP_subset (by omega : P.card ≤ P'.card)
 
   -- PARITY CONTRADICTION: If P is independent, derive False from degree sum
   -- Each p ∈ P has degree 5: 1 to N(v), 0 to P (independent), so 4 to Q
@@ -2763,26 +2782,7 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           subst h_eq
           have hq_props := hQ_props q_sparse hq_sparse_mem
           exact hq_props.1 (G.refl_of_adj rfl)
-        -- Prove P = P' (P' is from outer scope obtain at line 1973)
-        -- Define M locally
-        let M := Finset.univ \ insert v (G.neighborFinset v)
-
-        have hP_eq_P' : P = P' := by
-          have hP_subset_P' : P ⊆ P' := by
-            intro p hp
-            have ⟨hp_nonadj, hp_comm⟩ := hP_props p hp
-            simp only [P', M, Finset.mem_filter, Finset.mem_sdiff, Finset.mem_univ,
-                      Finset.mem_insert, true_and]
-            constructor
-            · push_neg
-              constructor
-              · intro h_eq; subst h_eq; exact hp_nonadj (G.refl_of_adj rfl)
-              · intro hp_N
-                rw [mem_neighborFinset] at hp_N
-                exact hp_nonadj (G.symm hp_N)
-            · exact hp_comm
-          apply Finset.eq_of_subset_of_card_le hP_subset_P'
-          rw [hP_card, hP'_card]
+        -- Use hP_eq_P' from outer scope (line 1980)
 
         have hPQ_disj : Disjoint P Q := by
           rw [hP_eq_P']
@@ -2945,7 +2945,8 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       -- Now count: |M-neighbors| = 3
       calc (P.filter (G.Adj q)).card + (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card
           = (P'.filter (G.Adj q)).card + (Q.filter (fun q' => q ≠ q' ∧ G.Adj q q')).card := by
-              sorry -- TODO: show P = P' so P.filter = P'.filter
+              -- Use hP_eq_P' from line 1980
+              rw [hP_eq_P']
         _ = (G.neighborFinset q ∩ P').card + (G.neighborFinset q ∩ (Q.filter (fun q' => q ≠ q'))).card := by
               congr 1
               · ext x; simp only [Finset.mem_filter, Finset.mem_inter, mem_neighborFinset]
