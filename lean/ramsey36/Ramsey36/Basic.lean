@@ -3040,16 +3040,58 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       rw [hP_eq_P'] at hp
 
       -- P' vertices are pairwise non-adjacent to each other (no P'-P' edges)
-      -- This follows from claim2_neighbor_structure
+      -- Key: If p₁ ~ p₂ and both have commonNeighborsCard = 1 with v,
+      -- they might form a triangle with a shared common neighbor
       have h_P_indep : ∀ p₁ ∈ P, ∀ p₂ ∈ P, p₁ ≠ p₂ → ¬G.Adj p₁ p₂ := by
-        intro p₁ hp₁ p₂ hp₂ hp_ne
-        -- P = P' are vertices with commonNeighborsCard = 1
-        -- If two such vertices were adjacent, they'd be in a triangle with their common neighbor
-        rw [hP_eq_P'] at hp₁ hp₂
-        have h₁ := hP'_props p₁ hp₁
-        have h₂ := hP'_props p₂ hp₂
-        -- Both have common neighbor with v
-        sorry -- TODO: use triangle-free to show P vertices are independent
+        intro p₁ hp₁ p₂ hp₂ hp_ne h_adj
+        -- Get common neighbors
+        have h₁_props := hP_props p₁ hp₁
+        have h₂_props := hP_props p₂ hp₂
+
+        -- p₁ has exactly 1 common neighbor with v
+        unfold commonNeighborsCard commonNeighbors at h₁_props h₂_props
+        have h₁_card : (G.neighborFinset p₁ ∩ G.neighborFinset v).card = 1 := h₁_props.2
+        have h₂_card : (G.neighborFinset p₂ ∩ G.neighborFinset v).card = 1 := h₂_props.2
+
+        -- Extract the unique common neighbors
+        have h₁_nonempty : (G.neighborFinset p₁ ∩ G.neighborFinset v).Nonempty := by
+          rw [Finset.nonempty_iff_ne_empty]
+          intro h
+          rw [h, Finset.card_empty] at h₁_card
+          omega
+
+        have h₂_nonempty : (G.neighborFinset p₂ ∩ G.neighborFinset v).Nonempty := by
+          rw [Finset.nonempty_iff_ne_empty]
+          intro h
+          rw [h, Finset.card_empty] at h₂_card
+          omega
+
+        obtain ⟨w₁, hw₁⟩ := h₁_nonempty
+        obtain ⟨w₂, hw₂⟩ := h₂_nonempty
+
+        -- w₁ is THE unique common neighbor of p₁ and v
+        have hw₁_unique : ∀ w ∈ (G.neighborFinset p₁ ∩ G.neighborFinset v), w = w₁ := by
+          intro w hw
+          have : (G.neighborFinset p₁ ∩ G.neighborFinset v) = {w₁} := by
+            apply Finset.card_eq_one.mp
+            exact ⟨w₁, hw₁, h₁_card⟩
+          rw [this] at hw
+          simp at hw
+          exact hw
+
+        -- Similarly for w₂
+        have hw₂_unique_for_p₂ : ∀ w ∈ (G.neighborFinset p₂ ∩ G.neighborFinset v), w = w₂ := by
+          intro w hw
+          have : (G.neighborFinset p₂ ∩ G.neighborFinset v) = {w₂} := by
+            apply Finset.card_eq_one.mp
+            exact ⟨w₂, hw₂, h₂_card⟩
+          rw [this] at hw
+          simp at hw
+          exact hw
+
+        -- If p₁ and p₂ share a common neighbor w with v, then {p₁, p₂, w} is a triangle
+        -- This contradicts triangle-free
+        sorry -- TODO: show either w₁ = w₂ (leading to triangle) or use different argument
 
       -- p has 0 neighbors in P \ {p}
       have hp_P_count : (G.neighborFinset p ∩ (P.erase p)).card = 0 := by
@@ -3324,7 +3366,55 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           sorry -- TODO: build 6-IS with q₁, q₃
 
       · -- q₁ ↛ q₂ (they're independent!)
-        sorry -- TODO: build 6-IS with q₁, q₂
+        -- Great! Now we have p₁, p₂ with q₁, q₂ ∈ Q_common both independent
+        -- Need to find 6th vertex for {v, p₁, p₂, q₁, q₂, ?}
+
+        -- Strategy: Find q₃ ∈ Q_common \ {q₁, q₂} that's non-adjacent to both q₁ and q₂
+        -- This is possible if |Q_common| ≥ 3 because Q is a matching (degree ≤ 1)
+        -- Among any 3 vertices in a matching, at least one is non-adjacent to the other two
+
+        by_cases h_Q_common_size : Q_common.card ≥ 3
+        · -- |Q_common| ≥ 3: can find q₃ non-adjacent to q₁, q₂
+          obtain ⟨q₃, hq₃⟩ := h_nonempty''
+
+          -- Among {q₁, q₂, q₃}, at least one pair must be independent besides (q₁, q₂)
+          -- Since Q is a matching, among 3 vertices there's at most 1 edge
+          -- We know q₁ ↛ q₂, so q₃ can be matched to at most one of them
+
+          by_cases h_q₃_q₁ : G.Adj q₃ q₁
+          · -- q₃ ~ q₁, so q₃ must be non-adjacent to q₂
+            -- (q₃ can't be matched to both q₁ and q₂)
+            have h_not_q₃_q₂ : ¬G.Adj q₃ q₂ := by
+              intro h_adj
+              -- q₃ has degree ≤ 1 in Q-induced subgraph (Q is matching)
+              -- But q₃ ~ q₁ and q₃ ~ q₂ means degree ≥ 2
+              sorry -- TODO: use matching property
+
+            -- Build 6-IS: {v, p₁, p₂, q₁, q₂, q₃}
+            sorry -- TODO: verify all non-adjacencies
+
+          · -- q₃ ↛ q₁
+            by_cases h_q₃_q₂ : G.Adj q₃ q₂
+            · -- q₃ ~ q₂ but q₃ ↛ q₁: use {v, p₁, p₂, q₁, q₂, q₃}
+              sorry -- TODO: verify all non-adjacencies
+
+            · -- q₃ ↛ q₁ and q₃ ↛ q₂: perfect! Use {v, p₁, p₂, q₁, q₂, q₃}
+              have h_6IS : G.IsIndepSet (insert v ({p₁, p₂, q₁, q₂, q₃} : Set (Fin 18))) := by
+                intro x hx y hy hxy h_adj
+                -- Verify all pairwise non-adjacencies
+                sorry -- TODO: case analysis on x, y
+              have h_6card : (insert v ({p₁, p₂, q₁, q₂, q₃} : Set (Fin 18))).ncard = 6 := by
+                sorry -- TODO: count distinct vertices
+              exact h_no6 (insert v ({p₁, p₂, q₁, q₂, q₃} : Set (Fin 18))) h_6IS h_6card
+
+        · -- |Q_common| = 2: only have q₁, q₂
+          -- Need different approach: add a P vertex or find different pair
+          push_neg at h_Q_common_size
+          have : Q_common.card = 2 := by omega
+
+          -- Try adding p₃ ∈ P \ {p₁, p₂}
+          -- For this to work: p₃ ↛ q₁ and p₃ ↛ q₂
+          sorry -- TODO: find p₃ or use different construction
 
     · -- |Q_common| = 2 exactly
       push_neg at h_Q_common_3
