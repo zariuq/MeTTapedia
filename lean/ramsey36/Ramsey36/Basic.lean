@@ -1754,17 +1754,43 @@ lemma s_has_three_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           · exact hw_adj
         exact this
 
-      -- Since both p and w have s as their unique partner,
-      -- and the partner mapping is injective (each s has at most one p-partner),
-      -- we would have p = w, contradicting hw_ne_p
+      -- CONSTRUCT 6-IS: I = {p, w} ∪ (N(v) \ {s})
+      -- p and w are distinct, both adjacent to s, both non-adjacent to v
+      -- By triangle-free, N(s) is independent, so p and w are non-adjacent
 
-      -- Actually, we need to show injectivity in the other direction:
-      -- if two different non-neighbors of v have the same unique partner, contradiction
-      -- This follows from degree constraints: s has degree 5, connects to v and at most 4 others
-      -- But the uniqueness from P_partner_in_N is in the "exists unique s for each p" direction
-      -- The reverse (at most one p for each s) requires additional argument
+      have hpw_nonadj : ¬G.Adj p w := by
+        intro h_adj
+        -- p, w both in N(s), and s-v adjacent, would form triangle
+        have h_s_triangle := neighborSet_indep_of_triangleFree h_tri s
+        have hp_in_Ns : p ∈ (G.neighborFinset s : Set (Fin 18)) := by
+          simp [mem_neighborFinset, hs_adj_p]
+        have hw_in_Ns : w ∈ (G.neighborFinset s : Set (Fin 18)) := by
+          simp [mem_neighborFinset, hw_adj]
+        exact h_s_triangle hp_in_Ns hw_in_Ns hw_ne_p.symm h_adj
 
-      sorry -- Complete injectivity argument: s cannot be unique partner for both w and p
+      let I : Finset (Fin 18) := insert p (insert w (G.neighborFinset v \ {s}))
+
+      have hI_card : I.card = 6 := by
+        have hp_not_in : p ∉ insert w (G.neighborFinset v \ {s}) := by
+          simp only [Finset.mem_insert, Finset.mem_sdiff, mem_neighborFinset, Finset.mem_singleton]
+          tauto
+        have hw_not_in : w ∉ G.neighborFinset v \ {s} := by
+          simp only [Finset.mem_sdiff, mem_neighborFinset, Finset.mem_singleton]
+          tauto
+        rw [Finset.card_insert_of_notMem hp_not_in, Finset.card_insert_of_notMem hw_not_in]
+        have : (G.neighborFinset v \ {s}).card = 4 := by
+          have hN_card := h_reg v
+          rw [G.card_neighborFinset_eq_degree] at hN_card
+          have hs_in_N : s ∈ G.neighborFinset v := by
+            rw [mem_neighborFinset]; exact G.symm hs_adj_v
+          rw [Finset.card_sdiff (Finset.singleton_subset_iff.mpr hs_in_N), Finset.card_singleton]
+          omega
+        simp [this]
+
+      have hI_indep : G.IsIndepSet (I : Set (Fin 18)) := by
+        sorry -- I is independent: p,w non-adj (shown), N(v)\{s} is independent, cross non-adjacencies
+
+      exact h_no6 I ⟨hI_indep, hI_card⟩
     exact hQ_complete w hw_nonadj_v hw_common
 
   -- Q.filter (G.Adj s) contains exactly the 3 neighbors of s outside {v, p}
@@ -1856,11 +1882,31 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       | inr hy_P =>
         exact h_P_indep hx_P hy_P hxy h_adj
 
-  -- Need to find q ∈ Q non-adjacent to all of P ∪ {v}
-  -- Use degree counting: if P is independent, each p has 4 Q-neighbors
-  -- Total 16 P-Q edges, but Q has 8 vertices and degree constraints
+  -- PARITY CONTRADICTION: If P is independent, derive False from degree sum
+  -- Each p ∈ P has degree 5: 1 to N(v), 0 to P (independent), so 4 to Q
+  -- Total P-Q edges: 4 * 4 = 16
 
-  sorry -- Find q ∈ Q to complete 6-IS, uses degree counting + s_has_three_Q_neighbors
+  -- From s_has_three_Q_neighbors: each s ∈ N(v) has exactly 3 Q-neighbors
+  -- Total N(v)-Q edges: 5 * 3 = 15
+
+  -- Sum of Q degrees = 8 * 5 = 40 (8 vertices, each degree 5)
+  -- This sum = E_{P-Q} + E_{N(v)-Q} + 2*E_Q (internal Q edges)
+  -- 40 = 16 + 15 + 2*E_Q
+  -- 9 = 2*E_Q
+
+  -- But 9 is odd and 2*E_Q is even - CONTRADICTION!
+
+  have h_Q_degree_sum : (Q : Set (Fin 18)).toFinset.sum (fun q => G.degree q) = 40 := by
+    sorry -- Q.card = 8, each q has degree 5
+
+  have h_PQ_edges : (∑ p in P, (Q.filter (G.Adj p)).card) = 16 := by
+    sorry -- Each p has 4 Q-neighbors when P is independent
+
+  have h_NQ_edges : (∑ s in G.neighborFinset v, (Q.filter (G.Adj s)).card) = 15 := by
+    sorry -- Each of 5 s's has exactly 3 Q-neighbors (from s_has_three_Q_neighbors)
+
+  -- Derive parity contradiction
+  sorry -- 40 = 16 + 15 + 2*E_Q implies 9 = 2*E_Q, contradiction
 
 /-- The induced subgraph on P has at most 4 edges (P is not K₄).
 Proof: If P had ≥ 5 edges, handshaking gives sum of P-degrees ≥ 10.
@@ -2047,15 +2093,42 @@ lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         hp_tot_deg] at this
     omega
 
-  -- p's neighbors in M = P ∪ Q, and p has ≥3 in P, so ≤1 in Q
-  -- This violates the global balance from s_has_three_Q_neighbors
-  -- Each s ∈ N(v) contributes 3 edges to Q, total 15 edges from N(v) to Q
-  -- P has only 4 vertices, each contributing ≤1 edge to Q, total ≤4 edges
-  -- But 15 > 4, so Q must have edges from outside P, contradiction
+  -- TRIANGLE-FREE CONTRADICTION: P has 4 vertices and ≥5 edges
+  -- Maximum edges in 4-vertex graph: C(4,2) = 6 (complete graph K₄)
+  -- K₄ has 4 triangles
+  -- With 5 edges: must have removed ≤1 edge from K₄
+  -- Any 4-vertex graph with ≥5 edges contains a triangle
 
-  -- Detailed argument requires analyzing the full S-P-Q structure
-  -- This is a complex combinatorial counting argument
-  sorry -- Contradiction from global P-Q edge balance
+  -- Find a triangle in P
+  have h_triangle : ∃ (a b c : Fin 18), a ∈ P ∧ b ∈ P ∧ c ∈ P ∧
+      a ≠ b ∧ b ≠ c ∧ a ≠ c ∧
+      G.Adj a b ∧ G.Adj b c ∧ G.Adj a c := by
+    -- With |P| = 4 and |E_P| ≥ 5, use pigeonhole/Ramsey-type argument
+    -- or direct case analysis on 4-vertex graphs
+    sorry -- Triangle exists in any 4-vertex graph with ≥5 edges
+
+  obtain ⟨a, b, c, ha, hb, hc, hab_ne, hbc_ne, hac_ne, hab, hbc, hac⟩ := h_triangle
+
+  -- But G is triangle-free
+  let T : Finset (Fin 18) := {a, b, c}
+  have hT_clique : G.IsNClique 3 T := by
+    rw [isNClique_iff]
+    constructor
+    · intros x hx y hy hxy_ne
+      simp only [T, Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
+      rcases hx with rfl | rfl | rfl <;> rcases hy with rfl | rfl | rfl
+      · exact absurd rfl hxy_ne
+      · exact hab
+      · exact hac
+      · exact G.symm hab
+      · exact absurd rfl hxy_ne
+      · exact hbc
+      · exact G.symm hac
+      · exact G.symm hbc
+      · exact absurd rfl hxy_ne
+    · simp [T]; constructor; exact hab_ne; constructor; exact hac_ne; exact hbc_ne
+
+  exact h_tri T hT_clique
 
 /-- P is 2-regular: each p ∈ P has exactly 2 neighbors in P.
 This is the key structural lemma that implies P is a 4-cycle.
