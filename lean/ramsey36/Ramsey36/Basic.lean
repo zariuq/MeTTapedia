@@ -3089,9 +3089,47 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           simp at hw
           exact hw
 
-        -- If p₁ and p₂ share a common neighbor w with v, then {p₁, p₂, w} is a triangle
-        -- This contradicts triangle-free
-        sorry -- TODO: show either w₁ = w₂ (leading to triangle) or use different argument
+        -- Key: p₁ ~ p₂ (assumed), so if they share a common neighbor w with v,
+        -- then {p₁, p₂, w} forms a triangle
+        --
+        -- Strategy: p₁ has exactly 1 common neighbor w₁ with v
+        --           p₂ has exactly 1 common neighbor w₂ with v
+        --           Case 1: w₁ = w₂ → triangle {p₁, p₂, w₁}
+        --           Case 2: w₁ ≠ w₂ → check if either forms triangle with p₁, p₂
+
+        by_cases hw_eq : w₁ = w₂
+        · -- Case 1: w₁ = w₂, so p₁, p₂ share the same common neighbor with v
+          subst hw_eq
+          -- Now we have: p₁ ~ w₁, p₂ ~ w₁, p₁ ~ p₂
+          -- This forms a triangle {p₁, p₂, w₁}
+          have hp₁_w₁ : G.Adj p₁ w₁ := by
+            simp only [Finset.mem_inter, mem_neighborFinset] at hw₁
+            exact hw₁.1
+          have hp₂_w₁ : G.Adj p₂ w₁ := by
+            simp only [Finset.mem_inter, mem_neighborFinset] at hw₂
+            exact hw₂.1
+          -- {p₁, p₂, w₁} is a 3-clique
+          have h_triangle : G.IsClique ({p₁, p₂, w₁} : Set (Fin 18)) := by
+            intro x hx y hy hxy
+            simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hx hy
+            rcases hx with rfl | rfl | rfl <;> rcases hy with rfl | rfl | rfl
+            · exact (hxy rfl).elim
+            · exact h_adj
+            · exact hp₁_w₁
+            · exact G.symm h_adj
+            · exact (hxy rfl).elim
+            · exact hp₂_w₁
+            · exact G.symm hp₁_w₁
+            · exact G.symm hp₂_w₁
+            · exact (hxy rfl).elim
+          have h_3card : ({p₁, p₂, w₁} : Set (Fin 18)).ncard = 3 := by
+            sorry -- TODO: prove distinctness and count
+          exact h_tri ({p₁, p₂, w₁} : Set (Fin 18)) h_triangle h_3card
+
+        · -- Case 2: w₁ ≠ w₂, different common neighbors
+          -- Actually, this case may still lead to a contradiction
+          -- But for now, let's see if case 1 always applies by checking if w must be unique
+          sorry -- TODO: analyze case where common neighbors differ
 
       -- p has 0 neighbors in P \ {p}
       have hp_P_count : (G.neighborFinset p ∩ (P.erase p)).card = 0 := by
@@ -3253,13 +3291,52 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
       have h_pairs_card : pairs.card = 6 := by
         -- P has 4 elements, so C(4,2) = 6 pairs
-        sorry -- TODO: count unordered pairs
+        -- Count directly: for a 4-element set, number of unordered pairs = 4*3/2 = 6
+        have h_equiv : pairs = (P ×ˢ P).filter (fun pp => pp.1 < pp.2) := by
+          ext ⟨p1, p2⟩
+          simp only [pairs, Finset.mem_filter, Finset.mem_univ, Finset.mem_product, true_and]
+          tauto
+        rw [h_equiv]
+        -- For finite ordered type, count pairs where first < second
+        -- When |P| = 4, we have C(4,2) = 6 pairs
+        have : ((P ×ˢ P).filter (fun pp : (Fin 18 × Fin 18) => pp.1 < pp.2)).card =
+               Nat.choose P.card 2 := by
+          -- Standard combinatorial fact
+          sorry -- TODO: prove or use library lemma
+        rw [this, hP_card]
+        norm_num
 
       -- The same count from pair perspective
       have h_from_pairs : pairs.sum (fun pp =>
           (Q.filter (fun q => ¬G.Adj pp.1 q ∧ ¬G.Adj pp.2 q)).card) = 8 := by
         -- This is the same as h_from_q by double-counting
-        sorry -- TODO: show sums are equal
+        -- Both sides count triples (q, p₁, p₂) where p₁ < p₂ ∈ P and q ∈ Q with ¬Adj p₁ q ∧ ¬Adj p₂ q
+        --
+        -- h_from_q groups by q first: for each q, count pairs {p₁,p₂} ⊆ P-non-neighbors of q
+        -- h_from_pairs groups by pair first: for each pair {p₁,p₂}, count q with both non-adjacent
+        --
+        -- These count the same set of triples!
+
+        -- Define the triple set
+        let triples := Finset.univ.filter (fun (t : (Fin 18 × Fin 18) × Fin 18) =>
+          let (pp, q) := t
+          pp.1 ∈ P ∧ pp.2 ∈ P ∧ pp.1 < pp.2 ∧ q ∈ Q ∧ ¬G.Adj pp.1 q ∧ ¬G.Adj pp.2 q)
+
+        -- h_from_q counts triples grouped by q
+        have h_from_q_triples : Q.sum (fun q =>
+            Nat.choose ((P.filter (fun p => ¬G.Adj p q)).card) 2) = triples.card := by
+          -- For each q, count unordered pairs from P-non-neighbors of q
+          sorry -- TODO: prove bijection
+
+        -- h_from_pairs counts triples grouped by pair
+        have h_from_pairs_triples : pairs.sum (fun pp =>
+            (Q.filter (fun q => ¬G.Adj pp.1 q ∧ ¬G.Adj pp.2 q)).card) = triples.card := by
+          -- For each pair pp, count q with both non-adjacent
+          sorry -- TODO: prove bijection
+
+        -- Therefore they're equal
+        rw [← h_from_q_triples, ← h_from_pairs_triples]
+        exact h_from_q
 
       -- By pigeonhole: if sum = 8 over 6 pairs, some pair has ≥ 2
       have : ∃ pp ∈ pairs, (Q.filter (fun q => ¬G.Adj pp.1 q ∧ ¬G.Adj pp.2 q)).card ≥ 2 := by
@@ -3357,7 +3434,40 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
             intro h_adj₂₃
             -- q₃ is adjacent to both q₁ and q₂
             -- But Q is a matching, so each vertex has degree 1 in Q
-            sorry -- TODO: use matching property to derive contradiction
+            -- q₃ ∈ Q_common ⊆ Q
+            have hq₃_Q : q₃ ∈ Q := by
+              simp only [Q_common, Finset.mem_filter] at hq₃
+              exact hq₃.1
+            -- Use h_Q_matching: q₃ has exactly 1 Q-neighbor
+            have hq₃_deg1 : (Q.filter (fun q' => q' ≠ q₃ ∧ G.Adj q₃ q')).card = 1 := h_Q_matching q₃ hq₃_Q
+            -- But q₁ and q₂ are both distinct Q-neighbors of q₃
+            have hq₁_Q : q₁ ∈ Q := by
+              simp only [Q_common, Finset.mem_filter] at hq₁
+              exact (Finset.mem_erase.mp (Finset.mem_erase.mp hq₃).1).2
+            have hq₂_Q : q₂ ∈ Q := by
+              simp only [Q_common, Finset.mem_filter] at hq₂
+              exact hq₂.1
+            have hq₁_ne : q₁ ≠ q₃ := by
+              intro h; subst h
+              exact (Finset.mem_erase.mp (Finset.mem_erase.mp hq₃).1).1 rfl
+            have hq₂_ne : q₂ ≠ q₃ := by
+              intro h; subst h
+              exact (Finset.mem_erase.mp hq₃).1 rfl
+            have hq₁_q₂_ne : q₁ ≠ q₂ := by
+              intro h; subst h
+              exact (Finset.mem_erase.mp hq₂).1 rfl
+            -- So {q₁, q₂} ⊆ Q-neighbors of q₃
+            have h_two_neighbors : {q₁, q₂} ⊆ Q.filter (fun q' => q' ≠ q₃ ∧ G.Adj q₃ q') := by
+              intro q hq
+              simp only [Finset.mem_insert, Finset.mem_singleton] at hq
+              rcases hq with rfl | rfl
+              · simp only [Finset.mem_filter]; exact ⟨hq₁_Q, hq₁_ne, h_adj₁₃⟩
+              · simp only [Finset.mem_filter]; exact ⟨hq₂_Q, hq₂_ne, h_adj₂₃⟩
+            have h_card_ge_2 : (Q.filter (fun q' => q' ≠ q₃ ∧ G.Adj q₃ q')).card ≥ 2 := by
+              calc (Q.filter (fun q' => q' ≠ q₃ ∧ G.Adj q₃ q')).card
+                  ≥ ({q₁, q₂} : Finset (Fin 18)).card := Finset.card_le_card h_two_neighbors
+                _ = 2 := by simp [Finset.card_insert_of_not_mem, hq₁_q₂_ne]
+            omega
 
           -- Use {v, p₁, p₂, q₂, q₃, ?} but need 6th vertex
           sorry -- TODO: find 6th vertex
@@ -3388,7 +3498,42 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               intro h_adj
               -- q₃ has degree ≤ 1 in Q-induced subgraph (Q is matching)
               -- But q₃ ~ q₁ and q₃ ~ q₂ means degree ≥ 2
-              sorry -- TODO: use matching property
+              -- q₃ ∈ Q_common ⊆ Q
+              have hq₃_Q : q₃ ∈ Q := by
+                simp only [Q_common, Finset.mem_filter] at hq₃
+                exact hq₃.1
+              -- Use h_Q_matching: q₃ has exactly 1 Q-neighbor
+              have hq₃_deg1 : (Q.filter (fun q' => q' ≠ q₃ ∧ G.Adj q₃ q')).card = 1 := h_Q_matching q₃ hq₃_Q
+              -- But q₁ and q₂ are both distinct Q-neighbors of q₃
+              have hq₁_Q : q₁ ∈ Q := by
+                simp only [Q_common, Finset.mem_filter] at hq₁
+                exact hq₁.1
+              have hq₂_Q : q₂ ∈ Q := by
+                simp only [Q_common, Finset.mem_filter] at hq₂
+                exact (Finset.mem_erase.mp hq₂).2
+              have hq₁_ne : q₁ ≠ q₃ := by
+                intro h; subst h
+                simp only [Q_common', Finset.mem_erase] at hq₃
+                exact hq₃.1 rfl
+              have hq₂_ne : q₂ ≠ q₃ := by
+                intro h; subst h
+                simp only [Q_common'', Finset.mem_erase] at hq₃
+                exact hq₃.1 rfl
+              have hq₁_q₂_ne : q₁ ≠ q₂ := ne_of_apply_ne _ (by
+                intro h; subst h
+                exact h_adj (G.adj_irrefl q₁))
+              -- So {q₁, q₂} ⊆ Q-neighbors of q₃
+              have h_two_neighbors : {q₁, q₂} ⊆ Q.filter (fun q' => q' ≠ q₃ ∧ G.Adj q₃ q') := by
+                intro q hq
+                simp only [Finset.mem_insert, Finset.mem_singleton] at hq
+                rcases hq with rfl | rfl
+                · simp only [Finset.mem_filter]; exact ⟨hq₁_Q, hq₁_ne, h_q₃_q₁⟩
+                · simp only [Finset.mem_filter]; exact ⟨hq₂_Q, hq₂_ne, h_adj⟩
+              have h_card_ge_2 : (Q.filter (fun q' => q' ≠ q₃ ∧ G.Adj q₃ q')).card ≥ 2 := by
+                calc (Q.filter (fun q' => q' ≠ q₃ ∧ G.Adj q₃ q')).card
+                    ≥ ({q₁, q₂} : Finset (Fin 18)).card := Finset.card_le_card h_two_neighbors
+                  _ = 2 := by simp [Finset.card_insert_of_not_mem, hq₁_q₂_ne]
+              omega
 
             -- Build 6-IS: {v, p₁, p₂, q₁, q₂, q₃}
             sorry -- TODO: verify all non-adjacencies
@@ -3400,11 +3545,166 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
             · -- q₃ ↛ q₁ and q₃ ↛ q₂: perfect! Use {v, p₁, p₂, q₁, q₂, q₃}
               have h_6IS : G.IsIndepSet (insert v ({p₁, p₂, q₁, q₂, q₃} : Set (Fin 18))) := by
-                intro x hx y hy hxy h_adj
-                -- Verify all pairwise non-adjacencies
-                sorry -- TODO: case analysis on x, y
+                intro x hx y hy hxy h_adj_xy
+                -- Verify all 15 pairwise non-adjacencies
+                -- The 6 vertices are: v, p₁, p₂, q₁, q₂, q₃
+                simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hx hy
+
+                -- Get membership facts
+                have hp₁_props := hP_props p₁ hp₁_mem
+                have hp₂_props := hP_props p₂ hp₂_mem
+                have hq₁_in_Q_common : q₁ ∈ Q_common := by
+                  simp only [Q_common', Finset.mem_erase] at hq₁
+                  exact hq₁.2
+                have hq₂_in_Q_common : q₂ ∈ Q_common := by
+                  simp only [Q_common', Finset.mem_erase] at hq₂
+                  exact hq₂.2
+                have hq₃_in_Q_common : q₃ ∈ Q_common := by
+                  simp only [Q_common'', Finset.mem_erase, Q_common', Finset.mem_erase] at hq₃
+                  exact hq₃.2.2
+
+                -- Extract Q-membership and non-adjacencies to p₁, p₂
+                have hq₁_Q : q₁ ∈ Q := by
+                  simp only [Q_common, Finset.mem_filter] at hq₁_in_Q_common
+                  exact hq₁_in_Q_common.1
+                have hq₂_Q : q₂ ∈ Q := by
+                  simp only [Q_common, Finset.mem_filter] at hq₂_in_Q_common
+                  exact hq₂_in_Q_common.1
+                have hq₃_Q : q₃ ∈ Q := by
+                  simp only [Q_common, Finset.mem_filter] at hq₃_in_Q_common
+                  exact hq₃_in_Q_common.1
+
+                have h_p₁_q₁ : ¬G.Adj p₁ q₁ := by
+                  simp only [Q_common, Finset.mem_filter] at hq₁_in_Q_common
+                  exact hq₁_in_Q_common.2.1
+                have h_p₁_q₂ : ¬G.Adj p₁ q₂ := by
+                  simp only [Q_common, Finset.mem_filter] at hq₂_in_Q_common
+                  exact hq₂_in_Q_common.2.1
+                have h_p₁_q₃ : ¬G.Adj p₁ q₃ := by
+                  simp only [Q_common, Finset.mem_filter] at hq₃_in_Q_common
+                  exact hq₃_in_Q_common.2.1
+                have h_p₂_q₁ : ¬G.Adj p₂ q₁ := by
+                  simp only [Q_common, Finset.mem_filter] at hq₁_in_Q_common
+                  exact hq₁_in_Q_common.2.2
+                have h_p₂_q₂ : ¬G.Adj p₂ q₂ := by
+                  simp only [Q_common, Finset.mem_filter] at hq₂_in_Q_common
+                  exact hq₂_in_Q_common.2.2
+                have h_p₂_q₃ : ¬G.Adj p₂ q₃ := by
+                  simp only [Q_common, Finset.mem_filter] at hq₃_in_Q_common
+                  exact hq₃_in_Q_common.2.2
+
+                -- v is non-adjacent to all of M = P ∪ Q
+                have hv_M : ∀ m ∈ (Finset.univ \ insert v (G.neighborFinset v)), ¬G.Adj v m := by
+                  intro m hm
+                  simp only [Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert, mem_neighborFinset, true_and] at hm
+                  push_neg at hm
+                  exact hm.2
+                have hv_p₁ : ¬G.Adj v p₁ := hp₁_props.1
+                have hv_p₂ : ¬G.Adj v p₂ := hp₂_props.1
+                have hv_q₁ : ¬G.Adj v q₁ := by
+                  apply hv_M
+                  simp only [Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert, mem_neighborFinset, true_and]
+                  push_neg
+                  constructor
+                  · intro h; subst h
+                    have : q₁ ∈ Q := hq₁_Q
+                    sorry -- TODO: v ≠ q₁
+                  · intro h; exact h_p₁_q₁ (G.symm h)  -- contradiction would mean q₁ ∈ N(v)
+                have hv_q₂ : ¬G.Adj v q₂ := sorry -- similar
+                have hv_q₃ : ¬G.Adj v q₃ := sorry -- similar
+
+                -- P is independent
+                have h_p₁_p₂ : ¬G.Adj p₁ p₂ := h_P_indep p₁ hp₁_mem p₂ hp₂_mem hp_ne
+
+                -- Q pairs: q₁ ↛ q₂, q₁ ↛ q₃, q₂ ↛ q₃
+                have h_q₁_q₂ : ¬G.Adj q₁ q₂ := h_adj
+                have h_q₁_q₃ : ¬G.Adj q₁ q₃ := h_q₃_q₁
+                have h_q₂_q₃ : ¬G.Adj q₂ q₃ := h_q₃_q₂
+
+                -- Case analysis on x and y
+                rcases hx with rfl | rfl | rfl | rfl | rfl | rfl <;>
+                rcases hy with rfl | rfl | rfl | rfl | rfl | rfl
+                all_goals try (exfalso; exact hxy rfl)
+                -- All remaining cases: show non-adjacency
+                · exact hv_p₁ h_adj_xy
+                · exact hv_p₂ h_adj_xy
+                · exact hv_q₁ h_adj_xy
+                · exact hv_q₂ h_adj_xy
+                · exact hv_q₃ h_adj_xy
+                · exact hv_p₁ (G.symm h_adj_xy)
+                · exact h_p₁_p₂ h_adj_xy
+                · exact h_p₁_q₁ h_adj_xy
+                · exact h_p₁_q₂ h_adj_xy
+                · exact h_p₁_q₃ h_adj_xy
+                · exact hv_p₂ (G.symm h_adj_xy)
+                · exact h_p₁_p₂ (G.symm h_adj_xy)
+                · exact h_p₂_q₁ h_adj_xy
+                · exact h_p₂_q₂ h_adj_xy
+                · exact h_p₂_q₃ h_adj_xy
+                · exact hv_q₁ (G.symm h_adj_xy)
+                · exact h_p₁_q₁ (G.symm h_adj_xy)
+                · exact h_p₂_q₁ (G.symm h_adj_xy)
+                · exact h_q₁_q₂ h_adj_xy
+                · exact h_q₁_q₃ h_adj_xy
+                · exact hv_q₂ (G.symm h_adj_xy)
+                · exact h_p₁_q₂ (G.symm h_adj_xy)
+                · exact h_p₂_q₂ (G.symm h_adj_xy)
+                · exact h_q₁_q₂ (G.symm h_adj_xy)
+                · exact h_q₂_q₃ h_adj_xy
+                · exact hv_q₃ (G.symm h_adj_xy)
+                · exact h_p₁_q₃ (G.symm h_adj_xy)
+                · exact h_p₂_q₃ (G.symm h_adj_xy)
+                · exact h_q₁_q₃ (G.symm h_adj_xy)
+                · exact h_q₂_q₃ (G.symm h_adj_xy)
+
               have h_6card : (insert v ({p₁, p₂, q₁, q₂, q₃} : Set (Fin 18))).ncard = 6 := by
-                sorry -- TODO: count distinct vertices
+                -- Prove all 6 vertices are distinct
+                have hp₁_props := hP_props p₁ hp₁_mem
+                have hp₂_props := hP_props p₂ hp₂_mem
+
+                -- Get distinctness facts
+                have hv_ne_p₁ : v ≠ p₁ := by
+                  intro h; subst h
+                  exact hp₁_props.1 (G.adj_irrefl v)
+                have hv_ne_p₂ : v ≠ p₂ := by
+                  intro h; subst h
+                  exact hp₂_props.1 (G.adj_irrefl v)
+                have hv_ne_q₁ : v ≠ q₁ := by
+                  sorry -- v ∈ {v}, q₁ ∈ Q ⊆ M, v ∉ M
+                have hv_ne_q₂ : v ≠ q₂ := sorry
+                have hv_ne_q₃ : v ≠ q₃ := sorry
+
+                have hp₁_ne_p₂ : p₁ ≠ p₂ := hp_ne
+                have hp₁_ne_q₁ : p₁ ≠ q₁ := by
+                  sorry -- p₁ ∈ P, q₁ ∈ Q, P ∩ Q = ∅
+                have hp₁_ne_q₂ : p₁ ≠ q₂ := sorry
+                have hp₁_ne_q₃ : p₁ ≠ q₃ := sorry
+                have hp₂_ne_q₁ : p₂ ≠ q₁ := sorry
+                have hp₂_ne_q₂ : p₂ ≠ q₂ := sorry
+                have hp₂_ne_q₃ : p₂ ≠ q₃ := sorry
+
+                have hq₁_ne_q₂ : q₁ ≠ q₂ := by
+                  intro h; subst h
+                  exact (Finset.mem_erase.mp hq₂).1 rfl
+                have hq₁_ne_q₃ : q₁ ≠ q₃ := by
+                  intro h; subst h
+                  simp only [Q_common'', Finset.mem_erase, Q_common', Finset.mem_erase] at hq₃
+                  exact hq₃.2.1 rfl
+                have hq₂_ne_q₃ : q₂ ≠ q₃ := by
+                  intro h; subst h
+                  simp only [Q_common'', Finset.mem_erase] at hq₃
+                  exact hq₃.1 rfl
+
+                -- Count using insert and singleton operations
+                rw [Set.ncard_insert_of_not_mem, Set.ncard_insert_of_not_mem,
+                    Set.ncard_insert_of_not_mem, Set.ncard_insert_of_not_mem,
+                    Set.ncard_insert_of_not_mem, Set.ncard_singleton]
+                all_goals simp only [Set.mem_insert_iff, Set.mem_singleton_iff, not_or]
+                · exact ⟨hv_ne_p₁, hv_ne_p₂, hv_ne_q₁, hv_ne_q₂, hv_ne_q₃⟩
+                · exact ⟨hp₁_ne_p₂, hp₁_ne_q₁, hp₁_ne_q₂, hp₁_ne_q₃⟩
+                · exact ⟨hp₂_ne_q₁, hp₂_ne_q₂, hp₂_ne_q₃⟩
+                · exact ⟨hq₁_ne_q₂, hq₁_ne_q₃⟩
+                · exact hq₂_ne_q₃
               exact h_no6 (insert v ({p₁, p₂, q₁, q₂, q₃} : Set (Fin 18))) h_6IS h_6card
 
         · -- |Q_common| = 2: only have q₁, q₂
