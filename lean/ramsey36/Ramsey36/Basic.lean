@@ -1969,6 +1969,10 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       | inr hy_P =>
         exact h_P_indep hx_P hy_P hxy h_adj
 
+  -- Get Q from claim2_neighbor_structure
+  obtain ⟨P', Q, hP'_card, hQ_card, hP'_props, hQ_props⟩ :=
+    claim2_neighbor_structure h_reg h_tri h_no6 v
+
   -- PARITY CONTRADICTION: If P is independent, derive False from degree sum
   -- Each p ∈ P has degree 5: 1 to N(v), 0 to P (independent), so 4 to Q
   -- Total P-Q edges: 4 * 4 = 16
@@ -2759,14 +2763,10 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           subst h_eq
           have hq_props := hQ_props q_sparse hq_sparse_mem
           exact hq_props.1 (G.refl_of_adj rfl)
-        -- Need to get P', Q from claim2 and prove P = P'
-        obtain ⟨P', Q_local, hP'_card, hQ_local_card, hP'_props, hQ_local_props⟩ :=
-          claim2_neighbor_structure h_reg h_tri h_no6 v
-
+        -- Prove P = P' (P' is from outer scope obtain at line 1973)
         -- Define M locally
         let M := Finset.univ \ insert v (G.neighborFinset v)
 
-        -- Prove P = P'
         have hP_eq_P' : P = P' := by
           have hP_subset_P' : P ⊆ P' := by
             intro p hp
@@ -2784,30 +2784,11 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           apply Finset.eq_of_subset_of_card_le hP_subset_P'
           rw [hP_card, hP'_card]
 
-        -- Prove Q = Q_local (same argument)
-        have hQ_eq : Q = Q_local := by
-          have hQ_subset : Q ⊆ Q_local := by
-            intro q hq
-            have ⟨hq_nonadj, hq_comm⟩ := hQ_props q hq
-            simp only [Q_local, M, Finset.mem_filter, Finset.mem_sdiff, Finset.mem_univ,
-                      Finset.mem_insert, true_and]
-            constructor
-            · push_neg
-              constructor
-              · intro h_eq; subst h_eq; exact hq_nonadj (G.refl_of_adj rfl)
-              · intro hq_N
-                rw [mem_neighborFinset] at hq_N
-                exact hq_nonadj (G.symm hq_N)
-            · exact hq_comm
-          have : Q_local.card = Q.card := by rw [hQ_local_card, hQ_card]
-          apply Finset.eq_of_subset_of_card_le hQ_subset
-          omega
-
         have hPQ_disj : Disjoint P Q := by
-          rw [hP_eq_P', hQ_eq]
+          rw [hP_eq_P']
           rw [Finset.disjoint_iff_inter_eq_empty]
           ext w
-          simp only [P', Q_local, Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty, iff_false]
+          simp only [P', Q, Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty, iff_false]
           intro ⟨⟨_, h1⟩, ⟨_, h2⟩⟩
           rw [h1] at h2
           norm_num at h2
@@ -2924,27 +2905,27 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           _ = 5 - 2 := by rw [hq_deg, hq_Nv_count]
           _ = 3 := by norm_num
 
-      -- Get P', Q_local from claim2 to establish M = P ∪ Q structure
-      obtain ⟨P', Q_local, hP'_card, hQ_local_card, hP'_props, hQ_local_props⟩ :=
-        claim2_neighbor_structure h_reg h_tri h_no6 v
-
-      -- M = P' ∪ Q_local (partition)
-      have hM_partition : M = P' ∪ Q_local := by
+      -- Use P' and Q from outer scope (obtained at line 1973)
+      -- M = P' ∪ Q (partition)
+      have hM_partition : M = P' ∪ Q := by
         ext x
-        simp only [M, P', Q_local, Finset.mem_union, Finset.mem_filter, Finset.mem_sdiff,
+        simp only [M, P', Q, Finset.mem_union, Finset.mem_filter, Finset.mem_sdiff,
                   Finset.mem_univ, Finset.mem_insert, true_and]
         constructor
-        · intro ⟨hx_univ, hx_not⟩
-          sorry -- TODO: use commonNeighborsCard bounds
+        · intro ⟨_, hx_not⟩
+          push_neg at hx_not
+          sorry -- TODO: use commonNeighborsCard bounds to show x ∈ P' ∪ Q
         · intro hx
-          sorry -- TODO: reverse direction
+          sorry -- TODO: reverse direction (if x ∈ P' ∪ Q then x ∈ M)
 
-      -- M-neighbors split into P'-neighbors and Q_local-neighbors
+      -- M-neighbors split into P'-neighbors and Q-neighbors
       have h_M_split : G.neighborFinset q ∩ M =
-                       (G.neighborFinset q ∩ P') ∪ (G.neighborFinset q ∩ Q_local) := by
+                       (G.neighborFinset q ∩ P') ∪ (G.neighborFinset q ∩ Q) := by
         rw [hM_partition, Finset.inter_union_distrib_left]
 
-      sorry -- TODO: show P = P', Q = Q_local, then compute card
+      -- Now count: |M-neighbors| = 3, split into P' and Q
+      -- Since q ∈ Q, can't be adjacent to itself, so Q-neighbors are in Q \ {q}
+      sorry -- TODO: complete the counting
 
     -- Key insight: since sum = 16 and all ≥ 2, all must be exactly 2
     have h_all_exactly_2 : ∀ q ∈ Q, (P.filter (G.Adj q)).card = 2 := by
