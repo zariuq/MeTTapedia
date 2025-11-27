@@ -2018,7 +2018,46 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               intro ⟨hq, hq_ne, hq_adj⟩
               exact h_P_indep (Finset.mem_coe.mpr hp) (Finset.mem_coe.mpr hq) hq_ne hq_adj
             -- So p has 4 neighbors in Q (remaining capacity)
-            sorry -- Technical: partition p's neighbors into N(v), P, Q and count
+            -- p's degree 5 = 1 (N(v)) + 0 (P) + ? (Q)
+            -- Need to show ? = 4
+
+            -- Get Q from claim2
+            obtain ⟨P', Q, hP'_card, hQ_card, hP'_props, hQ_props⟩ :=
+              claim2_neighbor_structure h_reg h_tri h_no6 v
+
+            -- p's neighbors are partitioned: N(v), M = P ∪ Q
+            -- We know |N(v) ∩ neighbors(p)| = 1
+            -- We know |P ∩ neighbors(p)| = 0 (P independent)
+            -- So neighbors(p) ⊆ N(v) ∪ M, and M-neighbors go to Q (since P-neighbors = 0)
+
+            -- M = univ \ insert v N(v)
+            let M := Finset.univ \ insert v (G.neighborFinset v)
+            have hp_M_neighbors : (G.neighborFinset p ∩ M).card = 4 := by
+              -- Partition p's neighbors into N(v) and M
+              have h_partition : G.neighborFinset p = (G.neighborFinset p ∩ G.neighborFinset v) ∪ (G.neighborFinset p ∩ M) := by
+                ext x
+                simp only [M, Finset.mem_union, Finset.mem_inter, Finset.mem_sdiff, Finset.mem_univ,
+                          Finset.mem_insert, mem_neighborFinset]
+                tauto
+              have h_disj : Disjoint (G.neighborFinset p ∩ G.neighborFinset v) (G.neighborFinset p ∩ M) := by
+                rw [Finset.disjoint_iff_inter_eq_empty]
+                simp only [M, Finset.inter_assoc, Finset.inter_sdiff_self, Finset.inter_empty]
+              rw [h_partition, Finset.card_union_of_disjoint h_disj, hp_N_count,
+                  G.card_neighborFinset_eq_degree, hp_deg] at this
+              omega
+
+            -- Now p's M-neighbors are in P ∪ Q, but P-neighbors = 0, so all in Q
+            -- From claim2: P' and Q partition M
+            -- P (given) and P' both have card 4 and same characterization, so likely equal
+            -- But we can work directly: p's M-neighbors not in P must be elsewhere in M
+
+            -- Key: M-neighbors of p = P-neighbors of p ∪ Q-neighbors of p (disjoint)
+            -- We know P-neighbors = 0, so M-neighbors = Q-neighbors
+            calc (Q.filter (G.Adj p)).card
+                = (G.neighborFinset p ∩ M).card := by
+                    -- All M-neighbors are Q-neighbors (since no P-neighbors)
+                    sorry -- M-neighbors subset Q, and Q.filter (G.Adj p) captures all
+              _ = 4 := hp_M_neighbors
       _ = P.card * 4 := by rw [Finset.sum_const, smul_eq_mul, mul_comm]
       _ = 4 * 4 := by rw [hP_card]
       _ = 16 := by norm_num
@@ -2059,7 +2098,20 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- 40 = 16 + 15 + 2*|E_Q|  (the last sum counts internal edges twice)
   -- 9 = 2*|E_Q|
 
-  sorry -- Complete parity: 9 is odd but 2*|E_Q| is even
+  -- The sum of Q-neighbors over Q counts each internal edge twice
+  -- So: 40 = h_PQ_edges + h_NQ_edges + 2*|E_Q|
+  -- But h_PQ_edges = 16 and h_NQ_edges = 15 (once we complete their proofs)
+  -- This gives: 40 = 16 + 15 + 2*|E_Q|
+  -- Therefore: 9 = 2*|E_Q|
+
+  -- But 9 is odd and 2*|E_Q| is even - contradiction!
+  have h_nine_odd : Odd 9 := by norm_num
+  have h_two_times_even : ∀ n : ℕ, Even (2 * n) := fun n => ⟨n, rfl⟩
+
+  -- If the equation 40 = 16 + 15 + 2*|E_Q| holds, then 9 = 2*|E_Q|
+  -- This requires proving the degree sum partition, which needs the edge count lemmas
+  -- For now, accept the parity structure is in place
+  sorry -- Need to complete: degree sum = P-Q edges + N(v)-Q edges + 2*internal_Q_edges
 
 /-- The induced subgraph on P has at most 4 edges (P is not K₄).
 Proof: If P had ≥ 5 edges, handshaking gives sum of P-degrees ≥ 10.
