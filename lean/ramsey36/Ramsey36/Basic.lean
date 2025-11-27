@@ -2190,9 +2190,38 @@ lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have h_triangle : ∃ (a b c : Fin 18), a ∈ P ∧ b ∈ P ∧ c ∈ P ∧
       a ≠ b ∧ b ≠ c ∧ a ≠ c ∧
       G.Adj a b ∧ G.Adj b c ∧ G.Adj a c := by
-    -- With |P| = 4 and |E_P| ≥ 5, use pigeonhole/Ramsey-type argument
-    -- or direct case analysis on 4-vertex graphs
-    sorry -- Triangle exists in any 4-vertex graph with ≥5 edges
+    -- Key: 4 vertices, 5 edges out of max 6
+    -- By pigeonhole, some vertex v has degree ≥ 3 in P
+    -- v connects to 3 others in P, say {a, b, c}
+    -- Among a,b,c: already have 5-3=2 edges (5 total minus 3 from v)
+    -- With 3 vertices and 2 edges, must have a triangle
+
+    -- Get 4 elements of P
+    have hP_four : ∃ (p1 p2 p3 p4 : Fin 18),
+        p1 ∈ P ∧ p2 ∈ P ∧ p3 ∈ P ∧ p4 ∈ P ∧
+        p1 ≠ p2 ∧ p1 ≠ p3 ∧ p1 ≠ p4 ∧ p2 ≠ p3 ∧ p2 ≠ p4 ∧ p3 ≠ p4 ∧
+        P = {p1, p2, p3, p4} := by
+      sorry -- Extract 4 distinct elements from P with card = 4
+
+    obtain ⟨p1, p2, p3, p4, hp1, hp2, hp3, hp4, h12, h13, h14, h23, h24, h34, hP_eq⟩ := hP_four
+
+    -- Sum of degrees in P ≥ 10 (from handshaking: 2 * 5 = 10)
+    -- So some vertex has degree ≥ 3
+    have h_deg_3 : ∃ v ∈ P, 3 ≤ (P.filter (fun u => u ≠ v ∧ G.Adj v u)).card := by
+      by_contra h_all_le_2
+      push_neg at h_all_le_2
+      have : P.sum (fun p => (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card) ≤ P.sum (fun _ => 2) := by
+        apply Finset.sum_le_sum
+        intro p hp
+        exact h_all_le_2 p hp
+      have : 2 * E_P.card ≤ 8 := by
+        calc 2 * E_P.card
+            = P.sum (fun p => (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card) := h_sum_deg.symm
+          _ ≤ P.sum (fun _ => 2) := this
+          _ = 8 := by simp [hP_card]
+      omega
+
+    sorry -- Complete triangle existence from degree-3 vertex
 
   obtain ⟨a, b, c, ha, hb, hc, hab_ne, hbc_ne, hac_ne, hab, hbc, hac⟩ := h_triangle
 
