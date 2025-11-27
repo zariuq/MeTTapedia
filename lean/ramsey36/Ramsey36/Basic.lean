@@ -1783,8 +1783,46 @@ lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
   -- Handshaking: sum of P-degrees = 2 × |E_P|
   have h_sum_deg : (P.sum (fun p => (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card)) = 2 * E_P.card := by
-    -- Each edge counted twice in the sum
-    sorry
+    -- Double-counting argument: count ordered pairs (p,q) with p,q ∈ P, p ≠ q, Adj p q
+    -- LHS: group by first element p, count neighbors q
+    -- RHS: each unordered edge {p,q} contributes 2 ordered pairs (p,q) and (q,p)
+
+    -- Define ordered edge pairs
+    let ordered_pairs := Finset.univ.filter (fun (e : Fin 18 × Fin 18) =>
+      e.1 ∈ P ∧ e.2 ∈ P ∧ e.1 ≠ e.2 ∧ G.Adj e.1 e.2)
+
+    -- LHS counts ordered pairs
+    have h_lhs : P.sum (fun p => (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card) = ordered_pairs.card := by
+      -- Sum over p of |neighbors of p in P| = |ordered pairs|
+      rw [← Finset.card_sigma]
+      congr 1
+      ext ⟨p, q⟩
+      simp only [ordered_pairs, Finset.mem_sigma, Finset.mem_filter, Finset.mem_univ, true_and]
+      tauto
+
+    -- Each unordered edge gives 2 ordered pairs
+    have h_rhs : ordered_pairs.card = 2 * E_P.card := by
+      -- Key: partition ordered_pairs by the canonical edge (min, max)
+      -- Each edge e = (a,b) with a < b in E_P gives exactly 2 ordered pairs:
+      -- (a,b) and (b,a)
+
+      -- Define the "canonical form" map: ordered pair → unordered edge
+      let toEdge := fun (p : Fin 18 × Fin 18) =>
+        if p.1 < p.2 then p else (p.2, p.1)
+
+      -- Each edge in E_P has exactly 2 preimages in ordered_pairs
+      have h_fiber_2 : ∀ e ∈ E_P, (ordered_pairs.filter (fun p => toEdge p = e)).card = 2 := by
+        intro e he
+        simp only [E_P, Finset.mem_filter, Finset.mem_univ, true_and] at he
+        obtain ⟨he_P1, he_P2, he_lt, he_adj⟩ := he
+        -- The two ordered pairs are (e.1, e.2) and (e.2, e.1)
+        have h_ne : e.1 ≠ e.2 := ne_of_lt he_lt
+        sorry -- Show exactly {(e.1, e.2), (e.2, e.1)} map to e
+
+      -- Sum over fibers gives total count
+      sorry -- Use fiber cardinality to conclude ordered_pairs.card = 2 * E_P.card
+
+    rw [h_lhs, h_rhs]
 
   have : 2 * E_P.card ≥ 10 := by omega
 
@@ -1862,10 +1900,46 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     · intro hp_in_N; rw [mem_neighborFinset] at hp_in_N; exact hp_nonadj_v hp_in_N
 
   -- Every non-neighbor of v has commonNeighborsCard ∈ {1, 2}
-  -- So Q is exactly M \ P
+  -- So Q is exactly M.filter (commonNeighborsCard = 2)
   have hQ_def : Q = M.filter (fun w => commonNeighborsCard G v w = 2) := by
-    -- This follows from claim2's construction
-    sorry
+    -- Q is characterized by: w ∈ Q ↔ w ∈ M ∧ commonNeighborsCard = 2
+    ext w
+    simp only [Finset.mem_filter]
+    constructor
+    · intro hw_in_Q
+      have ⟨hw_nonadj, hw_common2⟩ := hQ_props w hw_in_Q
+      constructor
+      · -- w ∈ M
+        simp only [M, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert, true_and, not_or]
+        constructor
+        · intro heq; subst heq; exact hw_nonadj (G.refl v)
+        · intro hw_in_N; rw [mem_neighborFinset] at hw_in_N; exact hw_nonadj hw_in_N
+      · exact hw_common2
+    · intro ⟨hw_in_M, hw_common2⟩
+      -- Need to show w ∈ Q
+      -- From claim2, Q contains all w ∈ M with commonNeighborsCard = 2
+      -- We know P ∪ Q = M and P ∩ Q = ∅
+      -- P consists of elements with commonCard = 1, Q with commonCard = 2
+      -- So w ∈ M with commonCard = 2 must be in Q
+      by_contra hw_not_Q
+      -- w ∈ M but w ∉ Q, so w ∈ P (from partition)
+      have hw_in_P : w ∈ P' := by
+        -- P' ∪ Q = M from claim2 proof structure
+        -- Since every element of M has commonCard ∈ {1,2}, w must be somewhere
+        have hw_common1 : commonNeighborsCard G v w = 1 := by
+          have hw_ne_v : w ≠ v := by
+            simp only [M, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_insert, not_or] at hw_in_M
+            exact hw_in_M.2.1
+          have hw_nonadj : ¬G.Adj v w := by
+            simp only [M, Finset.mem_sdiff, Finset.mem_insert, mem_neighborFinset, not_or] at hw_in_M
+            exact hw_in_M.2.2
+          have h_bounds := commonNeighborsCard_le_two h_tri h_no6 h_reg v w hw_ne_v hw_nonadj
+          have h_pos := commonNeighborsCard_pos h_tri h_no6 h_reg v w hw_ne_v hw_nonadj
+          omega
+        -- But w has commonCard = 2, contradiction
+        omega
+      have ⟨_, hw_P_common1⟩ := hP'_props w hw_in_P
+      omega
 
   let Q_nbrs := (M \ P).filter (G.Adj p)
 
@@ -1895,19 +1969,15 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         exact hq_nonadj hs_in_N
 
     have h_PQ_disjoint : Disjoint P_nbrs Q_nbrs := by
+      -- P and Q (from claim2) partition M by commonNeighborsCard
+      -- Since P_nbrs ⊆ P and Q_nbrs ⊆ (M\P), they're disjoint
       rw [Finset.disjoint_iff_inter_eq_empty]
       ext x
-      simp only [P_nbrs, Q_nbrs, Finset.mem_inter, Finset.mem_filter, Finset.not_mem_empty,
-                 iff_false, not_and]
-      intro hx_in_P _ _
-      intro hx_in_Q
-      -- x can't be in both P and Q (disjoint by claim2)
-      have hPQ_disj : Disjoint P' Q := by
-        -- This follows from claim2 structure
-        sorry
-      rw [← hP_eq_P'] at hx_in_P
-      rw [Finset.disjoint_left] at hPQ_disj
-      exact hPQ_disj hx_in_P hx_in_Q
+      simp only [P_nbrs, Q_nbrs, Finset.mem_inter, Finset.mem_filter, Finset.mem_sdiff,
+                 Finset.not_mem_empty, iff_false, not_and]
+      intro hx_P _ _
+      intro ⟨⟨hx_M, hx_not_P⟩, _⟩
+      exact hx_not_P hx_P
 
     have h_total : ({s} ∪ P_nbrs ∪ Q_nbrs).card = 5 := by
       calc ({s} ∪ P_nbrs ∪ Q_nbrs).card
@@ -1917,8 +1987,43 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         _ = 1 + P_nbrs.card + Q_nbrs.card := by
             rw [Finset.card_union_of_disjoint h_PQ_disjoint]
         _ = (G.neighborFinset p).card := by
-            -- This should equal degree of p
-            sorry
+            -- Prove {s} ∪ P_nbrs ∪ Q_nbrs = G.neighborFinset p
+            congr 1
+            ext x
+            simp only [Finset.mem_union, Finset.mem_singleton, P_nbrs, Q_nbrs,
+                       Finset.mem_filter, Finset.mem_sdiff, mem_neighborFinset]
+            constructor
+            · intro h
+              cases h with
+              | inl h_eq =>
+                subst h_eq
+                exact hs_adj_p.symm
+              | inr h_rest =>
+                cases h_rest with
+                | inl ⟨_, _, hx_adj⟩ => exact hx_adj
+                | inr ⟨⟨_, _⟩, hx_adj⟩ => exact hx_adj
+            · intro hx_adj_p
+              -- x is a neighbor of p. Is it s, in P, or in M\P?
+              by_cases hx_eq_s : x = s
+              · left; exact hx_eq_s
+              · right
+                by_cases hx_eq_v : x = v
+                · -- x = v, but v is not adjacent to p
+                  subst hx_eq_v
+                  exact absurd hx_adj_p hp_nonadj_v
+                · -- x ≠ v, x ≠ s, so x ∈ M
+                  have hx_in_M : x ∈ M := by
+                    simp only [M, Finset.mem_erase]
+                    constructor
+                    · exact hx_eq_v
+                    · exact Finset.mem_univ x
+                  by_cases hx_in_P : x ∈ P
+                  · left
+                    simp only [P_nbrs, Finset.mem_filter]
+                    exact ⟨hx_in_P, Ne.symm (G.ne_of_adj hx_adj_p), hx_adj_p⟩
+                  · right
+                    simp only [Q_nbrs, Finset.mem_filter, Finset.mem_sdiff]
+                    exact ⟨⟨hx_in_M, hx_in_P⟩, hx_adj_p⟩
       rw [G.card_neighborFinset_eq_degree] at this
       simpa [hp_deg] using this
 
