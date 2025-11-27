@@ -2643,36 +2643,43 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
   have h_E_Q : E_Q.card = 4 := by omega
 
-  -- 🎯 PARITY REVISION PAYOFF: Q has 8 vertices with only 4 internal edges!
-  -- Construct a 6-independent set using this sparsity
+  -- 🎯 PARITY REVISION PAYOFF: Use E_Q = 4 with Ramsey R(3,4) = 9!
+  --
+  -- BREAKTHROUGH IDEA: Use R(3,3) = 6 on Q directly!
+  --
+  -- Strategy:
+  -- 1. Q has 8 vertices with 4 edges
+  -- 2. Take ANY 6-vertex subset of Q
+  -- 3. This subset has at most 4 edges (could have fewer if we exclude some edges)
+  -- 4. By R(3,3) = 6: Any 6-vertex graph has triangle OR 3-IS
+  -- 5. Triangle impossible (h_tri)
+  -- 6. So we get a 3-IS from Q
+  --
+  -- Now combine:
+  -- - {v}: 1 vertex, not adjacent to anyone in P ∪ Q
+  -- - P: 4 vertices, independent, not adjacent to v
+  -- - 3-IS from Q: 3 vertices, independent among themselves
+  --
+  -- Total: 1 + 4 + 3 = 8 vertices
+  --
+  -- But are they ALL mutually independent?
+  -- - v ↛ P ✓ (definition of P)
+  -- - v ↛ Q ✓ (definition of Q)
+  -- - P independent ✓
+  -- - 3-IS independent ✓
+  -- - P ↛ 3-IS? ✗ (h_PQ_edges = 16, so P-Q edges exist!)
+  --
+  -- So we can't just union them. We need to CHOOSE the 3-IS from Q
+  -- such that it avoids edges to P (or choose subset of P that avoids edges to Q)
+  --
+  -- Refined approach: Among the 16 P-Q edges with |P|=4, |Q|=8:
+  -- Some vertices in Q have fewer P-neighbors than others
+  -- If we can find 3 vertices in Q that together are not adjacent to SOME p ∈ P,
+  -- then {v, p, and 4 more from P ∪ Q...} might work
+  --
+  -- This is getting complex. Let me defer the exact construction.
 
-  -- Key insight: With Q having 8 vertices and 4 edges, we can find a 5-IS in Q
-  -- Combined with v (not adjacent to Q), this gives a 6-IS
-
-  -- Step 1: Q has 8 vertices with 4 internal edges (from h_E_Q)
-  -- The induced subgraph on Q has average degree 2*4/8 = 1
-
-  -- Step 2: Find a 5-IS in Q using greedy algorithm
-  -- With average degree 1, at least 4 vertices have degree ≤ 1
-  -- Pick a low-degree vertex, remove it and its neighbor, repeat
-
-  -- For now, we use the fact that any graph with n vertices and n/2 edges
-  -- has an independent set of size ≥ n/2 (greedy gives this bound)
-  -- Here: 8 vertices, 4 edges → IS of size ≥ 4
-  -- But we need size 5, so we need a stronger argument
-
-  -- Stronger argument: Apply Ramsey R(3,5) = 14 to Q's complement
-  -- Q's complement has 8 vertices and C(8,2) - 4 = 24 edges
-  -- We're looking for a 5-clique in this complement (= 5-IS in Q)
-
-  -- Actually, the most direct approach: use explicit construction via degree sequence
-  -- Since sum of degrees in Q = 2*4 = 8 over 8 vertices, average = 1
-  -- By pigeonhole, at least 4 vertices have degree ≤ 1
-
-  -- TODO: Complete the formal Lean proof of 5-IS existence in sparse graph
-  -- For now, we assert this can be done and defer the construction
-
-  sorry -- Construct 5-IS in Q (8 vertices, 4 edges) + v → 6-IS
+  sorry -- TODO: Use R(3,3) on Q to get 3-IS, carefully combine with P and v to get 6-IS
 
 /-- The induced subgraph on P has at most 4 edges (P is not K₄).
 Proof: If P had ≥ 5 edges, handshaking gives sum of P-degrees ≥ 10.
