@@ -1984,16 +1984,82 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- But 9 is odd and 2*E_Q is even - CONTRADICTION!
 
   have h_Q_degree_sum : (Q : Set (Fin 18)).toFinset.sum (fun q => G.degree q) = 40 := by
-    sorry -- Q.card = 8, each q has degree 5
+    have hQ_card_8 : Q.card = 8 := hQ_card
+    have : (Q : Set (Fin 18)).toFinset = Q := by
+      ext x
+      simp only [Set.mem_toFinset, Finset.mem_coe]
+    rw [this]
+    calc Q.sum (fun q => G.degree q)
+        = Q.sum (fun _ => 5) := by
+            apply Finset.sum_congr rfl
+            intro q hq
+            exact h_reg q
+      _ = Q.card * 5 := by rw [Finset.sum_const, smul_eq_mul, mul_comm]
+      _ = 8 * 5 := by rw [hQ_card_8]
+      _ = 40 := by norm_num
 
   have h_PQ_edges : (∑ p in P, (Q.filter (G.Adj p)).card) = 16 := by
-    sorry -- Each p has 4 Q-neighbors when P is independent
+    -- When P is independent, each p has: degree 5 = 1 (to N(v)) + 0 (to P) + 4 (to Q)
+    calc P.sum (fun p => (Q.filter (G.Adj p)).card)
+        = P.sum (fun _ => 4) := by
+            apply Finset.sum_congr rfl
+            intro p hp
+            have ⟨hp_nonadj_v, hp_common1⟩ := hP_props p hp
+            have hp_deg : G.degree p = 5 := h_reg p
+            -- p has 1 neighbor in N(v) (by commonNeighborsCard = 1)
+            have hp_N_count : (G.neighborFinset p ∩ G.neighborFinset v).card = 1 := by
+              unfold commonNeighborsCard commonNeighbors at hp_common1
+              exact hp_common1
+            -- p has 0 neighbors in P (since P is independent)
+            have hp_P_count : (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card = 0 := by
+              apply Finset.card_eq_zero.mpr
+              intro q
+              simp only [Finset.mem_filter]
+              intro ⟨hq, hq_ne, hq_adj⟩
+              exact h_P_indep (Finset.mem_coe.mpr hp) (Finset.mem_coe.mpr hq) hq_ne hq_adj
+            -- So p has 4 neighbors in Q (remaining capacity)
+            sorry -- Technical: partition p's neighbors into N(v), P, Q and count
+      _ = P.card * 4 := by rw [Finset.sum_const, smul_eq_mul, mul_comm]
+      _ = 4 * 4 := by rw [hP_card]
+      _ = 16 := by norm_num
 
   have h_NQ_edges : (∑ s in G.neighborFinset v, (Q.filter (G.Adj s)).card) = 15 := by
-    sorry -- Each of 5 s's has exactly 3 Q-neighbors (from s_has_three_Q_neighbors)
+    calc (G.neighborFinset v).sum (fun s => (Q.filter (G.Adj s)).card)
+        = (G.neighborFinset v).sum (fun _ => 3) := by
+            apply Finset.sum_congr rfl
+            intro s hs
+            rw [mem_neighborFinset] at hs
+            -- Need to apply s_has_three_Q_neighbors
+            -- But it requires specific parameters including p
+            -- For now, accept that each s has exactly 3 Q-neighbors
+            sorry -- Apply s_has_three_Q_neighbors for each s
+      _ = (G.neighborFinset v).card * 3 := by rw [Finset.sum_const, smul_eq_mul, mul_comm]
+      _ = 5 * 3 := by
+          have : (G.neighborFinset v).card = 5 := by
+            rw [G.card_neighborFinset_eq_degree]
+            exact h_reg v
+          rw [this]
+      _ = 15 := by norm_num
 
   -- Derive parity contradiction
-  sorry -- 40 = 16 + 15 + 2*E_Q implies 9 = 2*E_Q, contradiction
+  -- Sum of Q degrees counts: edges from P to Q, from N(v) to Q, and internal Q edges (twice)
+  -- But we need to relate these properly
+
+  -- The sum h_Q_degree_sum counts all edges from Q
+  -- h_PQ_edges counts edges from P side
+  -- h_NQ_edges counts edges from N(v) side
+  -- The difference must be 2*|E_Q| (internal Q edges, counted twice)
+
+  -- Actually, each q's degree = (neighbors in P) + (neighbors in N(v)) + (neighbors in Q) + (neighbors in {v})
+  -- But q ∉ N(v), so q not adjacent to v
+  -- So: degree(q) = |P-neighbors| + |N(v)-neighbors| + |Q-neighbors|
+
+  -- Summing over all q ∈ Q:
+  -- ∑ degree(q) = ∑|P-neighbors of q| + ∑|N(v)-neighbors of q| + ∑|Q-neighbors of q|
+  -- 40 = 16 + 15 + 2*|E_Q|  (the last sum counts internal edges twice)
+  -- 9 = 2*|E_Q|
+
+  sorry -- Complete parity: 9 is odd but 2*|E_Q| is even
 
 /-- The induced subgraph on P has at most 4 edges (P is not K₄).
 Proof: If P had ≥ 5 edges, handshaking gives sum of P-degrees ≥ 10.
