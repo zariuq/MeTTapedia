@@ -1645,9 +1645,108 @@ lemma s_has_three_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- The neighbors of s are: v, p, and 3 others
   -- These 3 others must be in Q (non-neighbors of v with 2 common neighbors)
 
-  -- For now, we use the degree constraint directly
-  -- Full proof would show the 3 remaining neighbors are exactly the Q-neighbors
-  sorry
+  -- Partition s's neighbors: {v, p} ∪ (remaining 3)
+  have h_v_ne_p : v ≠ p := fun h => hp_nonadj (h ▸ hs_adj_v)
+  have h_card_vp : ({v, p} : Finset (Fin 18)).card = 2 := by
+    rw [Finset.card_insert_of_notMem, Finset.card_singleton]
+    simp [h_v_ne_p]
+
+  -- The neighbors of s excluding {v, p} have cardinality 3
+  have h_other_card : (G.neighborFinset s \ {v, p}).card = 3 := by
+    have : G.neighborFinset s = insert v (insert p (G.neighborFinset s \ {v, p})) := by
+      ext w
+      simp only [Finset.mem_insert, Finset.mem_sdiff, Finset.mem_singleton, not_or]
+      tauto
+    rw [this, Finset.card_insert_of_notMem, Finset.card_insert_of_notMem] at hs_deg
+    · omega
+    · simp only [Finset.mem_insert, Finset.mem_sdiff, Finset.mem_singleton, not_or, not_and]
+      intro h_p_in
+      cases h_p_in with
+      | inl h_p_eq_v => exact h_v_ne_p.symm h_p_eq_v
+      | inr h_right =>
+        have : p ∉ {v, p} := h_right.2
+        simp at this
+    · simp only [Finset.mem_sdiff, mem_neighborFinset, Finset.mem_insert, Finset.mem_singleton, not_or]
+      intro ⟨h_adj, h_ne_v, h_ne_p⟩
+      exact h_ne_v rfl
+
+  -- All neighbors of s outside {v, p} are in Q
+  have h_others_in_Q : ∀ w ∈ G.neighborFinset s \ {v, p}, w ∈ Q := by
+    intro w hw
+    simp only [Finset.mem_sdiff, mem_neighborFinset, Finset.mem_insert, Finset.mem_singleton, not_or] at hw
+    obtain ⟨hw_adj, hw_ne_v, hw_ne_p⟩ := hw
+    -- w is adjacent to s, and s is adjacent to v, so w-s-v
+    -- w must be a non-neighbor of v (else triangle)
+    have hw_nonadj_v : ¬G.Adj w v := by
+      intro h_adj
+      -- Triangle: {v, s, w}
+      let T : Finset (Fin 18) := {v, s, w}
+      have hT_clique : G.IsNClique 3 T := by
+        rw [isNClique_iff]
+        constructor
+        · intros a ha b hb hab
+          simp only [T, Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at ha hb
+          rcases ha with rfl | rfl | rfl <;> rcases hb with rfl | rfl | rfl
+          · exact absurd rfl hab
+          · exact hs_adj_v
+          · exact h_adj
+          · exact G.symm hs_adj_v
+          · exact absurd rfl hab
+          · exact hw_adj
+          · exact G.symm h_adj
+          · exact G.symm hw_adj
+          · exact absurd rfl hab
+        · simp only [T]
+          have hv_ne_s : v ≠ s := G.ne_of_adj hs_adj_v
+          have hv_ne_w : v ≠ w := G.ne_of_adj h_adj
+          have hs_ne_w : s ≠ w := G.ne_of_adj hw_adj
+          rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+          · simp [hs_ne_w]
+          · simp [hv_ne_s, hv_ne_w]
+      exact h_tri T hT_clique
+    -- w has exactly 2 common neighbors with v
+    have hw_common : commonNeighborsCard G v w = 2 := by
+      -- Lower bound: at least 1 (positive)
+      have h_pos := commonNeighborsCard_pos h_tri h_no6 h_reg v w hw_ne_v.symm hw_nonadj_v
+      -- Upper bound: at most 2
+      have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg v w hw_ne_v.symm hw_nonadj_v
+      -- Must be 1 or 2; ruling out 1 requires additional structure from claim2
+      -- Specifically: if commonNeighborsCard = 1, then w ∈ P (by partition definition)
+      -- But P.card = 4 and each element of P has a unique s-partner
+      -- The fact that s has 3 neighbors outside {v,p} and they all must be in Q
+      -- follows from degree counting and the P/Q partition properties
+      -- For now, we note this follows from the overall structure
+      sorry
+    exact hQ_complete w hw_nonadj_v hw_common
+
+  -- Q.filter (G.Adj s) contains exactly the 3 neighbors of s outside {v, p}
+  have h_subset1 : G.neighborFinset s \ {v, p} ⊆ Q.filter (G.Adj s) := by
+    intro w hw
+    simp only [Finset.mem_filter]
+    constructor
+    · exact h_others_in_Q w hw
+    · simp only [Finset.mem_sdiff, mem_neighborFinset] at hw
+      exact hw.1
+
+  have h_subset2 : Q.filter (G.Adj s) ⊆ G.neighborFinset s \ {v, p} := by
+    intro w hw
+    simp only [Finset.mem_filter, Finset.mem_sdiff, mem_neighborFinset, Finset.mem_insert, Finset.mem_singleton, not_or]
+    obtain ⟨hw_in_Q, hw_adj⟩ := hw
+    have hw_nonadj_v : ¬G.Adj v w := (hQ_def w).mp hw_in_Q |>.1
+    constructor
+    · exact hw_adj
+    · constructor
+      · intro h; subst h
+        exact hw_nonadj_v hs_adj_v
+      · intro h; subst h
+        exact hp_nonadj (G.symm hw_adj)
+
+  have : Q.filter (G.Adj s) = G.neighborFinset s \ {v, p} := by
+    ext w; constructor
+    · exact fun h => h_subset2 h
+    · exact fun h => h_subset1 h
+
+  rw [this, h_other_card]
 
 /-- The induced subgraph on P has at least 2 edges (P is not too sparse).
 This follows from the S-W structure: at least 2 pairs of s's share W-neighbors. -/
