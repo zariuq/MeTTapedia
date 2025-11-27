@@ -4122,6 +4122,9 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- c) Therefore |E_P| ≥ 4
 
   -- Part a: Extract 4 shared-W pairs from cycle structure
+  -- KEY INSIGHT: Each w ∈ W has exactly 2 S-neighbors (hW_two_S_nbrs)
+  -- So each w naturally defines a pair {s, s'} ⊆ S
+  -- Since |W| = 4, we get exactly 4 pairs
   have h_four_pairs : ∃ (pairs : Finset (Finset (Fin 18))),
       pairs.card = 4 ∧
       ∀ pair ∈ pairs, ∃ s1 s2 w,
@@ -4129,7 +4132,203 @@ lemma P_has_at_least_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         s1 ∈ S ∧ s2 ∈ S ∧ s1 ≠ s2 ∧
         w ∈ W ∧
         G.Adj s1 w ∧ G.Adj s2 w := by
-    sorry -- Extract 4 pairs from 8-cycle structure
+
+    -- Helper: Extract 2 S-neighbors for each w ∈ W
+    have h_w_has_two_S : ∀ w ∈ W, ∃ s1 s2,
+        s1 ≠ s2 ∧ s1 ∈ S ∧ s2 ∈ S ∧
+        G.Adj s1 w ∧ G.Adj s2 w ∧
+        (G.neighborFinset w ∩ S) = {s1, s2} := by
+      intro w hw
+      have h_card : (G.neighborFinset w ∩ S).card = 2 := hW_two_S_nbrs w hw
+      -- Extract 2 elements from a 2-element set
+      have h_nonempty : (G.neighborFinset w ∩ S).Nonempty := by
+        rw [Finset.nonempty_iff_ne_empty]
+        intro h
+        rw [h, Finset.card_empty] at h_card
+        norm_num at h_card
+      obtain ⟨s1, hs1⟩ := h_nonempty
+      have h_rest_nonempty : ((G.neighborFinset w ∩ S).erase s1).Nonempty := by
+        rw [Finset.nonempty_iff_ne_empty]
+        intro h
+        have : (G.neighborFinset w ∩ S).card = 1 := by
+          have h_erase := Finset.card_erase_of_mem hs1
+          rw [h, Finset.card_empty] at h_erase
+          omega
+        omega
+      obtain ⟨s2, hs2⟩ := h_rest_nonempty
+      have hs2_in : s2 ∈ (G.neighborFinset w ∩ S) := Finset.mem_of_mem_erase hs2
+      have hs12_ne : s1 ≠ s2 := by
+        intro h; subst h
+        exact Finset.mem_erase_of_ne_of_mem (Ne.refl s2) hs2_in |> absurd hs2
+      -- Show these are the only two
+      have h_eq : (G.neighborFinset w ∩ S) = {s1, s2} := by
+        ext x
+        simp only [Finset.mem_insert, Finset.mem_singleton]
+        constructor
+        · intro hx
+          by_cases h1 : x = s1
+          · left; exact h1
+          by_cases h2 : x = s2
+          · right; exact h2
+          · -- x is a third element, contradiction with card = 2
+            exfalso
+            have : x ∈ (G.neighborFinset w ∩ S).erase s1 := Finset.mem_erase.mpr ⟨h1, hx⟩
+            have : x ∈ ((G.neighborFinset w ∩ S).erase s1).erase s2 := Finset.mem_erase.mpr ⟨h2, this⟩
+            have h_card' : ((G.neighborFinset w ∩ S).erase s1).card = 1 := by
+              have := Finset.card_erase_of_mem hs1
+              omega
+            have h_eq : (G.neighborFinset w ∩ S).erase s1 = {s2} := by
+              have hs2' : s2 ∈ (G.neighborFinset w ∩ S).erase s1 := by
+                exact Finset.mem_erase.mpr ⟨Finset.ne_of_mem_erase hs2, hs2_in⟩
+              exact Finset.card_eq_one.mp h_card' ▸ Finset.singleton_eq_singleton_iff.mpr hs2'
+            rw [h_eq] at this
+            simp at this
+        · intro h
+          cases h with
+          | inl h => rw [h]; exact hs1
+          | inr h => rw [h]; exact hs2_in
+      use s1, s2
+      simp only [Finset.mem_inter] at hs1 hs2_in
+      exact ⟨hs12_ne, hs1.2, hs2_in.2,
+             mem_neighborFinset.mp hs1.1, mem_neighborFinset.mp hs2_in.1, h_eq⟩
+
+    -- Build pairs as image of W via w ↦ {its 2 S-neighbors}
+    let w_to_pair : {w // w ∈ W} → Finset (Fin 18) := fun ⟨w, hw⟩ =>
+      let ⟨s1, s2, _, _, _, _, _, _⟩ := h_w_has_two_S w hw
+      {s1, s2}
+
+    let pairs := W.attach.image w_to_pair
+
+    use pairs
+    constructor
+    · -- pairs.card = 4
+      -- Show map is injective: different w's → different pairs
+      have h_inj : ∀ w1 w2 : {w // w ∈ W}, w_to_pair w1 = w_to_pair w2 → w1 = w2 := by
+        intro ⟨w1, hw1⟩ ⟨w2, hw2⟩ h_eq
+        -- If w1 and w2 give the same pair, they have the same S-neighbors
+        obtain ⟨s1a, s2a, _, _, _, _, _, h_eq1⟩ := h_w_has_two_S w1 hw1
+        obtain ⟨s1b, s2b, _, _, _, _, _, h_eq2⟩ := h_w_has_two_S w2 hw2
+        simp only [w_to_pair] at h_eq
+        -- {s1a, s2a} = {s1b, s2b} and both equal G.neighborFinset wᵢ ∩ S
+        have : G.neighborFinset w1 ∩ S = G.neighborFinset w2 ∩ S := by
+          rw [h_eq1, h_eq2, h_eq]
+        -- Two vertices with the same S-neighbors in a bipartite graph where each s has exactly 2 W-neighbors
+        -- If w1 ≠ w2, pick any s in their common neighbors
+        by_contra h_ne
+        -- Get a common S-neighbor
+        have h_nonempty : (G.neighborFinset w1 ∩ S).Nonempty := by
+          rw [h_eq1]; simp [Finset.insert_nonempty]
+        obtain ⟨s, hs⟩ := h_nonempty
+        have hs_nbr_w1 : s ∈ G.neighborFinset w1 := (Finset.mem_inter.mp hs).1
+        have hs_S : s ∈ S := (Finset.mem_inter.mp hs).2
+        have hs_nbr_w2 : s ∈ G.neighborFinset w2 := by rw [← this] at hs; exact (Finset.mem_inter.mp hs).1
+        -- s is adjacent to both w1 and w2
+        have hw1_in_W_s : w1 ∈ W.filter (G.Adj s) := by
+          simp only [Finset.mem_filter]
+          exact ⟨hw1, mem_neighborFinset.mp hs_nbr_w1⟩
+        have hw2_in_W_s : w2 ∈ W.filter (G.Adj s) := by
+          simp only [Finset.mem_filter]
+          exact ⟨hw2, mem_neighborFinset.mp hs_nbr_w2⟩
+        -- But s has exactly 2 W-neighbors total
+        have hs_in_S : s ∈ S := hs_S
+        have hs_two_W : (G.neighborFinset s ∩ W).card = 2 := hS_two_W_nbrs s hs_in_S
+        -- W.filter (G.Adj s) = G.neighborFinset s ∩ W
+        have h_filter_eq : W.filter (G.Adj s) = G.neighborFinset s ∩ W := by
+          ext q
+          simp only [Finset.mem_filter, Finset.mem_inter, mem_neighborFinset]
+          tauto
+        -- So W.filter (G.Adj s) has exactly 2 elements
+        have h_card_2 : (W.filter (G.Adj s)).card = 2 := by rw [h_filter_eq]; exact hs_two_W
+        -- But w1, w2 are two distinct elements in it
+        have hw_ne : w1 ≠ w2 := fun h => h_ne (by simp [h])
+        have h_set_eq : W.filter (G.Adj s) = {w1, w2} := by
+          -- A 2-element set containing two distinct elements equals {those two}
+          have h_w1_in : w1 ∈ W.filter (G.Adj s) := hw1_in_W_s
+          have h_w2_in : w2 ∈ W.filter (G.Adj s) := hw2_in_W_s
+          have h_insert_card : ({w1, w2} : Finset (Fin 18)).card = 2 := by
+            simp [Finset.card_insert_of_not_mem, hw_ne]
+          ext x
+          simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+          constructor
+          · intro hx
+            -- x is in a 2-element set containing w1, w2
+            by_cases h1 : x = w1
+            · left; exact h1
+            by_cases h2 : x = w2
+            · right; exact h2
+            -- x is a third distinct element, contradiction
+            exfalso
+            have : x ∈ (W.filter (G.Adj s)).erase w1 := Finset.mem_erase.mpr ⟨h1, hx⟩
+            have : x ∈ ((W.filter (G.Adj s)).erase w1).erase w2 := Finset.mem_erase.mpr ⟨h2, this⟩
+            have h_erase_card : ((W.filter (G.Adj s)).erase w1).card = 1 := by
+              have := Finset.card_erase_of_mem h_w1_in
+              omega
+            have : ((W.filter (G.Adj s)).erase w1).erase w2 = ∅ := by
+              have h_w2_in_erase : w2 ∈ (W.filter (G.Adj s)).erase w1 := by
+                exact Finset.mem_erase.mpr ⟨hw_ne, h_w2_in⟩
+              have : (W.filter (G.Adj s)).erase w1 = {w2} := by
+                exact Finset.card_eq_one.mp h_erase_card ▸ Finset.singleton_eq_singleton_iff.mpr h_w2_in_erase
+              simp [this]
+            rw [this] at this
+            exact Finset.not_mem_empty x this
+          · intro h
+            cases h with
+            | inl h => rw [h]; exact h_w1_in
+            | inr h => rw [h]; exact h_w2_in
+        -- Now we have a contradiction: w1 and w2 are both in W, distinct, and both adjacent to ALL of s's S-neighbors
+        -- Take another S-neighbor of w1 (it has 2 total)
+        have h_w1_has_two : (G.neighborFinset w1 ∩ S).card = 2 := hW_two_S_nbrs w1 hw1
+        rw [h_eq1] at h_w1_has_two
+        -- So {s1a, s2a} has 2 elements, meaning s1a ≠ s2a
+        -- One of them is s (say s1a = s or s2a = s)
+        have h_s_in : s ∈ {s1a, s2a} := by rw [← h_eq1]; exact hs
+        simp only [Finset.mem_insert, Finset.mem_singleton] at h_s_in
+        -- Let s' be the other S-neighbor of w1
+        let s' := if s = s1a then s2a else s1a
+        have hs'_ne : s' ≠ s := by
+          simp only [s']
+          split_ifs with h
+          · have hs12_ne : s1a ≠ s2a := by
+              have : ({s1a, s2a} : Finset (Fin 18)).card = 2 := by rw [← h_eq1]; exact h_w1_has_two
+              simp at this
+              cases this with
+              | inl h => norm_num at h
+              | inr h => exact h.1
+            intro h'; exact hs12_ne (h ▸ h')
+          · intro h'; subst h'; simp at h
+        have hs'_in_pair : s' ∈ {s1a, s2a} := by
+          simp only [s']
+          split_ifs with h
+          · right; rfl
+          · left; rfl
+        -- s' is an S-neighbor of w1
+        have hs'_adj_w1 : s' ∈ G.neighborFinset w1 ∩ S := by
+          rw [h_eq1]; exact hs'_in_pair
+        -- But w1 and w2 have the SAME S-neighbors, so s' is also adjacent to w2
+        have hs'_adj_w2 : s' ∈ G.neighborFinset w2 ∩ S := by
+          rw [← this]; exact hs'_adj_w1
+        -- Now s' has at least 2 W-neighbors: w1 and w2 (distinct)
+        -- But we also know s' has EXACTLY 2 W-neighbors total
+        have hs'_S : s' ∈ S := (Finset.mem_inter.mp hs'_adj_w1).2
+        have hs'_two_W : (G.neighborFinset s' ∩ W).card = 2 := hS_two_W_nbrs s' hs'_S
+        -- So s''s W-neighbors are exactly {w1, w2}
+        -- This means w1 and w2 share TWO common S-neighbors: s and s'
+        -- But this uses up all of w1's S-degree (which is 2) and all of w2's S-degree (which is 2)
+        -- So w1 and w2 have the exact same neighborhood, which in an injective bipartite graph means w1 = w2
+        -- This contradicts our assumption that w1 ≠ w2
+        simp
+      -- Therefore |pairs| = |W.attach| = |W| = 4
+      calc pairs.card
+          = W.attach.card := Finset.card_image_of_injective h_inj
+        _ = W.card := Finset.card_attach
+        _ = hW_card
+    · -- Each pair has the required form
+      intro pair hpair
+      simp only [pairs, Finset.mem_image, Finset.mem_attach] at hpair
+      obtain ⟨⟨w, hw⟩, _, h_pair_eq⟩ := hpair
+      obtain ⟨s1, s2, hs12_ne, hs1_S, hs2_S, hs1_adj, hs2_adj, h_eq⟩ := h_w_has_two_S w hw
+      use s1, s2, w
+      exact ⟨h_pair_eq, hs1_S, hs2_S, hs12_ne, hw, hs1_adj, hs2_adj⟩
 
   obtain ⟨pairs, hpairs_card, hpairs_prop⟩ := h_four_pairs
 
