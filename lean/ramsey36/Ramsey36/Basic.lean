@@ -2868,7 +2868,109 @@ lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           _ = 8 := by simp [hP_card]
       omega
 
-    sorry -- Complete triangle existence from degree-3 vertex
+    -- Complete triangle: v has ≥3 neighbors, 2 more edges among them
+    obtain ⟨v, hv, h_v_deg⟩ := h_deg_3
+
+    -- v has at least 3 neighbors in P
+    let v_nbrs := P.filter (fun u => u ≠ v ∧ G.Adj v u)
+    have hv_nbrs_card : v_nbrs.card ≥ 3 := h_v_deg
+
+    -- Get 3 neighbors of v
+    have hv_nbrs_ne : v_nbrs.Nonempty := by
+      rw [Finset.nonempty_iff_ne_empty]
+      intro h
+      rw [h, Finset.card_empty] at hv_nbrs_card
+      omega
+
+    -- Extract 3 distinct neighbors
+    obtain ⟨a, ha_v_nbrs⟩ := hv_nbrs_ne
+    have ha : a ∈ P := by simp only [v_nbrs, Finset.mem_filter] at ha_v_nbrs; exact ha_v_nbrs.1
+    have hav_ne : a ≠ v := by simp only [v_nbrs, Finset.mem_filter] at ha_v_nbrs; exact ha_v_nbrs.2.1
+    have hav_adj : G.Adj v a := by simp only [v_nbrs, Finset.mem_filter] at ha_v_nbrs; exact ha_v_nbrs.2.2
+
+    have hv_nbrs1 : (v_nbrs \ {a}).card ≥ 2 := by
+      have : v_nbrs.card = (v_nbrs \ {a}).card + 1 := by
+        rw [Finset.card_sdiff (Finset.singleton_subset_iff.mpr ha_v_nbrs)]
+        simp
+      omega
+
+    have hv_nbrs1_ne : (v_nbrs \ {a}).Nonempty := by
+      rw [Finset.nonempty_iff_ne_empty]
+      intro h
+      rw [h, Finset.card_empty] at hv_nbrs1
+      omega
+
+    obtain ⟨b, hb_v_nbrs1⟩ := hv_nbrs1_ne
+    have hb : b ∈ P := by
+      have : b ∈ v_nbrs := Finset.mem_of_mem_diff hb_v_nbrs1
+      simp only [v_nbrs, Finset.mem_filter] at this; exact this.1
+    have hbv_ne : b ≠ v := by
+      have : b ∈ v_nbrs := Finset.mem_of_mem_diff hb_v_nbrs1
+      simp only [v_nbrs, Finset.mem_filter] at this; exact this.2.1
+    have hbv_adj : G.Adj v b := by
+      have : b ∈ v_nbrs := Finset.mem_of_mem_diff hb_v_nbrs1
+      simp only [v_nbrs, Finset.mem_filter] at this; exact this.2.2
+    have hab_ne : a ≠ b := by
+      simp only [Finset.mem_sdiff, Finset.mem_singleton] at hb_v_nbrs1; exact hb_v_nbrs1.2
+
+    have hv_nbrs2 : (v_nbrs \ {a, b}).card ≥ 1 := by
+      have : (v_nbrs \ {a}).card = (v_nbrs \ {a, b}).card + 1 := by
+        rw [Finset.card_sdiff]
+        · simp
+          intro h
+          cases h <;> (subst_vars; contradiction)
+        · intro x
+          simp only [Finset.mem_insert, Finset.mem_singleton]
+          intro h
+          cases h with
+          | inl h => exact h ▸ (Finset.mem_of_mem_diff hb_v_nbrs1)
+          | inr h => exact h ▸ hb_v_nbrs1.1
+      omega
+
+    have hv_nbrs2_ne : (v_nbrs \ {a, b}).Nonempty := by
+      rw [Finset.nonempty_iff_ne_empty]
+      intro h
+      rw [h, Finset.card_empty] at hv_nbrs2
+      omega
+
+    obtain ⟨c, hc_v_nbrs2⟩ := hv_nbrs2_ne
+    have hc : c ∈ P := by
+      have : c ∈ v_nbrs := by
+        have := Finset.mem_of_mem_diff hc_v_nbrs2
+        exact Finset.mem_of_mem_diff this
+      simp only [v_nbrs, Finset.mem_filter] at this; exact this.1
+    have hcv_ne : c ≠ v := by
+      have : c ∈ v_nbrs := by
+        have := Finset.mem_of_mem_diff hc_v_nbrs2
+        exact Finset.mem_of_mem_diff this
+      simp only [v_nbrs, Finset.mem_filter] at this; exact this.2.1
+    have hcv_adj : G.Adj v c := by
+      have : c ∈ v_nbrs := by
+        have := Finset.mem_of_mem_diff hc_v_nbrs2
+        exact Finset.mem_of_mem_diff this
+      simp only [v_nbrs, Finset.mem_filter] at this; exact this.2.2
+    have hac_ne : a ≠ c := by
+      have := Finset.mem_of_mem_diff hc_v_nbrs2
+      simp only [Finset.mem_sdiff, Finset.mem_insert, Finset.mem_singleton] at this
+      exact this.2.1
+    have hbc_ne : b ≠ c := by
+      simp only [Finset.mem_sdiff, Finset.mem_insert, Finset.mem_singleton] at hc_v_nbrs2
+      exact hc_v_nbrs2.2.2
+
+    -- Now: v connects to a, b, c (3 edges from v)
+    -- Total edges in E_P ≥ 5
+    -- So among {a, b, c}, there are ≥ 5-3 = 2 edges
+    -- With 3 vertices and 2 edges, forms a triangle
+
+    -- Count edges among {a, b, c}
+    let abc_edges := E_P.filter (fun e => e.1 ∈ ({a, b, c} : Finset (Fin 18)) ∧ e.2 ∈ ({a, b, c} : Finset (Fin 18)))
+
+    -- Use pigeonhole: 3 vertices with 2 edges must form triangle
+    -- Since 3 vertices can have at most C(3,2) = 3 edges total
+    -- With 2 edges, either forms triangle or misses 1 edge
+    -- But we can show must form triangle by case analysis
+
+    sorry -- Complete the pigeonhole argument: 3 vertices, 2 edges → triangle
 
   obtain ⟨a, b, c, ha, hb, hc, hab_ne, hbc_ne, hac_ne, hab, hbc, hac⟩ := h_triangle
 
