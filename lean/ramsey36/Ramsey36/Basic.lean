@@ -1756,9 +1756,63 @@ lemma P_has_at_least_two_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (hP_card : P.card = 4)
     (hP_props : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) :
     2 ≤ (P.filter (fun p₁ => (P.filter (fun p₂ => p₁ ≠ p₂ ∧ G.Adj p₁ p₂)).Nonempty)).card := by
-  -- The S-W bipartite graph has at least 2 connected components means at least 2 pairs
-  -- share W-neighbors, giving at least 2 P-edges by p_adjacent_of_shared_w
-  sorry
+  -- Key insight: if P has ANY edge, then ≥2 vertices have nonempty neighborhoods
+  -- So we just need to show P is not an independent set
+
+  -- Assume P is independent (no edges)
+  by_contra h_not
+  push_neg at h_not
+
+  -- If P has ≤1 vertex with neighbors in P, then P has ≤ 3 edges
+  -- But we'll show P must have ≥1 edge, giving the result
+
+  -- If P is independent, we can find a 6-IS
+  have h_P_indep : G.IsIndepSet (P : Set (Fin 18)) := by
+    intro x hx y hy hxy h_adj
+    -- x, y ∈ P and x ≠ y
+    have : (P.filter (fun p₂ => p₂ ≠ x ∧ G.Adj x p₂)).Nonempty := by
+      use y
+      simp only [mem_filter]
+      exact ⟨hy, hxy, h_adj⟩
+    -- So x has a nonempty P-neighborhood
+    have hx_in_filter : x ∈ P.filter (fun p₁ => (P.filter (fun p₂ => p₁ ≠ p₂ ∧ G.Adj p₁ p₂)).Nonempty) := by
+      simp only [mem_filter]
+      exact ⟨hx, this⟩
+    -- But then the filtered set has ≥1 element, so ≥2 by the bound
+    have : 1 ≤ (P.filter (fun p₁ => (P.filter (fun p₂ => p₁ ≠ p₂ ∧ G.Adj p₁ p₂)).Nonempty)).card := by
+      apply Finset.one_le_card_iff_ne_empty.mpr
+      intro h_empty
+      rw [h_empty] at hx_in_filter
+      exact Finset.not_mem_empty x hx_in_filter
+    omega
+
+  -- P is a 4-IS, extend to 6-IS by adding v and one vertex from Q
+  -- {v} ∪ P is already a 5-IS (v non-adjacent to all of P)
+  have h_vP_indep : G.IsIndepSet (insert v (P : Set (Fin 18))) := by
+    intro x hx y hy hxy h_adj
+    simp only [Set.mem_insert_iff] at hx hy
+    cases hx with
+    | inl hx_v =>
+      cases hy with
+      | inl hy_v => exact hxy (hx_v.trans hy_v.symm)
+      | inr hy_P =>
+        subst hx_v
+        have ⟨hp_nonadj, _⟩ := hP_props y hy_P
+        exact hp_nonadj h_adj
+    | inr hx_P =>
+      cases hy with
+      | inl hy_v =>
+        subst hy_v
+        have ⟨hp_nonadj, _⟩ := hP_props x hx_P
+        exact hp_nonadj (G.symm h_adj)
+      | inr hy_P =>
+        exact h_P_indep hx_P hy_P hxy h_adj
+
+  -- Need to find q ∈ Q non-adjacent to all of P ∪ {v}
+  -- Use degree counting: if P is independent, each p has 4 Q-neighbors
+  -- Total 16 P-Q edges, but Q has 8 vertices and degree constraints
+
+  sorry -- Find q ∈ Q to complete 6-IS, uses degree counting + s_has_three_Q_neighbors
 
 /-- The induced subgraph on P has at most 4 edges (P is not K₄).
 Proof: If P had ≥ 5 edges, handshaking gives sum of P-degrees ≥ 10.
