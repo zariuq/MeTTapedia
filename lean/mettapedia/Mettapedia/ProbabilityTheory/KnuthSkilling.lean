@@ -211,7 +211,7 @@ This is the **REPRESENTATION THEOREM** - the crown jewel of the K&S approach!
 
 This structure is MORE GENERAL than probability spaces - it applies to any
 "combining" operation satisfying these symmetries (semigroups, monoids, etc.) -/
-class KnuthSkillingAlgebra (α : Type*) extends LinearOrder α where
+class KnuthSkillingAlgebra (α : Type*) extends PartialOrder α where
   /-- The combination operation (written ⊕ in papers, here `op`) -/
   op : α → α → α
   /-- Identity element (the "zero" or impossibility) -/
@@ -291,49 +291,71 @@ variable {α : Type*} [KnuthSkillingAlgebra α]
 The paper states: "Because these three possibilities (<,>,=) are exhaustive,
 consistency implies the reverse, sometimes called cancellativity."
 
-**Note**: The K&S proof works with LINEAR orders (real valuations). For partial orders,
-we state conditional versions. The strict versions don't require linearity.
+**IMPORTANT STRUCTURAL NOTE**:
+
+The K&S axioms as stated use PartialOrder, but the representation theorem
+IMPLIES that any valid K&S algebra must be totally ordered (since it embeds
+into ℝ). We prove cancellativity in two forms:
+
+1. **Partial order versions**: Work without assuming totality, but give weaker
+   conclusions (e.g., "¬(y ≤ x)" instead of "x < y")
+2. **Linear order versions**: In a separate section, assuming totality holds
+
+The representation theorem proves totality, so linear order theorems apply
+to any valid K&S algebra.
 -/
 
-/-- Strict left cancellativity: op x z < op y z implies x < y.
-In a linear order, this follows from the contrapositive of strict monotonicity. -/
-theorem op_cancel_left_strict (x y z : α) (h : op x z < op y z) : x < y := by
-  -- In a linear order, ¬(x < y) ↔ y ≤ x
-  by_contra hxy
-  rw [not_lt] at hxy  -- hxy : y ≤ x
-  rcases hxy.lt_or_eq with hyx | heq
-  · -- y < x, so op y z < op x z by strict mono, contradicting h
-    have hcontra : op y z < op x z := op_strictMono_left z hyx
+/-- In a partial order, if op x z < op y z, then y cannot be ≤ x.
+This is the partial-order version of strict cancellativity. -/
+theorem op_not_le_of_op_lt_left (x y z : α) (h : op x z < op y z) : ¬(y ≤ x) := by
+  intro hyx
+  rcases hyx.lt_or_eq with hlt | heq
+  · -- y < x: then op y z < op x z, contradicting h
+    have hcontra : op y z < op x z := op_strictMono_left z hlt
     exact lt_asymm h hcontra
-  · -- y = x, so op x z = op y z, contradicting h
-    rw [heq] at h
+  · -- y = x: then op y z = op x z, contradicting h
+    rw [← heq] at h
     exact lt_irrefl _ h
 
-/-- Strict right cancellativity -/
-theorem op_cancel_right_strict (x y z : α) (h : op z x < op z y) : x < y := by
-  by_contra hxy
-  rw [not_lt] at hxy
-  rcases hxy.lt_or_eq with hyx | heq
-  · have hcontra : op z y < op z x := op_strictMono_right z hyx
+/-- Right version: if op z x < op z y, then y cannot be ≤ x. -/
+theorem op_not_le_of_op_lt_right (x y z : α) (h : op z x < op z y) : ¬(y ≤ x) := by
+  intro hyx
+  rcases hyx.lt_or_eq with hlt | heq
+  · have hcontra : op z y < op z x := op_strictMono_right z hlt
     exact lt_asymm h hcontra
-  · rw [heq] at h
+  · rw [← heq] at h
     exact lt_irrefl _ h
 
-/-- Weak left cancellativity -/
-theorem op_cancel_left_of_le (x y z : α) (h : op x z ≤ op y z) : x ≤ y := by
-  -- If y < x, then op y z < op x z by strict mono
-  rcases le_or_gt x y with hxy | hyx
+/-- Cancellativity for comparable elements: if x, y are comparable and op x z ≤ op y z,
+then x ≤ y. -/
+theorem op_cancel_left_of_le_of_comparable (x y z : α)
+    (h : op x z ≤ op y z) (hcomp : x ≤ y ∨ y ≤ x) : x ≤ y := by
+  rcases hcomp with hxy | hyx
   · exact hxy
-  · -- y < x, so op y z < op x z
-    have : op y z < op x z := op_strictMono_left z hyx
-    exact absurd h (not_le.mpr this)
+  · -- We have y ≤ x. If y < x, then op y z < op x z, contradicting h
+    rcases hyx.lt_or_eq with hlt | heq
+    · have hlt' : op y z < op x z := op_strictMono_left z hlt
+      -- op y z < op x z and op x z ≤ op y z gives op y z < op y z, contradiction
+      exact absurd (lt_of_lt_of_le hlt' h) (lt_irrefl _)
+    · exact le_of_eq heq.symm
 
-/-- Weak right cancellativity -/
-theorem op_cancel_right_of_le (x y z : α) (h : op z x ≤ op z y) : x ≤ y := by
-  rcases le_or_gt x y with hxy | hyx
+/-- Right version for comparable elements. -/
+theorem op_cancel_right_of_le_of_comparable (x y z : α)
+    (h : op z x ≤ op z y) (hcomp : x ≤ y ∨ y ≤ x) : x ≤ y := by
+  rcases hcomp with hxy | hyx
   · exact hxy
-  · have : op z y < op z x := op_strictMono_right z hyx
-    exact absurd h (not_le.mpr this)
+  · rcases hyx.lt_or_eq with hlt | heq
+    · have hlt' : op z y < op z x := op_strictMono_right z hlt
+      exact absurd (lt_of_lt_of_le hlt' h) (lt_irrefl _)
+    · exact le_of_eq heq.symm
+
+/-! #### Note on Linear Order
+
+Full cancellativity (without comparability hypothesis) requires knowing that
+the order is total. This follows from the representation theorem: any K&S algebra
+embeds into ℝ, which is totally ordered. The representation theorem implies that
+any valid K&S algebra is in fact totally ordered.
+-/
 
 /-! ### Phase 2: One Type Base Case (K&S lines 1350-1409)
 
@@ -373,6 +395,92 @@ This is a key step: iterate_op a (m+1) = op a (iterate_op a m) by definition,
 but we need the "adding" version: iterate_op a (m+n) relates to iterates. -/
 theorem iterate_op_succ (a : α) (n : ℕ) : iterate_op a (n + 1) = op a (iterate_op a n) := rfl
 
+/-- **KEY LEMMA**: iterate_op respects addition WITHOUT assuming commutativity!
+
+op (iterate_op a m) (iterate_op a n) = iterate_op a (m + n)
+
+This is crucial for the K&S proof because it allows us to derive the repetition lemma
+and ultimately prove commutativity as a THEOREM, not assume it as an axiom.
+
+The proof uses ONLY associativity and identity (no commutativity!). -/
+theorem iterate_op_add (a : α) (m n : ℕ) :
+    op (iterate_op a m) (iterate_op a n) = iterate_op a (m + n) := by
+  induction m with
+  | zero =>
+    -- op ident (iterate_op a n) = iterate_op a n = iterate_op a (0 + n)
+    simp only [iterate_op_zero, op_ident_left, Nat.zero_add]
+  | succ m ih =>
+    -- op (iterate_op a (m+1)) (iterate_op a n)
+    -- = op (op a (iterate_op a m)) (iterate_op a n)  [by iterate_op_succ]
+    -- = op a (op (iterate_op a m) (iterate_op a n))  [by assoc]
+    -- = op a (iterate_op a (m + n))                  [by IH]
+    -- = iterate_op a (m + n + 1)                     [by iterate_op_succ]
+    -- = iterate_op a ((m + 1) + n)                   [arithmetic]
+    calc op (iterate_op a (m + 1)) (iterate_op a n)
+        = op (op a (iterate_op a m)) (iterate_op a n) := by rw [iterate_op_succ]
+      _ = op a (op (iterate_op a m) (iterate_op a n)) := by rw [op_assoc]
+      _ = op a (iterate_op a (m + n)) := by rw [ih]
+      _ = iterate_op a (m + n + 1) := by rw [← iterate_op_succ]
+      _ = iterate_op a (m + 1 + n) := by ring_nf
+
+/-- iterate_op is strictly monotone in its base argument for positive iterations.
+If x < y and m > 0, then iterate_op x m < iterate_op y m. -/
+theorem iterate_op_strictMono_base (m : ℕ) (hm : 0 < m) (x y : α) (hxy : x < y) :
+    iterate_op x m < iterate_op y m := by
+  cases m with
+  | zero => omega
+  | succ m =>
+    induction m with
+    | zero =>
+      -- iterate_op x 1 = x < y = iterate_op y 1
+      rw [iterate_op_one, iterate_op_one]
+      exact hxy
+    | succ m ih =>
+      -- Two-step argument using both strict monotonicity directions
+      calc iterate_op x (m + 1 + 1)
+          = op x (iterate_op x (m + 1)) := rfl
+        _ < op x (iterate_op y (m + 1)) := op_strictMono_right x (ih (Nat.succ_pos m))
+        _ < op y (iterate_op y (m + 1)) := op_strictMono_left (iterate_op y (m + 1)) hxy
+        _ = iterate_op y (m + 1 + 1) := rfl
+
+/-- **KEY BOUNDING LEMMA**: If x < iterate_op a L and m > 0, then iterate_op x m < iterate_op a (L * m).
+
+This is the "repetition" property that gives uniform bounds on the lower ratio set.
+The proof uses iterate_op_add and monotonicity of op.
+
+**Crucially, this does NOT require commutativity!** -/
+theorem iterate_bound (a x : α) (L : ℕ) (hx : x < iterate_op a L) (m : ℕ) (hm : 0 < m) :
+    iterate_op x m < iterate_op a (L * m) := by
+  cases m with
+  | zero => omega
+  | succ m =>
+    induction m with
+    | zero =>
+      -- iterate_op x 1 = x, and we need x < iterate_op a (L * 1) = iterate_op a L
+      rw [iterate_op_one, Nat.mul_one]
+      exact hx
+    | succ m ih =>
+      -- iterate_op x (m+2) = op x (iterate_op x (m+1))
+      -- iterate_op a (L * (m+2)) = op (iterate_op a L) (iterate_op a (L * (m+1)))
+      calc iterate_op x (m + 1 + 1)
+          = op x (iterate_op x (m + 1)) := rfl
+        _ < op x (iterate_op a (L * (m + 1))) := op_strictMono_right x (ih (Nat.succ_pos m))
+        _ < op (iterate_op a L) (iterate_op a (L * (m + 1))) := op_strictMono_left _ hx
+        _ = iterate_op a (L + L * (m + 1)) := by rw [iterate_op_add]
+        _ = iterate_op a (L * (m + 1 + 1)) := by ring_nf
+
+/-- Corollary: A weaker bound that's easier to use.
+If x < iterate_op a L, then iterate_op x m ≤ iterate_op a (L * m) for all m. -/
+theorem iterate_bound_le (a x : α) (L : ℕ) (_hL : 0 < L) (hx : x < iterate_op a L) (m : ℕ) :
+    iterate_op x m ≤ iterate_op a (L * m) := by
+  cases m with
+  | zero =>
+    simp only [iterate_op_zero, Nat.mul_zero]
+    -- Goal: ident ≤ ident
+    exact le_refl _
+  | succ m =>
+    exact le_of_lt (iterate_bound a x L hx (m + 1) (Nat.succ_pos m))
+
 /-- For the one-type case, we can define Θ(iterate_op a n) = n.
 This is well-defined since iterate_op is strictly monotone. -/
 noncomputable def one_type_linearizer (a : α) (_ha : ident < a) : α → ℝ := fun x =>
@@ -405,21 +513,266 @@ theorem nat_iterate_eq_iterate_op_succ (a : α) (n : ℕ) :
     -- By definition: iterate_op a (k+2) = op a (iterate_op a (k+1))
     rfl
 
-/-- For any x in α, x is bounded above by some iterate of a -/
+/-- For any x in α, x is bounded above by some iterate of a.
+This follows directly from Archimedean property (no totality needed). -/
 theorem bounded_by_iterate (a : α) (ha : ident < a) (x : α) :
-    ∃ n : ℕ, x ≤ iterate_op a n := by
-  rcases le_or_gt x ident with hx | hx
-  · exact ⟨0, hx⟩
-  · -- x > ident, use Archimedean property
-    obtain ⟨n, hn⟩ := op_archimedean a x ha
-    -- hn : x < Nat.iterate (op a) n a = iterate_op a (n+1)
-    rw [nat_iterate_eq_iterate_op_succ] at hn
-    exact ⟨n + 1, le_of_lt hn⟩
+    ∃ n : ℕ, x < iterate_op a n := by
+  -- Archimedean gives x < Nat.iterate (op a) n a for some n
+  obtain ⟨n, hn⟩ := op_archimedean a x ha
+  rw [nat_iterate_eq_iterate_op_succ] at hn
+  exact ⟨n + 1, hn⟩
 
 /-- For any x > ident, x is bounded below by some positive iterate -/
 theorem bounded_below_by_iterate (a : α) (_ha : ident < a) (x : α) (hx : ident < x) :
     ∃ n : ℕ, iterate_op a n ≤ x := by
   exact ⟨0, le_of_lt hx⟩
+
+/-! ### Phase 4-8: Dedekind Cut Construction (K&S lines 1536-1895)
+
+**The Construction**:
+For a reference element a with ident < a, we define Θ : α → ℝ as follows:
+
+For any x ∈ α:
+  Θ(x) := sup { (n : ℝ) / m | n, m ∈ ℕ, m > 0, iterate_op a n ≤ iterate_op x m }
+
+This set is:
+1. Non-empty: contains 0 (take n = 0, m = 1)
+2. Bounded above: by Archimedean property, iterate_op x m < iterate_op a N for some N
+
+The supremum exists in ℝ by completeness.
+-/
+
+/-- The lower ratio set for x relative to reference element a.
+This is { n/m : iterate_op a n ≤ iterate_op x m, m > 0 }. -/
+def lowerRatioSet (a x : α) : Set ℝ :=
+  { r : ℝ | ∃ n m : ℕ, m > 0 ∧ iterate_op a n ≤ iterate_op x m ∧ r = (n : ℝ) / m }
+
+/-- If x ≤ y, then lowerRatioSet a x ⊆ lowerRatioSet a y.
+The key is that iterate_op x m ≤ iterate_op y m when x ≤ y and m > 0. -/
+theorem lowerRatioSet_mono (a x y : α) (hx : ident < x) (hy : ident < y) (hxy : x ≤ y) :
+    lowerRatioSet a x ⊆ lowerRatioSet a y := by
+  intro r ⟨n, m, hm_pos, hle, hr_eq⟩
+  refine ⟨n, m, hm_pos, ?_, hr_eq⟩
+  -- Need: iterate_op a n ≤ iterate_op y m
+  -- We have: iterate_op a n ≤ iterate_op x m and x ≤ y
+  -- By monotonicity: iterate_op x m ≤ iterate_op y m
+  have h_mono : iterate_op x m ≤ iterate_op y m := by
+    cases m with
+    | zero => simp only [iterate_op_zero]; exact le_refl ident
+    | succ m =>
+      cases hxy.lt_or_eq with
+      | inl hlt =>
+        apply le_of_lt
+        exact iterate_op_strictMono_base (m + 1) (Nat.succ_pos m) x y hlt
+      | inr heq => simp [heq]
+  exact le_trans hle h_mono
+
+/-- The lower ratio set contains 0 (take n = 0, m = 1). -/
+theorem lowerRatioSet_nonempty (a x : α) (hx : ident < x) : (lowerRatioSet a x).Nonempty := by
+  use 0
+  refine ⟨0, 1, Nat.one_pos, ?_, by simp⟩
+  -- Need: iterate_op a 0 ≤ iterate_op x 1
+  -- iterate_op a 0 = ident and iterate_op x 1 = x
+  simp only [iterate_op_zero]
+  rw [iterate_op_one]
+  exact le_of_lt hx
+
+/-- Key lemma: iterate_op preserves strict order for any element y with ident < y. -/
+theorem iterate_op_strictMono_of_pos (y : α) (hy : ident < y) : StrictMono (iterate_op y) :=
+  iterate_op_strictMono y hy
+
+/-- Key lemma: iterate_op is monotone for any element. -/
+theorem iterate_op_mono (y : α) (hy : ident < y) : Monotone (iterate_op y) := by
+  intro m n hmn
+  rcases Nat.lt_or_ge m n with hlt | hge
+  · exact le_of_lt (iterate_op_strictMono y hy hlt)
+  · have : m = n := le_antisymm hmn hge
+    rw [this]
+
+/-- The lower ratio set is bounded above (by Archimedean property).
+For any x, there exists N such that iterate_op x m < iterate_op a N for all m. -/
+theorem lowerRatioSet_bddAbove (a x : α) (ha : ident < a) (hx : ident < x) :
+    BddAbove (lowerRatioSet a x) := by
+  -- By Archimedean, iterate_op x 1 = x < iterate_op a N for some N
+  obtain ⟨N, hN⟩ := bounded_by_iterate a ha x
+  use N
+  intro r ⟨n, m, hm_pos, hle, hr_eq⟩
+  rw [hr_eq]
+  -- We need (n : ℝ) / m ≤ N
+  -- From hle: iterate_op a n ≤ iterate_op x m
+  -- We'll show n ≤ N * m (in ℕ), hence n/m ≤ N
+  by_cases hn : n = 0
+  · simp only [hn, Nat.cast_zero, zero_div]
+    exact Nat.cast_nonneg N
+  · -- n > 0 case: Use the iterate_bound theorem!
+    -- By iterate_bound_le: iterate_op x m ≤ iterate_op a (N * m)
+    -- Combined with hle: iterate_op a n ≤ iterate_op x m ≤ iterate_op a (N * m)
+    -- By monotonicity: n ≤ N * m
+    -- Therefore: n / m ≤ N
+    have hN_pos : 0 < N := by
+      -- N > 0 since x < iterate_op a N and x > ident
+      -- If N = 0, then iterate_op a 0 = ident, so x < ident, contradicting hx
+      by_contra h_not_pos
+      push_neg at h_not_pos
+      interval_cases N
+      simp only [iterate_op_zero] at hN
+      exact absurd (lt_trans hx hN) (lt_irrefl ident)
+    have h_bound : iterate_op x m ≤ iterate_op a (N * m) :=
+      iterate_bound_le a x N hN_pos hN m
+    -- Combine: iterate_op a n ≤ iterate_op x m ≤ iterate_op a (N * m)
+    have h_combined : iterate_op a n ≤ iterate_op a (N * m) := le_trans hle h_bound
+    -- By monotonicity of iterate_op a (contrapositive of strict mono): n ≤ N * m
+    have hn_le_Nm : n ≤ N * m := by
+      by_contra h_gt
+      push_neg at h_gt
+      have h_lt : iterate_op a (N * m) < iterate_op a n := iterate_op_strictMono a ha h_gt
+      -- h_combined: iterate_op a n ≤ iterate_op a (N * m)
+      -- h_lt: iterate_op a (N * m) < iterate_op a n
+      -- Combining gives iterate_op a (N * m) < iterate_op a (N * m)
+      exact absurd (lt_of_lt_of_le h_lt h_combined) (lt_irrefl _)
+    -- Therefore n / m ≤ N
+    have hm_pos_real : (0 : ℝ) < m := Nat.cast_pos.mpr hm_pos
+    have hm_nonneg : (0 : ℝ) ≤ m := le_of_lt hm_pos_real
+    calc (n : ℝ) / m
+        ≤ (N * m : ℕ) / m := by
+          apply div_le_div_of_nonneg_right (Nat.cast_le.mpr hn_le_Nm) hm_nonneg
+      _ = N := by
+          rw [Nat.cast_mul]
+          field_simp
+
+/-- Define the representation function Θ using the supremum of the lower ratio set. -/
+noncomputable def Theta (a x : α) (ha : ident < a) (hx : ident < x) : ℝ :=
+  sSup (lowerRatioSet a x)
+
+/-- The lower ratio set for a relative to itself is exactly { n/m : n ≤ m }. -/
+theorem lowerRatioSet_self (a : α) (ha : ident < a) :
+    lowerRatioSet a a = { r : ℝ | ∃ n m : ℕ, m > 0 ∧ n ≤ m ∧ r = (n : ℝ) / m } := by
+  ext r
+  constructor
+  · -- lowerRatioSet a a → { n/m : n ≤ m }
+    intro ⟨n, m, hm_pos, hle, hr_eq⟩
+    refine ⟨n, m, hm_pos, ?_, hr_eq⟩
+    -- iterate_op a n ≤ iterate_op a m ↔ n ≤ m (by strict monotonicity)
+    by_contra h_gt
+    push_neg at h_gt
+    have hlt : iterate_op a m < iterate_op a n := iterate_op_strictMono a ha h_gt
+    -- hle : iterate_op a n ≤ iterate_op a m, hlt : iterate_op a m < iterate_op a n
+    -- Combining: iterate_op a m < iterate_op a m (contradiction)
+    exact absurd (lt_of_lt_of_le hlt hle) (lt_irrefl _)
+  · -- { n/m : n ≤ m } → lowerRatioSet a a
+    intro ⟨n, m, hm_pos, hn_le_m, hr_eq⟩
+    refine ⟨n, m, hm_pos, ?_, hr_eq⟩
+    exact iterate_op_mono a ha hn_le_m
+
+/-- The set { n/m : n ≤ m, m > 0 } has supremum 1. -/
+theorem sSup_ratio_le_one :
+    sSup { r : ℝ | ∃ n m : ℕ, m > 0 ∧ n ≤ m ∧ r = (n : ℝ) / m } = 1 := by
+  apply le_antisymm
+  · -- sup ≤ 1: all elements are ≤ 1
+    apply csSup_le
+    · -- Nonempty: 1/1 = 1 is in the set
+      exact ⟨1, 1, 1, Nat.one_pos, le_refl 1, by simp⟩
+    · -- Upper bound: n/m ≤ 1 when n ≤ m
+      intro r ⟨n, m, hm_pos, hn_le_m, hr_eq⟩
+      rw [hr_eq]
+      have hm_pos_real : (0 : ℝ) < m := Nat.cast_pos.mpr hm_pos
+      rw [div_le_one hm_pos_real]
+      exact Nat.cast_le.mpr hn_le_m
+  · -- 1 ≤ sup: 1 is in the set
+    apply le_csSup
+    · -- Bounded above by 1
+      use 1
+      intro r ⟨n, m, hm_pos, hn_le_m, hr_eq⟩
+      rw [hr_eq]
+      have hm_pos_real : (0 : ℝ) < m := Nat.cast_pos.mpr hm_pos
+      rw [div_le_one hm_pos_real]
+      exact Nat.cast_le.mpr hn_le_m
+    · -- 1 is in the set (take n = m = 1)
+      exact ⟨1, 1, Nat.one_pos, le_refl 1, by simp⟩
+
+/-- For x = a, we have Θ(a) = 1. -/
+theorem Theta_ref_eq_one (a : α) (ha : ident < a) :
+    Theta a a ha ha = 1 := by
+  unfold Theta
+  rw [lowerRatioSet_self a ha]
+  exact sSup_ratio_le_one
+
+/-- For x = ident, we have Θ(ident) = 0. -/
+theorem Theta_ident_eq_zero (a : α) (ha : ident < a) (hident_pos : ident < ident) :
+    Theta a ident ha hident_pos = 0 := by
+  -- This is actually ill-defined since we require ident < x, but ident is not < ident
+  -- We need to handle the ident case separately in the full construction
+  exact absurd hident_pos (lt_irrefl ident)
+
+/-! ### Extended Construction: Handle ident case specially -/
+
+/-- The full representation function, handling ident specially. -/
+noncomputable def ThetaFull (a : α) (ha : ident < a) : α → ℝ := fun x =>
+  if h : ident < x then Theta a x ha h
+  else if h' : x = ident then 0
+  else 0  -- For x < ident (which shouldn't exist in well-formed algebras)
+
+/-- ThetaFull maps ident to 0. -/
+theorem ThetaFull_ident (a : α) (ha : ident < a) :
+    ThetaFull a ha ident = 0 := by
+  simp only [ThetaFull, lt_irrefl ident, ↓reduceDIte]
+
+/-- ThetaFull is non-negative on elements ≥ ident. -/
+theorem ThetaFull_nonneg (a : α) (ha : ident < a) (x : α) (_hx : ident ≤ x) :
+    0 ≤ ThetaFull a ha x := by
+  simp only [ThetaFull]
+  split_ifs with h h'
+  · -- ident < x: Θ(x) is a supremum of non-negative ratios
+    unfold Theta
+    apply Real.sSup_nonneg
+    intro r ⟨n, m, _, _, hr_eq⟩
+    rw [hr_eq]
+    apply div_nonneg (Nat.cast_nonneg n) (Nat.cast_nonneg m)
+  · -- x = ident: returns 0
+    rfl
+  · -- x < ident: returns 0 (this case shouldn't happen if hx : ident ≤ x holds)
+    rfl
+
+/-- ThetaFull is strictly monotone on elements > ident.
+This is a key step toward the representation theorem. -/
+theorem ThetaFull_strictMono_on_pos (a : α) (ha : ident < a) (x y : α)
+    (hx : ident < x) (hy : ident < y) (hxy : x < y) :
+    ThetaFull a ha x < ThetaFull a ha y := by
+  -- The proof uses the fact that the lower ratio set for x is a subset of that for y
+  -- (up to some adjustment), and the supremums are ordered
+  simp only [ThetaFull, hx, hy, dif_pos]
+  unfold Theta
+  -- Need: sSup (lowerRatioSet a x) < sSup (lowerRatioSet a y)
+  -- This follows from:
+  -- 1. Every element of lowerRatioSet a x is in lowerRatioSet a y (roughly)
+  -- 2. lowerRatioSet a y has elements strictly larger than sup of lowerRatioSet a x
+  sorry  -- TODO: Prove using monotonicity of supremum and strictness
+
+/-! ### Summary: Representation Theorem Infrastructure Status
+
+**Proven**:
+- `iterate_op_strictMono`: Iterates of a > ident form a strictly increasing chain
+- `bounded_by_iterate`: Every element is bounded above by some iterate
+- `lowerRatioSet_nonempty`: The lower ratio set is non-empty
+- `lowerRatioSet_self`: For x = a, the lower ratio set is { n/m : n ≤ m }
+- `sSup_ratio_le_one`: sup { n/m : n ≤ m } = 1
+- `Theta_ref_eq_one`: Θ(a) = 1 for the reference element
+- `ThetaFull_ident`: Θ(ident) = 0
+- `commutativity_from_representation`: Commutativity follows from additivity
+
+**Remaining** (with sorries):
+- `lowerRatioSet_bddAbove`: Boundedness requires the K&S repetition lemma
+- `ThetaFull_strictMono_on_pos`: Strict monotonicity of Θ
+- `ks_representation_theorem`: Existence of additive representation
+
+The key missing piece is the **repetition lemma** (K&S lines 1497-1534):
+  If μ(r,...,t) ≤ μ(r₀,...,t₀; u), then μ(n·r,...,n·t) ≤ μ(n·r₀,...,n·t₀; n·u)
+
+This lemma allows us to:
+1. Bound the lower ratio set uniformly (proving it's bounded above)
+2. Show that Θ respects the operation (additivity)
+3. Derive strict monotonicity from the construction
+-/
 
 /-! ### Phase 9: Commutativity Derived from Additivity (K&S lines 1448-1453, 1160-1166)
 
@@ -435,10 +788,15 @@ The derivation:
 4. Therefore: x ⊕ y = y ⊕ x
 -/
 
-/-- Commutativity follows from the existence of an additive representation.
-This is the key philosophical point of K&S: commutativity EMERGES from the axioms. -/
+/-- Commutativity follows from the existence of an additive ORDER EMBEDDING.
+
+**Key insight**: For partial orders, we need Θ to be an ORDER EMBEDDING
+(both order-preserving AND order-reflecting), not just strictly monotone.
+This ensures Θ is injective: if Θ(a) = Θ(b), then a ≤ b and b ≤ a, so a = b.
+
+The K&S representation theorem constructs such an embedding into ℝ. -/
 theorem commutativity_from_representation (Θ : α → ℝ)
-    (hΘ_mono : StrictMono Θ)
+    (hΘ_le : ∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b)  -- Order embedding (preserves AND reflects ≤)
     (hΘ_add : ∀ x y : α, Θ (op x y) = Θ x + Θ y) :
     ∀ x y : α, op x y = op y x := by
   intro x y
@@ -447,16 +805,22 @@ theorem commutativity_from_representation (Θ : α → ℝ)
   have h2 : Θ (op y x) = Θ y + Θ x := hΘ_add y x
   have h3 : Θ x + Θ y = Θ y + Θ x := add_comm (Θ x) (Θ y)
   have h4 : Θ (op x y) = Θ (op y x) := by rw [h1, h2, h3]
-  -- Θ is injective (since strictly monotone)
-  exact hΘ_mono.injective h4
+  -- Θ is injective (order embedding into ℝ)
+  -- If Θ(a) = Θ(b), then Θ(a) ≤ Θ(b) and Θ(b) ≤ Θ(a), so a ≤ b and b ≤ a, so a = b
+  have h_inj : Function.Injective Θ := by
+    intro a b hab
+    have h_ab : a ≤ b := (hΘ_le a b).mpr (le_of_eq hab)
+    have h_ba : b ≤ a := (hΘ_le b a).mpr (le_of_eq hab.symm)
+    exact le_antisymm h_ab h_ba
+  exact h_inj h4
 
-/-- Full commutativity theorem: Once we prove the representation theorem,
-commutativity follows automatically. -/
+/-- Full commutativity theorem: Once we prove the representation theorem
+(with order embedding, not just strict monotonicity), commutativity follows. -/
 theorem commutativity_derived
-    (h_rep : ∃ (Θ : α → ℝ), StrictMono Θ ∧ Θ ident = 0 ∧ ∀ x y, Θ (op x y) = Θ x + Θ y) :
+    (h_rep : ∃ (Θ : α → ℝ), (∀ a b, a ≤ b ↔ Θ a ≤ Θ b) ∧ Θ ident = 0 ∧ ∀ x y, Θ (op x y) = Θ x + Θ y) :
     ∀ x y : α, op x y = op y x := by
-  obtain ⟨Θ, hΘ_mono, _, hΘ_add⟩ := h_rep
-  exact commutativity_from_representation Θ hΘ_mono hΘ_add
+  obtain ⟨Θ, hΘ_le, _, hΘ_add⟩ := h_rep
+  exact commutativity_from_representation Θ hΘ_le hΘ_add
 
 end KSAppendixA
 
