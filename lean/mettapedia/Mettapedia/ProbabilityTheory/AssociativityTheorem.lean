@@ -252,7 +252,7 @@ theorem iterate_op_distrib (n : ℕ) (x y : ℝ) :
               C.op (C.op (C.op x y) (iterate C k x)) (iterate C k y) := (C.assoc _ _ _).symm
     have h2 : C.op (C.op x y) (iterate C k x) = C.op x (C.op y (iterate C k x)) := C.assoc x y _
     have h3 : C.op y (iterate C k x) = C.op (iterate C k x) y := C.comm y _
-    have h4 : C.op x (C.op (iterate C k x) y) = C.op (C.op x (iterate C k x)) y := C.assoc x _ y
+    have h4 : C.op x (C.op (iterate C k x) y) = C.op (C.op x (iterate C k x)) y := (C.assoc x _ y).symm
     calc C.op (C.op x y) (C.op (iterate C k x) (iterate C k y))
         = C.op (C.op (C.op x y) (iterate C k x)) (iterate C k y) := h1
       _ = C.op (C.op x (C.op y (iterate C k x))) (iterate C k y) := by rw [h2]
@@ -308,7 +308,7 @@ variable (CC : ContinuousCombination)
 /-- Strict monotonicity in second argument for ContinuousCombination -/
 lemma ContinuousCombination.strictMono_right (x : ℝ) (hx : 0 < x) :
     StrictMono (fun y => CC.op x y) :=
-  strictMono_right CC.toCombinationAxioms x hx
+  @strictMono_right CC.toCombinationAxioms x hx
 
 /-- With continuity, iterate extends to a continuous function -/
 lemma iterate_continuous (n : ℕ) : Continuous (fun x => iterate CC.toCombinationAxioms n x) := by
@@ -323,7 +323,7 @@ lemma iterate_continuous (n : ℕ) : Continuous (fun x => iterate CC.toCombinati
       ext x; rfl
     rw [h]
     apply Continuous.comp CC.continuous_op
-    exact continuous_id.prod_mk ih
+    exact Continuous.prod continuous_id ih
 
 /-! ### Key Lemmas for the Real Extension
 
@@ -377,7 +377,7 @@ lemma iterate_unbounded (u : ℝ) (hu : 0 < u) : ∀ M : ℝ, ∃ n : ℕ, M < i
       have : (fun x => CC.op u x) = (fun p : ℝ × ℝ => CC.op p.1 p.2) ∘ (fun x => (u, x)) := by
         ext x; rfl
       rw [this]
-      exact CC.continuous_op.comp (continuous_const.prod_mk continuous_id)
+      exact CC.continuous_op.comp (Continuous.prod continuous_const continuous_id)
     -- Filter.Tendsto f l (nhds y) → Filter.Tendsto (g ∘ f) l (nhds (g y)) for continuous g
     have h_tends : Filter.Tendsto (fun n => CC.op u (iterate CC.toCombinationAxioms n u)) Filter.atTop (nhds (CC.op u L)) :=
       h_cont.continuousAt.tendsto.comp h_converges
@@ -456,9 +456,9 @@ lemma iterate_mul (k m : ℕ) (x : ℝ) :
   | succ n ih =>
     simp only [iterate_succ, Nat.succ_mul]
     rw [ih]
-    -- Need: iterate m x ⊕ iterate (n * m) x = iterate (m + n * m) x
-    have h : m + n * m = n * m + m := by ring
-    rw [← iterate_add C m (n * m) x, h]
+    -- Need: op (iterate m x) (iterate (n * m) x) = iterate (n * m + m) x
+    -- Using commutativity and iterate_add
+    rw [C.comm (iterate C m x) (iterate C (n * m) x), ← iterate_add C (n * m) m x]
 
 /-- If iterate p u = iterate q y, then the ratio p/q is uniquely determined by y.
 This follows from strict injectivity of iterate (as a function of n for fixed u > 0). -/
@@ -514,13 +514,12 @@ lemma iterate_pos (p : ℕ) (u : ℝ) (hu : 0 < u) (hp : 1 ≤ p) :
   | succ k =>
     -- iterate (k+1) u = u ⊕ iterate k u ≥ u > 0 (since ⊕ is monotone)
     simp only [iterate_succ]
-    have hC := CC.toCombinationAxioms
     -- u ⊕ iterate k u ≥ u ⊕ 0 = u > 0
-    have h1 : CC.op u (iterate hC k u) ≥ CC.op u 0 := by
-      by_cases hk : iterate hC k u = 0
+    have h1 : CC.op u (iterate CC.toCombinationAxioms k u) ≥ CC.op u 0 := by
+      by_cases hk : iterate CC.toCombinationAxioms k u = 0
       · rw [hk]
-      · have hpos : 0 < iterate hC k u := by
-          have hnn := iterate_nonneg hC k u (le_of_lt hu)
+      · have hpos : 0 < iterate CC.toCombinationAxioms k u := by
+          have hnn := iterate_nonneg CC.toCombinationAxioms k u (le_of_lt hu)
           exact lt_of_le_of_ne hnn (Ne.symm hk)
         have hmono := CC.strictMono_right u hu
         exact le_of_lt (hmono hpos)
@@ -540,19 +539,18 @@ lemma supLinearizer_zero (u : ℝ) (hu : 0 < u) :
   -- For y = 0: iterate q 0 = 0 for all q
   -- So we need iterate p u ≤ 0, which requires p = 0 (since iterate p u > 0 for p ≥ 1)
   -- Thus the sup is over {0/q : q > 0} = {0}
-  have hC := CC.toCombinationAxioms
   simp only [supLinearizer]
   -- The set is {r | ∃ p q, q > 0, r = p/q, iterate p u ≤ iterate q 0}
   -- = {r | ∃ p q, q > 0, r = p/q, iterate p u ≤ 0}  (since iterate q 0 = 0)
   -- = {r | ∃ q, q > 0, r = 0/q} = {0}               (since iterate p u ≤ 0 iff p = 0)
   have hset_eq : { r : ℝ | ∃ (p q : ℕ) (hq : 0 < q), r = (p : ℝ) / q ∧
-                   iterate hC p u ≤ iterate hC q 0 } = {0} := by
+                   iterate CC.toCombinationAxioms p u ≤ iterate CC.toCombinationAxioms q 0 } = {0} := by
     ext r
     simp only [Set.mem_setOf_eq, Set.mem_singleton_iff]
     constructor
     · -- If r is in the set, then r = 0
       rintro ⟨p, q, hq, hr, hiter⟩
-      rw [iterate_zero CC] at hiter
+      rw [iterate_zero_arg CC] at hiter
       -- iterate p u ≤ 0 implies p = 0
       by_cases hp : p = 0
       · simp [hp] at hr; exact hr
@@ -563,17 +561,17 @@ lemma supLinearizer_zero (u : ℝ) (hu : 0 < u) :
     · -- 0 is in the set: take p = 0, q = 1
       intro hr
       rw [hr]
-      exact ⟨0, 1, Nat.one_pos, by simp, by simp [iterate_zero]⟩
+      exact ⟨0, 1, Nat.one_pos, by simp, by simp [iterate_zero_arg]⟩
   rw [hset_eq]
   exact csSup_singleton 0
 
 /-- iterate is monotone in the second argument (for fixed n ≥ 1). -/
 lemma iterate_mono_arg (n : ℕ) (hn : 1 ≤ n) (x y : ℝ) (hx : 0 ≤ x) (hy : 0 ≤ y) (hxy : x ≤ y) :
     iterate CC.toCombinationAxioms n x ≤ iterate CC.toCombinationAxioms n y := by
-  have hC := CC.toCombinationAxioms
   -- Special case: x = 0
   by_cases hx_zero : x = 0
-  · simp [hx_zero, iterate_zero CC, iterate_nonneg hC n y hy]
+  · simp only [hx_zero, iterate_zero_arg CC]
+    exact iterate_nonneg CC.toCombinationAxioms n y hy
   -- Special case: y = 0, but then x ≤ y and x ≥ 0 and x ≠ 0 is impossible
   by_cases hy_zero : y = 0
   · have : x = 0 := le_antisymm (hxy.trans (le_of_eq hy_zero)) hx
@@ -588,35 +586,35 @@ lemma iterate_mono_arg (n : ℕ) (hn : 1 ≤ n) (x y : ℝ) (hx : 0 ≤ x) (hy :
     simp only [iterate_succ]
     by_cases hk : k = 0
     · -- k = 0, so n = 1: iterate 1 x = x ≤ y = iterate 1 y
-      simp [hk, iterate, hC.identity_right, hxy]
+      simp only [hk, iterate, CC.toCombinationAxioms.identity_right]
+      exact hxy
     · -- k ≥ 1
       have hk1 : 1 ≤ k := Nat.one_le_iff_ne_zero.mpr hk
       have ih' := ih hk1
       -- Need: x ⊕ iterate k x ≤ y ⊕ iterate k y
       -- Step 1: iterate k x > 0 (since x > 0 and k ≥ 1)
-      have hiter_pos : 0 < iterate hC k x := iterate_pos CC k x hx_pos hk1
+      have hiter_pos : 0 < iterate CC.toCombinationAxioms k x := iterate_pos CC k x hx_pos hk1
       -- Step 2: x ⊕ iterate k x ≤ y ⊕ iterate k x (monotone in first arg)
-      have h1 : CC.op x (iterate hC k x) ≤ CC.op y (iterate hC k x) := by
+      have h1 : CC.op x (iterate CC.toCombinationAxioms k x) ≤ CC.op y (iterate CC.toCombinationAxioms k x) := by
         by_cases hxy_eq : x = y
         · rw [hxy_eq]
         · have hxy_lt : x < y := lt_of_le_of_ne hxy hxy_eq
-          exact le_of_lt (CC.strictMono_left (iterate hC k x) hiter_pos hxy_lt)
+          exact le_of_lt (CC.strictMono_left (iterate CC.toCombinationAxioms k x) hiter_pos hxy_lt)
       -- Step 3: y ⊕ iterate k x ≤ y ⊕ iterate k y (monotone in second arg)
-      have h2 : CC.op y (iterate hC k x) ≤ CC.op y (iterate hC k y) := by
-        by_cases hiter_eq : iterate hC k x = iterate hC k y
+      have h2 : CC.op y (iterate CC.toCombinationAxioms k x) ≤ CC.op y (iterate CC.toCombinationAxioms k y) := by
+        by_cases hiter_eq : iterate CC.toCombinationAxioms k x = iterate CC.toCombinationAxioms k y
         · rw [hiter_eq]
-        · have hiter_lt : iterate hC k x < iterate hC k y := lt_of_le_of_ne ih' hiter_eq
+        · have hiter_lt : iterate CC.toCombinationAxioms k x < iterate CC.toCombinationAxioms k y := lt_of_le_of_ne ih' hiter_eq
           exact le_of_lt (CC.strictMono_right y hy_pos hiter_lt)
       exact le_trans h1 h2
 
 /-- iterate is STRICTLY monotone in the second argument (for fixed n ≥ 1). -/
 lemma iterate_strictMono_arg (n : ℕ) (hn : 1 ≤ n) (x y : ℝ) (hx : 0 ≤ x) (hy : 0 ≤ y) (hxy : x < y) :
     iterate CC.toCombinationAxioms n x < iterate CC.toCombinationAxioms n y := by
-  have hC := CC.toCombinationAxioms
   -- Case: x = 0
   by_cases hx_zero : x = 0
   · -- iterate n 0 = 0 < iterate n y (for y > 0 and n ≥ 1)
-    simp only [hx_zero, iterate_zero CC]
+    simp only [hx_zero, iterate_zero_arg CC]
     have hy_pos : 0 < y := by linarith
     exact iterate_pos CC n y hy_pos hn
   -- Case: x > 0
@@ -627,15 +625,16 @@ lemma iterate_strictMono_arg (n : ℕ) (hn : 1 ≤ n) (x y : ℝ) (hx : 0 ≤ x)
   | succ k ih =>
     simp only [iterate_succ]
     by_cases hk : k = 0
-    · simp [hk, iterate, hC.identity_right, hxy]
+    · simp only [hk, iterate, CC.toCombinationAxioms.identity_right]
+      exact hxy
     · have hk1 : 1 ≤ k := Nat.one_le_iff_ne_zero.mpr hk
       have ih' := ih hk1
       -- iterate k x > 0 since x > 0 and k ≥ 1
-      have hiter_pos : 0 < iterate hC k x := iterate_pos CC k x hx_pos hk1
+      have hiter_pos : 0 < iterate CC.toCombinationAxioms k x := iterate_pos CC k x hx_pos hk1
       -- x ⊕ iterate k x < y ⊕ iterate k y using strict mono in both args
-      calc CC.op x (iterate hC k x)
-          < CC.op y (iterate hC k x) := CC.strictMono_left (iterate hC k x) hiter_pos hxy
-        _ < CC.op y (iterate hC k y) := CC.strictMono_right y hy_pos ih'
+      calc CC.op x (iterate CC.toCombinationAxioms k x)
+          < CC.op y (iterate CC.toCombinationAxioms k x) := CC.strictMono_left (iterate CC.toCombinationAxioms k x) hiter_pos hxy
+        _ < CC.op y (iterate CC.toCombinationAxioms k y) := CC.strictMono_right y hy_pos ih'
 
 /-- The sup linearizer is strictly monotone on non-negative reals.
 
@@ -650,7 +649,7 @@ The proof uses the Dedekind-cut structure of these sets:
 lemma supLinearizer_strictMono' (u : ℝ) (hu : 0 < u)
     (y₁ y₂ : ℝ) (hy₁ : 0 ≤ y₁) (hy₂ : 0 ≤ y₂) (h : y₁ < y₂) :
     supLinearizer CC u y₁ hu hy₁ < supLinearizer CC u y₂ hu hy₂ := by
-  have hC := CC.toCombinationAxioms
+  let hC := CC.toCombinationAxioms
   simp only [supLinearizer]
   let S₁ := { r : ℝ | ∃ (p q : ℕ) (hq : 0 < q), r = (p : ℝ) / q ∧
               iterate hC p u ≤ iterate hC q y₁ }
@@ -1055,7 +1054,7 @@ Main argument:
 lemma supLinearizer_add (u : ℝ) (hu : 0 < u) (x y : ℝ) (hx : 0 ≤ x) (hy : 0 ≤ y) :
     supLinearizer CC u (CC.op x y) hu (CC.nonneg x y hx hy) =
     supLinearizer CC u x hu hx + supLinearizer CC u y hu hy := by
-  have hC := CC.toCombinationAxioms
+  let hC := CC.toCombinationAxioms
   simp only [supLinearizer]
   let S_x := { r : ℝ | ∃ (p q : ℕ) (hq : 0 < q), r = (p : ℝ) / q ∧ iterate hC p u ≤ iterate hC q x }
   let S_y := { r : ℝ | ∃ (p q : ℕ) (hq : 0 < q), r = (p : ℝ) / q ∧ iterate hC p u ≤ iterate hC q y }
@@ -1944,7 +1943,7 @@ lemma supLinearizer_add (u : ℝ) (hu : 0 < u) (x y : ℝ) (hx : 0 ≤ x) (hy : 
     by_cases hx_pos : x = 0
     · -- If x = 0, then S_x = {0} and sup S_x = 0
       subst hx_pos
-      simp only [iterate_zero CC] at *
+      simp only [iterate_zero_arg CC] at *
       have h_Sx_eq : S_x = {0} := by
         ext r
         simp only [S_x, Set.mem_setOf_eq, Set.mem_singleton_iff]
@@ -1954,18 +1953,18 @@ lemma supLinearizer_add (u : ℝ) (hu : 0 < u) (x y : ℝ) (hx : 0 ≤ x) (hy : 
           · simp [hp] at hr ⊢; exact hr.symm
           · have hp1 : 1 ≤ p := Nat.one_le_iff_ne_zero.mpr hp
             have := iterate_pos CC p u hu hp1
-            simp [iterate_zero CC] at hiter
+            simp [iterate_zero_arg CC] at hiter
             linarith
         · intro hr
           rw [hr]
-          exact ⟨0, 1, Nat.one_pos, by simp, by simp [iterate_zero CC]⟩
+          exact ⟨0, 1, Nat.one_pos, by simp, by simp [iterate_zero_arg CC]⟩
       have h_sup_x : sSup S_x = 0 := by rw [h_Sx_eq]; exact csSup_singleton 0
       rw [h_sup_x, zero_add]
       exact le_csSup_of_le h_bdd_xy ⟨0, 1, Nat.one_pos, by simp, by simp [iterate, CC.identity_left]⟩ (by simp)
     · by_cases hy_pos : y = 0
       · -- If y = 0, symmetric argument
         subst hy_pos
-        simp only [iterate_zero CC] at *
+        simp only [iterate_zero_arg CC] at *
         have h_Sy_eq : S_y = {0} := by
           ext r
           simp only [S_y, Set.mem_setOf_eq, Set.mem_singleton_iff]
@@ -1975,11 +1974,11 @@ lemma supLinearizer_add (u : ℝ) (hu : 0 < u) (x y : ℝ) (hx : 0 ≤ x) (hy : 
             · simp [hp] at hr ⊢; exact hr.symm
             · have hp1 : 1 ≤ p := Nat.one_le_iff_ne_zero.mpr hp
               have := iterate_pos CC p u hu hp1
-              simp [iterate_zero CC] at hiter
+              simp [iterate_zero_arg CC] at hiter
               linarith
           · intro hr
             rw [hr]
-            exact ⟨0, 1, Nat.one_pos, by simp, by simp [iterate_zero CC]⟩
+            exact ⟨0, 1, Nat.one_pos, by simp, by simp [iterate_zero_arg CC]⟩
         have h_sup_y : sSup S_y = 0 := by rw [h_Sy_eq]; exact csSup_singleton 0
         rw [h_sup_y, add_zero]
         exact le_csSup_of_le h_bdd_xy ⟨0, 1, Nat.one_pos, by simp, by simp [iterate, CC.identity_right]⟩ (by simp)
