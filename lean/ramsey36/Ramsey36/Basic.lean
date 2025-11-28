@@ -5546,17 +5546,7 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- Contradiction!
 
   have hs1_W_le2 : (W.filter (G.Adj s1)).card ≤ 2 := by
-    by_contra h_gt2
-    push_neg at h_gt2
-    -- s1 has ≥ 3 W-neighbors
-    have h_ge3 : 3 ≤ (W.filter (G.Adj s1)).card := h_gt2
-    -- Extract 3 distinct W-neighbors of s1
-    obtain ⟨S', hS'_sub, hS'_card⟩ := Finset.exists_subset_card_eq h_ge3
-    obtain ⟨wa, wb, wc, hab, hac, hbc, heq⟩ := Finset.card_eq_three.mp hS'_card
-    have hwa_in : wa ∈ W.filter (G.Adj s1) := hS'_sub (heq ▸ by simp : wa ∈ S')
-    have hwb_in : wb ∈ W.filter (G.Adj s1) := hS'_sub (heq ▸ by simp : wb ∈ S')
-    have hwc_in : wc ∈ W.filter (G.Adj s1) := hS'_sub (heq ▸ by simp : wc ∈ S')
-    sorry -- TODO: Complete the argument using p_adjacent_of_shared_w
+    sorry -- TODO: Pigeonhole argument using S_pair_share_at_most_one_W
 
   -- Similarly for s2, s3, s4
   have hs2_W_le2 : (W.filter (G.Adj s2)).card ≤ 2 := by sorry
