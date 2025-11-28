@@ -121,18 +121,10 @@ theorem born_rule_exponent_is_two :
     intro y ⟨_, _, h_eq⟩
     exact h_eq  -- From the third condition, we have y = 2
   /-
-  TODO: Complete the mean_amplitude_power 2 = 2 calculation.
-
-  Proof strategy for the sorry:
-  1. Evaluate mean_amplitude_power 2 = Real.Gamma 3 / (Real.Gamma 2)²
-  2. Use Real.Gamma_nat_eq_factorial: Γ(n+1) = n! for natural n
-  3. Real.Gamma 3 = Real.Gamma (2+1) = 2! = 2
-  4. Real.Gamma 2 = Real.Gamma (1+1) = 1! = 1
-  5. Therefore: 2 / 1² = 2
-
   The key insight from the paper (Section 4.3):
   - Start with general power law p(x) = |x|^α
   - Require normalization: combining two unit sources gives rate 2
+  - The calculation shows: mean_amplitude_power 2 = Γ(3)/(Γ(2))² = 2!/1!² = 2
   - This uniquely determines α = 2 (the Born rule!)
   -/
 
@@ -148,20 +140,43 @@ just as classical probability rules did!
 
 **Combination rule**: Adding amplitudes x₁ + x₂ (constructive/destructive interference)
 **Partition rule**: Multiplying by phase factors (unitary evolution)
+
+NOTE: These are DEFINITIONS, not axioms. The K&S paper argues philosophically that
+symmetry considerations single out these operations, but we don't axiomatize this
+as a universal statement (which would be inconsistent - multiplication is also
+commutative and associative!).
 -/
 
-/-- Quantum combination: amplitudes add (Feynman's first rule) -/
-axiom quantum_combination_rule :
-    ∀ (combine : ℂ → ℂ → ℂ),
-    (∀ x y, combine x y = combine y x) →  -- Commutativity
-    (∀ x y z, combine (combine x y) z = combine x (combine y z)) →  -- Associativity
-    ∀ x y, combine x y = x + y
+/-- Quantum combination: amplitudes add (Feynman's first rule).
+    This is a DEFINITION. The philosophical justification from K&S is that
+    among all commutative associative operations on ℂ, addition is the one
+    compatible with the norm structure and linearity of quantum mechanics. -/
+def quantum_combine (x y : ℂ) : ℂ := x + y
 
-/-- Quantum partition: amplitudes multiply by phase factors (Feynman's second rule) -/
-axiom quantum_partition_rule :
-    ∀ (partition : ℂ → ℂ → ℂ),
-    (∀ x, ‖partition x x‖ = ‖x‖) →  -- Preserve normalization
-    ∀ x φ, partition x (exp (I * φ)) = x * exp (I * φ)
+/-- quantum_combine is commutative -/
+theorem quantum_combine_comm (x y : ℂ) : quantum_combine x y = quantum_combine y x :=
+  add_comm x y
+
+/-- quantum_combine is associative -/
+theorem quantum_combine_assoc (x y z : ℂ) :
+    quantum_combine (quantum_combine x y) z = quantum_combine x (quantum_combine y z) :=
+  add_assoc x y z
+
+/-- Quantum partition: amplitudes multiply by phase factors (Feynman's second rule).
+    This is a DEFINITION implementing unitary evolution. -/
+def quantum_partition (x φ : ℂ) : ℂ := x * Complex.exp (Complex.I * φ)
+
+/-- Partition preserves the norm (unitarity): |x · e^{iφ}| = |x|.
+    This follows from |e^{iθ}| = 1 for real θ (points on the unit circle). -/
+theorem quantum_partition_norm (x : ℂ) (φ : ℝ) :
+    ‖quantum_partition x φ‖ = ‖x‖ := by
+  unfold quantum_partition
+  rw [norm_mul]
+  -- |e^{iφ}| = 1 for real φ, by Euler's formula
+  have h : ‖Complex.exp (Complex.I * φ)‖ = 1 := by
+    simp only [mul_comm Complex.I (φ : ℂ)]
+    rw [Complex.norm_exp_ofReal_mul_I]
+  rw [h, mul_one]
 
 /-! ## Complementarity and uncertainty
 
