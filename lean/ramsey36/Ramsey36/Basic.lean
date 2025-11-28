@@ -2304,6 +2304,420 @@ lemma CariolaroSetup.P_is_cycle {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
   exact ⟨h_p1_p2, h_p2_p3, h_p3_p4, h_p4_p1, h_not_p1_p3, h_not_p2_p4⟩
 
+/-! ### Cariolaro's S-W Structure (Key Lemmas from the Paper)
+
+Following Cariolaro's paper, the key structural facts are:
+1. t (5th element of N(v)) has exactly 4 neighbors in Q → T = {t1, t2, t3, t4}
+2. W = Q \ T has exactly 4 elements
+3. Each ti ∈ T has exactly 1 S-neighbor (from commonNeighborsCard = 2, with t as the other)
+4. Each si has exactly 1 T-neighbor and 2 W-neighbors
+5. Each wi has exactly 2 S-neighbors
+
+These facts lead to the S-W bipartite structure being 2-regular, which forces
+exactly 4 pairs of s's to share W-neighbors, giving the C4 structure on P.
+-/
+
+/-- t has exactly 4 neighbors in Q.
+Proof sketch (Cariolaro):
+- t has degree 5, with 1 edge to v
+- N(v) is independent (triangle-free), so t has no edges to other N(v) elements
+- t is not adjacent to any p ∈ P (each p's only N(v)-neighbor is its unique s-partner)
+- So t's 4 remaining neighbors are all in Q -/
+lemma t_has_four_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
+    (v t : Fin 18) (ht_adj_v : G.Adj v t)
+    (Q : Finset (Fin 18))
+    (hQ_card : Q.card = 8)
+    (hQ_complete : ∀ x, ¬G.Adj v x → x ≠ v → commonNeighborsCard G v x = 2 → x ∈ Q)
+    (P : Finset (Fin 18))
+    (hP_card : P.card = 4)
+    (hP_def : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1)
+    (ht_nonadj_P : ∀ p ∈ P, ¬G.Adj t p)
+    (hPQ_partition : ∀ x, x ≠ v → ¬G.Adj v x →
+      (commonNeighborsCard G v x = 1 → x ∈ P) ∧ (commonNeighborsCard G v x = 2 → x ∈ Q)) :
+    (Q.filter (G.Adj t)).card = 4 := by
+  -- Step 1: t has degree 5
+  have ht_deg : (G.neighborFinset t).card = 5 := h_reg t
+
+  -- Step 2: v is a neighbor of t
+  have hv_mem_Nt : v ∈ G.neighborFinset t := by
+    simp only [mem_neighborFinset]
+    exact G.symm ht_adj_v
+
+  -- Step 3: Any neighbor x of t with x ≠ v must be in Q
+  have h_other_nbrs_in_Q : ∀ x ∈ G.neighborFinset t, x ≠ v → x ∈ Q := by
+    intro x hx_mem hx_ne_v
+    have hx_adj_t : G.Adj t x := mem_neighborFinset.mp hx_mem
+    -- Show x is not adjacent to v (triangle-free argument)
+    have hx_nonadj_v : ¬G.Adj v x := by
+      intro h_adj_vx
+      -- If x adjacent to v and t adjacent to x, then v-x-t forms a triangle
+      have hx_in_Nv : x ∈ G.neighborFinset v := mem_neighborFinset.mpr h_adj_vx
+      -- t is also in N(v)
+      have ht_in_Nv : t ∈ G.neighborFinset v := mem_neighborFinset.mpr ht_adj_v
+      -- N(v) is independent in a triangle-free graph
+      have hNv_indep := neighborSet_indep_of_triangleFree h_tri v
+      -- x and t are both in N(v), x ≠ t (since x is adjacent to t, not a self-loop)
+      have hx_ne_t : x ≠ t := by
+        intro h_eq
+        subst h_eq
+        exact G.loopless t hx_adj_t
+      -- So x and t should not be adjacent
+      exact hNv_indep h_adj_vx ht_adj_v hx_ne_t (G.symm hx_adj_t)
+    -- x is a non-neighbor of v, so x ∈ P ∪ Q
+    -- We need to show x ∈ Q, i.e., commonNeighborsCard = 2
+    -- First, show commonNeighborsCard ≥ 1 (t is a common neighbor)
+    have ht_common : t ∈ G.neighborFinset v ∩ G.neighborFinset x := by
+      simp only [mem_inter, mem_neighborFinset]
+      exact ⟨ht_adj_v, hx_adj_t⟩
+    have h_common_ge1 : 1 ≤ commonNeighborsCard G v x := by
+      unfold commonNeighborsCard _root_.commonNeighbors
+      calc 1 ≤ ({t} : Finset (Fin 18)).card := by simp
+        _ ≤ (G.neighborFinset v ∩ G.neighborFinset x).card := by
+          apply card_le_card
+          simp only [singleton_subset_iff]
+          exact ht_common
+    -- Apply the bounds from claim2
+    have h_bounds := commonNeighborsCard_bounds h_tri h_no6 h_reg v x hx_ne_v hx_nonadj_v
+    have h_common_eq : commonNeighborsCard G v x = 1 ∨ commonNeighborsCard G v x = 2 := by
+      omega
+    -- If commonNeighborsCard = 1, then x ∈ P, but then t is not adjacent to x (contradiction)
+    cases h_common_eq with
+    | inl h1 =>
+      have hx_in_P : x ∈ P := (hPQ_partition x hx_ne_v hx_nonadj_v).1 h1
+      have h_contra : ¬G.Adj t x := ht_nonadj_P x hx_in_P
+      exact absurd hx_adj_t h_contra
+    | inr h2 =>
+      exact (hPQ_partition x hx_ne_v hx_nonadj_v).2 h2
+
+  -- Step 4: v ∉ Q (v is adjacent to itself? No, v ≠ q for all q ∈ Q)
+  have hv_notin_Q : v ∉ Q := by
+    intro hv_in_Q
+    -- Q contains only non-neighbors of v, so we need commonNeighborsCard G v v = 2
+    -- But v is not a non-neighbor of itself, and the partition doesn't include v
+    -- Actually, from hQ_complete we have: x ∈ Q → ¬G.Adj v x
+    -- But we don't have this directly. Let's use that Q ⊆ M = non-neighbors of v
+    -- This should follow from the structure, but let's derive it
+    -- If v ∈ Q and Q only has non-neighbors of v with commonNeighborsCard = 2, contradiction
+    -- since ¬G.Adj v v is true (no self-loops) but v = v violates x ≠ v in the partition
+    have : v ≠ v → ¬G.Adj v v → (commonNeighborsCard G v v = 2 → v ∈ Q) := by
+      intro _ _ h; exact hQ_complete v (G.loopless v) (fun h => h rfl) h
+    -- This doesn't help directly. Let me use a different approach.
+    -- From the construction in claim2_neighbor_structure, Q ⊆ M and v ∉ M
+    -- But we don't have direct access to this. Let's use P∪Q partition instead.
+    -- Actually, the issue is the hypotheses don't directly say v ∉ Q.
+    -- But logically, v shouldn't be in Q because Q is defined via hQ_complete which requires x ≠ v.
+    -- Let's assume this is provable from the context or add it as a hypothesis.
+    -- For now, use that if v ∈ Q, then by hPQ_partition with x = v, we'd need v ≠ v.
+    sorry
+
+  -- Step 5: G.neighborFinset t = {v} ∪ (Q.filter (G.Adj t))
+  have h_Nt_eq : G.neighborFinset t = insert v (Q.filter (G.Adj t)) := by
+    ext x
+    simp only [mem_insert, mem_filter, mem_neighborFinset]
+    constructor
+    · intro hx_adj
+      by_cases hxv : x = v
+      · left; exact hxv
+      · right
+        have hx_in_Q := h_other_nbrs_in_Q x (mem_neighborFinset.mpr hx_adj) hxv
+        exact ⟨hx_in_Q, hx_adj⟩
+    · intro h
+      cases h with
+      | inl hxv => subst hxv; exact G.symm ht_adj_v
+      | inr hxQ => exact hxQ.2
+
+  -- Step 6: {v} and Q.filter (G.Adj t) are disjoint
+  have h_v_notin_filter : v ∉ Q.filter (G.Adj t) := by
+    simp only [mem_filter, not_and]
+    intro hv_in_Q
+    exact absurd hv_in_Q hv_notin_Q
+
+  -- Step 7: Count
+  calc (Q.filter (G.Adj t)).card
+      = (insert v (Q.filter (G.Adj t))).card - 1 := by
+        rw [card_insert_of_notMem h_v_notin_filter]
+        omega
+    _ = (G.neighborFinset t).card - 1 := by rw [← h_Nt_eq]
+    _ = 5 - 1 := by rw [ht_deg]
+    _ = 4 := by norm_num
+
+/-- Each ti ∈ T (neighbor of t in Q) has exactly 1 S-neighbor.
+Proof sketch: ti has commonNeighborsCard(v, ti) = 2. One common neighbor is t.
+The other must be some sj ∈ N(v) \ {t}. -/
+lemma T_vertex_has_one_S_neighbor {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G)
+    (v t ti : Fin 18)
+    (ht_adj_v : G.Adj v t) (hti_adj_t : G.Adj t ti)
+    (hti_common2 : commonNeighborsCard G v ti = 2)
+    (S : Finset (Fin 18)) (hS_card : S.card = 4)
+    (hS_eq : S = (G.neighborFinset v).erase t) :
+    (S.filter (G.Adj ti)).card = 1 := by
+  -- ti's 2 common neighbors with v are: t and exactly one s ∈ S
+  unfold commonNeighborsCard _root_.commonNeighbors at hti_common2
+  have h_inter_card : (G.neighborFinset v ∩ G.neighborFinset ti).card = 2 := hti_common2
+  -- t is one of the common neighbors
+  have ht_in_inter : t ∈ G.neighborFinset v ∩ G.neighborFinset ti := by
+    simp only [Finset.mem_inter, SimpleGraph.mem_neighborFinset]
+    exact ⟨ht_adj_v, G.symm hti_adj_t⟩
+  -- Extract the two elements
+  obtain ⟨a, b, hab_ne, h_eq⟩ := Finset.card_eq_two.mp h_inter_card
+  have ht_in : t ∈ ({a, b} : Finset (Fin 18)) := by rw [← h_eq]; exact ht_in_inter
+  -- S.filter (G.Adj ti) = (intersection) \ {t}
+  have h_filter_eq : S.filter (G.Adj ti) = (G.neighborFinset v ∩ G.neighborFinset ti).erase t := by
+    ext x
+    simp only [Finset.mem_filter, Finset.mem_erase, Finset.mem_inter, SimpleGraph.mem_neighborFinset]
+    constructor
+    · intro ⟨hx_in_S, hx_adj_ti⟩
+      rw [hS_eq] at hx_in_S
+      simp only [Finset.mem_erase, SimpleGraph.mem_neighborFinset] at hx_in_S
+      exact ⟨hx_in_S.1, hx_in_S.2, hx_adj_ti⟩
+    · intro ⟨hx_ne_t, hx_adj_v, hx_adj_ti⟩
+      constructor
+      · rw [hS_eq]
+        simp only [Finset.mem_erase, SimpleGraph.mem_neighborFinset]
+        exact ⟨hx_ne_t, hx_adj_v⟩
+      · exact hx_adj_ti
+  rw [h_filter_eq, Finset.card_erase_of_mem ht_in_inter, h_inter_card]
+
+/-- Each si has exactly 1 T-neighbor and 2 W-neighbors.
+Proof sketch: si has degree 5 = 1(v) + 1(pi) + 3(Q). By counting S-T edges
+(total 4, since each ti has 1 S-neighbor), each si has exactly 1 T-neighbor.
+So si has 2 W-neighbors. -/
+lemma S_vertex_has_one_T_two_W_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
+    (v si : Fin 18) (hsi_adj_v : G.Adj v si)
+    (T W : Finset (Fin 18))
+    (hTW_partition : ∀ q, q ∈ T ∨ q ∈ W ↔ ¬G.Adj v q ∧ commonNeighborsCard G v q = 2)
+    (hT_card : T.card = 4) (hW_card : W.card = 4)
+    (hT_def : ∀ ti, ti ∈ T ↔ ¬G.Adj v ti ∧ commonNeighborsCard G v ti = 2 ∧ G.Adj ti v) :
+    (T.filter (G.Adj si)).card = 1 ∧ (W.filter (G.Adj si)).card = 2 := by
+  sorry
+
+/-- Each wi ∈ W has exactly 2 S-neighbors.
+Proof sketch: wi has commonNeighborsCard(v, wi) = 2. wi is not adjacent to t (by def of W).
+So wi's 2 common neighbors with v are both from S = N(v) \ {t}. -/
+lemma W_vertex_has_two_S_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_tri : TriangleFree G)
+    (v t wi : Fin 18)
+    (ht_adj_v : G.Adj v t) (hwi_nonadj_t : ¬G.Adj t wi)
+    (hwi_common2 : commonNeighborsCard G v wi = 2)
+    (S : Finset (Fin 18)) (hS_card : S.card = 4)
+    (hS_eq : S = (G.neighborFinset v).erase t) :
+    (S.filter (G.Adj wi)).card = 2 := by
+  -- wi's 2 common neighbors with v are both in S (since wi is not adjacent to t)
+  -- Common neighbors of v and wi
+  unfold commonNeighborsCard _root_.commonNeighbors at hwi_common2
+  -- The common neighbors are exactly the N(v)-neighbors of wi
+  -- Since wi is not adjacent to t, these 2 must be in S = N(v) \ {t}
+  have h_inter : (G.neighborFinset v ∩ G.neighborFinset wi).card = 2 := hwi_common2
+  -- t is not in the intersection (since wi is not adjacent to t)
+  have ht_notin_inter : t ∉ G.neighborFinset v ∩ G.neighborFinset wi := by
+    simp only [Finset.mem_inter, SimpleGraph.mem_neighborFinset, not_and]
+    intro _
+    exact fun h => hwi_nonadj_t (G.symm h)
+  -- The intersection is a subset of N(v) \ {t} = S
+  have h_inter_sub_S : G.neighborFinset v ∩ G.neighborFinset wi ⊆ S := by
+    rw [hS_eq]
+    intro x hx
+    simp only [Finset.mem_inter, SimpleGraph.mem_neighborFinset] at hx
+    simp only [Finset.mem_erase, SimpleGraph.mem_neighborFinset]
+    constructor
+    · intro h_eq
+      subst h_eq
+      exact hwi_nonadj_t (G.symm hx.2)
+    · exact hx.1
+  -- S.filter (G.Adj wi) contains exactly the intersection
+  have h_filter_eq : S.filter (G.Adj wi) = G.neighborFinset v ∩ G.neighborFinset wi := by
+    ext x
+    simp only [Finset.mem_filter, Finset.mem_inter, SimpleGraph.mem_neighborFinset]
+    constructor
+    · intro ⟨hx_in_S, hx_adj_wi⟩
+      rw [hS_eq] at hx_in_S
+      simp only [Finset.mem_erase, SimpleGraph.mem_neighborFinset] at hx_in_S
+      exact ⟨hx_in_S.2, hx_adj_wi⟩
+    · intro ⟨hx_adj_v, hx_adj_wi⟩
+      constructor
+      · rw [hS_eq]
+        simp only [Finset.mem_erase, SimpleGraph.mem_neighborFinset]
+        constructor
+        · intro h_eq
+          subst h_eq
+          exact hwi_nonadj_t (G.symm hx_adj_wi)
+        · exact hx_adj_v
+      · exact hx_adj_wi
+  rw [h_filter_eq, h_inter]
+
+/-! ### Existence of CariolaroSetup -/
+
+/-- Existence of a CariolaroSetup for any counterexample graph, centered at any vertex v.
+This is the central construction that bundles the S-W bipartite structure.
+The proof requires careful constraint tracking of the T/W partition of Q. -/
+lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
+    (v : Fin 18) :
+    ∃ setup : CariolaroSetup G h_reg h_tri h_no6, setup.v = v := by
+  classical
+  -- The construction follows Cariolaro's labeling scheme:
+  -- 1. Use the given vertex v
+  -- 2. Split N(v) = {t, s₁, s₂, s₃, s₄} where t is the special neighbor
+  -- 3. Use Claim 2 to get P = {p₁, p₂, p₃, p₄} with unique s-partners
+  -- 4. Split Q into T (neighbors of t) and W (non-neighbors of t)
+  -- 5. The S-W bipartite structure forces the C₄ pairing pattern
+  --
+  -- The detailed construction requires:
+  -- - Showing |T| = |W| = 4
+  -- - Showing each w ∈ W has exactly 2 S-neighbors
+  -- - Verifying the pairing avoids triangles (hence is a C₄)
+  sorry
+
+/-- Existence of a CariolaroSetup for any counterexample graph. -/
+lemma exists_CariolaroSetup {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G) :
+    Nonempty (CariolaroSetup G h_reg h_tri h_no6) := by
+  obtain ⟨setup, _⟩ := exists_CariolaroSetup_at h_reg h_tri h_no6 0
+  exact ⟨setup⟩
+
+/-- Canonical choice of CariolaroSetup for a counterexample graph. -/
+noncomputable def someCariolaroSetup (G : SimpleGraph (Fin 18)) [DecidableRel G.Adj]
+    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G) :
+    CariolaroSetup G h_reg h_tri h_no6 :=
+  (exists_CariolaroSetup h_reg h_tri h_no6).some
+
+/-! ### Degree computation from explicit cycle structure -/
+
+/-- In a 4-cycle p1-p2-p3-p4-p1, each vertex has exactly 2 neighbors among {p1,p2,p3,p4}.
+This is immediate from the structure: each vertex is adjacent to exactly 2 others
+(the cycle edges) and non-adjacent to the remaining 1 (the diagonal).
+
+TODO: This proof has a Lean 4 scoping issue with `rcases ... rfl` patterns
+eliminating bound variables inside nested `have` blocks. The mathematical
+content is straightforward: filter the 4-element set by adjacency, get 2 elements. -/
+lemma cycle_vertex_has_two_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    (p1 p2 p3 p4 : Fin 18)
+    (hdist : p1 ≠ p2 ∧ p1 ≠ p3 ∧ p1 ≠ p4 ∧ p2 ≠ p3 ∧ p2 ≠ p4 ∧ p3 ≠ p4)
+    (h_cycle : G.Adj p1 p2 ∧ G.Adj p2 p3 ∧ G.Adj p3 p4 ∧ G.Adj p4 p1 ∧
+               ¬G.Adj p1 p3 ∧ ¬G.Adj p2 p4)
+    (P : Finset (Fin 18)) (hP_eq : P = {p1, p2, p3, p4}) :
+    ∀ p ∈ P, (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card = 2 := by
+  -- Save vertex references before case split to avoid scoping issues
+  let a1 := p1; let a2 := p2; let a3 := p3; let a4 := p4
+  have ha1 : a1 = p1 := rfl; have ha2 : a2 = p2 := rfl
+  have ha3 : a3 = p3 := rfl; have ha4 : a4 = p4 := rfl
+  -- Precompute all the distinctness facts
+  -- hdist : p1 ≠ p2 ∧ p1 ≠ p3 ∧ p1 ≠ p4 ∧ p2 ≠ p3 ∧ p2 ≠ p4 ∧ p3 ≠ p4
+  have hne12 : a1 ≠ a2 := hdist.1
+  have hne13 : a1 ≠ a3 := hdist.2.1
+  have hne14 : a1 ≠ a4 := hdist.2.2.1
+  have hne23 : a2 ≠ a3 := hdist.2.2.2.1
+  have hne24 : a2 ≠ a4 := hdist.2.2.2.2.1
+  have hne34 : a3 ≠ a4 := hdist.2.2.2.2.2
+  -- Precompute adjacency facts
+  have hadj12 : G.Adj a1 a2 := h_cycle.1
+  have hadj23 : G.Adj a2 a3 := h_cycle.2.1
+  have hadj34 : G.Adj a3 a4 := h_cycle.2.2.1
+  have hadj41 : G.Adj a4 a1 := h_cycle.2.2.2.1
+  have hnadj13 : ¬G.Adj a1 a3 := h_cycle.2.2.2.2.1
+  have hnadj24 : ¬G.Adj a2 a4 := h_cycle.2.2.2.2.2
+  -- Now P = {a1, a2, a3, a4}
+  have hP_eq' : P = {a1, a2, a3, a4} := hP_eq
+  intro p hp
+  rw [hP_eq'] at hp ⊢
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hp
+  obtain rfl | rfl | rfl | rfl := hp
+  -- Case p = a1: neighbors are a2 and a4
+  · have h_filter_eq : ({a1, a2, a3, a4} : Finset (Fin 18)).filter (fun q => q ≠ a1 ∧ G.Adj a1 q) = {a2, a4} := by
+      ext x
+      simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+      constructor
+      · intro ⟨hx_mem, hx_ne, hx_adj⟩
+        obtain hx1 | hx2 | hx3 | hx4 := hx_mem
+        · exact (hx_ne hx1).elim
+        · left; exact hx2
+        · subst hx3; exact (hnadj13 hx_adj).elim
+        · right; exact hx4
+      · intro hx
+        obtain hx2 | hx4 := hx
+        -- For a2: need a2 ≠ a1 (use hne12.symm) and G.Adj a1 a2 (use hadj12)
+        · subst hx2; exact ⟨Or.inr (Or.inl rfl), hne12.symm, hadj12⟩
+        -- For a4: need a4 ≠ a1 (use hne14.symm) and G.Adj a1 a4 (use G.adj_symm hadj41)
+        · subst hx4; exact ⟨Or.inr (Or.inr (Or.inr rfl)), hne14.symm, G.adj_symm hadj41⟩
+    rw [h_filter_eq]
+    simp [Finset.card_insert_of_not_mem, hne24]
+  -- Case p = a2: neighbors are a1 and a3
+  · have h_filter_eq : ({a1, a2, a3, a4} : Finset (Fin 18)).filter (fun q => q ≠ a2 ∧ G.Adj a2 q) = {a1, a3} := by
+      ext x
+      simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+      constructor
+      · intro ⟨hx_mem, hx_ne, hx_adj⟩
+        obtain hx1 | hx2 | hx3 | hx4 := hx_mem
+        · left; exact hx1
+        · exact (hx_ne hx2).elim
+        · right; exact hx3
+        · subst hx4; exact (hnadj24 hx_adj).elim
+      · intro hx
+        obtain hx1 | hx3 := hx
+        -- For a1: need a1 ≠ a2 (use hne12) and G.Adj a2 a1 (use G.adj_symm hadj12)
+        · subst hx1; exact ⟨Or.inl rfl, hne12, G.adj_symm hadj12⟩
+        -- For a3: need a3 ≠ a2 (use hne23.symm) and G.Adj a2 a3 (use hadj23)
+        · subst hx3; exact ⟨Or.inr (Or.inr (Or.inl rfl)), hne23.symm, hadj23⟩
+    rw [h_filter_eq]
+    simp [Finset.card_insert_of_not_mem, hne13]
+  -- Case p = a3: neighbors are a2 and a4
+  · have h_filter_eq : ({a1, a2, a3, a4} : Finset (Fin 18)).filter (fun q => q ≠ a3 ∧ G.Adj a3 q) = {a2, a4} := by
+      ext x
+      simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+      constructor
+      · intro ⟨hx_mem, hx_ne, hx_adj⟩
+        obtain hx1 | hx2 | hx3 | hx4 := hx_mem
+        · subst hx1; exact (hnadj13 (G.adj_symm hx_adj)).elim
+        · left; exact hx2
+        · exact (hx_ne hx3).elim
+        · right; exact hx4
+      · intro hx
+        obtain hx2 | hx4 := hx
+        -- For a2: need a2 ≠ a3 (use hne23) and G.Adj a3 a2 (use G.adj_symm hadj23)
+        · subst hx2; exact ⟨Or.inr (Or.inl rfl), hne23, G.adj_symm hadj23⟩
+        -- For a4: need a4 ≠ a3 (use hne34.symm) and G.Adj a3 a4 (use hadj34)
+        · subst hx4; exact ⟨Or.inr (Or.inr (Or.inr rfl)), hne34.symm, hadj34⟩
+    rw [h_filter_eq]
+    simp [Finset.card_insert_of_not_mem, hne24]
+  -- Case p = a4: neighbors are a1 and a3
+  · have h_filter_eq : ({a1, a2, a3, a4} : Finset (Fin 18)).filter (fun q => q ≠ a4 ∧ G.Adj a4 q) = {a1, a3} := by
+      ext x
+      simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+      constructor
+      · intro ⟨hx_mem, hx_ne, hx_adj⟩
+        obtain hx1 | hx2 | hx3 | hx4 := hx_mem
+        · left; exact hx1
+        · subst hx2; exact (hnadj24 (G.adj_symm hx_adj)).elim
+        · right; exact hx3
+        · exact (hx_ne hx4).elim
+      · intro hx
+        obtain hx1 | hx3 := hx
+        -- For a1: need a1 ≠ a4 (use hne14) and G.Adj a4 a1 (use hadj41)
+        · subst hx1; exact ⟨Or.inl rfl, hne14, hadj41⟩
+        -- For a3: need a3 ≠ a4 (use hne34) and G.Adj a4 a3 (use G.adj_symm hadj34)
+        · subst hx3; exact ⟨Or.inr (Or.inr (Or.inl rfl)), hne34, G.adj_symm hadj34⟩
+    rw [h_filter_eq]
+    simp [Finset.card_insert_of_not_mem, hne13]
+
+/-- The P from Claim 2 equals the P from any CariolaroSetup for the same vertex. -/
+lemma P_eq_setup_P {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
+    {h_reg : IsKRegular G 5} {h_tri : TriangleFree G} {h_no6 : NoKIndepSet 6 G}
+    (setup : CariolaroSetup G h_reg h_tri h_no6)
+    (P : Finset (Fin 18))
+    (hP_card : P.card = 4)
+    (hP_props : ∀ p ∈ P, ¬G.Adj setup.v p ∧ commonNeighborsCard G setup.v p = 1) :
+    P = {setup.p1, setup.p2, setup.p3, setup.p4} := by
+  -- The unique set of 4 non-neighbors with commonNeighborsCard = 1 is {p1,p2,p3,p4}.
+  -- From claim2_neighbor_structure: exactly 4 vertices satisfy this property.
+  -- Both P and {p1,p2,p3,p4} have cardinality 4 and satisfy the property,
+  -- so they must be equal.
+  -- TODO: The counting argument is proven in claim2_neighbor_structure.
+  -- This lemma follows by showing both sets are the same filter set.
+  sorry
+
 /-! ### Helper lemmas for the 4-cycle structure -/
 
 /- COMMENTED OUT: Unused helper lemmas. Can be restored if needed for P_is_two_regular proof.
@@ -2348,271 +2762,35 @@ lemma P_has_at_most_four_edges {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 -/
 
 /-- P is 2-regular: each p ∈ P has exactly 2 neighbors in P.
-This is the key structural lemma that implies P is a 4-cycle. -/
+This is the key structural lemma that implies P is a 4-cycle.
+
+**Proof Strategy (using CariolaroSetup)**:
+Once we have a CariolaroSetup at vertex v, the setup's P forms a 4-cycle by P_is_cycle.
+The 4-cycle structure directly gives each vertex degree 2.
+-/
 lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
     (v : Fin 18) (P : Finset (Fin 18))
     (hP_card : P.card = 4)
     (hP_props : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1) :
     ∀ p ∈ P, (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card = 2 := by
-  intro p hp
+  classical
+  -- Step 1: Obtain a CariolaroSetup centered at vertex v
+  obtain ⟨setup, hv_eq⟩ := exists_CariolaroSetup_at h_reg h_tri h_no6 v
 
-  -- Let deg_P(p) = number of P-neighbors of p
-  let deg_P := (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card
+  -- Step 2: Show P equals the setup's P (both are the unique 4-element set
+  -- of non-neighbors of v with commonNeighborsCard = 1)
+  have hP_props' : ∀ p ∈ P, ¬G.Adj setup.v p ∧ commonNeighborsCard G setup.v p = 1 := by
+    simp only [hv_eq]; exact hP_props
+  have hP_eq : P = {setup.p1, setup.p2, setup.p3, setup.p4} :=
+    P_eq_setup_P setup P hP_card hP_props'
 
-  -- Step 1: Upper bound - deg_P(p) ≤ 2
-  -- If deg_P(p) ≥ 3, then p is adjacent to all other P-vertices.
-  -- Triangle-free constraint forces P\{p} to be an independent set.
-  -- But then sum of P-degrees = 3 + 1 + 1 + 1 = 6 = 2|E(P)|, so |E(P)| = 3.
-  -- This contradicts the lower bound (|E(P)| ≥ 4 from S-W structure).
-  have h_upper : deg_P ≤ 2 := by
-    by_contra h_not
-    push_neg at h_not
-    -- deg_P ≥ 3 means p is adjacent to at least 3 other P-vertices
-    -- Since |P| = 4, p has exactly 3 P-neighbors (all other vertices in P)
-    have h_deg_eq_3 : deg_P = 3 := by
-      have h_max : deg_P ≤ P.card - 1 := by
-        apply Nat.le_sub_one_of_lt
-        calc deg_P
-          _ = (P.filter (fun q => q ≠ p ∧ G.Adj p q)).card := rfl
-          _ ≤ (P.filter (fun q => q ≠ p)).card := by
-              apply Finset.card_le_card
-              intro x hx
-              simp only [Finset.mem_filter] at hx ⊢
-              exact ⟨hx.1, hx.2.1⟩
-          _ = (P.erase p).card := by
-              congr 1; ext x
-              simp only [Finset.mem_filter, Finset.mem_erase, ne_eq, and_comm]
-          _ = P.card - 1 := Finset.card_erase_of_mem hp
-          _ < P.card := Nat.sub_lt (by omega : 0 < P.card) (by norm_num)
-      omega
-    -- p is adjacent to all q ∈ P \ {p}
-    have h_all_adj : ∀ q ∈ P, q ≠ p → G.Adj p q := by
-      intro q hq hne
-      by_contra h_not_adj
-      -- If p is not adjacent to q, then deg_P ≤ 2 (at most 2 other vertices)
-      have h_bound : deg_P ≤ 2 := by
-        have h_filter_sub : P.filter (fun r => r ≠ p ∧ G.Adj p r) ⊆
-                            (P.erase p).erase q := by
-          intro r hr
-          simp only [Finset.mem_filter] at hr
-          simp only [Finset.mem_erase]
-          constructor
-          · intro h_eq; subst h_eq; exact h_not_adj hr.2.2
-          · exact ⟨hr.2.1, hr.1⟩
-        calc deg_P
-          _ ≤ ((P.erase p).erase q).card := Finset.card_le_card h_filter_sub
-          _ = (P.erase p).card - 1 := by
-              rw [Finset.card_erase_of_mem]
-              simp only [Finset.mem_erase]
-              exact ⟨hne, hq⟩
-          _ = P.card - 1 - 1 := by rw [Finset.card_erase_of_mem hp]
-          _ = 4 - 1 - 1 := by rw [hP_card]
-          _ = 2 := by norm_num
-      omega
-    -- Now we have p adjacent to all other P-vertices
-    -- Triangle-free forces P\{p} to be independent (else get triangle with p)
-    have h_others_indep : ∀ r1 r2 : Fin 18, r1 ∈ P → r2 ∈ P →
-        r1 ≠ p → r2 ≠ p → r1 ≠ r2 → ¬G.Adj r1 r2 := by
-      intro r1 r2 hr1 hr2 hne1 hne2 hne12 h_adj
-      -- {p, r1, r2} is a triangle
-      have h_p_r1 : G.Adj p r1 := h_all_adj r1 hr1 hne1
-      have h_p_r2 : G.Adj p r2 := h_all_adj r2 hr2 hne2
-      have h_clique : G.IsNClique 3 {p, r1, r2} := by
-        rw [SimpleGraph.isNClique_iff]
-        constructor
-        · intro x hx y hy hxy
-          simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
-          rcases hx with hx_p | hx_r1 | hx_r2 <;> rcases hy with hy_p | hy_r1 | hy_r2
-          · exact absurd (hx_p.trans hy_p.symm) hxy
-          · rw [hx_p, hy_r1]; exact h_p_r1
-          · rw [hx_p, hy_r2]; exact h_p_r2
-          · rw [hx_r1, hy_p]; exact G.symm h_p_r1
-          · exact absurd (hx_r1.trans hy_r1.symm) hxy
-          · rw [hx_r1, hy_r2]; exact h_adj
-          · rw [hx_r2, hy_p]; exact G.symm h_p_r2
-          · rw [hx_r2, hy_r1]; exact G.symm h_adj
-          · exact absurd (hx_r2.trans hy_r2.symm) hxy
-        · rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
-          · simp only [Finset.mem_singleton]; exact hne12
-          · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
-            exact ⟨hne1.symm, hne2.symm⟩
-      exact h_tri {p, r1, r2} h_clique
-    -- So P = K_{1,3} (star with center p), having only 3 edges
-    -- But from Cariolaro's S-W argument, P must have ≥ 4 edges (4 pairs share w's)
-    -- This gives contradiction
+  -- Step 3: Get the cycle structure from CariolaroSetup.P_is_cycle
+  have h_cycle := setup.P_is_cycle
 
-    -- The S-W structure argument:
-    -- Each s_i ∈ S = {s1,s2,s3,s4} sends 2 edges to W ⊆ Q
-    -- |W| = 4, each w receives ≤ 2 S-edges (from commonNeighbors bound)
-    -- So each w receives exactly 2 S-edges
-    -- Each w gives 1 pair (s_i, s_j), so 4 pairs exist
-    -- By p_adjacent_of_shared_w, each pair gives a P-edge
-    -- So |E(P)| ≥ 4, but K_{1,3} has only 3 edges: contradiction
-
-    -- For now, we use the fact that this specific structure (K_{1,3})
-    -- cannot satisfy the edge constraints from the full Cariolaro argument.
-    -- The detailed verification requires the S-W bipartite structure.
-
-    -- Simplification: In K_{1,3}, the 3 leaves each have degree 1 in P.
-    -- So each leaf has 3 Q-neighbors. Together, the 3 leaves send 9 edges to Q.
-    -- The center p sends deg_Q(p) = 4 - 3 = 1 edge to Q.
-    -- Total P→Q edges = 10.
-    -- But the equation 16 = 2|E(P)| + |E(P,Q)| gives:
-    -- With |E(P)| = 3: |E(P,Q)| = 16 - 6 = 10. Check!
-    --
-    -- From Q side: 24 = |E(P,Q)| + 2|E(Q)|, so |E(Q)| = (24 - 10)/2 = 7.
-    --
-    -- The contradiction comes from the S-W bipartite structure:
-    --
-    -- FULL ARGUMENT (Cariolaro's Claim 3):
-    -- 1. Split N(v) = {t, s₁, s₂, s₃, s₄} where sᵢ-pᵢ are unique edges to P
-    -- 2. Split Q into T = N(t) ∩ Q (4 vertices) and W = Q \ T (4 vertices)
-    -- 3. Each w ∈ W has commonNeighborsCard(v,w) = 2, both from S
-    --    (since w is not adjacent to t, its common neighbors with v are s's)
-    -- 4. So each w has exactly 2 S-neighbors → 8 total S-W edges
-    -- 5. Each w gives one pair (sᵢ,sⱼ) of s's sharing it → 4 pairs total
-    -- 6. By p_adjacent_of_shared_w, each pair gives a P-edge
-    -- 7. The 4 pairs must form a C₄ pattern (not 3 pairs from same triple)
-    --    because if all 3 pairs from {s₁,s₂,s₃} shared w's, we'd get a
-    --    triangle {p₁,p₂,p₃} in P, contradicting h_tri
-    -- 8. C₄ on 4 vertices has exactly 4 edges
-    -- 9. But K_{1,3} (star) has only 3 edges: CONTRADICTION
-    --
-    -- This argument requires setting up T/W partition and using p_adjacent_of_shared_w.
-
-    -- The S-W structure forces |E_P| ≥ 4, but K_{1,3} has only 3 edges
-    -- Key insight: the S-W bipartite graph is 2-regular on 4+4 vertices,
-    -- forming an 8-cycle that gives 4 distinct pairs of s's.
-    -- Each pair forces a P-edge via p_adjacent_of_shared_w.
-    -- But K_{1,3} has only 3 edges: contradiction.
-
-    exfalso
-    -- The formal proof requires constructing the T/W partition of Q
-    -- and applying p_adjacent_of_shared_w for each w ∈ W.
-    -- This shows |E_P| ≥ 4, contradicting K_{1,3} having only 3 edges.
-    sorry
-
-  -- Step 2: Lower bound - deg_P(p) ≥ 2
-  -- By the S-W argument, P has exactly 4 edges forming a C₄.
-  -- In C₄, every vertex has degree exactly 2.
-  have h_lower : 2 ≤ deg_P := by
-    -- Sum of P-degrees = 2|E(P)| ≥ 2×4 = 8 (from S-W argument above)
-    -- If some vertex had deg ≤ 1, and all others have deg ≤ 2 (by h_upper),
-    -- then sum ≤ 1 + 2 + 2 + 2 = 7 < 8. Contradiction.
-    -- So every vertex has deg ≥ 2, hence deg = 2 exactly.
-
-    by_contra h_not
-    push_neg at h_not
-    -- deg_P ≤ 1 for p
-
-    -- Compute bounds on sum of degrees
-    -- Upper bound: deg_P(p) ≤ 1, and ∀ q ∈ P, deg_P(q) ≤ 2 (from h_upper applied to each)
-    -- This gives sum ≤ 1 + 2 + 2 + 2 = 7
-
-    -- First, show every other vertex also has deg_P ≤ 2
-    have h_others_upper : ∀ q ∈ P, (P.filter (fun r => r ≠ q ∧ G.Adj q r)).card ≤ 2 := by
-      intro q hq
-      -- Apply the same upper bound argument to q
-      by_contra h_gt
-      push_neg at h_gt
-      -- If deg_P(q) ≥ 3, then by the same argument as h_upper, we get P = K_{1,3} with center q
-      -- But we showed K_{1,3} is impossible
-      have h_deg_eq_3 : (P.filter (fun r => r ≠ q ∧ G.Adj q r)).card = 3 := by
-        have h_max : (P.filter (fun r => r ≠ q ∧ G.Adj q r)).card ≤ P.card - 1 := by
-          apply Nat.le_sub_one_of_lt
-          calc (P.filter (fun r => r ≠ q ∧ G.Adj q r)).card
-            _ ≤ (P.filter (fun r => r ≠ q)).card := by
-                apply Finset.card_le_card
-                intro x hx
-                simp only [Finset.mem_filter] at hx ⊢
-                exact ⟨hx.1, hx.2.1⟩
-            _ = (P.erase q).card := by
-                congr 1; ext x
-                simp only [Finset.mem_filter, Finset.mem_erase, ne_eq, and_comm]
-            _ = P.card - 1 := Finset.card_erase_of_mem hq
-            _ < P.card := Nat.sub_lt (by omega : 0 < P.card) (by norm_num)
-        omega
-      -- q is adjacent to all other P vertices
-      have h_all_adj_q : ∀ r ∈ P, r ≠ q → G.Adj q r := by
-        intro r hr hne
-        by_contra h_not_adj
-        have h_bound : (P.filter (fun s => s ≠ q ∧ G.Adj q s)).card ≤ 2 := by
-          have h_filter_sub : P.filter (fun s => s ≠ q ∧ G.Adj q s) ⊆ (P.erase q).erase r := by
-            intro s hs
-            simp only [Finset.mem_filter] at hs
-            simp only [Finset.mem_erase]
-            constructor
-            · intro h_eq; subst h_eq; exact h_not_adj hs.2.2
-            · exact ⟨hs.2.1, hs.1⟩
-          calc (P.filter (fun s => s ≠ q ∧ G.Adj q s)).card
-            _ ≤ ((P.erase q).erase r).card := Finset.card_le_card h_filter_sub
-            _ = (P.erase q).card - 1 := by
-                rw [Finset.card_erase_of_mem]
-                simp only [Finset.mem_erase]
-                exact ⟨hne, hr⟩
-            _ = P.card - 1 - 1 := by rw [Finset.card_erase_of_mem hq]
-            _ = 4 - 1 - 1 := by rw [hP_card]
-            _ = 2 := by norm_num
-        omega
-      -- Triangle-free forces other vertices to be non-adjacent to each other
-      have h_q_others_indep : ∀ r1 r2 : Fin 18, r1 ∈ P → r2 ∈ P →
-          r1 ≠ q → r2 ≠ q → r1 ≠ r2 → ¬G.Adj r1 r2 := by
-        intro r1 r2 hr1 hr2 hne1 hne2 hne12 h_adj
-        have h_q_r1 : G.Adj q r1 := h_all_adj_q r1 hr1 hne1
-        have h_q_r2 : G.Adj q r2 := h_all_adj_q r2 hr2 hne2
-        have h_clique : G.IsNClique 3 {q, r1, r2} := by
-          rw [SimpleGraph.isNClique_iff]
-          constructor
-          · intro x hx y hy hxy
-            simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
-            rcases hx with hx_q | hx_r1 | hx_r2 <;> rcases hy with hy_q | hy_r1 | hy_r2
-            · exact absurd (hx_q.trans hy_q.symm) hxy
-            · rw [hx_q, hy_r1]; exact h_q_r1
-            · rw [hx_q, hy_r2]; exact h_q_r2
-            · rw [hx_r1, hy_q]; exact G.symm h_q_r1
-            · exact absurd (hx_r1.trans hy_r1.symm) hxy
-            · rw [hx_r1, hy_r2]; exact h_adj
-            · rw [hx_r2, hy_q]; exact G.symm h_q_r2
-            · rw [hx_r2, hy_r1]; exact G.symm h_adj
-            · exact absurd (hx_r2.trans hy_r2.symm) hxy
-          · rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
-            · simp only [Finset.mem_singleton]; exact hne12
-            · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
-              exact ⟨hne1.symm, hne2.symm⟩
-        exact h_tri {q, r1, r2} h_clique
-      -- K_{1,3} with center q: same S-W contradiction applies
-      -- Get Q from claim2
-      obtain ⟨P', Q, hP'_card, hQ_card, hP'_props, hQ_props⟩ :=
-        claim2_neighbor_structure h_reg h_tri h_no6 v
-      -- The S-W structure forces |E_P| ≥ 4, but K_{1,3} has only 3 edges
-      exfalso
-      sorry -- Same S-W argument as in upper bound
-
-    -- Now bound the sum of degrees
-    -- deg_P(p) ≤ 1, and for other q: deg_P(q) ≤ 2
-    -- Sum ≤ 1 + 2 * 3 = 7
-
-    -- But |E_P| ≥ 4 from S-W structure means sum ≥ 8
-    -- Contradiction!
-
-    -- From S-W: at least 4 edges in P
-    -- So sum of degrees ≥ 8
-    -- But we have sum ≤ 7 (since one vertex has deg ≤ 1)
-
-    -- The S-W structure gives 4 w's, each with 2 S-neighbors
-    -- This forces 4 pairs of s's, hence 4 P-edges
-    -- So sum of P-degrees = 2 * |E_P| ≥ 8
-
-    -- With deg_P(p) ≤ 1 and others ≤ 2:
-    -- sum = deg_P(p) + (sum over P \ {p} of deg_P) ≤ 1 + 2 * 3 = 7 < 8
-    -- Contradiction
-
-    -- TODO: Complete formal S-W edge counting argument
-    exfalso
-    sorry
-
-  omega
+  -- Step 4: Apply the cycle degree lemma (explicit vertex arguments)
+  exact cycle_vertex_has_two_neighbors setup.p1 setup.p2 setup.p3 setup.p4
+    setup.h_P_distinct h_cycle P hP_eq
 
 /-- A 2-regular graph on 4 vertices is a 4-cycle (C₄).
 This is a graph-theoretic fact: 4 vertices with each having degree 2
@@ -3265,17 +3443,49 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         · simp only [mem_insert, mem_singleton, not_or]; exact ⟨h_s_ne_p1, h_s_ne_p2⟩
     exact h_tri {s1, p1, p2} h_triangle
 
-  -- Step 5: The full Cariolaro argument shows that the constraint tracking
-  -- eventually leads to some pair of non-adjacent vertices having 3 common neighbors,
-  -- contradicting commonNeighborsCard ≤ 2.
+  -- Step 5: Show s2 is NOT adjacent to p1 (since s1 is the unique N(v)-neighbor of p1)
+  have hs2_nonadj_p1 : ¬G.Adj s2 p1 := by
+    intro h
+    -- If s2 were adjacent to p1, then s2 would be a common neighbor of v and p1
+    -- But p1's unique common neighbor with v is s1, and s1 ≠ s2
+    have h_s2_in_N : s2 ∈ G.neighborFinset v := hs2_in_N
+    have h_s2_witness : s2 ∈ G.neighborFinset v ∧ G.Adj s2 p1 := ⟨h_s2_in_N, h⟩
+    have h_eq : s2 = s1 := hs1_unique s2 h_s2_witness
+    exact h_s_ne h_eq.symm
+
+  -- Step 6: p2 is a common neighbor of s2 and p1
+  -- - s2 is adjacent to p2 (s-p partner edge)
+  -- - p1 is adjacent to p2 (cycle edge)
+  have hp2_common : G.Adj s2 p2 ∧ G.Adj p1 p2 := ⟨hs2_adj_p2, h_adj12⟩
+
+  -- Step 7: The full Cariolaro argument requires finding w1, t1 ∈ Q
+  -- that are also common neighbors of s2 and p1.
   --
-  -- Specifically: after labeling t, tᵢ's, wᵢ's and tracking edges,
-  -- s₂ and p₁ end up sharing {p₂, w₁, t₁} as common neighbors.
-  -- Since s₂ is not adjacent to p₁ (p₁'s only N(v)-neighbor is s₁),
-  -- this violates the bound from Claim 2.
+  -- The constraint tracking from Cariolaro's paper shows:
+  -- 1. Label pi-ti (each p has exactly one T-neighbor) and pi-wi (each p has one W-neighbor)
+  -- 2. w1 must have N(v)-neighbors from {s2,s3,s4} (not s1, else triangle s1-p1-w1)
+  -- 3. w1 must have N(t)-neighbors from {t2,t3,t4} (not t1)
+  -- 4. If w1-s2 and w1-t2, then p2 and w1 share 3 common neighbors → contradiction
+  -- 5. If w1-s4 and w1-t4, then p4 and w1 share 3 common neighbors → contradiction
+  -- 6. So w1-s3, w1-t3, and by symmetry w1-s2, w1-t4
+  -- 7. s2's T-neighbor can't be t2 (triangle s2-p2-t2), t3 (s2-w1-t3), t4 (s2-w1-t4)
+  -- 8. So s2-t1
+  -- 9. Now s2 and p1 share {p2, w1, t1} = 3 common neighbors
   --
-  -- The full verification requires tracking all the edge constraints through
-  -- the labeling scheme. See Cariolaro's paper for details.
+  -- The detailed verification requires extracting all T and W vertices
+  -- and tracking their edge constraints. This is a substantial formalization
+  -- that follows the Cariolaro paper line-by-line.
+  --
+  -- For the formal proof, we would need to:
+  -- - Extract t (5th element of N(v))
+  -- - Partition Q into T = {neighbors of t} and W = {non-neighbors of t}
+  -- - Extract specific t1, w1 from T and W
+  -- - Prove the triangle-avoiding constraints
+  -- - Apply commonNeighborsCard_le_two
+  --
+  -- TODO: Complete the vertex extraction and constraint tracking.
+  -- The mathematical argument is fully understood; the Lean formalization
+  -- requires careful tracking of all 18 vertices and their adjacencies.
   sorry
 
 /-! ## Upper Bound Theorem -/

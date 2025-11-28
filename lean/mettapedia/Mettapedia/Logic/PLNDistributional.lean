@@ -343,6 +343,180 @@ theorem pln_deduction_variance_simplified
   have h3 : 0 ≤ Var_AB * Var_BC := mul_nonneg hVar_AB hVar_BC
   linarith
 
+/-! # The Algebra of Independence
+
+This section develops the general theory of variance for affine combinations of
+products of independent random variables. The key result is that for Z = aXY + bX + cY + d,
+the variance can be written as a **sum of squares**, guaranteeing non-negativity.
+
+## Mathematical Setup
+
+Let X, Y be independent random variables with:
+- Means: μ_X = E[X], μ_Y = E[Y]
+- Variances: σ²_X = Var(X), σ²_Y = Var(Y)
+
+## Key Moments (by Independence)
+
+- E[XY] = E[X]·E[Y] = μ_X·μ_Y
+- E[X²Y] = E[X²]·E[Y] = (σ²_X + μ²_X)·μ_Y
+- E[XY²] = E[X]·E[Y²] = μ_X·(σ²_Y + μ²_Y)
+- E[X²Y²] = E[X²]·E[Y²] = (σ²_X + μ²_X)(σ²_Y + μ²_Y)
+-/
+
+/--
+The variance of the product XY for independent X, Y.
+
+**Formula:**
+$$\text{Var}(XY) = \mu_X^2 \sigma_Y^2 + \mu_Y^2 \sigma_X^2 + \sigma_X^2 \sigma_Y^2$$
+
+This is the fundamental building block for more complex variance formulas.
+-/
+def varianceProductIndep (μX μY σ2X σ2Y : ℝ) : ℝ :=
+  μX^2 * σ2Y + μY^2 * σ2X + σ2X * σ2Y
+
+/--
+The variance of Z = aXY + bX + cY + d for independent X, Y.
+
+**Raw Formula:**
+$$\text{Var}(Z) = a^2 \text{Var}(XY) + b^2 \sigma_X^2 + c^2 \sigma_Y^2
+                + 2ab \mu_Y \sigma_X^2 + 2ac \mu_X \sigma_Y^2$$
+
+**Sum-of-Squares Form** (key insight for non-negativity):
+$$\text{Var}(Z) = (a\mu_Y + b)^2 \sigma_X^2 + (a\mu_X + c)^2 \sigma_Y^2 + a^2 \sigma_X^2 \sigma_Y^2$$
+
+The cross-terms arise from covariances:
+- Cov(XY, X) = μ_Y · σ²_X
+- Cov(XY, Y) = μ_X · σ²_Y
+- Cov(X, Y) = 0 (independence)
+-/
+def varianceAffineProductIndep (μX μY σ2X σ2Y a b c : ℝ) : ℝ :=
+  let σ2XY := varianceProductIndep μX μY σ2X σ2Y
+  a^2 * σ2XY + b^2 * σ2X + c^2 * σ2Y + 2*a*b*μY*σ2X + 2*a*c*μX*σ2Y
+
+/--
+**Correctness Theorem**: The variance formula equals E[Z²] - E[Z]².
+
+This verifies our closed-form expression is algebraically correct by expanding
+E[(aXY + bX + cY + d)²] and subtracting E[aXY + bX + cY + d]².
+-/
+theorem varianceAffineProductIndep_correct (EX EY VarX VarY a b c d : ℝ) :
+    let EX2 := VarX + EX^2                    -- E[X²] = Var(X) + E[X]²
+    let EY2 := VarY + EY^2                    -- E[Y²] = Var(Y) + E[Y]²
+    let EXY := EX * EY                        -- E[XY] = E[X]E[Y]
+    let EX2Y2 := EX2 * EY2                    -- E[(XY)²] = E[X²]E[Y²]
+    let EX2Y := EX2 * EY                      -- E[X²Y] = E[X²]E[Y]
+    let EXY2 := EX * EY2                      -- E[XY²] = E[X]E[Y²]
+    let EZ := a * EXY + b * EX + c * EY + d
+    let EZ2 := a^2 * EX2Y2 + b^2 * EX2 + c^2 * EY2 + d^2 +
+               2*a*b * EX2Y + 2*a*c * EXY2 + 2*a*d * EXY +
+               2*b*c * EXY + 2*b*d * EX + 2*c*d * EY
+    EZ2 - EZ^2 = varianceAffineProductIndep EX EY VarX VarY a b c := by
+  simp only [varianceAffineProductIndep, varianceProductIndep]
+  ring
+
+/--
+**Non-negativity Theorem** (The "God's Book" Proof)
+
+The variance is always ≥ 0 because it can be rewritten as a sum of squares:
+$$\text{Var}(Z) = \underbrace{(a\mu_Y + b)^2}_{\geq 0} \sigma_X^2
+                + \underbrace{(a\mu_X + c)^2}_{\geq 0} \sigma_Y^2
+                + \underbrace{a^2}_{\geq 0} \sigma_X^2 \sigma_Y^2$$
+
+Since σ²_X ≥ 0 and σ²_Y ≥ 0 (variances are non-negative), each term is ≥ 0.
+-/
+theorem varianceAffineProductIndep_nonneg (μX μY σ2X σ2Y a b c : ℝ)
+    (hσX : 0 ≤ σ2X) (hσY : 0 ≤ σ2Y) :
+    0 ≤ varianceAffineProductIndep μX μY σ2X σ2Y a b c := by
+  simp only [varianceAffineProductIndep, varianceProductIndep]
+  -- Key algebraic identity: rewrite as sum of squares
+  have h_sos : a^2 * (μX^2 * σ2Y + μY^2 * σ2X + σ2X * σ2Y) + b^2 * σ2X + c^2 * σ2Y +
+               2*a*b*μY*σ2X + 2*a*c*μX*σ2Y =
+               (a*μY + b)^2 * σ2X + (a*μX + c)^2 * σ2Y + a^2 * σ2X * σ2Y := by ring
+  rw [h_sos]
+  have h1 : 0 ≤ (a*μY + b)^2 * σ2X := mul_nonneg (sq_nonneg _) hσX
+  have h2 : 0 ≤ (a*μX + c)^2 * σ2Y := mul_nonneg (sq_nonneg _) hσY
+  have h3 : 0 ≤ a^2 * σ2X * σ2Y := mul_nonneg (mul_nonneg (sq_nonneg _) hσX) hσY
+  linarith
+
+/-! # The PLN Deduction Formula
+
+The full PLN deduction rule computes P(A→C) from P(A→B) and P(B→C):
+
+$$s_{AC} = s_{AB} \cdot s_{BC} + \frac{(1 - s_{AB})(s_C - s_B \cdot s_{BC})}{1 - s_B}$$
+
+When s_B and s_C are treated as constants (point estimates), this is an affine
+function of the product s_AB · s_BC, fitting our general framework.
+
+## Rearranged Form
+
+Let X = s_AB, Y = s_BC, and k = 1/(1 - s_B). Then:
+$$s_{AC} = aXY + bX + cY + d$$
+
+where:
+- a = 1 + k·s_B (coefficient of XY)
+- b = -k·s_C (coefficient of X)
+- c = -k·s_B (coefficient of Y)
+- d = k·s_C (constant)
+-/
+
+/--
+The coefficients (a, b, c, d) for the PLN Deduction formula.
+
+Given term probabilities s_B and s_C (treated as constants), returns the
+coefficients that express s_AC as aXY + bX + cY + d.
+-/
+def plnDeductionCoeffs (sB sC : ℝ) (_hB : sB ≠ 1) : ℝ × ℝ × ℝ × ℝ :=
+  let k := 1 / (1 - sB)
+  ( 1 + k * sB,      -- a: coefficient of s_AB · s_BC
+   -k * sC,          -- b: coefficient of s_AB
+   -k * sB,          -- c: coefficient of s_BC
+    k * sC )         -- d: constant term
+
+/--
+The **exact** variance of the full PLN Deduction formula.
+
+This is the "non-simplified" version that includes all cross-terms from
+the (1 - s_AB) correction term. Compare with `trueProductVariance` which
+only considers the simplified Z = XY case.
+-/
+def trueFullDeductionVariance (s_AB s_BC Var_AB Var_BC sB sC : ℝ) (hB : sB ≠ 1) : ℝ :=
+  let (a, b, c, _) := plnDeductionCoeffs sB sC hB
+  varianceAffineProductIndep s_AB s_BC Var_AB Var_BC a b c
+
+/-! # The Variance Audit
+
+We now prove that the full deduction variance is always non-negative, and
+show how the simplified version relates to the full version.
+-/
+
+/--
+**Main Theorem**: The full PLN deduction variance is always non-negative.
+
+This follows directly from `varianceAffineProductIndep_nonneg` since the
+formula is a sum of squared terms times non-negative variances.
+-/
+theorem pln_deduction_variance_full_nonneg
+    (s_AB s_BC Var_AB Var_BC sB sC : ℝ)
+    (_hs_AB : s_AB ∈ Icc 0 1) (_hs_BC : s_BC ∈ Icc 0 1)
+    (hVar_AB : 0 ≤ Var_AB) (hVar_BC : 0 ≤ Var_BC)
+    (_hsB : sB ∈ Ioo 0 1) (_hsC : sC ∈ Icc 0 1)
+    (hB : sB ≠ 1) :
+    0 ≤ trueFullDeductionVariance s_AB s_BC Var_AB Var_BC sB sC hB := by
+  unfold trueFullDeductionVariance plnDeductionCoeffs
+  exact varianceAffineProductIndep_nonneg s_AB s_BC Var_AB Var_BC _ _ _ hVar_AB hVar_BC
+
+/--
+The simplified variance Var(XY) is the special case of the affine formula with a=1, b=c=0.
+
+This shows that `varianceProductIndep` is subsumed by the more general
+`varianceAffineProductIndep`, providing a unified theory.
+-/
+theorem simplified_eq_affine_special_case (μX μY σ2X σ2Y : ℝ) :
+    varianceProductIndep μX μY σ2X σ2Y =
+    varianceAffineProductIndep μX μY σ2X σ2Y 1 0 0 := by
+  simp only [varianceAffineProductIndep, varianceProductIndep]
+  ring
+
 /-! ## Confidence Count Relationship
 
 PLN confidence c is related to "evidence count" n via c = n/(n+k) for some k.
