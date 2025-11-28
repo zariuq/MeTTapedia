@@ -549,14 +549,21 @@ theorem regrade_on_rat (W : WeakRegraduation combine_fn)
       -- Link r and s back to the goal form
       have hr_eq : (r : ℝ) = (k : ℝ) / (n : ℝ) := by dsimp [r]; simp [Rat.cast_div, Rat.cast_natCast]
       have hs_eq : (s : ℝ) = (1 : ℝ) / (n : ℝ) := by dsimp [s]; simp [Rat.cast_div, Rat.cast_one, Rat.cast_natCast]
-      -- h_add : W.regrade ↑((k+1)/n) = W.regrade r + W.regrade s (Lean normalizes both sides)
-      -- Goal : W.regrade (((k+1)/n : ℚ) : ℝ) = (k+1)/n (Lean normalizes LHS)
-      -- Use calc to bridge
+      -- h_add : W.regrade ↑((k+1)/n) = W.regrade r + W.regrade s
+      -- Goal : W.regrade (((k+1)/n : ℚ) : ℝ) = (k+1)/n
+      simp only [hr_eq, hs_eq] at h_add
+      -- h_add now in real-division form for r and s
+      -- Bridge: convert h_add's LHS from rat-cast to real-division form
+      have h_add' : W.regrade (((k + 1 : ℕ) : ℝ) / (n : ℝ)) =
+                    W.regrade ((k : ℝ) / (n : ℝ)) + W.regrade ((1 : ℝ) / (n : ℝ)) := by
+        convert h_add using 2 <;>
+          simp only [Rat.cast_div, Rat.cast_natCast, Rat.cast_add, Rat.cast_one,
+                     Nat.cast_add, Nat.cast_one]
       calc W.regrade ((((k + 1 : ℕ) : ℚ) / n) : ℝ)
-          = W.regrade (((k : ℝ) + 1) / (n : ℝ)) := by rw [hk1_cast_eq]
-        _ = W.regrade (r : ℝ) + W.regrade (s : ℝ) := by
-              simp only [hk1_cast_eq, hr_eq, hs_eq] at h_add; exact h_add
-        _ = (k : ℝ) / (n : ℝ) + (1 : ℝ) / (n : ℝ) := by rw [← hk_cast_eq, ← h1_cast_eq, ih', h1_cast_eq]
+          = W.regrade (((k + 1 : ℕ) : ℝ) / (n : ℝ)) := by congr 1
+        _ = W.regrade ((k : ℝ) / (n : ℝ)) + W.regrade ((1 : ℝ) / (n : ℝ)) := h_add'
+        _ = (k : ℝ) / (n : ℝ) + (1 : ℝ) / (n : ℝ) := by
+              rw [← hk_cast_eq, ← h1_cast_eq, ih', h1_cast_eq]
         _ = ((k : ℝ) + 1) / (n : ℝ) := by field_simp; ring
         _ = ((k + 1 : ℕ) : ℝ) / (n : ℝ) := by simp only [Nat.cast_add, Nat.cast_one]
   -- Apply h_kn at k = p'

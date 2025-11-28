@@ -5038,11 +5038,46 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- (forced by S_pair_share_at_most_one_W) aligns with the P 4-cycle structure.
   -- ═══════════════════════════════════════════════════════════════════════════
 
-  -- TODO: Complete the specific 8-cycle labeling and verify all CariolaroSetup properties
-  -- This requires:
-  -- 1. Using five_cycle_structure to show adjacent p's have s's sharing W's
-  -- 2. Extracting the shared W's and relabeling w1, w2, w3, w4 appropriately
-  -- 3. Proving all ~100 adjacency properties of CariolaroSetup
+  -- STEP 6c: Find the specific W's adjacent to consecutive s-pairs
+  --
+  -- The S-W bipartite graph is an 8-cycle (forced by W_vertex_has_two_S_neighbors
+  -- and S_pair_share_at_most_one_W). In this 8-cycle, consecutive s's share exactly
+  -- one W-neighbor. We need to find these shared W's.
+  --
+  -- Key insight: S_pair_share_at_most_one_W implies that if two different W's
+  -- are both adjacent to s_i and s_j, we get a contradiction. So the shared W
+  -- is unique (if it exists).
+
+  -- ═══════════════════════════════════════════════════════════════════════════
+  -- STEP 6c: Find specific W's adjacent to consecutive s-pairs
+  --
+  -- The S-W bipartite graph is an 8-cycle (forced by W_vertex_has_two_S_neighbors
+  -- and S_pair_share_at_most_one_W). Consecutive s's in the P-labeling share a W.
+  --
+  -- Key insights:
+  -- 1. Each W has exactly 2 S-neighbors (W_vertex_has_two_S_neighbors)
+  -- 2. No two S's share a PAIR of W-neighbors (S_pair_share_at_most_one_W)
+  -- 3. This forces the S-W graph to be an 8-cycle, not two 4-cycles
+  -- 4. The P-cycle (p1-p2-p3-p4) determines s1-s2-s3-s4 are consecutive in 8-cycle
+  --
+  -- For each consecutive s-pair (s1,s2), (s2,s3), (s3,s4), (s4,s1), there exists
+  -- a unique W adjacent to both. These 4 W's are distinct and form the relabeling.
+  --
+  -- TODO: Complete the extraction:
+  -- 1. Prove consecutive s-pairs share exactly one W (8-cycle argument)
+  -- 2. Extract w1' = unique W adj to {s1,s2}, w2' = unique W adj to {s2,s3}, etc.
+  -- 3. Prove w1', w2', w3', w4' are distinct (each has 2 S-neighbors, would need 3)
+  -- 4. Derive non-adjacencies using W_vertex_has_two_S_neighbors
+  -- 5. Build CariolaroSetup with all required properties
+  --
+  -- The proof that p_i-p_{i+1} adjacent implies s_i,s_{i+1} share a W uses:
+  -- - Adjacent p's share common neighbors outside N(v)
+  -- - Their Q-neighbors intersect in at least one W (by 8-cycle forcing)
+  -- ═══════════════════════════════════════════════════════════════════════════
+
+  -- For now, we leave this as the main remaining sorry in the construction.
+  -- All the infrastructure (T, W, s-partners, t, etc.) is correctly extracted.
+  -- The final step is proving the specific 8-cycle labeling.
   sorry
 
 /-- Existence of a CariolaroSetup for any counterexample graph. -/
