@@ -559,12 +559,16 @@ theorem regrade_on_rat (W : WeakRegraduation combine_fn)
         convert h_add using 2 <;>
           simp only [Rat.cast_div, Rat.cast_natCast, Rat.cast_add, Rat.cast_one,
                      Nat.cast_add, Nat.cast_one]
+      -- Bridge casts: ih' and h_unit are in ↑↑ form, we need ↑ form
+      have eq1 : W.regrade ((k : ℝ) / (n : ℝ)) = (k : ℝ) / (n : ℝ) := by
+        convert ih' using 2 <;> simp only [Rat.cast_natCast]
+      have eq2 : W.regrade ((1 : ℝ) / (n : ℝ)) = (1 : ℝ) / (n : ℝ) := by
+        convert h_unit using 2 <;> simp only [Rat.cast_one, Rat.cast_natCast]
       calc W.regrade ((((k + 1 : ℕ) : ℚ) / n) : ℝ)
           = W.regrade (((k + 1 : ℕ) : ℝ) / (n : ℝ)) := by congr 1
         _ = W.regrade ((k : ℝ) / (n : ℝ)) + W.regrade ((1 : ℝ) / (n : ℝ)) := h_add'
-        _ = (k : ℝ) / (n : ℝ) + (1 : ℝ) / (n : ℝ) := by
-              rw [← hk_cast_eq, ← h1_cast_eq, ih', h1_cast_eq]
-        _ = ((k : ℝ) + 1) / (n : ℝ) := by field_simp; ring
+        _ = (k : ℝ) / (n : ℝ) + (1 : ℝ) / (n : ℝ) := by rw [eq1, eq2]
+        _ = ((k : ℝ) + 1) / (n : ℝ) := by ring
         _ = ((k + 1 : ℕ) : ℝ) / (n : ℝ) := by simp only [Nat.cast_add, Nat.cast_one]
   -- Apply h_kn at k = p'
   have h_result := h_kn p' hp'_le_n
@@ -573,6 +577,7 @@ theorem regrade_on_rat (W : WeakRegraduation combine_fn)
     rw [hq_eq]
     simp only [Int.cast_natCast, Rat.cast_div, Rat.cast_intCast, Rat.cast_natCast]
   rw [h_q_rat, h_result, ← h_q_eq']
+  exact h_q_rat
 
 /-- Main derivation: φ = id on [0,1] when combine_fn = + on ℚ ∩ [0,1].
 

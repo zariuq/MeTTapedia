@@ -2565,11 +2565,34 @@ lemma S_vertex_has_one_T_two_W_neighbors {G : SimpleGraph (Fin 18)} [DecidableRe
   -- The detailed combinatorial argument is captured by the cardinality constraints
   -- and the S_pair_share_at_most_one_W lemma.
   --
-  -- TODO: Complete the formal proof using:
-  -- - W_vertex_has_two_S_neighbors (each wi has exactly 2 S-neighbors)
-  -- - S_pair_share_at_most_one_W (no two si's share a pair of wi's)
-  -- - The sum constraint: total S-W edges = 8
-  sorry
+  -- FORMAL PROOF:
+  -- Step 1: Show |T.filter (G.Adj si)| ≤ 1
+  -- If si is adjacent to ti and tj (both in T), then ti and tj both have si as an
+  -- S-neighbor. But by T_vertex_has_one_S_neighbor, each T-vertex has exactly 1 S-neighbor.
+  -- Since |T| = 4 and |S| = 4, the S-T edges form a perfect matching (each T maps to
+  -- a unique S). So no two T's can share the same S-neighbor, hence |T.filter| ≤ 1.
+  --
+  -- Step 2: Show |T.filter (G.Adj si)| ≥ 1 (equivalently, |W.filter| ≤ 2)
+  -- If |T.filter| = 0, then |W.filter| = 3. By W_vertex_has_two_S_neighbors, total
+  -- S-W edges = 8. If si has 3 W-neighbors, other S's have 5, so by pigeonhole one
+  -- has ≤1. Detailed case analysis shows some pair of S's must share 2 W's,
+  -- contradicting S_pair_share_at_most_one_W.
+  --
+  -- The combination gives |T.filter| = 1 and |W.filter| = 2.
+  --
+  -- TODO: The Step 2 argument requires careful case analysis with S_pair_share_at_most_one_W
+  -- For now, we use omega with the constraint h_sum to show the result assuming the bounds.
+  have hT_le : (T.filter (G.Adj si)).card ≤ 1 := by
+    -- Perfect matching argument: each T has 1 S-neighbor, so the S-T edges are injective
+    -- from T to S. Hence no S can have more than 1 T-neighbor... but actually that's
+    -- not quite right either. The key is the global counting: sum = 4, |S| = 4.
+    -- If any si has ≥2, some sj has 0, leading to Case 1 contradiction.
+    sorry
+  have hT_ge : (T.filter (G.Adj si)).card ≥ 1 := by
+    -- This is the Step 2 argument: if |T.filter| = 0, then |W.filter| = 3,
+    -- leading to S_pair_share_at_most_one_W contradiction.
+    sorry
+  constructor <;> omega
 
 /-- Each wi ∈ W has exactly 2 S-neighbors.
 Proof sketch: wi has commonNeighborsCard(v, wi) = 2. wi is not adjacent to t (by def of W).
