@@ -350,63 +350,57 @@ lemma pNormInvolution_zero (p : ℝ) (hp : 0 < p) :
 /-- The p-norm involution satisfies N(1) = 0. -/
 lemma pNormInvolution_one (p : ℝ) (hp : 0 < p) :
     pNormInvolution p hp 1 = 0 := by
-  simp [pNormInvolution, Real.zero_rpow (one_div_ne_zero (ne_of_gt hp))]
+  simp only [pNormInvolution, Real.one_rpow, sub_self]
+  exact Real.zero_rpow (one_div_ne_zero (ne_of_gt hp))
 
 /-- The p-norm involution is involutive on [0,1]. -/
 lemma pNormInvolution_involutive (p : ℝ) (hp : 0 < p) (x : ℝ)
     (hx0 : 0 ≤ x) (hx1 : x ≤ 1) :
     pNormInvolution p hp (pNormInvolution p hp x) = x := by
   simp only [pNormInvolution]
+  -- First, establish that 0 ≤ 1 - x^p since x ∈ [0,1]
   have h1 : 0 ≤ 1 - x ^ p := by
-    have hxp : x ^ p ≤ 1 := by
-      apply Real.rpow_le_one hx0 hx1 (le_of_lt hp)
+    have hxp : x ^ p ≤ 1 := Real.rpow_le_one hx0 hx1 (le_of_lt hp)
     linarith
-  have h2 : (1 - x ^ p) ^ (1 / p) ^ p = 1 - x ^ p := by
-    rw [← Real.rpow_natCast, ← Real.rpow_mul h1]
-    simp [hp, ne_of_gt hp]
-  rw [h2]
-  ring_nf
-  have hxp_nn : 0 ≤ x ^ p := Real.rpow_nonneg hx0 p
-  have h3 : (1 - (1 - x ^ p)) ^ (1 / p) = (x ^ p) ^ (1 / p) := by ring_nf
-  rw [h3, ← Real.rpow_mul hxp_nn]
-  simp [hp, ne_of_gt hp, Real.rpow_one, hx0]
+  -- Establish nonnegativity for the inner term
+  have h_inner_nn : 0 ≤ (1 - x ^ p) ^ (1 / p) := Real.rpow_nonneg h1 (1 / p)
+  -- Key: ((1 - x^p)^(1/p))^p = 1 - x^p using rpow_mul
+  have h2 : ((1 - x ^ p) ^ (1 / p)) ^ p = 1 - x ^ p := by
+    rw [← Real.rpow_mul h1]
+    simp only [one_div, inv_mul_cancel₀ (ne_of_gt hp), Real.rpow_one]
+  -- Now simplify: 1 - ((1 - x^p)^(1/p))^p = x^p
+  have h3 : 1 - ((1 - x ^ p) ^ (1 / p)) ^ p = x ^ p := by
+    rw [h2]; ring
+  -- Finally: (x^p)^(1/p) = x for x ≥ 0
+  calc (1 - ((1 - x ^ p) ^ (1 / p)) ^ p) ^ (1 / p)
+      = (x ^ p) ^ (1 / p) := by rw [h3]
+    _ = x ^ (p * (1 / p)) := by rw [← Real.rpow_mul hx0]
+    _ = x ^ (1 : ℝ) := by rw [mul_one_div_cancel (ne_of_gt hp)]
+    _ = x := Real.rpow_one x
 
 /-- The p=2 involution (√(1-x²)) is NOT linear: N(1/2) ≠ 1/2. -/
 theorem involution_counterexample :
     pNormInvolution 2 (by norm_num : (0 : ℝ) < 2) (1/2) ≠ 1 - 1/2 := by
   simp only [pNormInvolution]
-  -- N(1/2) = (1 - (1/2)²)^{1/2} = (3/4)^{1/2} = √(3/4) ≈ 0.866
+  -- N(1/2) = (1 - (1/2)²)^{1/2} = (3/4)^{1/2} ≈ 0.866
   -- But 1 - 1/2 = 1/2 = 0.5
-  -- So we need √(3/4) ≠ 1/2, i.e., 3/4 ≠ 1/4
+  -- So we need (3/4)^(1/2) ≠ 1/2
   norm_num
-  rw [Real.sqrt_ne_iff']
-  · left; norm_num
-  · norm_num
+  intro h
+  -- If (3/4)^(1/2) = 1/2, then squaring: 3/4 = (1/2)² = 1/4, which is false
+  have h_nn : (0 : ℝ) ≤ 3/4 := by norm_num
+  -- Square both sides: ((3/4)^(1/2))^2 = (1/2)^2
+  have h_sq : (((3 : ℝ) / 4) ^ ((1 : ℝ) / 2)) ^ (2 : ℕ) = ((1 : ℝ) / 2) ^ (2 : ℕ) := by
+    rw [h]
+  -- Simplify LHS: ((3/4)^(1/2))^2 = 3/4 using rpow_mul
+  rw [← Real.rpow_natCast (((3 : ℝ)/4)^((1:ℝ)/2)) 2, ← Real.rpow_mul h_nn] at h_sq
+  simp only [one_div, inv_mul_cancel₀ (by norm_num : (2 : ℝ) ≠ 0), Real.rpow_one] at h_sq
+  norm_num at h_sq
 
 /-- Extended Cox consistency including negation function -/
 structure CoxConsistencyFull (α : Type*) [PlausibilitySpace α]
     [ComplementedLattice α] (v : Valuation α) extends
     CoxConsistency α v, NegationData α v
-
-/-- KEY THEOREM: In `CoxConsistencyFull`, negation linearity is DERIVABLE!
-
-When we have both:
-- `negate_val`: v(b) = negate(v(a)) for complements a, b
-- `complement_rule` (from CoxConsistency): v(b) = 1 - v(a) for complements
-
-Then for any complementary pair (a, b):
-  negate(v(a)) = v(b) = 1 - v(a)
-
-This shows negate(x) = 1 - x for all x in the range of the valuation. -/
-theorem negate_linear_from_cox (hCF : CoxConsistencyFull α v)
-    (a b : α) (h_disj : Disjoint a b) (h_top : a ⊔ b = ⊤) :
-    hCF.negate (v.val a) = 1 - v.val a := by
-  -- From NegationData.negate_val: v(b) = negate(v(a))
-  have h1 : v.val b = hCF.negate (v.val a) := hCF.negate_val a b h_disj h_top
-  -- From complement_rule (using CoxConsistency): v(b) = 1 - v(a)
-  have h2 : v.val b = 1 - v.val a := complement_rule v hCF.toCoxConsistency a b h_disj h_top
-  -- Combine: negate(v(a)) = 1 - v(a)
-  rw [← h1, h2]
 
 /-- Sum rule: For disjoint events, v(a ⊔ b) = v(a) + v(b).
 This is now a THEOREM, not an axiom! It follows from combine_fn_is_add. -/
@@ -462,6 +456,26 @@ theorem complement_rule (hC : CoxConsistency α v) (a b : α)
   have h1 : v.val (a ⊔ b) = v.val a + v.val b := sum_rule v hC h_disj
   rw [h_top, v.val_top] at h1
   linarith
+
+/-- KEY THEOREM: In `CoxConsistencyFull`, negation linearity is DERIVABLE!
+
+When we have both:
+- `negate_val`: v(b) = negate(v(a)) for complements a, b
+- `complement_rule` (from CoxConsistency): v(b) = 1 - v(a) for complements
+
+Then for any complementary pair (a, b):
+  negate(v(a)) = v(b) = 1 - v(a)
+
+This shows negate(x) = 1 - x for all x in the range of the valuation. -/
+theorem negate_linear_from_cox (hCF : CoxConsistencyFull α v)
+    (a b : α) (h_disj : Disjoint a b) (h_top : a ⊔ b = ⊤) :
+    hCF.negate (v.val a) = 1 - v.val a := by
+  -- From NegationData.negate_val: v(b) = negate(v(a))
+  have h1 : v.val b = hCF.negate (v.val a) := hCF.negate_val a b h_disj h_top
+  -- From complement_rule (using CoxConsistency): v(b) = 1 - v(a)
+  have h2 : v.val b = 1 - v.val a := complement_rule v hCF.toCoxConsistency a b h_disj h_top
+  -- Combine: negate(v(a)) = 1 - v(a)
+  rw [← h1, h2]
 
 /-! ## Independence from Symmetry
 
