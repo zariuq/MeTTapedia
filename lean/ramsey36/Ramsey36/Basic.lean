@@ -636,7 +636,306 @@ lemma degree_not_four_of_triangleFree_no_6indep
 
   This contradicts h_no6. □
   -/
-  sorry
+  -- Step 1: Pick t ∈ N(v)
+  have hN_nonempty : N.Nonempty := Finset.card_pos.mp (by omega : 0 < N.card)
+  obtain ⟨t, ht_in_N⟩ := hN_nonempty
+  have ht_adj_v : G.Adj v t := by rw [← mem_neighborFinset]; exact ht_in_N
+
+  -- Step 2: t has ≥ 3 neighbors in M
+  -- deg(t) ≥ 4, uses 1 for v, no neighbors in N\{t} (triangle-free)
+  have ht_deg : G.degree t ≥ 4 := h_min_deg t
+
+  -- Neighbors of t in M
+  let t_neighbors_in_M := M.filter (G.Adj t)
+
+  -- t's neighbors outside of {v, t_neighbors_in_M} are in N\{t}, but N is independent
+  have ht_no_N_neighbors : ∀ u ∈ N, u ≠ t → ¬G.Adj t u := by
+    intro u hu hne h_adj
+    -- {v, t, u} would be a triangle: v-t, v-u, t-u
+    have h_v_t : G.Adj v t := ht_adj_v
+    have h_v_u : G.Adj v u := by rw [← mem_neighborFinset]; exact hu
+    have h_clique : G.IsNClique 3 {v, t, u} := by
+      rw [SimpleGraph.isNClique_iff]
+      constructor
+      · intro x hx y hy hxy
+        simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
+        rcases hx with rfl | rfl | rfl <;> rcases hy with rfl | rfl | rfl
+        · exact absurd rfl hxy
+        · exact h_v_t
+        · exact h_v_u
+        · exact G.symm h_v_t
+        · exact absurd rfl hxy
+        · exact h_adj
+        · exact G.symm h_v_u
+        · exact G.symm h_adj
+        · exact absurd rfl hxy
+      · have hvt : v ≠ t := G.ne_of_adj h_v_t
+        have hvu : v ≠ u := G.ne_of_adj h_v_u
+        rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+        · simp only [Finset.mem_singleton]; exact hne.symm
+        · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
+          exact ⟨hvt, hvu⟩
+    exact h_tri _ h_clique
+
+  -- So t's neighbors are: v, plus neighbors in M
+  have h_t_neighbors_card : t_neighbors_in_M.card ≥ 3 := by
+    -- deg(t) = 1 (for v) + |neighbors in M| + |neighbors in N\{t}|
+    -- But |neighbors in N\{t}| = 0
+    -- So |neighbors in M| = deg(t) - 1 ≥ 4 - 1 = 3
+    have h_neighbors_decomp : G.neighborFinset t ⊆ insert v t_neighbors_in_M ∪ (N.erase t) := by
+      intro x hx
+      rw [mem_neighborFinset] at hx
+      by_cases hxv : x = v
+      · rw [Finset.mem_union]
+        left
+        rw [Finset.mem_insert]
+        left; exact hxv
+      · by_cases hxM : x ∈ M
+        · rw [Finset.mem_union]
+          left
+          rw [Finset.mem_insert]
+          right
+          simp only [t_neighbors_in_M, Finset.mem_filter]
+          exact ⟨hxM, hx⟩
+        · -- x is not in M and not v, so x ∈ N
+          rw [Finset.mem_union]
+          right
+          simp only [Finset.mem_erase]
+          constructor
+          · intro heq
+            subst heq
+            exact G.loopless x hx
+          · -- x ∈ N: since x is neighbor of t and not v and not in M
+            by_contra h_not_in_N
+            have : x ∈ insert v N := by
+              have hx_in_univ : x ∈ Finset.univ := Finset.mem_univ x
+              by_contra h_not_insert
+              have : x ∈ M := by
+                simp only [M, Finset.mem_sdiff, Finset.mem_univ, true_and]
+                exact h_not_insert
+              exact hxM this
+            rcases Finset.mem_insert.mp this with rfl | hx_in_N
+            · exact hxv rfl
+            · exact h_not_in_N hx_in_N
+    -- The N\{t} part has no edges from t (by ht_no_N_neighbors)
+    have h_N_erase_empty : (N.erase t).filter (G.Adj t) = ∅ := by
+      ext x
+      simp only [Finset.mem_filter, Finset.mem_erase, Finset.notMem_empty, iff_false, not_and, and_imp]
+      intro hne hxN h_adj
+      exact ht_no_N_neighbors x hxN hne h_adj
+    -- So G.neighborFinset t ⊆ insert v t_neighbors_in_M
+    have h_subset : G.neighborFinset t ⊆ insert v t_neighbors_in_M := by
+      intro x hx
+      have h_in_union := h_neighbors_decomp hx
+      rcases Finset.mem_union.mp h_in_union with h_left | h_right
+      · exact h_left
+      · -- x ∈ N.erase t and G.Adj t x
+        have h_adj : G.Adj t x := by rw [← mem_neighborFinset]; exact hx
+        have : x ∈ (N.erase t).filter (G.Adj t) := by
+          simp only [Finset.mem_filter]
+          exact ⟨h_right, h_adj⟩
+        rw [h_N_erase_empty] at this
+        exact (Finset.notMem_empty x this).elim
+    -- Card bound
+    have h_card_bound : G.degree t ≤ (insert v t_neighbors_in_M).card := by
+      rw [← G.card_neighborFinset_eq_degree]
+      exact Finset.card_le_card h_subset
+    have h_v_notin : v ∉ t_neighbors_in_M := by
+      simp only [t_neighbors_in_M, Finset.mem_filter]
+      intro ⟨hv_M, _⟩
+      simp only [M, Finset.mem_sdiff, Finset.mem_univ, true_and] at hv_M
+      exact hv_M (Finset.mem_insert_self v N)
+    calc t_neighbors_in_M.card
+        = (insert v t_neighbors_in_M).card - 1 := by
+          rw [Finset.card_insert_of_notMem h_v_notin]
+          omega
+      _ ≥ G.degree t - 1 := by omega
+      _ ≥ 4 - 1 := by omega
+      _ = 3 := by norm_num
+
+  -- Step 3: Get 3 neighbors of t in M
+  obtain ⟨T_set, hT_sub, hT_card⟩ := Finset.exists_subset_card_eq h_t_neighbors_card
+  have hT_in_M : ∀ x ∈ T_set, x ∈ M := by
+    intro x hx
+    have := hT_sub hx
+    simp only [t_neighbors_in_M, Finset.mem_filter] at this
+    exact this.1
+  have hT_adj_t : ∀ x ∈ T_set, G.Adj t x := by
+    intro x hx
+    have := hT_sub hx
+    simp only [t_neighbors_in_M, Finset.mem_filter] at this
+    exact this.2
+
+  -- T_set is independent (neighbors of t in triangle-free graph)
+  have hT_indep : G.IsIndepSet T_set := by
+    intro x' hx' y' hy' hne' h_adj'
+    -- {t, x', y'} would be a triangle
+    -- Store the adjacency facts before case analysis
+    have h_tx' : G.Adj t x' := hT_adj_t x' hx'
+    have h_ty' : G.Adj t y' := hT_adj_t y' hy'
+    have h_clique : G.IsNClique 3 {t, x', y'} := by
+      rw [SimpleGraph.isNClique_iff]
+      constructor
+      · intro a ha b hb hab
+        simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at ha hb
+        rcases ha with ha_t | ha_x | ha_y <;> rcases hb with hb_t | hb_x | hb_y
+        · exact absurd (ha_t.trans hb_t.symm) hab
+        · subst ha_t; subst hb_x; exact h_tx'
+        · subst ha_t; subst hb_y; exact h_ty'
+        · subst ha_x; subst hb_t; exact G.symm h_tx'
+        · exact absurd (ha_x.trans hb_x.symm) hab
+        · subst ha_x; subst hb_y; exact h_adj'
+        · subst ha_y; subst hb_t; exact G.symm h_ty'
+        · subst ha_y; subst hb_x; exact G.symm h_adj'
+        · exact absurd (ha_y.trans hb_y.symm) hab
+      · have htx' : t ≠ x' := by
+          intro heq; subst heq
+          exact G.loopless t h_tx'
+        have hty' : t ≠ y' := by
+          intro heq; subst heq
+          exact G.loopless t h_ty'
+        rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+        · simp only [Finset.mem_singleton]; exact hne'
+        · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
+          exact ⟨htx', hty'⟩
+    exact h_tri _ h_clique
+
+  -- Step 4: Each element of T_set has no neighbors in N \ {t}
+  -- Argument: x ∈ T_set ⊆ M has deg_M = 4 (from h_M_reg), deg_G ≤ 5.
+  -- x is adjacent to t (outside M), so x has at most 5 - 4 = 1 edge outside M.
+  -- That edge is t. So x cannot be adjacent to u ∈ N \ {t}.
+  have hT_no_N_neighbors : ∀ x ∈ T_set, ∀ u ∈ N, u ≠ t → ¬G.Adj x u := by
+    intro x hx u hu hne h_adj
+    -- x ∈ M, so find the corresponding index i : Fin 13
+    have hx_in_M : x ∈ M := hT_in_M x hx
+    -- x has 4 neighbors in M (from G_M being 4-regular)
+    -- x is adjacent to t (outside M) and u (in N, also outside M)
+    -- So deg_G(x) ≥ 6 > 5, contradiction
+    have hx_adj_t : G.Adj x t := G.symm (hT_adj_t x hx)
+    have hx_adj_u : G.Adj x u := h_adj
+    have ht_not_in_M : t ∉ M := by
+      simp only [M, Finset.mem_sdiff, Finset.mem_univ, true_and, not_not]
+      exact Finset.mem_insert_of_mem ht_in_N
+    have hu_not_in_M : u ∉ M := by
+      simp only [M, Finset.mem_sdiff, Finset.mem_univ, true_and, not_not]
+      exact Finset.mem_insert_of_mem hu
+    -- Get inverse image of x in Fin 13 using the equivalence
+    have hx_in_set : x ∈ (↑M : Set (Fin 18)) := hx_in_M
+    let ix : Fin 13 := e.symm ⟨x, hx_in_set⟩
+    have hix_eq : f ix = x := by
+      show (e ix).val = x
+      simp only [ix, Equiv.apply_symm_apply]
+    -- G_M.degree ix = 4
+    have h_deg_ix : G_M.degree ix = 4 := h_M_reg ix
+    -- The neighbors of x in M are at least 4 (via the comap degree)
+    -- Count: G_M.neighborFinset ix maps bijectively to M-neighbors of x in G
+    have h_t_in_nbr : t ∈ G.neighborFinset x := by rw [mem_neighborFinset]; exact hx_adj_t
+    have h_u_in_nbr : u ∈ G.neighborFinset x := by rw [mem_neighborFinset]; exact hx_adj_u
+    have ht_ne_u : t ≠ u := by
+      intro heq; subst heq; exact hne rfl
+    -- M-neighbors of x in G
+    let M_nbrs_of_x := M.filter (G.Adj x)
+    -- Show M_nbrs_of_x.card ≥ 4 via the comap relationship
+    have h_M_nbrs_card : M_nbrs_of_x.card ≥ 4 := by
+      -- The image of G_M.neighborFinset ix under f is contained in M_nbrs_of_x
+      have h_image_subset : (G_M.neighborFinset ix).map f ⊆ M_nbrs_of_x := by
+        intro y hy
+        rw [Finset.mem_map] at hy
+        obtain ⟨j, hj_nbr, hj_eq⟩ := hy
+        simp only [Finset.mem_filter, M_nbrs_of_x]
+        constructor
+        · rw [← hj_eq]; exact hf_in_M j
+        · -- G.Adj x (f j) follows from G_M.Adj ix j
+          rw [mem_neighborFinset] at hj_nbr
+          -- G_M.Adj ix j means G.Adj (f ix) (f j)
+          have : G.Adj (f ix) (f j) := hj_nbr
+          rw [hix_eq] at this
+          rw [← hj_eq]
+          exact this
+      calc M_nbrs_of_x.card
+          ≥ ((G_M.neighborFinset ix).map f).card := Finset.card_le_card h_image_subset
+        _ = (G_M.neighborFinset ix).card := Finset.card_map f
+        _ = G_M.degree ix := by rw [G_M.card_neighborFinset_eq_degree]
+        _ = 4 := h_deg_ix
+    -- Now count: deg_G(x) ≥ |M_nbrs_of_x| + |{t, u}| ≥ 4 + 2 = 6
+    have h_subset : M_nbrs_of_x ∪ {t, u} ⊆ G.neighborFinset x := by
+      intro y hy
+      rcases Finset.mem_union.mp hy with hy_M | hy_tu
+      · simp only [M_nbrs_of_x, Finset.mem_filter] at hy_M
+        rw [mem_neighborFinset]
+        exact hy_M.2
+      · rcases Finset.mem_insert.mp hy_tu with rfl | hy_u
+        · exact h_t_in_nbr
+        · simp only [Finset.mem_singleton] at hy_u; subst hy_u; exact h_u_in_nbr
+    have h_disjoint : Disjoint M_nbrs_of_x {t, u} := by
+      rw [Finset.disjoint_iff_ne]
+      intro a ha b hb hab
+      simp only [M_nbrs_of_x, Finset.mem_filter] at ha
+      rcases Finset.mem_insert.mp hb with rfl | hb'
+      · exact ht_not_in_M (hab ▸ ha.1)
+      · simp only [Finset.mem_singleton] at hb'; subst hb'
+        exact hu_not_in_M (hab ▸ ha.1)
+    have h_card_tu : ({t, u} : Finset (Fin 18)).card = 2 := by
+      rw [Finset.card_insert_of_notMem, Finset.card_singleton]
+      simp only [Finset.mem_singleton]
+      exact ht_ne_u
+    have h_card_union : (M_nbrs_of_x ∪ {t, u}).card ≥ 6 := by
+      rw [Finset.card_union_of_disjoint h_disjoint, h_card_tu]
+      omega
+    have h_deg_ge_6 : G.degree x ≥ 6 := by
+      rw [← G.card_neighborFinset_eq_degree]
+      calc (G.neighborFinset x).card
+          ≥ (M_nbrs_of_x ∪ {t, u}).card := Finset.card_le_card h_subset
+        _ ≥ 6 := h_card_union
+    have h_deg_le_5 : G.degree x ≤ 5 := h_max_deg x
+    omega
+
+  -- Step 5: Build 6-IS: (N \ {t}) ∪ T_set
+  let I := (N.erase t) ∪ T_set
+
+  have hI_card : I.card = 6 := by
+    have h_disjoint : Disjoint (N.erase t) T_set := by
+      rw [Finset.disjoint_iff_ne]
+      intro a ha b hb
+      have ha_in_N : a ∈ N := (Finset.mem_erase.mp ha).2
+      have hb_in_M : b ∈ M := hT_in_M b hb
+      intro heq
+      subst heq
+      have : a ∈ insert v N := Finset.mem_insert_of_mem ha_in_N
+      simp only [M, Finset.mem_sdiff, Finset.mem_univ, true_and] at hb_in_M
+      exact hb_in_M this
+    calc I.card
+        = (N.erase t).card + T_set.card := Finset.card_union_of_disjoint h_disjoint
+      _ = (N.card - 1) + 3 := by rw [Finset.card_erase_of_mem ht_in_N, hT_card]
+      _ = (4 - 1) + 3 := by rw [hN_card]
+      _ = 6 := by norm_num
+
+  have hI_indep : G.IsNIndepSet 6 I := by
+    constructor
+    · intro x hx y hy hne h_adj
+      rcases Finset.mem_union.mp hx with hx_N | hx_T <;>
+      rcases Finset.mem_union.mp hy with hy_N | hy_T
+      -- Case 1: x, y ∈ N \ {t} → independent by hN_indep
+      · have hx_in_N : x ∈ G.neighborSet v := by
+          rw [mem_neighborSet, ← mem_neighborFinset]
+          exact (Finset.mem_erase.mp hx_N).2
+        have hy_in_N : y ∈ G.neighborSet v := by
+          rw [mem_neighborSet, ← mem_neighborFinset]
+          exact (Finset.mem_erase.mp hy_N).2
+        exact hN_indep hx_in_N hy_in_N hne h_adj
+      -- Case 2: x ∈ N \ {t}, y ∈ T_set → no edge by hT_no_N_neighbors
+      · have hx_in_N : x ∈ N := (Finset.mem_erase.mp hx_N).2
+        have hx_ne_t : x ≠ t := (Finset.mem_erase.mp hx_N).1
+        exact hT_no_N_neighbors y hy_T x hx_in_N hx_ne_t (G.symm h_adj)
+      -- Case 3: x ∈ T_set, y ∈ N \ {t} → no edge by hT_no_N_neighbors
+      · have hy_in_N : y ∈ N := (Finset.mem_erase.mp hy_N).2
+        have hy_ne_t : y ≠ t := (Finset.mem_erase.mp hy_N).1
+        exact hT_no_N_neighbors x hx_T y hy_in_N hy_ne_t h_adj
+      -- Case 4: x, y ∈ T_set → independent by hT_indep
+      · exact hT_indep hx_T hy_T hne h_adj
+    · exact hI_card
+
+  exact h_no6 I hI_indep
 
 lemma claim1_five_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G) :
@@ -2181,6 +2480,17 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     -- 9. But K_{1,3} (star) has only 3 edges: CONTRADICTION
     --
     -- This argument requires setting up T/W partition and using p_adjacent_of_shared_w.
+
+    -- The S-W structure forces |E_P| ≥ 4, but K_{1,3} has only 3 edges
+    -- Key insight: the S-W bipartite graph is 2-regular on 4+4 vertices,
+    -- forming an 8-cycle that gives 4 distinct pairs of s's.
+    -- Each pair forces a P-edge via p_adjacent_of_shared_w.
+    -- But K_{1,3} has only 3 edges: contradiction.
+
+    exfalso
+    -- The formal proof requires constructing the T/W partition of Q
+    -- and applying p_adjacent_of_shared_w for each w ∈ W.
+    -- This shows |E_P| ≥ 4, contradicting K_{1,3} having only 3 edges.
     sorry
 
   -- Step 2: Lower bound - deg_P(p) ≥ 2
@@ -2191,6 +2501,115 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     -- If some vertex had deg ≤ 1, and all others have deg ≤ 2 (by h_upper),
     -- then sum ≤ 1 + 2 + 2 + 2 = 7 < 8. Contradiction.
     -- So every vertex has deg ≥ 2, hence deg = 2 exactly.
+
+    by_contra h_not
+    push_neg at h_not
+    -- deg_P ≤ 1 for p
+
+    -- Compute bounds on sum of degrees
+    -- Upper bound: deg_P(p) ≤ 1, and ∀ q ∈ P, deg_P(q) ≤ 2 (from h_upper applied to each)
+    -- This gives sum ≤ 1 + 2 + 2 + 2 = 7
+
+    -- First, show every other vertex also has deg_P ≤ 2
+    have h_others_upper : ∀ q ∈ P, (P.filter (fun r => r ≠ q ∧ G.Adj q r)).card ≤ 2 := by
+      intro q hq
+      -- Apply the same upper bound argument to q
+      by_contra h_gt
+      push_neg at h_gt
+      -- If deg_P(q) ≥ 3, then by the same argument as h_upper, we get P = K_{1,3} with center q
+      -- But we showed K_{1,3} is impossible
+      have h_deg_eq_3 : (P.filter (fun r => r ≠ q ∧ G.Adj q r)).card = 3 := by
+        have h_max : (P.filter (fun r => r ≠ q ∧ G.Adj q r)).card ≤ P.card - 1 := by
+          apply Nat.le_sub_one_of_lt
+          calc (P.filter (fun r => r ≠ q ∧ G.Adj q r)).card
+            _ ≤ (P.filter (fun r => r ≠ q)).card := by
+                apply Finset.card_le_card
+                intro x hx
+                simp only [Finset.mem_filter] at hx ⊢
+                exact ⟨hx.1, hx.2.1⟩
+            _ = (P.erase q).card := by
+                congr 1; ext x
+                simp only [Finset.mem_filter, Finset.mem_erase, ne_eq, and_comm]
+            _ = P.card - 1 := Finset.card_erase_of_mem hq
+            _ < P.card := Nat.sub_lt (by omega : 0 < P.card) (by norm_num)
+        omega
+      -- q is adjacent to all other P vertices
+      have h_all_adj_q : ∀ r ∈ P, r ≠ q → G.Adj q r := by
+        intro r hr hne
+        by_contra h_not_adj
+        have h_bound : (P.filter (fun s => s ≠ q ∧ G.Adj q s)).card ≤ 2 := by
+          have h_filter_sub : P.filter (fun s => s ≠ q ∧ G.Adj q s) ⊆ (P.erase q).erase r := by
+            intro s hs
+            simp only [Finset.mem_filter] at hs
+            simp only [Finset.mem_erase]
+            constructor
+            · intro h_eq; subst h_eq; exact h_not_adj hs.2.2
+            · exact ⟨hs.2.1, hs.1⟩
+          calc (P.filter (fun s => s ≠ q ∧ G.Adj q s)).card
+            _ ≤ ((P.erase q).erase r).card := Finset.card_le_card h_filter_sub
+            _ = (P.erase q).card - 1 := by
+                rw [Finset.card_erase_of_mem]
+                simp only [Finset.mem_erase]
+                exact ⟨hne, hr⟩
+            _ = P.card - 1 - 1 := by rw [Finset.card_erase_of_mem hq]
+            _ = 4 - 1 - 1 := by rw [hP_card]
+            _ = 2 := by norm_num
+        omega
+      -- Triangle-free forces other vertices to be non-adjacent to each other
+      have h_q_others_indep : ∀ r1 r2 : Fin 18, r1 ∈ P → r2 ∈ P →
+          r1 ≠ q → r2 ≠ q → r1 ≠ r2 → ¬G.Adj r1 r2 := by
+        intro r1 r2 hr1 hr2 hne1 hne2 hne12 h_adj
+        have h_q_r1 : G.Adj q r1 := h_all_adj_q r1 hr1 hne1
+        have h_q_r2 : G.Adj q r2 := h_all_adj_q r2 hr2 hne2
+        have h_clique : G.IsNClique 3 {q, r1, r2} := by
+          rw [SimpleGraph.isNClique_iff]
+          constructor
+          · intro x hx y hy hxy
+            simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
+            rcases hx with hx_q | hx_r1 | hx_r2 <;> rcases hy with hy_q | hy_r1 | hy_r2
+            · exact absurd (hx_q.trans hy_q.symm) hxy
+            · rw [hx_q, hy_r1]; exact h_q_r1
+            · rw [hx_q, hy_r2]; exact h_q_r2
+            · rw [hx_r1, hy_q]; exact G.symm h_q_r1
+            · exact absurd (hx_r1.trans hy_r1.symm) hxy
+            · rw [hx_r1, hy_r2]; exact h_adj
+            · rw [hx_r2, hy_q]; exact G.symm h_q_r2
+            · rw [hx_r2, hy_r1]; exact G.symm h_adj
+            · exact absurd (hx_r2.trans hy_r2.symm) hxy
+          · rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+            · simp only [Finset.mem_singleton]; exact hne12
+            · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
+              exact ⟨hne1.symm, hne2.symm⟩
+        exact h_tri {q, r1, r2} h_clique
+      -- K_{1,3} with center q: same S-W contradiction applies
+      -- Get Q from claim2
+      obtain ⟨P', Q, hP'_card, hQ_card, hP'_props, hQ_props⟩ :=
+        claim2_neighbor_structure h_reg h_tri h_no6 v
+      -- The S-W structure forces |E_P| ≥ 4, but K_{1,3} has only 3 edges
+      exfalso
+      sorry -- Same S-W argument as in upper bound
+
+    -- Now bound the sum of degrees
+    -- deg_P(p) ≤ 1, and for other q: deg_P(q) ≤ 2
+    -- Sum ≤ 1 + 2 * 3 = 7
+
+    -- But |E_P| ≥ 4 from S-W structure means sum ≥ 8
+    -- Contradiction!
+
+    -- From S-W: at least 4 edges in P
+    -- So sum of degrees ≥ 8
+    -- But we have sum ≤ 7 (since one vertex has deg ≤ 1)
+
+    -- The S-W structure gives 4 w's, each with 2 S-neighbors
+    -- This forces 4 pairs of s's, hence 4 P-edges
+    -- So sum of P-degrees = 2 * |E_P| ≥ 8
+
+    -- With deg_P(p) ≤ 1 and others ≤ 2:
+    -- sum = deg_P(p) + (sum over P \ {p} of deg_P) ≤ 1 + 2 * 3 = 7 < 8
+    -- Contradiction
+
+    -- TODO: Complete formal S-W edge counting argument
+    exfalso
     sorry
 
   omega

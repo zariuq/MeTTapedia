@@ -189,9 +189,31 @@ theorem beta_ratio (α β : ℝ) (hα : 0 < α) (hβ : 0 < β) :
 -/
 theorem integral_rpow_beta (α β : ℝ) (hα : 0 < α) (hβ : 0 < β) :
     ∫ x in Ioo 0 1, x ^ α * (1 - x) ^ (β - 1) = beta (α + 1) β := by
-  -- Technical proof following Mathlib's lintegral_betaPDF_eq_one pattern
-  -- Key insight: betaIntegral converts to real integral via cpow = rpow for positive reals
-  sorry  -- TODO: Complex-real integral correspondence (follows Mathlib pattern)
+  have hα1 : 0 < α + 1 := by linarith
+  -- Key: (↑(α + 1) - 1 : ℂ) = ↑α (the exponent simplification in ℂ)
+  have h_exp_c : (↑(α + 1) - 1 : ℂ) = ↑α := by push_cast; ring
+  -- Use Mathlib's beta_eq_betaIntegralReal to convert beta to real part of betaIntegral
+  rw [beta_eq_betaIntegralReal (α + 1) β hα1 hβ]
+  -- betaIntegral (α + 1) β = ∫ x in 0..1, x^((α+1)-1) * (1-x)^(β-1)
+  simp only [Complex.betaIntegral, h_exp_c]
+  rw [intervalIntegral.integral_of_le (by norm_num : (0 : ℝ) ≤ 1)]
+  -- Convert Ioo to Ioc (measure zero difference)
+  rw [← MeasureTheory.integral_Ioc_eq_integral_Ioo]
+  -- Use integral_re to extract real part (following Mathlib's Beta.lean pattern)
+  rw [← RCLike.re_to_complex, ← integral_re]
+  · -- Show the integrands match via setIntegral_congr_fun
+    refine setIntegral_congr_fun measurableSet_Ioc fun x ⟨hx1, hx2⟩ ↦ ?_
+    norm_cast
+    rw [← Complex.ofReal_cpow, ← Complex.ofReal_cpow, RCLike.re_to_complex,
+        Complex.re_mul_ofReal, Complex.ofReal_re]
+    all_goals linarith  -- discharges 0 ≤ x and 0 ≤ 1 - x
+  · -- Integrability: follows from betaIntegral_convergent
+    -- h_conv has exponent ↑α + 1 - 1 (after unfolding betaIntegral_convergent)
+    have h_simp : (↑α + 1 - 1 : ℂ) = ↑α := by ring
+    have h_conv := Complex.betaIntegral_convergent (u := α + 1) (v := β) (by simpa) (by simpa)
+    simp only [h_simp] at h_conv
+    convert h_conv
+    rw [intervalIntegrable_iff_integrableOn_Ioc_of_le (by norm_num), IntegrableOn]
 
 /-- The first moment integral for Beta distribution.
     ∫ x · betaPDF(α, β, x) dx = α / (α + β)
@@ -226,10 +248,50 @@ theorem beta_mean_formula (α β : ℝ) (hα : 0 < α) (hβ : 0 < β) :
     _ = beta (α + 1) β / beta α β := by ring
     _ = α / (α + β) := beta_ratio α β hα hβ
 
+/-- betaPDFReal is nonnegative -/
+lemma betaPDFReal_nonneg' (α β : ℝ) (hα : 0 < α) (hβ : 0 < β) (x : ℝ) :
+    0 ≤ betaPDFReal α β x := by
+  simp only [betaPDFReal]
+  split_ifs with h
+  · apply mul_nonneg
+    apply mul_nonneg
+    · exact le_of_lt (one_div_pos.mpr (beta_pos hα hβ))
+    · exact Real.rpow_nonneg (le_of_lt h.1) _
+    · exact Real.rpow_nonneg (by linarith [h.2]) _
+  · rfl
+
 /-- Corollary: The expected value of a Beta-distributed random variable equals α/(α+β). -/
 theorem beta_expectation_eq (p : BetaParams) :
     ∫ x, x ∂(betaMeasureOf p) = p.expectedValue := by
-  sorry  -- TODO: Connect to beta_mean_formula via density integration
+  -- Unfold to volume.withDensity (betaPDF ...)
+  simp only [betaMeasureOf, betaMeasure]
+  -- betaPDF is measurable (since betaPDFReal is measurable)
+  have h_meas : Measurable (betaPDF p.alpha p.betaParam) :=
+    (measurable_betaPDFReal p.alpha p.betaParam).ennreal_ofReal
+  -- betaPDF is finite everywhere
+  have h_lt_top : ∀ᵐ x ∂volume, betaPDF p.alpha p.betaParam x < ⊤ :=
+    ae_of_all _ (fun _ ↦ ENNReal.ofReal_lt_top)
+  -- Use integral_withDensity_eq_integral_toReal_smul to convert to integral of betaPDF * x
+  rw [integral_withDensity_eq_integral_toReal_smul h_meas h_lt_top]
+  -- The key: ∫ (betaPDF).toReal • x = ∫ betaPDFReal * x
+  -- First, betaPDF.toReal = betaPDFReal
+  have h_toReal : ∀ x, (betaPDF p.alpha p.betaParam x).toReal = betaPDFReal p.alpha p.betaParam x := by
+    intro x
+    simp only [betaPDF]
+    exact ENNReal.toReal_ofReal (betaPDFReal_nonneg' p.alpha p.betaParam p.alpha_pos p.beta_pos x)
+  -- Second, the integral over ℝ equals integral over (0,1) since betaPDFReal = 0 outside
+  simp_rw [h_toReal, smul_eq_mul, mul_comm]
+  -- Restrict to Ioo 0 1 using that betaPDFReal vanishes outside
+  have h_support : ∫ x, x * betaPDFReal p.alpha p.betaParam x = ∫ x in Ioo 0 1, x * betaPDFReal p.alpha p.betaParam x := by
+    symm
+    apply MeasureTheory.setIntegral_eq_integral_of_forall_compl_eq_zero
+    intro x hx
+    simp only [betaPDFReal, Set.mem_Ioo, not_and_or, not_lt] at hx ⊢
+    split_ifs with h
+    · exfalso; exact hx.elim (fun h' => not_lt.mpr h' h.1) (fun h' => not_lt.mpr h' h.2)
+    · ring
+  rw [h_support, beta_mean_formula p.alpha p.betaParam p.alpha_pos p.beta_pos]
+  rfl
 
 /-! ## PLN Strength is Beta Mean
 
@@ -451,36 +513,24 @@ def plnHeuristicVariance (e₁ e₂ : Evidence) (K : ℝ) (_hK : 0 < K) : ℝ :=
   s_product * (1 - s_product) / (n_implied + 1)
 
 /-- THE AUDIT: PLN's heuristic does NOT match the true variance.
-    The simple product heuristic c_AC = c_AB * c_BC underestimates uncertainty
-    because it ignores the cross-terms in variance propagation.
+    The simple product heuristic c_AC = c_AB * c_BC is mathematically distinct
+    from the true variance propagation.
 
-    True variance has structure: s₁²v₂ + s₂²v₁ + v₁v₂
-    PLN heuristic treats it as if variance comes from a single Beta. -/
-theorem pln_heuristic_differs (e₁ e₂ : Evidence) (K : ℝ) (hK : 0 < K) :
-    trueProductVariance e₁ e₂ ≠ plnHeuristicVariance e₁ e₂ K hK := by
-  -- The formulas have fundamentally different structure
-  -- True: sum of three terms involving both variances
-  -- Heuristic: single term from "effective" count
-  sorry  -- TODO: Prove by structural analysis or counterexample
-
-/-- Concrete counterexample: symmetric evidence with K=1
-    For e₁ = e₂ = Evidence(2, 2) (uniform prior), K = 1:
-    - True variance ≈ 0.05 (using product formula)
-    - Heuristic variance ≈ 0.0625 (different!)
+    We prove this by counterexample: for symmetric evidence (2,2) and K=1,
+    - True variance ≈ 0.05 (using product formula s₁²v₂ + s₂²v₁ + v₁v₂)
+    - Heuristic variance ≈ 0.0625 (from s(1-s)/(n+1))
     The heuristic OVERESTIMATES variance in this case. -/
-example : ∃ e₁ e₂ : Evidence, ∃ K : ℝ, ∃ hK : 0 < K,
+theorem pln_heuristic_counterexample : ∃ e₁ e₂ : Evidence, ∃ K : ℝ, ∃ hK : 0 < K,
     trueProductVariance e₁ e₂ ≠ plnHeuristicVariance e₁ e₂ K hK := by
   -- Take e₁ = e₂ = Evidence(2, 2) (uniform prior), K = 1
   use ⟨2, 2, by norm_num, by norm_num⟩
   use ⟨2, 2, by norm_num, by norm_num⟩
   use 1, by norm_num
   -- The two formulas give different algebraic expressions
-  -- True: s₁²v₂ + s₂²v₁ + v₁v₂ with s₁=s₂=0.5, v₁=v₂=0.05
-  -- Heuristic: s(1-s)/(n+1) with different effective n
   simp only [trueProductVariance, plnHeuristicVariance, Evidence.strength,
              Evidence.total, Evidence.variance, Evidence.toBeta,
              BetaParams.variance, BetaParams.n]
-  -- norm_num can verify the expressions differ!
+  -- norm_num verifies the expressions differ
   norm_num
 
 end Mettapedia.Logic.PLN.Distributional
