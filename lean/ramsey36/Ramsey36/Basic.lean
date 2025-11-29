@@ -4451,7 +4451,103 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     by_cases hab_same : s_a = s_b
     · -- Case: a and b share the same N(v)-neighbor s_a
       -- Then {a, b} ∪ (N(v) \ {s_a}) is a 6-IS
-      sorry
+      -- Cariolaro's Construction 3
+      subst hab_same
+      -- s_a is the common neighbor of both a and b with v
+      have hs_a_adj_v : G.Adj s_a v := by
+        have := Finset.mem_inter.mp (hs_a_eq ▸ Finset.mem_singleton_self s_a)
+        rw [mem_neighborFinset] at this
+        exact G.symm this.1
+      have hs_a_adj_a : G.Adj s_a a := by
+        have := Finset.mem_inter.mp (hs_a_eq ▸ Finset.mem_singleton_self s_a)
+        have := this.2
+        rw [mem_neighborFinset] at this
+        exact G.symm this
+      have hs_a_adj_b : G.Adj s_a b := by
+        have := Finset.mem_inter.mp (hs_b_eq ▸ Finset.mem_singleton_self s_a)
+        have := this.2
+        rw [mem_neighborFinset] at this
+        exact G.symm this
+      -- Construct the 6-IS
+      let IS6 := {a, b} ∪ (G.neighborFinset v).erase s_a
+      have hIS6_card : IS6.card = 6 := by
+        rw [Finset.card_union_of_disjoint]
+        · have h_reg_v : (G.neighborFinset v).card = 5 := h_reg v
+          rw [Finset.card_erase_of_mem, h_reg_v]
+          · norm_num
+          · rw [mem_neighborFinset]; exact hs_a_adj_v
+        · rw [Finset.disjoint_iff_ne]
+          intro x hx y hy hxy
+          subst hxy
+          simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+          simp only [mem_erase, mem_neighborFinset] at hy
+          rcases hx with rfl | rfl
+          · exact hy.1 (hs_a_adj_a ▸ rfl)
+          · exact hy.1 (hs_a_adj_b ▸ rfl)
+      have hIS6_indep : G.IsIndepSet IS6 := by
+        intro x hx y hy hxy
+        simp only [IS6, Finset.mem_union, Finset.mem_insert, Finset.mem_singleton, mem_erase, mem_neighborFinset] at hx hy
+        rcases hx with (rfl | rfl) | ⟨hx_ne_sa, hx_adj_v⟩ <;> rcases hy with (rfl | rfl) | ⟨hy_ne_sa, hy_adj_v⟩
+        · exact absurd rfl hxy
+        · -- a vs b: non-adjacent (would form triangle with v via common neighbor s_a)
+          intro h_adj
+          have h_clique : G.IsNClique 3 {v, a, b} := by
+            rw [SimpleGraph.isNClique_iff]
+            constructor
+            · intro u hu w hw huw
+              simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hu hw
+              rcases hu with rfl | rfl | rfl <;> rcases hw with rfl | rfl | rfl
+              · exact absurd rfl huw
+              · exact G.symm ((hP_props a ha_P).1)
+              · exact G.symm ((hP_props b hb_P).1)
+              · exact (hP_props a ha_P).1
+              · exact absurd rfl huw
+              · exact h_adj
+              · exact (hP_props b hb_P).1
+              · exact G.symm h_adj
+              · exact absurd rfl huw
+            · rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+              · simp only [Finset.mem_singleton]; exact hab
+              · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
+                exact ⟨(G.ne_of_adj ((hP_props a ha_P).1)).symm, (G.ne_of_adj ((hP_props b hb_P).1)).symm⟩
+          exact h_tri _ h_clique
+        · -- a vs N(v) \ {s_a}: a is not adjacent to v's neighbors except s_a
+          intro h_adj
+          have : y ∈ _root_.commonNeighbors G v a := by
+            simp only [_root_.commonNeighbors, mem_inter, mem_neighborFinset]
+            exact ⟨hy_adj_v, h_adj⟩
+          rw [← hs_a_eq] at this
+          have : y = s_a := Finset.mem_singleton.mp this
+          exact hxy.symm (hy_ne_sa ▸ this)
+        · exact absurd rfl hxy
+        · -- b vs N(v) \ {s_a}: b is not adjacent to v's neighbors except s_a
+          intro h_adj
+          have : y ∈ _root_.commonNeighbors G v b := by
+            simp only [_root_.commonNeighbors, mem_inter, mem_neighborFinset]
+            exact ⟨hy_adj_v, h_adj⟩
+          rw [← hs_b_eq] at this
+          have : y = s_a := Finset.mem_singleton.mp this
+          exact hxy.symm (hy_ne_sa ▸ this)
+        · -- N(v) \ {s_a} vs a: symmetric case
+          intro h_adj
+          have : x ∈ _root_.commonNeighbors G v a := by
+            simp only [_root_.commonNeighbors, mem_inter, mem_neighborFinset]
+            exact ⟨hx_adj_v, G.symm h_adj⟩
+          rw [← hs_a_eq] at this
+          have : x = s_a := Finset.mem_singleton.mp this
+          exact hxy (hx_ne_sa ▸ this)
+        · -- N(v) \ {s_a} vs b: symmetric case
+          intro h_adj
+          have : x ∈ _root_.commonNeighbors G v b := by
+            simp only [_root_.commonNeighbors, mem_inter, mem_neighborFinset]
+            exact ⟨hx_adj_v, G.symm h_adj⟩
+          rw [← hs_b_eq] at this
+          have : x = s_a := Finset.mem_singleton.mp this
+          exact hxy (hx_ne_sa ▸ this)
+        · -- N(v) \ {s_a} internal: triangle-free means N(v) is independent
+          exact neighborSet_indep_of_triangleFree h_tri v hx_adj_v hy_adj_v hxy
+      -- Contradiction: we have a 6-IS
+      exact h_no6 IS6 ⟨hIS6_indep, hIS6_card⟩
     · by_cases hac_same : s_a = s_c
       · -- Case: a and c share the same N(v)-neighbor s_a
         sorry

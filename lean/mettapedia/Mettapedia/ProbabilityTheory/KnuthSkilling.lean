@@ -441,67 +441,58 @@ theorem QQ.add_assoc : ∀ x y z : QQ, QQ.add (QQ.add x y) z = QQ.add x (QQ.add 
   simp only [QQ.add, ofLex_toLex]
   congr 1 <;> ring
 
+/-- Helper: reconstruct toLex from components -/
+theorem QQ.toLex_ofLex_components (x : QQ) : toLex ((ofLex x).1, (ofLex x).2) = x := by
+  simp only [Prod.eta, toLex_ofLex]
+
 /-- Right identity -/
 theorem QQ.add_zero_right : ∀ x : QQ, QQ.add x QQ.zero = x := by
   intro x
-  simp only [QQ.add, QQ.zero, ofLex_toLex, add_zero, toLex_ofLex]
+  simp only [QQ.add, QQ.zero, ofLex_toLex, add_zero, Prod.eta, toLex_ofLex]
 
 /-- Left identity -/
 theorem QQ.add_zero_left : ∀ x : QQ, QQ.add QQ.zero x = x := by
   intro x
-  simp only [QQ.add, QQ.zero, ofLex_toLex, zero_add, toLex_ofLex]
+  simp only [QQ.add, QQ.zero, ofLex_toLex, zero_add, Prod.eta, toLex_ofLex]
 
 /-- Strict monotonicity in first argument (using lexicographic order) -/
 theorem QQ.add_strictMono_left : ∀ y : QQ, StrictMono (fun x => QQ.add x y) := by
-  intro y
-  intro x₁ x₂ h
-  -- h : x₁ < x₂ in lexicographic order
+  intro y x₁ x₂ h
   simp only [QQ.add]
-  -- Use the Lex order directly via toLex_lt_toLex
-  rw [toLex_lt_toLex, Prod.Lex.lt_iff] at h
-  rw [toLex_lt_toLex, Prod.Lex.lt_iff]
+  rw [Prod.Lex.toLex_lt_toLex]
   simp only [ofLex_toLex]
-  rcases h with ⟨h1⟩ | ⟨h1, h2⟩
-  · -- Case: x₁.1 < x₂.1
-    left
-    exact add_lt_add_right h1 (ofLex y).1
-  · -- Case: x₁.1 = x₂.1 and x₁.2 < x₂.2
-    right
-    constructor
-    · simp [h1]
-    · exact add_lt_add_right h2 (ofLex y).2
+  -- h : x₁ < x₂ in Lex order. Extract the disjunction using Prod.Lex.lt_iff
+  have h' := h
+  rw [Prod.Lex.lt_iff] at h'
+  rcases h' with ⟨h1⟩ | ⟨h1, h2⟩
+  · left; exact add_lt_add_right h1 (ofLex y).1
+  · right; exact ⟨by simp [h1], add_lt_add_right h2 (ofLex y).2⟩
 
 /-- Strict monotonicity in second argument -/
 theorem QQ.add_strictMono_right : ∀ x : QQ, StrictMono (fun y => QQ.add x y) := by
-  intro x
-  intro y₁ y₂ h
+  intro x y₁ y₂ h
   simp only [QQ.add]
-  rw [toLex_lt_toLex, Prod.Lex.lt_iff] at h
-  rw [toLex_lt_toLex, Prod.Lex.lt_iff]
+  rw [Prod.Lex.toLex_lt_toLex]
   simp only [ofLex_toLex]
-  rcases h with ⟨h1⟩ | ⟨h1, h2⟩
-  · left
-    exact add_lt_add_left h1 (ofLex x).1
-  · right
-    constructor
-    · simp [h1]
-    · exact add_lt_add_left h2 (ofLex x).2
+  have h' := h
+  rw [Prod.Lex.lt_iff] at h'
+  rcases h' with ⟨h1⟩ | ⟨h1, h2⟩
+  · left; exact add_lt_add_left h1 (ofLex x).1
+  · right; exact ⟨by simp [h1], add_lt_add_left h2 (ofLex x).2⟩
 
 /-! ### The Key Result: Archimedean Property FAILS -/
 
 /-- QQ.epsilon = (0, 1) is positive (greater than origin) -/
 theorem QQ.epsilon_pos : QQ.zero < QQ.epsilon := by
   simp only [QQ.zero, QQ.epsilon]
-  rw [toLex_lt_toLex, Prod.Lex.lt_iff]
+  rw [Prod.Lex.toLex_lt_toLex]
   right
-  constructor
-  · rfl
-  · norm_num
+  exact ⟨rfl, by norm_num⟩
 
 /-- QQ.one = (1, 0) is positive -/
 theorem QQ.one_pos : QQ.zero < QQ.one := by
   simp only [QQ.zero, QQ.one]
-  rw [toLex_lt_toLex, Prod.Lex.lt_iff]
+  rw [Prod.Lex.toLex_lt_toLex]
   left
   norm_num
 
@@ -510,12 +501,14 @@ theorem QQ.iterate_epsilon (n : ℕ) :
     Nat.iterate (QQ.add QQ.epsilon) n QQ.epsilon = toLex (0, (n + 1 : ℚ)) := by
   induction n with
   | zero =>
-    simp only [Nat.iterate, QQ.epsilon, Nat.cast_zero, zero_add]
+    simp only [Function.iterate_zero, id_eq, QQ.epsilon, Nat.cast_zero, zero_add]
   | succ n ih =>
-    simp only [Nat.iterate, ih, QQ.add, QQ.epsilon, ofLex_toLex]
+    rw [Function.iterate_succ_apply', ih]
+    simp only [QQ.add, QQ.epsilon, ofLex_toLex]
+    -- Goal: toLex (0, 1 + (↑n + 1)) = toLex (0, ↑(n + 1) + 1)
     congr 1
-    · ring
-    · push_cast; ring
+    push_cast
+    ring
 
 /-- **THE KEY THEOREM**: No matter how many times we iterate epsilon,
     it NEVER exceeds QQ.one = (1, 0)!
@@ -527,7 +520,7 @@ theorem QQ.epsilon_never_exceeds_one :
   intro n
   rw [QQ.iterate_epsilon]
   simp only [QQ.one]
-  rw [toLex_lt_toLex, Prod.Lex.lt_iff]
+  rw [Prod.Lex.toLex_lt_toLex]
   left
   norm_num
 
@@ -558,48 +551,48 @@ theorem QQ.not_archimedean :
 
 This contradiction shows no such Θ exists.
 -/
+-- Helper lemma: iteration of additive map is multiplication
+private theorem iterate_add_mul (Θ : QQ → ℝ) (hΘ_add : ∀ x y : QQ, Θ (QQ.add x y) = Θ x + Θ y)
+    (n : ℕ) : Θ (Nat.iterate (QQ.add QQ.epsilon) n QQ.epsilon) = (n + 1 : ℕ) * Θ QQ.epsilon := by
+  induction n with
+  | zero => simp only [Function.iterate_zero, id_eq, Nat.cast_zero, zero_add, Nat.cast_one, one_mul]
+  | succ n ih =>
+    rw [Function.iterate_succ_apply', hΘ_add, ih]
+    push_cast
+    ring
+
 theorem QQ.no_representation :
     ¬∃ (Θ : QQ → ℝ), (∀ x y : QQ, x < y ↔ Θ x < Θ y) ∧
                       (∀ x y : QQ, Θ (QQ.add x y) = Θ x + Θ y) := by
   intro ⟨Θ, hΘ_mono, hΘ_add⟩
-  -- Step 1: Θ(epsilon) > 0 since epsilon > zero
+  -- Step 1: Θ(zero) = 0 by additivity: Θ zero = Θ (add zero zero) = 2 * Θ zero
+  have h_zero : Θ QQ.zero = 0 := by
+    have heq : QQ.zero = QQ.add QQ.zero QQ.zero := by
+      simp only [QQ.add, QQ.zero, ofLex_toLex, add_zero]
+    have h2 : Θ QQ.zero = Θ QQ.zero + Θ QQ.zero := by
+      conv_lhs => rw [heq]
+      rw [hΘ_add]
+    linarith
+  -- Step 2: Θ(epsilon) > 0 since epsilon > zero
   have h_eps_pos : 0 < Θ QQ.epsilon := by
-    have h := hΘ_mono QQ.zero QQ.epsilon
-    rw [h] at QQ.epsilon_pos
-    -- Θ zero = 0 by additivity: Θ zero = Θ (add zero zero) = 2 * Θ zero
-    have h_zero : Θ QQ.zero = 0 := by
-      have heq : QQ.zero = QQ.add QQ.zero QQ.zero := by
-        simp only [QQ.add, QQ.zero, ofLex_toLex, add_zero]
-      rw [heq, hΘ_add]
-      linarith
-    rw [h_zero] at QQ.epsilon_pos
-    exact QQ.epsilon_pos
-  -- Step 2: Θ(one) is finite (some real number)
-  -- Step 3: By Archimedean property of ℝ, ∃ n such that (n+1) * Θ(epsilon) > Θ(one)
+    have h_order := QQ.epsilon_pos  -- QQ.zero < QQ.epsilon
+    rw [hΘ_mono] at h_order
+    rw [h_zero] at h_order
+    exact h_order
+  -- Step 3: By Archimedean property of ℝ, ∃ n such that n * Θ(epsilon) > Θ(one)
   obtain ⟨n, hn⟩ := exists_nat_gt (Θ QQ.one / Θ QQ.epsilon)
-  -- (n : ℝ) > Θ(one) / Θ(epsilon) means n * Θ(epsilon) > Θ(one)
-  have h_n_big : ((n : ℕ) : ℝ) * Θ QQ.epsilon > Θ QQ.one := by
+  have h_n_big : (n : ℝ) * Θ QQ.epsilon > Θ QQ.one := by
     have h_div : Θ QQ.one / Θ QQ.epsilon < n := hn
-    calc Θ QQ.one = (Θ QQ.one / Θ QQ.epsilon) * Θ QQ.epsilon := by
-           field_simp
-         _ < n * Θ QQ.epsilon := by
-           apply mul_lt_mul_of_pos_right h_div h_eps_pos
+    calc Θ QQ.one = (Θ QQ.one / Θ QQ.epsilon) * Θ QQ.epsilon := by field_simp
+         _ < n * Θ QQ.epsilon := mul_lt_mul_of_pos_right h_div h_eps_pos
   -- Step 4: Show Θ(iterate_epsilon n) = (n+1) * Θ(epsilon)
-  have h_iterate : Θ (Nat.iterate (QQ.add QQ.epsilon) n QQ.epsilon) = (n + 1 : ℕ) * Θ QQ.epsilon := by
-    induction n with
-    | zero => simp
-    | succ n ih =>
-      simp only [Nat.iterate]
-      rw [hΘ_add, ih]
-      push_cast
-      ring
+  have h_iterate : Θ (Nat.iterate (QQ.add QQ.epsilon) n QQ.epsilon) = (n + 1 : ℕ) * Θ QQ.epsilon :=
+    iterate_add_mul Θ hΘ_add n
   -- Step 5: So Θ(iterate_epsilon n) > Θ(one) for large enough n
-  -- Actually, we need n such that (n+1) * Θ(epsilon) > Θ(one)
-  -- Our n satisfies n * Θ(epsilon) > Θ(one), so (n+1) * Θ(epsilon) > Θ(one) too
   have h_contradiction : Θ (Nat.iterate (QQ.add QQ.epsilon) n QQ.epsilon) > Θ QQ.one := by
     rw [h_iterate]
     calc ((n + 1 : ℕ) : ℝ) * Θ QQ.epsilon
-        = (n : ℝ) * Θ QQ.epsilon + Θ QQ.epsilon := by ring
+        = (n : ℝ) * Θ QQ.epsilon + Θ QQ.epsilon := by push_cast; ring
       _ > Θ QQ.one + 0 := by linarith [h_n_big, h_eps_pos]
       _ = Θ QQ.one := by ring
   -- Step 6: By order preservation, this means iterate_epsilon n > one
@@ -607,7 +600,6 @@ theorem QQ.no_representation :
     rwa [hΘ_mono]
   -- Step 7: But we proved iterate_epsilon n < one for ALL n!
   have h_bound := QQ.epsilon_never_exceeds_one n
-  -- h_bound : iterate < one, h_order : one < iterate - contradiction!
   exact absurd h_order (not_lt.mpr (le_of_lt h_bound))
 
 end LexCounterexample
