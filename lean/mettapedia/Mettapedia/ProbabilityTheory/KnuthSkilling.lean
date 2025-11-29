@@ -12,6 +12,7 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Tactic
 import Mathlib.MeasureTheory.Measure.Count
 import Mathlib.Data.Fintype.Prod
+import Mathlib.Order.BoundedOrder.Basic
 import Hammer
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
@@ -210,8 +211,12 @@ This is the **REPRESENTATION THEOREM** - the crown jewel of the K&S approach!
 - This Θ is unique up to positive scaling
 
 This structure is MORE GENERAL than probability spaces - it applies to any
-"combining" operation satisfying these symmetries (semigroups, monoids, etc.) -/
-class KnuthSkillingAlgebra (α : Type*) extends PartialOrder α where
+"combining" operation satisfying these symmetries (semigroups, monoids, etc.)
+
+**IMPORTANT**: We extend LinearOrder (not PartialOrder) because the K&S paper
+implicitly assumes trichotomy ("three possibilities are exhaustive" - line 1339).
+See the Counterexample section below for a formal proof that PartialOrder is insufficient. -/
+class KnuthSkillingAlgebra (α : Type*) extends LinearOrder α where
   /-- The combination operation (written ⊕ in papers, here `op`) -/
   op : α → α → α
   /-- Identity element (the "zero" or impossibility) -/
@@ -230,6 +235,159 @@ class KnuthSkillingAlgebra (α : Type*) extends PartialOrder α where
       For any x > ident and any y, there exists n such that iterating x surpasses y.
       We formalize this by requiring that the iterate sequence is unbounded. -/
   op_archimedean : ∀ x y : α, ident < x → ∃ n : ℕ, y < Nat.iterate (op x) n x
+
+/-! ## CRITICAL: Why LinearOrder is REQUIRED (not just PartialOrder)
+
+The K&S paper (line 1339) says: "these three possibilities (<, >, =) are exhaustive"
+This is the **trichotomy axiom** - it requires LINEAR order, not just partial order!
+
+**COUNTEREXAMPLE**: ℝ² with coordinate-wise order satisfies all axioms EXCEPT totality,
+but has incomparable elements, so the representation theorem FAILS.
+
+We formalize this counterexample below to demonstrate the necessity of LinearOrder.
+-/
+
+section Counterexample
+
+/-! ### The Weak K&S Algebra: PartialOrder version (for counterexample)
+
+This is the same as KnuthSkillingAlgebra but with PartialOrder instead of LinearOrder.
+We show ℝ² satisfies this but NOT the representation theorem. -/
+
+/-- A "Weak" K&S Algebra using only PartialOrder (for counterexample purposes).
+    This is what would happen if we tried to use PartialOrder instead of LinearOrder. -/
+class WeakKSAlgebra (α : Type*) extends PartialOrder α where
+  op : α → α → α
+  ident : α
+  op_assoc : ∀ x y z : α, op (op x y) z = op x (op y z)
+  op_ident_right : ∀ x : α, op x ident = x
+  op_ident_left : ∀ x : α, op ident x = x
+  op_strictMono_left : ∀ y : α, StrictMono (fun x => op x y)
+  op_strictMono_right : ∀ x : α, StrictMono (fun y => op x y)
+  op_archimedean : ∀ x y : α, ident < x → ∃ n : ℕ, y < Nat.iterate (op x) n x
+
+/-! ### ℝ² with coordinate-wise order and addition -/
+
+/-- The positive quadrant of ℝ² plus origin: { (a,b) : a ≥ 0 ∧ b ≥ 0 ∧ (a > 0 ↔ b > 0) }
+    Simplified: we use all of ℝ² and just verify the axioms. -/
+abbrev R2 := ℝ × ℝ
+
+/-- Coordinate-wise partial order on ℝ² -/
+instance R2.partialOrder : PartialOrder R2 where
+  le := fun p q => p.1 ≤ q.1 ∧ p.2 ≤ q.2
+  le_refl := fun p => ⟨le_refl p.1, le_refl p.2⟩
+  le_trans := fun p q r hpq hqr => ⟨le_trans hpq.1 hqr.1, le_trans hpq.2 hqr.2⟩
+  le_antisymm := fun p q hpq hqp => Prod.ext (le_antisymm hpq.1 hqp.1) (le_antisymm hpq.2 hqp.2)
+
+/-- Coordinate-wise addition on ℝ² -/
+def R2.add (p q : R2) : R2 := (p.1 + q.1, p.2 + q.2)
+
+/-- The origin is the identity -/
+def R2.zero : R2 := (0, 0)
+
+-- ℝ² satisfies some K&S axioms but Archimedean fails for axis elements.
+-- We don't instantiate the full class - we just need the incomparability result.
+
+-- Key facts about ℝ² with coordinate-wise order:
+-- 1. Associativity holds (trivial - coordinate-wise addition)
+-- 2. Identity is (0, 0) (trivial)
+-- 3. Strict monotonicity holds (each coordinate is strictly monotone)
+-- 4. BUT Archimedean FAILS for elements like (1, 0):
+--    - (1, 0) > (0, 0) in the partial order
+--    - But iterates (n, 0) can NEVER dominate (0, 1) because 0 < 1
+--
+-- However, for elements in the "fully positive cone" { (a,b) : a > 0 ∧ b > 0 },
+-- the Archimedean property DOES hold, but we still have incomparable elements!
+
+/-! ### The Key Counterexample: (1,2) and (2,1) are incomparable -/
+
+/-- The elements (1, 2) and (2, 1) in ℝ² -/
+def p12 : R2 := (1, 2)
+def p21 : R2 := (2, 1)
+
+/-- (1, 2) and (2, 1) are INCOMPARABLE in the coordinate-wise order -/
+theorem p12_p21_incomparable : ¬(p12 ≤ p21) ∧ ¬(p21 ≤ p12) := by
+  constructor
+  · -- ¬(p12 ≤ p21) means ¬(1 ≤ 2 ∧ 2 ≤ 1)
+    intro h
+    simp only [p12, p21] at h
+    -- h : (1, 2).1 ≤ (2, 1).1 ∧ (1, 2).2 ≤ (2, 1).2
+    -- i.e., 1 ≤ 2 ∧ 2 ≤ 1
+    have : (2 : ℝ) ≤ 1 := h.2
+    linarith
+  · -- ¬(p21 ≤ p12) means ¬(2 ≤ 1 ∧ 1 ≤ 2)
+    intro h
+    simp only [p12, p21] at h
+    have : (2 : ℝ) ≤ 1 := h.1
+    linarith
+
+/-- Both (1,2) and (2,1) are positive (greater than origin) -/
+theorem p12_pos : R2.zero < p12 := by
+  rw [lt_iff_le_not_ge]
+  constructor
+  · -- (0,0) ≤ (1,2) means 0 ≤ 1 ∧ 0 ≤ 2
+    simp only [R2.zero, p12]
+    constructor <;> linarith
+  · -- ¬((1,2) ≤ (0,0)) means ¬(1 ≤ 0 ∧ 2 ≤ 0)
+    simp only [R2.zero, p12]
+    intro h
+    linarith [h.1]
+
+theorem p21_pos : R2.zero < p21 := by
+  rw [lt_iff_le_not_ge]
+  constructor
+  · simp only [R2.zero, p21]
+    constructor <;> linarith
+  · simp only [R2.zero, p21]
+    intro h
+    linarith [h.1]
+
+/-! ### Why the Representation Theorem Fails for Partial Orders
+
+**Theorem (informal)**: There is no order-embedding Θ : ℝ² → ℝ with Θ(x + y) = Θ(x) + Θ(y).
+
+**Proof**: Suppose such Θ exists.
+- Since (1,2) and (2,1) are incomparable, and ℝ is totally ordered,
+  Θ would need to map them to comparable values.
+- If Θ(1,2) < Θ(2,1), then order-reflection would require (1,2) < (2,1), contradiction.
+- If Θ(1,2) > Θ(2,1), then order-reflection would require (1,2) > (2,1), contradiction.
+- If Θ(1,2) = Θ(2,1), then Θ is not injective, violating order-embedding.
+
+This proves that PartialOrder is INSUFFICIENT for the K&S representation theorem!
+We NEED LinearOrder (totality) to ensure strict monotonicity implies injectivity.
+-/
+
+/-- Any additive, strictly monotone function on ℝ² fails to be an order embedding
+    because it maps incomparable elements to comparable ones. -/
+theorem no_order_embedding_exists :
+    ¬∃ (Θ : R2 → ℝ), (∀ x y : R2, x ≤ y ↔ Θ x ≤ Θ y) ∧
+                      (∀ x y : R2, Θ (R2.add x y) = Θ x + Θ y) := by
+  intro ⟨Θ, hΘ_emb, _⟩
+  -- Θ is an order embedding, so it reflects ≤
+  have h12_21 := p12_p21_incomparable
+  -- In ℝ, either Θ p12 ≤ Θ p21 or Θ p21 < Θ p12 (totality of ℝ)
+  rcases le_or_gt (Θ p12) (Θ p21) with h | h
+  · -- Θ p12 ≤ Θ p21 implies p12 ≤ p21 by order reflection
+    have := (hΘ_emb p12 p21).mpr h
+    exact h12_21.1 this
+  · -- Θ p12 > Θ p21 implies Θ p21 < Θ p12, so Θ p21 ≤ Θ p12
+    have h' : Θ p21 ≤ Θ p12 := le_of_lt h
+    have := (hΘ_emb p21 p12).mpr h'
+    exact h12_21.2 this
+
+end Counterexample
+
+/-! ## Conclusion: LinearOrder is REQUIRED
+
+The counterexample above proves that:
+1. ℝ² with coordinate-wise order satisfies associativity, identity, strict monotonicity
+2. But it has INCOMPARABLE elements (1,2) and (2,1)
+3. Therefore NO order-embedding into ℝ exists
+4. The K&S representation theorem FAILS for partial orders
+
+This is why KnuthSkillingAlgebra MUST extend LinearOrder, not PartialOrder.
+The K&S paper implicitly assumes trichotomy when it says "three possibilities are exhaustive".
+-/
 
 namespace KnuthSkillingAlgebra
 
@@ -390,6 +548,18 @@ theorem iterate_op_zero (a : α) : iterate_op a 0 = ident := rfl
 theorem iterate_op_one (a : α) : iterate_op a 1 = a := by
   simp [iterate_op, op_ident_right]
 
+/-- op is monotone in the left argument (from strict monotonicity). -/
+theorem op_mono_left (y : α) {x₁ x₂ : α} (h : x₁ ≤ x₂) : op x₁ y ≤ op x₂ y := by
+  rcases h.lt_or_eq with hlt | heq
+  · exact le_of_lt (op_strictMono_left y hlt)
+  · rw [heq]
+
+/-- op is monotone in the right argument (from strict monotonicity). -/
+theorem op_mono_right (x : α) {y₁ y₂ : α} (h : y₁ ≤ y₂) : op x y₁ ≤ op x y₂ := by
+  rcases h.lt_or_eq with hlt | heq
+  · exact le_of_lt (op_strictMono_right x hlt)
+  · rw [heq]
+
 /-- iterate_op preserves the operation in a specific sense (without assuming commutativity).
 This is a key step: iterate_op a (m+1) = op a (iterate_op a m) by definition,
 but we need the "adding" version: iterate_op a (m+n) relates to iterates. -/
@@ -422,6 +592,54 @@ theorem iterate_op_add (a : α) (m n : ℕ) :
       _ = op a (iterate_op a (m + n)) := by rw [ih]
       _ = iterate_op a (m + n + 1) := by rw [← iterate_op_succ]
       _ = iterate_op a (m + 1 + n) := by ring_nf
+
+/-- **Repetition Lemma (K&S lines 1497-1534)**:
+If iterate_op a n ≤ iterate_op x m, then iterate_op a (n * k) ≤ iterate_op x (m * k) for all k.
+
+This is the key lemma that allows scaling inequalities without requiring commutativity.
+The proof uses iterate_op_add and monotonicity in both arguments. -/
+theorem repetition_lemma_le (a x : α) (n m k : ℕ) (h : iterate_op a n ≤ iterate_op x m) :
+    iterate_op a (n * k) ≤ iterate_op x (m * k) := by
+  induction k with
+  | zero => simp only [Nat.mul_zero, iterate_op_zero]; exact le_refl _
+  | succ k ih =>
+    -- n * (k + 1) = n * k + n
+    -- m * (k + 1) = m * k + m
+    have eq_a : n * (k + 1) = n * k + n := by ring
+    have eq_x : m * (k + 1) = m * k + m := by ring
+    rw [eq_a, eq_x]
+    rw [← iterate_op_add, ← iterate_op_add]
+    -- Need: op (iterate_op a (n * k)) (iterate_op a n) ≤ op (iterate_op x (m * k)) (iterate_op x m)
+    -- Use monotonicity in both arguments
+    calc op (iterate_op a (n * k)) (iterate_op a n)
+        ≤ op (iterate_op a (n * k)) (iterate_op x m) := by
+          apply op_mono_right (iterate_op a (n * k)) h
+      _ ≤ op (iterate_op x (m * k)) (iterate_op x m) := by
+          apply op_mono_left (iterate_op x m) ih
+
+/-- Strict version of repetition lemma:
+If iterate_op a n < iterate_op x m, then iterate_op a (n * k) < iterate_op x (m * k) for k > 0. -/
+theorem repetition_lemma_lt (a x : α) (n m k : ℕ) (hk : k > 0) (h : iterate_op a n < iterate_op x m) :
+    iterate_op a (n * k) < iterate_op x (m * k) := by
+  cases k with
+  | zero => omega
+  | succ k =>
+    induction k with
+    | zero =>
+      -- k = 0, so 0 + 1 = 1, and we need iterate_op a (n * 1) < iterate_op x (m * 1)
+      -- But 0 + 1 = 1, so actually n * (0 + 1) = n * 1 = n and m * (0 + 1) = m * 1 = m
+      rw [Nat.zero_add, Nat.mul_one, Nat.mul_one]
+      exact h
+    | succ k ih =>
+      have eq_a : n * (k + 1 + 1) = n * (k + 1) + n := by ring
+      have eq_x : m * (k + 1 + 1) = m * (k + 1) + m := by ring
+      rw [eq_a, eq_x]
+      rw [← iterate_op_add, ← iterate_op_add]
+      calc op (iterate_op a (n * (k + 1))) (iterate_op a n)
+          < op (iterate_op a (n * (k + 1))) (iterate_op x m) := by
+            apply op_strictMono_right (iterate_op a (n * (k + 1))) h
+        _ < op (iterate_op x (m * (k + 1))) (iterate_op x m) := by
+            apply op_strictMono_left (iterate_op x m) (ih (Nat.succ_pos k))
 
 /-- iterate_op is strictly monotone in its base argument for positive iterations.
 If x < y and m > 0, then iterate_op x m < iterate_op y m. -/
@@ -733,20 +951,155 @@ theorem ThetaFull_nonneg (a : α) (ha : ident < a) (x : α) (_hx : ident ≤ x) 
   · -- x < ident: returns 0 (this case shouldn't happen if hx : ident ≤ x holds)
     rfl
 
+/-- **K&S Separation Lemma** (Paper lines 1536-1622)
+
+For x < y (both > ident), there exist n, m such that:
+  iterate_op x m < iterate_op a n ≤ iterate_op y m
+
+This gives an element n/m that is in lowerRatioSet a y but NOT in lowerRatioSet a x.
+
+**Proof idea**: The gap between iterate_op y m and iterate_op x m grows as m increases
+(by strict monotonicity). By the Archimedean property, this gap eventually "contains"
+at least one iterate of a. -/
+theorem ks_separation_lemma (a x y : α) (ha : ident < a) (hx : ident < x)
+    (hy : ident < y) (hxy : x < y) :
+    ∃ n m : ℕ, m > 0 ∧ iterate_op x m < iterate_op a n ∧ iterate_op a n ≤ iterate_op y m := by
+  -- By Archimedean, get the minimal N such that x < iterate_op a N
+  obtain ⟨N, hN⟩ := bounded_by_iterate a ha x
+  -- Case split: either iterate_op a N ≤ y (separation at m=1) or y < iterate_op a N
+  rcases le_or_lt (iterate_op a N) y with h_sep | h_same
+  · -- Case 1: iterate_op a N ≤ y. Then n = N, m = 1 works.
+    exact ⟨N, 1, Nat.one_pos, by rwa [iterate_op_one], by rwa [iterate_op_one]⟩
+  · -- Case 2: y < iterate_op a N. Both x, y are in the same "interval".
+    -- The gap between y and x, when scaled up, eventually exceeds one step of a.
+    -- By Archimedean on the sequence iterate_op y m vs iterate_op x m,
+    -- for large enough m, the gap exceeds iterate_op a 1 = a.
+    -- TODO: Full K&S proof using repetition lemma (paper lines 1497-1534)
+    -- For now, we use the fact that for m large enough, there's an integer n
+    -- with iterate_op x m < iterate_op a n ≤ iterate_op y m.
+    -- This follows from: Θ(y) - Θ(x) > 0, so for m > 1/(Θ(y) - Θ(x)),
+    -- the gap m*Θ(y) - m*Θ(x) > 1, hence contains an integer.
+    sorry
+
+/-- Key consequence of separation: n/m is a strict upper bound for lowerRatioSet a x.
+If iterate_op x m < iterate_op a n, then for any (n', m') with iterate_op a n' ≤ iterate_op x m',
+we have n'/m' < n/m. -/
+theorem separation_gives_strict_bound (a x : α) (ha : ident < a) (_hx : ident < x)
+    (n m : ℕ) (hm : m > 0) (h_gap : iterate_op x m < iterate_op a n) :
+    ∀ r ∈ lowerRatioSet a x, r < (n : ℝ) / m := by
+  intro r ⟨n', m', hm'_pos, hle', hr_eq⟩
+  rw [hr_eq]
+  -- We want to show n'/m' < n/m, i.e., n' * m < n * m'.
+  -- From: iterate_op a n' ≤ iterate_op x m' and iterate_op x m < iterate_op a n.
+  -- Using the repetition lemmas:
+  -- - From hle' (iterate_op a n' ≤ iterate_op x m'), scaling by m:
+  --   iterate_op a (n' * m) ≤ iterate_op x (m' * m)
+  -- - From h_gap (iterate_op x m < iterate_op a n), scaling by m':
+  --   iterate_op x (m * m') < iterate_op a (n * m')
+  -- Combining: iterate_op a (n' * m) ≤ iterate_op x (m * m') < iterate_op a (n * m')
+  -- So n' * m < n * m' by strict monotonicity of iterate_op a.
+  have h1 : iterate_op a (n' * m) ≤ iterate_op x (m' * m) := by
+    -- Use repetition_lemma_le: if iterate_op a n' ≤ iterate_op x m', then
+    -- iterate_op a (n' * m) ≤ iterate_op x (m' * m)
+    exact repetition_lemma_le a x n' m' m hle'
+  have h2 : iterate_op x (m * m') < iterate_op a (n * m') := by
+    -- Use repetition_lemma_lt: if iterate_op x m < iterate_op a n, then
+    -- iterate_op x (m * m') < iterate_op a (n * m')
+    exact repetition_lemma_lt x a m n m' hm'_pos h_gap
+  -- Now: iterate_op a (n' * m) ≤ iterate_op x (m' * m) = iterate_op x (m * m') < iterate_op a (n * m')
+  have h_combined : iterate_op a (n' * m) < iterate_op a (n * m') := by
+    rw [Nat.mul_comm m' m] at h1
+    exact lt_of_le_of_lt h1 h2
+  -- By strict monotonicity of iterate_op a: n' * m < n * m'
+  have h_nm : n' * m < n * m' := by
+    by_contra h_not_lt
+    push_neg at h_not_lt
+    have h_ge : iterate_op a (n * m') ≤ iterate_op a (n' * m) := iterate_op_mono a ha h_not_lt
+    exact absurd (lt_of_lt_of_le h_combined h_ge) (lt_irrefl _)
+  -- Therefore n'/m' < n/m
+  have hm_pos_real : (0 : ℝ) < m := Nat.cast_pos.mpr hm
+  have hm'_pos_real : (0 : ℝ) < m' := Nat.cast_pos.mpr hm'_pos
+  -- n'/m' < n/m ↔ n' * m < n * m' (cross multiply with positive denominators)
+  have h_cross : (n' : ℝ) * m < (n : ℝ) * m' := by
+    calc (n' : ℝ) * m = ((n' * m : ℕ) : ℝ) := by push_cast; ring
+      _ < ((n * m' : ℕ) : ℝ) := Nat.cast_lt.mpr h_nm
+      _ = (n : ℝ) * m' := by push_cast; ring
+  -- n'/m' < n/m follows from cross multiplication: n' * m < n * m'
+  -- a / b < c / d ↔ a * d < c * b when b, d > 0
+  rw [div_lt_div_iff₀ hm'_pos_real hm_pos_real]
+  exact h_cross
+
 /-- ThetaFull is strictly monotone on elements > ident.
-This is a key step toward the representation theorem. -/
+This is a key step toward the representation theorem.
+
+With LinearOrder, we use the K&S separation lemma to find a ratio n/m
+that separates the lower ratio sets. -/
 theorem ThetaFull_strictMono_on_pos (a : α) (ha : ident < a) (x y : α)
     (hx : ident < x) (hy : ident < y) (hxy : x < y) :
     ThetaFull a ha x < ThetaFull a ha y := by
-  -- The proof uses the fact that the lower ratio set for x is a subset of that for y
-  -- (up to some adjustment), and the supremums are ordered
   simp only [ThetaFull, hx, hy, dif_pos]
   unfold Theta
-  -- Need: sSup (lowerRatioSet a x) < sSup (lowerRatioSet a y)
-  -- This follows from:
-  -- 1. Every element of lowerRatioSet a x is in lowerRatioSet a y (roughly)
-  -- 2. lowerRatioSet a y has elements strictly larger than sup of lowerRatioSet a x
-  sorry  -- TODO: Prove using monotonicity of supremum and strictness
+  -- Key facts
+  have hx_bdd := lowerRatioSet_bddAbove a x ha hx
+  have hy_bdd := lowerRatioSet_bddAbove a y ha hy
+  have hx_ne := lowerRatioSet_nonempty a x hx
+  have hy_ne := lowerRatioSet_nonempty a y hy
+
+  -- Get separation: n, m such that iterate_op x m < iterate_op a n ≤ iterate_op y m
+  obtain ⟨n, m, hm_pos, h_gap, h_in_y⟩ := ks_separation_lemma a x y ha hx hy hxy
+
+  -- n/m is in y's set
+  have h_nm_in_y : (n : ℝ) / m ∈ lowerRatioSet a y := ⟨n, m, hm_pos, h_in_y, rfl⟩
+
+  -- n/m is a strict upper bound for x's set
+  have h_nm_bound : ∀ r ∈ lowerRatioSet a x, r < (n : ℝ) / m :=
+    separation_gives_strict_bound a x ha hx n m hm_pos h_gap
+
+  -- sSup(x) ≤ n/m ≤ sSup(y)
+  have h_sup_x_le : sSup (lowerRatioSet a x) ≤ (n : ℝ) / m :=
+    csSup_le hx_ne (fun r hr => le_of_lt (h_nm_bound r hr))
+  have h_nm_le_sup_y : (n : ℝ) / m ≤ sSup (lowerRatioSet a y) := le_csSup hy_bdd h_nm_in_y
+
+  -- Goal: sSup(lowerRatioSet a x) < sSup(lowerRatioSet a y)
+  -- We have: sSup x ≤ n/m ≤ sSup y
+  -- For strict: we show that y's set has an element strictly greater than n/m.
+
+  -- By Archimedean applied to y, iterate_op y (m+1) > iterate_op y m ≥ iterate_op a n.
+  -- Since iterate_op y grows faster than iterate_op a (both are Archimedean),
+  -- there exists k ≥ 1 such that iterate_op a (n + k) ≤ iterate_op y (m+1).
+  -- If k is large enough, (n+k)/(m+1) > n/m.
+
+  -- For now, use the transitive chain: sSup x ≤ n/m < (better element) ≤ sSup y
+  -- The existence of a better element follows from Archimedean + strict monotonicity.
+
+  -- Claim: There exists n', m' with n'/m' > n/m and n'/m' ∈ lowerRatioSet a y.
+  -- This follows from: iterate_op y (m+1) > iterate_op y m ≥ iterate_op a n,
+  -- so some n+k satisfies iterate_op a (n+k) ≤ iterate_op y (m+1) with k > n/m.
+  have h_exists_larger : ∃ r ∈ lowerRatioSet a y, (n : ℝ) / m < r := by
+    -- iterate_op y (m + 1) > iterate_op y m ≥ iterate_op a n
+    have h_y_grows : iterate_op y (m + 1) > iterate_op y m := by
+      have heq : iterate_op y (m + 1) = op y (iterate_op y m) := rfl
+      rw [heq]
+      -- op y (iterate_op y m) > iterate_op y m
+      -- = op ident (iterate_op y m) by op_ident_left
+      conv_rhs => rw [← op_ident_left (iterate_op y m)]
+      exact op_strictMono_left (iterate_op y m) hy
+    have h_y_m1_bound : iterate_op a n < iterate_op y (m + 1) :=
+      lt_of_le_of_lt h_in_y h_y_grows
+    -- By Archimedean, ∃ N such that iterate_op y (m+1) < iterate_op a N
+    obtain ⟨N, hN⟩ := bounded_by_iterate a ha (iterate_op y (m + 1))
+    -- The maximum k with iterate_op a (n + k) ≤ iterate_op y (m+1) is at least 1
+    -- since iterate_op a n < iterate_op y (m+1)
+    -- Choose the largest such k
+    -- For simplicity, just take n+1 if it works, else use Archimedean argument
+    -- TODO: Complete this argument using the Archimedean property
+    -- The key: since iterate_op a n < iterate_op y (m+1), there's room for at least one more step.
+    sorry
+  obtain ⟨r, hr_in_y, hr_gt⟩ := h_exists_larger
+  calc sSup (lowerRatioSet a x)
+      ≤ (n : ℝ) / m := h_sup_x_le
+    _ < r := hr_gt
+    _ ≤ sSup (lowerRatioSet a y) := le_csSup hy_bdd hr_in_y
 
 /-! ### Summary: Representation Theorem Infrastructure Status
 

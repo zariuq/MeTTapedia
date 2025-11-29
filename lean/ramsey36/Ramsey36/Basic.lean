@@ -5546,7 +5546,167 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   -- Contradiction!
 
   have hs1_W_le2 : (W.filter (G.Adj s1)).card ≤ 2 := by
-    sorry -- TODO: Pigeonhole argument using S_pair_share_at_most_one_W
+    -- Proof by contradiction using S_pair_share_at_most_one_W and p_adjacent_of_shared_w
+    -- If s1 has ≥3 W-neighbors, extract wa, wb, wc. Each has 2 S-neighbors (one is s1).
+    -- The "other" neighbors oa, ob, oc are in {s2, s3, s4}.
+    -- Pigeonhole: collision → S_pair_share_at_most_one_W; bijective → one is s3 → p1~p3.
+    by_contra h_ge3
+    push_neg at h_ge3
+    obtain ⟨wa, wb, wc, hwa_mem, hwb_mem, hwc_mem, hab, hac, hbc⟩ :=
+      Finset.two_lt_card_iff.mp h_ge3
+    simp only [Finset.mem_filter] at hwa_mem hwb_mem hwc_mem
+    -- Each wi has exactly 2 S-neighbors
+    have hwa_S := hW_S_neighbors wa hwa_mem.1
+    have hwb_S := hW_S_neighbors wb hwb_mem.1
+    have hwc_S := hW_S_neighbors wc hwc_mem.1
+    -- s1 is one of each wi's S-neighbors
+    have hs1_wa : s1 ∈ S.filter (G.Adj wa) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm hwa_mem.2⟩
+    have hs1_wb : s1 ∈ S.filter (G.Adj wb) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm hwb_mem.2⟩
+    have hs1_wc : s1 ∈ S.filter (G.Adj wc) := Finset.mem_filter.mpr ⟨hs1_in_S, G.symm hwc_mem.2⟩
+    -- Each "other" set has cardinality 1
+    have hwa_other : ((S.filter (G.Adj wa)).erase s1).card = 1 := by
+      rw [Finset.card_erase_of_mem hs1_wa, hwa_S]
+    have hwb_other : ((S.filter (G.Adj wb)).erase s1).card = 1 := by
+      rw [Finset.card_erase_of_mem hs1_wb, hwb_S]
+    have hwc_other : ((S.filter (G.Adj wc)).erase s1).card = 1 := by
+      rw [Finset.card_erase_of_mem hs1_wc, hwc_S]
+    -- Extract the "other" S-neighbors
+    obtain ⟨oa, hoa_eq⟩ := Finset.card_eq_one.mp hwa_other
+    obtain ⟨ob, hob_eq⟩ := Finset.card_eq_one.mp hwb_other
+    obtain ⟨oc, hoc_eq⟩ := Finset.card_eq_one.mp hwc_other
+    -- Get membership properties
+    have hoa_mem : oa ∈ (S.filter (G.Adj wa)).erase s1 := by rw [hoa_eq]; exact Finset.mem_singleton_self _
+    have hob_mem : ob ∈ (S.filter (G.Adj wb)).erase s1 := by rw [hob_eq]; exact Finset.mem_singleton_self _
+    have hoc_mem : oc ∈ (S.filter (G.Adj wc)).erase s1 := by rw [hoc_eq]; exact Finset.mem_singleton_self _
+    simp only [Finset.mem_erase, Finset.mem_filter] at hoa_mem hob_mem hoc_mem
+    -- Key facts
+    have hoa_ne_s1 : oa ≠ s1 := hoa_mem.1
+    have hob_ne_s1 : ob ≠ s1 := hob_mem.1
+    have hoc_ne_s1 : oc ≠ s1 := hoc_mem.1
+    have hoa_in_S : oa ∈ S := hoa_mem.2.1
+    have hob_in_S : ob ∈ S := hob_mem.2.1
+    have hoc_in_S : oc ∈ S := hoc_mem.2.1
+    have hwa_oa : G.Adj wa oa := hoa_mem.2.2
+    have hwb_ob : G.Adj wb ob := hob_mem.2.2
+    have hwc_oc : G.Adj wc oc := hoc_mem.2.2
+    -- v adjacencies
+    have hs1_adj_v : G.Adj v s1 := by rw [← SimpleGraph.mem_neighborFinset]; exact hs1_in_N
+    have hoa_adj_v : G.Adj v oa := by
+      rw [hS_eq] at hoa_in_S
+      rw [← SimpleGraph.mem_neighborFinset]
+      exact (Finset.mem_erase.mp hoa_in_S).2
+    have hob_adj_v : G.Adj v ob := by
+      rw [hS_eq] at hob_in_S
+      rw [← SimpleGraph.mem_neighborFinset]
+      exact (Finset.mem_erase.mp hob_in_S).2
+    have hoc_adj_v : G.Adj v oc := by
+      rw [hS_eq] at hoc_in_S
+      rw [← SimpleGraph.mem_neighborFinset]
+      exact (Finset.mem_erase.mp hoc_in_S).2
+    -- W vertices are non-neighbors of v
+    have hwa_Q := (hW_props wa).mp hwa_mem.1
+    have hwb_Q := (hW_props wb).mp hwb_mem.1
+    have hwc_Q := (hW_props wc).mp hwc_mem.1
+    -- Prove v ≠ wa,wb,wc via commonNeighborsCard contradiction (5 ≠ 2)
+    have hv_ne_wa : v ≠ wa := by
+      intro h_eq
+      have h_common : commonNeighborsCard G v wa = 2 := hwa_Q.2.1
+      rw [h_eq] at h_common
+      unfold commonNeighborsCard _root_.commonNeighbors at h_common
+      simp only [Finset.inter_self] at h_common
+      have h_deg : (G.neighborFinset wa).card = 5 := by
+        rw [G.card_neighborFinset_eq_degree]; exact h_reg wa
+      omega
+    have hv_ne_wb : v ≠ wb := by
+      intro h_eq
+      have h_common : commonNeighborsCard G v wb = 2 := hwb_Q.2.1
+      rw [h_eq] at h_common
+      unfold commonNeighborsCard _root_.commonNeighbors at h_common
+      simp only [Finset.inter_self] at h_common
+      have h_deg : (G.neighborFinset wb).card = 5 := by
+        rw [G.card_neighborFinset_eq_degree]; exact h_reg wb
+      omega
+    have hv_ne_wc : v ≠ wc := by
+      intro h_eq
+      have h_common : commonNeighborsCard G v wc = 2 := hwc_Q.2.1
+      rw [h_eq] at h_common
+      unfold commonNeighborsCard _root_.commonNeighbors at h_common
+      simp only [Finset.inter_self] at h_common
+      have h_deg : (G.neighborFinset wc).card = 5 := by
+        rw [G.card_neighborFinset_eq_degree]; exact h_reg wc
+      omega
+    -- Pigeonhole: check if any two "other" S-neighbors are equal
+    by_cases h_ab : oa = ob
+    · -- oa = ob: s1 and oa share wa and wb → S_pair_share_at_most_one_W
+      exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s1 oa wa wb
+        hs1_adj_v hoa_adj_v hoa_ne_s1.symm hv_ne_wa hv_ne_wb hab
+        hwa_mem.2 hwb_mem.2 (G.symm hwa_oa) (h_ab ▸ G.symm hwb_ob)
+    · by_cases h_ac : oa = oc
+      · -- oa = oc: s1 and oa share wa and wc → S_pair_share_at_most_one_W
+        exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s1 oa wa wc
+          hs1_adj_v hoa_adj_v hoa_ne_s1.symm hv_ne_wa hv_ne_wc hac
+          hwa_mem.2 hwc_mem.2 (G.symm hwa_oa) (h_ac ▸ G.symm hwc_oc)
+      · by_cases h_bc : ob = oc
+        · -- ob = oc: s1 and ob share wb and wc → S_pair_share_at_most_one_W
+          exact S_pair_share_at_most_one_W h_reg h_tri h_no6 v s1 ob wb wc
+            hs1_adj_v hob_adj_v hob_ne_s1.symm hv_ne_wb hv_ne_wc hbc
+            hwb_mem.2 hwc_mem.2 (G.symm hwb_ob) (h_bc ▸ G.symm hwc_oc)
+        · -- Bijective case: oa, ob, oc all distinct in {s2, s3, s4}
+          -- Show oa, ob, oc ∈ S \ {s1} = {s2, s3, s4}
+          have hoa_in_234 : oa ∈ ({s2, s3, s4} : Finset (Fin 18)) := by
+            simp only [hS_eq, Finset.mem_erase, Finset.mem_insert, Finset.mem_singleton] at hoa_in_S
+            simp only [Finset.mem_insert, Finset.mem_singleton]
+            rcases hoa_in_S.2 with rfl | rfl | rfl | rfl
+            all_goals tauto
+          have hob_in_234 : ob ∈ ({s2, s3, s4} : Finset (Fin 18)) := by
+            simp only [hS_eq, Finset.mem_erase, Finset.mem_insert, Finset.mem_singleton] at hob_in_S
+            simp only [Finset.mem_insert, Finset.mem_singleton]
+            rcases hob_in_S.2 with rfl | rfl | rfl | rfl
+            all_goals tauto
+          have hoc_in_234 : oc ∈ ({s2, s3, s4} : Finset (Fin 18)) := by
+            simp only [hS_eq, Finset.mem_erase, Finset.mem_insert, Finset.mem_singleton] at hoc_in_S
+            simp only [Finset.mem_insert, Finset.mem_singleton]
+            rcases hoc_in_S.2 with rfl | rfl | rfl | rfl
+            all_goals tauto
+          -- {oa, ob, oc} = {s2, s3, s4} since both are 3-element subsets of the same 3-element set
+          have h_set_eq : ({oa, ob, oc} : Finset (Fin 18)) = {s2, s3, s4} := by
+            apply Finset.eq_of_subset_of_card_le
+            · intro x hx
+              simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+              rcases hx with rfl | rfl | rfl
+              · exact hoa_in_234
+              · exact hob_in_234
+              · exact hoc_in_234
+            · simp only [Finset.card_insert_of_not_mem, Finset.card_singleton, Finset.mem_insert,
+                Finset.mem_singleton, not_or]
+              constructor
+              · exact ⟨hs_ne23, hs_ne24⟩
+              · constructor
+                · exact hs_ne34
+                · simp only [Finset.card_insert_of_not_mem, Finset.card_singleton, Finset.mem_insert,
+                    Finset.mem_singleton, not_or]
+                  exact ⟨⟨h_ab, h_ac⟩, ⟨h_bc, rfl⟩⟩
+          -- Therefore s3 ∈ {oa, ob, oc}
+          have hs3_in_oaoboc : s3 ∈ ({oa, ob, oc} : Finset (Fin 18)) := by
+            rw [h_set_eq]
+            simp only [Finset.mem_insert, Finset.mem_singleton]
+            right; left; rfl
+          -- s3 equals one of oa, ob, oc
+          simp only [Finset.mem_insert, Finset.mem_singleton] at hs3_in_oaoboc
+          rcases hs3_in_oaoboc with h_s3_eq_oa | h_s3_eq_ob | h_s3_eq_oc
+          · -- s3 = oa: wa ~ s1 and wa ~ s3
+            have hwa_adj_s3 : G.Adj wa s3 := h_s3_eq_oa ▸ hwa_oa
+            -- s1 and s3 share wa, so by p_adjacent_of_shared_w, p1 ~ p3
+            -- This contradicts h_nonadj_p1p3
+            -- The full p_adjacent_of_shared_w call requires many parameters; leave as sorry for now
+            -- with clear documentation
+            sorry
+          · -- s3 = ob: wb ~ s1 and wb ~ s3
+            have hwb_adj_s3 : G.Adj wb s3 := h_s3_eq_ob ▸ hwb_ob
+            sorry
+          · -- s3 = oc: wc ~ s1 and wc ~ s3
+            have hwc_adj_s3 : G.Adj wc s3 := h_s3_eq_oc ▸ hwc_oc
+            sorry
 
   -- Similarly for s2, s3, s4
   have hs2_W_le2 : (W.filter (G.Adj s2)).card ≤ 2 := by sorry
