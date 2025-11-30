@@ -592,6 +592,30 @@ theorem ThetaFull_nonneg (a : α) (ha : ident < a) (x : α) (_hx : ident ≤ x) 
   · -- x < ident: returns 0 (this case shouldn't happen if hx : ident ≤ x holds)
     rfl
 
+/-- ThetaFull is strictly positive on elements > ident.
+This is needed for strict monotonicity in the main theorem. -/
+theorem ThetaFull_pos_of_pos (a : α) (ha : ident < a) (x : α) (hx : ident < x) :
+    0 < ThetaFull a ha x := by
+  simp only [ThetaFull, hx, dif_pos]
+  unfold Theta
+  -- We need to show sSup (lowerRatioSet a x) > 0
+  -- By Archimedean, ∃ M such that a < iterate_op x M
+  -- This gives the ratio 1/M > 0 in the set
+  obtain ⟨M, hM⟩ := bounded_by_iterate x hx a
+  have hM_pos : 0 < M := by
+    by_contra h_not_pos
+    push_neg at h_not_pos
+    interval_cases M
+    simp only [iterate_op_zero] at hM
+    exact absurd (lt_trans ha hM) (lt_irrefl _)
+  have h_ratio_in : (1 : ℝ) / M ∈ lowerRatioSet a x := by
+    refine ⟨1, M, hM_pos, ?_, by simp⟩
+    rw [iterate_op_one]
+    exact le_of_lt hM
+  have h_ratio_pos : (0 : ℝ) < 1 / M := by positivity
+  calc 0 < (1 : ℝ) / M := h_ratio_pos
+    _ ≤ sSup (lowerRatioSet a x) := le_csSup (lowerRatioSet_bddAbove a x ha hx) h_ratio_in
+
 /-! ### Additivity of Theta
 
 ## Restructured Approach (following GPT-5.1 Pro advice)
