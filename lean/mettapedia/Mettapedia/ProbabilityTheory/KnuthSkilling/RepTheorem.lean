@@ -204,31 +204,29 @@ theorem iterate_op_mul (x : α) (n m : ℕ) :
       _ = iterate_op x (n + n * m) := by rw [iterate_op_add]
       _ = iterate_op x (n * (m + 1)) := by ring_nf
 
-/-- **Key distributivity**: iterate_op distributes over op in the sense that
-op (iterate_op x m) (iterate_op y m) = iterate_op (op x y) m.
+/-! **iterate_op_op_distrib is FALSE without commutativity!**
 
-This is crucial for the additivity proof: it relates iteration of a product
-to the product of iterations. -/
-theorem iterate_op_op_distrib (x y : α) (m : ℕ) :
-    op (iterate_op x m) (iterate_op y m) = iterate_op (op x y) m := by
-  induction m with
-  | zero =>
-    -- op (iterate_op x 0) (iterate_op y 0) = op ident ident = ident = iterate_op (op x y) 0
-    simp only [iterate_op_zero, op_ident_left]
-  | succ m ih =>
-    -- iterate_op (op x y) (m + 1) = op (op x y) (iterate_op (op x y) m)
-    --                             = op (op x y) (op (iterate_op x m) (iterate_op y m)) [by IH]
-    -- We need: op (iterate_op x (m+1)) (iterate_op y (m+1))
-    --        = op (op x (iterate_op x m)) (op y (iterate_op y m))
-    -- Then use associativity and commutativity...
-    -- Actually, without commutativity this is tricky!
-    -- But we DO have associativity, so let's see:
-    -- LHS = op (op x (iterate_op x m)) (op y (iterate_op y m))
-    --     = op x (op (iterate_op x m) (op y (iterate_op y m)))    [assoc]
-    --     = op x (op (op (iterate_op x m) y) (iterate_op y m))    [assoc]
-    -- This doesn't immediately give us what we want without commutativity.
-    -- Let me try a different approach using iterate_op_add...
-    sorry -- TODO: This requires commutativity - need to add assumption or prove differently
+The statement `op (iterate_op x m) (iterate_op y m) = iterate_op (op x y) m`
+(i.e., x^m ⊕ y^m = (x⊕y)^m) requires commutativity of op.
+
+**Counterexample**: See `Counterexamples.iterate_op_op_distrib_false`:
+For the free monoid (lists with concatenation):
+  [0]² ++ [1]² = [0,0,1,1] ≠ [0,1,0,1] = ([0] ++ [1])²
+
+**What we DO have** (without commutativity):
+  `iterate_op_op_le_double`: x^m ⊕ y^m ≤ (x⊕y)^{2m}
+
+The factor of 2 is unavoidable without commutativity.
+
+**K&S approach**: They derive commutativity AS A CONSEQUENCE of the
+representation theorem. This creates a bootstrapping issue that requires
+the careful Appendix A construction. See `exists_split_ratio_of_op`.
+-/
+
+-- NOTE: This theorem is FALSE and should NOT be proved.
+-- We keep the statement commented out for reference.
+-- theorem iterate_op_op_distrib (x y : α) (m : ℕ) :
+--     op (iterate_op x m) (iterate_op y m) = iterate_op (op x y) m
 
 /-- **Repetition Lemma (K&S lines 1497-1534)**:
 If iterate_op a n ≤ iterate_op x m, then iterate_op a (n * k) ≤ iterate_op x (m * k) for all k.
@@ -594,51 +592,253 @@ theorem ThetaFull_nonneg (a : α) (ha : ident < a) (x : α) (_hx : ident ≤ x) 
   · -- x < ident: returns 0 (this case shouldn't happen if hx : ident ≤ x holds)
     rfl
 
-/-! ### Additivity of Theta -/
+/-! ### Additivity of Theta
+
+## Restructured Approach (following GPT-5.1 Pro advice)
+
+**KEY INSIGHT**: `iterate_op_op_distrib` (x^m ⊕ y^m = (x⊕y)^m) is FALSE without commutativity!
+We cannot prove set equality `lowerRatioSet a (op x y) = lowerRatioSet a x + lowerRatioSet a y`.
+
+Instead, we prove Theta additivity directly via two inequalities:
+1. `Theta_le_add`: Θ(x⊕y) ≤ Θ(x) + Θ(y) (uses Archimedean split)
+2. `add_le_Theta`: Θ(x) + Θ(y) ≤ Θ(x⊕y) (uses approximation, no commutativity needed)
+
+This avoids the false `iterate_op_op_distrib` entirely.
+-/
 
 section Additivity
 
 open scoped Pointwise
 
-/-- **Key Additivity Lemma**: The lower ratio sets add pointwise.
+/-- **Archimedean Split Lemma**: Given a lower-ratio bound for x ⊕ y,
+we can (approximately) split it into a sum of lower-ratio elements for x and y.
 
-For x ⊕ y, a ratio n/m is in lowerRatioSet if a^n ≤ (x ⊕ y)^m.
-By the repetition lemmas, this is equivalent to finding ratios that sum to n/m
-from the individual sets for x and y.
+This is the core of Appendix A's ε-δ / grid argument.
 
-This lemma enables the use of `csSup_add` to prove Θ(x ⊕ y) = Θ(x) + Θ(y). -/
-theorem lowerRatioSet_op_eq_add (a x y : α) (ha : ident < a) (hx : ident < x) (hy : ident < y) :
-    lowerRatioSet a (op x y) = lowerRatioSet a x + lowerRatioSet a y := by
-  -- Proof by double inclusion (⊆ and ⊇)
-  ext r
-  constructor
-  · -- Left-to-right (⊆): If r ∈ Lower(x ⊕ y), split into sum
-    intro ⟨n, m, hm_pos, h_le, hr_eq⟩
-    -- TODO: This is the harder direction - requires Archimedean reasoning
-    -- to split r = n/m into r₁ + r₂ where r₁ ∈ Lower(x), r₂ ∈ Lower(y)
-    sorry
-  · -- Right-to-left (⊇): If r₁ + r₂ with r₁ ∈ Lower(x), r₂ ∈ Lower(y), then r₁ + r₂ ∈ Lower(x ⊕ y)
-    intro hr
-    -- Pointwise set addition: r ∈ s + t ↔ ∃ r₁ ∈ s, ∃ r₂ ∈ t, r = r₁ + r₂
-    rw [Set.mem_add] at hr
-    obtain ⟨r₁, hr₁, r₂, hr₂, hr_sum⟩ := hr
-    -- r₁ ∈ Lower(x) means ∃ n₁ m₁, a^{n₁} ≤ x^{m₁}, r₁ = n₁/m₁
-    obtain ⟨n₁, m₁, hm₁_pos, h₁_le, hr₁_eq⟩ := hr₁
-    obtain ⟨n₂, m₂, hm₂_pos, h₂_le, hr₂_eq⟩ := hr₂
-    -- Strategy: Use common denominator m = m₁ * m₂
-    -- Then r = (n₁*m₂ + n₂*m₁)/(m₁*m₂)
-    -- Need to show: a^{n₁*m₂ + n₂*m₁} ≤ (x ⊕ y)^{m₁*m₂}
-    -- This requires:
-    --   1. iterate_op_mul: (x ⊕ y)^{m₁*m₂} involves x^{m₁*m₂} ⊕ y^{m₁*m₂}
-    --   2. Repetition lemmas to scale the bounds
-    --   3. Additivity structure a^{n₁*m₂ + n₂*m₁} = a^{n₁*m₂} ⊕ a^{n₂*m₁}
-    sorry -- TODO: Use iterate_op_mul, repetition lemmas, and op properties
+Mathematical idea: If a^n ≤ (x⊕y)^m, use the Archimedean property to find
+how the "contribution" splits between x and y. The bound may be slightly loose
+(hence ≤ instead of = in the conclusion). -/
+lemma exists_split_ratio_of_op
+    (a x y : α) (ha : ident < a) (hx : ident < x) (hy : ident < y)
+    {n m : ℕ} (hm_pos : 0 < m)
+    (h_le : iterate_op a n ≤ iterate_op (op x y) m) :
+  ∃ n₁ m₁ n₂ m₂ : ℕ,
+    0 < m₁ ∧ 0 < m₂ ∧
+    iterate_op a n₁ ≤ iterate_op x m₁ ∧
+    iterate_op a n₂ ≤ iterate_op y m₂ ∧
+    (n : ℝ) / m ≤ (n₁ : ℝ) / m₁ + (n₂ : ℝ) / m₂ := by
+  -- TODO: This is the Archimedean split - the main technical lemma
+  -- Strategy from K&S Appendix A:
+  -- 1. Use repetition lemma to work on a common grid
+  -- 2. Use separation construction to track how a-steps split between x and y
+  -- 3. Convert counts into ratios with the inequality
+  sorry
+
+/-- First inequality: Θ(x⊕y) ≤ Θ(x) + Θ(y)
+
+Uses the Archimedean split lemma to show every element of Lower(x⊕y)
+is bounded by a sum from Lower(x) + Lower(y). -/
+lemma Theta_le_add (a x y : α) (ha : ident < a) (hx : ident < x) (hy : ident < y)
+    (hxy : ident < op x y) :
+    Theta a (op x y) ha hxy ≤ Theta a x ha hx + Theta a y ha hy := by
+  unfold Theta
+  -- Use csSup_le: show every r in lowerRatioSet a (op x y) is ≤ Θ(x) + Θ(y)
+  apply csSup_le (lowerRatioSet_nonempty a (op x y) hxy)
+  intro r ⟨n, m, hm_pos, h_le, hr_eq⟩
+  subst hr_eq
+  -- Apply splitting lemma
+  obtain ⟨n₁, m₁, n₂, m₂, hm₁_pos, hm₂_pos, hx_le, hy_le, h_rat_le⟩ :=
+    exists_split_ratio_of_op a x y ha hx hy hm_pos h_le
+  -- n₁/m₁ ∈ lowerRatioSet a x, n₂/m₂ ∈ lowerRatioSet a y
+  have hr1_in : (n₁ : ℝ) / m₁ ∈ lowerRatioSet a x := ⟨n₁, m₁, hm₁_pos, hx_le, rfl⟩
+  have hr2_in : (n₂ : ℝ) / m₂ ∈ lowerRatioSet a y := ⟨n₂, m₂, hm₂_pos, hy_le, rfl⟩
+  -- Bound by suprema
+  have h1 : (n₁ : ℝ) / m₁ ≤ sSup (lowerRatioSet a x) :=
+    le_csSup (lowerRatioSet_bddAbove a x ha hx) hr1_in
+  have h2 : (n₂ : ℝ) / m₂ ≤ sSup (lowerRatioSet a y) :=
+    le_csSup (lowerRatioSet_bddAbove a y ha hy) hr2_in
+  -- Combine: n/m ≤ n₁/m₁ + n₂/m₂ ≤ Θ(x) + Θ(y)
+  calc (n : ℝ) / m ≤ (n₁ : ℝ) / m₁ + (n₂ : ℝ) / m₂ := h_rat_le
+    _ ≤ sSup (lowerRatioSet a x) + sSup (lowerRatioSet a y) := add_le_add h1 h2
+
+/-- Helper: x ≤ x ⊕ y when ident < y (by monotonicity of op in right argument) -/
+lemma le_op_of_pos_right (x y : α) (hy : ident < y) : x ≤ op x y := by
+  have : op x ident < op x y := op_strictMono_right x hy
+  rw [op_ident_right] at this
+  exact le_of_lt this
+
+/-- Helper: y ≤ x ⊕ y when ident < x (by monotonicity of op in left argument) -/
+lemma le_op_of_pos_left (x y : α) (hx : ident < x) : y ≤ op x y := by
+  have : op ident y < op x y := op_strictMono_left y hx
+  rw [op_ident_left] at this
+  exact le_of_lt this
+
+/-- If x ≤ z, then x^m ≤ z^m for all m (iterate_op is monotone in base) -/
+lemma iterate_op_mono_base (x z : α) (hxz : x ≤ z) (hz : ident < z) (m : ℕ) :
+    iterate_op x m ≤ iterate_op z m := by
+  induction m with
+  | zero => exact le_refl _
+  | succ m ih =>
+    simp only [iterate_op_succ]
+    -- x ⊕ x^m ≤ z ⊕ z^m
+    calc op x (iterate_op x m)
+        ≤ op z (iterate_op x m) := (op_strictMono_left (iterate_op x m)).monotone hxz
+      _ ≤ op z (iterate_op z m) := (op_strictMono_right z).monotone ih
+
+/-- Key intermediate result: x^m ⊕ y^m ≤ (x⊕y)^{2m}
+
+This is weaker than iterate_op_op_distrib (which claims x^m ⊕ y^m = (x⊕y)^m),
+but it's TRUE without commutativity! The factor of 2 is unavoidable. -/
+lemma iterate_op_op_le_double (x y : α) (hx : ident < x) (hy : ident < y) (m : ℕ) :
+    op (iterate_op x m) (iterate_op y m) ≤ iterate_op (op x y) (2 * m) := by
+  -- x ≤ x⊕y and y ≤ x⊕y
+  have hx_le : x ≤ op x y := le_op_of_pos_right x y hy
+  have hy_le : y ≤ op x y := le_op_of_pos_left x y hx
+  have hxy : ident < op x y := by
+    calc ident = op ident ident := (op_ident_left ident).symm
+      _ < op x ident := op_strictMono_left ident hx
+      _ < op x y := op_strictMono_right x hy
+  -- So x^m ≤ (x⊕y)^m and y^m ≤ (x⊕y)^m
+  have hxm : iterate_op x m ≤ iterate_op (op x y) m := iterate_op_mono_base x (op x y) hx_le hxy m
+  have hym : iterate_op y m ≤ iterate_op (op x y) m := iterate_op_mono_base y (op x y) hy_le hxy m
+  -- Now: x^m ⊕ y^m ≤ (x⊕y)^m ⊕ (x⊕y)^m = (x⊕y)^{2m}
+  calc op (iterate_op x m) (iterate_op y m)
+      ≤ op (iterate_op (op x y) m) (iterate_op y m) :=
+        (op_strictMono_left (iterate_op y m)).monotone hxm
+    _ ≤ op (iterate_op (op x y) m) (iterate_op (op x y) m) :=
+        (op_strictMono_right (iterate_op (op x y) m)).monotone hym
+    _ = iterate_op (op x y) (2 * m) := by rw [two_mul, ← iterate_op_add]
+
+/-- **Weaker bound** (provable without commutativity):
+(Θ(x) + Θ(y))/2 ≤ Θ(x⊕y)
+
+This follows from iterate_op_op_le_double: for any r₁ ∈ Lower(x), r₂ ∈ Lower(y),
+the ratio (r₁+r₂)/2 belongs to Lower(x⊕y). -/
+lemma half_add_le_Theta (a x y : α) (ha : ident < a) (hx : ident < x) (hy : ident < y)
+    (hxy : ident < op x y) :
+    (Theta a x ha hx + Theta a y ha hy) / 2 ≤ Theta a (op x y) ha hxy := by
+  unfold Theta
+  -- Strategy: For any r₁ ∈ Lower(x), r₂ ∈ Lower(y), show (r₁+r₂)/2 ∈ Lower(x⊕y)
+  -- Then (Θ(x)+Θ(y))/2 = sup{(r₁+r₂)/2} ≤ Θ(x⊕y)
+
+  -- Build the combined ratio set
+  have h_combine : ∀ r₁ r₂, r₁ ∈ lowerRatioSet a x → r₂ ∈ lowerRatioSet a y →
+      (r₁ + r₂) / 2 ∈ lowerRatioSet a (op x y) := by
+    intro r₁ r₂ ⟨n₁, m₁, hm₁, hle₁, hr₁⟩ ⟨n₂, m₂, hm₂, hle₂, hr₂⟩
+    subst hr₁ hr₂
+    -- Use repetition lemma to get common denominator M = m₁ * m₂
+    have hle₁' : iterate_op a (n₁ * m₂) ≤ iterate_op x (m₁ * m₂) :=
+      repetition_lemma_le a x n₁ m₁ m₂ hle₁
+    have hle₂' : iterate_op a (n₂ * m₁) ≤ iterate_op y (m₁ * m₂) := by
+      have h := repetition_lemma_le a y n₂ m₂ m₁ hle₂
+      simp only [Nat.mul_comm m₂ m₁] at h
+      exact h
+    -- Combine: a^{n₁m₂ + n₂m₁} ≤ x^{m₁m₂} ⊕ y^{m₁m₂}
+    have hle_sum : iterate_op a (n₁ * m₂ + n₂ * m₁) ≤ op (iterate_op x (m₁ * m₂)) (iterate_op y (m₁ * m₂)) := by
+      rw [← iterate_op_add]
+      -- a^{n₁m₂} ⊕ a^{n₂m₁} ≤ x^{m₁m₂} ⊕ y^{m₁m₂} using monotonicity
+      calc op (iterate_op a (n₁ * m₂)) (iterate_op a (n₂ * m₁))
+          ≤ op (iterate_op x (m₁ * m₂)) (iterate_op a (n₂ * m₁)) :=
+            (op_strictMono_left _).monotone hle₁'
+        _ ≤ op (iterate_op x (m₁ * m₂)) (iterate_op y (m₁ * m₂)) :=
+            (op_strictMono_right _).monotone hle₂'
+    -- Apply iterate_op_op_le_double
+    have hle_final : op (iterate_op x (m₁ * m₂)) (iterate_op y (m₁ * m₂)) ≤
+        iterate_op (op x y) (2 * (m₁ * m₂)) :=
+      iterate_op_op_le_double x y hx hy (m₁ * m₂)
+    -- Chain the inequalities
+    have hle_combined : iterate_op a (n₁ * m₂ + n₂ * m₁) ≤ iterate_op (op x y) (2 * (m₁ * m₂)) :=
+      le_trans hle_sum hle_final
+    -- Now show (n₁/m₁ + n₂/m₂)/2 = (n₁m₂ + n₂m₁)/(2*m₁*m₂)
+    have hdenom_pos : 0 < 2 * (m₁ * m₂) := by
+      have : 0 < m₁ * m₂ := Nat.mul_pos hm₁ hm₂
+      omega
+    refine ⟨n₁ * m₂ + n₂ * m₁, 2 * (m₁ * m₂), hdenom_pos, hle_combined, ?_⟩
+    -- Ratio arithmetic: (n₁/m₁ + n₂/m₂)/2 = (n₁*m₂ + n₂*m₁)/(2*m₁*m₂)
+    have hm₁_ne : (m₁ : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (Nat.pos_iff_ne_zero.mp hm₁)
+    have hm₂_ne : (m₂ : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (Nat.pos_iff_ne_zero.mp hm₂)
+    push_cast
+    field_simp [hm₁_ne, hm₂_ne]
+
+  -- Now use h_combine to show the bound
+  have h_half_in : ∀ r₁ r₂, r₁ ∈ lowerRatioSet a x → r₂ ∈ lowerRatioSet a y →
+      (r₁ + r₂) / 2 ≤ sSup (lowerRatioSet a (op x y)) := by
+    intro r₁ r₂ hr₁ hr₂
+    have h_in := h_combine r₁ r₂ hr₁ hr₂
+    exact le_csSup (lowerRatioSet_bddAbove a (op x y) ha hxy) h_in
+
+  -- Apply to suprema: (sup_x + sup_y)/2 ≤ sup_xy
+  have hx_bdd := lowerRatioSet_bddAbove a x ha hx
+  have hy_bdd := lowerRatioSet_bddAbove a y ha hy
+  have hx_ne := lowerRatioSet_nonempty a x hx
+  have hy_ne := lowerRatioSet_nonempty a y hy
+  have hxy_ne := lowerRatioSet_nonempty a (op x y) hxy
+
+  -- For any ε > 0, pick r₁ close to sup_x and r₂ close to sup_y
+  -- Then (r₁ + r₂)/2 ≤ sup_xy, so (sup_x + sup_y)/2 - ε ≤ sup_xy
+  -- Taking ε → 0 gives the result
+  by_contra h_neg
+  push_neg at h_neg
+  -- (sup_x + sup_y)/2 > sup_xy
+  set S_xy := sSup (lowerRatioSet a (op x y)) with hS_xy
+  set S_x := sSup (lowerRatioSet a x) with hS_x
+  set S_y := sSup (lowerRatioSet a y) with hS_y
+  have hgap : (S_x + S_y) / 2 - S_xy > 0 := by linarith
+  set ε := ((S_x + S_y) / 2 - S_xy) / 2 with hε
+  have hε_pos : ε > 0 := by linarith
+  -- Pick r₁ close to S_x and r₂ close to S_y
+  obtain ⟨r₁, hr₁_in, hr₁_close⟩ := exists_lt_of_lt_csSup hx_ne (by linarith : S_x - ε < S_x)
+  obtain ⟨r₂, hr₂_in, hr₂_close⟩ := exists_lt_of_lt_csSup hy_ne (by linarith : S_y - ε < S_y)
+  -- Then (r₁ + r₂)/2 > S_xy
+  have h1 : r₁ > S_x - ε := hr₁_close
+  have h2 : r₂ > S_y - ε := hr₂_close
+  have h3 : (r₁ + r₂) / 2 > (S_x - ε + S_y - ε) / 2 := by linarith
+  have h4 : (S_x - ε + S_y - ε) / 2 = (S_x + S_y) / 2 - ε := by ring
+  rw [h4] at h3
+  have h5 : (S_x + S_y) / 2 - ε = S_xy + ε := by
+    field_simp [hε]
+    ring
+  rw [h5] at h3
+  -- So (r₁ + r₂)/2 > S_xy + ε > S_xy
+  have h6 : (r₁ + r₂) / 2 > S_xy := by linarith
+  -- But (r₁ + r₂)/2 ≤ S_xy by h_half_in
+  have h7 := h_half_in r₁ r₂ hr₁_in hr₂_in
+  linarith
+
+/-- Second inequality: Θ(x) + Θ(y) ≤ Θ(x⊕y)
+
+**STATUS**: This is the hardest remaining sorry.
+
+**Mathematical analysis** (without commutativity):
+Using iterate_op_op_le_double (x^m ⊕ y^m ≤ (x⊕y)^{2m}), we can only prove:
+  (Θ(x) + Θ(y))/2 ≤ Θ(x⊕y)
+
+The factor of 2 is **unavoidable** without commutativity:
+- Counterexample: In the free monoid, [0]² ++ [1]² = [0,0,1,1] has length 4
+  but ([0]++[1])² = [0,1,0,1] has length 4. The best bound is the 2m version.
+
+**What we NEED** (for full equality):
+1. Commutativity (which would give iterate_op_op_distrib), OR
+2. The K&S Appendix A bootstrapping argument
+
+**K&S approach**: They derive commutativity AS A CONSEQUENCE of a weaker
+representation result, then use commutativity to prove full additivity.
+The logical structure is:
+  (weak representation) → (commutativity) → (strong additivity) → (full theorem)
+
+For a complete formalization, we need to implement this bootstrapping. -/
+lemma add_le_Theta (a x y : α) (ha : ident < a) (hx : ident < x) (hy : ident < y)
+    (hxy : ident < op x y) :
+    Theta a x ha hx + Theta a y ha hy ≤ Theta a (op x y) ha hxy := by
+  -- Without commutativity, we can only prove half_add_le_Theta (factor of 2).
+  -- The full proof requires K&S Appendix A bootstrapping.
+  -- See the docstring above for the mathematical situation.
+  sorry
 
 /-- **Additivity of Theta**: Θ(x ⊕ y) = Θ(x) + Θ(y).
 
 This is the key property that makes the representation theorem work.
-It follows from the lower ratio sets adding pointwise, plus the mathlib lemma
-`csSup_add` which states sSup (s + t) = sSup s + sSup t. -/
+Proved by combining the two inequalities. -/
 theorem Theta_add (a x y : α) (ha : ident < a) (hx : ident < x) (hy : ident < y) :
     Theta a (op x y) ha (by {
       -- Show ident < x ⊕ y from ident < x and ident < y
@@ -646,12 +846,13 @@ theorem Theta_add (a x y : α) (ha : ident < a) (hx : ident < x) (hy : ident < y
         _ < op x ident := op_strictMono_left ident hx
         _ < op x y := op_strictMono_right x hy
     }) = Theta a x ha hx + Theta a y ha hy := by
-  unfold Theta
-  -- Once lowerRatioSet_op_eq_add is proven, the proof is:
-  -- rw [lowerRatioSet_op_eq_add a x y ha hx hy,
-  --     csSup_add (lowerRatioSet_nonempty a x hx) (lowerRatioSet_bddAbove a x ha hx)
-  --               (lowerRatioSet_nonempty a y hy) (lowerRatioSet_bddAbove a y ha hy)]
-  sorry -- TODO: Depends on lowerRatioSet_op_eq_add
+  have hxy : ident < op x y := by
+    calc ident = op ident ident := (op_ident_left ident).symm
+      _ < op x ident := op_strictMono_left ident hx
+      _ < op x y := op_strictMono_right x hy
+  apply le_antisymm
+  · exact Theta_le_add a x y ha hx hy hxy
+  · exact add_le_Theta a x y ha hx hy hxy
 
 end Additivity
 

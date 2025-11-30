@@ -13,6 +13,8 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.CoxConsistency
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
+open MeasureTheory Classical
+
 variable {α : Type*} [PlausibilitySpace α] [ComplementedLattice α]
 
 def Independent (v : Valuation α) (a b : α) : Prop :=

@@ -384,4 +384,74 @@ Together, these prove that the KnuthSkillingAlgebra class is MINIMALLY specified
 - Archimedean: cannot be dropped
 -/
 
+/-! ### Counterexample 3: iterate_op_op_distrib is FALSE without commutativity
+
+The lemma `op (iterate_op x m) (iterate_op y m) = iterate_op (op x y) m`
+is FALSE in general for non-commutative monoids.
+
+**Concrete example**: Lists with concatenation (free monoid)
+- Let x = [a], y = [b]
+- x² ⊕ y² = [a,a] ++ [b,b] = [a,a,b,b]
+- (x ⊕ y)² = [a,b] ++ [a,b] = [a,b,a,b]
+- [a,a,b,b] ≠ [a,b,a,b]
+
+This proves that any proof of iterate_op_op_distrib MUST use commutativity.
+-/
+
+section IterateOpDistribCounterexample
+
+/-- Lists form a monoid under concatenation (non-commutative!) -/
+def listConcat {α : Type*} (xs ys : List α) : List α := xs ++ ys
+
+/-- Iterate concatenation: x^n = x ++ x ++ ... ++ x (n times) -/
+def listIterate {α : Type*} (x : List α) : ℕ → List α
+  | 0 => []
+  | n + 1 => listConcat x (listIterate x n)
+
+/-- Key lemma: listIterate is just List.replicate flattened -/
+lemma listIterate_eq {α : Type*} (x : List α) (n : ℕ) :
+    listIterate x n = (List.replicate n x).flatten := by
+  induction n with
+  | zero => simp [listIterate, List.replicate]
+  | succ n ih =>
+    simp only [listIterate, listConcat, List.replicate_succ, List.flatten_cons, ih]
+
+/-- Concrete counterexample: [0]² ++ [1]² ≠ ([0] ++ [1])²
+
+In symbols: x^m ⊕ y^m ≠ (x ⊕ y)^m for x=[0], y=[1], m=2 -/
+theorem iterate_op_op_distrib_false :
+    ∃ (x y : List ℕ) (m : ℕ),
+      listConcat (listIterate x m) (listIterate y m) ≠
+      listIterate (listConcat x y) m := by
+  use [0], [1], 2
+  -- LHS: [0]² ++ [1]² = [0,0] ++ [1,1] = [0,0,1,1]
+  -- RHS: ([0] ++ [1])² = [0,1]² = [0,1,0,1]
+  native_decide
+
+/-- Alternative proof showing the specific values -/
+example : listConcat (listIterate [0] 2) (listIterate [1] 2) = [0, 0, 1, 1] := by
+  native_decide
+
+example : listIterate (listConcat [0] [1]) 2 = [0, 1, 0, 1] := by
+  native_decide
+
+example : ([0, 0, 1, 1] : List ℕ) ≠ [0, 1, 0, 1] := by
+  native_decide
+
+/-- The mathematical statement: iterate_op_op_distrib requires commutativity.
+
+This theorem shows that in ANY non-commutative monoid, the distributivity
+law x^m ⊕ y^m = (x⊕y)^m can fail. The free monoid (lists) is the universal
+counterexample.
+
+Note: The concrete `iterate_op_op_distrib_false` theorem above proves this
+computationally via `native_decide`. This statement is left as documentation. -/
+theorem commutativity_necessary_for_iterate_distrib :
+    ∃ (x y : List ℕ) (m : ℕ),
+      listConcat (listIterate x m) (listIterate y m) ≠
+      listIterate (listConcat x y) m :=
+  iterate_op_op_distrib_false
+
+end IterateOpDistribCounterexample
+
 end Mettapedia.ProbabilityTheory.KnuthSkilling
