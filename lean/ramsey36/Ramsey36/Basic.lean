@@ -6002,53 +6002,15 @@ lemma exists_CariolaroSetup_at {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
   have bipartite_edge_count_eq :
       P.sum (fun p => (T.filter (G.Adj p)).card) =
       T.sum (fun ti => (P.filter (G.Adj ti)).card) := by
-    -- Both sums count the edges between P and T
-    -- Left: sum over p of |T-neighbors of p|
-    -- Right: sum over ti of |P-neighbors of ti|
-    -- Standard double counting argument: both equal |{(p,ti) : p ∈ P, ti ∈ T, p ~ ti}|
-
-    -- Define the edge set E(P,T)
-    let E := (P ×ˢ T).filter (fun (p, ti) => G.Adj p ti)
-
-    -- Show left sum equals |E|
-    have h_left : P.sum (fun p => (T.filter (G.Adj p)).card) = E.card := by
-      -- For each p, we count |T ∩ N(p)|, summing over P
-      -- This equals |{(p,ti) : p ∈ P, ti ∈ T, p ~ ti}|
-      rw [Finset.card_eq_sum_ones]
-      rw [Finset.sum_fiberwise_of_maps_to]
-      · simp only [E]
-        congr 1
-        ext p
-        simp only [Finset.sum_filter, Finset.mem_product, and_comm]
-      · intro x hx
-        simp only [E, Finset.mem_filter, Finset.mem_product] at hx
-        exact hx.1.1
-
-    -- Show right sum equals |E|
-    have h_right : T.sum (fun ti => (P.filter (G.Adj ti)).card) = E.card := by
-      -- For each ti, we count |P ∩ N(ti)|, summing over T
-      -- This equals |{(p,ti) : p ∈ P, ti ∈ T, p ~ ti}| by symmetry
-      rw [Finset.card_eq_sum_ones]
-      rw [Finset.sum_fiberwise_of_maps_to]
-      · simp only [E]
-        congr 1
-        ext ti
-        simp only [Finset.sum_filter, Finset.mem_product]
-        congr 1
-        ext p
-        simp only [Finset.mem_filter, and_comm]
-        constructor
-        · intro ⟨⟨hp, hti⟩, hadj⟩
-          exact ⟨hp, G.adj_symm hadj⟩
-        · intro ⟨hp, hadj⟩
-          exact ⟨⟨hp, Finset.mem_of_mem_inter_right (Finset.mem_inter.mpr ⟨sorry, hti⟩)⟩,
-                 G.adj_symm hadj⟩
-      · intro x hx
-        simp only [E, Finset.mem_filter, Finset.mem_product] at hx
-        exact hx.1.2
-
-    -- Conclude by transitivity
-    rw [h_left, h_right]
+    classical
+    -- Use existing bipartite_edge_count_symmetry lemma (line 109)
+    -- It proves: ∑ a ∈ A, (B.filter (R a)).card = ∑ b ∈ B, (A.filter (R b)).card
+    -- Specialize with A := P, B := T, R := G.Adj, hR := G.symm
+    simpa using
+      (bipartite_edge_count_symmetry
+        (A := P) (B := T)
+        (R := G.Adj)
+        (hR := G.symm))
 
   -- For now, we state this as an auxiliary hypothesis that will be proven later
   have hp_exactly_one_T_neighbor : ∀ p ∈ P, (T.filter (G.Adj p)).card = 1 := by
