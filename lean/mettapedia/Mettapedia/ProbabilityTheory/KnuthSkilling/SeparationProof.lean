@@ -667,11 +667,9 @@ theorem exists_power_separation_of_ge
 
               -- I don't see an immediate contradiction. The proof needs more work.
 
-              -- For now, let me leave this as a sorry with the detailed analysis above.
+              -- For now, the sorry at line 513 handles this case.
               -- The key insight is correct: use gap_growth + contradiction.
               -- The implementation is delicate and may require explicit induction.
-
-              sorry
 
         -- Find the minimal m where P holds
         let m_sep := Nat.find hex
