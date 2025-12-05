@@ -1109,9 +1109,37 @@ instance gridBridge_singleton (a : α) (ha : ident < a) :
 lemma gridBridge_of_k_eq_one {F : AtomFamily α 1} : GridBridge F := by
   constructor
   intro r n
-  -- For k=1, this is essentially the singleton case with F.atoms 0
-  -- The detailed proof follows mu_scaleMult_eq_iterate_singleton
-  sorry -- BASE CASE: Follows singleton pattern with F.atoms 0
+  classical
+  -- For k=1, μ is essentially a single iterate: μ(F, r) = (F.atoms 0)^{r 0}
+  -- because Fin 1 has exactly one element.
+  let a := F.atoms ⟨0, by decide⟩
+
+  -- Step 1: Show mu F r = iterate_op a (r 0)
+  have hr : mu F r = iterate_op a (r ⟨0, by decide⟩) := by
+    -- Fin 1 has one element, so foldl over finRange 1 = [0] is one step
+    simp only [mu, a]
+    -- finRange 1 = [0]
+    have hlist : List.finRange 1 = [⟨0, by decide⟩] := by native_decide
+    simp only [hlist, List.foldl_cons, List.foldl_nil, op_ident_left]
+
+  -- Step 2: Show mu F (scaleMult n r) = iterate_op a (n * r 0)
+  have hscale : scaleMult n r = fun _ : Fin 1 => n * r ⟨0, by decide⟩ := by
+    funext i
+    fin_cases i
+    simp [scaleMult]
+  have hnr : mu F (scaleMult n r) = iterate_op a (n * r ⟨0, by decide⟩) := by
+    simp only [mu, a]
+    have hlist : List.finRange 1 = [⟨0, by decide⟩] := by native_decide
+    simp only [hlist, List.foldl_cons, List.foldl_nil, op_ident_left, hscale]
+
+  -- Step 3: Show iterate_op (mu F r) n = iterate_op a (n * r 0)
+  have hiter : iterate_op (mu F r) n = iterate_op a (n * r ⟨0, by decide⟩) := by
+    rw [hr, iterate_op_mul]
+    congr 1
+    ring
+
+  -- Conclude
+  rw [hnr, hiter]
 
 /-- The separation statistic for a witness (r, u).
     This is the "candidate value" for Θ(d) if μ(F, r) = d^u. -/
@@ -1195,18 +1223,13 @@ theorem repetition_preserves_B_singleton (a : α) (ha : ident < a)
     TODO: Complete the proof using Theta_scaleMult + strict monotonicity + trichotomy.
           For now, this remains a sorry tied to the full Θ construction. -/
 lemma mu_scaleMult_iterate_B
-    {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
+    {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F) (IH : GridBridge F)
     (d : α) (hd : ident < d) (r : Multi k) (u : ℕ) (hu : 0 < u)
     (hr : r ∈ extensionSetB F d u) (n : ℕ) (hn : 0 < n) :
     mu F (scaleMult n r) = iterate_op (mu F r) n := by
-  -- The full proof requires:
-  -- 1. Theta_scaleMult (Θ(μ(F, n·r)) = n * Θ(μ(F, r)))
-  -- 2. Iterate additivity: Θ((d^u)^n) = n * Θ(d^u)
-  -- 3. Strict monotonicity + trichotomy to conclude equality
-  --
-  -- This is conceptually tied to the representation theorem itself,
-  -- so we leave it as a deep sorry for now.
-  sorry
+  -- In the B-case we can appeal directly to the inductive grid bridge.
+  -- The bridge already states the desired scaling identity for every r,n.
+  simpa using IH.bridge r n
 
 /-- Repetition lemma (general k): If r ∈ B(u), then (n·r) ∈ B(nu).
 
@@ -1221,6 +1244,7 @@ lemma mu_scaleMult_iterate_B
     4. Therefore: μ(F, n·r) = d^{n*u}, i.e., (n·r) ∈ B(n*u)
 -/
 theorem repetition_preserves_B {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
+    (IH : GridBridge F)
     (d : α) (hd : ident < d) (r : Multi k) (u : ℕ) (hu : 0 < u)
     (hr : r ∈ extensionSetB F d u) (n : ℕ) (hn : 0 < n) :
     scaleMult n r ∈ extensionSetB F d (n * u) := by
@@ -1229,7 +1253,7 @@ theorem repetition_preserves_B {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep
   -- goal: mu F (scaleMult n r) = iterate_op d (n * u)
   -- Use the B-case scaling lemma
   have h_mu_scaled : mu F (scaleMult n r) = iterate_op (mu F r) n :=
-    mu_scaleMult_iterate_B R d hd r u hu hr n hn
+    mu_scaleMult_iterate_B R IH d hd r u hu hr n hn
   have h_target : iterate_op d (n * u) = iterate_op (mu F r) n := by
     -- (d^u)^n = d^{n*u}
     have : iterate_op d (n * u) = iterate_op (iterate_op d u) n := by
@@ -1263,6 +1287,7 @@ This pins down Θ(d) uniquely: Θ(d) = σ(r, u) for ANY witness (r, u) ∈ B.
 /-- If two witnesses are in B, their separation statistics are equal.
     This is the key uniqueness result for Case B non-empty. -/
 theorem B_witnesses_same_statistic {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
+    (IH : GridBridge F)
     (d : α) (hd : ident < d)
     (r : Multi k) (u : ℕ) (hu : 0 < u) (hr : r ∈ extensionSetB F d u)
     (r' : Multi k) (u' : ℕ) (hu' : 0 < u') (hr' : r' ∈ extensionSetB F d u') :
@@ -1273,11 +1298,11 @@ theorem B_witnesses_same_statistic {k : ℕ} {F : AtomFamily α k} (R : MultiGri
 
   -- Scale (r, u) by u' to get (u'·r, u'*u) in B(u'*u)
   have hr_scaled : scaleMult u' r ∈ extensionSetB F d (u' * u) :=
-    repetition_preserves_B R d hd r u hu hr u' hu'
+    repetition_preserves_B R IH d hd r u hu hr u' hu'
 
   -- Scale (r', u') by u to get (u·r', u*u') in B(u*u')
   have hr'_scaled : scaleMult u r' ∈ extensionSetB F d (u * u') :=
-    repetition_preserves_B R d hd r' u' hu' hr' u hu
+    repetition_preserves_B R IH d hd r' u' hu' hr' u hu
 
   -- Both have the same target: d^{u'*u} = d^{u*u'}
   simp only [extensionSetB, Set.mem_setOf_eq] at hr_scaled hr'_scaled
@@ -1328,7 +1353,7 @@ noncomputable def B_common_statistic {k : ℕ} {F : AtomFamily α k} (R : MultiG
 
 /-- The common statistic is independent of the witness choice. -/
 theorem B_common_statistic_eq_any_witness {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
-    (d : α) (hd : ident < d)
+    (IH : GridBridge F) (d : α) (hd : ident < d)
     (hB_nonempty : ∃ r u, 0 < u ∧ r ∈ extensionSetB F d u)
     (r : Multi k) (u : ℕ) (hu : 0 < u) (hr : r ∈ extensionSetB F d u) :
     B_common_statistic R d hd hB_nonempty = separationStatistic R r u hu := by
@@ -1343,7 +1368,7 @@ theorem B_common_statistic_eq_any_witness {k : ℕ} {F : AtomFamily α k} (R : M
   have hu₀ : 0 < u₀ := hu_spec.1
   have hr₀ : r₀ ∈ extensionSetB F d u₀ := hu_spec.2
   -- Now apply B_witnesses_same_statistic to show they're equal
-  exact B_witnesses_same_statistic R d hd r₀ u₀ hu₀ hr₀ r u hu hr
+  exact B_witnesses_same_statistic R IH d hd r₀ u₀ hu₀ hr₀ r u hu hr
 
 /-- Convenience wrapper around `Nat.findGreatest_eq_iff`.
     It provides the predicate at `findGreatest`, the bound, and maximality. -/
@@ -1410,26 +1435,298 @@ lemma lt_floor_succ_bracket (δ θ : ℝ) (hδ : 0 < δ) (hθ : 0 ≤ θ) :
       apply mul_lt_mul_of_pos_right h_lt hδ
     _ = ((Nat.floor (θ / δ) + 1 : ℕ) : ℝ) * δ := by norm_cast
 
+/-- **Helper Lemma 0 (GPT-5 Pro)**: Swap middle elements using grid commutativity.
+Given multi-index witnesses for grid membership, we can swap using associativity + commutativity. -/
+lemma op_swap_right_on_grid {k : ℕ} {F : AtomFamily α k}
+    (H : GridComm F) (r_x r_y r_z : Multi k)
+    (hx : x = mu F r_x) (hy : y = mu F r_y) (hz : z = mu F r_z) :
+    op (op x y) z = op (op x z) y := by
+  subst hx hy hz
+  calc op (op (mu F r_x) (mu F r_y)) (mu F r_z)
+      = op (mu F r_x) (op (mu F r_y) (mu F r_z)) := op_assoc _ _ _
+    _ = op (mu F r_x) (op (mu F r_z) (mu F r_y)) := by rw [H.comm r_y r_z]
+    _ = op (op (mu F r_x) (mu F r_z)) (mu F r_y) := (op_assoc _ _ _).symm
+
+/-- **Helper**: Iterates of atoms are grid members. -/
+lemma iterate_atom_mem_kGrid {k : ℕ} (F : AtomFamily α k) (i : Fin k) (n : ℕ) :
+    iterate_op (F.atoms i) n ∈ kGrid F := by
+  use unitMulti i n
+  exact (mu_unitMulti F i n).symm
+
+/-- **Helper**: Folds with contributions from a multiplicity vector.
+Two folds over the same list with the same function are equal. -/
+private lemma mu_foldl_eq {k : ℕ} (F : AtomFamily α k) (r : Multi k)
+    (l : List (Fin k)) (acc : α) :
+    List.foldl (fun a i => op a (iterate_op (F.atoms i) (r i))) acc l =
+    List.foldl (fun a i => op a (iterate_op (F.atoms i) (r i))) acc l := rfl
+
+/-- **Helper**: Pull an iterate contribution past another using GridComm.
+This is the core swap operation that enables reordering. -/
+private lemma op_iterate_comm {k : ℕ} {F : AtomFamily α k} (H : GridComm F)
+    (i j : Fin k) (m n : ℕ) :
+    op (iterate_op (F.atoms i) m) (iterate_op (F.atoms j) n) =
+    op (iterate_op (F.atoms j) n) (iterate_op (F.atoms i) m) := by
+  have hi : iterate_op (F.atoms i) m = mu F (unitMulti i m) := (mu_unitMulti F i m).symm
+  have hj : iterate_op (F.atoms j) n = mu F (unitMulti j n) := (mu_unitMulti F j n).symm
+  rw [hi, hj, H.comm (unitMulti i m) (unitMulti j n)]
+
+/-- **Helper**: Pull an iterate contribution to the right of accumulator.
+Key: op (op acc x) y = op (op acc y) x when x, y are grid elements. -/
+private lemma op_op_comm_grid {k : ℕ} {F : AtomFamily α k} (H : GridComm F)
+    (acc : α) (i j : Fin k) (m n : ℕ) :
+    op (op acc (iterate_op (F.atoms i) m)) (iterate_op (F.atoms j) n) =
+    op (op acc (iterate_op (F.atoms j) n)) (iterate_op (F.atoms i) m) := by
+  calc op (op acc (iterate_op (F.atoms i) m)) (iterate_op (F.atoms j) n)
+      = op acc (op (iterate_op (F.atoms i) m) (iterate_op (F.atoms j) n)) := op_assoc _ _ _
+    _ = op acc (op (iterate_op (F.atoms j) n) (iterate_op (F.atoms i) m)) := by
+        rw [op_iterate_comm H i j m n]
+    _ = op (op acc (iterate_op (F.atoms j) n)) (iterate_op (F.atoms i) m) := (op_assoc _ _ _).symm
+
+/-- **Helper**: Pull one s-contribution through an r-fold using commutativity.
+After folding r-contributions, we can move a single s-contribution past. -/
+private lemma foldl_r_then_s {k : ℕ} {F : AtomFamily α k} (H : GridComm F)
+    (l : List (Fin k)) (r : Multi k) (j : Fin k) (n : ℕ) (acc : α) :
+    op (List.foldl (fun a i => op a (iterate_op (F.atoms i) (r i))) acc l)
+       (iterate_op (F.atoms j) n) =
+    List.foldl (fun a i => op a (iterate_op (F.atoms i) (r i)))
+       (op acc (iterate_op (F.atoms j) n)) l := by
+  induction l generalizing acc with
+  | nil => rfl
+  | cons i tl ih =>
+    simp only [List.foldl_cons]
+    -- LHS = op (foldl ... (op acc (iter_r_i)) tl) (iter_s_j)
+    -- RHS = foldl ... (op (op acc (iter_s_j)) (iter_r_i)) tl
+    -- First, show we can swap iter_r_i and iter_s_j:
+    have hswap : op (op acc (iterate_op (F.atoms i) (r i))) (iterate_op (F.atoms j) n) =
+                 op (op acc (iterate_op (F.atoms j) n)) (iterate_op (F.atoms i) (r i)) :=
+      op_op_comm_grid H acc i j (r i) n
+    -- Now use IH
+    calc op (List.foldl (fun a i => op a (iterate_op (F.atoms i) (r i)))
+               (op acc (iterate_op (F.atoms i) (r i))) tl) (iterate_op (F.atoms j) n)
+        = List.foldl (fun a i => op a (iterate_op (F.atoms i) (r i)))
+               (op (op acc (iterate_op (F.atoms i) (r i))) (iterate_op (F.atoms j) n)) tl := ih _
+      _ = List.foldl (fun a i => op a (iterate_op (F.atoms i) (r i)))
+               (op (op acc (iterate_op (F.atoms j) n)) (iterate_op (F.atoms i) (r i))) tl := by
+          rw [hswap]
+
+/-- **Carry lemma**: Starting the fold with an extra `j`-iterate is the same as
+bumping the `j`-coordinate by `n`.
+
+Key insight from GPT-5 Pro: Instead of splitting at j-1, we bubble the extra
+iterate across the fold one head at a time, merge exponents when we hit j,
+then use foldl_congr_on_list for the tail (since j can't appear again by nodup). -/
+private lemma foldl_carry_unit {k : ℕ} {F : AtomFamily α k} (H : GridComm F)
+    (r : Multi k) (j : Fin k) (n : ℕ) :
+    ∀ (l : List (Fin k)) (hnd : l.Nodup) (hj : j ∈ l) (acc : α),
+      List.foldl (fun a i => op a (iterate_op (F.atoms i) (r i)))
+        (op acc (iterate_op (F.atoms j) n)) l
+      =
+      List.foldl (fun a i => op a (iterate_op (F.atoms i) ((r + unitMulti j n) i)))
+        acc l := by
+  intro l hnd hj acc
+  induction l generalizing acc with
+  | nil =>
+    simp at hj  -- j ∈ [] is impossible
+  | cons i tl ih =>
+    have hi_not_in_tl : i ∉ tl := (List.nodup_cons.mp hnd).1
+    have hnd_tl : tl.Nodup := (List.nodup_cons.mp hnd).2
+    have hj' : j = i ∨ j ∈ tl := by
+      simpa [List.mem_cons] using hj
+    cases hj' with
+    | inl hji =>
+      subst hji
+      -- Now j is the head, and j ∉ tl by nodup
+      have hj_not_in_tl : j ∉ tl := hi_not_in_tl
+      simp only [List.foldl_cons]
+      -- Merge the two j-contributions in the starting accumulator:
+      have hstart :
+          op (op acc (iterate_op (F.atoms j) n)) (iterate_op (F.atoms j) (r j)) =
+            op acc (iterate_op (F.atoms j) ((r + unitMulti j n) j)) := by
+        -- (acc ⊕ j^n) ⊕ j^{rj} = acc ⊕ (j^n ⊕ j^{rj}) = acc ⊕ j^{n+rj} = acc ⊕ j^{rj+n}
+        rw [op_assoc]
+        rw [iterate_op_add (F.atoms j) n (r j)]
+        rw [Nat.add_comm n (r j)]
+        simp [Pi.add_apply, unitMulti]
+      -- Replace the LHS init accumulator by the RHS init accumulator
+      rw [hstart]
+      -- Tail: since j ∉ tl, the step functions agree on tl
+      apply foldl_congr_on_list
+      intro x hx acc'
+      have hxne : x ≠ j := by
+        intro hEq
+        apply hj_not_in_tl
+        simpa [hEq] using hx
+      simp [Pi.add_apply, unitMulti, hxne]
+    | inr hj_tl =>
+      -- j is in tl; nodup forces i ≠ j
+      have hij_ne : i ≠ j := by
+        intro hEq
+        apply hi_not_in_tl
+        simpa [hEq] using hj_tl
+      simp only [List.foldl_cons]
+      -- Swap the head i-iterate past the carried j-iterate in the accumulator
+      have hswap :
+          op (op acc (iterate_op (F.atoms j) n)) (iterate_op (F.atoms i) (r i)) =
+          op (op acc (iterate_op (F.atoms i) (r i))) (iterate_op (F.atoms j) n) := by
+        simpa using op_op_comm_grid (H := H) (acc := acc) (i := j) (j := i) (m := n) (n := r i)
+      rw [hswap]
+      -- Now apply IH on the tail with accumulator advanced by the i-step
+      have hih :=
+        ih (acc := op acc (iterate_op (F.atoms i) (r i))) hnd_tl hj_tl
+      -- RHS head uses (r + unitMulti j n) i = r i since i ≠ j
+      have hi_eq : (r + unitMulti j n) i = r i := by
+        simp [Pi.add_apply, unitMulti, hij_ne]
+      simp only [List.foldl_cons, hi_eq]
+      exact hih
+
+/-- **Helper**: Adding a unit contribution to mu using GridComm.
+The key insight is that mu F (r + unitMulti j n) has contribution r_j + n at index j,
+which equals op (iter_j^{r_j}) (iter_j^n) = iter_j^{r_j + n} by iterate_op_add.
+With GridComm, we can reorder to merge the contributions.
+
+This is the KEY lemma that breaks the circularity in foldl_op_distrib_gen.
+
+**Proof** (per GPT-5 Pro): Use foldl_r_then_s to pull the iterate to the start,
+then foldl_carry_unit to merge at j and adjust the tail. -/
+private lemma mu_add_unitMulti {k : ℕ} {F : AtomFamily α k} (H : GridComm F)
+    (r : Multi k) (j : Fin k) (n : ℕ) :
+    op (mu F r) (iterate_op (F.atoms j) n) = mu F (r + unitMulti j n) := by
+  classical
+  unfold mu
+  set l : List (Fin k) := List.finRange k with hl_def
+  have hnd : l.Nodup := by simpa [l] using (List.nodup_finRange k)
+  have hj : j ∈ l := by simp [l]
+  -- Pull the extra iterate into the fold using foldl_r_then_s
+  have hpull :=
+    foldl_r_then_s (H := H) (l := l) (r := r) (j := j) (n := n) (acc := ident)
+  -- Now carry it through and merge at j via foldl_carry_unit
+  calc
+    op (List.foldl (fun acc i => op acc (iterate_op (F.atoms i) (r i))) ident l)
+        (iterate_op (F.atoms j) n)
+        =
+      List.foldl (fun acc i => op acc (iterate_op (F.atoms i) (r i)))
+        (op ident (iterate_op (F.atoms j) n)) l := by
+          simpa [l] using hpull
+    _ =
+      List.foldl (fun acc i => op acc (iterate_op (F.atoms i) ((r + unitMulti j n) i)))
+        ident l := by
+          simpa [l, op_ident_left] using
+            (foldl_carry_unit (H := H) (r := r) (j := j) (n := n) l hnd hj ident)
+
+/-- **Generalized Distribution Lemma**: When starting from op (mu F r_acc) (mu F s_acc),
+the combined fold distributes into separate r and s folds.
+This requires witness tracking for commutativity.
+
+**Key insight**: We track that the accumulators are mu F of the "already processed" indices,
+so we can apply GridComm to swap contributions. -/
+private lemma foldl_op_distrib_gen {k : ℕ} {F : AtomFamily α k} (H : GridComm F)
+    (l : List (Fin k)) (r s r_acc s_acc : Multi k) :
+    List.foldl (fun acc i => op acc (op (iterate_op (F.atoms i) (r i))
+                                       (iterate_op (F.atoms i) (s i))))
+       (op (mu F r_acc) (mu F s_acc)) l =
+    op (List.foldl (fun acc i => op acc (iterate_op (F.atoms i) (r i))) (mu F r_acc) l)
+       (List.foldl (fun acc i => op acc (iterate_op (F.atoms i) (s i))) (mu F s_acc) l) := by
+  induction l generalizing r_acc s_acc with
+  | nil => rfl
+  | cons j tl ih =>
+    simp only [List.foldl_cons]
+    -- Key: Rewrite op (op (mu F r_acc) (mu F s_acc)) (op r_j s_j)
+    -- as op (op (mu F r_acc) r_j) (op (mu F s_acc) s_j)
+    have hreorder : op (op (mu F r_acc) (mu F s_acc))
+                       (op (iterate_op (F.atoms j) (r j)) (iterate_op (F.atoms j) (s j))) =
+                    op (op (mu F r_acc) (iterate_op (F.atoms j) (r j)))
+                       (op (mu F s_acc) (iterate_op (F.atoms j) (s j))) := by
+      let r_j := iterate_op (F.atoms j) (r j)
+      let s_j := iterate_op (F.atoms j) (s j)
+      have hr_j : r_j = mu F (unitMulti j (r j)) := (mu_unitMulti F j (r j)).symm
+      calc op (op (mu F r_acc) (mu F s_acc)) (op r_j s_j)
+          = op (mu F r_acc) (op (mu F s_acc) (op r_j s_j)) := op_assoc _ _ _
+        _ = op (mu F r_acc) (op (op (mu F s_acc) r_j) s_j) := by rw [← op_assoc (mu F s_acc) r_j s_j]
+        _ = op (mu F r_acc) (op (op r_j (mu F s_acc)) s_j) := by
+            have hcomm : op (mu F s_acc) r_j = op r_j (mu F s_acc) := by
+              rw [hr_j]; exact H.comm s_acc (unitMulti j (r j))
+            rw [hcomm]
+        _ = op (mu F r_acc) (op r_j (op (mu F s_acc) s_j)) := by rw [op_assoc r_j (mu F s_acc) s_j]
+        _ = op (op (mu F r_acc) r_j) (op (mu F s_acc) s_j) := (op_assoc _ _ _).symm
+    rw [hreorder]
+
+    -- Now apply IH with updated witnesses
+    -- Key observation: op (mu F r_acc) (iterate_op ...) = mu F (r_acc + unitMulti j ...)
+    -- by mu_add_unitMulti (which uses GridComm)
+    have hr_new : op (mu F r_acc) (iterate_op (F.atoms j) (r j)) =
+                  mu F (r_acc + unitMulti j (r j)) := mu_add_unitMulti H r_acc j (r j)
+    have hs_new : op (mu F s_acc) (iterate_op (F.atoms j) (s j)) =
+                  mu F (s_acc + unitMulti j (s j)) := mu_add_unitMulti H s_acc j (s j)
+    rw [hr_new, hs_new]
+    exact ih (r_acc + unitMulti j (r j)) (s_acc + unitMulti j (s j))
+
+/-- **Key Distribution Lemma**: Foldl of "op-pair" distributes as op of two foldls.
+When all contributions commute pairwise (via GridComm), we can separate the fold of
+(a^r ⊕ a^s) into op (fold of a^r) (fold of a^s).
+
+This is a special case of foldl_op_distrib_gen starting from ident = mu F 0. -/
+private lemma foldl_op_distrib {k : ℕ} {F : AtomFamily α k} (H : GridComm F)
+    (l : List (Fin k)) (r s : Multi k) :
+    List.foldl (fun acc i => op acc (op (iterate_op (F.atoms i) (r i))
+                                       (iterate_op (F.atoms i) (s i)))) ident l =
+    op (List.foldl (fun acc i => op acc (iterate_op (F.atoms i) (r i))) ident l)
+       (List.foldl (fun acc i => op acc (iterate_op (F.atoms i) (s i))) ident l) := by
+  -- The generalized version starts from op (mu F r_acc) (mu F s_acc).
+  -- With r_acc = s_acc = 0, we have:
+  --   mu F 0 = ident
+  --   op (mu F 0) (mu F 0) = op ident ident = ident
+  -- So we can use foldl_op_distrib_gen and simplify
+  have hgen := foldl_op_distrib_gen H l r s (fun _ => 0) (fun _ => 0)
+  -- Simplify: op (mu F 0) (mu F 0) = ident, mu F 0 = ident
+  have h0 : mu F (fun _ => 0) = ident := mu_zero F
+  simp only [h0, op_ident_left] at hgen
+  exact hgen
+
 /-- **Helper: mu is additive if the grid commutes.**
 
 This is the key algebraic property: when GridComm holds, mu preserves addition.
 The proof requires reordering the foldl terms using commutativity.
 
-**Proof Idea** (per GPT-5 Pro):
-- Decompose F into head atom a and tail F'
-- μ(r) = a^{r₀} ⊕ μ(F', r_tail)
-- μ(r+s) = a^{r₀+s₀} ⊕ μ(F', r_tail + s_tail)
-- Expand a^{r₀+s₀} = a^{r₀} ⊕ a^{s₀}
-- Use GridComm to swap a^{s₀} and μ(F', r_tail) to group r's and s's together
-- This is a standard algebraic consequence of commutativity -/
+**Proof Strategy** (per GPT-5 Pro):
+For F' = extendAtomFamily F d hd with k+1 atoms:
+1. Use splitMulti/joinMulti to decompose multiplicities
+2. Apply mu_extend_last to separate old and new parts
+3. Get GridComm F from H' via gridComm_of_extended (Lemma 2)
+4. Apply IH (mu_add_of_comm on F) for the old grid part
+5. Use iterate_op_add for the new atom's contribution
+6. Reorder using op_swap_right_on_grid (Lemma 0)
+
+**Dependencies**: Blocks mu_scale_eq_iterate_of_comm, delta_shift_equiv (pure A/C),
+and h_strictMono (t_x ≠ t_y cases). -/
 lemma mu_add_of_comm {k : ℕ} {F : AtomFamily α k} (H : GridComm F)
     (r s : Multi k) : mu F (r + s) = op (mu F r) (mu F s) := by
-  -- This requires reordering the fold using GridComm.
-  -- Since GridComm asserts op (mu r) (mu s) = op (mu s) (mu r),
-  -- the grid elements form an abelian monoid.
-  -- This is a standard algebraic result: strict commutativity implies
-  -- structure preservation for sums.
-  sorry -- Algebraic consequence of GridComm (reordering foldl terms)
+  -- Strategy: Rewrite mu F (r+s) using iterate_op_add, then apply foldl_op_distrib.
+  --
+  -- Step 1: mu F (r+s) = foldl (λ acc i => op acc (iter_i^{(r+s)_i})) ident (finRange k)
+  -- Step 2: By iterate_op_add: iter_i^{(r+s)_i} = op (iter_i^{r_i}) (iter_i^{s_i})
+  -- Step 3: So mu F (r+s) = foldl (λ acc i => op acc (op (iter_r_i) (iter_s_i))) ident (finRange k)
+  -- Step 4: By foldl_op_distrib: = op (foldl ... r ...) (foldl ... s ...)
+  --                              = op (mu F r) (mu F s)
+
+  -- First, show that the fold of (r+s) equals the fold of "paired" contributions
+  have hfold_rw : mu F (r + s) =
+      List.foldl (fun acc i => op acc (op (iterate_op (F.atoms i) (r i))
+                                          (iterate_op (F.atoms i) (s i)))) ident
+        (List.finRange k) := by
+    unfold mu
+    congr 1
+    funext acc i
+    -- Show: op acc (iter_i^{(r+s)_i}) = op acc (op (iter_i^{r_i}) (iter_i^{s_i}))
+    have h_split : iterate_op (F.atoms i) ((r + s) i) =
+                   op (iterate_op (F.atoms i) (r i)) (iterate_op (F.atoms i) (s i)) := by
+      simp only [Pi.add_apply]
+      exact (iterate_op_add (F.atoms i) (r i) (s i)).symm
+    rw [h_split]
+
+  rw [hfold_rw]
+
+  -- Now apply foldl_op_distrib
+  exact foldl_op_distrib H (List.finRange k) r s
 
 /-- **Grid Bridge Lemma (with GridComm)**: μ(F, n·r) equals (μ(F, r))^n.
 
@@ -1526,15 +1823,10 @@ Mathematical sketch:
 - Divide to get: Θ(mu F rA)/uA < Θ(mu F rC)/uC
 -/
 lemma separation_property {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
-    (H : GridComm F) {d : α} (hd : ident < d)
+    (H : GridComm F) (IH : GridBridge F) {d : α} (hd : ident < d)
     {rA : Multi k} {uA : ℕ} (huA : 0 < uA) (hrA : rA ∈ extensionSetA F d uA)
     {rC : Multi k} {uC : ℕ} (huC : 0 < uC) (hrC : rC ∈ extensionSetC F d uC) :
     separationStatistic R rA uA huA < separationStatistic R rC uC huC := by
-  -- NOTE: Per GPT-5.1 Pro, this lemma should eventually take (IH : GridBridge F)
-  -- instead of (H : GridComm F). The GridBridge approach threads the inductive
-  -- hypothesis cleanly through all separation lemmas. For now, we derive IH from
-  -- the mu_scale_eq_iterate lemma (which has sorry for k≥2).
-  have IH : GridBridge F := ⟨fun r n => mu_scale_eq_iterate R H r n⟩
   unfold separationStatistic extensionSetA extensionSetC at *
   -- Extract the key inequalities
   have hA_lt : mu F rA < iterate_op d uA := hrA
@@ -1782,7 +2074,7 @@ lemma separation_property_B_C {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep 
 
 /-- For B empty: any A-witness statistic is ≤ δ. -/
 lemma A_stat_le_delta_of_B_empty {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
-    (H : GridComm F) {d : α} (hd : ident < d)
+    (H : GridComm F) (IH : GridBridge F) {d : α} (hd : ident < d)
     (hB_empty : ∀ r u, 0 < u → r ∉ extensionSetB F d u)
     (hA_nonempty : ∃ r u, 0 < u ∧ r ∈ extensionSetA F d u)
     (hC_nonempty : ∃ r u, 0 < u ∧ r ∈ extensionSetC F d u)
@@ -1810,14 +2102,14 @@ lemma A_stat_le_delta_of_B_empty {k : ℕ} {F : AtomFamily α k} (R : MultiGridR
     intro s hs
     rcases hs with ⟨r', u', hu', hrA', rfl⟩
     -- Every A-statistic is strictly below any C-statistic
-    exact le_of_lt (separation_property R H hd hu' hrA' huC hrC)
+    exact le_of_lt (separation_property R H IH hd hu' hrA' huC hrC)
 
   -- Apply le_csSup
   exact le_csSup h_bdd h_in_set
 
 /-- For B empty: δ is ≤ any C-witness statistic. -/
 lemma delta_le_C_stat_of_B_empty {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
-    (H : GridComm F) {d : α} (hd : ident < d)
+    (H : GridComm F) (IH : GridBridge F) {d : α} (hd : ident < d)
     (hB_empty : ∀ r u, 0 < u → r ∉ extensionSetB F d u)
     (hA_nonempty : ∃ r u, 0 < u ∧ r ∈ extensionSetA F d u)
     (hC_nonempty : ∃ r u, 0 < u ∧ r ∈ extensionSetC F d u)
@@ -1842,7 +2134,7 @@ lemma delta_le_C_stat_of_B_empty {k : ℕ} {F : AtomFamily α k} (R : MultiGridR
   rcases hs with ⟨r', u', hu', hrA', rfl⟩
   -- Need: σ(r',u') ≤ σ(r,u) where r'∈A, r∈C
   -- This follows from separation property: all A-stats < all C-stats
-  exact le_of_lt (separation_property R H hd hu' hrA' hu hrC)
+  exact le_of_lt (separation_property R H IH hd hu' hrA' hu hrC)
 
 /-- The accuracy lemma: δ is pinned by the A/C gap arbitrarily precisely.
 
@@ -2297,7 +2589,8 @@ These are used to complete the extend_grid_rep_with_atom proof.
 
 /-- δ is positive in both branches of `chooseδ`. -/
 lemma delta_pos {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
-    (R : MultiGridRep F) (H : GridComm F) (d : α) (hd : ident < d) :
+    (R : MultiGridRep F) (IH : GridBridge F) (H : GridComm F)
+    (d : α) (hd : ident < d) :
     0 < chooseδ hk R d hd := by
   classical
   unfold chooseδ
@@ -2307,7 +2600,7 @@ lemma delta_pos {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
     have ⟨r,u,hu,hr⟩ := hB
     have hstat :
       B_common_statistic R d hd hB = separationStatistic R r u hu :=
-      B_common_statistic_eq_any_witness R d hd hB r u hu hr
+      B_common_statistic_eq_any_witness R IH d hd hB r u hu hr
     -- Expand the statistic and use strict monotonicity + Θ(ident)=0
     simp [hstat, separationStatistic]
     -- Since ident < d^u, strict monotonicity of Θ_grid gives Θ(d^u) > Θ(ident)=0
@@ -2383,14 +2676,14 @@ lemma delta_pos {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
         intro s ⟨r', u', hu', hrA', hs⟩
         subst hs
         -- Every A-statistic is < every C-statistic by separation_property
-        exact le_of_lt (separation_property R H hd hu' hrA' hu hrC)
+        exact le_of_lt (separation_property R H IH hd hu' hrA' hu hrC)
       })
       (by exact h_stat_in)
       hN_stat_pos
 
 /-- chooseδ satisfies the A-bound: all A-statistics are ≤ δ. -/
 lemma chooseδ_A_bound {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
-    (R : MultiGridRep F) (H : GridComm F) (d : α) (hd : ident < d) :
+    (R : MultiGridRep F) (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d) :
     ∀ r u (hu : 0 < u), r ∈ extensionSetA F d u →
       separationStatistic R r u hu ≤ chooseδ hk R d hd := by
   intro r u hu hrA
@@ -2402,7 +2695,7 @@ lemma chooseδ_A_bound {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
     have hB_nonempty : ∃ r u, 0 < u ∧ r ∈ extensionSetB F d u := hB_exists
     rcases hB_nonempty with ⟨rB, uB, huB, hrB⟩
     have h_B_eq : B_common_statistic R d hd hB_exists = separationStatistic R rB uB huB :=
-      B_common_statistic_eq_any_witness R d hd hB_exists rB uB huB hrB
+      B_common_statistic_eq_any_witness R IH d hd hB_exists rB uB huB hrB
     rw [h_B_eq]
     exact le_of_lt (separation_property_A_B R H hd hu hrA huB hrB)
   · -- B = ∅: δ = B_empty_delta = sSup of A-statistics
@@ -2426,13 +2719,13 @@ lemma chooseδ_A_bound {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
       use separationStatistic R rC uC huC
       intro s ⟨r', u', hu', hrA', hs⟩
       subst hs
-      exact le_of_lt (separation_property R H hd hu' hrA' huC hrC)
+      exact le_of_lt (separation_property R H IH hd hu' hrA' huC hrC)
     simp only [separationStatistic]
     exact le_csSup h_bdd h_in_set
 
 /-- chooseδ satisfies the C-bound: δ ≤ all C-statistics. -/
 lemma chooseδ_C_bound {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
-    (R : MultiGridRep F) (H : GridComm F) (d : α) (hd : ident < d) :
+    (R : MultiGridRep F) (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d) :
     ∀ r u (hu : 0 < u), r ∈ extensionSetC F d u →
       chooseδ hk R d hd ≤ separationStatistic R r u hu := by
   intro r u hu hrC
@@ -2444,7 +2737,7 @@ lemma chooseδ_C_bound {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
     have hB_nonempty : ∃ r u, 0 < u ∧ r ∈ extensionSetB F d u := hB_exists
     rcases hB_nonempty with ⟨rB, uB, huB, hrB⟩
     have h_B_eq : B_common_statistic R d hd hB_exists = separationStatistic R rB uB huB :=
-      B_common_statistic_eq_any_witness R d hd hB_exists rB uB huB hrB
+      B_common_statistic_eq_any_witness R IH d hd hB_exists rB uB huB hrB
     rw [h_B_eq]
     exact le_of_lt (separation_property_B_C R H hd huB hrB hu hrC)
   · -- B = ∅: δ = B_empty_delta = sSup of A-statistics
@@ -2465,11 +2758,11 @@ lemma chooseδ_C_bound {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
       intro s ⟨r', u', hu', hrA', hs⟩
       subst hs
       simp only [separationStatistic]
-      exact le_of_lt (separation_property R H hd hu' hrA' hu hrC)
+      exact le_of_lt (separation_property R H IH hd hu' hrA' hu hrC)
 
 /-- chooseδ satisfies the B-bound: all B-statistics equal δ. -/
 lemma chooseδ_B_bound {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
-    (R : MultiGridRep F) (d : α) (hd : ident < d) :
+    (R : MultiGridRep F) (IH : GridBridge F) (d : α) (hd : ident < d) :
     ∀ r u (hu : 0 < u), r ∈ extensionSetB F d u →
       separationStatistic R r u hu = chooseδ hk R d hd := by
   intro r u hu hrB
@@ -2477,7 +2770,7 @@ lemma chooseδ_B_bound {k : ℕ} {F : AtomFamily α k} (hk : k ≥ 1)
   split_ifs with hB_exists
   · -- B ≠ ∅: δ = B_common_statistic
     -- B_common_statistic equals any B-witness's statistic
-    exact (B_common_statistic_eq_any_witness R d hd hB_exists r u hu hrB).symm
+    exact (B_common_statistic_eq_any_witness R IH d hd hB_exists r u hu hrB).symm
   · -- B = ∅: Contradiction - we have r ∈ B but B is empty!
     exfalso
     exact hB_exists ⟨r, u, hu, hrB⟩
@@ -2580,7 +2873,7 @@ the Θ-difference must equal Δ·δ.
 
 This is THE key lemma for Theta'_well_defined. -/
 lemma delta_shift_equiv {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
-    (H : GridComm F) {d : α} (hd : ident < d)
+    (H : GridComm F) (IH : GridBridge F) {d : α} (hd : ident < d)
     {δ : ℝ}
     (hδA : ∀ r u (hu : 0 < u), r ∈ extensionSetA F d u → separationStatistic R r u hu ≤ δ)
     (hδC : ∀ r u (hu : 0 < u), r ∈ extensionSetC F d u → δ ≤ separationStatistic R r u hu)
@@ -2785,26 +3078,251 @@ lemma delta_shift_equiv {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
 
       · -- Case B: No B-witness for s_old - Pure A/C case
         --
-        -- **STRUCTURAL INSIGHT** (same as mu_scale_eq_iterate):
-        -- This case requires the INDUCTIVE HYPOTHESIS that the k-grid is commutative.
+        -- **KEY INSIGHT** (GPT-5 Pro): If B is globally empty, use accuracy_lemma.
+        -- If B is non-empty but s_old isn't in B, this is a structural contradiction
+        -- in many algebras (the trade equation forces s_old to be a B-witness).
         --
-        -- With k-grid commutativity, we can use R.add (additivity) to derive:
-        -- Θ(μ r_old) = Θ(μ s_old ⊕ d^Δ) = Θ(μ s_old) + Θ(d^Δ)
-        -- where Θ(d^Δ) = Δ*δ by the B-statistic definition (or limiting argument).
-        --
-        -- Without commutativity, we can only prove the width-2δ bracket:
-        --   (Δ-1)*δ < θr - θs < (Δ+1)*δ
-        -- using floor V = ⌊θs/δ⌋ and trade shift lemmas.
-        --
-        -- **Why this is NOT a fatal gap**:
-        -- In many K&S algebras (e.g., free monoid), the pure A/C case is VACUOUS
-        -- because the trade equation μ r_old = μ s_old ⊕ d^Δ can only be satisfied
-        -- when s_old is actually a B-witness (i.e., μ s_old = d^V for some V).
-        --
-        -- For the general case, this sorry represents the same inductive requirement
-        -- as mu_scale_eq_iterate (line ~1397): the k-grid must be commutative.
-        --
-        sorry -- INDUCTIVE HYPOTHESIS: k-grid commutativity (same as mu_scale_eq_iterate)
+        push_neg at hB_witness
+        -- hB_witness : ∀ V, 0 < V → s_old ∉ extensionSetB F d V
+
+        -- Check if B is globally empty
+        by_cases hB_global : ∃ r u, 0 < u ∧ r ∈ extensionSetB F d u
+
+        · -- B is globally non-empty, but s_old ∉ B
+          -- In this case, there's another element that IS a B-witness.
+          -- The trade equation μ r_old = μ s_old ⊕ d^Δ combined with
+          -- the existence of some B-witness should give us constraints.
+          --
+          -- **STRUCTURAL ISSUE**: This case requires k-grid commutativity
+          -- to relate the trade to the B-witness. Without it, we can't proceed.
+          -- In many K&S algebras, this case is actually VACUOUS.
+          sorry -- INDUCTIVE HYPOTHESIS: k-grid commutativity needed
+
+        · -- B is globally empty: Use accuracy_lemma to squeeze bounds
+          push_neg at hB_global
+          have hB_empty : ∀ r u, 0 < u → r ∉ extensionSetB F d u :=
+            fun r u hu hr => hB_global r u hu hr
+
+          -- We prove θr - θs ≤ Δ * δ by contradiction using accuracy_lemma.
+          by_contra h_not_le
+          push_neg at h_not_le
+          -- h_not_le : Δ * δ < θr - θs
+          let ε : ℝ := (θr - θs) - (Δ : ℝ) * δ
+          have hε_pos : 0 < ε := by simp only [ε]; linarith
+
+          -- Need A and C nonempty for accuracy_lemma
+          have hA_nonempty : ∃ r u, 0 < u ∧ r ∈ extensionSetA F d u :=
+            extensionSetA_nonempty_of_B_empty F d hd hB_empty
+
+          -- For C nonempty, we need k ≥ 1. Get this from hs_pos (s_old > ident).
+          -- If k = 0, then mu F s_old = ident, contradicting hs_pos.
+          have hk_pos : k ≥ 1 := by
+            by_contra hk0
+            push_neg at hk0
+            -- hk0 : k < 1, so k = 0
+            have hk_eq_0 : k = 0 := by omega
+            -- k = 0: mu F s_old = ident for any s_old since foldl over empty list = ident
+            have hmu_ident : mu F s_old = ident := by
+              subst hk_eq_0
+              rfl  -- mu F s_old = foldl _ ident [] = ident
+            -- From hmu_ident and hs_pos : ident < mu F s_old, get contradiction
+            rw [hmu_ident] at hs_pos
+            exact (lt_irrefl ident) hs_pos
+
+          have hC_nonempty : ∃ r u, 0 < u ∧ r ∈ extensionSetC F d u :=
+            extensionSetC_nonempty_of_B_empty F hk_pos d hd hB_empty
+
+          -- Use accuracy_lemma to get A/C witnesses with statistics within ε
+          obtain ⟨rA, uA, huA, hrA, rC, uC, huC, hrC, h_gap_small⟩ :=
+            accuracy_lemma R d hd hB_empty hA_nonempty hC_nonempty ε hε_pos
+
+          -- From the A/C bounds:
+          -- stat(rA, uA) ≤ δ ⟹ Θ(μ rA) ≤ uA * δ
+          -- stat(rC, uC) ≥ δ ⟹ Θ(μ rC) ≥ uC * δ
+          -- And stat(rC) - stat(rA) < ε
+
+          -- The squeeze: Using s_old's A/C levels and trade shifts...
+          -- Upper bound on θr: from s_old ∈ A(U), get r_old ∈ A(U+Δ), so θr ≤ (U+Δ)*δ
+          -- Lower bound on θs: from s_old ∈ C(V), get θs ≥ V*δ
+          -- So θr - θs ≤ (U+Δ-V)*δ
+          -- With accuracy_lemma, as U→V, this approaches Δ*δ
+
+          -- Find s_old's natural A-level (exists by Archimedean since s_old is positive)
+          obtain ⟨U_s, hU_s⟩ := bounded_by_iterate d hd (mu F s_old)
+          have hs_in_A : s_old ∈ extensionSetA F d U_s := hU_s
+          have hU_s_pos : 0 < U_s := by
+            by_contra h; push_neg at h; interval_cases U_s
+            simp only [iterate_op_zero] at hU_s
+            exact not_lt.mpr (ident_le (mu F s_old)) hU_s
+
+          -- By trade_shift_A: r_old ∈ A(U_s + Δ)
+          have hr_in_A : r_old ∈ extensionSetA F d (U_s + Δ) := trade_shift_A hd hΔ htrade hs_in_A
+          have hUΔ_pos : 0 < U_s + Δ := by omega
+
+          -- A-bounds: θr ≤ (U_s+Δ)*δ and θs ≤ U_s*δ
+          have hθr_A : θr ≤ (U_s + Δ : ℕ) * δ := by
+            have hbound := hδA r_old (U_s + Δ) hUΔ_pos hr_in_A
+            simp only [separationStatistic] at hbound
+            have hpos : (0 : ℝ) < (U_s + Δ : ℕ) := Nat.cast_pos.mpr hUΔ_pos
+            rw [div_le_iff₀ hpos] at hbound
+            linarith
+
+          -- Find s_old's natural C-level (exists since s_old > ident)
+          -- Key: ident < mu F s_old means there exists V_s with d^{V_s} < mu F s_old
+          -- We use V_s = 0 or find the largest V_s where s_old ∈ C(V_s)
+          have hs_pos_real : ident < mu F s_old := hs_pos
+
+          -- For positive s_old with B empty, find the C-level
+          -- s_old is in C(V) for some V iff d^V < mu F s_old
+          -- The largest such V is the "floor" of s_old's position in the d-sequence
+
+          -- Use V = 0 if mu F s_old ≤ d, otherwise find V > 0
+          by_cases hs_above_d : iterate_op d 1 < mu F s_old
+
+          · -- s_old > d: Find V_s ≥ 1 where s_old ∈ C(V_s)
+            have hs_in_C_1 : s_old ∈ extensionSetC F d 1 := by simp [extensionSetC, hs_above_d]
+
+            -- C-bound at V_s = 1: θs ≥ 1*δ = δ
+            have hθs_C : θs ≥ (1 : ℕ) * δ := by
+              have hbound := hδC s_old 1 (by omega : 0 < 1) hs_in_C_1
+              simp only [separationStatistic, Nat.cast_one, div_one] at hbound
+              -- hbound : δ ≤ θs, goal : θs ≥ 1 * δ
+              simp only [Nat.cast_one, one_mul]
+              exact hbound
+
+            -- By trade_shift_C_forward: r_old ∈ C(1 + Δ)
+            have hr_in_C : r_old ∈ extensionSetC F d (1 + Δ) := trade_shift_C_forward hd hΔ htrade hs_in_C_1
+
+            -- C-bound: θr ≥ (1+Δ)*δ
+            have hθr_C : θr ≥ ((1 + Δ : ℕ) : ℝ) * δ := by
+              have hpos_1Δ : 0 < 1 + Δ := by omega
+              have hbound := hδC r_old (1 + Δ) hpos_1Δ hr_in_C
+              simp only [separationStatistic] at hbound
+              have hpos : (0 : ℝ) < (1 + Δ : ℕ) := Nat.cast_pos.mpr hpos_1Δ
+              rw [le_div_iff₀ hpos] at hbound
+              linarith
+
+            -- Floor-bracket: (Δ-1+1)*δ ≤ θr - θs ≤ (U_s+Δ)*δ - 1*δ
+            -- That is: Δ*δ ≤ θr - θs (from C-bounds)
+            -- But we assumed θr - θs > Δ*δ, so need to check if we can get ≤
+
+            -- From A-bound on r and C-bound on s:
+            -- θr - θs ≤ (U_s + Δ)*δ - 1*δ = (U_s + Δ - 1)*δ
+
+            -- The issue: This gives upper bound (U_s + Δ - 1)*δ, not exactly Δ*δ
+            -- For contradiction, we need θr - θs ≤ Δ*δ but we only get ≤ (U_s + Δ - 1)*δ
+
+            -- **KEY INSIGHT**: The floor-bracket gives us width ~2δ centered around Δ*δ.
+            -- The accuracy_lemma tightens δ arbitrarily, but doesn't eliminate the bracket width.
+
+            -- For now, we observe this case requires the INDUCTIVE HYPOTHESIS:
+            -- With k-grid commutativity, we could express the trade more directly
+            -- and eliminate the floor-bracket gap.
+            --
+            -- NOTE: In well-behaved K&S algebras, when B is empty AND s_old > d,
+            -- the inductive structure forces tighter constraints. This case may
+            -- be vacuous under our construction path.
+            sorry -- STRUCTURAL: Pure A/C with s_old > d requires deeper analysis
+
+          · -- s_old ≤ d: Use ident < s_old ≤ d
+            push_neg at hs_above_d
+            -- hs_above_d : mu F s_old ≤ iterate_op d 1
+
+            -- We need to show mu F s_old < d (strictly) since if equal, s_old ∈ B(1)
+            have hs_lt_d : mu F s_old < iterate_op d 1 := by
+              rcases eq_or_lt_of_le hs_above_d with h_eq | h_lt
+              · -- If mu F s_old = d, then s_old ∈ B(1), contradicting B empty
+                have hB1 : s_old ∈ extensionSetB F d 1 := by
+                  simp only [extensionSetB, Set.mem_setOf_eq, iterate_op_one, h_eq]
+                exact absurd hB1 (hB_empty s_old 1 (by omega))
+              · exact h_lt
+
+            -- s_old ∈ A(1) since mu F s_old < d = d^1
+            have hs_in_A_1 : s_old ∈ extensionSetA F d 1 := by
+              simp only [extensionSetA, Set.mem_setOf_eq]
+              exact hs_lt_d
+
+            -- A-bound: θs ≤ 1*δ = δ
+            have hθs_A : θs ≤ (1 : ℕ) * δ := by
+              have hbound := hδA s_old 1 (by omega) hs_in_A_1
+              simp only [separationStatistic, Nat.cast_one, div_one] at hbound
+              -- hbound : θs ≤ δ, goal : θs ≤ 1 * δ
+              simp only [Nat.cast_one, one_mul]
+              exact hbound
+
+            -- By trade_shift_A: r_old ∈ A(1 + Δ)
+            have hr_in_A_1Δ : r_old ∈ extensionSetA F d (1 + Δ) := trade_shift_A hd hΔ htrade hs_in_A_1
+
+            -- A-bound: θr ≤ (1+Δ)*δ
+            have hθr_A' : θr ≤ ((1 + Δ : ℕ) : ℝ) * δ := by
+              have hpos_1Δ : 0 < 1 + Δ := by omega
+              have hbound := hδA r_old (1 + Δ) hpos_1Δ hr_in_A_1Δ
+              simp only [separationStatistic] at hbound
+              have hpos : (0 : ℝ) < (1 + Δ : ℕ) := Nat.cast_pos.mpr hpos_1Δ
+              rw [div_le_iff₀ hpos] at hbound
+              linarith
+
+            -- For the C-level, since s_old > ident but s_old < d, we have
+            -- d^0 = ident < s_old < d = d^1
+            -- So s_old is NOT in C(1), but is "above" ident.
+
+            -- The C-bound at level 0 is vacuous (0 < 0 is false).
+            -- We need a positive C-level, but s_old < d means s_old ∉ C(v) for any v ≥ 1.
+
+            -- Lower bound on θs: From ident < s_old, we get θs > 0
+            have hθs_pos : 0 < θs := by
+              have hθ_strict : R.Θ_grid ⟨mu F s_old, mu_mem_kGrid F s_old⟩ > R.Θ_grid ⟨ident, ident_mem_kGrid F⟩ :=
+                R.strictMono hs_pos
+              simp only [R.ident_eq_zero] at hθ_strict
+              exact hθ_strict
+
+            -- From trade: r_old is "Δ steps above" s_old
+            -- If s_old < d = d^1, then s_old ⊕ d^Δ could be anywhere relative to d^{Δ+1}
+
+            -- **KEY INSIGHT**: When ident < s_old < d, the trade μ(r_old) = s_old ⊕ d^Δ
+            -- places r_old between d^Δ and d^{Δ+1} (approximately).
+            -- r_old ∈ C(Δ) since d^Δ < s_old ⊕ d^Δ (by s_old > ident)
+
+            have hr_in_C_Δ : r_old ∈ extensionSetC F d Δ := by
+              simp only [extensionSetC, Set.mem_setOf_eq]
+              rw [htrade]
+              -- Need: d^Δ < s_old ⊕ d^Δ
+              -- Since s_old > ident, by op_strictMono_left: s_old ⊕ d^Δ > ident ⊕ d^Δ = d^Δ
+              have h := (op_strictMono_left (iterate_op d Δ)) hs_pos
+              simp only [op_ident_left] at h
+              exact h
+
+            -- C-bound: θr ≥ Δ*δ
+            have hθr_C : θr ≥ (Δ : ℝ) * δ := by
+              have hbound := hδC r_old Δ hΔ hr_in_C_Δ
+              simp only [separationStatistic] at hbound
+              have hpos : (0 : ℝ) < (Δ : ℕ) := Nat.cast_pos.mpr hΔ
+              rw [le_div_iff₀ hpos] at hbound
+              linarith
+
+            -- Now we have: Δ*δ ≤ θr ≤ (1+Δ)*δ and 0 < θs ≤ 1*δ
+
+            -- From these: θr - θs ≥ Δ*δ - 1*δ = (Δ-1)*δ
+            --            θr - θs ≤ (1+Δ)*δ - 0 = (1+Δ)*δ
+
+            -- This is a width-2δ bracket centered around Δ*δ.
+            -- Our assumption h_not_le says θr - θs > Δ*δ.
+
+            -- **CONTRADICTION PATH**: Need to show θr - θs ≤ Δ*δ
+            -- But our bounds only give θr - θs ≤ (1+Δ)*δ
+
+            -- The accuracy_lemma says δ is pinned tightly, but doesn't help here
+            -- because the bracket width comes from the DISCRETE level structure.
+
+            -- We need: θr ≤ Δ*δ + θs, i.e., θr - θs ≤ Δ*δ
+            -- We have: θr ≤ (1+Δ)*δ and θs > 0
+
+            -- The gap: We can only conclude θr - θs ≤ (1+Δ)*δ - 0 = (1+Δ)*δ
+            -- But h_not_le says θr - θs > Δ*δ, which is consistent with θr - θs ∈ (Δ*δ, (Δ+1)*δ]
+
+            -- **STRUCTURAL LIMITATION**: The floor-bracket cannot be closed without
+            -- additional structure (k-grid commutativity from inductive hypothesis).
+            sorry -- FLOOR-BRACKET: Pure A/C case requires inductive hypothesis to close
 
   · -- Lower bound: Δ * δ ≤ θr - θs
 
@@ -2895,10 +3413,39 @@ lemma delta_shift_equiv {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
         linarith
 
       · -- Case B: No B-witness for s_old - Pure A/C case
-        -- Same structural issue as the upper bound (line ~2686):
-        -- This requires the INDUCTIVE HYPOTHESIS that the k-grid is commutative.
-        -- See detailed comments in the upper bound case.
-        sorry -- INDUCTIVE HYPOTHESIS: k-grid commutativity (same as mu_scale_eq_iterate)
+        -- Same structure as the upper bound: split on global B-emptiness.
+        push_neg at hB_witness
+
+        by_cases hB_global : ∃ r u, 0 < u ∧ r ∈ extensionSetB F d u
+
+        · -- B is globally non-empty, but s_old ∉ B
+          -- Same structural issue as upper bound: needs k-grid commutativity.
+          sorry -- INDUCTIVE HYPOTHESIS: k-grid commutativity needed
+
+        · -- B is globally empty: Use accuracy_lemma for lower bound
+          push_neg at hB_global
+          have hB_empty : ∀ r u, 0 < u → r ∉ extensionSetB F d u :=
+            fun r u hu hr => hB_global r u hu hr
+
+          -- Symmetric argument to upper bound:
+          -- If Δ * δ > θr - θs, use accuracy_lemma to derive contradiction.
+          -- However, the same FLOOR-BRACKET limitation applies:
+          --
+          -- For the lower bound we need θr - θs ≥ Δ*δ.
+          -- Using C-bound on r at level V+Δ: θr ≥ (V+Δ)*δ
+          -- Using A-bound on s at level U: θs ≤ U*δ
+          -- So θr - θs ≥ (V+Δ)*δ - U*δ = (V+Δ-U)*δ
+          --
+          -- With U = V+1 (tightest when B is empty):
+          -- θr - θs ≥ (V+Δ-V-1)*δ = (Δ-1)*δ
+          --
+          -- This only gives θr - θs ≥ (Δ-1)*δ, not ≥ Δ*δ!
+          -- The floor-bracket width 2δ cannot be eliminated without additional structure.
+          --
+          -- **STRUCTURAL LIMITATION**: Same as upper bound case.
+          -- The pure A/C case requires k-grid commutativity (inductive hypothesis)
+          -- to close the bracket to exact equality.
+          sorry -- FLOOR-BRACKET: Pure A/C lower bound requires inductive hypothesis
 
 /-! ### Θ' Infrastructure: Well-Definedness on μ-Fibers
 
@@ -2930,7 +3477,7 @@ The δ bounds (hδA, hδC) are precisely what make this work.
 -/
 lemma Theta'_well_defined
   {k} {F : AtomFamily α k} (R : MultiGridRep F)
-  (H : GridComm F) (d : α) (hd : ident < d)
+  (H : GridComm F) (IH : GridBridge F) (d : α) (hd : ident < d)
   (δ : ℝ)
   (hδA : ∀ r u (hu : 0 < u), r ∈ extensionSetA F d u → separationStatistic R r u hu ≤ δ)
   (hδC : ∀ r u (hu : 0 < u), r ∈ extensionSetC F d u → δ ≤ separationStatistic R r u hu)
@@ -3021,7 +3568,7 @@ lemma Theta'_well_defined
     -- Equivalently: Θ(r_old) - Θ(s_old) = (u - t)*δ = Δ*δ
 
     -- Apply the delta_shift_equiv lemma!
-    have h_trade_eq := delta_shift_equiv R H hd hδA hδC hδB hΔ_pos hμ_trade
+    have h_trade_eq := delta_shift_equiv R H IH hd hδA hδC hδB hΔ_pos hμ_trade
     -- h_trade_eq: Θ(r_old) - Θ(s_old) = Δ * δ
 
     -- Rearrange to get: Θ(r_old) + t*δ = Θ(s_old) + u*δ
@@ -3133,7 +3680,7 @@ lemma Theta'_well_defined
     -- Equivalently: Θ(s_old) - Θ(r_old) = (t - u)*δ = Δ*δ
 
     -- Apply delta_shift_equiv with s_old as the "larger" element
-    have h_trade_eq := delta_shift_equiv R H hd hδA hδC hδB hΔ_pos hμ_trade
+    have h_trade_eq := delta_shift_equiv R H IH hd hδA hδC hδB hΔ_pos hμ_trade
     -- h_trade_eq: Θ(s_old) - Θ(r_old) = Δ * δ
 
     -- Rearrange to get: Θ(r_old) + t*δ = Θ(s_old) + u*δ
@@ -3164,7 +3711,7 @@ lemma Theta'_well_defined
 
 theorem extend_grid_rep_with_atom
     {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
-    (H : GridComm F) (d : α) (hd : ident < d) :
+    (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d) :
     ∃ (F' : AtomFamily α (k + 1)),
       (∀ i : Fin k, F'.atoms ⟨i, Nat.lt_succ_of_lt i.is_lt⟩ = F.atoms i) ∧
       F'.atoms ⟨k, Nat.lt_succ_self k⟩ = d ∧
@@ -3316,9 +3863,9 @@ theorem extend_grid_rep_with_atom
       -- Theta'_raw (splitMulti r') = Theta'_raw r_old t
 
       -- Get the δ-bounds for Theta'_well_defined
-      have hδA := chooseδ_A_bound hk R H d hd
-      have hδC := chooseδ_C_bound hk R H d hd
-      have hδB := chooseδ_B_bound hk R d hd
+      have hδA := chooseδ_A_bound hk R IH H d hd
+      have hδC := chooseδ_C_bound hk R IH H d hd
+      have hδB := chooseδ_B_bound hk R IH d hd
 
       -- LHS witness
       set r'_succ := Classical.choose (mu_mem_kGrid F' (joinMulti r_old (t+1))) with hr'_succ_def
@@ -3331,8 +3878,8 @@ theorem extend_grid_rep_with_atom
         (Classical.choose_spec (mu_mem_kGrid F' (joinMulti r_old t))).symm
 
       -- Apply well-definedness to show each side equals canonical form
-      have hWD_succ := Theta'_well_defined R H d hd δ hδA hδC hδB hr'_succ_spec
-      have hWD_t := Theta'_well_defined R H d hd δ hδA hδC hδB hr'_t_spec
+      have hWD_succ := Theta'_well_defined R H IH d hd δ hδA hδC hδB hr'_succ_spec
+      have hWD_t := Theta'_well_defined R H IH d hd δ hδA hδC hδB hr'_t_spec
 
       -- Unfold Theta'_raw in the well-definedness results
       simp only [Theta'_raw, h_split_succ, h_split] at hWD_succ hWD_t
@@ -3358,7 +3905,7 @@ theorem extend_grid_rep_with_atom
 
         -- B_common_statistic equals any B-witness's statistic
         have hstat_eq : B_common_statistic R d hd hB = separationStatistic R r u hu :=
-          B_common_statistic_eq_any_witness R d hd hB r u hu hr
+          B_common_statistic_eq_any_witness R IH d hd hB r u hu hr
 
         rw [hstat_eq]
         -- Now show separationStatistic R r u hu > 0
@@ -3454,7 +4001,7 @@ theorem extend_grid_rep_with_atom
           use σC
           intro s ⟨r', u', hu', hrA', hs⟩
           subst hs
-          exact le_of_lt (separation_property R H hd hu' hrA' huC hrC)
+          exact le_of_lt (separation_property R H IH hd hu' hrA' huC hrC)
 
         -- Apply le_csSup to get sSup ≥ our positive statistic
         have h_ge : R.Θ_grid ⟨mu F (unitMulti i₀ 1), mu_mem_kGrid F _⟩ / N ≤ sSup AStats :=
@@ -3483,9 +4030,9 @@ theorem extend_grid_rep_with_atom
       -- by R.strictMono, so adding t·δ preserves the inequality
 
       -- Get the δ-bounds for Theta'_well_defined
-      have hδA := chooseδ_A_bound hk R H d hd
-      have hδC := chooseδ_C_bound hk R H d hd
-      have hδB := chooseδ_B_bound hk R d hd
+      have hδA := chooseδ_A_bound hk R IH H d hd
+      have hδC := chooseδ_C_bound hk R IH H d hd
+      have hδB := chooseδ_B_bound hk R IH d hd
 
       -- X-witness
       set r'_x := Classical.choose (mu_mem_kGrid F' (joinMulti r_old_x t)) with hr'_x_def
@@ -3498,8 +4045,8 @@ theorem extend_grid_rep_with_atom
         (Classical.choose_spec (mu_mem_kGrid F' (joinMulti r_old_y t))).symm
 
       -- Apply well-definedness to show each side equals canonical form
-      have hWD_x := Theta'_well_defined R H d hd δ hδA hδC hδB hr'_x_spec
-      have hWD_y := Theta'_well_defined R H d hd δ hδA hδC hδB hr'_y_spec
+      have hWD_x := Theta'_well_defined R H IH d hd δ hδA hδC hδB hr'_x_spec
+      have hWD_y := Theta'_well_defined R H IH d hd δ hδA hδC hδB hr'_y_spec
 
       -- Unfold Theta'_raw in the well-definedness results
       simp only [Theta'_raw, h_split_x, h_split_y] at hWD_x hWD_y
@@ -3536,9 +4083,9 @@ theorem extend_grid_rep_with_atom
       simp only [Θ']
 
       -- Get the δ-bounds for Theta'_well_defined
-      have hδA := chooseδ_A_bound hk R H d hd
-      have hδC := chooseδ_C_bound hk R H d hd
-      have hδB := chooseδ_B_bound hk R d hd
+      have hδA := chooseδ_A_bound hk R IH H d hd
+      have hδC := chooseδ_C_bound hk R IH H d hd
+      have hδB := chooseδ_B_bound hk R IH d hd
 
       -- Extract witnesses
       set r_x := Classical.choose hx with hr_x_def
@@ -3672,9 +4219,9 @@ theorem extend_grid_rep_with_atom
       simp only [Θ']
 
       -- Get the δ-bounds for Theta'_well_defined
-      have hδA := chooseδ_A_bound hk R H d hd
-      have hδC := chooseδ_C_bound hk R H d hd
-      have hδB := chooseδ_B_bound hk R d hd
+      have hδA := chooseδ_A_bound hk R IH H d hd
+      have hδC := chooseδ_C_bound hk R IH H d hd
+      have hδB := chooseδ_B_bound hk R IH d hd
 
       -- Key: splitMulti distributes over addition
       have h_split_add : splitMulti (fun i => r i + s i) =
@@ -3726,9 +4273,9 @@ theorem extend_grid_rep_with_atom
         rw [hr'_s_spec, h_s_join]
 
       -- Apply Theta'_well_defined to each
-      have hWD_sum := Theta'_well_defined R H d hd δ hδA hδC hδB h_mu_sum
-      have hWD_r := Theta'_well_defined R H d hd δ hδA hδC hδB h_mu_r
-      have hWD_s := Theta'_well_defined R H d hd δ hδA hδC hδB h_mu_s
+      have hWD_sum := Theta'_well_defined R H IH d hd δ hδA hδC hδB h_mu_sum
+      have hWD_r := Theta'_well_defined R H IH d hd δ hδA hδC hδB h_mu_r
+      have hWD_s := Theta'_well_defined R H IH d hd δ hδA hδC hδB h_mu_s
 
       -- Unfold Theta'_raw in the well-definedness results
       simp only [Theta'_raw, splitMulti_joinMulti] at hWD_sum hWD_r hWD_s
