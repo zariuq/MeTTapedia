@@ -4121,23 +4121,57 @@ theorem extend_grid_rep_with_atom
       · -- Case: t_x < t_y
         -- Need: Θ(r_old_x) + t_x*δ < Θ(r_old_y) + t_y*δ
         --
-        -- Sub-case A: mu F r_old_x ≤ mu F r_old_y
-        --   Then Θ(r_old_x) ≤ Θ(r_old_y) by R.strictMono.
-        --   Combined with t_x < t_y (so t_x*δ < t_y*δ), we get the result.
-        --
-        -- Sub-case B: mu F r_old_x > mu F r_old_y
-        --   From x < y: op (mu F r_old_x) (d^{t_x}) < op (mu F r_old_y) (d^{t_y})
-        --   Let z = op (mu F r_old_x) (d^{t_y}). Then y < z.
-        --   By cancellativity: mu F r_old_y < mu F r_old_x (✓ matches sub-case B)
-        --   From x < y and y < z:
-        --     op (mu F r_old_x) (d^{t_x}) < op (mu F r_old_y) (d^{t_y})
-        --   By careful cancellation: (r_old_x - r_old_y gap) < d^Δ where Δ = t_y - t_x
-        --   This bounds: Θ(r_old_x) - Θ(r_old_y) < (Δ+1)*δ (floor-based accuracy)
-        --
-        -- **STRUCTURAL INSIGHT** (same as delta_shift_equiv and mu_scale_eq_iterate):
-        -- The exact bound requires the INDUCTIVE HYPOTHESIS that the k-grid is commutative.
-        -- The floor-based approach gives width-2δ bracket; exact equality needs commutativity.
-        sorry -- INDUCTIVE HYPOTHESIS: k-grid commutativity (same as delta_shift_equiv)
+        -- Strategy: Compare mu F r_old_x with mu F r_old_y
+        by_cases h_mu_order : mu F r_old_x < mu F r_old_y
+
+        · -- Sub-case A: mu F r_old_x < mu F r_old_y
+          -- Use Theta'_strictMono_same_t at level t_x, then add the t difference
+          have hθ_at_tx : R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ <
+                          R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ :=
+            R.strictMono h_mu_order
+
+          -- Since t_x < t_y, we have t_x*δ < t_y*δ
+          have ht_ineq : (t_x : ℝ) * δ < (t_y : ℝ) * δ := by
+            have h_delta_pos : 0 < δ := delta_pos
+            have h_tx_lt_ty : (t_x : ℝ) < (t_y : ℝ) := Nat.cast_lt.mpr h_t_lt
+            exact (mul_lt_mul_right h_delta_pos).mpr h_tx_lt_ty
+
+          -- Combine: both Θ and t favor RHS
+          linarith
+
+        · -- Sub-case B: mu F r_old_y ≤ mu F r_old_x
+          push_neg at h_mu_order
+          -- In this case, since x < y but the old parts don't favor y,
+          -- the t difference must compensate.
+          -- From x < y: op (mu F r_old_x) (d^{t_x}) < op (mu F r_old_y) (d^{t_y})
+
+          rcases eq_or_lt_of_le h_mu_order with h_eq | h_gt
+
+          · -- mu F r_old_x = mu F r_old_y
+            -- Then Θ values are equal, and t_x < t_y gives the result
+            -- Since t_x < t_y, we have t_x*δ < t_y*δ
+            have ht_ineq : (t_x : ℝ) * δ < (t_y : ℝ) * δ := by
+              have h_delta_pos : 0 < δ := delta_pos
+              have h_tx_lt_ty : (t_x : ℝ) < (t_y : ℝ) := Nat.cast_lt.mpr h_t_lt
+              nlinarith [sq_nonneg (t_y - t_x : ℝ), sq_nonneg δ]
+
+            -- With mu F r_old_x = mu F r_old_y, the Θ parts are equal
+            -- So the inequality follows from t_x < t_y alone
+            calc R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ + (t_x : ℝ) * δ
+                = R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ + (t_x : ℝ) * δ := by
+                    simp only [h_eq]
+              _ < R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ + (t_y : ℝ) * δ := by
+                    linarith
+
+          · -- mu F r_old_x > mu F r_old_y
+            -- This case requires commutativity to relate the gap to δ-steps
+            -- From x < y: op (mu F r_old_x) (d^{t_x}) < op (mu F r_old_y) (d^{t_y})
+            -- With t_x < t_y and mu F r_old_x > mu F r_old_y, the compensation
+            -- from the extra d-powers must overcome the old-part disadvantage.
+            --
+            -- To make this precise requires GridComm to rearrange operations
+            -- and relate the gap Θ(r_old_x) - Θ(r_old_y) to δ-multiples.
+            sorry -- INDUCTIVE HYPOTHESIS: k-grid commutativity for gap analysis
 
       · -- Case: t_x = t_y
         -- Since x < y and t_x = t_y, we have mu F r_old_x ⊕ d^t < mu F r_old_y ⊕ d^t
@@ -4176,22 +4210,61 @@ theorem extend_grid_rep_with_atom
         -- Need: Θ(r_old_x) + t_x*δ < Θ(r_old_y) + t_y*δ
         -- Equivalently: Θ(r_old_y) - Θ(r_old_x) > (t_x - t_y)*δ
         --
-        -- Since x < y and t_x > t_y, the old part r_old_y must be "much larger"
-        -- than r_old_x to compensate for the smaller d-exponent.
+        -- Since x < y and t_x > t_y, the old part r_old_y must be larger
+        -- than r_old_x to overcome the t disadvantage.
+
+        -- First, show that mu F r_old_x < mu F r_old_y (by contradiction)
+        have h_mu_lt : mu F r_old_x < mu F r_old_y := by
+          by_contra h_not_lt
+          push_neg at h_not_lt
+          -- h_not_lt : mu F r_old_y ≤ mu F r_old_x
+
+          -- From x < y:
+          have hxy_α : x < y := hxy
+          rw [hx_eq, hy_eq] at hxy_α
+          -- hxy_α : op (mu F r_old_x) (d^{t_x}) < op (mu F r_old_y) (d^{t_y})
+
+          -- Since t_x > t_y and iterate_op is strictly increasing:
+          have h_dt_gt : iterate_op d t_y < iterate_op d t_x :=
+            iterate_op_strictMono d hd h_t_gt
+
+          -- By monotonicity: mu F r_old_x >= mu F r_old_y implies
+          -- op (mu F r_old_x) (d^{t_x}) >= op (mu F r_old_y) (d^{t_x})
+          have h1 : op (mu F r_old_y) (iterate_op d t_x) ≤ op (mu F r_old_x) (iterate_op d t_x) := by
+            rcases eq_or_lt_of_le h_not_lt with h_eq | h_lt
+            · rw [h_eq]
+            · exact le_of_lt (op_strictMono_left (iterate_op d t_x) h_lt)
+
+          -- By monotonicity: d^{t_y} < d^{t_x} implies
+          -- op (mu F r_old_y) (d^{t_y}) < op (mu F r_old_y) (d^{t_x})
+          have h2 : op (mu F r_old_y) (iterate_op d t_y) < op (mu F r_old_y) (iterate_op d t_x) :=
+            (op_strictMono_right (mu F r_old_y)) h_dt_gt
+
+          -- Combining: op (mu F r_old_y) (d^{t_y}) < ... <= op (mu F r_old_x) (d^{t_x})
+          have h_ge : op (mu F r_old_y) (iterate_op d t_y) < op (mu F r_old_x) (iterate_op d t_x) :=
+            lt_of_lt_of_le h2 h1
+
+          -- But this gives y < x, contradicting x < y
+          exact not_lt_of_gt h_ge hxy_α
+
+        -- Now we have mu F r_old_x < mu F r_old_y, so Θ(r_old_x) < Θ(r_old_y)
+        have hθ_lt : R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ <
+                     R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ :=
+          R.strictMono h_mu_lt
+
+        -- To complete the proof, we need: Θ(r_old_y) - Θ(r_old_x) > (t_x - t_y)*δ
         --
-        -- From x < y: op (mu F r_old_x) (d^{t_x}) < op (mu F r_old_y) (d^{t_y})
-        -- Since t_x > t_y, we must have mu F r_old_y >> mu F r_old_x to compensate.
+        -- The constraint x < y gives us:
+        -- op (mu F r_old_x) (d^{t_x}) < op (mu F r_old_y) (d^{t_y})
         --
-        -- Let Δ = t_x - t_y > 0. The constraint x < y implies:
-        --   The "gap" from r_old_x to r_old_y exceeds d^Δ worth of compensation.
-        --   Specifically: mu F r_old_y > op (mu F r_old_x) (d^Δ) [informally]
+        -- With commutativity, we could rearrange to:
+        -- op (mu F r_old_x) (op (d^{t_y}) (d^Δ)) < op (mu F r_old_y) (d^{t_y})
+        -- where Δ = t_x - t_y, and then cancel to get:
+        -- op (mu F r_old_x) (d^Δ) < mu F r_old_y
         --
-        -- By A/C bounds: Θ(r_old_y) - Θ(r_old_x) is at least (Δ-1)*δ (floor-based)
-        --
-        -- **STRUCTURAL INSIGHT** (same as delta_shift_equiv and mu_scale_eq_iterate):
-        -- The exact bound requires the INDUCTIVE HYPOTHESIS that the k-grid is commutative.
-        -- The floor-based approach gives width-2δ bracket; exact equality needs commutativity.
-        sorry -- INDUCTIVE HYPOTHESIS: k-grid commutativity (same as delta_shift_equiv)
+        -- This would give the quantitative bound on the Θ gap.
+        -- Without commutativity, we can only get qualitative ordering.
+        sorry -- INDUCTIVE HYPOTHESIS: k-grid commutativity for quantitative gap bound
 
     -- Property 3: Additivity (componentwise on multiplicities)
     --
@@ -4297,24 +4370,62 @@ theorem extend_grid_rep_with_atom
 
     -- Construct the MultiGridRep F' and GridComm F'
     let R' : MultiGridRep F' := ⟨Θ', h_strictMono, h_additive, h_norm⟩
+
     -- GridComm F' follows from R'.add: commutativity emerges from additive homomorphism!
     -- If Θ'(x ⊕ y) = Θ'(x) + Θ'(y) = Θ'(y) + Θ'(x) = Θ'(y ⊕ x), then by strictMono injectivity, x ⊕ y = y ⊕ x.
     have H' : GridComm F' := ⟨by
       intro r s
-      -- TODO: EMERGING COMMUTATIVITY - This is the core circularity in K&S Appendix A
+      -- **EMERGING COMMUTATIVITY** (per GPT-5 Pro / K&S Appendix A):
+      -- Commutativity is DERIVED from additivity + injectivity, not assumed.
       --
       -- Strategy: Show Θ' values of both sides are equal, use strictMono injectivity
       -- We want: op (mu F' r) (mu F' s) = op (mu F' s) (mu F' r)
-      --
-      -- The difficulty: To prove GridComm F', we need properties that themselves
-      -- require GridComm F'. The resolution requires showing that mu F' (r + s)
-      -- and op (mu F' r) (mu F' s) have the same Θ' value by construction of Θ',
-      -- which uses the δ-extension structure and the accuracy lemma.
-      --
-      -- This is where K&S's full inductive argument is needed, building F' from F
-      -- with the new atom d and proving commutativity emerges from Θ' additivity.
 
-      sorry -- EMERGING COMMUTATIVITY: requires showing mu additivity via Θ' construction
+      -- The key connection: We need to show op (mu F' r) (mu F' s) relates to mu F' (r+s)
+      -- This uses GridComm F (which we have as H!) plus structural properties of F'.
+
+      -- Split r and s using joinMulti/splitMulti
+      set r_old := (splitMulti r).1
+      set t_r := (splitMulti r).2
+      set s_old := (splitMulti s).1
+      set t_s := (splitMulti s).2
+
+      have hr_join : r = joinMulti r_old t_r := (joinMulti_splitMulti r).symm
+      have hs_join : s = joinMulti s_old t_s := (joinMulti_splitMulti s).symm
+
+      -- Express mu F' r and mu F' s using mu_extend_last
+      have hμr : mu F' r = op (mu F r_old) (iterate_op d t_r) := by
+        rw [hr_join]; exact mu_extend_last F d hd r_old t_r
+
+      have hμs : mu F' s = op (mu F s_old) (iterate_op d t_s) := by
+        rw [hs_join]; exact mu_extend_last F d hd s_old t_s
+
+      -- We need: op (mu F' r) (mu F' s) = op (mu F' s) (mu F' r)
+      rw [hμr, hμs]
+
+      -- Goal: op (op (mu F r_old) (d^{t_r})) (op (mu F s_old) (d^{t_s}))
+      --     = op (op (mu F s_old) (d^{t_s})) (op (mu F r_old) (d^{t_r}))
+      --
+      -- This is a 4-element rearrangement. We need to use:
+      -- 1. Associativity (from KnuthSkillingAlgebra)
+      -- 2. GridComm F (given as H) for k-grid elements
+      -- 3. Commutativity of iterate_op d with itself
+      --
+      -- The challenge: mu F r_old and mu F s_old are k-grid elements (can use H),
+      -- but d is the new element. We can't directly commute d with k-grid elements.
+      --
+      -- **K&S RESOLUTION**: The construction ensures that the NEW grid (F') is
+      -- commutative by virtue of the Θ' additivity + injectivity. We use this
+      -- indirectly by showing both sides give the same Θ' value, then using
+      -- h_strictMono injectivity.
+      --
+      -- To make this work, we'd need to:
+      -- (a) Show that mu_add_of_comm holds for F' (requires full separation argument)
+      -- (b) Use that to connect op (mu F' r) (mu F' s) with mu F' (r+s)
+      -- (c) Then use additivity + injectivity to conclude commutativity
+      --
+      -- For now, this remains a structural gap requiring the full K&S machinery.
+      sorry -- EMERGING COMMUTATIVITY: requires 4-way rearrangement or mu_add_of_comm for F'
     ⟩
     refine ⟨R', H', trivial⟩
 
