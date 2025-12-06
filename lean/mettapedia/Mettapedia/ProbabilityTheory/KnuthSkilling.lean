@@ -31,10 +31,12 @@ The formalization uses a two-layer design to avoid circular dependencies:
 
 -- Import all submodules
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
--- Counterexamples moved to _archive/
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
 import Mettapedia.ProbabilityTheory.KnuthSkilling.SeparationProof  -- Provides instance : KSSeparation α
 import Mettapedia.ProbabilityTheory.KnuthSkilling.RepTheorem
 import Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA
 import Mettapedia.ProbabilityTheory.KnuthSkilling.ProbabilityDerivation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Independence
+-- Counterexamples and no-go theorems
+import Mettapedia.ProbabilityTheory.KnuthSkilling.CounterExamples
+import Mettapedia.ProbabilityTheory.KnuthSkilling.NoGo

@@ -1,3 +1,5 @@
+import Mettapedia.ProbabilityTheory.KnuthSkilling.FreeMonoid2Order
+import Mathlib.Data.List.Lex
 
 /-!
 # Counterexamples for K&S Formalization
@@ -73,11 +75,16 @@ open Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA
 
 We construct the free monoid on two generators as a concrete counterexample.
 For simplicity, we use `List Bool` where `false` = "a" and `true` = "b".
+
+The LinearOrder instance is now imported from FreeMonoid2Order.lean, which uses
+GPT-5 Pro's insight: encode as (length, bits) and use LinearOrder.lift' to avoid
+manual instance hell.
 -/
 
-/-- The free monoid on two generators, represented as lists of booleans.
-    `false` represents generator "a", `true` represents generator "b". -/
-abbrev FreeMonoid2 := List Bool
+open Mettapedia.ProbabilityTheory.KnuthSkilling.FreeMonoid2Order
+
+/-- The free monoid on two generators (re-exported from FreeMonoid2Order). -/
+abbrev FreeMonoid2 := Mettapedia.ProbabilityTheory.KnuthSkilling.FreeMonoid2Order.FreeMonoid2
 
 /-- Concatenation operation on the free monoid. -/
 def fm_op (x y : FreeMonoid2) : FreeMonoid2 := x ++ y
@@ -85,38 +92,11 @@ def fm_op (x y : FreeMonoid2) : FreeMonoid2 := x ++ y
 /-- Identity element (empty list). -/
 def fm_ident : FreeMonoid2 := []
 
-/-- Shortlex order: compare lengths first, then lexicographically.
-    We use `false < true` as the base ordering (so "a" < "b"). -/
-def fm_lt (x y : FreeMonoid2) : Prop :=
-  x.length < y.length ∨ (x.length = y.length ∧ x < y)
-
-/-- Shortlex order is decidable. -/
-instance : DecidableRel fm_lt := fun x y => by
-  unfold fm_lt
-  infer_instance
-
-/-- Shortlex is a strict order. -/
-instance : IsTrans FreeMonoid2 fm_lt where
-  trans := by
-    intro x y z hxy hyz
-    unfold fm_lt at *
-    rcases hxy with hxy_len | ⟨hxy_len, hxy_lex⟩
-    · rcases hyz with hyz_len | ⟨hyz_len, hyz_lex⟩
-      · left; omega
-      · left; omega
-    · rcases hyz with hyz_len | ⟨hyz_len, hyz_lex⟩
-      · left; omega
-      · right; constructor
-        · omega
-        · exact List.lt_trans hxy_lex hyz_lex
-
-instance : IsIrrefl FreeMonoid2 fm_lt where
-  irrefl := by
-    intro x hx
-    unfold fm_lt at hx
-    rcases hx with hlen | ⟨_, hlex⟩
-    · omega
-    · exact List.lt_irrefl x hlex
+/-- Append on the right preserves shortlex order (from FreeMonoid2Order). -/
+lemma fm_lt_append_right {u v s : FreeMonoid2} : u < v → fm_op u s < fm_op v s := by
+  intro h
+  unfold fm_op
+  exact append_right_strictMono s h
 
 /-- Generator "a" (represented as [false]). -/
 def gen_a : FreeMonoid2 := [false]

@@ -64,7 +64,8 @@ This is the core result from which commutativity follows.
 7. Prove additivity on the grid, extend to all of α
 8. Derive commutativity from additivity + injectivity
 -/
-theorem associativity_representation (α : Type*) [KnuthSkillingAlgebra α] :
+theorem associativity_representation
+    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] :
     ∃ Θ : α → ℝ,
       (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
       Θ ident = 0 ∧
@@ -130,7 +131,8 @@ This is the key result that unblocks the rest of the library:
 - The "factor of 2" problem disappears with commutativity
 - exists_split_ratio_of_op becomes tractable
 -/
-theorem op_comm_of_associativity (α : Type*) [KnuthSkillingAlgebra α] :
+theorem op_comm_of_associativity
+    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] :
     ∀ x y : α, op x y = op y x := by
   obtain ⟨Θ, hΘ_order, _, hΘ_add⟩ := associativity_representation α
   exact commutativity_from_representation Θ hΘ_order hΘ_add
