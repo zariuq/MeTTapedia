@@ -46,16 +46,49 @@ def bits : FreeMonoid2 → ℕ
     This is the "shift left then add" formula that makes everything work! -/
 theorem bits_append (x y : FreeMonoid2) :
     bits (x ++ y) = bits x + bits y * 2^(x.length) := by
-  -- TODO: straightforward induction using `bits` recursion and arithmetic; defer for now.
-  sorry
+  induction x with
+  | nil =>
+    rw [List.nil_append]
+    simp only [bits, List.length_nil, pow_zero, Nat.mul_one, Nat.zero_add]
+  | cons b xs ih =>
+    rw [List.cons_append]
+    simp only [bits, List.length_cons]
+    rw [ih]
+    simp only [pow_succ]
+    ring
 
 /-- Shortlex encoding: map word to (length, bits) with lex order. -/
 def enc (w : FreeMonoid2) : Lex (ℕ × ℕ) := toLex (w.length, bits w)
 
 /-- The encoding is injective. -/
 theorem enc_injective : Function.Injective enc := by
-  -- TODO: complete the parity/length induction proof
-  intro x y h; sorry
+  intro x y h
+  simp [enc, toLex] at h
+  obtain ⟨hlen, hbits⟩ := h
+  induction x generalizing y with
+  | nil => cases y <;> simp_all
+  | cons b xs ih =>
+    cases y with
+    | nil => simp_all
+    | cons b' ys =>
+      simp [bits] at hbits
+      simp at hlen
+      have hlen' : xs.length = ys.length := hlen
+      -- Parity argument for heads
+      have hb : b = b' := by
+        have := congrArg (· % 2) hbits
+        simp [Nat.add_mul_mod_self_left] at this
+        cases b <;> cases b' <;> simp_all
+      -- Division argument for tails
+      have htail : bits xs = bits ys := by
+        subst hb
+        have : 2 * bits xs = 2 * bits ys := by
+          cases b <;> simp_all [bits] <;> linarith
+        linarith
+      -- Recursion
+      subst hb
+      have : xs = ys := ih (by simp [hlen']) (by simp [htail])
+      simp [this]
 
 /-- **THE MONEY SHOT**: LinearOrder for FreeMonoid2 via lift!
 

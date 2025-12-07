@@ -1127,7 +1127,11 @@ theorem ThetaFull_strictMono_on_pos (a : α) (ha : ident < a) (x y : α)
       -- n'/m' ≤ N_x where x < iterate_op a N_x.
       -- The key is that this bound N_x < n/m when x < y and iterate_op a n = iterate_op y m.
       -- This follows from Θ(x) < Θ(y) = n/m in the eventual representation.
-      -- TODO: Complete using the Archimedean bound argument (K&S Appendix A).
+      --
+      -- **FUNDAMENTAL ISSUE**: Even if ∀s ∈ S, s < c, we can have sSup(S) = c.
+      -- Example: S = {1 - 1/n : n ∈ ℕ} has sSup = 1, but all elements strictly < 1.
+      -- To prove sSup < c requires showing elements are bounded away from c,
+      -- which needs the full K&S Appendix A grid construction.
       sorry
 
     calc sSup (lowerRatioSet a x)

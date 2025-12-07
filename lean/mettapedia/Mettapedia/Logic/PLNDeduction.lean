@@ -153,10 +153,26 @@ noncomputable def deductionFormulaSTV
   strength_nonneg := by
     -- Case analysis on consistency and edge cases
     -- Each branch returns 0, rS, or clamp01(...), all ≥ 0
-    sorry
+    dsimp only
+    by_cases hcons :
+        conditionalProbabilityConsistency tvP.strength tvQ.strength tvPQ.strength ∧
+          conditionalProbabilityConsistency tvQ.strength tvR.strength tvQR.strength
+    · -- inputs consistent
+      simp [hcons] ; by_cases hq : tvQ.strength > 0.9999
+      · simp [hq, tvR.strength_nonneg]
+      · simp [hq, clamp01_nonneg]
+    · -- inconsistent inputs → strength = 0
+      simp [hcons]
   strength_le_one := by
     -- Each branch returns 0, rS, or clamp01(...), all ≤ 1
-    sorry
+    dsimp only
+    by_cases hcons :
+        conditionalProbabilityConsistency tvP.strength tvQ.strength tvPQ.strength ∧
+          conditionalProbabilityConsistency tvQ.strength tvR.strength tvQR.strength
+    · simp [hcons] ; by_cases hq : tvQ.strength > 0.9999
+      · simp [hq, tvR.strength_le_one]
+      · simp [hq, clamp01_le_one]
+    · simp [hcons]
   confidence_nonneg := by
     simp only [le_min_iff]
     exact ⟨tvP.confidence_nonneg, tvQ.confidence_nonneg, tvR.confidence_nonneg,
@@ -217,8 +233,8 @@ theorem deduction_when_B_certain
     (_hsBC : sBC ∈ Set.Icc (0 : ℝ) 1) :
     simpleDeductionStrengthFormula pA 1 pC sAB sBC = pC := by
   unfold simpleDeductionStrengthFormula
-  -- When pB = 1 > 0.99, the formula returns pC (edge case)
-  -- Need to handle the consistency check first
+  -- When pB = 1 > 0.99, the edge case returns pC (assuming consistency holds).
+  -- A full consistency discharge is left as future work.
   sorry
 
 /-- When sAB = 1 (A implies B), we have P(C|A) = P(C|B) = sBC.
@@ -233,6 +249,7 @@ theorem deduction_when_A_implies_B
     simpleDeductionStrengthFormula pA pB pC 1 sBC = sBC := by
   -- When sAB = 1: formula = 1*sBC + 0*(pC - pB*sBC)/(1-pB) = sBC
   -- (assuming pB ≤ 0.99 to avoid edge case)
+  unfold simpleDeductionStrengthFormula
   sorry
 
 /-- When sAB = 0 (A implies not B), we have P(C|A) = P(C|¬B).
@@ -247,6 +264,7 @@ theorem deduction_when_A_implies_notB
                  conditionalProbabilityConsistency pB pC sBC) :
     simpleDeductionStrengthFormula pA pB pC 0 sBC = (pC - pB * sBC) / (1 - pB) := by
   -- When sAB = 0: formula = 0*sBC + 1*(pC - pB*sBC)/(1-pB) = (pC - pB*sBC)/(1-pB)
+  unfold simpleDeductionStrengthFormula
   sorry
 
 /-! ## Confidence Propagation
