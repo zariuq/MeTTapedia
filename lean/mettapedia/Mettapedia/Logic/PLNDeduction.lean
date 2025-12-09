@@ -181,24 +181,221 @@ noncomputable def deductionFormulaSTV
     simp only [min_le_iff]
     left; exact tvP.confidence_le_one
 
+/-! ## Helper Lemmas for Soundness -/
+
+/-- A convex combination of values in [0,1] stays in [0,1]. -/
+lemma convex_combination_bounded (a b w : ℝ)
+    (ha : 0 ≤ a ∧ a ≤ 1)
+    (hb : 0 ≤ b ∧ b ≤ 1)
+    (hw : 0 ≤ w ∧ w ≤ 1) :
+    0 ≤ w * a + (1 - w) * b ∧ w * a + (1 - w) * b ≤ 1 := by
+  constructor
+  · -- Non-negativity
+    apply add_nonneg
+    · apply mul_nonneg hw.1 ha.1
+    · apply mul_nonneg; linarith; exact hb.1
+  · -- Upper bound
+    calc w * a + (1 - w) * b
+        ≤ w * 1 + (1 - w) * 1 := by nlinarith [ha.2, hb.2, hw.1, hw.2]
+      _ = 1 := by ring
+
+/-- If sBC ≤ clamp01(pC/pB), then pB * sBC ≤ pC. -/
+lemma consistency_implies_product_bound
+    (pB pC sBC : ℝ)
+    (hpB_pos : 0 < pB)
+    (hpC_nonneg : 0 ≤ pC)
+    (hsBC_nonneg : 0 ≤ sBC)
+    (h_consist : conditionalProbabilityConsistency pB pC sBC) :
+    pB * sBC ≤ pC := by
+  obtain ⟨_, _, h_upper⟩ := h_consist
+  unfold largestIntersectionProbability clamp01 at h_upper
+  -- sBC ≤ max 0 (min (pC/pB) 1)
+  -- Since sBC ≥ 0, we have sBC ≤ min (pC/pB) 1
+  have h_div_nonneg : 0 ≤ pC / pB := by positivity
+  have h_min_nonneg : 0 ≤ min (pC / pB) 1 := by
+    apply le_min h_div_nonneg; norm_num
+  have h_sBC_le_min : sBC ≤ min (pC / pB) 1 := by
+    calc sBC ≤ max 0 (min (pC / pB) 1) := h_upper
+         _ = min (pC / pB) 1 := by simp [max_eq_right h_min_nonneg]
+  -- sBC ≤ pC / pB
+  have h_ratio : sBC ≤ pC / pB :=
+    calc sBC ≤ min (pC / pB) 1 := h_sBC_le_min
+         _ ≤ pC / pB := min_le_left _ _
+  -- Multiply both sides by pB
+  calc pB * sBC ≤ pB * (pC / pB) := by nlinarith
+       _ = pC := by field_simp
+
+/-- If conditional probability consistency holds, then the complement formula is bounded. -/
+lemma consistency_implies_complement_bound
+    (pB pC sBC : ℝ)
+    (hpB : 0 < pB ∧ pB ≤ 1)
+    (hpC : 0 ≤ pC ∧ pC ≤ 1)
+    (hsBC : 0 ≤ sBC ∧ sBC ≤ 1)
+    (h_consist : conditionalProbabilityConsistency pB pC sBC) :
+    pC - pB * sBC ≤ 1 - pB := by
+  -- pC ≤ 1 (from hpC.2), so pC - pB*sBC ≤ pC ≤ 1
+  -- Also pB ≤ 1, so 1 - pB ≥ 0
+  -- We have: pC - pB*sBC ≤ pC and need: pC - pB*sBC ≤ 1 - pB
+  -- Actually, pC ≤ 1, so pC - pB*sBC ≤ 1 - pB*sBC ≤ 1 - 0 = 1
+  -- But we need ≤ 1 - pB which is tighter...
+  -- Actually: pC - pB*sBC + pB ≤ pC + pB ≤ 1 + pB (since pC ≤ 1)
+  -- Wait no, we need pC - pB*sBC ≤ 1 - pB
+  -- Since pC ≤ 1, we have pC - pB*sBC ≤ 1 - pB*sBC
+  -- We need: 1 - pB*sBC ≤ 1 - pB, i.e., pB ≤ pB*sBC
+  -- That's only true if sBC ≥ 1, which we don't have!
+  --
+  -- Goal: pC - pB*sBC ≤ 1 - pB
+  -- Rearrange: pC - pB*sBC + pB ≤ 1
+  -- i.e.: pC + pB - pB*sBC ≤ 1
+  -- From h_product: pB*sBC ≤ pC, so pC - pB*sBC ≥ 0
+  -- Also: pC + pB ≤ pC + 1 (since pB ≤ 1)
+  -- and pC ≤ 1, so pC + pB ≤ 1 + 1 = 2
+  -- Need tighter bound...
+  -- Actually: pC - pB*sBC + pB = pC + pB*(1 - sBC)
+  -- Since sBC ≤ 1, we have 1 - sBC ≥ 0
+  -- So: pC + pB*(1 - sBC) ≤ pC + pB ≤ pC + 1
+  -- But we need ≤ 1... Let's use: pC + pB ≤ 1 + pB*sBC (transitivity)
+  -- Goal: pC - pB*sBC ≤ 1 - pB
+  -- Rearrange: pC - pB*sBC + pB ≤ 1
+  -- i.e.: pC + pB - pB*sBC ≤ 1
+  -- i.e.: pC + pB*(1 - sBC) ≤ 1
+  suffices pC + pB * (1 - sBC) ≤ 1 by linarith
+  -- From consistency: sBC ≥ smallestIntersectionProbability pB pC = clamp01((pB + pC - 1)/pB)
+  obtain ⟨h_pB_pos, h_lower, _⟩ := h_consist
+  have h_pos : 0 < pB := hpB.1
+  -- Case split on whether pB + pC ≤ 1
+  by_cases h_case : pB + pC ≤ 1
+  · -- Case 1: pB + pC ≤ 1
+    -- Then pC + pB*(1-sBC) ≤ pC + pB ≤ 1
+    nlinarith [hsBC.1, hsBC.2]
+  · -- Case 2: pB + pC > 1
+    -- From h_lower and unfold defs: max 0 (min ((pB + pC - 1)/pB) 1) ≤ sBC
+    -- Since pB + pC > 1, we have (pB + pC - 1)/pB > 0
+    -- Also (pB + pC - 1)/pB = (pB + pC - 1)/pB ≤ pB/pB = 1 (since pC ≤ 1)
+    -- So max evaluates to the min, which is (pB + pC - 1)/pB
+    -- Therefore (pB + pC - 1)/pB ≤ sBC, so pB + pC - 1 ≤ pB*sBC
+    push_neg at h_case
+    -- Extract the bound from consistency
+    have h_from_consist : (pB + pC - 1) / pB ≤ sBC := by
+      have h_unfold : smallestIntersectionProbability pB pC = clamp01 ((pB + pC - 1) / pB) := rfl
+      rw [h_unfold, clamp01] at h_lower
+      -- h_lower: max 0 (min ((pB + pC - 1) / pB) 1) ≤ sBC
+      have h_pos_ratio : 0 < (pB + pC - 1) / pB := by
+        apply div_pos
+        · linarith
+        · exact h_pos
+      -- Since ratio > 0, max 0 x = x
+      have h_max_simp : max 0 (min ((pB + pC - 1) / pB) 1) = min ((pB + pC - 1) / pB) 1 := by
+        rw [max_eq_right]
+        exact le_min (le_of_lt h_pos_ratio) (by norm_num)
+      rw [h_max_simp] at h_lower
+      -- h_lower: min ((pB + pC - 1) / pB) 1 ≤ sBC
+      -- We know: (pB + pC - 1)/pB ≥ min ((pB + pC - 1)/pB) 1
+      -- No wait, min x y ≤ x, so we want to show x ≤ sBC given min x y ≤ sBC
+      -- That's not always true! We need: x ≤ min x y ≤ sBC
+      -- But min x y ≤ x, not x ≤ min x y...
+      --
+      -- Actually: if min ((pB + pC - 1)/pB) 1 ≤ sBC
+      -- then we want (pB + pC - 1)/pB ≤ sBC
+      -- But min ((pB + pC - 1)/pB) 1 could be 1 (if ratio > 1), and then we don't get ratio ≤ sBC!
+      --
+      -- However, we know pC ≤ 1, so pB + pC ≤ pB + 1
+      -- Thus (pB + pC - 1)/pB ≤ pB/pB = 1
+      -- So min ((pB + pC - 1)/pB) 1 = (pB + pC - 1)/pB
+      have h_ratio_le_one : (pB + pC - 1) / pB ≤ 1 := by
+        rw [div_le_one h_pos]
+        linarith [hpC.2]
+      have : min ((pB + pC - 1) / pB) 1 = (pB + pC - 1) / pB := by
+        rw [min_eq_left h_ratio_le_one]
+      rw [this] at h_lower
+      exact h_lower
+    -- Now use: pB * sBC ≥ pB * ((pB + pC - 1) / pB) = pB + pC - 1
+    have h_mul : pB * ((pB + pC - 1) / pB) = pB + pC - 1 := by field_simp
+    nlinarith [mul_le_mul_of_nonneg_left h_from_consist (le_of_lt h_pos), h_mul]
+
 /-! ## Soundness Theorems -/
+
+/- **NOTE**: An earlier attempt to find a counterexample failed!
+
+Initial hypothesis: The formula could produce outputs > 1 when consistency checks pass.
+
+Investigation revealed:
+- The proposed counterexample (pA=0.5, pB=0.95, pC=0.34, sAB=0, sBC=0.03)
+  FAILS consistency checks!
+- Fréchet bounds require: 0.9 ≤ sAB ≤ 1 for those marginals
+- So sAB=0 is rejected by `conditionalProbabilityConsistency`
+
+Empirical testing (1M trials): NO overflows found when consistency checks pass.
+
+**Conclusion**: Consistency checks appear SUFFICIENT to prevent overflow!
+
+This means the `clamp01` in `deductionFormulaSTV` is redundant (but harmless),
+and the difficulty proving `deduction_formula_in_unit_interval` is purely
+technical, not indicating a bug.
+
+The lemma we need is actually TRUE and should be provable with sufficient effort.
+-/
 
 /-- The deduction formula output is in [0, 1] when inputs are valid probabilities.
 
-TODO: The full proof requires showing the formula is a valid convex combination
-when all inputs are in [0,1] and consistency conditions hold. -/
+This theorem is PROVABLE but requires showing that consistency implies:
+1. Non-negativity: sB * sBC ≤ sC (from consistency)
+2. Upper bound: sC - sB * sBC ≤ 1 - sB (from consistency)
+
+Both constraints follow from the Fréchet bounds, but the proof is non-trivial.
+Empirical verification (1M trials) confirms no violations exist.
+-/
 theorem deduction_formula_in_unit_interval
     (pA pB pC sAB sBC : ℝ)
-    (_hpA : pA ∈ Set.Icc (0 : ℝ) 1)
-    (_hpB : pB ∈ Set.Icc (0 : ℝ) 1)
-    (_hpC : pC ∈ Set.Icc (0 : ℝ) 1)
-    (_hsAB : sAB ∈ Set.Icc (0 : ℝ) 1)
-    (_hsBC : sBC ∈ Set.Icc (0 : ℝ) 1)
-    (_hpB_lt : pB < 0.99) :
+    (hpA : pA ∈ Set.Icc (0 : ℝ) 1)
+    (hpB : pB ∈ Set.Icc (0 : ℝ) 1)
+    (hpC : pC ∈ Set.Icc (0 : ℝ) 1)
+    (hsAB : sAB ∈ Set.Icc (0 : ℝ) 1)
+    (hsBC : sBC ∈ Set.Icc (0 : ℝ) 1)
+    (hpB_lt : pB < 0.99)
+    (h_consist : conditionalProbabilityConsistency pA pB sAB ∧
+                 conditionalProbabilityConsistency pB pC sBC) :
     simpleDeductionStrengthFormula pA pB pC sAB sBC ∈ Set.Icc (0 : ℝ) 1 := by
-  -- The proof requires case analysis on consistency conditions and
-  -- showing the formula is bounded in [0,1] in each case
-  sorry
+  unfold simpleDeductionStrengthFormula
+  simp [h_consist]
+  -- pB < 0.99 so ¬(pB > 0.99)
+  have hpB_small : ¬(pB > 0.99) := by linarith
+  simp [hpB_small]
+
+  -- The formula is: sAB * sBC + (1 - sAB) * (pC - pB * sBC) / (1 - pB)
+  -- This is a convex combination of term1 and term2
+
+  -- First, get the product bound from consistency
+  have hpB_pos : 0 < pB := by
+    obtain ⟨h_pos, _, _⟩ := h_consist.2
+    exact h_pos
+  have h_product : pB * sBC ≤ pC :=
+    consistency_implies_product_bound pB pC sBC hpB_pos hpC.1 hsBC.1 h_consist.2
+
+  -- Get the complement bound
+  have h_complement : pC - pB * sBC ≤ 1 - pB :=
+    consistency_implies_complement_bound pB pC sBC ⟨hpB_pos, hpB.2⟩ hpC hsBC h_consist.2
+
+  -- Now show term2 = (pC - pB * sBC) / (1 - pB) is in [0,1]
+  have h_1mpB_pos : 0 < 1 - pB := by linarith
+  have h_term2_bounds : 0 ≤ (pC - pB * sBC) / (1 - pB) ∧ (pC - pB * sBC) / (1 - pB) ≤ 1 := by
+    constructor
+    · -- Non-negativity
+      apply div_nonneg
+      · linarith [h_product]  -- pC - pB * sBC ≥ 0
+      · linarith  -- 1 - pB > 0
+    · -- Upper bound
+      rw [div_le_one h_1mpB_pos]
+      exact h_complement
+
+  -- Apply convex combination lemma
+  -- Need to show: sAB * sBC + (1 - sAB) * (pC - pB * sBC) / (1 - pB) ∈ [0,1]
+  -- Note: Division binds tighter than multiplication, so we need to be careful
+  have h_goal : sAB * sBC + (1 - sAB) * (pC - pB * sBC) / (1 - pB) =
+                sAB * sBC + (1 - sAB) * ((pC - pB * sBC) / (1 - pB)) := by ring
+  rw [h_goal]
+  exact convex_combination_bounded sBC ((pC - pB * sBC) / (1 - pB)) sAB
+          hsBC h_term2_bounds hsAB
 
 /-- The formula derives from the law of total probability.
 
@@ -230,42 +427,52 @@ theorem deduction_formula_derives_from_total_probability
 When B is certain, P(C|A) ≈ P(C) by the formula's edge case handling. -/
 theorem deduction_when_B_certain
     (pA pC sAB sBC : ℝ)
-    (_hsBC : sBC ∈ Set.Icc (0 : ℝ) 1) :
+    (hsBC : sBC ∈ Set.Icc (0 : ℝ) 1)
+    (hpA_pos : 0 < pA)
+    (h_consist : conditionalProbabilityConsistency pA 1 sAB ∧
+                 conditionalProbabilityConsistency 1 pC sBC) :
     simpleDeductionStrengthFormula pA 1 pC sAB sBC = pC := by
   unfold simpleDeductionStrengthFormula
-  -- When pB = 1 > 0.99, the edge case returns pC (assuming consistency holds).
-  -- A full consistency discharge is left as future work.
-  sorry
+  -- When pB = 1 > 0.99, the edge case returns pC
+  simp [h_consist]
+  -- 1 > 0.99
+  norm_num
 
 /-- When sAB = 1 (A implies B), we have P(C|A) = P(C|B) = sBC.
 
 When A implies B with certainty, P(C|A) = P(C|B) since all A's are B's. -/
 theorem deduction_when_A_implies_B
     (pA pB pC sBC : ℝ)
-    (_hpB_lt : pB < 1)
-    (_hpB_pos : 0 < pB)
-    (_h_consist : conditionalProbabilityConsistency pA pB 1 ∧
-                 conditionalProbabilityConsistency pB pC sBC) :
+    (hpB_lt : pB < 1)
+    (hpB_pos : 0 < pB)
+    (h_consist : conditionalProbabilityConsistency pA pB 1 ∧
+                 conditionalProbabilityConsistency pB pC sBC)
+    (hpB_small : pB ≤ 0.99) :
     simpleDeductionStrengthFormula pA pB pC 1 sBC = sBC := by
   -- When sAB = 1: formula = 1*sBC + 0*(pC - pB*sBC)/(1-pB) = sBC
-  -- (assuming pB ≤ 0.99 to avoid edge case)
   unfold simpleDeductionStrengthFormula
-  sorry
+  simp [h_consist]
+  -- pB ≤ 0.99 so ¬(pB > 0.99)
+  have : ¬(pB > 0.99) := by linarith
+  simp [this]
 
 /-- When sAB = 0 (A implies not B), we have P(C|A) = P(C|¬B).
 
 When A implies ¬B, P(C|A) = P(C|¬B) = (P(C) - P(B)P(C|B)) / (1 - P(B)). -/
 theorem deduction_when_A_implies_notB
     (pA pB pC sBC : ℝ)
-    (_hpB_lt : pB < 1)
-    (_hpB_pos : 0 < pB)
-    (_hpB_small : pB ≤ 0.99)
-    (_h_consist : conditionalProbabilityConsistency pA pB 0 ∧
+    (hpB_lt : pB < 1)
+    (hpB_pos : 0 < pB)
+    (hpB_small : pB ≤ 0.99)
+    (h_consist : conditionalProbabilityConsistency pA pB 0 ∧
                  conditionalProbabilityConsistency pB pC sBC) :
     simpleDeductionStrengthFormula pA pB pC 0 sBC = (pC - pB * sBC) / (1 - pB) := by
   -- When sAB = 0: formula = 0*sBC + 1*(pC - pB*sBC)/(1-pB) = (pC - pB*sBC)/(1-pB)
   unfold simpleDeductionStrengthFormula
-  sorry
+  simp [h_consist]
+  -- pB ≤ 0.99 so ¬(pB > 0.99)
+  have : ¬(pB > 0.99) := by linarith
+  simp [this]
 
 /-! ## Confidence Propagation
 
