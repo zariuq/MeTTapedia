@@ -44,8 +44,16 @@ structure SumoEthicsSig (World : Type u) : Type (u + 1) where
   hasAttribute : Agent → VirtueAttribute → Formula World
   desires : Agent → Formula World → Formula World
   prefers : Agent → Formula World → Formula World → Formula World
+  interferesWith : Agent → Formula World → Formula World
   holdsObligation : Formula World → Agent → Formula World
   holdsEthicalPhilosophy : Agent → EthicalPhilosophy → Formula World
+  /--
+  A “practice / guidance” state: the philosophy has action-guiding force for the agent.
+
+  In SUMO this role is played indirectly via `influences` (often only `Likely`) on decision events;
+  here we keep it abstract and typed.
+  -/
+  practicesEthicalPhilosophy : Agent → EthicalPhilosophy → Formula World
   realizesFormula : Process → Formula World → Formula World
   capableInSituation : ProcessClass → Agent → Situation → Formula World
   holdsValue : Agent → Value → Formula World
@@ -57,6 +65,12 @@ structure SumoEthicsSig (World : Type u) : Type (u + 1) where
 def SumoEthicsSig.virtueDesireFormula {World : Type u} (sig : SumoEthicsSig World)
     (v : sig.VirtueAttribute) (φ : Formula World) : Formula World :=
   fun w => ∀ a : sig.Agent, sig.hasAttribute a v w → sig.desires a φ w
+
+def SumoEthicsSig.claimRightTo {World : Type u} (sig : SumoEthicsSig World)
+    (holder : sig.Agent) (P : sig.Agent → Formula World) : Formula World :=
+  fun w =>
+    ∀ other : sig.Agent,
+      sig.holdsObligation (fun w' => ¬ sig.interferesWith other (P holder) w') other w
 
 def SumoEthicsSig.inSituation {World : Type u} (sig : SumoEthicsSig World)
     (p : sig.Process) (s : sig.Situation) : Formula World :=
@@ -80,6 +94,20 @@ def SumoEthicsSig.obligatedToHoldPhilosophy {World : Type u} (sig : SumoEthicsSi
     (a : sig.Agent) (p : sig.EthicalPhilosophy) : Formula World :=
   sig.holdsObligation (sig.holdsEthicalPhilosophy a p) a
 
+def SumoEthicsSig.desiresToPracticeEthicalPhilosophy {World : Type u} (sig : SumoEthicsSig World)
+    (a : sig.Agent) (p : sig.EthicalPhilosophy) : Formula World :=
+  sig.desires a (sig.practicesEthicalPhilosophy a p)
+
+def SumoEthicsSig.aspirationallyHoldsEthicalPhilosophy {World : Type u} (sig : SumoEthicsSig World)
+    (a : sig.Agent) (p : sig.EthicalPhilosophy) : Formula World :=
+  fun w =>
+    sig.holdsEthicalPhilosophy a p w ∧
+      sig.desiresToPracticeEthicalPhilosophy a p w
+
+def SumoEthicsSig.authenticallyHoldsEthicalPhilosophy {World : Type u} (sig : SumoEthicsSig World)
+    (a : sig.Agent) (p : sig.EthicalPhilosophy) : Formula World :=
+  fun w => sig.holdsEthicalPhilosophy a p w ∧ sig.practicesEthicalPhilosophy a p w
+
 def SumoEthicsSig.agentDoesProcessOfClass {World : Type u} (sig : SumoEthicsSig World)
     (a : sig.Agent) (c : sig.ProcessClass) : Formula World :=
   fun w => ∃ pr : sig.Process, sig.hasAgent pr a w ∧ sig.isProcessInstance pr c w
@@ -88,5 +116,22 @@ def SumoEthicsSig.agentDoesProcessOfClassInSituation {World : Type u} (sig : Sum
     (a : sig.Agent) (c : sig.ProcessClass) (s : sig.Situation) : Formula World :=
   fun w =>
     ∃ pr : sig.Process, sig.hasAgent pr a w ∧ sig.isProcessInstance pr c w ∧ sig.situationFn pr = s
+
+/-! ## Optional “moral psychology” bridge schemata (keep assumptions explicit) -/
+
+/-- A modal operator on formulas (e.g. identity, “likely”, “normally”, etc.). -/
+abbrev Modality (World : Type u) : Type u :=
+  Formula World → Formula World
+
+def SumoEthicsSig.holdingImpliesDesiresToPractice {World : Type u} (sig : SumoEthicsSig World) : Formula World :=
+  fun w =>
+    ∀ (a : sig.Agent) (p : sig.EthicalPhilosophy),
+      sig.holdsEthicalPhilosophy a p w → sig.desiresToPracticeEthicalPhilosophy a p w
+
+def SumoEthicsSig.holdingImpliesModalityDesiresToPractice {World : Type u} (sig : SumoEthicsSig World)
+    (M : Modality World) : Formula World :=
+  fun w =>
+    ∀ (a : sig.Agent) (p : sig.EthicalPhilosophy),
+      sig.holdsEthicalPhilosophy a p w → M (sig.desiresToPracticeEthicalPhilosophy a p) w
 
 end Foet

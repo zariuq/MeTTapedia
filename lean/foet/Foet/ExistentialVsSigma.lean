@@ -64,8 +64,10 @@ def sig : SumoEthicsSig World :=
     hasAttribute := fun _ _ => fun _ => True
     desires := fun _ φ => φ
     prefers := fun _ _ _ => fun _ => True
+    interferesWith := fun _ _ => fun _ => False
     holdsObligation := fun _ _ => fun _ => True
     holdsEthicalPhilosophy := fun _ _ => fun _ => True
+    practicesEthicalPhilosophy := fun _ _ => fun _ => True
     realizesFormula := fun _ _ => fun _ => True
     capableInSituation := fun _ _ _ => fun _ => True
     holdsValue := fun _ _ => fun _ => True

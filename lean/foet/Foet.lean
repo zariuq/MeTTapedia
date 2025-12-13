@@ -21,3 +21,4 @@ import Foet.MoralParadigmEquivalence
 import Foet.UtilitarianInDeontology
 import Foet.KifKillingStayingStill
 import Foet.ExistentialVsSigma
+import Foet.GewirthPGC

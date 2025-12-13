@@ -101,6 +101,7 @@ lemma ramsey_two_right {m : ℕ} (hm : 2 ≤ m) : ramseyNumber m 2 = m := by
 
 /-! ## Helper Lemmas -/
 
+omit [Fintype V] [DecidableEq V] in
 lemma triangleFree_iff_cliqueFree_three {G : SimpleGraph V} :
     TriangleFree G ↔ G.CliqueFree 3 := by rfl
 
@@ -167,11 +168,11 @@ lemma pigeonhole_four_one_large {a b c d : ℕ}
 /-- Three elements from a 3-element set: either two collide or all three are distinct.
     This is the fundamental dichotomy for pigeonhole in small sets. -/
 lemma three_from_three_dichotomy {α : Type*} [DecidableEq α]
-    {x y z : α} (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
+    {x y z : α} (_hxy : x ≠ y) (_hxz : x ≠ z) (_hyz : y ≠ z)
     {a b c : α}
-    (ha : a ∈ ({x, y, z} : Finset α))
-    (hb : b ∈ ({x, y, z} : Finset α))
-    (hc : c ∈ ({x, y, z} : Finset α)) :
+    (_ha : a ∈ ({x, y, z} : Finset α))
+    (_hb : b ∈ ({x, y, z} : Finset α))
+    (_hc : c ∈ ({x, y, z} : Finset α)) :
     (a = b ∨ a = c ∨ b = c) ∨ (a ≠ b ∧ a ≠ c ∧ b ≠ c) := by
   by_cases hab : a = b
   · left; left; exact hab
@@ -193,11 +194,11 @@ lemma three_distinct_is_perm {α : Type*} [DecidableEq α]
   simp only [Finset.mem_insert, Finset.mem_singleton] at ha hb hc
   -- {a,b,c} ⊆ {x,y,z} and both have 3 distinct elements
   have h_card_abc : ({a, b, c} : Finset α).card = 3 := by
-    rw [Finset.card_insert_of_not_mem, Finset.card_insert_of_not_mem, Finset.card_singleton]
+    rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
     · simp [hbc]
     · simp [hab, hac]
   have h_card_xyz : ({x, y, z} : Finset α).card = 3 := by
-    rw [Finset.card_insert_of_not_mem, Finset.card_insert_of_not_mem, Finset.card_singleton]
+    rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
     · simp [hyz]
     · simp [hxy, hxz]
   -- {a,b,c} ⊆ {x,y,z}
@@ -262,7 +263,7 @@ lemma degree_eq_from_bounds_and_bipartite_total {V : Type*} [DecidableEq V]
 /-- Two 2-element subsets of a 4-element set that share exactly 1 element
     have intersection of size 1. -/
 lemma two_element_sets_intersection {α : Type*} [DecidableEq α]
-    (A B : Finset α) (hA : A.card = 2) (hB : B.card = 2)
+    (A B : Finset α) (hA : A.card = 2) (_hB : B.card = 2)
     (h_share : (A ∩ B).Nonempty) (h_diff : (A \ B).Nonempty) :
     (A ∩ B).card = 1 := by
   -- A has 2 elements, A ∩ B is nonempty, A \ B is nonempty
@@ -287,6 +288,7 @@ lemma two_element_sets_intersection {α : Type*} [DecidableEq α]
     exact Finset.card_union_of_disjoint h_disjoint
   omega
 
+omit [DecidableEq V] in
 /-- If a graph G has >= n vertices, and all graphs on n vertices have the Ramsey property (k, l),
     then G also has the Ramsey property (k, l). -/
 theorem hasRamseyProperty_of_card_ge {k l n : ℕ} (G : SimpleGraph V) [DecidableRel G.Adj]
@@ -328,6 +330,7 @@ theorem hasRamseyProperty_of_card_ge {k l n : ℕ} (G : SimpleGraph V) [Decidabl
       exact h_indep
     · exact hs.2
 
+omit [DecidableEq V] in
 theorem ramsey_three_five_large (G : SimpleGraph V) [DecidableRel G.Adj]
     (hV : Fintype.card V ≥ 14) (h_tri : TriangleFree G) :
     ∃ s : Finset V, G.IsNIndepSet 5 s := by
@@ -340,6 +343,7 @@ theorem ramsey_three_five_large (G : SimpleGraph V) [DecidableRel G.Adj]
     exact h_tri s hs
   · exact ⟨s, hs⟩
 
+omit [DecidableEq V] in
 theorem ramsey_three_four_large (G : SimpleGraph V) [DecidableRel G.Adj]
     (hV : Fintype.card V ≥ 9) (h_tri : TriangleFree G) :
     ∃ s : Finset V, G.IsNIndepSet 4 s := by
@@ -1193,7 +1197,7 @@ lemma commonNeighborsCard_pos
   have hw_no_neighbors_in_N : ∀ n ∈ N, ¬G.Adj w n := by
     intro n hn
     unfold _root_.commonNeighbors at h_empty
-    rw [Finset.eq_empty_iff_forall_not_mem] at h_empty
+    rw [Finset.eq_empty_iff_forall_notMem] at h_empty
     intro h_adj
     have hmem : n ∈ G.neighborFinset v ∩ G.neighborFinset w := by
       rw [Finset.mem_inter]
@@ -1206,7 +1210,7 @@ lemma commonNeighborsCard_pos
   -- Build 6-independent set: N ∪ {w}
   let I := insert w N
   have hI_card : I.card = 6 := by
-    rw [Finset.card_insert_of_not_mem, hN_card]
+    rw [Finset.card_insert_of_notMem, hN_card]
     intro h_in_N
     rw [mem_neighborFinset] at h_in_N
     exact hw_nonadj h_in_N
@@ -1629,7 +1633,7 @@ lemma claim2_neighbor_structure {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       -- Count: neighbors(n) = {v} ∪ (M ∩ neighbors(n))
       have h_partition : G.neighborFinset n = insert v ((M.filter (fun w => G.Adj n w)).image id) := by
         ext w
-        simp only [mem_neighborFinset, mem_insert, mem_image, mem_filter, id_eq, exists_prop, exists_eq_right]
+        simp only [mem_neighborFinset, mem_insert, mem_image, mem_filter, id_eq, exists_eq_right]
         constructor
         · intro hw_adj
           by_cases hw_eq_v : w = v
@@ -1652,7 +1656,7 @@ lemma claim2_neighbor_structure {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       rw [h_partition, card_insert_of_notMem, card_image_of_injective] at h_deg_n
       · omega
       · intros x y; simp only [id_eq, imp_self]
-      · simp only [mem_image, mem_filter, id_eq, exists_prop, exists_eq_right, not_and]
+      · simp only [mem_image, mem_filter, id_eq, exists_eq_right, not_and]
         intro h_v_in_M _
         simp only [M, mem_sdiff, mem_insert, mem_univ, true_and] at h_v_in_M
         simp at h_v_in_M
@@ -1752,9 +1756,9 @@ The set P of 4 vertices (each with exactly 1 common neighbor with v) forms a 4-c
 
 /-- Key helper: for vertices in P, their unique common neighbor with v is one of v's neighbors -/
 lemma P_partner_in_N {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
-    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G)
+    (_h_reg : IsKRegular G 5) (_h_tri : TriangleFree G)
     (v : Fin 18) (p : Fin 18)
-    (hp_nonadj : ¬G.Adj v p)
+    (_hp_nonadj : ¬G.Adj v p)
     (hp_common1 : commonNeighborsCard G v p = 1) :
     ∃! s, s ∈ G.neighborFinset v ∧ G.Adj s p := by
   -- commonNeighborsCard = 1 means exactly one common neighbor
@@ -2507,11 +2511,11 @@ lemma t_has_four_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
     (v t : Fin 18) (ht_adj_v : G.Adj v t)
     (Q : Finset (Fin 18))
-    (hQ_card : Q.card = 8)
+    (_hQ_card : Q.card = 8)
     (hv_notin_Q : v ∉ Q)
     (hQ_complete : ∀ x, ¬G.Adj v x → x ≠ v → commonNeighborsCard G v x = 2 → x ∈ Q)
     (P : Finset (Fin 18))
-    (hP_card : P.card = 4)
+    (_hP_card : P.card = 4)
     (hP_def : ∀ p ∈ P, ¬G.Adj v p ∧ commonNeighborsCard G v p = 1)
     (ht_nonadj_P : ∀ p ∈ P, ¬G.Adj t p)
     (hPQ_partition : ∀ x, x ≠ v → ¬G.Adj v x →
@@ -2595,11 +2599,11 @@ lemma t_has_four_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 Proof sketch: ti has commonNeighborsCard(v, ti) = 2. One common neighbor is t.
 The other must be some sj ∈ N(v) \ {t}. -/
 lemma T_vertex_has_one_S_neighbor {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
-    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G)
+    (_h_reg : IsKRegular G 5) (_h_tri : TriangleFree G)
     (v t ti : Fin 18)
     (ht_adj_v : G.Adj v t) (hti_adj_t : G.Adj t ti)
     (hti_common2 : commonNeighborsCard G v ti = 2)
-    (S : Finset (Fin 18)) (hS_card : S.card = 4)
+    (S : Finset (Fin 18)) (_hS_card : S.card = 4)
     (hS_eq : S = (G.neighborFinset v).erase t) :
     (S.filter (G.Adj ti)).card = 1 := by
   -- ti's 2 common neighbors with v are: t and exactly one s ∈ S
@@ -2633,11 +2637,11 @@ lemma T_vertex_has_one_S_neighbor {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj
 Proof sketch: wi has commonNeighborsCard(v, wi) = 2. wi is not adjacent to t (by def of W).
 So wi's 2 common neighbors with v are both from S = N(v) \ {t}. -/
 lemma W_vertex_has_two_S_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
-    (h_tri : TriangleFree G)
+    (_h_tri : TriangleFree G)
     (v t wi : Fin 18)
     (ht_adj_v : G.Adj v t) (hwi_nonadj_t : ¬G.Adj t wi)
     (hwi_common2 : commonNeighborsCard G v wi = 2)
-    (S : Finset (Fin 18)) (hS_card : S.card = 4)
+    (S : Finset (Fin 18)) (_hS_card : S.card = 4)
     (hS_eq : S = (G.neighborFinset v).erase t) :
     (S.filter (G.Adj wi)).card = 2 := by
   -- wi's 2 common neighbors with v are both in S (since wi is not adjacent to t)
@@ -2796,7 +2800,7 @@ lemma cycle_vertex_has_two_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.
         -- For a4: need a4 ≠ a1 (use hne14.symm) and G.Adj a1 a4 (use G.adj_symm hadj41)
         · subst hx4; exact ⟨Or.inr (Or.inr (Or.inr rfl)), hne14.symm, G.adj_symm hadj41⟩
     rw [h_filter_eq]
-    simp [Finset.card_insert_of_not_mem, hne24]
+    simp [hne24]
   -- Case p = a2: neighbors are a1 and a3
   · have h_filter_eq : ({a1, a2, a3, a4} : Finset (Fin 18)).filter (fun q => q ≠ a2 ∧ G.Adj a2 q) = {a1, a3} := by
       ext x
@@ -2815,7 +2819,7 @@ lemma cycle_vertex_has_two_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.
         -- For a3: need a3 ≠ a2 (use hne23.symm) and G.Adj a2 a3 (use hadj23)
         · subst hx3; exact ⟨Or.inr (Or.inr (Or.inl rfl)), hne23.symm, hadj23⟩
     rw [h_filter_eq]
-    simp [Finset.card_insert_of_not_mem, hne13]
+    simp [hne13]
   -- Case p = a3: neighbors are a2 and a4
   · have h_filter_eq : ({a1, a2, a3, a4} : Finset (Fin 18)).filter (fun q => q ≠ a3 ∧ G.Adj a3 q) = {a2, a4} := by
       ext x
@@ -2834,7 +2838,7 @@ lemma cycle_vertex_has_two_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.
         -- For a4: need a4 ≠ a3 (use hne34.symm) and G.Adj a3 a4 (use hadj34)
         · subst hx4; exact ⟨Or.inr (Or.inr (Or.inr rfl)), hne34.symm, hadj34⟩
     rw [h_filter_eq]
-    simp [Finset.card_insert_of_not_mem, hne24]
+    simp [hne24]
   -- Case p = a4: neighbors are a1 and a3
   · have h_filter_eq : ({a1, a2, a3, a4} : Finset (Fin 18)).filter (fun q => q ≠ a4 ∧ G.Adj a4 q) = {a1, a3} := by
       ext x
@@ -2853,7 +2857,7 @@ lemma cycle_vertex_has_two_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.
         -- For a3: need a3 ≠ a4 (use hne34) and G.Adj a4 a3 (use G.adj_symm hadj34)
         · subst hx3; exact ⟨Or.inr (Or.inr (Or.inl rfl)), hne34, G.adj_symm hadj34⟩
     rw [h_filter_eq]
-    simp [Finset.card_insert_of_not_mem, hne13]
+    simp [hne13]
 
 /-! ### Helper lemmas for the 4-cycle structure -/
 
@@ -2878,7 +2882,7 @@ lemma s_has_three_Q_neighbors {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 /-- P and Q partition the non-neighbors of v (completeness).
 Any non-neighbor x of v with commonNeighborsCard = 1 is in P, and with = 2 is in Q. -/
 lemma PQ_partition_completeness {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
-    (h_reg : IsKRegular G 5) (h_tri : TriangleFree G) (h_no6 : NoKIndepSet 6 G)
+    (h_reg : IsKRegular G 5) (_h_tri : TriangleFree G) (_h_no6 : NoKIndepSet 6 G)
     (v : Fin 18)
     (P Q : Finset (Fin 18))
     (hP_card : P.card = 4) (hQ_card : Q.card = 8)
@@ -3264,8 +3268,8 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 refine Finset.sum_congr rfl ?_
                 intro p hp
                 exact hP_N_card p hp
-        _ = P.card := by simp [Finset.sum_const]
-        _ = 4 := by simpa [hP_card]
+          _ = P.card := by simp [Finset.sum_const]
+          _ = 4 := by simp [hP_card]
     -- rewrite h_sym using h_left
     calc
       ∑ s ∈ N, (P.filter (G.Adj s)).card
@@ -3289,8 +3293,8 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 refine Finset.sum_congr rfl ?_
                 intro t htN
                 exact h_all_one t htN
-        _ = N.card := by simp [Finset.sum_const]
-        _ = 5 := by simpa [hN_card]
+          _ = N.card := by simp [Finset.sum_const]
+          _ = 5 := by simp [hN_card]
     have : (4 : ℕ) = 5 := by
       -- Compare with hNP_edges = 4
       exact hNP_edges.symm.trans h_sum_eq
@@ -3305,7 +3309,9 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     intro ht_adj_p
     have hmem : p ∈ P.filter (G.Adj t) := Finset.mem_filter.mpr ⟨hp, ht_adj_p⟩
     have hempty : P.filter (G.Adj t) = ∅ := Finset.card_eq_zero.mp htP0
-    simpa [hempty] using hmem
+    have hmem0 := hmem
+    rw [hempty] at hmem0
+    exact Finset.notMem_empty p hmem0
 
   let S : Finset (Fin 18) := N.erase t
   have hS_card : S.card = 4 := by
@@ -3411,8 +3417,8 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 refine Finset.sum_congr rfl ?_
                 intro p hp
                 exact hP_S_card p hp
-        _ = P.card := by simp [Finset.sum_const]
-        _ = 4 := by simpa [hP_card]
+          _ = P.card := by simp [Finset.sum_const]
+          _ = 4 := by simp [hP_card]
     simpa [hS_card] using h_sum
 
   -- Each s ∈ S has exactly one P-neighbor.
@@ -3478,8 +3484,8 @@ lemma P_is_two_regular {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                 refine Finset.sum_congr rfl ?_
                 intro ti hti
                 exact hT_S_card ti hti
-        _ = T.card := by simp [Finset.sum_const]
-        _ = 4 := by simpa [hT_card]
+          _ = T.card := by simp [Finset.sum_const]
+          _ = 4 := by simp [hT_card]
     calc
       ∑ s ∈ S, (T.filter (G.Adj s)).card
           = ∑ ti ∈ T, (S.filter (G.Adj ti)).card := by
@@ -5662,22 +5668,26 @@ lemma two_regular_four_vertices_is_cycle
   have hP1_card : P1.card = 2 := by simp [P1, hp2P0, hP0_card]
   have hp4P1 : p4 ∈ P1 := by
     have hp4P0 : p4 ∈ P0 := by simpa [P0, Finset.mem_erase, hp4ne1] using hp4P
-    simpa [P1, Finset.mem_erase, hp2ne4.symm] using hp4P0
+    simp [P1, hp4P0, hp2ne4.symm]
   have hP2_card : P2.card = 1 := by simp [P2, hp4P1, hP1_card]
   obtain ⟨p3, hP2_eq⟩ := Finset.card_eq_one.mp hP2_card
-  have hp3P2 : p3 ∈ P2 := by simpa [hP2_eq]
+  have hp3P2 : p3 ∈ P2 := by
+    rw [hP2_eq]
+    simp
   have hp3P1 : p3 ∈ P1 := Finset.mem_of_subset (Finset.erase_subset _ _) hp3P2
   have hp3P0 : p3 ∈ P0 := Finset.mem_of_subset (Finset.erase_subset _ _) hp3P1
   have hp3P : p3 ∈ P := Finset.mem_of_subset (Finset.erase_subset _ _) hp3P0
   have hp3ne4 : p3 ≠ p4 := (Finset.mem_erase.mp (by simpa [P2] using hp3P2)).1
   have hp3ne2 : p3 ≠ p2 := (Finset.mem_erase.mp (by simpa [P1] using hp3P1)).1
   have hp3ne1 : p3 ≠ p1 := (Finset.mem_erase.mp (by simpa [P0] using hp3P0)).1
-
+  
   -- p3 is not adjacent to p1, otherwise it would be in N1
   have h_not_adj_13 : ¬adj p1 p3 := by
     intro h
-    have : p3 ∈ N1 := Finset.mem_filter.mpr ⟨hp3P, hp3ne1, h⟩
-    have : p3 ∈ ({p2, p4} : Finset α) := by simpa [hN1_eq] using this
+    have hmem : p3 ∈ N1 := Finset.mem_filter.mpr ⟨hp3P, hp3ne1, h⟩
+    have : p3 ∈ ({p2, p4} : Finset α) := by
+      rw [hN1_eq] at hmem
+      exact hmem
     rcases Finset.mem_insert.mp this with h' | h'
     · exact hp3ne2 h'
     · simp only [Finset.mem_singleton] at h'; exact hp3ne4 h'
