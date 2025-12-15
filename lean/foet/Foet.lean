@@ -22,3 +22,5 @@ import Foet.UtilitarianInDeontology
 import Foet.KifKillingStayingStill
 import Foet.ExistentialVsSigma
 import Foet.GewirthPGC
+import Foet.AfpGewirth.GewirthArgument
+import Foet.AfpGewirth.OntologyBridge
