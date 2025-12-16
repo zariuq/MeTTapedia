@@ -12044,13 +12044,1302 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
 
     exact (h_no6 _ h6IS).elim
 
-  -- Remaining combinatorial constraints (Cariolaro’s final step) to derive 3 common neighbors
-  -- for a suitable pair are not yet formalized.
-  -- TODO: Use `t1` and `w1` to build the final 3-common-neighbors contradiction.
-  --
-  -- Current state: all counting/matching infrastructure is in place.
-  -- The last step should conclude by contradicting `commonNeighborsCard_le_two`.
-  sorry
+  -- Finish Cariolaro's final step.
+  classical
+
+  -- First, upgrade the partial `N(v)` labeling: show `s1,s2,s3,s4` are pairwise distinct and
+  -- hence `S0 = {s1,s2,s3,s4}`.
+  have hN_indep : G.IsIndepSet (G.neighborSet v) :=
+    neighborSet_indep_of_triangleFree h_tri v
+
+  -- Helper: if two `p`'s share the same `s`-partner, we get a triangle or a 6-independent-set.
+  have distinct_helper : ∀ (pa pb s : Fin 18),
+      pa ≠ pb →
+      ¬G.Adj v pa → ¬G.Adj v pb →
+      s ∈ N → G.Adj s pa → G.Adj s pb →
+      (∀ x, x ∈ N → x ≠ s → ¬G.Adj x pa) →
+      (∀ x, x ∈ N → x ≠ s → ¬G.Adj x pb) →
+      False := by
+    intro pa pb s hne hpa_nonadj hpb_nonadj hs_in hs_pa hs_pb hunique_pa hunique_pb
+    by_cases hadj : G.Adj pa pb
+    · -- Case 1: pa-pb adjacent → {s, pa, pb} is a triangle
+      have h_clique : G.IsNClique 3 {s, pa, pb} := by
+        rw [isNClique_iff]
+        constructor
+        · intro x hx y hy hxy
+          simp only [mem_coe, mem_insert, mem_singleton] at hx hy
+          obtain (rfl | rfl | rfl) := hx <;> obtain (rfl | rfl | rfl) := hy
+          all_goals
+            first
+            | exact absurd rfl hxy
+            | exact hs_pa
+            | exact hs_pb
+            | exact G.symm hs_pa
+            | exact G.symm hs_pb
+            | exact hadj
+            | exact G.symm hadj
+        · have h1 : s ≠ pa := G.ne_of_adj hs_pa
+          have h2 : s ≠ pb := G.ne_of_adj hs_pb
+          rw [card_insert_of_notMem, card_insert_of_notMem, card_singleton]
+          · simp only [mem_singleton]; exact hne
+          · simp only [mem_insert, mem_singleton, not_or]; exact ⟨h1, h2⟩
+      exact h_tri {s, pa, pb} h_clique
+    · -- Case 2: pa-pb not adjacent → {pa, pb} ∪ (N \ {s}) is a 6-IS
+      let N' := N.erase s
+      have hN'_card : N'.card = 4 := by rw [card_erase_of_mem hs_in, hN_card]
+      let I := insert pa (insert pb N')
+      have hI_card : I.card = 6 := by
+        have h_pa_notin : pa ∉ insert pb N' := by
+          simp only [mem_insert, not_or]
+          refine ⟨hne, ?_⟩
+          intro h
+          have hpa_in_N := mem_of_mem_erase h
+          rw [mem_neighborFinset] at hpa_in_N
+          exact hpa_nonadj hpa_in_N
+        have h_pb_notin_N' : pb ∉ N' := by
+          intro h
+          have hpb_in_N := mem_of_mem_erase h
+          rw [mem_neighborFinset] at hpb_in_N
+          exact hpb_nonadj hpb_in_N
+        rw [card_insert_of_notMem h_pa_notin, card_insert_of_notMem h_pb_notin_N', hN'_card]
+      have hI_indep : G.IsIndepSet I := by
+        intro x hx y hy hxy h_edge
+        simp only [I, mem_coe, mem_insert] at hx hy
+        have h_N'_to_N : ∀ z, z ∈ N' → z ∈ N := fun z hz => mem_of_mem_erase hz
+        rcases hx with rfl | rfl | hx_N' <;> rcases hy with rfl | rfl | hy_N'
+        · exact hxy rfl
+        · exact hadj h_edge
+        · -- pa adj to y ∈ N', y ≠ s
+          have hy_ne_s : y ≠ s := (mem_erase.mp hy_N').1
+          exact hunique_pa y (h_N'_to_N y hy_N') hy_ne_s (G.symm h_edge)
+        · exact hadj (G.symm h_edge)
+        · exact hxy rfl
+        · have hy_ne_s : y ≠ s := (mem_erase.mp hy_N').1
+          exact hunique_pb y (h_N'_to_N y hy_N') hy_ne_s (G.symm h_edge)
+        · have hx_ne_s : x ≠ s := (mem_erase.mp hx_N').1
+          exact hunique_pa x (h_N'_to_N x hx_N') hx_ne_s h_edge
+        · have hx_ne_s : x ≠ s := (mem_erase.mp hx_N').1
+          exact hunique_pb x (h_N'_to_N x hx_N') hx_ne_s h_edge
+        · -- Both in N', use N indep
+          have hx_in_N : x ∈ N := h_N'_to_N x hx_N'
+          have hy_in_N : y ∈ N := h_N'_to_N y hy_N'
+          rw [mem_neighborFinset] at hx_in_N hy_in_N
+          exact hN_indep hx_in_N hy_in_N hxy h_edge
+      exact h_no6 I ⟨hI_indep, hI_card⟩
+  have h1_unique : ∀ x, x ∈ N → x ≠ s1 → ¬G.Adj x p1 := by
+    intro x hx hne hxadj
+    have h_and : x ∈ G.neighborFinset v ∧ G.Adj x p1 := ⟨hx, hxadj⟩
+    exact hne (hs1_unique x h_and)
+  have h2_unique : ∀ x, x ∈ N → x ≠ s2 → ¬G.Adj x p2 := by
+    intro x hx hne hxadj
+    have h_and : x ∈ G.neighborFinset v ∧ G.Adj x p2 := ⟨hx, hxadj⟩
+    exact hne (hs2_unique x h_and)
+  have h3_unique : ∀ x, x ∈ N → x ≠ s3 → ¬G.Adj x p3 := by
+    intro x hx hne hxadj
+    have h_and : x ∈ G.neighborFinset v ∧ G.Adj x p3 := ⟨hx, hxadj⟩
+    exact hne (hs3_unique x h_and)
+  have h4_unique : ∀ x, x ∈ N → x ≠ s4 → ¬G.Adj x p4 := by
+    intro x hx hne hxadj
+    have h_and : x ∈ G.neighborFinset v ∧ G.Adj x p4 := ⟨hx, hxadj⟩
+    exact hne (hs4_unique x h_and)
+
+  have hs_distinct :
+      s1 ≠ s2 ∧ s1 ≠ s3 ∧ s1 ≠ s4 ∧ s2 ≠ s3 ∧ s2 ≠ s4 ∧ s3 ≠ s4 := by
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩ <;> (intro h_eq; subst h_eq)
+    · exact distinct_helper p1 p2 s1 hp_ne12 hp1_nonadj_v hp2_nonadj_v hs1_in_N hs1_adj_p1 hs2_adj_p2
+        h1_unique h2_unique
+    · exact distinct_helper p1 p3 s1 hp_ne13 hp1_nonadj_v hp3_nonadj_v hs1_in_N hs1_adj_p1 hs3_adj_p3
+        h1_unique h3_unique
+    · exact distinct_helper p1 p4 s1 hp_ne14 hp1_nonadj_v hp4_nonadj_v hs1_in_N hs1_adj_p1 hs4_adj_p4
+        h1_unique h4_unique
+    · exact distinct_helper p2 p3 s2 hp_ne23 hp2_nonadj_v hp3_nonadj_v hs2_in_N hs2_adj_p2 hs3_adj_p3
+        h2_unique h3_unique
+    · exact distinct_helper p2 p4 s2 hp_ne24 hp2_nonadj_v hp4_nonadj_v hs2_in_N hs2_adj_p2 hs4_adj_p4
+        h2_unique h4_unique
+    · exact distinct_helper p3 p4 s3 hp_ne34 hp3_nonadj_v hp4_nonadj_v hs3_in_N hs3_adj_p3 hs4_adj_p4
+        h3_unique h4_unique
+
+  obtain ⟨hs_ne12, hs_ne13, hs_ne14, hs_ne23, hs_ne24, hs_ne34⟩ := hs_distinct
+
+  have hS_card : ({s1, s2, s3, s4} : Finset (Fin 18)).card = 4 := by
+    rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+    · simp [hs_ne34]
+    · simp [hs_ne23, hs_ne24]
+    · simp [hs_ne12, hs_ne13, hs_ne14]
+
+  have hS_sub_S0 : ({s1, s2, s3, s4} : Finset (Fin 18)) ⊆ S0 := by
+    intro x hx
+    have ht_ne_s3 : t ≠ s3 := by
+      intro h
+      subst h
+      exact ht_notin_S (by simp [S])
+    have ht_ne_s4 : t ≠ s4 := by
+      intro h
+      subst h
+      exact ht_notin_S (by simp [S])
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+    rcases hx with rfl | rfl | rfl | rfl
+    · exact Finset.mem_erase.mpr ⟨ht_ne_s1.symm, hs1_in_N⟩
+    · exact Finset.mem_erase.mpr ⟨ht_ne_s2.symm, hs2_in_N⟩
+    · exact Finset.mem_erase.mpr ⟨ht_ne_s3.symm, hs3_in_N⟩
+    · exact Finset.mem_erase.mpr ⟨ht_ne_s4.symm, hs4_in_N⟩
+
+  have hS0_eq : S0 = ({s1, s2, s3, s4} : Finset (Fin 18)) := by
+    exact (Finset.eq_of_subset_of_card_le hS_sub_S0 (by simpa [hS0_card, hS_card])).symm
+
+  have hSrest_w1_card : (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card = 2 := by
+    have h' : (S0.filter (G.Adj w1)).card = 2 := hS0w1_card
+    have : ((({s1, s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1))).card = 2 := by
+      simpa [hS0_eq] using h'
+    simpa [Finset.filter_insert, hw1_nonadj_s1] using this
+
+  -- Extract `t2,t3,t4`: the unique T-neighbors of p2,p3,p4.
+  have h_p2_T_card : (T.filter (G.Adj p2)).card = 1 := by
+    have hp1P : p1 ∈ P := by rw [hP_eq]; simp
+    have hp2P : p2 ∈ P := by rw [hP_eq]; simp
+    have hp3P : p3 ∈ P := by rw [hP_eq]; simp
+    have hp4P : p4 ∈ P := by rw [hP_eq]; simp
+    have h_p1_ge1 : 1 ≤ (T.filter (G.Adj p1)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p1 hp1P))
+    have h_p3_ge1 : 1 ≤ (T.filter (G.Adj p3)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p3 hp3P))
+    have h_p4_ge1 : 1 ≤ (T.filter (G.Adj p4)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p4 hp4P))
+    have h_sum_exp :
+        P.sum (fun p => (T.filter (G.Adj p)).card) =
+          (T.filter (G.Adj p1)).card + (T.filter (G.Adj p2)).card +
+          (T.filter (G.Adj p3)).card + (T.filter (G.Adj p4)).card := by
+      simpa [hP_eq] using
+        (sum_over_four p1 p2 p3 p4 hp_ne12 hp_ne13 hp_ne14 hp_ne23 hp_ne24 hp_ne34
+          (fun p => (T.filter (G.Adj p)).card))
+    by_contra hne1
+    have h_p2_ge1 : 1 ≤ (T.filter (G.Adj p2)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p2 hp2P))
+    have h_p2_ge2 : 2 ≤ (T.filter (G.Adj p2)).card := by
+      have : 1 < (T.filter (G.Adj p2)).card := lt_of_le_of_ne h_p2_ge1 (Ne.symm hne1)
+      exact Nat.succ_le_iff.mp this
+    have hsum_ge5 :
+        5 ≤ (T.filter (G.Adj p1)).card + (T.filter (G.Adj p2)).card +
+              (T.filter (G.Adj p3)).card + (T.filter (G.Adj p4)).card := by
+      omega
+    have hsum_eq4 :
+        (T.filter (G.Adj p1)).card + (T.filter (G.Adj p2)).card +
+              (T.filter (G.Adj p3)).card + (T.filter (G.Adj p4)).card = 4 := by
+      have := congrArg id h_sum_eq4
+      simpa [h_sum_exp] using this
+    omega
+
+  have h_p3_T_card : (T.filter (G.Adj p3)).card = 1 := by
+    have hp1P : p1 ∈ P := by rw [hP_eq]; simp
+    have hp2P : p2 ∈ P := by rw [hP_eq]; simp
+    have hp3P : p3 ∈ P := by rw [hP_eq]; simp
+    have hp4P : p4 ∈ P := by rw [hP_eq]; simp
+    have h_p1_ge1 : 1 ≤ (T.filter (G.Adj p1)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p1 hp1P))
+    have h_p2_ge1 : 1 ≤ (T.filter (G.Adj p2)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p2 hp2P))
+    have h_p4_ge1 : 1 ≤ (T.filter (G.Adj p4)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p4 hp4P))
+    have h_sum_exp :
+        P.sum (fun p => (T.filter (G.Adj p)).card) =
+          (T.filter (G.Adj p1)).card + (T.filter (G.Adj p2)).card +
+          (T.filter (G.Adj p3)).card + (T.filter (G.Adj p4)).card := by
+      simpa [hP_eq] using
+        (sum_over_four p1 p2 p3 p4 hp_ne12 hp_ne13 hp_ne14 hp_ne23 hp_ne24 hp_ne34
+          (fun p => (T.filter (G.Adj p)).card))
+    by_contra hne1
+    have h_p3_ge1 : 1 ≤ (T.filter (G.Adj p3)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p3 hp3P))
+    have h_p3_ge2 : 2 ≤ (T.filter (G.Adj p3)).card := by
+      have : 1 < (T.filter (G.Adj p3)).card := lt_of_le_of_ne h_p3_ge1 (Ne.symm hne1)
+      exact Nat.succ_le_iff.mp this
+    have hsum_ge5 :
+        5 ≤ (T.filter (G.Adj p1)).card + (T.filter (G.Adj p2)).card +
+              (T.filter (G.Adj p3)).card + (T.filter (G.Adj p4)).card := by
+      omega
+    have hsum_eq4 :
+        (T.filter (G.Adj p1)).card + (T.filter (G.Adj p2)).card +
+              (T.filter (G.Adj p3)).card + (T.filter (G.Adj p4)).card = 4 := by
+      have := congrArg id h_sum_eq4
+      simpa [h_sum_exp] using this
+    omega
+
+  have h_p4_T_card : (T.filter (G.Adj p4)).card = 1 := by
+    have hp1P : p1 ∈ P := by rw [hP_eq]; simp
+    have hp2P : p2 ∈ P := by rw [hP_eq]; simp
+    have hp3P : p3 ∈ P := by rw [hP_eq]; simp
+    have hp4P : p4 ∈ P := by rw [hP_eq]; simp
+    have h_p1_ge1 : 1 ≤ (T.filter (G.Adj p1)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p1 hp1P))
+    have h_p2_ge1 : 1 ≤ (T.filter (G.Adj p2)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p2 hp2P))
+    have h_p3_ge1 : 1 ≤ (T.filter (G.Adj p3)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p3 hp3P))
+    have h_sum_exp :
+        P.sum (fun p => (T.filter (G.Adj p)).card) =
+          (T.filter (G.Adj p1)).card + (T.filter (G.Adj p2)).card +
+          (T.filter (G.Adj p3)).card + (T.filter (G.Adj p4)).card := by
+      simpa [hP_eq] using
+        (sum_over_four p1 p2 p3 p4 hp_ne12 hp_ne13 hp_ne14 hp_ne23 hp_ne24 hp_ne34
+          (fun p => (T.filter (G.Adj p)).card))
+    by_contra hne1
+    have h_p4_ge1 : 1 ≤ (T.filter (G.Adj p4)).card :=
+      Nat.succ_le_iff.mp (Finset.card_pos.mpr (hp_has_T_neighbor p4 hp4P))
+    have h_p4_ge2 : 2 ≤ (T.filter (G.Adj p4)).card := by
+      have : 1 < (T.filter (G.Adj p4)).card := lt_of_le_of_ne h_p4_ge1 (Ne.symm hne1)
+      exact Nat.succ_le_iff.mp this
+    have hsum_ge5 :
+        5 ≤ (T.filter (G.Adj p1)).card + (T.filter (G.Adj p2)).card +
+              (T.filter (G.Adj p3)).card + (T.filter (G.Adj p4)).card := by
+      omega
+    have hsum_eq4 :
+        (T.filter (G.Adj p1)).card + (T.filter (G.Adj p2)).card +
+              (T.filter (G.Adj p3)).card + (T.filter (G.Adj p4)).card = 4 := by
+      have := congrArg id h_sum_eq4
+      simpa [h_sum_exp] using this
+    omega
+
+  obtain ⟨t2, ht2_eq⟩ := Finset.card_eq_one.mp h_p2_T_card
+  have ht2_mem : t2 ∈ T.filter (G.Adj p2) := by simp [ht2_eq]
+  have ht2_in_T : t2 ∈ T := (Finset.mem_filter.mp ht2_mem).1
+  have hp2_adj_t2 : G.Adj p2 t2 := (Finset.mem_filter.mp ht2_mem).2
+
+  obtain ⟨t3, ht3_eq⟩ := Finset.card_eq_one.mp h_p3_T_card
+  have ht3_mem : t3 ∈ T.filter (G.Adj p3) := by simp [ht3_eq]
+  have ht3_in_T : t3 ∈ T := (Finset.mem_filter.mp ht3_mem).1
+  have hp3_adj_t3 : G.Adj p3 t3 := (Finset.mem_filter.mp ht3_mem).2
+
+  obtain ⟨t4, ht4_eq⟩ := Finset.card_eq_one.mp h_p4_T_card
+  have ht4_mem : t4 ∈ T.filter (G.Adj p4) := by simp [ht4_eq]
+  have ht4_in_T : t4 ∈ T := (Finset.mem_filter.mp ht4_mem).1
+  have hp4_adj_t4 : G.Adj p4 t4 := (Finset.mem_filter.mp ht4_mem).2
+
+  -- Distinctness of `t1,t2,t3,t4` follows from the fact each `ti ∈ T` has at most one P-neighbor.
+  have ht2_ne_t1 : t2 ≠ t1 := by
+    intro h
+    have ht1P : p1 ∈ P.filter (G.Adj t1) := by
+      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_t1⟩
+    have ht2P : p2 ∈ P.filter (G.Adj t1) := by
+      subst h
+      exact Finset.mem_filter.mpr ⟨hp2_in_P, G.symm hp2_adj_t2⟩
+    have hsubset : ({p1, p2} : Finset (Fin 18)) ⊆ P.filter (G.Adj t1) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl
+      · exact ht1P
+      · exact ht2P
+    have hge2 : 2 ≤ (P.filter (G.Adj t1)).card := by
+      have : ({p1, p2} : Finset (Fin 18)).card ≤ (P.filter (G.Adj t1)).card :=
+        Finset.card_le_card hsubset
+      simpa [hp_ne12] using this
+    have hle1 : (P.filter (G.Adj t1)).card ≤ 1 := hT_to_P_le1 t1 ht1_in_T
+    omega
+  have ht3_ne_t1 : t3 ≠ t1 := by
+    intro h
+    have ht1P : p1 ∈ P.filter (G.Adj t1) := by
+      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_t1⟩
+    have ht3P : p3 ∈ P.filter (G.Adj t1) := by
+      subst h
+      exact Finset.mem_filter.mpr ⟨hp3_in_P, G.symm hp3_adj_t3⟩
+    have hsubset : ({p1, p3} : Finset (Fin 18)) ⊆ P.filter (G.Adj t1) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl
+      · exact ht1P
+      · exact ht3P
+    have hge2 : 2 ≤ (P.filter (G.Adj t1)).card := by
+      have : ({p1, p3} : Finset (Fin 18)).card ≤ (P.filter (G.Adj t1)).card :=
+        Finset.card_le_card hsubset
+      simpa [hp_ne13] using this
+    have hle1 : (P.filter (G.Adj t1)).card ≤ 1 := hT_to_P_le1 t1 ht1_in_T
+    omega
+  have ht4_ne_t1 : t4 ≠ t1 := by
+    intro h
+    have ht1P : p1 ∈ P.filter (G.Adj t1) := by
+      exact Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_t1⟩
+    have ht4P : p4 ∈ P.filter (G.Adj t1) := by
+      subst h
+      exact Finset.mem_filter.mpr ⟨hp4_in_P, G.symm hp4_adj_t4⟩
+    have hsubset : ({p1, p4} : Finset (Fin 18)) ⊆ P.filter (G.Adj t1) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl
+      · exact ht1P
+      · exact ht4P
+    have hge2 : 2 ≤ (P.filter (G.Adj t1)).card := by
+      have : ({p1, p4} : Finset (Fin 18)).card ≤ (P.filter (G.Adj t1)).card :=
+        Finset.card_le_card hsubset
+      simpa [hp_ne14] using this
+    have hle1 : (P.filter (G.Adj t1)).card ≤ 1 := hT_to_P_le1 t1 ht1_in_T
+    omega
+
+  have ht2_ne_t3 : t2 ≠ t3 := by
+    intro h
+    have ht2P : p2 ∈ P.filter (G.Adj t2) := by
+      exact Finset.mem_filter.mpr ⟨hp2_in_P, G.symm hp2_adj_t2⟩
+    have ht3P : p3 ∈ P.filter (G.Adj t2) := by
+      subst h
+      exact Finset.mem_filter.mpr ⟨hp3_in_P, G.symm hp3_adj_t3⟩
+    have hsubset : ({p2, p3} : Finset (Fin 18)) ⊆ P.filter (G.Adj t2) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl
+      · exact ht2P
+      · exact ht3P
+    have hge2 : 2 ≤ (P.filter (G.Adj t2)).card := by
+      have : ({p2, p3} : Finset (Fin 18)).card ≤ (P.filter (G.Adj t2)).card :=
+        Finset.card_le_card hsubset
+      simpa [hp_ne23] using this
+    have hle1 : (P.filter (G.Adj t2)).card ≤ 1 := hT_to_P_le1 t2 ht2_in_T
+    omega
+  have ht2_ne_t4 : t2 ≠ t4 := by
+    intro h
+    have ht2P : p2 ∈ P.filter (G.Adj t2) := by
+      exact Finset.mem_filter.mpr ⟨hp2_in_P, G.symm hp2_adj_t2⟩
+    have ht4P : p4 ∈ P.filter (G.Adj t2) := by
+      subst h
+      exact Finset.mem_filter.mpr ⟨hp4_in_P, G.symm hp4_adj_t4⟩
+    have hsubset : ({p2, p4} : Finset (Fin 18)) ⊆ P.filter (G.Adj t2) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl
+      · exact ht2P
+      · exact ht4P
+    have hge2 : 2 ≤ (P.filter (G.Adj t2)).card := by
+      have : ({p2, p4} : Finset (Fin 18)).card ≤ (P.filter (G.Adj t2)).card :=
+        Finset.card_le_card hsubset
+      simpa [hp_ne24] using this
+    have hle1 : (P.filter (G.Adj t2)).card ≤ 1 := hT_to_P_le1 t2 ht2_in_T
+    omega
+  have ht3_ne_t4 : t3 ≠ t4 := by
+    intro h
+    have ht3P : p3 ∈ P.filter (G.Adj t3) := by
+      exact Finset.mem_filter.mpr ⟨hp3_in_P, G.symm hp3_adj_t3⟩
+    have ht4P : p4 ∈ P.filter (G.Adj t3) := by
+      subst h
+      exact Finset.mem_filter.mpr ⟨hp4_in_P, G.symm hp4_adj_t4⟩
+    have hsubset : ({p3, p4} : Finset (Fin 18)) ⊆ P.filter (G.Adj t3) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl
+      · exact ht3P
+      · exact ht4P
+    have hge2 : 2 ≤ (P.filter (G.Adj t3)).card := by
+      have : ({p3, p4} : Finset (Fin 18)).card ≤ (P.filter (G.Adj t3)).card :=
+        Finset.card_le_card hsubset
+      simpa [hp_ne34] using this
+    have hle1 : (P.filter (G.Adj t3)).card ≤ 1 := hT_to_P_le1 t3 ht3_in_T
+    omega
+
+  have hT_eq : T = ({t1, t2, t3, t4} : Finset (Fin 18)) := by
+    have hsub : ({t1, t2, t3, t4} : Finset (Fin 18)) ⊆ T := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl | rfl | rfl
+      · exact ht1_in_T
+      · exact ht2_in_T
+      · exact ht3_in_T
+      · exact ht4_in_T
+    have hcard : ({t1, t2, t3, t4} : Finset (Fin 18)).card = 4 := by
+      rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+      · simp [ht3_ne_t4]
+      · simp [ht2_ne_t3, ht2_ne_t4]
+      · simp [ht2_ne_t1.symm, ht3_ne_t1.symm, ht4_ne_t1.symm]
+    exact (Finset.eq_of_subset_of_card_le hsub (by simpa [hT_card, hcard])).symm
+
+  -- w1 is not adjacent to t1 (else {p1, t1, w1} is a triangle).
+  have hw1_nonadj_t1 : ¬G.Adj w1 t1 := by
+    intro h
+    have h_clique : G.IsNClique 3 {p1, t1, w1} := by
+      rw [SimpleGraph.isNClique_iff]
+      constructor
+      · intro x hx y hy hxy
+        simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
+        rcases hx with rfl | rfl | rfl <;> rcases hy with rfl | rfl | rfl
+        all_goals
+          first
+          | exact absurd rfl hxy
+          | exact hp1_adj_t1
+          | exact hp1_adj_w1
+          | exact G.symm hp1_adj_t1
+          | exact G.symm hp1_adj_w1
+          | exact h
+          | exact G.symm h
+      · have hp1_ne_t1 : p1 ≠ t1 := G.ne_of_adj hp1_adj_t1
+        have hp1_ne_w1 : p1 ≠ w1 := G.ne_of_adj hp1_adj_w1
+        have ht1_ne_w1 : t1 ≠ w1 := by
+          intro h_eq
+          have ht1_adj_t : G.Adj t t1 := (Finset.mem_filter.mp ht1_in_T).2
+          exact hw1_nonadj_t (by simpa [h_eq] using ht1_adj_t)
+        simp [hp1_ne_t1, hp1_ne_w1, ht1_ne_w1]
+    exact h_tri _ h_clique
+
+  -- Relate `commonNeighborsCard t w1` to the number of T-neighbors of w1.
+  have hw1_nonadj_v : ¬G.Adj v w1 := (hQ_props w1 hw1_in_Q).1
+  have hTw1_card : (T.filter (G.Adj w1)).card = 2 := by
+    have h_inter_eq : (G.neighborFinset t ∩ G.neighborFinset w1) = T.filter (G.Adj w1) := by
+      ext x
+      constructor
+      · intro hx
+        have hx_t : x ∈ G.neighborFinset t := (Finset.mem_inter.mp hx).1
+        have hx_w1 : x ∈ G.neighborFinset w1 := (Finset.mem_inter.mp hx).2
+        have htx : G.Adj t x := by simpa [mem_neighborFinset] using hx_t
+        have hw1x : G.Adj w1 x := by simpa [mem_neighborFinset] using hx_w1
+        have hx_ne_v : x ≠ v := by
+          intro h
+          subst h
+          exact hw1_nonadj_v (G.symm hw1x)
+        have hx_in_T : x ∈ T := ht_neighbor_in_T x htx hx_ne_v
+        exact Finset.mem_filter.mpr ⟨hx_in_T, hw1x⟩
+      · intro hx
+        have hxT : x ∈ T := (Finset.mem_filter.mp hx).1
+        have hw1x : G.Adj w1 x := (Finset.mem_filter.mp hx).2
+        have htx : G.Adj t x := (Finset.mem_filter.mp hxT).2
+        exact Finset.mem_inter.mpr ⟨by simpa [mem_neighborFinset] using htx, by simpa [mem_neighborFinset] using hw1x⟩
+    have : commonNeighborsCard G t w1 = (T.filter (G.Adj w1)).card := by
+      simp [commonNeighborsCard, _root_.commonNeighbors, h_inter_eq]
+    simpa [this] using ht_w1_common2
+
+  have hTrest_w1_card : (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card = 2 := by
+    have : (({t1, t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card = 2 := by
+      simpa [hT_eq] using hTw1_card
+    simpa [Finset.filter_insert, hw1_nonadj_t1] using this
+
+  -- Each `si ∈ S0` has exactly one T-neighbor (an S0–T perfect matching).
+  have hs1_T_le1 : (T.filter (G.Adj s1)).card ≤ 1 := by
+    have hs1_ne_t : s1 ≠ t := ht_ne_s1.symm
+    have hs1_nonadj_t : ¬G.Adj s1 t := by
+      -- t has no neighbors in N(v)
+      intro h
+      exact (ht_no_S_neighbors s1 hs1_in_N) (G.symm h)
+    have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg s1 t hs1_ne_t.symm hs1_nonadj_t
+    have hv_in : v ∈ G.neighborFinset s1 ∩ G.neighborFinset t := by
+      refine Finset.mem_inter.mpr ?_
+      constructor
+      · simpa [mem_neighborFinset] using (G.symm (by simpa [mem_neighborFinset] using hs1_in_N))
+      · simpa [mem_neighborFinset] using (G.symm ht_adj_v)
+    have h_inter_eq : (G.neighborFinset s1 ∩ G.neighborFinset t) = insert v (T.filter (G.Adj s1)) := by
+      ext x
+      constructor
+      · intro hx
+        have hx_s1 : x ∈ G.neighborFinset s1 := (Finset.mem_inter.mp hx).1
+        have hx_t : x ∈ G.neighborFinset t := (Finset.mem_inter.mp hx).2
+        have htx : G.Adj t x := by simpa [mem_neighborFinset] using hx_t
+        have hs1x : G.Adj s1 x := by simpa [mem_neighborFinset] using hx_s1
+        by_cases hxv : x = v
+        · subst hxv; exact Finset.mem_insert_self _ _
+        · have hx_in_T : x ∈ T := ht_neighbor_in_T x htx hxv
+          exact Finset.mem_insert_of_mem (Finset.mem_filter.mpr ⟨hx_in_T, hs1x⟩)
+      · intro hx
+        rcases Finset.mem_insert.mp hx with rfl | hxT
+        · exact hv_in
+        · have hxT' : x ∈ T := (Finset.mem_filter.mp hxT).1
+          have hs1x : G.Adj s1 x := (Finset.mem_filter.mp hxT).2
+          have htx : G.Adj t x := (Finset.mem_filter.mp hxT').2
+          exact Finset.mem_inter.mpr ⟨by simpa [mem_neighborFinset] using hs1x, by simpa [mem_neighborFinset] using htx⟩
+    have hv_notin : v ∉ (T.filter (G.Adj s1)) := by
+      intro hv
+      have hvT : v ∈ T := (Finset.mem_filter.mp hv).1
+      have hvQ : v ∈ Q := (Finset.mem_filter.mp hvT).1
+      have ⟨_, hv_common2⟩ := hQ_props v hvQ
+      have hv_common5 : commonNeighborsCard G v v = 5 := by
+        simp [commonNeighborsCard, _root_.commonNeighbors, Finset.inter_self, h_reg v]
+      omega
+    have hcard : commonNeighborsCard G s1 t = 1 + (T.filter (G.Adj s1)).card := by
+      unfold commonNeighborsCard _root_.commonNeighbors
+      -- rewrite the common-neighbor finset, then compute the card of an insert
+      rw [h_inter_eq]
+      have hci : (insert v (T.filter (G.Adj s1))).card = (T.filter (G.Adj s1)).card + 1 :=
+        Finset.card_insert_of_notMem hv_notin
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hci
+    have hsum : 1 + (T.filter (G.Adj s1)).card ≤ 2 := by
+      simpa [hcard] using h_le
+    omega
+
+  have hs2_T_le1 : (T.filter (G.Adj s2)).card ≤ 1 := by
+    have hs2_ne_t : s2 ≠ t := ht_ne_s2.symm
+    have hs2_nonadj_t : ¬G.Adj s2 t := by
+      intro h
+      exact (ht_no_S_neighbors s2 hs2_in_N) (G.symm h)
+    have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg s2 t hs2_ne_t.symm hs2_nonadj_t
+    have hv_in : v ∈ G.neighborFinset s2 ∩ G.neighborFinset t := by
+      refine Finset.mem_inter.mpr ?_
+      constructor
+      · simpa [mem_neighborFinset] using (G.symm (by simpa [mem_neighborFinset] using hs2_in_N))
+      · simpa [mem_neighborFinset] using (G.symm ht_adj_v)
+    have h_inter_eq : (G.neighborFinset s2 ∩ G.neighborFinset t) = insert v (T.filter (G.Adj s2)) := by
+      ext x
+      constructor
+      · intro hx
+        have hx_s2 : x ∈ G.neighborFinset s2 := (Finset.mem_inter.mp hx).1
+        have hx_t : x ∈ G.neighborFinset t := (Finset.mem_inter.mp hx).2
+        have htx : G.Adj t x := by simpa [mem_neighborFinset] using hx_t
+        have hs2x : G.Adj s2 x := by simpa [mem_neighborFinset] using hx_s2
+        by_cases hxv : x = v
+        · subst hxv; exact Finset.mem_insert_self _ _
+        · have hx_in_T : x ∈ T := ht_neighbor_in_T x htx hxv
+          exact Finset.mem_insert_of_mem (Finset.mem_filter.mpr ⟨hx_in_T, hs2x⟩)
+      · intro hx
+        rcases Finset.mem_insert.mp hx with rfl | hxT
+        · exact hv_in
+        · have hxT' : x ∈ T := (Finset.mem_filter.mp hxT).1
+          have hs2x : G.Adj s2 x := (Finset.mem_filter.mp hxT).2
+          have htx : G.Adj t x := (Finset.mem_filter.mp hxT').2
+          exact Finset.mem_inter.mpr ⟨by simpa [mem_neighborFinset] using hs2x, by simpa [mem_neighborFinset] using htx⟩
+    have hv_notin : v ∉ (T.filter (G.Adj s2)) := by
+      intro hv
+      have hvT : v ∈ T := (Finset.mem_filter.mp hv).1
+      have hvQ : v ∈ Q := (Finset.mem_filter.mp hvT).1
+      have ⟨_, hv_common2⟩ := hQ_props v hvQ
+      have hv_common5 : commonNeighborsCard G v v = 5 := by
+        simp [commonNeighborsCard, _root_.commonNeighbors, Finset.inter_self, h_reg v]
+      omega
+    have hcard : commonNeighborsCard G s2 t = 1 + (T.filter (G.Adj s2)).card := by
+      unfold commonNeighborsCard _root_.commonNeighbors
+      rw [h_inter_eq]
+      have hci : (insert v (T.filter (G.Adj s2))).card = (T.filter (G.Adj s2)).card + 1 :=
+        Finset.card_insert_of_notMem hv_notin
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hci
+    have hsum : 1 + (T.filter (G.Adj s2)).card ≤ 2 := by
+      simpa [hcard] using h_le
+    omega
+
+  have hs3_T_le1 : (T.filter (G.Adj s3)).card ≤ 1 := by
+    have hs3_ne_t : s3 ≠ t := ht_ne_s3.symm
+    have hs3_nonadj_t : ¬G.Adj s3 t := by
+      intro h
+      exact (ht_no_S_neighbors s3 hs3_in_N) (G.symm h)
+    have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg s3 t hs3_ne_t.symm hs3_nonadj_t
+    have hv_in : v ∈ G.neighborFinset s3 ∩ G.neighborFinset t := by
+      refine Finset.mem_inter.mpr ?_
+      constructor
+      · simpa [mem_neighborFinset] using (G.symm (by simpa [mem_neighborFinset] using hs3_in_N))
+      · simpa [mem_neighborFinset] using (G.symm ht_adj_v)
+    have h_inter_eq : (G.neighborFinset s3 ∩ G.neighborFinset t) = insert v (T.filter (G.Adj s3)) := by
+      ext x
+      constructor
+      · intro hx
+        have hx_s3 : x ∈ G.neighborFinset s3 := (Finset.mem_inter.mp hx).1
+        have hx_t : x ∈ G.neighborFinset t := (Finset.mem_inter.mp hx).2
+        have htx : G.Adj t x := by simpa [mem_neighborFinset] using hx_t
+        have hs3x : G.Adj s3 x := by simpa [mem_neighborFinset] using hx_s3
+        by_cases hxv : x = v
+        · subst hxv; exact Finset.mem_insert_self _ _
+        · have hx_in_T : x ∈ T := ht_neighbor_in_T x htx hxv
+          exact Finset.mem_insert_of_mem (Finset.mem_filter.mpr ⟨hx_in_T, hs3x⟩)
+      · intro hx
+        rcases Finset.mem_insert.mp hx with rfl | hxT
+        · exact hv_in
+        · have hxT' : x ∈ T := (Finset.mem_filter.mp hxT).1
+          have hs3x : G.Adj s3 x := (Finset.mem_filter.mp hxT).2
+          have htx : G.Adj t x := (Finset.mem_filter.mp hxT').2
+          exact Finset.mem_inter.mpr ⟨by simpa [mem_neighborFinset] using hs3x, by simpa [mem_neighborFinset] using htx⟩
+    have hv_notin : v ∉ (T.filter (G.Adj s3)) := by
+      intro hv
+      have hvT : v ∈ T := (Finset.mem_filter.mp hv).1
+      have hvQ : v ∈ Q := (Finset.mem_filter.mp hvT).1
+      have ⟨_, hv_common2⟩ := hQ_props v hvQ
+      have hv_common5 : commonNeighborsCard G v v = 5 := by
+        simp [commonNeighborsCard, _root_.commonNeighbors, Finset.inter_self, h_reg v]
+      omega
+    have hcard : commonNeighborsCard G s3 t = 1 + (T.filter (G.Adj s3)).card := by
+      unfold commonNeighborsCard _root_.commonNeighbors
+      rw [h_inter_eq]
+      have hci : (insert v (T.filter (G.Adj s3))).card = (T.filter (G.Adj s3)).card + 1 :=
+        Finset.card_insert_of_notMem hv_notin
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hci
+    have hsum : 1 + (T.filter (G.Adj s3)).card ≤ 2 := by
+      simpa [hcard] using h_le
+    omega
+
+  have hs4_T_le1 : (T.filter (G.Adj s4)).card ≤ 1 := by
+    have hs4_ne_t : s4 ≠ t := ht_ne_s4.symm
+    have hs4_nonadj_t : ¬G.Adj s4 t := by
+      intro h
+      exact (ht_no_S_neighbors s4 hs4_in_N) (G.symm h)
+    have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg s4 t hs4_ne_t.symm hs4_nonadj_t
+    have hv_in : v ∈ G.neighborFinset s4 ∩ G.neighborFinset t := by
+      refine Finset.mem_inter.mpr ?_
+      constructor
+      · simpa [mem_neighborFinset] using (G.symm (by simpa [mem_neighborFinset] using hs4_in_N))
+      · simpa [mem_neighborFinset] using (G.symm ht_adj_v)
+    have h_inter_eq : (G.neighborFinset s4 ∩ G.neighborFinset t) = insert v (T.filter (G.Adj s4)) := by
+      ext x
+      constructor
+      · intro hx
+        have hx_s4 : x ∈ G.neighborFinset s4 := (Finset.mem_inter.mp hx).1
+        have hx_t : x ∈ G.neighborFinset t := (Finset.mem_inter.mp hx).2
+        have htx : G.Adj t x := by simpa [mem_neighborFinset] using hx_t
+        have hs4x : G.Adj s4 x := by simpa [mem_neighborFinset] using hx_s4
+        by_cases hxv : x = v
+        · subst hxv; exact Finset.mem_insert_self _ _
+        · have hx_in_T : x ∈ T := ht_neighbor_in_T x htx hxv
+          exact Finset.mem_insert_of_mem (Finset.mem_filter.mpr ⟨hx_in_T, hs4x⟩)
+      · intro hx
+        rcases Finset.mem_insert.mp hx with rfl | hxT
+        · exact hv_in
+        · have hxT' : x ∈ T := (Finset.mem_filter.mp hxT).1
+          have hs4x : G.Adj s4 x := (Finset.mem_filter.mp hxT).2
+          have htx : G.Adj t x := (Finset.mem_filter.mp hxT').2
+          exact Finset.mem_inter.mpr ⟨by simpa [mem_neighborFinset] using hs4x, by simpa [mem_neighborFinset] using htx⟩
+    have hv_notin : v ∉ (T.filter (G.Adj s4)) := by
+      intro hv
+      have hvT : v ∈ T := (Finset.mem_filter.mp hv).1
+      have hvQ : v ∈ Q := (Finset.mem_filter.mp hvT).1
+      have ⟨_, hv_common2⟩ := hQ_props v hvQ
+      have hv_common5 : commonNeighborsCard G v v = 5 := by
+        simp [commonNeighborsCard, _root_.commonNeighbors, Finset.inter_self, h_reg v]
+      omega
+    have hcard : commonNeighborsCard G s4 t = 1 + (T.filter (G.Adj s4)).card := by
+      unfold commonNeighborsCard _root_.commonNeighbors
+      rw [h_inter_eq]
+      have hci : (insert v (T.filter (G.Adj s4))).card = (T.filter (G.Adj s4)).card + 1 :=
+        Finset.card_insert_of_notMem hv_notin
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hci
+    have hsum : 1 + (T.filter (G.Adj s4)).card ≤ 2 := by
+      simpa [hcard] using h_le
+    omega
+
+  have hS0_T_sum :
+      S0.sum (fun si => (T.filter (G.Adj si)).card) = 4 := by
+    have h_edge_count :
+        S0.sum (fun si => (T.filter (G.Adj si)).card) =
+          T.sum (fun ti => (S0.filter (G.Adj ti)).card) := by
+      simpa using
+        (bipartite_edge_count_symmetry (A := S0) (B := T) (R := G.Adj) (hR := G.symm))
+    have h_each_ti : ∀ ti ∈ T, (S0.filter (G.Adj ti)).card = 1 := by
+      intro ti hti
+      have hti_Q : ti ∈ Q := (Finset.mem_filter.mp hti).1
+      have hti_adj_t : G.Adj t ti := (Finset.mem_filter.mp hti).2
+      have hti_common2 : commonNeighborsCard G v ti = 2 := (hQ_props ti hti_Q).2
+      exact
+        T_vertex_has_one_S_neighbor h_reg h_tri v t ti ht_adj_v hti_adj_t hti_common2 S0 hS0_card rfl
+    have : T.sum (fun ti => (S0.filter (G.Adj ti)).card) = 4 := by
+      calc
+        T.sum (fun ti => (S0.filter (G.Adj ti)).card)
+            = T.sum (fun _ => 1) := by
+                refine Finset.sum_congr rfl ?_
+                intro ti hti
+                simp [h_each_ti ti hti]
+        _ = 4 := by simp [Finset.sum_const, hT_card]
+    simpa [h_edge_count] using this
+
+  have hS0_sum_exp :
+      S0.sum (fun si => (T.filter (G.Adj si)).card) =
+        (T.filter (G.Adj s1)).card + (T.filter (G.Adj s2)).card +
+        (T.filter (G.Adj s3)).card + (T.filter (G.Adj s4)).card := by
+    simpa [hS0_eq] using
+      (sum_over_four s1 s2 s3 s4 hs_ne12 hs_ne13 hs_ne14 hs_ne23 hs_ne24 hs_ne34
+        (fun si => (T.filter (G.Adj si)).card))
+
+  have hs2_T_card : (T.filter (G.Adj s2)).card = 1 := by
+    omega
+  have hs4_T_card : (T.filter (G.Adj s4)).card = 1 := by
+    omega
+
+  have hSrest_card3 : ({s2, s3, s4} : Finset (Fin 18)).card = 3 := by
+    rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+    · simp [hs_ne34]
+    · simp [hs_ne23, hs_ne24]
+
+  have hTrest_card3 : ({t2, t3, t4} : Finset (Fin 18)).card = 3 := by
+    rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+    · simp [ht3_ne_t4]
+    · simp [ht2_ne_t3, ht2_ne_t4]
+
+  -- Convert the "card = 2 of a 3-set" facts into concrete adjacency patterns.
+  have hs_cases :
+      (¬G.Adj w1 s2 ∧ G.Adj w1 s3 ∧ G.Adj w1 s4) ∨
+      (G.Adj w1 s2 ∧ ¬G.Adj w1 s3 ∧ G.Adj w1 s4) ∨
+      (G.Adj w1 s2 ∧ G.Adj w1 s3 ∧ ¬G.Adj w1 s4) := by
+    have hSrest_w1_card' :
+        (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card = 2 := by
+      simpa using hSrest_w1_card
+    by_cases hs2 : G.Adj w1 s2
+    · by_cases hs3 : G.Adj w1 s3
+      · -- then ¬(w1~s4), else the filtered set has card 3
+        have hs4 : ¬G.Adj w1 s4 := by
+          intro hs4
+          have hsub :
+              ({s2, s3, s4} : Finset (Fin 18)) ⊆
+                ({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1) := by
+            intro x hx
+            simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+            rcases hx with rfl | rfl | rfl
+            · simpa using hs2
+            · simpa using hs3
+            · simpa using hs4
+          have hge3 :
+              3 ≤ (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card := by
+            have :
+                ({s2, s3, s4} : Finset (Fin 18)).card ≤
+                  (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card :=
+              Finset.card_le_card hsub
+            simpa [hSrest_card3] using this
+          have : 3 ≤ 2 := by simpa [hSrest_w1_card'] using hge3
+          exact (Nat.not_succ_le_self 2) (by simpa using this)
+        exact Or.inr (Or.inr ⟨hs2, hs3, hs4⟩)
+      · by_cases hs4 : G.Adj w1 s4
+        · exact Or.inr (Or.inl ⟨hs2, hs3, hs4⟩)
+        · -- only s2 adjacent gives card 1, contradiction
+          exfalso
+          have hcard1 :
+              (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card = 1 := by
+            simp [Finset.filter_insert, hs2, hs3, hs4, hs_ne23, hs_ne24, hs_ne34]
+          have : (1 : ℕ) = 2 := by simpa [hcard1] using hSrest_w1_card'
+          exact (by decide : (1 : ℕ) ≠ 2) this
+    · -- ¬(w1~s2), so must have w1~s3 and w1~s4
+      by_cases hs3 : G.Adj w1 s3
+      · by_cases hs4 : G.Adj w1 s4
+        · exact Or.inl ⟨hs2, hs3, hs4⟩
+        · -- only s3 adjacent gives card 1, contradiction
+          exfalso
+          have hcard1 :
+              (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card = 1 := by
+            simp [Finset.filter_insert, hs2, hs3, hs4, hs_ne23, hs_ne24, hs_ne34]
+          have : (1 : ℕ) = 2 := by simpa [hcard1] using hSrest_w1_card'
+          exact (by decide : (1 : ℕ) ≠ 2) this
+      · -- none of s2,s3 adjacent gives card ≤1, contradiction
+        exfalso
+        by_cases hs4 : G.Adj w1 s4
+        · -- If w1 adj s4, then card = 1 (only s4 adjacent)
+          have hcard1 :
+              (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card = 1 := by
+            have : ({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1) = {s4} := by
+              ext x
+              simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+              constructor
+              · intro ⟨hx_mem, hx_adj⟩
+                rcases hx_mem with rfl | rfl | rfl
+                · exfalso; exact hs2 hx_adj
+                · exfalso; exact hs3 hx_adj
+                · rfl
+              · intro rfl
+                exact ⟨Or.inr (Or.inr rfl), hs4⟩
+            simp [this]
+          have : (1 : ℕ) = 2 := by simpa [hcard1] using hSrest_w1_card'
+          exact (by decide : (1 : ℕ) ≠ 2) this
+        · -- If w1 not adj s4, then card = 0 (none adjacent)
+          have hcard0 :
+              (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card = 0 := by
+            simp [Finset.filter_insert, hs2, hs3, hs4, hs_ne23, hs_ne24, hs_ne34]
+          have : (0 : ℕ) = 2 := by simpa [hcard0] using hSrest_w1_card'
+          exact (by decide : (0 : ℕ) ≠ 2) this
+
+  have ht_cases :
+      (¬G.Adj w1 t2 ∧ G.Adj w1 t3 ∧ G.Adj w1 t4) ∨
+      (G.Adj w1 t2 ∧ ¬G.Adj w1 t3 ∧ G.Adj w1 t4) ∨
+      (G.Adj w1 t2 ∧ G.Adj w1 t3 ∧ ¬G.Adj w1 t4) := by
+    have hTrest_w1_card' :
+        (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card = 2 := by
+      simpa using hTrest_w1_card
+    by_cases ht2 : G.Adj w1 t2
+    · by_cases ht3 : G.Adj w1 t3
+      · have ht4 : ¬G.Adj w1 t4 := by
+          intro ht4
+          have hsub :
+              ({t2, t3, t4} : Finset (Fin 18)) ⊆
+                ({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1) := by
+            intro x hx
+            simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+            rcases hx with rfl | rfl | rfl
+            · simpa using ht2
+            · simpa using ht3
+            · simpa using ht4
+          have hge3 :
+              3 ≤ (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card := by
+            have :
+                ({t2, t3, t4} : Finset (Fin 18)).card ≤
+                  (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card :=
+              Finset.card_le_card hsub
+            simpa [hTrest_card3] using this
+          have : 3 ≤ 2 := by simpa [hTrest_w1_card'] using hge3
+          exact (Nat.not_succ_le_self 2) (by simpa using this)
+        exact Or.inr (Or.inr ⟨ht2, ht3, ht4⟩)
+      · by_cases ht4 : G.Adj w1 t4
+        · exact Or.inr (Or.inl ⟨ht2, ht3, ht4⟩)
+        · exfalso
+          have hcard1 :
+              (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card = 1 := by
+            simp [Finset.filter_insert, ht2, ht3, ht4, ht2_ne_t3, ht2_ne_t4, ht3_ne_t4]
+          have : (1 : ℕ) = 2 := by simpa [hcard1] using hTrest_w1_card'
+          exact (by decide : (1 : ℕ) ≠ 2) this
+    · by_cases ht3 : G.Adj w1 t3
+      · by_cases ht4 : G.Adj w1 t4
+        · exact Or.inl ⟨ht2, ht3, ht4⟩
+        · exfalso
+          have hcard1 :
+              (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card = 1 := by
+            simp [Finset.filter_insert, ht2, ht3, ht4, ht2_ne_t3, ht2_ne_t4, ht3_ne_t4]
+          have : (1 : ℕ) = 2 := by simpa [hcard1] using hTrest_w1_card'
+          exact (by decide : (1 : ℕ) ≠ 2) this
+      · exfalso
+        by_cases ht4 : G.Adj w1 t4
+        · -- If w1 adj t4, then card = 1 (only t4 adjacent)
+          have hcard1 :
+              (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card = 1 := by
+            have : ({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1) = {t4} := by
+              ext x
+              simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+              constructor
+              · intro ⟨hx_mem, hx_adj⟩
+                rcases hx_mem with rfl | rfl | rfl
+                · exfalso; exact ht2 hx_adj
+                · exfalso; exact ht3 hx_adj
+                · rfl
+              · intro rfl
+                exact ⟨Or.inr (Or.inr rfl), ht4⟩
+            simp [this]
+          have : (1 : ℕ) = 2 := by simpa [hcard1] using hTrest_w1_card'
+          exact (by decide : (1 : ℕ) ≠ 2) this
+        · -- If w1 not adj t4, then card = 0 (none adjacent)
+          have hcard0 :
+              (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card = 0 := by
+            simp [Finset.filter_insert, ht2, ht3, ht4, ht2_ne_t3, ht2_ne_t4, ht3_ne_t4]
+          have : (0 : ℕ) = 2 := by simpa [hcard0] using hTrest_w1_card'
+          exact (by decide : (0 : ℕ) ≠ 2) this
+
+  have h_exists_i :
+      (G.Adj w1 s2 ∧ G.Adj w1 t2) ∨ (G.Adj w1 s3 ∧ G.Adj w1 t3) ∨ (G.Adj w1 s4 ∧ G.Adj w1 t4) := by
+    rcases hs_cases with hs | hs | hs <;> rcases ht_cases with ht | ht | ht
+    all_goals
+      rcases hs with ⟨hs2, hs3, hs4⟩
+      rcases ht with ⟨ht2, ht3, ht4⟩
+    -- Case 1,1: ¬s2,s3,s4 and ¬t2,t3,t4
+    · exact Or.inr (Or.inl ⟨hs3, ht3⟩)
+    -- Case 1,2: ¬s2,s3,s4 and t2,¬t3,t4
+    · exact Or.inr (Or.inr ⟨hs4, ht4⟩)
+    -- Case 1,3: ¬s2,s3,s4 and t2,t3,¬t4
+    · exact Or.inr (Or.inl ⟨hs3, ht3⟩)
+    -- Case 2,1: s2,¬s3,s4 and ¬t2,t3,t4
+    · exact Or.inr (Or.inr ⟨hs4, ht4⟩)
+    -- Case 2,2: s2,¬s3,s4 and t2,¬t3,t4
+    · exact Or.inl ⟨hs2, ht2⟩
+    -- Case 2,3: s2,¬s3,s4 and t2,t3,¬t4
+    · exact Or.inl ⟨hs2, ht2⟩
+    -- Case 3,1: s2,s3,¬s4 and ¬t2,t3,t4
+    · exact Or.inr (Or.inl ⟨hs3, ht3⟩)
+    -- Case 3,2: s2,s3,¬s4 and t2,¬t3,t4
+    · exact Or.inl ⟨hs2, ht2⟩
+    -- Case 3,3: s2,s3,¬s4 and t2,t3,¬t4
+    · exact Or.inr (Or.inl ⟨hs3, ht3⟩)
+
+  -- Show `w1` is not adjacent to `p2` nor `p4` (its unique P-neighbor is `p1`).
+  have hw1_nonadj_p2 : ¬G.Adj w1 p2 := by
+    intro h
+    have hp1_mem : p1 ∈ P.filter (G.Adj w1) := Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_w1⟩
+    have hp2_mem : p2 ∈ P.filter (G.Adj w1) := Finset.mem_filter.mpr ⟨hp2_in_P, h⟩
+    have hsubset : ({p1, p2} : Finset (Fin 18)) ⊆ P.filter (G.Adj w1) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl
+      · exact hp1_mem
+      · exact hp2_mem
+    have hge2 : 2 ≤ (P.filter (G.Adj w1)).card := by
+      have : ({p1, p2} : Finset (Fin 18)).card ≤ (P.filter (G.Adj w1)).card :=
+        Finset.card_le_card hsubset
+      simpa [hp_ne12] using this
+    omega
+
+  have hw1_nonadj_p4 : ¬G.Adj w1 p4 := by
+    intro h
+    have hp1_mem : p1 ∈ P.filter (G.Adj w1) := Finset.mem_filter.mpr ⟨hp1_in_P, G.symm hp1_adj_w1⟩
+    have hp4_mem : p4 ∈ P.filter (G.Adj w1) := Finset.mem_filter.mpr ⟨hp4_in_P, h⟩
+    have hsubset : ({p1, p4} : Finset (Fin 18)) ⊆ P.filter (G.Adj w1) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl
+      · exact hp1_mem
+      · exact hp4_mem
+    have hge2 : 2 ≤ (P.filter (G.Adj w1)).card := by
+      have : ({p1, p4} : Finset (Fin 18)).card ≤ (P.filter (G.Adj w1)).card :=
+        Finset.card_le_card hsubset
+      simpa [hp_ne14] using this
+    omega
+
+  -- Exclude i=2 and i=4 using a 3-common-neighbors contradiction with Claim 2 (≤2 common neighbors).
+  have h_not_i2 : ¬(G.Adj w1 s2 ∧ G.Adj w1 t2) := by
+    rintro ⟨hw1s2, hw1t2⟩
+    have hw1_ne_p2 : w1 ≠ p2 := fun h =>
+      Finset.disjoint_left.mp hP_Q_disj hp2_in_P (h ▸ hw1_in_Q)
+    have hw1_nonadj_p2' : ¬G.Adj w1 p2 := hw1_nonadj_p2
+    have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg w1 p2 hw1_ne_p2.symm hw1_nonadj_p2'
+    have hsubset : ({p1, s2, t2} : Finset (Fin 18)) ⊆ (G.neighborFinset w1 ∩ G.neighborFinset p2) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl | rfl
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨G.symm hp1_adj_w1, G.symm h_adj12⟩
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨hw1s2, G.symm hs2_adj_p2⟩
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨hw1t2, hp2_adj_t2⟩
+    have hcard_ge3 : 3 ≤ commonNeighborsCard G w1 p2 := by
+      have : ({p1, s2, t2} : Finset (Fin 18)).card ≤ (G.neighborFinset w1 ∩ G.neighborFinset p2).card :=
+        Finset.card_le_card hsubset
+      have hp1_ne_s2 : p1 ≠ s2 := by
+        intro h
+        subst h
+        exact hp1_nonadj_v (by simpa [mem_neighborFinset] using hs2_in_N)
+      have ht2_ne_s2 : t2 ≠ s2 := by
+        intro h
+        subst h
+        have : t2 ∈ Q := (Finset.mem_filter.mp ht2_in_T).1
+        exact (Finset.disjoint_left.mp hNv_Q_disj) hs2_in_N this
+      have hp1_ne_t2 : p1 ≠ t2 := by
+        intro h
+        subst h
+        have : p1 ∈ Q := (Finset.mem_filter.mp ht2_in_T).1
+        exact (Finset.disjoint_left.mp hP_Q_disj) hp1_in_P this
+      have h3 : ({p1, s2, t2} : Finset (Fin 18)).card = 3 := by
+        rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+        · simp only [Finset.mem_singleton]; exact ht2_ne_s2.symm
+        · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]; exact ⟨hp1_ne_s2, hp1_ne_t2⟩
+      have : 3 ≤ (G.neighborFinset w1 ∩ G.neighborFinset p2).card := by
+        simpa [h3] using this
+      simpa [commonNeighborsCard, _root_.commonNeighbors] using this
+    omega
+
+  have h_not_i4 : ¬(G.Adj w1 s4 ∧ G.Adj w1 t4) := by
+    rintro ⟨hw1s4, hw1t4⟩
+    have hw1_ne_p4 : w1 ≠ p4 := fun h =>
+      Finset.disjoint_left.mp hP_Q_disj hp4_in_P (h ▸ hw1_in_Q)
+    have hw1_nonadj_p4' : ¬G.Adj w1 p4 := hw1_nonadj_p4
+    have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg w1 p4 hw1_ne_p4.symm hw1_nonadj_p4'
+    have hsubset : ({p1, s4, t4} : Finset (Fin 18)) ⊆ (G.neighborFinset w1 ∩ G.neighborFinset p4) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl | rfl
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨G.symm hp1_adj_w1, h_adj41⟩
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨hw1s4, G.symm hs4_adj_p4⟩
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨hw1t4, hp4_adj_t4⟩
+    have hcard_ge3 : 3 ≤ commonNeighborsCard G w1 p4 := by
+      have : ({p1, s4, t4} : Finset (Fin 18)).card ≤ (G.neighborFinset w1 ∩ G.neighborFinset p4).card :=
+        Finset.card_le_card hsubset
+      have hp1_ne_s4 : p1 ≠ s4 := by
+        intro h
+        subst h
+        exact hp1_nonadj_v (by simpa [mem_neighborFinset] using hs4_in_N)
+      have ht4_ne_s4 : t4 ≠ s4 := by
+        intro h
+        subst h
+        have : t4 ∈ Q := (Finset.mem_filter.mp ht4_in_T).1
+        exact (Finset.disjoint_left.mp hNv_Q_disj) hs4_in_N this
+      have hp1_ne_t4 : p1 ≠ t4 := by
+        intro h
+        subst h
+        have : p1 ∈ Q := (Finset.mem_filter.mp ht4_in_T).1
+        exact (Finset.disjoint_left.mp hP_Q_disj) hp1_in_P this
+      have h3 : ({p1, s4, t4} : Finset (Fin 18)).card = 3 := by
+        rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+        · simp only [Finset.mem_singleton]; exact ht4_ne_s4.symm
+        · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]; exact ⟨hp1_ne_s4, hp1_ne_t4⟩
+      have : 3 ≤ (G.neighborFinset w1 ∩ G.neighborFinset p4).card := by
+        simpa [h3] using this
+      simpa [commonNeighborsCard, _root_.commonNeighbors] using this
+    omega
+
+  -- Therefore i=3: w1 is adjacent to s3 and t3.
+  have hw1_adj_s3_t3 : G.Adj w1 s3 ∧ G.Adj w1 t3 := by
+    rcases h_exists_i with h2 | h3 | h4
+    · exact (h_not_i2 h2).elim
+    · exact h3
+    · exact (h_not_i4 h4).elim
+  have hw1_adj_s3 : G.Adj w1 s3 := hw1_adj_s3_t3.1
+  have hw1_adj_t3 : G.Adj w1 t3 := hw1_adj_s3_t3.2
+
+  have h_s_other :
+      (G.Adj w1 s2 ∧ ¬G.Adj w1 s4) ∨ (¬G.Adj w1 s2 ∧ G.Adj w1 s4) := by
+    rcases hs_cases with hs | hs | hs
+    · refine Or.inr ⟨hs.1, hs.2.2⟩
+    · exact (hs.2.1 hw1_adj_s3).elim
+    · refine Or.inl ⟨hs.1, hs.2.2⟩
+
+  have h_t_other :
+      (G.Adj w1 t2 ∧ ¬G.Adj w1 t4) ∨ (¬G.Adj w1 t2 ∧ G.Adj w1 t4) := by
+    rcases ht_cases with ht | ht | ht
+    · refine Or.inr ⟨ht.1, ht.2.2⟩
+    · exact (ht.2.1 hw1_adj_t3).elim
+    · refine Or.inl ⟨ht.1, ht.2.2⟩
+
+  have h_branch :
+      (G.Adj w1 s2 ∧ G.Adj w1 t4) ∨ (G.Adj w1 s4 ∧ G.Adj w1 t2) := by
+    rcases h_s_other with hs | hs <;> rcases h_t_other with ht | ht
+    · exfalso; exact h_not_i2 ⟨hs.1, ht.1⟩
+    · exact Or.inl ⟨hs.1, ht.2⟩
+    · exact Or.inr ⟨hs.2, ht.1⟩
+    · exfalso; exact h_not_i4 ⟨hs.2, ht.2⟩
+
+  -- Final contradiction in the two symmetric branches.
+  rcases h_branch with ⟨hw1s2, hw1t4⟩ | ⟨hw1s4, hw1t2⟩
+  · -- Branch: w1~s2 and w1~t4
+    have hs2_ne_p1 : s2 ≠ p1 := by
+      intro h
+      subst h
+      exact hp1_nonadj_v (by simpa [mem_neighborFinset] using hs2_in_N)
+    have hs2_nonadj_t2 : ¬G.Adj s2 t2 := by
+      intro h
+      have h_clique : G.IsNClique 3 {p2, s2, t2} := by
+        rw [SimpleGraph.isNClique_iff]
+        constructor
+        · intro x hx y hy hxy
+          simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
+          rcases hx with rfl | rfl | rfl <;> rcases hy with rfl | rfl | rfl
+          all_goals
+            first
+            | exact absurd rfl hxy
+            | exact hs2_adj_p2
+            | exact hp2_adj_t2
+            | exact G.symm hs2_adj_p2
+            | exact G.symm hp2_adj_t2
+            | exact h
+            | exact G.symm h
+        · have hp2_ne_s2 : p2 ≠ s2 := G.ne_of_adj (G.symm hs2_adj_p2)
+          have hp2_ne_t2 : p2 ≠ t2 := G.ne_of_adj hp2_adj_t2
+          have hs2_ne_t2 : s2 ≠ t2 := by
+            intro h_eq
+            have ht2_in_N : t2 ∈ N := h_eq ▸ hs2_in_N
+            have ht2_in_Q : t2 ∈ Q := (Finset.mem_filter.mp ht2_in_T).1
+            exact (Finset.disjoint_left.mp hNv_Q_disj) ht2_in_N ht2_in_Q
+          simp [hp2_ne_s2, hp2_ne_t2, hs2_ne_t2]
+      exact h_tri _ h_clique
+    have hs2_nonadj_t3 : ¬G.Adj s2 t3 := by
+      intro h
+      have h_clique : G.IsNClique 3 {w1, s2, t3} := by
+        rw [SimpleGraph.isNClique_iff]
+        constructor
+        · intro x hx y hy hxy
+          simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
+          rcases hx with rfl | rfl | rfl <;> rcases hy with rfl | rfl | rfl
+          all_goals
+            first
+            | exact absurd rfl hxy
+            | exact hw1s2
+            | exact hw1_adj_t3
+            | exact G.symm hw1s2
+            | exact G.symm hw1_adj_t3
+            | exact h
+            | exact G.symm h
+        · have hw1_ne_s2 : w1 ≠ s2 := G.ne_of_adj hw1s2
+          have hw1_ne_t3 : w1 ≠ t3 := G.ne_of_adj hw1_adj_t3
+          have hs2_ne_t3 : s2 ≠ t3 := by
+            intro h_eq
+            have ht3_in_N : t3 ∈ N := h_eq ▸ hs2_in_N
+            have ht3_in_Q : t3 ∈ Q := (Finset.mem_filter.mp ht3_in_T).1
+            exact (Finset.disjoint_left.mp hNv_Q_disj) ht3_in_N ht3_in_Q
+          simp [hw1_ne_s2, hw1_ne_t3, hs2_ne_t3]
+      exact h_tri _ h_clique
+    have hs2_nonadj_t4 : ¬G.Adj s2 t4 := by
+      intro h
+      have h_clique : G.IsNClique 3 {w1, s2, t4} := by
+        rw [SimpleGraph.isNClique_iff]
+        constructor
+        · intro x hx y hy hxy
+          simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
+          rcases hx with rfl | rfl | rfl <;> rcases hy with rfl | rfl | rfl
+          all_goals
+            first
+            | exact absurd rfl hxy
+            | exact hw1s2
+            | exact hw1t4
+            | exact G.symm hw1s2
+            | exact G.symm hw1t4
+            | exact h
+            | exact G.symm h
+        · have hw1_ne_s2 : w1 ≠ s2 := G.ne_of_adj hw1s2
+          have hw1_ne_t4 : w1 ≠ t4 := G.ne_of_adj hw1t4
+          have hs2_ne_t4 : s2 ≠ t4 := by
+            intro h_eq
+            have ht4_in_N : t4 ∈ N := h_eq ▸ hs2_in_N
+            have ht4_in_Q : t4 ∈ Q := (Finset.mem_filter.mp ht4_in_T).1
+            exact (Finset.disjoint_left.mp hNv_Q_disj) ht4_in_N ht4_in_Q
+          simp [hw1_ne_s2, hw1_ne_t4, hs2_ne_t4]
+      exact h_tri _ h_clique
+    have hs2_adj_t1 : G.Adj s2 t1 := by
+      by_contra hnot
+      have : (T.filter (G.Adj s2)).card = 0 := by
+        have : (T.filter (G.Adj s2)) = ∅ := by
+          ext x
+          simp only [Finset.mem_filter, Finset.not_mem_empty, iff_false, not_and]
+          intro hx
+          rw [hT_eq] at hx
+          simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+          rcases hx with rfl | rfl | rfl | rfl
+          · exact hnot
+          · exact hs2_nonadj_t2
+          · exact hs2_nonadj_t3
+          · exact hs2_nonadj_t4
+        simpa [this]
+      omega
+    have hsubset : ({p2, w1, t1} : Finset (Fin 18)) ⊆ (G.neighborFinset s2 ∩ G.neighborFinset p1) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl | rfl
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨hs2_adj_p2, h_adj12⟩
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨G.symm hw1s2, hp1_adj_w1⟩
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨hs2_adj_t1, hp1_adj_t1⟩
+    have hcard3 : 3 ≤ commonNeighborsCard G s2 p1 := by
+      have : ({p2, w1, t1} : Finset (Fin 18)).card ≤ (G.neighborFinset s2 ∩ G.neighborFinset p1).card :=
+        Finset.card_le_card hsubset
+      have hp2_ne_w1 : p2 ≠ w1 := fun h =>
+        Finset.disjoint_left.mp hP_Q_disj hp2_in_P (h ▸ hw1_in_Q)
+      have hp2_ne_t1 : p2 ≠ t1 := by
+        intro h
+        subst h
+        have : p2 ∈ Q := (Finset.mem_filter.mp ht1_in_T).1
+        exact (Finset.disjoint_left.mp hP_Q_disj) hp2_in_P this
+      have hw1_ne_t1 : w1 ≠ t1 := fun h_eq =>
+        hw1_nonadj_t (h_eq ▸ ht1_adj_t)
+      have h3 : ({p2, w1, t1} : Finset (Fin 18)).card = 3 := by
+        rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+        · simp only [Finset.mem_singleton]; exact hw1_ne_t1
+        · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]; exact ⟨hp2_ne_w1, hp2_ne_t1⟩
+      have : 3 ≤ (G.neighborFinset s2 ∩ G.neighborFinset p1).card := by
+        simpa [h3] using this
+      simpa [commonNeighborsCard, _root_.commonNeighbors] using this
+    have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg s2 p1 hs2_ne_p1.symm hs2_nonadj_p1
+    omega
+  · -- Branch: w1~s4 and w1~t2 (symmetric)
+    have hs4_ne_p1 : s4 ≠ p1 := by
+      intro h
+      subst h
+      exact hp1_nonadj_v (by simpa [mem_neighborFinset] using hs4_in_N)
+    have hs4_nonadj_t2 : ¬G.Adj s4 t2 := by
+      intro h
+      have h_clique : G.IsNClique 3 {w1, s4, t2} := by
+        rw [SimpleGraph.isNClique_iff]
+        constructor
+        · intro x hx y hy hxy
+          simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
+          rcases hx with rfl | rfl | rfl <;> rcases hy with rfl | rfl | rfl
+          all_goals
+            first
+            | exact absurd rfl hxy
+            | exact hw1s4
+            | exact hw1t2
+            | exact G.symm hw1s4
+            | exact G.symm hw1t2
+            | exact h
+            | exact G.symm h
+        · have hw1_ne_s4 : w1 ≠ s4 := G.ne_of_adj hw1s4
+          have hw1_ne_t2 : w1 ≠ t2 := G.ne_of_adj hw1t2
+          have hs4_ne_t2 : s4 ≠ t2 := by
+            intro h_eq
+            have ht2_in_N : t2 ∈ N := h_eq ▸ hs4_in_N
+            have ht2_in_Q : t2 ∈ Q := (Finset.mem_filter.mp ht2_in_T).1
+            exact (Finset.disjoint_left.mp hNv_Q_disj) ht2_in_N ht2_in_Q
+          simp [hw1_ne_s4, hw1_ne_t2, hs4_ne_t2]
+      exact h_tri _ h_clique
+    have hs4_nonadj_t3 : ¬G.Adj s4 t3 := by
+      intro h
+      have h_clique : G.IsNClique 3 {w1, s4, t3} := by
+        rw [SimpleGraph.isNClique_iff]
+        constructor
+        · intro x hx y hy hxy
+          simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
+          rcases hx with rfl | rfl | rfl <;> rcases hy with rfl | rfl | rfl
+          all_goals
+            first
+            | exact absurd rfl hxy
+            | exact hw1s4
+            | exact hw1_adj_t3
+            | exact G.symm hw1s4
+            | exact G.symm hw1_adj_t3
+            | exact h
+            | exact G.symm h
+        · have hw1_ne_s4 : w1 ≠ s4 := G.ne_of_adj hw1s4
+          have hw1_ne_t3 : w1 ≠ t3 := G.ne_of_adj hw1_adj_t3
+          have hs4_ne_t3 : s4 ≠ t3 := by
+            intro h_eq
+            have ht3_in_N : t3 ∈ N := h_eq ▸ hs4_in_N
+            have ht3_in_Q : t3 ∈ Q := (Finset.mem_filter.mp ht3_in_T).1
+            exact (Finset.disjoint_left.mp hNv_Q_disj) ht3_in_N ht3_in_Q
+          simp [hw1_ne_s4, hw1_ne_t3, hs4_ne_t3]
+      exact h_tri _ h_clique
+    have hs4_nonadj_t4 : ¬G.Adj s4 t4 := by
+      intro h
+      have h_clique : G.IsNClique 3 {p4, s4, t4} := by
+        rw [SimpleGraph.isNClique_iff]
+        constructor
+        · intro x hx y hy hxy
+          simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx hy
+          rcases hx with rfl | rfl | rfl <;> rcases hy with rfl | rfl | rfl
+          all_goals
+            first
+            | exact absurd rfl hxy
+            | exact hs4_adj_p4
+            | exact hp4_adj_t4
+            | exact G.symm hs4_adj_p4
+            | exact G.symm hp4_adj_t4
+            | exact h
+            | exact G.symm h
+        · have hp4_ne_s4 : p4 ≠ s4 := G.ne_of_adj (G.symm hs4_adj_p4)
+          have hp4_ne_t4 : p4 ≠ t4 := G.ne_of_adj hp4_adj_t4
+          have hs4_ne_t4 : s4 ≠ t4 := by
+            intro h_eq
+            have ht4_in_N : t4 ∈ N := h_eq ▸ hs4_in_N
+            have ht4_in_Q : t4 ∈ Q := (Finset.mem_filter.mp ht4_in_T).1
+            exact (Finset.disjoint_left.mp hNv_Q_disj) ht4_in_N ht4_in_Q
+          simp [hp4_ne_s4, hp4_ne_t4, hs4_ne_t4]
+      exact h_tri _ h_clique
+    have hs4_adj_t1 : G.Adj s4 t1 := by
+      by_contra hnot
+      have : (T.filter (G.Adj s4)).card = 0 := by
+        have : (T.filter (G.Adj s4)) = ∅ := by
+          ext x
+          simp only [Finset.mem_filter, Finset.not_mem_empty, iff_false, not_and]
+          intro hx
+          rw [hT_eq] at hx
+          simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+          rcases hx with rfl | rfl | rfl | rfl
+          · exact hnot
+          · exact hs4_nonadj_t2
+          · exact hs4_nonadj_t3
+          · exact hs4_nonadj_t4
+        simpa [this]
+      omega
+    have hs4_nonadj_p1 : ¬G.Adj s4 p1 := by
+      intro h
+      have h_and : s4 ∈ G.neighborFinset v ∧ G.Adj s4 p1 := ⟨hs4_in_N, h⟩
+      have : s4 = s1 := hs1_unique s4 h_and
+      exact hs_ne14 (this.symm)
+    have hsubset : ({p4, w1, t1} : Finset (Fin 18)) ⊆ (G.neighborFinset s4 ∩ G.neighborFinset p1) := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl | rfl
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨hs4_adj_p4, G.symm h_adj41⟩
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨G.symm hw1s4, hp1_adj_w1⟩
+      · rw [Finset.mem_inter, mem_neighborFinset, mem_neighborFinset]
+        exact ⟨hs4_adj_t1, hp1_adj_t1⟩
+    have hcard3 : 3 ≤ commonNeighborsCard G s4 p1 := by
+      have : ({p4, w1, t1} : Finset (Fin 18)).card ≤ (G.neighborFinset s4 ∩ G.neighborFinset p1).card :=
+        Finset.card_le_card hsubset
+      have hp4_ne_w1 : p4 ≠ w1 := fun h =>
+        Finset.disjoint_left.mp hP_Q_disj hp4_in_P (h ▸ hw1_in_Q)
+      have hp4_ne_t1 : p4 ≠ t1 := by
+        intro h
+        subst h
+        have : p4 ∈ Q := (Finset.mem_filter.mp ht1_in_T).1
+        exact (Finset.disjoint_left.mp hP_Q_disj) hp4_in_P this
+      have hw1_ne_t1 : w1 ≠ t1 := fun h_eq =>
+        hw1_nonadj_t (h_eq ▸ ht1_adj_t)
+      have h3 : ({p4, w1, t1} : Finset (Fin 18)).card = 3 := by
+        rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
+        · simp only [Finset.mem_singleton]; exact hw1_ne_t1
+        · simp only [Finset.mem_insert, Finset.mem_singleton, not_or]; exact ⟨hp4_ne_w1, hp4_ne_t1⟩
+      have : 3 ≤ (G.neighborFinset s4 ∩ G.neighborFinset p1).card := by
+        simpa [h3] using this
+      simpa [commonNeighborsCard, _root_.commonNeighbors] using this
+    have h_le := commonNeighborsCard_le_two h_tri h_no6 h_reg s4 p1 hs4_ne_p1.symm hs4_nonadj_p1
+    omega
 
 /-! ## Upper Bound Theorem -/
 
