@@ -12185,7 +12185,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
     · exact Finset.mem_erase.mpr ⟨ht_ne_s4.symm, hs4_in_N⟩
 
   have hS0_eq : S0 = ({s1, s2, s3, s4} : Finset (Fin 18)) := by
-    exact (Finset.eq_of_subset_of_card_le hS_sub_S0 (by simpa [hS0_card, hS_card])).symm
+    exact (Finset.eq_of_subset_of_card_le hS_sub_S0 (by simp [hS0_card, hS_card])).symm
 
   have hSrest_w1_card : (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card = 2 := by
     have h' : (S0.filter (G.Adj w1)).card = 2 := hS0w1_card
@@ -12445,7 +12445,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       · simp [ht3_ne_t4]
       · simp [ht2_ne_t3, ht2_ne_t4]
       · simp [ht2_ne_t1.symm, ht3_ne_t1.symm, ht4_ne_t1.symm]
-    exact (Finset.eq_of_subset_of_card_le hsub (by simpa [hT_card, hcard])).symm
+    exact (Finset.eq_of_subset_of_card_le hsub (by simp [hT_card, hcard])).symm
 
   -- w1 is not adjacent to t1 (else {p1, t1, w1} is a triangle).
   have hw1_nonadj_t1 : ¬G.Adj w1 t1 := by
@@ -12776,8 +12776,8 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card :=
               Finset.card_le_card hsub
             simpa [hSrest_card3] using this
-          have : 3 ≤ 2 := by simpa [hSrest_w1_card'] using hge3
-          exact (Nat.not_succ_le_self 2) (by simpa using this)
+          have : 3 ≤ 2 := by rw [hSrest_w1_card'] at hge3; exact hge3
+          exact (Nat.not_succ_le_self 2) this
         exact Or.inr (Or.inr ⟨hs2, hs3, hs4⟩)
       · by_cases hs4 : G.Adj w1 s4
         · exact Or.inr (Or.inl ⟨hs2, hs3, hs4⟩)
@@ -12785,8 +12785,8 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           exfalso
           have hcard1 :
               (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card = 1 := by
-            simp [Finset.filter_insert, hs2, hs3, hs4, hs_ne23, hs_ne24, hs_ne34]
-          have : (1 : ℕ) = 2 := by simpa [hcard1] using hSrest_w1_card'
+            simp [Finset.filter_insert, hs2, hs3, hs4, hs_ne24]
+          have : (1 : ℕ) = 2 := by rw [hcard1] at hSrest_w1_card'; exact hSrest_w1_card'
           exact (by decide : (1 : ℕ) ≠ 2) this
     · -- ¬(w1~s2), so must have w1~s3 and w1~s4
       by_cases hs3 : G.Adj w1 s3
@@ -12796,8 +12796,19 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           exfalso
           have hcard1 :
               (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card = 1 := by
-            simp [Finset.filter_insert, hs2, hs3, hs4, hs_ne23, hs_ne24, hs_ne34]
-          have : (1 : ℕ) = 2 := by simpa [hcard1] using hSrest_w1_card'
+            have : ({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1) = {s3} := by
+              ext x
+              simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+              constructor
+              · intro ⟨hx_mem, hx_adj⟩
+                rcases hx_mem with rfl | rfl | rfl
+                · exfalso; exact hs2 hx_adj
+                · rfl
+                · exfalso; exact hs4 hx_adj
+              · intro rfl
+                exact ⟨Or.inr (Or.inl rfl), hs3⟩
+            simp [this]
+          have : (1 : ℕ) = 2 := by rw [hcard1] at hSrest_w1_card'; exact hSrest_w1_card'
           exact (by decide : (1 : ℕ) ≠ 2) this
       · -- none of s2,s3 adjacent gives card ≤1, contradiction
         exfalso
@@ -12817,13 +12828,13 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               · intro rfl
                 exact ⟨Or.inr (Or.inr rfl), hs4⟩
             simp [this]
-          have : (1 : ℕ) = 2 := by simpa [hcard1] using hSrest_w1_card'
+          have : (1 : ℕ) = 2 := by rw [hcard1] at hSrest_w1_card'; exact hSrest_w1_card'
           exact (by decide : (1 : ℕ) ≠ 2) this
         · -- If w1 not adj s4, then card = 0 (none adjacent)
           have hcard0 :
               (({s2, s3, s4} : Finset (Fin 18)).filter (G.Adj w1)).card = 0 := by
-            simp [Finset.filter_insert, hs2, hs3, hs4, hs_ne23, hs_ne24, hs_ne34]
-          have : (0 : ℕ) = 2 := by simpa [hcard0] using hSrest_w1_card'
+            simp [Finset.filter_insert, hs2, hs3, hs4]
+          have : (0 : ℕ) = 2 := by rw [hcard0] at hSrest_w1_card'; exact hSrest_w1_card'
           exact (by decide : (0 : ℕ) ≠ 2) this
 
   have ht_cases :
@@ -12853,16 +12864,16 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
                   (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card :=
               Finset.card_le_card hsub
             simpa [hTrest_card3] using this
-          have : 3 ≤ 2 := by simpa [hTrest_w1_card'] using hge3
-          exact (Nat.not_succ_le_self 2) (by simpa using this)
+          have : 3 ≤ 2 := by rw [hTrest_w1_card'] at hge3; exact hge3
+          exact (Nat.not_succ_le_self 2) this
         exact Or.inr (Or.inr ⟨ht2, ht3, ht4⟩)
       · by_cases ht4 : G.Adj w1 t4
         · exact Or.inr (Or.inl ⟨ht2, ht3, ht4⟩)
         · exfalso
           have hcard1 :
               (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card = 1 := by
-            simp [Finset.filter_insert, ht2, ht3, ht4, ht2_ne_t3, ht2_ne_t4, ht3_ne_t4]
-          have : (1 : ℕ) = 2 := by simpa [hcard1] using hTrest_w1_card'
+            simp [Finset.filter_insert, ht2, ht3, ht4, ht2_ne_t4]
+          have : (1 : ℕ) = 2 := by rw [hcard1] at hTrest_w1_card'; exact hTrest_w1_card'
           exact (by decide : (1 : ℕ) ≠ 2) this
     · by_cases ht3 : G.Adj w1 t3
       · by_cases ht4 : G.Adj w1 t4
@@ -12870,8 +12881,19 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
         · exfalso
           have hcard1 :
               (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card = 1 := by
-            simp [Finset.filter_insert, ht2, ht3, ht4, ht2_ne_t3, ht2_ne_t4, ht3_ne_t4]
-          have : (1 : ℕ) = 2 := by simpa [hcard1] using hTrest_w1_card'
+            have : ({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1) = {t3} := by
+              ext x
+              simp only [Finset.mem_filter, Finset.mem_insert, Finset.mem_singleton]
+              constructor
+              · intro ⟨hx_mem, hx_adj⟩
+                rcases hx_mem with rfl | rfl | rfl
+                · exfalso; exact ht2 hx_adj
+                · rfl
+                · exfalso; exact ht4 hx_adj
+              · intro rfl
+                exact ⟨Or.inr (Or.inl rfl), ht3⟩
+            simp [this]
+          have : (1 : ℕ) = 2 := by rw [hcard1] at hTrest_w1_card'; exact hTrest_w1_card'
           exact (by decide : (1 : ℕ) ≠ 2) this
       · exfalso
         by_cases ht4 : G.Adj w1 t4
@@ -12890,13 +12912,13 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
               · intro rfl
                 exact ⟨Or.inr (Or.inr rfl), ht4⟩
             simp [this]
-          have : (1 : ℕ) = 2 := by simpa [hcard1] using hTrest_w1_card'
+          have : (1 : ℕ) = 2 := by rw [hcard1] at hTrest_w1_card'; exact hTrest_w1_card'
           exact (by decide : (1 : ℕ) ≠ 2) this
         · -- If w1 not adj t4, then card = 0 (none adjacent)
           have hcard0 :
               (({t2, t3, t4} : Finset (Fin 18)).filter (G.Adj w1)).card = 0 := by
-            simp [Finset.filter_insert, ht2, ht3, ht4, ht2_ne_t3, ht2_ne_t4, ht3_ne_t4]
-          have : (0 : ℕ) = 2 := by simpa [hcard0] using hTrest_w1_card'
+            simp [Finset.filter_insert, ht2, ht3, ht4]
+          have : (0 : ℕ) = 2 := by rw [hcard0] at hTrest_w1_card'; exact hTrest_w1_card'
           exact (by decide : (0 : ℕ) ≠ 2) this
 
   have h_exists_i :
@@ -13163,7 +13185,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have : (T.filter (G.Adj s2)).card = 0 := by
         have : (T.filter (G.Adj s2)) = ∅ := by
           ext x
-          simp only [Finset.mem_filter, Finset.not_mem_empty, iff_false, not_and]
+          simp only [Finset.mem_filter, Finset.notMem_empty, iff_false, not_and]
           intro hx
           rw [hT_eq] at hx
           simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -13172,7 +13194,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           · exact hs2_nonadj_t2
           · exact hs2_nonadj_t3
           · exact hs2_nonadj_t4
-        simpa [this]
+        simp [this]
       omega
     have hsubset : ({p2, w1, t1} : Finset (Fin 18)) ⊆ (G.neighborFinset s2 ∩ G.neighborFinset p1) := by
       intro x hx
@@ -13293,7 +13315,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
       have : (T.filter (G.Adj s4)).card = 0 := by
         have : (T.filter (G.Adj s4)) = ∅ := by
           ext x
-          simp only [Finset.mem_filter, Finset.not_mem_empty, iff_false, not_and]
+          simp only [Finset.mem_filter, Finset.notMem_empty, iff_false, not_and]
           intro hx
           rw [hT_eq] at hx
           simp only [Finset.mem_insert, Finset.mem_singleton] at hx
@@ -13302,7 +13324,7 @@ lemma final_contradiction {G : SimpleGraph (Fin 18)} [DecidableRel G.Adj]
           · exact hs4_nonadj_t2
           · exact hs4_nonadj_t3
           · exact hs4_nonadj_t4
-        simpa [this]
+        simp [this]
       omega
     have hs4_nonadj_p1 : ¬G.Adj s4 p1 := by
       intro h
