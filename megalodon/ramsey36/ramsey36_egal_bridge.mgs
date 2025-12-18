@@ -1,2 +1,0 @@
-Axiom equip_bij : forall X Y, equip X Y -> exists f:set -> set, bij X Y f.
-Axiom bij_equip : forall X Y, forall f:set -> set, bij X Y f -> equip X Y.
