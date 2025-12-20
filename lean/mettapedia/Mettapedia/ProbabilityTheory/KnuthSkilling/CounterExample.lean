@@ -1,10 +1,14 @@
 /-
 # Counter-Examples for Knuth-Skilling Formalization
 
-This file contains two types of counterexamples:
+This file contains examples showing limitations of specific proof strategies:
 
-1. The L = M witness strategy failure (ℝ with addition)
-2. Non-commutativity breaking the scaling equality μ(F, n·r) = (μ(F, r))^n
+1. **L = M witness strategy failure** (ℝ with addition):
+   PROVEN - A specific witness construction for separation fails when L=M
+
+2. **Non-commutativity breaking scaling** (free monoid):
+   DOCUMENTED - The algebraic identity μ(F, n·r) = (μ(F, r))^n requires
+   commutativity. The actual proof is in CounterExamples.lean.
 -/
 
 import Mathlib.Data.Real.Basic
@@ -41,15 +45,18 @@ Separation condition: x^m < a^n ≤ y^m
 Therefore, the witness construction FAILS.
 -/
 
-/-- The counter-example proving witness (n'+1, L+(M-1)) fails when L = M
+/-- The counter-example proving witness (n'+1, L+(M-1)) fails when L = M.
 
-The full proof with all minimality conditions is complex, but the core
-failure is captured in the simpler theorems below. -/
-axiom counterexample_L_eq_M_witness_fails :
+This theorem shows that for specific values a=10, x=3.5, y=3.6 with M=L=3,
+the proposed witness (n=2, m=5) fails the upper bound.
+
+The key point: x < y < a, with M=3 minimal s.t. 3x ≥ a, and L=3 minimal s.t. 3y > a.
+The witness m = L + (M-1) = 5 and n = 2 fails because 2·a = 20 > 18 = 5·y. -/
+theorem counterexample_L_eq_M_witness_fails :
   ∃ (a x y : ℝ),
     -- Basic ordering
     0 < a ∧ 0 < x ∧ 0 < y ∧ x < y ∧
-    -- N = 1 (x < a but no smaller power works)
+    -- x < a (so N=1 works)
     x < a ∧
     -- M = 3 is minimal with a ≤ M·x
     (∀ k : ℕ, k > 0 → k < 3 → (k : ℝ) * x < a) ∧
@@ -63,10 +70,16 @@ axiom counterexample_L_eq_M_witness_fails :
     let m := L + (M - 1)  -- 5
     let n' := 1           -- floor((2x + a)/a)
     let n := n' + 1       -- 2
-    ¬ ((n : ℝ) * a ≤ (m : ℝ) * y)
-
--- Note: The full proof is tedious but straightforward.
--- The key inequality failures are demonstrated in the theorems below.
+    ¬ ((n : ℝ) * a ≤ (m : ℝ) * y) := by
+  -- Use a = 10, x = 3.5, y = 3.6
+  refine ⟨10, 3.5, 3.6, by norm_num, by norm_num, by norm_num, by norm_num, by norm_num,
+    ?hM_min, by norm_num, ?hL_min, by norm_num, by norm_num⟩
+  · -- M = 3 is minimal: k·3.5 < 10 for k ∈ {1, 2}
+    intro k hk_pos hk_lt
+    interval_cases k <;> norm_num
+  · -- L = 3 is minimal: k·3.6 ≤ 10 for k ∈ {1, 2}
+    intro k hk_pos hk_lt
+    interval_cases k <;> norm_num
 
 /-- Simplified version showing just the key inequality failure -/
 theorem counterexample_simplified :
@@ -104,9 +117,11 @@ theorem counterexample_upper_bound_inequality :
 
 /-! ## Mathematical Insight
 
+**What this counterexample shows**: A specific witness construction strategy FAILS for L=M.
+
 The failure occurs because when L = M, we have:
 - a ≤ x^M (x has "grown large enough")
-- m = 2M - 1
+- m = 2M - 1 (proposed witness multiplicity)
 - x^m = x^{M-1} ⊕ x^M ≥ x^{M-1} ⊕ a
 
 The crossing point n' is chosen so that:
@@ -119,13 +134,12 @@ But when we compute x^m:
 This means a^{n'+1} might fall in the gap (x^{M-1} ⊕ a, x^m],
 breaking the lower bound x^m < a^{n'+1}.
 
-But even if the lower bound works (as in our counterexample where
-the extra x^M - a is small), the upper bound a^{n'+1} ≤ y^m can fail
-because n'+1 is calibrated for the gap at x^{M-1}, not at the larger x^m.
+Even when the lower bound works (as in our a=10, x=3.5, y=3.6 example),
+the upper bound a^{n'+1} ≤ y^m can fail because n'+1 is calibrated
+for the gap at x^{M-1}, not at the larger x^m.
 
-The solution requires using m large enough that the geometric growth
-of (y/x)^m creates sufficient space for a power of a, regardless of
-the relationship between M and L.
+**What this does NOT show**: That separation witnesses don't exist in general.
+Other witness constructions may succeed. This merely shows one strategy fails.
 -/
 
 /-! ## Counter-Example: Non-Commutativity Breaks Scaling
@@ -165,39 +179,24 @@ open KnuthSkillingAlgebra AppendixA
 
 variable {α : Type*} [KnuthSkillingAlgebra α]
 
-/-- **Positive result**: WITH commutativity, the scaling equality holds for 2-type families.
+/-! ### Mathematical Observations
 
-This theorem demonstrates that commutativity is SUFFICIENT for the result.
-Combined with the informal counterexample above, this shows commutativity
-is both necessary and sufficient for the general scaling equality. -/
-theorem mu_scaleMult_iterate_with_commutativity
-    {F : AtomFamily α 2}
-    (h_comm : ∀ x y : α, op x y = op y x)
-    (r : Multi 2) (n : ℕ) :
-    mu F (scaleMult n r) = iterate_op (mu F r) n := by
-  -- The proof uses the iterate_op_add_comm lemma from Algebra.lean
-  -- which requires commutativity to show a^m ⊕ b^n = (a⊕b)^{m+n}
-  -- and inductively builds up to a^{nm} ⊕ b^{nm} = (a⊕b)^{nm}
-  sorry -- TODO: Complete using iterate_op_add_comm + induction on fold structure
+**What IS proven** (in CounterExamples.lean):
+- `free_monoid_counterexample`: In the free monoid, (a⊕b)² ≠ a²⊕b²
 
-/-- **Negative observation**: The K&S axioms do NOT include commutativity.
+**What this demonstrates**:
+- The algebraic identity μ(F, n·r) = (μ(F, r))^n requires commutativity
+- Without commutativity: (a⊕b)² = a⊕b⊕a⊕b (interleaved) ≠ a²⊕b² (grouped)
+- The K&S axioms do NOT include commutativity
 
-Therefore, we CANNOT prove μ(F, n·r) = (μ(F, r))^n for multi-type families
-from the K&S axioms alone. The equality requires additional structure:
-either commutativity OR the B-case order/Θ machinery. -/
-example : ¬ (∀ (α : Type*) [KnuthSkillingAlgebra α],
-    ∀ {k : ℕ} (F : AtomFamily α k) (r : Multi k) (n : ℕ),
-    mu F (scaleMult n r) = iterate_op (mu F r) n) := by
-  -- The counterexample is the free monoid model described above.
-  -- We'd need to construct the model explicitly in Lean to complete this,
-  -- which requires defining a non-commutative KnuthSkillingAlgebra instance.
-  -- For now, we note that such a model exists and the proof cannot go through.
-  sorry -- TODO: Construct free monoid model explicitly
+**What remains to be shown** (not yet formalized):
+- A full `KnuthSkillingAlgebra` instance for the free monoid with shortlex order
+- Once constructed, this would provide a formal model where μ-scaling fails
 
-/-! ### Mathematical Moral
+### Mathematical Moral
 
 The scaling equality μ(F, n·r) = (μ(F, r))^n requires one of:
-1. **Commutativity** (proven sufficient above)
+1. **Commutativity** (sufficient; standard algebra)
 2. **B-case restriction**: μ(F, r) = d^u for external d (uses order/Θ structure)
 
 The K&S Appendix A cleverly uses approach (2) to derive commutativity as a THEOREM,

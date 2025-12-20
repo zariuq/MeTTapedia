@@ -462,10 +462,13 @@ Show that Cox consistency implies the Kolmogorov axioms.
 This proves the two foundations are equivalent!
 -/
 
-/-- The sum rule + product rule + complement rule are exactly
+/-- **Cox's theorem**: The sum rule + product rule + complement rule are exactly
 the Kolmogorov probability axioms. Cox's derivation shows these
-follow from more basic symmetry principles! -/
-theorem ks_implies_kolmogorov (hC : CoxConsistency α v) :
+follow from more basic symmetry principles!
+
+NOTE: This is Cox's approach (CoxConsistency), not Knuth-Skilling's approach
+(KnuthSkillingAlgebra). These are different foundations for probability. -/
+theorem cox_implies_kolmogorov (hC : CoxConsistency α v) :
     (∀ a b, Disjoint a b → v.val (a ⊔ b) = v.val a + v.val b) ∧
     (∀ a, 0 ≤ v.val a) ∧
     (v.val ⊤ = 1) := by
@@ -474,6 +477,10 @@ theorem ks_implies_kolmogorov (hC : CoxConsistency α v) :
   constructor
   · exact v.nonneg
   · exact v.val_top
+
+/-- Alias for backward compatibility -/
+@[deprecated cox_implies_kolmogorov (since := "2025-12-19")]
+abbrev ks_implies_kolmogorov := @cox_implies_kolmogorov
 
 /-! ## Inclusion-Exclusion (2 events)
 
