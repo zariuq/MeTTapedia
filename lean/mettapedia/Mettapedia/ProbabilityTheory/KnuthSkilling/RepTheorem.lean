@@ -963,6 +963,116 @@ theorem separation_gives_strict_bound (a x : α) (ha : ident < a) (_hx : ident <
   rw [div_lt_div_iff₀ hm'_pos_real hm_pos_real]
   exact h_cross
 
+/-!
+### Strict monotonicity of `ThetaFull` from strict separation
+
+The final step in `ThetaFull` strict monotonicity is to show that, given
+`x^m < a^n < y^m`, the `y`-lowerRatioSet has elements *strictly above* `n/m`.
+
+This is achieved by applying strict separation again to the pair
+`a^n < y^m`, producing a ratio `n₂ / (m * m₂)` with
+`n/m < n₂/(m*m₂) ∈ lowerRatioSet a y`.
+-/
+
+/-- `ThetaFull` is strictly monotone on elements `> ident`, assuming the strict variant
+`KSSeparationStrict` of the separation property. -/
+theorem ThetaFull_strictMono_on_pos_of_KSSeparationStrict
+    {α : Type*} [KnuthSkillingAlgebra α] [KSSeparationStrict α]
+    (a : α) (ha : ident < a) (x y : α)
+    (hx : ident < x) (hy : ident < y) (hxy : x < y) :
+    ThetaFull a ha x < ThetaFull a ha y := by
+  classical
+  -- Use `KSSeparationStrict` as a `KSSeparation` instance when calling helper lemmas.
+  haveI : KSSeparation α := KSSeparationStrict.toKSSeparation (α := α)
+  -- Reduce to the `Theta` case (both inputs are `> ident`).
+  simp only [ThetaFull, hx, hy, dif_pos]
+  unfold Theta
+  have hx_ne : (lowerRatioSet a x).Nonempty := lowerRatioSet_nonempty a x hx
+  have hy_bdd : BddAbove (lowerRatioSet a y) := lowerRatioSet_bddAbove a y ha hy
+
+  -- Get a strict separating ratio `n/m` with `x^m < a^n < y^m`.
+  rcases (KSSeparationStrict.separation_strict (a := a) (x := x) (y := y) ha hx hy hxy) with
+    ⟨n, m, hm_pos, hxm_lt, han_lt_ym⟩
+
+  -- `n/m` is an upper bound for `lowerRatioSet a x`.
+  have h_sup_x_le : sSup (lowerRatioSet a x) ≤ (n : ℝ) / m := by
+    apply csSup_le hx_ne
+    intro r hr
+    exact le_of_lt (separation_gives_strict_bound (a := a) (x := x) ha hx n m hm_pos hxm_lt r hr)
+
+  -- `n/m ∈ lowerRatioSet a y` (via `a^n ≤ y^m`).
+  have h_nm_in_y : (n : ℝ) / m ∈ lowerRatioSet a y :=
+    ⟨n, m, hm_pos, le_of_lt han_lt_ym, rfl⟩
+
+  -- Build a strictly larger ratio in `lowerRatioSet a y` by separating `a^n < y^m`.
+  have hn_pos : 0 < n := by
+    by_contra hn0
+    have hn0' : n = 0 := by omega
+    subst hn0'
+    have hx_pow_pos : ident < iterate_op x m := iterate_op_pos x hx m hm_pos
+    have hx_pow_lt : iterate_op x m < ident := by
+      simpa [iterate_op_zero] using hxm_lt
+    exact (not_lt_of_gt hx_pow_pos) hx_pow_lt
+  have ha_pow_pos : ident < iterate_op a n := iterate_op_pos a ha n hn_pos
+  have hy_pow_pos : ident < iterate_op y m := iterate_op_pos y hy m hm_pos
+  rcases (KSSeparationStrict.separation_strict (a := a) (x := iterate_op a n) (y := iterate_op y m)
+      ha ha_pow_pos hy_pow_pos han_lt_ym) with
+    ⟨n₂, m₂, hm₂_pos, h_pow_lt, h_pow_in⟩
+
+  -- Rewrite the strict gap using `iterate_op_mul`.
+  have h_pow_lt' : iterate_op a (n * m₂) < iterate_op a n₂ := by
+    simpa [iterate_op_mul] using h_pow_lt
+  have h_pow_in' : iterate_op a n₂ < iterate_op y (m * m₂) := by
+    simpa [iterate_op_mul] using h_pow_in
+
+  -- From `a^(n*m₂) < a^n₂`, deduce `n*m₂ < n₂`, hence a ratio strictly above `n/m`.
+  have hnm₂_lt : n * m₂ < n₂ := by
+    by_contra h_not
+    push_neg at h_not
+    have h_ge : iterate_op a n₂ ≤ iterate_op a (n * m₂) := iterate_op_mono a ha h_not
+    exact (lt_irrefl _ (lt_of_lt_of_le h_pow_lt' h_ge))
+
+  -- Define the refined ratio `n₂ / (m*m₂)` which lies in `lowerRatioSet a y`.
+  have h_ratio_in_y : (n₂ : ℝ) / (m * m₂ : ℕ) ∈ lowerRatioSet a y := by
+    refine ⟨n₂, m * m₂, Nat.mul_pos hm_pos hm₂_pos, ?_, rfl⟩
+    exact le_of_lt h_pow_in'
+
+  have h_ratio_gt : (n : ℝ) / m < (n₂ : ℝ) / (m * m₂ : ℕ) := by
+    -- Rewrite `n/m = (n*m₂)/(m*m₂)` and compare numerators with common denominator.
+    have hnm_eq : (n : ℝ) / m = (n * m₂ : ℕ) / (m * m₂ : ℕ) := by
+      have hm0 : (m : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hm_pos)
+      have hm₂0 : (m₂ : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hm₂_pos)
+      field_simp [hm0, hm₂0]
+      simp [Nat.cast_mul, mul_left_comm]
+    have hden_pos : 0 < ((m * m₂ : ℕ) : ℝ) := Nat.cast_pos.mpr (Nat.mul_pos hm_pos hm₂_pos)
+    have hnum_lt : ((n * m₂ : ℕ) : ℝ) < (n₂ : ℝ) := Nat.cast_lt.mpr hnm₂_lt
+    have hinv_pos : 0 < (1 : ℝ) / ((m * m₂ : ℕ) : ℝ) := one_div_pos.mpr hden_pos
+    have : ((n * m₂ : ℕ) : ℝ) * ((1 : ℝ) / ((m * m₂ : ℕ) : ℝ)) <
+        (n₂ : ℝ) * ((1 : ℝ) / ((m * m₂ : ℕ) : ℝ)) :=
+      mul_lt_mul_of_pos_right hnum_lt hinv_pos
+    calc (n : ℝ) / m = ((n * m₂ : ℕ) : ℝ) / (m * m₂ : ℕ) := by simp [hnm_eq]
+      _ = ((n * m₂ : ℕ) : ℝ) * ((1 : ℝ) / ((m * m₂ : ℕ) : ℝ)) := by
+          simp [div_eq_mul_inv]
+      _ < (n₂ : ℝ) * ((1 : ℝ) / ((m * m₂ : ℕ) : ℝ)) := this
+      _ = (n₂ : ℝ) / (m * m₂ : ℕ) := by
+          simp [div_eq_mul_inv]
+
+  -- Conclude: `sSup lowerRatioSet x ≤ n/m < sSup lowerRatioSet y`.
+  have h_nm_lt_sup_y : (n : ℝ) / m < sSup (lowerRatioSet a y) :=
+    lt_of_lt_of_le h_ratio_gt (le_csSup hy_bdd h_ratio_in_y)
+  exact lt_of_le_of_lt h_sup_x_le h_nm_lt_sup_y
+
+/-- If the order on `α` is dense, then `KSSeparation` upgrades to the strict variant,
+which is enough to get strict monotonicity of `ThetaFull` on `ident < x`. -/
+theorem ThetaFull_strictMono_on_pos_of_KSSeparation_of_denselyOrdered
+    {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α] [DenselyOrdered α]
+    (a : α) (ha : ident < a) (x y : α)
+    (hx : ident < x) (hy : ident < y) (hxy : x < y) :
+    ThetaFull a ha x < ThetaFull a ha y := by
+  haveI : KSSeparationStrict α := KSSeparation.toKSSeparationStrict_of_denselyOrdered (α := α)
+  exact ThetaFull_strictMono_on_pos_of_KSSeparationStrict (a := a) (ha := ha) (x := x) (y := y)
+    hx hy hxy
+
 section StrictMonoBlocked
 
 variable [RepTheoremBlockers α]
@@ -1171,6 +1281,107 @@ theorem ThetaFull_strictMono_on_pos (a : α) (ha : ident < a) (x y : α)
 
 end StrictMonoBlocked
 
+/-!
+### Background: `RepTheoremBlockers` is already strong enough for commutativity
+
+This is *not* the full K&S Appendix A theorem, but it makes the dependency structure explicit:
+
+- if the two remaining additivity blockers (`exists_split_ratio_of_op`, `add_le_Theta`) are discharged
+  (and strict monotonicity of `ThetaFull` on `ident < x` is available, either as a blocker or from
+  strict separation), then a single `ThetaFull a` provides an order embedding into `ℝ` turning `op`
+  into `+`, hence commutativity follows immediately.
+-/
+
+section CommutativityFromBlockers
+
+open Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA
+
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α] [RepTheoremBlockers α]
+
+/-- `ThetaFull` is monotone (for a fixed reference element `a`). -/
+theorem ThetaFull_mono (a : α) (ha : ident < a) : Monotone (ThetaFull a ha) := by
+  intro x y hxy
+  by_cases hx0 : x = ident
+  · subst hx0
+    simpa [ThetaFull_ident] using ThetaFull_nonneg (a := a) ha y (ident_le y)
+  · have hx : ident < x := lt_of_le_of_ne (ident_le x) (Ne.symm hx0)
+    have hy : ident < y := lt_of_lt_of_le hx hxy
+    -- Reduce to `Theta`: lowerRatioSet monotonicity implies `sSup` monotone.
+    simp only [ThetaFull, hx, hy, dif_pos]
+    unfold Theta
+    have hx_ne : (lowerRatioSet a x).Nonempty := lowerRatioSet_nonempty a x hx
+    have hy_bdd : BddAbove (lowerRatioSet a y) := lowerRatioSet_bddAbove a y ha hy
+    have hsub : lowerRatioSet a x ⊆ lowerRatioSet a y := lowerRatioSet_mono a x y hx hy hxy
+    apply csSup_le hx_ne
+    intro r hr
+    exact le_csSup hy_bdd (hsub hr)
+
+/-- Additivity of `ThetaFull` under `RepTheoremBlockers`. -/
+theorem ThetaFull_add (a : α) (ha : ident < a) :
+    ∀ x y : α, ThetaFull a ha (op x y) = ThetaFull a ha x + ThetaFull a ha y := by
+  intro x y
+  by_cases hx0 : x = ident
+  · subst hx0
+    simp [ThetaFull, op_ident_left]
+  · have hx : ident < x := lt_of_le_of_ne (ident_le x) (Ne.symm hx0)
+    by_cases hy0 : y = ident
+    · subst hy0
+      simp [ThetaFull, op_ident_right]
+    · have hy : ident < y := lt_of_le_of_ne (ident_le y) (Ne.symm hy0)
+      have hxy : ident < op x y := by
+        calc ident = op ident ident := (op_ident_left ident).symm
+          _ < op x ident := op_strictMono_left ident hx
+          _ < op x y := op_strictMono_right x hy
+      -- Reduce to `Theta_add` on positive arguments.
+      simp [ThetaFull, hx, hy, hxy]
+      simpa [Theta] using (Theta_add (a := a) (x := x) (y := y) ha hx hy)
+
+/-- An order embedding `Θ : α → ℝ` from `ThetaFull`, assuming a positive reference element. -/
+theorem exists_representation_of_RepTheoremBlockers
+    (hex : ∃ a : α, ident < a) :
+    ∃ Θ : α → ℝ,
+      (∀ x y : α, x ≤ y ↔ Θ x ≤ Θ y) ∧
+      Θ ident = 0 ∧
+      ∀ x y : α, Θ (op x y) = Θ x + Θ y := by
+  classical
+  rcases hex with ⟨a, ha⟩
+  refine ⟨ThetaFull a ha, ?_, ThetaFull_ident a ha, ThetaFull_add (a := a) ha⟩
+  have hmono : Monotone (ThetaFull a ha) := ThetaFull_mono (a := a) ha
+  refine fun x y => ⟨fun hxy => hmono hxy, ?_⟩
+  intro hΘ
+  by_contra hnot
+  have hyx : y < x := lt_of_not_ge hnot
+  have hx0 : x ≠ ident := by
+    intro hx0; subst hx0
+    exact (not_lt_of_ge (ident_le y)) hyx
+  have hx : ident < x := lt_of_le_of_ne (ident_le x) (Ne.symm hx0)
+  have hy0 : y ≠ ident := by
+    intro hy0; subst hy0
+    have : 0 < ThetaFull a ha x := ThetaFull_pos_of_pos a ha x hx
+    simpa [ThetaFull_ident] using (lt_of_lt_of_le this hΘ)
+  have hy : ident < y := lt_of_le_of_ne (ident_le y) (Ne.symm hy0)
+  have hlt : ThetaFull a ha y < ThetaFull a ha x :=
+    RepTheoremBlockers.ThetaFull_strictMono_on_pos (α := α) a ha y x hy hx hyx
+  exact (lt_irrefl _ (lt_of_le_of_lt hΘ hlt))
+
+/-- **Emptiness witness**: under `RepTheoremBlockers`, `KSSeparation` already forces commutativity. -/
+theorem op_comm_of_KSSeparation_of_RepTheoremBlockers :
+    ∀ x y : α, op x y = op y x := by
+  classical
+  by_cases hex : ∃ a : α, ident < a
+  · obtain ⟨Θ, hΘ_order, _, hΘ_add⟩ := exists_representation_of_RepTheoremBlockers (α := α) hex
+    exact commutativity_from_representation Θ hΘ_order hΘ_add
+  · -- If there is no element above `ident`, then `α` is trivial.
+    have hall : ∀ x : α, x = ident := by
+      intro x
+      by_contra hx0
+      have hx : ident < x := lt_of_le_of_ne (ident_le x) (Ne.symm hx0)
+      exact hex ⟨x, hx⟩
+    intro x y
+    simp [hall x, hall y]
+
+end CommutativityFromBlockers
+
 /-! ### Summary: Representation Theorem Infrastructure Status
 
 **Proven**:
@@ -1187,7 +1398,8 @@ end StrictMonoBlocked
 **Remaining (blocked, legacy)**:
 - `RepTheoremBlockers.exists_split_ratio_of_op`: Archimedean “ratio split” used in Θ additivity.
 - `RepTheoremBlockers.add_le_Theta`: Second inequality for Θ additivity.
-- `RepTheoremBlockers.ThetaFull_strictMono_on_pos`: Strict monotonicity of ΘFull on `ident < x`.
+- `RepTheoremBlockers.ThetaFull_strictMono_on_pos`: Strict monotonicity of ΘFull on `ident < x`
+  (now derivable from `KSSeparationStrict`, e.g. if `α` is densely ordered).
 
 This file is retained as a legacy alternative proof attempt. The primary Appendix-A development is
 under `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/`.

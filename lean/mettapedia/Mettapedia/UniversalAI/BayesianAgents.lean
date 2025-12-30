@@ -4,6 +4,7 @@ import Mathlib.Topology.Instances.ENNReal.Lemmas
 import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
+import Mettapedia.UniversalAI.BayesianAgents.Core
 import Mettapedia.Logic.UniversalPrediction
 import Hammer
 
@@ -88,6 +89,9 @@ inductive Percept : Type
   | mk : Bool → Bool → Percept  -- (observation, reward_bit)
   deriving DecidableEq, Fintype
 
+instance : Inhabited Percept where
+  default := Percept.mk false false
+
 /-- Extract observation from percept. -/
 def Percept.obs : Percept → Bool
   | mk o _ => o
@@ -99,6 +103,24 @@ def Percept.rewardBit : Percept → Bool
 /-- Reward value (0 or 1). -/
 def Percept.reward : Percept → ℝ
   | mk _ r => if r then 1 else 0
+
+/-- Reward function typeclass for percepts with rewards in [0,1]. -/
+class PerceptReward (Percept : Type*) where
+  reward : Percept → ℝ
+  reward_nonneg : ∀ x, 0 ≤ reward x
+  reward_le_one : ∀ x, reward x ≤ 1
+
+namespace PerceptReward
+
+variable {Percept : Type*} [PerceptReward Percept]
+
+theorem nonneg (x : Percept) : 0 ≤ PerceptReward.reward x :=
+  PerceptReward.reward_nonneg x
+
+theorem le_one (x : Percept) : PerceptReward.reward x ≤ 1 :=
+  PerceptReward.reward_le_one x
+
+end PerceptReward
 
 /-- Encode a percept as a binary string. -/
 def encodePercept : Percept → List Bool
@@ -381,6 +403,14 @@ theorem Percept.reward_le_one (x : Percept) : x.reward ≤ 1 := by
   cases x with
   | mk o r => simp only [Percept.reward]; split_ifs <;> linarith
 
+instance : Inhabited Action where
+  default := Action.stay
+
+instance : PerceptReward Percept where
+  reward := Percept.reward
+  reward_nonneg := Percept.reward_nonneg
+  reward_le_one := Percept.reward_le_one
+
 /-- Helper lemma: foldl of non-negative terms is non-negative. -/
 lemma foldl_nonneg {α : Type*} (f : ℝ → α → ℝ) (l : List α) (init : ℝ)
     (hinit : 0 ≤ init) (hf : ∀ acc x, 0 ≤ acc → 0 ≤ f acc x) :
@@ -469,10 +499,10 @@ lemma foldl_weighted_le_product {α : Type*} (weight : α → ℝ) (val : α →
           _ = init + ((weight x * val x) + xs.foldl f 0) := by
               simp [add_assoc]
           _ = init + xs.foldl f (weight x * val x) := by
-              simp [ih2, add_assoc]
+              simp [ih2]
   induction l with
   | nil =>
-      simp [f]
+      simp
   | cons head tail ih =>
       have hw_head : 0 ≤ weight head := hw_nonneg head (by simp)
       have hval_head : val head ≤ B := hval head (by simp)
@@ -497,7 +527,7 @@ lemma foldl_weighted_le_product {α : Type*} (weight : α → ℝ) (val : α →
             exact add_le_add hhead ih'
         _ = (weight head + (tail.map weight).sum) * B := by ring
         _ = ((head :: tail).map weight).sum * B := by
-            simp [List.map_cons, List.sum_cons, add_assoc]
+            simp [List.map_cons, List.sum_cons]
 
 lemma univ_Action : (Finset.univ : Finset Action) = {Action.left, Action.right, Action.stay} := by
   classical
@@ -530,7 +560,7 @@ theorem qValue_le_succ (μ : Environment) (π : Agent) (γ : DiscountFactor)
       · simp [ha, hwa]
         nlinarith
       ·
-        have hwa' : ha.wellFormed := by simpa [hwa]
+        have hwa' : ha.wellFormed := by simp [hwa]
         -- Reduce the goal to an explicit 4-term sum over the percepts.
         simp [ha, hwa]
         set B : ℝ := (n : ℝ) + 1
@@ -595,7 +625,7 @@ theorem qValue_le_succ (μ : Environment) (π : Agent) (γ : DiscountFactor)
                   (p (Percept.mk false true) + (p (Percept.mk true false) + p (Percept.mk true true))) := by
             classical
             rw [univ_Percept]
-            simp [p, Finset.sum_insert, Finset.sum_singleton, add_assoc, add_left_comm, add_comm]
+            simp [p, Finset.sum_insert, Finset.sum_singleton]
           simpa [hexp] using hsum_toReal_le
         have hterm (x : Percept) : p x * v x ≤ p x * B :=
           mul_le_mul_of_nonneg_left (hv_le_B x) (hp_nonneg x)
@@ -674,12 +704,12 @@ theorem value_le (μ : Environment) (π : Agent) (γ : DiscountFactor)
   | succ n =>
       rw [value_succ]
       cases hw : h.wellFormed
-      · simp [hw]
+      · simp
         nlinarith
       ·
-        have hw' : h.wellFormed := by simpa [hw]
+        have hw' : h.wellFormed := by simp [hw]
         -- Reduce the goal to an explicit 3-term sum over the actions.
-        simp [hw]
+        simp
         set B : ℝ := (n : ℝ) + 1
         let p : Action → ℝ := fun a => (π.policy h a).toReal
         let v : Action → ℝ := fun a => qValue μ π γ h a n
@@ -718,7 +748,7 @@ theorem value_le (μ : Environment) (π : Agent) (γ : DiscountFactor)
                 p Action.left + (p Action.right + p Action.stay) := by
             classical
             rw [univ_Action]
-            simp [p, Finset.sum_insert, Finset.sum_singleton, add_assoc]
+            simp [p, Finset.sum_insert, Finset.sum_singleton]
           simpa [hexp, p] using htoReal_eq
         have hterm (a : Action) : p a * v a ≤ p a * B :=
           mul_le_mul_of_nonneg_left (hv_le_B a) (hp_nonneg a)

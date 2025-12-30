@@ -1088,10 +1088,97 @@ def extensionSetC_base {k : ℕ} (F : AtomFamily α k) (d : α) (r0 : Multi k) (
     Set (Multi k) :=
   {r | op (mu F r0) (iterate_op d u) < mu F r}
 
+/-! ### Basic monotonicity in the level parameter `u` (base-indexed A/C sets)
+
+Since `iterate_op d u` is strictly increasing in `u` when `ident < d`, the boundary
+`μ(F,r0) ⊕ d^u` increases with `u`. Therefore:
+- `A_base(r0,u)` is monotone increasing in `u` (more points lie below a larger boundary),
+- `C_base(r0,u)` is monotone decreasing in `u` (fewer points lie above a larger boundary).
+
+These are small but frequently useful facts when coordinating arguments across different levels. -/
+
+lemma extensionSetA_base_subset_of_le {k : ℕ} {F : AtomFamily α k} {d : α} (hd : ident < d)
+    (r0 : Multi k) {u v : ℕ} (huv : u ≤ v) :
+    extensionSetA_base F d r0 u ⊆ extensionSetA_base F d r0 v := by
+  intro r hr
+  have h_iter : iterate_op d u ≤ iterate_op d v :=
+    (iterate_op_strictMono d hd).monotone huv
+  have hbd : op (mu F r0) (iterate_op d u) ≤ op (mu F r0) (iterate_op d v) :=
+    (op_strictMono_right (mu F r0)).monotone h_iter
+  have : mu F r < op (mu F r0) (iterate_op d v) := lt_of_lt_of_le (by
+    simpa [extensionSetA_base, Set.mem_setOf_eq] using hr) hbd
+  simpa [extensionSetA_base, Set.mem_setOf_eq] using this
+
+lemma extensionSetC_base_subset_of_le {k : ℕ} {F : AtomFamily α k} {d : α} (hd : ident < d)
+    (r0 : Multi k) {u v : ℕ} (huv : u ≤ v) :
+    extensionSetC_base F d r0 v ⊆ extensionSetC_base F d r0 u := by
+  intro r hr
+  have h_iter : iterate_op d u ≤ iterate_op d v :=
+    (iterate_op_strictMono d hd).monotone huv
+  have hbd : op (mu F r0) (iterate_op d u) ≤ op (mu F r0) (iterate_op d v) :=
+    (op_strictMono_right (mu F r0)).monotone h_iter
+  have : op (mu F r0) (iterate_op d u) < mu F r :=
+    lt_of_le_of_lt hbd (by simpa [extensionSetC_base, Set.mem_setOf_eq] using hr)
+  simpa [extensionSetC_base, Set.mem_setOf_eq] using this
+
 /-- Base-indexed statistic: slope candidate `(Θ(r) - Θ(r0)) / u`. -/
 noncomputable def separationStatistic_base {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
     (r0 r : Multi k) (u : ℕ) (hu : 0 < u) : ℝ :=
   (R.Θ_grid ⟨mu F r, mu_mem_kGrid F r⟩ - R.Θ_grid ⟨mu F r0, mu_mem_kGrid F r0⟩) / u
+
+lemma separationStatistic_base_scaleMult {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
+    (r0 r : Multi k) (u m : ℕ) (hu : 0 < u) (hm : 0 < m) :
+    separationStatistic_base R (scaleMult m r0) (scaleMult m r) (u * m) (Nat.mul_pos hu hm) =
+      separationStatistic_base R r0 r u hu := by
+  classical
+  have hθr :
+      R.Θ_grid ⟨mu F (scaleMult m r), mu_mem_kGrid F (scaleMult m r)⟩ =
+        m * R.Θ_grid ⟨mu F r, mu_mem_kGrid F r⟩ :=
+    Theta_scaleMult (R := R) (r := r) m
+  have hθr0 :
+      R.Θ_grid ⟨mu F (scaleMult m r0), mu_mem_kGrid F (scaleMult m r0)⟩ =
+        m * R.Θ_grid ⟨mu F r0, mu_mem_kGrid F r0⟩ :=
+    Theta_scaleMult (R := R) (r := r0) m
+  have hm0 : (m : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_zero_of_lt hm)
+  simp [separationStatistic_base, hθr, hθr0, Nat.cast_mul]
+  have hfactor :
+      ((m : ℝ) * R.Θ_grid ⟨mu F r, mu_mem_kGrid F r⟩ -
+            (m : ℝ) * R.Θ_grid ⟨mu F r0, mu_mem_kGrid F r0⟩) =
+        (m : ℝ) *
+          (R.Θ_grid ⟨mu F r, mu_mem_kGrid F r⟩ -
+            R.Θ_grid ⟨mu F r0, mu_mem_kGrid F r0⟩) := by
+    ring
+  rw [hfactor]
+  have : ((u : ℝ) * (m : ℝ)) = (m : ℝ) * (u : ℝ) := by ring
+  rw [this]
+  simpa [mul_assoc, mul_comm, mul_left_comm] using
+    (mul_div_mul_left
+      (R.Θ_grid ⟨mu F r, mu_mem_kGrid F r⟩ -
+        R.Θ_grid ⟨mu F r0, mu_mem_kGrid F r0⟩)
+      (u : ℝ)
+      hm0)
+
+/-- A scale-sensitive “size” for a base-indexed problem: `Θ(r0)/u^2`.
+
+This is motivated by the (currently incomplete) idea of proving base-indexed strict-gap bounds
+by a strong-induction argument where one passes from `(r0,u)` to `(scaleMult m r0, u*m)` with `m>1`,
+which decreases this quantity by a factor of `1/m`. -/
+noncomputable def baseGapMeasure {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
+    (r0 : Multi k) (u : ℕ) : ℝ :=
+  R.Θ_grid ⟨mu F r0, mu_mem_kGrid F r0⟩ / ((u : ℝ) ^ 2)
+
+lemma baseGapMeasure_scaleMult {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
+    (r0 : Multi k) (u m : ℕ) (hm : 0 < m) :
+    baseGapMeasure R (scaleMult m r0) (u * m) = baseGapMeasure R r0 u / (m : ℝ) := by
+  classical
+  have hθ :
+      R.Θ_grid ⟨mu F (scaleMult m r0), mu_mem_kGrid F (scaleMult m r0)⟩ =
+        m * R.Θ_grid ⟨mu F r0, mu_mem_kGrid F r0⟩ :=
+    Theta_scaleMult (R := R) (r := r0) m
+  have hm0 : (m : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_zero_of_lt hm)
+  simp [baseGapMeasure, hθ, Nat.cast_mul, pow_two, mul_assoc, mul_left_comm, mul_comm, hm0]
+  -- normalize denominators and cancel one factor of `m`
+  field_simp
 
 /-!
 ### Ben/Goertzel v2 “Lemma 7” cancellation (base-indexed)
@@ -1723,6 +1810,244 @@ lemma mu_add_of_comm {k : ℕ} {F : AtomFamily α k} (H : GridComm F)
 
   -- Now apply foldl_op_distrib
   exact foldl_op_distrib H (List.finRange k) r s
+
+/-!
+### Cancelling a common multiplicity prefix (base-indexed A/B/C and statistics)
+
+When comparing two old-grid witnesses `r0` and `r` relative to the target boundary `μ(r0) ⊕ d^u`,
+it is often convenient to factor out the coordinatewise common part of the two multiplicities.
+
+Let `c := min r0 r` coordinatewise, and write:
+- `r0 = c + r0'`
+- `r  = c + r'`
+
+Then, under `GridComm` (so `μ` is additive) and associativity, the boundary comparison
+`μ(r) ? μ(r0) ⊕ d^u` is equivalent to `μ(r') ? μ(r0') ⊕ d^u`, and the base-indexed statistic
+`(Θ(r) - Θ(r0))/u` is unchanged.
+
+This isolates the genuinely “non-translate” part of base-indexed arguments. -/
+
+/-- Coordinatewise common part of two multiplicities. -/
+def commonMulti {k : ℕ} (r s : Multi k) : Multi k := fun i => Nat.min (r i) (s i)
+
+/-- `commonMulti` commutes with scaling: `min (m·r) (m·s) = m·min r s` coordinatewise. -/
+lemma commonMulti_scaleMult {k : ℕ} (r s : Multi k) (m : ℕ) :
+    commonMulti (scaleMult m r) (scaleMult m s) = scaleMult m (commonMulti r s) := by
+  ext i
+  by_cases h : r i ≤ s i
+  · have hmin : Nat.min (r i) (s i) = r i := Nat.min_eq_left h
+    have hmul : m * r i ≤ m * s i := Nat.mul_le_mul_left m h
+    have hmin' : Nat.min (m * r i) (m * s i) = m * r i := Nat.min_eq_left hmul
+    simp [commonMulti, scaleMult, hmin, hmin']
+  · have h' : s i ≤ r i := le_of_not_ge h
+    have hmin : Nat.min (r i) (s i) = s i := Nat.min_eq_right h'
+    have hmul : m * s i ≤ m * r i := Nat.mul_le_mul_left m h'
+    have hmin' : Nat.min (m * r i) (m * s i) = m * s i := Nat.min_eq_right hmul
+    simp [commonMulti, scaleMult, hmin, hmin']
+
+lemma commonMulti_scaleMult_eq_zero {k : ℕ} (r0 r : Multi k) (m : ℕ)
+    (h : commonMulti r0 r = (0 : Multi k)) :
+    commonMulti (scaleMult m r0) (scaleMult m r) = (0 : Multi k) := by
+  calc
+    commonMulti (scaleMult m r0) (scaleMult m r) = scaleMult m (commonMulti r0 r) :=
+      commonMulti_scaleMult (r := r0) (s := r) m
+    _ = (0 : Multi k) := by
+      -- scaleMult m 0 = 0
+      ext i
+      simpa [h, scaleMult]
+
+/-- Remove the `commonMulti r s` prefix from `r`. -/
+def remMultiLeft {k : ℕ} (r s : Multi k) : Multi k := fun i => r i - commonMulti r s i
+
+/-- Remove the `commonMulti r s` prefix from `s`. -/
+def remMultiRight {k : ℕ} (r s : Multi k) : Multi k := fun i => s i - commonMulti r s i
+
+lemma commonMulti_remMultiLeft_remMultiRight_eq_zero {k : ℕ} (r s : Multi k) :
+    commonMulti (remMultiLeft r s) (remMultiRight r s) = (0 : Multi k) := by
+  ext i
+  by_cases h : r i ≤ s i
+  · have hmin : Nat.min (r i) (s i) = r i := Nat.min_eq_left h
+    -- Then `remMultiLeft r s i = 0`, so the min is 0.
+    simp [commonMulti, remMultiLeft, remMultiRight, hmin, Nat.min_eq_left (Nat.zero_le _)]
+  · have h' : s i ≤ r i := le_of_not_ge h
+    have hmin : Nat.min (r i) (s i) = s i := Nat.min_eq_right h'
+    simp [commonMulti, remMultiLeft, remMultiRight, hmin, Nat.min_eq_right (Nat.zero_le _)]
+
+lemma commonMulti_add_remMultiLeft {k : ℕ} (r s : Multi k) : commonMulti r s + remMultiLeft r s = r := by
+  ext i
+  have hle : commonMulti r s i ≤ r i := Nat.min_le_left _ _
+  -- `Nat.sub_add_cancel` gives `(r - c) + c = r`; commute the summands to match our goal.
+  simpa [commonMulti, remMultiLeft, Pi.add_apply, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+    (Nat.sub_add_cancel hle).symm
+
+lemma commonMulti_add_remMultiRight {k : ℕ} (r s : Multi k) : commonMulti r s + remMultiRight r s = s := by
+  ext i
+  have hle : commonMulti r s i ≤ s i := Nat.min_le_right _ _
+  simpa [commonMulti, remMultiRight, Pi.add_apply, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+    (Nat.sub_add_cancel hle).symm
+
+lemma extensionSetA_base_iff_remMulti {k : ℕ} {F : AtomFamily α k} (H : GridComm F) (d : α)
+    (r0 r : Multi k) (u : ℕ) :
+    r ∈ extensionSetA_base F d r0 u ↔
+      remMultiRight r0 r ∈ extensionSetA_base F d (remMultiLeft r0 r) u := by
+  classical
+  -- Abbreviate the common part and remainders.
+  let c : Multi k := commonMulti r0 r
+  let r0' : Multi k := remMultiLeft r0 r
+  let r' : Multi k := remMultiRight r0 r
+  have hr0 : r0 = c + r0' := (commonMulti_add_remMultiLeft r0 r).symm
+  have hr : r = c + r' := (commonMulti_add_remMultiRight r0 r).symm
+  -- Rewrite the defining inequality and cancel the common left prefix `μ(c)`.
+  constructor
+  · intro hrA
+    have hμr : mu F r < op (mu F r0) (iterate_op d u) := by
+      simpa [extensionSetA_base, Set.mem_setOf_eq] using hrA
+    have hμr' : op (mu F c) (mu F r') < op (mu F c) (op (mu F r0') (iterate_op d u)) := by
+      -- Expand μ(r) and μ(r0) using additivity on the commutative μ-grid.
+      have hμr_eq : mu F r = op (mu F c) (mu F r') := by
+        simpa [hr] using (mu_add_of_comm H c r')
+      have hμr0_eq : mu F r0 = op (mu F c) (mu F r0') := by
+        simpa [hr0] using (mu_add_of_comm H c r0')
+      -- Reassociate the boundary so the common prefix is `op (mu F c) _`.
+      have hbd :
+          op (mu F r0) (iterate_op d u) = op (mu F c) (op (mu F r0') (iterate_op d u)) := by
+        simpa [hμr0_eq, op_assoc]
+      simpa [hμr_eq, hbd] using hμr
+    have hcancel :
+        mu F r' < op (mu F r0') (iterate_op d u) := by
+      have hmono : StrictMono (fun x : α => op (mu F c) x) := op_strictMono_right (mu F c)
+      exact (hmono.lt_iff_lt).1 hμr'
+    simpa [extensionSetA_base, Set.mem_setOf_eq, c, r0', r', remMultiLeft, remMultiRight] using hcancel
+  · intro hrA'
+    have hμr' : mu F r' < op (mu F r0') (iterate_op d u) := by
+      simpa [extensionSetA_base, Set.mem_setOf_eq] using hrA'
+    have hμr : op (mu F c) (mu F r') < op (mu F c) (op (mu F r0') (iterate_op d u)) := by
+      exact (op_strictMono_right (mu F c)) hμr'
+    have hμr_eq : mu F r = op (mu F c) (mu F r') := by
+      simpa [hr] using (mu_add_of_comm H c r')
+    have hμr0_eq : mu F r0 = op (mu F c) (mu F r0') := by
+      simpa [hr0] using (mu_add_of_comm H c r0')
+    have hbd :
+        op (mu F r0) (iterate_op d u) = op (mu F c) (op (mu F r0') (iterate_op d u)) := by
+      simpa [hμr0_eq, op_assoc]
+    have : mu F r < op (mu F r0) (iterate_op d u) := by
+      simpa [hμr_eq, hbd] using hμr
+    simpa [extensionSetA_base, Set.mem_setOf_eq] using this
+
+lemma extensionSetB_base_iff_remMulti {k : ℕ} {F : AtomFamily α k} (H : GridComm F) (d : α)
+    (r0 r : Multi k) (u : ℕ) :
+    r ∈ extensionSetB_base F d r0 u ↔
+      remMultiRight r0 r ∈ extensionSetB_base F d (remMultiLeft r0 r) u := by
+  classical
+  let c : Multi k := commonMulti r0 r
+  let r0' : Multi k := remMultiLeft r0 r
+  let r' : Multi k := remMultiRight r0 r
+  have hr0 : r0 = c + r0' := (commonMulti_add_remMultiLeft r0 r).symm
+  have hr : r = c + r' := (commonMulti_add_remMultiRight r0 r).symm
+  constructor
+  · intro hrB
+    have hμr : mu F r = op (mu F r0) (iterate_op d u) := by
+      simpa [extensionSetB_base, Set.mem_setOf_eq] using hrB
+    have hμr_eq : mu F r = op (mu F c) (mu F r') := by
+      simpa [hr] using (mu_add_of_comm H c r')
+    have hμr0_eq : mu F r0 = op (mu F c) (mu F r0') := by
+      simpa [hr0] using (mu_add_of_comm H c r0')
+    have hbd :
+        op (mu F r0) (iterate_op d u) = op (mu F c) (op (mu F r0') (iterate_op d u)) := by
+      simpa [hμr0_eq, op_assoc]
+    have hEq' : op (mu F c) (mu F r') = op (mu F c) (op (mu F r0') (iterate_op d u)) := by
+      simpa [hμr_eq, hbd] using hμr
+    have hcancel :
+        mu F r' = op (mu F r0') (iterate_op d u) := by
+      exact (op_strictMono_right (mu F c)).injective hEq'
+    simpa [extensionSetB_base, Set.mem_setOf_eq, c, r0', r', remMultiLeft, remMultiRight] using hcancel
+  · intro hrB'
+    have hμr' : mu F r' = op (mu F r0') (iterate_op d u) := by
+      simpa [extensionSetB_base, Set.mem_setOf_eq] using hrB'
+    have hμr_eq : mu F r = op (mu F c) (mu F r') := by
+      simpa [hr] using (mu_add_of_comm H c r')
+    have hμr0_eq : mu F r0 = op (mu F c) (mu F r0') := by
+      simpa [hr0] using (mu_add_of_comm H c r0')
+    have hbd :
+        op (mu F r0) (iterate_op d u) = op (mu F c) (op (mu F r0') (iterate_op d u)) := by
+      simpa [hμr0_eq, op_assoc]
+    have : mu F r = op (mu F r0) (iterate_op d u) := by
+      -- Reassociate the RHS to match the common prefix.
+      have : op (mu F c) (mu F r') = op (mu F c) (op (mu F r0') (iterate_op d u)) := by
+        simpa [hμr']
+      simpa [hμr_eq, hbd] using this
+    simpa [extensionSetB_base, Set.mem_setOf_eq] using this
+
+lemma extensionSetC_base_iff_remMulti {k : ℕ} {F : AtomFamily α k} (H : GridComm F) (d : α)
+    (r0 r : Multi k) (u : ℕ) :
+    r ∈ extensionSetC_base F d r0 u ↔
+      remMultiRight r0 r ∈ extensionSetC_base F d (remMultiLeft r0 r) u := by
+  classical
+  let c : Multi k := commonMulti r0 r
+  let r0' : Multi k := remMultiLeft r0 r
+  let r' : Multi k := remMultiRight r0 r
+  have hr0 : r0 = c + r0' := (commonMulti_add_remMultiLeft r0 r).symm
+  have hr : r = c + r' := (commonMulti_add_remMultiRight r0 r).symm
+  constructor
+  · intro hrC
+    have hμr : op (mu F r0) (iterate_op d u) < mu F r := by
+      simpa [extensionSetC_base, Set.mem_setOf_eq] using hrC
+    have hμr_eq : mu F r = op (mu F c) (mu F r') := by
+      simpa [hr] using (mu_add_of_comm H c r')
+    have hμr0_eq : mu F r0 = op (mu F c) (mu F r0') := by
+      simpa [hr0] using (mu_add_of_comm H c r0')
+    have hbd :
+        op (mu F r0) (iterate_op d u) = op (mu F c) (op (mu F r0') (iterate_op d u)) := by
+      simpa [hμr0_eq, op_assoc]
+    have hμr' :
+        op (mu F c) (op (mu F r0') (iterate_op d u)) < op (mu F c) (mu F r') := by
+      simpa [hbd, hμr_eq] using hμr
+    have hcancel :
+        op (mu F r0') (iterate_op d u) < mu F r' := by
+      have hmono : StrictMono (fun x : α => op (mu F c) x) := op_strictMono_right (mu F c)
+      exact (hmono.lt_iff_lt).1 hμr'
+    simpa [extensionSetC_base, Set.mem_setOf_eq, c, r0', r', remMultiLeft, remMultiRight] using hcancel
+  · intro hrC'
+    have hμr' : op (mu F r0') (iterate_op d u) < mu F r' := by
+      simpa [extensionSetC_base, Set.mem_setOf_eq] using hrC'
+    have hμr_eq : mu F r = op (mu F c) (mu F r') := by
+      simpa [hr] using (mu_add_of_comm H c r')
+    have hμr0_eq : mu F r0 = op (mu F c) (mu F r0') := by
+      simpa [hr0] using (mu_add_of_comm H c r0')
+    have hbd :
+        op (mu F r0) (iterate_op d u) = op (mu F c) (op (mu F r0') (iterate_op d u)) := by
+      simpa [hμr0_eq, op_assoc]
+    have : op (mu F c) (op (mu F r0') (iterate_op d u)) < op (mu F c) (mu F r') :=
+      (op_strictMono_right (mu F c)) hμr'
+    have : op (mu F r0) (iterate_op d u) < mu F r := by
+      simpa [hbd, hμr_eq] using this
+    simpa [extensionSetC_base, Set.mem_setOf_eq] using this
+
+lemma separationStatistic_base_eq_remMulti {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
+    (r0 r : Multi k) (u : ℕ) (hu : 0 < u) :
+    separationStatistic_base R r0 r u hu =
+      separationStatistic_base R (remMultiLeft r0 r) (remMultiRight r0 r) u hu := by
+  classical
+  let c : Multi k := commonMulti r0 r
+  let r0' : Multi k := remMultiLeft r0 r
+  let r' : Multi k := remMultiRight r0 r
+  have hr0 : r0 = c + r0' := (commonMulti_add_remMultiLeft r0 r).symm
+  have hr : r = c + r' := (commonMulti_add_remMultiRight r0 r).symm
+  -- Expand the Θ-values of `r0` and `r` using additivity, then cancel the common part.
+  have hθ_r :
+      R.Θ_grid ⟨mu F r, mu_mem_kGrid F r⟩ =
+        R.Θ_grid ⟨mu F c, mu_mem_kGrid F c⟩ +
+          R.Θ_grid ⟨mu F r', mu_mem_kGrid F r'⟩ := by
+    -- `R.add` is stated for `mu F (c + r')`; rewrite using `hr`.
+    simpa [hr, Pi.add_apply, add_comm, add_left_comm, add_assoc] using (R.add c r')
+  have hθ_r0 :
+      R.Θ_grid ⟨mu F r0, mu_mem_kGrid F r0⟩ =
+        R.Θ_grid ⟨mu F c, mu_mem_kGrid F c⟩ +
+          R.Θ_grid ⟨mu F r0', mu_mem_kGrid F r0'⟩ := by
+    simpa [hr0, Pi.add_apply, add_comm, add_left_comm, add_assoc] using (R.add c r0')
+  -- Now cancel the common Θ(c) term.
+  simp [separationStatistic_base, hθ_r, hθ_r0, c, r0', r', remMultiLeft, remMultiRight, sub_eq_add_neg,
+    add_assoc, add_left_comm, add_comm]
 
 /-- **Grid Bridge Lemma (with GridComm)**: μ(F, n·r) equals (μ(F, r))^n.
 

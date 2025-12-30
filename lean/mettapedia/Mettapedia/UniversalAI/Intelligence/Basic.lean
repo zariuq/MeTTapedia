@@ -151,7 +151,8 @@ noncomputable def encodeIntelligenceMixture {ι : Type*} [Encodable ι]
               (Encodable.decode₂_ne_none_iff (α := ι) (n := n)).2 (by
                 rcases hn with ⟨i, hi⟩
                 exact ⟨i, hi⟩)
-            simpa [hdec] using hne
+            have hne' := hne
+            simp [hdec] at hne'
           have : Function.extend (Encodable.encode : ι → ℕ) (fun i : ι => encodeWeight i)
               (0 : ℕ → ENNReal) n = 0 := by
             simpa using
@@ -159,7 +160,7 @@ noncomputable def encodeIntelligenceMixture {ι : Type*} [Encodable ι]
                 (f := (Encodable.encode : ι → ℕ))
                 (g := fun i : ι => encodeWeight i)
                 (e' := (0 : ℕ → ENNReal)) n hn)
-          simp [hdec, this]
+          simp [this]
       | some i =>
           have hi : Encodable.encode i = n := (Encodable.decode₂_eq_some).1 hdec
           have : Function.extend (Encodable.encode : ι → ℕ) (fun i : ι => encodeWeight i) 0 n =
@@ -167,7 +168,7 @@ noncomputable def encodeIntelligenceMixture {ι : Type*} [Encodable ι]
             simpa [hi] using
               (Encodable.encode_injective.extend_apply
                 (g := fun i : ι => encodeWeight i) (e' := (0 : ℕ → ENNReal)) i)
-          simp [hdec, this]
+          simp [this]
     have htsum :
         (∑' n : ℕ,
             match Encodable.decode₂ ι n with

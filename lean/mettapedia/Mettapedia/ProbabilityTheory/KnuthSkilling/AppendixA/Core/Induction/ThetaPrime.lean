@@ -880,6 +880,182 @@ structure BEmptyStrictGapSpec
       (¬ ∃ rB : Multi k, rB ∈ extensionSetB_base F d r_old_x Δ) →
         chooseδ hk R d hd < separationStatistic_base R r_old_x r_old_y Δ hΔ
 
+/-- Equivalent “no-common-prefix” form of `BEmptyStrictGapSpec`.
+
+Using `commonMulti`/`remMultiLeft`/`remMultiRight`, any base-indexed comparison can be reduced to
+the case where the base and witness share **no** coordinatewise common part.  This mirrors the
+`ChooseδBaseAdmissible_noCommon` interface in `.../Core/Induction/Goertzel.lean`, but for the
+strict-gap blocker itself.
+
+This reduction is valuable because it isolates the genuinely “non-translate” case: if a proof or
+countermodel exists, it should already appear in the disjoint-support situation. -/
+structure BEmptyStrictGapSpec_noCommon
+    {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
+    (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d) [KSSeparation α] : Prop where
+  /-- A-side strictness, reduced to the case `commonMulti r_old_y r_old_x = 0`. -/
+  A_noCommon :
+    (∀ r u, 0 < u → r ∉ extensionSetB F d u) →
+    ∀ (r_old_x r_old_y : Multi k) (Δ : ℕ) (hΔ : 0 < Δ),
+      mu F r_old_y < mu F r_old_x →
+      r_old_x ∈ extensionSetA_base F d r_old_y Δ →
+      (¬ ∃ rB : Multi k, rB ∈ extensionSetB_base F d r_old_y Δ) →
+      commonMulti r_old_y r_old_x = 0 →
+        separationStatistic_base R r_old_y r_old_x Δ hΔ < chooseδ hk R d hd
+  /-- C-side strictness, reduced to the case `commonMulti r_old_x r_old_y = 0`. -/
+  C_noCommon :
+    (∀ r u, 0 < u → r ∉ extensionSetB F d u) →
+    ∀ (r_old_x r_old_y : Multi k) (Δ : ℕ) (hΔ : 0 < Δ),
+      mu F r_old_x < mu F r_old_y →
+      r_old_y ∈ extensionSetC_base F d r_old_x Δ →
+      (¬ ∃ rB : Multi k, rB ∈ extensionSetB_base F d r_old_x Δ) →
+      commonMulti r_old_x r_old_y = 0 →
+        chooseδ hk R d hd < separationStatistic_base R r_old_x r_old_y Δ hΔ
+
+theorem bEmptyStrictGapSpec_noCommon_of_bEmptyStrictGapSpec
+    {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
+    (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d)
+    [KSSeparation α]
+    (h : BEmptyStrictGapSpec (α := α) hk R IH H d hd) :
+    BEmptyStrictGapSpec_noCommon (α := α) hk R IH H d hd := by
+  refine ⟨?_, ?_⟩
+  · intro hB_empty r_old_x r_old_y Δ hΔ hμ hA hB _hcommon
+    exact h.A hB_empty r_old_x r_old_y Δ hΔ hμ hA hB
+  · intro hB_empty r_old_x r_old_y Δ hΔ hμ hC hB _hcommon
+    exact h.C hB_empty r_old_x r_old_y Δ hΔ hμ hC hB
+
+theorem bEmptyStrictGapSpec_of_bEmptyStrictGapSpec_noCommon
+    {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
+    (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d)
+    [KSSeparation α]
+    (h : BEmptyStrictGapSpec_noCommon (α := α) hk R IH H d hd) :
+    BEmptyStrictGapSpec (α := α) hk R IH H d hd := by
+  classical
+  refine ⟨?_, ?_⟩
+  · intro hB_empty r_old_x r_old_y Δ hΔ hμ hA hB
+    -- Cancel the coordinatewise common prefix between `r_old_y` and `r_old_x`.
+    let c : Multi k := commonMulti r_old_y r_old_x
+    let r0' : Multi k := remMultiLeft r_old_y r_old_x
+    let r' : Multi k := remMultiRight r_old_y r_old_x
+    have hrA' : r' ∈ extensionSetA_base F d r0' Δ :=
+      (extensionSetA_base_iff_remMulti (H := H) d r_old_y r_old_x Δ).1 hA
+    have hcommon : commonMulti r0' r' = (0 : Multi k) := by
+      simpa [c, r0', r'] using commonMulti_remMultiLeft_remMultiRight_eq_zero (r := r_old_y) (s := r_old_x)
+    have hμ' : mu F r0' < mu F r' := by
+      have hr0_vec : r_old_y = c + r0' := (commonMulti_add_remMultiLeft r_old_y r_old_x).symm
+      have hr_vec : r_old_x = c + r' := (commonMulti_add_remMultiRight r_old_y r_old_x).symm
+      have hr0 : mu F r_old_y = op (mu F c) (mu F r0') := by
+        calc
+          mu F r_old_y = mu F (c + r0') := by simpa [hr0_vec]
+          _ = op (mu F c) (mu F r0') := mu_add_of_comm (F := F) H c r0'
+      have hr : mu F r_old_x = op (mu F c) (mu F r') := by
+        calc
+          mu F r_old_x = mu F (c + r') := by simpa [hr_vec]
+          _ = op (mu F c) (mu F r') := mu_add_of_comm (F := F) H c r'
+      have hlt : op (mu F c) (mu F r0') < op (mu F c) (mu F r') := by
+        simpa [hr0, hr] using hμ
+      have hle : mu F r0' ≤ mu F r' :=
+        cancellative_right (z := mu F c) (x := mu F r0') (y := mu F r') (le_of_lt hlt)
+      have hne : mu F r0' ≠ mu F r' := by
+        intro hEq
+        have hEq' : op (mu F c) (mu F r0') = op (mu F c) (mu F r') := by simpa [hEq]
+        exact (ne_of_lt hlt) hEq'
+      exact lt_of_le_of_ne hle hne
+    have hB' : (¬ ∃ rB : Multi k, rB ∈ extensionSetB_base F d r0' Δ) := by
+      intro hB0
+      rcases hB0 with ⟨rB', hrB'⟩
+      -- Lift a reduced-base B-witness back to the original base by adding the cancelled prefix `c`.
+      refine hB ?_
+      refine ⟨c + rB', ?_⟩
+      -- Expand the definition and use `mu_add_of_comm` + associativity.
+      have hμB' : mu F rB' = op (mu F r0') (iterate_op d Δ) := by
+        simpa [extensionSetB_base, Set.mem_setOf_eq] using hrB'
+      have hμadd : mu F (c + rB') = op (mu F c) (mu F rB') :=
+        mu_add_of_comm (F := F) H c rB'
+      have hμr0 : mu F r_old_y = op (mu F c) (mu F r0') := by
+        have hr0_vec : r_old_y = c + r0' := (commonMulti_add_remMultiLeft r_old_y r_old_x).symm
+        calc
+          mu F r_old_y = mu F (c + r0') := by simpa [hr0_vec]
+          _ = op (mu F c) (mu F r0') := mu_add_of_comm (F := F) H c r0'
+      -- Now `mu(c+rB') = mu(r_old_y) ⊕ d^Δ`.
+      have : mu F (c + rB') = op (mu F r_old_y) (iterate_op d Δ) := by
+        calc
+          mu F (c + rB') = op (mu F c) (mu F rB') := hμadd
+          _ = op (mu F c) (op (mu F r0') (iterate_op d Δ)) := by rw [hμB']
+          _ = op (op (mu F c) (mu F r0')) (iterate_op d Δ) := by
+                simpa [op_assoc] using (op_assoc (mu F c) (mu F r0') (iterate_op d Δ)).symm
+          _ = op (mu F r_old_y) (iterate_op d Δ) := by simpa [hμr0]
+      simpa [extensionSetB_base, Set.mem_setOf_eq] using this
+    have hlt' :
+        separationStatistic_base R r0' r' Δ hΔ < chooseδ hk R d hd :=
+      h.A_noCommon hB_empty r' r0' Δ hΔ hμ' hrA' hB' (by simpa using hcommon)
+    simpa [separationStatistic_base_eq_remMulti (R := R) r_old_y r_old_x Δ hΔ, r0', r'] using hlt'
+  · intro hB_empty r_old_x r_old_y Δ hΔ hμ hC hB
+    let c : Multi k := commonMulti r_old_x r_old_y
+    let r0' : Multi k := remMultiLeft r_old_x r_old_y
+    let r' : Multi k := remMultiRight r_old_x r_old_y
+    have hrC' : r' ∈ extensionSetC_base F d r0' Δ :=
+      (extensionSetC_base_iff_remMulti (H := H) d r_old_x r_old_y Δ).1 hC
+    have hcommon : commonMulti r0' r' = (0 : Multi k) := by
+      simpa [c, r0', r'] using commonMulti_remMultiLeft_remMultiRight_eq_zero (r := r_old_x) (s := r_old_y)
+    have hμ' : mu F r0' < mu F r' := by
+      have hr0_vec : r_old_x = c + r0' := (commonMulti_add_remMultiLeft r_old_x r_old_y).symm
+      have hr_vec : r_old_y = c + r' := (commonMulti_add_remMultiRight r_old_x r_old_y).symm
+      have hr0 : mu F r_old_x = op (mu F c) (mu F r0') := by
+        calc
+          mu F r_old_x = mu F (c + r0') := by simpa [hr0_vec]
+          _ = op (mu F c) (mu F r0') := mu_add_of_comm (F := F) H c r0'
+      have hr : mu F r_old_y = op (mu F c) (mu F r') := by
+        calc
+          mu F r_old_y = mu F (c + r') := by simpa [hr_vec]
+          _ = op (mu F c) (mu F r') := mu_add_of_comm (F := F) H c r'
+      have hlt : op (mu F c) (mu F r0') < op (mu F c) (mu F r') := by
+        simpa [hr0, hr] using hμ
+      have hle : mu F r0' ≤ mu F r' :=
+        cancellative_right (z := mu F c) (x := mu F r0') (y := mu F r') (le_of_lt hlt)
+      have hne : mu F r0' ≠ mu F r' := by
+        intro hEq
+        have hEq' : op (mu F c) (mu F r0') = op (mu F c) (mu F r') := by simpa [hEq]
+        exact (ne_of_lt hlt) hEq'
+      exact lt_of_le_of_ne hle hne
+    have hB' : (¬ ∃ rB : Multi k, rB ∈ extensionSetB_base F d r0' Δ) := by
+      intro hB0
+      rcases hB0 with ⟨rB', hrB'⟩
+      refine hB ?_
+      refine ⟨c + rB', ?_⟩
+      have hμB' : mu F rB' = op (mu F r0') (iterate_op d Δ) := by
+        simpa [extensionSetB_base, Set.mem_setOf_eq] using hrB'
+      have hμadd : mu F (c + rB') = op (mu F c) (mu F rB') :=
+        mu_add_of_comm (F := F) H c rB'
+      have hμr0 : mu F r_old_x = op (mu F c) (mu F r0') := by
+        have hr0_vec : r_old_x = c + r0' := (commonMulti_add_remMultiLeft r_old_x r_old_y).symm
+        calc
+          mu F r_old_x = mu F (c + r0') := by simpa [hr0_vec]
+          _ = op (mu F c) (mu F r0') := mu_add_of_comm (F := F) H c r0'
+      have : mu F (c + rB') = op (mu F r_old_x) (iterate_op d Δ) := by
+        calc
+          mu F (c + rB') = op (mu F c) (mu F rB') := hμadd
+          _ = op (mu F c) (op (mu F r0') (iterate_op d Δ)) := by rw [hμB']
+          _ = op (op (mu F c) (mu F r0')) (iterate_op d Δ) := by
+                simpa [op_assoc] using (op_assoc (mu F c) (mu F r0') (iterate_op d Δ)).symm
+          _ = op (mu F r_old_x) (iterate_op d Δ) := by simpa [hμr0]
+      simpa [extensionSetB_base, Set.mem_setOf_eq] using this
+    have hlt' :
+        chooseδ hk R d hd < separationStatistic_base R r0' r' Δ hΔ :=
+      h.C_noCommon hB_empty r0' r' Δ hΔ hμ' hrC' hB' (by simpa using hcommon)
+    simpa [separationStatistic_base_eq_remMulti (R := R) r_old_x r_old_y Δ hΔ, r0', r'] using hlt'
+
+theorem bEmptyStrictGapSpec_iff_bEmptyStrictGapSpec_noCommon
+    {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
+    (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d)
+    [KSSeparation α] :
+    BEmptyStrictGapSpec (α := α) hk R IH H d hd ↔
+      BEmptyStrictGapSpec_noCommon (α := α) hk R IH H d hd := by
+  constructor
+  · intro h
+    exact bEmptyStrictGapSpec_noCommon_of_bEmptyStrictGapSpec (α := α) hk R IH H d hd h
+  · intro h
+    exact bEmptyStrictGapSpec_of_bEmptyStrictGapSpec_noCommon (α := α) hk R IH H d hd h
+
 /-
 Ben/Goertzel v2 perspective: one route to discharging `BEmptyStrictGapSpec` is to prove a
 “realizability interval” statement saying that an open interval of δ-choices yields a valid

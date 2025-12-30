@@ -16,6 +16,8 @@ import Mathlib.Order.BoundedOrder.Basic
 import Mathlib.Data.Prod.Lex
 import Mathlib.Algebra.Order.Group.Pointwise.CompleteLattice
 import Hammer
+import Mettapedia.ProbabilityTheory.Common.Valuation
+import Mettapedia.ProbabilityTheory.Common.Lattice
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
@@ -253,5 +255,41 @@ but has incomparable elements, so the representation theorem FAILS.
 
 We formalize this counterexample below to demonstrate the necessity of LinearOrder.
 -/
+
+/-! ## Connection to Common Infrastructure
+
+K&S Valuations are instances of the unified NormalizedValuation framework.
+This allows reusing common lemmas and connecting K&S to other probability theories.
+-/
+
+section CommonFramework
+
+open Mettapedia.ProbabilityTheory.Common
+
+variable {α : Type*} [PlausibilitySpace α]
+
+/-- A K&S Valuation is a NormalizedValuation (precise, monotone, normalized). -/
+def Valuation.toNormalizedValuation (v : Valuation α) : NormalizedValuation α where
+  val := v.val
+  mono := fun _ _ h => v.monotone h
+  val_bot := v.val_bot
+  val_top := v.val_top
+
+/-- K&S valuations get the common bounded theorem for free. -/
+theorem Valuation.bounded_common (v : Valuation α) (a : α) :
+    0 ≤ v.val a ∧ v.val a ≤ 1 :=
+  v.toNormalizedValuation.bounded a
+
+/-- K&S valuations inherit the common nonneg theorem. -/
+theorem Valuation.nonneg_common (v : Valuation α) (a : α) :
+    0 ≤ v.val a :=
+  v.toNormalizedValuation.nonneg a
+
+/-- K&S valuations inherit the common le_one theorem. -/
+theorem Valuation.le_one_common (v : Valuation α) (a : α) :
+    v.val a ≤ 1 :=
+  v.toNormalizedValuation.le_one a
+
+end CommonFramework
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling

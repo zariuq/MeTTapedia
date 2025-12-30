@@ -186,6 +186,46 @@ theorem iterate_op_pos (y : α) (hy : ident < y) (m : ℕ) (hm : m > 0) :
   calc ident = iterate_op y 0 := (iterate_op_zero y).symm
     _ < iterate_op y m := iterate_op_strictMono y hy hm
 
+/-- **Distribution lemma**: `(x ⊕ y)^m = x^m ⊕ y^m` when op is commutative.
+
+This is the key lemma for expanding iterates of sums. Note that this is FALSE without
+commutativity (see counterexample in Counterexamples.lean). -/
+theorem iterate_op_op_distrib_of_comm (x y : α) (h_comm : ∀ a b : α, op a b = op b a) (m : ℕ) :
+    iterate_op (op x y) m = op (iterate_op x m) (iterate_op y m) := by
+  induction m with
+  | zero => simp only [iterate_op_zero, op_ident_left]
+  | succ m ih =>
+    -- Goal: (x⊕y)^{m+1} = x^{m+1} ⊕ y^{m+1}
+    -- LHS = (x⊕y) ⊕ (x^m ⊕ y^m) by IH
+    -- RHS = (x ⊕ x^m) ⊕ (y ⊕ y^m)
+    -- We need to rearrange (x⊕y)⊕(x^m⊕y^m) to (x⊕x^m)⊕(y⊕y^m)
+    have step1 : op (op x y) (op (iterate_op x m) (iterate_op y m)) =
+        op x (op y (op (iterate_op x m) (iterate_op y m))) := by
+      rw [op_assoc]
+    have step2 : op y (op (iterate_op x m) (iterate_op y m)) =
+        op (op y (iterate_op x m)) (iterate_op y m) := by
+      rw [← op_assoc]
+    have step3 : op y (iterate_op x m) = op (iterate_op x m) y := h_comm y (iterate_op x m)
+    have step4 : op (op (iterate_op x m) y) (iterate_op y m) =
+        op (iterate_op x m) (op y (iterate_op y m)) := op_assoc _ _ _
+    have step5 : op x (op (iterate_op x m) (op y (iterate_op y m))) =
+        op (op x (iterate_op x m)) (op y (iterate_op y m)) := by
+      rw [← op_assoc]
+    calc iterate_op (op x y) (m + 1)
+        = op (op x y) (iterate_op (op x y) m) := rfl
+      _ = op (op x y) (op (iterate_op x m) (iterate_op y m)) := by rw [ih]
+      _ = op x (op y (op (iterate_op x m) (iterate_op y m))) := by rw [step1]
+      _ = op x (op (op y (iterate_op x m)) (iterate_op y m)) := by rw [step2]
+      _ = op x (op (op (iterate_op x m) y) (iterate_op y m)) := by rw [step3]
+      _ = op x (op (iterate_op x m) (op y (iterate_op y m))) := by rw [step4]
+      _ = op (op x (iterate_op x m)) (op y (iterate_op y m)) := by rw [step5]
+      _ = op (iterate_op x (m + 1)) (iterate_op y (m + 1)) := rfl
+
+/-- Variant: op distributes over iterate_op in opposite order -/
+theorem iterate_op_op_distrib_of_comm' (x y : α) (h_comm : ∀ a b : α, op a b = op b a) (m : ℕ) :
+    op (iterate_op x m) (iterate_op y m) = iterate_op (op x y) m :=
+  (iterate_op_op_distrib_of_comm x y h_comm m).symm
+
 end KnuthSkillingAlgebra
 
 /-! ## Separation Typeclass
@@ -219,5 +259,198 @@ class KSSeparation (α : Type*) [KnuthSkillingAlgebra α] where
     ∃ n m : ℕ, 0 < m ∧
       KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
       KnuthSkillingAlgebra.iterate_op a n ≤ KnuthSkillingAlgebra.iterate_op y m
+
+namespace KSSeparation
+
+open KnuthSkillingAlgebra
+
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+
+/-- Strengthening of `KSSeparation.separation`: we can request an arbitrarily large exponent `m`.
+
+This follows by applying `separation` to `x^(N+1) < y^(N+1)` and unfolding with `iterate_op_mul`. -/
+theorem separation_large_m {a x y : α} (ha : ident < a) (hx : ident < x) (hy : ident < y) (hxy : x < y)
+    (N : ℕ) :
+    ∃ n m : ℕ, N < m ∧ iterate_op x m < iterate_op a n ∧ iterate_op a n ≤ iterate_op y m := by
+  classical
+  set p : ℕ := N + 1
+  have hp_pos : 0 < p := Nat.succ_pos N
+  have hx_p : ident < iterate_op x p := iterate_op_pos x hx p hp_pos
+  have hy_p : ident < iterate_op y p := iterate_op_pos y hy p hp_pos
+  have hxy_p : iterate_op x p < iterate_op y p := iterate_op_strictMono_base p hp_pos x y hxy
+  rcases (KSSeparation.separation (a := a) (x := iterate_op x p) (y := iterate_op y p) ha hx_p hy_p hxy_p) with
+    ⟨n, m₁, hm₁_pos, h_gap, h_in⟩
+  refine ⟨n, p * m₁, ?_, ?_, ?_⟩
+  · -- N < p * m₁
+    have hp_lt : N < p := Nat.lt_succ_self N
+    have hm₁_pos' : 0 < m₁ := hm₁_pos
+    have : p ≤ p * m₁ := Nat.le_mul_of_pos_right p hm₁_pos'
+    exact lt_of_lt_of_le hp_lt this
+  · -- unfold the left inequality
+    simpa [iterate_op_mul, Nat.mul_assoc] using h_gap
+  · -- unfold the right inequality
+    simpa [iterate_op_mul, Nat.mul_assoc] using h_in
+
+/-- A convenient “one-sided commensurability” corollary of `KSSeparation`:
+for any positive base `a` and positive element `x`, some power of `a` sits above a power of `x`
+and below a *square-power* of `x`.
+
+This is the schematic inequality `x^m < a^n ≤ (x⊕x)^m = x^(2m)` that mimics the fact that
+`log_a(x)` lies in some rational interval of width `1`. -/
+theorem separation_between_self_and_square {a x : α} (ha : ident < a) (hx : ident < x) :
+    ∃ n m : ℕ, 0 < m ∧ iterate_op x m < iterate_op a n ∧ iterate_op a n ≤ iterate_op x (2 * m) := by
+  -- Apply separation to `x < x⊕x`.
+  have hx2 : ident < iterate_op x 2 := iterate_op_pos x hx 2 (by decide)
+  have hx_lt_x2 : x < iterate_op x 2 := by
+    -- `x = x^1 < x^2` since iterations of a positive element are strictly increasing.
+    simpa [iterate_op_one] using (iterate_op_strictMono x hx (by decide : (1 : ℕ) < 2))
+  rcases KSSeparation.separation (a := a) (x := x) (y := iterate_op x 2) ha hx hx2 hx_lt_x2 with
+    ⟨n, m, hm_pos, hlt, hle⟩
+  refine ⟨n, m, hm_pos, hlt, ?_⟩
+  -- Rewrite the upper bound `(x^2)^m` as `x^(2m)`.
+  simpa [iterate_op_mul, Nat.mul_assoc] using hle
+
+end KSSeparation
+
+/-! ## A Strict Variant of Separation
+
+`KSSeparation` only guarantees `a^n ≤ y^m` on the upper side. For some Appendix A.3.4 steps
+(notably, ruling out “minimal” C-statistics hitting the cut), it is convenient to assume the
+strict strengthening where `a^n < y^m`.  This is packaged separately so we can precisely
+track where strictness is used.
+-/
+
+/-- **Strict Separation Typeclass**: strengthen `KSSeparation` by making the upper bound strict. -/
+class KSSeparationStrict (α : Type*) [KnuthSkillingAlgebra α] where
+  /-- For any positive `x < y` and any base `a > ident`, find exponents `(n,m)` with `0 < m` and
+  `x^m < a^n < y^m`. -/
+  separation_strict : ∀ {a x y : α}, KnuthSkillingAlgebra.ident < a →
+      KnuthSkillingAlgebra.ident < x → KnuthSkillingAlgebra.ident < y → x < y →
+    ∃ n m : ℕ, 0 < m ∧
+      KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
+      KnuthSkillingAlgebra.iterate_op a n < KnuthSkillingAlgebra.iterate_op y m
+
+namespace KSSeparationStrict
+
+open KnuthSkillingAlgebra
+
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparationStrict α]
+
+/-- `KSSeparationStrict` implies `KSSeparation` (by weakening `<` to `≤` on the upper bound). -/
+theorem toKSSeparation : KSSeparation α := by
+  classical
+  refine ⟨?_⟩
+  intro a x y ha hx hy hxy
+  rcases (KSSeparationStrict.separation_strict (a := a) (x := x) (y := y) ha hx hy hxy) with
+    ⟨n, m, hm_pos, hlt, hgt⟩
+  exact ⟨n, m, hm_pos, hlt, le_of_lt hgt⟩
+
+end KSSeparationStrict
+
+namespace KSSeparation
+
+open KnuthSkillingAlgebra
+
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+
+/-- If the order on `α` is dense, then `KSSeparation` upgrades to the strict variant
+`KSSeparationStrict`.
+
+This isolates an extra hypothesis that suffices to rule out the “upper-bound equality” corner case:
+pick `z` with `x < z < y`, apply separation to `(x,z)`, then use `z^m < y^m` to make the upper
+bound strict. -/
+theorem toKSSeparationStrict_of_denselyOrdered [DenselyOrdered α] : KSSeparationStrict α := by
+  classical
+  refine ⟨?_⟩
+  intro a x y ha hx hy hxy
+  rcases exists_between hxy with ⟨z, hxz, hzy⟩
+  have hz : ident < z := lt_trans hx hxz
+  rcases (KSSeparation.separation (a := a) (x := x) (y := z) ha hx hz hxz) with
+    ⟨n, m, hm_pos, hlt, hle⟩
+  have hz_lt_y : iterate_op z m < iterate_op y m :=
+    iterate_op_strictMono_base m hm_pos z y hzy
+  have hlt' : iterate_op a n < iterate_op y m := lt_of_le_of_lt hle hz_lt_y
+  exact ⟨n, m, hm_pos, hlt, hlt'⟩
+
+end KSSeparation
+
+end Mettapedia.ProbabilityTheory.KnuthSkilling
+
+namespace Mettapedia.ProbabilityTheory.KnuthSkilling
+
+open KnuthSkillingAlgebra
+
+/-!
+## Commutation Helpers
+
+These small lemmas are convenient when reasoning about “new atom commutes with old atoms” style
+assumptions (see `AppendixA/Core/Induction/Goertzel.lean`).
+-/
+
+namespace KnuthSkillingAlgebra
+
+variable {α : Type*} [KnuthSkillingAlgebra α]
+
+/-- `x` and `y` commute with respect to `KnuthSkillingAlgebra.op`. -/
+def Commutes (x y : α) : Prop :=
+  op x y = op y x
+
+namespace Commutes
+
+theorem symm {x y : α} (h : Commutes (α := α) x y) : Commutes (α := α) y x := by
+  dsimp [Commutes] at h ⊢
+  exact h.symm
+
+theorem refl (x : α) : Commutes (α := α) x x :=
+  rfl
+
+theorem ident_left (x : α) : Commutes (α := α) ident x := by
+  simp [Commutes, op_ident_left, op_ident_right]
+
+theorem ident_right (x : α) : Commutes (α := α) x ident := by
+  simp [Commutes, op_ident_left, op_ident_right]
+
+/-- If `x` commutes with `y` and `z`, then it commutes with `y ⊕ z`. -/
+theorem op_right {x y z : α} (hxy : Commutes (α := α) x y) (hxz : Commutes (α := α) x z) :
+    Commutes (α := α) x (op y z) := by
+  dsimp [Commutes] at hxy hxz ⊢
+  calc
+    op x (op y z) = op (op x y) z := by
+      simpa [op_assoc]
+    _ = op (op y x) z := by
+      simpa [hxy]
+    _ = op y (op x z) := by
+      simpa [op_assoc]
+    _ = op y (op z x) := by
+      simpa [hxz]
+    _ = op (op y z) x := by
+      simpa [op_assoc]
+
+/-- If `y` commutes with `x` and `z`, then `y ⊕ z` commutes with `x`. -/
+theorem op_left {x y z : α} (hyx : Commutes (α := α) y x) (hzx : Commutes (α := α) z x) :
+    Commutes (α := α) (op y z) x := by
+  exact (op_right (α := α) (x := x) (y := y) (z := z) hyx.symm hzx.symm).symm
+
+end Commutes
+
+/-- The set of elements commuting with a fixed `x`. -/
+def centralizer (x : α) : Set α :=
+  {y : α | Commutes (α := α) x y}
+
+namespace centralizer
+
+theorem mem_iff {x y : α} : y ∈ centralizer (α := α) x ↔ Commutes (α := α) x y := by
+  rfl
+
+theorem ident_mem (x : α) : ident ∈ centralizer (α := α) x :=
+  Commutes.ident_right (α := α) x
+
+theorem closed_op {x y z : α} (hy : y ∈ centralizer (α := α) x) (hz : z ∈ centralizer (α := α) x) :
+    op y z ∈ centralizer (α := α) x :=
+  Commutes.op_right (α := α) (x := x) (y := y) (z := z) hy hz
+
+end centralizer
+
+end KnuthSkillingAlgebra
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling

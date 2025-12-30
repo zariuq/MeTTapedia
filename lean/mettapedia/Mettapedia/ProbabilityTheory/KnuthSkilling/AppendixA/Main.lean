@@ -21,6 +21,18 @@ Goal: keep the library building green while we incrementally port/fix that proof
 **Status**: Blocked by explicit missing hypotheses (see `.../Core/Induction/ThetaPrime.lean`):
 - `BEmptyStrictGapSpec` (K&S Appendix A.3.4 strict relative gaps in the global `B = ∅` regime)
 - `ZQuantized_chooseδ_if_B_nonempty` (commensurability used only in the global `B ≠ ∅` branch)
+  - A clean sufficient replacement for the strict-gap blocker is
+    `ChooseδBaseAdmissible` (see `.../Core/Induction/Goertzel.lean`), which isolates the remaining
+    “base invariance / diagonal crosses all relevant base-indexed intervals” step.
+  - In turn, `Goertzel.lean` now isolates a smaller explicit hypothesis package
+    `AppendixA34Extra` for the B-empty branch:
+    - `AppendixA34Extra.newAtomCommutes` (`NewAtomCommutes F d`): the new atom must commute with the
+      existing μ-grid to justify the `(μ ⊕ d^u)^m` decomposition used in the base-indexed A-side.
+    - `AppendixA34Extra.C_strict0`: strict C-side inaccessibility at base `0`; this is implied by
+      the strict-separation strengthening `KSSeparationStrict` (or by `KSSeparation` if `α` is
+      densely ordered).
+    This makes the remaining “real mathematical work” very explicit: either derive these from the
+    existing K&S assumptions, or exhibit a `KSSeparation` countermodel where they fail.
 
 **Proof Strategy** (GPT-5 Pro's "Triple Family Trick"):
 1. For any x ≠ ident, choose reference atom `a` with `ident < a`
