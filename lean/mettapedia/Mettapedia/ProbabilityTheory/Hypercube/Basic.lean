@@ -217,7 +217,7 @@ def cox : ProbabilityVertex where
 
 /-- Knuth-Skilling probability theory. -/
 def knuthSkilling : ProbabilityVertex where
-  commutativity := .commutative  -- NOT explicitly assumed but USED!
+  commutativity := .commutative  -- K&S target; Goertzel v4 assumes, v5 aims to derive from KSSeparation
   distributivity := .distributive -- Distributive lattice (not Boolean)
   precision := .precise          -- Derives standard probability
   orderAxis := .totalOrder       -- CRITICAL: LinearOrder required
@@ -232,6 +232,20 @@ def knuthSkilling : ProbabilityVertex where
 combination structure is assumed to be a group rather than merely a monoid. -/
 def knuthSkillingGroup : ProbabilityVertex :=
   { knuthSkilling with invertibility := .group }
+
+/-- Knuth–Skilling with commutativity taken as an explicit axiom (Goertzel v4).
+
+This is the same semantic vertex as `knuthSkilling`; the distinction is *proof-theoretic*:
+v4 explicitly strengthens the axiom package to avoid the `NewAtomCommutes` blocker. -/
+def knuthSkillingV4 : ProbabilityVertex :=
+  knuthSkilling
+
+/-- Knuth–Skilling with `KSSeparation` as the “single strengthening” (Goertzel v5).
+
+This is again the same semantic vertex as `knuthSkilling`; the distinction is *proof-theoretic*:
+v5 proposes deriving commutativity from the separation/density axiom. -/
+def knuthSkillingV5 : ProbabilityVertex :=
+  knuthSkilling
 
 /-- Dempster-Shafer belief functions. -/
 def dempsterShafer : ProbabilityVertex where

@@ -1,4 +1,5 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
+import Mettapedia.ProbabilityTheory.KnuthSkilling.GoertzelV5Separation
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA.Core
 
@@ -21,7 +22,7 @@ This means the "ratio" b^k / a^k is > 1 for all k.
 If a^n ≤ b^m with n > m, this violates growth rate constraints.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingAlgebra α]
 
 /-!
 ## Lemma 1: Powers Preserve Strict Inequality
@@ -65,8 +66,8 @@ But we also have a^m < b^m, so we're squeezing a^n between a^m and b^m.
 -/
 
 theorem power_inequality_squeeze {a b : α} (hab : a < b) {n m : ℕ}
-    (hn : 0 < n) (hm : 0 < m) (hnm : m < n)
-    (h : iterate_op a n ≤ iterate_op b m) :
+    (hn : 0 < n) (_hm : 0 < m) (_hnm : m < n)
+    (_h : iterate_op a n ≤ iterate_op b m) :
     iterate_op a n < iterate_op b n := by
   -- Since a < b and n > 0, we have a^n < b^n
   exact iterate_op_lt_iterate_op hab n hn
@@ -100,8 +101,8 @@ structure of x⊕y vs y⊕x.
 If x⊕y < y⊕x, apply separation with different bases and derive constraints.
 -/
 
-theorem separation_self_base (x y : α) (hx : ident < x) (hy : ident < y)
-    (hne : op x y ≠ op y x) (hlt : op x y < op y x) :
+theorem separation_self_base_sepImpliesComm [KSSeparation α] (x y : α) (hx : ident < x) (hy : ident < y)
+    (_hne : op x y ≠ op y x) (hlt : op x y < op y x) :
     ∃ n m : ℕ, 0 < m ∧
     iterate_op (op x y) m < iterate_op (op x y) n ∧
     iterate_op (op x y) n ≤ iterate_op (op y x) m := by
@@ -236,5 +237,74 @@ The fundamental issue: without commutativity, I can't manipulate the expressions
   /-- Conjecture: `KSSeparation` implies commutativity. -/
   def SeparationImpliesCommutative : Prop :=
     ∀ x y : α, op x y = op y x
+
+  /-!
+  ## Theorem (Goertzel v5): `KSSeparation` implies commutativity
+
+  The file `Mettapedia/ProbabilityTheory/KnuthSkilling/GoertzelV5Separation.lean` contains a
+  sorry-free proof of commutativity from `KSSeparation`, formulated over a minimal “weak” K&S
+  structure (associativity + identity + strict monotonicity + `ident` as bottom).
+
+  Here we instantiate that weak structure from `KnuthSkillingAlgebra` and transport the
+  `KSSeparation` hypothesis, yielding a theorem in the Appendix A core namespace.
+  -/
+
+  /-- Goertzel v5 (formalized): `KSSeparation` forces global commutativity. -/
+  theorem separationImpliesCommutative_of_KSSeparation [KSSeparation α] :
+      SeparationImpliesCommutative (α := α) := by
+    classical
+    -- Build the “weak” K&S structure used by the v5 proof, from the existing K&S structure.
+    letI : Mettapedia.ProbabilityTheory.KnuthSkilling.GoertzelV5.KnuthSkillingAlgebraWeak α :=
+      { op := op
+        ident := ident
+        op_assoc := op_assoc
+        op_ident_right := op_ident_right
+        op_ident_left := op_ident_left
+        op_strictMono_left := op_strictMono_left
+        op_strictMono_right := op_strictMono_right
+        ident_le := ident_le }
+
+    -- Relate the two `iterate_op` definitions so we can reuse `KSSeparation.separation`.
+    have h_op :
+        ∀ x y : α,
+          Mettapedia.ProbabilityTheory.KnuthSkilling.GoertzelV5.KnuthSkillingAlgebraWeak.op x y =
+            op x y := by
+      intro x y
+      rfl
+    have h_iterate :
+        ∀ (x : α) (n : ℕ),
+          KnuthSkillingAlgebra.iterate_op x n =
+            Mettapedia.ProbabilityTheory.KnuthSkilling.GoertzelV5.KnuthSkillingAlgebraWeak.iterate_op x n := by
+      intro x n
+      induction n with
+      | zero => rfl
+      | succ n ih =>
+        simp [KnuthSkillingAlgebra.iterate_op,
+          Mettapedia.ProbabilityTheory.KnuthSkilling.GoertzelV5.KnuthSkillingAlgebraWeak.iterate_op, ih,
+          h_op]
+
+    -- Transport `KSSeparation` to `KSSeparationWeak` (same statement, different `iterate_op` name).
+    letI : Mettapedia.ProbabilityTheory.KnuthSkilling.GoertzelV5.KSSeparationWeak α :=
+      { separation := by
+          intro a x y ha hx hy hxy
+          rcases (KSSeparation.separation (α := α) (a := a) (x := x) (y := y) ha hx hy hxy) with
+            ⟨n, m, hm_pos, hlt, hle⟩
+          refine ⟨n, m, hm_pos, ?_, ?_⟩
+          · simpa [h_iterate] using hlt
+          · simpa [h_iterate] using hle }
+
+    -- Apply the v5 commutativity theorem, handling the identity cases separately.
+    intro x y
+    by_cases hx : x = ident
+    · subst hx
+      simp [op_ident_left, op_ident_right]
+    by_cases hy : y = ident
+    · subst hy
+      simp [op_ident_left, op_ident_right]
+    have hx_pos : ident < x := lt_of_le_of_ne (ident_le x) (Ne.symm hx)
+    have hy_pos : ident < y := lt_of_le_of_ne (ident_le y) (Ne.symm hy)
+    exact
+      Mettapedia.ProbabilityTheory.KnuthSkilling.GoertzelV5.ThetaAdditivity.ksSeparation_implies_comm
+        (α := α) (x := x) (y := y) hx_pos hy_pos
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA.Core

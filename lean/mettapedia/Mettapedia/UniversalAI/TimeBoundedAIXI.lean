@@ -1274,6 +1274,16 @@ noncomputable def decodeValueActionOutput : List ℕ → Option (ℝ × Action)
 
 end Coding
 
+theorem History.wellFormed_append_act_eq (h : History) (a b : Action) :
+    (h ++ [HistElem.act a]).wellFormed = (h ++ [HistElem.act b]).wellFormed := by
+  induction h using List.twoStepInduction with
+  | nil =>
+      simp [History.wellFormed]
+  | singleton e =>
+      cases e <;> simp [History.wellFormed]
+  | cons_cons e1 e2 rest ih =>
+      cases e1 <;> cases e2 <;> simp [History.wellFormed, ih]
+
 /-! ### A concrete time-bounded wrapper (Step 3)
 
 `ExtendedChronologicalProgram` represents the *already modified* programs that always output within
@@ -1346,6 +1356,31 @@ noncomputable def computeWithin (t : ℕ) (p : RawToPartrecProgram) (h : History
   match StepCounting.ToPartrec.evalWithin t p.tm (Coding.encodeHistoryNat h) with
   | some out => (Coding.decodeValueActionOutput out).getD (0, Action.stay)
   | none => (0, Action.stay)
+
+theorem computeWithin_fst_nonneg (t : ℕ) (p : RawToPartrecProgram) (h : History) : 0 ≤ (computeWithin t p h).1 := by
+  classical
+  unfold computeWithin
+  cases hrun : StepCounting.ToPartrec.evalWithin t p.tm (Coding.encodeHistoryNat h) with
+  | none =>
+      simp
+  | some out =>
+      cases out with
+      | nil =>
+          simp [Coding.decodeValueActionOutput]
+      | cons num out1 =>
+          cases out1 with
+          | nil =>
+              simp [Coding.decodeValueActionOutput]
+          | cons den out2 =>
+              cases out2 with
+              | nil =>
+                  simp [Coding.decodeValueActionOutput]
+              | cons a out3 =>
+                  cases hact : Coding.decodeActionNat a with
+                  | none =>
+                      simp [Coding.decodeValueActionOutput, hact]
+                  | some act =>
+                      simpa [Coding.decodeValueActionOutput, hact] using Coding.decodeValueNat_nonneg num den
 
 /-- The associated total extended chronological program (post-modification). -/
 noncomputable def toExtended (t : ℕ) (p : RawToPartrecProgram) : ExtendedChronologicalProgram :=
@@ -4702,7 +4737,7 @@ lemma sum_prefixFreeWeightAt_eq_prob_of_idxsOfOutput (tEnv l : ℕ) (ha : Histor
             calc
               ξ.weights i * (ξ.envs i).prob ha target = ξ.weights i * 1 := by simp [hprob1]
               _ = ξ.weights i := by simp
-              _ = xi_tlPrefixFreeWeightAt bits i := by simpa [hweight]
+              _ = xi_tlPrefixFreeWeightAt bits i := by simp [hweight]
           simpa [hmem] using this
     · cases htm : Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bits.get ⟨i, hiBits⟩) with
       | none =>
@@ -4749,7 +4784,7 @@ lemma sum_prefixFreeWeightAt_eq_prob_of_idxsOfOutput (tEnv l : ℕ) (ha : Histor
                       | none => false) =
                       true := by
                   simpa [htmAt] using hpred'
-                simpa [hiAt, hpred]
+                simp [hiAt, hpred]
             have : i ∈ idxs.toFinset := (List.mem_toFinset).2 this
             exact (False.elim (hmem this))
           · have htmIdx : Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bits[i]) = some tm := by
@@ -4789,9 +4824,42 @@ lemma sum_prefixFreeWeightAt_eq_prob_of_idxsOfOutput (tEnv l : ℕ) (ha : Histor
     _ = ∑ i ∈ Finset.range bits.length, if i ∈ idxs.toFinset then xi_tlPrefixFreeWeightAt bits i else 0 := by
           simpa using hsum.symm
     _ = ∑ i ∈ Finset.range bits.length, ξ.weights i * (ξ.envs i).prob ha target := by
-          simpa [hterm]
+          simp [hterm]
     _ = (xi_tlEnvironment tEnv l).prob ha target := by
-          simpa [hprob]
+          simp [hprob]
+
+lemma prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv l : ℕ) (ha : History) (target : Percept) :
+    let idxs := idxsOfOutput tEnv l ha target
+    ((xi_tlEnvironment tEnv l).prob ha target).toReal =
+      (numeratorBoundValue (l := l) idxs (idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := ha) (target := target)) :
+            ℝ) /
+        (2 ^ denomExp l : ℝ) := by
+  classical
+  let idxs := idxsOfOutput tEnv l ha target
+  have hnodup : idxs.Nodup :=
+    idxsOfOutput_nodup (tEnv := tEnv) (l := l) (ha := ha) (target := target)
+  have hnum :
+      numeratorBound l idxs =
+        some
+          (numeratorBoundValue (l := l) idxs
+            (idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := ha) (target := target))) :=
+    numeratorBoundValue_spec (l := l) (idxs := idxs)
+      (hlt := idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := ha) (target := target))
+  have hsum :
+      (∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt (bitsAt l) i).toReal =
+        ((numeratorBoundValue (l := l) idxs
+                (idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := ha) (target := target)) : ℕ) : ℝ) /
+          (2 ^ denomExp l : ℝ) :=
+    toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l) (idxs := idxs)
+      (num :=
+        numeratorBoundValue (l := l) idxs
+          (idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := ha) (target := target)))
+      (hnodup := hnodup) (hnum := hnum)
+  have hprob :
+      (∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt (bitsAt l) i) =
+        (xi_tlEnvironment tEnv l).prob ha target := by
+    simpa [idxs] using sum_prefixFreeWeightAt_eq_prob_of_idxsOfOutput (tEnv := tEnv) (l := l) (ha := ha) (target := target)
+  simpa [idxs, hprob] using hsum
 
 def ok (tEnv l : ℕ) (p : RawToPartrecProgram) (cert : XiTlOneStepRewardLowerBoundCert) : Prop :=
   match Coding.decodeHistoryNat cert.historyCode, Coding.decodeActionNat cert.actionCode with
@@ -6995,6 +7063,13 @@ noncomputable def xi_tlTwoStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                               value_nonneg (μ := μ) (π := (p.toExtended tProg).toAgent) (γ := gammaOne) (h := h') (n := 4)
                             simpa [hclaim0] using hnonneg
 
+/-- The concrete sound-proof-system family for the 2-cycle verifier (horizon `4`, `γ = 1`) over `ξ^tl`. -/
+noncomputable def xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily (l : ℕ) :
+    ∀ tEnv : ℕ,
+      EncodableSoundProofSystemFamily (α := RawToPartrecProgram)
+        (fun tProg p => ValidValueLowerBound (xi_tlEnvironment tEnv l) gammaOne 4 (p.toExtended tProg)) :=
+  fun tEnv => xi_tlTwoStepRewardLowerBoundSoundProofSystemToPartrec (tEnv := tEnv) (l := l)
+
 /-- Lift a sound proof system for `ValidValueLowerBound` from `μ₁` to `μ₂` when `μ₁` is pointwise bounded above by `μ₂`.
 
 This is the key “ξ^tl underapprox ⇒ VA soundness” bridge: if a checker certifies a lower-bound claim for a time-bounded
@@ -7405,27 +7480,27 @@ theorem exists_tProg_verify_mkCert (tEnv l : ℕ) (h : History) (a0 aFF aFT aTF 
     refine
       (StepCounting.ToPartrec.exists_evalWithin_eq_some_iff (c := p.tm) (v := Coding.encodeHistoryNat h)
           (out := outRoot)).2 ?_
-    simpa [hevalRoot]
+    simp [hevalRoot]
   have hexFF : ∃ n, StepCounting.ToPartrec.evalWithin n p.tm (Coding.encodeHistoryNat hFF) = some outFF := by
     refine
       (StepCounting.ToPartrec.exists_evalWithin_eq_some_iff (c := p.tm) (v := Coding.encodeHistoryNat hFF)
           (out := outFF)).2 ?_
-    simpa [hevalFF]
+    simp [hevalFF]
   have hexFT : ∃ n, StepCounting.ToPartrec.evalWithin n p.tm (Coding.encodeHistoryNat hFT) = some outFT := by
     refine
       (StepCounting.ToPartrec.exists_evalWithin_eq_some_iff (c := p.tm) (v := Coding.encodeHistoryNat hFT)
           (out := outFT)).2 ?_
-    simpa [hevalFT]
+    simp [hevalFT]
   have hexTF : ∃ n, StepCounting.ToPartrec.evalWithin n p.tm (Coding.encodeHistoryNat hTF) = some outTF := by
     refine
       (StepCounting.ToPartrec.exists_evalWithin_eq_some_iff (c := p.tm) (v := Coding.encodeHistoryNat hTF)
           (out := outTF)).2 ?_
-    simpa [hevalTF]
+    simp [hevalTF]
   have hexTT : ∃ n, StepCounting.ToPartrec.evalWithin n p.tm (Coding.encodeHistoryNat hTT) = some outTT := by
     refine
       (StepCounting.ToPartrec.exists_evalWithin_eq_some_iff (c := p.tm) (v := Coding.encodeHistoryNat hTT)
           (out := outTT)).2 ?_
-    simpa [hevalTT]
+    simp [hevalTT]
 
   rcases hexRoot with ⟨nRoot, hnRoot⟩
   rcases hexFF with ⟨nFF, hnFF⟩
@@ -7438,34 +7513,34 @@ theorem exists_tProg_verify_mkCert (tEnv l : ℕ) (h : History) (a0 aFF aFT aTF 
   let rest1 : ℕ := Nat.max nFF rest2
   let tProg : ℕ := Nat.max nRoot rest1
   have hrest1_le : rest1 ≤ tProg := by
-    simpa [tProg] using (Nat.le_max_right nRoot rest1)
+    simp [tProg]
   have htRoot : nRoot ≤ tProg := by
-    simpa [tProg] using (Nat.le_max_left nRoot rest1)
+    simp [tProg]
   have htFF : nFF ≤ tProg := by
     have hnFF : nFF ≤ rest1 := by
-      simpa [rest1] using (Nat.le_max_left nFF rest2)
+      simp [rest1]
     exact le_trans hnFF hrest1_le
   have htFT : nFT ≤ tProg := by
     have hnFT : nFT ≤ rest2 := by
-      simpa [rest2] using (Nat.le_max_left nFT rest3)
+      simp [rest2]
     have hrest2 : rest2 ≤ rest1 := by
-      simpa [rest1] using (Nat.le_max_right nFF rest2)
+      simp [rest1]
     exact le_trans hnFT (le_trans hrest2 hrest1_le)
   have htTF : nTF ≤ tProg := by
     have hnTF : nTF ≤ rest3 := by
-      simpa [rest3] using (Nat.le_max_left nTF nTT)
+      simp [rest3]
     have hrest3 : rest3 ≤ rest2 := by
-      simpa [rest2] using (Nat.le_max_right nFT rest3)
+      simp [rest2]
     have hrest2 : rest2 ≤ rest1 := by
-      simpa [rest1] using (Nat.le_max_right nFF rest2)
+      simp [rest1]
     exact le_trans hnTF (le_trans hrest3 (le_trans hrest2 hrest1_le))
   have htTT : nTT ≤ tProg := by
     have hnTT : nTT ≤ rest3 := by
-      simpa [rest3] using (Nat.le_max_right nTF nTT)
+      simp [rest3]
     have hrest3 : rest3 ≤ rest2 := by
-      simpa [rest2] using (Nat.le_max_right nFT rest3)
+      simp [rest2]
     have hrest2 : rest2 ≤ rest1 := by
-      simpa [rest1] using (Nat.le_max_right nFF rest2)
+      simp [rest1]
     exact le_trans hnTT (le_trans hrest3 (le_trans hrest2 hrest1_le))
 
   have hEvalRoot : StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat h) = some outRoot :=
@@ -7697,6 +7772,484 @@ theorem exists_tProg_verify_mkCert (tEnv l : ℕ) (h : History) (a0 aFF aFT aTF 
   simpa [xi_tlTwoStepRewardLowerBoundSoundProofSystemToPartrec] using (decide_eq_true hok)
 
 end XiTlTwoStepRewardLowerBoundCert
+
+/-- A concrete `nearOptimal_stabilized` witness for the 2-cycle `ξ^tl` verifier (`γ = 1`, horizon `4`).
+
+At decision points (histories that can be extended by an action), we choose the optimal action at each node
+and use the exhaustive `mkCert` certificate to justify the exact optimal `optimalValue`. When the history is not
+a decision point, `optimalValue` is `0` and any verified program suffices. -/
+theorem nearOptimal_stabilized_xi_tlTwoStepRewardLowerBound (l : ℕ) :
+    ∀ h : History,
+      h.wellFormed →
+        ∀ ε : ℝ,
+          0 < ε →
+            ∃ tProg : ℕ, ∃ p : RawToPartrecProgram,
+              ∃ pr :
+                (xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily (l := l)
+                      (xi_tlOptimalValueStabilizationTime (l := l) (γ := gammaOne) h 4)).Proof,
+                (xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily (l := l)
+                      (xi_tlOptimalValueStabilizationTime (l := l) (γ := gammaOne) h 4)).verify tProg p pr = true ∧
+                  optimalValue
+                      (xi_tlEnvironment (xi_tlOptimalValueStabilizationTime (l := l) (γ := gammaOne) h 4) l) gammaOne h
+                      4 -
+                    ε ≤
+                    ((p.toExtended tProg).compute h).1 := by
+  classical
+  intro h hwf ε hε
+  let tEnv : ℕ := xi_tlOptimalValueStabilizationTime (l := l) (γ := gammaOne) h 4
+  let μ : Environment := xi_tlEnvironment tEnv l
+  by_cases hTurn : (h ++ [HistElem.act Action.stay]).wellFormed = true
+  · -- Decision point: build the optimal 2-cycle action tree and certify the exact optimal value.
+    let a0 : Action := optimalAction μ gammaOne h 3
+    let xFF : Percept := ⟨false, false⟩
+    let xFT : Percept := ⟨false, true⟩
+    let xTF : Percept := ⟨true, false⟩
+    let xTT : Percept := ⟨true, true⟩
+    let hFF : History := h ++ [HistElem.act a0, HistElem.per xFF]
+    let hFT : History := h ++ [HistElem.act a0, HistElem.per xFT]
+    let hTF : History := h ++ [HistElem.act a0, HistElem.per xTF]
+    let hTT : History := h ++ [HistElem.act a0, HistElem.per xTT]
+    let aFF : Action := optimalAction μ gammaOne hFF 1
+    let aFT : Action := optimalAction μ gammaOne hFT 1
+    let aTF : Action := optimalAction μ gammaOne hTF 1
+    let aTT : Action := optimalAction μ gammaOne hTT 1
+
+    have ha0Wf : (h ++ [HistElem.act a0]).wellFormed = true := by
+      calc
+        (h ++ [HistElem.act a0]).wellFormed = (h ++ [HistElem.act Action.stay]).wellFormed :=
+          History.wellFormed_append_act_eq (h := h) (a := a0) (b := Action.stay)
+        _ = true := hTurn
+
+    rcases
+        XiTlTwoStepRewardLowerBoundCert.exists_tProg_verify_mkCert (tEnv := tEnv) (l := l) (h := h) (a0 := a0)
+          (aFF := aFF) (aFT := aFT) (aTF := aTF) (aTT := aTT) ha0Wf with
+      ⟨tProg, htProg⟩
+
+    let cert : XiTlTwoStepRewardLowerBoundCert :=
+      XiTlTwoStepRewardLowerBoundCert.mkCert (tEnv := tEnv) (l := l) h a0 aFF aFT aTF aTT
+    let p : RawToPartrecProgram :=
+      XiTlTwoStepRewardLowerBoundCert.mkProg (h := h) (a0 := a0) (aFF := aFF) (aFT := aFT) (aTF := aTF) (aTT := aTT)
+        cert.num cert.den
+
+    have hverify :
+        (xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily (l := l) tEnv).verify tProg p cert = true := by
+      simpa [xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily, cert, p] using htProg
+
+    have hclaim :
+        ((p.toExtended tProg).compute h).1 = optimalValue μ gammaOne h 4 := by
+      -- Extract the `ok` predicate from the verifier.
+      have hok :
+          XiTlTwoStepRewardLowerBoundCert.ok (tProg := tProg) (tEnv := tEnv) (l := l) p cert := by
+        have :
+            decide (XiTlTwoStepRewardLowerBoundCert.ok (tProg := tProg) (tEnv := tEnv) (l := l) p cert) = true := by
+          simpa [xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily, xi_tlTwoStepRewardLowerBoundSoundProofSystemToPartrec]
+            using hverify
+        exact of_decide_eq_true this
+
+      -- Local well-formedness helpers (these only depend on the `HistElem` pattern, not the payloads).
+      have wellFormed_append_act_per_of_wellFormed_append_act
+          (h0 : History) (a : Action) (x : Percept) (hw : (h0 ++ [HistElem.act a]).wellFormed = true) :
+          (h0 ++ [HistElem.act a, HistElem.per x]).wellFormed = true := by
+        induction h0 using List.twoStepInduction with
+        | nil =>
+            simp [History.wellFormed]
+        | singleton e =>
+            cases e <;> simp [History.wellFormed] at hw
+        | cons_cons e1 e2 rest ih =>
+            cases e1 <;> cases e2 <;> simp [History.wellFormed] at hw ⊢
+            exact ih hw
+
+      have wellFormed_append_act_of_wellFormed_append_act_per
+          (h0 : History) (a : Action) (x : Percept) (a' : Action)
+          (hw : (h0 ++ [HistElem.act a, HistElem.per x]).wellFormed = true) :
+          (h0 ++ [HistElem.act a, HistElem.per x, HistElem.act a']).wellFormed = true := by
+        induction h0 using List.twoStepInduction with
+        | nil =>
+            simp [History.wellFormed] at hw ⊢
+        | singleton e =>
+            cases e <;> simp [History.wellFormed] at hw
+        | cons_cons e1 e2 rest ih =>
+            cases e1 <;> cases e2 <;> simp [History.wellFormed] at hw ⊢
+            exact ih hw
+
+      have hFFWf : hFF.wellFormed := by
+        have : (h ++ [HistElem.act a0, HistElem.per xFF]).wellFormed = true :=
+          wellFormed_append_act_per_of_wellFormed_append_act h a0 xFF ha0Wf
+        simpa [hFF] using this
+      have hFTWf : hFT.wellFormed := by
+        have : (h ++ [HistElem.act a0, HistElem.per xFT]).wellFormed = true :=
+          wellFormed_append_act_per_of_wellFormed_append_act h a0 xFT ha0Wf
+        simpa [hFT] using this
+      have hTFWf : hTF.wellFormed := by
+        have : (h ++ [HistElem.act a0, HistElem.per xTF]).wellFormed = true :=
+          wellFormed_append_act_per_of_wellFormed_append_act h a0 xTF ha0Wf
+        simpa [hTF] using this
+      have hTTWf : hTT.wellFormed := by
+        have : (h ++ [HistElem.act a0, HistElem.per xTT]).wellFormed = true :=
+          wellFormed_append_act_per_of_wellFormed_append_act h a0 xTT ha0Wf
+        simpa [hTT] using this
+
+      -- Compute the root claimed value from the certificate.
+      have hok' :
+          Coding.encodeHistoryNat h = cert.historyCode ∧
+            cert.den = XiTlTwoStepRewardLowerBoundCert.expectedDen l ∧
+              cert.num = XiTlTwoStepRewardLowerBoundCert.claimNumerator l cert.nums := by
+        -- `mkCert` hardcodes these fields.
+        simp [cert, XiTlTwoStepRewardLowerBoundCert.mkCert]
+
+      have hden : cert.den = XiTlTwoStepRewardLowerBoundCert.expectedDen l := hok'.2.1
+      have hnum : cert.num = XiTlTwoStepRewardLowerBoundCert.claimNumerator l cert.nums := hok'.2.2
+
+      -- Show the claim matches the optimal value at horizon 4 by unfolding `optimalValue`/`optimalQValue`
+      -- and rewriting the `ξ^tl` probabilities using the dyadic numerators in `cert.nums`.
+      have hwf' : h.wellFormed := hwf
+      have hopt :
+          optimalValue μ gammaOne h 4 = optimalQValue μ gammaOne h a0 3 := by
+        simpa [a0] using
+          (optimalValue_eq_optimalQValue_optimalAction (μ := μ) (γ := gammaOne) (h := h) (n := 3) hwf')
+
+      -- First, compute the root claim as a dyadic rational.
+      have hclaimDyadic :
+          Coding.decodeValueNat cert.num cert.den =
+            ((XiTlTwoStepRewardLowerBoundCert.claimNumerator l cert.nums : ℕ) : ℝ) /
+              (XiTlTwoStepRewardLowerBoundCert.denomPow2 l : ℝ) := by
+        have hden' : (cert.den + 1 : ℝ) = (XiTlTwoStepRewardLowerBoundCert.denomPow2 l : ℝ) := by
+          have hpow : 1 ≤ XiTlTwoStepRewardLowerBoundCert.denomPow2 l := by
+            have : 0 < XiTlTwoStepRewardLowerBoundCert.denomPow2 l := by
+              have : 0 < XiTlTwoStepRewardLowerBoundCert.denomPow1 l := by
+                simp [XiTlTwoStepRewardLowerBoundCert.denomPow1, XiTlTwoStepRewardLowerBoundCert.denomExp]
+              simpa [XiTlTwoStepRewardLowerBoundCert.denomPow2] using Nat.mul_pos this this
+            exact Nat.succ_le_iff.2 this
+          -- `expectedDen = denomPow2 - 1`.
+          have : cert.den + 1 = XiTlTwoStepRewardLowerBoundCert.denomPow2 l := by
+            calc
+              cert.den + 1 = XiTlTwoStepRewardLowerBoundCert.expectedDen l + 1 := by simp [hden]
+              _ = (XiTlTwoStepRewardLowerBoundCert.denomPow2 l - 1) + 1 := by rfl
+              _ = XiTlTwoStepRewardLowerBoundCert.denomPow2 l := Nat.sub_add_cancel hpow
+          exact_mod_cast this
+        -- Rewrite the decoded rational.
+        simp [Coding.decodeValueNat, hnum, hden', XiTlTwoStepRewardLowerBoundCert.denomPow2]
+
+      -- It remains to show the dyadic formula is exactly `optimalQValue` at the optimal action.
+      -- The proof follows the same arithmetic identity as in the soundness theorem, but using
+      -- the exhaustiveness of `idxsOfOutput` to get equalities for the probability masses.
+      have hq :
+          optimalQValue μ gammaOne h a0 3 =
+            ((XiTlTwoStepRewardLowerBoundCert.claimNumerator l cert.nums : ℕ) : ℝ) /
+              (XiTlTwoStepRewardLowerBoundCert.denomPow2 l : ℝ) := by
+          have hha0Wf' : (h ++ [HistElem.act a0]).wellFormed := by simpa using ha0Wf
+          let den1 : ℝ := (2 : ℝ) ^ XiTlTwoStepRewardLowerBoundCert.denomExp l
+          have hden1 : (XiTlTwoStepRewardLowerBoundCert.denomPow1 l : ℝ) = den1 := by
+            simp [den1, XiTlTwoStepRewardLowerBoundCert.denomPow1, XiTlTwoStepRewardLowerBoundCert.denomExp]
+          have hden2 : (XiTlTwoStepRewardLowerBoundCert.denomPow2 l : ℝ) = den1 * den1 := by
+            simp [XiTlTwoStepRewardLowerBoundCert.denomPow2, XiTlTwoStepRewardLowerBoundCert.denomPow1, den1,
+              XiTlTwoStepRewardLowerBoundCert.denomExp, mul_assoc]
+
+          -- First-step probabilities as dyadics.
+          have hprob1FF :
+              (μ.prob (h ++ [HistElem.act a0]) xFF).toReal = (cert.nums.n1FF : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := h ++ [HistElem.act a0]) (target := xFF))
+          have hprob1FT :
+              (μ.prob (h ++ [HistElem.act a0]) xFT).toReal = (cert.nums.n1FT : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := h ++ [HistElem.act a0]) (target := xFT))
+          have hprob1TF :
+              (μ.prob (h ++ [HistElem.act a0]) xTF).toReal = (cert.nums.n1TF : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := h ++ [HistElem.act a0]) (target := xTF))
+          have hprob1TT :
+              (μ.prob (h ++ [HistElem.act a0]) xTT).toReal = (cert.nums.n1TT : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := h ++ [HistElem.act a0]) (target := xTT))
+
+          -- Second-step probabilities (for reward=true percepts) as dyadics.
+          have hprob2FFFT :
+              (μ.prob (hFF ++ [HistElem.act aFF]) xFT).toReal = (cert.nums.n2FFFT : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp, hFF,
+              xFF, xFT] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := hFF ++ [HistElem.act aFF]) (target := xFT))
+          have hprob2FFTT :
+              (μ.prob (hFF ++ [HistElem.act aFF]) xTT).toReal = (cert.nums.n2FFTT : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp, hFF,
+              xFF, xTT] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := hFF ++ [HistElem.act aFF]) (target := xTT))
+          have hprob2FTFT :
+              (μ.prob (hFT ++ [HistElem.act aFT]) xFT).toReal = (cert.nums.n2FTFT : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp, hFT,
+              xFT] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := hFT ++ [HistElem.act aFT]) (target := xFT))
+          have hprob2FTTT :
+              (μ.prob (hFT ++ [HistElem.act aFT]) xTT).toReal = (cert.nums.n2FTTT : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp, hFT,
+              xTT] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := hFT ++ [HistElem.act aFT]) (target := xTT))
+          have hprob2TFFT :
+              (μ.prob (hTF ++ [HistElem.act aTF]) xFT).toReal = (cert.nums.n2TFFT : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp, hTF,
+              xTF, xFT] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := hTF ++ [HistElem.act aTF]) (target := xFT))
+          have hprob2TFTT :
+              (μ.prob (hTF ++ [HistElem.act aTF]) xTT).toReal = (cert.nums.n2TFTT : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp, hTF,
+              xTF, xTT] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := hTF ++ [HistElem.act aTF]) (target := xTT))
+          have hprob2TTFT :
+              (μ.prob (hTT ++ [HistElem.act aTT]) xFT).toReal = (cert.nums.n2TTFT : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp, hTT,
+              xTT, xFT] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := hTT ++ [HistElem.act aTT]) (target := xFT))
+          have hprob2TTTT :
+              (μ.prob (hTT ++ [HistElem.act aTT]) xTT).toReal = (cert.nums.n2TTTT : ℝ) / den1 := by
+            simpa [μ, den1, cert, XiTlTwoStepRewardLowerBoundCert.mkCert, XiTlTwoStepRewardLowerBoundCert.denomExp, hTT,
+              xTT] using
+              (XiTlOneStepRewardLowerBoundCert.prob_toReal_eq_numeratorBoundValue_div_denomPow1 (tEnv := tEnv) (l := l)
+                (ha := hTT ++ [HistElem.act aTT]) (target := xTT))
+
+          -- Well-formedness for the second-step action histories (to unfold `optimalQValue` at horizon 1).
+          have hFFWf' : (h ++ [HistElem.act a0, HistElem.per xFF]).wellFormed = true := by
+            simpa [hFF] using hFFWf
+          have hFTWf' : (h ++ [HistElem.act a0, HistElem.per xFT]).wellFormed = true := by
+            simpa [hFT] using hFTWf
+          have hTFWf' : (h ++ [HistElem.act a0, HistElem.per xTF]).wellFormed = true := by
+            simpa [hTF] using hTFWf
+          have hTTWf' : (h ++ [HistElem.act a0, HistElem.per xTT]).wellFormed = true := by
+            simpa [hTT] using hTTWf
+
+          have haFFWf' :
+              (hFF ++ [HistElem.act aFF]).wellFormed := by
+            have :
+                (h ++ [HistElem.act a0, HistElem.per xFF, HistElem.act aFF]).wellFormed = true :=
+              wellFormed_append_act_of_wellFormed_append_act_per h a0 xFF aFF hFFWf'
+            have : (hFF ++ [HistElem.act aFF]).wellFormed = true := by
+              simpa [hFF, List.append_assoc] using this
+            simpa using this
+          have haFTWf' :
+              (hFT ++ [HistElem.act aFT]).wellFormed := by
+            have :
+                (h ++ [HistElem.act a0, HistElem.per xFT, HistElem.act aFT]).wellFormed = true :=
+              wellFormed_append_act_of_wellFormed_append_act_per h a0 xFT aFT hFTWf'
+            have : (hFT ++ [HistElem.act aFT]).wellFormed = true := by
+              simpa [hFT, List.append_assoc] using this
+            simpa using this
+          have haTFWf' :
+              (hTF ++ [HistElem.act aTF]).wellFormed := by
+            have :
+                (h ++ [HistElem.act a0, HistElem.per xTF, HistElem.act aTF]).wellFormed = true :=
+              wellFormed_append_act_of_wellFormed_append_act_per h a0 xTF aTF hTFWf'
+            have : (hTF ++ [HistElem.act aTF]).wellFormed = true := by
+              simpa [hTF, List.append_assoc] using this
+            simpa using this
+          have haTTWf' :
+              (hTT ++ [HistElem.act aTT]).wellFormed := by
+            have :
+                (h ++ [HistElem.act a0, HistElem.per xTT, HistElem.act aTT]).wellFormed = true :=
+              wellFormed_append_act_of_wellFormed_append_act_per h a0 xTT aTT hTTWf'
+            have : (hTT ++ [HistElem.act aTT]).wellFormed = true := by
+              simpa [hTT, List.append_assoc] using this
+            simpa using this
+
+          -- Branch values at horizon 2 are just “probability of reward” at the next percept.
+          have hVFF : optimalValue μ gammaOne hFF 2 =
+              (μ.prob (hFF ++ [HistElem.act aFF]) xFT).toReal +
+                (μ.prob (hFF ++ [HistElem.act aFF]) xTT).toReal := by
+            have hoptFF :
+                optimalValue μ gammaOne hFF 2 = optimalQValue μ gammaOne hFF aFF 1 := by
+              simpa [aFF] using
+                (optimalValue_eq_optimalQValue_optimalAction (μ := μ) (γ := gammaOne) (h := hFF) (n := 1) hFFWf)
+            rw [hoptFF]
+            simp [optimalQValue, haFFWf', List.foldl_cons, List.foldl_nil, Percept.reward, gammaOne]
+
+          have hVFT : optimalValue μ gammaOne hFT 2 =
+              (μ.prob (hFT ++ [HistElem.act aFT]) xFT).toReal +
+                (μ.prob (hFT ++ [HistElem.act aFT]) xTT).toReal := by
+            have hoptFT :
+                optimalValue μ gammaOne hFT 2 = optimalQValue μ gammaOne hFT aFT 1 := by
+              simpa [aFT] using
+                (optimalValue_eq_optimalQValue_optimalAction (μ := μ) (γ := gammaOne) (h := hFT) (n := 1) hFTWf)
+            rw [hoptFT]
+            simp [optimalQValue, haFTWf', List.foldl_cons, List.foldl_nil, Percept.reward, gammaOne]
+
+          have hVTF : optimalValue μ gammaOne hTF 2 =
+              (μ.prob (hTF ++ [HistElem.act aTF]) xFT).toReal +
+                (μ.prob (hTF ++ [HistElem.act aTF]) xTT).toReal := by
+            have hoptTF :
+                optimalValue μ gammaOne hTF 2 = optimalQValue μ gammaOne hTF aTF 1 := by
+              simpa [aTF] using
+                (optimalValue_eq_optimalQValue_optimalAction (μ := μ) (γ := gammaOne) (h := hTF) (n := 1) hTFWf)
+            rw [hoptTF]
+            simp [optimalQValue, haTFWf', List.foldl_cons, List.foldl_nil, Percept.reward, gammaOne]
+
+          have hVTT : optimalValue μ gammaOne hTT 2 =
+              (μ.prob (hTT ++ [HistElem.act aTT]) xFT).toReal +
+                (μ.prob (hTT ++ [HistElem.act aTT]) xTT).toReal := by
+            have hoptTT :
+                optimalValue μ gammaOne hTT 2 = optimalQValue μ gammaOne hTT aTT 1 := by
+              simpa [aTT] using
+                (optimalValue_eq_optimalQValue_optimalAction (μ := μ) (γ := gammaOne) (h := hTT) (n := 1) hTTWf)
+            rw [hoptTT]
+            simp [optimalQValue, haTTWf', List.foldl_cons, List.foldl_nil, Percept.reward, gammaOne]
+
+          -- Expand `optimalQValue` at horizon 3 and rewrite all probabilities/branch values to dyadics.
+          simp [optimalQValue, hha0Wf', List.foldl_cons, List.foldl_nil, Percept.reward, gammaOne] at *
+          -- Rewrite the percept/history literals to our local names, so the dyadic lemmas match.
+          have hxFF' : (Percept.mk false false) = xFF := by
+            have : xFF = Percept.mk false false := by simp [xFF]
+            simpa using this.symm
+          have hxFT' : (Percept.mk false true) = xFT := by
+            have : xFT = Percept.mk false true := by simp [xFT]
+            simpa using this.symm
+          have hxTF' : (Percept.mk true false) = xTF := by
+            have : xTF = Percept.mk true false := by simp [xTF]
+            simpa using this.symm
+          have hxTT' : (Percept.mk true true) = xTT := by
+            have : xTT = Percept.mk true true := by simp [xTT]
+            simpa using this.symm
+
+          have hhFF : (h ++ [HistElem.act a0, HistElem.per xFF]) = hFF := by
+            simp [hFF]
+          have hhFT : (h ++ [HistElem.act a0, HistElem.per xFT]) = hFT := by
+            simp [hFT]
+          have hhTF : (h ++ [HistElem.act a0, HistElem.per xTF]) = hTF := by
+            simp [hTF]
+          have hhTT : (h ++ [HistElem.act a0, HistElem.per xTT]) = hTT := by
+            simp [hTT]
+
+          simp [hxFF', hxFT', hxTF', hxTT', hhFF, hhFT, hhTF, hhTT] at *
+          -- Goal is now pure arithmetic in dyadics.
+          simp [hprob1FF, hprob1FT, hprob1TF, hprob1TT, hprob2FFFT, hprob2FFTT, hprob2FTFT, hprob2FTTT, hprob2TFFT,
+            hprob2TFTT, hprob2TTFT, hprob2TTTT, hVFF, hVFT, hVTF, hVTT,
+            XiTlTwoStepRewardLowerBoundCert.claimNumerator, XiTlTwoStepRewardLowerBoundCert.denomPow2,
+            XiTlTwoStepRewardLowerBoundCert.denomPow1, den1, XiTlTwoStepRewardLowerBoundCert.denomExp] at *
+          ring_nf
+
+      -- Combine: claim = optimalValue.
+      have hclaimOpt : Coding.decodeValueNat cert.num cert.den = optimalValue μ gammaOne h 4 := by
+        calc
+          Coding.decodeValueNat cert.num cert.den =
+              ((XiTlTwoStepRewardLowerBoundCert.claimNumerator l cert.nums : ℕ) : ℝ) /
+                (XiTlTwoStepRewardLowerBoundCert.denomPow2 l : ℝ) := hclaimDyadic
+          _ = optimalQValue μ gammaOne h a0 3 := by simpa [hq]
+          _ = optimalValue μ gammaOne h 4 := by simpa [hopt]
+
+      -- Finally, `compute` returns the decoded certificate value at the guarded root history.
+      have : ((p.toExtended tProg).compute h).1 = Coding.decodeValueNat cert.num cert.den := by
+        -- `compute` is `computeWithin` and `mkProg` evaluates to the root output by construction of `tProg`.
+        -- Use the verifier's `ok` predicate to get the `evalWithin` equality.
+        have hokDec :
+            XiTlTwoStepRewardLowerBoundCert.ok (tProg := tProg) (tEnv := tEnv) (l := l) p cert := hok
+        -- This is exactly the root case handled inside the soundness proof; use the same unfolding.
+        -- The `ok` predicate includes `evalWithin tProg p.tm (encodeHistoryNat h) = some [cert.num, cert.den, encodeActionNat a0]`.
+        -- We extract it by unfolding `ok` (the decoding succeeds for `mkCert`).
+        have hEvalRoot :
+            StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat h) =
+              some [cert.num, cert.den, Coding.encodeActionNat a0] := by
+          have hdecH : Coding.decodeHistoryNat cert.historyCode = some h := by
+            simp [cert, XiTlTwoStepRewardLowerBoundCert.mkCert]
+          have hdecA0 : Coding.decodeActionNat cert.actionCode0 = some a0 := by
+            simp [cert, XiTlTwoStepRewardLowerBoundCert.mkCert]
+          have hdecAFF : Coding.decodeActionNat cert.actionCodeFF = some aFF := by
+            simp [cert, XiTlTwoStepRewardLowerBoundCert.mkCert]
+          have hdecAFT : Coding.decodeActionNat cert.actionCodeFT = some aFT := by
+            simp [cert, XiTlTwoStepRewardLowerBoundCert.mkCert]
+          have hdecATF : Coding.decodeActionNat cert.actionCodeTF = some aTF := by
+            simp [cert, XiTlTwoStepRewardLowerBoundCert.mkCert]
+          have hdecATT : Coding.decodeActionNat cert.actionCodeTT = some aTT := by
+            simp [cert, XiTlTwoStepRewardLowerBoundCert.mkCert]
+          have hokSimp :=
+            (by
+              simpa [XiTlTwoStepRewardLowerBoundCert.ok, hdecH, hdecA0, hdecAFF, hdecAFT, hdecATF, hdecATT] using
+                hokDec)
+          -- Drop everything except the root `evalWithin` conjunct.
+          rcases hokSimp with
+            ⟨_hhEnc, _hpTm, _hden0, _hha0Wf0, _hhaFFWf0, _hhaFTWf0, _hhaTFWf0, _hhaTTWf0, hTail⟩
+          -- `evalWithin` at the root is the 27th conjunct in `hTail`.
+          have hTail' := hTail
+          iterate 26
+            (rcases hTail' with ⟨_, hTail'⟩)
+          rcases hTail' with ⟨hEvalRoot, _⟩
+          exact hEvalRoot
+
+        unfold RawToPartrecProgram.toExtended RawToPartrecProgram.computeWithin
+        simp [hEvalRoot, Coding.decodeValueActionOutput, Coding.decodeActionNat_encodeActionNat, Coding.decodeValueNat]
+
+      -- Conclude.
+      simpa [this, hclaimOpt]
+
+    refine ⟨tProg, p, cert, hverify, ?_⟩
+    -- `optimalValue - ε ≤ claim` since `claim = optimalValue`.
+    have := congrArg (fun x => x - ε) hclaim.symm
+    -- `linarith` is enough once rewritten.
+    linarith [hclaim]
+
+  · -- Not a decision point: `optimalValue` is `0` at horizon `4`, so any verified program works.
+    have hstayFalse : (h ++ [HistElem.act Action.stay]).wellFormed = false := by
+      cases hstay : (h ++ [HistElem.act Action.stay]).wellFormed <;> first | rfl | exact (False.elim (hTurn hstay))
+    have haFalse : ∀ a : Action, (h ++ [HistElem.act a]).wellFormed = false := by
+      intro a
+      calc
+        (h ++ [HistElem.act a]).wellFormed = (h ++ [HistElem.act Action.stay]).wellFormed :=
+          History.wellFormed_append_act_eq (h := h) (a := a) (b := Action.stay)
+        _ = false := hstayFalse
+
+    have hopt0 : optimalValue μ gammaOne h 4 = 0 := by
+      have hmax := optimalValue_is_max μ gammaOne h 3 hwf
+      -- Each `optimalQValue` term is `0` because the extended history is ill-formed.
+      have hleft : optimalQValue μ gammaOne h Action.left 3 = 0 := by
+        simp [optimalQValue, haFalse Action.left]
+      have hright : optimalQValue μ gammaOne h Action.right 3 = 0 := by
+        simp [optimalQValue, haFalse Action.right]
+      have hstay : optimalQValue μ gammaOne h Action.stay 3 = 0 := by
+        simp [optimalQValue, haFalse Action.stay]
+      -- Reduce the foldl-max over the three actions.
+      rw [hmax]
+      simp [hleft, hright, hstay]
+
+    -- Any verified program suffices; use the concrete `mkCert` at the empty history.
+    let h0 : History := []
+    let a0 : Action := Action.stay
+    let aFF : Action := Action.stay
+    let aFT : Action := Action.stay
+    let aTF : Action := Action.stay
+    let aTT : Action := Action.stay
+    have ha0Wf0 : (h0 ++ [HistElem.act a0]).wellFormed = true := by
+      simp [h0, History.wellFormed]
+    rcases
+        XiTlTwoStepRewardLowerBoundCert.exists_tProg_verify_mkCert (tEnv := tEnv) (l := l) (h := h0) (a0 := a0)
+          (aFF := aFF) (aFT := aFT) (aTF := aTF) (aTT := aTT) ha0Wf0 with
+      ⟨tProg, htProg⟩
+    let cert : XiTlTwoStepRewardLowerBoundCert :=
+      XiTlTwoStepRewardLowerBoundCert.mkCert (tEnv := tEnv) (l := l) h0 a0 aFF aFT aTF aTT
+    let p : RawToPartrecProgram :=
+      XiTlTwoStepRewardLowerBoundCert.mkProg (h := h0) (a0 := a0) (aFF := aFF) (aFT := aFT) (aTF := aTF) (aTT := aTT)
+        cert.num cert.den
+
+    have hverify :
+        (xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily (l := l) tEnv).verify tProg p cert = true := by
+      simpa [xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily, cert, p] using htProg
+
+    have hclaimNonneg : 0 ≤ ((p.toExtended tProg).compute h).1 := by
+      -- `compute` is `computeWithin` and decoded values are always nonnegative.
+      simpa [RawToPartrecProgram.toExtended, RawToPartrecProgram.computeWithin] using
+        RawToPartrecProgram.computeWithin_fst_nonneg (t := tProg) (p := p) (h := h)
+
+    refine ⟨tProg, p, cert, hverify, ?_⟩
+    -- `optimalValue = 0`, and the decoded claim is nonnegative.
+    have : optimalValue μ gammaOne h 4 - ε ≤ ((p.toExtended tProg).compute h).1 := by
+      have hlt : -ε ≤ ((p.toExtended tProg).compute h).1 := by linarith [hclaimNonneg]
+      simpa [hopt0] using hlt
+    simpa [tEnv, μ] using this
 
 /-- Build sound-proof-system convergence assumptions for the unbounded `ξ^tl` environment from:
 
@@ -7971,6 +8524,47 @@ theorem aixitl_xi_tlUnbounded_cycle_eps_optimal_eventually_of_stabilized
       (assumptions :=
         soundProofSystemConvergenceAssumptions_xi_tlUnbounded_of_stabilized (l := l) (γ := γ) (n := n)
           (sys := sys) (nearOptimal_stabilized := nearOptimal_stabilized))
+      h hwf ε hε)
+
+/-- Specialize `aixitl_xi_tlUnbounded_cycle_eps_optimal_eventually_of_stabilized` to the concrete 2-cycle verifier
+`xi_tlTwoStepRewardLowerBoundSoundProofSystemToPartrec`, i.e. `γ = 1` and horizon `4` (`n = 3`). -/
+theorem aixitl_xi_tlUnbounded_twoStep_cycle_eps_optimal_eventually_of_stabilized
+    (l : ℕ)
+    (nearOptimal_stabilized :
+      ∀ h : History,
+        h.wellFormed →
+          ∀ ε : ℝ,
+            0 < ε →
+              ∃ tProg : ℕ, ∃ p : RawToPartrecProgram,
+                ∃ pr :
+                  (xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily (l := l)
+                        (xi_tlOptimalValueStabilizationTime (l := l) (γ := gammaOne) h 4)).Proof,
+                  (xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily (l := l)
+                        (xi_tlOptimalValueStabilizationTime (l := l) (γ := gammaOne) h 4)).verify tProg p pr = true ∧
+                    optimalValue
+                        (xi_tlEnvironment (xi_tlOptimalValueStabilizationTime (l := l) (γ := gammaOne) h 4) l) gammaOne h 4 -
+                      ε ≤
+                      ((p.toExtended tProg).compute h).1) :
+    ∀ h : History,
+      h.wellFormed →
+        ∀ ε : ℝ,
+          0 < ε →
+            ∃ t l' N, ∀ l_p ≥ N,
+              optimalQValue (xi_tlEnvironmentUnbounded l) gammaOne h
+                    (optimalAction (xi_tlEnvironmentUnbounded l) gammaOne h 3) 3 - ε ≤
+                optimalQValue (xi_tlEnvironmentUnbounded l) gammaOne h
+                  (aixitl_cycle
+                    (aixitlFromProofCheckerToPartrec (xi_tlEnvironmentUnbounded l) gammaOne 4 t
+                      ((soundProofSystemCheckerFamilyToPartrec (μ := xi_tlEnvironmentUnbounded l) (γ := gammaOne) 3
+                            (soundProofSystemConvergenceAssumptions_xi_tlUnbounded_of_stabilized (l := l) (γ := gammaOne)
+                                  (n := 3) (sys := xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily (l := l)
+                                  ) (nearOptimal_stabilized := nearOptimal_stabilized)).proofSystem).checker t)
+                      l' l_p) h)
+                  3 := by
+  intro h hwf ε hε
+  simpa using
+    (aixitl_xi_tlUnbounded_cycle_eps_optimal_eventually_of_stabilized (l := l) (γ := gammaOne) (n := 3)
+      (sys := xi_tlTwoStepRewardLowerBoundSoundProofSystemFamily (l := l)) (nearOptimal_stabilized := nearOptimal_stabilized)
       h hwf ε hε)
 
 /-- Convergence schema (generic): with a complete proof-checker family (indexed by `t`) and

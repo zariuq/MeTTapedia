@@ -1,7 +1,9 @@
 import Mathlib.Algebra.Group.Basic
+import Mathlib.Algebra.Group.Int.Defs
 import Mathlib.Data.Int.Basic
 import Mathlib.Data.Nat.Find
 import Mathlib.Order.Basic
+import Mathlib.Tactic.Abel
 
 /-!
 # Hölder / Clay–Rolfsen (non-abelian direction): Archimedean bi-ordered groups are abelian
@@ -275,7 +277,7 @@ theorem add_comm_of_biOrdered_archimedean [ArchimedeanNC G] :
     calc
       za • p + zb • p = (za + zb) • p := by
         simpa using (add_zsmul p za zb).symm
-      _ = (zb + za) • p := by simpa [add_comm]
+      _ = (zb + za) • p := by simpa [Int.add_comm]
       _ = zb • p + za • p := by
         simpa using (add_zsmul p zb za)
   · -- no least positive element: Clay–Rolfsen Lemma 2.4, Case 2
@@ -284,28 +286,64 @@ theorem add_comm_of_biOrdered_archimedean [ArchimedeanNC G] :
     -- Suppose `a+b ≠ b+a`; derive a contradiction.
     by_contra hab
     have hab' : a + b ≠ b + a := by simpa using hab
+    have ha0 : a ≠ 0 := by
+      intro ha0
+      apply hab'
+      simpa [ha0]
+    have hb0 : b ≠ 0 := by
+      intro hb0
+      apply hab'
+      simpa [hb0]
     -- Make both elements positive by possibly negating.
     let g : G := if 0 < a then a else -a
     let h : G := if 0 < b then b else -b
     have hgPos : 0 < g := by
       by_cases ha : 0 < a
       · simp [g, ha]
-      · have : a < 0 := lt_of_not_ge ha
-        -- `0 < -a`
-        have : 0 < -a := by simpa using (neg_lt_neg_of_lt (G := G) this)
+      · have haLe : a ≤ 0 := le_of_not_gt ha
+        have haLt : a < 0 := lt_of_le_of_ne haLe ha0
+        have : 0 < -a := by simpa using (neg_lt_neg_of_lt (G := G) haLt)
         simp [g, ha, this]
     have hhPos : 0 < h := by
       by_cases hb : 0 < b
       · simp [h, hb]
-      · have : b < 0 := lt_of_not_ge hb
-        have : 0 < -b := by simpa using (neg_lt_neg_of_lt (G := G) this)
+      · have hbLe : b ≤ 0 := le_of_not_gt hb
+        have hbLt : b < 0 := lt_of_le_of_ne hbLe hb0
+        have : 0 < -b := by simpa using (neg_lt_neg_of_lt (G := G) hbLt)
         simp [h, hb, this]
+    have add_comm_of_add_comm_neg_right {a b : G} (h : a + (-b) = (-b) + a) :
+        a + b = b + a := by
+      have h1 : a = (-b) + (a + b) := by
+        have := congrArg (fun t => t + b) h
+        simpa [add_assoc] using this
+      have := congrArg (fun t => b + t) h1
+      simpa [add_assoc] using this.symm
+    have add_comm_of_add_comm_neg_left {a b : G} (h : (-a) + b = b + (-a)) :
+        a + b = b + a := by
+      have h1 : b = a + b + (-a) := by
+        have := congrArg (fun t => a + t) h
+        simpa [add_assoc] using this
+      have := congrArg (fun t => t + a) h1
+      simpa [add_assoc] using this.symm
     have hNonComm : g + h ≠ h + g := by
-      -- commutativity is invariant under negating either argument
-      have : a + b = b + a ↔ g + h = h + g := by
-        by_cases ha : 0 < a <;> by_cases hb : 0 < b <;>
-          simp [g, h, ha, hb, add_comm_iff_neg_left (G := G), and_left_comm, and_assoc, and_comm]
-      exact fun hgh => hab' (this.2 hgh)
+      intro hgh
+      have habEq : a + b = b + a := by
+        by_cases ha : 0 < a
+        · by_cases hb : 0 < b
+          · simpa [g, h, ha, hb] using hgh
+          · have h1 : a + (-b) = (-b) + a := by
+              simpa [g, h, ha, hb] using hgh
+            exact add_comm_of_add_comm_neg_right (a := a) (b := b) h1
+        · by_cases hb : 0 < b
+          · have h1 : (-a) + b = b + (-a) := by
+              simpa [g, h, ha, hb] using hgh
+            exact add_comm_of_add_comm_neg_left (a := a) (b := b) h1
+          · have h1 : (-a) + (-b) = (-b) + (-a) := by
+              simpa [g, h, ha, hb] using hgh
+            have h2 : a + (-b) = (-b) + a :=
+              add_comm_of_add_comm_neg_left (a := a) (b := -b) h1
+            exact add_comm_of_add_comm_neg_right (a := a) (b := b) h2
+      exact hab' habEq
     have hCne : commutator (G := G) g h ≠ 0 := by
       intro h0
       exact hNonComm (commutator_eq_zero_iff (G := G) g h |>.1 h0)
@@ -349,10 +387,22 @@ theorem add_comm_of_biOrdered_archimedean [ArchimedeanNC G] :
       simpa [natCast_zsmul] using hmLe
     have hnLeZ : (n : ℤ) • x ≤ h' := by
       simpa [natCast_zsmul] using hnLe
-    have hmLtZ : g' < (m + 1 : ℤ) • x := by
-      simpa [natCast_zsmul] using hmLt
-    have hnLtZ : h' < (n + 1 : ℤ) • x := by
-      simpa [natCast_zsmul] using hnLt
+    have hmLtZ : g' < (↑m + 1 : ℤ) • x := by
+      have hEq : (↑(m + 1) : ℤ) • x = (m + 1) • x := natCast_zsmul x (m + 1)
+      have hmLt' : g' < (↑(m + 1) : ℤ) • x := lt_of_lt_of_eq hmLt hEq.symm
+      have hCoef : (↑(m + 1) : ℤ) = (↑m + 1 : ℤ) := by
+        simpa [Nat.succ_eq_add_one] using (Int.ofNat_succ m)
+      have hCoef' : (↑(m + 1) : ℤ) • x = (↑m + 1 : ℤ) • x :=
+        congrArg (fun t : ℤ => t • x) hCoef
+      exact lt_of_lt_of_eq hmLt' hCoef'
+    have hnLtZ : h' < (↑n + 1 : ℤ) • x := by
+      have hEq : (↑(n + 1) : ℤ) • x = (n + 1) • x := natCast_zsmul x (n + 1)
+      have hnLt' : h' < (↑(n + 1) : ℤ) • x := lt_of_lt_of_eq hnLt hEq.symm
+      have hCoef : (↑(n + 1) : ℤ) = (↑n + 1 : ℤ) := by
+        simpa [Nat.succ_eq_add_one] using (Int.ofNat_succ n)
+      have hCoef' : (↑(n + 1) : ℤ) • x = (↑n + 1 : ℤ) • x :=
+        congrArg (fun t : ℤ => t • x) hCoef
+      exact lt_of_lt_of_eq hnLt' hCoef'
     have hnegG : -g' ≤ (-(m : ℤ)) • x := by
       -- `m•x ≤ g'` implies `-g' ≤ -(m•x)`; rewrite `-(m•x)` as `(-m)•x`.
       have : -g' ≤ -((m : ℤ) • x) := neg_le_neg_of_le (G := G) hmLeZ
@@ -363,56 +413,54 @@ theorem add_comm_of_biOrdered_archimedean [ArchimedeanNC G] :
     -- Now bound the commutator above by `x+x`, contradicting `x+x < commutator`.
     have hUpper : commutator (G := G) g' h' < x + x := by
       -- Step 1: `g'+h' < (m+1)•x + (n+1)•x`
-      have h1 : g' + h' < (m + 1 : ℤ) • x + h' := IsBiOrderedAddGroup.add_lt_add_right hmLtZ h'
-      have h2 : (m + 1 : ℤ) • x + h' < (m + 1 : ℤ) • x + (n + 1 : ℤ) • x :=
-        IsBiOrderedAddGroup.add_lt_add_left hnLtZ ((m + 1 : ℤ) • x)
-      have hgh : g' + h' < (m + 1 : ℤ) • x + (n + 1 : ℤ) • x := lt_trans h1 h2
+      have h1 : g' + h' < (↑m + 1 : ℤ) • x + h' := IsBiOrderedAddGroup.add_lt_add_right hmLtZ h'
+      have h2 : (↑m + 1 : ℤ) • x + h' < (↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x :=
+        IsBiOrderedAddGroup.add_lt_add_left hnLtZ ((↑m + 1 : ℤ) • x)
+      have hgh : g' + h' < (↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x := lt_trans h1 h2
       -- Step 2: add `-g'` on the right, then replace by `(-m)•x` via `≤`
-      have h3 : g' + h' + (-g') < ((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-g') :=
+      have h3 :
+          g' + h' + (-g') < ((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-g') :=
         IsBiOrderedAddGroup.add_lt_add_right hgh (-g')
-      have h4 : ((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-g') ≤
-          ((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-(m : ℤ)) • x :=
-        add_le_add_left (G := G) hnegG ((m + 1 : ℤ) • x + (n + 1 : ℤ) • x)
-      have h3' : g' + h' + (-g') < ((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-(m : ℤ)) • x :=
+      have h4 :
+          ((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-g') ≤
+            ((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-(m : ℤ)) • x :=
+        add_le_add_left (G := G) hnegG ((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x)
+      have h3' :
+          g' + h' + (-g') < ((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-(m : ℤ)) • x :=
         lt_of_lt_of_le h3 h4
       -- Step 3: add `-h'` on the right, then replace by `(-n)•x`
       have h5 : g' + h' + (-g') + (-h') <
-          (((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-h') :=
+          (((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-h') :=
         IsBiOrderedAddGroup.add_lt_add_right h3' (-h')
-      have h6 : (((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-h') ≤
-          (((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-(n : ℤ)) • x :=
-        add_le_add_left (G := G) hnegH (((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-(m : ℤ)) • x)
+      have h6 :
+          (((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-h') ≤
+            (((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-(n : ℤ)) • x :=
+        add_le_add_left (G := G) hnegH
+          (((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-(m : ℤ)) • x)
       have h5' : g' + h' + (-g') + (-h') <
-          (((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-(n : ℤ)) • x :=
+          (((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-(n : ℤ)) • x :=
         lt_of_lt_of_le h5 h6
       -- Step 4: compute the RHS as `x+x` by combining adjacent `zsmul`s (as in Clay–Rolfsen).
       have hRhs :
-          (((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-(n : ℤ)) • x = x + x := by
-        -- Combine the middle adjacent terms first: `(n+1)•x + (-m)•x = (n+1-m)•x`,
-        -- then combine with `(m+1)•x`, then with `(-n)•x`.
+          (((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-(n : ℤ)) • x = x + x := by
+        -- Reassociate into two adjacent sums, convert each via `add_zsmul`, then compute the scalar.
         calc
-          (((m + 1 : ℤ) • x + (n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-(n : ℤ)) • x
-              = ((m + 1 : ℤ) • x + ((n + 1 : ℤ) • x + (-(m : ℤ)) • x)) + (-(n : ℤ)) • x := by
+          (((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + (-(m : ℤ)) • x) + (-(n : ℤ)) • x
+              = ((↑m + 1 : ℤ) • x + (↑n + 1 : ℤ) • x) + ((-(m : ℤ)) • x + (-(n : ℤ)) • x) := by
                   simp [add_assoc]
-          _ = ((m + 1 : ℤ) • x + ((n + 1 - m : ℤ) • x)) + (-(n : ℤ)) • x := by
-                  have hBC :
-                      (n + 1 : ℤ) • x + (-(m : ℤ)) • x = (n + 1 - m : ℤ) • x := by
-                    simpa [sub_eq_add_neg] using
-                      (add_zsmul x (n + 1 : ℤ) (-(m : ℤ))).symm
-                  simpa [hBC, add_assoc]
-          _ = (n + 2 : ℤ) • x + (-(n : ℤ)) • x := by
-                  have hAB :
-                      (m + 1 : ℤ) • x + (n + 1 - m : ℤ) • x = (n + 2 : ℤ) • x := by
-                    simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using
-                      (add_zsmul x (m + 1 : ℤ) (n + 1 - m : ℤ)).symm
-                  simpa [hAB, add_assoc]
+          _ = ((↑m + 1 + (↑n + 1) : ℤ) • x) + ((-(m : ℤ) + (-(n : ℤ)) : ℤ) • x) := by
+                  simp [add_zsmul]
+          _ = ((↑m + 1 + (↑n + 1) + (-(m : ℤ) + (-(n : ℤ))) : ℤ) • x) := by
+                  simpa using (add_zsmul x (↑m + 1 + (↑n + 1) : ℤ) (-(m : ℤ) + (-(n : ℤ)) : ℤ)).symm
           _ = (2 : ℤ) • x := by
-                  -- `(n+2)•x + (-n)•x = ((n+2) + (-n))•x = 2•x`
-                  simpa using (add_zsmul x (n + 2 : ℤ) (-(n : ℤ))).symm
-          _ = x + x := by
-                  simp [two_zsmul]
+                  -- scalar arithmetic in `ℤ`
+                  have h0 : (↑m + 1 + (↑n + 1) + (-(m : ℤ) + (-(n : ℤ))) : ℤ) = 2 := by
+                    abel
+                  simpa [h0]
+          _ = x + x := by simpa using (two_zsmul x)
+      have h5'' : g' + h' + (-g') + (-h') < x + x := lt_of_lt_of_eq h5' hRhs
       have : commutator (G := G) g' h' < x + x := by
-        simpa [commutator, hRhs, add_assoc] using h5'
+        simpa [commutator, add_assoc] using h5''
       exact this
     exact (not_lt_of_ge (le_of_lt hx2Lt)) hUpper
 

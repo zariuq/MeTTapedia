@@ -2140,6 +2140,13 @@ This is the weakest assumption needed for the B-empty extension step. -/
 def NewAtomCommutes {k : ℕ} (F : AtomFamily α k) (d : α) : Prop :=
   ∀ i : Fin k, op (F.atoms i) d = op d (F.atoms i)
 
+/-- If `op` is globally commutative, then any candidate `d` satisfies `NewAtomCommutes F d`. -/
+lemma newAtomCommutes_of_op_comm {k : ℕ} {F : AtomFamily α k} {d : α}
+    (hcomm : ∀ x y : α, op x y = op y x) :
+    NewAtomCommutes F d := by
+  intro i
+  simpa [NewAtomCommutes] using hcomm (F.atoms i) d
+
 /-- Equivalent formulation of `NewAtomCommutes`: `d` commutes with every old-grid element `μ(F,r)`. -/
 def NewAtomCommutesGrid {k : ℕ} (F : AtomFamily α k) (d : α) : Prop :=
   ∀ r : Multi k, op (mu F r) d = op d (mu F r)
@@ -4224,6 +4231,24 @@ theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict
   exact
     extend_grid_rep_with_atom_of_appendixA34Extra (α := α) (hk := hk) (R := R) (F := F) (d := d)
       (hd := hd) (IH := IH) (H := H) (hExtra := hExtra)
+
+omit [KSSeparation α] in
+/-- Goertzel v4-style wrapper: if `op` is globally commutative, then the remaining B-empty extension
+step needs only `KSSeparationStrict` (since `NewAtomCommutes` is automatic). -/
+theorem extend_grid_rep_with_atom_of_op_comm_of_KSSeparationStrict
+    (IH : GridBridge F) (H : GridComm F)
+    [KSSeparationStrict α] (hcomm : ∀ x y : α, op x y = op y x) :
+      ∃ (F' : AtomFamily α (k + 1)),
+      (∀ i : Fin k, F'.atoms ⟨i, Nat.lt_succ_of_lt i.is_lt⟩ = F.atoms i) ∧
+      F'.atoms ⟨k, Nat.lt_succ_self k⟩ = d ∧
+      ∃ (R' : MultiGridRep F'),
+        (∀ r_old : Multi k, ∀ t : ℕ,
+          R'.Θ_grid ⟨mu F' (joinMulti r_old t), mu_mem_kGrid F' (joinMulti r_old t)⟩ =
+          R.Θ_grid ⟨mu F r_old, mu_mem_kGrid F r_old⟩ + (t : ℝ) * chooseδ hk R d hd) := by
+  have hNew : NewAtomCommutes F d := newAtomCommutes_of_op_comm (α := α) (F := F) (d := d) hcomm
+  exact
+    extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict (α := α) (hk := hk) (R := R)
+      (F := F) (d := d) (hd := hd) (IH := IH) (H := H) (hcomm := hNew)
 
 omit [KSSeparation α] in
 /-- Full B-empty extension wrapper: `NewAtomCommutes` + `KSSeparation` + `DenselyOrdered α` suffice
