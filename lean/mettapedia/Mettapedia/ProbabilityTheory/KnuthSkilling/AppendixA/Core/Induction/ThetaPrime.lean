@@ -11,22 +11,31 @@ open Classical KnuthSkillingAlgebra
 
 variable {α : Type*} [KnuthSkillingAlgebra α]
 
-/-! ### Θ' Infrastructure: Well-Definedness on μ-Fibers
+/-!
+## Θ' Infrastructure (core induction step `k → k+1`)
 
-Following GPT-5.1 Pro's recommendation (§3), we define Θ' via a raw evaluator
-and prove it's independent of witness choice. This defuses the Classical.choose
-problems in both additivity and strict monotonicity proofs.
+We define `Θ'` via a raw evaluator `Theta'_raw` and prove it is constant on μ-fibers of the
+extended grid. This avoids `Classical.choose`-dependence in later additivity/monotonicity proofs.
 
-#### Note: `ZQuantized` vs `chooseδ` in the B-empty regime
+### Executive Summary (for reviewers)
+- The main theorem here is `extend_grid_rep_with_atom`, which constructs a `MultiGridRep` on the
+  extended atom family `extendAtomFamily F d hd`.
+- The *only* remaining explicit blocker for that construction is
+  `ChooseδBaseAdmissible hk R d hd` (defined below): the chosen
+  `δ := chooseδ hk R d hd` must be strictly base-admissible for every base `r0` and level `u > 0`
+  (K&S Appendix A.3.4 “fixdelta → fixm” / base-invariance step).
+- In the global `B = ∅` regime, `ChooseδBaseAdmissible` is equivalent to the older strict-gap
+  interface `BEmptyStrictGapSpec`; see
+  `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Core/Induction/Goertzel.lean`.
 
-Several later lemmas in this file assume `hZQ : ZQuantized F R (chooseδ hk R d hd)`, i.e. that
-every k-grid Θ-value is an integer multiple of the *new* δ chosen for the extension atom `d`.
-This is a strong commensurability hypothesis and is not automatic in general when `B = ∅` (where
-`chooseδ` is defined as a `sSup` of A-statistics).
+### Note: `ZQuantized` vs `chooseδ` (legacy/optional)
+Some older lemmas in this file assume `hZQ : ZQuantized F R (chooseδ hk R d hd)`, i.e. every
+k-grid Θ-value is an integer multiple of the *new* δ. This is a strong commensurability premise:
+it is **not** required by `extend_grid_rep_with_atom`, and it can fail even in additive models.
 
-Concretely, even in the additive model (`α = ℝ≥0`, `op = (+)`, `Θ = id`), there are B-empty
-extensions where `ZQuantized F R (chooseδ …)` fails; see:
-`lean-projects/mettapedia/Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/ZQuantizedBEmpty.lean`.
+See:
+- `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/ZQuantizedBEmpty.lean`
+- `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/ZQuantizedBNonempty.lean`
 -/
 
 /-- Raw evaluator on witnesses for F': old part + t·δ. -/
@@ -884,7 +893,8 @@ structure BEmptyStrictGapSpec
 
 Using `commonMulti`/`remMultiLeft`/`remMultiRight`, any base-indexed comparison can be reduced to
 the case where the base and witness share **no** coordinatewise common part.  This mirrors the
-`ChooseδBaseAdmissible_noCommon` interface in `.../Core/Induction/Goertzel.lean`, but for the
+`ChooseδBaseAdmissible_noCommon` interface in
+`Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Core/Induction/Goertzel.lean`, but for the
 strict-gap blocker itself.
 
 This reduction is valuable because it isolates the genuinely “non-translate” case: if a proof or
@@ -910,6 +920,22 @@ structure BEmptyStrictGapSpec_noCommon
       (¬ ∃ rB : Multi k, rB ∈ extensionSetB_base F d r_old_x Δ) →
       commonMulti r_old_x r_old_y = 0 →
         chooseδ hk R d hd < separationStatistic_base R r_old_x r_old_y Δ hΔ
+
+/-- **Strong interface**: the chosen `δ := chooseδ …` is base-admissible for *every* base `r0`
+and level `u > 0`.
+
+This is stronger than `BEmptyStrictGapSpec` (which only needs strictness in the “external” mixed
+cases), but it is a clean sufficient condition: it makes the Θ′ strict-monotonicity proof entirely
+local, by directly bounding all base-indexed A/C statistics at the relevant `(r0,u)` pairs. -/
+class ChooseδBaseAdmissible
+    {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
+    (d : α) (hd : ident < d) : Prop where
+  base :
+    ∀ (r0 : Multi k) (u : ℕ) (hu : 0 < u),
+      (∀ r : Multi k, r ∈ extensionSetA_base F d r0 u →
+          separationStatistic_base R r0 r u hu < chooseδ hk R d hd) ∧
+        (∀ r : Multi k, r ∈ extensionSetC_base F d r0 u →
+          chooseδ hk R d hd < separationStatistic_base R r0 r u hu)
 
 theorem bEmptyStrictGapSpec_noCommon_of_bEmptyStrictGapSpec
     {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
@@ -1068,17 +1094,21 @@ strictly monotone extension evaluator agreeing with `Theta'_raw`.  Then:
 
 This conditional “flip ⇒ base-indexed B-witness” lemma is implemented (without placeholders) as
 `Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA.flip_implies_baseIndexed_B_witness` in
-`.../Core/Induction/Goertzel.lean`.
+`Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Core/Induction/Goertzel.lean`.
 
 Note: the v2 notes sometimes speak of an “interval of admissible δ” globally.  For the *global*
 admissibility predicate `AdmissibleDelta` (quantifying over all A/C witnesses at all levels),
-this cannot happen: `.../Core/Induction/Goertzel.lean` proves
+this cannot happen:
+`Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Core/Induction/Goertzel.lean` proves
 `no_open_interval_of_global_admissibleDelta`.  Any interval-of-freedom argument must therefore
 use a strictly more local/base-indexed admissibility notion, as K&S do in A.3.4. -/
 
-/-- Helper hypothesis: we only need `ZQuantized F R (chooseδ …)` in the **globally B-nonempty**
-branch (the “rational δ” regime). In the globally B-empty branch, `chooseδ` is a `sSup` and
-can be incommensurate with old grid values, so this quantization should not be required. -/
+/-- Legacy helper hypothesis (not used by `extend_grid_rep_with_atom`): a strong commensurability
+premise for the “globally `B ≠ ∅`” branch.
+
+Warning: this is *not* automatic. Even in the additive model (`α = ℝ≥0`, `op = (+)`, `Θ = id`),
+there are `B ≠ ∅` extensions where this implication fails; see
+`Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/ZQuantizedBNonempty.lean`. -/
 abbrev ZQuantized_chooseδ_if_B_nonempty
     {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
     (d : α) (hd : ident < d) : Prop :=
@@ -1472,13 +1502,17 @@ theorem zquantized_chooseδ_blocks_strict_gap_Δ1
 -/
 -- END REMOVED PROOF BODY
 
-/-- Relative Θ-gap upper bound (A-side).
+/-- Legacy relative Θ-gap upper bound (A-side).
 
 If `mu F r_old_y < mu F r_old_x` but `mu F r_old_x < mu F r_old_y ⊕ d^Δ`, then the Θ-gap is
 strictly less than `Δ * δ`, where `δ := chooseδ hk R d hd`.
 
 The internal (`d^Δ` already on the old grid) branch is proved; the genuinely external case is
-still pending. -/
+still pending.
+
+This lemma is retained for historical context; the current extension theorem does **not** use it.
+For the refactored gap bound used by `extend_grid_rep_with_atom`, see
+`theta_gap_lt_of_mu_lt_op_of_chooseδBaseAdmissible`. -/
 lemma theta_gap_lt_of_mu_lt_op
     {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
     (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d)
@@ -1549,7 +1583,8 @@ lemma theta_gap_lt_of_mu_lt_op
     -- If the boundary `μy ⊕ d^Δ` itself lies on the old k-grid, we can reduce to the
     -- (already proved) trade-equality case via `delta_shift_equiv`.
     -- This is a *base-indexed* equality witness for base `μy`, and does not follow from
-    -- global `extensionSetB F d Δ` (see `.../Counterexamples/GoertzelLemma7.lean`).
+    -- global `extensionSetB F d Δ` (see
+    -- `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/GoertzelLemma7.lean`).
     by_cases hB_base : ∃ rB : Multi k, mu F rB = op (mu F r_old_y) (iterate_op d Δ)
     · rcases hB_base with ⟨rB, hrB⟩
       have hμ_lt_grid : mu F r_old_x < mu F rB := by
@@ -1866,13 +1901,17 @@ lemma theta_gap_lt_of_mu_lt_op
       exact lt_of_le_of_ne h_non_strict h_not_eq
       -/
 
-/-- Relative Θ-gap lower bound (C-side).
+/-- Legacy relative Θ-gap lower bound (C-side).
 
 If `mu F r_old_x < mu F r_old_y` and `(mu F r_old_x) ⊕ d^Δ < mu F r_old_y`, then the Θ-gap is
 strictly greater than `Δ * δ`, where `δ := chooseδ hk R d hd`.
 
 The internal (`d^Δ` already on the old grid) branch is proved; the genuinely external case is
-still pending. -/
+still pending.
+
+This lemma is retained for historical context; the current extension theorem does **not** use it.
+For the refactored gap bound used by `extend_grid_rep_with_atom`, see
+`theta_gap_gt_of_op_lt_mu_of_chooseδBaseAdmissible`. -/
 lemma theta_gap_gt_of_op_lt_mu
     {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
     (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d)
@@ -2295,12 +2334,79 @@ lemma theta_gap_gt_of_op_lt_mu
       exact lt_of_le_of_ne h_non_strict h_not_eq.symm
       -/
 
+/-- Relative Θ-gap upper bound (A-side), derived from `ChooseδBaseAdmissible`.
+
+If `mu F r_old_x < mu F r_old_y ⊕ d^Δ`, then the Θ-gap is strictly less than `Δ * δ`, where
+`δ := chooseδ hk R d hd`. -/
+lemma theta_gap_lt_of_mu_lt_op_of_chooseδBaseAdmissible
+    {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
+    (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d)
+    [KSSeparation α]
+    (hBase : ChooseδBaseAdmissible (α := α) hk R d hd)
+    (r_old_x r_old_y : Multi k) (Δ : ℕ) (hΔ : 0 < Δ)
+    (h_lt : mu F r_old_x < op (mu F r_old_y) (iterate_op d Δ)) :
+    R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ -
+        R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩
+      < (Δ : ℝ) * chooseδ hk R d hd := by
+  classical
+  set δ : ℝ := chooseδ hk R d hd
+  have hA_base : r_old_x ∈ extensionSetA_base F d r_old_y Δ := by
+    simpa [extensionSetA_base, Set.mem_setOf_eq] using h_lt
+  have hstat :
+      separationStatistic_base R r_old_y r_old_x Δ hΔ < δ :=
+    (hBase.base r_old_y Δ hΔ).1 r_old_x hA_base
+  have hΔ_pos_real : (0 : ℝ) < (Δ : ℝ) := Nat.cast_pos.mpr hΔ
+  have h' :
+      R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ -
+          R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ < δ * (Δ : ℝ) := by
+    exact
+      (div_lt_iff₀ hΔ_pos_real).1 (by simpa [separationStatistic_base, δ] using hstat)
+  have :
+      R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ -
+          R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ < (Δ : ℝ) * δ := by
+    simpa [mul_comm] using h'
+  simpa [δ] using this
+
+/-- Relative Θ-gap lower bound (C-side), derived from `ChooseδBaseAdmissible`.
+
+If `(mu F r_old_x) ⊕ d^Δ < mu F r_old_y`, then the Θ-gap is strictly greater than `Δ * δ`, where
+`δ := chooseδ hk R d hd`. -/
+lemma theta_gap_gt_of_op_lt_mu_of_chooseδBaseAdmissible
+    {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
+    (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d)
+    [KSSeparation α]
+    (hBase : ChooseδBaseAdmissible (α := α) hk R d hd)
+    (r_old_x r_old_y : Multi k) (Δ : ℕ) (hΔ : 0 < Δ)
+    (h_lt : op (mu F r_old_x) (iterate_op d Δ) < mu F r_old_y) :
+    (Δ : ℝ) * chooseδ hk R d hd <
+      R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ -
+        R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ := by
+  classical
+  set δ : ℝ := chooseδ hk R d hd
+  have hC_base : r_old_y ∈ extensionSetC_base F d r_old_x Δ := by
+    simpa [extensionSetC_base, Set.mem_setOf_eq] using h_lt
+  have hstat :
+      δ < separationStatistic_base R r_old_x r_old_y Δ hΔ :=
+    (hBase.base r_old_x Δ hΔ).2 r_old_y hC_base
+  have hΔ_pos_real : (0 : ℝ) < (Δ : ℝ) := Nat.cast_pos.mpr hΔ
+  have h' :
+      δ * (Δ : ℝ) <
+        R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ -
+          R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ := by
+    exact
+      (lt_div_iff₀ hΔ_pos_real).1 (by simpa [separationStatistic_base, δ] using hstat)
+  have :
+      (Δ : ℝ) * δ <
+        R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ -
+          R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ := by
+    simpa [mul_comm] using h'
+  simpa [δ] using this
+
 theorem extend_grid_rep_with_atom
     {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
     (IH : GridBridge F) (H : GridComm F) (d : α) (hd : ident < d)
     [KSSeparation α]
-    (hZQ_if : ZQuantized_chooseδ_if_B_nonempty (α := α) hk R d hd)
-    (hStrict : BEmptyStrictGapSpec hk R IH H d hd) :
+    (hBase : ChooseδBaseAdmissible (α := α) hk R d hd) :
       ∃ (F' : AtomFamily α (k + 1)),
       (∀ i : Fin k, F'.atoms ⟨i, Nat.lt_succ_of_lt i.is_lt⟩ = F.atoms i) ∧
       F'.atoms ⟨k, Nat.lt_succ_self k⟩ = d ∧
@@ -2757,7 +2863,7 @@ theorem extend_grid_rep_with_atom
                 R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ < (Δ : ℝ) * δ :=
             by
               simpa [δ] using
-              theta_gap_lt_of_mu_lt_op hk R IH H d hd hZQ_if hStrict r_old_x r_old_y Δ hΔ_pos hμ_gt h_gap_bound
+              theta_gap_lt_of_mu_lt_op_of_chooseδBaseAdmissible hk R IH H d hd hBase r_old_x r_old_y Δ hΔ_pos h_gap_bound
           -- Conclude θx + t_x·δ < θy + t_y·δ using t_y = t_x + Δ.
           have ht_y_cast : (t_y : ℝ) * δ = (t_x : ℝ) * δ + (Δ : ℝ) * δ := by
             -- expand (t_x + Δ)·δ
@@ -2828,7 +2934,7 @@ theorem extend_grid_rep_with_atom
                 R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ :=
           by
             simpa [δ] using
-              theta_gap_gt_of_op_lt_mu hk R IH H d hd hZQ_if hStrict r_old_x r_old_y Δ hΔ_pos hμ_lt h_trade_bound
+              theta_gap_gt_of_op_lt_mu_of_chooseδBaseAdmissible hk R IH H d hd hBase r_old_x r_old_y Δ hΔ_pos h_trade_bound
         have ht_x_cast : (t_x : ℝ) * δ = (t_y : ℝ) * δ + (Δ : ℝ) * δ := by
           simpa [hΔ_eq, Nat.cast_add, add_mul]
         have hθ_gap' :
@@ -3701,5 +3807,21 @@ lemma ZQuantized_extend
     simpa [hΘr, hm]
   -- Now just do the cast bookkeeping.
   simpa [hΘ_mul] using (zquantized_cast_add m t δ)
+
+theorem extend_grid_rep_with_atom_of_gridComm
+    {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
+    (H : GridComm F) (d : α) (hd : ident < d)
+    [KSSeparation α]
+    (hBase : ChooseδBaseAdmissible (α := α) hk R d hd) :
+      ∃ (F' : AtomFamily α (k + 1)),
+      (∀ i : Fin k, F'.atoms ⟨i, Nat.lt_succ_of_lt i.is_lt⟩ = F.atoms i) ∧
+      F'.atoms ⟨k, Nat.lt_succ_self k⟩ = d ∧
+      ∃ (R' : MultiGridRep F'),
+        (∀ r_old : Multi k, ∀ t : ℕ,
+          R'.Θ_grid ⟨mu F' (joinMulti r_old t), mu_mem_kGrid F' (joinMulti r_old t)⟩ =
+          R.Θ_grid ⟨mu F r_old, mu_mem_kGrid F r_old⟩ + (t : ℝ) * chooseδ hk R d hd) := by
+  have IH : GridBridge F := gridBridge_of_gridComm (F := F) H
+  exact extend_grid_rep_with_atom (α := α) (hk := hk) (R := R) (IH := IH) (H := H) (d := d)
+    (hd := hd) hBase
 
   end Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA

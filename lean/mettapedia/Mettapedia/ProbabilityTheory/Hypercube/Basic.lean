@@ -11,7 +11,7 @@ Following Stay & Wells' H_Σ construction, we observe that probability theories 
 organized by their "base rewrites" (inference rules) and the sort assignments to their
 slots. Each vertex of the hypercube is a different probability theory!
 
-## The Five Axes
+## Core Axes
 
 1. **Commutativity**: Does A∧B = B∧A?
    - Yes: Classical, Cox, K&S, D-S
@@ -33,6 +33,11 @@ slots. Each vertex of the hypercube is a different probability theory!
 5. **Additivity**: Is P σ-additive on the lattice?
    - Yes: Kolmogorov
    - Derived from other axioms: Cox, K&S
+
+## Extended Axes
+
+This development also includes additional axes used in the later parts of the file:
+`DeterminismAxis`, `SupportAxis`, `RegularityAxis`, and `IndependenceAxis`.
 
 ## K&S Naturalness
 
@@ -60,8 +65,9 @@ namespace Mettapedia.ProbabilityTheory.Hypercube
 /-!
 ## §1: The Fundamental Axes
 
-Each axis represents a binary choice in the operational semantics of a probability theory.
-The hypercube has 2^n vertices where n is the number of axes.
+Each axis represents a choice in the operational semantics of a probability theory.
+Since several axes have 3–4 values, the total number of vertices is the product of
+the axis cardinalities (not `2^n`).
 -/
 
 /-- The commutativity axis: does the meet operation commute? -/
@@ -95,6 +101,18 @@ inductive AdditivityAxis where
   | additive : AdditivityAxis    -- P(A∪B) = P(A) + P(B) for disjoint
   | subadditive : AdditivityAxis -- P(A∪B) ≤ P(A) + P(B) (belief functions)
   | derived : AdditivityAxis     -- Additivity derived from other axioms
+  deriving DecidableEq, Repr
+
+/-- The invertibility axis: how much algebraic cancellation exists in the plausibility scale?
+
+This axis exists primarily to track the Goertzel-v3 "add inverses, invoke Hölder" patch:
+moving from a monoid (K&S as stated) to a group (adds inverses) dramatically changes which
+external representation theorems apply.
+-/
+inductive InvertibilityAxis where
+  | semigroup : InvertibilityAxis -- Only associativity is available
+  | monoid : InvertibilityAxis    -- Identity element exists
+  | group : InvertibilityAxis     -- Inverses exist (group completion)
   deriving DecidableEq, Repr
 
 /-- The determinism axis: how "crisp" are truth values?
@@ -145,8 +163,8 @@ inductive IndependenceAxis where
 /-!
 ## §2: The Extended Probability Hypercube
 
-A vertex in the hypercube specifies choices along all 9 axes.
-With 9 axes (some with 2-4 values), we have thousands of potential vertices,
+A vertex in the hypercube specifies choices along all 10 axes.
+With 10 axes (some with 2-4 values), we have thousands of potential vertices,
 though many combinations don't correspond to meaningful probability theories.
 
 The NEW IndependenceAxis captures the fundamental distinction between:
@@ -156,7 +174,7 @@ The NEW IndependenceAxis captures the fundamental distinction between:
 -/
 
 /-- A vertex in the probability hypercube: a specific probability theory.
-    The 9 axes capture fundamental choices in the foundations of probability. -/
+    The 10 axes capture fundamental choices in the foundations of probability. -/
 @[ext]
 structure ProbabilityVertex where
   commutativity : CommutativityAxis
@@ -164,6 +182,7 @@ structure ProbabilityVertex where
   precision : PrecisionAxis
   orderAxis : OrderAxis
   additivity : AdditivityAxis
+  invertibility : InvertibilityAxis
   determinism : DeterminismAxis
   support : SupportAxis
   regularity : RegularityAxis
@@ -177,6 +196,7 @@ def kolmogorov : ProbabilityVertex where
   precision := .precise
   orderAxis := .totalOrder
   additivity := .additive
+  invertibility := .monoid
   determinism := .probabilistic
   support := .continuous
   regularity := .borel
@@ -189,6 +209,7 @@ def cox : ProbabilityVertex where
   precision := .precise          -- Derives P(A) + P(¬A) = 1
   orderAxis := .totalOrder       -- Total ordering assumed
   additivity := .derived         -- Derived from functional equations
+  invertibility := .monoid
   determinism := .probabilistic
   support := .continuous
   regularity := .borel
@@ -201,10 +222,16 @@ def knuthSkilling : ProbabilityVertex where
   precision := .precise          -- Derives standard probability
   orderAxis := .totalOrder       -- CRITICAL: LinearOrder required
   additivity := .derived         -- Derived from associativity + Archimedean
+  invertibility := .monoid
   determinism := .probabilistic
   support := .continuous
   regularity := .borel
   independence := .tensor
+
+/-- Knuth–Skilling with inverses (Goertzel-style “group fix”): same as `knuthSkilling`, but the
+combination structure is assumed to be a group rather than merely a monoid. -/
+def knuthSkillingGroup : ProbabilityVertex :=
+  { knuthSkilling with invertibility := .group }
 
 /-- Dempster-Shafer belief functions. -/
 def dempsterShafer : ProbabilityVertex where
@@ -213,6 +240,7 @@ def dempsterShafer : ProbabilityVertex where
   precision := .imprecise         -- Bel(A) + Bel(¬A) ≤ 1
   orderAxis := .partialOrder      -- Bel only induces partial order
   additivity := .subadditive      -- n-monotone, not additive
+  invertibility := .monoid
   determinism := .probabilistic
   support := .finite              -- Typically finite frame of discernment
   regularity := .borel
@@ -225,6 +253,7 @@ def quantum : ProbabilityVertex where
   precision := .precise            -- States give precise probabilities
   orderAxis := .partialOrder       -- No total order on projections
   additivity := .additive          -- σ-additive on commuting projections
+  invertibility := .monoid
   determinism := .probabilistic
   support := .continuous
   regularity := .borel
@@ -239,6 +268,7 @@ def freeProbability : ProbabilityVertex where
   precision := .precise            -- Well-defined spectral measures
   orderAxis := .partialOrder       -- Partial order on positive operators
   additivity := .additive          -- Additive on spectral projections
+  invertibility := .monoid
   determinism := .probabilistic
   support := .continuous           -- Continuous spectra
   regularity := .borel
@@ -252,6 +282,7 @@ def classicalLogic : ProbabilityVertex where
   precision := .precise
   orderAxis := .totalOrder
   additivity := .additive
+  invertibility := .group
   determinism := .deterministic   -- P(A) ∈ {0, 1}
   support := .finite
   regularity := .radon            -- Finite implies Radon (most specific regularity)
@@ -264,6 +295,7 @@ def fuzzyLogic : ProbabilityVertex where
   precision := .imprecise          -- μ(A) + μ(¬A) can be ≠ 1
   orderAxis := .partialOrder
   additivity := .subadditive       -- max(μ(A), μ(B)) ≤ μ(A) + μ(B)
+  invertibility := .monoid
   determinism := .fuzzy
   support := .continuous
   regularity := .borel
@@ -276,6 +308,7 @@ def finiteProbability : ProbabilityVertex where
   precision := .precise
   orderAxis := .totalOrder
   additivity := .additive
+  invertibility := .monoid
   determinism := .probabilistic
   support := .finite              -- Finitely many outcomes
   regularity := .radon            -- Finite = Radon automatically
@@ -288,6 +321,7 @@ def deFinetti : ProbabilityVertex where
   precision := .precise
   orderAxis := .totalOrder
   additivity := .additive         -- Finite additivity (weaker than σ-additive)
+  invertibility := .monoid
   determinism := .probabilistic
   independence := .tensor
   support := .continuous
@@ -300,6 +334,7 @@ def discreteProbability : ProbabilityVertex where
   precision := .precise
   orderAxis := .totalOrder
   additivity := .additive
+  invertibility := .monoid
   determinism := .probabilistic
   support := .countable
   regularity := .borel
@@ -312,6 +347,7 @@ def radonProbability : ProbabilityVertex where
   precision := .precise
   orderAxis := .totalOrder
   additivity := .additive
+  invertibility := .monoid
   determinism := .probabilistic
   support := .continuous
   regularity := .radon            -- Inner regular, tight
@@ -485,45 +521,49 @@ Understanding which edges are "natural" movements between theories.
 -/
 
 /-- An edge is natural if it represents adding structure (specialization)
-    or removing structure (generalization). Exactly one of the 8 axes differs. -/
+    or removing structure (generalization). Exactly one of the 10 axes differs. -/
 def isNaturalEdge (V W : ProbabilityVertex) : Prop :=
   -- Exactly one axis differs (Hamming distance 1)
   (V.commutativity ≠ W.commutativity ∧ V.distributivity = W.distributivity ∧
    V.precision = W.precision ∧ V.orderAxis = W.orderAxis ∧ V.additivity = W.additivity ∧
-   V.determinism = W.determinism ∧ V.support = W.support ∧ V.regularity = W.regularity ∧
-   V.independence = W.independence) ∨
+   V.invertibility = W.invertibility ∧ V.determinism = W.determinism ∧ V.support = W.support ∧
+   V.regularity = W.regularity ∧ V.independence = W.independence) ∨
   (V.commutativity = W.commutativity ∧ V.distributivity ≠ W.distributivity ∧
    V.precision = W.precision ∧ V.orderAxis = W.orderAxis ∧ V.additivity = W.additivity ∧
-   V.determinism = W.determinism ∧ V.support = W.support ∧ V.regularity = W.regularity ∧
-   V.independence = W.independence) ∨
+   V.invertibility = W.invertibility ∧ V.determinism = W.determinism ∧ V.support = W.support ∧
+   V.regularity = W.regularity ∧ V.independence = W.independence) ∨
   (V.commutativity = W.commutativity ∧ V.distributivity = W.distributivity ∧
    V.precision ≠ W.precision ∧ V.orderAxis = W.orderAxis ∧ V.additivity = W.additivity ∧
-   V.determinism = W.determinism ∧ V.support = W.support ∧ V.regularity = W.regularity ∧
-   V.independence = W.independence) ∨
+   V.invertibility = W.invertibility ∧ V.determinism = W.determinism ∧ V.support = W.support ∧
+   V.regularity = W.regularity ∧ V.independence = W.independence) ∨
   (V.commutativity = W.commutativity ∧ V.distributivity = W.distributivity ∧
    V.precision = W.precision ∧ V.orderAxis ≠ W.orderAxis ∧ V.additivity = W.additivity ∧
-   V.determinism = W.determinism ∧ V.support = W.support ∧ V.regularity = W.regularity ∧
-   V.independence = W.independence) ∨
+   V.invertibility = W.invertibility ∧ V.determinism = W.determinism ∧ V.support = W.support ∧
+   V.regularity = W.regularity ∧ V.independence = W.independence) ∨
   (V.commutativity = W.commutativity ∧ V.distributivity = W.distributivity ∧
    V.precision = W.precision ∧ V.orderAxis = W.orderAxis ∧ V.additivity ≠ W.additivity ∧
-   V.determinism = W.determinism ∧ V.support = W.support ∧ V.regularity = W.regularity ∧
-   V.independence = W.independence) ∨
+   V.invertibility = W.invertibility ∧ V.determinism = W.determinism ∧ V.support = W.support ∧
+   V.regularity = W.regularity ∧ V.independence = W.independence) ∨
   (V.commutativity = W.commutativity ∧ V.distributivity = W.distributivity ∧
    V.precision = W.precision ∧ V.orderAxis = W.orderAxis ∧ V.additivity = W.additivity ∧
-   V.determinism ≠ W.determinism ∧ V.support = W.support ∧ V.regularity = W.regularity ∧
-   V.independence = W.independence) ∨
+   V.invertibility ≠ W.invertibility ∧ V.determinism = W.determinism ∧ V.support = W.support ∧
+   V.regularity = W.regularity ∧ V.independence = W.independence) ∨
   (V.commutativity = W.commutativity ∧ V.distributivity = W.distributivity ∧
    V.precision = W.precision ∧ V.orderAxis = W.orderAxis ∧ V.additivity = W.additivity ∧
-   V.determinism = W.determinism ∧ V.support ≠ W.support ∧ V.regularity = W.regularity ∧
-   V.independence = W.independence) ∨
+   V.invertibility = W.invertibility ∧ V.determinism ≠ W.determinism ∧ V.support = W.support ∧
+   V.regularity = W.regularity ∧ V.independence = W.independence) ∨
   (V.commutativity = W.commutativity ∧ V.distributivity = W.distributivity ∧
    V.precision = W.precision ∧ V.orderAxis = W.orderAxis ∧ V.additivity = W.additivity ∧
-   V.determinism = W.determinism ∧ V.support = W.support ∧ V.regularity ≠ W.regularity ∧
-   V.independence = W.independence) ∨
+   V.invertibility = W.invertibility ∧ V.determinism = W.determinism ∧ V.support ≠ W.support ∧
+   V.regularity = W.regularity ∧ V.independence = W.independence) ∨
   (V.commutativity = W.commutativity ∧ V.distributivity = W.distributivity ∧
    V.precision = W.precision ∧ V.orderAxis = W.orderAxis ∧ V.additivity = W.additivity ∧
-   V.determinism = W.determinism ∧ V.support = W.support ∧ V.regularity = W.regularity ∧
-   V.independence ≠ W.independence)
+   V.invertibility = W.invertibility ∧ V.determinism = W.determinism ∧ V.support = W.support ∧
+   V.regularity ≠ W.regularity ∧ V.independence = W.independence) ∨
+  (V.commutativity = W.commutativity ∧ V.distributivity = W.distributivity ∧
+   V.precision = W.precision ∧ V.orderAxis = W.orderAxis ∧ V.additivity = W.additivity ∧
+   V.invertibility = W.invertibility ∧ V.determinism = W.determinism ∧ V.support = W.support ∧
+   V.regularity = W.regularity ∧ V.independence ≠ W.independence)
 
 /-!
 ## §9: Summary and Implications for K&S Formalization
@@ -581,9 +621,9 @@ def centralQuestion : Prop :=
 /-!
 ## §10: Hypercube Vertex Classification
 
-The 8-axis hypercube has 2^8 = 256 potential vertices (though many axis values
-have more than 2 options, so the actual count varies). Not all correspond to
-coherent probability theories.
+This file uses 10 axes. With axis sizes `2 * 4 * 2 * 2 * 3 * 3 * 3 * 3 * 3 * 4`, this is
+`31104` possible vertices, though many combinations won't correspond to coherent
+probability theories.
 
 Rather than enumerate all vertices, we classify based on logical constraints.
 -/
@@ -597,7 +637,7 @@ inductive VertexStatus where
 
 /-- Classify a vertex as inhabited, possible, or impossible.
     Uses pattern matching on the first 5 axes for known theories,
-    with the remaining 3 axes providing refinements. -/
+    with the remaining axes providing refinements. -/
 def classifyVertex (v : ProbabilityVertex) : VertexStatus :=
   -- First check for impossible combinations
   if v.commutativity = .noncommutative ∧ v.distributivity = .boolean then
@@ -622,13 +662,14 @@ def classifyVertex (v : ProbabilityVertex) : VertexStatus :=
   else if v = deFinetti then .inhabited "de Finetti"
   else .possible
 
-/-- The most general vertex: maximally permissive on all 8 axes. -/
+/-- The most general vertex: maximally permissive on all 10 axes. -/
 def mostGeneralVertex : ProbabilityVertex where
   commutativity := .noncommutative
   distributivity := .general
   precision := .imprecise
   orderAxis := .partialOrder
   additivity := .subadditive
+  invertibility := .semigroup
   determinism := .fuzzy            -- Fuzzy is most general (includes probabilistic and deterministic)
   support := .continuous           -- Continuous includes countable and finite
   regularity := .finitelyAdditive  -- Weakest regularity requirement
@@ -652,6 +693,9 @@ def isMoreGeneral (v w : ProbabilityVertex) : Prop :=
   -- Subadditive ≥ Derived ≥ Additive
   (v.additivity = .subadditive ∨ v.additivity = w.additivity ∨
    (v.additivity = .derived ∧ w.additivity = .additive)) ∧
+  -- Semigroup ≥ Monoid ≥ Group
+  (v.invertibility = .semigroup ∨ v.invertibility = w.invertibility ∨
+   (v.invertibility = .monoid ∧ w.invertibility = .group)) ∧
   -- Fuzzy ≥ Probabilistic ≥ Deterministic
   (v.determinism = .fuzzy ∨ v.determinism = w.determinism ∨
    (v.determinism = .probabilistic ∧ w.determinism = .deterministic)) ∧
@@ -660,18 +704,22 @@ def isMoreGeneral (v w : ProbabilityVertex) : Prop :=
    (v.support = .countable ∧ w.support = .finite)) ∧
   -- FinitelyAdditive ≥ Borel ≥ Radon
   (v.regularity = .finitelyAdditive ∨ v.regularity = w.regularity ∨
-   (v.regularity = .borel ∧ w.regularity = .radon))
+   (v.regularity = .borel ∧ w.regularity = .radon)) ∧
+  -- Independence: treat `free` as ⊤ and `tensor` as ⊥, with other notions incomparable
+  -- except via these bounds.
+  (v.independence = .free ∨ w.independence = .tensor ∨ v.independence = w.independence)
 
 instance (v w : ProbabilityVertex) : Decidable (isMoreGeneral v w) := by
   unfold isMoreGeneral
   infer_instance
 
-/-- All named theories in the extended 8-dimensional hypercube. -/
-def namedTheories : List (String × ProbabilityVertex) :=
+/-- All named theories in the extended 10-axis hypercube. -/
+ def namedTheories : List (String × ProbabilityVertex) :=
   [ -- Classical probability variants
     ("Kolmogorov", kolmogorov),
     ("Cox", cox),
     ("Knuth-Skilling", knuthSkilling),
+    ("Knuth-Skilling (Group)", knuthSkillingGroup),
     ("Finite Probability", finiteProbability),
     ("Discrete Probability", discreteProbability),
     ("Radon Probability", radonProbability),
@@ -689,11 +737,25 @@ def namedTheories : List (String × ProbabilityVertex) :=
     ("Most General", mostGeneralVertex) ]
 
 /-- Count of named theories. -/
-theorem namedTheories_count : namedTheories.length = 14 := rfl
+theorem namedTheories_count : namedTheories.length = 15 := rfl
 
 /-- Kolmogorov is among the named theories. -/
 theorem kolmogorov_in_namedTheories : ("Kolmogorov", kolmogorov) ∈ namedTheories := by
   simp [namedTheories]
+
+/-- `knuthSkillingGroup` differs from `knuthSkilling` only by the invertibility axis. -/
+theorem knuthSkillingGroup_isNaturalEdge :
+    isNaturalEdge knuthSkilling knuthSkillingGroup := by
+  -- Use the “invertibility differs” disjunct.
+  unfold isNaturalEdge knuthSkillingGroup
+  right; right; right; right; right; left
+  refine ⟨rfl, rfl, rfl, rfl, rfl, ?_, rfl, rfl, rfl, rfl⟩
+  decide
+
+/-- The group variant is strictly more specific than the monoid variant. -/
+theorem knuthSkilling_moreGeneral_than_group :
+    isMoreGeneral knuthSkilling knuthSkillingGroup := by
+  native_decide
 
 /-!
 ## §11: Edge Morphism Properties
@@ -712,18 +774,29 @@ theorem isNaturalEdge_symmetric {V W : ProbabilityVertex} :
   intro h
   unfold isNaturalEdge at h ⊢
   -- Each disjunct swaps V and W with symmetric equalities
-  rcases h with h1 | h2 | h3 | h4 | h5 | h6 | h7 | h8 | h9
+  rcases h with h1 | h2 | h3 | h4 | h5 | h6 | h7 | h8 | h9 | h10
   all_goals (
     first
-    | left; obtain ⟨a, b, c, d, e, f, g, i, j⟩ := h1; exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, i.symm, j.symm⟩
-    | right; left; obtain ⟨a, b, c, d, e, f, g, i, j⟩ := h2; exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, i.symm, j.symm⟩
-    | right; right; left; obtain ⟨a, b, c, d, e, f, g, i, j⟩ := h3; exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, i.symm, j.symm⟩
-    | right; right; right; left; obtain ⟨a, b, c, d, e, f, g, i, j⟩ := h4; exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, i.symm, j.symm⟩
-    | right; right; right; right; left; obtain ⟨a, b, c, d, e, f, g, i, j⟩ := h5; exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, i.symm, j.symm⟩
-    | right; right; right; right; right; left; obtain ⟨a, b, c, d, e, f, g, i, j⟩ := h6; exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, i.symm, j.symm⟩
-    | right; right; right; right; right; right; left; obtain ⟨a, b, c, d, e, f, g, i, j⟩ := h7; exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, i.symm, j.symm⟩
-    | right; right; right; right; right; right; right; left; obtain ⟨a, b, c, d, e, f, g, i, j⟩ := h8; exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, i.symm, j.symm⟩
-    | right; right; right; right; right; right; right; right; obtain ⟨a, b, c, d, e, f, g, i, j⟩ := h9; exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, i.symm, j.symm⟩
+    | left; obtain ⟨a, b, c, d, e, f, g, h, i, j⟩ := h1
+      exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, h.symm, i.symm, j.symm⟩
+    | right; left; obtain ⟨a, b, c, d, e, f, g, h, i, j⟩ := h2
+      exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, h.symm, i.symm, j.symm⟩
+    | right; right; left; obtain ⟨a, b, c, d, e, f, g, h, i, j⟩ := h3
+      exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, h.symm, i.symm, j.symm⟩
+    | right; right; right; left; obtain ⟨a, b, c, d, e, f, g, h, i, j⟩ := h4
+      exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, h.symm, i.symm, j.symm⟩
+    | right; right; right; right; left; obtain ⟨a, b, c, d, e, f, g, h, i, j⟩ := h5
+      exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, h.symm, i.symm, j.symm⟩
+    | right; right; right; right; right; left; obtain ⟨a, b, c, d, e, f, g, h, i, j⟩ := h6
+      exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, h.symm, i.symm, j.symm⟩
+    | right; right; right; right; right; right; left; obtain ⟨a, b, c, d, e, f, g, h, i, j⟩ := h7
+      exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, h.symm, i.symm, j.symm⟩
+    | right; right; right; right; right; right; right; left; obtain ⟨a, b, c, d, e, f, g, h, i, j⟩ := h8
+      exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, h.symm, i.symm, j.symm⟩
+    | right; right; right; right; right; right; right; right; left; obtain ⟨a, b, c, d, e, f, g, h, i, j⟩ := h9
+      exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, h.symm, i.symm, j.symm⟩
+    | right; right; right; right; right; right; right; right; right; obtain ⟨a, b, c, d, e, f, g, h, i, j⟩ := h10
+      exact ⟨a.symm, b.symm, c.symm, d.symm, e.symm, f.symm, g.symm, h.symm, i.symm, j.symm⟩
   )
 
 /-- No vertex has a natural edge to itself. -/
@@ -732,7 +805,8 @@ theorem isNaturalEdge_irrefl (V : ProbabilityVertex) : ¬isNaturalEdge V V := by
   unfold isNaturalEdge at h
   rcases h with ⟨hne, _⟩ | ⟨_, hne, _⟩ | ⟨_, _, hne, _⟩ | ⟨_, _, _, hne, _⟩ |
                ⟨_, _, _, _, hne, _⟩ | ⟨_, _, _, _, _, hne, _⟩ | ⟨_, _, _, _, _, _, hne, _⟩ |
-               ⟨_, _, _, _, _, _, _, hne, _⟩ | ⟨_, _, _, _, _, _, _, _, hne⟩
+               ⟨_, _, _, _, _, _, _, hne, _⟩ | ⟨_, _, _, _, _, _, _, _, hne, _⟩ |
+               ⟨_, _, _, _, _, _, _, _, _, hne⟩
   all_goals exact hne rfl
 
 /-- Hamming distance between two vertices (number of differing axes). -/
@@ -742,52 +816,107 @@ def hammingDistance (V W : ProbabilityVertex) : ℕ :=
   (if V.precision = W.precision then 0 else 1) +
   (if V.orderAxis = W.orderAxis then 0 else 1) +
   (if V.additivity = W.additivity then 0 else 1) +
+  (if V.invertibility = W.invertibility then 0 else 1) +
   (if V.determinism = W.determinism then 0 else 1) +
   (if V.support = W.support then 0 else 1) +
   (if V.regularity = W.regularity then 0 else 1) +
   (if V.independence = W.independence then 0 else 1)
-
-/-- Natural edges have Hamming distance exactly 1. -/
-theorem isNaturalEdge_iff_hamming_one {V W : ProbabilityVertex} :
-    isNaturalEdge V W ↔ hammingDistance V W = 1 := by
-  constructor
-  · intro h
-    simp only [isNaturalEdge, hammingDistance] at h ⊢
-    rcases h with ⟨hne, h1, h2, h3, h4, h5, h6, h7, h8⟩ | ⟨h0, hne, h2, h3, h4, h5, h6, h7, h8⟩ |
-                 ⟨h0, h1, hne, h3, h4, h5, h6, h7, h8⟩ | ⟨h0, h1, h2, hne, h4, h5, h6, h7, h8⟩ |
-                 ⟨h0, h1, h2, h3, hne, h5, h6, h7, h8⟩ | ⟨h0, h1, h2, h3, h4, hne, h6, h7, h8⟩ |
-                 ⟨h0, h1, h2, h3, h4, h5, hne, h7, h8⟩ | ⟨h0, h1, h2, h3, h4, h5, h6, hne, h8⟩ |
-                 ⟨h0, h1, h2, h3, h4, h5, h6, h7, hne⟩
-    all_goals simp [*]
-  · intro h
-    simp only [hammingDistance, isNaturalEdge] at h ⊢
-    -- Exactly one axis differs - use by_cases on all 9 axes
-    by_cases hc : V.commutativity = W.commutativity <;>
-    by_cases hd : V.distributivity = W.distributivity <;>
-    by_cases hp : V.precision = W.precision <;>
-    by_cases ho : V.orderAxis = W.orderAxis <;>
-    by_cases ha : V.additivity = W.additivity <;>
-    by_cases hdet : V.determinism = W.determinism <;>
-    by_cases hsup : V.support = W.support <;>
-    by_cases hreg : V.regularity = W.regularity <;>
-    by_cases hind : V.independence = W.independence <;>
-    simp_all
 
 /-- Same vertex implies zero Hamming distance. -/
 @[simp]
 theorem hammingDistance_self (V : ProbabilityVertex) : hammingDistance V V = 0 := by
   simp [hammingDistance]
 
+/-- `knuthSkillingGroup` is one Hamming step away from `knuthSkilling`. -/
+theorem hammingDistance_knuthSkilling_knuthSkillingGroup :
+    hammingDistance knuthSkilling knuthSkillingGroup = 1 := by
+  native_decide
+
 /-- Hamming distance is symmetric. -/
 theorem hammingDistance_comm (V W : ProbabilityVertex) :
     hammingDistance V W = hammingDistance W V := by
   simp only [hammingDistance, eq_comm]
 
-/-- Hamming distance is bounded by 9 (total number of axes). -/
-theorem hammingDistance_le_nine (V W : ProbabilityVertex) :
-    hammingDistance V W ≤ 9 := by
-  simp only [hammingDistance]
-  split_ifs <;> omega
+/-- Hamming distance `0` forces vertex equality (all axes match). -/
+theorem eq_of_hammingDistance_eq_zero {V W : ProbabilityVertex} (h : hammingDistance V W = 0) :
+    V = W := by
+  -- Unfold and peel off summands from the right using `Nat.add_eq_zero_iff`.
+  unfold hammingDistance at h
+  rcases Nat.add_eq_zero_iff.1 h with ⟨h9, hInd⟩
+  rcases Nat.add_eq_zero_iff.1 h9 with ⟨h8, hReg⟩
+  rcases Nat.add_eq_zero_iff.1 h8 with ⟨h7, hSup⟩
+  rcases Nat.add_eq_zero_iff.1 h7 with ⟨h6, hDet⟩
+  rcases Nat.add_eq_zero_iff.1 h6 with ⟨h5, hInv⟩
+  rcases Nat.add_eq_zero_iff.1 h5 with ⟨h4, hAdd⟩
+  rcases Nat.add_eq_zero_iff.1 h4 with ⟨h3, hOrd⟩
+  rcases Nat.add_eq_zero_iff.1 h3 with ⟨h2, hPrec⟩
+  rcases Nat.add_eq_zero_iff.1 h2 with ⟨h1, hDist⟩
+  -- The remaining leftmost summand must be 0.
+  have hComm : (if V.commutativity = W.commutativity then 0 else 1) = 0 := by
+    simpa using h1
+  -- Convert “if … then 0 else 1 = 0” into the underlying equality on axes.
+  have eq_of_if_eq_zero {α : Type} [DecidableEq α] (a b : α) :
+      (if a = b then (0 : ℕ) else 1) = 0 → a = b := by
+    intro hab
+    by_cases h' : a = b
+    · exact h'
+    ·
+      -- If `a ≠ b`, the `if` reduces to `1`, contradicting `hab`.
+      have : (1 : ℕ) = 0 := by
+        simpa [h'] using hab
+      exact False.elim (Nat.one_ne_zero this)
+  have hc : V.commutativity = W.commutativity :=
+    eq_of_if_eq_zero V.commutativity W.commutativity hComm
+  have hd : V.distributivity = W.distributivity :=
+    eq_of_if_eq_zero V.distributivity W.distributivity hDist
+  have hp : V.precision = W.precision :=
+    eq_of_if_eq_zero V.precision W.precision hPrec
+  have ho : V.orderAxis = W.orderAxis :=
+    eq_of_if_eq_zero V.orderAxis W.orderAxis hOrd
+  have ha : V.additivity = W.additivity :=
+    eq_of_if_eq_zero V.additivity W.additivity hAdd
+  have hinv : V.invertibility = W.invertibility :=
+    eq_of_if_eq_zero V.invertibility W.invertibility hInv
+  have hdet : V.determinism = W.determinism :=
+    eq_of_if_eq_zero V.determinism W.determinism hDet
+  have hsup : V.support = W.support :=
+    eq_of_if_eq_zero V.support W.support hSup
+  have hreg : V.regularity = W.regularity :=
+    eq_of_if_eq_zero V.regularity W.regularity hReg
+  have hind : V.independence = W.independence :=
+    eq_of_if_eq_zero V.independence W.independence hInd
+  ext <;> assumption
+
+/-- Hamming distance is bounded by 10 (total number of axes). -/
+theorem hammingDistance_le_ten (V W : ProbabilityVertex) :
+    hammingDistance V W ≤ 10 := by
+  unfold hammingDistance
+  have h_if (p : Prop) [Decidable p] : (if p then 0 else 1) ≤ (1 : ℕ) := by
+    by_cases p <;> simp [*]
+  have hcomm : (if V.commutativity = W.commutativity then 0 else 1) ≤ (1 : ℕ) := h_if _
+  have hdist : (if V.distributivity = W.distributivity then 0 else 1) ≤ (1 : ℕ) := h_if _
+  have hprec : (if V.precision = W.precision then 0 else 1) ≤ (1 : ℕ) := h_if _
+  have hord : (if V.orderAxis = W.orderAxis then 0 else 1) ≤ (1 : ℕ) := h_if _
+  have hadd : (if V.additivity = W.additivity then 0 else 1) ≤ (1 : ℕ) := h_if _
+  have hinv : (if V.invertibility = W.invertibility then 0 else 1) ≤ (1 : ℕ) := h_if _
+  have hdet : (if V.determinism = W.determinism then 0 else 1) ≤ (1 : ℕ) := h_if _
+  have hsup : (if V.support = W.support then 0 else 1) ≤ (1 : ℕ) := h_if _
+  have hreg : (if V.regularity = W.regularity then 0 else 1) ≤ (1 : ℕ) := h_if _
+  have hind : (if V.independence = W.independence then 0 else 1) ≤ (1 : ℕ) := h_if _
+  have hsum :
+      (if V.commutativity = W.commutativity then 0 else 1) +
+      (if V.distributivity = W.distributivity then 0 else 1) +
+      (if V.precision = W.precision then 0 else 1) +
+      (if V.orderAxis = W.orderAxis then 0 else 1) +
+      (if V.additivity = W.additivity then 0 else 1) +
+      (if V.invertibility = W.invertibility then 0 else 1) +
+      (if V.determinism = W.determinism then 0 else 1) +
+      (if V.support = W.support then 0 else 1) +
+      (if V.regularity = W.regularity then 0 else 1) +
+      (if V.independence = W.independence then 0 else 1) ≤
+      1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 := by
+    omega
+  simpa using hsum
 
 /-- A path in the hypercube is a sequence of natural edges. -/
 def isPath : List ProbabilityVertex → Prop
@@ -814,6 +943,8 @@ private def stepToward (V W : ProbabilityVertex) : ProbabilityVertex :=
     { V with orderAxis := W.orderAxis }
   else if V.additivity ≠ W.additivity then
     { V with additivity := W.additivity }
+  else if V.invertibility ≠ W.invertibility then
+    { V with invertibility := W.invertibility }
   else if V.determinism ≠ W.determinism then
     { V with determinism := W.determinism }
   else if V.support ≠ W.support then
@@ -828,85 +959,134 @@ private theorem isNaturalEdge_stepToward (V W : ProbabilityVertex) (hne : V ≠ 
     isNaturalEdge V (stepToward V W) := by
   unfold stepToward isNaturalEdge
   by_cases hc : V.commutativity ≠ W.commutativity
-  · simp only [hc, ne_eq]; left; exact ⟨hc, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  · simp only [hc, ne_eq]; left; exact ⟨hc, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   · push_neg at hc
     simp only [hc, ne_eq]
     by_cases hd : V.distributivity ≠ W.distributivity
-    · simp only [hd]; right; left; exact ⟨rfl, hd, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+    · simp only [hd]; right; left; exact ⟨rfl, hd, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
     · push_neg at hd
       simp only [hd]
       by_cases hp : V.precision ≠ W.precision
-      · simp only [hp]; right; right; left; exact ⟨rfl, rfl, hp, rfl, rfl, rfl, rfl, rfl, rfl⟩
+      · simp only [hp]; right; right; left; exact ⟨rfl, rfl, hp, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
       · push_neg at hp
         simp only [hp]
         by_cases ho : V.orderAxis ≠ W.orderAxis
-        · simp only [ho]; right; right; right; left; exact ⟨rfl, rfl, rfl, ho, rfl, rfl, rfl, rfl, rfl⟩
+        · simp only [ho]; right; right; right; left; exact ⟨rfl, rfl, rfl, ho, rfl, rfl, rfl, rfl, rfl, rfl⟩
         · push_neg at ho
           simp only [ho]
           by_cases ha : V.additivity ≠ W.additivity
-          · simp only [ha]; right; right; right; right; left; exact ⟨rfl, rfl, rfl, rfl, ha, rfl, rfl, rfl, rfl⟩
+          · simp only [ha]; right; right; right; right; left; exact ⟨rfl, rfl, rfl, rfl, ha, rfl, rfl, rfl, rfl, rfl⟩
           · push_neg at ha
             simp only [ha]
-            by_cases hdet : V.determinism ≠ W.determinism
-            · simp only [hdet]; right; right; right; right; right; left; exact ⟨rfl, rfl, rfl, rfl, rfl, hdet, rfl, rfl, rfl⟩
-            · push_neg at hdet
-              simp only [hdet]
-              by_cases hsup : V.support ≠ W.support
-              · simp only [hsup]; right; right; right; right; right; right; left; exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, hsup, rfl, rfl⟩
-              · push_neg at hsup
-                simp only [hsup]
-                by_cases hreg : V.regularity ≠ W.regularity
-                · simp only [hreg]; right; right; right; right; right; right; right; left; exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, hreg, rfl⟩
-                · push_neg at hreg
-                  simp only [hreg]
-                  -- All other axes match, so independence must differ
-                  have hind : V.independence ≠ W.independence := by
-                    intro heq; apply hne; ext <;> first | exact hc | exact hd | exact hp | exact ho | exact ha | exact hdet | exact hsup | exact hreg | exact heq
-                  right; right; right; right; right; right; right; right; exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, hind⟩
+            by_cases hinv : V.invertibility ≠ W.invertibility
+            · simp only [hinv]
+              right; right; right; right; right; left
+              exact ⟨rfl, rfl, rfl, rfl, rfl, hinv, rfl, rfl, rfl, rfl⟩
+            · push_neg at hinv
+              simp only [hinv]
+              by_cases hdet : V.determinism ≠ W.determinism
+              · simp only [hdet]
+                right; right; right; right; right; right; left
+                exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, hdet, rfl, rfl, rfl⟩
+              · push_neg at hdet
+                simp only [hdet]
+                by_cases hsup : V.support ≠ W.support
+                · simp only [hsup]
+                  right; right; right; right; right; right; right; left
+                  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, hsup, rfl, rfl⟩
+                · push_neg at hsup
+                  simp only [hsup]
+                  by_cases hreg : V.regularity ≠ W.regularity
+                  · simp only [hreg]
+                    right; right; right; right; right; right; right; right; left
+                    exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, hreg, rfl⟩
+                  · push_neg at hreg
+                    simp only [hreg]
+                    -- All other axes match, so independence must differ
+                    have hind : V.independence ≠ W.independence := by
+                      intro heq
+                      apply hne
+                      ext <;> try assumption
+                    right; right; right; right; right; right; right; right; right
+                    exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, hind⟩
 
 /-- Hamming distance decreases after stepping toward target. -/
 private theorem hammingDistance_stepToward_lt (V W : ProbabilityVertex) (hne : V ≠ W) :
     hammingDistance (stepToward V W) W < hammingDistance V W := by
   unfold stepToward hammingDistance
-  -- Work through the chain: find the first differing axis
+  -- Work through the chain: find the first differing axis.
   by_cases hc : V.commutativity ≠ W.commutativity
-  · simp only [if_pos hc]; split_ifs <;> omega
+  · simp [hc] <;> omega
   · push_neg at hc
-    simp only [if_neg (not_not.mpr hc)]
+    simp [hc]
     by_cases hd : V.distributivity ≠ W.distributivity
-    · simp only [if_pos hd]; split_ifs <;> omega
+    · simp [hd] <;> omega
     · push_neg at hd
-      simp only [if_neg (not_not.mpr hd)]
+      simp [hd]
       by_cases hp : V.precision ≠ W.precision
-      · simp only [if_pos hp]; split_ifs <;> omega
+      · simp [hp] <;> omega
       · push_neg at hp
-        simp only [if_neg (not_not.mpr hp)]
+        simp [hp]
         by_cases ho : V.orderAxis ≠ W.orderAxis
-        · simp only [if_pos ho]; split_ifs <;> omega
+        · simp [ho] <;> omega
         · push_neg at ho
-          simp only [if_neg (not_not.mpr ho)]
+          simp [ho]
           by_cases ha : V.additivity ≠ W.additivity
-          · simp only [if_pos ha]; split_ifs <;> omega
+          · simp [ha] <;> omega
           · push_neg at ha
-            simp only [if_neg (not_not.mpr ha)]
-            by_cases hdet : V.determinism ≠ W.determinism
-            · simp only [if_pos hdet]; split_ifs <;> omega
-            · push_neg at hdet
-              simp only [if_neg (not_not.mpr hdet)]
-              by_cases hsup : V.support ≠ W.support
-              · simp only [if_pos hsup]; split_ifs <;> omega
-              · push_neg at hsup
-                simp only [if_neg (not_not.mpr hsup)]
-                by_cases hreg : V.regularity ≠ W.regularity
-                · simp only [if_pos hreg]; split_ifs <;> omega
-                · push_neg at hreg
-                  simp only [if_neg (not_not.mpr hreg)]
-                  -- All other axes match, so independence must differ
-                  have hind : V.independence ≠ W.independence := by
-                    intro heq; apply hne; ext <;> first | exact hc | exact hd | exact hp | exact ho | exact ha | exact hdet | exact hsup | exact hreg | exact heq
-                  -- After simplification: stepToward = { V with independence := W.independence }
-                  simp only [hc, hd, hp, ho, ha, hdet, hsup, hreg, hind, ↓reduceIte]
-                  omega
+            simp [ha]
+            by_cases hinv : V.invertibility ≠ W.invertibility
+            · simp [hinv] <;> omega
+            · push_neg at hinv
+              simp [hinv]
+              by_cases hdet : V.determinism ≠ W.determinism
+              · simp [hdet] <;> omega
+              · push_neg at hdet
+                simp [hdet]
+                by_cases hsup : V.support ≠ W.support
+                · simp [hsup] <;> omega
+                · push_neg at hsup
+                  simp [hsup]
+                  by_cases hreg : V.regularity ≠ W.regularity
+                  · simp [hreg] <;> omega
+                  · push_neg at hreg
+                    simp [hreg]
+                    have hind : V.independence ≠ W.independence := by
+                      intro heq
+                      apply hne
+                      ext <;> try assumption
+                    simp [hind] <;> omega
+
+/-- Natural edges have Hamming distance exactly 1. -/
+theorem isNaturalEdge_iff_hamming_one {V W : ProbabilityVertex} :
+    isNaturalEdge V W ↔ hammingDistance V W = 1 := by
+  constructor
+  · intro h
+    simp only [isNaturalEdge, hammingDistance] at h ⊢
+    rcases h with
+        ⟨hne, h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ |
+        ⟨h0, hne, h2, h3, h4, h5, h6, h7, h8, h9⟩ |
+        ⟨h0, h1, hne, h3, h4, h5, h6, h7, h8, h9⟩ |
+        ⟨h0, h1, h2, hne, h4, h5, h6, h7, h8, h9⟩ |
+        ⟨h0, h1, h2, h3, hne, h5, h6, h7, h8, h9⟩ |
+        ⟨h0, h1, h2, h3, h4, hne, h6, h7, h8, h9⟩ |
+        ⟨h0, h1, h2, h3, h4, h5, hne, h7, h8, h9⟩ |
+        ⟨h0, h1, h2, h3, h4, h5, h6, hne, h8, h9⟩ |
+        ⟨h0, h1, h2, h3, h4, h5, h6, h7, hne, h9⟩ |
+        ⟨h0, h1, h2, h3, h4, h5, h6, h7, h8, hne⟩
+    all_goals simp [*]
+  · intro h
+    have hne : V ≠ W := by
+      intro hVW
+      subst hVW
+      simpa [hammingDistance] using h
+    have hEdge : isNaturalEdge V (stepToward V W) :=
+      isNaturalEdge_stepToward V W hne
+    have hlt : hammingDistance (stepToward V W) W < 1 := by
+      simpa [h] using (hammingDistance_stepToward_lt V W hne)
+    have hz : hammingDistance (stepToward V W) W = 0 := (Nat.lt_one_iff).1 hlt
+    have hEq : stepToward V W = W := eq_of_hammingDistance_eq_zero hz
+    simpa [hEq] using hEdge
 
 /-- Any two vertices can be connected by a path (hypercube is connected).
     The path length equals the Hamming distance. -/
@@ -986,13 +1166,9 @@ theorem mostGeneral_dominates :
     ∀ (name : String) (V : ProbabilityVertex),
       (name, V) ∈ namedTheories →
       isMoreGeneral mostGeneralVertex V := by
-  intro name V hV
-  simp only [namedTheories, List.mem_cons, Prod.mk.injEq] at hV
-  -- 14 named theories: handle each case
-  rcases hV with ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ |
-                ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ |
-                ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | hEmpty
-  all_goals (first | native_decide | simp_all)
+  intro _name V _hV
+  -- `mostGeneralVertex` is defined with “top” values for every axis, so it dominates any `V`.
+  simp [isMoreGeneral, mostGeneralVertex]
 
 /-- Classical logic is the most specific named theory. -/
 theorem classicalLogic_most_specific :
@@ -1001,9 +1177,10 @@ theorem classicalLogic_most_specific :
       isMoreGeneral V classicalLogic := by
   intro name V hV
   simp only [namedTheories, List.mem_cons, Prod.mk.injEq] at hV
-  rcases hV with ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ |
-                ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ |
-                ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | hEmpty
+  rcases hV with
+      ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ |
+      ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ |
+      ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩
   all_goals (first | native_decide | simp_all)
 
 end Mettapedia.ProbabilityTheory.Hypercube

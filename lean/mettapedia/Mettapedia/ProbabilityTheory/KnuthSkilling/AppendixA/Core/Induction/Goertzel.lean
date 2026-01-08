@@ -9,26 +9,46 @@ open Classical KnuthSkillingAlgebra
 variable {α : Type*} [KnuthSkillingAlgebra α]
 
 /-!
-Goertzel (Foundations-of-inference-new-proofs_v1, Lemma 7) reframes the B-empty difficulty as an
-*order-invariance inside an admissible gap* statement:
+## Goertzel’s v2 Lemma‑7 framing, in our vocabulary
 
-If a B-empty extension step admits multiple admissible choices for the new “slope”/parameter, then
-the relative order between any two newly-formed expressions should be independent of which
-admissible choice is used; otherwise some “critical value” would force an equality, contradicting
-the B-empty assumption.
+Goertzel (Foundations-of-inference-new-proofs_v2, Lemma 7) reframes the global `B = ∅` difficulty
+as an *order-invariance inside an admissible gap* statement:
 
-This file records that idea in the current refactored codebase vocabulary, and links it to the
-existing explicit blocker `BEmptyStrictGapSpec` in `ThetaPrime.lean`.
+If a B-empty extension step admits multiple admissible choices for the new “slope”/parameter `δ`,
+then the relative order between any two newly-formed expressions should be independent of which
+admissible `δ` is used; otherwise some “critical value” would force an equality, contradicting
+the `B = ∅` assumption.
 
-Status: This file currently provides *interfaces* (no placeholder proofs) that make the Goertzel
-dependency explicit. Proving these interfaces from the existing K&S `Core/` development is the
-next step.
+### What this file does
+This file packages that idea as:
+- `RealizesThetaRaw` / `RealizesThetaRaw_pair`: a strictly monotone evaluator on (part of) the
+  extended μ-grid that agrees with the “raw extension formula” `ThetaRaw`.
+- `bEmptyStrictGapSpec_of_realizesThetaRaw_chooseδ`: Goertzel’s “flip/boundary-collision” argument
+  formalized as `RealizesThetaRaw chooseδ → BEmptyStrictGapSpec`.
+- `realizesThetaRaw_chooseδ_iff_chooseδBaseAdmissible`: under a *global* `B = ∅` regime,
+  `RealizesThetaRaw chooseδ` is equivalent to the single explicit extension blocker
+  `ChooseδBaseAdmissible` from `ThetaPrime.lean`.
 
-Important: Goertzel’s Lemma 7 proof sketch contains the inference
-“`X ⊕ d^n = Y` (old `X,Y`) ⇒ an old-grid value equals `d^n`”, i.e. a B-witness for `n`.
-This is not valid in general for an associative ordered monoid: it would require additional
-structure (e.g. a cancellative group/inverses, or a special unique-decomposition property).
-See the concrete counterexample `lean-projects/mettapedia/Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/GoertzelLemma7.lean`.
+### What remains open (the actual Appendix A.3.4 gap)
+Proving `ChooseδBaseAdmissible` from the current K&S `Core/` axioms is still the main remaining
+mathematical step for Appendix A.3.4 (“fixdelta → fixm” / base-invariance). This file isolates
+smaller sufficient packages (e.g. `AppendixA34Extra`) to make that dependency explicit.
+
+### Important: a known invalid inference in the v2 sketch
+Goertzel’s Lemma 7 proof sketch uses the inference
+“`X ⊕ d^n = Y` (old `X,Y`) ⇒ some old-grid value equals `d^n`” (a B-witness for `n`).
+This is not valid in a general associative ordered monoid: it would require extra structure
+(e.g. cancellation or unique decomposition). See the concrete counterexample
+`Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/GoertzelLemma7.lean`.
+-/
+
+/-!
+### Suggested Reading Order (for review)
+1. `ChooseδBaseAdmissible` and `extend_grid_rep_with_atom` in
+   `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Core/Induction/ThetaPrime.lean`
+2. `realizesThetaRaw_chooseδ_iff_chooseδBaseAdmissible` (this file): the cleaned-up “circularity”
+3. `AppendixA34Extra` (this file): a small sufficient package for proving base admissibility
+4. Counterexamples in `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/`
 -/
 
 section
@@ -554,7 +574,9 @@ lemma separationStatistic_base_eq_chooseδ_of_B_base_witness
 K&S’s “accuracy” argument (Appendix A.3.4) constructs A/C witnesses with statistics whose gap can
 be made arbitrarily small by allowing sufficiently large multiplicities.
 
-The core `accuracy_lemma` in `.../Core/MultiGrid.lean` is phrased in the absolute (`r0 = 0`) form.
+The core `accuracy_lemma` in
+`Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Core/MultiGrid.lean`
+is phrased in the absolute (`r0 = 0`) form.
 Since the k-grid representation is additive on μ-values, translating both witnesses by a fixed base
 `r0` preserves the statistics gap, yielding the corresponding base-indexed statement.
 -/
@@ -1322,7 +1344,9 @@ Ben/Goertzel Lemma 7’s cancellation step produces an equality of the form `X0 
 with `Y` an old-grid value; this is a *base-indexed* B-witness for base `X0`, but it need not
 produce an absolute witness `mu F r = d^w`.
 
-The counterexample `.../AppendixA/Counterexamples/GoertzelLemma7.lean` demonstrates this mismatch
+The counterexample
+`Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/GoertzelLemma7.lean`
+demonstrates this mismatch
 in a concrete additive model: global “absolute B-empty” can hold while there exist old-grid
 values `X0, Y` with `X0 ⊕ d = Y`.
 -/
@@ -1553,7 +1577,7 @@ Within a fixed admissible interval `I` (for the base `r0` at the difference leve
 the truth value of `ThetaRaw δ r0 u < ThetaRaw δ ry v` cannot depend on the particular choice
 `δ ∈ I`, provided there is no base-indexed `B`-witness at that difference level.
 
-This matches Lemma 7 in `/home/zar/claude/literature/Foundations-of-inference-new-proofs_v2.pdf`
+This matches Lemma 7 in `claude/literature/Foundations-of-inference-new-proofs_v2.pdf`
 (§4.3.3), specialized to the Lean `ThetaRaw` encoding. -/
 theorem ThetaRaw_order_invariant_inside_admissibleInterval_base
     {δ₁ δ₂ : ℝ}
@@ -1703,7 +1727,7 @@ there are no base-indexed `B` witnesses at those levels, then every pairwise str
 this finite “old ∪ base-family” set is independent of whether one uses `δ₁` or `δ₂`.
 
 This is the Lean analogue of Lemma 8 in
-`/home/zar/claude/literature/Foundations-of-inference-new-proofs_v2.pdf` (where the argument is
+`claude/literature/Foundations-of-inference-new-proofs_v2.pdf` (where the argument is
 presented for the coordinate-host picture; here we express it directly in terms of `ThetaRaw`). -/
 theorem ThetaRaw_order_invariant_oldGrid_with_baseFamily_finset
     {δ₁ δ₂ : ℝ} (r0 : Multi k) (U : Finset ℕ)
@@ -2051,14 +2075,13 @@ lemma bEmptyStrictGapSpec_of_realizesThetaRaw_chooseδ
       exact (lt_div_iff₀ hΔ_pos_real).2 hgap'
     simpa [separationStatistic_base, δ] using this
 
-lemma realizesThetaRaw_chooseδ_of_BEmptyStrictGapSpec
-    (hZQ_if : ZQuantized_chooseδ_if_B_nonempty (α := α) hk R d hd)
-    (hStrict : BEmptyStrictGapSpec hk R IH H d hd) :
+lemma realizesThetaRaw_chooseδ_of_chooseδBaseAdmissible
+    (H : GridComm F) (hBase : ChooseδBaseAdmissible (α := α) hk R d hd) :
     RealizesThetaRaw (R := R) (F := F) (d := d) (hd := hd) (chooseδ hk R d hd) := by
   classical
   rcases
-      extend_grid_rep_with_atom (α := α) (hk := hk) (R := R) (IH := IH) (H := H) (d := d) (hd := hd)
-        (hZQ_if := hZQ_if) (hStrict := hStrict) with
+      extend_grid_rep_with_atom_of_gridComm (α := α) (hk := hk) (R := R) (H := H) (d := d) (hd := hd)
+        (hBase := hBase) with
     ⟨F', hF'_old, hF'_new, R', hExt⟩
   have hF' : F' = extendAtomFamily F d hd :=
     AtomFamily.eq_extendAtomFamily_of_old_new (F := F) (d := d) (hd := hd) F' hF'_old hF'_new
@@ -2067,18 +2090,6 @@ lemma realizesThetaRaw_chooseδ_of_BEmptyStrictGapSpec
   intro r_old t
   -- `ThetaRaw` is exactly the `Θ`-extension formula produced by `extend_grid_rep_with_atom`.
   simpa [ThetaRaw] using (hExt r_old t)
-
-theorem realizesThetaRaw_chooseδ_iff_BEmptyStrictGapSpec
-    (hZQ_if : ZQuantized_chooseδ_if_B_nonempty (α := α) hk R d hd) :
-    RealizesThetaRaw (R := R) (F := F) (d := d) (hd := hd) (chooseδ hk R d hd) ↔
-      BEmptyStrictGapSpec hk R IH H d hd := by
-  constructor
-  · intro hReal
-    exact bEmptyStrictGapSpec_of_realizesThetaRaw_chooseδ (hk := hk) (R := R) (IH := IH) (H := H)
-      (d := d) (hd := hd) hReal
-  · intro hStrict
-    exact realizesThetaRaw_chooseδ_of_BEmptyStrictGapSpec (hk := hk) (R := R) (IH := IH) (H := H)
-      (d := d) (hd := hd) (hZQ_if := hZQ_if) hStrict
 
 end Circularity
 
@@ -2101,9 +2112,9 @@ This “base invariance / diagonal crosses all relevant intervals” claim is ex
 in K&S A.3.4 where, for a fixed base `r0` and target level `u`, they assert that the *global* choice
 `δ` (picked from the full A/C families over all levels) may be used as the representative slope for
 the **single‑u** “relevant constraints” interval. See:
-- `/home/zar/claude/literature/Knuth_Skilling/Knuth_Skilling_Foundations_of_Inference/knuth-skilling-2012---foundations-of-inference----arxiv.tex`
+- `claude/literature/Knuth_Skilling/Knuth_Skilling_Foundations_of_Inference/knuth-skilling-2012---foundations-of-inference----arxiv.tex`
   (A.3.4, around eqs. (fixdelta)–(fixm), especially the step “Accordingly, it is legitimate to assign … = δ”).
-- `/home/zar/claude/literature/Foundations-of-inference-new-proofs_v2.pdf` (Lemma 6 framing of the base‑indexed gap).
+- `claude/literature/Foundations-of-inference-new-proofs_v2.pdf` (Lemma 6 framing of the base‑indexed gap).
 -/
 
 /-!
@@ -3060,16 +3071,10 @@ private lemma thetaAtom_mul_le_Theta_base_mul_of_iterate_atom_le_iterate_mu
     exact mul_nonneg (by exact_mod_cast (Nat.zero_le (u * m))) hδ_nonneg
   linarith
 
-/-- **Strong interface**: the chosen `δ := chooseδ …` is base-admissible for *every* base `r0`
-and level `u > 0`.
-
-This is stronger than `BEmptyStrictGapSpec` (which only needs strictness in the “external” base-
-indexed cases), but it is a clean sufficient condition and can serve as a focused subgoal for
-future work. -/
-class ChooseδBaseAdmissible : Prop where
-  base :
-    ∀ (r0 : Multi k) (u : ℕ) (hu : 0 < u),
-      AdmissibleDelta_base (k := k) (F := F) (R₀ := R) (d₀ := d) (chooseδ hk R d hd) r0 u hu
+/-!
+`ChooseδBaseAdmissible` is defined in `AppendixA/Core/Induction/ThetaPrime.lean` and imported at
+the top of this file.
+-/
 
 /-- Equivalent “no-common-prefix” form of `ChooseδBaseAdmissible`.
 
@@ -3211,6 +3216,31 @@ theorem chooseδBaseAdmissible_iff_bEmptyStrictGapSpec
     exact chooseδBaseAdmissible_of_BEmptyStrictGapSpec (hk := hk) (R := R) (IH := IH) (H := H)
       (d := d) (hd := hd) (hB_empty := hB_empty) h
 
+/-- Goertzel’s “realizer” interface at `δ := chooseδ …` is equivalent to base-indexed admissibility
+once we assume the global B-empty regime (`∀ r u>0, r ∉ extensionSetB …`).
+
+This repackages the circularity cleanly:
+- `RealizesThetaRaw` gives strict gaps (`BEmptyStrictGapSpec`) by the flip/boundary-collision argument, and
+- strict gaps plus global B-emptiness give full base admissibility (`ChooseδBaseAdmissible`).
+-/
+theorem realizesThetaRaw_chooseδ_iff_chooseδBaseAdmissible
+    (IH : GridBridge F) (H : GridComm F)
+    (hB_empty : ∀ r u, 0 < u → r ∉ extensionSetB F d u) :
+    RealizesThetaRaw (R := R) (F := F) (d := d) (hd := hd) (chooseδ hk R d hd) ↔
+      ChooseδBaseAdmissible (hk := hk) (R := R) (F := F) (d := d) (hd := hd) := by
+  constructor
+  · intro hReal
+    have hStrict : BEmptyStrictGapSpec hk R IH H d hd :=
+      bEmptyStrictGapSpec_of_realizesThetaRaw_chooseδ (hk := hk) (R := R) (IH := IH) (H := H)
+        (d := d) (hd := hd) hReal
+    exact
+      chooseδBaseAdmissible_of_BEmptyStrictGapSpec (hk := hk) (R := R) (IH := IH) (H := H) (d := d)
+        (hd := hd) (hB_empty := hB_empty) hStrict
+  · intro hBase
+    exact
+      realizesThetaRaw_chooseδ_of_chooseδBaseAdmissible (hk := hk) (R := R) (H := H) (d := d)
+        (hd := hd) hBase
+
 /-- Variant of `bEmptyStrictGapSpec_of_chooseδBaseAdmissible` that produces the
 no-common-prefix strict-gap interface (`BEmptyStrictGapSpec_noCommon`).
 
@@ -3248,38 +3278,23 @@ theorem chooseδBaseAdmissible_noCommon_iff_bEmptyStrictGapSpec_noCommon
       (chooseδBaseAdmissible_iff_chooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F)
         (d := d) (hd := hd) (H := H)).1 hBase
 
-/-- Convenience wrapper: `ChooseδBaseAdmissible` discharges the circularity blocker and yields a
-global `ThetaRaw` realization at `δ := chooseδ …`. -/
-theorem realizesThetaRaw_chooseδ_of_chooseδBaseAdmissible
-    (IH : GridBridge F) (H : GridComm F)
-    (hZQ_if : ZQuantized_chooseδ_if_B_nonempty (α := α) hk R d hd)
-    (hBase : ChooseδBaseAdmissible (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
-    RealizesThetaRaw (R := R) (F := F) (d := d) (hd := hd) (chooseδ hk R d hd) := by
-  have hStrict : BEmptyStrictGapSpec hk R IH H d hd :=
-    bEmptyStrictGapSpec_of_chooseδBaseAdmissible (hk := hk) (R := R) (IH := IH) (H := H)
-      (d := d) (hd := hd) hBase
-  exact realizesThetaRaw_chooseδ_of_BEmptyStrictGapSpec (hk := hk) (R := R) (IH := IH) (H := H)
-    (d := d) (hd := hd) (hZQ_if := hZQ_if) hStrict
-
 /-- Convenience wrapper: no-common-prefix variant of `realizesThetaRaw_chooseδ_of_chooseδBaseAdmissible`. -/
 theorem realizesThetaRaw_chooseδ_of_chooseδBaseAdmissible_noCommon
-    (IH : GridBridge F) (H : GridComm F)
-    (hZQ_if : ZQuantized_chooseδ_if_B_nonempty (α := α) hk R d hd)
+    (H : GridComm F)
     (hBase :
       ChooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
     RealizesThetaRaw (R := R) (F := F) (d := d) (hd := hd) (chooseδ hk R d hd) := by
   have hBase' : ChooseδBaseAdmissible (hk := hk) (R := R) (F := F) (d := d) (hd := hd) :=
     chooseδBaseAdmissible_of_chooseδBaseAdmissible_noCommon
       (hk := hk) (R := R) (F := F) (d := d) (hd := hd) H hBase
-  exact realizesThetaRaw_chooseδ_of_chooseδBaseAdmissible (hk := hk) (R := R) (IH := IH) (H := H)
-    (d := d) (hd := hd) (hZQ_if := hZQ_if) hBase'
+  exact
+    realizesThetaRaw_chooseδ_of_chooseδBaseAdmissible (hk := hk) (R := R) (H := H) (d := d)
+      (hd := hd) hBase'
 
 /-- Convenience wrapper: the inductive extension step follows from the stronger
 `ChooseδBaseAdmissible` hypothesis. -/
 theorem extend_grid_rep_with_atom_of_chooseδBaseAdmissible
-    (IH : GridBridge F) (H : GridComm F)
-    (hZQ_if : ZQuantized_chooseδ_if_B_nonempty (α := α) hk R d hd)
-    (hBase : ChooseδBaseAdmissible (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
+    (H : GridComm F) (hBase : ChooseδBaseAdmissible (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
       ∃ (F' : AtomFamily α (k + 1)),
       (∀ i : Fin k, F'.atoms ⟨i, Nat.lt_succ_of_lt i.is_lt⟩ = F.atoms i) ∧
       F'.atoms ⟨k, Nat.lt_succ_self k⟩ = d ∧
@@ -3287,11 +3302,8 @@ theorem extend_grid_rep_with_atom_of_chooseδBaseAdmissible
         (∀ r_old : Multi k, ∀ t : ℕ,
           R'.Θ_grid ⟨mu F' (joinMulti r_old t), mu_mem_kGrid F' (joinMulti r_old t)⟩ =
           R.Θ_grid ⟨mu F r_old, mu_mem_kGrid F r_old⟩ + (t : ℝ) * chooseδ hk R d hd) := by
-  have hStrict : BEmptyStrictGapSpec hk R IH H d hd :=
-    bEmptyStrictGapSpec_of_chooseδBaseAdmissible (hk := hk) (R := R) (IH := IH) (H := H)
-      (d := d) (hd := hd) hBase
-  exact extend_grid_rep_with_atom (α := α) (hk := hk) (R := R) (IH := IH) (H := H) (d := d)
-    (hd := hd) (hZQ_if := hZQ_if) (hStrict := hStrict)
+  exact extend_grid_rep_with_atom_of_gridComm (α := α) (hk := hk) (R := R) (H := H) (d := d)
+    (hd := hd) hBase
 
 /-!
 ### Proof attempt for ChooseδBaseAdmissible_noCommon
@@ -4174,7 +4186,6 @@ theorem chooseδBaseAdmissible_of_appendixA34Extra
 
 theorem extend_grid_rep_with_atom_of_appendixA34Extra
     (IH : GridBridge F) (H : GridComm F)
-    (hZQ_if : ZQuantized_chooseδ_if_B_nonempty (α := α) hk R d hd)
     (hExtra : AppendixA34Extra (α := α) hk (R := R) (F := F) d hd) :
       ∃ (F' : AtomFamily α (k + 1)),
       (∀ i : Fin k, F'.atoms ⟨i, Nat.lt_succ_of_lt i.is_lt⟩ = F.atoms i) ∧
@@ -4189,14 +4200,13 @@ theorem extend_grid_rep_with_atom_of_appendixA34Extra
       (hd := hd) (IH := IH) (H := H) hExtra
   exact
     extend_grid_rep_with_atom_of_chooseδBaseAdmissible (α := α) (hk := hk) (R := R) (F := F)
-      (d := d) (hd := hd) (IH := IH) (H := H) (hZQ_if := hZQ_if) hBase
+      (d := d) (hd := hd) (H := H) hBase
 
 omit [KSSeparation α] in
 /-- Convenience wrapper: in the B-empty extension step, it suffices to assume
 `NewAtomCommutes` plus the strict separation strengthening `KSSeparationStrict`. -/
 theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict
     (IH : GridBridge F) (H : GridComm F)
-    (hZQ_if : ZQuantized_chooseδ_if_B_nonempty (α := α) hk R d hd)
     [KSSeparationStrict α] (hcomm : NewAtomCommutes F d) :
       ∃ (F' : AtomFamily α (k + 1)),
       (∀ i : Fin k, F'.atoms ⟨i, Nat.lt_succ_of_lt i.is_lt⟩ = F.atoms i) ∧
@@ -4213,14 +4223,13 @@ theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict
       (IH := IH) (H := H) (d := d) (hd := hd) hcomm
   exact
     extend_grid_rep_with_atom_of_appendixA34Extra (α := α) (hk := hk) (R := R) (F := F) (d := d)
-      (hd := hd) (IH := IH) (H := H) (hZQ_if := hZQ_if) (hExtra := hExtra)
+      (hd := hd) (IH := IH) (H := H) (hExtra := hExtra)
 
 omit [KSSeparation α] in
 /-- Full B-empty extension wrapper: `NewAtomCommutes` + `KSSeparation` + `DenselyOrdered α` suffice
 to run the extension step (strict separation is derived from density). -/
 theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparation_of_denselyOrdered
     (IH : GridBridge F) (H : GridComm F)
-    (hZQ_if : ZQuantized_chooseδ_if_B_nonempty (α := α) hk R d hd)
     [KSSeparation α] [DenselyOrdered α] (hcomm : NewAtomCommutes F d) :
       ∃ (F' : AtomFamily α (k + 1)),
       (∀ i : Fin k, F'.atoms ⟨i, Nat.lt_succ_of_lt i.is_lt⟩ = F.atoms i) ∧
@@ -4233,7 +4242,7 @@ theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparation_of_denselyO
     KSSeparation.toKSSeparationStrict_of_denselyOrdered (α := α)
   exact
     extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict (α := α) (hk := hk) (R := R)
-      (F := F) (d := d) (hd := hd) (IH := IH) (H := H) (hZQ_if := hZQ_if) hcomm
+      (F := F) (d := d) (hd := hd) (IH := IH) (H := H) hcomm
 
 /-!
 ## Archived attempt: `A_base_statistic_lt_chooseδ_noCommon`

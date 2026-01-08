@@ -785,6 +785,188 @@ theorem value_le (μ : Environment) (π : Agent) (γ : DiscountFactor)
 
 end
 
+/-! Upper bounds for the optimal value functions. -/
+mutual
+
+/-- Optimal Q-value is bounded by horizon + 1. -/
+theorem optimalQValue_le_succ (μ : Environment) (γ : DiscountFactor)
+    (h : History) (a : Action) (n : ℕ) :
+    optimalQValue μ γ h a n ≤ n + 1 := by
+  classical
+  cases n with
+  | zero =>
+      simp [optimalQValue_zero]
+  | succ n =>
+      -- Unfold one step.
+      unfold optimalQValue
+      set ha : History := h ++ [HistElem.act a]
+      cases hwa : ha.wellFormed
+      · simp [ha, hwa]
+        nlinarith
+      ·
+        have hwa' : ha.wellFormed := by simp [hwa]
+        simp [ha, hwa]
+        set B : ℝ := (n : ℝ) + 1
+        have hB_nonneg : 0 ≤ B := by
+          dsimp [B]
+          nlinarith
+        let p : Percept → ℝ := fun x => (μ.prob ha x).toReal
+        let v : Percept → ℝ := fun x => x.reward + γ.val * optimalValue μ γ (ha ++ [HistElem.per x]) n
+        have hv_le_B (x : Percept) : v x ≤ B := by
+          have hreward : x.reward ≤ 1 := Percept.reward_le_one x
+          have hfuture_le : optimalValue μ γ (ha ++ [HistElem.per x]) n ≤ n :=
+            optimalValue_le μ γ (ha ++ [HistElem.per x]) n
+          have hγmul_le_n :
+              γ.val * optimalValue μ γ (ha ++ [HistElem.per x]) n ≤ n := by
+            have hmul_le : γ.val * optimalValue μ γ (ha ++ [HistElem.per x]) n ≤ γ.val * n :=
+              mul_le_mul_of_nonneg_left hfuture_le γ.nonneg
+            have hn0 : 0 ≤ (n : ℝ) := by nlinarith
+            have hmul_le' : γ.val * (n : ℝ) ≤ (n : ℝ) := by
+              have := mul_le_mul_of_nonneg_right γ.le_one hn0
+              simpa [one_mul] using this
+            exact hmul_le.trans hmul_le'
+          dsimp [v, B]
+          nlinarith
+        have hp_nonneg (x : Percept) : 0 ≤ p x := ENNReal.toReal_nonneg
+        have hp_sum_le_one :
+            p (Percept.mk false false) +
+                (p (Percept.mk false true) + (p (Percept.mk true false) + p (Percept.mk true true))) ≤
+              1 := by
+          have hprob_le_one_tsum : (∑' x : Percept, μ.prob ha x) ≤ 1 := μ.prob_le_one ha hwa'
+          have hprob_le_one : (∑ x : Percept, μ.prob ha x) ≤ 1 := by
+            simpa [tsum_fintype] using hprob_le_one_tsum
+          have hsum_ne_top : (∑ x : Percept, μ.prob ha x) ≠ (⊤ : ENNReal) :=
+            ne_top_of_le_ne_top ENNReal.one_ne_top hprob_le_one
+          have hprob_ne_top : ∀ x : Percept, μ.prob ha x ≠ (⊤ : ENNReal) := by
+            intro x
+            have hx_le_sum : μ.prob ha x ≤ ∑ y : Percept, μ.prob ha y := by
+              classical
+              have : μ.prob ha x ≤ ∑ y ∈ (Finset.univ : Finset Percept), μ.prob ha y := by
+                refine Finset.single_le_sum ?_ (by simp)
+                intro y _hy
+                exact zero_le _
+              simpa using this
+            have hx_le_one : μ.prob ha x ≤ 1 := hx_le_sum.trans hprob_le_one
+            exact ne_top_of_le_ne_top ENNReal.one_ne_top hx_le_one
+          have htoReal_sum :
+              (∑ x ∈ (Finset.univ : Finset Percept), μ.prob ha x).toReal =
+                ∑ x ∈ (Finset.univ : Finset Percept), (μ.prob ha x).toReal :=
+            ENNReal.toReal_sum (s := (Finset.univ : Finset Percept)) (f := fun x : Percept => μ.prob ha x)
+              (by
+                intro x _hx
+                exact hprob_ne_top x)
+          have hsum_toReal_le : (∑ x : Percept, (μ.prob ha x).toReal) ≤ 1 := by
+            have hle : (∑ x : Percept, μ.prob ha x).toReal ≤ (1 : ENNReal).toReal :=
+              (ENNReal.toReal_le_toReal (ne_top_of_le_ne_top ENNReal.one_ne_top hprob_le_one)
+                ENNReal.one_ne_top).2 hprob_le_one
+            simpa [htoReal_sum] using hle
+          have hexp :
+              (∑ x : Percept, (μ.prob ha x).toReal) =
+                p (Percept.mk false false) +
+                  (p (Percept.mk false true) + (p (Percept.mk true false) + p (Percept.mk true true))) := by
+            classical
+            rw [univ_Percept]
+            simp [p, Finset.sum_insert, Finset.sum_singleton]
+          simpa [hexp] using hsum_toReal_le
+        have hterm (x : Percept) : p x * v x ≤ p x * B :=
+          mul_le_mul_of_nonneg_left (hv_le_B x) (hp_nonneg x)
+        have hsum_le_B :
+            p (Percept.mk false false) * v (Percept.mk false false) +
+                (p (Percept.mk false true) * v (Percept.mk false true) +
+                  (p (Percept.mk true false) * v (Percept.mk true false) +
+                    p (Percept.mk true true) * v (Percept.mk true true))) ≤
+              B := by
+          have hff := hterm (Percept.mk false false)
+          have hft := hterm (Percept.mk false true)
+          have htf := hterm (Percept.mk true false)
+          have htt := hterm (Percept.mk true true)
+          have hsum_le_weighted :
+              p (Percept.mk false false) * v (Percept.mk false false) +
+                  (p (Percept.mk false true) * v (Percept.mk false true) +
+                    (p (Percept.mk true false) * v (Percept.mk true false) +
+                      p (Percept.mk true true) * v (Percept.mk true true))) ≤
+                p (Percept.mk false false) * B +
+                  (p (Percept.mk false true) * B +
+                    (p (Percept.mk true false) * B + p (Percept.mk true true) * B)) :=
+            add_le_add hff (add_le_add hft (add_le_add htf htt))
+          have hpsum_mul :
+              p (Percept.mk false false) * B +
+                  (p (Percept.mk false true) * B +
+                    (p (Percept.mk true false) * B + p (Percept.mk true true) * B)) ≤
+                (1 : ℝ) * B := by
+            have hdist :
+                p (Percept.mk false false) * B +
+                    (p (Percept.mk false true) * B +
+                      (p (Percept.mk true false) * B + p (Percept.mk true true) * B)) =
+                  (p (Percept.mk false false) +
+                        (p (Percept.mk false true) + (p (Percept.mk true false) + p (Percept.mk true true)))) * B := by
+              ring_nf
+            have : (p (Percept.mk false false) +
+                        (p (Percept.mk false true) + (p (Percept.mk true false) + p (Percept.mk true true)))) * B ≤
+                  (1 : ℝ) * B := by
+              exact mul_le_mul_of_nonneg_right hp_sum_le_one hB_nonneg
+            simpa [hdist] using this
+          have : p (Percept.mk false false) * v (Percept.mk false false) +
+                  (p (Percept.mk false true) * v (Percept.mk false true) +
+                    (p (Percept.mk true false) * v (Percept.mk true false) +
+                      p (Percept.mk true true) * v (Percept.mk true true))) ≤
+                (1 : ℝ) * B :=
+            hsum_le_weighted.trans hpsum_mul
+          simpa using this
+        have hB_le : B ≤ (n : ℝ) + (1 + 1) := by
+          dsimp [B]
+          nlinarith
+        have hgoal_le_B :
+            (μ.prob ha (Percept.mk false false)).toReal *
+                  ((Percept.mk false false).reward +
+                    γ.val * optimalValue μ γ (ha ++ [HistElem.per (Percept.mk false false)]) n) +
+                ((μ.prob ha (Percept.mk false true)).toReal *
+                      ((Percept.mk false true).reward +
+                        γ.val * optimalValue μ γ (ha ++ [HistElem.per (Percept.mk false true)]) n) +
+                  ((μ.prob ha (Percept.mk true false)).toReal *
+                        ((Percept.mk true false).reward +
+                          γ.val * optimalValue μ γ (ha ++ [HistElem.per (Percept.mk true false)]) n) +
+                    (μ.prob ha (Percept.mk true true)).toReal *
+                      ((Percept.mk true true).reward +
+                        γ.val * optimalValue μ γ (ha ++ [HistElem.per (Percept.mk true true)]) n))) ≤
+              B := by
+          simpa [p, v, add_assoc] using hsum_le_B
+        simpa [ha, B, add_assoc] using (hgoal_le_B.trans hB_le)
+
+/-- Optimal value is bounded by the horizon. -/
+theorem optimalValue_le (μ : Environment) (γ : DiscountFactor)
+    (h : History) (n : ℕ) :
+    optimalValue μ γ h n ≤ n := by
+  classical
+  cases n with
+  | zero =>
+      simp [optimalValue_zero]
+  | succ n =>
+      rw [optimalValue_succ]
+      cases hw : h.wellFormed
+      · simp
+        nlinarith
+      ·
+        simp only [not_true_eq_false, ↓reduceIte]
+        simp only [List.foldl_cons, List.foldl_nil]
+        have hleft : optimalQValue μ γ h Action.left n ≤ n + 1 :=
+          optimalQValue_le_succ μ γ h Action.left n
+        have hright : optimalQValue μ γ h Action.right n ≤ n + 1 :=
+          optimalQValue_le_succ μ γ h Action.right n
+        have hstay : optimalQValue μ γ h Action.stay n ≤ n + 1 :=
+          optimalQValue_le_succ μ γ h Action.stay n
+        have h0 : (0 : ℝ) ≤ n + 1 := by nlinarith
+        have : max (max (max 0 (optimalQValue μ γ h Action.left n))
+                    (optimalQValue μ γ h Action.right n))
+                  (optimalQValue μ γ h Action.stay n) ≤
+              n + 1 := by
+          refine max_le ?_ hstay
+          refine max_le ?_ hright
+          exact max_le h0 hleft
+        simpa using this
+
+end
+
 /-- The expectimax principle: choose action maximizing expected value.
 
     a* = argmax_a Q_μ^π(h, a)

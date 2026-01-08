@@ -1,7 +1,7 @@
 /-
 # Abstract Taxonomy Infrastructure for Probability Hypercube
 
-This module provides the abstract machinery for organizing the 2592-vertex
+This module provides the abstract machinery for organizing the 31104-vertex
 probability hypercube using typeclass-based specificity orderings.
 
 ## Key Abstraction: SpecificityOrder
@@ -34,7 +34,7 @@ Each axis has `⊤` (most general) and `⊥` (most specific).
 def mkLE {α : Type*} (cmp : α → α → Prop) : LE α := ⟨cmp⟩
 
 /-!
-## §2: Partial Order Instances for All Eight Axes
+## §2: Partial Order Instances for All Ten Axes
 
 Each axis gets LE/LT instances and a PartialOrder.
 "More general" = weaker assumptions, so top = most general, bot = most specific.
@@ -134,6 +134,24 @@ instance : BoundedOrder AdditivityAxis where
   le_top a := by cases a <;> simp [LE.le]
   bot_le a := by cases a <;> simp [LE.le]
 
+-- Invertibility: semigroup (⊤) ≥ monoid ≥ group (⊥)
+instance : LE InvertibilityAxis where
+  le a b := b = .semigroup ∨ a = b ∨ (b = .monoid ∧ a = .group)
+
+instance : DecidableRel (α := InvertibilityAxis) (· ≤ ·) := fun a b => by
+  simp only [LE.le]; infer_instance
+
+instance : PartialOrder InvertibilityAxis where
+  le_refl a := by cases a <;> simp [LE.le]
+  le_trans a b c := by cases a <;> cases b <;> cases c <;> simp [LE.le]
+  le_antisymm a b := by cases a <;> cases b <;> simp [LE.le]
+
+instance : BoundedOrder InvertibilityAxis where
+  top := .semigroup
+  bot := .group
+  le_top a := by cases a <;> simp [LE.le]
+  bot_le a := by cases a <;> simp [LE.le]
+
 -- Determinism: fuzzy (⊤) ≥ probabilistic ≥ deterministic (⊥)
 instance : LE DeterminismAxis where
   le a b := b = .fuzzy ∨ a = b ∨ (b = .probabilistic ∧ a = .deterministic)
@@ -188,30 +206,33 @@ instance : BoundedOrder RegularityAxis where
   le_top a := by cases a <;> simp [LE.le]
   bot_le a := by cases a <;> simp [LE.le]
 
--- Independence: DISCRETE ORDER (only reflexivity, no other relations)
--- TODO: Proper partial order where free ≥ others, but they're incomparable to each other
--- For now, use discrete order (a ≤ b iff a = b) to allow BoundedOrder instance
+-- Independence: noncommutative independences are not totally ordered.
+--
+-- We use a simple bounded partial order with:
+-- - `⊤ = free` (treated as “most general / least constrained”)
+-- - `⊥ = tensor` (treated as “most specific / most classical”)
+-- - `boolean` and `monotone` incomparable except via ⊤/⊥
 instance : LE IndependenceAxis where
-  le a b := a = b  -- Discrete order: only reflexive
+  le a b := b = .free ∨ a = .tensor ∨ a = b
 
 instance : DecidableRel (α := IndependenceAxis) (· ≤ ·) := fun a b => by
   simp only [LE.le]; infer_instance
 
 instance : PartialOrder IndependenceAxis where
-  le_refl a := by simp [LE.le]
-  le_trans a b c hab hbc := by simp [LE.le] at hab hbc ⊢; rw [hab, hbc]
-  le_antisymm a b hab hba := by simp [LE.le] at hab; exact hab
+  le_refl a := by cases a <;> simp [LE.le]
+  le_trans a b c := by cases a <;> cases b <;> cases c <;> simp [LE.le]
+  le_antisymm a b := by cases a <;> cases b <;> simp [LE.le]
 
 instance : BoundedOrder IndependenceAxis where
-  top := .tensor   -- Arbitrary choice; discrete order means no element dominates
-  bot := .tensor   -- Arbitrary choice; discrete order means no element is dominated
-  le_top a := by sorry  -- TODO: Discrete order incompatible with BoundedOrder
-  bot_le a := by sorry  -- TODO: Discrete order incompatible with BoundedOrder
+  top := .free
+  bot := .tensor
+  le_top a := by cases a <;> simp [LE.le]
+  bot_le a := by cases a <;> simp [LE.le]
 
 /-!
 ## §3: Product Order on ProbabilityVertex
 
-The `isMoreGeneral` relation is exactly the product order on all 9 axes.
+  The `isMoreGeneral` relation is exactly the product order on all 10 axes.
 -/
 
 /-- Product specificity order: V ≤ W iff V is more general on every axis. -/
@@ -222,6 +243,7 @@ instance instLEProbabilityVertex : LE ProbabilityVertex where
     V.precision ≤ W.precision ∧
     V.orderAxis ≤ W.orderAxis ∧
     V.additivity ≤ W.additivity ∧
+    V.invertibility ≤ W.invertibility ∧
     V.determinism ≤ W.determinism ∧
     V.support ≤ W.support ∧
     V.regularity ≤ W.regularity ∧
@@ -233,15 +255,17 @@ instance : DecidableRel (α := ProbabilityVertex) (· ≤ ·) := fun _ _ => by
 
 /-- The product order is a partial order. -/
 instance instPartialOrderProbabilityVertex : PartialOrder ProbabilityVertex where
-  le_refl V := ⟨le_refl _, le_refl _, le_refl _, le_refl _, le_refl _, le_refl _, le_refl _, le_refl _, le_refl _⟩
+  le_refl V := ⟨le_refl _, le_refl _, le_refl _, le_refl _, le_refl _, le_refl _, le_refl _,
+    le_refl _, le_refl _, le_refl _⟩
   le_trans V W X hVW hWX := by
-    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hVW
-    obtain ⟨h1', h2', h3', h4', h5', h6', h7', h8', h9'⟩ := hWX
+    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10⟩ := hVW
+    obtain ⟨h1', h2', h3', h4', h5', h6', h7', h8', h9', h10'⟩ := hWX
     exact ⟨le_trans h1 h1', le_trans h2 h2', le_trans h3 h3', le_trans h4 h4',
-           le_trans h5 h5', le_trans h6 h6', le_trans h7 h7', le_trans h8 h8', le_trans h9 h9'⟩
+           le_trans h5 h5', le_trans h6 h6', le_trans h7 h7', le_trans h8 h8',
+           le_trans h9 h9', le_trans h10 h10'⟩
   le_antisymm V W hVW hWV := by
-    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hVW
-    obtain ⟨h1', h2', h3', h4', h5', h6', h7', h8', h9'⟩ := hWV
+    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10⟩ := hVW
+    obtain ⟨h1', h2', h3', h4', h5', h6', h7', h8', h9', h10'⟩ := hWV
     ext
     · exact le_antisymm h1 h1'
     · exact le_antisymm h2 h2'
@@ -252,15 +276,18 @@ instance instPartialOrderProbabilityVertex : PartialOrder ProbabilityVertex wher
     · exact le_antisymm h7 h7'
     · exact le_antisymm h8 h8'
     · exact le_antisymm h9 h9'
+    · exact le_antisymm h10 h10'
 
 /-- The most general and specific vertices form bounds. -/
 instance : BoundedOrder ProbabilityVertex where
   top := mostGeneralVertex
   bot := classicalLogic
   le_top _ := ⟨OrderTop.le_top _, OrderTop.le_top _, OrderTop.le_top _, OrderTop.le_top _,
-               OrderTop.le_top _, OrderTop.le_top _, OrderTop.le_top _, OrderTop.le_top _, sorry⟩  -- TODO: Independence axis
+               OrderTop.le_top _, OrderTop.le_top _, OrderTop.le_top _, OrderTop.le_top _,
+               OrderTop.le_top _, OrderTop.le_top _⟩
   bot_le _ := ⟨OrderBot.bot_le _, OrderBot.bot_le _, OrderBot.bot_le _, OrderBot.bot_le _,
-               OrderBot.bot_le _, OrderBot.bot_le _, OrderBot.bot_le _, OrderBot.bot_le _, sorry⟩  -- TODO: Independence axis
+               OrderBot.bot_le _, OrderBot.bot_le _, OrderBot.bot_le _, OrderBot.bot_le _,
+               OrderBot.bot_le _, OrderBot.bot_le _⟩
 
 /-!
 ## §4: Equivalence with isMoreGeneral
@@ -273,7 +300,43 @@ The abstract `≤` on ProbabilityVertex is equivalent to the manually-defined `i
     This matches lattice convention where ⊤ (most general) is above ⊥ (most specific). -/
 theorem le_iff_isMoreGeneral (V W : ProbabilityVertex) :
     V ≤ W ↔ isMoreGeneral W V := by
-  sorry  -- TODO: isMoreGeneral in Basic.lean doesn't include independence axis yet
+  constructor
+  · intro h
+    rcases h with ⟨hcomm, hdist, hprec, hord, hadd, hinv, hdet, hsup, hreg, hind⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · -- commutativity
+      simpa [LE.le, eq_comm] using hcomm
+    · -- distributivity
+      simpa [LE.le, eq_comm] using hdist
+    · -- precision
+      simpa [LE.le, eq_comm] using hprec
+    · -- order
+      simpa [LE.le, eq_comm] using hord
+    · -- additivity
+      simpa [LE.le, eq_comm] using hadd
+    · -- invertibility
+      simpa [LE.le, eq_comm] using hinv
+    · -- determinism
+      simpa [LE.le, eq_comm] using hdet
+    · -- support
+      simpa [LE.le, eq_comm] using hsup
+    · -- regularity
+      simpa [LE.le, eq_comm] using hreg
+    · -- independence
+      simpa [LE.le, eq_comm] using hind
+  · intro h
+    rcases h with ⟨hcomm, hdist, hprec, hord, hadd, hinv, hdet, hsup, hreg, hind⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · simpa [LE.le, eq_comm] using hcomm
+    · simpa [LE.le, eq_comm] using hdist
+    · simpa [LE.le, eq_comm] using hprec
+    · simpa [LE.le, eq_comm] using hord
+    · simpa [LE.le, eq_comm] using hadd
+    · simpa [LE.le, eq_comm] using hinv
+    · simpa [LE.le, eq_comm] using hdet
+    · simpa [LE.le, eq_comm] using hsup
+    · simpa [LE.le, eq_comm] using hreg
+    · simpa [LE.le, eq_comm] using hind
 
 /-- `isMoreGeneral` is decidable via the decidable LE on ProbabilityVertex. -/
 instance isMoreGeneral_decidable (V W : ProbabilityVertex) :
@@ -288,9 +351,9 @@ Utility functions for working with the hypercube structure.
 -/
 
 /-- Total number of vertices in the hypercube. -/
-def vertexCount : ℕ := 2 * 4 * 2 * 2 * 3 * 3 * 3 * 3
+def vertexCount : ℕ := 2 * 4 * 2 * 2 * 3 * 3 * 3 * 3 * 3 * 4
 
-theorem vertexCount_eq : vertexCount = 2592 := rfl
+theorem vertexCount_eq : vertexCount = 31104 := rfl
 
 /-- Number of comparable pairs in the lattice.
     Two vertices are comparable iff one is more general than the other. -/
@@ -313,6 +376,7 @@ theorem mostGeneralVertex_top (V : ProbabilityVertex) : V ≤ mostGeneralVertex 
        V.precision ≤ mostGeneralVertex.precision ∧
        V.orderAxis ≤ mostGeneralVertex.orderAxis ∧
        V.additivity ≤ mostGeneralVertex.additivity ∧
+       V.invertibility ≤ mostGeneralVertex.invertibility ∧
        V.determinism ≤ mostGeneralVertex.determinism ∧
        V.support ≤ mostGeneralVertex.support ∧
        V.regularity ≤ mostGeneralVertex.regularity ∧
@@ -325,7 +389,8 @@ theorem mostGeneralVertex_top (V : ProbabilityVertex) : V ≤ mostGeneralVertex 
   constructor; · exact le_top
   constructor; · exact le_top
   constructor; · exact le_top
-  · sorry  -- TODO: Independence axis needs proper partial order, not discrete
+  constructor; · exact le_top
+  · exact le_top
 
 /-- classicalLogic is dominated by everything (restated using ≤). -/
 theorem classicalLogic_bot (V : ProbabilityVertex) : classicalLogic ≤ V := by
@@ -334,11 +399,12 @@ theorem classicalLogic_bot (V : ProbabilityVertex) : classicalLogic ≤ V := by
        classicalLogic.precision ≤ V.precision ∧
        classicalLogic.orderAxis ≤ V.orderAxis ∧
        classicalLogic.additivity ≤ V.additivity ∧
+       classicalLogic.invertibility ≤ V.invertibility ∧
        classicalLogic.determinism ≤ V.determinism ∧
        classicalLogic.support ≤ V.support ∧
        classicalLogic.regularity ≤ V.regularity ∧
        classicalLogic.independence ≤ V.independence
-  exact ⟨bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le⟩
+  exact ⟨bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le⟩
 
 /-- Kolmogorov is in the middle of the lattice. -/
 theorem kolmogorov_intermediate :
@@ -350,24 +416,25 @@ theorem kolmogorov_intermediate :
          classicalLogic.precision ≤ kolmogorov.precision ∧
          classicalLogic.orderAxis ≤ kolmogorov.orderAxis ∧
          classicalLogic.additivity ≤ kolmogorov.additivity ∧
+         classicalLogic.invertibility ≤ kolmogorov.invertibility ∧
          classicalLogic.determinism ≤ kolmogorov.determinism ∧
          classicalLogic.support ≤ kolmogorov.support ∧
          classicalLogic.regularity ≤ kolmogorov.regularity ∧
          classicalLogic.independence ≤ kolmogorov.independence
-    exact ⟨bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le⟩
+    exact ⟨bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le⟩
   · -- Expand the LE definition for top
     show kolmogorov.commutativity ≤ mostGeneralVertex.commutativity ∧
          kolmogorov.distributivity ≤ mostGeneralVertex.distributivity ∧
          kolmogorov.precision ≤ mostGeneralVertex.precision ∧
          kolmogorov.orderAxis ≤ mostGeneralVertex.orderAxis ∧
          kolmogorov.additivity ≤ mostGeneralVertex.additivity ∧
+         kolmogorov.invertibility ≤ mostGeneralVertex.invertibility ∧
          kolmogorov.determinism ≤ mostGeneralVertex.determinism ∧
          kolmogorov.support ≤ mostGeneralVertex.support ∧
          kolmogorov.regularity ≤ mostGeneralVertex.regularity ∧
          kolmogorov.independence ≤ mostGeneralVertex.independence
     -- kolmogorov.independence = .tensor, mostGeneralVertex.independence = .free
-    refine ⟨le_top, le_top, le_top, le_top, le_top, le_top, le_top, le_top, ?_⟩
-    sorry  -- TODO: Independence axis needs proper partial order, not discrete
+    exact ⟨le_top, le_top, le_top, le_top, le_top, le_top, le_top, le_top, le_top, le_top⟩
 
 /-- The named theories form a sublattice with well-defined bounds. -/
 theorem named_theories_bounded :
@@ -382,17 +449,19 @@ theorem named_theories_bounded :
          classicalLogic.precision ≤ V.precision ∧
          classicalLogic.orderAxis ≤ V.orderAxis ∧
          classicalLogic.additivity ≤ V.additivity ∧
+         classicalLogic.invertibility ≤ V.invertibility ∧
          classicalLogic.determinism ≤ V.determinism ∧
          classicalLogic.support ≤ V.support ∧
          classicalLogic.regularity ≤ V.regularity ∧
          classicalLogic.independence ≤ V.independence
-    exact ⟨bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le⟩
+    exact ⟨bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le, bot_le⟩
   · -- V ≤ mostGeneralVertex (expand LE definition)
     show V.commutativity ≤ mostGeneralVertex.commutativity ∧
          V.distributivity ≤ mostGeneralVertex.distributivity ∧
          V.precision ≤ mostGeneralVertex.precision ∧
          V.orderAxis ≤ mostGeneralVertex.orderAxis ∧
          V.additivity ≤ mostGeneralVertex.additivity ∧
+         V.invertibility ≤ mostGeneralVertex.invertibility ∧
          V.determinism ≤ mostGeneralVertex.determinism ∧
          V.support ≤ mostGeneralVertex.support ∧
          V.regularity ≤ mostGeneralVertex.regularity ∧
@@ -405,6 +474,7 @@ theorem named_theories_bounded :
     constructor; · exact le_top
     constructor; · exact le_top
     constructor; · exact le_top
-    · sorry  -- TODO: Independence axis needs proper partial order, not discrete
+    constructor; · exact le_top
+    · exact le_top
 
 end Mettapedia.ProbabilityTheory.Hypercube

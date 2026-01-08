@@ -46,6 +46,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
 import Mettapedia.ProbabilityTheory.KnuthSkilling.SeparationProof
 import Mettapedia.ProbabilityTheory.KnuthSkilling.RepTheorem
 import Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA
+import Mettapedia.ProbabilityTheory.KnuthSkilling.GoertzelGroupFix
 import Mettapedia.ProbabilityTheory.KnuthSkilling.ProbabilityDerivation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Independence
 

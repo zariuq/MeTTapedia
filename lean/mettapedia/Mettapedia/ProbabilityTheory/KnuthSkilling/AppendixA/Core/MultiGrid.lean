@@ -1812,6 +1812,38 @@ lemma mu_add_of_comm {k : ℕ} {F : AtomFamily α k} (H : GridComm F)
   exact foldl_op_distrib H (List.finRange k) r s
 
 /-!
+### GridBridge derived from GridComm
+
+In a commutative μ-grid, the “bridge” identity
+
+`μ(F, n·r) = (μ(F, r))^n`
+
+holds by a simple induction using `mu_add_of_comm`.
+
+This lemma is useful to avoid threading `GridBridge` as an independent hypothesis in situations
+where `GridComm` is already available.
+-/
+
+/-- If the μ-grid is commutative (`GridComm`), then it satisfies the bridge identity. -/
+theorem gridBridge_of_gridComm {k : ℕ} {F : AtomFamily α k} (H : GridComm F) : GridBridge F := by
+  refine ⟨?_⟩
+  intro r n
+  induction n with
+  | zero =>
+      simp [GridBridge, scaleMult, mu_zero, iterate_op_zero]
+  | succ n ih =>
+      calc
+        mu F (scaleMult (n + 1) r)
+            = mu F (r + scaleMult n r) := by
+                have hscale : scaleMult (n + 1) r = r + scaleMult n r := by
+                  ext i
+                  simp [scaleMult, Nat.succ_mul, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                simpa [hscale]
+        _ = op (mu F r) (mu F (scaleMult n r)) := mu_add_of_comm (F := F) H r (scaleMult n r)
+        _ = op (mu F r) (iterate_op (mu F r) n) := by rw [ih]
+        _ = iterate_op (mu F r) (n + 1) := rfl
+
+/-!
 ### Cancelling a common multiplicity prefix (base-indexed A/B/C and statistics)
 
 When comparing two old-grid witnesses `r0` and `r` relative to the target boundary `μ(r0) ⊕ d^u`,

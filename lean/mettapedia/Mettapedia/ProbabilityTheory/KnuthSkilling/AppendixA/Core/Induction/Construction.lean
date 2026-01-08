@@ -381,8 +381,12 @@ there is no reason for this newly chosen `δ := chooseδ hk R d hd` to be commen
 existing k-grid values, so `ZQuantized F R (chooseδ hk R d hd)` should not be treated as an
 automatic inductive invariant of the extension step.
 
-See `lean-projects/mettapedia/Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/ZQuantizedBEmpty.lean`
+See `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/ZQuantizedBEmpty.lean`
 for a concrete additive model where `B` is empty and `ZQuantized F R (chooseδ …)` fails.
+
+See `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/ZQuantizedBNonempty.lean`
+for a concrete additive model where `B` is **nonempty** but `ZQuantized_chooseδ_if_B_nonempty` still fails (so
+the “rational δ” branch needs something weaker than full `ZQuantized`).
 -/
 
 /-- ZQuantized: Every Θ-value on the k-grid is an integer multiple of δ.

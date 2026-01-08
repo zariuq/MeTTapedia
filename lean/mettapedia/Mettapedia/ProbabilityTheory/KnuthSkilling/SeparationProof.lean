@@ -1,16 +1,19 @@
 /-
 # Knuth-Skilling Separation Property - Proof from Axioms
 
-This file proves that the separation property (KSSeparation typeclass) holds
-for any Knuth-Skilling algebra, using only the primitive K-S axioms plus
-Archimedean arguments.
+This file is a work-in-progress attempt to prove the separation property (`KSSeparation`)
+from the primitive `KnuthSkillingAlgebra` axioms (Archimedean + strict monotonicity).
 
-**Purpose**: Discharge the `KSSeparation` specification by proving it from first principles.
+**Current status**: The development succeeds in reducing `KSSeparation` to a single remaining
+large-regime lemma, which is packaged as `LargeRegimeSeparationSpec`. Assuming that spec, we
+provide an instance `KSSeparation α`.
+
+Important: `KSSeparation` is **not** derivable from the base axioms alone in general; see the
+compiled counterexample `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/KSSeparationNotDerivable.lean`.
 
 **Layer Structure** (avoiding circularity):
 - **RepTheorem.lean** assumes `[KSSeparation α]` and proves the representation theorem
-- **This file** proves `KSSeparation` from raw K-S axioms (no dependence on Θ)
-- Result: `instance : KSSeparation α` makes the representation theorem work
+- **This file** isolates the remaining large-regime argument as a separate explicit spec
 
 **Mathematical Content**:
 The key insight is gap growth: if x < y, then y^m - x^m grows unboundedly with m.
@@ -1396,5 +1399,30 @@ without requiring any closed-form formula for m. -/
 -- instance instKSSeparation : KSSeparation α where
 --   separation {a x y} ha hx hy hxy :=
 --     ks_separation_lemma a x y ha hx hy hxy
+
+/-- If we assume the remaining large-regime spec, the full separation typeclass follows. -/
+instance instKSSeparation_of_largeRegimeSeparationSpec [LargeRegimeSeparationSpec α] :
+    KSSeparation α := by
+  classical
+  refine ⟨?_⟩
+  intro a x y ha hx hy hxy
+  exact ks_separation_lemma (a := a) (x := x) (y := y) ha hx hy hxy
+
+/-!
+## Large-regime spec as a consequence of full separation
+
+`LargeRegimeSeparationSpec` is (by design) the “large-regime” fragment of `KSSeparation`.
+We expose the easy direction as a lemma (not an `instance`) to avoid typeclass cycles. -/
+
+theorem largeRegimeSeparationSpec_of_KSSeparation [KSSeparation α] :
+    LargeRegimeSeparationSpec α := by
+  classical
+  refine ⟨?_⟩
+  intro a x y ha hxy hax
+  have hx : ident < x := lt_of_lt_of_le ha hax
+  have hy : ident < y := lt_of_le_of_lt (ident_le x) hxy
+  rcases (KSSeparation.separation (a := a) (x := x) (y := y) ha hx hy hxy) with
+    ⟨n, m, hm_pos, hlt, hle⟩
+  exact ⟨n, m, hm_pos, hlt, hle⟩
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling

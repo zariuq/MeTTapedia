@@ -230,10 +230,18 @@ end KnuthSkillingAlgebra
 
 /-! ## Separation Typeclass
 
-The KSSeparation typeclass captures the property that we can always find rational witnesses
-separating any two distinct positive elements. This is proven from the K-S axioms in
-SeparationProof.lean and used by the representation theorem in RepTheorem.lean.
--/
+`KSSeparation` captures the “rational separation” property used throughout the representation
+arguments: for `ident < x < y` and any base `a > ident`, some power of `a` sits strictly between a
+power of `x` and a power of `y`.
+
+In the original K&S Appendix A narrative this is treated as a derived lemma, but in our
+formalization it is an *explicit* typeclass assumption: it is **not** derivable from the base
+`KnuthSkillingAlgebra` axioms in general (see
+`Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/KSSeparationNotDerivable.lean`).
+
+`SeparationProof.lean` is the (still experimental) attempt to derive `KSSeparation` from additional
+structured hypotheses, and it currently packages the remaining hard step as a `Prop`-class
+(`LargeRegimeSeparationSpec`). -/
 
 /-- **Separation Typeclass**: The property that we can always find rational witnesses
 separating any two distinct positive elements.
@@ -353,17 +361,18 @@ open KnuthSkillingAlgebra
 
 variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
 
-/-- If the order on `α` is dense, then `KSSeparation` upgrades to the strict variant
-`KSSeparationStrict`.
+/-- If we can pick an intermediate point between any `ident < x < y`, then `KSSeparation` upgrades to
+the strict variant `KSSeparationStrict`.
 
-This isolates an extra hypothesis that suffices to rule out the “upper-bound equality” corner case:
-pick `z` with `x < z < y`, apply separation to `(x,z)`, then use `z^m < y^m` to make the upper
-bound strict. -/
-theorem toKSSeparationStrict_of_denselyOrdered [DenselyOrdered α] : KSSeparationStrict α := by
+This is a weaker hypothesis than `[DenselyOrdered α]`: we only need density *above* `ident`, since
+`KSSeparation` is only stated for positive `x,y`. -/
+theorem toKSSeparationStrict_of_exists_between_pos
+    (hBetween : ∀ {x y : α}, ident < x → x < y → ∃ z, x < z ∧ z < y) :
+    KSSeparationStrict α := by
   classical
   refine ⟨?_⟩
   intro a x y ha hx hy hxy
-  rcases exists_between hxy with ⟨z, hxz, hzy⟩
+  rcases hBetween (x := x) (y := y) hx hxy with ⟨z, hxz, hzy⟩
   have hz : ident < z := lt_trans hx hxz
   rcases (KSSeparation.separation (a := a) (x := x) (y := z) ha hx hz hxz) with
     ⟨n, m, hm_pos, hlt, hle⟩
@@ -371,6 +380,17 @@ theorem toKSSeparationStrict_of_denselyOrdered [DenselyOrdered α] : KSSeparatio
     iterate_op_strictMono_base m hm_pos z y hzy
   have hlt' : iterate_op a n < iterate_op y m := lt_of_le_of_lt hle hz_lt_y
   exact ⟨n, m, hm_pos, hlt, hlt'⟩
+
+/-- If the order on `α` is dense, then `KSSeparation` upgrades to the strict variant
+`KSSeparationStrict`.
+
+This isolates an extra hypothesis that suffices to rule out the “upper-bound equality” corner case:
+pick `z` with `x < z < y`, apply separation to `(x,z)`, then use `z^m < y^m` to make the upper
+bound strict. -/
+theorem toKSSeparationStrict_of_denselyOrdered [DenselyOrdered α] : KSSeparationStrict α := by
+  exact
+    toKSSeparationStrict_of_exists_between_pos (α := α)
+      (hBetween := fun {x y} _hx hxy => exists_between hxy)
 
 end KSSeparation
 
@@ -416,15 +436,15 @@ theorem op_right {x y z : α} (hxy : Commutes (α := α) x y) (hxz : Commutes (�
   dsimp [Commutes] at hxy hxz ⊢
   calc
     op x (op y z) = op (op x y) z := by
-      simpa [op_assoc]
+      simp [op_assoc]
     _ = op (op y x) z := by
-      simpa [hxy]
+      simp [hxy]
     _ = op y (op x z) := by
-      simpa [op_assoc]
+      simp [op_assoc]
     _ = op y (op z x) := by
-      simpa [hxz]
+      simp [hxz]
     _ = op (op y z) x := by
-      simpa [op_assoc]
+      simp [op_assoc]
 
 /-- If `y` commutes with `x` and `z`, then `y ⊕ z` commutes with `x`. -/
 theorem op_left {x y z : α} (hyx : Commutes (α := α) y x) (hzx : Commutes (α := α) z x) :

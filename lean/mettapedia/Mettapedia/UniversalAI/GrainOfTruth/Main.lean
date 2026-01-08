@@ -84,77 +84,19 @@ theorem convergence_to_nash {n : ℕ} (O : Oracle)
           ⟨1/2, by norm_num, by norm_num⟩ ε [] t :=
   convergence_to_equilibrium O M σ policies h_asymp_opt ε hε
 
-/-! ## Theorem 7.6: Thompson Sampling is Optimal
+/-! ## Theorem 7.6 (planned): Thompson Sampling is Optimal
 
-Thompson sampling achieves asymptotic optimality in mean.
+The learning-theory core (Thompson sampling asymptotic optimality in mean) follows Leike's Chapter 5
+and is developed in the measure-theory folder:
+
+`Mettapedia/UniversalAI/GrainOfTruth/MeasureTheory/`.
 -/
 
-/-- Thompson sampling is asymptotically optimal in mean.
+/-! ## Main Theorem (planned): Grain of Truth
 
-    This follows from:
-    1. Bayesian consistency (posterior concentrates on true environment)
-    2. Expected regret decomposition
-    3. Concentration inequalities for learning
-
-    Full proof requires measure-theoretic foundations for:
-    - Martingale convergence (for posterior concentration)
-    - Doob's inequality (for concentration bounds)
-    - Dominated convergence (for expectation limits) -/
-theorem thompson_is_optimal (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (γ : DiscountFactor)
-    (ν_star : EnvironmentIndex) (h_grain : 0 < prior.weight ν_star) :
-    ∃ π : Agent, IsAsymptoticallyOptimal π O M prior envs γ := by
-  -- Thompson sampling works by:
-  -- 1. Sample environment ν from posterior
-  -- 2. Act optimally for ν
-  -- 3. Update posterior with new data
-  -- The key is that posterior concentrates → expected regret → 0
-  sorry
-
-/-! ## Main Theorem: Grain of Truth -/
-
-/-- **The Grain of Truth Theorem**: Thompson sampling agents converge to Nash.
-
-    Given:
-    - A reflective oracle O
-    - The class M^O_refl of O-computable environments
-    - A prior with full support over M^O_refl
-
-    If all agents use Thompson sampling (which is asymptotically optimal),
-    then for any ε > 0, there exists t₀ such that for all t ≥ t₀,
-    the joint policy profile is an ε-Nash equilibrium.
-
-    This solves the "grain of truth" problem: agents can model each other
-    without infinite regress because:
-    1. M^O_refl contains all computable environments
-    2. M^O_refl contains the Bayes mixture over itself (grain of truth)
-    3. Thompson sampling is computable with O
-    4. So agents model other Thompson sampling agents correctly
-
-    Key Dependencies:
-    - bayesian_consistency: Posterior concentrates on true environment
-    - consistency_implies_regret_convergence: Concentration → regret → 0
-    - bayes_is_in_class: Mixture is in the class (Proposition 7.1)
+The full “grain of truth” statement (Thompson samplers converge to ε-best responses on-policy) is
+assembled once the learning-theory core (Thompson sampling AoIM) is completed.
 -/
-theorem grain_of_truth {n : ℕ}
-    (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (γ : DiscountFactor)
-    (ε : ℝ) (hε : ε > 0)
-    (h_grain : ∀ i : ℕ, 0 < prior.weight i) :  -- Full support = grain of truth
-    ∃ (policies : Fin n → Agent),
-      -- All agents are asymptotically optimal
-      (∀ i, IsAsymptoticallyOptimal (policies i) O M prior envs γ) ∧
-      -- They converge to ε-best responses
-      ∃ t₀ : ℕ, ∀ t ≥ t₀, ∀ i : Fin n,
-        ∀ h : History, h.wellFormed → h.length = t →
-          ∀ ν_idx : EnvironmentIndex,
-            IsEpsilonBestResponse (envs ν_idx) (policies i) γ ε h t := by
-  -- Proof sketch:
-  -- 1. Let each agent use Thompson sampling (from thompson_is_optimal)
-  -- 2. By bayesian_consistency, posteriors concentrate
-  -- 3. By consistency_implies_regret_convergence, expected regret → 0
-  -- 4. Markov inequality converts expected regret to ε-best response
-  sorry
 
 /-! ## Status Summary
 

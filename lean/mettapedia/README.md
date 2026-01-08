@@ -47,6 +47,9 @@ lake exe cache get
 lake build
 ```
 
+Note: `lake build` currently fails for some parts of the repo; see **Build Status** below for
+known-good targets.
+
 ## Development Workflow
 
 ### Building
@@ -56,6 +59,23 @@ lake build
 export LAKE_JOBS=3
 nice -n 19 lake build
 ```
+
+### Suggested Build Targets
+
+```bash
+cd lean-projects/mettapedia
+export LAKE_JOBS=3
+ulimit -Sv 6291456
+
+nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA
+nice -n 19 lake build Mettapedia.ProbabilityTheory.Hypercube
+```
+
+## Build Status (last checked 2026-01-06)
+
+- ✅ `lake build Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA` (0 sorries; linter warnings in `Mettapedia/ProbabilityTheory/KnuthSkilling/Algebra.lean`)
+- ✅ `lake build Mettapedia.ProbabilityTheory.Hypercube` (0 sorries; see `Mettapedia/ProbabilityTheory/Hypercube/README.md`)
+- ❌ `lake build` (full) currently fails in `Mettapedia/UniversalAI/TimeBoundedAIXI.lean`
 
 ### Using LeanHammer
 
@@ -108,6 +128,12 @@ du -sh ~/.cache/mathlib
 - [ ] Independence
 - [ ] Bayes' theorem
 - [ ] Total probability
+
+### Probability Theory Subprojects
+
+- Knuth–Skilling Appendix A: `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA.lean` (see also `reports/ks_appendixA_formalization/ks_appendixA_formalization.pdf`)
+- Probability Hypercube: `Mettapedia/ProbabilityTheory/Hypercube/README.md`
+- Reflective Oracles (archived axiomatic attempt): `Mettapedia/UniversalAI/ReflectiveOracles/_archive/2025-12-29_axiom_based/README.md`
 
 ## References
 

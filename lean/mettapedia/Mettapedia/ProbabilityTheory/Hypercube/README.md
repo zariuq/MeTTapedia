@@ -74,8 +74,10 @@ Commutativity theory and the classical/quantum boundary:
 - **Foulis-Holland Theorem (Complete!)**:
   - `commutes_inf`: `a C b ∧ a C c → a C (b ⊓ c)`
   - `commutes_sup`: `a C b ∧ a C c → a C (b ⊔ c)`
-- **Disjunctive Syllogism** `oml_disjunctive_syllogism`: Conditional inference in OMLs
-- **Orthocomplement Uniqueness**: Uniqueness of decompositions
+- **Quantum Logic Note**: Disjunctive syllogism does *not* hold in general OMLs; `NeighborTheories.lean`
+  deliberately avoids an unconditional `oml_disjunctive_syllogism` lemma.
+- **Orthocomplement Uniqueness**: recorded as a statement `oml_orthocomplement_unique_statement`
+  (no proof yet; needs the correct compatibility hypotheses).
 
 **Novel Contributions**:
 - **Complete Foulis-Holland theorem**: Commuting elements are closed under ⊓ and ⊔
@@ -92,7 +94,7 @@ Classical Dempster-Shafer theory on power sets:
   - Möbius inversion formulas
   - Dempster's rule properties
 
-#### `Taxonomy.lean` (12 KB)
+#### `Taxonomy.lean` (17 KB)
 Classification of probability theories by lattice axioms:
 - Defines `ProbabilityTheoryClass` structure
 - Classifies Kolmogorov, Dempster-Shafer, Quantum, Fuzzy theories
@@ -144,7 +146,9 @@ From Kalmbach (1983). This is THE key property distinguishing commuting (classic
 **Theorem** `commutes_inf`: If `a C b` and `a C c`, then `a C (b ⊓ c)`
 **Theorem** `commutes_sup`: If `a C b` and `a C c`, then `a C (b ⊔ c)`
 
-Commuting elements are closed under lattice operations, hence generate Boolean (distributive) sublattices. This explains why classical probability emerges from quantum probability when measuring compatible observables.
+Commuting elements are closed under lattice operations. Distributivity for commuting triples is
+recorded as `commuting_distributive` (statement; proof TODO). This is part of the standard story
+of why classical probability emerges from quantum probability when measuring compatible observables.
 
 **Proof Strategy**:
 - For `commutes_inf`: Use exchange characterization. Since `b ⊓ c ≤ b, c`, the exchange bounds combine to give `a ⊓ (aᶜ ⊔ (b ⊓ c)) = a ⊓ b ⊓ c`.
@@ -153,8 +157,9 @@ Commuting elements are closed under lattice operations, hence generate Boolean (
 ## Building the Formalization
 
 ```bash
-cd /home/zar/claude/lean-projects/mettapedia
+cd lean-projects/mettapedia
 export LAKE_JOBS=3
+ulimit -Sv 6291456
 nice -n 19 lake build Mettapedia.ProbabilityTheory.Hypercube
 ```
 
@@ -164,24 +169,23 @@ nice -n 19 lake build Mettapedia.ProbabilityTheory.Hypercube
 
 ## Current Status
 
-### Completed (Zero Sorries)
-- ✅ Orthomodular lattice axiomatization
-- ✅ Orthogonality → disjointness (`inf_eq_bot_of_le_compl`)
-- ✅ Commutativity basic lemmas (symmetry, complement, etc.)
-- ✅ Exchange property (bidirectional: `commutes_iff_exchange`)
-- ✅ **Foulis-Holland theorem** (`commutes_inf`, `commutes_sup`)
-- ✅ Disjunctive syllogism in OMLs
-- ✅ Classical Dempster-Shafer on power sets
-- ✅ Quantum mass functions (finite case)
+### Build (last checked 2026-01-06)
+
+`lake build Mettapedia.ProbabilityTheory.Hypercube` succeeds with **0** `sorry`s.
+
+### Completed (sorry-free)
+- ✅ Orthomodular lattice axiomatization + basic quantum structures (`NovelTheories.lean`)
+- ✅ Classical Dempster–Shafer on `Finset Ω` (`Basic.lean`)
+- ✅ Neighbor investigations (`NeighborTheories.lean`) are `sorry`-free (open items are explicit `Prop` statements)
+- ✅ Hypercube taxonomy order (`Taxonomy.lean`) is `sorry`-free
 
 ### Corrected Misconceptions
 - ❌ ~~OML fundamental lemma (quasi-distributivity)~~ - **FALSE in general OML!**
 - ❌ ~~Bidirectional orthogonality criterion~~ - Only forward direction holds
 
 ### In Progress
-- ⚠️ `commuting_distributive`: Distributivity for commuting triples (uses `commutes_sup`)
+- ⚠️ `commuting_distributive`: distributivity for commuting triples (Kalmbach/Beran; statement recorded, proof TODO)
 - ⚠️ Infinite lattice case for quantum beliefs (requires measure theory)
-- ⚠️ Complete hypercube edge characterizations
 
 ## Relationship to Other Formalizations
 
@@ -205,7 +209,7 @@ Extended Dempster-Shafer theory:
 
 ## Design Philosophy
 
-1. **No Sorries in Core Proofs**: All fundamental lemmas proven rigorously
+1. **No `sorry`**: open research lemmas are explicitly recorded as `Prop` statements (not placeholder proofs)
 2. **Source Attribution**: Every theorem cites original papers
 3. **Modular Structure**: Each theory in separate file
 4. **Computational Content**: Definitions executable on finite lattices
@@ -214,7 +218,7 @@ Extended Dempster-Shafer theory:
 ## Future Work
 
 1. ~~**Complete Foulis-Holland**~~ ✅ DONE: `commutes_inf`, `commutes_sup` proven
-2. **Distributive Sublattices**: Prove `commuting_distributive` theorem
+2. **Distributive Sublattices**: Prove `commuting_distributive`
 3. **Hypercube Edges**: Formalize all 12 edges (theory transformations)
 4. **Measure Theory Bridge**: Extend finite quantum beliefs to σ-algebras
 5. **Concrete Examples**: MO5 lattice, projective geometries
@@ -224,11 +228,11 @@ Extended Dempster-Shafer theory:
 
 Part of the Mettapedia project formalizing mathematical foundations of inference, probability, and universal AI.
 
-For questions about this formalization, see `/home/zar/claude/lean-projects/mettapedia/CLAUDE.md`.
+For questions about this formalization, see `lean-projects/mettapedia/CLAUDE.md`.
 
 ## Literature
 
-See `/home/zar/claude/literature/KS_codex/README.md` for complete bibliography including:
+See `literature/KS_codex/README.md` for complete bibliography including:
 - Knuth-Skilling papers
 - Cox's theorem proofs
 - Ordered semigroup embeddings (Hölder, Alimov)

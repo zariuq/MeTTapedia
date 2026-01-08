@@ -18,21 +18,23 @@ Goal: keep the library building green while we incrementally port/fix that proof
 /-!
 ### Main Representation Theorem
 
-**Status**: Blocked by explicit missing hypotheses (see `.../Core/Induction/ThetaPrime.lean`):
-- `BEmptyStrictGapSpec` (K&S Appendix A.3.4 strict relative gaps in the global `B = ∅` regime)
-- `ZQuantized_chooseδ_if_B_nonempty` (commensurability used only in the global `B ≠ ∅` branch)
-  - A clean sufficient replacement for the strict-gap blocker is
-    `ChooseδBaseAdmissible` (see `.../Core/Induction/Goertzel.lean`), which isolates the remaining
-    “base invariance / diagonal crosses all relevant base-indexed intervals” step.
-  - In turn, `Goertzel.lean` now isolates a smaller explicit hypothesis package
-    `AppendixA34Extra` for the B-empty branch:
-    - `AppendixA34Extra.newAtomCommutes` (`NewAtomCommutes F d`): the new atom must commute with the
-      existing μ-grid to justify the `(μ ⊕ d^u)^m` decomposition used in the base-indexed A-side.
-    - `AppendixA34Extra.C_strict0`: strict C-side inaccessibility at base `0`; this is implied by
-      the strict-separation strengthening `KSSeparationStrict` (or by `KSSeparation` if `α` is
-      densely ordered).
-    This makes the remaining “real mathematical work” very explicit: either derive these from the
-    existing K&S assumptions, or exhibit a `KSSeparation` countermodel where they fail.
+**Status**: Blocked by one explicit missing hypothesis (see
+`Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Core/Induction/ThetaPrime.lean`):
+- `ChooseδBaseAdmissible`: the chosen `δ := chooseδ hk R d hd` is strictly base-admissible for
+  every base `r0` and level `u > 0` (K&S Appendix A.3.4 “fixdelta → fixm” / base-invariance step).
+  - In the globally `B = ∅` regime, this implies the earlier strict-gap interface
+    `BEmptyStrictGapSpec`, and conversely can be recovered from it (see
+    `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Core/Induction/Goertzel.lean`).
+  - The previous proof attempt used `ZQuantized_chooseδ_if_B_nonempty`, but this implication is
+    **not** derivable in general and can fail even in the additive model
+    (see `Mettapedia/ProbabilityTheory/KnuthSkilling/AppendixA/Counterexamples/ZQuantizedBNonempty.lean`).
+    The extension theorem no longer depends on `ZQuantized…`.
+  - `Goertzel.lean` further isolates a smaller explicit hypothesis package sufficient for proving
+    `ChooseδBaseAdmissible` in the B-empty branch (`AppendixA34Extra`), including:
+    - `AppendixA34Extra.newAtomCommutes` (`NewAtomCommutes F d`): the new atom commutes with the old μ-grid
+      (needed for the `(μ ⊕ d^u)^m` decomposition in the base-indexed A-side scaling argument).
+    - `AppendixA34Extra.C_strict0`: strict C-side inaccessibility at base `0`, implied by the strict-separation
+      strengthening `KSSeparationStrict` (or by `KSSeparation` if `α` is densely ordered).
 
 **Proof Strategy** (GPT-5 Pro's "Triple Family Trick"):
 1. For any x ≠ ident, choose reference atom `a` with `ident < a`
@@ -52,10 +54,9 @@ Goal: keep the library building green while we incrementally port/fix that proof
 - R.add gives Θ(μ(r + s)) = Θ(μ(r)) + Θ(μ(s)) on grid
 - Need: x ⊕ y is representable on the grid
 
-**Blocking Issue**: The extension step `extend_grid_rep_with_atom` is currently proved only under the
-two explicit hypotheses above. Discharging them (or refactoring the proof to avoid them) is the
-remaining work needed to derive `associativity_representation` from just
-`[KnuthSkillingAlgebra α] [KSSeparation α]`.
+**Blocking Issue**: The extension step `extend_grid_rep_with_atom` is currently proved assuming
+`ChooseδBaseAdmissible`. Discharging that interface (or refactoring to avoid it) is the remaining
+work needed to derive `associativity_representation` from just `[KnuthSkillingAlgebra α] [KSSeparation α]`.
 -/
 /-!
 ### Main Representation Theorem (K&S Appendix A)

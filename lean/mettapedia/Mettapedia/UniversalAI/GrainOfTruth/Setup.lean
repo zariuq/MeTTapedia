@@ -1,8 +1,7 @@
-import Mettapedia.UniversalAI.BayesianAgents
+import Mettapedia.UniversalAI.GrainOfTruth.Core
 import Mettapedia.UniversalAI.MultiAgent.Environment
 import Mettapedia.UniversalAI.MultiAgent.Policy
 import Mettapedia.UniversalAI.MultiAgent.Value
-import Mettapedia.UniversalAI.ReflectiveOracles.Basic
 import Mettapedia.Computability.ArithmeticalHierarchy.PolicyClasses
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 
@@ -41,43 +40,6 @@ open Mettapedia.UniversalAI.MultiAgent
 open Mettapedia.UniversalAI.ReflectiveOracles
 open Mettapedia.Computability.ArithmeticalHierarchy
 open scoped ENNReal NNReal
-
-/-- A stochastic policy is an Agent (assigns probabilities to actions). -/
-abbrev StochasticPolicy := Agent
-
-/-! ## The Reflective Environment Class M^O_refl
-
-Fix a reflective oracle O. The class M^O_refl consists of all environments
-that are computable on a probabilistic Turing machine with access to O,
-completed from semimeasures to measures using O.
-
-This is the class that solves the grain of truth problem because:
-1. It contains all computable environments
-2. It contains all Bayes-optimal policies over itself
-3. It is limit computable (via the limit computable reflective oracle)
--/
-
-/-- Index into the class of reflective-oracle-computable environments.
-    Each index corresponds to a probabilistic TM with oracle access. -/
-abbrev EnvironmentIndex := ℕ
-
-/-- The reflective environment class M^O_refl.
-    Parameterized by a reflective oracle O. -/
-structure ReflectiveEnvironmentClass (O : Oracle) where
-  /-- Enumeration of all environment indices in the class -/
-  members : ℕ → EnvironmentIndex
-  /-- The class is countable and covers all oracle-computable environments -/
-  covers_computable : ∀ idx : EnvironmentIndex, ∃ n, members n = idx
-
-/-- A prior distribution over the environment class.
-    Must be lower semicomputable and sum to ≤ 1. -/
-structure PriorOverClass (O : Oracle) (M : ReflectiveEnvironmentClass O) where
-  /-- Prior weight for environment index i -/
-  weight : EnvironmentIndex → ℝ≥0∞
-  /-- Weights are summable -/
-  summable : Summable weight
-  /-- Each weight is positive (for grain of truth) -/
-  positive : ∀ i, 0 < weight i
 
 /-! ## The Bayesian Mixture
 
@@ -226,9 +188,9 @@ The main result: If all agents use asymptotically optimal policies
 def isAsymptoticallyOptimalInMean (π : StochasticPolicy) (O : Oracle)
     (M : ReflectiveEnvironmentClass O) : Prop :=
   -- Proper definition: for any indexing of environments, regret converges
-  ∀ (envs : ℕ → Environment) (prior : PriorOverClass O M) (γ : DiscountFactor),
+  ∀ (envs : ℕ → Environment) (_prior : PriorOverClass O M) (γ : DiscountFactor),
     ∀ ε > 0, ∃ t₀ : ℕ, ∀ t ≥ t₀,
-      ∀ h : History, h.wellFormed → h.length = t →
+      ∀ h : History, h.wellFormed → h.cycles = t →
         -- Individual regret for each environment in the class
         ∀ i : ℕ, (optimalValue (envs i) γ h t - value (envs i) π γ h t) < ε
 
@@ -303,34 +265,15 @@ theorem convergence_to_equilibrium {n : ℕ} (O : Oracle)
   simp only [SubjectiveEnvironment.trivial, hopt2, sub_self]
   exact hε
 
-/-! ## Corollary: Thompson Sampling Convergence
+/-! ## Corollary: Thompson Sampling Convergence (planned)
 
-Thompson sampling over M^O_refl is asymptotically optimal in mean,
-so Thompson sampling agents converge to ε-Nash equilibrium.
+Leike's Chapter 5 proves asymptotic optimality-in-mean of Thompson sampling via:
+posterior-as-martingale → (Blackwell–Dubins) strong merging → on-policy value convergence.
+
+This file only contains the *game-theory* wrapper (Theorem 7.5 style).
+The learning-theory core will live in the measure-theory pipeline under
+`Mettapedia/UniversalAI/GrainOfTruth/MeasureTheory/`.
 -/
-
-/-- Thompson sampling is reflective-oracle-computable.
-    (Theorem 7.6 from Leike's thesis)
-
-    The full proof requires showing:
-    1. The posterior w(· | ae_{<t}) is reflective-oracle-computable
-    2. The optimal policies π*_ν are reflective-oracle-computable (Thm 7.3)
-    3. Thompson sampling samples ν from posterior and follows π*_ν
-    4. Bayesian posterior concentrates on true environment (FixedPoint.bayesian_consistency)
-    5. Regret converges to 0 (FixedPoint.consistency_implies_regret_convergence)
-
-    The real Thompson sampling agent is defined in
-    Mettapedia.Logic.UniversalPrediction.ThompsonSampling. -/
-theorem thompson_sampling_is_oracle_computable (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (_prior : PriorOverClass O M) :
-    ∃ π : StochasticPolicy, isAsymptoticallyOptimalInMean π O M := by
-  -- Use uniformAgent as placeholder (full proof requires Bayesian learning theory)
-  use uniformAgent
-  -- Full proof requires:
-  -- 1. Bayesian consistency (posterior concentrates on true environment)
-  -- 2. Regret convergence (concentration implies expected regret → 0)
-  -- See FixedPoint.lean for proper infrastructure
-  sorry
 
 /-! ## Helper: Extract Deterministic Policy from Agent
 

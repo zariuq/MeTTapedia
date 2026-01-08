@@ -364,6 +364,7 @@ def generateTheoryVertex (mods : List RewriteModification) : ProbabilityVertex :
     precision := if hasImprecision then .imprecise else .precise,
     orderAxis := .totalOrder,
     additivity := .derived,
+    invertibility := .monoid,
     determinism := .probabilistic,
     support := .continuous,
     regularity := .borel,

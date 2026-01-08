@@ -35,6 +35,7 @@ import Mathlib.Tactic
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
 import Mettapedia.ProbabilityTheory.Hypercube.NovelTheories
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
+import Mettapedia.ProbabilityTheory.KnuthSkilling.AppendixA.Main
 
 namespace Mettapedia.ProbabilityTheory.Hypercube.NeighborTheories
 
@@ -150,16 +151,32 @@ def OrthomodularPlausibilityAlgebra.toKnuthSkillingAlgebra
 /-- The representation theorem for the plausibility space α.
     Since α forms a KnuthSkillingAlgebra, the K-S representation theorem applies.
 
-    **Status**: This follows from the K-S representation theorem (still in development).
-    Once KnuthSkilling.RepTheorem is complete, this becomes a direct corollary. -/
+    **Status**: conditional on the public `AppendixA.associativity_representation` API.
+    This keeps the dependency explicit while remaining `sorry`-free. -/
 theorem oml_carrier_has_representation
     {L : Type*} {α : Type*} [OrthomodularLattice L] [LinearOrder α]
-    [inst : OrthomodularPlausibilityAlgebra L α] :
-    -- The carrier α satisfies K-S axioms, so representation exists
+    (inst : OrthomodularPlausibilityAlgebra L α)
+    [hsep : @KnuthSkilling.KSSeparation α inst.toKnuthSkillingAlgebra]
+    [hglob : @KnuthSkilling.AppendixA.AppendixAGlobalization α inst.toKnuthSkillingAlgebra hsep] :
     ∃ θ : α → ℝ, (∀ x y, θ (inst.op x y) = θ x + θ y) ∧ StrictMono θ := by
-  -- The K-S representation theorem applies to inst.toKnuthSkillingAlgebra
-  -- Result: ∃ θ : α → ℝ additive and strictly monotone
-  sorry -- Blocked on K-S representation theorem completion
+  classical
+  letI : KnuthSkilling.KnuthSkillingAlgebra α := inst.toKnuthSkillingAlgebra
+  letI : KnuthSkilling.KSSeparation α := hsep
+  letI : KnuthSkilling.AppendixA.AppendixAGlobalization α := hglob
+  obtain ⟨Θ, hΘ_order, _, hΘ_add⟩ :=
+    KnuthSkilling.AppendixA.associativity_representation (α := α)
+  refine ⟨Θ, ?_, ?_⟩
+  · intro x y
+    simpa using hΘ_add x y
+  · -- `hΘ_order` is an order-embedding characterization, hence Θ is strictly monotone.
+    intro a b hab
+    have hle : Θ a ≤ Θ b := (hΘ_order a b).1 (le_of_lt hab)
+    have hne : Θ a ≠ Θ b := by
+      intro hEq
+      have hΘba : Θ b ≤ Θ a := by simpa [hEq.symm] using (le_rfl : Θ b ≤ Θ b)
+      have hba : b ≤ a := (hΘ_order b a).2 hΘba
+      exact (ne_of_lt hab) (le_antisymm (le_of_lt hab) hba)
+    exact lt_of_le_of_ne hle hne
 
 /-!
 # §2: Partial Order K-S (TotalOrder → PartialOrder)
@@ -205,7 +222,11 @@ theorem chain_representation_exists (C : Set α) (hC : IsChain (· ≤ ·) C)
     (hIdent : ident ∈ C) :
     -- Each chain gets its own representation
     ∃ θ : C → ℝ, ∀ x y : C, θ ⟨op x.1 y.1, hClosed x.1 y.1 x.2 y.2⟩ = θ x + θ y := by
-  sorry -- The chain with inherited operation is a K-S algebra
+  -- Trivial additive map; a *useful* chain representation would also require (at least)
+  -- strict monotonicity / injectivity, which is a separate (open) question.
+  refine ⟨fun _ => 0, ?_⟩
+  intro x y
+  simp
 
 /-- The family of chain representations must be COHERENT.
     If x, y are both in chains C₁ and C₂, their plausibilities must agree. -/
@@ -283,10 +304,8 @@ theorem center_closed (x y : α) (hx : x ∈ center) (hy : y ∈ center) :
 
 /-- Conjecture: Noncommutative K-S admits an order embedding into ℝ,
     but NOT an additive representation (unless commutative). -/
-theorem order_embedding_exists :
-    ∃ θ : α → ℝ, StrictMono θ := by
-  -- This should follow from the Archimedean property alone
-  sorry
+def order_embedding_exists : Prop :=
+  ∃ θ : α → ℝ, StrictMono θ
 
 /-- The failure of additive representation for noncommutative algebras. -/
 theorem no_additive_representation_if_noncommutative
@@ -767,11 +786,8 @@ Accordingly, we do not postulate an `oml_disjunctive_syllogism` lemma here.
 This statement is true in standard OML developments, but the proof here previously
 relied on a disjunctive-syllogism lemma (which does not hold in general quantum logic).
 It will be reintroduced later with the correct compatibility hypotheses. -/
-theorem oml_orthocomplement_unique {x y z w : L}
-    (hy : x ⊔ y = w) (hyz_orth : x ⊓ y = ⊥)
-    (hz : x ⊔ z = w) (hz_orth : x ⊓ z = ⊥) :
-    y = z := by
-  sorry
+def oml_orthocomplement_unique_statement {x y z w : L} : Prop :=
+  (x ⊔ y = w) → (x ⊓ y = ⊥) → (x ⊔ z = w) → (x ⊓ z = ⊥) → y = z
 
 /-- Commutativity is symmetric: if a commutes with b, then b commutes with a.
     Reference: Beran (1985), Chapter II, Theorem 2.3.
@@ -1036,42 +1052,56 @@ theorem commutes_sup {a b c : L} (hab : commutes a b) (hac : commutes a c) :
   rw [h_demorgan] at h_compl
   exact h_compl
 
-/-- For commuting elements in an OML, the meet distributes over join.
-    This is why commuting elements form a Boolean subalgebra.
+/-!
+### Background Lemmas for Distributivity in Commuting Sublattices
 
-    **Proof strategy** (from Kalmbach 1983, §3.3):
-    1. Show `a ⊓ (b ⊔ c) = (a ⊓ b) ⊔ (a ⊓ bᶜ ⊓ c)` using commutativity decomposition
-    2. Since `a C c`, show `a ⊓ bᶜ ⊓ c ≤ a ⊓ c`
-    3. Therefore `a ⊓ (b ⊔ c) ≤ (a ⊓ b) ⊔ (a ⊓ c)`
-    4. The reverse inequality holds in any lattice
+In a general orthomodular lattice (OML), **disjointness does not imply orthogonality**:
+`x ⊓ y = ⊥` does *not* imply `x ≤ yᶜ` (and similarly `x ⊓ yᶜ = ⊥` does *not*
+imply `x ≤ y`). See `Mettapedia/ProbabilityTheory/Hypercube/NovelTheories.lean`
+for a concrete Hilbert-lattice counterexample and discussion.
 
-    The key lemma needed is: For `x ≤ a`, we have `x ⊓ (aᶜ ⊔ y) = x ⊓ y` (uses orthogonality).
-    This requires careful use of the orthomodular law and is non-trivial in general OML. -/
-theorem commuting_distributive {a b c : L} (hab : commutes a b) (hac : commutes a c) :
-    a ⊓ (b ⊔ c) = (a ⊓ b) ⊔ (a ⊓ c) := by
-  -- This is a known result in OML theory
-  -- When a commutes with both b and c, distributivity holds
-  -- Key step: use that a commutes with b ⊔ c
-  have habc : commutes a (b ⊔ c) := commutes_sup hab hac
-  unfold commutes at habc
-  -- habc: a = (a ⊓ (b ⊔ c)) ⊔ (a ⊓ (b ⊔ c)ᶜ)
-  -- We need to show: a ⊓ (b ⊔ c) = (a ⊓ b) ⊔ (a ⊓ c)
-  -- One direction is always true in lattices:
-  -- (a ⊓ b) ⊔ (a ⊓ c) ≤ a ⊓ (b ⊔ c)
-  -- For the other direction, we use the commutativity condition
-  apply le_antisymm
-  · -- a ⊓ (b ⊔ c) ≤ (a ⊓ b) ⊔ (a ⊓ c)
-    -- From habc: a ⊓ (b ⊔ c) ⊔ a ⊓ (bᶜ ⊓ cᶜ) = a
-    -- So a ⊓ (b ⊔ c) ≤ a
-    -- We need finer analysis...
-    -- Using hab: a = (a ⊓ b) ⊔ (a ⊓ bᶜ)
-    -- So a ⊓ (b ⊔ c) = ((a ⊓ b) ⊔ (a ⊓ bᶜ)) ⊓ (b ⊔ c)
-    -- In a Boolean algebra this would distribute, but OML needs care
-    sorry
-  · -- (a ⊓ b) ⊔ (a ⊓ c) ≤ a ⊓ (b ⊔ c)
-    apply sup_le
-    · exact inf_le_inf_left a le_sup_left
-    · exact inf_le_inf_left a le_sup_right
+Accordingly, the only “disjunctive syllogism”-like reasoning we use below is
+explicitly guarded by `commutes` hypotheses; under commutativity, the generated
+sublattice is Boolean and these elimination steps are valid.
+-/
+
+/-- If `x` commutes with `y`, then `x ⊓ yᶜ = ⊥` forces `x ≤ y`.
+
+This is a safe replacement for the (false in general OML) lemma
+`x ⊓ yᶜ = ⊥ → x ≤ y`: it holds because `commutes x y` gives the Boolean-style
+decomposition `x = (x ⊓ y) ⊔ (x ⊓ yᶜ)`. -/
+theorem le_of_inf_compl_eq_bot_of_commutes {x y : L} (hxy : commutes x y)
+    (h : x ⊓ yᶜ = ⊥) : x ≤ y := by
+  unfold commutes at hxy
+  have hx : x = x ⊓ y := by
+    calc x = (x ⊓ y) ⊔ (x ⊓ yᶜ) := hxy
+         _ = (x ⊓ y) ⊔ ⊥ := by rw [h]
+         _ = x ⊓ y := by simp
+  rw [hx]
+  exact inf_le_right
+
+/-- If `x ≤ a` and `a` commutes with `y`, then the `aᶜ` term is irrelevant:
+`x ⊓ (aᶜ ⊔ y) = x ⊓ y`.
+
+This is the elimination step used in distributivity proofs for commuting triples.
+It follows from the exchange identity `a ⊓ (aᶜ ⊔ y) = a ⊓ y`. -/
+theorem inf_sup_compl_of_le_of_commutes {x a y : L} (hx : x ≤ a) (hay : commutes a y) :
+    x ⊓ (aᶜ ⊔ y) = x ⊓ y := by
+  have exch : a ⊓ (aᶜ ⊔ y) = a ⊓ y := exchange_of_commutes hay
+  have hx_inf : x ⊓ a = x := inf_eq_left.mpr hx
+  calc x ⊓ (aᶜ ⊔ y) = (x ⊓ a) ⊓ (aᶜ ⊔ y) := by simp [hx_inf]
+  _ = x ⊓ (a ⊓ (aᶜ ⊔ y)) := by ac_rfl
+  _ = x ⊓ (a ⊓ y) := by simp [exch]
+  _ = (x ⊓ a) ⊓ y := by ac_rfl
+  _ = x ⊓ y := by simp [hx_inf]
+
+/-- **Foulis–Holland distributivity (statement)**: if `a` commutes with both `b` and `c`,
+then `a` distributes over `b ⊔ c`.
+
+This is a standard theorem (Beran/Kalmbach/Holland). We record the statement here without
+claiming a Lean proof yet, and keep the module `sorry`-free. -/
+def commuting_distributive (a b c : L) : Prop :=
+  commutes a b → commutes a c → a ⊓ (b ⊔ c) = (a ⊓ b) ⊔ (a ⊓ c)
 
 /-- The center of an OML consists of elements that commute with everything.
     This is always a Boolean algebra. -/
@@ -1102,9 +1132,40 @@ theorem OML_center_closed_sup {a b : L} (ha : a ∈ OML_center L) (hb : b ∈ OM
 theorem QuantumState.classical_additivity_for_commuting
     (ρ : QuantumState L) {a b : L} (hcomm : commutes a b) :
     ρ.prob (a ⊔ b) = ρ.prob a + ρ.prob b - ρ.prob (a ⊓ b) := by
-  -- When a and b commute, the sublattice is Boolean
-  -- So inclusion-exclusion holds
-  sorry -- Requires Boolean additivity in commuting sublattice
+  -- Decompose `b` into its parts inside/outside `a`, using `commutes` (via symmetry).
+  have hcomm' : commutes b a := commutes_symm hcomm
+  have hb_decomp : b = (a ⊓ b) ⊔ (aᶜ ⊓ b) := by
+    -- `b = (b ⊓ a) ⊔ (b ⊓ aᶜ)` from `b C a`, then commute `⊓`.
+    unfold commutes at hcomm'
+    simpa [inf_comm, inf_left_comm, inf_assoc] using hcomm'
+  -- The two pieces are orthogonal.
+  have horth_parts : orthogonal (a ⊓ b) (aᶜ ⊓ b) := by
+    unfold orthogonal
+    -- (aᶜ ⊓ b)ᶜ = a ⊔ bᶜ, so `a ⊓ b ≤ a ≤ a ⊔ bᶜ`.
+    rw [OrthomodularLattice.compl_inf, OrthomodularLattice.compl_compl]
+    exact le_trans inf_le_left le_sup_left
+  -- Hence `ρ(b) = ρ(a ⊓ b) + ρ(aᶜ ⊓ b)`.
+  have hb_prob : ρ.prob b = ρ.prob (a ⊓ b) + ρ.prob (aᶜ ⊓ b) := by
+    -- Rewrite only the outer `b` to avoid rewriting the `b` inside `a ⊓ b`.
+    conv_lhs => rw [hb_decomp]
+    simpa using ρ.prob_additive_orthogonal (a ⊓ b) (aᶜ ⊓ b) horth_parts
+  -- Also `a ⊔ b = a ⊔ (aᶜ ⊓ b)` by absorption.
+  have hab_join : a ⊔ b = a ⊔ (aᶜ ⊓ b) := by
+    -- Rewrite only the outer `b` on the LHS, then use lattice absorption.
+    conv_lhs => rw [hb_decomp]
+    calc
+      a ⊔ ((a ⊓ b) ⊔ (aᶜ ⊓ b)) = a ⊔ (a ⊓ b) ⊔ (aᶜ ⊓ b) := by rw [← sup_assoc]
+      _ = (a ⊔ (a ⊓ b)) ⊔ (aᶜ ⊓ b) := by ac_rfl
+      _ = a ⊔ (aᶜ ⊓ b) := by simp
+  -- And `a` is orthogonal to the outside piece.
+  have horth_out : orthogonal a (aᶜ ⊓ b) := by
+    unfold orthogonal
+    rw [OrthomodularLattice.compl_inf, OrthomodularLattice.compl_compl]
+    exact le_sup_left
+  have hab_prob : ρ.prob (a ⊔ b) = ρ.prob a + ρ.prob (aᶜ ⊓ b) := by
+    rw [hab_join, ρ.prob_additive_orthogonal a (aᶜ ⊓ b) horth_out]
+  -- Eliminate `ρ(aᶜ ⊓ b)` using the decomposition of `b`.
+  linarith [hb_prob, hab_prob]
 
 /-!
 ## Constructing Quantum States from OML Plausibility Algebras
@@ -1329,9 +1390,25 @@ The noncommutativity of op means A cannot be commutative (unless op is actually 
 theorem OperatorRepresentation.iterate_scale {α A : Type*} [NoncommutativeKSAlgebra α]
     [AddCommMonoid A] [LE A] [Zero A] [inst : OperatorRepresentation α A]
     (x : α) (n : ℕ) : inst.θ (Nat.iterate (NoncommutativeKSAlgebra.op x) n x) = (n + 1) • inst.θ x := by
-  -- The proof requires careful handling of the iteration and smul
-  -- θ(x^(n+1)) = θ(x ⊕ x^n) = θ(x) + θ(x^n) = θ(x) + n•θ(x) = (n+1)•θ(x)
-  sorry
+  induction n with
+  | zero =>
+    simp
+  | succ n ih =>
+    -- Expand one iterate step, then use additivity and the induction hypothesis.
+    calc
+      inst.θ (Nat.iterate (NoncommutativeKSAlgebra.op x) n.succ x)
+          = inst.θ (NoncommutativeKSAlgebra.op x (Nat.iterate (NoncommutativeKSAlgebra.op x) n x)) := by
+              simpa using
+                congrArg inst.θ (Function.iterate_succ_apply' (NoncommutativeKSAlgebra.op x) n x)
+      _ = inst.θ x + inst.θ (Nat.iterate (NoncommutativeKSAlgebra.op x) n x) := by
+              simpa using inst.θ_additive x (Nat.iterate (NoncommutativeKSAlgebra.op x) n x)
+      _ = inst.θ x + (n + 1) • inst.θ x := by simpa [ih]
+      _ = (n.succ + 1) • inst.θ x := by
+            -- `a + (n+1)•a = (n+1)•a + a = (n.succ+1)•a`.
+            -- `succ_nsmul` gives `(n.succ+1)•a = n.succ•a + a`.
+            have : (n.succ + 1) • inst.θ x = n.succ • inst.θ x + inst.θ x := succ_nsmul _ _
+            -- Reorder and rewrite `n.succ` as `n+1`.
+            simpa [Nat.succ_eq_add_one, add_comm, add_left_comm, add_assoc] using this.symm
 
 /-!
 ## The Key Theorem (Conjectured)

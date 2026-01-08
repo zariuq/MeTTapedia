@@ -228,6 +228,32 @@ class OrthomodularLattice (L : Type*) extends Lattice L, HasCompl L, BoundedOrde
   /-- a ⊔ aᶜ = ⊤ (orthocomplementation property) -/
   sup_compl_self : ∀ a : L, a ⊔ aᶜ = ⊤
 
+/-!
+### Boolean Algebras as Orthomodular Lattices
+
+Any Boolean algebra is (trivially) an orthomodular lattice: distributivity is stronger than
+orthomodularity, and the Boolean complement provides an orthocomplementation.
+-/
+
+instance {L : Type*} [BooleanAlgebra L] : OrthomodularLattice L where
+  toLattice := inferInstance
+  toHasCompl := inferInstance
+  toBoundedOrder := inferInstance
+  orthomodular a b hab := by
+    -- In a Boolean algebra: b = (b ⊓ a) ⊔ (b ⊓ aᶜ) = a ⊔ (b ⊓ aᶜ) when a ≤ b.
+    calc
+      b = b ⊓ ⊤ := by simp
+      _ = b ⊓ (a ⊔ aᶜ) := by simp
+      _ = (b ⊓ a) ⊔ (b ⊓ aᶜ) := by simp
+      _ = a ⊔ (b ⊓ aᶜ) := by simp [inf_eq_right.mpr hab]
+  compl_compl a := by simp
+  compl_sup a b := by simp
+  compl_inf a b := by simp
+  compl_bot := by simp
+  compl_top := by simp
+  inf_compl_self a := by simp
+  sup_compl_self a := by simp
+
 namespace OrthomodularLattice
 
 variable {L : Type*} [OrthomodularLattice L]
@@ -518,23 +544,32 @@ theorem rawCombineMass_lr_nonneg (m₁ m₂ : QuantumMassFunction L) (c : L) :
 /-- In a Boolean algebra viewed as an OML, Sasaki projection equals meet.
     This shows the classical case where combination is commutative.
 
-    Note: We cannot directly apply `sasakiProj` to BooleanAlgebra types without
-    proving BooleanAlgebra → OrthomodularLattice, so this is stated as a general fact. -/
+    Note: We have an instance `BooleanAlgebra → OrthomodularLattice` above, so `sasakiProj`
+    is available on Boolean algebras. We keep this lemma stated purely in Boolean terms for
+    direct reuse without mentioning `sasakiProj`. -/
 theorem sasaki_eq_meet_in_boolean_fact {L : Type*} [BooleanAlgebra L] (a b : L) :
     (b ⊔ aᶜ) ⊓ a = a ⊓ b := by
   rw [inf_sup_right]
   simp [inf_comm]
 
+omit [OrthomodularLattice L] [DecidableRel (α := L) (· ≤ ·)] in
 /-- In Boolean algebras, left-to-right equals right-to-left (classical behavior).
 
-    TODO: This requires showing BooleanAlgebra → OrthomodularLattice to use
-    QuantumMassFunction directly. For now, we note that the combination rule
-    reduces to classical Dempster on Boolean algebras. -/
-axiom rawCombineMass_lr_eq_rl_boolean {L : Type*} [BooleanAlgebra L]
-    [inst : OrthomodularLattice L]  -- Assume L can be viewed as OML
-    [Fintype L] [DecidableEq L] [DecidableRel (α := L) (· ≤ ·)]
+With the Boolean-algebra → OML bridge, `sasakiProj` reduces to `⊓`, hence the two orderings
+coincide. -/
+theorem rawCombineMass_lr_eq_rl_boolean {L : Type*} [BooleanAlgebra L]
+    [Fintype L] [DecidableEq L]
     (m₁ m₂ : QuantumMassFunction L) (c : L) :
-    rawCombineMass_lr m₁ m₂ c = rawCombineMass_rl m₁ m₂ c
+    rawCombineMass_lr m₁ m₂ c = rawCombineMass_rl m₁ m₂ c := by
+  classical
+  unfold rawCombineMass_lr rawCombineMass_rl
+  -- In a Boolean algebra, `sasakiProj a b = a ⊓ b`.
+  have hsasaki : ∀ a b : L, sasakiProj a b = a ⊓ b := by
+    intro a b
+    -- `sasakiProj a b = (b ⊔ aᶜ) ⊓ a`, and `(b ⊔ aᶜ) ⊓ a = a ⊓ b` by distributivity.
+    simpa [sasakiProj] using sasaki_eq_meet_in_boolean_fact (L := L) a b
+  -- Rewrite both conditions to `a ⊓ b = c` (commutativity takes care of RL).
+  simp [hsasaki, inf_comm]
 
 end QuantumCombination
 
@@ -860,6 +895,7 @@ def partialOrderClassical : ProbabilityVertex where
   precision := .precise
   orderAxis := .partialOrder       -- Key difference
   additivity := .additive
+  invertibility := .monoid
   determinism := .probabilistic
   support := .continuous
   regularity := .borel
@@ -984,6 +1020,7 @@ def mostGeneral : ProbabilityVertex where
   precision := .imprecise
   orderAxis := .partialOrder
   additivity := .subadditive
+  invertibility := .semigroup
   determinism := .fuzzy
   support := .continuous
   regularity := .finitelyAdditive

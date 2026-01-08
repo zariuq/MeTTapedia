@@ -1,4 +1,4 @@
-import Mettapedia.UniversalAI.GrainOfTruth.Setup
+import Mettapedia.UniversalAI.GrainOfTruth.Core
 import Mettapedia.UniversalAI.BayesianAgents
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Topology.MetricSpace.Basic
@@ -111,8 +111,62 @@ noncomputable def historyProbabilityAux (μ : Environment) : History → History
 noncomputable def historyProbability (μ : Environment) (h : History) : ℝ≥0∞ :=
   historyProbabilityAux μ [] h
 
+/-- Appending `[act a]` to a wellFormed history of even length preserves wellFormedness. -/
+theorem wellFormed_append_act (h : History) (hw : h.wellFormed) (he : Even h.length) (a : Action) :
+    (h ++ [HistElem.act a]).wellFormed := by
+  induction h using List.twoStepInduction with
+  | nil =>
+    rfl
+  | singleton e =>
+    simp only [List.length_singleton] at he
+    exact (Nat.not_even_one he).elim
+  | cons_cons e1 e2 rest ih =>
+    match e1, e2 with
+    | HistElem.act _, HistElem.per _ =>
+      simp only [List.cons_append, History.wellFormed] at hw ⊢
+      have he' : Even rest.length := by
+        simp only [List.length_cons] at he
+        obtain ⟨k, hk⟩ := he
+        use k - 1
+        omega
+      exact ih hw he'
+    | HistElem.act _, HistElem.act _ =>
+      simp only [History.wellFormed] at hw
+      cases hw
+    | HistElem.per _, _ =>
+      simp only [History.wellFormed] at hw
+      cases hw
+
+/-- Appending `[act a, per x]` to a wellFormed history of even length preserves wellFormedness. -/
+theorem wellFormed_append_act_per (h : History) (hw : h.wellFormed) (he : Even h.length)
+    (a : Action) (x : Percept) :
+    (h ++ [HistElem.act a, HistElem.per x]).wellFormed := by
+  induction h using List.twoStepInduction with
+  | nil =>
+    rfl
+  | singleton e =>
+    simp only [List.length_singleton] at he
+    exact (Nat.not_even_one he).elim
+  | cons_cons e1 e2 rest ih =>
+    match e1, e2 with
+    | HistElem.act _, HistElem.per _ =>
+      simp only [List.cons_append, History.wellFormed] at hw ⊢
+      have he' : Even rest.length := by
+        simp only [List.length_cons] at he
+        obtain ⟨k, hk⟩ := he
+        use k - 1
+        omega
+      exact ih hw he'
+    | HistElem.act _, HistElem.act _ =>
+      simp only [History.wellFormed] at hw
+      cases hw
+    | HistElem.per _, _ =>
+      simp only [History.wellFormed] at hw
+      cases hw
+
 /-- Auxiliary lemma: historyProbabilityAux is at most 1 for any prefix. -/
-theorem historyProbabilityAux_le_one (μ : Environment) (pfx h : History) :
+theorem historyProbabilityAux_le_one (μ : Environment) (pfx h : History)
+    (h_pfx_wf : pfx.wellFormed) (h_pfx_complete : Even pfx.length) :
     historyProbabilityAux μ pfx h ≤ 1 := by
   induction h generalizing pfx with
   | nil => simp [historyProbabilityAux]
@@ -129,13 +183,21 @@ theorem historyProbabilityAux_le_one (μ : Environment) (pfx h : History) :
           -- Need: μ.prob _ x * historyProbabilityAux μ _ rest' ≤ 1
           -- Each factor is ≤ 1, so product is ≤ 1
           have h1 : μ.prob (pfx ++ [HistElem.act a]) x ≤ 1 := by
+            have h_wf : (pfx ++ [HistElem.act a]).wellFormed :=
+              wellFormed_append_act pfx h_pfx_wf h_pfx_complete a
             calc μ.prob (pfx ++ [HistElem.act a]) x
                 ≤ ∑' y, μ.prob (pfx ++ [HistElem.act a]) y := ENNReal.le_tsum _
-              _ ≤ 1 := sorry  -- needs wellFormed hypothesis
+              _ ≤ 1 := μ.prob_le_one _ h_wf
           have h2 : historyProbabilityAux μ (pfx ++ [HistElem.act a, HistElem.per x]) rest' ≤ 1 :=
             ih (pfx ++ [HistElem.act a, HistElem.per x])
+              (wellFormed_append_act_per pfx h_pfx_wf h_pfx_complete a x)
+              (by
+                rcases h_pfx_complete with ⟨k, hk⟩
+                refine ⟨k + 1, ?_⟩
+                simp [List.length_append, hk]
+                omega)
           exact mul_le_one' h1 h2
-    | per _ => exact ih pfx
+    | per _ => exact ih pfx h_pfx_wf h_pfx_complete
 
 /-- History probability is at most 1.
 
@@ -149,7 +211,53 @@ theorem historyProbabilityAux_le_one (μ : Environment) (pfx h : History) :
 theorem historyProbability_le_one (μ : Environment) (h : History) :
     historyProbability μ h ≤ 1 := by
   simp only [historyProbability]
-  exact historyProbabilityAux_le_one μ [] h
+  exact historyProbabilityAux_le_one μ [] h rfl (by simp)
+
+/-- Helper lemma: historyProbabilityAux with concatenation.
+    When processing (h ++ [act a, per x]), the result is:
+    (historyProbabilityAux for h) × (μ.prob for the new step) -/
+theorem historyProbabilityAux_append_act_per (μ : Environment) (pfx h : History)
+    (hw : h.wellFormed) (hc : Even h.length) (a : Action) (x : Percept) :
+    historyProbabilityAux μ pfx (h ++ [HistElem.act a, HistElem.per x]) =
+      historyProbabilityAux μ pfx h * μ.prob (pfx ++ h ++ [HistElem.act a]) x := by
+  -- Proof by strong induction on h.length
+  match h with
+  | [] =>
+    -- h = [], so h ++ [act a, per x] = [act a, per x]
+    simp only [List.nil_append, historyProbabilityAux, one_mul, List.append_nil, mul_one]
+  | [HistElem.act _] =>
+    -- h = [act _], but Even h.length = Even 1 = false
+    simp only [List.length_singleton] at hc
+    exact absurd hc (by decide : ¬Even 1)
+  | [HistElem.per _] =>
+    -- Not wellFormed: [per _] is not a valid history start
+    simp [History.wellFormed] at hw
+  | HistElem.act a' :: HistElem.per x' :: rest' =>
+    -- h = act a' :: per x' :: rest'
+    -- Process first pair, then recurse
+    simp only [List.cons_append, historyProbabilityAux]
+    -- wellFormed h = wellFormed rest'
+    simp only [History.wellFormed] at hw
+    simp only [List.length_cons] at hc
+    have hc' : Even rest'.length := by
+      obtain ⟨k, hk⟩ := hc
+      use k - 1
+      omega
+    -- Recursively apply
+    have ih := historyProbabilityAux_append_act_per μ (pfx ++ [HistElem.act a', HistElem.per x'])
+                 rest' hw hc' a x
+    rw [ih]
+    -- Normalize: pfx ++ [a', x'] ++ rest' = pfx ++ a' :: x' :: rest'
+    simp only [List.append_assoc, List.cons_append, List.nil_append]
+    -- Reassociate the multiplication: a * (b * c) = a * b * c
+    ring
+  | HistElem.act _ :: HistElem.act _ :: _ =>
+    -- Not wellFormed: two actions in a row
+    simp [History.wellFormed] at hw
+  | HistElem.per _ :: _ :: _ =>
+    -- Not wellFormed: starts with percept
+    simp [History.wellFormed] at hw
+termination_by h.length
 
 /-- **Chain rule for history probability**: Extending a history by one step multiplies
     the probability by the conditional probability of that step.
@@ -161,21 +269,9 @@ theorem historyProbability_append_step (μ : Environment) (h : History)
     (hw : h.wellFormed) (hc : Even h.length) (a : Action) (x : Percept) :
     historyProbability μ (h ++ [HistElem.act a, HistElem.per x]) =
       historyProbability μ h * μ.prob (h ++ [HistElem.act a]) x := by
-  /-
-  Proof sketch:
-  The key is that historyProbabilityAux processes history left-to-right,
-  accumulating a prefix. When we append [act a, per x] to h, the recursion:
-  1. Processes all of h first (computing P(h))
-  2. Then processes [act a, per x] at the end, multiplying by μ.prob(h ++ [act a]) x
-
-  The formal proof requires:
-  1. A generalized lemma about historyProbabilityAux with arbitrary prefix
-  2. Careful tracking of the accumulated prefix during recursion
-  3. Using the well-formedness constraint to ensure proper act-per alternation
-
-  This follows from the definition of historyProbabilityAux by induction on h.
-  -/
-  sorry
+  unfold historyProbability
+  rw [historyProbabilityAux_append_act_per μ [] h hw hc a x]
+  simp only [List.nil_append]
 
 /-! ## Bayesian Posterior
 
@@ -219,10 +315,32 @@ theorem bayesianPosterior_sum_one (O : Oracle) (M : ReflectiveEnvironmentClass O
     (prior : PriorOverClass O M) (envs : ℕ → Environment) (h : History)
     (h_mix_pos : mixtureProbability O M prior envs h > 0) :
     ∑' i, bayesianPosteriorWeight O M prior envs i h = 1 := by
-  -- TODO: Need proper ENNReal tsum lemmas
-  -- Key steps: unfold bayesianPosteriorWeight, use h_mix_pos to eliminate if-then-else,
-  -- factor out 1/ξ(h) from the tsum, show Σ w(ν)·ν(h) = ξ(h) by definition
-  sorry
+  classical
+  set denom : ℝ≥0∞ := mixtureProbability O M prior envs h
+  have hden_ne0 : denom ≠ 0 := ne_of_gt h_mix_pos
+  have hden_le_one : denom ≤ 1 := by
+    have h_term : ∀ i : ℕ, prior.weight i * historyProbability (envs i) h ≤ prior.weight i := by
+      intro i
+      have h_prob : historyProbability (envs i) h ≤ 1 := historyProbability_le_one (envs i) h
+      simpa [mul_one] using (mul_le_mul_left' h_prob (prior.weight i))
+    have h_le : denom ≤ ∑' i, prior.weight i := by
+      simpa [denom, mixtureProbability] using (ENNReal.tsum_le_tsum h_term)
+    exact le_trans h_le prior.tsum_le_one
+  have hden_ne_top : denom ≠ ∞ :=
+    (lt_of_le_of_lt hden_le_one ENNReal.one_lt_top).ne_top
+
+  calc
+    (∑' i, bayesianPosteriorWeight O M prior envs i h)
+        = ∑' i, (prior.weight i * historyProbability (envs i) h) / denom := by
+            simp [bayesianPosteriorWeight, denom, hden_ne0]
+    _ = ∑' i, (prior.weight i * historyProbability (envs i) h) * denom⁻¹ := by
+          simp [div_eq_mul_inv]
+    _ = (∑' i, prior.weight i * historyProbability (envs i) h) * denom⁻¹ := by
+          simpa using (ENNReal.tsum_mul_right (f := fun i => prior.weight i * historyProbability (envs i) h)
+            (a := denom⁻¹))
+    _ = denom * denom⁻¹ := by
+          simp [denom, mixtureProbability]
+    _ = 1 := ENNReal.mul_inv_cancel hden_ne0 hden_ne_top
 
 /-! ## Expected Regret Over Prior
 
@@ -259,7 +377,7 @@ This is the proper definition, not a placeholder.
 def IsAsymptoticallyOptimal (π : Agent) (O : Oracle) (M : ReflectiveEnvironmentClass O)
     (prior : PriorOverClass O M) (envs : ℕ → Environment) (γ : DiscountFactor) : Prop :=
   ∀ ε > 0, ∃ t₀ : ℕ, ∀ t ≥ t₀,
-    ∀ h : History, h.wellFormed → h.length = t →
+    ∀ h : History, h.wellFormed → h.cycles = t →
       expectedRegretOverPrior O M prior envs π γ h t < ε
 
 /-! ## ε-Best Response
@@ -278,45 +396,16 @@ theorem regret_bound_gives_best_response (μ : Environment) (π : Agent) (γ : D
     IsEpsilonBestResponse μ π γ ε h horizon :=
   hbound
 
-/-! ## Key Lemmas for Convergence
+/-! ## Convergence (measure-theoretic)
 
-The full convergence proof requires showing:
-1. Bayesian posterior concentrates on true environment (consistency)
-2. This implies expected regret → 0
-3. Which implies ε-best response convergence
+The Chapter 7 / Leike-route convergence statements are *on-policy* and are most naturally stated
+either almost surely or in probability on the induced trajectory measure.
+
+See the measure-theory pipeline in:
+
+* `Mettapedia/UniversalAI/GrainOfTruth/MeasureTheory/RegretConvergence.lean`
+* `Mettapedia/UniversalAI/GrainOfTruth/MeasureTheory/AsymptoticOptimality.lean`
+* `Mettapedia/UniversalAI/GrainOfTruth/MeasureTheory/Main.lean`
 -/
-
-/-- Bayesian consistency: If the prior has positive weight on the true environment,
-    and the true environment generates data, the posterior concentrates.
-
-    This is the "grain of truth" - the prior must contain the true model.
-
-    Full proof requires:
-    - Law of large numbers for likelihood ratios
-    - Martingale convergence theorems
-    - Proper measure-theoretic setup -/
-theorem bayesian_consistency (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment)
-    (ν_star : EnvironmentIndex)
-    (h_grain : 0 < prior.weight ν_star)  -- Grain of truth
-    : ∀ ε > 0, ∃ t₀ : ℕ, ∀ t ≥ t₀,
-      ∀ h : History, h.wellFormed → h.length = t →
-        -- Posterior concentrates: w(ν*|h) → 1
-        (1 : ℝ≥0∞) - bayesianPosteriorWeight O M prior envs ν_star h < ε := by
-  -- This requires substantial measure theory and martingale convergence
-  -- The key insight: log likelihood ratio is a supermartingale
-  sorry
-
-/-- From Bayesian consistency to regret convergence.
-    If posterior concentrates on true environment, expected regret → 0. -/
-theorem consistency_implies_regret_convergence (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent) (γ : DiscountFactor)
-    (ν_star : EnvironmentIndex) (h_grain : 0 < prior.weight ν_star)
-    (h_π_optimal : ∀ h : History, h.wellFormed →
-      ∀ n : ℕ, regret (envs ν_star) π γ h n = 0) :  -- π is optimal for true env
-    IsAsymptoticallyOptimal π O M prior envs γ := by
-  -- If π is optimal for the true environment and posterior concentrates,
-  -- then expected regret goes to 0
-  sorry
 
 end Mettapedia.UniversalAI.GrainOfTruth.FixedPoint

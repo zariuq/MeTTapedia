@@ -1,0 +1,252 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                  THE K&S PROBABILITY HYPERCUBE                                ║
+║                                                                               ║
+║  A geometric view of probability foundations via the Stay-Wells framework    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ AXIS 1: Commutativity (Derived from Order + Separation)                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+         NO COMMUTATIVITY           →→→           WITH COMMUTATIVITY
+         (Free Monoid)          [K&S Derivation]   (Probability Structures)
+              V₀                                           V₁, V₂, V₃
+    (a⊕b)² ≠ a²⊕b²                                  x ⊕ y = y ⊕ x ✓
+    CounterExamples.lean                          Main.lean, CredalSets.lean
+         │
+         │  Outside equational center Z_KS
+         │  No Θ representation can exist
+         └─────────────────────────────────────────────────────────────────────
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ AXIS 2: Completeness (Foundational Choice, NOT Derivable)                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    NO COMPLETENESS                 REFINEMENT PATH                COMPLETENESS
+    (Constructive ℝ)        [RefinedCredalAlgebra.converge]      (Classical ℝ)
+         V₂                [CredalSets.collapse_theorem]              V₃
+  μ : α → Interval                     ↓                        Θ : α → ℝ
+  [lower, upper]            Intervals shrink to points           Point values
+  CredalSets.lean                    sSup                       Main.lean
+         │                                                            │
+         │ Works over ℚ                                               │ Requires ℝ complete
+         │ Constructive OK                                            │ Classical only
+         └─────────────────────────────────────────────────────────────────────
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ AXIS 3: Precision Profile (Per-Slot Sort Assignment Σ)                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ALL ∗-SLOTS                     MIXED                       ALL □-SLOTS
+   (All imprecise)              (Some precise,               (All precise)
+                                 some imprecise)
+    Every parameter              Partial                     Every parameter
+    is an interval              uncertainty                  is a point
+         │                                                          │
+         V₂ configuration                                     V₃ configuration
+         │                                                          │
+         └──────────────────────────────────────────────────────────────────
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    THE THREE MAIN VERTICES                                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    V₀: Free Monoid                V₂: Credal Sets           V₃: Classical Prob
+┌─────────────────────────┐  ┌─────────────────────────┐  ┌──────────────────────┐
+│ Commutativity:    ✗     │  │ Commutativity:    ✓     │  │ Commutativity:    ✓  │
+│ Completeness:     N/A   │  │ Completeness:     ✗     │  │ Completeness:     ✓  │
+│ Precision:        N/A   │  │ Precision:     all ∗    │  │ Precision:     all □ │
+│                         │  │                         │  │                      │
+│ Measure:    NONE        │  │ Measure:  Interval      │  │ Measure:  ℝ-valued   │
+│                         │  │                         │  │                      │
+│ Example:                │  │ Example:                │  │ Example:             │
+│  (a⊕b)² = "abab"       │  │  μ(x) ∈ [0.7, 0.9]     │  │  Θ(x) = 0.842...    │
+│  a²⊕b² = "aabb"        │  │  Uncertain!             │  │  Exact!              │
+│  ≠ !!!                  │  │                         │  │                      │
+│                         │  │                         │  │                      │
+│ Status: OUTSIDE Z_KS    │  │ Status: INSIDE Z_KS     │  │ Status: INSIDE Z_KS  │
+│                         │  │                         │  │                      │
+│ File:                   │  │ File:                   │  │ File:                │
+│  CounterExamples.lean   │  │  CredalSets.lean        │  │  Main.lean           │
+└─────────────────────────┘  └─────────────────────────┘  └──────────────────────┘
+       │                            │                            │
+       │ No probability             │ Imprecise probability      │ Classical probability
+       │ structure                  │ (constructive)             │ (Kolmogorov axioms)
+       └────────────────────────────┴────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              MODAL TYPES = SEPARATION STATISTICS                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    K&S Separation Sets              Modal Type Notation        Rely-Possibly Reading
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ A(d, u) = {r | μ(r) < d^u}        ⟨C_<⟩_{d::+, u::ℕ₊} Below                 │
+│ "Below d^u"                                                                  │
+│                                    "For all positive d and u > 0,            │
+│                                     if we compare r with d^u,                │
+│                                     possibly: r is Below"                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ B(d, u) = {r | μ(r) = d^u}        ⟨C_=⟩_{d::+, u::ℕ₊} Equal                 │
+│ "Equal to d^u"                                                               │
+│                                    "For all positive d and u > 0,            │
+│                                     if we compare r with d^u,                │
+│                                     possibly: r is Equal"                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ C(d, u) = {r | μ(r) > d^u}        ⟨C_>⟩_{d::+, u::ℕ₊} Above                 │
+│ "Above d^u"                                                                  │
+│                                    "For all positive d and u > 0,            │
+│                                     if we compare r with d^u,                │
+│                                     possibly: r is Above"                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+The separation statistic θ(r)/u is the MODAL ELIMINATION of these types!
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                  HEYTING NEGATION = B-EMPTY                                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    K&S B-Empty Condition            Modal Type with ⊥           Heyting Negation
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ∀r u, 0 < u → r ∉ B(d, u)         ⟨C_=⟩_{d::+, u::ℕ₊} ⊥                      │
+│ "No exact witnesses"                                                         │
+│                                    "For all d, u, it's IMPOSSIBLE            │
+│                                     to find r with μ(r) = d^u"               │
+│                                                                              │
+│                                    = ¬(∃r. μ(r) = d^u)                       │
+│                                    = Heyting negation of B-witnesses         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+The "inaccessible δ" property:
+  - No A-statistic equals δ: ⟨approach_below⟩ ⊥
+  - No C-statistic equals δ: ⟨approach_above⟩ ⊥
+  - δ lives in the GAP between A and C
+
+This is why the strict gap proofs (ThetaPrime.lean:584, 655) are hard!
+They need to use this modal negation structure.
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                 SPATIAL TYPES = ATOM FAMILIES                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    K&S Atom Family Formula          Spatial Type                Image Subobject
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ μ(F, r) = a₁^r₁ ⊕ ⋯ ⊕ aₖ^rₖ      μ♯(A₁,...,Aₖ)                              │
+│                                                                              │
+│ Combines k atoms                  { x : α | ∃(rᵢ : ℕ).                      │
+│ with multiplicities                 x = a₁^r₁ ⊕ ⋯ ⊕ aₖ^rₖ                   │
+│                                      ∧ aᵢ :: Aᵢ }                            │
+│                                                                              │
+│ Slot family:                      Slots = {s^{Xᵢ}_i}ᵢ₌₁..ₖ ∪ {s^α_out}      │
+│ - One slot per atom carrier       Each can be ∗ (imprecise) or □ (precise)  │
+│ - One slot for result                                                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Spatial types classify elements by WHICH ATOMS they combine!
+This is orthogonal to modal types (which classify by BEHAVIOR).
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        THE TWO PATHS                                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+PATH 1: DERIVATION (V₀ → V₂)
+────────────────────────────────────────────────────────────────────────────────
+   Free Monoid                    Add Order + Archimedean          Credal Sets
+      V₀                            + Separation                        V₂
+   (a⊕b)² ≠ a²⊕b²          ───→   K&S Appendix A           ───→   x ⊕ y = y ⊕ x
+   No commutativity                Representation exists           Commutativity!
+   No probability                  Θ : α → ℝ exists                Intervals
+
+   Key: Commutativity is a THEOREM when you have order + separation structure
+
+PATH 2: REFINEMENT (V₂ → V₃)
+────────────────────────────────────────────────────────────────────────────────
+    Credal Sets                  Add Completeness                Classical Prob
+        V₂                        (sSup exists)                       V₃
+   μ : α → Interval        ───→  collapse_theorem          ───→   Θ : α → ℝ
+   [lower, upper]                 Intervals shrink                 Point values
+   All ∗-slots                    to points                        All □-slots
+
+   Key: Completeness is a FOUNDATIONAL CHOICE (not derivable from K&S axioms)
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        KEY INSIGHTS                                          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+1. PROBABILITY IS NOT UNIQUE
+   It's a family of theories at different vertices of a hypercube
+
+2. TWO STEPS BEYOND ASSOCIATIVITY
+   Step 1: Order + Archimedean → Commutativity (DERIVABLE, K&S Appendix A)
+   Step 2: Completeness → Point values (NOT DERIVABLE, foundational assumption)
+
+3. NATURAL THEORY = CREDAL SETS (V₂)
+   - Has commutativity (emerges from order)
+   - Doesn't assume completeness
+   - Works constructively over ℚ
+
+4. CLASSICAL PROBABILITY = REFINED CREDAL (V₃)
+   - Requires completeness of ℝ
+   - Built into Lean/ZFC foundations
+   - Not wrong, just a vertex choice!
+
+5. THE "ERROR" WAS A VERTEX CONFUSION
+   CredalSets.lean originally claimed "K&S made an error"
+   Reality: K&S worked at V₃ (with completeness), credal sets are at V₂
+   Both are valid - different vertices of the same hypercube!
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    RESOLUTION                                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    What K&S Actually Claimed              Hypercube Interpretation
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ "From associativity + order + Archimedean, │ TRUE at V₃ (classical ℝ)       │
+│  we derive ℝ-valued probability"            │                                │
+│                                             │ K&S worked in Lean/ZFC where   │
+│                                             │ completeness is assumed        │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    What Credal Sets Show                  Hypercube Interpretation
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ "Without completeness, you get            │ TRUE at V₂ (constructive)       │
+│  interval-valued bounds"                  │                                │
+│                                           │ Credal sets = probability       │
+│                                           │ without completeness            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    Both Are Correct!                      They're At Different Vertices
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ The hypercube framework shows these are two valid theories in the same       │
+│ spectrum, not a contradiction. The choice of vertex depends on:              │
+│                                                                              │
+│ - Foundational assumptions (classical vs constructive)                       │
+│ - Precision requirements (intervals vs points)                               │
+│ - Computational needs (over ℚ vs over ℝ)                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                     FILES IN THE FORMALIZATION                               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+CounterExamples.lean     ⟷  V₀: Free monoid (no probability)
+CredalSets.lean         ⟷  V₂: Credal sets (interval-valued, constructive)
+Main.lean               ⟷  V₃: Classical probability (ℝ-valued, complete)
+HypercubeConnection.lean ⟷  The full formal connection
+HYPERCUBE_SUMMARY.md     ⟷  This explanation in markdown
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           BIBLIOGRAPHY                                       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+[Stay-Wells] M. Stay, C. Wells. "Generating Hypercubes of Type Systems"
+             hypercube.pdf
+
+[K&S]        D. Knuth, J. Skilling. "Foundations of Inference" Appendix A
+
+[Walley]     P. Walley. "Statistical Reasoning with Imprecise Probabilities"
+             (1991) - The foundational text for credal sets
+
+[HoTT]       "Modal Homotopy Type Theory: The Prospect of a New Logic"
+             modal-homotopy-type-theory-the-prospect-of-a-new-logic-for-philosophy.pdf
+
+═══════════════════════════════════════════════════════════════════════════════

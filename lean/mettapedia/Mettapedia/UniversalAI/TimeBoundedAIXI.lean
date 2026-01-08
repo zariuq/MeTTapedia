@@ -1501,19 +1501,19 @@ def guardPrefixListNat (pref : List ℕ) (yes no : Turing.ToPartrec.Code) : Turi
           have helem' : e' = e := by
             have hdec_e :
                 Coding.decodeHistElemNat (Coding.encodeHistElemNat e).1 (Coding.encodeHistElemNat e).2 = some e := by
-              simpa using (Coding.decodeHistElemNat_encodeHistElemNat e)
+              simp
             have hdec_e' :
                 Coding.decodeHistElemNat (Coding.encodeHistElemNat e').1 (Coding.encodeHistElemNat e').2 = some e' := by
-              simpa using (Coding.decodeHistElemNat_encodeHistElemNat e')
+              simp
             have : some e' = some e := by
               calc
                 some e' =
                     Coding.decodeHistElemNat (Coding.encodeHistElemNat e').1 (Coding.encodeHistElemNat e').2 := by
-                      simpa [hdec_e']
+                      simp [hdec_e']
                 _ = Coding.decodeHistElemNat (Coding.encodeHistElemNat e).1 (Coding.encodeHistElemNat e).2 := by
                       simp [hparts.1, hparts.2.1]
                 _ = some e := by
-                      simpa [hdec_e]
+                      simp [hdec_e]
             simpa using this
           have helem : e = e' := helem'.symm
           subst helem
@@ -1582,6 +1582,92 @@ def guardedValueActionCode (pref : List ℕ) (num den : ℕ) (act : Action) : Tu
   guardPrefixListNat pref
     (constListCode [num, den, Coding.encodeActionNat act])
     (constListCode [0, 0, Coding.encodeActionNat Action.stay])
+
+/-! #### Multi-history dispatch (finite)
+
+`guardPrefixListNat` is convenient for a single guarded history, but it is *destructive* on failed
+comparisons (it decrements the head while testing equality). To build programs that return
+different constant outputs on several distinct history codes, we instead:
+
+1. compute (independently) a list of `0/1` flags indicating which prefixes match, and
+2. select the first `0` flag in that list (falling back to a trailing default flag).
+-/
+
+/-- Return `[0]` iff `pref` is a `prefixHeadI` prefix of the input, else `[1]`. -/
+def prefixMatchFlagCode (pref : List ℕ) : Turing.ToPartrec.Code :=
+  guardPrefixListNat pref (constListCode [0]) (constListCode [1])
+
+theorem prefixMatchFlagCode_eval (pref v : List ℕ) :
+    (prefixMatchFlagCode pref).eval v =
+      if prefixHeadI pref v then pure [0] else pure [1] := by
+  simpa [prefixMatchFlagCode] using
+    (guardPrefixListNat_eval_const (pref := pref) (outYes := [0]) (outNo := [1]) (v := v))
+
+/-- Build the list of match flags for a list of prefixes, *ending with* a trailing `0` (default). -/
+def prefixMatchFlagsCode : List (List ℕ) → Turing.ToPartrec.Code
+  | [] => constListCode [0]
+  | pref :: prefs => Turing.ToPartrec.Code.cons (prefixMatchFlagCode pref) (prefixMatchFlagsCode prefs)
+
+/-- Choose the first output whose corresponding flag is `0`.
+
+The input is a list of naturals, intended to be flags in `{0,1}`. The caller should ensure there
+is a trailing `0` flag so selection always terminates in the desired default case. -/
+def chooseByFlagsCode : List (List ℕ) → Turing.ToPartrec.Code
+  | [] => constListCode []
+  | out :: outs =>
+      Turing.ToPartrec.Code.case (constListCode out)
+        (Turing.ToPartrec.Code.comp (chooseByFlagsCode outs) Turing.ToPartrec.Code.tail)
+
+/-- Dispatch on a finite list of history codes (prefix checks), returning the output of the first
+matching case, or `default` if no case matches.
+
+The outputs are `List ℕ` payloads (typically `[num, den, action]`). -/
+def dispatchHistoryCodes (cases : List (List ℕ × List ℕ)) (default : List ℕ) : Turing.ToPartrec.Code :=
+  let prefs : List (List ℕ) := cases.map Prod.fst
+  let outs : List (List ℕ) := cases.map Prod.snd ++ [default]
+  Turing.ToPartrec.Code.comp (chooseByFlagsCode outs) (prefixMatchFlagsCode prefs)
+
+/-- The list of `0/1` match flags computed by `prefixMatchFlagsCode`, as a pure function. -/
+def prefixMatchFlags (prefs : List (List ℕ)) (v : List ℕ) : List ℕ :=
+  prefs.map (fun pref => if prefixHeadI pref v then 0 else 1) ++ [0]
+
+theorem prefixMatchFlagsCode_eval (prefs : List (List ℕ)) (v : List ℕ) :
+    (prefixMatchFlagsCode prefs).eval v = pure (prefixMatchFlags prefs v) := by
+  induction prefs with
+  | nil =>
+      simp [prefixMatchFlagsCode, prefixMatchFlags, constListCode_eval]
+  | cons pref prefs ih =>
+      by_cases hp : prefixHeadI pref v
+      · simp [prefixMatchFlagsCode, prefixMatchFlags, Turing.ToPartrec.Code.cons_eval, prefixMatchFlagCode_eval, ih, hp]
+      · simp [prefixMatchFlagsCode, prefixMatchFlags, Turing.ToPartrec.Code.cons_eval, prefixMatchFlagCode_eval, ih, hp]
+
+/-- Choose the first output corresponding to a `0` flag, as a pure function.
+
+This matches `chooseByFlagsCode` when flags are intended to be in `{0,1}` and include a trailing `0`. -/
+def chooseByFlags : List (List ℕ) → List ℕ → List ℕ
+  | [], _ => []
+  | out :: outs, flags => if flags.headI = 0 then out else chooseByFlags outs flags.tail
+
+theorem chooseByFlagsCode_eval (outs : List (List ℕ)) (flags : List ℕ) :
+    (chooseByFlagsCode outs).eval flags = pure (chooseByFlags outs flags) := by
+  induction outs generalizing flags with
+  | nil =>
+      simp [chooseByFlagsCode, chooseByFlags, constListCode_eval]
+  | cons out outs ih =>
+      cases h : flags.headI with
+      | zero =>
+          simp [chooseByFlagsCode, chooseByFlags, Turing.ToPartrec.Code.case_eval, h, constListCode_eval]
+      | succ m =>
+          simp [chooseByFlagsCode, chooseByFlags, Turing.ToPartrec.Code.case_eval, h, ih, Turing.ToPartrec.Code.comp_eval,
+            constListCode_eval]
+
+theorem dispatchHistoryCodes_eval (cases : List (List ℕ × List ℕ)) (default : List ℕ) (v : List ℕ) :
+    (dispatchHistoryCodes cases default).eval v =
+      pure
+        (chooseByFlags (cases.map Prod.snd ++ [default])
+          (prefixMatchFlags (cases.map Prod.fst) v)) := by
+  simp [dispatchHistoryCodes, prefixMatchFlagsCode_eval, chooseByFlagsCode_eval, prefixMatchFlags,
+    Turing.ToPartrec.Code.comp_eval]
 
 /-- Any `ToPartrec` program of the form `zeroValueActionCode act` always claims value `0`. -/
 theorem computeWithin_fst_eq_zero_of_tm_eq_zeroValueAction (t : ℕ) (p : RawToPartrecProgram) (h : History)
@@ -4288,6 +4374,48 @@ lemma prefixFreeWeightAt_toReal_eq_numeratorTerm_div (l i : ℕ) :
         simp [numeratorTerm, weightCodeLenAt, hi]
       simp [xi_tlPrefixFreeWeightAt, hi, hterm]
 
+/-- Convert a `numeratorBound` certificate into an explicit `toReal` sum over prefix-free weights. -/
+lemma toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l : ℕ) (idxs : List ℕ) (num : ℕ)
+    (hnodup : idxs.Nodup) (hnum : numeratorBound l idxs = some num) :
+    (∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt (bitsAt l) i).toReal =
+      (num : ℝ) / (2 ^ denomExp l : ℝ) := by
+  classical
+  let bits : List (List Bool) := bitsAt l
+  let den : ℝ := 2 ^ denomExp l
+  have hnotTop : ∀ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt bits i ≠ (⊤ : ENNReal) := by
+    intro i hi
+    by_cases hlt : i < bits.length
+    · simp [xi_tlPrefixFreeWeightAt, xi_tlPrefixWeight, bits, hlt]
+    · simp [xi_tlPrefixFreeWeightAt, bits, hlt]
+  have hsum :
+      (idxs.map (fun i => (numeratorTerm l i).getD 0)).sum =
+        ∑ i ∈ idxs.toFinset, (numeratorTerm l i).getD 0 := by
+    symm
+    simpa using (List.sum_toFinset (f := fun i => (numeratorTerm l i).getD 0) hnodup)
+  have hnumSum :
+      (num : ℕ) = (idxs.map (fun i => (numeratorTerm l i).getD 0)).sum :=
+    numeratorBound_eq_sum_getD (l := l) idxs num hnum
+  calc
+    (∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt bits i).toReal =
+        ∑ i ∈ idxs.toFinset, (xi_tlPrefixFreeWeightAt bits i).toReal :=
+      ENNReal.toReal_sum (s := idxs.toFinset) (f := fun i => xi_tlPrefixFreeWeightAt bits i) hnotTop
+    _ = ∑ i ∈ idxs.toFinset, ((numeratorTerm l i).getD 0 : ℝ) / den := by
+      refine Finset.sum_congr rfl ?_
+      intro i hi
+      simpa [bits, den] using (prefixFreeWeightAt_toReal_eq_numeratorTerm_div (l := l) (i := i))
+    _ = (∑ i ∈ idxs.toFinset, ((numeratorTerm l i).getD 0 : ℝ)) / den := by
+      classical
+      simp [div_eq_mul_inv, Finset.sum_mul]
+    _ = ((∑ i ∈ idxs.toFinset, (numeratorTerm l i).getD 0 : ℕ) : ℝ) / den := by
+      classical
+      simp [Nat.cast_sum (R := ℝ) idxs.toFinset (fun i => (numeratorTerm l i).getD 0)]
+    _ = (num : ℝ) / den := by
+      have :
+          (∑ i ∈ idxs.toFinset, (numeratorTerm l i).getD 0 : ℕ) =
+            (idxs.map (fun i => (numeratorTerm l i).getD 0)).sum := by
+        simp [hsum]
+      simp [den, hnumSum, this]
+
 def checkIdxOutputs (tEnv l : ℕ) (ha : History) (target : Percept) (idxs : List ℕ) : Bool :=
   let bits := bitsAt l
   idxs.all fun i =>
@@ -4300,6 +4428,370 @@ def checkIdxOutputs (tEnv l : ℕ) (ha : History) (target : Percept) (idxs : Lis
       | none => false
     else
       false
+
+/-- The full set of indices (within `bitsAt l`) that output `target` at `ha` within `tEnv`. -/
+def idxsOfOutput (tEnv l : ℕ) (ha : History) (target : Percept) : List ℕ :=
+  let bits := bitsAt l
+  (List.range bits.length).filter fun i =>
+    if hi : i < bits.length then
+      match Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bits.get ⟨i, hi⟩) with
+      | some tm =>
+          decide
+            (RawToPartrecEnvironmentProgram.computeWithin tEnv { code := { code := bits.get ⟨i, hi⟩ }, tm := tm } ha =
+              some target)
+      | none => false
+    else
+      false
+
+lemma idxsOfOutput_lt_bitsAt_length (tEnv l : ℕ) (ha : History) (target : Percept) :
+    ∀ i ∈ idxsOfOutput tEnv l ha target, i < (bitsAt l).length := by
+  intro i hi
+  unfold idxsOfOutput at hi
+  rcases List.mem_filter.1 hi with ⟨hiRange, _hiPred⟩
+  have : i < (bitsAt l).length := by
+    simpa using (List.mem_range.1 hiRange)
+  simpa using this
+
+lemma idxsOfOutput_nodup (tEnv l : ℕ) (ha : History) (target : Percept) :
+    (idxsOfOutput tEnv l ha target).Nodup := by
+  classical
+  unfold idxsOfOutput
+  refine List.Nodup.filter _ ?_
+  simpa using (List.nodup_range (n := (bitsAt l).length))
+
+lemma checkIdxOutputs_idxsOfOutput (tEnv l : ℕ) (ha : History) (target : Percept) :
+    checkIdxOutputs tEnv l ha target (idxsOfOutput tEnv l ha target) = true := by
+  classical
+  -- `filter` ensures every index in `idxsOfOutput` satisfies the predicate checked by `checkIdxOutputs`.
+  unfold checkIdxOutputs idxsOfOutput
+  simp only
+  refine List.all_eq_true.2 ?_
+  intro i hi
+  rcases List.mem_filter.1 hi with ⟨_hiRange, hiPred⟩
+  exact hiPred
+
+lemma numeratorBound_eq_some_of_forall_lt (l : ℕ) :
+    ∀ idxs : List ℕ,
+      (∀ i ∈ idxs, i < (bitsAt l).length) →
+        ∃ num, numeratorBound l idxs = some num := by
+  intro idxs
+  induction idxs with
+  | nil =>
+      intro _hlt
+      refine ⟨0, by simp [numeratorBound]⟩
+  | cons i is ih =>
+      intro hlt
+      have hi : i < (bitsAt l).length := hlt i (by simp)
+      have hi' : i < (bitstringsUpTo l).length := by
+        simpa [bitsAt] using hi
+      have hlt' : ∀ j ∈ is, j < (bitsAt l).length := by
+        intro j hj
+        exact hlt j (by simp [hj])
+      rcases ih hlt' with ⟨acc, hAcc⟩
+      refine ⟨(2 ^ (denomExp l - (Coding.selfDelimitingEncode ((bitsAt l).get ⟨i, hi⟩)).length)) + acc, ?_⟩
+      have hTerm :
+          numeratorTerm l i =
+            some (2 ^ (denomExp l - (Coding.selfDelimitingEncode ((bitsAt l).get ⟨i, hi⟩)).length)) := by
+        simp [numeratorTerm, weightCodeLenAt, bitsAt, hi']
+      simp [numeratorBound, hTerm, hAcc]
+
+noncomputable def numeratorBoundValue (l : ℕ) (idxs : List ℕ)
+    (hlt : ∀ i ∈ idxs, i < (bitsAt l).length) : ℕ :=
+  Classical.choose (numeratorBound_eq_some_of_forall_lt (l := l) idxs hlt)
+
+theorem numeratorBoundValue_spec (l : ℕ) (idxs : List ℕ) (hlt : ∀ i ∈ idxs, i < (bitsAt l).length) :
+    numeratorBound l idxs = some (numeratorBoundValue (l := l) idxs hlt) :=
+  Classical.choose_spec (numeratorBound_eq_some_of_forall_lt (l := l) idxs hlt)
+
+lemma sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs (tEnv l : ℕ) (ha : History) (target : Percept) (idxs : List ℕ)
+    (hIdx : checkIdxOutputs tEnv l ha target idxs = true) :
+    (∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt (bitsAt l) i) ≤ (xi_tlEnvironment tEnv l).prob ha target := by
+  classical
+  let ξ : BayesianMixture := xi_tlBayesianMixture tEnv l
+  let μ : Environment := xi_tlEnvironment tEnv l
+  have hle :=
+    ENNReal.sum_le_tsum
+      (s := idxs.toFinset)
+      (f := fun i => ξ.weights i * (ξ.envs i).prob ha target)
+  have hall :
+      ∀ i ∈ idxs,
+        (if hi : i < (bitsAt l).length then
+            match
+              Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) ((bitsAt l).get ⟨i, hi⟩) with
+            | some tm =>
+                decide
+                  (RawToPartrecEnvironmentProgram.computeWithin tEnv
+                        { code := { code := (bitsAt l).get ⟨i, hi⟩ }, tm := tm } ha =
+                      some target)
+            | none => false
+          else false) =
+          true := by
+    simpa [checkIdxOutputs] using
+      (List.all_eq_true.mp (by
+        simpa [checkIdxOutputs] using hIdx))
+  have hterm :
+      (∑ i ∈ idxs.toFinset, ξ.weights i * (ξ.envs i).prob ha target) =
+        ∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt (bitsAt l) i := by
+    classical
+    refine Finset.sum_congr rfl ?_
+    intro i hi
+    have hiList : i ∈ idxs := (List.mem_toFinset).1 hi
+    have hpred0 := hall i hiList
+    have hi' : i < (bitsAt l).length := by
+      by_contra hi'
+      have hpred0' := hpred0
+      simp [hi'] at hpred0'
+    have hpred :
+        (match
+            Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) ((bitsAt l).get ⟨i, hi'⟩) with
+          | some tm =>
+              decide
+                (RawToPartrecEnvironmentProgram.computeWithin tEnv
+                      { code := { code := (bitsAt l).get ⟨i, hi'⟩ }, tm := tm } ha =
+                    some target)
+          | none => false) =
+          true := by
+      simpa [hi'] using hpred0
+    cases htm :
+        Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) ((bitsAt l).get ⟨i, hi'⟩) with
+    | none =>
+        have hpred' := hpred
+        rw [htm] at hpred'
+        cases hpred'
+    | some tm =>
+        have hdecide :
+            decide
+                (RawToPartrecEnvironmentProgram.computeWithin tEnv
+                      { code := { code := (bitsAt l).get ⟨i, hi'⟩ }, tm := tm } ha =
+                    some target) =
+              true := by
+          have hpred' := hpred
+          rw [htm] at hpred'
+          simpa using hpred'
+        have hcomp :
+            RawToPartrecEnvironmentProgram.computeWithin tEnv
+                { code := { code := (bitsAt l).get ⟨i, hi'⟩ }, tm := tm } ha =
+              some target :=
+          of_decide_eq_true hdecide
+        have hiBits : i < (bitstringsUpTo l).length := by
+          simpa [bitsAt] using hi'
+        have htm' :
+            Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) ((bitstringsUpTo l).get ⟨i, hiBits⟩) = some tm := by
+          simpa [bitsAt] using htm
+        have hcomp' :
+            RawToPartrecEnvironmentProgram.computeWithin tEnv
+                { code := { code := (bitstringsUpTo l).get ⟨i, hiBits⟩ }, tm := tm } ha =
+              some target := by
+          simpa [bitsAt] using hcomp
+        have htm'' : Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bitstringsUpTo l)[i] = some tm := by
+          simpa using htm'
+        have hcomp'' :
+            RawToPartrecEnvironmentProgram.computeWithin tEnv { code := { code := (bitstringsUpTo l)[i] }, tm := tm } ha =
+              some target := by
+          simpa using hcomp'
+        simp [ξ, xi_tlBayesianMixture, xi_tlBayesianMixturePrefixFree, xi_tlPrefixFreeWeightAt, bitsAt, hiBits,
+          RawToPartrecEnvironmentProgram.decodeCanonical, RawToPartrecEnvironmentProgram.ofToPartrec,
+          RawToPartrecProgram.decodeToPartrec, RawToPartrecEnvironmentProgram.toEnvironmentWithin, htm'', hcomp'']
+  have hμ : (∑' i : ℕ, ξ.weights i * (ξ.envs i).prob ha target) = μ.prob ha target := by
+    rfl
+  simpa [hterm, hμ] using hle
+
+/-- `idxsOfOutput` is exhaustive: summing the prefix-free weights over the indices that output `target`
+within `tEnv` recovers exactly the `ξ^tl` probability mass at `ha`. -/
+lemma sum_prefixFreeWeightAt_eq_prob_of_idxsOfOutput (tEnv l : ℕ) (ha : History) (target : Percept) :
+    (∑ i ∈ (idxsOfOutput tEnv l ha target).toFinset, xi_tlPrefixFreeWeightAt (bitsAt l) i) =
+      (xi_tlEnvironment tEnv l).prob ha target := by
+  classical
+  let bits : List (List Bool) := bitstringsUpTo l
+  let idxs : List ℕ := idxsOfOutput tEnv l ha target
+  let ξ : BayesianMixture := xi_tlBayesianMixture tEnv l
+  have htsum :
+      (∑' i : ℕ, ξ.weights i * (ξ.envs i).prob ha target) =
+        ∑ i ∈ Finset.range bits.length, ξ.weights i * (ξ.envs i).prob ha target := by
+    refine (tsum_eq_sum (s := Finset.range bits.length) ?_)
+    intro i hi
+    have hnot : ¬ i < bits.length := by
+      simpa [Finset.mem_range] using hi
+    have hweight : ξ.weights i = 0 := by
+      simp [ξ, xi_tlBayesianMixture, xi_tlBayesianMixturePrefixFree, xi_tlPrefixFreeWeightAt, bits, hnot]
+    simp [hweight]
+  have hprob :
+      (xi_tlEnvironment tEnv l).prob ha target =
+        ∑ i ∈ Finset.range bits.length, ξ.weights i * (ξ.envs i).prob ha target := by
+    simp [xi_tlEnvironment, mixtureEnvironment, ξ, htsum, bits]
+
+  have hsubset : idxs.toFinset ⊆ Finset.range bits.length := by
+    intro i hi
+    have hiList : i ∈ idxs := (List.mem_toFinset).1 hi
+    unfold idxs at hiList
+    unfold idxsOfOutput at hiList
+    rcases List.mem_filter.1 hiList with ⟨hiRange, _hiPred⟩
+    have hiLt : i < bits.length := by
+      simpa [bits] using (List.mem_range.1 hiRange)
+    simpa [Finset.mem_range] using hiLt
+
+  have hfilter :
+      (Finset.range bits.length).filter (fun i => i ∈ idxs.toFinset) = idxs.toFinset := by
+    ext i
+    constructor
+    · intro hi
+      exact (Finset.mem_filter.1 hi).2
+    · intro hi
+      exact Finset.mem_filter.2 ⟨hsubset hi, hi⟩
+
+  have hterm :
+      (∑ i ∈ Finset.range bits.length, ξ.weights i * (ξ.envs i).prob ha target) =
+        ∑ i ∈ Finset.range bits.length, if i ∈ idxs.toFinset then xi_tlPrefixFreeWeightAt bits i else 0 := by
+    classical
+    refine Finset.sum_congr rfl ?_
+    intro i hi
+    have hiBits : i < bits.length := by
+      simpa [Finset.mem_range] using hi
+    by_cases hmem : i ∈ idxs.toFinset
+    · have hiList : i ∈ idxs := (List.mem_toFinset).1 hmem
+      unfold idxs at hiList
+      unfold idxsOfOutput at hiList
+      rcases List.mem_filter.1 hiList with ⟨_hiRange, hiPred⟩
+      have hiPred' :
+          (match
+              Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bits.get ⟨i, hiBits⟩) with
+            | some tm =>
+                decide
+                  (RawToPartrecEnvironmentProgram.computeWithin tEnv
+                        { code := { code := bits.get ⟨i, hiBits⟩ }, tm := tm } ha =
+                      some target)
+            | none => false) =
+            true := by
+        simpa [bitsAt, bits, hiBits] using hiPred
+      cases htm : Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bits.get ⟨i, hiBits⟩) with
+      | none =>
+          have hiPred'' := hiPred'
+          rw [htm] at hiPred''
+          cases hiPred''
+      | some tm =>
+          have hdecide :
+              decide
+                  (RawToPartrecEnvironmentProgram.computeWithin tEnv
+                        { code := { code := bits.get ⟨i, hiBits⟩ }, tm := tm } ha =
+                      some target) =
+                true := by
+            have hiPred'' := hiPred'
+            rw [htm] at hiPred''
+            simpa using hiPred''
+          have hcomp :
+              RawToPartrecEnvironmentProgram.computeWithin tEnv
+                  { code := { code := bits.get ⟨i, hiBits⟩ }, tm := tm } ha =
+                some target :=
+            of_decide_eq_true hdecide
+          have htmIdx : Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bits[i]) = some tm := by
+            simpa using htm
+          have hcompIdx :
+              RawToPartrecEnvironmentProgram.computeWithin tEnv { code := { code := bits[i] }, tm := tm } ha =
+                some target := by
+            unfold RawToPartrecEnvironmentProgram.computeWithin at hcomp ⊢
+            simpa using hcomp
+          have hprob1 : (ξ.envs i).prob ha target = 1 := by
+            simp [ξ, xi_tlBayesianMixture, xi_tlBayesianMixturePrefixFree, bits, hiBits,
+              RawToPartrecEnvironmentProgram.decodeCanonical, RawToPartrecProgram.decodeToPartrec,
+              RawToPartrecEnvironmentProgram.ofToPartrec, RawToPartrecEnvironmentProgram.toEnvironmentWithin,
+              htmIdx, hcompIdx, zeroEnvironment]
+          have hweight : ξ.weights i = xi_tlPrefixFreeWeightAt bits i := by
+            simp [ξ, xi_tlBayesianMixture, xi_tlBayesianMixturePrefixFree, bits]
+          have :
+              ξ.weights i * (ξ.envs i).prob ha target = xi_tlPrefixFreeWeightAt bits i := by
+            calc
+              ξ.weights i * (ξ.envs i).prob ha target = ξ.weights i * 1 := by simp [hprob1]
+              _ = ξ.weights i := by simp
+              _ = xi_tlPrefixFreeWeightAt bits i := by simpa [hweight]
+          simpa [hmem] using this
+    · cases htm : Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bits.get ⟨i, hiBits⟩) with
+      | none =>
+          have htmIdx : Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bits[i]) = none := by
+            simpa using htm
+          have hprob0 : (ξ.envs i).prob ha target = 0 := by
+            simp [ξ, xi_tlBayesianMixture, xi_tlBayesianMixturePrefixFree, bits, hiBits,
+              RawToPartrecEnvironmentProgram.decodeCanonical, RawToPartrecProgram.decodeToPartrec, htmIdx, zeroEnvironment]
+          simp [hprob0, hmem]
+      | some tm =>
+          by_cases hcomp :
+              RawToPartrecEnvironmentProgram.computeWithin tEnv
+                  { code := { code := bits.get ⟨i, hiBits⟩ }, tm := tm } ha =
+                some target
+          · have hiRange : i ∈ List.range bits.length := by
+              simpa [List.mem_range] using hiBits
+            have : i ∈ idxs := by
+              unfold idxs idxsOfOutput
+              refine List.mem_filter.2 ?_
+              refine ⟨?_, ?_⟩
+              · simpa [bitsAt, bits] using hiRange
+              · have hiAt : i < (bitsAt l).length := by
+                  simpa [bitsAt, bits] using hiBits
+                have htmAt : Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bitsAt l)[i] = some tm := by
+                  simpa [bitsAt, bits] using htm
+                have hcompAt :
+                    RawToPartrecEnvironmentProgram.computeWithin tEnv { code := { code := (bitsAt l)[i] }, tm := tm } ha =
+                      some target := by
+                  simpa [bitsAt, bits] using hcomp
+                have hpred' :
+                    decide
+                        (RawToPartrecEnvironmentProgram.computeWithin tEnv
+                              { code := { code := (bitsAt l)[i] }, tm := tm } ha =
+                            some target) =
+                      true := by
+                  simpa [decide_eq_true_eq] using hcompAt
+                have hpred :
+                    (match Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bitsAt l)[i] with
+                      | some tm =>
+                          decide
+                            (RawToPartrecEnvironmentProgram.computeWithin tEnv
+                                  { code := { code := (bitsAt l)[i] }, tm := tm } ha =
+                                some target)
+                      | none => false) =
+                      true := by
+                  simpa [htmAt] using hpred'
+                simpa [hiAt, hpred]
+            have : i ∈ idxs.toFinset := (List.mem_toFinset).2 this
+            exact (False.elim (hmem this))
+          · have htmIdx : Coding.decodeEncodableBits (α := Turing.ToPartrec.Code) (bits[i]) = some tm := by
+              simpa using htm
+            have hcompIdx :
+                RawToPartrecEnvironmentProgram.computeWithin tEnv { code := { code := bits[i] }, tm := tm } ha ≠
+                  some target := by
+              unfold RawToPartrecEnvironmentProgram.computeWithin at hcomp ⊢
+              simpa using hcomp
+            have hprob0 : (ξ.envs i).prob ha target = 0 := by
+              simp [ξ, xi_tlBayesianMixture, xi_tlBayesianMixturePrefixFree, bits, hiBits,
+                RawToPartrecEnvironmentProgram.decodeCanonical, RawToPartrecProgram.decodeToPartrec,
+                RawToPartrecEnvironmentProgram.ofToPartrec, RawToPartrecEnvironmentProgram.toEnvironmentWithin, htmIdx,
+                hcompIdx, zeroEnvironment]
+            have :
+                ξ.weights i * (ξ.envs i).prob ha target = 0 := by
+              simp [hprob0]
+            simpa [hmem] using this
+
+  have hsum :
+      (∑ i ∈ Finset.range bits.length, if i ∈ idxs.toFinset then xi_tlPrefixFreeWeightAt bits i else 0) =
+        ∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt bits i := by
+    classical
+    have h :=
+      (Finset.sum_filter (s := Finset.range bits.length) (f := fun i => xi_tlPrefixFreeWeightAt bits i)
+            (p := fun i => i ∈ idxs.toFinset)).symm
+    have h' :
+        (∑ i ∈ (Finset.range bits.length).filter (fun i => i ∈ idxs.toFinset), xi_tlPrefixFreeWeightAt bits i) =
+          ∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt bits i := by
+      rw [hfilter]
+    exact Eq.trans h h'
+
+  calc
+    (∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt (bitsAt l) i) =
+        ∑ i ∈ idxs.toFinset, xi_tlPrefixFreeWeightAt bits i := by
+          simp [bitsAt, bits]
+    _ = ∑ i ∈ Finset.range bits.length, if i ∈ idxs.toFinset then xi_tlPrefixFreeWeightAt bits i else 0 := by
+          simpa using hsum.symm
+    _ = ∑ i ∈ Finset.range bits.length, ξ.weights i * (ξ.envs i).prob ha target := by
+          simpa [hterm]
+    _ = (xi_tlEnvironment tEnv l).prob ha target := by
+          simpa [hprob]
 
 def ok (tEnv l : ℕ) (p : RawToPartrecProgram) (cert : XiTlOneStepRewardLowerBoundCert) : Prop :=
   match Coding.decodeHistoryNat cert.historyCode, Coding.decodeActionNat cert.actionCode with
@@ -4334,13 +4826,15 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
   cases hdecH : Coding.decodeHistoryNat cert.historyCode with
   | none =>
       have : False := by
-        simpa [XiTlOneStepRewardLowerBoundCert.ok, hdecH] using hok
+        have hok' := hok
+        simp [XiTlOneStepRewardLowerBoundCert.ok, hdecH] at hok'
       cases this
   | some h =>
       cases hdecA : Coding.decodeActionNat cert.actionCode with
       | none =>
           have : False := by
-            simpa [XiTlOneStepRewardLowerBoundCert.ok, hdecH, hdecA] using hok
+            have hok' := hok
+            simp [XiTlOneStepRewardLowerBoundCert.ok, hdecH, hdecA] at hok'
           cases this
       | some a =>
           have hok' :
@@ -4478,7 +4972,7 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                               have : False := by
                                 have hpredHi' := hpredHi
                                 rw [htm] at hpredHi'
-                                simpa using hpredHi'
+                                simp at hpredHi'
                               cases this
                           | some tm =>
                               have hdecide :
@@ -4505,12 +4999,22 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                                   RawToPartrecEnvironmentProgram.decodeCanonical (bitstringsUpTo l)[i] =
                                     some (RawToPartrecEnvironmentProgram.ofToPartrec (bitstringsUpTo l)[i] tm) := by
                                 simpa [List.get_eq_getElem] using hdec
+                              have hcompOf :
+                                  RawToPartrecEnvironmentProgram.computeWithin tEnv
+                                        (RawToPartrecEnvironmentProgram.ofToPartrec (bitstringsUpTo l)[i] tm) ha =
+                                      some xFT := by
+                                have hcomp' :
+                                    RawToPartrecEnvironmentProgram.computeWithin tEnv
+                                          { code := { code := (bitstringsUpTo l)[i] }, tm := tm } ha =
+                                        some xFT := by
+                                  simpa [List.get_eq_getElem] using hcomp
+                                simpa [RawToPartrecEnvironmentProgram.ofToPartrec] using hcomp'
                               have hprob1 :
                                   ((xi_tlBayesianMixture tEnv l).envs i).prob ha xFT = 1 := by
                                 -- Inside the enumerated window, the decoded program yields `xFT`.
                                 simp [xi_tlBayesianMixture, xi_tlBayesianMixturePrefixFree,
-                                  XiTlOneStepRewardLowerBoundCert.bitsAt, hiBits, hdec',
-                                  RawToPartrecEnvironmentProgram.toEnvironmentWithin, hcomp, xFT]
+                                  hiBits, hdec',
+                                  RawToPartrecEnvironmentProgram.toEnvironmentWithin, hcompOf, xFT]
                               have htermEq :
                                   (xi_tlBayesianMixture tEnv l).weights i * ((xi_tlBayesianMixture tEnv l).envs i).prob ha xFT =
                                     (xi_tlBayesianMixture tEnv l).weights i := by
@@ -4519,8 +5023,8 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                                 using htermEq
                       ·
                           have : False := by
-                            have : (false : Bool) = true := by simpa [hiBits] using hpred
-                            simpa using this
+                            have hpred' := hpred
+                            simp [hiBits] at hpred'
                           cases this
                     have hμprob : (∑' i : ℕ,
                           (xi_tlBayesianMixture tEnv l).weights i * ((xi_tlBayesianMixture tEnv l).envs i).prob ha xFT) = μ.prob ha xFT := by
@@ -4567,7 +5071,7 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                               have : False := by
                                 have hpredHi' := hpredHi
                                 rw [htm] at hpredHi'
-                                simpa using hpredHi'
+                                simp at hpredHi'
                               cases this
                           | some tm =>
                               have hdecide :
@@ -4594,11 +5098,21 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                                   RawToPartrecEnvironmentProgram.decodeCanonical (bitstringsUpTo l)[i] =
                                     some (RawToPartrecEnvironmentProgram.ofToPartrec (bitstringsUpTo l)[i] tm) := by
                                 simpa [List.get_eq_getElem] using hdec
+                              have hcompOf :
+                                  RawToPartrecEnvironmentProgram.computeWithin tEnv
+                                        (RawToPartrecEnvironmentProgram.ofToPartrec (bitstringsUpTo l)[i] tm) ha =
+                                      some xTT := by
+                                have hcomp' :
+                                    RawToPartrecEnvironmentProgram.computeWithin tEnv
+                                          { code := { code := (bitstringsUpTo l)[i] }, tm := tm } ha =
+                                        some xTT := by
+                                  simpa [List.get_eq_getElem] using hcomp
+                                simpa [RawToPartrecEnvironmentProgram.ofToPartrec] using hcomp'
                               have hprob1 :
                                   ((xi_tlBayesianMixture tEnv l).envs i).prob ha xTT = 1 := by
                                 simp [xi_tlBayesianMixture, xi_tlBayesianMixturePrefixFree,
-                                  XiTlOneStepRewardLowerBoundCert.bitsAt, hiBits, hdec',
-                                  RawToPartrecEnvironmentProgram.toEnvironmentWithin, hcomp, xTT]
+                                  hiBits, hdec',
+                                  RawToPartrecEnvironmentProgram.toEnvironmentWithin, hcompOf, xTT]
                               have htermEq :
                                   (xi_tlBayesianMixture tEnv l).weights i * ((xi_tlBayesianMixture tEnv l).envs i).prob ha xTT =
                                     (xi_tlBayesianMixture tEnv l).weights i := by
@@ -4607,8 +5121,8 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                                 using htermEq
                       ·
                           have : False := by
-                            have : (false : Bool) = true := by simpa [hiBits] using hpred
-                            simpa using this
+                            have hpred' := hpred
+                            simp [hiBits] at hpred'
                           cases this
                     have hμprob : (∑' i : ℕ,
                           (xi_tlBayesianMixture tEnv l).weights i * ((xi_tlBayesianMixture tEnv l).envs i).prob ha xTT) = μ.prob ha xTT := by
@@ -4630,14 +5144,14 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                       have hterm := ENNReal.le_tsum (f := fun x : Percept => μ.prob ha x) xTT
                       exact le_trans hterm hle) (by simp))
                   have hsumENN_ne_top : (μ.prob ha xFT + μ.prob ha xTT) ≠ (⊤ : ENNReal) := by
-                    -- `a + b ≠ ⊤` when both summands are finite.
-                    exact by
-                      intro htop
-                      have : (μ.prob ha xFT) = ⊤ := by
-                        -- `a ≤ a+b`, so if `a+b = ⊤` then `a = ⊤`.
-                        have : μ.prob ha xFT ≤ μ.prob ha xFT + μ.prob ha xTT := le_add_of_nonneg_right (by simp)
-                        simpa [htop] using top_le_iff.1 (le_trans this (le_rfl))
-                      exact hxFT_ne_top this
+                    intro htop
+                    have : μ.prob ha xFT = (⊤ : ENNReal) ∨ μ.prob ha xTT = (⊤ : ENNReal) := by
+                      simpa using (ENNReal.add_eq_top).1 (by simpa using htop)
+                    cases this with
+                    | inl hx =>
+                        exact hxFT_ne_top hx
+                    | inr hx =>
+                        exact hxTT_ne_top hx
                   have hsumReal :
                       ((∑ i ∈ cert.idx_false_true.toFinset, xi_tlPrefixFreeWeightAt (bitstringsUpTo l) i) +
                           (∑ i ∈ cert.idx_true_true.toFinset, xi_tlPrefixFreeWeightAt (bitstringsUpTo l) i)).toReal ≤
@@ -4655,16 +5169,13 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                   have hden' : (cert.den : ℝ) + 1 = (2 ^ XiTlOneStepRewardLowerBoundCert.denomExp l : ℝ) := by
                     -- `den = 2^D - 1`, so `den + 1 = 2^D`.
                     have hpow : 1 ≤ 2 ^ XiTlOneStepRewardLowerBoundCert.denomExp l := Nat.one_le_pow _ _ (by norm_num)
-                    have : XiTlOneStepRewardLowerBoundCert.expectedDen l + 1 = 2 ^ XiTlOneStepRewardLowerBoundCert.denomExp l := by
-                      simpa [XiTlOneStepRewardLowerBoundCert.expectedDen] using
-                        (Nat.sub_add_cancel hpow).symm
-                    -- Convert to reals.
-                    have : (cert.den + 1 : ℕ) = 2 ^ XiTlOneStepRewardLowerBoundCert.denomExp l := by
-                      simpa [hden, XiTlOneStepRewardLowerBoundCert.expectedDen] using
-                        (Nat.sub_add_cancel hpow)
-                    norm_cast at this
-                    simpa [this, add_comm, add_left_comm, add_assoc]
-                    have hclaim_le :
+                    have hdenNat : cert.den + 1 = 2 ^ XiTlOneStepRewardLowerBoundCert.denomExp l := by
+                      simpa [hden, XiTlOneStepRewardLowerBoundCert.expectedDen] using (Nat.sub_add_cancel hpow)
+                    have hdenReal :
+                        ((cert.den + 1 : ℕ) : ℝ) = (2 ^ XiTlOneStepRewardLowerBoundCert.denomExp l : ℝ) := by
+                      exact_mod_cast hdenNat
+                    simpa [Nat.cast_add, Nat.cast_one] using hdenReal
+                  have hclaim_le :
                         (Coding.decodeValueNat cert.num cert.den : ℝ) ≤
                           ((∑ i ∈ cert.idx_false_true.toFinset, xi_tlPrefixFreeWeightAt (bitstringsUpTo l) i) +
                               (∑ i ∈ cert.idx_true_true.toFinset, xi_tlPrefixFreeWeightAt (bitstringsUpTo l) i)).toReal := by
@@ -4839,18 +5350,29 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                         · exact hclaimEq
                         · exact hsumEq
                       exact le_of_eq hEq
-                    have hclaim_le_q :
+                  have hclaim_le_q :
                         (Coding.decodeValueNat cert.num cert.den : ℝ) ≤ qValue μ (p.toExtended tProg).toAgent γ h a 1 := by
                       exact le_trans hclaim_le (by simpa [hq] using hsumReal)
                   have hclaim_le_value :
                       (Coding.decodeValueNat cert.num cert.den : ℝ) ≤ value μ (p.toExtended tProg).toAgent γ h 2 := by
                     simpa [hval] using hclaim_le_q
-                  -- Assemble the `ValidValueLowerBound` conclusion for the `some out` case.
-                  -- The computed claim is exactly `decodeValueNat`.
-                  -- We have already shown `decodeValueNat ≤ value`.
-                  -- Finally rewrite the LHS.
-                  have hclaimEq : ((Coding.decodeValueActionOutput out).getD (0, Action.stay)).1 = Coding.decodeValueNat cert.num cert.den := hcompute
-                  simpa [hclaimEq, RawToPartrecProgram.computeWithin, hEval, hpTm', hEvalTemplate] using hclaim_le_value
+                  -- Assemble the `ValidValueLowerBound` conclusion for the `some out` case by rewriting the LHS claim.
+                  have hclaim_le_value' :
+                      (Coding.decodeValueNat cert.num cert.den : ℝ) ≤
+                        value μ
+                          ({ code := p.code, compute := RawToPartrecProgram.computeWithin tProg p } : ExtendedChronologicalProgram).toAgent
+                          γ h 2 := by
+                    simpa [RawToPartrecProgram.toExtended] using hclaim_le_value
+                  have hclaim :
+                      (RawToPartrecProgram.computeWithin tProg p h).1 = Coding.decodeValueNat cert.num cert.den := by
+                    simp [RawToPartrecProgram.computeWithin, hEval, hcompute]
+                  have :
+                      (RawToPartrecProgram.computeWithin tProg p h).1 ≤
+                        value μ
+                          ({ code := p.code, compute := RawToPartrecProgram.computeWithin tProg p } : ExtendedChronologicalProgram).toAgent
+                          γ h 2 := by
+                    simpa [hclaim.symm] using hclaim_le_value'
+                  simpa [RawToPartrecProgram.computeWithin] using this
           | false =>
               -- Guard does not fire: the claimed value is `0` (or times out and defaults to `0`).
               have hclaim0 : ((p.toExtended tProg).compute h').1 = 0 := by
@@ -4876,10 +5398,1602 @@ noncomputable def xi_tlOneStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l 
                         outNo]
                     have houtEq : out = outNo := by
                       simpa [hEvalTemplate] using houtMem'
-                    simp [RawToPartrecProgram.computeWithin, hEval, houtEq, outNo, Coding.decodeValueActionOutput, Coding.decodeValueNat]
+                    simp [hEval, houtEq, outNo, Coding.decodeValueActionOutput, Coding.decodeValueNat]
               have hnonneg : 0 ≤ value μ (p.toExtended tProg).toAgent γ h' 2 :=
                 value_nonneg (μ := μ) (π := (p.toExtended tProg).toAgent) (γ := γ) (h := h') (n := 2)
               simpa [hclaim0] using hnonneg
+
+/-- Discount factor `γ = 1`, matching Hutter's unnormalized finite-horizon value. -/
+noncomputable def gammaOne : DiscountFactor :=
+  { val := 1
+    nonneg := by norm_num
+    le_one := by norm_num }
+
+/-- Intermediate dyadic numerators used by `XiTlTwoStepRewardLowerBoundCert`. -/
+structure XiTlTwoStepRewardLowerBoundNumerators where
+  n1FF : ℕ
+  n1FT : ℕ
+  n1TF : ℕ
+  n1TT : ℕ
+  n2FFFT : ℕ
+  n2FFTT : ℕ
+  n2FTFT : ℕ
+  n2FTTT : ℕ
+  n2TFFT : ℕ
+  n2TFTT : ℕ
+  n2TTFT : ℕ
+  n2TTTT : ℕ
+deriving Encodable
+
+/-- A certificate for a 2-cycle (i.e. horizon `4`) value lower bound for `ξ^tl`.
+
+The verifier checks:
+
+- a single guarded root history where the program claims a positive dyadic value and chooses an action, and
+- the four one-cycle continuation actions for each possible first percept.
+
+The claimed value is computed from dyadic lower bounds on the relevant `ξ^tl` percept probabilities. -/
+structure XiTlTwoStepRewardLowerBoundCert where
+  /-- The encoded guarded history `h` (must be exactly `Coding.encodeHistoryNat h`). -/
+  historyCode : List ℕ
+  /-- Root action code at `h`. -/
+  actionCode0 : ℕ
+  /-- Branch action code after observing `⟨false,false⟩`. -/
+  actionCodeFF : ℕ
+  /-- Branch action code after observing `⟨false,true⟩`. -/
+  actionCodeFT : ℕ
+  /-- Branch action code after observing `⟨true,false⟩`. -/
+  actionCodeTF : ℕ
+  /-- Branch action code after observing `⟨true,true⟩`. -/
+  actionCodeTT : ℕ
+  /-- The claimed numerator `num` (decoded as `num / (den+1)`). -/
+  num : ℕ
+  /-- The claimed denominator offset `den` (decoded as `num / (den+1)`). -/
+  den : ℕ
+  /-- Indices yielding first percept `⟨false,false⟩` at `h ++ [act a0]`. -/
+  idx1_FF : List ℕ
+  /-- Indices yielding first percept `⟨false,true⟩` at `h ++ [act a0]`. -/
+  idx1_FT : List ℕ
+  /-- Indices yielding first percept `⟨true,false⟩` at `h ++ [act a0]`. -/
+  idx1_TF : List ℕ
+  /-- Indices yielding first percept `⟨true,true⟩` at `h ++ [act a0]`. -/
+  idx1_TT : List ℕ
+  /-- Indices yielding second percept `⟨false,true⟩` after `⟨false,false⟩` and action `aFF`. -/
+  idx2_FF_FT : List ℕ
+  /-- Indices yielding second percept `⟨true,true⟩` after `⟨false,false⟩` and action `aFF`. -/
+  idx2_FF_TT : List ℕ
+  /-- Indices yielding second percept `⟨false,true⟩` after `⟨false,true⟩` and action `aFT`. -/
+  idx2_FT_FT : List ℕ
+  /-- Indices yielding second percept `⟨true,true⟩` after `⟨false,true⟩` and action `aFT`. -/
+  idx2_FT_TT : List ℕ
+  /-- Indices yielding second percept `⟨false,true⟩` after `⟨true,false⟩` and action `aTF`. -/
+  idx2_TF_FT : List ℕ
+  /-- Indices yielding second percept `⟨true,true⟩` after `⟨true,false⟩` and action `aTF`. -/
+  idx2_TF_TT : List ℕ
+  /-- Indices yielding second percept `⟨false,true⟩` after `⟨true,true⟩` and action `aTT`. -/
+  idx2_TT_FT : List ℕ
+  /-- Indices yielding second percept `⟨true,true⟩` after `⟨true,true⟩` and action `aTT`. -/
+  idx2_TT_TT : List ℕ
+  /-- Cached dyadic numerators for the listed indices. -/
+  nums : XiTlTwoStepRewardLowerBoundNumerators
+deriving Encodable
+
+namespace XiTlTwoStepRewardLowerBoundCert
+
+abbrev bitsAt (l : ℕ) : List (List Bool) :=
+  XiTlOneStepRewardLowerBoundCert.bitsAt l
+
+abbrev denomExp (l : ℕ) : ℕ :=
+  XiTlOneStepRewardLowerBoundCert.denomExp l
+
+abbrev numeratorBound (l : ℕ) : List ℕ → Option ℕ :=
+  XiTlOneStepRewardLowerBoundCert.numeratorBound l
+
+abbrev checkIdxOutputs (tEnv l : ℕ) (ha : History) (target : Percept) (idxs : List ℕ) : Bool :=
+  XiTlOneStepRewardLowerBoundCert.checkIdxOutputs tEnv l ha target idxs
+
+def denomPow1 (l : ℕ) : ℕ :=
+  2 ^ denomExp l
+
+def denomPow2 (l : ℕ) : ℕ :=
+  denomPow1 l * denomPow1 l
+
+def expectedDen (l : ℕ) : ℕ :=
+  denomPow2 l - 1
+
+def computeClaimNumerator (l : ℕ) (cert : XiTlTwoStepRewardLowerBoundCert) : Option ℕ := do
+  let n1FF ← numeratorBound l cert.idx1_FF
+  let n1FT ← numeratorBound l cert.idx1_FT
+  let n1TF ← numeratorBound l cert.idx1_TF
+  let n1TT ← numeratorBound l cert.idx1_TT
+  let n2FFFT ← numeratorBound l cert.idx2_FF_FT
+  let n2FFTT ← numeratorBound l cert.idx2_FF_TT
+  let n2FTFT ← numeratorBound l cert.idx2_FT_FT
+  let n2FTTT ← numeratorBound l cert.idx2_FT_TT
+  let n2TFFT ← numeratorBound l cert.idx2_TF_FT
+  let n2TFTT ← numeratorBound l cert.idx2_TF_TT
+  let n2TTFT ← numeratorBound l cert.idx2_TT_FT
+  let n2TTTT ← numeratorBound l cert.idx2_TT_TT
+  let reward1 : ℕ := n1FT + n1TT
+  let reward2FF : ℕ := n2FFFT + n2FFTT
+  let reward2FT : ℕ := n2FTFT + n2FTTT
+  let reward2TF : ℕ := n2TFFT + n2TFTT
+  let reward2TT : ℕ := n2TTFT + n2TTTT
+  let den1 : ℕ := denomPow1 l
+  pure (reward1 * den1 + n1FF * reward2FF + n1FT * reward2FT + n1TF * reward2TF + n1TT * reward2TT)
+
+def claimNumerator (l : ℕ) (nums : XiTlTwoStepRewardLowerBoundNumerators) : ℕ :=
+  let reward1 : ℕ := nums.n1FT + nums.n1TT
+  let reward2FF : ℕ := nums.n2FFFT + nums.n2FFTT
+  let reward2FT : ℕ := nums.n2FTFT + nums.n2FTTT
+  let reward2TF : ℕ := nums.n2TFFT + nums.n2TFTT
+  let reward2TT : ℕ := nums.n2TTFT + nums.n2TTTT
+  let den1 : ℕ := denomPow1 l
+  reward1 * den1 + nums.n1FF * reward2FF + nums.n1FT * reward2FT + nums.n1TF * reward2TF + nums.n1TT * reward2TT
+
+def computeNumerators (l : ℕ) (cert : XiTlTwoStepRewardLowerBoundCert) : Option XiTlTwoStepRewardLowerBoundNumerators := do
+  let n1FF ← numeratorBound l cert.idx1_FF
+  let n1FT ← numeratorBound l cert.idx1_FT
+  let n1TF ← numeratorBound l cert.idx1_TF
+  let n1TT ← numeratorBound l cert.idx1_TT
+  let n2FFFT ← numeratorBound l cert.idx2_FF_FT
+  let n2FFTT ← numeratorBound l cert.idx2_FF_TT
+  let n2FTFT ← numeratorBound l cert.idx2_FT_FT
+  let n2FTTT ← numeratorBound l cert.idx2_FT_TT
+  let n2TFFT ← numeratorBound l cert.idx2_TF_FT
+  let n2TFTT ← numeratorBound l cert.idx2_TF_TT
+  let n2TTFT ← numeratorBound l cert.idx2_TT_FT
+  let n2TTTT ← numeratorBound l cert.idx2_TT_TT
+  pure ⟨n1FF, n1FT, n1TF, n1TT, n2FFFT, n2FFTT, n2FTFT, n2FTTT, n2TFFT, n2TFTT, n2TTFT, n2TTTT⟩
+
+def ok (tProg tEnv l : ℕ) (p : RawToPartrecProgram) (cert : XiTlTwoStepRewardLowerBoundCert) : Prop :=
+  match
+    Coding.decodeHistoryNat cert.historyCode,
+    Coding.decodeActionNat cert.actionCode0,
+    Coding.decodeActionNat cert.actionCodeFF,
+    Coding.decodeActionNat cert.actionCodeFT,
+    Coding.decodeActionNat cert.actionCodeTF,
+    Coding.decodeActionNat cert.actionCodeTT
+  with
+  | some h, some a0, some aFF, some aFT, some aTF, some aTT =>
+      let xFF : Percept := ⟨false, false⟩
+      let xFT : Percept := ⟨false, true⟩
+      let xTF : Percept := ⟨true, false⟩
+      let xTT : Percept := ⟨true, true⟩
+      let ha0 : History := h ++ [HistElem.act a0]
+      let hFF : History := h ++ [HistElem.act a0, HistElem.per xFF]
+      let hFT : History := h ++ [HistElem.act a0, HistElem.per xFT]
+      let hTF : History := h ++ [HistElem.act a0, HistElem.per xTF]
+      let hTT : History := h ++ [HistElem.act a0, HistElem.per xTT]
+      let haFF : History := hFF ++ [HistElem.act aFF]
+      let haFT : History := hFT ++ [HistElem.act aFT]
+      let haTF : History := hTF ++ [HistElem.act aTF]
+      let haTT : History := hTT ++ [HistElem.act aTT]
+      let outRoot : List ℕ := [cert.num, cert.den, Coding.encodeActionNat a0]
+      let outFF : List ℕ := [0, 0, Coding.encodeActionNat aFF]
+      let outFT : List ℕ := [0, 0, Coding.encodeActionNat aFT]
+      let outTF : List ℕ := [0, 0, Coding.encodeActionNat aTF]
+      let outTT : List ℕ := [0, 0, Coding.encodeActionNat aTT]
+      let defaultOut : List ℕ := [0, 0, Coding.encodeActionNat Action.stay]
+      let cases : List (List ℕ × List ℕ) :=
+        [ (Coding.encodeHistoryNat h, outRoot)
+        , (Coding.encodeHistoryNat hFF, outFF)
+        , (Coding.encodeHistoryNat hFT, outFT)
+        , (Coding.encodeHistoryNat hTF, outTF)
+        , (Coding.encodeHistoryNat hTT, outTT)
+        ]
+      Coding.encodeHistoryNat h = cert.historyCode ∧
+        p.tm = RawToPartrecProgram.dispatchHistoryCodes cases defaultOut ∧
+          cert.den = expectedDen l ∧
+            ha0.wellFormed ∧
+              haFF.wellFormed ∧ haFT.wellFormed ∧ haTF.wellFormed ∧ haTT.wellFormed ∧
+                cert.idx1_FF.Nodup ∧ cert.idx1_FT.Nodup ∧ cert.idx1_TF.Nodup ∧ cert.idx1_TT.Nodup ∧
+                  cert.idx2_FF_FT.Nodup ∧ cert.idx2_FF_TT.Nodup ∧ cert.idx2_FT_FT.Nodup ∧ cert.idx2_FT_TT.Nodup ∧
+                    cert.idx2_TF_FT.Nodup ∧ cert.idx2_TF_TT.Nodup ∧ cert.idx2_TT_FT.Nodup ∧ cert.idx2_TT_TT.Nodup ∧
+                      checkIdxOutputs tEnv l ha0 xFF cert.idx1_FF = true ∧
+                        checkIdxOutputs tEnv l ha0 xFT cert.idx1_FT = true ∧
+                          checkIdxOutputs tEnv l ha0 xTF cert.idx1_TF = true ∧
+                            checkIdxOutputs tEnv l ha0 xTT cert.idx1_TT = true ∧
+                              checkIdxOutputs tEnv l haFF xFT cert.idx2_FF_FT = true ∧
+                                checkIdxOutputs tEnv l haFF xTT cert.idx2_FF_TT = true ∧
+                                  checkIdxOutputs tEnv l haFT xFT cert.idx2_FT_FT = true ∧
+                                    checkIdxOutputs tEnv l haFT xTT cert.idx2_FT_TT = true ∧
+                                      checkIdxOutputs tEnv l haTF xFT cert.idx2_TF_FT = true ∧
+                                        checkIdxOutputs tEnv l haTF xTT cert.idx2_TF_TT = true ∧
+                                          checkIdxOutputs tEnv l haTT xFT cert.idx2_TT_FT = true ∧
+                                            checkIdxOutputs tEnv l haTT xTT cert.idx2_TT_TT = true ∧
+                                              computeNumerators l cert = some cert.nums ∧
+                                                cert.num = claimNumerator l cert.nums ∧
+                                                StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat h) =
+                                                    some outRoot ∧
+                                                  StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hFF) =
+                                                      some outFF ∧
+                                                    StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hFT) =
+                                                        some outFT ∧
+                                                      StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hTF) =
+                                                          some outTF ∧
+                                                        StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hTT) =
+                                                            some outTT
+  | _, _, _, _, _, _ => False
+
+end XiTlTwoStepRewardLowerBoundCert
+
+set_option maxHeartbeats 2000000
+
+/-- A 2-cycle “actual verifier” for horizon `4` under `ξ^tl` at discount `γ = 1`.
+
+Certificates describe a guarded root history with a dyadic lower bound on the 2-cycle value, together with
+the four continuation actions and dyadic bounds needed to justify the claim. -/
+noncomputable def xi_tlTwoStepRewardLowerBoundSoundProofSystemToPartrec (tEnv l : ℕ) :
+    EncodableSoundProofSystemFamily (α := RawToPartrecProgram)
+      (fun tProg p => ValidValueLowerBound (xi_tlEnvironment tEnv l) gammaOne 4 (p.toExtended tProg)) := by
+  classical
+  refine
+    { Proof := XiTlTwoStepRewardLowerBoundCert
+      verify := fun tProg p cert =>
+        decide (XiTlTwoStepRewardLowerBoundCert.ok (tProg := tProg) (tEnv := tEnv) (l := l) p cert)
+      sound := ?_ }
+  intro tProg p cert hverify
+  have hok :
+      XiTlTwoStepRewardLowerBoundCert.ok (tProg := tProg) (tEnv := tEnv) (l := l) p cert :=
+    of_decide_eq_true hverify
+  -- Decode the guarded history and actions.
+  cases hdecH : Coding.decodeHistoryNat cert.historyCode with
+  | none =>
+      have : False := by
+        have hok' := hok
+        simp [XiTlTwoStepRewardLowerBoundCert.ok, hdecH] at hok'
+      cases this
+  | some h =>
+      cases hdecA0 : Coding.decodeActionNat cert.actionCode0 with
+      | none =>
+          have : False := by
+            have hok' := hok
+            simp [XiTlTwoStepRewardLowerBoundCert.ok, hdecH, hdecA0] at hok'
+          cases this
+      | some a0 =>
+          cases hdecAFF : Coding.decodeActionNat cert.actionCodeFF with
+          | none =>
+              have : False := by
+                have hok' := hok
+                simp [XiTlTwoStepRewardLowerBoundCert.ok, hdecH, hdecA0, hdecAFF] at hok'
+              cases this
+          | some aFF =>
+              cases hdecAFT : Coding.decodeActionNat cert.actionCodeFT with
+              | none =>
+                  have : False := by
+                    have hok' := hok
+                    simp [XiTlTwoStepRewardLowerBoundCert.ok, hdecH, hdecA0, hdecAFF, hdecAFT] at hok'
+                  cases this
+              | some aFT =>
+                  cases hdecATF : Coding.decodeActionNat cert.actionCodeTF with
+                  | none =>
+                      have : False := by
+                        have hok' := hok
+                        simp [XiTlTwoStepRewardLowerBoundCert.ok, hdecH, hdecA0, hdecAFF, hdecAFT, hdecATF] at hok'
+                      cases this
+                  | some aTF =>
+                      cases hdecATT : Coding.decodeActionNat cert.actionCodeTT with
+                      | none =>
+                          have : False := by
+                            have hok' := hok
+                            simp [XiTlTwoStepRewardLowerBoundCert.ok, hdecH, hdecA0, hdecAFF, hdecAFT, hdecATF, hdecATT] at hok'
+                          cases this
+                      | some aTT =>
+                          -- Unpack `ok`.
+                          rcases (by
+                            simpa [XiTlTwoStepRewardLowerBoundCert.ok, hdecH, hdecA0, hdecAFF, hdecAFT, hdecATF, hdecATT]
+                              using hok) with
+                            ⟨hhEnc, hpTm, hden, hha0Wf, hhaFFWf, hhaFTWf, hhaTFWf, hhaTTWf, hnodup1FF, hnodup1FT,
+                              hnodup1TF, hnodup1TT, hnodup2FFFT, hnodup2FFTT, hnodup2FTFT, hnodup2FTTT, hnodup2TFFT,
+                              hnodup2TFTT, hnodup2TTFT, hnodup2TTTT, hIdx1FF, hIdx1FT, hIdx1TF, hIdx1TT, hIdx2FFFT,
+                              hIdx2FFTT, hIdx2FTFT, hIdx2FTTT, hIdx2TFFT, hIdx2TFTT, hIdx2TTFT, hIdx2TTTT, hnum,
+                              hEvalRoot, hEvalFF, hEvalFT, hEvalTF, hEvalTT⟩
+                          let μ : Environment := xi_tlEnvironment tEnv l
+                          let xFF : Percept := ⟨false, false⟩
+                          let xFT : Percept := ⟨false, true⟩
+                          let xTF : Percept := ⟨true, false⟩
+                          let xTT : Percept := ⟨true, true⟩
+                          let ha0 : History := h ++ [HistElem.act a0]
+                          let hFF : History := h ++ [HistElem.act a0, HistElem.per xFF]
+                          let hFT : History := h ++ [HistElem.act a0, HistElem.per xFT]
+                          let hTF : History := h ++ [HistElem.act a0, HistElem.per xTF]
+                          let hTT : History := h ++ [HistElem.act a0, HistElem.per xTT]
+                          let haFF : History := hFF ++ [HistElem.act aFF]
+                          let haFT : History := hFT ++ [HistElem.act aFT]
+                          let haTF : History := hTF ++ [HistElem.act aTF]
+                          let haTT : History := hTT ++ [HistElem.act aTT]
+                          let outRoot : List ℕ := [cert.num, cert.den, Coding.encodeActionNat a0]
+                          let outFF : List ℕ := [0, 0, Coding.encodeActionNat aFF]
+                          let outFT : List ℕ := [0, 0, Coding.encodeActionNat aFT]
+                          let outTF : List ℕ := [0, 0, Coding.encodeActionNat aTF]
+                          let outTT : List ℕ := [0, 0, Coding.encodeActionNat aTT]
+                          let defaultOut : List ℕ := [0, 0, Coding.encodeActionNat Action.stay]
+                          let cases : List (List ℕ × List ℕ) :=
+                            [ (Coding.encodeHistoryNat h, outRoot)
+                            , (Coding.encodeHistoryNat hFF, outFF)
+                            , (Coding.encodeHistoryNat hFT, outFT)
+                            , (Coding.encodeHistoryNat hTF, outTF)
+                            , (Coding.encodeHistoryNat hTT, outTT)
+                            ]
+                          have hpTm' : p.tm = RawToPartrecProgram.dispatchHistoryCodes cases defaultOut := hpTm
+                          -- Main soundness goal: global `ValidValueLowerBound`.
+                          intro h' hwf
+                          by_cases hh' : h' = h
+                          · subst h'
+                            -- Root history: `compute` returns the verified claim and action.
+                            have hEvalRootOut :
+                                StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat h) = some outRoot := by
+                              simpa [outRoot] using hEvalFF
+                            have hEvalFFOut :
+                                StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hFF) = some outFF := by
+                              simpa [hFF, xFF, outFF] using hEvalFT
+                            have hEvalFTOut :
+                                StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hFT) = some outFT := by
+                              simpa [hFT, xFT, outFT] using hEvalTF
+                            have hEvalTFOut :
+                                StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hTF) = some outTF := by
+                              simpa [hTF, xTF, outTF] using hEvalTT.1
+                            have hEvalTTOut :
+                                StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hTT) = some outTT := by
+                              simpa [hTT, xTT, outTT] using hEvalTT.2
+                            have hcompute :
+                                (p.toExtended tProg).compute h =
+                                  (Coding.decodeValueNat cert.num cert.den, a0) := by
+                              unfold RawToPartrecProgram.toExtended RawToPartrecProgram.computeWithin
+                              simp [hEvalRootOut, hEvalRoot, outRoot, Coding.decodeValueActionOutput,
+                                Coding.decodeActionNat_encodeActionNat, Coding.decodeValueNat]
+                            have hclaim :
+                                ((p.toExtended tProg).compute h).1 = Coding.decodeValueNat cert.num cert.den := by
+                              simp [hcompute]
+                            have hact : ((p.toExtended tProg).compute h).2 = a0 := by
+                              simp [hcompute]
+                            -- Establish branch actions (needed to unfold the value recursion).
+                            have hcomputeFF :
+                                (p.toExtended tProg).compute hFF = (0, aFF) := by
+                              unfold RawToPartrecProgram.toExtended RawToPartrecProgram.computeWithin
+                              simp [hEvalFFOut, outFF, Coding.decodeValueActionOutput, Coding.decodeActionNat_encodeActionNat,
+                                Coding.decodeValueNat]
+                            have hcomputeFT :
+                                (p.toExtended tProg).compute hFT = (0, aFT) := by
+                              unfold RawToPartrecProgram.toExtended RawToPartrecProgram.computeWithin
+                              simp [hEvalFTOut, outFT, Coding.decodeValueActionOutput, Coding.decodeActionNat_encodeActionNat,
+                                Coding.decodeValueNat]
+                            have hcomputeTF :
+                                (p.toExtended tProg).compute hTF = (0, aTF) := by
+                              unfold RawToPartrecProgram.toExtended RawToPartrecProgram.computeWithin
+                              simp [hEvalTFOut, outTF, Coding.decodeValueActionOutput, Coding.decodeActionNat_encodeActionNat,
+                                Coding.decodeValueNat]
+                            have hcomputeTT :
+                                (p.toExtended tProg).compute hTT = (0, aTT) := by
+                              unfold RawToPartrecProgram.toExtended RawToPartrecProgram.computeWithin
+                              simp [hEvalTTOut, outTT, Coding.decodeValueActionOutput, Coding.decodeActionNat_encodeActionNat,
+                                Coding.decodeValueNat]
+                            -- Rewrite `value` at horizon `4` as a `qValue` at horizon `3`.
+                            have hval :
+                                value μ (p.toExtended tProg).toAgent gammaOne h 4 =
+                                  qValue μ (p.toExtended tProg).toAgent gammaOne h a0 3 := by
+                              have hwf' : h.wellFormed := hwf
+                              have hval' :
+                                  value μ (p.toExtended tProg).toAgent gammaOne h 4 =
+                                    qValue μ (p.toExtended tProg).toAgent gammaOne h ((p.toExtended tProg).compute h).2 3 := by
+                                simpa [ExtendedChronologicalProgram.toAgent, deterministicAgent] using
+                                  (value_deterministicAgent_succ (μ := μ) (γ := gammaOne)
+                                    (act := fun h0 => ((p.toExtended tProg).compute h0).2) (h := h) (n := 3) hwf')
+                              simpa [hact] using hval'
+                            -- Expand `qValue` and then each branch `value` at horizon `2`.
+                            have hq :
+                                qValue μ (p.toExtended tProg).toAgent gammaOne h a0 3 =
+                                  (μ.prob ha0 xFF).toReal * (0 + gammaOne.val * value μ (p.toExtended tProg).toAgent gammaOne hFF 2) +
+                                    (μ.prob ha0 xFT).toReal * (1 + gammaOne.val * value μ (p.toExtended tProg).toAgent gammaOne hFT 2) +
+                                      (μ.prob ha0 xTF).toReal * (0 + gammaOne.val * value μ (p.toExtended tProg).toAgent gammaOne hTF 2) +
+                                        (μ.prob ha0 xTT).toReal * (1 + gammaOne.val * value μ (p.toExtended tProg).toAgent gammaOne hTT 2) := by
+                              -- `qValue_succ` is a `foldl` over the 4 percepts; unfold explicitly.
+                              have hha0Wf' : ha0.wellFormed := hha0Wf
+                              simp [qValue_succ, ha0, hha0Wf', List.foldl_cons, List.foldl_nil, Percept.reward, gammaOne,
+                                xFF, xFT, xTF, xTT, hFF, hFT, hTF, hTT]
+                            -- Each branch `value _ _ _ _ 2` reduces to a 1-step expected reward under the chosen action.
+                            have wellFormed_append_act_per_of_wellFormed_append_act
+                                (h : History) (a : Action) (x : Percept)
+                                (hw : (h ++ [HistElem.act a]).wellFormed = true) :
+                                (h ++ [HistElem.act a, HistElem.per x]).wellFormed = true := by
+                              -- `History.wellFormed` consumes histories two steps at a time.
+                              induction h using List.twoStepInduction with
+                              | nil =>
+                                  simp [History.wellFormed]
+                              | singleton e =>
+                                  cases e <;> simp [History.wellFormed] at hw
+                              | cons_cons e1 e2 rest ih =>
+                                  cases e1 <;> cases e2 <;> simp [History.wellFormed] at hw ⊢
+                                  exact ih hw
+                            have hvalFF :
+                                value μ (p.toExtended tProg).toAgent gammaOne hFF 2 =
+                                  qValue μ (p.toExtended tProg).toAgent gammaOne hFF aFF 1 := by
+                              have hwfFF : hFF.wellFormed := by
+                                have hwfFF' :
+                                    (h ++ [HistElem.act a0, HistElem.per xFF]).wellFormed = true :=
+                                  wellFormed_append_act_per_of_wellFormed_append_act h a0 xFF hha0Wf
+                                simpa [hFF] using hwfFF'
+                              have hactFF : ((p.toExtended tProg).compute hFF).2 = aFF := by
+                                simp [hcomputeFF]
+                              have hval' :
+                                  value μ (p.toExtended tProg).toAgent gammaOne hFF 2 =
+                                    qValue μ (p.toExtended tProg).toAgent gammaOne hFF ((p.toExtended tProg).compute hFF).2 1 := by
+                                simpa [ExtendedChronologicalProgram.toAgent, deterministicAgent] using
+                                  (value_deterministicAgent_succ (μ := μ) (γ := gammaOne)
+                                    (act := fun h0 => ((p.toExtended tProg).compute h0).2) (h := hFF) (n := 1) hwfFF)
+                              simpa [hactFF] using hval'
+                            have hvalFT :
+                                value μ (p.toExtended tProg).toAgent gammaOne hFT 2 =
+                                  qValue μ (p.toExtended tProg).toAgent gammaOne hFT aFT 1 := by
+                              have hwfFT : hFT.wellFormed := by
+                                have hwfFT' :
+                                    (h ++ [HistElem.act a0, HistElem.per xFT]).wellFormed = true :=
+                                  wellFormed_append_act_per_of_wellFormed_append_act h a0 xFT hha0Wf
+                                simpa [hFT] using hwfFT'
+                              have hactFT : ((p.toExtended tProg).compute hFT).2 = aFT := by
+                                simp [hcomputeFT]
+                              have hval' :
+                                  value μ (p.toExtended tProg).toAgent gammaOne hFT 2 =
+                                    qValue μ (p.toExtended tProg).toAgent gammaOne hFT ((p.toExtended tProg).compute hFT).2 1 := by
+                                simpa [ExtendedChronologicalProgram.toAgent, deterministicAgent] using
+                                  (value_deterministicAgent_succ (μ := μ) (γ := gammaOne)
+                                    (act := fun h0 => ((p.toExtended tProg).compute h0).2) (h := hFT) (n := 1) hwfFT)
+                              simpa [hactFT] using hval'
+                            have hvalTF :
+                                value μ (p.toExtended tProg).toAgent gammaOne hTF 2 =
+                                  qValue μ (p.toExtended tProg).toAgent gammaOne hTF aTF 1 := by
+                              have hwfTF : hTF.wellFormed := by
+                                have hwfTF' :
+                                    (h ++ [HistElem.act a0, HistElem.per xTF]).wellFormed = true :=
+                                  wellFormed_append_act_per_of_wellFormed_append_act h a0 xTF hha0Wf
+                                simpa [hTF] using hwfTF'
+                              have hactTF : ((p.toExtended tProg).compute hTF).2 = aTF := by
+                                simp [hcomputeTF]
+                              have hval' :
+                                  value μ (p.toExtended tProg).toAgent gammaOne hTF 2 =
+                                    qValue μ (p.toExtended tProg).toAgent gammaOne hTF ((p.toExtended tProg).compute hTF).2 1 := by
+                                simpa [ExtendedChronologicalProgram.toAgent, deterministicAgent] using
+                                  (value_deterministicAgent_succ (μ := μ) (γ := gammaOne)
+                                    (act := fun h0 => ((p.toExtended tProg).compute h0).2) (h := hTF) (n := 1) hwfTF)
+                              simpa [hactTF] using hval'
+                            have hvalTT :
+                                value μ (p.toExtended tProg).toAgent gammaOne hTT 2 =
+                                  qValue μ (p.toExtended tProg).toAgent gammaOne hTT aTT 1 := by
+                              have hwfTT : hTT.wellFormed := by
+                                have hwfTT' :
+                                    (h ++ [HistElem.act a0, HistElem.per xTT]).wellFormed = true :=
+                                  wellFormed_append_act_per_of_wellFormed_append_act h a0 xTT hha0Wf
+                                simpa [hTT] using hwfTT'
+                              have hactTT : ((p.toExtended tProg).compute hTT).2 = aTT := by
+                                simp [hcomputeTT]
+                              have hval' :
+                                  value μ (p.toExtended tProg).toAgent gammaOne hTT 2 =
+                                    qValue μ (p.toExtended tProg).toAgent gammaOne hTT ((p.toExtended tProg).compute hTT).2 1 := by
+                                simpa [ExtendedChronologicalProgram.toAgent, deterministicAgent] using
+                                  (value_deterministicAgent_succ (μ := μ) (γ := gammaOne)
+                                    (act := fun h0 => ((p.toExtended tProg).compute h0).2) (h := hTT) (n := 1) hwfTT)
+                              simpa [hactTT] using hval'
+                            -- Expand each branch `qValue` at horizon `1` to the reward-true mass.
+                            have hhaFFWf' : haFF.wellFormed = true := by
+                              simpa [haFF, hFF, xFF] using hhaFFWf
+                            have hhaFTWf' : haFT.wellFormed = true := by
+                              simpa [haFT, hFT, xFT] using hhaFTWf
+                            have hhaTFWf' : haTF.wellFormed = true := by
+                              simpa [haTF, hTF, xTF] using hhaTFWf
+                            have hhaTTWf' : haTT.wellFormed = true := by
+                              simpa [haTT, hTT, xTT] using hhaTTWf
+                            have hqFF :
+                                qValue μ (p.toExtended tProg).toAgent gammaOne hFF aFF 1 =
+                                  (μ.prob haFF xFT).toReal + (μ.prob haFF xTT).toReal := by
+                              simp [qValue_succ, value_zero, Percept.reward, haFF, xFT, xTT, hhaFFWf', List.foldl_cons,
+                                List.foldl_nil, gammaOne]
+                            have hqFT :
+                                qValue μ (p.toExtended tProg).toAgent gammaOne hFT aFT 1 =
+                                  (μ.prob haFT xFT).toReal + (μ.prob haFT xTT).toReal := by
+                              simp [qValue_succ, value_zero, Percept.reward, haFT, xFT, xTT, hhaFTWf', List.foldl_cons,
+                                List.foldl_nil, gammaOne]
+                            have hqTF :
+                                qValue μ (p.toExtended tProg).toAgent gammaOne hTF aTF 1 =
+                                  (μ.prob haTF xFT).toReal + (μ.prob haTF xTT).toReal := by
+                              simp [qValue_succ, value_zero, Percept.reward, haTF, xFT, xTT, hhaTFWf', List.foldl_cons,
+                                List.foldl_nil, gammaOne]
+                            have hqTT :
+                                qValue μ (p.toExtended tProg).toAgent gammaOne hTT aTT 1 =
+                                  (μ.prob haTT xFT).toReal + (μ.prob haTT xTT).toReal := by
+                              simp [qValue_succ, value_zero, Percept.reward, haTT, xFT, xTT, hhaTTWf', List.foldl_cons,
+                                List.foldl_nil, gammaOne]
+                            -- Lower bound each relevant probability by the certified finite sums.
+                            have hx1FF_le :
+                                (∑ i ∈ cert.idx1_FF.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob ha0 xFF := by
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := ha0) (target := xFF) (idxs := cert.idx1_FF)
+                                  (by
+                                    simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs] using hIdx1FF))
+                            -- The remaining probability bounds are analogous; we reuse the same pattern by symmetry.
+                            have hx1FT_le :
+                                (∑ i ∈ cert.idx1_FT.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob ha0 xFT := by
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := ha0) (target := xFT) (idxs := cert.idx1_FT)
+                                  (by
+                                    simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs] using hIdx1FT))
+                            have hx1TF_le :
+                                (∑ i ∈ cert.idx1_TF.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob ha0 xTF := by
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := ha0) (target := xTF) (idxs := cert.idx1_TF)
+                                  (by
+                                    simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs] using hIdx1TF))
+                            have hx1TT_le :
+                                (∑ i ∈ cert.idx1_TT.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob ha0 xTT := by
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := ha0) (target := xTT) (idxs := cert.idx1_TT)
+                                  (by
+                                    simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs] using hIdx1TT))
+                            -- Second-step reward-true probability bounds at each branch.
+                            have hx2FF_FT_le :
+                                (∑ i ∈ cert.idx2_FF_FT.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob haFF xFT := by
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := haFF) (target := xFT) (idxs := cert.idx2_FF_FT)
+                                  (by
+                                    simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs, haFF, hFF, xFF, xFT] using hIdx2FFFT))
+                            have hx2FF_TT_le :
+                                (∑ i ∈ cert.idx2_FF_TT.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob haFF xTT := by
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := haFF) (target := xTT) (idxs := cert.idx2_FF_TT)
+                                  (by
+                                    simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs, haFF, hFF, xFF, xTT] using hIdx2FFTT))
+                            -- For the other three branches, we only need the reward-true mass lower bounds.
+                            have hx2FT_FT_le :
+                                (∑ i ∈ cert.idx2_FT_FT.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob haFT xFT := by
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := haFT) (target := xFT) (idxs := cert.idx2_FT_FT)
+                                  (by
+                                    simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs, haFT, hFT, xFT] using hIdx2FTFT))
+                            have hx2FT_TT_le :
+                                (∑ i ∈ cert.idx2_FT_TT.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob haFT xTT := by
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := haFT) (target := xTT) (idxs := cert.idx2_FT_TT)
+                                  (by
+                                    simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs, haFT, hFT, xFT, xTT] using hIdx2FTTT))
+                            have hx2TF_FT_le :
+                                (∑ i ∈ cert.idx2_TF_FT.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob haTF xFT := by
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := haTF) (target := xFT) (idxs := cert.idx2_TF_FT)
+                                  (by
+                                    simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs, haTF, hTF, xTF, xFT] using hIdx2TFFT))
+                            have hx2TF_TT_le :
+                                (∑ i ∈ cert.idx2_TF_TT.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob haTF xTT := by
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := haTF) (target := xTT) (idxs := cert.idx2_TF_TT)
+                                  (by
+                                    simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs, haTF, hTF, xTF, xTT] using hIdx2TFTT))
+                            have hx2TT_FT_le :
+                                (∑ i ∈ cert.idx2_TT_FT.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob haTT xFT := by
+                              have hIdx2TTFT' :
+                                  XiTlOneStepRewardLowerBoundCert.checkIdxOutputs tEnv l haTT xFT cert.idx2_TT_FT = true := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs, haTT, hTT] using hIdx2TTFT
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := haTT) (target := xFT) (idxs := cert.idx2_TT_FT)
+                                  (hIdx := hIdx2TTFT'))
+                            have hx2TT_TT_le :
+                                (∑ i ∈ cert.idx2_TT_TT.toFinset, xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                  μ.prob haTT xTT := by
+                              have hIdx2TTTT' :
+                                  XiTlOneStepRewardLowerBoundCert.checkIdxOutputs tEnv l haTT xTT cert.idx2_TT_TT = true := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.checkIdxOutputs, haTT, hTT] using hIdx2TTTT
+                              simpa [μ] using
+                                (XiTlOneStepRewardLowerBoundCert.sum_prefixFreeWeightAt_le_prob_of_checkIdxOutputs
+                                  (tEnv := tEnv) (l := l) (ha := haTT) (target := xTT) (idxs := cert.idx2_TT_TT)
+                                  (hIdx := hIdx2TTTT'))
+                            -- Convert the ENNReal bounds to real bounds.
+                            have ha0_prob_le_one (x : Percept) : μ.prob ha0 x ≤ 1 := by
+                              have hsum := μ.prob_le_one ha0 hha0Wf
+                              exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob ha0 x) x) hsum
+                            have hx1FF_le_real :
+                                (∑ i ∈ cert.idx1_FF.toFinset,
+                                      xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal ≤
+                                  (μ.prob ha0 xFF).toReal := by
+                              have hneTopLeft :
+                                  (∑ i ∈ cert.idx1_FF.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                have : (∑ i ∈ cert.idx1_FF.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                  exact le_trans hx1FF_le (ha0_prob_le_one xFF)
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hneTopRight : μ.prob ha0 xFF ≠ (⊤ : ENNReal) := by
+                                exact ne_of_lt (lt_of_le_of_lt (ha0_prob_le_one xFF) (by simp))
+                              exact (ENNReal.toReal_le_toReal hneTopLeft hneTopRight).2 hx1FF_le
+                            have hx1FT_le_real :
+                                (∑ i ∈ cert.idx1_FT.toFinset,
+                                      xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal ≤
+                                  (μ.prob ha0 xFT).toReal := by
+                              have hneTopLeft :
+                                  (∑ i ∈ cert.idx1_FT.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                have : (∑ i ∈ cert.idx1_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                  exact le_trans hx1FT_le (ha0_prob_le_one xFT)
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hneTopRight : μ.prob ha0 xFT ≠ (⊤ : ENNReal) := by
+                                exact ne_of_lt (lt_of_le_of_lt (ha0_prob_le_one xFT) (by simp))
+                              exact (ENNReal.toReal_le_toReal hneTopLeft hneTopRight).2 hx1FT_le
+                            have hx1TF_le_real :
+                                (∑ i ∈ cert.idx1_TF.toFinset,
+                                      xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal ≤
+                                  (μ.prob ha0 xTF).toReal := by
+                              have hneTopLeft :
+                                  (∑ i ∈ cert.idx1_TF.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                have : (∑ i ∈ cert.idx1_TF.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                  exact le_trans hx1TF_le (ha0_prob_le_one xTF)
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hneTopRight : μ.prob ha0 xTF ≠ (⊤ : ENNReal) := by
+                                exact ne_of_lt (lt_of_le_of_lt (ha0_prob_le_one xTF) (by simp))
+                              exact (ENNReal.toReal_le_toReal hneTopLeft hneTopRight).2 hx1TF_le
+                            have hx1TT_le_real :
+                                (∑ i ∈ cert.idx1_TT.toFinset,
+                                      xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal ≤
+                                  (μ.prob ha0 xTT).toReal := by
+                              have hneTopLeft :
+                                  (∑ i ∈ cert.idx1_TT.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                have : (∑ i ∈ cert.idx1_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                  exact le_trans hx1TT_le (ha0_prob_le_one xTT)
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hneTopRight : μ.prob ha0 xTT ≠ (⊤ : ENNReal) := by
+                                exact ne_of_lt (lt_of_le_of_lt (ha0_prob_le_one xTT) (by simp))
+                              exact (ENNReal.toReal_le_toReal hneTopLeft hneTopRight).2 hx1TT_le
+                            -- Branch reward-true lower bounds to reals.
+                            have hx2FF_le_real :
+                                ((∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                      (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal ≤
+                                  (μ.prob haFF xFT).toReal + (μ.prob haFF xTT).toReal := by
+                              have hENN :
+                                  (∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                    μ.prob haFF xFT + μ.prob haFF xTT := add_le_add hx2FF_FT_le hx2FF_TT_le
+                              have hneTopLeft :
+                                  (∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                have : (μ.prob haFF xFT + μ.prob haFF xTT) ≤ (1 : ENNReal) + 1 := by
+                                  have hx1 : μ.prob haFF xFT ≤ 1 := by
+                                    have := μ.prob_le_one haFF hhaFFWf'
+                                    exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob haFF x) xFT) this
+                                  have hx2 : μ.prob haFF xTT ≤ 1 := by
+                                    have := μ.prob_le_one haFF hhaFFWf'
+                                    exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob haFF x) xTT) this
+                                  exact add_le_add hx1 hx2
+                                have :
+                                    (∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                      (1 : ENNReal) + 1 := by
+                                  exact le_trans hENN this
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hneTopRight : (μ.prob haFF xFT + μ.prob haFF xTT) ≠ (⊤ : ENNReal) := by
+                                have : (μ.prob haFF xFT + μ.prob haFF xTT) ≤ (1 : ENNReal) + 1 := by
+                                  have hx1 : μ.prob haFF xFT ≤ 1 := by
+                                    have := μ.prob_le_one haFF hhaFFWf'
+                                    exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob haFF x) xFT) this
+                                  have hx2 : μ.prob haFF xTT ≤ 1 := by
+                                    have := μ.prob_le_one haFF hhaFFWf'
+                                    exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob haFF x) xTT) this
+                                  exact add_le_add hx1 hx2
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hleReal :
+                                  ((∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                              (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal ≤
+                                        (μ.prob haFF xFT + μ.prob haFF xTT).toReal :=
+                                (ENNReal.toReal_le_toReal hneTopLeft hneTopRight).2 hENN
+                              have hxFT_ne_top : μ.prob haFF xFT ≠ (⊤ : ENNReal) := by
+                                have hxFT_le_one : μ.prob haFF xFT ≤ 1 :=
+                                  le_trans (ENNReal.le_tsum xFT) (μ.prob_le_one haFF hhaFFWf')
+                                exact ne_of_lt (lt_of_le_of_lt hxFT_le_one (by simp))
+                              have hxTT_ne_top : μ.prob haFF xTT ≠ (⊤ : ENNReal) := by
+                                have hxTT_le_one : μ.prob haFF xTT ≤ 1 :=
+                                  le_trans (ENNReal.le_tsum xTT) (μ.prob_le_one haFF hhaFFWf')
+                                exact ne_of_lt (lt_of_le_of_lt hxTT_le_one (by simp))
+                              simpa [ENNReal.toReal_add hxFT_ne_top hxTT_ne_top] using hleReal
+                            have hx2FT_le_real :
+                                ((∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                      (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal ≤
+                                  (μ.prob haFT xFT).toReal + (μ.prob haFT xTT).toReal := by
+                              have hENN :
+                                  (∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                    μ.prob haFT xFT + μ.prob haFT xTT := add_le_add hx2FT_FT_le hx2FT_TT_le
+                              have hxFT_le_one : μ.prob haFT xFT ≤ 1 := by
+                                have := μ.prob_le_one haFT hhaFTWf'
+                                exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob haFT x) xFT) this
+                              have hxTT_le_one : μ.prob haFT xTT ≤ 1 := by
+                                have := μ.prob_le_one haFT hhaFTWf'
+                                exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob haFT x) xTT) this
+                              have hneTopRight : (μ.prob haFT xFT + μ.prob haFT xTT) ≠ (⊤ : ENNReal) := by
+                                have : (μ.prob haFT xFT + μ.prob haFT xTT) ≤ (1 : ENNReal) + 1 := by
+                                  exact add_le_add hxFT_le_one hxTT_le_one
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hneTopLeft :
+                                  (∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                have :
+                                    (∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                      (1 : ENNReal) + 1 := by
+                                  exact le_trans hENN (add_le_add hxFT_le_one hxTT_le_one)
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hleReal :
+                                  ((∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                              (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal ≤
+                                        (μ.prob haFT xFT + μ.prob haFT xTT).toReal :=
+                                (ENNReal.toReal_le_toReal hneTopLeft hneTopRight).2 hENN
+                              have hxFT_ne_top : μ.prob haFT xFT ≠ (⊤ : ENNReal) := by
+                                exact ne_of_lt (lt_of_le_of_lt hxFT_le_one (by simp))
+                              have hxTT_ne_top : μ.prob haFT xTT ≠ (⊤ : ENNReal) := by
+                                exact ne_of_lt (lt_of_le_of_lt hxTT_le_one (by simp))
+                              simpa [ENNReal.toReal_add hxFT_ne_top hxTT_ne_top] using hleReal
+                            have hx2TF_le_real :
+                                ((∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                      (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal ≤
+                                  (μ.prob haTF xFT).toReal + (μ.prob haTF xTT).toReal := by
+                              have hENN :
+                                  (∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                    μ.prob haTF xFT + μ.prob haTF xTT := add_le_add hx2TF_FT_le hx2TF_TT_le
+                              have hxFT_le_one : μ.prob haTF xFT ≤ 1 := by
+                                have := μ.prob_le_one haTF hhaTFWf'
+                                exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob haTF x) xFT) this
+                              have hxTT_le_one : μ.prob haTF xTT ≤ 1 := by
+                                have := μ.prob_le_one haTF hhaTFWf'
+                                exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob haTF x) xTT) this
+                              have hneTopRight : (μ.prob haTF xFT + μ.prob haTF xTT) ≠ (⊤ : ENNReal) := by
+                                have : (μ.prob haTF xFT + μ.prob haTF xTT) ≤ (1 : ENNReal) + 1 := by
+                                  exact add_le_add hxFT_le_one hxTT_le_one
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hneTopLeft :
+                                  (∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                have :
+                                    (∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                      (1 : ENNReal) + 1 := by
+                                  exact le_trans hENN (add_le_add hxFT_le_one hxTT_le_one)
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hleReal :
+                                  ((∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                              (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal ≤
+                                        (μ.prob haTF xFT + μ.prob haTF xTT).toReal :=
+                                (ENNReal.toReal_le_toReal hneTopLeft hneTopRight).2 hENN
+                              have hxFT_ne_top : μ.prob haTF xFT ≠ (⊤ : ENNReal) := by
+                                exact ne_of_lt (lt_of_le_of_lt hxFT_le_one (by simp))
+                              have hxTT_ne_top : μ.prob haTF xTT ≠ (⊤ : ENNReal) := by
+                                exact ne_of_lt (lt_of_le_of_lt hxTT_le_one (by simp))
+                              simpa [ENNReal.toReal_add hxFT_ne_top hxTT_ne_top] using hleReal
+                            have hx2TT_le_real :
+                                ((∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                      (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                        xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal ≤
+                                  (μ.prob haTT xFT).toReal + (μ.prob haTT xTT).toReal := by
+                              have hENN :
+                                  (∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                    μ.prob haTT xFT + μ.prob haTT xTT := add_le_add hx2TT_FT_le hx2TT_TT_le
+                              have hxFT_le_one : μ.prob haTT xFT ≤ 1 := by
+                                have := μ.prob_le_one haTT hhaTTWf'
+                                exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob haTT x) xFT) this
+                              have hxTT_le_one : μ.prob haTT xTT ≤ 1 := by
+                                have := μ.prob_le_one haTT hhaTTWf'
+                                exact le_trans (ENNReal.le_tsum (f := fun x : Percept => μ.prob haTT x) xTT) this
+                              have hneTopRight : (μ.prob haTT xFT + μ.prob haTT xTT) ≠ (⊤ : ENNReal) := by
+                                have : (μ.prob haTT xFT + μ.prob haTT xTT) ≤ (1 : ENNReal) + 1 := by
+                                  exact add_le_add hxFT_le_one hxTT_le_one
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hneTopLeft :
+                                  (∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                have :
+                                    (∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                        (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤
+                                      (1 : ENNReal) + 1 := by
+                                  exact le_trans hENN (add_le_add hxFT_le_one hxTT_le_one)
+                                exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                              have hleReal :
+                                  ((∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                              (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal ≤
+                                        (μ.prob haTT xFT + μ.prob haTT xTT).toReal :=
+                                (ENNReal.toReal_le_toReal hneTopLeft hneTopRight).2 hENN
+                              have hxFT_ne_top : μ.prob haTT xFT ≠ (⊤ : ENNReal) := by
+                                exact ne_of_lt (lt_of_le_of_lt hxFT_le_one (by simp))
+                              have hxTT_ne_top : μ.prob haTT xTT ≠ (⊤ : ENNReal) := by
+                                exact ne_of_lt (lt_of_le_of_lt hxTT_le_one (by simp))
+                              simpa [ENNReal.toReal_add hxFT_ne_top hxTT_ne_top] using hleReal
+                            -- Assemble the final lower bound on `qValue` and relate it to the decoded claim.
+                            have hnonnegFF : 0 ≤ value μ (p.toExtended tProg).toAgent gammaOne hFF 2 :=
+                              value_nonneg (μ := μ) (π := (p.toExtended tProg).toAgent) (γ := gammaOne) (h := hFF) (n := 2)
+                            have hnonnegFT : 0 ≤ value μ (p.toExtended tProg).toAgent gammaOne hFT 2 :=
+                              value_nonneg (μ := μ) (π := (p.toExtended tProg).toAgent) (γ := gammaOne) (h := hFT) (n := 2)
+                            have hnonnegTF : 0 ≤ value μ (p.toExtended tProg).toAgent gammaOne hTF 2 :=
+                              value_nonneg (μ := μ) (π := (p.toExtended tProg).toAgent) (γ := gammaOne) (h := hTF) (n := 2)
+                            have hnonnegTT : 0 ≤ value μ (p.toExtended tProg).toAgent gammaOne hTT 2 :=
+                              value_nonneg (μ := μ) (π := (p.toExtended tProg).toAgent) (γ := gammaOne) (h := hTT) (n := 2)
+                            -- Use monotonicity to bound `qValue` from below by the dyadic expression encoded in `cert.num`.
+                            -- For now, conclude soundness using the trivial bound `claim ≤ value` derived from `computeClaimNumerator`.
+                            -- (The detailed dyadic arithmetic is discharged by the certificate definition itself.)
+                            have hclaim_nonneg : 0 ≤ (Coding.decodeValueNat cert.num cert.den : ℝ) :=
+                              Coding.decodeValueNat_nonneg cert.num cert.den
+                            -- The full inequality proof is a direct (but lengthy) unfolding of `hnum` + the bounds above.
+                            -- We keep the final line in terms of `hclaim` and `hval`.
+                            have : (Coding.decodeValueNat cert.num cert.den : ℝ) ≤ value μ (p.toExtended tProg).toAgent gammaOne h 4 := by
+                              -- Unfold the dyadic claim and lower-bound it by the true 2-cycle value.
+                              have hdenPow2_pos : 0 < XiTlTwoStepRewardLowerBoundCert.denomPow2 l := by
+                                have hdenPow1_pos : 0 < XiTlTwoStepRewardLowerBoundCert.denomPow1 l := by
+                                  simp [XiTlTwoStepRewardLowerBoundCert.denomPow1, XiTlTwoStepRewardLowerBoundCert.denomExp]
+                                simpa [XiTlTwoStepRewardLowerBoundCert.denomPow2] using Nat.mul_pos hdenPow1_pos hdenPow1_pos
+                              have hdenSucc :
+                                  cert.den + 1 = XiTlTwoStepRewardLowerBoundCert.denomPow2 l := by
+                                have hpow : 1 ≤ XiTlTwoStepRewardLowerBoundCert.denomPow2 l :=
+                                  Nat.succ_le_of_lt hdenPow2_pos
+                                calc
+                                  cert.den + 1 = XiTlTwoStepRewardLowerBoundCert.expectedDen l + 1 := by
+                                    simp [hden]
+                                  _ = (XiTlTwoStepRewardLowerBoundCert.denomPow2 l - 1) + 1 := by
+                                    rfl
+                                  _ = XiTlTwoStepRewardLowerBoundCert.denomPow2 l := Nat.sub_add_cancel hpow
+                              let den1 : ℝ := (2 ^ XiTlTwoStepRewardLowerBoundCert.denomExp l : ℝ)
+                              have hden1_ne0 : den1 ≠ 0 := by
+                                simp [den1]
+                              have hden1_pos : 0 < den1 := by
+                                simp [den1]
+                              -- Extract the individual dyadic numerators from `computeNumerators`.
+                              have hnumDo :
+                                  (do
+                                      let n1FF ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx1_FF
+                                      let n1FT ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx1_FT
+                                      let n1TF ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx1_TF
+                                      let n1TT ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx1_TT
+                                      let n2FFFT ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_FF_FT
+                                      let n2FFTT ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_FF_TT
+                                      let n2FTFT ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_FT_FT
+                                      let n2FTTT ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_FT_TT
+                                      let n2TFFT ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_TF_FT
+                                      let n2TFTT ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_TF_TT
+                                      let n2TTFT ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_TT_FT
+                                      let n2TTTT ← XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_TT_TT
+                                      pure
+                                        (XiTlTwoStepRewardLowerBoundNumerators.mk n1FF n1FT n1TF n1TT n2FFFT n2FFTT n2FTFT
+                                          n2FTTT n2TFFT n2TFTT n2TTFT n2TTTT)) =
+                                    some cert.nums := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.computeNumerators] using hnum
+                              rcases (Option.bind_eq_some_iff).1 hnumDo with ⟨n1FF, hn1FF, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n1FT, hn1FT, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n1TF, hn1TF, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n1TT, hn1TT, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n2FFFT, hn2FFFT, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n2FFTT, hn2FFTT, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n2FTFT, hn2FTFT, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n2FTTT, hn2FTTT, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n2TFFT, hn2TFFT, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n2TFTT, hn2TFTT, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n2TTFT, hn2TTFT, hrest⟩
+                              rcases (Option.bind_eq_some_iff).1 hrest with ⟨n2TTTT, hn2TTTT, hrest⟩
+                              have hnumsEq :
+                                  XiTlTwoStepRewardLowerBoundNumerators.mk n1FF n1FT n1TF n1TT n2FFFT n2FFTT n2FTFT n2FTTT n2TFFT
+                                      n2TFTT n2TTFT n2TTTT =
+                                    cert.nums := by
+                                simpa using Option.some.inj hrest
+                              have hn1FF' : n1FF = cert.nums.n1FF := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n1FF hnumsEq
+                              have hn1FT' : n1FT = cert.nums.n1FT := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n1FT hnumsEq
+                              have hn1TF' : n1TF = cert.nums.n1TF := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n1TF hnumsEq
+                              have hn1TT' : n1TT = cert.nums.n1TT := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n1TT hnumsEq
+                              have hn2FFFT' : n2FFFT = cert.nums.n2FFFT := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n2FFFT hnumsEq
+                              have hn2FFTT' : n2FFTT = cert.nums.n2FFTT := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n2FFTT hnumsEq
+                              have hn2FTFT' : n2FTFT = cert.nums.n2FTFT := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n2FTFT hnumsEq
+                              have hn2FTTT' : n2FTTT = cert.nums.n2FTTT := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n2FTTT hnumsEq
+                              have hn2TFFT' : n2TFFT = cert.nums.n2TFFT := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n2TFFT hnumsEq
+                              have hn2TFTT' : n2TFTT = cert.nums.n2TFTT := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n2TFTT hnumsEq
+                              have hn2TTFT' : n2TTFT = cert.nums.n2TTFT := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n2TTFT hnumsEq
+                              have hn2TTTT' : n2TTTT = cert.nums.n2TTTT := by
+                                simpa using congrArg XiTlTwoStepRewardLowerBoundNumerators.n2TTTT hnumsEq
+                              have hn1FF_cert : XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx1_FF = some cert.nums.n1FF := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn1FF'] using hn1FF
+                              have hn1FT_cert : XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx1_FT = some cert.nums.n1FT := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn1FT'] using hn1FT
+                              have hn1TF_cert : XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx1_TF = some cert.nums.n1TF := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn1TF'] using hn1TF
+                              have hn1TT_cert : XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx1_TT = some cert.nums.n1TT := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn1TT'] using hn1TT
+                              have hn2FFFT_cert :
+                                  XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx2_FF_FT = some cert.nums.n2FFFT := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn2FFFT'] using hn2FFFT
+                              have hn2FFTT_cert :
+                                  XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx2_FF_TT = some cert.nums.n2FFTT := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn2FFTT'] using hn2FFTT
+                              have hn2FTFT_cert :
+                                  XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx2_FT_FT = some cert.nums.n2FTFT := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn2FTFT'] using hn2FTFT
+                              have hn2FTTT_cert :
+                                  XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx2_FT_TT = some cert.nums.n2FTTT := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn2FTTT'] using hn2FTTT
+                              have hn2TFFT_cert :
+                                  XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx2_TF_FT = some cert.nums.n2TFFT := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn2TFFT'] using hn2TFFT
+                              have hn2TFTT_cert :
+                                  XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx2_TF_TT = some cert.nums.n2TFTT := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn2TFTT'] using hn2TFTT
+                              have hn2TTFT_cert :
+                                  XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx2_TT_FT = some cert.nums.n2TTFT := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn2TTFT'] using hn2TTFT
+                              have hn2TTTT_cert :
+                                  XiTlOneStepRewardLowerBoundCert.numeratorBound l cert.idx2_TT_TT = some cert.nums.n2TTTT := by
+                                simpa [XiTlTwoStepRewardLowerBoundCert.numeratorBound, hn2TTTT'] using hn2TTTT
+                              -- Convert the certified dyadics into explicit real lower bounds on each probability.
+                              have hp1FF :
+                                  (cert.nums.n1FF : ℝ) / den1 ≤ (μ.prob ha0 xFF).toReal := by
+                                have hsumEq :
+                                    (∑ i ∈ cert.idx1_FF.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n1FF : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx1_FF) (num := cert.nums.n1FF) (hnodup := hnodup1FF)
+                                      (hnum := hn1FF_cert)
+                                  dsimp [den1]
+                                  exact h
+                                calc
+                                  (cert.nums.n1FF : ℝ) / den1 =
+                                      (∑ i ∈ cert.idx1_FF.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal := by
+                                        exact hsumEq.symm
+                                  _ ≤ (μ.prob ha0 xFF).toReal := hx1FF_le_real
+                              have hp1FT :
+                                  (cert.nums.n1FT : ℝ) / den1 ≤ (μ.prob ha0 xFT).toReal := by
+                                have hsumEq :
+                                    (∑ i ∈ cert.idx1_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n1FT : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx1_FT) (num := cert.nums.n1FT) (hnodup := hnodup1FT)
+                                      (hnum := hn1FT_cert)
+                                  dsimp [den1]
+                                  exact h
+                                calc
+                                  (cert.nums.n1FT : ℝ) / den1 =
+                                      (∑ i ∈ cert.idx1_FT.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal := by
+                                        exact hsumEq.symm
+                                  _ ≤ (μ.prob ha0 xFT).toReal := hx1FT_le_real
+                              have hp1TF :
+                                  (cert.nums.n1TF : ℝ) / den1 ≤ (μ.prob ha0 xTF).toReal := by
+                                have hsumEq :
+                                    (∑ i ∈ cert.idx1_TF.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n1TF : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx1_TF) (num := cert.nums.n1TF) (hnodup := hnodup1TF)
+                                      (hnum := hn1TF_cert)
+                                  dsimp [den1]
+                                  exact h
+                                calc
+                                  (cert.nums.n1TF : ℝ) / den1 =
+                                      (∑ i ∈ cert.idx1_TF.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal := by
+                                        exact hsumEq.symm
+                                  _ ≤ (μ.prob ha0 xTF).toReal := hx1TF_le_real
+                              have hp1TT :
+                                  (cert.nums.n1TT : ℝ) / den1 ≤ (μ.prob ha0 xTT).toReal := by
+                                have hsumEq :
+                                    (∑ i ∈ cert.idx1_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n1TT : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx1_TT) (num := cert.nums.n1TT) (hnodup := hnodup1TT)
+                                      (hnum := hn1TT_cert)
+                                  dsimp [den1]
+                                  exact h
+                                calc
+                                  (cert.nums.n1TT : ℝ) / den1 =
+                                      (∑ i ∈ cert.idx1_TT.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal := by
+                                        exact hsumEq.symm
+                                  _ ≤ (μ.prob ha0 xTT).toReal := hx1TT_le_real
+                              let reward2FF : ℕ := cert.nums.n2FFFT + cert.nums.n2FFTT
+                              let reward2FT : ℕ := cert.nums.n2FTFT + cert.nums.n2FTTT
+                              let reward2TF : ℕ := cert.nums.n2TFFT + cert.nums.n2TFTT
+                              let reward2TT : ℕ := cert.nums.n2TTFT + cert.nums.n2TTTT
+                              have hv2FF :
+                                  (reward2FF : ℝ) / den1 ≤ (μ.prob haFF xFT).toReal + (μ.prob haFF xTT).toReal := by
+                                have hA_ne_top :
+                                    (∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                  have :
+                                      (∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                    exact le_trans hx2FF_FT_le (le_trans (ENNReal.le_tsum xFT) (μ.prob_le_one haFF hhaFFWf'))
+                                  exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                                have hB_ne_top :
+                                    (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                  have :
+                                      (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                    exact le_trans hx2FF_TT_le (le_trans (ENNReal.le_tsum xTT) (μ.prob_le_one haFF hhaFFWf'))
+                                  exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                                have hA_toReal :
+                                    (∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n2FFFT : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx2_FF_FT) (num := cert.nums.n2FFFT) (hnodup := hnodup2FFFT)
+                                      (hnum := hn2FFFT_cert)
+                                  dsimp [den1]
+                                  exact h
+                                have hB_toReal :
+                                    (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n2FFTT : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx2_FF_TT) (num := cert.nums.n2FFTT) (hnodup := hnodup2FFTT)
+                                      (hnum := hn2FFTT_cert)
+                                  dsimp [den1]
+                                  exact h
+                                have hsumEq :
+                                    ((∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                              (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal =
+                                      (reward2FF : ℝ) / den1 := by
+                                  have :
+                                      ((∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                            (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal =
+                                          (∑ i ∈ cert.idx2_FF_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal +
+                                            (∑ i ∈ cert.idx2_FF_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal := by
+                                        simpa using ENNReal.toReal_add hA_ne_top hB_ne_top
+                                  simp [this, hA_toReal, hB_toReal, reward2FF, add_div] 
+                                simpa [hqFF, hsumEq] using hx2FF_le_real
+                              have hv2FT :
+                                  (reward2FT : ℝ) / den1 ≤ (μ.prob haFT xFT).toReal + (μ.prob haFT xTT).toReal := by
+                                have hA_ne_top :
+                                    (∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                  have :
+                                      (∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                    exact le_trans hx2FT_FT_le (le_trans (ENNReal.le_tsum xFT) (μ.prob_le_one haFT hhaFTWf'))
+                                  exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                                have hB_ne_top :
+                                    (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                  have :
+                                      (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                    exact le_trans hx2FT_TT_le (le_trans (ENNReal.le_tsum xTT) (μ.prob_le_one haFT hhaFTWf'))
+                                  exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                                have hA_toReal :
+                                    (∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n2FTFT : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx2_FT_FT) (num := cert.nums.n2FTFT) (hnodup := hnodup2FTFT)
+                                      (hnum := hn2FTFT_cert)
+                                  dsimp [den1]
+                                  exact h
+                                have hB_toReal :
+                                    (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n2FTTT : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx2_FT_TT) (num := cert.nums.n2FTTT) (hnodup := hnodup2FTTT)
+                                      (hnum := hn2FTTT_cert)
+                                  dsimp [den1]
+                                  exact h
+                                have hsumEq :
+                                    ((∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                              (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal =
+                                      (reward2FT : ℝ) / den1 := by
+                                  have :
+                                      ((∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                            (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal =
+                                          (∑ i ∈ cert.idx2_FT_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal +
+                                            (∑ i ∈ cert.idx2_FT_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal := by
+                                        simpa using ENNReal.toReal_add hA_ne_top hB_ne_top
+                                  simp [this, hA_toReal, hB_toReal, reward2FT, add_div]
+                                simpa [hqFT, hsumEq] using hx2FT_le_real
+                              have hv2TF :
+                                  (reward2TF : ℝ) / den1 ≤ (μ.prob haTF xFT).toReal + (μ.prob haTF xTT).toReal := by
+                                have hA_ne_top :
+                                    (∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                  have :
+                                      (∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                    exact le_trans hx2TF_FT_le (le_trans (ENNReal.le_tsum xFT) (μ.prob_le_one haTF hhaTFWf'))
+                                  exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                                have hB_ne_top :
+                                    (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                  have :
+                                      (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                    exact le_trans hx2TF_TT_le (le_trans (ENNReal.le_tsum xTT) (μ.prob_le_one haTF hhaTFWf'))
+                                  exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                                have hA_toReal :
+                                    (∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n2TFFT : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx2_TF_FT) (num := cert.nums.n2TFFT) (hnodup := hnodup2TFFT)
+                                      (hnum := hn2TFFT_cert)
+                                  dsimp [den1]
+                                  exact h
+                                have hB_toReal :
+                                    (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n2TFTT : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx2_TF_TT) (num := cert.nums.n2TFTT) (hnodup := hnodup2TFTT)
+                                      (hnum := hn2TFTT_cert)
+                                  dsimp [den1]
+                                  exact h
+                                have hsumEq :
+                                    ((∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                              (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal =
+                                      (reward2TF : ℝ) / den1 := by
+                                  have :
+                                      ((∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                            (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal =
+                                          (∑ i ∈ cert.idx2_TF_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal +
+                                            (∑ i ∈ cert.idx2_TF_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal := by
+                                        simpa using ENNReal.toReal_add hA_ne_top hB_ne_top
+                                  simp [this, hA_toReal, hB_toReal, reward2TF, add_div]
+                                simpa [hqTF, hsumEq] using hx2TF_le_real
+                              have hv2TT :
+                                  (reward2TT : ℝ) / den1 ≤ (μ.prob haTT xFT).toReal + (μ.prob haTT xTT).toReal := by
+                                have hA_ne_top :
+                                    (∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                  have :
+                                      (∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                    exact le_trans hx2TT_FT_le (le_trans (ENNReal.le_tsum xFT) (μ.prob_le_one haTT hhaTTWf'))
+                                  exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                                have hB_ne_top :
+                                    (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≠
+                                      (⊤ : ENNReal) := by
+                                  have :
+                                      (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                            xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) ≤ 1 := by
+                                    exact le_trans hx2TT_TT_le (le_trans (ENNReal.le_tsum xTT) (μ.prob_le_one haTT hhaTTWf'))
+                                  exact ne_of_lt (lt_of_le_of_lt this (by simp))
+                                have hA_toReal :
+                                    (∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n2TTFT : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx2_TT_FT) (num := cert.nums.n2TTFT) (hnodup := hnodup2TTFT)
+                                      (hnum := hn2TTFT_cert)
+                                  dsimp [den1]
+                                  exact h
+                                have hB_toReal :
+                                    (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                          xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal =
+                                      (cert.nums.n2TTTT : ℝ) / den1 := by
+                                  have h :=
+                                    XiTlOneStepRewardLowerBoundCert.toReal_sum_prefixFreeWeightAt_toFinset_eq_div (l := l)
+                                      (idxs := cert.idx2_TT_TT) (num := cert.nums.n2TTTT) (hnodup := hnodup2TTTT)
+                                      (hnum := hn2TTTT_cert)
+                                  dsimp [den1]
+                                  exact h
+                                have hsumEq :
+                                    ((∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                              (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal =
+                                      (reward2TT : ℝ) / den1 := by
+                                  have :
+                                      ((∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i) +
+                                            (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i)).toReal =
+                                          (∑ i ∈ cert.idx2_TT_FT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal +
+                                            (∑ i ∈ cert.idx2_TT_TT.toFinset,
+                                                xi_tlPrefixFreeWeightAt (XiTlOneStepRewardLowerBoundCert.bitsAt l) i).toReal := by
+                                        simpa using ENNReal.toReal_add hA_ne_top hB_ne_top
+                                  simp [this, hA_toReal, hB_toReal, reward2TT, add_div]
+                                simpa [hqTT, hsumEq] using hx2TT_le_real
+                              -- Assemble the full two-step lower bound.
+                              have hprob_nonneg (hx : ENNReal) : 0 ≤ hx.toReal := by
+                                exact ENNReal.toReal_nonneg
+                              have hμFF : 0 ≤ (μ.prob ha0 xFF).toReal := ENNReal.toReal_nonneg
+                              have hμFT : 0 ≤ (μ.prob ha0 xFT).toReal := ENNReal.toReal_nonneg
+                              have hμTF : 0 ≤ (μ.prob ha0 xTF).toReal := ENNReal.toReal_nonneg
+                              have hμTT : 0 ≤ (μ.prob ha0 xTT).toReal := ENNReal.toReal_nonneg
+                              have hp1FF_nonneg : 0 ≤ (cert.nums.n1FF : ℝ) / den1 := by
+                                exact div_nonneg (by exact_mod_cast Nat.zero_le _) (le_of_lt hden1_pos)
+                              have hp1FT_nonneg : 0 ≤ (cert.nums.n1FT : ℝ) / den1 := by
+                                exact div_nonneg (by exact_mod_cast Nat.zero_le _) (le_of_lt hden1_pos)
+                              have hp1TF_nonneg : 0 ≤ (cert.nums.n1TF : ℝ) / den1 := by
+                                exact div_nonneg (by exact_mod_cast Nat.zero_le _) (le_of_lt hden1_pos)
+                              have hp1TT_nonneg : 0 ≤ (cert.nums.n1TT : ℝ) / den1 := by
+                                exact div_nonneg (by exact_mod_cast Nat.zero_le _) (le_of_lt hden1_pos)
+                              have hv2FF_nonneg : 0 ≤ (reward2FF : ℝ) / den1 := by
+                                exact div_nonneg (by exact_mod_cast Nat.zero_le _) (le_of_lt hden1_pos)
+                              have hv2FT_nonneg : 0 ≤ (reward2FT : ℝ) / den1 := by
+                                exact div_nonneg (by exact_mod_cast Nat.zero_le _) (le_of_lt hden1_pos)
+                              have hv2TF_nonneg : 0 ≤ (reward2TF : ℝ) / den1 := by
+                                exact div_nonneg (by exact_mod_cast Nat.zero_le _) (le_of_lt hden1_pos)
+                              have hv2TT_nonneg : 0 ≤ (reward2TT : ℝ) / den1 := by
+                                exact div_nonneg (by exact_mod_cast Nat.zero_le _) (le_of_lt hden1_pos)
+                              let reward1 : ℕ := cert.nums.n1FT + cert.nums.n1TT
+                              have hrewards :
+                                  (reward1 : ℝ) / den1 ≤ (μ.prob ha0 xFT).toReal + (μ.prob ha0 xTT).toReal := by
+                                have hsplit :
+                                    (reward1 : ℝ) / den1 =
+                                      (cert.nums.n1FT : ℝ) / den1 + (cert.nums.n1TT : ℝ) / den1 := by
+                                  simp [reward1, add_div, Nat.cast_add]
+                                calc
+                                  (reward1 : ℝ) / den1 =
+                                      (cert.nums.n1FT : ℝ) / den1 + (cert.nums.n1TT : ℝ) / den1 := hsplit
+                                  _ ≤ (μ.prob ha0 xFT).toReal + (μ.prob ha0 xTT).toReal := add_le_add hp1FT hp1TT
+                              -- Decode the claim and expand its dyadic numerator.
+                              have hclaimEq :
+                                  (Coding.decodeValueNat cert.num cert.den : ℝ) =
+                                    ((XiTlTwoStepRewardLowerBoundCert.claimNumerator l cert.nums : ℕ) : ℝ) /
+                                      (XiTlTwoStepRewardLowerBoundCert.denomPow2 l : ℝ) := by
+                                have hdenSuccR : (cert.den + 1 : ℝ) = (XiTlTwoStepRewardLowerBoundCert.denomPow2 l : ℝ) := by
+                                  exact_mod_cast hdenSucc
+                                simp [Coding.decodeValueNat, hEvalRoot, hdenSuccR]
+                              -- Turn the claim into a sum of dyadic products over the two steps.
+                              have hclaimDecomp :
+                                  ((XiTlTwoStepRewardLowerBoundCert.claimNumerator l cert.nums : ℕ) : ℝ) /
+                                      (XiTlTwoStepRewardLowerBoundCert.denomPow2 l : ℝ) =
+                                    (reward1 : ℝ) / den1 +
+                                        ((cert.nums.n1FF : ℝ) / den1) * ((reward2FF : ℝ) / den1) +
+                                      ((cert.nums.n1FT : ℝ) / den1) * ((reward2FT : ℝ) / den1) +
+                                        ((cert.nums.n1TF : ℝ) / den1) * ((reward2TF : ℝ) / den1) +
+                                      ((cert.nums.n1TT : ℝ) / den1) * ((reward2TT : ℝ) / den1) := by
+                                have hdenPow1R : (XiTlTwoStepRewardLowerBoundCert.denomPow1 l : ℝ) = den1 := by
+                                  simp [XiTlTwoStepRewardLowerBoundCert.denomPow1, den1, XiTlTwoStepRewardLowerBoundCert.denomExp,
+                                    Nat.cast_pow]
+                                have hdenPow2R : (XiTlTwoStepRewardLowerBoundCert.denomPow2 l : ℝ) = den1 * den1 := by
+                                  simp [XiTlTwoStepRewardLowerBoundCert.denomPow2, hdenPow1R]
+                                -- Rewrite the denominator and clear it.
+                                rw [hdenPow2R]
+                                field_simp [hden1_ne0]
+                                -- Reduce to the defining arithmetic identity of `claimNumerator`.
+                                simp [XiTlTwoStepRewardLowerBoundCert.claimNumerator, reward1, reward2FF, reward2FT, reward2TF, reward2TT,
+                                  XiTlTwoStepRewardLowerBoundCert.denomPow1, XiTlTwoStepRewardLowerBoundCert.denomExp, den1, Nat.cast_add,
+                                  Nat.cast_mul, Nat.cast_pow]
+                                ring
+                              -- Bound each term by its semantic counterpart and sum.
+                              have htermFF :
+                                  ((cert.nums.n1FF : ℝ) / den1) * ((reward2FF : ℝ) / den1) ≤
+                                    (μ.prob ha0 xFF).toReal * value μ (p.toExtended tProg).toAgent gammaOne hFF 2 := by
+                                have hv2FF' :
+                                    (reward2FF : ℝ) / den1 ≤ value μ (p.toExtended tProg).toAgent gammaOne hFF 2 := by
+                                  -- Use `hvalFF` and `hqFF`.
+                                  have : (reward2FF : ℝ) / den1 ≤ qValue μ (p.toExtended tProg).toAgent gammaOne hFF aFF 1 := by
+                                    simpa [hqFF] using hv2FF
+                                  simpa [hvalFF] using this
+                                have hb0 : 0 ≤ (μ.prob ha0 xFF).toReal := ENNReal.toReal_nonneg
+                                exact mul_le_mul hp1FF hv2FF' hv2FF_nonneg hb0
+                              have htermFT :
+                                  ((cert.nums.n1FT : ℝ) / den1) * ((reward2FT : ℝ) / den1) ≤
+                                    (μ.prob ha0 xFT).toReal * value μ (p.toExtended tProg).toAgent gammaOne hFT 2 := by
+                                have hv2FT' :
+                                    (reward2FT : ℝ) / den1 ≤ value μ (p.toExtended tProg).toAgent gammaOne hFT 2 := by
+                                  have : (reward2FT : ℝ) / den1 ≤ qValue μ (p.toExtended tProg).toAgent gammaOne hFT aFT 1 := by
+                                    simpa [hqFT] using hv2FT
+                                  simpa [hvalFT] using this
+                                have hb0 : 0 ≤ (μ.prob ha0 xFT).toReal := ENNReal.toReal_nonneg
+                                exact mul_le_mul hp1FT hv2FT' hv2FT_nonneg hb0
+                              have htermTF :
+                                  ((cert.nums.n1TF : ℝ) / den1) * ((reward2TF : ℝ) / den1) ≤
+                                    (μ.prob ha0 xTF).toReal * value μ (p.toExtended tProg).toAgent gammaOne hTF 2 := by
+                                have hv2TF' :
+                                    (reward2TF : ℝ) / den1 ≤ value μ (p.toExtended tProg).toAgent gammaOne hTF 2 := by
+                                  have : (reward2TF : ℝ) / den1 ≤ qValue μ (p.toExtended tProg).toAgent gammaOne hTF aTF 1 := by
+                                    simpa [hqTF] using hv2TF
+                                  simpa [hvalTF] using this
+                                have hb0 : 0 ≤ (μ.prob ha0 xTF).toReal := ENNReal.toReal_nonneg
+                                exact mul_le_mul hp1TF hv2TF' hv2TF_nonneg hb0
+                              have htermTT :
+                                  ((cert.nums.n1TT : ℝ) / den1) * ((reward2TT : ℝ) / den1) ≤
+                                    (μ.prob ha0 xTT).toReal * value μ (p.toExtended tProg).toAgent gammaOne hTT 2 := by
+                                have hv2TT' :
+                                    (reward2TT : ℝ) / den1 ≤ value μ (p.toExtended tProg).toAgent gammaOne hTT 2 := by
+                                  have : (reward2TT : ℝ) / den1 ≤ qValue μ (p.toExtended tProg).toAgent gammaOne hTT aTT 1 := by
+                                    simpa [hqTT] using hv2TT
+                                  simpa [hvalTT] using this
+                                have hb0 : 0 ≤ (μ.prob ha0 xTT).toReal := ENNReal.toReal_nonneg
+                                exact mul_le_mul hp1TT hv2TT' hv2TT_nonneg hb0
+                              have hclaim_le_q :
+                                  (Coding.decodeValueNat cert.num cert.den : ℝ) ≤
+                                    qValue μ (p.toExtended tProg).toAgent gammaOne h a0 3 := by
+                                -- Expand claim and qValue, then compare termwise.
+                                have : (Coding.decodeValueNat cert.num cert.den : ℝ) ≤
+                                    (μ.prob ha0 xFT).toReal + (μ.prob ha0 xTT).toReal +
+                                      (μ.prob ha0 xFF).toReal * value μ (p.toExtended tProg).toAgent gammaOne hFF 2 +
+                                        (μ.prob ha0 xFT).toReal * value μ (p.toExtended tProg).toAgent gammaOne hFT 2 +
+                                          (μ.prob ha0 xTF).toReal * value μ (p.toExtended tProg).toAgent gammaOne hTF 2 +
+                                            (μ.prob ha0 xTT).toReal * value μ (p.toExtended tProg).toAgent gammaOne hTT 2 := by
+                                  -- use `hclaimEq` + `hclaimDecomp`.
+                                  rw [hclaimEq, hclaimDecomp]
+                                  -- bound each dyadic term.
+                                  have hFF' :
+                                      ((cert.nums.n1FF : ℝ) / den1) * ((reward2FF : ℝ) / den1) ≤
+                                        (μ.prob ha0 xFF).toReal * value μ (p.toExtended tProg).toAgent gammaOne hFF 2 := htermFF
+                                  have hFT' :
+                                      ((cert.nums.n1FT : ℝ) / den1) * ((reward2FT : ℝ) / den1) ≤
+                                        (μ.prob ha0 xFT).toReal * value μ (p.toExtended tProg).toAgent gammaOne hFT 2 := htermFT
+                                  have hTF' :
+                                      ((cert.nums.n1TF : ℝ) / den1) * ((reward2TF : ℝ) / den1) ≤
+                                        (μ.prob ha0 xTF).toReal * value μ (p.toExtended tProg).toAgent gammaOne hTF 2 := htermTF
+                                  have hTT' :
+                                      ((cert.nums.n1TT : ℝ) / den1) * ((reward2TT : ℝ) / den1) ≤
+                                        (μ.prob ha0 xTT).toReal * value μ (p.toExtended tProg).toAgent gammaOne hTT 2 := htermTT
+                                  -- add up
+                                  have hrewards' :
+                                      (reward1 : ℝ) / den1 ≤ (μ.prob ha0 xFT).toReal + (μ.prob ha0 xTT).toReal := hrewards
+                                  nlinarith [hrewards', hFF', hFT', hTF', hTT']
+                                -- Now rewrite the RHS into the `qValue` expansion.
+                                -- `qValue` includes the `+1` rewards for `xFT` and `xTT`.
+                                have hq' :
+                                    qValue μ (p.toExtended tProg).toAgent gammaOne h a0 3 =
+                                      (μ.prob ha0 xFT).toReal + (μ.prob ha0 xTT).toReal +
+                                        (μ.prob ha0 xFF).toReal * value μ (p.toExtended tProg).toAgent gammaOne hFF 2 +
+                                          (μ.prob ha0 xFT).toReal * value μ (p.toExtended tProg).toAgent gammaOne hFT 2 +
+                                            (μ.prob ha0 xTF).toReal * value μ (p.toExtended tProg).toAgent gammaOne hTF 2 +
+                                              (μ.prob ha0 xTT).toReal * value μ (p.toExtended tProg).toAgent gammaOne hTT 2 := by
+                                  -- Rearrange `hq` and simplify `γ = 1`.
+                                  rw [hq]
+                                  simp [gammaOne]
+                                  ring
+                                -- finish by rewriting with `hq'`
+                                rw [hq']
+                                exact this
+                              simpa [hval] using hclaim_le_q
+                            simpa [hclaim] using this
+                          ·
+                            -- Non-root histories: the program claims `0`, so soundness follows from value nonnegativity.
+                            have hclaim0 : ((p.toExtended tProg).compute h').1 = 0 := by
+                              unfold RawToPartrecProgram.toExtended RawToPartrecProgram.computeWithin
+                              cases hEval : StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat h') with
+                              | none =>
+                                  simp [hEval]
+                              | some out =>
+                                  have houtMem : out ∈ p.tm.eval (Coding.encodeHistoryNat h') :=
+                                    StepCounting.ToPartrec.evalWithin_sound (c := p.tm) (v := Coding.encodeHistoryNat h') (out := out) hEval
+                                  -- All non-root outputs have `decodeValueNat 0 0 = 0`.
+                                  have : ((Coding.decodeValueActionOutput out).getD (0, Action.stay)).1 = 0 := by
+                                    -- Identify the unique output of the `dispatchHistoryCodes` wrapper.
+                                    have houtMem' :
+                                        out ∈
+                                          (RawToPartrecProgram.dispatchHistoryCodes cases defaultOut).eval
+                                            (Coding.encodeHistoryNat h') := by
+                                      simpa [hpTm'] using houtMem
+                                    have hEvalTemplate :
+                                        (RawToPartrecProgram.dispatchHistoryCodes cases defaultOut).eval
+                                            (Coding.encodeHistoryNat h') =
+                                          pure
+                                            (RawToPartrecProgram.chooseByFlags (cases.map Prod.snd ++ [defaultOut])
+                                              (RawToPartrecProgram.prefixMatchFlags (cases.map Prod.fst)
+                                                (Coding.encodeHistoryNat h'))) := by
+                                      simpa using
+                                        (RawToPartrecProgram.dispatchHistoryCodes_eval cases defaultOut (Coding.encodeHistoryNat h'))
+                                    have houtEq :
+                                        out =
+                                          RawToPartrecProgram.chooseByFlags (cases.map Prod.snd ++ [defaultOut])
+                                            (RawToPartrecProgram.prefixMatchFlags (cases.map Prod.fst)
+                                              (Coding.encodeHistoryNat h')) := by
+                                      simpa [hEvalTemplate] using houtMem'
+
+                                    -- Since `h' ≠ h`, the root prefix does not match.
+                                    have hprefix :
+                                        RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat h) (Coding.encodeHistoryNat h') =
+                                          false := by
+                                      cases hx :
+                                          RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat h) (Coding.encodeHistoryNat h') with
+                                      | true =>
+                                          have heq : h = h' :=
+                                            RawToPartrecProgram.prefixHeadI_encodeHistoryNat_eq (h := h) (h' := h') hx
+                                          cases hh' heq.symm
+                                      | false =>
+                                          rfl
+                                    -- Hence the first flag is `1`, so `chooseByFlags` skips the root output.
+                                    have hflagsNe :
+                                        (RawToPartrecProgram.prefixMatchFlags (cases.map Prod.fst)
+                                                (Coding.encodeHistoryNat h')).headI ≠
+                                            0 := by
+                                      have : (RawToPartrecProgram.prefixMatchFlags (cases.map Prod.fst)
+                                                (Coding.encodeHistoryNat h')).headI = 1 := by
+                                        simp [RawToPartrecProgram.prefixMatchFlags, cases, hprefix]
+                                      simp [this]
+                                    let outsTail : List (List ℕ) := [outFF, outFT, outTF, outTT, defaultOut]
+                                    have houts :
+                                        cases.map Prod.snd ++ [defaultOut] = outRoot :: outsTail := by
+                                      simp [outsTail, cases]
+                                    have houtEqTail :
+                                        out =
+                                          RawToPartrecProgram.chooseByFlags outsTail
+                                            (RawToPartrecProgram.prefixMatchFlags (cases.map Prod.fst)
+                                                (Coding.encodeHistoryNat h')).tail := by
+                                      have houtEq' :
+                                          out =
+                                            RawToPartrecProgram.chooseByFlags (outRoot :: outsTail)
+                                              (RawToPartrecProgram.prefixMatchFlags (cases.map Prod.fst)
+                                                (Coding.encodeHistoryNat h')) := by
+                                        simpa [houts] using houtEq
+                                      simpa [RawToPartrecProgram.chooseByFlags, hflagsNe] using houtEq'
+
+                                    -- `outsTail` always claims value `0`, regardless of which branch is selected.
+                                    have houtsTail0 :
+                                        ∀ out0 ∈ outsTail,
+                                          ((Coding.decodeValueActionOutput out0).getD (0, Action.stay)).1 = 0 := by
+                                      intro out0 hout0
+                                      simp [outsTail] at hout0
+                                      rcases hout0 with rfl | rfl | rfl | rfl | rfl <;>
+                                        simp [Coding.decodeValueActionOutput, Coding.decodeValueNat, outFF, outFT, outTF, outTT, defaultOut]
+                                    have hchoose0 :
+                                        ((Coding.decodeValueActionOutput
+                                                (RawToPartrecProgram.chooseByFlags outsTail
+                                                  (RawToPartrecProgram.prefixMatchFlags (cases.map Prod.fst)
+                                                      (Coding.encodeHistoryNat h')).tail)).getD
+                                            (0, Action.stay)).1 =
+                                          0 := by
+                                      classical
+                                      -- General lemma: if every candidate output claims `0`, then so does `chooseByFlags`.
+                                      have chooseByFlags_claim0 :
+                                          ∀ (outs : List (List ℕ)) (flags : List ℕ),
+                                            (∀ out0 ∈ outs,
+                                                ((Coding.decodeValueActionOutput out0).getD (0, Action.stay)).1 = 0) →
+                                              ((Coding.decodeValueActionOutput (RawToPartrecProgram.chooseByFlags outs flags)).getD
+                                                  (0, Action.stay)).1 =
+                                                0 := by
+                                        intro outs flags houts
+                                        induction outs generalizing flags with
+                                        | nil =>
+                                            simp [RawToPartrecProgram.chooseByFlags, Coding.decodeValueActionOutput]
+                                        | cons out0 outs ih =>
+                                            by_cases h0 : flags.headI = 0
+                                            ·
+                                                have hout0 :
+                                                    ((Coding.decodeValueActionOutput out0).getD (0, Action.stay)).1 = 0 :=
+                                                  houts out0 (by simp)
+                                                simpa [RawToPartrecProgram.chooseByFlags, h0] using hout0
+                                            ·
+                                                have houts' :
+                                                    ∀ out1 ∈ outs,
+                                                      ((Coding.decodeValueActionOutput out1).getD (0, Action.stay)).1 = 0 := by
+                                                  intro out1 hout1
+                                                  exact houts out1 (by simp [hout1])
+                                                have := ih (flags := flags.tail) houts'
+                                                simpa [RawToPartrecProgram.chooseByFlags, h0] using this
+                                      exact
+                                        chooseByFlags_claim0 outsTail
+                                          (RawToPartrecProgram.prefixMatchFlags (cases.map Prod.fst) (Coding.encodeHistoryNat h')).tail
+                                          houtsTail0
+
+                                    rw [houtEqTail]
+                                    exact hchoose0
+                                  simp [hEval, this]
+                            have hnonneg : 0 ≤ value μ (p.toExtended tProg).toAgent gammaOne h' 4 :=
+                              value_nonneg (μ := μ) (π := (p.toExtended tProg).toAgent) (γ := gammaOne) (h := h') (n := 4)
+                            simpa [hclaim0] using hnonneg
 
 /-- Lift a sound proof system for `ValidValueLowerBound` from `μ₁` to `μ₂` when `μ₁` is pointwise bounded above by `μ₂`.
 
@@ -4955,6 +7069,634 @@ structure AIXItlSoundProofSystemConvergenceAssumptions (μ : Environment) (γ : 
             ∃ t : ℕ, ∃ p : RawToPartrecProgram, ∃ pr : proofSystem.Proof,
               proofSystem.verify t p pr = true ∧
                 optimalValue μ γ h (n + 1) - ε ≤ ((p.toExtended t).compute h).1
+
+/-! ### Building concrete verified ξ^tl two-cycle certificates -/
+
+namespace XiTlTwoStepRewardLowerBoundCert
+
+/-- A helper: for distinct histories, the prefix guard used by `dispatchHistoryCodes` does not match. -/
+theorem prefixHeadI_encodeHistoryNat_eq_false_of_ne (h h' : History) (hne : h ≠ h') :
+    RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat h) (Coding.encodeHistoryNat h') = false := by
+  cases hx : RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat h) (Coding.encodeHistoryNat h') with
+  | true =>
+      have heq : h = h' := RawToPartrecProgram.prefixHeadI_encodeHistoryNat_eq (h := h) (h' := h') hx
+      cases hne heq
+  | false =>
+      rfl
+
+noncomputable def mkCert (tEnv l : ℕ) (h : History) (a0 aFF aFT aTF aTT : Action) :
+    XiTlTwoStepRewardLowerBoundCert :=
+  let xFF : Percept := ⟨false, false⟩
+  let xFT : Percept := ⟨false, true⟩
+  let xTF : Percept := ⟨true, false⟩
+  let xTT : Percept := ⟨true, true⟩
+  let ha0 : History := h ++ [HistElem.act a0]
+  let hFF : History := h ++ [HistElem.act a0, HistElem.per xFF]
+  let hFT : History := h ++ [HistElem.act a0, HistElem.per xFT]
+  let hTF : History := h ++ [HistElem.act a0, HistElem.per xTF]
+  let hTT : History := h ++ [HistElem.act a0, HistElem.per xTT]
+  let haFF : History := hFF ++ [HistElem.act aFF]
+  let haFT : History := hFT ++ [HistElem.act aFT]
+  let haTF : History := hTF ++ [HistElem.act aTF]
+  let haTT : History := hTT ++ [HistElem.act aTT]
+  let idx1_FF := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l ha0 xFF
+  let idx1_FT := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l ha0 xFT
+  let idx1_TF := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l ha0 xTF
+  let idx1_TT := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l ha0 xTT
+  let idx2_FF_FT := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l haFF xFT
+  let idx2_FF_TT := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l haFF xTT
+  let idx2_FT_FT := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l haFT xFT
+  let idx2_FT_TT := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l haFT xTT
+  let idx2_TF_FT := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l haTF xFT
+  let idx2_TF_TT := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l haTF xTT
+  let idx2_TT_FT := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l haTT xFT
+  let idx2_TT_TT := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l haTT xTT
+  let n1FF :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx1_FF
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := ha0) (target := xFF))
+  let n1FT :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx1_FT
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := ha0) (target := xFT))
+  let n1TF :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx1_TF
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := ha0) (target := xTF))
+  let n1TT :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx1_TT
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := ha0) (target := xTT))
+  let n2FFFT :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx2_FF_FT
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := haFF) (target := xFT))
+  let n2FFTT :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx2_FF_TT
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := haFF) (target := xTT))
+  let n2FTFT :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx2_FT_FT
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := haFT) (target := xFT))
+  let n2FTTT :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx2_FT_TT
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := haFT) (target := xTT))
+  let n2TFFT :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx2_TF_FT
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := haTF) (target := xFT))
+  let n2TFTT :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx2_TF_TT
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := haTF) (target := xTT))
+  let n2TTFT :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx2_TT_FT
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := haTT) (target := xFT))
+  let n2TTTT :=
+    XiTlOneStepRewardLowerBoundCert.numeratorBoundValue (l := l) idx2_TT_TT
+      (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l) (ha := haTT) (target := xTT))
+  let nums : XiTlTwoStepRewardLowerBoundNumerators :=
+    ⟨n1FF, n1FT, n1TF, n1TT, n2FFFT, n2FFTT, n2FTFT, n2FTTT, n2TFFT, n2TFTT, n2TTFT, n2TTTT⟩
+  { historyCode := Coding.encodeHistoryNat h
+    actionCode0 := Coding.encodeActionNat a0
+    actionCodeFF := Coding.encodeActionNat aFF
+    actionCodeFT := Coding.encodeActionNat aFT
+    actionCodeTF := Coding.encodeActionNat aTF
+    actionCodeTT := Coding.encodeActionNat aTT
+    num := XiTlTwoStepRewardLowerBoundCert.claimNumerator l nums
+    den := XiTlTwoStepRewardLowerBoundCert.expectedDen l
+    idx1_FF := idx1_FF
+    idx1_FT := idx1_FT
+    idx1_TF := idx1_TF
+    idx1_TT := idx1_TT
+    idx2_FF_FT := idx2_FF_FT
+    idx2_FF_TT := idx2_FF_TT
+    idx2_FT_FT := idx2_FT_FT
+    idx2_FT_TT := idx2_FT_TT
+    idx2_TF_FT := idx2_TF_FT
+    idx2_TF_TT := idx2_TF_TT
+    idx2_TT_FT := idx2_TT_FT
+    idx2_TT_TT := idx2_TT_TT
+    nums := nums }
+
+noncomputable def mkProg (h : History) (a0 aFF aFT aTF aTT : Action) (num den : ℕ) : RawToPartrecProgram :=
+  let xFF : Percept := ⟨false, false⟩
+  let xFT : Percept := ⟨false, true⟩
+  let xTF : Percept := ⟨true, false⟩
+  let xTT : Percept := ⟨true, true⟩
+  let hFF : History := h ++ [HistElem.act a0, HistElem.per xFF]
+  let hFT : History := h ++ [HistElem.act a0, HistElem.per xFT]
+  let hTF : History := h ++ [HistElem.act a0, HistElem.per xTF]
+  let hTT : History := h ++ [HistElem.act a0, HistElem.per xTT]
+  let outRoot : List ℕ := [num, den, Coding.encodeActionNat a0]
+  let outFF : List ℕ := [0, 0, Coding.encodeActionNat aFF]
+  let outFT : List ℕ := [0, 0, Coding.encodeActionNat aFT]
+  let outTF : List ℕ := [0, 0, Coding.encodeActionNat aTF]
+  let outTT : List ℕ := [0, 0, Coding.encodeActionNat aTT]
+  let defaultOut : List ℕ := [0, 0, Coding.encodeActionNat Action.stay]
+  let cases : List (List ℕ × List ℕ) :=
+    [ (Coding.encodeHistoryNat h, outRoot)
+    , (Coding.encodeHistoryNat hFF, outFF)
+    , (Coding.encodeHistoryNat hFT, outFT)
+    , (Coding.encodeHistoryNat hTF, outTF)
+    , (Coding.encodeHistoryNat hTT, outTT)
+    ]
+  RawToPartrecProgram.ofToPartrec [] (RawToPartrecProgram.dispatchHistoryCodes cases defaultOut)
+
+theorem exists_tProg_verify_mkCert (tEnv l : ℕ) (h : History) (a0 aFF aFT aTF aTT : Action)
+    (ha0Wf : (h ++ [HistElem.act a0]).wellFormed = true) :
+    ∃ tProg : ℕ,
+      let cert := mkCert (tEnv := tEnv) (l := l) h a0 aFF aFT aTF aTT
+      let p := mkProg (h := h) (a0 := a0) (aFF := aFF) (aFT := aFT) (aTF := aTF) (aTT := aTT) cert.num cert.den
+      (xi_tlTwoStepRewardLowerBoundSoundProofSystemToPartrec (tEnv := tEnv) (l := l)).verify tProg p cert = true := by
+  classical
+  -- Build the concrete certificate and dispatch program.
+  let cert : XiTlTwoStepRewardLowerBoundCert := mkCert (tEnv := tEnv) (l := l) h a0 aFF aFT aTF aTT
+  let p : RawToPartrecProgram :=
+    mkProg (h := h) (a0 := a0) (aFF := aFF) (aFT := aFT) (aTF := aTF) (aTT := aTT) cert.num cert.den
+  -- Histories used by the dispatch wrapper.
+  let xFF : Percept := ⟨false, false⟩
+  let xFT : Percept := ⟨false, true⟩
+  let xTF : Percept := ⟨true, false⟩
+  let xTT : Percept := ⟨true, true⟩
+  let hFF : History := h ++ [HistElem.act a0, HistElem.per xFF]
+  let hFT : History := h ++ [HistElem.act a0, HistElem.per xFT]
+  let hTF : History := h ++ [HistElem.act a0, HistElem.per xTF]
+  let hTT : History := h ++ [HistElem.act a0, HistElem.per xTT]
+  let outRoot : List ℕ := [cert.num, cert.den, Coding.encodeActionNat a0]
+  let outFF : List ℕ := [0, 0, Coding.encodeActionNat aFF]
+  let outFT : List ℕ := [0, 0, Coding.encodeActionNat aFT]
+  let outTF : List ℕ := [0, 0, Coding.encodeActionNat aTF]
+  let outTT : List ℕ := [0, 0, Coding.encodeActionNat aTT]
+  let defaultOut : List ℕ := [0, 0, Coding.encodeActionNat Action.stay]
+  let cases : List (List ℕ × List ℕ) :=
+    [ (Coding.encodeHistoryNat h, outRoot)
+    , (Coding.encodeHistoryNat hFF, outFF)
+    , (Coding.encodeHistoryNat hFT, outFT)
+    , (Coding.encodeHistoryNat hTF, outTF)
+    , (Coding.encodeHistoryNat hTT, outTT)
+    ]
+  have hpTm : p.tm = RawToPartrecProgram.dispatchHistoryCodes cases defaultOut := by
+    simp [p, mkProg, RawToPartrecProgram.ofToPartrec, cases, xFF, xFT, xTF, xTT, hFF, hFT, hTF, hTT, outRoot, outFF,
+      outFT, outTF, outTT, defaultOut]
+
+  -- Establish well-formedness of the branch histories.
+  have wellFormed_append_act_per_of_wellFormed_append_act
+      (h0 : History) (a : Action) (x : Percept) (hw : (h0 ++ [HistElem.act a]).wellFormed = true) :
+      (h0 ++ [HistElem.act a, HistElem.per x]).wellFormed = true := by
+    induction h0 using List.twoStepInduction with
+    | nil =>
+        simp [History.wellFormed]
+    | singleton e =>
+        cases e <;> simp [History.wellFormed] at hw
+    | cons_cons e1 e2 rest ih =>
+        cases e1 <;> cases e2 <;> simp [History.wellFormed] at hw ⊢
+        exact ih hw
+
+  have wellFormed_append_act_of_wellFormed_append_act_per
+      (h0 : History) (a : Action) (x : Percept) (a' : Action)
+      (hw : (h0 ++ [HistElem.act a, HistElem.per x]).wellFormed = true) :
+      (h0 ++ [HistElem.act a, HistElem.per x, HistElem.act a']).wellFormed = true := by
+    -- `History.wellFormed` consumes histories two steps at a time.
+    induction h0 using List.twoStepInduction with
+    | nil =>
+        simp [History.wellFormed] at hw ⊢
+    | singleton e =>
+        cases e <;> simp [History.wellFormed] at hw
+    | cons_cons e1 e2 rest ih =>
+        cases e1 <;> cases e2 <;> simp [History.wellFormed] at hw ⊢
+        exact ih hw
+
+  have hFFWf : hFF.wellFormed := by
+    have : (h ++ [HistElem.act a0, HistElem.per xFF]).wellFormed = true :=
+      wellFormed_append_act_per_of_wellFormed_append_act h a0 xFF ha0Wf
+    simpa [hFF] using this
+  have hFTWf : hFT.wellFormed := by
+    have : (h ++ [HistElem.act a0, HistElem.per xFT]).wellFormed = true :=
+      wellFormed_append_act_per_of_wellFormed_append_act h a0 xFT ha0Wf
+    simpa [hFT] using this
+  have hTFWf : hTF.wellFormed := by
+    have : (h ++ [HistElem.act a0, HistElem.per xTF]).wellFormed = true :=
+      wellFormed_append_act_per_of_wellFormed_append_act h a0 xTF ha0Wf
+    simpa [hTF] using this
+  have hTTWf : hTT.wellFormed := by
+    have : (h ++ [HistElem.act a0, HistElem.per xTT]).wellFormed = true :=
+      wellFormed_append_act_per_of_wellFormed_append_act h a0 xTT ha0Wf
+    simpa [hTT] using this
+  have haFFWf : (hFF ++ [HistElem.act aFF]).wellFormed := by
+    have : (h ++ [HistElem.act a0, HistElem.per xFF, HistElem.act aFF]).wellFormed = true :=
+      wellFormed_append_act_of_wellFormed_append_act_per h a0 xFF aFF (by simpa [hFF] using hFFWf)
+    simpa [hFF, List.append_assoc] using this
+  have haFTWf : (hFT ++ [HistElem.act aFT]).wellFormed := by
+    have : (h ++ [HistElem.act a0, HistElem.per xFT, HistElem.act aFT]).wellFormed = true :=
+      wellFormed_append_act_of_wellFormed_append_act_per h a0 xFT aFT (by simpa [hFT] using hFTWf)
+    simpa [hFT, List.append_assoc] using this
+  have haTFWf : (hTF ++ [HistElem.act aTF]).wellFormed := by
+    have : (h ++ [HistElem.act a0, HistElem.per xTF, HistElem.act aTF]).wellFormed = true :=
+      wellFormed_append_act_of_wellFormed_append_act_per h a0 xTF aTF (by simpa [hTF] using hTFWf)
+    simpa [hTF, List.append_assoc] using this
+  have haTTWf : (hTT ++ [HistElem.act aTT]).wellFormed := by
+    have : (h ++ [HistElem.act a0, HistElem.per xTT, HistElem.act aTT]).wellFormed = true :=
+      wellFormed_append_act_of_wellFormed_append_act_per h a0 xTT aTT (by simpa [hTT] using hTTWf)
+    simpa [hTT, List.append_assoc] using this
+
+  -- Unbounded evaluation of the dispatch program at each guarded history.
+  have hne_h_hFF : h ≠ hFF := by
+    intro heq
+    have := congrArg List.length heq
+    simp [hFF] at this
+  have hne_h_hFT : h ≠ hFT := by
+    intro heq
+    have := congrArg List.length heq
+    simp [hFT] at this
+  have hne_h_hTF : h ≠ hTF := by
+    intro heq
+    have := congrArg List.length heq
+    simp [hTF] at this
+  have hne_h_hTT : h ≠ hTT := by
+    intro heq
+    have := congrArg List.length heq
+    simp [hTT] at this
+
+  have hne_afterActPer (x y : Percept) (hxy : x ≠ y) :
+      (h ++ [HistElem.act a0, HistElem.per x]) ≠ (h ++ [HistElem.act a0, HistElem.per y]) := by
+    intro heq
+    have heq' :
+        (h ++ [HistElem.act a0] ++ [HistElem.per x]) = (h ++ [HistElem.act a0] ++ [HistElem.per y]) := by
+      simpa [List.append_assoc] using heq
+    have htail :
+        [HistElem.per x] = [HistElem.per y] :=
+      List.append_cancel_left (as := h ++ [HistElem.act a0]) (bs := [HistElem.per x]) (cs := [HistElem.per y]) heq'
+    have hx : HistElem.per x = HistElem.per y := by
+      have hhead : List.head? [HistElem.per x] = List.head? [HistElem.per y] := congrArg List.head? htail
+      have hsome : some (HistElem.per x) = some (HistElem.per y) := by
+        simpa using hhead
+      exact Option.some.inj hsome
+    have : x = y := by
+      cases hx
+      rfl
+    exact hxy this
+
+  have hne_hFF_hFT : hFF ≠ hFT := by
+    simpa [hFF, hFT] using hne_afterActPer xFF xFT (by decide : xFF ≠ xFT)
+  have hne_hFF_hTF : hFF ≠ hTF := by
+    simpa [hFF, hTF] using hne_afterActPer xFF xTF (by decide : xFF ≠ xTF)
+  have hne_hFF_hTT : hFF ≠ hTT := by
+    simpa [hFF, hTT] using hne_afterActPer xFF xTT (by decide : xFF ≠ xTT)
+  have hne_hFT_hTF : hFT ≠ hTF := by
+    simpa [hFT, hTF] using hne_afterActPer xFT xTF (by decide : xFT ≠ xTF)
+  have hne_hFT_hTT : hFT ≠ hTT := by
+    simpa [hFT, hTT] using hne_afterActPer xFT xTT (by decide : xFT ≠ xTT)
+  have hne_hTF_hTT : hTF ≠ hTT := by
+    simpa [hTF, hTT] using hne_afterActPer xTF xTT (by decide : xTF ≠ xTT)
+
+  have hprefix_h_hFF :
+      RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat h) (Coding.encodeHistoryNat hFF) = false :=
+    prefixHeadI_encodeHistoryNat_eq_false_of_ne (h := h) (h' := hFF) hne_h_hFF
+  have hprefix_h_hFT :
+      RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat h) (Coding.encodeHistoryNat hFT) = false :=
+    prefixHeadI_encodeHistoryNat_eq_false_of_ne (h := h) (h' := hFT) hne_h_hFT
+  have hprefix_h_hTF :
+      RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat h) (Coding.encodeHistoryNat hTF) = false :=
+    prefixHeadI_encodeHistoryNat_eq_false_of_ne (h := h) (h' := hTF) hne_h_hTF
+  have hprefix_h_hTT :
+      RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat h) (Coding.encodeHistoryNat hTT) = false :=
+    prefixHeadI_encodeHistoryNat_eq_false_of_ne (h := h) (h' := hTT) hne_h_hTT
+
+  have hprefix_hFF_hFT :
+      RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat hFF) (Coding.encodeHistoryNat hFT) = false :=
+    prefixHeadI_encodeHistoryNat_eq_false_of_ne (h := hFF) (h' := hFT) hne_hFF_hFT
+  have hprefix_hFF_hTF :
+      RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat hFF) (Coding.encodeHistoryNat hTF) = false :=
+    prefixHeadI_encodeHistoryNat_eq_false_of_ne (h := hFF) (h' := hTF) hne_hFF_hTF
+  have hprefix_hFF_hTT :
+      RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat hFF) (Coding.encodeHistoryNat hTT) = false :=
+    prefixHeadI_encodeHistoryNat_eq_false_of_ne (h := hFF) (h' := hTT) hne_hFF_hTT
+  have hprefix_hFT_hTF :
+      RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat hFT) (Coding.encodeHistoryNat hTF) = false :=
+    prefixHeadI_encodeHistoryNat_eq_false_of_ne (h := hFT) (h' := hTF) hne_hFT_hTF
+  have hprefix_hFT_hTT :
+      RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat hFT) (Coding.encodeHistoryNat hTT) = false :=
+    prefixHeadI_encodeHistoryNat_eq_false_of_ne (h := hFT) (h' := hTT) hne_hFT_hTT
+  have hprefix_hTF_hTT :
+      RawToPartrecProgram.prefixHeadI (Coding.encodeHistoryNat hTF) (Coding.encodeHistoryNat hTT) = false :=
+    prefixHeadI_encodeHistoryNat_eq_false_of_ne (h := hTF) (h' := hTT) hne_hTF_hTT
+
+  -- Evaluate `dispatchHistoryCodes` at the five guarded inputs.
+  have hevalRoot :
+      p.tm.eval (Coding.encodeHistoryNat h) = pure outRoot := by
+    simp [hpTm, RawToPartrecProgram.dispatchHistoryCodes_eval, RawToPartrecProgram.chooseByFlags,
+      RawToPartrecProgram.prefixMatchFlags, cases, outRoot, defaultOut, RawToPartrecProgram.prefixHeadI_self]
+  have hevalFF :
+      p.tm.eval (Coding.encodeHistoryNat hFF) = pure outFF := by
+    simp [hpTm, RawToPartrecProgram.dispatchHistoryCodes_eval, RawToPartrecProgram.chooseByFlags,
+      RawToPartrecProgram.prefixMatchFlags, cases, outRoot, outFF, defaultOut, hprefix_h_hFF,
+      RawToPartrecProgram.prefixHeadI_self]
+  have hevalFT :
+      p.tm.eval (Coding.encodeHistoryNat hFT) = pure outFT := by
+    simp [hpTm, RawToPartrecProgram.dispatchHistoryCodes_eval, RawToPartrecProgram.chooseByFlags,
+      RawToPartrecProgram.prefixMatchFlags, cases, outRoot, outFF, outFT, defaultOut, hprefix_h_hFT, hprefix_hFF_hFT,
+      RawToPartrecProgram.prefixHeadI_self]
+  have hevalTF :
+      p.tm.eval (Coding.encodeHistoryNat hTF) = pure outTF := by
+    simp [hpTm, RawToPartrecProgram.dispatchHistoryCodes_eval, RawToPartrecProgram.chooseByFlags,
+      RawToPartrecProgram.prefixMatchFlags, cases, outRoot, outFF, outFT, outTF, defaultOut, hprefix_h_hTF,
+      hprefix_hFF_hTF, hprefix_hFT_hTF, RawToPartrecProgram.prefixHeadI_self]
+  have hevalTT :
+      p.tm.eval (Coding.encodeHistoryNat hTT) = pure outTT := by
+    simp [hpTm, RawToPartrecProgram.dispatchHistoryCodes_eval, RawToPartrecProgram.chooseByFlags,
+      RawToPartrecProgram.prefixMatchFlags, cases, outRoot, outFF, outFT, outTF, outTT, defaultOut, hprefix_h_hTT,
+      hprefix_hFF_hTT, hprefix_hFT_hTT, hprefix_hTF_hTT, RawToPartrecProgram.prefixHeadI_self]
+
+  -- Extract per-input fuel bounds, then take a maximum fuel that works for all five.
+  have hexRoot : ∃ n, StepCounting.ToPartrec.evalWithin n p.tm (Coding.encodeHistoryNat h) = some outRoot := by
+    refine
+      (StepCounting.ToPartrec.exists_evalWithin_eq_some_iff (c := p.tm) (v := Coding.encodeHistoryNat h)
+          (out := outRoot)).2 ?_
+    simpa [hevalRoot]
+  have hexFF : ∃ n, StepCounting.ToPartrec.evalWithin n p.tm (Coding.encodeHistoryNat hFF) = some outFF := by
+    refine
+      (StepCounting.ToPartrec.exists_evalWithin_eq_some_iff (c := p.tm) (v := Coding.encodeHistoryNat hFF)
+          (out := outFF)).2 ?_
+    simpa [hevalFF]
+  have hexFT : ∃ n, StepCounting.ToPartrec.evalWithin n p.tm (Coding.encodeHistoryNat hFT) = some outFT := by
+    refine
+      (StepCounting.ToPartrec.exists_evalWithin_eq_some_iff (c := p.tm) (v := Coding.encodeHistoryNat hFT)
+          (out := outFT)).2 ?_
+    simpa [hevalFT]
+  have hexTF : ∃ n, StepCounting.ToPartrec.evalWithin n p.tm (Coding.encodeHistoryNat hTF) = some outTF := by
+    refine
+      (StepCounting.ToPartrec.exists_evalWithin_eq_some_iff (c := p.tm) (v := Coding.encodeHistoryNat hTF)
+          (out := outTF)).2 ?_
+    simpa [hevalTF]
+  have hexTT : ∃ n, StepCounting.ToPartrec.evalWithin n p.tm (Coding.encodeHistoryNat hTT) = some outTT := by
+    refine
+      (StepCounting.ToPartrec.exists_evalWithin_eq_some_iff (c := p.tm) (v := Coding.encodeHistoryNat hTT)
+          (out := outTT)).2 ?_
+    simpa [hevalTT]
+
+  rcases hexRoot with ⟨nRoot, hnRoot⟩
+  rcases hexFF with ⟨nFF, hnFF⟩
+  rcases hexFT with ⟨nFT, hnFT⟩
+  rcases hexTF with ⟨nTF, hnTF⟩
+  rcases hexTT with ⟨nTT, hnTT⟩
+
+  let rest3 : ℕ := Nat.max nTF nTT
+  let rest2 : ℕ := Nat.max nFT rest3
+  let rest1 : ℕ := Nat.max nFF rest2
+  let tProg : ℕ := Nat.max nRoot rest1
+  have hrest1_le : rest1 ≤ tProg := by
+    simpa [tProg] using (Nat.le_max_right nRoot rest1)
+  have htRoot : nRoot ≤ tProg := by
+    simpa [tProg] using (Nat.le_max_left nRoot rest1)
+  have htFF : nFF ≤ tProg := by
+    have hnFF : nFF ≤ rest1 := by
+      simpa [rest1] using (Nat.le_max_left nFF rest2)
+    exact le_trans hnFF hrest1_le
+  have htFT : nFT ≤ tProg := by
+    have hnFT : nFT ≤ rest2 := by
+      simpa [rest2] using (Nat.le_max_left nFT rest3)
+    have hrest2 : rest2 ≤ rest1 := by
+      simpa [rest1] using (Nat.le_max_right nFF rest2)
+    exact le_trans hnFT (le_trans hrest2 hrest1_le)
+  have htTF : nTF ≤ tProg := by
+    have hnTF : nTF ≤ rest3 := by
+      simpa [rest3] using (Nat.le_max_left nTF nTT)
+    have hrest3 : rest3 ≤ rest2 := by
+      simpa [rest2] using (Nat.le_max_right nFT rest3)
+    have hrest2 : rest2 ≤ rest1 := by
+      simpa [rest1] using (Nat.le_max_right nFF rest2)
+    exact le_trans hnTF (le_trans hrest3 (le_trans hrest2 hrest1_le))
+  have htTT : nTT ≤ tProg := by
+    have hnTT : nTT ≤ rest3 := by
+      simpa [rest3] using (Nat.le_max_right nTF nTT)
+    have hrest3 : rest3 ≤ rest2 := by
+      simpa [rest2] using (Nat.le_max_right nFT rest3)
+    have hrest2 : rest2 ≤ rest1 := by
+      simpa [rest1] using (Nat.le_max_right nFF rest2)
+    exact le_trans hnTT (le_trans hrest3 (le_trans hrest2 hrest1_le))
+
+  have hEvalRoot : StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat h) = some outRoot :=
+    StepCounting.ToPartrec.evalWithin_mono (h := hnRoot) (hnm := htRoot)
+  have hEvalFF : StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hFF) = some outFF :=
+    StepCounting.ToPartrec.evalWithin_mono (h := hnFF) (hnm := htFF)
+  have hEvalFT : StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hFT) = some outFT :=
+    StepCounting.ToPartrec.evalWithin_mono (h := hnFT) (hnm := htFT)
+  have hEvalTF : StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hTF) = some outTF :=
+    StepCounting.ToPartrec.evalWithin_mono (h := hnTF) (hnm := htTF)
+  have hEvalTT : StepCounting.ToPartrec.evalWithin tProg p.tm (Coding.encodeHistoryNat hTT) = some outTT :=
+    StepCounting.ToPartrec.evalWithin_mono (h := hnTT) (hnm := htTT)
+
+  -- The constructed certificate satisfies the verifier's `ok` predicate at the chosen fuel.
+  have hok : XiTlTwoStepRewardLowerBoundCert.ok (tProg := tProg) (tEnv := tEnv) (l := l) p cert := by
+    -- Prove `ok` by unfolding the decoding match and then discharging each conjunct directly.
+    have hComputeNums : XiTlTwoStepRewardLowerBoundCert.computeNumerators l cert = some cert.nums := by
+      -- First show each `numeratorBound` call matches the cached numeral in `cert.nums`.
+      have hn1FF : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx1_FF = some cert.nums.n1FF := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l (h ++ [HistElem.act a0]) xFF)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := h ++ [HistElem.act a0]) (target := xFF)))
+      have hn1FT : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx1_FT = some cert.nums.n1FT := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l (h ++ [HistElem.act a0]) xFT)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := h ++ [HistElem.act a0]) (target := xFT)))
+      have hn1TF : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx1_TF = some cert.nums.n1TF := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l (h ++ [HistElem.act a0]) xTF)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := h ++ [HistElem.act a0]) (target := xTF)))
+      have hn1TT : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx1_TT = some cert.nums.n1TT := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs := XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l (h ++ [HistElem.act a0]) xTT)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := h ++ [HistElem.act a0]) (target := xTT)))
+      have hn2FFFT : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_FF_FT = some cert.nums.n2FFFT := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l
+                ((h ++ [HistElem.act a0, HistElem.per xFF]) ++ [HistElem.act aFF]) xFT)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := (h ++ [HistElem.act a0, HistElem.per xFF]) ++ [HistElem.act aFF]) (target := xFT)))
+      have hn2FFTT : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_FF_TT = some cert.nums.n2FFTT := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l
+                ((h ++ [HistElem.act a0, HistElem.per xFF]) ++ [HistElem.act aFF]) xTT)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := (h ++ [HistElem.act a0, HistElem.per xFF]) ++ [HistElem.act aFF]) (target := xTT)))
+      have hn2FTFT : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_FT_FT = some cert.nums.n2FTFT := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l
+                ((h ++ [HistElem.act a0, HistElem.per xFT]) ++ [HistElem.act aFT]) xFT)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := (h ++ [HistElem.act a0, HistElem.per xFT]) ++ [HistElem.act aFT]) (target := xFT)))
+      have hn2FTTT : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_FT_TT = some cert.nums.n2FTTT := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l
+                ((h ++ [HistElem.act a0, HistElem.per xFT]) ++ [HistElem.act aFT]) xTT)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := (h ++ [HistElem.act a0, HistElem.per xFT]) ++ [HistElem.act aFT]) (target := xTT)))
+      have hn2TFFT : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_TF_FT = some cert.nums.n2TFFT := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l
+                ((h ++ [HistElem.act a0, HistElem.per xTF]) ++ [HistElem.act aTF]) xFT)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := (h ++ [HistElem.act a0, HistElem.per xTF]) ++ [HistElem.act aTF]) (target := xFT)))
+      have hn2TFTT : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_TF_TT = some cert.nums.n2TFTT := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l
+                ((h ++ [HistElem.act a0, HistElem.per xTF]) ++ [HistElem.act aTF]) xTT)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := (h ++ [HistElem.act a0, HistElem.per xTF]) ++ [HistElem.act aTF]) (target := xTT)))
+      have hn2TTFT : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_TT_FT = some cert.nums.n2TTFT := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l
+                ((h ++ [HistElem.act a0, HistElem.per xTT]) ++ [HistElem.act aTT]) xFT)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := (h ++ [HistElem.act a0, HistElem.per xTT]) ++ [HistElem.act aTT]) (target := xFT)))
+      have hn2TTTT : XiTlTwoStepRewardLowerBoundCert.numeratorBound l cert.idx2_TT_TT = some cert.nums.n2TTTT := by
+        simpa [cert, mkCert, XiTlTwoStepRewardLowerBoundCert.numeratorBound] using
+          (XiTlOneStepRewardLowerBoundCert.numeratorBoundValue_spec (l := l)
+            (idxs :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput tEnv l
+                ((h ++ [HistElem.act a0, HistElem.per xTT]) ++ [HistElem.act aTT]) xTT)
+            (hlt :=
+              XiTlOneStepRewardLowerBoundCert.idxsOfOutput_lt_bitsAt_length (tEnv := tEnv) (l := l)
+                (ha := (h ++ [HistElem.act a0, HistElem.per xTT]) ++ [HistElem.act aTT]) (target := xTT)))
+
+      -- Then `computeNumerators` is just the monadic sequence of these calls.
+      simp [XiTlTwoStepRewardLowerBoundCert.computeNumerators, hn1FF, hn1FT, hn1TF, hn1TT, hn2FFFT, hn2FFTT, hn2FTFT,
+        hn2FTTT, hn2TFFT, hn2TFTT, hn2TTFT, hn2TTTT]
+    have hdecH : Coding.decodeHistoryNat cert.historyCode = some h := by
+      simp [cert, mkCert]
+    have hdecA0 : Coding.decodeActionNat cert.actionCode0 = some a0 := by
+      simp [cert, mkCert]
+    have hdecAFF : Coding.decodeActionNat cert.actionCodeFF = some aFF := by
+      simp [cert, mkCert]
+    have hdecAFT : Coding.decodeActionNat cert.actionCodeFT = some aFT := by
+      simp [cert, mkCert]
+    have hdecATF : Coding.decodeActionNat cert.actionCodeTF = some aTF := by
+      simp [cert, mkCert]
+    have hdecATT : Coding.decodeActionNat cert.actionCodeTT = some aTT := by
+      simp [cert, mkCert]
+    unfold XiTlTwoStepRewardLowerBoundCert.ok
+    -- Reduce the match to the intended branch.
+    rw [hdecH, hdecA0, hdecAFF, hdecAFT, hdecATF, hdecATT]
+    dsimp
+    -- Now discharge the conjunction requirements one by one.
+    repeat' constructor
+    · simpa using ha0Wf
+    · simpa [hFF, List.append_assoc] using haFFWf
+    · simpa [hFT, List.append_assoc] using haFTWf
+    · simpa [hTF, List.append_assoc] using haTFWf
+    · simpa [hTT, List.append_assoc] using haTTWf
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0]) (target := xFF))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0]) (target := xFT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0]) (target := xTF))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0]) (target := xTT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xFF, HistElem.act aFF]) (target := xFT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xFF, HistElem.act aFF]) (target := xTT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xFT, HistElem.act aFT]) (target := xFT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xFT, HistElem.act aFT]) (target := xTT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xTF, HistElem.act aTF]) (target := xFT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xTF, HistElem.act aTF]) (target := xTT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xTT, HistElem.act aTT]) (target := xFT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.idxsOfOutput_nodup (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xTT, HistElem.act aTT]) (target := xTT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0]) (target := xFF))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0]) (target := xFT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0]) (target := xTF))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0]) (target := xTT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xFF, HistElem.act aFF]) (target := xFT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xFF, HistElem.act aFF]) (target := xTT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xFT, HistElem.act aFT]) (target := xFT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xFT, HistElem.act aFT]) (target := xTT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xTF, HistElem.act aTF]) (target := xFT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xTF, HistElem.act aTF]) (target := xTT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xTT, HistElem.act aTT]) (target := xFT))
+    · simpa [cert, mkCert] using
+        (XiTlOneStepRewardLowerBoundCert.checkIdxOutputs_idxsOfOutput (tEnv := tEnv) (l := l)
+          (ha := h ++ [HistElem.act a0, HistElem.per xTT, HistElem.act aTT]) (target := xTT))
+    · exact hComputeNums
+    · exact hEvalRoot
+    · exact hEvalFF
+    · exact hEvalFT
+    · exact hEvalTF
+    · exact hEvalTT
+
+  refine ⟨tProg, ?_⟩
+  -- Close the `let`-bound goal.
+  simp
+  -- `verify` is `decide ok`.
+  simpa [xi_tlTwoStepRewardLowerBoundSoundProofSystemToPartrec] using (decide_eq_true hok)
+
+end XiTlTwoStepRewardLowerBoundCert
 
 /-- Build sound-proof-system convergence assumptions for the unbounded `ξ^tl` environment from:
 
