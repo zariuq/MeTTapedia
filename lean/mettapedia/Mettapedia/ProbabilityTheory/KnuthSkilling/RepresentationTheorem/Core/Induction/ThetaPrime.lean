@@ -10,8 +10,9 @@ namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
 open Classical
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
+open SandwichSeparation.SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
 
 /-!
 ## Θ' Infrastructure (core induction step `k → k+1`)
@@ -70,8 +71,8 @@ lemma Theta'_well_defined
   (hδB : ∀ r u (hu : 0 < u), r ∈ extensionSetB F d u → separationStatistic R r u hu = δ)
   {r s : Multi (k+1)}
   (hμ : mu (extendAtomFamily F d hd) r = mu (extendAtomFamily F d hd) s) :
-  @Theta'_raw α _ k F R d δ (splitMulti r).1 (splitMulti r).2 =
-  @Theta'_raw α _ k F R d δ (splitMulti s).1 (splitMulti s).2 := by
+  @Theta'_raw α _ _ k F R d δ (splitMulti r).1 (splitMulti r).2 =
+  @Theta'_raw α _ _ k F R d δ (splitMulti s).1 (splitMulti s).2 := by
   classical
   -- Extract the split components
   set r_old := (splitMulti r).1 with hr_old_def

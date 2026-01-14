@@ -102,7 +102,7 @@ noncomputable def evidenceDeduction
 
 This is the key result: deduction strength equals composed evidence strength.
 
-For now we state it with sorry - this is what we need to prove!
+This theorem is fully proven using `Evidence.deductionEvidence_strength`.
 -/
 
 /-- The main theorem: PLN deduction equals evidence composition

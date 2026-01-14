@@ -223,22 +223,8 @@ theorem iterate_op_op_distrib_of_comm' (x y : α) (h_comm : ∀ a b : α, op a b
 
 end Base
 
-section Full
-
-variable {α : Type*} [KnuthSkillingAlgebra α]
-
-open KnuthSkillingAlgebra
-
-/-- For any `x` in `α`, `x` is bounded above by some iterate of `a`.
-
-This is exactly the `op_archimedean` axiom, rewritten using `iterate_op`. -/
-theorem bounded_by_iterate (a : α) (ha : ident < a) (x : α) :
-    ∃ n : ℕ, iterate_op a n > x := by
-  obtain ⟨n, hn⟩ := op_archimedean a x ha
-  rw [nat_iterate_eq_iterate_op_succ] at hn
-  exact ⟨n + 1, hn⟩
-
-end Full
+/-! The Archimedean property (`bounded_by_iterate`, `op_archimedean_of_separation`) is
+derived from `KSSeparation` in `Separation/SandwichSeparation.lean`. It is NOT an axiom. -/
 
 end KnuthSkillingAlgebra
 

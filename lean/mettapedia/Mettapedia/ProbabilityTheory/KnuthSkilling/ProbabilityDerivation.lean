@@ -11,6 +11,8 @@ Key structures:
 -/
 
 import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Main
+import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem
+import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.DirectProduct
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
@@ -860,6 +862,67 @@ theorem sum_rule (hC : CoxConsistency α v) {a b : α} (hDisj : Disjoint a b) :
   -- NEW: S(v(a), v(b)) = v(a ⊔ b) ≤ 1
   · rw [← hC.combine_disjoint hDisj]
     exact v.le_one (a ⊔ b)
+
+/-!
+## Independence (Appendix B): direct product rule
+
+K&S introduces a **direct product** operation between independent lattices, written `×`
+at the lattice level and `⊗` at the scalar level. After Appendix A regrades `⊕` to `+`,
+Appendix B shows that `⊗` must be multiplication up to a single global scale constant.
+
+In our formalization, Appendix B is proved in:
+`Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.Main`.
+
+The lemma below is the “pipeline glue” used by `ProbabilityDerivation`:
+once you have *some* scalar `tensor` used to interpret direct products of events, the
+Appendix B theorem converts it into literal multiplication after normalization.
+-/
+
+namespace AppendixB
+
+open Mettapedia.ProbabilityTheory.KnuthSkilling.Literature
+
+open ProductTheorem
+
+variable {β γ : Type*} [PlausibilitySpace β] [PlausibilitySpace γ]
+
+/-- Compatibility predicate: the valuation on the composite lattice uses `tensor` on the
+measures of rectangle events. This is the intended reading of K&S “`x ⊗ t = m(x × t)`”. -/
+def RectTensorCompatible
+    {α : Type*} [PlausibilitySpace α]
+    (P : ProductTheorem.DirectProduct α β γ)
+    (vα : Valuation α) (vβ : Valuation β) (vγ : Valuation γ)
+    (tensor : ProductTheorem.PosReal → ProductTheorem.PosReal → ProductTheorem.PosReal) : Prop :=
+  ∀ a : α, ∀ b : β, ∀ ha : 0 < vα.val a, ∀ hb : 0 < vβ.val b,
+    vγ.val (P.prod a b) = ((tensor ⟨vα.val a, ha⟩ ⟨vβ.val b, hb⟩ : ProductTheorem.PosReal) : ℝ)
+
+/-- Appendix B consequence: any `tensor` satisfying the Independence axioms is multiplication
+up to a global scale, hence the measure of rectangle events obeys the direct-product rule. -/
+theorem directProduct_rule_mul_div_const
+    {α : Type*} [PlausibilitySpace α]
+    (P : ProductTheorem.DirectProduct α β γ)
+    (vα : Valuation α) (vβ : Valuation β) (vγ : Valuation γ)
+    {tensor : ProductTheorem.PosReal → ProductTheorem.PosReal → ProductTheorem.PosReal}
+    (hRep : AdditiveOrderIsoRep ProductTheorem.PosReal tensor)
+    (hDistrib : ProductTheorem.DistributesOverAdd tensor)
+    (hCompat : RectTensorCompatible (β := β) (γ := γ) P vα vβ vγ tensor) :
+    ∃ C : ℝ, 0 < C ∧
+      ∀ a : α, ∀ b : β, 0 < vα.val a → 0 < vβ.val b →
+        vγ.val (P.prod a b) = (vα.val a * vβ.val b) / C := by
+  rcases ProductTheorem.tensor_coe_eq_mul_div_const (tensor := tensor) hRep hDistrib with ⟨C, hC, hMul⟩
+  refine ⟨C, hC, ?_⟩
+  intro a b ha hb
+  have hRect : vγ.val (P.prod a b) =
+      ((tensor ⟨vα.val a, ha⟩ ⟨vβ.val b, hb⟩ : ProductTheorem.PosReal) : ℝ) :=
+    hCompat a b ha hb
+  -- Replace `tensor` by multiplication (up to `C`) via Appendix B.
+  calc
+    vγ.val (P.prod a b)
+        = ((tensor ⟨vα.val a, ha⟩ ⟨vβ.val b, hb⟩ : ProductTheorem.PosReal) : ℝ) := hRect
+    _ = ((vα.val a) * (vβ.val b)) / C := by
+        simpa using hMul ⟨vα.val a, ha⟩ ⟨vβ.val b, hb⟩
+
+end AppendixB
 
 /-- Product rule: v(a ⊓ b) = v(a|b) · v(b) follows from definition of condVal -/
 theorem product_rule_ks (_hC : CoxConsistency α v) (a b : α) (hB : v.val b ≠ 0) :

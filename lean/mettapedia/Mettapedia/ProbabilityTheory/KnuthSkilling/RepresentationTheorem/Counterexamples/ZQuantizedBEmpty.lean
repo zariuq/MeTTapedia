@@ -44,38 +44,6 @@ local instance : Mettapedia.ProbabilityTheory.KnuthSkilling.KnuthSkillingAlgebra
     intro x
     intro y₁ y₂ hy
     exact add_lt_add_left hy x
-  op_archimedean := by
-    intro x y hx
-    -- In NNReal under addition: choose n so that y < (n+1) * x.
-    -- Use the floor trick in ℝ.
-    have hx' : (0 : ℝ) < (x : ℝ) := by exact_mod_cast hx
-    set n : ℕ := Nat.floor ((y : ℝ) / (x : ℝ)) with hn
-    refine ⟨n, ?_⟩
-    -- First, compute `Nat.iterate (op x) n x` in this instance as `(n+1) • x`.
-    have h_iter : Nat.iterate (fun z : ℝ≥0 => x + z) n x = (n + 1) • x := by
-      induction n with
-      | zero => simp
-      | succ n ih =>
-          simp [Function.iterate_succ, ih, add_assoc, add_left_comm, add_comm, Nat.succ_eq_add_one,
-            add_nsmul]
-    -- Show the strict inequality by coercing to ℝ and using `Nat.lt_floor_add_one`.
-    have hn_lt : (y : ℝ) / (x : ℝ) < n + 1 := Nat.lt_floor_add_one ((y : ℝ) / (x : ℝ))
-    have hy_lt : (y : ℝ) < ((n + 1 : ℕ) : ℝ) * (x : ℝ) := by
-      -- Multiply by x > 0.
-      have := (mul_lt_mul_of_pos_right hn_lt hx')
-      -- ((y/x) * x) < (n+1) * x
-      simpa [div_eq_mul_inv, mul_assoc, inv_mul_cancel₀ (ne_of_gt hx'),
-        mul_one] using this
-    -- Back to NNReal.
-    -- Coe of (n+1)•x is (n+1) * x in ℝ.
-    have hy_lt' : y < ((n + 1 : ℕ) : ℝ≥0) * x := by
-      -- `((n+1):ℝ≥0) * x` is nat multiplication in NNReal.
-      -- Use the order-embedding into ℝ.
-      -- `simp` converts nat multiplication in NNReal to real multiplication under coercion.
-      exact_mod_cast hy_lt
-    -- The iterate is (n+1)•x, which equals nat multiplication in NNReal.
-    simpa [Mettapedia.ProbabilityTheory.KnuthSkilling.KnuthSkillingAlgebraBase.op, h_iter, nsmul_eq_mul]
-      using hy_lt'
   ident_le := by intro x; exact bot_le
 
 open Mettapedia.ProbabilityTheory.KnuthSkilling
@@ -377,34 +345,6 @@ noncomputable local instance : KnuthSkillingAlgebra ℝ≥0 where
   op_strictMono_right := by
     intro x y₁ y₂ hy
     exact add_lt_add_left hy x
-  op_archimedean := by
-    intro x y hx
-    -- Choose `n` so that `(y / x) < n` in ℝ, then `y < n * x` hence `y < (n+1) * x`.
-    have hx' : (0 : ℝ) < (x : ℝ) := by exact_mod_cast hx
-    obtain ⟨n, hn⟩ : ∃ n : ℕ, (y : ℝ) / (x : ℝ) < n :=
-      exists_nat_gt ((y : ℝ) / (x : ℝ))
-    refine ⟨n, ?_⟩
-    have hy_lt_nx : (y : ℝ) < (n : ℝ) * (x : ℝ) := by
-      have := mul_lt_mul_of_pos_right hn hx'
-      simpa [div_eq_mul_inv, mul_assoc, inv_mul_cancel₀ (ne_of_gt hx'), mul_one] using this
-    have hy_lt_n1x : (y : ℝ) < ((n + 1 : ℕ) : ℝ) * (x : ℝ) := by
-      have hx_nonneg : (0 : ℝ) ≤ (x : ℝ) := le_of_lt hx'
-      have hn_le : (n : ℝ) * (x : ℝ) ≤ ((n + 1 : ℕ) : ℝ) * (x : ℝ) := by
-        gcongr
-        exact Nat.cast_le.2 (Nat.le_succ n)
-      exact lt_of_lt_of_le hy_lt_nx hn_le
-    -- Coerce the real inequality back to `ℝ≥0`.
-    have hy_lt_n1x' : y < ((n + 1 : ℕ) : ℝ≥0) * x := by
-      exact_mod_cast hy_lt_n1x
-
-    -- Compute the iterate explicitly: repeated left-addition by `x`.
-    have h_iter : Nat.iterate (fun z : ℝ≥0 => x + z) n x = ((n + 1 : ℕ) : ℝ≥0) * x :=
-      nat_iterate_add_left_eq_mul x n
-
-    -- Conclude the Archimedean inequality.
-    have : y < Nat.iterate (fun z : ℝ≥0 => x + z) n x := by
-      simpa [h_iter] using hy_lt_n1x'
-    simpa [KnuthSkillingAlgebraBase.op] using this
   ident_le := by intro x; exact bot_le
 
 -- Singleton atom family with atom `1`.

@@ -1,10 +1,12 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.SandwichSeparation
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
 
 open Classical
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
+open SandwichSeparation.SeparationToArchimedean
 
 /-!
 # 1-Dimensional Ordered Monoids are Commutative

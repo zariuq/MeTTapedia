@@ -39,11 +39,16 @@ import Mathlib.Order.ConditionallyCompleteLattice.Basic
 import Mathlib.Tactic
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.SandwichSeparation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Core.SeparationImpliesCommutative
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Alternative
 
-open Classical KnuthSkillingAlgebra
+open Classical
+-- Bring the K&S operation/identity projections into scope (`op`, `ident`, etc.).
+-- Without this, `op` resolves to unrelated Mathlib identifiers (e.g. Opposite), and the file breaks.
+open KnuthSkillingAlgebraBase
+open KnuthSkillingAlgebra
 open scoped Pointwise
 
 variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
@@ -209,10 +214,10 @@ theorem pow'_lt_pow'_mul {a x : α} {k : ℕ} (_ha : ident < a) (hx : x < pow' a
         _ < op (pow' a k) (pow' a (k * n)) := op_strictMono_left (pow' a (k * n)) hx
         _ = op (pow' a (k * n)) (pow' a k) := op_comm' _ _
 
-/-- The cut set is bounded above (uses Archimedean property) -/
+/-- The cut set is bounded above (uses Archimedean property, derived from KSSeparation) -/
 theorem cutSet_bddAbove (a : α) (ha : ident < a) (x : α) : BddAbove (cutSet a x) := by
-  -- By Archimedean, ∃ N such that x < (op a)^[N] a = pow' a (N + 1)
-  obtain ⟨N, hN⟩ := op_archimedean a x ha
+  -- By Archimedean (derived from KSSeparation), ∃ N such that x < (op a)^[N] a = pow' a (N + 1)
+  obtain ⟨N, hN⟩ := SandwichSeparation.SeparationToArchimedean.op_archimedean_of_separation a x ha
   rw [iterate_eq_pow'_succ] at hN
   -- Use N + 1 as upper bound
   use (N + 1 : ℕ)
@@ -662,9 +667,9 @@ theorem Θ_cuts_strictMono (a : α) (ha : ident < a) : StrictMono (Θ_cuts a ha)
   -- Handle the `x = ident` case separately.
   by_cases hx0 : x = ident
   · subst hx0
-    -- Show `0 < Θ_cuts a ha y` from Archimedean: some power of `y` dominates `a`.
+    -- Show `0 < Θ_cuts a ha y` from Archimedean (derived from KSSeparation): some power of `y` dominates `a`.
     have hy_pos : ident < y := by simpa using hxy
-    obtain ⟨N, hN⟩ := op_archimedean y a hy_pos
+    obtain ⟨N, hN⟩ := SandwichSeparation.SeparationToArchimedean.op_archimedean_of_separation y a hy_pos
     rw [iterate_eq_pow'_succ] at hN
     have h_mem : ((1 : ℚ) / (N + 1 : ℕ)) ∈ cutSet a y := by
       have h0_le : (0 : ℚ) ≤ (1 : ℚ) / (N + 1 : ℕ) := by
@@ -881,6 +886,7 @@ theorem cutSet_add_closed (a : α) (x y : α) :
           simpa using h_distrib.symm
 
 -- Main additivity theorem.
+omit [KSSeparationStrict α] in
 theorem Θ_cuts_add (a : α) (ha : ident < a) (x y : α) :
     Θ_cuts a ha (op x y) = Θ_cuts a ha x + Θ_cuts a ha y := by
   classical
@@ -1046,7 +1052,7 @@ theorem Θ_cuts_add (a : α) (ha : ident < a) (x y : α) :
       -- rewrite both sides as sums
       have h_rhs :
           op (pow' a (m₁ * n₂)) (pow' a (m₂ * n₁)) = pow' a (m₁ * n₂ + m₂ * n₁) := by
-        simpa [pow'_add] using (pow'_add a (m₁ * n₂) (m₂ * n₁)).symm
+        simp [pow'_add]
       have h1 :
           op (pow' x (n₁ * n₂)) (pow' y (n₁ * n₂)) < op (pow' a (m₁ * n₂)) (pow' y (n₁ * n₂)) :=
         op_strictMono_left (pow' y (n₁ * n₂)) hx_scaled
@@ -1058,7 +1064,7 @@ theorem Θ_cuts_add (a : α) (ha : ident < a) (x y : α) :
       exact lt_trans h1 h2
 
     -- Compute the rational q as m/n, and also as the q₁+q₂ construction.
-    have hq_mn : (m : ℚ) / n = q := by simpa [hq_eq]
+    have hq_mn : (m : ℚ) / n = q := by simp [hq_eq]
     have hq_as_sum : q = q₁ + q₂ := by simp [q₂]
     have hq_as_frac :
         q = (m₁ * n₂ + m₂ * n₁ : ℕ) / (n₁ * n₂ : ℕ) := by

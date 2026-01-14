@@ -51,13 +51,11 @@ The Archimedean property states: for any a > ident and any x, there exists n suc
 If `KSSeparation` holds, then for x with ident < x < x⊕x (which is always true for x > ident),
 we can find n, m with x^m < a^n. Since m ≥ 1, this gives us bounds.
 
-Actually, the base KnuthSkillingAlgebra ALREADY requires Archimedean via `op_archimedean`.
-So (full) `KSSeparation` does not “derive” Archimedean when the base structure is
-`KnuthSkillingAlgebra` — Archimedean is already assumed there.
+`KSSeparation` derives Archimedean — it is NOT assumed as an axiom. This file provides the
+theorem `op_archimedean_of_separation` which derives the Archimedean property from `KSSeparation`.
+The base `KnuthSkillingAlgebra` is now an alias for `KnuthSkillingAlgebraBase` (no Archimedean axiom).
 
-The interesting statement is that over the weaker base `KnuthSkillingAlgebraBase`,
-`KSSeparation` implies an Archimedean-style unboundedness property, and (separately)
-forces commutativity.
+`KSSeparation` also implies commutativity (via `op_comm_of_KSSeparation` below).
 -/
 
 namespace SandwichSeparation
@@ -180,6 +178,18 @@ theorem op_archimedean_of_separation [KSSeparation α] (a : α) (x : α) (ha : i
   use k
   rw [nat_iterate_eq_iterate_op_succ]
   exact hx_lt
+
+/-- The Archimedean property in `iterate_op` form: for any positive `a` and any `x`,
+there exists `n` such that `x < iterate_op a n`. This is the form used throughout the
+K&S formalization. -/
+theorem bounded_by_iterate [KSSeparation α] (a : α) (ha : ident < a) (x : α) :
+    ∃ n : ℕ, x < iterate_op a n := by
+  -- Get the Nat.iterate form from op_archimedean_of_separation
+  obtain ⟨k, hk⟩ := op_archimedean_of_separation a x ha
+  -- Convert: (op a)^[k] a = iterate_op a (k + 1)
+  use k + 1
+  rw [← nat_iterate_eq_iterate_op_succ]
+  exact hk
 
 end SeparationToArchimedean
 

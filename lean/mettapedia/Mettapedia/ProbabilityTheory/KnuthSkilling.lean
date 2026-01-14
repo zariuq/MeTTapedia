@@ -14,6 +14,7 @@ Key insight: Probability DERIVED from symmetry, not axiomatized!
   - `Separation/Derivation.lean`: work-in-progress proof sketch toward `KSSeparation` from K-S axioms
   - `Separation/SandwichSeparation.lean`: sandwich separation ⇒ commutativity + Archimedean-style consequences
 - **RepresentationTheorem.lean**: **MAIN ENTRYPOINT** - Appendix A representation theorem (proof under `RepresentationTheorem/`)
+- **ProductTheorem.lean**: Appendix B product theorem (product equation → exponential → product rule)
 
 ## Layer Structure
 
@@ -32,6 +33,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
+import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem
 import Mettapedia.ProbabilityTheory.KnuthSkilling.GoertzelGroupFix
 import Mettapedia.ProbabilityTheory.KnuthSkilling.ProbabilityDerivation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Independence

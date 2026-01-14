@@ -320,9 +320,6 @@ instance : KnuthSkillingAlgebra SD where
   op_ident_left := op_ident_left
   op_strictMono_left := op_strictMono_left
   op_strictMono_right := op_strictMono_right
-  op_archimedean := by
-    intro x y hx
-    simpa [ident] using op_archimedean x y hx
   ident_le := ident_le
 
 end SD

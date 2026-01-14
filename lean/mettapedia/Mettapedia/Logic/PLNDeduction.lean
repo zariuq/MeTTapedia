@@ -217,8 +217,6 @@ lemma convex_combination_bounded (a b w : ℝ)
 lemma consistency_implies_product_bound
     (pB pC sBC : ℝ)
     (hpB_pos : 0 < pB)
-    (hpC_nonneg : 0 ≤ pC)
-    (hsBC_nonneg : 0 ≤ sBC)
     (h_consist : conditionalProbabilityConsistency pB pC sBC) :
     pB * sBC ≤ pC := by
   obtain ⟨_, _, h_upper⟩ := h_consist
@@ -236,7 +234,6 @@ lemma consistency_implies_product_bound
 lemma consistency_implies_complement_bound
     (pB pC sBC : ℝ)
     (hpB : 0 < pB ∧ pB ≤ 1)
-    (hpC : 0 ≤ pC ∧ pC ≤ 1)
     (hsBC : 0 ≤ sBC ∧ sBC ≤ 1)
     (h_consist : conditionalProbabilityConsistency pB pC sBC) :
     pC - pB * sBC ≤ 1 - pB := by
@@ -330,9 +327,9 @@ Empirical verification (1M trials) confirms no violations exist.
 -/
 theorem deduction_formula_in_unit_interval
     (pA pB pC sAB sBC : ℝ)
-    (hpA : pA ∈ Set.Icc (0 : ℝ) 1)
+    (_hpA : pA ∈ Set.Icc (0 : ℝ) 1)
     (hpB : pB ∈ Set.Icc (0 : ℝ) 1)
-    (hpC : pC ∈ Set.Icc (0 : ℝ) 1)
+    (_hpC : pC ∈ Set.Icc (0 : ℝ) 1)
     (hsAB : sAB ∈ Set.Icc (0 : ℝ) 1)
     (hsBC : sBC ∈ Set.Icc (0 : ℝ) 1)
     (hpB_lt : pB < 0.99)
@@ -353,11 +350,11 @@ theorem deduction_formula_in_unit_interval
     obtain ⟨h_pos, _, _⟩ := h_consist.2
     exact h_pos
   have h_product : pB * sBC ≤ pC :=
-    consistency_implies_product_bound pB pC sBC hpB_pos hpC.1 hsBC.1 h_consist.2
+    consistency_implies_product_bound pB pC sBC hpB_pos h_consist.2
 
   -- Get the complement bound
   have h_complement : pC - pB * sBC ≤ 1 - pB :=
-    consistency_implies_complement_bound pB pC sBC ⟨hpB_pos, hpB.2⟩ hpC hsBC h_consist.2
+    consistency_implies_complement_bound pB pC sBC ⟨hpB_pos, hpB.2⟩ hsBC h_consist.2
 
   -- Now show term2 = (pC - pB * sBC) / (1 - pB) is in [0,1]
   have h_1mpB_pos : 0 < 1 - pB := by linarith
@@ -410,8 +407,8 @@ theorem deduction_formula_derives_from_total_probability
 When B is certain, P(C|A) ≈ P(C) by the formula's edge case handling. -/
 theorem deduction_when_B_certain
     (pA pC sAB sBC : ℝ)
-    (hsBC : sBC ∈ Set.Icc (0 : ℝ) 1)
-    (hpA_pos : 0 < pA)
+    (_hsBC : sBC ∈ Set.Icc (0 : ℝ) 1)
+    (_hpA_pos : 0 < pA)
     (h_consist : conditionalProbabilityConsistency pA 1 sAB ∧
                  conditionalProbabilityConsistency 1 pC sBC) :
     simpleDeductionStrengthFormula pA 1 pC sAB sBC = pC := by
@@ -426,8 +423,8 @@ theorem deduction_when_B_certain
 When A implies B with certainty, P(C|A) = P(C|B) since all A's are B's. -/
 theorem deduction_when_A_implies_B
     (pA pB pC sBC : ℝ)
-    (hpB_lt : pB < 1)
-    (hpB_pos : 0 < pB)
+    (_hpB_lt : pB < 1)
+    (_hpB_pos : 0 < pB)
     (h_consist : conditionalProbabilityConsistency pA pB 1 ∧
                  conditionalProbabilityConsistency pB pC sBC)
     (hpB_small : pB ≤ 0.99) :
@@ -444,8 +441,8 @@ theorem deduction_when_A_implies_B
 When A implies ¬B, P(C|A) = P(C|¬B) = (P(C) - P(B)P(C|B)) / (1 - P(B)). -/
 theorem deduction_when_A_implies_notB
     (pA pB pC sBC : ℝ)
-    (hpB_lt : pB < 1)
-    (hpB_pos : 0 < pB)
+    (_hpB_lt : pB < 1)
+    (_hpB_pos : 0 < pB)
     (hpB_small : pB ≤ 0.99)
     (h_consist : conditionalProbabilityConsistency pA pB 0 ∧
                  conditionalProbabilityConsistency pB pC sBC) :

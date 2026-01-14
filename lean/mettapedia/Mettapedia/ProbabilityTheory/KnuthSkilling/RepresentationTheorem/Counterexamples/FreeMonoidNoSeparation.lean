@@ -258,7 +258,6 @@ noncomputable instance : KnuthSkillingAlgebra Word where
   op_ident_left := op_ident_left
   op_strictMono_left := op_strictMono_left
   op_strictMono_right := op_strictMono_right
-  op_archimedean := op_archimedean
   ident_le := ident_le
 
 @[simp] theorem len_KS_ident : (KnuthSkillingAlgebraBase.ident (α := Word)).len = 0 := by

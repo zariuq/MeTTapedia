@@ -1,10 +1,14 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.SandwichSeparation
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Core
 
 open Classical
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
+open SandwichSeparation.SeparationToArchimedean
+
+-- Use `bounded_by_iterate` from SandwichSeparation (requires [KSSeparation α])
 
 /-!
 # Growth Rate Theory for K-S Algebras
@@ -22,7 +26,7 @@ WITHOUT using logarithms or real number representations.
 These provide algebraic tools for comparing exponential growth without needing ℝ.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
 
 /-!
 ## Section 1: Fundamental Growth Rate Lemmas (No Separation Needed)

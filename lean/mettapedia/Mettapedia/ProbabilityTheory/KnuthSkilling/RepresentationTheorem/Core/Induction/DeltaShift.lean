@@ -10,8 +10,9 @@ namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
 open Classical
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
+open SandwichSeparation.SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
 
 /-! ### Key Trade Lemma: δ-Shift Equivalence
 

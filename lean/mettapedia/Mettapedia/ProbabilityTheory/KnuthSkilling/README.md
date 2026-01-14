@@ -1,15 +1,32 @@
 # Knuth-Skilling Foundations of Inference
 
-This directory contains a complete Lean 4 formalization of the Knuth-Skilling
-approach to deriving probability theory from first principles.
+Lean 4 formalization of Knuth & Skilling's "Foundations of Inference" (2012).
 
 ## Overview
 
 The **Knuth-Skilling representation theorem** shows that any algebraic structure
-satisfying certain natural axioms (associativity, monotonicity, and a separation
-property) must be order-isomorphic to `(R, +)`. This provides a foundational
-justification for probability theory: plausibility measures satisfying these
-axioms must behave like probabilities.
+satisfying natural axioms (associativity, monotonicity, and a separation
+property) embeds into `(ℝ, +)`. This provides a foundational justification for
+probability theory without assuming additivity, continuity, or differentiability.
+
+**Key insight**: K&S works on **distributive lattices**, not just Boolean algebras.
+This means no negation/complements are required—a genuine generalization of
+classical probability.
+
+## Two Proof Approaches
+
+We formalize **both** proofs of the representation theorem:
+
+1. **K&S-style induction** (`RepresentationTheorem/Main.lean`):
+   Grid-based inductive extension via `RepresentationGlobalization`.
+
+2. **Direct Dedekind cuts** (`RepresentationTheorem/Alternative/Main.lean`):
+   Hölder-style construction adapting classical ordered group embeddings.
+   More concise and direct.
+
+The direct cuts approach is modeled on Hölder (1901) and Alimov (1950),
+adapted for ordered monoids. The separation axiom—adopted following a
+suggestion by B. Goertzel—provides the density condition making this work.
 
 ## Main Result (Representation Theorem; Appendix A in the paper)
 
@@ -76,6 +93,12 @@ KnuthSkilling/
 │   ├── SandwichSeparation.lean  # Sandwich separation: commutativity + Archimedean consequences
 │   └── Derivation.lean          # WIP derivation of `KSSeparation` (packages `LargeRegimeSeparationSpec`)
 ├── AxiomSystemEquivalence.lean  # Relationship between separation and commutativity/representation bundles
+├── ProductTheorem/              # Appendix B (product equation + product rule)
+│   ├── FunctionalEquation.lean   # Appendix B solver: product equation → exponential
+│   ├── Basic.lean                # Derive product equation from axioms 3–4 + Θ(x⊗t)=Θx+Θt
+│   ├── DirectProduct.lean        # Lattice-level bookkeeping for direct products of independent lattices
+│   └── Main.lean                 # Conclude `⊗` is multiplication (up to a scale constant)
+├── ProductTheorem.lean          # Public entry point for Appendix B
 ├── RepresentationTheorem/       # The main formalization (see RepresentationTheorem/README.md)
 │   ├── Main.lean                # Public API: representation theorem + corollaries
 │   ├── Globalization.lean       # Globalization construction (`RepresentationGlobalization`)
@@ -93,6 +116,8 @@ KnuthSkilling/
 | `Separation/SandwichSeparation.lean` | Sandwich separation: `KSSeparation` ⇒ Commutativity + Archimedean-style consequences |
 | `AxiomSystemEquivalence.lean` | Separation consequences + “representation ⇒ separation” via rational density |
 | `RepresentationTheorem/Main.lean` | **Main theorem**: `associativity_representation` |
+| `ProductTheorem/Main.lean` | **Appendix B**: product equation ⇒ exponential ⇒ product rule for `⊗` |
+| `ProductTheorem/DirectProduct.lean` | Lattice-level direct product `×` (canonical `Set` model) |
 
 ## The Hypercube Connection
 
@@ -136,11 +161,45 @@ nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationT
 
 ## Status
 
-**Complete** (2026-01-11):
+**Appendix A (Representation Theorem): COMPLETE** (2026-01-11)
 - Full representation theorem proven (no `sorry`)
-- Separation ⇒ commutativity, and faithful representation ⇒ separation (see `AxiomSystemEquivalence.lean`)
-- `lake build Mettapedia.ProbabilityTheory.KnuthSkilling` and
-  `lake build Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem` are warning-free
+- Two proof approaches: K&S induction AND direct Dedekind cuts
+- Separation ⇒ commutativity + Archimedean (see `Separation/SandwichSeparation.lean`)
+- Faithful representation ⇒ separation (see `AxiomSystemEquivalence.lean`)
+- Builds warning-free
+
+**Appendix B (Product Theorem): WIP** (2026-01-14)
+- Product equation framework in `ProductTheorem/`
+- `TensorRegularity` hypothesis bundle (not new axioms)
+- **Gap**: Need to justify ⊗ satisfies K&S conditions (issue: `ident_le` fails for multiplication)
+
+## Open Gaps
+
+### 1. Event Lattice → Plausibility Scale Connection
+
+We have two disconnected pieces:
+- `PlausibilitySpace`: Distributive lattice of events
+- `KnuthSkillingAlgebra`: Linearly ordered plausibility scale with ⊕
+
+**Missing**: Formal connection showing how a valuation `v : Events → Scale`
+induces K&S algebra structure on `range(v)`.
+
+### 2. Non-Boolean Examples
+
+K&S claims to work on distributive lattices without complements, but our
+examples mostly use Boolean lattices (`Set Bool`, etc.).
+
+**Needed**: Concrete non-Boolean distributive lattice with K&S valuation.
+
+### 3. Cauchy's Functional Equation
+
+Appendix B exponential characterization needs:
+```lean
+theorem continuous_additive_is_linear (f : ℝ → ℝ)
+    (h_cont : Continuous f) (h_add : ∀ x y, f(x+y) = f(x) + f(y)) :
+    ∃ c, ∀ x, f(x) = c * x
+```
+Not in Mathlib. Classical result but requires density argument.
 
 ## Countermodels (why the extra axioms matter)
 
@@ -154,7 +213,13 @@ nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationT
 
 ## References
 
-- Knuth & Skilling, "Foundations of Inference" (2012), Appendix A
-- Goertzel, "Foundations of Inference: New Proofs" (2026 note)
+- Knuth & Skilling, "Foundations of Inference" (2012)
+- Hölder, "Die Axiome der Quantität und die Lehre vom Mass" (1901) — ordered group embeddings
+- Alimov (1950) — ordered semigroup embeddings
+- Klain & Rota, "Introduction to Geometric Probability" — valuations on distributive lattices
+- Aczél, "Lectures on Functional Equations" — rational homogeneity
 - Stay & Wells, "Generating Hypercubes of Type Systems"
-- Aczél, "Lectures on Functional Equations" (for rational homogeneity)
+
+## Paper
+
+See `paper/ks-formalization.tex` for a detailed writeup of the formalization.

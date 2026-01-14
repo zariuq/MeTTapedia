@@ -1,4 +1,5 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Core.Prelude
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.SandwichSeparation
 
 set_option linter.unnecessarySimpa false
 set_option linter.unusedSimpArgs false
@@ -10,8 +11,9 @@ namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
 open Classical
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
+open SandwichSeparation.SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
 
 /-! ## Phase 2: A/B/C Partition for New Types
 

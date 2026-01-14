@@ -547,9 +547,9 @@ theorem bayesInversion_eq (s_BA s_A s_B : ℝ) (hA : s_A ≠ 0) :
 
 /-- Bayes inversion preserves probability bounds under natural constraints. -/
 theorem bayesInversion_bounded (s_BA s_A s_B : ℝ)
-    (hBA : 0 ≤ s_BA ∧ s_BA ≤ 1)
+    (_hBA : 0 ≤ s_BA ∧ s_BA ≤ 1)
     (hA : 0 < s_A)
-    (hB : 0 ≤ s_B ∧ s_B ≤ 1)
+    (_hB : 0 ≤ s_B ∧ s_B ≤ 1)
     (h_constraint : s_BA * s_B ≤ s_A) :
     bayesInversion s_BA s_A s_B ≤ 1 := by
   unfold bayesInversion
@@ -696,13 +696,13 @@ Uses Bayes to get P(C|B), then applies deduction.
 Full formula:
   s_{AC} = s_{AB} · (s_{CB} · s_C / s_B) + correction term
 -/
-def plnAbductionStrength (s_AB s_CB s_A s_B s_C : ℝ) : ℝ :=
+def plnAbductionStrength (s_AB s_CB _s_A s_B s_C : ℝ) : ℝ :=
   let s_BC := bayesInversion s_CB s_B s_C
   plnDeductionStrength s_AB s_BC s_B s_C
 
 /-- PLN Abduction is Bayes + Deduction composition. -/
-theorem plnAbduction_eq_bayes_deduction (s_AB s_CB s_A s_B s_C : ℝ) :
-    plnAbductionStrength s_AB s_CB s_A s_B s_C =
+theorem plnAbduction_eq_bayes_deduction (s_AB s_CB _s_A s_B s_C : ℝ) :
+    plnAbductionStrength s_AB s_CB _s_A s_B s_C =
       plnDeductionStrength s_AB (bayesInversion s_CB s_B s_C) s_B s_C := by
   unfold plnAbductionStrength
   rfl

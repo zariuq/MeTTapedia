@@ -21,6 +21,15 @@ theorem associativity_representation
 
 The proof proceeds by induction on "atom families":
 
+### Alternative Proof (Direct Cuts)
+
+There is also a compact Hölder/Dedekind-cuts proof of the same representation theorem, packaged as:
+
+- `RepresentationTheorem/Alternative/Main.lean` (`associativity_representation_cuts`)
+- `RepresentationTheorem/Alternative/DirectCuts.lean` (the full cut construction of `Θ_cuts`)
+
+This path is meant as a readability/compactness showcase and a cross-check against the grid/induction pipeline.
+
 ### Quick Reviewer Entry Point
 
 If you want to understand the pipeline without reading the large induction files first, start at:
@@ -60,6 +69,9 @@ RepresentationTheorem/
 ├── ProofSketch.lean          # Reviewer entry point (dependency chain + pointers)
 ├── Main.lean                # Public API: representation theorem + corollaries
 ├── Globalization.lean       # Globalization construction (`RepresentationGlobalization`)
+├── Alternative/             # Alternative proof path (Dedekind cuts)
+│   ├── Main.lean            # Public API: `associativity_representation_cuts`
+│   └── DirectCuts.lean      # Cut-based Θ construction (`Θ_cuts`)
 ├── Core/                    # Induction machinery (see Core/README.md)
 │   ├── All.lean             # Aggregates all Core exports
 │   ├── Prelude.lean         # Basic setup, imports
@@ -112,11 +124,15 @@ class KnuthSkillingAlgebraBase (α : Type*) extends LinearOrder α where
   op_strictMono_right : ∀ a, StrictMono (fun b => op b a)
   ident_le : ∀ a, ident ≤ a
 
--- Full K&S algebra: base axioms + explicit Archimedean property
-class KnuthSkillingAlgebra (α : Type*) extends KnuthSkillingAlgebraBase α where
-  op_archimedean : ∀ x y : α, ident < x → ∃ n : ℕ, y < Nat.iterate (op x) n x
+-- KnuthSkillingAlgebra is an alias for the base (no Archimedean axiom)
+-- Archimedean is DERIVED from KSSeparation, not assumed.
+abbrev KnuthSkillingAlgebra := KnuthSkillingAlgebraBase
 
--- Separation: the “rational density” strengthening used throughout Appendix A
+-- The Archimedean property (derived from KSSeparation, NOT an axiom):
+-- theorem op_archimedean_of_separation [KSSeparation α] (a x : α) (ha : ident < a) :
+--   ∃ n : ℕ, x < Nat.iterate (op a) n a
+
+-- Separation: the "rational density" strengthening used throughout Appendix A
 class KSSeparation (α : Type*) [KnuthSkillingAlgebraBase α] : Prop where
   separation :
     ∀ {a x y : α}, ident < a → ident < x → ident < y → x < y →
@@ -151,6 +167,15 @@ cd lean-projects/mettapedia
 ulimit -Sv 6291456
 export LAKE_JOBS=1  # `ThetaPrime.lean` can exceed 6GB when compiled in parallel
 nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
+```
+
+To build the cuts-based alternative:
+
+```bash
+cd lean-projects/mettapedia
+ulimit -Sv 6291456
+export LAKE_JOBS=1
+nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Alternative.Main
 ```
 
 ## Status

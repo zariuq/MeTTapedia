@@ -40,11 +40,7 @@ lemma top_adj_of_ne (u v : V) (h : u ≠ v) : (⊤ : SimpleGraph V).Adj u v := h
 theorem complete_isHamiltonian (hn : Fintype.card V ≥ 3) : (⊤ : SimpleGraph V).IsHamiltonian := by
   intro hne1
   have hcard : 0 < Fintype.card V := by omega
-  -- Get an enumeration of vertices as Fin (card V)
-  obtain ⟨e⟩ := Fintype.truncEquivFin V
-  -- Build the natural Hamilton cycle: v₀ → v₁ → ... → v_{n-1} → v₀
-  -- This follows from the construction in exists_hamilton_cycle_complete
-  -- which is defined later in the file
+  -- Proof deferred to after exists_hamilton_cycle_complete is defined
   sorry
 
 /-!
@@ -123,16 +119,14 @@ def HamiltonCycle.toWalk {G : SimpleGraph V} {hn : Fintype.card V = n}
 /-- The walk from HamiltonCycle visits every vertex exactly once (in the non-closed part) -/
 lemma HamiltonCycle.toWalk_isHamiltonianCycle {G : SimpleGraph V} {hn : Fintype.card V = n}
     (C : HamiltonCycle n hn_pos G hn) (hn3 : n ≥ 3) : C.toWalk.IsHamiltonianCycle := by
-  constructor
-  · -- IsCycle: the walk is a cycle
-    constructor
-    · -- not nil: length ≥ 1
-      sorry
-    · -- support nodup tail: no repeated vertices except start/end
-      sorry
-  · -- isHamiltonian_tail: every vertex appears exactly once in tail
-    intro v
-    sorry
+  -- Requires proving:
+  -- 1. C.toWalk.IsCycle (the walk is a cycle)
+  -- 2. C.toWalk.tail.IsHamiltonian (every vertex appears exactly once in tail)
+  -- This is technically involved because it requires detailed analysis of:
+  -- - walkFrom structure (recursively built)
+  -- - support and tail properties
+  -- - The bijection C.toEquiv ensuring all vertices visited exactly once
+  sorry
 
 /-!
 ## Section 3: Dirac's Theorem

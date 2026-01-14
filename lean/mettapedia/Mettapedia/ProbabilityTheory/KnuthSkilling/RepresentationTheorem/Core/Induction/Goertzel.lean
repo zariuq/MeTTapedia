@@ -8,8 +8,9 @@ namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
 open Classical
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
+open SandwichSeparation.SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
 
 /-!
 ## Goertzel’s v2 Lemma‑7 framing, in our vocabulary
@@ -3084,7 +3085,6 @@ This lemma is independent of any strict-gap / Θ′ monotonicity arguments; it o
 existing k-grid representation (`MultiGridRep`) and the bridge lemma (`GridBridge`).
 -/
 
-omit [KSSeparation α] in
 /-- If `a^n ≤ μ(F,r0)^m`, then `n·θ(a) ≤ m·Θ(r0) + (u*m)·chooseδ`. -/
 private lemma thetaAtom_mul_le_Theta_base_mul_of_iterate_atom_le_iterate_mu
     (IH : GridBridge F) (H : GridComm F)
@@ -3145,7 +3145,6 @@ class ChooseδBaseAdmissible_noCommon : Prop where
             r ∈ extensionSetC_base F d r0 u →
               chooseδ hk R d hd < separationStatistic_base R r0 r u hu)
 
-omit [KSSeparation α] in
 theorem chooseδBaseAdmissible_noCommon_of_chooseδBaseAdmissible
     (h : ChooseδBaseAdmissible (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
     ChooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F) (d := d) (hd := hd) := by
@@ -3157,7 +3156,6 @@ theorem chooseδBaseAdmissible_noCommon_of_chooseδBaseAdmissible
   · intro r _hcommon hrC
     exact (h.base r0 u hu).2 r hrC
 
-omit [KSSeparation α] in
 theorem chooseδBaseAdmissible_of_chooseδBaseAdmissible_noCommon
     (H : GridComm F)
     (h : ChooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
@@ -3188,7 +3186,6 @@ theorem chooseδBaseAdmissible_of_chooseδBaseAdmissible_noCommon
       (h.base_noCommon r0' u hu).2 r' (by simpa [hcommon]) hrC'
     simpa [separationStatistic_base_eq_remMulti (R := R) r0 r u hu, r0', r'] using hlt
 
-omit [KSSeparation α] in
 theorem chooseδBaseAdmissible_iff_chooseδBaseAdmissible_noCommon
     (H : GridComm F) :
     ChooseδBaseAdmissible (hk := hk) (R := R) (F := F) (d := d) (hd := hd) ↔
@@ -3367,7 +3364,6 @@ The key insight is to decompose based on whether μ(F,r) falls below or above d^
 - If d^u ≤ μ(F,r): This is the harder case requiring KSSeparation bump.
 -/
 
-omit [KSSeparation α] in
 /-- Helper: when μ(F,r) = ident, the base-indexed A-statistic is non-positive, hence < δ. -/
 private lemma A_base_statistic_lt_chooseδ_of_mu_eq_ident
     (IH : GridBridge F) (H : GridComm F)
@@ -3397,7 +3393,6 @@ private lemma A_base_statistic_lt_chooseδ_of_mu_eq_ident
     exact div_nonpos_of_nonpos_of_nonneg h_neg_nonneg h_u_pos.le
   linarith
 
-omit [KSSeparation α] in
 /-- Helper: if `μ(F,r) ≤ μ(F,r0)`, the base-indexed statistic is non-positive, hence `< chooseδ`. -/
 private lemma A_base_statistic_lt_chooseδ_of_mu_le
     (IH : GridBridge F) (H : GridComm F)
@@ -3508,7 +3503,6 @@ private lemma remMultiRight_scaleMult_unitMulti_of_lt
     simp [remMultiRight, commonMulti, scaleMult, unitMulti, Nat.min_eq_left (le_of_lt hn)]
   · simp [remMultiRight, commonMulti, scaleMult, unitMulti, hj]
 
-omit [KSSeparation α] in
 private lemma extensionSetA_base_and_statistic_reduce_scaleMult_unitMulti_of_lt
     (H : GridComm F)
     (r0 : Multi k) (i₀ : Fin k) (m n u : ℕ) (hu : 0 < u)
@@ -3540,7 +3534,6 @@ private lemma extensionSetA_base_and_statistic_reduce_scaleMult_unitMulti_of_lt
   refine ⟨hrA_reduced, ?_⟩
   simpa [hleft, hright] using hstat
 
-omit [KSSeparation α] in
 private lemma extensionSetC_base_and_statistic_reduce_scaleMult_unitMulti_of_lt
     (H : GridComm F)
     (r0 : Multi k) (i₀ : Fin k) (m n u : ℕ) (hu : 0 < u)
@@ -4141,7 +4134,6 @@ theorem chooseδBaseAdmissible_noCommon_hard_of_newAtomCommutes_of_C_strict0
       chooseδBaseAdmissible_noCommon_hardC_of_newAtomCommutes_of_C_strict0 (α := α) (hk := hk) (R := R)
         (F := F) (d := d) (hd := hd) (IH := IH) (H := H) (hcomm := hcomm) (hC_strict0 := hC_strict0)
 
-omit [KSSeparation α] in
 theorem chooseδBaseAdmissible_noCommon_hard_of_chooseδBaseAdmissible_noCommon
     (h :
       ChooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
@@ -4215,7 +4207,6 @@ theorem chooseδBaseAdmissible_of_newAtomCommutes_of_KSSeparationStrict
     chooseδBaseAdmissible_of_newAtomCommutes_of_C_strict0 (α := α) (hk := hk) (R := R) (F := F)
       (d := d) (hd := hd) (IH := IH) (H := H) (hcomm := hcomm) (hC_strict0 := hC_strict0)
 
-omit [KSSeparation α] in
 /-- Convenience wrapper: if you assume `NewAtomCommutes`, `KSSeparation`, and `DenselyOrdered α`,
 then the strict separation used on the C-side is automatic. -/
 theorem chooseδBaseAdmissible_of_newAtomCommutes_of_KSSeparation_of_denselyOrdered
@@ -4235,7 +4226,6 @@ With `[KSSeparation α]`, `NewAtomCommutes` is automatically satisfied via globa
 These constructors eliminate the explicit `hcomm` parameter entirely.
 -/
 
-omit [KSSeparation α] in
 /-- **Simplified**: `ChooseδBaseAdmissible` from `[KSSeparationStrict α]` alone.
     `NewAtomCommutes` is derived automatically from KSSeparation → commutativity. -/
 theorem chooseδBaseAdmissible_of_KSSeparationStrict
@@ -4285,7 +4275,6 @@ theorem extend_grid_rep_with_atom_of_bEmptyExtensionExtra
     extend_grid_rep_with_atom_of_chooseδBaseAdmissible (α := α) (hk := hk) (R := R) (F := F)
       (d := d) (hd := hd) (H := H) hBase
 
-omit [KSSeparation α] in
 /-- Convenience wrapper: in the B-empty extension step, it suffices to assume
 `NewAtomCommutes` plus the strict separation strengthening `KSSeparationStrict`. -/
 theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict
@@ -4308,7 +4297,6 @@ theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict
     extend_grid_rep_with_atom_of_bEmptyExtensionExtra (α := α) (hk := hk) (R := R) (F := F) (d := d)
       (hd := hd) (IH := IH) (H := H) (hExtra := hExtra)
 
-omit [KSSeparation α] in
 /-- Goertzel v4-style wrapper: if `op` is globally commutative, then the remaining B-empty extension
 step needs only `KSSeparationStrict` (since `NewAtomCommutes` is automatic). -/
 theorem extend_grid_rep_with_atom_of_op_comm_of_KSSeparationStrict
@@ -4326,7 +4314,6 @@ theorem extend_grid_rep_with_atom_of_op_comm_of_KSSeparationStrict
     extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict (α := α) (hk := hk) (R := R)
       (F := F) (d := d) (hd := hd) (IH := IH) (H := H) (hcomm := hNew)
 
-omit [KSSeparation α] in
 /-- Full B-empty extension wrapper: `NewAtomCommutes` + `KSSeparation` + `DenselyOrdered α` suffice
 to run the extension step (strict separation is derived from density). -/
 theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparation_of_denselyOrdered
@@ -4353,7 +4340,6 @@ is automatically satisfied for any atom family and candidate. These wrappers eli
 explicit `hcomm : NewAtomCommutes F d` parameter entirely.
 -/
 
-omit [KSSeparation α] in
 /-- **Simplified**: B-empty extension step with `[KSSeparationStrict α]` only.
     `NewAtomCommutes` is derived automatically from KSSeparation → commutativity. -/
 theorem extend_grid_rep_with_atom_of_KSSeparationStrict
@@ -4387,7 +4373,7 @@ theorem extend_grid_rep_with_atom_of_KSSeparation_of_denselyOrdered_auto
           R.Θ_grid ⟨mu F r_old, mu_mem_kGrid F r_old⟩ + (t : ℝ) * chooseδ hk R d hd) := by
   have hNew : NewAtomCommutes F d := newAtomCommutes_of_KSSeparation (α := α) (F := F) (d := d)
   exact
-    extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparation_of_denselyOrdered (α := α)
+    extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparation_of_denselyOrdered
       (hk := hk) (R := R) (F := F) (d := d) (hd := hd) (IH := IH) (H := H) hNew
 
 /-!

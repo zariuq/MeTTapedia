@@ -1,6 +1,7 @@
 import Mathlib.Algebra.Order.Archimedean.Basic
 
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.SandwichSeparation
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
@@ -11,15 +12,15 @@ open KnuthSkillingAlgebra
 /-!
 # Mathlib Bridge for Knuth–Skilling
 
-Mathlib’s main “Archimedean ordered group embeds into `ℝ`” theorem
+Mathlib's main "Archimedean ordered group embeds into `ℝ`" theorem
 (`Mathlib/Data/Real/Embedding.lean`) is stated for additive *commutative groups*.
 
 K&S Appendix A starts from a *noncommutative* operation `op` and derives commutativity as a theorem.
 So the embedding theorem is not directly applicable to a raw `[KnuthSkillingAlgebra α]`.
 
-This file provides a small bridge: once commutativity is available, the K&S “no infinitesimals”
-axiom `op_archimedean` implies mathlib’s `Archimedean` typeclass (for the induced additive
-commutative monoid).
+This file provides a small bridge: under `[KSSeparation α]`, we derive both commutativity
+and the Archimedean property (from `SandwichSeparation.lean`), and show these imply mathlib's
+`Archimedean` typeclass (for the induced additive commutative monoid).
 -/
 
 /-- Type wrapper interpreting `KnuthSkillingAlgebraBase.op` as addition and `ident` as `0`. -/
@@ -86,19 +87,45 @@ def instAddCommMonoid {α : Type*} [KnuthSkillingAlgebra α]
     ext
     simpa [val_add] using (hcomm x.val y.val)
 
-/-- K&S’s `op_archimedean` implies mathlib’s `Archimedean` once we view `op` as commutative addition. -/
-theorem archimedean_of_op_archimedean {α : Type*} [KnuthSkillingAlgebra α]
-    (hcomm : ∀ x y : α, op x y = op y x) :
+/-- Under `KSSeparation`, we get mathlib's `Archimedean` once we view `op` as commutative addition.
+
+Commutativity and the Archimedean property are both derived from `KSSeparation`
+(see `SandwichSeparation.lean`). -/
+theorem archimedean_of_KSSeparation {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α] :
+    @Archimedean (KSAdd α) (instAddCommMonoid (α := α)
+      (fun x y => SandwichSeparation.SeparationToCommutativity.op_comm_of_KSSeparation x y))
+      (by infer_instance) := by
+  classical
+  letI : AddCommMonoid (KSAdd α) := instAddCommMonoid (α := α)
+    (fun x y => SandwichSeparation.SeparationToCommutativity.op_comm_of_KSSeparation x y)
+  refine ⟨?_⟩
+  intro x y hy
+  -- Apply the K&S Archimedean (derived from KSSeparation) with `x := y` (positive) and `y := x` (arbitrary).
+  obtain ⟨n, hn⟩ := SandwichSeparation.SeparationToArchimedean.op_archimedean_of_separation y.val x.val (by
+    -- `0 < y` in the wrapper is `ident < y.val` in `α`.
+    simpa [KSAdd.val_zero] using hy)
+  -- Convert K&S's strict bound into the ≤ bound demanded by mathlib's `Archimedean`.
+  refine ⟨n + 1, ?_⟩
+  have hn' : x.val < iterate_op y.val (n + 1) := by
+    simpa [nat_iterate_eq_iterate_op_succ] using hn
+  -- `nsmul` for our induced `AddCommMonoid` is `iterate_op`.
+  exact (le_of_lt hn')
+
+/-- Legacy: `op_archimedean` implies mathlib's `Archimedean` given commutativity.
+This version takes an explicit Archimedean hypothesis for use in contexts without `KSSeparation`. -/
+theorem archimedean_of_op_archimedean_explicit {α : Type*} [KnuthSkillingAlgebra α]
+    (hcomm : ∀ x y : α, op x y = op y x)
+    (harch : ∀ (a x : α), ident < a → ∃ n : ℕ, x < Nat.iterate (op a) n a) :
     @Archimedean (KSAdd α) (instAddCommMonoid (α := α) hcomm) (by infer_instance) := by
   classical
   letI : AddCommMonoid (KSAdd α) := instAddCommMonoid (α := α) hcomm
   refine ⟨?_⟩
   intro x y hy
-  -- Apply the K&S axiom with `x := y` (positive) and `y := x` (arbitrary).
-  obtain ⟨n, hn⟩ := op_archimedean y.val x.val (by
+  -- Apply the Archimedean hypothesis with `a := y` (positive) and `x := x` (arbitrary).
+  obtain ⟨n, hn⟩ := harch y.val x.val (by
     -- `0 < y` in the wrapper is `ident < y.val` in `α`.
     simpa [KSAdd.val_zero] using hy)
-  -- Convert K&S’s strict bound into the ≤ bound demanded by mathlib’s `Archimedean`.
+  -- Convert K&S's strict bound into the ≤ bound demanded by mathlib's `Archimedean`.
   refine ⟨n + 1, ?_⟩
   have hn' : x.val < iterate_op y.val (n + 1) := by
     simpa [nat_iterate_eq_iterate_op_succ] using hn

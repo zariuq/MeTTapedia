@@ -82,7 +82,7 @@ theorem twoInh2Sim_comm (s_AC s_CA : ℝ) :
 theorem twoInh2Sim_eq (s_AC s_CA : ℝ) (hAC : s_AC ≠ 0) (hCA : s_CA ≠ 0) :
     twoInh2Sim s_AC s_CA = s_AC * s_CA / (s_AC + s_CA - s_AC * s_CA) := by
   unfold twoInh2Sim
-  simp only [hAC, hCA, or_self, ↓reduceIte, ne_eq, not_false_eq_true]
+  simp only [hAC, hCA, or_self, ↓reduceIte]
   have h : 1 / s_AC + 1 / s_CA - 1 = (s_AC + s_CA - s_AC * s_CA) / (s_AC * s_CA) := by
     field_simp
     ring
@@ -397,7 +397,7 @@ theorem member_inh_roundtrip (s c k : ℝ) :
     let (s'', c'') := inheritanceToMember s' c' k
     s'' = s ∧ c'' = c * k * k := by
   -- Straightforward computation: s'' = s, c'' = (c*k)*k = c*k*k
-  exact ⟨rfl, by simp only [memberToInheritance, mul_assoc]⟩
+  exact ⟨rfl, by simp [mul_assoc]⟩
 
 /-! ## §4: Term Probability Inference
 

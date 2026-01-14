@@ -3,8 +3,9 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Core.Ind
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
 
 open Classical KnuthSkillingAlgebra
+open SandwichSeparation.SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
 
 /-!
 # Hypercube boundary-collision argument (made explicit)

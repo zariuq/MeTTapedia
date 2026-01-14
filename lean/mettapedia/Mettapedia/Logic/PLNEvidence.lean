@@ -305,7 +305,7 @@ noncomputable def compl (a : Evidence) : Evidence :=
 
 /-- The residuation law (Frame signature): a ≤ b ⇨ c ↔ a ⊓ b ≤ c -/
 theorem le_himp_iff (a b c : Evidence) : a ≤ himp b c ↔ a ⊓ b ≤ c := by
-  simp only [inf, himp, le_def]
+  simp only [himp, le_def]
   constructor
   · intro ⟨ha_pos, ha_neg⟩
     constructor
@@ -673,8 +673,8 @@ noncomputable def complementStrength (pB pC sBC : ℝ≥0∞) : ℝ≥0∞ :=
 noncomputable def deductionEvidence
     (E_AB E_BC : Evidence)
     (pB pC : ℝ≥0∞)
-    (hE_AB : E_AB.total ≠ 0) (hE_BC : E_BC.total ≠ 0)
-    (hpB : pB ≠ 1) : Evidence :=
+    (_hE_AB : E_AB.total ≠ 0) (_hE_BC : E_BC.total ≠ 0)
+    (_hpB : pB ≠ 1) : Evidence :=
   let sAB := toStrength E_AB
   let sBC := toStrength E_BC
   let direct := sAB * sBC

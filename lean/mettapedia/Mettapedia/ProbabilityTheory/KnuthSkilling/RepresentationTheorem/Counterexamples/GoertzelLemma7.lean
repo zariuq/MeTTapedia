@@ -66,28 +66,6 @@ noncomputable local instance : KnuthSkillingAlgebra ℝ≥0 where
   op_ident_left := by intro x; simp
   op_strictMono_left := by intro y x₁ x₂ hx; exact add_lt_add_right hx y
   op_strictMono_right := by intro x y₁ y₂ hy; exact add_lt_add_left hy x
-  op_archimedean := by
-    intro x y hx
-    have hx' : (0 : ℝ) < (x : ℝ) := by exact_mod_cast hx
-    obtain ⟨n, hn⟩ : ∃ n : ℕ, (y : ℝ) / (x : ℝ) < n :=
-      exists_nat_gt ((y : ℝ) / (x : ℝ))
-    refine ⟨n, ?_⟩
-    have hy_lt_nx : (y : ℝ) < (n : ℝ) * (x : ℝ) := by
-      have := mul_lt_mul_of_pos_right hn hx'
-      simpa [div_eq_mul_inv, mul_assoc, inv_mul_cancel₀ (ne_of_gt hx'), mul_one] using this
-    have hy_lt_n1x : (y : ℝ) < ((n + 1 : ℕ) : ℝ) * (x : ℝ) := by
-      have hx_nonneg : (0 : ℝ) ≤ (x : ℝ) := le_of_lt hx'
-      have hn_le : (n : ℝ) * (x : ℝ) ≤ ((n + 1 : ℕ) : ℝ) * (x : ℝ) := by
-        gcongr
-        exact Nat.cast_le.2 (Nat.le_succ n)
-      exact lt_of_lt_of_le hy_lt_nx hn_le
-    have hy_lt_n1x' : y < ((n + 1 : ℕ) : ℝ≥0) * x := by
-      exact_mod_cast hy_lt_n1x
-    have h_iter : Nat.iterate (fun z : ℝ≥0 => x + z) n x = ((n + 1 : ℕ) : ℝ≥0) * x :=
-      nat_iterate_add_left_eq_mul x n
-    have : y < Nat.iterate (fun z : ℝ≥0 => x + z) n x := by
-      simpa [h_iter] using hy_lt_n1x'
-    simpa [KnuthSkillingAlgebraBase.op] using this
   ident_le := by intro x; exact bot_le
 
 private noncomputable def i0 : Fin 2 := 0

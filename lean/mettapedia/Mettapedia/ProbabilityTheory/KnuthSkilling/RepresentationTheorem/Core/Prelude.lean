@@ -31,6 +31,7 @@ The dependency structure is:
 -/
 
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.SandwichSeparation
 import Batteries.Data.Fin.Fold
 
 set_option linter.unnecessarySimpa false
@@ -43,8 +44,9 @@ namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
 open Classical
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
+open SandwichSeparation.SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
 
 /-! ## Main API: Representation Theorem and Commutativity
 
