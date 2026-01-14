@@ -1373,11 +1373,13 @@ def baseSetB (r0 : Multi k) (d : α) (u : ℕ) : Set (Multi k) :=
 def baseSetC (r0 : Multi k) (d : α) (u : ℕ) : Set (Multi k) :=
   extensionSetC_base F d r0 u
 
+omit [KSSeparation α] in
 lemma mem_baseSetB_iff
     (r0 r : Multi k) (d : α) (u : ℕ) :
     r ∈ baseSetB (F := F) r0 d u ↔ mu F r = op (mu F r0) (iterate_op d u) := by
   rfl
 
+omit [KSSeparation α] in
 lemma baseSetB_witness_of_eq
     (r0 r : Multi k) (d : α) (u : ℕ)
     (h : mu F r = op (mu F r0) (iterate_op d u)) :
@@ -2144,6 +2146,7 @@ This is the weakest assumption needed for the B-empty extension step. -/
 def NewAtomCommutes {k : ℕ} (F : AtomFamily α k) (d : α) : Prop :=
   ∀ i : Fin k, op (F.atoms i) d = op d (F.atoms i)
 
+omit [KSSeparation α] in
 /-- If `op` is globally commutative, then any candidate `d` satisfies `NewAtomCommutes F d`. -/
 lemma newAtomCommutes_of_op_comm {k : ℕ} {F : AtomFamily α k} {d : α}
     (hcomm : ∀ x y : α, op x y = op y x) :
@@ -2151,6 +2154,7 @@ lemma newAtomCommutes_of_op_comm {k : ℕ} {F : AtomFamily α k} {d : α}
   intro i
   simpa [NewAtomCommutes] using hcomm (F.atoms i) d
 
+omit [KSSeparation α] in
 /-- **Key simplification**: `KSSeparation` implies global commutativity, hence
     any candidate `d` satisfies `NewAtomCommutes F d` automatically.
 
@@ -2212,12 +2216,14 @@ However, if one could prove `NewAtomCommutes` **uniformly** for every singleton 
 Equivalently: does `KSSeparation` rule out any noncommutative `KnuthSkillingAlgebra`?
 -/
 
+omit [KSSeparation α] in
 theorem newAtomCommutes_singleton_of_op_comm (hcomm : ∀ x y : α, op x y = op y x)
     (x : α) (hx : ident < x) (d : α) :
     NewAtomCommutes (singletonAtomFamily (α := α) x hx) d := by
   intro i
   simpa [NewAtomCommutes, singletonAtomFamily] using hcomm x d
 
+omit [KSSeparation α] in
 theorem op_comm_of_newAtomCommutes_singleton
     (h :
       ∀ (x : α) (hx : ident < x) (d : α),
@@ -2236,6 +2242,7 @@ theorem op_comm_of_newAtomCommutes_singleton
   have hi := hxy ⟨0, by decide⟩
   simpa [NewAtomCommutes, singletonAtomFamily] using hi
 
+omit [KSSeparation α] in
 theorem op_comm_iff_newAtomCommutes_singleton :
     (∀ x y : α, op x y = op y x) ↔
       (∀ (x : α) (hx : ident < x) (d : α),
@@ -2262,6 +2269,7 @@ lemma gridComm_of_gridComm_extendAtomFamily {k : ℕ} {F : AtomFamily α k} {d :
       (mu_extend_last (F := F) (d := d) (hd := hd) s 0)
   simpa [hμr, hμs] using hcomm'
 
+omit [KSSeparation α] in
 /-- If d commutes with all atoms, then d commutes with iterate_op of any atom. -/
 lemma d_comm_iterate_atom {k : ℕ} {F : AtomFamily α k} {d : α}
     (hcomm : NewAtomCommutes F d) (i : Fin k) (n : ℕ) :
@@ -2278,6 +2286,7 @@ lemma d_comm_iterate_atom {k : ℕ} {F : AtomFamily α k} {d : α}
       _ = op d (op (F.atoms i) (iterate_op (F.atoms i) n)) := by rw [op_assoc]
       _ = op d (iterate_op (F.atoms i) (n + 1)) := by rfl
 
+omit [KSSeparation α] in
 /-- If d commutes with all atoms, then d^m commutes with all atoms. -/
 lemma iterate_d_comm_atom {k : ℕ} {F : AtomFamily α k} {d : α}
     (hcomm : NewAtomCommutes F d) (i : Fin k) (m : ℕ) :
@@ -2294,6 +2303,7 @@ lemma iterate_d_comm_atom {k : ℕ} {F : AtomFamily α k} {d : α}
       _ = op (op d (iterate_op d m)) (F.atoms i) := by rw [← op_assoc]
       _ = op (iterate_op d (m + 1)) (F.atoms i) := by rfl
 
+omit [KSSeparation α] in
 /-- If d commutes with all atoms, then a^n commutes with d^m. -/
 lemma iterate_atom_comm_iterate_d {k : ℕ} {F : AtomFamily α k} {d : α}
     (hcomm : NewAtomCommutes F d) (i : Fin k) (n m : ℕ) :
@@ -2312,6 +2322,7 @@ lemma iterate_atom_comm_iterate_d {k : ℕ} {F : AtomFamily α k} {d : α}
       _ = op (iterate_op d m) (op (F.atoms i) (iterate_op (F.atoms i) n)) := by rw [op_assoc]
       _ = op (iterate_op d m) (iterate_op (F.atoms i) (n + 1)) := by rfl
 
+omit [KSSeparation α] in
 /-- If d commutes with all atoms in F, then d^m commutes with all grid elements μ(F,r).
 
 The key insight: μ(F,r) = a_0^{r_0} ⊕ a_1^{r_1} ⊕ ... ⊕ a_{k-1}^{r_{k-1}}
@@ -2361,6 +2372,7 @@ lemma iterate_d_comm_mu {k : ℕ} {F : AtomFamily α k} {d : α}
   · -- ident commutes with everything
     simp [op_ident_left, op_ident_right]
 
+omit [KSSeparation α] in
 lemma newAtomCommutesGrid_of_newAtomCommutes {k : ℕ} {F : AtomFamily α k} {d : α}
     (hcomm : NewAtomCommutes F d) : NewAtomCommutesGrid F d := by
   intro r
@@ -2784,6 +2796,7 @@ lemma extensionSetA_base_scaleMult_of_newAtomCommutes {k : ℕ} {F : AtomFamily 
     simpa [h_bridge_r, h_bridge_r0] using h'
   simpa [extensionSetA_base, Set.mem_setOf_eq] using this
 
+omit [KSSeparation α] in
 /-- Scaling preserves base-indexed A-membership assuming only the shifted-boundary power
 decomposition law (`NewAtomDecompose`), without requiring full commutation with all atoms. -/
 lemma extensionSetA_base_scaleMult_of_newAtomDecompose {k : ℕ} {F : AtomFamily α k}
@@ -2841,6 +2854,7 @@ lemma extensionSetC_base_scaleMult_of_newAtomCommutes {k : ℕ} {F : AtomFamily 
     simpa [h_bridge_r, h_bridge_r0] using h'
   simpa [extensionSetC_base, Set.mem_setOf_eq] using this
 
+omit [KSSeparation α] in
 /-- Scaling preserves base-indexed C-membership assuming only `NewAtomDecompose`. -/
 lemma extensionSetC_base_scaleMult_of_newAtomDecompose {k : ℕ} {F : AtomFamily α k}
     (IH : GridBridge F) {d : α} (hdec : NewAtomDecompose F d)
@@ -2894,6 +2908,7 @@ lemma extensionSetB_base_scaleMult_of_newAtomCommutes {k : ℕ} {F : AtomFamily 
           simpa [h_bridge_r0]
   simpa [extensionSetB_base, Set.mem_setOf_eq] using this
 
+omit [KSSeparation α] in
 /-- Scaling preserves base-indexed B-membership assuming only `NewAtomDecompose`. -/
 lemma extensionSetB_base_scaleMult_of_newAtomDecompose {k : ℕ} {F : AtomFamily α k}
     (IH : GridBridge F) {d : α} (hdec : NewAtomDecompose F d)
@@ -3145,6 +3160,7 @@ class ChooseδBaseAdmissible_noCommon : Prop where
             r ∈ extensionSetC_base F d r0 u →
               chooseδ hk R d hd < separationStatistic_base R r0 r u hu)
 
+omit [KSSeparation α] in
 theorem chooseδBaseAdmissible_noCommon_of_chooseδBaseAdmissible
     (h : ChooseδBaseAdmissible (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
     ChooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F) (d := d) (hd := hd) := by
@@ -4134,6 +4150,7 @@ theorem chooseδBaseAdmissible_noCommon_hard_of_newAtomCommutes_of_C_strict0
       chooseδBaseAdmissible_noCommon_hardC_of_newAtomCommutes_of_C_strict0 (α := α) (hk := hk) (R := R)
         (F := F) (d := d) (hd := hd) (IH := IH) (H := H) (hcomm := hcomm) (hC_strict0 := hC_strict0)
 
+omit [KSSeparation α] in
 theorem chooseδBaseAdmissible_noCommon_hard_of_chooseδBaseAdmissible_noCommon
     (h :
       ChooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
@@ -4194,6 +4211,7 @@ theorem chooseδBaseAdmissible_of_newAtomCommutes_of_C_strict0
   exact chooseδBaseAdmissible_of_chooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F) (d := d)
     (hd := hd) (H := H) hNoCommon
 
+omit [KSSeparation α] in
 /-- Convenience wrapper: if you assume `NewAtomCommutes` and the **strict** separation strengthening
 `KSSeparationStrict`, then the C-side strictness hypothesis `BEmptyExtensionExtra.C_strict0` is automatic. -/
 theorem chooseδBaseAdmissible_of_newAtomCommutes_of_KSSeparationStrict
@@ -4207,6 +4225,7 @@ theorem chooseδBaseAdmissible_of_newAtomCommutes_of_KSSeparationStrict
     chooseδBaseAdmissible_of_newAtomCommutes_of_C_strict0 (α := α) (hk := hk) (R := R) (F := F)
       (d := d) (hd := hd) (IH := IH) (H := H) (hcomm := hcomm) (hC_strict0 := hC_strict0)
 
+omit [KSSeparation α] in
 /-- Convenience wrapper: if you assume `NewAtomCommutes`, `KSSeparation`, and `DenselyOrdered α`,
 then the strict separation used on the C-side is automatic. -/
 theorem chooseδBaseAdmissible_of_newAtomCommutes_of_KSSeparation_of_denselyOrdered
@@ -4226,6 +4245,7 @@ With `[KSSeparation α]`, `NewAtomCommutes` is automatically satisfied via globa
 These constructors eliminate the explicit `hcomm` parameter entirely.
 -/
 
+omit [KSSeparation α] in
 /-- **Simplified**: `ChooseδBaseAdmissible` from `[KSSeparationStrict α]` alone.
     `NewAtomCommutes` is derived automatically from KSSeparation → commutativity. -/
 theorem chooseδBaseAdmissible_of_KSSeparationStrict
@@ -4237,6 +4257,7 @@ theorem chooseδBaseAdmissible_of_KSSeparationStrict
     chooseδBaseAdmissible_of_newAtomCommutes_of_KSSeparationStrict (α := α) (hk := hk) (R := R)
       (F := F) (d := d) (hd := hd) (IH := IH) (H := H) hcomm
 
+omit [KSSeparation α] in
 /-- **Simplified with Density**: `ChooseδBaseAdmissible` from `[KSSeparation α] [DenselyOrdered α]`.
     `NewAtomCommutes` is derived automatically from KSSeparation → commutativity.
     `KSSeparationStrict` is derived from density. -/
@@ -4275,6 +4296,7 @@ theorem extend_grid_rep_with_atom_of_bEmptyExtensionExtra
     extend_grid_rep_with_atom_of_chooseδBaseAdmissible (α := α) (hk := hk) (R := R) (F := F)
       (d := d) (hd := hd) (H := H) hBase
 
+omit [KSSeparation α] in
 /-- Convenience wrapper: in the B-empty extension step, it suffices to assume
 `NewAtomCommutes` plus the strict separation strengthening `KSSeparationStrict`. -/
 theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict
@@ -4297,6 +4319,7 @@ theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict
     extend_grid_rep_with_atom_of_bEmptyExtensionExtra (α := α) (hk := hk) (R := R) (F := F) (d := d)
       (hd := hd) (IH := IH) (H := H) (hExtra := hExtra)
 
+omit [KSSeparation α] in
 /-- Goertzel v4-style wrapper: if `op` is globally commutative, then the remaining B-empty extension
 step needs only `KSSeparationStrict` (since `NewAtomCommutes` is automatic). -/
 theorem extend_grid_rep_with_atom_of_op_comm_of_KSSeparationStrict
@@ -4314,6 +4337,7 @@ theorem extend_grid_rep_with_atom_of_op_comm_of_KSSeparationStrict
     extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict (α := α) (hk := hk) (R := R)
       (F := F) (d := d) (hd := hd) (IH := IH) (H := H) (hcomm := hNew)
 
+omit [KSSeparation α] in
 /-- Full B-empty extension wrapper: `NewAtomCommutes` + `KSSeparation` + `DenselyOrdered α` suffice
 to run the extension step (strict separation is derived from density). -/
 theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparation_of_denselyOrdered

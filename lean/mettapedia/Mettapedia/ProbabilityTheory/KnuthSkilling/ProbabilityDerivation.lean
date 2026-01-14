@@ -870,8 +870,10 @@ K&S introduces a **direct product** operation between independent lattices, writ
 at the lattice level and `⊗` at the scalar level. After Appendix A regrades `⊕` to `+`,
 Appendix B shows that `⊗` must be multiplication up to a single global scale constant.
 
-In our formalization, Appendix B is proved in:
-`Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.Main`.
+In our formalization, Appendix B is proved in two routes:
+
+- `Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.Main` (via the product equation)
+- `Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.AczelTheorem` (Lean-friendly direct route)
 
 The lemma below is the “pipeline glue” used by `ProbabilityDerivation`:
 once you have *some* scalar `tensor` used to interpret direct products of events, the
@@ -903,13 +905,14 @@ theorem directProduct_rule_mul_div_const
     (P : ProductTheorem.DirectProduct α β γ)
     (vα : Valuation α) (vβ : Valuation β) (vγ : Valuation γ)
     {tensor : ProductTheorem.PosReal → ProductTheorem.PosReal → ProductTheorem.PosReal}
-    (hRep : AdditiveOrderIsoRep ProductTheorem.PosReal tensor)
+    (hTensor : ProductTheorem.TensorRegularity tensor)
     (hDistrib : ProductTheorem.DistributesOverAdd tensor)
     (hCompat : RectTensorCompatible (β := β) (γ := γ) P vα vβ vγ tensor) :
     ∃ C : ℝ, 0 < C ∧
       ∀ a : α, ∀ b : β, 0 < vα.val a → 0 < vβ.val b →
         vγ.val (P.prod a b) = (vα.val a * vβ.val b) / C := by
-  rcases ProductTheorem.tensor_coe_eq_mul_div_const (tensor := tensor) hRep hDistrib with ⟨C, hC, hMul⟩
+  rcases ProductTheorem.tensor_coe_eq_mul_div_const_of_tensorRegularity
+      (tensor := tensor) hTensor hDistrib with ⟨C, hC, hMul⟩
   refine ⟨C, hC, ?_⟩
   intro a b ha hb
   have hRect : vγ.val (P.prod a b) =

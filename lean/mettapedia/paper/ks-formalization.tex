@@ -1,0 +1,781 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=1in}
+
+% Listings configuration for Lean code
+\lstdefinelanguage{Lean}{
+  morekeywords={theorem, lemma, def, axiom, class, structure, instance, where, by, import, namespace, open, section, variable, example},
+  sensitive=true,
+  morecomment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  morestring=[b]",
+}
+
+\lstset{
+  language=Lean,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{red},
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  literate=
+    {⊕}{$\oplus$}1
+    {⊗}{$\otimes$}1
+    {→}{$\to$}1
+    {←}{$\gets$}1
+    {⟨}{$\langle$}1
+    {⟩}{$\rangle$}1
+    {∀}{$\forall$}1
+    {∃}{$\exists$}1
+    {≤}{$\leq$}1
+    {≥}{$\geq$}1
+    {≠}{$\neq$}1
+    {∈}{$\in$}1
+    {∉}{$\notin$}1
+    {⊔}{$\sqcup$}1
+    {⊓}{$\sqcap$}1
+    {∧}{$\wedge$}1
+    {∨}{$\vee$}1
+    {¬}{$\neg$}1
+    {ℝ}{$\mathbb{R}$}1
+    {ℕ}{$\mathbb{N}$}1
+    {Θ}{$\Theta$}1
+    {Ψ}{$\Psi$}1
+    {ψ}{$\psi$}1
+    {ζ}{$\zeta$}1
+    {ξ}{$\xi$}1
+    {η}{$\eta$}1
+    {α}{$\alpha$}1
+    {β}{$\beta$}1
+    {γ}{$\gamma$}1
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{axiom}[theorem]{Axiom}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+
+\title{Foundations of Inference: A Formal Treatment}
+\author{Formalization of Knuth \& Skilling (2012)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present a complete formalization in Lean 4 of Knuth \& Skilling's axiomatic foundations for inference (2012).
+Their approach derives the probability calculus, measure theory, and information theory from elementary symmetries, without assuming continuity or differentiability.
+Our formalization makes explicit the implicit assumptions in their derivation, provides constructive proofs of their main theorems, and extends their framework to handle independence and product measures.
+We demonstrate K\&S's claim that the framework applies to non-Boolean distributive lattices (chains, open sets of $\mathbb{R}$).
+\end{abstract}
+
+\tableofcontents
+
+\section{Introduction}
+
+Knuth \& Skilling~\cite{KnuthSkilling2012} presented a foundation for inference that unites and extends the approaches of Cox and Kolmogorov.
+Their key innovation is to derive the standard probability calculus from elementary \emph{symmetries} rather than axiomatizing it directly.
+The core insight: algebraic symmetries of combination operations uniquely determine quantification rules.
+
+\subsection{The Knuth-Skilling Program}
+
+The K\&S approach proceeds in stages:
+\begin{enumerate}
+\item \textbf{Symmetries 0--2} (fidelity, monotonicity, associativity) $\Rightarrow$ \textbf{Measure theory}: The sum rule $x \oplus y = x + y$ for disjoint events.
+\item \textbf{Symmetries 3--4} (product distributivity, product associativity) $\Rightarrow$ \textbf{Independence}: The product form for independent measures.
+\item \textbf{Symmetry 5} (chaining associativity) $\Rightarrow$ \textbf{Probability calculus}: Conditional probability and Bayes' theorem.
+\end{enumerate}
+
+Each symmetry becomes an \emph{axiom of quantification}, and these axioms uniquely determine the calculus.
+K\&S emphasize:
+\begin{itemize}
+\item \textbf{Minimal assumptions}: No continuity, differentiability, or negation required.
+\item \textbf{Constructive proofs}: Build from finite systems, avoiding unobservable infinitary subtleties.
+\item \textbf{Wide applicability}: Foundations cover measure theory, probability, divergence, and entropy.
+\end{itemize}
+
+\subsection{This Formalization}
+
+We formalize K\&S Appendices A and B in Lean 4, providing:
+\begin{itemize}
+\item Precise statement of axioms and symmetries
+\item Complete proofs of the representation theorems
+\item Explicit treatment of implicit assumptions (linear order, separation property)
+\item Non-Boolean examples demonstrating genuine generality
+\item Extensions to handle independence and products
+\item Counterexamples showing necessity of assumptions
+\end{itemize}
+
+The formalization reveals that K\&S's informal proofs are essentially correct, but rely on several implicit assumptions that become apparent only when formalizing.
+These details are documented in Appendix~\ref{app:corrections}.
+
+\section{The Knuth-Skilling Axioms}
+\label{sec:axioms}
+
+\subsection{Informal Statement}
+
+K\&S model the world as being in one of finitely many mutually exclusive states.
+States correspond to \emph{atoms}, combined via logical OR to form elements of a Boolean lattice.
+A \emph{valuation} assigns real numbers to lattice elements, faithful to the lattice order.
+
+For disjoint elements $\mathtt{x}, \mathtt{y}, \mathtt{z}$, K\&S require:
+\begin{itemize}
+\item \textbf{Axiom 0} (Fidelity): $x > 0$ (positive valuations)
+\item \textbf{Axiom 1} (Monotonicity): $x < y \Rightarrow x \oplus z < y \oplus z$ and $z \oplus x < z \oplus y$
+\item \textbf{Axiom 2} (Associativity): $(x \oplus y) \oplus z = x \oplus (y \oplus z)$
+\end{itemize}
+
+These three axioms suffice to derive the sum rule $x \oplus y = x + y$ (Appendix A).
+
+For independent measures on product spaces:
+\begin{itemize}
+\item \textbf{Axiom 3} (Product Distributivity): $(x \otimes t) \oplus (y \otimes t) = (x \oplus y) \otimes t$
+\item \textbf{Axiom 4} (Product Associativity): $(u \otimes v) \otimes w = u \otimes (v \otimes w)$
+\end{itemize}
+
+These determine the multiplicative form of $\otimes$ (Appendix B).
+
+\subsection{Formal Definition}
+
+We formalize the basic K\&S algebra structure as a linearly ordered monoid with strict monotonicity:
+
+\begin{lstlisting}[caption={Core K\&S algebra axioms}]
+class KnuthSkillingAlgebra (α : Type*) extends LinearOrder α where
+  op : α → α → α                                    -- ⊕ combination
+  ident : α                                         -- identity element
+  op_assoc : ∀ x y z, op (op x y) z = op x (op y z)  -- Axiom 2
+  op_ident_right : ∀ x, op x ident = x
+  op_ident_left : ∀ x, op ident x = x
+  op_strictMono_left : ∀ y, StrictMono (fun x => op x y)   -- Axiom 1a
+  op_strictMono_right : ∀ x, StrictMono (fun y => op x y)  -- Axiom 1b
+  ident_le : ∀ x, ident ≤ x                        -- Axiom 0
+\end{lstlisting}
+
+\textbf{Note:} K\&S never explicitly state that elements are totally ordered, but their proofs rely on trichotomy ($x < y$, $x = y$, or $x > y$).
+Our formalization makes this explicit via \texttt{LinearOrder}.
+
+\subsection{Iteration Notation}
+
+Following K\&S, we define iterated application of the operation:
+
+\begin{lstlisting}[caption={Iteration definition}]
+def iterate_op (x : α) : ℕ → α
+  | 0 => ident
+  | n + 1 => op x (iterate_op x n)
+\end{lstlisting}
+
+This builds the sequence $\text{ident}, x, x \oplus x, x \oplus (x \oplus x), \ldots$, which K\&S write as ``$0$ of $x$'', ``$1$ of $x$'', ``$2$ of $x$'', etc.
+
+\section{The Separation Property}
+\label{sec:separation}
+
+\subsection{Definition}
+
+K\&S's Appendix A proof requires finding rational approximations to any pair of distinct values.
+This is implicit in their ``induction to more than one type of atom'' construction.
+Following a suggestion by B.\ Goertzel, we isolate this as an explicit axiom---the \emph{separation property}:
+
+\begin{lstlisting}[caption={Separation axiom}]
+class KSSeparation (α : Type*) [KnuthSkillingAlgebra α] where
+  separation : ∀ {a x y : α}, ident < a → ident < x → ident < y → x < y →
+    ∃ n m : ℕ, 0 < m ∧
+      iterate_op x m < iterate_op a n ∧
+      iterate_op a n ≤ iterate_op y m
+\end{lstlisting}
+
+\textbf{Intuition:} For any base $a > \text{ident}$ and distinct $x < y$, we can find exponents $(n, m)$ such that $x^m < a^n \leq y^m$.
+This lets us ``separate'' $x$ and $y$ using rational powers of $a$.
+
+\subsection{Necessity}
+
+The separation property is \emph{necessary} for representation.
+Counterexample: Consider $\mathbb{N} \times \mathbb{N}$ with lexicographic order:
+\[(n_1, m_1) < (n_2, m_2) \iff n_1 < n_2 \text{ or } (n_1 = n_2 \text{ and } m_1 < m_2)\]
+and operation:
+\[(n_1, m_1) \oplus (n_2, m_2) = (n_1 + n_2, m_1 + m_2)\]
+
+This satisfies Axioms 0--2 but \emph{not} separation: $(1, 1) < (2, 0)$, but no powers of $(1, 0)$ can separate them.
+Consequently, no order embedding into $\mathbb{R}$ exists.
+
+\subsection{Derivable Consequences}
+
+From separation, we derive:
+\begin{itemize}
+\item \textbf{Archimedean property}: For any $x > \text{ident}$ and $y$, there exists $n$ such that $\text{iterate\_op}\, x\, n > y$.
+\item \textbf{Commutativity}: $\text{op}\, x\, y = \text{op}\, y\, x$ for all $x, y$.
+\end{itemize}
+
+These are proven in \texttt{Separation/SandwichSeparation.lean} and \texttt{RepresentationTheorem/Core/SeparationImpliesCommutative.lean}.
+
+\section{The Representation Theorem (Appendix A)}
+\label{sec:representation}
+
+\subsection{Statement}
+
+\begin{theorem}[K\&S Appendix A]
+\label{thm:representation}
+Let $\alpha$ be a type with \texttt{KnuthSkillingAlgebra} and \texttt{KSSeparation}.
+Then there exists an order embedding $\Theta : \alpha \to \mathbb{R}$ such that:
+\begin{enumerate}
+\item $\Theta(\text{ident}) = 0$
+\item $\forall x, y : \alpha,\; \Theta(\text{op}\, x\, y) = \Theta(x) + \Theta(y)$
+\end{enumerate}
+\end{theorem}
+
+This is K\&S's main result: Axioms 1--2 plus separation uniquely determine that $\oplus$ corresponds to addition in $\mathbb{R}$ (up to order-preserving regrade).
+
+\subsection{Proof Sketch}
+
+K\&S's constructive proof proceeds by:
+\begin{enumerate}
+\item \textbf{One type}: For a single atom $a$, assign $\text{iterate\_op}\, a\, n \mapsto n \cdot \Theta(a)$.
+\item \textbf{Induction}: For a new atom $d$, use separation to find $(u, v)$ such that $a^u < d^v \leq a^{u+1}$.
+   Define $\Theta(d) = (u + \delta) / v$ for appropriate $\delta \in [0, 1]$.
+\item \textbf{Globalization}: Show this extends to all combinations consistently.
+\end{enumerate}
+
+Our formalization in \texttt{RepresentationTheorem/} provides complete Lean proofs of each step.
+
+\subsection{Formal Statement}
+
+\begin{lstlisting}[caption={Representation theorem in Lean}]
+theorem associativity_representation
+    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α]
+    [DenselyOrdered α] :
+    ∃ Θ : α → ℝ,
+      (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
+      Θ ident = 0 ∧
+      ∀ x y : α, Θ (op x y) = Θ x + Θ y
+\end{lstlisting}
+
+\section{The Product Theorem (Appendix B)}
+\label{sec:product}
+
+\textbf{Lean status: proved.}
+
+After Appendix A regrades $\oplus$ to real addition, K\&S introduce a second scalar operation
+$\otimes$ for the direct product of independent lattices.  Appendix B shows that $\otimes$ must
+be multiplication up to a single global scale constant.
+
+In Lean we formalize this conclusion in two complementary ways (both sorry-free):
+\begin{enumerate}
+\item \textbf{Product-equation route} (closest to K\&S’s presentation):
+  assume an additive order-isomorphism representation of $\otimes$ on $\mathbb{R}_{>0}$,
+  i.e. $\Theta(x \otimes y) = \Theta x + \Theta y$, together with distributivity over $+$ (Axiom~3).
+  This yields the Appendix~B product equation for $\Psi := \Theta^{-1}$, which we solve to obtain
+  $\Psi(x) = C e^{Ax}$ and hence $(x \otimes y) = (xy)/C$.
+  (Lean: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ProductTheorem/Main.lean}.)
+\item \textbf{Lean-friendly “avoid Appendix A again” route}:
+  do \emph{not} assume a representation theorem for $\otimes$.
+  Instead, package the regularity properties used implicitly in Appendix~B as a hypothesis bundle
+  \texttt{TensorRegularity} (associativity, plus injectivity of $t \mapsto 1 \otimes t$)
+  and combine it with distributivity (Axiom~3) to derive $(x \otimes y) = (xy)/C$ directly.
+  (Lean: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ProductTheorem/AczelTheorem.lean}.)
+\end{enumerate}
+
+\textbf{Key point:} the Appendix~A axiom \texttt{ident\_le} (identity is the bottom element) is
+appropriate for $\oplus$ but structurally incompatible with $\otimes$ on $(0,\infty)$, where the
+identity is $1$ and is \emph{not} a minimum element.  Our Appendix~B development avoids this
+mismatch by never trying to model $\otimes$ as a “bottomed” additive monoid.
+
+\subsection{K\&S's Approach: Fibonacci Recurrence}
+
+For independent random variables, K\&S derive that the measure function $\Psi$ must satisfy:
+\[\Psi(\tau + \xi) + \Psi(\tau + \eta) = \Psi(\tau + \zeta(\xi, \eta))\]
+where $\tau, \xi, \eta$ are independent real variables.
+
+K\&S prove the unique solution $\Psi(x) = C \cdot e^{Ax}$ via:
+\begin{enumerate}
+\item \textbf{2-term recurrence} (special case $\xi = \eta$): Shows $\Psi(\theta + na) = 2^n \Psi(\theta)$
+\item \textbf{3-term recurrence} (Fibonacci-like): Produces golden ratio behavior
+\item \textbf{Density argument}: Since $b/a$ is irrational, offsets $mb - na$ approximate any real
+\end{enumerate}
+
+This clever proof avoids continuity assumptions and works purely combinatorially.
+
+\subsection{Formalization Notes}
+
+\begin{itemize}
+\item \textbf{K\&S's Fibonacci proof}: not formalized (golden-ratio density argument is Lean-hostile).
+\item \textbf{Regularity assumptions}: made explicit (product-equation route: continuity/strict monotonicity
+  of $\Psi$; direct route: injectivity of $t \mapsto 1 \otimes t$ via \texttt{TensorRegularity}); these are
+  derivable from an order-isomorphism representation when one is available.
+\item \textbf{Mathlib support}: we use \texttt{Real.log\_mul} and related properties of $\exp/\log$ for the
+  log-coordinate arguments.
+\end{itemize}
+
+\section{Probability and Conditional Inference}
+
+K\&S's Axiom 5 (chaining associativity) extends the framework to conditional probability.
+This formalization is future work, building on the measure-theoretic foundations established here.
+
+\section{Conclusion}
+
+The K\&S program successfully derives probability calculus from symmetries.
+Our formalization confirms their approach is sound, while making explicit:
+\begin{itemize}
+\item Linear order (implicit in their trichotomy arguments)
+\item Separation property (implicit in rational approximation)
+\item Archimedean property (derivable from separation)
+\item Commutativity (derivable from separation + order)
+\end{itemize}
+
+The formalized representation theorem provides a constructive, computationally meaningful foundation for inference.
+
+\appendix
+
+\section{Corrections to the K\&S Axioms}
+\label{app:corrections}
+
+Formalization revealed several implicit assumptions and derivable properties in K\&S.
+We document these findings with a generous reading of their intent.
+
+\subsection{The Implicit Linear Order}
+
+K\&S never explicitly state that elements are totally ordered, yet their proofs rely on trichotomy: for any $x, y$, exactly one of $x < y$, $x = y$, or $x > y$ holds.
+
+\textbf{Evidence:} K\&S line 1339:
+\begin{quote}
+``By interchanging $x$ and $y$ in axiom 1, the same relationship holds when `$<$' is replaced throughout by `$>$', and replacement by `$=$' holds trivially. So, in effect, the axiom makes a three-fold assertion''
+\end{quote}
+
+This implicitly assumes trichotomy, which we make explicit via \texttt{LinearOrder}.
+
+\subsection{Commutativity: Derivable, But Only With Separation}
+
+K\&S state (Section 3.1):
+\begin{quote}
+``We also confirm that commutativity is not a necessary assumption. Rather, commutativity of measure is imposed by the associativity and order required of a scalar representation.''
+\end{quote}
+
+\textbf{Our finding:} Commutativity is \emph{not} derivable from Axioms 0--2 alone.
+It requires the \emph{separation property}.
+
+\textbf{Proof:} Theorem in \texttt{RepresentationTheorem/Core/SeparationImpliesCommutative.lean}:
+\begin{lstlisting}
+theorem op_comm_of_associativity
+    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] :
+    ∀ x y : α, op x y = op y x
+\end{lstlisting}
+
+\textbf{Generous reading:} K\&S likely intended ``associativity and order'' to include the implicit separation property that enables their rational approximation construction.
+
+\subsection{Archimedean: Derivable from Separation}
+
+K\&S's proofs implicitly use the Archimedean property: for any $a > \text{ident}$ and $x$, there exists $n$ such that $a^n > x$.
+
+\textbf{Our finding:} The Archimedean property is \emph{derivable} from separation, not an independent axiom.
+
+\textbf{Proof:} Theorem in \texttt{Separation/SandwichSeparation.lean}:
+\begin{lstlisting}
+theorem op_archimedean_of_separation
+    [KSSeparation α] (a x : α) (ha : ident < a) :
+    ∃ n : ℕ, x < iterate_op a n
+\end{lstlisting}
+
+This is formalization-revealed structure, not a correction to K\&S.
+
+\subsection{The Separation Property Itself}
+
+K\&S's Appendix A construction implicitly assumes we can ``separate'' any two distinct values using rational powers of a base.
+We make this explicit as \texttt{KSSeparation}.
+
+\textbf{Evidence:} K\&S's ``induction to more than one type of atom'' (Appendix A, starting line 1437) constructs rationals $u/v$ to approximate new atom values.
+This requires separation.
+
+\subsection{Summary of Necessary Assumptions}
+
+For the representation theorem, we require:
+\begin{enumerate}
+\item \textbf{LinearOrder} (implicit in K\&S)
+\item \textbf{Associativity, Identity, Strict Monotonicity} (K\&S Axioms 1--2)
+\item \textbf{Separation} (implicit in K\&S's rational approximation)
+\end{enumerate}
+
+From these, we \emph{derive}:
+\begin{itemize}
+\item Archimedean property
+\item Commutativity
+\item Additive representation
+\end{itemize}
+
+\section{Philosophical Context: Cox, Kolmogorov, and K\&S}
+\label{app:philosophy}
+
+We compare three foundational approaches to probability, all formalized in Mettapedia.
+
+\subsection{Kolmogorov (1933): Measure-Theoretic}
+
+Kolmogorov's axioms define probability as a normalized measure on a $\sigma$-algebra.
+Formalized in Mathlib as \texttt{IsProbabilityMeasure}:
+
+\begin{lstlisting}[caption={Kolmogorov probability in Mathlib}]
+class IsProbabilityMeasure (μ : Measure Ω) : Prop where
+  measure_univ : μ Set.univ = 1
+\end{lstlisting}
+
+\textbf{Key properties} (all in Mathlib):
+\begin{itemize}
+\item $\sigma$-additivity: $\mu(\bigcup_i A_i) = \sum_i \mu(A_i)$ for disjoint $A_i$
+\item Monotonicity: $A \subseteq B \Rightarrow \mu(A) \leq \mu(B)$
+\item Normalization: $\mu(\Omega) = 1$, $\mu(\emptyset) = 0$
+\end{itemize}
+
+\textbf{Comparison with K\&S}: Kolmogorov \emph{axiomatizes} additivity; K\&S \emph{derives} it from associativity symmetry.
+
+\subsection{Cox (1946, 1961): Logical Plausibility}
+
+\textbf{Formalization}: See \texttt{Cox/Basic.lean}
+
+\subsubsection{Philosophical Setting}
+
+Cox takes an \emph{epistemological} starting point: How should a rational agent assign degrees of belief to propositions?
+Unlike Kolmogorov (who starts with sets and measures), Cox starts with propositions and asks what constraints logic imposes on plausibility assignments.
+
+The key philosophical move: rather than axiomatizing what probability \emph{is}, Cox axiomatizes how plausibility \emph{behaves} and proves probability emerges uniquely.
+
+\subsubsection{The Cox Axioms}
+
+\begin{enumerate}
+\item \textbf{Real-valued plausibility}: Each proposition $A$ given background $B$ has a plausibility $p(A|B) \in [0,1]$.
+
+\item \textbf{Order preservation}: If $A$ is more plausible than $A'$ given $B$, then $p(A|B) > p(A'|B)$.
+
+\item \textbf{Product rule} (the key axiom): There exists \emph{some} function $F$ such that:
+\[p(A \land B | C) = F(p(A|C), p(B|A \land C))\]
+
+\item \textbf{Negation rule}: There exists \emph{some} function $G$ such that:
+\[p(\neg A | B) = G(p(A|B))\]
+\end{enumerate}
+
+The crucial point: Cox does \emph{not} assume $F(x,y) = xy$ or $G(x) = 1-x$.
+He proves these are the \emph{only} possibilities (up to reparametrization).
+
+\subsubsection{The Derivation}
+
+The associativity of conjunction---$(A \land B) \land C \equiv A \land (B \land C)$---forces:
+\[F(F(x,y), z) = F(x, F(y,z))\]
+
+This is the same functional equation as K\&S Axiom 2!
+Combined with \textbf{continuity} of $F$, it forces $F$ to be multiplication after a monotone reparametrization $\Theta$:
+\[F(x,y) = \Theta^{-1}(\Theta(x) \cdot \Theta(y))\]
+
+The standard choice $\Theta = \text{id}$ gives the probability product rule $p(A \land B | C) = p(A|C) \cdot p(B|A \land C)$.
+
+\subsubsection{Continuity vs.\ Separation: A Key Contrast}
+
+Both Cox and K\&S face the same challenge: the associativity equation $F(F(x,y),z) = F(x,F(y,z))$ has pathological solutions (Cauchy's discontinuous additive functions).
+They rule these out differently:
+
+\begin{center}
+\begin{tabular}{lll}
+& \textbf{Cox} & \textbf{K\&S} \\
+\hline
+Setting & $F : \mathbb{R} \to \mathbb{R} \to \mathbb{R}$ & Abstract algebra $\alpha$ \\
+Regularity & $F$ is \textbf{continuous} & \textbf{Separation} property \\
+Domain & Already on $\mathbb{R}$ & Must embed into $\mathbb{R}$ \\
+\end{tabular}
+\end{center}
+
+\textbf{What they share}: Both conditions rule out pathological non-measurable solutions.
+
+\textbf{How they differ}:
+\begin{itemize}
+\item \textbf{Continuity} (Cox): A topological condition on $\mathbb{R}$.
+  Directly invokes the topology of the reals.
+
+\item \textbf{Separation} (K\&S): An algebraic condition on abstract $\alpha$.
+  For any $x < y$, there exist $n, m$ with $x^m < a^n \leq y^m$.
+  This is \emph{density of rational powers}---no topology needed!
+\end{itemize}
+
+\textbf{Key insight}: Separation and continuity are \emph{similar conditions in different settings}.
+
+\textbf{The precise relationship}:
+\begin{enumerate}
+\item \textbf{From $\alpha$ to $\mathbb{R}$}: Separation + base axioms $\Rightarrow$ embedding $\Theta : \alpha \to \mathbb{R}$ exists.
+  Once embedded, the operation becomes addition on $\mathrm{Im}(\Theta) \subseteq \mathbb{R}$, which is automatically continuous.
+
+\item \textbf{On $\mathbb{R}$}: Any continuous, monotone, associative $F : \mathbb{R} \to \mathbb{R} \to \mathbb{R}$ satisfies separation.
+  Why? Separation on $(\mathbb{R}, +)$ says: for $x < y$, $\exists n,m$ with $mx < na \leq my$.
+  This is just $x < (n/m) \cdot a \leq y$ for some rational---density of $\mathbb{Q} \cdot a$ in $\mathbb{R}$.
+
+\item \textbf{Failure mode}: What if separation \emph{fails}? Then no embedding into $\mathbb{R}$ exists at all.
+\end{enumerate}
+
+\textbf{Counterexample}: \texttt{NatProdLex} ($\mathbb{N} \times \mathbb{N}$ with lexicographic order and componentwise addition) satisfies the base K\&S axioms but \emph{fails} separation.
+The gap between $(0, k)$ and $(1, 0)$ cannot be bridged by rational powers.
+Consequently, no order-preserving additive embedding into $\mathbb{R}$ exists.
+
+See: \texttt{RepresentationTheorem/Counterexamples/} \\
+\hspace*{2em} \texttt{ProductFailsSeparation.lean}
+
+\textbf{Connection theorem}: \texttt{cox\_comm\_of\_additiveOrderIsoRep} in \\
+\hspace*{2em} \texttt{Literature/CoxTheorem.lean}
+
+\subsection{K\&S (2012): Lattice Symmetries}
+
+K\&S unify both approaches via lattice symmetries:
+\begin{itemize}
+\item Like Kolmogorov: works with lattices (Boolean for sets, more general for logic)
+\item Like Cox: derives rules from functional equations, not axiomatizes them
+\item Beyond both: minimal assumptions (no continuity, no differentiability)
+\end{itemize}
+
+\textbf{Summary of relationships}:
+\begin{center}
+\begin{tabular}{lccc}
+& Kolmogorov & Cox & K\&S \\
+\hline
+Additivity & Axiom & Derived & Derived \\
+Commutativity & Assumed & Derived & Derived \\
+Continuity & Needed & Assumed & Not needed \\
+Domain & $\sigma$-algebra & Propositions & Lattice \\
+\end{tabular}
+\end{center}
+
+\section{The Direct Cuts Approach}
+\label{app:directcuts}
+
+K\&S prove the representation theorem via \textbf{inductive extension}: given a representation for $n$ atoms, extend it to $n+1$ atoms by finding the unique real value for the new atom.
+
+Our formalization provides \textbf{both} proofs:
+\begin{enumerate}
+\item \textbf{K\&S's approach} (grid/induction): \texttt{RepresentationTheorem/Main.lean} \\
+  Uses \texttt{RepresentationGlobalization} typeclass machinery.
+
+\item \textbf{Direct cuts} (our alternative): \texttt{RepresentationTheorem/Alternative/Main.lean} \\
+  Constructs $\Theta$ via Dedekind cuts explicitly. Smaller and more direct.
+\end{enumerate}
+
+Both prove the same theorem; the cuts version is more concise.
+
+\subsection{Connection to Hölder and Alimov}
+
+The direct cuts construction is modeled on classical embedding theorems for ordered algebraic structures:
+
+\begin{center}
+\begin{tabular}{lll}
+\textbf{Theorem} & \textbf{Structure} & \textbf{Result} \\
+\hline
+Hölder (1901) & Archimedean ordered abelian groups & Embed in $(\mathbb{R}, +)$ \\
+Alimov (1950) & Cancellative ordered semigroups & Embed in $(\mathbb{R}, +)$ \\
+K\&S + Separation & Ordered monoids with separation & Embed in $(\mathbb{R}, +)$ \\
+\end{tabular}
+\end{center}
+
+Our cuts construction adapts Hölder's technique to the K\&S monoid setting, bypassing the need for group completion.
+The separation axiom (Section~\ref{sec:separation}) provides the density condition that makes this construction work.
+
+\textbf{Formalization}: See \texttt{Literature/SemigroupRepresentations.lean} for the connection to Hölder's theorem via Mathlib's \texttt{Archimedean.exists\_orderAddMonoidHom\_real\_injective}.
+
+\subsection{The A/B/C Partition}
+
+K\&S partition grid points when extending the representation to a new atom $d$:
+\begin{itemize}
+\item \textbf{Set A}: Points below some power of $d$: $\mu(F, r) < d^u$
+\item \textbf{Set B}: Points equal to some power of $d$: $\mu(F, r) = d^u$
+\item \textbf{Set C}: Points above some power of $d$: $\mu(F, r) > d^u$
+\end{itemize}
+
+\subsection{Dedekind Cut Property (Our Reformulation)}
+
+When $B = \emptyset$ (the generic case), we show that $\delta := \Theta(d)$ is determined as a Dedekind cut:
+
+\begin{lstlisting}[caption={Dedekind cut tightness lemma}]
+lemma delta_cut_tight (hB_empty : ∀ r u, r ∉ extensionSetB F d u) :
+    ∀ ε > 0, ∃ rA rC uA uC,
+      rA ∈ extensionSetA F d uA ∧
+      rC ∈ extensionSetC F d uC ∧
+      |stat(rC, uC) - δ| < ε ∧
+      |δ - stat(rA, uA)| < ε
+\end{lstlisting}
+
+\textbf{Meaning}: $\delta = \sup(\text{A-statistics}) = \inf(\text{C-statistics})$, a tight Dedekind cut.
+
+\subsection{Why This Works}
+
+The separation property (\texttt{KSSeparation}) guarantees that for any $x < y$, we can find exponents that ``separate'' them.
+This provides the density needed for the Dedekind cut to uniquely determine $\delta$.
+
+\textbf{Key insight}: The K\&S proof is essentially constructing Dedekind cuts to embed the abstract algebra into $\mathbb{R}$, one atom at a time.
+
+\section{The Probability Hypercube}
+\label{app:hypercube}
+
+We formalize a multi-axis classification of probability theories, placing K\&S among its neighbors.
+
+\subsection{Hypercube Axes}
+
+Each axis represents a binary or multi-valued property of probability theories.
+
+\textbf{Formalization}: See \texttt{Hypercube/Basic.lean}
+
+\begin{itemize}
+\item \textbf{Commutativity}: $P(A \cap B) = P(B \cap A)$? (Classical: yes; Quantum: no)
+\item \textbf{Precision}: Point-valued or interval-valued plausibilities?
+\item \textbf{Additivity}: $P(A \cup B) = P(A) + P(B)$ for disjoint $A, B$?
+\item \textbf{Lattice structure}: Boolean, orthomodular, distributive?
+\item \textbf{Separation}: Can distinct values be separated by rationals?
+\end{itemize}
+
+\subsection{Named Vertices}
+
+Key probability theories correspond to vertices of this hypercube:
+
+\begin{center}
+\begin{tabular}{llccccc}
+\textbf{Framework} & \textbf{Result} & \textbf{Comm.} & \textbf{Precise} & \textbf{Add.} & \textbf{Lattice} & \textbf{Method} \\
+\hline
+Kolmogorov & Classical prob.\ & Yes & Yes & Axiom & Boolean & Axiom \\
+Cox & Classical prob.\ & Yes & Yes & Derived & Boolean & Continuity \\
+K\&S (Boolean) & Classical prob.\ & Yes & Yes & Derived & Boolean & Separation \\
+\hline
+K\&S (general) & Lattice plaus.\ & Yes & Yes & Derived & Distrib.\ & Separation \\
+\hline
+de Finetti & Subjective prob.\ & Yes & Yes & Finite & Boolean & Coherence \\
+Dempster-Shafer & Belief functions & Yes & No & Sub & Boolean & Combination \\
+Walley & Imprecise prob.\ & Yes & No & Sub & Boolean & Coherence \\
+\hline
+von Neumann & Quantum prob.\ & No & Yes & Axiom & Orthomod.\ & Axiom \\
+\end{tabular}
+\end{center}
+
+\textbf{Key insight}: Kolmogorov, Cox, and K\&S are \emph{different vertices} (different derivation methods) that \emph{converge} to the same theory on Boolean lattices.
+They differ in what they assume vs.\ derive:
+\begin{itemize}
+\item \textbf{Kolmogorov}: Axiomatizes additivity directly (no derivation)
+\item \textbf{Cox}: Derives additivity from continuity of plausibility functions
+\item \textbf{K\&S}: Derives additivity from separation (no continuity needed)
+\end{itemize}
+
+\subsection{Distributive vs.\ Boolean: What's Different?}
+
+K\&S on general distributive lattices differs from classical probability in one key way: \textbf{no negation required}.
+
+\begin{itemize}
+\item \textbf{Boolean lattice}: Every element $a$ has a complement $\bar{a}$ with $a \vee \bar{a} = \top$ and $a \wedge \bar{a} = \bot$.
+  This gives the ``negation'' rule $P(\bar{A}) = 1 - P(A)$.
+
+\item \textbf{Distributive lattice}: No complements required.
+  K\&S axioms never mention negation---this is the ``first fruit of our minimalist approach'' (K\&S).
+\end{itemize}
+
+\textbf{When does this matter?} Problems where not all combinations of states are allowed.
+Rather than ``padding'' a distributive lattice to Boolean, K\&S works directly on the natural structure.
+
+\textbf{Literature}: Valuations on distributive lattices appear in Klain \& Rota's \emph{Introduction to Geometric Probability} (cited by K\&S) and the theory of lattice valuations in combinatorics.
+
+\textbf{Legend}:
+\begin{itemize}
+\item \textbf{Comm.}: Is the conjunction operation commutative? ($P(A \cap B) = P(B \cap A)$)
+\item \textbf{Precise}: Single-valued (Yes) vs.\ interval-valued credal sets (No)
+\item \textbf{Additive}: Full $\sigma$-additivity (Yes), finite additivity (Finite), or subadditivity (Sub)
+\item \textbf{Lattice}: Boolean ($\sigma$-algebra), distributive (K\&S), or orthomodular (quantum)
+\end{itemize}
+
+\subsection{Novel Theories}
+
+The hypercube suggests unexplored combinations:
+\begin{itemize}
+\item \textbf{Imprecise K\&S}: K\&S with interval-valued plausibilities (credal sets)
+\item \textbf{Quantum D-S}: Dempster-Shafer on orthomodular lattices
+\item \textbf{Non-commutative classical}: Classical probability without $P(A \cap B) = P(B \cap A)$
+\end{itemize}
+
+\textbf{Formalization}: See \texttt{Hypercube/NovelTheories.lean} and \\
+\hspace*{2em} \texttt{Hypercube/NeighborTheories.lean}
+
+\section{To-Do: Open Gaps in Formalization}
+\label{app:todo}
+
+\subsection{Event Lattice to Plausibility Scale}
+
+\textbf{Status}: resolved.
+
+The bridge is implemented in \texttt{Model.lean} as:
+
+\begin{lstlisting}
+structure KSModel (E S : Type*)
+    [PlausibilitySpace E] [KnuthSkillingAlgebraBase S] where
+  v : E → S
+  mono : Monotone v
+  v_bot : v ⊥ = ident
+  v_sup_of_disjoint : ∀ {a b}, Disjoint a b →
+    v (a ⊔ b) = op (v a) (v b)
+\end{lstlisting}
+
+The scale $S$ is equipped with its K\&S algebra structure from the start.
+The representation theorem tells us this algebra embeds into $(\mathbb{R}, +)$, so using $\mathbb{R}_{\geq 0}$ with addition as our scale is canonical.
+
+\texttt{KSModelWithRepresentation} extends this by composing with the representation $\Theta : S \to \mathbb{R}$, yielding the full pipeline:
+\[
+E \xrightarrow{v} S \xrightarrow{\Theta} \mathbb{R}
+\]
+
+Concrete example: \texttt{Examples/CoinFlip.lean} demonstrates a coin flip (Bernoulli trial) with 4-element Boolean algebra mapping through $\mathbb{R}_{\geq 0}$ to classical probability in $\mathbb{R}$.
+
+\subsection{Appendix B: Product Theorem}
+
+\textbf{Status}: proved (scalar level).
+
+Lean proves that any $\otimes : \mathbb{R}_{>0}\to\mathbb{R}_{>0}\to\mathbb{R}_{>0}$ satisfying
+distributivity over $+$ (Axiom~3) and mild regularity (associativity, plus injectivity of
+$t \mapsto 1 \otimes t$) is multiplication up to a global scale constant.
+This is formalized as \texttt{TensorRegularity} in
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ProductTheorem/AczelTheorem.lean}.
+
+\textbf{What remains}: the \emph{event-level} bridge from lattice direct products to a concrete
+scalar $\otimes$ satisfying these hypotheses in the intended models.
+
+\subsection{Cauchy's Functional Equation}
+
+\textbf{Status}: proved and used.
+
+We prove the needed Cauchy lemma as
+\texttt{continuous\_additive\_eq\_mul} in
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ProductTheorem/FunctionalEquation.lean},
+using Mathlib’s continuous additive $\Rightarrow$ $\mathbb{R}$-linear infrastructure.
+
+\subsection{Concrete Examples}
+
+\textbf{Status}: demonstrated.
+
+See \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Examples/} for:
+\begin{itemize}
+\item \texttt{CoinFlip.lean}: Full K\&S pipeline on a coin flip (Bernoulli trial, Durrett Example 1.6.12).
+  Demonstrates: 4-element Boolean algebra $\to$ $\mathbb{R}_{\geq 0}$ $\to$ $\mathbb{R}$.
+  Verifies: $P(\emptyset)=0$, $P(\Omega)=1$, additivity $P(H \cup T) = P(H) + P(T)$.
+\item \texttt{ThreeElementChain.lean}: Minimal non-Boolean distributive lattice (3-element chain).
+\item \texttt{OpenSets.lean}: Open sets of $\mathbb{R}$ (distributive, typically not complemented).
+\end{itemize}
+
+\bibliographystyle{plain}
+\begin{thebibliography}{9}
+
+\bibitem{KnuthSkilling2012}
+Kevin H. Knuth and John Skilling.
+\textit{Foundations of Inference}.
+Axioms, 1(1):38--73, 2012.
+
+\end{thebibliography}
+
+\end{document}

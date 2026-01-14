@@ -10,9 +10,10 @@
   (after Appendix A regrades `⊕` to `+` on `ℝ`).
 - (Lattice-level bookkeeping for direct products lives in
   `Mettapedia/ProbabilityTheory/KnuthSkilling/ProductTheorem/DirectProduct.lean`.)
-- Symmetry 4 (Product Associativity): used via an additive order-isomorphism
-  representation `Θ(x ⊗ t) = Θ x + Θ t` (see `.../ProductTheorem/Main.lean`);
-  the associativity-to-representation step is the Appendix A theorem applied to `⊗`.
+- Symmetry 4 (Product Associativity): used in Appendix B either via an additive order-isomorphism
+  representation `Θ(x ⊗ t) = Θ x + Θ t` (see `.../ProductTheorem/Main.lean`), or via the
+  Lean-friendly direct route in `.../ProductTheorem/AczelTheorem.lean` that derives scaled
+  multiplication from distributivity + associativity + regularity (without “Appendix A again”).
 - Symmetry 5 (Chaining Associativity): PARTIAL
 
 ## Formalization Notes

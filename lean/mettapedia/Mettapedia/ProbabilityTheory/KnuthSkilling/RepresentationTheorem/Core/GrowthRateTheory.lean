@@ -26,7 +26,7 @@ WITHOUT using logarithms or real number representations.
 These provide algebraic tools for comparing exponential growth without needing ℝ.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingAlgebra α]
 
 /-!
 ## Section 1: Fundamental Growth Rate Lemmas (No Separation Needed)
@@ -53,11 +53,6 @@ theorem iterate_op_lt_of_base_lt {a b : α} (hab : a < b) (k : ℕ) (hk : 0 < k)
 /-- Exponent monotonicity: for a > ident, a^m < a^n when m < n -/
 theorem iterate_op_strictMono' (a : α) (ha : ident < a) : StrictMono (iterate_op a) :=
   KnuthSkillingAlgebra.iterate_op_strictMono a ha
-
-/-- Powers grow without bound (from Archimedean property) -/
-theorem powers_unbounded (a : α) (ha : ident < a) (x : α) :
-    ∃ n : ℕ, x < iterate_op a n :=
-  bounded_by_iterate a ha x
 
 /-!
 ## Section 2: Multiplication and Addition Laws for Growth
@@ -140,6 +135,11 @@ theorem power_ge_implies_base_ge {a b : α} (m : ℕ) (hm : 0 < m)
 section WithSeparation
 
 variable [KSSeparation α]
+
+/-- Powers grow without bound (from Archimedean property) -/
+theorem powers_unbounded (a : α) (ha : ident < a) (x : α) :
+    ∃ n : ℕ, x < iterate_op a n :=
+  bounded_by_iterate a ha x
 
 /-- Using separation to bound growth rates -/
 theorem separation_gives_growth_bound (a x y : α)

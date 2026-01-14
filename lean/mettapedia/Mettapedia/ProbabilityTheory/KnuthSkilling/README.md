@@ -97,6 +97,7 @@ KnuthSkilling/
 ├── README.md                    # This file
 ├── Basic.lean                   # PlausibilitySpace, Valuation, KnuthSkillingAlgebraBase
 ├── Algebra.lean                 # iterate_op, basic lemmas
+├── Model.lean                   # KSModel: Events → Scale bridge, NNReal instance
 ├── Separation/                  # Separation machinery
 │   ├── SandwichSeparation.lean  # KSSeparation ⇒ Commutativity + Archimedean (DERIVED!)
 │   └── Derivation.lean          # WIP derivation of KSSeparation from weaker hypotheses
@@ -115,6 +116,10 @@ KnuthSkilling/
 │   ├── FunctionalEquation.lean  # Product equation → exponential
 │   └── AczelTheorem.lean        # TensorRegularity hypothesis bundle
 ├── ProductTheorem.lean          # Import facade
+├── Examples/                    # Concrete examples
+│   ├── CoinFlip.lean            # Full pipeline: coin flip → NNReal → ℝ (Durrett 1.6.12)
+│   ├── ThreeElementChain.lean   # Non-Boolean: 3-element chain (⊥ < mid < ⊤)
+│   └── OpenSets.lean            # Non-Boolean: open sets of ℝ with topology
 └── Literature/                  # Reference: Aczél, Hölder, Cox
 ```
 
@@ -122,13 +127,17 @@ KnuthSkilling/
 
 | File | Description |
 |------|-------------|
-| `Basic.lean` | Core definitions: `PlausibilitySpace`, `KnuthSkillingAlgebraBase` |
+| `Basic.lean` | Core definitions: `PlausibilitySpace`, `Valuation`, `KnuthSkillingAlgebraBase` |
+| `Model.lean` | **KSModel**: Events → Scale bridge, NNReal instance, Three' example |
 | `Separation/SandwichSeparation.lean` | **Key derivations**: `KSSeparation` ⇒ Commutativity + Archimedean |
 | `RepresentationTheorem/Main.lean` | **Appendix A (K&S proof)**: `associativity_representation` |
 | `RepresentationTheorem/Alternative/Main.lean` | **Appendix A (cuts proof)**: `associativity_representation_cuts` |
 | `AxiomSystemEquivalence.lean` | Representation ⇔ separation equivalence |
 | `ProductTheorem/Main.lean` | **Appendix B (WIP)**: product operation |
 | `Counterexamples/ProductFailsSeparation.lean` | NatProdLex: why separation is necessary |
+| `Examples/CoinFlip.lean` | **Full pipeline example**: coin flip → NNReal → ℝ (Durrett 1.6.12) |
+| `Examples/ThreeElementChain.lean` | **Non-Boolean example**: minimal 3-element chain with `Valuation` |
+| `Examples/OpenSets.lean` | **Non-Boolean example**: open sets of ℝ (connects to Lebesgue measure) |
 
 ## The Hypercube Connection
 
@@ -179,28 +188,43 @@ nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationT
 - Faithful representation ⇒ separation (see `AxiomSystemEquivalence.lean`)
 - Builds warning-free
 
-**Appendix B (Product Theorem): WIP** (2026-01-14)
-- Product equation framework in `ProductTheorem/`
-- `TensorRegularity` hypothesis bundle (not new axioms)
-- **Gap**: Need to justify ⊗ satisfies K&S conditions (issue: `ident_le` fails for multiplication)
+**Appendix B (Product Theorem): PROVED (scalar theorem), integration WIP** (2026-01-14)
+- Two Lean routes: product equation (`ProductTheorem/Main.lean`) and direct `TensorRegularity` route (`ProductTheorem/AczelTheorem.lean`)
+- `TensorRegularity` hypothesis bundle (not new axioms): Axiom 4 + injectivity of `t ↦ 1 ⊗ t` (no `ident_le`; injectivity is derivable from an additive order-isomorphism representation)
+- **Gap**: event-level bridge from direct products to a `tensor` satisfying these hypotheses
 
 ## Open Gaps
 
-### 1. Event Lattice → Plausibility Scale Connection
+### 1. Event Lattice → Plausibility Scale Connection ✅ RESOLVED
 
-We have two disconnected pieces:
-- `PlausibilitySpace`: Distributive lattice of events
-- `KnuthSkillingAlgebra`: Linearly ordered plausibility scale with ⊕
+**Implemented** in `Model.lean`:
 
-**Missing**: Formal connection showing how a valuation `v : Events → Scale`
-induces K&S algebra structure on `range(v)`.
+```lean
+structure KSModel (E S : Type*)
+    [PlausibilitySpace E] [KnuthSkillingAlgebraBase S] where
+  v : E → S
+  mono : Monotone v
+  v_bot : v ⊥ = ident
+  v_sup_of_disjoint : ∀ {a b : E}, Disjoint a b → v (a ⊔ b) = op (v a) (v b)
+```
 
-### 2. Non-Boolean Examples
+This follows GPT-5 Pro's suggestion: keep the scale S already equipped with its
+K&S algebra structure. The bridge is the single axiom `v(a ⊔ b) = v(a) ⊕ v(b)`.
 
-K&S claims to work on distributive lattices without complements, but our
-examples mostly use Boolean lattices (`Set Bool`, etc.).
+**Also includes**:
+- `KSModelWithRepresentation`: Composition with the representation theorem (Θ : S → ℝ)
+- `instKSAlgebraNNReal`: NNReal with addition forms a `KnuthSkillingAlgebraBase`
+- `Three'.threeKSModel`: Concrete example on the 3-element chain with NNReal scale
 
-**Needed**: Concrete non-Boolean distributive lattice with K&S valuation.
+### 2. Non-Boolean Examples ✅ RESOLVED
+
+K&S claims to work on distributive lattices without complements.
+
+**Demonstrated** in `Examples/`:
+- `ThreeElementChain.lean`: Minimal 3-element chain (⊥ < mid < ⊤) with `Valuation`
+- `OpenSets.lean`: Natural example using open sets of ℝ (topological, no complements)
+
+Both files prove their respective lattices are NOT Boolean (no complement operation exists).
 
 ### 3. Cauchy's Functional Equation
 

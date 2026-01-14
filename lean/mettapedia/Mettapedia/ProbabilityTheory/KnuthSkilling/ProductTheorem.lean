@@ -1,6 +1,7 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.FunctionalEquation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.DirectProduct
 import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.Main
+import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.AczelTheorem
 
 /-!
 This module is the public entry point for the Knuth–Skilling (Appendix B) *product theorem*.
@@ -14,6 +15,9 @@ The development is split as follows:
   representation `Θ(x ⊗ t) = Θ x + Θ t`.
 - `...ProductTheorem.Main`: combines the bridge and the solver to conclude that `⊗` is
   multiplication up to a global scale constant.
+- `...ProductTheorem.AczelTheorem`: an alternative Lean-friendly route that avoids assuming
+  an Aczél-style representation theorem for `⊗` on `(0,∞)`, deriving scaled multiplication
+  directly from distributivity, associativity, and regularity.
 - `...ProductTheorem.DirectProduct`: lattice-level bookkeeping for the event product `×`
   used in the “Independence” subsection, with the canonical `Set` model.
 -/
