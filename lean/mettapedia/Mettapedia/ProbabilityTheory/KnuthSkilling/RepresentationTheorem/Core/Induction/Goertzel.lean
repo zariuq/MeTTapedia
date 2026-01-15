@@ -3087,7 +3087,6 @@ section ChooseδBase
 variable {k : ℕ} (hk : k ≥ 1) {F : AtomFamily α k} (R : MultiGridRep F)
 variable (IH : GridBridge F) (H : GridComm F)
 variable (d : α) (hd : ident < d)
-variable [KSSeparation α]
 
 /-!
 ### Non-circular “old-part dominates” helper
@@ -3160,7 +3159,6 @@ class ChooseδBaseAdmissible_noCommon : Prop where
             r ∈ extensionSetC_base F d r0 u →
               chooseδ hk R d hd < separationStatistic_base R r0 r u hu)
 
-omit [KSSeparation α] in
 theorem chooseδBaseAdmissible_noCommon_of_chooseδBaseAdmissible
     (h : ChooseδBaseAdmissible (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
     ChooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F) (d := d) (hd := hd) := by
@@ -4150,7 +4148,6 @@ theorem chooseδBaseAdmissible_noCommon_hard_of_newAtomCommutes_of_C_strict0
       chooseδBaseAdmissible_noCommon_hardC_of_newAtomCommutes_of_C_strict0 (α := α) (hk := hk) (R := R)
         (F := F) (d := d) (hd := hd) (IH := IH) (H := H) (hcomm := hcomm) (hC_strict0 := hC_strict0)
 
-omit [KSSeparation α] in
 theorem chooseδBaseAdmissible_noCommon_hard_of_chooseδBaseAdmissible_noCommon
     (h :
       ChooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F) (d := d) (hd := hd)) :
@@ -4211,7 +4208,6 @@ theorem chooseδBaseAdmissible_of_newAtomCommutes_of_C_strict0
   exact chooseδBaseAdmissible_of_chooseδBaseAdmissible_noCommon (hk := hk) (R := R) (F := F) (d := d)
     (hd := hd) (H := H) hNoCommon
 
-omit [KSSeparation α] in
 /-- Convenience wrapper: if you assume `NewAtomCommutes` and the **strict** separation strengthening
 `KSSeparationStrict`, then the C-side strictness hypothesis `BEmptyExtensionExtra.C_strict0` is automatic. -/
 theorem chooseδBaseAdmissible_of_newAtomCommutes_of_KSSeparationStrict
@@ -4225,7 +4221,6 @@ theorem chooseδBaseAdmissible_of_newAtomCommutes_of_KSSeparationStrict
     chooseδBaseAdmissible_of_newAtomCommutes_of_C_strict0 (α := α) (hk := hk) (R := R) (F := F)
       (d := d) (hd := hd) (IH := IH) (H := H) (hcomm := hcomm) (hC_strict0 := hC_strict0)
 
-omit [KSSeparation α] in
 /-- Convenience wrapper: if you assume `NewAtomCommutes`, `KSSeparation`, and `DenselyOrdered α`,
 then the strict separation used on the C-side is automatic. -/
 theorem chooseδBaseAdmissible_of_newAtomCommutes_of_KSSeparation_of_denselyOrdered
@@ -4245,7 +4240,6 @@ With `[KSSeparation α]`, `NewAtomCommutes` is automatically satisfied via globa
 These constructors eliminate the explicit `hcomm` parameter entirely.
 -/
 
-omit [KSSeparation α] in
 /-- **Simplified**: `ChooseδBaseAdmissible` from `[KSSeparationStrict α]` alone.
     `NewAtomCommutes` is derived automatically from KSSeparation → commutativity. -/
 theorem chooseδBaseAdmissible_of_KSSeparationStrict
@@ -4257,7 +4251,6 @@ theorem chooseδBaseAdmissible_of_KSSeparationStrict
     chooseδBaseAdmissible_of_newAtomCommutes_of_KSSeparationStrict (α := α) (hk := hk) (R := R)
       (F := F) (d := d) (hd := hd) (IH := IH) (H := H) hcomm
 
-omit [KSSeparation α] in
 /-- **Simplified with Density**: `ChooseδBaseAdmissible` from `[KSSeparation α] [DenselyOrdered α]`.
     `NewAtomCommutes` is derived automatically from KSSeparation → commutativity.
     `KSSeparationStrict` is derived from density. -/
@@ -4296,7 +4289,6 @@ theorem extend_grid_rep_with_atom_of_bEmptyExtensionExtra
     extend_grid_rep_with_atom_of_chooseδBaseAdmissible (α := α) (hk := hk) (R := R) (F := F)
       (d := d) (hd := hd) (H := H) hBase
 
-omit [KSSeparation α] in
 /-- Convenience wrapper: in the B-empty extension step, it suffices to assume
 `NewAtomCommutes` plus the strict separation strengthening `KSSeparationStrict`. -/
 theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict
@@ -4319,7 +4311,6 @@ theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict
     extend_grid_rep_with_atom_of_bEmptyExtensionExtra (α := α) (hk := hk) (R := R) (F := F) (d := d)
       (hd := hd) (IH := IH) (H := H) (hExtra := hExtra)
 
-omit [KSSeparation α] in
 /-- Goertzel v4-style wrapper: if `op` is globally commutative, then the remaining B-empty extension
 step needs only `KSSeparationStrict` (since `NewAtomCommutes` is automatic). -/
 theorem extend_grid_rep_with_atom_of_op_comm_of_KSSeparationStrict
@@ -4337,7 +4328,6 @@ theorem extend_grid_rep_with_atom_of_op_comm_of_KSSeparationStrict
     extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparationStrict (α := α) (hk := hk) (R := R)
       (F := F) (d := d) (hd := hd) (IH := IH) (H := H) (hcomm := hNew)
 
-omit [KSSeparation α] in
 /-- Full B-empty extension wrapper: `NewAtomCommutes` + `KSSeparation` + `DenselyOrdered α` suffice
 to run the extension step (strict separation is derived from density). -/
 theorem extend_grid_rep_with_atom_of_newAtomCommutes_of_KSSeparation_of_denselyOrdered

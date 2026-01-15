@@ -8,12 +8,12 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.Basic
 This file is an **alternative** Appendix B route that avoids postulating a global Aczél-style
 representation theorem for `⊗` on `(0,∞)`.
 
-K&S phrase the key step as “apply Appendix A again” to the tensor operation `⊗`.
+K&S phrase the key step as "apply Appendix A again" to the tensor operation `⊗`.
 In Lean, our Appendix A representation theorem for `⊕` is packaged by
 `AdditiveOrderIsoRep`, but it assumes a monoid identity that is the minimum element
 (`ident_le`), which does not hold for operations on `(0,∞)` (identity `1` is not the infimum).
 
-Instead of adding a separate global “Aczél theorem” axiom, we prove directly:
+Instead of adding a separate global "Aczél theorem" axiom, we prove directly:
 
 - From K&S Axiom 3 (distributivity over `+`), `x ↦ x ⊗ t` is additive on `(0,∞)`,
   hence linear: `x ⊗ t = x * k(t)` for a scalar `k(t) > 0`.
@@ -21,7 +21,29 @@ Instead of adding a separate global “Aczél theorem” axiom, we prove directl
   `k` is forced to be a *global scale* times the identity: `k(t) = t / C`.
 - Therefore `x ⊗ y = (x * y) / C`, i.e. `⊗` is multiplication up to a global constant.
 
-This produces the paper’s direct product rule *without any unproven “specification” axioms*.
+This produces the paper's direct product rule *without any unproven "specification" axioms*.
+
+## WARNING: Circular Reasoning Anti-Pattern
+
+A previous file `EventBridge.lean` was DELETED because it contained circular reasoning.
+It attempted to "bridge" event-level to scalar-level by:
+
+```
+abbrev mulTensor := mulPos  -- WRONG: assumes tensor IS multiplication
+theorem mulTensor_regularity : TensorRegularity mulTensor := ...
+-- "Proves" multiplication = scaled multiplication. Circular!
+```
+
+**This is the WRONG approach.** You cannot "prove" that tensor equals multiplication by
+*defining* tensor to be multiplication. That proves nothing!
+
+**The CORRECT approach** (what this file does):
+1. Start with an ABSTRACT tensor `⊗` satisfying Axioms 3-4 (distributivity, associativity)
+2. Prove that ANY such tensor must equal scaled multiplication
+3. The tensor's identity is derived, not assumed
+
+The theorems in this file work for ANY tensor satisfying the axioms - they don't assume
+the tensor is multiplication. That's what makes them non-circular.
 
 -/
 

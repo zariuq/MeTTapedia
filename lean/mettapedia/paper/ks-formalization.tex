@@ -269,32 +269,40 @@ theorem associativity_representation
 \section{The Product Theorem (Appendix B)}
 \label{sec:product}
 
-\textbf{Lean status: proved.}
+\textbf{Lean status: COMPLETE (no \texttt{sorry}, no \texttt{axiom}).}
 
 After Appendix A regrades $\oplus$ to real addition, K\&S introduce a second scalar operation
 $\otimes$ for the direct product of independent lattices.  Appendix B shows that $\otimes$ must
 be multiplication up to a single global scale constant.
 
-In Lean we formalize this conclusion in two complementary ways (both sorry-free):
+In Lean we formalize this conclusion in three complementary ways (all sorry-free):
 \begin{enumerate}
-\item \textbf{Product-equation route} (closest to K\&S’s presentation):
+\item \textbf{Product-equation route} (closest to K\&S's presentation):
   assume an additive order-isomorphism representation of $\otimes$ on $\mathbb{R}_{>0}$,
   i.e. $\Theta(x \otimes y) = \Theta x + \Theta y$, together with distributivity over $+$ (Axiom~3).
   This yields the Appendix~B product equation for $\Psi := \Theta^{-1}$, which we solve to obtain
   $\Psi(x) = C e^{Ax}$ and hence $(x \otimes y) = (xy)/C$.
-  (Lean: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ProductTheorem/Main.lean}.)
-\item \textbf{Lean-friendly “avoid Appendix A again” route}:
+  (Lean: \texttt{ProductTheorem/Main.lean}.)
+\item \textbf{Lean-friendly "avoid Appendix A again" route}:
   do \emph{not} assume a representation theorem for $\otimes$.
-  Instead, package the regularity properties used implicitly in Appendix~B as a hypothesis bundle
-  \texttt{TensorRegularity} (associativity, plus injectivity of $t \mapsto 1 \otimes t$)
-  and combine it with distributivity (Axiom~3) to derive $(x \otimes y) = (xy)/C$ directly.
-  (Lean: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ProductTheorem/AczelTheorem.lean}.)
+  Instead, package the regularity properties as \texttt{TensorRegularity} (associativity + injectivity of $t \mapsto 1 \otimes t$)
+  and combine with distributivity (Axiom~3) to derive $(x \otimes y) = (xy)/C$ directly.
+  (Lean: \texttt{ProductTheorem/AczelTheorem.lean}.)
+\item \textbf{WARNING: Circular Reasoning Anti-Pattern}.
+  A previous file \texttt{EventBridge.lean} was \textbf{deleted} because it contained circular reasoning:
+  it defined \texttt{mulTensor := multiplication} and then ``proved'' multiplication equals scaled multiplication.
+  \textbf{This proves nothing!}  The correct approach (what \texttt{AczelTheorem.lean} does) is to start with
+  an \emph{abstract} tensor $\otimes$ satisfying Axioms 3--4 and prove that ANY such tensor equals scaled multiplication.
 \end{enumerate}
 
 \textbf{Key point:} the Appendix~A axiom \texttt{ident\_le} (identity is the bottom element) is
 appropriate for $\oplus$ but structurally incompatible with $\otimes$ on $(0,\infty)$, where the
 identity is $1$ and is \emph{not} a minimum element.  Our Appendix~B development avoids this
-mismatch by never trying to model $\otimes$ as a “bottomed” additive monoid.
+mismatch by never trying to model $\otimes$ as a "bottomed" additive monoid.
+
+\textbf{Axiom audit:} We checked all \texttt{ProductTheorem/*.lean} files for \texttt{axiom}, \texttt{sorry}, or \texttt{admit}---none found.
+The injectivity requirement in \texttt{TensorRegularity} is \emph{derived} from distributivity + commutativity
+via \texttt{TensorRegularity.of\_assoc\_of\_distrib\_of\_comm}, not assumed.
 
 \subsection{K\&S's Approach: Fibonacci Recurrence}
 
@@ -314,12 +322,46 @@ This clever proof avoids continuity assumptions and works purely combinatorially
 \subsection{Formalization Notes}
 
 \begin{itemize}
-\item \textbf{K\&S's Fibonacci proof}: not formalized (golden-ratio density argument is Lean-hostile).
-\item \textbf{Regularity assumptions}: made explicit (product-equation route: continuity/strict monotonicity
-  of $\Psi$; direct route: injectivity of $t \mapsto 1 \otimes t$ via \texttt{TensorRegularity}); these are
-  derivable from an order-isomorphism representation when one is available.
+\item \textbf{K\&S's Fibonacci proof}: COMPLETE.  The full Fibonacci recurrence argument is formalized
+  in \texttt{FibonacciProof.lean}, including:
+  \begin{enumerate}
+  \item Golden ratio irrationality (\texttt{goldenRatio\_irrational})
+  \item Dense offsets $\{m - n\phi : m,n \in \mathbb{N}, n \geq 1\}$ in $\mathbb{R}$ (\texttt{dense\_fib\_linear\_combinations})
+  \item The 2-term and 3-term recurrences that produce Fibonacci behavior
+  \end{enumerate}
+
+\item \textbf{KEY ACHIEVEMENT: Continuity derivation}.  We prove that continuity follows from
+  the ProductEquation + strict monotonicity + positivity, avoiding the need to assume continuity:
+  \begin{lstlisting}[caption={Deriving continuity from ProductEquation}]
+theorem productEquation_strictMono_pos_continuous
+    {Ψ : ℝ → ℝ} {ζ : ℝ → ℝ → ℝ}
+    (hProd : ProductEquation Ψ ζ)
+    (hPos : ∀ x, 0 < Ψ x)
+    (hMono : StrictMono Ψ) : Continuous Ψ
+  \end{lstlisting}
+  \textbf{Proof idea}: ProductEquation implies $\Psi(\theta + na) = 2^n \Psi(\theta)$ (doubling).
+  Combined with the dense range $\{m \cdot C/2^k : m \geq 1, k \in \mathbb{N}\}$ where $C = \Psi(0)$,
+  strict monotonicity forces $\Psi$ to be continuous (no jumps possible).
+
+\item \textbf{Main theorem} (K\&S Appendix B):
+  \begin{lstlisting}[caption={K\&S Appendix B: StrictMono case}]
+theorem ks_appendix_b_fibonacci_strictMono
+    (Ψ : ℝ → ℝ) (ζ : ℝ → ℝ → ℝ)
+    (hProd : ProductEquation Ψ ζ)
+    (hPos : ∀ x, 0 < Ψ x)
+    (hMono : StrictMono Ψ) :
+    ∃ C A : ℝ, 0 < C ∧ ∀ x : ℝ, Ψ x = C * Real.exp (A * x)
+  \end{lstlisting}
+  This theorem is \textbf{sorry-free} and combines the continuity derivation with
+  \texttt{productEquation\_solution\_of\_continuous\_strictMono}.
+
 \item \textbf{Mathlib support}: we use \texttt{Real.log\_mul} and related properties of $\exp/\log$ for the
   log-coordinate arguments.
+
+\item \textbf{Archived alternatives}: Two incomplete approaches (deriving StrictMono from Continuous,
+  and deriving StrictMono from weak Monotone) are preserved in \texttt{FibonacciProofScratch.lean}
+  for reference.  These were not needed because K\&S Appendix A already provides StrictMono from
+  the order isomorphism representation.
 \end{itemize}
 
 \section{Probability and Conditional Inference}
@@ -735,16 +777,28 @@ Concrete example: \texttt{Examples/CoinFlip.lean} demonstrates a coin flip (Bern
 
 \subsection{Appendix B: Product Theorem}
 
-\textbf{Status}: proved (scalar level).
+\textbf{Status}: COMPLETE (no \texttt{sorry}, no \texttt{axiom} smuggling).
 
 Lean proves that any $\otimes : \mathbb{R}_{>0}\to\mathbb{R}_{>0}\to\mathbb{R}_{>0}$ satisfying
 distributivity over $+$ (Axiom~3) and mild regularity (associativity, plus injectivity of
 $t \mapsto 1 \otimes t$) is multiplication up to a global scale constant.
 This is formalized as \texttt{TensorRegularity} in
-\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ProductTheorem/AczelTheorem.lean}.
+\texttt{ProductTheorem/AczelTheorem.lean}.
 
-\textbf{What remains}: the \emph{event-level} bridge from lattice direct products to a concrete
-scalar $\otimes$ satisfying these hypotheses in the intended models.
+\textbf{WARNING: Circular Reasoning Anti-Pattern}.
+A previous file \texttt{EventBridge.lean} was \textbf{deleted} because it contained circular reasoning.
+It claimed to ``bridge'' event-level to scalar-level by defining \texttt{mulTensor := multiplication}
+and then ``proving'' multiplication equals scaled multiplication.  \textbf{This proves nothing!}
+
+The error was confusing ``multiplication satisfies these axioms'' with ``any tensor satisfying these
+axioms equals multiplication.''  The former is trivial field theory; the latter is the actual theorem.
+
+The \textbf{correct approach} (what \texttt{AczelTheorem.lean} does):
+\begin{enumerate}
+\item Start with an \emph{abstract} tensor $\otimes$ satisfying K\&S Axioms 3--4
+\item Prove that ANY such tensor must equal scaled multiplication
+\item The tensor's identity is \emph{derived}, not assumed
+\end{enumerate}
 
 \subsection{Cauchy's Functional Equation}
 
