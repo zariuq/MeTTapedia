@@ -1,6 +1,7 @@
 import Mathlib.Analysis.SpecialFunctions.Exp
 import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.FunctionalEquation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.Basic
+import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.ScaledMultRep
 
 /-!
 # Knuth–Skilling Appendix B: Product Rule from the Product Equation
@@ -178,5 +179,19 @@ noncomputable def additiveOrderIsoRep_of_mul_div_const
               rw [hΘ x, hΘ y]
               simp [Real.exp_add, Real.exp_neg, hexp_log x, hexp_log y, hlogC, div_eq_mul_inv,
                 mul_assoc, mul_left_comm, mul_comm]
+
+/-! ## ScaledMultRep Interface
+
+The K&S Appendix B path provides the `ScaledMultRep` interface. -/
+
+/-- K&S Appendix B provides the `ScaledMultRep` interface.
+
+This is the K&S path: uses `AdditiveOrderIsoRep` from Appendix A to derive scaled multiplication. -/
+noncomputable def scaledMultRep_of_additiveOrderIsoRep
+    {tensor : PosReal → PosReal → PosReal}
+    (hRep : AdditiveOrderIsoRep PosReal tensor)
+    (hDistrib : DistributesOverAdd tensor) :
+    ScaledMultRep tensor :=
+  ScaledMultRep.ofExists (tensor_coe_eq_mul_div_const hRep hDistrib)
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem

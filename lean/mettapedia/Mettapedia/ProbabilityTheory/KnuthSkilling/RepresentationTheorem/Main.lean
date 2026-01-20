@@ -1,10 +1,12 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Globalization
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.HolderEmbedding
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
 
 open Classical
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
+open Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.HolderEmbedding
 
 /-!
 # K&S Representation Theorem: Main Theorem (Public API)
@@ -68,5 +70,62 @@ theorem op_comm_of_associativity
   classical
   obtain ⟨Θ, hΘ_order, _, hΘ_add⟩ := associativity_representation (α := α)
   exact commutativity_from_representation Θ hΘ_order hΘ_add
+
+/-! ## Unified Representation Interface for KSSeparation Path
+
+We connect the KSSeparation path to the unified RepresentationResult structure
+defined in `HolderEmbedding.lean`. This allows uniform reasoning across paths.
+
+**KSSeparation path characteristics:**
+- Requires: `[KnuthSkillingAlgebra α] [KSSeparation α] [RepresentationGlobalization α]`
+- Provides: `NormalizedRepresentationResult α` (with Θ ident = 0)
+
+**Comparison with Hölder path:**
+- Hölder: `NoAnomalousPairs α` → `RepresentationResult α` (identity-free)
+- Hölder: `NoAnomalousPairs α` → `NormalizedRepresentationResult α` (with identity)
+- KSSeparation: `KSSeparation α` + globalization → `NormalizedRepresentationResult α`
+
+**Note on identity:**
+The KSSeparation path currently uses `ident` in its hypotheses (e.g., `ident < a`).
+A future refactoring could use `ℕ+` powers instead, making identity optional.
+For now, KSSeparation produces only the normalized result. -/
+
+variable {α : Type*} [KnuthSkillingAlgebra α]
+
+/-- KSSeparation path produces a NormalizedRepresentationResult.
+    This connects the KSSeparation path to the unified interface.
+
+    Note: Unlike the Hölder path, KSSeparation currently requires identity in
+    its hypotheses (`ident < a` for positivity), so we don't have an identity-free
+    version. Future work could refactor to use `ℕ+` powers. -/
+noncomputable def ksseparation_normalized_representation
+    [KSSeparation α] [RepresentationGlobalization α] : NormalizedRepresentationResult α :=
+  let h := associativity_representation α
+  { Θ := Classical.choose h
+    order_preserving := (Classical.choose_spec h).1
+    additive := (Classical.choose_spec h).2.2
+    ident_zero := (Classical.choose_spec h).2.1 }
+
+/-- The KSSeparation path provides canonical normalization Θ(ident) = 0.
+    This is inherited from the identity being available in the hypothesis. -/
+theorem ksseparation_provides_canonical_normalization
+    [KSSeparation α] [RepresentationGlobalization α] :
+    (ksseparation_normalized_representation (α := α)).Θ ident = 0 :=
+  ksseparation_normalized_representation.ident_zero
+
+/-! ## Path Comparison Summary
+
+| Path | Hypothesis | Identity-Free? | Provides |
+|------|------------|----------------|----------|
+| Hölder | `NoAnomalousPairs α` | Yes | `RepresentationResult α` |
+| Hölder | `NoAnomalousPairs α` | With ident | `NormalizedRepresentationResult α` |
+| KSSeparation | `KSSeparation α` | No (uses ident) | `NormalizedRepresentationResult α` |
+
+**Key insight**: The Hölder path is more general because:
+1. It works without identity (semigroup-only)
+2. `KSSeparation` + `IdentIsMinimum` implies `NoAnomalousPairs`
+
+Thus the Hölder path subsumes the KSSeparation path when identity is available,
+and extends to the identity-free case. -/
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem

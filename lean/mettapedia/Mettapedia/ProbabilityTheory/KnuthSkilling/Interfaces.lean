@@ -17,7 +17,7 @@ All downstream code should import this file rather than reaching into implementa
 ### From Appendix B (Product Theorem)
 - `ProductEquation Ψ ζ`: The functional equation Ψ(τ + ξ) + Ψ(τ + η) = Ψ(τ + ζ(ξ,η))
 - `productEquation_strictMono_pos_continuous`: **KEY** - Continuity is DERIVED, not assumed!
-- `productEquation_solution_of_strictMono`: The main Appendix B theorem (sorry-free)
+- `productEquation_solution_of_strictMono`: The main Appendix B theorem (fully proven)
 
 **Note**: The optional historical module
 `Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.FibonacciProof` imports heavy
@@ -84,7 +84,7 @@ theorem continuity_from_productEquation_strictMono_pos
 /-- **MAIN APPENDIX B THEOREM** (StrictMono case): If Ψ satisfies the product equation,
 is positive, and is strictly monotone, then Ψ(x) = C · exp(A · x) for some C > 0, A ∈ ℝ.
 
-This theorem is SORRY-FREE. Continuity is derived (not assumed) via
+This theorem is FULLY PROVEN. Continuity is derived (not assumed) via
 `continuity_from_productEquation_strictMono_pos`. -/
 theorem appendixB_exponential_strictMono
     (Ψ : ℝ → ℝ) (ζ : ℝ → ℝ → ℝ)
@@ -108,8 +108,9 @@ theorem appendixB_exponential_strictAnti
 When we have an additive order-isomorphism representation of ⊗ (from Appendix A)
 plus distributivity (Axiom 3), we can conclude ⊗ = scaled multiplication.
 
-**Note**: For the full tensor theorems, import `ProductTheorem.Basic` and `ProductTheorem.AczelTheorem`
-directly. This file focuses on the most commonly-used results.
+**Note**: For the full tensor theorems, import `ProductTheorem.Main` (K&S path) or
+`ProductTheorem.Alternative.DirectProof` (alternative path). This file focuses on the
+most commonly-used results.
 -/
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling

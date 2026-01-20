@@ -2630,4 +2630,388 @@ theorem accuracy_lemma {k : ℕ} {F : AtomFamily α k} (R : MultiGridRep F)
     nlinarith [hgap_exact, hgap]
 
 
+/-! ## Identity-Free Grid Definitions (Parametric Versions)
+
+This section provides identity-optional versions of the grid infrastructure,
+following Eric Luap's approach from OrderedSemigroups.
+
+**Key changes from standard versions:**
+1. `AtomFamily_param` uses `IsPositive (atoms i)` instead of `ident < atoms i`
+2. `mu_param` takes an explicit base element instead of hardcoded `ident`
+3. `kGrid_param` uses `mu_param` for identity-free grid construction
+
+**Connection to standard versions:**
+When identity exists, these reduce to the standard definitions:
+- `IsPositive a ↔ ident < a` (proven in Basic.lean)
+- `mu F r = mu_param F r ident`
+- `kGrid F = kGrid_param F ident`
+
+**Use case:** Enable representation theorem for semigroups without identity,
+using an arbitrary "anchor element" instead of identity for normalization.
+-/
+
+section IdentityFreeGrids
+
+open KnuthSkillingAlgebraBase
+open KnuthSkilling (IsPositive)
+
+/-- Identity-free atom family: uses Eric's `IsPositive` instead of `ident < atoms i`.
+
+    When identity exists, `IsPositive a ↔ ident < a`, so this generalizes
+    the standard `AtomFamily`. -/
+structure AtomFamily_param (α : Type*) [KSSemigroupBase α] (k : ℕ) where
+  /-- The k atom types. -/
+  atoms : Fin k → α
+  /-- Each atom is positive (increases everything when left-multiplied). -/
+  pos : ∀ i : Fin k, IsPositive (atoms i)
+
+/-- Convert a standard AtomFamily to a parametric one.
+    Requires KnuthSkillingAlgebra to access the equivalence. -/
+def AtomFamily.toParam {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+    (F : AtomFamily α k) : AtomFamily_param α k where
+  atoms := F.atoms
+  pos := fun i => by
+    rw [isPositive_iff_ident_lt]
+    exact F.pos i
+
+/-- Parametric grid valuation: fold with an explicit base element instead of `ident`.
+
+    `mu_param F r base` computes `base ⊕ (a₀^r₀) ⊕ (a₁^r₁) ⊕ ... ⊕ (aₖ₋₁^rₖ₋₁)`
+    where the folding starts from `base` rather than `ident`.
+
+    When `base = ident`, this equals the standard `mu F r`. -/
+noncomputable def mu_param {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+    (F : AtomFamily α k) (r : Multi k) (base : α) : α :=
+  (List.finRange k).foldl (fun acc i => op acc (iterate_op (F.atoms i) (r i))) base
+
+/-- Standard `mu` is `mu_param` with base = `ident`. -/
+theorem mu_eq_mu_param_ident {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+    (F : AtomFamily α k) (r : Multi k) :
+    mu F r = mu_param F r ident := rfl
+
+/-- Parametric grid: values reachable as `mu_param F r base` for some multiplicity vector. -/
+def kGrid_param {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+    (F : AtomFamily α k) (base : α) : Set α :=
+  {x | ∃ r : Multi k, x = mu_param F r base}
+
+/-- Standard `kGrid` equals `kGrid_param` with base = `ident`. -/
+theorem kGrid_eq_kGrid_param_ident {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+    (F : AtomFamily α k) :
+    kGrid F = kGrid_param F ident := by
+  ext x
+  simp only [kGrid, kGrid_param, mu_eq_mu_param_ident]
+
+/-- The base element is always in the parametric grid (take zero multiplicities). -/
+lemma base_mem_kGrid_param {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+    (F : AtomFamily α k) (base : α) : base ∈ kGrid_param F base := by
+  use fun _ => 0
+  simp only [mu_param]
+  symm
+  -- Show: fold ... base = base when all multiplicities are 0
+  have h : ∀ (l : List (Fin k)) (b : α),
+      List.foldl (fun acc i => op acc (iterate_op (F.atoms i) 0)) b l = b := by
+    intro l
+    induction l with
+    | nil => intro b; rfl
+    | cons hd tl ih =>
+      intro b
+      rw [List.foldl_cons]
+      -- Goal: foldl f (op b (iterate_op (F.atoms hd) 0)) tl = b
+      -- Step: op b (iterate_op ... 0) = op b ident = b
+      have h_step : op b (iterate_op (F.atoms hd) 0) = b := by
+        rw [iterate_op_zero, op_ident_right]
+      rw [h_step]
+      exact ih b
+  exact h _ base
+
+/-- Monotonicity: `mu_param` is monotone in the base element. -/
+lemma mu_param_mono_base {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+    (F : AtomFamily α k) (r : Multi k) {base₁ base₂ : α} (h : base₁ ≤ base₂) :
+    mu_param F r base₁ ≤ mu_param F r base₂ := by
+  unfold mu_param
+  induction List.finRange k generalizing base₁ base₂ with
+  | nil => simpa
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    apply ih
+    exact op_mono_left _ h
+
+/-- Strict monotonicity: `mu_param` is strictly monotone in the base element. -/
+lemma mu_param_strictMono_base {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+    (F : AtomFamily α k) (r : Multi k) {base₁ base₂ : α} (h : base₁ < base₂) :
+    mu_param F r base₁ < mu_param F r base₂ := by
+  unfold mu_param
+  induction List.finRange k generalizing base₁ base₂ with
+  | nil => simpa
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    apply ih
+    exact op_strictMono_left _ h
+
+/-- `mu_param` additivity in base: `mu_param F r (op base x) = op (mu_param F r base) x`
+    when `x` commutes with all atoms in the family.
+
+    NOTE: This requires commutativity of `x` with all `iterate_op (F.atoms i) (r i)`.
+    The general form without commutativity does NOT hold.
+    In the K&S context, commutativity is derived from the representation theorem. -/
+lemma mu_param_op_base {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+    (F : AtomFamily α k) (r : Multi k) (base x : α)
+    (hcomm : ∀ i : Fin k, op x (iterate_op (F.atoms i) (r i)) = op (iterate_op (F.atoms i) (r i)) x) :
+    mu_param F r (op base x) = op (mu_param F r base) x := by
+  unfold mu_param
+  induction List.finRange k generalizing base with
+  | nil => simp
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    -- Need: foldl f (op (op base x) (iter hd)) tl = op (foldl f (op base (iter hd)) tl) x
+    -- Use: op (op base x) y = op (op base y) x  when x and y commute
+    have h_assoc : op (op base x) (iterate_op (F.atoms hd) (r hd)) =
+                   op (op base (iterate_op (F.atoms hd) (r hd))) x := by
+      rw [op_assoc, op_assoc, hcomm hd]
+    rw [h_assoc]
+    exact ih _
+
+/-! ### Truly Identity-Free Grids (using ℕ+ iteration)
+
+The parametric constructions above (`mu_param`, `kGrid_param`) still use `iterate_op` which
+requires identity for the 0 case. Here we define truly identity-free versions using:
+- `iterate_op_pnat` (ℕ+ iteration, no base case)
+- Positive exponents `Fin k → ℕ+` instead of `Fin k → ℕ`
+
+These work on `KSSemigroupBase` without any identity element. -/
+
+open KnuthSkilling (iterate_op_pnat iterate_op_pnat_one iterate_op_pnat_succ)
+
+/-- Positive multiplicity vector for `k` atom types. -/
+abbrev MultiPos (k : ℕ) := Fin k → ℕ+
+
+/-- **Identity-free grid valuation** using ℕ+ iteration.
+
+    `mu_pnat F r base` computes `base ⊕ (a₀^r₀) ⊕ (a₁^r₁) ⊕ ... ⊕ (aₖ₋₁^rₖ₋₁)`
+    where each `rᵢ ∈ ℕ+` and iteration uses `iterate_op_pnat` (no identity needed).
+
+    This is the fundamental identity-free grid construction. -/
+noncomputable def mu_pnat {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) (r : MultiPos k) (base : α) : α :=
+  (List.finRange k).foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r i))) base
+
+/-- **Identity-free grid**: values reachable as `mu_pnat F r base` for some positive multiplicity vector. -/
+def kGrid_pnat {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) (base : α) : Set α :=
+  {x | ∃ r : MultiPos k, x = mu_pnat F r base}
+
+/-- The unit multiplicity vector folds to single powers of each atom.
+
+    Note: Unlike the identity-based grid where `base` corresponds to all-zero multiplicities,
+    here the all-ones vector gives `base ⊕ a₀ ⊕ a₁ ⊕ ... ⊕ aₖ₋₁`. -/
+lemma mu_pnat_ones {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) (base : α) :
+    mu_pnat F (fun _ => 1) base =
+    (List.finRange k).foldl (fun acc i => op acc (F.atoms i)) base := by
+  unfold mu_pnat
+  -- Show the two folds are equal by induction on the list
+  induction List.finRange k generalizing base with
+  | nil => rfl
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    -- The lambda (fun _ => 1) applied to hd gives 1
+    show List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) 1)) (op base (iterate_op_pnat (F.atoms hd) 1)) tl =
+         List.foldl (fun acc i => op acc (F.atoms i)) (op base (F.atoms hd)) tl
+    rw [iterate_op_pnat_one]
+    exact ih (op base (F.atoms hd))
+
+/-- Monotonicity: `mu_pnat` is monotone in the base element. -/
+lemma mu_pnat_mono_base {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) (r : MultiPos k) {base₁ base₂ : α} (h : base₁ ≤ base₂) :
+    mu_pnat F r base₁ ≤ mu_pnat F r base₂ := by
+  unfold mu_pnat
+  induction List.finRange k generalizing base₁ base₂ with
+  | nil => simpa
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    apply ih
+    exact KSSemigroupBase.op_mono_left _ h
+
+/-- Strict monotonicity: `mu_pnat` is strictly monotone in the base element. -/
+lemma mu_pnat_strictMono_base {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) (r : MultiPos k) {base₁ base₂ : α} (h : base₁ < base₂) :
+    mu_pnat F r base₁ < mu_pnat F r base₂ := by
+  unfold mu_pnat
+  induction List.finRange k generalizing base₁ base₂ with
+  | nil => simpa
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    apply ih
+    exact KSSemigroupBase.op_strictMono_left _ h
+
+/-- Connection to identity-based grid when identity exists.
+
+    `mu_pnat F.toParam r base = mu_param F (r.val) base` where we view
+    positive exponents as natural numbers via `.val`. -/
+theorem mu_pnat_eq_mu_param {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+    (F : AtomFamily α k) (r : MultiPos k) (base : α) :
+    mu_pnat F.toParam r base = mu_param F (fun i => (r i).val) base := by
+  unfold mu_pnat mu_param AtomFamily.toParam
+  -- Both are folds over List.finRange k with the same step function
+  induction List.finRange k generalizing base with
+  | nil => rfl
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    -- The step functions are equal because iterate_op_pnat_eq
+    have h_step : op base (iterate_op_pnat (F.atoms hd) (r hd)) =
+                  op base (iterate_op (F.atoms hd) (r hd).val) := by
+      congr 1
+      exact iterate_op_pnat_eq (F.atoms hd) (r hd)
+    rw [h_step]
+    exact ih _
+
+/-- Helper: foldl with same step function is monotone in base. -/
+private lemma foldl_mono_base {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) (r : MultiPos k) (l : List (Fin k))
+    {base₁ base₂ : α} (h : base₁ ≤ base₂) :
+    List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r i))) base₁ l ≤
+    List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r i))) base₂ l := by
+  induction l generalizing base₁ base₂ with
+  | nil => simpa
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    apply ih
+    exact KSSemigroupBase.op_mono_left _ h
+
+/-- Monotonicity in exponents: larger exponents give larger values.
+
+    For each coordinate `i`, if `r₁ i ≤ r₂ i`, then `mu_pnat F r₁ base ≤ mu_pnat F r₂ base`. -/
+lemma mu_pnat_mono_exp {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) {r₁ r₂ : MultiPos k} (base : α)
+    (hle : ∀ i, r₁ i ≤ r₂ i) :
+    mu_pnat F r₁ base ≤ mu_pnat F r₂ base := by
+  unfold mu_pnat
+  -- We need to show foldl with r₁ ≤ foldl with r₂
+  -- The key is that each step preserves ≤ because of monotonicity
+  induction List.finRange k generalizing base with
+  | nil => exact le_refl _
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    -- After one step: op base (iter r₁ hd) vs op base (iter r₂ hd)
+    -- Need: op base (iter r₁ hd) ≤ op base (iter r₂ hd)
+    have h_mono : op base (iterate_op_pnat (F.atoms hd) (r₁ hd)) ≤
+                  op base (iterate_op_pnat (F.atoms hd) (r₂ hd)) := by
+      apply KSSemigroupBase.op_mono_right
+      exact iterate_op_pnat_mono (F.atoms hd) (F.pos hd) (hle hd)
+    -- Now use the helper for base monotonicity, then ih for exponent monotonicity
+    calc List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₁ i)))
+              (op base (iterate_op_pnat (F.atoms hd) (r₁ hd))) tl
+        ≤ List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₁ i)))
+              (op base (iterate_op_pnat (F.atoms hd) (r₂ hd))) tl := foldl_mono_base F r₁ tl h_mono
+      _ ≤ List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₂ i)))
+              (op base (iterate_op_pnat (F.atoms hd) (r₂ hd))) tl :=
+          ih (op base (iterate_op_pnat (F.atoms hd) (r₂ hd)))
+
+/-- Helper: foldl with same step function is strictly monotone in base. -/
+private lemma foldl_strictMono_base {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) (r : MultiPos k) (l : List (Fin k))
+    {base₁ base₂ : α} (h : base₁ < base₂) :
+    List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r i))) base₁ l <
+    List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r i))) base₂ l := by
+  induction l generalizing base₁ base₂ with
+  | nil => simpa
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    apply ih
+    exact KSSemigroupBase.op_strictMono_left _ h
+
+/-- Helper: foldl is monotone in exponents (non-strict version).
+    If `r₁ i ≤ r₂ i` for all `i`, then foldl with `r₁` ≤ foldl with `r₂`. -/
+private lemma foldl_mono_exp_list {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) {r₁ r₂ : MultiPos k} (l : List (Fin k)) (base : α)
+    (hle : ∀ i, r₁ i ≤ r₂ i) :
+    List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₁ i))) base l ≤
+    List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₂ i))) base l := by
+  induction l generalizing base with
+  | nil => exact le_refl _
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    have h_step : op base (iterate_op_pnat (F.atoms hd) (r₁ hd)) ≤
+                  op base (iterate_op_pnat (F.atoms hd) (r₂ hd)) := by
+      apply KSSemigroupBase.op_mono_right
+      exact iterate_op_pnat_mono (F.atoms hd) (F.pos hd) (hle hd)
+    calc List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₁ i)))
+              (op base (iterate_op_pnat (F.atoms hd) (r₁ hd))) tl
+        ≤ List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₁ i)))
+              (op base (iterate_op_pnat (F.atoms hd) (r₂ hd))) tl := foldl_mono_base F r₁ tl h_step
+      _ ≤ List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₂ i)))
+              (op base (iterate_op_pnat (F.atoms hd) (r₂ hd))) tl := ih _
+
+/-- Helper: foldl is strict mono when at least one coordinate has strict inequality in exponent.
+
+    This is the key lemma for strict monotonicity: if we have ≤ everywhere and < at some index
+    that appears in the list, we get < overall. -/
+private lemma foldl_strictMono_exp {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) {r₁ r₂ : MultiPos k} (l : List (Fin k)) (base : α)
+    (hle : ∀ i, r₁ i ≤ r₂ i) (j : Fin k) (hj_mem : j ∈ l) (hlt : r₁ j < r₂ j) :
+    List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₁ i))) base l <
+    List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₂ i))) base l := by
+  induction l generalizing base with
+  | nil => simp at hj_mem
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    cases List.mem_cons.mp hj_mem with
+    | inl h_eq =>
+      -- j = hd: strict inequality at this step, then preserve with monotonicity
+      subst h_eq
+      have h_strict : op base (iterate_op_pnat (F.atoms j) (r₁ j)) <
+                      op base (iterate_op_pnat (F.atoms j) (r₂ j)) := by
+        apply KSSemigroupBase.op_strictMono_right
+        exact iterate_op_pnat_strictMono (F.atoms j) (F.pos j) hlt
+      calc List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₁ i)))
+                (op base (iterate_op_pnat (F.atoms j) (r₁ j))) tl
+          < List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₁ i)))
+                (op base (iterate_op_pnat (F.atoms j) (r₂ j))) tl := foldl_strictMono_base F r₁ tl h_strict
+        _ ≤ List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₂ i)))
+                (op base (iterate_op_pnat (F.atoms j) (r₂ j))) tl :=
+            foldl_mono_exp_list F tl (op base (iterate_op_pnat (F.atoms j) (r₂ j))) hle
+    | inr h_in_tl =>
+      -- j ∈ tl: use monotonicity for hd step, then recurse
+      have h_mono : op base (iterate_op_pnat (F.atoms hd) (r₁ hd)) ≤
+                    op base (iterate_op_pnat (F.atoms hd) (r₂ hd)) := by
+        apply KSSemigroupBase.op_mono_right
+        exact iterate_op_pnat_mono (F.atoms hd) (F.pos hd) (hle hd)
+      calc List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₁ i)))
+                (op base (iterate_op_pnat (F.atoms hd) (r₁ hd))) tl
+          ≤ List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₁ i)))
+                (op base (iterate_op_pnat (F.atoms hd) (r₂ hd))) tl := foldl_mono_base F r₁ tl h_mono
+        _ < List.foldl (fun acc i => op acc (iterate_op_pnat (F.atoms i) (r₂ i)))
+                (op base (iterate_op_pnat (F.atoms hd) (r₂ hd))) tl :=
+            ih (op base (iterate_op_pnat (F.atoms hd) (r₂ hd))) h_in_tl
+
+/-- Strict monotonicity in a single exponent: increasing one exponent strictly increases the value. -/
+lemma mu_pnat_strictMono_single_exp {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) {r₁ r₂ : MultiPos k} (base : α)
+    (j : Fin k) (hlt : r₁ j < r₂ j) (hle : ∀ i, r₁ i ≤ r₂ i) :
+    mu_pnat F r₁ base < mu_pnat F r₂ base := by
+  unfold mu_pnat
+  exact foldl_strictMono_exp F (List.finRange k) base hle j (List.mem_finRange j) hlt
+
+/-- `mu_pnat` additivity in base: `mu_pnat F r (op base x) = op (mu_pnat F r base) x`
+    when `x` commutes with all atoms in the family.
+
+    This is the identity-free analogue of `mu_param_op_base`. -/
+lemma mu_pnat_op_base {α : Type*} [KSSemigroupBase α] {k : ℕ}
+    (F : AtomFamily_param α k) (r : MultiPos k) (base x : α)
+    (hcomm : ∀ i : Fin k, op x (iterate_op_pnat (F.atoms i) (r i)) =
+                          op (iterate_op_pnat (F.atoms i) (r i)) x) :
+    mu_pnat F r (op base x) = op (mu_pnat F r base) x := by
+  unfold mu_pnat
+  induction List.finRange k generalizing base with
+  | nil => simp
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    have h_assoc : op (op base x) (iterate_op_pnat (F.atoms hd) (r hd)) =
+                   op (op base (iterate_op_pnat (F.atoms hd) (r hd))) x := by
+      rw [op_assoc, op_assoc, hcomm hd]
+    rw [h_assoc]
+    exact ih _
+
+end IdentityFreeGrids
+
 end Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem

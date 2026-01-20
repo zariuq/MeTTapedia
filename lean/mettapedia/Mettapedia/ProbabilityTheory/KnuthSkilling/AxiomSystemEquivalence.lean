@@ -172,14 +172,12 @@ theorem ksSeparation_of_additiveOrderIsoRep
     simp only [h_iterate_Theta]
     exact h_upper
 
-/-!
-## Summary (informal)
+/- ## Summary (informal)
 
 - `KSSeparation` already implies commutativity (and an Archimedean-style consequence) over the
   core K&S structure.
 - Any faithful additive order representation into ℝ implies `KSSeparation` by rational density.
 -/
-theorem axiom_bundle_summary_doc : True := trivial
 
 end AxiomSystemEquivalence
 

@@ -20,7 +20,7 @@ the separate assumptions “commutativity” + “Archimedean” by a single str
 In this Lean codebase:
 - The *Archimedean* part is already bundled into `KnuthSkillingAlgebra` (see `.../Basic.lean`).
 - The remaining hard content is showing that `KSSeparation` forces commutativity; this is now
-  proven (sorry-free) in `.../Separation/SandwichSeparation.lean` and re-exported via the theorem
+  proven (complete) in `.../Separation/SandwichSeparation.lean` and re-exported via the theorem
   `Core.op_comm_of_KSSeparation`.
 
 This file provides a tiny convenience wrapper: using

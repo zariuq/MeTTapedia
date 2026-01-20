@@ -1,7 +1,10 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.VariationalTheorem
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Divergence
+import Mettapedia.ProbabilityTheory.KnuthSkilling.ConditionalProbability.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Algebra.BigOperators.Ring.Finset
+import Mathlib.Data.ENNReal.Basic
 import Mathlib.Topology.MetricSpace.Basic
 
 /-!
@@ -48,7 +51,7 @@ K&S claim these are "inevitable consequences of seeking a variational quantity":
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.InformationEntropy
 
 open Real Finset BigOperators
-open scoped Topology
+open scoped Topology ENNReal
 
 open Mettapedia.ProbabilityTheory.KnuthSkilling.VariationalTheorem
 open Mettapedia.ProbabilityTheory.KnuthSkilling.Divergence
@@ -98,6 +101,24 @@ namespace ProbDist
 
 variable {n : ℕ}
 
+/-- Two distributions are equal if they agree on every coordinate. -/
+@[ext] theorem ext (P Q : ProbDist n) (h : ∀ i, P.p i = Q.p i) : P = Q := by
+  cases P with
+  | mk pP nonnegP sumP =>
+      cases Q with
+      | mk pQ nonnegQ sumQ =>
+          have hp : pP = pQ := by
+            funext i
+            exact h i
+          cases hp
+          have hnonneg : nonnegP = nonnegQ := by
+            apply Subsingleton.elim
+          have hsum : sumP = sumQ := by
+            apply Subsingleton.elim
+          cases hnonneg
+          cases hsum
+          rfl
+
 /-- All probabilities are at most 1. -/
 theorem le_one (P : ProbDist n) (i : Fin n) : P.p i ≤ 1 := by
   by_contra h
@@ -120,15 +141,234 @@ theorem eq_one_implies_others_zero (P : ProbDist n) (i : Fin n) (hi : P.p i = 1)
   rw [hzero] at hrest
   exact hrest j (mem_erase.mpr ⟨hj, mem_univ j⟩)
 
+/-- The point-mass distribution concentrated at `i`. -/
+noncomputable def pointMass {n : ℕ} (i : Fin n) : ProbDist n where
+  p := fun j => if j = i then 1 else 0
+  nonneg := by
+    intro j
+    by_cases h : j = i <;> simp [h]
+  sum_one := by
+    classical
+    have hsingle :
+        (∑ j : Fin n, (if j = i then (1 : ℝ) else 0)) = (if i = i then (1 : ℝ) else 0) := by
+      refine Finset.sum_eq_single i ?_ ?_
+      · intro j _ hji
+        simp [hji]
+      · intro hi
+        simpa using (hi (Finset.mem_univ i))
+    simp [hsingle]
+
+@[simp] theorem pointMass_apply {n : ℕ} (i : Fin n) (j : Fin n) :
+    (pointMass (n := n) i).p j = (if j = i then (1 : ℝ) else 0) := rfl
+
 end ProbDist
+
+/-! ## Connection to K&S Derivation
+
+This section connects the standalone `ProbDist` definition to the K&S derivation
+of probability theory via `Bivaluation` and `baseMeasure`.
+
+**Key theorem**: Given a normalized Bivaluation on a finite Boolean algebra with atoms
+`{a₁, ..., aₙ}`, the values `baseMeasure B aᵢ` form a probability distribution.
+
+This bridges the gap between:
+- K&S Section 7: Derives `prob_eq_measure_ratio`: `p(x|t) = m(x ∧ t) / m(t)`
+- K&S Section 8: Uses probability distributions for entropy/information
+
+The connection shows that `ProbDist` is not just a standalone definition but is
+**grounded in the K&S derivation**.
+-/
+section ConnectionToDerivation
+
+open Mettapedia.ProbabilityTheory.KnuthSkilling.ConditionalProbability
+
+/-- For Fin (m+1), iSup splits into sup of iSup over Fin m and the last element. -/
+theorem iSup_fin_succ {α : Type*} [CompleteLattice α] {m : ℕ} (f : Fin (m + 1) → α) :
+    ⨆ i : Fin (m + 1), f i = (⨆ i : Fin m, f (Fin.castSucc i)) ⊔ f (Fin.last m) := by
+  apply le_antisymm
+  · -- ⨆ f ≤ (⨆ castSucc) ⊔ f(last)
+    apply iSup_le
+    intro i
+    by_cases hi : i = Fin.last m
+    · -- i = last m
+      rw [hi]
+      exact le_sup_right
+    · -- i ≠ last m, so i = castSucc j for some j
+      have hj : ∃ j : Fin m, i = Fin.castSucc j := Fin.exists_castSucc_eq.mpr hi
+      rcases hj with ⟨j, hj⟩
+      rw [hj]
+      exact le_sup_of_le_left (le_iSup (f ∘ Fin.castSucc) j)
+  · -- (⨆ castSucc) ⊔ f(last) ≤ ⨆ f
+    apply sup_le
+    · apply iSup_le
+      intro j
+      exact le_iSup f (Fin.castSucc j)
+    · exact le_iSup f (Fin.last m)
+
+open Finset in
+/-- Helper lemma: For a finite disjoint family, baseMeasure of the supremum equals the sum.
+
+This is the n-ary extension of `baseMeasure.additive`. -/
+theorem baseMeasure_sum_eq_sup_of_disjoint
+    {α : Type*} [CompleteLattice α]
+    (B : Bivaluation α)
+    {n : ℕ} (atoms : Fin n → α)
+    (hDisjoint : ∀ i j, i ≠ j → Disjoint (atoms i) (atoms j)) :
+    ∑ i : Fin n, baseMeasure B (atoms i) = baseMeasure B (⨆ i, atoms i) := by
+  induction n with
+  | zero =>
+    -- Empty sum is 0, empty iSup is ⊥
+    simp only [Finset.univ_eq_empty, sum_empty, iSup_of_empty]
+    -- baseMeasure B ⊥ = B.p ⊥ ⊤
+    -- If ⊤ = ⊥, then baseMeasure B ⊥ = B.p ⊥ ⊥ which could be anything
+    -- But we want 0 = baseMeasure B ⊥
+    -- This is tricky because baseMeasure.bot requires hTop : ⊤ ≠ ⊥
+    -- For the degenerate case ⊤ = ⊥, we handle separately
+    by_cases h : (⊤ : α) = ⊥
+    · -- Degenerate: ⊤ = ⊥, so the lattice is trivial
+      -- baseMeasure B ⊥ = B.p ⊥ ⊤ = B.p ⊥ ⊥
+      -- We need positivity of p only when ⊥ < x, but ⊥ ≤ ⊤ = ⊥ means nothing is > ⊥
+      -- Actually in this case ⊥ = ⊤, so baseMeasure B ⊥ = B.p ⊤ ⊤ (by context)
+      unfold baseMeasure
+      rw [B.p_context ⊥ ⊤]
+      simp only [bot_inf_eq]
+      -- p(⊥|⊤) when ⊤ = ⊥ means p(⊥|⊥) = p(⊥ ⊓ ⊥|⊥) = p(⊥|⊥)
+      -- We need to show this is 0. Use p_sum_disjoint with ⊥ ⊔ ⊥ = ⊥
+      have hsum := B.p_sum_disjoint ⊥ ⊥ ⊤ disjoint_bot_left (by simp)
+      simp at hsum
+      -- hsum : B.p ⊥ ⊤ = 0
+      exact hsum.symm
+    · -- Non-degenerate: use baseMeasure.bot
+      exact (baseMeasure.bot B h).symm
+  | succ m ih =>
+    -- Split the sum: ∑ i : Fin (m+1), f i = ∑ i : Fin m, f (castSucc i) + f (last m)
+    rw [Fin.sum_univ_castSucc]
+    -- Split the iSup
+    rw [iSup_fin_succ]
+    -- Disjointness for the recursive call
+    have hDisj' : ∀ i j : Fin m, i ≠ j →
+        Disjoint (atoms (Fin.castSucc i)) (atoms (Fin.castSucc j)) := fun i j hij => by
+      have h : Fin.castSucc i ≠ Fin.castSucc j := fun h => hij (Fin.castSucc_injective m h)
+      exact hDisjoint (Fin.castSucc i) (Fin.castSucc j) h
+    -- Apply induction hypothesis
+    have ih' : ∑ i : Fin m, baseMeasure B (atoms (Fin.castSucc i)) =
+        baseMeasure B (⨆ i : Fin m, atoms (Fin.castSucc i)) := ih (atoms ∘ Fin.castSucc) hDisj'
+    rw [ih']
+    -- Now use binary additivity: need disjointness between (⨆ castSucc) and (last)
+    have hDisjLast : Disjoint (⨆ i : Fin m, atoms (Fin.castSucc i)) (atoms (Fin.last m)) := by
+      rw [iSup_disjoint_iff]
+      intro i
+      have h : Fin.castSucc i ≠ Fin.last m := Fin.castSucc_ne_last i
+      exact hDisjoint (Fin.castSucc i) (Fin.last m) h
+    -- Apply baseMeasure.additive
+    rw [← baseMeasure.additive B _ _ hDisjLast]
+
+open Finset in
+/-- **Finite partition induces ProbDist** (key connection theorem).
+
+Given a Bivaluation with chaining associativity on a finite Boolean algebra,
+and a complete partition of ⊤ into atoms `{a₁, ..., aₙ}`, the baseMeasure
+values form a probability distribution.
+
+This connects `ProbDist` to the K&S derivation: probability distributions
+arise from the derived `baseMeasure` on finite event spaces.
+-/
+noncomputable def ProbDist.ofBivaluationPartition
+    {α : Type*} [CompleteLattice α]
+    (B : Bivaluation α) [ChainingAssociativity α B]
+    (hNorm : ∀ t : α, ⊥ < t → B.p t t = 1)
+    {n : ℕ} (hn : 0 < n) (atoms : Fin n → α)
+    (hPos : ∀ i, ⊥ < atoms i)
+    (hDisjoint : ∀ i j, i ≠ j → Disjoint (atoms i) (atoms j))
+    (hCover : ⨆ i, atoms i = ⊤) : ProbDist n where
+  p i := baseMeasure B (atoms i)
+  nonneg i := le_of_lt (B.p_pos (atoms i) ⊤ (hPos i) le_top)
+  sum_one := by
+    -- The atoms partition ⊤, so Σᵢ m(aᵢ) = m(⊤) = p(⊤|⊤) = 1
+    -- First prove that ⊤ ≠ ⊥ (needed for baseMeasure.top_eq_one)
+    have hTop : (⊤ : α) ≠ ⊥ := by
+      intro h
+      have i0 : Fin n := ⟨0, hn⟩
+      have hbot : ⊥ < atoms i0 := hPos i0
+      have htop_le : ⊤ ≤ (⊥ : α) := by rw [h]
+      have hatoms_le : atoms i0 ≤ ⊤ := le_top
+      have : atoms i0 ≤ ⊥ := le_trans hatoms_le htop_le
+      have hcontr : atoms i0 = ⊥ := le_antisymm this bot_le
+      exact absurd hcontr (ne_of_gt hbot)
+    -- Use the sum = sup lemma
+    rw [baseMeasure_sum_eq_sup_of_disjoint B atoms hDisjoint]
+    -- Use hCover and top_eq_one
+    rw [hCover]
+    exact baseMeasure.top_eq_one B hNorm hTop
+
+/-- The induced probability distribution agrees with baseMeasure. -/
+theorem ProbDist.ofBivaluationPartition_eq
+    {α : Type*} [CompleteLattice α]
+    (B : Bivaluation α) [ChainingAssociativity α B]
+    (hNorm : ∀ t : α, ⊥ < t → B.p t t = 1)
+    {n : ℕ} (hn : 0 < n) (atoms : Fin n → α)
+    (hPos : ∀ i, ⊥ < atoms i)
+    (hDisjoint : ∀ i j, i ≠ j → Disjoint (atoms i) (atoms j))
+    (hCover : ⨆ i, atoms i = ⊤) (i : Fin n) :
+    (ProbDist.ofBivaluationPartition B hNorm hn atoms hPos hDisjoint hCover).p i =
+      baseMeasure B (atoms i) := rfl
+
+end ConnectionToDerivation
+
+section
 
 /-- **Kullback-Leibler divergence** for probability distributions.
 
 This is the specialization of general divergence (Section 6) to the probability case.
-K&S Equation 57: `H(p | q) = Σ_k p_k · log(p_k / q_k)`
+K&S Equation 57: `H(p | q) = Σ_k p_k · log(p_k / q_k)`.
+
+Important: this expression is only mathematically meaningful when the source distribution `q`
+is strictly positive (or at least positive on the support of `p`), since otherwise one encounters
+the standard `p_k > 0 ∧ q_k = 0` divergence-to-∞ case.
+
+Lean's `Real.log` and `/` are total (`log 0 = 0` and `x / 0 = 0`), so we **must not** define KL
+divergence on arbitrary `ProbDist` without extra hypotheses.  We therefore take strict positivity
+of `q` on the support of `p` as an explicit input (absolute continuity in the discrete setting),
+matching the regime in which the K&S formula is intended to apply.
+
+See `klDivergenceTop` for an **extended** version taking values in `ℝ≥0∞`, which returns `∞`
+when this positivity condition fails.
 -/
-noncomputable def klDivergence {n : ℕ} (P Q : ProbDist n) : ℝ :=
+noncomputable def klDivergence {n : ℕ} (P Q : ProbDist n)
+    (_hQ_pos : ∀ i, P.p i ≠ 0 → 0 < Q.p i) : ℝ :=
   ∑ i, P.p i * log (P.p i / Q.p i)
+
+end
+
+/-- **Extended** Kullback-Leibler divergence (`ℝ≥0∞`-valued).
+
+If `Q` is positive on the support of `P`, this is the finite value `ENNReal.ofReal (klDivergence P Q …)`.
+Otherwise it is `∞` (the standard `p_i > 0 ∧ q_i = 0` divergence-to-∞ case).
+
+This mirrors mathlib's measure-theoretic definition of `Measure.klDiv`:
+`klDiv μ ν = if μ ≪ ν then … else ∞`. -/
+noncomputable def klDivergenceTop {n : ℕ} (P Q : ProbDist n) : ℝ≥0∞ := by
+  classical
+  exact
+    if hQ_pos : ∀ i, P.p i ≠ 0 → 0 < Q.p i then
+      ENNReal.ofReal (klDivergence P Q hQ_pos)
+    else
+      ⊤
+
+theorem klDivergenceTop_eq_of_support_pos {n : ℕ} (P Q : ProbDist n)
+    (hQ_pos : ∀ i, P.p i ≠ 0 → 0 < Q.p i) :
+    klDivergenceTop P Q = ENNReal.ofReal (klDivergence P Q hQ_pos) := by
+  classical
+  simp [klDivergenceTop, dif_pos hQ_pos]
+
+theorem klDivergenceTop_eq_top_of_support_violation {n : ℕ} (P Q : ProbDist n) (i : Fin n)
+    (hPi : P.p i ≠ 0) (hQi : Q.p i = 0) : klDivergenceTop P Q = ⊤ := by
+  classical
+  have hnot : ¬(∀ j, P.p j ≠ 0 → 0 < Q.p j) := by
+    intro h
+    have hQi_pos : 0 < Q.p i := h i hPi
+    simp [hQi] at hQi_pos
+  simp [klDivergenceTop, dif_neg hnot]
 
 /-- **Connection to general divergence**: The KL formula arises from divergence
 when the normalization constraints Σp = Σq = 1 are applied.
@@ -139,8 +379,9 @@ With Σp = Σq = 1: `D(p||q) = (1 - 1) + Σ p_i·log(p_i/q_i) = Σ p_i·log(p_i/
 Note: This equation holds at the sum level, not term-wise (the (q_i - p_i) terms
 cancel when summed over normalized distributions).
 -/
-theorem klDivergence_from_divergence_formula {n : ℕ} (P Q : ProbDist n) :
-    klDivergence P Q = ∑ i, atomDivergence (P.p i) (Q.p i) - (∑ i, Q.p i - ∑ i, P.p i) := by
+theorem klDivergence_from_divergence_formula {n : ℕ} (P Q : ProbDist n)
+    (hQ_pos : ∀ i, P.p i ≠ 0 → 0 < Q.p i) :
+    klDivergence P Q hQ_pos = ∑ i, atomDivergence (P.p i) (Q.p i) - (∑ i, Q.p i - ∑ i, P.p i) := by
   simp only [klDivergence, P.sum_one, Q.sum_one, sub_self, sub_zero]
   -- Goal: Σ p*log(p/q) = Σ (q - p + p*log(p/q))
   -- Key: Σ(q-p) = 1 - 1 = 0, so RHS = 0 + Σ p*log(p/q) = LHS
@@ -158,13 +399,14 @@ theorem klDivergence_from_divergence_formula {n : ℕ} (P Q : ProbDist n) :
 **Strict version**: Requires all probabilities to be strictly positive.
 See `klDivergence_nonneg'` for a relaxed version allowing zeros in P. -/
 theorem klDivergence_nonneg {n : ℕ} (P Q : ProbDist n)
-    (hP_pos : ∀ i, 0 < P.p i) (hQ_pos : ∀ i, 0 < Q.p i) :
-    0 ≤ klDivergence P Q := by
+    (hP_pos : ∀ i, 0 < P.p i) (hQ_pos : ∀ i, P.p i ≠ 0 → 0 < Q.p i) :
+    0 ≤ klDivergence P Q hQ_pos := by
   -- This follows from Gibbs' inequality on the full divergence
   have hdiv_nonneg : 0 ≤ ∑ i, atomDivergence (P.p i) (Q.p i) := by
     apply sum_nonneg
     intro i _
-    exact atomDivergence_nonneg (P.p i) (Q.p i) (hP_pos i) (hQ_pos i)
+    have hQi : 0 < Q.p i := hQ_pos i (ne_of_gt (hP_pos i))
+    exact atomDivergence_nonneg (P.p i) (Q.p i) (hP_pos i) hQi
   -- The (q - p) terms sum to 0 due to normalization
   have hcancel : ∑ i, (Q.p i - P.p i) = 0 := by
     rw [sum_sub_distrib, Q.sum_one, P.sum_one]; ring
@@ -178,21 +420,25 @@ theorem klDivergence_nonneg {n : ℕ} (P Q : ProbDist n)
       unfold atomDivergence; ring
     rw [hrw, sum_add_distrib]
   rw [hexpand, hcancel, zero_add] at hdiv_nonneg
-  exact hdiv_nonneg
+  simpa [klDivergence] using hdiv_nonneg
 
 /-- KL divergence is non-negative (Gibbs' inequality) - **relaxed version**.
 
 This version allows P to have zero probabilities (which contribute 0 to KL
-by the convention `0 · log(0) = 0`), but still requires Q to be strictly positive
-(to avoid `log(p/0)` which would be undefined/infinite). -/
+by the convention `0 · log(0) = 0`), but requires Q to be positive on the support
+of P (to avoid the `p_i > 0 ∧ q_i = 0` divergence-to-∞ case). -/
 theorem klDivergence_nonneg' {n : ℕ} (P Q : ProbDist n)
-    (hQ_pos : ∀ i, 0 < Q.p i) :
-    0 ≤ klDivergence P Q := by
+    (hQ_pos : ∀ i, P.p i ≠ 0 → 0 < Q.p i) :
+    0 ≤ klDivergence P Q hQ_pos := by
   -- Use atomDivergenceExt which handles w = 0
   have hdiv_nonneg : 0 ≤ ∑ i, atomDivergenceExt (P.p i) (Q.p i) := by
     apply sum_nonneg
     intro i _
-    exact atomDivergenceExt_nonneg (P.p i) (Q.p i) (P.nonneg i) (hQ_pos i)
+    by_cases hPi : P.p i = 0
+    · -- If P.p i = 0 then atomDivergenceExt 0 u = u, so nonneg follows from Q.nonneg.
+      simpa [hPi] using Q.nonneg i
+    · have hQi_pos : 0 < Q.p i := hQ_pos i hPi
+      exact atomDivergenceExt_nonneg (P.p i) (Q.p i) (P.nonneg i) hQi_pos
   -- The (q - p) terms sum to 0 due to normalization
   have hcancel : ∑ i, (Q.p i - P.p i) = 0 := by
     rw [sum_sub_distrib, Q.sum_one, P.sum_one]; ring
@@ -212,7 +458,15 @@ theorem klDivergence_nonneg' {n : ℕ} (P Q : ProbDist n)
         ring
     rw [hrw, sum_add_distrib]
   rw [hexpand, hcancel, zero_add] at hdiv_nonneg
-  exact hdiv_nonneg
+  simpa [klDivergence] using hdiv_nonneg
+
+theorem klDivergenceTop_toReal_eq_of_support_pos {n : ℕ} (P Q : ProbDist n)
+    (hQ_pos : ∀ i, P.p i ≠ 0 → 0 < Q.p i) :
+    (klDivergenceTop P Q).toReal = klDivergence P Q hQ_pos := by
+  classical
+  have h0 : 0 ≤ klDivergence P Q hQ_pos := klDivergence_nonneg' (P := P) (Q := Q) hQ_pos
+  rw [klDivergenceTop_eq_of_support_pos (P := P) (Q := Q) hQ_pos]
+  simp [ENNReal.toReal_ofReal h0]
 
 /-! ## Section 8.2: Shannon Entropy
 
@@ -328,6 +582,90 @@ theorem shannonEntropy_uniform (n : ℕ) (hn : 0 < n) :
   simp only [log_one, zero_sub]
   field_simp
 
+/-! ## Entropy vs. KL Divergence to Uniform
+
+This is the standard finite relationship between Shannon entropy and Kullback–Leibler divergence:
+
+`D(P ‖ Uₙ) = log n - S(P)` and equivalently `S(P) = log n - D(P ‖ Uₙ)`.
+
+It is the cleanest “Section 8” bridge between the (derived) entropy formula and the (derived)
+divergence formula. -/
+
+theorem klDivergence_uniform_eq_log_sub_shannonEntropy {n : ℕ} (P : ProbDist n) (hn : 0 < n) :
+    klDivergence P (uniformDist n hn) (by
+      intro i _
+      have : 0 < (1 : ℝ) / n := by positivity
+      simpa [uniformDist] using this) =
+      log n - shannonEntropy P := by
+  classical
+  -- Rewrite the RHS in the usual `log n + Σ p_i log p_i` form.
+  have hRHS : log n - shannonEntropy P = log n + ∑ i, P.p i * log (P.p i) := by
+    rw [shannonEntropy_eq' (P := P)]
+    ring
+  -- Expand KL to the explicit uniform formula.
+  have hn0 : (n : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hn)
+  have hden : ((1 : ℝ) / n) ≠ 0 := div_ne_zero one_ne_zero hn0
+  have hlog_unif : log ((1 : ℝ) / n) = -log n := by
+    rw [log_div one_ne_zero hn0]
+    simp [log_one]
+  have hterm :
+      ∀ i : Fin n,
+        P.p i * log (P.p i / ((1 : ℝ) / n)) = P.p i * log (P.p i) - P.p i * log ((1 : ℝ) / n) := by
+    intro i
+    by_cases hPi : P.p i = 0
+    · simp [hPi]
+    · rw [log_div hPi hden]
+      ring
+  -- Now compute the finite sum.
+  have hU :
+      klDivergence P (uniformDist n hn) (by
+        intro i _
+        have : 0 < (1 : ℝ) / n := by positivity
+        simpa [uniformDist] using this) =
+      (∑ i : Fin n, P.p i * log (P.p i)) - ∑ i : Fin n, P.p i * log ((1 : ℝ) / n) := by
+    -- Expand definition and distribute.
+    simp only [klDivergence, uniformDist]
+    have :
+        (∑ i : Fin n, P.p i * log (P.p i / ((1 : ℝ) / n))) =
+          ∑ i : Fin n, (P.p i * log (P.p i) - P.p i * log ((1 : ℝ) / n)) := by
+      refine Finset.sum_congr rfl ?_
+      intro i _
+      simpa using hterm i
+    rw [this, Finset.sum_sub_distrib]
+  rw [hU]
+  -- Factor out the constant `log(1/n)` and use `∑ p_i = 1`.
+  have hsum_const :
+      (∑ i : Fin n, P.p i * log ((1 : ℝ) / n)) = (∑ i : Fin n, P.p i) * log ((1 : ℝ) / n) := by
+    simpa using
+      (Finset.sum_mul (s := (Finset.univ : Finset (Fin n))) (f := fun i : Fin n => P.p i)
+        (log ((1 : ℝ) / n))).symm
+  -- Finish: `-log(1/n) = log n`.
+  have hneg_log_unif : -log ((1 : ℝ) / n) = log n := by
+    rw [hlog_unif]
+    ring
+  -- Put everything together.
+  rw [hsum_const, P.sum_one]
+  simp only [one_mul]
+  -- `Σ p_i log p_i - log(1/n) = log n + Σ p_i log p_i`
+  linarith [hRHS, hneg_log_unif]
+
+theorem klDivergenceTop_uniform_toReal {n : ℕ} (P : ProbDist n) (hn : 0 < n) :
+    (klDivergenceTop P (uniformDist n hn)).toReal = log n - shannonEntropy P := by
+  classical
+  let U : ProbDist n := uniformDist n hn
+  have hU_pos : ∀ i, P.p i ≠ 0 → 0 < U.p i := by
+    intro i _
+    have : 0 < (1 : ℝ) / n := by positivity
+    simpa [U, uniformDist] using this
+  -- Reduce `toReal` of the `ℝ≥0∞`-valued KL to the finite sum definition.
+  have hto : (klDivergenceTop P U).toReal = klDivergence P U hU_pos :=
+    klDivergenceTop_toReal_eq_of_support_pos (P := P) (Q := U) hU_pos
+  -- Use the finite uniform identity.
+  have hfin :
+      klDivergence P U hU_pos = log n - shannonEntropy P := by
+    simpa [U] using klDivergence_uniform_eq_log_sub_shannonEntropy (P := P) hn
+  simpa [U] using (hto.trans hfin)
+
 /-- **Property 2: Monotonicity**: For n < m, `S(uniform_n) < S(uniform_m)`. -/
 theorem shannonEntropy_uniform_strictMono :
     StrictMono (fun n : {k : ℕ // 0 < k} => shannonEntropy (uniformDist n.1 n.2)) := by
@@ -403,8 +741,8 @@ theorem shannonEntropy_certain {n : ℕ} (P : ProbDist n) (k : Fin n)
 
 This is the "surprise" or "information content" of learning that state k occurred. -/
 theorem klDivergence_certain {n : ℕ} (P Q : ProbDist n) (k : Fin n)
-    (hP_certain : P.p k = 1) (_hQ_pos : ∀ i, 0 < Q.p i) :
-    klDivergence P Q = -log (Q.p k) := by
+    (hP_certain : P.p k = 1) (hQ_pos : ∀ i, P.p i ≠ 0 → 0 < Q.p i) :
+    klDivergence P Q hQ_pos = -log (Q.p k) := by
   unfold klDivergence
   have hP_others : ∀ j, j ≠ k → P.p j = 0 := P.eq_one_implies_others_zero k hP_certain
   -- Only the k-th term contributes

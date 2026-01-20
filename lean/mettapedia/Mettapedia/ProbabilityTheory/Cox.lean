@@ -1,5 +1,6 @@
 import Mettapedia.ProbabilityTheory.Cox.Basic
 import Mettapedia.ProbabilityTheory.Cox.Derivation
+import Mettapedia.ProbabilityTheory.Cox.ProductRuleDerivation
 
 /-!
 # Cox's Theorem: Probability from Plausibility
@@ -24,7 +25,8 @@ Then functional equation analysis forces:
 ## Files
 
 - `Basic.lean`: Core axiom structures (PlausibilityFunction, ConjunctionRule, etc.)
-- `Derivation.lean`: Proofs that standard rules satisfy axioms, connection to Kolmogorov
+- `Derivation.lean`: Proofs that standard rules satisfy axioms, commutativity derivation
+- `ProductRuleDerivation.lean`: **Complete Cox derivation** of F(x,y) = x·y from axioms
 
 ## Connection to Imprecise Probability
 
@@ -47,9 +49,18 @@ The relationship is:
 
 - ✅ Basic axiom structures
 - ✅ Standard rules satisfy axioms
-- ✅ Commutativity at boundary (partial)
-- 🔶 Full functional equation derivation (needs Aczél theory)
-- ✅ Connection to Kolmogorov (via K&S path)
+- ✅ Commutativity DERIVED from axioms (cox_commutativity)
+- ✅ Full product rule derivation (cox_productRule)
+- ✅ Negation rule derivation (cox_negationRule) - **0 sorries**
+- ✅ Iteration infrastructure (iterate_add, iterate_strictAnti, iterate_tendsto_zero)
+- ✅ Square root infrastructure (exists_sqrt, exists_unique_sqrt, sqrt_F)
+- ✅ Diagonal function properties (diagonal_continuous, diagonal_strictMono, diagonal_tendsto_zero)
+- ✅ Example: log provides additive rep for standard multiplication (standard_productRule_additiveRep)
+- 🔶 Aczél theorem (axiom) - remaining: dyadic extension of Θ (classical, Aczél 1966)
+
+**Note on Negation Rule**: The standalone involution axioms (G(G(x))=x, monotonicity, boundary)
+do NOT uniquely determine G(x)=1-x. The additivity constraint G(x)+x=1 comes from the
+product-negation INTERACTION in Cox's framework, and is included as an axiom in CoxNegationAxioms.
 
 ## References
 

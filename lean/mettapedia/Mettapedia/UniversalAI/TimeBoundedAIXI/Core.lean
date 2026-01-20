@@ -3,6 +3,7 @@ import Mathlib.Data.ENNReal.BigOperators
 import Mathlib.Data.List.Basic
 import Mathlib.Data.Real.Basic
 import Mettapedia.UniversalAI.BayesianAgents.Core
+import Mettapedia.UniversalAI.BayesianAgents.InfiniteHistoryCompat
 import Mettapedia.UniversalAI.TimeBoundedAIXI.ProofEnumeration
 
 /-!
@@ -528,5 +529,33 @@ theorem aixitlFromAIXItlConvergenceAssumptions_cycle_eps_optimal_eventually
   exact
     aixitlFromCompleteProofChecker_cycle_eps_optimal_eventually (μ := μ) (γ := γ) (t := t) (h := h) (n := n)
       (ε := ε) (hwf := hwf) (checker := assumptions.checker) (hex := hex) hε
+
+/-! ## Infinite-horizon limit (measure-theoretic core) -/
+
+section InfiniteHorizon
+
+universe u
+
+theorem valueFromMeasure_tendsto
+    {Action Percept : Type u} [Fintype Action] [Fintype Percept]
+    [BayesianAgents.Core.PerceptReward Percept]
+    (μ : BayesianAgents.Core.Environment Action Percept) (π : BayesianAgents.Core.Agent Action Percept)
+    (γ : BayesianAgents.Core.DiscountFactor)
+    (h_stoch : Mettapedia.UniversalAI.BayesianAgents.Core.InfiniteHistoryCompat.isStochastic μ)
+    (h_lt : γ.val < 1) :
+    Filter.Tendsto
+        (fun t =>
+          Mettapedia.UniversalAI.BayesianAgents.Core.InfiniteHistoryCompat.valueFromMeasure
+            (Action := Action) (Percept := Percept) μ π γ h_stoch t)
+        Filter.atTop
+        (nhds
+          (Mettapedia.UniversalAI.BayesianAgents.Core.InfiniteHistoryCompat.valueFromMeasureInf
+            (Action := Action) (Percept := Percept) μ π γ h_stoch)) := by
+  simpa using
+    (Mettapedia.UniversalAI.BayesianAgents.Core.InfiniteHistoryCompat.tendsto_valueFromMeasure
+      (Action := Action) (Percept := Percept) (μ := μ) (π := π) (γ := γ)
+      (h_stoch := h_stoch) (h_lt := h_lt))
+
+end InfiniteHorizon
 
 end Mettapedia.UniversalAI.TimeBoundedAIXI.Core

@@ -3,7 +3,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.AnomalousPairs
 
 open Classical
-open KnuthSkillingAlgebraBase
+open KSSemigroupBase KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 
 variable {α : Type*} [KnuthSkillingAlgebraBase α]

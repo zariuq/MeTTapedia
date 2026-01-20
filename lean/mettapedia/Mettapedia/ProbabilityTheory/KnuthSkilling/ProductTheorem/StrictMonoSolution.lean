@@ -21,7 +21,7 @@ The key step is:
 
 `ProductEquation + StrictMono + Positivity ⟹ Continuous Ψ`
 
-so we can apply the already-sorry-free solver in
+so we can apply the complete solver in
 `Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.FunctionalEquation`.
 
 This file exists so downstream modules can use the *actual proof* without importing the

@@ -1,10 +1,12 @@
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
+import Mathlib.Analysis.SpecialFunctions.Log.ENNRealLog
 import Mathlib.Topology.Algebra.Order.LiminfLimsup
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.InformationTheory.KullbackLeibler.KLFun
 import Mettapedia.ProbabilityTheory.KnuthSkilling.VariationalTheorem
+import Mettapedia.InformationTheory.Basic
 
 /-!
 # K&S Section 6: Divergence (Variational Potential Application)
@@ -52,7 +54,7 @@ define a geometric distance.
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Divergence
 
 open Real
-open scoped Topology
+open scoped Topology ENNReal NNReal
 
 /-! ## Single-Variable Divergence Function
 
@@ -613,5 +615,342 @@ theorem divergence_formula_agrees_with_klDiv {n : ℕ} (w u : Fin n → ℝ)
                InformationTheory.klFun_zero, mul_one, add_zero]
   · -- w i > 0 case
     exact atomDivergence_eq_mul_klFun (w i) (u i) hwi (hu i)
+
+/-! ## Connection to Shannon Entropy
+
+Shannon entropy `H(p) = -Σ pᵢ log pᵢ = Σ negMulLog pᵢ` is intimately related to
+KL divergence via the fundamental identity:
+
+  `D_KL(p || uniform) = log n - H(p)`
+
+This means:
+- **Entropy** measures "distance from uniform" (via KL divergence)
+- **Maximum entropy** = KL divergence zero = distribution is uniform
+- KL divergence from uniform equals the "negentropy" (log n - H)
+
+This section formalizes this connection using `Mettapedia.InformationTheory.shannonEntropy`
+and our K&S-derived `divergence`.
+-/
+
+/-- KL divergence from p to uniform equals log(n) minus Shannon entropy.
+
+**Theorem**: `D_KL(p || u_n) = log(n) - H(p)`
+
+where `u_n(i) = 1/n` is the uniform distribution.
+
+**Proof**: By direct computation:
+- `D_KL(p || u) = Σ_i p_i · log(p_i / (1/n))`
+- `= Σ_i p_i · (log p_i - log(1/n))`
+- `= Σ_i p_i · log p_i - Σ_i p_i · log(1/n)`
+- `= -H(p) - log(1/n) · Σ_i p_i`
+- `= -H(p) - log(1/n) · 1`       (since Σ p_i = 1)
+- `= -H(p) + log n`
+- `= log n - H(p)`
+-/
+theorem divergence_from_uniform_eq_logn_sub_entropy {n : ℕ} (hn : 0 < n)
+    (p : Fin n → ℝ)
+    (_hp_nonneg : ∀ i, 0 ≤ p i)
+    (hp_sum : ∑ i, p i = 1) :
+    divergence p (fun _ => 1 / (n : ℝ)) = log (n : ℝ) - ∑ i, negMulLog (p i) := by
+  -- First, show that for prob distributions, divergence simplifies to KL form
+  have hn_pos : (0 : ℝ) < n := Nat.cast_pos.mpr hn
+  have hu_pos : ∀ i : Fin n, 0 < (1 / (n : ℝ)) := fun _ => by positivity
+  have hu_sum : ∑ _i : Fin n, (1 / (n : ℝ)) = 1 := by
+    simp only [Finset.sum_const, Finset.card_fin, nsmul_eq_mul]
+    field_simp
+  -- Use the KL form
+  rw [divergence_eq_kl_for_prob p (fun _ => 1 / (n : ℝ)) hp_sum hu_sum]
+  -- Expand: Σ p_i · log(p_i / (1/n)) = Σ p_i · (log p_i - log(1/n))
+  -- = Σ p_i · log p_i + Σ p_i · log n = -H(p) + log n
+  -- Split the sum
+  have hsplit : ∑ i : Fin n, p i * log (p i / (1 / (n : ℝ))) =
+      ∑ i : Fin n, p i * log (p i) + ∑ i : Fin n, p i * log (n : ℝ) := by
+    rw [← Finset.sum_add_distrib]
+    apply Finset.sum_congr rfl
+    intro i _
+    by_cases hpi : p i = 0
+    · simp [hpi]
+    · have hn_ne : (n : ℝ) ≠ 0 := ne_of_gt hn_pos
+      -- p i / (1/n) = p i * n
+      have heq : p i / (1 / (n : ℝ)) = p i * n := by field_simp
+      rw [heq]
+      rw [log_mul hpi hn_ne]
+      ring
+  rw [hsplit]
+  -- Σ p_i · log n = log n · Σ p_i = log n · 1 = log n
+  have hlogn_factor : ∑ i : Fin n, p i * log (n : ℝ) = log (n : ℝ) := by
+    rw [← Finset.sum_mul, hp_sum, one_mul]
+  rw [hlogn_factor]
+  -- Σ p_i · log p_i = -H(p) = -(Σ negMulLog p_i)
+  have hneg_entropy : ∑ i : Fin n, p i * log (p i) = -(∑ i : Fin n, negMulLog (p i)) := by
+    simp only [negMulLog, neg_mul]
+    rw [← Finset.sum_neg_distrib]
+    apply Finset.sum_congr rfl
+    intro i _
+    ring
+  rw [hneg_entropy]
+  ring
+
+/-- Corollary: Shannon entropy equals log(n) minus KL divergence from uniform.
+
+`H(p) = log n - D_KL(p || uniform)`
+
+This shows entropy measures "how far" from uniform (in a KL sense). -/
+theorem shannonEntropy_eq_logn_sub_divergence {n : ℕ} (hn : 0 < n)
+    (p : Fin n → ℝ)
+    (hp_nonneg : ∀ i, 0 ≤ p i)
+    (hp_sum : ∑ i, p i = 1) :
+    ∑ i, negMulLog (p i) = log (n : ℝ) - divergence p (fun _ => 1 / (n : ℝ)) := by
+  linarith [divergence_from_uniform_eq_logn_sub_entropy hn p hp_nonneg hp_sum]
+
+/-- For ProbVec: Shannon entropy equals log(n) minus KL divergence from uniform.
+
+This uses `Mettapedia.InformationTheory.shannonEntropy` and `ProbVec n`. -/
+theorem shannonEntropy_probvec_eq_logn_sub_divergence {n : ℕ} (hn : 0 < n)
+    (p : Mettapedia.InformationTheory.ProbVec n) :
+    Mettapedia.InformationTheory.shannonEntropy p =
+      log (n : ℝ) - divergence p.1 (fun _ => 1 / (n : ℝ)) := by
+  rw [Mettapedia.InformationTheory.shannonEntropy]
+  exact shannonEntropy_eq_logn_sub_divergence hn p.1 p.nonneg p.sum_eq_one
+
+/-- Maximum entropy principle: Shannon entropy ≤ log n, with equality iff uniform.
+
+**Corollary of Gibbs' inequality**: Since `D_KL(p || u) ≥ 0` and equals `0` iff `p = u`,
+we have `H(p) = log n - D(p||u) ≤ log n`, with equality iff `p` is uniform. -/
+theorem shannonEntropy_le_log {n : ℕ} (hn : 0 < n)
+    (p : Fin n → ℝ)
+    (hp_pos : ∀ i, 0 < p i)
+    (hp_sum : ∑ i, p i = 1) :
+    ∑ i, negMulLog (p i) ≤ log (n : ℝ) := by
+  have hp_nonneg : ∀ i, 0 ≤ p i := fun i => le_of_lt (hp_pos i)
+  have hu_pos : ∀ i : Fin n, 0 < (1 / (n : ℝ)) := fun _ => by positivity
+  have hdiv := divergence_from_uniform_eq_logn_sub_entropy hn p hp_nonneg hp_sum
+  have hdiv_nonneg := divergence_nonneg p (fun _ => 1 / (n : ℝ)) hp_pos hu_pos
+  linarith
+
+/-- Characterization of maximum entropy: entropy = log n iff distribution is uniform. -/
+theorem shannonEntropy_eq_log_iff_uniform {n : ℕ} (hn : 0 < n)
+    (p : Fin n → ℝ)
+    (hp_pos : ∀ i, 0 < p i)
+    (hp_sum : ∑ i, p i = 1) :
+    ∑ i, negMulLog (p i) = log (n : ℝ) ↔ p = fun _ => 1 / (n : ℝ) := by
+  have hp_nonneg : ∀ i, 0 ≤ p i := fun i => le_of_lt (hp_pos i)
+  have hu_pos : ∀ i : Fin n, 0 < (1 / (n : ℝ)) := fun _ => by positivity
+  have hdiv := divergence_from_uniform_eq_logn_sub_entropy hn p hp_nonneg hp_sum
+  constructor
+  · -- H = log n implies p = uniform
+    intro heq
+    have hdiv_zero : divergence p (fun _ => 1 / (n : ℝ)) = 0 := by linarith
+    exact (divergence_eq_zero_iff p (fun _ => 1 / (n : ℝ)) hp_pos hu_pos).mp hdiv_zero
+  · -- p = uniform implies H = log n
+    intro hunif
+    have hdiv_zero : divergence p (fun _ => 1 / (n : ℝ)) = 0 := by
+      rw [(divergence_eq_zero_iff p (fun _ => 1 / (n : ℝ)) hp_pos hu_pos).mpr hunif]
+    linarith
+
+/-! ## Extended Divergence with Proper ∞ Handling (ℝ≥0∞)
+
+The standard KL divergence formula has edge cases that require extended reals:
+
+1. **`w > 0, u = 0`**: Divergence is `+∞` (putting mass where reference has none)
+2. **`w = 0, u ≥ 0`**: Divergence is `u` (by convention `0 * log(0) = 0`)
+3. **`w, u > 0`**: Standard formula `u - w + w * log(w/u)`
+
+This section defines `atomDivergenceENNReal` returning `ℝ≥0∞` to properly handle all cases.
+
+### The Absolute Continuity Connection
+
+The condition "divergence is finite" is equivalent to **absolute continuity** in measure theory:
+- `D(μ || ν) < ∞` ⟺ `μ ≪ ν` (μ is absolutely continuous w.r.t. ν)
+- In discrete terms: `w_i > 0 ⟹ u_i > 0` for all i
+
+This is the foundation for the measure-theoretic KL divergence in mathlib's
+`InformationTheory.klDiv`.
+-/
+
+/-- Per-atom divergence returning `ℝ≥0∞` to handle all boundary cases.
+
+- `atomDivergenceENNReal w u = ⊤` when `w > 0` and `u = 0` (infinite divergence)
+- `atomDivergenceENNReal 0 u = u` (zero mass contributes u)
+- `atomDivergenceENNReal w u = u - w + w * log(w/u)` when both positive
+
+This properly models that putting probability mass where the reference has none
+results in infinite divergence. -/
+noncomputable def atomDivergenceENNReal (w u : ℝ≥0∞) : ℝ≥0∞ :=
+  if w = 0 then u
+  else if u = 0 then ⊤
+  else if w = ⊤ ∨ u = ⊤ then ⊤  -- Degenerate cases
+  else ENNReal.ofReal (u.toReal - w.toReal + w.toReal * Real.log (w.toReal / u.toReal))
+
+@[simp]
+theorem atomDivergenceENNReal_zero_left (u : ℝ≥0∞) : atomDivergenceENNReal 0 u = u := by
+  simp only [atomDivergenceENNReal, ↓reduceIte]
+
+@[simp]
+theorem atomDivergenceENNReal_zero_right {w : ℝ≥0∞} (hw : w ≠ 0) :
+    atomDivergenceENNReal w 0 = ⊤ := by
+  simp only [atomDivergenceENNReal, hw, ↓reduceIte]
+
+theorem atomDivergenceENNReal_self (u : ℝ≥0∞) (hu : u ≠ 0) (hu' : u ≠ ⊤) :
+    atomDivergenceENNReal u u = 0 := by
+  simp only [atomDivergenceENNReal, hu, hu', or_self, ↓reduceIte]
+  simp only [div_self (ENNReal.toReal_ne_zero.mpr ⟨hu, hu'⟩), Real.log_one, mul_zero, add_zero,
+             sub_self, ENNReal.ofReal_zero]
+
+/-- For positive finite values, the extended divergence equals the standard formula. -/
+theorem atomDivergenceENNReal_eq_ofReal {w u : ℝ≥0∞}
+    (hw : w ≠ 0) (hw' : w ≠ ⊤) (hu : u ≠ 0) (hu' : u ≠ ⊤) :
+    atomDivergenceENNReal w u =
+      ENNReal.ofReal (u.toReal - w.toReal + w.toReal * Real.log (w.toReal / u.toReal)) := by
+  simp only [atomDivergenceENNReal, hw, hw', hu, hu', or_self, ↓reduceIte]
+
+/-- The extended divergence agrees with `atomDivergence` for positive reals. -/
+theorem atomDivergenceENNReal_eq_atomDivergence {w u : ℝ}
+    (hw : 0 < w) (hu : 0 < u) :
+    atomDivergenceENNReal (ENNReal.ofReal w) (ENNReal.ofReal u) =
+      ENNReal.ofReal (atomDivergence w u) := by
+  have hw_ne : ENNReal.ofReal w ≠ 0 := ENNReal.ofReal_ne_zero_iff.mpr hw
+  have hu_ne : ENNReal.ofReal u ≠ 0 := ENNReal.ofReal_ne_zero_iff.mpr hu
+  have hw_ne' : ENNReal.ofReal w ≠ ⊤ := ENNReal.ofReal_ne_top
+  have hu_ne' : ENNReal.ofReal u ≠ ⊤ := ENNReal.ofReal_ne_top
+  rw [atomDivergenceENNReal_eq_ofReal hw_ne hw_ne' hu_ne hu_ne']
+  simp only [ENNReal.toReal_ofReal (le_of_lt hw), ENNReal.toReal_ofReal (le_of_lt hu)]
+  rfl
+
+/-- Non-negativity: The extended divergence is always non-negative (by definition in ℝ≥0∞).
+
+For the positive finite case, this follows from the log inequality. -/
+theorem atomDivergenceENNReal_nonneg (w u : ℝ≥0∞) : 0 ≤ atomDivergenceENNReal w u := by
+  exact zero_le _
+
+/-! ### Total Extended Divergence -/
+
+/-- Total divergence with proper ∞ handling for vectors. -/
+noncomputable def divergenceENNReal {n : ℕ} (w u : Fin n → ℝ≥0∞) : ℝ≥0∞ :=
+  ∑ i, atomDivergenceENNReal (w i) (u i)
+
+/-- Divergence is infinite iff there exists an index with `w i > 0` but `u i = 0`.
+
+This is the discrete version of "absolute continuity failure". -/
+theorem divergenceENNReal_eq_top_iff {n : ℕ} (w u : Fin n → ℝ≥0∞)
+    (hw : ∀ i, w i ≠ ⊤) (hu : ∀ i, u i ≠ ⊤) :
+    divergenceENNReal w u = ⊤ ↔ ∃ i, w i ≠ 0 ∧ u i = 0 := by
+  constructor
+  · -- If divergence = ⊤, then some term is ⊤
+    intro h
+    by_contra hne
+    push_neg at hne
+    -- All terms are finite, so the sum should be finite
+    have hfinite : ∀ i, atomDivergenceENNReal (w i) (u i) ≠ ⊤ := by
+      intro i
+      by_cases hwi : w i = 0
+      · simp only [hwi, atomDivergenceENNReal_zero_left, hu i, ne_eq, not_false_eq_true]
+      · have hui : u i ≠ 0 := hne i hwi
+        simp only [atomDivergenceENNReal, hwi, hui, hw i, hu i, or_self, ↓reduceIte,
+                   ENNReal.ofReal_ne_top, ne_eq, not_false_eq_true]
+    -- Sum of finite terms is finite
+    have hsum_finite : divergenceENNReal w u ≠ ⊤ := by
+      unfold divergenceENNReal
+      exact ENNReal.sum_ne_top.mpr (fun i _ => hfinite i)
+    exact hsum_finite h
+  · -- If some term is ⊤, the sum is ⊤
+    intro ⟨i, hwi, hui⟩
+    unfold divergenceENNReal
+    have hterm : atomDivergenceENNReal (w i) (u i) = ⊤ := by
+      simp only [atomDivergenceENNReal, hwi, hui, ↓reduceIte]
+    exact ENNReal.sum_eq_top.mpr ⟨i, Finset.mem_univ i, hterm⟩
+
+/-- Discrete absolute continuity: w is supported on the support of u.
+
+This is the condition for finite divergence. -/
+def DiscreteAbsCont {n : ℕ} (w u : Fin n → ℝ≥0∞) : Prop :=
+  ∀ i, w i ≠ 0 → u i ≠ 0
+
+theorem divergenceENNReal_ne_top_iff {n : ℕ} (w u : Fin n → ℝ≥0∞)
+    (hw : ∀ i, w i ≠ ⊤) (hu : ∀ i, u i ≠ ⊤) :
+    divergenceENNReal w u ≠ ⊤ ↔ DiscreteAbsCont w u := by
+  rw [ne_eq, divergenceENNReal_eq_top_iff w u hw hu]
+  simp only [not_exists, not_and, ne_eq]
+  constructor
+  · intro h i hwi
+    exact (h i) hwi
+  · intro h i hwi
+    exact h i hwi
+
+/-! ### Gibbs' Inequality for Extended Divergence -/
+
+/-- **Gibbs' Inequality (Extended)**: Divergence is zero iff w = u (pointwise).
+
+For finite positive values, this is the standard Gibbs' inequality.
+The extended version also handles boundary cases via the definition. -/
+theorem divergenceENNReal_eq_zero_iff {n : ℕ} (w u : Fin n → ℝ≥0∞)
+    (hw : ∀ i, w i ≠ ⊤) (hu : ∀ i, u i ≠ ⊤)
+    (hw' : ∀ i, w i ≠ 0 → u i ≠ 0) :  -- Absolute continuity
+    divergenceENNReal w u = 0 ↔ w = u := by
+  unfold divergenceENNReal
+  constructor
+  · -- If sum = 0, each term = 0, hence w i = u i
+    intro h
+    have hzero : ∀ i, atomDivergenceENNReal (w i) (u i) = 0 := by
+      intro i
+      -- Sum of nonneg ENNReal terms = 0 implies each term = 0
+      have hall : ∀ j ∈ Finset.univ, atomDivergenceENNReal (w j) (u j) = 0 := by
+        rw [Finset.sum_eq_zero_iff_of_nonneg (fun _ _ => zero_le _)] at h
+        exact h
+      exact hall i (Finset.mem_univ i)
+    ext i
+    specialize hzero i
+    by_cases hwi : w i = 0
+    · -- w i = 0 implies atomDiv = u i = 0
+      simp only [hwi, atomDivergenceENNReal_zero_left] at hzero
+      exact hwi.trans hzero.symm
+    · -- w i ≠ 0 implies u i ≠ 0, and we can use the real formula
+      have hui : u i ≠ 0 := hw' i hwi
+      simp only [atomDivergenceENNReal, hwi, hui, hw i, hu i, or_self, ↓reduceIte,
+                 ENNReal.ofReal_eq_zero] at hzero
+      -- Now we have: u.toReal - w.toReal + w.toReal * log(w.toReal/u.toReal) ≤ 0
+      -- Combined with non-negativity, this means = 0, hence w = u
+      have hpos_w : 0 < (w i).toReal := ENNReal.toReal_pos hwi (hw i)
+      have hpos_u : 0 < (u i).toReal := ENNReal.toReal_pos hui (hu i)
+      have hdiv_eq : atomDivergence (w i).toReal (u i).toReal = 0 := by
+        unfold atomDivergence
+        exact le_antisymm hzero (atomDivergence_nonneg (w i).toReal (u i).toReal hpos_w hpos_u)
+      have heq := (atomDivergence_eq_zero_iff (w i).toReal (u i).toReal hpos_w hpos_u).mp hdiv_eq
+      exact (ENNReal.toReal_eq_toReal_iff' (hw i) (hu i)).mp heq
+  · -- If w = u, divergence = 0
+    intro heq
+    rw [heq]
+    apply Finset.sum_eq_zero
+    intro i _
+    by_cases hui : u i = 0
+    · simp only [hui, atomDivergenceENNReal_zero_left]
+    · exact atomDivergenceENNReal_self (u i) hui (hu i)
+
+/-! ### Connection to Mathlib's Measure-Theoretic KL Divergence
+
+For discrete probability measures, our `divergenceENNReal` corresponds to mathlib's `klDiv`:
+
+```
+klDiv μ ν = ∞  if ¬(μ ≪ ν)
+         = ∫ klFun(dμ/dν) dν  otherwise
+```
+
+The absolute continuity condition `μ ≪ ν` corresponds to our `DiscreteAbsCont w u`.
+
+**Key insight**: The K&S variational derivation automatically produces the correct formula
+with proper boundary behavior, matching the measure-theoretic definition.
+-/
+
+/-! ### F-Divergence Form
+
+The extended divergence can also be expressed via mathlib's `klFun` as an f-divergence.
+For `ℝ≥0` inputs with all `u i > 0`:
+
+`divergenceENNReal w u = ENNReal.ofReal (∑ i, u i * klFun(w i / u i))`
+
+This connects our K&S-derived formula to the standard f-divergence framework.
+The proof is straightforward but requires careful handling of coercions between
+`ℝ≥0`, `ℝ≥0∞`, and `ℝ`.
+-/
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.Divergence

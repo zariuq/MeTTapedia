@@ -3,6 +3,7 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 import Mathlib.Analysis.Calculus.Deriv.Add
 import Mathlib.Analysis.Calculus.Deriv.Mul
+import Mathlib.Analysis.Calculus.LocalExtr.Basic
 import Mathlib.Analysis.Calculus.FDeriv.Measurable
 import Mathlib.MeasureTheory.Measure.Haar.NormedSpace
 import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.FunctionalEquation
@@ -406,6 +407,74 @@ theorem variationalEquation_solution_of_hasDerivAt
     H' m = deriv H m := hder.symm
     _ = B + C * Real.log m := hBC m hm
 
+/-- **Monotone regularity version**.
+
+If `H'` is monotone (on `ℝ`), it is automatically Borel measurable (by `Monotone.measurable`),
+so we can apply the measurable version directly. This matches one of the standard "anti-pathology"
+gates for Cauchy's functional equation. -/
+theorem variationalEquation_solution_monotone
+    (H' : ℝ → ℝ) (lam mu : ℝ → ℝ)
+    (hMono : Monotone H')
+    (hV : VariationalEquation H' lam mu) :
+    ∃ B C : ℝ, ∀ m : ℝ, 0 < m → H' m = B + C * Real.log m :=
+  variationalEquation_solution_measurable H' lam mu hMono.measurable hV
+
+/-- **Antitone regularity version**.
+
+Same as the monotone version, but for antitone (decreasing) functions. -/
+theorem variationalEquation_solution_antitone
+    (H' : ℝ → ℝ) (lam mu : ℝ → ℝ)
+    (hAnti : Antitone H')
+    (hV : VariationalEquation H' lam mu) :
+    ∃ B C : ℝ, ∀ m : ℝ, 0 < m → H' m = B + C * Real.log m :=
+  variationalEquation_solution_measurable H' lam mu hAnti.measurable hV
+
+/-- **StrictMono regularity version**.
+
+Strict monotonicity implies monotonicity, which implies measurability. -/
+theorem variationalEquation_solution_strictMono
+    (H' : ℝ → ℝ) (lam mu : ℝ → ℝ)
+    (hMono : StrictMono H')
+    (hV : VariationalEquation H' lam mu) :
+    ∃ B C : ℝ, ∀ m : ℝ, 0 < m → H' m = B + C * Real.log m :=
+  variationalEquation_solution_monotone H' lam mu hMono.monotone hV
+
+/-! ## Path B → Path A: "Generality Across Applications" (Universality + Richness)
+
+Path B (Lagrange multipliers) yields a *local* separated equation at a stationary point of a
+separable constrained problem. Path A (the functional-equation solver) requires a *global*
+variational equation holding for all positive pairs.
+
+K&S bridge this gap by a methodological premise: the same variational potential applies uniformly
+across a sufficiently rich class of applications, so that the separated coordinate equation can be
+treated as a functional equation in independent variables.
+
+We keep this premise explicit (and therefore auditable) as `KSVariationalGenerality`.
+
+For literature-backed variants of this “generality / consistency across applications” idea,
+see Shore–Johnson (1980).  Our project formalizes a Lean-friendly core consequence of SJ4
+(system independence) in `Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnsonTheorem.lean`,
+including an explicit regularity gate and an explicit counterexample showing why some regularity
+assumption is logically necessary.
+
+We additionally connect that Shore–Johnson “atom-level” conclusion to this project’s finite
+`klDivergence` definition (Section 8 layer) in
+`Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnsonBridge.lean`.
+-/
+
+/-- K&S’s “generality across applications” premise for Appendix C.
+
+This packages the (global) variational functional equation for `deriv H` as an explicit hypothesis,
+separating it from the local stationarity statement proven by Path B. -/
+structure KSVariationalGenerality (H : ℝ → ℝ) where
+  lam : ℝ → ℝ
+  mu : ℝ → ℝ
+  equation : VariationalEquation (deriv H) lam mu
+
+theorem variationalEquation_solution_of_generality (H : ℝ → ℝ) (hGen : KSVariationalGenerality H) :
+    ∃ B C : ℝ, ∀ m : ℝ, 0 < m → deriv H m = B + C * Real.log m :=
+  variationalEquation_solution (H := H) (lam := hGen.lam) (mu := hGen.mu) hGen.equation
+
 /-! ## Integration: From H' to H
 
 Given `H'(m) = B + C·log(m)`, we can integrate to get the entropy form:
@@ -533,5 +602,668 @@ theorem divergence_parameters_forced (u : ℝ) (_hu : 0 < u)
       exact h2
     field_simp at h1 ⊢
     linarith
+
+/-! ## Path B: Lagrange Multiplier Derivation
+
+K&S motivate the functional equation (their Eq. `Hproduct`, arxiv.tex:767–770) by considering an
+`x`-by-`y` direct-product application with **separable constraints** on each factor, and then taking
+the derivative of a Lagrangian with respect to the coordinate `m(x × y)`.
+
+In Lean we model “the partial derivative with respect to a coordinate” by a 1D derivative along
+the coordinate-update map `t ↦ Function.update m (x, y) t`.
+
+This isolates the pure calculus fact: at a stationary point, the coordinate-derivative equation
+*separates* into an `x`-part plus a `y`-part.  (Regularity of solutions to the resulting functional
+equation is handled by Path A via measurability of derivatives.)
+-/
+
+section PathB
+
+variable {X Y : Type*} [Fintype X] [Fintype Y]
+
+/-- The `x`-marginal of a joint assignment `m : X × Y → ℝ`. -/
+noncomputable def rowSum (m : X × Y → ℝ) (x : X) : ℝ := by
+  classical
+  exact (Finset.univ.sum fun y : Y => m (x, y))
+
+/-- The `y`-marginal of a joint assignment `m : X × Y → ℝ`. -/
+noncomputable def colSum (m : X × Y → ℝ) (y : Y) : ℝ := by
+  classical
+  exact (Finset.univ.sum fun x : X => m (x, y))
+
+/-- A basic “separable constraints” Lagrangian: an objective `∑ H(m_xy)` minus X-only and Y-only
+constraint terms built from the marginals `rowSum` and `colSum`. -/
+noncomputable def productLagrangian (H : ℝ → ℝ)
+    (g : X → ℝ → ℝ) (h : Y → ℝ → ℝ)
+    (α : X → ℝ) (β : Y → ℝ)
+    (m : X × Y → ℝ) : ℝ := by
+  classical
+  exact
+    (Finset.univ.sum fun xy : X × Y => H (m xy))
+      - (Finset.univ.sum fun x : X => α x * g x (rowSum m x))
+      - (Finset.univ.sum fun y : Y => β y * h y (colSum m y))
+
+omit [Fintype X] in
+theorem rowSum_update_eq (m : X × Y → ℝ) (x0 : X) (y0 : Y) (t : ℝ) :
+    rowSum (Function.update m (x0, y0) t) x0 =
+      t + (Finset.univ.erase y0).sum (fun y : Y => m (x0, y)) := by
+  classical
+  unfold rowSum
+  have hfun :
+      (fun y : Y => Function.update m (x0, y0) t (x0, y)) =
+        Function.update (fun y : Y => m (x0, y)) y0 t := by
+    funext y
+    by_cases hy : y = y0 <;> simp [Function.update, hy]
+  -- Rewrite the sum as a Finset sum of a `Function.update`.
+  rw [hfun]
+  rw [Finset.sum_update_of_mem (Finset.mem_univ y0)]
+  simp
+
+omit [Fintype X] in
+theorem rowSum_update_of_ne (m : X × Y → ℝ) {x x0 : X} (hx : x ≠ x0) (y0 : Y) (t : ℝ) :
+    rowSum (Function.update m (x0, y0) t) x = rowSum m x := by
+  classical
+  unfold rowSum
+  simp [Function.update, hx]
+
+omit [Fintype Y] in
+theorem colSum_update_eq (m : X × Y → ℝ) (x0 : X) (y0 : Y) (t : ℝ) :
+    colSum (Function.update m (x0, y0) t) y0 =
+      t + (Finset.univ.erase x0).sum (fun x : X => m (x, y0)) := by
+  classical
+  unfold colSum
+  have hfun :
+      (fun x : X => Function.update m (x0, y0) t (x, y0)) =
+        Function.update (fun x : X => m (x, y0)) x0 t := by
+    funext x
+    by_cases hx : x = x0 <;> simp [Function.update, hx]
+  rw [hfun]
+  rw [Finset.sum_update_of_mem (Finset.mem_univ x0)]
+  simp
+
+omit [Fintype Y] in
+theorem colSum_update_of_ne (m : X × Y → ℝ) {y y0 : Y} (hy : y ≠ y0) (x0 : X) (t : ℝ) :
+    colSum (Function.update m (x0, y0) t) y = colSum m y := by
+  classical
+  unfold colSum
+  simp [Function.update, hy]
+
+/-- A cleaned-up statement of the K&S coordinate-derivative calculation:
+at a stationary point of a separable Lagrangian, the coordinate derivative separates into an
+`X`-only term plus a `Y`-only term. -/
+theorem lagrange_coordinate_deriv_eq
+    (H : ℝ → ℝ) (g : X → ℝ → ℝ) (h : Y → ℝ → ℝ) (α : X → ℝ) (β : Y → ℝ)
+    (m : X × Y → ℝ) (x0 : X) (y0 : Y)
+    (hH : DifferentiableAt ℝ H (m (x0, y0)))
+    (hg : DifferentiableAt ℝ (g x0) (rowSum m x0))
+    (hh : DifferentiableAt ℝ (h y0) (colSum m y0))
+    (hcrit : HasDerivAt
+      (fun t => productLagrangian H g h α β (Function.update m (x0, y0) t))
+      0 (m (x0, y0))) :
+    deriv H (m (x0, y0))
+      = α x0 * deriv (g x0) (rowSum m x0) + β y0 * deriv (h y0) (colSum m y0) := by
+  classical
+  -- Compute the derivative of the objective part: only the `(x0,y0)` coordinate varies.
+  have hObj :
+      HasDerivAt
+        (fun t => (Finset.univ : Finset (X × Y)).sum fun xy : X × Y => H ((Function.update m (x0, y0) t) xy))
+        (deriv H (m (x0, y0))) (m (x0, y0)) := by
+    -- Only the `(x0,y0)` coordinate varies.
+    have hsum :
+        (fun t =>
+            (Finset.univ : Finset (X × Y)).sum fun xy : X × Y => H ((Function.update m (x0, y0) t) xy)) =
+          fun t =>
+            H t + (Finset.univ.erase (x0, y0)).sum (fun xy : X × Y => H (m xy)) := by
+      funext t
+      have hfun :
+          (fun xy : X × Y => H ((Function.update m (x0, y0) t) xy)) =
+            Function.update (fun xy : X × Y => H (m xy)) (x0, y0) (H t) := by
+        funext xy
+        by_cases hxy : xy = (x0, y0) <;> simp [Function.update, hxy]
+      rw [hfun]
+      rw [Finset.sum_update_of_mem (Finset.mem_univ (x0, y0))]
+      simp
+    -- Differentiate `t ↦ H t + const`.
+    have hH' : HasDerivAt H (deriv H (m (x0, y0))) (m (x0, y0)) := hH.hasDerivAt
+    have hconst :
+        HasDerivAt (fun _ : ℝ => (Finset.univ.erase (x0, y0)).sum (fun xy : X × Y => H (m xy)))
+          0 (m (x0, y0)) := hasDerivAt_const _ _
+    have h : HasDerivAt
+        (fun t => H t + (Finset.univ.erase (x0, y0)).sum (fun xy : X × Y => H (m xy)))
+        (deriv H (m (x0, y0))) (m (x0, y0)) := by
+      have h' :
+          HasDerivAt
+            (fun t => H t + (Finset.univ.erase (x0, y0)).sum (fun xy : X × Y => H (m xy)))
+            (deriv H (m (x0, y0)) + 0) (m (x0, y0)) :=
+        hH'.add hconst
+      simpa [add_zero] using h'
+    exact (hsum.symm ▸ h)
+  -- Compute the derivative of the X-constraint part: only the `x0` marginal varies.
+  have hRow :
+      HasDerivAt
+        (fun t => (Finset.univ : Finset X).sum fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x))
+        (α x0 * deriv (g x0) (rowSum m x0)) (m (x0, y0)) := by
+    have hsplit :
+        (fun t =>
+            (Finset.univ : Finset X).sum fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) =
+          fun t =>
+            α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0)
+              + (Finset.univ.erase x0).sum (fun x : X => α x * g x (rowSum m x)) := by
+      funext t
+      -- Peel off the `x0` term and show all others are constant in `t`.
+      have hx0 : x0 ∈ (Finset.univ : Finset X) := Finset.mem_univ x0
+      have : ((Finset.univ : Finset X).sum fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) =
+          α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0)
+            + (Finset.univ.erase x0).sum (fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) := by
+        -- Convert `Fintype.sum` to `Finset.univ.sum` and use `sum_update_of_mem`.
+        -- This is `sum_erase_add` in the direction we want.
+        have hsum :=
+          (Finset.sum_erase_add (s := (Finset.univ : Finset X)) (f := fun x : X =>
+            α x * g x (rowSum (Function.update m (x0, y0) t) x)) hx0).symm
+        -- `hsum` gives the decomposition as `(erase sum) + f x0`; reorder to `f x0 + (erase sum)`.
+        calc
+          ((Finset.univ : Finset X).sum fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) =
+              (Finset.univ.erase x0).sum (fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x))
+                + α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0) := hsum
+          _ = α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0)
+                + (Finset.univ.erase x0).sum (fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) := by
+            ac_rfl
+      -- Now rewrite the erase-sum using `rowSum_update_of_ne`.
+      have herase :
+          (Finset.univ.erase x0).sum (fun x : X =>
+              α x * g x (rowSum (Function.update m (x0, y0) t) x))
+            = (Finset.univ.erase x0).sum (fun x : X => α x * g x (rowSum m x)) := by
+        refine Finset.sum_congr rfl ?_
+        intro x hx
+        have hxne : x ≠ x0 := by
+          exact (Finset.mem_erase.mp hx).1
+        simp [rowSum_update_of_ne (m := m) (y0 := y0) (t := t) hxne]
+      -- Assemble.
+      simp [this, herase]
+    have hcore : HasDerivAt (fun t => α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0))
+        (α x0 * deriv (g x0) (rowSum m x0)) (m (x0, y0)) := by
+      -- `rowSum` changes with slope 1 at `t0`.
+      have hRowSlope :
+          HasDerivAt (fun t => rowSum (Function.update m (x0, y0) t) x0) 1 (m (x0, y0)) := by
+        -- Use the explicit linear form from `rowSum_update_eq`.
+        have hlin :
+            (fun t => rowSum (Function.update m (x0, y0) t) x0) =
+              fun t => t + (Finset.univ.erase y0).sum (fun y : Y => m (x0, y)) := by
+          funext t
+          simp [rowSum_update_eq (m := m) (x0 := x0) (y0 := y0) (t := t)]
+        have hid : HasDerivAt (fun t : ℝ => t) 1 (m (x0, y0)) := hasDerivAt_id _
+        have hconst :
+            HasDerivAt (fun _ : ℝ => (Finset.univ.erase y0).sum (fun y : Y => m (x0, y)))
+              0 (m (x0, y0)) := hasDerivAt_const _ _
+        have h' :
+            HasDerivAt
+              (fun t => t + (Finset.univ.erase y0).sum (fun y : Y => m (x0, y)))
+              (1 + 0) (m (x0, y0)) :=
+          hid.add hconst
+        have h'' :
+            HasDerivAt
+              (fun t => t + (Finset.univ.erase y0).sum (fun y : Y => m (x0, y)))
+              1 (m (x0, y0)) := by
+          simpa [add_zero] using h'
+        exact (hlin.symm ▸ h'')
+      have hrowAt : rowSum (Function.update m (x0, y0) (m (x0, y0))) x0 = rowSum m x0 := by
+        simp [Function.update_eq_self]
+      have hg0 :
+          DifferentiableAt ℝ (g x0) (rowSum (Function.update m (x0, y0) (m (x0, y0))) x0) := by
+        simpa [hrowAt] using hg
+      have hg' :
+          HasDerivAt (g x0)
+            (deriv (g x0) (rowSum (Function.update m (x0, y0) (m (x0, y0))) x0))
+            (rowSum (Function.update m (x0, y0) (m (x0, y0))) x0) :=
+        hg0.hasDerivAt
+      have hcomp :
+          HasDerivAt (fun t => g x0 (rowSum (Function.update m (x0, y0) t) x0))
+            (deriv (g x0) (rowSum (Function.update m (x0, y0) (m (x0, y0))) x0)) (m (x0, y0)) := by
+        simpa using hg'.comp (m (x0, y0)) hRowSlope
+      -- Multiply by the constant `α x0`.
+      simpa [mul_assoc] using hcomp.const_mul (α x0)
+    have hconst :
+        HasDerivAt (fun _ : ℝ => (Finset.univ.erase x0).sum (fun x : X => α x * g x (rowSum m x)))
+          0 (m (x0, y0)) := hasDerivAt_const _ _
+    have h' : HasDerivAt
+        (fun t =>
+          α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0)
+            + (Finset.univ.erase x0).sum (fun x : X => α x * g x (rowSum m x)))
+        (α x0 * deriv (g x0) (rowSum m x0) + 0) (m (x0, y0)) :=
+      hcore.add hconst
+    have h'' : HasDerivAt
+        (fun t =>
+          α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0)
+            + (Finset.univ.erase x0).sum (fun x : X => α x * g x (rowSum m x)))
+        (α x0 * deriv (g x0) (rowSum m x0)) (m (x0, y0)) := by
+      simpa [add_zero] using h'
+    exact (hsplit.symm ▸ h'')
+  -- Compute the derivative of the Y-constraint part: only the `y0` marginal varies.
+  have hCol :
+      HasDerivAt
+        (fun t => (Finset.univ : Finset Y).sum fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y))
+        (β y0 * deriv (h y0) (colSum m y0)) (m (x0, y0)) := by
+    have hsplit :
+        (fun t =>
+            (Finset.univ : Finset Y).sum fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y)) =
+          fun t =>
+            β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0)
+              + (Finset.univ.erase y0).sum (fun y : Y => β y * h y (colSum m y)) := by
+      funext t
+      have hy0 : y0 ∈ (Finset.univ : Finset Y) := Finset.mem_univ y0
+      have : ((Finset.univ : Finset Y).sum fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y)) =
+          β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0)
+            + (Finset.univ.erase y0).sum (fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y)) := by
+        have hsum :=
+          (Finset.sum_erase_add (s := (Finset.univ : Finset Y)) (f := fun y : Y =>
+            β y * h y (colSum (Function.update m (x0, y0) t) y)) hy0).symm
+        -- `hsum` gives the decomposition as `(erase sum) + f y0`; reorder to `f y0 + (erase sum)`.
+        calc
+          ((Finset.univ : Finset Y).sum fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y)) =
+              (Finset.univ.erase y0).sum (fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y))
+                + β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0) := hsum
+          _ = β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0)
+                + (Finset.univ.erase y0).sum (fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y)) := by
+            ac_rfl
+      have herase :
+          (Finset.univ.erase y0).sum (fun y : Y =>
+              β y * h y (colSum (Function.update m (x0, y0) t) y))
+            = (Finset.univ.erase y0).sum (fun y : Y => β y * h y (colSum m y)) := by
+        refine Finset.sum_congr rfl ?_
+        intro y hy
+        have hyne : y ≠ y0 := (Finset.mem_erase.mp hy).1
+        simp [colSum_update_of_ne (m := m) (x0 := x0) (t := t) hyne]
+      simp [this, herase]
+    have hcore : HasDerivAt (fun t => β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0))
+        (β y0 * deriv (h y0) (colSum m y0)) (m (x0, y0)) := by
+      have hColSlope :
+          HasDerivAt (fun t => colSum (Function.update m (x0, y0) t) y0) 1 (m (x0, y0)) := by
+        have hlin :
+            (fun t => colSum (Function.update m (x0, y0) t) y0) =
+              fun t => t + (Finset.univ.erase x0).sum (fun x : X => m (x, y0)) := by
+          funext t
+          simp [colSum_update_eq (m := m) (x0 := x0) (y0 := y0) (t := t)]
+        have hid : HasDerivAt (fun t : ℝ => t) 1 (m (x0, y0)) := hasDerivAt_id _
+        have hconst :
+            HasDerivAt (fun _ : ℝ => (Finset.univ.erase x0).sum (fun x : X => m (x, y0)))
+              0 (m (x0, y0)) := hasDerivAt_const _ _
+        have h' :
+            HasDerivAt
+              (fun t => t + (Finset.univ.erase x0).sum (fun x : X => m (x, y0)))
+              (1 + 0) (m (x0, y0)) :=
+          hid.add hconst
+        have h'' :
+            HasDerivAt
+              (fun t => t + (Finset.univ.erase x0).sum (fun x : X => m (x, y0)))
+              1 (m (x0, y0)) := by
+          simpa [add_zero] using h'
+        exact (hlin.symm ▸ h'')
+      have hcolAt : colSum (Function.update m (x0, y0) (m (x0, y0))) y0 = colSum m y0 := by
+        simp [Function.update_eq_self]
+      have hh0 :
+          DifferentiableAt ℝ (h y0) (colSum (Function.update m (x0, y0) (m (x0, y0))) y0) := by
+        simpa [hcolAt] using hh
+      have hh' :
+          HasDerivAt (h y0)
+            (deriv (h y0) (colSum (Function.update m (x0, y0) (m (x0, y0))) y0))
+            (colSum (Function.update m (x0, y0) (m (x0, y0))) y0) :=
+        hh0.hasDerivAt
+      have hcomp :
+          HasDerivAt (fun t => h y0 (colSum (Function.update m (x0, y0) t) y0))
+            (deriv (h y0) (colSum (Function.update m (x0, y0) (m (x0, y0))) y0)) (m (x0, y0)) := by
+        simpa using hh'.comp (m (x0, y0)) hColSlope
+      simpa [mul_assoc] using hcomp.const_mul (β y0)
+    have hconst :
+        HasDerivAt (fun _ : ℝ => (Finset.univ.erase y0).sum (fun y : Y => β y * h y (colSum m y)))
+          0 (m (x0, y0)) := hasDerivAt_const _ _
+    have h' : HasDerivAt
+        (fun t =>
+          β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0)
+            + (Finset.univ.erase y0).sum (fun y : Y => β y * h y (colSum m y)))
+        (β y0 * deriv (h y0) (colSum m y0) + 0) (m (x0, y0)) :=
+      hcore.add hconst
+    have h'' : HasDerivAt
+        (fun t =>
+          β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0)
+            + (Finset.univ.erase y0).sum (fun y : Y => β y * h y (colSum m y)))
+        (β y0 * deriv (h y0) (colSum m y0)) (m (x0, y0)) := by
+      simpa [add_zero] using h'
+    exact (hsplit.symm ▸ h'')
+  -- Assemble the derivative of the full Lagrangian and use `hcrit`.
+  have hL :
+      HasDerivAt (fun t => productLagrangian H g h α β (Function.update m (x0, y0) t))
+        (deriv H (m (x0, y0)) - α x0 * deriv (g x0) (rowSum m x0) - β y0 * deriv (h y0) (colSum m y0))
+        (m (x0, y0)) := by
+    unfold productLagrangian
+    -- `t ↦ objective - rowConstraints - colConstraints`
+    simpa [sub_eq_add_neg, add_assoc] using ((hObj.sub hRow).sub hCol)
+  have : deriv (fun t => productLagrangian H g h α β (Function.update m (x0, y0) t))
+      (m (x0, y0))
+      = deriv H (m (x0, y0)) - α x0 * deriv (g x0) (rowSum m x0) - β y0 * deriv (h y0) (colSum m y0) :=
+    hL.deriv
+  have hcrit' :
+      deriv (fun t => productLagrangian H g h α β (Function.update m (x0, y0) t))
+        (m (x0, y0)) = 0 := hcrit.deriv
+  -- Rewrite the stationarity condition using the computed derivative and solve for `deriv H`.
+  rw [this] at hcrit'
+  linarith
+
+/-- The same coordinate-derivative separation, but with stationarity derived from a local extremum.
+
+This is the “fully honest” Path B: a local minimum/maximum implies the coordinate derivative is
+zero (Fermat's theorem), so we do **not** assume `HasDerivAt … 0 …` as an extra axiom. -/
+theorem lagrange_coordinate_deriv_eq_of_isLocalExtr
+    (H : ℝ → ℝ) (g : X → ℝ → ℝ) (h : Y → ℝ → ℝ) (α : X → ℝ) (β : Y → ℝ)
+    (m : X × Y → ℝ) (x0 : X) (y0 : Y)
+    (hH : DifferentiableAt ℝ H (m (x0, y0)))
+    (hg : DifferentiableAt ℝ (g x0) (rowSum m x0))
+    (hh : DifferentiableAt ℝ (h y0) (colSum m y0))
+    (hExtr :
+      IsLocalExtr
+        (fun t => productLagrangian H g h α β (Function.update m (x0, y0) t))
+        (m (x0, y0))) :
+    deriv H (m (x0, y0))
+      = α x0 * deriv (g x0) (rowSum m x0) + β y0 * deriv (h y0) (colSum m y0) := by
+  classical
+  let f : ℝ → ℝ := fun t => productLagrangian H g h α β (Function.update m (x0, y0) t)
+  let t0 : ℝ := m (x0, y0)
+  have hDiff : DifferentiableAt ℝ f t0 := by
+    -- We rewrite each finite sum to separate out the unique `t`-dependent term; all other terms are
+    -- constant in `t` and therefore differentiable.
+    let objConst : ℝ := (Finset.univ.erase (x0, y0)).sum fun xy : X × Y => H (m xy)
+    have hObjEq :
+        (fun t =>
+            (Finset.univ : Finset (X × Y)).sum fun xy : X × Y =>
+              H ((Function.update m (x0, y0) t) xy)) =
+          fun t => H t + objConst := by
+      funext t
+      have hfun :
+          (fun xy : X × Y => H ((Function.update m (x0, y0) t) xy)) =
+            Function.update (fun xy : X × Y => H (m xy)) (x0, y0) (H t) := by
+        funext xy
+        by_cases hxy : xy = (x0, y0) <;> simp [Function.update, hxy]
+      rw [hfun]
+      rw [Finset.sum_update_of_mem (Finset.mem_univ (x0, y0))]
+      simp [objConst]
+    have hObjDiff :
+        DifferentiableAt ℝ
+          (fun t =>
+            (Finset.univ : Finset (X × Y)).sum fun xy : X × Y =>
+              H ((Function.update m (x0, y0) t) xy))
+          t0 := by
+      have : DifferentiableAt ℝ (fun t => H t + objConst) t0 := by
+        simpa [t0] using hH.add (differentiableAt_const (c := objConst))
+      simpa [hObjEq] using this
+
+    let rowConst : ℝ := (Finset.univ.erase x0).sum fun x : X => α x * g x (rowSum m x)
+    have hRowEq :
+        (fun t =>
+            (Finset.univ : Finset X).sum fun x : X =>
+              α x * g x (rowSum (Function.update m (x0, y0) t) x)) =
+          fun t => α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0) + rowConst := by
+      funext t
+      have hsplit :
+          (Finset.univ : Finset X).sum (fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) =
+            α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0)
+              + (Finset.univ.erase x0).sum
+                  (fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) := by
+        have hx0 : x0 ∈ (Finset.univ : Finset X) := Finset.mem_univ x0
+        have hsum :=
+          (Finset.sum_erase_add (s := (Finset.univ : Finset X))
+            (f := fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) hx0).symm
+        calc
+          ((Finset.univ : Finset X).sum fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) =
+              (Finset.univ.erase x0).sum
+                  (fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x))
+                + α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0) := hsum
+          _ =
+              α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0)
+                + (Finset.univ.erase x0).sum
+                    (fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) := by
+            ac_rfl
+      have hErase :
+          (Finset.univ.erase x0).sum (fun x : X => α x * g x (rowSum (Function.update m (x0, y0) t) x)) =
+            rowConst := by
+        refine Finset.sum_congr rfl ?_
+        intro x hx
+        have hxne : x ≠ x0 := (Finset.mem_erase.mp hx).1
+        simp [rowSum_update_of_ne (m := m) (x0 := x0) (y0 := y0) (t := t) hxne]
+      simpa using (by rw [hsplit, hErase])
+    have hRowDiff :
+        DifferentiableAt ℝ
+          (fun t =>
+            (Finset.univ : Finset X).sum fun x : X =>
+              α x * g x (rowSum (Function.update m (x0, y0) t) x))
+          t0 := by
+      have hRowSumDiff :
+          DifferentiableAt ℝ (fun t => rowSum (Function.update m (x0, y0) t) x0) t0 := by
+        -- `rowSum (update … t) x0 = t + const`
+        simp [rowSum_update_eq (m := m) (x0 := x0) (y0 := y0)]
+      have hRowAt : rowSum (Function.update m (x0, y0) t0) x0 = rowSum m x0 := by
+        simp [t0, Function.update_eq_self]
+      have hg0 : DifferentiableAt ℝ (g x0) (rowSum (Function.update m (x0, y0) t0) x0) := by
+        simpa [hRowAt, t0] using hg
+      have hComp : DifferentiableAt ℝ (fun t => g x0 (rowSum (Function.update m (x0, y0) t) x0)) t0 :=
+        hg0.comp t0 hRowSumDiff
+      have hMain :
+          DifferentiableAt ℝ
+            (fun t => α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0) + rowConst)
+            t0 := by
+        have hmul :
+            DifferentiableAt ℝ (fun t => α x0 * g x0 (rowSum (Function.update m (x0, y0) t) x0)) t0 :=
+          (differentiableAt_const (c := α x0)).mul hComp
+        exact hmul.add (differentiableAt_const (c := rowConst))
+      simpa [hRowEq] using hMain
+
+    let colConst : ℝ := (Finset.univ.erase y0).sum fun y : Y => β y * h y (colSum m y)
+    have hColEq :
+        (fun t =>
+            (Finset.univ : Finset Y).sum fun y : Y =>
+              β y * h y (colSum (Function.update m (x0, y0) t) y)) =
+          fun t => β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0) + colConst := by
+      funext t
+      have hsplit :
+          (Finset.univ : Finset Y).sum (fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y)) =
+            β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0)
+              + (Finset.univ.erase y0).sum
+                  (fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y)) := by
+        have hy0 : y0 ∈ (Finset.univ : Finset Y) := Finset.mem_univ y0
+        have hsum :=
+          (Finset.sum_erase_add (s := (Finset.univ : Finset Y))
+            (f := fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y)) hy0).symm
+        calc
+          ((Finset.univ : Finset Y).sum fun y : Y =>
+              β y * h y (colSum (Function.update m (x0, y0) t) y)) =
+              (Finset.univ.erase y0).sum
+                  (fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y))
+                + β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0) := hsum
+          _ =
+              β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0)
+                + (Finset.univ.erase y0).sum
+                    (fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y)) := by
+            ac_rfl
+      have hErase :
+          (Finset.univ.erase y0).sum (fun y : Y => β y * h y (colSum (Function.update m (x0, y0) t) y)) =
+            colConst := by
+        refine Finset.sum_congr rfl ?_
+        intro y hy
+        have hyne : y ≠ y0 := (Finset.mem_erase.mp hy).1
+        simp [colSum_update_of_ne (m := m) (y0 := y0) (x0 := x0) (t := t) hyne]
+      simpa using (by rw [hsplit, hErase])
+    have hColDiff :
+        DifferentiableAt ℝ
+          (fun t =>
+            (Finset.univ : Finset Y).sum fun y : Y =>
+              β y * h y (colSum (Function.update m (x0, y0) t) y))
+          t0 := by
+      have hColSumDiff :
+          DifferentiableAt ℝ (fun t => colSum (Function.update m (x0, y0) t) y0) t0 := by
+        simp [colSum_update_eq (m := m) (x0 := x0) (y0 := y0)]
+      have hColAt : colSum (Function.update m (x0, y0) t0) y0 = colSum m y0 := by
+        simp [t0, Function.update_eq_self]
+      have hh0 : DifferentiableAt ℝ (h y0) (colSum (Function.update m (x0, y0) t0) y0) := by
+        simpa [hColAt, t0] using hh
+      have hComp : DifferentiableAt ℝ (fun t => h y0 (colSum (Function.update m (x0, y0) t) y0)) t0 :=
+        hh0.comp t0 hColSumDiff
+      have hMain :
+          DifferentiableAt ℝ
+            (fun t => β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0) + colConst)
+            t0 := by
+        have hmul :
+            DifferentiableAt ℝ
+              (fun t => β y0 * h y0 (colSum (Function.update m (x0, y0) t) y0))
+              t0 :=
+          (differentiableAt_const (c := β y0)).mul hComp
+        exact hmul.add (differentiableAt_const (c := colConst))
+      simpa [hColEq] using hMain
+
+    have hf :
+        DifferentiableAt ℝ
+          (fun t => productLagrangian H g h α β (Function.update m (x0, y0) t))
+          t0 := by
+      unfold productLagrangian
+      -- `t ↦ objective - rowConstraints - colConstraints`
+      simpa [sub_eq_add_neg, add_assoc] using ((hObjDiff.sub hRowDiff).sub hColDiff)
+    simpa [f, t0] using hf
+
+  have hf : HasDerivAt f (deriv f t0) t0 := hDiff.hasDerivAt
+  have hder0 : deriv f t0 = 0 := by
+    have hExtr' : IsLocalExtr f t0 := by simpa [f, t0] using hExtr
+    exact hExtr'.hasDerivAt_eq_zero hf
+  have hcrit : HasDerivAt f 0 t0 := by simpa [hder0] using hf
+  have hmain :=
+    lagrange_coordinate_deriv_eq (H := H) (g := g) (h := h) (α := α) (β := β)
+      (m := m) (x0 := x0) (y0 := y0)
+      (by simpa [t0] using hH) (by simpa [t0] using hg) (by simpa [t0] using hh) (by simpa [f, t0] using hcrit)
+  simpa [t0] using hmain
+
+theorem lagrange_coordinate_deriv_eq_product
+    (H : ℝ → ℝ) (g : X → ℝ → ℝ) (h : Y → ℝ → ℝ) (α : X → ℝ) (β : Y → ℝ)
+    (m : X × Y → ℝ) (x0 : X) (y0 : Y)
+    (hH : DifferentiableAt ℝ H (m (x0, y0)))
+    (hg : DifferentiableAt ℝ (g x0) (rowSum m x0))
+    (hh : DifferentiableAt ℝ (h y0) (colSum m y0))
+    (hprod : m (x0, y0) = rowSum m x0 * colSum m y0)
+    (hcrit : HasDerivAt
+      (fun t => productLagrangian H g h α β (Function.update m (x0, y0) t))
+      0 (m (x0, y0))) :
+    deriv H (rowSum m x0 * colSum m y0)
+      = α x0 * deriv (g x0) (rowSum m x0) + β y0 * deriv (h y0) (colSum m y0) := by
+  simpa [hprod] using
+    lagrange_coordinate_deriv_eq (H := H) (g := g) (h := h) (α := α) (β := β)
+      (m := m) (x0 := x0) (y0 := y0) hH hg hh hcrit
+
+theorem lagrange_coordinate_deriv_eq_product_of_isLocalExtr
+    (H : ℝ → ℝ) (g : X → ℝ → ℝ) (h : Y → ℝ → ℝ) (α : X → ℝ) (β : Y → ℝ)
+    (m : X × Y → ℝ) (x0 : X) (y0 : Y)
+    (hH : DifferentiableAt ℝ H (m (x0, y0)))
+    (hg : DifferentiableAt ℝ (g x0) (rowSum m x0))
+    (hh : DifferentiableAt ℝ (h y0) (colSum m y0))
+    (hprod : m (x0, y0) = rowSum m x0 * colSum m y0)
+    (hExtr :
+      IsLocalExtr
+        (fun t => productLagrangian H g h α β (Function.update m (x0, y0) t))
+        (m (x0, y0))) :
+    deriv H (rowSum m x0 * colSum m y0)
+      = α x0 * deriv (g x0) (rowSum m x0) + β y0 * deriv (h y0) (colSum m y0) := by
+  have h :=
+    lagrange_coordinate_deriv_eq_of_isLocalExtr (H := H) (g := g) (h := h) (α := α) (β := β)
+      (m := m) (x0 := x0) (y0 := y0) hH hg hh hExtr
+  simpa [hprod] using h
+
+/-- Path B in the exact “K&S `Hproduct`” shape.
+
+This makes the `x`-only and `y`-only parts explicit as functions of the marginals `m_x, m_y`.
+
+K&S then treat this as a functional equation in the independent variables `m_x, m_y`, and solve it
+in Appendix C under a regularity hypothesis (we use measurability in Path A). -/
+theorem lagrange_Hproduct_eq_of_isLocalExtr
+    (H : ℝ → ℝ) (g : X → ℝ → ℝ) (h : Y → ℝ → ℝ) (α : X → ℝ) (β : Y → ℝ)
+    (m : X × Y → ℝ) (x0 : X) (y0 : Y)
+    (hH : DifferentiableAt ℝ H (m (x0, y0)))
+    (hg : DifferentiableAt ℝ (g x0) (rowSum m x0))
+    (hh : DifferentiableAt ℝ (h y0) (colSum m y0))
+    (hprod : m (x0, y0) = rowSum m x0 * colSum m y0)
+    (hExtr :
+      IsLocalExtr
+        (fun t => productLagrangian H g h α β (Function.update m (x0, y0) t))
+        (m (x0, y0))) :
+    deriv H (rowSum m x0 * colSum m y0) =
+      (fun m_x => α x0 * deriv (g x0) m_x) (rowSum m x0) +
+        (fun m_y => β y0 * deriv (h y0) m_y) (colSum m y0) := by
+  -- The goal is definitional equal to `lagrange_coordinate_deriv_eq_product_of_isLocalExtr`.
+  simpa using
+    lagrange_coordinate_deriv_eq_product_of_isLocalExtr (H := H) (g := g) (h := h) (α := α)
+      (β := β) (m := m) (x0 := x0) (y0 := y0) hH hg hh hprod hExtr
+
+end PathB
+
+/-! ### The Bridge Theorem: Connecting Path A and Path B'
+
+**Path A** (Variational Equation): `H'(m) = B + C · log(m)`
+Integrated: `H(m) = A + Bm + C(m log m - m)`
+
+**Path B'** (Product Entropy Separability): `h'(m) = C/m`
+Integrated: `h(m) = C · log(m) + const`
+
+These are **different functions**, but they're related through the structure of
+the variational potential. The bridge shows how setting appropriate constants
+connects the two forms. -/
+
+/-- **Bridge: Path A with B=0 gives a form compatible with Path B'**.
+
+When `B = 0`, the entropy form is `H(m) = A + C(m log m - m)`.
+This has derivative `H'(m) = C log m`, matching the logarithmic structure. -/
+theorem bridge_pathA_B0_gives_pathB {A C : ℝ} (m : ℝ) (hm : 0 < m) :
+    deriv (entropyForm A 0 C) m = C * Real.log m := by
+  have h := entropyForm_has_derivative A 0 C m hm
+  simp only [zero_add] at h
+  exact h.deriv
+
+/-- **Bridge: Path B' result connects to Path A form**.
+
+If `h(m) = C log m` (Path B form), then defining `H(m) = m · h(m) - C · m`
+gives exactly the entropy form `H(m) = C(m log m - m)`. -/
+theorem bridge_pathB_to_pathA {C : ℝ} (m : ℝ) (_hm : 0 < m) :
+    let h := fun m => C * Real.log m  -- Path B form
+    let H := fun m => m * h m - C * m  -- Transform to Path A form
+    H m = C * (m * Real.log m - m) := by
+  simp only
+  ring
+
+/-- **Unified Theorem**: Both paths lead to the same essential structure.
+
+Setting `A = 0`, `B = 0` in Path A: `H(m) = C(m log m - m)`.
+This is exactly what we get from the transformation of Path B's `h(m) = C log m`. -/
+theorem unified_entropy_structure :
+    ∀ C : ℝ, ∀ m : ℝ, 0 < m →
+      entropyForm 0 0 C m = C * (m * Real.log m - m) := by
+  intro C m _
+  simp only [entropyForm, zero_add, zero_mul]
+
+/-! ### Connection to Probability and Shannon Entropy
+
+This file is the **analytic core**.  Discrete probability specializations live in:
+- `Mettapedia.ProbabilityTheory.KnuthSkilling.Divergence` (K&S Section 6)
+- `Mettapedia.ProbabilityTheory.KnuthSkilling.InformationEntropy` (K&S Section 8)
+-/
+
+/-! ### Summary: The Complete K&S Derivation
+
+We have now formalized:
+
+1. **Path A (Variational Equation)**: `variationalEquation_solution_measurable`
+   - Input: `H'(mₓ · mᵧ) = λ(mₓ) + μ(mᵧ)` + measurability
+   - Output: `H'(m) = B + C log m`
+
+2. **Path B (Lagrange Multipliers)**: `lagrange_coordinate_deriv_eq`
+   - Input: a stationary point of the separable `productLagrangian` on an `x`-by-`y` product
+   - Output: the K&S separated coordinate equation `H'(m_xy) = λ(x) + μ(y)` (in its explicit form)
+
+3. **Bridge Theorems**: `bridge_pathA_B0_gives_pathB`, `bridge_pathB_to_pathA`
+   - Path A's `H(m) = C(m log m - m)` is the "extensive" form
+   - Path B's `h(m) = C log m` is the "intensive" form
+   - Related by: `H(m) = m · h(m) - C · m`
+-/
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.VariationalTheorem

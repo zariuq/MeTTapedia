@@ -29,37 +29,45 @@
   frame=single,
   numbers=left,
   numberstyle=\tiny\color{gray},
-  literate=
-    {⊕}{$\oplus$}1
-    {⊗}{$\otimes$}1
-    {→}{$\to$}1
-    {←}{$\gets$}1
-    {⟨}{$\langle$}1
-    {⟩}{$\rangle$}1
-    {∀}{$\forall$}1
-    {∃}{$\exists$}1
-    {≤}{$\leq$}1
-    {≥}{$\geq$}1
-    {≠}{$\neq$}1
-    {∈}{$\in$}1
-    {∉}{$\notin$}1
-    {⊔}{$\sqcup$}1
-    {⊓}{$\sqcap$}1
-    {∧}{$\wedge$}1
-    {∨}{$\vee$}1
-    {¬}{$\neg$}1
-    {ℝ}{$\mathbb{R}$}1
-    {ℕ}{$\mathbb{N}$}1
-    {Θ}{$\Theta$}1
-    {Ψ}{$\Psi$}1
-    {ψ}{$\psi$}1
-    {ζ}{$\zeta$}1
-    {ξ}{$\xi$}1
-    {η}{$\eta$}1
-    {α}{$\alpha$}1
-    {β}{$\beta$}1
-    {γ}{$\gamma$}1
-}
+	  literate=
+	    {⊕}{$\oplus$}1
+	    {⊗}{$\otimes$}1
+	    {→}{$\to$}1
+	    {←}{$\gets$}1
+	    {↔}{$\leftrightarrow$}1
+	    {⟨}{$\langle$}1
+	    {⟩}{$\rangle$}1
+	    {∀}{$\forall$}1
+	    {∃}{$\exists$}1
+	    {≤}{$\leq$}1
+	    {≥}{$\geq$}1
+	    {≠}{$\neq$}1
+	    {∈}{$\in$}1
+	    {∉}{$\notin$}1
+	    {⊥}{$\bot$}1
+	    {⊤}{$\top$}1
+	    {⊔}{$\sqcup$}1
+	    {⊓}{$\sqcap$}1
+	    {∧}{$\wedge$}1
+	    {∨}{$\vee$}1
+	    {¬}{$\neg$}1
+	    {ℝ}{$\mathbb{R}$}1
+	    {ℕ}{$\mathbb{N}$}1
+	    {Θ}{$\Theta$}1
+	    {Ψ}{$\Psi$}1
+	    {ψ}{$\psi$}1
+	    {ζ}{$\zeta$}1
+	    {ξ}{$\xi$}1
+	    {η}{$\eta$}1
+	    {α}{$\alpha$}1
+	    {β}{$\beta$}1
+	    {γ}{$\gamma$}1
+	    {δ}{$\delta$}1
+	    {ε}{$\varepsilon$}1
+	    {μ}{$\mu$}1
+	    {Ω}{$\Omega$}1
+	    {≃}{$\simeq$}1
+	}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -511,6 +519,60 @@ H'(m_x \cdot m_y) = \lambda(m_x) + \mu(m_y) \label{eq:variational}
 \end{equation}
 where $H' = dH/dm$ and $m_x, m_y > 0$.
 
+\subsection{Path B: Lagrange Multipliers (Deriving the Functional Equation)}
+
+In the paper, Equation~\eqref{eq:variational} is motivated by a Lagrange multiplier argument:
+K\&S begin with the variational constraint form (their Eq.~\texttt{vary2}), introduce multipliers
+(\texttt{vary3}), and then specialize to a two-dimensional $x$-by-$y$ direct-product application.
+There, the direct-product rule gives a target value $m(x\times y)=m_x m_y$, and taking the
+coordinate derivative with respect to $m(x\times y)$ yields their Eq.~\texttt{Hproduct}:
+\[
+H'_{xy}(m_x m_y) = \lambda_1 f_1(m_x) + \lambda_2 f_2(m_y).
+\]
+
+In Lean we formalize the \emph{coordinate-derivative calculation} explicitly, without smuggling it in
+as an axiom.  The key lemma is
+\texttt{lagrange\_coordinate\_deriv\_eq\_product}
+(\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/VariationalTheorem.lean}), which models
+``$\partial/\partial\,m(x\times y)$'' as the 1D derivative along the update map
+$t \mapsto \mathrm{update}\ m\ (x,y)\ t$.
+It assumes only local differentiability of the relevant terms and a stationarity hypothesis stated as a
+\texttt{HasDerivAt ... 0 ...} condition (so this is a real derivative, not the default \texttt{deriv} value at non-differentiable points).
+
+\begin{lstlisting}[caption={Path B: coordinate-derivative separation at a stationary point}]
+theorem lagrange_coordinate_deriv_eq_product
+    (H : Real -> Real) (g : X -> Real -> Real) (h : Y -> Real -> Real)
+    (alpha : X -> Real) (beta : Y -> Real) (m : Prod X Y -> Real) (x0 : X) (y0 : Y)
+    (hprod : m (x0, y0) = rowSum m x0 * colSum m y0)
+    (hcrit : HasDerivAt (fun t => productLagrangian H g h alpha beta
+              (Function.update m (x0, y0) t)) 0 (m (x0, y0))) :
+    deriv H (rowSum m x0 * colSum m y0)
+      = alpha x0 * deriv (g x0) (rowSum m x0)
+        + beta y0 * deriv (h y0) (colSum m y0)
+\end{lstlisting}
+
+This establishes K\&S's separated form \emph{at a stationary point} of a separable Lagrangian.
+The global functional-equation \eqref{eq:variational} is then treated by Path A (below), which is the
+classification step that yields the logarithmic solution.
+
+\paragraph{Fully honest stationarity.}
+To avoid assuming stationarity as an axiom, we also provide a variant that derives the
+\texttt{HasDerivAt ... 0 ...} hypothesis from a local extremum via Fermat's theorem:
+\texttt{lagrange\_coordinate\_deriv\_eq\_product\_of\_isLocalExtr}
+\ (\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/VariationalTheorem.lean}).
+We then package the result in the exact ``K\&S \texttt{Hproduct}'' shape as
+\texttt{lagrange\_Hproduct\_eq\_of\_isLocalExtr}.
+
+\paragraph{Universality/richness (Path B $\to$ Path A).}
+Path B establishes a separated coordinate equation at a \emph{particular} stationary point of a
+separable constrained problem.
+To treat this as a functional equation valid for all positive pairs $(m_x,m_y)$ (the input required
+by Path A), K\&S rely on an informal ``generality across applications'' premise: the same potential
+is intended to apply uniformly across a sufficiently rich class of inference problems.
+In Lean we make this bridge assumption explicit as the structure
+\texttt{KSVariationalGenerality} (\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/VariationalTheorem.lean}),
+so nothing is smuggled: either you assume it, or you do not get a global functional equation.
+
 \subsection{K\&S's Differentiability Claim (and Why It's Wrong)}
 
 K\&S assert that ``\emph{any variational potential must \ldots be differentiable at least once}'' because it applies to arbitrarily small perturbations.
@@ -532,8 +594,42 @@ This directly refutes K\&S's claim in their specific modeling domain.
 
 Nonsmooth variational problems are not exotic: absolute value, max functions, and $\ell_1$ penalties are core tools in modern optimization.
 Rockafellar--Wets~\cite{RockafellarWets} explicitly stress that max/min operations often fail to preserve smoothness.
+These counterexamples are formalized in \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Counterexamples/VariationalNonsmooth.lean}.
 
 \subsection{The Correct Approach: Measurability}
+
+\subsubsection{Minimal assumptions (sound formal statement)}
+
+It is useful to separate two logically distinct issues:
+\begin{enumerate}
+\item \emph{What hypotheses are needed for the functional-equation \emph{classification} $H'(m)=B+C\log m$?}
+\item \emph{What hypotheses are needed to interpret $H'$ as an actual derivative of some potential $H$?}
+\end{enumerate}
+
+Our Lean formalization provides both formulations, and makes each assumption explicit.
+The minimal package for the \emph{classification step} is:
+\begin{description}
+\item[\textbf{(C0) Domain / log-coordinates.}] We work on positive masses $m>0$ so that $\log m$ is defined and
+  $\log(m_x m_y)=\log m_x+\log m_y$ can be used.
+\item[\textbf{(C1) Variational functional equation.}] The separation-of-variables equation
+  $H'(m_x m_y)=\lambda(m_x)+\mu(m_y)$ holds for all $m_x,m_y>0$ (Equation~\eqref{eq:variational}).
+\item[\textbf{(C2) Anti-pathology regularity.}] Some regularity is required to rule out Hamel-basis pathologies of
+  Cauchy's equation after the $u=\log m$ change of variables.  We take \textbf{Borel measurability} of $H'$ as the
+  core hypothesis.
+\end{description}
+
+This is exactly the statement proved by our main Lean theorem
+\texttt{variationalEquation\_solution\_measurable}
+(\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/VariationalTheorem.lean}).
+It \emph{does not} assume that $H'$ comes from a differentiable potential.
+
+If one also wants a theorem phrased in terms of an underlying potential $H$, one adds an optional hypothesis:
+\begin{description}
+\item[\textbf{(C3) Derivative interpretation (optional).}] Either set $H'=\mathrm{deriv}\,H$, or assume
+  $\mathrm{HasDerivAt}\,H\,(H'(m))\,m$ for all $m>0$.
+\end{description}
+In Lean, (C3) is captured by the corollary \texttt{variationalEquation\_solution} (the \texttt{deriv} version), which
+automatically discharges (C2) via \texttt{measurable\_deriv}.
 
 Our formalization makes the regularity assumption \emph{explicit}.
 The key insight is that the functional equation~\eqref{eq:variational}, after the log-coordinate change $u = \log m$, reduces to \textbf{Cauchy's additive functional equation}:
@@ -541,6 +637,7 @@ The key insight is that the functional equation~\eqref{eq:variational}, after th
 
 Without regularity, Cauchy's equation has pathological non-linear solutions (via Hamel basis constructions, assuming the Axiom of Choice).
 To obtain the unique linear solution $f(t) = Ct$, \emph{some} regularity is required.
+The existence of non-linear additive solutions is shown by a standard Hamel-basis construction; we formalize this as a counterexample generator in \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Counterexamples/CauchyPathology.lean}.
 
 The standard hierarchy of sufficient conditions includes:
 \begin{itemize}
@@ -550,11 +647,27 @@ The standard hierarchy of sufficient conditions includes:
 \item Monotone on any interval
 \end{itemize}
 
+\begin{center}
+\begin{tabular}{|l|c|c|p{6.2cm}|}
+\hline
+\textbf{Regularity gate for Cauchy} & \textbf{Forces linearity?} & \textbf{Automatic for $\mathrm{deriv}$?} & \textbf{Comment} \\
+\hline
+Borel measurable & yes & yes & Our chosen explicit replacement for K\&S ``blurring''; discharged by \texttt{measurable\_deriv}. \\
+\hline
+Continuous at one point & yes & no & Classical Shannon/Faddeev-style hypothesis; also implies measurability. \\
+\hline
+Monotone on an interval & yes & no & Order-theoretic alternative; implies measurability (hence works with our proof). \\
+\hline
+Bounded on an interval & yes & no & Another standard gate excluding Hamel-basis pathologies. \\
+\hline
+\end{tabular}
+\end{center}
+
 \textbf{Our choice}: We use \textbf{Borel measurability} as the regularity assumption because:
 \begin{enumerate}
 \item It is among the weakest standard conditions
 \item It is \textbf{automatic} for derivatives: if $H$ is differentiable, then $H' = \text{deriv}\, H$ is Borel measurable (via \texttt{measurable\_deriv} in mathlib)
-\item It matches what K\&S's convolution ``blurring'' argument implicitly requires
+\item It matches what K\&S's convolution ``blurring'' argument implicitly requires (one cannot even write the convolution integral without measurability/integrability hypotheses)
 \end{enumerate}
 
 \begin{lstlisting}[caption={Main Variational Theorem (measurable version)}]
@@ -587,6 +700,42 @@ An alternative regularity assumption that mirrors Appendix A's order-theoretic s
 However, monotonicity is \emph{stronger} than measurability (not all measurable functions are monotone).
 Our core theorem uses the weaker assumption; monotonicity can be stated as a corollary.
 
+\subsection{Shore--Johnson (1980) comparison}
+
+Shore--Johnson's axioms for maximum entropy inference (IEEE Trans.\ IT, 1980) include a ``system independence''
+requirement that can be viewed as another route to the same logarithmic structure.
+In a discrete, summand-level setting:
+\begin{itemize}
+\item Assume an atomic divergence $d(p,q)$ satisfies $d(0,q)=0$ and that the sum
+  $\sum_i d(p_i,q_i)$ is additive over product distributions (an SJ4-style hypothesis).
+\item Dirac-delta test distributions then force a multiplicative Cauchy equation for
+  $g(q) := d(1,q)$ on the probability domain $0<q\le 1$.
+\item With a regularity gate (we again take measurability), this implies $g(q)=C\log q$.
+\end{itemize}
+
+We formalize this ``Dirac extraction $\to$ log'' lemma as
+\texttt{d\_one\_eq\_const\_mul\_log\_of\_measurable}
+in \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnson.lean}.
+This provides a clean comparison point between Shore--Johnson's system-independence intuition and
+K\&S Appendix~C: both rely on the same functional-equation rigidity, and both require an explicit
+anti-pathology hypothesis to exclude Hamel-basis solutions.
+
+We also formalize a small but useful \emph{KL uniqueness} lemma (``uniqueness up to scale, within a
+ratio-form class''):
+\begin{itemize}
+\item If $g:(0,\infty)\to\mathbb{R}$ satisfies $g(xy)=g(x)+g(y)$ and is Borel measurable, then $g(x)=C\log x$.
+\item Hence any ratio-form atom divergence $d(w,u)=w\,g(w/u)$ (for $w,u>0$) must be a constant multiple of the KL atom
+$w\log(w/u)$.
+\item Without the regularity gate, uniqueness fails: we exhibit a multiplicative-additive (Hamel-basis) counterexample
+and the induced ratio-form $d$ is \emph{not} a constant multiple of KL.
+\end{itemize}
+These results are proved in \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnsonKL.lean}.
+For convenience, the project re-exports the key Shore--Johnson lemmas we use in
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnsonTheorem.lean}.
+We then connect the resulting atom-level KL identity to the project's finite KL divergence
+definition on \texttt{ProbDist} (Section~8 layer) in
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnsonBridge.lean}.
+
 \subsection{The Entropy/Divergence Form}
 
 From the variational theorem, integrating $H'(m) = B + C \log m$ yields:
@@ -595,7 +744,8 @@ From the variational theorem, integrating $H'(m) = B + C \log m$ yields:
 With appropriate choices of constants ($C = 1$, $B = -\log u$, $A = u$), this specializes to the \textbf{Kullback--Leibler divergence}:
 \[D(w \| u) = \sum_i \left( u_i - w_i + w_i \log \frac{w_i}{u_i} \right)\]
 
-This is formalized in \texttt{Divergence.lean} with proofs of non-negativity, zero iff equal, and asymmetry.
+This is formalized in \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Divergence.lean} with proofs of non-negativity, zero iff equal, and asymmetry.
+For probability distributions (equal total mass), the linear terms $\sum_i (u_i - w_i)$ cancel, leaving the usual $\sum_i w_i \log(w_i/u_i)$.
 
 \subsection{Summary: What K\&S Should Have Said}
 
@@ -610,7 +760,45 @@ No circularity: we assume (functional equation + measurability), and \emph{deriv
 \section{Probability and Conditional Inference}
 
 K\&S's Axiom 5 (chaining associativity) extends the framework to conditional probability.
-This formalization is future work, building on the measure-theoretic foundations established here.
+We formalize the chain product rule, Bayes' theorem, and the ratio-of-measures representation in
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ConditionalProbability/Basic.lean}.
+
+\section{Information and Entropy (Section 8)}
+
+K\&S Section 8 specializes the variational potential to (i) information/divergence for probability
+distributions and (ii) Shannon entropy.
+We formalize this in
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/InformationEntropy.lean}.
+
+For comparison (and to honor the historical development), we also formalize classical axiomatic
+characterizations of Shannon entropy \emph{independently of K\&S}:
+\begin{itemize}
+\item Shannon's original 1948 axioms + uniqueness (Appendix~2 of Shannon): \texttt{Mettapedia/InformationTheory/ShannonEntropy/Shannon1948.lean} (sorry-free).
+\item Faddeev (1956) and Shannon--Khinchin (1957) axiom systems: \texttt{Mettapedia/InformationTheory/ShannonEntropy/Faddeev.lean} and \texttt{Mettapedia/InformationTheory/ShannonEntropy/ShannonKhinchin.lean} (both WIP).
+\item The equivalence \emph{glue} is kept in a separate file so the Shannon--Khinchin development does not depend on Faddeev: \texttt{Mettapedia/InformationTheory/ShannonEntropy/Equivalence.lean}.
+\end{itemize}
+
+Highlights:
+\begin{itemize}
+\item \textbf{Finite and extended KL}: a finite KL definition under ``support positivity'' and an extended
+  \texttt{ENNReal}-valued version returning $\top$ when $p_i>0$ but $q_i=0$
+  (\texttt{klDivergence}, \texttt{klDivergenceTop}).
+\item \textbf{Mathlib KL bridge (finite $\to$ general)}: we show our \texttt{klDivergenceTop} on \texttt{Fin n}
+  agrees with mathlib's measure-theoretic \texttt{InformationTheory.klDiv} on the associated Dirac-sum measures
+  (\texttt{klDiv\_toMeasureTop\_eq\_klDivergenceTop} in
+  \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/InformationEntropyMathlib.lean}).
+  This provides a clean ``infinite/continuum'' variant by reusing mathlib's general KL divergence.
+\item \textbf{Mathlib KL bridge (countable discrete)}: for sequences on $\mathbb{N}$ we connect the K\&S
+  countable divergence sum \texttt{divergenceInf} to \texttt{InformationTheory.klDiv} for Dirac-sum measures
+  (\texttt{Seq.klDiv\_toMeasureTop\_eq\_divergenceInfTop} and
+  \texttt{Seq.klDiv\_toMeasureTop\_eq\_ofReal\_divergenceInf} in
+  \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/DivergenceMathlib.lean}).
+\item \textbf{Shannon properties}: entropy of the uniform distribution is $\log n$
+  (\texttt{shannonEntropy\_uniform}), strict monotonicity in $n$ for uniform distributions
+  (\texttt{shannonEntropy\_uniform\_strictMono}), grouping/additivity in a binary refinement
+  (\texttt{shannonEntropy\_grouping\_probDist}), and continuity on the interior of the simplex
+  (\texttt{shannonEntropy\_continuous\_on\_interior}).
+\end{itemize}
 
 \section{Conclusion}
 
@@ -920,7 +1108,7 @@ This theorem states: if a linearly ordered cancellative semigroup has no anomalo
 \begin{itemize}
 \item \texttt{Semigroup}: $\text{mul} := \text{op}$, $\text{mul\_assoc} := \text{op\_assoc}$
 \item \texttt{IsOrderedCancelSemigroup}: From \texttt{op\_strictMono\_left/right}
-\item \texttt{Pow ℕ+}: $x^n := \text{iterate\_op}\, x\, n$
+\item \texttt{Pow \(\mathbb{N}^+\)}: $x^n := \text{iterate\_op}\, x\, n$
 \item \texttt{PNatPowAssoc}: Requires commutativity, which Eric proves follows from $\neg\text{has\_anomalous\_pair}$!
 \end{itemize}
 

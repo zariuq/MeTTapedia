@@ -1,0 +1,1638 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{booktabs}
+
+\geometry{margin=1in}
+
+% Listings configuration for Lean code
+\lstdefinelanguage{Lean}{
+  morekeywords={theorem, lemma, def, axiom, class, structure, instance, where, by, import, namespace, open, section, variable, example, sorry, noncomputable, inductive, abbrev},
+  sensitive=true,
+  morecomment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  morestring=[b]",
+}
+
+\lstset{
+  language=Lean,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{red},
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  literate=
+    {->}{$\to$}1
+    {<-}{$\gets$}1
+    {<->}{$\leftrightarrow$}1
+    {forall}{$\forall$}1
+    {exists}{$\exists$}1
+    {<=}{$\leq$}1
+    {>=}{$\geq$}1
+    {!=}{$\neq$}1
+    {Real}{$\mathbb{R}$}1
+    {Nat}{$\mathbb{N}$}1
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{Knuth-Skilling Formalization\\{\Large Review Walkthrough}}
+\author{Mettapedia Project}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides a systematic walkthrough of the Lean 4 formalization of Knuth \& Skilling's ``Foundations of Inference'' (2012).
+Each section lists the main theorem statements with their Lean proofs and file locations, organized by the corresponding K\&S paper sections.
+The formalization is \textbf{complete with zero sorries} in all core files.
+\end{abstract}
+
+\tableofcontents
+
+\newpage
+
+%==============================================================================
+\section{Overview and File Structure}
+%==============================================================================
+
+\subsection{K\&S Paper Coverage}
+
+\begin{center}
+\small
+\begin{longtable}{p{2.5cm}p{3.5cm}p{6cm}p{1.5cm}}
+\toprule
+\textbf{K\&S Section} & \textbf{Topic} & \textbf{Lean Files} & \textbf{Status} \\
+\midrule
+\endhead
+Sections 1--2 & Sum-side Axioms (Sym 0--2) & \texttt{Basic.lean}, \texttt{Algebra.lean} & Complete \\
+Section 3 & Probability & \texttt{SymmetricalFoundation.lean} & Complete \\
+Section 4 & Quantum theory & \texttt{SymmetricalFoundation.lean}, \texttt{TwoDimClassification.lean} & Complete \\
+Section 6 & Divergence & \texttt{Divergence.lean} & Complete \\
+Section 7 & Conditional prob. & \texttt{ConditionalProbability/Basic.lean} & Complete \\
+Section 8 & Info/Entropy & \texttt{InformationEntropy.lean} & Complete \\
+Appendix A & Representation & \texttt{RepresentationTheorem/Main.lean} & Complete \\
+Appendix B & Product (Sym 3--4) & \texttt{ProductTheorem/Main.lean} & Complete \\
+Appendix C & Variational & \texttt{VariationalTheorem.lean} & Complete \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Key Files}
+
+\begin{center}
+\begin{longtable}{p{7cm}p{7cm}}
+\toprule
+\textbf{File Path} & \textbf{Contents} \\
+\midrule
+\endhead
+\texttt{.../KnuthSkilling.lean} & Main entrypoint (imports all) \\
+\texttt{.../KnuthSkilling/Basic.lean} & Core: \texttt{KnuthSkillingAlgebraBase} (Sym 0--2) \\
+\texttt{.../KnuthSkilling/Algebra.lean} & \texttt{iterate\_op}, \texttt{KSSeparation} \\
+\texttt{.../Separation/SandwichSeparation.lean} & Archimedean + Commutativity \\
+\texttt{.../Separation/HolderEmbedding.lean} & Identity-free representation (Hölder path) \\
+\texttt{.../RepresentationTheorem/Main.lean} & Appendix A theorem (public API) \\
+\texttt{.../ProductTheorem/Main.lean} & Appendix B: K\&S path (via Appendix A) \\
+\texttt{.../ProductTheorem/Alternative/DirectProof.lean} & Appendix B: Direct algebraic path \\
+\texttt{.../ProductTheorem/ScaledMultRep.lean} & Appendix B: Common interface \\
+\texttt{.../VariationalTheorem.lean} & Appendix C entropy \\
+\texttt{.../SymmetricalFoundation.lean} & Section 4 quantum theory \\
+\texttt{.../TwoDimClassification.lean} & 2D algebra classification \\
+\texttt{.../Divergence.lean} & Section 6 divergence \\
+\texttt{.../InformationEntropy.lean} & Section 8 entropy \\
+\texttt{.../ConditionalProbability/Basic.lean} & Section 7 probability calculus \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+All paths are relative to the Mettapedia project root directory.
+
+%==============================================================================
+\section{Core Sum-Side Axioms (K\&S Sections 1--2)}
+%==============================================================================
+
+\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Basic.lean}
+
+\subsection{K\&S Sum-Side Symmetries (0--2)}
+
+K\&S present symmetries in two groups. The \textbf{sum-side} symmetries (0--2) govern the combination operation $\oplus$:
+\begin{itemize}
+\item \textbf{Symmetry 0} (Fidelity): $\bar{x} < \bar{y} \Rightarrow x < y$
+\item \textbf{Symmetry 1} (Monotonicity): $\bar{x} < \bar{y} \Rightarrow \bar{x} \oplus \bar{z} < \bar{y} \oplus \bar{z}$
+\item \textbf{Symmetry 2} (Associativity): $(\bar{x} \oplus \bar{y}) \oplus \bar{z} = \bar{x} \oplus (\bar{y} \oplus \bar{z})$
+\end{itemize}
+
+The \textbf{product-side} symmetries (3--4) are formalized separately in \texttt{ProductTheorem/Main.lean} (see Section~\ref{sec:product}).
+
+\begin{definition}[\texttt{KSSemigroupBase}]
+\textbf{Lines 148--156, Basic.lean}
+
+Identity-free core structure containing only Symmetries 0--2.
+\end{definition}
+
+\begin{lstlisting}[caption={Identity-free semigroup base}]
+class KSSemigroupBase (alpha : Type*) extends LinearOrder alpha where
+  op : alpha -> alpha -> alpha                     -- combination operation
+  op_assoc : forall x y z : alpha, op (op x y) z = op x (op y z)  -- Sym 2
+  op_strictMono_left : forall y : alpha, StrictMono (fun x => op x y)   -- Sym 0+1
+  op_strictMono_right : forall x : alpha, StrictMono (fun y => op x y)  -- Sym 0+1
+\end{lstlisting}
+
+\begin{definition}[\texttt{KnuthSkillingAlgebraBase}]
+\textbf{Lines 172--180, Basic.lean}
+
+Extends \texttt{KSSemigroupBase} with identity element and positivity.
+\end{definition}
+
+\begin{lstlisting}[caption={Core K\&S algebra structure (extends semigroup base)}]
+class KnuthSkillingAlgebraBase (alpha : Type*) extends KSSemigroupBase alpha where
+  ident : alpha                                    -- identity element
+  op_ident_right : forall x : alpha, op x ident = x
+  op_ident_left : forall x : alpha, op ident x = x
+  ident_le : forall x : alpha, ident <= x          -- positivity
+\end{lstlisting}
+
+\begin{remark}[Implicit Linear Order]
+K\&S never explicitly state that elements are totally ordered, but their proofs rely on trichotomy.
+We make this explicit via \texttt{LinearOrder}.
+\end{remark}
+
+\begin{remark}[Identity Element---NOT in K\&S Axioms]
+\textbf{Important}: The identity element (\texttt{ident}) is \textbf{not} among K\&S's numbered symmetries.
+K\&S explicitly state that the bottom element $\bot$ is \textbf{optional}:
+\begin{quote}
+``with the bottom element optional'' (K\&S line 320)\\
+``Some mathematicians opt to include the bottom element on aesthetic grounds, whereas others opt to exclude it'' (K\&S lines 340--341)
+\end{quote}
+
+Our formalization \textbf{proves} K\&S's claim via the \texttt{KSSemigroupBase} hierarchy:
+
+\begin{itemize}
+\item \textbf{Identity-free path} (\texttt{HolderEmbedding.lean:296--302}): \texttt{representation\_semigroup} proves the representation theorem without identity, giving $\Theta : \alpha \to \mathbb{R}$ with order-preservation and additivity.
+\item \textbf{With identity} (\texttt{HolderEmbedding.lean:309--312}): \texttt{identity\_gives\_canonical\_normalization} shows identity provides \textbf{canonical normalization}: $\Theta(\text{ident}) = 0$. Without identity, $\Theta$ is defined only up to an additive constant.
+\end{itemize}
+
+\textbf{Architectural hierarchy}:
+\begin{center}
+\texttt{KSSemigroupBase} (identity-free) $\xrightarrow{\text{extends}}$ \texttt{KnuthSkillingAlgebraBase} (with identity)
+\end{center}
+
+Most of the formalization uses \texttt{KnuthSkillingAlgebraBase} for historical reasons---the development was done with identity first---as well as convenience (iteration from $n=0$, canonical zero point), but the core representation theorem is proven at the identity-free \texttt{KSSemigroupBase} level.
+\end{remark}
+
+\begin{remark}[Unbundled Axiom Predicates]
+\textbf{Lines 143--166, Basic.lean}
+
+In addition to the bundled typeclasses, we provide \textbf{unbundled predicates} for each axiom.
+This enables flexible hypothesis tracking---use individual predicates when you need minimal assumptions,
+or bundled classes when you want ergonomic access to multiple axioms.
+
+\textbf{Sum-side predicates} (Basic.lean):
+\begin{itemize}
+\item \texttt{OpAssoc op} (line 143): $\forall x\, y\, z,\; \text{op}(\text{op}(x, y), z) = \text{op}(x, \text{op}(y, z))$
+\item \texttt{OpStrictMonoLeft op} (line 147): $\forall y,\; \text{StrictMono}(\lambda x.\, \text{op}(x, y))$
+\item \texttt{OpStrictMonoRight op} (line 151): $\forall x,\; \text{StrictMono}(\lambda y.\, \text{op}(x, y))$
+\item \texttt{OpIdentLeft op e} (line 155): $\forall x,\; \text{op}(e, x) = x$
+\item \texttt{OpIdentRight op e} (line 159): $\forall x,\; \text{op}(x, e) = x$
+\item \texttt{IdentIsMin e} (line 163): $\forall x,\; e \leq x$
+\end{itemize}
+
+\textbf{Connection theorems}: The \texttt{KSSemigroupBase} and \texttt{KnuthSkillingAlgebraBase} namespaces
+provide lemmas like \texttt{KSSemigroupBase.opAssoc} that extract the unbundled predicate from a bundled instance.
+\end{remark}
+
+\subsection{Iteration}
+
+\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Algebra.lean}
+
+\begin{definition}[\texttt{iterate\_op}]
+\textbf{Lines 23--25, Algebra.lean}
+
+\textbf{K\&S Paper Reference}: This corresponds to K\&S's use of ``$n$ copies of $x$'' in their proofs,
+written as $x^n$ or $nx$ depending on context (see K\&S equations around line 370--380 in the TeX source).
+The iteration builds repeated applications of $\oplus$: $x^n = \underbrace{x \oplus x \oplus \cdots \oplus x}_{n \text{ times}}$.
+\end{definition}
+
+\begin{lstlisting}[caption={Iteration definition}]
+def iterate_op (x : alpha) : Nat -> alpha
+  | 0 => ident
+  | n + 1 => op x (iterate_op x n)
+\end{lstlisting}
+
+This builds the sequence: $\text{ident}, x, x \oplus x, x \oplus (x \oplus x), \ldots$
+
+\subsection{Identity-Free Iteration}
+
+\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Basic.lean}
+
+\begin{definition}[\texttt{iterate\_op\_pnat}]
+\textbf{Lines 305--306, Basic.lean}
+
+For identity-free reasoning, we define iteration using positive natural numbers ($\mathbb{N}^+$) instead of $\mathbb{N}$. This works on the weaker \texttt{KSSemigroupBase} (no identity required).
+\end{definition}
+
+\begin{lstlisting}[caption={Identity-free iteration}]
+def iterate_op_pnat [KSSemigroupBase alpha] (x : alpha) (n : Nat+) : alpha :=
+  iterate_op_pnat_aux x (n.val - 1)
+
+private def iterate_op_pnat_aux (x : alpha) : Nat -> alpha
+  | 0 => x        -- n=0 maps to x^1 = x
+  | n + 1 => op x (iterate_op_pnat_aux x n)
+\end{lstlisting}
+
+\begin{remark}[Key Properties]
+\begin{itemize}
+\item \texttt{iterate\_op\_pnat x 1 = x} (base case is $x$, not $\text{ident}$)
+\item \texttt{iterate\_op\_pnat x (n+1) = op x (iterate\_op\_pnat x n)} (recursion)
+\item Builds the sequence: $x, x \oplus x, x \oplus (x \oplus x), \ldots$ (no identity!)
+\item \textbf{Connection}: \texttt{iterate\_op\_pnat x n = iterate\_op x n.val} when $n \geq 1$ (\texttt{Algebra.lean:198})
+\end{itemize}
+\end{remark}
+
+\textbf{Usage}: This identity-free version is used in:
+\begin{itemize}
+\item \texttt{KSSeparationPNat} (separation axioms using $\mathbb{N}^+$ iteration)
+\item \texttt{Separation/HolderEmbedding.lean} (identity-free representation path)
+\item \texttt{RepresentationTheorem/Alternative/DirectCuts.lean} (alternative representation using cuts)
+\end{itemize}
+
+%==============================================================================
+\section{The Separation Property}
+%==============================================================================
+
+\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Algebra.lean}
+
+\begin{definition}[\texttt{KSSeparationSemigroup}]
+\textbf{Lines 292--297, Algebra.lean}
+
+The separation property allows ``sandwiching'' any pair of distinct positive elements using powers of a base element. Uses \texttt{IsPositive} (element increases everything) instead of \texttt{ident < a}, and \texttt{iterate\_op\_pnat} ($\mathbb{N}^+$ iteration) instead of \texttt{iterate\_op} ($\mathbb{N}$ iteration).
+\end{definition}
+
+\begin{lstlisting}[caption={Separation axiom (identity-free)}]
+class KSSeparationSemigroup (alpha : Type*) [KSSemigroupBase alpha] where
+  separation : forall {a x y : alpha}, IsPositive a -> IsPositive x -> IsPositive y -> x < y ->
+    exists n m : Nat+, iterate_op_pnat x m < iterate_op_pnat a n /\
+                       iterate_op_pnat a n <= iterate_op_pnat y m
+\end{lstlisting}
+
+\textbf{Intuition}: For any positive base $a$ and distinct $x < y$, we can find exponents $(n, m) \in \mathbb{N}^+$ such that $x^m < a^n \leq y^m$.
+
+\textbf{Key advantage}: Works on \texttt{KSSemigroupBase} (no identity required).
+
+\begin{remark}[Unbundled Separation Predicates]
+\textbf{Lines 285--380, Algebra.lean}
+
+Following the unified axiom organization, separation also has unbundled predicates:
+\begin{itemize}
+\item \texttt{SeparationSemigroupProp} (line 285): Identity-free separation (uses $\mathbb{N}^+$)
+\item \texttt{SeparationSemigroupStrictProp} (line 293): Strict variant with $<$ on both sides
+\item \texttt{SeparationProp} (line 370): With identity (uses $\mathbb{N}$)
+\item \texttt{SeparationStrictProp} (line 380): Strict variant with identity
+\end{itemize}
+
+\textbf{Connection theorems}: The \texttt{KSSeparation} and \texttt{KSSeparationSemigroup} namespaces provide
+extraction lemmas (e.g., \texttt{KSSeparationSemigroup.separationSemigroupProp}) and convenience wrappers.
+\end{remark}
+
+%==============================================================================
+\section{Derivable Consequences}
+%==============================================================================
+
+\subsection{Archimedean Property}
+
+\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/RepresentationTheorem/Alternative/DirectCuts.lean}
+
+\begin{theorem}[\texttt{archimedean\_pnat\_of\_separation}]
+\textbf{Lines 1185--1210, DirectCuts.lean}
+
+Under \texttt{KSSeparationSemigroup}, for any positive $a$ and $x$, there exists $N \in \mathbb{N}^+$ such that $a \leq x^N$.
+\end{theorem}
+
+\begin{lstlisting}[caption={Archimedean from Separation (identity-free)}]
+theorem archimedean_pnat_of_separation
+    [KSSemigroupBase alpha] [KSSeparationSemigroup alpha]
+    (a x : alpha) (ha : IsPositive a) (hx : IsPositive x) :
+    exists N : Nat+, a <= iterate_op_pnat x N := by
+  -- Case 1: a <= x (trivial)
+  by_cases hax : a <= x
+  . exact <1, by simpa only [iterate_op_pnat_one] using hax>
+  -- Case 2: x < a
+  -- Use separation with base x on interval (a, op a a)
+  have ha2_lt : a < op a a := ha a
+  obtain <n, m, h_lower, h_upper> := KSSeparationSemigroup.sep hx ha ha2_pos ha2_lt
+  -- From a^m < x^n: conclude a <= x^n
+  use n
+  have ha_le_am : a <= iterate_op_pnat a m := by
+    rw [<- iterate_op_pnat_one a]
+    exact iterate_op_pnat_mono a ha (PNat.one_le m)
+  exact le_of_lt (lt_of_le_of_lt ha_le_am h_lower)
+\end{lstlisting}
+
+\subsection{Commutativity via NoAnomalousPairs (Main Route)}
+
+\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Separation/AnomalousPairs.lean}
+
+The \textbf{main proof route} uses the classical Hölder/Alimov/Fuchs theorem from ordered semigroup theory:
+
+\begin{definition}[\texttt{NoAnomalousPairs}]
+An ordered semigroup has no anomalous pairs if no two elements $a, b$ have iterates
+``squeezed'' forever: $a^n < b^n < a^{n+1}$ for all $n$.
+\end{definition}
+
+\begin{theorem}[Hölder 1901, Alimov 1950]
+In a linearly ordered cancellative semigroup, the absence of anomalous pairs is necessary and sufficient for an additive embedding into $(\mathbb{R}, +)$.
+\end{theorem}
+
+\textbf{Key implication chain}:
+\begin{enumerate}
+\item \textbf{Separation $\Rightarrow$ No Anomalous Pairs}: The separation property provides witnesses
+that break any potential squeeze (formalized in \texttt{Separation/AnomalousPairs.lean}).
+
+\item \textbf{No Anomalous Pairs $\Rightarrow$ Hölder Embedding}: Classical result (Hölder 1901, Alimov 1950, Fuchs 1963),
+formalized by Eric Luap in \texttt{OrderedSemigroups}.
+
+\item \textbf{Hölder Embedding $\Rightarrow$ Commutativity}: The embedding into $(\mathbb{R}, +)$ forces commutativity.
+
+\item \textbf{Real Representation $\Rightarrow$ Separation}: Rational density in $\mathbb{R}$ provides the sandwich witnesses.
+\end{enumerate}
+
+\textbf{Equivalence}: Under our standing hypotheses (linearly ordered, cancellative, associative, strictly monotone, identity as minimum), these are equivalent:
+\begin{center}
+Separation $\Longleftrightarrow$ No Anomalous Pairs $\Longleftrightarrow$ Additive real representation
+\end{center}
+
+Commutativity is a \emph{derived property}, not an independent axiom. This makes ``no anomalous pairs'' a \textbf{classical sharp Archimedean-type condition} in the standard setting of linearly ordered cancellative semigroups.
+
+\textbf{References}:
+\begin{itemize}
+\item Hölder, O. (1901). ``Die Axiome der Quantität und die Lehre vom Mass.'' \emph{Ber. Verh. Sächs. Akad. Wiss. Leipzig, Math.-Phys. Cl.} 53, 1--64.
+\item Alimov, N. G. (1950). ``On ordered semigroups.'' \emph{Izv. Akad. Nauk SSSR Ser. Mat.} 14, 569--576.
+\item Fuchs, L. (1963). \emph{Partially Ordered Algebraic Systems.} Pergamon Press.
+\item Luap, E. (2024). ``OrderedSemigroups: Formalization of Ordered Semigroups in Lean 4.''
+\end{itemize}
+
+\begin{remark}[Alternative: Direct Mass Counting]
+There is also a direct ``mass counting'' proof (\texttt{SandwichSeparation.lean:438--491}):
+Assume $(x \oplus y) < (y \oplus x)$.
+Apply separation to get $(x \oplus y)^m < (x \oplus y)^n \leq (y \oplus x)^m$.
+By associativity, both $(x \oplus y)^n$ and $(y \oplus x)^m$ contain the same multiset of atoms,
+so $(x \oplus y)^n > (y \oplus x)^m$ when $n > m$---contradiction.
+\end{remark}
+
+\begin{lstlisting}[caption={Key mass counting lemma}]
+theorem xy_pow_gt_yx_pow (x y : alpha) (hx : ident < x) (hy : ident < y)
+    (n m : Nat) (hm : m >= 1) (hnm : n > m) :
+    iterate_op (op x y) n > iterate_op (op y x) m := by
+  -- Uses associativity to show more copies of positive atoms = larger
+  ...
+\end{lstlisting}
+
+%==============================================================================
+\section{The Representation Theorem (Appendix A)}
+%==============================================================================
+
+\textbf{Files}:
+\begin{itemize}
+\item \texttt{RepresentationTheorem/Main.lean} (public API)
+\item \texttt{RepresentationTheorem/Globalization.lean} (850 lines: globalization proof using Core machinery)
+\item \texttt{RepresentationTheorem/Core/} ($\sim$17,700 lines: grid infrastructure)
+  \begin{itemize}
+  \item \texttt{Core/MultiGrid.lean}: \texttt{AtomFamily}, \texttt{MultiGridRep}, grid representations
+  \item \texttt{Core/Induction/}: Inductive extension theorems (\texttt{Construction}, \texttt{ThetaPrime}, \texttt{DeltaShift})
+  \item \texttt{Core/OneDimensional.lean}: Base case (single atom)
+  \item \texttt{Core/Prelude.lean}: Foundational lemmas
+  \end{itemize}
+\end{itemize}
+
+\textbf{Architecture}: \texttt{Globalization.lean} imports \texttt{Core.All} and orchestrates the grid machinery to prove global representation.
+
+\subsection{Three Independent Proof Paths}
+
+The formalization provides \textbf{three complete, independent proof routes} to the representation theorem:
+
+\begin{enumerate}
+\item \textbf{Hölder embedding} (MAIN ROUTE, weakest assumptions): Uses NoAnomalousPairs condition,
+classical ordered semigroup theory (Hölder 1901, Alimov 1950, Fuchs 1963), formalized via Eric Luap's \texttt{OrderedSemigroups}.
+
+\item \textbf{Dedekind cuts} (alternative): Uses Separation property with Hölder/Dedekind cuts construction,
+bypassing the grid machinery.
+
+\item \textbf{Grid induction} (K\&S-style): Uses multi-dimensional grid representations and induction on atom families,
+following K\&S's original approach.
+\end{enumerate}
+
+\textbf{Historical development}:
+\begin{itemize}
+\item First: Grid/induction path (following K\&S's original approach)
+\item Second: Cuts path discovered by Claude Code as superior
+\item Third: Hölder/Alimov path discovered by GPT-5.2 Pro as the best (weakest assumptions, classical connection)
+\end{itemize}
+
+All three proofs are complete with zero sorries. The Hölder path uses \textbf{NoAnomalousPairs only}---the weakest known condition sufficient for the representation theorem.
+
+\subsection{Proof Architecture 1: The Grid/Induction Path}
+
+The grid-based proof is packaged as the typeclass \texttt{RepresentationGlobalization},
+which is automatically instantiated when \texttt{[KSSeparationStrict $\alpha$]} is available.
+
+\begin{definition}[\texttt{RepresentationGlobalization}]
+\textbf{Lines 54--60, Globalization.lean}
+
+A typeclass packaging the existence of $\Theta$.
+\end{definition}
+
+\begin{lstlisting}[caption={RepresentationGlobalization typeclass}]
+class RepresentationGlobalization (alpha : Type*)
+    [KnuthSkillingAlgebra alpha] [KSSeparation alpha] : Prop where
+  exists_Theta :
+    exists Theta : alpha -> Real,
+      (forall a b : alpha, a <= b <-> Theta a <= Theta b) /\
+      Theta ident = 0 /\
+      forall x y : alpha, Theta (op x y) = Theta x + Theta y
+\end{lstlisting}
+
+\subsubsection{The Globalization Construction (``Triple Family Trick'')}
+
+The instance \texttt{representationGlobalization\_of\_KSSeparationStrict} (lines 93--850, Globalization.lean)
+constructs $\Theta$ globally using a multi-step process:
+
+\begin{enumerate}
+\item \textbf{Reference atom}: Choose any $a_0 > \text{ident}$ as a fixed reference point.
+
+\item \textbf{2-atom families}: For each $x > \text{ident}$, build a 2-atom family $F_2 = \{a_0, x\}$
+with a \texttt{MultiGridRep} $R_2$ (via \texttt{extend\_grid\_rep\_with\_atom\_of\_KSSeparationStrict}
+from \texttt{Core/}).
+
+\item \textbf{Define $\Theta(x)$}: Extract the representation value from the grid:
+\[ \Theta(x) := R_2.\text{Theta\_grid}(\langle x, \text{membership\_proof} \rangle) \]
+
+\item \textbf{Well-definedness}: Use 3-atom families $F_3 = \{a_0, a_1, x\}$ to show that $\Theta(x)$
+does not depend on the choice of reference atom. Path independence follows from
+\texttt{DeltaSpec\_unique} (line 755, \texttt{Core/Induction/Construction.lean}).
+
+\item \textbf{Order preservation}: For $a < b$, build $F_3 = \{a_0, a, b\}$ and use
+\texttt{MultiGridRep.strictMono} to show $\Theta(a) < \Theta(b)$.
+
+\item \textbf{Additivity}: For $x \oplus y$, build $F_3 = \{a_0, x, y\}$ and verify
+$\Theta(x \oplus y) = \Theta(x) + \Theta(y)$ by path independence across different extension orderings.
+\end{enumerate}
+
+\begin{remark}[Why ``Triple Family Trick''?]
+The name comes from using 3-atom families to mediate between different 2-atom constructions.
+This technique ensures global consistency: any two definitions of $\Theta(x)$ via different reference atoms
+must agree, because they both embed into a common 3-atom grid representation.
+\end{remark}
+
+\begin{remark}[Identity-Free Grid Infrastructure]
+The grid construction has \textbf{parametric versions} that could work without identity:
+\begin{itemize}
+\item \texttt{mu\_param F r base}: Grid valuation with explicit base element instead of \texttt{ident}
+\item \texttt{kGrid\_param F base}: Grid set using \texttt{mu\_param}
+\item \texttt{mu\_pnat}, \texttt{kGrid\_pnat}: Truly identity-free using $\mathbb{N}^+$ iteration (no 0 exponents)
+\item \texttt{RepresentationGlobalizationAnchor}: Class for representations normalizing to an arbitrary anchor
+\end{itemize}
+
+Currently, the globalization instance uses identity (\texttt{representationGlobalization\_of\_KSSeparationStrict}).
+An identity-free instance using the parametric infrastructure is marked as \textbf{future work} in \texttt{Globalization.lean}.
+
+For identity-free representations \textbf{today}, use the Hölder path (\texttt{HolderEmbedding.lean})
+which produces \texttt{RepresentationResult} (order + additivity, no normalization constraint).
+\end{remark}
+
+\subsection{Main Theorem Statement}
+
+\begin{theorem}[\texttt{associativity\_representation}]
+\textbf{Lines 32--38, RepresentationTheorem/Main.lean}
+
+\textbf{K\&S Appendix A Main Theorem}: There exists an order embedding $\Theta : \alpha \to \mathbb{R}$ such that:
+\begin{enumerate}
+\item Order preservation: $a \leq b \Leftrightarrow \Theta(a) \leq \Theta(b)$
+\item $\Theta(\text{ident}) = 0$
+\item Additivity: $\Theta(\text{op}\ x\ y) = \Theta(x) + \Theta(y)$
+\end{enumerate}
+\end{theorem}
+
+\begin{lstlisting}[caption={Appendix A Representation Theorem (public API)}]
+theorem associativity_representation
+    (alpha : Type*) [KnuthSkillingAlgebra alpha] [KSSeparation alpha]
+    [RepresentationGlobalization alpha] :
+    exists Theta : alpha -> Real,
+      (forall a b : alpha, a <= b <-> Theta a <= Theta b) /\
+      Theta ident = 0 /\
+      forall x y : alpha, Theta (op x y) = Theta x + Theta y := by
+  exact RepresentationGlobalization.exists_Theta (alpha := alpha)
+\end{lstlisting}
+
+\begin{remark}[Proof Delegation]
+The theorem statement simply extracts \texttt{exists\_Theta} from the typeclass.
+All the actual work happens in the instance construction:
+
+\texttt{representationGlobalization\_of\_KSSeparationStrict} (lines 93--850, Globalization.lean)
+
+This design keeps the public API clean while hiding the complex globalization machinery.
+\end{remark}
+
+\subsection{Proof Architecture 2: The Direct Cuts Path}
+
+\textbf{File}: \texttt{RepresentationTheorem/Alternative/DirectCuts.lean}
+
+The DirectCuts path provides \textbf{both identity-based and identity-free} versions using Dedekind cuts:
+
+\begin{itemize}
+\item \textbf{Identity-free}: Uses \texttt{Theta\_cuts\_pnat} with $\mathbb{N}^+$ iteration
+  \begin{itemize}
+  \item \texttt{Theta\_cuts\_pnat} (line 1434): Definition via Dedekind cuts using $\mathbb{N}^+$ iteration
+  \item \texttt{Theta\_cuts\_pnat\_strictMono} (line 1530): Strict monotonicity (fully proven)
+  \item \texttt{Theta\_cuts\_pnat\_add} (line 1636): Additivity (fully proven)
+  \item No reference to \texttt{ident} anywhere
+  \end{itemize}
+
+\item \textbf{Identity-based} (§9a): Uses \texttt{Theta\_cuts} with $\mathbb{N}$ iteration
+  \begin{itemize}
+  \item \texttt{iterate\_op x 0 = ident} for the base case
+  \item \texttt{ident} as the canonical reference point
+  \item Produces \texttt{RepresentationResult} satisfying $\Theta(\text{ident}) = 0$
+  \end{itemize}
+\end{itemize}
+
+The cuts construction uses a classical Hölder/Dedekind approach (shown here for the identity-based version; the identity-free version uses \texttt{IsPositive} instead of comparing to \texttt{ident}):
+
+\begin{enumerate}
+\item \textbf{Fix base element}: Choose any $a_0 > \text{ident}$ as a reference point (identity-free: choose any $a_0$ with \texttt{IsPositive $a_0$})
+
+\item \textbf{Define rational approximants}: For any $x \in \alpha$, consider the set of ratios $m/n \in \mathbb{Q}$
+where $a_0^m \leq x^n$ (equivalently, $m \cdot a_0 \leq n \cdot x$ in additive notation)
+
+\item \textbf{Define $\Theta(x)$ by supremum in $\mathbb{R}$}:
+\[ \Theta_{\text{cuts}}(x) := \sup_{\mathbb{R}} \{ m/n \in \mathbb{Q} : a_0^m \leq x^n,\ n > 0 \} \]
+where the supremum is taken in $\mathbb{R}$ (which is already complete from Mathlib).
+The cut set is defined in $\alpha$ using the order relation, but the supremum is computed in $\mathbb{R}$.
+
+\item \textbf{Prove properties}:
+\begin{itemize}
+\item \textbf{Order preservation}: If $x < y$, then for any $m/n$ in the cut of $x$, there exists
+      $m'/n'$ in the cut of $y$ with $m/n < m'/n'$ (uses KSSeparation to find witnesses)
+\item \textbf{Additivity}: $\Theta(x \oplus y) = \Theta(x) + \Theta(y)$ follows from
+      $a_0^{m_1+m_2} \leq (x \oplus y)^{n_1 \cdot n_2}$ iff $a_0^{m_1} \leq x^{n_1}$ and $a_0^{m_2} \leq y^{n_2}$
+      (uses commutativity and associativity)
+\end{itemize}
+\end{enumerate}
+
+\begin{remark}[No Circularity]
+This construction does \textbf{not} require completing $\alpha$ into $\mathbb{R}$ first.
+Instead:
+\begin{itemize}
+\item The set $\{ m/n \in \mathbb{Q} : a_0^m \leq x^n \}$ is defined using the order relation in $\alpha$
+\item These rationals are cast to $\mathbb{R}$: \texttt{($\uparrow$) '' cutSet $a$ $x$ : Set $\mathbb{R}$}
+\item The supremum is computed in $\mathbb{R}$ using \texttt{sSup} (conditional supremum from Mathlib)
+\end{itemize}
+Thus $\Theta : \alpha \to \mathbb{R}$ is directly defined without requiring $\alpha$ to already embed into $\mathbb{R}$.
+\end{remark}
+
+\begin{theorem}[\texttt{associativity\_representation\_cuts}]
+\textbf{Lines 43--48, Alternative/Main.lean}
+
+The cuts-based representation theorem.
+\end{theorem}
+
+\begin{lstlisting}[caption={Appendix A (cuts proof)}]
+theorem associativity_representation_cuts
+    (alpha : Type*) [KnuthSkillingAlgebra alpha] [KSSeparation alpha]
+    [KSSeparationStrict alpha] :
+    exists Theta : alpha -> Real,
+      (forall a b : alpha, a <= b <-> Theta a <= Theta b) /\
+      Theta ident = 0 /\
+      forall x y : alpha, Theta (op x y) = Theta x + Theta y := by
+  -- Use Theta_cuts (the Dedekind-cuts construction)
+  obtain <a0, ha0> := <witness for non-trivial element>
+  refine <Theta_cuts a0 ha0, order_preservation, identity, additivity>
+\end{lstlisting}
+
+\begin{remark}[Comparison to Grid Proof]
+The cuts proof is significantly more compact:
+\begin{itemize}
+\item \textbf{Grid proof}: $\sim$2000+ lines (induction machinery, extension lemmas, path independence)
+\item \textbf{Cuts proof}: $\sim$500 lines (direct construction, no induction)
+\end{itemize}
+
+However, the grid proof more closely follows K\&S's original argument structure (A/B/C partition, $\delta$-choice),
+while the cuts proof uses the standard Hölder technique from ordered group theory.
+\end{remark}
+
+\begin{corollary}[op\_comm\_of\_associativity]
+\textbf{Lines 65--70, RepresentationTheorem/Main.lean}
+
+Commutativity follows from the representation theorem.
+\end{corollary}
+
+\begin{lstlisting}[caption={Commutativity from representation}]
+theorem op_comm_of_associativity
+    (alpha : Type*) [KnuthSkillingAlgebra alpha] [KSSeparation alpha]
+    [RepresentationGlobalization alpha] :
+    forall x y : alpha, op x y = op y x := by
+  classical
+  obtain <Theta, hTheta_order, _, hTheta_add> := associativity_representation (alpha := alpha)
+  exact commutativity_from_representation Theta hTheta_order hTheta_add
+\end{lstlisting}
+
+%==============================================================================
+\section{The Product Theorem (Appendix B)}
+\label{sec:product}
+%==============================================================================
+
+\textbf{Files}:
+\begin{itemize}
+\item \texttt{ProductTheorem/Main.lean} (K\&S's actual path via Appendix A)
+\item \texttt{ProductTheorem/Alternative/DirectProof.lean} (Alternative: direct algebraic path)
+\item \texttt{ProductTheorem/ScaledMultRep.lean} (Common interface for both paths)
+\end{itemize}
+
+\subsection{Two Complete Proof Paths}
+
+Like Appendix A, the formalization provides \textbf{two independent proofs} of Appendix B's conclusion.
+Both paths arrive at the same result: the tensor operation $\otimes$ on positive reals equals
+multiplication up to a global scale constant.
+
+\subsubsection{Path 1: K\&S's Actual Derivation (Recommended)}
+
+\texttt{ProductTheorem/Main.lean} follows K\&S's paper exactly: ``apply Appendix A again to $\otimes$''.
+This path uses \texttt{AdditiveOrderIsoRep} (from Appendix A) to derive the product equation,
+then solves it to show $\otimes$ is scaled multiplication.
+
+\subsubsection{Path 2: Alternative (Direct Algebraic Proof)}
+
+\texttt{ProductTheorem/Alternative/DirectProof.lean} provides a direct algebraic proof that
+any tensor satisfying distributivity (Axiom 3) and associativity (Axiom 4) must be scaled multiplication.
+
+\begin{remark}[Why Two Paths?]
+\begin{itemize}
+\item \textbf{Path 1} assumes existence of \texttt{AdditiveOrderIsoRep} for the tensor (``apply Appendix A again'')
+\item \textbf{Path 2} derives the same result directly from distributivity + associativity axioms
+\item Both arrive at the same conclusion: $\otimes$ is scaled multiplication
+\item \textbf{Note}: This is NOT ``Aczél's derivation of probability theory'' (a separate classical approach); it's just an alternative proof technique for K\&S's Appendix B
+\end{itemize}
+\end{remark}
+
+\subsection{Common Interface: ScaledMultRep}
+
+Both paths provide the \texttt{ScaledMultRep} interface, which captures the OUTPUT of Appendix B:
+
+\begin{lstlisting}[caption={ScaledMultRep interface (ProductTheorem/ScaledMultRep.lean:44)}]
+structure ScaledMultRep (tensor : PosReal -> PosReal -> PosReal) where
+  C : Real                -- The scale constant C > 0
+  C_pos : 0 < C
+  tensor_eq : forall x y : PosReal,
+    ((tensor x y) : Real) = ((x : Real) * (y : Real)) / C
+\end{lstlisting}
+
+\textbf{Design principle}: Like \texttt{AdditiveOrderIsoRep} for Appendix A, this interface captures
+WHAT Appendix B proves without depending on HOW it was proven. Downstream code
+(\texttt{ConditionalProbability}, \texttt{ProbabilityDerivation}, etc.) should depend on
+\texttt{ScaledMultRep}, NOT on specific proof paths.
+
+\textbf{Constructors}:
+\begin{itemize}
+\item \texttt{scaledMultRep\_of\_additiveOrderIsoRep}: K\&S path (uses Appendix A)
+\item \texttt{scaledMultRep\_of\_tensorRegularity}: Direct path (bypasses Appendix A)
+\item \texttt{scaledMultRep\_of\_assoc\_distrib\_comm}: Minimal assumptions (assoc + distrib + comm)
+\end{itemize}
+
+\subsection{Product-Side Symmetries (3--4)}
+
+\textbf{K\&S paper location}: Symmetry 3 appears at equation (7) on page 6 (arxiv.tex lines 462--467),
+Axiom 3 at equation (24) on page 9 (arxiv.tex lines 566--572).
+
+Before applying Appendix A, K\&S work with lattice elements and the direct-product operator $\times$.
+\textbf{Symmetry 3} states that $\times$ is (right-)distributive over the join $\sqcup$:
+\[ (x \times t) \sqcup (y \times t) = (x \sqcup y) \times t \]
+
+After Appendix A provides the representation $\Theta : \alpha \to \mathbb{R}$, we work with
+graded measures and the tensor operation $\otimes$. \textbf{Axiom 3} is the graded version:
+\[ (x \otimes t) \oplus (y \otimes t) = (x \oplus y) \otimes t \]
+
+After moving to real numbers via $\Theta$, this becomes (Appendix B, arxiv.tex line 661):
+\[ x \otimes t + y \otimes t = (x + y) \otimes t \]
+where $+$ is real addition (since $\oplus$ has been identified with $+$ by Appendix A).
+
+\textbf{Symmetry 4} (Product Associativity): $(u \otimes v) \otimes w = u \otimes (v \otimes w)$
+
+\textbf{Formalization note}: Our formalization works directly at the graded level (positive reals)
+rather than formalizing the lattice level. Therefore:
+\begin{itemize}
+\item We define \texttt{DistributesOverAdd} as a \emph{property} that a tensor may or may not satisfy
+\item We then \emph{assume} this property holds for the tensor under consideration
+\item Ideally, this would be \emph{derived} from Symmetry 3 at the lattice level, but we have not
+formalized the lattice $\to$ graded transition
+\end{itemize}
+
+\begin{lstlisting}[caption={Distributivity property (ProductTheorem/Basic.lean:64)}]
+-- Defines the PROPERTY (not an axiom, just a predicate)
+def DistributesOverAdd (tensor : PosReal -> PosReal -> PosReal) : Prop :=
+  forall x y t : PosReal, tensor (addPos x y) t = addPos (tensor x t) (tensor y t)
+
+-- Then we ASSUME some tensor satisfies this property:
+variable (hDistrib : DistributesOverAdd tensor)
+\end{lstlisting}
+
+\begin{remark}[Why is this an assumption rather than derived?]
+In K\&S's development:
+\begin{enumerate}
+\item Symmetry 3 is stated at the lattice level: $(x \times t) \sqcup (y \times t) = (x \sqcup y) \times t$
+\item After Appendix A provides the representation, this \emph{should} automatically give Axiom 3
+\item The transition from lattice to graded measures should preserve this property
+\end{enumerate}
+
+Our formalization skips the lattice level and works directly with graded measures (positive reals),
+so we assume \texttt{DistributesOverAdd} as an axiom rather than deriving it from Symmetry 3.
+
+A complete formalization would:
+\begin{enumerate}
+\item Formalize distributive lattices with Symmetry 3
+\item Prove Appendix A at the lattice level
+\item \emph{Derive} that the graded tensor satisfies \texttt{DistributesOverAdd}
+\end{enumerate}
+\end{remark}
+
+\begin{remark}[Unbundled Tensor Predicates and TensorAlgebra]
+\textbf{Lines 72--115, ProductTheorem/Basic.lean}
+
+Following the unified axiom organization, tensor properties have both unbundled predicates and a bundled class:
+
+\textbf{Unbundled predicates}:
+\begin{itemize}
+\item \texttt{TensorAssoc tensor} (line 72): Associativity of $\otimes$
+\item \texttt{TensorPos tensor} (line 77): Positivity-preserving
+\item \texttt{TensorStrictMonoLeft tensor} (line 81): Strict monotonicity in left argument
+\item \texttt{TensorStrictMonoRight tensor} (line 85): Strict monotonicity in right argument
+\item \texttt{DistributesOverAdd tensor} (line 64): Distributivity over $+$
+\end{itemize}
+
+\textbf{Bundled class} (line 103):
+\begin{lstlisting}
+class TensorAlgebra (tensor : PosReal -> PosReal -> PosReal) : Prop where
+  distributes : DistributesOverAdd tensor
+  assoc : TensorAssoc tensor
+  pos : TensorPos tensor
+\end{lstlisting}
+
+\textbf{Convenience theorem} (line 115): \texttt{productEquation\_of\_tensorAlgebra} provides
+an ergonomic entry point for proofs that use all the bundled axioms together.
+
+\textbf{Design principle}: Use unbundled predicates (e.g., \texttt{hDistrib : DistributesOverAdd tensor})
+when tracking minimal hypotheses. Use \texttt{[TensorAlgebra tensor]} for ergonomic access in longer proofs.
+\end{remark}
+
+\subsection{Product Equation}
+
+Appendix B shows $\otimes$ must be multiplication up to a global scale.
+
+\begin{theorem}[\texttt{Psi\_is\_exp}]
+\textbf{Line 43, ProductTheorem/Main.lean}
+
+The inverse representation $\Psi = \Theta^{-1}$ is exponential:
+$\Psi(x) = C \cdot e^{Ax}$ for some constants $C > 0$ and $A$.
+\end{theorem}
+
+\begin{lstlisting}[caption={Appendix B: $\Psi$ is exponential}]
+theorem Psi_is_exp
+    (hRep : AdditiveOrderIsoRep PosReal tensor)
+    (hDistrib : DistributesOverAdd tensor) :
+    exists (C A : Real), 0 < C /\ forall x : Real, Derived.Psi hRep x = C * Real.exp (A * x)
+    := by
+  refine
+    productEquation_solution_of_continuous_strictMono
+      (hEq := productEquation_Psi (tensor := tensor) hRep hDistrib)
+      (hPos := fun x => Derived.Psi_pos (tensor := tensor) hRep x)
+      (hCont := Derived.Psi_continuous (tensor := tensor) hRep)
+      (hMono := Derived.Psi_strictMono (tensor := tensor) hRep)
+\end{lstlisting}
+
+\begin{remark}[The Functional Equation Proof]
+The proof delegates to:
+
+\texttt{productEquation\_solution\_of\_continuous\_strictMono} (line 294, \texttt{FunctionalEquation.lean})
+
+This proves a \textbf{classical result from functional equations theory}:
+
+\textbf{Statement}: If $\Psi : \mathbb{R} \to \mathbb{R}$ satisfies the product equation
+\[ \Psi(\tau + \xi) + \Psi(\tau + \eta) = \Psi(\tau + \zeta(\xi, \eta)) \]
+for all $\tau, \xi, \eta \in \mathbb{R}$, and if $\Psi$ is positive, continuous, and strictly monotone, then $\Psi(x) = C \cdot e^{Ax}$ for some constants $C > 0$ and $A$.
+
+\textbf{Key steps} (561 lines):
+\begin{enumerate}
+\item Extract shift constant: $a := \zeta(0,0)$ gives $\Psi(x+a) = 2\Psi(x)$
+\item Extend to powers: $\Psi(x + na) = 2^n \Psi(x)$ for all $n \in \mathbb{Z}$
+\item Extend to rationals: $\Psi(x + (m/n)a) = 2^{m/n} \Psi(x)$ for all $m/n \in \mathbb{Q}$
+\item Use continuity + density: Extend to all reals
+\item Conclude: $\Psi(x) = C \cdot 2^{x/a} = C \cdot e^{(\ln 2/a) \cdot x}$
+\end{enumerate}
+
+The continuity and monotonicity hypotheses are \textbf{derived} (not assumed) from the order isomorphism $\Theta : \text{PosReal} \simeq_o \mathbb{R}$ established in Appendix A:
+
+\begin{itemize}
+\item \texttt{Psi\_strictMono} (lines 88--92, \texttt{ProductTheorem/Basic.lean}): Since $\Psi := \Theta^{-1}$ and $\Theta$ is an order isomorphism, $\Theta^{-1}$ is strictly monotone.
+\item \texttt{Psi\_continuous} (lines 94--97, \texttt{ProductTheorem/Basic.lean}): Order isomorphisms $\mathbb{R} \simeq_o \mathbb{R}$ are continuous (order topology). The proof uses that $\Theta.\text{symm}$ is continuous, composed with the continuous subtype projection.
+\end{itemize}
+\end{remark}
+
+\begin{center}
+\fbox{\parbox{0.9\textwidth}{
+\textbf{Why Exponential $\Psi$ Implies Tensor = Scaled Multiplication}
+
+\smallskip
+\textbf{Given}: $\Theta(x \otimes y) = \Theta(x) + \Theta(y)$ (additivity) and $\Psi = \Theta^{-1}$ with $\Psi(z) = C \cdot e^{Az}$
+
+\smallskip
+\textbf{Derivation}:
+\begin{align*}
+x &= \Psi(\Theta(x)) = C \cdot e^{A \cdot \Theta(x)} \quad\Rightarrow\quad e^{A \cdot \Theta(x)} = x/C \\[3pt]
+x \otimes y &= \Psi(\Theta(x \otimes y)) = \Psi(\Theta(x) + \Theta(y)) \\
+&= C \cdot e^{A(\Theta(x) + \Theta(y))} = C \cdot e^{A \cdot \Theta(x)} \cdot e^{A \cdot \Theta(y)} \\
+&= C \cdot (x/C) \cdot (y/C) = \frac{x \cdot y}{C}
+\end{align*}
+
+\textbf{Conclusion}: $x \otimes y = (x \cdot y) / C$ \quad (Lean: \texttt{tensor\_coe\_eq\_mul\_div\_const}, line 61)
+}}
+\end{center}
+
+\begin{theorem}[\texttt{tensor\_mul\_rule\_normalized}]
+\textbf{Line 105, ProductTheorem/Main.lean}
+
+The tensor operation is multiplication up to a global constant:
+$(x \otimes y) / C = (x/C) \cdot (y/C)$.
+\end{theorem}
+
+\begin{lstlisting}[caption={Product rule (normalized)}]
+theorem tensor_mul_rule_normalized
+    (hRep : AdditiveOrderIsoRep PosReal tensor)
+    (hDistrib : DistributesOverAdd tensor) :
+    exists C : Real, 0 < C /\
+      (forall x : PosReal, 0 < ((x : Real) / C)) /\
+      (forall x y : PosReal,
+        ((tensor x y : PosReal) : Real) / C = (((x : Real) / C) * ((y : Real) / C)))
+\end{lstlisting}
+
+%==============================================================================
+\section{The Variational Theorem (Appendix C)}
+%==============================================================================
+
+\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/VariationalTheorem.lean}
+
+\subsection{Variational Functional Equation}
+
+\textbf{What this is about}: K\&S derive the entropy form $H(m) = A + Bm + C(m \log m - m)$ (the negative of Shannon/Boltzmann entropy) from a variational principle. The key functional equation comes from maximizing $H$ subject to constraints.
+
+\textbf{The equation}: The derivative $H'(m)$ must satisfy:
+\[ H'(m_x \cdot m_y) = \lambda(m_x) + \mu(m_y) \]
+where $m_x, m_y$ are probability masses (positive reals).
+
+\textbf{Intuition}: This says the potential function separates multiplicatively - the derivative at a product decomposes into separate contributions from each factor.
+
+\begin{definition}[\texttt{VariationalEquation}]
+\textbf{Lines 201--202, VariationalTheorem.lean}
+\end{definition}
+
+\begin{lstlisting}[caption={Variational equation definition}]
+def VariationalEquation (H' lam mu : Real -> Real) : Prop :=
+  forall m_x m_y : Real, 0 < m_x -> 0 < m_y -> H' (m_x * m_y) = lam m_x + mu m_y
+\end{lstlisting}
+
+\subsection{Main Theorem}
+
+\textbf{Result}: The only measurable solutions to the variational equation are logarithmic.
+
+\textbf{Why this matters}: This shows that the entropy form is **uniquely determined** (up to constants) by the variational principle plus measurability. You can't have some other weird function satisfy the constraints.
+
+\textbf{Proof strategy}: Transform the multiplicative equation $H'(m_x \cdot m_y) = \lambda(m_x) + \mu(m_y)$ into Cauchy's additive equation $f(u+v) = f(u) + f(v)$ by setting $u = \log m$. Measurable solutions to Cauchy's equation are linear, giving $H'(m) = B + C \log m$.
+
+\begin{theorem}[\texttt{variationalEquation\_solution\_measurable}]
+\textbf{Lines 310--375, VariationalTheorem.lean}
+
+If $H'$ satisfies the variational equation and is Borel-measurable, then:
+\[ H'(m) = B + C \cdot \log(m) \]
+for some constants $B, C$.
+\end{theorem}
+
+\begin{lstlisting}[caption={Appendix C main theorem}]
+theorem variationalEquation_solution_measurable
+    (H' : Real -> Real) (lam mu : Real -> Real)
+    (hMeas : Measurable H')
+    (hV : VariationalEquation H' lam mu) :
+    exists B C : Real, forall m : Real, 0 < m -> H' m = B + C * Real.log m := by
+  -- Step 1: Extract the common core phi from lam and mu
+  obtain <phi, c1, c2, hphi1, hlam, hmu> := hV.exists_common_core
+  -- Step 2-7: Transform to Cauchy equation and apply linear solution
+  ...
+\end{lstlisting}
+
+\subsection{The Entropy Form}
+
+\textbf{What this is}: The classical Shannon/Boltzmann entropy appears as the antiderivative of the logarithmic solution.
+
+\textbf{Derivation}: Integrating $H'(m) = B + C \log(m)$ with respect to $m$:
+\[ H(m) = \int (B + C \log m) \, dm = A + Bm + C(m \log m - m) \]
+where the integration constant is $A$.
+
+\textbf{Physical interpretation}: The term $m \log m$ is (up to sign and constants) the Shannon entropy $-\sum p_i \log p_i$ for discrete distributions, or the Boltzmann entropy $-\int p(x) \log p(x) \, dx$ for continuous distributions. The other terms ($A$, $Bm$) are normalization and constraint adjustments.
+
+\textbf{Why it matters}: This shows that entropy **isn't an axiom** - it's derived from the variational principle applied to the K\&S probability framework.
+
+\begin{definition}[\texttt{entropyForm}]
+\textbf{Line 475, VariationalTheorem.lean}
+\end{definition}
+
+\begin{lstlisting}[caption={Entropy form}]
+noncomputable def entropyForm (A B C : Real) : Real -> Real :=
+  fun m => A + B * m + C * (m * Real.log m - m)
+\end{lstlisting}
+
+\begin{definition}[\texttt{entropyDerivative}]
+\textbf{Line 287, VariationalTheorem.lean}
+
+The expected derivative of the entropy form.
+\end{definition}
+
+\begin{lstlisting}[caption={Expected derivative: $B + C \log m$}]
+noncomputable def entropyDerivative (B C : Real) : Real -> Real :=
+  fun m => B + C * Real.log m
+\end{lstlisting}
+
+\begin{theorem}[\texttt{entropyForm\_deriv}]
+\textbf{Lines 478--494, VariationalTheorem.lean}
+
+The entropy form has derivative $H'(m) = B + C \log m$.
+\end{theorem}
+
+\begin{lstlisting}[caption={Proof that entropy form has the correct derivative}]
+theorem entropyForm_deriv (A B C : Real) {m : Real} (hm : 0 < m) :
+    HasDerivAt (entropyForm A B C) (entropyDerivative B C m) m := by
+  unfold entropyForm entropyDerivative
+  -- d/dm [A + Bm + C(m log m - m)] = B + C(log m + 1 - 1) = B + C log m
+  ...
+\end{lstlisting}
+
+\begin{remark}[What this proves]
+The theorem \texttt{entropyForm\_deriv} proves that:
+\[ \frac{d}{dm}\left[A + Bm + C(m \log m - m)\right] = B + C \log m \]
+
+This verifies that integrating the logarithmic solution $H'(m) = B + C \log m$ (from the variational equation) gives the entropy form $H(m) = A + Bm + C(m \log m - m)$.
+\end{remark}
+
+\section{Divergence (K\&S Section 6)}
+%==============================================================================
+
+\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Divergence.lean}
+
+\textbf{What this is}: The divergence $\phi(w, u)$ measures the ``distance'' between two measure assignments $w$ and $u$. It quantifies the information-theoretic cost of using measure $u$ when the ``true'' measure is $w$.
+
+\textbf{Connection to Appendix C (Entropy Form)}: The divergence is a \textbf{special case} of the entropy form from the variational theorem:
+\begin{align*}
+H(m) &= A + Bm + C(m \log m - m) \quad \text{(Appendix C)} \\
+\phi(w, u) &= u - w + w \log(w/u) \quad \text{(Divergence)}
+\end{align*}
+
+Setting $A = u$, $B = -\log(u)$, $C = 1$ in the entropy form gives the divergence (K\&S Eq. 44). The critical point analysis from Appendix C proves that $\phi(w, u)$ is minimized when $w = u$.
+
+\textbf{Note}: This is \textbf{atom divergence} for general real-valued measures. The specialization to \textbf{probability distributions} happens in Section 10, after Section 9 derives what probability distributions are.
+
+\textbf{Key properties}:
+\begin{itemize}
+\item \textbf{Non-negative}: $\phi(w, u) \geq 0$, with equality iff $w = u$ (formalized in \texttt{atomDivergence\_nonneg}, lines 102--120)
+\item \textbf{Asymmetric}: $\phi(w, u) \neq \phi(u, w)$ in general (it's NOT a distance metric)
+\item \textbf{Connects variational calculus to information theory}: Bridge between Appendix C and Section 8
+\end{itemize}
+
+\textbf{Forward reference}: This atom divergence will be specialized to \textbf{probability distributions} in Section 10 (Information and Entropy), giving the Kullback-Leibler divergence formula.
+
+\begin{definition}[\texttt{atomDivergence}]
+\textbf{Lines 68--69, Divergence.lean}
+
+The per-atom divergence: $\phi(w, u) = u - w + w \log(w/u)$.
+\end{definition}
+
+\begin{lstlisting}[caption={Atom divergence}]
+noncomputable def atomDivergence (w u : Real) : Real :=
+  u - w + w * log (w / u)
+\end{lstlisting}
+
+\begin{theorem}[\texttt{atomDivergence\_nonneg}]
+\textbf{Lines 102--120, Divergence.lean}
+\end{theorem}
+
+\begin{lstlisting}[caption={Divergence non-negativity}]
+theorem atomDivergence_nonneg (w u : Real) (hw : 0 < w) (hu : 0 < u) :
+    0 <= atomDivergence w u := by
+  unfold atomDivergence
+  -- Rewrite as w * (u/w - 1 - log(u/w)) and use log inequality
+  let s := u / w
+  have hs : 0 < s := div_pos hu hw
+  have hrewrite : u - w + w * log (w / u) = w * (s - 1 - log s) := by ...
+  rw [hrewrite]
+  exact mul_nonneg (le_of_lt hw) (log_ineq s hs)
+\end{lstlisting}
+
+\begin{theorem}[\texttt{atomDivergence\_eq\_zero\_iff}]
+\textbf{Lines 123--159, Divergence.lean}
+
+Divergence equals zero if and only if $w = u$.
+\end{theorem}
+
+\begin{lstlisting}[caption={Divergence equals zero iff $w = u$ (Divergence.lean:123)}]
+theorem atomDivergence_eq_zero_iff (w u : Real) (hw : 0 < w) (hu : 0 < u) :
+    atomDivergence w u = 0 <-> w = u := by
+  constructor
+  . -- If phi(w,u) = 0, then w = u
+    intro h
+    let s := u / w
+    have hs : 0 < s := div_pos hu hw
+    -- phi(w,u) = w * (s - 1 - log s) = 0
+    -- w > 0 implies s - 1 - log s = 0
+    -- But s - 1 - log s > 0 for s != 1 (strict log inequality)
+    -- So s = 1, hence u = w
+    ...
+  .
+    intro heq
+    rw [heq]
+    exact atomDivergence_self u hu
+\end{lstlisting}
+
+%==============================================================================
+\section{Conditional Probability (K\&S Section 7)}
+%==============================================================================
+
+\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ConditionalProbability/Basic.lean}
+
+\textbf{What this section does}: K\&S Section 7 derives \textbf{probability calculus} from first principles. This is the crucial step that takes us from general measures (Sections 1--6) to \textbf{probability distributions} (normalized measures).
+
+Starting with conditional plausibility as a \textbf{bivaluation} $p(x|t)$ (a function taking pairs of lattice elements to reals), K\&S introduces \textbf{Axiom 5 (Chaining Associativity)} and proves:
+
+\begin{enumerate}
+\item The \textbf{chain-product rule}: $\Pr(a|c) = \Pr(a|b) \cdot \Pr(b|c)$ for chains $a \leq b \leq c$
+\item \textbf{Bayes' theorem}: $\Pr(x|\theta) \cdot \Pr(\theta) = \Pr(\theta|x) \cdot \Pr(x)$
+\item \textbf{Probability as a ratio}: $\Pr(x|t) = \frac{m(x \wedge t)}{m(t)}$ (K\&S Eq. 53)
+\end{enumerate}
+
+\textbf{Key insight}: The SAME functional equation from Appendix B (product equation) reappears here! Axiom 5 + sum rule forces the chaining operation to be multiplication (up to scale).
+
+\textbf{Deliverable}: This section establishes that \textbf{probability is a normalized measure} - ``simply the shape of the confined measure, automatically normalized to unit mass'' (K\&S, Section 7.3). This gives us \textbf{probability distributions}, which are used in Section 10.
+
+\subsection{Structural Change: From Linear Order to Lattice}
+
+\begin{remark}[Different Type Structure]
+K\&S Section 7 operates on a \textbf{different type} than Sections 1--6:
+
+\begin{itemize}
+\item \textbf{Sections 1--6} (K\&S algebra): \texttt{[LinearOrder $\alpha$]} - measures on linearly ordered values
+\item \textbf{Section 7} (Bivaluation): \texttt{[Lattice $\alpha$] [BoundedOrder $\alpha$]} - probability on lattice of events
+\end{itemize}
+
+This reflects K\&S's conceptual shift: earlier sections study \textbf{measure values} (which are linearly ordered reals), while Section 7 studies \textbf{conditional probability on events} (which form a lattice).
+
+The Lean formalization respects the \textbf{logical dependency order}, not K\&S's presentation order. Section 7 requires lattice operations ($\wedge$, $\vee$, $\bot$, $\top$) that weren't needed in Sections 1--6.
+
+\textbf{Lattice hierarchy in the code}:
+\begin{itemize}
+\item \texttt{Bivaluation} structure (line 59): \texttt{[Lattice $\alpha$]} - general lattice
+\item Main theorems (chain-product, Bayes): \texttt{[DistribLattice $\alpha$]} - needs distributivity
+\item Optional theorems (\texttt{sumRule\_general}, \texttt{complementRule}): \texttt{[BooleanAlgebra $\alpha$]} - needs complements
+\end{itemize}
+
+\textbf{Mathematical generalization}: K\&S works with propositions (Boolean), but the Lean formalization proves the core probability calculus works on \textbf{any distributive lattice}. Boolean structure is only needed for complement operations.
+\end{remark}
+
+\subsection{Bivaluation and Axiom 5}
+
+\begin{definition}[\texttt{Bivaluation}]
+\textbf{Lines 59--73, Basic.lean}
+
+A bivaluation $p : \alpha \to \alpha \to \mathbb{R}$ represents conditional plausibility on a lattice with:
+\begin{itemize}
+\item \textbf{Positivity}: $p(x|t) > 0$ when $\bot < x \leq t$
+\item \textbf{Sum rule}: $p(x \vee y|t) = p(x|t) + p(y|t)$ for disjoint $x, y$
+\item \textbf{Context intersection}: $p(x|t) = p(x \wedge t|t)$ (implicit in K\&S)
+\end{itemize}
+\end{definition}
+
+\begin{remark}[Lattice Structure on Events, Not Context]
+Note that the sum rule applies to the \textbf{first argument} (the event), not the context:
+\[ p(x \vee y \mid t) = p(x \mid t) + p(y \mid t) \]
+The context $t$ stays \textbf{fixed} while events are decomposed via the lattice join $\vee$.
+This matches the standard probability identity $P(A \cup B \mid C) = P(A \mid C) + P(B \mid C)$ for disjoint $A, B$.
+The lattice operations ($\vee$, $\wedge$, $\bot$) describe the \emph{event algebra}; the context is just a parameter.
+\end{remark}
+
+\begin{definition}[Axiom 5: Chaining Associativity]
+\textbf{Lines 109--128 (ChainingOp structure), Basic.lean}
+
+The chaining operation $\odot : \mathbb{R} \to \mathbb{R} \to \mathbb{R}$ on plausibility values satisfies:
+\end{definition}
+
+\begin{lstlisting}[caption={\texttt{ChainingOp} structure (Basic.lean:124)}]
+structure ChainingOp where
+  chain : Real -> Real -> Real
+  chain_assoc : forall x y z, chain (chain x y) z = chain x (chain y z)
+  chain_strictMono_left : forall z, 0 < z -> StrictMono (fun x => chain x z)
+  chain_strictMono_right : forall x, 0 < x -> StrictMono (fun z => chain x z)
+  chain_pos : forall x y, 0 < x -> 0 < y -> 0 < chain x y
+  chain_distrib_left : forall a b t, 0 < a -> 0 < b -> 0 < t ->
+    chain a t + chain b t = chain (a + b) t
+\end{lstlisting}
+
+\textbf{Formulation}: For a chain $a < b < c < d$:
+\[ (p(a|b) \odot p(b|c)) \odot p(c|d) = p(a|b) \odot (p(b|c) \odot p(c|d)) \]
+
+\begin{definition}[Chain Rule]
+\textbf{Line 219, Basic.lean}
+
+The chain rule connects the chaining operation to the bivaluation:
+\end{definition}
+
+\begin{lstlisting}[caption={\texttt{ChainingAssociativity} class (Basic.lean:219)}]
+class ChainingAssociativity (alpha : Type*) [Lattice alpha] [BoundedOrder alpha]
+    (B : Bivaluation alpha) where
+  chainOp : ChainingOp
+  chain_rule : forall a b c : alpha, a <= b -> b <= c -> Bot < a ->
+    B.p a c = chainOp.chain (B.p a b) (B.p b c)
+\end{lstlisting}
+
+This says: $p(a|c) = p(a|b) \odot p(b|c)$ for chains $a \leq b \leq c$.\footnote{K\&S uses ``interval notation'' $[x,y]$ throughout Section 7 without formally defining intervals as mathematical objects. They write $\alpha = [x,y]$, $\beta = [y,z]$, etc., and speak of ``concatenating intervals'' $[x,y] \circ [y,z] = [x,z]$. The chaining operation $\odot$ then acts on the plausibility \emph{values} of these intervals: $p(\alpha) \odot p(\beta)$. Our formalization sidesteps this implicit interval semantics by working directly with lattice elements: the ``interval $[a,b]$'' is represented implicitly by the pair $(a, b)$ with constraint $a \leq b$. The chain rule then states $p(a|c) = p(a|b) \odot p(b|c)$ for $a \leq b \leq c$, which captures the compositional structure without reifying intervals as first-class objects.}
+
+\subsection{The Product Equation Reappears}
+
+\textbf{Lines 245--314, Basic.lean}
+
+K\&S's brilliant observation: combining chaining associativity with the sum rule gives the \textbf{exact same product equation} as Appendix B!
+
+\textbf{Proof sketch}:
+\begin{enumerate}
+\item Let $\Theta$ be the function such that $\Theta(p(a|b) \odot p(b|c)) = \Theta(p(a|b)) + \Theta(p(b|c))$
+\item Define $\Psi = \Theta^{-1}$
+\item The sum rule says: for disjoint $x, y$ with intermediate context,
+\[ \text{chain}(a, t) + \text{chain}(b, t) = \text{chain}(a+b, t) \]
+This is \textbf{left-distributivity over addition} - exactly the Appendix B hypothesis!
+\item Therefore: $\Psi(\tau + \xi) + \Psi(\tau + \eta) = \Psi(\tau + \zeta(\xi, \eta))$ where $\zeta(\xi,\eta) = \Theta(\Psi(\xi) + \Psi(\eta))$
+\item By Appendix B: $\Theta = A \cdot \log$ for some $A > 0$
+\item Hence the chaining operation is: $\text{chain}(x, y) = \frac{x \cdot y}{K}$ for some $K > 0$
+\end{enumerate}
+
+\subsection{Chain-Product Rule}
+
+\begin{theorem}[\texttt{chainProductRule}]
+\textbf{Line 345, Basic.lean}
+
+For chains $a \leq b \leq c$ in a lattice with normalized bivaluation ($p(t|t) = 1$):
+\[ \Pr(a|c) = \Pr(a|b) \cdot \Pr(b|c) \]
+\end{theorem}
+
+\begin{lstlisting}[caption={\texttt{chainProductRule} (Basic.lean:345)}]
+theorem chainProductRule
+    {alpha : Type*} [DistribLattice alpha] [BoundedOrder alpha]
+    (B : Bivaluation alpha) [CA : ChainingAssociativity alpha B]
+    (hNormalized : forall t : alpha, Bot < t -> B.p t t = 1) :
+    forall a b c : alpha, a <= b -> b <= c -> Bot < a ->
+      B.p a c = B.p a b * B.p b c
+\end{lstlisting}
+
+\textbf{Proof strategy}:
+\begin{itemize}
+\item Appendix B gives: $\text{chain}(x,y) = (x \cdot y)/K$ for some $K > 0$
+\item Normalization at $(a,a,a)$ forces $K = 1$: since $p(a|a) = 1$, we have $1 = \text{chain}(1, 1) = 1/K$
+\item Therefore: $p(a|c) = \text{chain}(p(a|b), p(b|c)) = p(a|b) \cdot p(b|c)$
+\end{itemize}
+
+\subsection{Bayes' Theorem}
+
+\begin{theorem}[\texttt{bayesTheorem}]
+\textbf{Line 421, Basic.lean}
+
+For $x, \theta \leq t$ in a distributive lattice:
+\[ \Pr(x|\theta) \cdot \Pr(\theta|t) = \Pr(\theta|x) \cdot \Pr(x|t) \]
+\end{theorem}
+
+\begin{lstlisting}[caption={\texttt{bayesTheorem} (Basic.lean:421)}]
+theorem bayesTheorem
+    {alpha : Type*} [DistribLattice alpha] [BoundedOrder alpha]
+    (B : Bivaluation alpha) [CA : ChainingAssociativity alpha B]
+    (hNormalized : forall t : alpha, Bot < t -> B.p t t = 1)
+    (x theta t : alpha) (hxtheta_pos : Bot < x ⊓ theta) (hx : x <= t) (htheta : theta <= t)
+    (hx_pos : Bot < x) (htheta_pos : Bot < theta) :
+    B.p x theta * B.p theta t = B.p theta x * B.p x t
+\end{lstlisting}
+
+\textbf{Proof}: Both sides equal $\Pr(x \wedge \theta | t)$ by the product rule and commutativity of $\wedge$.
+
+\subsection{Probability as Ratio of Measures}
+
+\begin{theorem}[\texttt{prob\_eq\_measure\_ratio}]
+\textbf{Line 462, Basic.lean}
+
+Define the \textbf{unconditional measure} by $m(x) := p(x|\top)$. Then for any context $t \neq \bot$:
+\[ \Pr(x|t) = \frac{m(x \wedge t)}{m(t)} \]
+\end{theorem}
+
+\begin{lstlisting}[caption={\texttt{prob\_eq\_measure\_ratio} (Basic.lean:462)}]
+theorem prob_eq_measure_ratio
+    {alpha : Type*} [DistribLattice alpha] [BoundedOrder alpha]
+    (B : Bivaluation alpha) [CA : ChainingAssociativity alpha B]
+    (hNormalized : forall t : alpha, Bot < t -> B.p t t = 1) :
+    forall x t : alpha, t != Bot -> B.p x t = baseMeasure B (x ⊓ t) / baseMeasure B t
+\end{lstlisting}
+
+This single formula subsumes the sum rule, chain-product rule, and range $[0,1]$. Probability is simply the \textbf{ratio of measures} --- ``the elementary calculus of proportions of measure'' (K\&S, Section 7.3).
+
+\subsection{baseMeasure Satisfies Measure Axioms}
+
+\textbf{Lines 559--576, Basic.lean}
+
+The derived \texttt{baseMeasure} satisfies the classical measure axioms:
+
+\begin{theorem}[\texttt{baseMeasure\_satisfies\_measure\_axioms}]
+For a normalized Bivaluation ($p(t|t) = 1$ for $t > \bot$), \texttt{baseMeasure} is a probability measure:
+\begin{enumerate}
+\item $m(\bot) = 0$ (empty set has measure zero)
+\item Finite additivity: $m(x \vee y) = m(x) + m(y)$ for disjoint $x, y$
+\item Non-negativity: $0 \leq m(x)$
+\item Normalization: $m(\top) = 1$
+\end{enumerate}
+\end{theorem}
+
+\begin{lstlisting}[caption={\texttt{baseMeasure\_satisfies\_measure\_axioms} (Basic.lean:559)}]
+theorem baseMeasure_satisfies_measure_axioms
+    (hNormalized : forall t : alpha, Bot < t -> B.p t t = 1)
+    (hTop : (Top : alpha) != Bot) :
+    baseMeasure B Bot = 0 /\
+    (forall x y : alpha, Disjoint x y ->
+      baseMeasure B (x ⊔ y) = baseMeasure B x + baseMeasure B y) /\
+    (forall x : alpha, 0 <= baseMeasure B x) /\
+    baseMeasure B Top = 1
+\end{lstlisting}
+
+\textbf{Key point}: For finite Boolean algebras, finite additivity is equivalent to $\sigma$-additivity, so this is a bona fide probability measure in the Kolmogorov sense.
+
+\begin{remark}[Additional Measure Properties]
+The formalization also proves:
+\begin{itemize}
+\item \textbf{Inclusion-exclusion} (\texttt{baseMeasure\_inclusion\_exclusion}, line 588):
+  \[ m(x \vee y) + m(x \wedge y) = m(x) + m(y) \]
+\item \textbf{Complement rule} (\texttt{baseMeasure\_compl\_normalized}, line 640):
+  \[ m(x^c) = 1 - m(x) \]
+\item \textbf{Subadditivity} (\texttt{baseMeasure\_subadditive}, line 649):
+  \[ m(x \vee y) \leq m(x) + m(y) \]
+\item \textbf{ENNReal version} (\texttt{baseMeasureENNReal}, line 673): For Mathlib compatibility
+\end{itemize}
+\end{remark}
+
+%==============================================================================
+\section{Information and Entropy (K\&S Section 8)}
+%==============================================================================
+
+\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/InformationEntropy.lean}
+
+\textbf{What this section does}: K\&S Section 8 takes \textbf{special cases} of the variational potential $H$ from Appendix C, specialized to probability distributions (normalized measures from Section 7).
+
+\textbf{Key point}: Shannon entropy is \textbf{derived}, not just defined. It emerges as an ``inevitable consequence of seeking a variational quantity'' (K\&S, Section 8.2).
+
+\subsection{From Atom Divergence to KL Divergence}
+
+\textbf{The key step}: Now that we have probability distributions from Section 9, we can specialize the atom divergence from Section 8 to normalized measures.
+
+\textbf{For probability distributions} $P = (p_1, \ldots, p_n)$ and $Q = (q_1, \ldots, q_n)$ where $\sum p_i = 1$ and $\sum q_i = 1$:
+\begin{align*}
+\sum_i \phi(p_i, q_i) &= \sum_i (q_i - p_i + p_i \log(p_i/q_i)) \\
+&= \underbrace{\sum_i q_i}_{=1} - \underbrace{\sum_i p_i}_{=1} + \sum_i p_i \log(p_i/q_i) \\
+&= \sum_i p_i \log(p_i/q_i) = D_{KL}(P \| Q)
+\end{align*}
+
+This is the \textbf{Kullback-Leibler divergence} (K\&S Eq. 54).
+
+\textbf{Formalized in Lean} (\texttt{klDivergence\_from\_divergence\_formula}, lines 211--224, \texttt{InformationEntropy.lean}):
+\begin{lstlisting}
+theorem klDivergence_from_divergence_formula (P Q : ProbDist n)
+    (hQ_pos : forall i, P.p i != 0 -> 0 < Q.p i) :
+    klDivergence P Q hQ_pos =
+      sum i, atomDivergence (P.p i) (Q.p i) - (sum i, Q.p i - sum i, P.p i)
+\end{lstlisting}
+
+The proof uses the normalization constraints: $\sum (q_i - p_i) = 1 - 1 = 0$, so the linear terms cancel.
+
+\subsection{Derivation Chain}
+
+\textbf{From Appendix C to Shannon Entropy}:
+
+\begin{enumerate}
+\item \textbf{Appendix C} establishes the general variational form for any measure:
+\[ H(m) = A + B \cdot m + C \cdot (m \log m - m) \]
+
+\item \textbf{Section 8} specializes to atom divergence: $\phi(w, u) = u - w + w \log(w/u)$
+
+\item \textbf{Section 9} proves that probability is a normalized measure: $\Pr(x|t) = m(x \wedge t) / m(t)$
+
+\item \textbf{Section 10 (above)}: For probability distributions, divergence simplifies to KL divergence
+
+\item \textbf{Section 8.2 (Entropy)}: To quantify uncertainty, we require:
+\begin{itemize}
+\item Zero uncertainty when one $p_k = 1$ (fully determined state)
+\item This forces: $A_k = 0$ and $B_k = C$
+\item Setting $C = -1$ (conventional scale) gives:
+\end{itemize}
+\[ S(p) = -\sum_k p_k \log p_k \]
+\end{enumerate}
+
+\textbf{This is Shannon entropy} - not assumed, but \textbf{derived from the variational principle}.
+
+\subsection{Shannon's Three Properties}
+
+K\&S claim these properties are ``inevitable consequences'' (K\&S, Section 8.2):
+
+\begin{enumerate}
+\item \textbf{Continuity}: $S$ is a continuous function of its arguments
+\item \textbf{Monotonicity}: If there are $n$ equal choices ($p_k = 1/n$), then $S$ increases in $n$
+\item \textbf{Grouping}: If a choice is broken down into subchoices, $S$ adds according to expectation:
+\[ S(p_1, p_2, p_3) = S(p_1, p_2+p_3) + (p_2+p_3) \cdot S\left(\frac{p_2}{p_2+p_3}, \frac{p_3}{p_2+p_3}\right) \]
+\end{enumerate}
+
+These are Shannon's original axioms (Shannon 1948). K\&S shows they follow from the variational framework.
+
+\subsection{Formalization}
+
+\begin{definition}[\texttt{ProbDist}]
+\textbf{Lines 94--98, InformationEntropy.lean}
+
+A probability distribution: probabilities for $n$ outcomes that are non-negative and sum to 1.
+\end{definition}
+
+\begin{lstlisting}[caption={Probability distribution}]
+structure ProbDist (n : Nat) where
+  p : Fin n -> Real
+  nonneg : forall i, 0 <= p i
+  sum_one : sum i, p i = 1
+\end{lstlisting}
+
+\begin{definition}[\texttt{klDivergence}]
+\textbf{Line 184, InformationEntropy.lean}
+
+The Kullback-Leibler divergence for probability distributions (K\&S Eq. 54).
+\end{definition}
+
+\begin{lstlisting}[caption={\texttt{klDivergence} (InformationEntropy.lean:184)}]
+noncomputable def klDivergence {n : Nat} (P Q : ProbDist n)
+    (hQ_pos : forall i, P.p i != 0 -> 0 < Q.p i) : Real :=
+  sum i, P.p i * log (P.p i / Q.p i)
+\end{lstlisting}
+
+\textbf{Note}: The positivity hypothesis \texttt{hQ\_pos} ensures $Q$ is strictly positive on the support of $P$, avoiding $\log(p/0)$ issues. This is the regime where K\&S's formula is meaningful. An extended version \texttt{klDivergenceTop} (line 197) takes values in $\mathbb{R}_{\geq 0} \cup \{\infty\}$, returning $\infty$ when this condition fails.
+
+The Shannon entropy is formalized as:
+\[ S(p) = -\sum_i p_i \log(p_i) \]
+with the convention $0 \cdot \log(0) = 0$ (from continuity: $\lim_{x \to 0^+} x \log x = 0$), justified by \texttt{zero\_mul\_log\_zero} (line 70).
+
+%==============================================================================
+\section{Counterexamples and Clarifications}
+%==============================================================================
+
+\textbf{Directory}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Counterexamples/}
+
+\subsection{The ``Discontinuous Re-grading'' Claim}
+
+K\&S (Section 2) claim that continuity is ``merely a convenient convention'' and suggest
+a discontinuous ``re-grading'' map $\Theta$ could preserve the sum rule, using a
+base-conversion example.
+
+\begin{theorem}[\texttt{regrade\_preserving\_sum\_rule\_is\_continuous}]
+\textbf{File}: \texttt{Counterexamples/RegradeCounterexample.lean}
+
+\textbf{This claim is false.} Any re-grading $\Theta: \mathbb{R} \to \mathbb{R}$ that preserves:
+\begin{enumerate}
+\item The sum rule: $\Theta(x + y) = \Theta(x) + \Theta(y)$ (additivity)
+\item Monotonicity: $x \leq y \Rightarrow \Theta(x) \leq \Theta(y)$
+\end{enumerate}
+must be linear ($\Theta(x) = c \cdot x$ for some constant $c$), hence continuous.
+\end{theorem}
+
+\begin{lstlisting}[caption={Monotone additive functions are linear (RegradeCounterexample.lean:100)}]
+theorem monotone_additive_is_linear {f : R -> R}
+    (hadd : forall x y, f (x + y) = f x + f y)
+    (hmono : Monotone f) :
+    forall x, f x = f 1 * x
+
+theorem regrade_preserving_sum_rule_is_continuous {Theta : R -> R}
+    (hTheta_add : forall x y, Theta (x + y) = Theta x + Theta y)
+    (hTheta_mono : Monotone Theta) :
+    Continuous Theta
+\end{lstlisting}
+
+\begin{remark}[Why K\&S's Example Fails]
+K\&S's base-conversion map is not additive: $\Theta(x + y) \neq \Theta(x) + \Theta(y)$.
+Their example could only work by changing the addition operation to some weird $\oplus$,
+which is just obfuscating notation, not demonstrating genuine discontinuity.
+
+The philosophical point (finite systems can't detect continuity) may be valid,
+but the mathematical example does not support the claim.
+\end{remark}
+
+\subsection{Pathological Additive Functions}
+
+\textbf{File}: \texttt{Counterexamples/CauchyPathology.lean}
+
+Without regularity conditions, Cauchy's equation $f(x+y) = f(x) + f(y)$ has
+``wild'' non-linear solutions (constructed via Hamel bases over $\mathbb{Q}$).
+These solutions are necessarily \textbf{non-monotonic}---they oscillate wildly
+and cannot preserve order.
+
+\subsubsection{The Construction}
+
+\textbf{Step 1: Build a Hamel basis} (lines 35--77):
+
+We work with $\mathbb{R}$ as a vector space over $\mathbb{Q}$. First prove $\{1, \sqrt{2}\}$ is
+$\mathbb{Q}$-linearly independent (using irrationality of $\sqrt{2}$), then extend to a Hamel basis:
+
+\begin{lstlisting}[caption={Hamel basis extending $\{1, \sqrt{2}\}$}]
+theorem linearIndepOn_one_sqrt2 :
+    LinearIndepOn Q id ({(1 : R), Real.sqrt 2} : Set R)
+
+noncomputable def hamelBasis :
+    Module.Basis (...extend {1, sqrt 2}...) Q R :=
+  Module.Basis.extend linearIndepOn_one_sqrt2
+\end{lstlisting}
+
+\textbf{Step 2: Define the weird map} (lines 79--86):
+
+Create a $\mathbb{Q}$-linear map that sends:
+\begin{itemize}
+\item $1 \mapsto 0$
+\item $\sqrt{2} \mapsto 1$
+\item All other basis vectors $\mapsto 0$
+\end{itemize}
+
+\begin{lstlisting}[caption={Definition of weirdAdditive}]
+noncomputable def weirdQLinear : R ->_[Q] R :=
+  (hamelBasis).constr Q fun i =>
+    if (i : R) = Real.sqrt 2 then (1 : R) else 0
+
+noncomputable def weirdAdditive : R -> R := fun x => weirdQLinear x
+\end{lstlisting}
+
+\textbf{Step 3: Prove it's additive but not linear} (lines 87--127):
+
+\begin{lstlisting}[caption={weirdAdditive satisfies Cauchy's equation but isn't linear}]
+theorem weirdAdditive_add (x y : R) :
+    weirdAdditive (x + y) = weirdAdditive x + weirdAdditive y
+
+theorem weirdAdditive_not_mul (A : R) :
+    exists x : R, weirdAdditive x != A * x
+  -- Proof: weirdAdditive 1 = 0 but weirdAdditive (sqrt 2) = 1
+  -- So it can't be x |-> A*x for any constant A
+\end{lstlisting}
+
+\textbf{Step 4: Convert to positive reals} (lines 129--165):
+
+Define $H'(m) := \text{weirdAdditive}(\log m)$ on positive reals:
+
+\begin{lstlisting}[caption={Multiplicative-additive pathology on positive reals}]
+noncomputable def Hprime (m : R) : R := weirdAdditive (Real.log m)
+
+theorem Hprime_mul (m_x m_y : R) (hx : 0 < m_x) (hy : 0 < m_y) :
+    Hprime (m_x * m_y) = Hprime m_x + Hprime m_y
+
+theorem Hprime_not_B_add_C_log :
+    ~ exists (B C : R), forall m, 0 < m -> Hprime m = B + C * log m
+  -- Proof: If Hprime m = B + C*log m, then weirdAdditive x = C*x,
+  -- contradicting weirdAdditive_not_mul
+\end{lstlisting}
+
+\textbf{Key insight}: These pathological solutions exist but \textbf{cannot be monotone}.
+By the theorem in \S11.1, any monotone additive function is linear, so wild solutions
+like \texttt{weirdAdditive} must oscillate wildly and violate order preservation.
+
+%==============================================================================
+\section{Summary: Complete Formalization}
+%==============================================================================
+
+\subsection{What K\&S Claims vs. What We Prove}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{K\&S Claim} & \textbf{Lean Status} & \textbf{Notes} \\
+\midrule
+Axioms 0--2 $\Rightarrow$ Sum Rule & Proven & Appendix A representation \\
+Archimedean derivable & Proven & From KSSeparation \\
+Commutativity derivable & Proven & From KSSeparation \\
+Axioms 3--4 $\Rightarrow$ Product Rule & Proven & Appendix B \\
+Variational $\Rightarrow$ Entropy form & Proven & Appendix C \\
+3 algebra classes & Proven & TwoDimClassification \\
+$\mu < 0$ for QM & Proven & selection\_theorem \\
+Born rule from averaging & Proven & mean\_bornRule\_sum\_unit\_phases \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Key Discoveries from Formalization}
+
+\begin{enumerate}
+\item \textbf{Linear order is implicit}: K\&S proofs assume trichotomy without stating it.
+
+\item \textbf{Identity element is proven optional}: K\&S say the bottom element is ``optional'' (lines 320, 340--341).
+Our formalization \textbf{proves} this rigorously via the \texttt{KSSemigroupBase} hierarchy:
+
+\textbf{Identity-free representation} (\texttt{HolderEmbedding.lean}):
+\begin{itemize}
+\item \texttt{representation\_semigroup} (lines 297--303) proves the representation theorem \textbf{without identity}:
+  there exists $\Theta : \alpha \to \mathbb{R}$ with order-preservation and additivity
+\item Uses Eric Luap's \texttt{OrderedSemigroups} library via \texttt{holder\_embedding\_of\_noAnomalousPairs}
+\item The Hölder/Alimov embedding theorem works on any cancellative ordered semigroup without anomalous pairs
+\end{itemize}
+
+\textbf{What identity provides} (\texttt{HolderEmbedding.lean:310--313}):
+\begin{itemize}
+\item \texttt{identity\_gives\_canonical\_normalization}: Identity gives $\Theta(\text{ident}) = 0$
+\item Without identity, $\Theta$ is defined only up to an additive constant $c$: if $\Theta$ is valid, so is $\Theta + c$
+\item Identity pins down $c = 0$ by requiring $\Theta(\text{ident}) = 0$
+\end{itemize}
+
+\textbf{Two Appendix A paths}:
+\begin{itemize}
+\item \textbf{Hölder path} (\texttt{HolderEmbedding.lean}): Identity-FREE---produces \texttt{RepresentationResult}
+\item \textbf{Grid/Globalization path} (\texttt{RepresentationTheorem/}): Currently uses identity---produces \texttt{NormalizedRepresentationResult} with $\Theta(\text{ident}) = 0$
+\item \textbf{DirectCuts path} (\texttt{Alternative/DirectCuts.lean}): Explicitly requires identity for the cut construction
+\end{itemize}
+
+\textbf{Grid path identity-free infrastructure} (exists but not yet instantiated):
+\begin{itemize}
+\item \texttt{AtomFamily\_param}: Uses \texttt{IsPositive (atoms i)} instead of \texttt{ident < atoms i}
+\item \texttt{mu\_param}, \texttt{kGrid\_param}: Parametric versions with explicit base element
+\item \texttt{mu\_pnat}, \texttt{kGrid\_pnat}: Truly identity-free using $\mathbb{N}^+$ iteration
+\item \texttt{RepresentationGlobalizationAnchor}: Class for identity-free representations (normalizes to arbitrary anchor)
+\end{itemize}
+See \texttt{MultiGrid.lean} section ``Identity-Free Grid Definitions'' for the parametric API.
+
+Most of the formalization uses \texttt{KnuthSkillingAlgebraBase} (with identity) for historical reasons---the development was done with identity first---(4000+ references), but the core representation theorem is proven at the identity-free \texttt{KSSemigroupBase} level. K\&S are \textbf{correct} that identity is optional; we have \textbf{proven this rigorously}.
+
+\item \textbf{Separation property is necessary}: The representation theorem requires an explicit ``separation'' axiom to enable rational approximation.
+
+\item \textbf{Archimedean is derivable}: Not an axiom---follows from separation.
+
+\item \textbf{Commutativity is derivable}: Not an axiom---follows from separation via mass counting.
+
+\item \textbf{Classification gives isomorphism}: The original K\&S classification theorem is about \emph{isomorphism classes}, not equality of multiplication rules.
+
+\item \textbf{Measurability replaces continuity}: For Appendix C, measurability (not differentiability) is the correct regularity assumption.
+
+\item \textbf{Discontinuous re-grading is impossible}: K\&S's claim that continuity is optional is false
+for maps preserving both the sum rule and monotonicity (proven in \texttt{RegradeCounterexample.lean}).
+
+\item \textbf{Symmetries 3--4 are product-side}: The product-side symmetries (distributivity, product associativity) are logically separate from the sum-side axioms and are formalized in \texttt{ProductTheorem/Main.lean}.
+
+\item \textbf{Interface design pattern}: Both Appendix A and Appendix B use an \textbf{interface + multiple implementations} pattern:
+\begin{itemize}
+\item \textbf{Appendix A}: \texttt{AdditiveOrderIsoRep} interface with Hölder and Grid implementations
+\item \textbf{Appendix B}: \texttt{ScaledMultRep} interface with K\&S path and Direct path implementations
+\end{itemize}
+Downstream code depends only on the interfaces, not on specific proof paths. This separation of concerns
+allows switching implementations without changing dependent code.
+\end{enumerate}
+
+\subsection{Sorry Count}
+
+\begin{center}
+\fbox{\textbf{Total sorries in core K\&S files: 0}}
+\end{center}
+
+All core theorems are fully proven. The formalization is complete and ready for review.
+
+%==============================================================================
+\section{Build Instructions}
+%==============================================================================
+
+From the Mettapedia project root:
+
+\begin{lstlisting}[language=bash]
+export LAKE_JOBS=3
+nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling
+\end{lstlisting}
+
+For memory-intensive files (ThetaPrime.lean):
+\begin{lstlisting}[language=bash]
+ulimit -Sv 6291456
+export LAKE_JOBS=1
+nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
+\end{lstlisting}
+
+\end{document}

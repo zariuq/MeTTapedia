@@ -1,3 +1,4 @@
+import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Probability.Kernel.IonescuTulcea.Traj
 import Mettapedia.UniversalAI.BayesianAgents.Core
@@ -67,6 +68,122 @@ def prefixToHistory (n : ℕ) (x : Prefix n) : History Action Percept :=
   (List.finRange (n + 1)).flatMap fun i =>
     let s : Step := x ⟨i.val, mem_Iic.2 (Nat.lt_succ_iff.mp i.isLt)⟩
     [HistElem.act s.1, HistElem.per s.2]
+
+/-- Extend a prefix by one step. -/
+def prefixExtend (a : ℕ) (pref : Prefix a) (s : Step) : Prefix (a + 1) :=
+  _root_.IicProdIoc (X := StepFamily) a (a + 1)
+    (pref, (MeasurableEquiv.piSingleton (X := StepFamily) a s))
+
+omit [Fintype Action] [Fintype Percept] in
+theorem prefixExtend_apply_last (a : ℕ) (pref : Prefix a) (s : Step) :
+    prefixExtend (Action := Action) (Percept := Percept) a pref s
+        ⟨a + 1, mem_Iic.2 (le_rfl)⟩ = s := by
+  have hnot : ¬ (a + 1 ≤ a) := Nat.not_succ_le_self a
+  simp [prefixExtend, _root_.IicProdIoc_def, hnot, MeasurableEquiv.piSingleton]
+
+omit [Fintype Action] [Fintype Percept] in
+theorem prefixExtend_frestrictLe (a : ℕ) (pref : Prefix a) (s : Step) :
+    frestrictLe₂ (π := StepFamily) (a := a) (b := a + 1) (Nat.le_succ a)
+        (prefixExtend (Action := Action) (Percept := Percept) a pref s) = pref := by
+  have h :=
+    congrArg
+      (fun f => f (pref, (MeasurableEquiv.piSingleton (X := StepFamily) a s)))
+      (frestrictLe₂_comp_IicProdIoc (X := StepFamily) (a := a) (b := a + 1)
+        (hab := Nat.le_succ a))
+  simpa [prefixExtend] using h
+
+theorem measurable_prefixExtend (a : ℕ) (pref : Prefix a) :
+    Measurable fun s : Step =>
+      prefixExtend (Action := Action) (Percept := Percept) a pref s := by
+  have h_pi :
+      Measurable fun s : Step =>
+        (MeasurableEquiv.piSingleton (X := StepFamily) a s) := by
+    simpa using (MeasurableEquiv.piSingleton (X := StepFamily) a).measurable
+  -- `measurable_of_finite` keeps the compat layer simple and avoids instance mismatches
+  -- from the `Prefix` abbreviations.
+  simpa using
+    (measurable_of_finite
+      (f := fun s : Step =>
+        prefixExtend (Action := Action) (Percept := Percept) a pref s))
+
+omit [Fintype Action] [Fintype Percept] in
+theorem prefixToHistory_succ (a : ℕ) (x : Prefix (a + 1)) :
+    prefixToHistory (Action := Action) (Percept := Percept) (a + 1) x =
+      prefixToHistory (Action := Action) (Percept := Percept) a
+          (frestrictLe₂ (π := StepFamily) (a := a) (b := a + 1) (Nat.le_succ a) x) ++
+        [HistElem.act (x ⟨a + 1, mem_Iic.2 (le_rfl)⟩).1,
+          HistElem.per (x ⟨a + 1, mem_Iic.2 (le_rfl)⟩).2] := by
+  classical
+  let f : Fin (a + 2) → List (HistElem Action Percept) := fun i =>
+    let s : Step := x ⟨i.val, mem_Iic.2 (Nat.lt_succ_iff.mp i.isLt)⟩
+    [HistElem.act s.1, HistElem.per s.2]
+  have h_range :
+      List.finRange (a + 2) =
+        (List.finRange (a + 1)).map Fin.castSucc ++ [Fin.last (a + 1)] := by
+    have h_ofFn :
+        List.ofFn (fun i : Fin (a + 2) => i) =
+          (List.ofFn fun i : Fin (a + 1) => Fin.castSucc i).concat (Fin.last (a + 1)) := by
+      simpa using (List.ofFn_succ' (f := fun i : Fin (a + 2) => i))
+    have h_cast :
+        List.ofFn (fun i : Fin (a + 1) => Fin.castSucc i) =
+          (List.finRange (a + 1)).map Fin.castSucc := by
+      simpa using (List.ofFn_eq_map (f := fun i : Fin (a + 1) => Fin.castSucc i))
+    calc
+      List.finRange (a + 2) = List.ofFn (fun i : Fin (a + 2) => i) := by
+        simpa using (List.ofFn_id (a + 2)).symm
+      _ = (List.ofFn fun i : Fin (a + 1) => Fin.castSucc i).concat (Fin.last (a + 1)) := h_ofFn
+      _ = ((List.finRange (a + 1)).map Fin.castSucc).concat (Fin.last (a + 1)) := by
+        simpa using congrArg (fun l => l.concat (Fin.last (a + 1))) h_cast
+      _ = (List.finRange (a + 1)).map Fin.castSucc ++ [Fin.last (a + 1)] := by
+        simp [List.concat_eq_append]
+  have h_flat :
+      (List.finRange (a + 2)).flatMap f =
+        (List.finRange (a + 1)).flatMap (fun i => f (Fin.castSucc i)) ++
+          f (Fin.last (a + 1)) := by
+    simp [h_range, List.flatMap_append, List.flatMap_map]
+  have h_prefix :
+      (List.finRange (a + 1)).flatMap (fun i => f (Fin.castSucc i)) =
+        prefixToHistory (Action := Action) (Percept := Percept) a
+          (frestrictLe₂ (π := StepFamily) (a := a) (b := a + 1) (Nat.le_succ a) x) := by
+    simp [prefixToHistory, f, frestrictLe₂_apply]
+  have h_last :
+      f (Fin.last (a + 1)) =
+        [HistElem.act (x ⟨a + 1, mem_Iic.2 (le_rfl)⟩).1,
+          HistElem.per (x ⟨a + 1, mem_Iic.2 (le_rfl)⟩).2] := by
+    simp [f]
+  calc
+    prefixToHistory (Action := Action) (Percept := Percept) (a + 1) x =
+        (List.finRange (a + 2)).flatMap f := by
+          simp [prefixToHistory, f]
+    _ =
+        (List.finRange (a + 1)).flatMap (fun i => f (Fin.castSucc i)) ++
+          f (Fin.last (a + 1)) := h_flat
+    _ =
+        prefixToHistory (Action := Action) (Percept := Percept) a
+            (frestrictLe₂ (π := StepFamily) (a := a) (b := a + 1) (Nat.le_succ a) x) ++
+          [HistElem.act (x ⟨a + 1, mem_Iic.2 (le_rfl)⟩).1,
+            HistElem.per (x ⟨a + 1, mem_Iic.2 (le_rfl)⟩).2] := by
+          simp [h_prefix, h_last]
+
+omit [Fintype Action] [Fintype Percept] in
+theorem prefixToHistory_extend (a : ℕ) (pref : Prefix a) (s : Step) :
+    prefixToHistory (Action := Action) (Percept := Percept) (a + 1)
+        (prefixExtend (Action := Action) (Percept := Percept) a pref s) =
+      prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+        [HistElem.act s.1, HistElem.per s.2] := by
+  have h_succ :=
+    prefixToHistory_succ (Action := Action) (Percept := Percept) (a := a)
+      (x := prefixExtend (Action := Action) (Percept := Percept) a pref s)
+  have h_restrict :
+      frestrictLe₂ (π := StepFamily) (a := a) (b := a + 1) (Nat.le_succ a)
+          (prefixExtend (Action := Action) (Percept := Percept) a pref s) = pref :=
+    prefixExtend_frestrictLe (Action := Action) (Percept := Percept) (a := a) (pref := pref)
+      (s := s)
+  have h_last :
+      (prefixExtend (Action := Action) (Percept := Percept) a pref s)
+          ⟨a + 1, mem_Iic.2 (le_rfl)⟩ = s :=
+    prefixExtend_apply_last (Action := Action) (Percept := Percept) (a := a) (pref := pref) (s := s)
+  simpa [h_restrict, h_last] using h_succ
 
 omit [Fintype Action] [Fintype Percept] in
 theorem percepts_actper_pairs (pairs : List (Action × Percept)) :
@@ -317,6 +434,54 @@ theorem initialStepMeasureWithPolicy_isProbability
     rfl
   simpa [tsum_fintype] using (π.policy_sum_one ([] : History Action Percept) h_wf)
 
+theorem integral_transitionMeasureWithPolicy
+    (μ : Environment Action Percept) (π : Agent Action Percept) (n : ℕ) (x : Prefix n)
+    {g : Step → ℝ} (hg : MeasureTheory.Integrable g (transitionMeasureWithPolicy μ π n x)) :
+    ∫ s, g s ∂ transitionMeasureWithPolicy μ π n x =
+      ∑ s : Step,
+        (π.policy (prefixToHistory n x) s.1 *
+            μ.prob (prefixToHistory n x ++ [HistElem.act s.1]) s.2).toReal * g s := by
+  classical
+  have h_sum :
+      ∫ s, g s ∂ transitionMeasureWithPolicy μ π n x =
+        ∑' s : Step,
+          ∫ s', g s' ∂
+            ((π.policy (prefixToHistory n x) s.1 *
+                  μ.prob (prefixToHistory n x ++ [HistElem.act s.1]) s.2) •
+              MeasureTheory.Measure.dirac s) := by
+    simpa [transitionMeasureWithPolicy] using
+      (MeasureTheory.integral_sum_measure (μ := fun s : Step =>
+        (π.policy (prefixToHistory n x) s.1 *
+              μ.prob (prefixToHistory n x ++ [HistElem.act s.1]) s.2) •
+          MeasureTheory.Measure.dirac s) (f := g) hg)
+  have h_dirac :
+      ∀ s : Step,
+        ∫ s', g s' ∂
+          ((π.policy (prefixToHistory n x) s.1 *
+                μ.prob (prefixToHistory n x ++ [HistElem.act s.1]) s.2) •
+            MeasureTheory.Measure.dirac s) =
+          (π.policy (prefixToHistory n x) s.1 *
+              μ.prob (prefixToHistory n x ++ [HistElem.act s.1]) s.2).toReal * g s := by
+    intro s
+    simp [MeasureTheory.integral_smul_measure, MeasureTheory.integral_dirac]
+  calc
+    ∫ s, g s ∂ transitionMeasureWithPolicy μ π n x =
+        ∑' s : Step,
+          ∫ s', g s' ∂
+            ((π.policy (prefixToHistory n x) s.1 *
+                  μ.prob (prefixToHistory n x ++ [HistElem.act s.1]) s.2) •
+              MeasureTheory.Measure.dirac s) := h_sum
+    _ =
+        ∑' s : Step,
+          (π.policy (prefixToHistory n x) s.1 *
+              μ.prob (prefixToHistory n x ++ [HistElem.act s.1]) s.2).toReal * g s := by
+        simp [h_dirac]
+    _ = ∑ s : Step,
+          (π.policy (prefixToHistory n x) s.1 *
+              μ.prob (prefixToHistory n x ++ [HistElem.act s.1]) s.2).toReal * g s := by
+        simp [tsum_fintype]
+
+
 /-- Convert between a single step and the `Iic 0` prefix space. -/
 def stepToIic0 : Step ≃ (Prefix 0) where
   toFun s := fun _ => s
@@ -527,6 +692,25 @@ theorem measurable_reward_at (k : ℕ) :
     simpa using (measurable_snd.comp (measurable_pi_apply (a := k)))
   exact h_reward.comp h_eval
 
+omit [Fintype Action] [Fintype Percept] in
+theorem measurable_reward_prefix (a : ℕ) :
+    Measurable fun z : PrefixT Action Percept (a + 1) =>
+      PerceptReward.reward (z ⟨a + 1, mem_Iic.2 (le_rfl)⟩).2 := by
+  have h_reward : Measurable (fun p : Percept => PerceptReward.reward p) := by
+    simpa using
+      (measurable_from_top (β := ℝ) (f := fun p : Percept => PerceptReward.reward p))
+  have h_eval :
+      Measurable fun z : PrefixT Action Percept (a + 1) =>
+        (z ⟨a + 1, mem_Iic.2 (le_rfl)⟩).2 := by
+    have h_step :
+        Measurable fun z : PrefixT Action Percept (a + 1) =>
+          z ⟨a + 1, mem_Iic.2 (le_rfl)⟩ := by
+      simpa using
+        (measurable_pi_apply
+          (a := (⟨a + 1, mem_Iic.2 (le_rfl)⟩ : Finset.Iic (a + 1))))
+    exact measurable_snd.comp h_step
+  exact h_reward.comp h_eval
+
 omit [Fintype Action] [Fintype Percept] [PerceptReward Percept] in
 theorem trajTail_shift (k : ℕ) (traj : Trajectory) :
     trajTail (Action := Action) (Percept := Percept) (trajShift (Action := Action) (Percept := Percept) k traj) =
@@ -547,6 +731,12 @@ theorem trajShift_succ (k : ℕ) (traj : Trajectory) :
     simp [Nat.add_assoc]
   have h' : traj (k + (1 + n)) = traj (k + 1 + n) := congrArg traj h
   simp [trajShift, h']
+
+omit [Fintype Action] [Fintype Percept] [PerceptReward Percept] in
+theorem trajShift_zero (traj : Trajectory) :
+    trajShift (Action := Action) (Percept := Percept) 0 traj = traj := by
+  funext n
+  exact congrArg traj (Nat.zero_add n)
 
 noncomputable def discountedRewardSum (γ : DiscountFactor) : ℕ → Trajectory → ℝ
   | 0, _ => 0
@@ -605,6 +795,128 @@ theorem discountedRewardSumFrom_succ (γ : DiscountFactor) (k t : ℕ) (traj : T
       PerceptReward.reward (traj (k)).2 +
         γ.val * discountedRewardSumFrom (Action := Action) (Percept := Percept) γ (k + 1) t traj := by
   simp [discountedRewardSumFrom, discountedRewardSum, trajTail_shift, trajShift]
+
+omit [Fintype Action] [Fintype Percept] in
+theorem summable_geometric_discount (γ : DiscountFactor) (h_lt : γ.val < 1) :
+    Summable (fun n : ℕ => |γ.val ^ n|) := by
+  have h := summable_geometric_of_lt_one γ.nonneg h_lt
+  simpa [abs_of_nonneg (pow_nonneg γ.nonneg _)] using h
+
+omit [Fintype Action] [Fintype Percept] in
+theorem discountedUtilityTrunc_succ_head
+    (γ : DiscountFactor) (t : ℕ) (traj : Trajectory) :
+    Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc
+        (Action := Action) (Percept := Percept)
+        (fun s : Step => PerceptReward.reward s.2)
+        (fun n => γ.val ^ n) (t + 1) traj =
+      PerceptReward.reward (traj 0).2 +
+        γ.val *
+          Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc
+            (Action := Action) (Percept := Percept)
+            (fun s : Step => PerceptReward.reward s.2)
+            (fun n => γ.val ^ n) t (trajTail traj) := by
+  have h_tail :
+      (Finset.range t).sum
+          (fun n => (γ.val ^ (n + 1)) * PerceptReward.reward (traj (n + 1)).2) =
+        γ.val * (Finset.range t).sum
+          (fun n => (γ.val ^ n) * PerceptReward.reward (trajTail traj n).2) := by
+    calc
+      (Finset.range t).sum
+          (fun n => (γ.val ^ (n + 1)) * PerceptReward.reward (traj (n + 1)).2)
+          =
+        (Finset.range t).sum
+          (fun n => γ.val * ((γ.val ^ n) * PerceptReward.reward (traj (n + 1)).2)) := by
+          simp [pow_succ, mul_assoc, mul_comm]
+      _ = γ.val * (Finset.range t).sum
+          (fun n => (γ.val ^ n) * PerceptReward.reward (traj (n + 1)).2) := by
+          symm
+          simp [Finset.mul_sum]
+      _ = γ.val * (Finset.range t).sum
+          (fun n => (γ.val ^ n) * PerceptReward.reward (trajTail traj n).2) := by
+          have h_traj :
+              (fun n => (γ.val ^ n) * PerceptReward.reward (traj (n + 1)).2) =
+                (fun n => (γ.val ^ n) * PerceptReward.reward (trajTail traj n).2) := by
+            funext n
+            have h_tail : trajTail traj n = traj (n + 1) := by
+              dsimp [trajTail, trajShift]
+              exact congrArg traj (Nat.add_comm 1 n)
+            rw [h_tail]
+          simp [h_traj]
+  have h_head :
+      PerceptReward.reward (traj 0).2 +
+          γ.val *
+            (Finset.range t).sum
+              (fun n => (γ.val ^ n) * PerceptReward.reward (trajTail traj n).2) =
+        γ.val *
+            (Finset.range t).sum
+              (fun n => (γ.val ^ n) * PerceptReward.reward (trajTail traj n).2) +
+          PerceptReward.reward (traj 0).2 := by
+    simp [add_comm]
+  simp [Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc, Finset.sum_range_succ',
+    h_tail, h_head]
+
+omit [Fintype Action] [Fintype Percept] in
+theorem discountedRewardSumFrom_eq_discountedUtilityTrunc
+    (γ : DiscountFactor) (k t : ℕ) (traj : Trajectory) :
+    discountedRewardSumFrom (Action := Action) (Percept := Percept) γ k t traj =
+      Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc
+        (Action := Action) (Percept := Percept)
+        (fun s : Step => PerceptReward.reward s.2)
+        (fun n => γ.val ^ n) t (trajShift k traj) := by
+  induction t generalizing k with
+  | zero =>
+      simp [discountedRewardSumFrom, discountedRewardSum,
+        Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc_zero]
+  | succ t ih =>
+      have h_tail :
+          Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc
+              (Action := Action) (Percept := Percept)
+              (fun s : Step => PerceptReward.reward s.2)
+              (fun n => γ.val ^ n) t (trajTail (trajShift k traj)) =
+            Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc
+              (Action := Action) (Percept := Percept)
+              (fun s : Step => PerceptReward.reward s.2)
+              (fun n => γ.val ^ n) t (trajShift (k + 1) traj) := by
+        simp [trajTail_shift]
+      calc
+        discountedRewardSumFrom (Action := Action) (Percept := Percept) γ k (t + 1) traj
+            =
+          PerceptReward.reward (traj k).2 +
+            γ.val * discountedRewardSumFrom (Action := Action) (Percept := Percept) γ (k + 1) t traj := by
+              simpa using
+                (discountedRewardSumFrom_succ (Action := Action) (Percept := Percept)
+                  (γ := γ) (k := k) (t := t) (traj := traj))
+        _ =
+          PerceptReward.reward ((trajShift k traj) 0).2 +
+            γ.val *
+              Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc
+                (Action := Action) (Percept := Percept)
+                (fun s : Step => PerceptReward.reward s.2)
+                (fun n => γ.val ^ n) t (trajShift (k + 1) traj) := by
+              simp [trajShift, ih (k + 1)]
+        _ =
+          Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc
+            (Action := Action) (Percept := Percept)
+            (fun s : Step => PerceptReward.reward s.2)
+            (fun n => γ.val ^ n) (t + 1) (trajShift k traj) := by
+              have h :=
+                discountedUtilityTrunc_succ_head (Action := Action) (Percept := Percept)
+                  (γ := γ) (t := t) (traj := trajShift k traj)
+              simpa [h_tail] using h.symm
+
+omit [Fintype Action] [Fintype Percept] in
+theorem discountedRewardSum_eq_discountedUtilityTrunc
+    (γ : DiscountFactor) (t : ℕ) (traj : Trajectory) :
+    discountedRewardSum (Action := Action) (Percept := Percept) γ t traj =
+      Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc
+        (Action := Action) (Percept := Percept)
+        (fun s : Step => PerceptReward.reward s.2)
+        (fun n => γ.val ^ n) t traj := by
+  have h :=
+    discountedRewardSumFrom_eq_discountedUtilityTrunc
+      (Action := Action) (Percept := Percept) (γ := γ) (k := 0) (t := t) (traj := traj)
+  simpa [discountedRewardSumFrom,
+    trajShift_zero (Action := Action) (Percept := Percept)] using h
 
 omit [Fintype Action] [Fintype Percept] in
 theorem discountedRewardSumFrom_nonneg (γ : DiscountFactor) (k t : ℕ) (traj : Trajectory) :
@@ -714,6 +1026,31 @@ noncomputable def valueFromMeasure
     (environmentMeasureWithPolicy μ π h_stoch)
     (discountedRewardSum (Action := Action) (Percept := Percept) γ t)
 
+noncomputable def valueFromMeasureInf
+    (μ : Environment Action Percept) (π : Agent Action Percept) (γ : DiscountFactor)
+    (h_stoch : isStochastic μ) : ℝ :=
+  Mettapedia.UniversalAI.InfiniteHistory.value (Action := Action) (Percept := Percept)
+    (environmentMeasureWithPolicy μ π h_stoch)
+    (Mettapedia.UniversalAI.InfiniteHistory.discountedUtility
+      (Action := Action) (Percept := Percept)
+      (fun s : Step => PerceptReward.reward s.2)
+      (fun n => γ.val ^ n))
+
+omit [Fintype Action] [Fintype Percept] in
+theorem measurable_reward_step :
+    Measurable fun s : Step => PerceptReward.reward s.2 := by
+  have h_reward : Measurable (fun p : Percept => PerceptReward.reward p) := by
+    simpa using
+      (measurable_from_top (β := ℝ) (f := fun p : Percept => PerceptReward.reward p))
+  exact h_reward.comp measurable_snd
+
+omit [Fintype Action] [Fintype Percept] in
+theorem reward_step_abs_le_one (s : Step) :
+    |PerceptReward.reward s.2| ≤ (1 : ℝ) := by
+  have h_nonneg : 0 ≤ PerceptReward.reward s.2 := PerceptReward.nonneg _
+  have h_le : PerceptReward.reward s.2 ≤ 1 := PerceptReward.le_one _
+  simpa [abs_of_nonneg h_nonneg] using h_le
+
 noncomputable def valueFromPrefix
     (μ : Environment Action Percept) (π : Agent Action Percept) (γ : DiscountFactor)
     (h_stoch : isStochastic μ) (a t : ℕ) (pref : Prefix a) : ℝ :=
@@ -723,6 +1060,64 @@ noncomputable def valueFromPrefix
     ((Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
         (κ := transitionKernelWithPolicy μ π) a) pref)
     (discountedRewardSumFrom (Action := Action) (Percept := Percept) γ (a + 1) t)
+
+theorem valueFromPrefix_eq_discountedUtilityTrunc
+    (μ : Environment Action Percept) (π : Agent Action Percept) (γ : DiscountFactor)
+    (h_stoch : isStochastic μ) (a t : ℕ) (pref : Prefix a)
+    [hκ : ∀ n, ProbabilityTheory.IsMarkovKernel (transitionKernelWithPolicy μ π n)] :
+    valueFromPrefix (Action := Action) (Percept := Percept) μ π γ h_stoch a t pref =
+      ∫ traj,
+        Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc
+          (Action := Action) (Percept := Percept)
+          (fun s : Step => PerceptReward.reward s.2)
+          (fun n => γ.val ^ n) t (trajShift (Action := Action) (Percept := Percept) (a + 1) traj) ∂
+        (Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
+          (κ := transitionKernelWithPolicy μ π) a) pref := by
+  dsimp [valueFromPrefix]
+  refine MeasureTheory.integral_congr_ae ?_
+  refine Filter.Eventually.of_forall ?_
+  intro traj
+  simp [discountedRewardSumFrom_eq_discountedUtilityTrunc]
+
+theorem valueFromMeasure_eq_discountedUtilityTrunc
+    (μ : Environment Action Percept) (π : Agent Action Percept) (γ : DiscountFactor)
+    (h_stoch : isStochastic μ) (t : ℕ) :
+    valueFromMeasure (Action := Action) (Percept := Percept) μ π γ h_stoch t =
+      ∫ traj,
+        Mettapedia.UniversalAI.InfiniteHistory.discountedUtilityTrunc
+          (Action := Action) (Percept := Percept)
+          (fun s : Step => PerceptReward.reward s.2)
+          (fun n => γ.val ^ n) t traj ∂
+        environmentMeasureWithPolicy μ π h_stoch := by
+  simp [valueFromMeasure, Mettapedia.UniversalAI.InfiniteHistory.value]
+  refine MeasureTheory.integral_congr_ae ?_
+  refine Filter.Eventually.of_forall ?_
+  intro traj
+  simp [discountedRewardSum_eq_discountedUtilityTrunc]
+
+theorem tendsto_valueFromMeasure
+    (μ : Environment Action Percept) (π : Agent Action Percept) (γ : DiscountFactor)
+    (h_stoch : isStochastic μ) (h_lt : γ.val < 1) :
+    Filter.Tendsto
+        (fun t => valueFromMeasure (Action := Action) (Percept := Percept) μ π γ h_stoch t)
+        Filter.atTop
+        (nhds (valueFromMeasureInf (Action := Action) (Percept := Percept) μ π γ h_stoch)) := by
+  haveI : MeasureTheory.IsProbabilityMeasure (environmentMeasureWithPolicy μ π h_stoch) :=
+    environmentMeasureWithPolicy_isProbability μ π h_stoch
+  haveI : MeasureTheory.IsFiniteMeasure (environmentMeasureWithPolicy μ π h_stoch) :=
+    by infer_instance
+  have h_tendsto :=
+    Mettapedia.UniversalAI.InfiniteHistory.tendsto_integral_discountedUtilityTrunc
+      (Action := Action) (Percept := Percept)
+      (reward := fun s : Step => PerceptReward.reward s.2)
+      (w := fun n => γ.val ^ n) (R := 1)
+      (h_reward := measurable_reward_step (Action := Action) (Percept := Percept))
+      (h_reward_bound := reward_step_abs_le_one (Action := Action) (Percept := Percept))
+      (h_R_nonneg := by simp)
+      (hw := summable_geometric_discount γ h_lt)
+      (μ := environmentMeasureWithPolicy μ π h_stoch)
+  simpa [valueFromMeasure_eq_discountedUtilityTrunc, valueFromMeasureInf,
+    Mettapedia.UniversalAI.InfiniteHistory.value] using h_tendsto
 
 omit [PerceptReward Percept] in
 theorem integral_trajKernelOf_succ
@@ -768,6 +1163,42 @@ theorem trajKernelOf_map_frestrictLe_self
   simpa [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq,
     ProbabilityTheory.Kernel.id_apply] using h_map'
 
+omit [PerceptReward Percept] in
+theorem integral_comp_frestrictLe_trajKernelOf_eq
+    (μ : Environment Action Percept) (π : Agent Action Percept)
+    (a : ℕ) (pref : PrefixT Action Percept a)
+    [hκ : ∀ n, ProbabilityTheory.IsMarkovKernel (transitionKernelWithPolicy μ π n)]
+    {g : PrefixT Action Percept a → ℝ} (hg : Measurable g) :
+    ∫ y, g (frestrictLe (π := StepFamily) a y) ∂
+        (Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
+          (κ := transitionKernelWithPolicy μ π) a) pref =
+      g pref := by
+  have h_map :
+      MeasureTheory.Measure.map (frestrictLe (π := StepFamily) a)
+          ((ProbabilityTheory.Kernel.traj (κ := transitionKernelWithPolicy μ π) a) pref) =
+        MeasureTheory.Measure.dirac pref := by
+    simpa [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq] using
+      (trajKernelOf_map_frestrictLe_self (μ := μ) (π := π) (a := a) (pref := pref))
+  have h_phi :
+      AEMeasurable (frestrictLe (π := StepFamily) a)
+        ((Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
+          (κ := transitionKernelWithPolicy μ π) a) pref) :=
+    (measurable_frestrictLe (X := StepFamily) a).aemeasurable
+  calc
+    ∫ y, g (frestrictLe (π := StepFamily) a y) ∂
+        (Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
+          (κ := transitionKernelWithPolicy μ π) a) pref
+        = ∫ z, g z ∂ MeasureTheory.Measure.map
+            (frestrictLe (π := StepFamily) a)
+            ((ProbabilityTheory.Kernel.traj (κ := transitionKernelWithPolicy μ π) a) pref) := by
+          symm
+          simpa [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq] using
+            (MeasureTheory.integral_map h_phi (hg.aestronglyMeasurable))
+    _ = ∫ z, g z ∂ MeasureTheory.Measure.dirac pref := by
+          simp [h_map]
+    _ = g pref := by
+          simp
+
 theorem integral_reward_trajKernelOf
     (μ : Environment Action Percept) (π : Agent Action Percept)
     (a : ℕ) (pref : PrefixT Action Percept (a + 1))
@@ -779,18 +1210,8 @@ theorem integral_reward_trajKernelOf
   let g : PrefixT Action Percept (a + 1) → ℝ := fun z =>
     PerceptReward.reward (z ⟨a + 1, mem_Iic.2 (le_rfl)⟩).2
   have h_g_meas : Measurable g := by
-    simpa [g] using (measurable_of_finite (f := g))
-  have h_map :
-      MeasureTheory.Measure.map (frestrictLe (π := StepFamily) (a + 1))
-          ((ProbabilityTheory.Kernel.traj (κ := transitionKernelWithPolicy μ π) (a + 1)) pref) =
-        MeasureTheory.Measure.dirac pref := by
-    simpa [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq] using
-      (trajKernelOf_map_frestrictLe_self (μ := μ) (π := π) (a := a + 1) (pref := pref))
-  have h_phi :
-      AEMeasurable (frestrictLe (π := StepFamily) (a + 1))
-        ((Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
-          (κ := transitionKernelWithPolicy μ π) (a + 1)) pref) :=
-    (measurable_frestrictLe (X := StepFamily) (a + 1)).aemeasurable
+    simpa [g] using
+      (measurable_reward_prefix (Action := Action) (Percept := Percept) (a := a))
   calc
     ∫ y, PerceptReward.reward (y (a + 1)).2 ∂
         (Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
@@ -802,15 +1223,11 @@ theorem integral_reward_trajKernelOf
           refine Filter.Eventually.of_forall ?_
           intro y
           simp [g, reward_from_prefix (Action := Action) (Percept := Percept) (a := a) (traj := y)]
-    _ = ∫ z, g z ∂ MeasureTheory.Measure.map
-            (frestrictLe (π := StepFamily) (a + 1))
-            (Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf (X := StepFamily)
-              (κ := transitionKernelWithPolicy μ π) (a + 1) pref) := by
-          symm
-          exact MeasureTheory.integral_map h_phi (h_g_meas.aestronglyMeasurable)
-    _ = ∫ z, g z ∂ MeasureTheory.Measure.dirac pref := by
-          simp [Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf_eq, h_map]
     _ = g pref := by
+          simpa using
+            (integral_comp_frestrictLe_trajKernelOf_eq (μ := μ) (π := π)
+              (a := a + 1) (pref := pref) (g := g) h_g_meas)
+    _ = PerceptReward.reward (pref ⟨a + 1, mem_Iic.2 (le_rfl)⟩).2 := by
           simp [g]
 
 theorem valueFromPrefix_succ
@@ -935,6 +1352,192 @@ theorem valueFromPrefix_zero
     funext traj
     simp [discountedRewardSumFrom_zero]
   simp [valueFromPrefix, h0]
+
+theorem coreValue_succ_step_sum
+    (μ : Environment Action Percept) (π : Agent Action Percept) (γ : DiscountFactor)
+    (a t : ℕ) (pref : Prefix a) :
+    value μ π γ (prefixToHistory (Action := Action) (Percept := Percept) a pref) (2 * (t + 1)) =
+      ∑ s : Step,
+        (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) s.1 *
+            μ.prob (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+              [HistElem.act s.1]) s.2).toReal *
+          (PerceptReward.reward s.2 +
+            γ.val *
+              value μ π γ
+                (prefixToHistory (Action := Action) (Percept := Percept) (a + 1)
+                  (prefixExtend (Action := Action) (Percept := Percept) a pref s))
+                (2 * t)) := by
+  have h_wf :
+      History.wellFormed (Action := Action) (Percept := Percept)
+        (prefixToHistory (Action := Action) (Percept := Percept) a pref) :=
+    prefixToHistory_wellFormed (Action := Action) (Percept := Percept) a pref
+  have h_horizon : 2 * (t + 1) = 2 * t + 2 := by
+    simp [Nat.mul_succ]
+  calc
+    value μ π γ (prefixToHistory (Action := Action) (Percept := Percept) a pref) (2 * (t + 1))
+        =
+        value μ π γ (prefixToHistory (Action := Action) (Percept := Percept) a pref) (2 * t + 2) := by
+          simp [h_horizon]
+    _ =
+        ∑ a' : Action,
+          (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) a').toReal *
+            qValue μ π γ (prefixToHistory (Action := Action) (Percept := Percept) a pref) a'
+              (2 * t + 1) := by
+          simp [value_succ, h_wf]
+    _ =
+        ∑ a' : Action,
+          (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) a').toReal *
+            ∑ p : Percept,
+              (μ.prob
+                    (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                        [HistElem.act a']) p).toReal *
+                (PerceptReward.reward p +
+                  γ.val *
+                    value μ π γ
+                      (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                          [HistElem.act a', HistElem.per p])
+                      (2 * t)) := by
+          refine Finset.sum_congr rfl ?_
+          intro a' _ha'
+          have h_wf_act :
+              History.wellFormed (Action := Action) (Percept := Percept)
+                (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                    [HistElem.act a']) :=
+            prefixToHistory_append_act_wellFormed (Action := Action) (Percept := Percept) a pref a'
+          simp [qValue_succ, h_wf_act]
+    _ =
+        ∑ s : Step,
+          (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) s.1 *
+              μ.prob (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                [HistElem.act s.1]) s.2).toReal *
+            (PerceptReward.reward s.2 +
+              γ.val *
+                value μ π γ
+                  (prefixToHistory (Action := Action) (Percept := Percept) (a + 1)
+                    (prefixExtend (Action := Action) (Percept := Percept) a pref s))
+                  (2 * t)) := by
+          classical
+          -- Reindex the action/percept sum as a sum over steps.
+          have h_rewrite :
+              ∑ a' : Action,
+                (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) a').toReal *
+                  ∑ p : Percept,
+                    (μ.prob
+                          (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                              [HistElem.act a']) p).toReal *
+                      (PerceptReward.reward p +
+                        γ.val *
+                          value μ π γ
+                            (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                                [HistElem.act a', HistElem.per p])
+                            (2 * t)) =
+                ∑ a' : Action, ∑ p : Percept,
+                  (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) a').toReal *
+                    (μ.prob
+                          (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                              [HistElem.act a']) p).toReal *
+                      (PerceptReward.reward p +
+                        γ.val *
+                          value μ π γ
+                            (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                                [HistElem.act a', HistElem.per p])
+                            (2 * t)) := by
+                refine Finset.sum_congr rfl ?_
+                intro a' _ha'
+                simp [Finset.mul_sum, mul_assoc]
+          have h_extend :
+              ∑ a' : Action, ∑ p : Percept,
+                  (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) a').toReal *
+                    (μ.prob
+                          (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                              [HistElem.act a']) p).toReal *
+                      (PerceptReward.reward p +
+                        γ.val *
+                          value μ π γ
+                            (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                                [HistElem.act a', HistElem.per p])
+                            (2 * t)) =
+                ∑ a' : Action, ∑ p : Percept,
+                  (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) a').toReal *
+                    (μ.prob
+                          (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                              [HistElem.act a']) p).toReal *
+                      (PerceptReward.reward p +
+                        γ.val *
+                          value μ π γ
+                            (prefixToHistory (Action := Action) (Percept := Percept) (a + 1)
+                              (prefixExtend (Action := Action) (Percept := Percept) a pref (a', p)))
+                            (2 * t)) := by
+                simp [prefixToHistory_extend]
+          -- rewrite to a sum over steps, using the prefix extension lemma
+          have h_step :
+              ∑ s : Step,
+                  (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) s.1 *
+                      μ.prob (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                        [HistElem.act s.1]) s.2).toReal *
+                    (PerceptReward.reward s.2 +
+                      γ.val *
+                        value μ π γ
+                          (prefixToHistory (Action := Action) (Percept := Percept) (a + 1)
+                            (prefixExtend (Action := Action) (Percept := Percept) a pref s))
+                          (2 * t)) =
+                ∑ a' : Action, ∑ p : Percept,
+                  (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) a').toReal *
+                    (μ.prob
+                          (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                              [HistElem.act a']) p).toReal *
+                      (PerceptReward.reward p +
+                        γ.val *
+                          value μ π γ
+                            (prefixToHistory (Action := Action) (Percept := Percept) (a + 1)
+                              (prefixExtend (Action := Action) (Percept := Percept) a pref (a', p)))
+                            (2 * t)) := by
+                simp [Fintype.sum_prod_type]
+          calc
+            ∑ a' : Action,
+                (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) a').toReal *
+                  ∑ p : Percept,
+                    (μ.prob
+                          (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                              [HistElem.act a']) p).toReal *
+                      (PerceptReward.reward p +
+                        γ.val *
+                          value μ π γ
+                            (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                                [HistElem.act a', HistElem.per p])
+                            (2 * t))
+                = ∑ a' : Action, ∑ p : Percept,
+                    (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) a').toReal *
+                      (μ.prob
+                            (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                                [HistElem.act a']) p).toReal *
+                        (PerceptReward.reward p +
+                          γ.val *
+                            value μ π γ
+                              (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                                  [HistElem.act a', HistElem.per p])
+                              (2 * t)) := h_rewrite
+            _ = ∑ a' : Action, ∑ p : Percept,
+                  (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) a').toReal *
+                    (μ.prob
+                          (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                              [HistElem.act a']) p).toReal *
+                      (PerceptReward.reward p +
+                        γ.val *
+                          value μ π γ
+                            (prefixToHistory (Action := Action) (Percept := Percept) (a + 1)
+                              (prefixExtend (Action := Action) (Percept := Percept) a pref (a', p)))
+                            (2 * t)) := h_extend
+            _ = ∑ s : Step,
+                  (π.policy (prefixToHistory (Action := Action) (Percept := Percept) a pref) s.1 *
+                      μ.prob (prefixToHistory (Action := Action) (Percept := Percept) a pref ++
+                        [HistElem.act s.1]) s.2).toReal *
+                    (PerceptReward.reward s.2 +
+                      γ.val *
+                        value μ π γ
+                          (prefixToHistory (Action := Action) (Percept := Percept) (a + 1)
+                            (prefixExtend (Action := Action) (Percept := Percept) a pref s))
+                          (2 * t)) := h_step.symm
 
 end FiniteHorizonUtility
 

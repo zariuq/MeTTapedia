@@ -1,6 +1,11 @@
+import Mathlib.MeasureTheory.Constructions.BorelSpace.Metrizable
+import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Probability.Kernel.Composition.CompProd
 import Mathlib.Probability.Kernel.IonescuTulcea.Traj
+import Mathlib.Analysis.Normed.Group.InfiniteSum
+import Mathlib.Topology.Algebra.InfiniteSum.Basic
+import Mathlib.Topology.Algebra.InfiniteSum.Ring
 
 /-!
 # Infinite-history interaction core
@@ -182,5 +187,229 @@ noncomputable def valueFromPrefix
     (a : Nat) (pref : Prefix Action Percept a)
     (U : Trajectory Action Percept -> Real) : Real :=
   MeasureTheory.integral ((trajKernel (Action:=Action) (Percept:=Percept) pi mu a) pref) U
+
+section DiscountedUtility
+
+variable {Action : Type u} {Percept : Type v}
+  [MeasurableSpace Action] [MeasurableSpace Percept]
+
+/-- Shift a trajectory by `k` steps. -/
+def trajShift (k : ℕ) (traj : Trajectory Action Percept) : Trajectory Action Percept :=
+  fun n => traj (k + n)
+
+/-- Shift a weight sequence by `k` steps. -/
+def weightShift (k : ℕ) (w : ℕ → ℝ) : ℕ → ℝ :=
+  fun n => w (k + n)
+
+/-- Infinite-horizon discounted utility on trajectories. -/
+noncomputable def discountedUtility
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) :
+    Trajectory Action Percept → ℝ :=
+  fun traj => tsum fun n => w n * reward (traj n)
+
+/-- Finite-horizon truncation of discounted utility. -/
+noncomputable def discountedUtilityTrunc
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (t : ℕ) :
+    Trajectory Action Percept → ℝ :=
+  fun traj => (Finset.range t).sum fun n => w n * reward (traj n)
+
+/-- Discounted utility from time `k` onward. -/
+noncomputable def discountedUtilityFrom
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (k : ℕ) :
+    Trajectory Action Percept → ℝ :=
+  fun traj => discountedUtility reward (weightShift k w) (trajShift k traj)
+
+theorem measurable_reward_at
+    (reward : Action × Percept → ℝ) (k : ℕ) (h_reward : Measurable reward) :
+    Measurable fun traj : Trajectory Action Percept => reward (traj k) := by
+  have h_eval : Measurable fun traj : Trajectory Action Percept => traj k := by
+    simpa using (measurable_pi_apply (a := k))
+  exact h_reward.comp h_eval
+
+theorem measurable_discountedUtilityTrunc
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (t : ℕ)
+    (h_reward : Measurable reward) :
+    Measurable (discountedUtilityTrunc (Action := Action) (Percept := Percept) reward w t) := by
+  classical
+  refine Finset.measurable_fun_sum (Finset.range t) ?_
+  intro n hn
+  have h_at := measurable_reward_at (Action := Action) (Percept := Percept)
+    (reward := reward) (k := n) h_reward
+  simpa [discountedUtilityTrunc] using (measurable_const.mul h_at)
+
+omit [MeasurableSpace Action] [MeasurableSpace Percept] in
+theorem summable_discountedUtility_of_bound
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (R : ℝ)
+    (h_reward_bound : ∀ s, |reward s| ≤ R)
+    (hw : Summable (fun n => |w n|)) :
+    ∀ traj : Trajectory Action Percept,
+      Summable (fun n => w n * reward (traj n)) := by
+  intro traj
+  have hsum : Summable fun n => |w n| * R := (Summable.mul_right R hw)
+  refine Summable.of_norm_bounded hsum ?_
+  intro n
+  have h_bound : |reward (traj n)| ≤ R := h_reward_bound _
+  have h_nonneg : 0 ≤ |w n| := abs_nonneg _
+  have h_mul : |w n| * |reward (traj n)| ≤ |w n| * R :=
+    mul_le_mul_of_nonneg_left h_bound h_nonneg
+  simpa [Real.norm_eq_abs, abs_mul] using h_mul
+
+theorem measurable_discountedUtility
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (R : ℝ)
+    (h_reward : Measurable reward)
+    (h_reward_bound : ∀ s, |reward s| ≤ R)
+    (hw : Summable (fun n => |w n|)) :
+    Measurable (discountedUtility (Action := Action) (Percept := Percept) reward w) := by
+  have h_meas : ∀ t,
+      Measurable (discountedUtilityTrunc (Action := Action) (Percept := Percept) reward w t) :=
+    fun t => measurable_discountedUtilityTrunc (Action := Action) (Percept := Percept)
+      (reward := reward) (w := w) (t := t) h_reward
+  refine measurable_of_tendsto_metrizable h_meas ?_
+  refine tendsto_pi_nhds.2 ?_
+  intro traj
+  have hsum :
+      Summable (fun n => w n * reward (traj n)) :=
+    summable_discountedUtility_of_bound (Action := Action) (Percept := Percept)
+      (reward := reward) (w := w) (R := R) h_reward_bound hw traj
+  have hhas :
+      HasSum (fun n => w n * reward (traj n))
+        (discountedUtility (Action := Action) (Percept := Percept) reward w traj) := by
+    simpa [discountedUtility] using hsum.hasSum
+  simpa [discountedUtilityTrunc] using hhas.tendsto_sum_nat
+
+omit [MeasurableSpace Action] [MeasurableSpace Percept] in
+theorem tendsto_discountedUtilityTrunc
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (R : ℝ)
+    (h_reward_bound : ∀ s, |reward s| ≤ R)
+    (hw : Summable (fun n => |w n|)) (traj : Trajectory Action Percept) :
+    Filter.Tendsto
+        (fun t =>
+          discountedUtilityTrunc (Action := Action) (Percept := Percept) reward w t traj)
+        Filter.atTop
+        (nhds (discountedUtility (Action := Action) (Percept := Percept) reward w traj)) := by
+  have hsum :
+      Summable (fun n => w n * reward (traj n)) :=
+    summable_discountedUtility_of_bound (Action := Action) (Percept := Percept)
+      (reward := reward) (w := w) (R := R) h_reward_bound hw traj
+  have hhas :
+      HasSum (fun n => w n * reward (traj n))
+        (discountedUtility (Action := Action) (Percept := Percept) reward w traj) := by
+    simpa [discountedUtility] using hsum.hasSum
+  simpa [discountedUtilityTrunc] using hhas.tendsto_sum_nat
+
+omit [MeasurableSpace Action] [MeasurableSpace Percept] in
+theorem discountedUtility_norm_le
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (R : ℝ)
+    (h_reward_bound : ∀ s, |reward s| ≤ R)
+    (hw : Summable (fun n => |w n|)) (traj : Trajectory Action Percept) :
+    ‖discountedUtility (Action := Action) (Percept := Percept) reward w traj‖ ≤
+      tsum (fun n => |w n| * R) := by
+  have hsum : Summable fun n => |w n| * R := (Summable.mul_right R hw)
+  have h_has : HasSum (fun n => |w n| * R) (tsum fun n => |w n| * R) := hsum.hasSum
+  have h_bound : ∀ n, ‖w n * reward (traj n)‖ ≤ |w n| * R := by
+    intro n
+    have h_r : |reward (traj n)| ≤ R := h_reward_bound _
+    have h_nonneg : 0 ≤ |w n| := abs_nonneg _
+    have h_mul : |w n| * |reward (traj n)| ≤ |w n| * R :=
+      mul_le_mul_of_nonneg_left h_r h_nonneg
+    simpa [Real.norm_eq_abs, abs_mul] using h_mul
+  have h :=
+    tsum_of_norm_bounded (f := fun n => w n * reward (traj n))
+      (g := fun n => |w n| * R) (a := tsum fun n => |w n| * R) h_has h_bound
+  simpa [discountedUtility] using h
+
+theorem integrable_discountedUtility
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (R : ℝ)
+    (h_reward : Measurable reward)
+    (h_reward_bound : ∀ s, |reward s| ≤ R)
+    (hw : Summable (fun n => |w n|))
+    (μ : MeasureTheory.Measure (Trajectory Action Percept))
+    [MeasureTheory.IsFiniteMeasure μ] :
+    MeasureTheory.Integrable
+      (discountedUtility (Action := Action) (Percept := Percept) reward w) μ := by
+  have h_meas :
+      Measurable (discountedUtility (Action := Action) (Percept := Percept) reward w) :=
+    measurable_discountedUtility (Action := Action) (Percept := Percept)
+      (reward := reward) (w := w) (R := R) h_reward h_reward_bound hw
+  have h_bound :
+      ∀ᵐ traj ∂μ,
+        ‖discountedUtility (Action := Action) (Percept := Percept) reward w traj‖ ≤
+          tsum (fun n => |w n| * R) := by
+    refine Filter.Eventually.of_forall ?_
+    intro traj
+    exact discountedUtility_norm_le (Action := Action) (Percept := Percept)
+      (reward := reward) (w := w) (R := R) h_reward_bound hw traj
+  exact MeasureTheory.Integrable.of_bound h_meas.aestronglyMeasurable _ h_bound
+
+theorem tendsto_integral_discountedUtilityTrunc
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (R : ℝ)
+    (h_reward : Measurable reward)
+    (h_reward_bound : ∀ s, |reward s| ≤ R) (h_R_nonneg : 0 ≤ R)
+    (hw : Summable (fun n => |w n|))
+    (μ : MeasureTheory.Measure (Trajectory Action Percept))
+    [MeasureTheory.IsFiniteMeasure μ] :
+    Filter.Tendsto
+        (fun t =>
+          ∫ traj, discountedUtilityTrunc (Action := Action) (Percept := Percept) reward w t traj ∂ μ)
+        Filter.atTop
+        (nhds (∫ traj, discountedUtility (Action := Action) (Percept := Percept) reward w traj ∂ μ)) := by
+  refine MeasureTheory.tendsto_integral_of_dominated_convergence
+      (bound := fun _ => tsum (fun n => |w n| * R)) ?_ ?_ ?_ ?_
+  · intro t
+    exact
+      (measurable_discountedUtilityTrunc (Action := Action) (Percept := Percept)
+        (reward := reward) (w := w) (t := t) h_reward).aestronglyMeasurable
+  ·
+    exact
+      (MeasureTheory.integrable_const (tsum fun n => |w n| * R) :
+        MeasureTheory.Integrable
+          (fun _ : Trajectory Action Percept => tsum (fun n => |w n| * R)) μ)
+  ·
+    intro t
+    refine Filter.Eventually.of_forall ?_
+    intro traj
+    have hsum : Summable fun n => |w n| * R := (Summable.mul_right R hw)
+    have h_bound : ∀ n, ‖w n * reward (traj n)‖ ≤ |w n| * R := by
+      intro n
+      have h_r : |reward (traj n)| ≤ R := h_reward_bound _
+      have h_nonneg : 0 ≤ |w n| := abs_nonneg _
+      have h_mul : |w n| * |reward (traj n)| ≤ |w n| * R :=
+        mul_le_mul_of_nonneg_left h_r h_nonneg
+      simpa [Real.norm_eq_abs, abs_mul] using h_mul
+    have hsum_trunc :
+        ‖(Finset.range t).sum (fun n => w n * reward (traj n))‖ ≤
+          (Finset.range t).sum (fun n => |w n| * R) :=
+      norm_sum_le_of_le _ fun n _ => h_bound n
+    have hsum_trunc' :
+        (Finset.range t).sum (fun n => |w n| * R) ≤
+          tsum (fun n => |w n| * R) :=
+      hsum.sum_le_tsum (Finset.range t) fun n _ =>
+        mul_nonneg (abs_nonneg _) h_R_nonneg
+    have hsum_trunc'' :
+        ‖(Finset.range t).sum (fun n => w n * reward (traj n))‖ ≤
+          tsum (fun n => |w n| * R) :=
+      le_trans hsum_trunc hsum_trunc'
+    simpa [discountedUtilityTrunc] using hsum_trunc''
+  ·
+    refine Filter.Eventually.of_forall ?_
+    intro traj
+    exact
+      tendsto_discountedUtilityTrunc (Action := Action) (Percept := Percept)
+        (reward := reward) (w := w) (R := R) h_reward_bound hw traj
+
+omit [MeasurableSpace Action] [MeasurableSpace Percept] in
+theorem discountedUtilityTrunc_zero
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (traj : Trajectory Action Percept) :
+    discountedUtilityTrunc reward w 0 traj = 0 := by
+  simp [discountedUtilityTrunc]
+
+omit [MeasurableSpace Action] [MeasurableSpace Percept] in
+theorem discountedUtilityTrunc_succ
+    (reward : Action × Percept → ℝ) (w : ℕ → ℝ) (t : ℕ) (traj : Trajectory Action Percept) :
+    discountedUtilityTrunc reward w (t + 1) traj =
+      discountedUtilityTrunc reward w t traj + w t * reward (traj t) := by
+  simp [discountedUtilityTrunc, Finset.sum_range_succ]
+
+end DiscountedUtility
 
 end Mettapedia.UniversalAI.InfiniteHistory

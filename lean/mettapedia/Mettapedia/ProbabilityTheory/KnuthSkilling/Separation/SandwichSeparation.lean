@@ -64,8 +64,7 @@ namespace SandwichSeparation
 ### Base Structure
 
 This development works over the core K&S structure `KnuthSkillingAlgebraBase` (associativity,
-identity, strict monotonicity, and `ident` as bottom), together with the iterate/power “sandwich”
-axiom `KSSeparation`.
+identity, strict monotonicity, and `ident` as bottom), together with the iterate/power “sandwich” axiom `KSSeparation`.
 
 Both are defined in the main K&S modules:
 - `Mettapedia.ProbabilityTheory.KnuthSkilling.Basic` (`KnuthSkillingAlgebraBase`)

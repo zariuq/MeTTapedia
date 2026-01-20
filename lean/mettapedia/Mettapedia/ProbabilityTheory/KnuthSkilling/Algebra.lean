@@ -10,7 +10,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
-open KnuthSkillingAlgebraBase
+open KSSemigroupBase KnuthSkillingAlgebraBase
 
 namespace KnuthSkillingAlgebra
 
@@ -193,6 +193,26 @@ theorem iterate_op_pos (y : α) (hy : ident < y) (m : ℕ) (hm : m > 0) :
   calc ident = iterate_op y 0 := (iterate_op_zero y).symm
     _ < iterate_op y m := iterate_op_strictMono y hy hm
 
+/-- Connection: `iterate_op_pnat` equals `iterate_op` when n is positive.
+    This bridges identity-free ℕ+ iteration with identity-based ℕ iteration. -/
+theorem iterate_op_pnat_eq (x : α) (n : ℕ+) :
+    iterate_op_pnat x n = iterate_op x n.val := by
+  -- By induction on n
+  induction n using PNat.recOn with
+  | one =>
+    -- iterate_op_pnat x 1 = x, and iterate_op x 1 = x
+    rw [iterate_op_pnat_one]
+    -- Goal: x = iterate_op x (1 : ℕ+).val
+    -- (1 : ℕ+).val = 1 : ℕ definitionally
+    have h1 : (1 : ℕ+).val = 1 := rfl
+    rw [h1]
+    exact (iterate_op_one x).symm
+  | succ n ih =>
+    rw [iterate_op_pnat_succ, ih]
+    -- Now show: op x (iterate_op x n.val) = iterate_op x (n.val + 1)
+    have hsucc : (n + 1 : ℕ+).val = n.val + 1 := PNat.add_coe n 1
+    rw [hsucc, ← iterate_op_succ]
+
 /-- **Distribution lemma**: `(x ⊕ y)^m = x^m ⊕ y^m` when op is commutative.
 
 This is the key lemma for expanding iterates of sums. Note that this is FALSE without
@@ -255,7 +275,116 @@ formalization it is an *explicit* typeclass assumption: it is **not** derivable 
 structured hypotheses, and it currently packages the remaining hard step as a `Prop`-class
 (`LargeRegimeSeparationSpec`). -/
 
-/-- **KSSeparation**: the iterate/power “sandwich” axiom.
+/-! ## Unbundled Separation Predicates
+
+We define separation axioms as standalone predicates before bundling them into classes. -/
+
+/-- **Separation property (identity-free, semigroup version)**.
+    For positive elements `a, x, y` with `x < y`, there exist `n, m ∈ ℕ+` such that
+    `x^m < a^n ≤ y^m`. -/
+def SeparationSemigroupProp [KSSemigroupBase α] : Prop :=
+  ∀ {a x y : α}, IsPositive a → IsPositive x → IsPositive y → x < y →
+    ∃ n m : ℕ+, iterate_op_pnat x m < iterate_op_pnat a n ∧
+               iterate_op_pnat a n ≤ iterate_op_pnat y m
+
+/-- **Strict separation property (identity-free, semigroup version)**.
+    For positive elements `a, x, y` with `x < y`, there exist `n, m ∈ ℕ+` such that
+    `x^m < a^n < y^m` (strict on both sides). -/
+def SeparationSemigroupStrictProp [KSSemigroupBase α] : Prop :=
+  ∀ {a x y : α}, IsPositive a → IsPositive x → IsPositive y → x < y →
+    ∃ n m : ℕ+, iterate_op_pnat x m < iterate_op_pnat a n ∧
+               iterate_op_pnat a n < iterate_op_pnat y m
+
+/-! ## Identity-Free Separation (KSSeparationSemigroup)
+
+Following Eric Luap's approach, we define separation WITHOUT reference to identity.
+This uses `IsPositive` (element increases everything under multiplication) instead of
+`ident < a`, and `iterate_op_pnat` (ℕ+ iteration) instead of `iterate_op` (ℕ iteration).
+
+When identity exists, `KSSeparationSemigroup` is equivalent to `KSSeparation`. -/
+
+/-- **KSSeparationSemigroup**: Identity-free version of the separation axiom.
+
+Uses `IsPositive` instead of `ident < a` and `iterate_op_pnat` instead of `iterate_op`.
+This works on `KSSemigroupBase` without requiring identity.
+
+When identity exists, this is equivalent to `KSSeparation` (see theorems below). -/
+class KSSeparationSemigroup (α : Type*) [KSSemigroupBase α] where
+  /-- For any positive elements a, x, y with x < y, we can find exponents (n, m) ∈ ℕ+
+      such that x^m < a^n ≤ y^m. -/
+  separation : ∀ {a x y : α}, IsPositive a → IsPositive x → IsPositive y → x < y →
+    ∃ n m : ℕ+, iterate_op_pnat x m < iterate_op_pnat a n ∧
+               iterate_op_pnat a n ≤ iterate_op_pnat y m
+
+namespace KSSeparationSemigroup
+
+variable {α : Type*} [KSSemigroupBase α] [KSSeparationSemigroup α]
+
+/-! ### Connection to Unbundled Predicates -/
+
+/-- The `KSSeparationSemigroup` instance satisfies the unbundled `SeparationSemigroupProp` predicate. -/
+theorem separationSemigroupProp : SeparationSemigroupProp (α := α) := KSSeparationSemigroup.separation
+
+/-- Convenience: extraction of the separation property. -/
+theorem sep {a x y : α} (ha : IsPositive a) (hx : IsPositive x) (hy : IsPositive y) (hxy : x < y) :
+    ∃ n m : ℕ+, iterate_op_pnat x m < iterate_op_pnat a n ∧
+               iterate_op_pnat a n ≤ iterate_op_pnat y m :=
+  KSSeparationSemigroup.separation ha hx hy hxy
+
+end KSSeparationSemigroup
+
+/-- **KSSeparationSemigroupStrict**: Identity-free version of the STRICT separation axiom.
+
+This gives `x^m < a^n < y^m` (strict on both sides), which is needed for strict monotonicity
+of Θ in the cuts construction.
+
+When identity exists, this is equivalent to `KSSeparationStrict`. -/
+class KSSeparationSemigroupStrict (α : Type*) [KSSemigroupBase α]
+    extends KSSeparationSemigroup α where
+  /-- For any positive elements a, x, y with x < y, we can find exponents (n, m) ∈ ℕ+
+      such that x^m < a^n < y^m (strict on both sides). -/
+  separation_strict : ∀ {a x y : α}, IsPositive a → IsPositive x → IsPositive y → x < y →
+    ∃ n m : ℕ+, iterate_op_pnat x m < iterate_op_pnat a n ∧
+               iterate_op_pnat a n < iterate_op_pnat y m
+  /-- `KSSeparationSemigroupStrict` implies `KSSeparationSemigroup` by weakening. -/
+  separation := by
+    intro a x y ha hx hy hxy
+    rcases separation_strict ha hx hy hxy with ⟨n, m, hlt, hgt⟩
+    exact ⟨n, m, hlt, le_of_lt hgt⟩
+
+namespace KSSeparationSemigroupStrict
+
+variable {α : Type*} [KSSemigroupBase α] [KSSeparationSemigroupStrict α]
+
+/-- Convenience: extraction of the strict separation property. -/
+theorem sep_strict {a x y : α} (ha : IsPositive a) (hx : IsPositive x) (hy : IsPositive y) (hxy : x < y) :
+    ∃ n m : ℕ+, iterate_op_pnat x m < iterate_op_pnat a n ∧
+               iterate_op_pnat a n < iterate_op_pnat y m :=
+  KSSeparationSemigroupStrict.separation_strict ha hx hy hxy
+
+end KSSeparationSemigroupStrict
+
+/-- **Separation property (identity-based version)**.
+    For `ident < a`, `ident < x`, `ident < y` with `x < y`, there exist `n, m ∈ ℕ`
+    with `0 < m` such that `x^m < a^n ≤ y^m`. -/
+def SeparationProp [KnuthSkillingAlgebraBase α] : Prop :=
+  ∀ {a x y : α}, KnuthSkillingAlgebraBase.ident < a →
+      KnuthSkillingAlgebraBase.ident < x → KnuthSkillingAlgebraBase.ident < y → x < y →
+    ∃ n m : ℕ, 0 < m ∧
+      KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
+      KnuthSkillingAlgebra.iterate_op a n ≤ KnuthSkillingAlgebra.iterate_op y m
+
+/-- **Strict separation property (identity-based version)**.
+    For `ident < a`, `ident < x`, `ident < y` with `x < y`, there exist `n, m ∈ ℕ`
+    with `0 < m` such that `x^m < a^n < y^m` (strict on both sides). -/
+def SeparationStrictProp [KnuthSkillingAlgebraBase α] : Prop :=
+  ∀ {a x y : α}, KnuthSkillingAlgebraBase.ident < a →
+      KnuthSkillingAlgebraBase.ident < x → KnuthSkillingAlgebraBase.ident < y → x < y →
+    ∃ n m : ℕ, 0 < m ∧
+      KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
+      KnuthSkillingAlgebra.iterate_op a n < KnuthSkillingAlgebra.iterate_op y m
+
+/-- **KSSeparation**: the iterate/power "sandwich" axiom.
 
 Paper cross-reference:
 - `paper/ks-formalization.tex`, Subsection “The Separation Property” and Subsection
@@ -286,6 +415,11 @@ namespace KSSeparation
 open KnuthSkillingAlgebra
 
 variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α]
+
+/-! ### Connection to Unbundled Predicates -/
+
+/-- The `KSSeparation` instance satisfies the unbundled `SeparationProp` predicate. -/
+theorem separationProp : SeparationProp (α := α) := KSSeparation.separation
 
 /-- Strengthening of `KSSeparation.separation`: we can request an arbitrarily large exponent `m`.
 
@@ -413,11 +547,73 @@ theorem toKSSeparationStrict_of_denselyOrdered [DenselyOrdered α] : KSSeparatio
 
 end KSSeparation
 
+/-! ## Separation Equivalence (KSSeparation ↔ KSSeparationSemigroup)
+
+When identity exists, the identity-free `KSSeparationSemigroup` is equivalent to `KSSeparation`. -/
+
+section SeparationEquivalence
+
+open KnuthSkillingAlgebraBase KnuthSkillingAlgebra
+
+/-- `KSSeparation` implies `KSSeparationSemigroup` when identity exists.
+    This is the easy direction: ident < a ↔ IsPositive a, and iterate_op restricted to ℕ+. -/
+instance KSSeparationSemigroup_of_KSSeparation {α : Type*} [KnuthSkillingAlgebraBase α]
+    [KSSeparation α] : KSSeparationSemigroup α where
+  separation := by
+    intro a x y ha hx hy hxy
+    -- Convert IsPositive to ident < using the equivalence theorem
+    have ha' : ident < a := (isPositive_iff_ident_lt a).mp ha
+    have hx' : ident < x := (isPositive_iff_ident_lt x).mp hx
+    have hy' : ident < y := (isPositive_iff_ident_lt y).mp hy
+    -- Apply the standard KSSeparation
+    obtain ⟨n, m, hm_pos, h_lo, h_hi⟩ := KSSeparation.separation ha' hx' hy' hxy
+    -- Convert ℕ to ℕ+ (we have 0 < m and can take n ≥ 1 by the structure of separation)
+    -- Note: if n = 0, then iterate_op a 0 = ident, but ident ≤ iterate_op y m for any m,
+    -- and iterate_op x m < ident is impossible for positive x. So n > 0.
+    by_cases hn : n = 0
+    · -- n = 0 case: contradiction since iterate_op a 0 = ident and x^m < ident is impossible
+      exfalso
+      simp only [hn, iterate_op_zero] at h_lo
+      have hxm_pos : ident < iterate_op x m := iterate_op_pos x hx' m hm_pos
+      exact not_lt.mpr (le_of_lt hxm_pos) h_lo
+    · -- n > 0 case: can convert to ℕ+
+      have hn_pos : 0 < n := Nat.pos_of_ne_zero hn
+      use ⟨n, hn_pos⟩, ⟨m, hm_pos⟩
+      -- Connect iterate_op_pnat to iterate_op
+      have h1 : iterate_op_pnat x ⟨m, hm_pos⟩ = iterate_op x m := iterate_op_pnat_eq x ⟨m, hm_pos⟩
+      have h2 : iterate_op_pnat a ⟨n, hn_pos⟩ = iterate_op a n := iterate_op_pnat_eq a ⟨n, hn_pos⟩
+      have h3 : iterate_op_pnat y ⟨m, hm_pos⟩ = iterate_op y m := iterate_op_pnat_eq y ⟨m, hm_pos⟩
+      rw [h1, h2, h3]
+      exact ⟨h_lo, h_hi⟩
+
+/-- `KSSeparationSemigroup` implies `KSSeparation` when identity exists.
+    This is the converse: we convert ℕ+ back to ℕ. -/
+def KSSeparation_of_KSSeparationSemigroup {α : Type*} [KnuthSkillingAlgebraBase α]
+    [KSSeparationSemigroup α] : KSSeparation α where
+  separation := by
+    intro a x y ha hx hy hxy
+    -- Convert ident < to IsPositive
+    have ha' : IsPositive a := (isPositive_iff_ident_lt a).mpr ha
+    have hx' : IsPositive x := (isPositive_iff_ident_lt x).mpr hx
+    have hy' : IsPositive y := (isPositive_iff_ident_lt y).mpr hy
+    -- Apply the semigroup separation
+    obtain ⟨n, m, h_lo, h_hi⟩ := KSSeparationSemigroup.sep ha' hx' hy' hxy
+    -- Convert ℕ+ to ℕ
+    use n.val, m.val, m.pos
+    -- Connect iterate_op to iterate_op_pnat
+    have h1 : iterate_op x m.val = iterate_op_pnat x m := (iterate_op_pnat_eq x m).symm
+    have h2 : iterate_op a n.val = iterate_op_pnat a n := (iterate_op_pnat_eq a n).symm
+    have h3 : iterate_op y m.val = iterate_op_pnat y m := (iterate_op_pnat_eq y m).symm
+    rw [h1, h2, h3]
+    exact ⟨h_lo, h_hi⟩
+
+end SeparationEquivalence
+
 end Mettapedia.ProbabilityTheory.KnuthSkilling
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
-open KnuthSkillingAlgebraBase
+open KSSemigroupBase KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 
 /-!

@@ -2,13 +2,31 @@ import Mathlib.Order.BoundedOrder.Basic
 import Mathlib.Order.BooleanAlgebra.Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Topology.Order.Basic
+import Mathlib.MeasureTheory.Measure.MeasureSpace
+import Mathlib.MeasureTheory.MeasurableSpace.Basic
+import Mathlib.Data.ENNReal.Basic
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.AczelTheorem
+import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem
 
 /-!
 # K&S Section 7: Conditional Probability via Chaining Associativity (Axiom 5)
 
-This file formalizes K&S's derivation of probability calculus from Axiom 5 (chaining associativity).
+**IMPORTANT**: For canonical probability calculus results (Bayes' theorem, product rule, etc.),
+use `ProbabilityCalculus.lean` which provides the single source of truth. This file contains
+the lattice-theoretic `Bivaluation` formalism from K&S Section 7, which is complementary
+to (not a replacement for) the main derivation.
+
+**Architecture**:
+- `ProbabilityCalculus.lean`: Canonical interface for end-results (use this!)
+- `ProbabilityDerivation.lean`: Main K&S derivation (provides the canonical implementation)
+- This file: K&S Section 7's `Bivaluation` + `ChainingAssociativity` formalism
+
+The theorems in this file (e.g., `bayesTheorem`, `productRule`) are specific to the
+`Bivaluation` structure and demonstrate how Section 7's framework derives the same
+results. For general use, prefer `ProbabilityCalculus.sumRule`, etc.
+
+This file uses `DirectProof.lean` for the Appendix B result, which is an alternative
+proof technique (not a different axiom system) that avoids "apply Appendix A again".
 
 ## The Story
 
@@ -436,6 +454,255 @@ noncomputable def baseMeasure
     {α : Type*} [Lattice α] [BoundedOrder α]
     (B : Bivaluation α) : α → ℝ :=
   fun x => B.p x ⊤
+
+/-! ### Measure Properties of baseMeasure
+
+We prove that `baseMeasure` satisfies the standard measure axioms:
+1. `baseMeasure_bot`: m(⊥) = 0
+2. `baseMeasure_additive`: m(x ⊔ y) = m(x) + m(y) for disjoint x, y
+3. `baseMeasure_pos`: ⊥ < x → 0 < m(x)
+4. `baseMeasure_mono`: x ≤ y → m(x) ≤ m(y)
+5. `baseMeasure_nonneg`: 0 ≤ m(x)
+-/
+
+namespace baseMeasure
+
+variable {α : Type*} [Lattice α] [BoundedOrder α] (B : Bivaluation α)
+
+/-- The measure of bottom is zero: m(⊥) = 0.
+
+This is the first measure axiom, following from the bivaluation's p_bot property. -/
+theorem bot (hTop : (⊤ : α) ≠ ⊥) : baseMeasure B ⊥ = 0 := by
+  have htop : ⊥ < (⊤ : α) := bot_lt_iff_ne_bot.mpr hTop
+  exact B.p_bot ⊤ htop
+
+/-- Finite additivity: m(x ⊔ y) = m(x) + m(y) for disjoint x, y.
+
+This is the second measure axiom (finite additivity version). -/
+theorem additive (x y : α) (hDisj : Disjoint x y) :
+    baseMeasure B (x ⊔ y) = baseMeasure B x + baseMeasure B y := by
+  exact B.p_sum_disjoint x y ⊤ hDisj le_top
+
+/-- Strict positivity: m(x) > 0 when ⊥ < x. -/
+theorem pos (x : α) (hx : ⊥ < x) : 0 < baseMeasure B x := by
+  exact B.p_pos x ⊤ hx le_top
+
+/-- Monotonicity: x ≤ y → m(x) ≤ m(y). -/
+theorem mono (x y : α) (hxy : x ≤ y) : baseMeasure B x ≤ baseMeasure B y := by
+  exact B.p_mono_left x y ⊤ hxy le_top
+
+/-- Non-negativity: 0 ≤ m(x) for all x.
+
+This follows from positivity for non-bottom elements and m(⊥) = 0. -/
+theorem nonneg (hTop : (⊤ : α) ≠ ⊥) (x : α) : 0 ≤ baseMeasure B x := by
+  by_cases hx : x = ⊥
+  · rw [hx, bot B hTop]
+  · exact le_of_lt (pos B x (bot_lt_iff_ne_bot.mpr hx))
+
+/-- The measure is bounded above by m(⊤). -/
+theorem le_measure_top (x : α) : baseMeasure B x ≤ baseMeasure B ⊤ := by
+  exact mono B x ⊤ le_top
+
+/-- For normalized bivaluations (p(t|t) = 1), we have m(⊤) = 1.
+
+This makes baseMeasure a probability measure on the lattice. -/
+theorem top_eq_one (hNormalized : ∀ t : α, ⊥ < t → B.p t t = 1) (hTop : (⊤ : α) ≠ ⊥) :
+    baseMeasure B ⊤ = 1 := by
+  have htop : ⊥ < (⊤ : α) := bot_lt_iff_ne_bot.mpr hTop
+  calc baseMeasure B ⊤ = B.p ⊤ ⊤ := rfl
+    _ = 1 := hNormalized ⊤ htop
+
+/-- For normalized bivaluations, baseMeasure is bounded in [0, 1]. -/
+theorem bounded (hNormalized : ∀ t : α, ⊥ < t → B.p t t = 1) (hTop : (⊤ : α) ≠ ⊥) (x : α) :
+    0 ≤ baseMeasure B x ∧ baseMeasure B x ≤ 1 := by
+  constructor
+  · exact nonneg B hTop x
+  · calc baseMeasure B x ≤ baseMeasure B ⊤ := le_measure_top B x
+      _ = 1 := top_eq_one B hNormalized hTop
+
+end baseMeasure
+
+/-! ### Connection to Mathlib Measure Theory
+
+For finite Boolean algebras, `baseMeasure` induces a proper `MeasureTheory.Measure`.
+The key insight is that:
+1. A finite Boolean algebra is a σ-algebra (all subsets are measurable)
+2. Finite additivity = σ-additivity for finite types
+3. baseMeasure ≥ 0 and baseMeasure(⊥) = 0
+
+We construct the measure via ENNReal (extended non-negative reals). -/
+
+section MeasureAxioms
+
+/-! ### baseMeasure Satisfies Measure Axioms
+
+We prove that `baseMeasure` satisfies all standard measure axioms,
+making it a finitely additive probability measure on the lattice.
+
+For finite Boolean algebras, finite additivity is equivalent to σ-additivity,
+so this is a bona fide probability measure. For infinite lattices, K&S only
+guarantees finite additivity (extending to σ-additivity would require
+additional continuity assumptions not present in the K&S framework). -/
+
+variable {α : Type*} [BooleanAlgebra α] (B : Bivaluation α)
+
+/-- **Main Theorem**: baseMeasure satisfies all measure axioms.
+
+This theorem states that baseMeasure from a normalized Bivaluation satisfies:
+1. m(⊥) = 0 (empty set has measure zero)
+2. Finite additivity: m(x ⊔ y) = m(x) + m(y) for disjoint x, y
+3. Non-negativity: 0 ≤ m(x)
+4. Normalization: m(⊤) = 1 (probability measure)
+
+For finite Boolean algebras, finite additivity is equivalent to σ-additivity,
+so this is a bona fide probability measure. -/
+theorem baseMeasure_satisfies_measure_axioms
+    (hNormalized : ∀ t : α, ⊥ < t → B.p t t = 1)
+    (hTop : (⊤ : α) ≠ ⊥) :
+    -- Axiom 1: Empty set has measure zero
+    baseMeasure B ⊥ = 0 ∧
+    -- Axiom 2: Finite additivity (which equals σ-additivity for finite sets)
+    (∀ x y : α, Disjoint x y → baseMeasure B (x ⊔ y) = baseMeasure B x + baseMeasure B y) ∧
+    -- Axiom 3: Non-negativity
+    (∀ x : α, 0 ≤ baseMeasure B x) ∧
+    -- Axiom 4: Bounded (probability measure property)
+    baseMeasure B ⊤ = 1 := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact baseMeasure.bot B hTop
+  · intro x y hDisj
+    exact baseMeasure.additive B x y hDisj
+  · intro x
+    exact baseMeasure.nonneg B hTop x
+  · exact baseMeasure.top_eq_one B hNormalized hTop
+
+/-- The inclusion-exclusion formula for baseMeasure in Boolean algebras.
+
+This is the measure-theoretic version of the general sum rule:
+m(x ∪ y) + m(x ∩ y) = m(x) + m(y)
+
+which rearranges to the familiar:
+m(x ∪ y) = m(x) + m(y) - m(x ∩ y)
+
+**Note**: This is proven directly here using the bivaluation axioms.
+The general `sumRule_general` theorem (proven later in this file) also gives this. -/
+theorem baseMeasure_inclusion_exclusion
+    (x y : α) :
+    baseMeasure B (x ⊔ y) + baseMeasure B (x ⊓ y) = baseMeasure B x + baseMeasure B y := by
+  -- Reduce to context ⊤ via baseMeasure definition
+  unfold baseMeasure
+  -- Decompose x = (x ⊓ yᶜ) ⊔ (x ⊓ y) (disjoint union)
+  have hdecomp_x : (x ⊓ yᶜ) ⊔ (x ⊓ y) = x := by
+    calc (x ⊓ yᶜ) ⊔ (x ⊓ y) = x ⊓ (yᶜ ⊔ y) := by rw [← inf_sup_left]
+      _ = x ⊓ ⊤ := by simp
+      _ = x := by simp
+  have hdisj_x : Disjoint (x ⊓ yᶜ) (x ⊓ y) := by
+    rw [disjoint_iff]
+    calc (x ⊓ yᶜ) ⊓ (x ⊓ y) = x ⊓ (yᶜ ⊓ y) := by simp [inf_left_comm, inf_comm]
+      _ = ⊥ := by simp
+  have hle_x : (x ⊓ yᶜ) ⊔ (x ⊓ y) ≤ (⊤ : α) := le_top
+  have hadd_x : B.p x ⊤ = B.p (x ⊓ yᶜ) ⊤ + B.p (x ⊓ y) ⊤ := by
+    have h := B.p_sum_disjoint (x ⊓ yᶜ) (x ⊓ y) ⊤ hdisj_x hle_x
+    rw [hdecomp_x] at h
+    exact h
+  -- Similarly decompose x ⊔ y = (x ⊓ yᶜ) ⊔ y
+  have hjoin_sup : (x ⊓ yᶜ) ⊔ y = x ⊔ y := by
+    apply le_antisymm
+    · exact sup_le (le_trans inf_le_left le_sup_left) le_sup_right
+    · refine sup_le ?_ le_sup_right
+      calc x = (x ⊓ yᶜ) ⊔ (x ⊓ y) := hdecomp_x.symm
+        _ ≤ (x ⊓ yᶜ) ⊔ y := sup_le le_sup_left (le_trans inf_le_right le_sup_right)
+  have hdisj_sup : Disjoint (x ⊓ yᶜ) y := by
+    rw [disjoint_iff]
+    calc (x ⊓ yᶜ) ⊓ y = x ⊓ (yᶜ ⊓ y) := by simp [inf_left_comm, inf_comm]
+      _ = ⊥ := by simp
+  have hle_sup : (x ⊓ yᶜ) ⊔ y ≤ (⊤ : α) := le_top
+  have hadd_sup : B.p (x ⊔ y) ⊤ = B.p (x ⊓ yᶜ) ⊤ + B.p y ⊤ := by
+    have h := B.p_sum_disjoint (x ⊓ yᶜ) y ⊤ hdisj_sup hle_sup
+    rw [hjoin_sup] at h
+    exact h
+  -- Combine: (x⊔y) + (x⊓y) = (x⊓yᶜ) + y + (x⊓y) = (x⊓yᶜ) + (x⊓y) + y = x + y
+  linarith
+
+/-- Complement rule for baseMeasure: m(xᶜ) = m(⊤) - m(x).
+
+For normalized measures where m(⊤) = 1, this gives m(xᶜ) = 1 - m(x). -/
+theorem baseMeasure_compl
+    (hTop : (⊤ : α) ≠ ⊥) (x : α) :
+    baseMeasure B xᶜ = baseMeasure B ⊤ - baseMeasure B x := by
+  -- x and xᶜ partition ⊤
+  have hDisj : Disjoint x xᶜ := disjoint_compl_right
+  have hJoin : x ⊔ xᶜ = ⊤ := sup_compl_eq_top
+  have hAdd := baseMeasure.additive B x xᶜ hDisj
+  rw [hJoin] at hAdd
+  linarith
+
+/-- For normalized measures, m(xᶜ) = 1 - m(x). -/
+theorem baseMeasure_compl_normalized
+    (hNormalized : ∀ t : α, ⊥ < t → B.p t t = 1)
+    (hTop : (⊤ : α) ≠ ⊥) (x : α) :
+    baseMeasure B xᶜ = 1 - baseMeasure B x := by
+  rw [baseMeasure_compl B hTop x, baseMeasure.top_eq_one B hNormalized hTop]
+
+/-- Subadditivity for baseMeasure: m(x ⊔ y) ≤ m(x) + m(y).
+
+This follows from inclusion-exclusion since m(x ⊓ y) ≥ 0. -/
+theorem baseMeasure_subadditive
+    (hTop : (⊤ : α) ≠ ⊥) (x y : α) :
+    baseMeasure B (x ⊔ y) ≤ baseMeasure B x + baseMeasure B y := by
+  have h := baseMeasure_inclusion_exclusion B x y
+  have hnn : 0 ≤ baseMeasure B (x ⊓ y) := baseMeasure.nonneg B hTop (x ⊓ y)
+  linarith
+
+end MeasureAxioms
+
+section ENNRealMeasure
+
+/-! ### ENNReal Version for Mathlib Compatibility
+
+We provide a version of baseMeasure taking values in ℝ≥0∞ (extended non-negative reals)
+for compatibility with Mathlib's measure theory framework. -/
+
+variable {α : Type*} [Lattice α] [BoundedOrder α]
+
+open scoped ENNReal
+
+/-- Convert baseMeasure to ENNReal for use with Mathlib's measure theory.
+
+Since baseMeasure is non-negative (for normalized bivaluations), we can safely convert.
+Values are finite (not ∞) since baseMeasure is bounded by m(⊤). -/
+noncomputable def baseMeasureENNReal (B : Bivaluation α) (hTop : (⊤ : α) ≠ (⊥ : α)) : α → ℝ≥0∞ :=
+  fun x => ENNReal.ofReal (baseMeasure B x)
+
+theorem baseMeasureENNReal_bot (B : Bivaluation α) (hTop : (⊤ : α) ≠ (⊥ : α)) :
+    baseMeasureENNReal B hTop ⊥ = 0 := by
+  simp only [baseMeasureENNReal, baseMeasure.bot B hTop, ENNReal.ofReal_zero]
+
+theorem baseMeasureENNReal_ne_top (B : Bivaluation α) (hTop : (⊤ : α) ≠ (⊥ : α)) (x : α) :
+    baseMeasureENNReal B hTop x ≠ ⊤ := by
+  simp only [baseMeasureENNReal, ne_eq]
+  exact ENNReal.ofReal_ne_top
+
+theorem baseMeasureENNReal_mono (B : Bivaluation α) (hTop : (⊤ : α) ≠ (⊥ : α)) {x y : α} (hxy : x ≤ y) :
+    baseMeasureENNReal B hTop x ≤ baseMeasureENNReal B hTop y := by
+  simp only [baseMeasureENNReal]
+  exact ENNReal.ofReal_le_ofReal (baseMeasure.mono B x y hxy)
+
+theorem baseMeasureENNReal_additive (B : Bivaluation α) (hTop : (⊤ : α) ≠ (⊥ : α))
+    {x y : α} (hDisj : Disjoint x y) :
+    baseMeasureENNReal B hTop (x ⊔ y) =
+    baseMeasureENNReal B hTop x + baseMeasureENNReal B hTop y := by
+  simp only [baseMeasureENNReal]
+  rw [baseMeasure.additive B x y hDisj]
+  have ha : 0 ≤ baseMeasure B x := baseMeasure.nonneg B hTop x
+  have hb : 0 ≤ baseMeasure B y := baseMeasure.nonneg B hTop y
+  exact ENNReal.ofReal_add ha hb
+
+theorem baseMeasureENNReal_top_eq_one (B : Bivaluation α)
+    (hNormalized : ∀ t : α, ⊥ < t → B.p t t = 1) (hTop : (⊤ : α) ≠ (⊥ : α)) :
+    baseMeasureENNReal B hTop ⊤ = 1 := by
+  simp only [baseMeasureENNReal, baseMeasure.top_eq_one B hNormalized hTop, ENNReal.ofReal_one]
+
+end ENNRealMeasure
 
 /-- **Probability as a ratio of measures** (K&S Eq. (ratio)).
 

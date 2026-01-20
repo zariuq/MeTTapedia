@@ -39,7 +39,7 @@ theorem representable_implies_commutative_reference [Representable α] :
 /-!
 ## Theorem 1b: If Separated, Then Commutative (FULLY PROVEN)
 
-There is a sorry-free proof that the iterate/power “sandwich” axiom `KSSeparation`
+There is a complete proof that the iterate/power "sandwich" axiom `KSSeparation`
 forces global commutativity. -/
 
 theorem ksSeparation_implies_commutative_reference [KSSeparation α] :

@@ -706,4 +706,48 @@ theorem optimalValue_ge_value {Action : Type uA} {Percept : Type uP}
     optimalValue μ γ h n ≥ value μ π γ h n := by
   simpa [ge_iff_le] using (value_le_optimalValue (μ := μ) (π := π) (γ := γ) (h := h) (n := n))
 
+/-! ## Average value (γ = 1 friendly) -/
+
+noncomputable def averageValue {Action : Type uA} {Percept : Type uP}
+    [Fintype Action] [Fintype Percept] [PerceptReward Percept]
+    (μ : Environment Action Percept) (π : Agent Action Percept) (γ : DiscountFactor)
+    (h : History Action Percept) (horizon : ℕ) : ℝ :=
+  if horizon = 0 then 0 else value μ π γ h horizon / horizon
+
+theorem averageValue_nonneg {Action : Type uA} {Percept : Type uP}
+    [Fintype Action] [Fintype Percept] [PerceptReward Percept]
+    (μ : Environment Action Percept) (π : Agent Action Percept) (γ : DiscountFactor)
+    (h : History Action Percept) (horizon : ℕ) :
+    0 ≤ averageValue μ π γ h horizon := by
+  by_cases hzero : horizon = 0
+  · simp [averageValue, hzero]
+  · have hpos : (0 : ℝ) < horizon := by
+        exact Nat.cast_pos.mpr (Nat.pos_of_ne_zero hzero)
+    have hval : 0 ≤ value μ π γ h horizon :=
+      value_nonneg (μ := μ) (π := π) (γ := γ) (h := h) (n := horizon)
+    calc
+      0 ≤ value μ π γ h horizon / horizon := by
+        exact div_nonneg hval hpos.le
+      _ = averageValue μ π γ h horizon := by
+        simp [averageValue, hzero]
+
+theorem averageValue_le_one {Action : Type uA} {Percept : Type uP}
+    [Fintype Action] [Fintype Percept] [PerceptReward Percept]
+    (μ : Environment Action Percept) (π : Agent Action Percept) (γ : DiscountFactor)
+    (h : History Action Percept) (horizon : ℕ) :
+    averageValue μ π γ h horizon ≤ 1 := by
+  by_cases hzero : horizon = 0
+  · simp [averageValue, hzero]
+  · have hpos : (0 : ℝ) < horizon := by
+        exact Nat.cast_pos.mpr (Nat.pos_of_ne_zero hzero)
+    have hval : value μ π γ h horizon ≤ horizon :=
+      value_le (μ := μ) (π := π) (γ := γ) (h := h) (n := horizon)
+    have hdiv : value μ π γ h horizon / horizon ≤ (horizon : ℝ) / horizon :=
+      div_le_div_of_nonneg_right hval hpos.le
+    calc
+      averageValue μ π γ h horizon = value μ π γ h horizon / horizon := by
+        simp [averageValue, hzero]
+      _ ≤ (horizon : ℝ) / horizon := hdiv
+      _ = 1 := by simp [hzero]
+
 end Mettapedia.UniversalAI.BayesianAgents.Core

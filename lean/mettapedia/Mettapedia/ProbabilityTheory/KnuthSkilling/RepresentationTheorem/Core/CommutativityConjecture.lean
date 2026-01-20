@@ -13,7 +13,7 @@ This file originally recorded an *open* conjecture that `KSSeparation` implies c
 
 ## Status: RESOLVED
 
-There is a sorry-free Lean proof:
+There is a complete Lean proof:
 - `Mettapedia/ProbabilityTheory/KnuthSkilling/Separation/SandwichSeparation.lean`
 
 The main “Core/” entry point for this fact is:

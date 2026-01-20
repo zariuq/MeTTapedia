@@ -873,7 +873,7 @@ Appendix B shows that `⊗` must be multiplication up to a single global scale c
 In our formalization, Appendix B is proved in two routes:
 
 - `Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.Main` (via the product equation)
-- `Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.AczelTheorem` (Lean-friendly direct route)
+- `Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem.DirectProof` (Lean-friendly direct route)
 
 The lemma below is the “pipeline glue” used by `ProbabilityDerivation`:
 once you have *some* scalar `tensor` used to interpret direct products of events, the

@@ -56,13 +56,72 @@ abbrev PosReal := Ioi (0 : ℝ)
 @[simp] theorem coe_mulPos (x y : PosReal) : ((mulPos x y : PosReal) : ℝ) = (x : ℝ) * (y : ℝ) := by
   rfl
 
-/-- The distributivity axiom for `⊗` over `+` (paper eq. (\"axiom3\"))
+/-! ## Unbundled Tensor Axiom Predicates
+
+Following the "unbundled predicates + bundled convenience classes" pattern. -/
+
+/-- The distributivity axiom for `⊗` over `+` (paper eq. ("axiom3"))
 
 `(x ⊗ t) + (y ⊗ t) = (x + y) ⊗ t`.
 
 We package it for `PosReal` using `addPos` for closure. -/
 def DistributesOverAdd (tensor : PosReal → PosReal → PosReal) : Prop :=
   ∀ x y t : PosReal, tensor (addPos x y) t = addPos (tensor x t) (tensor y t)
+
+/-- Tensor associativity: `(u ⊗ v) ⊗ w = u ⊗ (v ⊗ w)`. -/
+def TensorAssoc (tensor : PosReal → PosReal → PosReal) : Prop :=
+  ∀ u v w : PosReal, tensor (tensor u v) w = tensor u (tensor v w)
+
+/-- Tensor maps positive to positive. This is automatic for `PosReal → PosReal → PosReal`
+    but we state it for documentation and uniformity. -/
+def TensorPos (tensor : PosReal → PosReal → PosReal) : Prop :=
+  ∀ x y : PosReal, 0 < (tensor x y).val
+
+/-- Tensor is strictly monotone in the left argument. -/
+def TensorStrictMonoLeft (tensor : PosReal → PosReal → PosReal) : Prop :=
+  ∀ t : PosReal, StrictMono (fun x => tensor x t)
+
+/-- Tensor is strictly monotone in the right argument. -/
+def TensorStrictMonoRight (tensor : PosReal → PosReal → PosReal) : Prop :=
+  ∀ x : PosReal, StrictMono (fun t => tensor x t)
+
+/-! ## Bundled Tensor Algebra Class
+
+`TensorAlgebra` bundles the key tensor axioms used in the Product Theorem.
+This provides ergonomics for longer proofs while the unbundled predicates
+enable minimal-hypothesis tracking in theorem statements. -/
+
+/-- **TensorAlgebra**: Bundled tensor axioms for the K&S Product Theorem.
+
+This bundles:
+- Distributivity over addition (`DistributesOverAdd`)
+- Associativity (`TensorAssoc`)
+- Positivity (`TensorPos`)
+
+Use the unbundled predicates directly for minimal-hypothesis theorems,
+or use `[TensorAlgebra tensor]` for convenience in longer proofs. -/
+class TensorAlgebra (tensor : PosReal → PosReal → PosReal) : Prop where
+  /-- Tensor distributes over addition: `(x + y) ⊗ t = (x ⊗ t) + (y ⊗ t)`. -/
+  distributes : DistributesOverAdd tensor
+  /-- Tensor is associative: `(u ⊗ v) ⊗ w = u ⊗ (v ⊗ w)`. -/
+  assoc : TensorAssoc tensor
+  /-- Tensor maps positive reals to positive reals. -/
+  pos : TensorPos tensor
+
+namespace TensorAlgebra
+
+variable {tensor : PosReal → PosReal → PosReal} [TensorAlgebra tensor]
+
+/-- Access distributivity from the bundled class. -/
+theorem distributesOverAdd : DistributesOverAdd tensor := TensorAlgebra.distributes
+
+/-- Access associativity from the bundled class. -/
+theorem tensorAssoc : TensorAssoc tensor := TensorAlgebra.assoc
+
+/-- Access positivity from the bundled class. -/
+theorem tensorPos : TensorPos tensor := TensorAlgebra.pos
+
+end TensorAlgebra
 
 namespace Derived
 
@@ -180,6 +239,16 @@ theorem productEquation_of_distributes
             simpa [this] using this.symm
     _ = Psi hRep (τ + zeta hRep ξ η) := by
             simpa [hxy']
+
+/-- The K&S product equation using bundled `TensorAlgebra` instance.
+
+This is a convenience wrapper around `productEquation_of_distributes` that uses
+the bundled class for ergonomics in longer proofs. -/
+theorem productEquation_of_tensorAlgebra
+    (hRep : AdditiveOrderIsoRep PosReal tensor)
+    [TensorAlgebra tensor] :
+    ProductEquation (Psi hRep) (zeta hRep) :=
+  productEquation_of_distributes hRep TensorAlgebra.distributesOverAdd
 
 end Derived
 

@@ -7,6 +7,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Logic.Equiv.Fin.Basic
 import Mettapedia.UniversalAI.BayesianAgents
+import Mettapedia.UniversalAI.BayesianAgents.InfiniteHistoryCompat
 
 /-!
 # Important Problem Classes (Hutter 2005, Chapter 6)
@@ -1913,6 +1914,39 @@ noncomputable def toEnvironment (ex : SupervisedLearningProblem) :
           simpa [probFun, hlast] using hsum_le
 
 end SupervisedLearningProblem
+
+/-! ## Infinite-Horizon Limit (measure-theoretic core)
+
+This section wires the infinite-history convergence lemma into the Chapter 6 setting.
+It does not change the problem-class reductions, but provides a reusable bridge from
+finite-horizon values to the infinite-horizon integral semantics when `γ < 1`. -/
+
+section InfiniteHorizonLimit
+
+universe u
+
+theorem valueFromMeasure_tendsto
+    {Action Percept : Type u} [Fintype Action] [Fintype Percept]
+    [BayesianAgents.Core.PerceptReward Percept]
+    (μ : BayesianAgents.Core.Environment Action Percept)
+    (π : BayesianAgents.Core.Agent Action Percept)
+    (γ : BayesianAgents.Core.DiscountFactor)
+    (h_stoch : Mettapedia.UniversalAI.BayesianAgents.Core.InfiniteHistoryCompat.isStochastic μ)
+    (h_lt : γ.val < 1) :
+    Filter.Tendsto
+        (fun t =>
+          Mettapedia.UniversalAI.BayesianAgents.Core.InfiniteHistoryCompat.valueFromMeasure
+            (Action := Action) (Percept := Percept) μ π γ h_stoch t)
+        Filter.atTop
+        (nhds
+          (Mettapedia.UniversalAI.BayesianAgents.Core.InfiniteHistoryCompat.valueFromMeasureInf
+            (Action := Action) (Percept := Percept) μ π γ h_stoch)) := by
+  simpa using
+    (Mettapedia.UniversalAI.BayesianAgents.Core.InfiniteHistoryCompat.tendsto_valueFromMeasure
+      (Action := Action) (Percept := Percept) (μ := μ) (π := π) (γ := γ)
+      (h_stoch := h_stoch) (h_lt := h_lt))
+
+end InfiniteHorizonLimit
 
 /-! ### Theorem 6.5.1 (finite): Optimality in the induced supervised-learning environment
 

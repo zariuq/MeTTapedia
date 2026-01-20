@@ -25,6 +25,23 @@ order-embedding `Θ : α → ℝ`, under the same hypothesis used elsewhere in t
 We keep the lemma `Θ_cuts_eq_div_of_representation` as a useful *characterization*:
 once any additive order embedding exists, the cut-based construction recovers it (up to scale).
 
+## Identity Requirements
+
+This construction **requires identity** in several fundamental ways:
+1. **Power iteration base case**: `pow' x 0 = ident`
+2. **Reference element selection**: `a > ident`
+3. **Cut set definition**: Comparisons involve identity
+4. **Normalization**: Θ is scaled relative to identity
+
+**Future work** could potentially make this identity-optional by:
+- Using `iterate_op_pnat : ℕ+ → α` instead of `pow' : ℕ → α`
+- Using Eric's `IsPositive a` instead of `ident < a`
+- Defining cuts relative to an anchor element instead of identity
+
+However, this would require substantial restructuring. For identity-free representation,
+the **Hölder path** (via Eric Luap's OrderedSemigroups library) is recommended instead.
+See `Separation/HolderEmbedding.lean` for the identity-free approach.
+
 ## References
 
 - Hölder, "Die Axiome der Quantität und die Lehre vom Mass" (1901)
@@ -41,6 +58,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.SandwichSeparation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Core.SeparationImpliesCommutative
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.HolderEmbedding
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Alternative
 
@@ -1134,5 +1152,930 @@ theorem Θ_cuts_add (a : α) (ha : ident < a) (x y : α) :
   simpa [hΘx, hΘy, hΘxy] using h_sSup_eq
 
 end Standalone
+
+/-!
+## §8: Identity-Free Cuts (Using ℕ+ Iteration)
+
+This section provides a **genuinely identity-free** cuts construction using:
+- `iterate_op_pnat : ℕ+ → α` instead of `pow' : ℕ → α` (no n=0 base case)
+- `IsPositive a` instead of `ident < a` (Eric Luap's identity-free positivity)
+
+This is the proper foundational approach for ordered semigroups without identity.
+-/
+
+section IdentityFreeCuts
+variable {α : Type*} [KSSemigroupBase α] [KSSeparationSemigroup α]
+
+open KSSemigroupBase
+
+/-- Identity-free cut set: rationals m/n such that a^m ≤ x^n (using ℕ+ iteration). -/
+def cutSet_pnat (a : α) (x : α) : Set ℚ :=
+  { q : ℚ | 0 ≤ q ∧ ∃ (m n : ℕ+), q = (m : ℚ) / n ∧ iterate_op_pnat a m ≤ iterate_op_pnat x n }
+
+/-- **Archimedean property for identity-free semigroups**: For positive elements a and x,
+there exists N such that a ≤ x^N.
+
+This is derivable from `KSSeparationSemigroup` via the following argument:
+1. If a ≤ x, then N = 1 works.
+2. If x < a, apply separation with base x on interval (x, a) to get bounds.
+   The lower bound x^m < x^n forces m < n (strict mono in exponent).
+   Combined with density of rationals, this shows x^n grows unboundedly.
+
+Full proof uses techniques from SandwichSeparation.lean. -/
+theorem archimedean_pnat_of_separation (a x : α) (ha : IsPositive a) (hx : IsPositive x) :
+    ∃ N : ℕ+, a ≤ iterate_op_pnat x N := by
+  -- Case 1: a ≤ x
+  by_cases hax : a ≤ x
+  · exact ⟨1, by simpa only [iterate_op_pnat_one] using hax⟩
+  -- Case 2: x < a
+  push_neg at hax
+  -- Apply separation with base x on interval (a, op a a)
+  -- First establish: a < op a a (from IsPositive a)
+  have ha2_lt : a < op a a := ha a
+  -- Establish: IsPositive (op a a)
+  -- For any y: y < op a y < op a (op a y) = op (op a a) y (by associativity)
+  have ha2_pos : IsPositive (op a a) := fun y =>
+    lt_trans (ha y) (by rw [op_assoc]; exact ha (op a y))
+  -- Apply separation: base = x, lower = a, upper = op a a
+  obtain ⟨n, m, h_lower, h_upper⟩ := KSSeparationSemigroup.sep hx ha ha2_pos ha2_lt
+  -- h_lower: a^m < x^n
+  -- h_upper: x^n ≤ (op a a)^m
+  -- From a^m < x^n with m ≥ 1: a = a^1 ≤ a^m < x^n
+  use n
+  -- Show a ≤ a^m using monotonicity (1 ≤ m)
+  have ha_le_am : a ≤ iterate_op_pnat a m := by
+    rw [← iterate_op_pnat_one a]
+    exact iterate_op_pnat_mono a ha (PNat.one_le m)
+  -- Conclude: a ≤ a^m < x^n
+  exact le_of_lt (lt_of_le_of_lt ha_le_am h_lower)
+
+/-- **Reverse Archimedean**: For positive a and x, there exists K with x < a^K.
+This bounds x from above by powers of a. -/
+theorem reverse_archimedean_pnat (a x : α) (ha : IsPositive a) (_hx : IsPositive x) :
+    ∃ K : ℕ+, x < iterate_op_pnat a K := by
+  -- Case 1: x < a already
+  by_cases hxa : x < a
+  · exact ⟨1, by simpa only [iterate_op_pnat_one] using hxa⟩
+  -- Case 2: a ≤ x
+  push_neg at hxa
+  -- Need to show x < a^K for some K
+  -- Use Archimedean: x ≤ a^N for some N, then x < a^{N+1}
+  obtain ⟨N, hN⟩ := archimedean_pnat_of_separation x a _hx ha
+  -- hN : x ≤ a^N
+  use N + 1
+  have h_mono : N < N + 1 := PNat.lt_add_one_iff.mpr (le_refl N)
+  calc x ≤ iterate_op_pnat a N := hN
+    _ < iterate_op_pnat a (N + 1) := iterate_op_pnat_strictMono a ha h_mono
+
+omit [KSSeparationSemigroup α] in
+/-- The cut set is nonempty when x has positive element a in its cut (contains 1/1 = 1 when a ≤ x). -/
+theorem cutSet_pnat_nonempty_of_ge (a x : α) (hax : a ≤ x) :
+    (cutSet_pnat a x).Nonempty := by
+  use 1
+  simp only [cutSet_pnat, Set.mem_setOf_eq]
+  refine ⟨by norm_num, 1, 1, ?_, ?_⟩
+  · norm_num
+  · simp only [iterate_op_pnat_one, hax]
+
+/-- More general nonemptiness: cut set always contains rational approximations. -/
+theorem cutSet_pnat_nonempty (a x : α) (ha : IsPositive a) (hx : IsPositive x) :
+    (cutSet_pnat a x).Nonempty := by
+  -- By Archimedean: ∃ N, a ≤ x^N
+  -- Then 1/N ∈ cutSet_pnat a x since a^1 = a ≤ x^N
+  obtain ⟨N, hN⟩ := archimedean_pnat_of_separation a x ha hx
+  -- hN : a ≤ iterate_op_pnat x N
+  use (1 : ℚ) / N
+  simp only [cutSet_pnat, Set.mem_setOf_eq]
+  refine ⟨?_, 1, N, ?_, ?_⟩
+  · -- 0 ≤ 1/N
+    exact div_nonneg (by norm_num) (by exact_mod_cast N.pos.le)
+  · -- 1/N = 1/N
+    norm_num
+  · -- a^1 ≤ x^N
+    simp only [iterate_op_pnat_one]
+    exact hN
+
+omit [KSSeparationSemigroup α] in
+/-- Key lemma: iterate_op_pnat is strictly monotone in base for fixed exponent. -/
+theorem iterate_op_pnat_strictMono_base {a b : α} (hab : a < b) (n : ℕ+) :
+    iterate_op_pnat a n < iterate_op_pnat b n := by
+  induction n using PNat.recOn with
+  | one => simp only [iterate_op_pnat_one, hab]
+  | succ n ih =>
+    rw [iterate_op_pnat_succ, iterate_op_pnat_succ]
+    calc op a (iterate_op_pnat a n)
+        < op a (iterate_op_pnat b n) := op_strictMono_right a ih
+      _ < op b (iterate_op_pnat b n) := op_strictMono_left (iterate_op_pnat b n) hab
+
+omit [KSSeparationSemigroup α] in
+/-- Non-strict monotonicity. -/
+theorem iterate_op_pnat_mono_base {a b : α} (hab : a ≤ b) (n : ℕ+) :
+    iterate_op_pnat a n ≤ iterate_op_pnat b n := by
+  rcases hab.lt_or_eq with hlt | heq
+  · exact le_of_lt (iterate_op_pnat_strictMono_base hlt n)
+  · rw [heq]
+
+omit [KSSeparationSemigroup α] in
+/-- Multiplicativity: (x^m)^n = x^(m*n). This follows from pure associativity.
+    Key for bounding the cut set. -/
+theorem iterate_op_pnat_mul (x : α) (m n : ℕ+) :
+    iterate_op_pnat (iterate_op_pnat x m) n = iterate_op_pnat x (m * n) := by
+  -- Prove by induction on n
+  induction n using PNat.recOn with
+  | one =>
+    -- (x^m)^1 = x^m = x^(m*1)
+    simp only [iterate_op_pnat_one]
+    congr 1
+    exact (mul_one m).symm
+  | succ n ih =>
+    -- (x^m)^(n+1) = x^m ⊕ (x^m)^n = x^m ⊕ x^(m*n) = x^(m + m*n) = x^(m*(n+1))
+    rw [iterate_op_pnat_succ, ih]
+    -- Goal: op (iterate_op_pnat x m) (iterate_op_pnat x (m * n)) = iterate_op_pnat x (m * (n + 1))
+    -- Use iterate_op_pnat_add in reverse: x^a ⊕ x^b = x^(a+b)
+    rw [← iterate_op_pnat_add]
+    congr 1
+    -- m + m * n = m * (n + 1)
+    have h : m + m * n = m * (n + 1) := by
+      apply Subtype.ext
+      show (m + m * n).val = (m * (n + 1)).val
+      simp only [PNat.add_coe, PNat.mul_coe, PNat.val_ofNat]
+      ring
+    exact h
+
+omit [KSSeparationSemigroup α] in
+/-- Distribution: (x ⊕ y)^n = x^n ⊕ y^n when operation commutes. -/
+theorem iterate_op_pnat_distrib (x y : α) (hcomm : ∀ a b : α, op a b = op b a) (n : ℕ+) :
+    iterate_op_pnat (op x y) n = op (iterate_op_pnat x n) (iterate_op_pnat y n) := by
+  induction n using PNat.recOn with
+  | one => simp only [iterate_op_pnat_one]
+  | succ n ih =>
+    rw [iterate_op_pnat_succ, iterate_op_pnat_succ, iterate_op_pnat_succ, ih]
+    -- Goal: op (op x y) (op (iterate_op_pnat x n) (iterate_op_pnat y n))
+    --     = op (op x (iterate_op_pnat x n)) (op y (iterate_op_pnat y n))
+    -- Use associativity and commutativity
+    calc op (op x y) (op (iterate_op_pnat x n) (iterate_op_pnat y n))
+        = op x (op y (op (iterate_op_pnat x n) (iterate_op_pnat y n))) := op_assoc x y _
+      _ = op x (op (op y (iterate_op_pnat x n)) (iterate_op_pnat y n)) := by rw [op_assoc y _ _]
+      _ = op x (op (op (iterate_op_pnat x n) y) (iterate_op_pnat y n)) := by rw [hcomm y (iterate_op_pnat x n)]
+      _ = op x (op (iterate_op_pnat x n) (op y (iterate_op_pnat y n))) := by rw [op_assoc (iterate_op_pnat x n) y _]
+      _ = op (op x (iterate_op_pnat x n)) (op y (iterate_op_pnat y n)) := by rw [← op_assoc x _ _]
+
+/-- The cut set is bounded above (uses Archimedean property from separation). -/
+theorem cutSet_pnat_bddAbove (a x : α) (ha : IsPositive a) (hx : IsPositive x) :
+    BddAbove (cutSet_pnat a x) := by
+  -- By reverse Archimedean: ∃ K, x < a^K
+  -- If q = m/n ∈ cutSet_pnat, then a^m ≤ x^n < (a^K)^n = a^{K*n}
+  -- Thus a^m < a^{K*n}, so m < K*n (by strict mono in exponent), hence m/n < K
+  obtain ⟨K, hK⟩ := reverse_archimedean_pnat a x ha hx
+  -- hK : x < iterate_op_pnat a K
+  use (K : ℚ)
+  intro q hq
+  simp only [cutSet_pnat, Set.mem_setOf_eq] at hq
+  obtain ⟨_hq_nonneg, m, n, hq_eq, ham_le⟩ := hq
+  subst hq_eq
+  -- Goal: m/n ≤ K
+  -- Step 1: x^n < (a^K)^n (strict mono in base)
+  have hxn_lt : iterate_op_pnat x n < iterate_op_pnat (iterate_op_pnat a K) n :=
+    iterate_op_pnat_strictMono_base hK n
+  -- Step 2: (a^K)^n = a^{K*n} (multiplicativity)
+  rw [iterate_op_pnat_mul] at hxn_lt
+  -- hxn_lt : iterate_op_pnat x n < iterate_op_pnat a (K * n)
+  -- Step 3: a^m ≤ x^n < a^{K*n}
+  have ham_lt : iterate_op_pnat a m < iterate_op_pnat a (K * n) :=
+    lt_of_le_of_lt ham_le hxn_lt
+  -- Step 4: m < K*n (by strict mono in exponent for positive a)
+  have hmKn : m < K * n := by
+    by_contra h_not
+    push_neg at h_not  -- K * n ≤ m
+    have h_mono : iterate_op_pnat a (K * n) ≤ iterate_op_pnat a m :=
+      iterate_op_pnat_mono a ha h_not
+    exact not_lt.mpr h_mono ham_lt
+  -- Step 5: m/n ≤ K (since m < K*n implies m/n < K for positive n)
+  have hn_pos : (0 : ℚ) < n := by exact_mod_cast n.pos
+  have hn_ne : (n : ℚ) ≠ 0 := ne_of_gt hn_pos
+  rw [div_le_iff₀ hn_pos]
+  -- Goal: (m : ℚ) ≤ K * n
+  have h_le : m ≤ K * n := le_of_lt hmKn
+  exact_mod_cast h_le
+
+omit [KSSeparationSemigroup α] in
+/-- Closure of cutSet_pnat under addition (for additivity proof). -/
+theorem cutSet_pnat_add_closed (a x y : α) (_hcomm : ∀ u v : α, op u v = op v u) :
+    ∀ {q₁ q₂ : ℚ}, q₁ ∈ cutSet_pnat a x → q₂ ∈ cutSet_pnat a y →
+    q₁ + q₂ ∈ cutSet_pnat a (op x y) := by
+  intro q₁ q₂ hq₁ hq₂
+  rcases hq₁ with ⟨hq₁_nonneg, m₁, n₁, hq₁_eq, ham₁_le⟩
+  rcases hq₂ with ⟨hq₂_nonneg, m₂, n₂, hq₂_eq, ham₂_le⟩
+  subst hq₁_eq; subst hq₂_eq
+
+  -- Use common denominator n₁ * n₂
+  -- Construct the new numerator as a PNat
+  have h_num_pos : 0 < m₁.val * n₂.val + m₂.val * n₁.val := by
+    have h1 : 0 < m₁.val * n₂.val := Nat.mul_pos m₁.pos n₂.pos
+    have h2 : 0 < m₂.val * n₁.val := Nat.mul_pos m₂.pos n₁.pos
+    omega
+  refine ⟨add_nonneg hq₁_nonneg hq₂_nonneg,
+    ⟨m₁.val * n₂.val + m₂.val * n₁.val, h_num_pos⟩, n₁ * n₂, ?_, ?_⟩
+  · -- Arithmetic: m₁/n₁ + m₂/n₂ = (m₁*n₂ + m₂*n₁)/(n₁*n₂)
+    simp only [PNat.mul_coe, PNat.mk_coe]
+    have hn₁_ne : (n₁ : ℚ) ≠ 0 := by exact_mod_cast n₁.pos.ne'
+    have hn₂_ne : (n₂ : ℚ) ≠ 0 := by exact_mod_cast n₂.pos.ne'
+    field_simp [hn₁_ne, hn₂_ne]
+    -- Goal is polynomial identity in ℚ with Nat casts
+    push_cast
+    ring
+  · -- Power inequality: a^(m₁*n₂ + m₂*n₁) ≤ (x⊕y)^(n₁*n₂)
+    -- Step 1: Scale inequalities
+    -- From a^m₁ ≤ x^n₁, raise to power n₂: (a^m₁)^n₂ ≤ (x^n₁)^n₂
+    -- Using iterate_op_pnat_mul: a^(m₁*n₂) ≤ x^(n₁*n₂)
+    have h1 : iterate_op_pnat a (⟨m₁.val * n₂.val, Nat.mul_pos m₁.pos n₂.pos⟩ : ℕ+) ≤
+              iterate_op_pnat x (n₁ * n₂) := by
+      rw [show (⟨m₁.val * n₂.val, _⟩ : ℕ+) = m₁ * n₂ from rfl]
+      rw [← iterate_op_pnat_mul a m₁ n₂, ← iterate_op_pnat_mul x n₁ n₂]
+      exact iterate_op_pnat_mono_base ham₁_le n₂
+    -- From a^m₂ ≤ y^n₂, raise to power n₁: a^(m₂*n₁) ≤ y^(n₂*n₁) = y^(n₁*n₂)
+    have h2 : iterate_op_pnat a (⟨m₂.val * n₁.val, Nat.mul_pos m₂.pos n₁.pos⟩ : ℕ+) ≤
+              iterate_op_pnat y (n₂ * n₁) := by
+      rw [show (⟨m₂.val * n₁.val, _⟩ : ℕ+) = m₂ * n₁ from rfl]
+      rw [← iterate_op_pnat_mul a m₂ n₁, ← iterate_op_pnat_mul y n₂ n₁]
+      exact iterate_op_pnat_mono_base ham₂_le n₁
+    -- Rewrite n₂ * n₁ = n₁ * n₂
+    have h_comm_pnat : n₂ * n₁ = n₁ * n₂ := mul_comm n₂ n₁
+    rw [h_comm_pnat] at h2
+    -- Step 2: Combine using iterate_op_pnat_add
+    -- a^(m₁*n₂) ⊕ a^(m₂*n₁) = a^(m₁*n₂ + m₂*n₁)
+    have h_pnat_eq : (⟨m₁.val * n₂.val, Nat.mul_pos m₁.pos n₂.pos⟩ : ℕ+) +
+                     (⟨m₂.val * n₁.val, Nat.mul_pos m₂.pos n₁.pos⟩ : ℕ+) =
+                     (⟨m₁.val * n₂.val + m₂.val * n₁.val, h_num_pos⟩ : ℕ+) := Subtype.ext rfl
+    have h_add_lhs : iterate_op_pnat a (⟨m₁.val * n₂.val + m₂.val * n₁.val, h_num_pos⟩ : ℕ+) =
+                     op (iterate_op_pnat a (⟨m₁.val * n₂.val, Nat.mul_pos m₁.pos n₂.pos⟩ : ℕ+))
+                        (iterate_op_pnat a (⟨m₂.val * n₁.val, Nat.mul_pos m₂.pos n₁.pos⟩ : ℕ+)) := by
+      rw [← iterate_op_pnat_add, h_pnat_eq]
+    -- Step 3: x^(n₁*n₂) ⊕ y^(n₁*n₂) = (x⊕y)^(n₁*n₂) (distribution with commutativity)
+    have h_distrib : iterate_op_pnat (op x y) (n₁ * n₂) =
+                     op (iterate_op_pnat x (n₁ * n₂)) (iterate_op_pnat y (n₁ * n₂)) := by
+      rw [iterate_op_pnat_distrib]
+      exact _hcomm
+    -- Step 4: Combine: show op (a^(m₁*n₂)) (a^(m₂*n₁)) ≤ (x⊕y)^(n₁*n₂)
+    rw [h_add_lhs, h_distrib]
+    -- Goal: op (a^(m₁*n₂)) (a^(m₂*n₁)) ≤ op (x^(n₁*n₂)) (y^(n₁*n₂))
+    -- This follows from h1, h2 and op being monotone in both arguments
+    -- Use: op is monotone in each argument (from strict mono)
+    calc op (iterate_op_pnat a ⟨m₁.val * n₂.val, Nat.mul_pos m₁.pos n₂.pos⟩)
+               (iterate_op_pnat a ⟨m₂.val * n₁.val, Nat.mul_pos m₂.pos n₁.pos⟩)
+        ≤ op (iterate_op_pnat x (n₁ * n₂))
+              (iterate_op_pnat a ⟨m₂.val * n₁.val, Nat.mul_pos m₂.pos n₁.pos⟩) :=
+          (op_strictMono_left _).monotone h1
+      _ ≤ op (iterate_op_pnat x (n₁ * n₂)) (iterate_op_pnat y (n₁ * n₂)) :=
+          (op_strictMono_right _).monotone h2
+
+/-- Definition of Θ via supremum of cut set (identity-free).
+    The `IsPositive` hypotheses ensure the cut set is nonempty and bounded above. -/
+noncomputable def Θ_cuts_pnat (a : α) (_ha : IsPositive a) (x : α) (_hx : IsPositive x) : ℝ :=
+  sSup ((↑) '' cutSet_pnat a x : Set ℝ)
+
+/-- Θ_cuts_pnat is monotone: x ≤ y → Θ(x) ≤ Θ(y). -/
+theorem Θ_cuts_pnat_mono (a : α) (ha : IsPositive a)
+    {x y : α} (hx : IsPositive x) (hy : IsPositive y) (hxy : x ≤ y) :
+    Θ_cuts_pnat a ha x hx ≤ Θ_cuts_pnat a ha y hy := by
+  simp only [Θ_cuts_pnat]
+  -- cutSet_pnat a x ⊆ cutSet_pnat a y
+  apply csSup_le_csSup
+  · -- cutSet_pnat a y is bounded
+    have hbdd := cutSet_pnat_bddAbove a y ha hy
+    obtain ⟨B, hB⟩ := hbdd
+    use B
+    intro r hr
+    simp only [Set.mem_image] at hr
+    obtain ⟨q, hq, rfl⟩ := hr
+    exact Rat.cast_le.mpr (hB hq)
+  · -- cutSet_pnat a x is nonempty
+    have hne := cutSet_pnat_nonempty a x ha hx
+    obtain ⟨q, hq⟩ := hne
+    exact ⟨q, Set.mem_image_of_mem _ hq⟩
+  · -- Inclusion
+    intro r hr
+    simp only [Set.mem_image] at hr
+    obtain ⟨q, hq, rfl⟩ := hr
+    simp only [Set.mem_image]
+    refine ⟨q, ?_, rfl⟩
+    simp only [cutSet_pnat, Set.mem_setOf_eq] at hq ⊢
+    obtain ⟨hq_nonneg, m, n, hq_eq, ham_le⟩ := hq
+    exact ⟨hq_nonneg, m, n, hq_eq, le_trans ham_le (iterate_op_pnat_mono_base hxy n)⟩
+
+/-!
+### Identity-Free Cuts: Full Representation
+
+The complete identity-free cuts path producing `RepresentationResult`.
+All proofs use only `IsPositive`, `iterate_op_pnat`, and `KSSeparationSemigroup`.
+-/
+
+omit [KSSeparationSemigroup α] in
+/-- Key lemma: if `iterate_op_pnat x m₀ < iterate_op_pnat a n₀`, then all rationals
+    in `cutSet_pnat a x` are strictly less than `n₀/m₀`.
+
+This is the identity-free version of `cutSet_lt_of_pow'_lt`. -/
+theorem cutSet_pnat_lt_of_iterate_lt (a : α) (ha : IsPositive a) {x : α} {m₀ n₀ : ℕ+}
+    (h_lt : iterate_op_pnat x m₀ < iterate_op_pnat a n₀) :
+    ∀ q ∈ cutSet_pnat a x, (q : ℝ) < (n₀ : ℝ) / (m₀ : ℝ) := by
+  intro q hq
+  simp only [cutSet_pnat, Set.mem_setOf_eq] at hq
+  obtain ⟨_hq_nonneg, m, n, hq_eq, ham_le⟩ := hq
+  subst hq_eq
+  -- We have: a^m ≤ x^n and x^m₀ < a^n₀
+  -- Need to show: m/n < n₀/m₀, i.e., m * m₀ < n₀ * n
+
+  have hn_pos' : 0 < (n : ℝ) := by exact_mod_cast n.pos
+  have hm₀_pos' : 0 < (m₀ : ℝ) := by exact_mod_cast m₀.pos
+
+  -- Scale `a^m ≤ x^n` by m₀: `a^(m*m₀) ≤ x^(n*m₀)`
+  have ham_le' : iterate_op_pnat a (m * m₀) ≤ iterate_op_pnat x (n * m₀) := by
+    have := iterate_op_pnat_mono_base ham_le m₀
+    rwa [iterate_op_pnat_mul, iterate_op_pnat_mul] at this
+
+  -- Scale `x^m₀ < a^n₀` by n: `x^(m₀*n) < a^(n₀*n)`
+  have hx_lt' : iterate_op_pnat x (m₀ * n) < iterate_op_pnat a (n₀ * n) := by
+    have := iterate_op_pnat_strictMono_base h_lt n
+    rwa [iterate_op_pnat_mul, iterate_op_pnat_mul] at this
+
+  -- Combine: `a^(m*m₀) ≤ x^(n*m₀) = x^(m₀*n) < a^(n₀*n)`
+  have h_between : iterate_op_pnat a (m * m₀) < iterate_op_pnat a (n₀ * n) := by
+    have heq : n * m₀ = m₀ * n := mul_comm n m₀
+    calc iterate_op_pnat a (m * m₀)
+        ≤ iterate_op_pnat x (n * m₀) := ham_le'
+      _ = iterate_op_pnat x (m₀ * n) := by rw [heq]
+      _ < iterate_op_pnat a (n₀ * n) := hx_lt'
+
+  -- From `a^(m*m₀) < a^(n₀*n)`, strict monotonicity gives `m*m₀ < n₀*n`
+  have h_exp_lt : m * m₀ < n₀ * n := (iterate_op_pnat_strictMono a ha).lt_iff_lt.mp h_between
+
+  -- Convert to real inequality: m/n < n₀/m₀
+  have h_exp_lt' : (m : ℝ) * (m₀ : ℝ) < (n₀ : ℝ) * (n : ℝ) := by
+    have : ((m * m₀ : ℕ+) : ℝ) < ((n₀ * n : ℕ+) : ℝ) := by exact_mod_cast h_exp_lt
+    simp only [PNat.mul_coe, Nat.cast_mul] at this
+    exact this
+
+  -- m/n < n₀/m₀ iff m * m₀ < n₀ * n (when denominators positive)
+  -- Goal: ↑(↑↑m / ↑↑n : ℚ) < (n₀ : ℝ) / (m₀ : ℝ)
+  -- Rat.cast_div: ↑(p/q) = (↑p)/(↑q) for ℚ→ℝ
+  -- Rat.cast_natCast: ↑(n : ℚ) = (n : ℝ) for ℕ→ℝ via ℚ
+  simp only [Rat.cast_div, Rat.cast_natCast]
+  rw [div_lt_div_iff₀ hn_pos' hm₀_pos']
+  exact h_exp_lt'
+
+/-- **Strict monotonicity** of identity-free Θ: x < y → Θ(x) < Θ(y).
+
+This is the key property needed for order-preservation.
+Requires `KSSeparationSemigroupStrict` for the strict upper bound. -/
+theorem Θ_cuts_pnat_strictMono [KSSeparationSemigroupStrict α] (a : α) (ha : IsPositive a)
+    {x y : α} (hx : IsPositive x) (hy : IsPositive y) (hxy : x < y) :
+    Θ_cuts_pnat a ha x hx < Θ_cuts_pnat a ha y hy := by
+  classical
+  -- Apply STRICT separation with base a on (x, y)
+  obtain ⟨n₀, m₀, hlt_iter, hgt_iter⟩ := KSSeparationSemigroupStrict.sep_strict ha hx hy hxy
+  -- hlt_iter: iterate_op_pnat x m₀ < iterate_op_pnat a n₀
+  -- hgt_iter: iterate_op_pnat a n₀ < iterate_op_pnat y m₀ (STRICT!)
+
+  -- The witness rational q₀ = n₀/m₀ lies in cutSet_pnat a y (with non-strict bound)
+  have hq₀_mem : ((n₀ : ℚ) / m₀) ∈ cutSet_pnat a y := by
+    simp only [cutSet_pnat, Set.mem_setOf_eq]
+    refine ⟨?_, n₀, m₀, ?_, ?_⟩
+    · exact div_nonneg (by exact_mod_cast n₀.pos.le) (by exact_mod_cast m₀.pos.le)
+    · rfl
+    · exact le_of_lt hgt_iter  -- a^n₀ < y^m₀ implies a^n₀ ≤ y^m₀
+
+  -- q₀ ≤ Θ(y)
+  have hq₀_le : ((n₀ : ℚ) / m₀ : ℝ) ≤ Θ_cuts_pnat a ha y hy := by
+    simp only [Θ_cuts_pnat]
+    have hbdd := cutSet_pnat_bddAbove a y ha hy
+    obtain ⟨B, hB⟩ := hbdd
+    have hbdd' : BddAbove ((↑) '' cutSet_pnat a y : Set ℝ) := by
+      refine ⟨(B : ℝ), ?_⟩
+      intro r hr
+      obtain ⟨q, hq, rfl⟩ := hr
+      exact Rat.cast_le.mpr (hB hq)
+    have hmem : (((n₀ : ℚ) / m₀) : ℝ) ∈ ((↑) '' cutSet_pnat a y : Set ℝ) := by
+      refine ⟨(n₀ : ℚ) / m₀, hq₀_mem, ?_⟩
+      simp only [Rat.cast_div, Rat.cast_natCast]
+    exact le_csSup hbdd' hmem
+
+  -- Apply STRICT separation again to (x^m₀, a^n₀) with base a
+  have hx_m₀_pos : IsPositive (iterate_op_pnat x m₀) := iterate_op_pnat_pos x hx m₀
+  have ha_n₀_pos : IsPositive (iterate_op_pnat a n₀) := iterate_op_pnat_pos a ha n₀
+
+  obtain ⟨n₁, k, hlt₁_iter, hgt₁_iter⟩ :=
+    KSSeparationSemigroupStrict.sep_strict ha hx_m₀_pos ha_n₀_pos hlt_iter
+  -- hlt₁_iter: (x^m₀)^k < a^n₁
+  -- hgt₁_iter: a^n₁ < (a^n₀)^k (STRICT!)
+
+  have hlt₁ : iterate_op_pnat x (m₀ * k) < iterate_op_pnat a n₁ := by
+    have : iterate_op_pnat (iterate_op_pnat x m₀) k < iterate_op_pnat a n₁ := hlt₁_iter
+    rwa [iterate_op_pnat_mul] at this
+
+  -- From a^n₁ < (a^n₀)^k = a^(n₀*k), we get n₁ < n₀*k by strict mono
+  have h_n₁_lt : n₁ < n₀ * k := by
+    have hgt₁' : iterate_op_pnat a n₁ < iterate_op_pnat a (n₀ * k) := by
+      have : iterate_op_pnat a n₁ < iterate_op_pnat (iterate_op_pnat a n₀) k := hgt₁_iter
+      rwa [iterate_op_pnat_mul] at this
+    exact (iterate_op_pnat_strictMono a ha).lt_iff_lt.mp hgt₁'
+
+  -- Θ(x) is bounded above by n₁/(m₀*k)
+  have hΘx_le : Θ_cuts_pnat a ha x hx ≤ (n₁ : ℝ) / ((m₀ * k : ℕ+) : ℝ) := by
+    simp only [Θ_cuts_pnat]
+    have hne := cutSet_pnat_nonempty a x ha hx
+    have hne' : ((↑) '' cutSet_pnat a x : Set ℝ).Nonempty := Set.image_nonempty.mpr hne
+    refine csSup_le hne' ?_
+    intro r hr
+    obtain ⟨q, hq, rfl⟩ := hr
+    have h_lt := cutSet_pnat_lt_of_iterate_lt a ha hlt₁ q hq
+    exact le_of_lt h_lt
+
+  -- n₁/(m₀*k) < n₀/m₀ because n₁ < n₀*k
+  have hlt_rat : (n₁ : ℝ) / ((m₀ * k : ℕ+) : ℝ) < (n₀ : ℝ) / (m₀ : ℝ) := by
+    have h_n₁_lt' : (n₁ : ℝ) < (n₀ : ℝ) * (k : ℝ) := by
+      have : ((n₁ : ℕ+) : ℝ) < ((n₀ * k : ℕ+) : ℝ) := by exact_mod_cast h_n₁_lt
+      simp only [PNat.mul_coe, Nat.cast_mul] at this
+      exact this
+    have hm₀k_pos : 0 < ((m₀ * k : ℕ+) : ℝ) := by exact_mod_cast (m₀ * k).pos
+    have hm₀_pos : 0 < (m₀ : ℝ) := by exact_mod_cast m₀.pos
+    rw [div_lt_div_iff₀ hm₀k_pos hm₀_pos]
+    have hk' : ((m₀ * k : ℕ+) : ℝ) = (m₀ : ℝ) * (k : ℝ) := by simp only [PNat.mul_coe, Nat.cast_mul]
+    calc (n₁ : ℝ) * (m₀ : ℝ)
+        < ((n₀ : ℝ) * (k : ℝ)) * (m₀ : ℝ) := by nlinarith [h_n₁_lt']
+      _ = (n₀ : ℝ) * ((m₀ : ℝ) * (k : ℝ)) := by ring
+      _ = (n₀ : ℝ) * ((m₀ * k : ℕ+) : ℝ) := by rw [← hk']
+
+  -- Combine: Θ(x) ≤ n₁/(m₀*k) < n₀/m₀ ≤ Θ(y)
+  have hq₀_eq : ((n₀ : ℚ) / m₀ : ℝ) = (n₀ : ℝ) / (m₀ : ℝ) := by
+    simp only [Rat.cast_natCast]
+  calc Θ_cuts_pnat a ha x hx
+      ≤ (n₁ : ℝ) / ((m₀ * k : ℕ+) : ℝ) := hΘx_le
+    _ < (n₀ : ℝ) / (m₀ : ℝ) := hlt_rat
+    _ = ((n₀ : ℚ) / m₀ : ℝ) := hq₀_eq.symm
+    _ ≤ Θ_cuts_pnat a ha y hy := hq₀_le
+
+omit [KSSeparationSemigroup α] in
+/-- Positivity is preserved under `op` for positive elements. -/
+theorem isPositive_op' {x y : α} (hx : IsPositive x) (hy : IsPositive y) : IsPositive (op x y) := by
+  intro z
+  have h1 : z < op x z := hx z
+  have h2 : z < op y z := hy z
+  have h3 : op x z < op x (op y z) := op_strictMono_right x h2
+  have h4 : op x (op y z) = op (op x y) z := (op_assoc x y z).symm
+  calc z < op x z := h1
+    _ < op x (op y z) := h3
+    _ = op (op x y) z := h4
+
+/-- **Additivity** of identity-free Θ: Θ(x⊕y) = Θ(x) + Θ(y).
+
+This follows the same proof structure as the identity-based `Θ_cuts_add`:
+1. First inequality (≥): Uses `cutSet_pnat_add_closed` and `csSup_add`
+2. Second inequality (≤): By contradiction using rational splitting
+
+Requires commutativity for `cutSet_pnat_add_closed`. -/
+theorem Θ_cuts_pnat_add (a : α) (ha : IsPositive a)
+    (hcomm : ∀ u v : α, op u v = op v u)
+    (x y : α) (hx : IsPositive x) (hy : IsPositive y) :
+    Θ_cuts_pnat a ha (op x y) (isPositive_op' hx hy) =
+      Θ_cuts_pnat a ha x hx + Θ_cuts_pnat a ha y hy := by
+  classical
+  have hxy : IsPositive (op x y) := isPositive_op' hx hy
+
+  -- Work with the real images of the cut-sets
+  let s : Set ℝ := (↑) '' cutSet_pnat a x
+  let t : Set ℝ := (↑) '' cutSet_pnat a y
+  let u : Set ℝ := (↑) '' cutSet_pnat a (op x y)
+
+  have hs0 : s.Nonempty := Set.image_nonempty.mpr (cutSet_pnat_nonempty a x ha hx)
+  have ht0 : t.Nonempty := Set.image_nonempty.mpr (cutSet_pnat_nonempty a y ha hy)
+  have hu0 : u.Nonempty := Set.image_nonempty.mpr (cutSet_pnat_nonempty a (op x y) ha hxy)
+
+  have hs1 : BddAbove s := by
+    obtain ⟨B, hB⟩ := cutSet_pnat_bddAbove a x ha hx
+    refine ⟨(B : ℝ), ?_⟩
+    intro r hr; obtain ⟨q, hq, rfl⟩ := hr
+    exact Rat.cast_le.mpr (hB hq)
+  have ht1 : BddAbove t := by
+    obtain ⟨B, hB⟩ := cutSet_pnat_bddAbove a y ha hy
+    refine ⟨(B : ℝ), ?_⟩
+    intro r hr; obtain ⟨q, hq, rfl⟩ := hr
+    exact Rat.cast_le.mpr (hB hq)
+  have hu1 : BddAbove u := by
+    obtain ⟨B, hB⟩ := cutSet_pnat_bddAbove a (op x y) ha hxy
+    refine ⟨(B : ℝ), ?_⟩
+    intro r hr; obtain ⟨q, hq, rfl⟩ := hr
+    exact Rat.cast_le.mpr (hB hq)
+
+  -- Inclusion: s + t ⊆ u
+  have hsubset : s + t ⊆ u := by
+    intro r hr
+    rcases Set.mem_add.1 hr with ⟨r₁, hr₁, r₂, hr₂, rfl⟩
+    rcases hr₁ with ⟨q₁, hq₁, rfl⟩
+    rcases hr₂ with ⟨q₂, hq₂, rfl⟩
+    refine ⟨q₁ + q₂, cutSet_pnat_add_closed a x y hcomm hq₁ hq₂, ?_⟩
+    simp only [Rat.cast_add]
+
+  -- First inequality: Θ(x) + Θ(y) ≤ Θ(x⊕y)
+  have h_le1 : sSup s + sSup t ≤ sSup u := by
+    have h_sup_sum : sSup (s + t) ≤ sSup u := csSup_le_csSup hu1 (hs0.add ht0) hsubset
+    have h_add : sSup (s + t) = sSup s + sSup t := csSup_add hs0 hs1 ht0 ht1
+    exact h_add ▸ h_sup_sum
+
+  -- Second inequality: Θ(x⊕y) ≤ Θ(x) + Θ(y)
+  -- By showing that every q ∈ cutSet_pnat a (op x y) satisfies q ≤ Θ(x) + Θ(y)
+  have h_le2 : sSup u ≤ sSup s + sSup t := by
+    refine csSup_le hu0 ?_
+    intro r hr
+    obtain ⟨q, hq, rfl⟩ := hr
+    -- If `q` is at most the sum of sups, we're done
+    by_contra h_not_le
+    have h_gt : sSup s + sSup t < (q : ℝ) := lt_of_not_ge h_not_le
+
+    -- Unpack the witness for `q ∈ cutSet_pnat(a, x⊕y)`
+    obtain ⟨hq_nonneg, m, n, hq_eq, ham_le⟩ := hq
+
+    -- Nonnegativity of Θ values: sSup s ≥ 0 and sSup t ≥ 0
+    -- This follows because cutSet_pnat only contains nonnegative rationals
+    have hΘx_nonneg : (0 : ℝ) ≤ sSup s := by
+      obtain ⟨qx, hqx⟩ := cutSet_pnat_nonempty a x ha hx
+      have hqx_nonneg := hqx.1
+      have hqx_mem : (qx : ℝ) ∈ s := ⟨qx, hqx, rfl⟩
+      have hqx_le : (qx : ℝ) ≤ sSup s := le_csSup hs1 hqx_mem
+      exact le_trans (Rat.cast_nonneg.mpr hqx_nonneg) hqx_le
+    have hΘy_nonneg : (0 : ℝ) ≤ sSup t := by
+      obtain ⟨qy, hqy⟩ := cutSet_pnat_nonempty a y ha hy
+      have hqy_nonneg := hqy.1
+      have hqy_mem : (qy : ℝ) ∈ t := ⟨qy, hqy, rfl⟩
+      have hqy_le : (qy : ℝ) ≤ sSup t := le_csSup ht1 hqy_mem
+      exact le_trans (Rat.cast_nonneg.mpr hqy_nonneg) hqy_le
+
+    -- Between Θ(x) and q - Θ(y), pick a rational q₁
+    have h_between : sSup s < (q : ℝ) - sSup t := by linarith
+    obtain ⟨q₁, hq₁_gt, hq₁_lt⟩ := exists_rat_btwn h_between
+    let q₂ : ℚ := q - q₁
+
+    have hq₂_gt : sSup t < (q₂ : ℝ) := by
+      have : sSup t < (q : ℝ) - (q₁ : ℝ) := by linarith [hq₁_lt]
+      have hcast : ((q - q₁ : ℚ) : ℝ) = (q : ℝ) - (q₁ : ℝ) := by simp [sub_eq_add_neg]
+      simpa [q₂, hcast] using this
+
+    -- Nonnegativity of q₁ and q₂
+    have hq₁_nonneg : (0 : ℚ) ≤ q₁ := by
+      have h0 : (0 : ℝ) ≤ (q₁ : ℝ) := le_trans hΘx_nonneg (le_of_lt hq₁_gt)
+      exact Rat.cast_nonneg.mp h0
+    have hq₂_nonneg : (0 : ℚ) ≤ q₂ := by
+      have h0 : (0 : ℝ) ≤ (q₂ : ℝ) := le_trans hΘy_nonneg (le_of_lt hq₂_gt)
+      exact Rat.cast_nonneg.mp h0
+
+    -- Since q₁ > Θ(x), it cannot lie in the cut-set for x; similarly for q₂ and y
+    have hq₁_not : q₁ ∉ cutSet_pnat a x := by
+      intro hq₁_mem
+      have hq₁_mem' : (q₁ : ℝ) ∈ s := ⟨q₁, hq₁_mem, rfl⟩
+      have : (q₁ : ℝ) ≤ sSup s := le_csSup hs1 hq₁_mem'
+      exact not_lt_of_ge this hq₁_gt
+
+    have hq₂_not : q₂ ∉ cutSet_pnat a y := by
+      intro hq₂_mem
+      have hq₂_mem' : (q₂ : ℝ) ∈ t := ⟨q₂, hq₂_mem, rfl⟩
+      have : (q₂ : ℝ) ≤ sSup t := le_csSup ht1 hq₂_mem'
+      exact not_lt_of_ge this hq₂_gt
+
+    -- Convert q₁ and q₂ to canonical ℕ+/ℕ+ representations
+    -- Using the fact that positive rationals can be written as m/n with m, n : ℕ+
+    -- But q₁ and q₂ could be 0. We handle this by using numerator/denominator
+    -- For q₁ = num₁/den₁ where den₁ > 0 and num₁ ≥ 0
+
+    -- Handle edge case: if q₁ = 0 or q₂ = 0, use specialized argument
+    by_cases hq₁_pos : 0 < q₁
+    case neg =>
+      -- q₁ = 0, so q₂ = q which should be in cutSet(a, y) if q ∈ cutSet(a, x⊕y)
+      -- But q₂ > Θ(y), contradiction
+      have hq₁_zero : q₁ = 0 := le_antisymm (not_lt.mp hq₁_pos) hq₁_nonneg
+      have hq₂_eq_q : q₂ = q := by simp [q₂, hq₁_zero]
+      -- We need: if a^m ≤ (x⊕y)^n and q₁ = 0, then q = q₂ is bounded by something related to y
+      -- This is actually complex. The standard approach uses q₁, q₂ > 0.
+      -- For now, derive contradiction from hq₁_gt: 0 = q₁ > sSup s ≥ some positive
+      -- But sSup s could be 0 if cutSet_pnat is empty except for very small elements
+      -- Actually, cutSet_pnat_nonempty gives us a positive element, so sSup s > 0
+      obtain ⟨qx, hqx_mem⟩ := cutSet_pnat_nonempty a x ha hx
+      have hqx_pos : 0 < qx := by
+        obtain ⟨_, mx, nx, hqx_eq, _⟩ := hqx_mem
+        rw [hqx_eq]
+        exact div_pos (by positivity : (0 : ℚ) < mx) (by positivity : (0 : ℚ) < nx)
+      have hqx_le_sup : (qx : ℝ) ≤ sSup s := le_csSup hs1 ⟨qx, hqx_mem, rfl⟩
+      have hq₁_gt' : (0 : ℝ) = (q₁ : ℝ) := by simp [hq₁_zero]
+      have hqx_pos_real : (0 : ℝ) < (qx : ℝ) := by exact_mod_cast hqx_pos
+      linarith
+    case pos =>
+      -- q₁ > 0
+      by_cases hq₂_pos : 0 < q₂
+      case neg =>
+        -- q₂ = 0, similar argument
+        have hq₂_zero : q₂ = 0 := le_antisymm (not_lt.mp hq₂_pos) hq₂_nonneg
+        obtain ⟨qy, hqy_mem⟩ := cutSet_pnat_nonempty a y ha hy
+        have hqy_pos : 0 < qy := by
+          obtain ⟨_, my, ny, hqy_eq, _⟩ := hqy_mem
+          rw [hqy_eq]
+          exact div_pos (by positivity : (0 : ℚ) < my) (by positivity : (0 : ℚ) < ny)
+        have hqy_le_sup : (qy : ℝ) ≤ sSup t := le_csSup ht1 ⟨qy, hqy_mem, rfl⟩
+        have hq₂_gt' : (0 : ℝ) = (q₂ : ℝ) := by simp [hq₂_zero]
+        have hqy_pos_real : (0 : ℝ) < (qy : ℝ) := by exact_mod_cast hqy_pos
+        linarith
+      case pos =>
+        -- Both q₁ > 0 and q₂ > 0
+
+        -- Convert to ℕ+/ℕ+ form using numerator/denominator
+        have h_num₁_pos : 0 < q₁.num := Rat.num_pos.mpr hq₁_pos
+        have h_num₁_nonneg : 0 ≤ q₁.num := le_of_lt h_num₁_pos
+        have h_num₁_toNat_pos : 0 < q₁.num.toNat := by
+          have h_ne : q₁.num.toNat ≠ 0 := by
+            intro h_eq
+            have h_cast : (q₁.num.toNat : ℤ) = q₁.num := Int.toNat_of_nonneg h_num₁_nonneg
+            have : q₁.num = 0 := by omega
+            exact (ne_of_gt h_num₁_pos) this
+          exact Nat.pos_of_ne_zero h_ne
+        let m₁ : ℕ+ := ⟨q₁.num.toNat, h_num₁_toNat_pos⟩
+        let n₁ : ℕ+ := ⟨q₁.den, q₁.den_pos⟩
+        have h_eqZ₁ : (q₁.num.toNat : ℤ) = q₁.num := Int.toNat_of_nonneg h_num₁_nonneg
+        have hq₁_eq : q₁ = (m₁ : ℚ) / n₁ := by
+          have h_orig : q₁ = q₁.num / q₁.den := (Rat.num_div_den q₁).symm
+          rw [h_orig]
+          congr 1
+          exact_mod_cast h_eqZ₁.symm
+
+        have h_num₂_pos : 0 < q₂.num := Rat.num_pos.mpr hq₂_pos
+        have h_num₂_nonneg : 0 ≤ q₂.num := le_of_lt h_num₂_pos
+        have h_num₂_toNat_pos : 0 < q₂.num.toNat := by
+          have h_ne : q₂.num.toNat ≠ 0 := by
+            intro h_eq
+            have h_cast : (q₂.num.toNat : ℤ) = q₂.num := Int.toNat_of_nonneg h_num₂_nonneg
+            have : q₂.num = 0 := by omega
+            exact (ne_of_gt h_num₂_pos) this
+          exact Nat.pos_of_ne_zero h_ne
+        let m₂ : ℕ+ := ⟨q₂.num.toNat, h_num₂_toNat_pos⟩
+        let n₂ : ℕ+ := ⟨q₂.den, q₂.den_pos⟩
+        have h_eqZ₂ : (q₂.num.toNat : ℤ) = q₂.num := Int.toNat_of_nonneg h_num₂_nonneg
+        have hq₂_eq : q₂ = (m₂ : ℚ) / n₂ := by
+          have h_orig : q₂ = q₂.num / q₂.den := (Rat.num_div_den q₂).symm
+          rw [h_orig]
+          congr 1
+          exact_mod_cast h_eqZ₂.symm
+
+        -- From non-membership, get strict inequalities:
+        -- q₁ ∉ cutSet_pnat a x means ¬(a^m₁ ≤ x^n₁), i.e., x^n₁ < a^m₁
+        have hx_strict : iterate_op_pnat x n₁ < iterate_op_pnat a m₁ := by
+          have h_not_le : ¬ (iterate_op_pnat a m₁ ≤ iterate_op_pnat x n₁) := by
+            intro hle
+            have hq₁_in : q₁ ∈ cutSet_pnat a x := ⟨hq₁_nonneg, m₁, n₁, hq₁_eq, hle⟩
+            exact hq₁_not hq₁_in
+          exact lt_of_not_ge h_not_le
+
+        have hy_strict : iterate_op_pnat y n₂ < iterate_op_pnat a m₂ := by
+          have h_not_le : ¬ (iterate_op_pnat a m₂ ≤ iterate_op_pnat y n₂) := by
+            intro hle
+            have hq₂_in : q₂ ∈ cutSet_pnat a y := ⟨hq₂_nonneg, m₂, n₂, hq₂_eq, hle⟩
+            exact hq₂_not hq₂_in
+          exact lt_of_not_ge h_not_le
+
+        -- Scale to common denominator n₁ * n₂
+        have hx_scaled : iterate_op_pnat x (n₁ * n₂) < iterate_op_pnat a (m₁ * n₂) := by
+          have := iterate_op_pnat_strictMono_base hx_strict n₂
+          rwa [iterate_op_pnat_mul, iterate_op_pnat_mul] at this
+
+        have hy_scaled : iterate_op_pnat y (n₁ * n₂) < iterate_op_pnat a (m₂ * n₁) := by
+          have := iterate_op_pnat_strictMono_base hy_strict n₁
+          rw [iterate_op_pnat_mul, iterate_op_pnat_mul] at this
+          have h_comm : n₂ * n₁ = n₁ * n₂ := mul_comm n₂ n₁
+          simp only [h_comm] at this
+          exact this
+
+        -- Use distributivity: (x⊕y)^(n₁*n₂) = x^(n₁*n₂) ⊕ y^(n₁*n₂)
+        have h_distrib_xy : iterate_op_pnat (op x y) (n₁ * n₂) =
+            op (iterate_op_pnat x (n₁ * n₂)) (iterate_op_pnat y (n₁ * n₂)) :=
+          iterate_op_pnat_distrib x y hcomm (n₁ * n₂)
+
+        -- Combine: (x⊕y)^(n₁*n₂) < a^(m₁*n₂ + m₂*n₁)
+        have h_sum_lt : iterate_op_pnat (op x y) (n₁ * n₂) <
+            iterate_op_pnat a (m₁ * n₂ + m₂ * n₁) := by
+          have h_rhs : op (iterate_op_pnat a (m₁ * n₂)) (iterate_op_pnat a (m₂ * n₁)) =
+              iterate_op_pnat a (m₁ * n₂ + m₂ * n₁) := (iterate_op_pnat_add a (m₁ * n₂) (m₂ * n₁)).symm
+          have h1 : op (iterate_op_pnat x (n₁ * n₂)) (iterate_op_pnat y (n₁ * n₂)) <
+              op (iterate_op_pnat a (m₁ * n₂)) (iterate_op_pnat y (n₁ * n₂)) :=
+            op_strictMono_left (iterate_op_pnat y (n₁ * n₂)) hx_scaled
+          have h2 : op (iterate_op_pnat a (m₁ * n₂)) (iterate_op_pnat y (n₁ * n₂)) <
+              op (iterate_op_pnat a (m₁ * n₂)) (iterate_op_pnat a (m₂ * n₁)) :=
+            op_strictMono_right (iterate_op_pnat a (m₁ * n₂)) hy_scaled
+          rw [h_distrib_xy, ← h_rhs]
+          exact lt_trans h1 h2
+
+        -- From membership: a^m ≤ (x⊕y)^n, scale by (n₁*n₂)
+        have ham_scale : iterate_op_pnat a (m * (n₁ * n₂)) ≤
+            iterate_op_pnat (op x y) (n * (n₁ * n₂)) := by
+          have := iterate_op_pnat_mono_base ham_le (n₁ * n₂)
+          rwa [iterate_op_pnat_mul, iterate_op_pnat_mul] at this
+
+        -- Scale h_sum_lt by n
+        have hlt_scale : iterate_op_pnat (op x y) ((n₁ * n₂) * n) <
+            iterate_op_pnat a ((m₁ * n₂ + m₂ * n₁) * n) := by
+          have := iterate_op_pnat_strictMono_base h_sum_lt n
+          rwa [iterate_op_pnat_mul, iterate_op_pnat_mul] at this
+
+        -- Rational equality: q = q₁ + q₂ = (m₁*n₂ + m₂*n₁)/(n₁*n₂)
+        have hq_as_sum : q = q₁ + q₂ := by simp [q₂]
+        have hq_as_frac : q = ((m₁ : ℕ) * n₂ + (m₂ : ℕ) * n₁ : ℕ) / ((n₁ : ℕ) * n₂ : ℕ) := by
+          have hn₁_ne : (n₁ : ℚ) ≠ 0 := by positivity
+          have hn₂_ne : (n₂ : ℚ) ≠ 0 := by positivity
+          calc q = q₁ + q₂ := hq_as_sum
+            _ = (m₁ : ℚ) / n₁ + (m₂ : ℚ) / n₂ := by rw [hq₁_eq, hq₂_eq]
+            _ = ((m₁ : ℕ) * n₂ + (m₂ : ℕ) * n₁ : ℕ) / ((n₁ : ℕ) * n₂ : ℕ) := by
+                  field_simp
+                  push_cast
+                  ring
+
+        -- Cross-multiply to get the integer equality
+        have hq_mn : (m : ℚ) / n = q := by simp only [hq_eq]
+        have hn_ne : (n : ℚ) ≠ 0 := by positivity
+        have hn' : 0 < (n₁ : ℕ) * n₂ := Nat.mul_pos n₁.pos n₂.pos
+        have hn'_ne : (((n₁ : ℕ) * n₂ : ℕ) : ℚ) ≠ 0 := by positivity
+
+        have h_cross : (m : ℕ) * ((n₁ : ℕ) * n₂) = ((m₁ : ℕ) * n₂ + (m₂ : ℕ) * n₁) * n := by
+          have h_div : (m : ℚ) / n = (((m₁ : ℕ) * n₂ + (m₂ : ℕ) * n₁ : ℕ) : ℚ) / ((n₁ : ℕ) * n₂ : ℕ) := by
+            calc (m : ℚ) / n = q := hq_mn
+              _ = ((m₁ : ℕ) * n₂ + (m₂ : ℕ) * n₁ : ℕ) / ((n₁ : ℕ) * n₂ : ℕ) := hq_as_frac
+          have h' : (m : ℚ) * (((n₁ : ℕ) * n₂ : ℕ) : ℚ) =
+              (((m₁ : ℕ) * n₂ + (m₂ : ℕ) * n₁ : ℕ) : ℚ) * (n : ℚ) := by
+            have := (div_eq_div_iff hn_ne hn'_ne).1 h_div
+            linarith [this]
+          exact_mod_cast h'
+
+        -- Use h_cross to align exponents and derive contradiction
+        -- ham_scale: a^(m*(n₁*n₂)) ≤ (x⊕y)^(n*(n₁*n₂))
+        -- hlt_scale: (x⊕y)^((n₁*n₂)*n) < a^((m₁*n₂+m₂*n₁)*n)
+        -- h_cross: m * (n₁*n₂) = (m₁*n₂+m₂*n₁) * n
+
+        -- Rewrite ham_scale using h_cross
+        have h_mul_comm_n : (n : ℕ) * ((n₁ : ℕ) * n₂) = ((n₁ : ℕ) * n₂) * n := mul_comm _ _
+
+        -- The key is showing that the exponents match up
+        -- m * (n₁*n₂) = (m₁*n₂+m₂*n₁) * n  (from h_cross)
+        -- n * (n₁*n₂) = (n₁*n₂) * n        (by commutativity)
+
+        -- Convert everything to ℕ+ exponents for the final contradiction
+        -- Show the contradiction
+        -- From ham_scale: a^(m*(n₁*n₂)) ≤ (x⊕y)^(n*(n₁*n₂))
+        -- This becomes (using h_cross): a^((m₁*n₂+m₂*n₁)*n) ≤ (x⊕y)^((n₁*n₂)*n)
+        have ham_scale_aligned : iterate_op_pnat a ((m₁ * n₂ + m₂ * n₁) * n) ≤
+            iterate_op_pnat (op x y) ((n₁ * n₂) * n) := by
+          have key1 : (m * (n₁ * n₂) : ℕ+) = (m₁ * n₂ + m₂ * n₁) * n := by
+            apply Subtype.ext
+            show (m : ℕ) * ((n₁ : ℕ) * n₂) = ((m₁ : ℕ) * n₂ + (m₂ : ℕ) * n₁) * n
+            exact h_cross
+          have key2 : (n * (n₁ * n₂) : ℕ+) = (n₁ * n₂) * n := by
+            apply Subtype.ext
+            show (n : ℕ) * ((n₁ : ℕ) * n₂) = ((n₁ : ℕ) * n₂) * n
+            exact h_mul_comm_n
+          rw [← key1, ← key2]
+          exact ham_scale
+
+        -- hlt_scale already says: (x⊕y)^((n₁*n₂)*n) < a^((m₁*n₂+m₂*n₁)*n)
+        exact not_lt_of_ge ham_scale_aligned hlt_scale
+
+  exact le_antisymm h_le2 h_le1
+
+/-!
+### Identity-Free Representation Summary
+
+The following theorems provide a **genuinely identity-free** cuts representation:
+
+- `Θ_cuts_pnat` : Defined via Dedekind cuts using ℕ+ iteration (no n=0 case)
+- `Θ_cuts_pnat_strictMono` : **Strict monotonicity** (x < y ↔ Θ(x) < Θ(y)) - FULLY PROVEN
+- `Θ_cuts_pnat_add` : **Additivity** (Θ(x⊕y) = Θ(x) + Θ(y)) - FULLY PROVEN
+
+**Usage**: For a positive ordered semigroup where all elements satisfy `IsPositive`,
+these theorems provide a complete representation without needing identity.
+
+**Relation to RepresentationResult**: The identity-free proofs here can be wrapped
+into a `RepresentationResult` when restricted to positive elements. For general
+ordered semigroups with identity, use `cuts_representation` below.
+-/
+
+end IdentityFreeCuts
+
+/-!
+## §9: Unified Interface - RepresentationResult from Cuts
+
+This section wraps the cuts constructions into the unified `RepresentationResult`
+interface from `HolderEmbedding.lean`.
+
+### Identity-Based Path (§9a)
+
+Uses `Θ_cuts` with `pow'` (ℕ iteration, has n=0 base case).
+
+### Identity-Free Path (§8)
+
+Uses `Θ_cuts_pnat` with `iterate_op_pnat` (ℕ+ iteration, no n=0 case).
+The key theorems `Θ_cuts_pnat_strictMono` and `Θ_cuts_pnat_add` are proven
+using only identity-free constructs: `IsPositive`, `iterate_op_pnat`, and
+`KSSeparationSemigroup` (or `KSSeparationSemigroupStrict` for strict monotonicity).
+-/
+
+section UnifiedInterface
+variable [KSSeparationStrict α]
+
+open Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.HolderEmbedding
+
+/-- The cuts path produces a `RepresentationResult` (order + additivity).
+    Uses identity internally but the output doesn't require `Θ ident = 0` to be useful. -/
+noncomputable def cuts_representation (a : α) (ha : ident < a) : RepresentationResult α :=
+  { Θ := Θ_cuts a ha
+    order_preserving := fun x y =>
+      ⟨fun hxy => Θ_cuts_mono a ha hxy,
+       fun hΘ => by
+        -- Use strict monotonicity for reverse direction
+        by_contra h
+        push_neg at h
+        have hlt := Θ_cuts_strictMono a ha h
+        exact not_le_of_gt hlt hΘ⟩
+    additive := Θ_cuts_add a ha }
+
+/-- The cuts path produces a `NormalizedRepresentationResult` (with `Θ ident = 0`). -/
+noncomputable def cuts_normalized_representation (a : α) (ha : ident < a) :
+    NormalizedRepresentationResult α :=
+  { Θ := Θ_cuts a ha
+    order_preserving := fun x y =>
+      ⟨fun hxy => Θ_cuts_mono a ha hxy,
+       fun hΘ => by
+        by_contra h
+        push_neg at h
+        have hlt := Θ_cuts_strictMono a ha h
+        exact not_le_of_gt hlt hΘ⟩
+    additive := Θ_cuts_add a ha
+    ident_zero := Θ_cuts_ident a ha }
+
+end UnifiedInterface
+
+/-!
+## §9b: Identity-Free Unified Interface
+
+This section provides `cuts_pnat_representation` using the identity-free proofs
+from §8 (`Θ_cuts_pnat`, `Θ_cuts_pnat_strictMono`, `Θ_cuts_pnat_add`).
+
+**Key difference from §9a**: No identity required. Works with `KSSemigroupBase` +
+`KSSeparationSemigroupStrict` instead of `KnuthSkillingAlgebra` + `KSSeparationStrict`.
+
+**Requirement**: All elements must be positive (`∀ x, IsPositive x`). This is the
+natural case for ordered semigroups without identity element.
+-/
+
+section IdentityFreeUnifiedInterface
+variable [KSSeparationSemigroupStrict α]
+
+open Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.HolderEmbedding
+
+/-- **Identity-Free Cuts Representation**: Produces a `RepresentationResult` using
+    only identity-free constructs (`Θ_cuts_pnat`, `IsPositive`, `iterate_op_pnat`).
+
+    **Hypotheses**:
+    - `a : α` - anchor element (used for normalization)
+    - `ha : IsPositive a` - anchor is positive
+    - `h_all_pos : ∀ x : α, IsPositive x` - all elements are positive
+    - `hcomm : ∀ u v : α, op u v = op v u` - commutativity (for additivity)
+
+    **Use case**: Ordered semigroups without identity element, where all elements
+    are "positive" (i.e., `∀ z, z < op x z` for all `x`).
+
+    For ordered monoids with identity, prefer `cuts_representation` from §9a. -/
+noncomputable def cuts_pnat_representation
+    (a : α) (ha : IsPositive a)
+    (h_all_pos : ∀ x : α, IsPositive x)
+    (hcomm : ∀ u v : α, op u v = op v u) : RepresentationResult α :=
+  { Θ := fun x => Θ_cuts_pnat a ha x (h_all_pos x)
+    order_preserving := fun x y => by
+      constructor
+      · -- x ≤ y → Θ(x) ≤ Θ(y)
+        intro hxy
+        exact Θ_cuts_pnat_mono a ha (h_all_pos x) (h_all_pos y) hxy
+      · -- Θ(x) ≤ Θ(y) → x ≤ y (contrapositive via strict mono)
+        intro hΘ
+        by_contra h
+        push_neg at h
+        have hlt := Θ_cuts_pnat_strictMono a ha (h_all_pos y) (h_all_pos x) h
+        exact not_le_of_gt hlt hΘ
+    additive := fun x y => by
+      -- h_add uses isPositive_op' for the positivity proof, but our Θ uses h_all_pos (op x y)
+      -- These are equal by proof irrelevance, so convert handles the mismatch
+      have h_add := Θ_cuts_pnat_add a ha hcomm x y (h_all_pos x) (h_all_pos y)
+      convert h_add using 2 }
+
+/-- Strict monotonicity for identity-free cuts representation. -/
+theorem cuts_pnat_representation_strictMono
+    (a : α) (ha : IsPositive a) (h_all_pos : ∀ x : α, IsPositive x)
+    (hcomm : ∀ u v : α, op u v = op v u)
+    {x y : α} (hxy : x < y) :
+    (cuts_pnat_representation a ha h_all_pos hcomm).Θ x <
+    (cuts_pnat_representation a ha h_all_pos hcomm).Θ y :=
+  Θ_cuts_pnat_strictMono a ha (h_all_pos x) (h_all_pos y) hxy
+
+end IdentityFreeUnifiedInterface
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Alternative
