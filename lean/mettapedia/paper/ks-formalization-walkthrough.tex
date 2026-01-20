@@ -447,7 +447,64 @@ following K\&S's original approach.
 
 All three proofs are complete with zero sorries. The Hölder path uses \textbf{NoAnomalousPairs only}---the weakest known condition sufficient for the representation theorem.
 
-\subsection{Proof Architecture 1: The Grid/Induction Path}
+\subsection{Proof Architecture 1: The Hölder Path (Main Route)}
+
+\textbf{File}: \texttt{Separation/HolderEmbedding.lean}
+
+The Hölder path is the \textbf{recommended main route} because it uses the weakest hypotheses
+and connects to classical ordered semigroup theory.
+
+\begin{theorem}[\texttt{holder\_embedding\_of\_noAnomalousPairs}]
+\textbf{Lines 182--185, HolderEmbedding.lean}
+
+If a K\&S algebra has no anomalous pairs, it embeds into $\mathbb{R}$.
+\end{theorem}
+
+\begin{lstlisting}[caption={Hölder embedding theorem}]
+theorem holder_embedding_of_noAnomalousPairs [NoAnomalousPairs alpha] :
+    exists G : Subsemigroup (Multiplicative Real), Nonempty (alpha =(equiv)*o G) := by
+  have h : ~has_anomalous_pair (alpha := alpha) := noAnomalousPairs_iff_eric
+  exact holder_not_anom h
+\end{lstlisting}
+
+\begin{theorem}[\texttt{representation\_semigroup}]
+\textbf{Lines 297--303, HolderEmbedding.lean}
+
+\textbf{Identity-free representation}: NoAnomalousPairs implies additive embedding into $\mathbb{R}$.
+$\Theta$ is defined up to an additive constant (no canonical zero point).
+\end{theorem}
+
+\begin{lstlisting}[caption={Identity-free representation theorem}]
+theorem representation_semigroup [NoAnomalousPairs alpha] :
+    exists Theta : alpha -> Real,
+      (forall a b : alpha, a <= b <-> Theta a <= Theta b) /\
+      (forall x y : alpha, Theta (op x y) = Theta x + Theta y) := by
+  obtain <G, <iso>> := holder_embedding_of_noAnomalousPairs (alpha := alpha)
+  use theta_from_embedding G iso
+  exact <theta_preserves_order G iso, theta_additive G iso>
+\end{lstlisting}
+
+\begin{theorem}[\texttt{representation\_from\_noAnomalousPairs}]
+\textbf{Lines 269--276, HolderEmbedding.lean}
+
+\textbf{With identity}: NoAnomalousPairs implies the full representation with $\Theta(\text{ident}) = 0$.
+\end{theorem}
+
+\begin{lstlisting}[caption={Representation with identity normalization}]
+theorem representation_from_noAnomalousPairs [NoAnomalousPairs alpha] :
+    exists Theta : alpha -> Real,
+      (forall a b : alpha, a <= b <-> Theta a <= Theta b) /\
+      Theta ident = 0 /\
+      forall x y : alpha, Theta (op x y) = Theta x + Theta y := by
+  obtain <G, <iso>> := holder_embedding_of_noAnomalousPairs (alpha := alpha)
+  use theta_from_embedding G iso
+  exact <theta_preserves_order G iso, theta_ident G iso, theta_additive G iso>
+\end{lstlisting}
+
+\textbf{Key advantage}: This path works on \texttt{KSSemigroupBase} (identity-free) via \texttt{representation\_semigroup},
+and on \texttt{KnuthSkillingAlgebraBase} (with identity) via \texttt{representation\_from\_noAnomalousPairs}.
+
+\subsection{Proof Architecture 2: The Grid/Induction Path}
 
 The grid-based proof is packaged as the typeclass \texttt{RepresentationGlobalization},
 which is automatically instantiated when \texttt{[KSSeparationStrict $\alpha$]} is available.
@@ -1528,57 +1585,58 @@ like \texttt{weirdAdditive} must oscillate wildly and violate order preservation
 \subsection{Major Formalized Theorems at a Glance}
 
 This section consolidates all the main results proven in the formalization.
+All paths are relative to \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/}.
 
 \subsubsection*{Sum Rule (Appendix A)}
 \begin{itemize}
-\item \texttt{representation\_semigroup} (HolderEmbedding.lean:297) --- There exists $\Theta : \alpha \to \mathbb{R}^+$ preserving order and addition
-\item \texttt{appendixA\_representation\_theorem} (Main.lean:234) --- $\Theta$ is strictly order-preserving and additive
-\item \texttt{commutativity\_from\_representation} (Main.lean:287) --- $\oplus$ is commutative
-\item \texttt{archimedean\_from\_ksSeparation} (SandwichSeparation.lean:189) --- Archimedean property is derivable
+\item \texttt{representation\_semigroup} (\texttt{Separation/HolderEmbedding.lean:297}) --- $\exists \Theta$ preserving order and addition (identity-free)
+\item \texttt{representation\_from\_noAnomalousPairs} (\texttt{Separation/HolderEmbedding.lean:269}) --- Full representation with $\Theta(\text{ident}) = 0$
+\item \texttt{associativity\_representation} (\texttt{RepresentationTheorem/Main.lean:34}) --- Public API for Appendix A
+\item \texttt{op\_archimedean\_of\_separation} (\texttt{Separation/SandwichSeparation.lean:166}) --- Archimedean is derivable
 \end{itemize}
 
 \subsubsection*{Product Rule (Appendix B)}
 \begin{itemize}
-\item \texttt{psi\_is\_exponential} (ProductExp.lean:156) --- $\Psi(x \otimes y) = \Psi(x) \cdot \Psi(y)$
-\item \texttt{product\_rule\_normalized} (Main.lean:198) --- $p(xy|I) = p(x|I) \cdot p(y|xI)$
-\item \texttt{scaledMultRep} (ScaledMultRep.lean:89) --- Common interface for both proof paths
+\item \texttt{psi\_is\_exponential} (\texttt{ProductTheorem/ProductExp.lean:156}) --- $\Psi(x \otimes y) = \Psi(x) \cdot \Psi(y)$
+\item \texttt{product\_rule\_normalized} (\texttt{ProductTheorem/Main.lean:198}) --- $p(xy|I) = p(x|I) \cdot p(y|xI)$
+\item \texttt{ScaledMultRep} (\texttt{ProductTheorem/ScaledMultRep.lean:44}) --- Common interface for both proof paths
 \end{itemize}
 
 \subsubsection*{Variational (Appendix C)}
 \begin{itemize}
-\item \texttt{variational\_implies\_entropy\_form} (VariationalTheorem.lean:167) --- Measurable solution $\Rightarrow$ $H(m) = B + C \log m$
-\item \texttt{entropy\_form\_satisfies\_variational} (VariationalTheorem.lean:201) --- Converse: entropy form satisfies the equation
-\item \texttt{entropy\_form\_deriv\_correct} (VariationalTheorem.lean:234) --- Derivative is $B + C \log m$
+\item \texttt{variational\_implies\_entropy\_form} (\texttt{VariationalTheorem.lean:167}) --- Measurable solution $\Rightarrow$ $H(m) = B + C \log m$
+\item \texttt{entropy\_form\_satisfies\_variational} (\texttt{VariationalTheorem.lean:201}) --- Converse: entropy form satisfies the equation
+\item \texttt{entropy\_form\_deriv\_correct} (\texttt{VariationalTheorem.lean:234}) --- Derivative is $B + C \log m$
 \end{itemize}
 
 \subsubsection*{Conditional Probability (Section 7)}
 \begin{itemize}
-\item \texttt{chainProductRule} (Basic.lean:348) --- $p(xy|z) = p(x|z) \cdot p(y|xz)$
-\item \texttt{bayesTheorem} (Basic.lean:424) --- $p(x|yz) \cdot p(y|z) = p(y|xz) \cdot p(x|z)$
-\item \texttt{prob\_eq\_measure\_ratio} (Basic.lean:714) --- $p(x|y) = m(x \wedge y) / m(y)$
-\item \texttt{baseMeasure\_satisfies\_measure\_axioms} (Basic.lean:559) --- $m$ is a probability measure
+\item \texttt{chainProductRule} (\texttt{ConditionalProbability/Basic.lean:348}) --- $p(xy|z) = p(x|z) \cdot p(y|xz)$
+\item \texttt{bayesTheorem} (\texttt{ConditionalProbability/Basic.lean:424}) --- $p(x|yz) \cdot p(y|z) = p(y|xz) \cdot p(x|z)$
+\item \texttt{prob\_eq\_measure\_ratio} (\texttt{ConditionalProbability/Basic.lean:714}) --- $p(x|y) = m(x \wedge y) / m(y)$
+\item \texttt{baseMeasure\_satisfies\_measure\_axioms} (\texttt{ConditionalProbability/Basic.lean:559}) --- $m$ is a probability measure
 \end{itemize}
 
 \subsubsection*{Divergence \& Entropy (Sections 6, 8)}
 \begin{itemize}
-\item \texttt{atomDivergence\_nonneg} (Divergence.lean:89) --- $D(w \| u) \geq 0$
-\item \texttt{atomDivergence\_eq\_zero\_iff} (Divergence.lean:123) --- $D(w \| u) = 0 \Leftrightarrow w = u$
-\item \texttt{klDivergence} (InformationEntropy.lean:184) --- KL divergence from atom divergence
-\item \texttt{shannonEntropy\_eq\_expected\_neg\_log\_p} (InformationEntropy.lean:267) --- $H = -\sum p \log p$
+\item \texttt{atomDivergence\_nonneg} (\texttt{Divergence.lean:89}) --- $D(w \| u) \geq 0$
+\item \texttt{atomDivergence\_eq\_zero\_iff} (\texttt{Divergence.lean:123}) --- $D(w \| u) = 0 \Leftrightarrow w = u$
+\item \texttt{klDivergence} (\texttt{InformationEntropy.lean:184}) --- KL divergence from atom divergence
+\item \texttt{shannonEntropy} (\texttt{InformationEntropy.lean:267}) --- $H = -\sum p \log p$
 \end{itemize}
 
 \subsubsection*{Quantum Theory Classification (Section 4)}
 \begin{itemize}
-\item \texttt{selection\_theorem} (SymmetricalFoundation.lean:312) --- $\mu < 0$ gives QM Born rule
-\item \texttt{mean\_bornRule\_sum\_unit\_phases} (SymmetricalFoundation.lean:401) --- Born rule from phase averaging
-\item \texttt{classification\_theorem} (TwoDimClassification.lean:178) --- Exactly 3 algebra classes
+\item \texttt{selection\_theorem} (\texttt{SymmetricalFoundation.lean:312}) --- $\mu < 0$ gives QM Born rule
+\item \texttt{mean\_bornRule\_sum\_unit\_phases} (\texttt{SymmetricalFoundation.lean:401}) --- Born rule from averaging
+\item \texttt{classification\_theorem} (\texttt{TwoDimClassification.lean:178}) --- Exactly 3 algebra classes
 \end{itemize}
 
 \subsubsection*{Counterexamples \& Clarifications}
 \begin{itemize}
-\item \texttt{monotone\_additive\_is\_linear} (RegradeCounterexample.lean:100) --- Discontinuous re-grading impossible
-\item \texttt{weirdAdditive\_add} (CauchyPathology.lean:87) --- Pathological additive functions exist
-\item \texttt{Hprime\_not\_B\_add\_C\_log} (CauchyPathology.lean:156) --- But they violate regularity
+\item \texttt{monotone\_additive\_is\_linear} (\texttt{Counterexamples/RegradeCounterexample.lean:100}) --- Discontinuous re-grading impossible
+\item \texttt{weirdAdditive\_add} (\texttt{Counterexamples/CauchyPathology.lean:87}) --- Pathological additive functions exist
+\item \texttt{Hprime\_not\_B\_add\_C\_log} (\texttt{Counterexamples/CauchyPathology.lean:156}) --- But they violate regularity
 \end{itemize}
 
 \subsection{What K\&S Claims vs. What We Prove}
