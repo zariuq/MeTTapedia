@@ -314,11 +314,11 @@ theorem pln_consistency_implies_valid_probability
       -- Get product bound from consistency
       have h_product : μ.real B * condProb μ C B ≤ μ.real C :=
         consistency_implies_product_bound (μ.real B) (μ.real C) (condProb μ C B)
-          hpB_pos hpC.1 hsBC.1 h_BC
+          hpB_pos h_BC
       -- Get complement bound
       have h_complement : μ.real C - μ.real B * condProb μ C B ≤ 1 - μ.real B :=
         consistency_implies_complement_bound (μ.real B) (μ.real C) (condProb μ C B)
-          ⟨hpB_pos, hpB.2⟩ hpC hsBC h_BC
+          ⟨hpB_pos, hpB.2⟩ hsBC h_BC
       -- term2 bounds
       have h_term2_bounds : 0 ≤ (μ.real C - μ.real B * condProb μ C B) / (1 - μ.real B) ∧
                             (μ.real C - μ.real B * condProb μ C B) / (1 - μ.real B) ≤ 1 := by

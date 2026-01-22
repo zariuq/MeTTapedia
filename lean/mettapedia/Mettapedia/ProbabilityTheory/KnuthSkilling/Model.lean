@@ -194,7 +194,7 @@ noncomputable instance instKSAlgebraNNReal : KnuthSkillingAlgebraBase NNReal whe
   ident_le := zero_le
 
 /-- In instKSAlgebraNNReal, op is addition -/
-theorem nnreal_op_is_add : @op NNReal instKSAlgebraNNReal = (· + ·) := rfl
+theorem nnreal_op_is_add : @op NNReal instKSAlgebraNNReal.toKSSemigroupBase = (· + ·) := rfl
 
 /-- In instKSAlgebraNNReal, ident is zero -/
 theorem nnreal_ident_is_zero : @ident NNReal instKSAlgebraNNReal = 0 := rfl
@@ -284,15 +284,25 @@ noncomputable def threeKSModel (p : NNReal) (hp0 : 0 < p) (hp1 : p < 1) :
   v_bot := rfl
   v_sup_of_disjoint := fun {a b} h => by
     rw [disjoint_iff_has_bot] at h
+    -- The key insight: op on NNReal is (+), and ident is 0
+    -- So op x 0 = x + 0 = x and op 0 x = 0 + x = x
+    have h_op_zero_left : ∀ x : NNReal, op (0 : NNReal) x = x := op_ident_left
+    have h_op_zero_right : ∀ x : NNReal, op x (0 : NNReal) = x := op_ident_right
     cases h with
     | inl ha =>
       subst ha
-      simp only [nnreal_op_is_add, zero_add]
-      cases b <;> rfl
+      -- v(⊥ ⊔ b) = op(v ⊥)(v b) = op 0 (v b) = v b
+      cases b with
+      | bot => simp only [max_self]; exact (h_op_zero_left 0).symm
+      | mid => simp only [max_eq_right (by decide : bot ≤ mid)]; exact (h_op_zero_left p).symm
+      | top => simp only [max_eq_right (by decide : bot ≤ top)]; exact (h_op_zero_left 1).symm
     | inr hb =>
       subst hb
-      simp only [nnreal_op_is_add, add_zero]
-      cases a <;> rfl
+      -- v(a ⊔ ⊥) = op(v a)(v ⊥) = op(v a) 0 = v a
+      cases a with
+      | bot => simp only [max_self]; exact (h_op_zero_right 0).symm
+      | mid => simp only [max_eq_left (by decide : bot ≤ mid)]; exact (h_op_zero_right p).symm
+      | top => simp only [max_eq_left (by decide : bot ≤ top)]; exact (h_op_zero_right 1).symm
 
 /-- Standard model with p = 1/2 -/
 noncomputable def standardThreeKSModel : KSModel Three' NNReal :=
@@ -302,7 +312,7 @@ noncomputable def standardThreeKSModel : KSModel Three' NNReal :=
 theorem threeKSModel_additive (p : NNReal) (hp0 : 0 < p) (hp1 : p < 1)
     {a b : Three'} (h : Disjoint a b) :
     (threeKSModel p hp0 hp1).v (a ⊔ b) =
-    @op NNReal instKSAlgebraNNReal ((threeKSModel p hp0 hp1).v a) ((threeKSModel p hp0 hp1).v b) :=
+    @op NNReal instKSAlgebraNNReal.toKSSemigroupBase ((threeKSModel p hp0 hp1).v a) ((threeKSModel p hp0 hp1).v b) :=
   (threeKSModel p hp0 hp1).v_sup_of_disjoint h
 
 /-- Three' is not Boolean -/

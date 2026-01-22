@@ -42,6 +42,42 @@ theorem shift2_apply_other {n : ℕ} (q : Fin n → ℝ) (i j k : Fin n) (t : �
     shift2 q i j t k = q k := by
   simp [shift2, hki, hkj]
 
+/-! ## Symmetry under index swap
+
+The key identity: `shift2 q i j t = shift2 q j i (q i + q j - t)`.
+This is crucial for the derivative symmetry proof in the Shore-Johnson theorem.
+-/
+
+/-- The shift2 curve is symmetric under swapping i ↔ j and reflecting the parameter. -/
+theorem shift2_swap {n : ℕ} (q : Fin n → ℝ) (i j : Fin n) (t : ℝ) (hij : i ≠ j) :
+    shift2 q i j t = shift2 q j i (q i + q j - t) := by
+  ext k
+  by_cases hki : k = i
+  · subst hki
+    -- LHS: shift2 q i j t i = t
+    -- RHS: shift2 q j i (q i + q j - t) i = q j + q i - (q i + q j - t) = t
+    simp only [shift2, ↓reduceIte, ne_eq, hij, not_false_eq_true]
+    ring
+  · by_cases hkj : k = j
+    · subst hkj
+      -- LHS: shift2 q i j t j = q i + q j - t
+      -- RHS: shift2 q j i (q i + q j - t) j = q i + q j - t
+      simp only [shift2, hij.symm, ↓reduceIte, ne_eq, not_true_eq_false, not_false_eq_true]
+    · -- Both sides equal q k
+      simp [shift2, hki, hkj]
+
+/-- At t = q i, shift2 returns the original distribution. -/
+theorem shift2_self {n : ℕ} (q : Fin n → ℝ) (i j : Fin n) (hij : i ≠ j) :
+    shift2 q i j (q i) = q := by
+  ext k
+  by_cases hki : k = i
+  · subst hki; simp [shift2]
+  · by_cases hkj : k = j
+    · subst hkj
+      simp only [shift2, hij.symm, ↓reduceIte, ne_eq, not_true_eq_false]
+      ring
+    · simp [shift2, hki, hkj]
+
 /-! ## Sum invariance (to be used later)
 
 The next step in the Shore–Johnson Appendix proof is to show that

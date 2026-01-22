@@ -121,7 +121,8 @@ KnuthSkilling/
 ├── Examples/                    # Concrete examples
 │   ├── CoinFlip.lean            # Full pipeline: coin flip → NNReal → ℝ (Durrett 1.6.12)
 │   ├── ThreeElementChain.lean   # Non-Boolean: 3-element chain (⊥ < mid < ⊤)
-│   └── OpenSets.lean            # Non-Boolean: open sets of ℝ with topology
+│   ├── OpenSets.lean            # Non-Boolean: open sets of ℝ with topology
+│   └── PreciseVsImpreciseGrounded.lean  # K&S → credal sets, EU vs maximin, hypercube positioning
 └── Literature/                  # Reference: Aczél, Hölder, Cox
 ```
 
@@ -143,6 +144,7 @@ KnuthSkilling/
 | `Examples/CoinFlip.lean` | **Full pipeline example**: coin flip → NNReal → ℝ (Durrett 1.6.12) |
 | `Examples/ThreeElementChain.lean` | **Non-Boolean example**: minimal 3-element chain with `Valuation` |
 | `Examples/OpenSets.lean` | **Non-Boolean example**: open sets of ℝ (connects to Lebesgue measure) |
+| `Examples/PreciseVsImpreciseGrounded.lean` | **Decision theory example**: K&S representations → credal sets → EU vs maximin (0 sorry) |
 
 ## The Hypercube Connection
 
@@ -249,7 +251,26 @@ K&S claims to work on distributive lattices without complements.
 
 Both files prove their respective lattices are NOT Boolean (no complement operation exists).
 
-### 3. Cauchy's Functional Equation
+### 3. Decision Theory Example ✅ COMPLETE (2026-01-21)
+
+**Implemented** in `Examples/PreciseVsImpreciseGrounded.lean` (910 lines, 0 sorry):
+
+Demonstrates the complete pipeline from K&S axioms to decision theory:
+- **K&S grounding**: Actual `Θ : Event → ℝ` satisfying modularity/monotonicity/non-negativity
+- **Probability extraction**: `P(a) = Θ(a) / Θ(⊤)` via `KSBooleanRepresentation.probability`
+- **Credal sets**: Sets of K&S representations for imprecise probability (epistemic uncertainty)
+- **Hypercube positioning**: Formal connection to `PrecisionAxis.precise` vs `.imprecise`
+- **Decision rules**: Expected utility (von Neumann-Morgenstern) vs maximin (Gilboa-Schmeidler)
+
+**Key theorems**:
+- Connection: probability distributions arise from K&S representations (not ad-hoc)
+- Completeness: when K&S axioms fail to uniquely determine probabilities → credal sets
+- Independence: decision theory axioms (vNM, G-S) are ADDITIONAL to K&S probability
+- Decisions differ: EU and maximin give opposite recommendations under uncertainty
+
+Axiom stack is honest: clearly separates what K&S derives (probability calculus) from what requires additional axioms (decision rules).
+
+### 4. Cauchy's Functional Equation
 
 Appendix B exponential characterization needs:
 ```lean

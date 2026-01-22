@@ -41,6 +41,8 @@
     {!=}{$\neq$}1
     {Real}{$\mathbb{R}$}1
     {Nat}{$\mathbb{N}$}1
+    {⊓}{$\sqcap$}1
+    {⊔}{$\sqcup$}1
 }
 
 \newtheorem{theorem}{Theorem}[section]
@@ -52,7 +54,7 @@
 \newtheorem{remark}[theorem]{Remark}
 
 \title{Knuth-Skilling Formalization\\{\Large Review Walkthrough}}
-\author{Mettapedia Project}
+\author{Codex 5.2, Claude 4.5, Zar Goertzel}
 \date{\today}
 
 \begin{document}
@@ -64,6 +66,16 @@ This document provides a systematic walkthrough of the Lean 4 formalization of K
 Each section lists the main theorem statements with their Lean proofs and file locations, organized by the corresponding K\&S paper sections.
 The formalization is \textbf{complete with zero sorries} in all core files.
 \end{abstract}
+
+\section*{Quickstart for Reviewers}
+
+\begin{itemize}
+\item \textbf{High-level view:} Start with Section~12 (Summary) for the consolidated theorem list and key discoveries.
+\item \textbf{Audit Appendix~A (sum rule):} See Section~5, then the three proof paths (H\"{o}lder / Grid / Direct Cuts).
+\item \textbf{Audit Appendix~B (product rule):} See Section~6 for the two independent proof paths.
+\item \textbf{Audit Appendix~C (entropy / variational theorem):} See Section~7 and the counterexamples in Section~11.
+\item \textbf{Build commands:} See Section~13 (Build Instructions) at the end.
+\end{itemize}
 
 \tableofcontents
 

@@ -627,7 +627,7 @@ theorem baseMeasure_inclusion_exclusion
 
 For normalized measures where m(⊤) = 1, this gives m(xᶜ) = 1 - m(x). -/
 theorem baseMeasure_compl
-    (hTop : (⊤ : α) ≠ ⊥) (x : α) :
+    (_hTop : (⊤ : α) ≠ ⊥) (x : α) :
     baseMeasure B xᶜ = baseMeasure B ⊤ - baseMeasure B x := by
   -- x and xᶜ partition ⊤
   have hDisj : Disjoint x xᶜ := disjoint_compl_right
@@ -670,7 +670,7 @@ open scoped ENNReal
 
 Since baseMeasure is non-negative (for normalized bivaluations), we can safely convert.
 Values are finite (not ∞) since baseMeasure is bounded by m(⊤). -/
-noncomputable def baseMeasureENNReal (B : Bivaluation α) (hTop : (⊤ : α) ≠ (⊥ : α)) : α → ℝ≥0∞ :=
+noncomputable def baseMeasureENNReal (B : Bivaluation α) (_hTop : (⊤ : α) ≠ (⊥ : α)) : α → ℝ≥0∞ :=
   fun x => ENNReal.ofReal (baseMeasure B x)
 
 theorem baseMeasureENNReal_bot (B : Bivaluation α) (hTop : (⊤ : α) ≠ (⊥ : α)) :
