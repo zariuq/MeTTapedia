@@ -2,7 +2,7 @@
 # Finite Probability: Section 5.2 Inclusion-Exclusion on Generalized Boolean Algebras
 
 This file demonstrates that **classical finite probability** uses the structure formalized in
-K&S Section 5.2 (RepresentationTheorem/InclusionExclusion.lean).
+K&S Section 5.2 (Additive/Proofs/GridInduction/InclusionExclusion.lean).
 
 ## Key Insight
 
@@ -14,7 +14,7 @@ This proves that K&S's abstract framework **captures** classical probability, no
 ## References
 
 - Knuth & Skilling, "Foundations of Inference" (2012), Section 5.2
-- RepresentationTheorem/InclusionExclusion.lean (this project)
+- Additive/Proofs/GridInduction/InclusionExclusion.lean (this project)
 - Durrett, "Probability: Theory and Examples" (5th ed), Section 1.1
 -/
 

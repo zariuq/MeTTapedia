@@ -10,9 +10,8 @@ It is designed to be a safe import target for downstream development
 The "core algebra" layer:
 - **Basic**: Ordered semigroup/monoid structures (`KSSemigroupBase`, `KnuthSkillingAlgebraBase`)
 - **Algebra**: Iteration, separation axioms
-- **Separation**: Sandwich separation theorems (NAP ↔ embedding)
-- **RepresentationTheorem**: Appendix A - additive representation (⊕ → ℝ+)
-- **ProductTheorem**: Appendix B - product representation (⊗ → scaled multiplication)
+- **Additive**: Appendix A - separation axioms + additive representation (⊕ → ℝ+)
+- **Multiplicative**: Appendix B - product representation (⊗ → scaled multiplication)
 
 ## What's NOT Exported
 
@@ -42,16 +41,16 @@ example : Type := KSSeparation
 -/
 
 -- Foundation layer
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Interfaces
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Algebra
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Interfaces
 
 -- Separation machinery (Alimov/Hölder path)
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms
 
 -- Main representation theorems
-import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ProductTheorem
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Main
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Multiplicative
 
 -- Variational theorem (functional equation → log form)
-import Mettapedia.ProbabilityTheory.KnuthSkilling.VariationalTheorem
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Variational.Main

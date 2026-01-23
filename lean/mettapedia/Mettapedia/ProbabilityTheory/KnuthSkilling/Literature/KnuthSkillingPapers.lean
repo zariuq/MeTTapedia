@@ -1,5 +1,5 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling
-import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Main
 
 /-!
 # Knuth–Skilling papers: formalization entry points
@@ -14,11 +14,12 @@ Local PDFs:
   `literature/KS_codex/Skilling_Knuth_2019_Symmetrical_Foundation.pdf`.
 
 Lean entry points (project-relative paths):
-- `Mettapedia/ProbabilityTheory/KnuthSkilling/Basic.lean` (high-level K&S structures)
-- `Mettapedia/ProbabilityTheory/KnuthSkilling/Algebra.lean` (core algebra)
-- `Mettapedia/ProbabilityTheory/KnuthSkilling/Separation/SandwichSeparation.lean` (sandwich separation: separation ⇒ commutativity)
-- `Mettapedia/ProbabilityTheory/KnuthSkilling/Separation/Derivation.lean` (WIP derivation of `KSSeparation`)
-- `Mettapedia/ProbabilityTheory/KnuthSkilling/RepresentationTheorem/` (representation theorem development)
+- `Mettapedia/ProbabilityTheory/KnuthSkilling/Core/Basic.lean` (high-level K&S structures)
+- `Mettapedia/ProbabilityTheory/KnuthSkilling/Core/Algebra.lean` (core algebra)
+- `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Axioms/SandwichSeparation.lean` (sandwich separation: separation ⇒ commutativity)
+- `Mettapedia/ProbabilityTheory/KnuthSkilling/_archive/Separation/Derivation.lean` (WIP derivation of `KSSeparation`)
+- `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Proofs/GridInduction/` (Appendix A grid/induction development)
+- `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean` (Hölder embedding path)
 - `Mettapedia/ProbabilityTheory/AssociativityTheorem.lean` (context + alternative view)
 
 Nothing in this file is “new mathematics”; it is a documentation-oriented import bridge so the

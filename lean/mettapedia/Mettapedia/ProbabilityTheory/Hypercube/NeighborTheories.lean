@@ -34,8 +34,8 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Tactic
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
 import Mettapedia.ProbabilityTheory.Hypercube.NovelTheories
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Main
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Main
 
 namespace Mettapedia.ProbabilityTheory.Hypercube.NeighborTheories
 
@@ -151,21 +151,21 @@ def OrthomodularPlausibilityAlgebra.toKnuthSkillingAlgebra
 /-- The representation theorem for the plausibility space α.
     Since α forms a KnuthSkillingAlgebra, the K-S representation theorem applies.
 
-    **Status**: conditional on the public `RepresentationTheorem.associativity_representation` API.
+    **Status**: conditional on the public `Additive.associativity_representation` API.
     This keeps the dependency explicit while remaining `sorry`-free. -/
 theorem oml_carrier_has_representation
     {L : Type*} {α : Type*} [OrthomodularLattice L] [LinearOrder α]
     (inst : OrthomodularPlausibilityAlgebra L α)
     [hsep : @KnuthSkilling.KSSeparation α inst.toKnuthSkillingAlgebra.toKnuthSkillingAlgebraBase]
     [hglob :
-      @KnuthSkilling.RepresentationTheorem.RepresentationGlobalization α inst.toKnuthSkillingAlgebra hsep] :
+      @KnuthSkilling.Additive.RepresentationGlobalization α inst.toKnuthSkillingAlgebra hsep] :
     ∃ θ : α → ℝ, (∀ x y, θ (inst.op x y) = θ x + θ y) ∧ StrictMono θ := by
   classical
   letI : KnuthSkilling.KnuthSkillingAlgebra α := inst.toKnuthSkillingAlgebra
   letI : KnuthSkilling.KSSeparation α := hsep
-  letI : KnuthSkilling.RepresentationTheorem.RepresentationGlobalization α := hglob
+  letI : KnuthSkilling.Additive.RepresentationGlobalization α := hglob
   obtain ⟨Θ, hΘ_order, _, hΘ_add⟩ :=
-    KnuthSkilling.RepresentationTheorem.associativity_representation (α := α)
+    KnuthSkilling.Additive.associativity_representation (α := α)
   refine ⟨Θ, ?_, ?_⟩
   · intro x y
     simpa using hΘ_add x y

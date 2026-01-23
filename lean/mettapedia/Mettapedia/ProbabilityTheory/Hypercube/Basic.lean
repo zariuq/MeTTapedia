@@ -1730,7 +1730,7 @@ vertex W - the examples form a web showing how axiom choices carve up the space.
 - Blume, L., Brandenburger, A., Dekel, E. (1991). "Lexicographic Probabilities"
 - Positive: ℕ ×ₗ ℕ with lexicographic order, componentwise addition
 - Axiom weakened: Archimedean property
-- See: `RepresentationTheorem/Counterexamples/ProductFailsSeparation.lean`
+- See: `Additive/Counterexamples/ProductFailsSeparation.lean`
 
 **Quantum Probability (Noncommutative + Tensor + Stochastic)**:
 - von Neumann, J. (1932). "Mathematical Foundations of Quantum Mechanics"
@@ -1759,7 +1759,7 @@ Concrete Lean formalizations with proofs live in `Hypercube/Examples.lean`.
 |---------|--------------|--------------|---------------|
 | ℕ with + | KnuthSkillingAlgebraBase, Archimedean | - | `Hypercube/Examples.lean: instance : KnuthSkillingAlgebraBase ℕ` |
 | Bool | - | KnuthSkillingAlgebraBase | `Hypercube/Examples.lean: bool_not_ksAlgebraBase` |
-| ℕ ×ₗ ℕ | KnuthSkillingAlgebraBase | Archimedean, KSSeparation | `RepresentationTheorem/Counterexamples/ProductFailsSeparation.lean: natProdLex_fails_KSSeparation` |
+| ℕ ×ₗ ℕ | KnuthSkillingAlgebraBase | Archimedean, KSSeparation | `Additive/Counterexamples/ProductFailsSeparation.lean: natProdLex_fails_KSSeparation` |
 | Heisenberg | Noncommutative | Commutative | `IntervalCollapse.lean: heisenberg_not_comm` |
 | Fair Die | Kolmogorov probability | - | `Examples.lean: IsProbabilityMeasure dieProbMeasure` |
 

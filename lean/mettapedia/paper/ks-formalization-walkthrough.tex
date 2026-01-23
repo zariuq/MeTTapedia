@@ -186,7 +186,7 @@ K\&S never explicitly state that elements are totally ordered, but their proofs 
 We make this explicit via \texttt{LinearOrder}.
 \end{remark}
 
-\begin{remark}[Identity Element---NOT in K\&S Axioms]
+\begin{remark}[Identity Element---Essential for Positivity]
 \textbf{Important}: The identity element (\texttt{ident}) is \textbf{not} among K\&S's numbered symmetries.
 K\&S explicitly state that the bottom element $\bot$ is \textbf{optional}:
 \begin{quote}
@@ -194,19 +194,21 @@ K\&S explicitly state that the bottom element $\bot$ is \textbf{optional}:
 ``Some mathematicians opt to include the bottom element on aesthetic grounds, whereas others opt to exclude it'' (K\&S lines 340--341)
 \end{quote}
 
-Our formalization \textbf{proves} K\&S's claim via the \texttt{KSSemigroupBase} hierarchy:
-
+\textbf{However}, our formalization \textbf{disproves} K\&S's claim that fidelity alone ensures positivity.
+The $\mathbb{Z}$ counterexample (\texttt{AppendixA/Counterexamples/NegativeWithoutIdentity.lean}) shows:
 \begin{itemize}
-\item \textbf{Identity-free path} (\texttt{HolderEmbedding.lean:296--302}): \texttt{representation\_semigroup} proves the representation theorem without identity, giving $\Theta : \alpha \to \mathbb{R}$ with order-preservation and additivity.
-\item \textbf{With identity} (\texttt{HolderEmbedding.lean:309--312}): \texttt{identity\_gives\_canonical\_normalization} shows identity provides \textbf{canonical normalization}: $\Theta(\text{ident}) = 0$. Without identity, $\Theta$ is defined only up to an additive constant.
+\item $(\mathbb{Z}, +, \leq)$ satisfies K\&S Axioms 1--2 but has no identity
+\item The representation theorem applies, giving $\Theta : \mathbb{Z} \to \mathbb{R}$
+\item But $\Theta(-1) = -1 < 0$---\textbf{negative values appear}
 \end{itemize}
 
-\textbf{Architectural hierarchy}:
-\begin{center}
-\texttt{KSSemigroupBase} (identity-free) $\xrightarrow{\text{extends}}$ \texttt{KnuthSkillingAlgebraBase} (with identity)
-\end{center}
+\textbf{Corrected understanding}:
+\begin{itemize}
+\item \textbf{With identity + \texttt{ident\_le}}: $\Theta(\bot) = 0$; all $x > \bot$ have $\Theta(x) > 0$
+\item \textbf{Without identity}: Representation works but positivity is \textbf{not guaranteed}
+\end{itemize}
 
-Most of the formalization uses \texttt{KnuthSkillingAlgebraBase} for historical reasons---the development was done with identity first---as well as convenience (iteration from $n=0$, canonical zero point), but the core representation theorem is proven at the identity-free \texttt{KSSemigroupBase} level.
+Identity with \texttt{ident\_le} (i.e., $\bot \leq x$ for all $x$) is \textbf{essential} for positivity, not ``aesthetic.''
 \end{remark}
 
 \begin{remark}[Unbundled Axiom Predicates]
@@ -802,13 +804,19 @@ where $+$ is real addition (since $\oplus$ has been identified with $+$ by Appen
 
 \textbf{Symmetry 4} (Product Associativity): $(u \otimes v) \otimes w = u \otimes (v \otimes w)$
 
-\textbf{Formalization note}: Our formalization works directly at the graded level (positive reals)
-rather than formalizing the lattice level. Therefore:
+\textbf{Formalization note}: We have lattice-level Symmetry 3 in \texttt{DirectProduct.prod\_sup\_left}:
+\begin{lstlisting}
+-- ProductTheorem/DirectProduct.lean, line 42
+prod_sup_left : forall a1 a2 : alpha, forall b : beta,
+  prod (a1 || a2) b = prod a1 b || prod a2 b  -- || denotes sup
+\end{lstlisting}
+
+At the graded level, we define \texttt{DistributesOverAdd} as a property:
 \begin{itemize}
-\item We define \texttt{DistributesOverAdd} as a \emph{property} that a tensor may or may not satisfy
-\item We then \emph{assume} this property holds for the tensor under consideration
-\item Ideally, this would be \emph{derived} from Symmetry 3 at the lattice level, but we have not
-formalized the lattice $\to$ graded transition
+\item \texttt{DistributesOverAdd} is a predicate that a tensor may or may not satisfy
+\item \texttt{TensorAlgebra} is the bundled class including this property
+\item The derivation of \texttt{DistributesOverAdd} from \texttt{prod\_sup\_left} is now
+\textbf{fully formalized} in \texttt{DistributivityDerivation.lean}
 \end{itemize}
 
 \begin{lstlisting}[caption={Distributivity property (ProductTheorem/Basic.lean:64)}]
@@ -820,23 +828,30 @@ def DistributesOverAdd (tensor : PosReal -> PosReal -> PosReal) : Prop :=
 variable (hDistrib : DistributesOverAdd tensor)
 \end{lstlisting}
 
-\begin{remark}[Why is this an assumption rather than derived?]
+\begin{remark}[Connection between lattice and graded levels]
 In K\&S's development:
 \begin{enumerate}
 \item Symmetry 3 is stated at the lattice level: $(x \times t) \sqcup (y \times t) = (x \sqcup y) \times t$
-\item After Appendix A provides the representation, this \emph{should} automatically give Axiom 3
-\item The transition from lattice to graded measures should preserve this property
+\item After Appendix A provides the representation $\Theta$, this gives distributivity at the graded level
+\item The graded tensor satisfies \texttt{DistributesOverAdd}
 \end{enumerate}
 
-Our formalization skips the lattice level and works directly with graded measures (positive reals),
-so we assume \texttt{DistributesOverAdd} as an axiom rather than deriving it from Symmetry 3.
+\textbf{Current state}: We have \emph{all three} levels formalized:
+\begin{itemize}
+\item Lattice level: \texttt{DirectProduct.prod\_sup\_left} (ProductTheorem/DirectProduct.lean)
+\item Graded level: \texttt{DistributesOverAdd} (ProductTheorem/Basic.lean)
+\item Bridge: \texttt{distributes\_over\_add\_from\_lattice} (ProductTheorem/DistributivityDerivation.lean)
+\end{itemize}
 
-A complete formalization would:
+\textbf{Derivation (COMPLETE)}: The theorem \texttt{distributes\_over\_add\_from\_lattice} proves that
+\texttt{DistributesOverAdd} follows from:
 \begin{enumerate}
-\item Formalize distributive lattices with Symmetry 3
-\item Prove Appendix A at the lattice level
-\item \emph{Derive} that the graded tensor satisfies \texttt{DistributesOverAdd}
+\item \texttt{prod\_sup\_left}: Lattice-level distributivity
+\item \texttt{disjoint\_prod\_left}: Disjointness preservation
+\item \texttt{sum\_rule}: Valuation additivity on disjoint events (from \texttt{CoxConsistency})
+\item \texttt{RectTensorCompatible}: Bridge predicate $v(\text{prod}\ a\ b) = \text{tensor}(v(a), v(b))$
 \end{enumerate}
+This shows that scalar distributivity is \textbf{derived}, not assumed!
 \end{remark}
 
 \begin{remark}[Unbundled Tensor Predicates and TensorAlgebra]
@@ -1590,6 +1605,7 @@ theorem Hprime_not_B_add_C_log :
 By the theorem in \S11.1, any monotone additive function is linear, so wild solutions
 like \texttt{weirdAdditive} must oscillate wildly and violate order preservation.
 
+\newpage
 %==============================================================================
 \section{Summary: Complete Formalization}
 %==============================================================================
@@ -1675,41 +1691,36 @@ Born rule from averaging & Proven & mean\_bornRule\_sum\_unit\_phases \\
 \begin{enumerate}
 \item \textbf{Linear order is implicit}: K\&S proofs assume trichotomy without stating it.
 
-\item \textbf{Identity element is proven optional}: K\&S say the bottom element is ``optional'' (lines 320, 340--341).
-Our formalization \textbf{proves} this rigorously via the \texttt{KSSemigroupBase} hierarchy:
+\item \textbf{Identity is essential for positivity}: K\&S say the bottom element is ``optional'' (lines 320, 340--341),
+claiming ``fidelity ensures that other elements are quantified by positive values.''
+Our formalization \textbf{proves this claim is FALSE} for unbounded structures.
 
-\textbf{Identity-free representation} (\texttt{HolderEmbedding.lean}):
+\textbf{The $\mathbb{Z}$ counterexample} (\texttt{AppendixA/Counterexamples/NegativeWithoutIdentity.lean}):
 \begin{itemize}
-\item \texttt{representation\_semigroup} (lines 297--303) proves the representation theorem \textbf{without identity}:
-  there exists $\Theta : \alpha \to \mathbb{R}$ with order-preservation and additivity
-\item Uses Eric Luap's \texttt{OrderedSemigroups} library via \texttt{holder\_embedding\_of\_noAnomalousPairs}
-\item The Hölder/Alimov embedding theorem works on any cancellative ordered semigroup without anomalous pairs
+\item $(\mathbb{Z}, +, \leq)$ satisfies K\&S Axioms 1--2 (associativity and strict order preservation)
+\item The Hölder embedding theorem applies (no anomalous pairs)
+\item But $\Theta(-1) = -1 < 0$---\textbf{negative values appear!}
 \end{itemize}
 
-\textbf{What identity provides} (\texttt{HolderEmbedding.lean:310--313}):
+\textbf{Why K\&S's claim fails}: K\&S's positivity comes from \texttt{ident\_le}: $\forall x,\; \bot \leq x$.
+This requires $\bot$ to \emph{exist} and be \emph{minimal}. For $\mathbb{Z}$:
 \begin{itemize}
-\item \texttt{identity\_gives\_canonical\_normalization}: Identity gives $\Theta(\text{ident}) = 0$
-\item Without identity, $\Theta$ is defined only up to an additive constant $c$: if $\Theta$ is valid, so is $\Theta + c$
-\item Identity pins down $c = 0$ by requiring $\Theta(\text{ident}) = 0$
+\item No bottom element exists ($\mathbb{Z}$ is unbounded below)
+\item The representation theorem still applies
+\item But positivity is \textbf{not guaranteed}
 \end{itemize}
 
-\textbf{Two Appendix A paths}:
+\textbf{Corrected understanding}:
 \begin{itemize}
-\item \textbf{Hölder path} (\texttt{HolderEmbedding.lean}): Identity-FREE---produces \texttt{RepresentationResult}
-\item \textbf{Grid/Globalization path} (\texttt{RepresentationTheorem/}): Currently uses identity---produces \texttt{NormalizedRepresentationResult} with $\Theta(\text{ident}) = 0$
-\item \textbf{DirectCuts path} (\texttt{Alternative/DirectCuts.lean}): Explicitly requires identity for the cut construction
+\item \textbf{With identity + \texttt{ident\_le}}: $\Theta(\bot) = 0$ provides canonical normalization;
+      all other elements have $\Theta(x) > 0$.
+\item \textbf{Without identity}: The representation theorem works, but positivity is
+      \textbf{not guaranteed}. The embedding is unique up to additive constant, but
+      no constant can rescue positivity for unbounded-below structures.
 \end{itemize}
 
-\textbf{Grid path identity-free infrastructure} (exists but not yet instantiated):
-\begin{itemize}
-\item \texttt{AtomFamily\_param}: Uses \texttt{IsPositive (atoms i)} instead of \texttt{ident < atoms i}
-\item \texttt{mu\_param}, \texttt{kGrid\_param}: Parametric versions with explicit base element
-\item \texttt{mu\_pnat}, \texttt{kGrid\_pnat}: Truly identity-free using $\mathbb{N}^+$ iteration
-\item \texttt{RepresentationGlobalizationAnchor}: Class for identity-free representations (normalizes to arbitrary anchor)
-\end{itemize}
-See \texttt{MultiGrid.lean} section ``Identity-Free Grid Definitions'' for the parametric API.
-
-Most of the formalization uses \texttt{KnuthSkillingAlgebraBase} (with identity) for historical reasons---the development was done with identity first---(4000+ references), but the core representation theorem is proven at the identity-free \texttt{KSSemigroupBase} level. K\&S are \textbf{correct} that identity is optional; we have \textbf{proven this rigorously}.
+\textbf{Status}: K\&S claim \textbf{corrected}. Identity with \texttt{ident\_le} is
+\textbf{essential} for positivity, not merely ``aesthetic.''
 
 \item \textbf{Separation property is necessary}: The representation theorem requires an explicit ``separation'' axiom to enable rational approximation.
 

@@ -1,6 +1,6 @@
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
-import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.CredalSets
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Algebra
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.CredalSets
 import Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.ToyFreeMonoid2
 
 /-!
@@ -30,7 +30,7 @@ In particular, nothing here proves the main K&S representation theorem.
 
 - Stay & Wells, "Generating Hypercubes of Type Systems" (hypercube.pdf)
 - K&S, "Foundations of Inference" Appendix A
-- `RepresentationTheorem/CredalSets.lean` (interval / credal-set exploration)
+- `Additive/Proofs/GridInduction/CredalSets.lean` (interval / credal-set exploration)
 - `Hypercube/KnuthSkilling/ToyFreeMonoid2.lean` (toy noncommutative monoid)
 -/
 
@@ -40,7 +40,7 @@ namespace Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.Proofs
 
 open Mettapedia.ProbabilityTheory.KnuthSkilling
 open KnuthSkillingAlgebra
-open Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.CredalSets
+open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.CredalSets
 
 /-! ## Section 1: Vertex Characterization
 
@@ -119,7 +119,7 @@ def freeMenoidIsV0 : VertexV0 ToyFreeMonoid2.FreeMonoid2 where
 
 This is proven below. Whether such Θ exists from the K&S axioms is the substantive content of
 the representation-theorem development (see
-`Mettapedia/ProbabilityTheory/KnuthSkilling/RepresentationTheorem/Main.lean`).
+`Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Main.lean`).
 -/
 
 /-- **Commutativity Emergence Theorem** (Informal Statement)

@@ -34,7 +34,7 @@ can assign coherent measures to structures that fall outside the scope of:
 
 - Knuth & Skilling, "Foundations of Inference" (2012), Sections 5.1-5.2
 - Cox, "The Algebra of Probable Inference" (1961)
-- This project: RepresentationTheorem/, Counterexamples/NonModularDistributive.lean
+- This project: Additive/ (Appendix A) and Counterexamples/NonModularDistributive.lean
 -/
 
 import Mathlib.Data.Real.Basic

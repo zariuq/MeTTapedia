@@ -1,0 +1,891 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{cleveref}
+\usepackage{geometry}
+\usepackage{xcolor}
+
+\geometry{margin=1in}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{axiom}[theorem]{Axiom}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+
+% Lean footnote helper: keep Lean references out of the main exposition.
+% `\path{...}` allows line breaks in long file paths.
+\newcommand{\LeanFile}[1]{\footnote{\textbf{Lean}: \path{#1}.}}
+
+\title{Algebraic Foundations of Inference:\\from Order and Symmetry to Probability and Entropy}
+\author{Codex 5.2, Claude 4.5, Zar Goertzel}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note gives a math-first exposition of an algebraic route from order and symmetry principles to the
+standard probability calculus and to information measures such as Kullback--Leibler divergence and Shannon
+entropy.\footnote{Historically, this style of argument was emphasized by Knuth \& Skilling~\cite{KnuthSkilling2012},
+but we present the mathematics in a self-contained organization.}
+
+The emphasis is on the \emph{minimal mathematical hypotheses} needed for each step, and on how the resulting
+axiom systems compare with classical foundations (Kolmogorov, Cox) and with the Shore--Johnson consistency
+axioms for maximum entropy.
+
+Our formal proofs live in Lean 4; Lean details are relegated to footnotes so the main text reads as
+ordinary mathematics.
+\end{abstract}
+
+\tableofcontents
+
+\section{Introduction: why an algebraic foundation?}
+
+Probability theory is often presented in two complementary foundational styles:
+
+\begin{itemize}
+\item \textbf{Measure-theoretic} foundations (Kolmogorov): start with a $\sigma$-algebra of events and a
+  probability measure $P$ satisfying axioms of countable additivity.
+\item \textbf{Plausibility-theoretic} foundations (Cox and successors): start with a notion of rational
+  plausibility for propositions and derive the probability calculus from consistency desiderata.
+\end{itemize}
+
+An algebraic viewpoint is that inference is about \emph{combining} information, and combination operations
+have symmetries (associativity, distributivity, etc.). These symmetries constrain the possible numerical
+representations so strongly that familiar calculi emerge.\footnote{See~\cite{KnuthSkilling2012} for an influential
+instance of this viewpoint.}
+
+This project contributes two kinds of results:
+\begin{enumerate}
+\item \textbf{Axiom necessity.} We isolate which hypotheses are truly needed for each representation theorem
+  (additive, multiplicative, conditional, variational), and we make ``regularity gates'' explicit whenever
+  functional equations admit pathological solutions.
+\item \textbf{Multiple proof routes.} Several results admit independent proofs with different hypothesis
+  profiles (e.g.\ explicit constructions vs.\ classical ordered-semigroup representation theorems).
+\end{enumerate}
+
+\subsection*{Roadmap (what implies what)}
+
+The algebraic program can be read as a sequence of increasingly structured ``symmetry laws'' and their
+consequences:
+\begin{itemize}
+\item \textbf{Disjoint join.} Associativity + strict order-compatibility + an Archimedean/density axiom
+  $\Rightarrow$ regrade $\oplus$ to real addition (\cref{sec:additive_rep}).
+\item \textbf{Independent product.} Distributivity of $\otimes$ over $+$ + associativity of $\otimes$
+  $\Rightarrow$ $\otimes$ is multiplication up to a constant scale (\cref{sec:product_rep}).
+\item \textbf{Conditioning.} A chaining axiom for $p(a\mid b)$ on a lattice of events
+  $\Rightarrow$ Bayes/product rules (\cref{sec:conditioning}).
+\item \textbf{Variation.} A separated variational functional equation for a potential $H$
+  + an explicit regularity gate $\Rightarrow$ the logarithmic normal form and thus KL divergence and
+  Shannon entropy (\cref{sec:variational}).
+\item \textbf{Extension to $\sigma$-additivity.} Completeness axioms on scale and events
+  $\Rightarrow$ $\sigma$-additivity as a theorem, with a bridge to measure theory (\cref{sec:sigma-extension}).
+\end{itemize}
+
+\subsection*{Axiom summary (at a glance)}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Hypotheses} & \textbf{Conclusion} \\
+\hline
+Ordered scale $(S,\oplus)$ + no anomalous pairs & $\Theta(x\oplus y)=\Theta(x)+\Theta(y)$ \\
+\hline
+Additive coordinate + distributive/associative $\otimes$ & $x\otimes y = xy/C$ (scaled multiplication) \\
+\hline
+Distributive event lattice + chaining law for $p(a\mid b)$ & product rule and Bayes' rule \\
+\hline
+Variational equation + Gate~R (regularity) & $H'(m)=B+C\log m$ and KL/entropy forms \\
+\hline
+Finite additivity + scale/event completeness & $\sigma$-additivity (measure theory bridge) \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{The two gates: globality and regularity}
+
+Two ``gates'' recur throughout the algebraic program.  Understanding them is essential.
+
+\paragraph{Gate~G (Globality / Richness).}
+When can a local optimality condition (at a stationary point) be upgraded to a
+\emph{global} functional equation?  This requires a richness/universality premise:
+that the class of admissible problems is broad enough to test the functional constraint
+at essentially arbitrary inputs.
+
+\textbf{Where it applies:} The \emph{variational theorem} (\cref{sec:variational}).
+The entropy functional equation $H'(m_x m_y) = \lambda(m_x) + \mu(m_y)$ arises from
+Lagrange multiplier conditions at stationary points; Gate~G justifies extending this
+to all positive $(m_x, m_y)$.
+
+\paragraph{Gate~R (Rigidity / Regularity).}
+When does an algebraic functional equation have a unique ``nice'' solution?
+Cauchy-type equations $f(x+y)=f(x)+f(y)$ and their multiplicative variants admit
+pathological solutions (Hamel bases) unless a regularity hypothesis is imposed:
+measurability, monotonicity, or continuity at a point suffice.
+
+\textbf{Where it applies:}
+\begin{itemize}
+\item \emph{Product representation} (\cref{sec:product_rep}): The step ``additive on $(0,\infty)$
+  implies linear'' is a Cauchy-type equation.  Here, \textbf{positivity} of $\otimes$ supplies
+  the needed monotonicity, so Gate~R is satisfied implicitly.
+\item \emph{Variational theorem} (\cref{sec:variational}): The equation $H'(m_x m_y) = \lambda(m_x) + \mu(m_y)$
+  reduces to Cauchy's equation after a log-coordinate change.  Here, Gate~R must be imposed
+  explicitly (e.g., $H'$ is measurable or monotone).
+\end{itemize}
+
+Throughout this paper, we keep both gates explicit rather than sweeping them under implicit
+``reasonableness'' assumptions.
+
+\section{Events, order, and the idea of regraduation}
+
+The common core behind plausibility-theoretic and algebraic foundations is that propositions (or ``events'')
+carry an order: one event may entail another.  Let $E$ be a partially ordered set of events with bottom
+$\bot$ (false) and top $\top$ (true).
+
+\begin{definition}[Valuation idea]
+A \emph{valuation} is a map $v : E \to S$ into a totally ordered \emph{scale} $S$ such that
+$a \le b \Rightarrow v(a) \le v(b)$.
+\end{definition}
+
+Different choices of scale $S$ and of numerical coordinate on $S$ are often physically irrelevant.
+A change of coordinates is a \emph{regraduation}.\footnote{The term is used prominently in~\cite{KnuthSkilling2012}.}
+Mathematically, it is an order isomorphism $\Theta : S \to S'$.
+
+\begin{remark}[Order-preserving regraduations are rigid once additivity is fixed]
+A recurring subtlety in algebraic foundations is that \emph{functional equations have pathological solutions}
+unless one imposes a ``regularity gate''.
+For example, the additive Cauchy equation admits wildly discontinuous solutions (via Hamel bases).
+However, once one requires \emph{order preservation} (fidelity/monotonicity), these pathologies disappear:
+any monotone additive map on $\mathbb{R}$ is necessarily linear, hence continuous.
+In other words: once the sum rule has been regraded to real addition, the only coordinate changes that
+preserve both the sum rule and order are affine transformations.
+\end{remark}
+
+
+
+\begin{remark}[Why order is the right primitive]
+Order captures the idea of \emph{fidelity}: if $a$ entails $b$, then $a$ should not be assigned a larger
+plausibility than $b$.  Many apparently ``numerical'' axioms in probability can be viewed as order axioms
+plus structural symmetries of event-combination operations.
+\end{remark}
+
+\section{Event structures: Boolean and beyond}
+
+For finite reasoning it is convenient to work with a lattice of events.  Write $a\vee b$ for join
+(logical OR) and $a\wedge b$ for meet (logical AND).
+
+\begin{definition}[Distributive lattice]
+A \emph{distributive lattice} is a set $E$ equipped with $\vee,\wedge$ such that both operations are
+associative, commutative, idempotent, and satisfy absorption, and such that $\wedge$ distributes over
+$\vee$ (equivalently $\vee$ distributes over $\wedge$).
+\end{definition}
+
+\begin{definition}[Disjointness]
+Two events $a,b\in E$ are \emph{disjoint} if $a\wedge b=\bot$.  In a Boolean algebra, this is equivalent
+to $a\le \neg b$, but in general we do not assume complements exist.
+\end{definition}
+
+A key algebraic point is that complements are not primitive: the sum rule and product rule can be
+developed in non-Boolean distributive lattices.\footnote{This is emphasized in~\cite{KnuthSkilling2012}, but
+the underlying observation is independent of any particular presentation.}
+
+\begin{example}[Boolean algebra of subsets]
+For a finite set $\Omega$, the powerset $\mathcal{P}(\Omega)$ is a Boolean algebra with
+$\vee=\cup$, $\wedge=\cap$, $\bot=\emptyset$, $\top=\Omega$.
+\end{example}
+
+\begin{example}[Three-element chain (minimal non-Boolean distributive lattice)]
+Let $E=\{\bot<a<\top\}$ with $\vee=\max$, $\wedge=\min$.  This lattice is distributive but not Boolean:
+$a$ has no complement in $E$.
+\end{example}
+
+\begin{example}[Open sets]
+For a topological space $X$, the collection of open sets is a distributive lattice under $\cup,\cap$,
+typically not Boolean because complements of open sets need not be open.
+\end{example}
+
+\bigskip
+\begin{center}
+\rule{0.5\textwidth}{0.4pt}\\[0.5em]
+\textsc{Part I: Abstract Representation Theorems}\\[0.3em]
+\rule{0.5\textwidth}{0.4pt}
+\end{center}
+\bigskip
+
+\noindent
+The next three sections develop the abstract mathematics of ordered semigroups, tensors, and
+functional equations---independent of any particular event interpretation.
+
+\section{From associative combination to addition (additive representation)}
+\label{sec:additive_rep}
+
+\subsection{The algebraic scale for disjoint combination}
+
+Introduce a binary operation $\oplus$ on scale values to represent the valuation of a disjoint join:
+if $a$ and $b$ are disjoint events, then $v(a \vee b)$ is determined by $v(a)$ and $v(b)$, so
+\[
+v(a \vee b) = v(a) \oplus v(b).
+\]
+
+Abstractly, the scale $(S,\oplus)$ is required to satisfy:
+\begin{itemize}
+\item \textbf{Associativity:} $(x \oplus y)\oplus z = x \oplus (y \oplus z)$.
+\item \textbf{Strict monotonicity in each argument:} $x<y \Rightarrow x\oplus z < y\oplus z$ and
+  $z\oplus x < z\oplus y$.
+\end{itemize}
+
+\paragraph{The algebraic core is identity-free.}
+The two axioms above---associativity and strict monotonicity---constitute the minimal
+algebraic structure for an ordered semigroup.  Classical representation theory
+(Alimov~\cite{Alimov1950}, H\"older~\cite{Holder1901}) works at this level of generality:
+no identity element is required.
+
+\paragraph{Probability semantics: identity as minimum (optional add-on).}
+For probability-style applications, one often adds:
+\begin{itemize}
+\item \textbf{Identity:} an element $0$ such that $x\oplus 0 = x = 0\oplus x$.
+\item \textbf{Minimum:} $0 \le x$ for all $x$.
+\end{itemize}
+The identity provides a canonical normalization $\Theta(0)=0$ for the representation.
+The minimum condition rules out ``negative'' anomalous behavior automatically.
+
+In our formal development, the identity-free variant is \texttt{KSSemigroupBase}; the
+probability-style variant with identity-as-minimum is \texttt{KnuthSkillingAlgebraBase}.
+
+\begin{definition}[Iteration / ``$n$ of $x$'']
+Fix a scale $(S,\oplus,0)$.  Define the iterates
+\[
+x^{(0)} := 0,\qquad x^{(n+1)} := x \oplus x^{(n)}.
+\]
+When $\oplus$ is (regraded to) real addition, $x^{(n)}$ is just $n\cdot x$.
+\end{definition}
+
+\subsection{The density axiom: no anomalous pairs (Alimov--H\"older)}
+
+Associativity and monotonicity are not enough to force an additive real representation.
+One also needs an \emph{Archimedean/density} condition ruling out infinitesimal gaps.
+
+The classical formulation, due to Alimov~\cite{Alimov1950} building on H\"older~\cite{Holder1901},
+is the \emph{no anomalous pairs} condition.
+
+\begin{definition}[Anomalous pair]
+Say that $a,b>0$ form an \emph{anomalous pair} if for every $n\ge 1$,
+\[
+a^{(n)} < b^{(n)} < a^{(n+1)}.
+\]
+Intuitively, $b$ is ``infinitesimally larger'' than $a$: no finite magnification makes the gap exceed $a$.
+\end{definition}
+
+\begin{axiom}[No Anomalous Pairs (NAP)]
+No pair of positive elements forms an anomalous pair.
+\end{axiom}
+
+\begin{theorem}[Alimov--H\"older representation]
+In a linearly ordered cancellative semigroup, NAP is equivalent to embeddability into $(\mathbb{R},+)$.
+\end{theorem}
+
+This provides a clean conceptual bridge: ``one-dimensionality'' is exactly the exclusion of
+infinitesimals.\footnote{A key connection: in an ordered semigroup with strict monotonicity,
+non-commutativity forces the existence of anomalous pairs.  Contrapositive: NAP implies
+commutativity, which we prove as \cref{thm:separation-commutativity}.}
+Our project uses Eric Luap's Lean formalization of H\"older's theorem for this route.
+
+\begin{remark}[What NAP excludes---necessity witness]
+NAP excludes lexicographic ``multi-scale'' structures with infinitesimals.
+\textbf{Example (lexicographic structure):} $(\mathbb{N}\times\mathbb{N},+)$ ordered lexicographically admits anomalous pairs:
+if $a=(1,0)$ and $b=(1,1)$, then $a^{(n)}=(n,0)$ and $b^{(n)}=(n,n)$, so
+$a^{(n)} < b^{(n)} < a^{(n+1)}$ for all $n$.
+\end{remark}
+
+\subsection{Equivalent formulation: separation (Ben Goertzel)}
+
+An equivalent formulation of the density axiom, due to Ben Goertzel in this project, is
+\emph{separation}---a direct rational approximation principle.
+
+\begin{axiom}[Separation]
+For any $0<a$ and any $0<x<y$, there exist natural numbers $m>0,n$ such that
+\[
+x^{(m)} \;<\; a^{(n)} \;\le\; y^{(m)},
+\]
+where $x^{(m)}$ denotes $m$-fold iteration of $\oplus$.
+\end{axiom}
+
+\begin{theorem}[Separation $\Leftrightarrow$ NAP (probability setting)]
+In a linearly ordered monoid where the identity $0$ is the minimum:
+\begin{enumerate}
+\item Separation $\Rightarrow$ NAP.
+\item NAP $\Rightarrow$ (via H\"older representation) $\Rightarrow$ Separation (by rational density in $\mathbb{R}$).
+\end{enumerate}
+\end{theorem}
+
+\begin{theorem}[Separation forces commutativity]
+\label{thm:separation-commutativity}
+In a linearly ordered scale with strict monotonicity, separation implies:
+\begin{enumerate}
+\item \textbf{Archimedean growth:} for any $0<a$ and any $x$, some iterate $a^{(n)}$ exceeds $x$;
+\item \textbf{Commutativity:} $x\oplus y = y\oplus x$ (so commutativity need not be assumed).
+\end{enumerate}
+\end{theorem}
+
+\begin{remark}[Why $0$ being a minimum matters]
+In probability-style applications the identity element represents certainty and is the minimum of the order.
+In the ordered-semigroup literature one also considers ``negative'' anomalous behavior; the minimum-identity
+assumption rules that out automatically.  The identity-free H\"older route handles both cases uniformly.
+\end{remark}
+
+\subsection{Representation theorem: the additive coordinate}
+
+The core conclusion is:
+
+\begin{theorem}[Additive representation]
+\textbf{Assumptions:}
+\begin{itemize}
+\item $(S,\oplus)$ is a linearly ordered semigroup with strict monotonicity in each argument.
+\item No anomalous pairs (equivalently: separation, in the probability setting).
+\item Optional: identity element $0$ with $0\le x$ for all $x$ (for probability semantics).
+\end{itemize}
+\textbf{Conclusion:}
+There exists an order embedding $\Theta : S \to \mathbb{R}$ such that
+\[
+\Theta(x\oplus y) = \Theta(x) + \Theta(y).
+\]
+The representation is unique up to positive affine transformation.
+If identity exists, one can normalize $\Theta(0)=0$.
+\end{theorem}
+
+We have three proof routes with different hypothesis profiles:
+\begin{enumerate}
+\item \textbf{H\"older embedding (main route)}: classical ordered-semigroup representation from NAP.
+  This is the conceptually cleanest path, working on identity-free semigroups.
+\item \textbf{Dedekind cuts}: classical density construction from separation.
+\item \textbf{Grid induction}: explicit finite construction (more constructive, more complex).
+\end{enumerate}
+
+\newpage
+\section{From distributive tensors to multiplication (product representation)}
+\label{sec:product_rep}
+
+Introduce a second operation $\otimes$ to represent the valuation of independent products
+(direct products of lattices / independent systems). After regraduating $\oplus$ to real addition,
+the key axiom is distributivity:
+\[
+(x+y)\otimes t = (x\otimes t) + (y\otimes t).
+\]
+
+\begin{remark}[Why the multiplicative case needs a different interface]
+For multiplication on $(0,\infty)$, the identity $1$ is \emph{not} a minimum.  So an attempt to reuse the
+additive semigroup interface for $\otimes$ would be structurally mismatched.
+Instead one derives that $\otimes$ is multiplication-like from distributivity and associativity.
+\end{remark}
+
+\begin{theorem}[Product representation]
+\textbf{Assumptions:}
+\begin{itemize}
+\item $(0,\infty)$ with real addition (from the additive representation theorem).
+\item A binary operation $\otimes : (0,\infty)^2 \to (0,\infty)$ that is:
+  \begin{itemize}
+  \item Distributive over $+$: $(x+y)\otimes t = (x\otimes t)+(y\otimes t)$.
+  \item Associative: $(x\otimes y)\otimes z = x\otimes(y\otimes z)$.
+  \item Positive: $x,y>0 \Rightarrow x\otimes y > 0$.
+  \end{itemize}
+\end{itemize}
+\textbf{Conclusion:}
+There exists a constant $C>0$ such that $x\otimes y = xy/C$.
+\end{theorem}
+
+We have two proof routes with different flavors.
+
+\subsection{Direct proof (algebraic)}
+
+Fix $t$ and consider $f_t(x) := x\otimes t$ on $(0,\infty)$.
+Distributivity says $f_t$ is additive on positive reals.  Positivity of $\otimes$ rules out
+Hamel-basis pathologies (Gate~R) and forces $f_t(x)=k(t)\,x$.
+Associativity then forces the scale factors to be coherent: $k(t)=c\,t$ for a constant $c>0$,
+yielding $x\otimes y = xy/C$.
+
+\subsection{Fibonacci proof (K\&S original)}
+
+K\&S's Appendix~B solves a functional equation $\Psi(\xi+\tau)+\Psi(\eta+\tau)=\Psi(\zeta(\xi,\eta)+\tau)$
+by deriving recurrence relations.  A 2-term recurrence gives $\Psi(\theta+na)=2^n\Psi(\theta)$;
+a 3-term recurrence yields the golden ratio $\varphi$.  The irrationality of $\varphi$ implies
+that offsets $m\cdot\log\varphi - n\cdot\log 2$ are dense in $\mathbb{R}$, forcing
+$\Psi(x)=Ce^{Ax}$---an exponential, hence multiplication after a log-coordinate change.
+
+\begin{remark}[Assumptions in the direct proof]
+The Cauchy-type step ``additive on $(0,\infty)$ implies linear'' needs an anti-pathology hypothesis.
+In the direct proof, \emph{positivity} of $\otimes$ supplies the needed monotonicity (Gate~R).
+The final step (from $f_t(x)=k(t)x$ to $k(t)=ct$) requires only injectivity of $k$.
+The Fibonacci proof uses the same positivity assumption but via a different route
+(irrationality of the golden ratio forces the exponential form).
+\end{remark}
+
+\bigskip
+\begin{center}
+\rule{0.5\textwidth}{0.4pt}\\[0.5em]
+\textsc{Part II: Interpretation and Applications}\\[0.3em]
+\rule{0.5\textwidth}{0.4pt}
+\end{center}
+\bigskip
+
+\noindent
+Having established the abstract representation theorems, we now interpret them in the context of
+event lattices, conditional plausibility, and information measures.
+
+\section{Conditional plausibility on lattices}
+\label{sec:conditioning}
+
+Complements are not primitive: inference can be carried out on distributive lattices that are not Boolean.
+One can axiomatize a conditional plausibility $p(a\mid b)$ on comparable event pairs with a
+chaining/product axiom and derive Bayes-style identities.\footnote{This ``chaining'' symmetry is central in
+\cite{KnuthSkilling2012}, but it can be stated without reference to any particular presentation.}
+
+The statements below are marked ``schematic'' because the full type-theoretic details (handling
+of partiality, domain constraints, etc.) are in the Lean formalization; here we present the
+conceptual content.
+
+\begin{definition}[Conditional plausibility (schematic)]
+Given events $a\le b$, write $p(a\mid b)$ for the plausibility of $a$ in the context $b$.
+One requires a context law $p(a\mid b)=p(a\wedge b\mid b)$ and monotonicity in $a$.
+\end{definition}
+
+\begin{axiom}[Chaining / product axiom (schematic)]
+For $a\le b\le c$ with $a\ne \bot$, there is a binary operation $\star$ on plausibilities such that
+\[
+p(a\mid c) = p(a\mid b)\star p(b\mid c).
+\]
+\end{axiom}
+
+\begin{theorem}[Sum, product, Bayes (schematic)]
+Under the additive and multiplicative representations above, the chaining axiom yields the familiar
+probability calculus:
+\[
+P(A\wedge B)=P(A\mid B)\,P(B),
+\qquad
+P(A\mid B)\,P(B)=P(B\mid A)\,P(A).
+\]
+\end{theorem}
+
+The key insight is that the chaining axiom does not assume $\star$ is multiplication---only
+that \emph{some} operation chains conditionals.  The algebraic constraints (associativity of $\star$,
+compatibility with the product rule for independent events) then \emph{force} $\star$ to be
+multiplication.  It is not a choice; it is the unique coherent possibility.
+
+\section{Variational potentials, divergence, and entropy}
+\label{sec:variational}
+
+The pattern continues: just as associativity + order forced $\oplus$ to be addition, and
+distributivity + associativity forced $\otimes$ to be multiplication, a ``product-to-sum''
+separation condition on a variational potential forces the \emph{logarithmic} form---yielding
+KL divergence and Shannon entropy as the unique information measures consistent with
+the algebraic structure.
+
+Concretely, introduce a potential $H$ whose derivative satisfies a separated functional equation
+\[
+H'(m_x m_y) = \lambda(m_x) + \mu(m_y).
+\]
+After the log-coordinate change $u=\log m$, this becomes Cauchy's additive equation.
+
+\subsection{Two independent regularity issues}
+
+\begin{enumerate}
+\item \textbf{(Globality)} Turning a local Lagrange-multiplier separation (at a stationary point)
+  into a global functional equation requires an explicit universality/richness premise.
+\item \textbf{(Anti-pathology)} Solving the Cauchy equation uniquely requires a regularity gate
+  (measurable / monotone / continuous); without it, Hamel-basis solutions exist.
+\end{enumerate}
+
+Our development keeps both premises explicit and provides counterexamples showing why some
+anti-pathology hypothesis is logically necessary.
+
+\begin{definition}[Universality and richness (schematic)]
+``Universality across applications'' means a single potential $H$ is intended to apply across a wide class
+of inference problems, not tuned to a specific domain.  ``Richness'' means that admissible problems range
+widely enough that the functional constraints implied by local optimality can be tested at essentially
+arbitrary positive pairs $(m_x,m_y)$.  Together, these premises justify upgrading a local separation
+condition to a global functional equation.
+\end{definition}
+
+\subsection{Regularity gates for Cauchy-type equations}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Gate} & \textbf{Typical justification} & \textbf{Use} \\
+\hline
+Borel measurable & $H'=\mathrm{deriv}\,H$ (or any measurable model) & excludes Hamel solutions \\
+\hline
+Monotone on an interval & order/convexity assumptions & implies measurability \\
+\hline
+Continuous at one point & smoothing / convolution heuristics & implies measurability \\
+\hline
+\end{tabular}
+\caption{Standard ``regularity gates'' that make Cauchy's equation rigid.}
+\end{table}
+
+\begin{remark}[What Gate~R excludes---necessity witness]
+Without a regularity gate, Cauchy's equation $f(x+y)=f(x)+f(y)$ admits uncountably many solutions.
+\textbf{Example (pathological solutions):} Let $\mathcal{B}$ be a Hamel basis for $\mathbb{R}$ over $\mathbb{Q}$.
+Define $f(x)$ by expressing $x=\sum_{i} q_i b_i$ (finite sum, $q_i\in\mathbb{Q}$, $b_i\in\mathcal{B}$)
+and setting $f(x)=\sum_i q_i g(b_i)$ for any function $g:\mathcal{B}\to\mathbb{R}$.
+Every such $f$ is additive, but if $g$ is chosen erratically, $f$ is nowhere continuous, unbounded
+on every interval, and non-measurable.  Any regularity gate kills these pathologies.
+\end{remark}
+
+\subsection{Solving the variational functional equation}
+
+The classification step is a standard rigidity phenomenon for Cauchy-type functional equations.
+
+\begin{theorem}[Variational representation]
+\textbf{Assumptions:}
+\begin{itemize}
+\item $H':(0,\infty)\to\mathbb{R}$ satisfies the separated functional equation
+$H'(m_x m_y)=\lambda(m_x)+\mu(m_y)$ for all $m_x,m_y>0$.
+\item Gate~G (Globality): the equation holds globally, not just at specific stationary points.
+\item Gate~R (Regularity): $H'$ is Borel measurable (or monotone, or continuous at one point).
+\end{itemize}
+\textbf{Conclusion:}
+There exist constants $B,C\in\mathbb{R}$ such that
+\[
+H'(m)=B+C\log m \qquad(m>0).
+\]
+Integrating: $H(m)=A + Bm + C(m\log m - m)$.
+\end{theorem}
+
+Integrating yields the entropy/divergence normal form
+\[
+H(m)=A + Bm + C(m\log m - m).
+\]
+
+\subsection{From the normal form to KL divergence and Shannon entropy}
+
+Specializing $H$ to a divergence between two nonnegative vectors $w,u$ with equal total mass gives
+the Kullback--Leibler expression
+\[
+D(w\|u)=\sum_i w_i\log\frac{w_i}{u_i}
+\]
+in the absolutely continuous case; in extended form one sets $D(w\|u)=+\infty$ if some $w_i>0$ but $u_i=0$.
+
+For a probability distribution $p$ on $n$ states, Shannon entropy appears as the special case
+\[
+S(p) = -\sum_{i=1}^n p_i\log p_i = \log n - D(p\,\|\,\mathrm{uniform}).
+\]
+Entropy is the KL divergence from $p$ to the uniform distribution.
+
+\paragraph{Countable/discrete measures.}
+The same formulas make sense for countable state spaces as series; in the formal development we connect the
+countable sum definition to the standard measure-theoretic KL divergence $\mathrm{klDiv}$ used in modern
+probability texts.
+
+\subsection{A clean comparison point: Shore--Johnson (1980)}
+
+Shore \& Johnson propose a different ``universality across applications'' idea: a set of four
+consistency axioms for inference procedures that update prior distributions given constraints.
+\begin{enumerate}
+  \item \textbf{Uniqueness.} The procedure should yield a unique result.
+  \item \textbf{Coordinate invariance.} The result should not depend on coordinate system choice.
+  \item \textbf{System independence.} For product systems $A \times B$, updating on constraints that
+    factor as $C_A \times C_B$ should give the same result as updating each system separately.
+  \item \textbf{Subset independence.} If a constraint already determines some coordinates, the
+    procedure on remaining coordinates should be unaffected.
+\end{enumerate}
+
+The mathematical core of their argument runs as follows.  Suppose the ``atomic divergence''
+$d(p,q)$ contributes to a total divergence $D(P\|Q)=\sum_i d(p_i,q_i)$ that is minimized by
+inference procedures.  System independence (axiom 3) forces $d$ to satisfy an additivity identity
+over product distributions:
+\[
+  \sum_{i,j} d(p_i r_j,\, q_i s_j) \;=\; \sum_i d(p_i,q_i) + \sum_j d(r_j,s_j).
+\]
+Testing this identity on Dirac delta distributions (concentrating all mass on single coordinates)
+extracts a multiplicative functional equation for $g(q) := d(1,q)$:
+\[
+  g(q_1 q_2) = g(q_1) + g(q_2), \qquad 0 < q_1,q_2 \le 1.
+\]
+This is precisely the multiplicative Cauchy equation, whose solutions are either $g(q)=C\log q$
+(the ``regular'' solutions) or pathological Hamel-basis constructions (everywhere discontinuous,
+non-measurable).  A regularity hypothesis---such as Borel measurability of $g$---excludes the
+pathological solutions and yields the logarithmic form $d(1,q)=C\log q$.  Within the class of
+ratio-form atoms $d(p,q)=p\cdot g(p/q)$, this forces
+\[
+  d(p,q) = C\, p\log(p/q),
+\]
+the KL divergence atom (up to a multiplicative constant).
+
+The structural parallel with Knuth--Skilling is notable: both derivations reduce the problem to
+Cauchy-type functional equations, and both require an explicit regularity gate (measurability,
+monotonicity, or continuity) to exclude pathological solutions.  The algebraic route arrives at
+addition and multiplication on the scale via lattice symmetries; Shore--Johnson arrives at the
+same functional forms via consistency requirements on inference procedures.
+
+\section{Extension to $\sigma$-additivity}
+\label{sec:sigma-extension}
+
+A standard limitation of axiomatic approaches---including Cox--Jaynes---is that they derive
+only finite additivity, while Kolmogorov's measure-theoretic foundations include $\sigma$-additivity
+from the start.\footnote{This is a longstanding foundational debate.  De~Finetti \cite{deFinetti1974}
+argued that finite additivity suffices and that $\sigma$-additivity is overly restrictive;
+modern Bayesians remain divided on whether $\sigma$-additivity is philosophically necessary
+or merely mathematically convenient.}
+We show that this limitation is addressed by natural extension axioms.
+
+\subsection{The completeness axioms}
+
+The extension to countably infinite cases requires three additional axioms:
+
+\begin{axiom}[Sigma-complete events]
+The event algebra admits countable joins: for any sequence $(e_n)$ of events,
+the supremum $\bigsqcup_n e_n$ exists.
+\end{axiom}
+
+\begin{axiom}[Scale completeness]
+The scale $S$ is sequentially complete: every bounded monotone sequence $(s_n)$ has a supremum.
+\end{axiom}
+
+\begin{axiom}[Scott continuity]
+The valuation $v : E \to S$ is Scott continuous: for any directed family\footnote{A family
+where any two elements have an upper bound in the family---the natural generalization
+of ``increasing sequence'' to non-linear index sets.} $(e_i)_{i \in I}$,
+$v(\bigsqcup_i e_i) = \bigsqcup_i v(e_i)$.
+\end{axiom}
+
+These axioms are \textbf{necessary}---they cannot be derived from the basic K\&S axioms---but
+they are mathematically natural extensions that preserve the core algebraic structure.
+The Archimedean property (no infinitesimals) already constrains the scale to embed into $\mathbb{R}$,
+and scale completeness is the natural additional requirement for handling infinite operations.
+
+\begin{remark}[Categorical perspective: $\sigma$-frames]
+From a categorical viewpoint, moving from Boolean algebras to $\sigma$-algebras corresponds to
+moving from frames to \emph{$\sigma$-frames} (lattices with countable joins and finite meets,
+where finite meets distribute over countable joins).  The Scott continuity axiom is the
+natural morphism condition in this setting.  This connects the algebraic foundations to
+pointless topology and locale theory, where $\sigma$-additivity becomes structural rather
+than axiomatic.
+\end{remark}
+
+\subsection{The $\sigma$-additivity theorem}
+
+\begin{theorem}[$\sigma$-additivity from K\&S + completeness]
+Under the K\&S axioms plus the three completeness axioms above, the composition
+$\mu = \Theta \circ v$ (where $\Theta : S \to \mathbb{R}$ is the additive representation)
+is $\sigma$-additive for pairwise disjoint sequences:
+\[
+\mu\Bigl(\bigsqcup_n e_n\Bigr) = \sum_{n=0}^\infty \mu(e_n).
+\]
+\end{theorem}
+
+
+\subsection{Significance}
+
+The key insight is that $\oplus \to +$ is \textbf{derived} from the K\&S axioms (via the representation
+theorem), not assumed.  The additive structure that connects to standard measure theory comes from
+the K\&S derivation, not from an external assumption.
+
+This resolves the ``finite-only'' criticism of algebraic foundations: \emph{K\&S naturally extends to
+$\sigma$-algebras when appropriate completeness axioms are added, and the extension is grounded
+in the same algebraic principles that govern the finite case.}
+
+\section{How this compares to classical foundations}
+
+The following table summarizes the key structural assumptions of each foundational approach:
+
+\begin{center}
+\small
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Foundation} & \textbf{Events} & \textbf{Codomain} & \textbf{Key axiom} & \textbf{Regularity gate} \\
+\hline
+Kolmogorov & $\sigma$-algebra & $[0,1]$ & $\sigma$-additivity & --- \\
+\hline
+Cox--Jaynes & propositions & $[0,1]$ & consistency & continuity \\
+\hline
+de~Finetti & events & $[0,1]$ & finite add. & --- \\
+\hline
+K\&S (finite) & lattice & ordered scale & associativity & no anomalous pairs \\
+\hline
+K\&S + compl. & $\sigma$-lattice & complete scale & + Scott cont. & + completeness \\
+\hline
+Shore--Johnson & distributions & divergence & system indep. & measurability \\
+\hline
+\end{tabular}
+\end{center}
+
+Each foundation makes different choices about what to assume and what to derive:
+
+\begin{itemize}
+\item \textbf{Kolmogorov} postulates $\sigma$-additivity directly: $P:\mathcal{F}\to[0,1]$
+  with $P(\Omega)=1$ and countable additivity on disjoint unions. \cite{Kolmogorov1933}
+
+\item \textbf{Cox--Jaynes} derives the sum and product rules from consistency requirements on
+  plausibility assignments, given a continuity hypothesis. \cite{Cox1946}
+
+\item \textbf{De~Finetti} takes finite additivity as primitive, arguing that $\sigma$-additivity
+  is an unnecessary strengthening. \cite{deFinetti1974}
+
+\item \textbf{K\&S} derives additivity and multiplication from lattice symmetries (associativity,
+  monotonicity), given a ``no anomalous pairs'' hypothesis on the scale.
+
+\item \textbf{Shannon--Faddeev} derives entropy uniqueness from axioms on probability vectors
+  (continuity, maximality at uniform, additivity over independent systems).
+  \cite{Shannon1948,Faddeev1956}
+
+\item \textbf{Shore--Johnson} derives KL divergence from consistency axioms on inference
+  procedures, given a measurability hypothesis. \cite{ShoreJohnson1980}
+\end{itemize}
+
+The approaches that \emph{derive} the calculus (Cox, K\&S, Shore--Johnson) all face the same
+mathematical issue: functional equations admit pathological Hamel-basis solutions unless a
+regularity hypothesis excludes them.  A careful foundation keeps this gate visible.
+
+\begin{remark}[Where the novelty sits]
+The novelty of the algebraic approach is not the final calculus (which agrees with
+Kolmogorov/Shannon) but the \emph{upstream} identification of which symmetry principles
+suffice to force the calculus, and which regularity principles are logically indispensable.
+\end{remark}
+
+\begin{remark}[Imprecise probabilities]
+Not all applications justify a single sharp measure.  Representing uncertainty by sets of
+measures (credal sets) or interval bounds corresponds algebraically to weakening the scale
+from a total order to a partial order.\footnote{See Walley~\cite{Walley1991}.}
+\end{remark}
+
+\appendix
+
+\section{Dictionary: Paper notation to Lean names}
+
+The following table maps the mathematical concepts in this paper to their Lean formalizations
+in the \texttt{Mettapedia.ProbabilityTheory.KnuthSkilling} namespace.
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Paper term} & \textbf{Lean name} & \textbf{File} \\
+\hline
+Ordered scale $(S,\oplus)$ & \texttt{KSSemigroupBase} & \texttt{Basic.lean} \\
+\hline
+$+$ identity as minimum & \texttt{KnuthSkillingAlgebraBase} & \texttt{Basic.lean} \\
+\hline
+Separation axiom & \texttt{KSSeparation} & \texttt{Basic.lean} \\
+\hline
+No anomalous pairs & \texttt{NoAnomalousPairs} & \texttt{Separation/AnomalousPairs.lean} \\
+\hline
+H\"older embedding & \texttt{holder\_embedding} & \texttt{Separation/HolderEmbedding.lean} \\
+\hline
+$\oplus$, $\otimes$, $\star$ & \texttt{op}, \texttt{tensor}, \texttt{condOp} & \texttt{Basic.lean} \\
+\hline
+$x^{(n)}$ (iteration) & \texttt{iterate\_op\_pnat} & \texttt{Basic.lean} \\
+\hline
+Additive representation & \texttt{representation\_theorem} & \texttt{RepresentationTheorem/Main.lean} \\
+\hline
+Product representation & \texttt{product\_representation} & \texttt{ProductTheorem/Main.lean} \\
+\hline
+Variational theorem & \texttt{variational\_classification} & \texttt{VariationalTheorem.lean} \\
+\hline
+KL divergence & \texttt{klDiv} & \texttt{DivergenceMathlib.lean} \\
+\hline
+Regraduation & order isomorphism & various \\
+\hline
+Sigma-complete events & \texttt{SigmaCompleteEvents} & \texttt{ScaleCompleteness.lean} \\
+\hline
+Scale completeness & \texttt{KSScaleComplete} & \texttt{ScaleCompleteness.lean} \\
+\hline
+Scott continuity & \texttt{KSScottContinuous} & \texttt{ScaleCompleteness.lean} \\
+\hline
+$\sigma$-additivity theorem & \texttt{ks\_sigma\_additive} & \texttt{ScaleCompleteness.lean} \\
+\hline
+$\oplus \to +$ (derived) & \texttt{op\_is\_addition\_via\_Theta} & \texttt{Separation/OpIsAddition.lean} \\
+\hline
+Mathlib bridge & \texttt{toProbabilityMeasure} & \texttt{MathlibProbability.lean} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{thebibliography}{13}
+
+\bibitem{KnuthSkilling2012}
+Kevin H. Knuth and John Skilling.
+\textit{Foundations of Inference}.
+Axioms, 1(1):38--73, 2012.
+
+\bibitem{Cox1946}
+Richard T. Cox.
+\textit{Probability, Frequency and Reasonable Expectation}.
+American Journal of Physics, 14(1):1--13, 1946.
+
+\bibitem{Kolmogorov1933}
+Andrey N. Kolmogorov.
+\textit{Grundbegriffe der Wahrscheinlichkeitsrechnung}.
+Springer, 1933.
+
+\bibitem{ShoreJohnson1980}
+J. E. Shore and R. W. Johnson.
+\textit{Axiomatic Derivation of the Principle of Maximum Entropy and the Principle of Minimum Cross-Entropy}.
+IEEE Trans. Inform. Theory, 26(1):26--37, 1980.
+
+\bibitem{Shannon1948}
+C. E. Shannon.
+\textit{A Mathematical Theory of Communication}.
+Bell System Technical Journal, 27:379--423 and 623--656, 1948.
+
+\bibitem{Khinchin1957}
+A. I. Khinchin.
+\textit{Mathematical Foundations of Information Theory}.
+Dover, 1957.
+
+\bibitem{Faddeev1956}
+D. K. Faddeev.
+\textit{On the concept of entropy of a finite probabilistic scheme}.
+Uspekhi Mat. Nauk, 11(1):227--231, 1956.
+
+\bibitem{Alimov1950}
+N.~G. Alimov.
+On ordered semigroups.
+\textit{Izv. Akad. Nauk SSSR Ser. Mat.}, 14:569--576, 1950.
+
+\bibitem{Fuchs1963}
+L.~Fuchs.
+\textit{Partially Ordered Algebraic Systems}.
+Pergamon Press, 1963.
+
+\bibitem{Holder1901}
+O.~H\"older.
+Die Axiome der Quantit\"at und die Lehre vom Mass.
+\textit{Berichte \"uber die Verhandlungen der K\"oniglich S\"achsischen Gesellschaft der Wissenschaften zu Leipzig,
+Mathematisch-Physische Classe}, 53:1--64, 1901.
+
+\bibitem{RockafellarWets}
+R.~T. Rockafellar and R.~J.-B. Wets.
+\textit{Variational Analysis}.
+Springer, 1998.
+
+\bibitem{Clarke1990}
+F.~H. Clarke.
+\textit{Optimization and Nonsmooth Analysis}.
+SIAM, 1990.
+
+\bibitem{Luap2024}
+Eric Luap.
+\textit{OrderedSemigroups: Formalization in Lean 4}.
+GitHub repository, 2024. \url{https://github.com/ericluap/OrderedSemigroups}
+
+\bibitem{Walley1991}
+Peter Walley.
+\textit{Statistical Reasoning with Imprecise Probabilities}.
+Chapman \& Hall, 1991.
+
+\bibitem{deFinetti1974}
+Bruno de~Finetti.
+\textit{Theory of Probability} (2 vols).
+Wiley, 1974--1975.
+
+\end{thebibliography}
+
+\end{document}

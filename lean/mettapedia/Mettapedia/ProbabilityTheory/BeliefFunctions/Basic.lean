@@ -40,7 +40,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Real.Basic
 import Mathlib.Tactic
-import Mettapedia.ProbabilityTheory.Common.Valuation
+import Mettapedia.ProbabilityTheory.Structures.Valuation.Basic
 import Mettapedia.ProbabilityTheory.Common.Lattice
 import Mettapedia.ProbabilityTheory.Common.LatticeSummation
 import Mettapedia.ProbabilityTheory.Hypercube.NovelTheories

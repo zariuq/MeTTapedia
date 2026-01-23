@@ -1,10 +1,10 @@
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Counterexamples.SemidirectNoSeparation
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Counterexamples.SemidirectNoSeparation
 
 namespace Mettapedia.ProbabilityTheory.Hypercube
 
 open Mettapedia.ProbabilityTheory.KnuthSkilling
-open Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Counterexamples
+open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Counterexamples
 
 /-- The “central question” as stated in `Hypercube.Basic` is false: the `SemidirectNoSeparation`
 counterexample provides a noncommutative ordered monoid satisfying all listed hypotheses. -/

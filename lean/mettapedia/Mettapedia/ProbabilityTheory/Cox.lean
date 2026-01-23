@@ -37,7 +37,7 @@ Cox's associativity axiom is what forces additivity. Without it:
 ## Connection to Knuth-Skilling
 
 K&S claim to derive probability from weaker axioms (no continuity, no inverses).
-Their `CoxConsistency` structure in `KnuthSkilling/ProbabilityDerivation.lean`
+Their `CoxConsistency` structure in `KnuthSkilling/Probability/ProbabilityDerivation.lean`
 captures the algebraic essence and proves `cox_implies_kolmogorov`.
 
 The relationship is:

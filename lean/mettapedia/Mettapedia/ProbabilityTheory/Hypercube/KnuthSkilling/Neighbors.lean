@@ -1,5 +1,5 @@
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
-import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.CredalSets
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Algebra
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.CredalSets
 import Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.SequentialSemantics
 import Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.ScaleDichotomy
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
@@ -50,7 +50,7 @@ namespace Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.Neighbors
 
 open Classical
 open Mettapedia.ProbabilityTheory.KnuthSkilling
-open Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem
+open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 open KnuthSkillingAlgebra
 
 /-!
@@ -77,7 +77,7 @@ open KnuthSkillingAlgebra
 -/
 
 /-- Vertices 2,3,6,7 are empty: KSSeparation implies commutativity.
-See `Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.Core.op_comm_of_KSSeparation`
+See `Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core.op_comm_of_KSSeparation`
 for the proof. -/
 theorem sep_implies_comm_collapse_doc : True := trivial
 
@@ -155,7 +155,7 @@ The correct steelman is:
 3. For real-valued completions, this induces an **interval** `[sInf, sSup]` for each term.
 
 This is formalized (for the K&S value scale, independent of event lattices) in
-`Mettapedia/ProbabilityTheory/KnuthSkilling/RepresentationTheorem/CredalSets.lean`:
+`Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Proofs/GridInduction/CredalSets.lean`:
 - `CredalSets.IntervalAddSemantics.ofThetaFamily` (family of completions ⇒ interval semantics)
 - `CredalSets.intervalOf_unique` (singleton family ⇒ precise interval)
 - `CredalSets.IntervalAddSemantics.width_subadditive` (imprecision accumulates subadditively)

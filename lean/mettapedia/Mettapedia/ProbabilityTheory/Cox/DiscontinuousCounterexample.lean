@@ -46,7 +46,11 @@ This is analogous to our SD (semidirect product) counterexample for K&S:
 
 namespace Mettapedia.ProbabilityTheory.Cox.DiscontinuousCounterexample
 
-open Classical
+open Classical Filter
+
+open scoped Topology
+
+noncomputable section
 
 /-!
 ## Part 1: Discontinuous Additive Functions Exist
@@ -196,43 +200,67 @@ private lemma swapF_discontinuous (b : ℝ) (hb : 1 < b) :
   have hbpos : (0 : ℝ) < b := lt_trans (by norm_num) hb
   have hb1ne0 : b - 1 ≠ 0 := by linarith
   have hb1neb : b - 1 ≠ b := by linarith
+  have hswap_b1 : Equiv.swap (0 : ℝ) b (b - 1) = b - 1 := by
+    exact Equiv.swap_apply_of_ne_of_ne hb1ne0 hb1neb
   have hg0 : g 0 = b - 1 := by
-    simp [g, swapF, Equiv.swap_apply_left, Equiv.swap_apply_right,
-      Equiv.swap_apply_of_ne_of_ne, hb1ne0, hb1neb]
-  have hseq_val : ∀ n : ℕ, g (1 / ((n : ℝ) + 2)) = 1 / ((n : ℝ) + 2) - 1 := by
+    calc
+      g 0 = Equiv.swap (0 : ℝ) b (b + 0 - 1) := by
+        simp [g, swapF, Equiv.swap_apply_left, Equiv.swap_apply_right]
+      _ = Equiv.swap (0 : ℝ) b (b - 1) := by simp
+      _ = b - 1 := hswap_b1
+  have hseq_val : ∀ n : ℕ, g ((n : ℝ) + 2)⁻¹ = ((n : ℝ) + 2)⁻¹ - 1 := by
     intro n
     have hden : 0 < (n : ℝ) + 2 := by nlinarith
-    have hxpos : 0 < (1 : ℝ) / ((n : ℝ) + 2) := by
-      exact one_div_pos.mpr hden
-    have hxlt1 : (1 : ℝ) / ((n : ℝ) + 2) < 1 := by
+    have hxpos : 0 < ((n : ℝ) + 2)⁻¹ := by
+      have hxpos' : 0 < (1 : ℝ) / ((n : ℝ) + 2) := one_div_pos.mpr hden
+      simpa [one_div] using hxpos'
+    have hxlt1 : ((n : ℝ) + 2)⁻¹ < 1 := by
       have hpos : (0 : ℝ) < 1 := by norm_num
       have hlt : (1 : ℝ) < (n : ℝ) + 2 := by nlinarith
       have h := one_div_lt_one_div_of_lt hpos hlt
-      simpa using h
-    have hx0 : (1 : ℝ) / ((n : ℝ) + 2) ≠ 0 := ne_of_gt hxpos
-    have hxb : (1 : ℝ) / ((n : ℝ) + 2) ≠ b := by
+      simpa [one_div] using h
+    have hx0 : ((n : ℝ) + 2)⁻¹ ≠ 0 := ne_of_gt hxpos
+    have hxb : ((n : ℝ) + 2)⁻¹ ≠ b := by
       exact ne_of_lt (lt_trans hxlt1 hb)
-    have hxneg : (1 : ℝ) / ((n : ℝ) + 2) - 1 < 0 := sub_lt_zero.mpr hxlt1
-    have hx1ne0 : (1 : ℝ) / ((n : ℝ) + 2) - 1 ≠ 0 := ne_of_lt hxneg
-    have hx1neb : (1 : ℝ) / ((n : ℝ) + 2) - 1 ≠ b := by
-      have hx1ltb : (1 : ℝ) / ((n : ℝ) + 2) - 1 < b := lt_trans hxneg hbpos
+    have hxneg : ((n : ℝ) + 2)⁻¹ - 1 < 0 := sub_lt_zero.mpr hxlt1
+    have hx1ne0 : ((n : ℝ) + 2)⁻¹ - 1 ≠ 0 := ne_of_lt hxneg
+    have hx1neb : ((n : ℝ) + 2)⁻¹ - 1 ≠ b := by
+      have hx1ltb : ((n : ℝ) + 2)⁻¹ - 1 < b := lt_trans hxneg hbpos
       exact ne_of_lt hx1ltb
-    simp [g, swapF, Equiv.swap_apply_left, Equiv.swap_apply_right,
-      Equiv.swap_apply_of_ne_of_ne, hx0, hxb, hx1ne0, hx1neb]
-  have hx : Tendsto (fun n : ℕ => (1 : ℝ) / ((n : ℝ) + 2)) atTop (𝓝 0) := by
-    have hbase : Tendsto (fun n : ℕ => (1 : ℝ) / ((n : ℝ) + 1)) atTop (𝓝 0) :=
-      tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)
+    have hswap_x : Equiv.swap (0 : ℝ) b ((n : ℝ) + 2)⁻¹ = ((n : ℝ) + 2)⁻¹ := by
+      exact Equiv.swap_apply_of_ne_of_ne hx0 hxb
+    have hswap_b : Equiv.swap (0 : ℝ) b b = (0 : ℝ) := by
+      simp [Equiv.swap_apply_right]
+    have hswap_x1 :
+        Equiv.swap (0 : ℝ) b (((n : ℝ) + 2)⁻¹ - 1) = ((n : ℝ) + 2)⁻¹ - 1 := by
+      simpa using (Equiv.swap_apply_of_ne_of_ne hx1ne0 hx1neb)
+    calc
+      g ((n : ℝ) + 2)⁻¹
+          = Equiv.swap (0 : ℝ) b
+              (Equiv.swap (0 : ℝ) b ((n : ℝ) + 2)⁻¹ + Equiv.swap (0 : ℝ) b b - 1) := by
+                simp [g, swapF]
+      _ = Equiv.swap (0 : ℝ) b (((n : ℝ) + 2)⁻¹ + 0 - 1) := by
+        simp [hswap_x, hswap_b]
+      _ = Equiv.swap (0 : ℝ) b (((n : ℝ) + 2)⁻¹ - 1) := by simp
+      _ = ((n : ℝ) + 2)⁻¹ - 1 := hswap_x1
+  have hx : Tendsto (fun n : ℕ => ((n : ℝ) + 2)⁻¹) atTop (𝓝 0) := by
+    have hbase : Tendsto (fun n : ℕ => ((n : ℝ) + 1)⁻¹) atTop (𝓝 0) := by
+      simpa [one_div] using (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ))
     have hshift :=
-      (tendsto_add_atTop_iff_nat (f := fun n : ℕ => (1 : ℝ) / ((n : ℝ) + 1)) 1).2 hbase
-    simpa [Nat.add_assoc, add_assoc, add_comm, add_left_comm] using hshift
-  have hx' : Tendsto (fun n : ℕ => (1 : ℝ) / ((n : ℝ) + 2) - 1) atTop (𝓝 (-1)) := by
+      (tendsto_add_atTop_iff_nat (f := fun n : ℕ => ((n : ℝ) + 1)⁻¹) 1).2 hbase
+    simpa [one_add_one_eq_two, add_assoc, add_comm, add_left_comm] using hshift
+  have hx' : Tendsto (fun n : ℕ => ((n : ℝ) + 2)⁻¹ - 1) atTop (𝓝 (-1)) := by
     simpa using (hx.sub tendsto_const_nhds)
-  have hseq : Tendsto (fun n : ℕ => g (1 / ((n : ℝ) + 2))) atTop (𝓝 (-1)) := by
-    refine Tendsto.congr' ?_ hx'
-    exact Filter.eventually_of_forall hseq_val
-  have hcont0 : Tendsto (fun n : ℕ => g (1 / ((n : ℝ) + 2))) atTop (𝓝 (g 0)) :=
+  have hseq : Tendsto (fun n : ℕ => g ((n : ℝ) + 2)⁻¹) atTop (𝓝 (-1)) := by
+    have hfun :
+        (fun n : ℕ => g ((n : ℝ) + 2)⁻¹) =
+          fun n : ℕ => ((n : ℝ) + 2)⁻¹ - 1 := funext hseq_val
+    simpa [hfun] using hx'
+  have hcont0 : Tendsto (fun n : ℕ => g ((n : ℝ) + 2)⁻¹) atTop (𝓝 (g 0)) :=
     (hg_cont.tendsto 0).comp hx
-  have hg0eq : g 0 = (-1 : ℝ) := tendsto_nhds_unique hseq hcont0
+  have hg0eq' : (-1 : ℝ) = g 0 :=
+    tendsto_nhds_unique (l := atTop) (f := fun n : ℕ => g ((n : ℝ) + 2)⁻¹) hseq hcont0
+  have hg0eq : g 0 = (-1 : ℝ) := hg0eq'.symm
   have hg0ne : g 0 ≠ (-1 : ℝ) := by
     have hb1pos : (0 : ℝ) < b - 1 := by linarith
     have hb1ne : b - 1 ≠ (-1 : ℝ) := by
@@ -259,8 +287,13 @@ theorem nonstandard_conjunction_exists :
     have hleft : C.F 0 2 = (1 : ℝ) := by
       have h10 : (1 : ℝ) ≠ 0 := by norm_num
       have h12 : (1 : ℝ) ≠ 2 := by norm_num
-      simp [C, swapF, Equiv.swap_apply_left, Equiv.swap_apply_right,
-        Equiv.swap_apply_of_ne_of_ne, h10, h12]
+      have hswap1 : Equiv.swap (0 : ℝ) 2 (1 : ℝ) = (1 : ℝ) := by
+        simpa using (Equiv.swap_apply_of_ne_of_ne (a := 0) (b := 2) h10 h12)
+      calc
+        C.F 0 2 = Equiv.swap (0 : ℝ) 2 (2 - 1) := by
+          simp [C, swapF, Equiv.swap_apply_left, Equiv.swap_apply_right]
+        _ = Equiv.swap (0 : ℝ) 2 (1 : ℝ) := by norm_num
+        _ = (1 : ℝ) := hswap1
     have hright : standardF 0 2 = (0 : ℝ) := by simp [standardF]
     have : (1 : ℝ) = 0 := by simpa [hleft, hright] using hval
     exact one_ne_zero this
@@ -294,13 +327,27 @@ theorem cox_underdetermined_without_continuity :
     have hleft : C₁.F 0 2 = (1 : ℝ) := by
       have h10 : (1 : ℝ) ≠ 0 := by norm_num
       have h12 : (1 : ℝ) ≠ 2 := by norm_num
-      simp [C₁, swapF, Equiv.swap_apply_left, Equiv.swap_apply_right,
-        Equiv.swap_apply_of_ne_of_ne, h10, h12]
+      have hswap1 : Equiv.swap (0 : ℝ) 2 (1 : ℝ) = (1 : ℝ) := by
+        simpa using (Equiv.swap_apply_of_ne_of_ne (a := 0) (b := 2) h10 h12)
+      calc
+        C₁.F 0 2 = Equiv.swap (0 : ℝ) 2 (2 - 1) := by
+          simp [C₁, swapF, Equiv.swap_apply_left, Equiv.swap_apply_right]
+        _ = Equiv.swap (0 : ℝ) 2 (1 : ℝ) := by norm_num
+        _ = (1 : ℝ) := hswap1
     have hright : C₂.F 0 2 = (4 : ℝ) := by
-      have h40 : (4 : ℝ) ≠ 0 := by norm_num
-      have h43 : (4 : ℝ) ≠ 3 := by norm_num
-      simp [C₂, swapF, Equiv.swap_apply_left, Equiv.swap_apply_right,
-        Equiv.swap_apply_of_ne_of_ne, h40, h43]
+      have hswap2 : Equiv.swap (0 : ℝ) 3 (2 : ℝ) = (2 : ℝ) := by
+        have h20 : (2 : ℝ) ≠ 0 := by norm_num
+        have h23 : (2 : ℝ) ≠ 3 := by norm_num
+        simpa using (Equiv.swap_apply_of_ne_of_ne (a := 0) (b := 3) h20 h23)
+      have hswap4 : Equiv.swap (0 : ℝ) 3 (4 : ℝ) = (4 : ℝ) := by
+        have h40 : (4 : ℝ) ≠ 0 := by norm_num
+        have h43 : (4 : ℝ) ≠ 3 := by norm_num
+        simpa using (Equiv.swap_apply_of_ne_of_ne (a := 0) (b := 3) h40 h43)
+      calc
+        C₂.F 0 2 = Equiv.swap (0 : ℝ) 3 (3 + 2 - 1) := by
+          simp [C₂, swapF, Equiv.swap_apply_left, Equiv.swap_apply_right, hswap2]
+        _ = Equiv.swap (0 : ℝ) 3 (4 : ℝ) := by norm_num
+        _ = (4 : ℝ) := hswap4
     have : (1 : ℝ) = 4 := by simpa [hleft, hright] using hval
     exact by linarith
   exact ⟨C₁, C₂, hdisc₁, hdisc₂, hneq⟩
@@ -341,25 +388,27 @@ theorem discontinuousAdditive_graph_dense (f : ℝ → ℝ)
       map_add' := by
         intro x y
         exact hf x y }
-  have hf_rat : ∀ q x, f (q • x) = q • f x := by
+  have hf_rat : ∀ q : ℚ, ∀ x, f (q • x) = q • f x := by
     intro q x
     simpa [f_add] using (map_rat_smul (f := f_add) q x)
-  have hf_rat_mul : ∀ q x, f ((q : ℝ) * x) = (q : ℝ) * f x := by
+  have hf_rat_mul : ∀ q : ℚ, ∀ x, f ((q : ℝ) * x) = (q : ℝ) * f x := by
     intro q x
+    have hcast_x : (q : ℝ) * x = q • x := by
+      simpa [smul_eq_mul] using (Rat.cast_smul_eq_qsmul (R := ℝ) (q := q) (x := x))
+    have hcast_fx : (q : ℝ) * f x = q • f x := by
+      simpa [smul_eq_mul] using (Rat.cast_smul_eq_qsmul (R := ℝ) (q := q) (x := f x))
     calc
-      f ((q : ℝ) * x) = f ((q : ℝ) • x) := by simp [smul_eq_mul]
-      _ = f (q • x) := by
-        simpa using (Rat.cast_smul_eq_qsmul (R := ℝ) (q := q) (x := x))
+      f ((q : ℝ) * x) = f (q • x) := by
+        simpa [hcast_x]
       _ = q • f x := hf_rat q x
-      _ = (q : ℝ) • f x := by
-        simpa using (Rat.cast_smul_eq_qsmul (R := ℝ) (q := q) (x := f x)).symm
-      _ = (q : ℝ) * f x := by simp [smul_eq_mul]
+      _ = (q : ℝ) * f x := by
+        simpa [hcast_fx]
   have hx0 : ∃ x, f x ≠ f 1 * x := by
     by_contra h
     push_neg at h
     have hcont : Continuous f := by
       have hfun : f = fun x => f 1 * x := funext h
-      simpa [hfun] using (continuous_const.mul continuous_id)
+      refine hfun ▸ (continuous_const.mul continuous_id)
     exact hdisc hcont
   rcases hx0 with ⟨x0, hx0⟩
   let det : ℝ := f x0 - f 1 * x0
@@ -404,10 +453,14 @@ theorem discontinuousAdditive_graph_dense (f : ℝ → ℝ)
       simpa using (hf_rat_mul q.2 x0)
     dsimp [L, f_rat]
     calc
-      f ((q.1 : ℝ) + (q.2 : ℝ) * x0)
+      (q.1 : ℝ) * f 1 + (q.2 : ℝ) * f x0
           = f (q.1 : ℝ) + f ((q.2 : ℝ) * x0) := by
+            simp [h1, h2]
+      _ = f ((q.1 : ℝ) + (q.2 : ℝ) * x0) := by
+            symm
             simpa using hf (q.1 : ℝ) ((q.2 : ℝ) * x0)
-      _ = (q.1 : ℝ) * f 1 + (q.2 : ℝ) * f x0 := by simp [h1, h2]
   exact Dense.mono hsubset hDense
+
+end
 
 end Mettapedia.ProbabilityTheory.Cox.DiscontinuousCounterexample

@@ -83,7 +83,7 @@ import Mathlib.Data.Rat.Cast.Order
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Int.Basic
 import Mathlib.Tactic
-import Mettapedia.ProbabilityTheory.KnuthSkilling
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.ProbabilityDerivation
 
 namespace Mettapedia.ProbabilityTheory.AssociativityTheorem
 
@@ -553,10 +553,10 @@ theorem associativity_theorem (h_ident : ∀ x, A.op 0 x = x) (a : ℝ) (_ha : 0
     intro n _ m
     exact op_iterate_is_addition A a h_ident m n
 
-/-! ## Part 7: Connection to KnuthSkilling.lean
+/-! ## Part 7: Connection to KnuthSkilling/Probability/ProbabilityDerivation.lean
 
 The Associativity Theorem produces a Linearizer, which connects to the
-Regraduation framework in KnuthSkilling.lean.
+Regraduation framework in KnuthSkilling/Probability/ProbabilityDerivation.lean.
 -/
 
 /-- A Linearizer is what the associativity theorem produces:
@@ -646,7 +646,7 @@ theorem commutativity_derived (L : Linearizer A) :
 /-! ## Part 8: Connection to WeakRegraduation
 
 The `Linearizer` structure from the Associativity Theorem is closely related to
-`WeakRegraduation` in KnuthSkilling.lean. Here we show the formal connection.
+`WeakRegraduation` in KnuthSkilling/Probability/ProbabilityDerivation.lean. Here we show the formal connection.
 
 **Linearizer** (from AssociativityTheorem):
 - φ : ℝ → ℝ
@@ -676,7 +676,7 @@ structure NormalizedLinearizer (A : KSAxioms) extends Linearizer A where
 This is the key connection between the two files. -/
 noncomputable def weakRegraduationFromLinearizer
     (L : NormalizedLinearizer A) :
-    KnuthSkilling.WeakRegraduation A.op where
+    KnuthSkilling.Probability.WeakRegraduation A.op where
   regrade := L.φ
   strictMono := L.strictMono
   zero := L.zero
@@ -700,7 +700,7 @@ noncomputable def identityNormalizedLinearizer : NormalizedLinearizer additionKS
 
 /-- For A.op = (+), the identity gives a WeakRegraduation. -/
 theorem weak_regraduation_for_addition :
-    ∃ W : KnuthSkilling.WeakRegraduation additionKSAxioms.op, W.regrade = id := by
+    ∃ W : KnuthSkilling.Probability.WeakRegraduation additionKSAxioms.op, W.regrade = id := by
   use weakRegraduationFromLinearizer (A := additionKSAxioms) identityNormalizedLinearizer
   rfl
 
@@ -723,7 +723,7 @@ NormalizedLinearizer
         |
         | [weakRegraduationFromLinearizer]
         v
-WeakRegraduation (from KnuthSkilling.lean)
+WeakRegraduation (from KnuthSkilling/Probability/ProbabilityDerivation.lean)
         |
         | [Derive: additive follows from combine_eq_add + density]
         v

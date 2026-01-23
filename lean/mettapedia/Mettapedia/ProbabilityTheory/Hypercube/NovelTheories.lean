@@ -26,7 +26,7 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Tactic
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
-import Mettapedia.ProbabilityTheory.Common.Valuation
+import Mettapedia.ProbabilityTheory.Structures.Valuation.Basic
 import Mettapedia.ProbabilityTheory.Common.LatticeSummation
 
 namespace Mettapedia.ProbabilityTheory.Hypercube.NovelTheories

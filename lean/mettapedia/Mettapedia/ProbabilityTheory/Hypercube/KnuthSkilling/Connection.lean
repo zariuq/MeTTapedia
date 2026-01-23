@@ -1,6 +1,6 @@
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Algebra
-import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.CredalSets
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Algebra
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.CredalSets
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
 
 /-!

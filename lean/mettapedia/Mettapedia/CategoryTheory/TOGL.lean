@@ -3,7 +3,7 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Logic.Basic
 import Mathlib.Probability.ConditionalProbability
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Basic
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
 
 /-!
 # TOGL: Theory of Generating Languages (Greg Meredith)
@@ -415,7 +415,7 @@ References:
 - Walley, P. (1991). "Statistical Reasoning with Imprecise Probabilities"
 - Williams, P.M. (1975). "Notes on conditional previsions"
 - Quaeghebeur, E. (2014). "Desirability" in Introduction to Imprecise Probabilities
-- See: Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.DesirableGambles
+- See: Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.DesirableGambles
 -/
 
 /-- The D1-D4 axioms for V₂ (Credal Sets) expressed as OSLF typing constraints
@@ -490,7 +490,7 @@ This is the bridge from V₂ (interval-valued) to V₃ (point-valued):
 ### Concrete Results for Intervals and Collapse
 
 The abstract claims about V₂ intervals and V₃ collapse are proven concretely
-in `Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.DesirableGambles`:
+in `Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.DesirableGambles`:
 
 **Proven Theorems** (0 sorry):
 

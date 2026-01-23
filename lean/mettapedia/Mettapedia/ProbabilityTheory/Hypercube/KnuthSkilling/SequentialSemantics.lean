@@ -1,4 +1,4 @@
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Separation.SandwichSeparation
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms.SandwichSeparation
 
 /-!
 # K&S Neighbor Theory: Sequential (Noncommutative) Semantics

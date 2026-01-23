@@ -42,11 +42,11 @@ import Mathlib.Analysis.Normed.Group.Seminorm
 import Mathlib.Analysis.Convex.Cone.Extension
 import Mathlib.Data.Real.Pointwise
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.DesirableGambles
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.DesirableGambles
 
 namespace Mettapedia.ProbabilityTheory.ImpreciseProbability
 
-open Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationTheorem.DesirableGambles
+open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.DesirableGambles
 open Set Pointwise
 
 /-!
