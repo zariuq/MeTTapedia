@@ -8,7 +8,8 @@ It is designed to be a safe import target for downstream development
 ## What's Exported
 
 The "core algebra" layer:
-- **Basic**: Ordered semigroup/monoid structures (`KSSemigroupBase`, `KnuthSkillingAlgebraBase`)
+- **Basic**: Ordered scale structures
+  (`KSSemigroupBase`, `KnuthSkillingMonoidBase`, `KnuthSkillingAlgebraBase`)
 - **Algebra**: Iteration, separation axioms
 - **Additive**: Appendix A - separation axioms + additive representation (⊕ → ℝ+)
 - **Multiplicative**: Appendix B - product representation (⊗ → scaled multiplication)
@@ -34,6 +35,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core
 
 -- Access core structures
 example : Type := KSSemigroupBase
+example : Type := KnuthSkillingMonoidBase
 example : Type := KnuthSkillingAlgebraBase
 example : Type := KSSeparation
 -- etc.

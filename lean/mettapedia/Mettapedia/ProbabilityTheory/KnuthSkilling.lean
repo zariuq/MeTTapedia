@@ -41,8 +41,8 @@ path-specific versions in `Probability/ProbabilityDerivation` or `Probability/Co
 
 ## Module Structure
 
-- **Core/Basic.lean**: Core definitions (PlausibilitySpace, Valuation, KnuthSkillingAlgebra, KSSeparation)
-- **Core/Algebra.lean**: Basic operations (iterate_op, commutativity lemmas)
+- **Core/Basic.lean**: Core definitions (PlausibilitySpace, Valuation, KSSemigroupBase / Monoid / Algebra bases)
+- **Core/Algebra.lean**: Basic operations (iterate_op, separation axioms, identity-free ℕ+ iteration)
 - **Additive/Axioms/**: Separation machinery (sandwich separation, anomalous pairs)
 - **Additive/Main.lean**: **MAIN ENTRYPOINT** - Appendix A representation theorem
   - `Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean`: canonical Hölder path
@@ -58,11 +58,22 @@ path-specific versions in `Probability/ProbabilityDerivation` or `Probability/Co
   - `Probability/ConditionalProbability/Basic.lean`: Axiom 5 (Chaining Associativity), chain-product rule, Bayes' theorem
 - **Information/InformationEntropy.lean**: K&S Section 8 information/entropy (KL divergence, Shannon entropy, basic Shannon properties)
 
-## Layer Structure
+## Axiom Hierarchy (Primary Assumption: NoAnomalousPairs)
 
-The formalization uses a two-layer design to avoid circular dependencies:
-- **Layer A (Additive/Proofs/*)**: Assumes `[KSSeparation α]`, proves representation + commutativity
-- **Layer B (_archive/Separation/Derivation.lean)**: Intended to provide `instance : KSSeparation α` (currently not completed)
+The canonical proof path uses **NoAnomalousPairs (NAP)** from the 1950s ordered-semigroup literature
+(Alimov 1950, Fuchs 1963), formalized via Eric Luap's OrderedSemigroups library:
+
+- **Canonical path (Hölder/Alimov)**: `[NoAnomalousPairs α]` → additive representation
+  - Location: `Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean`
+  - Lightweight, identity-free, proven complete
+
+- **Alternative path (Cuts)**: `[KSSeparationStrict α]` → additive representation
+  - Location: `Additive/Proofs/DirectCuts/`
+  - Uses Dedekind cuts; requires identity
+
+The relationship between axioms:
+- `KSSeparation` + `IdentIsMinimum` ⇒ `NoAnomalousPairs` (proven in `AnomalousPairs.lean`)
+- NAP is strictly weaker (identity-free) and historically prior (1950s vs K&S 2012)
 
 ## Countermodels (opt-in)
 - Counterexamples clarifying which hypotheses are required live under
@@ -70,31 +81,17 @@ The formalization uses a two-layer design to avoid circular dependencies:
   They are intentionally not imported by the main proof chain; import them explicitly when needed.
 -/
 
--- Import all submodules
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Algebra
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Main
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Multiplicative
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Variational.Main
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Information.Divergence
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Information.DivergenceMathlib
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ShoreJohnson.ShoreJohnson
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ShoreJohnson.ShoreJohnsonKL
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ShoreJohnson.ShoreJohnsonTheorem
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ShoreJohnson.ShoreJohnsonBridge
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ShoreJohnson.ShoreJohnsonInference
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ShoreJohnson.ShoreJohnsonObjective
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ShoreJohnson.ShoreJohnsonConstraints
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ShoreJohnson.ShoreJohnsonPathC
-import Mettapedia.ProbabilityTheory.KnuthSkilling.ShoreJohnson.ShoreJohnsonAppendixKL
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropy
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Information.InformationEntropyMathlib
+-- Stable core facade (Appendices A/B/C + minimal axiom hierarchy).
+import Mettapedia.ProbabilityTheory.KnuthSkilling.FoundationsOfInference
+
+-- Additional K&S material beyond the FOI core.
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Bridges.GoertzelGroupFix
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.ProbabilityDerivation
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.ProbabilityCalculus
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.Independence
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Probability.ConditionalProbability
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.SymmetricalFoundation
+
+-- Shore–Johnson is first-class but intentionally not on the default import path.
+-- (Paused/WIP; import explicitly when needed.)
+-- import Mettapedia.ProbabilityTheory.KnuthSkilling.ShoreJohnson
 
 -- Countermodels are parked under CounterModels/ and not imported by default.

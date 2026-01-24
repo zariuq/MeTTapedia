@@ -70,15 +70,19 @@ class NoAnomalousPairs (α : Type*) [KSSemigroupBase α] : Prop where
 
 section WithIdentity
 
-variable {α : Type*} [KnuthSkillingAlgebraBase α]
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
 /-- **IdentIsMinimum**: the identity element is the minimum of the order.
 
 In probability theory, `ident` represents the certain event, and all elements
 are "sub-events" with `a ≤ ident`. This rules out negative elements (a < ident),
 making negative anomalous pairs impossible. -/
-class IdentIsMinimum (α : Type*) [KnuthSkillingAlgebraBase α] : Prop where
+class IdentIsMinimum (α : Type*) [KnuthSkillingMonoidBase α] : Prop where
   ident_le : ∀ a : α, ident ≤ a
+
+-- Convenience: any `KnuthSkillingAlgebraBase` (identity-is-minimum) provides `IdentIsMinimum`.
+instance (α : Type*) [KnuthSkillingAlgebraBase α] : IdentIsMinimum α :=
+  ⟨KnuthSkillingAlgebraBase.ident_le (α := α)⟩
 
 namespace KSSeparation
 

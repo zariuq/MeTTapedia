@@ -27,7 +27,7 @@ Even if we can't prove φ is additive yet, we CAN prove:
 - This might be enough to force commutativity!
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingMonoidBase α] [KSSeparation α]
 
 /-!
 ## Step 1: Build a "Logarithm-Like" Function

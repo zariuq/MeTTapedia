@@ -1,6 +1,11 @@
-# K&S Representation Theorem (Appendix A)
+# K&S Representation Theorem (Grid Induction Path)
 
-This directory contains the core formalization of the Knuth-Skilling representation
+> **Note**: This directory documents the **grid-induction proof path**, which uses
+> `KSSeparationStrict` (requires identity). For the **canonical assumption hierarchy**
+> using `NoAnomalousPairs` (identity-free, 1950s literature), see
+> `Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean`.
+
+This directory contains the grid/induction proof of the Knuth-Skilling representation
 theorem from Appendix A of "Foundations of Inference".
 
 ## Main Theorem
@@ -23,10 +28,10 @@ The proof proceeds by induction on "atom families":
 
 ### Alternative Proof (Direct Cuts)
 
-There is also a compact Hölder/Dedekind-cuts proof of the same representation theorem, packaged as:
+There is also a compact Dedekind-cuts proof of the same representation theorem, packaged as:
 
-- `RepresentationTheorem/Alternative/Main.lean` (`associativity_representation_cuts`)
-- `RepresentationTheorem/Alternative/DirectCuts.lean` (the full cut construction of `Θ_cuts`)
+- `../DirectCuts/Main.lean` (`associativity_representation_cuts`)
+- `../DirectCuts/DirectCuts.lean` (the full cut construction of `Θ_cuts`)
 
 This path is meant as a readability/compactness showcase and a cross-check against the grid/induction pipeline.
 
@@ -34,9 +39,9 @@ This path is meant as a readability/compactness showcase and a cross-check again
 
 If you want to understand the pipeline without reading the large induction files first, start at:
 
-- `RepresentationTheorem/ProofSketch.lean` (compact dependency chain + pointers)
-- `RepresentationTheorem/Main.lean` (public API theorem statements)
-- `RepresentationTheorem/Globalization.lean` (the globalization construction; “triple family trick”)
+- `ProofSketch.lean` (compact dependency chain + pointers)
+- `Main.lean` (public API theorem statements)
+- `Globalization.lean` (the globalization construction; "triple family trick")
 
 ### 1. Base Case (k=1)
 For a single atom `a > ident`, define `Θ(a^n) = n` and extend by density.

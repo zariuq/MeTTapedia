@@ -51,7 +51,7 @@ This file now serves only as a record of auxiliary constraints that were useful 
 trying to prove commutativity directly.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingAlgebraBase α]
 
 /-- `KSSeparation` forces global commutativity. -/
 theorem separation_implies_commutative [KSSeparation α] : ∀ x y : α, op x y = op y x := by

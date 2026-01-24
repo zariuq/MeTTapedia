@@ -10,13 +10,13 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
-open KSSemigroupBase KnuthSkillingAlgebraBase
+open KSSemigroupBase KnuthSkillingMonoidBase KnuthSkillingAlgebraBase
 
 namespace KnuthSkillingAlgebra
 
 section Base
 
-variable {α : Type*} [KnuthSkillingAlgebraBase α]
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
 /-- Iterate the operation: x ⊕ x ⊕ ... ⊕ x (n times).
 This builds the sequence: ident, x, x⊕x, x⊕(x⊕x), ... -/
@@ -271,9 +271,9 @@ formalization it is an *explicit* typeclass assumption: it is **not** derivable 
 `KnuthSkillingAlgebra` axioms in general (see
 `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Counterexamples/KSSeparationNotDerivable.lean`).
 
-`_archive/Separation/Derivation.lean` is the (still experimental) attempt to derive `KSSeparation` from additional
-structured hypotheses, and it currently packages the remaining hard step as a `Prop`-class
-(`LargeRegimeSeparationSpec`). -/
+`_archive/ProbabilityTheory/KnuthSkilling/Separation/Derivation.lean`
+is the (still experimental) attempt to derive `KSSeparation` from additional structured hypotheses,
+and it currently packages the remaining hard step as a `Prop`-class (`LargeRegimeSeparationSpec`). -/
 
 /-! ## Unbundled Separation Predicates
 
@@ -367,9 +367,8 @@ end KSSeparationSemigroupStrict
 /-- **Separation property (identity-based version)**.
     For `ident < a`, `ident < x`, `ident < y` with `x < y`, there exist `n, m ∈ ℕ`
     with `0 < m` such that `x^m < a^n ≤ y^m`. -/
-def SeparationProp [KnuthSkillingAlgebraBase α] : Prop :=
-  ∀ {a x y : α}, KnuthSkillingAlgebraBase.ident < a →
-      KnuthSkillingAlgebraBase.ident < x → KnuthSkillingAlgebraBase.ident < y → x < y →
+def SeparationProp [KnuthSkillingMonoidBase α] : Prop :=
+  ∀ {a x y : α}, ident < a → ident < x → ident < y → x < y →
     ∃ n m : ℕ, 0 < m ∧
       KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
       KnuthSkillingAlgebra.iterate_op a n ≤ KnuthSkillingAlgebra.iterate_op y m
@@ -377,9 +376,8 @@ def SeparationProp [KnuthSkillingAlgebraBase α] : Prop :=
 /-- **Strict separation property (identity-based version)**.
     For `ident < a`, `ident < x`, `ident < y` with `x < y`, there exist `n, m ∈ ℕ`
     with `0 < m` such that `x^m < a^n < y^m` (strict on both sides). -/
-def SeparationStrictProp [KnuthSkillingAlgebraBase α] : Prop :=
-  ∀ {a x y : α}, KnuthSkillingAlgebraBase.ident < a →
-      KnuthSkillingAlgebraBase.ident < x → KnuthSkillingAlgebraBase.ident < y → x < y →
+def SeparationStrictProp [KnuthSkillingMonoidBase α] : Prop :=
+  ∀ {a x y : α}, ident < a → ident < x → ident < y → x < y →
     ∃ n m : ℕ, 0 < m ∧
       KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
       KnuthSkillingAlgebra.iterate_op a n < KnuthSkillingAlgebra.iterate_op y m
@@ -399,13 +397,13 @@ See the semidirect-product countermodel in
 `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Counterexamples/KSSeparationNotDerivable.lean`.
 
 Related files:
-- `Mettapedia/ProbabilityTheory/KnuthSkilling/_archive/Separation/Derivation.lean` explores additional structured
-  hypotheses under which `KSSeparation` *can* be derived. -/
-class KSSeparation (α : Type*) [KnuthSkillingAlgebraBase α] where
+- `_archive/ProbabilityTheory/KnuthSkilling/Separation/Derivation.lean`
+  explores additional structured hypotheses under which `KSSeparation` *can* be derived. -/
+
+class KSSeparation (α : Type*) [KnuthSkillingMonoidBase α] where
   /-- For any positive x < y and any base a > ident, we can find exponents (n, m)
   such that x^m < a^n ≤ y^m. This is the key property enabling representation. -/
-  separation : ∀ {a x y : α}, KnuthSkillingAlgebraBase.ident < a →
-      KnuthSkillingAlgebraBase.ident < x → KnuthSkillingAlgebraBase.ident < y → x < y →
+  separation : ∀ {a x y : α}, ident < a → ident < x → ident < y → x < y →
     ∃ n m : ℕ, 0 < m ∧
       KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
       KnuthSkillingAlgebra.iterate_op a n ≤ KnuthSkillingAlgebra.iterate_op y m
@@ -414,7 +412,7 @@ namespace KSSeparation
 
 open KnuthSkillingAlgebra
 
-variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingMonoidBase α] [KSSeparation α]
 
 /-! ### Connection to Unbundled Predicates -/
 
@@ -481,11 +479,10 @@ Paper cross-reference:
 - `paper/ks-formalization.tex`, Subsection “The Separation Type Classes” (Section `sec:main`).
 - The informal “density implies strict separation” remark corresponds to
   `KSSeparation.toKSSeparationStrict_of_denselyOrdered` below. -/
-class KSSeparationStrict (α : Type*) [KnuthSkillingAlgebraBase α] extends KSSeparation α where
+class KSSeparationStrict (α : Type*) [KnuthSkillingMonoidBase α] extends KSSeparation α where
   /-- For any positive `x < y` and any base `a > ident`, find exponents `(n,m)` with `0 < m` and
   `x^m < a^n < y^m`. -/
-  separation_strict : ∀ {a x y : α}, KnuthSkillingAlgebraBase.ident < a →
-      KnuthSkillingAlgebraBase.ident < x → KnuthSkillingAlgebraBase.ident < y → x < y →
+  separation_strict : ∀ {a x y : α}, ident < a → ident < x → ident < y → x < y →
     ∃ n m : ℕ, 0 < m ∧
       KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
       KnuthSkillingAlgebra.iterate_op a n < KnuthSkillingAlgebra.iterate_op y m
@@ -500,7 +497,7 @@ namespace KSSeparationStrict
 
 open KnuthSkillingAlgebra
 
-variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparationStrict α]
+variable {α : Type*} [KnuthSkillingMonoidBase α] [KSSeparationStrict α]
 
 end KSSeparationStrict
 
@@ -508,7 +505,7 @@ namespace KSSeparation
 
 open KnuthSkillingAlgebra
 
-variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingMonoidBase α] [KSSeparation α]
 
 /-- If we can pick an intermediate point between any `ident < x < y`, then `KSSeparation` upgrades to
 the strict variant `KSSeparationStrict`.
@@ -553,11 +550,11 @@ When identity exists, the identity-free `KSSeparationSemigroup` is equivalent to
 
 section SeparationEquivalence
 
-open KnuthSkillingAlgebraBase KnuthSkillingAlgebra
+open KnuthSkillingMonoidBase KnuthSkillingAlgebra
 
 /-- `KSSeparation` implies `KSSeparationSemigroup` when identity exists.
     This is the easy direction: ident < a ↔ IsPositive a, and iterate_op restricted to ℕ+. -/
-instance KSSeparationSemigroup_of_KSSeparation {α : Type*} [KnuthSkillingAlgebraBase α]
+instance KSSeparationSemigroup_of_KSSeparation {α : Type*} [KnuthSkillingMonoidBase α]
     [KSSeparation α] : KSSeparationSemigroup α where
   separation := by
     intro a x y ha hx hy hxy
@@ -586,9 +583,47 @@ instance KSSeparationSemigroup_of_KSSeparation {α : Type*} [KnuthSkillingAlgebr
       rw [h1, h2, h3]
       exact ⟨h_lo, h_hi⟩
 
+/-- `KSSeparationStrict` implies `KSSeparationSemigroupStrict` when identity exists.
+
+This is the strict analogue of `KSSeparationSemigroup_of_KSSeparation`.
+
+The key technical point is that the strict sandwich condition forces the exponent `n` on the
+base `a` to be positive: if `n = 0`, then `a^n = ident` and the lower strict inequality
+`x^m < a^n` would contradict `ident < x^m` for positive `x`. -/
+instance KSSeparationSemigroupStrict_of_KSSeparationStrict {α : Type*} [KnuthSkillingMonoidBase α]
+    [KSSeparationStrict α] : KSSeparationSemigroupStrict α where
+  separation_strict := by
+    intro a x y ha hx hy hxy
+    -- Convert `IsPositive` to `ident <`.
+    have ha' : ident < a := (isPositive_iff_ident_lt a).mp ha
+    have hx' : ident < x := (isPositive_iff_ident_lt x).mp hx
+    have hy' : ident < y := (isPositive_iff_ident_lt y).mp hy
+    -- Apply the strict (identity-based) separation axiom.
+    obtain ⟨n, m, hm_pos, h_lo, h_hi⟩ :=
+      KSSeparationStrict.separation_strict (α := α) (a := a) (x := x) (y := y) ha' hx' hy' hxy
+    -- `n` cannot be 0: otherwise `x^m < ident`, contradicting positivity of `x`.
+    by_cases hn : n = 0
+    · subst hn
+      -- Here `h_lo : x^m < a^0 = ident`.
+      have hxm_pos : ident < iterate_op x m := iterate_op_pos x hx' m hm_pos
+      have : ¬ iterate_op x m < ident := not_lt.mpr (le_of_lt hxm_pos)
+      exfalso
+      simpa [iterate_op_zero] using this h_lo
+    · have hn_pos : 0 < n := Nat.pos_of_ne_zero hn
+      -- Prepare the ℕ+/ℕ iteration conversion lemmas *before* splitting goals,
+      -- so they are available for both strict inequalities.
+      let m' : ℕ+ := ⟨m, hm_pos⟩
+      let n' : ℕ+ := ⟨n, hn_pos⟩
+      have hx_eq : iterate_op_pnat x m' = iterate_op x m := iterate_op_pnat_eq x m'
+      have ha_eq : iterate_op_pnat a n' = iterate_op a n := iterate_op_pnat_eq a n'
+      have hy_eq : iterate_op_pnat y m' = iterate_op y m := iterate_op_pnat_eq y m'
+      refine ⟨n', m', ?_, ?_⟩
+      · simpa [hx_eq, ha_eq] using h_lo
+      · simpa [ha_eq, hy_eq] using h_hi
+
 /-- `KSSeparationSemigroup` implies `KSSeparation` when identity exists.
     This is the converse: we convert ℕ+ back to ℕ. -/
-def KSSeparation_of_KSSeparationSemigroup {α : Type*} [KnuthSkillingAlgebraBase α]
+def KSSeparation_of_KSSeparationSemigroup {α : Type*} [KnuthSkillingMonoidBase α]
     [KSSeparationSemigroup α] : KSSeparation α where
   separation := by
     intro a x y ha hx hy hxy
@@ -607,13 +642,58 @@ def KSSeparation_of_KSSeparationSemigroup {α : Type*} [KnuthSkillingAlgebraBase
     rw [h1, h2, h3]
     exact ⟨h_lo, h_hi⟩
 
+/-- `KSSeparationSemigroupStrict` implies `KSSeparationStrict` when identity exists.
+
+This is the converse of `KSSeparationSemigroupStrict_of_KSSeparationStrict`.
+We convert `ident <` hypotheses to `IsPositive`, apply the identity-free strict sandwich axiom,
+and then translate back from `ℕ+` iteration to the identity-based `iterate_op`. -/
+def KSSeparationStrict_of_KSSeparationSemigroupStrict {α : Type*} [KnuthSkillingMonoidBase α]
+    [KSSeparationSemigroupStrict α] : KSSeparationStrict α where
+  separation_strict := by
+    intro a x y ha hx hy hxy
+    -- Convert `ident <` to `IsPositive`.
+    have ha' : IsPositive a := (isPositive_iff_ident_lt a).mpr ha
+    have hx' : IsPositive x := (isPositive_iff_ident_lt x).mpr hx
+    have hy' : IsPositive y := (isPositive_iff_ident_lt y).mpr hy
+    -- Apply the strict semigroup separation.
+    obtain ⟨n, m, h_lo, h_hi⟩ :=
+      KSSeparationSemigroupStrict.sep_strict (a := a) (x := x) (y := y) ha' hx' hy' hxy
+    -- Convert `ℕ+` to `ℕ`.
+    refine ⟨n.val, m.val, m.pos, ?_, ?_⟩
+    ·
+      have hx_eq : iterate_op x m.val = iterate_op_pnat x m := (iterate_op_pnat_eq x m).symm
+      have ha_eq : iterate_op a n.val = iterate_op_pnat a n := (iterate_op_pnat_eq a n).symm
+      simpa [hx_eq, ha_eq] using h_lo
+    ·
+      have ha_eq : iterate_op a n.val = iterate_op_pnat a n := (iterate_op_pnat_eq a n).symm
+      have hy_eq : iterate_op y m.val = iterate_op_pnat y m := (iterate_op_pnat_eq y m).symm
+      simpa [ha_eq, hy_eq] using h_hi
+  separation := by
+    intro a x y ha hx hy hxy
+    -- Convert `ident <` to `IsPositive`.
+    have ha' : IsPositive a := (isPositive_iff_ident_lt a).mpr ha
+    have hx' : IsPositive x := (isPositive_iff_ident_lt x).mpr hx
+    have hy' : IsPositive y := (isPositive_iff_ident_lt y).mpr hy
+    -- Apply the strict semigroup separation, then weaken the upper bound.
+    obtain ⟨n, m, h_lo, h_hi⟩ :=
+      KSSeparationSemigroupStrict.sep_strict (a := a) (x := x) (y := y) ha' hx' hy' hxy
+    refine ⟨n.val, m.val, m.pos, ?_, ?_⟩
+    ·
+      have hx_eq : iterate_op x m.val = iterate_op_pnat x m := (iterate_op_pnat_eq x m).symm
+      have ha_eq : iterate_op a n.val = iterate_op_pnat a n := (iterate_op_pnat_eq a n).symm
+      simpa [hx_eq, ha_eq] using h_lo
+    ·
+      have ha_eq : iterate_op a n.val = iterate_op_pnat a n := (iterate_op_pnat_eq a n).symm
+      have hy_eq : iterate_op y m.val = iterate_op_pnat y m := (iterate_op_pnat_eq y m).symm
+      simpa [ha_eq, hy_eq] using (le_of_lt h_hi)
+
 end SeparationEquivalence
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
-open KSSemigroupBase KnuthSkillingAlgebraBase
+open KSSemigroupBase KnuthSkillingMonoidBase
 open KnuthSkillingAlgebra
 
 /-!
@@ -623,9 +703,9 @@ These small lemmas are convenient when reasoning about “new atom commutes with
 assumptions (see `Additive/Proofs/GridInduction/Core/Induction/Goertzel.lean`).
 -/
 
-namespace KnuthSkillingAlgebra
+namespace KSSemigroupBase
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KSSemigroupBase α]
 
 /-- `x` and `y` commute with respect to `KnuthSkillingAlgebraBase.op`. -/
 def Commutes (x y : α) : Prop :=
@@ -639,12 +719,6 @@ theorem symm {x y : α} (h : Commutes (α := α) x y) : Commutes (α := α) y x 
 
 theorem refl (x : α) : Commutes (α := α) x x :=
   rfl
-
-theorem ident_left (x : α) : Commutes (α := α) ident x := by
-  simp [Commutes, op_ident_left, op_ident_right]
-
-theorem ident_right (x : α) : Commutes (α := α) x ident := by
-  simp [Commutes, op_ident_left, op_ident_right]
 
 /-- If `x` commutes with `y` and `z`, then it commutes with `y ⊕ z`. -/
 theorem op_right {x y z : α} (hxy : Commutes (α := α) x y) (hxz : Commutes (α := α) x z) :
@@ -678,15 +752,43 @@ namespace centralizer
 theorem mem_iff {x y : α} : y ∈ centralizer (α := α) x ↔ Commutes (α := α) x y := by
   rfl
 
-theorem ident_mem (x : α) : ident ∈ centralizer (α := α) x :=
-  Commutes.ident_right (α := α) x
-
 theorem closed_op {x y z : α} (hy : y ∈ centralizer (α := α) x) (hz : z ∈ centralizer (α := α) x) :
     op y z ∈ centralizer (α := α) x :=
   Commutes.op_right (α := α) (x := x) (y := y) (z := z) hy hz
 
 end centralizer
 
-end KnuthSkillingAlgebra
+end KSSemigroupBase
+
+/-!
+## Identity-based commutation conveniences
+
+The identity element is not part of `KSSemigroupBase`, so “commutes with `ident`” lemmas live here.
+-/
+
+section WithIdentity
+
+open KnuthSkillingMonoidBase
+
+variable {α : Type*} [KnuthSkillingMonoidBase α]
+
+namespace KSSemigroupBase.Commutes
+
+theorem ident_left (x : α) : KSSemigroupBase.Commutes (α := α) ident x := by
+  simp [KSSemigroupBase.Commutes, op_ident_left, op_ident_right]
+
+theorem ident_right (x : α) : KSSemigroupBase.Commutes (α := α) x ident := by
+  simp [KSSemigroupBase.Commutes, op_ident_left, op_ident_right]
+
+end KSSemigroupBase.Commutes
+
+namespace KSSemigroupBase.centralizer
+
+theorem ident_mem (x : α) : ident ∈ KSSemigroupBase.centralizer (α := α) x :=
+  KSSemigroupBase.Commutes.ident_right (α := α) x
+
+end KSSemigroupBase.centralizer
+
+end WithIdentity
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling

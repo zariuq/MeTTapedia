@@ -34,7 +34,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
-open KnuthSkillingAlgebraBase
+open KnuthSkillingMonoidBase
 
 /-! ## KSModel: The Bridge Structure -/
 
@@ -50,7 +50,7 @@ v additive on disjoint joins.
 Normalization (v(⊤) = 1) happens when we compose with the representation theorem
 and choose a scale factor for Θ. -/
 structure KSModel (E S : Type*)
-    [PlausibilitySpace E] [KnuthSkillingAlgebraBase S] where
+    [PlausibilitySpace E] [KnuthSkillingMonoidBase S] where
   /-- The valuation function from events to the plausibility scale -/
   v : E → S
   /-- Monotonicity: larger events have larger plausibility -/
@@ -62,7 +62,7 @@ structure KSModel (E S : Type*)
 
 namespace KSModel
 
-variable {E S : Type*} [PlausibilitySpace E] [KnuthSkillingAlgebraBase S]
+variable {E S : Type*} [PlausibilitySpace E] [KnuthSkillingMonoidBase S]
 variable (m : KSModel E S)
 
 /-! ### Basic Properties -/
@@ -130,7 +130,7 @@ end KSModel
 /-- When we have a KSModel and a representation Θ : S → ℝ, we can compose them
     to get a valuation v_ℝ : E → ℝ that satisfies the classical probability axioms. -/
 structure KSModelWithRepresentation (E S : Type*)
-    [PlausibilitySpace E] [KnuthSkillingAlgebraBase S] extends KSModel E S where
+    [PlausibilitySpace E] [KnuthSkillingMonoidBase S] extends KSModel E S where
   /-- The representation into reals -/
   Θ : S → ℝ
   /-- Θ is an order embedding -/
@@ -142,7 +142,7 @@ structure KSModelWithRepresentation (E S : Type*)
 
 namespace KSModelWithRepresentation
 
-variable {E S : Type*} [PlausibilitySpace E] [KnuthSkillingAlgebraBase S]
+variable {E S : Type*} [PlausibilitySpace E] [KnuthSkillingMonoidBase S]
 variable (m : KSModelWithRepresentation E S)
 
 /-- The composed valuation: events → ℝ -/
@@ -194,10 +194,11 @@ noncomputable instance instKSAlgebraNNReal : KnuthSkillingAlgebraBase NNReal whe
   ident_le := zero_le
 
 /-- In instKSAlgebraNNReal, op is addition -/
-theorem nnreal_op_is_add : @op NNReal instKSAlgebraNNReal.toKSSemigroupBase = (· + ·) := rfl
+theorem nnreal_op_is_add :
+    @op NNReal instKSAlgebraNNReal.toKnuthSkillingMonoidBase.toKSSemigroupBase = (· + ·) := rfl
 
 /-- In instKSAlgebraNNReal, ident is zero -/
-theorem nnreal_ident_is_zero : @ident NNReal instKSAlgebraNNReal = 0 := rfl
+theorem nnreal_ident_is_zero : @ident NNReal instKSAlgebraNNReal.toKnuthSkillingMonoidBase = 0 := rfl
 
 /-! ## Example: Three-Element Chain with NNReal Scale -/
 
@@ -312,7 +313,8 @@ noncomputable def standardThreeKSModel : KSModel Three' NNReal :=
 theorem threeKSModel_additive (p : NNReal) (hp0 : 0 < p) (hp1 : p < 1)
     {a b : Three'} (h : Disjoint a b) :
     (threeKSModel p hp0 hp1).v (a ⊔ b) =
-    @op NNReal instKSAlgebraNNReal.toKSSemigroupBase ((threeKSModel p hp0 hp1).v a) ((threeKSModel p hp0 hp1).v b) :=
+    @op NNReal instKSAlgebraNNReal.toKnuthSkillingMonoidBase.toKSSemigroupBase
+      ((threeKSModel p hp0 hp1).v a) ((threeKSModel p hp0 hp1).v b) :=
   (threeKSModel p hp0 hp1).v_sup_of_disjoint h
 
 /-- Three' is not Boolean -/

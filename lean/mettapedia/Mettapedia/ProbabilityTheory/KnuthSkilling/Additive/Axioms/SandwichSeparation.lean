@@ -1,14 +1,17 @@
 /-
 # Sandwich Separation (iterate/power “sandwich” axiom)
 
-This file develops the consequences of the iterate/power “sandwich” separation axiom
+This file develops the consequences of the iterate/power "sandwich" separation axiom
 (`KSSeparation`) over the core Knuth–Skilling algebraic structure `KnuthSkillingAlgebraBase`.
 
-## Status: COMPLETE (2026-01-08)
+## Key theorems
 
-✅ Key theorems proven (under `[KnuthSkillingAlgebraBase α] [KSSeparation α]`):
-- `op_archimedean_of_separation`: separation ⇒ Archimedean (unbounded iterates)
-- `ksSeparation_implies_comm`: separation ⇒ commutativity (mass-counting argument)
+- `op_archimedean_of_separation` (under `[KnuthSkillingMonoidBase α] [KSSeparation α]`):
+  separation ⇒ Archimedean-style unbounded iterates (no `ident_le` needed)
+- `ThetaAdditivity.ksSeparation_implies_comm` (under `[KnuthSkillingMonoidBase α] [KSSeparation α]`):
+  separation ⇒ commutativity on the positive cone (mass-counting argument)
+- `ksSeparation_implies_commutative` (under `[KnuthSkillingAlgebraBase α] [KSSeparation α]`):
+  global commutativity corollary (uses `ident_le` to reduce all elements to the positive cone)
 
 ## Separation (“sandwich”) axiom
 
@@ -40,7 +43,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Algebra
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
 open Classical
-open KnuthSkillingAlgebraBase
+open KnuthSkillingMonoidBase KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 
 /-!
@@ -63,8 +66,10 @@ namespace SandwichSeparation
 /-!
 ### Base Structure
 
-This development works over the core K&S structure `KnuthSkillingAlgebraBase` (associativity,
-identity, strict monotonicity, and `ident` as bottom), together with the iterate/power “sandwich” axiom `KSSeparation`.
+This development splits assumptions by sub-result:
+- Archimedean-style consequences use only `KnuthSkillingMonoidBase` + `KSSeparation`.
+- Commutativity on the positive cone uses only `KnuthSkillingMonoidBase` + `KSSeparation`.
+- Global commutativity additionally uses `KnuthSkillingAlgebraBase` (the `ident_le` reduction).
 
 Both are defined in the main K&S modules:
 - `Mettapedia.ProbabilityTheory.KnuthSkilling.Basic` (`KnuthSkillingAlgebraBase`)
@@ -79,77 +84,39 @@ If separation holds, then for any a > ident and any x, we can find n with x < a^
 
 namespace SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebraBase α]
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
-/-- Any element is bounded by some power of any base element above identity. -/
+/-- Archimedean-style bound for *positive* `x` (no `ident_le` needed).
+
+If `x > ident`, apply separation to `x < x ⊕ x`, producing `x^m < a^n`. Since `m ≥ 1`,
+monotonicity of iterates gives `x = x^1 ≤ x^m < a^n`. -/
+theorem archimedean_of_separation_pos [KSSeparation α] (a : α) (ha : ident < a) (x : α)
+    (hx : ident < x) : ∃ n : ℕ, x ≤ iterate_op a n := by
+  -- x < x ⊕ x
+  have hx_lt_xx : x < op x x := by
+    calc x = op ident x := (op_ident_left x).symm
+      _ < op x x := op_strictMono_left x hx
+  have hx_xx_pos : ident < op x x := lt_trans hx hx_lt_xx
+  -- Separate between x and x⊕x using base a
+  rcases KSSeparation.separation (a := a) (x := x) (y := op x x) ha hx hx_xx_pos hx_lt_xx with
+    ⟨n, m, hm_pos, hxm_lt_an, _⟩
+  -- x ≤ x^m for m ≥ 1
+  have hmono : Monotone (iterate_op x) := (iterate_op_strictMono x hx).monotone
+  have hm1 : 1 ≤ m := Nat.succ_le_iff.mp hm_pos
+  have hx_le_xm : x ≤ iterate_op x m := by
+    -- iterate_op x 1 = x
+    simpa [iterate_op_one] using (hmono hm1)
+  exact ⟨n, le_of_lt (lt_of_le_of_lt hx_le_xm hxm_lt_an)⟩
+
+/-- Any element is bounded by some power of any base element above identity.
+
+For `x ≤ ident`, take `n = 0`. For `x > ident`, reduce to `archimedean_of_separation_pos`. -/
 theorem archimedean_of_separation [KSSeparation α] (a : α) (ha : ident < a) (x : α) :
     ∃ n : ℕ, x ≤ iterate_op a n := by
-  -- We need to show x ≤ a^n for some n
   by_cases hx : x ≤ ident
-  -- Case 1: x ≤ ident. Then x ≤ ident = a^0.
   · exact ⟨0, by simpa [iterate_op_zero] using hx⟩
-  -- Case 2: ident < x.
-  push_neg at hx
-  -- Further case split: x ≤ a or a < x
-  by_cases hxa : x ≤ a
-  -- Case 2a: x ≤ a = a^1
-  · exact ⟨1, by simpa [iterate_op_one] using hxa⟩
-  -- Case 2b: a < x. Use separation with base a on (a, x).
-  push_neg at hxa
-  -- We have ident < a < x, so apply separation to (a, x) with base a
-  have ha' : ident < a := ha
-  have hax : a < x := hxa
-  rcases KSSeparation.separation (a := a) (x := a) (y := x) ha ha' hx hax with
-    ⟨n, m, hm_pos, h_lower, h_upper⟩
-  -- h_lower: a^m < a^n
-  -- h_upper: a^n ≤ x^m
-  -- From h_lower, we get m < n (since a > ident makes iteration strictly increasing)
-  -- We have a^n ≤ x^m, and we want x ≤ a^k for some k
-  -- Actually this gives us the wrong direction...
-
-  -- Let me reconsider. We want: ∃n, x ≤ a^n
-  -- Separation gives us: ∃n,m: x^m < a^n (taking y large enough)
-
-  -- Use separation differently: find y > x and apply separation to (x, y) with base a
-  -- But we need to pick a specific y...
-
-  -- Actually, let's use x and x⊕x. We know ident < x < x⊕x.
-  have hx2 : x < op x x := by
-    calc x = op x ident := (op_ident_right x).symm
-      _ < op x x := op_strictMono_right x hx
-
-  have hx2_pos : ident < op x x := lt_trans hx hx2
-
-  rcases KSSeparation.separation (a := a) (x := x) (y := op x x) ha hx hx2_pos hx2 with
-    ⟨n, m, hm_pos, h_lower', h_upper'⟩
-  -- h_lower': x^m < a^n
-  -- h_upper': a^n ≤ (x⊕x)^m
-
-  -- From x^m < a^n, we have that a^n exceeds x^m, but we want to bound x by some a^k.
-  -- Key insight: Since m ≥ 1, we have x = x^1 ≤ x^m < a^n (if iteration is monotone in n)
-
-  -- Actually we need: x = x^1 < x^m when m > 1
-  -- This requires showing iterate_op is strictly increasing in the exponent
-
-  -- For now, let me just show x < a^n when x^1 < a^n, which requires m = 1 case
-  -- or a bound on iterates...
-
-  -- The cleanest approach: x^1 < x^m < a^n when m > 1, so x < a^n.
-  -- When m = 1: x^1 < a^n directly.
-
-  cases m with
-  | zero => exact absurd hm_pos (Nat.not_lt_zero 0)
-  | succ k =>
-    -- m = k + 1 ≥ 1
-    -- x^(k+1) < a^n means x ⊕ x^k < a^n
-    -- Since ident ≤ x^k, we have x ≤ x ⊕ x^k = x^(k+1) < a^n
-    have hiter_ge_base : x ≤ iterate_op x (k + 1) := by
-      calc x = op x ident := (op_ident_right x).symm
-        _ ≤ op x (iterate_op x k) := by
-          apply op_strictMono_right x |>.monotone
-          exact ident_le (iterate_op x k)
-        _ = iterate_op x (k + 1) := rfl
-    exact ⟨n, le_of_lt (lt_of_le_of_lt hiter_ge_base h_lower')⟩
+  · have hx' : ident < x := lt_of_not_ge hx
+    exact archimedean_of_separation_pos (α := α) a ha x hx'
 
 /-- Nat.iterate (op a) n a equals iterate_op a (n + 1) -/
 theorem nat_iterate_eq_iterate_op_succ (a : α) (n : ℕ) :
@@ -207,7 +174,7 @@ contradicts the upper bound.
 
 namespace CommutativityProof
 
-variable {α : Type*} [KnuthSkillingAlgebraBase α]
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
 /-- Helper: iterate_op is strictly monotone in exponent for positive base -/
 theorem iterate_op_strictMono_exp (a : α) (ha : ident < a) : StrictMono (iterate_op a) := by
@@ -245,7 +212,7 @@ This enables `xy_succ_gt_yx`: (x⊕y)^{k+1} > (y⊕x)^k, which combined with
 
 namespace ThetaAdditivity
 
-variable {α : Type*} [KnuthSkillingAlgebraBase α]
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
 /-!
 ### The Mass Counting Argument
@@ -556,11 +523,11 @@ both have θ = 3m, leaving no room for a^n between them.
 -/
 
 /-!
-## Summary: What We’ve Proven
+## Summary
 
-**Claims** (both PROVEN):
-- KSSeparation → Archimedean ✓ (`op_archimedean_of_separation`)
-- KSSeparation → Commutative ✓ (`ksSeparation_implies_comm`)
+**Main results**:
+- KSSeparation → Archimedean (`op_archimedean_of_separation`)
+- KSSeparation → Commutative (`ksSeparation_implies_comm`)
 
 **Proof Strategy for Commutativity**:
 

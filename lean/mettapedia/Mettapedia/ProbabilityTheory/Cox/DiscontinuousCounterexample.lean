@@ -3,6 +3,9 @@ import Mathlib.Algebra.Module.Rat
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Analysis.SpecificLimits.Basic
+import Mathlib.LinearAlgebra.Basis.Defs
+import Mathlib.LinearAlgebra.Basis.VectorSpace
+import Mathlib.NumberTheory.Real.Irrational
 import Mathlib.Topology.Algebra.Module.Basic
 import Mathlib.Topology.Algebra.Order.Archimedean
 import Mathlib.Topology.Constructions.SumProd
@@ -20,7 +23,7 @@ are NOT equivalent to the standard product rule.
 ## Main Results
 
 1. `discontinuousAdditive_exists`: There exists a discontinuous additive function ℝ → ℝ
-   (classical result, Hamel 1905 - we axiomatize it)
+   (classical result, Hamel 1905 - constructed here from a ℚ-basis)
 2. `cox_underdetermined_without_continuity`: Without continuity, Cox's axioms admit
    multiple non-equivalent solutions
 
@@ -55,7 +58,7 @@ noncomputable section
 /-!
 ## Part 1: Discontinuous Additive Functions Exist
 
-We axiomatize the classical result (Hamel, 1905) that discontinuous
+We construct the classical result (Hamel, 1905) that discontinuous
 additive functions exist. The full construction requires:
 1. ℝ is a ℚ-vector space (Module ℚ ℝ)
 2. Existence of a Hamel basis (requires Axiom of Choice)
@@ -98,21 +101,72 @@ theorem continuous_additive_is_linear (f : ℝ → ℝ) (hf : IsAdditive f) (hc 
     simpa [f_add, smul_eq_mul, mul_comm, mul_left_comm, mul_assoc] using hsmul
   simpa [mul_comm] using hsmul'
 
-/-- **Axiom (Hamel, 1905)**: There exist discontinuous additive functions.
+/-- **Hamel (1905)**: There exist discontinuous additive functions.
 
-This is a classical result requiring the Axiom of Choice. The construction:
-1. Let B be a Hamel basis for ℝ over ℚ (exists by Zorn's lemma)
-2. B is uncountable (since dim_ℚ(ℝ) = |ℝ|)
-3. Pick b₁, b₂ ∈ B with b₂/b₁ ∉ ℚ
-4. Define g(b₁) = b₂, g(b₂) = b₁, g(b) = b for other basis elements
-5. Extend g ℚ-linearly to f : ℝ → ℝ
-6. f is additive but f(b₁)/b₁ ≠ f(b₂)/b₂, so f ≠ c·id for any c
-7. By the theorem above, f is not continuous
-
-We axiomatize this rather than construct it, as the Hamel basis construction
-is complex in Mathlib and the mathematical content is well-established.
+We give a concrete construction using a ℚ-basis of ℝ. The key idea:
+1. `{1, √2}` is ℚ-linearly independent (since √2 is irrational).
+2. Extend this set to a basis `B` of ℝ over ℚ.
+3. Define a ℚ-linear map `f` that sends the basis element `√2` to `1`
+   and all other basis elements to `0`.
+4. Then `f` is additive but not of the form `c·x`, hence not continuous.
 -/
-axiom discontinuousAdditive_exists : ∃ f : ℝ → ℝ, IsAdditive f ∧ ¬Continuous f
+theorem discontinuousAdditive_exists : ∃ f : ℝ → ℝ, IsAdditive f ∧ ¬Continuous f := by
+  classical
+  let s : Set ℝ := {(1 : ℝ), Real.sqrt 2}
+  have hlin : LinearIndepOn ℚ id s := by
+    refine linearIndepOn_id_pair (K := ℚ) (x := (1 : ℝ)) (y := Real.sqrt 2) ?_ ?_
+    · norm_num
+    · intro a
+      have hrat : (Real.sqrt 2) ≠ (a : ℝ) := (irrational_sqrt_two.ne_rat a)
+      have hrat' : (a : ℝ) ≠ (Real.sqrt 2) := hrat.symm
+      simpa [smul_eq_mul] using hrat'
+  let B : Module.Basis (hlin.extend (Set.subset_univ s)) ℚ ℝ :=
+    Module.Basis.extend (K := ℚ) (V := ℝ) hlin
+  have hsubset : s ⊆ hlin.extend (Set.subset_univ s) :=
+    Module.Basis.subset_extend (K := ℚ) (V := ℝ) hlin
+  have h1 : (1 : ℝ) ∈ hlin.extend (Set.subset_univ s) := hsubset (by simp [s])
+  have h2 : (Real.sqrt 2) ∈ hlin.extend (Set.subset_univ s) := hsubset (by simp [s])
+  let x1 : hlin.extend (Set.subset_univ s) := ⟨1, h1⟩
+  let x2 : hlin.extend (Set.subset_univ s) := ⟨Real.sqrt 2, h2⟩
+  have hx12 : x1 ≠ x2 := by
+    intro h
+    have h' : (1 : ℝ) = Real.sqrt 2 := by
+      simpa [x1, x2] using congrArg Subtype.val h
+    exact (irrational_sqrt_two.ne_rat (1 : ℚ)) (by simpa using h'.symm)
+  let g : hlin.extend (Set.subset_univ s) → ℝ := fun x => if x = x2 then 1 else 0
+  let fLin : ℝ →ₗ[ℚ] ℝ := B.constr ℚ g
+  let f : ℝ → ℝ := fun x => fLin x
+  have hf_add : IsAdditive f := by
+    intro x y
+    change fLin (x + y) = fLin x + fLin y
+    exact map_add fLin x y
+  have hf1 : f 1 = 0 := by
+    have hfx1 : f 1 = g x1 := by
+      simpa [f, fLin, B, x1] using
+        (B.constr_basis (S := ℚ) (f := g) (i := x1))
+    have hgx1 : g x1 = 0 := by
+      simp [g, x1, x2, hx12]
+    simpa [hgx1] using hfx1
+  have hf2 : f (Real.sqrt 2) = 1 := by
+    have hfx2 : f (Real.sqrt 2) = g x2 := by
+      simpa [f, fLin, B, x2] using
+        (B.constr_basis (S := ℚ) (f := g) (i := x2))
+    have hgx2 : g x2 = 1 := by
+      simp [g, x2]
+    simpa [hgx2] using hfx2
+  have hnot : ¬Continuous f := by
+    intro hcont
+    obtain ⟨c, hc⟩ := continuous_additive_is_linear f hf_add hcont
+    have hc1 : f 1 = c := by simpa using hc 1
+    have hc0 : c = 0 := by simpa [hf1] using hc1.symm
+    have hfs : f (Real.sqrt 2) = 0 := by
+      simpa [hc0] using hc (Real.sqrt 2)
+    have : (1 : ℝ) = 0 := by
+      have hfs' := hfs
+      rw [hf2] at hfs'
+      exact hfs'
+    exact one_ne_zero this
+  exact ⟨f, hf_add, hnot⟩
 
 /-!
 ## Part 2: Cox Without Continuity is Underdetermined
@@ -168,7 +222,7 @@ private lemma swapF_assoc (b : ℝ) : ∀ x y z, swapF b (swapF b x y) z = swapF
         simp [swapF, ψ]
       _ = ψ x + (ψ y + ψ z - 1) - 1 := by simp [hψ]
       _ = ψ x + ψ y + ψ z - 2 := by ring
-  simpa [h1, h2]
+  simp [h1, h2]
 
 private lemma swapF_one_left (b : ℝ) (hb : b ≠ 1) : ∀ y, swapF b 1 y = y := by
   intro y
@@ -295,8 +349,14 @@ theorem nonstandard_conjunction_exists :
         _ = Equiv.swap (0 : ℝ) 2 (1 : ℝ) := by norm_num
         _ = (1 : ℝ) := hswap1
     have hright : standardF 0 2 = (0 : ℝ) := by simp [standardF]
-    have : (1 : ℝ) = 0 := by simpa [hleft, hright] using hval
-    exact one_ne_zero this
+    have hval' : C.F 0 2 = standardF 0 2 := by
+      change (fun F => F 0 2) C.F = (fun F => F 0 2) standardF
+      exact hval
+    have hcontra : (1 : ℝ) = 0 := by
+      have hval'' := hval'
+      rw [hleft, hright] at hval''
+      exact hval''
+    exact one_ne_zero hcontra
   exact ⟨C, hdisc, hneq⟩
 
 /-- Main theorem: Cox's axioms without continuity admit multiple
@@ -345,11 +405,17 @@ theorem cox_underdetermined_without_continuity :
         simpa using (Equiv.swap_apply_of_ne_of_ne (a := 0) (b := 3) h40 h43)
       calc
         C₂.F 0 2 = Equiv.swap (0 : ℝ) 3 (3 + 2 - 1) := by
-          simp [C₂, swapF, Equiv.swap_apply_left, Equiv.swap_apply_right, hswap2]
+          simp [C₂, swapF, Equiv.swap_apply_left, hswap2]
         _ = Equiv.swap (0 : ℝ) 3 (4 : ℝ) := by norm_num
         _ = (4 : ℝ) := hswap4
-    have : (1 : ℝ) = 4 := by simpa [hleft, hright] using hval
-    exact by linarith
+    have hval' : C₁.F 0 2 = C₂.F 0 2 := by
+      change (fun F => F 0 2) C₁.F = (fun F => F 0 2) C₂.F
+      exact hval
+    have hcontra : (1 : ℝ) = 4 := by
+      have hval'' := hval'
+      rw [hleft, hright] at hval''
+      exact hval''
+    exact by linarith [hcontra]
   exact ⟨C₁, C₂, hdisc₁, hdisc₂, hneq⟩
 
 /-!
@@ -399,10 +465,10 @@ theorem discontinuousAdditive_graph_dense (f : ℝ → ℝ)
       simpa [smul_eq_mul] using (Rat.cast_smul_eq_qsmul (R := ℝ) (q := q) (x := f x))
     calc
       f ((q : ℝ) * x) = f (q • x) := by
-        simpa [hcast_x]
+        simp [hcast_x]
       _ = q • f x := hf_rat q x
       _ = (q : ℝ) * f x := by
-        simpa [hcast_fx]
+        simp [hcast_fx]
   have hx0 : ∃ x, f x ≠ f 1 * x := by
     by_contra h
     push_neg at h
@@ -424,16 +490,16 @@ theorem discontinuousAdditive_graph_dense (f : ℝ → ℝ)
     let a : ℝ := p.1 - b * x0
     refine ⟨(a, b), ?_⟩
     ext
-    · simp [L, a, add_comm, add_left_comm, add_assoc, sub_eq_add_neg]
+    · simp [L, a, add_comm, add_left_comm, sub_eq_add_neg]
     ·
       have hbdet : b * det = p.2 - p.1 * f 1 := by
-        simpa [b, det] using (div_mul_cancel₀ (p.2 - p.1 * f 1) hdet)
+        simp [b, det, hdet]
       calc
         a * f 1 + b * f x0
             = (p.1 - b * x0) * f 1 + b * f x0 := by simp [a]
         _ = p.1 * f 1 + b * (f x0 - x0 * f 1) := by ring
-        _ = p.1 * f 1 + b * det := by simp [det, mul_comm, mul_left_comm, mul_assoc]
-        _ = p.1 * f 1 + (p.2 - p.1 * f 1) := by simpa [hbdet]
+        _ = p.1 * f 1 + b * det := by simp [det, mul_comm]
+        _ = p.1 * f 1 + (p.2 - p.1 * f 1) := by simp [hbdet]
         _ = p.2 := by ring
   have hL_dense : DenseRange L := Function.Surjective.denseRange hL_surj
   let f_rat : ℚ × ℚ → ℝ × ℝ :=

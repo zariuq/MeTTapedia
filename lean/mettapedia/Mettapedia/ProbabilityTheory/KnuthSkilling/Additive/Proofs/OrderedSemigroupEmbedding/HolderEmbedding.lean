@@ -23,7 +23,7 @@ without needing the custom infrastructure in `AlimovEmbedding.lean`.
 
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms.AnomalousPairs
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Representation
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Globalization
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.GlobalizationInterface
 -- Import Eric's OrderedSemigroups
 import OrderedSemigroups.Holder
 -- Import for Multiplicative type tag lemmas
@@ -39,7 +39,11 @@ open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 open Multiplicative (toAdd ofAdd)
 open Subsemigroup
 
-variable {α : Type*} [KSSemigroupBase α]
+variable {α : Type*}
+
+section Semigroup
+
+variable [KSSemigroupBase α]
 
 /-! ## Section 1: K&S Semigroup provides Semigroup structure
 
@@ -112,10 +116,11 @@ instance KSSemigroupBase_to_PowPNat : Pow α ℕ+ where
 instance KSSemigroupBase_to_PNatPowAssoc : PNatPowAssoc α where
   ppow_add k n x := by
     -- x^(k+n) = x^k * x^n
-    -- using iterate_op_pnat_add
-    simpa [Pow.pow, iterate_op_pnat_add] using (iterate_op_pnat_add x k n)
+    change iterate_op_pnat x (k + n) = op (iterate_op_pnat x k) (iterate_op_pnat x n)
+    exact iterate_op_pnat_add x k n
   ppow_one x := by
-    simpa [Pow.pow] using (iterate_op_pnat_one x)
+    change iterate_op_pnat x 1 = x
+    exact iterate_op_pnat_one x
 
 /-! ## Section 4: Definition equivalence
 
@@ -192,10 +197,12 @@ theorem theta_preserves_order [NoAnomalousPairs α]
     have h1 : iso a ≤ iso b := hθ
     exact iso.map_le_map_iff'.mp h1
 
+end Semigroup
+
 section WithIdentity
 
-variable [KnuthSkillingAlgebraBase α]
-open KnuthSkillingAlgebraBase KnuthSkillingAlgebra
+variable [KnuthSkillingMonoidBase α]
+open KnuthSkillingMonoidBase KnuthSkillingAlgebra
 
 theorem theta_ident [NoAnomalousPairs α]
     (G : Subsemigroup (Multiplicative ℝ)) (iso : α ≃*o G) :
@@ -232,6 +239,10 @@ theorem theta_ident [NoAnomalousPairs α]
   linarith
 
 end WithIdentity
+
+section Semigroup
+
+variable [KSSemigroupBase α]
 
 theorem theta_additive [NoAnomalousPairs α]
     (G : Subsemigroup (Multiplicative ℝ)) (iso : α ≃*o G) :
@@ -275,10 +286,12 @@ noncomputable def holder_representation [NoAnomalousPairs α] : RepresentationRe
     order_preserving := (Classical.choose_spec h).1
     additive := (Classical.choose_spec h).2 }
 
+end Semigroup
+
 section WithIdentity
 
-variable [KnuthSkillingAlgebraBase α]
-open KnuthSkillingAlgebraBase KnuthSkillingAlgebra
+variable [KnuthSkillingMonoidBase α]
+open KnuthSkillingMonoidBase KnuthSkillingAlgebra
 
 /-- **K&S Appendix A via Hölder**: `NoAnomalousPairs α` implies the representation theorem.
 
@@ -303,49 +316,53 @@ theorem identity_gives_canonical_normalization [NoAnomalousPairs α]
     theta_from_embedding G iso ident = 0 :=
   theta_ident G iso
 
-/-- The representation is unique up to positive scaling.
-    Identity pins down the additive constant (Θ(ident) = 0).
-    A scale convention (e.g., choosing a reference element) pins down the scale.
+/-- Minimal uniqueness theorem (identity-only):
 
-    Proof strategy: Both embeddings respect the same order structure on iterates, so
-    a^m ≤ x^n ↔ m·Θ₁(a) ≤ n·Θ₁(x) ↔ m·Θ₂(a) ≤ n·Θ₂(x).
-    This forces Θ₁(x)/Θ₁(a) = Θ₂(x)/Θ₂(a) for positive elements. -/
-theorem representation_uniqueness_structure [NoAnomalousPairs α]
+If two real-valued representations are:
+- order-preserving
+- additive for `op`
+- normalized at the identity (`Θ(ident)=0`)
+
+then, once we choose a single reference element `a > ident`, the two representations differ
+by a positive multiplicative scale factor.
+
+This version does **not** assume `ident_le` (i.e. it only needs `KnuthSkillingMonoidBase`),
+so it is reusable outside the probability-theory setting. -/
+theorem representation_uniqueness_structure_of_ref
     (Θ₁ Θ₂ : α → ℝ)
     (h1_ord : ∀ a b : α, a ≤ b ↔ Θ₁ a ≤ Θ₁ b)
     (h2_ord : ∀ a b : α, a ≤ b ↔ Θ₂ a ≤ Θ₂ b)
     (h1_add : ∀ x y : α, Θ₁ (op x y) = Θ₁ x + Θ₁ y)
     (h2_add : ∀ x y : α, Θ₂ (op x y) = Θ₂ x + Θ₂ y)
     (h1_ident : Θ₁ ident = 0)
-    (h2_ident : Θ₂ ident = 0) :
+    (h2_ident : Θ₂ ident = 0)
+    (a : α) (ha_pos : ident < a) :
     ∃ c : ℝ, 0 < c ∧ ∀ x : α, Θ₂ x = c * Θ₁ x := by
-  -- Handle trivial case: if all elements equal ident
-  by_cases htriv : ∀ x : α, x = ident
-  · refine ⟨1, one_pos, fun x => ?_⟩
-    simp only [htriv x, h1_ident, h2_ident, mul_zero]
-  -- Non-trivial: get a reference element a > ident
-  push_neg at htriv
-  obtain ⟨a, ha_ne⟩ := htriv
-  have ha_pos : ident < a := lt_of_le_of_ne (ident_le a) (Ne.symm ha_ne)
   -- Both Θ values are positive for a > ident
   have hΘ1a_pos : 0 < Θ₁ a := by
     have h := (h1_ord ident a).mp (le_of_lt ha_pos)
     rw [h1_ident] at h
     rcases h.lt_or_eq with hlt | heq
     · exact hlt
-    · exfalso; have : a ≤ ident := (h1_ord a ident).mpr (by rw [h1_ident]; exact le_of_eq heq.symm)
+    · exfalso
+      have : a ≤ ident :=
+        (h1_ord a ident).mpr (by rw [h1_ident]; exact le_of_eq heq.symm)
       exact not_lt.mpr this ha_pos
   have hΘ2a_pos : 0 < Θ₂ a := by
     have h := (h2_ord ident a).mp (le_of_lt ha_pos)
     rw [h2_ident] at h
     rcases h.lt_or_eq with hlt | heq
     · exact hlt
-    · exfalso; have : a ≤ ident := (h2_ord a ident).mpr (by rw [h2_ident]; exact le_of_eq heq.symm)
+    · exfalso
+      have : a ≤ ident :=
+        (h2_ord a ident).mpr (by rw [h2_ident]; exact le_of_eq heq.symm)
       exact not_lt.mpr this ha_pos
+
   -- Define the scaling factor
-  let c := Θ₂ a / Θ₁ a
+  let c : ℝ := Θ₂ a / Θ₁ a
   have hc_pos : 0 < c := div_pos hΘ2a_pos hΘ1a_pos
   refine ⟨c, hc_pos, fun x => ?_⟩
+
   -- Iteration lemmas
   have h_iter_Θ1 : ∀ y : α, ∀ n : ℕ, Θ₁ (iterate_op y n) = n * Θ₁ y := fun y n => by
     induction n with
@@ -359,6 +376,7 @@ theorem representation_uniqueness_structure [NoAnomalousPairs α]
     | succ n ih =>
       rw [iterate_op_succ, h2_add, ih]
       simp only [Nat.cast_succ]; ring
+
   -- For positive y, the ratios Θ₁(y)/Θ₁(a) and Θ₂(y)/Θ₂(a) are equal
   -- because both embeddings see the same order on a^m vs y^n
   have h_ratio_pos : ∀ y : α, ident < y → Θ₁ y / Θ₁ a = Θ₂ y / Θ₂ a := fun y hy => by
@@ -367,19 +385,21 @@ theorem representation_uniqueness_structure [NoAnomalousPairs α]
       rw [h1_ident] at h
       rcases h.lt_or_eq with hlt | heq
       · exact hlt
-      · exfalso; have : y ≤ ident := (h1_ord y ident).mpr (by rw [h1_ident]; exact le_of_eq heq.symm)
+      · exfalso
+        have : y ≤ ident :=
+          (h1_ord y ident).mpr (by rw [h1_ident]; exact le_of_eq heq.symm)
         exact not_lt.mpr this hy
     have hΘ2y_pos : 0 < Θ₂ y := by
       have h := (h2_ord ident y).mp (le_of_lt hy)
       rw [h2_ident] at h
       rcases h.lt_or_eq with hlt | heq
       · exact hlt
-      · exfalso; have : y ≤ ident := (h2_ord y ident).mpr (by rw [h2_ident]; exact le_of_eq heq.symm)
+      · exfalso
+        have : y ≤ ident :=
+          (h2_ord y ident).mpr (by rw [h2_ident]; exact le_of_eq heq.symm)
         exact not_lt.mpr this hy
-    -- Key: a^m ≤ y^n ↔ m·Θ₁(a) ≤ n·Θ₁(y) ↔ m·Θ₂(a) ≤ n·Θ₂(y)
-    -- This means the set {m/n : a^m ≤ y^n} defines the same real for both ratios
+
     by_contra hne
-    -- Either Θ₁(y)/Θ₁(a) < Θ₂(y)/Θ₂(a) or vice versa
     have hne' : Θ₁ y / Θ₁ a ≠ Θ₂ y / Θ₂ a := hne
     rcases hne'.lt_or_gt with hlt | hlt
     · -- Case 1: Θ₁(y)/Θ₁(a) < Θ₂(y)/Θ₂(a)
@@ -389,7 +409,8 @@ theorem representation_uniqueness_structure [NoAnomalousPairs α]
         exact_mod_cast lt_trans this hq_lo
       have hn_pos : 0 < q.den := q.den_pos
       have hm_pos : 0 < q.num := Rat.num_pos.mpr hq_pos
-      let m := q.num.toNat; let n := q.den
+      let m := q.num.toNat
+      let n := q.den
       have hn_pos' : (0 : ℝ) < n := Nat.cast_pos.mpr hn_pos
       -- Cast q to ℝ: q = (q.num : ℝ) / q.den
       have hq_lo' : Θ₁ y / Θ₁ a < (q.num : ℝ) / q.den := by
@@ -428,7 +449,8 @@ theorem representation_uniqueness_structure [NoAnomalousPairs α]
         exact_mod_cast lt_trans this hq_lo
       have hn_pos : 0 < q.den := q.den_pos
       have hm_pos : 0 < q.num := Rat.num_pos.mpr hq_pos
-      let m := q.num.toNat; let n := q.den
+      let m := q.num.toNat
+      let n := q.den
       have hn_pos' : (0 : ℝ) < n := Nat.cast_pos.mpr hn_pos
       have hq_lo' : Θ₂ y / Θ₂ a < (q.num : ℝ) / q.den := by
         convert hq_lo using 1; simp [Rat.cast_def]
@@ -459,21 +481,20 @@ theorem representation_uniqueness_structure [NoAnomalousPairs α]
           field_simp at h; rw [hm_eq]; linarith
         linarith
       exact absurd h_order_2 (not_lt.mpr (le_of_lt h_order_1))
+
   -- Main proof by cases on x
   rcases lt_trichotomy x ident with hx_lt | hx_eq | hx_gt
-  · -- Case x < ident: need Archimedean property
-    -- There exists n such that op x (a^n) > ident
-    -- Then use additivity to reduce to positive case
+  · -- Case x < ident: shift by a sufficiently large iterate of a to enter the positive cone.
     have hΘ1x_neg : Θ₁ x < 0 := by
       have h := (h1_ord x ident).mp (le_of_lt hx_lt)
       rw [h1_ident] at h
       rcases h.lt_or_eq with hlt | heq
       · exact hlt
-      · exfalso; have : ident ≤ x := (h1_ord ident x).mpr (by rw [h1_ident]; exact le_of_eq heq.symm)
+      · exfalso
+        have : ident ≤ x :=
+          (h1_ord ident x).mpr (by rw [h1_ident]; exact le_of_eq heq.symm)
         exact not_lt.mpr this hx_lt
-    -- Find n such that x ⊕ a^n > ident
-    -- Θ₁(x ⊕ a^n) = Θ₁(x) + n·Θ₁(a), want this > 0
-    -- So need n > -Θ₁(x)/Θ₁(a)
+    -- Find n such that Θ₁(x ⊕ a^n) > 0.
     have h_exists : ∃ n : ℕ, 0 < Θ₁ x + n * Θ₁ a := by
       use Nat.ceil ((-Θ₁ x) / Θ₁ a) + 1
       have hceil : (-Θ₁ x) / Θ₁ a ≤ Nat.ceil ((-Θ₁ x) / Θ₁ a) := Nat.le_ceil _
@@ -481,26 +502,20 @@ theorem representation_uniqueness_structure [NoAnomalousPairs α]
         have : (Nat.ceil ((-Θ₁ x) / Θ₁ a) : ℝ) + 1 > (-Θ₁ x) / Θ₁ a := by linarith
         convert this using 1
         simp only [Nat.cast_add, Nat.cast_one]
-      -- From M > -Θ₁(x)/Θ₁(a), multiply by Θ₁(a) > 0: M * Θ₁(a) > -Θ₁(x)
-      have hMa : ((Nat.ceil ((-Θ₁ x) / Θ₁ a) + 1 : ℕ) : ℝ) * Θ₁ a > -Θ₁ x := by
+      have hMa :
+          ((Nat.ceil ((-Θ₁ x) / Θ₁ a) + 1 : ℕ) : ℝ) * Θ₁ a > -Θ₁ x := by
         have h := mul_lt_mul_of_pos_right hM_gt hΘ1a_pos
         rwa [div_mul_cancel₀ _ (ne_of_gt hΘ1a_pos)] at h
       linarith
     obtain ⟨n, hn⟩ := h_exists
-    -- So Θ₁(x ⊕ a^n) > 0, meaning x ⊕ a^n > ident
     have hsum_pos : ident < op x (iterate_op a n) := by
-      -- Derive strict order from non-strict: a < b ↔ ¬(b ≤ a)
       rw [lt_iff_not_ge]
       intro hle
       have := (h1_ord (op x (iterate_op a n)) ident).mp hle
       rw [h1_add, h_iter_Θ1, h1_ident] at this
       linarith
-    -- Apply ratio equality to the positive element
     have h_sum_ratio := h_ratio_pos (op x (iterate_op a n)) hsum_pos
-    -- Θ₁(x ⊕ a^n)/Θ₁(a) = Θ₂(x ⊕ a^n)/Θ₂(a)
-    -- (Θ₁(x) + n·Θ₁(a))/Θ₁(a) = (Θ₂(x) + n·Θ₂(a))/Θ₂(a)
     rw [h1_add, h2_add, h_iter_Θ1, h_iter_Θ2] at h_sum_ratio
-    -- Θ₁(x)/Θ₁(a) + n = Θ₂(x)/Θ₂(a) + n
     have hΘ1a_ne : Θ₁ a ≠ 0 := ne_of_gt hΘ1a_pos
     have hΘ2a_ne : Θ₂ a ≠ 0 := ne_of_gt hΘ2a_pos
     have h_x_ratio : Θ₁ x / Θ₁ a = Θ₂ x / Θ₂ a := by
@@ -510,21 +525,54 @@ theorem representation_uniqueness_structure [NoAnomalousPairs α]
         field_simp [hΘ2a_ne]
       rw [h1, h2] at h_sum_ratio
       linarith
-    -- Θ₂(x) = (Θ₂(a)/Θ₁(a)) · Θ₁(x)
     have : Θ₂ x = Θ₂ a / Θ₁ a * Θ₁ x := by
       have := congr_arg (· * Θ₂ a) h_x_ratio
       field_simp [hΘ1a_ne, hΘ2a_ne] at this ⊢
       linarith
-    exact this
+    simpa [c] using this
   · -- Case x = ident
     simp [hx_eq, h1_ident, h2_ident]
-  · -- Case x > ident: direct application
+  · -- Case ident < x
     have h_x_ratio := h_ratio_pos x hx_gt
     have : Θ₂ x = Θ₂ a / Θ₁ a * Θ₁ x := by
       have := congr_arg (· * Θ₂ a) h_x_ratio
       field_simp at this ⊢
       linarith
-    exact this
+    simpa [c] using this
+
+end WithIdentity
+
+section IdentIsMin
+
+variable [KnuthSkillingAlgebraBase α]
+open KnuthSkillingAlgebraBase KnuthSkillingAlgebra
+
+/-- The representation is unique up to positive scaling.
+    Identity pins down the additive constant (Θ(ident) = 0).
+    A scale convention (e.g., choosing a reference element) pins down the scale.
+
+    Proof strategy: Both embeddings respect the same order structure on iterates, so
+    a^m ≤ x^n ↔ m·Θ₁(a) ≤ n·Θ₁(x) ↔ m·Θ₂(a) ≤ n·Θ₂(x).
+    This forces Θ₁(x)/Θ₁(a) = Θ₂(x)/Θ₂(a) for positive elements. -/
+theorem representation_uniqueness_structure [NoAnomalousPairs α]
+    (Θ₁ Θ₂ : α → ℝ)
+    (h1_ord : ∀ a b : α, a ≤ b ↔ Θ₁ a ≤ Θ₁ b)
+    (h2_ord : ∀ a b : α, a ≤ b ↔ Θ₂ a ≤ Θ₂ b)
+    (h1_add : ∀ x y : α, Θ₁ (op x y) = Θ₁ x + Θ₁ y)
+    (h2_add : ∀ x y : α, Θ₂ (op x y) = Θ₂ x + Θ₂ y)
+    (h1_ident : Θ₁ ident = 0)
+    (h2_ident : Θ₂ ident = 0) :
+    ∃ c : ℝ, 0 < c ∧ ∀ x : α, Θ₂ x = c * Θ₁ x := by
+  classical
+  by_cases htriv : ∀ x : α, x = ident
+  · refine ⟨1, one_pos, fun x => ?_⟩
+    simp only [htriv x, h1_ident, h2_ident, mul_zero]
+  push_neg at htriv
+  obtain ⟨a, ha_ne⟩ := htriv
+  have ha_pos : ident < a := lt_of_le_of_ne (ident_le a) (Ne.symm ha_ne)
+  exact
+    representation_uniqueness_structure_of_ref (α := α)
+      Θ₁ Θ₂ h1_ord h2_ord h1_add h2_add h1_ident h2_ident a ha_pos
 
 /-! ## Normalized Hölder Representation -/
 
@@ -539,7 +587,8 @@ noncomputable def holder_normalized_representation [NoAnomalousPairs α] :
 
 /-! ## Unified Representation Interface
 
-The common interfaces `RepresentationResult` and `NormalizedRepresentationResult` now live in\n+`Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Representation`. -/
+The common interfaces `RepresentationResult` and `NormalizedRepresentationResult` live in
+`Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Representation`. -/
 
 /-! ## Grid Path Representation
 
@@ -557,13 +606,13 @@ with the canonical `Θ(ident) = 0` normalization. -/
 
 section GridPath
 open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive in
-variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α] [RepresentationGlobalization α]
+variable {α : Type*} [KnuthSkillingMonoidBase α] [RepresentationGlobalization α]
 
 open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive in
 /-- Grid path produces a NormalizedRepresentationResult (with identity).
     This wraps the `RepresentationGlobalization` class into our unified interface. -/
 noncomputable def grid_normalized_representation {α : Type*}
-    [KnuthSkillingAlgebraBase α] [KSSeparation α] [RepresentationGlobalization α] :
+    [KnuthSkillingMonoidBase α] [RepresentationGlobalization α] :
     NormalizedRepresentationResult α :=
   let h := RepresentationGlobalization.exists_Theta (α := α)
   { Θ := Classical.choose h
@@ -577,10 +626,9 @@ open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive in
     When identity exists, `KSSeparationSemigroup` implies `KSSeparation` via
     the equivalence in `Algebra.lean`. This function shows the integration. -/
 noncomputable def grid_normalized_representation_from_semigroup_sep {α : Type*}
-    [KnuthSkillingAlgebraBase α] [KSSeparationSemigroup α]
-    [@RepresentationGlobalization α _ (KSSeparation_of_KSSeparationSemigroup)] :
+    [KnuthSkillingMonoidBase α] [RepresentationGlobalization α] :
     NormalizedRepresentationResult α :=
-  @grid_normalized_representation α _ KSSeparation_of_KSSeparationSemigroup _
+  grid_normalized_representation (α := α)
 
 open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive in
 /-- Grid path produces a RepresentationResult (identity-free interface).
@@ -593,7 +641,7 @@ open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive in
     **Use case**: When you want to work with the unified `RepresentationResult`
     interface across all paths (Hölder, Grid, Cuts) without committing to identity. -/
 noncomputable def grid_representation {α : Type*}
-    [KnuthSkillingAlgebraBase α] [KSSeparation α] [RepresentationGlobalization α] :
+    [KnuthSkillingMonoidBase α] [RepresentationGlobalization α] :
     RepresentationResult α :=
   (grid_normalized_representation (α := α)).toRepresentationResult
 
@@ -603,13 +651,13 @@ end GridPath
 
 **Hölder Path** (`NoAnomalousPairs`):
 - Works on `KSSemigroupBase` (identity-free) → `RepresentationResult`
-- Works on `KnuthSkillingAlgebraBase` (with identity) → `NormalizedRepresentationResult`
+- With an identity (and `ident` as minimum) → `NormalizedRepresentationResult`
 - Uses Eric Luap's OrderedSemigroups library
 
 **Grid Path** (`KSSeparation` or `KSSeparationSemigroup`):
-- Requires `KnuthSkillingAlgebraBase` (with identity) → `NormalizedRepresentationResult`
-- Uses multi-grid construction and globalization via "triple family trick"
-- With identity: `KSSeparation ↔ KSSeparationSemigroup` (both work via equivalence)
+- Construction uses an identity, packaged as `RepresentationGlobalization` on `KnuthSkillingMonoidBase`.
+- Forgetting normalization gives the identity-free interface `RepresentationGlobalizationSemigroup`.
+- With identity: `KSSeparation ↔ KSSeparationSemigroup` (via `Core/Algebra.lean`).
 
 **Cuts Path** (`KSSeparationStrict`):
 - Requires `KnuthSkillingAlgebraBase` (with identity) → `RepresentationResult` / `NormalizedRepresentationResult`
@@ -666,6 +714,6 @@ theorem holder_is_canonical {α : Type*} [KnuthSkillingAlgebraBase α] [NoAnomal
 
 end PathEquivalence
 
-end WithIdentity
+end IdentIsMin
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.OrderedSemigroupEmbedding.HolderEmbedding

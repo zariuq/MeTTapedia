@@ -69,7 +69,7 @@ open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 open scoped Pointwise
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α]
 
 /-!
 ## §1: Commutativity from Separation (imported)
@@ -79,7 +79,9 @@ We use the already-proven fact that KSSeparation implies commutativity.
 
 /-- Commutativity follows from KSSeparation. -/
 theorem op_comm' : ∀ x y : α, op x y = op y x :=
-  fun x y => Core.op_comm_of_KSSeparation x y
+  fun x y =>
+    Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core.op_comm_of_KSSeparation
+      (α := α) x y
 
 /-!
 ## §2: Iteration and Power Notation
@@ -1948,8 +1950,8 @@ theorem Θ_cuts_pnat_add (a : α) (ha : IsPositive a)
 The following theorems provide a **genuinely identity-free** cuts representation:
 
 - `Θ_cuts_pnat` : Defined via Dedekind cuts using ℕ+ iteration (no n=0 case)
-- `Θ_cuts_pnat_strictMono` : **Strict monotonicity** (x < y ↔ Θ(x) < Θ(y)) - FULLY PROVEN
-- `Θ_cuts_pnat_add` : **Additivity** (Θ(x⊕y) = Θ(x) + Θ(y)) - FULLY PROVEN
+- `Θ_cuts_pnat_strictMono` : Strict monotonicity (x < y ↔ Θ(x) < Θ(y))
+- `Θ_cuts_pnat_add` : Additivity (Θ(x⊕y) = Θ(x) + Θ(y))
 
 **Usage**: For a positive ordered semigroup where all elements satisfy `IsPositive`,
 these theorems provide a complete representation without needing identity.
@@ -1981,8 +1983,6 @@ using only identity-free constructs: `IsPositive`, `iterate_op_pnat`, and
 
 section UnifiedInterface
 variable [KSSeparationStrict α]
-
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.OrderedSemigroupEmbedding.HolderEmbedding
 
 /-- The cuts path produces a `RepresentationResult` (order + additivity).
     Uses identity internally but the output doesn't require `Θ ident = 0` to be useful. -/
@@ -2029,8 +2029,6 @@ natural case for ordered semigroups without identity element.
 
 section IdentityFreeUnifiedInterface
 variable [KSSeparationSemigroupStrict α]
-
-open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.OrderedSemigroupEmbedding.HolderEmbedding
 
 /-- **Identity-Free Cuts Representation**: Produces a `RepresentationResult` using
     only identity-free constructs (`Θ_cuts_pnat`, `IsPositive`, `iterate_op_pnat`).

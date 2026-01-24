@@ -4,6 +4,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms.SandwichSepara
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core
 
 open Classical
+open KSSemigroupBase
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 open SandwichSeparation.SeparationToArchimedean
@@ -26,7 +27,38 @@ WITHOUT using logarithms or real number representations.
 These provide algebraic tools for comparing exponential growth without needing ℝ.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+/-! ## Identity-Free Core (ℕ+ iteration, no identity) -/
+
+section Semigroup
+
+variable {α : Type*} [KSSemigroupBase α]
+
+/-- If a < b, then ℕ+ powers preserve this inequality. -/
+theorem iterate_op_pnat_lt_of_base_lt {a b : α} (hab : a < b) (k : ℕ+) :
+    iterate_op_pnat a k < iterate_op_pnat b k :=
+  iterate_op_pnat_strictMono_base hab k
+
+/-- Exponent monotonicity (identity-free): for positive a, a^m < a^n when m < n. -/
+theorem iterate_op_pnat_strictMono' (a : α) (ha : IsPositive a) : StrictMono (iterate_op_pnat a) :=
+  iterate_op_pnat_strictMono a ha
+
+/-- Comparing different bases when larger base has larger exponent (identity-free). -/
+theorem mixed_power_comparison_favorable_pnat {a b : α} (hb : IsPositive b) (hab : a < b)
+    {m n : ℕ+} (hmn : m ≤ n) :
+    iterate_op_pnat a m < iterate_op_pnat b n := by
+  have h1 : iterate_op_pnat a m < iterate_op_pnat b m :=
+    iterate_op_pnat_lt_of_base_lt hab m
+  have h2 : iterate_op_pnat b m ≤ iterate_op_pnat b n :=
+    iterate_op_pnat_mono b hb hmn
+  exact lt_of_lt_of_le h1 h2
+
+end Semigroup
+
+/-! ## Identity-Based (ℕ iteration, with identity) -/
+
+section WithIdentity
+
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
 /-!
 ## Section 1: Fundamental Growth Rate Lemmas (No Separation Needed)
@@ -216,5 +248,7 @@ theorem noncommutativity_gives_constraints (x y : α)
 theorem gap_persists_in_powers (x y : α) (hlt : op x y < op y x) (k : ℕ) (hk : 0 < k) :
     iterate_op (op x y) k < iterate_op (op y x) k :=
   iterate_op_lt_of_base_lt hlt k hk
+
+end WithIdentity
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core

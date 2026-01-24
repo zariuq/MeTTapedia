@@ -4,6 +4,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms.SandwichSepara
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 
 open Classical
+open KSSemigroupBase
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 open SandwichSeparation.SeparationToArchimedean
@@ -32,7 +33,56 @@ If φ is injective (or order-reflecting), this implies x ⊕ y = y ⊕ x.
 This is a **Hölder-type theorem** for ordered monoids.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+/-!
+## Identity-Free Representability
+
+The core commutativity argument only needs:
+- an additive homomorphism into ℝ
+- strict monotonicity (injectivity)
+
+It does **not** require identity. We record a minimal semigroup interface here.
+-/
+
+section Semigroup
+
+variable {α : Type*} [KSSemigroupBase α]
+
+/-- A representation of an ordered semigroup into ℝ (identity-free). -/
+structure RepresentationSemigroup (α : Type*) [KSSemigroupBase α] where
+  /-- The representation function. -/
+  φ : α → ℝ
+  /-- Preserves operation (homomorphism). -/
+  φ_op : ∀ x y : α, φ (op x y) = φ x + φ y
+  /-- Strictly monotone (implies injectivity). -/
+  φ_strictMono : StrictMono φ
+
+/-- An ordered semigroup is representable if it admits a representation. -/
+class RepresentableSemigroup (α : Type*) [KSSemigroupBase α] where
+  /-- There exists a representation. -/
+  repr : RepresentationSemigroup α
+
+/-- Identity-free commutativity: representable semigroups are commutative. -/
+theorem representable_semigroup_implies_commutative [inst : RepresentableSemigroup α] :
+    ∀ x y : α, op x y = op y x := by
+  intro x y
+  let φ := inst.repr.φ
+  have h1 : φ (op x y) = φ x + φ y := inst.repr.φ_op x y
+  have h2 : φ x + φ y = φ y + φ x := add_comm (φ x) (φ y)
+  have h3 : φ y + φ x = φ (op y x) := (inst.repr.φ_op y x).symm
+  have h_eq : φ (op x y) = φ (op y x) := by
+    calc φ (op x y)
+        = φ x + φ y := h1
+      _ = φ y + φ x := h2
+      _ = φ (op y x) := h3
+  exact inst.repr.φ_strictMono.injective h_eq
+
+end Semigroup
+
+/-! ## Identity-Based Representability (Normalized) -/
+
+section WithIdentity
+
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
 /-!
 ## Definition: Representability
@@ -48,7 +98,7 @@ The last condition (order-preservation) ensures φ is injective.
 -/
 
 /-- A representation of an ordered monoid into ℝ≥0. -/
-structure Representation (α : Type*) [KnuthSkillingAlgebra α] where
+structure Representation (α : Type*) [KnuthSkillingMonoidBase α] where
   /-- The representation function. -/
   φ : α → ℝ
   /-- Preserves identity. -/
@@ -59,7 +109,7 @@ structure Representation (α : Type*) [KnuthSkillingAlgebra α] where
   φ_strictMono : StrictMono φ
 
 /-- An ordered monoid is representable if it admits a representation. -/
-class Representable (α : Type*) [inst : KnuthSkillingAlgebra α] where
+class Representable (α : Type*) [inst : KnuthSkillingMonoidBase α] where
   /-- There exists a representation. -/
   repr : Representation α
 
@@ -257,5 +307,7 @@ We're still stuck! The core issue:
 Given that even Goertzel's proof has gaps and Codex treats it as an axiom,
 option 4 might be the pragmatic choice for now.
 -/
+
+end WithIdentity
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.Additive

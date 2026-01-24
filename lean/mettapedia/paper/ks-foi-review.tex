@@ -548,7 +548,7 @@ full generality would require additional work---see Section~\ref{sec:sigma-addit
 \textbf{Note on finite vs.\ infinite}: K\&S's \emph{exposition} focuses on finite event
 lattices, but their \emph{axioms} impose no finiteness restriction. Our formalization
 proves the opposite: any nontrivial model of K\&S's axioms has an \textbf{infinite value
-scale} (see \texttt{NoFiniteModel.lean}). The event lattice can be infinite; one simply
+scale} (see \texttt{Additive/Counterexamples/NoFiniteModel.lean}). The event lattice can be infinite; one simply
 loses the bridge to $\sigma$-additivity that Kolmogorov's framework provides directly.
 
 \subsubsection{K\&S and the $\sigma$-Additivity Question}
@@ -859,13 +859,13 @@ J.~Y. Halpern,
 \textbf{K\&S Section} & \textbf{Lean Files} & \textbf{Key Theorems} \\
 \midrule
 \endhead
-Appendix A & \texttt{Separation/HolderEmbedding.lean} & \texttt{holder\_embedding} \\
-Appendix A & \texttt{AppendixA/Main.lean} & \texttt{appendixA\_representation} \\
-Appendix B & \texttt{ProductTheorem/ScaledMultRep.lean} & \texttt{psi\_is\_exponential} \\
-Appendix C & \texttt{VariationalTheorem.lean} & \texttt{entropy\_form\_solution} \\
-Section 7 & \texttt{ConditionalProbability/Basic.lean} & \texttt{chainProductRule} \\
-Section 7 & \texttt{ConditionalProbability/Basic.lean} & \texttt{bayesTheorem} \\
-Section 8 & \texttt{InformationEntropy.lean} & \texttt{klDivergence} \\
+Appendix A & \texttt{Additive/Proofs/.../HolderEmbedding.lean} & \texttt{holder\_embedding} \\
+Appendix A & \texttt{Additive/Main.lean} & \texttt{appendixA\_representation} \\
+Appendix B & \texttt{Multiplicative/ScaledMultRep.lean} & \texttt{psi\_is\_exponential} \\
+Appendix C & \texttt{Variational/Main.lean} & \texttt{entropy\_form\_solution} \\
+Section 7 & \texttt{Probability/ConditionalProbability/Basic.lean} & \texttt{chainProductRule} \\
+Section 7 & \texttt{Probability/ConditionalProbability/Basic.lean} & \texttt{bayesTheorem} \\
+Section 8 & \texttt{Information/InformationEntropy.lean} & \texttt{klDivergence} \\
 \bottomrule
 \end{longtable}
 

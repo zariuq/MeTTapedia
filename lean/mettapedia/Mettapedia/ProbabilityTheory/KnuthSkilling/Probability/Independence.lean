@@ -479,7 +479,7 @@ theorem cox_implies_kolmogorov (hC : CoxConsistency α v) :
   · exact v.val_top
 
 /-- Alias for backward compatibility -/
-@[deprecated cox_implies_kolmogorov (since := "2025-12-19")]
+@[deprecated cox_implies_kolmogorov (since := "2026-01-24")]
 abbrev ks_implies_kolmogorov := @cox_implies_kolmogorov
 
 /-! ## Inclusion-Exclusion (2 events)
@@ -582,7 +582,7 @@ From these alone, we get the **Representation Theorem** (`ks_representation_theo
 ### What We DERIVED (Theorems, not axioms):
 
 #### Foundational Results:
-- ✅ **Representation Theorem**: K&S algebra → (ℝ≥0, +) (`ks_representation_theorem`) [TODO: full proof]
+- ✅ **Representation Theorem**: K&S algebra → (ℝ≥0, +) (see `ProbabilityDerivation.ks_representation_theorem`)
 - ✅ **φ = id on [0,1]**: Regraduation is identity (`regrade_eq_id_on_unit`)
 - ✅ **Additivity derived**: From `WeakRegraduation` + `combine_rat` (`additive_derived`)
 - ✅ **combine_fn = +**: Derived from regraduation (`combine_fn_eq_add_derived`)
@@ -639,11 +639,7 @@ than Kolmogorov's axioms!
 - **Classes**: 2 (KnuthSkillingAlgebra, PlausibilitySpace)
 - **Structures**: 6 (Valuation, WeakRegraduation, Regraduation, CoxConsistency, NegationData, CoxConsistencyFull)
 - **Theorems proven**: 30+ (representation, all probability rules, independence, XOR counterexample)
-- **Sorries**: 4 total:
-  - `ks_representation_theorem` (1): Abstract version - connects class to construction [nice-to-have]
-  - `Regraduation.fromWeakRegraduation` (3): Edge cases for x+y > 1 or values ∉ [0,1]
-    These are **provably unreachable in probability**: for disjoint events a, b,
-    we always have v(a) + v(b) = v(a ⊔ b) ≤ 1. Not used in any probability theorem.
+- **Sorries**: 0 (all sorries resolved)
 
 ### Key Proofs Complete:
 - ✅ `strictMono_eq_id_of_eq_on_rat`: Density argument (φ = id on ℚ → φ = id on ℝ)

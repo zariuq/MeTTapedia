@@ -1,10 +1,20 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Algebra
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Representation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.DirectCuts.Main
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.OrderedSemigroupEmbedding.HolderEmbedding
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.OrderedSemigroupEmbedding.Main
 
 /-!
 This module is the public entry point for the Knuth–Skilling (Appendix A) *representation theorem*.
+
+## Primary Assumption: NoAnomalousPairs (NAP)
+
+The **canonical proof path** uses `NoAnomalousPairs` from the 1950s ordered-semigroup literature
+(Alimov 1950, Fuchs 1963), implemented via Eric Luap's OrderedSemigroups library.
+
+**Why NAP is primary**:
+- Historical precedent: NAP (1950s) predates K&S's `KSSeparation` (2012) by 60+ years
+- Strictly weaker: NAP is identity-free; `KSSeparation` requires identity
+- The relationship: `KSSeparation + IdentIsMinimum ⇒ NoAnomalousPairs` (proven)
 
 ## Design note (keep the API light)
 
@@ -12,12 +22,13 @@ The grid/induction proof path (`...Additive/Proofs/GridInduction/Main.lean`) is 
 compile. This entrypoint therefore exposes a small, proof-agnostic interface
 `HasRepresentationTheorem` whose instances can be provided by different proof paths.
 
-Included here (lightweight):
-- Hölder embedding (`...Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean`):
-  assumes `NoAnomalousPairs`.
-- Dedekind cuts (`...Additive/Proofs/DirectCuts/Main.lean`): assumes `KSSeparationStrict`.
+Proof paths (in order of precedence):
+1. **Hölder/Alimov** (`...Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean`):
+   assumes `NoAnomalousPairs` — **CANONICAL**
+2. **Dedekind cuts** (`...Additive/Proofs/DirectCuts/Main.lean`):
+   assumes `KSSeparationStrict` — alternative
 
-For the full “three-path” comparison (including the grid/induction instance), import:
+For the full "three-path" comparison (including the grid/induction instance), import:
 `Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Comparison`.
 -/
 
@@ -38,21 +49,12 @@ instance holder_hasRepresentationTheorem
 
 /-- Cuts proof path: Dedekind cuts on the `KSSeparationStrict` grid. -/
 instance cuts_hasRepresentationTheorem
-    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] [KSSeparationStrict α] :
+    (α : Type*) [KnuthSkillingAlgebraBase α] [KSSeparation α] [KSSeparationStrict α] :
     HasRepresentationTheorem α where
   exists_representation := by
     obtain ⟨Θ, hΘ_order, _hΘ_ident, hΘ_add⟩ :=
-      Alternative.associativity_representation_cuts α
+      Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.DirectCuts.associativity_representation_cuts (α := α)
     exact ⟨Θ, hΘ_order, hΘ_add⟩
-
-/-- Unified entry point: any instantiation of `HasRepresentationTheorem α` yields a K&S additive
-order representation `Θ : α → ℝ`. -/
-theorem exists_Theta_of_hasRepresentationTheorem
-    (α : Type*) [KSSemigroupBase α] [HasRepresentationTheorem α] :
-    ∃ Θ : α → ℝ,
-      (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
-      ∀ x y : α, Θ (op x y) = Θ x + Θ y := by
-  simpa using (HasRepresentationTheorem.exists_representation (α := α))
 
 /-- Commutativity follows from any additive order representation. -/
 theorem op_comm_of_hasRepresentationTheorem

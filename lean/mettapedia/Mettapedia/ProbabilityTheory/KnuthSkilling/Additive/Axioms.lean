@@ -10,10 +10,12 @@ This module groups the separation-related developments:
   (uses Eric Luap's OrderedSemigroups library).
 
 **Archived**:
-- `_archive/Separation/Derivation.lean`: experimental attempt to derive `KSSeparation` from structured
+- `_archive/ProbabilityTheory/KnuthSkilling/Separation/Derivation.lean`:
+  experimental attempt to derive `KSSeparation` from structured
   hypotheses (superseded by the Hölder approach).
-- `_archive/Separation/AlimovEmbedding.lean`: earlier partial Alimov embedding attempt (superseded
-  by HolderEmbedding.lean which uses Eric Luap's proven theorems).
+- `_archive/ProbabilityTheory/KnuthSkilling/Additive/Proofs/OrderedSemigroupEmbedding/AlimovEmbedding.lean`:
+  earlier partial Alimov embedding attempt (superseded by HolderEmbedding.lean which uses Eric Luap's
+  proven theorems).
 -/
 
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms.SandwichSeparation

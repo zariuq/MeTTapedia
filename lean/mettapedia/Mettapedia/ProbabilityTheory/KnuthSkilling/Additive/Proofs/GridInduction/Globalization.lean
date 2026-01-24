@@ -1,10 +1,9 @@
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.GlobalizationInterface
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 
 open Classical
-open KnuthSkillingAlgebraBase
-open KnuthSkillingAlgebra
 
 /-!
 # K&S Representation Theorem: Globalization (constructing the global `Θ`)
@@ -12,12 +11,8 @@ open KnuthSkillingAlgebra
 This file contains the globalization construction packaged as `RepresentationGlobalization`,
 together with the main instance `representationGlobalization_of_KSSeparationStrict`.
 
-The short “public API” theorems (representation theorem statement + convenience wrappers) live in:
+The short "public API" theorems (representation theorem statement + convenience wrappers) live in:
 `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Proofs/GridInduction/Main.lean`.
-
-## Status: COMPLETE (2026-01-08)
-
-✅ Zero sorries, zero errors, zero warnings.
 
 ## Main Results
 
@@ -66,50 +61,10 @@ normalizing to an arbitrary "anchor element" instead of `ident`.
 See `MultiGrid.lean` section "Identity-Free Grid Definitions" for the parametric API.
 -/
 
-/-- The globalization step for the K&S representation theorem: existence of the representation Θ.
+section WithIdentity
 
-This class is automatically instantiated via `representationGlobalization_of_KSSeparationStrict`
-when `[KSSeparationStrict α]` is available. -/
-class RepresentationGlobalization (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] : Prop where
-  /-- Existence of an order embedding `Θ : α → ℝ` turning `op` into `+`. -/
-  exists_Theta :
-    ∃ Θ : α → ℝ,
-      (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
-      Θ ident = 0 ∧
-      ∀ x y : α, Θ (op x y) = Θ x + Θ y
-
-/-- **Identity-free globalization**: Θ normalized to an anchor element instead of identity.
-
-This class works with `KSSemigroupBase` (no identity required) and `KSSeparationSemigroup`
-(identity-free separation). The anchor element plays the role that `ident` plays in the
-standard `RepresentationGlobalization`.
-
-**Relationship to `RepresentationGlobalization`**:
-When identity exists and `anchor = ident`, this is equivalent to `RepresentationGlobalization`. -/
-class RepresentationGlobalizationAnchor (α : Type*) [KSSemigroupBase α] [KSSeparationSemigroup α]
-    (anchor : α) (h_anchor : IsPositive anchor) : Prop where
-  /-- Existence of an order embedding `Θ : α → ℝ` turning `op` into `+`, with Θ(anchor) = 0. -/
-  exists_Theta :
-    ∃ Θ : α → ℝ,
-      (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
-      Θ anchor = 0 ∧
-      ∀ x y : α, Θ (op x y) = Θ x + Θ y
-
-/-!
-### Note on Anchor Normalization
-
-The `RepresentationGlobalizationAnchor` class requires `Θ(anchor) = 0` with additivity.
-However, for additive homomorphisms, `Θ(op x x) = 2*Θ(x)`, so `Θ(x) = 0` implies
-`Θ(op x x) = 0`. But for positive x, we have `op x x > x`, so `Θ(op x x) > Θ(x)`.
-
-This means **only idempotent elements** (where `op x x = x`) can have `Θ = 0`.
-In a K&S algebra, only `ident` is idempotent (`op ident ident = ident`).
-
-**Consequence**: For identity-free representations, we use `RepresentationResult`
-(from `HolderEmbedding.lean`) which has no normalization constraint, just order + additivity.
-The `RepresentationGlobalizationAnchor` class is provided for completeness but requires
-the anchor to be the unique "zero point" of any valid Θ.
--/
+open KnuthSkillingAlgebraBase
+open KnuthSkillingAlgebra
 
 /-!
 ### Separation-driven Globalization Instance
@@ -121,7 +76,7 @@ The globalization is fully proven using the "triple family trick":
 - Path independence (`DeltaSpec_unique`) establishes additivity
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α]
 
 /-- GridComm holds for any family when we have global commutativity from KSSeparation. -/
 lemma gridComm_of_KSSeparation (F : AtomFamily α k) : GridComm F := ⟨by
@@ -907,5 +862,7 @@ instance representationGlobalization_of_KSSeparation_of_denselyOrdered [DenselyO
     RepresentationGlobalization α := by
   letI : KSSeparationStrict α := KSSeparation.toKSSeparationStrict_of_denselyOrdered
   exact representationGlobalization_of_KSSeparationStrict
+
+end WithIdentity
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.Additive

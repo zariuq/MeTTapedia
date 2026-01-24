@@ -10,7 +10,7 @@ open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 open SandwichSeparation.SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α]
 
 /-!
 ## Goertzel’s v2 Lemma‑7 framing, in our vocabulary
@@ -2729,7 +2729,7 @@ lemma newAtomDecompose_of_newAtomCommutes {k : ℕ} {F : AtomFamily α k} {d : �
   intro r u m
   simpa using (iterate_op_mu_d_decompose (F := F) (d := d) hcomm r u m)
 
-private lemma op_comm_of_iter2_decompose {α : Type*} [KnuthSkillingAlgebra α] (a d : α)
+private lemma op_comm_of_iter2_decompose {α : Type*} [KnuthSkillingMonoidBase α] (a d : α)
     (h : iterate_op (op a d) 2 = op (iterate_op a 2) (iterate_op d 2)) :
     op a d = op d a := by
   -- Expand the `2`-fold iterates and cancel using strict monotonicity.
@@ -4403,12 +4403,13 @@ exactly the missing Appendix A.3.4 ingredient (paper) already isolated as the ex
 - `ChooseδBaseAdmissible` / `ChooseδBaseAdmissible_noCommon`
 - `BEmptyStrictGapSpec` / `BEmptyStrictGapSpec_noCommon`
 
-To keep the grid-induction development building warning-free, the work-in-progress proof is commented out here.
-It can be revived once the missing base-invariance lemma is proven (or replaced by an explicit
-assumption/axiom, if a countermodel is found).
+To keep the grid-induction development building warning-free, the work-in-progress proof is archived.
+
+Historical proof sketch (2025-12-26) archived to:
+`_archive/ProbabilityTheory/KnuthSkilling/Additive/Proofs/GridInduction/Core/Induction/GoertzelWIP_20251226.lean`
 -/
 
-/-  -- BEGIN WIP (2025-12-26, Opus 4.5)
+/-  Archived WIP content (547 lines)
 /-- Helper: when μ(F,r) ≤ μ(F,r0), the base-indexed A-statistic is non-positive, hence < δ. -/
 private lemma A_base_statistic_lt_chooseδ_of_mu_le
     (IH : GridBridge F) (H : GridComm F)

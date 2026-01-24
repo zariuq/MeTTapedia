@@ -20,7 +20,7 @@ We keep the lemma below because it is a good “sanity check” for why the naï
 `(x⊕y)^m = x^m ⊕ y^m` cannot be used before commutativity is established.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
 /-!
 ## Lemma: Expansion of `(x⊕y)^2` Without Commutativity

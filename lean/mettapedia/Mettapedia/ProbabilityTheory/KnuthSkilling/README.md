@@ -13,20 +13,36 @@ probability theory without assuming additivity, continuity, or differentiability
 This means no negation/complements are required—a genuine generalization of
 classical probability.
 
+## Primary Assumption: NoAnomalousPairs (NAP)
+
+The **canonical proof path** uses `NoAnomalousPairs` from the 1950s ordered-semigroup
+literature (Alimov 1950, Fuchs 1963), formalized via Eric Luap's OrderedSemigroups library.
+
+**Why NAP is primary**:
+- Historical precedent: NAP (1950s) predates K&S's `KSSeparation` (2012) by 60+ years
+- Strictly weaker: NAP is identity-free; `KSSeparation` requires identity
+- The relationship: `KSSeparation + IdentIsMinimum ⇒ NoAnomalousPairs` (proven)
+
+See `Additive/Main.lean` for the canonical assumption hierarchy.
+
 ## Two Proof Approaches
 
 We formalize **both** proofs of the representation theorem:
 
-1. **K&S-style induction** (`RepresentationTheorem/Main.lean`):
-   Grid-based inductive extension via `RepresentationGlobalization`.
+1. **Hölder/Alimov embedding** (`Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean`):
+   Uses `NoAnomalousPairs` — **CANONICAL PATH**
+   Direct embedding via Eric Luap's OrderedSemigroups library.
 
-2. **Direct Dedekind cuts** (`RepresentationTheorem/Alternative/Main.lean`):
-   Hölder-style construction adapting classical ordered group embeddings.
-   More concise and direct.
+2. **Dedekind cuts** (`Additive/Proofs/DirectCuts/Main.lean`):
+   Uses `KSSeparationStrict` — alternative path
+   Classical Dedekind cuts construction.
 
-The direct cuts approach is modeled on Hölder (1901) and Alimov (1950),
-adapted for ordered monoids. The separation axiom—adopted following a
-suggestion by B. Goertzel—provides the density condition making this work.
+3. **Grid induction** (`Additive/Proofs/GridInduction/Main.lean`):
+   Uses `KSSeparationStrict` — K&S paper's original approach
+   Most complex; kept for historical fidelity.
+
+The Hölder/Alimov approach is modeled on Alimov (1950) and Hölder (1901),
+adapted for ordered semigroups without identity.
 
 ## Main Result (Representation Theorem; Appendix A in the paper)
 
@@ -60,8 +76,8 @@ We use a minimal base with separation as the key regularity condition:
 - For any `a > ident` and `x < y`, there exist `m, n` such that `x^m < a^n ≤ y^m`
 
 **What we DERIVE (not assume!)**:
-- **Commutativity**: `op x y = op y x` — proven in `Separation/SandwichSeparation.lean`
-- **Archimedean property**: no infinitesimals — proven in `Separation/SandwichSeparation.lean`
+- **Commutativity**: `op x y = op y x` — proven in `Additive/Axioms/SandwichSeparation.lean`
+- **Archimedean property**: no infinitesimals — proven in `Additive/Axioms/SandwichSeparation.lean`
 
 ### Comparison with Other Expositions
 
@@ -95,34 +111,36 @@ class KSSeparation (α : Type*) [KnuthSkillingAlgebraBase α] : Prop where
 ```
 KnuthSkilling/
 ├── README.md                    # This file
-├── Basic.lean                   # PlausibilitySpace, Valuation, KnuthSkillingAlgebraBase
-├── Algebra.lean                 # iterate_op, basic lemmas
-├── Model.lean                   # KSModel: Events → Scale bridge, NNReal instance
-├── Separation/                  # Separation machinery
-│   ├── SandwichSeparation.lean  # KSSeparation ⇒ Commutativity + Archimedean (DERIVED!)
-│   └── Derivation.lean          # WIP derivation of KSSeparation from weaker hypotheses
-├── AxiomSystemEquivalence.lean  # Separation ⇔ representation equivalences
-├── RepresentationTheorem/       # Appendix A: main formalization
-│   ├── Main.lean                # Public API: associativity_representation
-│   ├── Alternative/             # Direct Dedekind cuts proof (Hölder-style)
-│   │   ├── Main.lean            # associativity_representation_cuts
-│   │   └── DirectCuts.lean      # The construction
-│   ├── Globalization.lean       # RepresentationGlobalization typeclass
-│   ├── Core/                    # K&S-style induction machinery
-│   └── Counterexamples/         # Why separation is necessary
-├── ProductTheorem/              # Appendix B: product operation
-│   ├── Main.lean                # Public entry point: tensor_coe_eq_mul_div_const
-│   ├── Basic.lean               # Product equation from distributivity
-│   ├── FunctionalEquation.lean  # Product equation → exponential (no sorry)
-│   ├── AczelTheorem.lean        # TensorRegularity hypothesis bundle
-│   ├── FibonacciProof.lean      # K&S's actual Appendix B proof (WIP, has sorries)
-│   └── DirectProduct.lean       # Lattice-level event product structure
-├── ProductTheorem.lean          # Import facade
+├── FoundationsOfInference.lean  # Reviewer entrypoint (imports Core + Appendices A/B/C)
+├── Core/                        # Core axiom hierarchy
+│   ├── Basic.lean               # PlausibilitySpace, Valuation, KSSemigroupBase
+│   ├── Algebra.lean             # iterate_op, KSSeparation, NoAnomalousPairs
+│   └── ScaleCompleteness.lean   # σ-additivity bridge
+├── Additive/                    # Appendix A: additive representation
+│   ├── Main.lean                # Public API: HasRepresentationTheorem
+│   ├── Axioms/                  # Axiom definitions
+│   │   ├── AnomalousPairs.lean  # NoAnomalousPairs (NAP) - PRIMARY
+│   │   └── SandwichSeparation.lean  # KSSeparation ⇒ Commutativity + Archimedean
+│   └── Proofs/                  # Three proof paths
+│       ├── OrderedSemigroupEmbedding/  # Hölder path (NAP) - CANONICAL
+│       ├── DirectCuts/          # Dedekind cuts (KSSeparationStrict)
+│       └── GridInduction/       # K&S induction (KSSeparationStrict)
+├── Multiplicative/              # Appendix B: product operation
+│   ├── Main.lean                # Public entry point
+│   └── Proofs/                  # Proof alternatives
+├── Variational/                 # Appendix C: Cauchy/log equation
+│   └── Main.lean                # Variational theorem
+├── Probability/                 # Derived probability calculus
+│   ├── ProbabilityCalculus.lean # Canonical interface for end-results
+│   └── ProbabilityDerivation.lean
+├── Information/                 # K&S Section 6/8: entropy/KL
+│   └── Main.lean
+├── ShoreJohnson/                # Shore-Johnson (1980) formalization
+│   └── Main.lean                # SJ entrypoint (first-class, import explicitly)
 ├── Examples/                    # Concrete examples
-│   ├── CoinFlip.lean            # Full pipeline: coin flip → NNReal → ℝ (Durrett 1.6.12)
-│   ├── ThreeElementChain.lean   # Non-Boolean: 3-element chain (⊥ < mid < ⊤)
-│   ├── OpenSets.lean            # Non-Boolean: open sets of ℝ with topology
-│   └── PreciseVsImpreciseGrounded.lean  # K&S → credal sets, EU vs maximin, hypercube positioning
+│   ├── CoinDie.lean             # Full pipeline: coin/die → ℝ
+│   └── PreciseVsImpreciseGrounded.lean  # K&S → credal sets, decision theory
+├── Counterexamples/             # Why axioms matter
 └── Literature/                  # Reference: Aczél, Hölder, Cox
 ```
 
@@ -130,21 +148,18 @@ KnuthSkilling/
 
 | File | Description |
 |------|-------------|
-| `Basic.lean` | Core definitions: `PlausibilitySpace`, `Valuation`, `KnuthSkillingAlgebraBase` |
-| `Model.lean` | **KSModel**: Events → Scale bridge, NNReal instance, Three' example |
-| `Separation/SandwichSeparation.lean` | **Key derivations**: `KSSeparation` ⇒ Commutativity + Archimedean |
-| `RepresentationTheorem/Main.lean` | **Appendix A (K&S proof)**: `associativity_representation` |
-| `RepresentationTheorem/Alternative/Main.lean` | **Appendix A (cuts proof)**: `associativity_representation_cuts` |
-| `AxiomSystemEquivalence.lean` | Representation ⇔ separation equivalence |
-| `ProductTheorem/Main.lean` | **Appendix B**: product theorem (tensor → scaled multiplication) |
-| `ProductTheorem/FunctionalEquation.lean` | **Appendix B**: Cauchy equation solver (no sorry!) |
-| `ProductTheorem/AczelTheorem.lean` | **Appendix B**: TensorRegularity → scaled multiplication |
-| `ProductTheorem/FibonacciProof.lean` | **Appendix B**: K&S's actual proof (Fibonacci + golden ratio, WIP) |
-| `Counterexamples/ProductFailsSeparation.lean` | NatProdLex: why separation is necessary |
-| `Examples/CoinFlip.lean` | **Full pipeline example**: coin flip → NNReal → ℝ (Durrett 1.6.12) |
-| `Examples/ThreeElementChain.lean` | **Non-Boolean example**: minimal 3-element chain with `Valuation` |
-| `Examples/OpenSets.lean` | **Non-Boolean example**: open sets of ℝ (connects to Lebesgue measure) |
-| `Examples/PreciseVsImpreciseGrounded.lean` | **Decision theory example**: K&S representations → credal sets → EU vs maximin (0 sorry) |
+| `FoundationsOfInference.lean` | **Reviewer entrypoint**: imports Core + Appendices A/B/C |
+| `Core/Basic.lean` | Core definitions: `KSSemigroupBase`, `KnuthSkillingMonoidBase` |
+| `Additive/Axioms/AnomalousPairs.lean` | **NoAnomalousPairs (NAP)**: primary assumption |
+| `Additive/Axioms/SandwichSeparation.lean` | **Key derivations**: `KSSeparation` ⇒ Commutativity + Archimedean |
+| `Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean` | **Appendix A (Hölder)**: NAP → representation — CANONICAL |
+| `Additive/Proofs/DirectCuts/Main.lean` | **Appendix A (cuts)**: KSSeparationStrict → representation |
+| `Additive/Main.lean` | **Appendix A API**: `HasRepresentationTheorem` |
+| `Multiplicative/Main.lean` | **Appendix B**: product theorem |
+| `Variational/Main.lean` | **Appendix C**: variational/Cauchy theorem |
+| `Probability/ProbabilityCalculus.lean` | **Canonical interface**: sum rule, product rule, Bayes |
+| `Examples/CoinDie.lean` | **Full pipeline example**: coin/die → ℝ |
+| `Examples/PreciseVsImpreciseGrounded.lean` | **Decision theory**: K&S → credal sets → EU vs maximin |
 
 ## The Hypercube Connection
 
@@ -191,7 +206,7 @@ nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling.RepresentationT
 **Appendix A (Representation Theorem): COMPLETE** (2026-01-11)
 - Full representation theorem proven (no `sorry`)
 - Two proof approaches: K&S induction AND direct Dedekind cuts
-- Separation ⇒ commutativity + Archimedean (see `Separation/SandwichSeparation.lean`)
+- Separation ⇒ commutativity + Archimedean (see `Additive/Axioms/SandwichSeparation.lean`)
 - Faithful representation ⇒ separation (see `AxiomSystemEquivalence.lean`)
 - Builds warning-free
 
@@ -241,15 +256,16 @@ K&S algebra structure. The bridge is the single axiom `v(a ⊔ b) = v(a) ⊕ v(b
 - `instKSAlgebraNNReal`: NNReal with addition forms a `KnuthSkillingAlgebraBase`
 - `Three'.threeKSModel`: Concrete example on the 3-element chain with NNReal scale
 
-### 2. Non-Boolean Examples ✅ RESOLVED
+### 2. Non-Boolean Examples
 
 K&S claims to work on distributive lattices without complements.
 
-**Demonstrated** in `Examples/`:
-- `ThreeElementChain.lean`: Minimal 3-element chain (⊥ < mid < ⊤) with `Valuation`
-- `OpenSets.lean`: Natural example using open sets of ℝ (topological, no complements)
+The `Examples/` directory contains concrete examples demonstrating K&S applied to finite lattices:
+- `CoinDie.lean`: Full pipeline coin/die → ℝ
+- `PreciseVsImpreciseGrounded.lean`: K&S → credal sets → decision theory
+- `ImpreciseOn7Element.lean`: Imprecise probability on 7-element lattice
 
-Both files prove their respective lattices are NOT Boolean (no complement operation exists).
+Counterexamples showing why axioms matter are in `Additive/Counterexamples/`.
 
 ### 3. Decision Theory Example ✅ COMPLETE (2026-01-21)
 
@@ -282,13 +298,14 @@ Not in Mathlib. Classical result but requires density argument.
 
 ## Countermodels (why the extra axioms matter)
 
-- `RepresentationTheorem/Counterexamples/SemidirectNoSeparation.lean`: an Archimedean ordered associative monoid
-  which is noncommutative and fails `KSSeparation` (so “Archimedean semigroup ⇒ commutative” is
+- `Additive/Counterexamples/SemidirectNoSeparation.lean`: an Archimedean ordered associative monoid
+  which is noncommutative and fails `KSSeparation` (so "Archimedean semigroup ⇒ commutative" is
   false).
-- `RepresentationTheorem/Counterexamples/ProductFailsSeparation.lean`: a commutative ordered monoid with
+- `Additive/Counterexamples/ProductFailsSeparation.lean`: a commutative ordered monoid with
   infinitesimals (lexicographic product), failing the sandwich separation axiom `KSSeparation`
   even though addition is commutative (and in particular it is not Archimedean, so it is not a
   `KnuthSkillingAlgebra`).
+- `Additive/Counterexamples/KSSeparationNotDerivable.lean`: proves NAP must be postulated, not derived.
 
 ## References
 

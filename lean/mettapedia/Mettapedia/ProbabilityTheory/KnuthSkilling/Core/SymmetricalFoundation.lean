@@ -27,9 +27,8 @@ The paper explicitly cites FOI Appendix A:
 4. **Born Rule**: The uniform phase prior + additivity of mean rates forces p(x) = |x|²
    (Eq. 28).
 
-## Proof Status
+## Key Results
 
-PROVEN:
 - Sum rule from FOI (sumRule_from_FOI)
 - Product rule for proportions (productRule)
 - Associativity of all three product types
@@ -39,8 +38,6 @@ PROVEN:
 - Selection: μ < 0 required for positive-definite norm (selection_complex_over_dual_split)
 - Norm multiplicativity for all μ (norm_multiplicative_all_mu)
 - Classification: GeneralBilinearAlgebra(a,b) ≃+* MuAlgebra(a+b²/4) (classification_bilinear_isomorphic)
-
-ALL CORE THEOREMS PROVEN - No remaining sorries in K&S Section 4 formalization.
 
 ## References
 
@@ -66,7 +63,8 @@ open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 The representation theorem (FOI Appendix A) gives Θ : α → ℝ with:
 - Order preservation: a ≤ b ↔ Θ(a) ≤ Θ(b)
 - Additivity: Θ(a ⊕ b) = Θ(a) + Θ(b)
-- Identity: Θ(ident) = 0
+
+If an identity exists, we can **normalize** by requiring Θ(ident) = 0.
 
 For probability, we interpret:
 - The "root" O of the partition tree has Θ(O) = log(total_mass)
@@ -81,8 +79,8 @@ section Probability
 
 /-- The FOI representation theorem directly gives the sum rule for measures.
 This is Equation (6) of the Symmetrical Foundation paper. -/
-theorem sumRule_from_FOI (α : Type*) [KnuthSkillingAlgebraBase α] [HasRepresentationTheorem α] :
-    ∃ Θ : α → ℝ, ∀ x y : α, Θ (KnuthSkillingAlgebraBase.op x y) = Θ x + Θ y := by
+theorem sumRule_from_FOI (α : Type*) [KSSemigroupBase α] [HasRepresentationTheorem α] :
+    ∃ Θ : α → ℝ, ∀ x y : α, Θ (KSSemigroupBase.op x y) = Θ x + Θ y := by
   obtain ⟨Θ, _, hΘ_add⟩ := HasRepresentationTheorem.exists_representation (α := α)
   exact ⟨Θ, hΘ_add⟩
 
@@ -92,7 +90,7 @@ This corresponds to Equation (12): p(dest ∘ source) = p(dest) / p(source)
 In the exponential form (where measure = exp(Θ)), this becomes:
   p(A|B) = exp(Θ(A)) / exp(Θ(B)) = exp(Θ(A) - Θ(B))
 -/
-noncomputable def proportionRepresentation (α : Type*) [KnuthSkillingAlgebraBase α]
+noncomputable def proportionRepresentation (α : Type*) [KSSemigroupBase α]
     (Θ : α → ℝ) (source dest : α) : ℝ :=
   Real.exp (Θ dest - Θ source)
 
@@ -102,7 +100,7 @@ This is Equation (10): p(UV ∘ VW) = p(UV) · p(VW)
 In terms of the additive representation:
   exp(Θ(U) - Θ(W)) = exp(Θ(U) - Θ(V)) · exp(Θ(V) - Θ(W))
 -/
-theorem productRule (α : Type*) [KnuthSkillingAlgebraBase α]
+theorem productRule (α : Type*) [KSSemigroupBase α]
     (Θ : α → ℝ) (u v w : α) :
     proportionRepresentation α Θ w u =
     proportionRepresentation α Θ v u * proportionRepresentation α Θ w v := by
@@ -393,27 +391,22 @@ The paper's checklist (Table in Section 5) shows:
 - Quantum: + Associativity for ∘ (needed to select among product rules)
 -/
 structure UnifiedFOIContext where
-  /-- The underlying K&S algebra (from FOI) -/
+  /-- The underlying K&S semigroup (from FOI) -/
   α : Type*
-  /-- K&S algebra instance -/
-  inst_base : KnuthSkillingAlgebraBase α
+  /-- K&S semigroup instance (identity-free) -/
+  inst_base : KSSemigroupBase α
   /-- Representation theorem instance -/
   inst_repr : @HasRepresentationTheorem α inst_base
   /-- The representation map from FOI -/
   Θ : α → ℝ
   /-- Θ preserves order -/
-  Θ_order : ∀ a b : α, @LE.le α (@Preorder.toLE α (@PartialOrder.toPreorder α
-    (@SemilatticeInf.toPartialOrder α (@Lattice.toSemilatticeInf α
-      (@LinearOrder.toLattice α inst_base.toKSSemigroupBase.toLinearOrder))))) a b ↔
-    Θ a ≤ Θ b
-  /-- Θ maps identity to 0 -/
-  Θ_ident : Θ (@KnuthSkillingAlgebraBase.ident α inst_base) = 0
+  Θ_order : ∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b
   /-- Θ is additive -/
-  Θ_add : ∀ x y : α, Θ (@KSSemigroupBase.op α inst_base.toKSSemigroupBase x y) = Θ x + Θ y
+  Θ_add : ∀ x y : α, Θ (@KSSemigroupBase.op α inst_base x y) = Θ x + Θ y
 
 /-- From a UnifiedFOIContext, extract the sum rule (FOI → Measure). -/
 theorem unifiedContext_sumRule (ctx : UnifiedFOIContext) :
-    ∀ x y, ctx.Θ (@KSSemigroupBase.op ctx.α ctx.inst_base.toKSSemigroupBase x y) = ctx.Θ x + ctx.Θ y :=
+    ∀ x y, ctx.Θ (@KSSemigroupBase.op ctx.α ctx.inst_base x y) = ctx.Θ x + ctx.Θ y :=
   ctx.Θ_add
 
 /-- From a UnifiedFOIContext, extract probability proportions (FOI → Probability). -/

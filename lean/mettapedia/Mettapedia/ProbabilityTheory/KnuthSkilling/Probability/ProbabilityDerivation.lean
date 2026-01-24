@@ -10,7 +10,7 @@ Key structures:
 - Probability rules (sum rule, product rule, Bayes' theorem, complement rule)
 -/
 
-import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Main
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Representation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Multiplicative
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Multiplicative.DirectProduct
 
@@ -25,6 +25,10 @@ Given a K&S algebra, there exists a strictly monotone map Θ : α → ℝ that
 "linearizes" the operation: Θ(x ⊕ y) = Θ(x) + Θ(y).
 
 This says: ANY structure satisfying the K&S axioms is isomorphic to (ℝ≥0, +)!
+
+Lean note: this file *does not* commit to a specific Appendix A proof path.
+We only assume the packaged conclusion `HasNormalizedRepresentation` and derive
+the probability-calculus consequences from it.
 
 **Construction** (from K&S Appendix A):
 1. Pick a reference element a with ident < a
@@ -54,15 +58,15 @@ The Born rule, probability calculus, and measure theory all follow from this.
 Note: The full constructive proof (grid extension) is in WeakRegraduation + density
 arguments below. Here we state the existence theorem cleanly. -/
 theorem ks_representation_theorem
-    [KnuthSkillingAlgebra α] [KSSeparation α]
-    [Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.RepresentationGlobalization α] :
+    [KnuthSkillingMonoidBase α]
+    [Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.HasNormalizedRepresentation α] :
     ∃ (Θ : α → ℝ),
       StrictMono Θ ∧
-        Θ KnuthSkillingAlgebraBase.ident = 0 ∧
-          (∀ x y : α, Θ (KnuthSkillingAlgebraBase.op x y) = Θ x + Θ y) := by
+        Θ (KnuthSkillingMonoidBase.ident (α := α)) = 0 ∧
+          (∀ x y : α, Θ (KSSemigroupBase.op x y) = Θ x + Θ y) := by
   classical
   obtain ⟨Θ, hΘ_order, hΘ_ident, hΘ_add⟩ :=
-    Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.associativity_representation (α := α)
+    Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.HasNormalizedRepresentation.exists_representation (α := α)
   refine ⟨Θ, ?_, hΘ_ident, ?_⟩
   · intro x y hxy
     have hx_le : x ≤ y := le_of_lt hxy
@@ -961,10 +965,7 @@ theorem bayes_theorem_ks (_hC : CoxConsistency α v) (a b : α)
   field_simp
 
 /-- Complement rule: For any element a, if b is its complement (disjoint and a ⊔ b = ⊤),
-then v(b) = 1 - v(a).
-
-TODO: The notation for complements in ComplementedLattice needs investigation.
-For now, we state this more explicitly. -/
+then v(b) = 1 - v(a). -/
 theorem complement_rule (hC : CoxConsistency α v) (a b : α)
     (h_disj : Disjoint a b) (h_top : a ⊔ b = ⊤) :
     v.val b = 1 - v.val a := by

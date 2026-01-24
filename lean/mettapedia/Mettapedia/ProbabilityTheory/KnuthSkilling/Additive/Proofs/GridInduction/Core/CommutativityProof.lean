@@ -2,7 +2,8 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Algebra
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core
 
-open Classical KnuthSkillingAlgebra
+open Classical
+open KSSemigroupBase KnuthSkillingMonoidBase KnuthSkillingAlgebra
 
 /-!
 # Formal Proof: KSSeparation Implies Commutativity
@@ -10,13 +11,14 @@ open Classical KnuthSkillingAlgebra
 NO informal arguments. ONLY formal Lean proofs.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
 /-!
 ## Step 1: Basic Facts About Powers
 -/
 
-theorem iterate_op_strictMono (a : α) (ha : ident < a) : StrictMono (iterate_op a) :=
+theorem iterate_op_strictMono (a : α) (ha : KnuthSkillingMonoidBase.ident < a) :
+    StrictMono (iterate_op a) :=
   KnuthSkillingAlgebra.iterate_op_strictMono a ha
 
 theorem iterate_op_lt_of_base_lt {a b : α} (hab : a < b) (k : ℕ) (hk : 0 < k) :
@@ -35,6 +37,10 @@ theorem iterate_op_lt_of_base_lt {a b : α} (hab : a < b) (k : ℕ) (hk : 0 < k)
         _ < op a (iterate_op b k) := op_strictMono_right a (ih hpos)
         _ < op b (iterate_op b k) := op_strictMono_left (iterate_op b k) hab
         _ = iterate_op b (k + 1) := rfl
+
+section Separation
+
+variable [KSSeparation α]
 
 /-!
 ## Step 2: The Separation Constraint
@@ -176,7 +182,8 @@ Key facts:
 Therefore: x < op x y < op y x
 -/
 
-theorem base_ordering (x y : α) (hx : ident < x) (hy : ident < y)
+omit [KSSeparation α] in
+theorem base_ordering (x y : α) (hy : KnuthSkillingMonoidBase.ident < y)
     (hlt : op x y < op y x) :
     x < op x y ∧ op x y < op y x := by
   constructor
@@ -300,5 +307,7 @@ The missing “final contradiction” has since been supplied by the mass-counti
 - `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Proofs/GridInduction/Core/SeparationImpliesCommutative.lean`
 
 Accordingly, this file is now a *historical appendix* of intermediate lemmas. -/
+
+end Separation
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core

@@ -9,11 +9,13 @@ set_option linter.unusedSectionVars false
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 
 open Classical
-open KnuthSkillingAlgebraBase
+open KnuthSkillingMonoidBase
 open KnuthSkillingAlgebra
 open SandwichSeparation.SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+section WithIdentity
+
+variable {α : Type*} [KnuthSkillingMonoidBase α] [KSSeparation α]
 
 /-! ## Phase 2: A/B/C Partition for New Types
 
@@ -144,7 +146,7 @@ The heavy separation and accuracy arguments will build on top of this. -/
 open Finset
 
 /-- A family of `k` atom types, each strictly above `ident`. -/
-structure AtomFamily (α : Type*) [KnuthSkillingAlgebra α] (k : ℕ) where
+structure AtomFamily (α : Type*) [KnuthSkillingMonoidBase α] (k : ℕ) where
   atoms : Fin k → α
   pos : ∀ i : Fin k, ident < atoms i
 
@@ -156,7 +158,7 @@ abbrev Multi (k : ℕ) := Fin k → ℕ
 
     Note: we use `foldl` to avoid any commutativity requirement on `op`. The
     order over `Finset.univ` for `Fin k` is deterministic. -/
-noncomputable def mu {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+noncomputable def mu {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) (r : Multi k) : α :=
   (List.finRange k).foldl (fun acc i => op acc (iterate_op (F.atoms i) (r i))) ident
 
@@ -543,22 +545,8 @@ lemma gridComm_of_k_eq_one {F : AtomFamily α 1} : GridComm F := ⟨by
     _ = op (iterate_op (F.atoms i₀) (s i₀)) (iterate_op (F.atoms i₀) (r i₀)) := by rw [iterate_op_add]
 ⟩
 
-/-!
-### TODO: Thread `GridComm`/`GridBridge` through extensions
-
-The global Θ-construction later in this file builds larger atom families by repeatedly
-calling `extend_grid_rep_with_atom`.  In the Knuth–Skilling induction, one should also
-transport `GridComm` (and hence `GridBridge`) across the k→k+1 step using additivity +
-injectivity of the representation.
-
-We intentionally do *not* expose a helper lemma like:
-
-`gridComm_of_k_ge_one (hk : k ≥ 1) : GridComm F`
-
-because it would be nonconstructive at this stage: for k>1, commutativity on the μ-grid
-is not available without completing the k→k+1 extension step and then deriving it from
-Θ′ additivity + injectivity (as K&S do).
--/
+/-! Thread `GridComm`/`GridBridge` through k→k+1 extensions using Θ′ additivity + injectivity.
+No generic `gridComm_of_k_ge_one` is exposed; commutativity is an inductive hypothesis. -/
 
 /-! ## Multi-type A/B/C partition using `mu` -/
 
@@ -999,10 +987,7 @@ instance gridBridge_singleton (a : α) (ha : ident < a) :
 
 /-- GridBridge for any k=1 family.
     For k=1, all multiplicities reduce to a single atom, making the bridge trivial.
-    The proof mirrors mu_scaleMult_eq_iterate_singleton using F.atoms 0.
-
-    TODO: Complete this proof - it follows the same pattern as the singleton case
-    but requires showing that mu for any k=1 family equals the singleton formula. -/
+    The proof mirrors mu_scaleMult_eq_iterate_singleton using F.atoms 0. -/
 lemma gridBridge_of_k_eq_one {F : AtomFamily α 1} : GridBridge F := by
   constructor
   intro r n
@@ -1038,13 +1023,7 @@ lemma gridBridge_of_k_eq_one {F : AtomFamily α 1} : GridBridge F := by
   -- Conclude
   rw [hnr, hiter]
 
-/-!
-### TODO: Thread `GridBridge` across extensions
-
-Similarly, we do not provide a generic lemma `gridBridge_of_k_ge_one` yet.  In the intended
-K&S induction, `GridBridge` is carried as an inductive hypothesis and re-established on the
-(k+1)-grid at the end of `extend_grid_rep_with_atom`.
--/
+/-! Thread `GridBridge` across k→k+1 extensions; carried as inductive hypothesis. -/
 
 /-- The separation statistic for a witness (r, u).
     This is the "candidate value" for Θ(d) if μ(F, r) = d^u. -/
@@ -2646,9 +2625,12 @@ When identity exists, these reduce to the standard definitions:
 - `mu F r = mu_param F r ident`
 - `kGrid F = kGrid_param F ident`
 
-**Use case:** Enable representation theorem for semigroups without identity,
-using an arbitrary "anchor element" instead of identity for normalization.
+**Use case:** Provide grid constructions that work without identity (`mu_pnat`, `kGrid_pnat`),
+so semigroup-level lemmas can be stated without assuming an identity. Normalization
+(`Θ ident = 0`) is only available when an identity exists.
 -/
+
+end WithIdentity
 
 section IdentityFreeGrids
 
@@ -2667,7 +2649,7 @@ structure AtomFamily_param (α : Type*) [KSSemigroupBase α] (k : ℕ) where
 
 /-- Convert a standard AtomFamily to a parametric one.
     Requires KnuthSkillingAlgebra to access the equivalence. -/
-def AtomFamily.toParam {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+def AtomFamily.toParam {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) : AtomFamily_param α k where
   atoms := F.atoms
   pos := fun i => by
@@ -2680,29 +2662,29 @@ def AtomFamily.toParam {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
     where the folding starts from `base` rather than `ident`.
 
     When `base = ident`, this equals the standard `mu F r`. -/
-noncomputable def mu_param {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+noncomputable def mu_param {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) (r : Multi k) (base : α) : α :=
   (List.finRange k).foldl (fun acc i => op acc (iterate_op (F.atoms i) (r i))) base
 
 /-- Standard `mu` is `mu_param` with base = `ident`. -/
-theorem mu_eq_mu_param_ident {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+theorem mu_eq_mu_param_ident {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) (r : Multi k) :
     mu F r = mu_param F r ident := rfl
 
 /-- Parametric grid: values reachable as `mu_param F r base` for some multiplicity vector. -/
-def kGrid_param {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+def kGrid_param {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) (base : α) : Set α :=
   {x | ∃ r : Multi k, x = mu_param F r base}
 
 /-- Standard `kGrid` equals `kGrid_param` with base = `ident`. -/
-theorem kGrid_eq_kGrid_param_ident {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+theorem kGrid_eq_kGrid_param_ident {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) :
     kGrid F = kGrid_param F ident := by
   ext x
   simp only [kGrid, kGrid_param, mu_eq_mu_param_ident]
 
 /-- The base element is always in the parametric grid (take zero multiplicities). -/
-lemma base_mem_kGrid_param {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+lemma base_mem_kGrid_param {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) (base : α) : base ∈ kGrid_param F base := by
   use fun _ => 0
   simp only [mu_param]
@@ -2725,7 +2707,7 @@ lemma base_mem_kGrid_param {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
   exact h _ base
 
 /-- Monotonicity: `mu_param` is monotone in the base element. -/
-lemma mu_param_mono_base {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+lemma mu_param_mono_base {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) (r : Multi k) {base₁ base₂ : α} (h : base₁ ≤ base₂) :
     mu_param F r base₁ ≤ mu_param F r base₂ := by
   unfold mu_param
@@ -2737,7 +2719,7 @@ lemma mu_param_mono_base {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
     exact op_mono_left _ h
 
 /-- Strict monotonicity: `mu_param` is strictly monotone in the base element. -/
-lemma mu_param_strictMono_base {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+lemma mu_param_strictMono_base {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) (r : Multi k) {base₁ base₂ : α} (h : base₁ < base₂) :
     mu_param F r base₁ < mu_param F r base₂ := by
   unfold mu_param
@@ -2754,7 +2736,7 @@ lemma mu_param_strictMono_base {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
     NOTE: This requires commutativity of `x` with all `iterate_op (F.atoms i) (r i)`.
     The general form without commutativity does NOT hold.
     In the K&S context, commutativity is derived from the representation theorem. -/
-lemma mu_param_op_base {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+lemma mu_param_op_base {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) (r : Multi k) (base x : α)
     (hcomm : ∀ i : Fin k, op x (iterate_op (F.atoms i) (r i)) = op (iterate_op (F.atoms i) (r i)) x) :
     mu_param F r (op base x) = op (mu_param F r base) x := by
@@ -2848,7 +2830,7 @@ lemma mu_pnat_strictMono_base {α : Type*} [KSSemigroupBase α] {k : ℕ}
 
     `mu_pnat F.toParam r base = mu_param F (r.val) base` where we view
     positive exponents as natural numbers via `.val`. -/
-theorem mu_pnat_eq_mu_param {α : Type*} [KnuthSkillingAlgebra α] {k : ℕ}
+theorem mu_pnat_eq_mu_param {α : Type*} [KnuthSkillingMonoidBase α] {k : ℕ}
     (F : AtomFamily α k) (r : MultiPos k) (base : α) :
     mu_pnat F.toParam r base = mu_param F (fun i => (r i).val) base := by
   unfold mu_pnat mu_param AtomFamily.toParam

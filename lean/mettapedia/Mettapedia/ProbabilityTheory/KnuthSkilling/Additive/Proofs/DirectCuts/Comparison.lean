@@ -21,7 +21,7 @@ The key bridge is the characterization lemma in `DirectCuts.lean`:
 `Θ_cuts_eq_div_of_representation`.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingAlgebraBase α]
 
 /-!
 ## Any two representations differ by a positive scalar
@@ -94,7 +94,7 @@ theorem representation_unique_up_to_posScale
 -/
 
 theorem associativity_representation_grid_and_cuts_agree_up_to_scale
-    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] [KSSeparationStrict α] :
+    (α : Type*) [KnuthSkillingAlgebraBase α] [KSSeparation α] [KSSeparationStrict α] :
     ∃ (Θ_grid Θ_cuts : α → ℝ) (c : ℝ),
       0 < c ∧
       (∀ u v : α, u ≤ v ↔ Θ_grid u ≤ Θ_grid v) ∧

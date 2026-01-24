@@ -1,6 +1,9 @@
 name = "Mettapedia"
 version = "0.1.0"
 defaultTargets = ["Mettapedia"]
+# Lean 4 can fail to create its default thread pool under the project's 6GB ulimit.
+# For reproducible builds in this environment, force single-threaded elaboration.
+weakLeanArgs = ["-j", "1"]
 
 [[lean_lib]]
 name = "Mettapedia"
@@ -25,4 +28,3 @@ rev = "v4.25.0"
 [[require]]
 name = "ordered_semigroups"
 path = "Mettapedia/Algebra/OrderedSemigroups"
-

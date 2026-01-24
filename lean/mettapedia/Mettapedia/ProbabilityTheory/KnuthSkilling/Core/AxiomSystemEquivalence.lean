@@ -36,6 +36,7 @@ open Classical
 
 namespace AxiomSystemEquivalence
 
+open KnuthSkillingMonoidBase
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 open SandwichSeparation
@@ -48,10 +49,17 @@ in the main K&S namespace.
 
 /-- `KSSeparation` gives an Archimedean-style bound: `x < a^n` for some `n`. -/
 theorem archimedean_of_ksSeparation
-    {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α]
+    {α : Type*} [KnuthSkillingMonoidBase α] [KSSeparation α]
     (a x : α) (ha : ident < a) :
     ∃ n : ℕ, x < Nat.iterate (op a) n a :=
   SandwichSeparation.SeparationToArchimedean.op_archimedean_of_separation (α := α) a x ha
+
+/-- `KSSeparation` forces commutativity on the positive cone. -/
+theorem comm_pos_of_ksSeparation
+    {α : Type*} [KnuthSkillingMonoidBase α] [KSSeparation α]
+    (x y : α) (hx : ident < x) (hy : ident < y) :
+    op x y = op y x :=
+  SandwichSeparation.ThetaAdditivity.ksSeparation_implies_comm (α := α) x y hx hy
 
 /-- `KSSeparation` forces global commutativity of `op`. -/
 theorem comm_of_ksSeparation

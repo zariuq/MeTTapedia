@@ -50,18 +50,18 @@ instance {α : Type*} [LinearOrder α] : PartialOrder (KSAdd α) where
     -- transport the linear-order characterization of `<` from `α`
     simpa using (lt_iff_le_not_ge : x.val < y.val ↔ x.val ≤ y.val ∧ ¬ y.val ≤ x.val)
 
-instance {α : Type*} [KnuthSkillingAlgebra α] : Zero (KSAdd α) :=
+instance {α : Type*} [KnuthSkillingAlgebraBase α] : Zero (KSAdd α) :=
   ⟨⟨ident⟩⟩
 
-instance {α : Type*} [KnuthSkillingAlgebra α] : Add (KSAdd α) :=
+instance {α : Type*} [KnuthSkillingAlgebraBase α] : Add (KSAdd α) :=
   ⟨fun x y => ⟨op x.val y.val⟩⟩
 
-@[simp] theorem val_zero {α : Type*} [KnuthSkillingAlgebra α] : (0 : KSAdd α).val = ident := rfl
-@[simp] theorem val_add {α : Type*} [KnuthSkillingAlgebra α] (x y : KSAdd α) :
+@[simp] theorem val_zero {α : Type*} [KnuthSkillingAlgebraBase α] : (0 : KSAdd α).val = ident := rfl
+@[simp] theorem val_add {α : Type*} [KnuthSkillingAlgebraBase α] (x y : KSAdd α) :
     (x + y).val = op x.val y.val := rfl
 
 /-- Turn a commutative K&S operation into an additive commutative monoid structure (on the wrapper). -/
-def instAddCommMonoid {α : Type*} [KnuthSkillingAlgebra α]
+def instAddCommMonoid {α : Type*} [KnuthSkillingAlgebraBase α]
     (hcomm : ∀ x y : α, op x y = op y x) : AddCommMonoid (KSAdd α) where
   add := (· + ·)
   zero := (0 : KSAdd α)
@@ -91,13 +91,13 @@ def instAddCommMonoid {α : Type*} [KnuthSkillingAlgebra α]
 
 Commutativity and the Archimedean property are both derived from `KSSeparation`
 (see `SandwichSeparation.lean`). -/
-theorem archimedean_of_KSSeparation {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α] :
+theorem archimedean_of_KSSeparation {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α] :
     @Archimedean (KSAdd α) (instAddCommMonoid (α := α)
-      (fun x y => SandwichSeparation.SeparationToCommutativity.op_comm_of_KSSeparation x y))
+      (fun x y => SandwichSeparation.ksSeparation_implies_commutative (α := α) x y))
       (by infer_instance) := by
   classical
   letI : AddCommMonoid (KSAdd α) := instAddCommMonoid (α := α)
-    (fun x y => SandwichSeparation.SeparationToCommutativity.op_comm_of_KSSeparation x y)
+    (fun x y => SandwichSeparation.ksSeparation_implies_commutative (α := α) x y)
   refine ⟨?_⟩
   intro x y hy
   -- Apply the K&S Archimedean (derived from KSSeparation) with `x := y` (positive) and `y := x` (arbitrary).
@@ -113,7 +113,7 @@ theorem archimedean_of_KSSeparation {α : Type*} [KnuthSkillingAlgebra α] [KSSe
 
 /-- Legacy: `op_archimedean` implies mathlib's `Archimedean` given commutativity.
 This version takes an explicit Archimedean hypothesis for use in contexts without `KSSeparation`. -/
-theorem archimedean_of_op_archimedean_explicit {α : Type*} [KnuthSkillingAlgebra α]
+theorem archimedean_of_op_archimedean_explicit {α : Type*} [KnuthSkillingAlgebraBase α]
     (hcomm : ∀ x y : α, op x y = op y x)
     (harch : ∀ (a x : α), ident < a → ∃ n : ℕ, x < Nat.iterate (op a) n a) :
     @Archimedean (KSAdd α) (instAddCommMonoid (α := α) hcomm) (by infer_instance) := by

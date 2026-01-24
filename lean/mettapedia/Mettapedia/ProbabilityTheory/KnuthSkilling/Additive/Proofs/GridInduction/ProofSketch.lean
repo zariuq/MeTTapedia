@@ -3,7 +3,8 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 
-open Classical KnuthSkillingAlgebra
+open Classical
+open KSSemigroupBase KnuthSkillingMonoidBase KnuthSkillingAlgebraBase KnuthSkillingAlgebra
 
 /-!
 # Representation Theorem: Proof Sketch / Reviewer Guide
@@ -37,17 +38,17 @@ Section `sec:commutativity` (separation ⇒ commutativity).
 
 section Commutativity
 
-variable (α : Type*) [KnuthSkillingAlgebra α]
+variable (α : Type*) [KnuthSkillingAlgebraBase α]
 
 /-- `KSSeparation` forces commutativity of `op`. -/
 theorem op_comm_of_KSSeparation [KSSeparation α] : ∀ x y : α, op x y = op y x :=
-  Core.op_comm_of_KSSeparation (α := α)
+  Proofs.GridInduction.Core.op_comm_of_KSSeparation (α := α)
 
 end Commutativity
 
 section Representation
 
-variable (α : Type*) [KnuthSkillingAlgebra α]
+variable (α : Type*) [KnuthSkillingAlgebraBase α]
 
 /-- A convenient “no typeclass plumbing” wrapper:
 `KSSeparationStrict` suffices to run the full Appendix-A-style pipeline. -/

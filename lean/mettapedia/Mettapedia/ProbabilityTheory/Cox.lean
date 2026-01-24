@@ -1,6 +1,8 @@
 import Mettapedia.ProbabilityTheory.Cox.Basic
 import Mettapedia.ProbabilityTheory.Cox.Derivation
 import Mettapedia.ProbabilityTheory.Cox.ProductRuleDerivation
+import Mettapedia.ProbabilityTheory.Cox.ProbabilityCalculusBridge
+import Mettapedia.ProbabilityTheory.Cox.ProbabilityCalculusIntegration
 
 /-!
 # Cox's Theorem: Probability from Plausibility
@@ -18,7 +20,7 @@ Cox shows that if plausibility satisfies:
 
 Then functional equation analysis forces:
 - F(x,y) = x·y (product rule)
-- G(x) = 1-x (negation rule)
+- G(x)^r + x^r = 1 for some r > 0 (negation rule up to regraduation)
 
 **Key insight**: Commutativity F(x,y) = F(y,x) is DERIVED, not assumed!
 
@@ -27,6 +29,8 @@ Then functional equation analysis forces:
 - `Basic.lean`: Core axiom structures (PlausibilityFunction, ConjunctionRule, etc.)
 - `Derivation.lean`: Proofs that standard rules satisfy axioms, commutativity derivation
 - `ProductRuleDerivation.lean`: **Complete Cox derivation** of F(x,y) = x·y from axioms
+- `ProbabilityCalculusBridge.lean`: Cox ⇄ K&S interface connectors (regrade equivalence)
+- `ProbabilityCalculusIntegration.lean`: Event-level Cox path → `ProbabilityCalculusClass`
 
 ## Connection to Imprecise Probability
 
@@ -37,7 +41,7 @@ Cox's associativity axiom is what forces additivity. Without it:
 ## Connection to Knuth-Skilling
 
 K&S claim to derive probability from weaker axioms (no continuity, no inverses).
-Their `CoxConsistency` structure in `KnuthSkilling/Probability/ProbabilityDerivation.lean`
+Their `CoxConsistency` structure in `KnuthSkilling/ProbabilityDerivation.lean`
 captures the algebraic essence and proves `cox_implies_kolmogorov`.
 
 The relationship is:
@@ -51,7 +55,7 @@ The relationship is:
 - ✅ Standard rules satisfy axioms
 - ✅ Commutativity DERIVED from axioms (cox_commutativity)
 - ✅ Full product rule derivation (cox_productRule)
-- ✅ Negation rule derivation (cox_negationRule) - **0 sorries**
+- ✅ Negation rule derivation (power-family, cox_negationRule) - **0 sorries**
 - ✅ Iteration infrastructure (iterate_add, iterate_strictAnti, iterate_tendsto_zero)
 - ✅ Square root infrastructure (exists_sqrt, exists_unique_sqrt, sqrt_F)
 - ✅ Diagonal function properties (diagonal_continuous, diagonal_strictMono, diagonal_tendsto_zero)

@@ -223,36 +223,36 @@ theorem op_mono_right (x : α) {y₁ y₂ : α} (h : y₁ ≤ y₂) : op x y₁ 
 
 end KSSemigroupBase
 
-/-! ## KnuthSkillingAlgebraBase: Semigroup + Identity
+/-! ## KnuthSkillingMonoidBase / KnuthSkillingAlgebraBase
 
-Extends KSSemigroupBase with identity element. The identity provides:
-- Canonical normalization: Θ(ident) = 0 in representation
-- Monoid structure: enables iteration from n=0
-- Positivity: ident ≤ x for all x (probability framework) -/
+We keep `KSSemigroupBase` as the default, identity-free base.
 
-/-- Core K&S structure with identity. Extends KSSemigroupBase.
-    Archimedean is derivable from KSSeparation (see SandwichSeparation.lean).
+When an identity element is needed, we distinguish:
+- `KnuthSkillingMonoidBase`: identity + left/right identity laws (no `ident_le`)
+- `KnuthSkillingAlgebraBase`: adds `ident_le : ∀ x, ident ≤ x` (probability-theory convenience)
+-/
 
-    What identity adds beyond KSSemigroupBase:
-    - Canonical zero: Θ(ident) = 0 in representation theorem
-    - Monoid structure: iterate_op x 0 = ident
-    - Positivity: ident_le ensures all elements are "positive" -/
-class KnuthSkillingAlgebraBase (α : Type*) extends KSSemigroupBase α where
+/-- Core K&S structure with an identity element (but **without** assuming the identity is
+the minimum element). -/
+class KnuthSkillingMonoidBase (α : Type*) extends KSSemigroupBase α where
   /-- Identity element (certain event in probability, additive zero in log-space) -/
   ident : α
   /-- Right identity: x ⊕ ident = x -/
   op_ident_right : ∀ x : α, op x ident = x
   /-- Left identity: ident ⊕ x = x -/
   op_ident_left : ∀ x : α, op ident x = x
+
+/-- Core K&S structure used for probability theory: identity is also the minimum element. -/
+class KnuthSkillingAlgebraBase (α : Type*) extends KnuthSkillingMonoidBase α where
   /-- Positivity: identity is the minimum element -/
   ident_le : ∀ x : α, ident ≤ x
 
--- Re-export semigroup fields so `open KnuthSkillingAlgebraBase` brings them into scope
--- Also re-export toLinearOrder for backward compatibility with explicit @ references
-namespace KnuthSkillingAlgebraBase
+-- Re-export semigroup fields so `open KnuthSkillingMonoidBase`/`open KnuthSkillingAlgebraBase`
+-- brings them into scope. Also re-export toLinearOrder for backward compatibility.
+namespace KnuthSkillingMonoidBase
 export KSSemigroupBase (op op_assoc op_strictMono_left op_strictMono_right toLinearOrder)
 
-variable {α : Type*} [KnuthSkillingAlgebraBase α]
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
 /-! ### Connection to Unbundled Predicates -/
 
@@ -261,6 +261,16 @@ theorem opIdentLeft : OpIdentLeft (op (α := α)) ident := op_ident_left
 
 /-- The bundled right identity field satisfies the unbundled predicate. -/
 theorem opIdentRight : OpIdentRight (op (α := α)) ident := op_ident_right
+
+end KnuthSkillingMonoidBase
+
+namespace KnuthSkillingAlgebraBase
+export KSSemigroupBase (op op_assoc op_strictMono_left op_strictMono_right toLinearOrder)
+export KnuthSkillingMonoidBase (ident op_ident_left op_ident_right)
+
+variable {α : Type*} [KnuthSkillingAlgebraBase α]
+
+/-! ### Connection to Unbundled Predicates -/
 
 /-- The bundled identity-is-minimum field satisfies the unbundled predicate. -/
 theorem identIsMin : IdentIsMin (ident (α := α)) := ident_le
@@ -301,9 +311,9 @@ def IsOne [KSSemigroupBase α] (a : α) : Prop :=
   ∀ x : α, KSSemigroupBase.op a x = x
 
 section PositivityWithIdentity
-variable {α : Type*} [KnuthSkillingAlgebraBase α]
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
-open KSSemigroupBase KnuthSkillingAlgebraBase
+open KSSemigroupBase KnuthSkillingMonoidBase
 
 /-- Eric's positivity ↔ traditional positivity (with identity).
     When identity exists, `IsPositive a` is equivalent to `ident < a`. -/
@@ -329,9 +339,10 @@ theorem isNegative_iff_lt_ident (a : α) : IsNegative a ↔ a < ident := by
       _ = x := op_ident_left x
 
 /-- In K&S probability framework, all elements are positive (ident is minimum). -/
-theorem isPositive_of_ne_ident (a : α) (ha : a ≠ ident) : IsPositive a := by
+theorem isPositive_of_ne_ident {α : Type*} [KnuthSkillingAlgebraBase α]
+    (a : α) (ha : a ≠ ident) : IsPositive a := by
   rw [isPositive_iff_ident_lt]
-  exact lt_of_le_of_ne (ident_le a) (Ne.symm ha)
+  exact lt_of_le_of_ne (KnuthSkillingAlgebraBase.ident_le a) (Ne.symm ha)
 
 /-- The identity element is the unique `IsOne` element. -/
 theorem isOne_iff_eq_ident (a : α) : IsOne a ↔ a = ident := by
@@ -439,6 +450,26 @@ theorem iterate_op_pnat_mono (x : α) (hx : IsPositive x) {m n : ℕ+} (h : m �
     iterate_op_pnat x m ≤ iterate_op_pnat x n := by
   rcases h.lt_or_eq with hlt | heq
   · exact le_of_lt (iterate_op_pnat_strictMono x hx hlt)
+  · rw [heq]
+
+/-- Strict monotonicity in the base for fixed ℕ+ exponent. -/
+theorem iterate_op_pnat_strictMono_base {a b : α} (hab : a < b) (n : ℕ+) :
+    iterate_op_pnat a n < iterate_op_pnat b n := by
+  induction n using PNat.recOn with
+  | one =>
+    simp [iterate_op_pnat_one, hab]
+  | succ n ih =>
+    -- a^(n+1) = a ⊕ a^n, b^(n+1) = b ⊕ b^n
+    rw [iterate_op_pnat_succ, iterate_op_pnat_succ]
+    calc
+      op a (iterate_op_pnat a n) < op a (iterate_op_pnat b n) := op_strictMono_right a ih
+      _ < op b (iterate_op_pnat b n) := op_strictMono_left (iterate_op_pnat b n) hab
+
+/-- Monotonicity in the base for fixed ℕ+ exponent. -/
+theorem iterate_op_pnat_mono_base {a b : α} (hab : a ≤ b) (n : ℕ+) :
+    iterate_op_pnat a n ≤ iterate_op_pnat b n := by
+  rcases hab.lt_or_eq with hlt | heq
+  · exact le_of_lt (iterate_op_pnat_strictMono_base hlt n)
   · rw [heq]
 
 /-- Positivity is preserved under ℕ+ iteration. -/

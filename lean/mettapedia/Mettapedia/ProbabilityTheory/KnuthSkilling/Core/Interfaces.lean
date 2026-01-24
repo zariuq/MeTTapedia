@@ -1,4 +1,5 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Literature.FunctionalEquations
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Representation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Multiplicative.FunctionalEquation
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Multiplicative.StrictMonoSolution
 
@@ -11,8 +12,14 @@ All downstream code should import this file rather than reaching into implementa
 ## What This File Provides
 
 ### From Appendix A (Representation Theorem)
-- `AdditiveOrderIsoRep α op`: The central interface - an order isomorphism Θ : α ≃o ℝ
-  such that Θ(op x y) = Θ x + Θ y
+- `Additive.RepresentationResult α`: identity-free representation package (`Θ : α → ℝ`,
+  order-embedding + additivity)
+- `Additive.HasRepresentationTheorem α`: proof-agnostic identity-free interface (∃ such Θ)
+- `Additive.HasNormalizedRepresentation α`: identity-based convenience interface (also gives Θ(ident)=0)
+
+**Note**: `AdditiveOrderIsoRep α op` is a *stronger* “order isomorphism to ℝ” form used mainly when
+we need an explicit inverse `Ψ := Θ⁻¹` (Appendix B). The core Appendix A story produces an
+order-embedding into ℝ, not necessarily a global order isomorphism onto all of ℝ.
 
 ### From Appendix B (Product Theorem)
 - `ProductEquation Ψ ζ`: The functional equation Ψ(τ + ξ) + Ψ(τ + η) = Ψ(τ + ζ(ξ,η))
@@ -26,16 +33,15 @@ number-theory dependencies; it is intentionally not imported here.
 ## Design Principle
 
 **One interface, many realizers**: Multiple proof routes (Grid, Cuts, Alimov) all produce
-`AdditiveOrderIsoRep`. Downstream theorems depend only on this interface.
+the same *Appendix A output interface* (`Additive.RepresentationResult` / `Additive.HasRepresentationTheorem`).
+Downstream theorems should depend only on this interface.
 
 ```
-  Appendix A proofs ──┬──► AdditiveOrderIsoRep ──► Downstream theorems
-                      │         ▲                    (inclusion-exclusion,
-  (Grid, Cuts,        │         │                     MathlibBridge, etc.)
-   Alimov, ...)       │         │
-                      │    Appendix B results
-                      │    (tensor = scaled mult,
-                      │     continuity derived)
+  Appendix A proofs ──► HasRepresentationTheorem / RepresentationResult ──► Downstream theorems
+                │                       │
+                │                       └──► (optional upgrade) AdditiveOrderIsoRep
+                │                                   (when an explicit inverse Θ⁻¹ is needed)
+                └──────────────────────────────────────────────► Appendix B pipeline
 ```
 -/
 
@@ -43,12 +49,13 @@ namespace Mettapedia.ProbabilityTheory.KnuthSkilling
 
 /-! ## Re-export: AdditiveOrderIsoRep (The Central Interface) -/
 
-/-- The central interface from Appendix A: an operation `op` is additively representable
-if there exists an order isomorphism Θ : α ≃o ℝ with Θ(op x y) = Θ x + Θ y.
+/-- A *strong* additive representation: an operation `op` is conjugate to real addition
+by an order isomorphism `Θ : α ≃o ℝ`.
 
-This is the OUTPUT of Appendix A and the INPUT to everything downstream.
-Multiple proof routes (separation+grid, separation+cuts, no-anomalous-pairs) all
-produce this same type. -/
+This form is most useful when we need an explicit inverse `Ψ := Θ⁻¹` (Appendix B).
+
+For Appendix A itself, the default / minimal interface is identity-free:
+`Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.HasRepresentationTheorem`. -/
 abbrev AdditiveOrderIsoRep := Literature.AdditiveOrderIsoRep
 
 namespace AdditiveOrderIsoRep
@@ -84,8 +91,7 @@ theorem continuity_from_productEquation_strictMono_pos
 /-- **MAIN APPENDIX B THEOREM** (StrictMono case): If Ψ satisfies the product equation,
 is positive, and is strictly monotone, then Ψ(x) = C · exp(A · x) for some C > 0, A ∈ ℝ.
 
-This theorem is FULLY PROVEN. Continuity is derived (not assumed) via
-`continuity_from_productEquation_strictMono_pos`. -/
+Continuity is derived (not assumed) via `continuity_from_productEquation_strictMono_pos`. -/
 theorem appendixB_exponential_strictMono
     (Ψ : ℝ → ℝ) (ζ : ℝ → ℝ → ℝ)
     (hProd : ProductEquation Ψ ζ)

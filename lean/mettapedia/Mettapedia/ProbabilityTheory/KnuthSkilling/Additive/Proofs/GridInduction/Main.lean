@@ -4,14 +4,16 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Representation
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 
 open Classical
+open KSSemigroupBase
+open KnuthSkillingMonoidBase
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 
 /-!
 # K&S Representation Theorem: Main Theorem (Public API)
 
-This file is intentionally short: it exposes the representation theorem statement and the main
-corollary (commutativity), assuming the globalization class.
+This file is intentionally short: it exposes both the identity-free and identity-normalized
+representation theorem statements, assuming the appropriate globalization class.
 
 For the globalization construction itself (the “triple family trick”), see:
 `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Proofs/GridInduction/Globalization.lean`.
@@ -22,6 +24,25 @@ Paper cross-reference:
 - Section “Commutativity from Separation” (label `sec:commutativity`) for the separation ⇒ commutativity story.
 -/
 
+/-- **Identity-free representation theorem**: existence of an additive order embedding.
+
+This is the minimal interface for the grid/induction path when normalization is not required. -/
+theorem associativity_representation_semigroup
+    (α : Type*) [KSSemigroupBase α] [RepresentationGlobalizationSemigroup α] :
+    ∃ Θ : α → ℝ,
+      (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
+      ∀ x y : α, Θ (op x y) = Θ x + Θ y := by
+  exact RepresentationGlobalizationSemigroup.exists_Theta (α := α)
+
+/-- Identity-free bridge to the unified `RepresentationResult`. -/
+noncomputable def grid_representation_result
+    (α : Type*) [KSSemigroupBase α] [RepresentationGlobalizationSemigroup α] :
+    RepresentationResult α :=
+  let h := RepresentationGlobalizationSemigroup.exists_Theta (α := α)
+  { Θ := Classical.choose h
+    order_preserving := (Classical.choose_spec h).1
+    additive := (Classical.choose_spec h).2 }
+
 /-- **K&S Appendix A main theorem**: existence of an order embedding `Θ : α → ℝ` turning `op` into `+`.
 
 Lean architecture note:
@@ -31,7 +52,7 @@ Lean architecture note:
   `RepresentationGlobalization`, and this theorem simply exposes the `exists_Theta` field as the public
   API. -/
 theorem associativity_representation
-    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] [RepresentationGlobalization α] :
+    (α : Type*) [KnuthSkillingMonoidBase α] [KSSeparation α] [RepresentationGlobalization α] :
     ∃ Θ : α → ℝ,
       (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
       Θ ident = 0 ∧
@@ -41,7 +62,7 @@ theorem associativity_representation
 /-- Convenience wrapper: with `[KSSeparation α]` and dense order, the globalization instance is
 automatic, so the representation theorem can be used without mentioning `RepresentationGlobalization`. -/
 theorem associativity_representation_of_KSSeparation_of_denselyOrdered
-    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] [DenselyOrdered α] :
+    (α : Type*) [KnuthSkillingAlgebraBase α] [KSSeparation α] [DenselyOrdered α] :
     ∃ Θ : α → ℝ,
       (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
       Θ ident = 0 ∧
@@ -52,7 +73,7 @@ theorem associativity_representation_of_KSSeparation_of_denselyOrdered
 /-- Convenience wrapper: a weaker “density above `ident`” hypothesis also suffices to upgrade
 `KSSeparation` to `KSSeparationStrict`, and thus obtain the representation theorem. -/
 theorem associativity_representation_of_KSSeparation_of_exists_between_pos
-    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α]
+    (α : Type*) [KnuthSkillingAlgebraBase α] [KSSeparation α]
     (hBetween : ∀ {x y : α}, ident < x → x < y → ∃ z, x < z ∧ z < y) :
     ∃ Θ : α → ℝ,
       (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
@@ -64,7 +85,7 @@ theorem associativity_representation_of_KSSeparation_of_exists_between_pos
 
 /-- Commutativity as a corollary of the representation theorem. -/
 theorem op_comm_of_associativity
-    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] [RepresentationGlobalization α] :
+    (α : Type*) [KnuthSkillingMonoidBase α] [KSSeparation α] [RepresentationGlobalization α] :
     ∀ x y : α, op x y = op y x := by
   classical
   obtain ⟨Θ, hΘ_order, _, hΘ_add⟩ := associativity_representation (α := α)
@@ -76,7 +97,7 @@ We connect the KSSeparation path to the unified RepresentationResult structure
 defined in `Additive/Representation.lean`. This allows uniform reasoning across paths.
 
 **KSSeparation path characteristics:**
-- Requires: `[KnuthSkillingAlgebra α] [KSSeparation α] [RepresentationGlobalization α]`
+- Requires: `[KnuthSkillingMonoidBase α] [KSSeparation α] [RepresentationGlobalization α]`
 - Provides: `NormalizedRepresentationResult α` (with Θ ident = 0)
 
 **Comparison with Hölder path:**
@@ -89,7 +110,7 @@ The KSSeparation path currently uses `ident` in its hypotheses (e.g., `ident < a
 A future refactoring could use `ℕ+` powers instead, making identity optional.
 For now, KSSeparation produces only the normalized result. -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+variable {α : Type*} [KnuthSkillingMonoidBase α]
 
 /-- KSSeparation path produces a NormalizedRepresentationResult.
     This connects the KSSeparation path to the unified interface.

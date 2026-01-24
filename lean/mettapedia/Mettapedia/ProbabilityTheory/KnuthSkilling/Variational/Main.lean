@@ -54,6 +54,8 @@ See also:
 - `Mettapedia/ProbabilityTheory/KnuthSkilling/Counterexamples/CauchyPathology.lean` for an explicit
   (Hamel-basis) countermodel showing that *some* regularity hypothesis is genuinely needed to rule
   out non-linear solutions of Cauchy’s equation.
+- `Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnson/PathC.lean` for the Shore-Johnson
+  alternative route to the same multiplicative Cauchy/log conclusion (used to reach KL).
 
 This follows the K&S design principle: the same core algebraic structures appear across
 Appendices A, B, and C, with shared proof techniques.
@@ -453,13 +455,13 @@ We keep this premise explicit (and therefore auditable) as `KSVariationalGeneral
 
 For literature-backed variants of this “generality / consistency across applications” idea,
 see Shore–Johnson (1980).  Our project formalizes a Lean-friendly core consequence of SJ4
-(system independence) in `Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnsonTheorem.lean`,
+(system independence) in `Mettapedia/ProbabilityTheory/KnuthSkilling/Theorem.lean`,
 including an explicit regularity gate and an explicit counterexample showing why some regularity
 assumption is logically necessary.
 
 We additionally connect that Shore–Johnson “atom-level” conclusion to this project’s finite
 `klDivergence` definition (Section 8 layer) in
-`Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnsonBridge.lean`.
+`Mettapedia/ProbabilityTheory/KnuthSkilling/Bridge.lean`.
 -/
 
 /-- K&S’s “generality across applications” premise for Appendix C.

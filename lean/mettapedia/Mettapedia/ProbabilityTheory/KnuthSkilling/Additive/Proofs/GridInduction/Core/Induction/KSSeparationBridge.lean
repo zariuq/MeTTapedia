@@ -8,7 +8,7 @@ open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 open SandwichSeparation.SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α]
 
 /-!
 ## Bridging: using `KSSeparation` to supply commutativity

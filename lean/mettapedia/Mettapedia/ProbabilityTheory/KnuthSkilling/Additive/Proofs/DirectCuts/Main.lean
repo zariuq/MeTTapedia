@@ -25,7 +25,7 @@ Paper cross-reference:
 - For the “cuts/log” alternative, see the discussion around Hölder-style constructions.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α]
 
 /-!
 ## Main theorem (cuts version)
@@ -34,7 +34,7 @@ variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
 /-- **K&S Appendix A representation theorem (cuts proof)**.
 
 Assumptions:
-- `KnuthSkillingAlgebra α` (order + associativity + identity + Archimedean)
+- `KnuthSkillingAlgebraBase α` (order + associativity + identity + `ident` is minimum)
 - `KSSeparation α` (iterate/power “sandwich” axiom)
 - `KSSeparationStrict α` (strict upper-bound variant; often derived from density)
 
@@ -42,7 +42,7 @@ Conclusion:
 There exists an order embedding `Θ : α → ℝ` with `Θ ident = 0` and `Θ (x ⊕ y) = Θ x + Θ y`.
 -/
 theorem associativity_representation_cuts
-    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] [KSSeparationStrict α] :
+    (α : Type*) [KnuthSkillingAlgebraBase α] [KSSeparation α] [KSSeparationStrict α] :
     ∃ Θ : α → ℝ,
       (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
       Θ ident = 0 ∧
@@ -72,7 +72,7 @@ theorem associativity_representation_cuts
 /-- Convenience wrapper: density upgrades `KSSeparation` to `KSSeparationStrict`,
 so the cuts-based representation theorem can be used without mentioning strict separation. -/
 theorem associativity_representation_cuts_of_denselyOrdered
-    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] [DenselyOrdered α] :
+    (α : Type*) [KnuthSkillingAlgebraBase α] [KSSeparation α] [DenselyOrdered α] :
     ∃ Θ : α → ℝ,
       (∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b) ∧
       Θ ident = 0 ∧
@@ -81,4 +81,3 @@ theorem associativity_representation_cuts_of_denselyOrdered
   exact associativity_representation_cuts (α := α)
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.DirectCuts
-

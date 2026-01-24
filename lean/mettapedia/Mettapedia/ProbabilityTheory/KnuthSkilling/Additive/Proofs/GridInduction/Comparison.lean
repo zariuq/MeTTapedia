@@ -42,6 +42,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Comparison
 
 open Classical
+open KnuthSkillingMonoidBase
 open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms.AnomalousPairs
@@ -49,13 +50,13 @@ open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.OrderedSemigroup
 
 /-! ## Section 1: “Three proof paths” as instances -/
 
-/-- **Instance from Grid approach** (via `RepresentationGlobalization`). -/
+/-- **Instance from Grid approach** (identity-free interface). -/
 instance grid_hasRepresentationTheorem
-    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] [RepresentationGlobalization α] :
+    (α : Type*) [KSSemigroupBase α] [RepresentationGlobalizationSemigroup α] :
     HasRepresentationTheorem α where
   exists_representation := by
-    obtain ⟨Θ, hΘ_order, _hΘ_ident, hΘ_add⟩ :=
-      RepresentationGlobalization.exists_Theta (α := α)
+    obtain ⟨Θ, hΘ_order, hΘ_add⟩ :=
+      RepresentationGlobalizationSemigroup.exists_Theta (α := α)
     exact ⟨Θ, hΘ_order, hΘ_add⟩
 
 /-! ## Section 3: Bridge from NoAnomalousPairs to RepresentationGlobalization
@@ -64,12 +65,24 @@ When we have both `KSSeparation` and `NoAnomalousPairs`, we can provide
 a `RepresentationGlobalization` instance via the Hölder approach.
 -/
 
+/-- **Bridge**: NoAnomalousPairs provides RepresentationGlobalizationSemigroup. -/
+instance representationGlobalizationSemigroup_of_noAnomalousPairs
+    (α : Type*) [KSSemigroupBase α] [NoAnomalousPairs α] :
+    RepresentationGlobalizationSemigroup α where
+  exists_Theta := by
+    obtain ⟨Θ, hΘ_order, hΘ_add⟩ := representation_semigroup (α := α)
+    exact ⟨Θ, hΘ_order, hΘ_add⟩
+
+/-!
+## Section 3b: Identity-based bridge (normalized)
+-/
+
 /-- **Bridge**: NoAnomalousPairs provides RepresentationGlobalization.
 
 This shows the Hölder approach can substitute for the grid-based globalization
 when `NoAnomalousPairs` is available. -/
 instance representationGlobalization_of_noAnomalousPairs
-    (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] [NoAnomalousPairs α] :
+    (α : Type*) [KnuthSkillingMonoidBase α] [NoAnomalousPairs α] :
     RepresentationGlobalization α where
   exists_Theta := representation_from_noAnomalousPairs
 
@@ -77,7 +90,7 @@ instance representationGlobalization_of_noAnomalousPairs
 
 /-- **Commutativity** follows from any representation. -/
 theorem op_comm_of_hasRepresentationTheorem
-    (α : Type*) [KnuthSkillingAlgebraBase α] [HasRepresentationTheorem α] :
+    (α : Type*) [KSSemigroupBase α] [HasRepresentationTheorem α] :
     ∀ x y : α, op x y = op y x := by
   obtain ⟨Θ, hΘ_order, hΘ_add⟩ := HasRepresentationTheorem.exists_representation (α := α)
   intro x y
@@ -97,7 +110,7 @@ theorem op_comm_of_hasRepresentationTheorem
 
 /-- **KSSeparation + IdentIsMinimum → NoAnomalousPairs** -/
 theorem noAnomalousPairs_of_KSSeparation_IdentIsMinimum
-    (α : Type*) [KnuthSkillingAlgebraBase α] [KSSeparation α] [IdentIsMinimum α] :
+    (α : Type*) [KnuthSkillingMonoidBase α] [KSSeparation α] [IdentIsMinimum α] :
     NoAnomalousPairs α :=
   KSSeparation.noAnomalousPairs_of_KSSeparation_with_IdentMin
 
@@ -112,8 +125,23 @@ This establishes a **full equivalence**: `NoAnomalousPairs ↔ HasRepresentation
 /-- **Additive representations scale iterates**: `Θ(aⁿ) = n * Θ(a)`.
 
 This is the key lemma for the equivalence proof. -/
+lemma theta_iterate_op_pnat_eq_nsmul
+    (α : Type*) [KSSemigroupBase α]
+    (Θ : α → ℝ) (hΘ_add : ∀ x y : α, Θ (op x y) = Θ x + Θ y)
+    (a : α) (n : ℕ+) : Θ (iterate_op_pnat a n) = (n : ℝ) * Θ a := by
+  induction n using PNat.recOn with
+  | one =>
+    simp [iterate_op_pnat_one]
+  | succ n ih =>
+    have hcoe : ((n + 1 : ℕ+) : ℝ) = (n : ℝ) + 1 := by
+      have h := PNat.add_coe n 1
+      exact_mod_cast h
+    rw [iterate_op_pnat_succ, hΘ_add, ih, hcoe]
+    ring
+
+/-! ### Identity-based convenience (ℕ iteration) -/
 lemma theta_iterate_op_eq_nsmul
-    (α : Type*) [KnuthSkillingAlgebraBase α]
+    (α : Type*) [KnuthSkillingMonoidBase α]
     (Θ : α → ℝ) (hΘ_ident : Θ ident = 0) (hΘ_add : ∀ x y : α, Θ (op x y) = Θ x + Θ y)
     (a : α) (n : ℕ) : Θ (iterate_op a n) = n * Θ a := by
   induction n with
@@ -129,21 +157,12 @@ lemma theta_iterate_op_eq_nsmul
 `n*Θ(a) < n*Θ(b) < (n+1)*Θ(a)`, which gives `n*(Θ(b) - Θ(a)) < Θ(a)` for all n > 0.
 Since `Θ(b) > Θ(a)` (from n=1), this bounds n from above, contradiction. -/
 theorem noAnomalousPairs_of_representation
-    (α : Type*) [KnuthSkillingAlgebraBase α]
+    (α : Type*) [KSSemigroupBase α]
     (Θ : α → ℝ) (hΘ_order : ∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b)
-    (hΘ_ident : Θ ident = 0) (hΘ_add : ∀ x y : α, Θ (op x y) = Θ x + Θ y) :
+    (hΘ_add : ∀ x y : α, Θ (op x y) = Θ x + Θ y) :
     NoAnomalousPairs α := by
   constructor
   intro a b hAnom
-  -- Convert ℕ+ anomalous condition to ℕ (positive) iterates for reuse below
-  have hAnom_nat :
-      ∀ n : ℕ, 0 < n →
-        (iterate_op a n < iterate_op b n ∧ iterate_op b n < iterate_op a (n + 1)) ∨
-        (iterate_op a n > iterate_op b n ∧ iterate_op b n > iterate_op a (n + 1)) := by
-    intro n hn
-    have h := hAnom ⟨n, hn⟩
-    simpa [iterate_op_pnat_eq] using h
-
   -- Helper: Θ reflects strict order
   have hΘ_order_lt : ∀ x y : α, x < y ↔ Θ x < Θ y := fun x y => by
     constructor
@@ -165,41 +184,43 @@ theorem noAnomalousPairs_of_representation
       exact lt_of_le_of_ne h2 h3
 
   -- Get the anomalous condition at n=1
-  rcases hAnom_nat 1 Nat.one_pos with ⟨ha1_lt_b1, hb1_lt_a2⟩ | ⟨ha1_gt_b1, hb1_gt_a2⟩
+  rcases hAnom 1 with ⟨ha1_lt_b1, hb1_lt_a2⟩ | ⟨ha1_gt_b1, hb1_gt_a2⟩
 
   · -- Positive case: a¹ < b¹ < a²
-    simp only [iterate_op_one] at ha1_lt_b1 hb1_lt_a2
+    simp only [iterate_op_pnat_one] at ha1_lt_b1 hb1_lt_a2
     -- a < b and b < a·a
     have hΘa_lt_Θb : Θ a < Θ b := hΘ_order_lt a b |>.mp ha1_lt_b1
     have hdiff_pos : 0 < Θ b - Θ a := sub_pos.mpr hΘa_lt_Θb
 
-    -- For any n > 0, the anomalous condition gives n*(Θb - Θa) < Θa
-    have hbound : ∀ n : ℕ, 0 < n → (n : ℝ) * (Θ b - Θ a) < Θ a := by
-      intro n hn
-      rcases hAnom_nat n hn with ⟨han_lt_bn, hbn_lt_an1⟩ | ⟨han_gt_bn, _⟩
+    -- For any n : ℕ+, the anomalous condition gives n*(Θb - Θa) < Θa
+    have hbound : ∀ n : ℕ+, (n : ℝ) * (Θ b - Θ a) < Θ a := by
+      intro n
+      rcases hAnom n with ⟨han_lt_bn, hbn_lt_an1⟩ | ⟨han_gt_bn, _⟩
       · -- From bⁿ < aⁿ⁺¹, we get n*Θb < (n+1)*Θa
-        have h1 : Θ (iterate_op b n) < Θ (iterate_op a (n + 1)) :=
+        have h1 : Θ (iterate_op_pnat b n) < Θ (iterate_op_pnat a (n + 1)) :=
           hΘ_order_lt _ _ |>.mp hbn_lt_an1
-        rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add a (n + 1)] at h1
-        rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add b n] at h1
+        rw [theta_iterate_op_pnat_eq_nsmul α Θ hΘ_add a (n + 1)] at h1
+        rw [theta_iterate_op_pnat_eq_nsmul α Θ hΘ_add b n] at h1
         -- n * Θb < (n + 1) * Θa
         -- n * Θb < n * Θa + Θa
         -- n * (Θb - Θa) < Θa
-        have h2 : (n : ℝ) * Θ b < (n + 1 : ℕ) * Θ a := h1
+        have h2 : (n : ℝ) * Θ b < ((n + 1 : ℕ+) : ℝ) * Θ a := h1
+        have hcoe : ((n + 1 : ℕ+) : ℝ) = (n : ℝ) + 1 := by
+          have h := PNat.add_coe n 1
+          exact_mod_cast h
         calc (n : ℝ) * (Θ b - Θ a) = (n : ℝ) * Θ b - (n : ℝ) * Θ a := by ring
-          _ < (n + 1 : ℕ) * Θ a - (n : ℝ) * Θ a := by linarith
-          _ = ((n : ℝ) + 1) * Θ a - (n : ℝ) * Θ a := by simp [Nat.cast_add, Nat.cast_one]
+          _ < ((n + 1 : ℕ+) : ℝ) * Θ a - (n : ℝ) * Θ a := by linarith
+          _ = ((n : ℝ) + 1) * Θ a - (n : ℝ) * Θ a := by rw [hcoe]
           _ = Θ a := by ring
       · -- Contradicts a < b at n=1 level
-        have h1 : Θ (iterate_op a n) > Θ (iterate_op b n) :=
+        have h1 : Θ (iterate_op_pnat a n) > Θ (iterate_op_pnat b n) :=
           hΘ_order_lt _ _ |>.mp han_gt_bn
-        rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add a n] at h1
-        rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add b n] at h1
-        have hn_pos : (0 : ℝ) < n := Nat.cast_pos'.mpr hn
-        have h2 : Θ a > Θ b := by
-          have := mul_lt_mul_of_pos_left h1 (inv_pos.mpr hn_pos)
-          simp only [inv_mul_cancel_left₀ (ne_of_gt hn_pos)] at this
-          linarith
+        rw [theta_iterate_op_pnat_eq_nsmul α Θ hΘ_add a n] at h1
+        rw [theta_iterate_op_pnat_eq_nsmul α Θ hΘ_add b n] at h1
+        have hn_pos : (0 : ℝ) < (n : ℝ) := by
+          exact_mod_cast n.pos
+        have h1' : (n : ℝ) * Θ b < (n : ℝ) * Θ a := by linarith
+        have h2 : Θ b < Θ a := (mul_lt_mul_iff_right₀ hn_pos).1 h1'
         exact absurd hΘa_lt_Θb (not_lt.mpr (le_of_lt h2))
 
     -- Now we derive a contradiction: hdiff_pos and hbound can't both hold for all n
@@ -216,16 +237,18 @@ theorem noAnomalousPairs_of_representation
         simp at hN
         have : Θ a / (Θ b - Θ a) ≥ 0 := div_nonneg hΘa_sign (le_of_lt hdiff_pos)
         linarith
-      have hcontra := hbound N hN_pos
-      have h1 : (N : ℝ) > Θ a / (Θ b - Θ a) := hN
-      have h2 : (N : ℝ) * (Θ b - Θ a) > Θ a := by
-        calc (N : ℝ) * (Θ b - Θ a) > (Θ a / (Θ b - Θ a)) * (Θ b - Θ a) := by
+      let n' : ℕ+ := ⟨N, hN_pos⟩
+      have hcontra := hbound n'
+      have h1 : (n' : ℝ) > Θ a / (Θ b - Θ a) := by
+        simpa using hN
+      have h2 : (n' : ℝ) * (Θ b - Θ a) > Θ a := by
+        calc (n' : ℝ) * (Θ b - Θ a) > (Θ a / (Θ b - Θ a)) * (Θ b - Θ a) := by
               exact mul_lt_mul_of_pos_right h1 hdiff_pos
           _ = Θ a := by field_simp
       linarith
     · -- Case Θa < 0: immediate contradiction since n*(Θb - Θa) > 0 > Θa
       push_neg at hΘa_sign
-      have h := hbound 1 Nat.one_pos
+      have h := hbound 1
       simp at h
       -- 1 * (Θb - Θa) < Θa means Θb < 2*Θa
       -- But Θb > Θa and Θa < 0 means Θb could be anywhere
@@ -240,7 +263,7 @@ theorem noAnomalousPairs_of_representation
       linarith
 
   · -- Negative case: a¹ > b¹ > a² (symmetric argument)
-    simp only [iterate_op_one] at ha1_gt_b1 hb1_gt_a2
+    simp only [iterate_op_pnat_one] at ha1_gt_b1 hb1_gt_a2
     -- a > b and b > a·a
     have hΘa_gt_Θb : Θ a > Θ b := hΘ_order_lt b a |>.mp ha1_gt_b1
     have hdiff_pos : 0 < Θ a - Θ b := sub_pos.mpr hΘa_gt_Θb
@@ -249,39 +272,41 @@ theorem noAnomalousPairs_of_representation
     -- From aⁿ⁺¹ < bⁿ < aⁿ (negative squeeze): (n+1)*Θa < n*Θb < n*Θa
     -- So n*Θa - n*Θb < n*Θa - (n+1)*Θa = -Θa
     -- i.e., n*(Θa - Θb) < -Θa, but Θa - Θb > 0 and we need -Θa > 0 means Θa < 0
-    have hbound : ∀ n : ℕ, 0 < n → (n : ℝ) * (Θ a - Θ b) < -Θ a := by
-      intro n hn
-      rcases hAnom_nat n hn with ⟨han_lt_bn, _⟩ | ⟨_, hbn_gt_an1⟩
+    have hbound : ∀ n : ℕ+, (n : ℝ) * (Θ a - Θ b) < -Θ a := by
+      intro n
+      rcases hAnom n with ⟨han_lt_bn, _⟩ | ⟨_, hbn_gt_an1⟩
       · -- From aⁿ < bⁿ - contradicts a > b
-        have h1 : Θ (iterate_op a n) < Θ (iterate_op b n) :=
+        have h1 : Θ (iterate_op_pnat a n) < Θ (iterate_op_pnat b n) :=
           hΘ_order_lt _ _ |>.mp han_lt_bn
-        rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add a n] at h1
-        rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add b n] at h1
-        have hn_pos : (0 : ℝ) < n := Nat.cast_pos'.mpr hn
-        have h2 : Θ a < Θ b := by
-          have := mul_lt_mul_of_pos_left h1 (inv_pos.mpr hn_pos)
-          simp only [inv_mul_cancel_left₀ (ne_of_gt hn_pos)] at this
-          linarith
+        rw [theta_iterate_op_pnat_eq_nsmul α Θ hΘ_add a n] at h1
+        rw [theta_iterate_op_pnat_eq_nsmul α Θ hΘ_add b n] at h1
+        have hn_pos : (0 : ℝ) < (n : ℝ) := by
+          exact_mod_cast n.pos
+        have h1' : (n : ℝ) * Θ a < (n : ℝ) * Θ b := by linarith
+        have h2 : Θ a < Θ b := (mul_lt_mul_iff_right₀ hn_pos).1 h1'
         exact absurd hΘa_gt_Θb (not_lt.mpr (le_of_lt h2))
       · -- From aⁿ⁺¹ < bⁿ, we get (n+1)*Θa < n*Θb
-        have h1 : Θ (iterate_op a (n + 1)) < Θ (iterate_op b n) :=
+        have h1 : Θ (iterate_op_pnat a (n + 1)) < Θ (iterate_op_pnat b n) :=
           hΘ_order_lt _ _ |>.mp hbn_gt_an1
-        rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add a (n + 1)] at h1
-        rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add b n] at h1
+        rw [theta_iterate_op_pnat_eq_nsmul α Θ hΘ_add a (n + 1)] at h1
+        rw [theta_iterate_op_pnat_eq_nsmul α Θ hΘ_add b n] at h1
         -- (n + 1) * Θa < n * Θb
         -- n * Θa + Θa < n * Θb
         -- n * (Θa - Θb) < -Θa
-        have h2 : ((n + 1 : ℕ) : ℝ) * Θ a < (n : ℝ) * Θ b := h1
+        have h2 : ((n + 1 : ℕ+) : ℝ) * Θ a < (n : ℝ) * Θ b := h1
+        have hcoe : ((n + 1 : ℕ+) : ℝ) = (n : ℝ) + 1 := by
+          have h := PNat.add_coe n 1
+          exact_mod_cast h
         calc (n : ℝ) * (Θ a - Θ b) = (n : ℝ) * Θ a - (n : ℝ) * Θ b := by ring
-          _ < (n : ℝ) * Θ a - ((n + 1 : ℕ) : ℝ) * Θ a := by linarith
-          _ = (n : ℝ) * Θ a - ((n : ℝ) + 1) * Θ a := by simp [Nat.cast_add, Nat.cast_one]
+          _ < (n : ℝ) * Θ a - ((n + 1 : ℕ+) : ℝ) * Θ a := by linarith
+          _ = (n : ℝ) * Θ a - ((n : ℝ) + 1) * Θ a := by rw [hcoe]
           _ = -Θ a := by ring
 
     -- Contradiction: n*(Θa - Θb) < -Θa for all n > 0, with Θa - Θb > 0
     -- This requires -Θa > 0, i.e., Θa < 0
     -- And for large n, n*(Θa - Θb) → +∞, which can't stay < -Θa (a fixed value)
     have hΘa_neg : Θ a < 0 := by
-      have h := hbound 1 Nat.one_pos
+      have h := hbound 1
       simp at h
       linarith
     have hArch := exists_nat_gt ((-Θ a) / (Θ a - Θ b))
@@ -294,10 +319,12 @@ theorem noAnomalousPairs_of_representation
       have h1 : -Θ a > 0 := neg_pos.mpr hΘa_neg
       have h2 : (-Θ a) / (Θ a - Θ b) ≥ 0 := div_nonneg (le_of_lt h1) (le_of_lt hdiff_pos)
       linarith
-    have hcontra := hbound N hN_pos
-    have h1 : (N : ℝ) > (-Θ a) / (Θ a - Θ b) := hN
-    have h2 : (N : ℝ) * (Θ a - Θ b) > -Θ a := by
-      calc (N : ℝ) * (Θ a - Θ b) > ((-Θ a) / (Θ a - Θ b)) * (Θ a - Θ b) := by
+    let n' : ℕ+ := ⟨N, hN_pos⟩
+    have hcontra := hbound n'
+    have h1 : (n' : ℝ) > (-Θ a) / (Θ a - Θ b) := by
+      simpa using hN
+    have h2 : (n' : ℝ) * (Θ a - Θ b) > -Θ a := by
+      calc (n' : ℝ) * (Θ a - Θ b) > ((-Θ a) / (Θ a - Θ b)) * (Θ a - Θ b) := by
             exact mul_lt_mul_of_pos_right h1 hdiff_pos
         _ = -Θ a := by field_simp
     linarith
@@ -307,19 +334,14 @@ theorem noAnomalousPairs_of_representation
 This is the central theorem showing that `NoAnomalousPairs` is exactly the
 condition needed for an additive order-isomorphism into ℝ. -/
 theorem noAnomalousPairs_iff_hasRepresentationTheorem
-    (α : Type*) [KnuthSkillingAlgebraBase α] :
+    (α : Type*) [KSSemigroupBase α] :
     NoAnomalousPairs α ↔ HasRepresentationTheorem α := by
   constructor
   · intro h
     exact @holder_hasRepresentationTheorem α _ h
   · intro h
     obtain ⟨Θ, hΘ_order, hΘ_add⟩ := h.exists_representation
-    have hΘ_ident : Θ ident = 0 := by
-      have h := hΘ_add ident ident
-      have h' : Θ ident = Θ ident + Θ ident := by
-        simpa [op_ident_left] using h
-      linarith
-    exact noAnomalousPairs_of_representation α Θ hΘ_order hΘ_ident hΘ_add
+    exact noAnomalousPairs_of_representation α Θ hΘ_order hΘ_add
 
 /-! ## Section 5.6: The Silly but Complete Chain
 
@@ -342,7 +364,7 @@ This theorem shows that `NoAnomalousPairs` implies the separation property
 Combined with `KSSeparation + IdentIsMinimum → NoAnomalousPairs`, this shows
 all three conditions are equivalent under `IdentIsMinimum`. -/
 theorem ksSeparation_of_noAnomalousPairs
-    (α : Type*) [KnuthSkillingAlgebraBase α] [NoAnomalousPairs α]
+    (α : Type*) [KnuthSkillingMonoidBase α] [NoAnomalousPairs α]
     {a x y : α} (ha : ident < a) (hx : ident < x) (hy : ident < y) (hxy : x < y) :
     ∃ n m : ℕ, 0 < m ∧ iterate_op x m < iterate_op a n ∧ iterate_op a n ≤ iterate_op y m := by
   -- Step 1: NoAnomalousPairs → Representation (via Hölder)
@@ -427,9 +449,10 @@ theorem ksSeparation_of_noAnomalousPairs
 
 | Approach | Required Typeclasses |
 |----------|---------------------|
-| Grid | `KnuthSkillingAlgebra`, `KSSeparation`, `RepresentationGlobalization` |
+| Grid (normalized) | `KnuthSkillingAlgebra`, `KSSeparation`, `RepresentationGlobalization` |
+| Grid (semigroup) | `KSSemigroupBase`, `RepresentationGlobalizationSemigroup` |
 | Cuts | `KnuthSkillingAlgebra`, `KSSeparation`, `KSSeparationStrict` |
-| Hölder | `KnuthSkillingAlgebraBase`, `NoAnomalousPairs` (**weakest!**) |
+| Hölder | `KSSemigroupBase`, `NoAnomalousPairs` (**weakest!**) |
 
 ### Elegance Assessment
 

@@ -17,7 +17,8 @@ Lean entry points (project-relative paths):
 - `Mettapedia/ProbabilityTheory/KnuthSkilling/Core/Basic.lean` (high-level K&S structures)
 - `Mettapedia/ProbabilityTheory/KnuthSkilling/Core/Algebra.lean` (core algebra)
 - `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Axioms/SandwichSeparation.lean` (sandwich separation: separation ⇒ commutativity)
-- `Mettapedia/ProbabilityTheory/KnuthSkilling/_archive/Separation/Derivation.lean` (WIP derivation of `KSSeparation`)
+- `_archive/ProbabilityTheory/KnuthSkilling/Separation/Derivation.lean`
+  (WIP derivation of `KSSeparation`)
 - `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Proofs/GridInduction/` (Appendix A grid/induction development)
 - `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean` (Hölder embedding path)
 - `Mettapedia/ProbabilityTheory/AssociativityTheorem.lean` (context + alternative view)

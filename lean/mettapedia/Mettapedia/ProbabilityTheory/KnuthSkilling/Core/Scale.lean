@@ -14,12 +14,15 @@ The scale structures form a refinement hierarchy:
    - Strict monotonicity in both arguments
    - *This is the Alimov/Hölder classical setting*
 
-2. **`KnuthSkillingAlgebraBase`** (with identity)
-   - Adds: identity element `ident`
-   - Adds: `ident` is minimum (`ident_le`)
-   - *This is the probability/valuation setting*
+2. **`KnuthSkillingMonoidBase`** (identity, no bottom assumption)
+   - Adds: identity element `ident` with left/right identity laws
+   - *Useful for normalization Θ(ident)=0 without assuming `ident_le`*
 
-3. **`KSSeparation`** / **`KSSeparationSemigroup`**
+3. **`KnuthSkillingAlgebraBase`** (probability/valuation setting)
+   - Adds: `ident` is minimum (`ident_le`)
+   - *This is the setting where every element is “nonnegative” (≥ ident)*
+
+4. **`KSSeparation`** / **`KSSeparationSemigroup`**
    - Density axiom: no infinitesimal gaps
    - Equivalent to "No Anomalous Pairs" (Alimov)
    - *Ensures embedding into ℝ*
@@ -39,9 +42,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Scale
 variable {α : Type*} [KSSemigroupBase α]
 
 -- Identity-free ordered semigroup operations available
-example (x y : α) : op x y = op y x := by
-  -- requires KSSeparationSemigroup for commutativity
-  sorry
+-- (To prove commutativity, add a separation/representation hypothesis; omitted here.)
 ```
 -/
 

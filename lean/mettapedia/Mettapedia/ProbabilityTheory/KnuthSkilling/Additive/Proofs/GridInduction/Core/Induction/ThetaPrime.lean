@@ -12,7 +12,7 @@ open KnuthSkillingAlgebraBase
 open KnuthSkillingAlgebra
 open SandwichSeparation.SeparationToArchimedean
 
-variable {α : Type*} [KnuthSkillingAlgebra α] [KSSeparation α]
+variable {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α]
 
 /-!
 ## Θ' Infrastructure (core induction step `k → k+1`)
@@ -31,7 +31,7 @@ extended grid. This avoids `Classical.choose`-dependence in later additivity/mon
   interface `BEmptyStrictGapSpec`; see
   `Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Proofs/GridInduction/Core/Induction/Goertzel.lean`.
 
-### Note: `ZQuantized` vs `chooseδ` (legacy/optional)
+### Note: `ZQuantized` vs `chooseδ`
 Some older lemmas in this file assume `hZQ : ZQuantized F R (chooseδ hk R d hd)`, i.e. every
 k-grid Θ-value is an integer multiple of the *new* δ. This is a strong commensurability premise:
 it is **not** required by `extend_grid_rep_with_atom`, and it can fail even in additive models.
@@ -1447,8 +1447,6 @@ theorem zquantized_chooseδ_blocks_strict_gap_Δ1
     -- both μx and μy ⊕ d^Δ with μx < μy ⊕ d^Δ.
     --
     -- So there's no immediate contradiction from Kx = Ky + Δ on the A-side!
-    --
-    -- This suggests that the K&S argument must be more subtle. Let me re-read the TODO comment.
     --
     -- The comment says to use `delta_cut_tight_common_den` to get A/C witnesses and derive
     -- a contradiction. This suggests the argument needs more machinery than just the crossing
@@ -2971,8 +2969,7 @@ theorem extend_grid_rep_with_atom
             -- The ordering x < y encodes that the "t advantage" outweighs the "θ disadvantage".
             -- In the representation framework, this is captured by the A/C separation bounds.
 
-            -- Since the detailed proof requires additional infrastructure (relative A-bounds),
-            -- keep a TODO marker but with more context:
+            -- Since the detailed proof requires additional infrastructure (relative A-bounds):
             suffices h_bound : θx - θy < Δ * δ by linarith
 
             -- Use ZQuantized to express the gap as an integer multiple

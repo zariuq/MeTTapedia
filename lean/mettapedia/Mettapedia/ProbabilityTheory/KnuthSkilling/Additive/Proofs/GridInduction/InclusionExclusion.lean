@@ -370,24 +370,8 @@ theorem valuation_meet_comm (x y : α) :
 
 end Commutativity
 
-/-! ## TODO: Connect op to lattice structure
-
-The main gap in this file is formalizing the connection between:
-1. The `op : α → α → α` operation (from K&S axioms, represents disjoint combination)
-2. The lattice structure `⊔`, `⊓` (for arbitrary joins and meets)
-
-The paper implicitly assumes these are related by:
-- When x and y are "disjoint" (in some sense), then x ⊔ y = op x y
-- Disjointness can be expressed via the lattice: x ⊓ y = ⊥
-
-This connection needs to be either:
-(a) Added as an explicit hypothesis when we have both structures, or
-(b) Derived from a more primitive setup where the lattice operations
-    are defined in terms of op (less general), or
-(c) Proven in specific models where both structures are explicitly constructed
-    (e.g., finite Boolean algebras, open sets, etc.)
-
-The examples in `Examples/` folder take approach (c). A general theory would
-need (a) or (b). -/
+/-! Connect `op` (disjoint combination) to lattice structure (`⊔`, `⊓`).
+The paper assumes: when x ⊓ y = ⊥, then x ⊔ y = op x y.
+Approaches: (a) explicit hypothesis, (b) define lattice via op, (c) prove in specific models. -/
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.Additive

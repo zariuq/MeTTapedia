@@ -19,11 +19,19 @@ Paper cross-reference:
 - Theorem “Separation Implies Commutativity” (label `thm:sep-comm`).
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebraBase α]
+section Semigroup
+
+variable {α : Type*} [KSSemigroupBase α]
 
 /-- Proposition packaging global commutativity for `op`. -/
 def SeparationImpliesCommutative : Prop :=
   ∀ x y : α, op x y = op y x
+
+end Semigroup
+
+section WithIdentity
+
+variable {α : Type*} [KnuthSkillingAlgebraBase α]
 
 /-!
 ## Theorem: `KSSeparation` forces commutativity
@@ -40,5 +48,7 @@ Paper cross-reference:
 - `paper/ks-formalization.tex`, Theorem “Separation Implies Commutativity” (label `thm:sep-comm`). -/
 theorem op_comm_of_KSSeparation [KSSeparation α] (x y : α) : op x y = op y x :=
   separationImpliesCommutative_of_KSSeparation (α := α) x y
+
+end WithIdentity
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core

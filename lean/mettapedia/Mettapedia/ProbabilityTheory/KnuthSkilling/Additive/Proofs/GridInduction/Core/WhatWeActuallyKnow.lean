@@ -3,7 +3,9 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core
 
-open Classical KnuthSkillingAlgebra
+open Classical
+open KSSemigroupBase
+open KnuthSkillingAlgebra
 open Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 
 /-!
@@ -13,10 +15,10 @@ This file contains ONLY results that are fully proven, no handwaving.
 
 ## Summary
 
-✓ PROVEN: Representable ⟹ Commutative
-✓ PROVEN: A commutative non-Archimedean product fails the sandwich axiom
-✓ PROVEN: KSSeparation ⟹ Commutative (mass-counting proof)
-✗ OPEN: KSSeparation ⟹ Representable
+- Representable ⟹ Commutative
+- A commutative non-Archimedean product fails the sandwich axiom
+- KSSeparation ⟹ Commutative (mass-counting proof)
+- OPEN: KSSeparation ⟹ Representable
 
 ## The Gap
 
@@ -24,10 +26,40 @@ The remaining representation-theorem work is to connect `KSSeparation` to the ad
 embedding produced by the main construction.
 -/
 
-variable {α : Type*} [KnuthSkillingAlgebra α]
+/-! ## Identity-Free Facts -/
+
+section Semigroup
+
+variable {α : Type*} [KSSemigroupBase α]
 
 /-!
-## Theorem 1: If Representable, Then Commutative (FULLY PROVEN)
+## Theorem 1a: If Representable (Semigroup), Then Commutative ()
+-/
+
+theorem representable_semigroup_implies_commutative_reference [RepresentableSemigroup α] :
+    ∀ x y : α, op x y = op y x := by
+  exact representable_semigroup_implies_commutative (α := α)
+
+/-!
+## Theorem 2a: ℕ+ Powers Preserve Inequality ()
+-/
+
+theorem iterate_op_pnat_preserves_lt {a b : α} (hab : a < b) (k : ℕ+) :
+    iterate_op_pnat a k < iterate_op_pnat b k :=
+  iterate_op_pnat_strictMono_base hab k
+
+end Semigroup
+
+/-! ## Identity-Based Facts -/
+
+section WithIdentity
+
+variable {α : Type*} [KnuthSkillingMonoidBase α]
+
+open KnuthSkillingMonoidBase KnuthSkillingAlgebra
+
+/-!
+## Theorem 1: If Representable, Then Commutative ()
 
 This is proven in OneDimensional.lean with NO sorries.
 -/
@@ -37,18 +69,7 @@ theorem representable_implies_commutative_reference [Representable α] :
   exact representable_implies_commutative (α := α)
 
 /-!
-## Theorem 1b: If Separated, Then Commutative (FULLY PROVEN)
-
-There is a complete proof that the iterate/power "sandwich" axiom `KSSeparation`
-forces global commutativity. -/
-
-theorem ksSeparation_implies_commutative_reference [KSSeparation α] :
-    ∀ x y : α, op x y = op y x := by
-  intro x y
-  exact op_comm_of_KSSeparation (α := α) x y
-
-/-!
-## Theorem 2: Powers Preserve Inequality (FULLY PROVEN)
+## Theorem 2: Powers Preserve Inequality ()
 
 If a < b, then a^k < b^k for all k > 0.
 This is a basic fact about strictly monotone functions.
@@ -73,7 +94,7 @@ theorem iterate_op_preserves_lt {a b : α} (hab : a < b) (k : ℕ) (hk : 0 < k) 
         _ = iterate_op b (k + 1) := rfl
 
 /-!
-## Theorem 3: Separation Gives Specific Constraints (FULLY PROVEN)
+## Theorem 3: Separation Gives Specific Constraints ()
 
 If KSSeparation holds and x⊕y < y⊕x, we CAN apply separation.
 This gives us constraints, but not yet a contradiction.
@@ -136,5 +157,26 @@ This appears to be a genuinely difficult problem that may require:
 - Representation theory (beyond classical Hölder)
 - Order-theoretic methods we haven't found
 -/
+
+end WithIdentity
+
+section IdentIsMin
+
+variable {α : Type*} [KnuthSkillingAlgebraBase α]
+open KnuthSkillingAlgebraBase KnuthSkillingAlgebra
+
+/-!
+## Theorem 1b: If Separated, Then Commutative ()
+
+There is a complete proof that the iterate/power "sandwich" axiom `KSSeparation`
+forces global commutativity.
+-/
+
+theorem ksSeparation_implies_commutative_reference [KSSeparation α] :
+    ∀ x y : α, op x y = op y x := by
+  intro x y
+  exact op_comm_of_KSSeparation (α := α) x y
+
+end IdentIsMin
 
 end Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core
