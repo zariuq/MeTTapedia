@@ -270,6 +270,50 @@ theorem linear_order_all_comparable {α : Type*} [LinearOrder α] (x y : α) :
   · exact Or.inr (le_of_lt hgt)
 
 /-!
+### Point-Valued Faithful Representations Force Totality
+
+If a partial order admits a faithful point-valued representation into `ℝ` (i.e. an order embedding),
+then it must already be total: any two points become comparable because `ℝ` is linearly ordered.
+
+This is the clean formal sense in which `LinearOrder` is not cosmetic: it is exactly what is needed
+to support point-valued (precise) representations. Dropping totality leads naturally to interval-
+valued semantics (`TotalityImprecision.lean`) rather than a point-valued embedding.
+-/
+
+/-- A point-valued **faithful** representation into `ℝ`: order is reflected and preserved. -/
+def FaithfulPointRepresentation (α : Type*) [PartialOrder α] : Prop :=
+  ∃ Θ : α → ℝ, ∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b
+
+theorem totality_of_faithfulPointRepresentation {α : Type*} [PartialOrder α]
+    (hΘ : FaithfulPointRepresentation α) :
+    ∀ x y : α, x ≤ y ∨ y ≤ x := by
+  rcases hΘ with ⟨Θ, hΘ⟩
+  intro x y
+  rcases le_total (Θ x) (Θ y) with hxy | hyx
+  · exact Or.inl ((hΘ x y).2 hxy)
+  · exact Or.inr ((hΘ y x).2 hyx)
+
+theorem no_faithfulPointRepresentation_of_incomparable {α : Type*} [PartialOrder α]
+    (hinc : ∃ x y : α, ¬(x ≤ y) ∧ ¬(y ≤ x)) :
+    ¬ FaithfulPointRepresentation α := by
+  intro hΘ
+  rcases hinc with ⟨x, y, hx, hy⟩
+  have htot := totality_of_faithfulPointRepresentation (α := α) hΘ x y
+  cases htot with
+  | inl hxy => exact hx hxy
+  | inr hyx => exact hy hyx
+
+theorem no_pointRepresentation_with_incomparables
+    {α : Type*} [PartialKnuthSkillingAlgebra α]
+    (x y : α) (hxy : PartialKnuthSkillingAlgebra.Incomparable x y) :
+    ¬ ∃ (Θ : α → ℝ), ∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b := by
+  intro hΘ
+  -- Any faithful point-valued representation forces totality, contradicting incomparability.
+  have hinc : ∃ x y : α, ¬(x ≤ y) ∧ ¬(y ≤ x) := ⟨x, y, hxy.1, hxy.2⟩
+  exact no_faithfulPointRepresentation_of_incomparable (α := α) hinc (by
+    simpa [FaithfulPointRepresentation] using hΘ)
+
+/-!
 ### Theorem 4: The Totality-Precision Connection
 
 For faithful representations:

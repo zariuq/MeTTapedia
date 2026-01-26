@@ -232,7 +232,11 @@ class KnuthSkillingAlgebraBase (alpha : Type*) extends KnuthSkillingMonoidBase a
 
 \begin{remark}[Implicit Linear Order]
 K\&S never explicitly state that elements are totally ordered, but their proofs rely on trichotomy.
-We make this explicit via \texttt{LinearOrder}.
+We make this explicit via \texttt{LinearOrder}. This is \textbf{necessary}, not cosmetic:
+\texttt{no\_pointRepresentation\_with\_incomparables} proves that any partial order with
+incomparable elements admits no faithful $\Theta : \alpha \to \mathbb{R}$.
+Dropping totality yields interval-valued representations (Walley's imprecise probability);
+see \texttt{Core/TotalityImprecision.lean}.
 \end{remark}
 
 \begin{remark}[Identity Element---Essential for Positivity]
@@ -505,7 +509,7 @@ For a linearly ordered cancellative semigroup with strictly monotone operation a
 
 \textbf{Files}:
 \begin{itemize}
-\item \texttt{Core/Algebra.lean} --- \texttt{SeparationGeneralizedProp} definition
+\item \texttt{Core/Algebra.lean} --- \texttt{SeparationBilateralProp} definition
 \item \texttt{Additive/Proofs/GridInduction/Comparison.lean} --- proofs
 \end{itemize}
 
@@ -513,7 +517,7 @@ Without the assumption that identity is a minimum, elements can exist \emph{belo
 (mapping to negative reals under $\Theta$). The separation axiom extends naturally to a
 \textbf{bilateral} form:
 
-\begin{definition}[\texttt{SeparationGeneralizedProp}]
+\begin{definition}[\texttt{SeparationBilateralProp}]
 \textbf{Lines 400--409, Core/Algebra.lean}
 
 Bilateral separation consists of two branches:
@@ -524,10 +528,10 @@ Bilateral separation consists of two branches:
 The key constraint: $a$, $x$, $y$ must lie on the \emph{same side} of identity.
 \end{definition}
 
-\begin{theorem}[\texttt{separationGeneralizedProp\_of\_noAnomalousPairs}]
+\begin{theorem}[\texttt{separationBilateralProp\_of\_noAnomalousPairs}]
 \textbf{Lines 563--570, Additive/Proofs/GridInduction/Comparison.lean}
 
-\texttt{NoAnomalousPairs} implies \texttt{SeparationGeneralizedProp}.
+\texttt{NoAnomalousPairs} implies \texttt{SeparationBilateralProp}.
 \end{theorem}
 
 \textbf{Proof idea (negative branch)}:
@@ -539,7 +543,7 @@ gives $mX \leq nA < mY$. Translating back yields the sandwich $x^{(m)} < a^{(n)}
 
 \begin{remark}[Probability setting]
 Under \texttt{IdentIsMinimum} (the probability setting), no elements exist below identity,
-so the negative branch is vacuously true and \texttt{SeparationGeneralizedProp} reduces to
+so the negative branch is vacuously true and \texttt{SeparationBilateralProp} reduces to
 the standard one-sided \texttt{KSSeparation}.
 \end{remark}
 
@@ -2111,7 +2115,10 @@ Born rule from averaging & Proven & mean\_bornRule\_sum\_unit\_phases \\
 \subsection{Key Discoveries from Formalization}
 
 \begin{enumerate}
-\item \textbf{Linear order is implicit}: K\&S proofs assume trichotomy without stating it.
+\item \textbf{Linear order is necessary}: K\&S proofs assume trichotomy without stating it.
+We prove this is essential: \texttt{no\_pointRepresentation\_with\_incomparables} shows
+partial orders with incomparable elements admit no faithful $\Theta : \alpha \to \mathbb{R}$
+(\texttt{Core/TotalityImprecision.lean}).
 
 \item \textbf{Identity is essential for positivity}: K\&S say the bottom element is ``optional'' (lines 320, 340--341),
 claiming ``fidelity ensures that other elements are quantified by positive values.''
