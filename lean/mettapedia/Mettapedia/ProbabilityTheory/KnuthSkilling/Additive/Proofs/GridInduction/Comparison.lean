@@ -434,6 +434,141 @@ theorem ksSeparation_of_noAnomalousPairs
     have h1 : ((n' : ℝ) + 1) * Θ a < (m : ℝ) * Θ y := by linarith
     linarith
 
+/-- Negative-side version of `ksSeparation_of_noAnomalousPairs`.
+
+This proves the same sandwich property below `ident`.  Under a Hölder representation
+`Θ : α → ℝ`, the proof is the same rational-density argument, but uses the interval in
+`ℝ_{<0}` (equivalently, applies the positive argument to `-Θ`). -/
+theorem ksSeparation_neg_of_noAnomalousPairs
+    (α : Type*) [KnuthSkillingMonoidBase α] [NoAnomalousPairs α]
+    {a x y : α} (ha : a < ident) (hx : x < ident) (hy : y < ident) (hxy : x < y) :
+    ∃ n m : ℕ, 0 < m ∧ iterate_op x m < iterate_op a n ∧ iterate_op a n ≤ iterate_op y m := by
+  -- Step 1: NoAnomalousPairs → Representation (via Hölder)
+  obtain ⟨Θ, hΘ_order, hΘ_ident, hΘ_add⟩ := representation_from_noAnomalousPairs (α := α)
+
+  -- Helper: Θ reflects strict order
+  have hΘ_lt : ∀ u v : α, u < v ↔ Θ u < Θ v := fun u v => by
+    constructor
+    · intro huv
+      have h1 : Θ u ≤ Θ v := (hΘ_order u v).mp (le_of_lt huv)
+      have h2 : Θ u ≠ Θ v := by
+        intro heq
+        have h3 : v ≤ u := (hΘ_order v u).mpr (le_of_eq heq.symm)
+        exact absurd (le_antisymm (le_of_lt huv) h3) (ne_of_lt huv)
+      exact lt_of_le_of_ne h1 h2
+    · intro huv
+      have h1 : u ≤ v := (hΘ_order u v).mpr (le_of_lt huv)
+      have h2 : u ≠ v := by
+        intro heq
+        rw [heq] at huv
+        exact lt_irrefl _ huv
+      exact lt_of_le_of_ne h1 h2
+
+  -- Step 2: Map hypotheses to ℝ (all negative)
+  have ha' : Θ a < 0 := by
+    have : Θ a < Θ ident := (hΘ_lt a ident).mp ha
+    simpa [hΘ_ident] using this
+  have hx' : Θ x < 0 := by
+    have : Θ x < Θ ident := (hΘ_lt x ident).mp hx
+    simpa [hΘ_ident] using this
+  have hy' : Θ y < 0 := by
+    have : Θ y < Θ ident := (hΘ_lt y ident).mp hy
+    simpa [hΘ_ident] using this
+  have hxy' : Θ x < Θ y := (hΘ_lt x y).mp hxy
+
+  -- Work with positive reals A = -Θ(a), X = -Θ(y), Y = -Θ(x), so 0 < X < Y.
+  let A : ℝ := -Θ a
+  let X : ℝ := -Θ y
+  let Y : ℝ := -Θ x
+  have hA_pos : 0 < A := by simp [A]; linarith
+  have hX_pos : 0 < X := by simp [X]; linarith
+  have hY_pos : 0 < Y := by simp [Y]; linarith
+  have hXY : X < Y := by
+    have : -Θ y < -Θ x := by linarith [hxy']
+    simpa [X, Y] using this
+  have hgap_pos : 0 < Y - X := sub_pos.mpr hXY
+
+  -- Choose m large enough that A ≤ m * (Y - X).
+  obtain ⟨m, hm⟩ := exists_nat_ge (A / (Y - X))
+  have hm_pos : 0 < m := by
+    by_contra hm0
+    have hm0' : m = 0 := Nat.eq_zero_of_not_pos hm0
+    subst hm0'
+    have hfrac_pos : 0 < A / (Y - X) := div_pos hA_pos hgap_pos
+    exact (not_lt_of_ge hm) (by simpa using hfrac_pos)
+  have hA_le : A ≤ (m : ℝ) * (Y - X) := by
+    -- hm : A / (Y - X) ≤ m
+    have hm' : A / (Y - X) ≤ (m : ℝ) := by simpa using hm
+    exact (div_le_iff₀ hgap_pos).1 hm'
+
+  -- Choose n = ceil(m * X / A). Then m*X ≤ n*A < m*X + A ≤ m*Y.
+  let n : ℕ := Nat.ceil ((m : ℝ) * X / A)
+  have hmx_le_nA : (m : ℝ) * X ≤ (n : ℝ) * A := by
+    have hceil : (m : ℝ) * X / A ≤ (n : ℝ) := by
+      simpa [n] using (Nat.le_ceil ((m : ℝ) * X / A))
+    exact (div_le_iff₀ hA_pos).1 hceil
+  have hnA_lt_mY : (n : ℝ) * A < (m : ℝ) * Y := by
+    have hnonneg : 0 ≤ (m : ℝ) * X / A := by positivity
+    have hceil_lt : (n : ℝ) < (m : ℝ) * X / A + 1 := by
+      simpa [n] using (Nat.ceil_lt_add_one (R := ℝ) hnonneg)
+    have hnA_lt : (n : ℝ) * A < ((m : ℝ) * X / A + 1) * A :=
+      mul_lt_mul_of_pos_right hceil_lt hA_pos
+    have hA_ne : A ≠ 0 := ne_of_gt hA_pos
+    have hRHS : ((m : ℝ) * X / A + 1) * A = (m : ℝ) * X + A := by
+      calc
+        ((m : ℝ) * X / A + 1) * A
+            = ((m : ℝ) * X / A) * A + 1 * A := by
+                simp [add_mul]
+        _ = ((m : ℝ) * X * A) / A + A := by
+                simp [div_mul_eq_mul_div, mul_assoc]
+        _ = (m : ℝ) * X + A := by
+                simp [mul_div_cancel_right₀, hA_ne]
+    have hmxA_le_mY : (m : ℝ) * X + A ≤ (m : ℝ) * Y := by
+      have h1 : (m : ℝ) * X + A ≤ (m : ℝ) * X + (m : ℝ) * (Y - X) :=
+        add_le_add_left hA_le ((m : ℝ) * X)
+      have h2 : (m : ℝ) * X + (m : ℝ) * (Y - X) = (m : ℝ) * Y := by ring
+      simpa [h2] using h1
+    have hnA_lt_mxA : (n : ℝ) * A < (m : ℝ) * X + A := by
+      simpa [hRHS] using hnA_lt
+    exact lt_of_lt_of_le hnA_lt_mxA hmxA_le_mY
+
+  -- Convert back to Θ inequalities: m*Θ(x) < n*Θ(a) ≤ m*Θ(y).
+  have hlt_real : (m : ℝ) * Θ x < (n : ℝ) * Θ a := by
+    have h' : (n : ℝ) * (-Θ a) < (m : ℝ) * (-Θ x) := by
+      simpa [A, Y] using hnA_lt_mY
+    have := neg_lt_neg h'
+    -- `-(m * (-Θ x)) = m * Θ x` and `-(n * (-Θ a)) = n * Θ a`
+    simpa using this
+  have hle_real : (n : ℝ) * Θ a ≤ (m : ℝ) * Θ y := by
+    have h' : (m : ℝ) * (-Θ y) ≤ (n : ℝ) * (-Θ a) := by
+      simpa [A, X] using hmx_le_nA
+    have := neg_le_neg h'
+    simpa using this
+
+  -- Translate back via Θ
+  refine ⟨n, m, hm_pos, ?_, ?_⟩
+  · apply (hΘ_lt _ _).mpr
+    rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add x m]
+    rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add a n]
+    exact hlt_real
+  · apply (hΘ_order _ _).mpr
+    rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add a n]
+    rw [theta_iterate_op_eq_nsmul α Θ hΘ_ident hΘ_add y m]
+    exact hle_real
+
+/-- **Bilateral separation from NAP** (no `IdentIsMinimum` needed).
+
+This packages both `ksSeparation_of_noAnomalousPairs` (positive side) and
+`ksSeparation_neg_of_noAnomalousPairs` (negative side) into `SeparationBilateralProp`. -/
+theorem separationBilateralProp_of_noAnomalousPairs
+    (α : Type*) [KnuthSkillingMonoidBase α] [NoAnomalousPairs α] :
+    SeparationBilateralProp (α := α) := by
+  refine ⟨?_, ?_⟩
+  · intro a x y ha hx hy hxy
+    exact ksSeparation_of_noAnomalousPairs (α := α) (a := a) (x := x) (y := y) ha hx hy hxy
+  · intro a x y ha hx hy hxy
+    exact ksSeparation_neg_of_noAnomalousPairs (α := α) (a := a) (x := x) (y := y) ha hx hy hxy
+
 /-! ## Section 6: Analysis Summary
 
 ### Lines of Code Comparison

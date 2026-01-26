@@ -382,6 +382,47 @@ def SeparationStrictProp [KnuthSkillingMonoidBase α] : Prop :=
       KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
       KnuthSkillingAlgebra.iterate_op a n < KnuthSkillingAlgebra.iterate_op y m
 
+/-- **Negative separation property (identity-based version)**.
+
+For `a < ident` and `x < y < ident`, there exist `n, m ∈ ℕ` with `0 < m` such that
+`x^m < a^n ≤ y^m`.
+
+This is the natural “other side” of `SeparationProp`, and is what you get automatically from a
+Hölder-style additive embedding `Θ : α → ℝ`: the same rational-density argument works in `ℝ_{<0}`.
+
+In the probability-theory setting (`ident` is a minimum), this property is vacuous because there
+are no elements strictly below `ident`. -/
+def SeparationNegProp [KnuthSkillingMonoidBase α] : Prop :=
+  ∀ {a x y : α}, a < ident → x < ident → y < ident → x < y →
+    ∃ n m : ℕ, 0 < m ∧
+      KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
+      KnuthSkillingAlgebra.iterate_op a n ≤ KnuthSkillingAlgebra.iterate_op y m
+
+/-- **Bilateral separation property (identity-based version)**.
+
+This is just `SeparationProp` on the positive cone together with `SeparationNegProp` on the
+negative cone. The “crossing” case `x < ident < y` is intentionally excluded: with ℕ-iteration
+only, there is no meaningful rational-sandwich statement spanning both sides without introducing
+additional signed structure. -/
+def SeparationBilateralProp [KnuthSkillingMonoidBase α] : Prop :=
+  SeparationProp (α := α) ∧ SeparationNegProp (α := α)
+
+theorem separationNegProp_of_identIsMinimum
+    {α : Type*} [KnuthSkillingAlgebraBase α] :
+    SeparationNegProp (α := α) := by
+  intro a x y _ha hx _hy _hxy
+  -- In the probability setting, `ident` is the minimum, so `x < ident` is impossible.
+  exact (False.elim (not_lt_of_ge (ident_le x) hx))
+
+theorem separationBilateralProp_iff_separationProp_of_identIsMinimum
+    {α : Type*} [KnuthSkillingAlgebraBase α] :
+    SeparationBilateralProp (α := α) ↔ SeparationProp (α := α) := by
+  constructor
+  · intro h
+    exact h.1
+  · intro h
+    refine ⟨h, separationNegProp_of_identIsMinimum (α := α)⟩
+
 /-- **KSSeparation**: the iterate/power "sandwich" axiom.
 
 Paper cross-reference:
@@ -407,6 +448,36 @@ class KSSeparation (α : Type*) [KnuthSkillingMonoidBase α] where
     ∃ n m : ℕ, 0 < m ∧
       KnuthSkillingAlgebra.iterate_op x m < KnuthSkillingAlgebra.iterate_op a n ∧
       KnuthSkillingAlgebra.iterate_op a n ≤ KnuthSkillingAlgebra.iterate_op y m
+
+/-- **KSSeparationBilateral**: `KSSeparation` plus the corresponding negative-side sandwich.
+
+This is an *optional* strengthening that is useful when working without the
+probability-theory assumption that `ident` is the minimum element.
+
+In the probability setting (`[KnuthSkillingAlgebraBase α]`), the extra field is vacuous, so
+`KSSeparationBilateral` is equivalent in strength to `KSSeparation`. -/
+class KSSeparationBilateral (α : Type*) [KnuthSkillingMonoidBase α] : Prop extends KSSeparation α where
+  /-- Negative-side sandwich: `SeparationNegProp`. -/
+  separation_neg : SeparationNegProp (α := α)
+
+namespace KSSeparationBilateral
+
+variable {α : Type*} [KnuthSkillingMonoidBase α] [KSSeparationBilateral α]
+
+theorem separationNegProp : SeparationNegProp (α := α) :=
+  KSSeparationBilateral.separation_neg
+
+theorem separationBilateralProp : SeparationBilateralProp (α := α) :=
+  ⟨KSSeparation.separation, KSSeparationBilateral.separation_neg⟩
+
+end KSSeparationBilateral
+
+-- In the probability setting, there are no elements below `ident`, so the negative-side sandwich is trivial.
+theorem ksSeparationBilateral_of_ksSeparation
+    {α : Type*} [KnuthSkillingAlgebraBase α] [KSSeparation α] :
+    KSSeparationBilateral α :=
+  { toKSSeparation := ‹KSSeparation α›
+    separation_neg := separationNegProp_of_identIsMinimum (α := α) }
 
 namespace KSSeparation
 

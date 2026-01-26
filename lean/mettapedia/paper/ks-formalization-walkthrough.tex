@@ -56,7 +56,7 @@
 \newtheorem{remark}[theorem]{Remark}
 
 \title{Knuth-Skilling Formalization\\{\Large Review Walkthrough}}
-\author{Codex 5.2, Claude 4.5, Zar Goertzel}
+\author{Codex 5.2, Claude 4.5, Zar Goertzel\thanks{This document was drafted collaboratively by humans and AI systems (GPT/Codex, Claude). While formal claims are machine-checked in Lean 4, prose descriptions may contain human or AI hallucinations. Caveat lector.}}
 \date{\today}
 
 \begin{document}
@@ -64,11 +64,36 @@
 \maketitle
 
 \begin{abstract}
-This document provides a systematic walkthrough of the Lean 4 formalization of Knuth \& Skilling's ``Foundations of Inference'' (2012).
+This document provides a systematic walkthrough of the Lean 4 formalization of Knuth \& Skilling's ``Foundations of Inference''~\cite{KnuthSkilling2012}.
 Each section lists the main theorem statements with their Lean proofs and file locations, organized by the corresponding K\&S paper sections.
 The reviewer entrypoint \texttt{.../KnuthSkilling/FoundationsOfInference.lean} is \textbf{complete with zero sorries}.
-Supplementary modules (Cox, Shore--Johnson, Shannon/Faddeev) are present but intentionally not imported by default by the FOI reviewer entrypoint; they provide alternative derivation paths and may assume additional regularity gates.
+Supplementary modules (Cox~\cite{Cox1946}, Shore--Johnson~\cite{ShoreJohnson1980}, Shannon~\cite{Shannon1948}/Faddeev~\cite{Faddeev1956}) are present but intentionally not imported by default by the FOI reviewer entrypoint; they provide alternative derivation paths and may assume additional regularity gates.
 \end{abstract}
+
+\begin{center}
+\noindent\fbox{%
+\begin{minipage}{0.97\textwidth}
+\textbf{Two-track reading (choose your level).}
+This walkthrough is structured so that a mathematician can audit \emph{statements} quickly,
+while a proof-assistant user can audit \emph{proofs} precisely.
+
+\medskip
+\textbf{Track A: theorem-level audit (skim).}
+\begin{itemize}
+\item Start with Section~13 (Summary), then jump to any topic and read only the definitions + theorem statements.
+\item Use file/line pointers for rapid spot-checking without reading every proof.
+\end{itemize}
+
+\textbf{Track B: proof-level audit (deep).}
+\begin{itemize}
+\item Run \texttt{lake build} \path{Mettapedia.ProbabilityTheory.KnuthSkilling.FoundationsOfInference}.
+\item Open the referenced Lean files at the cited line numbers to audit the full proof scripts.
+\end{itemize}
+
+\textbf{Scope note.} The reviewer entrypoint \texttt{FoundationsOfInference.lean} intentionally excludes
+optional derivation paths (Cox, Shore--Johnson, Shannon/Faddeev, algorithmic probability), which are present as opt-in modules.
+\end{minipage}}
+\end{center}
 
 \section*{Quickstart for Reviewers}
 
@@ -99,8 +124,8 @@ Supplementary modules (Cox, Shore--Johnson, Shannon/Faddeev) are present but int
 \midrule
 \endhead
 Sections 1--2 & Sum-side Axioms (Sym 0--2) & \texttt{Core/Basic.lean}, \texttt{Core/Algebra.lean} \\
-Sections 3,7 & Probability (two K\&S paths) & \texttt{Probability/ProbabilityDerivation.lean}, \texttt{Probability/ConditionalProbability/Basic.lean} \\
-Section 4 & Quantum theory & \texttt{Core/SymmetricalFoundation.lean}, \texttt{Mettapedia/Algebra/TwoDimClassification.lean} \\
+Sections 3,7 & Probability (two K\&S paths) & \path{Probability/ProbabilityDerivation.lean},\newline \path{Probability/ConditionalProbability/Basic.lean} \\
+Section 4 & Quantum theory & \path{Core/SymmetricalFoundation.lean},\newline \path{Mettapedia/Algebra/TwoDimClassification.lean} \\
 Section 6 & Divergence & \texttt{Information/Divergence.lean} \\
 Section 8 & Info/Entropy & \texttt{Information/InformationEntropy.lean} \\
 Appendix A & Representation & \texttt{Additive/Main.lean}, \texttt{Additive/Representation.lean} \\
@@ -120,7 +145,8 @@ All paths below are relative to \texttt{Mettapedia/ProbabilityTheory/KnuthSkilli
 \item[\texttt{FoundationsOfInference.lean}] Reviewer entrypoint (FOI core; no WIP)
 
 \medskip
-\item[\texttt{Core/Basic.lean}] Core axioms: \texttt{KSSemigroupBase}, \texttt{KnuthSkillingMonoidBase}, \texttt{KnuthSkillingAlgebraBase}
+\item[\texttt{Core/Basic.lean}] Core axioms: \texttt{KSSemigroupBase}, \texttt{KnuthSkillingMonoidBase},\\
+      \texttt{KnuthSkillingAlgebraBase}
 \item[\texttt{Core/Algebra.lean}] \texttt{iterate\_op}, separation axioms (\texttt{KSSeparation*})
 \item[\texttt{Core/ScaleCompleteness.lean}] $\sigma$-completeness axioms and $\sigma$-additivity theorem
 \item[\texttt{Core/SymmetricalFoundation.lean}] Section 4 quantum derivation
@@ -146,7 +172,7 @@ All paths below are relative to \texttt{Mettapedia/ProbabilityTheory/KnuthSkilli
 \item[\texttt{Information/InformationEntropy.lean}] Section 8 information/entropy (KL, Shannon)
 
 \medskip
-\item[\texttt{Probability/ConditionalProbability/Basic.lean}] Section 7 conditional probability (lattice path)
+\item[{\footnotesize\texttt{Probability/ConditionalProbability/Basic.lean}}] Section 7 conditional probability (lattice path)
 \end{description}
 
 %==============================================================================
@@ -263,7 +289,7 @@ or bundled classes when you want ergonomic access to multiple axioms.
 
 \textbf{Sum-side predicates} (Core/Basic.lean):
 \begin{itemize}
-\item \texttt{OpAssoc op} (line 142): $\forall x\, y\, z,\; \text{op}(\text{op}(x, y), z) = \text{op}(x, \text{op}(y, z))$
+\item \texttt{OpAssoc op} (line 143): $\forall x\, y\, z,\; \text{op}(\text{op}(x, y), z) = \text{op}(x, \text{op}(y, z))$
 \item \texttt{OpStrictMonoLeft op} (line 147): $\forall y,\; \text{StrictMono}(\lambda x.\, \text{op}(x, y))$
 \item \texttt{OpStrictMonoRight op} (line 151): $\forall x,\; \text{StrictMono}(\lambda y.\, \text{op}(x, y))$
 \item \texttt{OpIdentLeft op e} (line 155): $\forall x,\; \text{op}(e, x) = x$
@@ -319,7 +345,8 @@ private def iterate_op_pnat_aux (x : alpha) : Nat -> alpha
 \item \texttt{iterate\_op\_pnat x 1 = x} (base case is $x$, not $\text{ident}$)
 \item \texttt{iterate\_op\_pnat x (n+1) = op x (iterate\_op\_pnat x n)} (recursion)
 \item Builds the sequence: $x, x \oplus x, x \oplus (x \oplus x), \ldots$ (no identity!)
-\item \textbf{Connection}: \texttt{iterate\_op\_pnat x n = iterate\_op x n.val} when $n \geq 1$ (\texttt{Core/Algebra.lean:198})
+\item \textbf{Connection}: \texttt{iterate\_op\_pnat x n = iterate\_op x n.val} when $n \geq 1$
+      (\path{Core/Algebra.lean:198})
 \end{itemize}
 \end{remark}
 
@@ -343,8 +370,7 @@ continuity. The formalization must make explicit certain density requirements th
 approach handles implicitly. Two roughly equivalent formulations emerge:
 
 \begin{itemize}
-\item \textbf{No Anomalous Pairs (NAP)}: The classical condition from ordered semigroup theory
-      (H\"older 1901, Alimov 1950, Fuchs 1963).
+\item \textbf{No Anomalous Pairs (NAP)}: The classical condition from ordered semigroup theory~\cite{Holder1901,Alimov1950,Fuchs1963}.
 \item \textbf{Separation}: A ``sandwich'' property extracted from K\&S's constructive proof,
       made explicit in the formalization.
 \end{itemize}
@@ -357,7 +383,7 @@ classical algebra and has a complete machine-checked proof via Eric Luap's \text
 \label{subsec:nap}
 %------------------------------------------------------------------------------
 
-\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Axioms/AnomalousPairs.lean}
+\textbf{File}: \path{Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Axioms/AnomalousPairs.lean}
 
 \begin{definition}[Anomalous Pair]
 Two elements $a, b$ of an ordered semigroup form an \emph{anomalous pair} if their iterates remain
@@ -384,11 +410,11 @@ class NoAnomalousPairs (alpha : Type*) [KSSemigroupBase alpha] : Prop where
   not_anomalous : forall a b : alpha, Not (AnomalousPair a b)
 \end{lstlisting}
 
-\textbf{Historical context}: For \emph{groups}, H\"older (1901) proved that Archimedean ordered groups
-embed into $(\mathbb{R}, +)$. For \emph{semigroups} (without inverses), Alimov (1950) identified
-``no anomalous pairs'' as the precise generalization. Fuchs (1963) provided the textbook treatment.
+\textbf{Historical context}: For \emph{groups}, H\"older~\cite{Holder1901} proved that Archimedean ordered groups
+embed into $(\mathbb{R}, +)$. For \emph{semigroups} (without inverses), Alimov~\cite{Alimov1950} identified
+``no anomalous pairs'' as the precise generalization. Fuchs~\cite{Fuchs1963} provided the textbook treatment.
 
-\begin{theorem}[H\"older 1901, Alimov 1950, Fuchs 1963]
+\begin{theorem}[H\"older--Alimov~\cite{Holder1901,Alimov1950,Fuchs1963}]
 \label{thm:holder-alimov}
 In a linearly ordered cancellative semigroup, the following are equivalent:
 \begin{enumerate}
@@ -397,19 +423,8 @@ In a linearly ordered cancellative semigroup, the following are equivalent:
 \end{enumerate}
 \end{theorem}
 
-This classical result is formalized in Eric Luap's \texttt{OrderedSemigroups} library and imported
+This classical result is formalized in Eric Luap's \texttt{OrderedSemigroups} library~\cite{Luap2024} and imported
 into the K\&S development.
-
-\textbf{References}:
-\begin{itemize}
-\item H\"older, O. (1901). ``Die Axiome der Quantit\"at und die Lehre vom Mass.''
-      \emph{Ber.\ Verh.\ S\"achs.\ Akad.\ Wiss.\ Leipzig, Math.-Phys.\ Cl.}\ 53, 1--64.
-\item Alimov, N. G. (1950). ``On ordered semigroups.''
-      \emph{Izv.\ Akad.\ Nauk SSSR Ser.\ Mat.}\ 14, 569--576.
-\item Fuchs, L. (1963). \emph{Partially Ordered Algebraic Systems.} Pergamon Press.
-\item Luap, E. (2024). ``OrderedSemigroups: Formalization of Ordered Semigroups in Lean 4.''
-      \texttt{github.com/ericluap/OrderedSemigroups}
-\end{itemize}
 
 %------------------------------------------------------------------------------
 \subsection{Separation (K\&S Constructive Formulation)}
@@ -472,10 +487,13 @@ For a linearly ordered cancellative semigroup with strictly monotone operation a
 \item \textbf{Separation $\Rightarrow$ NAP}: If $(a, b)$ were anomalous with $a^n < b^n < a^{n+1}$
       for all $n$, separation would provide witnesses $(n, m)$ with $a^m < c^n \leq b^m$ for some
       base $c$---breaking the squeeze.
+      \\
       (\texttt{noAnomalousPairs\_of\_KSSeparation\_with\_IdentMin})
 
 \item \textbf{NAP $\Rightarrow$ Embedding}: The H\"older/Alimov theorem (Theorem~\ref{thm:holder-alimov}),
-      formalized via \texttt{OrderedSemigroups.holder\_not\_anom}.
+      formalized via
+      \\
+      \texttt{OrderedSemigroups.holder\_not\_anom}.
 
 \item \textbf{Embedding $\Rightarrow$ Separation}: Rational density in $\mathbb{R}$ provides the
       sandwich witnesses. For any $x < y$ in the semigroup, their images $\Theta(x) < \Theta(y)$
@@ -483,10 +501,52 @@ For a linearly ordered cancellative semigroup with strictly monotone operation a
       power witnesses.
 \end{enumerate}
 
+\subsubsection{Bilateral Separation}
+
+\textbf{Files}:
+\begin{itemize}
+\item \texttt{Core/Algebra.lean} --- \texttt{SeparationGeneralizedProp} definition
+\item \texttt{Additive/Proofs/GridInduction/Comparison.lean} --- proofs
+\end{itemize}
+
+Without the assumption that identity is a minimum, elements can exist \emph{below} identity
+(mapping to negative reals under $\Theta$). The separation axiom extends naturally to a
+\textbf{bilateral} form:
+
+\begin{definition}[\texttt{SeparationGeneralizedProp}]
+\textbf{Lines 400--409, Core/Algebra.lean}
+
+Bilateral separation consists of two branches:
+\begin{itemize}
+\item \textbf{(Positive)} For $\texttt{ident} < a$ and $\texttt{ident} < x < y$: sandwich condition.
+\item \textbf{(Negative)} For $a < \texttt{ident}$ and $x < y < \texttt{ident}$: same sandwich condition.
+\end{itemize}
+The key constraint: $a$, $x$, $y$ must lie on the \emph{same side} of identity.
+\end{definition}
+
+\begin{theorem}[\texttt{separationGeneralizedProp\_of\_noAnomalousPairs}]
+\textbf{Lines 563--570, Additive/Proofs/GridInduction/Comparison.lean}
+
+\texttt{NoAnomalousPairs} implies \texttt{SeparationGeneralizedProp}.
+\end{theorem}
+
+\textbf{Proof idea (negative branch)}:
+From NAP, obtain $\Theta : \alpha \to \mathbb{R}$.
+For $a, x, y < \texttt{ident}$, we have $\Theta(a), \Theta(x), \Theta(y) < 0$.
+Setting $A = -\Theta(a)$, $X = -\Theta(y)$, $Y = -\Theta(x)$ (note the swap!) gives $0 < X < Y$.
+By Archimedean property, pick $m$ with $A \leq m(Y - X)$, then $n := \lceil mX/A \rceil$
+gives $mX \leq nA < mY$. Translating back yields the sandwich $x^{(m)} < a^{(n)} \leq y^{(m)}$.
+
+\begin{remark}[Probability setting]
+Under \texttt{IdentIsMinimum} (the probability setting), no elements exist below identity,
+so the negative branch is vacuously true and \texttt{SeparationGeneralizedProp} reduces to
+the standard one-sided \texttt{KSSeparation}.
+\end{remark}
+
 \begin{remark}[Why NAP is Primary]
 The formalization treats \texttt{NoAnomalousPairs} as the primary axiom for three reasons:
 \begin{enumerate}
-\item \textbf{Historical precedent}: NAP predates K\&S by 60+ years (H\"older 1901).
+\item \textbf{Historical precedent}: NAP predates K\&S by 60+ years~\cite{Holder1901}.
 \item \textbf{Verified library}: Eric Luap's \texttt{OrderedSemigroups} provides a complete,
       machine-checked proof of the H\"older embedding theorem.
 \item \textbf{Minimality}: NAP is identity-free and works at the semigroup level, making it the
@@ -556,28 +616,30 @@ their constructive proof, which assumes the ability to place new values within i
 \begin{itemize}
 \item \texttt{Additive/Representation.lean} (interfaces: identity-free default)
 \item \texttt{Additive/Main.lean} (entrypoint: lightweight interface + instances)
-\item \texttt{Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean} (Hölder/Alimov embedding path)
+\item {\scriptsize\path{Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean}} (Hölder/Alimov embedding path)
 \item \texttt{Additive/Proofs/DirectCuts/Main.lean} (Dedekind cuts path)
 \item \texttt{Additive/Proofs/GridInduction/Main.lean} (Grid/induction path; K\&S-style, large)
 \item \texttt{Additive/Proofs/GridInduction/Globalization.lean} (globalization orchestrator)
 \item \texttt{Additive/Proofs/GridInduction/Core/} ($\sim$17,700 lines: grid infrastructure)
   \begin{itemize}
   \item \texttt{Core/MultiGrid.lean}: \texttt{AtomFamily}, \texttt{MultiGridRep}, grid representations
-  \item \texttt{Core/Induction/}: Inductive extension theorems (\texttt{Construction}, \texttt{ThetaPrime}, \texttt{DeltaShift})
+  \item \texttt{Core/Induction/}: Inductive extension theorems (\texttt{Construction}, \texttt{ThetaPrime},\newline \texttt{DeltaShift})
   \item \texttt{Core/OneDimensional.lean}: Base case (single atom)
   \item \texttt{Core/Prelude.lean}: Foundational lemmas
   \end{itemize}
 \end{itemize}
 
-\textbf{Architecture}: \texttt{Additive/Proofs/GridInduction/Globalization.lean} imports \texttt{.../Core/All.lean} and orchestrates the grid machinery to prove global representation.
+\textbf{Architecture}: \path{Additive/Proofs/GridInduction/Globalization.lean} imports
+\path{Additive/Proofs/GridInduction/Core/All.lean} and orchestrates the grid machinery to prove global representation.
 
 \subsection{Three Independent Proof Paths}
 
 The formalization provides \textbf{three complete, independent proof routes} to the representation theorem:
 
 \begin{enumerate}
-\item \textbf{Hölder embedding} (MAIN ROUTE, weakest assumptions): Uses NoAnomalousPairs condition,
-classical ordered semigroup theory (Hölder 1901, Alimov 1950, Fuchs 1963), formalized via Eric Luap's \texttt{OrderedSemigroups}.
+\item \textbf{Hölder embedding} (MAIN ROUTE, weakest assumptions): Uses the NoAnomalousPairs condition and
+classical ordered semigroup theory~\cite{Holder1901,Alimov1950,Fuchs1963}.
+Formalized via Eric Luap's \texttt{OrderedSemigroups}~\cite{Luap2024}.
 
 \item \textbf{Dedekind cuts} (alternative): Uses Separation property with Hölder/Dedekind cuts construction,
 bypassing the grid machinery.
@@ -649,8 +711,10 @@ theorem representation_from_noAnomalousPairs [NoAnomalousPairs alpha] :
   exact <theta_preserves_order G iso, theta_ident G iso, theta_additive G iso>
 \end{lstlisting}
 
-\textbf{Key advantage}: This path works on \texttt{KSSemigroupBase} (identity-free) via \texttt{representation\_semigroup},
-and on \texttt{KnuthSkillingAlgebraBase} (with identity) via \texttt{representation\_from\_noAnomalousPairs}.
+\textbf{Key advantage}: Identity-free semigroup version:\\
+\texttt{representation\_semigroup} (for \texttt{KSSemigroupBase}).\\
+With identity, the same path yields
+\texttt{representation\_from\_}\linebreak\texttt{noAnomalousPairs} (for \texttt{KnuthSkillingAlgebraBase}).
 
 \subsection{Proof Architecture 2: The Grid/Induction Path}
 
@@ -714,7 +778,9 @@ The grid construction has \textbf{parametric versions} that could work without i
 \item \texttt{RepresentationGlobalizationAnchor}: Class for representations normalizing to an arbitrary anchor
 \end{itemize}
 
-Currently, the globalization instance uses identity (\texttt{representationGlobalization\_of\_KSSeparationStrict}).
+Currently, the globalization instance uses identity:
+\\
+\texttt{representationGlobalization\_of\_KSSeparationStrict}.
 An identity-free instance using the parametric infrastructure is marked as \textbf{future work} in \texttt{Globalization.lean}.
 
 For identity-free representations \textbf{today}, use the Hölder path (\texttt{HolderEmbedding.lean})
@@ -749,8 +815,9 @@ theorem associativity_representation
 The theorem statement simply extracts \texttt{exists\_Theta} from the typeclass.
 All the actual work happens in the instance construction:
 
-\texttt{representationGlobalization\_of\_KSSeparationStrict} (starts at line 105,
-\texttt{Additive/Proofs/GridInduction/Globalization.lean})
+\texttt{representationGlobalization\_of\_KSSeparationStrict}
+\\
+(starts at line 105, \path{Additive/Proofs/GridInduction/Globalization.lean})
 
 This design keeps the public API clean while hiding the complex globalization machinery.
 \end{remark}
@@ -909,9 +976,8 @@ structure ScaledMultRep (tensor : PosReal -> PosReal -> PosReal) where
 \end{lstlisting}
 
 \textbf{Design principle}: Like \texttt{AdditiveOrderIsoRep} for Appendix A, this interface captures
-WHAT Appendix B proves without depending on HOW it was proven. Downstream code
-(\texttt{ConditionalProbability}, \texttt{ProbabilityDerivation}, etc.) should depend on
-\texttt{ScaledMultRep}, NOT on specific proof paths.
+WHAT Appendix B proves without depending on HOW it was proven. Downstream code should depend on
+\texttt{ScaledMultRep}, not on specific proof paths.
 
 \textbf{Constructors}:
 \begin{itemize}
@@ -1046,7 +1112,9 @@ theorem Psi_is_exp
 \begin{remark}[The Functional Equation Proof]
 The proof delegates to:
 
-\texttt{productEquation\_solution\_of\_continuous\_strictMono} (line 294, \texttt{Multiplicative/FunctionalEquation.lean})
+\texttt{productEquation\_solution\_of\_continuous\_strictMono}
+\\
+(line 294, \path{Multiplicative/FunctionalEquation.lean})
 
 This proves a \textbf{classical result from functional equations theory}:
 
@@ -1118,9 +1186,9 @@ theorem tensor_mul_rule_normalized
 
 Appendix C separates cleanly into two steps.
 
-\textbf{Path A (rigidity / solution)}: assume the functional equation holds globally and add an explicit regularity gate (we use measurability of $H'$). Then the only solutions are logarithmic (see \texttt{variationalEquation\_solution\_measurable}, lines 312--378 in \texttt{Variational/Main.lean}).
+\textbf{Path A (rigidity / solution)}: assume the functional equation holds globally and add an explicit regularity gate (we use measurability of $H'$). Then the only solutions are logarithmic (see \texttt{variationalEquation\_solution\_measurable}, lines 315--380 in \texttt{Variational/Main.lean}).
 
-\textbf{Path B (derivation / motivation)}: compute the coordinate derivative of a separable product Lagrangian at a stationary point and obtain the separated equation that motivates the functional equation (see \texttt{section PathB} starting at line 622 and \texttt{lagrange\_coordinate\_deriv\_eq} at line 696 in \texttt{Variational/Main.lean}). Upgrading ``holds at a stationary point'' to a global equation is an explicit universality/richness premise (Gate~G).
+\textbf{Path B (derivation / motivation)}: compute the coordinate derivative of a separable product Lagrangian at a stationary point and obtain the separated equation that motivates the functional equation (see \texttt{section PathB} starting at line 625 and \texttt{lagrange\_coordinate\_deriv\_eq} at line 699 in \texttt{Variational/Main.lean}). Upgrading ``holds at a stationary point'' to a global equation is an explicit universality/richness premise (Gate~G).
 
 \subsection{Variational Functional Equation}
 
@@ -1147,7 +1215,7 @@ def VariationalEquation (H' lam mu : Real -> Real) : Prop :=
 
 \textbf{Why this matters}: This shows that the entropy form is **uniquely determined** (up to constants) by the variational principle plus measurability. You can't have some other weird function satisfy the constraints.
 
-\textbf{Proof strategy}: Transform the multiplicative equation $H'(m_x \cdot m_y) = \lambda(m_x) + \mu(m_y)$ into Cauchy's additive equation $f(u+v) = f(u) + f(v)$ by setting $u = \log m$. Measurable solutions to Cauchy's equation are linear, giving $H'(m) = B + C \log m$.
+\textbf{Proof strategy}: Transform the multiplicative equation $H'(m_x \cdot m_y) = \lambda(m_x) + \mu(m_y)$ into Cauchy's additive equation $f(u+v) = f(u) + f(v)$ by setting $u = \log m$. Measurable solutions to Cauchy's equation are linear~\cite{Aczel1966}, giving $H'(m) = B + C \log m$.
 
 \begin{theorem}[\texttt{variationalEquation\_solution\_measurable}]
 \textbf{Lines 310--375, Variational/Main.lean}
@@ -1304,7 +1372,7 @@ theorem atomDivergence_eq_zero_iff (w u : Real) (hw : 0 < w) (hu : 0 < u) :
 \section{Conditional Probability (K\&S Section 7)}
 %==============================================================================
 
-\textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Probability/ConditionalProbability/Basic.lean}
+\textbf{File}: \path{Mettapedia/ProbabilityTheory/KnuthSkilling/Probability/ConditionalProbability/Basic.lean}
 
 \textbf{What this section does}: K\&S Section 7 derives \textbf{probability calculus} from first principles. This is the crucial step that takes us from general measures (Sections 1--6) to \textbf{probability distributions} (normalized measures).
 
@@ -1511,7 +1579,7 @@ theorem baseMeasure_satisfies_measure_axioms
     baseMeasure B Top = 1
 \end{lstlisting}
 
-\textbf{Key point}: For finite Boolean algebras, finite additivity is equivalent to $\sigma$-additivity, so this is a bona fide probability measure in the Kolmogorov sense.
+\textbf{Key point}: For finite Boolean algebras, finite additivity is equivalent to $\sigma$-additivity, so this is a bona fide probability measure in the Kolmogorov sense~\cite{Kolmogorov1933}.
 
 \begin{remark}[Additional Measure Properties]
 The formalization also proves:
@@ -1607,7 +1675,7 @@ For a bridge to mathlib's \texttt{Measure} / \texttt{ProbabilityMeasure} APIs, s
 
 \textbf{Key point}: Shannon entropy is \textbf{derived}, not just defined. It emerges as an ``inevitable consequence of seeking a variational quantity'' (K\&S, Section 8.2).
 
-\textbf{Unified view (project-wide, optional)}: The repo also includes axiomatic entropy (Faddeev / Shannon--Khinchin) and bridges to mathlib's measure-theoretic KL; the curated entrypoint \texttt{Mettapedia/InformationTheory/EntropyKL.lean} imports the unified finite-discrete story and records the main equivalence theorems (see Appendix: Supplementary Derivation Paths).
+\textbf{Unified view (project-wide, optional)}: The repo also includes axiomatic entropy (Faddeev / Shannon--Khinchin) and bridges to mathlib's measure-theoretic KL; the curated entrypoint \path{Mettapedia/InformationTheory/EntropyKL.lean} imports the unified finite-discrete story and records the main equivalence theorems (see Appendix: Supplementary Derivation Paths).
 
 \subsection{From Atom Divergence to KL Divergence}
 
@@ -1622,7 +1690,8 @@ For a bridge to mathlib's \texttt{Measure} / \texttt{ProbabilityMeasure} APIs, s
 
 This is the \textbf{Kullback-Leibler divergence} (K\&S Eq. 54).
 
-\textbf{Formalized in Lean} (\texttt{klDivergence\_from\_divergence\_formula}, lines 324--338, \texttt{Information/InformationEntropy.lean}):
+\textbf{Formalized in Lean} (\texttt{klDivergence\_from\_divergence\_formula}, lines 324--338,
+\path{Information/InformationEntropy.lean}):
 \begin{lstlisting}
 theorem klDivergence_from_divergence_formula (P Q : ProbDist n)
     (hQ_pos : forall i, P.p i != 0 -> 0 < Q.p i) :
@@ -1668,7 +1737,7 @@ K\&S claim these properties are ``inevitable consequences'' (K\&S, Section 8.2):
 \[ S(p_1, p_2, p_3) = S(p_1, p_2+p_3) + (p_2+p_3) \cdot S\left(\frac{p_2}{p_2+p_3}, \frac{p_3}{p_2+p_3}\right) \]
 \end{enumerate}
 
-These are Shannon's original axioms (Shannon 1948). K\&S shows they follow from the variational framework.
+These are Shannon's original axioms~\cite{Shannon1948}. K\&S shows they follow from the variational framework.
 
 \subsection{Formalization}
 
@@ -1688,7 +1757,8 @@ structure ProbDist (n : Nat) where
 \begin{remark}[KS-facing alias]
 \textbf{Lines 66--72, Information/InformationEntropy.lean}
 
-\texttt{ProbDist} is defined in \texttt{Mettapedia/ProbabilityTheory/Foundations/Distributions/ProbDist.lean} and re-exported as a KS-facing alias
+\texttt{ProbDist} is defined in\\
+{\footnotesize\path{Mettapedia/ProbabilityTheory/Foundations/Distributions/ProbDist.lean}} and re-exported as a KS-facing alias
 so that Section 8 can refer to \texttt{ProbDist} without importing Foundations directly.
 \end{remark}
 
@@ -1704,11 +1774,16 @@ noncomputable def klDivergence {n : Nat} (P Q : ProbDist n)
   sum i, P.p i * log (P.p i / Q.p i)
 \end{lstlisting}
 
-\textbf{Note}: The positivity hypothesis \texttt{hQ\_pos} ensures $Q$ is strictly positive on the support of $P$, avoiding $\log(p/0)$ issues. This is the regime where K\&S's formula is meaningful. An extended version \texttt{klDivergenceTop} (line 292, \texttt{Information/InformationEntropy.lean}) takes values in $\mathbb{R}_{\geq 0} \cup \{\infty\}$, returning $\infty$ when this condition fails.
+\textbf{Note}: The positivity hypothesis \texttt{hQ\_pos} ensures $Q$ is strictly positive on the support of $P$,
+avoiding $\log(p/0)$ issues. This is the regime where K\&S's formula is meaningful.
+
+An extended version \texttt{klDivergenceTop} (line 292, \texttt{Information/InformationEntropy.lean}) takes values in
+$\mathbb{R}_{\geq 0} \cup \{\infty\}$, returning $\infty$ when this condition fails.
 
 The Shannon entropy is formalized as:
 \[ S(p) = -\sum_i p_i \log(p_i) \]
-with the convention $0 \cdot \log(0) = 0$ (from continuity: $\lim_{x \to 0^+} x \log x = 0$), justified by \texttt{zero\_mul\_log\_zero} (line 70).
+with the convention $0 \cdot \log(0) = 0$ (from continuity: $\lim_{x \to 0^+} x \log x = 0$).\\
+Justified by \texttt{zero\_mul\_log\_zero} (line 70).
 
 %==============================================================================
 \section{Counterexamples and Clarifications}
@@ -1722,8 +1797,10 @@ K\&S (Section 2) claim that continuity is ``merely a convenient convention'' and
 a discontinuous ``re-grading'' map $\Theta$ could preserve the sum rule, using a
 base-conversion example.
 
-\begin{theorem}[\texttt{regrade\_preserving\_sum\_rule\_is\_continuous}]
-\textbf{File}: \texttt{Counterexamples/RegradeCounterexample.lean}
+\begin{theorem}[Re-grading continuity]
+\leavevmode\\
+\textbf{File}: \texttt{Counterexamples/RegradeCounterexample.lean}\\
+\textbf{Lean name}: \texttt{regrade\_preserving\_sum\_rule\_is\_continuous}
 
 \textbf{This claim is false.} Any re-grading $\Theta: \mathbb{R} \to \mathbb{R}$ that preserves:
 \begin{enumerate}
@@ -1759,7 +1836,7 @@ but the mathematical example does not support the claim.
 \textbf{File}: \texttt{Counterexamples/CauchyPathology.lean}
 
 Without regularity conditions, Cauchy's equation $f(x+y) = f(x) + f(y)$ has
-``wild'' non-linear solutions (constructed via Hamel bases over $\mathbb{Q}$).
+``wild'' non-linear solutions (constructed via Hamel bases over $\mathbb{Q}$)~\cite{Aczel1966}.
 These solutions are necessarily \textbf{non-monotonic}---they oscillate wildly
 and cannot preserve order.
 
@@ -1828,6 +1905,91 @@ theorem Hprime_not_B_add_C_log :
 By the theorem in \S11.1, any monotone additive function is linear, so wild solutions
 like \texttt{weirdAdditive} must oscillate wildly and violate order preservation.
 
+\subsection{Separation is Not Derivable (Independence Result)}
+\label{subsec:separation-independence}
+
+\textbf{Directory}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Additive/Counterexamples/}
+
+A key discovery during formalization: the \textbf{separation property is independent} of the
+base K\&S axioms. This was initially unexpected---our early formalization (December 2025)
+assumed separation was derivable, matching the K\&S paper's informal presentation.
+
+\begin{theorem}[KSSeparation Independence]
+\leavevmode\\
+\textbf{File}: \texttt{Counterexamples/KSSeparationNotDerivable.lean}\\
+\textbf{Lean name}: \texttt{exists\_knuthskilling\_not\_separation}
+
+There exists a structure satisfying all base K\&S axioms (associativity, strict monotonicity,
+identity-as-minimum) that \textbf{fails} the separation property.
+\end{theorem}
+
+\subsubsection{The Semidirect Product Countermodel}
+
+\textbf{File}: \texttt{Counterexamples/SemidirectNoSeparation.lean}
+
+\textbf{Construction}:
+\begin{align*}
+\text{SD} &:= \text{WithBot}(\mathbb{N}^+ \times_{\text{lex}} \mathbb{N}) \\
+(u, x) \oplus (v, y) &:= (u + v,\; x + 2^u \cdot y)
+\end{align*}
+
+This is a semidirect product: the first component acts on the second via $2^u$ scaling.
+
+\begin{lstlisting}[caption={Semidirect product countermodel (SemidirectNoSeparation.lean)}]
+abbrev SD := WithBot (PNat *_[lex] Nat)
+
+def baseOp (p q : SDBase) : SDBase :=
+  let u : Nat := (p.1 : Nat)
+  (p.1 + q.1, p.2 + (Nat.pow 2 u) * q.2)
+
+-- Verified properties:
+instance : KnuthSkillingAlgebra SD  -- All base axioms satisfied
+
+-- But:
+theorem SD.not_commutative : exists x y : SD, op x y != op y x
+
+theorem SD.not_KSSeparation : ¬ KSSeparation SD
+\end{lstlisting}
+
+\textbf{Properties verified}:
+\begin{itemize}
+\item[\checkmark] Associative (the semidirect product construction preserves associativity)
+\item[\checkmark] Strictly monotone in each argument (lexicographic order)
+\item[\checkmark] Has identity ($\bot$)
+\item[\checkmark] Identity is minimum
+\item[$\times$] \textbf{NOT commutative}: $(1,1) \oplus (2,1) \neq (2,1) \oplus (1,1)$
+\item[$\times$] \textbf{Fails KSSeparation}: proven in \texttt{not\_KSSeparation}
+\end{itemize}
+
+\begin{theorem}[Independence Theorems]
+\leavevmode\\
+\textbf{File}: \texttt{Counterexamples/KSSeparationNotDerivable.lean}
+
+\begin{lstlisting}
+theorem exists_knuthskilling_noncomm :
+    exists (alpha : Type) (_ : KnuthSkillingAlgebra alpha),
+      exists x y : alpha, op x y != op y x
+
+theorem exists_knuthskilling_not_separation :
+    exists (alpha : Type) (_ : KnuthSkillingAlgebra alpha),
+      ¬ KSSeparation alpha
+\end{lstlisting}
+\end{theorem}
+
+\textbf{Implications}:
+\begin{enumerate}
+\item Any proof attempt deriving KSSeparation from the base K\&S axioms is \textbf{doomed to fail}.
+\item Commutativity cannot be derived from the base axioms alone (it requires separation).
+\item Separation (or an equivalent like NAP) must be \textbf{postulated as an independent axiom}.
+\end{enumerate}
+
+\begin{remark}[Formalization Exposing Hidden Assumptions]
+This is a concrete example of formalization's value. The K\&S paper's presentation suggests
+separation ``follows naturally'' from the base axioms. Rigorous formalization revealed this
+is false: an explicit countermodel blocks all derivation attempts. See
+Appendix~\ref{app:separation-history} for the discovery timeline.
+\end{remark}
+
 \newpage
 %==============================================================================
 \section{Summary: Complete Formalization}
@@ -1840,10 +2002,18 @@ All paths are relative to \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/}.
 
 \subsubsection*{Sum Rule (Appendix A)}
 \begin{itemize}
-\item \texttt{representation\_semigroup} (\texttt{Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean:272}) --- $\exists \Theta$ preserving order and addition (identity-free)
-\item \texttt{representation\_from\_noAnomalousPairs} (\texttt{Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean:300}) --- Full representation with $\Theta(\text{ident}) = 0$
-\item \texttt{associativity\_representation} (\texttt{Additive/Proofs/GridInduction/Main.lean:54}) --- K\&S-style (grid/induction) public API
-\item \texttt{op\_archimedean\_of\_separation} (\texttt{Additive/Axioms/SandwichSeparation.lean:134}) --- Archimedean is derivable from \texttt{KSSeparation}
+\item \texttt{representation\_semigroup}\\
+      \path{Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean:272}\\
+      --- $\exists \Theta$ preserving order and addition (identity-free)
+\item \texttt{representation\_from\_noAnomalousPairs}\\
+      \path{Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean:300}\\
+      --- Full representation with $\Theta(\text{ident}) = 0$
+\item \texttt{associativity\_representation}\\
+      \path{Additive/Proofs/GridInduction/Main.lean:54}\\
+      --- K\&S-style (grid/induction) public API
+\item \texttt{op\_archimedean\_of\_separation}\\
+      \path{Additive/Axioms/SandwichSeparation.lean:134}\\
+      --- Archimedean is derivable from \texttt{KSSeparation}
 \end{itemize}
 
 \subsubsection*{Product Theorem (Appendix B)}
@@ -1862,18 +2032,34 @@ All paths are relative to \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/}.
 
 \subsubsection*{Probability Calculus (FOI Mainline)}
 \begin{itemize}
-\item \texttt{sum\_rule} (\texttt{Probability/ProbabilityDerivation.lean:856}) --- $P(A \vee B) = P(A) + P(B)$ for disjoint events
-\item \texttt{product\_rule\_ks} (\texttt{Probability/ProbabilityDerivation.lean:938}) --- $P(A \wedge B) = P(A|B)\,P(B)$
-\item \texttt{bayes\_theorem\_ks} (\texttt{Probability/ProbabilityDerivation.lean:957}) --- Bayes' theorem
-\item \texttt{complement\_rule} (\texttt{Probability/ProbabilityDerivation.lean:972}) --- $P(B)=1-P(A)$ for complements
+\item \texttt{sum\_rule}\\
+      \path{Probability/ProbabilityDerivation.lean:856}\\
+      --- $P(A \vee B) = P(A) + P(B)$ for disjoint events
+\item \texttt{product\_rule\_ks}\\
+      \path{Probability/ProbabilityDerivation.lean:938}\\
+      --- $P(A \wedge B) = P(A|B)\,P(B)$
+\item \texttt{bayes\_theorem\_ks}\\
+      \path{Probability/ProbabilityDerivation.lean:957}\\
+      --- Bayes' theorem
+\item \texttt{complement\_rule}\\
+      \path{Probability/ProbabilityDerivation.lean:972}\\
+      --- $P(B)=1-P(A)$ for complements
 \end{itemize}
 
 \subsubsection*{Conditional Probability (Section 7)}
 \begin{itemize}
-\item \texttt{chainProductRule} (\texttt{Probability/ConditionalProbability/Basic.lean:348}) --- $p(xy|z) = p(x|z) \cdot p(y|xz)$
-\item \texttt{bayesTheorem} (\texttt{Probability/ConditionalProbability/Basic.lean:424}) --- $p(x|yz) \cdot p(y|z) = p(y|xz) \cdot p(x|z)$
-\item \texttt{prob\_eq\_measure\_ratio} (\texttt{Probability/ConditionalProbability/Basic.lean:714}) --- $p(x|y) = m(x \wedge y) / m(y)$
-\item \texttt{baseMeasure\_satisfies\_measure\_axioms} (\texttt{Probability/ConditionalProbability/Basic.lean:559}) --- $m$ is a probability measure
+\item \texttt{chainProductRule}\\
+      \path{Probability/ConditionalProbability/Basic.lean:348}\\
+      --- $p(xy|z) = p(x|z) \cdot p(y|xz)$
+\item \texttt{bayesTheorem}\\
+      \path{Probability/ConditionalProbability/Basic.lean:424}\\
+      --- $p(x|yz) \cdot p(y|z) = p(y|xz) \cdot p(x|z)$
+\item \texttt{prob\_eq\_measure\_ratio}\\
+      \path{Probability/ConditionalProbability/Basic.lean:714}\\
+      --- $p(x|y) = m(x \wedge y) / m(y)$
+\item \texttt{baseMeasure\_satisfies\_measure\_axioms}\\
+      \path{Probability/ConditionalProbability/Basic.lean:559}\\
+      --- $m$ is a probability measure
 \end{itemize}
 
 \subsubsection*{$\sigma$-Additivity Bridge (Extension)}
@@ -1969,7 +2155,9 @@ This requires $\bot$ to \emph{exist} and be \emph{minimal}. For $\mathbb{Z}$:
 \item \textbf{Measurability replaces continuity}: For Appendix C, measurability (not differentiability) is the correct regularity assumption.
 
 \item \textbf{Discontinuous re-grading is impossible}: K\&S's claim that continuity is optional is false
-for maps preserving both the sum rule and monotonicity (proven in \texttt{RegradeCounterexample.lean}).
+for maps preserving both the sum rule and monotonicity.
+\\
+(Proved in \path{Counterexamples/RegradeCounterexample.lean}.)
 
 \item \textbf{Symmetries 3--4 are product-side}: The product-side symmetries (distributivity, product associativity) are logically separate from the sum-side axioms and are formalized in \texttt{Multiplicative/Main.lean}.
 
@@ -1999,12 +2187,121 @@ These modules are not needed to audit K\&S FOI itself, but they provide addition
 and equivalence theorems that cross-check the entropy/KL story:
 
 \begin{itemize}
-\item \textbf{Unified finite entropy/KL entrypoint}: \texttt{Mettapedia/InformationTheory/EntropyKL.lean}
-\item \textbf{Axiomatic entropy (Faddeev, Shannon, Shannon--Khinchin)}: \texttt{Mettapedia/InformationTheory/ShannonEntropy/Main.lean}
-\item \textbf{Shore--Johnson $\to$ KL (derivation glue)}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnson/KLDerivation.lean} (full import surface: \texttt{.../ShoreJohnson/Main.lean})
-\item \textbf{Cox probability calculus derivation}: \texttt{Mettapedia/ProbabilityTheory/Cox.lean}
-\item \textbf{Algorithmic probability (Solomonoff) $\leftrightarrow$ K\&S KL gate}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Bridges/AlgorithmicProbabilityBridge.lean}
+\item \textbf{Unified finite entropy/KL entrypoint}:\\
+      \path{Mettapedia/InformationTheory/EntropyKL.lean}
+\item \textbf{Axiomatic entropy (Faddeev~\cite{Faddeev1956}, Shannon~\cite{Shannon1948}, Shannon--Khinchin)}:\\
+      \path{Mettapedia/InformationTheory/ShannonEntropy/Main.lean}
+\item \textbf{Shore--Johnson~\cite{ShoreJohnson1980} $\to$ KL (derivation glue)}:\\
+      \path{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnson/KLDerivation.lean}\\
+      (full import surface: \path{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnson/Main.lean})
+\item \textbf{Shore--Johnson scope note (Uffink~\cite{Uffink1995})}:\\
+      {\footnotesize Uffink critiques the claim that Shore--Johnson ``consistency'' alone uniquely singles out KL:
+      under weaker formulations (notably weaker forms of system independence), a broader R\'enyi-family of update rules
+      is compatible. Our Shore--Johnson development therefore treats \emph{product additivity} of the divergence under
+      product distributions as an explicit hypothesis, and derives the KL atom under a standard regularity gate
+      (measurability).}
+\item \textbf{Shore--Johnson $\leftrightarrow$ Appendix C gate bridge}:\\
+      {\footnotesize\path{Mettapedia/ProbabilityTheory/KnuthSkilling/Bridges/ShoreJohnsonVariationalBridge.lean}}
+\item \textbf{Cox~\cite{Cox1946} probability calculus derivation}:\\
+      \path{Mettapedia/ProbabilityTheory/Cox.lean}
+\item \textbf{Algorithmic probability (Solomonoff~\cite{Solomonoff1964}) $\leftrightarrow$ K\&S KL gate}:\\
+      {\footnotesize\path{Mettapedia/ProbabilityTheory/KnuthSkilling/Bridges/AlgorithmicProbabilityBridge.lean}}
 \end{itemize}
+
+%==============================================================================
+\section*{Appendix: The KSSeparation Discovery}
+\addcontentsline{toc}{section}{Appendix: The KSSeparation Discovery}
+\label{app:separation-history}
+%==============================================================================
+
+This appendix documents the discovery that the separation axiom is \textbf{independent} of the
+base K\&S axioms---a concrete example of formalization exposing hidden assumptions in informal
+mathematics.
+
+\subsection*{Timeline}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Date} & \textbf{Event} & \textbf{Source} \\
+\midrule
+Nov 30, 2025 & Initial \texttt{Algebra.lean} created & Commit 53f7a46 \\
+Dec 2, 2025 & AI agents (likely Claude Code) introduce \texttt{KSSeparation} & Commit af3847d \\
+Dec 4, 2025 & 1382-line proof attempt (\texttt{SeparationProof.lean}) & Commit d8ed2fb \\
+Dec 19--20, 2025 & Ben Goertzel provides ``sandwich'' framing & v1--v2 documents \\
+Jan 8, 2026 & Counterexample proves independence & Commit 6592c37 \\
+Jan 13, 2026 & \texttt{SandwichSeparation.lean} consolidates results & Commit 9f150fa \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Phase 1: Initial Optimism (Dec 2, 2025)}
+
+The original comment in \texttt{Algebra.lean} was optimistic:
+
+\begin{quote}
+\textit{``This is NOT a primitive axiom---it is derivable from the Knuth-Skilling axioms above.
+However, for organizational clarity, we factor it into a typeclass...''}
+\end{quote}
+
+This matched the K\&S paper's informal presentation, which treats separation as following
+naturally from the base axioms.
+
+\subsection*{Phase 2: Failed Derivation Attempts (Dec 4, 2025)}
+
+A 1382-line file \texttt{SeparationProof.lean} attempted to prove \texttt{KSSeparation} from
+the base axioms. The proof never completed---gaps remained unfilled despite substantial effort.
+
+\subsection*{Phase 3: Ben Goertzel's Contributions (Dec 19--20, 2025)}
+
+Ben Goertzel's documents ``Foundations of Inference: New Proofs'' provided:
+\begin{itemize}
+\item The ``sandwich'' terminology for the separation property
+\item Detailed analysis of the A/B/C separation sets
+\item The ``base-indexing'' insight (Remark 4, Lemma 7)
+\item Categorical framing via monoidal functors
+\end{itemize}
+
+\subsection*{Phase 4: The Counterexample (Jan 8, 2026)}
+
+The breakthrough: rather than continuing proof attempts, we constructed a \textbf{countermodel}.
+The semidirect product $\text{SD} = \text{WithBot}(\mathbb{N}^+ \times_{\text{lex}} \mathbb{N})$
+satisfies all base K\&S axioms but fails separation.
+
+This formally proved: \textbf{no derivation of separation from the base axioms can exist}.
+
+\subsection*{Attribution}
+
+\begin{itemize}
+\item \textbf{KSSeparation typeclass}: Introduced by AI agents (likely Claude Code), Dec 2, 2025
+\item \textbf{``Sandwich'' terminology \& categorical framing}: Ben Goertzel, Dec 19--20, 2025
+\item \textbf{Semidirect product countermodel}: AI agents (likely Claude Code or Codex), Jan 8, 2026
+\item \textbf{Consolidation}: Formalized Jan 13, 2026, combining both contributions
+\end{itemize}
+
+\textbf{Note}: Git commits are authored by the human user (Zar Goertzel), so the specific AI
+agent cannot be definitively identified from version control. Attribution to ``Claude Code''
+is based on project records showing Claude Code assistance throughout this period.
+
+\subsection*{Mathematical Significance}
+
+The countermodel proves that the K\&S base axioms (associativity, strict monotonicity,
+identity-as-minimum) do \textbf{NOT} imply:
+\begin{enumerate}
+\item Commutativity
+\item The separation property (``sandwich'' / rational approximation)
+\end{enumerate}
+
+Both must be \textbf{postulated as additional axioms} or \textbf{derived from stronger
+assumptions} (e.g., density, Archimedean properties on the real line, or the equivalent
+No Anomalous Pairs condition from ordered semigroup theory).
+
+\subsection*{Lesson for Formalization}
+
+This is exactly what formalization is for: finding gaps that informal proofs skip over.
+The K\&S paper's presentation \textit{suggests} separation follows naturally, but rigorous
+formalization reveals it requires explicit justification. The countermodel construction
+took the project from ``we can't prove it'' to ``we know it's unprovable.''
 
 %==============================================================================
 \section{Build Instructions}
@@ -2029,5 +2326,78 @@ ulimit -v 6291456
 export LAKE_JOBS=1
 nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Main
 \end{lstlisting}
+
+%------------------------------------------------------------------------------
+\begin{thebibliography}{99}
+
+\bibitem{KnuthSkilling2012}
+Knuth, K.~H. and Skilling, J. (2012).
+``Foundations of Inference.''
+\emph{Axioms} 1(1), 38--73.
+arXiv:1008.4831.
+
+\bibitem{Holder1901}
+H\"older, O. (1901).
+``Die Axiome der Quantit\"at und die Lehre vom Mass.''
+\emph{Ber.\ Verh.\ S\"achs.\ Akad.\ Wiss.\ Leipzig, Math.-Phys.\ Cl.}\ 53, 1--64.
+
+\bibitem{Alimov1950}
+Alimov, N.~G. (1950).
+``On ordered semigroups.''
+\emph{Izv.\ Akad.\ Nauk SSSR Ser.\ Mat.}\ 14, 569--576.
+
+\bibitem{Fuchs1963}
+Fuchs, L. (1963).
+\emph{Partially Ordered Algebraic Systems.}
+Pergamon Press.
+
+\bibitem{Luap2024}
+Luap, E. (2024).
+``OrderedSemigroups: Formalization of Ordered Semigroups in Lean 4.''
+\texttt{github.com/ericluap/OrderedSemigroups}
+
+\bibitem{Aczel1966}
+Acz\'el, J. (1966).
+\emph{Lectures on Functional Equations and Their Applications.}
+Academic Press.
+
+\bibitem{Shannon1948}
+Shannon, C.~E. (1948).
+``A Mathematical Theory of Communication.''
+\emph{Bell System Technical Journal} 27, 379--423, 623--656.
+
+\bibitem{Kolmogorov1933}
+Kolmogorov, A.~N. (1933).
+\emph{Grundbegriffe der Wahrscheinlichkeitsrechnung.}
+Springer.
+English translation: \emph{Foundations of the Theory of Probability} (1956).
+
+\bibitem{Cox1946}
+Cox, R.~T. (1946).
+``Probability, Frequency and Reasonable Expectation.''
+\emph{American Journal of Physics} 14(1), 1--13.
+
+\bibitem{ShoreJohnson1980}
+Shore, J.~E. and Johnson, R.~W. (1980).
+``Axiomatic Derivation of the Principle of Maximum Entropy and the Principle of Minimum Cross-Entropy.''
+\emph{IEEE Transactions on Information Theory} 26(1), 26--37.
+
+\bibitem{Uffink1995}
+Uffink, J. (1995).
+``Can the Maximum Entropy Principle Be Explained as a Consistency Requirement?''
+\emph{Studies in History and Philosophy of Modern Physics} 26(3), 223--261.
+doi: 10.1016/1355-2198(95)00015-1.
+
+\bibitem{Faddeev1956}
+Faddeev, D.~K. (1956).
+``On the concept of entropy of a finite probabilistic scheme.''
+\emph{Uspekhi Mat.\ Nauk} 11, 227--231.
+
+\bibitem{Solomonoff1964}
+Solomonoff, R.~J. (1964).
+``A Formal Theory of Inductive Inference.''
+\emph{Information and Control} 7, 1--22, 224--254.
+
+\end{thebibliography}
 
 \end{document}

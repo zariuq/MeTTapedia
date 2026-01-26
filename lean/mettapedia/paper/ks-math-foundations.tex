@@ -5,6 +5,7 @@
 \usepackage{url}
 \usepackage{cleveref}
 \usepackage{geometry}
+\usepackage{enumitem}
 \usepackage{xcolor}
 
 \geometry{margin=1in}
@@ -24,18 +25,17 @@
 % `\path{...}` allows line breaks in long file paths.
 \newcommand{\LeanFile}[1]{\footnote{\textbf{Lean}: \path{#1}.}}
 
-\title{Algebraic Foundations of Inference:\\from Order and Symmetry to Probability and Entropy}
-\author{Codex 5.2, Claude 4.5, Zar Goertzel}
+\title{Algebraic Foundations of Inference:\\From Order and Symmetry to Probability and Entropy}
+\author{Codex 5.2, Claude 4.5, Zar Goertzel\thanks{This document was drafted collaboratively by humans and AI systems (GPT/Codex, Claude). While formal claims are machine-checked in Lean 4, prose descriptions may contain human or AI hallucinations. Caveat lector.}}
 \date{\today}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-This note gives a math-first exposition of an algebraic route from order and symmetry principles to the
+This note gives a mathematical exposition of an algebraic route from order and symmetry principles to the
 standard probability calculus and to information measures such as Kullback--Leibler divergence and Shannon
-entropy.\footnote{Historically, this style of argument was emphasized by Knuth \& Skilling~\cite{KnuthSkilling2012},
-but we present the mathematics in a self-contained organization.}
+entropy.\footnote{This development is based on a formalization of Knuth \& Skilling~\cite{KnuthSkilling2012}, which we have strengthened and present here in a self-contained way.}
 
 The emphasis is on the \emph{minimal mathematical hypotheses} needed for each step, and on how the resulting
 axiom systems compare with classical foundations (Kolmogorov, Cox) and with the Shore--Johnson consistency
@@ -63,14 +63,10 @@ have symmetries (associativity, distributivity, etc.). These symmetries constrai
 representations so strongly that familiar calculi emerge.\footnote{See~\cite{KnuthSkilling2012} for an influential
 instance of this viewpoint.}
 
-This project contributes two kinds of results:
-\begin{enumerate}
-\item \textbf{Axiom necessity.} We isolate which hypotheses are truly needed for each representation theorem
-  (additive, multiplicative, conditional, variational), and we make ``regularity gates'' explicit whenever
-  functional equations admit pathological solutions.
-\item \textbf{Multiple proof routes.} Several results admit independent proofs with different hypothesis
-  profiles (e.g.\ explicit constructions vs.\ classical ordered-semigroup representation theorems).
-\end{enumerate}
+In the spirit of reverse mathematics, we isolate necessary hypotheses for each representation theorem
+(additive, multiplicative, conditional, variational) and explore which combinations of axioms yield
+which conclusions. We also make ``regularity gates'' explicit wherever functional equations admit
+pathological solutions.
 
 \subsection*{Roadmap (what implies what)}
 
@@ -112,7 +108,7 @@ Finite additivity + scale/event completeness & $\sigma$-additivity (measure theo
 
 \subsection*{The two gates: globality and regularity}
 
-Two ``gates'' recur throughout the algebraic program.  Understanding them is essential.
+Two recurring \emph{hypothesis gates} appear throughout the algebraic program.  Understanding them is essential.
 
 \paragraph{Gate~G (Globality / Richness).}
 When can a local optimality condition (at a stationary point) be upgraded to a
@@ -151,13 +147,13 @@ The common core behind plausibility-theoretic and algebraic foundations is that 
 carry an order: one event may entail another.  Let $E$ be a partially ordered set of events with bottom
 $\bot$ (false) and top $\top$ (true).
 
-\begin{definition}[Valuation idea]
+\begin{definition}
 A \emph{valuation} is a map $v : E \to S$ into a totally ordered \emph{scale} $S$ such that
 $a \le b \Rightarrow v(a) \le v(b)$.
 \end{definition}
 
 Different choices of scale $S$ and of numerical coordinate on $S$ are often physically irrelevant.
-A change of coordinates is a \emph{regraduation}.\footnote{The term is used prominently in~\cite{KnuthSkilling2012}.}
+A change of scale is a \emph{regraduation}.\footnote{The term is used prominently in~\cite{KnuthSkilling2012}.}
 Mathematically, it is an order isomorphism $\Theta : S \to S'$.
 
 \begin{remark}[Order-preserving regraduations are rigid once additivity is fixed]
@@ -184,13 +180,13 @@ plus structural symmetries of event-combination operations.
 For finite reasoning it is convenient to work with a lattice of events.  Write $a\vee b$ for join
 (logical OR) and $a\wedge b$ for meet (logical AND).
 
-\begin{definition}[Distributive lattice]
+\begin{definition}
 A \emph{distributive lattice} is a set $E$ equipped with $\vee,\wedge$ such that both operations are
 associative, commutative, idempotent, and satisfy absorption, and such that $\wedge$ distributes over
 $\vee$ (equivalently $\vee$ distributes over $\wedge$).
 \end{definition}
 
-\begin{definition}[Disjointness]
+\begin{definition}
 Two events $a,b\in E$ are \emph{disjoint} if $a\wedge b=\bot$.  In a Boolean algebra, this is equivalent
 to $a\le \neg b$, but in general we do not assume complements exist.
 \end{definition}
@@ -245,7 +241,7 @@ Abstractly, the scale $(S,\oplus)$ is required to satisfy:
 \end{itemize}
 
 \paragraph{The algebraic core is identity-free.}
-The two axioms above---associativity and strict monotonicity---constitute the minimal
+The two axioms above (associativity and strict monotonicity) constitute the minimal
 algebraic structure for an ordered semigroup.  Classical representation theory
 (Alimov~\cite{Alimov1950}, H\"older~\cite{Holder1901}) works at this level of generality:
 no identity element is required.
@@ -258,9 +254,6 @@ For probability-style applications, one often adds:
 \end{itemize}
 The identity provides a canonical normalization $\Theta(0)=0$ for the representation.
 The minimum condition rules out ``negative'' anomalous behavior automatically.
-
-In our formal development, the identity-free variant is \texttt{KSSemigroupBase}; the
-probability-style variant with identity-as-minimum is \texttt{KnuthSkillingAlgebraBase}.
 
 \begin{definition}[Iteration / ``$n$ of $x$'']
 Fix a scale $(S,\oplus,0)$.  Define the iterates
@@ -307,10 +300,10 @@ if $a=(1,0)$ and $b=(1,1)$, then $a^{(n)}=(n,0)$ and $b^{(n)}=(n,n)$, so
 $a^{(n)} < b^{(n)} < a^{(n+1)}$ for all $n$.
 \end{remark}
 
-\subsection{Equivalent formulation: separation (Ben Goertzel)}
+\subsection{Equivalent formulation: separation (Claude Code, Ben Goertzel)}
 
-An equivalent formulation of the density axiom, due to Ben Goertzel in this project, is
-\emph{separation}---a direct rational approximation principle.
+An equivalent formulation of the density axiom, developed collaboratively by Claude Code and Ben Goertzel
+during this project, is \emph{separation}---a direct rational approximation principle.
 
 \begin{axiom}[Separation]
 For any $0<a$ and any $0<x<y$, there exist natural numbers $m>0,n$ such that
@@ -320,12 +313,27 @@ x^{(m)} \;<\; a^{(n)} \;\le\; y^{(m)},
 where $x^{(m)}$ denotes $m$-fold iteration of $\oplus$.
 \end{axiom}
 
-\begin{theorem}[Separation $\Leftrightarrow$ NAP (probability setting)]
+\begin{theorem}[Separation $\Leftrightarrow$ NAP (bounded-below setting)]
+\label{thm:sep-nap-prob}
 In a linearly ordered monoid where the identity $0$ is the minimum:
 \begin{enumerate}
 \item Separation $\Rightarrow$ NAP.
 \item NAP $\Rightarrow$ (via H\"older representation) $\Rightarrow$ Separation (by rational density in $\mathbb{R}$).
 \end{enumerate}
+\end{theorem}
+
+\begin{theorem}[Bilateral Separation $\Leftrightarrow$ NAP]
+\label{thm:sep-nap-general}
+In a linearly ordered monoid with strict monotonicity (without assuming identity is minimum),
+define \emph{bilateral separation}:
+\begin{itemize}
+\item \textbf{(Positive)} For $0 < a$ and $0 < x < y$: $\exists\, m>0,\, n\ge 0$ with $x^{(m)} < a^{(n)} \le y^{(m)}$.
+\item \textbf{(Negative)} For $a < 0$ and $x < y < 0$: $\exists\, m>0,\, n\ge 0$ with $x^{(m)} < a^{(n)} \le y^{(m)}$.
+\end{itemize}
+Then: \textbf{NAP $\Leftrightarrow$ Bilateral Separation.}
+
+The key constraint is that $a$, $x$, $y$ must lie on the \emph{same side} of identity;
+cross-sign sandwiching is impossible since rationals cannot approximate sign-mismatched ratios.
 \end{theorem}
 
 \begin{theorem}[Separation forces commutativity]
@@ -337,10 +345,9 @@ In a linearly ordered scale with strict monotonicity, separation implies:
 \end{enumerate}
 \end{theorem}
 
-\begin{remark}[Why $0$ being a minimum matters]
-In probability-style applications the identity element represents certainty and is the minimum of the order.
-In the ordered-semigroup literature one also considers ``negative'' anomalous behavior; the minimum-identity
-assumption rules that out automatically.  The identity-free H\"older route handles both cases uniformly.
+\begin{remark}
+In probability applications, identity represents impossibility ($\bot$) and is the minimum of the order,
+so the negative branch of bilateral separation is vacuously satisfied.
 \end{remark}
 
 \subsection{Representation theorem: the additive coordinate}
@@ -351,7 +358,7 @@ The core conclusion is:
 \textbf{Assumptions:}
 \begin{itemize}
 \item $(S,\oplus)$ is a linearly ordered semigroup with strict monotonicity in each argument.
-\item No anomalous pairs (equivalently: separation, in the probability setting).
+\item No anomalous pairs (and, when a minimum identity exists, equivalently: separation).
 \item Optional: identity element $0$ with $0\le x$ for all $x$ (for probability semantics).
 \end{itemize}
 \textbf{Conclusion:}
@@ -429,6 +436,7 @@ The Fibonacci proof uses the same positivity assumption but via a different rout
 (irrationality of the golden ratio forces the exponential form).
 \end{remark}
 
+\newpage
 \bigskip
 \begin{center}
 \rule{0.5\textwidth}{0.4pt}\\[0.5em]
@@ -537,27 +545,28 @@ Continuous at one point & smoothing / convolution heuristics & implies measurabi
 
 \begin{table}[h]
 \centering
-\begin{tabular}{|p{3.0cm}|p{3.0cm}|p{4.2cm}|p{4.6cm}|}
+\footnotesize
+\begin{tabular}{|l|l|l|l|}
 \hline
-\textbf{Route} & \textbf{Gate~G (Globality)} & \textbf{Gate~R (Regularity)} & \textbf{Forced normal form} \\
+\textbf{Route} & \textbf{Gate~G (Globality)} & \textbf{Gate~R (Regularity)} & \textbf{Result}\\
 \hline
-K\&S Appendix C (Path B $\to$ Path A) &
-Universality / richness premise upgrades stationarity to a global equation &
-Measurability of $H'$ (e.g.\ $H'=\mathrm{deriv}\,H$) excludes Hamel solutions &
-$H'(m)=B+C\log m$ and thus $H(m)=A+Bm+C(m\log m - m)$ \\
+Variational on $H'$ &
+Universality $\to$ global equation &
+Regularity excludes Hamel &
+$H'(m)=B+C\log m$\\
 \hline
-Shore--Johnson (Path C) &
-System-independence tests extract a multiplicative Cauchy equation for $g(q)=d(1,q)$ &
-Measurability/continuity/monotonicity of $g$ yields $g(q)=C\log q$ &
-$d(p,q)=C\,p\log(p/q)$ (KL atom) and hence KL divergence \\
+KL atom $g(q)=d(1,q)$ &
+System-independence $\to$ Cauchy &
+Measurability $\to$ $g(q)=C\log q$ &
+$d(p,q)=Cp\log(p/q)$\\
 \hline
-Faddeev / Shannon--Khinchin (axioms on finite distributions) &
-N/A (global axioms) &
-Continuity / expansibility-type axioms exclude exotic solutions &
-$H(p)=-K\sum_i p_i \log p_i$ (up to constant/log base) \\
+Entropy axioms &
+Axioms quantify over all distributions &
+Continuity excludes exotics &
+$H(p)=-K\sum p_i\log p_i$\\
 \hline
 \end{tabular}
-\caption{Entropy/KL derivations share the same two logical gates: a globality premise (Gate~G) and a regularity gate (Gate~R).}
+\caption{Entropy/KL derivations share two hypothesis gates: globality (Gate~G) and regularity (Gate~R).}
 \end{table}
 
 \begin{remark}[What Gate~R excludes---necessity witness]
@@ -611,9 +620,8 @@ S(p) = -\sum_{i=1}^n p_i\log p_i = \log n - D(p\,\|\,\mathrm{uniform}).
 Entropy is the KL divergence from $p$ to the uniform distribution.
 
 \paragraph{Countable/discrete measures.}
-The same formulas make sense for countable state spaces as series; in the formal development we connect the
-countable sum definition to the standard measure-theoretic KL divergence $\mathrm{klDiv}$ used in modern
-probability texts.
+The same formulas make sense for countable state spaces as series, and they can be identified with the
+standard measure-theoretic KL divergence $\mathrm{klDiv}$ used in modern probability texts.
 
 \subsection{A clean comparison point: Shore--Johnson (1980)}
 
@@ -655,6 +663,14 @@ Cauchy-type functional equations, and both require an explicit regularity gate (
 monotonicity, or continuity) to exclude pathological solutions.  The algebraic route arrives at
 addition and multiplication on the scale via lattice symmetries; Shore--Johnson arrives at the
 same functional forms via consistency requirements on inference procedures.
+
+\begin{remark}[On the strength of ``system independence'']
+Uffink~\cite{Uffink1995} shows that weaker formulations of ``system independence'' admit a broader
+R\'enyi family, not just KL.  Our formalization bypasses this by explicitly requiring
+\emph{product-additivity} of the divergence (the displayed equation above), which is the
+strengthening that singles out KL.  Together with a regularity gate on $g$, this forms the
+explicit assumption ledger for the Shore--Johnson route.
+\end{remark}
 
 \section{Extension to $\sigma$-additivity}
 \label{sec:sigma-extension}
@@ -771,16 +787,10 @@ Each foundation makes different choices about what to assume and what to derive:
   procedures, given a measurability hypothesis. \cite{ShoreJohnson1980}
 \end{itemize}
 
-Algorithmic probability (Solomonoff induction) is complementary in a different sense: it does not
-aim to derive the probability calculus, but rather to provide a canonical \emph{assignment} of prior
-weight by summing $2^{-|p|}$ over programs whose output has a given prefix.  The resulting universal
-object is naturally a \emph{semimeasure} on prefixes, satisfying $M(x) \ge M(x0)+M(x1)$; the ``missing
-mass'' corresponds to non-continuation/halting after $x$.  Nonetheless it induces honest predictive
-distributions (either by conditioning on continuation or by adjoining a third ``halt'' outcome), and
-its universality/dominance theorem under standard computability hypotheses yields convergence and regret
-bounds in log-loss, placing
-Kullback--Leibler divergence at the shared information-theoretic ``gate'' between algebraic
-structure and algorithmic assignment. \cite{Solomonoff1964,Hutter2005}
+In this sense, the algebraic program and algorithmic probability (Solomonoff induction) are complementary:
+the former derives the \emph{form} of Bayesian updating from symmetry axioms, the latter derives a
+canonical \emph{prior} from computability and universality constraints~\cite{Solomonoff1964,Hutter2005}.
+Our results apply equally to such algorithmic priors once they are normalized to probability measures.
 
 The approaches that \emph{derive} the calculus (Cox, K\&S, Shore--Johnson) all face the same
 mathematical issue: functional equations admit pathological Hamel-basis solutions unless a
@@ -806,45 +816,46 @@ The following table maps the mathematical concepts in this paper to their Lean f
 in the \texttt{Mettapedia.ProbabilityTheory.KnuthSkilling} namespace.
 
 \begin{center}
-\begin{tabular}{|l|l|l|}
+\footnotesize
+\begin{tabular}{|p{3.6cm}|p{4.2cm}|p{5.6cm}|}
 \hline
 \textbf{Paper term} & \textbf{Lean name} & \textbf{File} \\
 \hline
-Ordered scale $(S,\oplus)$ & \texttt{KSSemigroupBase} & \texttt{Core/Basic.lean} \\
+Ordered scale $(S,\oplus)$ & \texttt{KSSemigroupBase} & \path{Core/Basic.lean} \\
 \hline
-$+$ identity as minimum & \texttt{KnuthSkillingAlgebraBase} & \texttt{Core/Basic.lean} \\
+$+$ identity as minimum & \texttt{KnuthSkillingAlgebraBase} & \path{Core/Basic.lean} \\
 \hline
-Separation axiom & \texttt{KSSeparation} & \texttt{Core/Algebra.lean} \\
+Separation axiom & \texttt{KSSeparation} & \path{Core/Algebra.lean} \\
 \hline
-No anomalous pairs & \texttt{NoAnomalousPairs} & \texttt{Additive/Axioms/AnomalousPairs.lean} \\
+No anomalous pairs & \texttt{NoAnomalousPairs} & \path{Additive/Axioms/AnomalousPairs.lean} \\
 \hline
-H\"older embedding & \texttt{holder\_embedding} & \texttt{Additive/Proofs/.../HolderEmbedding.lean} \\
+H\"older embedding & \texttt{holder\_embedding} & \path{Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean} \\
 \hline
-$\oplus$, $\otimes$, $\star$ & \texttt{op}, \texttt{tensor}, \texttt{condOp} & \texttt{Core/Basic.lean} \\
+$\oplus$, $\otimes$, $\star$ & \texttt{op}, \texttt{tensor}, \texttt{condOp} & \path{Core/Basic.lean} \\
 \hline
-$x^{(n)}$ (iteration) & \texttt{iterate\_op\_pnat} & \texttt{Core/Basic.lean} \\
+$x^{(n)}$ (iteration) & \texttt{iterate\_op\_pnat} & \path{Core/Basic.lean} \\
 \hline
-Additive representation & \texttt{representation\_theorem} & \texttt{Additive/Main.lean} \\
+Additive representation & \texttt{representation\_theorem} & \path{Additive/Main.lean} \\
 \hline
-Product representation & \texttt{product\_representation} & \texttt{Multiplicative/Main.lean} \\
+Product representation & \texttt{product\_representation} & \path{Multiplicative/Main.lean} \\
 \hline
-Variational theorem & \texttt{variational\_classification} & \texttt{Variational/Main.lean} \\
+Variational theorem & \texttt{variational\_classification} & \path{Variational/Main.lean} \\
 \hline
-KL divergence & \texttt{klDiv} & \texttt{Information/DivergenceMathlib.lean} \\
+KL divergence & \texttt{klDiv} & \path{Information/DivergenceMathlib.lean} \\
 \hline
 Regraduation & order isomorphism & various \\
 \hline
-Sigma-complete events & \texttt{SigmaCompleteEvents} & \texttt{Core/ScaleCompleteness.lean} \\
+Sigma-complete events & \texttt{SigmaCompleteEvents} & \path{Core/ScaleCompleteness.lean} \\
 \hline
-Scale completeness & \texttt{KSScaleComplete} & \texttt{Core/ScaleCompleteness.lean} \\
+Scale completeness & \texttt{KSScaleComplete} & \path{Core/ScaleCompleteness.lean} \\
 \hline
-Scott continuity & \texttt{KSScottContinuous} & \texttt{Core/ScaleCompleteness.lean} \\
+Scott continuity & \texttt{KSScottContinuous} & \path{Core/ScaleCompleteness.lean} \\
 \hline
-$\sigma$-additivity theorem & \texttt{ks\_sigma\_additive} & \texttt{Core/ScaleCompleteness.lean} \\
+$\sigma$-additivity theorem & \texttt{ks\_sigma\_additive} & \path{Core/ScaleCompleteness.lean} \\
 \hline
-$\oplus \to +$ (derived) & \texttt{op\_is\_addition\_via\_Theta} & \texttt{Additive/Axioms/OpIsAddition.lean} \\
+$\oplus \to +$ (derived) & \texttt{op\_is\_addition\_via\_Theta} & \path{Additive/Axioms/OpIsAddition.lean} \\
 \hline
-Mathlib bridge & \texttt{toProbabilityMeasure} & \texttt{Bridges/MathlibProbability.lean} \\
+Mathlib bridge & \texttt{toProbabilityMeasure} & \path{Bridges/MathlibProbability.lean} \\
 \hline
 \end{tabular}
 \end{center}
@@ -947,6 +958,11 @@ Information and Control, 7(1):1--22 and 7(2):224--254, 1964.
 Marcus Hutter.
 \textit{Universal Artificial Intelligence: Sequential Decisions Based on Algorithmic Probability}.
 Springer, 2005.
+
+\bibitem{Uffink1995}
+Jos Uffink.
+\textit{Can the Maximum Entropy Principle Be Explained as a Consistency Requirement?}
+Studies in History and Philosophy of Modern Physics, 26(3):223--261, 1995.
 
 \end{thebibliography}
 
