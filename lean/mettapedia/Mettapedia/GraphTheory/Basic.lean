@@ -271,42 +271,11 @@ omit [DecidableEq V] in
 theorem tree_two_leaves [Fintype V] (G : SimpleGraph V) [DecidableRel G.Adj]
     (hTree : G.IsTree) (hn : Fintype.card V ≥ 2) :
     ∃ u v : V, u ≠ v ∧ G.degree u = 1 ∧ G.degree v = 1 := by
-  by_contra h
-  push_neg at h
-  -- h says: for any two vertices u, v, either u = v or one doesn't have degree 1
-  -- This means there's at most one vertex with degree 1
-
-  set n := Fintype.card V
-  -- Sum of degrees = 2 * #edges = 2(n-1) for trees
-  have hdeg_sum := handshaking_lemma G
-  have hedge_count := tree_edge_count G hTree
-  rw [hedge_count] at hdeg_sum
-
-  -- Define the set of leaves (degree 1 vertices)
-  let leaves := Finset.univ.filter (fun v => G.degree v = 1)
-  let non_leaves := Finset.univ.filter (fun v => G.degree v ≠ 1)
-
-  -- Partition: every vertex is either a leaf or non-leaf
-  have hpartition : Finset.univ = leaves ∪ non_leaves := by
-    ext v
-    simp [leaves, non_leaves]
-
-  have hdisjoint : Disjoint leaves non_leaves := by
-    simp [Finset.disjoint_iff_inter_eq_empty, leaves, non_leaves]
-
-  -- From h, we know |leaves| ≤ 1
-  have hleaves_bound : leaves.card ≤ 1 := by
-    sorry  -- Need to formalize: "at most one vertex has degree 1"
-
-  -- Non-leaf vertices have degree ≥ 2 (trees are connected, n ≥ 2, so min degree ≥ 1)
-  have hnon_leaf_deg : ∀ v ∈ non_leaves, G.degree v ≥ 2 := by
-    sorry  -- Trees with n ≥ 2 have no isolated vertices, so degree ≠ 1 means degree ≥ 2
-
-  -- Count sum of degrees
-  have : ∑ v, G.degree v = (∑ v in leaves, G.degree v) + (∑ v in non_leaves, G.degree v) := by
-    sorry  -- Use partition to split sum
-
-  sorry  -- Derive contradiction from counting
+  classical
+  -- TODO: Port a proof from mathlib (trees have at least two leaves when `card V ≥ 2`),
+  -- or replace this file with a curated wrapper around existing mathlib theorems.
+  -- This file is currently not part of the probability foundations work.
+  sorry
 
 omit [DecidableEq V] in
 /-- A graph is bipartite iff it has no odd cycle -/

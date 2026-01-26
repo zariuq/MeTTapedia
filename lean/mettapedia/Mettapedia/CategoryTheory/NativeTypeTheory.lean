@@ -148,9 +148,9 @@ instance objCategoryStruct : CategoryTheory.CategoryStruct NativeTypeTheory wher
   comp := compHom
 
 instance objCategory : CategoryTheory.Category NativeTypeTheory where
-  id_comp := fun f => Hom.eq _ _
-  comp_id := fun f => Hom.eq _ _
-  assoc := fun f g h => Hom.eq _ _
+  id_comp := fun _ => Hom.eq _ _
+  comp_id := fun _ => Hom.eq _ _
+  assoc := fun _ _ _ => Hom.eq _ _
 
 /-! ## Step 4: The Projection Functor
 

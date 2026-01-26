@@ -137,9 +137,9 @@ theorem enriched_composition_inequality
     (pA pB pC sAB sBC : ℝ)
     (_hpA : pA ∈ Set.Icc (0 : ℝ) 1)
     (_hpB : pB ∈ Set.Icc (0 : ℝ) 1)
-    (hpC : pC ∈ Set.Icc (0 : ℝ) 1)
+    (_hpC : pC ∈ Set.Icc (0 : ℝ) 1)
     (hsAB : sAB ∈ Set.Icc (0 : ℝ) 1)
-    (hsBC : sBC ∈ Set.Icc (0 : ℝ) 1)
+    (_hsBC : sBC ∈ Set.Icc (0 : ℝ) 1)
     (h_consist_AB : conditionalProbabilityConsistency pA pB sAB)
     (h_consist_BC : conditionalProbabilityConsistency pB pC sBC)
     (hpB_pos : 0 < pB)
@@ -161,7 +161,7 @@ theorem enriched_composition_inequality
   have h1 : 0 ≤ 1 - sAB := by linarith [hsAB.2]
   have h2 : 0 < 1 - pB := by linarith
   have h3 : 0 ≤ pC - pB * sBC := by
-    have := consistency_implies_product_bound pB pC sBC hpB_pos hpC.1 hsBC.1 h_consist_BC
+    have := consistency_implies_product_bound pB pC sBC hpB_pos h_consist_BC
     linarith
   apply div_nonneg (mul_nonneg h1 h3)
   linarith

@@ -429,7 +429,7 @@ theorem product_le_deduction_result
   have h2 : 0 < 1 - pB := by linarith
   have h3 : 0 ≤ pC - pB * sBC := by
     -- From consistency: pB * sBC ≤ pC
-    have := consistency_implies_product_bound pB pC sBC hpB_pos hpC.1 hsBC.1 h_consist_BC
+    have := consistency_implies_product_bound pB pC sBC hpB_pos h_consist_BC
     linarith
   apply div_nonneg
   · exact mul_nonneg h1 h3

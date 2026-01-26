@@ -231,7 +231,7 @@ context Cj, it's possible to reach a reduct p with p::B in one step."
 -/
 
 /-- Generate a modal type specification from a rewrite context -/
-noncomputable def modalTypeFromRewrite (rule : RewriteRule) (rwCtx : RewriteContext rule)
+noncomputable def modalTypeFromRewrite (rule : RewriteRule) (_rwCtx : RewriteContext rule)
     (relies : List (String × PLNFiber PLNLambdaTheory.Pr))
     (result : PLNFiber PLNLambdaTheory.Pr) :
     NativeTypeTheory.ModalTypeSpec where

@@ -69,9 +69,9 @@ The rely-possibly formula computes the evidence for the modal composition.
     The result is the computed evidence for the conclusion.
 -/
 noncomputable def relyPossibly
-    (t : PLNTerm)
+    (_t : PLNTerm)
     (relies : List (String × Evidence))
-    (context : Context)
+    (_context : Context)
     (result : Evidence) : Evidence :=
   -- Combine the rely evidences with the result
   -- For deduction: E_AC = deductionEvidence(E_AB, E_BC, pB, pC)

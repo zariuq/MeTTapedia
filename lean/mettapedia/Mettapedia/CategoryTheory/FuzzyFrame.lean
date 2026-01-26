@@ -64,7 +64,7 @@ instance : Zero 𝕀 := ⟨zero⟩
 instance : One 𝕀 := ⟨one⟩
 
 /-- Decidable equality for unit interval -/
-noncomputable instance : DecidableEq 𝕀 := inferInstanceAs (DecidableEq {x : ℝ // _})
+noncomputable instance : DecidableEq 𝕀 := inferInstance
 
 /-- Order on the unit interval (inherited from ℝ) -/
 instance : LE 𝕀 := ⟨fun a b => a.val ≤ b.val⟩

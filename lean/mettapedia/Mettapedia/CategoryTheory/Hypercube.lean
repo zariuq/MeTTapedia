@@ -433,7 +433,7 @@ This constrains which sort assignments survive.
     For PLN, we need the sort of (P ∧ Q) ∧ R to equal P ∧ (Q ∧ R).
     This forces the conjunction sort to be symmetric.
 -/
-def isEquationallyAdmissible (σ : Slot → HSort) : Prop :=
+def isEquationallyAdmissible (_σ : Slot → HSort) : Prop :=
   -- For now, all assignments are admissible (PLN has few equations)
   -- In full generality, check t^S = u^S for each equation t = u
   True
