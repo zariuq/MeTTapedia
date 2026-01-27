@@ -405,7 +405,7 @@ Two roughly equivalent formulations of this requirement emerge:
 
 The formalization uses NAP as the \emph{primary} axiom because it connects to 60+ years of
 classical algebra, yields a shorter and more elegant proof, and has a complete machine-checked
-proof via Eric Luap's \texttt{OrderedSemigroups} library.\footnote{\url{https://github.com/ericluap/OrderedSemigroups}}
+proof via Eric Paul's \texttt{OrderedSemigroups} library.\footnote{\url{https://github.com/ericluap/OrderedSemigroups}}
 
 %------------------------------------------------------------------------------
 \subsection{No Anomalous Pairs (Classical Formulation)}
@@ -427,7 +427,7 @@ Two elements $a, b$ of an ordered semigroup form an \emph{anomalous pair} if the
 An ordered semigroup has \emph{no anomalous pairs} if no such pair exists.
 \end{definition}
 
-\begin{lstlisting}[caption={NAP definition (following Eric Luap's OrderedSemigroups)}]
+\begin{lstlisting}[caption={NAP definition (following Eric Paul's OrderedSemigroups)}]
 def AnomalousPair (a b : alpha) : Prop :=
   forall n : Nat+,
     (iterate_op_pnat a n < iterate_op_pnat b n /\
@@ -452,7 +452,7 @@ In a linearly ordered cancellative semigroup, the following are equivalent:
 \end{enumerate}
 \end{theorem}
 
-This classical result is formalized in Eric Luap's \texttt{OrderedSemigroups} library~\cite{Luap2024} and imported
+This classical result is formalized in Eric Paul's \texttt{OrderedSemigroups} library~\cite{Paul2024} and imported
 into the K\&S development.
 
 %------------------------------------------------------------------------------
@@ -560,9 +560,9 @@ order + associativity alone:
 Both the Archimedean property and commutativity follow \emph{directly} from NAP---they are not
 independent axioms. This is Alimov's theorem~\cite{Alimov1950,Klazar2016}.
 
-\textbf{Eric Luap's OrderedSemigroups library}~\cite{Luap2024} formalizes these results:
+\textbf{Eric Paul's OrderedSemigroups library}~\cite{Paul2024} formalizes these results:
 
-\begin{lstlisting}[caption={NAP $\Rightarrow$ Commutativity (Luap, Archimedean.lean:355--394)},numbers=none]
+\begin{lstlisting}[caption={NAP $\Rightarrow$ Commutativity (Paul, Archimedean.lean:355--394)},numbers=none]
 /-- If a linear ordered cancel semigroup does not have an anomalous pair,
     then it is commutative. -/
 theorem not_anomalous_pair_commutative
@@ -574,7 +574,7 @@ theorem not_anomalous_pair_commutative
   ...
 \end{lstlisting}
 
-\begin{lstlisting}[caption={NAP $\Rightarrow$ Archimedean (Luap, Archimedean.lean:396--399)},numbers=none]
+\begin{lstlisting}[caption={NAP $\Rightarrow$ Archimedean (Paul, Archimedean.lean:396--399)},numbers=none]
 theorem not_anomalous_arch (not_anomalous : ¬has_anomalous_pair (α := α)) :
     is_archimedean (α := α) := by
   have := mt (non_archimedean_anomalous_pair (α := α)) not_anomalous
@@ -634,7 +634,7 @@ The formalization provides \textbf{three complete, independent proof routes} to 
 \begin{enumerate}
 \item \textbf{Hölder embedding} (shortest route): Uses the NoAnomalousPairs condition and
 classical ordered semigroup theory~\cite{Holder1901,Alimov1950,Fuchs1963}.
-Formalized via Eric Luap's \texttt{OrderedSemigroups}~\cite{Luap2024}.
+Formalized via Eric Paul's \texttt{OrderedSemigroups}~\cite{Paul2024}.
 
 \item \textbf{Dedekind cuts} (alternative): Uses Separation property with Hölder/Dedekind cuts construction,
 bypassing the grid machinery.
@@ -2998,6 +2998,15 @@ nice -n 19 lake build Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs
 \end{lstlisting}
 
 %------------------------------------------------------------------------------
+\section*{Acknowledgments}
+\addcontentsline{toc}{section}{Acknowledgments}
+
+Thanks to Ben Goertzel for discussion, brainstorming to unstick the formalization, for proposing to axiomatize separation, and for initially pointing me to the Knuth-Skilling paper years ago.
+Thanks to Eray \"Ozkural for engaging in discussions about the interesting progress of these foundational explorations with me.
+Thanks also to the AI systems (Claude, ChatGPT Pro, Codex) for their tireless patience and enthusiasm in contributing to mathematical developments---ChatGPT Pro notably discovered the Alimov theorem that provided the classical foundation for the representation proof.
+The formalization builds on Mathlib, the Lean mathematical library maintained by the Lean community.
+
+%------------------------------------------------------------------------------
 \begin{thebibliography}{99}
 
 \bibitem{KnuthSkilling2012}
@@ -3026,10 +3035,11 @@ Klazar, M. (2016).
 ``Alimov's theorem: any ordered semigroup without infinitesimals is commutative.''
 Preprint.
 
-\bibitem{Luap2024}
-Luap, E. (2024).
+\bibitem{Paul2024}
+Paul, E. (2024).
 ``OrderedSemigroups: Formalization of Ordered Semigroups in Lean 4.''
-\texttt{github.com/ericluap/OrderedSemigroups}
+\url{https://github.com/ericluap/OrderedSemigroups}
+See also: \url{https://ericluap.github.io/}
 
 \bibitem{Aczel1966}
 Acz\'el, J. (1966).

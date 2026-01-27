@@ -93,7 +93,7 @@ We present a complete formalization in Lean 4 of Knuth \& Skilling's axiomatic f
 Their approach derives the probability calculus, measure theory, and information theory from elementary symmetries, without assuming continuity or differentiability.
 Our formalization makes explicit the implicit assumptions in their derivation, provides \textbf{three independent proof paths} for the main representation theorem (grid-based induction, Dedekind cuts, and H\"older embedding), and extends their framework to handle independence and product measures.
 We demonstrate K\&S's claim that the framework applies to non-Boolean distributive lattices (chains, open sets of $\mathbb{R}$).
-A key finding: the \textbf{NoAnomalousPairs} condition (from classical ordered semigroup theory) is sufficient for the representation theorem, via Eric Luap's formalized H\"older embedding.
+A key finding: the \textbf{NoAnomalousPairs} condition (from classical ordered semigroup theory) is sufficient for the representation theorem, via Eric Paul's formalized H\"older embedding.
 \end{abstract}
 
 \tableofcontents
@@ -130,7 +130,7 @@ We formalize K\&S Appendices A and B in Lean 4, providing:
   \begin{enumerate}
   \item Grid-based induction (following K\&S's paper structure)
   \item Dedekind cuts (classical Hölder-style construction)
-  \item H\"older embedding via Eric Luap's OrderedSemigroups library
+  \item H\"older embedding via Eric Paul's OrderedSemigroups library
   \end{enumerate}
 \item Explicit treatment of implicit assumptions (linear order, separation property)
 \item Connection to the classical \textbf{NoAnomalousPairs} condition (Alimov 1950)
@@ -323,7 +323,7 @@ theorem associativity_representation_cuts
 
 \textbf{Assumptions}: \texttt{NoAnomalousPairs} only!
 
-\textbf{Technique}: Leverage Eric Luap's formalized H\"older theorem for ordered semigroups:
+\textbf{Technique}: Leverage Eric Paul's formalized H\"older theorem for ordered semigroups:
 \begin{enumerate}
 \item Show \texttt{KnuthSkillingAlgebraBase} provides an \texttt{IsOrderedCancelSemigroup} instance
 \item Translate our \texttt{AnomalousPair} definition to Eric's \texttt{anomalous\_pair}
@@ -814,12 +814,12 @@ Our formalization confirms their approach is sound, while making explicit:
 \textbf{Key contributions of this formalization:}
 
 \begin{enumerate}
-\item \textbf{Three independent proof paths}: Grid-based (K\&S style), Dedekind cuts (classical), and H\"older embedding (via Eric Luap's library).
+\item \textbf{Three independent proof paths}: Grid-based (K\&S style), Dedekind cuts (classical), and H\"older embedding (via Eric Paul's library).
 
 \item \textbf{Discovery of minimal assumptions}: The \texttt{NoAnomalousPairs} condition from classical ordered semigroup theory (Alimov 1950) is \emph{sufficient} for the representation theorem and is \emph{weaker} than K\&S's separation property.
 
 \item \textbf{Connection to classical mathematics}: K\&S's work fits within the century-old tradition of H\"older embedding theorems for ordered algebraic structures.
-Eric Luap's Lean 4 formalization of this classical theory provides a clean, minimal proof path.
+Eric Paul's Lean 4 formalization of this classical theory provides a clean, minimal proof path.
 
 \item \textbf{Unified interface}: All three proof approaches provide instances of a common \texttt{HasRepresentationTheorem} typeclass, enabling modular use.
 \end{enumerate}
@@ -829,7 +829,7 @@ Eric Luap's Lean 4 formalization of this classical theory provides a clean, mini
 \item Uses classical assumptions (\texttt{NoAnomalousPairs} only)
 \item Shortest local codebase ($\sim$420 lines vs.\ $\sim$4000 for grid approach)
 \item Most mathematically elegant
-\item Leverages Eric Luap's battle-tested library
+\item Leverages Eric Paul's battle-tested library
 \end{itemize}
 
 The formalized representation theorem provides a constructive, computationally meaningful foundation for inference, now available via multiple independent proof paths.
@@ -919,7 +919,7 @@ For the representation theorem, we have three tiers of assumptions:
 
 From \texttt{NoAnomalousPairs} alone, we \emph{derive}:
 \begin{itemize}
-\item Commutativity (via Eric Luap's \texttt{not\_anomalous\_pair\_commutative})
+\item Commutativity (via Eric Paul's \texttt{not\_anomalous\_pair\_commutative})
 \item H\"older embedding into $(\mathbb{R}, +)$ (via Eric's \texttt{holder\_not\_anom})
 \item Additive representation $\Theta : \alpha \to \mathbb{R}$
 \end{itemize}
@@ -1088,14 +1088,14 @@ The representation theorem fits within a classical tradition of embedding theore
 H\"older (1901) & Archimedean ordered abelian groups & Embed in $(\mathbb{R}, +)$ \\
 Alimov (1950) & Cancellative ordered semigroups with NAP & Commutative + embed in $(\mathbb{R}, +)$ \\
 Fuchs (1963) & Textbook treatment of the above & Classical reference \\
-\textbf{Luap (2024)} & \textbf{Lean 4 formalization of the above} & \textbf{OrderedSemigroups} \\
+\textbf{Paul (2024)} & \textbf{Lean 4 formalization of the above} & \textbf{OrderedSemigroups} \\
 K\&S + Separation & Ordered monoids with separation & Embed in $(\mathbb{R}, +)$ \\
 \end{tabular}
 \end{center}
 
-\textbf{Key insight}: Eric Luap's OrderedSemigroups library (github.com/ericluap/OrderedSemigroups) provides a \textbf{complete Lean 4 formalization} of the Alimov-H\"older embedding theorem:
+\textbf{Key insight}: Eric Paul's OrderedSemigroups library (github.com/ericluap/OrderedSemigroups) provides a \textbf{complete Lean 4 formalization} of the Alimov-H\"older embedding theorem:
 
-\begin{lstlisting}[caption={Eric Luap's H\"older theorem (from OrderedSemigroups)}]
+\begin{lstlisting}[caption={Eric Paul's H\"older theorem (from OrderedSemigroups)}]
 theorem holder_not_anom [LinearOrder α] [Semigroup α]
     [IsOrderedCancelSemigroup α] [Pow α ℕ+] [PNatPowAssoc α]
     (h : ¬has_anomalous_pair (α := α)) :
@@ -1322,11 +1322,12 @@ Kevin H. Knuth and John Skilling.
 \textit{Foundations of Inference}.
 Axioms, 1(1):38--73, 2012.
 
-\bibitem{Luap2024}
-Eric Luap.
+\bibitem{Paul2024}
+Eric Paul.
 \textit{OrderedSemigroups: Formalization in Lean 4}.
 GitHub repository, 2024.
 \url{https://github.com/ericluap/OrderedSemigroups}
+See also: \url{https://ericluap.github.io/}
 
 \bibitem{Alimov1950}
 N.~G. Alimov.

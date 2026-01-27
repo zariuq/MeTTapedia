@@ -291,7 +291,7 @@ This provides a clean conceptual bridge: ``one-dimensionality'' is exactly the e
 infinitesimals.\footnote{A key connection: in an ordered semigroup with strict monotonicity,
 non-commutativity forces the existence of anomalous pairs.  Contrapositive: NAP implies
 commutativity, which we prove as \cref{thm:separation-commutativity}.}
-Our project uses Eric Luap's Lean formalization of H\"older's theorem for this route.
+Our project uses Eric Paul's Lean formalization of H\"older's theorem for this route.
 
 \begin{remark}[What NAP excludes---necessity witness]
 NAP excludes lexicographic ``multi-scale'' structures with infinitesimals.
@@ -865,6 +865,13 @@ Mathlib bridge & \texttt{toProbabilityMeasure} & \path{Bridges/MathlibProbabilit
 \end{tabular}
 \end{center}
 
+\section*{Acknowledgments}
+
+Thanks to Ben Goertzel for discussion, brainstorming to unstick the formalization, for proposing to axiomatize separation, and for initially pointing me to the Knuth-Skilling paper years ago.
+Thanks to Eray \"Ozkural for engaging in discussions about the interesting progress of these foundational explorations with me.
+Thanks also to the AI systems (Claude, ChatGPT Pro, Codex) for their tireless patience and enthusiasm in contributing to mathematical developments---ChatGPT Pro notably discovered the Alimov theorem that provided the classical foundation for the representation proof.
+The formalization builds on Mathlib, the Lean mathematical library maintained by the Lean community.
+
 \begin{thebibliography}{13}
 
 \bibitem{KnuthSkilling2012}
@@ -939,10 +946,11 @@ F.~H. Clarke.
 \textit{Optimization and Nonsmooth Analysis}.
 SIAM, 1990.
 
-\bibitem{Luap2024}
-Eric Luap.
+\bibitem{Paul2024}
+Eric Paul.
 \textit{OrderedSemigroups: Formalization in Lean 4}.
 GitHub repository, 2024. \url{https://github.com/ericluap/OrderedSemigroups}
+See also: \url{https://ericluap.github.io/}
 
 \bibitem{Walley1991}
 Peter Walley.

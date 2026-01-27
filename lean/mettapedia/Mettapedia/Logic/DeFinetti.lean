@@ -6,6 +6,7 @@ import Mathlib.MeasureTheory.Measure.Real
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Data.Fin.Tuple.Basic
 import Mathlib.Algebra.Group.ForwardDiff
+import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
 # De Finetti's Representation Theorem
@@ -254,6 +255,14 @@ def cyl {n : ℕ} (X : ℕ → Ω → Bool) (xs : Fin n → Bool) : Set Ω :=
 def onesThenZeros (k n : ℕ) : Fin (k + n) → Bool :=
   Fin.append (fun _ : Fin k => true) (fun _ : Fin n => false)
 
+/-- The canonical pattern consisting of `n` `false`s followed by `k` `true`s. -/
+def zerosThenOnes (n k : ℕ) : Fin (n + k) → Bool :=
+  Fin.append (fun _ : Fin n => false) (fun _ : Fin k => true)
+
+/-- The canonical pattern consisting of `n` `false`s, then `k` `true`s, then a final `false`. -/
+def zerosThenOnesThenZero (n k : ℕ) : Fin (n + k + 1) → Bool :=
+  Fin.append (zerosThenOnes n k) (fun _ : Fin 1 => false)
+
 /-- Cylinder events are measurable when all coordinates `X i` are measurable. -/
 theorem measurableSet_cyl {n : ℕ} (X : ℕ → Ω → Bool)
     (hX : ∀ i : ℕ, Measurable (X i)) (xs : Fin n → Bool) :
@@ -269,6 +278,105 @@ theorem measurableSet_cyl {n : ℕ} (X : ℕ → Ω → Bool)
     intro i
     exact measurableSet_preimage (hX i.val) (measurableSet_singleton (xs i))
   simpa [hrepr] using MeasurableSet.iInter hmeas
+
+/-! ### Counting Lemmas for Canonical Patterns -/
+
+@[simp]
+lemma countTrue_const_true (n : ℕ) : countTrue (fun _ : Fin n => true) = n := by
+  simp [countTrue]
+
+@[simp]
+lemma countTrue_const_false (n : ℕ) : countTrue (fun _ : Fin n => false) = 0 := by
+  simp [countTrue]
+
+/-- `countTrue` respects `Fin.append`. -/
+theorem countTrue_append_fin {m n : ℕ} (a : Fin m → Bool) (b : Fin n → Bool) :
+    countTrue (Fin.append a b) = countTrue a + countTrue b := by
+  classical
+  -- Convert `countTrue` to subtype cardinals, split using `finSumFinEquiv`,
+  -- and convert back.
+  have hAppend :
+      Fintype.card { i : Fin (m + n) // Fin.append a b i = true } = countTrue (Fin.append a b) := by
+    simpa [countTrue] using
+      (Fintype.card_subtype (α := Fin (m + n)) (p := fun i => Fin.append a b i = true))
+  have hA : Fintype.card { i : Fin m // a i = true } = countTrue a := by
+    simpa [countTrue] using (Fintype.card_subtype (α := Fin m) (p := fun i => a i = true))
+  have hB : Fintype.card { i : Fin n // b i = true } = countTrue b := by
+    simpa [countTrue] using (Fintype.card_subtype (α := Fin n) (p := fun i => b i = true))
+
+  let pSum : Fin m ⊕ Fin n → Prop :=
+    Sum.elim (fun i : Fin m => a i = true) (fun j : Fin n => b j = true)
+
+  have eSum :
+      { x : Fin m ⊕ Fin n // pSum x } ≃ ({i : Fin m // a i = true} ⊕ {j : Fin n // b j = true}) := by
+    refine
+      { toFun := fun x => ?_,
+        invFun := fun y => ?_,
+        left_inv := ?_,
+        right_inv := ?_ }
+    · rcases x with ⟨x, hx⟩
+      cases x with
+      | inl i => exact Sum.inl ⟨i, hx⟩
+      | inr j => exact Sum.inr ⟨j, hx⟩
+    · cases y with
+      | inl i => exact ⟨Sum.inl i.1, i.2⟩
+      | inr j => exact ⟨Sum.inr j.1, j.2⟩
+    · rintro ⟨x, hx⟩
+      cases x <;> rfl
+    · intro y
+      cases y <;> rfl
+
+  have cardSumSubtype :
+      Fintype.card { x : Fin m ⊕ Fin n // pSum x }
+        = Fintype.card { i : Fin m // a i = true } + Fintype.card { j : Fin n // b j = true } := by
+    calc
+      Fintype.card { x : Fin m ⊕ Fin n // pSum x }
+          = Fintype.card ({i : Fin m // a i = true} ⊕ {j : Fin n // b j = true}) := by
+              simpa using (Fintype.card_congr eSum)
+      _ = Fintype.card { i : Fin m // a i = true } + Fintype.card { j : Fin n // b j = true } := by
+            simpa using (Fintype.card_sum ({i : Fin m // a i = true}) ({j : Fin n // b j = true}))
+
+  let e : Fin m ⊕ Fin n ≃ Fin (m + n) := finSumFinEquiv
+
+  have hPred : ∀ x : Fin m ⊕ Fin n, pSum x ↔ (Fin.append a b (e x) = true) := by
+    intro x
+    cases x with
+    | inl i =>
+        simp [pSum, e, finSumFinEquiv, Fin.append]
+    | inr j =>
+        simp [pSum, e, finSumFinEquiv, Fin.append]
+
+  let eSub :
+      { x : Fin m ⊕ Fin n // pSum x } ≃ { i : Fin (m + n) // Fin.append a b i = true } :=
+    e.subtypeEquiv (fun x => hPred x)
+
+  have cardAppendSubtype :
+      Fintype.card { i : Fin (m + n) // Fin.append a b i = true }
+        = Fintype.card { x : Fin m ⊕ Fin n // pSum x } := by
+    simpa using (Fintype.card_congr eSub.symm)
+
+  have hCountTrue :
+      countTrue (Fin.append a b) = Fintype.card { i : Fin (m + n) // Fin.append a b i = true } :=
+    hAppend.symm
+
+  calc
+    countTrue (Fin.append a b)
+        = Fintype.card { i : Fin (m + n) // Fin.append a b i = true } := hCountTrue
+    _ = Fintype.card { x : Fin m ⊕ Fin n // pSum x } := by
+          simpa [cardAppendSubtype]
+    _ = Fintype.card { i : Fin m // a i = true } + Fintype.card { j : Fin n // b j = true } :=
+          cardSumSubtype
+    _ = countTrue a + countTrue b := by
+          simpa [hA, hB]
+
+@[simp]
+lemma countTrue_zerosThenOnes (n k : ℕ) : countTrue (zerosThenOnes n k) = k := by
+  simp [zerosThenOnes, countTrue_append_fin]
+
+@[simp]
+lemma countTrue_zerosThenOnesThenZero (n k : ℕ) :
+    countTrue (zerosThenOnesThenZero n k) = k := by
+  simp [zerosThenOnesThenZero, countTrue_append_fin]
 
 /-! ### De Finetti Moment Sequence
  

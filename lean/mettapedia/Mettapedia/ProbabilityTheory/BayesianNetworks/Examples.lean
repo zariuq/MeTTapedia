@@ -39,11 +39,44 @@ instance : Fintype Three where
 def chainGraph : DirectedGraph Three where
   edges u v := (u = Three.A ∧ v = Three.B) ∨ (u = Three.B ∧ v = Three.C)
 
+/-- Helper: no path from C in chain graph (C is a sink). -/
+private theorem chainGraph_no_path_from_C (v : Three) (h : chainGraph.Path Three.C v) :
+    v = Three.C := by
+  generalize hc : Three.C = c at h
+  induction h with
+  | refl => rfl
+  | step hedge _ ih =>
+    simp only [chainGraph] at hedge
+    rcases hedge with ⟨hu, _⟩ | ⟨hu, _⟩
+    · subst hc; exact absurd hu (by decide)
+    · subst hc; exact absurd hu (by decide)
+
+/-- Helper: no path from B to A in chain graph. -/
+private theorem chainGraph_no_path_B_to_A (h : chainGraph.Path Three.B Three.A) : False := by
+  -- Three.B ≠ Three.A, so refl is impossible; must be step
+  cases h with
+  | step hedge htail =>
+    simp only [chainGraph] at hedge
+    rcases hedge with ⟨hu, hv⟩ | ⟨hu, hv⟩
+    · -- Edge from A to something, but we start from B
+      exact absurd hu (by decide)
+    · -- Edge B → C, then path from C to A
+      subst hv
+      have := chainGraph_no_path_from_C Three.A htail
+      exact absurd this (by decide)
+
 /-- The chain graph is acyclic. -/
 theorem chainGraph_acyclic : chainGraph.IsAcyclic := by
   intro v ⟨w, hedge, hreach⟩
-  -- No cycles: A→B→C, no edges from C
-  sorry
+  simp only [chainGraph] at hedge
+  rcases hedge with ⟨hv, hw⟩ | ⟨hv, hw⟩
+  · -- Edge A → B, need: no path B → A
+    subst hv hw
+    exact chainGraph_no_path_B_to_A hreach
+  · -- Edge B → C, need: no path C → B
+    subst hv hw
+    have := chainGraph_no_path_from_C Three.B hreach
+    exact absurd this (by decide)
 
 /-- The chain Bayesian network. -/
 noncomputable def chainBN : BayesianNetwork Three where
@@ -58,11 +91,30 @@ noncomputable def chainBN : BayesianNetwork Three where
 def forkGraph : DirectedGraph Three where
   edges u v := (u = Three.B ∧ v = Three.A) ∨ (u = Three.B ∧ v = Three.C)
 
+/-- Helper: no path from A or C in fork graph (they are sinks). -/
+private theorem forkGraph_no_path_from_sink (u v : Three) (hu : u = Three.A ∨ u = Three.C)
+    (h : forkGraph.Path u v) : v = u := by
+  generalize hs : u = s at h
+  induction h with
+  | refl => rfl
+  | step hedge _ _ =>
+    simp only [forkGraph] at hedge
+    rcases hedge with ⟨hb, _⟩ | ⟨hb, _⟩ <;>
+    · subst hs; rcases hu with rfl | rfl <;> exact absurd hb (by decide)
+
 /-- The fork graph is acyclic. -/
 theorem forkGraph_acyclic : forkGraph.IsAcyclic := by
   intro v ⟨w, hedge, hreach⟩
-  -- No cycles: B→A, B→C, no edges from A or C
-  sorry
+  simp only [forkGraph] at hedge
+  rcases hedge with ⟨hv, hw⟩ | ⟨hv, hw⟩
+  · -- Edge B → A, need: no path A → B
+    subst hv hw
+    have := forkGraph_no_path_from_sink Three.A Three.B (Or.inl rfl) hreach
+    exact absurd this (by decide)
+  · -- Edge B → C, need: no path C → B
+    subst hv hw
+    have := forkGraph_no_path_from_sink Three.C Three.B (Or.inr rfl) hreach
+    exact absurd this (by decide)
 
 /-- The fork Bayesian network. -/
 noncomputable def forkBN : BayesianNetwork Three where
@@ -77,11 +129,30 @@ noncomputable def forkBN : BayesianNetwork Three where
 def colliderGraph : DirectedGraph Three where
   edges u v := (u = Three.A ∧ v = Three.C) ∨ (u = Three.B ∧ v = Three.C)
 
+/-- Helper: no path from C in collider graph (C is a sink). -/
+private theorem colliderGraph_no_path_from_C (v : Three) (h : colliderGraph.Path Three.C v) :
+    v = Three.C := by
+  generalize hc : Three.C = c at h
+  induction h with
+  | refl => rfl
+  | step hedge _ _ =>
+    simp only [colliderGraph] at hedge
+    rcases hedge with ⟨hu, _⟩ | ⟨hu, _⟩ <;>
+    · subst hc; exact absurd hu (by decide)
+
 /-- The collider graph is acyclic. -/
 theorem colliderGraph_acyclic : colliderGraph.IsAcyclic := by
   intro v ⟨w, hedge, hreach⟩
-  -- No cycles: A→C, B→C, no edges from C
-  sorry
+  simp only [colliderGraph] at hedge
+  rcases hedge with ⟨hv, hw⟩ | ⟨hv, hw⟩
+  · -- Edge A → C, need: no path C → A
+    subst hv hw
+    have := colliderGraph_no_path_from_C Three.A hreach
+    exact absurd this (by decide)
+  · -- Edge B → C, need: no path C → B
+    subst hv hw
+    have := colliderGraph_no_path_from_C Three.B hreach
+    exact absurd this (by decide)
 
 /-- The collider Bayesian network. -/
 noncomputable def colliderBN : BayesianNetwork Three where
@@ -94,23 +165,52 @@ noncomputable def colliderBN : BayesianNetwork Three where
 
 /-- In a chain A → B → C, B's parent is A. -/
 theorem chain_parents_B : chainBN.parents Three.B = {Three.A} := by
-  sorry -- TODO: needs careful unfolding
+  ext u
+  unfold BayesianNetwork.parents DirectedGraph.parents chainBN chainGraph
+  simp only [Set.mem_setOf_eq, Set.mem_singleton_iff]
+  constructor
+  · intro h; rcases h with ⟨rfl, _⟩ | ⟨_, h⟩ <;> [rfl; exact absurd h (by decide)]
+  · intro rfl; left; exact ⟨rfl, trivial⟩
 
 /-- In a chain A → B → C, C's parent is B. -/
 theorem chain_parents_C : chainBN.parents Three.C = {Three.B} := by
-  sorry
+  ext u
+  unfold BayesianNetwork.parents DirectedGraph.parents chainBN chainGraph
+  simp only [Set.mem_setOf_eq, Set.mem_singleton_iff]
+  constructor
+  · intro h; rcases h with ⟨_, h⟩ | ⟨rfl, _⟩ <;> [exact absurd h (by decide); rfl]
+  · intro rfl; right; exact ⟨rfl, trivial⟩
 
 /-- In a chain, A has no parents. -/
 theorem chain_parents_A : chainBN.parents Three.A = ∅ := by
-  sorry
+  ext u
+  unfold BayesianNetwork.parents DirectedGraph.parents chainBN chainGraph
+  simp only [Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false]
+  intro h
+  rcases h with ⟨_, h⟩ | ⟨_, h⟩ <;> exact absurd h (by decide)
 
 /-- In a fork A ← B → C, B has no parents. -/
 theorem fork_parents_B : forkBN.parents Three.B = ∅ := by
-  sorry
+  ext u
+  unfold BayesianNetwork.parents DirectedGraph.parents forkBN forkGraph
+  simp only [Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false]
+  intro h
+  rcases h with ⟨rfl, h⟩ | ⟨rfl, h⟩ <;> exact absurd h (by decide)
 
 /-- In a collider A → C ← B, C has parents {A, B}. -/
 theorem collider_parents_C : colliderBN.parents Three.C = {Three.A, Three.B} := by
-  sorry
+  ext u
+  unfold BayesianNetwork.parents DirectedGraph.parents colliderBN colliderGraph
+  simp only [Set.mem_setOf_eq, Set.mem_insert_iff, Set.mem_singleton_iff]
+  constructor
+  · intro h
+    rcases h with ⟨rfl, _⟩ | ⟨rfl, _⟩
+    · left; rfl
+    · right; rfl
+  · intro h
+    rcases h with rfl | rfl
+    · left; exact ⟨rfl, trivial⟩
+    · right; exact ⟨rfl, trivial⟩
 
 /-! ## D-Separation Examples (WIP) -/
 
