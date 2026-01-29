@@ -55,6 +55,40 @@ def bump (c : TransCounts) (prev next : Bool) : TransCounts :=
   | true,  false => ⟨c.ff,     c.ft,     c.tf + 1, c.tt⟩
   | true,  true  => ⟨c.ff,     c.ft,     c.tf,     c.tt + 1⟩
 
+/-- Scan a tail `xs` starting from a previous symbol `prev`, accumulating transition counts.
+
+Returns the updated counts together with the last symbol seen (or `prev` if `xs = []`). -/
+def summaryAux (prev : Bool) (c : TransCounts) : BinString → TransCounts × Bool
+  | [] => (c, prev)
+  | b :: xs => summaryAux b (bump c prev b) xs
+
+/-- Transition-count evidence for a binary string: counts plus the final symbol (if any). -/
+def summary : BinString → Option (TransCounts × Bool)
+  | [] => none
+  | b :: xs => some (summaryAux b zero xs)
+
+theorem summaryAux_append_singleton (prev : Bool) (c : TransCounts) (xs : BinString) (b : Bool) :
+    summaryAux prev c (xs ++ [b]) =
+      let r := summaryAux prev c xs
+      (bump r.1 r.2 b, b) := by
+  induction xs generalizing prev c with
+  | nil =>
+      simp [summaryAux]
+  | cons x xs ih =>
+      simp [summaryAux, ih, List.cons_append]
+
+theorem summary_append_singleton (xs : BinString) (b : Bool) :
+    summary (xs ++ [b]) =
+      match summary xs with
+      | none => some (zero, b)
+      | some r => some (bump r.1 r.2 b, b) := by
+  cases xs with
+  | nil =>
+      simp [summary, summaryAux]
+  | cons x xs =>
+      -- Reduce to the `summaryAux` lemma.
+      simp [summary, summaryAux_append_singleton]
+
 end TransCounts
 
 /-! ## One-step predictive probabilities -/

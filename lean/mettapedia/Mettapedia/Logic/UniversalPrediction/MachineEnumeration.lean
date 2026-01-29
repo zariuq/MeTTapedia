@@ -1,5 +1,6 @@
 import Mettapedia.Logic.UniversalPrediction.EnumerationBridge
 import Mettapedia.Logic.UniversalPrediction.BetaPredictor
+import Mettapedia.Logic.UniversalPrediction.MarkovBetaPredictor
 
 /-!
 # Machine Enumeration Interface
@@ -97,6 +98,43 @@ theorem relEntropy_le_log_inv_haldane (n : ℕ) :
     (relEntropy_le_log_inv_of_code (eval := betaEval) (c := BetaCode.haldane) (n := n))
 
 end BetaCode
+
+/-! ## Tiny Markov(1) Beta-family code set -/
+
+/-- Minimal codes for the Markov(1) Beta-family competitors in this repo. -/
+inductive MarkovBetaCode where
+  | laplace
+  | jeffreys
+deriving DecidableEq, Repr, Inhabited, Encodable
+
+namespace MarkovBetaCode
+
+/-- Evaluate a `MarkovBetaCode` to the corresponding Markov(1) `PrefixMeasure`. -/
+def eval : MarkovBetaCode → PrefixMeasure
+  | .laplace => markovLaplacePrefixMeasure
+  | .jeffreys => markovJeffreysPrefixMeasure
+
+/-- The tiny enumeration containing exactly the Markov(1) Laplace/Jeffreys competitors. -/
+abbrev enum : PrefixMeasureEnumeration :=
+  ofEval MarkovBetaCode eval
+
+theorem relEntropy_le_log_inv_laplace (n : ℕ) :
+    ∃ c : ENNReal, c ≠ 0 ∧
+      Dominates (PrefixMeasureEnumeration.xi enum) markovLaplacePrefixMeasure c ∧
+      relEntropy markovLaplacePrefixMeasure (PrefixMeasureEnumeration.xi enum) n ≤
+        Real.log (1 / c.toReal) := by
+  simpa [enum, eval] using
+    (relEntropy_le_log_inv_of_code (eval := eval) (c := MarkovBetaCode.laplace) (n := n))
+
+theorem relEntropy_le_log_inv_jeffreys (n : ℕ) :
+    ∃ c : ENNReal, c ≠ 0 ∧
+      Dominates (PrefixMeasureEnumeration.xi enum) markovJeffreysPrefixMeasure c ∧
+      relEntropy markovJeffreysPrefixMeasure (PrefixMeasureEnumeration.xi enum) n ≤
+        Real.log (1 / c.toReal) := by
+  simpa [enum, eval] using
+    (relEntropy_le_log_inv_of_code (eval := eval) (c := MarkovBetaCode.jeffreys) (n := n))
+
+end MarkovBetaCode
 
 end MachineEnumeration
 end Mettapedia.Logic.UniversalPrediction

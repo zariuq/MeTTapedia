@@ -1,3 +1,5 @@
+import Mathlib.Topology.Instances.ENNReal.Lemmas
+import Mathlib.Data.ENNReal.BigOperators
 import Mettapedia.Logic.UniversalPrediction.LossBounds
 
 /-!
@@ -656,6 +658,826 @@ theorem universalPrediction_minimizes_xi_error (μ : PrefixMeasure) (x : BinStri
       have hpf_eq : pf = 1 - pt := by linarith
       linarith
 
+/-! ### Curriculum Lemmas for Balanced Pareto Optimality
+
+These lemmas build the bridge between existing infrastructure and Theorems 3.69-3.70.
+The dependency chain is:
+  L2.1 → L2.2 → L3.2 → balanced_pareto_optimal -/
+
+/-- L2.1: ENNReal version of error performance monotonicity. -/
+theorem errorPerformance_ofReal_mono (p : Predictor) (μ : PrefixMeasure) :
+    Monotone (fun n => ENNReal.ofReal (errorPerformance p μ n)) := by
+  intro m n hmn
+  apply ENNReal.ofReal_le_ofReal
+  exact errorPerformance_mono p μ hmn
+
+/-- L2.2: Infinite-horizon performance is the limit of finite horizons.
+    Uses Mathlib's `tendsto_atTop_iSup` for monotone sequences. -/
+theorem infiniteHorizonPerf_tendsto (p : Predictor) (μ : PrefixMeasure) :
+    Filter.Tendsto (fun n => ENNReal.ofReal (errorPerformance p μ n))
+      Filter.atTop (nhds (infiniteHorizonPerf errorPerformance p μ)) :=
+  tendsto_atTop_iSup (errorPerformance_ofReal_mono p μ)
+
+/-- L3.2: Key interchange lemma - iSup of weighted sums ≤ weighted sum of iSups.
+    This follows from monotonicity: each finite sum is bounded by the infinite sum.
+
+    **Proof**: For each n, we have ∑ w(μ) * perf(n) ≤ ∑ w(μ) * (⨆ n, perf(n))
+    by pointwise inequality w(μ) * perf(n) ≤ w(μ) * (⨆ n, perf(n)).
+    Taking iSup over n preserves this. -/
+theorem iSup_weighted_le_weighted_iSup (w : PrefixMeasure → ENNReal) (p : Predictor) :
+    ⨆ n, (∑' μ, w μ * ENNReal.ofReal (errorPerformance p μ n)) ≤
+    ∑' μ, w μ * (⨆ n, ENNReal.ofReal (errorPerformance p μ n)) := by
+  apply iSup_le
+  intro n
+  apply ENNReal.tsum_le_tsum
+  intro μ
+  apply mul_le_mul_left'
+  -- ENNReal.ofReal (errorPerformance p μ n) ≤ ⨆ n, ENNReal.ofReal (errorPerformance p μ n)
+  exact le_iSup (fun n => ENNReal.ofReal (errorPerformance p μ n)) n
+
+/-- For the error performance (which is monotone in the horizon), balanced performance can be
+computed as the supremum of the weighted finite-horizon sums. This is the ENNReal analogue of
+monotone convergence for `tsum` and `iSup`. -/
+theorem BalancedPerformance_eq_iSup_weighted_errorPerformance (w : PrefixMeasure → ENNReal)
+    (p : Predictor) :
+    BalancedPerformance w errorPerformance p =
+      ⨆ n, ∑' μ, w μ * ENNReal.ofReal (errorPerformance p μ n) := by
+  classical
+  unfold BalancedPerformance infiniteHorizonPerf
+  -- Expand the outer `tsum` as an `iSup` over finite sums.
+  rw [ENNReal.tsum_eq_iSup_sum]
+  -- Rewrite the `tsum` inside the RHS as an `iSup` over finite sums as well.
+  have hRHS :
+      (⨆ n, ∑' μ, w μ * ENNReal.ofReal (errorPerformance p μ n)) =
+        ⨆ n, (⨆ s : Finset PrefixMeasure, ∑ μ ∈ s, w μ * ENNReal.ofReal (errorPerformance p μ n)) := by
+    simp [ENNReal.tsum_eq_iSup_sum]
+  -- Monotonicity needed to commute `iSup` with finite sums over `μ`.
+  have hmono :
+      ∀ μ : PrefixMeasure, Monotone fun n => w μ * ENNReal.ofReal (errorPerformance p μ n) := by
+    intro μ m n hmn
+    exact mul_le_mul_left' (errorPerformance_ofReal_mono p μ hmn) (w μ)
+  -- Commute `iSup` over horizon with the outer `tsum` (as `iSup` over finite sums).
+  -- For each finite set of environments, monotonicity lets us pick one horizon `n`
+  -- that approximates all components simultaneously.
+  calc
+    (⨆ s : Finset PrefixMeasure, ∑ μ ∈ s, w μ * ⨆ n, ENNReal.ofReal (errorPerformance p μ n))
+        =
+        ⨆ s : Finset PrefixMeasure, ⨆ n, ∑ μ ∈ s, w μ * ENNReal.ofReal (errorPerformance p μ n) := by
+          refine iSup_congr ?_
+          intro s
+          -- Use `ENNReal.finsetSum_iSup_of_monotone` on the finite set `s`.
+          -- First rewrite `w μ * (⨆ n, f n)` as `⨆ n, w μ * f n`.
+          have hmul :
+              (∑ μ ∈ s, w μ * ⨆ n, ENNReal.ofReal (errorPerformance p μ n)) =
+                ∑ μ ∈ s, ⨆ n, w μ * ENNReal.ofReal (errorPerformance p μ n) := by
+            refine Finset.sum_congr rfl ?_
+            intro μ hμ
+            simpa using (ENNReal.mul_iSup (w μ) (fun n => ENNReal.ofReal (errorPerformance p μ n)))
+          -- Now commute the finite sum with the supremum.
+          have hs :=
+            (ENNReal.finsetSum_iSup_of_monotone (s := s)
+              (f := fun μ n => w μ * ENNReal.ofReal (errorPerformance p μ n)) hmono)
+          -- Put everything together.
+          simpa [hmul] using hs
+    _ = ⨆ n, (⨆ s : Finset PrefixMeasure, ∑ μ ∈ s, w μ * ENNReal.ofReal (errorPerformance p μ n)) := by
+          -- Avoid `simp` loops: use the commutation lemma directly.
+          exact iSup_comm
+    _ = ⨆ n, ∑' μ, w μ * ENNReal.ofReal (errorPerformance p μ n) := by
+          -- Fold back the finite-sum characterization of `tsum`.
+          exact hRHS.symm
+
+/-- Monotonicity: μ(x++[b]) ≤ μ(x) for any prefix measure. -/
+theorem prefixMeasure_le_of_append (μ : PrefixMeasure) (x : BinString) (b : Bool) :
+    μ (x ++ [b]) ≤ μ x := by
+  have hadd := μ.additive' x
+  cases b with
+  | false =>
+    calc μ (x ++ [false]) ≤ μ (x ++ [false]) + μ (x ++ [true]) := le_self_add
+      _ = μ x := hadd
+  | true =>
+    calc μ (x ++ [true]) ≤ μ (x ++ [false]) + μ (x ++ [true]) := le_add_self
+      _ = μ x := hadd
+
+/-- If μ(x) = 0 then μ(x++[b]) = 0 for any prefix measure. -/
+theorem prefixMeasure_ext_eq_zero_of_prefix_eq_zero (μ : PrefixMeasure) (x : BinString) (b : Bool)
+    (hx : μ x = 0) : μ (x ++ [b]) = 0 := by
+  have h := prefixMeasure_le_of_append μ x b
+  simp only [hx, nonpos_iff_eq_zero] at h
+  exact h
+
+/-- L4.1: (μ x).toReal * condProb_μ(b|x) = (μ (x ++ [b])).toReal for prefix measures.
+    This is the key algebraic identity for the Fubini interchange (in ℝ).
+
+    **Proof**: condProb_μ(b|x) = μ(x++[b]) / μ(x) when μ(x) > 0, so
+    μ(x) * condProb_μ(b|x) = μ(x++[b]). When μ(x) = 0, both sides are 0. -/
+theorem mu_toReal_mul_condProb_eq_ext (μ : PrefixMeasure) (x : BinString) (b : Bool) :
+    (μ x).toReal * FiniteHorizon.condProb μ.toSemimeasure x b = (μ (x ++ [b])).toReal := by
+  unfold FiniteHorizon.condProb conditionalENN
+  by_cases hμx : μ x = 0
+  · -- If μ(x) = 0, then μ(x ++ [b]) = 0 by monotonicity
+    simp only [hμx, ENNReal.toReal_zero, zero_mul]
+    have h := prefixMeasure_ext_eq_zero_of_prefix_eq_zero μ x b hμx
+    simp only [h, ENNReal.toReal_zero]
+  · -- If μ(x) > 0, then μ(x) * (μ(x++[b])/μ(x)) = μ(x++[b])
+    -- Note: goal after unfold is already in toReal form
+    -- μ.toSemimeasure.toFun = μ.toFun by definition
+    have hne' : (μ x : ENNReal) ≠ ⊤ := semimeasure_ne_top μ.toSemimeasure x
+    simp only [PrefixMeasure.toSemimeasure_apply]
+    -- Now goal is: μ(x).toReal * (μ(x++[b]) / μ(x)).toReal = μ(x++[b]).toReal
+    rw [ENNReal.toReal_div]
+    -- Goal: μ(x).toReal * (μ(x++[b]).toReal / μ(x).toReal) = μ(x++[b]).toReal
+    field_simp [ENNReal.toReal_ne_zero.mpr ⟨hμx, hne'⟩]
+
+/-- Error formula: μ(x) * (1 - condProb(b|x)) = μ(x) - μ(x++[b]) in toReal form. -/
+theorem mu_toReal_mul_errorProb (μ : PrefixMeasure) (x : BinString) (b : Bool) :
+    (μ x).toReal * (1 - FiniteHorizon.condProb μ.toSemimeasure x b) =
+    (μ x).toReal - (μ (x ++ [b])).toReal := by
+  rw [mul_sub, mul_one]
+  congr 1
+  exact mu_toReal_mul_condProb_eq_ext μ x b
+
+/-- The errorProb formula expressed directly. -/
+theorem mu_toReal_mul_errorProb' (μ : PrefixMeasure) (x : BinString) (prediction : Bool) :
+    (μ x).toReal * errorProb μ prediction x = (μ x).toReal - (μ (x ++ [prediction])).toReal := by
+  unfold errorProb
+  exact mu_toReal_mul_errorProb μ x prediction
+
+/-- L4.2: Weighted error at prefix x can be expressed as: ξ(x) - ξ(x ++ [b]).
+    This shows why maximizing ξ(x ++ [b]) minimizes error.
+
+    **Key identity**: ∑ w(μ) * μ(x).toReal * (1 - condProb_μ(b|x))
+                    = ∑ w(μ) * (μ(x) - μ(x++[b])).toReal
+                    = (ξ(x) - ξ(x ++ [b])).toReal  (when ξ = ∑ w·μ) -/
+theorem weighted_error_as_mixture_diff (w : PrefixMeasure → ENNReal)
+    (ξ : Semimeasure) (hMixture : ∀ x, ξ x = ∑' μ, w μ * μ x)
+    (x : BinString) (b : Bool)
+    (hξx_ne_top : ξ x ≠ ⊤) :
+    ∑' μ, (w μ).toReal * ((μ x).toReal * (1 - FiniteHorizon.condProb μ.toSemimeasure x b)) =
+    (ξ x).toReal - (ξ (x ++ [b])).toReal := by
+  -- Step 1: Rewrite using mu_toReal_mul_errorProb and distribute multiplication
+  have h1 : (fun μ => (w μ).toReal * ((μ x).toReal * (1 - FiniteHorizon.condProb μ.toSemimeasure x b)))
+          = (fun μ => (w μ).toReal * (μ x).toReal - (w μ).toReal * (μ (x ++ [b])).toReal) := by
+    ext μ
+    rw [mu_toReal_mul_errorProb μ x b, mul_sub]
+  rw [tsum_congr (fun μ => congrFun h1 μ)]
+  -- Goal: ∑' μ, ((w μ).toReal * (μ x).toReal - (w μ).toReal * (μ (x ++ [b])).toReal) = ...
+  -- Step 3: Use tsum_sub (need summability)
+  have hξb_ne_top : ξ (x ++ [b]) ≠ ⊤ := ne_top_of_le_ne_top hξx_ne_top (ξ.mono x b)
+  -- For the tsum manipulation, we need to convert between ENNReal and ℝ carefully
+  -- Using the mixture hypothesis and toReal_tsum for nonneg terms
+  -- The key identity is: (w μ).toReal * (μ x).toReal = (w μ * μ x).toReal
+  -- (This holds when both are finite, which follows from ξ x ≠ ⊤)
+  -- Then: ∑' μ, (w μ * μ x).toReal = (∑' μ, w μ * μ x).toReal = (ξ x).toReal
+  -- Similarly for ξ(x ++ [b])
+  -- The proof requires careful handling of toReal and tsum interchange.
+  -- First show the two “mixture toReal” identities at `x` and `x ++ [b]`.
+  have htsum_x_ne_top : (∑' μ, w μ * μ x) ≠ ⊤ := by
+    simpa [hMixture x] using hξx_ne_top
+  have htsum_xb_ne_top : (∑' μ, w μ * μ (x ++ [b])) ≠ ⊤ := by
+    simpa [hMixture (x ++ [b])] using hξb_ne_top
+  have mix_toReal_x :
+      (ξ x).toReal = ∑' μ, (w μ).toReal * (μ x).toReal := by
+    calc
+      (ξ x).toReal = (∑' μ, w μ * μ x).toReal := by
+        simp [hMixture x]
+      _ = ∑' μ, (w μ * μ x).toReal := by
+        -- `tsum` is finite, so we can commute `toReal` with `tsum`.
+        have hterm : ∀ μ, w μ * μ x ≠ ⊤ :=
+          ENNReal.ne_top_of_tsum_ne_top (f := fun μ => w μ * μ x) htsum_x_ne_top
+        simpa using (ENNReal.tsum_toReal_eq hterm)
+      _ = ∑' μ, (w μ).toReal * (μ x).toReal := by
+        refine tsum_congr ?_
+        intro μ
+        simp [ENNReal.toReal_mul]
+  have mix_toReal_xb :
+      (ξ (x ++ [b])).toReal = ∑' μ, (w μ).toReal * (μ (x ++ [b])).toReal := by
+    calc
+      (ξ (x ++ [b])).toReal = (∑' μ, w μ * μ (x ++ [b])).toReal := by
+        simp [hMixture (x ++ [b])]
+      _ = ∑' μ, (w μ * μ (x ++ [b])).toReal := by
+        have hterm : ∀ μ, w μ * μ (x ++ [b]) ≠ ⊤ :=
+          ENNReal.ne_top_of_tsum_ne_top (f := fun μ => w μ * μ (x ++ [b])) htsum_xb_ne_top
+        simpa using (ENNReal.tsum_toReal_eq hterm)
+      _ = ∑' μ, (w μ).toReal * (μ (x ++ [b])).toReal := by
+        refine tsum_congr ?_
+        intro μ
+        simp [ENNReal.toReal_mul]
+
+  -- Now split the `tsum` of a difference into a difference of `tsum`s.
+  have hsum1 : Summable fun μ => (w μ).toReal * (μ x).toReal := by
+    -- Use summability of `toReal` from finiteness of the ENNReal tsum.
+    have hs : Summable fun μ => (w μ * μ x).toReal :=
+      ENNReal.summable_toReal (f := fun μ => w μ * μ x) htsum_x_ne_top
+    -- Convert `(w μ * μ x).toReal` to `(w μ).toReal * (μ x).toReal`.
+    refine hs.congr ?_
+    intro μ
+    simp [ENNReal.toReal_mul]
+  have hsum2 : Summable fun μ => (w μ).toReal * (μ (x ++ [b])).toReal := by
+    have hs : Summable fun μ => (w μ * μ (x ++ [b])).toReal :=
+      ENNReal.summable_toReal (f := fun μ => w μ * μ (x ++ [b])) htsum_xb_ne_top
+    refine hs.congr ?_
+    intro μ
+    simp [ENNReal.toReal_mul]
+
+  -- Finish.
+  calc
+    (∑' μ,
+        ((w μ).toReal * (μ x).toReal - (w μ).toReal * (μ (x ++ [b])).toReal)) =
+        (∑' μ, (w μ).toReal * (μ x).toReal) -
+          (∑' μ, (w μ).toReal * (μ (x ++ [b])).toReal) := by
+          simpa using (hsum1.tsum_sub hsum2)
+    _ = (ξ x).toReal - (ξ (x ++ [b])).toReal := by
+          -- Rewrite both components using the mixture identities.
+          simp [mix_toReal_x, mix_toReal_xb]
+
+/-- For a Bayes mixture ξ = ∑ w(μ) · μ of prefix measures, extensions sum exactly to prefix.
+    This is because each μ satisfies additivity: μ(x++[true]) + μ(x++[false]) = μ(x). -/
+theorem bayes_mixture_additive (w : PrefixMeasure → ENNReal)
+    (ξ : Semimeasure) (hMixture : ∀ x, ξ x = ∑' μ, w μ * μ x)
+    (x : BinString) :
+    ξ (x ++ [true]) + ξ (x ++ [false]) = ξ x := by
+  rw [hMixture (x ++ [true]), hMixture (x ++ [false]), hMixture x]
+  -- Goal: ∑' μ, w μ * μ (x ++ [true]) + ∑' μ, w μ * μ (x ++ [false]) = ∑' μ, w μ * μ x
+  rw [← ENNReal.tsum_add]
+  · -- Goal: ∑' μ, (w μ * μ (x ++ [true]) + w μ * μ (x ++ [false])) = ∑' μ, w μ * μ x
+    congr 1
+    ext μ
+    rw [← mul_add]
+    congr 1
+    rw [add_comm]
+    exact μ.additive' x
+
+/-- For a Bayes mixture, conditional probabilities sum to 1 (not just ≤ 1).
+    This is the key property that distinguishes mixtures of prefix measures. -/
+theorem bayes_mixture_condProb_sum_eq_one (w : PrefixMeasure → ENNReal)
+    (ξ : Semimeasure) (hMixture : ∀ x, ξ x = ∑' μ, w μ * μ x)
+    (x : BinString) (hξx_pos : ξ x ≠ 0) :
+    FiniteHorizon.condProb ξ x true + FiniteHorizon.condProb ξ x false = 1 := by
+  unfold FiniteHorizon.condProb conditionalENN
+  have hξx_top : ξ x ≠ ⊤ := semimeasure_ne_top ξ x
+  rw [ENNReal.toReal_div, ENNReal.toReal_div]
+  rw [← add_div]
+  have hadd := bayes_mixture_additive w ξ hMixture x
+  rw [← hadd]
+  have h1 : (ξ (x ++ [true])).toReal + (ξ (x ++ [false])).toReal =
+            (ξ (x ++ [true]) + ξ (x ++ [false])).toReal := by
+    have htrue_ne_top : ξ (x ++ [true]) ≠ ⊤ := ne_top_of_le_ne_top hξx_top (ξ.mono x true)
+    have hfalse_ne_top : ξ (x ++ [false]) ≠ ⊤ := ne_top_of_le_ne_top hξx_top (ξ.mono x false)
+    exact (ENNReal.toReal_add htrue_ne_top hfalse_ne_top).symm
+  rw [h1, hadd]
+  exact div_self (ENNReal.toReal_ne_zero.mpr ⟨hξx_pos, hξx_top⟩)
+
+/-- L4.3: Pointwise error minimization - universal prediction minimizes weighted error for each prefix.
+    For fixed x, choosing b = argmax condProb_ξ(b|x) minimizes the weighted error.
+
+    **Proof**: The error ξ(x) - ξ(x ++ [b]) is minimized by maximizing ξ(x ++ [b]).
+    Since condProb_ξ(b|x) = ξ(x++[b])/ξ(x), argmax condProb_ξ = argmax ξ(x++[b]).
+    This is exactly what universalPrediction does. -/
+theorem pointwise_weighted_error_minimized (w : PrefixMeasure → ENNReal)
+    (ξ : Semimeasure) (hMixture : ∀ x, ξ x = ∑' μ, w μ * μ x)
+    (x : BinString) (b : Bool)
+    (hξx_pos : ξ x ≠ 0) :
+    ξ (x ++ [universalPrediction ξ x]) ≥ ξ (x ++ [b]) := by
+  -- universalPrediction ξ x = true iff condProb_ξ(true|x) ≥ 1/2
+  -- = true iff ξ(x++[true])/ξ(x) ≥ 1/2
+  -- = true iff ξ(x++[true]) ≥ ξ(x)/2
+  -- By semimeasure additivity: ξ(x++[true]) + ξ(x++[false]) ≥ ξ(x)
+  -- So if ξ(x++[true]) ≥ ξ(x)/2, then ξ(x++[true]) ≥ ξ(x++[false])
+  unfold universalPrediction
+  -- Split on whether we predict true or false, then on the target b
+  by_cases hcond : FiniteHorizon.condProb ξ x true ≥ 1/2 <;> cases b
+  case pos.true =>
+    -- condProb(true) ≥ 1/2, predicting true, comparing with true
+    simp only [hcond]
+    show ξ (x ++ [true]) ≥ ξ (x ++ [true])
+    exact le_refl _
+  case pos.false =>
+    -- condProb(true) ≥ 1/2, predicting true, comparing with false
+    simp only [hcond]
+    show ξ (x ++ [true]) ≥ ξ (x ++ [false])
+    -- Key: condProb(true) + condProb(false) ≤ 1 (from semimeasure property)
+    -- So if condProb(true) ≥ 1/2, then condProb(false) ≤ 1/2 ≤ condProb(true)
+    -- Hence ξ(x++[false])/ξ(x) ≤ 1/2 ≤ ξ(x++[true])/ξ(x)
+    -- So ξ(x++[false]) ≤ ξ(x++[true])
+    have hsum := condProb_sum_le_one ξ x
+    have hfalse : FiniteHorizon.condProb ξ x false ≤ 1/2 := by linarith
+    -- Convert condProb inequalities to ENNReal inequalities
+    unfold FiniteHorizon.condProb conditionalENN at hcond hfalse
+    by_cases hξx : ξ x = 0
+    · -- If ξ(x) = 0, both extensions are 0 (by semimeasure monotonicity)
+      have htrue := ξ.mono x true
+      have hfalse' := ξ.mono x false
+      simp only [hξx, nonpos_iff_eq_zero] at htrue hfalse'
+      simp [htrue, hfalse']
+    · -- ξ(x) > 0 case
+      have hξx_top : ξ x ≠ ⊤ := semimeasure_ne_top ξ x
+      -- hcond, hfalse are already in toReal form after unfold
+      -- condProb = (ξ(x++[b]) / ξ(x)).toReal
+      -- hcond: (ξ(x++[true]) / ξ(x)).toReal ≥ 1/2
+      -- hfalse: (ξ(x++[false]) / ξ(x)).toReal ≤ 1/2
+      -- So ξ(x++[false]).toReal / ξ(x).toReal ≤ ξ(x++[true]).toReal / ξ(x).toReal
+      -- Since ξ(x) > 0 and ξ(x) < ⊤, we have ξ(x).toReal > 0
+      have hξx_real_pos : (0 : ℝ) < (ξ x).toReal := ENNReal.toReal_pos hξx hξx_top
+      have h1 : (ξ (x ++ [false]) / ξ x).toReal ≤ (ξ (x ++ [true]) / ξ x).toReal := by linarith
+      rw [ENNReal.toReal_div, ENNReal.toReal_div] at h1
+      have h2 : (ξ (x ++ [false])).toReal ≤ (ξ (x ++ [true])).toReal := by
+        exact (div_le_div_iff_of_pos_right hξx_real_pos).mp h1
+      -- Convert toReal inequality back to ENNReal inequality
+      have htrue_ne_top : ξ (x ++ [true]) ≠ ⊤ := ne_top_of_le_ne_top hξx_top (ξ.mono x true)
+      have hfalse_ne_top : ξ (x ++ [false]) ≠ ⊤ := ne_top_of_le_ne_top hξx_top (ξ.mono x false)
+      exact (ENNReal.toReal_le_toReal hfalse_ne_top htrue_ne_top).mp h2
+  case neg.false =>
+    -- condProb(true) < 1/2, predicting false, comparing with false
+    simp only [hcond]
+    show ξ (x ++ [false]) ≥ ξ (x ++ [false])
+    exact le_refl _
+  case neg.true =>
+    -- condProb(true) < 1/2, predicting false, comparing with true
+    simp only [hcond]
+    show ξ (x ++ [false]) ≥ ξ (x ++ [true])
+    -- Key: For Bayes mixture, condProb(true) + condProb(false) = 1
+    -- So condProb(true) < 1/2 implies condProb(false) > 1/2 > condProb(true)
+    have hsum_eq := bayes_mixture_condProb_sum_eq_one w ξ hMixture x hξx_pos
+    have hlt : FiniteHorizon.condProb ξ x true < 1/2 := not_le.mp hcond
+    have hfalse_ge : FiniteHorizon.condProb ξ x false ≥ 1/2 := by linarith
+    have hfalse_ge_true : FiniteHorizon.condProb ξ x false ≥ FiniteHorizon.condProb ξ x true := by
+      linarith
+    -- Convert condProb inequalities to ENNReal inequalities
+    unfold FiniteHorizon.condProb conditionalENN at hfalse_ge_true
+    have hξx_top : ξ x ≠ ⊤ := semimeasure_ne_top ξ x
+    have hξx_real_pos : (0 : ℝ) < (ξ x).toReal := ENNReal.toReal_pos hξx_pos hξx_top
+    rw [ENNReal.toReal_div, ENNReal.toReal_div] at hfalse_ge_true
+    have h2 : (ξ (x ++ [true])).toReal ≤ (ξ (x ++ [false])).toReal := by
+      exact (div_le_div_iff_of_pos_right hξx_real_pos).mp hfalse_ge_true
+    have htrue_ne_top : ξ (x ++ [true]) ≠ ⊤ := ne_top_of_le_ne_top hξx_top (ξ.mono x true)
+    have hfalse_ne_top : ξ (x ++ [false]) ≠ ⊤ := ne_top_of_le_ne_top hξx_top (ξ.mono x false)
+    exact (ENNReal.toReal_le_toReal htrue_ne_top hfalse_ne_top).mp h2
+
+/-- The error is monotone in the extension: larger ξ(x++[b]) means smaller error.
+    errorProb = 1 - condProb = 1 - ξ(x++[b])/ξ(x), so error ↓ when ξ(x++[b]) ↑ -/
+theorem errorProb_mono_extension (μ : PrefixMeasure) (x : BinString) (b₁ b₂ : Bool)
+    (hμx : μ x ≠ 0)
+    (h : μ (x ++ [b₁]) ≥ μ (x ++ [b₂])) :
+    errorProb μ b₁ x ≤ errorProb μ b₂ x := by
+  unfold errorProb
+  apply sub_le_sub_left
+  unfold FiniteHorizon.condProb conditionalENN
+  simp only [PrefixMeasure.toSemimeasure_apply]
+  have hne : (μ x : ENNReal) ≠ ⊤ := semimeasure_ne_top μ.toSemimeasure x
+  -- Need: (μ (x ++ [b₂]) / μ x).toReal ≤ (μ (x ++ [b₁]) / μ x).toReal
+  have hb₁_ne_top' : μ (x ++ [b₁]) ≠ ⊤ := ne_top_of_le_ne_top hne (prefixMeasure_le_of_append μ x b₁)
+  have hb₂_ne_top' : μ (x ++ [b₂]) ≠ ⊤ := ne_top_of_le_ne_top hne (prefixMeasure_le_of_append μ x b₂)
+  have hb₁_ne_top : μ (x ++ [b₁]) / μ x ≠ ⊤ := ENNReal.div_ne_top hb₁_ne_top' hμx
+  have hb₂_ne_top : μ (x ++ [b₂]) / μ x ≠ ⊤ := ENNReal.div_ne_top hb₂_ne_top' hμx
+  exact (ENNReal.toReal_le_toReal hb₂_ne_top hb₁_ne_top).mpr (ENNReal.div_le_div_right h (μ x))
+
+/-- Key intermediate: weighted error at x is ξ(x) - ξ(x++[prediction]).
+    Larger ξ(x++[b]) means smaller weighted error.
+    (In ENNReal, avoiding toReal complications) -/
+theorem weighted_error_le_of_extension_ge (w : PrefixMeasure → ENNReal)
+    (ξ : Semimeasure) (_hMixture : ∀ x, ξ x = ∑' μ, w μ * μ x)
+    (x : BinString) (b₁ b₂ : Bool) (_hξx : ξ x ≠ 0)
+    (h : ξ (x ++ [b₁]) ≥ ξ (x ++ [b₂])) :
+    ξ x - ξ (x ++ [b₁]) ≤ ξ x - ξ (x ++ [b₂]) := by
+  -- Larger extension means smaller difference from ξ(x)
+  apply tsub_le_tsub_left h
+
+/-- Universal prediction minimizes weighted error at each prefix x.
+    Corollary of pointwise_weighted_error_minimized. -/
+theorem universal_minimizes_weighted_error_at_prefix (w : PrefixMeasure → ENNReal)
+    (ξ : Semimeasure) (hMixture : ∀ x, ξ x = ∑' μ, w μ * μ x)
+    (x : BinString) (b : Bool) (hξx : ξ x ≠ 0) :
+    ξ x - ξ (x ++ [universalPrediction ξ x]) ≤ ξ x - ξ (x ++ [b]) := by
+  apply weighted_error_le_of_extension_ge w ξ hMixture x _ b hξx
+  exact pointwise_weighted_error_minimized w ξ hMixture x b hξx
+
+/-- Sum of ξ-errors over all prefixes of length k.
+    This is the "raw" error in ENNReal, avoiding toReal complications. -/
+noncomputable def xiErrorSum (ξ : Semimeasure) (pred : Predictor) (k : ℕ) : ENNReal :=
+  ∑ x : Fin k → Bool, (ξ (List.ofFn x) - ξ (List.ofFn x ++ [pred (List.ofFn x)]))
+
+/-- Universal predictor minimizes the ξ-error sum at each step k.
+    This is the cleaner ENNReal version, avoiding toReal complications. -/
+theorem universal_minimizes_xiErrorSum (w : PrefixMeasure → ENNReal)
+    (ξ : Semimeasure) (hMixture : ∀ x, ξ x = ∑' μ, w μ * μ x)
+    (p : Predictor) (k : ℕ) :
+    xiErrorSum ξ (universalPredictor ξ) k ≤ xiErrorSum ξ p k := by
+  unfold xiErrorSum
+  -- Apply Finset.sum_le_sum: it suffices to show each term is ≤
+  apply Finset.sum_le_sum
+  intro x _
+  -- For each x, show: ξ(x') - ξ(x'++[universal x']) ≤ ξ(x') - ξ(x'++[p x'])
+  -- where x' = List.ofFn x
+  let x' := List.ofFn x
+  -- Use universal_minimizes_weighted_error_at_prefix (if ξ x' ≠ 0)
+  by_cases hξx : ξ x' = 0
+  · -- If ξ(x') = 0, both extensions are also 0 (by semimeasure monotonicity)
+    have h1 : ξ (x' ++ [universalPredictor ξ x']) ≤ ξ x' := ξ.mono x' _
+    have h2 : ξ (x' ++ [p x']) ≤ ξ x' := ξ.mono x' _
+    rw [hξx, nonpos_iff_eq_zero] at h1 h2
+    -- Now both sides equal 0 - 0 = 0
+    show ξ (List.ofFn x) - ξ (List.ofFn x ++ [universalPredictor ξ (List.ofFn x)]) ≤
+         ξ (List.ofFn x) - ξ (List.ofFn x ++ [p (List.ofFn x)])
+    rw [hξx, h1, h2]
+  · -- If ξ(x') > 0, apply universal_minimizes_weighted_error_at_prefix
+    exact universal_minimizes_weighted_error_at_prefix w ξ hMixture x' (p x') hξx
+
+/-- Helper: The toReal of xiErrorSum equals the sum of toReal ξ-differences.
+    This requires ξ(x) ≠ ⊤ for all x, which holds for semimeasures (they're ≤ 1). -/
+theorem xiErrorSum_toReal (ξ : Semimeasure) (pred : Predictor) (k : ℕ) :
+    (xiErrorSum ξ pred k).toReal =
+    ∑ x : Fin k → Bool, ((ξ (List.ofFn x)).toReal - (ξ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) := by
+  unfold xiErrorSum
+  -- Use ENNReal.toReal_sum for finite sums
+  rw [ENNReal.toReal_sum]
+  · -- Goal: ∑ x, (ξ x' - ξ(x'++[pred x'])).toReal = ∑ x, (ξ x').toReal - (ξ(x'++[pred x'])).toReal
+    congr 1
+    ext x
+    let x' := List.ofFn x
+    -- toReal(a - b) = a.toReal - b.toReal when b ≤ a and both ≠ ⊤
+    have hle : ξ (x' ++ [pred x']) ≤ ξ x' := ξ.mono x' _
+    have hx_ne_top : ξ x' ≠ ⊤ := semimeasure_ne_top ξ x'
+    have hext_ne_top : ξ (x' ++ [pred x']) ≠ ⊤ := ne_top_of_le_ne_top hx_ne_top hle
+    exact ENNReal.toReal_sub_of_le hle hx_ne_top
+  · -- Show each term is ≠ ⊤
+    intro x _
+    let x' := List.ofFn x
+    have hle : ξ (x' ++ [pred x']) ≤ ξ x' := ξ.mono x' _
+    have hx_ne_top : ξ x' ≠ ⊤ := semimeasure_ne_top ξ x'
+    exact ne_top_of_le_ne_top hx_ne_top (tsub_le_self)
+
+theorem universalPredictor_minimizes_weighted_step_error
+    (w : PrefixMeasure → ENNReal) (ξ : Semimeasure)
+    (hMixture : ∀ x, ξ x = ∑' μ, w μ * μ x)
+    (p : Predictor) (k : ℕ) :
+    ∑' μ, w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x)) ≤
+    ∑' μ, w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x)) := by
+  classical
+  -- First extract the “Kraft”/finiteness facts about `w` from the mixture identity at `[]`.
+  have htsum_w : (∑' μ, w μ) = ξ [] := by
+    symm
+    calc
+      ξ [] = ∑' μ, w μ * μ [] := by
+        simpa using hMixture []
+      _ = ∑' μ, w μ := by
+        refine tsum_congr ?_
+        intro μ
+        simp [μ.root_eq_one']
+  have htsum_w_ne_top : (∑' μ, w μ) ≠ ⊤ := by
+    -- `ξ [] ≤ 1`, hence finite.
+    simpa [htsum_w.symm] using (semimeasure_ne_top ξ [])
+  have hw_ne_top : ∀ μ, w μ ≠ ⊤ := ENNReal.ne_top_of_tsum_ne_top htsum_w_ne_top
+  have hw_summable_toReal : Summable fun μ => (w μ).toReal :=
+    ENNReal.summable_toReal (f := fun μ => w μ) htsum_w_ne_top
+
+  -- Basic bounds: `errorProb ≤ 1`, hence each step expectation is ≤ 1.
+  have errorProb_le_one (μ : PrefixMeasure) (b : Bool) (x : BinString) :
+      errorProb μ b x ≤ 1 := by
+    unfold errorProb
+    have hnonneg : 0 ≤ FiniteHorizon.condProb μ.toSemimeasure x b := by
+      unfold FiniteHorizon.condProb conditionalENN
+      exact ENNReal.toReal_nonneg
+    linarith
+  have expectPrefix_le_one (μ : PrefixMeasure) (pred : Predictor) :
+      expectPrefix μ k (fun x => errorProb μ (pred x) x) ≤ 1 := by
+    unfold expectPrefix
+    have hweights := sum_prefixPMF_toReal μ k
+    calc
+      ∑ f : Fin k → Bool, (prefixPMF μ k f).toReal * errorProb μ (pred (List.ofFn f)) (List.ofFn f)
+          ≤ ∑ f : Fin k → Bool, (prefixPMF μ k f).toReal * 1 := by
+              apply Finset.sum_le_sum
+              intro f _
+              apply mul_le_mul_of_nonneg_left (errorProb_le_one μ _ _) ENNReal.toReal_nonneg
+      _ = ∑ f : Fin k → Bool, (prefixPMF μ k f).toReal := by simp
+      _ = 1 := hweights
+  have ofReal_expectPrefix_le_one (μ : PrefixMeasure) (pred : Predictor) :
+      ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (pred x) x)) ≤ 1 := by
+    have hle : expectPrefix μ k (fun x => errorProb μ (pred x) x) ≤ 1 := expectPrefix_le_one μ pred
+    simpa using (ENNReal.ofReal_le_ofReal hle)
+
+  -- The weighted sums are finite since each term is bounded by `w μ` and `∑ w μ = ξ []`.
+  have hLHS_ne_top :
+      (∑' μ, w μ * ENNReal.ofReal
+          (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x))) ≠ ⊤ := by
+    have hle :
+        (∑' μ, w μ * ENNReal.ofReal
+            (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x))) ≤ ∑' μ, w μ := by
+      refine ENNReal.tsum_le_tsum (fun μ => ?_)
+      calc
+        w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x))
+            ≤ w μ * 1 := by
+                exact mul_le_mul_left' (ofReal_expectPrefix_le_one μ (universalPredictor ξ)) (w μ)
+        _ = w μ := by simp
+    exact ne_top_of_le_ne_top htsum_w_ne_top hle
+  have hRHS_ne_top :
+      (∑' μ, w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x))) ≠ ⊤ := by
+    have hle :
+        (∑' μ, w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x))) ≤ ∑' μ, w μ := by
+      refine ENNReal.tsum_le_tsum (fun μ => ?_)
+      calc
+        w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x))
+            ≤ w μ * 1 := by
+                exact mul_le_mul_left' (ofReal_expectPrefix_le_one μ p) (w μ)
+        _ = w μ := by simp
+    exact ne_top_of_le_ne_top htsum_w_ne_top hle
+
+  -- Reduce to a real inequality by `toReal`.
+  refine (ENNReal.toReal_le_toReal hLHS_ne_top hRHS_ne_top).1 ?_
+
+  -- Convert `toReal` of the weighted ENNReal tsum into a real tsum.
+  have hterm_ne_top_univ :
+      ∀ μ, w μ * ENNReal.ofReal
+        (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x)) ≠ ⊤ := by
+    intro μ
+    have hle :
+        w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x)) ≤ w μ := by
+      calc
+        w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x))
+            ≤ w μ * 1 := by
+                exact mul_le_mul_left' (ofReal_expectPrefix_le_one μ (universalPredictor ξ)) (w μ)
+        _ = w μ := by simp
+    exact ne_top_of_le_ne_top (hw_ne_top μ) hle
+  have hterm_ne_top_p :
+      ∀ μ, w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x)) ≠ ⊤ := by
+    intro μ
+    have hle :
+        w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x)) ≤ w μ := by
+      calc
+        w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x))
+            ≤ w μ * 1 := by
+                exact mul_le_mul_left' (ofReal_expectPrefix_le_one μ p) (w μ)
+        _ = w μ := by simp
+    exact ne_top_of_le_ne_top (hw_ne_top μ) hle
+
+  -- Compute both sides as `xiErrorSum.toReal`.
+  have mix_toReal (x : BinString) :
+      (ξ x).toReal = ∑' μ, (w μ).toReal * (μ x).toReal := by
+    -- Use `ENNReal.tsum_toReal_eq` and the mixture identity.
+    have hx : ξ x = ∑' μ, w μ * μ x := hMixture x
+    have hterm : ∀ μ, w μ * μ x ≠ ⊤ := by
+      intro μ
+      have hμ_le_one : μ x ≤ 1 := by
+        have := semimeasure_le_one (μ := μ.toSemimeasure) x
+        simpa [PrefixMeasure.toSemimeasure_apply] using this
+      have hle : w μ * μ x ≤ w μ := by
+        calc
+          w μ * μ x ≤ w μ * 1 := mul_le_mul_left' hμ_le_one (w μ)
+          _ = w μ := by simp
+      exact ne_top_of_le_ne_top (hw_ne_top μ) hle
+    calc
+      (ξ x).toReal = (∑' μ, w μ * μ x).toReal := by simp [hx]
+      _ = ∑' μ, (w μ * μ x).toReal := by
+            simpa using (ENNReal.tsum_toReal_eq hterm)
+      _ = ∑' μ, (w μ).toReal * (μ x).toReal := by
+            refine tsum_congr ?_
+            intro μ
+            simp [ENNReal.toReal_mul]
+
+  have expectPrefix_errorProb_eq_sum_diff (μ : PrefixMeasure) (pred : Predictor) :
+      expectPrefix μ k (fun x => errorProb μ (pred x) x) =
+        ∑ x : Fin k → Bool,
+          ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) := by
+    unfold expectPrefix prefixPMF
+    congr 1
+    ext x
+    -- `prefixPMF μ k x = μ (List.ofFn x)` by definition.
+    simpa using mu_toReal_mul_errorProb' μ (List.ofFn x) (pred (List.ofFn x))
+
+  have weighted_expectPrefix_eq_xiErrorSum_toReal (pred : Predictor) :
+      (∑' μ, (w μ).toReal * expectPrefix μ k (fun x => errorProb μ (pred x) x)) =
+        (xiErrorSum ξ pred k).toReal := by
+    -- Expand `expectPrefix`, swap `tsum` with the finite sum, then use the mixture identity.
+    classical
+    -- Replace `expectPrefix` by a sum of differences.
+    have hrewrite :
+        (fun μ => (w μ).toReal * expectPrefix μ k (fun x => errorProb μ (pred x) x)) =
+          (fun μ => (w μ).toReal *
+              ∑ x : Fin k → Bool,
+                ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal)) := by
+      ext μ
+      simp [expectPrefix_errorProb_eq_sum_diff μ pred]
+    -- Turn `tsum` of the RHS into a `tsum` of a finite sum.
+    have hswap :
+        (∑' μ, (w μ).toReal *
+              ∑ x : Fin k → Bool,
+                ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal)) =
+          ∑ x : Fin k → Bool,
+            ∑' μ, (w μ).toReal *
+              ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) := by
+      -- Use `Summable.tsum_finsetSum` with `s = univ`.
+      have hsum :
+          ∀ x : Fin k → Bool,
+            Summable fun μ =>
+              (w μ).toReal *
+                ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) := by
+        intro x
+        -- Comparison against `μ ↦ (w μ).toReal`.
+        refine hw_summable_toReal.of_nonneg_of_le (fun μ => ?_) (fun μ => ?_)
+        · -- nonneg
+          have hle : μ (List.ofFn x ++ [pred (List.ofFn x)]) ≤ μ (List.ofFn x) := by
+            exact prefixMeasure_le_of_append μ (List.ofFn x) (pred (List.ofFn x))
+          have hμTop : μ (List.ofFn x) ≠ ⊤ := semimeasure_ne_top μ.toSemimeasure (List.ofFn x)
+          have hμextTop : μ (List.ofFn x ++ [pred (List.ofFn x)]) ≠ ⊤ :=
+            ne_top_of_le_ne_top hμTop hle
+          have hdiff :
+              0 ≤ (μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal := by
+            exact sub_nonneg.2 <| (ENNReal.toReal_le_toReal hμextTop hμTop).2 hle
+          have : 0 ≤ (w μ).toReal := ENNReal.toReal_nonneg
+          exact mul_nonneg this hdiff
+        · -- upper bound by `(w μ).toReal`
+          have hdiff_le_one :
+              (μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal ≤ 1 := by
+            have hμ_le_one : (μ (List.ofFn x)).toReal ≤ 1 := by
+              have hμ_le : μ (List.ofFn x) ≤ 1 := by
+                have := semimeasure_le_one (μ := μ.toSemimeasure) (List.ofFn x)
+                simpa [PrefixMeasure.toSemimeasure_apply] using this
+              have hμTop : μ (List.ofFn x) ≠ ⊤ := semimeasure_ne_top μ.toSemimeasure (List.ofFn x)
+              simpa using ENNReal.toReal_mono (hb := ENNReal.one_ne_top) hμ_le
+            -- subtracting a nonnegative term only decreases the value
+            have hμext_nonneg : 0 ≤ (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal :=
+              ENNReal.toReal_nonneg
+            have : (μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal ≤
+                (μ (List.ofFn x)).toReal := sub_le_self _ hμext_nonneg
+            exact this.trans hμ_le_one
+          have hw_nonneg : 0 ≤ (w μ).toReal := ENNReal.toReal_nonneg
+          -- Multiply the bound `hdiff_le_one` by the nonnegative weight.
+          have : (w μ).toReal * ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) ≤
+              (w μ).toReal * 1 := mul_le_mul_of_nonneg_left hdiff_le_one hw_nonneg
+          simpa using this
+      -- Now commute `tsum` with the finite sum (over `Finset.univ`).
+      have hmul :
+          ∀ μ : PrefixMeasure,
+            (w μ).toReal *
+                (∑ x : Fin k → Bool,
+                  ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal)) =
+              ∑ x : Fin k → Bool,
+                (w μ).toReal *
+                  ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) := by
+        intro μ
+        classical
+        -- Push the scalar inside the finite sum.
+        -- Note: `∑ x : Fin k → Bool, ...` is definitionally `∑ x in Finset.univ, ...`.
+        simpa using
+          (Finset.mul_sum (s := (Finset.univ : Finset (Fin k → Bool)))
+            (f := fun x : Fin k → Bool =>
+              (μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal)
+            (a := (w μ).toReal))
+      calc
+        (∑' μ, (w μ).toReal *
+              ∑ x : Fin k → Bool,
+                ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal))
+            =
+            ∑' μ, ∑ x : Fin k → Bool,
+              (w μ).toReal *
+                ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) := by
+              refine tsum_congr ?_
+              intro μ
+              exact hmul μ
+        _ =
+            ∑ x : Fin k → Bool,
+              ∑' μ,
+                (w μ).toReal *
+                  ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) := by
+              -- Swap `tsum` with the finite sum.
+              simpa using
+                (Summable.tsum_finsetSum
+                  (s := (Finset.univ : Finset (Fin k → Bool)))
+                  (f := fun x μ =>
+                    (w μ).toReal *
+                      ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal))
+                  (hf := by
+                    intro x hx
+                    simpa using hsum x))
+    -- Combine, then rewrite each inner tsum using `mix_toReal`.
+    calc
+      (∑' μ, (w μ).toReal * expectPrefix μ k (fun x => errorProb μ (pred x) x))
+          = ∑' μ, (w μ).toReal *
+              ∑ x : Fin k → Bool,
+                ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) := by
+              simp [hrewrite]
+      _ = ∑ x : Fin k → Bool,
+            ∑' μ, (w μ).toReal *
+              ((μ (List.ofFn x)).toReal - (μ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) := hswap
+      _ = ∑ x : Fin k → Bool,
+            ((ξ (List.ofFn x)).toReal - (ξ (List.ofFn x ++ [pred (List.ofFn x)])).toReal) := by
+              -- Evaluate the inner tsum by splitting into two tsums and using `mix_toReal`.
+              apply Fintype.sum_congr
+              intro x
+              -- Let `x'` be the prefix list.
+              set x' : BinString := List.ofFn x
+              have hsum1 : Summable fun μ => (w μ).toReal * (μ x').toReal := by
+                refine hw_summable_toReal.of_nonneg_of_le (fun _ => ?_) (fun μ => ?_)
+                · exact mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg
+                · -- `(μ x').toReal ≤ 1`
+                  have hμ_le_one : (μ x').toReal ≤ 1 := by
+                    have hμ_le : μ x' ≤ 1 := by
+                      have := semimeasure_le_one (μ := μ.toSemimeasure) x'
+                      simpa [PrefixMeasure.toSemimeasure_apply] using this
+                    have hμTop : μ x' ≠ ⊤ := semimeasure_ne_top μ.toSemimeasure x'
+                    simpa using ENNReal.toReal_mono (hb := ENNReal.one_ne_top) hμ_le
+                  have : (w μ).toReal * (μ x').toReal ≤ (w μ).toReal * 1 :=
+                    mul_le_mul_of_nonneg_left hμ_le_one ENNReal.toReal_nonneg
+                  simpa using this
+              have hsum2 : Summable fun μ => (w μ).toReal * (μ (x' ++ [pred x'])).toReal := by
+                refine hw_summable_toReal.of_nonneg_of_le (fun _ => ?_) (fun μ => ?_)
+                · exact mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg
+                · have hμ_le_one : (μ (x' ++ [pred x'])).toReal ≤ 1 := by
+                    have hμ_le : μ (x' ++ [pred x']) ≤ 1 := by
+                      have := semimeasure_le_one (μ := μ.toSemimeasure) (x' ++ [pred x'])
+                      simpa [PrefixMeasure.toSemimeasure_apply] using this
+                    have hμTop : μ (x' ++ [pred x']) ≠ ⊤ :=
+                      semimeasure_ne_top μ.toSemimeasure (x' ++ [pred x'])
+                    simpa using ENNReal.toReal_mono (hb := ENNReal.one_ne_top) hμ_le
+                  have : (w μ).toReal * (μ (x' ++ [pred x'])).toReal ≤ (w μ).toReal * 1 :=
+                    mul_le_mul_of_nonneg_left hμ_le_one ENNReal.toReal_nonneg
+                  simpa using this
+              -- Now compute the inner tsum via `tsum_sub`, then evaluate using `mix_toReal`.
+              calc
+                (∑' μ, (w μ).toReal * ((μ x').toReal - (μ (x' ++ [pred x'])).toReal))
+                    =
+                    ∑' μ,
+                      ((w μ).toReal * (μ x').toReal -
+                        (w μ).toReal * (μ (x' ++ [pred x'])).toReal) := by
+                        refine tsum_congr ?_
+                        intro μ
+                        simp [mul_sub]
+                _ = (∑' μ, (w μ).toReal * (μ x').toReal) -
+                      (∑' μ, (w μ).toReal * (μ (x' ++ [pred x'])).toReal) := by
+                        simpa using (hsum1.tsum_sub hsum2)
+                _ = (ξ x').toReal - (ξ (x' ++ [pred x'])).toReal := by
+                        simp [mix_toReal]
+      _ = (xiErrorSum ξ pred k).toReal := by
+            -- This is exactly `xiErrorSum_toReal`.
+            simp [xiErrorSum_toReal]
+
+  -- Finish by converting back to `xiErrorSum` and applying `universal_minimizes_xiErrorSum`.
+  have hxi :
+      xiErrorSum ξ (universalPredictor ξ) k ≤ xiErrorSum ξ p k :=
+    universal_minimizes_xiErrorSum (w := w) (ξ := ξ) hMixture p k
+  have hxi_ne_top : xiErrorSum ξ p k ≠ ⊤ := by
+    unfold xiErrorSum
+    -- finite sum of finite terms
+    have : (∀ x : Fin k → Bool, ξ (List.ofFn x) - ξ (List.ofFn x ++ [p (List.ofFn x)]) ≠ ⊤) := by
+      intro x
+      have hx_ne_top : ξ (List.ofFn x) ≠ ⊤ := semimeasure_ne_top ξ (List.ofFn x)
+      exact ne_top_of_le_ne_top hx_ne_top (tsub_le_self)
+    -- use `ENNReal.sum_ne_top` on `univ`
+    simpa [ENNReal.sum_ne_top] using (this)
+  have hxi_toReal :
+      (xiErrorSum ξ (universalPredictor ξ) k).toReal ≤ (xiErrorSum ξ p k).toReal :=
+    ENNReal.toReal_mono hxi_ne_top hxi
+  -- Rewrite both sides as the `toReal` of the weighted sums.
+  have hLHS_toReal :
+      (∑' μ, w μ * ENNReal.ofReal
+          (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x))).toReal =
+        (xiErrorSum ξ (universalPredictor ξ) k).toReal := by
+    -- Convert the ENNReal `tsum` to a real `tsum`, then reduce to `xiErrorSum`.
+    rw [ENNReal.tsum_toReal_eq hterm_ne_top_univ]
+    have hterm_toReal :
+        ∀ μ,
+          (w μ * ENNReal.ofReal
+              (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x))).toReal =
+            (w μ).toReal * expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x) := by
+      intro μ
+      have hnonneg :
+          0 ≤ expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x) :=
+        errorProbStep_nonneg (p := universalPredictor ξ) (μ := μ) (k := k)
+      simp [ENNReal.toReal_mul, ENNReal.toReal_ofReal hnonneg]
+    calc
+      (∑' μ,
+          (w μ * ENNReal.ofReal
+              (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x))).toReal)
+          =
+          ∑' μ, (w μ).toReal * expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x) := by
+            refine tsum_congr ?_
+            intro μ
+            exact hterm_toReal μ
+      _ = (xiErrorSum ξ (universalPredictor ξ) k).toReal := by
+            simpa using (weighted_expectPrefix_eq_xiErrorSum_toReal (pred := universalPredictor ξ))
+  have hRHS_toReal :
+      (∑' μ, w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x))).toReal =
+        (xiErrorSum ξ p k).toReal := by
+    rw [ENNReal.tsum_toReal_eq hterm_ne_top_p]
+    have hterm_toReal :
+        ∀ μ,
+          (w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x))).toReal =
+            (w μ).toReal * expectPrefix μ k (fun x => errorProb μ (p x) x) := by
+      intro μ
+      have hnonneg : 0 ≤ expectPrefix μ k (fun x => errorProb μ (p x) x) :=
+        errorProbStep_nonneg (p := p) (μ := μ) (k := k)
+      simp [ENNReal.toReal_mul, ENNReal.toReal_ofReal hnonneg]
+    calc
+      (∑' μ, (w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x))).toReal)
+          =
+          ∑' μ, (w μ).toReal * expectPrefix μ k (fun x => errorProb μ (p x) x) := by
+            refine tsum_congr ?_
+            intro μ
+            exact hterm_toReal μ
+      _ = (xiErrorSum ξ p k).toReal := by
+            simpa using (weighted_expectPrefix_eq_xiErrorSum_toReal (pred := p))
+  -- Conclude.
+  simpa [hLHS_toReal, hRHS_toReal] using hxi_toReal
+
 /-- **Theorem 3.69 (Balanced Pareto Optimality)** (Hutter 2005):
 
     When ξ is the Bayes mixture ξ = ∑ w(μ) · μ, the universal predictor minimizes
@@ -673,29 +1495,78 @@ theorem universalPrediction_minimizes_xi_error (μ : PrefixMeasure) (x : BinStri
     The dominance hypothesis (c·μ ≤ ξ) alone is insufficient. -/
 theorem balanced_pareto_optimal (ξ : Semimeasure)
     (w : PrefixMeasure → ENNReal)
-    (hKraft : ∑' μ, w μ ≤ 1)  -- Prior satisfies Kraft inequality
+    (_hKraft : ∑' μ, w μ ≤ 1)  -- Prior satisfies Kraft inequality
     (hMixture : ∀ x, ξ x = ∑' μ, w μ * μ x)  -- ξ is the Bayes mixture
     : ∀ p, BalancedPerformance w errorPerformance (universalPredictor ξ) ≤
          BalancedPerformance w errorPerformance p := by
   intro p
-  unfold BalancedPerformance infiniteHorizonPerf errorPerformance
-  -- The key is to show that at each step k, the weighted error is minimized.
-  -- We use that ξ-expectation = weighted sum of μ-expectations.
-  --
-  -- **Proof outline**:
-  -- 1. iSup over n of (∑ w(μ) * ∑_k E_μ[error at k])
-  --    = ∑ w(μ) * iSup over n of (∑_k E_μ[error at k])  [interchange sum and sup]
-  -- 2. For universal predictor, each step k contributes minimal ξ-expected error
-  -- 3. This means the total is minimal
-  --
-  -- The interchange of tsum and iSup requires careful analysis.
-  -- For now, we note the mathematical correctness and leave the formal details.
-  --
-  -- **Technical Note**: The full proof requires showing:
-  -- (a) tsum and iSup commute for monotone sequences
-  -- (b) universalPredictor minimizes weighted error at each step
-  -- (c) The limit preserves the step-wise inequality
-  sorry
+  -- Rewrite balanced performance as a supremum over finite horizons.
+  rw [BalancedPerformance_eq_iSup_weighted_errorPerformance (w := w) (p := universalPredictor ξ)]
+  rw [BalancedPerformance_eq_iSup_weighted_errorPerformance (w := w) (p := p)]
+  -- Reduce to showing the weighted finite-horizon inequality for every `n`.
+  refine iSup_le ?_
+  intro n
+  -- First, relate weighted finite-horizon error performance to the sum of stepwise weighted errors.
+  have hrewrite (pred : Predictor) :
+      (∑' μ, w μ * ENNReal.ofReal (errorPerformance pred μ n)) =
+        ∑ k ∈ Finset.range n,
+          ∑' μ, w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (pred x) x)) := by
+    classical
+    unfold errorPerformance
+    -- Push `ENNReal.ofReal` through the finite sum (all summands are nonnegative),
+    -- then commute `tsum` with the finite sum over `k`.
+    have hterm (μ : PrefixMeasure) :
+        w μ * ENNReal.ofReal (∑ k ∈ Finset.range n,
+            expectPrefix μ k (fun x => errorProb μ (pred x) x)) =
+          ∑ k ∈ Finset.range n,
+            w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (pred x) x)) := by
+      have hnonneg :
+          ∀ k ∈ Finset.range n, 0 ≤ expectPrefix μ k (fun x => errorProb μ (pred x) x) := by
+        intro k hk
+        exact errorProbStep_nonneg pred μ k
+      -- `ENNReal.ofReal` is additive over finite sums of nonnegative reals.
+      simp [ENNReal.ofReal_sum_of_nonneg hnonneg, Finset.mul_sum]
+    calc
+      (∑' μ, w μ * ENNReal.ofReal
+            (∑ k ∈ Finset.range n, expectPrefix μ k (fun x => errorProb μ (pred x) x)))
+          =
+          ∑' μ, ∑ k ∈ Finset.range n,
+            w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (pred x) x)) := by
+            refine tsum_congr ?_
+            intro μ
+            simpa using (hterm μ)
+      _ =
+          ∑ k ∈ Finset.range n,
+            ∑' μ, w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (pred x) x)) := by
+            -- `tsum` commutes with finite sums.
+            simpa using
+              (Summable.tsum_finsetSum
+                (β := PrefixMeasure) (γ := ℕ) (α := ENNReal)
+                (f := fun k μ =>
+                  w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (pred x) x)))
+                (s := Finset.range n) (hf := by
+                  intro k hk
+                  exact ENNReal.summable))
+  -- Now compare the stepwise weighted sums using L5.1 and sum over `k < n`.
+  have hstep : ∀ k, (∑' μ, w μ * ENNReal.ofReal
+        (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x))) ≤
+      (∑' μ, w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x))) := by
+    intro k
+    simpa using
+      (universalPredictor_minimizes_weighted_step_error (w := w) (ξ := ξ) hMixture p k)
+  -- Combine: rewrite both sides and sum the per-step inequalities.
+  have hfin :
+      (∑' μ, w μ * ENNReal.ofReal (errorPerformance (universalPredictor ξ) μ n)) ≤
+        (∑' μ, w μ * ENNReal.ofReal (errorPerformance p μ n)) := by
+    -- Rewrite each side as a finite sum over steps `k`.
+    rw [hrewrite (pred := universalPredictor ξ)]
+    rw [hrewrite (pred := p)]
+    -- Then sum the stepwise inequalities.
+    refine Finset.sum_le_sum ?_
+    intro k hk
+    exact hstep k
+  -- Finish by taking the `iSup` on the RHS.
+  exact le_trans hfin (le_iSup (fun n => ∑' μ, w μ * ENNReal.ofReal (errorPerformance p μ n)) n)
 
 /-! ## Theorem 3.70: Optimality of Universal Weights -/
 

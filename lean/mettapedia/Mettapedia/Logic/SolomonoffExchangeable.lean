@@ -19,15 +19,18 @@ When restricted to **exchangeable binary** sequences:
 2. Therefore the Solomonoff-style predictor `μ(x++[b]) / μ(x)` depends only on `(n⁺, n⁻)`.
 3. Evidence accumulation is just `hplus` on evidence counts.
 
-We **do not** need the full measure-theoretic de Finetti representation for νPLN's core claim:
-PLN uses predictors and sufficient statistics, and these make sense for semimeasures.
+Note: The full measure-theoretic de Finetti representation theorem IS formalized in
+`Mettapedia.Logic.DeFinetti` (with zero sorries), including the Hausdorff moment theorem.
+This file focuses on the semimeasure-level predictor collapse, which is the direct
+justification for PLN Evidence.
 
 ## Domain Characterization
 
 **Theorem (predictor form)**: For the class of exchangeable binary environments, Solomonoff
-prediction collapses from “arbitrary program mixture state” to just `(n⁺, n⁻)` (Evidence).
-Additional assumptions (e.g. a Beta prior / de Finetti mixture) are only needed to identify
-the *closed form* of the predictor, not the collapse itself.
+prediction collapses from "arbitrary program mixture state" to just `(n⁺, n⁻)` (Evidence).
+
+**Full de Finetti** (proven in `DeFinetti.lean`): Exchangeable ↔ Bernoulli mixture representation.
+This gives the closed form of the predictor (Beta-Bernoulli conjugacy).
 
 ## References
 
@@ -229,9 +232,9 @@ end RestrictedSolomonoffPrior
 
 /-- **Practical νPLN Theorem**: For exchangeable Solomonoff priors, counts are sufficient.
 
-    This is the key result for νPLN: we don't need the full de Finetti mixing measure!
-    What matters for PLN is that probabilities depend only on (n⁺, n⁻), which follows
-    directly from exchangeability via `mu_same_counts`.
+    Probabilities depend only on (n⁺, n⁻), which follows directly from exchangeability
+    via `mu_same_counts`. Note: the full de Finetti theorem IS formalized in
+    `Mettapedia.Logic.DeFinetti` and gives the closed-form Beta-Bernoulli representation.
 
     **This justifies PLN Evidence = (n⁺, n⁻) for exchangeable binary domains.**
 -/

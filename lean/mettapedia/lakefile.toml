@@ -19,6 +19,7 @@ git = "https://github.com/JOSHCLUNE/LeanHammer"
 rev = "v4.25.0"
 
 # Mathlib dependency (matching LeanHammer version)
+# NOTE: batteries comes automatically as a transitive dependency - do NOT add it separately
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
