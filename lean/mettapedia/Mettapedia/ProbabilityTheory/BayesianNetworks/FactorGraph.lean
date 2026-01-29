@@ -144,7 +144,7 @@ theorem unnormalizedJoint_ne_zero (fg : FactorGraph V) [Fintype fg.factors]
 
 section BayesianNetworkConnection
 
-variable [Fintype V] [DecidableEq V]
+variable [Fintype V]
 
 /-- Convert a Bayesian Network to a Factor Graph.
 
@@ -161,10 +161,11 @@ structure BNToFactorGraphData (bn : BayesianNetwork V) where
   factorScope : Fin (Fintype.card V) → Finset V
 
 /-- The factor graph induced by a Bayesian network has one factor per variable. -/
-theorem bn_factor_count (bn : BayesianNetwork V) :
+theorem bn_factor_count (_bn : BayesianNetwork V) :
     -- Each variable creates exactly one factor
     ∃ (n : ℕ), n = Fintype.card V := ⟨Fintype.card V, rfl⟩
 
+omit [Fintype V] in
 /-- In a BN-induced factor graph, each factor's scope is {v} ∪ parents(v). -/
 theorem bn_factor_scope_structure (bn : BayesianNetwork V) (v : V) :
     -- The scope for v's factor contains v and its parents

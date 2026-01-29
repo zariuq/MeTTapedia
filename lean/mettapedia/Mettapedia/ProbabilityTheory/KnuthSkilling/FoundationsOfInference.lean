@@ -17,9 +17,11 @@ This is a curated entrypoint for the Knuth–Skilling *Foundations of Inference*
 The canonical proof path for Appendix A uses **`NoAnomalousPairs`** from the 1950s ordered-semigroup
 literature (Alimov 1950, Fuchs 1963), formalized via Eric Luap's OrderedSemigroups library.
 
-- `NoAnomalousPairs` is strictly weaker than `KSSeparation` (identity-free)
-- The relationship: `KSSeparation + IdentIsMinimum ⇒ NoAnomalousPairs`
-- Historical precedent: NAP predates K&S by 60+ years
+- `NoAnomalousPairs` is identity-free; `KSSeparation` requires identity
+- Under `IdentIsMinimum`: **NAP ⟺ KSSeparation** (full equivalence!)
+  - Forward: `KSSeparation + IdentIsMinimum ⇒ NoAnomalousPairs` (AnomalousPairs.lean)
+  - Reverse: `NoAnomalousPairs ⇒ ℝ embedding ⇒ KSSeparation` (HolderEmbedding + AxiomSystemEquivalence)
+- Historical precedent: NAP predates K&S by 60+ years (Alimov 1950)
 
 See `Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean` for the canonical proof.
 

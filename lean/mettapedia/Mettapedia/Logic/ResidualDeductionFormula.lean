@@ -280,12 +280,12 @@ theorem residuate_is_quantale_himp (a b : Evidence)
 -/
 theorem frame_has_both_implications :
     -- Evidence has frame (Heyting) structure
-    (∃ _ : Order.Frame Evidence, True) ∧
+    Nonempty (Order.Frame Evidence) ∧
     -- And quantale residuation via tensor (non-degenerate case)
     (∀ a b : Evidence, a.pos ≠ 0 → a.neg ≠ 0 → b.pos ≠ ⊤ → b.neg ≠ ⊤ →
       ∃ r : Evidence, ∀ c, a * c ≤ b ↔ c ≤ r) := by
   constructor
-  · exact ⟨inferInstance, trivial⟩
+  · exact ⟨inferInstance⟩
   · intro a b ha_pos ha_neg hb_pos hb_neg
     use residuate a b
     intro c

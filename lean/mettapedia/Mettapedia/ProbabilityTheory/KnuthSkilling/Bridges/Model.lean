@@ -342,10 +342,10 @@ theorem not_boolean : ¬∃ (compl : Three' → Three'),
 
 /-- Summary: Three' is a K&S compatible non-Boolean lattice -/
 theorem three_is_ks_compatible :
-    (∃ _ : PlausibilitySpace Three', True) ∧
-    (∃ _ : KSModel Three' NNReal, True) ∧
+    Nonempty (PlausibilitySpace Three') ∧
+    Nonempty (KSModel Three' NNReal) ∧
     ¬∃ (compl : Three' → Three'), (∀ a, a ⊔ compl a = ⊤) ∧ (∀ a, a ⊓ compl a = ⊥) :=
-  ⟨⟨inferInstance, trivial⟩, ⟨standardThreeKSModel, trivial⟩, not_boolean⟩
+  ⟨⟨inferInstance⟩, ⟨standardThreeKSModel⟩, not_boolean⟩
 
 end Three'
 

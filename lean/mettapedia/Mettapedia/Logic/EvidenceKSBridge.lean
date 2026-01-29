@@ -143,7 +143,8 @@ What we DON'T have without Boolean:
 
     This is witnessed by the PlausibilitySpace instance being inferrable. -/
 theorem evidence_satisfies_ks_plausibility_axioms :
-    ∃ (_ : PlausibilitySpace Evidence), True := ⟨inferInstance, trivial⟩
+    Nonempty (PlausibilitySpace Evidence) :=
+  ⟨inferInstance⟩
 
 /-! ## Connection to PLN Operations
 

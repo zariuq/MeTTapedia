@@ -1,4 +1,6 @@
 import Mettapedia.Logic.Exchangeability
+import Mettapedia.Logic.MomentSequences
+import Mettapedia.Logic.HausdorffMoment
 import Mettapedia.Logic.EvidenceBeta
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.MeasureTheory.Integral.Bochner.Set
@@ -56,6 +58,7 @@ namespace Mettapedia.Logic.DeFinetti
 open MeasureTheory Finset BigOperators ENNReal
 open scoped BigOperators
 open Mettapedia.Logic.Exchangeability
+open Mettapedia.Logic.MomentSequences
 open Mettapedia.Logic.EvidenceBeta
 
 /-! ## Bernoulli Distribution -/
@@ -333,9 +336,11 @@ theorem countTrue_append_fin {m n : ℕ} (a : Fin m → Bool) (b : Fin n → Boo
     calc
       Fintype.card { x : Fin m ⊕ Fin n // pSum x }
           = Fintype.card ({i : Fin m // a i = true} ⊕ {j : Fin n // b j = true}) := by
-              simpa using (Fintype.card_congr eSum)
+              exact Fintype.card_congr eSum
       _ = Fintype.card { i : Fin m // a i = true } + Fintype.card { j : Fin n // b j = true } := by
-            simpa using (Fintype.card_sum ({i : Fin m // a i = true}) ({j : Fin n // b j = true}))
+            exact (Fintype.card_sum
+              (α := {i : Fin m // a i = true})
+              (β := {j : Fin n // b j = true}))
 
   let e : Fin m ⊕ Fin n ≃ Fin (m + n) := finSumFinEquiv
 
@@ -364,11 +369,11 @@ theorem countTrue_append_fin {m n : ℕ} (a : Fin m → Bool) (b : Fin n → Boo
     countTrue (Fin.append a b)
         = Fintype.card { i : Fin (m + n) // Fin.append a b i = true } := hCountTrue
     _ = Fintype.card { x : Fin m ⊕ Fin n // pSum x } := by
-          simpa [cardAppendSubtype]
+          simp [cardAppendSubtype]
     _ = Fintype.card { i : Fin m // a i = true } + Fintype.card { j : Fin n // b j = true } :=
           cardSumSubtype
     _ = countTrue a + countTrue b := by
-          simpa [hA, hB]
+          simp [hA, hB]
 
 @[simp]
 lemma countTrue_zerosThenOnes (n k : ℕ) : countTrue (zerosThenOnes n k) = k := by
@@ -409,6 +414,7 @@ they let us express Hausdorff forward differences of the moment sequence as meas
 of canonical cylinder events of the form `0^n 1^k`.
 -/
 
+omit [MeasurableSpace Ω] in
 /-- Reindexing a pattern by `Fin.cast` does not change the associated cylinder event. -/
 lemma cyl_comp_cast (X : ℕ → Ω → Bool) {m n : ℕ} (h : m = n) (xs : Fin n → Bool) :
     cyl X (xs ∘ Fin.cast h) = cyl X xs := by
@@ -444,6 +450,7 @@ lemma zerosThenOnes_last (n k : ℕ) :
     (Fin.append_right (u := fun _ : Fin n => false)
       (v := fun _ : Fin (k + 1) => true) (i := Fin.last k))
 
+omit [MeasurableSpace Ω] in
 /-- `cyl` for `0^n 1^(k+1)` is `cyl` for `0^n 1^k` plus the final-bit constraint. -/
 lemma cyl_zerosThenOnes_succ (X : ℕ → Ω → Bool) (n k : ℕ) :
     cyl X (zerosThenOnes n (k + 1)) = cyl X (zerosThenOnes n k) ∩ {ω | X (n + k) ω = true} := by
@@ -483,9 +490,10 @@ lemma zerosThenOnesThenZero_last (n k : ℕ) :
     simp
   unfold zerosThenOnesThenZero
   rw [hidx]
-  simpa using
+  exact
     (Fin.append_right (u := zerosThenOnes n k) (v := fun _ : Fin 1 => false) (i := (0 : Fin 1)))
 
+omit [MeasurableSpace Ω] in
 /-- Subtracting the final-bit-true event from `cyl (0^n 1^k)` yields `cyl (0^n 1^k 0)`. -/
 lemma cyl_zerosThenOnes_diff (X : ℕ → Ω → Bool) (n k : ℕ) :
     cyl X (zerosThenOnes n k) \ {ω | X (n + k) ω = true} = cyl X (zerosThenOnesThenZero n k) := by
@@ -586,78 +594,6 @@ This is non-negative because it's an expectation of a product of
 non-negative {0,1}-valued random variables.
 -/
 
-/-- Forward difference operator (in the Hausdorff convention): `Δ m k = m k - m (k+1)`. -/
-def fwdDiff (m : ℕ → ℝ) : ℕ → ℝ :=
-  fun k => m k - m (k + 1)
-
-/-- Iterated forward differences `Δⁿ m` in the Hausdorff convention.
-
-We define this via Mathlib's forward difference operator:
-`_root_.fwdDiff (h := 1) m k = m (k+1) - m k`.
-Our convention is the alternating-sign variant `m k - m (k+1)`, so we multiply by `(-1)^n`.
--/
-def fwdDiffIter (n : ℕ) (m : ℕ → ℝ) : ℕ → ℝ :=
-  fun k => ((-1 : ℝ) ^ n) * ((_root_.fwdDiff (h := (1 : ℕ)))^[n] m k)
-
-/-- A sequence is *completely monotone* if all iterated forward differences are nonnegative. -/
-def CompletelyMonotone (m : ℕ → ℝ) : Prop :=
-  ∀ n k, 0 ≤ fwdDiffIter n m k
-
-/-- Recurrence for Hausdorff forward differences:
-`Δ^{n+1} m k = Δ^n m k - Δ^n m (k+1)`. -/
-lemma fwdDiffIter_succ (m : ℕ → ℝ) (n k : ℕ) :
-    fwdDiffIter (n + 1) m k = fwdDiffIter n m k - fwdDiffIter n m (k + 1) := by
-  -- Unfold into Mathlib forward differences (`f (k+1) - f k`) and simplify signs.
-  unfold fwdDiffIter
-  -- Write `Δ := _root_.fwdDiff (h := 1)` and use the iterate-succ rule.
-  simp [Function.iterate_succ_apply', _root_.fwdDiff, pow_succ, mul_assoc, mul_left_comm, mul_comm,
-    sub_eq_add_neg, add_assoc, add_left_comm, add_comm, mul_add, add_mul]
-
-/-- Simplify the alternating signs coming from the translation between conventions:
-for `j ≤ n`, we have `(-1)^n * (-1)^(n-j) = (-1)^j`. -/
-lemma neg_one_pow_mul_neg_one_pow_sub (n j : ℕ) (hj : j ≤ n) :
-    ((-1 : ℝ) ^ n) * ((-1 : ℝ) ^ (n - j)) = (-1 : ℝ) ^ j := by
-  -- Rewrite `n` as `j + (n-j)`, then cancel the duplicated factor using `(-1)^2 = 1`.
-  have hn : n = j + (n - j) := (Nat.add_sub_of_le hj).symm
-  calc
-    ((-1 : ℝ) ^ n) * ((-1 : ℝ) ^ (n - j))
-        = ((-1 : ℝ) ^ (j + (n - j))) * ((-1 : ℝ) ^ (n - j)) := by
-            -- Avoid `simp` here (it can loop trying to simplify nested `Nat.sub`).
-            have hpow : (-1 : ℝ) ^ n = (-1 : ℝ) ^ (j + (n - j)) :=
-              congrArg (fun t : ℕ => (-1 : ℝ) ^ t) hn
-            rw [hpow]
-    _ = (((-1 : ℝ) ^ j) * ((-1 : ℝ) ^ (n - j))) * ((-1 : ℝ) ^ (n - j)) := by
-          simp [pow_add, mul_assoc]
-    _ = ((-1 : ℝ) ^ j) * (((-1 : ℝ) ^ (n - j)) * ((-1 : ℝ) ^ (n - j))) := by
-          simp [mul_assoc]
-    _ = ((-1 : ℝ) ^ j) * ((-1 : ℝ) ^ ((n - j) + (n - j))) := by
-          simpa [pow_add, mul_assoc] using (pow_add (-1 : ℝ) (n - j) (n - j)).symm
-    _ = ((-1 : ℝ) ^ j) * ((-1 : ℝ) ^ (2 * (n - j))) := by
-          -- `a + a = 2*a`
-          simpa [two_mul] using rfl
-    _ = ((-1 : ℝ) ^ j) * ((((-1 : ℝ) ^ 2) ^ (n - j))) := by
-          -- `(-1)^(2*(n-j)) = ((-1)^2)^(n-j)`
-          simpa [pow_mul, mul_assoc]
-    _ = (-1 : ℝ) ^ j := by
-          simp [neg_one_sq]
-
-/-- Closed form for iterated forward differences (binomial alternating sum). -/
-theorem fwdDiffIter_eq_sum_choose (m : ℕ → ℝ) :
-    ∀ n k, fwdDiffIter n m k =
-      ∑ j ∈ Finset.range (n + 1), ((-1 : ℝ) ^ j) * (Nat.choose n j : ℝ) * m (k + j) := by
-  classical
-  intro n k
-  have h :=
-    _root_.fwdDiff_iter_eq_sum_shift (h := (1 : ℕ)) (f := m) (n := n) (y := k)
-  -- Push the outer `(-1)^n` inside the sum and simplify casts; the remaining work is the
-  -- sign identity `(-1)^n * (-1)^(n-j) = (-1)^j`.
-  simp [fwdDiffIter, h, Finset.mul_sum, nsmul_one, zsmul_eq_mul, Int.cast_mul, Int.cast_pow,
-    Int.cast_natCast, mul_assoc, mul_left_comm, mul_comm]
-  refine Finset.sum_congr rfl ?_
-  intro j hj
-  have hjle : j ≤ n := Nat.lt_succ_iff.mp (Finset.mem_range.mp hj)
-  simp [neg_one_pow_mul_neg_one_pow_sub n j hjle, mul_assoc, mul_left_comm, mul_comm]
-
 /-- The first finite difference of the de Finetti moments is non-negative:
     Δ¹mₖ = mₖ - mₖ₊₁ ≥ 0 -/
 theorem deFinettiMoment_diff_nonneg (X : ℕ → Ω → Bool) (μ : Measure Ω)
@@ -739,7 +675,7 @@ theorem deFinettiMoment_fwdDiffIter_eq_cyl (X : ℕ → Ω → Bool) (μ : Measu
                 calc
                   μ.real (cyl X (zerosThenOnes n k)) - μ.real (cyl X (zerosThenOnes n (k + 1)))
                       = μ.real (cyl X (zerosThenOnes n k) \ {ω | X (n + k) ω = true}) := by
-                          simpa [hdiff] using hdiff.symm
+                          exact hdiff.symm
                   _ = μ.real (cyl X (zerosThenOnesThenZero n k)) := by
                         simp [cyl_zerosThenOnes_diff (X := X) n k]
               have hμ :
@@ -777,7 +713,10 @@ theorem deFinettiMoment_completelyMonotone (X : ℕ → Ω → Bool) (μ : Measu
   intro n k
   have h := deFinettiMoment_fwdDiffIter_eq_cyl (X := X) (μ := μ) hX hexch n k
   -- Now it's a real-valued measure of a set.
-  simpa [h] using (MeasureTheory.measureReal_nonneg (μ := μ) (s := cyl X (zerosThenOnes n k)))
+  have hnonneg := (MeasureTheory.measureReal_nonneg (μ := μ) (s := cyl X (zerosThenOnes n k)))
+  -- rewrite the goal using the cylinder characterization
+  rw [h]
+  exact hnonneg
 
 /-! ### Hausdorff Moment Theorem (Statement)
 
@@ -819,15 +758,8 @@ theorem hausdorff_moment_exists (m : ℕ → ℝ)
     (hzero : m 0 = 1) :
     ∃ (μ : Measure ℝ), IsProbabilityMeasure μ ∧ μ (Set.Icc 0 1)ᶜ = 0 ∧
       ∀ k, ∫ θ in Set.Icc 0 1, θ ^ k ∂μ = m k := by
-  -- The proof requires showing that (mₖ) being bounded, decreasing, and starting at 1
-  -- implies it's completely monotone, which is equivalent to being moments of a measure.
-  -- This involves:
-  -- 1. Using complete monotonicity (`hcm`) to build a positive linear functional on polynomials
-  -- 2. Constructing a positive functional on C[0,1] from the moments
-  -- 3. Applying Riesz representation
-  --
-  -- These steps require substantial analysis not yet in Mathlib.
-  sorry
+  simpa using
+    (Mettapedia.Logic.HausdorffMoment.hausdorff_moment_exists m hbnd hcm hzero)
 
 /-- De Finetti's theorem (infinite version):
     An infinite exchangeable binary sequence can be represented as a Bernoulli mixture.
@@ -868,7 +800,7 @@ theorem deFinetti_infinite (X : ℕ → Ω → Bool) (μ : Measure Ω)
       have hkCanon : countTrue xsCanon = k := by
         have := countTrue_comp_cast (h := hlen.symm) (xs := zerosThenOnes l k)
         simpa [xsCanon, k, countTrue_zerosThenOnes] using this
-      simpa [k, hkCanon]
+      simp [k, hkCanon]
 
     -- Exchangeability reduces everything to the canonical pattern.
     have hμexch : μ (cyl X xs) = μ (cyl X xsCanon) := by
@@ -934,10 +866,19 @@ theorem deFinetti_infinite (X : ℕ → Ω → Bool) (μ : Measure Ω)
           θ ^ k0 * (1 - θ) ^ (n0 + 1)
               = (θ ^ k0 * (1 - θ) ^ n0) * (1 - θ) := by
                   simp [pow_succ, mul_assoc]
-          _ = (θ ^ k0 * (1 - θ) ^ n0) * 1 - (θ ^ k0 * (1 - θ) ^ n0) * θ := by
-                  simpa [mul_sub]
-          _ = θ ^ k0 * (1 - θ) ^ n0 - θ ^ (k0 + 1) * (1 - θ) ^ n0 := by
-                  simp [pow_succ, mul_assoc, mul_left_comm, mul_comm]
+              _ = (θ ^ k0 * (1 - θ) ^ n0) * 1 - (θ ^ k0 * (1 - θ) ^ n0) * θ := by
+                  simp [mul_sub]
+              _ = θ ^ k0 * (1 - θ) ^ n0 - θ ^ (k0 + 1) * (1 - θ) ^ n0 := by
+                  have hmul :
+                      (θ ^ k0 * (1 - θ) ^ n0) * θ =
+                        θ ^ (k0 + 1) * (1 - θ) ^ n0 := by
+                    calc
+                      (θ ^ k0 * (1 - θ) ^ n0) * θ
+                          = (θ ^ k0 * θ) * (1 - θ) ^ n0 := by
+                              simp [mul_assoc, mul_comm]
+                      _ = θ ^ (k0 + 1) * (1 - θ) ^ n0 := by
+                              simp [pow_succ, mul_assoc]
+                  simp [mul_one, hmul]
       -- Integrate both sides.
       unfold g
       -- Rewrite the integrand, then apply linearity.
@@ -977,7 +918,8 @@ theorem deFinetti_infinite (X : ℕ → Ω → Bool) (μ : Measure Ω)
       calc
         μ.real (cyl X xs) = μ.real (cyl X (zerosThenOnes l k)) := hRealCanon
         _ = g l k := hcanon
-        _ = BernoulliMixture.prob ⟨ν, hprob, hsupp⟩ xs := by simpa [hprob'] using hprob'.symm
+        _ = BernoulliMixture.prob ⟨ν, hprob, hsupp⟩ xs := by
+              exact hprob'.symm
 
     have hNonneg : 0 ≤ BernoulliMixture.prob ⟨ν, hprob, hsupp⟩ xs := by
       -- `μ.real` is always nonnegative.

@@ -238,6 +238,7 @@ section Finite
 
 variable [Fintype V] [DecidableRel G.edges]
 
+omit [DecidableEq V] [DecidableRel G.edges] in
 /-- In a finite acyclic graph, sources exist (assuming non-empty). -/
 theorem exists_source_of_acyclic_nonempty [Nonempty V] (h : G.IsAcyclic) :
     ∃ v : V, G.IsSource v := by
@@ -322,8 +323,9 @@ theorem exists_source_of_acyclic_nonempty [Nonempty V] (h : G.IsAcyclic) :
   apply h (chain j)
   exact ⟨chain (j - 1), hedge_j, hpath_back⟩
 
-/-- Sinks exist in finite acyclic non-empty graphs. -/
-theorem exists_sink_of_acyclic_nonempty [Nonempty V] (h : G.IsAcyclic) :
+ omit [DecidableEq V] [DecidableRel G.edges] in
+ /-- Sinks exist in finite acyclic non-empty graphs. -/
+ theorem exists_sink_of_acyclic_nonempty [Nonempty V] (h : G.IsAcyclic) :
     ∃ v : V, G.IsSink v := by
   have hrev := reverse_isAcyclic G h
   obtain ⟨v, hv⟩ := exists_source_of_acyclic_nonempty G.reverse hrev
@@ -339,15 +341,18 @@ end Finite
 def empty : DirectedGraph V where
   edges := fun _ _ => False
 
+omit [DecidableEq V] in
 /-- The empty graph is acyclic. -/
 theorem empty_isAcyclic : (empty : DirectedGraph V).IsAcyclic := by
   intro v ⟨u, hedge, _⟩
   exact hedge
 
+omit [DecidableEq V] in
 /-- Every vertex is a source in the empty graph. -/
 theorem empty_all_sources (v : V) : (empty : DirectedGraph V).IsSource v := by
   simp [IsSource, parents, empty]
 
+omit [DecidableEq V] in
 /-- Every vertex is a sink in the empty graph. -/
 theorem empty_all_sinks (v : V) : (empty : DirectedGraph V).IsSink v := by
   simp [IsSink, children, empty]
@@ -355,11 +360,12 @@ theorem empty_all_sinks (v : V) : (empty : DirectedGraph V).IsSink v := by
 /-! ## Complete Graph -/
 
 /-- The complete directed graph (all edges except self-loops). -/
-def complete [DecidableEq V] : DirectedGraph V where
+ def complete : DirectedGraph V where
   edges := fun u v => u ≠ v
 
+omit [DecidableEq V] in
 /-- The complete graph on 3+ vertices has cycles. -/
-theorem complete_has_cycle [DecidableEq V] {u v w : V}
+theorem complete_has_cycle {u v w : V}
     (huv : u ≠ v) (hvw : v ≠ w) (hwu : w ≠ u) :
     ¬(complete : DirectedGraph V).IsAcyclic := by
   intro h

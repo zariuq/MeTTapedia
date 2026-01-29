@@ -192,14 +192,15 @@ section GrandUnification
 -/
 theorem four_pillars_unified :
     -- Pillar 1: Evidence has CommSemigroup and CompleteLattice
-    (∃ _ : CommSemigroup Evidence, ∃ _ : CompleteLattice Evidence, True) ∧
+    Nonempty (CommSemigroup Evidence) ∧
+    Nonempty (CompleteLattice Evidence) ∧
     -- Pillar 2: Tensor is the correct composition operation
     (∀ e1 e2 : Evidence, (e1 * e2).pos = e1.pos * e2.pos ∧ (e1 * e2).neg = e1.neg * e2.neg) ∧
     -- Pillar 3: Credal gaps measure uncertainty (singleton has gap 0)
     (∀ e : Evidence, credalGap {e} = 0) ∧
     -- Pillar 4: hplus adds, tensor multiplies
     (∀ e1 e2 : Evidence, (e1 + e2).pos = e1.pos + e2.pos ∧ (e1 * e2).pos = e1.pos * e2.pos) := by
-  refine ⟨⟨inferInstance, inferInstance, trivial⟩, ?_, ?_, ?_⟩
+  refine ⟨⟨inferInstance⟩, ⟨inferInstance⟩, ?_, ?_, ?_⟩
   · -- Tensor structure
     intro e1 e2
     simp only [Evidence.tensor_def, and_self]

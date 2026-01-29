@@ -232,4 +232,127 @@ noncomputable abbrev laplacePrefixMeasure : PrefixMeasure :=
 noncomputable abbrev jeffreysPrefixMeasure : PrefixMeasure :=
   betaPrefixMeasure (α := (1 / 2 : ℝ)) (β := (1 / 2 : ℝ)) (by norm_num) (by norm_num)
 
+/-! ## Haldane (improper) limit predictor
+
+The Haldane prior corresponds to the formal limit `α = β → 0`, which yields the
+predictive rule `k/(k+m)` when at least one observation has been seen.
+
+This is not a proper Beta prior; we implement it as a *limit-style* prefix
+measure with the convention that the empty history predicts `1/2`.
+-/
+
+private def haldaneStepProb (k m : ℕ) (b : Bool) : ℝ :=
+  let denom : ℝ := k + m
+  if _h : denom = 0 then
+    (1 / 2 : ℝ)
+  else
+    if b then (k : ℝ) / denom else (m : ℝ) / denom
+
+private lemma haldaneStepProb_nonneg (k m : ℕ) (b : Bool) : 0 ≤ haldaneStepProb k m b := by
+  by_cases h : (k + m : ℝ) = 0
+  · simp [haldaneStepProb, h]
+  · have hnonneg : (0 : ℝ) ≤ (k + m : ℝ) := by
+      exact_mod_cast (Nat.zero_le (k + m))
+    have hne : (0 : ℝ) ≠ (k + m : ℝ) := by
+      simpa [eq_comm] using h
+    have hpos : (0 : ℝ) < (k + m : ℝ) := lt_of_le_of_ne hnonneg hne
+    cases b
+    ·
+      have hm0 : (0 : ℝ) ≤ (m : ℝ) := by
+        exact_mod_cast (Nat.zero_le m)
+      have hdiv : 0 ≤ (m : ℝ) / (k + m : ℝ) := div_nonneg hm0 (le_of_lt hpos)
+      simpa [haldaneStepProb, h] using hdiv
+    ·
+      have hk0 : (0 : ℝ) ≤ (k : ℝ) := by
+        exact_mod_cast (Nat.zero_le k)
+      have hdiv : 0 ≤ (k : ℝ) / (k + m : ℝ) := div_nonneg hk0 (le_of_lt hpos)
+      simpa [haldaneStepProb, h] using hdiv
+
+private lemma haldaneStepProb_sum (k m : ℕ) :
+    haldaneStepProb k m false + haldaneStepProb k m true = 1 := by
+  classical
+  by_cases h : (k + m : ℝ) = 0
+  · have hnat : k + m = 0 := by
+      exact_mod_cast h
+    have hk : k = 0 := (Nat.add_eq_zero_iff.mp hnat).1
+    have hm : m = 0 := (Nat.add_eq_zero_iff.mp hnat).2
+    subst hk; subst hm
+    have : (1 / 2 : ℝ) + (1 / 2 : ℝ) = 1 := by norm_num
+    simpa [haldaneStepProb] using this
+  · have hpos : (k + m : ℝ) ≠ 0 := h
+    -- Sum of ratios equals 1 when denom ≠ 0.
+    have hkm : (m : ℝ) + (k : ℝ) = (k + m : ℝ) := by
+      -- reorder to match denominator
+      simp [add_comm]
+    calc
+      haldaneStepProb k m false + haldaneStepProb k m true
+          = (m : ℝ) / (k + m : ℝ) + (k : ℝ) / (k + m : ℝ) := by
+              simp [haldaneStepProb, h]
+      _ = ((m : ℝ) + (k : ℝ)) / (k + m : ℝ) := by
+            field_simp [hpos, add_comm, add_left_comm, add_assoc]
+      _ = 1 := by
+            simp [hkm, hpos]
+
+private def haldanePrefixAux (k m : ℕ) : BinString → ENNReal
+  | [] => 1
+  | b :: xs =>
+      ENNReal.ofReal (haldaneStepProb k m b) *
+        haldanePrefixAux (if b then k + 1 else k) (if b then m else m + 1) xs
+
+private theorem haldanePrefixAux_additive (k m : ℕ) (xs : BinString) :
+    haldanePrefixAux k m (xs ++ [false]) +
+        haldanePrefixAux k m (xs ++ [true]) =
+      haldanePrefixAux k m xs := by
+  induction xs generalizing k m with
+  | nil =>
+      -- reduce to the real sum identity, then lift via `ofReal`
+      simp [haldanePrefixAux]
+      have hpos_false : 0 ≤ haldaneStepProb k m false := haldaneStepProb_nonneg k m false
+      have hpos_true : 0 ≤ haldaneStepProb k m true := haldaneStepProb_nonneg k m true
+      calc
+        ENNReal.ofReal (haldaneStepProb k m false) +
+            ENNReal.ofReal (haldaneStepProb k m true) =
+            ENNReal.ofReal (haldaneStepProb k m false + haldaneStepProb k m true) := by
+              symm
+              exact ENNReal.ofReal_add hpos_false hpos_true
+        _ = ENNReal.ofReal (1 : ℝ) := by
+              simp [haldaneStepProb_sum k m]
+        _ = 1 := by simp
+  | cons b xs ih =>
+      cases b with
+      | false =>
+          calc
+            ENNReal.ofReal (haldaneStepProb k m false) *
+                  haldanePrefixAux k (m + 1) (xs ++ [false]) +
+                ENNReal.ofReal (haldaneStepProb k m false) *
+                  haldanePrefixAux k (m + 1) (xs ++ [true]) =
+              ENNReal.ofReal (haldaneStepProb k m false) *
+                (haldanePrefixAux k (m + 1) (xs ++ [false]) +
+                  haldanePrefixAux k (m + 1) (xs ++ [true])) := by
+                simp [mul_add]
+            _ = ENNReal.ofReal (haldaneStepProb k m false) *
+                haldanePrefixAux k (m + 1) xs := by
+                  simp [ih]
+      | true =>
+          calc
+            ENNReal.ofReal (haldaneStepProb k m true) *
+                  haldanePrefixAux (k + 1) m (xs ++ [false]) +
+                ENNReal.ofReal (haldaneStepProb k m true) *
+                  haldanePrefixAux (k + 1) m (xs ++ [true]) =
+              ENNReal.ofReal (haldaneStepProb k m true) *
+                (haldanePrefixAux (k + 1) m (xs ++ [false]) +
+                  haldanePrefixAux (k + 1) m (xs ++ [true])) := by
+                simp [mul_add]
+            _ = ENNReal.ofReal (haldaneStepProb k m true) *
+                haldanePrefixAux (k + 1) m xs := by
+                  simp [ih]
+
+/-- Haldane limit predictor as a `PrefixMeasure` (with empty-history convention). -/
+noncomputable def haldanePrefixMeasure : PrefixMeasure where
+  toFun := fun x => haldanePrefixAux 0 0 x
+  root_eq_one' := by simp [haldanePrefixAux]
+  additive' := by
+    intro x
+    simpa using (haldanePrefixAux_additive (k := 0) (m := 0) (xs := x))
+
 end Mettapedia.Logic.UniversalPrediction

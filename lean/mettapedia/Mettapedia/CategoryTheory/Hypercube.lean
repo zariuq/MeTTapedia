@@ -434,9 +434,11 @@ This constrains which sort assignments survive.
     This forces the conjunction sort to be symmetric.
 -/
 def isEquationallyAdmissible (_σ : Slot → HSort) : Prop :=
-  -- For now, all assignments are admissible (PLN has few equations)
-  -- In full generality, check t^S = u^S for each equation t = u
-  True
+  -- TODO: implement equational admissibility (check each equation t = u is preserved by σ).
+  -- This was previously `True`, which silently made later "admissibility" claims vacuous.
+  -- Keep this as an explicit `sorry` until the equation-checking machinery is in place.
+  by
+    exact sorry
 
 /-! ## The Full H_Σ Construction
 
