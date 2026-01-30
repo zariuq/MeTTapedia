@@ -374,6 +374,19 @@ noncomputable instance : Order.Frame Evidence where
   compl := compl
   himp_bot := himp_bot
 
+/-! ### Mathlib Theorems Now Available
+
+After the `Order.Frame Evidence` instance above, these Mathlib theorems apply automatically:
+- `le_himp_iff` : `a ≤ b ⇨ c ↔ a ⊓ b ≤ c` (Frame residuation)
+- `himp_bot` : `a ⇨ ⊥ = aᶜ` (complement definition)
+- `inf_sSup_eq` : `a ⊓ sSup S = ⨆ b ∈ S, a ⊓ b` (Frame distributivity)
+- `compl_compl_le_compl` and other Heyting complement laws
+
+Use these directly via typeclass inference rather than Evidence-specific versions.
+The proofs above (`le_himp_iff`, `himp_bot`) establish that Evidence satisfies
+the Frame axioms; after the instance, general Frame/Heyting theory applies.
+-/
+
 /-! ### View to SimpleTruthValue
 
 Evidence now has FULL Frame structure (complete Heyting algebra)!

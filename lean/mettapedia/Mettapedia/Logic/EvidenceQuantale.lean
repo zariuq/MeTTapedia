@@ -141,6 +141,18 @@ instance : IsQuantale Evidence where
 /-- Evidence is a commutative quantale. -/
 instance : IsCommQuantale Evidence where
 
+/-! ### Mathlib Quantale Theorems Now Available
+
+After the `IsQuantale Evidence` instance above, these Mathlib theorems apply automatically:
+- `mul_sSup_distrib` : `x * sSup S = ⨆ y ∈ S, x * y` (left distributivity)
+- `sSup_mul_distrib` : `sSup S * x = ⨆ y ∈ S, y * x` (right distributivity)
+- Other quantale theorems from `Mathlib.Algebra.Order.Quantale`
+
+Use these directly via typeclass inference rather than the primed versions (`mul_sSup_distrib'`).
+The primed versions above are the proofs establishing that Evidence satisfies the quantale axioms;
+after the instance, general quantale theory applies.
+-/
+
 end Evidence
 
 /-! ## The H × H^op Perspective

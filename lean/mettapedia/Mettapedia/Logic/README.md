@@ -1,145 +1,154 @@
 # Mettapedia Logic Module
 
-This module formalizes probabilistic logic networks (PLN) and their connections to
+Formalizing probabilistic logic networks (PLN) and their connections to
 probability theory, imprecise probability, Heyting algebras, quantales, and Solomonoff induction.
 
-## The Unified Architecture
+## Module Overview
+
+| Category | Files | Status |
+|----------|-------|--------|
+| Core PLN Inference | 9 | Complete |
+| Weight/Confidence | 2 | Complete |
+| Bounds/Consistency | 2 | Complete |
+| Algebraic Structure | 8 | Complete |
+| Solomonoff/Exchangeability | 6 | Complete |
+| Convergence/ | 4 | Complete |
+| Comparison/ | 3 | Complete |
+| MeasureTheoreticPLN/ | 3 | Complete |
+| PLNQuantaleSemantics/ | 4 | Complete |
+| UniversalPrediction/ | 21 | WIP |
+| Foundations/ | 90+ | Embedded (separate project) |
+| System Bridges | 4 | Complete |
+| Other/Misc | 8+ | Various |
+
+**Total**: 49 top-level files + 6 subdirectories
+
+---
+
+## The Unification Thesis
+
+PLN Evidence `(n+, n-)` unifies multiple mathematical frameworks:
 
 ```
-                     PLN Evidence (n⁺, n⁻)
-                            │
-       ┌────────────────────┼────────────────────┐
-       │                    │                    │
-       ▼                    ▼                    ▼
+                     PLN Evidence (n+, n-)
+                            |
+       +--------------------+--------------------+
+       |                    |                    |
+       v                    v                    v
    Quantale            Heyting Frame       Beta Statistic
-   (tensor ⊗)         (non-Boolean)        (conjugacy)
-       │                    │                    │
-       ▼                    ▼                    ▼
+   (tensor x)         (non-Boolean)        (conjugacy)
+       |                    |                    |
+       v                    v                    v
   PLN Deduction        Bounds [L, U]       Bayesian Update
-  A→B, B→C ⊢ A→C      with gap            (hplus = add params)
-       │                    │                    │
-       └────────────────────┼────────────────────┘
-                            │
-                            ▼
-              ┌─────────────────────────────┐
-              │ Solomonoff on Exchangeable  │
-              │ Binary = Evidence (n⁺, n⁻) │
-              └─────────────────────────────┘
+  A->B, B->C => A->C   with gap            (hplus = add params)
+       |                    |                    |
+       +--------------------+--------------------+
+                            |
+                            v
+              +-----------------------------+
+              | Solomonoff on Exchangeable  |
+              | Binary = Evidence (n+, n-)  |
+              +-----------------------------+
 ```
 
-## Key Theorems and Connections
+**Key Insight**: Restricted Solomonoff prediction on exchangeable binary sequences
+collapses to PLN Evidence counts!
 
-### 1. Fréchet Bounds (Proven)
+---
 
-File: `PLNFrechetBounds.lean`
+## Critical Proven Theorems
 
-| Theorem | Statement | Status |
-|---------|-----------|--------|
-| `frechet_upper_bound` | P(A ∩ B) ≤ min(P(A), P(B)) | ✅ Proven |
-| `frechet_lower_bound` | max(0, P(A) + P(B) - 1) ≤ P(A ∩ B) | ✅ Proven |
-| `frechet_bounds_iff_consistency` | PLN consistency ↔ Fréchet bounds | ✅ Proven |
+| Theorem | File | Statement |
+|---------|------|-----------|
+| Frechet Upper | `PLNFrechetBounds.lean` | P(A n B) <= min(P(A), P(B)) |
+| Frechet Lower | `PLNFrechetBounds.lean` | max(0, P(A)+P(B)-1) <= P(A n B) |
+| PLN Consistency | `PLNFrechetBounds.lean` | Consistency <-> Frechet bounds |
+| Weight-Space Min | `PLNConfidenceWeight.lean` | min in weight space, NOT confidence |
+| Evidence Not Boolean | `HeytingValuationOnEvidence.lean` | a v ~a != T for some a |
+| Quantale Transitivity | `EvidenceQuantale.lean` | (A->B) x (B->C) <= (A->C) |
+| Solomonoff Collapse | `SolomonoffExchangeable.lean` | Exchangeable -> depends on counts only |
+| De Finetti | `DeFinetti.lean` | Exchangeable <-> Bernoulli mixture |
 
-### 2. Hypergeometric Mode Bounds (Proven)
+---
 
-File: `PLNConjunction.lean`
+## Subdirectories
 
-| Theorem | Statement | Status |
-|---------|-----------|--------|
-| `hypergeometricMode_in_range` | mode ≤ min(a, b) | ✅ Proven |
-| Lower bound | max(0, a+b-n) ≤ mode | Documented (proof sketch) |
+### Comparison/ (3 files)
+Error analysis and optimality comparisons between PLN variants.
+- `ErrorCharacterization.lean` - Error analysis between fast/complete PLN
+- `OptimalityTheorems.lean` - Optimality results
+- `StructuralAdvantages.lean` - Structural advantages of PLN
 
-**Connection**: Fréchet bounds on probabilities correspond to hypergeometric bounds on cardinalities:
-- P(A) = a/n, P(B) = b/n in finite universe
-- P(A ∩ B) ∈ [max(0, a+b-n)/n, min(a,b)/n]
+### Convergence/ (4 files)
+Probabilistic convergence theory for PLN evidence semantics.
+- `ConfidenceConvergence.lean` - Confidence converges with evidence
+- `IIDBernoulli.lean` - IID Bernoulli convergence properties
+- `LawOfLargeNumbers.lean` - LLN for Evidence
+- `RateOfConvergence.lean` - Asymptotic rates
 
-### 3. Weight-Space Operations (Proven)
+### Foundations/ (90+ files) - EMBEDDED SEPARATE PROJECT
+Self-contained formal logic library with its own README, CLAUDE.md, LICENSE.
+Covers propositional, first-order, modal, and provability logic.
+**Note**: This is NOT part of PLN formalization proper.
 
-File: `PLNConfidenceWeight.lean` (NEW)
+### MeasureTheoreticPLN/ (3 files)
+Bridge between PLN and measure theory.
+- `Basic.lean` - Measure-theoretic foundations
+- `BetaMeasure.lean` - Beta measure connection
+- `EvidenceSemantics.lean` - Measure semantics of Evidence
 
-| Theorem | Statement | Status |
-|---------|-----------|--------|
-| `evidence_combination_bounded` | mode ≤ min(a, b) justifies min in weight space | ✅ Proven |
-| `w2c_le_one` | Confidence bounded by 1 | ✅ Proven |
-| `combineCorrect_comm` | Correct formula is symmetric | ✅ Proven |
+### PLNQuantaleSemantics/ (4 files)
+Quantale-valued semantics and soundness framework.
+- `CDLogic.lean` - Conditional Doxastic Logic
+- `PBit.lean` - Probabilistic bit
+- `PLNModel.lean` - Model theory for PLN
+- `Soundness.lean` - Soundness proofs
 
-**Critical Insight**: The hypergeometric operates on COUNTS (weights), not confidences!
-- **WRONG**: `w2c(min(c₁, c₂))` — treats confidences as weights
-- **CORRECT**: `w2c(min(c2w(c₁), c2w(c₂)))` — converts to weight space first
+### UniversalPrediction/ (21 files)
+Formalization of Hutter's Universal AI (AIXI) prediction theory.
+Largest subdirectory (~420 KB). Includes:
+- Entropy, distances, chain rule
+- Convergence criteria and error bounds
+- Hutter enumeration theorems
+- Beta/Dirichlet predictors
+- Thompson sampling
+- Solomonoff bridge
 
-### 4. Quantale Structure (Proven)
+---
 
-File: `EvidenceQuantale.lean`
+## File Index by Purpose
 
-| Theorem | Statement | Status |
-|---------|-----------|--------|
-| `Evidence.isQuantale` | Evidence with tensor is a quantale | ✅ Proven |
-| `IsCommQuantale Evidence` | Commutative quantale | ✅ Proven |
-| `evidence_tensor_transitivity` | (A→B) ⊗ (B→C) ≤ (A→C) | ✅ Proven |
-| `confidence_monotone_in_total` | More evidence → higher confidence | ✅ Proven |
-
-### 5. Heyting/Non-Boolean Structure (Proven)
-
-File: `HeytingValuationOnEvidence.lean`
-
-| Theorem | Statement | Status |
-|---------|-----------|--------|
-| `evidence_not_boolean` | Evidence has no Boolean complement | ✅ Proven |
-| `credalGap_singleton` | Point probabilities have zero gap | ✅ Proven |
-| `evidence_richer_than_strength` | Evidence > intervals | ✅ Proven |
-| `strength_fiber_infinite` | Infinitely many Evidence per strength | ✅ Proven |
-
-### 6. Solomonoff Connection (Proven)
-
-File: `SolomonoffExchangeable.lean`
-
-| Theorem | Statement | Status |
-|---------|-----------|--------|
-| `semimeasureExchangeable_same_counts` | Exchangeable → depends only on counts | ✅ Proven |
-| `mu_same_counts` | Restricted Solomonoff depends on (n⁺, n⁻) | ✅ Proven |
-
-**Key Insight**: Solomonoff prediction restricted to exchangeable binary sequences
-collapses to Evidence (n⁺, n⁻)!
-
-### 7. De Finetti Representation (Proven)
-
-File: `DeFinetti.lean`
-
-The full measure-theoretic de Finetti representation theorem is proven,
-establishing that exchangeable sequences have Bernoulli mixture representations.
-
-## File Index
-
-### Core PLN
+### PLN Core Foundation
 
 | File | Description | Sorries |
 |------|-------------|---------|
-| `PLNEvidence.lean` | Evidence structure, quantale operations (⊗, ⊕) | 0 |
-| `PLNDeduction.lean` | PLN deduction rules | 0 |
+| `PLNEvidence.lean` | Evidence structure (n+, n-), quantale ops (x, +) | 0 |
+
+### PLN Inference Rules
+
+| File | Description | Sorries |
+|------|-------------|---------|
+| `PLNDeduction.lean` | Deduction: A->B, B->C => A->C | 0 |
 | `PLNDerivation.lean` | Induction, abduction, Bayes inversion | 0 |
 | `PLNInferenceRules.lean` | Similarity, modus ponens/tollens | 0 |
-
-### Conjunction/Disjunction/Negation
-
-| File | Description | Sorries |
-|------|-------------|---------|
 | `PLNConjunction.lean` | Hypergeometric distribution, mode bounds | 0 |
 | `PLNDisjunction.lean` | De Morgan, inclusion-exclusion | 0 |
-| `PLNNegation.lean` | Evidence swap | 0 |
-| `PLNImplicantConjunction.lean` | A→C, B→C ⊢ A∧B→C | 0 |
+| `PLNNegation.lean` | Evidence swap (n+, n-) -> (n-, n+) | 0 |
 | `PLNRevision.lean` | Evidence aggregation = hplus | 0 |
+| `PLNImplicantConjunction.lean` | A->C, B->C => (A^B)->C | 0 |
 
 ### Weight-Space and Confidence
 
 | File | Description | Sorries |
 |------|-------------|---------|
-| `PLNConfidenceWeight.lean` | **NEW** Min in weight space theorem | 0 |
+| `PLNConfidenceWeight.lean` | **CRITICAL**: min in weight space, not confidence | 0 |
 | `ConfidenceCompoundingTheorem.lean` | Confidence propagation | 0 |
 
 ### Bounds and Consistency
 
 | File | Description | Sorries |
 |------|-------------|---------|
-| `PLNFrechetBounds.lean` | Fréchet bounds ↔ PLN consistency | 0 |
+| `PLNFrechetBounds.lean` | Frechet bounds <-> PLN consistency | 0 |
 | `EvidenceIntervalBounds.lean` | Strength intervals, incomparability | 0 |
 
 ### Algebraic Structure
@@ -149,54 +158,159 @@ establishing that exchangeable sequences have Bernoulli mixture representations.
 | `EvidenceQuantale.lean` | Commutative quantale instance | 0 |
 | `HeytingValuationOnEvidence.lean` | Non-Boolean, credal sets | 0 |
 | `EvidenceBeta.lean` | Beta distribution connection | 0 |
+| `EvidenceDirichlet.lean` | Dirichlet-Multinomial generalization | 0 |
+| `EvidenceKSBridge.lean` | Knuth-Skilling plausibility space | 0 |
+| `EvidenceSTVBijection.lean` | Truth value bijection | 0 |
+| `EvidenceIntuitionisticProbability.lean` | Intuitionistic semantics | 0 |
+| `ResidualDeductionFormula.lean` | Residuation in quantale | 0 |
 
 ### Solomonoff and Exchangeability
 
 | File | Description | Sorries |
 |------|-------------|---------|
-| `SolomonoffExchangeable.lean` | Solomonoff → Evidence collapse | 0 |
-| `Exchangeability.lean` | Exchangeable sequences | 0 |
+| `SolomonoffExchangeable.lean` | Solomonoff -> Evidence collapse | 0 |
+| `Exchangeability.lean` | Exchangeable sequences, count sufficiency | 0 |
 | `DeFinetti.lean` | De Finetti representation theorem | 0 |
+| `SolomonoffPrior.lean` | Solomonoff prior formalization | 0 |
+| `SolomonoffMeasure.lean` | Measure-theoretic Solomonoff | 0 |
+| `SolomonoffInduction.lean` | Solomonoff induction analysis | 0 |
 
-## Key Insight: PLN Evidence ↔ Credal Sets ↔ Interval Probability
+### System Bridges
 
-PLN represents beliefs as **Evidence** pairs `(n⁺, n⁻)` where:
-- `n⁺` = positive evidence (support for proposition)
-- `n⁻` = negative evidence (support against proposition)
+| File | Description | Sorries |
+|------|-------------|---------|
+| `NuPLNEvidenceBridge.lean` | nuPLN <-> Evidence quantale | 0 |
+| `NARSEvidenceBridge.lean` | NARS <-> Evidence bridge | 0 |
+| `PLN_KS_Bridge.lean` | PLN <-> Knuth-Skilling bridge | 0 |
+| `EvidenceKSBridge.lean` | Evidence as PlausibilitySpace | 0 |
 
-The **strength** is `s = n⁺ / (n⁺ + n⁻)` ∈ [0,1].
-The **weight** is `w = n⁺ + n⁻` (total evidence count).
-The **confidence** is `c = w / (w + k)` for prior weight k.
+### Analysis and Comparison
 
-**Key Theorem**: Evidence forms a **partial order** where two values can be
-**incomparable**. This incomparability represents **epistemic uncertainty**!
+| File | Description | Sorries |
+|------|-------------|---------|
+| `PLNBugAnalysis.lean` | Historical bug analysis | 0 |
+| `CompletePLN.lean` | Exact Bayesian inference in logical form | 0 |
+| `SoundnessCompleteness.lean` | Soundness/completeness analysis | 0 |
 
-### Why Evidence is Richer than Intervals
+### Other Files
 
-| What intervals capture | What PLN Evidence adds |
-|------------------------|------------------------|
-| Probability bounds [a, b] | Actual evidence counts |
+| File | Description | Sorries |
+|------|-------------|---------|
+| `PLNDistributional.lean` | Distributional properties | -- |
+| `PLNTemporal.lean` | Temporal PLN (skeleton) | -- |
+| `PLNEnrichedCategory.lean` | Enriched category structure | -- |
+| `PLNQuantaleConnection.lean` | Quantale connection | -- |
+| `PLNQuantaleSemantics.lean` | Semantic re-export | -- |
+| `PLNConsistencyLemmas.lean` | Consistency helpers | -- |
+| `PLNDeductionComposition.lean` | Deduction composition | -- |
+| `PLNDerivedFromEvidence.lean` | Derivation from Evidence | -- |
+| `PLNMettaTruthFunctions.lean` | MeTTa truth formulas | -- |
+| `NARSMettaTruthFunctions.lean` | NARS truth formulas | -- |
+| `TemporalQuantale.lean` | Temporal quantale structures | -- |
+| `MarkovExchangeability.lean` | Markov chain exchangeability | -- |
+| `MomentSequences.lean` | Completely monotone sequences | -- |
+| `HausdorffMoment.lean` | Hausdorff moment problem (81 KB) | -- |
+| `IntensionalInheritance.lean` | Information-theoretic unification (POC) | -- |
+| `UniversalPrediction.lean` | Re-export for UniversalPrediction/ | -- |
+
+---
+
+## Dependency Graph
+
+```
+PLNEvidence.lean (Foundation: Evidence structure, quantale ops)
+       |
+       +-- EvidenceQuantale.lean (quantale instance)
+       |        +-- evidence_tensor_transitivity
+       |
+       +-- HeytingValuationOnEvidence.lean (Heyting, non-Boolean)
+       |        +-- evidence_not_boolean
+       |        +-- credalGap_singleton
+       |
+       +-- EvidenceBeta.lean (Beta conjugacy)
+       |        +-- EvidenceDirichlet.lean (k-ary generalization)
+       |
+       +-- PLNDeduction.lean (core deduction rule)
+       |        +-- PLNDerivation.lean (induction, abduction, Bayes)
+       |                 +-- PLNInferenceRules.lean (similarity, modus ponens)
+       |
+       +-- PLNConjunction.lean (hypergeometric)
+       |        +-- PLNConfidenceWeight.lean (weight-space operations)
+       |        +-- PLNDisjunction.lean (De Morgan)
+       |
+       +-- PLNNegation.lean (evidence swap)
+       +-- PLNRevision.lean (= hplus)
+       +-- PLNImplicantConjunction.lean (A->C, B->C => A^B->C)
+       |
+       +-- PLNFrechetBounds.lean (Frechet <-> consistency)
+       +-- EvidenceIntervalBounds.lean (strength intervals)
+       |
+       +-- Exchangeability.lean (count sufficiency)
+                +-- SolomonoffExchangeable.lean (Solomonoff collapse)
+                +-- DeFinetti.lean (representation theorem)
+```
+
+---
+
+## Key Insight: PLN Evidence vs Interval Probability
+
+PLN Evidence `(n+, n-)` is **richer** than interval probabilities:
+
+| Interval Probability | PLN Evidence |
+|---------------------|--------------|
+| Bounds [a, b] | Actual counts (n+, n-) |
 | "What we know" | "How we know it" |
-| Point in [0,1]² | Extra dimension: weight |
+| Point in [0,1]^2 | Extra dimension: weight |
 
 The extra dimension (total count = weight) enables:
-1. **Confidence**: Higher weight → higher confidence
-2. **Correct inference**: min/max in weight space, not confidence space!
+1. **Confidence**: Higher weight -> higher confidence
+2. **Correct inference**: min/max in **weight space**, not confidence space!
 3. **Beta conjugacy**: Evidence = sufficient statistic for Beta posterior
+
+### The Weight-Space Bug Fix
+
+**WRONG** (causes 10-50% underestimation):
+```
+w2c(min(c1, c2))  -- treats confidences as weights
+```
+
+**CORRECT**:
+```
+w2c(min(c2w(c1), c2w(c2)))  -- converts to weight space first
+```
+
+This is formalized in `PLNConfidenceWeight.lean`.
+
+---
 
 ## Build
 
 ```bash
 cd lean-projects/mettapedia
-lake build Mettapedia.Logic.PLNConfidenceWeight  # New file
-lake build Mettapedia.Logic.PLNFrechetBounds     # Fréchet bounds
-lake build Mettapedia.Logic.EvidenceQuantale     # Quantale structure
+
+# Core files
+lake build Mettapedia.Logic.PLNEvidence
+lake build Mettapedia.Logic.PLNDeduction
+lake build Mettapedia.Logic.PLNFrechetBounds
+lake build Mettapedia.Logic.EvidenceQuantale
+
+# New files
+lake build Mettapedia.Logic.PLNConfidenceWeight
+lake build Mettapedia.Logic.PLNConjunction
+lake build Mettapedia.Logic.SolomonoffExchangeable
+lake build Mettapedia.Logic.DeFinetti
+
+# Build all (slow)
+export LAKE_JOBS=3 && nice -n 19 lake build Mettapedia.Logic
 ```
+
+---
 
 ## References
 
 - Walley, "Statistical Reasoning with Imprecise Probabilities" (1991)
 - Goertzel et al., "Probabilistic Logic Networks" (2008)
 - Knuth & Skilling, "Foundations of Inference" (2012)
-- Fréchet, M. (1935) "Généralisation du théorème des probabilités totales"
+- Frechet, M. (1935) "Generalisation du theoreme des probabilites totales"
+- Hutter, "Universal Artificial Intelligence" (2005)
 - Nil's nuPLN.tex (internal document on PLN formalization)

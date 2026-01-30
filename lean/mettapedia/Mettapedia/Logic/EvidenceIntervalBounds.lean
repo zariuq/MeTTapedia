@@ -34,6 +34,7 @@ import Mathlib.Data.Set.Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Order.Lattice
 import Mettapedia.Logic.PLNEvidence
+import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.HeytingIntervalRepresentation
 
 namespace Mettapedia.Logic.EvidenceIntervalBounds
 
@@ -81,17 +82,18 @@ theorem strength_pure_pos (p : ℝ≥0∞) (hp : p ≠ 0) (hpt : p ≠ ⊤) : st
 theorem strength_pure_neg (n : ℝ≥0∞) : strength ⟨0, n⟩ = 0 := by
   simp [strength]
 
-/-! ## Evidence Incomparability -/
+/-! ## Evidence Incomparability
 
-/-- Two evidence values are incomparable if neither is ≤ the other.
-    This represents epistemic uncertainty about the true state. -/
-def Incomparable (e₁ e₂ : Evidence) : Prop :=
-  ¬(e₁ ≤ e₂) ∧ ¬(e₂ ≤ e₁)
+Uses the general `Incomparable` definition from `HeytingIntervalRepresentation.lean`
+which applies to any Preorder. Evidence inherits this via its PartialOrder instance.
+-/
 
-/-- Incomparability is symmetric. -/
+open Mettapedia.ProbabilityTheory.KnuthSkilling.Heyting (Incomparable)
+
+/-- Incomparability is symmetric (specialization to Evidence of the general theorem). -/
 theorem incomparable_symm (e₁ e₂ : Evidence) :
     Incomparable e₁ e₂ ↔ Incomparable e₂ e₁ := by
-  simp [Incomparable, and_comm]
+  simp only [Incomparable, and_comm]
 
 /-- Incomparable evidence requires at least one dimension to "cross". -/
 theorem incomparable_characterization (e₁ e₂ : Evidence) :
