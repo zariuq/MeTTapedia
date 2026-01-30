@@ -1,4 +1,10 @@
 /.lake
+/external/
+
+# Separate repositories (subprojects)
+Mettapedia/Algebra/OrderedSemigroups/
+Mettapedia/Metatheory/
+Mettapedia/Logic/Foundations/
 
 # LaTeX build artifacts
 *.aux

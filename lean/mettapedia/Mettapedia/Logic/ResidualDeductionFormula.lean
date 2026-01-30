@@ -152,16 +152,12 @@ section IndirectPath
 
     In quantale terms, this relates to residuation of the direct path.
 -/
-noncomputable def indirectPathContribution (_E_AB E_BC_neg : Evidence) : Evidence :=
-  by
-    classical
-    -- TODO: Implement the intended PLN-style indirect contribution.
-    -- The intended formula is "scale by (1 - strength E_AB)", but getting this
-    -- into the `Evidence` carrier (ENNReal×ENNReal) needs a clear design choice.
-    --
-    -- We use an explicit `sorry` rather than a dummy constant so the file
-    -- remains honest about the current state of the definition.
-    sorry
+noncomputable def indirectPathContribution (E_AB E_BC_neg : Evidence) : Evidence :=
+  -- The indirect path contribution is weighted by P(¬B|A) = 1 - s_AB
+  -- where s_AB is the strength of E_AB
+  let s_AB := Evidence.toStrength E_AB
+  let complement_weight := 1 - s_AB  -- ENNReal truncated subtraction
+  ⟨complement_weight * E_BC_neg.pos, complement_weight * E_BC_neg.neg⟩
 
 /-- The indirect path can be expressed via residuation.
 

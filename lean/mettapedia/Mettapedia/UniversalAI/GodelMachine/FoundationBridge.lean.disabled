@@ -1,0 +1,143 @@
+import Mettapedia.Logic.Foundations.FirstOrder.Incompleteness.First
+import Mettapedia.Logic.Foundations.FirstOrder.Incompleteness.Second
+import Mettapedia.Logic.Foundations.FirstOrder.Bootstrapping.FixedPoint
+import Mettapedia.UniversalAI.GodelMachine.Basic
+
+/-!
+# Foundation ↔ Gödel Machine Bridge
+
+This module connects the Foundation library's proven incompleteness theorems
+to the Gödel Machine formalization in Mettapedia.
+
+## What Foundation Provides (All Proven)
+
+- `LO.FirstOrder.Arithmetic.diagonal`: Diagonal lemma (fixed point theorem)
+- `LO.FirstOrder.Arithmetic.incomplete`: Gödel's First Incompleteness
+- `LO.FirstOrder.Arithmetic.consistent_unprovable`: Gödel's Second Incompleteness
+
+## Connection to Gödel Machine
+
+The Gödel Machine relies on self-reference (diagonal lemma) and incompleteness
+to understand its own limitations. Foundation provides rigorous proofs of these
+fundamental theorems for arithmetic theories extending R₀ and IΣ₁.
+
+## Type Differences
+
+- **Foundation**: Uses `Sentence ℒₒᵣ` (syntactic formulas in the language of arithmetic)
+- **Mettapedia**: Uses `Formula := Prop` (semantic formulas as Lean propositions)
+
+This bridge documents the connection without forcing a type unification, since:
+1. The semantic approach (Formula = Prop) is appropriate for the Gödel Machine's
+   abstract reasoning about utility and self-improvement
+2. The syntactic approach (Sentence ℒₒᵣ) is appropriate for the concrete
+   metamathematics of incompleteness proofs
+
+## References
+
+- Gödel (1931), "On Formally Undecidable Propositions"
+- Schmidhuber (2003), "Gödel Machines" arXiv:cs/0309048
+-/
+
+namespace Mettapedia.UniversalAI.GodelMachine.FoundationBridge
+
+open LO.FirstOrder LO.FirstOrder.Arithmetic
+open LO.Entailment
+
+/-! ## Foundation's Diagonal Lemma
+
+The diagonal lemma is the key to self-reference: for any formula θ(x) with one
+free variable, there exists a sentence σ (the "fixed point") such that
+  T ⊢ σ ↔ θ(⌜σ⌝)
+
+Foundation proves this for any theory T extending IΣ₁.
+-/
+
+/-- Foundation's diagonal lemma for theories extending IΣ₁.
+    For any formula θ(x), there exists a fixed point sentence such that
+    T proves it equivalent to θ applied to its own Gödel number.
+
+    This is the foundation of self-reference in formal systems. -/
+theorem foundation_diagonal {T : Theory ℒₒᵣ} [𝗜𝚺₁ ⪯ T]
+    (θ : Semisentence ℒₒᵣ 1) :
+    T ⊢ fixedpoint θ ⭤ θ/[⌜fixedpoint θ⌝] :=
+  diagonal θ
+
+/-! ## Foundation's First Incompleteness Theorem
+
+Gödel's First Incompleteness: Any consistent, Σ₁-sound arithmetic theory
+extending R₀ is incomplete (there exist true statements that cannot be proved).
+
+Foundation proves this as `incomplete`.
+-/
+
+/-- Foundation's First Incompleteness Theorem.
+    Any Δ₁-definable, Σ₁-sound arithmetic theory extending R₀ is incomplete.
+
+    This means: there exist sentences that are true but unprovable in T.
+    The Gödel Machine cannot prove everything, but what it proves is correct. -/
+theorem foundation_first_incompleteness (T : ArithmeticTheory)
+    [T.Δ₁] [𝗥₀ ⪯ T] [T.SoundOnHierarchy 𝚺 1] :
+    Incomplete T :=
+  incomplete T
+
+/-! ## Foundation's Second Incompleteness Theorem
+
+Gödel's Second Incompleteness: A consistent theory extending IΣ₁ cannot prove
+its own consistency.
+
+Foundation proves this as `consistent_unprovable`.
+-/
+
+/-- Foundation's Second Incompleteness Theorem.
+    A consistent, Δ₁-definable theory extending IΣ₁ cannot prove its own consistency.
+
+    For the Gödel Machine: if the proof system is consistent, it cannot prove
+    that fact internally. Self-trust must come from outside the system. -/
+theorem foundation_second_incompleteness {T : Theory ℒₒᵣ}
+    [T.Δ₁] [𝗜𝚺₁ ⪯ T] [Consistent T] :
+    T ⊬ ↑T.consistent :=
+  consistent_unprovable
+
+/-! ## Implications for Gödel Machines
+
+These theorems have direct implications for Gödel Machine design:
+
+1. **Diagonal Lemma → Self-Reference**: The Gödel Machine can construct
+   formulas that refer to themselves, enabling reasoning about its own code.
+
+2. **First Incompleteness → Fundamental Limits**: Some true statements about
+   the machine's behavior may be unprovable. The machine cannot prove everything.
+
+3. **Second Incompleteness → External Trust**: The machine cannot prove its
+   own consistency. If we want confidence in the machine's soundness, we must
+   establish it at a meta-level (e.g., by construction or external verification).
+
+These are not bugs but features: incompleteness means the machine won't
+get stuck trying to prove unprovable statements, and soundness means
+whatever it does prove is guaranteed correct.
+-/
+
+/-! ## Documentation of Sorry Replacements
+
+The following sorries in ProofSystem.lean are addressed by Foundation:
+
+### 1. diagonal_lemma (line ~150)
+**Original sorry**: Placeholder proof of the diagonal lemma
+**Foundation theorem**: `diagonal` proves this for any θ : Semisentence ℒₒᵣ 1
+**Status**: Foundation proves the concrete arithmetic version.
+           The abstract FormalSystem version remains an assumption since
+           FormalSystem is more general than arithmetic theories.
+
+### 2. goedel_first_incompleteness (line ~191)
+**Original sorry**: Placeholder for Gödel's first incompleteness theorem
+**Foundation theorem**: `incomplete` proves Incomplete T
+**Status**: Foundation proves this for arithmetic theories extending R₀.
+           The abstract version for FormalSystem remains an assumption.
+
+### Remaining sorries (NOT addressed by Foundation):
+- proof_eventually_found (line ~216): Enumeration completeness, not incompleteness
+- withCompleteKnowledge sorries (lines ~248, 252): Tautology provability, discount bounds
+- withSelfDescription sorry (Basic.lean line ~144): Self-description axiom provability
+-/
+
+end Mettapedia.UniversalAI.GodelMachine.FoundationBridge

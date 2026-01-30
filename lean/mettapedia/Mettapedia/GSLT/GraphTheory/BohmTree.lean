@@ -242,16 +242,21 @@ theorem bohmTree_beta_eq (t s : LambdaTerm) (n : Nat) :
     - The Böhm tree BT(λx.M) = λx.BT(M) structurally
     - If BT(M) = BT(N) at all fuel levels, then BT(λx.M) = BT(λx.N)
     - Our fuel-based approximation preserves this structural property
+
+    Technical note: This proof requires understanding how toHNF and extractHNF
+    interact with the lambda constructor, and how Böhm equality propagates.
 -/
 theorem bohmTree_congLam (t t' : LambdaTerm) (h : ∀ n, bohmTree n t = bohmTree n t') (m : Nat) :
     bohmTree m (.lam t) = bohmTree m (.lam t') := by
-  cases m with
-  | zero => rfl
-  | succ fuel' =>
-    unfold bohmTree
-    -- Both sides compute toHNF fuel' (.lam t) and toHNF fuel' (.lam t')
-    -- Key observation: .lam is immediately in HNF if its body can have extractHNF applied
-    sorry -- TODO: Complete proof using extractHNF structure preservation
+  -- The proof requires deep analysis of toHNF/extractHNF structure
+  -- and understanding when two terms with equal Böhm trees produce
+  -- equal computational behavior. This is non-trivial because
+  -- different syntactic forms can have the same Böhm tree.
+  --
+  -- The key insight from Barendregt Ch. 10 is that Böhm equality
+  -- is a congruence relation, but proving this computationally
+  -- requires standardization-like arguments.
+  sorry
 
 /-- Böhm trees are congruent under application (left).
 

@@ -304,16 +304,28 @@ theorem satisfiesLEM_compl (a : α) (h : SatisfiesLEM a) : SatisfiesLEM aᶜ := 
 theorem satisfiesLEM_of_regular [Fintype α] [DecidableEq α] (a : α) (ha : Heyting.IsRegular a) :
     SatisfiesLEM a := by
   unfold SatisfiesLEM
-  -- NOTE: The original proof used Dense-Top, but Dense-Top is FALSE for finite
-  -- non-Boolean Heyting algebras (e.g., the 3-chain {⊥ < m < ⊤} has mᶜ = ⊥
-  -- but m ≠ ⊤).
+  -- CONTEXT: This theorem is ONLY for FINITE Heyting algebras.
   --
-  -- However, this theorem may still be TRUE because in the 3-chain, m is NOT
-  -- regular (mᶜᶜ = ⊤ ≠ m). The regular elements are only ⊥ and ⊤, which do
-  -- satisfy LEM.
+  -- INFINITE case: DISPROVEN in RegularityLEMCounterexample.lean
+  --   - In Opens ℝ, the interval (0,1) is regular but fails LEM
+  --   - Proof: (0,1) ∪ (0,1)ᶜ ≠ ℝ (point 0 is in neither)
   --
-  -- The correct proof strategy (per arXiv:2110.11515 Theorem 2.5) should use
-  -- the structure of regular elements directly, not Dense-Top.
+  -- FINITE case: STATUS UNKNOWN
+  --   - Chain3 evidence: All regular elements (⊥, ⊤) DO satisfy LEM
+  --   - But this doesn't prove the general finite case
+  --
+  -- NOTE: The original citation "arXiv:2110.11515 Theorem 2.5" was incorrect.
+  -- That paper proves lem_degree ≤ 2/3 but does NOT discuss regular elements.
+  --
+  -- Partial progress:
+  -- - For regular a: (a ⊔ aᶜ)ᶜ = ⊥ (proven)
+  -- - Therefore: (a ⊔ aᶜ)ᶜᶜ = ⊤ (proven)
+  -- - Cannot conclude a ⊔ aᶜ = ⊤ from this alone
+  --
+  -- TODO: Either:
+  --   1. Find a finite Heyting algebra counterexample (would prove FALSE)
+  --   2. Find a proof strategy using finiteness (would prove TRUE)
+  --   3. Remove this theorem if unprovable
   sorry
 
 /-- Non-LEM elements satisfy a ≠ aᶜᶜ (in finite Heyting algebras) -/
