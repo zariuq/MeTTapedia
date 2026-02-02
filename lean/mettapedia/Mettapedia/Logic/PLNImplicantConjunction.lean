@@ -1,5 +1,6 @@
 import Mettapedia.Logic.PLNEvidence
 import Mettapedia.Logic.PLNConjunction
+import Mettapedia.ProbabilityTheory.Basic
 
 /-!
 # PLN Implicant Conjunction Introduction
@@ -42,6 +43,8 @@ namespace Mettapedia.Logic.PLNImplicantConjunction
 open scoped ENNReal
 open Mettapedia.Logic.PLNEvidence
 open Mettapedia.Logic.PLNConjunction
+open Mettapedia.ProbabilityTheory
+open MeasureTheory
 open Evidence
 
 /-! ## The Implicant Conjunction Formula
@@ -197,15 +200,54 @@ Under the independence assumptions, the formula is correct.
     This is essentially a reformulation of the derivation in the docstring.
 -/
 theorem implicantConjunction_valid
-    (_s_AC _s_BC _s_C _s_A _s_B _s_AB : ℝ≥0∞)
-    (_h_global : _s_AB = _s_A * _s_B)
-    (_h_sC_pos : _s_C ≠ 0) (_h_sC_ne_top : _s_C ≠ ⊤)
-    (_h_sA_pos : _s_A ≠ 0) (_h_sB_pos : _s_B ≠ 0)
-    (_h_sA_ne_top : _s_A ≠ ⊤) (_h_sB_ne_top : _s_B ≠ ⊤)
-    (_h_sAC_le : _s_AC ≤ 1) (_h_sBC_le : _s_BC ≤ 1) :
-    -- The formula s_AC * s_BC / s_C gives P(C|A,B)
-    -- under the stated independence conditions
-    True := by trivial  -- Structural placeholder; full proof would verify Bayes derivation
+    {Ω : Type*} [MeasurableSpace Ω]
+    (μ : Measure Ω) [IsProbabilityMeasure μ] [IsFiniteMeasure μ]
+    (A B C : Set Ω)
+    (hA : μ A ≠ 0) (hB : μ B ≠ 0) (hC : μ C ≠ 0)
+    (hAB : μ (A ∩ B) ≠ 0)
+    (hIndep : μ.real (A ∩ B) = μ.real A * μ.real B)
+    (hCondIndep : condProb μ (A ∩ B) C = condProb μ A C * condProb μ B C) :
+    condProb μ C (A ∩ B) = (condProb μ C A) * (condProb μ C B) / μ.real C := by
+  have hAreal : μ.real A ≠ 0 := measureReal_ne_zero_of_measure_ne_zero (μ := μ) hA
+  have hBreal : μ.real B ≠ 0 := measureReal_ne_zero_of_measure_ne_zero (μ := μ) hB
+  have hCreal : μ.real C ≠ 0 := measureReal_ne_zero_of_measure_ne_zero (μ := μ) hC
+  have hABreal : μ.real (A ∩ B) ≠ 0 :=
+    measureReal_ne_zero_of_measure_ne_zero (μ := μ) hAB
+
+  -- Bayes: P(C | A∩B) = P(A∩B | C) * P(C) / P(A∩B)
+  have h_bayes_C_AB :
+      condProb μ C (A ∩ B) = condProb μ (A ∩ B) C * μ.real C / μ.real (A ∩ B) := by
+    simpa using (bayes (μ := μ) (A := C) (B := (A ∩ B)) hC hAB)
+
+  -- Bayes: P(A | C) and P(B | C) expressed via P(C | A), P(C | B)
+  have h_bayes_A_C : condProb μ A C = condProb μ C A * μ.real A / μ.real C := by
+    simpa using (bayes (μ := μ) (A := A) (B := C) hA hC)
+  have h_bayes_B_C : condProb μ B C = condProb μ C B * μ.real B / μ.real C := by
+    simpa using (bayes (μ := μ) (A := B) (B := C) hB hC)
+
+  -- Combine everything; the only real content is cancelling `P(A)P(B)` using independence.
+  -- The rest is algebra in `ℝ`.
+  have h_nonzero_prod : (μ.real A * μ.real B : ℝ) ≠ 0 := by
+    exact mul_ne_zero hAreal hBreal
+
+  -- Rewrite and simplify.
+  calc
+    condProb μ C (A ∩ B)
+        = (condProb μ (A ∩ B) C) * μ.real C / μ.real (A ∩ B) := h_bayes_C_AB
+    _ = (condProb μ A C * condProb μ B C) * μ.real C / μ.real (A ∩ B) := by
+          simp [hCondIndep, mul_assoc]
+    _ = ((condProb μ C A) * μ.real A / μ.real C) * ((condProb μ C B) * μ.real B / μ.real C) *
+          μ.real C / μ.real (A ∩ B) := by
+          simp [h_bayes_A_C, h_bayes_B_C]
+    _ = (condProb μ C A) * (condProb μ C B) / μ.real C := by
+          -- `field_simp` handles the division; use independence to replace `P(A∩B)` with `P(A)P(B)`.
+          have hIndep' : (μ.real (A ∩ B) : ℝ) = μ.real A * μ.real B := hIndep
+          -- Replace `P(A∩B)` so it cancels.
+          -- Then cancel the remaining `P(C)` factor.
+          field_simp [hAreal, hBreal, hCreal, hABreal, hIndep', h_nonzero_prod]
+          -- After clearing denominators, the remaining goal is a commutativity/associativity shuffle
+          -- together with `hIndep'`.
+          simp [hIndep', mul_assoc, mul_left_comm, mul_comm]
 
 /-! ## Connection to PLN Deduction
 
@@ -218,9 +260,13 @@ Both are fundamental PLN inference patterns.
 
 /-- The implicant conjunction can be seen as a "merge" of two evidence
     paths to the same conclusion. -/
-theorem implicant_conjunction_is_merge :
-    -- Conceptually: two independent reasons for C combine multiplicatively
-    True := by trivial
+theorem implicant_conjunction_is_merge
+    (e_AC e_BC : Evidence) (s_C : ℝ≥0∞)
+    (hAC : e_AC.total ≠ 0) (hBC : e_BC.total ≠ 0)
+    (hsC : s_C ≠ 0) (hsC_top : s_C ≠ ⊤) :
+    implicantConjunctionEvidence e_AC e_BC s_C hAC hBC hsC hsC_top =
+      implicantConjunctionEvidence e_BC e_AC s_C hBC hAC hsC hsC_top := by
+  simp [implicantConjunctionEvidence, mul_comm, min_comm]
 
 /-! ## Summary
 

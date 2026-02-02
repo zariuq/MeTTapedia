@@ -291,7 +291,7 @@ theorem urge_mono_arousal
     urge level params pad1 ≤ urge level params pad2 := by
   simp only [urge]
   apply mul_le_mul_of_nonneg_left
-  · apply add_le_add_left
+  · apply add_le_add_right
     apply mul_le_mul_of_nonneg_left h
     norm_num
   · apply mul_nonneg

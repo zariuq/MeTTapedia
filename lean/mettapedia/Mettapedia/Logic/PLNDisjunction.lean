@@ -1,6 +1,7 @@
 import Mettapedia.Logic.PLNEvidence
 import Mettapedia.Logic.PLNNegation
 import Mettapedia.Logic.PLNConjunction
+import Mettapedia.ProbabilityTheory.Basic
 
 /-!
 # PLN Disjunction Introduction Rule
@@ -39,6 +40,8 @@ open scoped ENNReal
 open Mettapedia.Logic.PLNEvidence
 open Mettapedia.Logic.PLNNegation
 open Mettapedia.Logic.PLNConjunction
+open Mettapedia.ProbabilityTheory
+open MeasureTheory
 open Evidence
 
 /-! ## Disjunction via De Morgan
@@ -148,24 +151,27 @@ De Morgan laws and probabilistic semantics.
 Without independence, we have bounds on disjunction probability.
 -/
 
-/-- Upper Fréchet bound: P(A ∨ B) ≤ min(1, P(A) + P(B))
+/-- Upper Fréchet bound: `P(A ∪ B) ≤ min(1, P(A) + P(B))`.
 
-    In strength terms: s_{A∨B} ≤ min(1, s_A + s_B)
--/
-theorem disjunction_strength_upper_bound (_s_A _s_B : ℝ≥0∞)
-    (_hs_A : _s_A ≤ 1) (_hs_B : _s_B ≤ 1) :
-    -- Under any dependence structure, the disjunction strength
-    -- cannot exceed the sum of individual strengths (capped at 1)
-    True := by trivial  -- Structural placeholder
+This is the standard union bound together with `P(A ∪ B) ≤ 1` for probability measures. -/
+theorem disjunction_strength_upper_bound
+    {Ω : Type*} [MeasurableSpace Ω] (μ : Measure Ω) [IsProbabilityMeasure μ] (A B : Set Ω) :
+    μ (A ∪ B) ≤ min 1 (μ A + μ B) := by
+  apply le_min
+  · -- `P(A ∪ B) ≤ 1`
+    have hle : μ (A ∪ B) ≤ μ Set.univ := measure_mono (Set.subset_univ _)
+    simpa [IsProbabilityMeasure.measure_univ] using hle
+  · exact measure_union_le A B
 
-/-- Lower Fréchet bound: P(A ∨ B) ≥ max(P(A), P(B))
+/-- Lower Fréchet bound: `P(A ∪ B) ≥ max(P(A), P(B))`.
 
-    In strength terms: s_{A∨B} ≥ max(s_A, s_B)
--/
-theorem disjunction_strength_lower_bound (_s_A _s_B : ℝ≥0∞) :
-    -- Under any dependence structure, the disjunction strength
-    -- is at least the maximum of the individual strengths
-    True := by trivial  -- Structural placeholder
+This is monotonicity: `A ⊆ A ∪ B` and `B ⊆ A ∪ B`. -/
+theorem disjunction_strength_lower_bound
+    {Ω : Type*} [MeasurableSpace Ω] (μ : Measure Ω) (A B : Set Ω) :
+    max (μ A) (μ B) ≤ μ (A ∪ B) := by
+  apply max_le
+  · exact measure_mono (Set.subset_union_left (s := A) (t := B))
+  · exact measure_mono (Set.subset_union_right (s := A) (t := B))
 
 /-! ## Inclusion-Exclusion Approach
 
@@ -195,9 +201,31 @@ theorem inclusion_exclusion_independent (s_A s_B : ℝ≥0∞) :
 -/
 theorem disjunctionDeMorgan_total (_e_A _e_B : Evidence)
     (_h_A : _e_A.total ≠ ⊤) (_h_B : _e_B.total ≠ ⊤) :
-    -- The disjunction total depends on the multiplication
-    -- Since pos and neg multiply independently, we need to track
-    True := by trivial  -- Structural placeholder
+    (disjunctionDeMorgan _e_A _e_B).total ≠ ⊤ := by
+  -- `disjunctionDeMorgan` is definitional `tensor` (proved above), so this is a
+  -- finiteness-of-total lemma for tensor/multiplication of evidence coordinates.
+  have hA_pos : _e_A.pos ≠ ⊤ := by
+    intro h
+    exact _h_A (by simp [Evidence.total, h])
+  have hA_neg : _e_A.neg ≠ ⊤ := by
+    intro h
+    exact _h_A (by simp [Evidence.total, h])
+  have hB_pos : _e_B.pos ≠ ⊤ := by
+    intro h
+    exact _h_B (by simp [Evidence.total, h])
+  have hB_neg : _e_B.neg ≠ ⊤ := by
+    intro h
+    exact _h_B (by simp [Evidence.total, h])
+  -- Expand totals explicitly using the proven coordinate formula.
+  rw [disjunctionDeMorgan_explicit]
+  -- Products of finite `ENNReal`s are finite, and the sum of two finite values is finite.
+  have hmul_pos : _e_A.pos * _e_B.pos ≠ (⊤ : ℝ≥0∞) :=
+    ENNReal.mul_ne_top hA_pos hB_pos
+  have hmul_neg : _e_A.neg * _e_B.neg ≠ (⊤ : ℝ≥0∞) :=
+    ENNReal.mul_ne_top hA_neg hB_neg
+  -- Reduce the goal to a sum-not-top statement, then use `ENNReal.add_ne_top`.
+  change _e_A.pos * _e_B.pos + _e_A.neg * _e_B.neg ≠ (⊤ : ℝ≥0∞)
+  exact (ENNReal.add_ne_top).2 ⟨hmul_pos, hmul_neg⟩
 
 /-! ## Summary
 

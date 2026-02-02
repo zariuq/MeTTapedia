@@ -1,4 +1,5 @@
 import Mettapedia.OSLF.RhoCalculus.Types
+import Mettapedia.OSLF.RhoCalculus.Reduction
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.CategoryTheory.Topos.InternalLanguage
 
@@ -643,20 +644,12 @@ def isValue : Pattern → Bool
       | _ => false
   | _ => false
 
-/-- Progress: a well-typed closed process either reduces or is a value
-
-    Note: The existential uses True as a placeholder for the actual reduction
-    relation `p ⇝ q`. A proper statement would be:
-    `isValue p ∨ ∃ q, p ⇝ q`
-
-    This weaker version is trivially true (we can always pick the right disjunct).
--/
+/-- Progress: a well-typed closed process either reduces or is a value. -/
 theorem progress {p : Pattern} {τ : NativeType} :
     (TypingContext.empty ⊢ p : τ) →
-    isValue p ∨ ∃ (_ : Pattern), True := by
+    isValue p ∨ ∃ q, p ⇝ q := by
   intro _
-  -- With True as placeholder, the existential is trivially satisfiable
-  exact Or.inr ⟨p, trivial⟩
+  sorry
 
 /-! ## Summary
 

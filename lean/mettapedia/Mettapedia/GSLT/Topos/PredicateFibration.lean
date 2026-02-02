@@ -1,6 +1,6 @@
 import Mettapedia.GSLT.Topos.SubobjectClassifier
 import Mettapedia.GSLT.Core.ChangeOfBase
-import Mathlib.CategoryTheory.Limits.Shapes.Pullback.CommSq
+import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.BicartesianSq
 
 /-!
 # Predicate Fibration over Presheaf Categories
@@ -121,11 +121,14 @@ def BeckChevalleyCondition {C : Type u} [Category.{v} C] (F : PredicateFib C)
 
 /-- Beck-Chevalley holds for presheaf categories.
     This is a fundamental property of presheaf toposes. -/
-theorem beckChevalleyPresheaf (C : Type u) [SmallCategory C] : True := by
-  -- The proof uses the topos structure of Psh(C)
-  -- Full statement: For any change-of-base structure on presheafPredicateFib,
-  -- the Beck-Chevalley condition holds for pullback squares.
-  trivial
+theorem beckChevalleyPresheaf (C : Type u) [SmallCategory C]
+    (cob : ChangeOfBase ⟨(presheafPredicateFib (C := C)).Sub, (presheafPredicateFib (C := C)).frame⟩) :
+    BeckChevalleyCondition (presheafPredicateFib (C := C)) cob := by
+  -- TODO: Prove for the concrete `presheafPredicateFib` using Mathlib's `Subobject` machinery
+  -- and the Beck-Chevalley lemma for pullbacks in a topos.
+  --
+  -- Important: this should *not* be stated as `True`; keep the real statement with an explicit `sorry`.
+  sorry
 
 /-! ## Connection to Our SubobjectFibration
 

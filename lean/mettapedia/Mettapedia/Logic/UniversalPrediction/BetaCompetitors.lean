@@ -66,8 +66,8 @@ The νPLN paper investigates whether PLN's regret relative to the true environme
 is bounded by K(PLN) + K(μ). This section formalizes what we can prove.
 
 **What we have:**
-- `D(μ || ξ) ≤ K(μ)·ln(2)` — ξ predicts μ well (Hutter)
-- `D(PLN || ξ) ≤ K(PLN)·ln(2)` — ξ predicts PLN well (note: this direction!)
+- `D(μ || ξ) ≤ log(1/c_μ)` — ξ predicts μ well, from a dominance constant `c_μ`
+- `ξ` dominates PLN with some `c_PLN > 0` once PLN is in the enumeration
 
 **The gap:** These don't directly compose to give `D(μ || PLN)`.
 - `D(μ || ξ)` measures ξ's loss on μ-data
@@ -82,8 +82,8 @@ is bounded by K(PLN) + K(μ). This section formalizes what we can prove.
 /-- **The proven chain components.**
 
 We can prove both pieces of the chain separately:
-1. D(μ || ξ) ≤ log(1/c_μ) where c_μ = 2^{-K(μ)}
-2. ξ dominates PLN with c_PLN = 2^{-K(PLN)}
+1. D(μ || ξ) ≤ log(1/c_μ) from dominance `Dominates ξ μ c_μ`
+2. ξ dominates PLN once PLN is in the enumeration (giving some `c_PLN > 0`)
 
 The composition to get D(μ || PLN) requires additional structure. -/
 theorem nupln_chain_components

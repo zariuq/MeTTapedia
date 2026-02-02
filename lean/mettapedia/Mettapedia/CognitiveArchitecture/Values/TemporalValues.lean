@@ -158,7 +158,6 @@ def missingTemporalValues : List TemporalValueType :=
 /-- All temporal values are missing from both models -/
 theorem all_temporal_missing : missingTemporalValues.length = 5 := by rfl
 
-/-- Neither model considers future generations -/
-theorem no_future_generations_support : True := trivial
+-- TODO: formalize what “support for future generations” means operationally for OpenPsi/MicroPsi.
 
 end Mettapedia.CognitiveArchitecture.Values.Temporal

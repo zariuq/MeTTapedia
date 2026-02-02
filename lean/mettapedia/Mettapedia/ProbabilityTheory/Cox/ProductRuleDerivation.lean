@@ -1199,8 +1199,7 @@ lemma g_star_continuous (c : ℝ) (hc_pos : 0 < c) (hc_lt : c < 1) :
         r₁ < r₂ →
         |r₁ - r₂| < (1 : ℚ) / N →
         |C.g_star c hc_pos hc_lt m₁ n₁ hm₁ hn₁ - C.g_star c hc_pos hc_lt m₂ n₂ hm₂ hn₂| < ε := by
-    intro m₁ n₁ m₂ n₂ hm₁ hn₁ hm₂ hn₂
-    intro r₁ r₂ hlt hdist
+    intro m₁ n₁ m₂ n₂ hm₁ hn₁ hm₂ hn₂ r₁ r₂ hlt hdist
     -- Common denominator D = n₁*n₂, with scaled numerators.
     set D : ℕ := n₁ * n₂
     set M₁ : ℕ := m₁ * n₂

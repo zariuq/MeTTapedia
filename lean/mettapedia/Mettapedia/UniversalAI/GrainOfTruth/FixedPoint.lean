@@ -120,7 +120,7 @@ theorem bayesianPosterior_sum_one (O : Oracle) (M : ReflectiveEnvironmentClass O
     have h_term : ∀ i : ℕ, prior.weight i * historyProbability (envs i) h ≤ prior.weight i := by
       intro i
       have h_prob : historyProbability (envs i) h ≤ 1 := historyProbability_le_one (envs i) h
-      simpa [mul_one] using (mul_le_mul_left' h_prob (prior.weight i))
+      simpa [mul_one] using (mul_le_mul_right h_prob (prior.weight i))
     have h_le : denom ≤ ∑' i, prior.weight i := by
       simpa [denom, mixtureProbability] using (ENNReal.tsum_le_tsum h_term)
     exact le_trans h_le prior.tsum_le_one

@@ -629,15 +629,14 @@ private theorem playerViewProbability_tsum_append_per_le {n : ℕ} (i : Fin n) (
                   have : ¬ MultiAgentHistory.playerView i (List.ofFn f ++ [JointHistElem.act ja]) =
                       h ++ [HistElem.per x] := by
                     intro hEq
-                    have hEq' :
-                        MultiAgentHistory.playerView i (List.ofFn f) ++ [HistElem.act (ja i)] =
-                          h ++ [HistElem.per x] := by
-                      simpa [MultiAgentHistory.playerView, List.map_append, JointHistElem.playerView] using hEq
-                    have hEq'' : h ++ [HistElem.act (ja i)] = h ++ [HistElem.per x] := by
-                      have hEq'' := hEq'
-                      simp [hv] at hEq''
+                    have hview_append_act :
+                        MultiAgentHistory.playerView i (List.ofFn f ++ [JointHistElem.act ja]) =
+                          MultiAgentHistory.playerView i (List.ofFn f) ++ [HistElem.act (ja i)] := by
+                      simp [MultiAgentHistory.playerView, List.map_append, JointHistElem.playerView]
+                    rw [hview_append_act] at hEq
+                    rw [hv] at hEq
                     have hsuf : [HistElem.act (ja i)] = [HistElem.per x] :=
-                      List.append_cancel_left hEq''
+                      List.append_cancel_left hEq
                     have : HistElem.act (ja i) = HistElem.per x :=
                       (List.singleton_inj.mp hsuf)
                     cases this
@@ -988,7 +987,7 @@ theorem convergence_to_equilibrium {n : ℕ} (O : Oracle)
     environmentMeasureWithPolicy_isProbability σ_i.asEnvironment (policies i) (h_stoch i)
   have hμ_univ : μT.real Set.univ = 1 := by
     letI : _root_.MeasureTheory.IsProbabilityMeasure μT := hμ_prob
-    exact _root_.MeasureTheory.measureReal_univ_eq_one (μ := μT)
+    exact _root_.MeasureTheory.probReal_univ (μ := μT)
 
   -- Define the (time-indexed) regret random variable.
   let f : ℕ → Trajectory → ℝ := fun t traj =>

@@ -2029,11 +2029,7 @@ noncomputable def toEnvironmentWithin (t : ℕ) (p : RawToPartrecEnvironmentProg
         simp
     | some x0 =>
         -- Exactly one percept has probability 1.
-        have :
-            (∑' x : Percept, (if x = x0 then (1 : ENNReal) else 0)) = 1 := by
-          simp [tsum_ite_eq]
-        -- Rewrite the sum in the form expected by `tsum_ite_eq`.
-        simpa [hpx, eq_comm] using this.le
+        simp
 
 theorem toEnvironmentWithin_prob_mono (p : RawToPartrecEnvironmentProgram) (h : History) (x : Percept) {t₁ t₂ : ℕ}
     (ht : t₁ ≤ t₂) :
@@ -2052,10 +2048,8 @@ noncomputable def toEnvironmentUnbounded (p : RawToPartrecEnvironmentProgram) : 
     | none =>
         simp
     | some x0 =>
-        have :
-            (∑' x : Percept, (if x = x0 then (1 : ENNReal) else 0)) = 1 := by
-          simp [tsum_ite_eq]
-        simpa [hpx, eq_comm] using this.le
+        -- Exactly one percept has probability 1.
+        simp
 
 /-- For a fixed history, increasing the fuel eventually stabilizes `computeWithin` to
 `computeUnbounded`. -/

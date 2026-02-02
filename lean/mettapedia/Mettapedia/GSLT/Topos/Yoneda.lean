@@ -2,7 +2,7 @@ import Mettapedia.GSLT.Core.LambdaTheoryCategory
 import Mathlib.CategoryTheory.Yoneda
 import Mathlib.CategoryTheory.Limits.Yoneda
 import Mathlib.CategoryTheory.Limits.Preserves.Yoneda
-import Mathlib.CategoryTheory.Closed.Cartesian
+import Mathlib.CategoryTheory.Monoidal.Closed.Cartesian
 
 /-!
 # Yoneda Embedding for Lambda Theories

@@ -304,7 +304,7 @@ theorem microPsi_arousal_affects_selection
       left
       simp only [MicroPsi.urge]
       apply mul_lt_mul_of_pos_left
-      · apply add_lt_add_left
+      · apply add_lt_add_right
         apply mul_lt_mul_of_pos_left h
         norm_num
       · apply mul_pos

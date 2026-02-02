@@ -117,7 +117,7 @@ theorem map_nsmul (hf : CauchyEquation f) (x : ℝ) (n : ℕ) : f (n * x) = n * 
 theorem map_zsmul (hf : CauchyEquation f) (x : ℝ) (n : ℤ) : f (n * x) = n * f x := by
   cases n with
   | ofNat m =>
-    simp only [Int.ofNat_eq_coe, Int.cast_natCast]
+    simp only [Int.ofNat_eq_natCast, Int.cast_natCast]
     exact hf.map_nsmul x m
   | negSucc m =>
     simp only [Int.cast_negSucc, neg_mul]

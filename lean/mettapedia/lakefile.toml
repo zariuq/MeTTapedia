@@ -23,3 +23,8 @@ rev = "v4.27.0"
 [[require]]
 name = "ordered_semigroups"
 path = "Mettapedia/Algebra/OrderedSemigroups"
+
+# Foundation (local dependency)
+[[require]]
+name = "Foundation"
+path = "Mettapedia/Logic/Foundation"

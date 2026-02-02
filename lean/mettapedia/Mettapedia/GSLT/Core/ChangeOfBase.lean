@@ -1,6 +1,6 @@
 import Mettapedia.GSLT.Core.LambdaTheoryCategory
 import Mathlib.Order.GaloisConnection.Defs
-import Mathlib.CategoryTheory.Limits.Shapes.Pullback.CommSq
+import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.BicartesianSq
 
 /-!
 # Change-of-Base Functors

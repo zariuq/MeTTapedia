@@ -71,16 +71,8 @@ The key safety property is that optimal policies only select optimal next polici
 def nextPolicyName (π : SelfModPolicy) (h : History) : PolicyName :=
   (π h).nextPolicyName
 
-/-- Helper: The realistic Q-value correctly anticipates the effect of self-modification.
-
-    If action a selects policy p_{t+1}, then the future value is computed using
-    ι(p_{t+1}), not the current policy. This is what makes realistic agents "realistic"
-    about the effects of self-modification. -/
-theorem realistic_anticipates_selfmod (_data : RealisticValueData)
-    (_h : History) (_a : PolicyModAction) (_n : ℕ) :
-    -- The future value uses the policy selected by a
-    True := by  -- This is a conceptual lemma, formalized in the Q definition
-  trivial
+-- TODO: add a lemma that explicitly unfolds `qValueRealistic` to show it evaluates the
+-- continuation using the *selected* next policy (not the current one).
 
 /-! ## Theorem 16: Safety of Realistic Self-Modification
 
@@ -111,19 +103,8 @@ theorem realistic_optimal_selects_optimal (data : RealisticValueData)
       qValueRealistic data h a horizon ≤ qValueRealistic data h (π h) horizon := by
   exact hopt h hwf
 
-/-- Corollary: Optimal realistic policies form a closed class under self-modification.
-
-    If we start with an optimal policy π₁, and follow the self-modification
-    chain π₁ → π₂ → π₃ → ..., all policies in the chain are optimal for u₁.
-
-    This is the key safety guarantee: the agent never "degrades" its goals. -/
-theorem realistic_optimality_preserved (_data : RealisticValueData)
-    (_π₁ : SelfModPolicy) (_horizon : ℕ)
-    (_hopt : isRealisticOptimal _data _π₁ _horizon) :
-    -- All policies reachable by self-modification are optimal
-    -- (This requires a notion of "reachable" which we capture informally)
-    True := by
-  trivial
+-- TODO: prove a reachability-closedness theorem once "reachable by self-modification"
+-- is formalized (e.g. as the reflexive-transitive closure of `nextPolicyName`).
 
 /-! ## Comparison with Other Agent Types
 

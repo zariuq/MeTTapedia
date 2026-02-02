@@ -1,9 +1,12 @@
 import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.CategoryTheory.Functor.Basic
-import Mathlib.CategoryTheory.Closed.Cartesian
+import Mathlib.CategoryTheory.Monoidal.Cartesian.Basic
+import Mathlib.CategoryTheory.Monoidal.Closed.Cartesian
+import Mathlib.CategoryTheory.Monoidal.Closed.Basic
 import Mathlib.CategoryTheory.Limits.Shapes.FiniteLimits
 import Mathlib.CategoryTheory.Limits.Constructions.Pullbacks
 import Mathlib.CategoryTheory.Limits.Preserves.Limits
+import Mathlib.CategoryTheory.Limits.Preserves.Finite
 import Mathlib.CategoryTheory.Adjunction.Basic
 import Mathlib.Order.Heyting.Basic
 import Mathlib.Order.CompleteBooleanAlgebra
@@ -127,8 +130,8 @@ structure LambdaTheoryWithEquality where
   instCategory : Category.{v} Obj
   /-- Cartesian monoidal structure (chosen finite products) -/
   instCartesianMonoidal : CartesianMonoidalCategory Obj
-  /-- Cartesian closed structure -/
-  instCartesianClosed : CartesianClosed Obj
+  /-- Monoidal closed structure (exponentials) -/
+  instMonoidalClosed : MonoidalClosed Obj
   /-- Finite limits -/
   instHasFiniteLimits : HasFiniteLimits Obj
   /-- The subobject fibration -/
@@ -136,7 +139,7 @@ structure LambdaTheoryWithEquality where
 
 attribute [instance] LambdaTheoryWithEquality.instCategory
 attribute [instance] LambdaTheoryWithEquality.instCartesianMonoidal
-attribute [instance] LambdaTheoryWithEquality.instCartesianClosed
+attribute [instance] LambdaTheoryWithEquality.instMonoidalClosed
 attribute [instance] LambdaTheoryWithEquality.instHasFiniteLimits
 
 namespace LambdaTheoryWithEquality
@@ -150,7 +153,9 @@ abbrev Sub (X : T.Obj) : Type _ := T.fibration.Sub X
 instance instFiberFrame (X : T.Obj) : Order.Frame (T.Sub X) := T.fibration.frame X
 
 /-- The exponential object (internal hom) using Mathlib's ihom -/
-def exp (X Y : T.Obj) : T.Obj := ihom X |>.obj Y
+def exp (X Y : T.Obj) : T.Obj :=
+  @Functor.obj _ _ _ _ (@ihom T.Obj T.instCategory T.instCartesianMonoidal.toMonoidalCategory
+    X (T.instMonoidalClosed.closed X)) Y
 
 /-- The product of two objects -/
 noncomputable def prod' (X Y : T.Obj) : T.Obj := Limits.prod X Y
@@ -159,7 +164,9 @@ noncomputable def prod' (X Y : T.Obj) : T.Obj := Limits.prod X Y
 noncomputable def terminal : T.Obj := ⊤_ T.Obj
 
 /-- The internal hom functor -/
-def internalHom (X : T.Obj) : T.Obj ⥤ T.Obj := ihom X
+def internalHom (X : T.Obj) : T.Obj ⥤ T.Obj :=
+  @ihom T.Obj T.instCategory T.instCartesianMonoidal.toMonoidalCategory
+    X (T.instMonoidalClosed.closed X)
 
 end LambdaTheoryWithEquality
 

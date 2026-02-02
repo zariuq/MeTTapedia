@@ -115,46 +115,51 @@ We define the interface for mutual information. The actual computation
 can be filled in later with Shannon or Kolmogorov versions.
 -/
 
-/-- Mutual information between two concepts.
-    This is the core measure of intensional inheritance.
+/-!
+To keep this file axiom-free, we package the needed information-theoretic primitives and
+laws as a typeclass. Concrete instances can later be provided by Shannon/Kolmogorov entropy
+constructions.
+-/
 
-    I(F; W) = H(W) - H(W | F)
-
-    where H is entropy (Shannon or Kolmogorov).
-
-    **Axiomatized for now** - to be connected to concrete entropy definitions. -/
-axiom mutualInfo (α : Type*) : Concept α → Concept α → ℝ
-
-/-- Mutual information is symmetric: I(F; W) = I(W; F) -/
-axiom mutualInfo_symm {α : Type*} (F W : Concept α) :
-    mutualInfo α F W = mutualInfo α W F
-
-/-- Mutual information is non-negative: I(F; W) ≥ 0 -/
-axiom mutualInfo_nonneg {α : Type*} (F W : Concept α) :
-    0 ≤ mutualInfo α F W
+/-- Interface for Goertzel-style information-theoretic inheritance. -/
+class GoertzelModel (α : Type*) where
+  /-- Mutual information `I(F;W)`. -/
+  mutualInfo : Concept α → Concept α → ℝ
+  /-- Symmetry of mutual information. -/
+  mutualInfo_symm (F W : Concept α) : mutualInfo F W = mutualInfo W F
+  /-- Nonnegativity of mutual information. -/
+  mutualInfo_nonneg (F W : Concept α) : 0 ≤ mutualInfo F W
+  /-- Prior probability `P(W)`. -/
+  priorProb : Concept α → ℝ
+  priorProb_unit (W : Concept α) : 0 ≤ priorProb W ∧ priorProb W ≤ 1
+  /-- Extensional inheritance `P(W|F)`. -/
+  extensionalInheritance : Concept α → Concept α → ℝ
+  extensionalInheritance_unit (F W : Concept α) :
+      0 ≤ extensionalInheritance F W ∧ extensionalInheritance F W ≤ 1
+  /-- Goertzel's proposed unifying identity. -/
+  goertzel_formula (F W : Concept α) :
+      extensionalInheritance F W = priorProb W * (2 : ℝ).rpow (mutualInfo F W)
 
 -- Note: Mutual information is bounded by min entropy: I(F; W) ≤ min(H(F), H(W))
--- This will need entropy definition to state properly
+-- This will need concrete entropy definitions to state properly.
 
 /-! ## §4: Inheritance Definitions -/
 
 /-- Intensional inheritance: how much information F provides about W.
     This IS mutual information. -/
-noncomputable def intensionalInheritance (α : Type*) (F W : Concept α) : ℝ :=
-  mutualInfo α F W
+noncomputable def intensionalInheritance {α : Type*} [GoertzelModel α] (F W : Concept α) : ℝ :=
+  GoertzelModel.mutualInfo F W
 
 /-- Prior probability of concept W.
-    Axiomatized - to be connected to concrete probability measures. -/
-axiom priorProb (α : Type*) : Concept α → ℝ
-
-axiom priorProb_unit {α : Type*} (W : Concept α) : 0 ≤ priorProb α W ∧ priorProb α W ≤ 1
+    To be connected to concrete probability measures. -/
+noncomputable def priorProb {α : Type*} [GoertzelModel α] : Concept α → ℝ :=
+  GoertzelModel.priorProb
 
 /-- Extensional inheritance: conditional probability P(W | F).
     "What fraction of F instances are also W instances?" -/
-axiom extensionalInheritance (α : Type*) : Concept α → Concept α → ℝ
-
-axiom extensionalInheritance_unit {α : Type*} (F W : Concept α) :
-    0 ≤ extensionalInheritance α F W ∧ extensionalInheritance α F W ≤ 1
+noncomputable def extensionalInheritance {α : Type*} [GoertzelModel α] :
+    Concept α → Concept α → ℝ :=
+  GoertzelModel.extensionalInheritance
 
 /-! ## §5: The Goertzel Unifying Formula
 
@@ -176,8 +181,10 @@ This unifies extensional and intensional inheritance under one formula.
     2. Shannon entropy definitions
     3. Derivation from Bayes' theorem + entropy identities
 -/
-axiom goertzel_formula {α : Type*} (F W : Concept α) :
-    extensionalInheritance α F W = priorProb α W * (2 : ℝ).rpow (mutualInfo α F W)
+theorem goertzel_formula {α : Type*} [GoertzelModel α] (F W : Concept α) :
+    extensionalInheritance F W =
+      priorProb W * (2 : ℝ).rpow (GoertzelModel.mutualInfo F W) :=
+  GoertzelModel.goertzel_formula F W
 
 /-! ## §6: Singleton Reduction Theorem
 
@@ -193,18 +200,18 @@ and extensional views coincide.
     This justifies using simpler set-theoretic reasoning when concepts
     are "just sets of instances" rather than rich property bundles.
 -/
-theorem singleton_reduction {α : Type*} (F W : Concept α)
+theorem singleton_reduction {α : Type*} [GoertzelModel α] (F W : Concept α)
     (_hF : F.isExtensional) (_hW : W.isExtensional)
-    (hprior_pos : priorProb α W > 0) :
+    (hprior_pos : priorProb W > 0) :
     -- In the singleton case, mutual information directly gives
     -- the log of the inheritance ratio
-    (2 : ℝ).rpow (intensionalInheritance α F W) =
-    extensionalInheritance α F W / priorProb α W := by
+    (2 : ℝ).rpow (intensionalInheritance F W) =
+    extensionalInheritance F W / priorProb W := by
   unfold intensionalInheritance
   -- From goertzel_formula: ext = prior * 2^I
   -- So 2^I = ext / prior
   have h := goertzel_formula F W
-  have hprior : priorProb α W ≠ 0 := ne_of_gt hprior_pos
+  have hprior : priorProb W ≠ 0 := ne_of_gt hprior_pos
   field_simp [hprior] at h ⊢
   linarith [h]
 

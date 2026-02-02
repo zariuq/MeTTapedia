@@ -269,7 +269,7 @@ theorem temporal_transitivity (a b c : Q) (t₁ t₂ : T) :
   have mp1 := modusPonens_left a (shift t₁ b)
   have step2 : (leftResiduate a (shift t₁ b) * a) * leftResiduate (shift t₁ b) (shift (t₁ + t₂) c)
              ≤ (shift t₁ b) * leftResiduate (shift t₁ b) (shift (t₁ + t₂) c) :=
-    mul_le_mul_right' mp1 _
+    mul_le_mul_left mp1 _
   -- By modus ponens again: (shift t₁ b ⇨ shift (t₁+t₂) c) * shift t₁ b ≤ shift (t₁+t₂) c
   have mp2 := modusPonens_left (shift t₁ b) (shift (t₁ + t₂) c)
   have step3 : (shift t₁ b) * leftResiduate (shift t₁ b) (shift (t₁ + t₂) c)

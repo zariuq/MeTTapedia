@@ -198,7 +198,9 @@ structure LambdaEquation where
     For now, we define this abstractly as a set of equations.
 -/
 def GraphModel.theory (_D : GraphModel) : Set LambdaEquation :=
-  { _eq | True }  -- Placeholder; needs interpretation function
+  by
+    -- TODO: Define an interpretation of lambda terms in `D` and define validity of equations.
+    sorry
 
 /-! ## Properties of Graph Theories
 
@@ -213,8 +215,9 @@ Key properties from Bucciarelli-Salibra:
     where Ω = (λx.xx)(λx.xx) is the paradigmatic unsolvable term.
 -/
 def LambdaTheorySensible (_T : Set LambdaEquation) : Prop :=
-  -- Placeholder: would check that omega = arbitrary unsolvable
-  True
+  by
+    -- TODO: Formalize unsolvability for lambda terms and state sensibility accordingly.
+    sorry
 
 /-- A lambda-theory is semisensible if unsolvable terms only equal unsolvables.
 
@@ -222,8 +225,9 @@ def LambdaTheorySensible (_T : Set LambdaEquation) : Prop :=
     but we don't require them all to be equal.
 -/
 def LambdaTheorySemisensible (_T : Set LambdaEquation) : Prop :=
-  -- Placeholder: unsolvable = term implies term is unsolvable
-  True
+  by
+    -- TODO: Formalize "unsolvable terms only equal unsolvables".
+    sorry
 
 /-! ## Summary
 

@@ -204,13 +204,8 @@ This is why the paper recommends against hedonistic value functions for
 self-modifying AI systems.
 -/
 
-/-- A hedonistic agent with the ability to self-modify will eventually
-    have utility maxUtility (informal statement).
-
-    Formally: There exists a time t such that the agent's utility is maxUtility
-    after t, assuming the agent acts to maximize hedonistic value. -/
-theorem hedonistic_converges_to_maxUtility :
-    True := by  -- Placeholder for informal statement
-  trivial
+-- TODO: once the environment/policy dynamics are modeled, prove a convergence theorem:
+-- a hedonistic agent with self-modification will select the `maxUtility` modification
+-- (the formal version of the informal argument in Everitt et al.).
 
 end Mettapedia.UniversalAI.SelfModification

@@ -737,13 +737,10 @@ lemma sum_choose_smul_bernsteinPolynomial (n r : ℕ) :
           omega
         have ht'' : t < n - r + 1 := by simpa [hlen] using ht'
         exact Nat.lt_succ_iff.mp ht''
-      have hle : r + t ≤ n := by
-        -- simple arithmetic; `omega` handles the Nat inequalities
-        omega
       have hrle : r ≤ r + t := Nat.le_add_right _ _
       have hnat : n.choose (r + t) * (r + t).choose r =
           n.choose r * (n - r).choose (r + t - r) :=
-        Nat.choose_mul (n := n) (k := r + t) (s := r) hle hrle
+        Nat.choose_mul (n := n) (k := r + t) (s := r) hrle
       have hsub : r + t - r = t := Nat.add_sub_cancel_left _ _
       exact_mod_cast (by simpa [hsub] using hnat)
     -- Apply the binomial theorem on `x + (1-x)`.

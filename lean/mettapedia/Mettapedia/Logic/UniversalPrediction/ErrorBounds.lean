@@ -821,13 +821,15 @@ theorem error_bound_main (μ : PrefixMeasure) (ξ : Semimeasure) (n : ℕ) :
     calc S ^ 2 + 4 * E * S
         = S ^ 2 + 4 * E * S + 0 := by ring
       _ ≤ S ^ 2 + 4 * E * S + 2 * S * Real.sqrt (4 * E * S) := by
-          apply add_le_add_left
+          apply add_le_add_right
           apply mul_nonneg (mul_nonneg (by norm_num : (0:ℝ) ≤ 2) hS_nonneg') (Real.sqrt_nonneg _)
-      _ = S ^ 2 + 2 * S * Real.sqrt (4 * E * S) + Real.sqrt (4 * E * S) ^ 2 := by rw [hsq4ES]; ring
+      _ = S ^ 2 + 2 * S * Real.sqrt (4 * E * S) + Real.sqrt (4 * E * S) ^ 2 := by
+          rw [hsq4ES]
+          ring
       _ = (S + Real.sqrt (4 * E * S)) ^ 2 := by ring
   -- Combine: δ ≤ S + √(S² + 4ES) ≤ S + S + √(4ES) = 2S + √(4ES)
   calc δ ≤ S + Real.sqrt (S ^ 2 + 4 * E * S) := hδ_le_root
-    _ ≤ S + (S + Real.sqrt (4 * E * S)) := add_le_add_left hsqrt_triangle S
+    _ ≤ S + (S + Real.sqrt (4 * E * S)) := add_le_add_right hsqrt_triangle S
     _ = Real.sqrt (4 * E * S) + 2 * S := by ring
 
 /-- Corollary: Under dominance, error regret is bounded by log(1/c).

@@ -423,10 +423,10 @@ lemma cyl_comp_cast (X : ℕ → Ω → Bool) {m n : ℕ} (h : m = n) (xs : Fin 
   · intro hx j
     have hj := hx (Fin.cast h.symm j)
     -- `Fin.cast` preserves `.val`, and `Fin.cast h (Fin.cast h.symm j) = j`.
-    simpa [cyl, Fin.coe_cast] using hj
+    simpa [cyl, Fin.val_cast] using hj
   · intro hx i
     have hi := hx (Fin.cast h i)
-    simpa [cyl, Fin.coe_cast] using hi
+    simpa [cyl, Fin.val_cast] using hi
 
 /-- Restricting `zerosThenOnes n (k+1)` to its first `n+k` indices recovers `zerosThenOnes n k`. -/
 lemma zerosThenOnes_castAdd (n k : ℕ) (i : Fin (n + k)) :

@@ -134,7 +134,7 @@ theorem xi_superadditive {ι : Type*} (ν : ι → Semimeasure) (w : ι → ENNR
           w i * ν i (x ++ [false]) + w i * ν i (x ++ [true])
               = w i * (ν i (x ++ [false]) + ν i (x ++ [true])) := by simp [mul_add]
           _ ≤ w i * ν i x := by
-              exact mul_le_mul_left' ((ν i).superadditive' x) (w i)
+              exact mul_le_mul_right ((ν i).superadditive' x) (w i)
 
 /-- The mixture root mass is bounded by the sum of weights. -/
 theorem xi_root_le_tsum_weights {ι : Type*} (ν : ι → Semimeasure) (w : ι → ENNReal) :
@@ -142,7 +142,7 @@ theorem xi_root_le_tsum_weights {ι : Type*} (ν : ι → Semimeasure) (w : ι �
   unfold xiFun
   have hterm : ∀ i, w i * ν i [] ≤ w i := by
     intro i
-    simpa using (mul_le_mul_left' ((ν i).root_le_one') (w i))
+    simpa using (mul_le_mul_right ((ν i).root_le_one') (w i))
   simpa using (ENNReal.tsum_le_tsum hterm)
 
 /-- If the weights sum to at most 1, the mixture is a semimeasure. -/
@@ -268,7 +268,7 @@ theorem xiFun_eq_zero_of_eq_zero {ι : Type*} (ν : ι → Semimeasure) (w : ι 
   refine (ENNReal.tsum_eq_zero).2 ?_
   intro i
   have hmono : ν i (x ++ y) ≤ ν i x := (ν i).mono_append x y
-  have hle : w i * ν i (x ++ y) ≤ w i * ν i x := mul_le_mul_left' hmono (w i)
+  have hle : w i * ν i (x ++ y) ≤ w i * ν i x := mul_le_mul_right hmono (w i)
   have : w i * ν i (x ++ y) ≤ 0 := by simpa [hterm0 i] using hle
   exact le_antisymm this (by simp)
 
@@ -412,7 +412,7 @@ theorem xiKpfSemimeasure_mul_le_of_invariance (U V : PrefixFreeMachine) [Univers
     have hw : kpfWeight (U := V) i * (2 : ENNReal) ^ (-(c : ℤ)) ≤ kpfWeight (U := U) i := hc i
     have hw' :
         (kpfWeight (U := V) i * (2 : ENNReal) ^ (-(c : ℤ))) * ν i x ≤ kpfWeight (U := U) i * ν i x :=
-      mul_le_mul_right' hw (ν i x)
+      mul_le_mul_left hw (ν i x)
     simpa [mul_assoc, mul_left_comm, mul_comm] using hw'
   calc
     (2 : ENNReal) ^ (-(c : ℤ)) * (xiKpfSemimeasure (U := V) ν) x

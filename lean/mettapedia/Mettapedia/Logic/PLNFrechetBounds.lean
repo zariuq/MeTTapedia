@@ -147,7 +147,7 @@ theorem conditional_lower_bound_from_frechet
     -- Use that μ.real (A ∪ B) ≤ 1 and inclusion-exclusion
     have h_union_le_one : μ.real (A ∪ B) ≤ 1 := by
       have h := measureReal_mono (μ := μ) (Set.subset_univ (A ∪ B))
-      simp only [measureReal_univ_eq_one] at h
+      simp only [MeasureTheory.probReal_univ] at h
       exact h
     -- Use inclusion-exclusion in real form
     have h_incl_excl_real : μ.real A + μ.real B = μ.real (A ∪ B) + μ.real (A ∩ B) := by

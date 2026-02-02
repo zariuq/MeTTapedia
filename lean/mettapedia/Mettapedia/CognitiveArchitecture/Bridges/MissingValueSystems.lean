@@ -169,12 +169,9 @@ def affiliationIsGeneric : Prop :=
   -- It's just a scalar "social need level", not a relational structure
   True
 
-/-- Neither model has individual-specific relationships -/
-theorem no_relational_values :
-    ∀ _ : RelationalValue,
-    -- Both models only have scalar demands, not relationship graphs
-    True := by
-  intro _; trivial
+-- Neither model has individual-specific relationships.
+-- TODO: If/when we formalize "relational state" (e.g. a social graph), prove that the
+-- current model interfaces cannot express relational values (they expose only scalar demands).
 
 /-! ## Part 5: Temporal and Legacy Values
 
@@ -193,11 +190,9 @@ inductive TemporalValue where
 /-- Both models are present-focused (current satisfaction) -/
 def modelTimeHorizon : String := "present satisfaction only"
 
-/-- Neither model has explicit future discounting or legacy values -/
-theorem no_temporal_values :
-    -- Both models optimize current demand satisfaction
-    -- No mechanism for caring about distant future
-    True := trivial
+-- Neither model has explicit future discounting or legacy values.
+-- TODO: If/when we add a temporal model (discounting / planning horizon), prove that the current
+-- demand-based interfaces cannot express temporal/legacy values.
 
 /-! ## Part 6: Meta-Values and Value Learning
 
@@ -212,11 +207,9 @@ inductive MetaValue where
   | moralProgress : MetaValue        -- Improving one's values over time
   deriving DecidableEq, Repr
 
-/-- Neither model supports value learning or moral uncertainty -/
-theorem no_meta_values :
-    -- Demand importance weights are fixed parameters
-    -- No mechanism for updating values based on experience
-    True := trivial
+-- Neither model supports value learning or moral uncertainty.
+-- TODO: If/when we formalize value-updating dynamics, prove that the current parameterization
+-- (fixed demand weights) cannot express meta-values like value learning or moral uncertainty.
 
 /-! ## Summary: Critical Gaps in Both Models
 

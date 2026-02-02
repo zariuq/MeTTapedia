@@ -1,11 +1,11 @@
 import Mettapedia.UniversalAI.GodelMachine.Basic
+import Mettapedia.UniversalAI.GodelMachine.FoundationBridge
 import Mettapedia.UniversalAI.GodelMachine.ProofSystem
 import Mettapedia.UniversalAI.GodelMachine.SelfImprovement
 import Mettapedia.UniversalAI.GodelMachine.SolomonoffBridge
 import Mettapedia.UniversalAI.GodelMachine.PLNSpecialCase
--- TODO: Foundation integration paused due to mathlib version incompatibility
--- FoundationBridge.lean exists but requires fixing Foundation for mathlib v4.25.0
--- See: Mettapedia/Logic/Foundations/ for the (currently non-compiling) source
+-- NOTE: The external `Foundation` package is wired in via `lakefile.toml`. The bridge module
+-- above keeps GödelMachine changes minimal while ensuring the dependency stays buildable.
 
 /-!
 # The Gödel Machine: Provably Optimal Self-Improvement

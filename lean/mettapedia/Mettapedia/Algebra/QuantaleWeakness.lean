@@ -421,7 +421,7 @@ theorem probWeakness_distinction_eq_logicalEntropy (pw : ProbWeight U) :
           ≤ ∑ u : U, pw.μ u * 1 := by
             apply Finset.sum_le_sum
             intro u _
-            exact mul_le_mul_left' (hbound u) _
+            exact mul_le_mul_right (hbound u) _
         _ = ∑ u : U, pw.μ u := by simp only [mul_one]
         _ = 1 := pw.sum_one
     exact ne_top_of_le_ne_top ENNReal.one_ne_top hle
@@ -609,7 +609,7 @@ theorem residuate_galois (x y z : Q) :
   · intro h
     exact le_sSup h
   · intro h
-    calc z * x ≤ (leftResiduate x y) * x := mul_le_mul_right' h x
+    calc z * x ≤ (leftResiduate x y) * x := mul_le_mul_left h x
          _ = sSup {z | z * x ≤ y} * x := rfl
          _ = ⨆ w ∈ {z | z * x ≤ y}, w * x := IsQuantale.sSup_mul_distrib _ _
          _ ≤ y := by
@@ -704,7 +704,7 @@ theorem quantaleImplies_antimono_left {A B : Q} (C : Q) (h : A ≤ B) :
   unfold quantaleImplies leftResiduate
   apply sSup_le_sSup
   intro z hz
-  calc z * A ≤ z * B := mul_le_mul_left' h z
+  calc z * A ≤ z * B := mul_le_mul_right h z
        _ ≤ C := hz
 
 /-- **Lower Bound Inference (Commutative Quantales)**
@@ -758,7 +758,7 @@ theorem quantaleImplies_curry {Q : Type*} [CommSemigroup Q] [CompleteLattice Q] 
     calc A * (quantaleImplies A (quantaleImplies B C) * B)
         = (A * quantaleImplies A (quantaleImplies B C)) * B := by rw [mul_assoc]
       _ ≤ quantaleImplies B C * B := by
-          apply mul_le_mul_right'
+          apply mul_le_mul_left
           exact modusPonens A (quantaleImplies B C)
       _ ≤ C := modusPonens' B C
 
@@ -782,7 +782,7 @@ theorem quantaleImplies_trans {Q : Type*} [CommSemigroup Q] [CompleteLattice Q] 
   rw [heq]
   calc quantaleImplies B C * (quantaleImplies A B * A)
       ≤ quantaleImplies B C * B := by
-        apply mul_le_mul_left'
+        apply mul_le_mul_right
         exact modusPonens_left A B
     _ ≤ C := modusPonens' B C
 

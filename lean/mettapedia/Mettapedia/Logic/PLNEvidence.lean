@@ -2,7 +2,11 @@ import Mathlib.Algebra.Order.Quantale
 import Mathlib.Data.ENNReal.Basic
 import Mathlib.Data.ENNReal.Operations
 import Mathlib.Data.ENNReal.Inv
+import Mathlib.Data.NNReal.Defs
 import Mettapedia.Logic.PLNDeduction
+import Mettapedia.Logic.EvidenceClass
+
+open scoped NNReal
 
 /-!
 # PLN Evidence Counts as a Quantale
@@ -403,9 +407,66 @@ Uses a prior parameter κ > 0.
 variable (κ : ℝ≥0∞) -- Prior/context size parameter
 
 /-- Convert evidence counts to strength: s = n⁺ / (n⁺ + n⁻)
-    Returns 0 if total evidence is 0 (undefined case). -/
+    Returns 0 if total evidence is 0 (undefined case).
+
+    Note: This is the "improper prior" case (α₀ = β₀ = 0).
+    For context-aware strength, use `strengthWith`. -/
 noncomputable def toStrength (e : Evidence) : ℝ≥0∞ :=
   if e.total = 0 then 0 else e.pos / e.total
+
+/-! ### Context-Aware Strength (Modal Evidence Theory)
+
+The strength formula depends on the interpretation context (prior parameters).
+The improper prior (α₀ = β₀ = 0) gives the "self-contained" formula above.
+-/
+
+open Mettapedia.Logic.EvidenceClass in
+/-- Context-aware strength computation.
+    This is the full Bayesian posterior mean for a Beta(α₀, β₀) prior:
+    strength = (α₀ + pos) / (α₀ + β₀ + pos + neg)
+
+    When ctx is the improper prior (α₀ = β₀ = 0), this equals `toStrength`. -/
+noncomputable def strengthWith (ctx : BinaryContext) (e : Evidence) : ℝ≥0∞ :=
+  (ctx.α₀ + e.pos) / (ctx.α₀ + ctx.β₀ + e.pos + e.neg)
+
+open Mettapedia.Logic.EvidenceClass in
+/-- The improper prior gives the same result as `toStrength`.
+    This is the backward-compatibility theorem. -/
+theorem strengthWith_improper (e : Evidence) :
+    strengthWith BinaryContext.improper e = toStrength e := by
+  unfold strengthWith toStrength BinaryContext.improper total
+  simp only [zero_add]
+  split_ifs with h
+  · -- e.pos + e.neg = 0 in ENNReal means e.pos = 0 and e.neg = 0
+    simp only [add_eq_zero] at h
+    simp only [h.1, ENNReal.zero_div]
+  · rfl
+
+-- Helper lemma: 0.5 + 0.5 = 1 in ℝ≥0∞
+-- ENNReal numeric literals are coercions from NNReal
+private lemma ennreal_half_add_half : (0.5 : ℝ≥0∞) + 0.5 = 1 := by
+  have eq1 : (0.5 : ℝ≥0∞) + 0.5 = (↑(0.5 : ℝ≥0) : ℝ≥0∞) + ↑(0.5 : ℝ≥0) := rfl
+  have eq2 : (↑(0.5 : ℝ≥0) : ℝ≥0∞) + ↑(0.5 : ℝ≥0) = ↑((0.5 : ℝ≥0) + (0.5 : ℝ≥0)) :=
+    (ENNReal.coe_add _ _).symm
+  have eq3 : ((0.5 : ℝ≥0) + (0.5 : ℝ≥0)) = (1 : ℝ≥0) := by
+    ext; simp only [NNReal.coe_add, NNReal.coe_one]; norm_num
+  calc (0.5 : ℝ≥0∞) + 0.5
+      = ↑((0.5 : ℝ≥0) + 0.5) := by rw [eq1, eq2]
+    _ = ↑(1 : ℝ≥0) := by rw [eq3]
+    _ = 1 := rfl
+
+open Mettapedia.Logic.EvidenceClass in
+/-- With the Jeffreys prior (α₀ = β₀ = 0.5), the formula adds 0.5 to each count.
+    This is a "minimax" prior that minimizes worst-case prediction error. -/
+theorem strengthWith_jeffreys (e : Evidence) :
+    strengthWith BinaryContext.jeffreys e =
+    (0.5 + e.pos) / (1 + e.pos + e.neg) := by
+  unfold strengthWith BinaryContext.jeffreys
+  congr 1
+  -- Goal: 0.5 + 0.5 + e.pos + e.neg = 1 + e.pos + e.neg
+  calc (0.5 : ℝ≥0∞) + 0.5 + e.pos + e.neg
+      = (0.5 + 0.5) + e.pos + e.neg := by ring
+    _ = 1 + e.pos + e.neg := by rw [ennreal_half_add_half]
 
 /-- Convert evidence counts to confidence: c = total / (total + κ)
     Higher total evidence → higher confidence (approaches 1 as evidence → ∞) -/
@@ -849,5 +910,178 @@ can be algorithmically generated from rewrite systems. For PLN:
 - Williams & Stay, "Native Type Theory" - topos-theoretic foundations
 - Lawvere, "Metric spaces, generalized logic, and closed categories" (1973)
 -/
+
+/-! ## Meta-Evidence: Learning Hyperparameters (AGI Layer)
+
+For AGI applications, hyperparameters themselves need to be learned from prediction accuracy.
+This requires evidence about evidence (meta-level).
+
+The key insight: meta-evidence records how well our context (prior) predicted outcomes.
+If predictions are systematically off, we adjust the prior.
+-/
+
+open Mettapedia.Logic.EvidenceClass in
+/-- A single prediction record: context, evidence, predicted strength, actual outcome -/
+structure PredictionRecord where
+  /-- The context used for prediction -/
+  ctx : BinaryContext
+  /-- The evidence at prediction time -/
+  evidence : Evidence
+  /-- The predicted probability (strength with context) -/
+  prediction : ℝ≥0∞
+  /-- The actual outcome: true = positive, false = negative -/
+  actual : Bool
+
+instance : Inhabited PredictionRecord :=
+  ⟨⟨default, default, 0, false⟩⟩
+
+namespace PredictionRecord
+
+open Mettapedia.Logic.EvidenceClass in
+/-- Create a prediction record from context and evidence -/
+noncomputable def make (ctx : BinaryContext) (e : Evidence) (actual : Bool) : PredictionRecord :=
+  ⟨ctx, e, Evidence.strengthWith ctx e, actual⟩
+
+/-- The prediction error: |prediction - actual| where actual ∈ {0, 1} -/
+noncomputable def error (r : PredictionRecord) : ℝ≥0∞ :=
+  if r.actual then 1 - r.prediction else r.prediction
+
+/-- Squared error for Brier score -/
+noncomputable def squaredError (r : PredictionRecord) : ℝ≥0∞ :=
+  (error r) * (error r)
+
+end PredictionRecord
+
+/-- Meta-evidence: a list of prediction records for learning priors -/
+structure BinaryMetaEvidence where
+  /-- List of prediction records -/
+  records : List PredictionRecord
+
+instance : Inhabited BinaryMetaEvidence := ⟨⟨[]⟩⟩
+
+namespace BinaryMetaEvidence
+
+/-- Empty meta-evidence -/
+def empty : BinaryMetaEvidence := ⟨[]⟩
+
+/-- Add a prediction record -/
+def add (m : BinaryMetaEvidence) (r : PredictionRecord) : BinaryMetaEvidence :=
+  ⟨r :: m.records⟩
+
+/-- Combine two meta-evidence collections (metaHplus) -/
+def hplus (m₁ m₂ : BinaryMetaEvidence) : BinaryMetaEvidence :=
+  ⟨m₁.records ++ m₂.records⟩
+
+/-- Number of prediction records -/
+def count (m : BinaryMetaEvidence) : ℕ := m.records.length
+
+/-- Sum of errors across all predictions -/
+noncomputable def totalError (m : BinaryMetaEvidence) : ℝ≥0∞ :=
+  m.records.foldl (fun acc r => acc + r.error) 0
+
+/-- Mean error (average prediction error) -/
+noncomputable def meanError (m : BinaryMetaEvidence) : ℝ≥0∞ :=
+  if m.count = 0 then 0 else m.totalError / m.count
+
+/-- Count of true positives (predicted high, was true) -/
+noncomputable def truePositives (m : BinaryMetaEvidence) (threshold : ℝ≥0∞ := 0.5) : ℕ :=
+  m.records.countP (fun r => r.prediction > threshold && r.actual)
+
+/-- Count of false positives (predicted high, was false) -/
+noncomputable def falsePositives (m : BinaryMetaEvidence) (threshold : ℝ≥0∞ := 0.5) : ℕ :=
+  m.records.countP (fun r => r.prediction > threshold && !r.actual)
+
+/-- Count of true negatives (predicted low, was false) -/
+noncomputable def trueNegatives (m : BinaryMetaEvidence) (threshold : ℝ≥0∞ := 0.5) : ℕ :=
+  m.records.countP (fun r => r.prediction ≤ threshold && !r.actual)
+
+/-- Count of false negatives (predicted low, was true) -/
+noncomputable def falseNegatives (m : BinaryMetaEvidence) (threshold : ℝ≥0∞ := 0.5) : ℕ :=
+  m.records.countP (fun r => r.prediction ≤ threshold && r.actual)
+
+end BinaryMetaEvidence
+
+/-! ### Context Update Rule
+
+The update rule adjusts α₀ and β₀ based on prediction accuracy.
+A simple approach: if predictions are too high on average, increase β₀ (more prior mass toward 0).
+If too low, increase α₀ (more prior mass toward 1).
+
+More sophisticated approaches (empirical Bayes, moment matching) are possible.
+-/
+
+open Mettapedia.Logic.EvidenceClass in
+/-- Simple context update: adjust priors based on mean error direction.
+    If predictions are systematically high (false positives), increase β₀.
+    If predictions are systematically low (false negatives), increase α₀.
+
+    Learning rate η controls how fast we update (default: 0.1).
+-/
+noncomputable def updateBinaryContext
+    (ctx : BinaryContext) (metaEv : BinaryMetaEvidence) (η : ℝ≥0∞ := 0.1) : BinaryContext :=
+  if metaEv.count = 0 then ctx else
+  -- Count false positives and false negatives to determine direction
+  let fp := metaEv.falsePositives
+  let fn := metaEv.falseNegatives
+  -- If more false positives, predictions are too high → increase β₀
+  -- If more false negatives, predictions are too low → increase α₀
+  if fp > fn then
+    ⟨ctx.α₀, ctx.β₀ + η * (fp - fn)⟩
+  else if fn > fp then
+    ⟨ctx.α₀ + η * (fn - fp), ctx.β₀⟩
+  else
+    ctx
+
+/-- BinaryContext is MetaLearnable from BinaryMetaEvidence -/
+noncomputable instance :
+    Mettapedia.Logic.EvidenceClass.MetaLearnable
+      Mettapedia.Logic.EvidenceClass.BinaryContext
+      BinaryMetaEvidence where
+  updateContext := fun ctx metaEv => updateBinaryContext ctx metaEv
+  metaHplus := BinaryMetaEvidence.hplus
+
+/-! ### Meta-Evidence Properties -/
+
+/-- hplus is associative for meta-evidence -/
+theorem metaHplus_assoc (m₁ m₂ m₃ : BinaryMetaEvidence) :
+    BinaryMetaEvidence.hplus (BinaryMetaEvidence.hplus m₁ m₂) m₃ =
+    BinaryMetaEvidence.hplus m₁ (BinaryMetaEvidence.hplus m₂ m₃) := by
+  unfold BinaryMetaEvidence.hplus
+  simp only [List.append_assoc]
+
+/-- Empty is the identity for hplus -/
+theorem metaHplus_empty_left (m : BinaryMetaEvidence) :
+    BinaryMetaEvidence.hplus BinaryMetaEvidence.empty m = m := by
+  unfold BinaryMetaEvidence.hplus BinaryMetaEvidence.empty
+  simp only [List.nil_append]
+
+theorem metaHplus_empty_right (m : BinaryMetaEvidence) :
+    BinaryMetaEvidence.hplus m BinaryMetaEvidence.empty = m := by
+  unfold BinaryMetaEvidence.hplus BinaryMetaEvidence.empty
+  simp only [List.append_nil]
+
+/-- Count is additive under hplus -/
+theorem count_hplus (m₁ m₂ : BinaryMetaEvidence) :
+    (BinaryMetaEvidence.hplus m₁ m₂).count = m₁.count + m₂.count := by
+  unfold BinaryMetaEvidence.hplus BinaryMetaEvidence.count
+  simp only [List.length_append]
+
+/-- Helper: foldl with addition can shift the base -/
+private theorem foldl_add_shift {α : Type*} [AddCommMonoid α] (f : PredictionRecord → α)
+    (b : α) (l : List PredictionRecord) :
+    List.foldl (fun acc r => acc + f r) b l = b + List.foldl (fun acc r => acc + f r) 0 l := by
+  induction l generalizing b with
+  | nil => simp
+  | cons x xs ih =>
+    simp only [List.foldl_cons, zero_add]
+    rw [ih (b + f x), ih (f x)]
+    rw [add_assoc]
+
+/-- Total error is additive under hplus (semantically commutative) -/
+theorem totalError_hplus (m₁ m₂ : BinaryMetaEvidence) :
+    (BinaryMetaEvidence.hplus m₁ m₂).totalError = m₁.totalError + m₂.totalError := by
+  unfold BinaryMetaEvidence.hplus BinaryMetaEvidence.totalError
+  simp only [List.foldl_append]
+  exact foldl_add_shift PredictionRecord.error _ _
 
 end Mettapedia.Logic.PLNEvidence

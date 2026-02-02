@@ -13,7 +13,7 @@ import Mathlib.Dynamics.Ergodic.MeasurePreserving
 import Mathlib.Analysis.SumIntegralComparisons
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Analysis.Calculus.FDeriv.Basic
-import Mathlib.Topology.Semicontinuous
+import Mathlib.Topology.Semicontinuity.Basic
 import Mathlib.Data.ENNReal.Basic
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Probability.Kernel.IonescuTulcea.Traj

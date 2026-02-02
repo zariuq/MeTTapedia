@@ -189,14 +189,10 @@ theorem pln_godelMachine_efficient_prediction (G : PLNGodelMachine) :
     G.plnEnv.state.total ≥ 0 := by
   exact Nat.zero_le _
 
-/-- For exchangeable binary domains, PLN achieves optimal prediction. -/
-theorem pln_optimal_for_exchangeable (_G : PLNGodelMachine)
-    (_M : RestrictedSolomonoffPrior) (_h : BinString)
-    (_hstate : historyToPLNState _h = _G.plnEnv.state) :
-    -- PLN prediction approximates Solomonoff prediction for exchangeable domains
-    -- (The Solomonoff predictor restricted to exchangeable equals the PLN predictor)
-    True := by
-  trivial  -- Detailed proof requires more machinery
+-- TODO: For exchangeable binary domains, connect the Gödel-machine-level story to the proven νPLN
+-- results:
+-- `Mettapedia.Logic.SolomonoffExchangeable.solomonoff_exchangeable_counts_sufficient`
+-- and the Beta/PLN optimality lemmas in `Mettapedia.Logic.EvidenceBeta`.
 
 /-! ## Part 6: Complexity Comparison
 
@@ -247,21 +243,12 @@ Provably Optimal for Exchangeable Tasks
     for exchangeable domains, as used in ε-metta/νPLN. -/
 theorem pln_godelMachine_optimal_for_exchangeable (_G : PLNGodelMachine)
     (_hrealistic : _G.toGodelMachineState.isQreOptimal) :
-    -- The PLN Gödel Machine achieves several optimality properties:
-    -- 1. Safe modifications (from realistic agent framework)
-    True ∧
-    -- 2. Efficient prediction (O(1) time and space)
-    (∀ s : PLNState, ∀ b : Bool, (s.update b).total = s.total + 1) ∧
-    -- 3. Approximately optimal prediction for exchangeable domains
-    True := by
-  constructor
-  · trivial
-  constructor
-  · intro s b
-    simp only [PLNState.update, PLNState.total]
-    cases b
-    case false => simp only [Bool.false_eq_true, ↓reduceIte]; ring
-    case true => simp only [↓reduceIte]; ring
-  · trivial
+    (∀ s : PLNState, ∀ b : Bool, (s.update b).total = s.total + 1) := by
+  intro s b
+  -- Purely a syntactic property of `PLNState.update`.
+  simp only [PLNState.update, PLNState.total]
+  cases b
+  case false => simp only [Bool.false_eq_true, ↓reduceIte]; ring
+  case true => simp only [↓reduceIte]; ring
 
 end Mettapedia.UniversalAI.GodelMachine.PLNSpecialCase

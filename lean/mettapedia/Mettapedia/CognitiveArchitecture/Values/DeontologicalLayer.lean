@@ -216,9 +216,7 @@ theorem no_deontology_support :
     openPsiHasDeontology = false ∧ microPsiHasDeontology = false := by
   constructor <;> rfl
 
-/-- All universal duties are absent from both models -/
-theorem all_duties_missing :
-    ∀ _ : UniversalDuty, True := by
-  intro _; trivial
+-- TODO: if/when we formalize OpenPsi/MicroPsi as value systems with explicit duty hooks,
+-- prove that there is no way to represent any `UniversalDuty` in either model.
 
 end Mettapedia.CognitiveArchitecture.Values.Deontological

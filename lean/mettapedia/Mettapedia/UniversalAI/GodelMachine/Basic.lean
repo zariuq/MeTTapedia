@@ -54,8 +54,8 @@ abbrev Formula := Prop
 /-- A proof witness is evidence that a formula is provable.
     In practice, this could be a proof tree, Gödel number of a proof, etc. -/
 structure ProofWitness (φ : Formula) where
-  /-- The proof exists (we don't require constructive extraction) -/
-  exists_proof : True  -- Placeholder; refined in ProofSystem.lean
+  /-- A Lean proof (stand-in for a concrete encoded proof object). -/
+  proof : φ
 
 /-- A formal proof system with axioms, inference rules, and provability. -/
 structure FormalSystem where

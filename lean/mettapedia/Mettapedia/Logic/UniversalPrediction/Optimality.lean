@@ -1,6 +1,10 @@
 import Mathlib.Topology.Instances.ENNReal.Lemmas
 import Mathlib.Data.ENNReal.BigOperators
+import Mathlib.Algebra.Order.Floor.Semiring
+import Mathlib.Analysis.SpecificLimits.Basic
 import Mettapedia.Logic.UniversalPrediction.LossBounds
+import Mettapedia.Logic.UniversalPrediction.HutterEnumerationTheorem
+import Mettapedia.Logic.UniversalPrediction.OptimalWeights
 
 /-!
 # Optimality and Pareto Results (Hutter 2005, Sections 3.5-3.6)
@@ -238,7 +242,7 @@ instance : DecidablePred (matchesTarget target) := fun x =>
 private lemma List.ofFn_succ_append' (n : ℕ) (f : ℕ → Bool) :
     (List.ofFn fun i : Fin (n + 1) => f i.val) = (List.ofFn fun i : Fin n => f i.val) ++ [f n] := by
   rw [List.ofFn_succ', List.concat_eq_append]
-  simp only [Fin.coe_castSucc, Fin.val_last]
+  simp only [Fin.val_castSucc, Fin.val_last]
 
 /-- Lemma: matchesTarget for x++[b] iff matchesTarget x and b = target |x|. -/
 private lemma matchesTarget_append (target : ℕ → Bool) (x : BinString) (b : Bool) :
@@ -252,7 +256,7 @@ private lemma matchesTarget_append (target : ℕ → Bool) (x : BinString) (b : 
   have hconv : List.ofFn (fun i : Fin (x ++ [b]).length => target i.val) =
                List.ofFn (fun i : Fin (x.length + 1) => target i.val) := by
     have := List.ofFn_congr hlen (fun i : Fin (x ++ [b]).length => target i.val)
-    simp only [Fin.coe_cast] at this
+    simp only [Fin.val_cast] at this
     exact this
   constructor
   · intro h
@@ -263,7 +267,7 @@ private lemma matchesTarget_append (target : ℕ → Bool) (x : BinString) (b : 
     exact ⟨h1, h2⟩
   · intro ⟨hx, hb⟩
     rw [hconv, key, hx, hb]
-    simp only [List.length_ofFn, Fin.coe_cast]
+    simp only [List.length_ofFn, Fin.val_cast]
 
 /-- Helper: A deterministic measure concentrated on a single sequence.
     Given a target bit function `target : ℕ → Bool`, this measure assigns
@@ -508,7 +512,7 @@ theorem universal_pareto_optimal (ξ : Semimeasure)
         · simp
         · intro i hi _
           simp only [List.getElem_ofFn, List.length_take, Nat.min_eq_left (Nat.le_of_lt hk_lt),
-                     Fin.coe_cast]
+                     Fin.val_cast]
           simp only [target]
           have hi_lt_k : i < k := by
             simp only [List.length_take, Nat.min_eq_left (Nat.le_of_lt hk_lt)] at hi
@@ -691,7 +695,7 @@ theorem iSup_weighted_le_weighted_iSup (w : PrefixMeasure → ENNReal) (p : Pred
   intro n
   apply ENNReal.tsum_le_tsum
   intro μ
-  apply mul_le_mul_left'
+  apply mul_le_mul_right
   -- ENNReal.ofReal (errorPerformance p μ n) ≤ ⨆ n, ENNReal.ofReal (errorPerformance p μ n)
   exact le_iSup (fun n => ENNReal.ofReal (errorPerformance p μ n)) n
 
@@ -715,7 +719,7 @@ theorem BalancedPerformance_eq_iSup_weighted_errorPerformance (w : PrefixMeasure
   have hmono :
       ∀ μ : PrefixMeasure, Monotone fun n => w μ * ENNReal.ofReal (errorPerformance p μ n) := by
     intro μ m n hmn
-    exact mul_le_mul_left' (errorPerformance_ofReal_mono p μ hmn) (w μ)
+    exact mul_le_mul_right (errorPerformance_ofReal_mono p μ hmn) (w μ)
   -- Commute `iSup` over horizon with the outer `tsum` (as `iSup` over finite sums).
   -- For each finite set of environments, monotonicity lets us pick one horizon `n`
   -- that approximates all components simultaneously.
@@ -1166,7 +1170,7 @@ theorem universalPredictor_minimizes_weighted_step_error
       calc
         w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x))
             ≤ w μ * 1 := by
-                exact mul_le_mul_left' (ofReal_expectPrefix_le_one μ (universalPredictor ξ)) (w μ)
+                exact mul_le_mul_right (ofReal_expectPrefix_le_one μ (universalPredictor ξ)) (w μ)
         _ = w μ := by simp
     exact ne_top_of_le_ne_top htsum_w_ne_top hle
   have hRHS_ne_top :
@@ -1177,7 +1181,7 @@ theorem universalPredictor_minimizes_weighted_step_error
       calc
         w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x))
             ≤ w μ * 1 := by
-                exact mul_le_mul_left' (ofReal_expectPrefix_le_one μ p) (w μ)
+                exact mul_le_mul_right (ofReal_expectPrefix_le_one μ p) (w μ)
         _ = w μ := by simp
     exact ne_top_of_le_ne_top htsum_w_ne_top hle
 
@@ -1194,7 +1198,7 @@ theorem universalPredictor_minimizes_weighted_step_error
       calc
         w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (universalPredictor ξ x) x))
             ≤ w μ * 1 := by
-                exact mul_le_mul_left' (ofReal_expectPrefix_le_one μ (universalPredictor ξ)) (w μ)
+                exact mul_le_mul_right (ofReal_expectPrefix_le_one μ (universalPredictor ξ)) (w μ)
         _ = w μ := by simp
     exact ne_top_of_le_ne_top (hw_ne_top μ) hle
   have hterm_ne_top_p :
@@ -1205,7 +1209,7 @@ theorem universalPredictor_minimizes_weighted_step_error
       calc
         w μ * ENNReal.ofReal (expectPrefix μ k (fun x => errorProb μ (p x) x))
             ≤ w μ * 1 := by
-                exact mul_le_mul_left' (ofReal_expectPrefix_le_one μ p) (w μ)
+                exact mul_le_mul_right (ofReal_expectPrefix_le_one μ p) (w μ)
         _ = w μ := by simp
     exact ne_top_of_le_ne_top (hw_ne_top μ) hle
 
@@ -1221,7 +1225,7 @@ theorem universalPredictor_minimizes_weighted_step_error
         simpa [PrefixMeasure.toSemimeasure_apply] using this
       have hle : w μ * μ x ≤ w μ := by
         calc
-          w μ * μ x ≤ w μ * 1 := mul_le_mul_left' hμ_le_one (w μ)
+          w μ * μ x ≤ w μ * 1 := mul_le_mul_right hμ_le_one (w μ)
           _ = w μ := by simp
       exact ne_top_of_le_ne_top (hw_ne_top μ) hle
     calc
@@ -1568,69 +1572,85 @@ theorem balanced_pareto_optimal (ξ : Semimeasure)
   -- Finish by taking the `iSup` on the RHS.
   exact le_trans hfin (le_iSup (fun n => ∑' μ, w μ * ENNReal.ofReal (errorPerformance p μ n)) n)
 
-/-! ## Theorem 3.70: Optimality of Universal Weights -/
+/-! ## Theorem 3.70: Optimal Choice of Universal Weights (Hutter §3.6.4)
 
-/-- Kolmogorov complexity of a computable environment.
+Hutter’s discussion uses Theorem 2.10(iii) to justify Solomonoff–Levin weights
+`w_ν := 2^{-K(ν)}` as an “optimal compromise” among enumerable weight functions `v` with short
+description: the bounds involving `ln w_ν^{-1}` are at most `O(1)` worse than those involving
+`ln v_ν^{-1}`.
 
-    An environment μ is computable if there exists a program that, given prefix x,
-    outputs μ(y|x) to arbitrary precision for any continuation y.
+In this Lean development we avoid global `axiom` declarations. The fully general comparison
+to arbitrary enumerable `v` needs a substantial AIT layer (a formal Theorem 2.10(iii) analogue,
+relating prefix-free complexity to enumerable semimeasures on indices).
 
-    K_env(μ) = length of shortest such program.
+What we *can* state and prove today is the machine-invariance core:
+changing the reference universal prefix-free machine only changes the “universal weights”
+by a multiplicative constant (equivalently: log-bounds change by an additive constant).
+-/
 
-    **Axiom Justification** (Zvonkin-Levin 1970, Hutter 2005 Chapter 2):
-    - Lower semicomputable semimeasures form a countable class
-    - Each such semimeasure can be encoded as a prefix-free program
-    - The universal Turing machine enumerates all such semimeasures
+/-- **Machine invariance for Solomonoff–Levin weights**.
 
-    Full formalization requires encoding PrefixMeasure as programs on a reference UTM.
-    We axiomatize existence to state Theorem 3.70 precisely. -/
-axiom K_env : PrefixMeasure → ℕ∞
+For universal prefix-free machines `U` and `V`, the algorithmic weights
+`w_U(x) := 2^{-Kpf[U](x)}` and `w_V(x) := 2^{-Kpf[V](x)}` agree up to a constant factor.
 
-/-- Universal prior weight: w(μ) = 2^{-K(μ)}.
-    This is Solomonoff's algorithmic prior over environments. -/
-noncomputable def universalWeight (μ : PrefixMeasure) : ENNReal :=
-  match K_env μ with
-  | ⊤ => 0  -- Non-computable environments get weight 0
-  | (n : ℕ) => (2 : ENNReal)⁻¹ ^ n
+This is the `O(1)` robustness that underlies Hutter’s “optimal weights” discussion:
+any bound that is monotone in `log(1 / w_U x)` changes by at most an additive constant when
+switching the reference universal machine. -/
+theorem universalWeights_mul_le_of_invariance
+    (U V : Mettapedia.Logic.SolomonoffPrior.PrefixFreeMachine)
+    [Mettapedia.Logic.SolomonoffPrior.UniversalPFM U]
+    [Mettapedia.Logic.SolomonoffPrior.UniversalPFM V] :
+    ∃ c : ℕ, ∀ x : BinString,
+      kpfWeight (U := V) x * (2 : ENNReal) ^ (-(c : ℤ)) ≤ kpfWeight (U := U) x := by
+  simpa using (kpfWeight_mul_le_of_invariance (U := U) (V := V))
 
-/-- Universal weights satisfy Kraft inequality (follows from prefix-free coding).
+/-- **Theorem 3.70 (Optimal choice of weights)** (Hutter 2005, §3.6.4, around eq. (1547)).
 
-    **Axiom Justification** (Kraft Inequality):
-    For any prefix-free code with codeword lengths l₁, l₂, ...,
-    we have ∑ᵢ 2^{-lᵢ} ≤ 1.
+Hutter considers the class `V` of *enumerable* weight functions `v` with short description and
+`∑ v_ν ≤ 1`, and argues that Solomonoff–Levin weights `w_ν := 2^{-K(ν)}` are an “optimal compromise”:
+the regret bounds depending on `ln(1 / w_ν)` are at most `O(1)` worse than those depending on
+`ln(1 / v_ν)`.
 
-    Since K(μ) represents lengths in a prefix-free enumeration of semimeasures,
-    the algorithmic prior satisfies Kraft. -/
-axiom universalWeight_kraft : ∑' μ, universalWeight μ ≤ 1
+In a multiplicative form (avoiding logs), this can be read as:
+`v_ν ≤ C · w_ν` for some constant `C` depending only on `v` (and the choice of universal machine),
+uniformly for all indices `ν`.
 
-/-- **Theorem 3.70 (Optimality of Universal Weights)** (Hutter 2005, p. 102-103):
+In this development, the corresponding *core quantitative statement* would be a corollary of a
+formal analogue of Hutter Theorem 2.10(iii) ("coding theorem" inequality), specialized to
+distributions over indices. We record the statement here as a theorem stub.
+-/
+theorem optimalChoiceOfWeights_hutter
+    (U : Mettapedia.Logic.SolomonoffPrior.PrefixFreeMachine)
+    [Mettapedia.Logic.SolomonoffPrior.UniversalPFM U]
+    (v : BinString → ENNReal)
+    (hv_sum : (∑' x : BinString, v x) ≤ 1) :
+    ∃ C : ENNReal, C ≠ 0 ∧ ∀ x : BinString, v x ≤ C * kpfWeight (U := U) x := by
+  -- NOTE: This is a purely Kraft-style inequality (dyadic coding) that holds for any `v`
+  -- with `∑ v ≤ 1`. A fully faithful formalization of Hutter's §3.6.4 discussion would
+  -- additionally track the *description length* / complexity of `v` (via an enumeration of
+  -- lower-semicomputable semimeasures); see `HutterEnumerationTheorem.lean` for the concrete
+  -- enumeration bridge used in this project.
+  simpa using OptimalWeights.exists_const_mul_kpfWeight (U := U) (v := v) hv_sum
 
-    The algorithmic prior w(μ) = 2^{-K(μ)} is optimal in the following sense:
-    for any other valid prior v(μ) satisfying Kraft inequality, the expected loss
-    difference between using v and using universal weights is bounded by O(K(v)),
-    where K(v) is the complexity of describing the alternative prior.
+/-- **V3 (Hutter/Levin enumeration)**: dominance→regret for lower-semicomputable environments.
 
-    More precisely: the universal mixture ξ with weights 2^{-K(μ)} dominates
-    any computable mixture with weights v(μ), with dominance constant
-    depending only on K(v).
+This is the “real machine model” layer (Hutter 2005, Chapter 2):
+we fix a concrete, surjective enumeration of **lower semicomputable** prefix measures and apply
+the Chapter‑3 dominance→regret theorem to its universal mixture.
 
-    **Proof Sketch** (Hutter):
-    1. Any computable prior v can be encoded with length K(v)
-    2. The universal prior assigns weight ≥ 2^{-K(μ)-K(v)} to each μ
-    3. This dominance implies regret bounds within O(K(v)) of any computable prior
-
-    **Status**: Stated with axioms. Full proof requires the Levin enumeration theorem
-    (every lower semicomputable semimeasure has a code) from AIT. -/
-theorem optimal_weights (ξ : Semimeasure)
-    (hU : ∀ μ, universalWeight μ ≠ 0 → ∃ c : ENNReal, c ≠ 0 ∧ Dominates ξ μ c)
-    (v : PrefixMeasure → ENNReal) (hKraft_v : ∑' μ, v μ ≤ 1) :
-    ∃ K_v : ℕ,  -- Complexity of the alternative prior v
-      BalancedPerformance universalWeight errorPerformance (universalPredictor ξ) ≤
-      BalancedPerformance v errorPerformance (universalPredictor ξ) +
-        ENNReal.ofReal (2 * K_v * Real.log 2) := by
-  -- The proof requires showing dominance of universal weights over v
-  -- This follows from the AIT invariance theorem for Kolmogorov complexity
-  sorry
+This is not a full formalization of Hutter's Theorem 2.10(iii) coding-theorem inequality on
+weights, but it is the key computability bridge needed to make “universal prediction” non-toy.
+-/
+theorem relEntropy_le_log_inv_of_LSC_hutterV3 (μ : PrefixMeasure)
+    (hμ : HutterEnumeration.LowerSemicomputablePrefixMeasure μ) (n : ℕ) :
+    ∃ c : ENNReal, c ≠ 0 ∧
+      Dominates
+          (HutterEnumerationTheorem.lscPrefixMeasureEnumeration.toPrefixMeasureEnumeration.xi) μ c ∧
+        relEntropy μ
+            (HutterEnumerationTheorem.lscPrefixMeasureEnumeration.toPrefixMeasureEnumeration.xi) n ≤
+          Real.log (1 / c.toReal) := by
+  simpa using
+    (Mettapedia.Logic.UniversalPrediction.relEntropy_le_log_inv_of_LSC_concrete (μ := μ) hμ n)
 
 end Optimality
 

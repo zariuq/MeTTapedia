@@ -154,12 +154,8 @@ theorem comm_reduces {n q p : Pattern} {x : String} :
   simp only [List.append_nil] at h
   exact h
 
-/-- Reduction preserves structure (processes stay processes) -/
-theorem reduces_preserves_proc {p q : Pattern} (_ : p ⇝ q) :
-    -- In a typed setting, if p : Proc then q : Proc
-    -- We state this informally for now
-    True := by
-  trivial
+-- TODO: once we have a syntactic predicate `IsProc : Pattern → Prop`,
+-- prove `p ⇝ q → IsProc p → IsProc q`.
 
 /-! ## Summary
 

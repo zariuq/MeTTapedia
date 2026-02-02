@@ -84,6 +84,68 @@ theorem relEntropy_le_log_inv_of_LSC (E : LSCPrefixMeasureEnumeration) (μ : Pre
 
 end LSCPrefixMeasureEnumeration
 
+/-- A semimeasure enumeration with Hutter's lower-semicomputability notion.
+
+This is the Chapter‑2 object Hutter ultimately wants: **enumerable semimeasures**.
+We keep it parallel to `LSCPrefixMeasureEnumeration` so we can reuse the same
+dominance→regret lemmas (which are stated for a true `PrefixMeasure` μ and a
+comparison `Semimeasure` ξ). -/
+structure LSCSemimeasureEnumeration where
+  /-- Code space indexing the enumeration. -/
+  Code : Type*
+  /-- The code space is countable. -/
+  [enc : Encodable Code]
+  /-- Interpret a code as a semimeasure. -/
+  eval : Code → Semimeasure
+  /-- **Enumeration theorem (assumed as an interface)**:
+  every lower semicomputable semimeasure has some code. -/
+  surj_eval :
+    ∀ ξ : Semimeasure, LowerSemicomputableSemimeasure ξ → ∃ c : Code, eval c = ξ
+
+attribute [instance] LSCSemimeasureEnumeration.enc
+
+namespace LSCSemimeasureEnumeration
+
+/-- The universal `encodeWeight` mixture induced by a semimeasure enumeration. -/
+noncomputable def xi (E : LSCSemimeasureEnumeration) : Semimeasure :=
+  xiEncodeSemimeasure (ι := E.Code) (fun c => E.eval c)
+
+/-- The mixture `ξ` dominates each enumerated component with its code weight. -/
+theorem xi_dominates_eval (E : LSCSemimeasureEnumeration) (c : E.Code) :
+    Dominates (E.xi) (E.eval c) (encodeWeight c) := by
+  intro x
+  simpa [LSCSemimeasureEnumeration.xi] using
+    (xiEncode_dominates_index (ι := E.Code) (ν := fun d => E.eval d) c x)
+
+theorem encodeWeight_ne_zero (E : LSCSemimeasureEnumeration) (c : E.Code) :
+    encodeWeight c ≠ 0 := by
+  unfold encodeWeight
+  exact pow_ne_zero _ (by simp)
+
+theorem lscPrefixMeasure_toSemimeasure (μ : PrefixMeasure)
+    (hμ : LowerSemicomputablePrefixMeasure μ) : LowerSemicomputableSemimeasure μ.toSemimeasure := by
+  -- Same underlying `toReal` function, since `μ.toSemimeasure x = μ x`.
+  simpa [LowerSemicomputableSemimeasure, LowerSemicomputablePrefixMeasure] using hμ
+
+/-- Convenience lemma: dominance→regret for any lower-semicomputable **measure** μ,
+using the universal mixture induced by an **enumeration of semimeasures**. -/
+theorem relEntropy_le_log_inv_of_LSC (E : LSCSemimeasureEnumeration) (μ : PrefixMeasure)
+    (hμ : LowerSemicomputablePrefixMeasure μ) (n : ℕ) :
+    ∃ c : ENNReal, c ≠ 0 ∧ Dominates (E.xi) μ c ∧
+      relEntropy μ (E.xi) n ≤ Real.log (1 / c.toReal) := by
+  classical
+  -- Get a code for `μ` viewed as a semimeasure.
+  obtain ⟨code, hcode⟩ :=
+    E.surj_eval μ.toSemimeasure (lscPrefixMeasure_toSemimeasure (μ := μ) hμ)
+  have hdom : Dominates (E.xi) μ (encodeWeight code) := by
+    intro x
+    simpa [hcode, PrefixMeasure.toSemimeasure_apply] using (E.xi_dominates_eval code x)
+  refine ⟨encodeWeight code, E.encodeWeight_ne_zero code, hdom, ?_⟩
+  exact relEntropy_le_log_inv_of_dominates (μ := μ) (ξ := E.xi) (hdom := hdom)
+    (hc0 := E.encodeWeight_ne_zero code) n
+
+end LSCSemimeasureEnumeration
+
 end HutterEnumeration
 
 end Mettapedia.Logic.UniversalPrediction

@@ -3,6 +3,13 @@
  "packages":
  [{"type": "path",
    "scope": "",
+   "name": "Foundation",
+   "manifestFile": "lake-manifest.json",
+   "inherited": false,
+   "dir": "Mettapedia/Logic/Foundation",
+   "configFile": "lakefile.toml"},
+  {"type": "path",
+   "scope": "",
    "name": "ordered_semigroups",
    "manifestFile": "lake-manifest.json",
    "inherited": false,

@@ -51,11 +51,21 @@ The Solomonoff prior M provides a universal model of the environment.
 
 /-- A Solomonoff environment model: uses the universal prior for prediction. -/
 structure SolomonoffEnv (U : PrefixFreeMachine) [UniversalPFM U] where
-  /-- The universal semimeasure (Solomonoff prior) -/
-  universal : Mettapedia.Logic.SolomonoffInduction.Semimeasure
-  /-- Hypothesis that it dominates all computable measures -/
-  dominates_all : ∀ μ : ComputableSemimeasure U, ∀ x : BinString,
-    (2 : ENNReal)^(-(μ.K : ℤ)) * μ.toSemimeasure x ≤ universal x
+  /-- Placeholder for future environment-specific data (e.g. an encoding of histories). -/
+  unit : Unit := ()
+
+/-- The universal semimeasure used for prediction.
+
+In this project we use the theorem-grade “Solomonoff-style” mixture `M₃(U)`
+from `Mettapedia.Logic.UniversalPrediction.SolomonoffBridge`, built as a
+mixture over lower-semicomputable semimeasures.
+
+We intentionally make this a *definition* (not a structure field) so that
+all later theorems are automatically tied to the canonical `M₂` without
+needing extra "consistency" hypotheses. -/
+noncomputable def SolomonoffEnv.universal {U : PrefixFreeMachine} [UniversalPFM U]
+    (_env : SolomonoffEnv U) : Mettapedia.Logic.SolomonoffInduction.Semimeasure :=
+  Mettapedia.Logic.UniversalPrediction.SolomonoffBridge.M₃ U
 
 /-- Convert a SolomonoffEnv to the environment probability function format. -/
 noncomputable def SolomonoffEnv.toEnvProb {U : PrefixFreeMachine} [UniversalPFM U]
@@ -89,19 +99,35 @@ The Solomonoff prior dominates any computable environment model.
 -/
 
 /-- The universal prior dominates any computable environment. -/
-theorem solomonoff_dominates_computable {U : PrefixFreeMachine} [UniversalPFM U]
-    (G : SolomonoffGodelMachine U) (μ : ComputableSemimeasure U) :
-    ∀ x : BinString,
-      (2 : ENNReal)^(-(μ.K : ℤ)) * μ.toSemimeasure x ≤ G.solomonoffEnv.universal x :=
-  G.solomonoffEnv.dominates_all μ
+theorem solomonoff_dominates_LSC {U : PrefixFreeMachine} [UniversalPFM U]
+    (G : SolomonoffGodelMachine U) (μ : Mettapedia.Logic.UniversalPrediction.PrefixMeasure)
+    (hμ : Mettapedia.Logic.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure μ) :
+    ∃ c : ENNReal, c ≠ 0 ∧ ∀ x : BinString, c * μ x ≤ G.solomonoffEnv.universal x := by
+  -- Our default `SolomonoffEnv.universal` is `M₃(U)`, for which we have a code-level dominance theorem.
+  classical
+  rcases
+      (Mettapedia.Logic.UniversalPrediction.SolomonoffBridge.relEntropy_le_codeKpf_log2_M₃
+        (U := U) (μ := μ) hμ 0) with ⟨code, hdom, _⟩
+  let c : ENNReal := Mettapedia.Logic.UniversalPrediction.HutterV3Kpf.codeWeight (U := U) code
+  have hc0 : c ≠ 0 := by
+    -- `kpfWeight` is a positive power of 2.
+    unfold c Mettapedia.Logic.UniversalPrediction.HutterV3Kpf.codeWeight
+      Mettapedia.Logic.UniversalPrediction.kpfWeight
+    have hne0 : (2 : ENNReal) ≠ 0 := by norm_num
+    have hneTop : (2 : ENNReal) ≠ (⊤ : ENNReal) := by simp
+    exact ne_of_gt (ENNReal.zpow_pos hne0 hneTop _)
+  refine ⟨c, hc0, ?_⟩
+  intro x
+  simpa [SolomonoffEnv.universal, c] using (hdom x)
 
 /-- Corollary: Predictions under M are never too far from any computable model. -/
 theorem prediction_dominance {U : PrefixFreeMachine} [UniversalPFM U]
-    (G : SolomonoffGodelMachine U) (μ : ComputableSemimeasure U)
+    (G : SolomonoffGodelMachine U) (μ : Mettapedia.Logic.UniversalPrediction.PrefixMeasure)
+    (hμ : Mettapedia.Logic.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure μ)
     (x : BinString) :
-    -- M(x) ≥ 2^{-K(μ)} · μ(x)
-    G.solomonoffEnv.universal x ≥ (2 : ENNReal)^(-(μ.K : ℤ)) * μ.toSemimeasure x :=
-  solomonoff_dominates_computable G μ x
+    ∃ c : ENNReal, c ≠ 0 ∧ G.solomonoffEnv.universal x ≥ c * μ x := by
+  rcases solomonoff_dominates_LSC (G := G) (μ := μ) hμ with ⟨c, hc0, hdom⟩
+  exact ⟨c, hc0, by simpa [mul_comm] using hdom x⟩
 
 /-! ## Part 4: Expected Utility Bounds
 
@@ -110,8 +136,8 @@ The expected utility under Solomonoff is bounded relative to any computable mode
 
 /-- The dominance weight for a computable model μ. -/
 noncomputable def dominanceWeight {U : PrefixFreeMachine} [UniversalPFM U]
-    (μ : ComputableSemimeasure U) : ℝ :=
-  (2 : ℝ)^(-(μ.K : ℤ))
+    (c : ENNReal) : ℝ :=
+  c.toReal
 
 /-- Expected utility under Solomonoff vs. under a computable model.
 
@@ -127,7 +153,7 @@ noncomputable def dominanceWeight {U : PrefixFreeMachine} [UniversalPFM U]
 
     where c depends only on the universal machine, not μ. -/
 theorem expected_utility_bound {U : PrefixFreeMachine} [UniversalPFM U]
-    (G : SolomonoffGodelMachine U) (_μ : ComputableSemimeasure U)
+    (G : SolomonoffGodelMachine U)
     (h : History) :
     -- The expected utility under M approximates that under any μ
     -- Precise bound requires integrating over histories
