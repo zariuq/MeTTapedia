@@ -200,10 +200,10 @@ theorem sim2inh_mem_unit (sim_AB s_A s_B : ℝ)
       exact h_constraint
     calc (1 + s_B / s_A) * sim_AB
         = sim_AB + (s_B / s_A) * sim_AB := by ring
-      _ ≤ sim_AB + 1 * sim_AB := by {
-          apply add_le_add_left
-          apply mul_le_mul_of_nonneg_right h_ratio h_sim.1
-        }
+      _ ≤ sim_AB + 1 * sim_AB := by
+          have : (s_B / s_A) * sim_AB ≤ 1 * sim_AB :=
+            mul_le_mul_of_nonneg_right h_ratio h_sim.1
+          linarith
       _ = 2 * sim_AB := by ring
       _ ≤ 1 + sim_AB := by nlinarith [h_sim.1, h_sim.2]
 
@@ -359,11 +359,11 @@ theorem symmetricModusPonens_mem_unit (sim_AB s_A c : ℝ)
             linarith [h_sim.2]
         }
       _ = s_A + 2 * c * (1 - s_A) := by ring
-      _ ≤ s_A + 2 * 0.5 * (1 - s_A) := by {
-          apply add_le_add_left
-          apply mul_le_mul_of_nonneg_right _ (by linarith [h_sA.2])
-          linarith [h_c.2]
-        }
+      _ ≤ s_A + 2 * 0.5 * (1 - s_A) := by
+          have h1 : 2 * c ≤ 2 * 0.5 := by linarith [h_c.2]
+          have h2 : 2 * c * (1 - s_A) ≤ 2 * 0.5 * (1 - s_A) :=
+            mul_le_mul_of_nonneg_right h1 (by linarith [h_sA.2])
+          linarith
       _ = 1 := by ring
 
 /-! ## §3: Member/Inheritance Conversion

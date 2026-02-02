@@ -25,9 +25,14 @@ This provides a precise threshold for when Evidence "looks Boolean enough":
 -/
 
 import Mathlib.Order.Heyting.Basic
+import Mathlib.Order.Heyting.Hom
 import Mathlib.Order.Heyting.Regular
+import Mathlib.Order.LatticeIntervals
 import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Fintype.Prod
 import Mathlib.Algebra.Order.Field.Basic
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Finset.Prod
 import Mathlib.Tactic
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.RegularityLEMCounterexample
 
@@ -35,7 +40,9 @@ namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Heyting.LEMSatisfiability
 
 /-! ## Basic Definitions -/
 
-variable {α : Type*} [HeytingAlgebra α]
+universe u
+
+variable {α : Type u} [HeytingAlgebra α]
 
 /-- An element satisfies the Law of Excluded Middle if a ⊔ aᶜ = ⊤ -/
 def SatisfiesLEM (a : α) : Prop := a ⊔ aᶜ = ⊤
@@ -88,6 +95,41 @@ noncomputable def lemCount (α : Type*) [HeytingAlgebra α] [Fintype α] : ℕ :
 /-- The degree of LEM satisfiability (as a rational number) -/
 noncomputable def lemDegree (α : Type*) [HeytingAlgebra α] [Fintype α] : ℚ :=
   (lemCount α : ℚ) / (Fintype.card α : ℚ)
+
+/-- `lemCount` is bounded by the total cardinality. -/
+theorem lemCount_le_card (α : Type*) [HeytingAlgebra α] [Fintype α] :
+    lemCount α ≤ Fintype.card α := by
+  classical
+  unfold lemCount
+  simpa using
+    (Finset.card_filter_le (s := (Finset.univ : Finset α)) (p := fun a : α => a ⊔ aᶜ = ⊤))
+
+/-- `lemDegree` is always nonnegative. -/
+theorem lemDegree_nonneg (α : Type*) [HeytingAlgebra α] [Fintype α] :
+    0 ≤ lemDegree α := by
+  classical
+  unfold lemDegree
+  by_cases h0 : (Fintype.card α : ℚ) = 0
+  · simp [h0]
+  · have hpos : 0 < (Fintype.card α : ℚ) := by
+      have : 0 ≤ (Fintype.card α : ℚ) := by exact_mod_cast (Nat.zero_le _)
+      exact lt_of_le_of_ne this (Ne.symm h0)
+    exact div_nonneg (by exact_mod_cast (Nat.zero_le (lemCount α))) (le_of_lt hpos)
+
+/-- `lemDegree` is always at most `1`. -/
+theorem lemDegree_le_one (α : Type*) [HeytingAlgebra α] [Fintype α] :
+    lemDegree α ≤ 1 := by
+  classical
+  unfold lemDegree
+  by_cases h0 : (Fintype.card α : ℚ) = 0
+  · simp [h0]
+  · have hpos : 0 < (Fintype.card α : ℚ) := by
+      have : 0 ≤ (Fintype.card α : ℚ) := by exact_mod_cast (Nat.zero_le _)
+      exact lt_of_le_of_ne this (Ne.symm h0)
+    have hle : (lemCount α : ℚ) ≤ (Fintype.card α : ℚ) := by
+      exact_mod_cast (lemCount_le_card α)
+    have := div_le_div_of_nonneg_right hle (le_of_lt hpos)
+    simpa [div_self (ne_of_gt hpos)] using this
 
 /-- In a Boolean algebra, the LEM degree is 1 -/
 theorem lemDegree_boolean {β : Type*} [BooleanAlgebra β] [Fintype β]
@@ -203,7 +245,7 @@ def compl' (a : Chain3) : Chain3 := match a with
   | top => bot
 
 instance : HImp Chain3 := ⟨himp'⟩
-instance : HasCompl Chain3 := ⟨compl'⟩
+instance : Compl Chain3 := ⟨compl'⟩
 
 instance : HeytingAlgebra Chain3 where
   himp := himp'
@@ -279,7 +321,7 @@ end Chain3
 Key lemmas about the complement operation in Heyting algebras:
 1. Triple complement collapses: aᶜᶜᶜ = aᶜ (from mathlib: `compl_compl_compl`)
 2. LEM is preserved by complement
-3. Regular elements (a = aᶜᶜ) satisfy LEM
+3. LEM ⇒ regular (but regular ⇏ LEM in general; see `RegularityLEMCounterexample`)
 -/
 
 /-- If a satisfies LEM, then aᶜ satisfies LEM -/
@@ -289,51 +331,269 @@ theorem satisfiesLEM_compl (a : α) (h : SatisfiesLEM a) : SatisfiesLEM aᶜ := 
   rw [hcc, sup_comm]
   exact h
 
-/-- If a = aᶜᶜ (a is regular), then a satisfies LEM (in finite Heyting algebras).
+/-! ### Regularity does not imply LEM
 
-    NOTE: This theorem requires finiteness. In infinite Heyting algebras there are
-    counterexamples: in the opens of ℝ, (0,1) is regular but (0,1) ⊔ (0,1)ᶜ ≠ ℝ.
+Even in the finite setting, `aᶜᶜ = a` does not force `a ⊔ aᶜ = ⊤`.
+See `RegularityLEMCounterexample.FiniteCounterexample.H5` for an explicit 5-element example.
+-/
 
-    For finite Heyting algebras (as in arXiv:2110.11515):
-    - We can show (a ⊔ aᶜ)ᶜ = aᶜ ⊓ a = ⊥ (using de Morgan + regularity)
-    - Hence (a ⊔ aᶜ)ᶜᶜ = ⊤
-    - In the finite case, the structure ensures a ⊔ aᶜ = ⊤
+theorem exists_finite_regular_not_satisfiesLEM :
+    ∃ (β : Type) (_ : HeytingAlgebra β) (_ : Fintype β),
+      ∃ a : β, Heyting.IsRegular a ∧ ¬SatisfiesLEM a := by
+  have h :=
+    Mettapedia.ProbabilityTheory.KnuthSkilling.Heyting.RegularityLEMCounterexample.FiniteCounterexample.exists_finite_regular_not_LEM
+  rcases h with ⟨β, instβ, instF, a, haReg, haNot⟩
+  refine ⟨β, instβ, instF, a, haReg, ?_⟩
+  exact haNot
 
-    Reference: arXiv:2110.11515 Theorem 2.5 -/
-theorem satisfiesLEM_of_regular [Fintype α] [DecidableEq α] (a : α) (ha : Heyting.IsRegular a) :
-    SatisfiesLEM a := by
+/-! ## Technical Lemmas for Theorem 2.4 (Bumpus–Kocsis–Master)
+
+We follow the paper’s proof strategy:
+- a product rule for the degree of satisfiability
+- a decomposition of a finite Heyting algebra along a nontrivial LEM element `c`
+- induction on the size of the algebra
+-/
+
+section TwoThirdsTechnical
+
+/-! ### A small “cardinality pigeonhole” helper -/
+
+private lemma exists_mem_ne_ne_of_card_gt_two {δ : Type*} [DecidableEq δ] (s : Finset δ)
+    (a b : δ) (hcard : 2 < s.card) : ∃ x ∈ s, x ≠ a ∧ x ≠ b := by
+  classical
+  by_contra h
+  have h' : ∀ x, x ∈ s → x = a ∨ x = b := by
+    intro x hx
+    by_cases hxa : x = a
+    · exact Or.inl hxa
+    · have : ¬(x ∈ s ∧ x ≠ a ∧ x ≠ b) := by
+        intro hx3
+        exact h ⟨x, hx3.1, hx3.2.1, hx3.2.2⟩
+      have : x = b := by
+        have : ¬(x ≠ b) := by
+          intro hxb
+          exact this ⟨hx, hxa, hxb⟩
+        exact not_ne_iff.mp this
+      exact Or.inr this
+  have hs : s ⊆ ({a, b} : Finset δ) := by
+    intro x hx
+    have := h' x hx
+    simpa [Finset.mem_insert, Finset.mem_singleton] using this
+  have hcard_le : s.card ≤ ({a, b} : Finset δ).card := Finset.card_le_card hs
+  have hab : ({a, b} : Finset δ).card ≤ 2 := by
+    simpa using (Finset.card_le_two (a := a) (b := b))
+  have : s.card ≤ 2 := le_trans hcard_le hab
+  exact (not_lt_of_ge this) hcard
+
+/-! ### Products -/
+
+theorem satisfiesLEM_prod_iff {β γ : Type*} [HeytingAlgebra β] [HeytingAlgebra γ] (x : β × γ) :
+    SatisfiesLEM x ↔ SatisfiesLEM x.1 ∧ SatisfiesLEM x.2 := by
+  cases x with
+  | mk b c =>
+    unfold SatisfiesLEM
+    simp [Prod.ext_iff]
+
+theorem lemCount_prod (β γ : Type*) [HeytingAlgebra β] [Fintype β] [HeytingAlgebra γ] [Fintype γ] :
+    lemCount (β × γ) = lemCount β * lemCount γ := by
+  classical
+  unfold lemCount
+  rw [← Finset.univ_product_univ]
+  have hfilter :
+      (@Finset.filter (β × γ) (fun x => x ⊔ xᶜ = (⊤ : β × γ)) (Classical.decPred _)
+          (Finset.univ ×ˢ Finset.univ)) =
+        (@Finset.filter β (fun b => b ⊔ bᶜ = (⊤ : β)) (Classical.decPred _) Finset.univ) ×ˢ
+          (@Finset.filter γ (fun c => c ⊔ cᶜ = (⊤ : γ)) (Classical.decPred _) Finset.univ) := by
+    simpa [Prod.ext_iff] using
+      (Finset.filter_product (s := (Finset.univ : Finset β)) (t := (Finset.univ : Finset γ))
+        (p := fun b : β => b ⊔ bᶜ = (⊤ : β)) (q := fun c : γ => c ⊔ cᶜ = (⊤ : γ)))
+  rw [hfilter, Finset.card_product]
+
+theorem lemDegree_prod (β γ : Type*) [HeytingAlgebra β] [Fintype β] [HeytingAlgebra γ] [Fintype γ] :
+    lemDegree (β × γ) = lemDegree β * lemDegree γ := by
+  classical
+  unfold lemDegree
+  simp [lemCount_prod, Fintype.card_prod, div_mul_div_comm]
+
+/-! ### The Heyting algebra structure on principal ideals `Set.Iic c` -/
+
+namespace IicHeyting
+
+variable {β : Type*} [HeytingAlgebra β]
+
+noncomputable def himpIic (c : β) : Set.Iic c → Set.Iic c → Set.Iic c :=
+  fun x y => ⟨(x.1 ⇨ y.1) ⊓ c, inf_le_right⟩
+
+noncomputable instance (c : β) : HImp (Set.Iic c) := ⟨himpIic (β := β) c⟩
+
+instance (c : β) : DistribLattice (Set.Iic c) where
+  le_sup_inf x y z := by
+    change ((x.1 ⊔ y.1) ⊓ (x.1 ⊔ z.1) ≤ x.1 ⊔ (y.1 ⊓ z.1))
+    simpa using (le_sup_inf (x := x.1) (y := y.1) (z := z.1))
+
+noncomputable instance (c : β) : HeytingAlgebra (Set.Iic c) := by
+  classical
+  refine HeytingAlgebra.ofHImp (α := Set.Iic c) (himp := fun x y => himpIic (β := β) c x y) ?_
+  intro d a b
+  dsimp [himpIic]
+  change (d.1 ≤ (a.1 ⇨ b.1) ⊓ c) ↔ (d.1 ⊓ a.1 ≤ b.1)
+  constructor
+  · intro h
+    have h1 : d.1 ≤ a.1 ⇨ b.1 := le_trans h inf_le_left
+    exact (le_himp_iff).1 h1
+  · intro h
+    apply le_inf
+    · exact (le_himp_iff).2 h
+    · exact d.2
+
+end IicHeyting
+
+open IicHeyting
+
+/-! ### Decomposition along a nontrivial LEM element `c` -/
+
+private noncomputable def decompOrderIso {β : Type*} [HeytingAlgebra β] (c : β)
+    (hc : c ⊔ cᶜ = (⊤ : β)) : β ≃o (Set.Iic c × Set.Iic cᶜ) := by
+  classical
+  refine
+    { toFun := fun x => (⟨x ⊓ c, inf_le_right⟩, ⟨x ⊓ cᶜ, inf_le_right⟩)
+      invFun := fun y => y.1.1 ⊔ y.2.1
+      left_inv := ?_
+      right_inv := ?_
+      map_rel_iff' := ?_ }
+  · intro x
+    calc
+      (x ⊓ c) ⊔ (x ⊓ cᶜ) = x ⊓ (c ⊔ cᶜ) := by
+        simp [inf_sup_left]
+      _ = x ⊓ ⊤ := by simp [hc]
+      _ = x := by simp
+  · intro y
+    rcases y with ⟨y1, y2⟩
+    rcases y1 with ⟨y1, hy1⟩
+    rcases y2 with ⟨y2, hy2⟩
+    apply Prod.ext <;> apply Subtype.ext
+    ·
+      calc
+        (y1 ⊔ y2) ⊓ c = y1 ⊓ c ⊔ y2 ⊓ c := by
+          simpa using (inf_sup_right y1 y2 c)
+        _ = y1 ⊔ ⊥ := by
+          congr 1
+          · exact inf_eq_left.2 hy1
+          · apply le_antisymm
+            ·
+              calc
+                y2 ⊓ c ≤ cᶜ ⊓ c := by
+                  exact inf_le_inf_right c hy2
+                _ = (⊥ : β) := by
+                  simp [inf_comm]
+            · exact bot_le
+        _ = y1 := by simp
+    ·
+      calc
+        (y1 ⊔ y2) ⊓ cᶜ = y1 ⊓ cᶜ ⊔ y2 ⊓ cᶜ := by
+          simpa using (inf_sup_right y1 y2 cᶜ)
+        _ = ⊥ ⊔ y2 := by
+          congr 1
+          · apply le_antisymm
+            ·
+              calc
+                y1 ⊓ cᶜ ≤ c ⊓ cᶜ := by
+                  exact inf_le_inf_right cᶜ hy1
+                _ = (⊥ : β) := by
+                  simp
+            · exact bot_le
+          · exact inf_eq_left.2 hy2
+        _ = y2 := by simp
+  · intro x y
+    constructor
+    · intro h
+      have : (x ⊓ c) ⊔ (x ⊓ cᶜ) ≤ (y ⊓ c) ⊔ (y ⊓ cᶜ) := by
+        exact sup_le_sup h.1 h.2
+      have hx : (x ⊓ c) ⊔ (x ⊓ cᶜ) = x := by
+        calc
+          (x ⊓ c) ⊔ (x ⊓ cᶜ) = x ⊓ (c ⊔ cᶜ) := by
+            simp [inf_sup_left]
+          _ = x := by simp [hc]
+      have hy : (y ⊓ c) ⊔ (y ⊓ cᶜ) = y := by
+        calc
+          (y ⊓ c) ⊔ (y ⊓ cᶜ) = y ⊓ (c ⊔ cᶜ) := by
+            simp [inf_sup_left]
+          _ = y := by simp [hc]
+      simpa [hx, hy] using this
+    · intro h
+      constructor <;> apply inf_le_inf_right _ h
+
+/-! ### LEM is invariant under order isomorphism -/
+
+private theorem satisfiesLEM_iff_of_orderIso {β γ : Type*} [HeytingAlgebra β] [HeytingAlgebra γ]
+    (f : β ≃o γ) (a : β) : SatisfiesLEM a ↔ SatisfiesLEM (f a) := by
   unfold SatisfiesLEM
-  -- CONTEXT: This theorem is ONLY for FINITE Heyting algebras.
-  --
-  -- INFINITE case: DISPROVEN in RegularityLEMCounterexample.lean
-  --   - In Opens ℝ, the interval (0,1) is regular but fails LEM
-  --   - Proof: (0,1) ∪ (0,1)ᶜ ≠ ℝ (point 0 is in neither)
-  --
-  -- FINITE case: STATUS UNKNOWN
-  --   - Chain3 evidence: All regular elements (⊥, ⊤) DO satisfy LEM
-  --   - But this doesn't prove the general finite case
-  --
-  -- NOTE: The original citation "arXiv:2110.11515 Theorem 2.5" was incorrect.
-  -- That paper proves lem_degree ≤ 2/3 but does NOT discuss regular elements.
-  --
-  -- Partial progress:
-  -- - For regular a: (a ⊔ aᶜ)ᶜ = ⊥ (proven)
-  -- - Therefore: (a ⊔ aᶜ)ᶜᶜ = ⊤ (proven)
-  -- - Cannot conclude a ⊔ aᶜ = ⊤ from this alone
-  --
-  -- TODO: Either:
-  --   1. Find a finite Heyting algebra counterexample (would prove FALSE)
-  --   2. Find a proof strategy using finiteness (would prove TRUE)
-  --   3. Remove this theorem if unprovable
-  sorry
+  constructor
+  · intro h
+    have : f (a ⊔ aᶜ) = f ⊤ := congrArg f h
+    simpa [map_sup, map_compl, map_top] using this
+  · intro h
+    have : f.symm (f a ⊔ (f a)ᶜ) = f.symm ⊤ := congrArg f.symm h
+    simpa [map_sup, map_compl, map_top] using this
 
-/-- Non-LEM elements satisfy a ≠ aᶜᶜ (in finite Heyting algebras) -/
-theorem ne_compl_compl_of_not_satisfiesLEM [Fintype α] [DecidableEq α] (a : α) (h : ¬SatisfiesLEM a) :
-    a ≠ aᶜᶜ := by
-  intro heq
-  -- heq : a = aᶜᶜ means a is regular (Heyting.IsRegular a)
-  -- Heyting.IsRegular is defined as aᶜᶜ = a
-  exact h (satisfiesLEM_of_regular a heq.symm)
+private theorem lemCount_congr_of_orderIso {β γ : Type*} [HeytingAlgebra β] [Fintype β]
+    [HeytingAlgebra γ] [Fintype γ] (f : β ≃o γ) :
+    lemCount β = lemCount γ := by
+  classical
+  let pβ : β → Prop := fun a => a ⊔ aᶜ = (⊤ : β)
+  let pγ : γ → Prop := fun a => a ⊔ aᶜ = (⊤ : γ)
+  letI : DecidablePred pβ := Classical.decPred _
+  letI : DecidablePred pγ := Classical.decPred _
+  let e : {a : β // pβ a} ≃ {b : γ // pγ b} :=
+    { toFun := fun x => ⟨f x.1, (satisfiesLEM_iff_of_orderIso f x.1).1 x.2⟩
+      invFun := fun y => ⟨f.symm y.1, (satisfiesLEM_iff_of_orderIso f.symm y.1).1 y.2⟩
+      left_inv := by intro x; ext; simp
+      right_inv := by intro y; ext; simp }
+  have hc : Fintype.card {a : β // pβ a} = Fintype.card {b : γ // pγ b} :=
+    Fintype.card_congr e
+  have hβ : lemCount β = Fintype.card {a : β // pβ a} := by
+    -- `lemCount` is the finset-filter count, while `Fintype.card_subtype` gives the same count.
+    simpa [lemCount, pβ] using (Fintype.card_subtype (α := β) pβ).symm
+  have hγ : lemCount γ = Fintype.card {b : γ // pγ b} := by
+    simpa [lemCount, pγ] using (Fintype.card_subtype (α := γ) pγ).symm
+  simpa [hβ, hγ] using hc
+
+private theorem lemDegree_congr_of_orderIso {β γ : Type*} [HeytingAlgebra β] [Fintype β]
+    [HeytingAlgebra γ] [Fintype γ] (f : β ≃o γ) :
+    lemDegree β = lemDegree γ := by
+  classical
+  unfold lemDegree
+  have hCount : lemCount β = lemCount γ := lemCount_congr_of_orderIso f
+  have hCard : Fintype.card β = Fintype.card γ := Fintype.card_congr f.toEquiv
+  simp [hCount, hCard]
+
+/-! ### A simple lemma about complements -/
+
+private lemma compl_eq_top_iff {β : Type*} [HeytingAlgebra β] (a : β) :
+    aᶜ = (⊤ : β) ↔ a = ⊥ := by
+  constructor
+  · intro h
+    apply (le_compl_self (a := a)).1
+    simp [h]
+  · intro h
+    simp [h]
+
+/-! ### A basic numeric inequality: `2 / n ≤ 2/3` for `n ≥ 3` -/
+
+private lemma two_div_card_le_two_thirds (n : ℕ) (hn : 3 ≤ n) :
+    (2 : ℚ) / (n : ℚ) ≤ 2/3 := by
+  have hn0 : (0 : ℚ) < (n : ℚ) := by
+    have : (0 : ℕ) < n := lt_of_lt_of_le (by decide : (0 : ℕ) < 3) hn
+    exact_mod_cast this
+  have : (2 : ℚ) ≤ (2/3 : ℚ) * (n : ℚ) := by
+    have hn' : (3 : ℚ) ≤ (n : ℚ) := by exact_mod_cast hn
+    have hnonneg : (0 : ℚ) ≤ (2/3 : ℚ) := by norm_num
+    calc
+      (2 : ℚ) = (2/3 : ℚ) * (3 : ℚ) := by norm_num
+      _ ≤ (2/3 : ℚ) * (n : ℚ) := mul_le_mul_of_nonneg_left hn' hnonneg
+  exact (div_le_iff₀ hn0).2 this
+
+end TwoThirdsTechnical
 
 /-! ## Main Theorem: The 2/3 Upper Bound
 
@@ -357,13 +617,196 @@ theorem two_thirds_achievable : ∃ (β : Type) (_ : HeytingAlgebra β) (_ : Fin
     (∃ a : β, a ⊔ aᶜ ≠ ⊤) ∧ @lemDegree β _ _ = 2/3 := by
   exact ⟨Chain3, inferInstance, inferInstance, Chain3.chain3_not_boolean, Chain3.chain3_lemDegree⟩
 
-/-- Conjecture: For any finite non-Boolean Heyting algebra, lemDegree ≤ 2/3
-    (This is the main theorem of arXiv:2110.11515) -/
+/-- **Theorem 2.4 (Bumpus–Kocsis–Master)**: For any finite non-Boolean Heyting algebra,
+the LEM degree is at most `2/3`. -/
 theorem lem_degree_le_two_thirds
     (hNotBoolean : ∃ a : α, a ⊔ aᶜ ≠ ⊤)
-    (hCard : 0 < Fintype.card α) :
+    (_hCard : 0 < Fintype.card α) :
     lemDegree α ≤ 2/3 := by
-  sorry -- Main theorem from the paper, requires significant proof
+  classical
+  -- Strong induction on `|α|`.
+  let P : ℕ → Prop :=
+    fun n =>
+      ∀ (β : Type u) [HeytingAlgebra β] [Fintype β],
+        Fintype.card β = n →
+          (∃ a : β, a ⊔ aᶜ ≠ (⊤ : β)) →
+            lemDegree β ≤ 2/3
+  have hP : P (Fintype.card α) := by
+    -- Main induction step.
+    refine Nat.strong_induction_on (n := Fintype.card α) ?_
+    intro n ih β instβ instF hcardβ hNotBooleanβ
+    classical
+    -- If at most two elements satisfy LEM, we are done by a simple counting bound.
+    by_cases hlem : lemCount β ≤ 2
+    ·
+      -- First show `3 ≤ |β|` from non-Booleanity.
+      obtain ⟨a, ha⟩ := hNotBooleanβ
+      have ha_notLEM : ¬SatisfiesLEM a := by
+        intro h
+        exact ha (by simpa [SatisfiesLEM] using h)
+      -- Inject `Fin 3` into `β` using `⊥, a, ⊤`.
+      have hcard_ge_three : 3 ≤ Fintype.card β := by
+        have ha_bot : a ≠ (⊥ : β) := by
+          intro ha'
+          subst ha'
+          have : SatisfiesLEM (⊥ : β) := by
+            unfold SatisfiesLEM
+            simp
+          exact ha_notLEM this
+        have ha_top : a ≠ (⊤ : β) := by
+          intro ha'
+          subst ha'
+          have : SatisfiesLEM (⊤ : β) := by
+            unfold SatisfiesLEM
+            simp
+          exact ha_notLEM this
+        have hbot_top : (⊥ : β) ≠ (⊤ : β) := by
+          intro hbt
+          have : a ≤ (⊥ : β) := by
+            simp [hbt]
+          have ha' : a = (⊥ : β) := le_bot_iff.mp this
+          exact ha_top (by simp [ha', hbt])
+        let f : Fin 3 → β := fun i =>
+          match (i : Nat) with
+          | 0 => (⊥ : β)
+          | 1 => a
+          | _ => (⊤ : β)
+        have hinj : Function.Injective f := by
+          intro i j hij
+          fin_cases i <;> fin_cases j <;> simp [f] at hij
+          all_goals try rfl
+          · exact False.elim (ha_bot hij.symm)
+          · exact False.elim (hbot_top hij)
+          · exact False.elim (ha_bot hij)
+          · exact False.elim (ha_top hij)
+          · exact False.elim (hbot_top hij.symm)
+          · exact False.elim (ha_top hij.symm)
+        have : Fintype.card (Fin 3) ≤ Fintype.card β :=
+          Fintype.card_le_of_injective (f := f) hinj
+        simpa using this
+      have hcard_ge_three' : 3 ≤ n := by simpa [hcardβ] using hcard_ge_three
+      -- Bound `lemDegree β ≤ 2 / |β| ≤ 2/3`.
+      have hle_num : (lemCount β : ℚ) ≤ 2 := by exact_mod_cast hlem
+      have hden_nonneg : 0 ≤ (Fintype.card β : ℚ) := by exact_mod_cast (Nat.zero_le _)
+      have hdiv_le : lemDegree β ≤ (2 : ℚ) / (Fintype.card β : ℚ) := by
+        unfold lemDegree
+        exact (div_le_div_of_nonneg_right hle_num hden_nonneg)
+      have htwo_div : (2 : ℚ) / (Fintype.card β : ℚ) ≤ 2/3 := by
+        -- replace `Fintype.card β` by `n` using `hcardβ`
+        simpa [hcardβ] using two_div_card_le_two_thirds n hcard_ge_three'
+      exact le_trans hdiv_le htwo_div
+    ·
+      -- Otherwise, there is a nontrivial element `c` satisfying LEM.
+      have hlem_gt : 2 < lemCount β := lt_of_not_ge hlem
+      let s : Finset β :=
+        @Finset.filter β (fun a => a ⊔ aᶜ = (⊤ : β)) (Classical.decPred _) Finset.univ
+      have hs_card : s.card = lemCount β := by
+        simp [lemCount, s]
+      have hs_gt : 2 < s.card := by simpa [hs_card] using hlem_gt
+      have hbot_mem : (⊥ : β) ∈ s := by
+        simp [s]
+      have htop_mem : (⊤ : β) ∈ s := by
+        simp [s]
+      obtain ⟨c, hc_mem, hc_ne_bot, hc_ne_top⟩ :=
+        exists_mem_ne_ne_of_card_gt_two (δ := β) s (⊥ : β) (⊤ : β) hs_gt
+      have hc : c ⊔ cᶜ = (⊤ : β) := by
+        simpa [s] using (Finset.mem_filter.1 hc_mem).2
+      -- Decompose `β` along `c`.
+      let f := decompOrderIso (β := β) c hc
+      -- Local `Fintype` instances for the factors.
+      letI : Fintype (Set.Iic c) := by classical exact inferInstance
+      letI : Fintype (Set.Iic cᶜ) := by classical exact inferInstance
+      -- Identify `lemDegree β` with the product degree.
+      have hdeg_congr : lemDegree β = lemDegree (Set.Iic c × Set.Iic cᶜ) :=
+        lemDegree_congr_of_orderIso (β := β) (γ := Set.Iic c × Set.Iic cᶜ) f
+      have hdeg_prod : lemDegree (Set.Iic c × Set.Iic cᶜ) = lemDegree (Set.Iic c) * lemDegree (Set.Iic cᶜ) :=
+        lemDegree_prod (Set.Iic c) (Set.Iic cᶜ)
+      -- Use non-Booleanity to show at least one factor is non-Boolean.
+      obtain ⟨a, ha_notLEM⟩ := hNotBooleanβ
+      have ha_notLEM' : ¬SatisfiesLEM a := by
+        intro h
+        exact ha_notLEM (by simpa [SatisfiesLEM] using h)
+      have ha_prod_notLEM : ¬SatisfiesLEM (f a) := by
+        -- LEM is invariant under order isomorphism.
+        exact (satisfiesLEM_iff_of_orderIso f a).not.mp ha_notLEM'
+      have hsplit : (¬SatisfiesLEM (f a).1) ∨ (¬SatisfiesLEM (f a).2) := by
+        -- `SatisfiesLEM` on products is conjunction.
+        have : ¬(SatisfiesLEM (f a).1 ∧ SatisfiesLEM (f a).2) := by
+          intro hboth
+          exact ha_prod_notLEM ((satisfiesLEM_prod_iff (x := f a)).2 hboth)
+        exact not_and_or.mp this
+      -- Cardinality of each factor is strictly smaller than `n` (since `c` and `cᶜ` are not `⊤`).
+      have hc_ne_top' : c ≠ (⊤ : β) := hc_ne_top
+      have hccompl_ne_top : cᶜ ≠ (⊤ : β) := by
+        intro hctop
+        have : c = (⊥ : β) := (compl_eq_top_iff (β := β) c).1 hctop
+        exact hc_ne_bot this
+      have hcard_Iic_lt : Fintype.card (Set.Iic c) < n := by
+        have hx : ¬((⊤ : β) ≤ c) := by
+          intro htop
+          have : c = (⊤ : β) := (top_le_iff).1 htop
+          exact hc_ne_top' this
+        have : Fintype.card {x : β // x ≤ c} < Fintype.card β :=
+          Fintype.card_subtype_lt (p := fun x : β => x ≤ c) (x := (⊤ : β)) hx
+        simpa [Set.Iic, hcardβ] using this
+      have hcard_IicCompl_lt : Fintype.card (Set.Iic cᶜ) < n := by
+        have hx : ¬((⊤ : β) ≤ cᶜ) := by
+          intro htop
+          have : cᶜ = (⊤ : β) := (top_le_iff).1 htop
+          exact hccompl_ne_top this
+        have : Fintype.card {x : β // x ≤ cᶜ} < Fintype.card β :=
+          Fintype.card_subtype_lt (p := fun x : β => x ≤ cᶜ) (x := (⊤ : β)) hx
+        simpa [Set.Iic, hcardβ] using this
+      -- Apply IH on the non-Boolean factor, and use `≤ 1` on the other.
+      have hdeg1_le1 : lemDegree (Set.Iic c) ≤ 1 := lemDegree_le_one (Set.Iic c)
+      have hdeg2_le1 : lemDegree (Set.Iic cᶜ) ≤ 1 := lemDegree_le_one (Set.Iic cᶜ)
+      have hdeg1_nonneg : 0 ≤ lemDegree (Set.Iic c) := lemDegree_nonneg (Set.Iic c)
+      have hdeg2_nonneg : 0 ≤ lemDegree (Set.Iic cᶜ) := lemDegree_nonneg (Set.Iic cᶜ)
+      have hbound :
+          lemDegree (Set.Iic c) * lemDegree (Set.Iic cᶜ) ≤ 2/3 := by
+        cases hsplit with
+        | inl hbad1 =>
+          -- First factor is non-Boolean.
+          have hIH1 : lemDegree (Set.Iic c) ≤ 2/3 := by
+            -- Use IH at size `|Set.Iic c|`.
+            have := ih (Fintype.card (Set.Iic c)) hcard_Iic_lt
+            -- specialize
+            have hnb : ∃ x : Set.Iic c, x ⊔ xᶜ ≠ (⊤ : Set.Iic c) := by
+              refine ⟨(f a).1, ?_⟩
+              exact hbad1
+            simpa using this (Set.Iic c) (by rfl) hnb
+          -- Multiply bounds.
+          calc
+            lemDegree (Set.Iic c) * lemDegree (Set.Iic cᶜ)
+                ≤ (2/3 : ℚ) * lemDegree (Set.Iic cᶜ) := by
+                  exact mul_le_mul_of_nonneg_right hIH1 hdeg2_nonneg
+            _ ≤ (2/3 : ℚ) * 1 := by
+                  exact mul_le_mul_of_nonneg_left hdeg2_le1 (by norm_num)
+            _ = 2/3 := by simp
+        | inr hbad2 =>
+          -- Second factor is non-Boolean.
+          have hIH2 : lemDegree (Set.Iic cᶜ) ≤ 2/3 := by
+            have := ih (Fintype.card (Set.Iic cᶜ)) hcard_IicCompl_lt
+            have hnb : ∃ x : Set.Iic cᶜ, x ⊔ xᶜ ≠ (⊤ : Set.Iic cᶜ) := by
+              refine ⟨(f a).2, ?_⟩
+              exact hbad2
+            simpa using this (Set.Iic cᶜ) (by rfl) hnb
+          calc
+            lemDegree (Set.Iic c) * lemDegree (Set.Iic cᶜ)
+                ≤ lemDegree (Set.Iic c) * (2/3 : ℚ) := by
+                  exact mul_le_mul_of_nonneg_left hIH2 hdeg1_nonneg
+            _ ≤ 1 * (2/3 : ℚ) := by
+                  exact mul_le_mul_of_nonneg_right hdeg1_le1 (by norm_num)
+            _ = 2/3 := by simp
+      -- Wrap up.
+      -- `lemDegree β = lemDegree (Iic c × Iic cᶜ) = product`.
+      calc
+        lemDegree β = lemDegree (Set.Iic c × Set.Iic cᶜ) := hdeg_congr
+        _ = lemDegree (Set.Iic c) * lemDegree (Set.Iic cᶜ) := hdeg_prod
+        _ ≤ 2/3 := hbound
+  -- Apply the induction result to `α`.
+  have := hP α rfl hNotBoolean
+  exact this
 
 /-- Contrapositive: If lemDegree > 2/3, the algebra is Boolean -/
 theorem boolean_of_lem_degree_gt_two_thirds

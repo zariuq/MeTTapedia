@@ -147,6 +147,165 @@ theorem relEntropy_le_log_inv_of_dominates (μ : PrefixMeasure) (ξ : Semimeasur
               (f := fun x => (prefixPMF μ n x).toReal) (a := Real.log (1 / c.toReal))).symm
     _ = Real.log (1 / c.toReal) := by simp [hweights]
 
+/-- **Competitor bound** (dominance on the predictor side):
+
+If a semimeasure `ξ` dominates a *competitor* prefix measure `η` with constant `c`,
+then for any true environment `μ` we have
+
+`Dₙ(μ‖ξ) ≤ Dₙ(μ‖η) + log(1/c)`.
+
+This is the standard “universal prediction competes with any enumerated expert” inequality,
+and it is also the key algebraic step behind Hook‑B hyperprior mixtures.
+
+We assume `η` is pointwise nonzero to avoid the totalized `Real.log (μ/0)=0` artifact
+from weakening the inequality in the wrong direction.
+-/
+theorem relEntropy_le_add_log_inv_of_dominates_right
+    (μ : PrefixMeasure) (ξ : Semimeasure) (η : PrefixMeasure) {c : ENNReal}
+    (hdom : Dominates ξ η c) (hc0 : c ≠ 0) (hη0 : ∀ x : BinString, η x ≠ 0) (n : ℕ) :
+    relEntropy μ ξ n ≤ relEntropy μ η.toSemimeasure n + Real.log (1 / c.toReal) := by
+  classical
+  unfold relEntropy expectPrefix
+  -- Termwise: `log(μ/ξ) ≤ log(μ/η) + log(1/c)`.
+  have hterm :
+      ∀ x : Fin n → Bool,
+        (prefixPMF μ n x).toReal *
+              Real.log ((μ (List.ofFn x)).toReal / (ξ (List.ofFn x)).toReal) ≤
+            (prefixPMF μ n x).toReal *
+                Real.log ((μ (List.ofFn x)).toReal / (η (List.ofFn x)).toReal) +
+              (prefixPMF μ n x).toReal * Real.log (1 / c.toReal) := by
+    intro x
+    set s : BinString := List.ofFn x
+    by_cases hμ0 : μ s = 0
+    · -- If `μ(s)=0`, then the PMF weight is `0`, so the whole term is `0`.
+      have hpmf0 : prefixPMF μ n x = 0 := by
+        -- `prefixPMF μ n x = μ (ofFn x)` by definition.
+        simpa [prefixPMF, s, hμ0]
+      simp [hpmf0]
+    · -- Otherwise `μ(s)>0`, and we can use log algebra.
+      have hμTop : μ s ≠ (⊤ : ENNReal) := by
+        -- A prefix measure is a semimeasure, hence bounded by `1`.
+        have hle : μ.toSemimeasure s ≤ 1 := semimeasure_le_one (μ := μ.toSemimeasure) s
+        exact ne_top_of_le_ne_top ENNReal.one_ne_top hle
+      have hμpos : 0 < (μ s).toReal := ENNReal.toReal_pos hμ0 hμTop
+      have hηTop : η s ≠ (⊤ : ENNReal) := by
+        have hle : η.toSemimeasure s ≤ 1 := semimeasure_le_one (μ := η.toSemimeasure) s
+        exact ne_top_of_le_ne_top ENNReal.one_ne_top hle
+      have hηpos : 0 < (η s).toReal := ENNReal.toReal_pos (hη0 s) hηTop
+      have hc1 : c ≤ 1 := dominates_const_le_one (μ := η) (ξ := ξ) hdom
+      have hcTop : c ≠ (⊤ : ENNReal) := ne_top_of_le_ne_top ENNReal.one_ne_top hc1
+      have hξ0 : ξ s ≠ 0 := by
+        intro hξ0
+        have : η s = 0 := Dominates.eq_zero_of_eq_zero (h := hdom) hc0 s hξ0
+        exact (hη0 s) this
+      have hξTop : ξ s ≠ (⊤ : ENNReal) := semimeasure_ne_top ξ s
+      have hξpos : 0 < (ξ s).toReal := ENNReal.toReal_pos hξ0 hξTop
+      -- Decompose `log(μ/ξ) = log(μ/η) + log(η/ξ)`.
+      have hdecomp :
+          Real.log ((μ s).toReal / (ξ s).toReal) =
+            Real.log ((μ s).toReal / (η s).toReal) + Real.log ((η s).toReal / (ξ s).toReal) := by
+        have hmul :
+            (μ s).toReal / (ξ s).toReal =
+              ((μ s).toReal / (η s).toReal) * ((η s).toReal / (ξ s).toReal) := by
+          field_simp [ne_of_gt hηpos, ne_of_gt hξpos]
+        -- Both factors are positive, so we can use `log_mul`.
+        have hpos1 : 0 < (μ s).toReal / (η s).toReal := div_pos hμpos hηpos
+        have hpos2 : 0 < (η s).toReal / (ξ s).toReal := div_pos hηpos hξpos
+        calc
+          Real.log ((μ s).toReal / (ξ s).toReal)
+              = Real.log (((μ s).toReal / (η s).toReal) * ((η s).toReal / (ξ s).toReal)) := by
+                  simp [hmul]
+          _ = Real.log ((μ s).toReal / (η s).toReal) + Real.log ((η s).toReal / (ξ s).toReal) := by
+                  simpa using
+                    (Real.log_mul (x := (μ s).toReal / (η s).toReal) (y := (η s).toReal / (ξ s).toReal)
+                      (ne_of_gt hpos1) (ne_of_gt hpos2))
+      -- Bound `log(η/ξ) ≤ log(1/c)` from dominance.
+      have hlog_ηξ :
+          Real.log ((η s).toReal / (ξ s).toReal) ≤ Real.log (1 / c.toReal) := by
+        -- Reuse the existing dominance lemma by viewing `η` as the true environment.
+        exact log_ratio_le_log_inv_of_dominates (μ := η) (ξ := ξ) (hdom := hdom) (hc0 := hc0)
+          (x := s)
+      have hlog :
+          Real.log ((μ s).toReal / (ξ s).toReal) ≤
+            Real.log ((μ s).toReal / (η s).toReal) + Real.log (1 / c.toReal) := by
+        -- Replace `log(μ/ξ)` by the decomposition and apply the bound.
+        linarith [hdecomp, hlog_ηξ]
+      -- Multiply by the (nonnegative) finite-horizon weight.
+      have hw_nonneg : 0 ≤ (prefixPMF μ n x).toReal := ENNReal.toReal_nonneg
+      calc
+        (prefixPMF μ n x).toReal * Real.log ((μ s).toReal / (ξ s).toReal)
+            ≤ (prefixPMF μ n x).toReal *
+                  (Real.log ((μ s).toReal / (η s).toReal) + Real.log (1 / c.toReal)) := by
+                exact mul_le_mul_of_nonneg_left hlog hw_nonneg
+        _ =
+            (prefixPMF μ n x).toReal * Real.log ((μ s).toReal / (η s).toReal) +
+              (prefixPMF μ n x).toReal * Real.log (1 / c.toReal) := by
+                ring
+  -- Sum the termwise bounds.
+  have hsum :
+      (∑ x : Fin n → Bool,
+            (prefixPMF μ n x).toReal *
+              Real.log ((μ (List.ofFn x)).toReal / (ξ (List.ofFn x)).toReal)) ≤
+          ∑ x : Fin n → Bool,
+            ((prefixPMF μ n x).toReal *
+                  Real.log ((μ (List.ofFn x)).toReal / (η (List.ofFn x)).toReal) +
+              (prefixPMF μ n x).toReal * Real.log (1 / c.toReal)) := by
+    simpa using
+      (Finset.sum_le_sum (s := (Finset.univ : Finset (Fin n → Bool))) (fun x hx => hterm x))
+  -- Split the RHS sum and use `∑ weights = 1`.
+  have hweights : (∑ x : Fin n → Bool, (prefixPMF μ n x).toReal) = 1 :=
+    sum_prefixPMF_toReal (μ := μ) (n := n)
+  calc
+    (∑ x : Fin n → Bool,
+          (prefixPMF μ n x).toReal *
+            Real.log ((μ (List.ofFn x)).toReal / (ξ (List.ofFn x)).toReal))
+        ≤ ∑ x : Fin n → Bool,
+            ((prefixPMF μ n x).toReal *
+                  Real.log ((μ (List.ofFn x)).toReal / (η (List.ofFn x)).toReal) +
+              (prefixPMF μ n x).toReal * Real.log (1 / c.toReal)) := hsum
+    _ =
+        (∑ x : Fin n → Bool,
+              (prefixPMF μ n x).toReal *
+                Real.log ((μ (List.ofFn x)).toReal / (η (List.ofFn x)).toReal)) +
+          ∑ x : Fin n → Bool, (prefixPMF μ n x).toReal * Real.log (1 / c.toReal) := by
+          simpa using (Finset.sum_add_distrib :
+            (∑ x : Fin n → Bool,
+                ((prefixPMF μ n x).toReal *
+                      Real.log ((μ (List.ofFn x)).toReal / (η (List.ofFn x)).toReal) +
+                  (prefixPMF μ n x).toReal * Real.log (1 / c.toReal))) =
+              (∑ x : Fin n → Bool,
+                  (prefixPMF μ n x).toReal *
+                    Real.log ((μ (List.ofFn x)).toReal / (η (List.ofFn x)).toReal)) +
+                ∑ x : Fin n → Bool, (prefixPMF μ n x).toReal * Real.log (1 / c.toReal))
+    _ = relEntropy μ η.toSemimeasure n + Real.log (1 / c.toReal) := by
+          unfold relEntropy expectPrefix
+          have hconst :
+              (∑ x : Fin n → Bool, (prefixPMF μ n x).toReal * Real.log (1 / c.toReal)) =
+                (∑ x : Fin n → Bool, (prefixPMF μ n x).toReal) * Real.log (1 / c.toReal) := by
+            simpa using
+              (Finset.sum_mul (s := (Finset.univ : Finset (Fin n → Bool)))
+                (f := fun x : Fin n → Bool => (prefixPMF μ n x).toReal)
+                (a := Real.log (1 / c.toReal))).symm
+          -- Peel off the constant term using `∑ weights = 1`.
+          calc
+            (∑ x : Fin n → Bool,
+                  (prefixPMF μ n x).toReal *
+                    Real.log ((μ (List.ofFn x)).toReal / (η (List.ofFn x)).toReal)) +
+                ∑ x : Fin n → Bool, (prefixPMF μ n x).toReal * Real.log (1 / c.toReal)
+                =
+                (∑ x : Fin n → Bool,
+                    (prefixPMF μ n x).toReal *
+                      Real.log ((μ (List.ofFn x)).toReal / (η (List.ofFn x)).toReal)) +
+                  (∑ x : Fin n → Bool, (prefixPMF μ n x).toReal) * Real.log (1 / c.toReal) := by
+                    -- Avoid `simp` rewriting `log (1 / c)` into `-log c` before we rewrite by `hconst`.
+                    rw [hconst]
+            _ =
+                (∑ x : Fin n → Bool,
+                    (prefixPMF μ n x).toReal *
+                      Real.log ((μ (List.ofFn x)).toReal / (η (List.ofFn x)).toReal)) +
+                  Real.log (1 / c.toReal) := by
+                    simp [hweights]
+
 end FiniteHorizon
 
 end Mettapedia.Logic.UniversalPrediction

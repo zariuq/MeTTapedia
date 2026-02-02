@@ -279,4 +279,68 @@ noncomputable abbrev markovJeffreysPrefixMeasure : PrefixMeasure :=
   markovBetaPrefixMeasure (α0 := (1/2 : ℝ)) (β0 := (1/2 : ℝ)) (α1 := (1/2 : ℝ)) (β1 := (1/2 : ℝ))
     (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
+/-! ## Positivity (no zero-mass prefixes) -/
+
+private lemma initProb_pos (b : Bool) : 0 < initProb b := by
+  simp [initProb]
+
+private lemma stepProb_pos (α0 β0 α1 β1 : ℝ)
+    (hα0 : 0 < α0) (hβ0 : 0 < β0) (hα1 : 0 < α1) (hβ1 : 0 < β1)
+    (c : TransCounts) (prev next : Bool) :
+    0 < stepProb α0 β0 α1 β1 c prev next := by
+  unfold stepProb
+  set denom := stepDenom α0 β0 α1 β1 c prev
+  have hdenom : 0 < denom := by
+    simpa [denom] using stepDenom_pos (α0 := α0) (β0 := β0) (α1 := α1) (β1 := β1)
+      hα0 hβ0 hα1 hβ1 c prev
+  cases prev <;> cases next <;> simp [denom]
+  all_goals
+    refine div_pos ?_ hdenom
+    -- Each numerator is a nat-cast plus a strictly positive hyperparameter.
+    have hn : 0 ≤ ((0 : ℕ) : ℝ) := by exact_mod_cast (Nat.zero_le 0)
+    linarith
+
+private lemma markovPrefixAux_ne_zero (α0 β0 α1 β1 : ℝ)
+    (hα0 : 0 < α0) (hβ0 : 0 < β0) (hα1 : 0 < α1) (hβ1 : 0 < β1)
+    (prev : Bool) (c : TransCounts) :
+    ∀ xs : BinString, markovPrefixAux α0 β0 α1 β1 hα0 hβ0 hα1 hβ1 prev c xs ≠ 0 := by
+  intro xs
+  induction xs generalizing prev c with
+  | nil =>
+      simp [markovPrefixAux]
+  | cons b xs ih =>
+      -- `simp` turns `x * y ≠ 0` into the conjunction of the two nonzero conditions.
+      simp [markovPrefixAux]
+      constructor
+      · -- `stepProb` is strictly positive when all hyperparameters are.
+        exact stepProb_pos (α0 := α0) (β0 := β0) (α1 := α1) (β1 := β1) hα0 hβ0 hα1 hβ1 c prev b
+      · -- The tail recursion is nonzero by IH.
+        simpa using ih (prev := b) (c := c.bump prev b)
+
+private lemma markovPrefix_ne_zero (α0 β0 α1 β1 : ℝ)
+    (hα0 : 0 < α0) (hβ0 : 0 < β0) (hα1 : 0 < α1) (hβ1 : 0 < β1) :
+    ∀ xs : BinString, markovPrefix α0 β0 α1 β1 hα0 hβ0 hα1 hβ1 xs ≠ 0 := by
+  intro xs
+  cases xs with
+  | nil =>
+      simp [markovPrefix]
+  | cons b xs =>
+      -- `simp` turns `x * y ≠ 0` into the conjunction of the two nonzero conditions.
+      simp [markovPrefix]
+      constructor
+      · exact initProb_pos b
+      · exact markovPrefixAux_ne_zero (α0 := α0) (β0 := β0) (α1 := α1) (β1 := β1)
+          hα0 hβ0 hα1 hβ1 b TransCounts.zero xs
+
+/-- Any Markov-Beta prefix-measure with strictly positive hyperparameters assigns nonzero
+probability to every finite prefix. -/
+theorem markovBetaPrefixMeasure_ne_zero
+    (α0 β0 α1 β1 : ℝ)
+    (hα0 : 0 < α0) (hβ0 : 0 < β0) (hα1 : 0 < α1) (hβ1 : 0 < β1) :
+    ∀ xs : BinString, (markovBetaPrefixMeasure (α0 := α0) (β0 := β0) (α1 := α1) (β1 := β1)
+      hα0 hβ0 hα1 hβ1) xs ≠ 0 := by
+  -- This is just `markovPrefix_ne_zero` for the underlying `toFun`.
+  intro xs
+  exact markovPrefix_ne_zero (α0 := α0) (β0 := β0) (α1 := α1) (β1 := β1) hα0 hβ0 hα1 hβ1 xs
+
 end Mettapedia.Logic.UniversalPrediction

@@ -58,7 +58,7 @@
     {₂}{$_2$}1
     {ₙ}{$_n$}1
     {ₖ}{$_k$}1
-    {ₗ}{$_l$}1
+	    {ₗ}{\\textsubscript{l}}1
     {¬}{$\neg$}1
     {≃}{$\simeq$}1
     {⊓}{$\sqcap$}1
@@ -71,11 +71,12 @@
     {⊥}{$\bot$}1
     {∅}{$\emptyset$}1
     {∑}{$\sum$}1
-    {⊗}{$\otimes$}1
-    {⊕}{$\oplus$}1
-    {×}{$\times$}1
-    {⟨}{$\langle$}1
-    {⟩}{$\rangle$}1
+	    {⊗}{$\otimes$}1
+	    {⊕}{$\oplus$}1
+	    {×ₗ}{$\times_{l}$}2
+	    {×}{$\times$}1
+	    {⟨}{$\langle$}1
+	    {⟩}{$\rangle$}1
     {“}{``}1
     {”}{''}1
     {–}{--}1
@@ -201,7 +202,7 @@ Symmetries 0--2 constrain how valuations relate to lattice structure:
 The \textbf{direct product} symmetries (3--4) are formalized separately in \texttt{Multiplicative/Main.lean} (see Section~\ref{sec:product}).
 
 \begin{definition}[\texttt{KSSemigroupBase}]
-\textbf{Lines 180--188, Core/Basic.lean}
+\textbf{Lines 179--187, Core/Basic.lean}
 
 Identity-free core structure containing only Symmetries 0--2.
 \end{definition}
@@ -215,7 +216,7 @@ class KSSemigroupBase (alpha : Type*) extends LinearOrder alpha where
 \end{lstlisting}
 
 \begin{definition}[\texttt{KnuthSkillingMonoidBase}]
-\textbf{Lines 237--244, Core/Basic.lean}
+\textbf{Lines 236--243, Core/Basic.lean}
 
 Adds an identity element (\texttt{ident}) without assuming it is the order minimum.
 \end{definition}
@@ -228,7 +229,7 @@ class KnuthSkillingMonoidBase (alpha : Type*) extends KSSemigroupBase alpha wher
 \end{lstlisting}
 
 \begin{definition}[\texttt{KnuthSkillingAlgebraBase}]
-\textbf{Lines 246--248, Core/Basic.lean}
+\textbf{Lines 245--247, Core/Basic.lean}
 
 The probability-theory convenience layer: assumes the identity is the order minimum (\texttt{ident\_le}).
 \end{definition}
@@ -301,12 +302,12 @@ or bundled classes when you want ergonomic access to multiple axioms.
 
 \textbf{Combination predicates} (Core/Basic.lean):
 \begin{itemize}
-\item \texttt{OpAssoc op} (line 143): $\forall x\, y\, z,\; \text{op}(\text{op}(x, y), z) = \text{op}(x, \text{op}(y, z))$
-\item \texttt{OpStrictMonoLeft op} (line 147): $\forall y,\; \text{StrictMono}(\lambda x.\, \text{op}(x, y))$
-\item \texttt{OpStrictMonoRight op} (line 151): $\forall x,\; \text{StrictMono}(\lambda y.\, \text{op}(x, y))$
-\item \texttt{OpIdentLeft op e} (line 155): $\forall x,\; \text{op}(e, x) = x$
-\item \texttt{OpIdentRight op e} (line 159): $\forall x,\; \text{op}(x, e) = x$
-\item \texttt{IdentIsMin e} (line 163): $\forall x,\; e \leq x$
+  \item \texttt{OpAssoc op} (line 142): $\forall x\, y\, z,\; \text{op}(\text{op}(x, y), z) = \text{op}(x, \text{op}(y, z))$
+  \item \texttt{OpStrictMonoLeft op} (line 146): $\forall y,\; \text{StrictMono}(\lambda x.\, \text{op}(x, y))$
+  \item \texttt{OpStrictMonoRight op} (line 150): $\forall x,\; \text{StrictMono}(\lambda y.\, \text{op}(x, y))$
+  \item \texttt{OpIdentLeft op e} (line 154): $\forall x,\; \text{op}(e, x) = x$
+  \item \texttt{OpIdentRight op e} (line 158): $\forall x,\; \text{op}(x, e) = x$
+  \item \texttt{IdentIsMin e} (line 162): $\forall x,\; e \leq x$
 \end{itemize}
 
 \textbf{Connection theorems}: The \texttt{KSSemigroupBase} and \texttt{KnuthSkillingAlgebraBase} namespaces
@@ -338,7 +339,7 @@ This builds the sequence: $\text{ident}, x, x \oplus x, x \oplus (x \oplus x), \
 \textbf{File}: \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Core/Basic.lean}
 
 \begin{definition}[\texttt{iterate\_op\_pnat}]
-\textbf{Lines 375--376, Core/Basic.lean}
+\textbf{Lines 374--375, Core/Basic.lean}
 
 For identity-free reasoning, we define iteration using positive natural numbers ($\mathbb{N}^+$) instead of $\mathbb{N}$. This works on the weaker \texttt{KSSemigroupBase} (no identity required).
 \end{definition}
@@ -480,7 +481,7 @@ such that:
 \]
 \end{definition}
 
-\begin{lstlisting}[caption={Separation axiom (identity-free, Algebra.lean:312)},numbers=none]
+\begin{lstlisting}[caption={Separation axiom (identity-free, Algebra.lean:335)},numbers=none]
 class KSSeparationSemigroup (alpha : Type*) [KSSemigroupBase alpha] where
   separation : forall {a x y : alpha},
     IsPositive a -> IsPositive x -> IsPositive y -> x < y ->
@@ -827,9 +828,9 @@ The DirectCuts path provides \textbf{both identity-based and identity-free} vers
 \begin{itemize}
 \item \textbf{Identity-free}: Uses \texttt{Theta\_cuts\_pnat} with $\mathbb{N}^+$ iteration
   \begin{itemize}
-  \item \texttt{Theta\_cuts\_pnat} (line 1434): Definition via Dedekind cuts using $\mathbb{N}^+$ iteration
-  \item \texttt{Theta\_cuts\_pnat\_strictMono} (line 1530): Strict monotonicity (fully proven)
-  \item \texttt{Theta\_cuts\_pnat\_add} (line 1636): Additivity (fully proven)
+  \item \texttt{Theta\_cuts\_pnat} (line 1436): Definition via Dedekind cuts using $\mathbb{N}^+$ iteration
+  \item \texttt{Theta\_cuts\_pnat\_strictMono} (line 1532): Strict monotonicity (fully proven)
+  \item \texttt{Theta\_cuts\_pnat\_add} (line 1638): Additivity (fully proven)
   \item No reference to \texttt{ident} anywhere
   \end{itemize}
 
@@ -876,7 +877,7 @@ Thus $\Theta : \alpha \to \mathbb{R}$ is directly defined without requiring $\al
 \end{remark}
 
 \begin{theorem}[\texttt{associativity\_representation\_cuts}]
-\textbf{Lines 44--71, Additive/Proofs/DirectCuts/Main.lean}
+\textbf{Lines 85--112, Additive/Proofs/DirectCuts/Main.lean}
 
 The cuts-based representation theorem.
 \end{theorem}
@@ -1322,7 +1323,7 @@ Shore--Johnson (1980) derive the \emph{same} functional equation via \emph{diffe
 
 \textbf{The connection}: This is the \emph{special case} $\lambda = \mu = g$ of the variational equation. Same Gate R (measurability) forces the same logarithmic solution.
 
-\begin{theorem}[\texttt{mulCauchyOnPos\_eq\_const\_mul\_log}]
+\begin{theorem}[\texttt{mulCauchyOnPos\_eq\_const\_mul\_log\_of\_variationalEquation\_solution\_measurable}]
 \textbf{Lines 33--65, Bridges/ShoreJohnsonVariationalBridge.lean}
 \end{theorem}
 
@@ -2670,7 +2671,7 @@ def AssociativityEquation (F : Real -> Real -> Real) : Prop :=
 \textbf{File}: \path{Mettapedia/ProbabilityTheory/Cox/ProductRuleDerivation.lean}
 
 \begin{theorem}[\texttt{cox\_productRule}]
-\textbf{Lines 2349--2351, Cox/ProductRuleDerivation.lean}
+\textbf{Lines 2348--2350, Cox/ProductRuleDerivation.lean}
 
 Cox's main theorem: under Cox's axioms, there exists a reparametrization $p$ such that
 $p(F(x,y)) = p(x)p(y)$ on $(0,1]$.
@@ -2685,7 +2686,7 @@ theorem cox_productRule (C : CoxFullAxioms) :
 \end{lstlisting}
 
 \begin{theorem}[\texttt{cox\_commutativity}]
-\textbf{Lines 2391--2402, Cox/ProductRuleDerivation.lean}
+\textbf{Lines 2390--2401, Cox/ProductRuleDerivation.lean}
 
 Commutativity is derived: $F(x,y)=F(y,x)$ on the probability domain, as a consequence of the product rule.
 \end{theorem}
@@ -2699,7 +2700,7 @@ theorem cox_commutativity (C : CoxFullAxioms)
 \end{lstlisting}
 
 \begin{theorem}[\texttt{cox\_negationRule}]
-\textbf{Lines 3374--3376, Cox/ProductRuleDerivation.lean}
+\textbf{Lines 3373--3375, Cox/ProductRuleDerivation.lean}
 
 Negation rule (power-family form): there exists $r>0$ such that $G(x)^r + x^r = 1$ on $(0,1)$.
 \end{theorem}

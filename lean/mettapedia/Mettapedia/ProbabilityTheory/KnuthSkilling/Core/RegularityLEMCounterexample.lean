@@ -3,8 +3,9 @@
 
 ## Overview
 
-This file proves that the theorem "regular elements satisfy LEM" is FALSE
-in general (infinite) Heyting algebras, while being TRUE in finite ones.
+This file shows that the naive theorem "regular elements satisfy LEM" is FALSE
+in general Heyting algebras (and in fact can fail even for finite ones).
+We also record a sufficient hypothesis (Dense-Top) under which regular → LEM holds.
 
 ## The Counterexample
 
@@ -14,16 +15,17 @@ In the Heyting algebra of open sets of ℝ:
 
 ## Key Insight
 
-The gap between regularity and LEM arises from "boundary effects" in infinite spaces:
-- In finite Heyting algebras, there are no such boundary effects
-- In infinite/continuous spaces, boundaries can be "thick" enough to prevent LEM
+The gap between regularity and LEM is not controlled by finiteness alone.
+Additional separation hypotheses (such as the Dense-Top property below) are what
+force regular → LEM. Infinite/continuous counterexamples can be understood as
+"boundary effects", but finiteness does not prevent failure.
 
 ## The Dense-Top Property
 
-The key property that ensures "regular → LEM" is the Dense-Top property:
+One key property that ensures "regular → LEM" is the Dense-Top property:
   ∀ a, aᶜ = ⊥ → a = ⊤
 
-Finite Heyting algebras have this property. Infinite ones (like opens of ℝ) may not.
+Boolean algebras have this property. Many finite and infinite Heyting algebras do not.
 
 ## Ramifications for Probability Theory
 
@@ -50,7 +52,7 @@ open TopologicalSpace Set
 
 /-! ## Part 1: The Dense-Top Property
 
-The key property that distinguishes finite from infinite Heyting algebras.
+A property that can force regular → LEM, but is not automatic (even for finite algebras).
 -/
 
 variable {α : Type*} [HeytingAlgebra α]
@@ -118,7 +120,173 @@ theorem regular_implies_LEM_boolean (a : β) : a ⊔ aᶜ = ⊤ :=
 
 end BooleanDenseTop
 
-/-! ## Part 3: Opens of Topological Spaces
+/-! ## Part 3: A Finite Counterexample (Regular Does Not Imply LEM)
+
+We now give an explicit *finite* Heyting algebra where a regular element fails LEM.
+
+This refutes the common misconception that "finite" is enough to make regular → LEM true.
+-/
+
+namespace FiniteCounterexample
+
+/-!
+We build a 5-element Heyting algebra `H5` with elements:
+`⊥ < a, b < ab < ⊤`, where `a` and `b` are incomparable.
+
+Its pseudocomplement satisfies:
+`aᶜ = b`, `bᶜ = a`, and `abᶜ = ⊥`.
+
+Then `a` is regular (`aᶜᶜ = a`) but `a ⊔ aᶜ = ab ≠ ⊤`.
+-/
+
+inductive H5 : Type
+  | bot : H5
+  | a : H5
+  | b : H5
+  | ab : H5
+  | top : H5
+  deriving DecidableEq, Fintype
+
+namespace H5
+
+open H5
+
+def le' (x y : H5) : Prop :=
+  match x, y with
+  | bot, _ => True
+  | a, a => True
+  | a, ab => True
+  | a, top => True
+  | b, b => True
+  | b, ab => True
+  | b, top => True
+  | ab, ab => True
+  | ab, top => True
+  | top, top => True
+  | _, _ => False
+
+instance : LE H5 := ⟨le'⟩
+
+instance : DecidableRel (LE.le (α := H5)) := by
+  intro x y
+  cases x <;> cases y <;> (first | exact isTrue trivial | exact isFalse (fun h => h))
+
+private theorem le_refl' (x : H5) : x ≤ x := by cases x <;> trivial
+private theorem le_trans' {x y z : H5} (hxy : x ≤ y) (hyz : y ≤ z) : x ≤ z := by
+  cases x <;> cases y <;> cases z <;> trivial
+
+private theorem le_antisymm' {x y : H5} (hxy : x ≤ y) (hyx : y ≤ x) : x = y := by
+  cases x <;> cases y <;> first | rfl | exact absurd hyx (fun h => h) | exact absurd hxy (fun h => h)
+
+instance : Preorder H5 where
+  le_refl := le_refl'
+  le_trans := @le_trans'
+  lt_iff_le_not_ge _ _ := Iff.rfl
+
+instance : PartialOrder H5 where
+  le_antisymm := @le_antisymm'
+
+instance : BoundedOrder H5 where
+  top := top
+  le_top x := by cases x <;> trivial
+  bot := bot
+  bot_le x := by cases x <;> trivial
+
+def inf' (x y : H5) : H5 :=
+  match x, y with
+  | bot, _ => bot
+  | _, bot => bot
+  | top, y => y
+  | x, top => x
+  | a, a => a
+  | a, b => bot
+  | b, a => bot
+  | b, b => b
+  | a, ab => a
+  | ab, a => a
+  | b, ab => b
+  | ab, b => b
+  | ab, ab => ab
+
+def sup' (x y : H5) : H5 :=
+  match x, y with
+  | top, _ => top
+  | _, top => top
+  | bot, y => y
+  | x, bot => x
+  | a, a => a
+  | b, b => b
+  | a, b => ab
+  | b, a => ab
+  | a, ab => ab
+  | ab, a => ab
+  | b, ab => ab
+  | ab, b => ab
+  | ab, ab => ab
+
+instance : Lattice H5 where
+  inf := inf'
+  sup := sup'
+  inf_le_left x y := by cases x <;> cases y <;> trivial
+  inf_le_right x y := by cases x <;> cases y <;> trivial
+  le_inf x y z _ _ := by cases x <;> cases y <;> cases z <;> trivial
+  le_sup_left x y := by cases x <;> cases y <;> trivial
+  le_sup_right x y := by cases x <;> cases y <;> trivial
+  sup_le x y z _ _ := by cases x <;> cases y <;> cases z <;> trivial
+
+instance : DistribLattice H5 where
+  le_sup_inf x y z := by cases x <;> cases y <;> cases z <;> trivial
+
+def himp' (x y : H5) : H5 :=
+  match x, y with
+  | bot, _ => top
+  | top, y => y
+  | a, bot => b
+  | a, a => top
+  | a, b => b
+  | a, ab => top
+  | a, top => top
+  | b, bot => a
+  | b, a => a
+  | b, b => top
+  | b, ab => top
+  | b, top => top
+  | ab, bot => bot
+  | ab, a => a
+  | ab, b => b
+  | ab, ab => top
+  | ab, top => top
+
+instance : HImp H5 := ⟨himp'⟩
+instance : Compl H5 := ⟨fun x => himp' x bot⟩
+
+instance : HeytingAlgebra H5 where
+  himp := himp'
+  le_himp_iff x y z := by
+    cases x <;> cases y <;> cases z <;> decide
+  compl := fun x => himp' x bot
+  himp_bot x := by
+    cases x <;> rfl
+
+theorem a_is_regular : Heyting.IsRegular (a : H5) := by
+  rfl
+
+theorem a_not_LEM : (a : H5) ⊔ aᶜ ≠ (⊤ : H5) := by
+  native_decide
+
+end H5
+
+/-- There exists a finite Heyting algebra with a regular element that fails LEM. -/
+theorem exists_finite_regular_not_LEM :
+    ∃ (α : Type) (_ : HeytingAlgebra α) (_ : Fintype α),
+      ∃ a : α, Heyting.IsRegular a ∧ a ⊔ aᶜ ≠ (⊤ : α) := by
+  refine ⟨H5, inferInstance, inferInstance, H5.a, ?_, ?_⟩
+  · exact H5.a_is_regular
+  · exact H5.a_not_LEM
+
+end FiniteCounterexample
+
+/-! ## Part 4: Opens of Topological Spaces
 
 The opens of a topological space form a Frame (complete Heyting algebra).
 In this setting, Dense-Top can fail.
@@ -144,9 +312,7 @@ theorem opens_compl_eq_interior_compl (U : Opens X) :
     intro hx_compl  -- hx_compl : x ∈ (Uᶜ : Set X), i.e., x ∈ the Heyting complement
     -- Uᶜ is an open set, and we need to show (Uᶜ : Set X) ⊆ (U : Set X)ᶜ
     have h_subset : ((Uᶜ : Opens X) : Set X) ⊆ (U : Set X)ᶜ := by
-      intro y hy_in_compl  -- hy_in_compl : y ∈ (Uᶜ : Set X)
-      -- Need to show y ∉ (U : Set X)
-      intro hy_in_U  -- hy_in_U : y ∈ (U : Set X)
+      intro y hy_in_compl hy_in_U
       -- Then y ∈ Uᶜ ⊓ U, but Uᶜ ⊓ U = ⊥
       have hmem : y ∈ ((Uᶜ ⊓ U) : Opens X) := ⟨hy_in_compl, hy_in_U⟩
       have h_bot : (Uᶜ ⊓ U : Opens X) = ⊥ := by rw [inf_comm]; exact inf_compl_eq_bot
@@ -470,14 +636,16 @@ end ProbabilityRamifications
 /-! ## Summary
 
 1. **Dense-Top Property**: aᶜ = ⊥ → a = ⊤
-   - Finite Heyting algebras HAVE this property
-   - Opens of ℝ (and similar) do NOT have this property
+   - Boolean algebras HAVE this property
+   - It can fail in both finite and infinite Heyting algebras
 
 2. **Regular → LEM** is EQUIVALENT to Dense-Top:
    - regular_implies_LEM_of_denseTop: Dense-Top → (regular → LEM)
    - not_denseTop_of_regular_not_LEM: ¬(regular → LEM) → ¬Dense-Top
 
-3. **Counterexample**: In Opens ℝ, the interval (0,1) is regular but fails LEM
+3. **Counterexamples**:
+   - Finite: `FiniteCounterexample.H5` has a regular element `a` with `a ⊔ aᶜ ≠ ⊤`
+   - Infinite: In `Opens ℝ`, the interval (0,1) is regular but fails LEM
 
 4. **Probability Implications**:
    - Classical sum rule P(A) + P(Aᶜ) = 1 requires LEM
