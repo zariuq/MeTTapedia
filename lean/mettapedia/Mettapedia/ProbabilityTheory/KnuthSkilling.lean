@@ -73,7 +73,7 @@ The canonical proof path uses **NoAnomalousPairs (NAP)** from the 1950s ordered-
 
 The relationship between axioms:
 - `KSSeparation` + `IdentIsMinimum` ⇒ `NoAnomalousPairs` (proven in `AnomalousPairs.lean`)
-- NAP is strictly weaker (identity-free) and historically prior (1950s vs K&S 2012)
+- NAP is identity-free and historically prior (1950s vs K&S 2012)
 
 ## Countermodels (opt-in)
 - Counterexamples clarifying which hypotheses are required live under

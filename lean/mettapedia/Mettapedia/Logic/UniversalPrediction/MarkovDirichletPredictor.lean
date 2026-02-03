@@ -40,6 +40,44 @@ variable {k : ℕ}
 
 def zero : TransCounts k := ⟨fun _ _ => 0⟩
 
+instance : Zero (TransCounts k) := ⟨zero⟩
+
+/-- Pointwise addition of transition-count matrices. -/
+def add (c₁ c₂ : TransCounts k) : TransCounts k :=
+  ⟨fun i j => c₁.counts i j + c₂.counts i j⟩
+
+instance : Add (TransCounts k) := ⟨add⟩
+
+@[simp] theorem zero_counts (i j : Fin k) : (0 : TransCounts k).counts i j = 0 := rfl
+
+@[simp] theorem add_counts (c₁ c₂ : TransCounts k) (i j : Fin k) :
+    (c₁ + c₂).counts i j = c₁.counts i j + c₂.counts i j :=
+  rfl
+
+instance : AddCommMonoid (TransCounts k) where
+  add := (· + ·)
+  add_assoc c₁ c₂ c₃ := by
+    ext i j
+    simp [Nat.add_assoc]
+  zero := 0
+  zero_add c := by
+    ext i j
+    simp
+  add_zero c := by
+    ext i j
+    simp
+  add_comm c₁ c₂ := by
+    ext i j
+    simp [Nat.add_comm]
+  nsmul n c := ⟨fun i j => n * c.counts i j⟩
+  nsmul_zero c := by
+    ext i j
+    simp
+  nsmul_succ n c := by
+    ext i j
+    -- `nsmul` on `ℕ` is multiplication, so this is `Nat.succ_mul` plus commutativity of addition.
+    simp [Nat.succ_mul, Nat.add_comm]
+
 /-- Increment exactly the transition counter `(prev,next)`. -/
 def bump (c : TransCounts k) (prev next : Fin k) : TransCounts k :=
   ⟨fun i j => if i = prev ∧ j = next then c.counts i j + 1 else c.counts i j⟩
@@ -54,6 +92,27 @@ theorem bump_apply_of_ne (c : TransCounts k) {i j prev next : Fin k}
     (h : ¬(i = prev ∧ j = next)) :
     (bump c prev next).counts i j = c.counts i j := by
   simp [bump, h]
+
+/-- The single-transition matrix with a `1` at `(prev,next)` and `0` elsewhere. -/
+def oneHot (prev next : Fin k) : TransCounts k :=
+  ⟨fun i j => if i = prev ∧ j = next then 1 else 0⟩
+
+@[simp] theorem oneHot_counts_self (prev next : Fin k) :
+    (oneHot (k := k) prev next).counts prev next = 1 := by
+  simp [oneHot]
+
+@[simp] theorem oneHot_counts_of_ne {i j prev next : Fin k} (h : ¬(i = prev ∧ j = next)) :
+    (oneHot (k := k) prev next).counts i j = 0 := by
+  simp [oneHot, h]
+
+/-- `bump` is exactly addition by a one-hot transition matrix. -/
+theorem bump_eq_add_oneHot (c : TransCounts k) (prev next : Fin k) :
+    bump c prev next = c + oneHot (k := k) prev next := by
+  ext i j
+  by_cases h : i = prev ∧ j = next
+  · rcases h with ⟨rfl, rfl⟩
+    simp [bump, oneHot]
+  · simp [bump, oneHot, h]
 
 /-- Row total count `∑ₐ N(prev,a)`. -/
 def rowTotal (c : TransCounts k) (prev : Fin k) : ℕ :=
@@ -101,10 +160,12 @@ namespace MarkovDirichlet
 
 variable {k : ℕ}
 
-private def stepDenom (prior : Fin k → DirichletParams k) (c : TransCounts k) (prev : Fin k) : ℝ :=
+/-- Denominator for the Dirichlet posterior-predictive probability at row `prev`. -/
+def stepDenom (prior : Fin k → DirichletParams k) (c : TransCounts k) (prev : Fin k) : ℝ :=
   (c.rowTotal prev : ℝ) + (prior prev).totalConcentration
 
-private def stepProb (prior : Fin k → DirichletParams k) (c : TransCounts k) (prev next : Fin k) : ℝ :=
+/-- Dirichlet posterior-predictive probability for the transition `prev → next`. -/
+def stepProb (prior : Fin k → DirichletParams k) (c : TransCounts k) (prev next : Fin k) : ℝ :=
   (((c.counts prev next : ℕ) : ℝ) + (prior prev).priorParams next) / stepDenom prior c prev
 
 private lemma stepDenom_pos (hk : 0 < k) (prior : Fin k → DirichletParams k) (c : TransCounts k)
@@ -184,7 +245,9 @@ private lemma stepProb_sum (hk : 0 < k) (prior : Fin k → DirichletParams k) (c
 
 /-! ## Sequential prefix probability -/
 
-private def prefixAux (prior : Fin k → DirichletParams k) (prev : Fin k) (c : TransCounts k) :
+/-- Auxiliary recursion for `markovDirichletPrefixMeasure`: prefix probability for a tail `xs`
+starting from previous symbol `prev` and transition counts `c`. -/
+def prefixAux (prior : Fin k → DirichletParams k) (prev : Fin k) (c : TransCounts k) :
     List (Fin k) → ENNReal
   | [] => 1
   | b :: xs =>
@@ -245,9 +308,29 @@ private theorem prefixAux_additive (hk : 0 < k) (prior : Fin k → DirichletPara
               prefixAux prior b (TransCounts.bump c prev b) xs := by
               exact congrArg (fun t => ENNReal.ofReal (stepProb prior c prev b) * t) ih'
 
+/-- `prefixAux` update for appending a single symbol, expressed via the transition-count state
+computed by `TransCounts.summaryAux`.
+
+This makes it explicit that the Markov-Dirichlet predictor’s recursion is a state machine whose
+state is exactly `(counts, last)`. -/
+theorem prefixAux_append_singleton (prior : Fin k → DirichletParams k) (prev : Fin k)
+    (c : TransCounts k) (xs : List (Fin k)) (a : Fin k) :
+    prefixAux (k := k) prior prev c (xs ++ [a]) =
+      prefixAux (k := k) prior prev c xs *
+        ENNReal.ofReal
+          (stepProb (k := k) prior (TransCounts.summaryAux prev c xs).1 (TransCounts.summaryAux prev c xs).2 a) := by
+  classical
+  induction xs generalizing prev c with
+  | nil =>
+      simp [prefixAux, TransCounts.summaryAux]
+  | cons b xs ih =>
+      -- One step of the recursion; then apply IH to the tail.
+      simp [prefixAux, TransCounts.summaryAux, ih, List.cons_append, mul_assoc]
+
 /-! ## The Markov-Dirichlet predictor as a prefix measure -/
 
-private def initProb (_b : Fin k) : ℝ := (1 / (k : ℝ))
+/-- Initial distribution for the first symbol, taken uniform on `Fin k`. -/
+def initProb (_b : Fin k) : ℝ := (1 / (k : ℝ))
 
 private lemma initProb_nonneg (hk : 0 < k) (b : Fin k) : 0 ≤ initProb (k := k) b := by
   unfold initProb
@@ -262,11 +345,25 @@ private lemma initProb_sum (hk : 0 < k) : (∑ b : Fin k, initProb (k := k) b) =
   -- Sum of a constant over `Fin k`.
   simp [Finset.sum_const, hk0, Finset.card_univ]
 
-private def prefixProb (prior : Fin k → DirichletParams k) : List (Fin k) → ENNReal
+/-- Prefix probability (as `ENNReal`) for a whole word, obtained by composing the initial
+distribution with the Markov(1) posterior-predictive recursion. -/
+def prefixProb (prior : Fin k → DirichletParams k) : List (Fin k) → ENNReal
   | [] => 1
   | b :: xs =>
       ENNReal.ofReal (initProb (k := k) b) *
         prefixAux prior b (TransCounts.zero) xs
+
+/-- Multiplicative update for the full prefix probability on nonempty words, expressed via the
+transition-count state `TransCounts.summaryAux`. -/
+theorem prefixProb_cons_append_singleton (prior : Fin k → DirichletParams k) (b : Fin k)
+    (xs : List (Fin k)) (a : Fin k) :
+    prefixProb (k := k) prior ((b :: xs) ++ [a]) =
+      prefixProb (k := k) prior (b :: xs) *
+        ENNReal.ofReal
+          (stepProb (k := k) prior (TransCounts.summaryAux b TransCounts.zero xs).1
+            (TransCounts.summaryAux b TransCounts.zero xs).2 a) := by
+  -- Unfold `prefixProb` and delegate to the `prefixAux` lemma.
+  simp [prefixProb, prefixAux_append_singleton, mul_assoc]
 
 /-- Markov(1) predictor with independent Dirichlet priors per row, as a finite-alphabet `PrefixMeasure`. -/
 noncomputable def markovDirichletPrefixMeasure (hk : 0 < k) (prior : Fin k → DirichletParams k) :

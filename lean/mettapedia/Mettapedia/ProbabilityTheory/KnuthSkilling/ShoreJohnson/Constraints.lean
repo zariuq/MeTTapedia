@@ -50,7 +50,11 @@ theorem satisfies_permute (σ : Equiv.Perm (Fin n)) (c : EVConstraint n) (q : Pr
       (∑ i : Fin n, q.p (σ⁻¹ i) * c.coeff (σ⁻¹ i)) =
         ∑ i : Fin n, q.p i * c.coeff i := by
     simpa using (Equiv.sum_comp (σ⁻¹) (fun i : Fin n => q.p i * c.coeff i))
-  simp [hsum]
+  constructor
+  · intro h
+    exact hsum.symm.trans h
+  · intro h
+    exact hsum.trans h
 
 end EVConstraint
 

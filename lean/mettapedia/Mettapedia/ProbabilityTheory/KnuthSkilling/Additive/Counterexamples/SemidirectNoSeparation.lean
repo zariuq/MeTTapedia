@@ -94,7 +94,7 @@ theorem strictMono_baseOp_left (q : SDBase) : StrictMono (fun p => baseOp p q) :
   cases hp' with
   | inl hfst =>
     -- First coordinate strictly increases, so the result strictly increases (in lex order).
-    have : p₁.1 + q.1 < p₂.1 + q.1 := by exact add_lt_add_right hfst _
+    have : p₁.1 + q.1 < p₂.1 + q.1 := by exact add_lt_add_left hfst q.1
     refine (Prod.Lex.toLex_lt_toLex (x := (ofLex (baseOp p₁ q) : PNat × ℕ))
         (y := (ofLex (baseOp p₂ q) : PNat × ℕ))).2 ?_
     refine Or.inl ?_
@@ -124,7 +124,7 @@ theorem strictMono_baseOp_right (p : SDBase) : StrictMono (fun q => baseOp p q) 
     simpa using this
   cases hq' with
   | inl hfst =>
-    have : p.1 + q₁.1 < p.1 + q₂.1 := by exact add_lt_add_left hfst _
+    have : p.1 + q₁.1 < p.1 + q₂.1 := by exact add_lt_add_right hfst p.1
     refine (Prod.Lex.toLex_lt_toLex (x := (ofLex (baseOp p q₁) : PNat × ℕ))
         (y := (ofLex (baseOp p q₂) : PNat × ℕ))).2 ?_
     refine Or.inl ?_

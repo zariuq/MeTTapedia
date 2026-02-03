@@ -26,52 +26,26 @@ does the frame structure force σ-additivity?
 -/
 
 import Mathlib.Topology.Basic
-import Mathlib.Topology.Instances.Real
+import Mathlib.Topology.Instances.Real.Lemmas
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
-import Mathlib.Order.CompleteLattice
+import Mathlib.Order.CompleteLattice.Basic
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Exploration
 
 open Set Topology
+open scoped BigOperators
 
 /-! ## Section 1: The Lattice of Open Sets -/
 
 /-- The type of open sets of ℝ -/
-def OpenSet (X : Type*) [TopologicalSpace X] := {s : Set X // IsOpen s}
-
-/-- Open sets form a complete lattice under inclusion -/
-instance (X : Type*) [TopologicalSpace X] : CompleteLattice (OpenSet X) where
-  le := fun U V => U.val ⊆ V.val
-  lt := fun U V => U.val ⊂ V.val
-  le_refl := fun U => Set.Subset.refl U.val
-  le_trans := fun _ _ _ hab hbc => Set.Subset.trans hab hbc
-  lt_iff_le_not_le := fun U V => Set.ssubset_iff_subset_not_subset
-  le_antisymm := fun U V hab hba => Subtype.ext (Set.Subset.antisymm hab hba)
-  sup := fun U V => ⟨U.val ∪ V.val, U.prop.union V.prop⟩
-  le_sup_left := fun U V => Set.subset_union_left
-  le_sup_right := fun U V => Set.subset_union_right
-  sup_le := fun U V W hUW hVW => Set.union_subset hUW hVW
-  inf := fun U V => ⟨U.val ∩ V.val, U.prop.inter V.prop⟩
-  inf_le_left := fun U V => Set.inter_subset_left
-  inf_le_right := fun U V => Set.inter_subset_right
-  le_inf := fun U V W hUV hUW => Set.subset_inter hUV hUW
-  sSup := fun S => ⟨⋃ U ∈ S, U.val, isOpen_biUnion (fun U _ => U.prop)⟩
-  le_sSup := fun S U hU x hx => Set.mem_biUnion hU hx
-  sSup_le := fun S U h x ⟨V, hVS, hxV⟩ => h V hVS hxV
-  sInf := fun S => ⟨interior (⋂ U ∈ S, U.val), isOpen_interior⟩
-  sInf_le := fun S U hU => Set.interior_subset.trans (Set.biInter_subset_of_mem hU)
-  le_sInf := fun S U h => Set.subset_interior_iff_isOpen.mpr U.prop |>.trans
-    (Set.interior_mono (Set.subset_biInter h))
-  top := ⟨Set.univ, isOpen_univ⟩
-  bot := ⟨∅, isOpen_empty⟩
-  le_top := fun U => Set.subset_univ U.val
-  bot_le := fun U => Set.empty_subset U.val
+abbrev OpenSet (X : Type*) [TopologicalSpace X] := TopologicalSpace.Opens X
 
 /-! ## Section 2: Disjointness in Open Sets -/
 
 /-- Two open sets are disjoint if their intersection is empty -/
 def OpenSet.Disjoint {X : Type*} [TopologicalSpace X] (U V : OpenSet X) : Prop :=
-  U.val ∩ V.val = ∅
+  ((U : Set X) ∩ (V : Set X)) = ∅
 
 /-- A countable family of open sets is pairwise disjoint -/
 def OpenSet.PairwiseDisjoint {X : Type*} [TopologicalSpace X] (f : ℕ → OpenSet X) : Prop :=
@@ -103,24 +77,30 @@ def IsSigmaAdditive {X : Type*} [TopologicalSpace X] (m : KSOpenMeasure X) : Pro
 
 /-- The frame has countable unions (this is automatic for open sets) -/
 theorem open_sets_have_countable_unions (X : Type*) [TopologicalSpace X]
-    (f : ℕ → OpenSet X) : IsOpen (⋃ n, (f n).val) :=
-  isOpen_iUnion (fun n => (f n).prop)
+    (f : ℕ → OpenSet X) : IsOpen (⋃ n, ((f n : OpenSet X) : Set X)) :=
+  isOpen_iUnion (fun n => (f n).2)
 
 /-- Finite additivity extends to any finite subfamily -/
 theorem finite_additivity_extends {X : Type*} [TopologicalSpace X]
     (m : KSOpenMeasure X) (f : ℕ → OpenSet X) (hpd : OpenSet.PairwiseDisjoint f)
-    (n : ℕ) : m.μ ⟨⋃ i < n, (f i).val, isOpen_biUnion (fun i _ => (f i).prop)⟩ =
-              ∑ i in Finset.range n, m.μ (f i) := by
+    (n : ℕ) :
+        m.μ ⟨⋃ i < n, ((f i : OpenSet X) : Set X), isOpen_biUnion (fun i _ => (f i).2)⟩ =
+              ∑ i ∈ Finset.range n, m.μ (f i) := by
   induction n with
   | zero =>
-    simp only [Finset.range_zero, Finset.sum_empty, Set.iUnion_empty, Set.iUnion_of_empty]
-    exact m.empty
+    have hbot :
+        (⟨⋃ i < (0 : ℕ), ((f i : OpenSet X) : Set X), isOpen_biUnion (fun i _ => (f i).2)⟩ :
+            OpenSet X) =
+          ⊥ := by
+      ext x
+      simp
+    simpa [hbot] using m.empty
   | succ k ih =>
     sorry -- Proof by induction using add_disjoint
 
 /-! ## Section 6: The Gap - Why Frame Structure Alone Isn't Enough -/
 
-/--
+/-
 **Key Theorem (Negative Result)**:
 Frame structure alone does NOT imply σ-additivity.
 
@@ -139,8 +119,8 @@ This is exactly "continuity from below" - a LIMIT statement.
 /-- The gap between finite sums and countable sums -/
 theorem sigma_additivity_gap {X : Type*} [TopologicalSpace X] (m : KSOpenMeasure X) :
     (∀ (f : ℕ → OpenSet X), OpenSet.PairwiseDisjoint f →
-      ∀ n, m.μ ⟨⋃ i < n, (f i).val, isOpen_biUnion (fun i _ => (f i).prop)⟩ =
-           ∑ i in Finset.range n, m.μ (f i)) →
+      ∀ n, m.μ ⟨⋃ i < n, ((f i : OpenSet X) : Set X), isOpen_biUnion (fun i _ => (f i).2)⟩ =
+           ∑ i ∈ Finset.range n, m.μ (f i)) →
     -- ^ This follows from finite additivity (K&S)
     -- But this does NOT imply:
     IsSigmaAdditive m := by
@@ -168,7 +148,7 @@ theorem sigma_additive_of_continuous_from_below {X : Type*} [TopologicalSpace X]
 
 /-! ## Section 8: Does Topology Give Us Continuity From Below? -/
 
-/--
+/-
 **The Critical Question**: Does the topology of open sets somehow
 imply continuity from below for any K&S measure?
 
@@ -185,7 +165,7 @@ These are independent! A measure can be:
 - Finitely additive (respects finite set operations)
 - But discontinuous (doesn't respect limits)
 
-**Counterexample**: Banach limits on ℓ^∞ extend to finitely additive
+  **Counterexample**: Banach limits on ℓ^∞ extend to finitely additive
 "probability measures" on 2^ℕ that are NOT σ-additive.
 -/
 

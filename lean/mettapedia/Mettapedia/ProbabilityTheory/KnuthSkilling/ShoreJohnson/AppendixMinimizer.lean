@@ -127,14 +127,16 @@ theorem permute_shift2ProbClamp {n : ℕ} (σ : Equiv.Perm (Fin n)) (q : ProbDis
         simpa using hij.symm
       simp [shift2, hclamp, hji, Inference.ProbDist.permute_apply]
     · -- Otherwise, it's an "other" coordinate.
-      have hk_i : σ⁻¹ k ≠ i := by
+      have hk_i : (Equiv.symm σ) k ≠ i := by
         intro hk
         apply hki
-        simpa using congrArg σ hk
-      have hk_j : σ⁻¹ k ≠ j := by
+        have : σ ((Equiv.symm σ) k) = σ i := congrArg σ hk
+        simpa using this
+      have hk_j : (Equiv.symm σ) k ≠ j := by
         intro hk
         apply hkj
-        simpa using congrArg σ hk
+        have : σ ((Equiv.symm σ) k) = σ j := congrArg σ hk
+        simpa using this
       simp [shift2, hki, hkj, hk_i, hk_j, Inference.ProbDist.permute_apply]
 
 /-! ## Constraint preservation for expected-value constraints -/

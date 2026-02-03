@@ -525,7 +525,7 @@ theorem ksSeparation_neg_of_noAnomalousPairs
                 simp [mul_div_cancel_right₀, hA_ne]
     have hmxA_le_mY : (m : ℝ) * X + A ≤ (m : ℝ) * Y := by
       have h1 : (m : ℝ) * X + A ≤ (m : ℝ) * X + (m : ℝ) * (Y - X) :=
-        add_le_add_left hA_le ((m : ℝ) * X)
+        add_le_add_right hA_le ((m : ℝ) * X)
       have h2 : (m : ℝ) * X + (m : ℝ) * (Y - X) = (m : ℝ) * Y := by ring
       simpa [h2] using h1
     have hnA_lt_mxA : (n : ℝ) * A < (m : ℝ) * X + A := by

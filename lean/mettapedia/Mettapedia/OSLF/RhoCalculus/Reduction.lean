@@ -62,6 +62,14 @@ inductive Reduces : Pattern → Pattern → Prop where
                                 .apply "PInput" [n, .lambda x p]] ++ rest) none)
         (.collection .hashBag ([commSubst p x q] ++ rest) none)
 
+  /-- DROP: *(@p) ⇝ p
+
+      Dropping a quoted process yields the process itself.
+      This is the reflection rule in ρ-calculus.
+  -/
+  | drop {p : Pattern} :
+      Reduces (.apply "PDrop" [.apply "NQuote" [p]]) p
+
   /-- PAR: structural congruence under parallel composition
 
       If p ⇝ q, then {p | rest} ⇝ {q | rest}
@@ -70,6 +78,16 @@ inductive Reduces : Pattern → Pattern → Prop where
       Reduces p q →
       Reduces (.collection .hashBag (p :: rest) none)
               (.collection .hashBag (q :: rest) none)
+
+  /-- PAR_ANY: structural congruence for any element (via permutation)
+
+      If p ∈ ps and p ⇝ q, then {ps} ⇝ {ps with p replaced by q}
+      This captures that parallel composition is commutative.
+  -/
+  | par_any {p q : Pattern} {before after : List Pattern} :
+      Reduces p q →
+      Reduces (.collection .hashBag (before ++ [p] ++ after) none)
+              (.collection .hashBag (before ++ [q] ++ after) none)
 
 infix:50 " ⇝ " => Reduces
 

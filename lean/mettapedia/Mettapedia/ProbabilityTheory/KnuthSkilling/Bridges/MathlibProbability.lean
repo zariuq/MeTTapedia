@@ -52,6 +52,7 @@ RepresentationResult S  (Additive/Representation.lean)
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.MathlibProbability
 
 open MeasureTheory Classical
+open Mettapedia.ProbabilityTheory.KnuthSkilling.Information
 open scoped BigOperators ENNReal
 
 /-! ## Section 1: Finite Case - ProbDist → ProbabilityMeasure

@@ -356,17 +356,24 @@ theorem logLikelihoodRatio_decomposition_ae (ν ν_star : Environment) (t : ℕ)
                 trajectoryToHistory traj s := by
             refine trajectoryToHistory_depends_on_prefix _ _ s ?_
             intro i hi
-            have hi' : i < s + 1 := Nat.lt_trans hi (Nat.lt_succ_self s)
-            simp [extendPrefix, truncate, hi']
+            -- `simp` reduces this to the (impossible) `s < i` branch.
+            simp [extendPrefix, truncate]
+            intro hsi
+            exfalso
+            exact Nat.lt_asymm hi hsi
           have h_step :
               (extendPrefix (truncate (s + 1) traj) s) = traj s := by
-            simp [extendPrefix, truncate, Nat.lt_succ_self s]
+            simp [extendPrefix, truncate]
           simpa [badStep, h_hist, h_step] using htraj
         have h_mem : traj ∈ cylinderSet (trajectoryToHistory (extendPrefix (truncate (s + 1) traj)) (s + 1)) := by
           refine ⟨s + 1, ?_⟩
           refine trajectoryToHistory_depends_on_prefix traj (extendPrefix (truncate (s + 1) traj)) (s + 1) ?_
           intro i hi
-          simp [extendPrefix, truncate, hi]
+          -- `simp` reduces this to the (impossible) `s < i` branch.
+          simp [extendPrefix, truncate]
+          intro hsi
+          exfalso
+          exact (Nat.not_lt_of_ge (Nat.le_of_lt_succ hi)) hsi
         simp [badPrefix, h_then, h_mem]
 
       -- Now `badStep s` is a countable union of null sets, hence null.
@@ -394,7 +401,7 @@ theorem logLikelihoodRatio_decomposition_ae (ν ν_star : Environment) (t : ℕ)
                   [HistElem.act (pfx last).action, HistElem.per (pfx last).percept] := by
             -- `extendPrefix pfx s = pfx last`.
             have : (extendPrefix pfx s) = pfx last := by
-              simp [extendPrefix, last, Nat.lt_succ_self s]
+              simp [extendPrefix, last]
             simp [trajectoryToHistory_succ, this]
           -- Rewrite `badPrefix` into the `append` form and apply `cylinderSet_append_single_step`.
           have h_meas :
@@ -737,11 +744,10 @@ theorem conditional_stepLogLikelihood (ν ν_star : Environment) (h : History) (
             rw [← ENNReal.toReal_sum]
             intro x _
             exact h_P_fin x
-        _ = (∑' x : Percept, ν_star.prob ha x).toReal := by
-            congr 1
-            -- For finite types, tsum equals finset sum
-            rw [tsum_fintype]
-        _ = 1 := by simp [h_stoch_ha]
+        _ = 1 := by
+            have hsum : (∑ x : Percept, ν_star.prob ha x) = 1 := by
+              simpa [tsum_fintype] using h_stoch_ha
+            simp [hsum]
 
     -- Use log(t) ≤ t - 1 to bound each term
     have h_term_bound : ∀ x : Percept,
@@ -1003,7 +1009,11 @@ theorem stepLogLikelihoodProcess_integrable (ν ν_star : Environment) (t : ℕ)
           stepLogLikelihoodProcess ν ν_star t (extendPrefix (truncate t.succ traj)) := by
       refine stepLogLikelihoodProcess_adapted ν ν_star t traj (extendPrefix (truncate t.succ traj)) ?_
       intro i hi
-      simp [extendPrefix, truncate, hi]
+      -- `simp` reduces this to the (impossible) `t < i` branch.
+      simp [extendPrefix, truncate]
+      intro hti
+      exfalso
+      exact (Nat.not_lt_of_ge (Nat.le_of_lt_succ hi)) hti
     have h_in : g (truncate t.succ traj) ∈ Set.range g := ⟨truncate t.succ traj, rfl⟩
     calc
       ‖stepLogLikelihoodProcess ν ν_star t traj‖
@@ -1461,7 +1471,7 @@ theorem logLikelihoodRatio_supermartingale (ν ν_star : Environment)
       _ = (∫ traj in s, logLikelihoodRatio ν ν_star t traj ∂μ) +
             (∫ traj in s, stepLogLikelihoodProcess ν ν_star t traj ∂μ) := h_add
       _ ≤ (∫ traj in s, logLikelihoodRatio ν ν_star t traj ∂μ) + 0 := by
-            exact add_le_add_left h_step_le _
+            exact add_le_add_right h_step_le _
       _ = (∫ traj in s, logLikelihoodRatio ν ν_star t traj ∂μ) := by simp
 
 /-! ## Consequences of the Supermartingale Property

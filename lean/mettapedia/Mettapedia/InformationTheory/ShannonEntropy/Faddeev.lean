@@ -1481,13 +1481,11 @@ theorem faddeev_splitBoth_uniform (E : FaddeevEntropy) {m k : ℕ} (hm : 0 < m) 
     -- Goal has k / (1 + k), hF has 1 - 1 / (1 + k). Show these are equal.
     -- Proof: k / (1 + k) = ((1+k) - 1) / (1+k) = 1 - 1/(1+k)
     have h_coeff : (k : ℝ) / (1 + k) = 1 - 1 / ↑(1 + k) := by
-      have hknat : (k : ℝ) = ((1 + k) : ℝ) - 1 := by
+      have h : (k : ℝ) / (1 + (k : ℝ)) = 1 - 1 / (1 + (k : ℝ)) := by
+        have hkne : (1 + (k : ℝ)) ≠ 0 := by positivity
+        field_simp [hkne]
         ring
-      rw [hknat, sub_div, one_div]
-      simp [← hknat]
-      -- Goal: (1 + k) / (1 + k) = 1
-      have hpos : (0 : ℝ) < 1 + k := by positivity
-      exact div_self (ne_of_gt hpos)
+      simpa [Nat.cast_add, Nat.cast_one, add_assoc, add_comm, add_left_comm] using h
     -- Convert the coefficient in hF to match the goal
     rw [← h_coeff] at hF
     exact hF
@@ -1562,12 +1560,11 @@ theorem faddeev_splitBoth_uniform (E : FaddeevEntropy) {m k : ℕ} (hm : 0 < m) 
 
       -- Show coefficient: m/(m+1) = 1 - 1/(m+1)
       have h_coeff : (m : ℝ) / (m + 1) = 1 - 1 / ↑(m + 1) := by
-        have hmnat : (m : ℝ) = ((m + 1) : ℝ) - 1 := by
+        have h : (m : ℝ) / (1 + (m : ℝ)) = 1 - 1 / (1 + (m : ℝ)) := by
+          have hmne : (1 + (m : ℝ)) ≠ 0 := by positivity
+          field_simp [hmne]
           ring
-        rw [hmnat, sub_div, one_div]
-        simp [← hmnat]
-        have hpos : (0 : ℝ) < m + 1 := by positivity
-        exact div_self (ne_of_gt hpos)
+        simpa [Nat.cast_add, Nat.cast_one, add_assoc, add_comm, add_left_comm] using h
 
       rw [← h_coeff] at hF
       exact hF
@@ -2043,7 +2040,7 @@ theorem faddeev_pointMass_eq_zero (E : FaddeevEntropy) {n : ℕ} (i : Fin n) :
             have : j = i := by simpa [σ] using this
             exact hj this
           -- Do not unfold `σ` further; use `hj'` directly to simplify the `if`.
-          simp [permute_apply, pointMass, hj, hj']
+          simpa [permute_apply, pointMass, hj] using hj'
       -- Use symmetry to rewrite `H(pointMass i) = H(pointMass 0)`.
       have hsymm : E.H (pointMass i) = E.H (pointMass (0 : Fin (m + 2))) := by
         have := E.symmetry (pointMass (0 : Fin (m + 2))) σ
@@ -3240,7 +3237,7 @@ theorem faddeev_mu_tendsto_zero (E : FaddeevEntropy) :
         apply div_le_div_of_nonneg_right htotal_bound; positivity
     _ = M / ((n + 1 : ℕ) : ℝ) + (n : ℝ) * (ε / 2) / ((n + 1 : ℕ) : ℝ) := by ring
     _ ≤ M / ((n + 1 : ℕ) : ℝ) + ε / 2 := by
-        apply add_le_add_left
+        apply add_le_add_right
         have h1 : (n : ℝ) / ((n + 1 : ℕ) : ℝ) ≤ 1 := by
           rw [div_le_one (by positivity : (0 : ℝ) < ((n + 1 : ℕ) : ℝ))]
           simp only [Nat.cast_add, Nat.cast_one]
@@ -3250,7 +3247,7 @@ theorem faddeev_mu_tendsto_zero (E : FaddeevEntropy) :
           _ ≤ 1 * (ε / 2) := by apply mul_le_mul_of_nonneg_right h1 (by linarith)
           _ = ε / 2 := one_mul _
     _ < ε / 2 + ε / 2 := by
-        apply add_lt_add_right
+        apply add_lt_add_left
         -- M / (n+1) < ε/2 because n ≥ N₁ > 2M/ε, so n+1 > 2M/ε
         have hn_ge_N1 : N₁ ≤ n := Nat.le_trans (le_max_left N₁ (K + 2)) hn
         have h2 : ((n + 1 : ℕ) : ℝ) > 2 * M / ε := by

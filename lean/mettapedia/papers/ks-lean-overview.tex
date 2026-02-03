@@ -98,7 +98,7 @@
 \newtheorem{remark}[theorem]{Remark}
 
 \title{Knuth-Skilling Lean Overview}
-\author{Codex 5.2, Claude 4.5, Zar Goertzel\thanks{This document was drafted collaboratively by humans and AI systems (GPT/Codex, Claude). While formal claims are machine-checked in Lean 4, prose descriptions may contain human or AI hallucinations. Caveat lector.}}
+\author{Codex 5.2, Claude 4.5, Zar Goertzel\thanks{This document was drafted collaboratively by humans and AI systems (GPT/Codex, Claude). While formal claims are machine-checked in Lean 4.27.0, prose descriptions may contain human or AI hallucinations. Caveat lector.}}
 \date{\today}
 
 \begin{document}
@@ -619,14 +619,14 @@ Since KSSeparation $\Leftrightarrow$ NAP (Theorem~\ref{thm:nap-sep-equiv}), thes
 \item \texttt{Additive/Proofs/GridInduction/Globalization.lean} (globalization orchestrator)
 \item \texttt{Additive/Proofs/GridInduction/Core/} (grid infrastructure)
   \begin{itemize}
-  \item \texttt{Core/MultiGrid.lean}: \texttt{AtomFamily}, \texttt{MultiGridRep}, grid representations
-  \item \texttt{Core/Induction/}: Inductive extension theorems (\texttt{Construction}, \texttt{ThetaPrime}, \texttt{DeltaShift}, \texttt{Goertzel})
-  \item \texttt{Core/OneDimensional.lean}: Base case (single atom)
-  \item \texttt{Core/Prelude.lean}: Foundational lemmas
+  \item \texttt{Additive/Proofs/GridInduction/Core/MultiGrid.lean}: \texttt{AtomFamily}, \texttt{MultiGridRep}, grid representations
+  \item \texttt{Additive/Proofs/GridInduction/Core/Induction/}: Inductive extension theorems (\texttt{Construction}, \texttt{ThetaPrime}, \texttt{DeltaShift}, \texttt{Goertzel})
+  \item \texttt{Additive/Proofs/GridInduction/Core/OneDimensional.lean}: Base case (single atom)
+  \item \texttt{Additive/Proofs/GridInduction/Core/Prelude.lean}: Foundational lemmas
   \end{itemize}
 \end{itemize}
 
-The grid path entry point is \texttt{Globalization.lean}, which imports \texttt{Core/All.lean}.
+The grid path entry point is \texttt{Additive/Proofs/GridInduction/Globalization.lean}, which imports \texttt{Additive/Proofs/GridInduction/Core/All.lean}.
 
 \subsection{Three Independent Proof Paths}
 
@@ -751,7 +751,7 @@ from \texttt{Core/}).
 
 \item \textbf{Well-definedness}: Use 3-atom families $F_3 = \{a_0, a_1, x\}$ to show that $\Theta(x)$
 does not depend on the choice of reference atom. Path independence follows from
-\texttt{DeltaSpec\_unique} (line 755, \texttt{Core/Induction/Construction.lean}).
+\texttt{DeltaSpec\_unique} (line 755, \texttt{Additive/Proofs/GridInduction/Core/Induction/Construction.lean}).
 
 \item \textbf{Order preservation}: For $a < b$, build $F_3 = \{a_0, a, b\}$ and use
 \texttt{MultiGridRep.strictMono} to show $\Theta(a) < \Theta(b)$.
@@ -898,8 +898,8 @@ theorem associativity_representation_cuts
 \begin{remark}[Comparison to Grid Proof]
 The cuts proof is significantly more compact:
 \begin{itemize}
-\item \textbf{Grid proof}: $\sim$2000+ lines (induction machinery, extension lemmas, path independence)
-\item \textbf{Cuts proof}: $\sim$500 lines (direct construction, no induction)
+\item \textbf{Grid proof}: 6,612 lines (ThetaPrime: 3,613 + MultiGrid: 2,999 --- induction machinery, extension lemmas, path independence)
+\item \textbf{Cuts proof}: 2,079 lines (DirectCuts.lean --- direct construction, no induction)
 \end{itemize}
 
 However, the grid proof more closely follows K\&S's original argument structure (A/B/C partition, $\delta$-choice),

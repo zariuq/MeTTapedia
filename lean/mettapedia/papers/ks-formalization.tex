@@ -142,7 +142,7 @@ We formalize K\&S Appendices A and B in Lean 4, providing:
 The formalization reveals that K\&S's informal proofs are essentially correct, but rely on several implicit assumptions that become apparent only when formalizing.
 These details are documented in Appendix~\ref{app:corrections}.
 
-A key finding of this formalization is that the \textbf{NoAnomalousPairs} condition from classical ordered semigroup theory (Alimov 1950, Fuchs 1963) is sufficient for the representation theorem, and is \emph{weaker} than K\&S's separation property.
+A key finding of this formalization is that the \textbf{NoAnomalousPairs} condition from classical ordered semigroup theory (Alimov 1950, Fuchs 1963) is sufficient for the representation theorem.
 This connects K\&S's work to the century-old H\"older embedding theorem for ordered groups.
 
 \section{The Knuth-Skilling Axioms}
@@ -241,7 +241,7 @@ From separation, we derive:
 \item \textbf{Commutativity}: $\text{op}\, x\, y = \text{op}\, y\, x$ for all $x, y$.
 \end{itemize}
 
-These are proven in \texttt{Separation/SandwichSeparation.lean} and \texttt{RepresentationTheorem/Core/SeparationImpliesCommutative.lean}.
+These are proven in \texttt{Additive/Axioms/SandwichSeparation.lean} and \texttt{Additive/Proofs/GridInduction/Core/SeparationImpliesCommutative.lean}.
 
 \section{The Representation Theorem (Appendix A)}
 \label{sec:representation}
@@ -276,8 +276,8 @@ Our formalization provides \textbf{three independent proof paths}, each with dif
 \item \textbf{Globalization}: Show this extends to all combinations consistently (the ``triple family trick'').
 \end{enumerate}
 
-\textbf{Files}: \texttt{RepresentationTheorem/Core/Induction/ThetaPrime.lean} ($\sim$2500 lines), \\
-\hspace*{2em} \texttt{RepresentationTheorem/Core/MultiGrid.lean} ($\sim$800 lines)
+\textbf{Files}: \texttt{Additive/Proofs/GridInduction/Core/Induction/ThetaPrime.lean} (3,613 lines), \\
+\hspace*{2em} \texttt{Additive/Proofs/GridInduction/Core/MultiGrid.lean} (2,999 lines)
 
 \textbf{Pros}: Follows K\&S paper closely; self-contained \\
 \textbf{Cons}: Complex grid management; hard to maintain
@@ -304,7 +304,7 @@ theorem associativity_representation
 \item Prove this is well-defined, order-preserving, and additive
 \end{enumerate}
 
-\textbf{Files}: \texttt{RepresentationTheorem/Alternative/DirectCuts.lean} ($\sim$900 lines)
+\textbf{Files}: \texttt{Additive/Proofs/DirectCuts/DirectCuts.lean}
 
 \textbf{Pros}: Classical approach; more direct than grid method \\
 \textbf{Cons}: Requires strict separation; still substantial code
@@ -331,7 +331,7 @@ theorem associativity_representation_cuts
 \item Extract $\Theta$ from the multiplicative order isomorphism
 \end{enumerate}
 
-\textbf{Files}: \texttt{Separation/HolderEmbedding.lean} ($\sim$320 lines) + Eric's library ($\sim$1500 lines)
+\textbf{Files}: \texttt{Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean} (761 lines) + Eric's library
 
 \textbf{Pros}: Classical assumptions; shortest local code; most elegant \\
 \textbf{Cons}: Depends on external library
@@ -405,7 +405,7 @@ instance grid_hasRepresentationTheorem [KSSeparation α] [RepresentationGlobaliz
 instance cuts_hasRepresentationTheorem [KSSeparation α] [KSSeparationStrict α]
 \end{lstlisting}
 
-\textbf{File}: \texttt{RepresentationTheorem/Comparison.lean}
+\textbf{File}: \texttt{Additive/Proofs/GridInduction/Comparison.lean}
 
 \section{The Product Theorem (Appendix B)}
 \label{sec:product}
@@ -423,12 +423,12 @@ In Lean we formalize this conclusion in three complementary ways (all sorry-free
   i.e. $\Theta(x \otimes y) = \Theta x + \Theta y$, together with distributivity over $+$ (Axiom~3).
   This yields the Appendix~B product equation for $\Psi := \Theta^{-1}$, which we solve to obtain
   $\Psi(x) = C e^{Ax}$ and hence $(x \otimes y) = (xy)/C$.
-  (Lean: \texttt{ProductTheorem/Main.lean}.)
+  (Lean: \texttt{Multiplicative/Main.lean}.)
 \item \textbf{Lean-friendly "avoid Appendix A again" route}:
   do \emph{not} assume a representation theorem for $\otimes$.
   Instead, package the regularity properties as \texttt{TensorRegularity} (associativity + injectivity of $t \mapsto 1 \otimes t$)
   and combine with distributivity (Axiom~3) to derive $(x \otimes y) = (xy)/C$ directly.
-  (Lean: \texttt{ProductTheorem/AczelTheorem.lean}.)
+  (Lean: \texttt{Multiplicative/AczelTheorem.lean}.)
 \item \textbf{WARNING: Circular Reasoning Anti-Pattern}.
   A previous file \texttt{EventBridge.lean} was \textbf{deleted} because it contained circular reasoning:
   it defined \texttt{mulTensor := multiplication} and then ``proved'' multiplication equals scaled multiplication.
@@ -441,7 +441,7 @@ appropriate for $\oplus$ but structurally incompatible with $\otimes$ on $(0,\in
 identity is $1$ and is \emph{not} a minimum element.  Our Appendix~B development avoids this
 mismatch by never trying to model $\otimes$ as a "bottomed" additive monoid.
 
-\textbf{Axiom audit:} We checked all \texttt{ProductTheorem/*.lean} files for \texttt{axiom}, \texttt{sorry}, or \texttt{admit}---none found.
+\textbf{Axiom audit:} We checked all \texttt{Multiplicative/*.lean} files for \texttt{axiom}, \texttt{sorry}, or \texttt{admit}---none found.
 The injectivity requirement in \texttt{TensorRegularity} is \emph{derived} from distributivity + commutativity
 via \texttt{TensorRegularity.of\_assoc\_of\_distrib\_of\_comm}, not assumed.
 
@@ -464,7 +464,7 @@ This clever proof avoids continuity assumptions and works purely combinatorially
 
 \begin{itemize}
 \item \textbf{K\&S's Fibonacci proof}: COMPLETE.  The full Fibonacci recurrence argument is formalized
-  in \texttt{FibonacciProof.lean}, including:
+  in \texttt{Multiplicative/Proofs/Direct/FibonacciProof.lean}, including:
   \begin{enumerate}
   \item Golden ratio irrationality (\texttt{goldenRatio\_irrational})
   \item Dense offsets $\{m - n\phi : m,n \in \mathbb{N}, n \geq 1\}$ in $\mathbb{R}$ (\texttt{dense\_fib\_linear\_combinations})
@@ -500,7 +500,7 @@ theorem ks_appendix_b_fibonacci_strictMono
   log-coordinate arguments.
 
 \item \textbf{Archived alternatives}: Two incomplete approaches (deriving StrictMono from Continuous,
-  and deriving StrictMono from weak Monotone) are preserved in \texttt{FibonacciProofScratch.lean}
+  and deriving StrictMono from weak Monotone) are preserved in \texttt{Multiplicative/Scratch/FibonacciProofScratch.lean}
   for reference.  These were not needed because K\&S Appendix A already provides StrictMono from
   the order isomorphism representation.
 \end{itemize}
@@ -533,7 +533,7 @@ H'_{xy}(m_x m_y) = \lambda_1 f_1(m_x) + \lambda_2 f_2(m_y).
 In Lean we formalize the \emph{coordinate-derivative calculation} explicitly, without smuggling it in
 as an axiom.  The key lemma is
 \texttt{lagrange\_coordinate\_deriv\_eq\_product}
-(\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/VariationalTheorem.lean}), which models
+(\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Variational/Main.lean}), which models
 ``$\partial/\partial\,m(x\times y)$'' as the 1D derivative along the update map
 $t \mapsto \mathrm{update}\ m\ (x,y)\ t$.
 It assumes only local differentiability of the relevant terms and a stationarity hypothesis stated as a
@@ -559,7 +559,7 @@ classification step that yields the logarithmic solution.
 To avoid assuming stationarity as an axiom, we also provide a variant that derives the
 \texttt{HasDerivAt ... 0 ...} hypothesis from a local extremum via Fermat's theorem:
 \texttt{lagrange\_coordinate\_deriv\_eq\_product\_of\_isLocalExtr}
-\ (\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/VariationalTheorem.lean}).
+\ (\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Variational/Main.lean}).
 We then package the result in the exact ``K\&S \texttt{Hproduct}'' shape as
 \texttt{lagrange\_Hproduct\_eq\_of\_isLocalExtr}.
 
@@ -570,7 +570,7 @@ To treat this as a functional equation valid for all positive pairs $(m_x,m_y)$ 
 by Path A), K\&S rely on an informal ``generality across applications'' premise: the same potential
 is intended to apply uniformly across a sufficiently rich class of inference problems.
 In Lean we make this bridge assumption explicit as the structure
-\texttt{KSVariationalGenerality} (\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/VariationalTheorem.lean}),
+\texttt{KSVariationalGenerality} (\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Variational/Main.lean}),
 so nothing is smuggled: either you assume it, or you do not get a global functional equation.
 
 \subsection{K\&S's Differentiability Claim (and Why It's Wrong)}
@@ -620,7 +620,7 @@ The minimal package for the \emph{classification step} is:
 
 This is exactly the statement proved by our main Lean theorem
 \texttt{variationalEquation\_solution\_measurable}
-(\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/VariationalTheorem.lean}).
+(\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Variational/Main.lean}).
 It \emph{does not} assume that $H'$ comes from a differentiable potential.
 
 If one also wants a theorem phrased in terms of an underlying potential $H$, one adds an optional hypothesis:
@@ -729,12 +729,12 @@ $w\log(w/u)$.
 \item Without the regularity gate, uniqueness fails: we exhibit a multiplicative-additive (Hamel-basis) counterexample
 and the induced ratio-form $d$ is \emph{not} a constant multiple of KL.
 \end{itemize}
-These results are proved in \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnsonKL.lean}.
+These results are proved in \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnson/KL.lean}.
 For convenience, the project re-exports the key Shore--Johnson lemmas we use in
-\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnsonTheorem.lean}.
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnson/Theorem.lean}.
 We then connect the resulting atom-level KL identity to the project's finite KL divergence
 definition on \texttt{ProbDist} (Section~8 layer) in
-\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnsonBridge.lean}.
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ShoreJohnson/Bridge.lean}.
 
 \subsection{The Entropy/Divergence Form}
 
@@ -744,7 +744,7 @@ From the variational theorem, integrating $H'(m) = B + C \log m$ yields:
 With appropriate choices of constants ($C = 1$, $B = -\log u$, $A = u$), this specializes to the \textbf{Kullback--Leibler divergence}:
 \[D(w \| u) = \sum_i \left( u_i - w_i + w_i \log \frac{w_i}{u_i} \right)\]
 
-This is formalized in \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Divergence.lean} with proofs of non-negativity, zero iff equal, and asymmetry.
+This is formalized in \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Information/Divergence.lean} with proofs of non-negativity, zero iff equal, and asymmetry.
 For probability distributions (equal total mass), the linear terms $\sum_i (u_i - w_i)$ cancel, leaving the usual $\sum_i w_i \log(w_i/u_i)$.
 
 \subsection{Summary: What K\&S Should Have Said}
@@ -761,14 +761,14 @@ No circularity: we assume (functional equation + measurability), and \emph{deriv
 
 K\&S's Axiom 5 (chaining associativity) extends the framework to conditional probability.
 We formalize the chain product rule, Bayes' theorem, and the ratio-of-measures representation in
-\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ConditionalProbability/Basic.lean}.
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Probability/ConditionalProbability/Basic.lean}.
 
 \section{Information and Entropy (Section 8)}
 
 K\&S Section 8 specializes the variational potential to (i) information/divergence for probability
 distributions and (ii) Shannon entropy.
 We formalize this in
-\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/InformationEntropy.lean}.
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Information/InformationEntropy.lean}.
 
 For comparison (and to honor the historical development), we also formalize classical axiomatic
 characterizations of Shannon entropy \emph{independently of K\&S}:
@@ -786,13 +786,13 @@ Highlights:
 \item \textbf{Mathlib KL bridge (finite $\to$ general)}: we show our \texttt{klDivergenceTop} on \texttt{Fin n}
   agrees with mathlib's measure-theoretic \texttt{InformationTheory.klDiv} on the associated Dirac-sum measures
   (\texttt{klDiv\_toMeasureTop\_eq\_klDivergenceTop} in
-  \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/InformationEntropyMathlib.lean}).
+  \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Information/InformationEntropyMathlib.lean}).
   This provides a clean ``infinite/continuum'' variant by reusing mathlib's general KL divergence.
 \item \textbf{Mathlib KL bridge (countable discrete)}: for sequences on $\mathbb{N}$ we connect the K\&S
   countable divergence sum \texttt{divergenceInf} to \texttt{InformationTheory.klDiv} for Dirac-sum measures
   (\texttt{Seq.klDiv\_toMeasureTop\_eq\_divergenceInfTop} and
   \texttt{Seq.klDiv\_toMeasureTop\_eq\_ofReal\_divergenceInf} in
-  \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/DivergenceMathlib.lean}).
+  \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Information/DivergenceMathlib.lean}).
 \item \textbf{Shannon properties}: entropy of the uniform distribution is $\log n$
   (\texttt{shannonEntropy\_uniform}), strict monotonicity in $n$ for uniform distributions
   (\texttt{shannonEntropy\_uniform\_strictMono}), grouping/additivity in a binary refinement
@@ -816,7 +816,7 @@ Our formalization confirms their approach is sound, while making explicit:
 \begin{enumerate}
 \item \textbf{Three independent proof paths}: Grid-based (K\&S style), Dedekind cuts (classical), and H\"older embedding (via Eric Paul's library).
 
-\item \textbf{Discovery of minimal assumptions}: The \texttt{NoAnomalousPairs} condition from classical ordered semigroup theory (Alimov 1950) is \emph{sufficient} for the representation theorem and is \emph{weaker} than K\&S's separation property.
+\item \textbf{Discovery of minimal assumptions}: The \texttt{NoAnomalousPairs} condition from classical ordered semigroup theory (Alimov 1950) is \emph{sufficient} for the representation theorem.
 
 \item \textbf{Connection to classical mathematics}: K\&S's work fits within the century-old tradition of H\"older embedding theorems for ordered algebraic structures.
 Eric Paul's Lean 4 formalization of this classical theory provides a clean, minimal proof path.
@@ -827,7 +827,7 @@ Eric Paul's Lean 4 formalization of this classical theory provides a clean, mini
 \textbf{Practical recommendation}: For new formalizations building on K\&S, the H\"older approach is preferred:
 \begin{itemize}
 \item Uses classical assumptions (\texttt{NoAnomalousPairs} only)
-\item Shortest local codebase ($\sim$420 lines vs.\ $\sim$4000 for grid approach)
+\item Shortest local codebase (761 lines vs.\ 6,612 for grid approach)
 \item Most mathematically elegant
 \item Leverages Eric Paul's battle-tested library
 \end{itemize}
@@ -863,7 +863,7 @@ K\&S state (Section 3.1):
 \textbf{Our finding:} Commutativity is \emph{not} derivable from Axioms 0--2 alone.
 It requires the \emph{separation property}.
 
-\textbf{Proof:} Theorem in \texttt{RepresentationTheorem/Core/SeparationImpliesCommutative.lean}:
+\textbf{Proof:} Theorem in \texttt{Additive/Proofs/GridInduction/Core/SeparationImpliesCommutative.lean}:
 \begin{lstlisting}
 theorem op_comm_of_associativity
     (α : Type*) [KnuthSkillingAlgebra α] [KSSeparation α] :
@@ -878,7 +878,7 @@ K\&S's proofs implicitly use the Archimedean property: for any $a > \text{ident}
 
 \textbf{Our finding:} The Archimedean property is \emph{derivable} from separation, not an independent axiom.
 
-\textbf{Proof:} Theorem in \texttt{Separation/SandwichSeparation.lean}:
+\textbf{Proof:} Theorem in \texttt{Additive/Axioms/SandwichSeparation.lean}:
 \begin{lstlisting}
 theorem op_archimedean_of_separation
     [KSSeparation α] (a x : α) (ha : ident < a) :
@@ -952,7 +952,7 @@ class IsProbabilityMeasure (μ : Measure Ω) : Prop where
 
 \subsection{Cox (1946, 1961): Logical Plausibility}
 
-\textbf{Formalization}: See \texttt{Cox/Basic.lean}
+\textbf{Formalization}: See \texttt{Mettapedia/ProbabilityTheory/Cox/Basic.lean}
 
 \subsubsection{Philosophical Setting}
 
@@ -1034,8 +1034,8 @@ Domain & Already on $\mathbb{R}$ & Must embed into $\mathbb{R}$ \\
 The gap between $(0, k)$ and $(1, 0)$ cannot be bridged by rational powers.
 Consequently, no order-preserving additive embedding into $\mathbb{R}$ exists.
 
-See: \texttt{RepresentationTheorem/Counterexamples/} \\
-\hspace*{2em} \texttt{ProductFailsSeparation.lean}
+See: \texttt{Additive/Counterexamples/} \\
+\hspace*{2em} \texttt{Additive/Counterexamples/ProductFailsSeparation.lean}
 
 \textbf{Connection theorem}: \texttt{cox\_comm\_of\_additiveOrderIsoRep} in \\
 \hspace*{2em} \texttt{Literature/CoxTheorem.lean}
@@ -1068,10 +1068,10 @@ K\&S prove the representation theorem via \textbf{inductive extension}: given a 
 
 Our formalization provides \textbf{both} proofs:
 \begin{enumerate}
-\item \textbf{K\&S's approach} (grid/induction): \texttt{RepresentationTheorem/Main.lean} \\
+\item \textbf{K\&S's approach} (grid/induction): \texttt{Additive/Proofs/GridInduction/Main.lean} \\
   Uses \texttt{RepresentationGlobalization} typeclass machinery.
 
-\item \textbf{Direct cuts} (our alternative): \texttt{RepresentationTheorem/Alternative/Main.lean} \\
+\item \textbf{Direct cuts} (our alternative): \texttt{Additive/Proofs/DirectCuts/Main.lean} \\
   Constructs $\Theta$ via Dedekind cuts explicitly. Smaller and more direct.
 \end{enumerate}
 
@@ -1112,13 +1112,13 @@ This theorem states: if a linearly ordered cancellative semigroup has no anomalo
 \item \texttt{PNatPowAssoc}: Requires commutativity, which Eric proves follows from $\neg\text{has\_anomalous\_pair}$!
 \end{itemize}
 
-Thus, \texttt{NoAnomalousPairs} alone suffices for the representation theorem---no \texttt{KSSeparation} needed!
+Thus, \texttt{NoAnomalousPairs} suffices for the representation theorem.
 
 \textbf{Files}:
 \begin{itemize}
-\item \texttt{Separation/HolderEmbedding.lean}: Bridge to Eric's library
-\item \texttt{Separation/AnomalousPairs.lean}: NoAnomalousPairs definition
-\item \texttt{RepresentationTheorem/Comparison.lean}: Unified interface
+\item \texttt{Additive/Proofs/OrderedSemigroupEmbedding/HolderEmbedding.lean}: Bridge to Eric's library
+\item \texttt{Additive/Axioms/AnomalousPairs.lean}: NoAnomalousPairs definition
+\item \texttt{Additive/Proofs/GridInduction/Comparison.lean}: Unified interface
 \end{itemize}
 
 \subsection{The A/B/C Partition}
@@ -1161,7 +1161,7 @@ We formalize a multi-axis classification of probability theories, placing K\&S a
 
 Each axis represents a binary or multi-valued property of probability theories.
 
-\textbf{Formalization}: See \texttt{Hypercube/Basic.lean}
+\textbf{Formalization}: See \texttt{Mettapedia/ProbabilityTheory/Hypercube/Basic.lean}
 
 \begin{itemize}
 \item \textbf{Commutativity}: $P(A \cap B) = P(B \cap A)$? (Classical: yes; Quantum: no)
@@ -1235,8 +1235,8 @@ The hypercube suggests unexplored combinations:
 \item \textbf{Non-commutative classical}: Classical probability without $P(A \cap B) = P(B \cap A)$
 \end{itemize}
 
-\textbf{Formalization}: See \texttt{Hypercube/NovelTheories.lean} and \\
-\hspace*{2em} \texttt{Hypercube/NeighborTheories.lean}
+\textbf{Formalization}: See \texttt{Mettapedia/ProbabilityTheory/Hypercube/NovelTheories.lean} and \\
+\hspace*{2em} \texttt{Mettapedia/ProbabilityTheory/Hypercube/NeighborTheories.lean}
 
 \section{To-Do: Open Gaps in Formalization}
 \label{app:todo}
@@ -1245,7 +1245,7 @@ The hypercube suggests unexplored combinations:
 
 \textbf{Status}: resolved.
 
-The bridge is implemented in \texttt{Model.lean} as:
+The bridge is implemented in \texttt{Bridges/Model.lean} as:
 
 \begin{lstlisting}
 structure KSModel (E S : Type*)
@@ -1265,7 +1265,7 @@ The representation theorem tells us this algebra embeds into $(\mathbb{R}, +)$, 
 E \xrightarrow{v} S \xrightarrow{\Theta} \mathbb{R}
 \]
 
-Concrete example: \texttt{Examples/CoinFlip.lean} demonstrates a coin flip (Bernoulli trial) with 4-element Boolean algebra mapping through $\mathbb{R}_{\geq 0}$ to classical probability in $\mathbb{R}$.
+Concrete example: \texttt{Examples/CoinDie.lean} includes a fair coin flip and die roll as \texttt{ProbDist} sanity checks.
 
 \subsection{Appendix B: Product Theorem}
 
@@ -1275,7 +1275,7 @@ Lean proves that any $\otimes : \mathbb{R}_{>0}\to\mathbb{R}_{>0}\to\mathbb{R}_{
 distributivity over $+$ (Axiom~3) and mild regularity (associativity, plus injectivity of
 $t \mapsto 1 \otimes t$) is multiplication up to a global scale constant.
 This is formalized as \texttt{TensorRegularity} in
-\texttt{ProductTheorem/AczelTheorem.lean}.
+\texttt{Multiplicative/AczelTheorem.lean}.
 
 \textbf{WARNING: Circular Reasoning Anti-Pattern}.
 A previous file \texttt{EventBridge.lean} was \textbf{deleted} because it contained circular reasoning.
@@ -1298,20 +1298,19 @@ The \textbf{correct approach} (what \texttt{AczelTheorem.lean} does):
 
 We prove the needed Cauchy lemma as
 \texttt{continuous\_additive\_eq\_mul} in
-\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/ProductTheorem/FunctionalEquation.lean},
+\texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Multiplicative/FunctionalEquation.lean},
 using Mathlib’s continuous additive $\Rightarrow$ $\mathbb{R}$-linear infrastructure.
 
 \subsection{Concrete Examples}
 
 \textbf{Status}: demonstrated.
 
-See \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Examples/} for:
+See \texttt{Mettapedia/ProbabilityTheory/KnuthSkilling/Examples/} (and the nearby \texttt{Bridges/} and \texttt{Exploration/} folders) for:
 \begin{itemize}
-\item \texttt{CoinFlip.lean}: Full K\&S pipeline on a coin flip (Bernoulli trial, Durrett Example 1.6.12).
-  Demonstrates: 4-element Boolean algebra $\to$ $\mathbb{R}_{\geq 0}$ $\to$ $\mathbb{R}$.
+\item \texttt{Examples/CoinDie.lean}: Fair coin flip and fair die roll \texttt{ProbDist} examples.
   Verifies: $P(\emptyset)=0$, $P(\Omega)=1$, additivity $P(H \cup T) = P(H) + P(T)$.
-\item \texttt{ThreeElementChain.lean}: Minimal non-Boolean distributive lattice (3-element chain).
-\item \texttt{OpenSets.lean}: Open sets of $\mathbb{R}$ (distributive, typically not complemented).
+\item \texttt{Bridges/Model.lean}: The three-element chain $\{\bot < m < \top\}$ as a \texttt{PlausibilitySpace}.
+\item \texttt{Exploration/OpenIntervalLattice.lean}: Open sets / intervals of $\mathbb{R}$ as a distributive lattice.
 \end{itemize}
 
 \bibliographystyle{plain}

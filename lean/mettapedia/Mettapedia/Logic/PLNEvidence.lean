@@ -184,6 +184,31 @@ theorem zero_hplus (x : Evidence) : zero + x = x := by
 
 instance : Zero Evidence := ⟨zero⟩
 
+/-! ### Division (Quotient Operation)
+
+Division is needed for conditional probability calculations like Inheritance.
+Uses safe division: returns 0 when dividing by 0.
+-/
+
+/-- Division: coordinatewise quotient with safe zero handling
+    (n⁺₁, n⁻₁) / (n⁺₂, n⁻₂) = (n⁺₁/n⁺₂, n⁻₁/n⁻₂)
+
+    Returns 0 when dividing by 0 to avoid undefined behavior.
+
+    Interpretation: Used for conditional probability calculations.
+    For Inheritance(A,B), we compute weakness(A ∩ B) / weakness(A),
+    giving P(B|A) - the conditional probability that a member of A is also in B.
+-/
+noncomputable def div (x y : Evidence) : Evidence :=
+  ⟨if y.pos = 0 then 0 else x.pos / y.pos,
+   if y.neg = 0 then 0 else x.neg / y.neg⟩
+
+noncomputable instance : Div Evidence := ⟨div⟩
+
+theorem div_def (x y : Evidence) :
+    x / y = ⟨if y.pos = 0 then 0 else x.pos / y.pos,
+             if y.neg = 0 then 0 else x.neg / y.neg⟩ := rfl
+
 /-! ### Lattice Structure
 
 Evidence forms a complete lattice with coordinatewise operations:

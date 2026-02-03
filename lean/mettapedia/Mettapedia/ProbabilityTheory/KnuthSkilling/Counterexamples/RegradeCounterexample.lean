@@ -60,7 +60,7 @@ theorem additive_zsmul {f : ℝ → ℝ} (hadd : ∀ x y, f (x + y) = f x + f y)
     (n : ℤ) (x : ℝ) : f (n * x) = n * f x := by
   cases n with
   | ofNat n =>
-    simp only [Int.ofNat_eq_coe, Int.cast_natCast]
+    simp only [Int.ofNat_eq_natCast, Int.cast_natCast]
     exact additive_nsmul hadd n x
   | negSucc n =>
     have key : f (-((n + 1 : ℕ) * x)) = -((n + 1 : ℕ) : ℝ) * f x := by

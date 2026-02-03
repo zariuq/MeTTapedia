@@ -33,6 +33,7 @@ The substitutability theorem is the **key correctness property** of OSLF:
 namespace Mettapedia.OSLF.RhoCalculus.Soundness
 
 open Mettapedia.OSLF.RhoCalculus
+open Mettapedia.OSLF.RhoCalculus.Reduction
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.CategoryTheory.LambdaTheories
@@ -633,23 +634,233 @@ theorem comm_preserves_type
 A well-typed process either reduces or is a value.
 -/
 
-/-- A process is a value (normal form) if it cannot reduce -/
+/-- Check if a pattern is a value element (recursive).
+    This is the main definition; `isValue` delegates to it for parallel bags. -/
+def isValueElement : Pattern → Bool
+  | .apply "PZero" [] => true
+  | .apply "POutput" _ => true
+  | .apply "PInput" _ => true
+  | .apply "NQuote" _ => true
+  | .collection .hashBag ps none => isValueElementList ps
+  | _ => false
+where
+  /-- Check if all elements in a list are value elements -/
+  isValueElementList : List Pattern → Bool
+    | [] => true
+    | p :: ps => isValueElement p && isValueElementList ps
+
+/-- A process is a value (normal form) if it cannot reduce without external interaction.
+
+    Values in ρ-calculus are:
+    - `0` (nil process)
+    - `n!(q)` (standalone output, blocked waiting for receiver)
+    - `for(x<-n){p}` (standalone input, blocked waiting for sender)
+    - `@p` (quoted process, a name value)
+    - `{ P | Q | ... }` where all elements are value elements
+
+    Note: A parallel bag with matching output/input channels CAN reduce via COMM,
+    but we still call it a "value" here since `isValue ∨ reduces` holds either way. -/
 def isValue : Pattern → Bool
   | .apply "PZero" [] => true
-  | .collection .hashBag ps none =>
-    ps.all fun p =>
-      match p with
-      | .apply "POutput" _ => true
-      | .apply "PInput" _ => true
-      | _ => false
+  | .apply "POutput" _ => true  -- Standalone output, blocked
+  | .apply "PInput" _ => true   -- Standalone input, blocked
+  | .apply "NQuote" _ => true   -- Quote is a Name value
+  | .collection .hashBag ps none => isValueElement.isValueElementList ps
   | _ => false
 
-/-- Progress: a well-typed closed process either reduces or is a value. -/
+/-- isValueElementList is equivalent to List.all isValueElement -/
+theorem isValueElementList_eq_all (ps : List Pattern) :
+    isValueElement.isValueElementList ps = ps.all isValueElement := by
+  induction ps with
+  | nil => rfl
+  | cons p ps ih =>
+    simp only [isValueElement.isValueElementList, List.all_cons, ih]
+
+/-- isValueElement for collections -/
+theorem isValueElement_collection (ps : List Pattern) :
+    isValueElement (.collection .hashBag ps none) = isValueElement.isValueElementList ps := rfl
+
+/-- isValueElement of nested parallel matches recursive check -/
+theorem isValueElement_par_iff (ps : List Pattern) :
+    isValueElement (.collection .hashBag ps none) = ps.all isValueElement := by
+  rw [isValueElement_collection, isValueElementList_eq_all]
+
+/-- In empty context, all Names are quotes.
+
+    Proof: By the typing rules, a term of sort "Name" can only be:
+    - A variable (but empty context has none)
+    - A quote @p (the only constructor producing Name sort)
+-/
+theorem empty_context_name_is_quote {n : Pattern} {α : NamePred} :
+    (TypingContext.empty ⊢ n : ⟨"Name", α, by simp⟩) →
+    ∃ p, n = .apply "NQuote" [p] := by
+  intro h
+  -- By the structure of HasType, only `var` and `quote` produce Name sort
+  -- All other constructors (nil, drop, output, input, par) produce Proc sort
+  generalize hτ : (⟨"Name", α, by simp⟩ : NativeType) = τ at h
+  cases h with
+  | var hlookup =>
+    -- Variable case: empty context has no bindings
+    simp [TypingContext.empty, TypingContext.lookup] at hlookup
+  | quote hp =>
+    -- Quote case: n = NQuote [p]
+    exact ⟨_, rfl⟩
+  | nil => simp [NativeType.mk.injEq] at hτ
+  | drop _ => simp [NativeType.mk.injEq] at hτ
+  | output _ _ => simp [NativeType.mk.injEq] at hτ
+  | input _ _ => simp [NativeType.mk.injEq] at hτ
+  | par _ => simp [NativeType.mk.injEq] at hτ
+
+/-- Helper: split a list at an element -/
+theorem List.exists_split_of_mem {α : Type*} {x : α} {xs : List α} (h : x ∈ xs) :
+    ∃ before after, xs = before ++ [x] ++ after := by
+  induction xs with
+  | nil => simp at h
+  | cons y ys ih =>
+    cases h with
+    | head => exact ⟨[], ys, rfl⟩
+    | tail _ hy =>
+      obtain ⟨before, after, heq⟩ := ih hy
+      exact ⟨y :: before, after, by simp [heq]⟩
+
+/-- A non-value element in empty context reduces.
+
+    This key lemma uses well-founded induction on pattern size to handle
+    arbitrarily nested parallel compositions. If a well-typed closed Proc-sorted
+    term is not a value element, it must contain a PDrop somewhere that can reduce. -/
+theorem non_value_proc_reduces {p : Pattern} {φ : ProcPred}
+    (htype : TypingContext.empty ⊢ p : ⟨"Proc", φ, by simp⟩)
+    (hnotval : isValueElement p = false) :
+    ∃ q, p ⇝ q := by
+  -- Well-founded induction on sizeOf p
+  generalize hp : sizeOf p = n
+  induction n using Nat.strong_induction_on generalizing p φ with
+  | _ n ih =>
+    generalize hτ : (⟨"Proc", φ, by simp⟩ : NativeType) = τ at htype
+    cases htype with
+    | var hlookup =>
+      simp [TypingContext.empty, TypingContext.lookup] at hlookup
+    | nil =>
+      simp [isValueElement] at hnotval
+    | quote _ =>
+      simp [NativeType.mk.injEq] at hτ
+    | drop hn =>
+      -- PDrop reduces via DROP rule
+      obtain ⟨q, rfl⟩ := empty_context_name_is_quote hn
+      exact ⟨q, Reduces.drop⟩
+    | output _ _ =>
+      simp [isValueElement] at hnotval
+    | input _ _ =>
+      simp [isValueElement] at hnotval
+    | @par _ ps hall =>
+      -- isValueElement (.collection .hashBag ps none) = ps.all isValueElement
+      rw [isValueElement_par_iff] at hnotval
+      -- hnotval : ps.all isValueElement = false
+      -- Extract witness: some element is not a value
+      have hnotval' : ¬ ps.all isValueElement = true := by simp [hnotval]
+      simp only [List.all_eq_true] at hnotval'
+      push_neg at hnotval'
+      obtain ⟨elem, helem, helemnotval⟩ := hnotval'
+      -- elem has sizeOf < sizeOf p (list membership property)
+      have hmem := List.sizeOf_lt_of_mem helem
+      -- sizeOf elem < sizeOf ps < sizeOf (Pattern.collection .hashBag ps none) = n
+      have hsz : sizeOf elem < n := by
+        have h1 : sizeOf ps ≤ sizeOf (Pattern.collection CollType.hashBag ps (none : Option String)) := by
+          simp only [Pattern.collection.sizeOf_spec]
+          omega
+        rw [hp] at h1
+        omega
+      -- elem is typed with Proc sort
+      have helem_typed := hall elem helem
+      -- Apply induction hypothesis
+      have helemnotval' : isValueElement elem = false := by
+        cases h : isValueElement elem
+        · rfl
+        · exact absurd h helemnotval
+      have hreduces := ih (sizeOf elem) hsz helem_typed helemnotval' rfl
+      obtain ⟨q, hred⟩ := hreduces
+      -- Lift reduction to parallel composition
+      obtain ⟨before, after, hps⟩ := List.exists_split_of_mem helem
+      use .collection .hashBag (before ++ [q] ++ after) none
+      rw [hps]
+      exact Reduces.par_any hred
+
+/-- Progress for Proc-sorted types: a well-typed closed process either reduces or is a value.
+
+    Key observation: For well-typed closed Procs, `isValueElement p = false` implies
+    p is either PDrop (which reduces) or a parallel collection with a non-value sub-element.
+-/
+theorem progress_proc {p : Pattern} {φ : ProcPred} :
+    (TypingContext.empty ⊢ p : ⟨"Proc", φ, by simp⟩) →
+    isValue p ∨ ∃ q, p ⇝ q := by
+  intro h
+  generalize hτ : (⟨"Proc", φ, by simp⟩ : NativeType) = τ at h
+  cases h with
+  | var hlookup =>
+    simp [TypingContext.empty, TypingContext.lookup] at hlookup
+  | nil =>
+    left; rfl
+  | quote _ =>
+    simp [NativeType.mk.injEq] at hτ
+  | drop hn =>
+    right
+    obtain ⟨q, rfl⟩ := empty_context_name_is_quote hn
+    exact ⟨q, Reduces.drop⟩
+  | output _ _ =>
+    left; rfl
+  | input _ _ =>
+    left; rfl
+  | @par _ ps hall =>
+    -- Use isValueElementList for the parallel check
+    by_cases hval : isValueElement.isValueElementList ps
+    · left
+      simp only [isValue]
+      exact hval
+    · -- Some element fails isValueElement
+      right
+      rw [isValueElementList_eq_all] at hval
+      have hval' : ¬ ps.all isValueElement = true := by simp [hval]
+      simp only [List.all_eq_true] at hval'
+      push_neg at hval'
+      obtain ⟨elem, helem, hnotval⟩ := hval'
+      -- elem is a non-value element, so it reduces by the well-founded lemma
+      have htyped := hall elem helem
+      have hnotval' : isValueElement elem = false := by
+        cases h : isValueElement elem
+        · rfl
+        · exact absurd h hnotval
+      obtain ⟨q, hred⟩ := non_value_proc_reduces htyped hnotval'
+      -- Lift the reduction to the parallel composition
+      obtain ⟨before, after, hps⟩ := List.exists_split_of_mem helem
+      use .collection .hashBag (before ++ [q] ++ after) none
+      rw [hps]
+      exact Reduces.par_any hred
+
+/-- Progress (general): a well-typed closed term either reduces or is a value. -/
 theorem progress {p : Pattern} {τ : NativeType} :
     (TypingContext.empty ⊢ p : τ) →
     isValue p ∨ ∃ q, p ⇝ q := by
-  intro _
-  sorry
+  intro h
+  by_cases hsort : τ.sort = "Proc"
+  · -- Proc sort: use progress_proc
+    -- Rewrite τ to have explicit "Proc" sort
+    obtain ⟨sort, pred, valid⟩ := τ
+    simp only at hsort
+    subst hsort
+    exact progress_proc h
+  · -- Name sort: quotes are values (no reduction rule applies)
+    left
+    -- τ.sort ≠ "Proc", so τ.sort = "Name" (by sort_valid)
+    obtain ⟨sort, pred, valid⟩ := τ
+    -- sort_valid says sort ∈ ["Proc", "Name"], and sort ≠ "Proc", so sort = "Name"
+    rcases valid with _ | ⟨_, _ | ⟨_, h'⟩⟩
+    · -- sort = "Proc", contradicts hsort
+      exact absurd rfl hsort
+    · -- sort = "Name"
+      obtain ⟨q, rfl⟩ := empty_context_name_is_quote h
+      rfl
+    · -- sort ∈ [], contradiction
+      nomatch h'
 
 /-! ## Summary
 

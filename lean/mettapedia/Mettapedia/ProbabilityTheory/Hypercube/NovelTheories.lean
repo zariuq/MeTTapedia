@@ -211,7 +211,7 @@ Mass functions assign to projection operators, not sets!
     - Has orthocomplementation (aᶜ with a ⊓ aᶜ = ⊥ and a ⊔ aᶜ = ⊤)
     - Satisfies orthomodularity: a ≤ b → b = a ⊔ (b ⊓ aᶜ)
 -/
-class OrthomodularLattice (L : Type*) extends Lattice L, HasCompl L, BoundedOrder L where
+class OrthomodularLattice (L : Type*) extends Lattice L, Compl L, BoundedOrder L where
   /-- Orthomodularity: if a ≤ b then b = a ∨ (b ∧ aᶜ) -/
   orthomodular : ∀ a b : L, a ≤ b → b = a ⊔ (b ⊓ aᶜ)
   /-- Double negation -/
@@ -237,7 +237,7 @@ orthomodularity, and the Boolean complement provides an orthocomplementation.
 
 instance {L : Type*} [BooleanAlgebra L] : OrthomodularLattice L where
   toLattice := inferInstance
-  toHasCompl := inferInstance
+  toCompl := inferInstance
   toBoundedOrder := inferInstance
   orthomodular a b hab := by
     -- In a Boolean algebra: b = (b ⊓ a) ⊔ (b ⊓ aᶜ) = a ⊔ (b ⊓ aᶜ) when a ≤ b.

@@ -13,7 +13,7 @@ The **canonical proof path** uses `NoAnomalousPairs` from the 1950s ordered-semi
 
 **Why NAP is primary**:
 - Historical precedent: NAP (1950s) predates K&S's `KSSeparation` (2012) by 60+ years
-- Strictly weaker: NAP is identity-free; `KSSeparation` requires identity
+- Identity-free: NAP is defined on semigroups; `KSSeparation` requires identity
 - The relationship: `KSSeparation + IdentIsMinimum ⇒ NoAnomalousPairs` (proven)
 
 ## Design note (keep the API light)

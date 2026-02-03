@@ -135,7 +135,7 @@ theorem two_term_recurrence
   intro n θ
   cases n with
   | ofNat n =>
-    simp only [Int.ofNat_eq_coe, Int.cast_natCast, zpow_natCast]
+    simp only [Int.ofNat_eq_natCast, Int.cast_natCast, zpow_natCast]
     exact two_term_recurrence_nat Ψ a hDouble n θ
   | negSucc n =>
     -- Int.negSucc n represents -(n+1)
@@ -638,9 +638,9 @@ lemma phi_pow_irrational (n : ℕ) (hn : n ≥ 1) : Irrational (φ ^ n) := by
 lemma phi_zpow_irrational (n : ℤ) (hn : n ≠ 0) : Irrational (φ ^ n) := by
   cases n with
   | ofNat m =>
-    simp only [Int.ofNat_eq_coe, zpow_natCast]
+    simp only [Int.ofNat_eq_natCast, zpow_natCast]
     have hm : m ≥ 1 := by
-      simp only [Int.ofNat_eq_coe, ne_eq] at hn
+      simp only [Int.ofNat_eq_natCast, ne_eq] at hn
       omega
     exact phi_pow_irrational m hm
   | negSucc m =>
@@ -841,7 +841,7 @@ theorem fibonacci_recurrence_fiber
   intro m
   cases m with
   | ofNat n =>
-    simp only [Int.ofNat_eq_coe, Int.cast_natCast, zpow_natCast]
+    simp only [Int.ofNat_eq_natCast, Int.cast_natCast, zpow_natCast]
     exact hForward n
   | negSucc n =>
     -- Backward induction for negative integers

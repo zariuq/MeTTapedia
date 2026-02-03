@@ -2622,7 +2622,7 @@ theorem extend_grid_rep_with_atom
                 = R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ + (t_x : ℝ) * δ := by
                     simpa [hθ_eq]
             _ < R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ + (t_y : ℝ) * δ :=
-                    add_lt_add_left ht_mul (R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩)
+                    add_lt_add_right ht_mul (R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩)
         · -- mixed case: old part favors LHS, but t-term favors RHS; use relative A-bound.
           have hΔ_pos : 0 < (t_y - t_x) := Nat.sub_pos_of_lt h_t_lt
           set Δ : ℕ := t_y - t_x
@@ -2662,7 +2662,7 @@ theorem extend_grid_rep_with_atom
           calc
             R.Θ_grid ⟨mu F r_old_x, mu_mem_kGrid F r_old_x⟩ + (t_x : ℝ) * δ
                 < (R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ + (Δ : ℝ) * δ) + (t_x : ℝ) * δ := by
-                    simpa [add_assoc] using add_lt_add_right hθ_gap' ((t_x : ℝ) * δ)
+                    simpa [add_assoc] using add_lt_add_left hθ_gap' ((t_x : ℝ) * δ)
             _ = R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ + ((t_x : ℝ) * δ + (Δ : ℝ) * δ) := by
                     ring
             _ = R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ + (t_y : ℝ) * δ := by
@@ -2686,7 +2686,7 @@ theorem extend_grid_rep_with_atom
           simpa [t_x, t_y] using h_t_eq
         -- Rewrite the RHS t-component to match the LHS, then add the common t-term.
         rw [← ht_eq']
-        exact add_lt_add_right hθ_lt (((splitMulti r_x).2 : ℝ) * δ)
+        exact add_lt_add_left hθ_lt (((splitMulti r_x).2 : ℝ) * δ)
 
       · -- Case t_x > t_y
         have hΔ_pos : 0 < (t_x - t_y) := Nat.sub_pos_of_lt h_t_gt
@@ -2735,7 +2735,7 @@ theorem extend_grid_rep_with_atom
                   simp [ht_x_cast]
                   ring
           _ < R.Θ_grid ⟨mu F r_old_y, mu_mem_kGrid F r_old_y⟩ + (t_y : ℝ) * δ := by
-                  simpa [add_assoc] using add_lt_add_right hθ_gap' ((t_y : ℝ) * δ)
+                  simpa [add_assoc] using add_lt_add_left hθ_gap' ((t_y : ℝ) * δ)
 
       /- Old proof attempt (disabled while refactoring):
       intro ⟨x, hx⟩ ⟨y, hy⟩ hxy

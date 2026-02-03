@@ -977,12 +977,12 @@ theorem shore_johnson_theorem_I
     (hPosP : ∀ {n : ℕ} (p : ProbDist n), ∀ i, 0 < p.p i) :
     ∃ d : ℝ → ℝ → ℝ, ObjEquivEV F (ofAtom d) := by
   -- Get the gradient representation
-  have ⟨gr, _⟩ := GradientSeparability.exists_gradient_representation
+  classical
+  have ⟨gr⟩ := GradientSeparability.exists_gradient_representation
     I F hSJ hRealize hExtract hBounded
 
   -- GAP 3: Convexity/Antiderivative - Needed for KKT sufficiency (stationary → minimizer)
   -- Use the hAntiderivExists assumption to get d
-  classical
   have ⟨d, hAntideriv, hConvex⟩ : ∃ d : ℝ → ℝ → ℝ, IsAntiderivative d gr.g ∧ IsConvexInFirstArg d :=
     hAntiderivExists gr
 
