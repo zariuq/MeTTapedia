@@ -1,6 +1,27 @@
 /.lake
 /external/
 
+# Scratch / tmp workspace
+/Mettapedia/.tmp/
+Mettapedia/**/.tmp_*
+Mettapedia/**/_scratch_*
+
+# Local dumps / logs / minted artifacts
+/all_txts/
+/build_logs/
+/papers/_minted/
+all_pln_*.txt
+all_ks_*.lean
+export_ks.sh
+
+# Local dumps / logs / minted artifacts
+/all_txts/
+/build_logs/
+/papers/_minted/
+all_pln_*.txt
+all_ks_*.lean
+export_ks.sh
+
 # Separate repositories (subprojects)
 Mettapedia/Algebra/OrderedSemigroups/
 Mettapedia/Metatheory/
