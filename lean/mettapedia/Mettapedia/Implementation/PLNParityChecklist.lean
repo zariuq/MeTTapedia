@@ -30,10 +30,10 @@ It is intentionally *not* a prose paper section (no `.md`), just a compiler-chec
 
 ## Evidence Semantics (Quantale/Heyting layer)
 
-- Evidence carrier and operations: `Mettapedia.Logic.PLNEvidence`
+- Evidence carrier and operations: `Mettapedia.Logic.EvidenceQuantale`
   - `Evidence` (counts `(nPlus, nMinus)`), `toStrength`, `toConfidence`
-  - revision-style aggregation lemma: `Mettapedia.Logic.PLNEvidence.Evidence.toStrength_hplus`
-  - polarity-swap negation rule: `Mettapedia.Logic.PLNEvidence.Evidence.toStrength_flip`
+  - revision-style aggregation lemma: `Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength_hplus`
+  - polarity-swap negation rule: `Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength_flip`
     (defined in `Mettapedia.Logic.PLNDerivedFromEvidence`)
 
 - KS vs Evidence (totality gate, “no faithful point semantics”)

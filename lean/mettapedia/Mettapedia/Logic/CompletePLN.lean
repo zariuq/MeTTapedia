@@ -65,7 +65,7 @@ than just pairwise conditional probabilities.
 
 namespace Mettapedia.Logic.CompletePLN
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLN
 
 /-! ## Part 1: Joint Probability Distribution

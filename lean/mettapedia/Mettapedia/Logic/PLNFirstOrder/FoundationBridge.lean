@@ -110,7 +110,7 @@ The foundation is solid. The rest is straightforward expansion.
 
 namespace Mettapedia.Logic.PLNFirstOrder
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Algebra.QuantaleWeakness
 open Mettapedia.Logic.PLNQuantaleSemantics.PBit
 open scoped ENNReal

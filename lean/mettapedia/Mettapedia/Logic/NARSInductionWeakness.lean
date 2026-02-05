@@ -164,7 +164,7 @@ theorem abduction_conf_le_half (t1 t2 : TV)
 
 The NARS induction/abduction confidence formulas arise from:
 
-1. **Evidence Quantale Foundation** (PLNEvidence.lean):
+1. **Evidence Quantale Foundation** (EvidenceQuantale.lean):
    - Evidence = (n⁺, n⁻) with tensor product for composition
    - Confidence c = total/(total + k) represents evidence weight
 

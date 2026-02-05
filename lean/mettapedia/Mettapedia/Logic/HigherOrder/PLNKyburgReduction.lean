@@ -12,7 +12,7 @@ import Mathlib.MeasureTheory.Integral.Bochner.Basic
 
 **Status**: Weeks 4-5 - PLN-Kyburg Bridge 🚧
 **Dependencies**:
-- PLNEvidence.lean (existing, 1112 lines)
+- EvidenceQuantale.lean (existing, 1112 lines)
 - EvidenceBeta.lean (existing, 690 lines)
 - HigherOrderProbability/* (Weeks 1-2 ✅)
 
@@ -59,13 +59,13 @@ full probability distributions. Why is this justified?
 
 - Kyburg, H.E. (1988). "Higher Order Probabilities"
 - Goertzel et al. (2009). "Probabilistic Logic Networks"
-- Existing Mettapedia: PLNEvidence.lean, EvidenceBeta.lean, DeFinetti.lean
+- Existing Mettapedia: EvidenceQuantale.lean, EvidenceBeta.lean, DeFinetti.lean
 
 -/
 
 namespace Mettapedia.Logic.PLNKyburgReduction
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceBeta
 open Mettapedia.Logic.EvidenceClass
 open Mettapedia.ProbabilityTheory.HigherOrderProbability

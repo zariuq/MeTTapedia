@@ -34,13 +34,13 @@ PLN Evidence (k, m) captures exactly the sufficient statistic, and:
 
 - de Finetti's representation theorem (Exchangeability.lean)
 - Beta-Bernoulli conjugacy (BetaBernoulli.lean)
-- PLN Evidence quantale (PLNEvidence.lean)
+- PLN Evidence quantale (EvidenceQuantale.lean)
 
 -/
 
 namespace Mettapedia.Logic.EvidenceBeta
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.Exchangeability
 open Mettapedia.ProbabilityTheory
 

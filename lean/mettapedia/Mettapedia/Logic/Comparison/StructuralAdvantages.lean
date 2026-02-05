@@ -36,7 +36,7 @@ PLN uses Evidence = (pos, neg : ℝ≥0∞):
 
 namespace Mettapedia.Logic.Comparison
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNQuantaleSemantics.PBit
 open scoped ENNReal
 

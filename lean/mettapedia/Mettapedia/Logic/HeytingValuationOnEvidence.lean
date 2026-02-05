@@ -40,7 +40,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.HeytingBounds
 namespace Mettapedia.Logic.HeytingValuationOnEvidence
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceIntervalBounds
 open Evidence
 
@@ -51,7 +51,7 @@ This is a distributive lattice (product of linear orders is distributive),
 but NOT a Heyting algebra (no natural implication operator).
 -/
 
-/-- Verify Evidence has DistribLattice structure (from PLNEvidence.lean) -/
+/-- Verify Evidence has DistribLattice structure (from EvidenceQuantale.lean) -/
 noncomputable example : DistribLattice Evidence := inferInstance
 
 /-- Verify Evidence has BoundedOrder structure (from CompleteLattice) -/

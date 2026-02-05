@@ -47,7 +47,7 @@ open scoped ENNReal
 
 open Mettapedia.Logic.SolomonoffPrior
 open Mettapedia.Logic.Exchangeability
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 
 /-! ## Exchangeable Programs -/
 

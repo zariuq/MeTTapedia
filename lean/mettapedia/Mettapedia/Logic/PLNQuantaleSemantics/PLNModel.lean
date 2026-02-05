@@ -26,7 +26,7 @@ have Evidence values that track both positive and negative support.
 
 namespace Mettapedia.Logic.PLNQuantaleSemantics.Model
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNQuantaleSemantics.PBit
 open Mettapedia.Logic.PLNQuantaleSemantics.CDLogic
 open scoped ENNReal

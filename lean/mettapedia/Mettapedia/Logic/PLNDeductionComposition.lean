@@ -27,13 +27,13 @@ This is the "pragmatic" approach - prove it works first, abstract later!
 
 ## References
 
-- PLNEvidence.lean - Evidence type and tensor product
+- EvidenceQuantale.lean - Evidence type and tensor product
 - PLNDeduction.lean - Deduction formula
 -/
 
 namespace Mettapedia.Logic.PLNDeductionComposition
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNDeduction
 
 /-! ## Step 1: Direct Path = Tensor Product
@@ -50,7 +50,7 @@ noncomputable def directPathStrength (s_AB s_BC : ENNReal) : ENNReal :=
 theorem tensor_strength_ge (E_AB E_BC : Evidence) :
     Evidence.toStrength (E_AB * E_BC) ≥
     Evidence.toStrength E_AB * Evidence.toStrength E_BC := by
-  -- This is Evidence.toStrength_tensor_ge from PLNEvidence.lean
+  -- This is Evidence.toStrength_tensor_ge from EvidenceQuantale.lean
   exact Evidence.toStrength_tensor_ge E_AB E_BC
 
 /-! ## Step 2: The Deduction Formula Structure
@@ -86,7 +86,7 @@ Now let's define deduction directly in terms of evidence composition.
     - pB, pC: prior probabilities
 
     The composed evidence for A→C uses the deductionEvidence function
-    from PLNEvidence.lean, which handles both:
+    from EvidenceQuantale.lean, which handles both:
     - Direct path: A→B→C (via tensor product)
     - Indirect path: A→¬B→C (via complementStrength)
 -/
@@ -141,7 +141,7 @@ theorem deduction_is_evidence_composition
   unfold deduction evidenceDeduction
   -- Substitute the strengths
   rw [← h_AB, ← h_BC]
-  -- Apply the key theorem from PLNEvidence.lean (symmetry to match goal)
+  -- Apply the key theorem from EvidenceQuantale.lean (symmetry to match goal)
   exact (Evidence.deductionEvidence_strength E_AB E_BC pB pC hE_AB hE_BC hpB
     h_total_ne_zero h_total_ne_top h_strength_le_1).symm
 
@@ -191,7 +191,7 @@ composition law for evidence values!
 
 ## The Two Paths Explained
 
-The `deductionEvidence` function (from PLNEvidence.lean) handles:
+The `deductionEvidence` function (from EvidenceQuantale.lean) handles:
 
 1. **Direct path**: When B happens (probability s_AB)
    - Contribution: `s_AB * s_BC`

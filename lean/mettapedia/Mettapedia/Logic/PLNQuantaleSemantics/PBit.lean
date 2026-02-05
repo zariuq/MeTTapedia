@@ -20,7 +20,7 @@ The existing `Evidence` type `(pos, neg : ℝ≥0∞)` IS already a p-bit struct
 
 namespace Mettapedia.Logic.PLNQuantaleSemantics.PBit
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open scoped ENNReal
 
 /-! ## P-Bit Corner Constants -/

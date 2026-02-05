@@ -28,6 +28,7 @@
 \newcommand{\nuPLN}{\texorpdfstring{$\nu$}{nu}\textup{PLN}}
 \newcommand{\xiPLN}{\texorpdfstring{$\xi$}{xi}\textup{PLN}}
 \newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\codepath}[1]{\path{#1}}
 \newcommand{\ty}[1]{\ensuremath{\mathtt{#1}}}
 \newcommand{\Evidence}{\ty{Evidence}}
 \newcommand{\JointEvidence}{\ty{JointEvidence}}
@@ -70,6 +71,10 @@ judgments using truth values such as
 quantity).  Modern \emph{nuPLN} work (Nil Geisweiller, draft and v1) makes the key step
 explicit: a complete grounding requires a global probabilistic semantics---a world model
 with a joint distribution over possible worlds and a Bayesian update story.
+We treat \nuPLN{} as the probabilistic reference layer and extend it in \xiPLN{} by (i)
+making posterior states the proof objects, (ii) separating evidence algebra from probability
+views, and (iii) connecting the complete layer to tractable Bayesian-network sublayers and
+Heyting-valued foundations~\cite{nuPLN2026}.
 
 Our experience formalizing PLN in Lean is that correctness failures almost always come from
 mixing layers:
@@ -136,18 +141,18 @@ In Lean, we isolate a minimal interface \WorldModel{} (posterior state + query p
 
 \begin{lstlisting}
 inductive PLNQuery (Atom : Type*) where
-  | prop : Atom → PLNQuery Atom
-  | link : Atom → Atom → PLNQuery Atom
+  | prop : Atom -> PLNQuery Atom
+  | link : Atom -> Atom -> PLNQuery Atom
 
 class WorldModel (State : Type*) (Query : Type*) [EvidenceType State] where
-  evidence : State → Query → Evidence
-  evidence_add : ∀ W₁ W₂ q, evidence (W₁ + W₂) q = evidence W₁ q + evidence W₂ q
+  evidence : State -> Query -> Evidence
+  evidence_add : forall W1 W2 q, evidence (W1 + W2) q = evidence W1 q + evidence W2 q
 \end{lstlisting}
 
 Here \code{EvidenceType} means: revision is an additive commutative monoid on \code{State}.
 Standard PLN event/link queries are represented by \code{PLNQuery Atom}; all truth-value
 quantities are derived by mapping extracted \Evidence{} to strengths/weights.
-See \code{Mettapedia/Logic/PLNWorldModel.lean}.
+See \codepath{Mettapedia/Logic/PLNWorldModel.lean}.
 
 \subsection{Reference complete instance: Dirichlet over worlds}
 
@@ -167,7 +172,7 @@ Formally, the Lean prototype proves:
 \[
   \mathrm{evidence}(E_1+E_2, q) = \mathrm{evidence}(E_1,q) \hplus \mathrm{evidence}(E_2,q)
 \]
-for all queries $q$.  See \code{Mettapedia/Logic/PLNJointEvidence.lean}.
+for all queries $q$.  See \codepath{Mettapedia/Logic/PLNJointEvidence.lean}.
 
 \subsection{Probability views}
 
@@ -177,8 +182,120 @@ From \Evidence{} we obtain posterior-mean probabilities (improper-prior strength
   P(B\mid A) = \frac{\#(A\wedge B)}{\#(A)}
 \]
 where $\#(\cdot)$ is a world-count sum in \JointEvidence{}.
-The Lean file \code{Mettapedia/Logic/PLNJointEvidenceProbability.lean} proves the exact ratio
+The Lean file \codepath{Mettapedia/Logic/PLNJointEvidenceProbability.lean} proves the exact ratio
 forms for these views.
+
+\section{A Sequent-Calculus View: World Models and Links}
+
+We present \xiPLN{} as a sequent-style system with two contexts:
+\begin{itemize}
+\item an \emph{evidence context} $\Gamma$, a finite multiset of posterior fragments (elements of a
+  world-model state type \code{State}); and
+\item a \emph{side-condition context} $\Sigma$ containing structural assumptions about the chosen
+  world-model class (e.g.\ a BN DAG, positivity, d-separation facts).
+\end{itemize}
+
+\subsection{Judgments}
+
+We use two judgment forms.
+\begin{enumerate}
+\item \textbf{World-model judgment:} $\Sigma;\Gamma \vdash_{\mathrm{wm}} W$ meaning ``from the
+  evidence pieces in $\Gamma$, we can construct the revised posterior state $W$''.
+\item \textbf{Query judgment:} $\Sigma;\Gamma \vdash q \Downarrow e$ meaning ``querying the
+  revised posterior state derived from $\Gamma$ yields evidence $e$ for query $q$''.
+\end{enumerate}
+
+In the Lean prototype, the world-model judgment is deterministic: if \code{State} is an
+additive commutative monoid, then the constructed posterior is simply the revision sum
+$W := \sum \Gamma$.  The query judgment is then obtained by extraction via \WorldModel{}:
+\[
+  e := \mathrm{evidence}(W,q).
+\]
+
+\subsection{Core rules}
+
+Let \code{State} be an \code{EvidenceType} (revision $\,+\,$ with unit $0$), and let \WorldModel{}
+provide $\mathrm{evidence} : \code{State} \to \code{Query} \to \Evidence$.
+The complete core calculus is:
+\[
+\frac{}{\,\Sigma;\varnothing \vdash_{\mathrm{wm}} 0\,}\;(\mathrm{WM\text{-}Unit})
+\qquad
+\frac{}{\,\Sigma;\{W\} \vdash_{\mathrm{wm}} W\,}\;(\mathrm{WM\text{-}Ev})
+\qquad
+\frac{\Sigma;\Gamma \vdash_{\mathrm{wm}} W \quad \Sigma;\Delta \vdash_{\mathrm{wm}} W'}
+     {\,\Sigma;\Gamma \uplus \Delta \vdash_{\mathrm{wm}} (W+W')\,}\;(\mathrm{WM\text{-}Rev})
+\]
+\[
+\frac{\Sigma;\Gamma \vdash_{\mathrm{wm}} W}
+     {\,\Sigma;\Gamma \vdash q \Downarrow \mathrm{evidence}(W,q)\,}\;(\mathrm{Q\text{-}Extract})
+\]
+
+The key algebraic law is commutation of extraction with revision:
+\[
+  \mathrm{evidence}(W_1+W_2,q) = \mathrm{evidence}(W_1,q) \hplus \mathrm{evidence}(W_2,q),
+\]
+which makes the following \emph{query-revision} rule admissible:
+\[
+\frac{\Sigma;\Gamma \vdash q \Downarrow e \quad \Sigma;\Delta \vdash q \Downarrow e'}
+     {\,\Sigma;\Gamma \uplus \Delta \vdash q \Downarrow (e \hplus e')\,}\;(\mathrm{Q\text{-}Rev})
+\]
+
+\paragraph{Links are queries.}
+In this view, a PLN ``link'' $A\!\Rightarrow\!B$ is not an object-level connective; it is a query
+\code{link(A,B)} against the revised world model.  The calculus does not propagate links directly;
+it revises world models and answers link queries.
+
+\subsection{Derived link calculus: classic PLN rules as admissible rewrites}
+
+Classic PLN rules (deduction/abduction/induction) become \emph{compiled tactics} or
+\emph{admissible query rewrites} relative to a world-model class with explicit side conditions
+$\Sigma$.  Intuitively, they are ways to answer some link queries using other link/event queries,
+without pretending to compute complete link evidence in full generality.
+
+\paragraph{Example: deduction strength admissibility (BN case).}
+Let $\mathsf{strength}(W,q)$ denote the posterior-mean view extracted from evidence:
+\[
+  \mathsf{strength}(W,q) := \mathrm{toStrength}(\mathrm{evidence}(W,q)).
+\]
+For a BN world-model class, if $\Sigma$ entails the screening-off equalities needed by the general
+PLN deduction theorem (conditional independence of $C$ from $A$ given $B$ and given $\neg B$, plus
+positivity), then one may rewrite a hard query $\code{link}(A,C)$ into smaller ones:
+\[
+  \mathsf{strength}(W,\code{link}(A,C)) =
+    \mathrm{plnDeductionStrength}\Big(
+      \mathsf{strength}(W,\code{link}(A,B)),
+      \mathsf{strength}(W,\code{link}(B,C)),
+      \mathsf{strength}(W,\code{prop}(B)),
+      \mathsf{strength}(W,\code{prop}(C))
+    \Big).
+\]
+
+\paragraph{Lean status.}
+\codepath{Mettapedia/Logic/PLNBayesNetFastRules.lean} proves this admissibility in the simplest
+nontrivial BN instance, the chain $A\to B\to C$: the theorem
+\code{chainBN\_plnDeductionStrength\_exact} shows the PLN deduction strength formula computes the
+exact $P(C\mid A)$ in the chain BN under explicit positivity side conditions.
+
+\paragraph{Admissible link-rule schema (strength view).}
+Let $\mathsf{strength}(e)$ denote the posterior-mean view extracted from evidence $e$.
+Then, for any world-model class where $\Sigma$ entails the screening-off conditions,
+the following rule is admissible:
+\[
+\frac{\Sigma \vdash \mathsf{ScreenOff}(A,B,C) \quad
+      \Sigma;\Gamma \vdash \code{link}(A,B)\Downarrow e_{AB} \quad
+      \Sigma;\Gamma \vdash \code{link}(B,C)\Downarrow e_{BC} \quad
+      \Sigma;\Gamma \vdash \code{prop}(B)\Downarrow e_{B} \quad
+      \Sigma;\Gamma \vdash \code{prop}(C)\Downarrow e_{C}}
+     {\Sigma;\Gamma \vdash \code{link}(A,C)\Downarrow e_{AC}}
+\]
+with the side-condition that
+\[
+  \mathsf{strength}(e_{AC}) =
+    \mathrm{plnDeductionStrength}(\mathsf{strength}(e_{AB}), \mathsf{strength}(e_{BC}),
+                                  \mathsf{strength}(e_{B}), \mathsf{strength}(e_{C})).
+\]
+This is a \emph{strength-level} rewrite: the evidence $e_{AC}$ itself is still obtained by querying
+the world model, unless an explicit evidence-flow law is available for the given model class.
 
 \section{A No-Go Theorem: ``Complete'' Link Inference Cannot Be Local}
 
@@ -199,7 +316,7 @@ from only the local premises $\Evidence(A),\Evidence(B),\Evidence(C),\Evidence(A
 
 The Lean proof constructs two different joint evidence states on three atoms that agree on all
 these premises but disagree on the conclusion \code{linkEvidence(A,C)}.
-See \code{Mettapedia/Logic/PLNJointEvidenceNoGo.lean}.
+See \codepath{Mettapedia/Logic/PLNJointEvidenceNoGo.lean}.
 
 \paragraph{Interpretation.}
 This theorem is the formal core of ``you must carry correlations''.
@@ -228,12 +345,14 @@ We have implemented the \emph{evidence plumbing} part of this sublayer:
 \item an additive projection from \JointEvidence{} to CPT evidence by marginalization
   (summing compatible worlds), which commutes with revision.
 \end{itemize}
-See \code{Mettapedia/Logic/PLNBayesNetWorldModel.lean}.
+See \codepath{Mettapedia/Logic/PLNBayesNetWorldModel.lean}.
 
 We have also begun the ``fast rule exactness'' bridge in the simplest nontrivial case:
-\code{Mettapedia/Logic/PLNBayesNetFastRules.lean} sets up the chain BN $A \to B \to C$,
-proves the required sink-factorization lemmas, and starts deriving the screening-off
-hypotheses needed to apply \code{PLNDerivation.pln\_deduction\_from\_total\_probability}.
+\codepath{Mettapedia/Logic/PLNBayesNetFastRules.lean} sets up the chain BN $A \to B \to C$,
+proves the required sink-factorization and normalization lemmas, derives the screening-off
+hypotheses, and applies \code{PLNDerivation.pln\_deduction\_from\_total\_probability} to obtain an
+\emph{exactness theorem}: in the chain BN, the standard PLN deduction strength formula computes the
+correct conditional probability $P(C\mid A)$ (under the explicit positivity side-conditions).
 
 Exact BN query answering (variable elimination / junction tree) is the next step: it will provide
 tractable evaluation of probabilities for larger query languages, while preserving correctness
@@ -246,6 +365,64 @@ Classic PLN link rules (deduction/abduction/induction) become:
 \item conditionally-sound lemmas under explicit assumptions (e.g. conditional independence),
 \end{itemize}
 rather than pretending to be globally complete link-level operators.
+
+\section{Factor Graphs: Semantic Factorization vs Operational Control}
+
+PLN has long used factor-graph and message-passing intuition for efficient inference.
+The recent MORK/MM2+ notes make this explicit by proposing a \emph{Quantale-Annotated PLN
+Factor Graph} encoding in Atomspace (variables = formulas with truth values; factors = rule
+instances/potentials; messages combined with $\oplus$ and $\otimes$)~\cite{Goertzel2025PLNFactorGraphMORK,Goertzel2025MOSESMORK}.
+This is the right operational substrate, but \xiPLN{} separates two distinct roles:
+
+\subsection{(A) Semantic factor graphs (world-model factorization)}
+
+Here factors \emph{are} the model: the world-model posterior state is represented by a
+factorization of a joint distribution (BN or MRF).  In this case:
+\begin{itemize}
+\item factors are genuine conditional / clique potentials;
+\item variable elimination / junction tree gives exact query answers
+  (treewidth controls complexity);
+\item belief propagation is exact on trees and approximate on loopy graphs.
+\end{itemize}
+Thus a factor graph is a \emph{world-model representation}, and correctness is relative
+to the declared model class.
+
+\paragraph{Positive example (semantic).}
+A BN with edges $A\to B\to C$ yields factors $P(A)$, $P(B\mid A)$, $P(C\mid B)$.
+If the model class is fixed to this DAG, variable elimination returns the exact
+$P(C\mid A)$ and the PLN deduction strength formula is admissible as a query rewrite.
+
+\subsection{(B) Operational factor graphs (inference control)}
+
+Here factors are \emph{rule schemas} (deduction, induction, revision, etc.) whose local
+``potentials'' are truth-value update formulas.  This aligns with the PLN chainer
+and MORK PathMap indexing~\cite{Goertzel2025PLNFactorGraphMORK,Goertzel2025MORKMiner}.
+However, unless each factor can be justified as a true conditional or likelihood
+factor in a world model, this structure should be viewed as \emph{inference control}:
+it proposes which queries to ask and which rewrites to attempt, but it does not itself
+constitute the semantics.
+
+\paragraph{Negative example (operational).}
+A graph whose factors are ``deduction'' or ``abduction'' update formulas on STVs is useful for
+search, but it is not automatically a probabilistic model: unless each factor corresponds to a
+conditional/likelihood in some WM class, message passing is a heuristic scheduler rather than
+an exact semantics.
+
+\subsection{Alignment: when the two coincide}
+
+The two notions align when rule factors are \emph{compiled} from a world-model class:
+each rule corresponds to a conditional or likelihood factor, and message passing
+implements the same queries that the world-model semantics would answer.
+This is exactly the intended “fast PLN rules as compiled tactics” story:
+the factor graph becomes a \emph{query plan} whose correctness is discharged
+by explicit side conditions ($\Sigma$) such as d-separation or Markov properties.
+
+\paragraph{Evidence accounting and control.}
+Geodesic inference control suggests a decentralized evidence ledger to prevent
+double counting during message passing and chaining~\cite{Goertzel2025GeodesicInferenceControl}.
+This is naturally compatible with the \WorldModel{} interface: evidence is revised
+at the world-model layer, while factor-graph message passing is used to schedule
+or approximate queries, with provenance tracking guarding independence assumptions.
 
 \section{Knuth--Skilling and Heyting Foundations}
 
@@ -260,30 +437,34 @@ In \xiPLN{}, this plays two roles:
   proved in \code{PLNJointEvidenceProbability}.
 \item \emph{Evidence as Heyting-valued semantics.} At the evidence/algebraic layer, \Evidence{}
   forms a rich (non-Boolean) lattice.  K\&S-style valuation rules persist but Boolean equalities
-  can weaken to inequalities; see \code{Mettapedia/Logic/EvidenceIntuitionisticProbability.lean}.
+  can weaken to inequalities; see \codepath{Mettapedia/Logic/EvidenceIntuitionisticProbability.lean}.
 \end{enumerate}
 
 An important cautionary fact---the ``totality gate''---is already formalized:
 because \Evidence{} has incomparable elements, it admits no faithful order-embedding into the
 reals.  Thus one should not expect a single real-valued map to capture all evidence information.
-See \code{Mettapedia/Logic/PLN\_KS\_Bridge.lean}.
+See \codepath{Mettapedia/Logic/PLN_KS_Bridge.lean}.
 
 \section{Roadmap and Deliverables}
 
 The core Lean artifacts supporting \xiPLN{} are:
 \begin{itemize}
-\item \code{Mettapedia/Logic/PLNWorldModel.lean}: the world-model interface and derived views;
-\item \code{Mettapedia/Logic/PLNJointEvidence.lean}: the reference complete instance and revision-commutes-with-extraction;
-\item \code{Mettapedia/Logic/PLNBayesNetWorldModel.lean}: BN-style CPT evidence states and the additive projection from \JointEvidence{};
-\item \code{Mettapedia/Logic/PLNBayesNetFastRules.lean}: chain BN infrastructure for proving fast-rule exactness under BN assumptions;
-\item \code{Mettapedia/Logic/PLNJointEvidenceProbability.lean}: posterior-mean probability views (ratio theorems);
-\item \code{Mettapedia/Logic/PLNJointEvidenceNoGo.lean}: the local-completeness no-go theorem.
+\item \codepath{Mettapedia/Logic/PLNWorldModel.lean}: the world-model interface and derived views;
+\item \codepath{Mettapedia/Logic/PLNJointEvidence.lean}: the reference complete instance and revision-commutes-with-extraction;
+\item \codepath{Mettapedia/Logic/PLNBayesNetWorldModel.lean}: BN-style CPT evidence states and the additive projection from \JointEvidence{};
+\item \codepath{Mettapedia/Logic/PLNBayesNetFastRules.lean}: chain BN proof that the PLN deduction strength formula is exact in $A\to B\to C$;
+\item \codepath{Mettapedia/Logic/PLNJointEvidenceProbability.lean}: posterior-mean probability views (ratio theorems);
+\item \codepath{Mettapedia/Logic/PLNJointEvidenceNoGo.lean}: the local-completeness no-go theorem.
 \end{itemize}
 
 Next implementation milestones:
 \begin{enumerate}
-\item extend the Bayesian-network sublayer with exact query answering (variable elimination / junction tree);
-\item connect fast PLN rules as compiled tactics/lemmas relative to that BN class;
+\item implement exact BN query answering (variable elimination first) for prop/link queries
+  over the BN/factor-graph world-model layer;
+\item generalize chain exactness to arbitrary BNs via d-separation/Markov properties so
+  screening-off obligations are discharged structurally;
+\item add a compilation layer: PLN rule patterns $\Rightarrow$ BN query plans with explicit
+  $\Sigma$ side-conditions.
 \item extend query language beyond atoms to formulas/events, enabling FO/HO semantics via
   SatisfyingSets while keeping probability views as world-model queries.
 \end{enumerate}

@@ -27,7 +27,7 @@ Given evidence `e = (n⁺, n⁻)` with prior `(α₀, β₀)`:
 
 namespace Mettapedia.Logic.MeasureTheoreticPLN
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open MeasureTheory ProbabilityTheory
 open scoped ENNReal NNReal
 

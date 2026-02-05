@@ -52,7 +52,7 @@ open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.CategoryTheory.NativeTypeTheory
 open Mettapedia.CategoryTheory.PLNTerms
 open Mettapedia.CategoryTheory.ModalTypes
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 
 /-! ## Section 3.1: Per-Object Enrichment
 

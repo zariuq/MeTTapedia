@@ -1,5 +1,6 @@
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure
+import Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge
 
 /-!
 # Markov de Finetti (Recurrence Assumption)
@@ -56,6 +57,23 @@ def MarkovRecurrentPrefixMeasure
   ∃ (P : Measure (ℕ → Fin k)), IsProbabilityMeasure P ∧
     (∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs)) ∧
     P (recurrentEvent (k := k)) = 1
+
+/-!
+## Recurrence hypothesis (explicit TODO)
+
+We keep the Diaconis–Freedman recurrence condition **as a theorem with `sorry`**
+so it is visible in builds and cannot be mistaken for a harmless assumption.
+
+This statement is intentionally strong; if it turns out to be false in this generality,
+it should be replaced by a counterexample or by a correctly weakened hypothesis.
+-/
+theorem markovRecurrentPrefixMeasure_of_exchangeable
+    (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge.MarkovExchangeablePrefixMeasure (k := k) μ) :
+    MarkovRecurrentPrefixMeasure (k := k) μ := by
+  -- TODO (Diaconis–Freedman): decide whether recurrence follows from exchangeability
+  -- under additional hypotheses (or provide a counterexample if not).
+  sorry
 
 end MarkovDeFinettiRecurrence
 

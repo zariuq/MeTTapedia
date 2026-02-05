@@ -35,7 +35,7 @@ PLN strength equals empirical frequency, which converges to θ by LLN.
 
 namespace Mettapedia.Logic.Convergence
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open MeasureTheory ProbabilityTheory Filter Topology
 open scoped ENNReal
 

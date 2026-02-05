@@ -208,7 +208,7 @@ combining independent evidence sources using Evidence-theoretic formulas.
 
 ## Next Steps
 
-We need to investigate PLNEvidence.lean and PLNDeduction.lean to understand:
+We need to investigate EvidenceQuantale.lean and PLNDeduction.lean to understand:
 1. What soundness condition SHOULD hold for Evidence-based TVs?
 2. Is there a different error model that matches Evidence theory?
 3. Should we track error bounds separately from Evidence confidence?

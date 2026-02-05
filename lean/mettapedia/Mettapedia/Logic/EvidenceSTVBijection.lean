@@ -30,7 +30,7 @@ When you project to strength alone, you lose the "how much evidence" information
 
 namespace Mettapedia.Logic.EvidenceSTVBijection
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.ProbabilityTheory.KnuthSkilling
 
 /-! ## Part 1: The Strength Fiber (What's Lost) -/
@@ -138,7 +138,7 @@ end ValuationLoss
     Specifically:
     1. Strength alone has non-unique preimages
     2. Any valuation destroys the partial order structure
-    3. But (strength, confidence) together recover Evidence (see toSTV/ofSTV in PLNEvidence) -/
+    3. But (strength, confidence) together recover Evidence (see toSTV/ofSTV in EvidenceQuantale) -/
 theorem information_hierarchy :
     -- 1. Strength alone has non-unique preimages
     (∃ e₁ e₂ : Evidence, Evidence.toStrength e₁ = Evidence.toStrength e₂ ∧ e₁ ≠ e₂) ∧

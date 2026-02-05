@@ -47,13 +47,13 @@ via first-order quantale weakness operations.
 - Goertzel et al., "Probabilistic Logic Networks" (2009), Chapter 10
 - `PLNFirstOrder/` directory: Complete first-order quantifier formalization (707 lines, 0 sorries)
 - `QuantaleWeakness.lean`: Core weakness theory (820+ lines, proven)
-- `PLNEvidence.lean`: Evidence quantale with Frame structure
+- `EvidenceQuantale.lean`: Evidence quantale with Frame structure
 
 -/
 
 namespace Mettapedia.Logic.HigherOrder
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNFirstOrder
 open Mettapedia.Algebra.QuantaleWeakness
 open scoped ENNReal

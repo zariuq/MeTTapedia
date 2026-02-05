@@ -5,7 +5,7 @@ import Mettapedia.Logic.PLNMeTTaCore
 # Evidence-STV Bridge
 
 This module bridges the gap between:
-1. **Evidence** (quantale carrier from PLNEvidence.lean)
+1. **Evidence** (quantale carrier from EvidenceQuantale.lean)
 2. **STV** (bounded truth values from PLNMeTTaCore.lean)
 
 ## Key Insight
@@ -24,7 +24,7 @@ The mapping:
 
 ## References
 
-- PLNEvidence.lean: Evidence quantale with toStrength, toConfidence
+- EvidenceQuantale.lean: Evidence quantale with toStrength, toConfidence
 - PLNMeTTaCore.lean: STV operations with soundness proofs
 -/
 
@@ -32,7 +32,7 @@ namespace Mettapedia.Logic.PLNMeTTaCoreEvidence
 
 open scoped ENNReal
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNMeTTaCore
 open Mettapedia.Logic.PLNDeduction
 open Mettapedia.Logic.PLN
@@ -68,7 +68,7 @@ The key theorem: combining evidence via hplus gives weighted averaging,
 which is exactly what PLN revision does. -/
 
 /-- Evidence hplus gives weighted average of strengths.
-    This is the core revision property from PLNEvidence.lean. -/
+    This is the core revision property from EvidenceQuantale.lean. -/
 theorem evidence_hplus_weighted_avg (e₁ e₂ : Evidence)
     (h₁ : e₁.total ≠ 0) (h₂ : e₂.total ≠ 0) (h₁₂ : (e₁ + e₂).total ≠ 0)
     (h₁_top : e₁.total ≠ ⊤) (h₂_top : e₂.total ≠ ⊤) :
@@ -128,7 +128,7 @@ This module establishes the bridge between Evidence and STV:
 ### Architecture
 
 ```
-Evidence (ℝ≥0∞ × ℝ≥0∞)       [PLNEvidence.lean - quantale]
+Evidence (ℝ≥0∞ × ℝ≥0∞)       [EvidenceQuantale.lean - quantale]
     │
     │ toStrength, toConfidence
     ↓

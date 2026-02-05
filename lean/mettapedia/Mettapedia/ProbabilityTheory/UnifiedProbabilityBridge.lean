@@ -44,7 +44,7 @@ and inference:
 
 namespace Mettapedia.ProbabilityTheory.UnifiedProbabilityBridge
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceBeta
 open Mettapedia.Logic.HeytingValuationOnEvidence
@@ -224,7 +224,7 @@ in this project are mathematically compatible:
    - Files: DirectedGraph.lean, BayesianNetwork.lean, DSeparation.lean
 
 2. **PLN Evidence Quantale**: Commutative quantale, frame, deduction
-   - Files: PLNEvidence.lean, EvidenceQuantale.lean, PLNDeduction.lean
+   - Files: EvidenceQuantale.lean, EvidenceQuantale.lean, PLNDeduction.lean
 
 3. **Heyting K&S**: Interval bounds, excluded middle gap, uncertainty
    - Files: HeytingValuationOnEvidence.lean, EvidenceIntervalBounds.lean

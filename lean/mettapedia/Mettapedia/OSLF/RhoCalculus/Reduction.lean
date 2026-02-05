@@ -49,8 +49,20 @@ We define the one-step reduction relation ⇝ on processes.
 
     p ⇝ q means p reduces to q in one step via the COMM rule
     (or a structural congruence).
+
+    **Design Decision (2026-02-04)**: Reduces is Type-valued, not Prop-valued.
+
+    **Rationale**: Reduction derivations are computational objects that encode HOW
+    a reduction happens, not just THAT it happens. Using Type enables:
+    - Automatic termination proofs (sizeOf works smoothly for Type inductives)
+    - Extraction of derivation trees for proof complexity analysis
+    - Alignment with process calculus tradition (derivations as witnesses)
+
+    Via Curry-Howard, Type subsumes Prop, so this works anywhere Prop would.
+    This decision was made after fighting Lean's termination checker for hours
+    with Prop - the Type approach makes sizeOf inequalities trivial.
 -/
-inductive Reduces : Pattern → Pattern → Prop where
+inductive Reduces : Pattern → Pattern → Type where
   /-- COMM: {n!(q) | for(x<-n){p} | ...rest} ⇝ {p[@q/x] | ...rest}
 
       When an output and input on the same channel meet in parallel,
@@ -132,16 +144,20 @@ Now we can define the modal operators concretely using the reduction relation.
 /-- Possibly: ◇φ = { p | ∃q. p ⇝ q ∧ q ∈ φ }
 
     A process p satisfies ◇φ if it can reduce to some process in φ.
+
+    Note: Uses Nonempty wrapper to convert Type-valued reduction to Prop.
 -/
 def possiblyProp (φ : Pattern → Prop) : Pattern → Prop :=
-  fun p => ∃ q, (p ⇝ q) ∧ φ q
+  fun p => ∃ q, Nonempty (p ⇝ q) ∧ φ q
 
 /-- Rely: ⧫φ = { p | ∀q. q ⇝ p → q ∈ φ }
 
     A process p satisfies ⧫φ if all its predecessors are in φ.
+
+    Note: Uses Nonempty wrapper to convert Type-valued reduction to Prop.
 -/
 def relyProp (φ : Pattern → Prop) : Pattern → Prop :=
-  fun p => ∀ q, (q ⇝ p) → φ q
+  fun p => ∀ q, Nonempty (q ⇝ p) → φ q
 
 /-! ## Galois Connection
 
@@ -195,9 +211,13 @@ theorem rely_pointwise (φ : ProcessPred) (p : Pattern) :
 We prove key properties of the COMM rule.
 -/
 
-/-- COMM reduces synchronizable terms -/
-theorem comm_reduces {n q p : Pattern} {x : String} :
-    ∃ r, (.collection .hashBag [.apply "POutput" [n, q],
+/-- COMM reduces synchronizable terms (constructive witness).
+
+    Returns a dependent pair (Σ) containing both the result pattern and the
+    derivation witness. This is a def (not theorem) because it returns Type-valued data.
+-/
+def comm_reduces {n q p : Pattern} {x : String} :
+    Σ r, (.collection .hashBag [.apply "POutput" [n, q],
                                 .apply "PInput" [n, .lambda x p]] none) ⇝ r := by
   use .collection .hashBag [commSubst p x q] none
   -- Apply COMM with rest = []

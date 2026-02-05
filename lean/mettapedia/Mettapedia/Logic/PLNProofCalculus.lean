@@ -56,13 +56,13 @@ This file provides:
 ## References
 
 - Foundation/Logic/Calculus.lean (Tait sequent calculus)
-- PLNEvidence.lean (Evidence quantale structure)
+- EvidenceQuantale.lean (Evidence quantale structure)
 - PLNDeduction.lean (PLN inference formulas)
 -/
 
 namespace Mettapedia.Logic.PLNProofCalculus
 
-open PLNEvidence
+open EvidenceQuantale
 open PLNDeduction
 
 /-! ## Formula Type

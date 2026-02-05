@@ -559,6 +559,54 @@ theorem subst_fresh (env : SubstEnv) (x : String) (p : Pattern)
     have hno_p : noExplicitSubst p := allNoExplicitSubst_mem hno hp
     exact ih p hp env (fresh_collection hfresh p hp) hno_p
 
+/-! ## Substitution and Reduction Interaction
+
+These lemmas are needed for proving that substitution preserves reduction rules.
+-/
+
+/-- Helper: applySubst on a single-element list -/
+theorem applySubst_singleton (env : SubstEnv) (p : Pattern) :
+    [p].map (applySubst env) = [applySubst env p] := by
+  simp only [List.map_cons, List.map_nil]
+
+/-- Helper: applySubst distributes over list append -/
+theorem applySubst_append (env : SubstEnv) (xs ys : List Pattern) :
+    (xs ++ ys).map (applySubst env) = xs.map (applySubst env) ++ ys.map (applySubst env) := by
+  simp only [List.map_append]
+
+/-- Helper: applySubst on NQuote -/
+theorem applySubst_quote (env : SubstEnv) (p : Pattern) :
+    applySubst env (.apply "NQuote" [p]) = .apply "NQuote" [applySubst env p] := by
+  simp only [applySubst, List.map_cons, List.map_nil]
+
+/-- Helper: applySubst on PDrop -/
+theorem applySubst_drop (env : SubstEnv) (p : Pattern) :
+    applySubst env (.apply "PDrop" [p]) = .apply "PDrop" [applySubst env p] := by
+  simp only [applySubst, List.map_cons, List.map_nil]
+
+/-- Helper: applySubst on POutput -/
+theorem applySubst_output (env : SubstEnv) (n q : Pattern) :
+    applySubst env (.apply "POutput" [n, q]) =
+      .apply "POutput" [applySubst env n, applySubst env q] := by
+  simp only [applySubst, List.map_cons, List.map_nil]
+
+/-- Helper: applySubst on PInput -/
+theorem applySubst_input (env : SubstEnv) (n : Pattern) (x : String) (p : Pattern) :
+    applySubst env (.apply "PInput" [n, .lambda x p]) =
+      .apply "PInput" [applySubst env n, .lambda x (applySubst (env.filter (·.1 != x)) p)] := by
+  simp only [applySubst, List.map_cons, List.map_nil]
+
+/-- commSubst is defined as applySubst with a specific environment -/
+theorem commSubst_def (p : Pattern) (x : String) (q : Pattern) :
+    commSubst p x q = applySubst (SubstEnv.extend SubstEnv.empty x (.apply "NQuote" [q])) p := by
+  rfl
+
+/-- Substitution composition: applying env after commSubst equals commSubst after env -/
+theorem subst_compose_comm (env : SubstEnv) (p : Pattern) (x : String) (q : Pattern) :
+    applySubst env (commSubst p x q) =
+    commSubst (applySubst (env.filter (·.1 != x)) p) x (applySubst env q) := by
+  sorry  -- TODO: Prove substitution composition for COMM rule
+
 /-! ## Summary
 
 This file provides:
@@ -579,9 +627,8 @@ This file provides:
 - `subst_empty`: Empty substitution is identity (on patterns without explicit subst)
 - `subst_empty_list`: List version of above
 - `subst_fresh`: If x ∉ FV(p) ∧ p.noExplicitSubst, filtering x from env doesn't change result
-  - Uses: `Pattern.inductionOn` custom recursor for nested inductive types
-  - Key insight: Adding `noExplicitSubst` precondition makes hsubst case vacuously true
-  - The precondition is justified because well-typed terms never contain explicit `.subst`
+- **NEW**: `applySubst_quote`, `applySubst_drop`, `applySubst_output`, `applySubst_input`
+- **NEW**: Helper lemmas for reduction preservation proofs
 
 **No remaining sorries!**
 

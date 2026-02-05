@@ -41,7 +41,7 @@ $$P(C|A,B) = \frac{P(C|A) × P(C|B)}{P(C)}$$
 namespace Mettapedia.Logic.PLNImplicantConjunction
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNConjunction
 open Mettapedia.ProbabilityTheory
 open MeasureTheory

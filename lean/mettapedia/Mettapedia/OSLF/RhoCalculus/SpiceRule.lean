@@ -52,7 +52,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
     Note: Finiteness depends on the pattern structure; not proven here.
 -/
 def futureStates (p : Pattern) (n : ℕ) : Set Pattern :=
-  { q | p ⇝[n] q }
+  { q | Nonempty (p ⇝[n] q) }
 
 /-- Present moment: all patterns reachable in exactly 1 step.
 
@@ -66,7 +66,7 @@ def presentMoment (p : Pattern) : Set Pattern :=
     This is the union of all futureStates for k ≤ n.
 -/
 def reachableStates (p : Pattern) (n : ℕ) : Set Pattern :=
-  { q | ∃ k ≤ n, p ⇝[k] q }
+  { q | ∃ k ≤ n, Nonempty (p ⇝[k] q) }
 
 /-! ## Basic Properties -/
 
@@ -84,7 +84,7 @@ theorem futureStates_zero (p : Pattern) :
 
 /-- Present moment is non-empty only if p can reduce -/
 theorem presentMoment_nonempty_iff_reduces (p : Pattern) :
-    (presentMoment p).Nonempty ↔ ∃ q, Reduces p q := by
+    (presentMoment p).Nonempty ↔ ∃ q, Nonempty (Reduces p q) := by
   simp [presentMoment, futureStates]
   constructor
   · intro ⟨q, h⟩
@@ -121,33 +121,33 @@ theorem futureStates_subset_reachable (p : Pattern) (n : ℕ) :
 
 /-- Reachable states via star closure -/
 def reachableViaStarClosure (p : Pattern) : Set Pattern :=
-  { q | p ⇝* q }
+  { q | Nonempty (p ⇝* q) }
 
 /-- If q is reachable in n steps, it's reachable via star -/
 theorem futureStates_subset_star (p : Pattern) (n : ℕ) :
     futureStates p n ⊆ reachableViaStarClosure p := by
-  intro q hq
-  exact reducesN_to_star hq
+  intro q ⟨hq⟩
+  exact ⟨reducesN_to_star hq⟩
 
 /-- If q is reachable in ≤n steps, it's reachable via star -/
 theorem reachableStates_subset_star (p : Pattern) (n : ℕ) :
     reachableStates p n ⊆ reachableViaStarClosure p := by
-  intro q ⟨k, _, hk⟩
-  exact reducesN_to_star hk
+  intro q ⟨k, _, ⟨hk⟩⟩
+  exact ⟨reducesN_to_star hk⟩
 
 /-- Helper: star closure implies n-step for some n -/
-theorem star_to_reducesN {p q : Pattern} (h : p ⇝* q) : ∃ n, p ⇝[n] q := by
+theorem star_to_reducesN {p q : Pattern} (h : p ⇝* q) : ∃ n, Nonempty (p ⇝[n] q) := by
   induction h with
   | refl =>
     use 0
-    exact ReducesN.zero _
+    exact ⟨ReducesN.zero _⟩
   | @step p' q' r' h_step _ ih =>
-    obtain ⟨n, hn⟩ := ih
+    obtain ⟨n, ⟨hn⟩⟩ := ih
     use n + 1
-    have h1 : p' ⇝[1] q' := (ReducesN.one_iff_reduces p' q').mpr h_step
+    have ⟨h1⟩ : Nonempty (p' ⇝[1] q') := (ReducesN.one_iff_reduces p' q').mpr ⟨h_step⟩
     have concat : p' ⇝[1 + n] r' := reducesN_concat h1 hn
     rw [Nat.add_comm] at concat
-    exact concat
+    exact ⟨concat⟩
 
 /-- The reachable states via star is the union of all futureStates.
 
@@ -160,9 +160,11 @@ theorem star_eq_union_future (p : Pattern) :
   ext q
   simp [reachableViaStarClosure, futureStates]
   constructor
-  · exact star_to_reducesN
-  · intro ⟨n, h⟩
-    exact reducesN_to_star h
+  · intro ⟨h⟩
+    obtain ⟨n, hn⟩ := star_to_reducesN h
+    exact ⟨n, hn⟩
+  · intro ⟨n, ⟨h⟩⟩
+    exact ⟨reducesN_to_star h⟩
 
 /-! ## Spice Evaluation (Precognitive Agents)
 
@@ -276,38 +278,38 @@ theorem spiceEval_finite (p : Pattern) (n : ℕ) :
     -- Further: {q | p ⇝[n+1] q} ⊆ ⋃_{r ∈ presentMoment p} {q | r ⇝[n] q}
 
     have h_union : reachableStates p (n+1) = reachableStates p n ∪
-                   {q | ∃ r, (p ⇝[1] r) ∧ q ∈ reachableStates r n} := by
+                   {q | ∃ r, Nonempty (p ⇝[1] r) ∧ q ∈ reachableStates r n} := by
       ext q
       simp only [reachableStates, Set.mem_setOf_eq, Set.mem_union]
       constructor
-      · intro ⟨k, hk, hr⟩
+      · intro ⟨k, hk, ⟨hr⟩⟩  -- Unwrap Nonempty here
         cases Nat.lt_or_eq_of_le hk with
         | inl h_lt =>
           -- k < n+1 means k ≤ n
           left
           have : k ≤ n := Nat.lt_succ_iff.mp h_lt
-          exact ⟨k, this, hr⟩
+          exact ⟨k, this, ⟨hr⟩⟩
         | inr h_eq =>
           right
           -- k = n+1, so p ⇝[n+1] q
           -- By reducesN_succ_iff: ∃r, p ⇝[1] r ∧ r ⇝[n] q
           subst h_eq
-          obtain ⟨r, h1, hn⟩ := reducesN_succ_iff.mp hr
+          obtain ⟨⟨r, h1, hn⟩⟩ := reducesN_succ_iff.mp ⟨hr⟩
           use r
           constructor
-          · exact h1
-          · use n, Nat.le_refl n, hn
+          · exact ⟨h1⟩
+          · exact ⟨n, Nat.le_refl n, ⟨hn⟩⟩
       · intro h
         cases h with
         | inl h_left =>
           obtain ⟨k, hk, hr⟩ := h_left
           exact ⟨k, Nat.le_succ_of_le hk, hr⟩
         | inr h_right =>
-          obtain ⟨r, h1, m, hm, hrq⟩ := h_right
+          obtain ⟨r, ⟨h1⟩, m, hm, ⟨hrq⟩⟩ := h_right
           use m + 1
           constructor
           · omega  -- m ≤ n means m + 1 ≤ n + 1
-          · exact reducesN_succ_iff.mpr ⟨r, h1, hrq⟩
+          · exact reducesN_succ_iff.mpr ⟨⟨r, h1, hrq⟩⟩
 
     rw [h_union]
     -- Show union is finite using axiom finite_union
@@ -315,14 +317,13 @@ theorem spiceEval_finite (p : Pattern) (n : ℕ) :
     -- Show second part is finite: union over finite index set
     -- presentMoment p is finite (axiom), each reachableStates r n is finite (by IH)
     have h_pm_finite : (presentMoment p).Finite := presentMoment_finite p
-    have h_second_finite : {q | ∃ r, (p ⇝[1] r) ∧ q ∈ reachableStates r n}.Finite := by
+    have h_second_finite : {q | ∃ r, Nonempty (p ⇝[1] r) ∧ q ∈ reachableStates r n}.Finite := by
       -- This is the biUnion: ⋃_{r ∈ presentMoment p} reachableStates r n
       -- Rewrite in form suitable for finite_biUnion axiom
-      have h_equiv : {q | ∃ r, (p ⇝[1] r) ∧ q ∈ reachableStates r n} =
+      have h_equiv : {q | ∃ r, Nonempty (p ⇝[1] r) ∧ q ∈ reachableStates r n} =
                      {q | ∃ r ∈ presentMoment p, q ∈ reachableStates r n} := by
         ext q
         simp only [presentMoment, futureStates, Set.mem_setOf_eq]
-        -- Goal should be solved by simp
       rw [h_equiv]
       -- Apply finite_biUnion axiom
       apply finite_biUnion h_pm_finite

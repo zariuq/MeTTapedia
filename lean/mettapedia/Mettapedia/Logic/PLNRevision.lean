@@ -36,7 +36,7 @@ The Revision Rule corresponds to Beta conjugate updating:
 namespace Mettapedia.Logic.PLNRevision
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Evidence
 
 /-! ## Revision as hplus -/

@@ -9,7 +9,7 @@ import Mettapedia.Algebra.QuantaleWeakness
 This file explores a **strength-level** (point-valued) quantale-like story for PLN.
 
 Important: the canonical foundational carrier for PLN in this repo is **evidence counts**
-`(n⁺, n⁻)` in `Mettapedia.Logic.PLNEvidence`, which naturally admits incomparability and therefore
+`(n⁺, n⁻)` in `Mettapedia.Logic.EvidenceQuantale`, which naturally admits incomparability and therefore
 cannot have a faithful point-valued representation into `ℝ` (see `Mettapedia.Logic.PLN_KS_Bridge`).
 The `[0,1]` strength view is a lossy projection of that richer semantics.
 
@@ -23,7 +23,7 @@ The `[0,1]` strength view is a lossy projection of that richer semantics.
 
 PLN formulas admit a useful “quantale/weakness-theory” reading once you choose a value space.
 This file records one such strength-level packaging; the project’s more robust foundations are:
-- evidence semantics (`Mettapedia.Logic.PLNEvidence`)
+- evidence semantics (`Mettapedia.Logic.EvidenceQuantale`)
 - the totality gate vs point semantics (`Mettapedia.Logic.PLN_KS_Bridge`)
 - the measure-theoretic deduction derivation (`Mettapedia.Logic.PLNDerivation`)
 
@@ -279,7 +279,7 @@ The full formalization as a CompleteLattice requires:
 3. The quantale distributivity axiom
 
 This is straightforward but tedious - the key mathematical content is already proven:
-- `deductionEvidence_strength` in PLNEvidence.lean connects evidence to deduction
+- `deductionEvidence_strength` in EvidenceQuantale.lean connects evidence to deduction
 - `product_le_deduction_result` below proves the quantale transitivity
 
 TODO: Complete the CompleteLattice instance. The proof strategy:

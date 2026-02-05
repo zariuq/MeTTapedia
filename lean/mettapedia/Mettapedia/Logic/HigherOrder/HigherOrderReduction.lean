@@ -36,7 +36,7 @@ All theorems proven without sorries.
 
 namespace Mettapedia.Logic.HigherOrder
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNFirstOrder
 open Mettapedia.Algebra.QuantaleWeakness
 open Mettapedia.Logic.PLNQuantaleSemantics.PBit

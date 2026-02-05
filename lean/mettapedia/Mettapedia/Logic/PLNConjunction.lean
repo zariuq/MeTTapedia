@@ -46,7 +46,7 @@ $$(n_A^+, n_A^-) ⊗ (n_B^+, n_B^-) = (n_A^+ × n_B^+, n_A^- × n_B^-)$$
 namespace Mettapedia.Logic.PLNConjunction
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Evidence
 
 /-! ## Discrete Hypergeometric Distribution
@@ -504,21 +504,199 @@ theorem conjunction_cdf_continuous_limit (p_A p_B : ℚ)
     -- p_A + p_B - 1 ≤ p_B iff p_A ≤ 1 (true)
     apply le_min <;> linarith
 
+/-! ## 3-Premise Conjunction with Causal Dependency
+
+When we have **causal** or **dependency** information between A and B,
+we can compute P(A ∧ B) more accurately than assuming independence.
+
+### The 3-Premise Rule
+
+Given:
+- A ≞ TVₐ (evidence for A)
+- B ≞ TVᵦ (evidence for B)
+- **A→B ≞ TVₐᵦ** (evidence for the implication/dependency)
+
+Derive: A ∧ B ≞ TV_AB
+
+### The Formula
+
+The key insight from conditional probability:
+
+**P(A ∧ B) = P(A) × P(B|A)**
+
+where P(B|A) = strength(A→B) = s_AB.
+
+This is MORE ACCURATE than the independence assumption P(A ∧ B) = P(A) × P(B)
+when we have actual evidence about the relationship between A and B.
+
+### Concrete Examples
+
+1. **Coffee Machine**:
+   - A = "button pressed"
+   - B = "coffee comes out"
+   - A→B = "button causes coffee" (high strength if machine works)
+   - P(button ∧ coffee) = P(button) × P(coffee|button)
+
+2. **Medical Diagnosis**:
+   - A = "patient has COVID-19"
+   - B = "patient has fever"
+   - A→B = "COVID causes fever" (known from medical literature)
+   - P(COVID ∧ fever) = P(COVID) × P(fever|COVID)
+
+3. **Program Analysis**:
+   - A = "variable x is null"
+   - B = "NullPointerException thrown"
+   - A→B = "null causes exception" (from control flow)
+   - P(x=null ∧ exception) = P(x=null) × P(exception|x=null)
+
+4. **Bayesian Networks**:
+   - Standard Bayesian network edges represent A→B dependencies
+   - Joint probabilities computed via conditional probabilities
+   - This is the standard approach in causal inference
+
+### Comparison with 2-Premise Rule
+
+| Feature | 2-Premise (Independence) | 3-Premise (Conditional) |
+|---------|--------------------------|-------------------------|
+| Premises | A, B | A, B, A→B |
+| Formula | P(A ∧ B) = P(A) × P(B) | P(A ∧ B) = P(A) × P(B\|A) |
+| Use Case | A, B unrelated | A causes/influences B |
+| Accuracy | Underestimates if positive correlation | Accurate given A→B evidence |
+| Example | "coin1 heads ∧ coin2 heads" | "button pressed ∧ coffee out" |
+-/
+
+/-- Conditional conjunction: P(A ∧ B) = P(A) × P(B|A)
+
+    When we have A→B evidence (strength s_AB = P(B|A)), use it directly:
+
+    s_{A∧B} = s_A × s_{A→B}
+
+    This is the fundamental formula for causal/conditional conjunction.
+    It's more accurate than independence when we have actual A→B evidence.
+-/
+noncomputable def conjunctionConditional (s_A s_AB : ℝ≥0∞) : ℝ≥0∞ :=
+  s_A * s_AB
+
+/-- The conditional conjunction formula is the standard probability rule.
+
+    This connects to PLNDeduction.lean's conditional probability framework.
+    The difference is:
+    - Deduction: P(C|A) from P(B|A) and P(C|B) (chain rule)
+    - Conditional Conjunction: P(A ∧ B) from P(A) and P(B|A) (product rule)
+-/
+theorem conjunctionConditional_eq_product (s_A s_AB : ℝ≥0∞) :
+    conjunctionConditional s_A s_AB = s_A * s_AB := rfl
+
+/-- When A→B has strength 1 (B always follows A), conjunction = A's strength -/
+theorem conjunctionConditional_certain_implication (s_A : ℝ≥0∞) :
+    conjunctionConditional s_A 1 = s_A := by
+  unfold conjunctionConditional
+  simp only [mul_one]
+
+/-- When A has strength 0 (A never occurs), conjunction = 0 -/
+theorem conjunctionConditional_impossible_A (s_AB : ℝ≥0∞) :
+    conjunctionConditional 0 s_AB = 0 := by
+  unfold conjunctionConditional
+  simp only [zero_mul]
+
+/-- When A→B has strength 0 (B never follows A), conjunction = 0 -/
+theorem conjunctionConditional_impossible_implication (s_A : ℝ≥0∞) :
+    conjunctionConditional s_A 0 = 0 := by
+  unfold conjunctionConditional
+  simp only [mul_zero]
+
+/-- Conditional conjunction upper bound: s_{A∧B} ≤ s_A
+
+    Since P(A ∧ B) ≤ P(A) (conjunction can't exceed A).
+    This follows from P(A ∧ B) = P(A) × P(B|A) where P(B|A) ≤ 1.
+
+    Note: We assume s_AB ≤ 1 (valid conditional probability).
+-/
+theorem conjunctionConditional_le_A (s_A s_AB : ℝ≥0∞) (h_AB : s_AB ≤ 1) :
+    conjunctionConditional s_A s_AB ≤ s_A := by
+  unfold conjunctionConditional
+  calc s_A * s_AB
+      ≤ s_A * 1 := mul_le_mul_left' h_AB s_A
+    _ = s_A := mul_one s_A
+
+/-- Conditional conjunction is monotone in both arguments -/
+theorem conjunctionConditional_mono {s_A s_A' s_AB s_AB' : ℝ≥0∞}
+    (ha : s_A ≤ s_A') (hab : s_AB ≤ s_AB') :
+    conjunctionConditional s_A s_AB ≤ conjunctionConditional s_A' s_AB' := by
+  unfold conjunctionConditional
+  exact mul_le_mul ha hab (zero_le _) (zero_le _)
+
+/-- When the implication strength equals the independence assumption:
+
+    If s_{A→B} = s_B (i.e., P(B|A) = P(B), meaning A and B are independent),
+    then conditional conjunction reduces to the independence formula:
+
+    s_{A∧B} = s_A × s_{A→B} = s_A × s_B
+
+    This shows that the 3-premise formula GENERALIZES the 2-premise formula.
+-/
+theorem conjunctionConditional_reduces_to_independent
+    (s_A s_B : ℝ≥0∞) :
+    conjunctionConditional s_A s_B = s_A * s_B := by
+  unfold conjunctionConditional
+  rfl
+
+/-! ### Relation to Evidence
+
+For Evidence-based conjunction with causal dependency, we need to:
+1. Extract strength s_A from Evidence(A)
+2. Extract strength s_{A→B} from Evidence(A→B)
+3. Apply the conditional formula
+4. Convert back to Evidence form
+
+This requires understanding the Evidence quantale structure for implications,
+which is developed in PLNDeduction.lean.
+-/
+
+/-- Conditional conjunction on Evidence (requires extracting strengths).
+
+    Given Evidence(A) and Evidence(A→B), compute Evidence(A ∧ B).
+
+    Note: This is a simplified version. Full treatment requires:
+    - Evidence for implications (developed in PLNDeduction.lean)
+    - Confidence propagation formula
+    - Handling of dependencies in the evidence counts
+-/
+noncomputable def conjunctionConditionalEvidence
+    (e_A : Evidence) (s_AB : ℝ≥0∞) : ℝ≥0∞ :=
+  toStrength e_A * s_AB
+
+/-- The conditional evidence formula matches the strength formula -/
+theorem conjunctionConditionalEvidence_eq_product
+    (e_A : Evidence) (s_AB : ℝ≥0∞) :
+    conjunctionConditionalEvidence e_A s_AB = toStrength e_A * s_AB := rfl
+
 /-! ## Summary
 
-The PLN Conjunction Introduction rule has two main cases:
+The PLN Conjunction Introduction rule has three main cases:
 
-1. **Independent A and B**: Use tensor product
+1. **Independent A and B** (2-premise): Use tensor product
    - Evidence(A ∧ B) = Evidence(A) ⊗ Evidence(B)
    - Strength: s_{A∧B} ≥ s_A × s_B (equality for concentrated distributions)
+   - Use when: A and B are causally unrelated (e.g., coin flips)
 
-2. **Correlated A and B**: Use full hypergeometric
+2. **Correlated A and B** (2-premise with correlation): Use full hypergeometric
    - Requires correlation parameter ρ
    - CDF given by continuous hypergeometric formula
+   - Use when: We know A and B are correlated but don't know the mechanism
+
+3. **Conditional A and B** (3-premise): Use causal dependency
+   - Formula: s_{A∧B} = s_A × s_{A→B}
+   - Requires Evidence(A→B) giving P(B|A)
+   - Use when: We have explicit causal/dependency information
+   - **Most accurate when such evidence is available**
 
 The key insight is that the Evidence quantale structure (tensor product)
 naturally captures the independent case, while the non-independent case
-requires the full distributional treatment.
+requires either full distributional treatment OR explicit causal information.
+
+**Practical Guidance**: When you have A→B evidence, use the 3-premise formula!
+It's more accurate than assuming independence and simpler than full correlation.
 -/
 
 end Mettapedia.Logic.PLNConjunction

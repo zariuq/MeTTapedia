@@ -38,6 +38,16 @@ namespace TransCounts
 
 variable {k : ℕ}
 
+instance : Countable (TransCounts k) := by
+  classical
+  -- `TransCounts k` is determined by its matrix of natural counts.
+  have hf : Function.Injective (fun c : TransCounts k => c.counts) := by
+    intro c₁ c₂ h
+    ext i j
+    -- Unfold `counts` via the equality of functions.
+    simpa using congrArg (fun f => f i j) h
+  exact hf.countable
+
 def zero : TransCounts k := ⟨fun _ _ => 0⟩
 
 instance : Zero (TransCounts k) := ⟨zero⟩

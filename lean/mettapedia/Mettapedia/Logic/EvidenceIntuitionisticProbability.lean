@@ -26,7 +26,7 @@ PLN's 2D Evidence keeps BOTH (n⁺, n⁻), avoiding the precision loss.
 
 namespace Mettapedia.Logic.EvidenceIntuitionisticProbability
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.ProbabilityTheory.KnuthSkilling
 
 /-! ## K&S Valuations on Evidence

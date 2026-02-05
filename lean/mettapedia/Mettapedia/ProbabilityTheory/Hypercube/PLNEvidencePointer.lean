@@ -2,9 +2,9 @@ import Mettapedia.ProbabilityTheory.Hypercube.Basic
 import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.PLN_KS_Bridge
 
-namespace Mettapedia.ProbabilityTheory.Hypercube.PLNEvidencePointer
+namespace Mettapedia.ProbabilityTheory.Hypercube.EvidenceQuantalePointer
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 
 /-!
 # PLN Evidence vs KS (Hypercube Pointer)
@@ -18,7 +18,7 @@ Key point:
 
 For the formal statements, see:
 - `Mettapedia.Logic.PLN_KS_Bridge`
-- `Mettapedia.Logic.PLNEvidence`
+- `Mettapedia.Logic.EvidenceQuantale`
 -/
 
 /-! ## Evidence Sits on the “Drop Totality” Face -/
@@ -39,4 +39,4 @@ theorem evidence_not_boolean :
     ∃ e : Evidence, e ⊔ e.compl ≠ (⊤ : Evidence) :=
   Mettapedia.Logic.PLN_KS_Bridge.evidence_not_boolean
 
-end Mettapedia.ProbabilityTheory.Hypercube.PLNEvidencePointer
+end Mettapedia.ProbabilityTheory.Hypercube.EvidenceQuantalePointer

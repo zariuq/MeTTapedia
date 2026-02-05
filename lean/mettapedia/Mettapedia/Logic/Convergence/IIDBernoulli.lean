@@ -32,7 +32,7 @@ PLN Evidence (k, n-k) captures exactly this sufficient statistic.
 
 namespace Mettapedia.Logic.Convergence
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.MeasureTheoreticPLN
 open MeasureTheory ProbabilityTheory
 open scoped ENNReal

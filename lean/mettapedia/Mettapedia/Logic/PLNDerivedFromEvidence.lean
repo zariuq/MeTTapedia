@@ -1,6 +1,6 @@
 import Mettapedia.Logic.EvidenceQuantale
 
-namespace Mettapedia.Logic.PLNEvidence
+namespace Mettapedia.Logic.EvidenceQuantale
 
 open Classical
 
@@ -58,4 +58,4 @@ theorem toStrength_flip (e : Evidence) (ht0 : e.total ≠ 0) (htT : e.total ≠ 
 
 end Evidence
 
-end Mettapedia.Logic.PLNEvidence
+end Mettapedia.Logic.EvidenceQuantale

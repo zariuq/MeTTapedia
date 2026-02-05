@@ -45,7 +45,7 @@ This theorem explains the PLN bug discovered in early 2025 where
 namespace Mettapedia.Logic.PLNConfidenceWeight
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNConjunction
 
 /-! ## The Confidence-Weight Bijection

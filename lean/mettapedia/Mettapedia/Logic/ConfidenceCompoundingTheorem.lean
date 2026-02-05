@@ -37,14 +37,14 @@ independent Bayesian evidence.
 
 ## References
 
-- PLN tensor product (PLNEvidence.lean)
+- PLN tensor product (EvidenceQuantale.lean)
 - Evidence-Beta connection (EvidenceBeta.lean)
 - Bayesian independence and likelihood combination
 -/
 
 namespace Mettapedia.Logic.ConfidenceCompoundingTheorem
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceBeta
 open Mettapedia.Logic.HeytingValuationOnEvidence
 

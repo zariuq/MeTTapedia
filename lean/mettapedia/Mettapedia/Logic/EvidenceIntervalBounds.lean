@@ -39,7 +39,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.HeytingIntervalRepresenta
 namespace Mettapedia.Logic.EvidenceIntervalBounds
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Evidence
 
 /-! ## Strength Bounds from Evidence -/

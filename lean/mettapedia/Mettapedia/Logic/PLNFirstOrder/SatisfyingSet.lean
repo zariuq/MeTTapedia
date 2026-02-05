@@ -30,7 +30,7 @@ This diagonal relation is what Goertzel's weakness function operates on for quan
 
 namespace Mettapedia.Logic.PLNFirstOrder
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Algebra.QuantaleWeakness
 open Mettapedia.Logic.PLNQuantaleSemantics.PBit
 open scoped ENNReal

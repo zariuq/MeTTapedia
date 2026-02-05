@@ -26,7 +26,7 @@ This is the bridge between:
 
 namespace Mettapedia.Logic.PLNFirstOrder
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Algebra.QuantaleWeakness
 open Mettapedia.Logic.PLNQuantaleSemantics.PBit
 open scoped ENNReal

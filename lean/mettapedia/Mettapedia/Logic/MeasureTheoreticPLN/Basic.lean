@@ -37,7 +37,7 @@ The standard prior choices are:
 
 namespace Mettapedia.Logic.MeasureTheoreticPLN
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open MeasureTheory
 open scoped ENNReal NNReal unitInterval
 

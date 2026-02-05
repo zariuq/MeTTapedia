@@ -4,7 +4,7 @@ import Mettapedia.Logic.NARSMettaTruthFunctions
 
 namespace Mettapedia.Logic.NARSEvidenceBridge
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.NARSMettaTruthFunctions
 
 /-!

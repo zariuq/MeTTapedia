@@ -45,7 +45,7 @@ open Mettapedia.CategoryTheory.LambdaTheories
 open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.CategoryTheory.NativeTypeTheory
 open Mettapedia.CategoryTheory.PLNTerms
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 
 /-! ## Step 1: The Rely-Possibly Formula
 

@@ -53,7 +53,7 @@ namespace Mettapedia.Logic.PLNInferenceCalculus
 
 open Mettapedia.Logic.PLNDeduction
 open Mettapedia.Logic.PLNRevision
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLN
 
 /-! ## PLN Formula Type -/

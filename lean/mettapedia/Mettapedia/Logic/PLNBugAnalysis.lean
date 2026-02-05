@@ -18,7 +18,7 @@ and provides computationally tractable corrections.
 ## References
 
 - MeTTa implementation: `hyperon/PeTTa/lib/lib_pln.metta`
-- Lean PLN Evidence: `Mettapedia.Logic.PLNEvidence`
+- Lean PLN Evidence: `Mettapedia.Logic.EvidenceQuantale`
 -/
 
 namespace Mettapedia.Logic.PLNBugAnalysis

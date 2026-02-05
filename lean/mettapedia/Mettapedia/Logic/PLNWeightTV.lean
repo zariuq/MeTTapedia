@@ -37,7 +37,7 @@ STV (strength, confidence) ← for users/interfaces
 
 ## References
 
-- PLNEvidence.lean: Evidence quantale definitions
+- EvidenceQuantale.lean: Evidence quantale definitions
 - PLNInferenceCalculus.lean: Inference rules (being refactored to use WTV)
 - PLNCorrectedFormulas.lean: Documents why weight-space operations are correct
 -/

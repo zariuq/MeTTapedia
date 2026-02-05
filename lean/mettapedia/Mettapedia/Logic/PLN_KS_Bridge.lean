@@ -21,7 +21,7 @@ namespace Mettapedia.Logic.PLN_KS_Bridge
 
 open scoped ENNReal
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.ProbabilityTheory.KnuthSkilling.TotalityImprecision
 
 /-! ## Evidence has incomparable elements -/

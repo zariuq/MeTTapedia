@@ -4,6 +4,7 @@ import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.OSLF.RhoCalculus.Types
 import Mettapedia.OSLF.RhoCalculus.Soundness
 import Mettapedia.OSLF.RhoCalculus.Reduction
+import Mettapedia.OSLF.PiCalculus.Main
 
 /-!
 # Operational Semantics in Logical Form (OSLF)

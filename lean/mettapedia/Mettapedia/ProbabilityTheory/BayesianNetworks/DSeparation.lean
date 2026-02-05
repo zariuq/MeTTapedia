@@ -181,10 +181,9 @@ theorem isCollider_comm (a b c : V) (hab : UndirectedEdge G a b) (hbc : Undirect
     The proof requires careful handling of path reversal. -/
 theorem dsep_symmetric (G : DirectedGraph V) (X Y Z : Set V)
     (hdsep : DSeparated G X Y Z) : DSeparated G Y X Z := by
-  intro y hy x hx hne
+  intro y hy x hx hne hpath
   -- We need to show ¬HasActivePath G Z y x
   -- Given: ∀ paths from x ∈ X to y ∈ Y are blocked
-  intro hpath
   -- Transform path from y to x into path from x to y
   apply hdsep x hx y hy hne.symm
   unfold HasActivePath at hpath ⊢
@@ -255,7 +254,7 @@ theorem dsep_singleton (G : DirectedGraph V) (v : V) (Y Z : Set V)
   exact h y hy hne
 
 /-- If no direct edges exist between X and Y, there's no direct active path. -/
-theorem dsep_no_direct_edges (G : DirectedGraph V) (X Y Z : Set V)
+theorem dsep_no_direct_edges (G : DirectedGraph V) (X Y : Set V)
     (hsep : ∀ x ∈ X, ∀ y ∈ Y, ¬UndirectedEdge G x y) :
     ∀ x ∈ X, ∀ y ∈ Y, x ≠ y → ¬(x = y ∨ (UndirectedEdge G x y ∧ x ≠ y)) := by
   intro x hx y hy hne hpath

@@ -21,7 +21,7 @@ Concept Learning" (arXiv:2012.14474).
 
 namespace Mettapedia.Logic.PLNQuantaleSemantics.CDLogic
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNQuantaleSemantics.PBit
 open scoped ENNReal
 

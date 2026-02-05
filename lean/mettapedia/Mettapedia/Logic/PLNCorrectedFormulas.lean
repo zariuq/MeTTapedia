@@ -33,7 +33,7 @@ These corrected formulas ensure that error bounds compose correctly:
 ## References
 
 - PLNBugAnalysis.lean: Formal proofs of bugs in naive formulas
-- PLNEvidence.lean: Evidence count definitions and tensor product
+- EvidenceQuantale.lean: Evidence count definitions and tensor product
 -/
 
 namespace Mettapedia.Logic.PLNCorrectedFormulas

@@ -122,7 +122,7 @@ Largest subdirectory (~420 KB). Includes:
 
 | File | Description | Sorries |
 |------|-------------|---------|
-| `PLNEvidence.lean` | Evidence structure (n+, n-), quantale ops (x, +) | 0 |
+| `EvidenceQuantale.lean` | Evidence structure (n+, n-), quantale ops (x, +) | 0 |
 
 ### PLN Inference Rules
 
@@ -179,7 +179,7 @@ Largest subdirectory (~420 KB). Includes:
 
 | File | Description | Sorries |
 |------|-------------|---------|
-| `NuPLNEvidenceBridge.lean` | nuPLN <-> Evidence quantale | 0 |
+| `NuEvidenceQuantaleBridge.lean` | nuPLN <-> Evidence quantale | 0 |
 | `NARSEvidenceBridge.lean` | NARS <-> Evidence bridge | 0 |
 | `PLN_KS_Bridge.lean` | PLN <-> Knuth-Skilling bridge | 0 |
 | `EvidenceKSBridge.lean` | Evidence as PlausibilitySpace | 0 |
@@ -218,7 +218,7 @@ Largest subdirectory (~420 KB). Includes:
 ## Dependency Graph
 
 ```
-PLNEvidence.lean (Foundation: Evidence structure, quantale ops)
+EvidenceQuantale.lean (Foundation: Evidence structure, quantale ops)
        |
        +-- EvidenceQuantale.lean (quantale instance)
        |        +-- evidence_tensor_transitivity
@@ -289,7 +289,7 @@ This is formalized in `PLNConfidenceWeight.lean`.
 cd lean-projects/mettapedia
 
 # Core files
-lake build Mettapedia.Logic.PLNEvidence
+lake build Mettapedia.Logic.EvidenceQuantale
 lake build Mettapedia.Logic.PLNDeduction
 lake build Mettapedia.Logic.PLNFrechetBounds
 lake build Mettapedia.Logic.EvidenceQuantale

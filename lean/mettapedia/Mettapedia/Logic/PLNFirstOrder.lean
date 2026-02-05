@@ -48,5 +48,5 @@ nice -n 19 lake build Mettapedia.Logic.PLNFirstOrder
 - Plan file: /home/zar/.claude/plans/hashed-baking-bumblebee.md
 - Goertzel, "Weakness and Its Quantale"
 - QuantaleWeakness.lean (820+ proven lines)
-- PLNEvidence.lean (Evidence with Frame structure)
+- EvidenceQuantale.lean (Evidence with Frame structure)
 -/

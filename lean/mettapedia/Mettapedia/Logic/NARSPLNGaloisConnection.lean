@@ -33,7 +33,7 @@ import Mettapedia.Logic.NARSSecondOrderProbability
 namespace Mettapedia.Logic.NARSPLNGaloisConnection
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.NARSMettaTruthFunctions
 open Mettapedia.Logic.NARSEvidenceBridge

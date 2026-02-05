@@ -46,7 +46,7 @@ namespace Mettapedia.UniversalAI.GodelMachine.PLNSpecialCase
 open SelfModification BayesianAgents Classical
 open Mettapedia.Logic.SolomonoffPrior
 open Mettapedia.Logic.SolomonoffExchangeable
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceBeta
 
 /-! ## Part 1: PLN Evidence as Sufficient Statistic

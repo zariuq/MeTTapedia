@@ -24,7 +24,7 @@ namespace Mettapedia.Logic.NARSSecondOrderProbability
 
 open scoped ENNReal
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.NARSMettaTruthFunctions
 
 /-! ## Validity predicate -/

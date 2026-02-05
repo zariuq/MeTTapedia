@@ -34,7 +34,7 @@ giving us **intuitionistic probability theory** where:
 
 namespace Mettapedia.Logic.EvidenceKSBridge
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.ProbabilityTheory.KnuthSkilling
 
 /-! ## Evidence IS a PlausibilitySpace

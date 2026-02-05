@@ -31,7 +31,7 @@ open scoped ENNReal
 
 open Mettapedia.Logic.CompletePLN
 open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNWorldModel
 
 /-! ## Joint evidence over `n` binary propositions -/

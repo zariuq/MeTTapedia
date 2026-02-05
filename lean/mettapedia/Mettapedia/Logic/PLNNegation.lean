@@ -24,7 +24,7 @@ This gives the expected probabilistic behavior:
 namespace Mettapedia.Logic.PLNNegation
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Evidence
 
 /-! ## PLN Negation Definition -/

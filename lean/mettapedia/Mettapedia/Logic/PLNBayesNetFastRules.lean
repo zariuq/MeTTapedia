@@ -559,6 +559,415 @@ private lemma mu_C_inter_A_inter_Bc_eq_sum_rest :
       rfl
     simpa [hBidx])
 
+/-! ### Screening-off equalities as BN theorems -/
+
+open ScreeningOff
+
+private lemma nodeProb_C_true_add_false (r : Rest) :
+    nodeProb cpt (cfg true r) Three.C + nodeProb cpt (cfg false r) Three.C = 1 := by
+  classical
+  -- Fix the parent assignment for `C`; it depends only on `B` in the chain BN.
+  let pa : ChainBN.ParentAssignment Three.C :=
+    cpt.parentAssignOfConfig (cfg true r) Three.C
+  have hpa : cpt.parentAssignOfConfig (cfg false r) Three.C = pa := by
+    funext u hu
+    have hu' : u = Three.B := by
+      simpa [ChainBN, chain_parents_C] using hu
+    subst hu'
+    simp [pa, DiscreteCPT.parentAssignOfConfig, cfg_apply_B]
+  have hsum : (∑ c : Bool, (cpt.cpt Three.C pa c : ℝ≥0∞)) = 1 :=
+    pmf_sum_eq_one (cpt.cpt Three.C pa)
+  have hsum' :
+      (cpt.cpt Three.C pa true : ℝ≥0∞) + (cpt.cpt Three.C pa false : ℝ≥0∞) = 1 := by
+    simpa [Fintype.sum_bool] using hsum
+  -- Expand `nodeProb` and rewrite parent assignments to `pa`.
+  simpa [DiscreteCPT.nodeProb, cfg_apply_C, pa, hpa] using hsum'
+
+private lemma mu_B_eq_sum_prodNonC :
+    (μ (cpt := cpt)) (B : Set ChainBN.JointSpace) =
+      ∑ r : Rest, (if r idxB = true then prodNonC (cpt := cpt) (c := true) r else 0) := by
+  classical
+  rw [mu_B_eq_sum_rest (cpt := cpt)]
+  refine Fintype.sum_congr _ _ (fun r => ?_)
+  by_cases hb : r idxB = true
+  · simp [hb]
+    have hprod :
+        prodNonC (cpt := cpt) (c := false) r = prodNonC (cpt := cpt) (c := true) r := by
+      simpa using
+        prodNonC_indep (cpt := cpt) (hs := chainGraph_isSink_C) (c := false) (c' := true) r
+    calc
+      (cpt.jointWeight (cfg true r) + cpt.jointWeight (cfg false r)) =
+          (nodeProb cpt (cfg true r) Three.C * prodNonC (cpt := cpt) (c := true) r) +
+            (nodeProb cpt (cfg false r) Three.C * prodNonC (cpt := cpt) (c := false) r) := by
+        simp [jointWeight_split_C (cpt := cpt) (c := true) r, jointWeight_split_C (cpt := cpt) (c := false) r]
+      _ = (nodeProb cpt (cfg true r) Three.C * prodNonC (cpt := cpt) (c := true) r) +
+            (nodeProb cpt (cfg false r) Three.C * prodNonC (cpt := cpt) (c := true) r) := by
+        simp [hprod]
+      _ = (nodeProb cpt (cfg true r) Three.C + nodeProb cpt (cfg false r) Three.C) *
+            prodNonC (cpt := cpt) (c := true) r := by
+        simpa using
+          (add_mul (nodeProb cpt (cfg true r) Three.C) (nodeProb cpt (cfg false r) Three.C)
+            (prodNonC (cpt := cpt) (c := true) r)).symm
+      _ = prodNonC (cpt := cpt) (c := true) r := by
+        simp [nodeProb_C_true_add_false (cpt := cpt) r]
+  · simp [hb]
+
+private lemma mu_C_inter_B_eq_q_mul_mu_B :
+    (μ (cpt := cpt)) (C ∩ (B : Set ChainBN.JointSpace)) =
+      qC_givenB (cpt := cpt) true * (μ (cpt := cpt)) (B : Set ChainBN.JointSpace) := by
+  classical
+  -- Reduce both sides to the same `Rest`-sum and use the product-form semantics.
+  rw [mu_C_inter_B_eq_sum_rest (cpt := cpt)]
+  rw [mu_B_eq_sum_prodNonC (cpt := cpt)]
+  -- Factor out `qC_givenB true` from the sum.
+  let g : Rest → ℝ≥0∞ := fun r => if r idxB = true then prodNonC (cpt := cpt) (c := true) r else 0
+  have hrewrite :
+      (∑ r : Rest, if r idxB = true then cpt.jointWeight (cfg true r) else 0) =
+        ∑ r : Rest, if r idxB = true then qC_givenB (cpt := cpt) true * prodNonC (cpt := cpt) (c := true) r else 0 := by
+    refine Fintype.sum_congr _ _ (fun r => ?_)
+    by_cases hb : r idxB = true
+    · have hnode : nodeProb cpt (cfg true r) Three.C = qC_givenB (cpt := cpt) true := by
+        simpa using
+          nodeProb_C_true_eq_qC_givenB (cpt := cpt) (r := r) (b := true) hb
+      simp [hb, jointWeight_split_C (cpt := cpt) (c := true) r, hnode]
+    · simp [hb]
+  -- Rewrite each summand as `q * g r`, then use `Finset.mul_sum`.
+  calc
+    (∑ r : Rest, if r idxB = true then cpt.jointWeight (cfg true r) else 0) =
+        ∑ r : Rest, if r idxB = true then qC_givenB (cpt := cpt) true * prodNonC (cpt := cpt) (c := true) r else 0 := hrewrite
+    _ = ∑ r : Rest, qC_givenB (cpt := cpt) true * g r := by
+      refine Fintype.sum_congr _ _ (fun r => ?_)
+      by_cases hb : r idxB = true <;> simp [g, hb]
+    _ = qC_givenB (cpt := cpt) true * ∑ r : Rest, g r := by
+      simpa using
+        (Finset.mul_sum (a := qC_givenB (cpt := cpt) true) (s := (Finset.univ : Finset Rest)) (f := g)).symm
+    _ = qC_givenB (cpt := cpt) true * ∑ r : Rest, if r idxB = true then prodNonC (cpt := cpt) (c := true) r else 0 := by
+      rfl
+
+private lemma mu_Bc_eq_sum_prodNonC :
+    (μ (cpt := cpt)) ((B : Set ChainBN.JointSpace)ᶜ) =
+      ∑ r : Rest, (if r idxB = false then prodNonC (cpt := cpt) (c := true) r else 0) := by
+  classical
+  rw [mu_Bc_eq_sum_rest (cpt := cpt)]
+  refine Fintype.sum_congr _ _ (fun r => ?_)
+  by_cases hb : r idxB = false
+  · simp [hb]
+    have hprod :
+        prodNonC (cpt := cpt) (c := false) r = prodNonC (cpt := cpt) (c := true) r := by
+      simpa using
+        prodNonC_indep (cpt := cpt) (hs := chainGraph_isSink_C) (c := false) (c' := true) r
+    calc
+      (cpt.jointWeight (cfg true r) + cpt.jointWeight (cfg false r)) =
+          (nodeProb cpt (cfg true r) Three.C * prodNonC (cpt := cpt) (c := true) r) +
+            (nodeProb cpt (cfg false r) Three.C * prodNonC (cpt := cpt) (c := false) r) := by
+        simp [jointWeight_split_C (cpt := cpt) (c := true) r, jointWeight_split_C (cpt := cpt) (c := false) r]
+      _ = (nodeProb cpt (cfg true r) Three.C * prodNonC (cpt := cpt) (c := true) r) +
+            (nodeProb cpt (cfg false r) Three.C * prodNonC (cpt := cpt) (c := true) r) := by
+        simp [hprod]
+      _ = (nodeProb cpt (cfg true r) Three.C + nodeProb cpt (cfg false r) Three.C) *
+            prodNonC (cpt := cpt) (c := true) r := by
+        simpa using
+          (add_mul (nodeProb cpt (cfg true r) Three.C) (nodeProb cpt (cfg false r) Three.C)
+            (prodNonC (cpt := cpt) (c := true) r)).symm
+      _ = prodNonC (cpt := cpt) (c := true) r := by
+        simp [nodeProb_C_true_add_false (cpt := cpt) r]
+  · simp [hb]
+
+private lemma mu_C_inter_Bc_eq_q_mul_mu_Bc :
+    (μ (cpt := cpt)) (C ∩ (B : Set ChainBN.JointSpace)ᶜ) =
+      qC_givenB (cpt := cpt) false * (μ (cpt := cpt)) ((B : Set ChainBN.JointSpace)ᶜ) := by
+  classical
+  rw [mu_C_inter_Bc_eq_sum_rest (cpt := cpt)]
+  rw [mu_Bc_eq_sum_prodNonC (cpt := cpt)]
+  let g : Rest → ℝ≥0∞ := fun r => if r idxB = false then prodNonC (cpt := cpt) (c := true) r else 0
+  have hrewrite :
+      (∑ r : Rest, if r idxB = false then cpt.jointWeight (cfg true r) else 0) =
+        ∑ r : Rest, if r idxB = false then qC_givenB (cpt := cpt) false * prodNonC (cpt := cpt) (c := true) r else 0 := by
+    refine Fintype.sum_congr _ _ (fun r => ?_)
+    by_cases hb : r idxB = false
+    · have hnode : nodeProb cpt (cfg true r) Three.C = qC_givenB (cpt := cpt) false := by
+        simpa using
+          nodeProb_C_true_eq_qC_givenB (cpt := cpt) (r := r) (b := false) hb
+      simp [hb, jointWeight_split_C (cpt := cpt) (c := true) r, hnode]
+    · simp [hb]
+  calc
+    (∑ r : Rest, if r idxB = false then cpt.jointWeight (cfg true r) else 0) =
+        ∑ r : Rest, if r idxB = false then qC_givenB (cpt := cpt) false * prodNonC (cpt := cpt) (c := true) r else 0 := hrewrite
+    _ = ∑ r : Rest, qC_givenB (cpt := cpt) false * g r := by
+      refine Fintype.sum_congr _ _ (fun r => ?_)
+      by_cases hb : r idxB = false <;> simp [g, hb]
+    _ = qC_givenB (cpt := cpt) false * ∑ r : Rest, g r := by
+      simpa using
+        (Finset.mul_sum (a := qC_givenB (cpt := cpt) false) (s := (Finset.univ : Finset Rest)) (f := g)).symm
+    _ = qC_givenB (cpt := cpt) false * ∑ r : Rest, if r idxB = false then prodNonC (cpt := cpt) (c := true) r else 0 := by
+      rfl
+
+private lemma mu_A_inter_B_eq_sum_prodNonC :
+    (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)) =
+      ∑ r : Rest,
+        (if r idxA = true ∧ r idxB = true then prodNonC (cpt := cpt) (c := true) r else 0) := by
+  classical
+  rw [mu_A_inter_B_eq_sum_rest (cpt := cpt)]
+  refine Fintype.sum_congr _ _ (fun r => ?_)
+  by_cases hAB : r idxA = true ∧ r idxB = true
+  · simp [hAB]
+    have hprod :
+        prodNonC (cpt := cpt) (c := false) r = prodNonC (cpt := cpt) (c := true) r := by
+      simpa using
+        prodNonC_indep (cpt := cpt) (hs := chainGraph_isSink_C) (c := false) (c' := true) r
+    calc
+      (cpt.jointWeight (cfg true r) + cpt.jointWeight (cfg false r)) =
+          (nodeProb cpt (cfg true r) Three.C * prodNonC (cpt := cpt) (c := true) r) +
+            (nodeProb cpt (cfg false r) Three.C * prodNonC (cpt := cpt) (c := false) r) := by
+        simp [jointWeight_split_C (cpt := cpt) (c := true) r, jointWeight_split_C (cpt := cpt) (c := false) r]
+      _ = (nodeProb cpt (cfg true r) Three.C * prodNonC (cpt := cpt) (c := true) r) +
+            (nodeProb cpt (cfg false r) Three.C * prodNonC (cpt := cpt) (c := true) r) := by
+        simp [hprod]
+      _ = (nodeProb cpt (cfg true r) Three.C + nodeProb cpt (cfg false r) Three.C) *
+            prodNonC (cpt := cpt) (c := true) r := by
+        simpa using
+          (add_mul (nodeProb cpt (cfg true r) Three.C) (nodeProb cpt (cfg false r) Three.C)
+            (prodNonC (cpt := cpt) (c := true) r)).symm
+      _ = prodNonC (cpt := cpt) (c := true) r := by
+        simp [nodeProb_C_true_add_false (cpt := cpt) r]
+  · simp [hAB]
+
+private lemma mu_C_inter_A_inter_B_eq_q_mul_mu_A_inter_B :
+    (μ (cpt := cpt)) (C ∩ (A ∩ (B : Set ChainBN.JointSpace))) =
+      qC_givenB (cpt := cpt) true * (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)) := by
+  classical
+  rw [mu_C_inter_A_inter_B_eq_sum_rest (cpt := cpt)]
+  rw [mu_A_inter_B_eq_sum_prodNonC (cpt := cpt)]
+  let g : Rest → ℝ≥0∞ := fun r =>
+    if r idxA = true ∧ r idxB = true then prodNonC (cpt := cpt) (c := true) r else 0
+  have hrewrite :
+      (∑ r : Rest, if r idxA = true ∧ r idxB = true then cpt.jointWeight (cfg true r) else 0) =
+        ∑ r : Rest,
+          if r idxA = true ∧ r idxB = true then
+            qC_givenB (cpt := cpt) true * prodNonC (cpt := cpt) (c := true) r
+          else 0 := by
+    refine Fintype.sum_congr _ _ (fun r => ?_)
+    by_cases hAB : r idxA = true ∧ r idxB = true
+    · have hb : r idxB = true := hAB.2
+      have hnode : nodeProb cpt (cfg true r) Three.C = qC_givenB (cpt := cpt) true := by
+        simpa using
+          nodeProb_C_true_eq_qC_givenB (cpt := cpt) (r := r) (b := true) hb
+      simp [hAB, jointWeight_split_C (cpt := cpt) (c := true) r, hnode]
+    · simp [hAB]
+  calc
+    (∑ r : Rest, if r idxA = true ∧ r idxB = true then cpt.jointWeight (cfg true r) else 0) =
+        ∑ r : Rest,
+          if r idxA = true ∧ r idxB = true then
+            qC_givenB (cpt := cpt) true * prodNonC (cpt := cpt) (c := true) r
+          else 0 := hrewrite
+    _ = ∑ r : Rest, qC_givenB (cpt := cpt) true * g r := by
+      refine Fintype.sum_congr _ _ (fun r => ?_)
+      by_cases hAB : r idxA = true ∧ r idxB = true <;> simp [g, hAB]
+    _ = qC_givenB (cpt := cpt) true * ∑ r : Rest, g r := by
+      simpa using
+        (Finset.mul_sum (a := qC_givenB (cpt := cpt) true) (s := (Finset.univ : Finset Rest)) (f := g)).symm
+    _ = qC_givenB (cpt := cpt) true *
+          ∑ r : Rest, if r idxA = true ∧ r idxB = true then prodNonC (cpt := cpt) (c := true) r else 0 := by
+      rfl
+
+private lemma mu_A_inter_Bc_eq_sum_prodNonC :
+    (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)ᶜ) =
+      ∑ r : Rest,
+        (if r idxA = true ∧ r idxB = false then prodNonC (cpt := cpt) (c := true) r else 0) := by
+  classical
+  rw [mu_A_inter_Bc_eq_sum_rest (cpt := cpt)]
+  refine Fintype.sum_congr _ _ (fun r => ?_)
+  by_cases hABc : r idxA = true ∧ r idxB = false
+  · simp [hABc]
+    have hprod :
+        prodNonC (cpt := cpt) (c := false) r = prodNonC (cpt := cpt) (c := true) r := by
+      simpa using
+        prodNonC_indep (cpt := cpt) (hs := chainGraph_isSink_C) (c := false) (c' := true) r
+    calc
+      (cpt.jointWeight (cfg true r) + cpt.jointWeight (cfg false r)) =
+          (nodeProb cpt (cfg true r) Three.C * prodNonC (cpt := cpt) (c := true) r) +
+            (nodeProb cpt (cfg false r) Three.C * prodNonC (cpt := cpt) (c := false) r) := by
+        simp [jointWeight_split_C (cpt := cpt) (c := true) r, jointWeight_split_C (cpt := cpt) (c := false) r]
+      _ = (nodeProb cpt (cfg true r) Three.C * prodNonC (cpt := cpt) (c := true) r) +
+            (nodeProb cpt (cfg false r) Three.C * prodNonC (cpt := cpt) (c := true) r) := by
+        simp [hprod]
+      _ = (nodeProb cpt (cfg true r) Three.C + nodeProb cpt (cfg false r) Three.C) *
+            prodNonC (cpt := cpt) (c := true) r := by
+        simpa using
+          (add_mul (nodeProb cpt (cfg true r) Three.C) (nodeProb cpt (cfg false r) Three.C)
+            (prodNonC (cpt := cpt) (c := true) r)).symm
+      _ = prodNonC (cpt := cpt) (c := true) r := by
+        simp [nodeProb_C_true_add_false (cpt := cpt) r]
+  · simp [hABc]
+
+private lemma mu_C_inter_A_inter_Bc_eq_q_mul_mu_A_inter_Bc :
+    (μ (cpt := cpt)) (C ∩ (A ∩ (B : Set ChainBN.JointSpace)ᶜ)) =
+      qC_givenB (cpt := cpt) false * (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)ᶜ) := by
+  classical
+  rw [mu_C_inter_A_inter_Bc_eq_sum_rest (cpt := cpt)]
+  rw [mu_A_inter_Bc_eq_sum_prodNonC (cpt := cpt)]
+  let g : Rest → ℝ≥0∞ := fun r =>
+    if r idxA = true ∧ r idxB = false then prodNonC (cpt := cpt) (c := true) r else 0
+  have hrewrite :
+      (∑ r : Rest, if r idxA = true ∧ r idxB = false then cpt.jointWeight (cfg true r) else 0) =
+        ∑ r : Rest,
+          if r idxA = true ∧ r idxB = false then
+            qC_givenB (cpt := cpt) false * prodNonC (cpt := cpt) (c := true) r
+          else 0 := by
+    refine Fintype.sum_congr _ _ (fun r => ?_)
+    by_cases hABc : r idxA = true ∧ r idxB = false
+    · have hb : r idxB = false := hABc.2
+      have hnode : nodeProb cpt (cfg true r) Three.C = qC_givenB (cpt := cpt) false := by
+        simpa using
+          nodeProb_C_true_eq_qC_givenB (cpt := cpt) (r := r) (b := false) hb
+      simp [hABc, jointWeight_split_C (cpt := cpt) (c := true) r, hnode]
+    · simp [hABc]
+  calc
+    (∑ r : Rest, if r idxA = true ∧ r idxB = false then cpt.jointWeight (cfg true r) else 0) =
+        ∑ r : Rest,
+          if r idxA = true ∧ r idxB = false then
+            qC_givenB (cpt := cpt) false * prodNonC (cpt := cpt) (c := true) r
+          else 0 := hrewrite
+    _ = ∑ r : Rest, qC_givenB (cpt := cpt) false * g r := by
+      refine Fintype.sum_congr _ _ (fun r => ?_)
+      by_cases hABc : r idxA = true ∧ r idxB = false <;> simp [g, hABc]
+    _ = qC_givenB (cpt := cpt) false * ∑ r : Rest, g r := by
+      simpa using
+        (Finset.mul_sum (a := qC_givenB (cpt := cpt) false) (s := (Finset.univ : Finset Rest)) (f := g)).symm
+    _ = qC_givenB (cpt := cpt) false *
+          ∑ r : Rest, if r idxA = true ∧ r idxB = false then prodNonC (cpt := cpt) (c := true) r else 0 := by
+      rfl
+
+private lemma real_ratio_eq_toReal_q {X Y : Set ChainBN.JointSpace} (hY_pos : (μ (cpt := cpt)) Y ≠ 0)
+    {q : ℝ≥0∞} (hXY : (μ (cpt := cpt)) (X ∩ Y) = q * (μ (cpt := cpt)) Y) :
+    (μ (cpt := cpt)).real (X ∩ Y) / (μ (cpt := cpt)).real Y = q.toReal := by
+  have hY_real_pos : (μ (cpt := cpt)).real Y ≠ 0 := by
+    have : 0 < (μ (cpt := cpt)).real Y := by
+      simp only [Measure.real, ENNReal.toReal_pos_iff]
+      exact ⟨pos_iff_ne_zero.mpr hY_pos, measure_lt_top _ _⟩
+    exact ne_of_gt this
+  -- Convert the ENNReal equality into a statement about real ratios.
+  simp only [Measure.real] at ⊢
+  -- Cancel using the nonzero denominator.
+  calc
+    ((μ (cpt := cpt)) (X ∩ Y)).toReal / ((μ (cpt := cpt)) Y).toReal =
+        ((q * (μ (cpt := cpt)) Y).toReal) / ((μ (cpt := cpt)) Y).toReal := by
+          simpa [hXY]
+    _ = (q.toReal * ((μ (cpt := cpt)) Y).toReal) / ((μ (cpt := cpt)) Y).toReal := by
+          simp [ENNReal.toReal_mul]
+    _ = q.toReal := by
+          -- Cancel the denominator (it is nonzero by `hY_pos`).
+          have hden : ((μ (cpt := cpt)) Y).toReal ≠ 0 := hY_real_pos
+          calc
+            q.toReal * ((μ (cpt := cpt)) Y).toReal / ((μ (cpt := cpt)) Y).toReal =
+                ((μ (cpt := cpt)) Y).toReal * q.toReal / ((μ (cpt := cpt)) Y).toReal := by
+                  simp [mul_comm]
+            _ = q.toReal := by
+                  simpa using (mul_div_cancel_left₀ q.toReal hden)
+
+lemma chainBN_pos_screeningOff
+    (hAB_pos : (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)) ≠ 0)
+    (hB_pos : (μ (cpt := cpt)) (B : Set ChainBN.JointSpace) ≠ 0) :
+    (μ (cpt := cpt)).real (C ∩ (A ∩ (B : Set ChainBN.JointSpace))) /
+        (μ (cpt := cpt)).real (A ∩ (B : Set ChainBN.JointSpace)) =
+      (μ (cpt := cpt)).real (C ∩ (B : Set ChainBN.JointSpace)) /
+        (μ (cpt := cpt)).real (B : Set ChainBN.JointSpace) := by
+  have hCAB : (μ (cpt := cpt)) (C ∩ (A ∩ (B : Set ChainBN.JointSpace))) =
+      qC_givenB (cpt := cpt) true * (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)) :=
+    mu_C_inter_A_inter_B_eq_q_mul_mu_A_inter_B (cpt := cpt)
+  have hCB : (μ (cpt := cpt)) (C ∩ (B : Set ChainBN.JointSpace)) =
+      qC_givenB (cpt := cpt) true * (μ (cpt := cpt)) (B : Set ChainBN.JointSpace) :=
+    mu_C_inter_B_eq_q_mul_mu_B (cpt := cpt)
+  -- Both conditionals equal `qC_givenB true`.
+  calc
+    (μ (cpt := cpt)).real (C ∩ (A ∩ (B : Set ChainBN.JointSpace))) /
+        (μ (cpt := cpt)).real (A ∩ (B : Set ChainBN.JointSpace)) =
+        (qC_givenB (cpt := cpt) true).toReal := by
+          simpa [Set.inter_assoc] using
+            real_ratio_eq_toReal_q (cpt := cpt) (X := C) (Y := A ∩ (B : Set ChainBN.JointSpace))
+              hAB_pos (q := qC_givenB (cpt := cpt) true) hCAB
+    _ = (μ (cpt := cpt)).real (C ∩ (B : Set ChainBN.JointSpace)) /
+          (μ (cpt := cpt)).real (B : Set ChainBN.JointSpace) := by
+          symm
+          simpa using
+            real_ratio_eq_toReal_q (cpt := cpt) (X := C) (Y := (B : Set ChainBN.JointSpace))
+              hB_pos (q := qC_givenB (cpt := cpt) true) hCB
+
+lemma chainBN_neg_screeningOff
+    (hABc_pos : (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)ᶜ) ≠ 0)
+    (hBc_pos : (μ (cpt := cpt)) ((B : Set ChainBN.JointSpace)ᶜ) ≠ 0) :
+    (μ (cpt := cpt)).real (C ∩ (A ∩ (B : Set ChainBN.JointSpace)ᶜ)) /
+        (μ (cpt := cpt)).real (A ∩ (B : Set ChainBN.JointSpace)ᶜ) =
+      (μ (cpt := cpt)).real (C ∩ (B : Set ChainBN.JointSpace)ᶜ) /
+        (μ (cpt := cpt)).real ((B : Set ChainBN.JointSpace)ᶜ) := by
+  have hCABc : (μ (cpt := cpt)) (C ∩ (A ∩ (B : Set ChainBN.JointSpace)ᶜ)) =
+      qC_givenB (cpt := cpt) false * (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)ᶜ) :=
+    mu_C_inter_A_inter_Bc_eq_q_mul_mu_A_inter_Bc (cpt := cpt)
+  have hCBc : (μ (cpt := cpt)) (C ∩ (B : Set ChainBN.JointSpace)ᶜ) =
+      qC_givenB (cpt := cpt) false * (μ (cpt := cpt)) ((B : Set ChainBN.JointSpace)ᶜ) :=
+    mu_C_inter_Bc_eq_q_mul_mu_Bc (cpt := cpt)
+  calc
+    (μ (cpt := cpt)).real (C ∩ (A ∩ (B : Set ChainBN.JointSpace)ᶜ)) /
+        (μ (cpt := cpt)).real (A ∩ (B : Set ChainBN.JointSpace)ᶜ) =
+        (qC_givenB (cpt := cpt) false).toReal := by
+          simpa [Set.inter_assoc] using
+            real_ratio_eq_toReal_q (cpt := cpt) (X := C) (Y := A ∩ (B : Set ChainBN.JointSpace)ᶜ)
+              hABc_pos (q := qC_givenB (cpt := cpt) false) hCABc
+    _ = (μ (cpt := cpt)).real (C ∩ (B : Set ChainBN.JointSpace)ᶜ) /
+          (μ (cpt := cpt)).real ((B : Set ChainBN.JointSpace)ᶜ) := by
+          symm
+          simpa using
+            real_ratio_eq_toReal_q (cpt := cpt) (X := C) (Y := (B : Set ChainBN.JointSpace)ᶜ)
+              hBc_pos (q := qC_givenB (cpt := cpt) false) hCBc
+
+theorem chainBN_plnDeductionStrength_exact
+    (hA_pos : (μ (cpt := cpt)) (A : Set ChainBN.JointSpace) ≠ 0)
+    (hB_pos : (μ (cpt := cpt)) (B : Set ChainBN.JointSpace) ≠ 0)
+    (hB_lt1 : (μ (cpt := cpt)) (B : Set ChainBN.JointSpace) < 1)
+    (hAB_pos : (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)) ≠ 0)
+    (hABc_pos : (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)ᶜ) ≠ 0) :
+    (μ (cpt := cpt)).real (C ∩ (A : Set ChainBN.JointSpace)) /
+        (μ (cpt := cpt)).real (A : Set ChainBN.JointSpace) =
+      plnDeductionStrength ((μ (cpt := cpt)).real ((B : Set ChainBN.JointSpace) ∩ A) /
+          (μ (cpt := cpt)).real (A : Set ChainBN.JointSpace))
+        ((μ (cpt := cpt)).real (C ∩ (B : Set ChainBN.JointSpace)) /
+          (μ (cpt := cpt)).real (B : Set ChainBN.JointSpace))
+        ((μ (cpt := cpt)).real (B : Set ChainBN.JointSpace))
+        ((μ (cpt := cpt)).real (C : Set ChainBN.JointSpace)) := by
+  -- First, establish `P(Bᶜ) ≠ 0` from `P(B) < 1`.
+  have hBc_pos : (μ (cpt := cpt)) ((B : Set ChainBN.JointSpace)ᶜ) ≠ 0 := by
+    intro h
+    have huniv := IsProbabilityMeasure.measure_univ (μ := (μ (cpt := cpt)))
+    have hBunion : (B : Set ChainBN.JointSpace) ∪ (B : Set ChainBN.JointSpace)ᶜ = Set.univ :=
+      Set.union_compl_self (B : Set ChainBN.JointSpace)
+    rw [← hBunion] at huniv
+    have hdisj : Disjoint (B : Set ChainBN.JointSpace) (B : Set ChainBN.JointSpace)ᶜ :=
+      disjoint_compl_right
+    rw [measure_union hdisj measurable_B.compl, h, add_zero] at huniv
+    rw [huniv] at hB_lt1
+    exact lt_irrefl 1 hB_lt1
+  -- Now discharge the screening-off equalities and apply the general PLN theorem.
+  have h_pos_indep :
+      (μ (cpt := cpt)).real (C ∩ ((A : Set ChainBN.JointSpace) ∩ (B : Set ChainBN.JointSpace))) /
+          (μ (cpt := cpt)).real ((A : Set ChainBN.JointSpace) ∩ (B : Set ChainBN.JointSpace)) =
+        (μ (cpt := cpt)).real (C ∩ (B : Set ChainBN.JointSpace)) /
+          (μ (cpt := cpt)).real (B : Set ChainBN.JointSpace) := by
+    simpa [Set.inter_assoc] using
+      chainBN_pos_screeningOff (cpt := cpt) hAB_pos hB_pos
+  have h_neg_indep :
+      (μ (cpt := cpt)).real (C ∩ ((A : Set ChainBN.JointSpace) ∩ (B : Set ChainBN.JointSpace)ᶜ)) /
+          (μ (cpt := cpt)).real ((A : Set ChainBN.JointSpace) ∩ (B : Set ChainBN.JointSpace)ᶜ) =
+        (μ (cpt := cpt)).real (C ∩ (B : Set ChainBN.JointSpace)ᶜ) /
+          (μ (cpt := cpt)).real (B : Set ChainBN.JointSpace)ᶜ := by
+    simpa [Set.inter_assoc] using
+      chainBN_neg_screeningOff (cpt := cpt) hABc_pos hBc_pos
+  simpa [Set.inter_assoc, Set.inter_left_comm, Set.inter_comm] using
+    Mettapedia.Logic.PLN.pln_deduction_from_total_probability
+      (μ := (μ (cpt := cpt))) (A := (A : Set ChainBN.JointSpace))
+      (B := (B : Set ChainBN.JointSpace)) (C := (C : Set ChainBN.JointSpace))
+      (hA := measurable_A) (hB := measurable_B) (hC := measurable_C)
+      hA_pos hB_pos hB_lt1 hAB_pos hABc_pos h_pos_indep h_neg_indep
+
 end Deduction
 
 end ChainBN

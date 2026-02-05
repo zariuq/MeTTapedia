@@ -43,7 +43,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.HeytingIntervalRepresenta
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.PLNBridge
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.ProbabilityTheory.KnuthSkilling.Heyting
 
 /-! ## Evidence Lattice Has Incomparable Elements -/

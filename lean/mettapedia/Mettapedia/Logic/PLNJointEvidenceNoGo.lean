@@ -25,7 +25,7 @@ namespace Mettapedia.Logic.PLNJointEvidenceNoGo
 open scoped BigOperators ENNReal
 
 open Mettapedia.Logic.CompletePLN
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNJointEvidence
 open Mettapedia.Logic.PLNJointEvidence.JointEvidence
 

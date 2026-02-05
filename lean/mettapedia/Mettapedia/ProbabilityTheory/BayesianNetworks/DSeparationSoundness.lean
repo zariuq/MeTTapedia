@@ -66,6 +66,7 @@ theorem condIndepVertices_empty_left (Y Z : Set V) :
   rw [h]
   exact condIndep_bot_left (bn.measurableSpaceOfVertices Y)
 
+omit [DecidableEq V] in
 /-- If Y is empty, conditional independence holds trivially. -/
 theorem condIndepVertices_empty_right (X Z : Set V) :
     CondIndepVertices bn μ X ∅ Z := by
@@ -78,6 +79,7 @@ theorem measurableSpaceOfVertices_mono {S S' : Set V} (h : S' ⊆ S) :
   unfold measurableSpaceOfVertices
   exact iSup_le fun ⟨v, hv⟩ => le_iSup_of_le ⟨v, h hv⟩ le_rfl
 
+omit [DecidableEq V] in
 /-- Monotonicity: if X' ⊆ X and X ⫫ Y | Z, then X' ⫫ Y | Z. -/
 theorem condIndepVertices_of_le_left {X X' Y Z : Set V} (hXX' : X' ⊆ X)
     (h : CondIndepVertices bn μ X Y Z) :
@@ -85,11 +87,46 @@ theorem condIndepVertices_of_le_left {X X' Y Z : Set V} (hXX' : X' ⊆ X)
   unfold CondIndepVertices at *
   exact condIndep_of_condIndep_of_le_left h (measurableSpaceOfVertices_mono bn hXX')
 
+omit [DecidableEq V] in
 /-- Monotonicity: if Y' ⊆ Y and X ⫫ Y | Z, then X ⫫ Y' | Z. -/
 theorem condIndepVertices_of_le_right {X Y Y' Z : Set V} (hYY' : Y' ⊆ Y)
     (h : CondIndepVertices bn μ X Y Z) :
     CondIndepVertices bn μ X Y' Z := by
   unfold CondIndepVertices at *
   exact condIndep_of_condIndep_of_le_right h (measurableSpaceOfVertices_mono bn hYY')
+
+/-! ## D-Separation Soundness Interface
+
+This is the standard soundness theorem: **d-separation implies conditional independence**
+for measures that satisfy the local Markov property (Koller–Friedman Thm 3.3; Pearl Ch. 3).
+
+We package it as a typeclass so downstream “compiled PLN rules” can demand the theorem
+without hard-coding a proof here.
+-/
+
+/-- D-separation soundness for a BN and joint measure.
+
+Assuming the local Markov property, d-separation in the graph implies conditional
+independence of the corresponding σ-algebras in the joint measure. -/
+class DSeparationSoundness {V : Type*} [Fintype V] [DecidableEq V]
+    (bn : BayesianNetwork V) [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+    (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
+    [HasLocalMarkovProperty bn μ] : Prop where
+  /-- Soundness: d-separation ⇒ conditional independence. -/
+  dsep_condIndep :
+    ∀ {X Y Z : Set V},
+      Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparated bn.graph X Y Z →
+        CondIndepVertices bn μ X Y Z
+
+/-- Use d-separation soundness to discharge a conditional-independence obligation. -/
+theorem dsep_implies_condIndepVertices
+    {V : Type*} [Fintype V] [DecidableEq V]
+    (bn : BayesianNetwork V) [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+    (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
+    [HasLocalMarkovProperty bn μ] [DSeparationSoundness bn μ]
+    {X Y Z : Set V}
+    (h : Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparated bn.graph X Y Z) :
+    CondIndepVertices bn μ X Y Z :=
+  DSeparationSoundness.dsep_condIndep (bn := bn) (μ := μ) h
 
 end Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork

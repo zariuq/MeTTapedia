@@ -22,7 +22,7 @@ set_option linter.dupNamespace false
 
 namespace Mettapedia.CategoryTheory.PLNSemiringQuantale
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 
 /-! ## Semiring Quantale Operations -/
 

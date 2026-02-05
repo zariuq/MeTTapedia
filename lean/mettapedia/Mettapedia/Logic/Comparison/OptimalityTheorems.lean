@@ -32,7 +32,7 @@ This makes PLN **Bayes-optimal** for binary classification with exchangeable dat
 
 namespace Mettapedia.Logic.Comparison
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceBeta
 open Mettapedia.Logic.Convergence
 open Mettapedia.Logic.MeasureTheoreticPLN

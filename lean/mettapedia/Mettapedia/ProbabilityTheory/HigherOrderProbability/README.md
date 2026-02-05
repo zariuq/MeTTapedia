@@ -77,7 +77,7 @@ Full 6-week implementation plan: `/home/zar/.claude/plans/eventual-mapping-wadle
 - Exchangeability = Kyburg reduction
 - Week 3 will make this connection explicit
 
-**PLN Evidence** (`Mettapedia/Logic/PLNEvidence.lean`):
+**PLN Evidence** (`Mettapedia/Logic/EvidenceQuantale.lean`):
 - (n⁺, n⁻) = sufficient statistic for Kyburg flattening
 - Strength/confidence = compact encoding of Beta mixture
 - Weeks 4-5 will formalize this bridge

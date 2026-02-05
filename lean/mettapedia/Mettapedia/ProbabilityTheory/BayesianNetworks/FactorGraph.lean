@@ -38,12 +38,14 @@ import Mathlib.Data.Set.Basic
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Pi
 import Mathlib.Data.ENNReal.Basic
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DirectedGraph
 import Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
 
 namespace Mettapedia.ProbabilityTheory.BayesianNetworks
 
 open DirectedGraph
+open scoped BigOperators ENNReal
 
 set_option linter.dupNamespace false in
 /-! ## Factor Graph Structure -/
@@ -57,7 +59,7 @@ set_option linter.dupNamespace false in
     - potential: For each factor, a non-negative function on configurations of its scope
 
     The joint function is: f(x) = ∏_i potential(i)(x|_{scope(i)}) -/
-structure FactorGraph (V : Type*) where
+structure FactorGraph (V : Type*) (K : Type*) where
   /-- State space for each variable -/
   stateSpace : V → Type*
   /-- Factor node type -/
@@ -65,19 +67,19 @@ structure FactorGraph (V : Type*) where
   /-- Scope of each factor: the variables it depends on -/
   scope : factors → Finset V
   /-- Potential function for each factor -/
-  potential : (f : factors) → (∀ v ∈ scope f, stateSpace v) → ENNReal
+  potential : (f : factors) → (∀ v ∈ scope f, stateSpace v) → K
 
 namespace FactorGraph
 
-variable {V : Type*}
+variable {V K : Type*}
 
 /-! ## Configuration Types -/
 
 /-- A full configuration assigns a value to every variable. -/
-def FullConfig (fg : FactorGraph V) := ∀ v : V, fg.stateSpace v
+def FullConfig (fg : FactorGraph V K) := ∀ v : V, fg.stateSpace v
 
 /-- Restrict a full configuration to the scope of a factor. -/
-def restrictToScope (fg : FactorGraph V) (f : fg.factors) (x : fg.FullConfig) :
+def restrictToScope (fg : FactorGraph V K) (f : fg.factors) (x : fg.FullConfig) :
     ∀ v ∈ fg.scope f, fg.stateSpace v :=
   fun v _ => x v
 
@@ -86,8 +88,8 @@ def restrictToScope (fg : FactorGraph V) (f : fg.factors) (x : fg.FullConfig) :
 /-- The unnormalized joint potential: product of all factor potentials.
 
     φ(x) = ∏_f potential(f)(x|_{scope(f)}) -/
-noncomputable def unnormalizedJoint (fg : FactorGraph V) [Fintype fg.factors]
-    (x : fg.FullConfig) : ENNReal :=
+noncomputable def unnormalizedJoint (fg : FactorGraph V K) [Fintype fg.factors]
+    [CommMonoid K] (x : fg.FullConfig) : K :=
   ∏ f : fg.factors, fg.potential f (fg.restrictToScope f x)
 
 /-- The partition function (normalizing constant).
@@ -95,8 +97,9 @@ noncomputable def unnormalizedJoint (fg : FactorGraph V) [Fintype fg.factors]
     Z = Σ_x ∏_f φ_f(x)
 
     Note: This requires summing over all configurations, which needs Fintype instances. -/
-noncomputable def partitionFunction (fg : FactorGraph V) [Fintype V]
-    [∀ v, Fintype (fg.stateSpace v)] [Fintype fg.factors] [DecidableEq V] : ENNReal :=
+noncomputable def partitionFunction (fg : FactorGraph V K) [Fintype V]
+    [∀ v, Fintype (fg.stateSpace v)] [Fintype fg.factors] [DecidableEq V]
+    [CommMonoid K] [AddCommMonoid K] : K :=
   by
     classical
     -- Since `V` is finite and each `stateSpace v` is finite, the dependent function type
@@ -110,35 +113,41 @@ noncomputable def partitionFunction (fg : FactorGraph V) [Fintype V]
 /-! ## Factor Graph Properties -/
 
 /-- A factor graph is **pairwise** if every factor involves at most 2 variables. -/
-def IsPairwise (fg : FactorGraph V) : Prop :=
+def IsPairwise (fg : FactorGraph V K) : Prop :=
   ∀ f : fg.factors, (fg.scope f).card ≤ 2
 
 /-- A factor graph is **unary** if every factor involves exactly 1 variable. -/
-def IsUnary (fg : FactorGraph V) : Prop :=
+def IsUnary (fg : FactorGraph V K) : Prop :=
   ∀ f : fg.factors, (fg.scope f).card = 1
 
 /-- The **neighbors** of a variable: factors that include it in their scope. -/
-def variableNeighbors (fg : FactorGraph V) [DecidableEq V] (v : V) : Set fg.factors :=
+def variableNeighbors (fg : FactorGraph V K) [DecidableEq V] (v : V) : Set fg.factors :=
   { f | v ∈ fg.scope f }
 
 /-- The **neighbors** of a factor: variables in its scope. -/
-def factorNeighbors (fg : FactorGraph V) (f : fg.factors) : Finset V :=
+def factorNeighbors (fg : FactorGraph V K) (f : fg.factors) : Finset V :=
   fg.scope f
 
 /-! ## Properties of Unnormalized Joint -/
 
+section Prob
+
+variable {V : Type*}
+
 /-- The unnormalized joint is non-negative. -/
-theorem unnormalizedJoint_nonneg (fg : FactorGraph V) [Fintype fg.factors]
+theorem unnormalizedJoint_nonneg (fg : FactorGraph V ℝ≥0∞) [Fintype fg.factors]
     (x : fg.FullConfig) : 0 ≤ fg.unnormalizedJoint x := by
   exact zero_le _
 
 /-- If all potentials are non-zero, the unnormalized joint is non-zero. -/
-theorem unnormalizedJoint_ne_zero (fg : FactorGraph V) [Fintype fg.factors]
+theorem unnormalizedJoint_ne_zero (fg : FactorGraph V ℝ≥0∞) [Fintype fg.factors]
     (x : fg.FullConfig)
     (hpos : ∀ f : fg.factors, fg.potential f (fg.restrictToScope f x) ≠ 0) :
     fg.unnormalizedJoint x ≠ 0 := by
   unfold unnormalizedJoint
   exact Finset.prod_ne_zero_iff.mpr (fun f _ => hpos f)
+
+end Prob
 
 /-! ## Relationship to Bayesian Networks -/
 
@@ -177,6 +186,14 @@ end BayesianNetworkConnection
 /-! ## Simple Factor Graph (Uniform State Space) -/
 
 end FactorGraph
+
+/-! ## Canonical Instantiations -/
+
+/-- Classical probabilistic factor graphs (ENNReal potentials). -/
+abbrev ProbFactorGraph (V : Type*) := FactorGraph V ℝ≥0∞
+
+/-- K&S regraduated factor graphs (real-valued plausibility scale). -/
+abbrev KSFactorGraph (V : Type*) := FactorGraph V ℝ
 
 /-- A simplified factor graph where all variables have the same state space.
     Potentials take full assignments for simplicity. -/

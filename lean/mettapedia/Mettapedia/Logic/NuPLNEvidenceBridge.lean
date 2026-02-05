@@ -2,9 +2,9 @@ import Mathlib.Tactic
 import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.PLNMettaTruthFunctions
 
-namespace Mettapedia.Logic.NuPLNEvidenceBridge
+namespace Mettapedia.Logic.NuEvidenceQuantaleBridge
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNMettaTruthFunctions
 open scoped ENNReal
 
@@ -13,7 +13,7 @@ open scoped ENNReal
 
 This file states and proves small "bridge" lemmas connecting:
 - the *numerical* truth-value formulas (as mirrored from `lib_pln.metta`), and
-- the Evidence semantics (`PLNEvidence.lean`) that interprets truth values as evidence counts.
+- the Evidence semantics (`EvidenceQuantale.lean`) that interprets truth values as evidence counts.
 
 The intended use is to make explicit (and checkable) the hypotheses under which the MeTTa-style
 truth-value calculations coincide with Evidence addition (`hplus`) and its `toSTV` view.
@@ -507,7 +507,7 @@ The weight-space minimum `w2c(min(c2w(c1), c2w(c2)))` ensures:
 namespace InductionAbductionBridge
 
 open Mettapedia.Logic.PLNMettaTruthFunctions
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Bridge
 
 /-- The weight transform `w = c/(1-c)` is monotone on [0, MAX_CONF].
@@ -700,4 +700,4 @@ The "double-damping" bug in the old code used `w2c(min(c1, c2))` which:
 - Has been fixed in `lib_pln.metta` as of 2025-01
 -/
 
-end Mettapedia.Logic.NuPLNEvidenceBridge
+end Mettapedia.Logic.NuEvidenceQuantaleBridge

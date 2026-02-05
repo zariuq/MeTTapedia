@@ -87,7 +87,7 @@ private lemma mem_parentsFinset_iff' (u v : V) :
 
 /-- The discrete factor graph induced by a BN + CPT:
 one factor per node with scope `{v} ∪ parents(v)` and potential equal to the CPT probability. -/
-noncomputable def toFactorGraph (cpt : bn.DiscreteCPT) : FactorGraph V where
+noncomputable def toFactorGraph (cpt : bn.DiscreteCPT) : FactorGraph V ℝ≥0∞ where
   stateSpace := bn.stateSpace
   factors := V
   scope := fun v => insert v (parentsFinset (bn := bn) v)

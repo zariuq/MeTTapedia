@@ -200,15 +200,15 @@ theorem spice_comm_zero_is_comm {channel q p : Pattern} {x : String} {rest : Lis
       (.collection .hashBag ([.apply "POutput" [channel, q],
                               .apply "PInput" [channel, .lambda x p]] ++ rest) none)
       (.collection .hashBag ([spiceCommSubst p x q 0] ++ rest) none) →
-    Reduces
+    Nonempty (Reduces
       (.collection .hashBag ([.apply "POutput" [channel, q],
                               .apply "PInput" [channel, .lambda x p]] ++ rest) none)
-      (.collection .hashBag ([commSubst p x q] ++ rest) none) := by
+      (.collection .hashBag ([commSubst p x q] ++ rest) none)) := by
   intro _
   -- Goal is to show standard COMM fires
   -- By spiceCommSubst_zero: spiceCommSubst p x q 0 = commSubst p x q
   -- So the result patterns are equal
-  exact Reduces.comm
+  exact ⟨Reduces.comm⟩
 
 /- REMOVED: spice_comm_mono - theorem was MIS-STATED.
 
@@ -251,7 +251,7 @@ an interaction.
 
 /-- An agent with horizon 0 is reactive (no lookahead). -/
 def ReactiveAgent (p : Pattern) : Prop :=
-  ∀ q, (p ⇝ₛ[0] q) → (p ⇝ q)
+  ∀ q, (p ⇝ₛ[0] q) → Nonempty (p ⇝ q)
 
 /-- An agent with horizon n>0 is precognitive (has lookahead). -/
 def PrecognitiveAgent (p : Pattern) (n : ℕ) : Prop :=
@@ -277,10 +277,11 @@ theorem reactive_is_standard (p : Pattern) :
     have h_eq : [spiceCommSubst pbody x qpat 0] = [commSubst pbody x qpat] := by
       rw [spiceCommSubst_zero]
     rw [h_eq]
-    exact Reduces.comm
+    exact ⟨Reduces.comm⟩
   | @par pinner qinner rest h_inner ih =>
     -- Inductive case: If the inner process reduces standardly, so does the parallel composition
-    exact Reduces.par ih
+    obtain ⟨h_std⟩ := ih
+    exact ⟨Reduces.par h_std⟩
 
 /-! ## Summary
 

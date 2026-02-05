@@ -24,7 +24,7 @@ namespace Mettapedia.Logic.PLNWorldModel
 open scoped ENNReal
 
 open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 
 /-! ## Queries -/
 
@@ -71,6 +71,42 @@ theorem evidence_add' (W₁ W₂ : State) (q : Query) :
   WorldModel.evidence_add (State := State) (Query := Query) W₁ W₂ q
 
 end WorldModel
+
+/-! ## WM calculus judgments (sequent-style spine) -/
+
+/-- World-model judgment: a posterior state is derivable by revision. -/
+inductive WMJudgment {State : Type*} [EvidenceType State] : State → Prop
+  | axiom (W : State) : WMJudgment W
+  | revise {W₁ W₂ : State} : WMJudgment W₁ → WMJudgment W₂ → WMJudgment (W₁ + W₂)
+
+notation:50 "⊢wm " W => WMJudgment W
+
+/-- Query judgment: extracted evidence for a query from a derivable state. -/
+def WMQueryJudgment {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    (W : State) (q : Query) (e : Evidence) : Prop :=
+  WMJudgment W ∧ e = WorldModel.evidence (State := State) (Query := Query) W q
+
+notation:50 "⊢q " W " ⇓ " q " ↦ " e => WMQueryJudgment W q e
+
+namespace WMJudgment
+
+variable {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+
+theorem query_of_axiom (W : State) (q : Query) :
+    ⊢q W ⇓ q ↦ (WorldModel.evidence (State := State) (Query := Query) W q) := by
+  exact ⟨WMJudgment.axiom W, rfl⟩
+
+theorem query_revise {W₁ W₂ : State} {q : Query} {e₁ e₂ : Evidence} :
+    (⊢q W₁ ⇓ q ↦ e₁) → (⊢q W₂ ⇓ q ↦ e₂) →
+      (⊢q (W₁ + W₂) ⇓ q ↦ (e₁ + e₂)) := by
+  intro h₁ h₂
+  rcases h₁ with ⟨hW₁, rfl⟩
+  rcases h₂ with ⟨hW₂, rfl⟩
+  refine ⟨WMJudgment.revise hW₁ hW₂, ?_⟩
+  simpa using
+    (WorldModel.evidence_add' (State := State) (Query := Query) W₁ W₂ q).symm
+
+end WMJudgment
 
 /-! ## Standard prop/link wrappers (when `Query = PLNQuery Atom`) -/
 

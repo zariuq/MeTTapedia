@@ -37,7 +37,7 @@ The decision of when to use fast vs complete PLN can be grounded in:
 namespace Mettapedia.Logic.Comparison.ErrorCharacterization
 
 open Mettapedia.Logic.CompletePLN
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLN
 
 /-! ## Part 1: The Independence Violation

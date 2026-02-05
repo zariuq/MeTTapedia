@@ -26,7 +26,7 @@ namespace Mettapedia.Logic.PLNBayesNetWorldModel
 open scoped Classical ENNReal
 
 open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.Logic.CompletePLN
 open Mettapedia.Logic.PLNJointEvidence

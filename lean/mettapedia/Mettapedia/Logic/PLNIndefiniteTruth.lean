@@ -53,7 +53,7 @@ From `PLNIntuitionisticBridge.lean`:
 - Evidence forms separate Heyting algebra (product of chains)
 
 ### Evidence Quantale
-From `PLNEvidence.lean`:
+From `EvidenceQuantale.lean`:
 - Evidence has quantale structure: tensor ⊗ and hplus ⊕
 - Credibility composes via quantale operations
 - **Separate from** interval arithmetic
@@ -80,7 +80,7 @@ cannot be unified via `e = 1-c` after combination.
 
 namespace Mettapedia.Logic.PLNIndefiniteTruth
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceBeta
 open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.PLNWeightTV

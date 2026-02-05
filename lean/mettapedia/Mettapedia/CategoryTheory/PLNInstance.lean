@@ -6,7 +6,7 @@ import Mettapedia.CategoryTheory.LambdaTheory
 import Mettapedia.Logic.EvidenceQuantale
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNEvidence (Evidence)
+open Mettapedia.Logic.EvidenceQuantale (Evidence)
 
 /-!
 # PLN as an Instance of the Lambda Theory Framework
@@ -42,13 +42,13 @@ which decomposes into:
 
 - Stay & Wells, "Generating Hypercubes of Type Systems"
 - Meredith & Stay, "Operational Semantics in Logical Form"
-- PLNEvidence.lean for Evidence-based formulation
+- EvidenceQuantale.lean for Evidence-based formulation
 -/
 
 namespace Mettapedia.CategoryTheory.PLNInstance
 
 open Mettapedia.CategoryTheory.LambdaTheories
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 
 /-! ## The Evidence Frame ✅
 
@@ -167,7 +167,7 @@ theorem pln_quantale_law (a : PLNLambdaTheory.SubPr) (S : Set PLNLambdaTheory.Su
 
 /-! ## Connection to Evidence
 
-The Evidence type from PLNEvidence.lean provides a richer structure:
+The Evidence type from EvidenceQuantale.lean provides a richer structure:
 - Evidence = (n⁺, n⁻) with tensor product
 - Maps to truth value via toStrength
 
@@ -240,7 +240,7 @@ The key insight is that:
 
 ✅ **COMPLETE**: We now have the full "richer formalization" with numerical
 truth values (Evidence) instead of Boolean (Prop)! The Frame structure is
-proven, not assumed. This connects the algebraic formulation in PLNEvidence.lean
+proven, not assumed. This connects the algebraic formulation in EvidenceQuantale.lean
 to the categorical foundations in LambdaTheory.lean.
 -/
 

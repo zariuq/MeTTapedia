@@ -34,7 +34,7 @@ As total observations n = n⁺ + n⁻ → ∞, confidence → 1.
 
 namespace Mettapedia.Logic.Convergence
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Filter
 open Topology
 

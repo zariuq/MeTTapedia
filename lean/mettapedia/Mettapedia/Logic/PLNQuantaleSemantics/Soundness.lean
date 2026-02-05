@@ -26,7 +26,7 @@ corresponds to tensor composition, which has provable monotonicity properties.
 
 namespace Mettapedia.Logic.PLNQuantaleSemantics.Soundness
 
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNQuantaleSemantics.PBit
 open Mettapedia.Logic.PLNQuantaleSemantics.CDLogic
 open Mettapedia.Logic.PLNQuantaleSemantics.Model
@@ -97,7 +97,7 @@ the strength of the composed evidence.
 /-- The strength of a tensor product is at least the product of strengths.
     This is the mathematical foundation for PLN's deduction formula.
 
-    Proof: Uses the existing `toStrength_tensor_ge` from PLNEvidence.
+    Proof: Uses the existing `toStrength_tensor_ge` from EvidenceQuantale.
 -/
 theorem tensor_strength_ge (a b : Evidence) :
     Evidence.toStrength (a ⊙ b) ≥ Evidence.toStrength a * Evidence.toStrength b := by

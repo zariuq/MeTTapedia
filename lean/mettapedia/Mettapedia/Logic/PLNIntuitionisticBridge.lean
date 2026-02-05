@@ -40,7 +40,7 @@ import Mettapedia.Logic.Foundation.Foundation.Propositional.Hilbert.Standard.Gli
 namespace Mettapedia.Logic.PLNIntuitionisticBridge
 
 open scoped ENNReal
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open LO.Propositional
 open Kripke
 

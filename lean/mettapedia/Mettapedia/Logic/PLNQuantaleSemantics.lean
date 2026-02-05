@@ -51,14 +51,14 @@ Sound inference rules with provable bounds
 
 ## Key Results
 
-1. **Evidence = P-bits**: The existing `Evidence` type from `PLNEvidence.lean`
+1. **Evidence = P-bits**: The existing `Evidence` type from `EvidenceQuantale.lean`
    is exactly Goertzel's p-bit structure from arXiv:2012.14474.
 
 2. **CD Logic is algebraic**: All CD logic operations are proven to satisfy
    their algebraic laws (involution, commutativity, associativity, distributivity).
 
 3. **Evidence is a Frame**: Evidence has complete Heyting algebra structure
-   (proven in `PLNEvidence.lean` via `Order.Frame Evidence`).
+   (proven in `EvidenceQuantale.lean` via `Order.Frame Evidence`).
 
 4. **Quantale law**: Tensor distributes over join (cdTensor_sup_left/right).
 
@@ -82,7 +82,7 @@ Sound inference rules with provable bounds
 ## Building on Existing Infrastructure
 
 This module builds on:
-- `PLNEvidence.lean`: Evidence structure, quantale instance, Frame instance
+- `EvidenceQuantale.lean`: Evidence structure, quantale instance, Frame instance
 - `PLNDeduction.lean`: Deduction formula, consistency bounds
 - `EvidenceBeta.lean`: Beta-Evidence connection, conjugate prior
 

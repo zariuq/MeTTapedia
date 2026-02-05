@@ -20,7 +20,7 @@ namespace Mettapedia.Logic.PLNJointEvidenceProbability
 open scoped ENNReal
 
 open Mettapedia.Logic.CompletePLN
-open Mettapedia.Logic.PLNEvidence
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNJointEvidence
 open Mettapedia.Logic.PLNJointEvidence.JointEvidence
 
