@@ -93,13 +93,13 @@ noncomputable def futureSetAsPattern (futures : Set Pattern) (h : Set.Finite fut
     Instead of substituting @Q, we substitute @{spiceEval(Q, n)} - the set of
     all states reachable from Q in ≤n steps.
 
-    Uses spiceEval_finite to obtain the finiteness proof needed by futureSetAsPattern.
-
-    Noncomputable because it depends on futureSetAsPattern (which uses axiom).
+    Takes a finiteness proof `h_fin` for the spiceEval set. For n=0, use
+    `spiceEval_zero_finite`. For n>0, finiteness requires finite branching
+    (standard in process calculus, not provable without quotienting by SC).
 -/
-noncomputable def spiceCommSubst (pBody : Pattern) (boundVar : String) (q : Pattern) (n : ℕ) : Pattern :=
-  let futurePattern := futureSetAsPattern (spiceEval q n) (spiceEval_finite q n)
-  -- Substitute the quoted future set
+noncomputable def spiceCommSubst (pBody : Pattern) (boundVar : String) (q : Pattern) (n : ℕ)
+    (h_fin : (spiceEval q n).Finite) : Pattern :=
+  let futurePattern := futureSetAsPattern (spiceEval q n) h_fin
   applySubst (SubstEnv.extend SubstEnv.empty boundVar (.apply "NQuote" [futurePattern])) pBody
 
 /-! ## Spice COMM Reduction
@@ -118,20 +118,35 @@ inductive SpiceCommReduction (n : ℕ) : Pattern → Pattern → Prop where
   /-- Spice COMM: {n!(q) | for(x<-n){p} | ...rest} ⇝ {p[@{futures(q,n)}/x] | ...rest}
 
       The input body p receives the FUTURES of q (all states reachable in ≤n steps)
-      instead of just q itself.
+      instead of just q itself. Carries a finiteness proof for the future set.
   -/
-  | spice_comm {channel q p : Pattern} {x : String} {rest : List Pattern} :
+  | spice_comm {channel q p : Pattern} {x : String} {rest : List Pattern}
+      (h_fin : (spiceEval q n).Finite) :
       SpiceCommReduction n
         (.collection .hashBag ([.apply "POutput" [channel, q],
                                 .apply "PInput" [channel, .lambda x p]] ++ rest) none)
-        (.collection .hashBag ([spiceCommSubst p x q n] ++ rest) none)
+        (.collection .hashBag ([spiceCommSubst p x q n h_fin] ++ rest) none)
 
-  /-- Structural: reduction under parallel composition -/
+  /-- Structural: reduction under parallel composition (head position) -/
   | par {p q : Pattern} {rest : List Pattern} :
       SpiceCommReduction n p q →
       SpiceCommReduction n
         (.collection .hashBag (p :: rest) none)
         (.collection .hashBag (q :: rest) none)
+
+  /-- Structural: reduction under parallel composition (any position) -/
+  | par_any {p q : Pattern} {before after : List Pattern} :
+      SpiceCommReduction n p q →
+      SpiceCommReduction n
+        (.collection .hashBag (before ++ [p] ++ after) none)
+        (.collection .hashBag (before ++ [q] ++ after) none)
+
+  /-- Structural: closure under structural congruence -/
+  | equiv {p p' q q' : Pattern} :
+      StructuralCongruence p p' →
+      SpiceCommReduction n p' q' →
+      StructuralCongruence q' q →
+      SpiceCommReduction n p q
 
 notation:20 p " ⇝ₛ[" n "] " q => SpiceCommReduction n p q
 
@@ -172,20 +187,14 @@ theorem futureSetAsPattern_singleton (q : Pattern) (h : Set.Finite ({q} : Set Pa
     2. `futureSetAsPattern {q} h = q` (futureSetAsPattern_singleton)
     3. Proof irrelevance (Subsingleton.elim) for finiteness proofs
 -/
-theorem spiceCommSubst_zero (p : Pattern) (x : String) (q : Pattern) :
-    spiceCommSubst p x q 0 = commSubst p x q := by
+theorem spiceCommSubst_zero (p : Pattern) (x : String) (q : Pattern)
+    (h_fin : (spiceEval q 0).Finite) :
+    spiceCommSubst p x q 0 h_fin = commSubst p x q := by
   unfold spiceCommSubst commSubst
-  -- Goal: applySubst (... futureSetAsPattern (spiceEval q 0) ...) p = applySubst (... q ...) p
-  -- Key: show futureSetAsPattern (spiceEval q 0) (spiceEval_finite q 0) = q
   have h1 : spiceEval q 0 = {q} := spice_zero_is_current q
-  -- Rewrite spiceEval q 0 to {q}
   simp only [h1]
-  -- Now we need: futureSetAsPattern {q} (spiceEval_finite q 0) = q
-  -- But spiceEval_finite q 0 : (spiceEval q 0).Finite = {q}.Finite
-  -- So after rewriting, we have: futureSetAsPattern {q} (...some finiteness proof...)
-  -- By proof irrelevance (Set.Finite is a Prop), all finiteness proofs are equal
-  have h2 : futureSetAsPattern {q} (h1 ▸ spiceEval_finite q 0) = q :=
-    futureSetAsPattern_singleton q (h1 ▸ spiceEval_finite q 0)
+  have h2 : futureSetAsPattern {q} (h1 ▸ h_fin) = q :=
+    futureSetAsPattern_singleton q (h1 ▸ h_fin)
   simp only [h2]
 
 /-- Spice COMM with n=0 is just standard COMM.
@@ -193,34 +202,25 @@ theorem spiceCommSubst_zero (p : Pattern) (x : String) (q : Pattern) :
     When n=0, the spice rule substitutes the same value as standard COMM,
     so if spice COMM fires, standard COMM fires with the same result.
 
-    **Proof**: Standard COMM rule + spiceCommSubst_zero axiom showing substitutions are equal.
+    **Proof**: Standard COMM rule + spiceCommSubst_zero lemma showing substitutions are equal.
 -/
-theorem spice_comm_zero_is_comm {channel q p : Pattern} {x : String} {rest : List Pattern} :
+theorem spice_comm_zero_is_comm {channel q p : Pattern} {x : String} {rest : List Pattern}
+    (h_fin : (spiceEval q 0).Finite) :
     SpiceCommReduction 0
       (.collection .hashBag ([.apply "POutput" [channel, q],
                               .apply "PInput" [channel, .lambda x p]] ++ rest) none)
-      (.collection .hashBag ([spiceCommSubst p x q 0] ++ rest) none) →
+      (.collection .hashBag ([spiceCommSubst p x q 0 h_fin] ++ rest) none) →
     Nonempty (Reduces
       (.collection .hashBag ([.apply "POutput" [channel, q],
                               .apply "PInput" [channel, .lambda x p]] ++ rest) none)
       (.collection .hashBag ([commSubst p x q] ++ rest) none)) := by
   intro _
-  -- Goal is to show standard COMM fires
-  -- By spiceCommSubst_zero: spiceCommSubst p x q 0 = commSubst p x q
-  -- So the result patterns are equal
   exact ⟨Reduces.comm⟩
 
-/- REMOVED: spice_comm_mono - theorem was MIS-STATED.
-
-    The claim `(p ⇝ₛ[n] q) → (p ⇝ₛ[m] q)` asserts the SAME target q for different
-    horizons, which is FALSE with singleton unwrapping:
-    - Horizon 0: substitutes @q (singleton unwraps)
-    - Horizon 1+: substitutes @{q, successors} (collection stays)
-
-    These produce DIFFERENT results, so the theorem cannot be true.
-
-    **If needed**: Restate as existence theorem and prove with sorry.
-    **For now**: Removed to maintain sound foundations.
+/- NOTE: spice_comm_mono was removed because the statement was unsound.
+    Different horizons produce different substitution targets (singleton unwrapping
+    at n=0 vs. collection at n>0), so monotonicity of the target is false.
+    A correct variant would assert existence of SOME target, not the same target.
 -/
 
 /-! ## Compatibility with Base Reduction
@@ -228,19 +228,8 @@ theorem spice_comm_zero_is_comm {channel q p : Pattern} {x : String} {rest : Lis
 The spice COMM rule should be compatible with the base reduction relation.
 -/
 
-/- REMOVED: spice_comm_extends_reduces - theorem was MIS-STATED.
-
-    The claim `(p ⇝ q) → (p ⇝ₛ[n] q)` asserts the SAME target q for both
-    standard and spice COMM, which is FALSE for n > 0:
-    - Standard COMM: substitutes @q
-    - Spice COMM (n > 0): substitutes @spiceEval(q, n) = @{q, successors}
-
-    Different substitutions → different results.
-
-    **Note**: For n = 0, this IS true and proven as `spice_comm_zero_is_comm`.
-
-    **If needed**: Restate as existence theorem and prove with sorry.
-    **For now**: Removed to maintain sound foundations.
+/- NOTE: spice_comm_extends_reduces was removed because different horizons produce
+    different results. For n=0, this IS true and proven as `spice_comm_zero_is_comm`.
 -/
 
 /-! ## Temporal Horizon and Agent Behavior
@@ -270,97 +259,40 @@ theorem reactive_is_standard (p : Pattern) :
   intro q hpq
   -- Induction on the spice reduction derivation with n=0
   induction hpq with
-  | @spice_comm channel qpat pbody x rest =>
-    -- Base case: Use spiceCommSubst_zero to rewrite, then apply COMM
-    -- Goal: ...⇝ .hashBag ([spiceCommSubst pbody x qpat 0] ++ rest)
-    -- By spiceCommSubst_zero: spiceCommSubst pbody x qpat 0 = commSubst pbody x qpat
-    have h_eq : [spiceCommSubst pbody x qpat 0] = [commSubst pbody x qpat] := by
+  | @spice_comm channel qpat pbody x rest h_fin =>
+    have h_eq : [spiceCommSubst pbody x qpat 0 h_fin] = [commSubst pbody x qpat] := by
       rw [spiceCommSubst_zero]
     rw [h_eq]
     exact ⟨Reduces.comm⟩
   | @par pinner qinner rest h_inner ih =>
-    -- Inductive case: If the inner process reduces standardly, so does the parallel composition
     obtain ⟨h_std⟩ := ih
     exact ⟨Reduces.par h_std⟩
+  | @par_any pinner qinner before after h_inner ih =>
+    obtain ⟨h_std⟩ := ih
+    exact ⟨Reduces.par_any h_std⟩
+  | @equiv p' p'' q' q'' h_pre h_inner h_post ih =>
+    obtain ⟨h_std⟩ := ih
+    exact ⟨Reduces.equiv h_pre h_std h_post⟩
 
 /-! ## Summary
 
 This file establishes the spice COMM rule infrastructure:
 
-**✅ COMPLETED (0 sorries!)**:
-1. **SpiceCommReduction n**: COMM with n-step lookahead (defined)
-2. **spiceCommSubst**: Substitution with future states (defined)
-3. **futureSetAsPattern**: Singleton unwrapping design (IMPLEMENTED!)
-4. **ReactiveAgent/PrecognitiveAgent**: Agent classifications (defined)
-5. **spice_comm_zero_is_comm**: n=0 recovers standard COMM (✅ PROVEN!)
-6. **reactive_is_standard**: Reactive agents = standard (✅ PROVEN!)
+**0 sorries, 0 axioms**:
+1. **SpiceCommReduction n**: COMM with n-step lookahead — 4 constructors:
+   - `spice_comm`: base COMM with future substitution
+   - `par` / `par_any`: reduction in parallel (head / any position)
+   - `equiv`: closure under structural congruence
+2. **spiceCommSubst**: Substitution with future states (parameterized by finiteness)
+3. **futureSetAsPattern**: Singleton unwrapping for n=0 recovery
+4. **ReactiveAgent/PrecognitiveAgent**: Agent classifications
+5. **spice_comm_zero_is_comm**: n=0 recovers standard COMM (proven)
+6. **reactive_is_standard**: Reactive agents = standard (proven, handles all 4 constructors)
 
-**⚠️ AXIOMATIZED (design issues)**:
-7. **spice_comm_mono**: Monotonicity (axiom - theorem as stated is unprovable)
-8. **spice_comm_extends_reduces**: Conservative extension (axiom - needs restatement)
-
-**Note**: Theorems 7-8 claim SAME target for different horizons, which contradicts
-singleton unwrapping design. They need to be restated as existence theorems or removed.
-
-## Implementation Status
-
-**✅ DONE: futureSetAsPattern implementation**
-
-We use existing `.collection .hashSet` infrastructure (Option C from design):
-```lean
-def futureSetAsPattern (futures : Set Pattern) : Pattern :=
-  .collection .hashSet (futures.toFinset.toList) none
-```
-
-This works because:
-- `spiceEval_finite` theorem ensures futures is finite
-- `.hashSet` provides set semantics with computable List operations
-- No Pattern type changes needed (conservative extension)
-
-## The Remaining Blocking Issue
-
-The 4 blocked theorems require showing **operational equivalence** between:
-- `spiceCommSubst p x q 0` (substitutes `@(.collection .hashSet [q] none)`)
-- `commSubst p x q` (substitutes `@q`)
-
-This is NOT syntactic equality, but requires proving:
-```lean
-.collection .hashSet [p] none ≡ p  -- Operational equivalence
-```
-
-Where `≡` means "behaves the same under reduction". This requires:
-1. Defining operational equivalence (≡) or bisimulation (~)
-2. Proving `.hashSet [p]` and `p` are bisimilar
-3. Showing substitution preserves equivalence
-
-**Status**: These are deep semantics properties beyond current scope.
-
-## Design Decision Summary
-
-**Question**: How to represent future states as patterns?
-
-**Answer**: Use existing `.collection .hashSet` (Option C)
-
-**Why**:
-- Computability: Uses `List Pattern` internally (all operations defined)
-- Set semantics: `.hashSet` provides no-duplicate semantics
-- Conservative: Zero changes to Pattern inductive type
-- Literature alignment: Meredith & Stay (2005) - collections as operational data
-
-**Why NOT Pattern.set with Set Pattern** (rejected Option B):
-- Breaks computability: `Set.map` not computable (needs DecidableEq)
-- Breaks substitution: requires `List.map` (computable operation)
-- Breaks termination: `sizeOf` needs computable sum over elements
-- No precedent: Original ρ-calculus has no first-class sets
-
-**Next Steps** (beyond current scope):
-1. Define operational equivalence relation (≡) or bisimulation (~)
-2. Prove `.hashSet [p] ≡ p` for singleton collections
-3. Prove substitution respects equivalence
-4. Complete the 4 blocked theorems
-
-**Key insight**: Spice calculus = ρ-calculus + temporal lookahead
-**Status**: Operational semantics DEFINED, semantic equivalence theorems BLOCKED
+**Design**: `spiceCommSubst` takes `(h_fin : (spiceEval q n).Finite)` as parameter.
+For n=0, `spiceEval_zero_finite` provides the proof (singleton {q}).
+For n>0, finiteness requires finite branching up to structural congruence
+(standard assumption in process calculus, not provable without SC quotient)
 -/
 
 end Mettapedia.OSLF.RhoCalculus.SpiceComm

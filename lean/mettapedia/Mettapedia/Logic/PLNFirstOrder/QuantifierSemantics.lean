@@ -50,6 +50,14 @@ noncomputable def forAllEval
     (μ : WeightFunction U Evidence) : Evidence :=
   weakness μ (SatisfyingSet.diagonal S)
 
+/-! ## Typicality Quantifier Aliases -/
+
+/-- Alias emphasizing the **PLN/typicality** reading of the universal quantifier. -/
+noncomputable def forAllEvalTypical
+    (S : SatisfyingSet U)
+    (μ : WeightFunction U Evidence) : Evidence :=
+  forAllEval S μ
+
 /-! ## Existential Quantifier Evaluation -/
 
 /-- Negation on SatisfyingSet: pointwise Heyting complement -/
@@ -69,6 +77,34 @@ noncomputable def thereExistsEval
     (S : SatisfyingSet U)
     (μ : WeightFunction U Evidence) : Evidence :=
   Evidence.compl (forAllEval (SatisfyingSet.neg S) μ)
+
+/-! ## Typicality Quantifier Aliases -/
+
+/-- Alias emphasizing the **PLN/typicality** reading of the existential quantifier. -/
+noncomputable def thereExistsEvalTypical
+    (S : SatisfyingSet U)
+    (μ : WeightFunction U Evidence) : Evidence :=
+  thereExistsEval S μ
+
+/-! ## Extensional (Meet/Join) Quantifier Views -/
+
+/-- **Extensional ∀**: meet (inf) of all pointwise evidences.
+
+This treats `S.pred u` as the truth value at each individual and aggregates
+by lattice meet, aligning with a classical “all individuals satisfy” reading
+inside the Evidence lattice. -/
+noncomputable def forAllEvalExt
+    (S : SatisfyingSet U) : Evidence :=
+  sInf { e | ∃ u : U, e = S.pred u }
+
+/-- **Extensional ∃**: join (sup) of all pointwise evidences.
+
+This treats `S.pred u` as the truth value at each individual and aggregates
+by lattice join, aligning with a classical “some individual satisfies” reading
+inside the Evidence lattice. -/
+noncomputable def thereExistsEvalExt
+    (S : SatisfyingSet U) : Evidence :=
+  sSup { e | ∃ u : U, e = S.pred u }
 
 /-! ## Basic Properties -/
 

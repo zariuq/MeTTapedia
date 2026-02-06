@@ -1,4 +1,6 @@
 import Mettapedia.OSLF.RhoCalculus.MultiStep
+import Mathlib.Data.Set.Finite.Basic
+import Mathlib.Data.Set.Finite.Lattice
 
 /-!
 # Spice Calculus: n-Step Lookahead for ρ-Calculus
@@ -91,6 +93,20 @@ theorem presentMoment_nonempty_iff_reduces (p : Pattern) :
     exact ⟨q, (ReducesN.one_iff_reduces p q).mp h⟩
   · intro ⟨q, h⟩
     exact ⟨q, (ReducesN.one_iff_reduces p q).mpr h⟩
+
+/-- **Value ↔ empty present moment**: A pattern is a value (normal form)
+    if and only if its present moment is empty.
+
+    This connects the semantic `Value` (= `NormalForm` = irreducibility) to
+    the paper's "present moment" concept from "How the Agents Got Their
+    Present Moment" (Meredith, 2026).
+
+    An agent whose present moment is empty has no available interactions —
+    it is stuck, i.e., a value. -/
+theorem value_iff_presentMoment_empty (p : Pattern) :
+    Value p ↔ ¬ (presentMoment p).Nonempty := by
+  simp only [Value, NormalForm, CanStep]
+  rw [presentMoment_nonempty_iff_reduces]
 
 /-- Reachable states at 0 is just p itself -/
 theorem reachableStates_zero (p : Pattern) :
@@ -198,139 +214,21 @@ theorem spice_mono {p : Pattern} {n m : ℕ} (h : n ≤ m) :
   simp [spiceEval]
   exact reachableStates_mono h
 
-/-- Axiom: Finite branching property - each pattern has finitely many 1-step successors.
+/-- spiceEval at n=0 is finite (singleton set {q}).
 
-    This is a fundamental property of the ρ-calculus reduction relation: the Reduces
-    relation is inductively defined with finitely many rules (COMM, DROP, PAR, PAR_ANY),
-    and each rule produces a deterministic output.
+    This is the base case for finiteness and is unconditionally true:
+    `spiceEval q 0 = {q}` is a singleton, hence finite.
 
-    While this is intuitively true for any finitely-representable process, proving it
-    formally requires showing that the Reduces relation is finitely branching, which
-    depends on the structure of Pattern being finitely branching itself.
-
-    For the purposes of this formalization, we axiomatize this property as it holds
-    for any realistic computational process. In a full constructive development, this
-    would be proven by structural induction on Pattern showing that each constructor
-    case produces finitely many successors.
-
-    TODO: Replace with theorem once Pattern has decidable structure or finite process
-    restriction is formalized.
+    General finiteness for n>0 requires finite branching (each pattern has
+    finitely many 1-step successors up to structural congruence). This is
+    standard in process calculus but not provable here because `Reduces.equiv`
+    combined with `AlphaEquiv.lambda_rename` produces infinitely many
+    syntactically distinct alpha-variants. A quotient by `StructuralCongruence`
+    would make general finiteness provable.
 -/
-axiom presentMoment_finite (p : Pattern) : (presentMoment p).Finite
-
-/-- Axiom: Union of two finite sets is finite.
-
-    This should be provable from mathlib's finite set API, but we axiomatize it here
-    to avoid dependency on specific mathlib lemmas that may change names.
-
-    TODO: Replace with actual mathlib theorem once the correct API is identified.
--/
-axiom finite_union {α : Type*} {s t : Set α} : s.Finite → t.Finite → (s ∪ t).Finite
-
-/-- Axiom: Finite union over finite index set.
-
-    If I is finite and f i is finite for each i ∈ I, then ⋃_{i ∈ I} f i is finite.
-
-    This is the key property needed for proving spiceEval_finite:
-    - presentMoment p is finite (finite branching)
-    - reachableStates r n is finite for each successor r (by induction)
-    - Their union is finite
-
-    Standard in mathlib as Set.Finite.biUnion, but we axiomatize to avoid API changes.
-
-    TODO: Replace with actual mathlib theorem (Set.Finite.biUnion or similar).
--/
-axiom finite_biUnion {α β : Type*} {I : Set α} {f : α → Set β} :
-    I.Finite → (∀ i ∈ I, (f i).Finite) → {b | ∃ i ∈ I, b ∈ f i}.Finite
-
-/-- Future states of finite processes are finite.
-
-    For finite processes (finitely many states), n-step reachability
-    produces only finitely many successor states.
-
-    This is the key finiteness property that allows converting `Set Pattern`
-    to `Finset Pattern` for use in CommRule.lean's `futureSetAsPattern`.
-
-    **Proof**: By induction on n using the axiom `presentMoment_finite`.
-    - Base case (n=0): `spiceEval p 0 = {p}` which is finite (singleton)
-    - Inductive step: `spiceEval p (n+1)` decomposes as union of:
-      1. `spiceEval p n` (finite by IH)
-      2. Union over `presentMoment p` of `spiceEval r n` for each successor r
-         (finite by axiom + IH + Set.Finite.biUnion)
--/
-theorem spiceEval_finite (p : Pattern) (n : ℕ) :
-    (spiceEval p n).Finite := by
-  -- Induct on n, proving for all patterns simultaneously
-  induction n generalizing p with
-  | zero =>
-    -- Base case: spiceEval p 0 = {p} is finite (singleton set)
-    simp only [spiceEval, reachableStates_zero]
-    exact Set.toFinite {p}
-  | succ n ih =>
-    -- Inductive step: show spiceEval p (n+1) is finite given spiceEval q n is finite for all q
-    -- Key idea: reachableStates p (n+1) = reachableStates p n ∪
-    --           ⋃_{r ∈ presentMoment p} reachableStates r n
-    simp only [spiceEval]
-
-    -- Show: reachableStates p (n+1) is finite
-    -- Decompose: {q | ∃k ≤ n+1, p ⇝[k] q} = {q | ∃k ≤ n, p ⇝[k] q} ∪ {q | p ⇝[n+1] q}
-
-    -- Further: {q | p ⇝[n+1] q} ⊆ ⋃_{r ∈ presentMoment p} {q | r ⇝[n] q}
-
-    have h_union : reachableStates p (n+1) = reachableStates p n ∪
-                   {q | ∃ r, Nonempty (p ⇝[1] r) ∧ q ∈ reachableStates r n} := by
-      ext q
-      simp only [reachableStates, Set.mem_setOf_eq, Set.mem_union]
-      constructor
-      · intro ⟨k, hk, ⟨hr⟩⟩  -- Unwrap Nonempty here
-        cases Nat.lt_or_eq_of_le hk with
-        | inl h_lt =>
-          -- k < n+1 means k ≤ n
-          left
-          have : k ≤ n := Nat.lt_succ_iff.mp h_lt
-          exact ⟨k, this, ⟨hr⟩⟩
-        | inr h_eq =>
-          right
-          -- k = n+1, so p ⇝[n+1] q
-          -- By reducesN_succ_iff: ∃r, p ⇝[1] r ∧ r ⇝[n] q
-          subst h_eq
-          obtain ⟨⟨r, h1, hn⟩⟩ := reducesN_succ_iff.mp ⟨hr⟩
-          use r
-          constructor
-          · exact ⟨h1⟩
-          · exact ⟨n, Nat.le_refl n, ⟨hn⟩⟩
-      · intro h
-        cases h with
-        | inl h_left =>
-          obtain ⟨k, hk, hr⟩ := h_left
-          exact ⟨k, Nat.le_succ_of_le hk, hr⟩
-        | inr h_right =>
-          obtain ⟨r, ⟨h1⟩, m, hm, ⟨hrq⟩⟩ := h_right
-          use m + 1
-          constructor
-          · omega  -- m ≤ n means m + 1 ≤ n + 1
-          · exact reducesN_succ_iff.mpr ⟨⟨r, h1, hrq⟩⟩
-
-    rw [h_union]
-    -- Show union is finite using axiom finite_union
-    apply finite_union (ih p)
-    -- Show second part is finite: union over finite index set
-    -- presentMoment p is finite (axiom), each reachableStates r n is finite (by IH)
-    have h_pm_finite : (presentMoment p).Finite := presentMoment_finite p
-    have h_second_finite : {q | ∃ r, Nonempty (p ⇝[1] r) ∧ q ∈ reachableStates r n}.Finite := by
-      -- This is the biUnion: ⋃_{r ∈ presentMoment p} reachableStates r n
-      -- Rewrite in form suitable for finite_biUnion axiom
-      have h_equiv : {q | ∃ r, Nonempty (p ⇝[1] r) ∧ q ∈ reachableStates r n} =
-                     {q | ∃ r ∈ presentMoment p, q ∈ reachableStates r n} := by
-        ext q
-        simp only [presentMoment, futureStates, Set.mem_setOf_eq]
-      rw [h_equiv]
-      -- Apply finite_biUnion axiom
-      apply finite_biUnion h_pm_finite
-      intro r hr
-      exact ih r
-    -- Second part proven finite, apply to finite_union
-    exact h_second_finite
+theorem spiceEval_zero_finite (q : Pattern) : (spiceEval q 0).Finite := by
+  simp only [spiceEval, reachableStates_zero]
+  exact Set.toFinite {q}
 
 /-! ## Temporal Horizon
 
@@ -356,15 +254,12 @@ This file establishes the spice calculus foundations:
 3. ✅ **reachableStates**: ≤n-step reachability
 4. ✅ **spiceEval**: n-step lookahead evaluation
 
-**Key theorems (all proven, 0 sorries):**
+**Key theorems (all proven, 0 sorries, 0 axioms):**
 5. ✅ **spice_zero_is_current**: n=0 gives current state {p}
 6. ✅ **spice_mono**: Monotonicity of lookahead
-7. ✅ **star_eq_union_future**: Star = ⋃ₙ futureStates (PROVEN!)
-
-**Next steps** (Phase 2: CommRule.lean):
-- Formalize COMM rule with n-step lookahead
-- Use spiceEval to compute message payloads
-- Prove spice COMM rule preserves reduction semantics
+7. ✅ **star_eq_union_future**: Star = ⋃ₙ futureStates
+8. ✅ **spiceEval_zero_finite**: {q} is finite (for n=0 CommRule usage)
+9. ✅ **value_iff_presentMoment_empty**: Value p ↔ empty present moment
 -/
 
 end Mettapedia.OSLF.RhoCalculus.Spice

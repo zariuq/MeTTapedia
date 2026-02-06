@@ -38,6 +38,10 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.CategoryTheory.LambdaTheories
 
+-- Modal operators from operational semantics
+local notation "possibly" => possiblyProp
+local notation "rely" => relyProp
+
 /-! ## Typing Contexts
 
 A typing context Γ assigns types to variables. In the OSLF framework,
@@ -93,7 +97,7 @@ inductive HasType : TypingContext → Pattern → NativeType → Prop where
 
   /-- Nil process: Γ ⊢ 0 : (Proc, ⊤) -/
   | nil {Γ : TypingContext} :
-      HasType Γ (.apply "PZero" []) ⟨"Proc", ⊤, by simp⟩
+      HasType Γ (.apply "PZero" []) ⟨"Proc", fun _ => True, by simp⟩
 
   /-- Quote: Γ ⊢ p : (Proc, φ) → Γ ⊢ @p : (Name, ◇φ) -/
   | quote {Γ : TypingContext} {p : Pattern} {φ : ProcPred} :
@@ -109,19 +113,19 @@ inductive HasType : TypingContext → Pattern → NativeType → Prop where
   | output {Γ : TypingContext} {n q : Pattern} {α : NamePred} {φ : ProcPred} :
       HasType Γ n ⟨"Name", α, by simp⟩ →
       HasType Γ q ⟨"Proc", φ, by simp⟩ →
-      HasType Γ (.apply "POutput" [n, q]) ⟨"Proc", ⊤, by simp⟩
+      HasType Γ (.apply "POutput" [n, q]) ⟨"Proc", fun _ => True, by simp⟩
 
   /-- Input: Γ ⊢ n : (Name, α), Γ,x:(Name,α) ⊢ p : (Proc, φ) → Γ ⊢ for(x<-n){p} : (Proc, ...) -/
   | input {Γ : TypingContext} {n : Pattern} {x : String} {p : Pattern}
           {α : NamePred} {φ : ProcPred} :
       HasType Γ n ⟨"Name", α, by simp⟩ →
       HasType (Γ.extend x ⟨"Name", α, by simp⟩) p ⟨"Proc", φ, by simp⟩ →
-      HasType Γ (.apply "PInput" [n, .lambda x p]) ⟨"Proc", ⊤, by simp⟩
+      HasType Γ (.apply "PInput" [n, .lambda x p]) ⟨"Proc", fun _ => True, by simp⟩
 
   /-- Parallel: all elements must be well-typed processes -/
   | par {Γ : TypingContext} {ps : List Pattern} :
-      (∀ p ∈ ps, HasType Γ p ⟨"Proc", ⊤, by simp⟩) →
-      HasType Γ (.collection .hashBag ps none) ⟨"Proc", ⊤, by simp⟩
+      (∀ p ∈ ps, HasType Γ p ⟨"Proc", fun _ => True, by simp⟩) →
+      HasType Γ (.collection .hashBag ps none) ⟨"Proc", fun _ => True, by simp⟩
 
 notation:40 Γ " ⊢ " p " : " τ => HasType Γ p τ
 
@@ -607,83 +611,97 @@ theorem substitutability
 
 /-- COMM rule preserves types
 
-    The key observation: the substituted term `@q` has type `(Name, ◇⊤) = (Name, ⊤)`
-    (since `possibly` is currently defined as identity). For the types to match,
-    we need `α = ⊤`. In the full OSLF, this constraint comes from channel types.
+    The key observation: the substituted term `@q` has type `(Name, ◇⊤)`
+    where ◇ is the operational `possibly` modality from Reduction.lean.
+
+    The input binds `x` with the modal type `◇⊤`, matching the type of `@q`.
+
+    Note: We use `fun _ => True` as the top predicate (all processes/names).
 -/
 theorem comm_preserves_type
     {Γ : TypingContext} {n : Pattern} {p : Pattern} {q : Pattern}
     {x : String} {φ : ProcPred}
-    (_hn : HasType Γ n ⟨"Name", ⊤, by simp⟩)
-    (hp : HasType (Γ.extend x ⟨"Name", ⊤, by simp⟩) p ⟨"Proc", φ, by simp⟩)
-    (hq : HasType Γ q ⟨"Proc", ⊤, by simp⟩)
+    (_hn : HasType Γ n ⟨"Name", fun _ => True, by simp⟩)
+    (hp : HasType (Γ.extend x ⟨"Name", possibly (fun _ => True), by simp⟩) p ⟨"Proc", φ, by simp⟩)
+    (hq : HasType Γ q ⟨"Proc", fun _ => True, by simp⟩)
     (hfresh : boundFresh p (.apply "NQuote" [q])) :
     HasType Γ (commSubst p x q) ⟨"Proc", φ, by simp⟩ := by
   -- commSubst p x q = applySubst [(x, NQuote q)] p
   unfold commSubst
-  -- @q has type (Name, ◇⊤) = (Name, ⊤) since possibly = identity
-  have hquote : HasType Γ (.apply "NQuote" [q]) ⟨"Name", possibly ⊤, by simp⟩ := HasType.quote hq
-  -- Since possibly = identity, possibly ⊤ = ⊤
-  have hposs_top : possibly (⊤ : ProcPred) = ⊤ := by unfold possibly; rfl
-  rw [hposs_top] at hquote
-  -- Now apply substitutability
+  -- @q has type (Name, possibly (fun _ => True)) by the quote typing rule
+  have hquote : HasType Γ (.apply "NQuote" [q]) ⟨"Name", possibly (fun _ => True), by simp⟩ :=
+    HasType.quote hq
+  -- Now the types match and we can apply substitutability
   exact substitution_preserves_type hp hquote hfresh
 
 /-! ## Progress Theorem
 
-A well-typed process either reduces or is a value.
+A well-typed process either reduces or is in normal form (Value).
+
+The semantic notion `Value = NormalForm` (irreducibility) is defined in
+`Reduction.lean`. Here we provide:
+1. A syntactic **approximation** `isInertSyntax` for decidable checking
+2. The key lemma `non_inert_proc_reduces`: if the syntactic check fails,
+   the pattern genuinely reduces (connects syntax to semantics)
+3. Progress: well-typed closed terms satisfy `CanStep p ∨ Value p`
 -/
 
-/-- Check if a pattern is a value element (recursive).
-    This is the main definition; `isValue` delegates to it for parallel bags. -/
-def isValueElement : Pattern → Bool
+/-- Syntactic inertness check for pattern elements (recursive).
+
+    This is a **conservative approximation**: `isInertElement p = true` does NOT
+    imply `NormalForm p`. A parallel bag where all elements pass this check may
+    still reduce via COMM if matching output/input channels are present.
+
+    The useful direction is the contrapositive: `isInertElement p = false` implies
+    the pattern contains a DROP-redex (or nested non-inert element), hence reduces.
+    This is proven as `non_inert_proc_reduces`.
+
+    Named "inert" rather than "value" because these patterns may still be reducible. -/
+def isInertElement : Pattern → Bool
   | .apply "PZero" [] => true
   | .apply "POutput" _ => true
   | .apply "PInput" _ => true
   | .apply "NQuote" _ => true
-  | .collection .hashBag ps none => isValueElementList ps
+  | .collection .hashBag ps none => isInertElementList ps
   | _ => false
 where
-  /-- Check if all elements in a list are value elements -/
-  isValueElementList : List Pattern → Bool
+  /-- Check if all elements in a list are inert -/
+  isInertElementList : List Pattern → Bool
     | [] => true
-    | p :: ps => isValueElement p && isValueElementList ps
+    | p :: ps => isInertElement p && isInertElementList ps
 
-/-- A process is a value (normal form) if it cannot reduce without external interaction.
+/-- Syntactic inertness check for top-level patterns.
 
-    Values in ρ-calculus are:
-    - `0` (nil process)
-    - `n!(q)` (standalone output, blocked waiting for receiver)
-    - `for(x<-n){p}` (standalone input, blocked waiting for sender)
-    - `@p` (quoted process, a name value)
-    - `{ P | Q | ... }` where all elements are value elements
+    **Important**: This is an approximation, NOT equivalent to `NormalForm`.
+    A pattern passing this check may still reduce (e.g., a parallel bag with
+    matching COMM channels). The check only detects DROP-redexes and non-process
+    forms; it does NOT check for COMM-redexes.
 
-    Note: A parallel bag with matching output/input channels CAN reduce via COMM,
-    but we still call it a "value" here since `isValue ∨ reduces` holds either way. -/
-def isValue : Pattern → Bool
+    Use `Value` (= `NormalForm`) from `Reduction.lean` for the correct semantic notion. -/
+def isInertSyntax : Pattern → Bool
   | .apply "PZero" [] => true
-  | .apply "POutput" _ => true  -- Standalone output, blocked
-  | .apply "PInput" _ => true   -- Standalone input, blocked
-  | .apply "NQuote" _ => true   -- Quote is a Name value
-  | .collection .hashBag ps none => isValueElement.isValueElementList ps
+  | .apply "POutput" _ => true
+  | .apply "PInput" _ => true
+  | .apply "NQuote" _ => true
+  | .collection .hashBag ps none => isInertElement.isInertElementList ps
   | _ => false
 
-/-- isValueElementList is equivalent to List.all isValueElement -/
-theorem isValueElementList_eq_all (ps : List Pattern) :
-    isValueElement.isValueElementList ps = ps.all isValueElement := by
+/-- isInertElementList is equivalent to List.all isInertElement -/
+theorem isInertElementList_eq_all (ps : List Pattern) :
+    isInertElement.isInertElementList ps = ps.all isInertElement := by
   induction ps with
   | nil => rfl
   | cons p ps ih =>
-    simp only [isValueElement.isValueElementList, List.all_cons, ih]
+    simp only [isInertElement.isInertElementList, List.all_cons, ih]
 
-/-- isValueElement for collections -/
-theorem isValueElement_collection (ps : List Pattern) :
-    isValueElement (.collection .hashBag ps none) = isValueElement.isValueElementList ps := rfl
+/-- isInertElement for collections -/
+theorem isInertElement_collection (ps : List Pattern) :
+    isInertElement (.collection .hashBag ps none) = isInertElement.isInertElementList ps := rfl
 
-/-- isValueElement of nested parallel matches recursive check -/
-theorem isValueElement_par_iff (ps : List Pattern) :
-    isValueElement (.collection .hashBag ps none) = ps.all isValueElement := by
-  rw [isValueElement_collection, isValueElementList_eq_all]
+/-- isInertElement of nested parallel matches recursive check -/
+theorem isInertElement_par_iff (ps : List Pattern) :
+    isInertElement (.collection .hashBag ps none) = ps.all isInertElement := by
+  rw [isInertElement_collection, isInertElementList_eq_all]
 
 /-- In empty context, all Names are quotes.
 
@@ -723,15 +741,16 @@ theorem List.exists_split_of_mem {α : Type*} {x : α} {xs : List α} (h : x ∈
       obtain ⟨before, after, heq⟩ := ih hy
       exact ⟨y :: before, after, by simp [heq]⟩
 
-/-- A non-value element in empty context reduces.
+/-- A non-inert element in empty context reduces.
 
     This key lemma uses well-founded induction on pattern size to handle
     arbitrarily nested parallel compositions. If a well-typed closed Proc-sorted
-    term is not a value element, it must contain a PDrop somewhere that can reduce. -/
-theorem non_value_proc_reduces {p : Pattern} {φ : ProcPred}
+    term fails the syntactic inertness check, it must contain a DROP-redex
+    somewhere that can reduce. -/
+theorem non_inert_proc_reduces {p : Pattern} {φ : ProcPred}
     (htype : TypingContext.empty ⊢ p : ⟨"Proc", φ, by simp⟩)
-    (hnotval : isValueElement p = false) :
-    ∃ q, p ⇝ q := by
+    (hnotval : isInertElement p = false) :
+    ∃ q, Nonempty (p ⇝ q) := by
   -- Well-founded induction on sizeOf p
   generalize hp : sizeOf p = n
   induction n using Nat.strong_induction_on generalizing p φ with
@@ -741,23 +760,23 @@ theorem non_value_proc_reduces {p : Pattern} {φ : ProcPred}
     | var hlookup =>
       simp [TypingContext.empty, TypingContext.lookup] at hlookup
     | nil =>
-      simp [isValueElement] at hnotval
+      simp [isInertElement] at hnotval
     | quote _ =>
       simp [NativeType.mk.injEq] at hτ
     | drop hn =>
       -- PDrop reduces via DROP rule
       obtain ⟨q, rfl⟩ := empty_context_name_is_quote hn
-      exact ⟨q, Reduces.drop⟩
+      exact ⟨q, ⟨Reduces.drop⟩⟩
     | output _ _ =>
-      simp [isValueElement] at hnotval
+      simp [isInertElement] at hnotval
     | input _ _ =>
-      simp [isValueElement] at hnotval
+      simp [isInertElement] at hnotval
     | @par _ ps hall =>
-      -- isValueElement (.collection .hashBag ps none) = ps.all isValueElement
-      rw [isValueElement_par_iff] at hnotval
-      -- hnotval : ps.all isValueElement = false
+      -- isInertElement (.collection .hashBag ps none) = ps.all isInertElement
+      rw [isInertElement_par_iff] at hnotval
+      -- hnotval : ps.all isInertElement = false
       -- Extract witness: some element is not a value
-      have hnotval' : ¬ ps.all isValueElement = true := by simp [hnotval]
+      have hnotval' : ¬ ps.all isInertElement = true := by simp [hnotval]
       simp only [List.all_eq_true] at hnotval'
       push_neg at hnotval'
       obtain ⟨elem, helem, helemnotval⟩ := hnotval'
@@ -773,8 +792,8 @@ theorem non_value_proc_reduces {p : Pattern} {φ : ProcPred}
       -- elem is typed with Proc sort
       have helem_typed := hall elem helem
       -- Apply induction hypothesis
-      have helemnotval' : isValueElement elem = false := by
-        cases h : isValueElement elem
+      have helemnotval' : isInertElement elem = false := by
+        cases h : isInertElement elem
         · rfl
         · exact absurd h helemnotval
       have hreduces := ih (sizeOf elem) hsz helem_typed helemnotval' rfl
@@ -783,16 +802,18 @@ theorem non_value_proc_reduces {p : Pattern} {φ : ProcPred}
       obtain ⟨before, after, hps⟩ := List.exists_split_of_mem helem
       use .collection .hashBag (before ++ [q] ++ after) none
       rw [hps]
-      exact Reduces.par_any hred
+      exact ⟨Reduces.par_any hred.some⟩
 
-/-- Progress for Proc-sorted types: a well-typed closed process either reduces or is a value.
+/-- Syntactic progress for Proc-sorted types: a well-typed closed process either
+    passes the syntactic inertness check or reduces.
 
-    Key observation: For well-typed closed Procs, `isValueElement p = false` implies
-    p is either PDrop (which reduces) or a parallel collection with a non-value sub-element.
--/
+    **Note**: `isInertSyntax p = true` is weaker than `NormalForm p`. This theorem
+    shows that `isInertSyntax` is a sound *over-approximation* of normal forms:
+    anything not caught by the check genuinely reduces. For the semantic version,
+    use `step_or_normalForm` from `Reduction.lean`. -/
 theorem progress_proc {p : Pattern} {φ : ProcPred} :
     (TypingContext.empty ⊢ p : ⟨"Proc", φ, by simp⟩) →
-    isValue p ∨ ∃ q, p ⇝ q := by
+    isInertSyntax p ∨ ∃ q, Nonempty (p ⇝ q) := by
   intro h
   generalize hτ : (⟨"Proc", φ, by simp⟩ : NativeType) = τ at h
   cases h with
@@ -805,41 +826,44 @@ theorem progress_proc {p : Pattern} {φ : ProcPred} :
   | drop hn =>
     right
     obtain ⟨q, rfl⟩ := empty_context_name_is_quote hn
-    exact ⟨q, Reduces.drop⟩
+    exact ⟨q, ⟨Reduces.drop⟩⟩
   | output _ _ =>
     left; rfl
   | input _ _ =>
     left; rfl
   | @par _ ps hall =>
-    -- Use isValueElementList for the parallel check
-    by_cases hval : isValueElement.isValueElementList ps
+    -- Use isInertElementList for the parallel check
+    by_cases hval : isInertElement.isInertElementList ps
     · left
-      simp only [isValue]
+      simp only [isInertSyntax]
       exact hval
-    · -- Some element fails isValueElement
+    · -- Some element fails isInertElement
       right
-      rw [isValueElementList_eq_all] at hval
-      have hval' : ¬ ps.all isValueElement = true := by simp [hval]
+      rw [isInertElementList_eq_all] at hval
+      have hval' : ¬ ps.all isInertElement = true := by simp [hval]
       simp only [List.all_eq_true] at hval'
       push_neg at hval'
       obtain ⟨elem, helem, hnotval⟩ := hval'
       -- elem is a non-value element, so it reduces by the well-founded lemma
       have htyped := hall elem helem
-      have hnotval' : isValueElement elem = false := by
-        cases h : isValueElement elem
+      have hnotval' : isInertElement elem = false := by
+        cases h : isInertElement elem
         · rfl
         · exact absurd h hnotval
-      obtain ⟨q, hred⟩ := non_value_proc_reduces htyped hnotval'
+      obtain ⟨q, hred⟩ := non_inert_proc_reduces htyped hnotval'
       -- Lift the reduction to the parallel composition
       obtain ⟨before, after, hps⟩ := List.exists_split_of_mem helem
       use .collection .hashBag (before ++ [q] ++ after) none
       rw [hps]
-      exact Reduces.par_any hred
+      exact ⟨Reduces.par_any hred.some⟩
 
-/-- Progress (general): a well-typed closed term either reduces or is a value. -/
+/-- Syntactic progress (general): a well-typed closed term either passes
+    the inertness check or reduces.
+
+    For the semantic version, use `step_or_normalForm` from `Reduction.lean`. -/
 theorem progress {p : Pattern} {τ : NativeType} :
     (TypingContext.empty ⊢ p : τ) →
-    isValue p ∨ ∃ q, p ⇝ q := by
+    isInertSyntax p ∨ ∃ q, Nonempty (p ⇝ q) := by
   intro h
   by_cases hsort : τ.sort = "Proc"
   · -- Proc sort: use progress_proc
@@ -873,7 +897,14 @@ This file establishes the type soundness of OSLF:
 5. ✅ **weakening**: If Γ ⊢ p : τ and x ∉ FV(p), then Γ,x:σ ⊢ p : τ
 6. ✅ **substitutability**: Main theorem with Barendregt convention (boundFresh hypothesis)
 7. ✅ **comm_preserves_type**: COMM rule soundness
-8. ✅ **progress**: Trivially satisfied (placeholder reduction relation)
+8. ✅ **isInertSyntax**: Syntactic approximation of normal forms (conservative)
+9. ✅ **non_inert_proc_reduces**: ¬inert ⇒ reduces (connects syntax to semantics)
+10. ✅ **progress**: isInertSyntax ∨ CanStep (uses typing to rule out stuck states)
+
+**Semantic value predicates** (`CanStep`, `NormalForm`, `Value`, `step_or_normalForm`,
+`normalForm_no_drop`) are defined in `Reduction.lean`. The syntactic `isInertSyntax`
+here is an over-approximation: it accepts some reducible patterns (e.g., bags with
+matching COMM channels). The semantic `Value = NormalForm` is the correct notion.
 
 **Key theorems proven:**
 - `substitution_preserves_type`: Uses well-founded recursion on `sizeOf p`

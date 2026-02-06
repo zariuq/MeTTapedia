@@ -85,6 +85,72 @@ theorem apply {r : WMRewriteRule State Query} {W : State} :
 
 end WMRewriteRule
 
+/-! ## Example templates: Σ-guarded rewrites -/
+
+section RewriteExamples
+
+variable {Atom State : Type*} [EvidenceType State] [WorldModel State (PLNQuery Atom)]
+
+/-- Generic rewrite: if `Σ` proves query equivalence, we can rewrite `q₂` to `q₁`. -/
+def rewrite_of_WMQueryEq
+    (Sigma : Prop) (q₁ q₂ : PLNQuery Atom)
+    (h : Sigma → WMQueryEq (State := State) (Query := PLNQuery Atom) q₁ q₂) :
+    WMRewriteRule State (PLNQuery Atom) :=
+  { side := Sigma
+    conclusion := q₂
+    derive := fun W => WorldModel.evidence (State := State) (Query := PLNQuery Atom) W q₁
+    sound := by
+      intro hSigma W
+      exact (h hSigma W) }
+
+/-- Deduction-style rewrite template under an explicit screening-off condition `Σ`. -/
+def deduction_rewrite
+    (A B C : Atom) (Sigma : Prop)
+    (combine : Evidence → Evidence → Evidence)
+    (hsound :
+      Sigma →
+        ∀ W : State,
+          combine
+              (PLNQuery.linkEvidence (State := State) (Atom := Atom) W A B)
+              (PLNQuery.linkEvidence (State := State) (Atom := Atom) W B C) =
+            PLNQuery.linkEvidence (State := State) (Atom := Atom) W A C) :
+    WMRewriteRule State (PLNQuery Atom) :=
+  { side := Sigma
+    conclusion := PLNQuery.link A C
+    derive := fun W =>
+      combine
+        (PLNQuery.linkEvidence (State := State) (Atom := Atom) W A B)
+        (PLNQuery.linkEvidence (State := State) (Atom := Atom) W B C)
+    sound := by
+      intro hSigma W
+      exact hsound hSigma W }
+
+/-- Screening-off rewrite template: under `Σ`, link A→C can be rewritten via B→C. -/
+def screeningOff_rewrite
+    (A B C : Atom) (Sigma : Prop)
+    (hsound :
+      Sigma →
+        ∀ W : State,
+          PLNQuery.linkEvidence (State := State) (Atom := Atom) W A C =
+            PLNQuery.linkEvidence (State := State) (Atom := Atom) W B C) :
+    WMRewriteRule State (PLNQuery Atom) :=
+  { side := Sigma
+    conclusion := PLNQuery.link A C
+    derive := fun W =>
+      PLNQuery.linkEvidence (State := State) (Atom := Atom) W B C
+    sound := by
+      intro hSigma W
+      simpa using (hsound hSigma W).symm }
+
+/-- D-separation-style rewrite template: `Σ` yields query equivalence. -/
+def dsep_rewrite
+    (q₁ q₂ : PLNQuery Atom) (Sigma : Prop)
+    (h : Sigma → WMQueryEq (State := State) (Query := PLNQuery Atom) q₁ q₂) :
+    WMRewriteRule State (PLNQuery Atom) :=
+  rewrite_of_WMQueryEq (State := State) (Atom := Atom) Sigma q₁ q₂ h
+
+  end RewriteExamples
+
 /-! ## Strength-rewrite rules (Σ-guarded) -/
 
 structure WMStrengthRule (State Query : Type*) [EvidenceType State] [WorldModel State Query] where

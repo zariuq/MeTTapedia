@@ -171,65 +171,6 @@ structure RewriteRule (L : LambdaTheory) where
   /-- Type of the right-hand side (reduct) -/
   rhsType : L.SubPr
 
-/-- A rewrite context: a one-hole context Cj such that Cj[tj] = L
-
-    This captures the "where in the redex are we?" information
-    needed to generate modal types.
--/
-structure RewriteContext (L : LambdaTheory) (r : RewriteRule L) where
-  /-- The carrier of the hole (what type goes in the hole) -/
-  holeCarrier : L.Obj
-  /-- Free variables of the context (subset of r.ctx) -/
-  freeVars : List L.Obj
-  /-- Proof that freeVars is a subset of r.ctx -/
-  freeVars_subset : ∀ x ∈ freeVars, x ∈ r.ctx
-
-/-! ## Modal Types from Rewrites
-
-The key construction: from a rewrite context Cj, we generate a modal type
-⟨Cj⟩_{xk::Ak} B
-
-Semantics (rely-possibly):
-  "For all parameters xk satisfying xk :: Ak,
-   if we place t in context Cj[-],
-   it is POSSIBLE to reach a reduct p with p :: B in one step."
--/
-
-/-- A modal type specification.
-
-    Represents: ⟨Cj⟩_{xk::Ak} B
-
-    - ctx: the rewrite context Cj
-    - relies: for each free variable xk, a type Ak that xk must satisfy
-    - result: the result type B
--/
-structure ModalTypeSpec (L : LambdaTheory) where
-  /-- The underlying rewrite rule -/
-  rule : RewriteRule L
-  /-- The rewrite context -/
-  ctx : RewriteContext L rule
-  /-- For each free variable, the "rely" type -/
-  relies : ∀ X ∈ ctx.freeVars, L.Sub X
-  /-- The result type B -/
-  result : L.SubPr
-
-/-- The modal type ⟨Cj⟩_{xk::Ak} B as an element of Sub(holeCarrier).
-
-    This is the comprehension of those t : holeCarrier satisfying
-    the rely-possibly formula.
-
-    For now, we axiomatize this as a function; a full formalization
-    would construct it via comprehension in the topos.
--/
-noncomputable def modalType (L : LambdaTheory) (spec : ModalTypeSpec L) :
-    L.Sub spec.ctx.holeCarrier :=
-  -- In a full topos-theoretic development, this would be constructed via comprehension:
-  -- { t : holeCarrier | ∀xk. (∧ xk::Ak) → ∃p. Cj[t]⇝p ∧ p::B }
-  --
-  -- For the generic abstract definition, we use top (⊤).
-  -- Specific instances (like PLN) override this via NativeTypeTheory.constructModalType.
-  ⊤
-
 /-! ## Modal Composition
 
 The composition of modal types gives the tensor product for the quantale.

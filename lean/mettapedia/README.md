@@ -38,7 +38,7 @@ nice -n 19 lake build
 - `ProbabilityTheory/KnuthSkilling/` — Knuth–Skilling Foundations of Inference
 - `ProbabilityTheory/Cox/` — Cox-style probability calculus
 - `InformationTheory/ShannonEntropy/`
-- `Logic/` — PLN and related logical formalisms
+- `Logic/` — PLN and related logical formalisms, including a **WorldModel calculus** for agent/environment reasoning
 - `SetTheory/BorelDeterminacy/`
 - `OSLF/` — ρ‑calculus / OSLF formalizations
 - `Algebra/OrderedSemigroups/`

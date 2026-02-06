@@ -1,7 +1,10 @@
 import Mettapedia.Logic.PLNLinkCalculus
+import Mettapedia.Logic.PLNWorldModelCalculus
 import Mettapedia.ProbabilityTheory.BayesianNetworks.VariableElimination
+import Mettapedia.ProbabilityTheory.BayesianNetworks.VEBridge
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparationSoundness
+import Mettapedia.ProbabilityTheory.BayesianNetworks.ScreeningOffFromCondIndep
 
 /-!
 # PLN → BN Compilation (Query Plans + Structural Side Conditions)
@@ -23,17 +26,20 @@ References:
 
 namespace Mettapedia.Logic.PLNBNCompilation
 
-open scoped Classical
+open scoped Classical ENNReal
 
 open MeasureTheory ProbabilityTheory
 
 open Mettapedia.Logic.PLNLinkCalculus
+open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.Logic.EvidenceClass
+open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.ProbabilityTheory.BayesianNetworks
 open Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation
 open Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
 open Mettapedia.ProbabilityTheory.BayesianNetworks.VariableElimination
 
-variable {V : Type*} [Fintype V] [DecidableEq V]
+variable {V : Type*}
 
 /-! ## BN Queries -/
 
@@ -47,11 +53,19 @@ namespace BNQuery
 variable (bn : BayesianNetwork V)
 
 /-- Evaluate a BN query via variable elimination (exact for the BN model class). -/
-noncomputable def evalVE (cpt : bn.DiscreteCPT)
+noncomputable def evalVE (cpt : bn.DiscreteCPT) [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] :
     BNQuery bn → ENNReal
   | .prop v val => BayesianNetwork.propProbVE (bn := bn) cpt v val
   | .link a b valA valB => BayesianNetwork.linkProbVE (bn := bn) cpt a b valA valB
+
+/-- BN value-labeled atom (vertex + concrete value). -/
+abbrev Atom : Type _ := Σ v : V, bn.stateSpace v
+
+/-- BNQuery as a PLNQuery over value-labeled atoms. -/
+def toPLNQuery : BNQuery bn → PLNQuery (Atom bn)
+  | .prop v val => PLNQuery.prop ⟨v, val⟩
+  | .link a b valA valB => PLNQuery.link ⟨a, valA⟩ ⟨b, valB⟩
 
 end BNQuery
 
@@ -72,6 +86,116 @@ def holds (cond : DSeparationCond V) : Prop :=
   DSeparated bn.graph cond.X cond.Y cond.Z
 
 end DSeparationCond
+
+/-! ## BN World-Model: VE-based evidence extraction -/
+
+namespace BNWorldModel
+
+variable {bn : BayesianNetwork V}
+variable [DecidableRel bn.graph.edges]
+variable [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
+
+abbrev Atom : Type _ := BNQuery.Atom (bn := bn)
+
+abbrev State : Type _ := Multiset (bn.DiscreteCPT)
+
+noncomputable def evidenceOfProb (p : ℝ≥0∞) : Evidence :=
+  ⟨p, 1 - p⟩
+
+noncomputable def queryProb [Fintype V] [DecidableEq V] (cpt : bn.DiscreteCPT) :
+    PLNQuery (BNQuery.Atom (bn := bn)) → ℝ≥0∞
+  | .prop ⟨v, val⟩ =>
+      BayesianNetwork.propProbVE (bn := bn) cpt v val
+  | .link ⟨a, valA⟩ ⟨b, valB⟩ =>
+      BayesianNetwork.linkProbVE (bn := bn) cpt a b valA valB
+  | .linkCond as ⟨b, valB⟩ =>
+      BayesianNetwork.linkProbVECond (bn := bn) cpt as ⟨b, valB⟩
+
+noncomputable def queryEvidence [Fintype V] [DecidableEq V] (cpt : bn.DiscreteCPT)
+    (q : PLNQuery (BNQuery.Atom (bn := bn))) : Evidence :=
+  evidenceOfProb (queryProb (bn := bn) cpt q)
+
+noncomputable def evidence [Fintype V] [DecidableEq V] (W : State (bn := bn))
+    (q : PLNQuery (BNQuery.Atom (bn := bn))) : Evidence :=
+  (W.map (fun cpt => queryEvidence (bn := bn) cpt q)).sum
+
+instance : AddCommMonoid (State (bn := bn)) := by
+  dsimp [State]
+  infer_instance
+
+instance : EvidenceType (State (bn := bn)) :=
+  { toAddCommMonoid := inferInstance }
+
+noncomputable instance [Fintype V] [DecidableEq V] :
+    WorldModel (State (bn := bn)) (PLNQuery (BNQuery.Atom (bn := bn))) where
+  evidence W q := evidence (bn := bn) W q
+  evidence_add W₁ W₂ q := by
+    classical
+    let f := fun cpt => queryEvidence (bn := bn) cpt q
+    have h :
+        (Multiset.map f (W₁ + W₂)).sum =
+          (Multiset.map f W₁).sum + (Multiset.map f W₂).sum := by
+      rw [Multiset.map_add, Multiset.sum_add]
+    dsimp [evidence]
+    exact h
+
+lemma wmqueryeq_of_prob_eq
+    [Fintype V] [DecidableEq V]
+    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (h : ∀ cpt : bn.DiscreteCPT, queryProb (bn := bn) cpt q₁ = queryProb (bn := bn) cpt q₂) :
+    WMQueryEq (State := State (bn := bn))
+      (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+  intro W
+  classical
+  let f₁ := fun cpt => queryEvidence (bn := bn) cpt q₁
+  let f₂ := fun cpt => queryEvidence (bn := bn) cpt q₂
+  have hmap : Multiset.map f₁ W = Multiset.map f₂ W := by
+    refine Multiset.map_congr rfl ?_
+    intro cpt _hcpt
+    have : queryEvidence (bn := bn) cpt q₁ = queryEvidence (bn := bn) cpt q₂ := by
+      simp [queryEvidence, evidenceOfProb, h cpt]
+    dsimp [f₁, f₂]
+    exact this
+  simp [WorldModel.evidence, evidence, f₁, f₂, hmap]
+
+lemma wmqueryeq_of_dsep
+    [Fintype V] [DecidableEq V]
+    (cond : DSeparationCond V)
+    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (h : cond.holds (bn := bn) → ∀ cpt : bn.DiscreteCPT,
+      queryProb (bn := bn) cpt q₁ = queryProb (bn := bn) cpt q₂) :
+    cond.holds (bn := bn) →
+      WMQueryEq (State := State (bn := bn))
+        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+  intro hcond
+  exact wmqueryeq_of_prob_eq (bn := bn) q₁ q₂ (h hcond)
+
+end BNWorldModel
+
+/-! ## WM rewrite bridge (Σ = d-separation) -/
+
+namespace WMRewriteBridge
+
+variable (bn : BayesianNetwork V)
+
+abbrev BNAtom : Type _ := BNQuery.Atom (bn := bn)
+
+variable {State : Type*} [Mettapedia.Logic.EvidenceClass.EvidenceType State]
+  [WorldModel State (PLNQuery (BNAtom bn))]
+
+/-- D-separation condition as a Σ side-condition for WM rewrites. -/
+def SigmaOfDsep (cond : DSeparationCond V) : Prop :=
+  cond.holds (bn := bn)
+
+/-- Turn a d-separation condition into a WM rewrite rule (query-equivalence form). -/
+def rewrite_of_dsep
+    (cond : DSeparationCond V) (q₁ q₂ : PLNQuery (BNAtom bn))
+    (h : SigmaOfDsep (bn := bn) cond →
+      WMQueryEq (State := State) (Query := PLNQuery (BNAtom bn)) q₁ q₂) :
+    WMRewriteRule State (PLNQuery (BNAtom bn)) :=
+  dsep_rewrite (State := State) (Atom := BNAtom bn) q₁ q₂ (SigmaOfDsep (bn := bn) cond) h
+
+end WMRewriteBridge
 
 /-! ## PLN rule patterns (fast rules) -/
 
@@ -155,10 +279,43 @@ namespace CompiledPlan
 variable {bn : BayesianNetwork V}
 
 noncomputable def evalVE (plan : CompiledPlan bn) (cpt : bn.DiscreteCPT)
+    [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] : List ENNReal :=
   plan.queries.map (BNQuery.evalVE (bn := bn) cpt)
 
 end CompiledPlan
+
+/-! ## Compiled-plan rewrites (BN WorldModel instance) -/
+
+namespace BNCompiledRewrite
+
+open BNWorldModel
+open WMRewriteBridge
+
+variable {bn : BayesianNetwork V}
+variable [Fintype V] [DecidableEq V]
+variable [DecidableRel bn.graph.edges]
+variable [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
+
+/-- Turn a compiled BN plan into a WM rewrite rule for a chosen conclusion query. -/
+noncomputable def fromPlan
+    (plan : CompiledPlan bn)
+    (conclusion : BNQuery bn)
+    (h :
+      plan.sideCond.holds (bn := bn) →
+        WMQueryEq
+          (State := State (bn := bn))
+          (Query := PLNQuery (BNQuery.Atom (bn := bn)))
+          (BNQuery.toPLNQuery (bn := bn) conclusion)
+          (BNQuery.toPLNQuery (bn := bn) conclusion)) :
+    WMRewriteRule (State (bn := bn)) (PLNQuery (BNQuery.Atom (bn := bn))) :=
+  rewrite_of_dsep (bn := bn) (State := State (bn := bn))
+    plan.sideCond
+    (BNQuery.toPLNQuery (bn := bn) conclusion)
+    (BNQuery.toPLNQuery (bn := bn) conclusion)
+    h
+
+end BNCompiledRewrite
 
 /-! ## Discharging Σ via d-separation soundness -/
 
@@ -167,6 +324,7 @@ namespace DSeparationCond
 open Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
 
 variable {bn : BayesianNetwork V}
+variable [Fintype V] [DecidableEq V]
 variable [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
 variable (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
 variable [HasLocalMarkovProperty bn μ]
@@ -179,7 +337,607 @@ theorem discharge
     CondIndepVertices bn μ cond.X cond.Y cond.Z :=
   dsep_implies_condIndepVertices (bn := bn) (μ := μ) hcond
 
+/-- d-separation discharge specialized to a BN CPT's joint measure. -/
+theorem discharge_cpt
+    (cond : DSeparationCond V) (cpt : bn.DiscreteCPT)
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
+    [HasLocalMarkovProperty bn cpt.jointMeasure]
+    [DSeparationSoundness bn cpt.jointMeasure]
+    (hcond : cond.holds (bn := bn)) :
+    CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z :=
+  dsep_implies_condIndepVertices (bn := bn) (μ := cpt.jointMeasure) hcond
+
 end DSeparationCond
+
+/-! ## WMQueryEq from d-separation discharge -/
+
+namespace BNWorldModel
+
+open Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
+
+variable {bn : BayesianNetwork V}
+variable [Fintype V] [DecidableEq V]
+variable [DecidableRel bn.graph.edges]
+variable [∀ v, Fintype (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
+variable [∀ v, DecidableEq (bn.stateSpace v)]
+variable [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+variable (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
+variable [HasLocalMarkovProperty bn μ]
+variable [DSeparationSoundness bn μ]
+
+/-! ## CondIndep → QueryEq (parameterized interface) -/
+
+/-- A parameterized interface: conditional independence implies query equality.
+
+This keeps bridge lemmas **explicitly assumption-bound** and avoids conflating
+PLN-typicality with classical quantifier readings. -/
+class CondIndepQueryEq
+    (cond : DSeparationCond V)
+    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn))) : Prop where
+  prob_eq :
+    ∀ cpt : bn.DiscreteCPT,
+      CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z →
+        queryProb (bn := bn) cpt q₁ = queryProb (bn := bn) cpt q₂
+
+instance condIndepQueryEq_refl
+    (cond : DSeparationCond V)
+    (q : PLNQuery (BNQuery.Atom (bn := bn))) :
+    CondIndepQueryEq (bn := bn) cond q q :=
+  ⟨by intro _cpt _c; rfl⟩
+
+/-! ## Screening-off instance (explicit assumptions)
+
+This is the **non-degenerate** template we can wire into `WMRewriteRule`s.
+It is intentionally *assumption-guarded*: providing an instance amounts to
+supplying the semantic proof (typically using conditional independence +
+positivity of the conditioning event).
+
+This keeps the ontological layers distinct:
+- `CondIndepVertices` is the semantic side condition (d-sep discharge);
+- `ScreeningOffProbEq` is the explicit proof obligation linking that condition
+  to the query equality we want.
+- The rewrite layer then becomes executable when such an instance exists.
+-/
+
+class ScreeningOffProbEq
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C) : Prop where
+  /-- Under conditional independence (and any necessary positivity assumptions),
+  the conditional-link queries agree. -/
+  prob_eq :
+    ∀ cpt : bn.DiscreteCPT,
+      CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V) →
+        queryProb (bn := bn) cpt
+          (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
+        queryProb (bn := bn) cpt
+          (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+
+instance condIndepQueryEq_screeningOff
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    [ScreeningOffProbEq (bn := bn) A B C valA valB valC] :
+    CondIndepQueryEq (bn := bn)
+      (cond := CompiledPlan.deductionSide A B C)
+      (q₁ := PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+      (q₂ := PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) :=
+  ⟨by
+    intro cpt hci
+    exact ScreeningOffProbEq.prob_eq (bn := bn) (A := A) (B := B) (C := C)
+      (valA := valA) (valB := valB) (valC := valC) cpt hci⟩
+
+/-- Use d-separation discharge to obtain a WMQueryEq, given a cond-indep ⇒ prob-eq lemma. -/
+theorem wmqueryeq_of_dsep_discharge
+    (cond : DSeparationCond V)
+    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (hprob :
+      ∀ cpt : bn.DiscreteCPT,
+        CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z →
+          queryProb (bn := bn) cpt q₁ = queryProb (bn := bn) cpt q₂)
+    (hci :
+      ∀ cpt : bn.DiscreteCPT,
+        cond.holds (bn := bn) →
+          CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z) :
+    cond.holds (bn := bn) →
+      WMQueryEq (State := State (bn := bn))
+        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+  intro hcond
+  exact wmqueryeq_of_prob_eq (bn := bn) q₁ q₂ (fun cpt =>
+    hprob cpt (hci cpt hcond))
+
+/-! ## WMQueryEq from d-sep + CondIndepQueryEq instance -/
+
+theorem wmqueryeq_of_dsep_discharge_class
+    (cond : DSeparationCond V)
+    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    [CondIndepQueryEq (bn := bn) cond q₁ q₂]
+    (hci :
+      ∀ cpt : bn.DiscreteCPT,
+        cond.holds (bn := bn) →
+          CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z) :
+    cond.holds (bn := bn) →
+      WMQueryEq (State := State (bn := bn))
+        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+  intro hcond
+  exact wmqueryeq_of_prob_eq (bn := bn) q₁ q₂ (fun cpt =>
+    CondIndepQueryEq.prob_eq (bn := bn) (cond := cond) cpt (hci cpt hcond))
+
+/-! ## Concrete cond-indep → linkProb equality (degenerate equality) -/
+
+/-! ## Explicit event-independence assumptions (non-degenerate rewrite) -/
+
+open Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
+
+section EventIndep
+
+/-- Positivity assumption for a conditioning event. -/
+class EventPos
+    (A : V) (valA : bn.stateSpace A) : Prop where
+  pos :
+    ∀ cpt : bn.DiscreteCPT,
+      cpt.jointMeasure (eventEq (bn := bn) A valA) ≠ 0
+
+/-- Positivity assumption for a list of constraints. -/
+class EventPosConstraints
+    (cs : List (Σ v : V, bn.stateSpace v)) : Prop where
+  pos :
+    ∀ cpt : bn.DiscreteCPT,
+      cpt.jointMeasure (eventOfConstraints (bn := bn) cs) ≠ 0
+
+/-- Explicit screening-off equality on joint measures. -/
+class ScreeningOffEventEq
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C) : Prop where
+  mul_eq :
+    ∀ cpt : bn.DiscreteCPT,
+      cpt.jointMeasure
+          (eventEq (bn := bn) A valA ∩
+            eventEq (bn := bn) C valC ∩
+            eventEq (bn := bn) B valB) *
+        cpt.jointMeasure (eventEq (bn := bn) B valB) =
+      cpt.jointMeasure
+          (eventEq (bn := bn) A valA ∩
+            eventEq (bn := bn) B valB) *
+        cpt.jointMeasure
+          (eventEq (bn := bn) C valC ∩
+            eventEq (bn := bn) B valB)
+
+lemma linkProbVE_eq_propProbVE_of_condIndep
+    [∀ v : V, MeasurableSingletonClass (bn.stateSpace v)]
+    (A C : V) (valA : bn.stateSpace A) (valC : bn.stateSpace C)
+    (cpt : bn.DiscreteCPT)
+    (hci : CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ∅)
+    (hpos : cpt.jointMeasure (eventEq (bn := bn) A valA) ≠ 0) :
+    queryProb (bn := bn) cpt
+      (PLNQuery.link ⟨A, valA⟩ ⟨C, valC⟩) =
+    queryProb (bn := bn) cpt
+      (PLNQuery.prop ⟨C, valC⟩) := by
+  -- Rewrite VE queries to joint-measure form.
+  have hlink :=
+    Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.linkProbVE_eq_jointMeasure_eventEq
+      (bn := bn) (cpt := cpt) A C valA valC
+  have hprop :=
+    Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.propProbVE_eq_jointMeasure_eventEq
+      (bn := bn) (cpt := cpt) C valC
+  have hindep :=
+    Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.condIndepVertices_eventEq_mul
+      (bn := bn) (μ := cpt.jointMeasure) A C valA valC hci
+  have hne_top :
+      cpt.jointMeasure (eventEq (bn := bn) A valA) ≠ ∞ :=
+    MeasureTheory.measure_ne_top (μ := cpt.jointMeasure) (s := eventEq (bn := bn) A valA)
+  -- Compute the ratio under independence and positivity.
+  dsimp [queryProb]
+  calc
+    BayesianNetwork.linkProbVE (bn := bn) cpt A C valA valC
+        =
+      if cpt.jointMeasure (eventEq (bn := bn) A valA) = 0 then 0 else
+        cpt.jointMeasure
+            (eventEq (bn := bn) A valA ∩ eventEq (bn := bn) C valC) /
+          cpt.jointMeasure (eventEq (bn := bn) A valA) := hlink
+    _ =
+      cpt.jointMeasure
+          (eventEq (bn := bn) A valA ∩ eventEq (bn := bn) C valC) /
+        cpt.jointMeasure (eventEq (bn := bn) A valA) := by
+          simp [hpos]
+    _ =
+      (cpt.jointMeasure (eventEq (bn := bn) A valA) *
+        cpt.jointMeasure (eventEq (bn := bn) C valC)) /
+        cpt.jointMeasure (eventEq (bn := bn) A valA) := by
+          simp [hindep]
+    _ =
+      cpt.jointMeasure (eventEq (bn := bn) C valC) := by
+          -- Use commutativity to cancel the conditioning event.
+          have := ENNReal.mul_div_cancel_right
+            (a := cpt.jointMeasure (eventEq (bn := bn) C valC))
+            (b := cpt.jointMeasure (eventEq (bn := bn) A valA)) hpos hne_top
+          simpa [mul_comm] using this
+    _ = BayesianNetwork.propProbVE (bn := bn) cpt C valC := hprop.symm
+
+omit [∀ v : V, StandardBorelSpace (bn.stateSpace v)] in
+lemma linkProbVECond_eq_linkProbVE_of_mul_eq
+    [∀ v : V, MeasurableSingletonClass (bn.stateSpace v)]
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    (cpt : bn.DiscreteCPT)
+    [EventPos (bn := bn) B valB]
+    [EventPosConstraints (bn := bn) [⟨A, valA⟩, ⟨B, valB⟩]]
+    (hmul :
+      cpt.jointMeasure
+          (eventEq (bn := bn) A valA ∩
+            eventEq (bn := bn) C valC ∩
+            eventEq (bn := bn) B valB) *
+        cpt.jointMeasure (eventEq (bn := bn) B valB) =
+      cpt.jointMeasure
+          (eventEq (bn := bn) A valA ∩
+            eventEq (bn := bn) B valB) *
+        cpt.jointMeasure
+          (eventEq (bn := bn) C valC ∩
+            eventEq (bn := bn) B valB)) :
+    queryProb (bn := bn) cpt
+      (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
+    queryProb (bn := bn) cpt
+      (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+  have hlinkCond :=
+    Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.linkProbVECond_eq_jointMeasure_eventOfConstraints
+        (bn := bn) (cpt := cpt)
+        (constraints := [⟨A, valA⟩, ⟨B, valB⟩]) (b := ⟨C, valC⟩)
+  have hlink :=
+    Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.linkProbVE_eq_jointMeasure_eventEq
+      (bn := bn) (cpt := cpt) B C valB valC
+  have hposB := EventPos.pos (bn := bn) (A := B) (valA := valB) cpt
+  have hposAB :=
+    EventPosConstraints.pos (bn := bn) (cs := [⟨A, valA⟩, ⟨B, valB⟩]) cpt
+  have hposAB' :
+      cpt.jointMeasure
+          (eventEq (bn := bn) A valA ∩ eventEq (bn := bn) B valB) ≠ 0 := by
+    simpa [BayesianNetwork.eventOfConstraints_cons, BayesianNetwork.eventOfConstraints_nil,
+      Set.inter_assoc, Set.inter_left_comm, Set.inter_comm] using hposAB
+  have hB_top :
+      cpt.jointMeasure (eventEq (bn := bn) B valB) ≠ ∞ :=
+    MeasureTheory.measure_ne_top (μ := cpt.jointMeasure) (s := eventEq (bn := bn) B valB)
+  have hAB_top :
+      cpt.jointMeasure
+          (eventEq (bn := bn) A valA ∩ eventEq (bn := bn) B valB) ≠ ∞ := by
+    exact
+      MeasureTheory.measure_ne_top (μ := cpt.jointMeasure)
+        (s := eventEq (bn := bn) A valA ∩ eventEq (bn := bn) B valB)
+  dsimp [queryProb]
+  have hlinkCond' :
+      BayesianNetwork.linkProbVECond (bn := bn) cpt [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩ =
+        cpt.jointMeasure
+            (eventEq (bn := bn) A valA ∩
+              eventEq (bn := bn) B valB ∩
+              eventEq (bn := bn) C valC) /
+          cpt.jointMeasure
+            (eventEq (bn := bn) A valA ∩
+              eventEq (bn := bn) B valB) := by
+    have h' := hlinkCond
+    simp [hposAB', BayesianNetwork.eventOfConstraints_cons, BayesianNetwork.eventOfConstraints_nil] at h'
+    simpa [Set.inter_assoc, Set.inter_left_comm, Set.inter_comm] using h'
+  have hlink' :
+      BayesianNetwork.linkProbVE (bn := bn) cpt B C valB valC =
+        cpt.jointMeasure
+            (eventEq (bn := bn) B valB ∩
+              eventEq (bn := bn) C valC) /
+          cpt.jointMeasure (eventEq (bn := bn) B valB) := by
+    have h' := hlink
+    simp [hposB] at h'
+    simpa [Set.inter_comm] using h'
+  calc
+    BayesianNetwork.linkProbVECond (bn := bn) cpt [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩
+        = cpt.jointMeasure
+            (eventEq (bn := bn) A valA ∩
+              eventEq (bn := bn) B valB ∩
+              eventEq (bn := bn) C valC) /
+          cpt.jointMeasure
+            (eventEq (bn := bn) A valA ∩
+              eventEq (bn := bn) B valB) := hlinkCond'
+    _ =
+        cpt.jointMeasure
+            (eventEq (bn := bn) B valB ∩
+              eventEq (bn := bn) C valC) /
+          cpt.jointMeasure (eventEq (bn := bn) B valB) := by
+          have hmul' :
+              cpt.jointMeasure
+                  (eventEq (bn := bn) A valA ∩
+                    eventEq (bn := bn) B valB ∩
+                    eventEq (bn := bn) C valC) *
+                cpt.jointMeasure (eventEq (bn := bn) B valB) =
+              cpt.jointMeasure
+                  (eventEq (bn := bn) A valA ∩
+                    eventEq (bn := bn) B valB) *
+                cpt.jointMeasure
+                  (eventEq (bn := bn) B valB ∩
+                    eventEq (bn := bn) C valC) := by
+            simpa [Set.inter_assoc, Set.inter_left_comm, Set.inter_comm] using hmul
+          have hcancel₁ :=
+            ENNReal.mul_div_mul_right
+              (a := cpt.jointMeasure
+                (eventEq (bn := bn) A valA ∩ eventEq (bn := bn) B valB ∩ eventEq (bn := bn) C valC))
+              (b := cpt.jointMeasure (eventEq (bn := bn) A valA ∩ eventEq (bn := bn) B valB))
+              (hc := hposB) (hc' := hB_top)
+          have hcancel₂ :=
+            ENNReal.mul_div_mul_left
+              (a := cpt.jointMeasure (eventEq (bn := bn) B valB ∩ eventEq (bn := bn) C valC))
+              (b := cpt.jointMeasure (eventEq (bn := bn) B valB))
+              (hc := hposAB') (hc' := hAB_top)
+          calc
+            cpt.jointMeasure
+                (eventEq (bn := bn) A valA ∩
+                  eventEq (bn := bn) B valB ∩
+                  eventEq (bn := bn) C valC) /
+              cpt.jointMeasure
+                (eventEq (bn := bn) A valA ∩
+                  eventEq (bn := bn) B valB)
+                =
+              (cpt.jointMeasure
+                  (eventEq (bn := bn) A valA ∩
+                    eventEq (bn := bn) B valB ∩
+                    eventEq (bn := bn) C valC) *
+                cpt.jointMeasure (eventEq (bn := bn) B valB)) /
+              (cpt.jointMeasure
+                  (eventEq (bn := bn) A valA ∩
+                    eventEq (bn := bn) B valB) *
+                cpt.jointMeasure (eventEq (bn := bn) B valB)) := by
+                simpa [mul_comm, mul_left_comm, mul_assoc] using hcancel₁.symm
+            _ =
+              (cpt.jointMeasure
+                  (eventEq (bn := bn) A valA ∩
+                    eventEq (bn := bn) B valB) *
+                cpt.jointMeasure
+                  (eventEq (bn := bn) B valB ∩
+                    eventEq (bn := bn) C valC)) /
+              (cpt.jointMeasure
+                  (eventEq (bn := bn) A valA ∩
+                    eventEq (bn := bn) B valB) *
+                cpt.jointMeasure (eventEq (bn := bn) B valB)) := by
+                simp [hmul']
+            _ =
+              cpt.jointMeasure
+                  (eventEq (bn := bn) B valB ∩
+                    eventEq (bn := bn) C valC) /
+                cpt.jointMeasure (eventEq (bn := bn) B valB) := by
+                simpa [mul_comm, mul_left_comm, mul_assoc] using hcancel₂
+    _ = BayesianNetwork.linkProbVE (bn := bn) cpt B C valB valC := by
+          simp [hlink']
+
+omit [∀ v : V, StandardBorelSpace (bn.stateSpace v)] in
+lemma linkProbVECond_eq_linkProbVE_of_eventEq_mul
+    [∀ v : V, MeasurableSingletonClass (bn.stateSpace v)]
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    (cpt : bn.DiscreteCPT)
+    [EventPos (bn := bn) B valB]
+    [EventPosConstraints (bn := bn) [⟨A, valA⟩, ⟨B, valB⟩]]
+    [ScreeningOffEventEq (bn := bn) A B C valA valB valC] :
+    queryProb (bn := bn) cpt
+      (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
+    queryProb (bn := bn) cpt
+      (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+  have hmul :=
+    ScreeningOffEventEq.mul_eq (bn := bn) (A := A) (B := B) (C := C)
+      (valA := valA) (valB := valB) (valC := valC) cpt
+  exact linkProbVECond_eq_linkProbVE_of_mul_eq (bn := bn)
+    (A := A) (B := B) (C := C)
+    (valA := valA) (valB := valB) (valC := valC)
+    (cpt := cpt) hmul
+
+instance screeningOffProbEq_of_eventEq_mul
+    [∀ v : V, MeasurableSingletonClass (bn.stateSpace v)]
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    [EventPos (bn := bn) B valB]
+    [EventPosConstraints (bn := bn) [⟨A, valA⟩, ⟨B, valB⟩]]
+    [ScreeningOffEventEq (bn := bn) A B C valA valB valC] :
+    ScreeningOffProbEq (bn := bn) A B C valA valB valC :=
+  ⟨by
+    intro cpt _hci
+    exact linkProbVECond_eq_linkProbVE_of_eventEq_mul
+      (bn := bn) (A := A) (B := B) (C := C)
+      (valA := valA) (valB := valB) (valC := valC) (cpt := cpt)⟩
+
+instance condIndepQueryEq_abduction_link_prop
+    [∀ v : V, MeasurableSingletonClass (bn.stateSpace v)]
+    (A B C : V) (valA : bn.stateSpace A) (valC : bn.stateSpace C)
+    [EventPos (bn := bn) A valA] :
+    CondIndepQueryEq (bn := bn)
+      (cond := CompiledPlan.abductionSide A B C)
+      (q₁ := PLNQuery.link ⟨A, valA⟩ ⟨C, valC⟩)
+      (q₂ := PLNQuery.prop ⟨C, valC⟩) :=
+  ⟨by
+    intro cpt hci
+    exact linkProbVE_eq_propProbVE_of_condIndep (bn := bn)
+      (A := A) (C := C) (valA := valA) (valC := valC)
+      (cpt := cpt) hci (EventPos.pos (bn := bn) (A := A) (valA := valA) cpt)⟩
+
+instance condIndepQueryEq_deduction_linkCond_link
+    [∀ v : V, Inhabited (bn.stateSpace v)]
+    [∀ v : V, MeasurableSingletonClass (bn.stateSpace v)]
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    [EventPos (bn := bn) B valB]
+    [EventPosConstraints (bn := bn) [⟨A, valA⟩, ⟨B, valB⟩]] :
+    CondIndepQueryEq (bn := bn)
+      (cond := CompiledPlan.deductionSide A B C)
+      (q₁ := PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+      (q₂ := PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) :=
+  ⟨by
+    intro cpt hci
+    have hciCA :
+        Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepOn
+          (bn := bn) (μ := cpt.jointMeasure) C B A := by
+      simpa [Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepOn] using
+        (condIndepVertices_symm (bn := bn) (μ := cpt.jointMeasure) hci)
+    have hmulCA :=
+      Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.condIndep_eventEq_mul_cond
+        (bn := bn) (μ := cpt.jointMeasure)
+        (A := C) (B := B) (C := A)
+        (valA := valC) (valB := valB) (valC := valA) hciCA
+    have hmul :
+        cpt.jointMeasure
+            (eventEq (bn := bn) A valA ∩
+              eventEq (bn := bn) C valC ∩
+              eventEq (bn := bn) B valB) *
+          cpt.jointMeasure (eventEq (bn := bn) B valB) =
+        cpt.jointMeasure
+            (eventEq (bn := bn) A valA ∩
+              eventEq (bn := bn) B valB) *
+          cpt.jointMeasure
+            (eventEq (bn := bn) C valC ∩
+              eventEq (bn := bn) B valB) := by
+      simpa [Set.inter_assoc, Set.inter_left_comm, Set.inter_comm, mul_comm, mul_left_comm, mul_assoc]
+        using hmulCA
+    exact linkProbVECond_eq_linkProbVE_of_mul_eq (bn := bn)
+      (A := A) (B := B) (C := C)
+      (valA := valA) (valB := valB) (valC := valC)
+      (cpt := cpt) hmul⟩
+
+end EventIndep
+
+omit [∀ v, Nonempty (bn.stateSpace v)] in
+theorem condIndep_linkProb_eq_of_eq
+    (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    (hAB : A = B) (hval : HEq valB valA) :
+    CondIndepVertices bn μ ({A} : Set V) ({C} : Set V) ({B} : Set V) →
+      ∀ cpt : bn.DiscreteCPT,
+        queryProb (bn := bn) cpt
+          (PLNQuery.link ⟨A, valA⟩ ⟨C, valC⟩) =
+        queryProb (bn := bn) cpt
+          (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+  intro _hci cpt
+  cases hAB
+  cases hval
+  rfl
+
+/-! ## Screening-off WMQueryEq (d-sep discharge + concrete lemma) -/
+
+theorem wmqueryeq_screeningOff_of_dsep
+    (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
+    [HasLocalMarkovProperty bn μ] [DSeparationSoundness bn μ]
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    [ScreeningOffProbEq (bn := bn) A B C valA valB valC]
+    (hci :
+      ∀ cpt : bn.DiscreteCPT,
+        (CompiledPlan.deductionSide A B C).holds (bn := bn) →
+          CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
+    (CompiledPlan.deductionSide A B C).holds (bn := bn) →
+      WMQueryEq (State := State (bn := bn))
+        (Query := PLNQuery (BNQuery.Atom (bn := bn)))
+        (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+        (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+  exact wmqueryeq_of_dsep_discharge_class (bn := bn)
+    (cond := CompiledPlan.deductionSide A B C)
+    (q₁ := PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+    (q₂ := PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+    hci
+
+/-- Deduction-pattern WMQueryEq: d-sep discharge + a cond-indep ⇒ prob-eq lemma. -/
+theorem wmqueryeq_screeningOff_of_dsep_with
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    (hprob :
+      ∀ cpt : bn.DiscreteCPT,
+        CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V) →
+          queryProb (bn := bn) cpt
+            (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
+          queryProb (bn := bn) cpt
+            (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩))
+    (hci :
+      ∀ cpt : bn.DiscreteCPT,
+        (CompiledPlan.deductionSide A B C).holds (bn := bn) →
+          CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
+    (CompiledPlan.deductionSide A B C).holds (bn := bn) →
+      WMQueryEq (State := State (bn := bn))
+        (Query := PLNQuery (BNQuery.Atom (bn := bn)))
+        (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+        (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+  intro hcond
+  exact wmqueryeq_of_prob_eq (bn := bn)
+    (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+    (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+    (fun cpt => hprob cpt (hci cpt hcond))
+
+/-! ## Screening-off WMQueryEq (d-sep discharge + ScreeningOffProbEq instance) -/
+
+theorem wmqueryeq_screeningOff_of_dsep_class
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    [ScreeningOffProbEq (bn := bn) A B C valA valB valC]
+    (hci :
+      ∀ cpt : bn.DiscreteCPT,
+        (CompiledPlan.deductionSide A B C).holds (bn := bn) →
+          CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
+    (CompiledPlan.deductionSide A B C).holds (bn := bn) →
+      WMQueryEq (State := State (bn := bn))
+        (Query := PLNQuery (BNQuery.Atom (bn := bn)))
+        (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+        (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) :=
+  wmqueryeq_of_dsep_discharge_class (bn := bn)
+    (cond := CompiledPlan.deductionSide A B C)
+    (q₁ := PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+    (q₂ := PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+    hci
+
+end BNWorldModel
+
+/-! ## BN-specific rewrite example (screening-off via d-sep) -/
+
+namespace BNCompiledRewrite
+
+open BNWorldModel
+open WMRewriteBridge
+
+variable {bn : BayesianNetwork V}
+variable [Fintype V] [DecidableEq V]
+variable [DecidableRel bn.graph.edges]
+variable [∀ v, Fintype (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
+variable [∀ v, DecidableEq (bn.stateSpace v)]
+variable [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+variable (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
+variable [HasLocalMarkovProperty bn μ]
+variable [DSeparationSoundness bn μ]
+
+/-! ## Screening-off rewrite (non-degenerate, via explicit assumptions) -/
+
+/-- Screening-off rewrite using a **proof obligation** instance.
+This is the version to use for sound PLN rules (when the semantic lemma exists). -/
+noncomputable def screeningOffRewrite_class
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    [BNWorldModel.ScreeningOffProbEq (bn := bn) A B C valA valB valC]
+    (hci :
+      ∀ cpt : bn.DiscreteCPT,
+        (CompiledPlan.deductionSide A B C).holds (bn := bn) →
+          CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
+    WMRewriteRule (State (bn := bn)) (PLNQuery (BNQuery.Atom (bn := bn))) :=
+  WMRewriteBridge.rewrite_of_dsep (bn := bn) (State := State (bn := bn))
+    (CompiledPlan.deductionSide A B C)
+    (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+    (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+    (fun hcond =>
+      (BNWorldModel.wmqueryeq_screeningOff_of_dsep_class (bn := bn)
+        A B C valA valB valC hci hcond).symm)
+
+/-- Screening-off rewrite for BN queries, guarded by d-separation. -/
+noncomputable def screeningOffRewrite
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    [BNWorldModel.ScreeningOffProbEq (bn := bn) A B C valA valB valC]
+    (hci :
+      ∀ cpt : bn.DiscreteCPT,
+        (CompiledPlan.deductionSide A B C).holds (bn := bn) →
+          CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
+    WMRewriteRule (State (bn := bn)) (PLNQuery (BNQuery.Atom (bn := bn))) :=
+  screeningOffRewrite_class (bn := bn) (A := A) (B := B) (C := C)
+    (valA := valA) (valB := valB) (valC := valC) hci
+
+/-! ## Class-based d-sep rewrite (safe default) -/
+
+noncomputable def rewrite_of_dsep_class
+    (cond : DSeparationCond V)
+    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    [BNWorldModel.CondIndepQueryEq (bn := bn) cond q₁ q₂]
+    (hci :
+      ∀ cpt : bn.DiscreteCPT,
+        cond.holds (bn := bn) →
+          CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z) :
+    WMRewriteRule (State (bn := bn)) (PLNQuery (BNQuery.Atom (bn := bn))) :=
+  WMRewriteBridge.rewrite_of_dsep (bn := bn) (State := State (bn := bn))
+    cond q₁ q₂
+    (fun hcond =>
+      BNWorldModel.wmqueryeq_of_dsep_discharge_class
+        (bn := bn) cond q₁ q₂ hci hcond)
+
+end BNCompiledRewrite
 
 /-! ## BN side conditions as PLNLinkCalculus parameters -/
 
@@ -253,7 +1011,6 @@ def atomA (inst : RuleInstance bn) : Atom bn := ⟨inst.A, inst.valA⟩
 def atomB (inst : RuleInstance bn) : Atom bn := ⟨inst.B, inst.valB⟩
 def atomC (inst : RuleInstance bn) : Atom bn := ⟨inst.C, inst.valC⟩
 
-omit [Fintype V] [DecidableEq V] in
 theorem compiled_deduction_side
     (inst : RuleInstance bn) (tA tB tC tAB tBC : PLNWeightTV.WTV)
     (hkind : inst.kind = .deduction) :
@@ -264,7 +1021,6 @@ theorem compiled_deduction_side
       cases hkind
       rfl
 
-omit [Fintype V] [DecidableEq V] in
 theorem compiled_induction_side
     (inst : RuleInstance bn) (tA tB tC tBA tBC : PLNWeightTV.WTV)
     (hkind : inst.kind = .induction) :
@@ -275,7 +1031,6 @@ theorem compiled_induction_side
       cases hkind
       rfl
 
-omit [Fintype V] [DecidableEq V] in
 theorem compiled_abduction_side
     (inst : RuleInstance bn) (tA tB tC tAB tCB : PLNWeightTV.WTV)
     (hkind : inst.kind = .abduction) :

@@ -2,6 +2,7 @@ import Mathlib.Data.Real.Basic
 import Mettapedia.ProbabilityTheory.BayesianNetworks.ValuationAlgebra
 import Mettapedia.ProbabilityTheory.BayesianNetworks.FactorGraph
 import Mettapedia.ProbabilityTheory.BayesianNetworks.VariableElimination
+import Mettapedia.ProbabilityTheory.BayesianNetworks.ValuationBridge
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Interfaces
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Multiplicative.ScaledMultRep
 
@@ -86,14 +87,84 @@ noncomputable def weightOfConstraintsKS {V : Type*}
       simpa [fg', regradeFactorGraph] using (inferInstance : DecidableEq (fg.stateSpace v))
     have instFactors : Fintype fg'.factors := by
       simpa [fg', regradeFactorGraph] using (inferInstance : Fintype fg.factors)
-    let _ := instState
-    let _ := instDecEq
-    let _ := instFactors
+    letI : ∀ v, Fintype (fg'.stateSpace v) := instState
+    letI : ∀ v, DecidableEq (fg'.stateSpace v) := instDecEq
+    letI : Fintype fg'.factors := instFactors
     exact
       Mettapedia.ProbabilityTheory.BayesianNetworks.VariableElimination.weightOfConstraints
         (fg := fg') constraints
 
 end FactorGraph
+
+/-! ## VE correctness for regraded KS factors (via valuation bridge) -/
+
+section VEBridge
+
+open Mettapedia.ProbabilityTheory.BayesianNetworks
+open Mettapedia.ProbabilityTheory.BayesianNetworks.ValuationBridge
+
+variable {α : Type*} [LinearOrder α] {op : α → α → α}
+
+variable {V : Type*} [DecidableEq V]
+variable (rep : Mettapedia.ProbabilityTheory.KnuthSkilling.AdditiveOrderIsoRep α op)
+variable (fg : FactorGraph V α)
+
+local instance regrade_state_fintype [∀ v, Fintype (fg.stateSpace v)] :
+    ∀ v, Fintype ((regradeFactorGraph (rep := rep) fg).stateSpace v) := by
+  intro v
+  simpa [regradeFactorGraph] using (inferInstance : Fintype (fg.stateSpace v))
+
+local instance regrade_factors_fintype [Fintype fg.factors] :
+    Fintype (regradeFactorGraph (rep := rep) fg).factors := by
+  simpa [regradeFactorGraph] using (inferInstance : Fintype fg.factors)
+
+theorem ve_correct_regrade
+    (order : List V)
+    [Fintype V]
+    [∀ v, Fintype (fg.stateSpace v)]
+    [Fintype fg.factors] :
+    toValuation (fg := regradeFactorGraph (rep := rep) fg)
+        (VariableElimination.sumOutAll (fg := regradeFactorGraph (rep := rep) fg)
+          (VariableElimination.combineAll (fg := regradeFactorGraph (rep := rep) fg)
+            (VariableElimination.factorsOfGraph (fg := regradeFactorGraph (rep := rep) fg))) order) =
+      combineAll (V := V) (β := fun v => fg.stateSpace v) (K := ℝ)
+        (eliminateVars (V := V) (β := fun v => fg.stateSpace v) (K := ℝ)
+          (toValuations (fg := regradeFactorGraph (rep := rep) fg)
+            (VariableElimination.factorsOfGraph (fg := regradeFactorGraph (rep := rep) fg))) order) := by
+  classical
+  let fg' := regradeFactorGraph (rep := rep) fg
+  -- Reuse the valuation-bridge VE correctness lemma on the regraded factor graph.
+  simpa using
+    (sumOutAll_combineAll_via_valuation
+      (fg := fg')
+      (fs := VariableElimination.factorsOfGraph (fg := fg')) (order := order))
+
+/-! ## Direct KS-valued VE instantiation -/
+
+noncomputable def ksVE
+    (order : List V)
+    [Fintype V]
+    [∀ v, Fintype (fg.stateSpace v)]
+    [Fintype fg.factors] :
+    Mettapedia.ProbabilityTheory.BayesianNetworks.Valuation V (fun v => fg.stateSpace v) ℝ :=
+  combineAll (V := V) (β := fun v => fg.stateSpace v) (K := ℝ)
+    (eliminateVars (V := V) (β := fun v => fg.stateSpace v) (K := ℝ)
+      (toValuations (fg := regradeFactorGraph (rep := rep) fg)
+        (VariableElimination.factorsOfGraph (fg := regradeFactorGraph (rep := rep) fg))) order)
+
+theorem ksVE_correct
+    (order : List V)
+    [Fintype V]
+    [∀ v, Fintype (fg.stateSpace v)]
+    [Fintype fg.factors] :
+    toValuation (fg := regradeFactorGraph (rep := rep) fg)
+        (VariableElimination.sumOutAll (fg := regradeFactorGraph (rep := rep) fg)
+          (VariableElimination.combineAll (fg := regradeFactorGraph (rep := rep) fg)
+            (VariableElimination.factorsOfGraph (fg := regradeFactorGraph (rep := rep) fg))) order) =
+      ksVE (rep := rep) (fg := fg) (order := order) := by
+  simpa [ksVE] using (ve_correct_regrade (rep := rep) (fg := fg) order)
+
+end VEBridge
 
 /-! ## Optional: scaled multiplication on the regraded scale
 

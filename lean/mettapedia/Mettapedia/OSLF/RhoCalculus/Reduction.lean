@@ -1,4 +1,5 @@
 import Mettapedia.OSLF.RhoCalculus.Types
+import Mettapedia.OSLF.RhoCalculus.StructuralCongruence
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.CategoryTheory.LambdaTheory
 
@@ -36,6 +37,7 @@ These form a Galois connection (◇ ⊣ ⧫).
 namespace Mettapedia.OSLF.RhoCalculus.Reduction
 
 open Mettapedia.OSLF.RhoCalculus
+open Mettapedia.OSLF.RhoCalculus.StructuralCongruence
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.CategoryTheory.LambdaTheories
@@ -81,6 +83,24 @@ inductive Reduces : Pattern → Pattern → Type where
   -/
   | drop {p : Pattern} :
       Reduces (.apply "PDrop" [.apply "NQuote" [p]]) p
+
+  /-- EQUIV: Reduction modulo structural congruence
+
+      Paper reference: Meredith & Radestock (2005), Section 2.8, page 58:
+      ```
+      P ≡ P'  P' → Q'  Q' ≡ Q
+      ──────────────────────────  (Equiv)
+              P → Q
+      ```
+
+      This rule allows reductions to work modulo structural congruence,
+      including α-equivalence and parallel composition laws.
+  -/
+  | equiv {p p' q q' : Pattern} :
+      StructuralCongruence p p' →
+      Reduces p' q' →
+      StructuralCongruence q' q →
+      Reduces p q
 
   /-- PAR: structural congruence under parallel composition
 
@@ -133,6 +153,13 @@ inductive Reduces : Pattern → Pattern → Type where
       Reduces p q →
       Reduces (.collection .hashSet (before ++ [p] ++ after) none)
               (.collection .hashSet (before ++ [q] ++ after) none)
+
+  -- NOTE (2026-02-06): input_cong and output_cong REMOVED.
+  -- In standard ρ-calculus (Meredith & Radestock 2005), reduction does NOT go
+  -- under input/output guards. The reduction rules are:
+  --   COMM, DROP, PAR, EQUIV (structural congruence closure)
+  -- Allowing reduction under guards would make guarded processes non-blocking,
+  -- which is non-standard and would surprise process calculus experts.
 
 infix:50 " ⇝ " => Reduces
 
@@ -190,17 +217,17 @@ that our reduction-based modal operators correspond to the categorical ones.
 /-- A predicate on processes (as a Prop-valued function) -/
 def ProcessPred := Pattern → Prop
 
-/-- The categorical possibly operator (identity) trivially agrees with possibly at any fixed process.
+/-- The categorical possibly operator trivially agrees with possibly at any fixed process.
 
-    Note: A full correspondence would require SubPr to be predicates on processes,
-    not just Prop. With SubPr = Prop, we can only state pointwise agreement.
+    Note: SubPr is now `Pattern → Prop` (after fixing Semantics.lean interpFibration).
+    The full abstract correspondence is in Framework/RhoInstance.lean.
 -/
 theorem possibly_pointwise (φ : ProcessPred) (p : Pattern) :
     possiblyProp φ p → (∃ q, φ q) := by
   intro ⟨q, _, hq⟩
   exact ⟨q, hq⟩
 
-/-- The categorical rely operator (identity) trivially agrees with rely at any fixed process. -/
+/-- The categorical rely operator trivially agrees with rely at any fixed process. -/
 theorem rely_pointwise (φ : ProcessPred) (p : Pattern) :
     (∀ q, φ q) → relyProp φ p := by
   intro hall q _
@@ -225,26 +252,75 @@ def comm_reduces {n q p : Pattern} {x : String} :
   simp only [List.append_nil] at h
   exact h
 
--- TODO: once we have a syntactic predicate `IsProc : Pattern → Prop`,
+-- Future direction: once we have a syntactic predicate `IsProc : Pattern → Prop`,
 -- prove `p ⇝ q → IsProc p → IsProc q`.
+
+/-! ## Semantic Value / Normal Form
+
+The correct notion of "value" in process calculus: a pattern that cannot step.
+This is the semantic (irreducibility-based) definition, as opposed to any
+syntactic approximation.
+
+Reference: Plotkin (1975), "Call-by-value, call-by-name and the λ-calculus".
+The term "value" means "the result of evaluation" — an irreducible normal form.
+-/
+
+/-- A pattern can step if there exists a one-step reduction from it. -/
+def CanStep (p : Pattern) : Prop :=
+  ∃ q, Nonempty (p ⇝ q)
+
+/-- A pattern is in normal form if it cannot step (irreducible).
+
+    This is the semantically correct notion: it automatically respects
+    all reduction rules (COMM, DROP, PAR, EQUIV, congruence) without
+    needing to track syntax. -/
+def NormalForm (p : Pattern) : Prop :=
+  ¬ CanStep p
+
+/-- Value = NormalForm. A value is simply an irreducible pattern.
+
+    Using `abbrev` so that `Value` unfolds transparently to `NormalForm`. -/
+abbrev Value : Pattern → Prop := NormalForm
+
+/-- Every pattern either can step or is in normal form.
+
+    This is the "honest progress" fact — true by excluded middle, not by
+    a deep theorem. The real content lives in canonical-forms lemmas
+    (e.g., `normalForm_no_drop`, `normalForm_no_canInteract`) that
+    characterize what normal forms look like. -/
+theorem step_or_normalForm (p : Pattern) : CanStep p ∨ NormalForm p := by
+  exact Classical.em (CanStep p)
+
+/-- Normal forms cannot be DROP-redexes.
+
+    If p = *(@q) then p reduces by the DROP rule, contradicting NormalForm. -/
+theorem normalForm_no_drop {q : Pattern}
+    (hnf : NormalForm (.apply "PDrop" [.apply "NQuote" [q]])) : False :=
+  hnf ⟨q, ⟨Reduces.drop⟩⟩
 
 /-! ## Summary
 
 This file establishes the reduction semantics for ρ-calculus:
 
-1. ✅ **Reduces**: One-step reduction relation (COMM + PAR)
+1. ✅ **Reduces**: One-step reduction relation (COMM + DROP + PAR + EQUIV, no reduction under guards)
 2. ✅ **possiblyProp**: Process can reduce to φ
 3. ✅ **relyProp**: All predecessors satisfy φ
-4. ✅ **galois_connection**: ◇ ⊣ ⧫ (PROVEN!)
-5. ⚠️ **toSubPr**: Embedding into categorical semantics (axiomatized)
-6. ⚠️ **possibly_agrees/rely_agrees**: Correspondence with Types.lean (needs proof)
+4. ✅ **galois_connection**: ◇ ⊣ ⧫ (proven purely from definitions)
+5. ✅ **possibly_pointwise / rely_pointwise**: Pointwise correspondence
+6. ✅ **comm_reduces**: Constructive witness for COMM
+7. ✅ **CanStep / NormalForm / Value**: Semantic irreducibility predicates
+8. ✅ **step_or_normalForm**: Honest progress (by excluded middle)
+9. ✅ **normalForm_no_drop**: Canonical form — no DROP-redex in normal forms
 
-**Key achievement**: The Galois connection is proven purely from the definitions!
-This validates the OSLF construction.
+**0 sorries, 0 axioms.**
 
-**Connection to Types.lean**: The `possibly` and `rely` functions in Types.lean
-are categorical versions of the propositional operators defined here. The
-`possibly_agrees` and `rely_agrees` theorems (when completed) show they coincide.
+**Key achievement**: The Galois connection is proven purely from the definitions,
+validating the OSLF construction.
+
+**Connection to Framework**: The abstract OSLF framework (Framework/RhoInstance.lean)
+instantiates `OSLFTypeSystem` with `diamond = possiblyProp`, `box = relyProp`,
+and proves the Galois connection as a first-class property. The Mathlib
+`GaloisConnection` instance is also provided (`rho_mathlib_galois`).
 -/
 
 end Mettapedia.OSLF.RhoCalculus.Reduction

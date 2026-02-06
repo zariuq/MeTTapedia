@@ -143,6 +143,7 @@ In Lean, we isolate a minimal interface \WorldModel{} (posterior state + query p
 inductive PLNQuery (Atom : Type*) where
   | prop : Atom -> PLNQuery Atom
   | link : Atom -> Atom -> PLNQuery Atom
+  | linkCond : List Atom -> Atom -> PLNQuery Atom
 
 class WorldModel (State : Type*) (Query : Type*) [EvidenceType State] where
   evidence : State -> Query -> Evidence
@@ -161,6 +162,7 @@ Dirichlet world-table \JointEvidence{}:
 \begin{itemize}
 \item \code{evidence(E, prop(A))} sums world counts where an atom is \code{true} vs \code{false};
 \item \code{evidence(E, link(A,B))} sums world counts where \code{A} is true and \code{B} true vs false.
+\item \code{evidence(E, linkCond([A,B],C))} sums world counts where both \code{A,B} hold and \code{C} holds vs fails.
 \end{itemize}
 
 Crucially, extraction commutes with revision:
@@ -259,9 +261,9 @@ Let $\mathsf{strength}(W,q)$ denote the posterior-mean view extracted from evide
 \]
 For a BN world-model class, if $\Sigma$ entails the screening-off equalities needed by the general
 PLN deduction theorem (conditional independence of $C$ from $A$ given $B$ and given $\neg B$, plus
-positivity), then one may rewrite a hard query $\code{link}(A,C)$ into smaller ones:
+positivity), then one may rewrite a hard query $\code{linkCond([A,B],C)}$ into smaller ones:
 \[
-  \mathsf{strength}(W,\code{link}(A,C)) =
+  \mathsf{strength}(W,\code{linkCond([A,B],C)}) =
     \mathrm{plnDeductionStrength}\Big(
       \mathsf{strength}(W,\code{link}(A,B)),
       \mathsf{strength}(W,\code{link}(B,C)),
@@ -275,6 +277,11 @@ positivity), then one may rewrite a hard query $\code{link}(A,C)$ into smaller o
 nontrivial BN instance, the chain $A\to B\to C$: the theorem
 \code{chainBN\_plnDeductionStrength\_exact} shows the PLN deduction strength formula computes the
 exact $P(C\mid A)$ in the chain BN under explicit positivity side conditions.
+The general BN-facing rewrite layer uses the query-level screening-off form
+\[
+  \code{linkCond([A,B],C)} = \code{link(B,C)}
+\]
+under explicit semantic obligations (see \codepath{Mettapedia/Logic/PLNBNCompilation.lean}).
 
 \paragraph{Admissible link-rule schema (strength view).}
 Let $\mathsf{strength}(e)$ denote the posterior-mean view extracted from evidence $e$.
@@ -286,7 +293,7 @@ the following rule is admissible:
       \Sigma;\Gamma \vdash \code{link}(B,C)\Downarrow e_{BC} \quad
       \Sigma;\Gamma \vdash \code{prop}(B)\Downarrow e_{B} \quad
       \Sigma;\Gamma \vdash \code{prop}(C)\Downarrow e_{C}}
-     {\Sigma;\Gamma \vdash \code{link}(A,C)\Downarrow e_{AC}}
+     {\Sigma;\Gamma \vdash \code{linkCond([A,B],C)}\Downarrow e_{AC}}
 \]
 with the side-condition that
 \[
@@ -440,6 +447,11 @@ In \xiPLN{}, this plays two roles:
   can weaken to inequalities; see \codepath{Mettapedia/Logic/EvidenceIntuitionisticProbability.lean}.
 \end{enumerate}
 
+We also bridge K\&S additive regraduations to valuation-algebra factor graphs, so VE can be run
+end-to-end on KS-valued factors without assuming probability normalization; see
+\codepath{Mettapedia/ProbabilityTheory/KnuthSkilling/Bridges/ValuationAlgebra.lean} and
+\codepath{Mettapedia/ProbabilityTheory/BayesianNetworks/KSFactorGraph.lean}.
+
 An important cautionary fact---the ``totality gate''---is already formalized:
 because \Evidence{} has incomparable elements, it admits no faithful order-embedding into the
 reals.  Thus one should not expect a single real-valued map to capture all evidence information.
@@ -454,6 +466,11 @@ The core Lean artifacts supporting \xiPLN{} are:
 \item \codepath{Mettapedia/Logic/PLNBayesNetWorldModel.lean}: BN-style CPT evidence states and the additive projection from \JointEvidence{};
 \item \codepath{Mettapedia/Logic/PLNBayesNetFastRules.lean}: chain BN proof that the PLN deduction strength formula is exact in $A\to B\to C$;
 \item \codepath{Mettapedia/Logic/PLNJointEvidenceProbability.lean}: posterior-mean probability views (ratio theorems);
+\item \codepath{Mettapedia/Logic/PLNBNCompilation.lean}: BN query compilation, \code{linkCond} queries, and Σ-guarded screening-off rewrites;
+\item \codepath{Mettapedia/ProbabilityTheory/BayesianNetworks/VariableElimination.lean}: exact VE engine;
+\item \codepath{Mettapedia/ProbabilityTheory/BayesianNetworks/ValuationAlgebra.lean}: valuation-algebra semantics + VE correctness spine;
+\item \codepath{Mettapedia/ProbabilityTheory/BayesianNetworks/VEBridge.lean}: joint-measure ↔ VE probability bridge;
+\item \codepath{Mettapedia/ProbabilityTheory/KnuthSkilling/Bridges/ValuationAlgebra.lean}: KS → valuation-algebra bridge;
 \item \codepath{Mettapedia/Logic/PLNJointEvidenceNoGo.lean}: the local-completeness no-go theorem.
 \end{itemize}
 

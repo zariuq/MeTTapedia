@@ -3,6 +3,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Logic.Equiv.Prod
 import Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
+import Mettapedia.ProbabilityTheory.BayesianNetworks.EventSets
 import Mettapedia.ProbabilityTheory.BayesianNetworks.FactorGraph
 
 /-!
@@ -105,6 +106,17 @@ noncomputable def toFactorGraph (cpt : bn.DiscreteCPT) : FactorGraph V ℝ≥0�
 private instance (cpt : bn.DiscreteCPT) : Fintype (toFactorGraph (bn := bn) cpt).factors := by
   dsimp [toFactorGraph]
   infer_instance
+
+-- Help typeclass inference: the state space of `toFactorGraph` is definitionally `bn.stateSpace`.
+instance (cpt : bn.DiscreteCPT) [∀ v, Fintype (bn.stateSpace v)] :
+    ∀ v, Fintype ((toFactorGraph (bn := bn) cpt).stateSpace v) := by
+  intro v
+  simpa [toFactorGraph] using (inferInstance : Fintype (bn.stateSpace v))
+
+instance (cpt : bn.DiscreteCPT) [∀ v, DecidableEq (bn.stateSpace v)] :
+    ∀ v, DecidableEq ((toFactorGraph (bn := bn) cpt).stateSpace v) := by
+  intro v
+  simpa [toFactorGraph] using (inferInstance : DecidableEq (bn.stateSpace v))
 
 theorem toFactorGraph_unnormalizedJoint_eq (cpt : bn.DiscreteCPT)
     (x : (toFactorGraph (bn := bn) cpt).FullConfig) :
@@ -461,6 +473,41 @@ noncomputable def jointMeasure (cpt : bn.DiscreteCPT) : MeasureTheory.Measure bn
 instance jointMeasure_isProbabilityMeasure (cpt : bn.DiscreteCPT) :
     MeasureTheory.IsProbabilityMeasure cpt.jointMeasure :=
   PMF.toMeasure.isProbabilityMeasure cpt.jointPMF
+
+/-! ### Joint measure of constraint events -/
+
+open BayesianNetwork
+
+lemma jointMeasure_eventOfConstraints
+    [∀ v, MeasurableSingletonClass (bn.stateSpace v)]
+    (cpt : bn.DiscreteCPT) (cs : List (Σ v : V, bn.stateSpace v)) :
+    cpt.jointMeasure (eventOfConstraints (bn := bn) cs) =
+      ∑ x : bn.JointSpace,
+        if x ∈ eventOfConstraints (bn := bn) cs then cpt.jointWeight x else 0 := by
+  classical
+  have hmeas : MeasurableSet (eventOfConstraints (bn := bn) cs) :=
+    measurable_eventOfConstraints (bn := bn) cs
+  -- PMF measure is the (finite) sum over the indicator.
+  have h :=
+    PMF.toMeasure_apply (p := cpt.jointPMF)
+      (s := eventOfConstraints (bn := bn) cs) hmeas
+  -- Convert the `tsum` to a finite sum.
+  have htsum :
+      (∑' x : bn.JointSpace,
+          (eventOfConstraints (bn := bn) cs).indicator cpt.jointWeight x) =
+        ∑ x : bn.JointSpace,
+          if x ∈ eventOfConstraints (bn := bn) cs then cpt.jointWeight x else 0 := by
+    classical
+    -- `tsum` over a finite type is a finite sum.
+    simp [Set.indicator]
+  -- Finish by rewriting the `tsum` in the PMF formula.
+  calc
+    cpt.jointMeasure (eventOfConstraints (bn := bn) cs)
+        = cpt.jointPMF.toMeasure (eventOfConstraints (bn := bn) cs) := rfl
+    _ = ∑' x : bn.JointSpace,
+          (eventOfConstraints (bn := bn) cs).indicator cpt.jointWeight x := h
+    _ = ∑ x : bn.JointSpace,
+          if x ∈ eventOfConstraints (bn := bn) cs then cpt.jointWeight x else 0 := htsum
 
 end JointDistribution
 

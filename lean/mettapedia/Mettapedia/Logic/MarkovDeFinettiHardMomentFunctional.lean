@@ -3,6 +3,7 @@ import Mathlib.MeasureTheory.Integral.Lebesgue.Countable
 import Mathlib.Topology.Algebra.Module.Basic
 import Mettapedia.Logic.MarkovDeFinettiHardRepresentability
 import Mettapedia.Logic.MarkovDeFinettiHardEmpirical
+import Mettapedia.Logic.MarkovDeFinettiHardGoodStateBound
 import Mettapedia.Logic.MarkovDeFinettiRecurrence
 import Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge
 
@@ -459,27 +460,255 @@ theorem empiricalWnn_tendsto_wμ_succ
   -- (This is `wμ_eq_sum_prefixCoeff_mul_wμ`.)
 
   -- Step 3: weighted‑difference form (the approximation lemma).
-  -- Define the weighted real difference, guarded by `Nat.succ n ≤ N`.
-  let weightedDiff : ℕ → ℝ :=
-    fun N =>
-      if hN : Nat.succ n ≤ N then
-        ∑ s ∈ stateFinset k N,
-          ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
-            - (prefixCoeff (k := k) (h := hN) e s).toReal) *
-            (wμ (k := k) μ N s).toReal
-      else
-        0
-
-  -- TODO (Diaconis–Freedman 1980): show `weightedDiff N → 0` as `N → ∞`
-  -- under `MarkovRecurrentPrefixMeasure`. This is the genuine approximation estimate:
-  --   W (n+1) e (empiricalParam s) → prefixCoeff e s in weighted sum.
-  have happrox : Filter.Tendsto weightedDiff Filter.atTop (nhds 0) := by
-    sorry
+  have happrox :
+      Filter.Tendsto (weightedDiff (k := k) hk μ n e) Filter.atTop (nhds 0) := by
+    -- Diaconis–Freedman approximation (isolated in `MarkovDeFinettiHardApprox`).
+    simpa using
+      (weightedDiff_tendsto_zero (k := k) hk (μ := μ) hμ hrec n e)
 
   -- Step 4: conclude the original `ENNReal` convergence from `happrox`
   -- using the rewrite in Step 1 and the tower identity in Step 2.
   -- (Conversion from ENNReal to ℝ is routine once the approximation is established.)
-  sorry
+  have hdiff_eventually :
+      Filter.Eventually
+        (fun N =>
+          ((∫⁻ θ, Wnn (k := k) (Nat.succ n) e θ ∂(empiricalMeasure (k := k) hk μ N)).toReal
+            - (wμ (k := k) μ (Nat.succ n) e).toReal)
+            = weightedDiff (k := k) hk μ n e N)
+        Filter.atTop := by
+    refine Filter.eventually_atTop.2 ?_
+    refine ⟨Nat.succ n, ?_⟩
+    intro N hN
+    -- Rewrite both terms as finite sums.
+    have hsumN := hsum N
+    have hwμN :=
+      wμ_eq_sum_prefixCoeff_mul_wμ (k := k) (μ := μ) hμ (h := hN) (e := e)
+    -- Bounds to justify `toReal_sum`.
+    have hW_le_one :
+        ∀ θ : MarkovParam k, W (k := k) (Nat.succ n) e θ ≤ 1 := by
+      intro θ
+      by_cases he : e ∈ stateFinset k (Nat.succ n)
+      · have hsumW :=
+          sum_W_eq_one' (k := k) (n := Nat.succ n) (θ := θ)
+        have hle :
+            W (k := k) (Nat.succ n) e θ ≤
+              ∑ eN ∈ stateFinset k (Nat.succ n), W (k := k) (Nat.succ n) eN θ := by
+          refine Finset.single_le_sum (f := fun eN =>
+            W (k := k) (Nat.succ n) eN θ) ?_ he
+          intro eN hmem
+          exact W_nonneg (k := k) (n := Nat.succ n) (e := eN) (θ := θ)
+        simpa [hsumW] using hle
+      · -- No realizable trajectories: the evidence weight is zero.
+        have hfilter :
+            (trajFinset k (Nat.succ n)).filter
+              (fun xs => stateOfTraj (k := k) xs = e) = ∅ := by
+          apply Finset.filter_eq_empty_iff.mpr
+          intro xs hxs hxe
+          have : e ∈ stateFinset k (Nat.succ n) := by
+            simpa [hxe] using (stateOfTraj_mem_stateFinset (k := k) (xs := xs))
+          exact he this
+        simp [W, hfilter]
+    have hwμ_le_one :
+        ∀ N : ℕ, ∀ s : MarkovState k, wμ (k := k) μ N s ≤ 1 := by
+      intro N s
+      by_cases hs : s ∈ stateFinset k N
+      · have hsum := sum_wμ_eq_one' (k := k) (μ := μ) N
+        have hle :
+            wμ (k := k) μ N s ≤
+              ∑ e ∈ stateFinset k N, wμ (k := k) μ N e := by
+          refine Finset.single_le_sum (f := fun e =>
+            wμ (k := k) μ N e) ?_ hs
+          intro e he
+          exact wμ_nonneg (k := k) (μ := μ) (n := N) (e := e)
+        simpa [hsum] using hle
+      · have hw0 :
+            wμ (k := k) μ N s = 0 :=
+          wμ_eq_zero_of_not_mem_stateFinset (k := k) (μ := μ) (n := N) (e := s) hs
+        simp [hw0]
+    have hsum_toReal_W :
+        (∑ s ∈ stateFinset k N,
+            W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s) *
+              wμ (k := k) μ N s).toReal =
+          ∑ s ∈ stateFinset k N,
+            (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal *
+              (wμ (k := k) μ N s).toReal := by
+      classical
+      refine (ENNReal.toReal_sum ?_).trans ?_
+      · intro s hs
+        apply ENNReal.mul_ne_top
+        · exact ne_of_lt (lt_of_le_of_lt (hW_le_one _)
+            ENNReal.one_lt_top)
+        · exact ne_of_lt (lt_of_le_of_lt (hwμ_le_one N s)
+            ENNReal.one_lt_top)
+      · simp [ENNReal.toReal_mul]
+    have hsum_toReal_pref :
+        (∑ s ∈ stateFinset k N,
+            prefixCoeff (k := k) (h := hN) e s * wμ (k := k) μ N s).toReal =
+          ∑ s ∈ stateFinset k N,
+            (prefixCoeff (k := k) (h := hN) e s).toReal *
+              (wμ (k := k) μ N s).toReal := by
+      classical
+      refine (ENNReal.toReal_sum ?_).trans ?_
+      · intro s hs
+        apply ENNReal.mul_ne_top
+        · -- `prefixCoeff ≤ 1`
+          have hle' :
+              prefixCoeff (k := k) (h := hN) e s ≤ 1 := by
+            by_cases he : e ∈ stateFinset k (Nat.succ n)
+            · have hsum :=
+                sum_prefixCoeff_eq_one_of_mem_stateFinset (k := k) (h := hN) (eN := s) hs
+              have hle :
+                  prefixCoeff (k := k) (h := hN) e s ≤
+                    ∑ e' ∈ stateFinset k (Nat.succ n),
+                      prefixCoeff (k := k) (h := hN) e' s := by
+                refine Finset.single_le_sum (f := fun e' =>
+                  prefixCoeff (k := k) (h := hN) e' s) ?_ he
+                intro e' he'
+                by_cases hcard : (fiber k N s).card = 0
+                · simp [prefixCoeff, hcard]
+                · simp [prefixCoeff, hcard]
+              simpa [hsum] using hle
+            · have hzero :
+                  prefixCoeff (k := k) (h := hN) e s = 0 := by
+                simpa [prefixCoeff, he] using
+                  (prefixCoeff_eq_zero_of_not_mem_stateFinset (k := k)
+                    (h := hN) (e := e) (eN := s) he)
+              simp [hzero]
+          exact ne_of_lt (lt_of_le_of_lt hle' ENNReal.one_lt_top)
+        · exact ne_of_lt (lt_of_le_of_lt (hwμ_le_one N s) ENNReal.one_lt_top)
+      · simp [ENNReal.toReal_mul]
+    calc
+      ((∫⁻ θ, Wnn (k := k) (Nat.succ n) e θ ∂(empiricalMeasure (k := k) hk μ N)).toReal
+          - (wμ (k := k) μ (Nat.succ n) e).toReal)
+          =
+          (∑ s ∈ stateFinset k N,
+              W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s) * wμ (k := k) μ N s).toReal
+            - (∑ s ∈ stateFinset k N,
+                prefixCoeff (k := k) (h := hN) e s * wμ (k := k) μ N s).toReal := by
+                rw [hsumN, hwμN]
+      _ =
+          ∑ s ∈ stateFinset k N,
+            ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
+              - (prefixCoeff (k := k) (h := hN) e s).toReal) *
+              (wμ (k := k) μ N s).toReal := by
+        -- distribute the difference inside the finite sum
+        classical
+        -- use `sub_mul` and `sum_sub_distrib` in reverse
+        simp [hsum_toReal_W, hsum_toReal_pref, sub_mul, Finset.sum_sub_distrib]
+      _ = weightedDiff (k := k) hk μ n e N := by
+        simp [weightedDiff, weightedDiffCore, hN]
+  have hdiff_tendsto :
+      Filter.Tendsto
+        (fun N =>
+          ((∫⁻ θ, Wnn (k := k) (Nat.succ n) e θ ∂(empiricalMeasure (k := k) hk μ N)).toReal
+            - (wμ (k := k) μ (Nat.succ n) e).toReal))
+        Filter.atTop (nhds 0) := by
+    refine (Filter.Tendsto.congr' (Filter.EventuallyEq.symm hdiff_eventually) ?_)
+    simpa using happrox
+  have htoReal :
+      Filter.Tendsto
+        (fun N =>
+          (∫⁻ θ, Wnn (k := k) (Nat.succ n) e θ ∂(empiricalMeasure (k := k) hk μ N)).toReal)
+        Filter.atTop
+        (nhds ((wμ (k := k) μ (Nat.succ n) e).toReal)) := by
+    -- `f - c → 0` implies `f → c`
+    have htoReal' :=
+      (Filter.tendsto_sub_const_iff
+          (b := (wμ (k := k) μ (Nat.succ n) e).toReal)
+          (c := (wμ (k := k) μ (Nat.succ n) e).toReal)
+          (f := fun N =>
+            (∫⁻ θ, Wnn (k := k) (Nat.succ n) e θ ∂(empiricalMeasure (k := k) hk μ N)).toReal)).1
+        (by simpa using hdiff_tendsto)
+    exact htoReal'
+  -- Lift the real convergence back to `ENNReal`.
+  refine (ENNReal.tendsto_toReal_iff
+    (hf := ?_) (hx := ?_)).1 htoReal
+  · intro N
+    -- local bounds (reused from the weighted-difference step)
+    have hW_le_one' :
+        ∀ θ : MarkovParam k, W (k := k) (Nat.succ n) e θ ≤ 1 := by
+      intro θ
+      by_cases he : e ∈ stateFinset k (Nat.succ n)
+      · have hsumW :=
+          sum_W_eq_one' (k := k) (n := Nat.succ n) (θ := θ)
+        have hle :
+            W (k := k) (Nat.succ n) e θ ≤
+              ∑ eN ∈ stateFinset k (Nat.succ n), W (k := k) (Nat.succ n) eN θ := by
+          refine Finset.single_le_sum (f := fun eN =>
+            W (k := k) (Nat.succ n) eN θ) ?_ he
+          intro eN hmem
+          exact W_nonneg (k := k) (n := Nat.succ n) (e := eN) (θ := θ)
+        simpa [hsumW] using hle
+      · have hfilter :
+            (trajFinset k (Nat.succ n)).filter
+              (fun xs => stateOfTraj (k := k) xs = e) = ∅ := by
+          apply Finset.filter_eq_empty_iff.mpr
+          intro xs hxs hxe
+          have : e ∈ stateFinset k (Nat.succ n) := by
+            simpa [hxe] using (stateOfTraj_mem_stateFinset (k := k) (xs := xs))
+          exact he this
+        simp [W, hfilter]
+    have hwμ_le_one' :
+        ∀ s : MarkovState k, wμ (k := k) μ N s ≤ 1 := by
+      intro s
+      by_cases hs : s ∈ stateFinset k N
+      · have hsum := sum_wμ_eq_one' (k := k) (μ := μ) N
+        have hle :
+            wμ (k := k) μ N s ≤
+              ∑ e ∈ stateFinset k N, wμ (k := k) μ N e := by
+          refine Finset.single_le_sum (f := fun e =>
+            wμ (k := k) μ N e) ?_ hs
+          intro e he
+          exact wμ_nonneg (k := k) (μ := μ) (n := N) (e := e)
+        simpa [hsum] using hle
+      · have hw0 :
+            wμ (k := k) μ N s = 0 :=
+          wμ_eq_zero_of_not_mem_stateFinset (k := k) (μ := μ) (n := N) (e := s) hs
+        simp [hw0]
+    have hle :
+        (∫⁻ θ, Wnn (k := k) (Nat.succ n) e θ ∂(empiricalMeasure (k := k) hk μ N)) ≤ 1 := by
+      -- Use the finite-sum representation and `W ≤ 1`.
+      have hle_sum :
+          ∑ s ∈ stateFinset k N,
+              W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s) * wμ (k := k) μ N s
+            ≤ ∑ s ∈ stateFinset k N, wμ (k := k) μ N s := by
+        refine Finset.sum_le_sum ?_
+        intro s hs
+        have hWle : W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s) ≤ 1 := by
+          exact hW_le_one' _
+        have hwμle : wμ (k := k) μ N s ≤ 1 := hwμ_le_one' s
+        -- `W ≤ 1` gives `W * wμ ≤ wμ`
+        have hmul :=
+          mul_le_mul_of_nonneg_right hWle
+            (wμ_nonneg (k := k) (μ := μ) (n := N) (e := s))
+        simpa [one_mul] using hmul
+      have hsum_wμ := sum_wμ_eq_one' (k := k) (μ := μ) N
+      have hsumN := hsum N
+      calc
+        (∫⁻ θ, Wnn (k := k) (Nat.succ n) e θ ∂(empiricalMeasure (k := k) hk μ N))
+            = ∑ s ∈ stateFinset k N,
+                W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s) * wμ (k := k) μ N s := by
+                  rw [hsumN]
+        _ ≤ ∑ s ∈ stateFinset k N, wμ (k := k) μ N s := hle_sum
+        _ = 1 := by simp [hsum_wμ]
+    exact ne_of_lt (lt_of_le_of_lt hle ENNReal.one_lt_top)
+  · have hwμ_le : wμ (k := k) μ (Nat.succ n) e ≤ 1 := by
+        -- simple bound from the total mass
+        by_cases he : e ∈ stateFinset k (Nat.succ n)
+        · have hsum := sum_wμ_eq_one' (k := k) (μ := μ) (Nat.succ n)
+          have hle :
+              wμ (k := k) μ (Nat.succ n) e ≤
+                ∑ e' ∈ stateFinset k (Nat.succ n), wμ (k := k) μ (Nat.succ n) e' := by
+            refine Finset.single_le_sum (f := fun e' =>
+              wμ (k := k) μ (Nat.succ n) e') ?_ he
+            intro e' he'
+            exact wμ_nonneg (k := k) (μ := μ) (n := Nat.succ n) (e := e')
+          simpa [hsum] using hle
+        · have hw0 :
+              wμ (k := k) μ (Nat.succ n) e = 0 :=
+            wμ_eq_zero_of_not_mem_stateFinset (k := k) (μ := μ) (n := Nat.succ n) (e := e) he
+          simp [hw0]
+    exact ne_of_lt (lt_of_le_of_lt hwμ_le ENNReal.one_lt_top)
 
 theorem empiricalWnn_tendsto_wμ
     (hk : 0 < k)
@@ -577,179 +806,8 @@ theorem empiricalWnn_tendsto_wμ
   | succ n =>
       -- Defer the genuine Diaconis–Freedman core to a dedicated lemma.
       exact empiricalWnn_tendsto_wμ_succ (k := k) (hk := hk) (μ := μ) hμ hrec n e
-  /- Old (broken) proof attempt kept temporarily while we refactor:
-  -- The `n = 0` case is exact: both sides reduce to the distribution of the initial state.
-  -- The genuinely hard Diaconis–Freedman content starts at `n+1`.
-  cases n with
-  | zero =>
-      -- Show the sequence is constant in `N`.
-      have hconst :
-          ∀ N : ℕ,
-            (∫⁻ θ, Wnn (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N)) =
-              wμ (k := k) μ 0 e := by
-        intro N
-        -- Expand the empirical integral into a finite sum over evidence states at horizon `N`.
-        have hsum :=
-          lintegral_Wnn_empiricalMeasure_eq_sum (k := k) hk (μ := μ) (N := N) (n := 0) (e := e)
-        -- Regroup `wμ 0 e` via the tower identity at horizon `N`.
-        have hwμ :=
-          wμ_eq_sum_prefixCoeff_mul_wμ (k := k) (μ := μ) hμ (h := Nat.zero_le N) (e := e)
-        -- Reduce to showing `W 0 e (empiricalParam s) = prefixCoeff 0≤N e s` for each state `s`.
-        -- For `n = 0`, the prefix evidence state is determined by the start symbol.
-        -- We work pointwise under the finite sum.
-        -- Rewrite the empirical sum using `W` instead of `Wnn`.
-        have hsum' :
-            (∫⁻ θ, W (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N)) =
-              (stateFinset k N).sum (fun s =>
-                W (k := k) 0 e (empiricalParam (k := k) hk s) * wμ (k := k) μ N s) := by
-          -- `hsum` is already in the `Wnn` / `statePMF` form; unfold those definitions.
-          -- Convert `Wnn` to `W` pointwise.
-          simpa [coe_Wnn, statePMF_apply, mul_assoc] using hsum
-        -- Convert the goal into the `W`-sum form.
-        -- We can now use `hwμ` once we show the coefficient equality pointwise.
-        -- This is a purely finite, combinatorial computation.
-        have hpoint :
-            (stateFinset k N).sum (fun s =>
-                W (k := k) 0 e (empiricalParam (k := k) hk s) * wμ (k := k) μ N s) =
-              ∑ s ∈ stateFinset k N, prefixCoeff (k := k) (h := Nat.zero_le N) e s * wμ (k := k) μ N s := by
-          -- Replace each summand using the explicit `n=0` evaluation.
-          refine Finset.sum_congr rfl ?_
-          intro s hs
-          -- In a length-`0` trajectory, the evidence state is determined by the start symbol.
-          -- `W 0 e` under `empiricalParam s` is `1` iff the start symbol matches.
-          -- The same criterion decides whether `prefixCoeff` is `1` or `0`.
-          by_cases he0 : e ∈ stateFinset k 0
-          · -- When `e` is a valid horizon-0 state, it must be `⟨e.start, 0, e.start⟩`.
-            have hlast : e.last = e.start := by
-              -- Any state in `stateFinset k 0` comes from a length-1 trajectory, hence `last = start`.
-              rcases Finset.mem_image.1 he0 with ⟨xs, -, rfl⟩
-              simp [stateOfTraj]
-            have hcounts : e.counts = 0 := by
-              rcases Finset.mem_image.1 he0 with ⟨xs, -, rfl⟩
-              ext a b
-              -- With `n = 0`, there are no transitions.
-              simp [stateOfTraj, MarkovExchangeabilityBridge.countsOfFn, MarkovExchangeabilityBridge.transCount]
-            have he_form : e = ⟨e.start, (0 : TransCounts k), e.start⟩ := by
-              ext <;> simp [hlast, hcounts]
-            -- Now compute `W 0 e (empiricalParam s)` explicitly.
-            -- There is exactly one length-1 trajectory with state `e`, namely the constant trajectory at `e.start`.
-            have hW :
-                W (k := k) 0 e (empiricalParam (k := k) hk s) =
-                  if s.start = e.start then 1 else 0 := by
-              -- Unfold `W` and simplify the finite sum.
-              -- The filter picks out the unique trajectory with start `e.start`.
-              classical
-              subst he_form
-              -- `Traj k 0` is `Fin 1 → Fin k`; enumerate by its value at `0`.
-              -- `stateOfTraj` for such a trajectory is `⟨a, 0, a⟩`.
-              -- Under `empiricalParam s`, `wordProb` of `[a]` is `1` iff `a = s.start`.
-              -- All other terms vanish.
-              simp [W, empiricalParam, wordProb, wordProbNN, initProb, stepProb, stateOfTraj]
-            -- Compute `prefixCoeff` in the `n=0` case: it is `1` iff `s.start = e.start`.
-            have hC :
-                prefixCoeff (k := k) (h := Nat.zero_le N) e s =
-                  if s.start = e.start then 1 else 0 := by
-              classical
-              -- If `s` is realizable at horizon `N`, its fiber is nonempty, and the prefix state is constant.
-              have hsN : s ∈ stateFinset k N := hs
-              have hcard : (fiber k N s).card ≠ 0 :=
-                fiber_card_ne_zero_of_mem_stateFinset (k := k) (N := N) (eN := s) hsN
-              have hcard' : (fiber k N s).card = 0 := by
-                exact (hcard rfl).elim
-              -- Since `n=0`, `prefixState` depends only on the start symbol; so `prefixFiber` is either
-              -- the full fiber or empty.
-              by_cases hstart : s.start = e.start
-              · -- In this case, every element of the fiber has prefix state `e`.
-                have hpf : prefixFiber (k := k) (h := Nat.zero_le N) e s = fiber k N s := by
-                  classical
-                  ext xs
-                  constructor
-                  · intro hx
-                    exact (Finset.mem_filter.1 hx).1
-                  · intro hx
-                    refine Finset.mem_filter.2 ?_
-                    refine ⟨hx, ?_⟩
-                    -- Compute the `0`-prefix evidence state.
-                    -- `prefixState` is the evidence of the length-1 prefix, i.e. `⟨start, 0, start⟩`.
-                    -- In the fiber, `start = s.start = e.start`.
-                    have hxstart : xs 0 = s.start := by
-                      have hxst : stateOfTraj (k := k) xs = s := (Finset.mem_filter.1 hx).2
-                      simpa [stateOfTraj] using congrArg MarkovState.start hxst
-                    -- Conclude `prefixState ... xs = e` by extensionality.
-                    ext <;> simp [prefixState, stateOfTraj, hxstart, hstart]
-                -- Now `prefixCoeff` is `card(fiber)/card(fiber)=1`.
-                simp [prefixCoeff, hcard, hpf, hstart]
-              · -- Otherwise the prefix fiber is empty, so the coefficient is `0`.
-                have hpf : prefixFiber (k := k) (h := Nat.zero_le N) e s = ∅ := by
-                  classical
-                  ext xs
-                  constructor
-                  · intro hx
-                    have hxstart : xs 0 = s.start := by
-                      have hxst : stateOfTraj (k := k) xs = s := (Finset.mem_filter.1 (Finset.mem_filter.1 hx).1).2
-                      simpa [stateOfTraj] using congrArg MarkovState.start hxst
-                    -- Contradiction: prefix state's start must be `s.start`, but `e.start` differs.
-                    have : prefixState (k := k) (n := 0) (N := N) (Nat.zero_le N) xs ≠ e := by
-                      intro hpe
-                      have := congrArg MarkovState.start hpe
-                      simpa [prefixState, stateOfTraj, hxstart] using this
-                    exact (this (Finset.mem_filter.1 hx).2).elim
-                  · intro hx
-                    exact (Finset.notMem_empty xs hx).elim
-                simp [prefixCoeff, hcard, hpf, hstart]
-            -- Combine the explicit computations.
-            simp [hW, hC]
-          · -- If `e` is not a valid horizon-0 state, both `wμ 0 e` and `W 0 e` are zero.
-            have hw0 : wμ (k := k) μ 0 e = 0 :=
-              wμ_eq_zero_of_not_mem_stateFinset (k := k) (μ := μ) (n := 0) (e := e) he0
-            -- `W 0 e` is also identically zero when the fiber is empty.
-            have hW0 : W (k := k) 0 e (empiricalParam (k := k) hk s) = 0 := by
-              classical
-              -- The filter in `W` is empty since `e` is not realized at horizon `0`.
-              -- (Any membership would witness `e ∈ stateFinset k 0`.)
-              have : (trajFinset k 0).filter (fun xs => stateOfTraj (k := k) xs = e) = ∅ := by
-                classical
-                refine Finset.filter_eq_empty_iff.2 ?_
-                intro xs hx
-                exact he0 (Finset.mem_image.2 ⟨xs, by simp [trajFinset], hx⟩)
-              simp [W, this]
-            -- The corresponding `prefixCoeff` is also zero by the previous lemma.
-            have hC0 : prefixCoeff (k := k) (h := Nat.zero_le N) e s = 0 :=
-              prefixCoeff_eq_zero_of_not_mem_stateFinset (k := k) (h := Nat.zero_le N) (e := e) (eN := s) he0
-            simp [hW0, hC0]
-        -- Finish the constant identity.
-        -- Put together `hsum'`, `hpoint`, and the tower identity `hwμ`.
-        calc
-          (∫⁻ θ, Wnn (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N))
-              = (∫⁻ θ, W (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N)) := by
-                    simpa [coe_Wnn]
-          _ = (stateFinset k N).sum (fun s =>
-                W (k := k) 0 e (empiricalParam (k := k) hk s) * wμ (k := k) μ N s) := hsum'
-          _ = ∑ s ∈ stateFinset k N, prefixCoeff (k := k) (h := Nat.zero_le N) e s * wμ (k := k) μ N s := hpoint
-          _ = wμ (k := k) μ 0 e := by
-                simpa [hwμ]
-      -- Conclude by `tendsto_const_nhds`.
-      have : (fun N =>
-          ∫⁻ θ, Wnn (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N))
-            = fun _ : ℕ => wμ (k := k) μ 0 e := by
-        funext N
-        exact hconst N
-      simpa [this] using (Filter.tendsto_const_nhds : Filter.Tendsto (fun _ : ℕ => wμ (k := k) μ 0 e) Filter.atTop (nhds (wμ (k := k) μ 0 e)))
-  | succ n =>
-      -- TODO (Diaconis–Freedman 1980): Markov-exchangeable + recurrent implies that the empirical
-      -- mixing measures built from horizon-`N` evidence converge on every fixed evidence polynomial.
-      --
-      -- The helper lemma `lintegral_Wnn_empiricalMeasure_eq_sum` rewrites the LHS as a finite sum:
-      --   `∑ s in stateFinset k N, Wnn (n+1) e (empiricalParam s) * wμ μ N s`.
-      --
-      -- Completing this proof requires a combinatorial / probabilistic estimate relating the
-      -- conditional law of a length-`(n+1)` prefix given a horizon-`N` Markov summary to the Markov chain
-      -- with (Laplace-smoothed) empirical transitions derived from that summary.
-      --
-      -- This is the genuine Diaconis–Freedman heart, and is the only remaining missing piece in
-      -- the Markov hard direction.
-      sorry
-  -/
+  -- (Legacy proof attempt removed — the `| succ n` case is now handled by
+  --  `empiricalWnn_tendsto_wμ_succ` via `weightedDiff_tendsto_zero`.)
 
 lemma empiricalVec_mem_momentPolytope (hk : 0 < k) (μ : PrefixMeasure (Fin k))
     (u : Finset (Nat × MarkovState k)) (n : ℕ) :

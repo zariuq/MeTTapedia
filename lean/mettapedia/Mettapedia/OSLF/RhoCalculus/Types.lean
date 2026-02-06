@@ -50,10 +50,7 @@ open Mettapedia.CategoryTheory.LambdaTheories
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Semantics
 
-/-! ## ρ-Calculus Theory -/
-
-/-- The ρ-calculus λ-theory (from Semantics.lean) -/
-abbrev RhoTheory : LambdaTheory := rhoCalcTheory
+/-! ## ρ-Calculus Objects -/
 
 /-- The process object in the ρ-calculus -/
 def ProcObj : InterpObj rhoCalc :=
@@ -65,54 +62,66 @@ def NameObj : InterpObj rhoCalc :=
 
 /-! ## Name Predicates (Namespaces)
 
-A namespace is a predicate on names: α : yN → Prop
+A namespace is a predicate on names: α : Name → Prop
 
 In OSLF terminology, namespaces classify which channels a process
 can communicate on. The key insight is that namespaces form a
 complete Heyting algebra under the fiber structure.
+
+Following Williams & Stay (Native Type Theory, ACT 2021) and
+Meredith & Stay (OSLF), predicates on sorts are THE ACTUAL predicates
+(Pattern → Prop), not just Props.
 -/
 
-/-- A name predicate (namespace) is a truth value in the fiber over Proc.
+/-- A name predicate (namespace) is a predicate on name patterns.
 
-    Note: In our simplified LambdaTheory, all fibers share the same type,
-    so we use SubPr which is the fiber over the distinguished Pr object.
+    This is the correct definition per OSLF: predicates are functions
+    from terms to Props, not just Props themselves.
 -/
-abbrev NamePred := RhoTheory.SubPr
+abbrev NamePred := Pattern → Prop
 
 /-- The full namespace (all names) -/
-def fullNamePred : NamePred := ⊤
+def fullNamePred : NamePred := fun _ => True
 
 /-- The empty namespace (no names) -/
-def emptyNamePred : NamePred := ⊥
+def emptyNamePred : NamePred := fun _ => False
 
 /-- Namespace intersection -/
-def namePredInter (α β : NamePred) : NamePred := α ⊓ β
+def namePredInter (α β : NamePred) : NamePred := fun n => α n ∧ β n
 
 /-- Namespace union -/
-def namePredUnion (α β : NamePred) : NamePred := α ⊔ β
+def namePredUnion (α β : NamePred) : NamePred := fun n => α n ∨ β n
 
 /-! ## Process Predicates (Codespaces)
 
-A codespace is a predicate on processes: φ : yP → Prop
+A codespace is a predicate on processes: φ : Proc → Prop
 
 Codespaces classify behavioral properties of processes, including
 types derived from the reduction semantics via modal operators.
+
+Following Williams & Stay (Native Type Theory, ACT 2021) and
+Meredith & Stay (OSLF), predicates on sorts are THE ACTUAL predicates
+(Pattern → Prop), not just Props.
 -/
 
-/-- A process predicate (codespace) is a truth value in the fiber over Proc -/
-abbrev ProcPred := RhoTheory.SubPr
+/-- A process predicate (codespace) is a predicate on process patterns.
+
+    This is the correct definition per OSLF: predicates are functions
+    from terms to Props, not just Props themselves.
+-/
+abbrev ProcPred := Pattern → Prop
 
 /-- The full codespace (all processes) -/
-def fullProcPred : ProcPred := ⊤
+def fullProcPred : ProcPred := fun _ => True
 
 /-- The empty codespace (no processes) -/
-def emptyProcPred : ProcPred := ⊥
+def emptyProcPred : ProcPred := fun _ => False
 
 /-- Codespace intersection (conjunction of properties) -/
-def procPredInter (φ ψ : ProcPred) : ProcPred := φ ⊓ ψ
+def procPredInter (φ ψ : ProcPred) : ProcPred := fun p => φ p ∧ ψ p
 
 /-- Codespace union (disjunction of properties) -/
-def procPredUnion (φ ψ : ProcPred) : ProcPred := φ ⊔ ψ
+def procPredUnion (φ ψ : ProcPred) : ProcPred := fun p => φ p ∨ ψ p
 
 /-! ## Barbs and Observables
 
@@ -184,72 +193,29 @@ structure ProcEquiv where
 
 /-! ## Modal Operators from Rewrites
 
-The OSLF construction generates modal operators from rewrite rules:
-- ◇ (possibly): ◇φ holds if reduction to φ is possible
-- ⧫ (rely): ⧫φ holds if reduction from φ is possible
+**NOTE:** The real modal operators `possiblyProp` and `relyProp` are defined in
+Reduction.lean, where they have access to the reduction relation. They form a
+proven Galois connection.
+
+This file defines only the static predicate structure. Modal operators derived
+from operational semantics belong in Reduction.lean, not here.
 -/
-
-/-- Possibly modality: ◇φ = { p | ∃q. p ⇝ q ∧ q ∈ φ }
-
-    A process p satisfies ◇φ if it can reduce to some process in φ.
-    This is the future/diamond modality from temporal logic.
--/
-noncomputable def possibly (φ : ProcPred) : ProcPred :=
-  -- In full OSLF, this is constructed via the reduction relation
-  -- For now, we use identity as placeholder
-  φ
-
-/-- Rely modality: ⧫φ = { p | ∀q. q ⇝ p → q ∈ φ }
-
-    A process p satisfies ⧫φ if all its predecessors are in φ.
-    This is the past/box modality from temporal logic.
--/
-noncomputable def rely (φ : ProcPred) : ProcPred :=
-  -- In full OSLF, this is the right adjoint to possibly
-  -- For now, we use identity as placeholder
-  φ
-
-/-! ## Key Properties -/
-
-/-- Possibly and rely form a Galois connection -/
-theorem possibly_rely_galois (φ ψ : ProcPred) :
-    possibly φ ≤ ψ ↔ φ ≤ rely ψ := by
-  -- With identity definitions, this is trivial
-  -- The real proof is in Reduction.galois_connection
-  unfold possibly rely
-  exact Iff.rfl
-
-/-- Possibly preserves joins (modal operator distributes over ∨) -/
-theorem possibly_sup (φ ψ : ProcPred) :
-    possibly (φ ⊔ ψ) = possibly φ ⊔ possibly ψ := by
-  unfold possibly
-  rfl
-
-/-- Rely preserves meets (modal operator distributes over ∧) -/
-theorem rely_inf (φ ψ : ProcPred) :
-    rely (φ ⊓ ψ) = rely φ ⊓ rely ψ := by
-  unfold rely
-  rfl
 
 /-! ## Summary
 
 This file establishes the type-theoretic foundations for the ρ-calculus:
 
-1. ✅ **RhoTheory**: The ρ-calculus as a λ-theory
-2. ✅ **NamePred**: Predicates on names (namespaces)
-3. ✅ **ProcPred**: Predicates on processes (codespaces)
+1. ✅ **NamePred**: Predicates on names — `Pattern → Prop` (per OSLF/Native Type Theory)
+2. ✅ **ProcPred**: Predicates on processes — `Pattern → Prop` (per OSLF/Native Type Theory)
 4. ✅ **Barbs**: Observable communication capabilities
 5. ✅ **BarbedRelation**: Relations for bisimulation
-6. ⚠️ **Modal operators**: `possibly` and `rely` (axiomatized)
-7. ⚠️ **Galois connection**: `possibly_rely_galois` (needs proof)
 
-**Connection to OSLF**: The modal operators ◇ and ⧫ are generated from
-the COMM rewrite rule. The full construction requires:
-- Explicit reduction relation semantics
-- Comprehension in the topos (subobject classifier)
-- Proof that ◇ ⊣ ⧫ forms an adjunction
+**Modal operators** (`possiblyProp`, `relyProp`) and the **Galois connection** are in
+Reduction.lean, where they have access to the reduction relation. See Reduction.lean
+for the proven Galois connection theorem.
 
-**Next**: Soundness.lean for the substitutability theorem
+This file provides the static predicate structure. Operational semantics belongs in
+Reduction.lean.
 -/
 
 end Mettapedia.OSLF.RhoCalculus

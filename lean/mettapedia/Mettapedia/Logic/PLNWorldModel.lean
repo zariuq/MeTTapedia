@@ -34,6 +34,8 @@ inductive PLNQuery (Atom : Type*) where
   | prop : Atom → PLNQuery Atom
   /-- Evidence for a link/conditional. -/
   | link : Atom → Atom → PLNQuery Atom
+  /-- Evidence for a conditional with multiple antecedents (conjunction). -/
+  | linkCond : List Atom → Atom → PLNQuery Atom
 
 /-! ## Interface -/
 
@@ -119,6 +121,9 @@ def propEvidence (W : State) (a : Atom) : Evidence :=
 
 def linkEvidence (W : State) (a b : Atom) : Evidence :=
   WorldModel.evidence (State := State) (Query := PLNQuery Atom) W (.link a b)
+
+def linkCondEvidence (W : State) (as : List Atom) (b : Atom) : Evidence :=
+  WorldModel.evidence (State := State) (Query := PLNQuery Atom) W (.linkCond as b)
 
 noncomputable def propStrength (W : State) (a : Atom) : ℝ≥0∞ :=
   Evidence.toStrength (propEvidence (State := State) (Atom := Atom) W a)

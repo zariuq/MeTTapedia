@@ -4,6 +4,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.ENNReal.Basic
 import Mettapedia.ProbabilityTheory.BayesianNetworks.FactorGraph
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DiscreteSemantics
+import Mettapedia.ProbabilityTheory.BayesianNetworks.ValuationAlgebra
 
 /-!
 # Variable Elimination for Discrete Factor Graphs (Exact Query Engine)
@@ -38,6 +39,11 @@ variable (fg : FactorGraph V K)
 /-- An assignment on a finite scope. -/
 abbrev Assign (S : Finset V) : Sort _ :=
   ∀ v ∈ S, fg.stateSpace v
+
+/-- Restrict a full configuration to a finite scope. -/
+noncomputable def fullAssign (x : fg.FullConfig) (S : Finset V) :
+    FactorGraph.Assign (fg := fg) S :=
+  fun v _ => x v
 
 noncomputable instance (S : Finset V) [∀ v, Fintype (fg.stateSpace v)] :
     Fintype (FactorGraph.Assign (fg := fg) S) := by
@@ -91,6 +97,7 @@ noncomputable def mul (φ ψ : Factor fg) [Mul K] : Factor fg :=
       φ.potential (FactorGraph.restrict (fg := fg) (h := hφ) x) *
       ψ.potential (FactorGraph.restrict (fg := fg) (h := hψ) x)⟩
 
+
 /-- Extend an assignment on `scope \ {v}` with a value for `v`. -/
 noncomputable def extend
     (φ : Factor fg) (v : V) (hv : v ∈ φ.scope)
@@ -136,6 +143,19 @@ noncomputable def sumOut (φ : Factor fg) (v : V) [Fintype (fg.stateSpace v)]
           φ.potential (extend (φ := φ) v hv x val))
     · exact φ
 
+lemma sumOut_def (φ : Factor fg) (v : V) [Fintype (fg.stateSpace v)]
+    [AddCommMonoid K] :
+    Factor.sumOut (φ := φ) v =
+      (if hv : v ∈ φ.scope then
+          ⟨φ.scope.erase v, fun x =>
+              (Finset.univ : Finset (fg.stateSpace v)).sum
+                (fun val => φ.potential (extend (φ := φ) v hv x val))⟩
+        else φ) := by
+  classical
+  by_cases hv : v ∈ φ.scope
+  · simp [Factor.sumOut, hv]
+  · simp [Factor.sumOut, hv]
+
 lemma sumOut_scope (φ : Factor fg) (v : V) [Fintype (fg.stateSpace v)]
     [AddCommMonoid K] :
     (Factor.sumOut (φ := φ) v).scope = φ.scope.erase v := by
@@ -156,7 +176,8 @@ noncomputable def oneFactor (fg : FactorGraph V K) [One K] : Factor fg :=
   ⟨∅, fun _ => 1⟩
 
 noncomputable def combineAll (fs : List (Factor fg)) [One K] [Mul K] : Factor fg :=
-  fs.foldl (fun a b => Factor.mul (fg := fg) a b) (oneFactor (fg := fg))
+  fs.foldr (fun f acc => Factor.mul (fg := fg) f acc) (oneFactor (fg := fg))
+
 
 /-- Sum out a list of variables from a single factor (gold semantics for a combined factor). -/
 noncomputable def sumOutAll (f : Factor fg) (order : List V)
@@ -188,20 +209,15 @@ lemma eraseList_eq_sdiff (s : Finset V) (order : List V) :
         _ = s \ (List.toFinset (v :: vs)) := by
           simp [List.toFinset_cons]
 
-/-- Multiply a list of factors into a single factor. -/
-noncomputable def foldlMul (fs : List (Factor fg)) [Mul K] : Option (Factor fg) :=
-  match fs with
-  | [] => none
-  | f :: fs' => some <| fs'.foldl (fun a b => Factor.mul (fg := fg) a b) f
-
 /-- Eliminate a variable from a list of factors by VE. -/
 noncomputable def eliminateVar (fs : List (Factor fg)) (v : V)
     [Fintype (fg.stateSpace v)] [CommSemiring K] : List (Factor fg) :=
   let hit := fs.filter (fun f => v ∈ f.scope)
   let rest := fs.filter (fun f => v ∉ f.scope)
-  match foldlMul (fg := fg) hit with
-  | none => rest
-  | some f =>
+  match hit with
+  | [] => rest
+  | _ =>
+      let f := combineAll (fg := fg) hit
       let f' := Factor.sumOut (φ := f) v
       f' :: rest
 
@@ -210,51 +226,176 @@ noncomputable def eliminateVars (fs : List (Factor fg)) (order : List V)
     [∀ v, Fintype (fg.stateSpace v)] [CommSemiring K] : List (Factor fg) :=
   order.foldl (fun acc v => eliminateVar (fg := fg) acc v) fs
 
-/-! ## Singleton-list correctness (combine-then-marginalize base case) -/
+/-! ## Bridge to valuation algebra (full-config semantics) -/
 
-theorem eliminateVar_singleton (f : Factor fg) (v : V)
-    [Fintype (fg.stateSpace v)] [CommSemiring K] :
-    eliminateVar (fg := fg) [f] v = [Factor.sumOut (φ := f) v] := by
+namespace Factor
+
+variable {fg : FactorGraph V K}
+
+local notation "β" => (fun v : V => fg.stateSpace v)
+
+noncomputable def toValuation (φ : Factor fg) : Valuation V β K :=
+  ⟨φ.scope, fun x => φ.potential (fun v _ => x v)⟩
+
+omit [DecidableEq V] in
+lemma restrict_full (x : FullConfig V β) {S T : Finset V} (h : S ⊆ T) :
+    FactorGraph.restrict (fg := fg) (h := h) (fun v _ => x v) =
+      (fun v _ => x v) := by
+  funext v _
+  rfl
+
+omit [DecidableEq V] in
+lemma toValuation_respectsScope (φ : Factor fg) :
+    RespectsScope (toValuation (φ := φ)) := by
+  intro x y hxy
+  have hassign : (fun v (hv : v ∈ φ.scope) => x v) =
+      (fun v (hv : v ∈ φ.scope) => y v) := by
+    funext v hv
+    exact hxy v hv
+  simp [toValuation, hassign]
+
+lemma toValuation_mul (φ ψ : Factor fg) [Mul K] :
+    toValuation (φ := Factor.mul (fg := fg) φ ψ) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+        (φ := toValuation (φ := φ)) (ψ := toValuation (φ := ψ)) := by
+  apply Valuation.ext
+  · rfl
+  · intro x
+    simp [toValuation, Factor.mul, Mettapedia.ProbabilityTheory.BayesianNetworks.combine,
+      restrict_full]
+
+omit [DecidableEq V] in
+lemma toValuation_oneFactor [One K] :
+    toValuation (φ := oneFactor fg) =
+      oneValuation V β K := by
+  apply Valuation.ext
+  · rfl
+  · intro x
+    simp [toValuation, oneFactor, oneValuation]
+
+lemma sumOut_potential_of_mem_full (φ : Factor fg) (v : V)
+    [Fintype (fg.stateSpace v)] [AddCommMonoid K] (hv : v ∈ φ.scope)
+    (x : FullConfig V β) :
+    (toValuation (φ := Factor.sumOut (φ := φ) v)).val x =
+      ∑ val : fg.stateSpace v,
+        φ.potential (Factor.extend (φ := φ) v hv (fun u _ => x u) val) := by
   classical
-  by_cases hv : v ∈ f.scope
-  · simp [eliminateVar, foldlMul, hv, Factor.sumOut]
-  · simp [eliminateVar, foldlMul, hv, Factor.sumOut]
+  dsimp [toValuation]
+  rw [sumOut_def]
+  let A : (v ∈ φ.scope) → Factor fg := fun hv' =>
+    ⟨φ.scope.erase v, fun x =>
+        (Finset.univ : Finset (fg.stateSpace v)).sum
+          (fun val => φ.potential (Factor.extend (φ := φ) v hv' x val))⟩
+  have hif : (if hv' : v ∈ φ.scope then A hv' else φ) = A hv := by
+    by_cases hv' : v ∈ φ.scope
+    · simp [hv']
+    · exact (False.elim (hv' hv))
+  rw [hif]
 
-theorem eliminateVars_singleton (f : Factor fg) (order : List V)
-    [∀ v, Fintype (fg.stateSpace v)] [CommSemiring K] :
-    eliminateVars (fg := fg) [f] order = [sumOutAll (fg := fg) f order] := by
+lemma sumOut_potential_of_not_mem_full (φ : Factor fg) (v : V)
+    [Fintype (fg.stateSpace v)] [AddCommMonoid K] (hv : v ∉ φ.scope)
+    (x : FullConfig V β) :
+    (toValuation (φ := Factor.sumOut (φ := φ) v)).val x =
+      φ.potential (fun u _ => x u) := by
+  classical
+  dsimp [toValuation]
+  rw [sumOut_def]
+  let A : (v ∈ φ.scope) → Factor fg := fun hv' =>
+    ⟨φ.scope.erase v, fun x =>
+        (Finset.univ : Finset (fg.stateSpace v)).sum
+          (fun val => φ.potential (Factor.extend (φ := φ) v hv' x val))⟩
+  have hif : (if hv' : v ∈ φ.scope then A hv' else φ) = φ := by
+    by_cases hv' : v ∈ φ.scope
+    · exact (False.elim (hv hv'))
+    · simp [hv']
+  rw [hif]
+
+lemma toValuation_sumOut (φ : Factor fg) (v : V)
+    [Fintype (fg.stateSpace v)] [AddCommMonoid K] :
+    toValuation (φ := Factor.sumOut (φ := φ) v) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.sumOut
+        (φ := toValuation (φ := φ)) v := by
+  classical
+  by_cases hv : v ∈ φ.scope
+  · apply Valuation.ext
+    · simp [toValuation, Factor.sumOut, Mettapedia.ProbabilityTheory.BayesianNetworks.sumOut, hv]
+    · intro x
+      have hassign :
+          ∀ val : fg.stateSpace v,
+            (fun u hu => Factor.extend (φ := φ) v hv (fun u hu => x u) val u hu) =
+              (fun u hu => update x v val u) := by
+            intro val
+            funext u hu
+            by_cases h : u = v
+            · subst h
+              simp [Factor.extend, update]
+            · simp [Factor.extend, update, h]
+      calc
+        (toValuation (φ := Factor.sumOut (φ := φ) v)).val x =
+            (∑ val : fg.stateSpace v,
+              φ.potential (Factor.extend (φ := φ) v hv (fun u hu => x u) val)) := by
+                simpa using
+                  (sumOut_potential_of_mem_full (φ := φ) (v := v) (hv := hv) x)
+        _ = ∑ val : fg.stateSpace v,
+              φ.potential (fun u hu => update x v val u) := by
+                refine Finset.sum_congr rfl ?_
+                intro val _
+                simp [hassign val]
+        _ = (Mettapedia.ProbabilityTheory.BayesianNetworks.sumOut
+              (φ := toValuation (φ := φ)) v).val x := by
+                simp [toValuation, Mettapedia.ProbabilityTheory.BayesianNetworks.sumOut, hv]
+  · apply Valuation.ext
+    · simp [toValuation, Factor.sumOut, Mettapedia.ProbabilityTheory.BayesianNetworks.sumOut, hv]
+    · intro x
+      calc
+        (toValuation (φ := Factor.sumOut (φ := φ) v)).val x =
+            φ.potential (fun u hu => x u) := by
+              simpa using
+                (sumOut_potential_of_not_mem_full (φ := φ) (v := v) (hv := hv) x)
+        _ = (Mettapedia.ProbabilityTheory.BayesianNetworks.sumOut
+              (φ := toValuation (φ := φ)) v).val x := by
+              simp [toValuation, Mettapedia.ProbabilityTheory.BayesianNetworks.sumOut, hv]
+
+lemma toValuation_combineAll (fs : List (Factor fg)) [One K] [Mul K] :
+    toValuation (φ := combineAll fs) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+        (fs.map fun f => toValuation (φ := f)) := by
+  classical
+  induction fs with
+  | nil =>
+      simp [combineAll, toValuation_oneFactor,
+        Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll, oneValuation]
+  | cons f fs ih =>
+      calc
+        toValuation (φ := combineAll (f :: fs)) =
+            Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+              (φ := toValuation (φ := f))
+              (ψ := toValuation (φ := combineAll fs)) := by
+                simp [combineAll, toValuation_mul]
+        _ =
+            Mettapedia.ProbabilityTheory.BayesianNetworks.combine
+              (φ := toValuation (φ := f))
+              (ψ := Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+                (fs.map fun g => toValuation (φ := g))) := by
+                simp [ih]
+        _ =
+            Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll
+              (toValuation (φ := f) :: fs.map fun g => toValuation (φ := g)) := by
+                simp [Mettapedia.ProbabilityTheory.BayesianNetworks.combineAll]
+
+lemma toValuation_sumOutAll (f : Factor fg) (order : List V)
+    [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K] :
+    toValuation (φ := sumOutAll f order) =
+      Mettapedia.ProbabilityTheory.BayesianNetworks.sumOutAll
+        (φ := toValuation (φ := f)) order := by
   classical
   induction order generalizing f with
   | nil =>
-      simp [eliminateVars, sumOutAll]
+      simp [sumOutAll, Mettapedia.ProbabilityTheory.BayesianNetworks.sumOutAll]
   | cons v vs ih =>
-      have h := ih (Factor.sumOut (φ := f) v)
-      simpa [eliminateVars, sumOutAll, eliminateVar_singleton] using h
+      simpa [sumOutAll, toValuation_sumOut] using ih (f := Factor.sumOut (φ := f) v)
 
-theorem eliminateVars_combineAll (fs : List (Factor fg)) (order : List V)
-    [∀ v, Fintype (fg.stateSpace v)] [CommSemiring K] [One K] :
-    eliminateVars (fg := fg) [combineAll (fg := fg) fs] order =
-      [sumOutAll (fg := fg) (combineAll (fg := fg) fs) order] := by
-  simpa using eliminateVars_singleton (fg := fg) (f := combineAll (fg := fg) fs) order
-
-/-! ## Algebraic soundness (single-step) -/
-
-theorem sumOut_mul_def_of_mem (φ ψ : Factor fg) (v : V)
-    (hv : v ∈ φ.scope ∪ ψ.scope)
-    [Fintype (fg.stateSpace v)] [CommSemiring K] :
-    Factor.sumOut (φ := Factor.mul (fg := fg) φ ψ) v =
-      ⟨(φ.scope ∪ ψ.scope).erase v, fun x =>
-        (Finset.univ : Finset (fg.stateSpace v)).sum (fun val =>
-          φ.potential
-              (FactorGraph.restrict (fg := fg) (h := by
-                intro u hu; exact Finset.mem_union.mpr (Or.inl hu))
-                (Factor.extend (φ := Factor.mul (fg := fg) φ ψ) v hv x val)) *
-          ψ.potential
-              (FactorGraph.restrict (fg := fg) (h := by
-                intro u hu; exact Finset.mem_union.mpr (Or.inr hu))
-                (Factor.extend (φ := Factor.mul (fg := fg) φ ψ) v hv x val)))⟩ := by
-  classical
-  simp [Factor.sumOut, hv, Factor.mul]
+end Factor
 
 /-! ## Constant evaluation after elimination -/
 
@@ -303,7 +444,7 @@ noncomputable def addConstraints
     [∀ v, DecidableEq (fg.stateSpace v)] [Zero K] [One K] : List (Factor fg) :=
   cs.foldl (fun acc c => Factor.indicator (fg := fg) c.1 c.2 :: acc) fs
 
-/-! ## Exact query weights via VE -/
+/-! ## Exact query weights (semantic form) -/
 
 lemma sumOutAll_scope (f : Factor fg) (order : List V)
     [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K] :
@@ -333,19 +474,29 @@ noncomputable def factorsOfGraph (fg : FactorGraph V K) [Fintype fg.factors] :
 /-! ## List-based semantic form (factorization-as-state) -/
 
 /-- Exact unnormalized weight for a constraint set, starting from an explicit factor list.
-This is the canonical “WM = factorization” semantic form. -/
+This is the canonical “WM = factorization” semantic form: sum the joint potential
+over all configurations that satisfy the constraints. -/
 noncomputable def weightOfConstraintsList
     (fg : FactorGraph V K)
     (fs : List (Factor fg))
     (constraints : List (Σ v : V, fg.stateSpace v))
     [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)]
     [CommSemiring K] : K :=
-  let fs' := addConstraints (fg := fg) fs constraints
-  let order := (Finset.univ : Finset V).toList
-  let f := sumOutAll (fg := fg) (combineAll (fg := fg) fs') order
-  have hscope : f.scope = ∅ := by
-    simpa using sumOutAll_scope_univ (fg := fg) (f := combineAll (fg := fg) fs')
-  Factor.evalConst (fg := fg) f hscope
+by
+  classical
+  letI : Fintype fg.FullConfig := by
+    dsimp [FactorGraph.FullConfig]
+    infer_instance
+  let f := combineAll (fg := fg) fs
+  let cfgs : Finset (fg.FullConfig) := Finset.univ
+  -- A configuration satisfies all constraints if it agrees on each constraint.
+  let satisfies : fg.FullConfig → Prop :=
+    fun x => ∀ c ∈ constraints, x c.1 = c.2
+  exact
+    cfgs.sum (fun x =>
+      if satisfies x then
+        f.potential (FactorGraph.fullAssign (fg := fg) x f.scope)
+      else 0)
 
 /-- Exact unnormalized weight for a constraint set (semantic combine+sum-out form). -/
 noncomputable def weightOfConstraints
@@ -419,6 +570,30 @@ noncomputable def linkProbVE (cpt : bn.DiscreteCPT)
     letI : ∀ v, DecidableEq (fg.stateSpace v) := instDecEq
     let num := weightOfConstraints (fg := fg) [⟨a, valA⟩, ⟨b, valB⟩]
     let den := weightOfConstraints (fg := fg) [⟨a, valA⟩]
+    exact if den = 0 then 0 else num / den
+
+/-- Exact conditional probability `P(B = valB | constraints)` for a list of antecedents. -/
+noncomputable def linkProbVECond (cpt : bn.DiscreteCPT)
+    (constraints : List (Σ v : V, bn.stateSpace v)) (b : Σ v : V, bn.stateSpace v)
+    [DecidableRel bn.graph.edges]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] : ENNReal :=
+  by
+    classical
+    let fg := toFactorGraph (bn := bn) cpt
+    have instFactors : Fintype fg.factors := by
+      dsimp [fg, toFactorGraph]
+      infer_instance
+    have instState : ∀ v, Fintype (fg.stateSpace v) := by
+      intro v
+      simpa [fg, toFactorGraph] using (inferInstance : Fintype (bn.stateSpace v))
+    have instDecEq : ∀ v, DecidableEq (fg.stateSpace v) := by
+      intro v
+      simpa [fg, toFactorGraph] using (inferInstance : DecidableEq (bn.stateSpace v))
+    letI : Fintype fg.factors := instFactors
+    letI : ∀ v, Fintype (fg.stateSpace v) := instState
+    letI : ∀ v, DecidableEq (fg.stateSpace v) := instDecEq
+    let num := weightOfConstraints (fg := fg) (constraints ++ [b])
+    let den := weightOfConstraints (fg := fg) constraints
     exact if den = 0 then 0 else num / den
 
 end BayesianNetwork

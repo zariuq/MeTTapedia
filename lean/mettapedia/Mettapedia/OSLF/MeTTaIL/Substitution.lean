@@ -1,98 +1,27 @@
-import Mathlib.Data.Fin.Basic
 import Mathlib.Data.List.Basic
 import Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-!
 # Capture-Avoiding Substitution for MeTTaIL
 
-This file formalizes capture-avoiding substitution concepts,
-matching MeTTaIL's moniker-based approach.
+This file formalizes capture-avoiding substitution for MeTTaIL patterns,
+using named variables with an environment-based approach.
 
-## De Bruijn Representation
+## Key Definitions
 
-In de Bruijn representation:
-- Variables are represented by natural numbers (indices)
-- Index 0 refers to the innermost binder
-- Substitution is capture-avoiding by construction
+- `SubstEnv`: Substitution environment mapping names to patterns
+- `applySubst`: Apply a substitution environment to a pattern
+- `freeVars` / `isFresh`: Free variable analysis and freshness checking
+- `commSubst`: The COMM rule substitution `p[@q/x]`
 
 ## References
 
-- de Bruijn, "Lambda calculus notation with nameless dummies" (1972)
 - `/home/zar/claude/hyperon/mettail-rust/macros/src/gen/term_ops/subst.rs`
 -/
 
 namespace Mettapedia.OSLF.MeTTaIL.Substitution
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
-
-/-! ## Simple De Bruijn Terms
-
-We use a simple representation with just variables, applications, and lambdas.
-Arguments are kept as a single term (can be extended to pairs/tuples).
--/
-
-/-- Simple de Bruijn term (single argument applications) -/
-inductive SimpleTerm : Nat → Type where
-  | var : Fin n → SimpleTerm n
-  | app : String → SimpleTerm n → SimpleTerm n
-  | lam : SimpleTerm (n + 1) → SimpleTerm n
-  | unit : SimpleTerm n  -- For nullary constructors
-
-namespace SimpleTerm
-
-/-! ## Weakening -/
-
-/-- Weaken a term: shift all free variables up by one -/
-def weaken : SimpleTerm n → SimpleTerm (n + 1)
-  | var i => var ⟨i.val, Nat.lt_succ_of_lt i.isLt⟩
-  | app c arg => app c (weaken arg)
-  | lam body => lam (weakenBody body)
-  | unit => unit
-where
-  /-- Weaken body of a lambda (shifts index 0) -/
-  weakenBody : SimpleTerm (n + 1) → SimpleTerm (n + 2)
-    | var i =>
-      if i.val = 0 then var ⟨0, Nat.zero_lt_succ _⟩
-      else var ⟨i.val + 1, Nat.succ_lt_succ i.isLt⟩
-    | app c arg => app c (weakenBody arg)
-    | lam body => lam (weakenBody2 body)
-    | unit => unit
-  /-- Weaken under two binders -/
-  weakenBody2 : SimpleTerm (n + 2) → SimpleTerm (n + 3)
-    | var i =>
-      if i.val ≤ 1 then var ⟨i.val, Nat.lt_of_lt_of_le i.isLt (Nat.le_succ _)⟩
-      else var ⟨i.val + 1, Nat.succ_lt_succ i.isLt⟩
-    | app c arg => app c (weakenBody2 arg)
-    | lam _ => lam unit  -- Simplified: deep nesting not fully supported
-    | unit => unit
-
-/-! ## Substitution -/
-
-/-- Substitute term s for variable 0 in term t -/
-def subst (s : SimpleTerm n) : SimpleTerm (n + 1) → SimpleTerm n
-  | var i =>
-    if h : i.val = 0 then s
-    else var ⟨i.val - 1, by
-      have hi := i.isLt
-      omega⟩
-  | app c arg => app c (subst s arg)
-  | lam body => lam (subst (weaken s) body)
-  | unit => unit
-
-/-! ## Closed Terms -/
-
-/-- A closed term (no free variables) -/
-abbrev Closed := SimpleTerm 0
-
-/-- The identity function: λx. x -/
-def identity : Closed :=
-  lam (var ⟨0, Nat.zero_lt_one⟩)
-
-/-- K combinator: λx. λy. x -/
-def kCombinator : Closed :=
-  lam (lam (var ⟨1, Nat.one_lt_two⟩))
-
-end SimpleTerm
 
 /-! ## Environment-Based Substitution
 
@@ -101,7 +30,7 @@ We model this as a map from names to terms.
 -/
 
 /-- An environment maps variable names to patterns -/
-def SubstEnv := List (String × Pattern)
+abbrev SubstEnv := List (String × Pattern)
 
 namespace SubstEnv
 
@@ -601,22 +530,13 @@ theorem commSubst_def (p : Pattern) (x : String) (q : Pattern) :
     commSubst p x q = applySubst (SubstEnv.extend SubstEnv.empty x (.apply "NQuote" [q])) p := by
   rfl
 
-/-- Substitution composition: applying env after commSubst equals commSubst after env -/
-theorem subst_compose_comm (env : SubstEnv) (p : Pattern) (x : String) (q : Pattern) :
-    applySubst env (commSubst p x q) =
-    commSubst (applySubst (env.filter (·.1 != x)) p) x (applySubst env q) := by
-  sorry  -- TODO: Prove substitution composition for COMM rule
-
 /-! ## Summary
 
 This file provides:
 
-1. ✅ **Simple de Bruijn terms**: `SimpleTerm n` with intrinsic scoping
-2. ✅ **Weakening**: `weaken` shifts indices up
-3. ✅ **Substitution**: `subst` is capture-avoiding (for de Bruijn terms)
-4. ✅ **Environment-based substitution**: `SubstEnv` and `applySubst`
-5. ✅ **Freshness checking**: `freeVars`, `isFresh`, `checkFreshness`
-6. ✅ **COMM rule substitution**: `commSubst` for ρ-calculus
+1. ✅ **Environment-based substitution**: `SubstEnv` and `applySubst`
+2. ✅ **Freshness checking**: `freeVars`, `isFresh`, `checkFreshness`
+3. ✅ **COMM rule substitution**: `commSubst` for ρ-calculus
 
 **Proven theorems:**
 - `find_filter_neq`: Filtering out x doesn't affect lookup of y ≠ x
@@ -627,10 +547,10 @@ This file provides:
 - `subst_empty`: Empty substitution is identity (on patterns without explicit subst)
 - `subst_empty_list`: List version of above
 - `subst_fresh`: If x ∉ FV(p) ∧ p.noExplicitSubst, filtering x from env doesn't change result
-- **NEW**: `applySubst_quote`, `applySubst_drop`, `applySubst_output`, `applySubst_input`
-- **NEW**: Helper lemmas for reduction preservation proofs
+- `applySubst_quote`, `applySubst_drop`, `applySubst_output`, `applySubst_input`
+- Helper lemmas for reduction preservation proofs
 
-**No remaining sorries!**
+**0 sorries, 0 axioms**
 
 **Connection to MeTTaIL**: The `subst.rs` file in mettail-rust uses moniker's
 `Scope` type and environment-based substitution, which matches our `applySubst`.

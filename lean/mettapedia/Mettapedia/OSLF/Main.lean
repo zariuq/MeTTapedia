@@ -5,56 +5,65 @@ import Mettapedia.OSLF.RhoCalculus.Types
 import Mettapedia.OSLF.RhoCalculus.Soundness
 import Mettapedia.OSLF.RhoCalculus.Reduction
 import Mettapedia.OSLF.PiCalculus.Main
+import Mettapedia.OSLF.Framework.RewriteSystem
+import Mettapedia.OSLF.Framework.RhoInstance
+import Mettapedia.OSLF.Framework.CategoryBridge
 
 /-!
 # Operational Semantics in Logical Form (OSLF)
 
 Re-exports for the OSLF formalization, connecting MeTTaIL language definitions
-to categorical semantics via λ-theories.
+to categorical semantics via the OSLF algorithm.
 
 ## Module Structure
 
 ```
 OSLF/
-├── Main.lean              -- This file (re-exports)
+├── Main.lean                -- This file (re-exports)
+├── Framework/
+│   ├── RewriteSystem.lean   -- Abstract OSLF: RewriteSystem -> OSLFTypeSystem
+│   ├── RhoInstance.lean     -- ρ-calculus instance (proven Galois connection)
+│   └── CategoryBridge.lean  -- Bridge to GSLT categorical infrastructure
 ├── MeTTaIL/
-│   ├── Syntax.lean        -- LanguageDef AST (types, terms, equations, rewrites)
-│   ├── Semantics.lean     -- Interpretation into LambdaTheory
-│   └── Substitution.lean  -- Capture-avoiding substitution
-└── RhoCalculus/           -- (Future) ρ-calculus application
-    ├── Syntax.lean        -- ρ-calculus LanguageDef
-    └── Types.lean         -- Namespaces, codespaces, bisimulation
+│   ├── Syntax.lean          -- LanguageDef AST (types, terms, equations, rewrites)
+│   ├── Semantics.lean       -- InterpObj, pattern interpretation
+│   └── Substitution.lean    -- Capture-avoiding substitution
+├── RhoCalculus/
+│   ├── Types.lean           -- Namespaces, codespaces, bisimulation
+│   ├── Reduction.lean       -- COMM/DROP/PAR, modal operators, Galois connection
+│   ├── Soundness.lean       -- Substitutability, progress, type preservation
+│   ├── StructuralCongruence.lean
+│   ├── CommRule.lean
+│   ├── SpiceRule.lean
+│   └── PresentMoment.lean
+├── PiCalculus/              -- π-calculus and ρ-encoding
+└── NativeType/
+    └── Construction.lean    -- NT as (sort, pred) pairs, type formation rules
 ```
 
-## Main Components
+## Architecture
 
-### MeTTaIL DSL (Phase 3)
+The formalization has two layers:
 
-- `LanguageDef`: Complete language definition structure
-- `TypeExpr`: Type expressions (base, arrow, collection)
-- `Pattern`: Pattern terms with collection support
-- `GrammarRule`: Constructor definitions with syntax
-- `Equation`: Bidirectional equality rules
-- `RewriteRule`: Directional rewrite rules
+### Abstract Layer (Framework/)
+- `RewriteSystem`: sorts + terms + reduction (INPUT to OSLF)
+- `OSLFTypeSystem`: predicates + Frame + diamond/box + Galois connection (OUTPUT)
+- `NativeTypeOf`: native type = (sort, predicate) pair
 
-### Categorical Semantics
+### Concrete Layer (RhoCalculus/)
+- `Reduces`: COMM, DROP, PAR, EQUIV rules (Type-valued)
+- `possiblyProp` / `relyProp`: modal operators on `Pattern -> Prop`
+- `galois_connection`: proven diamond -| box
+- `HasType`: Typing judgment with substitutability and progress
 
-- `InterpObj`: Objects of the interpreted λ-theory
-- `interpLambdaTheory`: Convert LanguageDef to LambdaTheory
-- `rhoCalcTheory`: The ρ-calculus as a λ-theory
-
-### Substitution
-
-- `SimpleTerm`: De Bruijn indexed terms
-- `SubstEnv`: Environment-based substitution
-- `applySubst`: Capture-avoiding substitution
-- `commSubst`: COMM rule substitution for ρ-calculus
+The concrete layer is fully proven (0 sorries). The abstract framework
+(`rhoOSLF`) instantiates the general OSLF construction for ρ-calculus,
+lifting the proven Galois connection.
 
 ## References
 
 - Williams & Stay, "Native Type Theory" (ACT 2021)
 - Meredith & Stay, "Operational Semantics in Logical Form"
-- `/home/zar/claude/hyperon/mettail-rust/` - Rust implementation
 -/
 
 namespace Mettapedia.OSLF
@@ -78,12 +87,9 @@ export Mettapedia.OSLF.MeTTaIL.Syntax (
 export Mettapedia.OSLF.MeTTaIL.Semantics (
   InterpObj
   WellFormedLanguage
-  interpLambdaTheory
-  rhoCalcTheory
 )
 
 export Mettapedia.OSLF.MeTTaIL.Substitution (
-  SimpleTerm
   SubstEnv
   applySubst
   freeVars
@@ -91,8 +97,8 @@ export Mettapedia.OSLF.MeTTaIL.Substitution (
   commSubst
 )
 
+-- Re-export RhoCalculus modules
 export Mettapedia.OSLF.RhoCalculus (
-  RhoTheory
   ProcObj
   NameObj
   NamePred
@@ -100,8 +106,6 @@ export Mettapedia.OSLF.RhoCalculus (
   BarbedParams
   BarbedRelation
   ProcEquiv
-  possibly
-  rely
 )
 
 export Mettapedia.OSLF.RhoCalculus.Soundness (
@@ -117,6 +121,21 @@ export Mettapedia.OSLF.RhoCalculus.Reduction (
   possiblyProp
   relyProp
   galois_connection
+)
+
+-- Re-export Framework modules
+export Mettapedia.OSLF.Framework (
+  RewriteSystem
+  OSLFTypeSystem
+  NativeTypeOf
+  Substitutability
+)
+
+export Mettapedia.OSLF.Framework.RhoInstance (
+  RhoSort
+  rhoRewriteSystem
+  rhoOSLF
+  rho_mathlib_galois
 )
 
 end Mettapedia.OSLF
