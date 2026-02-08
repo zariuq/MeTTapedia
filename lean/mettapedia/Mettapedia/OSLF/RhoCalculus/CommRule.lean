@@ -97,10 +97,10 @@ noncomputable def futureSetAsPattern (futures : Set Pattern) (h : Set.Finite fut
     `spiceEval_zero_finite`. For n>0, finiteness requires finite branching
     (standard in process calculus, not provable without quotienting by SC).
 -/
-noncomputable def spiceCommSubst (pBody : Pattern) (boundVar : String) (q : Pattern) (n : ℕ)
+noncomputable def spiceCommSubst (pBody : Pattern) (q : Pattern) (n : ℕ)
     (h_fin : (spiceEval q n).Finite) : Pattern :=
   let futurePattern := futureSetAsPattern (spiceEval q n) h_fin
-  applySubst (SubstEnv.extend SubstEnv.empty boundVar (.apply "NQuote" [futurePattern])) pBody
+  openBVar 0 (.apply "NQuote" [futurePattern]) pBody
 
 /-! ## Spice COMM Reduction
 
@@ -120,12 +120,12 @@ inductive SpiceCommReduction (n : ℕ) : Pattern → Pattern → Prop where
       The input body p receives the FUTURES of q (all states reachable in ≤n steps)
       instead of just q itself. Carries a finiteness proof for the future set.
   -/
-  | spice_comm {channel q p : Pattern} {x : String} {rest : List Pattern}
+  | spice_comm {channel q p : Pattern} {rest : List Pattern}
       (h_fin : (spiceEval q n).Finite) :
       SpiceCommReduction n
         (.collection .hashBag ([.apply "POutput" [channel, q],
-                                .apply "PInput" [channel, .lambda x p]] ++ rest) none)
-        (.collection .hashBag ([spiceCommSubst p x q n h_fin] ++ rest) none)
+                                .apply "PInput" [channel, .lambda p]] ++ rest) none)
+        (.collection .hashBag ([spiceCommSubst p q n h_fin] ++ rest) none)
 
   /-- Structural: reduction under parallel composition (head position) -/
   | par {p q : Pattern} {rest : List Pattern} :
@@ -187,9 +187,9 @@ theorem futureSetAsPattern_singleton (q : Pattern) (h : Set.Finite ({q} : Set Pa
     2. `futureSetAsPattern {q} h = q` (futureSetAsPattern_singleton)
     3. Proof irrelevance (Subsingleton.elim) for finiteness proofs
 -/
-theorem spiceCommSubst_zero (p : Pattern) (x : String) (q : Pattern)
+theorem spiceCommSubst_zero (p : Pattern) (q : Pattern)
     (h_fin : (spiceEval q 0).Finite) :
-    spiceCommSubst p x q 0 h_fin = commSubst p x q := by
+    spiceCommSubst p q 0 h_fin = commSubst p q := by
   unfold spiceCommSubst commSubst
   have h1 : spiceEval q 0 = {q} := spice_zero_is_current q
   simp only [h1]
@@ -204,16 +204,16 @@ theorem spiceCommSubst_zero (p : Pattern) (x : String) (q : Pattern)
 
     **Proof**: Standard COMM rule + spiceCommSubst_zero lemma showing substitutions are equal.
 -/
-theorem spice_comm_zero_is_comm {channel q p : Pattern} {x : String} {rest : List Pattern}
+theorem spice_comm_zero_is_comm {channel q p : Pattern} {rest : List Pattern}
     (h_fin : (spiceEval q 0).Finite) :
     SpiceCommReduction 0
       (.collection .hashBag ([.apply "POutput" [channel, q],
-                              .apply "PInput" [channel, .lambda x p]] ++ rest) none)
-      (.collection .hashBag ([spiceCommSubst p x q 0 h_fin] ++ rest) none) →
+                              .apply "PInput" [channel, .lambda p]] ++ rest) none)
+      (.collection .hashBag ([spiceCommSubst p q 0 h_fin] ++ rest) none) →
     Nonempty (Reduces
       (.collection .hashBag ([.apply "POutput" [channel, q],
-                              .apply "PInput" [channel, .lambda x p]] ++ rest) none)
-      (.collection .hashBag ([commSubst p x q] ++ rest) none)) := by
+                              .apply "PInput" [channel, .lambda p]] ++ rest) none)
+      (.collection .hashBag ([commSubst p q] ++ rest) none)) := by
   intro _
   exact ⟨Reduces.comm⟩
 
@@ -259,8 +259,8 @@ theorem reactive_is_standard (p : Pattern) :
   intro q hpq
   -- Induction on the spice reduction derivation with n=0
   induction hpq with
-  | @spice_comm channel qpat pbody x rest h_fin =>
-    have h_eq : [spiceCommSubst pbody x qpat 0 h_fin] = [commSubst pbody x qpat] := by
+  | @spice_comm channel qpat pbody rest h_fin =>
+    have h_eq : [spiceCommSubst pbody qpat 0 h_fin] = [commSubst pbody qpat] := by
       rw [spiceCommSubst_zero]
     rw [h_eq]
     exact ⟨Reduces.comm⟩

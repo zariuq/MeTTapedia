@@ -244,6 +244,35 @@ lemma card_image_segmentSwap_prefixPatternFiber_of_prefix_before_swap
   exact segmentSwap_injective (k := k) (a := a) (L1 := L1) (L2 := L2)
     (hL1 := hL1) (hL2 := hL2) (hcN := hcN) hxy
 
+/-- Build an image-equality witness for prefix-pattern fibers from
+forward/backward segment-swap membership maps. -/
+lemma image_eq_segmentSwap_prefixPatternFiber_of_maps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (hmap :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 hcN ∈
+          prefixPatternFiber (k := k) (hN := hN) e s q)
+    (hmapInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1 (by omega) ∈
+          prefixPatternFiber (k := k) (hN := hN) e s p) :
+    (prefixPatternFiber (k := k) (hN := hN) e s p).image
+      (fun xs => segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+      prefixPatternFiber (k := k) (hN := hN) e s q := by
+  classical
+  apply Finset.Subset.antisymm
+  · intro ys hys
+    rcases Finset.mem_image.1 hys with ⟨xs, hxs, rfl⟩
+    exact hmap xs hxs
+  · intro ys hys
+    refine Finset.mem_image.2 ?_
+    refine ⟨segmentSwap ys a L2 L1 hL2 hL1 (by omega), hmapInv ys hys, ?_⟩
+    -- involution with swapped lengths
+    simpa using
+      (segmentSwap_involutive (k := k) ys a L2 L1 hL2 hL1 (by omega))
+
 /-- WOR-side mass for pattern `p`: cardinality ratio in the long-horizon fiber. -/
 def worPatternMass
     {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k) (p : ExcursionList k) : ENNReal :=
@@ -270,12 +299,2077 @@ def shortPatternFiber
     (n : ℕ) (e : MarkovState k) (p : ExcursionList k) : Finset (Traj k (Nat.succ n)) :=
   (fiber k (Nat.succ n) e).filter (fun ys => excursionListOfTraj (k := k) ys = p)
 
+/-! ## Helper list lemmas for adjacent-excursion swaps -/
+
+def excLen (e : ExcursionType k) : ℕ :=
+  e.length - 1
+
+def excSteps (l : ExcursionList k) : ℕ :=
+  (l.map excLen).sum
+
+lemma excLen_trajSegment_of_excursionPair
+    {n : ℕ} (ys : Traj k n)
+    {p : Fin (n + 1) × Fin (n + 1)}
+    (hp : p ∈ excursionPairs (k := k) ys) :
+    excLen (k := k) (trajSegment (k := k) ys p.1 p.2) =
+      p.2.1 - p.1.1 := by
+  have hp_lt : p.1 < p.2 := fst_lt_snd_of_mem_excursionPairs (k := k) ys hp
+  have hp_le : p.1 ≤ p.2 := by exact (le_of_lt hp_lt)
+  -- length = (p2 - p1 + 1), so length - 1 = p2 - p1
+  have hlen :
+      (trajSegment (k := k) ys p.1 p.2).length =
+        p.2.1 - p.1.1 + 1 := by
+    exact trajSegment_length (k := k) ys p.1 p.2 (by omega) (by omega) hp_le
+  unfold excLen
+  -- reduce with Nat arithmetic
+  omega
+
+lemma excSteps_preSeg_eq_sum_diffs
+    {n : ℕ} (ys : Traj k n)
+    (pre : List (Fin (n + 1) × Fin (n + 1)))
+    (preSeg : ExcursionList k)
+    (hpre : preSeg = pre.map (fun pr => trajSegment (k := k) ys pr.1 pr.2))
+    (hmem : ∀ pr ∈ pre, pr ∈ excursionPairs (k := k) ys) :
+    excSteps (k := k) preSeg =
+      (pre.map (fun pr => pr.2.1 - pr.1.1)).sum := by
+  classical
+  subst hpre
+  -- rewrite with excLen and map
+  unfold excSteps
+  simp only [List.map_map]
+  have :
+      pre.map (excLen (k := k) ∘ fun pr => trajSegment (k := k) ys pr.1 pr.2) =
+        pre.map (fun pr => pr.2.1 - pr.1.1) := by
+    apply List.map_congr_left
+    intro pr hpr
+    have hp : pr ∈ excursionPairs (k := k) ys := hmem pr hpr
+    simpa [Function.comp, excLen_trajSegment_of_excursionPair (k := k) ys (p := pr) hp]
+  rw [this]
+
+-- A list-level reconstruction lemma: if l.zip l.tail decomposes as
+-- pre ++ [p1, p2] ++ suf, then l = pre.map fst ++ [p1.1, p1.2, p2.2] ++ suf.map snd.
+lemma list_eq_of_zip_tail_decomp
+    {α : Type*} (l : List α)
+    (pre suf : List (α × α)) (p1 p2 : α × α)
+    (hpairs : l.zip l.tail = pre ++ [p1, p2] ++ suf) :
+    l = pre.map Prod.fst ++ [p1.1, p1.2, p2.2] ++ suf.map Prod.snd := by
+  revert l
+  induction pre with
+  | nil =>
+      intro l hpairs
+      simp only [List.nil_append, List.map_nil, List.cons_append] at hpairs ⊢
+      -- hpairs : l.zip l.tail = p1 :: p2 :: suf
+      cases l with
+      | nil => simp at hpairs
+      | cons a tl =>
+          cases tl with
+          | nil => simp at hpairs
+          | cons b tl2 =>
+              cases tl2 with
+              | nil =>
+                  simp [List.zip_cons_cons, List.tail_cons] at hpairs
+              | cons c rest =>
+                  simp only [List.tail_cons, List.zip_cons_cons, List.nil_append] at hpairs
+                  -- hpairs : (a, b) :: (b, c) :: (c :: rest).zip rest = p1 :: p2 :: suf
+                  have h1 : (a, b) = p1 := by injection hpairs
+                  have h2tail : (b, c) :: (c :: rest).zip rest = p2 :: suf := by injection hpairs
+                  have h2 : (b, c) = p2 := by injection h2tail
+                  have hsuf : (c :: rest).zip rest = suf := by injection h2tail
+                  subst h1; subst h2
+                  simp only [Prod.fst, Prod.snd, List.cons.injEq, true_and]
+                  -- goal : rest = suf.map Prod.snd
+                  rw [← hsuf]; clear hsuf hpairs h2tail
+                  induction rest generalizing c with
+                  | nil => simp
+                  | cons d ds ih =>
+                      simp only [List.zip_cons_cons, List.map_cons, Prod.snd, List.cons.injEq,
+                        true_and]
+                      exact ih d
+  | cons q qs ih =>
+      intro l hpairs
+      cases l with
+      | nil => simp at hpairs
+      | cons x xs =>
+          cases xs with
+          | nil => simp at hpairs
+          | cons y ys =>
+              simp only [List.tail_cons, List.zip_cons_cons, List.cons_append] at hpairs
+              have hq : (x, y) = q := by injection hpairs
+              have htail : (y :: ys).zip ys = qs ++ [p1, p2] ++ suf := by injection hpairs
+              have hrec := ih (y :: ys) htail
+              subst hq
+              simp only [List.map_cons, List.cons_append]
+              exact congrArg (List.cons x) hrec
+
+-- Reconstruction lemma specialized to `returnPositionsList`.
+lemma returnPositionsList_eq_of_excursionPairs_decomp
+    {n : ℕ} (ys : Traj k n)
+    (pre suf : List (Fin (n + 1) × Fin (n + 1)))
+    (p1 p2 : Fin (n + 1) × Fin (n + 1))
+    (hpairs : excursionPairs (k := k) ys = pre ++ [p1, p2] ++ suf) :
+    returnPositionsList (k := k) ys =
+      pre.map Prod.fst ++ [p1.1, p1.2, p2.2] ++ suf.map Prod.snd := by
+  unfold excursionPairs at hpairs
+  simpa [returnPositionsList] using
+    (list_eq_of_zip_tail_decomp
+      (l := returnPositionsList (k := k) ys)
+      (pre := pre) (suf := suf) (p1 := p1) (p2 := p2) hpairs)
+
+/-- If `l.zip l.tail = pre ++ [(x,y),(y,z)] ++ suf` and we form
+`l' = pre.map Prod.fst ++ [x, w, z] ++ suf.map Prod.snd`,
+then `l'.zip l'.tail = pre ++ [(x,w),(w,z)] ++ suf`. -/
+private lemma zip_tail_replace_middle
+    {α : Type*} (l : List α)
+    (pre suf : List (α × α)) (x y z w : α)
+    (hzip : l.zip l.tail = pre ++ [(x, y), (y, z)] ++ suf) :
+    let l' := pre.map Prod.fst ++ [x, w, z] ++ suf.map Prod.snd
+    l'.zip l'.tail = pre ++ [(x, w), (w, z)] ++ suf := by
+  intro l'
+  have hl := list_eq_of_zip_tail_decomp l pre suf (x, y) (y, z) hzip
+  -- Extract the suffix zip property from the original hzip + hl
+  have hsuf_zip : (z :: suf.map Prod.snd).zip (suf.map Prod.snd) = suf := by
+    rw [hl] at hzip
+    clear hl l l'
+    induction pre with
+    | nil =>
+        simp only [List.nil_append, List.map_nil, List.tail_cons, List.zip_cons_cons,
+          List.cons_append, List.cons.injEq] at hzip
+        exact hzip.2.2
+    | cons q qs ih_pre =>
+        cases qs with
+        | nil =>
+            simp only [List.map_cons, List.map_nil, List.nil_append, List.cons_append,
+              List.tail_cons, List.zip_cons_cons, List.cons.injEq] at hzip
+            exact hzip.2.2.2
+        | cons q' qs' =>
+            simp only [List.map_cons, List.cons_append, List.tail_cons, List.zip_cons_cons,
+              List.cons.injEq] at hzip
+            exact ih_pre hzip.2
+  -- Now prove the main result by induction on pre
+  show l'.zip l'.tail = pre ++ [(x, w), (w, z)] ++ suf
+  revert l hzip hl
+  induction pre with
+  | nil =>
+      intro l hzip hl
+      simp only [l', List.nil_append, List.map_nil, List.tail_cons, List.zip_cons_cons,
+        List.cons_append, hsuf_zip]
+  | cons q qs ih_pre =>
+      intro l hzip hl
+      rw [hl] at hzip
+      show l'.zip l'.tail = (q :: qs) ++ [(x, w), (w, z)] ++ suf
+      -- Case split on qs to allow zip_cons_cons to fire
+      cases qs with
+      | nil =>
+          -- pre = [q], l = q.1 :: [x, y, z] ++ suf.map snd
+          simp only [List.map_cons, List.map_nil, List.nil_append, List.cons_append,
+            List.tail_cons, List.zip_cons_cons, List.cons.injEq] at hzip
+          -- hzip.1 : (q.1, x) = q
+          -- hzip.2.1 : (x, y) = (x, y)  (trivial)
+          -- hzip.2.2.1 : (y, z) = (y, z)  (trivial)
+          -- hzip.2.2.2 : (z :: suf.map snd).zip (suf.map snd) = suf
+          simp only [l', List.map_cons, List.map_nil, List.nil_append, List.cons_append,
+            List.tail_cons, List.zip_cons_cons, hsuf_zip, List.cons.injEq, and_true]
+          exact hzip.1
+      | cons q' qs' =>
+          -- pre = q :: q' :: qs'
+          simp only [List.map_cons, List.cons_append, List.tail_cons, List.zip_cons_cons,
+            List.cons.injEq] at hzip
+          obtain ⟨hq_eq, htail_zip⟩ := hzip
+          -- hq_eq : (q.1, q'.1) = q
+          -- htail_zip : rest about q' :: qs'
+          have hl_tail := list_eq_of_zip_tail_decomp
+            (q'.1 :: qs'.map Prod.fst ++ [x, y, z] ++ suf.map Prod.snd)
+            (q' :: qs') suf (x, y) (y, z) htail_zip
+          have ih_result := ih_pre
+            (q'.1 :: qs'.map Prod.fst ++ [x, y, z] ++ suf.map Prod.snd)
+            htail_zip hl_tail
+          -- ih_result about (q' :: qs').map fst ++ [x,w,z] ++ suf.map snd
+          simp only [l', List.map_cons, List.cons_append, List.tail_cons, List.zip_cons_cons,
+            List.cons.injEq]
+          exact ⟨hq_eq, ih_result⟩
+
+/-- The crucial excursion-pairs transformation under segment swap.
+
+If `excursionPairs xs` decomposes with middle pairs `(a,a+L1)` and `(a+L1,a+L1+L2)`,
+then `excursionPairs (segmentSwap xs ...)` has middle pairs `(a,a+L2)` and `(a+L2,a+L1+L2)`,
+with the same prefix and suffix. -/
+lemma excursionPairs_segmentSwap_eq_swap_middle {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (pre suf : List (Fin (N + 1) × Fin (N + 1)))
+    (hPairsOld :
+      excursionPairs (k := k) xs =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+           (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf)
+    (ha_ret : xs ⟨a, by omega⟩ = xs 0)
+    (hb_ret : xs ⟨a + L1, by omega⟩ = xs 0)
+    (hc_ret : xs ⟨a + L1 + L2, by omega⟩ = xs 0)
+    (hnoret1 : ∀ (j : Fin (N + 1)), a < j.val → j.val < a + L1 → xs j ≠ xs 0)
+    (hnoret2 : ∀ (j : Fin (N + 1)), a + L1 < j.val → j.val < a + L1 + L2 → xs j ≠ xs 0) :
+    excursionPairs (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+      pre ++
+        [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+         (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+        suf := by
+  classical
+  let xs' := segmentSwap xs a L1 L2 hL1 hL2 hcN
+  -- Step 1: Reconstruct sorted list from old excursionPairs decomposition
+  have hRetOld := returnPositionsList_eq_of_excursionPairs_decomp
+    (k := k) xs pre suf
+    (⟨a, by omega⟩, ⟨a + L1, by omega⟩)
+    (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)
+    hPairsOld
+  -- Step 2: The candidate new sorted list
+  let l' : List (Fin (N + 1)) :=
+    pre.map Prod.fst ++ [⟨a, by omega⟩, ⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩] ++
+      suf.map Prod.snd
+  -- Step 3: Show l' is strictly sorted
+  have hSortedOld : (returnPositionsList (k := k) xs).SortedLT :=
+    Finset.sortedLT_sort (returnPositions (k := k) xs)
+  have hSortedNew : (returnPositionsList (k := k) xs').SortedLT :=
+    Finset.sortedLT_sort (returnPositions (k := k) xs')
+  have hSortedL' : l'.SortedLT := by
+    rw [hRetOld] at hSortedOld
+    rw [List.sortedLT_iff_pairwise] at hSortedOld ⊢
+    change List.Pairwise (· < ·) (pre.map Prod.fst ++
+      [⟨a, by omega⟩, ⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩] ++ suf.map Prod.snd)
+    rw [List.append_assoc] at hSortedOld ⊢
+    rw [List.pairwise_append] at hSortedOld ⊢
+    obtain ⟨hPwPre, hPwMidSufOld, hCrossOld⟩ := hSortedOld
+    -- Normalize Prod projections and list append structure
+    simp only [Prod.fst, Prod.snd, List.cons_append, List.nil_append] at hPwMidSufOld hCrossOld ⊢
+    refine ⟨hPwPre, ?_, ?_⟩
+    · -- Pairwise (<) on ⟨a⟩ :: ⟨a+L2⟩ :: ⟨a+L1+L2⟩ :: suf.map snd
+      rw [List.pairwise_cons] at hPwMidSufOld ⊢
+      obtain ⟨ha_lt_all_old, hRestOld⟩ := hPwMidSufOld
+      rw [List.pairwise_cons] at hRestOld ⊢
+      obtain ⟨hL1_lt_all, hSufSorted⟩ := hRestOld
+      constructor
+      · intro x hx
+        simp only [List.mem_cons] at hx
+        rcases hx with rfl | rfl | hx_suf
+        · exact Fin.mk_lt_mk.mpr (by omega)
+        · exact ha_lt_all_old _ (.tail _ (.head _))
+        · exact ha_lt_all_old x (.tail _ (.tail _ hx_suf))
+      · constructor
+        · intro x hx
+          simp only [List.mem_cons] at hx
+          rcases hx with rfl | hx_suf
+          · exact Fin.mk_lt_mk.mpr (by omega)
+          · rw [List.pairwise_cons] at hSufSorted
+            exact lt_trans (Fin.mk_lt_mk.mpr (by omega)) (hSufSorted.1 x hx_suf)
+        · exact hSufSorted
+    · intro x hx y hy
+      simp only [List.mem_cons] at hy
+      rcases hy with rfl | rfl | rfl | hy_suf
+      · exact hCrossOld x hx _ (.head _)
+      · exact lt_trans (hCrossOld x hx _ (.head _))
+          (Fin.mk_lt_mk.mpr (by omega))
+      · exact hCrossOld x hx _ (.tail _ (.tail _ (.head _)))
+      · exact hCrossOld x hx y (.tail _ (.tail _ (.tail _ hy_suf)))
+  -- Step 4: Show l' has same elements as returnPositionsList xs'
+  have hRetSwap := returnPositions_segmentSwap_eq xs a L1 L2 hL1 hL2 hcN
+    ha_ret hb_ret hc_ret hnoret1 hnoret2
+  -- Helper: membership in returnPositions ↔ returnPositionsList
+  have hMemRP : ∀ y, y ∈ returnPositions (k := k) xs ↔ y ∈ returnPositionsList (k := k) xs := by
+    intro y; simp [returnPositionsList, Finset.mem_sort]
+  -- Helper: decompose old returnPositionsList membership
+  have hOldDecomp : ∀ y, y ∈ returnPositionsList (k := k) xs ↔
+      (y ∈ pre.map Prod.fst ∨ y = ⟨a, by omega⟩ ∨ y = ⟨a + L1, by omega⟩ ∨
+       y = ⟨a + L1 + L2, by omega⟩ ∨ y ∈ suf.map Prod.snd) := by
+    intro y; rw [hRetOld]
+    simp only [Prod.fst, Prod.snd, List.mem_append, List.mem_cons, List.mem_nil_iff, or_false]
+    tauto
+  -- Helper: pre elements strictly less than ⟨a⟩
+  have hpre_lt_a : ∀ y ∈ pre.map Prod.fst, y < (⟨a, by omega⟩ : Fin (N + 1)) := by
+    have hsorted := hSortedOld
+    rw [hRetOld, List.sortedLT_iff_pairwise] at hsorted
+    simp only [Prod.fst, Prod.snd, List.append_assoc, List.cons_append, List.nil_append,
+      List.pairwise_append] at hsorted
+    exact fun y hy => hsorted.2.2 y hy _ (.head _)
+  -- Helper: ⟨a+L1+L2⟩ < suf elements
+  have hc_lt_suf : ∀ y ∈ suf.map Prod.snd,
+      (⟨a + L1 + L2, by omega⟩ : Fin (N + 1)) < y := by
+    have hsorted := hSortedOld
+    rw [hRetOld, List.sortedLT_iff_pairwise] at hsorted
+    simp only [Prod.fst, Prod.snd, List.append_assoc, List.cons_append, List.nil_append,
+      List.pairwise_append, List.pairwise_cons] at hsorted
+    exact hsorted.2.1.2.2.1
+  have hMemEq : ∀ (x : Fin (N + 1)), x ∈ l' ↔ x ∈ returnPositionsList (k := k) xs' := by
+    intro x
+    rw [show returnPositionsList (k := k) xs' =
+        (returnPositions (k := k) xs').sort (· ≤ ·) from rfl]
+    rw [Finset.mem_sort, hRetSwap, Finset.mem_union, Finset.mem_erase, Finset.mem_singleton]
+    -- Goal: x ∈ l' ↔ (x ≠ ⟨a+L1⟩ ∧ x ∈ returnPositions xs) ∨ x = ⟨a+L2⟩
+    constructor
+    · -- Forward: l' → (retPos xs \ {a+L1}) ∪ {a+L2}
+      intro hx
+      simp only [l', List.mem_append, List.mem_cons, List.mem_nil_iff, or_false] at hx
+      rcases hx with (hx_pre | rfl | rfl | rfl) | hx_suf
+      · -- x ∈ pre.map fst
+        exact Or.inl ⟨(fun heq => absurd (heq ▸ hpre_lt_a x hx_pre)
+            (by simp [Fin.lt_def])),
+          (hMemRP x).2 ((hOldDecomp x).2 (Or.inl hx_pre))⟩
+      · -- x = ⟨a⟩
+        exact Or.inl ⟨(fun heq => absurd heq (by simp [Fin.ext_iff]; omega)),
+          (hMemRP _).2 ((hOldDecomp _).2 (Or.inr (Or.inl rfl)))⟩
+      · -- x = ⟨a+L2⟩
+        exact Or.inr rfl
+      · -- x = ⟨a+L1+L2⟩
+        exact Or.inl ⟨(fun heq => absurd heq (by simp [Fin.ext_iff]; omega)),
+          (hMemRP _).2 ((hOldDecomp _).2
+            (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))⟩
+      · -- x ∈ suf.map snd
+        exact Or.inl ⟨(fun heq => absurd (heq ▸ hc_lt_suf x hx_suf)
+            (by simp [Fin.lt_def])),
+          (hMemRP x).2 ((hOldDecomp x).2
+            (Or.inr (Or.inr (Or.inr (Or.inr hx_suf)))))⟩
+    · -- Backward: (retPos xs \ {a+L1}) ∪ {a+L2} → l'
+      intro hx
+      simp only [l', List.mem_append, List.mem_cons, List.mem_nil_iff, or_false]
+      rcases hx with ⟨hne, hx_mem⟩ | rfl
+      · have hx_old := (hOldDecomp x).1 ((hMemRP x).1 hx_mem)
+        rcases hx_old with hx_pre | rfl | rfl | rfl | hx_suf
+        · exact Or.inl (Or.inl hx_pre)
+        · exact Or.inl (Or.inr (Or.inl rfl))
+        · exact absurd rfl hne
+        · exact Or.inl (Or.inr (Or.inr (Or.inr rfl)))
+        · exact Or.inr hx_suf
+      · exact Or.inl (Or.inr (Or.inr (Or.inl rfl)))
+  -- Step 5: Conclude l' = returnPositionsList xs'
+  have hL'eq : l' = returnPositionsList (k := k) xs' :=
+    List.SortedLT.eq_of_mem_iff hSortedL' hSortedNew hMemEq
+  -- Step 6: Compute excursionPairs xs' via zip_tail_replace_middle
+  have hEPNew : excursionPairs (k := k) xs' = l'.zip l'.tail := by
+    unfold excursionPairs
+    rw [← hL'eq]
+  rw [hEPNew]
+  exact zip_tail_replace_middle (returnPositionsList (k := k) xs) pre suf
+    ⟨a, by omega⟩ ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩ ⟨a + L2, by omega⟩
+    (by unfold excursionPairs at hPairsOld; exact hPairsOld)
+
+lemma returnPositionsList_get_zero {n : ℕ} (xs : Traj k n) :
+    (returnPositionsList (k := k) xs).get
+      ⟨0, by
+        have hmem0 : (0 : Fin (n + 1)) ∈ returnPositions (k := k) xs := by
+          simp [returnPositions]
+        have hcard : 0 < (returnPositions (k := k) xs).card := by
+          exact Finset.card_pos.mpr ⟨0, hmem0⟩
+        simpa [length_returnPositionsList] using hcard⟩
+      = (0 : Fin (n + 1)) := by
+  classical
+  have hmem0 : (0 : Fin (n + 1)) ∈ returnPositions (k := k) xs := by
+    simp [returnPositions]
+  have hne : (returnPositions (k := k) xs).Nonempty := ⟨0, hmem0⟩
+  have hlen : 0 < (returnPositions (k := k) xs).sort.length := by
+    have hcard : 0 < (returnPositions (k := k) xs).card := by
+      exact Finset.card_pos.mpr ⟨0, hmem0⟩
+    simpa [Finset.length_sort] using hcard
+  have hmin :
+      (returnPositions (k := k) xs).min' hne = (0 : Fin (n + 1)) := by
+    apply (Finset.min'_eq_iff (s := returnPositions (k := k) xs) (H := hne)
+      (a := (0 : Fin (n + 1)))).2
+    constructor
+    · exact hmem0
+    · intro b hb
+      exact Fin.zero_le b
+  have hsorted :
+      (returnPositions (k := k) xs).sort[0] =
+        (returnPositions (k := k) xs).min' hne := by
+    simpa using
+      (Finset.sorted_zero_eq_min' (s := returnPositions (k := k) xs) (h := hlen))
+  simpa [returnPositionsList, hmin] using hsorted
+
+lemma returnPositionsList_getElem_zero
+    {n : ℕ} (xs : Traj k n) (h0 : 0 < (returnPositionsList (k := k) xs).length) :
+    (returnPositionsList (k := k) xs).get ⟨0, h0⟩ = (0 : Fin (n + 1)) := by
+  exact returnPositionsList_get_zero (k := k) xs
+
+lemma sum_diffs_zip_take_fin
+    {n : ℕ} :
+    ∀ (l : List (Fin (n + 1))) (h0 : 0 < l.length)
+      (hMono : l.Pairwise (· ≤ ·)) (m : ℕ) (hm : m < l.length),
+      (((l.zip l.tail).take m).map (fun pr => pr.2.1 - pr.1.1)).sum =
+        (l[m]'hm).1 - (l[0]'h0).1 := by
+  intro l h0 hMono m
+  induction m generalizing l with
+  | zero => intro hm; simp
+  | succ m ih =>
+      intro hm
+      cases l with
+      | nil => exact absurd h0 (by simp)
+      | cons a tl =>
+          cases tl with
+          | nil => simp at hm
+          | cons b tl' =>
+              have hml : m < (b :: tl').length := by simp at hm ⊢; omega
+              have h0' : 0 < (b :: tl').length := by simp
+              have hMono' : (b :: tl').Pairwise (· ≤ ·) := hMono.tail
+              have hab : a ≤ b := by
+                have := (List.pairwise_cons.mp hMono).1
+                exact this b (List.mem_cons_self ..)
+              have hih := ih (b :: tl') h0' hMono' hml
+              simp only [List.tail_cons] at hih
+              simp only [List.zip_cons_cons, List.tail_cons, List.take_succ_cons,
+                List.map_cons, List.sum_cons]
+              rw [hih]
+              -- Need b ≤ (b :: tl')[m] for nat subtraction arithmetic
+              have hb_le_m : b ≤ (b :: tl')[m]'hml := by
+                have hpw := List.pairwise_cons.mp hMono'
+                have hmem : (b :: tl')[m]'hml ∈ (b :: tl') := List.getElem_mem ..
+                rcases List.mem_cons.mp hmem with heq | htl
+                · exact le_of_eq heq.symm
+                · exact hpw.1 _ htl
+              simp only [List.getElem_cons_succ, List.getElem_cons_zero]
+              have hab' : a.1 ≤ b.1 := hab
+              have hbm : b.1 ≤ ((b :: tl')[m]'hml).1 := hb_le_m
+              omega
+
+lemma mem_left_of_mem_zip_tail
+    {α : Type*} {l : List α} {p : α × α} (hp : p ∈ l.zip l.tail) : p.1 ∈ l := by
+  cases l with
+  | nil =>
+      simp at hp
+  | cons a tl =>
+      cases tl with
+      | nil =>
+          simp at hp
+      | cons b tl2 =>
+          simp [List.tail] at hp
+          rcases hp with hhead | htail
+          · rcases hhead with ⟨rfl, rfl⟩
+            simp
+          · have hmem : p.1 ∈ b :: tl2 := mem_left_of_mem_zip_tail (l := b :: tl2) htail
+            simpa using List.mem_cons_of_mem a hmem
+
+lemma mem_right_of_mem_zip_tail
+    {α : Type*} {l : List α} {p : α × α} (hp : p ∈ l.zip l.tail) : p.2 ∈ l := by
+  cases l with
+  | nil =>
+      simp at hp
+  | cons a tl =>
+      cases tl with
+      | nil =>
+          simp at hp
+      | cons b tl2 =>
+          simp [List.tail] at hp
+          rcases hp with hhead | htail
+          · rcases hhead with ⟨rfl, rfl⟩
+            simp
+          · have hmem : p.2 ∈ b :: tl2 := mem_right_of_mem_zip_tail (l := b :: tl2) htail
+            simpa using List.mem_cons_of_mem a hmem
+
+lemma mem_returnPositions_of_mem_excursionPairs_fst
+    {n : ℕ} (ys : Traj k n)
+    {p : Fin (n + 1) × Fin (n + 1)} (hp : p ∈ excursionPairs (k := k) ys) :
+    p.1 ∈ returnPositions (k := k) ys := by
+  classical
+  have hmem_list : p.1 ∈ returnPositionsList (k := k) ys := by
+    have hp' : p ∈ (returnPositionsList (k := k) ys).zip
+        (returnPositionsList (k := k) ys).tail := by
+      simpa [excursionPairs] using hp
+    exact mem_left_of_mem_zip_tail hp'
+  have hmem_sort :
+      p.1 ∈ (returnPositions (k := k) ys).sort (· ≤ ·) := by
+    simpa [returnPositionsList] using hmem_list
+  exact (Finset.mem_sort (s := returnPositions (k := k) ys) (r := (· ≤ ·))).1 hmem_sort
+
+lemma mem_returnPositions_of_mem_excursionPairs_snd
+    {n : ℕ} (ys : Traj k n)
+    {p : Fin (n + 1) × Fin (n + 1)} (hp : p ∈ excursionPairs (k := k) ys) :
+    p.2 ∈ returnPositions (k := k) ys := by
+  classical
+  have hmem_list : p.2 ∈ returnPositionsList (k := k) ys := by
+    have hp' : p ∈ (returnPositionsList (k := k) ys).zip
+        (returnPositionsList (k := k) ys).tail := by
+      simpa [excursionPairs] using hp
+    exact mem_right_of_mem_zip_tail hp'
+  have hmem_sort :
+      p.2 ∈ (returnPositions (k := k) ys).sort (· ≤ ·) := by
+    simpa [returnPositionsList] using hmem_list
+  exact (Finset.mem_sort (s := returnPositions (k := k) ys) (r := (· ≤ ·))).1 hmem_sort
+
+lemma sum_diffs_pre_eq_fst_of_excursionPairs_decomp
+    {n : ℕ} (ys : Traj k n)
+    (pre suf : List (Fin (n + 1) × Fin (n + 1)))
+    (p1 p2 : Fin (n + 1) × Fin (n + 1))
+    (hpairs : excursionPairs (k := k) ys = pre ++ p1 :: p2 :: suf) :
+    (pre.map (fun pr => pr.2.1 - pr.1.1)).sum = p1.1.1 := by
+  classical
+  let l : List (Fin (n + 1)) := returnPositionsList (k := k) ys
+  have h0 : 0 < l.length := by
+    have hmem0 : (0 : Fin (n + 1)) ∈ returnPositions (k := k) ys := by
+      simp [returnPositions]
+    have hcard : 0 < (returnPositions (k := k) ys).card := by
+      exact Finset.card_pos.mpr ⟨0, hmem0⟩
+    simpa [l, length_returnPositionsList] using hcard
+  have hlen_pairs : pre.length < (excursionPairs (k := k) ys).length := by
+    rw [hpairs]; simp
+  have hm : pre.length < l.length := by
+    have hep_len : (excursionPairs (k := k) ys).length =
+        numExcursions (k := k) ys := length_excursionPairs ys
+    have hne : numExcursions (k := k) ys = (returnPositions (k := k) ys).card - 1 := rfl
+    have hrl : l.length = (returnPositions (k := k) ys).card := by
+      simp [l, length_returnPositionsList]
+    omega
+  have hzip : excursionPairs (k := k) ys = l.zip l.tail := by
+    simp [excursionPairs, l]
+  have hlSorted : l.Pairwise (· ≤ ·) := by
+    exact Finset.sort_sorted (returnPositions (k := k) ys) (· ≤ ·)
+  -- pre = first pre.length elements of excursionPairs
+  have hpre_eq : pre = (l.zip l.tail).take pre.length := by
+    have h1 : (excursionPairs (k := k) ys).take pre.length = pre := by
+      rw [hpairs]; simp [List.take_left]
+    conv_rhs => rw [← hzip]
+    exact h1.symm
+  have hsum :
+      (pre.map (fun pr => pr.2.1 - pr.1.1)).sum =
+        (((l.zip l.tail).take pre.length).map (fun pr => pr.2.1 - pr.1.1)).sum := by
+    conv_lhs => rw [hpre_eq]
+  have hsum' := sum_diffs_zip_take_fin l h0 hlSorted pre.length hm
+  -- hsum' : ... = l[pre.length].1 - l[0].1
+  have hp1_getElem : (pre ++ p1 :: p2 :: suf)[pre.length]'(by simp) = p1 := by
+    simp [List.getElem_append_right]
+  have hp1_fst_val : p1.1.1 = (l[pre.length]'hm).1 := by
+    have hzip_len : pre.length < (l.zip l.tail).length := by rw [← hzip]; exact hlen_pairs
+    have htail_len : pre.length < l.tail.length := by
+      simp [List.length_zip, List.length_tail] at hzip_len ⊢; omega
+    -- (l.zip l.tail)[pre.length] = p1 from the decomposition
+    have hzip_at_pre : (l.zip l.tail)[pre.length]'hzip_len = p1 := by
+      have h1 : (excursionPairs (k := k) ys)[pre.length]'hlen_pairs =
+          (l.zip l.tail)[pre.length]'hzip_len := by simp [hzip]
+      rw [← h1]
+      have h2 : excursionPairs (k := k) ys = pre ++ p1 :: p2 :: suf := hpairs
+      simp [h2, List.getElem_append_right]
+    -- Apply getElem_zip
+    have hzip_expand : (l.zip l.tail)[pre.length]'hzip_len =
+        (l[pre.length]'(by simp [List.length_zip] at hzip_len; omega),
+         l.tail[pre.length]'htail_len) := by
+      simp [List.getElem_zip]
+    rw [hzip_expand] at hzip_at_pre
+    exact (congrArg (fun p => p.1.1) hzip_at_pre).symm
+  have hzero_val : (l[0]'h0).1 = 0 := by
+    have hget0 := returnPositionsList_get_zero (k := k) ys
+    have : l.get ⟨0, h0⟩ = (0 : Fin (n + 1)) := hget0
+    rw [List.get_eq_getElem] at this
+    simp [this]
+  rw [hsum, hsum', hp1_fst_val, hzero_val]; omega
+
+
+
+
+lemma map_eq_append_cons_cons_append
+    {α β : Type*} (f : α → β) (l : List α)
+    (preSeg sufSeg : List β) (e1 e2 : β)
+    (h : l.map f = preSeg ++ [e1, e2] ++ sufSeg) :
+    ∃ pre p1 p2 suf,
+      l = pre ++ p1 :: p2 :: suf ∧
+      preSeg = pre.map f ∧
+      e1 = f p1 ∧
+      e2 = f p2 ∧
+      sufSeg = suf.map f := by
+  revert l
+  induction preSeg with
+  | nil =>
+      intro l h
+      cases l with
+      | nil =>
+          simp at h
+      | cons a tl =>
+          cases tl with
+          | nil =>
+              simp at h
+          | cons b tl2 =>
+              -- l.map f = f a :: f b :: tl2.map f = e1 :: e2 :: sufSeg
+              have h1 : f a = e1 ∧ (f b :: tl2.map f) = e2 :: sufSeg := by
+                have := List.cons.inj h
+                exact this
+              have h2 : f b = e2 ∧ tl2.map f = sufSeg := by
+                have := List.cons.inj h1.2
+                exact this
+              refine ⟨[], a, b, tl2, ?_, ?_, ?_, ?_, ?_⟩
+              · rfl
+              · simp
+              · exact h1.1.symm
+              · exact h2.1.symm
+              · exact h2.2.symm
+  | cons b preSeg ih =>
+      intro l h
+      cases l with
+      | nil =>
+          simp at h
+      | cons a tl =>
+          have h1 : f a = b ∧ tl.map f = preSeg ++ [e1, e2] ++ sufSeg := by
+            have := List.cons.inj h
+            exact this
+          have htail' :
+              tl.map f = preSeg ++ [e1, e2] ++ sufSeg := by
+            exact h1.2
+          rcases ih _ htail' with ⟨pre, p1, p2, suf, htl, hpre, he1, he2, hsuf⟩
+          refine ⟨a :: pre, p1, p2, suf, ?_, ?_, ?_, ?_, ?_⟩
+          · simp [htl]
+          · simp [hpre, h1.1]
+          · exact he1
+          · exact he2
+          · exact hsuf
+
+lemma consecutive_zip_tail_snd_eq_fst
+    {α : Type*} :
+    ∀ (l : List α) (pre : List (α × α)) (p1 p2 : α × α) (suf : List (α × α)),
+      l.zip l.tail = pre ++ p1 :: p2 :: suf → p1.2 = p2.1 := by
+  intro l pre p1 p2 suf h
+  induction pre generalizing l with
+  | nil =>
+      cases l with
+      | nil =>
+          simp at h
+      | cons a tl =>
+          cases tl with
+          | nil =>
+              simp at h
+          | cons b tl2 =>
+              have h' :
+                  (a, b) :: (List.zip (b :: tl2) tl2) = p1 :: p2 :: suf := by
+                simpa [List.tail] using h
+              have h1 := List.cons.inj h'
+              rcases h1 with ⟨hp1, htail⟩
+              cases tl2 with
+              | nil =>
+                  -- zip (b::[]) [] = []
+                  simp at htail
+              | cons c tl3 =>
+                  have h2 := List.cons.inj htail
+                  rcases h2 with ⟨hp2, _⟩
+                  -- head of zip (b::c::tl3) (c::tl3) is (b,c)
+                  have hp2' : p2 = (b, c) := by
+                    simpa [List.tail] using hp2.symm
+                  have hp1' : p1 = (a, b) := by
+                    exact hp1.symm
+                  -- conclude
+                  simp [hp1', hp2']
+  | cons x pre ih =>
+      cases l with
+      | nil =>
+          simp at h
+      | cons a tl =>
+          cases tl with
+          | nil =>
+              simp at h
+          | cons b tl2 =>
+              have h' :
+                  (a, b) :: (List.zip (b :: tl2) tl2) =
+                    x :: pre ++ p1 :: p2 :: suf := by
+                simpa [List.tail] using h
+              have h1 := List.cons.inj h'
+              rcases h1 with ⟨_, htail⟩
+              exact ih (b :: tl2) htail
+
+lemma excursionPairs_decomp_of_excursionList_decomp
+    {n : ℕ} (ys : Traj k n)
+    (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k)
+    (hlist :
+      excursionListOfTraj (k := k) ys = preSeg ++ [e1, e2] ++ sufSeg) :
+    ∃ (pre suf : List (Fin (n + 1) × Fin (n + 1)))
+      (p1 p2 : Fin (n + 1) × Fin (n + 1)),
+      excursionPairs (k := k) ys = pre ++ p1 :: p2 :: suf ∧
+      preSeg = pre.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+      e1 = trajSegment (k := k) ys p1.1 p1.2 ∧
+      e2 = trajSegment (k := k) ys p2.1 p2.2 ∧
+      sufSeg = suf.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+      p1.2 = p2.1 := by
+  -- unfold excursionListOfTraj and apply the list-map decomposition lemma
+  dsimp [excursionListOfTraj, excursionsOfTraj] at hlist
+  rcases map_eq_append_cons_cons_append
+      (f := fun pr => trajSegment (k := k) ys pr.1 pr.2)
+      (l := excursionPairs (k := k) ys)
+      (preSeg := preSeg) (sufSeg := sufSeg) (e1 := e1) (e2 := e2) hlist with
+    ⟨pre, p1, p2, suf, hpairs, hpre, he1, he2, hsuf⟩
+  refine ⟨pre, suf, p1, p2, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · exact hpairs
+  · exact hpre
+  · exact he1
+  · exact he2
+  · exact hsuf
+  · -- consecutive pairs in zip share the middle element
+    exact consecutive_zip_tail_snd_eq_fst
+      (l := returnPositionsList (k := k) ys)
+      (pre := pre) (p1 := p1) (p2 := p2) (suf := suf) (by
+        -- unfold excursionPairs to see the zip
+        simpa [excursionPairs] using hpairs)
+
+/-- Short-horizon analogue of `image_eq_segmentSwap_prefixPatternFiber_of_maps`. -/
+lemma image_eq_segmentSwap_shortPatternFiber_of_maps
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hmap :
+      ∀ ys ∈ shortPatternFiber n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcN ∈
+          shortPatternFiber n e q)
+    (hmapInv :
+      ∀ zs ∈ shortPatternFiber n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+          shortPatternFiber n e p) :
+    (shortPatternFiber n e p).image
+      (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcN) =
+      shortPatternFiber n e q := by
+  classical
+  apply Finset.Subset.antisymm
+  · intro ys hys
+    rcases Finset.mem_image.1 hys with ⟨xs, hxs, rfl⟩
+    exact hmap xs hxs
+  · intro ys hys
+    refine Finset.mem_image.2 ?_
+    refine ⟨segmentSwap ys a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN), hmapInv ys hys, ?_⟩
+    simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+      (segmentSwap_involutive (k := k) ys a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN))
+
+/-- Turn an ordered-list equality statement into a short-fiber forward map. -/
+lemma hmapShort_of_excursionList_segmentSwap_eq
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hmapFiber :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcN ∈ fiber k (Nat.succ n) e)
+    (hlist :
+      ∀ ys, ys ∈ shortPatternFiber (k := k) n e p →
+        excursionListOfTraj (k := k) (segmentSwap ys a L1 L2 hL1 hL2 hcN) = q) :
+    ∀ ys ∈ shortPatternFiber (k := k) n e p,
+      segmentSwap ys a L1 L2 hL1 hL2 hcN ∈ shortPatternFiber (k := k) n e q := by
+  intro ys hys
+  exact Finset.mem_filter.2 ⟨hmapFiber ys hys, hlist ys hys⟩
+
+/-- Turn an ordered-list equality statement into a short-fiber inverse map. -/
+lemma hmapShortInv_of_excursionList_segmentSwap_eq
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hmapFiber :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+          fiber k (Nat.succ n) e)
+    (hlist :
+      ∀ zs, zs ∈ shortPatternFiber (k := k) n e q →
+        excursionListOfTraj (k := k)
+          (segmentSwap zs a L2 L1 hL2 hL1
+            (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)) = p) :
+    ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+        shortPatternFiber (k := k) n e p := by
+  intro zs hzs
+  exact Finset.mem_filter.2 ⟨hmapFiber zs hzs, hlist zs hzs⟩
+
+/-- Build the short-pattern forward transport map from the stronger
+ordered-list adjacent-swap bridge with explicit excursion-pair decomposition
+data for each source trajectory. -/
+lemma hmapShort_of_swap_middle_of_excursionPairs_decomp
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hmapFiber :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcN ∈ fiber k (Nat.succ n) e)
+    (hdecomp :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+          (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+          excursionPairs (k := k) ys =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+               (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          excursionPairs (k := k) (segmentSwap ys a L1 L2 hL1 hL2 hcN) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+               (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          pre.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap ys a L1 L2 hL1 hL2 hcN) pr.1 pr.2) =
+            pre.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+          suf.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap ys a L1 L2 hL1 hL2 hcN) pr.1 pr.2) =
+            suf.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+          ys ⟨a, by omega⟩ = ys 0 ∧
+          ys ⟨a + L1, by omega⟩ = ys 0 ∧
+          ys ⟨a + L1 + L2, by omega⟩ = ys 0 ∧
+          excursionListOfTraj (k := k) ys = preSeg ++ [e1, e2] ++ sufSeg ∧
+          preSeg = pre.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+          sufSeg = suf.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+          e1 = trajSegment (k := k) ys ⟨a, by omega⟩ ⟨a + L1, by omega⟩ ∧
+          e2 = trajSegment (k := k) ys ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+          q = preSeg ++ [e2, e1] ++ sufSeg) :
+    ∀ ys ∈ shortPatternFiber (k := k) n e p,
+      segmentSwap ys a L1 L2 hL1 hL2 hcN ∈ shortPatternFiber (k := k) n e q := by
+  refine hmapShort_of_excursionList_segmentSwap_eq
+    (k := k) (n := n) (e := e) (p := p) (q := q)
+    (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcN hmapFiber ?_
+  intro ys hys
+  rcases hdecomp ys hys with ⟨pre, suf, preSeg, sufSeg, e1, e2,
+      hPairsOld, hPairsNew, hPre, hSuf, ha_ret, hb_ret, hc_ret,
+      hOld, hPreSeg, hSufSeg, hE1, hE2, hq⟩
+  have hswap :
+      excursionListOfTraj (k := k) (segmentSwap ys a L1 L2 hL1 hL2 hcN) =
+        preSeg ++ [e2, e1] ++ sufSeg :=
+    excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp_strong
+      (k := k) (xs := ys) (a := a) (L1 := L1) (L2 := L2)
+      hL1 hL2 hcN pre suf preSeg sufSeg e1 e2
+      hPairsOld hPairsNew hPre hSuf ha_ret hb_ret hc_ret
+      hOld hPreSeg hSufSeg hE1 hE2
+  simpa [hq] using hswap
+
+/-- Inverse counterpart of
+`hmapShort_of_swap_middle_of_excursionPairs_decomp`. -/
+lemma hmapShortInv_of_swap_middle_of_excursionPairs_decomp
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hmapFiberInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+          fiber k (Nat.succ n) e)
+    (hdecompInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+          (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+          excursionPairs (k := k) zs =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+               (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          excursionPairs (k := k)
+            (segmentSwap zs a L2 L1 hL2 hL1
+              (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+               (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          pre.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap zs a L2 L1 hL2 hL1
+                    (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN))
+                  pr.1 pr.2) =
+            pre.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+          suf.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap zs a L2 L1 hL2 hL1
+                    (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN))
+                  pr.1 pr.2) =
+            suf.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+          zs ⟨a, by omega⟩ = zs 0 ∧
+          zs ⟨a + L2, by omega⟩ = zs 0 ∧
+          zs ⟨a + L1 + L2, by omega⟩ = zs 0 ∧
+          excursionListOfTraj (k := k) zs = preSeg ++ [e2, e1] ++ sufSeg ∧
+          preSeg = pre.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+          sufSeg = suf.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+          e2 = trajSegment (k := k) zs ⟨a, by omega⟩ ⟨a + L2, by omega⟩ ∧
+          e1 = trajSegment (k := k) zs ⟨a + L2, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+          p = preSeg ++ [e1, e2] ++ sufSeg) :
+    ∀ zs ∈ shortPatternFiber (k := k) n e q,
+      segmentSwap zs a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+      shortPatternFiber (k := k) n e p := by
+  refine hmapShortInv_of_excursionList_segmentSwap_eq
+    (k := k) (n := n) (e := e) (p := p) (q := q)
+    (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcN hmapFiberInv ?_
+  intro zs hzs
+  rcases hdecompInv zs hzs with ⟨pre, suf, preSeg, sufSeg, e1, e2,
+      hPairsOld, hPairsNew, hPre, hSuf, ha_ret, hb2_ret, hc_ret,
+      hOld, hPreSeg, hSufSeg, hE1, hE2, hp⟩
+  have hPairsOld' :
+      excursionPairs (k := k) zs =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+           (⟨a + L2, by omega⟩, ⟨a + L2 + L1, by omega⟩)] ++
+          suf := by
+    simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hPairsOld
+  have hPairsNew' :
+      excursionPairs (k := k)
+        (segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)) =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+           (⟨a + L1, by omega⟩, ⟨a + L2 + L1, by omega⟩)] ++
+          suf := by
+    simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hPairsNew
+  have hswap :
+      excursionListOfTraj (k := k)
+        (segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)) =
+        preSeg ++ [e1, e2] ++ sufSeg :=
+    have hE2' :
+        e1 =
+          trajSegment (k := k) zs
+            ⟨a + L2, by omega⟩
+            ⟨a + L2 + L1, by omega⟩ := by
+      simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hE2
+    excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp_strong
+      (k := k) (xs := zs) (a := a) (L1 := L2) (L2 := L1)
+      hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)
+      pre suf preSeg sufSeg e2 e1
+      hPairsOld' hPairsNew' hPre hSuf ha_ret hb2_ret
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hc_ret)
+      hOld hPreSeg hSufSeg hE1 hE2'
+  simpa [hp] using hswap
+
+/-- Build short-pattern image equality directly from explicit decomposition
+witnesses for forward and inverse adjacent swaps. -/
+lemma himgShort_of_swap_middle_of_excursionPairs_decomp
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hmapFiber :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcN ∈ fiber k (Nat.succ n) e)
+    (hdecomp :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+          (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+          excursionPairs (k := k) ys =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+               (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          excursionPairs (k := k) (segmentSwap ys a L1 L2 hL1 hL2 hcN) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+               (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          pre.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap ys a L1 L2 hL1 hL2 hcN) pr.1 pr.2) =
+            pre.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+          suf.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap ys a L1 L2 hL1 hL2 hcN) pr.1 pr.2) =
+            suf.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+          ys ⟨a, by omega⟩ = ys 0 ∧
+          ys ⟨a + L1, by omega⟩ = ys 0 ∧
+          ys ⟨a + L1 + L2, by omega⟩ = ys 0 ∧
+          excursionListOfTraj (k := k) ys = preSeg ++ [e1, e2] ++ sufSeg ∧
+          preSeg = pre.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+          sufSeg = suf.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+          e1 = trajSegment (k := k) ys ⟨a, by omega⟩ ⟨a + L1, by omega⟩ ∧
+          e2 = trajSegment (k := k) ys ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+          q = preSeg ++ [e2, e1] ++ sufSeg)
+    (hmapFiberInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+          fiber k (Nat.succ n) e)
+    (hdecompInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+          (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+          excursionPairs (k := k) zs =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+               (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          excursionPairs (k := k)
+            (segmentSwap zs a L2 L1 hL2 hL1
+              (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+               (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          pre.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap zs a L2 L1 hL2 hL1
+                    (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN))
+                  pr.1 pr.2) =
+            pre.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+          suf.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap zs a L2 L1 hL2 hL1
+                    (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN))
+                  pr.1 pr.2) =
+            suf.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+          zs ⟨a, by omega⟩ = zs 0 ∧
+          zs ⟨a + L2, by omega⟩ = zs 0 ∧
+          zs ⟨a + L1 + L2, by omega⟩ = zs 0 ∧
+          excursionListOfTraj (k := k) zs = preSeg ++ [e2, e1] ++ sufSeg ∧
+          preSeg = pre.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+          sufSeg = suf.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+          e2 = trajSegment (k := k) zs ⟨a, by omega⟩ ⟨a + L2, by omega⟩ ∧
+          e1 = trajSegment (k := k) zs ⟨a + L2, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+          p = preSeg ++ [e1, e2] ++ sufSeg) :
+    (shortPatternFiber (k := k) n e p).image
+      (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcN) =
+      shortPatternFiber (k := k) n e q := by
+  apply image_eq_segmentSwap_shortPatternFiber_of_maps
+    (k := k) (n := n) (e := e) (p := p) (q := q)
+    (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcN
+  · exact hmapShort_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcN hmapFiber hdecomp
+  · exact hmapShortInv_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcN hmapFiberInv hdecompInv
+
+/-- Build the long-prefix forward transport map from the stronger ordered-list
+adjacent-swap bridge, applied to the prefixed trajectory. -/
+lemma hmapPrefix_of_swap_middle_of_excursionPairs_decomp
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hmapFiber :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN) ∈
+          prefixFiber (k := k) (h := hN) e s)
+    (hdecomp :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+          (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+          excursionPairs (k := k) (trajPrefix (k := k) hN xs) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+               (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          excursionPairs (k := k)
+            (segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+               (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          pre.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort)
+                  pr.1 pr.2) =
+            pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+          suf.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort)
+                  pr.1 pr.2) =
+            suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+          (trajPrefix (k := k) hN xs) ⟨a, by omega⟩ = (trajPrefix (k := k) hN xs) 0 ∧
+          (trajPrefix (k := k) hN xs) ⟨a + L1, by omega⟩ = (trajPrefix (k := k) hN xs) 0 ∧
+          (trajPrefix (k := k) hN xs) ⟨a + L1 + L2, by omega⟩ = (trajPrefix (k := k) hN xs) 0 ∧
+          excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs) = preSeg ++ [e1, e2] ++ sufSeg ∧
+          preSeg = pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+          sufSeg = suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+          e1 = trajSegment (k := k) (trajPrefix (k := k) hN xs) ⟨a, by omega⟩ ⟨a + L1, by omega⟩ ∧
+          e2 = trajSegment (k := k) (trajPrefix (k := k) hN xs) ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+          q = preSeg ++ [e2, e1] ++ sufSeg) :
+    ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+      segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN) ∈
+        prefixPatternFiber (k := k) (hN := hN) e s q := by
+  intro xs hxs
+  rcases hdecomp xs hxs with ⟨pre, suf, preSeg, sufSeg, e1, e2,
+      hPairsOld, hPairsNew, hPre, hSuf, ha_ret, hb_ret, hc_ret,
+      hOld, hPreSeg, hSufSeg, hE1, hE2, hq⟩
+  have hswapPref :
+      excursionListOfTraj (k := k)
+        (segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort) =
+        preSeg ++ [e2, e1] ++ sufSeg :=
+    excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp_strong
+      (k := k) (xs := trajPrefix (k := k) hN xs) (a := a) (L1 := L1) (L2 := L2)
+      hL1 hL2 hcShort
+      pre suf preSeg sufSeg e1 e2
+      hPairsOld hPairsNew hPre hSuf ha_ret hb_ret hc_ret
+      hOld hPreSeg hSufSeg hE1 hE2
+  have hprefSwap :
+      trajPrefix (k := k) hN
+        (segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN)) =
+        segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort :=
+    trajPrefix_segmentSwap_eq_segmentSwap_prefix
+      (k := k) (h := hN) (xs := xs) (a := a) (L1 := L1) (L2 := L2)
+      hL1 hL2 hcShort
+  have hlist :
+      excursionListOfTraj (k := k)
+        (trajPrefix (k := k) hN
+          (segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN))) = q := by
+    simpa [hq, hprefSwap] using hswapPref
+  exact Finset.mem_filter.2 ⟨hmapFiber xs hxs, hlist⟩
+
+/-- Inverse counterpart of
+`hmapPrefix_of_swap_middle_of_excursionPairs_decomp`. -/
+lemma hmapPrefixInv_of_swap_middle_of_excursionPairs_decomp
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hmapFiberInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN) ∈
+          prefixFiber (k := k) (h := hN) e s)
+    (hdecompInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+          (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+          excursionPairs (k := k) (trajPrefix (k := k) hN ys) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+               (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          excursionPairs (k := k)
+            (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+              (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+               (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          pre.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+                    (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+                  pr.1 pr.2) =
+            pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+          suf.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+                    (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+                  pr.1 pr.2) =
+            suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+          (trajPrefix (k := k) hN ys) ⟨a, by omega⟩ = (trajPrefix (k := k) hN ys) 0 ∧
+          (trajPrefix (k := k) hN ys) ⟨a + L2, by omega⟩ = (trajPrefix (k := k) hN ys) 0 ∧
+          (trajPrefix (k := k) hN ys) ⟨a + L1 + L2, by omega⟩ = (trajPrefix (k := k) hN ys) 0 ∧
+          excursionListOfTraj (k := k) (trajPrefix (k := k) hN ys) = preSeg ++ [e2, e1] ++ sufSeg ∧
+          preSeg = pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+          sufSeg = suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+          e2 = trajSegment (k := k) (trajPrefix (k := k) hN ys) ⟨a, by omega⟩ ⟨a + L2, by omega⟩ ∧
+          e1 = trajSegment (k := k) (trajPrefix (k := k) hN ys) ⟨a + L2, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+          p = preSeg ++ [e1, e2] ++ sufSeg) :
+    ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+      segmentSwap ys a L2 L1 hL2 hL1
+        (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN) ∈
+        prefixPatternFiber (k := k) (hN := hN) e s p := by
+  intro ys hys
+  rcases hdecompInv ys hys with ⟨pre, suf, preSeg, sufSeg, e1, e2,
+      hPairsOld, hPairsNew, hPre, hSuf, ha_ret, hb2_ret, hc_ret,
+      hOld, hPreSeg, hSufSeg, hE1, hE2, hp⟩
+  have hPairsOld' :
+      excursionPairs (k := k) (trajPrefix (k := k) hN ys) =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+           (⟨a + L2, by omega⟩, ⟨a + L2 + L1, by omega⟩)] ++
+          suf := by
+    simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hPairsOld
+  have hPairsNew' :
+      excursionPairs (k := k)
+        (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+           (⟨a + L1, by omega⟩, ⟨a + L2 + L1, by omega⟩)] ++
+          suf := by
+    simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hPairsNew
+  have hE2' :
+      e1 =
+        trajSegment (k := k) (trajPrefix (k := k) hN ys)
+          ⟨a + L2, by omega⟩
+          ⟨a + L2 + L1, by omega⟩ := by
+    simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hE2
+  have hswapPref :
+      excursionListOfTraj (k := k)
+        (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) =
+        preSeg ++ [e1, e2] ++ sufSeg :=
+    excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp_strong
+      (k := k) (xs := trajPrefix (k := k) hN ys) (a := a) (L1 := L2) (L2 := L1)
+      hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)
+      pre suf preSeg sufSeg e2 e1
+      hPairsOld' hPairsNew' hPre hSuf ha_ret hb2_ret
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hc_ret)
+      hOld hPreSeg hSufSeg hE1 hE2'
+  have hprefSwap :
+      trajPrefix (k := k) hN
+        (segmentSwap ys a L2 L1 hL2 hL1
+          (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN)) =
+        segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) :=
+    trajPrefix_segmentSwap_eq_segmentSwap_prefix
+      (k := k) (h := hN) (xs := ys) (a := a) (L1 := L2) (L2 := L1) hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)
+  have hlist :
+      excursionListOfTraj (k := k)
+        (trajPrefix (k := k) hN
+          (segmentSwap ys a L2 L1 hL2 hL1
+            (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN))) = p := by
+    simpa [hp, hprefSwap] using hswapPref
+  exact Finset.mem_filter.2 ⟨hmapFiberInv ys hys, hlist⟩
+
+/-- Build long-prefix image equality directly from explicit decomposition
+witnesses for forward and inverse adjacent swaps on prefixed trajectories. -/
+lemma himgPrefix_of_swap_middle_of_excursionPairs_decomp
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hmapFiber :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN) ∈
+          prefixFiber (k := k) (h := hN) e s)
+    (hdecomp :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+          (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+          excursionPairs (k := k) (trajPrefix (k := k) hN xs) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+               (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          excursionPairs (k := k)
+            (segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+               (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          pre.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort)
+                  pr.1 pr.2) =
+            pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+          suf.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort)
+                  pr.1 pr.2) =
+            suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+          (trajPrefix (k := k) hN xs) ⟨a, by omega⟩ = (trajPrefix (k := k) hN xs) 0 ∧
+          (trajPrefix (k := k) hN xs) ⟨a + L1, by omega⟩ = (trajPrefix (k := k) hN xs) 0 ∧
+          (trajPrefix (k := k) hN xs) ⟨a + L1 + L2, by omega⟩ = (trajPrefix (k := k) hN xs) 0 ∧
+          excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs) = preSeg ++ [e1, e2] ++ sufSeg ∧
+          preSeg = pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+          sufSeg = suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+          e1 = trajSegment (k := k) (trajPrefix (k := k) hN xs) ⟨a, by omega⟩ ⟨a + L1, by omega⟩ ∧
+          e2 = trajSegment (k := k) (trajPrefix (k := k) hN xs) ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+          q = preSeg ++ [e2, e1] ++ sufSeg)
+    (hmapFiberInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN) ∈
+          prefixFiber (k := k) (h := hN) e s)
+    (hdecompInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+          (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+          excursionPairs (k := k) (trajPrefix (k := k) hN ys) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+               (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          excursionPairs (k := k)
+            (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+              (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) =
+            pre ++
+              [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+               (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+              suf ∧
+          pre.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+                    (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+                  pr.1 pr.2) =
+            pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+          suf.map
+              (fun pr =>
+                trajSegment (k := k)
+                  (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+                    (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+                  pr.1 pr.2) =
+            suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+          (trajPrefix (k := k) hN ys) ⟨a, by omega⟩ = (trajPrefix (k := k) hN ys) 0 ∧
+          (trajPrefix (k := k) hN ys) ⟨a + L2, by omega⟩ = (trajPrefix (k := k) hN ys) 0 ∧
+          (trajPrefix (k := k) hN ys) ⟨a + L1 + L2, by omega⟩ = (trajPrefix (k := k) hN ys) 0 ∧
+          excursionListOfTraj (k := k) (trajPrefix (k := k) hN ys) = preSeg ++ [e2, e1] ++ sufSeg ∧
+          preSeg = pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+          sufSeg = suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+          e2 = trajSegment (k := k) (trajPrefix (k := k) hN ys) ⟨a, by omega⟩ ⟨a + L2, by omega⟩ ∧
+          e1 = trajSegment (k := k) (trajPrefix (k := k) hN ys) ⟨a + L2, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+          p = preSeg ++ [e1, e2] ++ sufSeg) :
+    (prefixPatternFiber (k := k) (hN := hN) e s p).image
+      (fun xs => segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN)) =
+      prefixPatternFiber (k := k) (hN := hN) e s q := by
+  apply image_eq_segmentSwap_prefixPatternFiber_of_maps
+    (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+    (a := a) (L1 := L1) (L2 := L2) hL1 hL2 (le_trans hcShort hN)
+  · exact hmapPrefix_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hmapFiber hdecomp
+  · exact hmapPrefixInv_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hmapFiberInv hdecompInv
+
+/-- Explicit short-fiber decomposition witness for an adjacent swap. -/
+def ShortSwapMiddleDecomp
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcN : a + L1 + L2 ≤ Nat.succ n) : Prop :=
+  ∀ ys ∈ shortPatternFiber (k := k) n e p,
+    ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+      (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+      excursionPairs (k := k) ys =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+           (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf ∧
+      excursionPairs (k := k) (segmentSwap ys a L1 L2 hL1 hL2 hcN) =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+           (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf ∧
+      pre.map
+          (fun pr =>
+            trajSegment (k := k)
+              (segmentSwap ys a L1 L2 hL1 hL2 hcN) pr.1 pr.2) =
+        pre.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+      suf.map
+          (fun pr =>
+            trajSegment (k := k)
+              (segmentSwap ys a L1 L2 hL1 hL2 hcN) pr.1 pr.2) =
+        suf.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+      ys ⟨a, by omega⟩ = ys 0 ∧
+      ys ⟨a + L1, by omega⟩ = ys 0 ∧
+      ys ⟨a + L1 + L2, by omega⟩ = ys 0 ∧
+      excursionListOfTraj (k := k) ys = preSeg ++ [e1, e2] ++ sufSeg ∧
+      preSeg = pre.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+      sufSeg = suf.map (fun pr => trajSegment (k := k) ys pr.1 pr.2) ∧
+      e1 = trajSegment (k := k) ys ⟨a, by omega⟩ ⟨a + L1, by omega⟩ ∧
+      e2 = trajSegment (k := k) ys ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+      q = preSeg ++ [e2, e1] ++ sufSeg
+
+/-- Explicit long-prefix decomposition witness for an adjacent swap. -/
+def PrefixSwapMiddleDecomp
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n) : Prop :=
+  ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+    ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+      (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+      excursionPairs (k := k) (trajPrefix (k := k) hN xs) =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+           (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf ∧
+      excursionPairs (k := k)
+        (segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort) =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+           (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf ∧
+      pre.map
+          (fun pr =>
+            trajSegment (k := k)
+              (segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort)
+              pr.1 pr.2) =
+        pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+      suf.map
+          (fun pr =>
+            trajSegment (k := k)
+              (segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort)
+              pr.1 pr.2) =
+        suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+      (trajPrefix (k := k) hN xs) ⟨a, by omega⟩ = (trajPrefix (k := k) hN xs) 0 ∧
+      (trajPrefix (k := k) hN xs) ⟨a + L1, by omega⟩ = (trajPrefix (k := k) hN xs) 0 ∧
+      (trajPrefix (k := k) hN xs) ⟨a + L1 + L2, by omega⟩ = (trajPrefix (k := k) hN xs) 0 ∧
+      excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs) = preSeg ++ [e1, e2] ++ sufSeg ∧
+      preSeg = pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+      sufSeg = suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN xs) pr.1 pr.2) ∧
+      e1 = trajSegment (k := k) (trajPrefix (k := k) hN xs) ⟨a, by omega⟩ ⟨a + L1, by omega⟩ ∧
+      e2 = trajSegment (k := k) (trajPrefix (k := k) hN xs) ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+      q = preSeg ++ [e2, e1] ++ sufSeg
+
+/-- Unpack the inverse short-swap decomposition into the explicit witness shape
+expected by `hmapShortInv_of_swap_middle_of_excursionPairs_decomp`. -/
+lemma shortSwapMiddleDecomp_inv_unpack
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompInv : ShortSwapMiddleDecomp
+      (k := k) n e q p a L2 L1 hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)) :
+    ∀ zs ∈ shortPatternFiber (k := k) n e q,
+      ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+        (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+        excursionPairs (k := k) zs =
+          pre ++
+            [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+             (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+            suf ∧
+        excursionPairs (k := k)
+          (segmentSwap zs a L2 L1 hL2 hL1
+            (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)) =
+          pre ++
+            [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+             (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+            suf ∧
+        pre.map
+            (fun pr =>
+              trajSegment (k := k)
+                (segmentSwap zs a L2 L1 hL2 hL1
+                  (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN))
+                pr.1 pr.2) =
+          pre.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+        suf.map
+            (fun pr =>
+              trajSegment (k := k)
+                (segmentSwap zs a L2 L1 hL2 hL1
+                  (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN))
+                pr.1 pr.2) =
+          suf.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+        zs ⟨a, by omega⟩ = zs 0 ∧
+        zs ⟨a + L2, by omega⟩ = zs 0 ∧
+        zs ⟨a + L1 + L2, by omega⟩ = zs 0 ∧
+        excursionListOfTraj (k := k) zs = preSeg ++ [e2, e1] ++ sufSeg ∧
+        preSeg = pre.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+        sufSeg = suf.map (fun pr => trajSegment (k := k) zs pr.1 pr.2) ∧
+        e2 = trajSegment (k := k) zs ⟨a, by omega⟩ ⟨a + L2, by omega⟩ ∧
+        e1 = trajSegment (k := k) zs ⟨a + L2, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+        p = preSeg ++ [e1, e2] ++ sufSeg := by
+  intro zs hzs
+  simpa [ShortSwapMiddleDecomp, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+    hdecompInv zs hzs
+
+/-- Unpack the inverse prefix-swap decomposition into the explicit witness shape
+expected by `hmapPrefixInv_of_swap_middle_of_excursionPairs_decomp`. -/
+lemma prefixSwapMiddleDecomp_inv_unpack
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompInv : PrefixSwapMiddleDecomp
+      (k := k) (hN := hN) e s q p a L2 L1 hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+      ∃ (pre suf : List (Fin (Nat.succ n + 1) × Fin (Nat.succ n + 1)))
+        (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k),
+        excursionPairs (k := k) (trajPrefix (k := k) hN ys) =
+          pre ++
+            [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+             (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+            suf ∧
+        excursionPairs (k := k)
+          (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+            (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) =
+          pre ++
+            [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+             (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+            suf ∧
+        pre.map
+            (fun pr =>
+              trajSegment (k := k)
+                (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+                  (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+                pr.1 pr.2) =
+          pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+        suf.map
+            (fun pr =>
+              trajSegment (k := k)
+                (segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+                  (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+                pr.1 pr.2) =
+          suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+        (trajPrefix (k := k) hN ys) ⟨a, by omega⟩ = (trajPrefix (k := k) hN ys) 0 ∧
+        (trajPrefix (k := k) hN ys) ⟨a + L2, by omega⟩ = (trajPrefix (k := k) hN ys) 0 ∧
+        (trajPrefix (k := k) hN ys) ⟨a + L1 + L2, by omega⟩ = (trajPrefix (k := k) hN ys) 0 ∧
+        excursionListOfTraj (k := k) (trajPrefix (k := k) hN ys) = preSeg ++ [e2, e1] ++ sufSeg ∧
+        preSeg = pre.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+        sufSeg = suf.map (fun pr => trajSegment (k := k) (trajPrefix (k := k) hN ys) pr.1 pr.2) ∧
+        e2 = trajSegment (k := k) (trajPrefix (k := k) hN ys) ⟨a, by omega⟩ ⟨a + L2, by omega⟩ ∧
+        e1 = trajSegment (k := k) (trajPrefix (k := k) hN ys) ⟨a + L2, by omega⟩ ⟨a + L1 + L2, by omega⟩ ∧
+        p = preSeg ++ [e1, e2] ++ sufSeg := by
+  intro ys hys
+  simpa [PrefixSwapMiddleDecomp, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+    hdecompInv ys hys
+
+/-- Forward short-fiber transport to `fiber` derived directly from a
+`ShortSwapMiddleDecomp` witness. -/
+lemma hmapShortFiber_of_shortSwapMiddleDecomp
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hdecomp : ShortSwapMiddleDecomp
+      (k := k) n e p q a L1 L2 hL1 hL2 hcN) :
+    ∀ ys ∈ shortPatternFiber (k := k) n e p,
+      segmentSwap ys a L1 L2 hL1 hL2 hcN ∈ fiber k (Nat.succ n) e := by
+  intro ys hys
+  rcases hdecomp ys hys with ⟨_, _, _, _, _, _, _, _, _, _, ha_ret, hb_ret, hc_ret, _, _, _, _, _, _⟩
+  exact segmentSwap_mem_fiber (k := k) e ys ((Finset.mem_filter.1 hys).1)
+    a L1 L2 hL1 hL2 hcN ha_ret hb_ret hc_ret
+
+/-- Inverse short-fiber transport to `fiber` derived directly from an inverse
+`ShortSwapMiddleDecomp` witness. -/
+lemma hmapShortFiberInv_of_shortSwapMiddleDecomp
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompInv : ShortSwapMiddleDecomp
+      (k := k) n e q p a L2 L1 hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)) :
+    ∀ zs ∈ shortPatternFiber (k := k) n e q,
+      segmentSwap zs a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+        fiber k (Nat.succ n) e := by
+  have hdecompInv' :=
+    shortSwapMiddleDecomp_inv_unpack
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcN hdecompInv
+  intro zs hzs
+  rcases hdecompInv' zs hzs with ⟨_, _, _, _, _, _, _, _, _, _, ha_ret, hb_ret, hc_ret, _, _, _, _, _, _⟩
+  exact segmentSwap_mem_fiber (k := k) e zs ((Finset.mem_filter.1 hzs).1)
+    a L2 L1 hL2 hL1
+    (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)
+    ha_ret hb_ret (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hc_ret)
+
+/-- A short-swap decomposition witness implies multiset equality between the
+two adjacent-swap patterns (using any witness trajectory in the short fiber). -/
+lemma multiset_eq_of_shortSwapMiddleDecomp
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hdecomp : ShortSwapMiddleDecomp
+      (k := k) n e p q a L1 L2 hL1 hL2 hcN)
+    {ys : Traj k (Nat.succ n)} (hys : ys ∈ shortPatternFiber (k := k) n e p) :
+    Multiset.ofList q = Multiset.ofList p := by
+  rcases hdecomp ys hys with
+    ⟨pre, suf, preSeg, sufSeg, e1, e2, hPairsOld, hPairsNew, hPre, hSuf,
+      ha_ret, hb_ret, hc_ret, hOld, hPreSeg, hSufSeg, hE1, hE2, hq⟩
+  have hmult :
+      excursionMultiset (k := k)
+          (excursionListOfTraj (k := k) (segmentSwap ys a L1 L2 hL1 hL2 hcN)) =
+        excursionMultiset (k := k) (excursionListOfTraj (k := k) ys) :=
+    excursionMultiset_segmentSwap_eq_swap_middle_of_excursionPairs_decomp_strong
+      (k := k) (xs := ys) (a := a) (L1 := L1) (L2 := L2)
+      hL1 hL2 hcN pre suf preSeg sufSeg e1 e2
+      hPairsOld hPairsNew hPre hSuf ha_ret hb_ret hc_ret
+      hOld hPreSeg hSufSeg hE1 hE2
+  have hp : excursionListOfTraj (k := k) ys = p := (Finset.mem_filter.1 hys).2
+  have hq' :
+      excursionListOfTraj (k := k) (segmentSwap ys a L1 L2 hL1 hL2 hcN) = q := by
+    have hswap :
+        excursionListOfTraj (k := k) (segmentSwap ys a L1 L2 hL1 hL2 hcN) =
+          preSeg ++ [e2, e1] ++ sufSeg :=
+      excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp_strong
+        (k := k) (xs := ys) (a := a) (L1 := L1) (L2 := L2)
+        hL1 hL2 hcN pre suf preSeg sufSeg e1 e2
+        hPairsOld hPairsNew hPre hSuf ha_ret hb_ret hc_ret
+        hOld hPreSeg hSufSeg hE1 hE2
+    simpa [hq] using hswap
+  have hqmult : Multiset.ofList q = excursionMultiset (k := k)
+      (excursionListOfTraj (k := k) (segmentSwap ys a L1 L2 hL1 hL2 hcN)) := by
+    simpa [excursionMultiset, hq']
+  have hpmult : excursionMultiset (k := k) (excursionListOfTraj (k := k) ys) =
+      Multiset.ofList p := by
+    simpa [excursionMultiset, hp]
+  calc
+    Multiset.ofList q =
+      excursionMultiset (k := k)
+        (excursionListOfTraj (k := k) (segmentSwap ys a L1 L2 hL1 hL2 hcN)) := hqmult
+    _ = excursionMultiset (k := k) (excursionListOfTraj (k := k) ys) := hmult
+    _ = Multiset.ofList p := hpmult
+
+/-- Forward long-prefix transport to `prefixFiber` derived directly from a
+`PrefixSwapMiddleDecomp` witness. -/
+lemma hmapPrefixFiber_of_prefixSwapMiddleDecomp
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hdecomp : PrefixSwapMiddleDecomp
+      (k := k) (hN := hN) e s p q a L1 L2 hL1 hL2 hcShort) :
+    ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+      segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN) ∈
+        prefixFiber (k := k) (h := hN) e s := by
+  intro xs hxs
+  rcases hdecomp xs hxs with
+    ⟨_, _, _, _, _, _, _, _, _, _, ha_ret_pref, hb_ret_pref, hc_ret_pref, _, _, _, _, _, _⟩
+  have hxsPrefix : xs ∈ prefixFiber (k := k) (h := hN) e s := (Finset.mem_filter.1 hxs).1
+  have hxsFiber : xs ∈ fiber k N s := (Finset.mem_filter.1 hxsPrefix).1
+  have ha_ret :
+      xs ⟨a, by omega⟩ = xs 0 := by
+    simpa [trajPrefix] using ha_ret_pref
+  have hb_ret :
+      xs ⟨a + L1, by omega⟩ = xs 0 := by
+    simpa [trajPrefix] using hb_ret_pref
+  have hc_ret :
+      xs ⟨a + L1 + L2, by omega⟩ = xs 0 := by
+    simpa [trajPrefix] using hc_ret_pref
+  have hmemFiber :
+      segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN) ∈ fiber k N s :=
+    segmentSwap_mem_fiber (k := k) s xs hxsFiber a L1 L2 hL1 hL2
+      (le_trans hcShort hN) ha_ret hb_ret hc_ret
+  have hprefix_swap :
+      trajPrefix (k := k) hN (segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN)) =
+        segmentSwap (trajPrefix (k := k) hN xs) a L1 L2 hL1 hL2 hcShort :=
+    trajPrefix_segmentSwap_eq_segmentSwap_prefix
+      (k := k) (h := hN) (xs := xs) (a := a) (L1 := L1) (L2 := L2)
+      hL1 hL2 hcShort
+  have hprefix_state_eq :
+      prefixState (k := k) hN
+        (segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN)) =
+        prefixState (k := k) hN xs := by
+    unfold prefixState
+    rw [hprefix_swap]
+    exact segmentSwap_stateOfTraj (k := k) (trajPrefix (k := k) hN xs) a L1 L2
+      hL1 hL2 hcShort ha_ret_pref hb_ret_pref hc_ret_pref
+  have hprefix_state :
+      prefixState (k := k) hN
+        (segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN)) = e := by
+    exact hprefix_state_eq.trans ((Finset.mem_filter.1 hxsPrefix).2)
+  exact Finset.mem_filter.2 ⟨hmemFiber, hprefix_state⟩
+
+/-- Inverse long-prefix transport to `prefixFiber` derived directly from an
+inverse `PrefixSwapMiddleDecomp` witness. -/
+lemma hmapPrefixFiberInv_of_prefixSwapMiddleDecomp
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompInv : PrefixSwapMiddleDecomp
+      (k := k) (hN := hN) e s q p a L2 L1 hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+      segmentSwap ys a L2 L1 hL2 hL1
+        (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN) ∈
+        prefixFiber (k := k) (h := hN) e s := by
+  have hdecompInv' :=
+    prefixSwapMiddleDecomp_inv_unpack
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompInv
+  intro ys hys
+  rcases hdecompInv' ys hys with
+    ⟨_, _, _, _, _, _, _, _, _, _, ha_ret_pref, hb_ret_pref, hc_ret_pref, _, _, _, _, _, _⟩
+  have hysPrefix : ys ∈ prefixFiber (k := k) (h := hN) e s := (Finset.mem_filter.1 hys).1
+  have hysFiber : ys ∈ fiber k N s := (Finset.mem_filter.1 hysPrefix).1
+  have ha_ret :
+      ys ⟨a, by omega⟩ = ys 0 := by
+    simpa [trajPrefix] using ha_ret_pref
+  have hb_ret :
+      ys ⟨a + L2, by omega⟩ = ys 0 := by
+    simpa [trajPrefix] using hb_ret_pref
+  have hc_ret :
+      ys ⟨a + L1 + L2, by omega⟩ = ys 0 := by
+    simpa [trajPrefix] using hc_ret_pref
+  have hmemFiber :
+      segmentSwap ys a L2 L1 hL2 hL1
+        (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN) ∈
+        fiber k N s :=
+    segmentSwap_mem_fiber (k := k) s ys hysFiber a L2 L1 hL2 hL1
+      (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN)
+      ha_ret hb_ret (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hc_ret)
+  have hprefix_swap :
+      trajPrefix (k := k) hN
+        (segmentSwap ys a L2 L1 hL2 hL1
+          (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN)) =
+        segmentSwap (trajPrefix (k := k) hN ys) a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) :=
+    trajPrefix_segmentSwap_eq_segmentSwap_prefix
+      (k := k) (h := hN) (xs := ys) (a := a) (L1 := L2) (L2 := L1)
+      hL2 hL1 (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)
+  have hprefix_state_eq :
+      prefixState (k := k) hN
+        (segmentSwap ys a L2 L1 hL2 hL1
+          (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN)) =
+        prefixState (k := k) hN ys := by
+    unfold prefixState
+    rw [hprefix_swap]
+    exact segmentSwap_stateOfTraj (k := k) (trajPrefix (k := k) hN ys) a L2 L1
+      hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)
+      ha_ret_pref hb_ret_pref
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hc_ret_pref)
+  have hprefix_state :
+      prefixState (k := k) hN
+        (segmentSwap ys a L2 L1 hL2 hL1
+          (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN)) = e := by
+    exact hprefix_state_eq.trans ((Finset.mem_filter.1 hysPrefix).2)
+  exact Finset.mem_filter.2 ⟨hmemFiber, hprefix_state⟩
+
+/-- Thin wrapper: produce short-fiber image equality from `ShortSwapMiddleDecomp`. -/
+lemma himgShort_of_shortSwapMiddleDecomp
+    (n : ℕ) (e : MarkovState k) (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (hmapFiber :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcN ∈ fiber k (Nat.succ n) e)
+    (hdecomp : ShortSwapMiddleDecomp
+      (k := k) n e p q a L1 L2 hL1 hL2 hcN)
+    (hmapFiberInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+          fiber k (Nat.succ n) e)
+    (hdecompInv : ShortSwapMiddleDecomp
+      (k := k) n e q p a L2 L1 hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)) :
+    (shortPatternFiber (k := k) n e p).image
+      (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcN) =
+      shortPatternFiber (k := k) n e q := by
+  have hdecompInv' :=
+    shortSwapMiddleDecomp_inv_unpack
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcN hdecompInv
+  exact himgShort_of_swap_middle_of_excursionPairs_decomp
+    (k := k) (n := n) (e := e) (p := p) (q := q)
+    (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcN
+    hmapFiber hdecomp hmapFiberInv hdecompInv'
+
+/-- Thin wrapper: produce long-prefix image equality from `PrefixSwapMiddleDecomp`. -/
+lemma himgPrefix_of_PrefixSwapMiddleDecomp
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hmapFiber :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN) ∈
+          prefixFiber (k := k) (h := hN) e s)
+    (hdecomp : PrefixSwapMiddleDecomp
+      (k := k) (hN := hN) e s p q a L1 L2 hL1 hL2 hcShort)
+    (hmapFiberInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN) ∈
+          prefixFiber (k := k) (h := hN) e s)
+    (hdecompInv : PrefixSwapMiddleDecomp
+      (k := k) (hN := hN) e s q p a L2 L1 hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    (prefixPatternFiber (k := k) (hN := hN) e s p).image
+      (fun xs => segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN)) =
+      prefixPatternFiber (k := k) (hN := hN) e s q := by
+  have hdecompInv' :=
+    prefixSwapMiddleDecomp_inv_unpack
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompInv
+  exact himgPrefix_of_swap_middle_of_excursionPairs_decomp
+    (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+    (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+    hmapFiber hdecomp hmapFiberInv hdecompInv'
+
+/-- Turn an ordered-list equality statement into a long-prefix forward map. -/
+lemma hmapPrefix_of_excursionList_segmentSwap_eq
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (hmapFiber :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 hcN ∈ prefixFiber (k := k) (h := hN) e s)
+    (hlist :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        excursionListOfTraj (k := k)
+          (trajPrefix (k := k) hN (segmentSwap xs a L1 L2 hL1 hL2 hcN)) = q) :
+    ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+      segmentSwap xs a L1 L2 hL1 hL2 hcN ∈
+        prefixPatternFiber (k := k) (hN := hN) e s q := by
+  intro xs hxs
+  exact Finset.mem_filter.2 ⟨hmapFiber xs hxs, hlist xs hxs⟩
+
+/-- Turn an ordered-list equality statement into a long-prefix inverse map. -/
+lemma hmapPrefixInv_of_excursionList_segmentSwap_eq
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (hmapFiber :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+          prefixFiber (k := k) (h := hN) e s)
+    (hlist :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        excursionListOfTraj (k := k)
+          (trajPrefix (k := k) hN
+            (segmentSwap ys a L2 L1 hL2 hL1
+              (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN))) = p) :
+    ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+      segmentSwap ys a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+        prefixPatternFiber (k := k) (hN := hN) e s p := by
+  intro ys hys
+  exact Finset.mem_filter.2 ⟨hmapFiber ys hys, hlist ys hys⟩
+
+/-- Concrete long-prefix transport map in the post-prefix regime (`n+1 ≤ a`):
+segment swap preserves the prefix excursion list, so this maps `p` to itself. -/
+lemma hmapPrefix_same_of_prefix_before_swap
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k) (p : ExcursionList k)
+    (a L1 L2 : ℕ) (hna : Nat.succ n ≤ a)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (ha_ret : ∀ xs, xs ∈ prefixPatternFiber (k := k) (hN := hN) e s (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) →
+      xs ⟨a, by omega⟩ = xs 0)
+    (hb_ret : ∀ xs, xs ∈ prefixPatternFiber (k := k) (hN := hN) e s (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) →
+      xs ⟨a + L1, by omega⟩ = xs 0)
+    (hc_ret : ∀ xs, xs ∈ prefixPatternFiber (k := k) (hN := hN) e s (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) →
+      xs ⟨a + L1 + L2, by omega⟩ = xs 0) :
+    ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+      segmentSwap xs a L1 L2 hL1 hL2 hcN ∈
+        prefixPatternFiber (k := k) (hN := hN) e s p := by
+  intro xs hxs
+  have hFiber :
+      segmentSwap xs a L1 L2 hL1 hL2 hcN ∈
+        prefixFiber (k := k) (h := hN) e s := by
+    exact segmentSwap_mem_prefixFiber_of_prefix_before_swap
+      (k := k) (h := hN) (e := e) (eN := s) (xs := xs)
+      (a := a) (L1 := L1) (L2 := L2) (hna := hna)
+      (hL1 := hL1) (hL2 := hL2) (hcN := hcN)
+      (ha_ret := by
+        have hxs' : xs ∈ prefixPatternFiber (k := k) (hN := hN) e s
+            (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) := by
+          exact Finset.mem_filter.2 ⟨(Finset.mem_filter.1 hxs).1, rfl⟩
+        exact ha_ret xs hxs')
+      (hb_ret := by
+        have hxs' : xs ∈ prefixPatternFiber (k := k) (hN := hN) e s
+            (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) := by
+          exact Finset.mem_filter.2 ⟨(Finset.mem_filter.1 hxs).1, rfl⟩
+        exact hb_ret xs hxs')
+      (hc_ret := by
+        have hxs' : xs ∈ prefixPatternFiber (k := k) (hN := hN) e s
+            (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) := by
+          exact Finset.mem_filter.2 ⟨(Finset.mem_filter.1 hxs).1, rfl⟩
+        exact hc_ret xs hxs')
+      ((Finset.mem_filter.1 hxs).1)
+  have hlist :
+      excursionListOfTraj (k := k)
+        (trajPrefix (k := k) hN (segmentSwap xs a L1 L2 hL1 hL2 hcN)) = p := by
+    have hp : excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs) = p :=
+      (Finset.mem_filter.1 hxs).2
+    simpa [hp] using
+      excursionListOfTraj_prefix_segmentSwap_eq_of_prefix_before_swap
+        (k := k) (hN := hN) (xs := xs) (a := a) (L1 := L1) (L2 := L2)
+        (hna := hna) (hL1 := hL1) (hL2 := hL2) (hcN := hcN)
+  exact Finset.mem_filter.2 ⟨hFiber, hlist⟩
+
+/-- Inverse long-prefix transport map in the post-prefix regime (`n+1 ≤ a`):
+segment swap with reversed lengths also preserves the prefix excursion list, so
+this maps `p` to itself. -/
+lemma hmapPrefixInv_same_of_prefix_before_swap
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k) (p : ExcursionList k)
+    (a L1 L2 : ℕ) (hna : Nat.succ n ≤ a)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (ha_ret : ∀ xs, xs ∈ prefixPatternFiber (k := k) (hN := hN) e s (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) →
+      xs ⟨a, by omega⟩ = xs 0)
+    (hb2_ret : ∀ xs, xs ∈ prefixPatternFiber (k := k) (hN := hN) e s (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) →
+      xs ⟨a + L2, by omega⟩ = xs 0)
+    (hc_ret : ∀ xs, xs ∈ prefixPatternFiber (k := k) (hN := hN) e s (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) →
+      xs ⟨a + L1 + L2, by omega⟩ = xs 0) :
+    ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+      segmentSwap xs a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+        prefixPatternFiber (k := k) (hN := hN) e s p := by
+  intro xs hxs
+  have hFiber :
+      segmentSwap xs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN) ∈
+        prefixFiber (k := k) (h := hN) e s := by
+    exact segmentSwap_mem_prefixFiber_of_prefix_before_swap
+      (k := k) (h := hN) (e := e) (eN := s) (xs := xs)
+      (a := a) (L1 := L2) (L2 := L1) (hna := hna)
+      (hL1 := hL2) (hL2 := hL1)
+      (hcN := by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)
+      (ha_ret := by
+        have hxs' : xs ∈ prefixPatternFiber (k := k) (hN := hN) e s
+            (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) := by
+          exact Finset.mem_filter.2 ⟨(Finset.mem_filter.1 hxs).1, rfl⟩
+        exact ha_ret xs hxs')
+      (hb_ret := by
+        have hxs' : xs ∈ prefixPatternFiber (k := k) (hN := hN) e s
+            (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) := by
+          exact Finset.mem_filter.2 ⟨(Finset.mem_filter.1 hxs).1, rfl⟩
+        exact hb2_ret xs hxs')
+      (hc_ret := by
+        have hxs' : xs ∈ prefixPatternFiber (k := k) (hN := hN) e s
+            (excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs)) := by
+          exact Finset.mem_filter.2 ⟨(Finset.mem_filter.1 hxs).1, rfl⟩
+        simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using (hc_ret xs hxs'))
+      ((Finset.mem_filter.1 hxs).1)
+  have hlist :
+      excursionListOfTraj (k := k)
+        (trajPrefix (k := k) hN
+          (segmentSwap xs a L2 L1 hL2 hL1
+            (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN))) = p := by
+    have hp : excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs) = p :=
+      (Finset.mem_filter.1 hxs).2
+    simpa [hp] using
+      excursionListOfTraj_prefix_segmentSwap_eq_of_prefix_before_swap
+        (k := k) (hN := hN) (xs := xs) (a := a) (L1 := L2) (L2 := L1)
+        (hna := hna) (hL1 := hL2) (hL2 := hL1)
+        (hcN := by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcN)
+  exact Finset.mem_filter.2 ⟨hFiber, hlist⟩
+
 /-- Pattern ratio inside the short fiber:
 `|shortPatternFiber(n,e,p)| / |fiber(n+1,e)|`. -/
 def shortPatternRatio
     (n : ℕ) (e : MarkovState k) (p : ExcursionList k) : ENNReal :=
   ((shortPatternFiber (k := k) n e p).card : ENNReal) /
     ((fiber k (Nat.succ n) e).card : ENNReal)
+
+lemma sum_shortPatternRatio_over_shortImage
+    (n : ℕ) (e : MarkovState k) :
+    ∑ p ∈ ((fiber k (Nat.succ n) e).image
+        (fun ys => excursionListOfTraj (k := k) ys)),
+      shortPatternRatio (k := k) n e p =
+        (if (fiber k (Nat.succ n) e).card = 0 then 0 else 1) := by
+  classical
+  let S : Finset (ExcursionList k) :=
+    (fiber k (Nat.succ n) e).image (fun ys => excursionListOfTraj (k := k) ys)
+  have hcard :
+      (fiber k (Nat.succ n) e).card =
+        ∑ p ∈ S, (shortPatternFiber (k := k) n e p).card := by
+    -- Partition the short fiber by excursion list.
+    simpa [S, shortPatternFiber] using
+      (Finset.card_eq_sum_card_image
+        (f := fun ys : Traj k (Nat.succ n) => excursionListOfTraj (k := k) ys)
+        (s := fiber k (Nat.succ n) e))
+  by_cases hden : (fiber k (Nat.succ n) e).card = 0
+  · have hshort0 :
+      ∀ p, shortPatternRatio (k := k) n e p = 0 := by
+        intro p
+        have hfiber_empty : fiber k (Nat.succ n) e = ∅ := Finset.card_eq_zero.mp hden
+        have hshort_empty : shortPatternFiber (k := k) n e p = ∅ := by
+          unfold shortPatternFiber
+          simp [hfiber_empty]
+        unfold shortPatternRatio
+        simp [hden, hshort_empty]
+    have hsum0 :
+        ∑ p ∈ S, shortPatternRatio (k := k) n e p = 0 := by
+      refine Finset.sum_eq_zero ?_
+      intro p hp
+      simp [hshort0]
+    rw [show ((fiber k (Nat.succ n) e).image
+          (fun ys => excursionListOfTraj (k := k) ys)) = S by rfl]
+    simp [hden, hsum0]
+  · have hsum :
+      ∑ p ∈ S, shortPatternRatio (k := k) n e p =
+        (((fiber k (Nat.succ n) e).card : ℕ) : ENNReal) /
+          ((fiber k (Nat.succ n) e).card : ENNReal) := by
+      calc
+        ∑ p ∈ S, shortPatternRatio (k := k) n e p
+            = (((∑ p ∈ S, (shortPatternFiber (k := k) n e p).card) : ℕ) : ENNReal) /
+                ((fiber k (Nat.succ n) e).card : ENNReal) := by
+                  simp [shortPatternRatio, div_eq_mul_inv, Finset.sum_mul]
+        _ = (((fiber k (Nat.succ n) e).card : ℕ) : ENNReal) /
+              ((fiber k (Nat.succ n) e).card : ENNReal) := by
+                rw [hcard]
+    have hden_enn : ((fiber k (Nat.succ n) e).card : ENNReal) ≠ 0 := by
+      exact_mod_cast hden
+    have hden_top : ((fiber k (Nat.succ n) e).card : ENNReal) ≠ ⊤ := by simp
+    have hratio1 :
+        (((fiber k (Nat.succ n) e).card : ℕ) : ENNReal) /
+            ((fiber k (Nat.succ n) e).card : ENNReal) = 1 := by
+      exact (ENNReal.div_eq_one_iff hden_enn hden_top).2 rfl
+    simp [S, hden, hsum, hratio1]
+
+lemma sum_prefixPatternRatio
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      prefixPatternRatio (k := k) (hN := hN) e s p =
+        (if (prefixFiber (k := k) (h := hN) e s).card = 0 then 0 else 1) := by
+  classical
+  let P₀ : Finset (ExcursionList k) :=
+    (prefixFiber (k := k) (h := hN) e s).image
+      (fun xs => excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs))
+  have hcard :
+      (prefixFiber (k := k) (h := hN) e s).card =
+        ∑ p ∈ P₀, (prefixPatternFiber (k := k) (hN := hN) e s p).card := by
+    simpa [P₀, prefixPatternFiber] using
+      (Finset.card_eq_sum_card_image
+        (f := fun xs : Traj k N =>
+          excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs))
+        (s := prefixFiber (k := k) (h := hN) e s))
+  have hP :
+      excursionPatternSet (k := k) (hN := hN) e s =
+        ((fiber k (Nat.succ n) e).image
+          (fun ys => excursionListOfTraj (k := k) ys)) := by
+    exact excursionPatternSet_eq_shortImage (k := k) (hN := hN) (e := e) (s := s)
+  -- Outside the long-prefix image `P₀`, numerator card is zero.
+  have hsubset : P₀ ⊆ excursionPatternSet (k := k) (hN := hN) e s := by
+    intro p hp
+    rw [hP]
+    rcases Finset.mem_image.1 hp with ⟨xs, hxs, rfl⟩
+    exact mem_excursionPatternSet_of_prefixFiber (k := k) (hN := hN) (e := e) (s := s) hxs
+  have hzero_out :
+      ∀ p ∈ excursionPatternSet (k := k) (hN := hN) e s, p ∉ P₀ →
+        (prefixPatternFiber (k := k) (hN := hN) e s p).card = 0 := by
+    intro p hp hpNot
+    have hempty :
+        prefixPatternFiber (k := k) (hN := hN) e s p = ∅ := by
+      ext xs
+      constructor
+      · intro hxs
+        have hx : excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs) = p :=
+          (Finset.mem_filter.1 hxs).2
+        have hxP0 : p ∈ P₀ := by
+          refine Finset.mem_image.2 ?_
+          exact ⟨xs, (Finset.mem_filter.1 hxs).1, hx⟩
+        exact False.elim (hpNot hxP0)
+      · intro hxs
+        simp at hxs
+    simp [hempty]
+  have hcard_on_patternSet :
+      (prefixFiber (k := k) (h := hN) e s).card =
+        ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+          (prefixPatternFiber (k := k) (hN := hN) e s p).card := by
+    calc
+      (prefixFiber (k := k) (h := hN) e s).card
+          = ∑ p ∈ P₀, (prefixPatternFiber (k := k) (hN := hN) e s p).card := hcard
+      _ = ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+            (prefixPatternFiber (k := k) (hN := hN) e s p).card := by
+            exact Finset.sum_subset hsubset hzero_out
+  by_cases hpf0 : (prefixFiber (k := k) (h := hN) e s).card = 0
+  · have hratio0 :
+      ∀ p, prefixPatternRatio (k := k) (hN := hN) e s p = 0 := by
+        intro p
+        have hpf_empty : prefixFiber (k := k) (h := hN) e s = ∅ := Finset.card_eq_zero.mp hpf0
+        have hpat_empty : prefixPatternFiber (k := k) (hN := hN) e s p = ∅ := by
+          unfold prefixPatternFiber
+          simp [hpf_empty]
+        unfold prefixPatternRatio
+        simp [hpf0, hpat_empty]
+    have hsum0 :
+        ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+          prefixPatternRatio (k := k) (hN := hN) e s p = 0 := by
+      refine Finset.sum_eq_zero ?_
+      intro p hp
+      simp [hratio0]
+    simp [hpf0, hsum0]
+  · have hsum :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        prefixPatternRatio (k := k) (hN := hN) e s p =
+          (((prefixFiber (k := k) (h := hN) e s).card : ℕ) : ENNReal) /
+            ((prefixFiber (k := k) (h := hN) e s).card : ENNReal) := by
+      calc
+        ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+          prefixPatternRatio (k := k) (hN := hN) e s p
+            = (((∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+                (prefixPatternFiber (k := k) (hN := hN) e s p).card) : ℕ) : ENNReal) /
+                ((prefixFiber (k := k) (h := hN) e s).card : ENNReal) := by
+                  simp [prefixPatternRatio, div_eq_mul_inv, Finset.sum_mul]
+        _ = (((prefixFiber (k := k) (h := hN) e s).card : ℕ) : ENNReal) /
+              ((prefixFiber (k := k) (h := hN) e s).card : ENNReal) := by
+                rw [hcard_on_patternSet]
+    have hpf_ne_zero : ((prefixFiber (k := k) (h := hN) e s).card : ENNReal) ≠ 0 := by
+      exact_mod_cast hpf0
+    have hpf_ne_top : ((prefixFiber (k := k) (h := hN) e s).card : ENNReal) ≠ ⊤ := by simp
+    have hratio1 :
+        (((prefixFiber (k := k) (h := hN) e s).card : ℕ) : ENNReal) /
+            ((prefixFiber (k := k) (h := hN) e s).card : ENNReal) = 1 := by
+      exact (ENNReal.div_eq_one_iff hpf_ne_zero hpf_ne_top).2 rfl
+    simp [hpf0, hsum, hratio1]
 
 /-- Long-prefix pattern ratio is invariant under segment-swap image cardinality
 in the post-prefix regime (`n+1 ≤ a`). -/
@@ -304,6 +2398,1136 @@ lemma worPatternMass_card_image_segmentSwap_of_prefix_before_swap
       (k := k) (hN := hN) (e := e) (s := s) (p := p)
       (a := a) (L1 := L1) (L2 := L2) hna hL1 hL2 hcN]
   rfl
+
+/-- If segment swap sends one prefix-pattern fiber exactly onto another, then
+the long-prefix pattern ratios are equal. This packages the finite-cardinality
+symmetry needed for adjacent-excursion transposition arguments. -/
+lemma prefixPatternRatio_eq_of_segmentSwap_image_eq
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (himg :
+      (prefixPatternFiber (k := k) (hN := hN) e s p).image
+        (fun xs => segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+      prefixPatternFiber (k := k) (hN := hN) e s q) :
+    prefixPatternRatio (k := k) (hN := hN) e s p =
+      prefixPatternRatio (k := k) (hN := hN) e s q := by
+  have hcardImage :
+      ((prefixPatternFiber (k := k) (hN := hN) e s p).image
+        (fun xs => segmentSwap xs a L1 L2 hL1 hL2 hcN)).card =
+      (prefixPatternFiber (k := k) (hN := hN) e s p).card := by
+    refine Finset.card_image_iff.mpr ?_
+    intro xs hxs ys hys hEq
+    exact segmentSwap_injective (k := k) (a := a) (L1 := L1) (L2 := L2)
+      (hL1 := hL1) (hL2 := hL2) (hcN := hcN) hEq
+  have hcard :
+      (prefixPatternFiber (k := k) (hN := hN) e s q).card =
+        (prefixPatternFiber (k := k) (hN := hN) e s p).card := by
+    rw [← himg, hcardImage]
+  unfold prefixPatternRatio
+  simp [hcard]
+
+/-- Same as `prefixPatternRatio_eq_of_segmentSwap_image_eq`, but for WOR-side
+pattern masses. -/
+lemma worPatternMass_eq_of_segmentSwap_image_eq
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (himg :
+      (prefixPatternFiber (k := k) (hN := hN) e s p).image
+        (fun xs => segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+      prefixPatternFiber (k := k) (hN := hN) e s q) :
+    worPatternMass (k := k) (hN := hN) e s p =
+      worPatternMass (k := k) (hN := hN) e s q := by
+  have hcardImage :
+      ((prefixPatternFiber (k := k) (hN := hN) e s p).image
+        (fun xs => segmentSwap xs a L1 L2 hL1 hL2 hcN)).card =
+      (prefixPatternFiber (k := k) (hN := hN) e s p).card := by
+    refine Finset.card_image_iff.mpr ?_
+    intro xs hxs ys hys hEq
+    exact segmentSwap_injective (k := k) (a := a) (L1 := L1) (L2 := L2)
+      (hL1 := hL1) (hL2 := hL2) (hcN := hcN) hEq
+  have hcard :
+      (prefixPatternFiber (k := k) (hN := hN) e s q).card =
+        (prefixPatternFiber (k := k) (hN := hN) e s p).card := by
+    rw [← himg, hcardImage]
+  unfold worPatternMass
+  simp [hcard]
+
+/-- Short-horizon analogue: if segment swap sends one short-pattern fiber onto
+another, then the corresponding short-pattern ratios are equal. -/
+lemma shortPatternRatio_eq_of_segmentSwap_image_eq
+    (n : ℕ) (e : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ Nat.succ n)
+    (himg :
+      (shortPatternFiber (k := k) n e p).image
+        (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcN) =
+      shortPatternFiber (k := k) n e q) :
+    shortPatternRatio (k := k) n e p =
+      shortPatternRatio (k := k) n e q := by
+  have hcardImage :
+      ((shortPatternFiber (k := k) n e p).image
+        (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcN)).card =
+      (shortPatternFiber (k := k) n e p).card := by
+    refine Finset.card_image_iff.mpr ?_
+    intro xs hxs ys hys hEq
+    exact segmentSwap_injective (k := k) (a := a) (L1 := L1) (L2 := L2)
+      (hL1 := hL1) (hL2 := hL2) (hcN := hcN) hEq
+  have hcard :
+      (shortPatternFiber (k := k) n e q).card =
+        (shortPatternFiber (k := k) n e p).card := by
+    rw [← himg, hcardImage]
+  unfold shortPatternRatio
+  simp [hcard]
+
+/-- Combined ratio-term invariance under synchronized short/prefix segment-swap
+fiber equalities. -/
+lemma abs_ratio_term_eq_of_segmentSwap_image_eq
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n) (hcLong : a + L1 + L2 ≤ N)
+    (himgShort :
+      (shortPatternFiber (k := k) n e p).image
+        (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcShort) =
+      shortPatternFiber (k := k) n e q)
+    (himgPrefix :
+      (prefixPatternFiber (k := k) (hN := hN) e s p).image
+        (fun xs => segmentSwap xs a L1 L2 hL1 hL2 hcLong) =
+      prefixPatternFiber (k := k) (hN := hN) e s q)
+    (Wv Pv : ℝ) :
+    |(shortPatternRatio (k := k) n e p).toReal * Wv -
+      (prefixPatternRatio (k := k) (hN := hN) e s p).toReal * Pv| =
+    |(shortPatternRatio (k := k) n e q).toReal * Wv -
+      (prefixPatternRatio (k := k) (hN := hN) e s q).toReal * Pv| := by
+  have hShort :
+      shortPatternRatio (k := k) n e p =
+        shortPatternRatio (k := k) n e q :=
+    shortPatternRatio_eq_of_segmentSwap_image_eq
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort himgShort
+  have hPrefix :
+      prefixPatternRatio (k := k) (hN := hN) e s p =
+        prefixPatternRatio (k := k) (hN := hN) e s q :=
+    prefixPatternRatio_eq_of_segmentSwap_image_eq
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcLong himgPrefix
+  simp [hShort, hPrefix]
+
+/-- Practical wrapper: derive absolute-ratio invariance from forward/backward
+segment-swap membership maps on short and long pattern fibers. -/
+lemma abs_ratio_term_eq_of_segmentSwap_maps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n) (hcLong : a + L1 + L2 ≤ N)
+    (hmapShort :
+      ∀ ys ∈ shortPatternFiber n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber n e q)
+    (hmapShortInv :
+      ∀ zs ∈ shortPatternFiber n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber n e p)
+    (hmapPrefix :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 hcLong ∈
+          prefixPatternFiber (k := k) (hN := hN) e s q)
+    (hmapPrefixInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcLong) ∈
+          prefixPatternFiber (k := k) (hN := hN) e s p)
+    (Wv Pv : ℝ) :
+    |(shortPatternRatio (k := k) n e p).toReal * Wv -
+      (prefixPatternRatio (k := k) (hN := hN) e s p).toReal * Pv| =
+    |(shortPatternRatio (k := k) n e q).toReal * Wv -
+      (prefixPatternRatio (k := k) (hN := hN) e s q).toReal * Pv| := by
+  have himgShort :
+      (shortPatternFiber n e p).image
+        (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcShort) =
+        shortPatternFiber n e q :=
+    image_eq_segmentSwap_shortPatternFiber_of_maps
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      hmapShort hmapShortInv
+  have himgPrefix :
+      (prefixPatternFiber (k := k) (hN := hN) e s p).image
+        (fun xs => segmentSwap xs a L1 L2 hL1 hL2 hcLong) =
+        prefixPatternFiber (k := k) (hN := hN) e s q :=
+    image_eq_segmentSwap_prefixPatternFiber_of_maps
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcLong
+      hmapPrefix hmapPrefixInv
+  exact abs_ratio_term_eq_of_segmentSwap_image_eq
+    (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+    (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hcLong
+    himgShort himgPrefix Wv Pv
+
+/-- Finite-pattern uniformity package for one adjacent segment swap.
+
+Given forward/backward swap maps on both short and long pattern fibers, all
+pattern-level observables used in the ratio decomposition are invariant under
+the induced transposition `p ↔ q`. This is the reusable symmetry block for the
+final orbit/cardinality averaging step in `hsumAbsRatio`. -/
+theorem finite_pattern_uniformity_of_adjacent_swap
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n) (hcLong : a + L1 + L2 ≤ N)
+    (hmapShort :
+      ∀ ys ∈ shortPatternFiber n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber n e q)
+    (hmapShortInv :
+      ∀ zs ∈ shortPatternFiber n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber n e p)
+    (hmapPrefix :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 hcLong ∈
+          prefixPatternFiber (k := k) (hN := hN) e s q)
+    (hmapPrefixInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcLong) ∈
+          prefixPatternFiber (k := k) (hN := hN) e s p) :
+    shortPatternRatio (k := k) n e p = shortPatternRatio (k := k) n e q ∧
+    prefixPatternRatio (k := k) (hN := hN) e s p =
+      prefixPatternRatio (k := k) (hN := hN) e s q ∧
+    worPatternMass (k := k) (hN := hN) e s p =
+      worPatternMass (k := k) (hN := hN) e s q ∧
+    ∀ (Wv Pv : ℝ),
+      |(shortPatternRatio (k := k) n e p).toReal * Wv -
+          (prefixPatternRatio (k := k) (hN := hN) e s p).toReal * Pv| =
+        |(shortPatternRatio (k := k) n e q).toReal * Wv -
+          (prefixPatternRatio (k := k) (hN := hN) e s q).toReal * Pv| := by
+  have himgShort :
+      (shortPatternFiber n e p).image
+        (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcShort) =
+        shortPatternFiber n e q :=
+    image_eq_segmentSwap_shortPatternFiber_of_maps
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      hmapShort hmapShortInv
+  have himgPrefix :
+      (prefixPatternFiber (k := k) (hN := hN) e s p).image
+        (fun xs => segmentSwap xs a L1 L2 hL1 hL2 hcLong) =
+        prefixPatternFiber (k := k) (hN := hN) e s q :=
+    image_eq_segmentSwap_prefixPatternFiber_of_maps
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcLong
+      hmapPrefix hmapPrefixInv
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact shortPatternRatio_eq_of_segmentSwap_image_eq
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort himgShort
+  · exact prefixPatternRatio_eq_of_segmentSwap_image_eq
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcLong himgPrefix
+  · exact worPatternMass_eq_of_segmentSwap_image_eq
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcLong himgPrefix
+  · intro Wv Pv
+    exact abs_ratio_term_eq_of_segmentSwap_image_eq
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hcLong
+      himgShort himgPrefix Wv Pv
+
+/-- Image-equality version of finite-pattern adjacent-swap uniformity.
+
+This lightweight wrapper avoids reconstructing transport maps when image
+equalities are already available. -/
+lemma finite_pattern_uniformity_of_adjacent_swap_of_images
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n) (hcLong : a + L1 + L2 ≤ N)
+    (himgShort :
+      (shortPatternFiber n e p).image
+        (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcShort) =
+        shortPatternFiber n e q)
+    (himgPrefix :
+      (prefixPatternFiber (k := k) (hN := hN) e s p).image
+        (fun xs => segmentSwap xs a L1 L2 hL1 hL2 hcLong) =
+        prefixPatternFiber (k := k) (hN := hN) e s q) :
+    shortPatternRatio (k := k) n e p = shortPatternRatio (k := k) n e q ∧
+    prefixPatternRatio (k := k) (hN := hN) e s p =
+      prefixPatternRatio (k := k) (hN := hN) e s q ∧
+    worPatternMass (k := k) (hN := hN) e s p =
+      worPatternMass (k := k) (hN := hN) e s q ∧
+    ∀ (Wv Pv : ℝ),
+      |(shortPatternRatio (k := k) n e p).toReal * Wv -
+          (prefixPatternRatio (k := k) (hN := hN) e s p).toReal * Pv| =
+        |(shortPatternRatio (k := k) n e q).toReal * Wv -
+          (prefixPatternRatio (k := k) (hN := hN) e s q).toReal * Pv| := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact shortPatternRatio_eq_of_segmentSwap_image_eq
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort himgShort
+  · exact prefixPatternRatio_eq_of_segmentSwap_image_eq
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcLong himgPrefix
+  · exact worPatternMass_eq_of_segmentSwap_image_eq
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcLong himgPrefix
+  · intro Wv Pv
+    exact abs_ratio_term_eq_of_segmentSwap_image_eq
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hcLong
+      himgShort himgPrefix Wv Pv
+
+/-- Build both short/prefix image equalities for an adjacent transposition from
+explicit decomposition witnesses and fiber-preservation maps. -/
+lemma adjacent_transposition_image_eq_of_decomps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hmapShortFiber :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ fiber k (Nat.succ n) e)
+    (hdecompShort :
+      ShortSwapMiddleDecomp n e p q a L1 L2 hL1 hL2 hcShort)
+    (hmapShortFiberInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          fiber k (Nat.succ n) e)
+    (hdecompShortInv :
+      ShortSwapMiddleDecomp
+        n e q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+    (hmapPrefixFiber :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN) ∈
+          prefixFiber (k := k) (h := hN) e s)
+    (hdecompPrefix :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s p q a L1 L2 hL1 hL2 hcShort)
+    (hmapPrefixFiberInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (le_trans (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) hN) ∈
+          prefixFiber (k := k) (h := hN) e s)
+    (hdecompPrefixInv :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    (shortPatternFiber (k := k) n e p).image
+      (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcShort) =
+      shortPatternFiber (k := k) n e q ∧
+    (prefixPatternFiber (k := k) (hN := hN) e s p).image
+      (fun xs => segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN)) =
+      prefixPatternFiber (k := k) (hN := hN) e s q := by
+  have himgShort :
+      (shortPatternFiber (k := k) n e p).image
+        (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcShort) =
+      shortPatternFiber (k := k) n e q :=
+    himgShort_of_shortSwapMiddleDecomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      hmapShortFiber hdecompShort hmapShortFiberInv hdecompShortInv
+  have himgPrefix :
+      (prefixPatternFiber (k := k) (hN := hN) e s p).image
+        (fun xs => segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN)) =
+      prefixPatternFiber (k := k) (hN := hN) e s q :=
+    himgPrefix_of_PrefixSwapMiddleDecomp
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      hmapPrefixFiber hdecompPrefix hmapPrefixFiberInv hdecompPrefixInv
+  exact ⟨himgShort, himgPrefix⟩
+
+/-- Automatic adjacent-transposition image equalities from decomposition
+witnesses only (no separate short/prefix map hypotheses). -/
+lemma adjacent_transposition_image_eq_of_decomps_auto
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompShort : ShortSwapMiddleDecomp
+      (k := k) n e p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompShortInv : ShortSwapMiddleDecomp
+      (k := k) n e q p a L2 L1 hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+    (hdecompPrefix : PrefixSwapMiddleDecomp
+      (k := k) (hN := hN) e s p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompPrefixInv : PrefixSwapMiddleDecomp
+      (k := k) (hN := hN) e s q p a L2 L1 hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    (shortPatternFiber (k := k) n e p).image
+      (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcShort) =
+      shortPatternFiber (k := k) n e q ∧
+    (prefixPatternFiber (k := k) (hN := hN) e s p).image
+      (fun xs => segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN)) =
+      prefixPatternFiber (k := k) (hN := hN) e s q := by
+  exact adjacent_transposition_image_eq_of_decomps
+    (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+    (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+    (hmapShortFiber := hmapShortFiber_of_shortSwapMiddleDecomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShort)
+    (hdecompShort := hdecompShort)
+    (hmapShortFiberInv := hmapShortFiberInv_of_shortSwapMiddleDecomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShortInv)
+    (hdecompShortInv := hdecompShortInv)
+    (hmapPrefixFiber := hmapPrefixFiber_of_prefixSwapMiddleDecomp
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompPrefix)
+    (hdecompPrefix := hdecompPrefix)
+    (hmapPrefixFiberInv := hmapPrefixFiberInv_of_prefixSwapMiddleDecomp
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompPrefixInv)
+    (hdecompPrefixInv := hdecompPrefixInv)
+
+/-- Decomposition-witness wrapper for `finite_pattern_uniformity_of_adjacent_swap`.
+
+This bridges explicit short/long adjacent-swap decomposition witnesses directly
+to the finite-pattern invariance package used in the BEST-core orbit argument. -/
+lemma finite_pattern_uniformity_of_adjacent_swap_of_decomps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompShort :
+      ShortSwapMiddleDecomp n e p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompShortInv :
+      ShortSwapMiddleDecomp
+        n e q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+    (hdecompPrefix :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompPrefixInv :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    shortPatternRatio (k := k) n e p = shortPatternRatio (k := k) n e q ∧
+    prefixPatternRatio (k := k) (hN := hN) e s p =
+      prefixPatternRatio (k := k) (hN := hN) e s q ∧
+    worPatternMass (k := k) (hN := hN) e s p =
+      worPatternMass (k := k) (hN := hN) e s q ∧
+    ∀ (Wv Pv : ℝ),
+      |(shortPatternRatio (k := k) n e p).toReal * Wv -
+          (prefixPatternRatio (k := k) (hN := hN) e s p).toReal * Pv| =
+        |(shortPatternRatio (k := k) n e q).toReal * Wv -
+          (prefixPatternRatio (k := k) (hN := hN) e s q).toReal * Pv| := by
+  have himg :
+      (shortPatternFiber (k := k) n e p).image
+        (fun ys => segmentSwap ys a L1 L2 hL1 hL2 hcShort) =
+        shortPatternFiber (k := k) n e q ∧
+      (prefixPatternFiber (k := k) (hN := hN) e s p).image
+        (fun xs => segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN)) =
+        prefixPatternFiber (k := k) (hN := hN) e s q :=
+    adjacent_transposition_image_eq_of_decomps_auto
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      hdecompShort hdecompShortInv hdecompPrefix hdecompPrefixInv
+  rcases himg with ⟨himgShort, himgPrefix⟩
+  exact finite_pattern_uniformity_of_adjacent_swap_of_images
+    (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+    (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort (le_trans hcShort hN)
+    himgShort himgPrefix
+
+/-- The absolute ratio-term used in `hsumAbsRatio`. -/
+def ratioTerm
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (p : ExcursionList k) : ℝ :=
+  |(shortPatternRatio (k := k) n e p).toReal *
+      (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+    (prefixPatternRatio (k := k) (hN := hN) e s p).toReal *
+      (prefixCoeff (k := k) (h := hN) e s).toReal|
+
+lemma ratioTerm_nonneg
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (p : ExcursionList k) :
+    0 ≤ ratioTerm (k := k) (hN := hN) (hk := hk) e s p := by
+  unfold ratioTerm
+  exact abs_nonneg _
+
+lemma ratioTerm_eq_of_segmentSwap_maps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n) (hcLong : a + L1 + L2 ≤ N)
+    (hmapShort :
+      ∀ ys ∈ shortPatternFiber n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber n e q)
+    (hmapShortInv :
+      ∀ zs ∈ shortPatternFiber n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber n e p)
+    (hmapPrefix :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 hcLong ∈
+          prefixPatternFiber (k := k) (hN := hN) e s q)
+    (hmapPrefixInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcLong) ∈
+          prefixPatternFiber (k := k) (hN := hN) e s p) :
+    ratioTerm (k := k) (hN := hN) (hk := hk) e s p =
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s q := by
+  unfold ratioTerm
+  simpa using
+    abs_ratio_term_eq_of_segmentSwap_maps
+      (k := k) (hN := hN) (e := e) (s := s)
+      (p := p) (q := q) (a := a) (L1 := L1) (L2 := L2)
+      hL1 hL2 hcShort hcLong
+      hmapShort hmapShortInv hmapPrefix hmapPrefixInv
+      (Wv := (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal)
+      (Pv := (prefixCoeff (k := k) (h := hN) e s).toReal)
+
+/-- `ratioTerm` invariance under an adjacent transposition from explicit
+short/long decomposition witnesses. This is the direct bridge used by the
+orbit-averaging step in the BEST-core proof. -/
+lemma ratioTerm_eq_of_adjacent_swap_of_decomps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompShort :
+      ShortSwapMiddleDecomp n e p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompShortInv :
+      ShortSwapMiddleDecomp
+        n e q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+    (hdecompPrefix :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompPrefixInv :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    ratioTerm (k := k) (hN := hN) (hk := hk) e s p =
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s q := by
+  rcases finite_pattern_uniformity_of_adjacent_swap_of_decomps
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      hdecompShort hdecompShortInv
+      hdecompPrefix hdecompPrefixInv
+      with ⟨_, _, _, hAbs⟩
+  unfold ratioTerm
+  simpa using hAbs
+    ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal)
+    ((prefixCoeff (k := k) (h := hN) e s).toReal)
+
+/-- Reindex `ratioTerm` along a pattern permutation preserving the finite index
+set. This is the algebraic summation step used by orbit/cardinality averaging. -/
+lemma sum_ratioTerm_eq_sum_ratioTerm_comp_equiv
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (σ : ExcursionList k ≃ ExcursionList k)
+    (hmem :
+      ∀ p : ExcursionList k,
+        p ∈ excursionPatternSet (k := k) (hN := hN) e s ↔
+          σ p ∈ excursionPatternSet (k := k) (hN := hN) e s) :
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s p) =
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s (σ p)) := by
+  classical
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  have hmem_symm :
+      ∀ p : ExcursionList k, p ∈ P ↔ σ.symm p ∈ P := by
+    intro p
+    constructor
+    · intro hp
+      exact (hmem (σ.symm p)).2 (by simpa using hp)
+    · intro hp
+      simpa using (hmem (σ.symm p)).1 hp
+  have hsum :=
+    (Finset.sum_equiv
+      (s := P) (t := P) (e := σ.symm)
+      (f := fun p => ratioTerm (k := k) (hN := hN) (hk := hk) e s p)
+      (g := fun p => ratioTerm (k := k) (hN := hN) (hk := hk) e s (σ p))
+      (hst := hmem_symm)
+      (hfg := fun p _ => by simp))
+  simpa [P] using hsum
+
+lemma sum_ratioTerm_eq_sum_ratioTerm_comp_swap
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (hmem :
+      ∀ r : ExcursionList k,
+        r ∈ excursionPatternSet (k := k) (hN := hN) e s ↔
+          (Equiv.swap p q) r ∈ excursionPatternSet (k := k) (hN := hN) e s) :
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s r) =
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s ((Equiv.swap p q) r)) := by
+  exact sum_ratioTerm_eq_sum_ratioTerm_comp_equiv
+    (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
+    (σ := Equiv.swap p q) hmem
+
+/-- Partition the finite ratio-term sum by excursion-multiset fibers. -/
+lemma sum_ratioTerm_partition_by_excursionMultiset
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k) :
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s p) =
+    (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+        ratioTerm (k := k) (hN := hN) (hk := hk) e s p) := by
+  classical
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  have hMapsTo :
+      (P : Set (ExcursionList k)).MapsTo Multiset.ofList (P.image Multiset.ofList) := by
+    intro p hp
+    exact Finset.mem_image.2 ⟨p, hp, rfl⟩
+  symm
+  simpa [P] using
+    (Finset.sum_fiberwise_of_maps_to
+      (s := P)
+      (t := P.image Multiset.ofList)
+      (g := Multiset.ofList)
+      hMapsTo
+      (fun p => ratioTerm (k := k) (hN := hN) (hk := hk) e s p))
+
+/-- Partition the finite absolute WR/WOR discrepancy sum by excursion-multiset
+fibers. This is the finite orbit/cardinality decomposition used in the BEST core. -/
+lemma sum_abs_wr_wor_patternMass_partition_by_excursionMultiset
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k) :
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+    (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) := by
+  classical
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  have hMapsTo :
+      (P : Set (ExcursionList k)).MapsTo Multiset.ofList (P.image Multiset.ofList) := by
+    intro p hp
+    exact Finset.mem_image.2 ⟨p, hp, rfl⟩
+  symm
+  simpa [P] using
+    (Finset.sum_fiberwise_of_maps_to
+      (s := P)
+      (t := P.image Multiset.ofList)
+      (g := Multiset.ofList)
+      hMapsTo
+          (fun p =>
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|))
+
+/-- On a fixed multiset fiber, if the absolute WR/WOR discrepancy is constant,
+the inner finite sum collapses to `card * representative`. -/
+lemma sum_abs_wr_wor_on_multisetFiber_eq_card_mul_of_const
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (mset : Multiset (ExcursionType k))
+    (p0 : ExcursionList k)
+    (hconst :
+      ∀ p,
+        p ∈ excursionPatternSet (k := k) (hN := hN) e s →
+          Multiset.ofList p = mset →
+            |(wrPatternMass (k := k) hk n e s p).toReal -
+              (worPatternMass (k := k) (hN := hN) e s p).toReal| =
+            |(wrPatternMass (k := k) hk n e s p0).toReal -
+              (worPatternMass (k := k) (hN := hN) e s p0).toReal|) :
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+    (((excursionPatternSet (k := k) (hN := hN) e s).filter
+        (fun p => Multiset.ofList p = mset)).card : ℝ) *
+      |(wrPatternMass (k := k) hk n e s p0).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p0).toReal| := by
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  calc
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+      Finset.sum (P.filter (fun p => Multiset.ofList p = mset))
+        (fun p =>
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal|) := by
+            simp [P]
+    _ =
+      Finset.sum (P.filter (fun p => Multiset.ofList p = mset))
+        (fun _ =>
+          |(wrPatternMass (k := k) hk n e s p0).toReal -
+            (worPatternMass (k := k) (hN := hN) e s p0).toReal|) := by
+            refine Finset.sum_congr rfl ?_
+            intro p hp
+            exact hconst p (Finset.mem_filter.1 hp).1 (Finset.mem_filter.1 hp).2
+    _ =
+      (((P.filter (fun p => Multiset.ofList p = mset)).card : ℕ) : ℝ) *
+        |(wrPatternMass (k := k) hk n e s p0).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p0).toReal| := by
+            simp
+    _ =
+      (((excursionPatternSet (k := k) (hN := hN) e s).filter
+          (fun p => Multiset.ofList p = mset)).card : ℝ) *
+        |(wrPatternMass (k := k) hk n e s p0).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p0).toReal| := by
+            simp [P]
+
+/-- `sum_abs_wr_wor_on_multisetFiber_eq_card_mul_of_const` with representative
+obtained from `mset ∈ image Multiset.ofList`. -/
+lemma sum_abs_wr_wor_on_multisetFiber_eq_card_mul_choose_of_const
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (mset : Multiset (ExcursionType k))
+    (hmset :
+      mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList)
+    (hconst :
+      ∀ p q,
+        p ∈ excursionPatternSet (k := k) (hN := hN) e s →
+          q ∈ excursionPatternSet (k := k) (hN := hN) e s →
+            Multiset.ofList p = mset →
+              Multiset.ofList q = mset →
+                |(wrPatternMass (k := k) hk n e s p).toReal -
+                  (worPatternMass (k := k) (hN := hN) e s p).toReal| =
+                |(wrPatternMass (k := k) hk n e s q).toReal -
+                  (worPatternMass (k := k) (hN := hN) e s q).toReal|) :
+    ∃ p0, p0 ∈ excursionPatternSet (k := k) (hN := hN) e s ∧
+      Multiset.ofList p0 = mset ∧
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+      (((excursionPatternSet (k := k) (hN := hN) e s).filter
+          (fun p => Multiset.ofList p = mset)).card : ℝ) *
+        |(wrPatternMass (k := k) hk n e s p0).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p0).toReal| := by
+  rcases Finset.mem_image.1 hmset with ⟨p0, hp0P, hp0m⟩
+  refine ⟨p0, hp0P, hp0m, ?_⟩
+  exact sum_abs_wr_wor_on_multisetFiber_eq_card_mul_of_const
+    (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
+    (mset := mset) (p0 := p0)
+    (fun p hp hpm => hconst p p0 hp hp0P hpm hp0m)
+
+/-- Orbit/cardinality averaging over the multiset partition: if the absolute
+WR/WOR discrepancy is fiberwise-constant on each `Multiset.ofList` class, the
+double sum collapses to one representative per class. -/
+lemma sum_abs_wr_wor_partition_by_excursionMultiset_eq_sum_card_mul_repr_of_const
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (hconst :
+      ∀ mset,
+        mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList →
+          ∀ p q,
+            p ∈ excursionPatternSet (k := k) (hN := hN) e s →
+              q ∈ excursionPatternSet (k := k) (hN := hN) e s →
+                Multiset.ofList p = mset →
+                  Multiset.ofList q = mset →
+                    |(wrPatternMass (k := k) hk n e s p).toReal -
+                      (worPatternMass (k := k) (hN := hN) e s p).toReal| =
+                    |(wrPatternMass (k := k) hk n e s q).toReal -
+                      (worPatternMass (k := k) (hN := hN) e s q).toReal|) :
+    let P := excursionPatternSet (k := k) (hN := hN) e s
+    let repr : Multiset (ExcursionType k) → ExcursionList k := fun mset =>
+      if hm : ∃ p ∈ P, Multiset.ofList p = mset then (Classical.choose hm) else []
+    (∑ mset ∈ P.image Multiset.ofList,
+      ∑ p ∈ P with Multiset.ofList p = mset,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+    (∑ mset ∈ P.image Multiset.ofList,
+      (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+        |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+          (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) := by
+  classical
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  let repr : Multiset (ExcursionType k) → ExcursionList k := fun mset =>
+    if hm : ∃ p ∈ P, Multiset.ofList p = mset then (Classical.choose hm) else []
+  refine Finset.sum_congr rfl ?_
+  intro mset hmset
+  have hmset' : ∃ p ∈ P, Multiset.ofList p = mset := Finset.mem_image.1 hmset
+  have hrepr_def :
+      repr mset =
+        Classical.choose hmset' := by
+    simp [repr, hmset']
+  have hreprP :
+      repr mset ∈ P := by
+    simpa [hrepr_def] using (Classical.choose_spec hmset').1
+  have hreprm :
+      Multiset.ofList (repr mset) = mset := by
+    simpa [hrepr_def] using (Classical.choose_spec hmset').2
+  have hconst' :
+      ∀ p,
+        p ∈ P →
+          Multiset.ofList p = mset →
+            |(wrPatternMass (k := k) hk n e s p).toReal -
+              (worPatternMass (k := k) (hN := hN) e s p).toReal| =
+            |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+              (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal| := by
+    intro p hp hpm
+    exact hconst mset hmset p (repr mset) hp hreprP hpm hreprm
+  calc
+    (∑ p ∈ P with Multiset.ofList p = mset,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+      (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+        |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+          (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|) := by
+      exact sum_abs_wr_wor_on_multisetFiber_eq_card_mul_of_const
+        (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
+        (mset := mset) (p0 := repr mset) hconst'
+    _ = (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+        |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+          (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|) := by
+      rfl
+
+lemma sum_abs_wr_wor_partition_by_excursionMultiset_le_of_const
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (bound : ℝ)
+    (hconst :
+      ∀ mset,
+        mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList →
+          ∀ p q,
+            p ∈ excursionPatternSet (k := k) (hN := hN) e s →
+              q ∈ excursionPatternSet (k := k) (hN := hN) e s →
+                Multiset.ofList p = mset →
+                  Multiset.ofList q = mset →
+                    |(wrPatternMass (k := k) hk n e s p).toReal -
+                      (worPatternMass (k := k) (hN := hN) e s p).toReal| =
+                    |(wrPatternMass (k := k) hk n e s q).toReal -
+                      (worPatternMass (k := k) (hN := hN) e s q).toReal|)
+    (hbound_repr :
+      let P := excursionPatternSet (k := k) (hN := hN) e s
+      let repr : Multiset (ExcursionType k) → ExcursionList k := fun mset =>
+        if hm : ∃ p ∈ P, Multiset.ofList p = mset then (Classical.choose hm) else []
+      (∑ mset ∈ P.image Multiset.ofList,
+        (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+          |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+            (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) ≤ bound) :
+    let P := excursionPatternSet (k := k) (hN := hN) e s
+    ∑ mset ∈ P.image Multiset.ofList,
+      ∑ p ∈ P with Multiset.ofList p = mset,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ bound := by
+  classical
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  let repr : Multiset (ExcursionType k) → ExcursionList k := fun mset =>
+    if hm : ∃ p ∈ P, Multiset.ofList p = mset then (Classical.choose hm) else []
+  have hcollapse :
+      (∑ mset ∈ P.image Multiset.ofList,
+        ∑ p ∈ P with Multiset.ofList p = mset,
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+      (∑ mset ∈ P.image Multiset.ofList,
+        (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+          |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+            (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) := by
+    simpa [P, repr] using
+      sum_abs_wr_wor_partition_by_excursionMultiset_eq_sum_card_mul_repr_of_const
+        (k := k) (hN := hN) (hk := hk) (e := e) (s := s) hconst
+  calc
+    (∑ mset ∈ P.image Multiset.ofList,
+      ∑ p ∈ P with Multiset.ofList p = mset,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|)
+      =
+    (∑ mset ∈ P.image Multiset.ofList,
+      (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+        |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+          (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) := hcollapse
+    _ ≤ bound := by
+      simpa [P, repr] using hbound_repr
+
+lemma mem_excursionPatternSet_of_mem_shortPatternFiber
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p : ExcursionList k) {ys : Traj k (Nat.succ n)}
+    (hys : ys ∈ shortPatternFiber (k := k) n e p) :
+    p ∈ excursionPatternSet (k := k) (hN := hN) e s := by
+  rw [excursionPatternSet_eq_shortImage (k := k) (hN := hN) (e := e) (s := s)]
+  exact Finset.mem_image.2 ⟨ys, (Finset.mem_filter.1 hys).1, (Finset.mem_filter.1 hys).2⟩
+
+/-- Membership in the shared finite pattern index set is invariant under the
+adjacent transposition `Equiv.swap p q` whenever we have forward/backward
+segment-swap maps between the corresponding short-pattern fibers. -/
+lemma mem_excursionPatternSet_swap_iff_of_shortPattern_maps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2) (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hmap :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber (k := k) n e q)
+    (hmapInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber (k := k) n e p) :
+    ∀ r : ExcursionList k,
+      r ∈ excursionPatternSet (k := k) (hN := hN) e s ↔
+        (Equiv.swap p q) r ∈ excursionPatternSet (k := k) (hN := hN) e s := by
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  have hp_to_hq : p ∈ P → q ∈ P := by
+    intro hpP
+    have hpP' :
+        p ∈ excursionPatternSet (k := k) (hN := hN) e s := by
+      simpa [P] using hpP
+    rw [excursionPatternSet_eq_shortImage (k := k) (hN := hN) (e := e) (s := s)] at hpP'
+    rcases Finset.mem_image.1 hpP' with ⟨ys, hysfib, hysEq⟩
+    have hys : ys ∈ shortPatternFiber (k := k) n e p := by
+      exact Finset.mem_filter.2 ⟨hysfib, hysEq⟩
+    have hsw : segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber (k := k) n e q :=
+      hmap ys hys
+    exact mem_excursionPatternSet_of_mem_shortPatternFiber
+      (k := k) (hN := hN) (e := e) (s := s) q hsw
+  have hq_to_hp : q ∈ P → p ∈ P := by
+    intro hqP
+    have hqP' :
+        q ∈ excursionPatternSet (k := k) (hN := hN) e s := by
+      simpa [P] using hqP
+    rw [excursionPatternSet_eq_shortImage (k := k) (hN := hN) (e := e) (s := s)] at hqP'
+    rcases Finset.mem_image.1 hqP' with ⟨zs, hzsfib, hzsEq⟩
+    have hzs : zs ∈ shortPatternFiber (k := k) n e q := by
+      exact Finset.mem_filter.2 ⟨hzsfib, hzsEq⟩
+    have hsw : segmentSwap zs a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+        shortPatternFiber (k := k) n e p := hmapInv zs hzs
+    exact mem_excursionPatternSet_of_mem_shortPatternFiber
+      (k := k) (hN := hN) (e := e) (s := s) p hsw
+  intro r
+  by_cases hrp : r = p
+  · constructor
+    · intro hrP
+      have hpP : p ∈ P := by simpa [hrp] using hrP
+      have hqP : q ∈ P := hp_to_hq hpP
+      simpa [hrp, P, Equiv.swap_apply_def] using hqP
+    · intro hswapP
+      have hqP : q ∈ P := by simpa [hrp, P, Equiv.swap_apply_def] using hswapP
+      have hpP : p ∈ P := hq_to_hp hqP
+      simpa [hrp, P] using hpP
+  · by_cases hrq : r = q
+    · constructor
+      · intro hrP
+        have hqP : q ∈ P := by simpa [hrq] using hrP
+        have hpP : p ∈ P := hq_to_hp hqP
+        have hswap_r : (Equiv.swap p q) r = p := by
+          simpa [hrq] using (Equiv.swap_apply_right p q)
+        simpa [P, hswap_r] using hpP
+      · intro hswapP
+        have hswap_r : (Equiv.swap p q) r = p := by
+          simpa [hrq] using (Equiv.swap_apply_right p q)
+        have hpP : p ∈ P := by simpa [P, hswap_r] using hswapP
+        have hqP : q ∈ P := hp_to_hq hpP
+        simpa [P, hrq] using hqP
+    · have hfix : (Equiv.swap p q) r = r := by
+        exact Equiv.swap_apply_of_ne_of_ne hrp hrq
+      simpa [P, hfix]
+
+/-- Reindexing invariance of the finite `ratioTerm` sum under an adjacent
+pattern transposition, derived from short-pattern segment-swap maps. -/
+lemma sum_ratioTerm_eq_sum_ratioTerm_comp_swap_of_shortPattern_maps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2) (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hmap :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber (k := k) n e q)
+    (hmapInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber (k := k) n e p) :
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s r) =
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s ((Equiv.swap p q) r)) := by
+  refine sum_ratioTerm_eq_sum_ratioTerm_comp_swap
+    (k := k) (hN := hN) (hk := hk) (e := e) (s := s) (p := p) (q := q) ?_
+  exact mem_excursionPatternSet_swap_iff_of_shortPattern_maps
+    (k := k) (hN := hN) (e := e) (s := s)
+    (p := p) (q := q) (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hmap hmapInv
+
+/-- Pointwise ratio-term invariance under an adjacent pattern transposition,
+assuming synchronized short/prefix segment-swap maps. -/
+lemma ratioTerm_eq_ratioTerm_swap_of_adjacent_maps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (p q r : ExcursionList k)
+    (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n) (hcLong : a + L1 + L2 ≤ N)
+    (hmapShort :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber (k := k) n e q)
+    (hmapShortInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber (k := k) n e p)
+    (hmapPrefix :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 hcLong ∈
+          prefixPatternFiber (k := k) (hN := hN) e s q)
+    (hmapPrefixInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcLong) ∈
+          prefixPatternFiber (k := k) (hN := hN) e s p) :
+    ratioTerm (k := k) (hN := hN) (hk := hk) e s r =
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s ((Equiv.swap p q) r) := by
+  by_cases hrp : r = p
+  · have hpq :
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s p =
+        ratioTerm (k := k) (hN := hN) (hk := hk) e s q :=
+      ratioTerm_eq_of_segmentSwap_maps
+        (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
+        (p := p) (q := q) (a := a) (L1 := L1) (L2 := L2)
+        hL1 hL2 hcShort hcLong hmapShort hmapShortInv hmapPrefix hmapPrefixInv
+    simpa [hrp, Equiv.swap_apply_def] using hpq
+  · by_cases hrq : r = q
+    · have hpq :
+        ratioTerm (k := k) (hN := hN) (hk := hk) e s p =
+          ratioTerm (k := k) (hN := hN) (hk := hk) e s q :=
+        ratioTerm_eq_of_segmentSwap_maps
+          (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
+          (p := p) (q := q) (a := a) (L1 := L1) (L2 := L2)
+          hL1 hL2 hcShort hcLong hmapShort hmapShortInv hmapPrefix hmapPrefixInv
+      simpa [hrq, Equiv.swap_apply_def] using hpq.symm
+    · have hfix : (Equiv.swap p q) r = r := Equiv.swap_apply_of_ne_of_ne hrp hrq
+      simpa [hfix]
+
+/-- Decomposition-witness wrapper for pointwise ratio-term invariance under an
+adjacent transposition on the shared finite pattern index set. -/
+lemma ratioTerm_eq_ratioTerm_swap_of_adjacent_decomps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (p q r : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompShort :
+      ShortSwapMiddleDecomp n e p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompShortInv :
+      ShortSwapMiddleDecomp
+        n e q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+    (hdecompPrefix :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompPrefixInv :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    ratioTerm (k := k) (hN := hN) (hk := hk) e s r =
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s ((Equiv.swap p q) r) := by
+  have hmapShort :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber (k := k) n e q :=
+    hmapShort_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      (hmapShortFiber_of_shortSwapMiddleDecomp
+        (k := k) (n := n) (e := e) (p := p) (q := q)
+        (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShort)
+      hdecompShort
+  have hdecompShortInv' :=
+    shortSwapMiddleDecomp_inv_unpack
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShortInv
+  have hmapShortInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber (k := k) n e p :=
+    hmapShortInv_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      (hmapShortFiberInv_of_shortSwapMiddleDecomp
+        (k := k) (n := n) (e := e) (p := p) (q := q)
+        (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShortInv)
+      hdecompShortInv'
+  have hmapPrefix :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort hN) ∈
+          prefixPatternFiber (k := k) (hN := hN) e s q :=
+    hmapPrefix_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      (hmapPrefixFiber_of_prefixSwapMiddleDecomp
+        (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+        (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompPrefix)
+      hdecompPrefix
+  have hdecompPrefixInv' :=
+    prefixSwapMiddleDecomp_inv_unpack
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompPrefixInv
+  have hmapPrefixInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using le_trans hcShort hN) ∈
+          prefixPatternFiber (k := k) (hN := hN) e s p :=
+    hmapPrefixInv_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      (hmapPrefixFiberInv_of_prefixSwapMiddleDecomp
+        (k := k) (hN := hN) (e := e) (s := s) (p := p) (q := q)
+        (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompPrefixInv)
+      hdecompPrefixInv'
+  exact ratioTerm_eq_ratioTerm_swap_of_adjacent_maps
+    (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
+    (p := p) (q := q) (r := r)
+    (a := a) (L1 := L1) (L2 := L2)
+    hL1 hL2 hcShort (le_trans hcShort hN)
+    hmapShort hmapShortInv hmapPrefix hmapPrefixInv
+
+/-- Reindexing invariance of the finite `ratioTerm` sum under an adjacent
+pattern transposition, built directly from short/prefix decomposition witnesses. -/
+lemma sum_ratioTerm_eq_sum_ratioTerm_comp_swap_of_adjacent_decomps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompShort :
+      ShortSwapMiddleDecomp n e p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompShortInv :
+      ShortSwapMiddleDecomp
+        n e q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+    (_hdecompPrefix :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s p q a L1 L2 hL1 hL2 hcShort)
+    (_hdecompPrefixInv :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s r) =
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s ((Equiv.swap p q) r)) := by
+  have hmapShort :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber (k := k) n e q :=
+    hmapShort_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      (hmapShortFiber_of_shortSwapMiddleDecomp
+        (k := k) (n := n) (e := e) (p := p) (q := q)
+        (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShort)
+      hdecompShort
+  have hdecompShortInv' :=
+    shortSwapMiddleDecomp_inv_unpack
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShortInv
+  have hmapShortInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber (k := k) n e p :=
+    hmapShortInv_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      (hmapShortFiberInv_of_shortSwapMiddleDecomp
+        (k := k) (n := n) (e := e) (p := p) (q := q)
+        (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShortInv)
+      hdecompShortInv'
+  have hmem :
+      ∀ r : ExcursionList k,
+        r ∈ excursionPatternSet (k := k) (hN := hN) e s ↔
+          (Equiv.swap p q) r ∈ excursionPatternSet (k := k) (hN := hN) e s :=
+    mem_excursionPatternSet_swap_iff_of_shortPattern_maps
+      (k := k) (hN := hN) (e := e) (s := s)
+      (p := p) (q := q) (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      hmapShort hmapShortInv
+  exact sum_ratioTerm_eq_sum_ratioTerm_comp_swap
+    (k := k) (hN := hN) (hk := hk) (e := e) (s := s) (p := p) (q := q) hmem
 
 lemma wrPatternMass_eq_card_mul_wordProb_of_mem_shortPatternFiber
     (hk : 0 < k) (n : ℕ) (e s : MarkovState k) (p : ExcursionList k)
@@ -669,6 +3893,257 @@ lemma sum_abs_wr_wor_patternMass_toReal_eq_sum_abs_ratio_form
   intro p hp
   exact abs_wr_wor_patternMass_toReal_eq_abs_ratio_form
     (k := k) (hk := hk) (hN := hN) (e := e) (s := s) (hs := hs) (p := p)
+
+/-- Fiberwise conversion on a fixed excursion-multiset block:
+`ratioTerm` equals the absolute WR/WOR mass discrepancy term. -/
+lemma sum_ratioTerm_on_excursionMultisetFiber_eq_sum_abs_wr_wor_on_excursionMultisetFiber
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (hs : s ∈ stateFinset k N)
+    (mset : Multiset (ExcursionType k)) :
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s p) =
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|) := by
+  refine Finset.sum_congr rfl ?_
+  intro p hp
+  symm
+  exact abs_wr_wor_patternMass_toReal_eq_abs_ratio_form
+    (k := k) (hk := hk) (hN := hN) (e := e) (s := s) (hs := hs) (p := p)
+
+/-- Blockwise conversion under the multiset partition:
+replace `ratioTerm` with the equivalent absolute WR/WOR discrepancy. -/
+lemma sum_ratioTerm_partition_by_excursionMultiset_eq_sum_abs_wr_wor_partition_by_excursionMultiset
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (hs : s ∈ stateFinset k N) :
+    (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+        ratioTerm (k := k) (hN := hN) (hk := hk) e s p) =
+    (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) := by
+  refine Finset.sum_congr rfl ?_
+  intro mset hmset
+  exact
+    sum_ratioTerm_on_excursionMultisetFiber_eq_sum_abs_wr_wor_on_excursionMultisetFiber
+      (k := k) (hN := hN) (hk := hk) (e := e) (s := s) (hs := hs) (mset := mset)
+
+/-- Adjacent-swap invariance of the WR/WOR absolute pattern discrepancy.
+
+This is the concrete mass-level counterpart of `ratioTerm_eq_of_segmentSwap_maps`,
+rewritten through the already-proved ratio-form identity. -/
+lemma abs_wr_wor_patternMass_toReal_eq_of_segmentSwap_maps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (hs : s ∈ stateFinset k N)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n) (hcLong : a + L1 + L2 ≤ N)
+    (hmapShort :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber (k := k) n e q)
+    (hmapShortInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber (k := k) n e p)
+    (hmapPrefix :
+      ∀ xs ∈ prefixPatternFiber (k := k) (hN := hN) e s p,
+        segmentSwap xs a L1 L2 hL1 hL2 hcLong ∈
+          prefixPatternFiber (k := k) (hN := hN) e s q)
+    (hmapPrefixInv :
+      ∀ ys ∈ prefixPatternFiber (k := k) (hN := hN) e s q,
+        segmentSwap ys a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcLong) ∈
+          prefixPatternFiber (k := k) (hN := hN) e s p) :
+    |(wrPatternMass (k := k) hk n e s p).toReal -
+      (worPatternMass (k := k) (hN := hN) e s p).toReal| =
+    |(wrPatternMass (k := k) hk n e s q).toReal -
+      (worPatternMass (k := k) (hN := hN) e s q).toReal| := by
+  calc
+    |(wrPatternMass (k := k) hk n e s p).toReal -
+      (worPatternMass (k := k) (hN := hN) e s p).toReal|
+        =
+      |(shortPatternRatio (k := k) n e p).toReal *
+          (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        (prefixPatternRatio (k := k) (hN := hN) e s p).toReal *
+          (prefixCoeff (k := k) (h := hN) e s).toReal| := by
+          exact abs_wr_wor_patternMass_toReal_eq_abs_ratio_form
+            (k := k) (hk := hk) (hN := hN) (e := e) (s := s) (hs := hs) (p := p)
+    _ =
+      |(shortPatternRatio (k := k) n e q).toReal *
+          (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        (prefixPatternRatio (k := k) (hN := hN) e s q).toReal *
+          (prefixCoeff (k := k) (h := hN) e s).toReal| := by
+          exact abs_ratio_term_eq_of_segmentSwap_maps
+            (k := k) (hN := hN) (e := e) (s := s)
+            (p := p) (q := q) (a := a) (L1 := L1) (L2 := L2)
+            hL1 hL2 hcShort hcLong
+            hmapShort hmapShortInv hmapPrefix hmapPrefixInv
+            (Wv := (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal)
+            (Pv := (prefixCoeff (k := k) (h := hN) e s).toReal)
+    _ =
+      |(wrPatternMass (k := k) hk n e s q).toReal -
+        (worPatternMass (k := k) (hN := hN) e s q).toReal| := by
+          symm
+          exact abs_wr_wor_patternMass_toReal_eq_abs_ratio_form
+            (k := k) (hk := hk) (hN := hN) (e := e) (s := s) (hs := hs) (p := q)
+
+/-- Decomposition-witness wrapper for pointwise adjacent-swap invariance of the
+absolute WR/WOR pattern discrepancy. -/
+lemma abs_wr_wor_patternMass_toReal_eq_of_adjacent_swap_of_decomps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (hs : s ∈ stateFinset k N)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompShort :
+      ShortSwapMiddleDecomp n e p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompShortInv :
+      ShortSwapMiddleDecomp
+        n e q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort))
+    (hdecompPrefix :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompPrefixInv :
+      PrefixSwapMiddleDecomp
+        (hN := hN) e s q p a L2 L1 hL2 hL1
+        (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    |(wrPatternMass (k := k) hk n e s p).toReal -
+      (worPatternMass (k := k) (hN := hN) e s p).toReal| =
+    |(wrPatternMass (k := k) hk n e s q).toReal -
+      (worPatternMass (k := k) (hN := hN) e s q).toReal| := by
+  have hratio :
+      ratioTerm (k := k) (hN := hN) (hk := hk) e s p =
+        ratioTerm (k := k) (hN := hN) (hk := hk) e s q :=
+    ratioTerm_eq_of_adjacent_swap_of_decomps
+      (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
+      (p := p) (q := q) (a := a) (L1 := L1) (L2 := L2)
+      hL1 hL2 hcShort
+      hdecompShort hdecompShortInv
+      hdecompPrefix hdecompPrefixInv
+  calc
+    |(wrPatternMass (k := k) hk n e s p).toReal -
+      (worPatternMass (k := k) (hN := hN) e s p).toReal|
+        = ratioTerm (k := k) (hN := hN) (hk := hk) e s p := by
+            simpa [ratioTerm] using
+              (abs_wr_wor_patternMass_toReal_eq_abs_ratio_form
+                (k := k) (hk := hk) (hN := hN) (e := e) (s := s) (hs := hs) (p := p))
+    _ = ratioTerm (k := k) (hN := hN) (hk := hk) e s q := hratio
+    _ = |(wrPatternMass (k := k) hk n e s q).toReal -
+          (worPatternMass (k := k) (hN := hN) e s q).toReal| := by
+            simpa [ratioTerm] using
+              (abs_wr_wor_patternMass_toReal_eq_abs_ratio_form
+                (k := k) (hk := hk) (hN := hN) (e := e) (s := s) (hs := hs) (p := q)).symm
+
+/-- Reindexing invariance of the finite absolute WR/WOR discrepancy sum under an
+adjacent pattern transposition. -/
+lemma sum_abs_wr_wor_patternMass_toReal_eq_sum_abs_wr_wor_patternMass_toReal_comp_swap_of_maps
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (hs : s ∈ stateFinset k N)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hmapShort :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber (k := k) n e q)
+    (hmapShortInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber (k := k) n e p) :
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s r).toReal -
+        (worPatternMass (k := k) (hN := hN) e s r).toReal|) =
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s ((Equiv.swap p q) r)).toReal -
+        (worPatternMass (k := k) (hN := hN) e s ((Equiv.swap p q) r)).toReal|) := by
+  have hsum_ratio :
+      (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        ratioTerm (k := k) (hN := hN) (hk := hk) e s r) =
+      (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        ratioTerm (k := k) (hN := hN) (hk := hk) e s ((Equiv.swap p q) r)) := by
+    exact sum_ratioTerm_eq_sum_ratioTerm_comp_swap_of_shortPattern_maps
+      (k := k) (hN := hN) (hk := hk) (e := e) (s := s) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hmapShort hmapShortInv
+  calc
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s r).toReal -
+        (worPatternMass (k := k) (hN := hN) e s r).toReal|)
+          =
+      (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        ratioTerm (k := k) (hN := hN) (hk := hk) e s r) := by
+          simpa [ratioTerm] using
+            (sum_abs_wr_wor_patternMass_toReal_eq_sum_abs_ratio_form
+              (k := k) (hk := hk) (hN := hN) (e := e) (s := s) hs)
+    _ =
+      (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        ratioTerm (k := k) (hN := hN) (hk := hk) e s ((Equiv.swap p q) r)) := hsum_ratio
+    _ =
+      (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s ((Equiv.swap p q) r)).toReal -
+          (worPatternMass (k := k) (hN := hN) e s ((Equiv.swap p q) r)).toReal|) := by
+          refine Finset.sum_congr rfl ?_
+          intro r hr
+          symm
+          exact abs_wr_wor_patternMass_toReal_eq_abs_ratio_form
+            (k := k) (hk := hk) (hN := hN) (e := e) (s := s) (hs := hs)
+            (p := (Equiv.swap p q) r)
+
+/-- Decomposition-witness wrapper for
+`sum_abs_wr_wor_patternMass_toReal_eq_sum_abs_wr_wor_patternMass_toReal_comp_swap_of_maps`.
+
+This provides the swap-reindexed finite-sum equality directly from explicit
+adjacent-swap decomposition witnesses on the short-pattern fibers. -/
+lemma sum_abs_wr_wor_patternMass_toReal_eq_sum_abs_wr_wor_patternMass_toReal_comp_swap_of_excursionPairs_decomp
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k)
+    (hs : s ∈ stateFinset k N)
+    (p q : ExcursionList k)
+    (a L1 L2 : ℕ) (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ Nat.succ n)
+    (hdecompShort : ShortSwapMiddleDecomp
+      (k := k) n e p q a L1 L2 hL1 hL2 hcShort)
+    (hdecompShortInv : ShortSwapMiddleDecomp
+      (k := k) n e q p a L2 L1 hL2 hL1
+      (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort)) :
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s r).toReal -
+        (worPatternMass (k := k) (hN := hN) e s r).toReal|) =
+    (∑ r ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s ((Equiv.swap p q) r)).toReal -
+        (worPatternMass (k := k) (hN := hN) e s ((Equiv.swap p q) r)).toReal|) := by
+  have hmapShort :
+      ∀ ys ∈ shortPatternFiber (k := k) n e p,
+        segmentSwap ys a L1 L2 hL1 hL2 hcShort ∈ shortPatternFiber (k := k) n e q :=
+    hmapShort_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      (hmapShortFiber_of_shortSwapMiddleDecomp
+        (k := k) (n := n) (e := e) (p := p) (q := q)
+        (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShort)
+      hdecompShort
+  have hmapShortInv :
+      ∀ zs ∈ shortPatternFiber (k := k) n e q,
+        segmentSwap zs a L2 L1 hL2 hL1
+          (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcShort) ∈
+          shortPatternFiber (k := k) n e p := by
+    have hdecompShortInv' :=
+      shortSwapMiddleDecomp_inv_unpack
+        (k := k) (n := n) (e := e) (p := p) (q := q)
+        (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShortInv
+    exact hmapShortInv_of_swap_middle_of_excursionPairs_decomp
+      (k := k) (n := n) (e := e) (p := p) (q := q)
+      (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+      (hmapShortFiberInv_of_shortSwapMiddleDecomp
+        (k := k) (n := n) (e := e) (p := p) (q := q)
+        (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort hdecompShortInv)
+      hdecompShortInv'
+  exact sum_abs_wr_wor_patternMass_toReal_eq_sum_abs_wr_wor_patternMass_toReal_comp_swap_of_maps
+    (k := k) (hN := hN) (hk := hk) (e := e) (s := s) (hs := hs)
+    (p := p) (q := q) (a := a) (L1 := L1) (L2 := L2) hL1 hL2 hcShort
+    hmapShort hmapShortInv
 
 lemma wrResidualMass_eq_zero
     {N : ℕ} (hk : 0 < k) (n : ℕ) (hN : Nat.succ n ≤ N) (e s : MarkovState k) :
@@ -1104,6 +4579,23 @@ private lemma excursion_bound_of_wor_wr_correspondence
     _ ≤ (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
           (returnsToStart (k := k) s : ℝ) := hfrac_le
 
+lemma sum_abs_ratio_partition_by_excursionMultiset
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (hk : 0 < k) (e s : MarkovState k) :
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(shortPatternRatio (k := k) n e p).toReal *
+          (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        (prefixPatternRatio (k := k) (hN := hN) e s p).toReal *
+          (prefixCoeff (k := k) (h := hN) e s).toReal|) =
+    (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+        |(shortPatternRatio (k := k) n e p).toReal *
+            (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+          (prefixPatternRatio (k := k) (hN := hN) e s p).toReal *
+            (prefixCoeff (k := k) (h := hN) e s).toReal|) := by
+  simpa [ratioTerm] using
+    sum_ratioTerm_partition_by_excursionMultiset
+      (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
+
 /-! ## Diaconis-Freedman core lemma
 
 The key bound connecting `W(empiricalParam)` and `prefixCoeff` via the
@@ -1124,6 +4616,51 @@ ordering bijection). The key missing pieces are:
 - Fiber cardinality formula: `|fiber(N, s)| = t_s(G) × ∏_a (outdeg(a) - 1)!`
 - Excursion ordering uniformity (consequence of BEST)
 - Product decomposition of `wordProbNN` through excursion frequencies -/
+private lemma excursion_wor_wr_core
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (hs : s ∈ stateFinset k N)
+    (hRlarge : 4 * (Nat.succ n) * (Nat.succ n) < returnsToStart (k := k) s) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(shortPatternRatio (k := k) n e p).toReal *
+          (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        (prefixPatternRatio (k := k) (hN := hN) e s p).toReal *
+          (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
+      (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+        (returnsToStart (k := k) s : ℝ) := by
+  have hpart :=
+    sum_ratioTerm_partition_by_excursionMultiset
+      (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
+  have hsumRatio :
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(shortPatternRatio (k := k) n e p).toReal *
+            (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+          (prefixPatternRatio (k := k) (hN := hN) e s p).toReal *
+            (prefixCoeff (k := k) (h := hN) e s).toReal|) =
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        ratioTerm (k := k) (hN := hN) (hk := hk) e s p := by
+    simp [ratioTerm]
+  rw [hsumRatio, hpart]
+  rw [sum_ratioTerm_partition_by_excursionMultiset_eq_sum_abs_wr_wor_partition_by_excursionMultiset
+      (k := k) (hN := hN) (hk := hk) (e := e) (s := s) hs]
+  -- Remaining core obligation (Diaconis-Freedman/BEST):
+  -- bound each multiset fiber by adjacent-transposition uniformity + orbit
+  -- averaging, then sum those fiber bounds.
+  have hpartBound :
+      (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+        ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+      (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+        (returnsToStart (k := k) s : ℝ) := by
+    -- TODO (BEST core): finite-pattern uniformity under adjacent transpositions,
+    -- then orbit/cardinality averaging on each multiset fiber.
+    -- `hs` and `hRlarge` are the hypotheses needed in this remaining step.
+    have _ := hs
+    have _ := hRlarge
+    sorry
+  exact hpartBound
+
 private lemma excursion_bound_from_pattern_abs_sum
     (hk : 0 < k) (n : ℕ) (e : MarkovState k)
     {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
@@ -1190,18 +4727,8 @@ theorem excursion_bound_from_decomposition
         - (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
             worPatternMass (k := k) (hN := hN) e s p).toReal| := by
     rw [← hWdecomp, ← hPCdecomp]
-  -- Remaining core gap (Diaconis-Freedman / BEST) in ratio form:
-  -- compare short-fiber pattern ratios against long-prefix pattern ratios on the
-  -- shared finite index set `P(n,e,s)`.
-  have hsumAbsRatio :
-      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
-        |(shortPatternRatio (k := k) n e p).toReal *
-            (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
-          (prefixPatternRatio (k := k) (hN := hN) e s p).toReal *
-            (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
-        (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
-          (returnsToStart (k := k) s : ℝ) := by
-    sorry
+  have hsumAbsRatio :=
+    excursion_wor_wr_core (k := k) hk n e hN s hs hRlarge
   have hsumAbs :
       ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
         |(wrPatternMass (k := k) hk n e s p).toReal -

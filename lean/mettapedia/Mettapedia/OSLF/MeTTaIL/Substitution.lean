@@ -2,20 +2,23 @@ import Mathlib.Data.List.Basic
 import Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-!
-# Capture-Avoiding Substitution for MeTTaIL
+# Substitution for MeTTaIL (Locally Nameless)
 
-This file formalizes capture-avoiding substitution for MeTTaIL patterns,
-using named variables with an environment-based approach.
+Substitution operations for the locally nameless Pattern representation.
+Bound variables use de Bruijn indices, so capture-avoidance is automatic —
+no environment filtering needed.
 
-## Key Definitions
+## Key Operations
 
-- `SubstEnv`: Substitution environment mapping names to patterns
+- `openBVar`: Replace BVar k with a term (enter binder scope)
+- `closeFVar`: Replace FVar x with BVar k (abstract a free variable)
+- `liftBVars`: Shift de Bruijn indices (move under additional binders)
+- `substFVar`: Substitute a term for a free variable (metavar instantiation)
 - `applySubst`: Apply a substitution environment to a pattern
-- `freeVars` / `isFresh`: Free variable analysis and freshness checking
-- `commSubst`: The COMM rule substitution `p[@q/x]`
 
 ## References
 
+- Aydemir et al., "Engineering Formal Metatheory" (POPL 2008)
 - `/home/zar/claude/hyperon/mettail-rust/macros/src/gen/term_ops/subst.rs`
 -/
 
@@ -23,144 +26,106 @@ namespace Mettapedia.OSLF.MeTTaIL.Substitution
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
+/-! ## Locally Nameless Core Operations -/
+
+/-- Replace `BVar k` with term `u` (opening a binder scope). -/
+def openBVar (k : Nat) (u : Pattern) : Pattern → Pattern
+  | .bvar n => if n == k then u else .bvar n
+  | .fvar x => .fvar x
+  | .apply c args => .apply c (args.map (openBVar k u))
+  | .lambda body => .lambda (openBVar (k + 1) u body)
+  | .multiLambda n body => .multiLambda n (openBVar (k + n) u body)
+  | .subst body repl => .subst (openBVar (k + 1) u body) (openBVar k u repl)
+  | .collection ct elems rest =>
+    .collection ct (elems.map (openBVar k u)) rest
+termination_by p => sizeOf p
+
+/-- Replace `FVar x` with `BVar k` (abstracting a free variable). -/
+def closeFVar (k : Nat) (x : String) : Pattern → Pattern
+  | .bvar n => .bvar n
+  | .fvar y => if y == x then .bvar k else .fvar y
+  | .apply c args => .apply c (args.map (closeFVar k x))
+  | .lambda body => .lambda (closeFVar (k + 1) x body)
+  | .multiLambda n body => .multiLambda n (closeFVar (k + n) x body)
+  | .subst body repl => .subst (closeFVar (k + 1) x body) (closeFVar k x repl)
+  | .collection ct elems rest =>
+    .collection ct (elems.map (closeFVar k x)) rest
+termination_by p => sizeOf p
+
+/-- Shift bound variable indices ≥ `cutoff` by `shift`. -/
+def liftBVars (cutoff shift : Nat) : Pattern → Pattern
+  | .bvar n => if n >= cutoff then .bvar (n + shift) else .bvar n
+  | .fvar x => .fvar x
+  | .apply c args => .apply c (args.map (liftBVars cutoff shift))
+  | .lambda body => .lambda (liftBVars (cutoff + 1) shift body)
+  | .multiLambda n body => .multiLambda n (liftBVars (cutoff + n) shift body)
+  | .subst body repl =>
+    .subst (liftBVars (cutoff + 1) shift body) (liftBVars cutoff shift repl)
+  | .collection ct elems rest =>
+    .collection ct (elems.map (liftBVars cutoff shift)) rest
+termination_by p => sizeOf p
+
 /-! ## Environment-Based Substitution
 
-MeTTaIL uses named variables with an environment for substitution.
-We model this as a map from names to terms.
+Substitution environment for replacing free variables (metavariables)
+with terms. In locally nameless, NO capture-avoidance filtering is needed:
+binders use de Bruijn indices, so there are no name conflicts.
 -/
 
-/-- An environment maps variable names to patterns -/
+/-- An environment maps free variable names to patterns -/
 abbrev SubstEnv := List (String × Pattern)
 
 namespace SubstEnv
 
-/-- Empty environment -/
 def empty : SubstEnv := []
 
-/-- Extend environment with a binding -/
 def extend (env : SubstEnv) (name : String) (term : Pattern) : SubstEnv :=
   (name, term) :: env
 
-/-- Look up a variable in the environment -/
 def find (env : SubstEnv) (name : String) : Option Pattern :=
   match env.find? (fun p => p.1 == name) with
   | some (_, term) => some term
   | none => none
 
-/-- Filtering out x doesn't affect lookup of y when y ≠ x -/
-theorem find_filter_neq (env : SubstEnv) (x y : String) (hne : y ≠ x) :
-    find (env.filter (·.1 != x)) y = find env y := by
-  induction env with
-  | nil => rfl
-  | cons pair env' ih =>
-    unfold find
-    simp only [List.filter]
-    by_cases hpairx : pair.1 = x
-    · -- pair.1 = x, so it gets filtered out
-      have hfilter : (pair.1 != x) = false := by
-        simp only [bne_eq_false_iff_eq, hpairx]
-      simp only [hfilter]
-      -- pair.1 = x ≠ y, so lookup y skips this pair anyway
-      simp only [List.find?]
-      have hpairy : (pair.1 == y) = false := by
-        simp only [beq_eq_false_iff_ne]
-        rw [hpairx]
-        exact hne.symm
-      simp only [hpairy]
-      unfold find at ih
-      exact ih
-    · -- pair.1 ≠ x, so it's kept
-      have hfilter : (pair.1 != x) = true := by
-        simp only [bne_iff_ne, ne_eq, hpairx, not_false_eq_true]
-      simp only [hfilter, List.find?]
-      by_cases hpairy : pair.1 = y
-      · -- Found y
-        have hfound : (pair.1 == y) = true := by simp only [beq_iff_eq, hpairy]
-        simp only [hfound]
-      · -- Not y, continue
-        have hnotfound : (pair.1 == y) = false := by simp only [beq_eq_false_iff_ne, ne_eq, hpairy, not_false_eq_true]
-        simp only [hnotfound]
-        unfold find at ih
-        exact ih
-
 end SubstEnv
 
-/-! ## Pattern Normal Forms
-
-A pattern is in "substitution normal form" if it contains no explicit `.subst` nodes.
-In practice, we build patterns from vars, applications, lambdas, and collections,
-not from explicit substitution markers.
--/
-
-mutual
-  /-- A pattern has no explicit substitution nodes -/
-  def noExplicitSubst : Pattern → Bool
-    | .var _ => true
-    | .apply _ args => allNoExplicitSubst args
-    | .lambda _ body => noExplicitSubst body
-    | .multiLambda _ body => noExplicitSubst body
-    | .subst _ _ _ => false
-    | .collection _ elems _ => allNoExplicitSubst elems
-
-  /-- Helper: all patterns in list have no explicit subst -/
-  def allNoExplicitSubst : List Pattern → Bool
-    | [] => true
-    | p :: ps => noExplicitSubst p && allNoExplicitSubst ps
-end
-
-/-- If allNoExplicitSubst holds for a list and p ∈ list, then noExplicitSubst p -/
-theorem allNoExplicitSubst_mem {ps : List Pattern} {p : Pattern}
-    (hall : allNoExplicitSubst ps) (hp : p ∈ ps) : noExplicitSubst p := by
-  induction ps with
-  | nil => simp at hp
-  | cons q qs ih =>
-    simp only [allNoExplicitSubst, Bool.and_eq_true] at hall
-    cases List.mem_cons.mp hp with
-    | inl heq => rw [heq]; exact hall.1
-    | inr hmem => exact ih hall.2 hmem
-
-/-! ## Pattern Substitution
-
-Apply an environment to a pattern, replacing variables.
--/
-
-/-- Apply substitution environment to a pattern -/
+/-- Apply substitution environment to a pattern.
+    In locally nameless, lambda/multiLambda cases do NOT filter the environment
+    — de Bruijn indices eliminate capture. -/
 def applySubst (env : SubstEnv) : Pattern → Pattern
-  | .var name =>
+  | .bvar n => .bvar n  -- BVars are not in the environment
+  | .fvar name =>
     match env.find name with
     | some replacement => replacement
-    | none => .var name  -- Keep unbound variables
+    | none => .fvar name
   | .apply constructor args =>
     .apply constructor (args.map (applySubst env))
-  | .lambda x body =>
-    -- Remove x from env to avoid capture
-    let env' := env.filter (fun p => p.1 != x)
-    .lambda x (applySubst env' body)
-  | .multiLambda xs body =>
-    let env' := env.filter (fun p => !xs.contains p.1)
-    .multiLambda xs (applySubst env' body)
-  | .subst body x replacement =>
-    -- Explicit substitution: apply it
-    let replacement' := applySubst env replacement
-    let env' := env.extend x replacement'
-    applySubst env' body
+  | .lambda body =>
+    -- NO filtering! De Bruijn indices prevent capture.
+    .lambda (applySubst env body)
+  | .multiLambda n body =>
+    .multiLambda n (applySubst env body)
+  | .subst body replacement =>
+    -- Explicit substitution: apply env to both parts, then openBVar
+    let body' := applySubst env body
+    let repl' := applySubst env replacement
+    openBVar 0 repl' body'
   | .collection ct elements rest =>
     .collection ct (elements.map (applySubst env)) rest
 termination_by p => sizeOf p
 
-/-! ## Freshness Checking
+/-! ## Freshness Checking -/
 
-Check if a variable is fresh (not free) in a pattern.
--/
-
-/-- Get free variables of a pattern -/
+/-- Get free variables of a pattern.
+    Trivial in locally nameless: just collect FVar names.
+    No filtering needed — binders are implicit via de Bruijn indices. -/
 def freeVars : Pattern → List String
-  | .var name => [name]
+  | .bvar _ => []
+  | .fvar name => [name]
   | .apply _ args => args.flatMap freeVars
-  | .lambda x body => (freeVars body).filter (· != x)
-  | .multiLambda xs body => (freeVars body).filter (!xs.contains ·)
-  | .subst body x replacement =>
-    (freeVars body).filter (· != x) ++ freeVars replacement
+  | .lambda body => freeVars body
+  | .multiLambda _ body => freeVars body
+  | .subst body replacement => freeVars body ++ freeVars replacement
   | .collection _ elements _ => elements.flatMap freeVars
 termination_by p => sizeOf p
 
@@ -172,336 +137,247 @@ def isFresh (x : String) (p : Pattern) : Bool :=
 def checkFreshness (fc : FreshnessCondition) : Bool :=
   isFresh fc.varName fc.term
 
-/-! ## Connection to MeTTaIL Rewrites
+/-- Get ALL variables (both free and bound variable names).
+    In locally nameless, BVars are indices not names, so allVars = freeVars.
+    Kept for API compatibility during migration. -/
+def allVars : Pattern → List String := freeVars
 
-MeTTaIL rewrites like `(PPar {(PInput n p), (POutput n q), ...rest}) ~> (PPar {p[@q], ...rest})`
-involve substitution: `p[@q]` means "substitute @q for the bound variable in p".
+/-- A variable is globally fresh if it does not appear anywhere in the pattern.
+    In locally nameless, this is the same as `isFresh` since BVars have no names. -/
+def isGloballyFresh (x : String) (p : Pattern) : Bool := isFresh x p
 
-In our formalization:
-- `p` is a pattern with a bound variable
-- `@q` is `NQuote q`
-- The substitution is `applySubst [("x", NQuote q)] p`
--/
+/-! ## COMM Rule Substitution -/
 
-/-- Apply the ρ-calculus COMM rule substitution -/
-def commSubst (pBody : Pattern) (boundVar : String) (q : Pattern) : Pattern :=
-  applySubst (SubstEnv.extend SubstEnv.empty boundVar (.apply "NQuote" [q])) pBody
+/-- Apply the ρ-calculus COMM rule substitution.
+    In locally nameless: substitute `NQuote(q)` for BVar 0 in the body. -/
+def commSubst (pBody q : Pattern) : Pattern :=
+  openBVar 0 (.apply "NQuote" [q]) pBody
 
-/-! ## Theorems
-
-Empty substitution is identity on patterns without explicit subst nodes.
-Proof uses mutual recursion mirroring the definition of noExplicitSubst.
--/
+/-! ## Pattern Normal Forms -/
 
 mutual
-  theorem subst_empty (p : Pattern) (h : noExplicitSubst p) :
-      applySubst SubstEnv.empty p = p :=
-    match p with
-    | .var name => by simp only [applySubst, SubstEnv.find, SubstEnv.empty, List.find?]
-    | .apply constructor args => by
-      unfold noExplicitSubst at h
-      simp only [applySubst]
-      congr 1
-      exact subst_empty_list args h
-    | .lambda x body => by
-      unfold noExplicitSubst at h
-      simp only [applySubst, SubstEnv.empty, List.filter_nil]
-      congr 1
-      exact subst_empty body h
-    | .multiLambda xs body => by
-      unfold noExplicitSubst at h
-      simp only [applySubst, SubstEnv.empty, List.filter_nil]
-      congr 1
-      exact subst_empty body h
-    | .subst _ _ _ => by
-      -- noExplicitSubst returns false for subst, so h : false = true
-      unfold noExplicitSubst at h
-      exact (Bool.false_ne_true h).elim
-    | .collection ct elems rest => by
-      unfold noExplicitSubst at h
-      simp only [applySubst]
-      congr 1
-      exact subst_empty_list elems h
+  /-- A pattern has no explicit substitution nodes -/
+  def noExplicitSubst : Pattern → Bool
+    | .bvar _ => true
+    | .fvar _ => true
+    | .apply _ args => allNoExplicitSubst args
+    | .lambda body => noExplicitSubst body
+    | .multiLambda _ body => noExplicitSubst body
+    | .subst _ _ => false
+    | .collection _ elems _ => allNoExplicitSubst elems
 
-  theorem subst_empty_list (ps : List Pattern) (h : allNoExplicitSubst ps) :
-      ps.map (applySubst SubstEnv.empty) = ps :=
-    match ps with
-    | [] => by simp only [List.map_nil]
-    | p :: ps' => by
-      unfold allNoExplicitSubst at h
-      simp only [Bool.and_eq_true] at h
-      simp only [List.map_cons]
-      congr 1
-      · exact subst_empty p h.1
-      · exact subst_empty_list ps' h.2
+  def allNoExplicitSubst : List Pattern → Bool
+    | [] => true
+    | p :: ps => noExplicitSubst p && allNoExplicitSubst ps
 end
 
-/-- Helper: filter idempotence -/
-theorem filter_filter_same {α : Type*} (p : α → Bool) (xs : List α) :
-    (xs.filter p).filter p = xs.filter p := by
-  simp only [List.filter_filter, Bool.and_self]
+/-- If allNoExplicitSubst holds for a list and p ∈ list, then noExplicitSubst p -/
+theorem allNoExplicitSubst_mem {ps : List Pattern} {p : Pattern}
+    (hall : allNoExplicitSubst ps) (hp : p ∈ ps) : noExplicitSubst p := by
+  induction ps with
+  | nil => cases hp
+  | cons q qs ih =>
+    simp only [allNoExplicitSubst, Bool.and_eq_true] at hall
+    cases List.mem_cons.mp hp with
+    | inl heq => rw [heq]; exact hall.1
+    | inr hmem => exact ih hall.2 hmem
 
-/-- Helper: filter commutativity -/
-theorem filter_comm {α : Type*} (p q : α → Bool) (xs : List α) :
-    (xs.filter p).filter q = (xs.filter q).filter p := by
-  simp only [List.filter_filter]
-  congr 1
-  funext a
-  exact (Bool.and_comm (p a) (q a)).symm
+/-! ## Local Closure -/
 
-/-- Helper: if xs.contains x = true, then x ∈ xs -/
-theorem elem_of_contains {α : Type*} [DecidableEq α] {xs : List α} {x : α}
-    (h : xs.contains x = true) : x ∈ xs := by
-  rw [List.contains_iff_exists_mem_beq] at h
-  obtain ⟨y, hy, hbeq⟩ := h
-  rw [beq_iff_eq] at hbeq
-  rwa [hbeq]
+mutual
+  /-- All BVars in `p` have index < `k`. -/
+  def lc_at : Nat → Pattern → Bool
+    | k, .bvar n => n < k
+    | _, .fvar _ => true
+    | k, .apply _ args => lc_at_list k args
+    | k, .lambda body => lc_at (k + 1) body
+    | k, .multiLambda n body => lc_at (k + n) body
+    | k, .subst body repl => lc_at (k + 1) body && lc_at k repl
+    | k, .collection _ elems _ => lc_at_list k elems
 
-/-- Helper: if x ∈ xs, then xs.contains x = true -/
-theorem contains_of_elem {α : Type*} [DecidableEq α] {xs : List α} {x : α}
-    (h : x ∈ xs) : xs.contains x = true := by
-  rw [List.contains_iff_exists_mem_beq]
-  exact ⟨x, h, beq_self_eq_true x⟩
+  def lc_at_list : Nat → List Pattern → Bool
+    | _, [] => true
+    | k, p :: ps => lc_at k p && lc_at_list k ps
+end
 
-/-- Helper: filter can be absorbed when one predicate implies another.
-    Note: The hypothesis `_h` is not needed for this particular proof,
-    but it documents the intended use case (when one filter subsumes another). -/
-theorem filter_filter_absorb {α : Type*} (p q : α → Bool) (xs : List α)
-    (_h : ∀ a ∈ xs, q a = true → p a = true) :
-    (xs.filter p).filter q = (xs.filter q).filter p := by
-  simp only [List.filter_filter]
-  congr 1
-  funext a
-  exact (Bool.and_comm (p a) (q a)).symm
+/-- A pattern is locally closed (no dangling BVars). -/
+def lc (p : Pattern) : Bool := lc_at 0 p
 
-/-- Helper: if x ∉ FV(.var y), then x ≠ y -/
-theorem fresh_var_neq {x y : String} (h : isFresh x (.var y)) : x ≠ y := by
-  unfold isFresh freeVars at h
-  simp only [List.contains_cons, List.contains_nil, Bool.or_false,
-             Bool.not_eq_true', beq_eq_false_iff_ne, ne_eq] at h
-  exact h
+/-! ## Theorems -/
 
-/-- Helper: if x ∉ FV(.apply c args), then x ∉ FV(p) for all p ∈ args -/
-theorem fresh_apply {x : String} {c : String} {args : List Pattern}
-    (h : isFresh x (.apply c args)) : ∀ p ∈ args, isFresh x p := by
-  intro p hp
-  unfold isFresh at h ⊢
-  unfold freeVars at h
-  rw [Bool.not_eq_true'] at h ⊢
-  by_contra habs
-  push_neg at habs
-  cases hb : (freeVars p).contains x with
-  | false => exact habs hb
-  | true =>
-    have hmem := elem_of_contains hb
-    have helem : x ∈ args.flatMap freeVars := List.mem_flatMap.mpr ⟨p, hp, hmem⟩
-    have hcontains := contains_of_elem helem
-    rw [h] at hcontains
-    exact Bool.false_ne_true hcontains
-
-/-- Helper: if x ∉ FV(.lambda y body), then x = y or x ∉ FV(body) -/
-theorem fresh_lambda {x y : String} {body : Pattern}
-    (h : isFresh x (.lambda y body)) : x = y ∨ isFresh x body := by
-  unfold isFresh freeVars at h
-  by_cases hxy : x = y
-  · exact Or.inl hxy
-  · right
-    unfold isFresh
-    rw [Bool.not_eq_true'] at h ⊢
-    by_contra habs
-    push_neg at habs
-    cases hb : (freeVars body).contains x with
-    | false => exact habs hb
-    | true =>
-      have hmem := elem_of_contains hb
-      have hfiltered : x ∈ (freeVars body).filter (· != y) := by
-        simp only [List.mem_filter]
-        exact ⟨hmem, bne_iff_ne.mpr hxy⟩
-      have hcontains := contains_of_elem hfiltered
-      rw [h] at hcontains
-      exact Bool.false_ne_true hcontains
-
-/-- Helper: if x ∉ FV(.collection ct elems rest), then x ∉ FV(p) for all p ∈ elems -/
-theorem fresh_collection {x : String} {ct : CollType} {elems : List Pattern} {rest : Option String}
-    (h : isFresh x (.collection ct elems rest)) : ∀ p ∈ elems, isFresh x p := by
-  intro p hp
-  unfold isFresh at h ⊢
-  unfold freeVars at h
-  rw [Bool.not_eq_true'] at h ⊢
-  by_contra habs
-  push_neg at habs
-  cases hb : (freeVars p).contains x with
-  | false => exact habs hb
-  | true =>
-    have hmem := elem_of_contains hb
-    have helem : x ∈ elems.flatMap freeVars := List.mem_flatMap.mpr ⟨p, hp, hmem⟩
-    have hcontains := contains_of_elem helem
-    rw [h] at hcontains
-    exact Bool.false_ne_true hcontains
-
-/-- Substitution respects freshness: if x ∉ FV(p), filtering x from env doesn't matter.
-
-    This theorem is generalized over all environments env.
-    The key insight is that filters commute and filtering is idempotent.
-
-    **Precondition**: `p.noExplicitSubst = true`
-    Well-typed ρ-calculus terms never contain explicit `.subst` patterns
-    (they are intermediate forms that get immediately reduced).
-    This precondition eliminates the impossible hsubst case.
--/
-theorem subst_fresh (env : SubstEnv) (x : String) (p : Pattern)
-    (hfresh : isFresh x p) (hno : noExplicitSubst p) :
-    applySubst env p = applySubst (env.filter (·.1 != x)) p := by
-  -- Use pattern induction
-  induction p using Pattern.inductionOn generalizing env with
-  | hvar y =>
-    -- If x ∉ FV(.var y), then x ≠ y
-    have hne : x ≠ y := fresh_var_neq hfresh
-    simp only [applySubst]
-    -- env.find y = (env.filter (·.1 != x)).find y when y ≠ x
-    rw [SubstEnv.find_filter_neq env x y hne.symm]
-  | happly c args ih =>
-    -- Apply IH to each argument
-    simp only [applySubst]
+/-- Helper: if `f a = a` for all `a ∈ l`, then `l.map f = l`. -/
+private theorem list_map_eq_self {α : Type*} {f : α → α} {l : List α}
+    (h : ∀ a ∈ l, f a = a) : l.map f = l := by
+  induction l with
+  | nil => rfl
+  | cons a as ih =>
+    rw [List.map_cons]
     congr 1
-    apply List.map_congr_left
-    intro p hp
-    -- hno says all args have noExplicitSubst
-    have hno_p : noExplicitSubst p := allNoExplicitSubst_mem hno hp
-    exact ih p hp env (fresh_apply hfresh p hp) hno_p
-  | hlambda y body ih =>
-    -- Cases: x = y or x ≠ y
-    simp only [applySubst]
-    -- hno says body has noExplicitSubst
-    unfold noExplicitSubst at hno
-    cases fresh_lambda hfresh with
-    | inl hxy =>
-      -- x = y: the inner filter already removes x
-      subst hxy
-      -- env.filter (·.1 != x) then filter (·.1 != x) = env.filter (·.1 != x)
-      -- by filter idempotence
-      congr 1
-      rw [filter_comm]
-      rw [filter_filter_same]
-    | inr hfresh_body =>
-      -- x ≠ y: apply IH
-      congr 1
-      -- Need: (env.filter (·.1 != y)).filter (·.1 != x) =
-      --       (env.filter (·.1 != x)).filter (·.1 != y)
-      rw [filter_comm]
-      exact ih (env.filter (fun p => p.1 != y)) hfresh_body hno
-  | hmultiLambda ys body ih =>
-    simp only [applySubst]
-    -- hno says body has noExplicitSubst
-    unfold noExplicitSubst at hno
-    -- Similar to lambda case but with multiple binders
-    -- Goal: Pattern.multiLambda ys (applySubst env' body) = Pattern.multiLambda ys (applySubst env'' body)
-    -- Use congr to reduce to showing the applySubst calls are equal
-    congr 1
-    -- Check if x is fresh in body (after filtering ys)
-    unfold isFresh freeVars at hfresh
-    rw [Bool.not_eq_true'] at hfresh
-    -- If x ∈ ys, the result is the same (filter removes it)
-    -- If x ∉ ys and x ∉ FV(body), apply IH
-    cases hxys : ys.contains x with
-    | true => -- x ∈ ys: filtering by (·.1 != x) is subsumed by filtering by (!ys.contains ·.1)
-      -- Since x ∈ ys, any p with p.1 = x would have ys.contains p.1 = true
-      -- So env.filter (fun p => !ys.contains p.1) already excludes x
-      -- Hence: env.filter (!ys.contains ·.1) = (env.filter (·.1 != x)).filter (!ys.contains ·.1)
-      have heq : env.filter (fun p => !ys.contains p.1) =
-                 (env.filter (·.1 != x)).filter (fun p => !ys.contains p.1) := by
-        -- Use filter_filter to merge filters on RHS
-        rw [List.filter_filter]
-        -- Now show: env.filter (!ys.contains ·.1) = env.filter ((·.1 != x) && (!ys.contains ·.1))
-        -- Key insight: !ys.contains a.1 = true implies a.1 != x (since x ∈ ys)
-        induction env with
-        | nil => rfl
-        | cons a tl ih =>
-          simp only [List.filter_cons]
-          -- Both sides have if on !ys.contains a.1 and a.1 != x && !ys.contains a.1
-          cases hnotc : (!ys.contains a.1)
-          case false =>
-            -- !ys.contains a.1 = false, so both ifs take false branch
-            -- First if: (!ys.contains a.1) = true? No, it's false
-            -- Second if: (a.1 != x && !ys.contains a.1) = true? No, because !ys.contains a.1 = false
-            simp only [Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true, bne_iff_ne, ne_eq]
-            -- Goal should now be ih: tl equality
-            exact ih
-          case true =>
-            -- !ys.contains a.1 = true, so first if takes true branch
-            -- For second if: a.1 != x must also be true (since x ∈ ys implies a.1 ≠ x)
-            have hne : (a.1 != x) = true := by
-              rw [bne_iff_ne]
-              intro heqa
-              rw [heqa, hxys] at hnotc
-              exact Bool.false_ne_true hnotc
-            simp only [↓reduceIte, hne, Bool.true_and, ih]
-      -- Goal after congr 1: applySubst (env.filter ...) body = applySubst ((env.filter ...).filter ...) body
-      -- Use heq to rewrite and close with rfl
-      rw [heq]
-    | false => -- x ∉ ys: need to show isFresh x body and apply IH
-      -- hxys : ys.contains x = false
-      have hfresh_body : isFresh x body := by
-        unfold isFresh
-        rw [Bool.not_eq_true']
-        -- hfresh says: ((freeVars body).filter (!ys.contains ·)).contains x = false
-        -- We need: (freeVars body).contains x = false
-        -- If (freeVars body).contains x = true, then x ∈ freeVars body
-        -- Since x ∉ ys, filter would keep x, giving filtered.contains x = true
-        -- But hfresh says filtered.contains x = false, contradiction
-        cases hb : (freeVars body).contains x with
-        | false => rfl
-        | true =>
-          have hmem := elem_of_contains hb
-          -- hxys : ys.contains x = false, so !ys.contains x = true
-          have hfiltered : x ∈ (freeVars body).filter (!ys.contains ·) := by
-            simp only [List.mem_filter, hxys]
-            exact ⟨hmem, rfl⟩
-          have hcontains := contains_of_elem hfiltered
-          rw [hfresh] at hcontains
-          exact absurd hcontains Bool.false_ne_true
-      -- IH: applySubst env' body = applySubst (env'.filter (·.1 != x)) body
-      -- where env' = env.filter (!ys.contains ·.1)
-      -- We need: applySubst env' body = applySubst (env.filter (·.1 != x)).filter (!ys.contains ·.1) body
-      -- By filter_comm: (env.filter (·.1 != x)).filter (!ys.contains ·.1) =
-      --                 (env.filter (!ys.contains ·.1)).filter (·.1 != x) = env'.filter (·.1 != x)
-      have hcomm : (env.filter (·.1 != x)).filter (fun p => !ys.contains p.1) =
-                   (env.filter (fun p => !ys.contains p.1)).filter (·.1 != x) := by
-        exact filter_comm (·.1 != x) (fun p => !ys.contains p.1) env
-      rw [hcomm]
-      exact ih (env.filter (fun p => !ys.contains p.1)) hfresh_body hno
-  | hsubst body y repl ih_body ih_repl =>
-    -- Explicit substitution case
-    -- The key insight: hno says p.noExplicitSubst = true
-    -- But noExplicitSubst (.subst _ _ _) = false by definition
-    -- This is a contradiction, so the case is impossible
-    simp only [noExplicitSubst] at hno
-    -- hno : false = true, which is absurd
-    exact absurd hno Bool.false_ne_true
+    · exact h a (List.mem_cons.mpr (Or.inl rfl))
+    · exact ih (fun b hb => h b (List.mem_cons.mpr (Or.inr hb)))
+
+/-- lc_at_list membership: if all elements are lc_at k, then each is. -/
+theorem lc_at_list_mem {k : Nat} {ps : List Pattern} {p : Pattern}
+    (hlc : lc_at_list k ps = true) (hp : p ∈ ps) : lc_at k p = true := by
+  induction ps with
+  | nil => cases hp
+  | cons q qs ih =>
+    simp only [lc_at_list, Bool.and_eq_true] at hlc
+    cases List.mem_cons.mp hp with
+    | inl heq => rw [heq]; exact hlc.1
+    | inr hmem => exact ih hlc.2 hmem
+
+/-- Empty substitution is identity (BVars untouched, FVars not in empty env). -/
+theorem subst_empty (p : Pattern) (h : noExplicitSubst p) :
+    applySubst SubstEnv.empty p = p := by
+  induction p using Pattern.inductionOn with
+  | hbvar _ => simp only [applySubst]
+  | hfvar name =>
+    simp only [applySubst, SubstEnv.find, SubstEnv.empty, List.find?]
+  | happly constructor args ih =>
+    unfold noExplicitSubst at h
+    simp only [applySubst]; congr 1
+    exact list_map_eq_self (fun q hq => ih q hq (allNoExplicitSubst_mem h hq))
+  | hlambda body ih =>
+    unfold noExplicitSubst at h
+    simp only [applySubst]; congr 1; exact ih h
+  | hmultiLambda n body ih =>
+    unfold noExplicitSubst at h
+    simp only [applySubst]; congr 1; exact ih h
+  | hsubst body repl _ _ =>
+    unfold noExplicitSubst at h; exact absurd h Bool.false_ne_true
   | hcollection ct elems rest ih =>
-    simp only [applySubst]
-    congr 1
-    apply List.map_congr_left
-    intro p hp
-    -- hno says all elems have noExplicitSubst
-    unfold noExplicitSubst at hno
-    have hno_p : noExplicitSubst p := allNoExplicitSubst_mem hno hp
-    exact ih p hp env (fresh_collection hfresh p hp) hno_p
+    unfold noExplicitSubst at h
+    simp only [applySubst]; congr 1
+    exact list_map_eq_self (fun q hq => ih q hq (allNoExplicitSubst_mem h hq))
 
-/-! ## Substitution and Reduction Interaction
+/-- Lifting by 0 is identity. -/
+theorem liftBVars_zero (p : Pattern) (cutoff : Nat) :
+    liftBVars cutoff 0 p = p := by
+  induction p using Pattern.inductionOn generalizing cutoff with
+  | hbvar n => simp only [liftBVars]; split <;> simp
+  | hfvar _ => simp only [liftBVars]
+  | happly c args ih =>
+    simp only [liftBVars]; congr 1
+    exact list_map_eq_self (fun q hq => ih q hq cutoff)
+  | hlambda body ih =>
+    simp only [liftBVars]; congr 1; exact ih (cutoff + 1)
+  | hmultiLambda n body ih =>
+    simp only [liftBVars]; congr 1; exact ih (cutoff + n)
+  | hsubst body repl ihb ihr =>
+    simp only [liftBVars]; congr 1
+    · exact ihb (cutoff + 1)
+    · exact ihr cutoff
+  | hcollection ct elems rest ih =>
+    simp only [liftBVars]; congr 1
+    exact list_map_eq_self (fun q hq => ih q hq cutoff)
 
-These lemmas are needed for proving that substitution preserves reduction rules.
--/
+/-- Opening a locally-closed term at level k is identity. -/
+theorem openBVar_lc_at (k : Nat) (u : Pattern) (p : Pattern)
+    (hlc : lc_at k p = true) : openBVar k u p = p := by
+  induction p using Pattern.inductionOn generalizing k with
+  | hbvar n =>
+    unfold openBVar; split
+    · next h =>
+      exfalso; have := eq_of_beq h; subst this
+      unfold lc_at at hlc; simp at hlc
+    · rfl
+  | hfvar _ => simp only [openBVar]
+  | happly c args ih =>
+    simp only [lc_at] at hlc
+    simp only [openBVar]; congr 1
+    exact list_map_eq_self (fun q hq => ih q hq k (lc_at_list_mem hlc hq))
+  | hlambda body ih =>
+    simp only [lc_at] at hlc
+    simp only [openBVar]; congr 1; exact ih (k + 1) hlc
+  | hmultiLambda n body ih =>
+    simp only [lc_at] at hlc
+    simp only [openBVar]; congr 1; exact ih (k + n) hlc
+  | hsubst body repl ihb ihr =>
+    simp only [lc_at, Bool.and_eq_true] at hlc
+    simp only [openBVar]; congr 1
+    · exact ihb (k + 1) hlc.1
+    · exact ihr k hlc.2
+  | hcollection ct elems rest ih =>
+    simp only [lc_at] at hlc
+    simp only [openBVar]; congr 1
+    exact list_map_eq_self (fun q hq => ih q hq k (lc_at_list_mem hlc hq))
 
-/-- Helper: applySubst on a single-element list -/
-theorem applySubst_singleton (env : SubstEnv) (p : Pattern) :
-    [p].map (applySubst env) = [applySubst env p] := by
-  simp only [List.map_cons, List.map_nil]
+/-- Close then open is identity when x is fresh. -/
+theorem close_open_id (k : Nat) (x : String) (p : Pattern)
+    (hfresh : x ∉ freeVars p) :
+    closeFVar k x (openBVar k (.fvar x) p) = p := by
+  induction p using Pattern.inductionOn generalizing k with
+  | hbvar n =>
+    simp only [openBVar]; split
+    · simp only [closeFVar, beq_self_eq_true, ↓reduceIte]
+      next h => congr 1; exact (beq_iff_eq.mp h).symm
+    · simp only [closeFVar]
+  | hfvar y =>
+    simp only [freeVars, List.mem_singleton] at hfresh
+    simp only [openBVar, closeFVar]
+    have : ¬(y = x) := fun h => hfresh (h ▸ rfl)
+    simp [beq_eq_false_iff_ne.mpr this]
+  | happly c args ih =>
+    simp only [freeVars] at hfresh
+    simp only [openBVar, closeFVar, List.map_map]; congr 1
+    exact list_map_eq_self fun q hq => ih q hq k
+      (fun hxq => hfresh (List.mem_flatMap.mpr ⟨q, hq, hxq⟩))
+  | hlambda body ih =>
+    simp only [freeVars] at hfresh
+    simp only [openBVar, closeFVar]; congr 1; exact ih (k + 1) hfresh
+  | hmultiLambda n body ih =>
+    simp only [freeVars] at hfresh
+    simp only [openBVar, closeFVar]; congr 1; exact ih (k + n) hfresh
+  | hsubst body repl ihb ihr =>
+    simp only [freeVars, List.mem_append] at hfresh; push_neg at hfresh
+    simp only [openBVar, closeFVar]; congr 1
+    · exact ihb (k + 1) hfresh.1
+    · exact ihr k hfresh.2
+  | hcollection ct elems rest ih =>
+    simp only [freeVars] at hfresh
+    simp only [openBVar, closeFVar, List.map_map]; congr 1
+    exact list_map_eq_self fun q hq => ih q hq k
+      (fun hxq => hfresh (List.mem_flatMap.mpr ⟨q, hq, hxq⟩))
 
-/-- Helper: applySubst distributes over list append -/
-theorem applySubst_append (env : SubstEnv) (xs ys : List Pattern) :
-    (xs ++ ys).map (applySubst env) = xs.map (applySubst env) ++ ys.map (applySubst env) := by
-  simp only [List.map_append]
+/-- Open then close is identity when locally closed at level k. -/
+theorem open_close_id (k : Nat) (x : String) (p : Pattern)
+    (hlc : lc_at k p = true) :
+    openBVar k (.fvar x) (closeFVar k x p) = p := by
+  induction p using Pattern.inductionOn generalizing k with
+  | hbvar n =>
+    simp only [closeFVar, openBVar]; split
+    · next h =>
+      exfalso; have := eq_of_beq h; subst this
+      unfold lc_at at hlc; simp at hlc
+    · rfl
+  | hfvar y =>
+    simp only [closeFVar]; split
+    · next h =>
+      simp only [openBVar, beq_self_eq_true, ↓reduceIte]
+      congr 1; exact (beq_iff_eq.mp h).symm
+    · simp only [openBVar]
+  | happly c args ih =>
+    simp only [lc_at] at hlc
+    simp only [closeFVar, openBVar, List.map_map]; congr 1
+    exact list_map_eq_self fun q hq => ih q hq k (lc_at_list_mem hlc hq)
+  | hlambda body ih =>
+    simp only [lc_at] at hlc
+    simp only [closeFVar, openBVar]; congr 1; exact ih (k + 1) hlc
+  | hmultiLambda n body ih =>
+    simp only [lc_at] at hlc
+    simp only [closeFVar, openBVar]; congr 1; exact ih (k + n) hlc
+  | hsubst body repl ihb ihr =>
+    simp only [lc_at, Bool.and_eq_true] at hlc
+    simp only [closeFVar, openBVar]; congr 1
+    · exact ihb (k + 1) hlc.1
+    · exact ihr k hlc.2
+  | hcollection ct elems rest ih =>
+    simp only [lc_at] at hlc
+    simp only [closeFVar, openBVar, List.map_map]; congr 1
+    exact list_map_eq_self fun q hq => ih q hq k (lc_at_list_mem hlc hq)
+
+/-! ## Substitution Helpers -/
 
 /-- Helper: applySubst on NQuote -/
 theorem applySubst_quote (env : SubstEnv) (p : Pattern) :
@@ -519,41 +395,512 @@ theorem applySubst_output (env : SubstEnv) (n q : Pattern) :
       .apply "POutput" [applySubst env n, applySubst env q] := by
   simp only [applySubst, List.map_cons, List.map_nil]
 
-/-- Helper: applySubst on PInput -/
-theorem applySubst_input (env : SubstEnv) (n : Pattern) (x : String) (p : Pattern) :
-    applySubst env (.apply "PInput" [n, .lambda x p]) =
-      .apply "PInput" [applySubst env n, .lambda x (applySubst (env.filter (·.1 != x)) p)] := by
-  simp only [applySubst, List.map_cons, List.map_nil]
-
-/-- commSubst is defined as applySubst with a specific environment -/
-theorem commSubst_def (p : Pattern) (x : String) (q : Pattern) :
-    commSubst p x q = applySubst (SubstEnv.extend SubstEnv.empty x (.apply "NQuote" [q])) p := by
+/-- commSubst unfolds to openBVar with NQuote -/
+theorem commSubst_def (p q : Pattern) :
+    commSubst p q = openBVar 0 (.apply "NQuote" [q]) p := by
   rfl
 
-/-! ## Summary
+/-! ## Monotonicity of Local Closure -/
 
-This file provides:
+/-- Build lc_at_list from pointwise lc_at. -/
+theorem lc_at_list_of_forall {k : Nat} {ps : List Pattern}
+    (h : ∀ p ∈ ps, lc_at k p = true) : lc_at_list k ps = true := by
+  induction ps with
+  | nil => rfl
+  | cons p ps ih =>
+    simp only [lc_at_list, Bool.and_eq_true]
+    exact ⟨h p (List.mem_cons.mpr (Or.inl rfl)),
+           ih (fun q hq => h q (List.mem_cons.mpr (Or.inr hq)))⟩
 
-1. ✅ **Environment-based substitution**: `SubstEnv` and `applySubst`
-2. ✅ **Freshness checking**: `freeVars`, `isFresh`, `checkFreshness`
-3. ✅ **COMM rule substitution**: `commSubst` for ρ-calculus
+/-- Local closure is monotone in the level. -/
+theorem lc_at_mono {k k' : Nat} {p : Pattern}
+    (hlc : lc_at k p = true) (hle : k ≤ k') :
+    lc_at k' p = true := by
+  induction p using Pattern.inductionOn generalizing k k' with
+  | hbvar n =>
+    unfold lc_at at hlc ⊢
+    exact decide_eq_true (Nat.lt_of_lt_of_le (of_decide_eq_true hlc) hle)
+  | hfvar _ => rfl
+  | happly _ args ih =>
+    simp only [lc_at] at hlc ⊢
+    have hmono : ∀ q ∈ args, lc_at k' q = true := fun q hq =>
+      ih q hq (lc_at_list_mem hlc hq) hle
+    exact lc_at_list_of_forall hmono
+  | hlambda body ih =>
+    unfold lc_at at hlc ⊢; exact ih hlc (Nat.add_le_add_right hle 1)
+  | hmultiLambda n body ih =>
+    unfold lc_at at hlc ⊢; exact ih hlc (Nat.add_le_add_right hle n)
+  | hsubst body repl ihb ihr =>
+    simp only [lc_at, Bool.and_eq_true] at hlc ⊢
+    exact ⟨ihb hlc.1 (Nat.add_le_add_right hle 1), ihr hlc.2 hle⟩
+  | hcollection _ elems _ ih =>
+    simp only [lc_at] at hlc ⊢
+    have hmono : ∀ q ∈ elems, lc_at k' q = true := fun q hq =>
+      ih q hq (lc_at_list_mem hlc hq) hle
+    exact lc_at_list_of_forall hmono
 
-**Proven theorems:**
-- `find_filter_neq`: Filtering out x doesn't affect lookup of y ≠ x
-- `filter_filter_same`: Filter idempotence
-- `filter_comm`: Filter commutativity
-- `elem_of_contains`: xs.contains x = true → x ∈ xs
-- `contains_of_elem`: x ∈ xs → xs.contains x = true
-- `subst_empty`: Empty substitution is identity (on patterns without explicit subst)
-- `subst_empty_list`: List version of above
-- `subst_fresh`: If x ∉ FV(p) ∧ p.noExplicitSubst, filtering x from env doesn't change result
-- `applySubst_quote`, `applySubst_drop`, `applySubst_output`, `applySubst_input`
-- Helper lemmas for reduction preservation proofs
+/-! ## Substitution and Freshness
 
-**0 sorries, 0 axioms**
-
-**Connection to MeTTaIL**: The `subst.rs` file in mettail-rust uses moniker's
-`Scope` type and environment-based substitution, which matches our `applySubst`.
+These lemmas establish that substitution for a fresh variable is identity,
+and that substitution commutes with opening under appropriate conditions.
+These are standard locally nameless metatheory results needed for type soundness.
 -/
+
+/-- Helper: pointwise equal functions produce equal maps. -/
+private theorem list_map_eq_map {α β : Type*} {f g : α → β} {l : List α}
+    (h : ∀ a ∈ l, f a = g a) : l.map f = l.map g := by
+  induction l with
+  | nil => rfl
+  | cons a as ih =>
+    rw [List.map_cons, List.map_cons]
+    congr 1
+    · exact h a (List.mem_cons.mpr (Or.inl rfl))
+    · exact ih (fun b hb => h b (List.mem_cons.mpr (Or.inr hb)))
+
+/-- Helper: not-contains from flatMap -/
+private theorem contains_false_of_flatMap_contains_false {x : String} {ps : List Pattern}
+    (hfresh : (ps.flatMap freeVars).contains x = false)
+    {p : Pattern} (hp : p ∈ ps) :
+    (freeVars p).contains x = false := by
+  by_contra habs
+  have habs' : (freeVars p).contains x = true := by
+    cases h : (freeVars p).contains x <;> simp_all
+  have hmem : x ∈ freeVars p := by
+    simp only [List.contains_iff_exists_mem_beq] at habs'
+    obtain ⟨z, hz, hzx⟩ := habs'
+    rwa [show z = x from (beq_iff_eq.mp hzx).symm] at hz
+  have hmem' : x ∈ ps.flatMap freeVars := List.mem_flatMap.mpr ⟨p, hp, hmem⟩
+  have hc : (ps.flatMap freeVars).contains x = true := by
+    simp only [List.contains_iff_exists_mem_beq]; exact ⟨x, hmem', beq_self_eq_true x⟩
+  exact Bool.false_ne_true (hfresh ▸ hc)
+
+/-- Freshness decomposes: if x is fresh in an apply, it's fresh in each argument. -/
+theorem isFresh_mem_of_flatMap {x : String} {c : String} {ps : List Pattern}
+    (hfresh : isFresh x (.apply c ps) = true) {p : Pattern} (hp : p ∈ ps) :
+    isFresh x p = true := by
+  simp only [isFresh, freeVars, Bool.not_eq_true'] at hfresh ⊢
+  exact contains_false_of_flatMap_contains_false hfresh hp
+
+/-- Freshness decomposes for collections. -/
+theorem isFresh_collection_mem {x : String} {ct : CollType} {ps : List Pattern} {rest : Option String}
+    (hfresh : isFresh x (.collection ct ps rest) = true) {p : Pattern} (hp : p ∈ ps) :
+    isFresh x p = true := by
+  simp only [isFresh, freeVars, Bool.not_eq_true'] at hfresh ⊢
+  exact contains_false_of_flatMap_contains_false hfresh hp
+
+/-- Substituting for a fresh variable is identity on subst-free patterns.
+
+    Requires `noExplicitSubst` because `applySubst` performs `openBVar` on
+    `.subst` nodes, changing the term structure even when the env has no effect. -/
+theorem applySubst_fresh_single {x : String} {q : Pattern} {p : Pattern}
+    (hfresh : isFresh x p = true) (hnes : noExplicitSubst p = true) :
+    applySubst (SubstEnv.extend SubstEnv.empty x q) p = p := by
+  induction p using Pattern.inductionOn with
+  | hbvar _ => simp [applySubst]
+  | hfvar name =>
+    simp only [applySubst, SubstEnv.extend, SubstEnv.empty, SubstEnv.find, List.find?]
+    simp only [isFresh, freeVars, List.contains_cons, List.contains_nil, Bool.or_false,
+               Bool.not_eq_true'] at hfresh
+    have hne : x ≠ name := fun h => by simp [h] at hfresh
+    simp [beq_eq_false_iff_ne.mpr hne]
+  | happly c args ih =>
+    simp only [applySubst]; congr 1
+    exact list_map_eq_self fun a ha =>
+      ih a ha (isFresh_mem_of_flatMap hfresh ha) (allNoExplicitSubst_mem (by exact hnes) ha)
+  | hlambda body ih =>
+    simp only [applySubst]; congr 1
+    simp only [isFresh, freeVars] at hfresh
+    exact ih hfresh (by exact hnes)
+  | hmultiLambda _ body ih =>
+    simp only [applySubst]; congr 1
+    simp only [isFresh, freeVars] at hfresh
+    exact ih hfresh (by exact hnes)
+  | hsubst body repl _ _ =>
+    have : noExplicitSubst (.subst body repl) = false := rfl
+    rw [this] at hnes; exact absurd hnes Bool.false_ne_true
+  | hcollection ct elems rest ih =>
+    simp only [applySubst]; congr 1
+    exact list_map_eq_self fun a ha =>
+      ih a ha (isFresh_collection_mem hfresh ha) (allNoExplicitSubst_mem (by exact hnes) ha)
+
+/-- Helper: applySubst on PInput -/
+theorem applySubst_input (env : SubstEnv) (n : Pattern) (body : Pattern) :
+    applySubst env (.apply "PInput" [n, .lambda body]) =
+      .apply "PInput" [applySubst env n, .lambda (applySubst env body)] := by
+  simp only [applySubst, List.map_cons, List.map_nil]
+
+/-- Helper: applySubst on lambda -/
+theorem applySubst_lambda (env : SubstEnv) (body : Pattern) :
+    applySubst env (.lambda body) = .lambda (applySubst env body) := by
+  simp only [applySubst]
+
+/-- Helper: applySubst on collection -/
+theorem applySubst_collection (env : SubstEnv) (ct : CollType) (ps : List Pattern) (rest : Option String) :
+    applySubst env (.collection ct ps rest) =
+      .collection ct (ps.map (applySubst env)) rest := by
+  simp only [applySubst]
+
+/-- SubstEnv.find for a singleton env: finds x, misses everything else -/
+theorem SubstEnv.find_extend_empty_eq {x : String} {q : Pattern} :
+    (SubstEnv.extend SubstEnv.empty x q).find x = some q := by
+  simp only [SubstEnv.extend, SubstEnv.empty, SubstEnv.find, List.find?, beq_self_eq_true]
+
+theorem SubstEnv.find_extend_empty_ne {x y : String} {q : Pattern} (hne : x ≠ y) :
+    (SubstEnv.extend SubstEnv.empty x q).find y = none := by
+  simp only [SubstEnv.extend, SubstEnv.empty, SubstEnv.find, List.find?]
+  have : (x == y) = false := beq_eq_false_iff_ne.mpr hne
+  simp only [this]
+
+/-- `subst_intro`: substitution after opening with a fresh variable equals direct opening.
+
+    This is the key lemma connecting the typing rule (which opens with a fresh FVar)
+    to the COMM rule (which opens with a concrete term).
+
+    If `z` is fresh in `p`, then:
+    `applySubst [(z, u)] (openBVar 0 (.fvar z) p) = openBVar 0 u p`
+
+    Note: requires `noExplicitSubst p` since `applySubst` changes `.subst` structure. -/
+theorem subst_intro {z : String} {u : Pattern} {p : Pattern}
+    (hfresh : isFresh z p = true) (hnes : noExplicitSubst p = true) :
+    applySubst (SubstEnv.extend SubstEnv.empty z u) (openBVar 0 (.fvar z) p) =
+      openBVar 0 u p := by
+  suffices h : ∀ k, applySubst (SubstEnv.extend SubstEnv.empty z u) (openBVar k (.fvar z) p) =
+      openBVar k u p from h 0
+  intro k
+  induction p using Pattern.inductionOn generalizing k with
+  | hbvar n =>
+    simp only [openBVar]
+    split
+    · simp only [applySubst, SubstEnv.find_extend_empty_eq]
+    · simp only [applySubst]
+  | hfvar name =>
+    simp only [openBVar, applySubst]
+    simp only [isFresh, freeVars, List.contains_cons, List.contains_nil, Bool.or_false,
+               Bool.not_eq_true'] at hfresh
+    have hne : z ≠ name := fun h => by simp [h] at hfresh
+    simp [SubstEnv.find_extend_empty_ne hne]
+  | happly c args ih =>
+    simp only [openBVar, applySubst, List.map_map]; congr 1
+    exact list_map_eq_map fun a ha =>
+      ih a ha (isFresh_mem_of_flatMap hfresh ha)
+        (allNoExplicitSubst_mem (by exact hnes) ha) k
+  | hlambda body ih =>
+    simp only [openBVar, applySubst]; congr 1
+    simp only [isFresh, freeVars] at hfresh
+    exact ih hfresh (by exact hnes) (k + 1)
+  | hmultiLambda n body ih =>
+    simp only [openBVar, applySubst]; congr 1
+    simp only [isFresh, freeVars] at hfresh
+    exact ih hfresh (by exact hnes) (k + n)
+  | hsubst body repl _ _ =>
+    have : noExplicitSubst (.subst body repl) = false := rfl
+    rw [this] at hnes; exact absurd hnes Bool.false_ne_true
+  | hcollection ct elems rest ih =>
+    simp only [openBVar, applySubst, List.map_map]; congr 1
+    exact list_map_eq_map fun a ha =>
+      ih a ha (isFresh_collection_mem hfresh ha)
+        (allNoExplicitSubst_mem (by exact hnes) ha) k
+
+/-! ## Freshness for FVar -/
+
+/-- Freshness for FVar: if x is fresh in `.fvar y` then x ≠ y. -/
+theorem isFresh_fvar_neq {x y : String} (h : isFresh x (.fvar y) = true) : x ≠ y := by
+  unfold isFresh freeVars at h
+  simp only [List.contains_cons, List.contains_nil, Bool.or_false,
+             Bool.not_eq_true', beq_eq_false_iff_ne, ne_eq] at h
+  exact fun heq => h heq
+
+/-- Freshness for lambda: x fresh in `.lambda body` iff x fresh in body. -/
+theorem isFresh_lambda_iff {x : String} {body : Pattern} :
+    isFresh x (.lambda body) = isFresh x body := by
+  simp only [isFresh, freeVars]
+
+/-! ## Opening Preserves noExplicitSubst -/
+
+/-- All elements of a mapped list preserve noExplicitSubst. -/
+private theorem allNoExplicitSubst_map_openBVar {k : Nat} {u : Pattern} {ps : List Pattern}
+    (hall : allNoExplicitSubst ps = true) (_hnes_u : noExplicitSubst u = true)
+    (ih : ∀ q ∈ ps, ∀ k, noExplicitSubst q = true → noExplicitSubst (openBVar k u q) = true) :
+    allNoExplicitSubst (ps.map (openBVar k u)) = true := by
+  induction ps with
+  | nil => rfl
+  | cons a as ih_list =>
+    simp only [allNoExplicitSubst, Bool.and_eq_true] at hall ⊢
+    simp only [List.map_cons, allNoExplicitSubst, Bool.and_eq_true]
+    exact ⟨ih a (List.mem_cons.mpr (Or.inl rfl)) k hall.1,
+           ih_list hall.2 (fun q hq => ih q (List.mem_cons.mpr (Or.inr hq)))⟩
+
+/-- Opening a subst-free pattern preserves noExplicitSubst. -/
+theorem noExplicitSubst_openBVar {k : Nat} {u : Pattern} {p : Pattern}
+    (hnes_p : noExplicitSubst p = true) (hnes_u : noExplicitSubst u = true) :
+    noExplicitSubst (openBVar k u p) = true := by
+  suffices h : ∀ (p : Pattern) (k : Nat), noExplicitSubst p = true →
+      noExplicitSubst (openBVar k u p) = true from h p k hnes_p
+  intro p
+  induction p using Pattern.inductionOn with
+  | hbvar n =>
+    intro k _
+    unfold openBVar; split
+    · exact hnes_u
+    · rfl
+  | hfvar _ =>
+    intro _ _; unfold openBVar; rfl
+  | happly c args ih =>
+    intro k hnes'
+    simp only [openBVar]
+    change allNoExplicitSubst (args.map (openBVar k u)) = true
+    exact allNoExplicitSubst_map_openBVar hnes' hnes_u ih
+  | hlambda body ih =>
+    intro k hnes'
+    simp only [openBVar, noExplicitSubst]
+    exact ih (k + 1) hnes'
+  | hmultiLambda n body ih =>
+    intro k hnes'
+    simp only [openBVar, noExplicitSubst]
+    exact ih (k + n) hnes'
+  | hsubst body repl _ _ =>
+    intro _ hnes'; exact absurd hnes' Bool.false_ne_true
+  | hcollection ct elems rest ih =>
+    intro k hnes'
+    simp only [openBVar]
+    change allNoExplicitSubst (elems.map (openBVar k u)) = true
+    exact allNoExplicitSubst_map_openBVar hnes' hnes_u ih
+
+/-! ## Commutation of Substitution and Opening -/
+
+/-- Commutation: free-variable substitution commutes with binder opening
+    when the opening variable differs from the substituted variable,
+    and the replacement is locally closed.
+
+    `applySubst [(x,q)] (openBVar k (.fvar z) p) = openBVar k (.fvar z) (applySubst [(x,q)] p)`
+
+    Conditions:
+    - `z ≠ x`: the opening variable is not the one being substituted
+    - `lc_at k q`: the replacement is locally closed at level k (so openBVar doesn't affect it)
+    - `noExplicitSubst p`: no `.subst` nodes (both sides are well-defined) -/
+theorem applySubst_openBVar_comm {x : String} {q : Pattern} {z : String}
+    {p : Pattern} {k : Nat}
+    (hne : z ≠ x) (hlc : lc_at k q = true)
+    (hnes : noExplicitSubst p = true) :
+    applySubst (SubstEnv.extend SubstEnv.empty x q) (openBVar k (.fvar z) p) =
+      openBVar k (.fvar z) (applySubst (SubstEnv.extend SubstEnv.empty x q) p) := by
+  -- Strengthen: prove for all k and all p with noExplicitSubst, under fixed hne
+  suffices h : ∀ (p : Pattern) (k : Nat), noExplicitSubst p = true → lc_at k q = true →
+      applySubst (SubstEnv.extend SubstEnv.empty x q) (openBVar k (.fvar z) p) =
+        openBVar k (.fvar z) (applySubst (SubstEnv.extend SubstEnv.empty x q) p) from
+    h p k hnes hlc
+  intro p
+  induction p using Pattern.inductionOn with
+  | hbvar n =>
+    intro k _ hlc'
+    by_cases hnk : n = k
+    · -- n = k: both sides reduce to .fvar z
+      subst hnk
+      simp only [openBVar, beq_self_eq_true, ite_true, applySubst,
+                 SubstEnv.find_extend_empty_ne (Ne.symm hne)]
+    · -- n ≠ k: both sides reduce to .bvar n
+      have hnk' : (n == k) = false := beq_eq_false_iff_ne.mpr hnk
+      simp only [openBVar, hnk', if_neg Bool.false_ne_true, applySubst]
+  | hfvar name =>
+    intro k _ hlc'
+    simp only [openBVar, applySubst]
+    by_cases hxn : x = name
+    · rw [hxn] at *
+      simp only [SubstEnv.find_extend_empty_eq]
+      rw [openBVar_lc_at k (.fvar z) q hlc']
+    · simp only [SubstEnv.find_extend_empty_ne hxn, openBVar]
+  | happly c args ih =>
+    intro k hnes' hlc'
+    simp only [openBVar, applySubst, List.map_map]
+    congr 1
+    exact list_map_eq_map fun a ha =>
+      ih a ha k (allNoExplicitSubst_mem hnes' ha) hlc'
+  | hlambda body ih =>
+    intro k hnes' hlc'
+    simp only [openBVar, applySubst]; congr 1
+    exact ih (k + 1) hnes' (lc_at_mono hlc' (Nat.le_add_right k 1))
+  | hmultiLambda n body ih =>
+    intro k hnes' hlc'
+    simp only [openBVar, applySubst]; congr 1
+    exact ih (k + n) hnes' (lc_at_mono hlc' (Nat.le_add_right k n))
+  | hsubst body repl _ _ =>
+    intro _ hnes' _
+    exact absurd hnes' Bool.false_ne_true
+  | hcollection ct elems rest ih =>
+    intro k hnes' hlc'
+    simp only [openBVar, applySubst, List.map_map]
+    congr 1
+    exact list_map_eq_map fun a ha =>
+      ih a ha k (allNoExplicitSubst_mem hnes' ha) hlc'
+
+/-! ## Backward Freshness for Singleton Substitution -/
+
+/-- Helper: list membership from contains -/
+private theorem list_mem_of_contains {x : String} {L : List String}
+    (h : L.contains x = true) : x ∈ L := by
+  simp only [List.contains_iff_exists_mem_beq] at h
+  obtain ⟨z, hz, hzx⟩ := h
+  rwa [show z = x from (beq_iff_eq.mp hzx).symm] at hz
+
+/-- Helper: contains from list membership -/
+private theorem contains_of_list_mem {x : String} {L : List String}
+    (h : x ∈ L) : L.contains x = true := by
+  simp only [List.contains_iff_exists_mem_beq]
+  exact ⟨x, h, beq_self_eq_true x⟩
+
+/-- Free variable z appears in applySubst [(x,q)] p when z ∈ freeVars p and z ≠ x,
+    for subst-free patterns. -/
+private theorem freeVars_forward_single {x : String} {q : Pattern} {z : String}
+    {p : Pattern}
+    (hnes : noExplicitSubst p = true)
+    (hz_in : z ∈ freeVars p) (hne : z ≠ x) :
+    z ∈ freeVars (applySubst (SubstEnv.extend SubstEnv.empty x q) p) := by
+  induction p using Pattern.inductionOn with
+  | hbvar _ =>
+    simp only [freeVars] at hz_in
+    cases hz_in
+  | hfvar name =>
+    simp only [freeVars, List.mem_singleton] at hz_in
+    subst hz_in
+    simp only [applySubst, SubstEnv.find_extend_empty_ne (Ne.symm hne), freeVars,
+               List.mem_singleton]
+  | happly c args ih =>
+    simp only [freeVars, List.mem_flatMap] at hz_in
+    obtain ⟨a, ha, hz_a⟩ := hz_in
+    show z ∈ freeVars (applySubst _ (.apply c args))
+    simp only [applySubst, freeVars, List.mem_flatMap]
+    exact ⟨applySubst _ a, List.mem_map.mpr ⟨a, ha, rfl⟩,
+           ih a ha (allNoExplicitSubst_mem hnes ha) hz_a⟩
+  | hlambda body ih =>
+    simp only [freeVars] at hz_in
+    show z ∈ freeVars (applySubst _ (.lambda body))
+    simp only [applySubst, freeVars]
+    exact ih hnes hz_in
+  | hmultiLambda n body ih =>
+    simp only [freeVars] at hz_in
+    show z ∈ freeVars (applySubst _ (.multiLambda n body))
+    simp only [applySubst, freeVars]
+    exact ih hnes hz_in
+  | hsubst body repl _ _ => exact absurd hnes Bool.false_ne_true
+  | hcollection ct elems rest ih =>
+    simp only [freeVars, List.mem_flatMap] at hz_in
+    obtain ⟨a, ha, hz_a⟩ := hz_in
+    show z ∈ freeVars (applySubst _ (.collection ct elems rest))
+    simp only [applySubst, freeVars, List.mem_flatMap]
+    exact ⟨applySubst _ a, List.mem_map.mpr ⟨a, ha, rfl⟩,
+           ih a ha (allNoExplicitSubst_mem hnes ha) hz_a⟩
+
+/-- Backward freshness for singleton substitution: if z is fresh in `applySubst [(x,q)] p`,
+    z ≠ x, and p has no explicit subst nodes, then z is fresh in p. -/
+theorem isFresh_of_isFresh_applySubst_single {x : String} {q : Pattern} {z : String}
+    {p : Pattern}
+    (hnes : noExplicitSubst p = true)
+    (hfresh : isFresh z (applySubst (SubstEnv.extend SubstEnv.empty x q) p) = true)
+    (hne : z ≠ x) :
+    isFresh z p = true := by
+  simp only [isFresh, Bool.not_eq_true'] at hfresh ⊢
+  rw [Bool.eq_false_iff] at hfresh ⊢
+  intro hz_in
+  exact hfresh (contains_of_list_mem
+    (freeVars_forward_single hnes (list_mem_of_contains hz_in) hne))
+
+/-- Forward freshness for singleton substitution: if z is fresh in p and fresh in q,
+    then z is fresh in applySubst [(x,q)] p (for subst-free p). -/
+theorem isFresh_applySubst_single {x : String} {q : Pattern} {z : String}
+    {p : Pattern}
+    (hnes : noExplicitSubst p = true)
+    (hfresh_p : isFresh z p = true) (hfresh_q : isFresh z q = true) :
+    isFresh z (applySubst (SubstEnv.extend SubstEnv.empty x q) p) = true := by
+  induction p using Pattern.inductionOn with
+  | hbvar _ => simp [applySubst, isFresh, freeVars]
+  | hfvar name =>
+    simp only [applySubst]
+    by_cases hxn : x = name
+    · simp only [SubstEnv.extend, SubstEnv.empty, SubstEnv.find, List.find?,
+                 beq_iff_eq.mpr hxn]
+      exact hfresh_q
+    · simp only [SubstEnv.find_extend_empty_ne hxn]
+      exact hfresh_p
+  | happly c args ih =>
+    have hfresh_apply : isFresh z (.apply c args) = true := hfresh_p
+    simp only [applySubst, isFresh, freeVars, Bool.not_eq_true']
+    rw [Bool.eq_false_iff]
+    intro hz_in
+    have hz_mem := list_mem_of_contains hz_in
+    simp only [List.mem_flatMap] at hz_mem
+    obtain ⟨mapped, hmapped, hz_mapped⟩ := hz_mem
+    rw [List.mem_map] at hmapped
+    obtain ⟨a, ha, rfl⟩ := hmapped
+    have ha_nes := allNoExplicitSubst_mem hnes ha
+    have ha_fresh : isFresh z a = true := isFresh_mem_of_flatMap hfresh_apply ha
+    have := ih a ha ha_nes ha_fresh
+    simp only [isFresh, Bool.not_eq_true'] at this
+    exact absurd (contains_of_list_mem hz_mapped) (Bool.eq_false_iff.mp this)
+  | hlambda body ih =>
+    simp only [applySubst, isFresh, freeVars] at *
+    exact ih hnes hfresh_p
+  | hmultiLambda _ body ih =>
+    simp only [applySubst, isFresh, freeVars] at *
+    exact ih hnes hfresh_p
+  | hsubst body repl _ _ => exact absurd hnes Bool.false_ne_true
+  | hcollection ct elems rest ih =>
+    have hfresh_coll : isFresh z (.collection ct elems rest) = true := hfresh_p
+    simp only [applySubst, isFresh, freeVars, Bool.not_eq_true']
+    rw [Bool.eq_false_iff]
+    intro hz_in
+    have hz_mem := list_mem_of_contains hz_in
+    simp only [List.mem_flatMap] at hz_mem
+    obtain ⟨mapped, hmapped, hz_mapped⟩ := hz_mem
+    rw [List.mem_map] at hmapped
+    obtain ⟨a, ha, rfl⟩ := hmapped
+    have ha_nes := allNoExplicitSubst_mem hnes ha
+    have ha_fresh : isFresh z a = true := isFresh_collection_mem hfresh_coll ha
+    have := ih a ha ha_nes ha_fresh
+    simp only [isFresh, Bool.not_eq_true'] at this
+    exact absurd (contains_of_list_mem hz_mapped) (Bool.eq_false_iff.mp this)
+
+/-! ## Reverse: noExplicitSubst from opened pattern -/
+
+/-- If `openBVar k u p` is subst-free, then `p` is subst-free.
+
+    openBVar only replaces `.bvar` nodes with `u`. It never introduces `.subst` nodes.
+    So if the result has no subst nodes, the original didn't either. -/
+theorem noExplicitSubst_of_openBVar {k : Nat} {u : Pattern} {p : Pattern}
+    (h : noExplicitSubst (openBVar k u p) = true) : noExplicitSubst p = true := by
+  induction p using Pattern.inductionOn generalizing k with
+  | hbvar _ => rfl
+  | hfvar _ => rfl
+  | happly c args ih =>
+    simp only [openBVar] at h
+    change allNoExplicitSubst (args.map (openBVar k u)) = true at h
+    show allNoExplicitSubst args = true
+    induction args with
+    | nil => rfl
+    | cons a as ih_list =>
+      simp only [List.map_cons, allNoExplicitSubst, Bool.and_eq_true] at h ⊢
+      exact ⟨ih a (List.mem_cons.mpr (Or.inl rfl)) h.1,
+             ih_list (fun q hq => ih q (List.mem_cons.mpr (Or.inr hq))) h.2⟩
+  | hlambda body ih =>
+    simp only [openBVar, noExplicitSubst] at h ⊢
+    exact ih h
+  | hmultiLambda n body ih =>
+    simp only [openBVar, noExplicitSubst] at h ⊢
+    exact ih h
+  | hsubst body repl _ _ =>
+    -- openBVar k u (.subst body repl) = .subst ... ..., noExplicitSubst of .subst = false
+    have : noExplicitSubst (openBVar k u (.subst body repl)) = false := by
+      simp only [openBVar, noExplicitSubst]
+    rw [this] at h
+    exact absurd h Bool.false_ne_true
+  | hcollection ct elems rest ih =>
+    simp only [openBVar] at h
+    change allNoExplicitSubst (elems.map (openBVar k u)) = true at h
+    show allNoExplicitSubst elems = true
+    induction elems with
+    | nil => rfl
+    | cons a as ih_list =>
+      simp only [List.map_cons, allNoExplicitSubst, Bool.and_eq_true] at h ⊢
+      exact ⟨ih a (List.mem_cons.mpr (Or.inl rfl)) h.1,
+             ih_list (fun q hq => ih q (List.mem_cons.mpr (Or.inr hq))) h.2⟩
 
 end Mettapedia.OSLF.MeTTaIL.Substitution

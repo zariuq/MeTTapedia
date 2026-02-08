@@ -818,6 +818,36 @@ instance screeningOffProbEq_of_eventEq_mul
       (bn := bn) (A := A) (B := B) (C := C)
       (valA := valA) (valB := valB) (valC := valC) (cpt := cpt)⟩
 
+theorem screeningOffMulEq_of_condIndepVertices_CA
+    [∀ v : V, Inhabited (bn.stateSpace v)]
+    [∀ v : V, MeasurableSingletonClass (bn.stateSpace v)]
+    (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
+    (cpt : bn.DiscreteCPT)
+    (hciCA : CondIndepVertices bn cpt.jointMeasure ({C} : Set V) ({A} : Set V) ({B} : Set V)) :
+    cpt.jointMeasure
+        (eventEq (bn := bn) A valA ∩
+          eventEq (bn := bn) C valC ∩
+          eventEq (bn := bn) B valB) *
+      cpt.jointMeasure (eventEq (bn := bn) B valB) =
+    cpt.jointMeasure
+        (eventEq (bn := bn) A valA ∩
+          eventEq (bn := bn) B valB) *
+      cpt.jointMeasure
+        (eventEq (bn := bn) C valC ∩
+          eventEq (bn := bn) B valB) := by
+  have hciCA' :
+      Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepOn
+        (bn := bn) (μ := cpt.jointMeasure) C B A := by
+    simpa [Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepOn] using
+      hciCA
+  have hmulCA :=
+    Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.condIndep_eventEq_mul_cond
+      (bn := bn) (μ := cpt.jointMeasure)
+      (A := C) (B := B) (C := A)
+      (valA := valC) (valB := valB) (valC := valA) hciCA'
+  simpa [Set.inter_assoc, Set.inter_left_comm, Set.inter_comm, mul_comm, mul_left_comm, mul_assoc]
+    using hmulCA
+
 instance condIndepQueryEq_abduction_link_prop
     [∀ v : V, MeasurableSingletonClass (bn.stateSpace v)]
     (A B C : V) (valA : bn.stateSpace A) (valC : bn.stateSpace C)
@@ -845,29 +875,12 @@ instance condIndepQueryEq_deduction_linkCond_link
   ⟨by
     intro cpt hci
     have hciCA :
-        Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepOn
-          (bn := bn) (μ := cpt.jointMeasure) C B A := by
-      simpa [Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepOn] using
-        (condIndepVertices_symm (bn := bn) (μ := cpt.jointMeasure) hci)
-    have hmulCA :=
-      Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.condIndep_eventEq_mul_cond
-        (bn := bn) (μ := cpt.jointMeasure)
-        (A := C) (B := B) (C := A)
-        (valA := valC) (valB := valB) (valC := valA) hciCA
-    have hmul :
-        cpt.jointMeasure
-            (eventEq (bn := bn) A valA ∩
-              eventEq (bn := bn) C valC ∩
-              eventEq (bn := bn) B valB) *
-          cpt.jointMeasure (eventEq (bn := bn) B valB) =
-        cpt.jointMeasure
-            (eventEq (bn := bn) A valA ∩
-              eventEq (bn := bn) B valB) *
-          cpt.jointMeasure
-            (eventEq (bn := bn) C valC ∩
-              eventEq (bn := bn) B valB) := by
-      simpa [Set.inter_assoc, Set.inter_left_comm, Set.inter_comm, mul_comm, mul_left_comm, mul_assoc]
-        using hmulCA
+        CondIndepVertices bn cpt.jointMeasure ({C} : Set V) ({A} : Set V) ({B} : Set V) :=
+      condIndepVertices_symm (bn := bn) (μ := cpt.jointMeasure) hci
+    have hmul :=
+      screeningOffMulEq_of_condIndepVertices_CA (bn := bn)
+        (A := A) (B := B) (C := C) (valA := valA) (valB := valB) (valC := valC)
+        (cpt := cpt) hciCA
     exact linkProbVECond_eq_linkProbVE_of_mul_eq (bn := bn)
       (A := A) (B := B) (C := C)
       (valA := valA) (valB := valB) (valC := valC)
@@ -1244,7 +1257,55 @@ theorem chain_screeningOff_wmqueryeq_of_dsepFull
       by
         letI : HasLocalMarkovProperty chainBN cpt.jointMeasure := hLM cpt
         exact chain_hciCA_of_dsepFull (cpt := cpt) hcondFull)
-    (Mettapedia.ProbabilityTheory.BayesianNetworks.Examples.chain_dsepFull_A_C_given_B)
+    hcondFull
+
+theorem chain_screeningOff_wmqueryeq_of_moralSep
+    (valA valB valC : Bool)
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)]
+    [∀ v : Three, Inhabited (chainBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (chainBN.stateSpace v)]
+    [StandardBorelSpace chainBN.JointSpace]
+    [EventPos (bn := chainBN) Three.B valB]
+    [EventPosConstraints (bn := chainBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLM : ∀ cpt : chainBN.DiscreteCPT, HasLocalMarkovProperty chainBN cpt.jointMeasure) :
+    Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.SeparatedInMoral
+      chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
+      WMQueryEq (State := State (bn := chainBN))
+        (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
+        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+  intro hSep
+  have hFull :
+      Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparatedFull
+        chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) :=
+    (Mettapedia.ProbabilityTheory.BayesianNetworks.Examples.chain_dsepFull_iff_separatedInMoral_A_C_given_B).2 hSep
+  exact chain_screeningOff_wmqueryeq_of_dsepFull
+    (valA := valA) (valB := valB) (valC := valC) hLM hFull
+
+theorem chain_screeningOff_wmqueryeq_of_moralSepAncestral
+    (valA valB valC : Bool)
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)]
+    [∀ v : Three, Inhabited (chainBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (chainBN.stateSpace v)]
+    [StandardBorelSpace chainBN.JointSpace]
+    [EventPos (bn := chainBN) Three.B valB]
+    [EventPosConstraints (bn := chainBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLM : ∀ cpt : chainBN.DiscreteCPT, HasLocalMarkovProperty chainBN cpt.jointMeasure) :
+    Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.SeparatedInMoralAncestral
+      chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
+      WMQueryEq (State := State (bn := chainBN))
+        (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
+        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+  intro hSepAnc
+  have hFull :
+      Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparatedFull
+        chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) :=
+    (Mettapedia.ProbabilityTheory.BayesianNetworks.Examples.chain_dsepFull_iff_sep_moral_ancestral_A_C_B).2 hSepAnc
+  exact chain_screeningOff_wmqueryeq_of_dsepFull
+    (valA := valA) (valB := valB) (valC := valC) hLM hFull
 
 end ChainExample
 

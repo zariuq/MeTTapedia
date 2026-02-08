@@ -140,8 +140,8 @@ notation:50 "PM(" a "," e ")" => presentMoment a e
     piece of information available on channel x."
 -/
 structure AgentMemory where
-  /-- Recipes: (channel, variable, continuation) for for(y <- x)P -/
-  recipes : List (Pattern × String × Pattern)
+  /-- Recipes: (channel, body) for for(<-x){body} — body has BVar 0 for bound var -/
+  recipes : List (Pattern × Pattern)
   /-- Facts: (channel, payload) for x!(Q) -/
   facts : List (Pattern × Pattern)
 deriving Repr
@@ -156,7 +156,7 @@ def extractMemory : Pattern → AgentMemory
   | .collection .hashBag elems none =>
       let recipes := elems.filterMap fun p =>
         match p with
-        | .apply "PInput" [chan, .lambda y body] => some (chan, y, body)
+        | .apply "PInput" [chan, .lambda body] => some (chan, body)
         | _ => none
       let facts := elems.filterMap fun p =>
         match p with
@@ -268,8 +268,8 @@ theorem presentMoment_nonempty_iff {a e : Pattern} :
         match ha : a with
         | .collection .hashBag elems none =>
             simp only [canInteract] at hx_interact
-            obtain ⟨⟨y, p_body, h_input⟩, ⟨q_payload, h_output⟩⟩ := hx_interact
-            let input_proc := Pattern.apply "PInput" [x, .lambda y p_body]
+            obtain ⟨⟨p_body, h_input⟩, ⟨q_payload, h_output⟩⟩ := hx_interact
+            let input_proc := Pattern.apply "PInput" [x, .lambda p_body]
             let output_proc := Pattern.apply "POutput" [x, q_payload]
             -- input_proc ≠ output_proc since "PInput" ≠ "POutput"
             have h_ne : output_proc ≠ input_proc := by
@@ -324,11 +324,11 @@ theorem presentMoment_nonempty_iff {a e : Pattern} :
             have h_comm_step :
                 Reduces
                   (.collection .hashBag (output_proc :: input_proc :: other_rest) none)
-                  (.collection .hashBag (commSubst p_body y q_payload :: other_rest) none) :=
-              @Reduces.comm x q_payload p_body y other_rest
+                  (.collection .hashBag (commSubst p_body q_payload :: other_rest) none) :=
+              @Reduces.comm x q_payload p_body other_rest
             -- Combined reduction via structural equivalence
             let result := Pattern.collection .hashBag
-              (commSubst p_body y q_payload :: other_rest) none
+              (commSubst p_body q_payload :: other_rest) none
             have h_reduces :
                 Reduces (.collection .hashBag [agent2, input_proc] none) result :=
               Reduces.equiv h_src_cong h_comm_step (StructuralCongruence.refl _)
@@ -340,7 +340,7 @@ theorem presentMoment_nonempty_iff {a e : Pattern} :
             have hx_int_mem :
                 x ∈ internalChannels (.collection .hashBag elems none) e := by
               unfold internalChannels; simp only [Set.mem_setOf]
-              exact ⟨hx_names, ⟨⟨y, p_body, h_input⟩, ⟨q_payload, h_output⟩⟩⟩
+              exact ⟨hx_names, ⟨⟨p_body, h_input⟩, ⟨q_payload, h_output⟩⟩⟩
             refine ⟨⟨EvalContext.par agent2 EvalContext.hole, x⟩, ?_⟩
             right
             unfold presentMomentInt
@@ -352,7 +352,7 @@ theorem presentMoment_nonempty_iff {a e : Pattern} :
             simp only [canInteract] at hx_interact
         | .collection .vec _ _ | .collection .hashSet _ _ =>
             simp only [canInteract] at hx_interact
-        | .var _ | .apply _ _ | .lambda _ _ | .subst _ _ _ | .multiLambda _ _ =>
+        | .bvar _ | .fvar _ | .apply _ _ | .lambda _ | .subst _ _ | .multiLambda _ _ =>
             simp only [canInteract] at hx_interact
 
 /-! ## Connection to Future States -/
@@ -458,10 +458,10 @@ def hasRace (elems : List Pattern) (x : Pattern) : Prop :=
   -- At least one output on x
   (∃ q, .apply "POutput" [x, q] ∈ elems) ∧
   -- At least two distinct inputs on x
-  (∃ y₁ body₁ y₂ body₂,
-    .apply "PInput" [x, .lambda y₁ body₁] ∈ elems ∧
-    .apply "PInput" [x, .lambda y₂ body₂] ∈ elems ∧
-    (.lambda y₁ body₁ : Pattern) ≠ .lambda y₂ body₂)
+  (∃ body₁ body₂,
+    .apply "PInput" [x, .lambda body₁] ∈ elems ∧
+    .apply "PInput" [x, .lambda body₂] ∈ elems ∧
+    (.lambda body₁ : Pattern) ≠ .lambda body₂)
 
 /-- Dual race: two or more outputs AND an input on x.
 
@@ -470,7 +470,7 @@ def hasRace (elems : List Pattern) (x : Pattern) : Prop :=
 -/
 def hasDualRace (elems : List Pattern) (x : Pattern) : Prop :=
   -- At least one input on x
-  (∃ y body, .apply "PInput" [x, .lambda y body] ∈ elems) ∧
+  (∃ body, .apply "PInput" [x, .lambda body] ∈ elems) ∧
   -- At least two distinct outputs on x
   (∃ q₁ q₂,
     .apply "POutput" [x, q₁] ∈ elems ∧
@@ -485,15 +485,15 @@ def hasDualRace (elems : List Pattern) (x : Pattern) : Prop :=
 theorem hasRace_implies_canInteract {elems : List Pattern} {x : Pattern}
     (h : hasRace elems x) :
     canInteract (.collection .hashBag elems none) x := by
-  obtain ⟨⟨q, hq⟩, ⟨y₁, body₁, _, _, h₁, _, _⟩⟩ := h
-  exact ⟨⟨y₁, body₁, h₁⟩, ⟨q, hq⟩⟩
+  obtain ⟨⟨q, hq⟩, ⟨body₁, _, h₁, _, _⟩⟩ := h
+  exact ⟨⟨body₁, h₁⟩, ⟨q, hq⟩⟩
 
 /-- A dual race also implies the process can interact on x. -/
 theorem hasDualRace_implies_canInteract {elems : List Pattern} {x : Pattern}
     (h : hasDualRace elems x) :
     canInteract (.collection .hashBag elems none) x := by
-  obtain ⟨⟨y, body, hy⟩, ⟨q₁, _, hq₁, _, _⟩⟩ := h
-  exact ⟨⟨y, body, hy⟩, ⟨q₁, hq₁⟩⟩
+  obtain ⟨⟨body, hy⟩, ⟨q₁, _, hq₁, _, _⟩⟩ := h
+  exact ⟨⟨body, hy⟩, ⟨q₁, hq₁⟩⟩
 
 /-- A race implies the process can step (is not a value).
 
@@ -539,11 +539,11 @@ theorem race_nondeterminism {elems : List Pattern} {x : Pattern}
     ∃ r₁ r₂, Nonempty (Reduces (.collection .hashBag elems none) r₁) ∧
               Nonempty (Reduces (.collection .hashBag elems none) r₂) ∧
               r₁ ≠ r₂ := by
-  obtain ⟨⟨q, hq_mem⟩, ⟨y₁, body₁, y₂, body₂, h₁_mem, h₂_mem, h_ne_lam⟩⟩ := h_race
+  obtain ⟨⟨q, hq_mem⟩, ⟨body₁, body₂, h₁_mem, h₂_mem, h_ne_lam⟩⟩ := h_race
   -- Abbreviate the three key processes
   let out := Pattern.apply "POutput" [x, q]
-  let inp₁ := Pattern.apply "PInput" [x, .lambda y₁ body₁]
-  let inp₂ := Pattern.apply "PInput" [x, .lambda y₂ body₂]
+  let inp₁ := Pattern.apply "PInput" [x, .lambda body₁]
+  let inp₂ := Pattern.apply "PInput" [x, .lambda body₂]
   -- All three are distinct
   have h_out_ne₁ : out ≠ inp₁ := by
     intro h; injection h with h_name; exact absurd h_name (by decide)
@@ -551,7 +551,7 @@ theorem race_nondeterminism {elems : List Pattern} {x : Pattern}
     intro h; injection h with h_name; exact absurd h_name (by decide)
   have h_inp_ne : inp₁ ≠ inp₂ := by
     intro h
-    have : (.lambda y₁ body₁ : Pattern) = .lambda y₂ body₂ := by
+    have : (.lambda body₁ : Pattern) = .lambda body₂ := by
       injection h with _ h_args
       simp only [List.cons.injEq] at h_args
       exact h_args.2.1
@@ -599,29 +599,29 @@ theorem race_nondeterminism {elems : List Pattern} {x : Pattern}
   -- Therefore the "other" lists differ
   have h_others_ne : b₁ ++ a₁ ≠ b₂ ++ a₂ := by
     intro h_eq; rw [h_eq] at h₂_in_other₁; exact h₂_notin_other₂ h₂_in_other₁
-  -- Construct COMM₁: elems ⇝ {commSubst body₁ y₁ q, b₁ ++ a₁}
+  -- Construct COMM₁: elems ⇝ {commSubst body₁ q, b₁ ++ a₁}
   have h_perm₁ : elems.Perm (out :: inp₁ :: (b₁ ++ a₁)) :=
     h_permO.trans (List.Perm.cons out (by rw [h_split₁]; exact List.perm_middle))
   have h_red₁ : Nonempty (Reduces (.collection .hashBag elems none)
-      (.collection .hashBag (commSubst body₁ y₁ q :: (b₁ ++ a₁)) none)) :=
+      (.collection .hashBag (commSubst body₁ q :: (b₁ ++ a₁)) none)) :=
     ⟨Reduces.equiv
       (StructuralCongruence.par_perm _ _ h_perm₁)
-      (@Reduces.comm x q body₁ y₁ (b₁ ++ a₁))
+      (@Reduces.comm x q body₁ (b₁ ++ a₁))
       (StructuralCongruence.refl _)⟩
-  -- Construct COMM₂: elems ⇝ {commSubst body₂ y₂ q, b₂ ++ a₂}
+  -- Construct COMM₂: elems ⇝ {commSubst body₂ q, b₂ ++ a₂}
   have h_perm₂ : elems.Perm (out :: inp₂ :: (b₂ ++ a₂)) :=
     h_permO.trans (List.Perm.cons out (by rw [h_split₂]; exact List.perm_middle))
   have h_red₂ : Nonempty (Reduces (.collection .hashBag elems none)
-      (.collection .hashBag (commSubst body₂ y₂ q :: (b₂ ++ a₂)) none)) :=
+      (.collection .hashBag (commSubst body₂ q :: (b₂ ++ a₂)) none)) :=
     ⟨Reduces.equiv
       (StructuralCongruence.par_perm _ _ h_perm₂)
-      (@Reduces.comm x q body₂ y₂ (b₂ ++ a₂))
+      (@Reduces.comm x q body₂ (b₂ ++ a₂))
       (StructuralCongruence.refl _)⟩
   -- Results differ: different tails imply different lists imply different patterns
   refine ⟨_, _, h_red₁, h_red₂, ?_⟩
   intro h_eq
-  have : commSubst body₁ y₁ q :: (b₁ ++ a₁) =
-      commSubst body₂ y₂ q :: (b₂ ++ a₂) := by
+  have : commSubst body₁ q :: (b₁ ++ a₁) =
+      commSubst body₂ q :: (b₂ ++ a₂) := by
     have h := h_eq
     simp only [Pattern.collection.injEq] at h
     exact h.2.1
@@ -637,15 +637,15 @@ Paper reference: Meredith (2026), Section 4.4.4
 
 /-- Helper: a term is a recipe (input guard) -/
 def isRecipe (p : Pattern) : Prop :=
-  ∃ chan y body, p = .apply "PInput" [chan, .lambda y body]
+  ∃ chan body, p = .apply "PInput" [chan, .lambda body]
 
 /-- Helper: a term is a fact (output guard) -/
 def isFact (p : Pattern) : Prop :=
   ∃ chan payload, p = .apply "POutput" [chan, payload]
 
 /-- Helper: recipe extraction function -/
-private def recipeExtract : Pattern → Option (Pattern × String × Pattern)
-  | .apply "PInput" [chan, .lambda y body] => some (chan, y, body)
+private def recipeExtract : Pattern → Option (Pattern × Pattern)
+  | .apply "PInput" [chan, .lambda body] => some (chan, body)
   | _ => none
 
 /-- Helper: fact extraction function -/
@@ -654,9 +654,9 @@ private def factExtract : Pattern → Option (Pattern × Pattern)
   | _ => none
 
 /-- If recipeExtract returns some, the pattern is a PInput -/
-private theorem recipeExtract_some {p : Pattern} {chan : Pattern} {y : String} {body : Pattern}
-    (h : recipeExtract p = some (chan, y, body)) :
-    p = .apply "PInput" [chan, .lambda y body] := by
+private theorem recipeExtract_some {p : Pattern} {chan : Pattern} {body : Pattern}
+    (h : recipeExtract p = some (chan, body)) :
+    p = .apply "PInput" [chan, .lambda body] := by
   cases p with
   | apply name args =>
     simp only [recipeExtract] at h
@@ -693,9 +693,9 @@ private theorem extractMemory_facts_eq {elems : List Pattern} :
     PInput [chan, λ y. body] is a member of the agent's parallel bag.
 -/
 theorem extractMemory_recipes_sound {elems : List Pattern}
-    {chan : Pattern} {y : String} {body : Pattern}
-    (h : (chan, y, body) ∈ (extractMemory (.collection .hashBag elems none)).recipes) :
-    .apply "PInput" [chan, .lambda y body] ∈ elems := by
+    {chan : Pattern} {body : Pattern}
+    (h : (chan, body) ∈ (extractMemory (.collection .hashBag elems none)).recipes) :
+    .apply "PInput" [chan, .lambda body] ∈ elems := by
   rw [extractMemory_recipes_eq] at h
   obtain ⟨p, hp_mem, hp_eq⟩ := List.mem_filterMap.mp h
   rw [← recipeExtract_some hp_eq]
@@ -721,14 +721,14 @@ theorem extractMemory_facts_sound {elems : List Pattern}
     When both exist on the same channel, COMM can fire internally.
 -/
 theorem memory_self_interaction {elems : List Pattern}
-    {chan : Pattern} {y : String} {body payload : Pattern}
-    (h_recipe : (chan, y, body) ∈
+    {chan : Pattern} {body payload : Pattern}
+    (h_recipe : (chan, body) ∈
       (extractMemory (.collection .hashBag elems none)).recipes)
     (h_fact : (chan, payload) ∈
       (extractMemory (.collection .hashBag elems none)).facts) :
     canInteract (.collection .hashBag elems none) chan := by
   simp only [canInteract]
-  exact ⟨⟨y, body, extractMemory_recipes_sound h_recipe⟩,
+  exact ⟨⟨body, extractMemory_recipes_sound h_recipe⟩,
          ⟨payload, extractMemory_facts_sound h_fact⟩⟩
 
 /-- An agent with matching recipes and facts on a channel can step.
@@ -736,8 +736,8 @@ theorem memory_self_interaction {elems : List Pattern}
     Corollary of `memory_self_interaction` + `reduces_of_canInteract`.
 -/
 theorem memory_self_interaction_canStep {elems : List Pattern}
-    {chan : Pattern} {y : String} {body payload : Pattern}
-    (h_recipe : (chan, y, body) ∈
+    {chan : Pattern} {body payload : Pattern}
+    (h_recipe : (chan, body) ∈
       (extractMemory (.collection .hashBag elems none)).recipes)
     (h_fact : (chan, payload) ∈
       (extractMemory (.collection .hashBag elems none)).facts) :
@@ -753,11 +753,11 @@ Completeness: every top-level PInput/POutput in a flat bag appears in extractMem
 
 /-- Completeness for recipes: every PInput in the bag is extracted. -/
 theorem extractMemory_recipes_complete {elems : List Pattern}
-    {chan : Pattern} {y : String} {body : Pattern}
-    (h : .apply "PInput" [chan, .lambda y body] ∈ elems) :
-    (chan, y, body) ∈ (extractMemory (.collection .hashBag elems none)).recipes := by
+    {chan : Pattern} {body : Pattern}
+    (h : .apply "PInput" [chan, .lambda body] ∈ elems) :
+    (chan, body) ∈ (extractMemory (.collection .hashBag elems none)).recipes := by
   rw [extractMemory_recipes_eq]
-  exact List.mem_filterMap.mpr ⟨.apply "PInput" [chan, .lambda y body], h, by
+  exact List.mem_filterMap.mpr ⟨.apply "PInput" [chan, .lambda body], h, by
     simp [recipeExtract]⟩
 
 /-- Completeness for facts: every POutput in the bag is extracted. -/
@@ -790,8 +790,7 @@ This is the core of the reversibility story: each COMM step is undoable.
 structure CommRecord where
   /-- The channel on which synchronization occurred -/
   channel : Pattern
-  /-- The consumed input guard: for(y <- channel){body} -/
-  inputVar : String
+  /-- The consumed input body: for(<-channel){body} — body has BVar 0 -/
   inputBody : Pattern
   /-- The consumed output payload: channel!(payload) -/
   outputPayload : Pattern
@@ -807,7 +806,7 @@ deriving Repr
 def CommRecord.preState (r : CommRecord) : Pattern :=
   .collection .hashBag
     ([.apply "POutput" [r.channel, r.outputPayload],
-      .apply "PInput" [r.channel, .lambda r.inputVar r.inputBody]]
+      .apply "PInput" [r.channel, .lambda r.inputBody]]
       ++ r.rest) none
 
 /-- The post-state resulting from a COMM record.
@@ -817,7 +816,7 @@ def CommRecord.preState (r : CommRecord) : Pattern :=
 -/
 def CommRecord.postState (r : CommRecord) : Pattern :=
   .collection .hashBag
-    ([commSubst r.inputBody r.inputVar r.outputPayload] ++ r.rest) none
+    ([commSubst r.inputBody r.outputPayload] ++ r.rest) none
 
 /-- **Forward**: a COMM record witnesses a reduction from pre to post.
 
@@ -837,7 +836,7 @@ theorem CommRecord.reconstruct (r : CommRecord) :
     r.preState =
     .collection .hashBag
       ([.apply "POutput" [r.channel, r.outputPayload],
-        .apply "PInput" [r.channel, .lambda r.inputVar r.inputBody]]
+        .apply "PInput" [r.channel, .lambda r.inputBody]]
         ++ r.rest) none := by
   rfl
 
@@ -853,11 +852,11 @@ theorem CommRecord.reconstruct (r : CommRecord) :
     substituted body doesn't happen to equal the consumed input.
 -/
 theorem CommRecord.recipe_consumed (r : CommRecord)
-    (h_not_in_rest : .apply "PInput" [r.channel, .lambda r.inputVar r.inputBody] ∉ r.rest)
-    (h_not_result : commSubst r.inputBody r.inputVar r.outputPayload ≠
-      .apply "PInput" [r.channel, .lambda r.inputVar r.inputBody]) :
-    .apply "PInput" [r.channel, .lambda r.inputVar r.inputBody] ∉
-      ([commSubst r.inputBody r.inputVar r.outputPayload] ++ r.rest) := by
+    (h_not_in_rest : .apply "PInput" [r.channel, .lambda r.inputBody] ∉ r.rest)
+    (h_not_result : commSubst r.inputBody r.outputPayload ≠
+      .apply "PInput" [r.channel, .lambda r.inputBody]) :
+    .apply "PInput" [r.channel, .lambda r.inputBody] ∉
+      ([commSubst r.inputBody r.outputPayload] ++ r.rest) := by
   intro hmem
   simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false] at hmem
   cases hmem with
@@ -867,10 +866,10 @@ theorem CommRecord.recipe_consumed (r : CommRecord)
 /-- **Linearity**: after COMM, the consumed fact is absent from the result. -/
 theorem CommRecord.fact_consumed (r : CommRecord)
     (h_not_in_rest : .apply "POutput" [r.channel, r.outputPayload] ∉ r.rest)
-    (h_not_result : commSubst r.inputBody r.inputVar r.outputPayload ≠
+    (h_not_result : commSubst r.inputBody r.outputPayload ≠
       .apply "POutput" [r.channel, r.outputPayload]) :
     .apply "POutput" [r.channel, r.outputPayload] ∉
-      ([commSubst r.inputBody r.inputVar r.outputPayload] ++ r.rest) := by
+      ([commSubst r.inputBody r.outputPayload] ++ r.rest) := by
   intro hmem
   simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false] at hmem
   cases hmem with
@@ -890,7 +889,7 @@ theorem CommRecord.round_trip (r : CommRecord) :
     Nonempty (Reduces r.preState r.postState) ∧
     r.preState = .collection .hashBag
       ([.apply "POutput" [r.channel, r.outputPayload],
-        .apply "PInput" [r.channel, .lambda r.inputVar r.inputBody]]
+        .apply "PInput" [r.channel, .lambda r.inputBody]]
         ++ r.rest) none :=
   ⟨r.forward, rfl⟩
 

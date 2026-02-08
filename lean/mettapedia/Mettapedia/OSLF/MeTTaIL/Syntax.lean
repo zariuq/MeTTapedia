@@ -2,28 +2,21 @@ import Mathlib.Data.List.Basic
 import Mathlib.Data.String.Basic
 
 /-!
-# MeTTaIL Language Definition Syntax
+# MeTTaIL Language Definition Syntax (Locally Nameless)
 
 Formalization of the MeTTaIL `language!` macro structure from
 `/home/zar/claude/hyperon/mettail-rust/`.
 
-This file defines the abstract syntax for MeTTaIL language definitions,
-mirroring the Rust implementation's AST types in `macros/src/ast/`.
-
-## Structure
-
-The MeTTaIL `language!` macro accepts:
-- `name`: Language identifier
-- `types`: List of category names (Proc, Name, etc.)
-- `terms`: Constructor definitions with syntax patterns
-- `equations`: Bidirectional equality rules
-- `rewrites`: Directional rewrite rules
+Uses **locally nameless** representation: bound variables are de Bruijn indices
+(`.bvar n`), free variables / metavariables are named (`.fvar x`). Binders
+carry no names — α-equivalent patterns are syntactically identical.
 
 ## References
 
 - `/home/zar/claude/hyperon/mettail-rust/macros/src/ast/`
 - Williams & Stay, "Native Type Theory" (ACT 2021)
 - Meredith & Stay, "Operational Semantics in Logical Form"
+- Aydemir et al., "Engineering Formal Metatheory" (POPL 2008)
 -/
 
 namespace Mettapedia.OSLF.MeTTaIL.Syntax
@@ -62,11 +55,14 @@ end TypeExpr
 
 /-! ## Term Parameters -/
 
-/-- Term parameters for constructor arguments -/
+/-- Term parameters for constructor arguments.
+    In locally nameless, abstraction/multiAbstraction carry only the
+    body variable name (for metavar matching) and type — the binder name
+    is implicit via de Bruijn indices. -/
 inductive TermParam where
   | simple : String → TypeExpr → TermParam
-  | abstraction : String → String → TypeExpr → TermParam
-  | multiAbstraction : String → String → TypeExpr → TermParam
+  | abstraction : String → TypeExpr → TermParam
+  | multiAbstraction : String → TypeExpr → TermParam
 deriving Repr
 
 /-! ## Syntax Items -/
@@ -86,23 +82,24 @@ structure GrammarRule where
   label : String
   category : String
   params : List TermParam
-  syntaxPattern : List SyntaxItem  -- renamed from 'syntax' to avoid keyword conflict
+  syntaxPattern : List SyntaxItem
 deriving Repr
 
-/-! ## Patterns -/
+/-! ## Patterns (Locally Nameless) -/
 
-/-- Pattern terms (non-recursive part) -/
-inductive PatternTermBase where
-  | var : String → PatternTermBase
-deriving Repr
-
-/-- Patterns with collection support -/
+/-- Patterns using locally nameless representation.
+    - `.bvar n`: bound variable (de Bruijn index `n`, counting from innermost binder)
+    - `.fvar x`: free variable / metavariable (named)
+    - `.lambda body`: binder — no name needed, BVar 0 = the bound variable
+    - `.subst body repl`: substitute `repl` for BVar 0 in `body`
+    α-equivalent patterns are definitionally equal. -/
 inductive Pattern where
-  | var : String → Pattern
+  | bvar : Nat → Pattern
+  | fvar : String → Pattern
   | apply : String → List Pattern → Pattern
-  | lambda : String → Pattern → Pattern
-  | multiLambda : List String → Pattern → Pattern
-  | subst : Pattern → String → Pattern → Pattern
+  | lambda : Pattern → Pattern
+  | multiLambda : Nat → Pattern → Pattern
+  | subst : Pattern → Pattern → Pattern
   | collection : CollType → List Pattern → Option String → Pattern
 deriving Repr
 
@@ -114,8 +111,11 @@ fails. We define it manually via mutual recursion on Pattern and List Pattern.
 
 mutual
   private def decEqPattern : (a b : Pattern) → Decidable (a = b)
-    | .var n₁, .var n₂ =>
+    | .bvar n₁, .bvar n₂ =>
       if h : n₁ = n₂ then isTrue (by subst h; rfl)
+      else isFalse (by intro h'; cases h'; exact h rfl)
+    | .fvar x₁, .fvar x₂ =>
+      if h : x₁ = x₂ then isTrue (by subst h; rfl)
       else isFalse (by intro h'; cases h'; exact h rfl)
     | .apply c₁ args₁, .apply c₂ args₂ =>
       if hc : c₁ = c₂ then
@@ -123,25 +123,21 @@ mutual
         | isTrue ha => isTrue (by subst hc; subst ha; rfl)
         | isFalse ha => isFalse (by intro h; cases h; exact ha rfl)
       else isFalse (by intro h; cases h; exact hc rfl)
-    | .lambda x₁ b₁, .lambda x₂ b₂ =>
-      if hx : x₁ = x₂ then
+    | .lambda b₁, .lambda b₂ =>
+      match decEqPattern b₁ b₂ with
+      | isTrue hb => isTrue (by subst hb; rfl)
+      | isFalse hb => isFalse (by intro h; cases h; exact hb rfl)
+    | .multiLambda n₁ b₁, .multiLambda n₂ b₂ =>
+      if hn : n₁ = n₂ then
         match decEqPattern b₁ b₂ with
-        | isTrue hb => isTrue (by subst hx; subst hb; rfl)
+        | isTrue hb => isTrue (by subst hn; subst hb; rfl)
         | isFalse hb => isFalse (by intro h; cases h; exact hb rfl)
-      else isFalse (by intro h; cases h; exact hx rfl)
-    | .multiLambda xs₁ b₁, .multiLambda xs₂ b₂ =>
-      if hxs : xs₁ = xs₂ then
-        match decEqPattern b₁ b₂ with
-        | isTrue hb => isTrue (by subst hxs; subst hb; rfl)
-        | isFalse hb => isFalse (by intro h; cases h; exact hb rfl)
-      else isFalse (by intro h; cases h; exact hxs rfl)
-    | .subst b₁ x₁ r₁, .subst b₂ x₂ r₂ =>
-      if hx : x₁ = x₂ then
-        match decEqPattern b₁ b₂, decEqPattern r₁ r₂ with
-        | isTrue hb, isTrue hr => isTrue (by subst hx; subst hb; subst hr; rfl)
-        | isFalse hb, _ => isFalse (by intro h; cases h; exact hb rfl)
-        | _, isFalse hr => isFalse (by intro h; cases h; exact hr rfl)
-      else isFalse (by intro h; cases h; exact hx rfl)
+      else isFalse (by intro h; cases h; exact hn rfl)
+    | .subst b₁ r₁, .subst b₂ r₂ =>
+      match decEqPattern b₁ b₂, decEqPattern r₁ r₂ with
+      | isTrue hb, isTrue hr => isTrue (by subst hb; subst hr; rfl)
+      | isFalse hb, _ => isFalse (by intro h; cases h; exact hb rfl)
+      | _, isFalse hr => isFalse (by intro h; cases h; exact hr rfl)
     | .collection ct₁ es₁ r₁, .collection ct₂ es₂ r₂ =>
       if hct : ct₁ = ct₂ then
         match decEqPatternList es₁ es₂ with
@@ -150,37 +146,49 @@ mutual
           else isFalse (by intro h; cases h; exact hr rfl)
         | isFalse he => isFalse (by intro h; cases h; exact he rfl)
       else isFalse (by intro h; cases h; exact hct rfl)
-    -- Cross-constructor cases
-    | .var _, .apply _ _ => isFalse Pattern.noConfusion
-    | .var _, .lambda _ _ => isFalse Pattern.noConfusion
-    | .var _, .multiLambda _ _ => isFalse Pattern.noConfusion
-    | .var _, .subst _ _ _ => isFalse Pattern.noConfusion
-    | .var _, .collection _ _ _ => isFalse Pattern.noConfusion
-    | .apply _ _, .var _ => isFalse Pattern.noConfusion
-    | .apply _ _, .lambda _ _ => isFalse Pattern.noConfusion
+    -- Cross-constructor cases (7 × 6 = 42)
+    | .bvar _, .fvar _ => isFalse Pattern.noConfusion
+    | .bvar _, .apply _ _ => isFalse Pattern.noConfusion
+    | .bvar _, .lambda _ => isFalse Pattern.noConfusion
+    | .bvar _, .multiLambda _ _ => isFalse Pattern.noConfusion
+    | .bvar _, .subst _ _ => isFalse Pattern.noConfusion
+    | .bvar _, .collection _ _ _ => isFalse Pattern.noConfusion
+    | .fvar _, .bvar _ => isFalse Pattern.noConfusion
+    | .fvar _, .apply _ _ => isFalse Pattern.noConfusion
+    | .fvar _, .lambda _ => isFalse Pattern.noConfusion
+    | .fvar _, .multiLambda _ _ => isFalse Pattern.noConfusion
+    | .fvar _, .subst _ _ => isFalse Pattern.noConfusion
+    | .fvar _, .collection _ _ _ => isFalse Pattern.noConfusion
+    | .apply _ _, .bvar _ => isFalse Pattern.noConfusion
+    | .apply _ _, .fvar _ => isFalse Pattern.noConfusion
+    | .apply _ _, .lambda _ => isFalse Pattern.noConfusion
     | .apply _ _, .multiLambda _ _ => isFalse Pattern.noConfusion
-    | .apply _ _, .subst _ _ _ => isFalse Pattern.noConfusion
+    | .apply _ _, .subst _ _ => isFalse Pattern.noConfusion
     | .apply _ _, .collection _ _ _ => isFalse Pattern.noConfusion
-    | .lambda _ _, .var _ => isFalse Pattern.noConfusion
-    | .lambda _ _, .apply _ _ => isFalse Pattern.noConfusion
-    | .lambda _ _, .multiLambda _ _ => isFalse Pattern.noConfusion
-    | .lambda _ _, .subst _ _ _ => isFalse Pattern.noConfusion
-    | .lambda _ _, .collection _ _ _ => isFalse Pattern.noConfusion
-    | .multiLambda _ _, .var _ => isFalse Pattern.noConfusion
+    | .lambda _, .bvar _ => isFalse Pattern.noConfusion
+    | .lambda _, .fvar _ => isFalse Pattern.noConfusion
+    | .lambda _, .apply _ _ => isFalse Pattern.noConfusion
+    | .lambda _, .multiLambda _ _ => isFalse Pattern.noConfusion
+    | .lambda _, .subst _ _ => isFalse Pattern.noConfusion
+    | .lambda _, .collection _ _ _ => isFalse Pattern.noConfusion
+    | .multiLambda _ _, .bvar _ => isFalse Pattern.noConfusion
+    | .multiLambda _ _, .fvar _ => isFalse Pattern.noConfusion
     | .multiLambda _ _, .apply _ _ => isFalse Pattern.noConfusion
-    | .multiLambda _ _, .lambda _ _ => isFalse Pattern.noConfusion
-    | .multiLambda _ _, .subst _ _ _ => isFalse Pattern.noConfusion
+    | .multiLambda _ _, .lambda _ => isFalse Pattern.noConfusion
+    | .multiLambda _ _, .subst _ _ => isFalse Pattern.noConfusion
     | .multiLambda _ _, .collection _ _ _ => isFalse Pattern.noConfusion
-    | .subst _ _ _, .var _ => isFalse Pattern.noConfusion
-    | .subst _ _ _, .apply _ _ => isFalse Pattern.noConfusion
-    | .subst _ _ _, .lambda _ _ => isFalse Pattern.noConfusion
-    | .subst _ _ _, .multiLambda _ _ => isFalse Pattern.noConfusion
-    | .subst _ _ _, .collection _ _ _ => isFalse Pattern.noConfusion
-    | .collection _ _ _, .var _ => isFalse Pattern.noConfusion
+    | .subst _ _, .bvar _ => isFalse Pattern.noConfusion
+    | .subst _ _, .fvar _ => isFalse Pattern.noConfusion
+    | .subst _ _, .apply _ _ => isFalse Pattern.noConfusion
+    | .subst _ _, .lambda _ => isFalse Pattern.noConfusion
+    | .subst _ _, .multiLambda _ _ => isFalse Pattern.noConfusion
+    | .subst _ _, .collection _ _ _ => isFalse Pattern.noConfusion
+    | .collection _ _ _, .bvar _ => isFalse Pattern.noConfusion
+    | .collection _ _ _, .fvar _ => isFalse Pattern.noConfusion
     | .collection _ _ _, .apply _ _ => isFalse Pattern.noConfusion
-    | .collection _ _ _, .lambda _ _ => isFalse Pattern.noConfusion
+    | .collection _ _ _, .lambda _ => isFalse Pattern.noConfusion
     | .collection _ _ _, .multiLambda _ _ => isFalse Pattern.noConfusion
-    | .collection _ _ _, .subst _ _ _ => isFalse Pattern.noConfusion
+    | .collection _ _ _, .subst _ _ => isFalse Pattern.noConfusion
 
   private def decEqPatternList : (a b : List Pattern) → Decidable (a = b)
     | [], [] => isTrue rfl
@@ -198,7 +206,8 @@ instance : BEq Pattern := ⟨fun a b => decide (a = b)⟩
 
 namespace Pattern
 
-def mkVar (name : String) : Pattern := .var name
+def mkFVar (name : String) : Pattern := .fvar name
+def mkBVar (n : Nat) : Pattern := .bvar n
 
 def mkApp (constructor : String) (args : List Pattern) : Pattern :=
   .apply constructor args
@@ -215,46 +224,38 @@ Pattern is a nested inductive (contains `List Pattern`), so the standard
 both Pattern and List Pattern simultaneously.
 -/
 
-/-- Custom induction principle for Pattern that handles nested List Pattern.
-
-    This is the key to proving properties about Pattern by structural induction.
-    The standard recursor doesn't work because Pattern contains List Pattern.
-
-    Usage:
-    ```
-    theorem my_theorem (p : Pattern) : P p := by
-      apply Pattern.inductionOn p
-      · -- var case
-      · -- apply case (with IH for list)
-      · -- lambda case
-      · -- multiLambda case
-      · -- subst case
-      · -- collection case (with IH for list)
-    ```
--/
+/-- Custom induction principle for Pattern that handles nested List Pattern. -/
 def Pattern.inductionOn {motive : Pattern → Prop}
     (p : Pattern)
-    (hvar : ∀ name, motive (.var name))
-    (happly : ∀ constructor args, (∀ q ∈ args, motive q) → motive (.apply constructor args))
-    (hlambda : ∀ x body, motive body → motive (.lambda x body))
-    (hmultiLambda : ∀ xs body, motive body → motive (.multiLambda xs body))
-    (hsubst : ∀ body x repl, motive body → motive repl → motive (.subst body x repl))
-    (hcollection : ∀ ct elems rest, (∀ q ∈ elems, motive q) → motive (.collection ct elems rest))
+    (hbvar : ∀ n, motive (.bvar n))
+    (hfvar : ∀ x, motive (.fvar x))
+    (happly : ∀ constructor args, (∀ q ∈ args, motive q) →
+      motive (.apply constructor args))
+    (hlambda : ∀ body, motive body → motive (.lambda body))
+    (hmultiLambda : ∀ n body, motive body → motive (.multiLambda n body))
+    (hsubst : ∀ body repl, motive body → motive repl → motive (.subst body repl))
+    (hcollection : ∀ ct elems rest, (∀ q ∈ elems, motive q) →
+      motive (.collection ct elems rest))
     : motive p :=
   match p with
-  | .var name => hvar name
+  | .bvar n => hbvar n
+  | .fvar x => hfvar x
   | .apply constructor args =>
-    happly constructor args (fun q _hq => inductionOn q hvar happly hlambda hmultiLambda hsubst hcollection)
-  | .lambda x body =>
-    hlambda x body (inductionOn body hvar happly hlambda hmultiLambda hsubst hcollection)
-  | .multiLambda xs body =>
-    hmultiLambda xs body (inductionOn body hvar happly hlambda hmultiLambda hsubst hcollection)
-  | .subst body x repl =>
-    hsubst body x repl
-      (inductionOn body hvar happly hlambda hmultiLambda hsubst hcollection)
-      (inductionOn repl hvar happly hlambda hmultiLambda hsubst hcollection)
+    happly constructor args (fun q _hq =>
+      inductionOn q hbvar hfvar happly hlambda hmultiLambda hsubst hcollection)
+  | .lambda body =>
+    hlambda body
+      (inductionOn body hbvar hfvar happly hlambda hmultiLambda hsubst hcollection)
+  | .multiLambda n body =>
+    hmultiLambda n body
+      (inductionOn body hbvar hfvar happly hlambda hmultiLambda hsubst hcollection)
+  | .subst body repl =>
+    hsubst body repl
+      (inductionOn body hbvar hfvar happly hlambda hmultiLambda hsubst hcollection)
+      (inductionOn repl hbvar hfvar happly hlambda hmultiLambda hsubst hcollection)
   | .collection ct elems rest =>
-    hcollection ct elems rest (fun q _hq => inductionOn q hvar happly hlambda hmultiLambda hsubst hcollection)
+    hcollection ct elems rest (fun q _hq =>
+      inductionOn q hbvar hfvar happly hlambda hmultiLambda hsubst hcollection)
 termination_by sizeOf p
 decreasing_by
   all_goals simp_wf
@@ -329,7 +330,11 @@ def addRewrite (lang : LanguageDef) (rw : RewriteRule) : LanguageDef :=
 
 end LanguageDef
 
-/-! ## ρ-Calculus Example -/
+/-! ## ρ-Calculus Example
+
+In locally nameless, rule patterns use `.fvar` for metavariables and
+`.lambda body` (no binder name) for abstractions. The COMM rule's
+`.subst body repl` substitutes `repl` for BVar 0 in `body`. -/
 
 /-- The ρ-calculus language definition -/
 def rhoCalc : LanguageDef := {
@@ -360,11 +365,11 @@ def rhoCalc : LanguageDef := {
       params := [.simple "n" TypeExpr.name, .simple "q" TypeExpr.proc],
       syntaxPattern := [.nonTerminal "n", .terminal "!", .terminal "(", .nonTerminal "q", .terminal ")"] },
 
-    -- PInput . n:Name, ^x.p:[Name -> Proc] |- n "?" x "." "{" p "}" : Proc
+    -- PInput . n:Name, ^p:[Name -> Proc] |- n "?" "." "{" p "}" : Proc
     { label := "PInput", category := "Proc",
       params := [.simple "n" TypeExpr.name,
-                 .abstraction "x" "p" (TypeExpr.funType TypeExpr.name TypeExpr.proc)],
-      syntaxPattern := [.nonTerminal "n", .terminal "?", .nonTerminal "x",
+                 .abstraction "p" (TypeExpr.funType TypeExpr.name TypeExpr.proc)],
+      syntaxPattern := [.nonTerminal "n", .terminal "?",
                         .terminal ".", .terminal "{", .nonTerminal "p", .terminal "}"] }
   ],
   equations := [
@@ -372,53 +377,38 @@ def rhoCalc : LanguageDef := {
     { name := "QuoteDrop",
       typeContext := [("N", TypeExpr.name)],
       premises := [],
-      left := .apply "NQuote" [.apply "PDrop" [.var "N"]],
-      right := .var "N" }
+      left := .apply "NQuote" [.apply "PDrop" [.fvar "N"]],
+      right := .fvar "N" }
   ],
   rewrites := [
-    -- Comm: { n!(q) | for(x<-n){p} | ...rest } ~> { p[@q/x] | ...rest }
+    -- Comm: { n!(q) | for(<-n){p} | ...rest } ~> { p[@q] | ...rest }
+    -- In LN: the input pattern is λ.body where BVar 0 is the received name.
+    -- The subst node replaces BVar 0 in p with NQuote(q).
     { name := "Comm",
       typeContext := [("n", TypeExpr.name), ("p", TypeExpr.proc), ("q", TypeExpr.proc)],
       premises := [],
       left := .collection .hashBag [
-        .apply "PInput" [.var "n", .lambda "x" (.var "p")],
-        .apply "POutput" [.var "n", .var "q"]
+        .apply "PInput" [.fvar "n", .lambda (.fvar "p")],
+        .apply "POutput" [.fvar "n", .fvar "q"]
       ] (some "rest"),
       right := .collection .hashBag [
-        .subst (.var "p") "x" (.apply "NQuote" [.var "q"])
+        .subst (.fvar "p") (.apply "NQuote" [.fvar "q"])
       ] (some "rest") },
 
     -- Drop: *(@p) ~> p
     { name := "Drop",
       typeContext := [("p", TypeExpr.proc)],
       premises := [],
-      left := .apply "PDrop" [.apply "NQuote" [.var "p"]],
-      right := .var "p" },
+      left := .apply "PDrop" [.apply "NQuote" [.fvar "p"]],
+      right := .fvar "p" },
 
     -- ParCong: | S ~> T |- {S, ...rest} ~> {T, ...rest}
     { name := "ParCong",
       typeContext := [],
-      premises := [.congruence (.var "S") (.var "T")],
-      left := .collection .hashBag [.var "S"] (some "rest"),
-      right := .collection .hashBag [.var "T"] (some "rest") }
+      premises := [.congruence (.fvar "S") (.fvar "T")],
+      left := .collection .hashBag [.fvar "S"] (some "rest"),
+      right := .collection .hashBag [.fvar "T"] (some "rest") }
   ]
 }
-
-/-! ## Summary
-
-This file provides the abstract syntax for MeTTaIL language definitions,
-matching the Rust implementation structure:
-
-- `TypeExpr` ↔ `macros/src/ast/types.rs::TypeExpr`
-- `TermParam` ↔ `macros/src/ast/grammar.rs::TermParam`
-- `GrammarRule` ↔ `macros/src/ast/grammar.rs::GrammarRule`
-- `Pattern` ↔ `macros/src/ast/pattern.rs::Pattern`
-- `Equation` ↔ `macros/src/ast/language.rs::Equation`
-- `RewriteRule` ↔ `macros/src/ast/language.rs::RewriteRule`
-- `LanguageDef` ↔ `macros/src/ast/language.rs::LanguageDef`
-
-**Next**: Connect this syntax to categorical semantics via interpretation
-into a λ-theory (see `Semantics.lean`).
--/
 
 end Mettapedia.OSLF.MeTTaIL.Syntax

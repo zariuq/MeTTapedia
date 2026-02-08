@@ -4,6 +4,7 @@ import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.MeTTaIL.DeclReduces
+import Mettapedia.OSLF.MeTTaIL.MatchSpec
 import Mettapedia.OSLF.RhoCalculus.Types
 import Mettapedia.OSLF.RhoCalculus.Soundness
 import Mettapedia.OSLF.RhoCalculus.Reduction
@@ -17,7 +18,15 @@ import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.GeneratedTyping
 import Mettapedia.OSLF.Framework.SynthesisBridge
 import Mettapedia.OSLF.Framework.LambdaInstance
+import Mettapedia.OSLF.Framework.PetriNetInstance
+import Mettapedia.OSLF.Framework.TinyMLInstance
+import Mettapedia.OSLF.Framework.ConstructorCategory
+import Mettapedia.OSLF.Framework.ConstructorFibration
+import Mettapedia.OSLF.Framework.ModalEquivalence
+import Mettapedia.OSLF.Framework.DerivedTyping
+import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 import Mettapedia.OSLF.Formula
+-- SpecIndex.lean imports Main (not vice versa) — no cycle
 
 /-!
 # Operational Semantics in Logical Form (OSLF)
@@ -31,21 +40,29 @@ to categorical semantics via the OSLF algorithm.
 OSLF/
 ├── Main.lean                -- This file (re-exports)
 ├── Framework/
-│   ├── RewriteSystem.lean      -- Abstract OSLF: RewriteSystem -> OSLFTypeSystem
-│   ├── RhoInstance.lean        -- ρ-calculus instance (proven Galois connection)
-│   ├── DerivedModalities.lean  -- Derived ◇/□ from adjoint triple (0 sorries)
-│   ├── CategoryBridge.lean     -- Categorical lift: GaloisConnection → Adjunction, SubobjectFibration
-│   ├── TypeSynthesis.lean      -- LanguageDef → OSLFTypeSystem (auto Galois)
-│   ├── GeneratedTyping.lean    -- Generated typing rules from grammar
-│   ├── SynthesisBridge.lean    -- Bridge: generated ↔ hand-written types
-│   └── LambdaInstance.lean     -- Lambda calculus OSLF instance (2nd example)
+│   ├── RewriteSystem.lean         -- Abstract OSLF: RewriteSystem -> OSLFTypeSystem
+│   ├── RhoInstance.lean           -- ρ-calculus instance (proven Galois connection)
+│   ├── DerivedModalities.lean     -- Derived ◇/□ from adjoint triple (0 sorries)
+│   ├── CategoryBridge.lean        -- Categorical lift: GaloisConnection → Adjunction
+│   ├── TypeSynthesis.lean         -- LanguageDef → OSLFTypeSystem (auto Galois)
+│   ├── GeneratedTyping.lean       -- Generated typing rules from grammar
+│   ├── SynthesisBridge.lean       -- Bridge: generated ↔ hand-written types
+│   ├── LambdaInstance.lean        -- Lambda calculus OSLF instance (2nd example)
+│   ├── PetriNetInstance.lean      -- Petri net OSLF instance (3rd, binder-free)
+│   ├── TinyMLInstance.lean        -- CBV λ-calculus + booleans/pairs/thunks (4th, multi-sort)
+│   ├── ConstructorCategory.lean   -- Sort quiver + free category from LanguageDef
+│   ├── ConstructorFibration.lean  -- SubobjectFibration + ChangeOfBase over constructors
+│   ├── ModalEquivalence.lean      -- Constructor change-of-base ↔ OSLF modalities
+│   ├── DerivedTyping.lean         -- Generic typing rules from categorical structure
+│   └── BeckChevalleyOSLF.lean    -- Substitution ↔ change-of-base (Beck-Chevalley)
 ├── MeTTaIL/
 │   ├── Syntax.lean          -- LanguageDef AST (types, terms, equations, rewrites)
 │   ├── Semantics.lean       -- InterpObj, pattern interpretation
 │   ├── Substitution.lean    -- Capture-avoiding substitution
-│   ├── Match.lean           -- Generic pattern matching (multiset, alpha-rename)
+│   ├── Match.lean           -- Generic pattern matching (multiset, locally nameless)
 │   ├── Engine.lean          -- Generic rewrite engine for any LanguageDef
-│   └── DeclReduces.lean     -- Declarative reduction (proven ↔ engine)
+│   ├── DeclReduces.lean     -- Declarative reduction (proven ↔ engine)
+│   └── MatchSpec.lean       -- Relational matching spec (proven ↔ executable)
 ├── RhoCalculus/
 │   ├── Types.lean           -- Namespaces, codespaces, bisimulation
 │   ├── Reduction.lean       -- COMM/DROP/PAR, modal operators, Galois connection
@@ -136,6 +153,23 @@ export Mettapedia.OSLF.MeTTaIL.DeclReduces (
   engine_sound
   engine_complete
   declReduces_iff_langReduces
+)
+
+export Mettapedia.OSLF.MeTTaIL.MatchSpec (
+  MatchRel
+  MatchArgsRel
+  MatchBagRel
+  matchPattern_sound
+  matchArgs_sound
+  matchBag_sound
+  matchRel_complete
+  matchArgsRel_complete
+  matchBagRel_complete
+  matchPattern_iff_matchRel
+  DeclReducesRel
+  declReducesRel_iff_declReduces
+  engine_sound_rel
+  engine_complete_rel
 )
 
 -- Re-export RhoCalculus modules
@@ -242,6 +276,93 @@ export Mettapedia.OSLF.Framework.LambdaInstance (
   lambdaCalc
   lambdaOSLF
   lambdaGalois
+)
+
+export Mettapedia.OSLF.Framework.PetriNetInstance (
+  petriNet
+  petriOSLF
+  petriGalois
+)
+
+export Mettapedia.OSLF.Framework.TinyMLInstance (
+  tinyML
+  tinyMLOSLF
+  tinyMLGalois
+  tinyML_crossings
+  tinyExprObj
+  tinyValObj
+  injectArrow
+  thunkArrow
+  injectMor
+  thunkMor
+  inject_di_pb_adj
+  thunk_di_pb_adj
+  thunk_is_quoting
+  inject_is_reflecting
+  thunk_action_eq_diamond
+  inject_action_eq_box
+  tinyML_typing_action_galois
+)
+
+export Mettapedia.OSLF.Framework.ConstructorCategory (
+  LangSort
+  baseSortOf
+  unaryCrossings
+  SortArrow
+  SortPath
+  ConstructorObj
+  constructorCategory
+  arrowSem
+  pathSem
+  pathSem_comp
+  liftFunctor
+  lift_map_unique
+)
+
+export Mettapedia.OSLF.Framework.ConstructorFibration (
+  constructorFibration
+  constructorPullback
+  constructorDirectImage
+  constructorUniversalImage
+  constructorChangeOfBase
+)
+
+export Mettapedia.OSLF.Framework.ModalEquivalence (
+  nquoteTypingAction
+  pdropTypingAction
+  typing_action_galois
+  diamondAction
+  boxAction
+  action_galois
+)
+
+export Mettapedia.OSLF.Framework.DerivedTyping (
+  ConstructorRole
+  classifyArrow
+  typingAction
+  DerivedHasType
+  nquote_is_quoting
+  pdrop_is_reflecting
+  nquote_action_eq_diamond
+  pdrop_action_eq_box
+)
+
+export Mettapedia.OSLF.Framework.BeckChevalleyOSLF (
+  galoisConnection_comp
+  commMap
+  commPb
+  commDi
+  commUi
+  comm_di_pb_adj
+  comm_pb_ui_adj
+  diamond_commDi_galois
+  commDi_diamond_galois
+  typedAt
+  substitutability_pb
+  substitutability_di
+  comm_beck_chevalley
+  commSubst_eq_open_constructorSem
+  strong_bc_fails
 )
 
 -- Re-export Formula module (OSLF output artifact)

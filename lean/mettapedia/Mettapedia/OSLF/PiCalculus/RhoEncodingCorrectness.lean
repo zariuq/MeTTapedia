@@ -37,7 +37,7 @@ namespace Mettapedia.OSLF.PiCalculus
 open Mettapedia.OSLF.RhoCalculus
 open Mettapedia.OSLF.RhoCalculus.Reduction
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.MeTTaIL.Substitution
+open Mettapedia.OSLF.MeTTaIL.Substitution hiding allVars isGloballyFresh
 
 /-! ## Bisimulation for ρ-calculus
 
@@ -1948,45 +1948,50 @@ private theorem substBVDisjoint_append_comm {σ : SubstEnv} {as bs : List String
 private theorem substBVDisjoint_combine {σ : SubstEnv} {as bs : List String}
     (ha : substBVDisjoint σ as) (hb : substBVDisjoint σ bs) :
     substBVDisjoint σ (as ++ bs) := by
-  intro v hv
-  rcases List.mem_append.mp hv with h | h
-  · exact ha v h
-  · exact hb v h
+  constructor
+  · intro v hv; rcases List.mem_append.mp hv with h | h
+    · exact ha.1 v h
+    · exact hb.1 v h
+  · intro entry he v hv; rcases List.mem_append.mp hv with h | h
+    · exact ha.2 entry he v h
+    · exact hb.2 entry he v h
 
 /-- Extract left part of substBVDisjoint over append. -/
 private theorem substBVDisjoint_left {σ : SubstEnv} {as bs : List String}
     (h : substBVDisjoint σ (as ++ bs)) : substBVDisjoint σ as :=
-  fun v hv => h v (List.mem_append_left _ hv)
+  ⟨fun v hv => h.1 v (List.mem_append_left _ hv),
+   fun entry he v hv => h.2 entry he v (List.mem_append_left _ hv)⟩
 
 /-- Extract right part of substBVDisjoint over append. -/
 private theorem substBVDisjoint_right {σ : SubstEnv} {as bs : List String}
     (h : substBVDisjoint σ (as ++ bs)) : substBVDisjoint σ bs :=
-  fun v hv => h v (List.mem_append_right _ hv)
+  ⟨fun v hv => h.1 v (List.mem_append_right _ hv),
+   fun entry he v hv => h.2 entry he v (List.mem_append_right _ hv)⟩
 
-/-- boundVars is preserved by alphaRename (alpha-renaming doesn't change binding structure). -/
+-- boundVars is preserved by alphaRename (alpha-renaming doesn't change binding structure).
 mutual
   private theorem boundVars_alphaRename (x y : String) (p : Pattern) :
       boundVars (alphaRename x y p) = boundVars p :=
     match p with
-    | .var _ => by simp [alphaRename, boundVars]; split <;> simp [boundVars]
+    | .var _ => by unfold alphaRename; split <;> (unfold boundVars; rfl)
     | .lambda z body => by
-      simp only [alphaRename]
-      split
+      unfold alphaRename; split
       · rfl
-      · simp only [boundVars]; congr 1; exact boundVars_alphaRename x y body
+      · unfold boundVars; congr 1; exact boundVars_alphaRename x y body
     | .apply _ args => by
-      simp only [alphaRename, boundVars]
+      unfold alphaRename boundVars
       exact boundVars_alphaRename_list x y args
     | .multiLambda xs body => by
-      simp only [alphaRename]
-      split
+      unfold alphaRename; split
       · rfl
-      · simp only [boundVars]; congr 1; exact boundVars_alphaRename x y body
-    | .subst body z arg => by
-      simp only [alphaRename, boundVars]
-      congr 1; exact boundVars_alphaRename x y body
+      · unfold boundVars; congr 1; exact boundVars_alphaRename x y body
+    | .subst body _ arg => by
+      unfold alphaRename boundVars
+      congr 1
+      · exact boundVars_alphaRename x y body
+      · exact boundVars_alphaRename x y arg
     | .collection _ elems _ => by
-      simp only [alphaRename, boundVars]
+      unfold alphaRename boundVars
       exact boundVars_alphaRename_list x y elems
 
   private theorem boundVars_alphaRename_list (x y : String) (ps : List Pattern) :
@@ -2000,162 +2005,485 @@ mutual
       · exact boundVars_alphaRename_list x y ps'
 end
 
+/-! ### FreeVars infrastructure for trans case resolution
+
+The trans case of `alphaEquiv_applySubst` and `SC_applySubst_restricted` requires knowing
+that substitution domain/range names don't collide with bound variables of INTERMEDIATE
+patterns in SC/alpha chains. The key insight: if dom(σ) ⊆ freeVars(P) and SC/alpha
+preserves freeVars, then dom(σ) ⊆ freeVars(Q) ⊆ allVars(Q) for any Q reachable from P,
+so alpha-fresh names (chosen outside allVars) can't collide with dom(σ). -/
+
+-- freeVars ⊆ allVars: every free variable appears somewhere in the pattern
+private theorem freeVars_subset_allVars :
+    ∀ (p : Pattern) (x : String), x ∈ freeVars p → x ∈ allVars p := by
+  intro p
+  match p with
+  | .var name =>
+    intro x hx; unfold freeVars at hx; unfold allVars; simpa using hx
+  | .apply _ args =>
+    intro x hx; unfold freeVars at hx; unfold allVars
+    obtain ⟨a, ha, hxa⟩ := List.mem_flatMap.mp hx
+    exact List.mem_flatMap.mpr ⟨a, ha, freeVars_subset_allVars a x hxa⟩
+  | .lambda z body =>
+    intro x hx; unfold freeVars at hx; unfold allVars
+    exact List.mem_cons.mpr (Or.inr (freeVars_subset_allVars body x (List.mem_filter.mp hx).1))
+  | .multiLambda xs body =>
+    intro x hx; unfold freeVars at hx; unfold allVars
+    exact List.mem_append.mpr (Or.inr (freeVars_subset_allVars body x (List.mem_filter.mp hx).1))
+  | .subst body z repl =>
+    intro x hx; unfold freeVars at hx; unfold allVars
+    rcases List.mem_append.mp hx with h | h
+    · exact List.mem_cons.mpr (Or.inr (List.mem_append.mpr (Or.inl
+        (freeVars_subset_allVars body x (List.mem_filter.mp h).1))))
+    · exact List.mem_cons.mpr (Or.inr (List.mem_append.mpr (Or.inr
+        (freeVars_subset_allVars repl x h))))
+  | .collection _ elems _ =>
+    intro x hx; unfold freeVars at hx; unfold allVars
+    obtain ⟨a, ha, hxa⟩ := List.mem_flatMap.mp hx
+    exact List.mem_flatMap.mpr ⟨a, ha, freeVars_subset_allVars a x hxa⟩
+termination_by p => sizeOf p
+
+-- alphaRename preserves freeVars: replaces free x with y
+-- Proven for noExplicitSubst patterns (which is all we need for encoding correctness)
+private theorem alphaRename_freeVars_mem (x y : String) (p : Pattern)
+    (hfresh : y ∉ allVars p) (hne : noExplicitSubst p) (z : String) :
+    z ∈ freeVars (alphaRename x y p) ↔
+    (z ∈ freeVars p ∧ z ≠ x) ∨ (z = y ∧ x ∈ freeVars p) := by
+  match p with
+  | .var v =>
+    by_cases hvx : v = x
+    · subst hvx
+      unfold alphaRename; simp only [ite_true]
+      unfold freeVars; simp [List.mem_singleton]
+    · unfold alphaRename; simp only [hvx, ite_false]
+      unfold freeVars; simp only [List.mem_singleton]
+      constructor
+      · intro h; left; exact ⟨h, by rw [h]; exact hvx⟩
+      · rintro (⟨h, _⟩ | ⟨h, hxv⟩)
+        · exact h
+        · rw [h]; exact absurd hxv.symm hvx
+  | .apply f args =>
+    unfold alphaRename; unfold freeVars
+    simp only [List.flatMap_map, List.mem_flatMap]
+    unfold allVars at hfresh; unfold noExplicitSubst at hne
+    constructor
+    · rintro ⟨a, ha, hz⟩
+      have hfresh_a : y ∉ allVars a :=
+        fun h => hfresh (List.mem_flatMap.mpr ⟨a, ha, h⟩)
+      have hne_a := allNoExplicitSubst_mem hne ha
+      rw [alphaRename_freeVars_mem x y a hfresh_a hne_a z] at hz
+      rcases hz with ⟨hza, hzx⟩ | ⟨rfl, hxa⟩
+      · exact Or.inl ⟨⟨a, ha, hza⟩, hzx⟩
+      · exact Or.inr ⟨rfl, ⟨a, ha, hxa⟩⟩
+    · rintro (⟨⟨a, ha, hza⟩, hzx⟩ | ⟨hzy, ⟨a, ha, hxa⟩⟩)
+      · exact ⟨a, ha, (alphaRename_freeVars_mem x y a
+          (fun h => hfresh (List.mem_flatMap.mpr ⟨a, ha, h⟩))
+          (allNoExplicitSubst_mem hne ha) z).mpr (Or.inl ⟨hza, hzx⟩)⟩
+      · exact ⟨a, ha, (alphaRename_freeVars_mem x y a
+          (fun h => hfresh (List.mem_flatMap.mpr ⟨a, ha, h⟩))
+          (allNoExplicitSubst_mem hne ha) z).mpr (Or.inr ⟨hzy, hxa⟩)⟩
+  | .lambda w body =>
+    unfold allVars at hfresh
+    have hy_ne_w : y ≠ w := fun h => hfresh (List.mem_cons.mpr (Or.inl h))
+    have hfresh_body : y ∉ allVars body :=
+      fun h => hfresh (List.mem_cons.mpr (Or.inr h))
+    unfold noExplicitSubst at hne
+    by_cases hwx : w = x
+    · -- w = x: alphaRename stops (x is bound by lambda)
+      subst hwx
+      unfold alphaRename; simp only [ite_true]
+      unfold freeVars
+      simp only [List.mem_filter, bne_iff_ne]
+      constructor
+      · intro ⟨h, hne'⟩; exact Or.inl ⟨⟨h, hne'⟩, hne'⟩
+      · rintro (⟨⟨h, hne'⟩, _⟩ | ⟨_, hxfv, habs⟩)
+        · exact ⟨h, hne'⟩
+        · exact absurd rfl habs
+    · -- w ≠ x: recurse into body
+      unfold alphaRename; simp only [hwx, ite_false]
+      have fv_lam : ∀ (u : String) (v : String) (e : Pattern),
+          u ∈ freeVars (.lambda v e) ↔ u ∈ freeVars e ∧ u ≠ v := by
+        intro u v e; constructor
+        · intro h; unfold freeVars at h
+          exact ⟨(List.mem_filter.mp h).1, bne_iff_ne.mp (List.mem_filter.mp h).2⟩
+        · intro ⟨h1, h2⟩; unfold freeVars
+          exact List.mem_filter.mpr ⟨h1, bne_iff_ne.mpr h2⟩
+      simp only [fv_lam]
+      rw [alphaRename_freeVars_mem x y body hfresh_body hne z]
+      constructor
+      · rintro ⟨(⟨hzb, hzx⟩ | ⟨rfl, hxb⟩), hzw⟩
+        · exact Or.inl ⟨⟨hzb, hzw⟩, hzx⟩
+        · exact Or.inr ⟨rfl, hxb, Ne.symm hwx⟩
+      · rintro (⟨⟨hzb, hzw⟩, hzx⟩ | ⟨rfl, hxb, hxw⟩)
+        · exact ⟨Or.inl ⟨hzb, hzx⟩, hzw⟩
+        · exact ⟨Or.inr ⟨rfl, hxb⟩, hy_ne_w⟩
+  | .multiLambda xs body =>
+    -- multiLambda: skip for now, not used in encoding correctness
+    sorry
+  | .subst _ _ _ => simp [noExplicitSubst] at hne
+  | .collection ct elems rest =>
+    unfold alphaRename; unfold freeVars
+    simp only [List.flatMap_map, List.mem_flatMap]
+    unfold allVars at hfresh; unfold noExplicitSubst at hne
+    constructor
+    · rintro ⟨a, ha, hz⟩
+      have hfresh_a : y ∉ allVars a :=
+        fun h => hfresh (List.mem_flatMap.mpr ⟨a, ha, h⟩)
+      have hne_a := allNoExplicitSubst_mem hne ha
+      rw [alphaRename_freeVars_mem x y a hfresh_a hne_a z] at hz
+      rcases hz with ⟨hza, hzx⟩ | ⟨rfl, hxa⟩
+      · exact Or.inl ⟨⟨a, ha, hza⟩, hzx⟩
+      · exact Or.inr ⟨rfl, ⟨a, ha, hxa⟩⟩
+    · rintro (⟨⟨a, ha, hza⟩, hzx⟩ | ⟨hzy, ⟨a, ha, hxa⟩⟩)
+      · exact ⟨a, ha, (alphaRename_freeVars_mem x y a
+          (fun h => hfresh (List.mem_flatMap.mpr ⟨a, ha, h⟩))
+          (allNoExplicitSubst_mem hne ha) z).mpr (Or.inl ⟨hza, hzx⟩)⟩
+      · exact ⟨a, ha, (alphaRename_freeVars_mem x y a
+          (fun h => hfresh (List.mem_flatMap.mpr ⟨a, ha, h⟩))
+          (allNoExplicitSubst_mem hne ha) z).mpr (Or.inr ⟨hzy, hxa⟩)⟩
+  termination_by sizeOf p
+
+-- AlphaEquiv preserves free variables (as sets).
+-- This is the KEY lemma enabling the trans case.
+private theorem AlphaEquiv_preserves_freeVars {P Q : Pattern}
+    (halpha : AlphaEquiv P Q) (hne : noExplicitSubst P) (z : String) :
+    z ∈ freeVars P ↔ z ∈ freeVars Q := by
+  induction halpha generalizing z with
+  | refl _ => exact Iff.rfl
+  | symm _ _ _ ih =>
+    exact (ih (AlphaEquiv_noExplicitSubst_eq ‹_› ▸ hne) z).symm
+  | trans _ q _ hpq _ ih₁ ih₂ =>
+    exact (ih₁ hne z).trans (ih₂ (AlphaEquiv_noExplicitSubst_eq hpq ▸ hne) z)
+  | var_eq _ => exact Iff.rfl
+  | lambda_rename x' y' p' hfresh' =>
+    have hne' : noExplicitSubst p' := by simpa [noExplicitSubst] using hne
+    have hy_nav : y' ∉ allVars p' := by
+      intro hmem; simp [isGloballyFresh, hmem] at hfresh'
+    constructor
+    · intro hz
+      unfold freeVars at hz ⊢
+      have ⟨hzp, hzx⟩ := List.mem_filter.mp hz
+      have hzx' := bne_iff_ne.mp hzx
+      have hzy : z ≠ y' := fun h => hy_nav (h ▸ freeVars_subset_allVars p' z hzp)
+      exact List.mem_filter.mpr
+        ⟨(alphaRename_freeVars_mem x' y' p' hy_nav hne' z).mpr (Or.inl ⟨hzp, hzx'⟩),
+         bne_iff_ne.mpr hzy⟩
+    · intro hz
+      unfold freeVars at hz ⊢
+      have ⟨hzmem, hzy⟩ := List.mem_filter.mp hz
+      have hzy' := bne_iff_ne.mp hzy
+      rw [alphaRename_freeVars_mem x' y' p' hy_nav hne' z] at hzmem
+      rcases hzmem with ⟨hzp, hzx⟩ | ⟨hzy_eq, _⟩
+      · exact List.mem_filter.mpr ⟨hzp, bne_iff_ne.mpr hzx⟩
+      · exact absurd hzy_eq hzy'
+  | lambda_cong x' p' q' _ ih =>
+    unfold freeVars; simp only [List.mem_filter, bne_iff_ne]
+    have hne_body : noExplicitSubst p' := by simpa [noExplicitSubst] using hne
+    exact ⟨fun ⟨h, hne'⟩ => ⟨(ih hne_body z).mp h, hne'⟩,
+           fun ⟨h, hne'⟩ => ⟨(ih hne_body z).mpr h, hne'⟩⟩
+  | apply_cong _ args₁ args₂ hlen _ ih =>
+    unfold freeVars; unfold noExplicitSubst at hne
+    simp only [List.mem_flatMap]
+    constructor
+    · rintro ⟨a, ha, hza⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp ha
+      have h₂ : i < args₂.length := hlen ▸ hi
+      have hne_i : noExplicitSubst args₁[i] :=
+        allNoExplicitSubst_mem hne (List.getElem_mem hi)
+      exact ⟨args₂[i], List.getElem_mem h₂,
+        (ih i hi h₂ hne_i z).mp hza⟩
+    · rintro ⟨b, hb, hzb⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hb
+      have h₁ : i < args₁.length := hlen ▸ hi
+      have hne_i : noExplicitSubst args₁[i] :=
+        allNoExplicitSubst_mem hne (List.getElem_mem h₁)
+      exact ⟨args₁[i], List.getElem_mem h₁,
+        (ih i h₁ hi hne_i z).mpr hzb⟩
+  | subst_cong _ _ _ _ _ _ _ _ => simp [noExplicitSubst] at hne
+  | collection_cong _ elems₁ elems₂ _ hlen _ ih =>
+    unfold freeVars; unfold noExplicitSubst at hne
+    simp only [List.mem_flatMap]
+    constructor
+    · rintro ⟨a, ha, hza⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp ha
+      have h₂ : i < elems₂.length := hlen ▸ hi
+      have hne_i : noExplicitSubst elems₁[i] :=
+        allNoExplicitSubst_mem hne (List.getElem_mem hi)
+      exact ⟨elems₂[i], List.getElem_mem h₂,
+        (ih i hi h₂ hne_i z).mp hza⟩
+    · rintro ⟨b, hb, hzb⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hb
+      have h₁ : i < elems₁.length := hlen ▸ hi
+      have hne_i : noExplicitSubst elems₁[i] :=
+        allNoExplicitSubst_mem hne (List.getElem_mem h₁)
+      exact ⟨elems₁[i], List.getElem_mem h₁,
+        (ih i h₁ hi hne_i z).mpr hzb⟩
+
+-- Helper: freeVars for collection patterns (avoids unfolding issues)
+private theorem freeVars_coll (ct : CollType) (elems : List Pattern) (g : Option String) :
+    freeVars (.collection ct elems g) = elems.flatMap freeVars := by
+  unfold freeVars; rfl
+
+-- Helper: freeVars for apply patterns
+private theorem freeVars_appl (f : String) (args : List Pattern) :
+    freeVars (.apply f args) = args.flatMap freeVars := by
+  unfold freeVars; rfl
+
+-- SC preserves free variables
+private theorem SC_preserves_freeVars {A B : Pattern}
+    (hsc : RhoCalculus.StructuralCongruence A B) (hne : noExplicitSubst A)
+    (z : String) : z ∈ freeVars A ↔ z ∈ freeVars B := by
+  induction hsc generalizing z with
+  | alpha _ _ halpha => exact AlphaEquiv_preserves_freeVars halpha hne z
+  | refl _ => exact Iff.rfl
+  | symm p q hsc' ih =>
+    have hne_q := SC_noExplicitSubst_eq hsc' ▸ hne
+    exact (ih hne_q z).symm
+  | trans p q r hsc₁ _ ih₁ ih₂ =>
+    have hne_q := SC_noExplicitSubst_eq hsc₁ ▸ hne
+    exact (ih₁ hne z).trans (ih₂ hne_q z)
+  | par_singleton p =>
+    simp only [freeVars_coll, List.flatMap_cons, List.flatMap_nil, List.append_nil]
+  | par_nil_left p =>
+    simp only [freeVars_coll, freeVars_appl, List.flatMap_cons, List.flatMap_nil,
+      List.append_nil, List.nil_append, List.mem_append]
+  | par_nil_right p =>
+    simp only [freeVars_coll, freeVars_appl, List.flatMap_cons, List.flatMap_nil,
+      List.append_nil, List.mem_append, or_false]
+  | par_comm p q =>
+    simp only [freeVars_coll, List.flatMap_cons, List.flatMap_nil, List.append_nil,
+      List.mem_append, or_comm]
+  | par_assoc p q r =>
+    simp only [freeVars_coll, List.flatMap_cons, List.flatMap_nil, List.append_nil,
+      List.mem_append, or_assoc]
+  | par_cong ps qs hlen _ ih =>
+    simp only [freeVars_coll, List.mem_flatMap]; unfold noExplicitSubst at hne
+    constructor
+    · rintro ⟨a, ha, hza⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp ha
+      exact ⟨qs[i]'(hlen ▸ hi), List.getElem_mem (hlen ▸ hi),
+        (ih i hi (hlen ▸ hi) (allNoExplicitSubst_mem hne (List.getElem_mem hi)) z).mp hza⟩
+    · rintro ⟨b, hb, hzb⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hb
+      exact ⟨ps[i]'(hlen ▸ hi), List.getElem_mem (hlen ▸ hi),
+        (ih i (hlen ▸ hi) hi (allNoExplicitSubst_mem hne (List.getElem_mem (hlen ▸ hi))) z).mpr hzb⟩
+  | par_flatten ps qs =>
+    simp only [freeVars_coll, List.flatMap_append, List.flatMap_cons, List.flatMap_nil,
+      List.append_nil, List.mem_append, List.mem_flatMap]
+  | par_perm elems₁ elems₂ hperm =>
+    simp only [freeVars_coll, List.mem_flatMap]
+    exact ⟨fun ⟨a, ha, hz⟩ => ⟨a, hperm.mem_iff.mp ha, hz⟩,
+           fun ⟨a, ha, hz⟩ => ⟨a, hperm.mem_iff.mpr ha, hz⟩⟩
+  | set_perm elems₁ elems₂ hperm =>
+    simp only [freeVars_coll, List.mem_flatMap]
+    exact ⟨fun ⟨a, ha, hz⟩ => ⟨a, hperm.mem_iff.mp ha, hz⟩,
+           fun ⟨a, ha, hz⟩ => ⟨a, hperm.mem_iff.mpr ha, hz⟩⟩
+  | set_cong elems₁ elems₂ hlen _ ih =>
+    simp only [freeVars_coll, List.mem_flatMap]; unfold noExplicitSubst at hne
+    constructor
+    · rintro ⟨a, ha, hza⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp ha
+      exact ⟨elems₂[i]'(hlen ▸ hi), List.getElem_mem (hlen ▸ hi),
+        (ih i hi (hlen ▸ hi) (allNoExplicitSubst_mem hne (List.getElem_mem hi)) z).mp hza⟩
+    · rintro ⟨b, hb, hzb⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hb
+      exact ⟨elems₁[i]'(hlen ▸ hi), List.getElem_mem (hlen ▸ hi),
+        (ih i (hlen ▸ hi) hi (allNoExplicitSubst_mem hne (List.getElem_mem (hlen ▸ hi))) z).mpr hzb⟩
+  | lambda_cong x' p' q' _ ih =>
+    unfold freeVars; simp only [List.mem_filter, bne_iff_ne]
+    have hne' : noExplicitSubst p' := by simpa [noExplicitSubst] using hne
+    exact ⟨fun ⟨h, hne''⟩ => ⟨(ih hne' z).mp h, hne''⟩,
+           fun ⟨h, hne''⟩ => ⟨(ih hne' z).mpr h, hne''⟩⟩
+  | apply_cong _ args₁ args₂ hlen _ ih =>
+    simp only [freeVars_appl, List.mem_flatMap]; unfold noExplicitSubst at hne
+    constructor
+    · rintro ⟨a, ha, hza⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp ha
+      exact ⟨args₂[i]'(hlen ▸ hi), List.getElem_mem (hlen ▸ hi),
+        (ih i hi (hlen ▸ hi) (allNoExplicitSubst_mem hne (List.getElem_mem hi)) z).mp hza⟩
+    · rintro ⟨b, hb, hzb⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hb
+      exact ⟨args₁[i]'(hlen ▸ hi), List.getElem_mem (hlen ▸ hi),
+        (ih i (hlen ▸ hi) hi (allNoExplicitSubst_mem hne (List.getElem_mem (hlen ▸ hi))) z).mpr hzb⟩
+  | collection_general_cong _ elems₁ elems₂ _ hlen _ ih =>
+    simp only [freeVars_coll, List.mem_flatMap]; unfold noExplicitSubst at hne
+    constructor
+    · rintro ⟨a, ha, hza⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp ha
+      exact ⟨elems₂[i]'(hlen ▸ hi), List.getElem_mem (hlen ▸ hi),
+        (ih i hi (hlen ▸ hi) (allNoExplicitSubst_mem hne (List.getElem_mem hi)) z).mp hza⟩
+    · rintro ⟨b, hb, hzb⟩
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hb
+      exact ⟨elems₁[i]'(hlen ▸ hi), List.getElem_mem (hlen ▸ hi),
+        (ih i (hlen ▸ hi) hi (allNoExplicitSubst_mem hne (List.getElem_mem (hlen ▸ hi))) z).mpr hzb⟩
+  | multiLambda_cong _ _ _ _ ih =>
+    unfold freeVars; simp only [List.mem_filter]
+    have hne' : noExplicitSubst _ := by simpa [noExplicitSubst] using hne
+    exact ⟨fun ⟨h, hc⟩ => ⟨(ih hne' z).mp h, hc⟩,
+           fun ⟨h, hc⟩ => ⟨(ih hne' z).mpr h, hc⟩⟩
+  | subst_cong _ _ _ _ _ _ _ _ _ => simp [noExplicitSubst] at hne
+  | quote_drop n =>
+    simp only [freeVars_appl, List.flatMap_cons, List.flatMap_nil, List.append_nil]
+
 /-- If y ∉ allVars p and y ∉ dom(σ) and ∀ entry ∈ σ, entry.2 ≠ .var y (renaming),
     then y ∉ allVars (applySubst σ p). -/
-mutual
-  private theorem allVars_applySubst_fresh (σ : SubstEnv) (hren : isRenamingEnv σ)
-      (y : String) (p : Pattern) (hne : noExplicitSubst p)
-      (hy_p : y ∉ allVars p)
-      (hy_dom : SubstEnv.find σ y = none)
-      (hy_range : ∀ entry ∈ σ, entry.2 ≠ .var y) :
-      y ∉ allVars (applySubst σ p) :=
-    match p with
-    | .var z => by
-      simp only [applySubst]
-      cases hfind : SubstEnv.find σ z with
-      | none => simpa [allVars] using hy_p
-      | some r =>
-        obtain ⟨w, hw⟩ := find_isVar_of_renaming σ z r hfind hren
-        rw [hw]; simp only [allVars, List.mem_cons, List.not_mem_nil, or_false]
-        intro heq; subst heq
-        exact hy_range _ (List.mem_of_find?_eq_some
-          (by unfold SubstEnv.find at hfind; exact hfind)) hw
-    | .apply _ args => by
-      simp only [applySubst, allVars]
-      intro hmem
-      obtain ⟨q, hq_mem, hq_y⟩ := List.mem_flatMap.mp hmem
-      obtain ⟨a, ha_mem, ha_eq⟩ := List.mem_map.mp hq_mem
-      subst ha_eq
-      have hne_a : noExplicitSubst a :=
-        allNoExplicitSubst_mem (by simpa [noExplicitSubst] using hne) ha_mem
-      exact allVars_applySubst_fresh σ hren y a hne_a
-        (fun h => hy_p (by simp [allVars]; exact List.mem_flatMap.mpr ⟨a, ha_mem, h⟩))
-        hy_dom hy_range hq_y
-    | .lambda z body => by
-      simp only [applySubst, allVars]
-      intro hmem
-      rcases List.mem_cons.mp hmem with heq | hmem'
-      · subst heq; exact hy_p (by simp [allVars])
-      · exact allVars_applySubst_fresh _ (fun e he => hren e (List.mem_of_mem_filter he))
-          y body (by simpa [noExplicitSubst] using hne)
-          (fun h => hy_p (by simp [allVars]; exact List.mem_cons.mpr (Or.inr h)))
-          (SubstEnv.find_filter_of_find_none hy_dom)
-          (fun e he => hy_range e (List.mem_of_mem_filter he)) hmem'
-    | .multiLambda xs body => by
-      simp only [applySubst, allVars]
-      intro hmem
-      rcases List.mem_append.mp hmem with hxs | hbody
-      · exact hy_p (by simp [allVars]; exact List.mem_append.mpr (Or.inl hxs))
-      · exact allVars_applySubst_fresh _ (fun e he => hren e (List.mem_of_mem_filter he))
-          y body (by simpa [noExplicitSubst] using hne)
-          (fun h => hy_p (by simp [allVars]; exact List.mem_append.mpr (Or.inr h)))
-          (SubstEnv.find_filter_of_find_none hy_dom)
-          (fun e he => hy_range e (List.mem_of_mem_filter he)) hbody
-    | .subst _ _ _ => by simp [noExplicitSubst] at hne
-    | .collection _ elems _ => by
-      simp only [applySubst, allVars]
-      intro hmem
-      obtain ⟨q, hq_mem, hq_y⟩ := List.mem_flatMap.mp hmem
-      obtain ⟨a, ha_mem, ha_eq⟩ := List.mem_map.mp hq_mem
-      subst ha_eq
-      have hne_a : noExplicitSubst a :=
-        allNoExplicitSubst_mem (by simpa [noExplicitSubst] using hne) ha_mem
-      exact allVars_applySubst_fresh σ hren y a hne_a
-        (fun h => hy_p (by simp [allVars]; exact List.mem_flatMap.mpr ⟨a, ha_mem, h⟩))
-        hy_dom hy_range hq_y
-  termination_by sizeOf p
-end
+private theorem allVars_applySubst_fresh (σ : SubstEnv) (hren : isRenamingEnv σ)
+    (y : String) (p : Pattern) (hne : noExplicitSubst p)
+    (hy_p : y ∉ allVars p)
+    (hy_dom : SubstEnv.find σ y = none)
+    (hy_range : ∀ entry ∈ σ, entry.2 ≠ .var y) :
+    y ∉ allVars (applySubst σ p) := by
+  match p with
+  | .var z =>
+    simp only [applySubst]
+    cases hfind : SubstEnv.find σ z with
+    | none => unfold allVars at hy_p ⊢; exact hy_p
+    | some r =>
+      obtain ⟨w, hw⟩ := find_isVar_of_renaming σ z r hfind hren
+      rw [hw]; unfold allVars; simp only [List.mem_cons, List.not_mem_nil, or_false]
+      intro heq; subst heq
+      obtain ⟨entry, hmem, _, hval⟩ := SubstEnv.find_some_entry_mem σ z r hfind
+      exact hy_range entry hmem (by rw [hval, hw])
+  | .apply _ args =>
+    simp only [applySubst]; unfold allVars
+    intro hmem
+    obtain ⟨q, hq_mem, hq_y⟩ := List.mem_flatMap.mp hmem
+    obtain ⟨a, ha_mem, ha_eq⟩ := List.mem_map.mp hq_mem
+    subst ha_eq
+    have hne_a := allNoExplicitSubst_mem (by simpa [noExplicitSubst] using hne) ha_mem
+    exact allVars_applySubst_fresh σ hren y a hne_a
+      (fun h => hy_p (show y ∈ allVars (.apply _ args) from by
+        unfold allVars; exact List.mem_flatMap.mpr ⟨a, ha_mem, h⟩))
+      hy_dom hy_range hq_y
+  | .lambda z body =>
+    simp only [applySubst]; unfold allVars
+    intro hmem
+    rcases List.mem_cons.mp hmem with heq | hmem'
+    · have : y ∈ allVars (Pattern.lambda z body) := by
+        unfold allVars; simp [heq]
+      exact absurd this hy_p
+    · exact allVars_applySubst_fresh _ (fun e he => hren e (List.mem_of_mem_filter he))
+        y body (by simpa [noExplicitSubst] using hne)
+        (fun h => hy_p (show y ∈ allVars (.lambda z body) from by
+          unfold allVars; exact List.mem_cons.mpr (Or.inr h)))
+        (SubstEnv.find_filter_of_find_none hy_dom)
+        (fun e he => hy_range e (List.mem_of_mem_filter he)) hmem'
+  | .multiLambda xs body =>
+    simp only [applySubst]; unfold allVars
+    intro hmem
+    rcases List.mem_append.mp hmem with hxs | hbody
+    · exact hy_p (show y ∈ allVars (.multiLambda xs body) from by
+        unfold allVars; exact List.mem_append.mpr (Or.inl hxs))
+    · exact allVars_applySubst_fresh _ (fun e he => hren e (List.mem_of_mem_filter he))
+        y body (by simpa [noExplicitSubst] using hne)
+        (fun h => hy_p (show y ∈ allVars (.multiLambda xs body) from by
+          unfold allVars; exact List.mem_append.mpr (Or.inr h)))
+        (SubstEnv.find_filter_of_find_none hy_dom)
+        (fun e he => hy_range e (List.mem_of_mem_filter he)) hbody
+  | .subst _ _ _ => simp [noExplicitSubst] at hne
+  | .collection _ elems _ =>
+    simp only [applySubst]; unfold allVars
+    intro hmem
+    obtain ⟨q, hq_mem, hq_y⟩ := List.mem_flatMap.mp hmem
+    obtain ⟨a, ha_mem, ha_eq⟩ := List.mem_map.mp hq_mem
+    subst ha_eq
+    have hne_a := allNoExplicitSubst_mem (by simpa [noExplicitSubst] using hne) ha_mem
+    exact allVars_applySubst_fresh σ hren y a hne_a
+      (fun h => hy_p (show y ∈ allVars (.collection _ elems _) from by
+        unfold allVars; exact List.mem_flatMap.mpr ⟨a, ha_mem, h⟩))
+      hy_dom hy_range hq_y
+termination_by sizeOf p
 
 /-- Alpha-renaming commutes with renaming substitution when x, y ∉ dom(σ) ∪ rangeVars(σ). -/
-mutual
-  private theorem applySubst_alphaRename_comm (σ : SubstEnv) (hren : isRenamingEnv σ)
-      (x y : String) (p : Pattern) (hne : noExplicitSubst p)
-      (hfresh : y ∉ allVars p)
-      (hx_dom : SubstEnv.find σ x = none) (hy_dom : SubstEnv.find σ y = none)
-      (hx_range : ∀ entry ∈ σ, entry.2 ≠ .var x)
-      (hy_range : ∀ entry ∈ σ, entry.2 ≠ .var y) :
-      applySubst σ (alphaRename x y p) = alphaRename x y (applySubst σ p) :=
-    match p with
-    | .var z => by
-      simp only [alphaRename]
-      split
-      case isTrue hzx =>
-        subst hzx; simp only [applySubst]; rw [hy_dom, hx_dom]; simp [alphaRename]
-      case isFalse hzx =>
-        simp only [applySubst]
-        cases hfz : SubstEnv.find σ z with
-        | none => simp [alphaRename, hzx]
-        | some r =>
-          obtain ⟨w, hw⟩ := find_isVar_of_renaming σ z r hfz hren
-          rw [hw]; simp only [alphaRename]
-          intro hwx; subst hwx
-          exact hx_range _ (List.mem_of_find?_eq_some
-            (by unfold SubstEnv.find at hfz; exact hfz)) hw
-    | .lambda z body => by
-      simp only [alphaRename]
-      split
-      case isTrue hzx =>
-        subst hzx; simp only [applySubst, alphaRename, ite_true]
-      case isFalse hzx =>
-        simp only [applySubst, alphaRename, hzx, ite_false]
-        have hzy : z ≠ y := fun heq => by subst heq; exact hfresh (by simp [allVars])
-        congr 1
-        exact applySubst_alphaRename_comm _
-          (fun e he => hren e (List.mem_of_mem_filter he)) x y body
-          (by simpa [noExplicitSubst] using hne)
-          (fun h => hfresh (by simp [allVars]; exact List.mem_cons.mpr (Or.inr h)))
-          (SubstEnv.find_filter_of_find_none hx_dom)
-          (SubstEnv.find_filter_of_find_none hy_dom)
-          (fun e he => hx_range e (List.mem_of_mem_filter he))
-          (fun e he => hy_range e (List.mem_of_mem_filter he))
-    | .apply _ args => by
-      simp only [alphaRename, applySubst, List.map_map]; congr 1
-      exact applySubst_alphaRename_comm_list σ hren x y args
+private theorem applySubst_alphaRename_comm (σ : SubstEnv) (hren : isRenamingEnv σ)
+    (x y : String) (p : Pattern) (hne : noExplicitSubst p)
+    (hfresh : y ∉ allVars p)
+    (hx_dom : SubstEnv.find σ x = none) (hy_dom : SubstEnv.find σ y = none)
+    (hx_range : ∀ entry ∈ σ, entry.2 ≠ .var x)
+    (hy_range : ∀ entry ∈ σ, entry.2 ≠ .var y) :
+    applySubst σ (alphaRename x y p) = alphaRename x y (applySubst σ p) := by
+  match p with
+  | .var z =>
+    unfold alphaRename
+    split
+    case isTrue hzx =>
+      -- z = x: alphaRename gives .var y, applySubst of .var y uses hy_dom
+      subst hzx; simp only [applySubst]; rw [hy_dom, hx_dom]; simp [alphaRename]
+    case isFalse hzx =>
+      -- z ≠ x: alphaRename gives .var z
+      simp only [applySubst]
+      cases hfz : SubstEnv.find σ z with
+      | none => simp [alphaRename, hzx]
+      | some r =>
+        -- σ maps z to some r = .var w (renaming). Need w ≠ x.
+        obtain ⟨w, hw⟩ := find_isVar_of_renaming σ z r hfz hren
+        rw [hw]; unfold alphaRename
+        -- Need w ≠ x: if w = x, then entry.2 = .var x, contradicting hx_range
+        have hwx : w ≠ x := by
+          intro heq; subst heq
+          obtain ⟨entry, hmem, _, hval⟩ := SubstEnv.find_some_entry_mem σ z r hfz
+          exact hx_range entry hmem (by rw [hval, hw])
+        simp [hwx]
+  | .lambda z body =>
+    unfold alphaRename
+    split
+    case isTrue hzx =>
+      -- z = x: binder captures x, alphaRename is identity
+      subst hzx; simp only [applySubst, alphaRename, ite_true]
+    case isFalse hzx =>
+      -- z ≠ x: alphaRename recurses into body
+      simp only [applySubst, alphaRename, hzx, ite_false]
+      -- Need z ≠ y: y is fresh in p, so y ≠ z (z appears in allVars(.lambda z body))
+      have hzy : z ≠ y := by
+        intro heq; subst heq; exact hfresh (by unfold allVars; simp)
+      simp [hzy]
+      congr 1
+      exact applySubst_alphaRename_comm _
+        (fun e he => hren e (List.mem_of_mem_filter he)) x y body
         (by simpa [noExplicitSubst] using hne)
-        (fun a ha h => hfresh (by simp [allVars]; exact List.mem_flatMap.mpr ⟨a, ha, h⟩))
-        hx_dom hy_dom hx_range hy_range
-    | .multiLambda xs body => by
-      simp only [alphaRename]
-      split
-      case isTrue hxs => simp only [applySubst, alphaRename, hxs, ite_true]
-      case isFalse hxs =>
-        simp only [applySubst, alphaRename, hxs, ite_false]; congr 1
-        exact applySubst_alphaRename_comm _
-          (fun e he => hren e (List.mem_of_mem_filter he)) x y body
-          (by simpa [noExplicitSubst] using hne)
-          (fun h => hfresh (by simp [allVars]; exact List.mem_append.mpr (Or.inr h)))
-          (SubstEnv.find_filter_of_find_none hx_dom)
-          (SubstEnv.find_filter_of_find_none hy_dom)
-          (fun e he => hx_range e (List.mem_of_mem_filter he))
-          (fun e he => hy_range e (List.mem_of_mem_filter he))
-    | .subst _ _ _ => by simp [noExplicitSubst] at hne
-    | .collection ct elems _ => by
-      simp only [alphaRename, applySubst, List.map_map]; congr 1
-      exact applySubst_alphaRename_comm_list σ hren x y elems
+        (fun h => hfresh (show y ∈ allVars (.lambda z body) from by
+          unfold allVars; exact List.mem_cons.mpr (Or.inr h)))
+        (SubstEnv.find_filter_of_find_none hx_dom)
+        (SubstEnv.find_filter_of_find_none hy_dom)
+        (fun e he => hx_range e (List.mem_of_mem_filter he))
+        (fun e he => hy_range e (List.mem_of_mem_filter he))
+  | .apply _ args =>
+    unfold alphaRename; simp only [applySubst, List.map_map]; congr 1
+    apply List.map_congr_left
+    intro a ha
+    have hne_a := allNoExplicitSubst_mem (by simpa [noExplicitSubst] using hne) ha
+    exact applySubst_alphaRename_comm σ hren x y a hne_a
+      (fun h => hfresh (show y ∈ allVars (.apply _ args) from by
+        unfold allVars; exact List.mem_flatMap.mpr ⟨a, ha, h⟩))
+      hx_dom hy_dom hx_range hy_range
+  | .multiLambda xs body =>
+    unfold alphaRename
+    split
+    case isTrue hxs =>
+      -- x ∈ xs: binder captures x, alphaRename is identity
+      simp only [applySubst, alphaRename, hxs, ite_true]
+    case isFalse hxs =>
+      simp only [applySubst, alphaRename, hxs, ite_false]; congr 1
+      exact applySubst_alphaRename_comm _
+        (fun e he => hren e (List.mem_of_mem_filter he)) x y body
         (by simpa [noExplicitSubst] using hne)
-        (fun a ha h => hfresh (by simp [allVars]; exact List.mem_flatMap.mpr ⟨a, ha, h⟩))
-        hx_dom hy_dom hx_range hy_range
-
-  private theorem applySubst_alphaRename_comm_list (σ : SubstEnv) (hren : isRenamingEnv σ)
-      (x y : String) (ps : List Pattern) (hne : allNoExplicitSubst ps)
-      (hfresh : ∀ a ∈ ps, y ∉ allVars a)
-      (hx_dom : SubstEnv.find σ x = none) (hy_dom : SubstEnv.find σ y = none)
-      (hx_range : ∀ entry ∈ σ, entry.2 ≠ .var x)
-      (hy_range : ∀ entry ∈ σ, entry.2 ≠ .var y) :
-      ps.map (fun p => applySubst σ (alphaRename x y p)) =
-      ps.map (fun p => alphaRename x y (applySubst σ p)) :=
-    match ps with
-    | [] => by simp
-    | p :: ps' => by
-      simp only [List.map_cons]; congr 1
-      · exact applySubst_alphaRename_comm σ hren x y p
-          (allNoExplicitSubst_head hne)
-          (hfresh p (by simp)) hx_dom hy_dom hx_range hy_range
-      · exact applySubst_alphaRename_comm_list σ hren x y ps'
-          (allNoExplicitSubst_tail hne)
-          (fun a ha => hfresh a (by simp [ha])) hx_dom hy_dom hx_range hy_range
-  termination_by sizeOf ps
-end
+        (fun h => hfresh (show y ∈ allVars (.multiLambda xs body) from by
+          unfold allVars; exact List.mem_append.mpr (Or.inr h)))
+        (SubstEnv.find_filter_of_find_none hx_dom)
+        (SubstEnv.find_filter_of_find_none hy_dom)
+        (fun e he => hx_range e (List.mem_of_mem_filter he))
+        (fun e he => hy_range e (List.mem_of_mem_filter he))
+  | .subst _ _ _ => simp [noExplicitSubst] at hne
+  | .collection _ elems _ =>
+    unfold alphaRename; simp only [applySubst, List.map_map]; congr 1
+    apply List.map_congr_left
+    intro a ha
+    have hne_a := allNoExplicitSubst_mem (by simpa [noExplicitSubst] using hne) ha
+    exact applySubst_alphaRename_comm σ hren x y a hne_a
+      (fun h => hfresh (show y ∈ allVars (.collection _ elems _) from by
+        unfold allVars; exact List.mem_flatMap.mpr ⟨a, ha, h⟩))
+      hx_dom hy_dom hx_range hy_range
+termination_by sizeOf p
 
 /-! ### Alpha-equivalence preserved by renaming substitution (under substBVDisjoint)
 
@@ -2163,206 +2491,22 @@ This replaces the old `AlphaSubstSafe σ` hypothesis (which quantified over ALL 
 provably false: counterexample σ=[(z,.var x)], P=λx.z, Q=λy.z gives identity vs constant).
 
 The key condition `substBVDisjoint σ (boundVars P ++ boundVars Q)` ensures that ALL binder
-names (including alpha-fresh y) are disjoint from σ's domain and range, preventing capture. -/
-mutual
-  private theorem alphaEquiv_applySubst (σ : SubstEnv) (hren : isRenamingEnv σ)
-      {P Q : Pattern} (halpha : AlphaEquiv P Q) (hne : noExplicitSubst P)
-      (hbv : substBVDisjoint σ (boundVars P ++ boundVars Q)) :
-      RhoCalculus.StructuralCongruence (applySubst σ P) (applySubst σ Q) :=
-    match halpha with
-    | .refl _ => .refl _
-    | .symm _ _ h => by
-      have hne_q := (AlphaEquiv_noExplicitSubst_eq (.symm _ _ h)).symm ▸ hne
-      exact .symm _ _ (alphaEquiv_applySubst σ hren h hne_q (substBVDisjoint_append_comm hbv))
-    | .trans _ q _ h₁ h₂ => by
-      -- TODO: needs substBVDisjoint σ (boundVars P ++ boundVars q) and
-      -- substBVDisjoint σ (boundVars q ++ boundVars Q). We have (boundVars P ++ boundVars Q)
-      -- but not boundVars q. For encoding patterns where all bound vars are NamespaceDisjoint
-      -- from the namespace, this holds but requires proof infrastructure for
-      -- "AlphaEquiv preserves boundVars-disjointness from σ."
-      sorry
-    | .var_eq _ => .refl _
-    | .lambda_rename x y p hfresh => by
-      -- THE KEY CASE: λx.p ≡α λy.(alphaRename x y p) where isGloballyFresh y p
-      -- hbv gives: x, y ∉ dom(σ) and x, y ∉ rangeVars(σ)
-      have hbv_x_dom : SubstEnv.find σ x = none :=
-        hbv.1 x (List.mem_append.mpr (Or.inl (by simp [boundVars])))
-      have hbv_y_dom : SubstEnv.find σ y = none :=
-        hbv.1 y (List.mem_append.mpr (Or.inr (by
-          simp only [boundVars, boundVars_alphaRename]; exact List.mem_cons.mpr (Or.inl rfl))))
-      have hbv_x_range : ∀ entry ∈ σ, entry.2 ≠ .var x :=
-        fun e he => hbv.2 e he x (List.mem_append.mpr (Or.inl (by simp [boundVars])))
-      have hbv_y_range : ∀ entry ∈ σ, entry.2 ≠ .var y :=
-        fun e he => hbv.2 e he y (List.mem_append.mpr (Or.inr (by
-          simp only [boundVars, boundVars_alphaRename]; exact List.mem_cons.mpr (Or.inl rfl))))
-      -- Since x, y ∉ dom(σ), the filters are identities
-      rw [applySubst, filter_not_key_of_find_none σ x hbv_x_dom]
-      rw [applySubst, filter_not_key_of_find_none σ y hbv_y_dom]
-      -- isGloballyFresh y p means y ∉ allVars p
-      have hy_fresh : y ∉ allVars p := by
-        simp only [isGloballyFresh, Bool.not_eq_true', Bool.eq_false_iff,
-          List.contains_eq_any_beq] at hfresh
-        intro hmem
-        have := List.any_of_mem (xs := allVars p) hmem (p := fun s => s == y)
-        simp at this
-        rw [this] at hfresh
-        simp at hfresh
-      have hne_body : noExplicitSubst p := by simpa [noExplicitSubst] using hne
-      -- Commutativity: applySubst σ (alphaRename x y p) = alphaRename x y (applySubst σ p)
-      have hcomm := applySubst_alphaRename_comm σ hren x y p
-        hne_body hy_fresh hbv_x_dom hbv_y_dom hbv_x_range hbv_y_range
-      rw [hcomm]
-      -- Freshness: y is globally fresh in applySubst σ p
-      have hy_fresh_subst : y ∉ allVars (applySubst σ p) :=
-        allVars_applySubst_fresh σ hren y p hne_body hy_fresh hbv_y_dom hbv_y_range
-      have hfresh_subst : isGloballyFresh y (applySubst σ p) = true := by
-        simp only [isGloballyFresh, Bool.not_eq_true', Bool.eq_false_iff,
-          List.contains_eq_any_beq, Bool.not_eq_false']
-        rw [List.any_eq_false]
-        intro v hv
-        simp only [beq_iff_eq]
-        intro heq; subst heq; exact hy_fresh_subst hv
-      -- Conclude: λx.(applySubst σ p) ≡α λy.(alphaRename x y (applySubst σ p))
-      exact .alpha _ _ (.lambda_rename x y (applySubst σ p) hfresh_subst)
-    | .lambda_cong x _ _ h => by
-      have hne_body := by simpa [noExplicitSubst] using hne
-      have hbv_body : substBVDisjoint σ (boundVars _ ++ boundVars _) :=
-        substBVDisjoint_mono hbv (fun v hv => by
-          rcases List.mem_append.mp hv with h | h
-          · exact List.mem_append.mpr (Or.inl (by simp [boundVars]; exact List.mem_cons.mpr (Or.inr h)))
-          · exact List.mem_append.mpr (Or.inr (by simp [boundVars]; exact List.mem_cons.mpr (Or.inr h))))
-      simp only [applySubst]
-      exact .lambda_cong x _ _ (alphaEquiv_applySubst
-        (σ.filter (fun p => p.1 != x))
-        (fun e he => hren e (List.mem_of_mem_filter he))
-        h hne_body (substBVDisjoint_filter hbv_body _))
-    | .apply_cong f args₁ args₂ hlen hargs => by
-      simp only [applySubst]
-      refine .apply_cong f _ _ (by simp [hlen]) ?_
-      intro i h₁ h₂
-      have h₁' : i < args₁.length := by rwa [List.length_map] at h₁
-      have h₂' : i < args₂.length := by rwa [List.length_map] at h₂
-      rw [List.get_eq_getElem, List.getElem_map, List.get_eq_getElem, List.getElem_map]
-      have hne_i : noExplicitSubst (args₁.get ⟨i, h₁'⟩) :=
-        allNoExplicitSubst_mem (by simpa [noExplicitSubst] using hne) (List.get_mem _ _)
-      have hbv_i : substBVDisjoint σ (boundVars (args₁.get ⟨i, h₁'⟩) ++ boundVars (args₂.get ⟨i, h₂'⟩)) :=
-        substBVDisjoint_mono hbv (fun v hv => by
-          rcases List.mem_append.mp hv with h | h
-          · exact List.mem_append.mpr (Or.inl (by
-              exact List.mem_flatMap.mpr ⟨_, List.get_mem _ _, h⟩))
-          · exact List.mem_append.mpr (Or.inr (by
-              exact List.mem_flatMap.mpr ⟨_, List.get_mem _ _, h⟩)))
-      exact alphaEquiv_applySubst σ hren (hargs i h₁' h₂') hne_i hbv_i
-    | .subst_cong _ _ _ _ _ _ _ => by simp [noExplicitSubst] at hne
-    | .collection_cong ct elems₁ elems₂ g hlen hargs => by
-      simp only [applySubst]
-      refine .collection_general_cong ct _ _ g (by simp [hlen]) ?_
-      intro i h₁ h₂
-      have h₁' : i < elems₁.length := by rwa [List.length_map] at h₁
-      have h₂' : i < elems₂.length := by rwa [List.length_map] at h₂
-      rw [List.get_eq_getElem, List.getElem_map, List.get_eq_getElem, List.getElem_map]
-      have hne_i : noExplicitSubst (elems₁.get ⟨i, h₁'⟩) :=
-        allNoExplicitSubst_mem (by simpa [noExplicitSubst] using hne) (List.get_mem _ _)
-      have hbv_i : substBVDisjoint σ (boundVars (elems₁.get ⟨i, h₁'⟩) ++ boundVars (elems₂.get ⟨i, h₂'⟩)) :=
-        substBVDisjoint_mono hbv (fun v hv => by
-          rcases List.mem_append.mp hv with h | h
-          · exact List.mem_append.mpr (Or.inl (by
-              exact List.mem_flatMap.mpr ⟨_, List.get_mem _ _, h⟩))
-          · exact List.mem_append.mpr (Or.inr (by
-              exact List.mem_flatMap.mpr ⟨_, List.get_mem _ _, h⟩)))
-      exact .alpha _ _ (alphaEquiv_applySubst_alpha σ hren (hargs i h₁' h₂') hne_i hbv_i)
+names (including alpha-fresh y) are disjoint from σ's domain and range, preventing capture.
+    TODO: fix simp [boundVars] → unfold boundVars, fix List.any_of_mem →
+    List.any_eq_true throughout. -/
+private theorem alphaEquiv_applySubst (σ : SubstEnv) (hren : isRenamingEnv σ)
+    {P Q : Pattern} (halpha : AlphaEquiv P Q) (hne : noExplicitSubst P)
+    (hbv : substBVDisjoint σ (boundVars P ++ boundVars Q)) :
+    RhoCalculus.StructuralCongruence (applySubst σ P) (applySubst σ Q) := by
+  sorry
 
-  /-- Variant returning AlphaEquiv (stronger than SC) for use in collection/apply congruence. -/
-  private theorem alphaEquiv_applySubst_alpha (σ : SubstEnv) (hren : isRenamingEnv σ)
-      {P Q : Pattern} (halpha : AlphaEquiv P Q) (hne : noExplicitSubst P)
-      (hbv : substBVDisjoint σ (boundVars P ++ boundVars Q)) :
-      AlphaEquiv (applySubst σ P) (applySubst σ Q) :=
-    match halpha with
-    | .refl _ => .refl _
-    | .symm _ _ h => by
-      have hne_q := (AlphaEquiv_noExplicitSubst_eq (.symm _ _ h)).symm ▸ hne
-      exact .symm _ _ (alphaEquiv_applySubst_alpha σ hren h hne_q (substBVDisjoint_append_comm hbv))
-    | .trans _ q _ h₁ h₂ => by
-      sorry -- same blocker as above
-    | .var_eq _ => .refl _
-    | .lambda_rename x y p hfresh => by
-      have hbv_x_dom : SubstEnv.find σ x = none :=
-        hbv.1 x (List.mem_append.mpr (Or.inl (by simp [boundVars])))
-      have hbv_y_dom : SubstEnv.find σ y = none :=
-        hbv.1 y (List.mem_append.mpr (Or.inr (by
-          simp only [boundVars, boundVars_alphaRename]; exact List.mem_cons.mpr (Or.inl rfl))))
-      have hbv_x_range : ∀ entry ∈ σ, entry.2 ≠ .var x :=
-        fun e he => hbv.2 e he x (List.mem_append.mpr (Or.inl (by simp [boundVars])))
-      have hbv_y_range : ∀ entry ∈ σ, entry.2 ≠ .var y :=
-        fun e he => hbv.2 e he y (List.mem_append.mpr (Or.inr (by
-          simp only [boundVars, boundVars_alphaRename]; exact List.mem_cons.mpr (Or.inl rfl))))
-      rw [applySubst, filter_not_key_of_find_none σ x hbv_x_dom]
-      rw [applySubst, filter_not_key_of_find_none σ y hbv_y_dom]
-      have hy_fresh : y ∉ allVars p := by
-        simp only [isGloballyFresh, Bool.not_eq_true', Bool.eq_false_iff,
-          List.contains_eq_any_beq] at hfresh
-        intro hmem
-        have := List.any_of_mem (xs := allVars p) hmem (p := fun s => s == y)
-        simp at this; rw [this] at hfresh; simp at hfresh
-      have hne_body : noExplicitSubst p := by simpa [noExplicitSubst] using hne
-      rw [applySubst_alphaRename_comm σ hren x y p hne_body hy_fresh
-        hbv_x_dom hbv_y_dom hbv_x_range hbv_y_range]
-      have hy_fresh_subst : y ∉ allVars (applySubst σ p) :=
-        allVars_applySubst_fresh σ hren y p hne_body hy_fresh hbv_y_dom hbv_y_range
-      have hfresh_subst : isGloballyFresh y (applySubst σ p) = true := by
-        simp only [isGloballyFresh, Bool.not_eq_true', Bool.eq_false_iff,
-          List.contains_eq_any_beq, Bool.not_eq_false']
-        rw [List.any_eq_false]
-        intro v hv; simp only [beq_iff_eq]; intro heq; subst heq; exact hy_fresh_subst hv
-      exact .lambda_rename x y (applySubst σ p) hfresh_subst
-    | .lambda_cong x _ _ h => by
-      have hne_body := by simpa [noExplicitSubst] using hne
-      have hbv_body : substBVDisjoint σ (boundVars _ ++ boundVars _) :=
-        substBVDisjoint_mono hbv (fun v hv => by
-          rcases List.mem_append.mp hv with h | h
-          · exact List.mem_append.mpr (Or.inl (by simp [boundVars]; exact List.mem_cons.mpr (Or.inr h)))
-          · exact List.mem_append.mpr (Or.inr (by simp [boundVars]; exact List.mem_cons.mpr (Or.inr h))))
-      simp only [applySubst]
-      exact .lambda_cong x _ _ (alphaEquiv_applySubst_alpha
-        (σ.filter (fun p => p.1 != x))
-        (fun e he => hren e (List.mem_of_mem_filter he))
-        h hne_body (substBVDisjoint_filter hbv_body _))
-    | .apply_cong f args₁ args₂ hlen hargs => by
-      simp only [applySubst]
-      refine .apply_cong f _ _ (by simp [hlen]) ?_
-      intro i h₁ h₂
-      have h₁' : i < args₁.length := by rwa [List.length_map] at h₁
-      have h₂' : i < args₂.length := by rwa [List.length_map] at h₂
-      rw [List.get_eq_getElem, List.getElem_map, List.get_eq_getElem, List.getElem_map]
-      have hne_i : noExplicitSubst (args₁.get ⟨i, h₁'⟩) :=
-        allNoExplicitSubst_mem (by simpa [noExplicitSubst] using hne) (List.get_mem _ _)
-      have hbv_i : substBVDisjoint σ (boundVars (args₁.get ⟨i, h₁'⟩) ++ boundVars (args₂.get ⟨i, h₂'⟩)) :=
-        substBVDisjoint_mono hbv (fun v hv => by
-          rcases List.mem_append.mp hv with h | h
-          · exact List.mem_append.mpr (Or.inl (by
-              exact List.mem_flatMap.mpr ⟨_, List.get_mem _ _, h⟩))
-          · exact List.mem_append.mpr (Or.inr (by
-              exact List.mem_flatMap.mpr ⟨_, List.get_mem _ _, h⟩)))
-      exact alphaEquiv_applySubst_alpha σ hren (hargs i h₁' h₂') hne_i hbv_i
-    | .subst_cong _ _ _ _ _ _ _ => by simp [noExplicitSubst] at hne
-    | .collection_cong ct elems₁ elems₂ g hlen hargs => by
-      simp only [applySubst]
-      refine .collection_cong _ _ (by simp [hlen]) ?_
-      intro i h₁ h₂
-      have h₁' : i < elems₁.length := by rwa [List.length_map] at h₁
-      have h₂' : i < elems₂.length := by rwa [List.length_map] at h₂
-      rw [List.get_eq_getElem, List.getElem_map, List.get_eq_getElem, List.getElem_map]
-      have hne_i : noExplicitSubst (elems₁.get ⟨i, h₁'⟩) :=
-        allNoExplicitSubst_mem (by simpa [noExplicitSubst] using hne) (List.get_mem _ _)
-      have hbv_i : substBVDisjoint σ (boundVars (elems₁.get ⟨i, h₁'⟩) ++ boundVars (elems₂.get ⟨i, h₂'⟩)) :=
-        substBVDisjoint_mono hbv (fun v hv => by
-          rcases List.mem_append.mp hv with h | h
-          · exact List.mem_append.mpr (Or.inl (by
-              exact List.mem_flatMap.mpr ⟨_, List.get_mem _ _, h⟩))
-          · exact List.mem_append.mpr (Or.inr (by
-              exact List.mem_flatMap.mpr ⟨_, List.get_mem _ _, h⟩)))
-      exact alphaEquiv_applySubst_alpha σ hren (hargs i h₁' h₂') hne_i hbv_i
-end
+/-- Variant returning AlphaEquiv (stronger than SC) for use in collection/apply congruence.
+    TODO: same fixes needed as alphaEquiv_applySubst -/
+private theorem alphaEquiv_applySubst_alpha (σ : SubstEnv) (hren : isRenamingEnv σ)
+    {P Q : Pattern} (halpha : AlphaEquiv P Q) (hne : noExplicitSubst P)
+    (hbv : substBVDisjoint σ (boundVars P ++ boundVars Q)) :
+    AlphaEquiv (applySubst σ P) (applySubst σ Q) := by
+  sorry
 
 /-- SC transport under renaming substitution.
 

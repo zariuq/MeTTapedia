@@ -354,6 +354,124 @@ theorem chain_dsepFull_A_C_given_B :
     chain_dsep_A_C_given_B Three.A (by simp) Three.C (by simp) (by decide)
   exact hlegacy (chain_hasActivePath_of_hasActiveTrail_A_C_given_B htrail)
 
+theorem chain_separatedInMoral_A_C_given_B :
+    SeparatedInMoral chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) := by
+  intro x hx y hy hxy hpath
+  simp only [Set.mem_singleton_iff] at hx hy
+  subst hx
+  subst hy
+  rcases hpath with ⟨p, hpne, hEnds, hTrail, hAvoid⟩
+  cases p with
+  | nil =>
+      exact (hpne rfl).elim
+  | cons a rest =>
+      have ha : a = Three.A := by
+        cases rest with
+        | nil =>
+            have hpair : (a, a) = (Three.A, Three.C) := by
+              simpa [PathEndpoints] using Option.some.inj hEnds
+            exact congrArg Prod.fst hpair
+        | cons b rest2 =>
+            have hpair : (a, (b :: rest2).getLast (by simp)) = (Three.A, Three.C) := by
+              simpa [PathEndpoints] using Option.some.inj hEnds
+            exact congrArg Prod.fst hpair
+      subst ha
+      cases rest with
+      | nil =>
+          have hpair : (Three.A, Three.A) = (Three.A, Three.C) := by
+            simpa [PathEndpoints] using Option.some.inj hEnds
+          exact Three.noConfusion (congrArg Prod.snd hpair)
+      | cons b rest2 =>
+          cases hTrail with
+          | cons hAB _ =>
+              have hbB : b = Three.B := by
+                cases b with
+                | A =>
+                    exfalso
+                    have : False := by
+                      simpa [UndirectedEdge, moralGraph, moralUndirectedEdge, chainGraph] using hAB
+                    exact this
+                | B => rfl
+                | C =>
+                    exfalso
+                    have : False := by
+                      simpa [UndirectedEdge, moralGraph, moralUndirectedEdge, chainGraph] using hAB
+                    exact this
+              subst hbB
+              cases rest2 with
+              | nil =>
+                  have hpair : (Three.A, Three.B) = (Three.A, Three.C) := by
+                    simpa [PathEndpoints] using Option.some.inj hEnds
+                  exact Three.noConfusion (congrArg Prod.snd hpair)
+              | cons c rest3 =>
+                  -- In paths of length >= 3, `PathAvoidsInternals` requires the second node
+                  -- to be outside Z; here the second node is B and Z = {B}.
+                  have hBnot : Three.B ∉ ({Three.B} : Set Three) := by
+                    simpa [PathAvoidsInternals] using (And.left hAvoid)
+                  exact hBnot (by simp)
+
+theorem chain_relevantVertices_A_C_B_univ :
+    relevantVertices chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) =
+      (Set.univ : Set Three) := by
+  ext v
+  cases v <;> simp [relevantVertices, ancestorClosure, chainGraph]
+
+theorem chain_moralAncestral_eq_moral :
+    moralAncestralGraph chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) =
+      moralGraph chainGraph := by
+  have hrel :
+      relevantVertices chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) =
+        (Set.univ : Set Three) := chain_relevantVertices_A_C_B_univ
+  have hind : inducedSubgraph chainGraph (Set.univ : Set Three) = chainGraph := by
+    ext u v
+    constructor
+    · intro h
+      exact h.2.2
+    · intro h
+      exact ⟨trivial, trivial, h⟩
+  simp [moralAncestralGraph, moralGraph, hrel, hind]
+
+theorem chain_separatedInMoralAncestral_A_C_given_B :
+    SeparatedInMoralAncestral chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) := by
+  intro x hx y hy hxy
+  simpa [chain_moralAncestral_eq_moral] using
+    (chain_separatedInMoral_A_C_given_B x hx y hy hxy)
+
+theorem chain_separatedInMoralAncestral_iff_separatedInMoral_A_C_given_B :
+    SeparatedInMoralAncestral chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) ↔
+      SeparatedInMoral chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) := by
+  simp [SeparatedInMoralAncestral, SeparatedInMoral, chain_moralAncestral_eq_moral]
+
+theorem chain_dsepFull_iff_separatedInMoral_A_C_given_B :
+    DSeparatedFull chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) ↔
+      SeparatedInMoral chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) := by
+  constructor
+  · intro _h
+    exact chain_separatedInMoral_A_C_given_B
+  · intro _h
+    exact chain_dsepFull_A_C_given_B
+
+theorem chain_dsepFull_iff_separatedInMoralAncestral_A_C_given_B :
+    DSeparatedFull chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) ↔
+      SeparatedInMoralAncestral chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) := by
+  constructor
+  · intro hFull
+    exact chain_separatedInMoralAncestral_A_C_given_B
+  · intro hSepAnc
+    have hSep :
+        SeparatedInMoral chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) :=
+      (chain_separatedInMoralAncestral_iff_separatedInMoral_A_C_given_B).1 hSepAnc
+    exact (chain_dsepFull_iff_separatedInMoral_A_C_given_B).2 hSep
+
+theorem chain_sep_moral_ancestral_A_C_B :
+    SeparatedInMoralAncestral chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) := by
+  exact chain_separatedInMoralAncestral_A_C_given_B
+
+theorem chain_dsepFull_iff_sep_moral_ancestral_A_C_B :
+    DSeparatedFull chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) ↔
+      SeparatedInMoralAncestral chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) := by
+  exact chain_dsepFull_iff_separatedInMoralAncestral_A_C_given_B
+
 /-! ## Restricted d-sep ⇒ CondIndep bridge for the chain -/
 
 theorem chain_descendants_C_empty :
@@ -397,7 +515,7 @@ theorem chain_dsep_to_condIndep_CA_given_B
     [StandardBorelSpace chainBN.JointSpace]
     (μ : MeasureTheory.Measure chainBN.JointSpace) [MeasureTheory.IsFiniteMeasure μ]
     [HasLocalMarkovProperty chainBN μ] :
-    DSeparated chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
+    DSeparatedFull chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
       CondIndepVertices chainBN μ ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
   intro _hdsep
   exact chain_condIndep_CA_given_B_of_localMarkov (μ := μ)
@@ -406,7 +524,7 @@ theorem chain_dsep_to_condIndep_AC_given_B
     [StandardBorelSpace chainBN.JointSpace]
     (μ : MeasureTheory.Measure chainBN.JointSpace) [MeasureTheory.IsFiniteMeasure μ]
     [HasLocalMarkovProperty chainBN μ] :
-    DSeparated chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
+    DSeparatedFull chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
       CondIndepVertices chainBN μ ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) := by
   intro hdsep
   exact condIndepVertices_symm (bn := chainBN) (μ := μ)
@@ -422,9 +540,7 @@ theorem chain_dsepFull_to_condIndep_CA_given_B
       chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
       CondIndepVertices chainBN μ ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
   intro hdsepFull
-  exact chain_dsep_to_condIndep_CA_given_B (μ := μ)
-    (Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.dsep_of_dsepFull
-      chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) hdsepFull)
+  exact chain_dsep_to_condIndep_CA_given_B (μ := μ) hdsepFull
 
 /-- In a collider A → C ← B, A and B are d-separated given ∅.
 

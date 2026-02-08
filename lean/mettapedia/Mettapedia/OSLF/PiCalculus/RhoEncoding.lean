@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.PiCalculus.Reduction
 import Mettapedia.OSLF.RhoCalculus.Reduction
 import Mettapedia.OSLF.MeTTaIL.Syntax
+import Mettapedia.OSLF.MeTTaIL.Substitution
 
 /-!
 # Correct Encoding π → ρ (Lybech 2022)
@@ -35,29 +36,26 @@ The π-calculus uses **atomic names** (strings like "x", "y"), while the
 namespace Mettapedia.OSLF.PiCalculus
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.Substitution (closeFVar)
 open Mettapedia.OSLF.RhoCalculus.Reduction
 
 /-! ## Name Mapping
 
 π-calculus names (atomic strings) map to ρ-calculus channels.
-We use `.var x` as the channel for π-name x. Output sends `PDrop(.var z)` as
-payload so that COMM's NQuote wrapping produces `NQuote(PDrop(.var z)) ≡ .var z`
+We use `.fvar x` as the channel for π-name x. Output sends `PDrop(.fvar z)` as
+payload so that COMM's NQuote wrapping produces `NQuote(PDrop(.fvar z)) ≡ .fvar z`
 by the QuoteDrop structural equation. This avoids the double-quoting problem.
 -/
 
 /-- Map a π-calculus atomic name to a ρ-calculus channel.
 
-    A π-name x maps to the variable `.var x` in the ρ-calculus encoding.
+    A π-name x maps to the free variable `.fvar x` in the ρ-calculus encoding.
     After COMM, the bound variable receives `NQuote(payload)`. Since output
-    sends `PDrop(.var z)` as payload, COMM produces `NQuote(PDrop(.var z))`,
-    which simplifies to `.var z` by the QuoteDrop structural equation.
-
-    **Design rationale**: Using `.var x` (not `NQuote(.var x)`) avoids the
-    double-quoting problem where COMM's NQuote wrapping creates
-    `NQuote(NQuote(.var z))` instead of `NQuote(.var z)`.
+    sends `PDrop(.fvar z)` as payload, COMM produces `NQuote(PDrop(.fvar z))`,
+    which simplifies to `.fvar z` by the QuoteDrop structural equation.
 -/
 def piNameToRhoName (n : Name) : Pattern :=
-  .var n
+  .fvar n
 
 /-- The nil process in ρ-calculus -/
 def rhoNil : Pattern :=
@@ -74,9 +72,12 @@ def rhoPar (P Q : Pattern) : Pattern :=
       .collection .hashBag (p :: qs) none
   | p, q => .collection .hashBag [p, q] none
 
-/-- Input in ρ-calculus: for(x <- n){P} -/
+/-- Input in ρ-calculus: for(x <- n){P}
+
+    In locally nameless, `closeFVar 0 x P` replaces free occurrences of `x`
+    in `P` with `BVar 0`, then wraps in `.lambda`. -/
 def rhoInput (n : Pattern) (x : String) (P : Pattern) : Pattern :=
-  .apply "PInput" [n, .lambda x P]
+  .apply "PInput" [n, .lambda (closeFVar 0 x P)]
 
 /-- Output in ρ-calculus: n!(q) -/
 def rhoOutput (n q : Pattern) : Pattern :=
@@ -86,7 +87,7 @@ def rhoOutput (n q : Pattern) : Pattern :=
 def rhoNu (x : String) (P : Pattern) : Pattern :=
   -- In ρ-calculus, restriction is typically encoded using input on a fresh channel
   -- For now, represent as a direct restriction pattern (may need refinement)
-  .apply "PNu" [.var x, P]
+  .apply "PNu" [.lambda (closeFVar 0 x P)]
 
 /-- Replication in ρ-calculus: !P -/
 def rhoReplicate (P : Pattern) : Pattern :=
@@ -115,7 +116,7 @@ Where D(x) is a "drop" operation that repeatedly offers `x` for communication.
     continuously makes x available.
 -/
 def dropOperation (x : String) : Pattern :=
-  rhoReplicate (rhoInput (.var x) "_drop" rhoNil)
+  rhoReplicate (rhoInput (.fvar x) "_drop" rhoNil)
 
 /-- The name server process that generates fresh names on demand.
 
@@ -136,17 +137,17 @@ def nameServer (x z v s : String) : Pattern :=
   let dropX := dropOperation x
   -- x⟨z(a).v(r).(D(x) | r⟨↓a⟩ | z⟨a⟨|0|⟩⟩)⟩
   let serverBody :=
-    rhoInput (.var x) z
-      (rhoInput (.var z) "a"
-        (rhoInput (.var v) "r"
+    rhoInput (.fvar x) z
+      (rhoInput (.fvar z) "a"
+        (rhoInput (.fvar v) "r"
           (rhoPar dropX
             (rhoPar
-              (rhoOutput (.var "r") (.apply "Drop" [.var "a"]))
-              (rhoOutput (.var z)
+              (rhoOutput (.fvar "r") (.apply "Drop" [.fvar "a"]))
+              (rhoOutput (.fvar z)
                 (.apply "Quote" [.apply "Quote" [rhoNil]]))))))
   -- z⟨↓s⟩
   let initialSeed :=
-    rhoOutput (.var z) (.apply "Drop" [.var s])
+    rhoOutput (.fvar z) (.apply "Drop" [.fvar s])
   -- Replicate the server and add initial seed
   rhoPar (rhoReplicate serverBody) (rhoPar dropX initialSeed)
 
@@ -181,8 +182,8 @@ def encode (P : Process) (n v : String) : Pattern :=
       -- Request fresh name from name server and use it in encoding
       -- Following Lybech: (νx)P ↦ v⟨n⟩ | n(x).⟦P⟧_{n∘n,v}
       rhoPar
-        (rhoOutput (.var v) (.var n))
-        (rhoInput (.var n) x (encode P (n ++ "_" ++ n) v))
+        (rhoOutput (.fvar v) (.fvar n))
+        (rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v))
   | .replicate x y P =>
       rhoReplicate (rhoInput (piNameToRhoName x) y (encode P (n ++ "_rep") v))
 
@@ -220,8 +221,8 @@ open Mettapedia.OSLF.MeTTaIL.Substitution
 /-- Namespace renaming environment: maps namespace variables generated from `n`
     to corresponding ones generated from `n'`.
 
-    For each `nu` in the process, the encoding uses `.var n` as a channel.
-    This env maps `n ↦ .var n'` so that `applySubst (nsEnv P n n') (encode P n v) = encode P n' v`.
+    For each `nu` in the process, the encoding uses `.fvar n` as a channel.
+    This env maps `n ↦ .fvar n'` so that `applySubst (nsEnv P n n') (encode P n v) = encode P n' v`.
 -/
 def nsEnv : Process → String → String → SubstEnv
   | .nil, _, _ => []
@@ -230,7 +231,7 @@ def nsEnv : Process → String → String → SubstEnv
   | .par P Q, n, n' =>
       nsEnv P (n ++ "_L") (n' ++ "_L") ++ nsEnv Q (n ++ "_R") (n' ++ "_R")
   | .nu _ P, n, n' =>
-      (n, .var n') :: nsEnv P (n ++ "_" ++ n) (n' ++ "_" ++ n')
+      (n, .fvar n') :: nsEnv P (n ++ "_" ++ n) (n' ++ "_" ++ n')
   | .replicate _ _ P, n, n' =>
       nsEnv P (n ++ "_rep") (n' ++ "_rep")
 

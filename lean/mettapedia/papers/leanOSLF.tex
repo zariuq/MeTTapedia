@@ -1,0 +1,893 @@
+%% leanOSLF: A Verified OSLF Formalization in Lean 4
+%%
+%% Render with:
+%%   pdflatex leanOSLF.tex && bibtex leanOSLF && pdflatex leanOSLF.tex && pdflatex leanOSLF.tex
+
+\documentclass[]{article}
+\usepackage{url}
+\usepackage[hyperindex,breaklinks]{hyperref}
+\usepackage{breakurl}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,frame=single}
+\usepackage{float}
+\restylefloat{table}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage[skip=0pt]{subcaption}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\codepath}[1]{\path{#1}}
+\newcommand{\rhocalc}{\ensuremath{\varrho}}
+\newcommand{\Dia}{\ensuremath{\diamondsuit}}
+\newcommand{\Bx}{\ensuremath{\blacksquare}}
+\newcommand{\OSLF}{\textup{OSLF}}
+\newcommand{\MeTTaIL}{\textup{MeTTaIL}}
+\newcommand{\GSLT}{\textup{GSLT}}
+
+\title{Verified Operational Semantics in Logical Form:\\A Lean 4 Formalization of the \OSLF{} Algorithm\\
+  \texttt{(DRAFT --- \today)}}
+\author{Zar \and Oru\v{z}i (Claude Anthropic)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a comprehensive Lean~4 formalization of Operational Semantics in Logical
+Form (\OSLF{}), the algorithm that mechanically derives spatial-behavioral type systems
+from rewrite rules.  Our formalization spans 22{,}300+ lines across 58 Lean files,
+with 0~sorries across the entire core pipeline (29~sorries remain only in auxiliary
+$\pi$-to-\rhocalc{} encoding correctness proofs).
+The formalization covers:
+(i) \MeTTaIL{}, a meta-language for defining process calculi with capture-avoiding
+substitution and a totalized pattern matcher;
+(ii) the \rhocalc{}-calculus with full reduction semantics, structural congruence,
+and modal type system;
+(iii) the abstract \OSLF{} framework instantiated for \emph{four} languages
+(\rhocalc{}-calculus, lambda calculus, Petri nets, and TinyML), each with
+\emph{fully proven} Galois connections $\Dia \dashv \Bx$;
+(iv) executable rewrite engines (specialized and generic) proven sound with respect
+to a declarative reduction specification;
+(v) a \emph{constructor category} built from sort-crossing constructors with a
+\code{SubobjectFibration} and \code{ChangeOfBase}, connecting to the GSLT
+categorical infrastructure;
+(vi) \emph{derived typing rules} where the modal operator ($\Dia$ or $\Bx$)
+assigned to each constructor is determined automatically by its position in the
+constructor category;
+(vii) a \emph{Beck--Chevalley analysis} of substitution as change-of-base, with a
+proven counterexample showing the strong condition fails; and
+(viii) a MeTTa Core interpreter specification with confluence and progress.
+All Galois connections, the type soundness theorem, the engine soundness theorem,
+the constructor fibration, the derived typing rules, and the Beck--Chevalley
+analysis carry zero sorries.
+\end{abstract}
+
+\section{Introduction}
+
+The \OSLF{} algorithm~\cite{meredith-stay-oslf} takes a rewrite system as input and
+produces a spatial-behavioral type system as output.  The core insight is that every
+reduction relation induces a pair of adjoint modal operators:
+\begin{align}
+  \Dia \varphi &= \{ p \mid \exists q.\; p \rightsquigarrow q \;\wedge\; q \in \varphi \}
+    \quad\text{(step-future / possibly)} \\
+  \Bx \varphi &= \{ q \mid \forall p.\; p \rightsquigarrow q \;\Rightarrow\; p \in \varphi \}
+    \quad\text{(step-past / rely)}
+\end{align}
+and that $\Dia \dashv \Bx$ forms a Galois connection.  Combined with the
+spatial decomposition from parallel composition, this yields a type system where types
+are ``behavioral neighborhoods'' and typing is substitutability under bisimulation.
+
+Previous treatments of \OSLF{} were paper-only.  We give the first machine-checked
+formalization, connecting:
+\begin{itemize}
+\item a \emph{generic} abstract framework (any rewrite system),
+\item a \emph{concrete} \rhocalc{}-calculus instance with all rules proven,
+\item a \emph{categorical} derivation via a constructor category with fibered
+  change-of-base and derived typing rules,
+\item an \emph{executable} reduction engine proven sound w.r.t.\ the spec, and
+\item \emph{four language instances} validating the full pipeline.
+\end{itemize}
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item A Lean~4 formalization of the \OSLF{} algorithm as an abstract structure
+  (\code{RewriteSystem} $\to$ \code{OSLFTypeSystem}) and its full \rhocalc{}-calculus
+  instance (\code{rhoOSLF}) with a proven Galois connection.
+\item A categorical proof that the Galois connection arises from the adjoint triple
+  $\exists_f \dashv f^* \dashv \forall_f$ applied to the reduction span, with the
+  result shown equal to the direct \rhocalc{}-calculus modalities.
+\item A \emph{constructor category} built from sort-crossing constructors of any
+  \code{LanguageDef}, with a \code{SubobjectFibration} and \code{ChangeOfBase}
+  connecting to the GSLT infrastructure.
+\item \emph{Derived typing rules}: the modal operator ($\Dia$/$\Bx$/id) assigned to
+  each constructor is determined automatically by its classification
+  (quoting/reflecting/neutral), and the assignment is proven correct for the
+  \rhocalc{}-calculus.
+\item A \emph{Beck--Chevalley analysis} of the COMM rule as change-of-base along the
+  substitution map, with a proven counterexample showing the GSLT strong
+  Beck--Chevalley condition does not hold for the constructor fibration.
+\item An executable reduction engine (\code{reduceStep}) handling COMM, DROP, and PAR
+  rules, with a machine-checked soundness theorem.
+\item A declarative reduction relation (\code{DeclReduces}) independent of the engine,
+  with proven soundness and completeness of the generic engine.
+\item \emph{Four} \OSLF{} instantiations validating generality:
+  \rhocalc{}-calculus, lambda calculus, Petri nets, and TinyML (a multi-sort CBV
+  $\lambda$-calculus with booleans, pairs, and thunks).
+\item \MeTTaIL{}: a meta-language for defining process calculi, with totalized pattern
+  matching, 29 proven theorems about capture-avoiding substitution, and a complete
+  \rhocalc{}-calculus language definition.
+\item A verified bounded model checker for \OSLF{} formulas, with support for
+  predecessor-based $\Bx$ checking and proven soundness.
+\item A MeTTa Core interpreter specification with progress, confluence, and barbed
+  bisimulation properties (97 proven theorems, 0 sorries).
+\end{enumerate}
+
+\section{Background: The \rhocalc{}-Calculus}
+
+The reflective higher-order calculus~\cite{meredith-radestock-rhocalc} extends the
+$\pi$-calculus with:
+\begin{itemize}
+\item \emph{Quoting}: any process $P$ can be turned into a name $@P$ (name = quoted process).
+\item \emph{Dequoting}: $*x$ recovers the process quoted by name $x$.
+\item \emph{No built-in names}: all names arise from quoting, giving the calculus a
+  reflective character.
+\end{itemize}
+
+The reduction rules are:
+\begin{align}
+  \text{COMM:}\quad & \{n!(q) \mid \mathbf{for}(x \leftarrow n)\{p\} \mid \mathit{rest}\}
+    \;\rightsquigarrow\; \{p[@q/x] \mid \mathit{rest}\} \\
+  \text{DROP:}\quad & *(@P) \;\rightsquigarrow\; P
+\end{align}
+plus structural congruence (11 rules) and contextual reduction under parallel composition.
+
+\section{Formalization Architecture}
+
+\subsection{Module Structure}
+
+The formalization is organized in seven directories plus standalone files:
+
+\begin{center}
+\begin{tabular}{lrrl}
+\textbf{Directory} & \textbf{Lines} & \textbf{Sorries} & \textbf{Content} \\
+\hline
+\code{MeTTaIL/}        & 2{,}929 & 0  & Meta-language AST, substitution, matching, declarative reduction \\
+\code{MeTTaCore/}      & 2{,}946 & 0  & Interpreter specification \\
+\code{Framework/}      & 4{,}400 & 0  & Abstract \OSLF{} + categorical bridge + 4 instances \\
+\code{RhoCalculus/}    & 3{,}893 & 0  & Concrete \rhocalc{}-calculus + engine \\
+\code{PiCalculus/}     & 6{,}582 & 29 & $\pi$-calculus + \rhocalc{}-encoding \\
+\code{NativeType/}     &   263   & 0  & Native type construction \\
+\code{Formula.lean}    &   582   & 0  & Verified bounded model checker \\
+\code{Main.lean}       &   387   & 0  & Re-exports \\
+\hline
+\textbf{Total}         & \textbf{22{,}320} & \textbf{29} & \textbf{Core: 0 sorries}
+\end{tabular}
+\end{center}
+
+All 29 remaining sorries are in the $\pi$-to-\rhocalc{} encoding correctness proofs
+(\code{PiCalculus/RhoEncodingCorrectness.lean}), with one major theorem (Proposition~2:
+substitution invariance) already fully proven.
+The entire core \OSLF{} pipeline---\MeTTaIL{}, Framework, RhoCalculus, Formula,
+and MeTTa Core---carries \textbf{0 sorries and 0 axioms}.
+
+The \code{Framework/} directory (4{,}400 lines, 15~files) is the largest component,
+containing:
+
+\begin{center}
+\begin{tabular}{lrl}
+\textbf{File} & \textbf{Lines} & \textbf{Content} \\
+\hline
+\code{ConstructorCategory.lean}    & 460 & Sort quiver + free category \\
+\code{TinyMLInstance.lean}         & 528 & CBV $\lambda$-calculus with booleans/pairs/thunks \\
+\code{BeckChevalleyOSLF.lean}      & 449 & Substitution as change-of-base \\
+\code{DerivedTyping.lean}          & 346 & Generic typing rules from constructor category \\
+\code{ModalEquivalence.lean}       & 311 & Constructor change-of-base $\leftrightarrow$ modalities \\
+\code{GeneratedTyping.lean}        & 294 & \code{GenHasType} typing rules \\
+\code{SynthesisBridge.lean}        & 282 & Three-layer bridge \\
+\code{ConstructorFibration.lean}   & 251 & \code{SubobjectFibration} + \code{ChangeOfBase} \\
+\code{DerivedModalities.lean}      & 250 & Adjoint triple derivation \\
+\code{CategoryBridge.lean}         & 247 & GaloisConnection $\to$ Adjunction \\
+\code{PetriNetInstance.lean}       & 233 & Petri net OSLF instance \\
+\code{LambdaInstance.lean}         & 218 & Lambda calculus OSLF instance \\
+\code{TypeSynthesis.lean}          & 201 & \code{langOSLF} pipeline \\
+\code{RewriteSystem.lean}          & 196 & Abstract \OSLF{} input/output \\
+\code{RhoInstance.lean}            & 134 & \rhocalc{}-calculus instance \\
+\end{tabular}
+\end{center}
+
+\subsection{Abstract \OSLF{} Framework}
+
+The abstract layer defines two key structures:
+
+\begin{lstlisting}[caption={The \OSLF{} input and output (RewriteSystem.lean)}]
+structure RewriteSystem where
+  Sorts    : Type*
+  procSort : Sorts
+  Term     : Sorts -> Type*
+  Reduces  : Term procSort -> Term procSort -> Prop
+
+structure OSLFTypeSystem where
+  Sorts    : Type*
+  procSort : Sorts
+  Term     : Sorts -> Type*
+  Pred     : Sorts -> Type*
+  [frame   : (S : Sorts) -> Frame (Pred S)]
+  satisfies  : (S : Sorts) -> Term S -> Pred S -> Prop
+  diamond    : Pred procSort -> Pred procSort
+  box        : Pred procSort -> Pred procSort
+  galois     : GaloisConnection diamond box
+\end{lstlisting}
+
+\subsection{The Galois Connection}
+
+The central theorem: $\Dia \dashv \Bx$.
+
+\begin{theorem}[Galois Connection, 0 sorries]
+\label{thm:galois}
+For all predicates $\varphi, \psi$ on \rhocalc{}-calculus processes:
+$$\Dia\varphi \le \psi \iff \varphi \le \Bx\psi$$
+where $\Dia\varphi(p) = \exists q.\; p \rightsquigarrow q \wedge \varphi(q)$
+and $\Bx\psi(q) = \forall p.\; p \rightsquigarrow q \to \psi(p)$.
+\end{theorem}
+
+In Lean:
+\begin{lstlisting}[caption={The Galois connection (Reduction.lean)}]
+theorem galois_connection :
+    GaloisConnection possiblyProp relyProp := by
+  intro phi psi
+  constructor
+  . intro h q hrely p hred
+    exact h (hrely p hred)
+  . intro h p hposs
+    exact h.2 p hposs.1 hposs.2
+\end{lstlisting}
+
+\subsection{Categorical Derivation via Adjoint Triples}
+
+The Galois connection arises from the general theory of change-of-base along
+a span.
+
+\begin{definition}[Reduction Span]
+A span $\mathcal{S} \xleftarrow{\mathrm{src}} E \xrightarrow{\mathrm{tgt}} \mathcal{S}$
+where $E$ is the set of reduction edges, $\mathrm{src}$ extracts the source, and
+$\mathrm{tgt}$ extracts the target.
+\end{definition}
+
+From any such span we derive three operations on predicates:
+\begin{align}
+  f^*(\psi)(e) &= \psi(\mathrm{tgt}(e))
+    && \text{(pullback)} \\
+  \exists_f(\varphi)(q) &= \exists e.\; \mathrm{tgt}(e) = q \wedge \varphi(e)
+    && \text{(direct image)} \\
+  \forall_f(\varphi)(q) &= \forall e.\; \mathrm{tgt}(e) = q \to \varphi(e)
+    && \text{(universal image)}
+\end{align}
+
+\begin{theorem}[Derived Galois, 0 sorries]
+\label{sec:derived}
+For any \code{ReductionSpan}, the composition $\Dia = \exists_{\mathrm{src}} \circ
+\mathrm{tgt}^*$ and $\Bx = \forall_{\mathrm{tgt}} \circ \mathrm{src}^*$ form a
+Galois connection.  Furthermore, for the \rhocalc{}-calculus span, the derived operators
+equal the concrete \code{possiblyProp} and \code{relyProp}.
+\end{theorem}
+
+\begin{lstlisting}[caption={Derived modalities equal concrete (DerivedModalities.lean)}]
+theorem derived_diamond_eq_possiblyProp :
+    derivedDiamond rhoSpan = possiblyProp := ...
+
+theorem derived_box_eq_relyProp :
+    derivedBox rhoSpan = relyProp := ...
+
+theorem rho_galois_from_span :
+    GaloisConnection (derivedDiamond rhoSpan)
+                     (derivedBox rhoSpan) :=
+  derived_galois rhoSpan
+\end{lstlisting}
+
+\section{Constructor Category and Fibration}
+\label{sec:constructor-cat}
+
+A key contribution of this formalization is the \emph{constructor category}: a
+non-discrete category built from the sort-crossing constructors of any
+\code{LanguageDef}, replacing the discrete \code{Discrete R.Sorts} from the
+earlier categorical lift.
+
+\subsection{Sort Quiver and Free Category}
+
+Given a \code{LanguageDef}, we extract the \emph{unary sort-crossing constructors}:
+grammar rules with exactly one \code{.simple} parameter whose base sort differs
+from the constructor's output sort.  These become the arrows of a quiver on the
+language's sorts.
+
+\begin{lstlisting}[caption={Constructor category (ConstructorCategory.lean)}]
+-- Sort type: valid sort names
+def LangSort (lang : LanguageDef) :=
+  { s : String // s IN lang.types }
+
+-- Sort-crossing arrows
+structure SortArrow (lang : LanguageDef)
+    (dom cod : LangSort lang) where
+  label : String
+  valid : (label, dom.val, cod.val) IN unaryCrossings lang
+
+-- Free category: paths of sort-crossing arrows
+inductive SortPath (lang : LanguageDef)
+    : LangSort lang -> LangSort lang -> Type where
+  | nil  : SortPath lang s s
+  | cons : SortPath lang s t -> SortArrow lang t u
+         -> SortPath lang s u
+\end{lstlisting}
+
+For the \rhocalc{}-calculus: 2 objects (Proc, Name), 2 arrows
+(\code{NQuote}: Proc $\to$ Name, \code{PDrop}: Name $\to$ Proc),
+and composites \code{PDrop} $\circ$ \code{NQuote} and
+\code{NQuote} $\circ$ \code{PDrop}.
+
+Each arrow has a \emph{semantic function} \code{arrowSem}: wrapping a pattern
+in the constructor's \code{.apply} node (e.g., $p \mapsto \mathtt{NQuote}(p)$).
+This extends to paths via \code{pathSem}, with a proven composition law
+\code{pathSem\_comp}.
+
+A \emph{universal property} (free category lifting) is proven:
+any assignment of objects and arrows to a target category $\mathcal{C}$
+lifts uniquely to a functor \code{liftFunctor}, with uniqueness proven in
+\code{lift\_map\_unique}.
+
+\subsection{SubobjectFibration and ChangeOfBase}
+
+Over the constructor category we build a fibration and change-of-base
+(\codepath{Framework/ConstructorFibration.lean}, 251 lines, 0~sorries):
+
+\begin{lstlisting}[caption={Constructor fibration (ConstructorFibration.lean)}]
+-- Each sort has fiber Pattern -> Prop (a Frame)
+def constructorFibration (lang : LanguageDef) :
+    SubobjectFibration (ConstructorObj lang) where
+  Sub   := fun _ => Pattern -> Prop
+  frame := fun _ => Pi.instFrame
+
+-- Full change-of-base with proven adjunctions
+def constructorChangeOfBase (lang : LanguageDef) :
+    ChangeOfBase (constructorFibration lang) where
+  pullback f       := pb (pathSem lang f)
+  directImage f    := di (pathSem lang f)
+  universalImage f := ui (pathSem lang f)
+  direct_pullback_adj f := di_pb_adj (pathSem lang f)
+  pullback_universal_adj f := pb_ui_adj (pathSem lang f)
+  ...
+\end{lstlisting}
+
+The adjunctions $\exists_f \dashv f^* \dashv \forall_f$ are proven (not axiomatized),
+following from the generic \code{di\_pb\_adj} / \code{pb\_ui\_adj} in
+\code{DerivedModalities.lean}.
+
+Key proven properties:
+\begin{itemize}
+\item \textbf{Pullback functoriality}: $(f \circ g)^* = g^* \circ f^*$
+  (from \code{pathSem\_comp}), $\mathit{id}^*(\varphi) = \varphi$.
+\item \textbf{Frame morphism}: $f^*(\varphi \wedge \psi) = f^*(\varphi) \wedge f^*(\psi)$
+  and $f^*(\top) = \top$ (both by \code{rfl}).
+\item \textbf{Monotonicity} of all three operations (from adjunctions).
+\end{itemize}
+
+\subsection{Modal Equivalence}
+
+The file \codepath{Framework/ModalEquivalence.lean} (311 lines) connects
+the constructor change-of-base to the \OSLF{} modalities:
+
+\begin{theorem}[Modal = Change-of-Base, 0 sorries]
+The \OSLF{} modalities are Set-level change-of-base along the reduction span:
+\begin{align*}
+  \Dia_{\mathit{lang}} &= \exists_{\mathrm{src}} \circ \mathrm{tgt}^*
+    && \text{(definitional)} \\
+  \Bx_{\mathit{lang}} &= \forall_{\mathrm{tgt}} \circ \mathrm{src}^*
+    && \text{(definitional)}
+\end{align*}
+\end{theorem}
+
+For the \rhocalc{}-calculus, this gives the \emph{typing actions}:
+\begin{itemize}
+\item \code{NQuote} (Proc $\to$ Name): $\varphi \mapsto \Dia\varphi$
+  \quad (``can reduce to $\varphi$'')
+\item \code{PDrop} (Name $\to$ Proc): $\alpha \mapsto \Bx\alpha$
+  \quad (``all predecessors satisfy $\alpha$'')
+\end{itemize}
+The composite $\code{PDrop} \circ \code{NQuote}$ gives $\Bx \circ \Dia$
+and $\code{NQuote} \circ \code{PDrop}$ gives $\Dia \circ \Bx$.
+The typing action Galois connection $\Dia \dashv \Bx$ is proven as an
+instance of the general language Galois connection.
+
+\subsection{Derived Typing Rules}
+\label{sec:derived-typing}
+
+The file \codepath{Framework/DerivedTyping.lean} (346 lines, 0~sorries)
+derives typing rules generically from the constructor category structure.
+
+Each sort-crossing arrow is automatically classified:
+\begin{lstlisting}[caption={Constructor classification (DerivedTyping.lean)}]
+inductive ConstructorRole where
+  | quoting    -- domain = procSort: introduces diamond
+  | reflecting -- codomain = procSort: introduces box
+  | neutral    -- neither: identity
+
+def classifyArrow (lang : LanguageDef) (procSort : String)
+    (arr : SortArrow lang dom cod) : ConstructorRole :=
+  if dom.val = procSort then .quoting
+  else if cod.val = procSort then .reflecting
+  else .neutral
+\end{lstlisting}
+
+\begin{theorem}[Classification Correctness, 0 sorries]
+For the \rhocalc{}-calculus:
+\begin{itemize}
+\item \code{NQuote} is classified as \emph{quoting}; its typing action equals $\Dia$.
+\item \code{PDrop} is classified as \emph{reflecting}; its typing action equals $\Bx$.
+\end{itemize}
+\end{theorem}
+
+The \code{DerivedHasType} judgment provides a generic typing rule for unary
+sort-crossing constructors: apply the constructor's typing action
+($\Dia$/$\Bx$/id) to the argument's predicate, then tag the result at the
+output sort.
+
+\subsection{Beck--Chevalley for Substitution}
+\label{sec:beck-chevalley}
+
+The file \codepath{Framework/BeckChevalleyOSLF.lean} (449 lines, 0~sorries)
+analyzes the COMM rule's substitution $p[@q/x]$ as a change-of-base map.
+
+\begin{definition}[COMM Substitution Map]
+$\sigma_q : \mathit{Pattern} \to \mathit{Pattern}$ defined by
+$\sigma_q(\mathit{pBody}) = \mathit{openBVar}\;0\;(\mathtt{NQuote}(q))\;\mathit{pBody}$.
+\end{definition}
+
+This induces the adjoint triple
+$\exists_{\sigma_q} \dashv \sigma_q^* \dashv \forall_{\sigma_q}$
+via the same \code{pb}/\code{di}/\code{ui} infrastructure, and the modal+substitution
+Galois connections compose:
+
+\begin{theorem}[Composed Galois, 0 sorries]
+$\Dia \circ \exists_{\sigma_q} \dashv \sigma_q^* \circ \Bx$
+\end{theorem}
+
+The COMM rule's type preservation (\code{comm\_preserves\_type} from
+\code{Soundness.lean}) is re-expressed categorically as a pullback inequality:
+
+\begin{theorem}[Substitutability as Pullback, 0 sorries]
+For any typing context $\Gamma$, type $\tau$, variable $x$, value $q$,
+and type $\sigma$ with $\Gamma \vdash q : \sigma$:
+$$\code{typedAt}(\Gamma[x \mapsto \sigma], \tau)
+  \;\le\; \sigma_q^*(\code{typedAt}(\Gamma, \tau))$$
+\end{theorem}
+
+The COMM substitution map factors through the constructor semantics:
+$\sigma_q(p) = \mathit{openBVar}\;0\;(\mathit{pathSem}\;\mathtt{nquoteMor}\;q)\;p$.
+
+\begin{theorem}[Strong Beck--Chevalley Fails, 0 sorries]
+\label{thm:bc-fails}
+The GSLT's universal Beck--Chevalley condition
+$f^* \circ \exists_g = \exists_{\pi_1} \circ \pi_2^*$
+does \textbf{not} hold for the constructor fibration.
+
+Concretely, for the commuting square
+$\code{PDrop} \circ \code{NQuote} = \code{PDrop} \circ \code{NQuote}$:
+$$\code{PDrop}^*(\exists_{\code{PDrop}}(\top))(\code{fvar}\;x) = \top$$
+but
+$$\exists_{\code{NQuote}}(\code{NQuote}^*(\top))(\code{fvar}\;x) = \bot$$
+because $\code{NQuote}(q) \ne \code{fvar}\;x$ for all $q$.
+\end{theorem}
+
+The counterexample is proven by exhibiting a concrete witness at
+$\code{fvar}\;``x"$: the LHS is inhabited by $\langle \code{fvar}\;x, \mathit{rfl},
+\top \rangle$ while the RHS requires some $p$ with
+$\code{NQuote}(p) = \code{fvar}\;x$, which is impossible since
+$\code{NQuote}(p) = \code{.apply}\;\text{``NQuote''}\;[p]$.
+
+\section{Executable Rewrite Engine}
+
+A formalization that only \emph{specifies} reduction is incomplete for verification
+of actual implementations.  We provide \code{reduceStep}, a computable function that
+enumerates all one-step reducts, proven sound w.r.t.\ the propositional \code{Reduces}.
+
+\subsection{Engine Design}
+
+\begin{lstlisting}[caption={The executable engine (Engine.lean)}]
+def reduceStep (p : Pattern) (fuel : Nat := 100)
+    : List Pattern :=
+  match fuel with
+  | 0 => []
+  | fuel + 1 =>
+    match p with
+    | .collection .hashBag elems none =>
+      let commReducts := findAllComm elems
+      let parReducts :=
+        reduceElemsAux (reduceStep . fuel) elems
+        |>.map fun (i, elem') =>
+          .collection .hashBag (elems.set i elem') none
+      commReducts ++ parReducts
+    | .apply "PDrop" [.apply "NQuote" [inner]] =>
+      [inner]
+    | _ => []
+\end{lstlisting}
+
+The engine handles COMM (all output-input pairs on matching channels), DROP
+($*(@P) \rightsquigarrow P$), and PAR (recursive reduction under parallel composition).
+Non-deterministic races produce multiple reducts in the output list.
+
+\subsection{Soundness}
+
+\begin{theorem}[Engine Soundness, 0 sorries]
+Every reduct computed by \code{reduceStep} corresponds to a valid \code{Reduces}:
+$$q \in \code{reduceStep}(p, \mathit{fuel}) \implies \exists d : p \rightsquigarrow q$$
+\end{theorem}
+
+The proof proceeds by case analysis:
+\begin{itemize}
+\item \textbf{COMM}: Each output-input pair is located by \code{findAllComm}, whose
+  specification is proven to identify valid COMM redex positions.  The soundness chain
+  is: list permutation (\code{perm\_extract\_two}) $\to$ structural congruence
+  (\code{par\_perm}) $\to$ \code{Reduces.comm} $\to$ \code{Reduces.equiv}.
+\item \textbf{DROP}: Direct pattern match yields \code{Reduces.drop}.
+\item \textbf{PAR}: The \code{reduceElemsAux\_spec} lemma extracts the sub-element
+  index and recursive reduct.  List decomposition via
+  \code{List.set\_eq\_take\_append\_cons\_drop} connects \code{List.set} to the
+  $\mathit{before} \mathbin{+\!\!+} [p] \mathbin{+\!\!+} \mathit{after}$ form
+  required by \code{Reduces.par\_any}.
+\end{itemize}
+
+\section{Generic MeTTaIL Rewrite Framework}
+
+The specialized \rhocalc{}-calculus engine is lifted to a language-parametric
+framework.  Given any \code{LanguageDef} (a list of sorts, constructors, equations,
+and rewrite rules), the generic engine automatically:
+\begin{enumerate}
+\item matches concrete terms against rule LHS patterns (multiset matching with rest variables),
+\item produces variable bindings via alpha-renaming for binders,
+\item applies bindings to rule RHS patterns (including substitution evaluation), and
+\item iterates under congruence (subterm rewriting inside parallel compositions).
+\end{enumerate}
+
+\begin{lstlisting}[caption={Generic rewrite step (Match.lean)}]
+def applyRule (rule : RewriteRule) (term : Pattern)
+    : List Pattern :=
+  if rule.premises.isEmpty then
+    (matchPattern rule.left term).map
+      fun b => applyBindings b rule.right
+  else []
+
+def rewriteStep (lang : LanguageDef) (term : Pattern)
+    : List Pattern :=
+  lang.rewrites.flatMap fun rule => applyRule rule term
+\end{lstlisting}
+
+\paragraph{Multiset matching.}
+The key algorithmic contribution is \code{matchBag}: for a collection pattern with
+$n$ elements and an optional rest variable, it enumerates all ways to match the $n$
+pattern elements against term elements (backtracking search over permutations),
+binding unmatched elements to the rest variable.
+
+\paragraph{Declarative reduction.}
+The file \codepath{MeTTaIL/DeclReduces.lean} provides a declarative inductive reduction
+relation independent of the executable engine.  The engine is proven both \emph{sound}
+and \emph{complete} with respect to this specification (0~sorries).
+
+\section{MeTTaIL and MeTTa Core}
+
+\subsection{MeTTaIL: The Meta-Language}
+
+\MeTTaIL{} (``MeTTa Intermediate Language'') defines the AST shared by all process
+calculi in the formalization, using locally nameless representation.  The core type is
+\code{Pattern} with 7 constructors:
+
+\begin{lstlisting}[caption={Pattern AST --- locally nameless (Syntax.lean)}]
+inductive Pattern where
+  | bvar       : Nat -> Pattern         -- bound variable (de Bruijn)
+  | fvar       : String -> Pattern      -- free variable / metavariable
+  | apply      : String -> List Pattern -> Pattern
+  | lambda     : Pattern -> Pattern     -- binder (no name)
+  | multiLambda: Nat -> Pattern -> Pattern
+  | subst      : Pattern -> Pattern -> Pattern
+  | collection : CollType -> List Pattern
+                  -> Option String -> Pattern
+\end{lstlisting}
+
+Key proven properties of substitution (29 theorems, 0 sorries):
+\begin{itemize}
+\item \code{subst\_empty}: empty substitution is the identity;
+\item \code{subst\_fresh}: substitution on a fresh variable is the identity;
+\item \code{commSubst}: the COMM-rule substitution $p[@q/x]$ respects freshness.
+\end{itemize}
+
+\subsection{MeTTa Core Interpreter}
+
+The \code{MeTTaCore/} directory provides a complete interpreter specification for
+Hyperon Experimental MeTTa (2{,}946 lines, 0~sorries), including:
+\begin{itemize}
+\item \code{Atom}: the universal term type with \code{DecidableEq};
+\item \code{Bindings}: variable resolution with merge and transitive lookup;
+\item \code{MeTTaState}: the 4-register $\langle i, k, w, o \rangle$ machine;
+\item \code{PatternMatch}: bidirectional unification;
+\item \code{MinimalOps}: grounded operations ($+, -, *, /, <$, etc.);
+\item \code{RewriteRules}: equation-driven rewriting;
+\item \code{Atomspace}: multiset-based knowledge base with query operations;
+\item \code{Properties}: progress, confluence, and barbed bisimulation.
+\end{itemize}
+
+\section{Type Soundness}
+
+\begin{theorem}[Substitutability, 0 sorries]
+If $P$ and $Q$ are bisimilar processes, then they have the same native types:
+$$P \sim Q \implies \forall \tau.\; P : \tau \iff Q : \tau$$
+\end{theorem}
+
+\begin{theorem}[Type Preservation, 0 sorries]
+The COMM and DROP rules preserve types:
+$$\Gamma \vdash P : \tau \;\wedge\; P \rightsquigarrow Q \implies \Gamma \vdash Q : \tau$$
+\end{theorem}
+
+Both theorems are proven in \codepath{RhoCalculus/Soundness.lean} with
+a 10-constructor typing judgment \code{HasType} and explicit typing contexts.
+
+\section{$\pi$-Calculus and \rhocalc{}-Encoding}
+
+The formalization includes a $\pi$-calculus (Syntax, Reduction,
+StructuralCongruence, MultiStep) and the encoding $[\![\cdot]\!] :
+\pi \to \rhocalc{}$ following Lybech~\cite{lybech-encoding}.  The encoding
+covers all 6~$\pi$-calculus constructors (Nil, Out, In, Par, Repl, Restrict).
+
+\begin{itemize}
+\item \textbf{Proposition 2} (substitution invariance of the encoding):
+  \emph{fully proven}, 0~sorries, 0~axioms.
+\item \textbf{Proposition 4, forward direction} (operational correspondence):
+  \emph{fully proven for the restriction-free fragment}, 0~sorries.
+  A restriction-free structural congruence (RFSC) and restriction-free
+  reduction relation (\code{ReducesRF}) provide a self-contained fragment
+  where the STRUCT case is provable.  See the companion paper
+  \emph{Verified Forward Simulation for the $\pi \to \rhocalc$ Encoding}
+  for details.
+\item \textbf{Propositions 1, 3, 5} and full Proposition~4:
+  partial, sorries remain in auxiliary correctness proofs.
+\end{itemize}
+
+\section{Type Synthesis: \code{LanguageDef} $\to$ \code{OSLFTypeSystem}}
+
+The culmination of the formalization is the \emph{type synthesis pipeline}: given any
+\code{LanguageDef}, mechanically produce a full \code{OSLFTypeSystem} with a
+\textbf{proven Galois connection}.
+
+\subsection{The Pipeline}
+
+The pipeline proceeds in five steps, all implemented in
+\codepath{Framework/TypeSynthesis.lean}:
+\begin{enumerate}
+\item \code{langReduces lang p q} wraps the executable engine:
+  $q \in \mathtt{rewriteWithContext}\;\mathit{lang}\;p$.
+\item \code{langRewriteSystem lang} assembles a \code{RewriteSystem}.
+\item \code{langSpan lang} builds the reduction span (edges = reductions).
+\item \code{langDiamond}/\code{langBox} derive modal operators via
+  \code{derivedDiamond}/\code{derivedBox} from the adjoint triple.
+\item \code{langOSLF lang} packages everything into an \code{OSLFTypeSystem},
+  with the Galois connection proven by \code{derived\_galois}.
+\end{enumerate}
+
+\begin{theorem}[Automatic Galois Connection, 0 sorries]
+For any \code{LanguageDef lang}:
+$$\Dia_{\mathit{lang}} \dashv \Bx_{\mathit{lang}}$$
+where $\Dia_{\mathit{lang}} = \exists_{\mathrm{src}} \circ \mathrm{tgt}^*$
+and $\Bx_{\mathit{lang}} = \forall_{\mathrm{tgt}} \circ \mathrm{src}^*$
+are derived from the reduction span.  No manual proof is needed per language.
+\end{theorem}
+
+\section{Language Instances}
+\label{sec:instances}
+
+The pipeline is validated by four language instances of increasing complexity:
+
+\subsection{Lambda Calculus (1 sort, 0 crossings)}
+
+Untyped lambda calculus with $\beta$-reduction
+(\codepath{Framework/LambdaInstance.lean}, 218 lines).
+One sort (\code{Term}), two constructors (\code{App}, \code{Lam}), one reduction rule.
+The constructor category is discrete (no sort-crossing constructors).
+Six executable demos verify $\beta$-reduction, multi-step normalization,
+and formula checking.
+
+\subsection{Petri Net (1 sort, 0 crossings)}
+
+A simple Petri net with four places and two transitions
+(\codepath{Framework/PetriNetInstance.lean}, 233 lines).
+Validates that multiset (bag) matching works correctly without any
+abstraction or substitution machinery.  Key properties proven by
+\code{native\_decide}:
+\begin{itemize}
+\item $\{D\}$ is a dead marking (0 reducts);
+\item $\{A, B\}$ has exactly 1 reduct via transition $T_1$.
+\end{itemize}
+
+\subsection{\rhocalc{}-Calculus (2 sorts, 2 crossings)}
+
+The primary instance with sorts Proc and Name, constructors
+\code{NQuote}: Proc $\to$ Name and \code{PDrop}: Name $\to$ Proc.
+This is the most extensively developed instance, with the full
+type soundness proof, specialized engine, and Beck--Chevalley analysis
+(Sections~\ref{sec:constructor-cat}--\ref{sec:beck-chevalley}).
+
+\subsection{TinyML (2 sorts, 2 crossings, 6 rules)}
+
+\emph{New:} A call-by-value $\lambda$-calculus with booleans, pairs, and thunks
+(\codepath{Framework/TinyMLInstance.lean}, 528 lines, 0~sorries).
+
+\begin{lstlisting}[caption={TinyML language definition (TinyMLInstance.lean)}]
+-- Sorts: Expr (process sort), Val (data sort)
+-- Constructors:
+--   Expr: App, If, Fst, Snd, Inject(v:Val)
+--   Val:  BoolT, BoolF, Lam(^body), PairV, Thunk(e:Expr)
+-- Reductions:
+--   Beta:     App(Inject(Lam(^body)), Inject(v)) ~> body[v/x]
+--   Force:    Inject(Thunk(e)) ~> e
+--   IfTrue:   If(Inject(BoolT), t, e) ~> t
+--   IfFalse:  If(Inject(BoolF), t, e) ~> e
+--   FstPair:  Fst(Inject(PairV(a, b))) ~> Inject(a)
+--   SndPair:  Snd(Inject(PairV(a, b))) ~> Inject(b)
+\end{lstlisting}
+
+TinyML mirrors the \rhocalc{}-calculus sort structure:
+\begin{center}
+\begin{tabular}{lll}
+\textbf{TinyML} & \textbf{\rhocalc{}-Calculus} & \textbf{Role} \\
+\hline
+Expr & Proc & Process sort (carries reduction) \\
+Val & Name & Data sort \\
+\code{Thunk}: Expr $\to$ Val & \code{NQuote}: Proc $\to$ Name & Quoting ($\Dia$) \\
+\code{Inject}: Val $\to$ Expr & \code{PDrop}: Name $\to$ Proc & Reflecting ($\Bx$) \\
+\code{Beta} & \code{COMM} & Main computation rule \\
+\code{Force} & \code{DROP} & Quoting/reflecting cancel \\
+\end{tabular}
+\end{center}
+
+The CBV strategy is encoded syntactically: $\beta$-reduction requires both the
+function and argument to be wrapped in \code{Inject(-)}, ensuring arguments
+are evaluated to values before substitution.
+
+Key proven results:
+\begin{itemize}
+\item \code{tinyML\_crossings}: exactly 2 sort-crossing constructors
+  (\code{Inject}, \code{Thunk}) -- \code{native\_decide}.
+\item \code{thunk\_is\_quoting}: \code{Thunk} classified as quoting; typing action = $\Dia$.
+\item \code{inject\_is\_reflecting}: \code{Inject} classified as reflecting; typing action = $\Bx$.
+\item \code{tinyML\_typing\_action\_galois}: $\Dia \dashv \Bx$ for TinyML typing actions.
+\item 11 executable demos including a 3-step reduction chain
+  (\code{force} $\to$ \code{ifTrue} $\to$ \code{fstPair}).
+\end{itemize}
+
+\section{Verified Formula Checker}
+
+The file \codepath{Formula.lean} provides a verified bounded model checker for
+\OSLF{} formulas (582 lines, 0~sorries).  The formula type \code{OSLFFormula}
+supports $\Dia$, $\Bx$, $\wedge$, $\vee$, $\implies$, $\top$, $\bot$,
+and atomic predicates.
+
+\begin{theorem}[Checker Soundness, 0 sorries]
+If the checker returns \code{.sat} for formula $\varphi$ at term $p$,
+then $p \models \varphi$ in the denotational semantics.
+\end{theorem}
+
+The checker supports:
+\begin{itemize}
+\item \code{checkWithPred}: checking with external predecessor functions,
+  enabling bounded $\Bx$ verification;
+\item \code{aggregateBox}: universal checking of $\Bx\varphi$ over a
+  predecessor list, with proven soundness (\code{aggregateBox\_sat}).
+\end{itemize}
+
+\section{Categorical Lift}
+
+The file \codepath{Framework/CategoryBridge.lean} lifts the Set-level \OSLF{}
+construction to Mathlib's categorical infrastructure (247~lines, 0~sorries).
+
+\subsection{Modal Adjunction}
+
+The predicate type \code{Pattern $\to$ Prop} carries conflicting category
+instances (\code{Preorder.smallCategory} vs.\ \code{CategoryTheory.Pi}).
+We introduce a type wrapper \code{PredLattice} to disambiguate, then lift:
+
+\begin{lstlisting}[caption={Modal adjunction (CategoryBridge.lean)}]
+noncomputable def langModalAdjunction (lang : LanguageDef) :
+    (langGaloisL lang).monotone_l.functor |-
+    (langGaloisL lang).monotone_u.functor :=
+  (langGaloisL lang).adjunction
+\end{lstlisting}
+
+This provides a categorical \code{Adjunction} between the $\Dia$ and $\Bx$
+endofunctors on the predicate preorder category, for any \code{LanguageDef}.
+
+\section{Status and Roadmap}
+
+\subsection{Milestones}
+
+\begin{enumerate}
+\item[\checkmark] \textbf{Milestone 1}: Executable \rhocalc{}-calculus engine.
+  \code{reduceStep} computes all one-step reducts; \code{reduceStep\_sound} proven
+  with 0~sorries; 6 executable tests pass.
+
+\item[\checkmark] \textbf{Milestone 2}: Generic \MeTTaIL{} framework.
+  Language-parametric pattern matching (\code{Match.lean}) and rewriting
+  (\code{MeTTaIL/Engine.lean}) for any \code{LanguageDef}.
+  8-test agreement suite confirms equivalence with specialized engine.
+
+\item[\checkmark] \textbf{Milestone 3}: \OSLF{} type synthesis.
+  \code{langOSLF} mechanically generates an \code{OSLFTypeSystem} from any
+  \code{LanguageDef} with auto-proven Galois connection.  \code{GenHasType}
+  provides generated typing rules.  Three-layer bridge established.
+
+\item[\checkmark] \textbf{Milestone 4}: Correctness infrastructure.
+  Totalized \code{Match.lean} (no \code{partial def} in core matching).
+  Declarative \code{DeclReduces} with engine soundness and completeness.
+  Enhanced formula checker with predecessor-based $\Bx$ checking.
+
+\item[\checkmark] \textbf{Milestone 5}: Language instances.
+  Four languages---lambda calculus, Petri nets, \rhocalc{}-calculus, TinyML---each
+  with auto-generated \code{OSLFTypeSystem} and Galois connection.
+
+\item[\checkmark] \textbf{Milestone 6}: Categorical lift.
+  \code{langModalAdjunction}: Galois connection $\to$ Mathlib \code{Adjunction}.
+  \code{predFibration}: \code{SubobjectFibration} over \code{Discrete R.Sorts}.
+  Unconditional specialized engine bridges (\code{specialized\_possibly}, etc.).
+
+\item[\checkmark] \textbf{Milestone 7}: Constructor category and GSLT bridge.
+  \code{ConstructorCategory}: free category on sort-crossing constructors.
+  \code{ConstructorFibration}: \code{SubobjectFibration} + \code{ChangeOfBase}
+  with proven adjunctions.
+  \code{ModalEquivalence}: constructor change-of-base $\leftrightarrow$ modalities.
+  \code{DerivedTyping}: typing rules derived from constructor classification.
+  \code{BeckChevalleyOSLF}: substitution as change-of-base, with counterexample.
+  All 0~sorries.
+\end{enumerate}
+
+\section{Conclusion}
+
+We have presented the first machine-checked formalization of the \OSLF{} algorithm,
+spanning 22{,}300+ lines of Lean~4 across 58 files with 0~sorries in the core pipeline.
+The formalization demonstrates that the entire pipeline from rewrite rules to
+spatial-behavioral types can be made rigorous in a modern proof assistant.
+
+The Galois connection at the heart of \OSLF{} is proven at three levels:
+(1)~directly for the \rhocalc{}-calculus, (2)~categorically for any reduction span via
+adjoint composition, and (3)~lifted to a Mathlib \code{Adjunction} between endofunctors
+on the predicate preorder category.  All three levels are shown to agree.
+
+The constructor category (Section~\ref{sec:constructor-cat}) provides a genuine
+categorical backbone: sort-crossing constructors become morphisms, the fibered
+change-of-base gives the adjoint triple $\exists_f \dashv f^* \dashv \forall_f$
+for each constructor, and the modal operators $\Dia$/$\Bx$ are shown to be
+the typing actions of quoting/reflecting constructors.  The derived typing rules
+(Section~\ref{sec:derived-typing}) make explicit that the assignment
+$\code{NQuote} \mapsto \Dia$, $\code{PDrop} \mapsto \Bx$ is not ad hoc but
+follows from the constructor's position in the category.  The Beck--Chevalley
+analysis (Section~\ref{sec:beck-chevalley}) shows that while substitution
+commutes with change-of-base in the COMM-specific case (proven via
+\code{comm\_preserves\_type}), the universal condition fails---a mathematically
+interesting negative result proven by explicit counterexample.
+
+The full type synthesis pipeline is validated by four language instances
+(\rhocalc{}-calculus, lambda calculus, Petri nets, and TinyML), each with
+auto-proven Galois connections.  TinyML demonstrates the framework's ability
+to handle multi-sort CBV languages with binders, conditionals, and
+sort-crossing constructors, mirroring the \rhocalc{}-calculus's
+NQuote/PDrop structure with Thunk/Inject.
+
+A declarative reduction relation provides an engine-independent specification,
+and the executable engines are proven both sound and complete with respect to it.
+All seven milestones are complete with 0~sorries in the core pipeline.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

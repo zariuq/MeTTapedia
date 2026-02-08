@@ -243,6 +243,20 @@ lemma trajPrefix_segmentSwap_eq_of_prefix_before_swap
   exact segmentSwap_eq_of_le_a xs a L1 L2 hL1 hL2 hcN
     (Fin.castLE (Nat.succ_le_succ h) i) hi_le_a
 
+/-- If the swap window lies entirely inside the prefix horizon, taking prefix
+after swap is definitionally the same as swapping inside the prefixed
+trajectory. -/
+lemma trajPrefix_segmentSwap_eq_segmentSwap_prefix
+    {n N : ℕ} (h : n ≤ N)
+    (xs : Traj k N) (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2)
+    (hcShort : a + L1 + L2 ≤ n) :
+    trajPrefix (k := k) h
+      (segmentSwap xs a L1 L2 hL1 hL2 (le_trans hcShort h)) =
+      segmentSwap (trajPrefix (k := k) h xs) a L1 L2 hL1 hL2 hcShort := by
+  funext i
+  rfl
+
 lemma prefixState_segmentSwap_eq_of_prefix_before_swap
     {n N : ℕ} (h : n ≤ N)
     (xs : Traj k N) (a L1 L2 : ℕ) (hna : n ≤ a)
@@ -713,6 +727,70 @@ lemma mem_excursionPairs_of_IsConsecutivePair {N : ℕ} (xs : Traj k N)
   rcases h with ⟨ha, hb, hab, hgap⟩
   exact mem_excursionPairs_of_return_consecutive (k := k) xs a b ha hb hab hgap
 
+/-- Converse: if `(a, b)` appears in `excursionPairs`, then `a` and `b` are
+consecutive in the return positions. -/
+lemma IsConsecutivePair_of_mem_excursionPairs {N : ℕ} (xs : Traj k N)
+    {a b : Fin (N + 1)}
+    (h : (a, b) ∈ excursionPairs (k := k) xs) :
+    IsConsecutivePair (returnPositions (k := k) xs) a b := by
+  classical
+  let l : List (Fin (N + 1)) := returnPositionsList (k := k) xs
+  have hs : l.SortedLT := by
+    simpa [l, returnPositionsList] using
+      (Finset.sortedLT_sort (returnPositions (k := k) xs))
+  have hzip : excursionPairs (k := k) xs = l.zip l.tail := by
+    simp [excursionPairs, l]
+  rw [hzip] at h
+  -- Get the index `i` such that `(l[i], l[i+1]) = (a, b)`
+  rcases (List.mem_iff_getElem.mp h) with ⟨i, hi_lt, hi_eq⟩
+  have hi_zip_len : i < (l.zip l.tail).length := hi_lt
+  have hl_len : i + 1 < l.length := by
+    have : (l.zip l.tail).length = l.length - 1 := by
+      simp [List.length_zip, List.length_tail]
+    omega
+  have hi_lt_l : i < l.length := by omega
+  have ha_eq : a = l[i] := by
+    have := congrArg Prod.fst hi_eq
+    simp [List.getElem_zip, List.getElem_tail] at this
+    exact this.symm
+  have hb_eq : b = l[i + 1] := by
+    have := congrArg Prod.snd hi_eq
+    simp [List.getElem_zip, List.getElem_tail] at this
+    exact this.symm
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- a ∈ returnPositions
+    rw [ha_eq]
+    have haL : l[i] ∈ l := List.getElem_mem hi_lt_l
+    simpa [l, returnPositionsList] using
+      (Finset.mem_sort (s := returnPositions (k := k) xs) (r := (· ≤ ·))).1 haL
+  · -- b ∈ returnPositions
+    rw [hb_eq]
+    have hbL : l[i + 1] ∈ l := List.getElem_mem hl_len
+    simpa [l, returnPositionsList] using
+      (Finset.mem_sort (s := returnPositions (k := k) xs) (r := (· ≤ ·))).1 hbL
+  · -- a < b
+    rw [ha_eq, hb_eq]
+    exact (List.SortedLT.getElem_lt_getElem_iff
+      (l := l) hs (i := i) (j := i + 1) (hi := hi_lt_l) (hj := hl_len)).2 (by omega)
+  · -- No element strictly between a and b
+    intro c hc ⟨hac, hcb⟩
+    rw [ha_eq] at hac
+    rw [hb_eq] at hcb
+    have hcL : c ∈ l := by
+      simpa [l, returnPositionsList] using
+        (Finset.mem_sort (s := returnPositions (k := k) xs) (r := (· ≤ ·))).2 hc
+    rcases (List.mem_iff_getElem.mp hcL) with ⟨j, hj_lt, hj_eq⟩
+    -- c = l[j], and l[i] < l[j] < l[i+1], so i < j < i+1, contradiction
+    have hij : i < j := by
+      rw [← hj_eq] at hac
+      exact (List.SortedLT.getElem_lt_getElem_iff
+        (l := l) hs (i := i) (j := j) (hi := hi_lt_l) (hj := hj_lt)).1 hac
+    have hji1 : j < i + 1 := by
+      rw [← hj_eq] at hcb
+      exact (List.SortedLT.getElem_lt_getElem_iff
+        (l := l) hs (i := j) (j := i + 1) (hi := hj_lt) (hj := hl_len)).1 hcb
+    omega
+
 /-- No-return hypotheses exactly say that `(a, a+L1)` and `(a+L1, a+L1+L2)` are
 consecutive pairs in the return positions. -/
 lemma isConsecutivePair_of_excursion_boundary {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
@@ -825,6 +903,9 @@ lemma mem_excursionPairs_swap {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
   exact ⟨mem_excursionPairs_of_IsConsecutivePair (k := k) xs' h1,
     mem_excursionPairs_of_IsConsecutivePair (k := k) xs' h2⟩
 
+-- The following generic list lemmas and the main excursionPairs transformation
+-- lemma are placed in MarkovDeFinettiHardBEST.lean (which imports this file)
+-- to avoid the Finset.cons namespace interference with List.cons.inj.
 lemma mem_excursionsOfTraj_of_mem_excursionPairs {N : ℕ} (xs : Traj k N)
     {p : Fin (N + 1) × Fin (N + 1)} (hp : p ∈ excursionPairs (k := k) xs) :
     trajSegment (k := k) xs p.1 p.2 ∈ excursionsOfTraj (k := k) xs := by
@@ -866,6 +947,262 @@ lemma swapped_middle_excursions_mem_excursionsOfTraj {N : ℕ}
           trajSegment (k := k) xs ⟨a, by omega⟩ ⟨a + L1, by omega⟩ :=
       trajSegment_segmentSwap_bwd (k := k) xs a L1 L2 hL1 hL2 hcN ha_ret hc_ret
     exact hseg ▸ hmem
+
+/-! ## Ordered-list adjacent-transposition bridge (decomposition form)
+
+These lemmas provide an exact ordered-list statement for `excursionListOfTraj`
+once the corresponding `excursionPairs` decomposition is available.
+-/
+
+/-- If `excursionPairs` of the swapped trajectory has the same prefix/suffix pair
+blocks with the middle pair transposed, and mapped prefix/suffix segments are
+preserved, then `excursionListOfTraj` is exactly the same transposition on the
+middle two excursions. -/
+lemma excursionListOfTraj_segmentSwap_eq_of_excursionPairs_decomp
+    {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (pre suf : List (Fin (N + 1) × Fin (N + 1)))
+    (hPairsNew :
+      excursionPairs (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+           (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf)
+    (hPre :
+      pre.map
+          (fun p =>
+            trajSegment (k := k)
+              (segmentSwap xs a L1 L2 hL1 hL2 hcN) p.1 p.2) =
+        pre.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (hSuf :
+      suf.map
+          (fun p =>
+            trajSegment (k := k)
+              (segmentSwap xs a L1 L2 hL1 hL2 hcN) p.1 p.2) =
+        suf.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (ha_ret : xs ⟨a, by omega⟩ = xs 0)
+    (hb_ret : xs ⟨a + L1, by omega⟩ = xs 0)
+    (hc_ret : xs ⟨a + L1 + L2, by omega⟩ = xs 0) :
+    excursionListOfTraj (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+      pre.map (fun p => trajSegment (k := k) xs p.1 p.2) ++
+        [trajSegment (k := k) xs ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩,
+         trajSegment (k := k) xs ⟨a, by omega⟩ ⟨a + L1, by omega⟩] ++
+        suf.map (fun p => trajSegment (k := k) xs p.1 p.2) := by
+  unfold excursionListOfTraj excursionsOfTraj
+  rw [hPairsNew, List.map_append, List.map_append]
+  simp only [List.map_cons, List.map_nil]
+  rw [hPre, hSuf]
+  simp only [List.append_assoc]
+  have hmid1 :
+      trajSegment (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN)
+          ⟨a, by omega⟩ ⟨a + L2, by omega⟩ =
+        trajSegment (k := k) xs
+          ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩ :=
+    trajSegment_segmentSwap_fwd (k := k) xs a L1 L2 hL1 hL2 hcN ha_ret hb_ret
+  have hmid2 :
+      trajSegment (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN)
+          ⟨a + L2, by omega⟩ ⟨a + L1 + L2, by omega⟩ =
+        trajSegment (k := k) xs
+          ⟨a, by omega⟩ ⟨a + L1, by omega⟩ :=
+    trajSegment_segmentSwap_bwd (k := k) xs a L1 L2 hL1 hL2 hcN ha_ret hc_ret
+  simp [hmid1, hmid2]
+
+/-- Adjacent-transposition form relative to the original excursion list.
+
+Assuming `excursionPairs xs = pre ++ [(a,a+L1),(a+L1,a+L1+L2)] ++ suf` and the
+corresponding swapped-pairs decomposition for `segmentSwap xs`, this yields an
+exact ordered-list transposition in `excursionListOfTraj`. -/
+lemma excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp
+    {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (pre suf : List (Fin (N + 1) × Fin (N + 1)))
+    (hPairsOld :
+      excursionPairs (k := k) xs =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+           (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf)
+    (hPairsNew :
+      excursionPairs (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+           (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf)
+    (hPre :
+      pre.map
+          (fun p =>
+            trajSegment (k := k)
+              (segmentSwap xs a L1 L2 hL1 hL2 hcN) p.1 p.2) =
+        pre.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (hSuf :
+      suf.map
+          (fun p =>
+            trajSegment (k := k)
+              (segmentSwap xs a L1 L2 hL1 hL2 hcN) p.1 p.2) =
+        suf.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (ha_ret : xs ⟨a, by omega⟩ = xs 0)
+    (hb_ret : xs ⟨a + L1, by omega⟩ = xs 0)
+    (hc_ret : xs ⟨a + L1 + L2, by omega⟩ = xs 0) :
+    excursionListOfTraj (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+      let e1 := trajSegment (k := k) xs ⟨a, by omega⟩ ⟨a + L1, by omega⟩
+      let e2 := trajSegment (k := k) xs ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩
+      (pre.map (fun p => trajSegment (k := k) xs p.1 p.2)) ++ [e2, e1] ++
+        (suf.map (fun p => trajSegment (k := k) xs p.1 p.2)) := by
+  have hnew :=
+    excursionListOfTraj_segmentSwap_eq_of_excursionPairs_decomp
+      (k := k) (xs := xs) (a := a) (L1 := L1) (L2 := L2)
+      hL1 hL2 hcN pre suf hPairsNew hPre hSuf ha_ret hb_ret hc_ret
+  -- Keep `hPairsOld` explicit in the statement: this is the decomposition
+  -- hypothesis tying `(a,L1,L2)` to consecutive middle excursions in `xs`.
+  -- It is used by downstream callers to construct `pre/suf`.
+  clear hPairsOld
+  simpa [List.append_assoc] using hnew
+
+/-- Stronger ordered-list adjacent-swap bridge.
+
+This variant exposes the result directly as a swap in a caller-provided
+excursion-list decomposition `preSeg ++ [e1, e2] ++ sufSeg`.
+-/
+lemma excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp_strong
+    {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (pre suf : List (Fin (N + 1) × Fin (N + 1)))
+    (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k)
+    (hPairsOld :
+      excursionPairs (k := k) xs =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+           (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf)
+    (hPairsNew :
+      excursionPairs (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+           (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf)
+    (hPre :
+      pre.map
+          (fun p =>
+            trajSegment (k := k)
+              (segmentSwap xs a L1 L2 hL1 hL2 hcN) p.1 p.2) =
+        pre.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (hSuf :
+      suf.map
+          (fun p =>
+            trajSegment (k := k)
+              (segmentSwap xs a L1 L2 hL1 hL2 hcN) p.1 p.2) =
+        suf.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (ha_ret : xs ⟨a, by omega⟩ = xs 0)
+    (hb_ret : xs ⟨a + L1, by omega⟩ = xs 0)
+    (hc_ret : xs ⟨a + L1 + L2, by omega⟩ = xs 0)
+    (hOld :
+      excursionListOfTraj (k := k) xs = preSeg ++ [e1, e2] ++ sufSeg)
+    (hPreSeg :
+      preSeg = pre.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (hSufSeg :
+      sufSeg = suf.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (hE1 :
+      e1 = trajSegment (k := k) xs ⟨a, by omega⟩ ⟨a + L1, by omega⟩)
+    (hE2 :
+      e2 = trajSegment (k := k) xs ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩) :
+    excursionListOfTraj (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+      preSeg ++ [e2, e1] ++ sufSeg := by
+  have hswap :=
+    excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp
+      (k := k) (xs := xs) (a := a) (L1 := L1) (L2 := L2)
+      hL1 hL2 hcN pre suf hPairsOld hPairsNew hPre hSuf ha_ret hb_ret hc_ret
+  have hswap' :
+      excursionListOfTraj (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+        (pre.map (fun p => trajSegment (k := k) xs p.1 p.2)) ++
+          [trajSegment (k := k) xs ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩,
+           trajSegment (k := k) xs ⟨a, by omega⟩ ⟨a + L1, by omega⟩] ++
+          (suf.map (fun p => trajSegment (k := k) xs p.1 p.2)) := by
+    simpa [List.append_assoc] using hswap
+  -- rewrite to caller's names
+  simpa [hOld, hPreSeg, hSufSeg, hE1, hE2, List.append_assoc] using hswap'
+
+/-- Under the adjacent-excursion transposition decomposition hypotheses, the
+excursion multiset is preserved by `segmentSwap`. -/
+lemma excursionMultiset_segmentSwap_eq_swap_middle_of_excursionPairs_decomp_strong
+    {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
+    (pre suf : List (Fin (N + 1) × Fin (N + 1)))
+    (preSeg sufSeg : ExcursionList k) (e1 e2 : ExcursionType k)
+    (hPairsOld :
+      excursionPairs (k := k) xs =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
+           (⟨a + L1, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf)
+    (hPairsNew :
+      excursionPairs (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+        pre ++
+          [(⟨a, by omega⟩, ⟨a + L2, by omega⟩),
+           (⟨a + L2, by omega⟩, ⟨a + L1 + L2, by omega⟩)] ++
+          suf)
+    (hPre :
+      pre.map
+          (fun p =>
+            trajSegment (k := k)
+              (segmentSwap xs a L1 L2 hL1 hL2 hcN) p.1 p.2) =
+        pre.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (hSuf :
+      suf.map
+          (fun p =>
+            trajSegment (k := k)
+              (segmentSwap xs a L1 L2 hL1 hL2 hcN) p.1 p.2) =
+        suf.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (ha_ret : xs ⟨a, by omega⟩ = xs 0)
+    (hb_ret : xs ⟨a + L1, by omega⟩ = xs 0)
+    (hc_ret : xs ⟨a + L1 + L2, by omega⟩ = xs 0)
+    (hOld :
+      excursionListOfTraj (k := k) xs = preSeg ++ [e1, e2] ++ sufSeg)
+    (hPreSeg :
+      preSeg = pre.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (hSufSeg :
+      sufSeg = suf.map (fun p => trajSegment (k := k) xs p.1 p.2))
+    (hE1 :
+      e1 = trajSegment (k := k) xs ⟨a, by omega⟩ ⟨a + L1, by omega⟩)
+    (hE2 :
+      e2 = trajSegment (k := k) xs ⟨a + L1, by omega⟩ ⟨a + L1 + L2, by omega⟩) :
+    excursionMultiset (k := k)
+        (excursionListOfTraj (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN)) =
+      excursionMultiset (k := k) (excursionListOfTraj (k := k) xs) := by
+  have hswap :
+      excursionListOfTraj (k := k) (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+        preSeg ++ [e2, e1] ++ sufSeg :=
+    excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp_strong
+      (k := k) (xs := xs) (a := a) (L1 := L1) (L2 := L2)
+      hL1 hL2 hcN pre suf preSeg sufSeg e1 e2
+      hPairsOld hPairsNew hPre hSuf ha_ret hb_ret hc_ret
+      hOld hPreSeg hSufSeg hE1 hE2
+  rw [hswap, hOld]
+  have hmid : [e2, e1].Perm [e1, e2] := by
+    simpa using (List.Perm.swap e2 e1 []).symm
+  have hperm :
+      (preSeg ++ [e2, e1] ++ sufSeg).Perm (preSeg ++ [e1, e2] ++ sufSeg) := by
+    exact (List.Perm.append_left _ hmid).append_right _
+  simpa [excursionMultiset] using hperm
+
+/-! ## Ordered-list bridge lemmas -/
+
+/-- If the segment swap starts strictly after the prefix horizon, the prefix
+excursion list is unchanged. This is the ordered-list form used to build
+`prefixPatternFiber` transport maps. -/
+lemma excursionListOfTraj_prefix_segmentSwap_eq_of_prefix_before_swap
+    {n N : ℕ} (hN : Nat.succ n ≤ N)
+    (xs : Traj k N) (a L1 L2 : ℕ) (hna : Nat.succ n ≤ a)
+    (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N) :
+    excursionListOfTraj (k := k)
+      (trajPrefix (k := k) hN (segmentSwap xs a L1 L2 hL1 hL2 hcN)) =
+    excursionListOfTraj (k := k) (trajPrefix (k := k) hN xs) := by
+  have hprefix :
+      trajPrefix (k := k) hN (segmentSwap xs a L1 L2 hL1 hL2 hcN) =
+        trajPrefix (k := k) hN xs :=
+    trajPrefix_segmentSwap_eq_of_prefix_before_swap
+      (k := k) (h := hN) (xs := xs) (a := a) (L1 := L1) (L2 := L2)
+      (hna := hna) (hL1 := hL1) (hL2 := hL2) (hcN := hcN)
+  simpa [hprefix]
 
 end MarkovDeFinettiHardExcursionBridge
 

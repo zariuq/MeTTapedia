@@ -66,10 +66,11 @@ inductive PatternInterp (L : LanguageDef) where
 /-- Interpret a pattern in a given context (simplified, non-recursive version) -/
 def interpretPatternShallow (L : LanguageDef) (ctx : PatternContext L) :
     Pattern → PatternInterp L
-  | .var name =>
+  | .fvar name =>
     match ctx.find? (fun p => p.1 == name) with
     | some (_, ty) => .term ty
     | none => .error s!"Unbound variable: {name}"
+  | .bvar n => .error s!"Dangling bound variable: BVar {n}"
   | .apply constructor _ =>
     match L.terms.find? (fun r => r.label == constructor) with
     | some rule =>
@@ -77,9 +78,9 @@ def interpretPatternShallow (L : LanguageDef) (ctx : PatternContext L) :
       | some ty => .term ty
       | none => .error s!"Invalid constructor type: {constructor}"
     | none => .error s!"Unknown constructor: {constructor}"
-  | .lambda _ _ => .error "Lambda not supported in shallow interpretation"
+  | .lambda _ => .error "Lambda not supported in shallow interpretation"
   | .multiLambda _ _ => .error "MultiLambda not supported in shallow interpretation"
-  | .subst _ _ _ => .error "Subst not supported in shallow interpretation"
+  | .subst _ _ => .error "Subst not supported in shallow interpretation"
   | .collection _ _ _ => .error "Collection not supported in shallow interpretation"
 
 /-! ## Well-Formedness -/
