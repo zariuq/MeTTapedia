@@ -635,26 +635,12 @@ $$\Gamma \vdash P : \tau \;\wedge\; P \rightsquigarrow Q \implies \Gamma \vdash 
 Both theorems are proven in \codepath{RhoCalculus/Soundness.lean} with
 a 10-constructor typing judgment \code{HasType} and explicit typing contexts.
 
-\section{$\pi$-Calculus and \rhocalc{}-Encoding}
+\section{\rhocalc{}-Calculus Instance}
 
-The formalization includes a $\pi$-calculus (Syntax, Reduction,
-StructuralCongruence, MultiStep) and the encoding $[\![\cdot]\!] :
-\pi \to \rhocalc{}$ following Lybech~\cite{lybech-encoding}.  The encoding
-covers all 6~$\pi$-calculus constructors (Nil, Out, In, Par, Repl, Restrict).
-
-\begin{itemize}
-\item \textbf{Proposition 2} (substitution invariance of the encoding):
-  \emph{fully proven}, 0~sorries, 0~axioms.
-\item \textbf{Proposition 4, forward direction} (operational correspondence):
-  \emph{fully proven for the restriction-free fragment}, 0~sorries.
-  A restriction-free structural congruence (RFSC) and restriction-free
-  reduction relation (\code{ReducesRF}) provide a self-contained fragment
-  where the STRUCT case is provable.  See the companion paper
-  \emph{Verified Forward Simulation for the $\pi \to \rhocalc$ Encoding}
-  for details.
-\item \textbf{Propositions 1, 3, 5} and full Proposition~4:
-  partial, sorries remain in auxiliary correctness proofs.
-\end{itemize}
+The \rhocalc{}-calculus is formalized with full reduction semantics (COMM, DROP),
+structural congruence (11 rules), and multi-step reduction. The OSLF algorithm
+derives its spatial-behavioral type system, with the Galois connection
+$\Dia \dashv \Bx$ proven in \code{RhoCalculus/Soundness.lean} (0 sorries).
 
 \section{Type Synthesis: \code{LanguageDef} $\to$ \code{OSLFTypeSystem}}
 

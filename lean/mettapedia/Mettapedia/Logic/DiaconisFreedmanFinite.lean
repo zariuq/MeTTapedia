@@ -112,11 +112,10 @@ lemma l1_pushforward_le
 
 end Mettapedia.Logic
 
-/-! ## IID vs injective sampling (bound stub)
+/-! ## IID vs injective sampling
 
-We will use a finite total-variation bound between uniform iid maps and uniform
-injective maps. The concrete bound is a standard collision estimate; to keep
-the main proof unblocked we expose it as a lemma with a `sorry` to fill later.
+We use a finite total-variation bound between uniform iid maps and uniform
+injective maps. The concrete bound is the standard collision estimate.
 -/
 
 namespace Mettapedia.Logic
@@ -249,10 +248,333 @@ lemma l1_iid_inj_le
            if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0)
            else 0)))
       ≤ (4 : ℝ) * (m : ℝ) * (m : ℝ) / (R : ℝ) := by
-  -- TODO: complete by conditioning-on-injective + collision union bound:
-  -- 1) `L1 = 2 * Pbad`,
-  -- 2) `Pbad ≤ m^2 / R` using ordered pair collisions and `pair_mass_le_inv`,
-  -- 3) conclude with slack factor `4`.
-  sorry
+  classical
+  cases m with
+  | zero =>
+      have hInj0 : Function.Injective (default : Fin 0 → Fin R) := by
+        intro i
+        exact Fin.elim0 i
+      have hcard :
+          ({x ∈ ({default} : Finset (Fin 0 → Fin R)) | Function.Injective x}).card = 1 := by
+        have hfilter_eq :
+            ({x ∈ ({default} : Finset (Fin 0 → Fin R)) | Function.Injective x}) =
+              ({default} : Finset (Fin 0 → Fin R)) := by
+          ext x
+          constructor
+          · intro hx
+            exact (Finset.mem_filter.mp hx).1
+          · intro hx
+            refine Finset.mem_filter.mpr ?_
+            refine ⟨hx, ?_⟩
+            have hx' : x = default := Finset.mem_singleton.mp hx
+            subst x
+            simpa using hInj0
+        simpa [hfilter_eq]
+      simp [hInj0, hcard]
+  | succ n =>
+      let μ0 : ℝ := (1 : ℝ) / (R : ℝ) ^ (n + 1)
+      let Z : ℝ :=
+        ∑ g : Fin (n + 1) → Fin R, if Function.Injective g then μ0 else 0
+      let Pbad : ℝ :=
+        ∑ f : Fin (n + 1) → Fin R, if Function.Injective f then 0 else μ0
+      have hμ0_nonneg : 0 ≤ μ0 := by
+        dsimp [μ0]
+        positivity
+      have hμ0_pos : 0 < μ0 := by
+        dsimp [μ0]
+        have hRr : (0 : ℝ) < (R : ℝ) := by exact_mod_cast hR
+        positivity
+      have hPbad_nonneg : 0 ≤ Pbad := by
+        dsimp [Pbad]
+        refine Finset.sum_nonneg ?_
+        intro f hf
+        by_cases hif : Function.Injective f
+        · simp [hif]
+        · simp [hif, hμ0_nonneg]
+      have hsum_all :
+          (∑ f : Fin (n + 1) → Fin R, μ0) = 1 := by
+        dsimp [μ0]
+        have hRr : (R : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hR)
+        calc
+          (∑ f : Fin (n + 1) → Fin R, (1 : ℝ) / (R : ℝ) ^ (n + 1))
+              = (Fintype.card (Fin (n + 1) → Fin R) : ℝ) * ((1 : ℝ) / (R : ℝ) ^ (n + 1)) := by
+                  simp [Finset.sum_const]
+          _ = ((R ^ (n + 1) : ℕ) : ℝ) * ((1 : ℝ) / (R : ℝ) ^ (n + 1)) := by
+                simp [Fintype.card_fin]
+          _ = 1 := by
+                have hpow : ((R ^ (n + 1) : ℕ) : ℝ) = (R : ℝ) ^ (n + 1) := by
+                  norm_num
+                rw [hpow]
+                field_simp [hRr]
+      have hsplit_total : Z + Pbad = ∑ f : Fin (n + 1) → Fin R, μ0 := by
+        calc
+          Z + Pbad =
+              (∑ f : Fin (n + 1) → Fin R,
+                ((if Function.Injective f then μ0 else 0) +
+                 (if Function.Injective f then 0 else μ0))) := by
+                dsimp [Z, Pbad]
+                rw [Finset.sum_add_distrib]
+          _ = ∑ f : Fin (n + 1) → Fin R, μ0 := by
+                refine Finset.sum_congr rfl ?_
+                intro f hf
+                by_cases hif : Function.Injective f
+                · simp [hif]
+                · simp [hif]
+      have hPbad_eq : Pbad = 1 - Z := by
+        have : Z + Pbad = 1 := by simpa [hsum_all] using hsplit_total
+        linarith
+      have hZ_le_one : Z ≤ 1 := by
+        linarith [hPbad_nonneg, hPbad_eq]
+      have hZ_pos : 0 < Z := by
+        have hRm' : n + 1 ≤ R := by simpa using hRm
+        have hμ0_le_Z : μ0 ≤ Z := by
+          have hinj0 : Function.Injective (Fin.castLE hRm') := Fin.castLE_injective hRm'
+          have hnonneg :
+              ∀ g : Fin (n + 1) → Fin R, 0 ≤ if Function.Injective g then μ0 else 0 := by
+            intro g
+            by_cases hif : Function.Injective g
+            · simp [hif, hμ0_nonneg]
+            · simp [hif]
+          calc
+            μ0 = (if Function.Injective (Fin.castLE hRm') then μ0 else 0) := by simp [hinj0]
+            _ ≤ Z := by
+                  dsimp [Z]
+                  exact Finset.single_le_sum (fun g hg => hnonneg g) (by simp)
+        exact lt_of_lt_of_le hμ0_pos hμ0_le_Z
+      have hZ_ne : Z ≠ 0 := ne_of_gt hZ_pos
+      have hOneLeInv : 1 ≤ 1 / Z := by
+        rw [le_div_iff₀ hZ_pos]
+        nlinarith [hZ_le_one]
+      have hμ0_le_div : μ0 ≤ μ0 / Z := by
+        have hmul : μ0 * 1 ≤ μ0 * (1 / Z) :=
+          mul_le_mul_of_nonneg_left hOneLeInv hμ0_nonneg
+        simpa [one_div, mul_comm, mul_left_comm, mul_assoc] using hmul
+      have hsum_split :
+          Finset.sum (Finset.univ : Finset (Fin (n + 1) → Fin R))
+              (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0)))
+            =
+          Finset.sum ((Finset.univ : Finset (Fin (n + 1) → Fin R)).filter Function.Injective)
+              (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0))) +
+          Finset.sum ((Finset.univ : Finset (Fin (n + 1) → Fin R)).filter (fun f => ¬ Function.Injective f))
+              (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0))) := by
+        have hsplit0 :=
+          (Finset.sum_filter_add_sum_filter_not
+            (s := (Finset.univ : Finset (Fin (n + 1) → Fin R)))
+            (p := Function.Injective)
+            (f := fun f : Fin (n + 1) → Fin R =>
+              abs (μ0 - (if Function.Injective f then μ0 / Z else 0))))
+        simpa [Finset.filter_not, add_comm] using hsplit0.symm
+      let Sinj : Finset (Fin (n + 1) → Fin R) :=
+        (Finset.univ : Finset (Fin (n + 1) → Fin R)).filter Function.Injective
+      let Sbad : Finset (Fin (n + 1) → Fin R) :=
+        (Finset.univ : Finset (Fin (n + 1) → Fin R)).filter (fun f => ¬ Function.Injective f)
+      have hgood :
+          Finset.sum Sinj (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0)))
+            = 1 - Z := by
+        have hconst :
+            ∀ f : Fin (n + 1) → Fin R,
+              Function.Injective f →
+              abs (μ0 - (if Function.Injective f then μ0 / Z else 0)) = μ0 / Z - μ0 := by
+          intro f hf
+          have hsub_nonpos : μ0 - μ0 / Z ≤ 0 := by linarith [hμ0_le_div]
+          simp [hf, abs_of_nonpos hsub_nonpos]
+        have hcardMul :
+            Finset.sum Sinj (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0)))
+              = (Sinj.card : ℝ) * (μ0 / Z - μ0) := by
+          calc
+            Finset.sum Sinj (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0)))
+                = Finset.sum Sinj (fun _ => (μ0 / Z - μ0)) := by
+                    refine Finset.sum_congr rfl ?_
+                    intro f hf
+                    exact hconst f (by
+                      have hf' : f ∈ (Finset.univ : Finset (Fin (n + 1) → Fin R)).filter Function.Injective := by
+                        simpa [Sinj] using hf
+                      exact (Finset.mem_filter.mp hf').2)
+            _ = (Sinj.card : ℝ) * (μ0 / Z - μ0) := by
+                  simp [Finset.sum_const]
+                  ring
+        have hsum_inj_mu0 :
+            Finset.sum Sinj (fun _ => μ0) = Z := by
+          dsimp [Sinj, Z]
+          calc
+            Finset.sum (Finset.filter Function.Injective Finset.univ) (fun _ => μ0)
+                = ∑ x : Fin (n + 1) → Fin R, if Function.Injective x then μ0 else 0 := by
+                    rw [Finset.sum_filter]
+            _ = ∑ g : Fin (n + 1) → Fin R, if Function.Injective g then μ0 else 0 := by
+                  rfl
+        calc
+          Finset.sum Sinj (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0)))
+              = Finset.sum Sinj (fun _ => μ0 * (1 / Z - 1)) := by
+                  refine Finset.sum_congr rfl ?_
+                  intro f hf
+                  have hf' : Function.Injective f := by
+                    have hf'' : f ∈ (Finset.univ : Finset (Fin (n + 1) → Fin R)).filter Function.Injective := by
+                      simpa [Sinj] using hf
+                    exact (Finset.mem_filter.mp hf'').2
+                  calc
+                    abs (μ0 - (if Function.Injective f then μ0 / Z else 0))
+                        = μ0 / Z - μ0 := hconst f hf'
+                    _ = μ0 * (1 / Z - 1) := by ring
+          _ = (Finset.sum Sinj (fun _ => μ0)) * (1 / Z - 1) := by
+                rw [Finset.sum_mul]
+          _ = Z * (1 / Z - 1) := by rw [hsum_inj_mu0]
+          _ = 1 - Z := by
+                have hZinv : Z * Z⁻¹ = 1 := by field_simp [hZ_ne]
+                calc
+                  Z * (1 / Z - 1) = Z * (1 / Z) - Z := by ring
+                  _ = 1 - Z := by simpa [hZinv]
+      have hbad :
+          Finset.sum Sbad (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0))) = Pbad := by
+        calc
+          Finset.sum Sbad (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0)))
+              = Finset.sum Sbad (fun _ => μ0) := by
+                    refine Finset.sum_congr rfl ?_
+                    intro f hf
+                    have hf' : ¬ Function.Injective f := by
+                      have hf'' : f ∈ (Finset.univ : Finset (Fin (n + 1) → Fin R)).filter (fun f => ¬ Function.Injective f) := by
+                        simpa [Sbad] using hf
+                      exact (Finset.mem_filter.mp hf'').2
+                    simp [hf', abs_of_nonneg hμ0_nonneg]
+          _ = Pbad := by
+                dsimp [Pbad, Sbad]
+                rw [Finset.sum_filter]
+                simp
+      have hL1_eq :
+          Finset.sum (Finset.univ : Finset (Fin (n + 1) → Fin R))
+            (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0)))
+            = 2 * Pbad := by
+        calc
+          Finset.sum (Finset.univ : Finset (Fin (n + 1) → Fin R))
+            (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0)))
+              =
+            Finset.sum Sinj (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0))) +
+            Finset.sum Sbad (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0))) := by
+              simpa [Sinj, Sbad] using hsum_split
+          _ = (1 - Z) + Pbad := by rw [hgood, hbad]
+          _ = Pbad + Pbad := by linarith [hPbad_eq]
+          _ = 2 * Pbad := by ring
+      have hPbad_le :
+          Pbad ≤ ((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ) := by
+        have hper :
+            ∀ f : Fin (n + 1) → Fin R,
+              (if Function.Injective f then (0 : ℝ) else μ0)
+                ≤ ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                    if i = j then (0 : ℝ) else if f i = f j then μ0 else 0 := by
+          intro f
+          have hnonneg :
+              ∀ i' j' : Fin (n + 1),
+                0 ≤ (if i' = j' then (0 : ℝ) else if f i' = f j' then μ0 else 0) := by
+            intro i' j'
+            by_cases hij' : i' = j'
+            · simp [hij']
+            · by_cases hfeq : f i' = f j'
+              · simp [hij', hfeq, hμ0_nonneg]
+              · simp [hij', hfeq]
+          by_cases hf : Function.Injective f
+          · have hsum_nonneg :
+                0 ≤ ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                      if i = j then (0 : ℝ) else if f i = f j then μ0 else 0 := by
+                exact Finset.sum_nonneg (fun i _ => Finset.sum_nonneg (fun j _ => hnonneg i j))
+            simpa [hf] using hsum_nonneg
+          · rcases Function.not_injective_iff.mp hf with ⟨i, j, hij_eq, hij_ne⟩
+            calc
+              (if Function.Injective f then (0 : ℝ) else μ0) = μ0 := by simp [hf]
+              _ = (if i = j then (0 : ℝ) else if f i = f j then μ0 else 0) := by
+                    simp [hij_ne, hij_eq]
+              _ ≤ ∑ j' : Fin (n + 1), (if i = j' then (0 : ℝ) else if f i = f j' then μ0 else 0) := by
+                    simpa using
+                      (Finset.single_le_sum
+                        (fun j' _ => hnonneg i j')
+                        (Finset.mem_univ j))
+              _ ≤ ∑ i' : Fin (n + 1), ∑ j' : Fin (n + 1),
+                    (if i' = j' then (0 : ℝ) else if f i' = f j' then μ0 else 0) := by
+                    simpa using
+                      (Finset.single_le_sum
+                        (fun i' _ => Finset.sum_nonneg (fun j' _ => hnonneg i' j'))
+                        (Finset.mem_univ i))
+        have hsum_f :
+            Pbad ≤
+              ∑ f : Fin (n + 1) → Fin R,
+                ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                  if i = j then (0 : ℝ) else if f i = f j then μ0 else 0 := by
+          dsimp [Pbad]
+          refine Finset.sum_le_sum ?_
+          intro f hf
+          exact hper f
+        have hswap :
+            (∑ f : Fin (n + 1) → Fin R,
+              ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                if i = j then (0 : ℝ) else if f i = f j then μ0 else 0)
+              =
+            (∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+              if i = j then (0 : ℝ)
+              else (∑ f : Fin (n + 1) → Fin R, if f i = f j then μ0 else 0)) := by
+          calc
+            (∑ f : Fin (n + 1) → Fin R,
+              ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                if i = j then (0 : ℝ) else if f i = f j then μ0 else 0)
+                = ∑ i : Fin (n + 1), ∑ f : Fin (n + 1) → Fin R,
+                    ∑ j : Fin (n + 1), if i = j then (0 : ℝ) else if f i = f j then μ0 else 0 := by
+                    simpa using
+                      (Finset.sum_comm
+                        (s := (Finset.univ : Finset (Fin (n + 1) → Fin R)))
+                        (t := (Finset.univ : Finset (Fin (n + 1))))
+                        (f := fun f i =>
+                          ∑ j : Fin (n + 1), if i = j then (0 : ℝ) else if f i = f j then μ0 else 0))
+            _ = ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                    ∑ f : Fin (n + 1) → Fin R, if i = j then (0 : ℝ) else if f i = f j then μ0 else 0 := by
+                  refine Finset.sum_congr rfl ?_
+                  intro i hi
+                  simpa using
+                    (Finset.sum_comm
+                      (s := (Finset.univ : Finset (Fin (n + 1) → Fin R)))
+                      (t := (Finset.univ : Finset (Fin (n + 1))))
+                      (f := fun f j =>
+                        if i = j then (0 : ℝ) else if f i = f j then μ0 else 0))
+            _ = (∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                  if i = j then (0 : ℝ)
+                  else (∑ f : Fin (n + 1) → Fin R, if f i = f j then μ0 else 0)) := by
+                    refine Finset.sum_congr rfl ?_
+                    intro i hi
+                    refine Finset.sum_congr rfl ?_
+                    intro j hj
+                    by_cases hij : i = j
+                    · simp [hij]
+                    · simp [hij]
+        have hpair_bound :
+            (∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+              if i = j then (0 : ℝ)
+              else (∑ f : Fin (n + 1) → Fin R, if f i = f j then μ0 else 0))
+            ≤ ((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ) := by
+          dsimp [μ0]
+          simpa using pair_sum_le_sq_inv R n hR
+        exact hsum_f.trans (by simpa [hswap] using hpair_bound)
+      calc
+        (∑ f : Fin (n + 1) → Fin R,
+            abs ((1 : ℝ) / (R : ℝ) ^ (n + 1) -
+              (if Function.Injective f then (1 : ℝ) / (R : ℝ) ^ (n + 1) / (∑ g : Fin (n + 1) → Fin R,
+               if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ (n + 1) else 0)
+               else 0)))
+            = (∑ f : Fin (n + 1) → Fin R, abs (μ0 - (if Function.Injective f then μ0 / Z else 0))) := by
+              simp [μ0, Z]
+        _ = 2 * Pbad := hL1_eq
+        _ ≤ 2 * (((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ)) := by
+              exact mul_le_mul_of_nonneg_left hPbad_le (by positivity)
+        _ ≤ (4 : ℝ) * (n + 1 : ℝ) * (n + 1 : ℝ) / (R : ℝ) := by
+              let X : ℝ := ((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ)
+              have hXnonneg : 0 ≤ X := by
+                dsimp [X]
+                positivity
+              have hmul : (2 : ℝ) * X ≤ (4 : ℝ) * X := by
+                nlinarith
+              calc
+                (2 : ℝ) * (((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ))
+                    = (2 : ℝ) * X := by simp [X]
+                _ ≤ (4 : ℝ) * X := hmul
+                _ = (4 : ℝ) * (n + 1 : ℝ) * (n + 1 : ℝ) / (R : ℝ) := by
+                      dsimp [X]
+                      ring
+        _ ≤ (4 : ℝ) * ↑(n + 1) * ↑(n + 1) / ↑R := by
+              norm_num
 
 end Mettapedia.Logic

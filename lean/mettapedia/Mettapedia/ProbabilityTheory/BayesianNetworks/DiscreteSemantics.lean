@@ -478,36 +478,29 @@ instance jointMeasure_isProbabilityMeasure (cpt : bn.DiscreteCPT) :
 
 open BayesianNetwork
 
+lemma jointMeasure_apply_as_sum
+    (cpt : bn.DiscreteCPT) {S : Set bn.JointSpace}
+    (hS : MeasurableSet S) :
+    cpt.jointMeasure S =
+      ∑ x : bn.JointSpace, if x ∈ S then cpt.jointWeight x else 0 := by
+  classical
+  have h :=
+    PMF.toMeasure_apply (p := cpt.jointPMF) (s := S) hS
+  calc
+    cpt.jointMeasure S = cpt.jointPMF.toMeasure S := rfl
+    _ = ∑' x : bn.JointSpace, S.indicator cpt.jointWeight x := h
+    _ = ∑ x : bn.JointSpace, if x ∈ S then cpt.jointWeight x else 0 := by
+          simp [Set.indicator]
+
 lemma jointMeasure_eventOfConstraints
     [∀ v, MeasurableSingletonClass (bn.stateSpace v)]
     (cpt : bn.DiscreteCPT) (cs : List (Σ v : V, bn.stateSpace v)) :
     cpt.jointMeasure (eventOfConstraints (bn := bn) cs) =
       ∑ x : bn.JointSpace,
         if x ∈ eventOfConstraints (bn := bn) cs then cpt.jointWeight x else 0 := by
-  classical
   have hmeas : MeasurableSet (eventOfConstraints (bn := bn) cs) :=
     measurable_eventOfConstraints (bn := bn) cs
-  -- PMF measure is the (finite) sum over the indicator.
-  have h :=
-    PMF.toMeasure_apply (p := cpt.jointPMF)
-      (s := eventOfConstraints (bn := bn) cs) hmeas
-  -- Convert the `tsum` to a finite sum.
-  have htsum :
-      (∑' x : bn.JointSpace,
-          (eventOfConstraints (bn := bn) cs).indicator cpt.jointWeight x) =
-        ∑ x : bn.JointSpace,
-          if x ∈ eventOfConstraints (bn := bn) cs then cpt.jointWeight x else 0 := by
-    classical
-    -- `tsum` over a finite type is a finite sum.
-    simp [Set.indicator]
-  -- Finish by rewriting the `tsum` in the PMF formula.
-  calc
-    cpt.jointMeasure (eventOfConstraints (bn := bn) cs)
-        = cpt.jointPMF.toMeasure (eventOfConstraints (bn := bn) cs) := rfl
-    _ = ∑' x : bn.JointSpace,
-          (eventOfConstraints (bn := bn) cs).indicator cpt.jointWeight x := h
-    _ = ∑ x : bn.JointSpace,
-          if x ∈ eventOfConstraints (bn := bn) cs then cpt.jointWeight x else 0 := htsum
+  exact jointMeasure_apply_as_sum (bn := bn) cpt hmeas
 
 end JointDistribution
 

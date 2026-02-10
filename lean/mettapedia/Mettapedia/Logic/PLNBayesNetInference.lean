@@ -37,6 +37,71 @@ noncomputable def bernoulliPMF (p : ℝ≥0∞) (hp : p ≤ 1) : PMF Bool :=
     have hsum' : p + (1 - p) = 1 := by
       simpa [add_comm] using (tsub_add_cancel_of_le hp)
     simp [hsum'])
+
+/-! ## Binary Naive Bayes as Evidence-Product -/
+
+section NaiveBayes
+
+variable {ι : Type*}
+
+/-- Binary NB in evidence form: prior evidence multiplied by per-feature likelihood evidence. -/
+noncomputable def nbEvidence [Fintype ι] (prior : Evidence) (likelihood : ι → Evidence) : Evidence :=
+  prior * ∏ i, likelihood i
+
+/-- Textbook binary NB posterior from class masses and conditionally-independent features. -/
+noncomputable def nbPosterior
+    [Fintype ι]
+    (priorPos priorNeg : ℝ≥0∞) (likePos likeNeg : ι → ℝ≥0∞) : ℝ≥0∞ :=
+  let numPos := priorPos * ∏ i, likePos i
+  let numNeg := priorNeg * ∏ i, likeNeg i
+  if numPos + numNeg = 0 then 0 else numPos / (numPos + numNeg)
+
+private lemma prod_pos (s : Finset ι) (f : ι → Evidence) :
+    (Finset.prod s f).pos = Finset.prod s (fun i => (f i).pos) := by
+  classical
+  induction s using Finset.induction with
+  | empty =>
+      rfl
+  | @insert a s ha ih =>
+      simp [ha, ih, Evidence.tensor_def]
+
+private lemma prod_neg (s : Finset ι) (f : ι → Evidence) :
+    (Finset.prod s f).neg = Finset.prod s (fun i => (f i).neg) := by
+  classical
+  induction s using Finset.induction with
+  | empty =>
+      rfl
+  | @insert a s ha ih =>
+      simp [ha, ih, Evidence.tensor_def]
+
+theorem nbEvidence_pos [Fintype ι] (prior : Evidence) (likelihood : ι → Evidence) :
+    (nbEvidence prior likelihood).pos =
+      prior.pos * Finset.univ.prod (fun i => (likelihood i).pos) := by
+  classical
+  unfold nbEvidence
+  simp [Evidence.tensor_def, prod_pos]
+
+theorem nbEvidence_neg [Fintype ι] (prior : Evidence) (likelihood : ι → Evidence) :
+    (nbEvidence prior likelihood).neg =
+      prior.neg * Finset.univ.prod (fun i => (likelihood i).neg) := by
+  classical
+  unfold nbEvidence
+  simp [Evidence.tensor_def, prod_neg]
+
+/-- Equivalence theorem:
+`Evidence.toStrength` of the NB evidence-product equals textbook binary NB posterior. -/
+theorem toStrength_nbEvidence_eq_nbPosterior
+    [Fintype ι]
+    (prior : Evidence) (likelihood : ι → Evidence) :
+    Evidence.toStrength (nbEvidence prior likelihood) =
+      nbPosterior prior.pos prior.neg
+        (fun i => (likelihood i).pos) (fun i => (likelihood i).neg) := by
+  classical
+  unfold Evidence.toStrength nbPosterior
+  simp [Evidence.total, nbEvidence_pos, nbEvidence_neg]
+
+end NaiveBayes
+
 end Mettapedia.Logic.PLNBayesNetInference
 
 /-! ## BoolBayesNet → BayesianNetwork -/

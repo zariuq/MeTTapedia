@@ -131,6 +131,33 @@ theorem pathAvoidsInternals_of_all_notInZ (Z : Set V) :
     | b :: _ :: _ =>
       exact ⟨hAll b (by simp), ih (fun v hv => hAll v (by simp [hv]))⟩
 
+/-- Convenience wrapper for the common chain shape `x :: c :: rest`. -/
+private theorem pathAvoidsInternals_cons_of_all_notInZ
+    (Z : Set V) {x c : V} {rest : List V}
+    (hAll : ∀ u ∈ c :: rest, u ∉ Z) :
+    PathAvoidsInternals Z (x :: c :: rest) := by
+  match rest with
+  | [] =>
+    exact trivial
+  | d :: rest' =>
+    constructor
+    · exact hAll c (List.mem_cons.mpr (Or.inl rfl))
+    · exact pathAvoidsInternals_of_all_notInZ Z
+        (fun u hu => hAll u (by simp [List.mem_cons] at hu ⊢; tauto))
+
+/-- Convenience wrapper: compute endpoints of `x :: tail` from `tail.getLast?`. -/
+private theorem pathEndpoints_cons_eq_of_getLast
+    {x w : V} {tail : List V}
+    (hLast : tail.getLast? = some w) :
+    PathEndpoints (x :: tail) = some (x, w) := by
+  have hLast' : (x :: tail).getLast? = some w := by
+    match tail with
+    | [] =>
+      simp [List.getLast?] at hLast
+    | _ :: _ =>
+      simpa [List.getLast?] using hLast
+  exact pathEndpoints_of_head_last (p := x :: tail) (by simp) (by simp) hLast'
+
 /-! ## Moral edge analysis -/
 
 /-- Decompose a moral-ancestral edge into direct or spouse cases. -/
@@ -230,13 +257,7 @@ theorem directed_detour_through_child
       -- PathAvoidsInternals: internal vertices of [v, c', ...qrest] are c' and qrest internals
       -- c' ∉ Z (from hcNotZ), and all qrest vertices ∉ Z
       have hAvoid : PathAvoidsInternals Z (v :: c' :: qrest) := by
-        match qrest with
-        | [] => exact trivial  -- [v, c'] has no internal
-        | d :: qrest' =>
-          constructor
-          · exact hcNotZ c' (List.mem_cons.mpr (Or.inl rfl))
-          · exact pathAvoidsInternals_of_all_notInZ Z
-              (fun u hu => hcNotZ u (by simp [List.mem_cons] at hu ⊢; tauto))
+        exact pathAvoidsInternals_cons_of_all_notInZ Z hcNotZ
       have hAT : ActiveTrail G Z (v :: c' :: qrest) :=
         directedChain_activeTrail G Z hacyclic hChain hAvoid (by simp)
       have hvw : v ≠ w := by
@@ -362,6 +383,45 @@ theorem reachable_to_backwardChain_avoidZ
 
 /-! ## Main theorem: ¬SepMoral → ¬DSepFull -/
 
+/-- Decompose endpoints for a trail with at least three vertices. -/
+private theorem pathEndpoints_cons_cons_cons
+    {a b c x y : V} {rest : List V}
+    (hEnds : PathEndpoints (a :: b :: c :: rest) = some (x, y)) :
+    a = x ∧ PathEndpoints (b :: c :: rest) = some (b, y) := by
+  have hSome :
+      some (a, (b :: c :: rest).getLast (by simp)) = some (x, y) := by
+    simpa [PathEndpoints] using hEnds
+  have hPair : (a, (b :: c :: rest).getLast (by simp)) = (x, y) :=
+    Option.some.inj hSome
+  have hPair' : a = x ∧ (b :: c :: rest).getLast (by simp) = y := by
+    simpa using hPair
+  have hLast : (c :: rest).getLast (by simp) = y := by
+    simpa [List.getLast_cons] using hPair'.2
+  constructor
+  · exact hPair'.1
+  · simpa [PathEndpoints, hLast]
+
+/-- The right endpoint of a moral-ancestral edge lies in relevant vertices. -/
+private theorem right_relevant_of_moral_edge
+    (G : DirectedGraph V) (X Y Z : Set V) {x b : V}
+    (hEdge : UndirectedEdge (moralAncestralGraph G X Y Z) x b) :
+    b ∈ relevantVertices G X Y Z := by
+  rcases moralAncestralEdge_decompose G X Y Z hEdge with
+    ⟨_, _, hbR⟩ | ⟨_, _, _, _, _, hbR⟩
+  · exact hbR
+  · exact hbR
+
+/-- Moral-ancestral undirected edges are irreflexive. -/
+private theorem ne_of_moral_undirected_edge
+    (G : DirectedGraph V) (X Y Z : Set V) {x b : V}
+    (hEdge : UndirectedEdge (moralAncestralGraph G X Y Z) x b) :
+    x ≠ b := by
+  intro hxb
+  rw [hxb] at hEdge
+  rcases hEdge with hE | hE
+  · exact hE.1 rfl
+  · exact hE.1 rfl
+
 /-- Base case helper: single moral edge from x∈X to y∈Y. -/
 private theorem base_case_single_edge
     (G : DirectedGraph V) (X Y Z : Set V)
@@ -447,19 +507,104 @@ private theorem base_case_single_edge
               exact not_in_Z_of_reachable_of_not_in_ancZ G Z hcAncZ
                 (hcc' ▸ directedChain_reachable_from_head G hqChain u hu)
             have hAvoidP : PathAvoidsInternals Z (x :: c' :: qrest) := by
-              match qrest with
-              | [] => exact trivial
-              | d :: qrest' =>
-                constructor
-                · exact hcNotZ c' (List.mem_cons.mpr (Or.inl rfl))
-                · exact pathAvoidsInternals_of_all_notInZ Z
-                    (fun u hu => hcNotZ u (by simp [List.mem_cons] at hu ⊢; tauto))
+              exact pathAvoidsInternals_cons_of_all_notInZ Z hcNotZ
             have hAT : ActiveTrail G Z (x :: c' :: qrest) :=
               directedChain_activeTrail G Z hacyclic hFwd hAvoidP (by simp)
             have hPE : PathEndpoints (x :: c' :: qrest) = some (x, w) := by
-              simp [PathEndpoints]; simpa [List.getLast?] using hqLast
+              exact pathEndpoints_cons_eq_of_getLast hqLast
             exact hDSep x hx w hwY hxw_ne
               ⟨x :: c' :: qrest, by simp, hPE, hAT⟩
+
+/-- Helper: package contradiction from one explicit active-trail witness. -/
+private theorem absurd_dsep_of_activeTrail
+    (G : DirectedGraph V) (X Y Z : Set V)
+    {x y : V} (hx : x ∈ X) (hy : y ∈ Y) (hxy : x ≠ y)
+    {p : List V} (hpne : p ≠ [])
+    (hEnds : PathEndpoints p = some (x, y))
+    (hAT : ActiveTrail G Z p)
+    (hDSep : DSeparatedFull G X Y Z) :
+    False := by
+  exact hDSep x hx y hy hxy ⟨p, hpne, hEnds, hAT⟩
+
+/-- Reusable contradiction helper:
+if `x ∈ X`, `w ∈ Y`, and there is an edge `x → c` with `c ↠ w`,
+then (provided `c ∉ Anc(Z)`) we can build an active trail from `x` to `w`. -/
+private theorem absurd_dsep_of_forward_detour_to_Y
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {x c w : V}
+    (hx : x ∈ X) (hwY : w ∈ Y)
+    (hxc : G.edges x c)
+    (hreach : G.Reachable c w)
+    (hcNotAncZ : c ∉ ancestorClosure G Z) :
+    ¬DSeparatedFull G X Y Z := by
+  intro hDSep
+  rcases reachable_to_directedChain G hreach with
+    ⟨q, hqne, hqHead, hqLast, hqChain⟩
+  match q, hqne, hqHead with
+  | c' :: qrest, _, hqH =>
+    have hcc' : c' = c := by simpa using hqH
+    have hFwd : IsDirectedChain G (x :: c' :: qrest) :=
+      ⟨hcc' ▸ hxc, hqChain⟩
+    have hcNotZ : ∀ u ∈ c' :: qrest, u ∉ Z :=
+      fun u hu => not_in_Z_of_reachable_of_not_in_ancZ G Z hcNotAncZ
+        (hcc' ▸ directedChain_reachable_from_head G hqChain u hu)
+    have hAvoidFwd : PathAvoidsInternals Z (x :: c' :: qrest) :=
+      pathAvoidsInternals_cons_of_all_notInZ Z hcNotZ
+    have hAT : ActiveTrail G Z (x :: c' :: qrest) :=
+      directedChain_activeTrail G Z hacyclic hFwd hAvoidFwd (by simp)
+    have hxw_ne : x ≠ w := by
+      intro heq
+      subst heq
+      exact G.isAcyclic_iff_no_self_reach.mp hacyclic x c hxc hreach
+    have hPE : PathEndpoints (x :: c' :: qrest) = some (x, w) :=
+      pathEndpoints_cons_eq_of_getLast hqLast
+    exact absurd_dsep_of_activeTrail G X Y Z hx hwY hxw_ne
+      (by simp) hPE hAT hDSep
+
+/-- Package `reachable_to_directedChain` with the standard non-ancestor-to-avoid-Z
+argument used repeatedly in the moral-to-active conversion proof. -/
+private theorem reachable_chain_avoidZ_of_not_ancZ
+    (G : DirectedGraph V) (Z : Set V)
+    {b w : V}
+    (hreach : G.Reachable b w)
+    (hbNotAncZ : b ∉ ancestorClosure G Z) :
+    ∃ q : List V,
+      q ≠ [] ∧
+      q.head? = some b ∧
+      q.getLast? = some w ∧
+      IsDirectedChain G q ∧
+      (∀ u ∈ q, u ∉ Z) := by
+  rcases reachable_to_directedChain G hreach with ⟨q, hqne, hqHead, hqLast, hqChain⟩
+  match q, hqne, hqHead with
+  | b' :: qrest, _, hqH =>
+    have hbb' : b' = b := by simpa using hqH
+    have hAvoid : ∀ u ∈ b' :: qrest, u ∉ Z := by
+      intro u hu
+      exact not_in_Z_of_reachable_of_not_in_ancZ G Z hbNotAncZ
+        (hbb' ▸ directedChain_reachable_from_head G hqChain u hu)
+    exact ⟨b' :: qrest, by simp, by simp [hqH], hqLast, hqChain, hAvoid⟩
+
+/-- Extract the reusable tail context from a `x :: b :: c :: rest` moral trail. -/
+private theorem tail_context_of_three_plus
+    (G : DirectedGraph V) (X Y Z : Set V)
+    {x y b c : V} {rest : List V}
+    (hEnds : PathEndpoints (x :: b :: c :: rest) = some (x, y))
+    (hTrail : IsTrail (moralAncestralGraph G X Y Z) (x :: b :: c :: rest))
+    (hAvoid : PathAvoidsInternals Z (x :: b :: c :: rest)) :
+    UndirectedEdge (moralAncestralGraph G X Y Z) x b ∧
+    IsTrail (moralAncestralGraph G X Y Z) (b :: c :: rest) ∧
+    PathAvoidsInternals Z (b :: c :: rest) ∧
+    b ∉ Z ∧
+    PathEndpoints (b :: c :: rest) = some (b, y) := by
+  have hEP := pathEndpoints_cons_cons_cons (hEnds := hEnds)
+  have hEdge_xb : UndirectedEdge (moralAncestralGraph G X Y Z) x b := by
+    cases hTrail with
+    | cons hE _ => exact hE
+  have hTailTrail : IsTrail (moralAncestralGraph G X Y Z) (b :: c :: rest) := by
+    cases hTrail with
+    | cons _ hT' => exact hT'
+  exact ⟨hEdge_xb, hTailTrail, hAvoid.2, hAvoid.1, hEP.2⟩
 
 /-- If there is a moral-ancestral trail from x∈X to y∈Y avoiding Z,
     then there is an active trail between some pair in X×Y.
@@ -511,29 +656,24 @@ theorem not_dsepFull_of_moralTrail
       exact base_case_single_edge G X Y Z hacyclic hx hy hxy hEdge_ab
     | a :: b :: c :: rest', _, hT =>
       -- Extract a = x from PathEndpoints
-      have ha : a = x := by simp [PathEndpoints] at hEnds; exact hEnds.1
-      -- Extract sub-trail info (using a, then rewriting to x)
-      have hEdge_ab : UndirectedEdge (moralAncestralGraph G X Y Z) a b := by
-        cases hT with | cons hE _ => exact hE
-      have hEdge_xb : UndirectedEdge (moralAncestralGraph G X Y Z) x b := ha ▸ hEdge_ab
-      have hTailTrail : IsTrail (moralAncestralGraph G X Y Z) (b :: c :: rest') := by
-        cases hT with | cons _ hT' => exact hT'
-      have hAvoidTail : PathAvoidsInternals Z (b :: c :: rest') := hAvoid.2
-      have hbNotZ : b ∉ Z := hAvoid.1
-      -- PathEndpoints of tail: y = getLast of b :: c :: rest'
-      have hEndsTail : PathEndpoints (b :: c :: rest') = some (b, y) := by
-        have hLast : (b :: c :: rest').getLast (by simp) = y := by
-          simp [PathEndpoints] at hEnds; exact hEnds.2
-        simp [PathEndpoints]; exact hLast
+      have hEP := pathEndpoints_cons_cons_cons (hEnds := hEnds)
+      have ha : a = x := hEP.1
+      have hEnds' : PathEndpoints (x :: b :: c :: rest') = some (x, y) := by
+        simpa [ha] using hEnds
+      have hTrail' : IsTrail (moralAncestralGraph G X Y Z) (x :: b :: c :: rest') := by
+        simpa [ha] using hT
+      have hAvoid' : PathAvoidsInternals Z (x :: b :: c :: rest') := by
+        simpa [ha] using hAvoid
+      rcases tail_context_of_three_plus G X Y Z (hEnds := hEnds') (hTrail := hTrail')
+          (hAvoid := hAvoid') with
+        ⟨hEdge_xb, hTailTrail, hAvoidTail, hbNotZ, hEndsTail⟩
       -- Tail is shorter
       have hTailLen : (b :: c :: rest').length ≤ n := by
         simp [List.length] at hlen ⊢; omega
       -- Case split on b
       by_cases hbY : b ∈ Y
       · -- b ∈ Y: base case on first edge x—b
-        have hxb_ne : x ≠ b := by
-          intro h; rw [h] at hEdge_xb
-          rcases hEdge_xb with hE | hE <;> exact hE.1 rfl
+        have hxb_ne : x ≠ b := ne_of_moral_undirected_edge G X Y Z hEdge_xb
         exact base_case_single_edge G X Y Z hacyclic hx hbY hxb_ne hEdge_xb
       · by_cases hbX : b ∈ X
         · -- b ∈ X: recurse on shorter tail trail
@@ -542,9 +682,8 @@ theorem not_dsepFull_of_moralTrail
             (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
         · -- b ∉ X ∪ Y: use b's reachability
           -- Extract b ∈ relevantVertices from the moral edge
-          have hbRel : b ∈ relevantVertices G X Y Z := by
-            rcases moralAncestralEdge_decompose G X Y Z hEdge_xb with
-              ⟨_, _, hbR⟩ | ⟨_, _, _, _, _, hbR⟩ <;> exact hbR
+          have hbRel : b ∈ relevantVertices G X Y Z :=
+            right_relevant_of_moral_edge G X Y Z hEdge_xb
           -- Main approach: check if b ∉ Anc(Z), then b reaches X∪Y
           by_cases hbAncZ : b ∈ ancestorClosure G Z
           · -- b ∈ Anc(Z) \ Z: complex case
@@ -563,40 +702,13 @@ theorem not_dsepFull_of_moralTrail
                     have hxc'_ne : x ≠ c' := fun h => by
                       subst h; exact G.isAcyclic_irrefl hacyclic x hxc'
                     intro hDSep
-                    exact hDSep x hx c' hc'Y hxc'_ne
-                      ⟨[x, c'], by simp, by simp [PathEndpoints],
-                       ActiveTrail.two (Or.inl hxc')⟩
+                    exact absurd_dsep_of_activeTrail G X Y Z hx hc'Y hxc'_ne
+                      (by simp) (by simp [PathEndpoints]) (ActiveTrail.two (Or.inl hxc'))
+                      hDSep
                 · rcases hwXY with hwX | hwY
                   · sorry -- c' reaches w ∈ X
-                  · -- c' reaches w ∈ Y: forward chain [x, c', ..., w]
-                    rcases reachable_to_directedChain G hreach with
-                      ⟨q, hqne, hqHead, hqLast, hqChain⟩
-                    match q, hqne, hqHead with
-                    | c'' :: qrest, _, hqH =>
-                      have hcc'' : c'' = c' := by simpa using hqH
-                      have hFwd : IsDirectedChain G (x :: c'' :: qrest) :=
-                        ⟨hcc'' ▸ hxc', hqChain⟩
-                      have hcNotZ : ∀ u ∈ c'' :: qrest, u ∉ Z :=
-                        fun u hu => not_in_Z_of_reachable_of_not_in_ancZ G Z hc'AncZ
-                          (hcc'' ▸ directedChain_reachable_from_head G hqChain u hu)
-                      have hAvoidFwd : PathAvoidsInternals Z (x :: c'' :: qrest) := by
-                        match qrest with
-                        | [] => exact trivial
-                        | d :: qrest' =>
-                          constructor
-                          · exact hcNotZ c'' (List.mem_cons.mpr (Or.inl rfl))
-                          · exact pathAvoidsInternals_of_all_notInZ Z
-                              (fun u hu => hcNotZ u (by simp [List.mem_cons] at hu ⊢; tauto))
-                      have hAT : ActiveTrail G Z (x :: c'' :: qrest) :=
-                        directedChain_activeTrail G Z hacyclic hFwd hAvoidFwd (by simp)
-                      have hxw_ne : x ≠ w := by
-                        intro heq; subst heq
-                        exact G.isAcyclic_iff_no_self_reach.mp hacyclic x c' hxc' hreach
-                      have hPE : PathEndpoints (x :: c'' :: qrest) = some (x, w) := by
-                        simp [PathEndpoints]; simpa [List.getLast?] using hqLast
-                      intro hDSep
-                      exact hDSep x hx w hwY hxw_ne
-                        ⟨x :: c'' :: qrest, by simp, hPE, hAT⟩
+                  · exact absurd_dsep_of_forward_detour_to_Y
+                      G X Y Z hacyclic hx hwY hxc' hreach hc'AncZ
           · -- b ∉ Anc(Z): b reaches w ∈ X∪Y
             rcases relevant_not_ancZ_reaches_XY G X Y Z hbRel hbAncZ with
               hbXY | ⟨w, hwXY, hreachBW, hbw⟩
@@ -606,69 +718,41 @@ theorem not_dsepFull_of_moralTrail
               · exact absurd hbYY hbY
             · rcases hwXY with hwX | hwY
               · sorry -- b reaches w ∈ X only (hard case)
-              · -- b reaches w ∈ Y: build active trail via directed chain
-                -- The directed chain [b, ..., w] avoids Z since b ∉ Anc(Z)
-                rcases reachable_to_directedChain G hreachBW with
-                  ⟨q, hqne, hqHead, hqLast, hqChain⟩
-                -- Now decompose first edge to prepend x
+              · -- b reaches w ∈ Y
+                -- Decompose first edge to prepend x.
                 rcases moralAncestralEdge_decompose G X Y Z hEdge_xb with
                   ⟨hDirect, _, _⟩ | ⟨c', hxc', hbc', hc'Rel, _, _⟩
                 · -- Direct edge x—b: build [x, b, ..., w∈Y]
-                  match q, hqne, hqHead with
-                  | b' :: qrest, _, hqH =>
-                    have hbb' : b' = b := by simpa using hqH
-                    have hbNotZ_chain : ∀ u ∈ b' :: qrest, u ∉ Z :=
-                      fun u hu => not_in_Z_of_reachable_of_not_in_ancZ G Z hbAncZ
-                        (hbb' ▸ directedChain_reachable_from_head G hqChain u hu)
-                    have hFwd : IsDirectedChain G (b' :: qrest) := hqChain
-                    -- x ≠ b from moral edge (moralUndirectedEdge has u ≠ v)
-                    have hxb_ne : x ≠ b := by
-                      intro h; rw [h] at hEdge_xb
-                      rcases hEdge_xb with hE | hE <;> exact hE.1 rfl
-                    have hxb'_ne : x ≠ b' := by rw [hbb']; exact hxb_ne
-                    match qrest with
-                    | [] =>
-                      -- q = [b'], w = b'. Trail [x, b'] from x∈X to b'=w∈Y.
-                      have hbw' : b' = w := by simp [List.getLast?] at hqLast; exact hqLast
-                      rw [← hbw'] at hwY
-                      intro hDSep
-                      exact hDSep x hx b' hwY hxb'_ne
-                        ⟨[x, b'], by simp, by simp [PathEndpoints],
-                         ActiveTrail.two (hbb' ▸ hDirect)⟩
-                    | d :: qrest' =>
-                      -- Chain: b' → d → ... → w ∈ Y. Split on direction of x—b edge.
-                      have hbd : G.edges b' d := hFwd.1
-                      have hAvoidQ : PathAvoidsInternals Z (b' :: d :: qrest') :=
-                        pathAvoidsInternals_of_all_notInZ Z hbNotZ_chain
-                      rcases hDirect with hxb_edge | hbx_edge
-                      · -- Case A: G.edges x b → x→b→d forms non-collider at b
-                        have hxd_ne : x ≠ d := by
-                          intro h; subst h -- d replaced by x
-                          -- G.edges b' x (= hbd) and G.edges x b (= hxb_edge)
-                          -- b' = b, so G.edges b x. Two-cycle with x → b.
-                          exact G.isAcyclic_no_two_cycle hacyclic x b hxb_edge (hbb' ▸ hbd)
-                        have hub : UndirectedEdge G x b' := Or.inl (by rw [hbb']; exact hxb_edge)
-                        have hbcU : UndirectedEdge G b' d := Or.inl hbd
-                        have hNonCol : IsNonCollider G ⟨x, b', d, hub, hbcU, hxd_ne⟩ := by
-                          unfold IsNonCollider IsCollider; intro ⟨_, hdb'⟩
-                          exact G.isAcyclic_no_two_cycle hacyclic b' d hbd hdb'
-                        have hAct : IsActive G Z ⟨x, b', d, hub, hbcU, hxd_ne⟩ := by
-                          unfold IsActive IsBlocked; push_neg
-                          exact ⟨fun _ => hbb' ▸ hbNotZ, fun h => absurd h hNonCol⟩
-                        have hTailAT : ActiveTrail G Z (b' :: d :: qrest') :=
-                          directedChain_activeTrail G Z hacyclic hFwd hAvoidQ (by simp)
-                        have hFullAT : ActiveTrail G Z (x :: b' :: d :: qrest') :=
-                          ActiveTrail.cons hub hbcU hxd_ne hAct hTailAT
-                        have hxw_ne : x ≠ w := by
-                          intro heq; subst heq
-                          exact G.isAcyclic_iff_no_self_reach.mp hacyclic x b hxb_edge
-                            (hbb' ▸ hreachBW)
-                        have hPE : PathEndpoints (x :: b' :: d :: qrest') = some (x, w) := by
-                          simp [PathEndpoints]; simpa [List.getLast?] using hqLast
+                  rcases hDirect with hxb_edge | hbx_edge
+                  · exact absurd_dsep_of_forward_detour_to_Y
+                      G X Y Z hacyclic hx hwY hxb_edge hreachBW hbAncZ
+                  ·
+                    -- Remaining orientation: b → x. Use the directed chain from b to w.
+                    rcases reachable_chain_avoidZ_of_not_ancZ G Z hreachBW hbAncZ with
+                      ⟨q, hqne, hqHead, hqLast, hqChain, hbNotZ_chain⟩
+                    match q, hqne, hqHead with
+                    | b' :: qrest, _, hqH =>
+                      have hbb' : b' = b := by simpa using hqH
+                      have hFwd : IsDirectedChain G (b' :: qrest) := hqChain
+                      -- x ≠ b from moral edge (moralUndirectedEdge has u ≠ v)
+                      have hxb_ne : x ≠ b := by
+                        exact ne_of_moral_undirected_edge G X Y Z hEdge_xb
+                      have hxb'_ne : x ≠ b' := by rw [hbb']; exact hxb_ne
+                      match qrest with
+                      | [] =>
+                        -- q = [b'], w = b'. Trail [x, b'] from x∈X to b'=w∈Y.
+                        have hbw' : b' = w := by simp [List.getLast?] at hqLast; exact hqLast
+                        rw [← hbw'] at hwY
                         intro hDSep
-                        exact hDSep x hx w hwY hxw_ne
-                          ⟨x :: b' :: d :: qrest', by simp, hPE, hFullAT⟩
-                      · -- Case B: G.edges b x → b→x and b→d, both outgoing from b
+                        exact absurd_dsep_of_activeTrail G X Y Z hx hwY hxb'_ne
+                          (by simp) (by simp [PathEndpoints])
+                          (ActiveTrail.two (Or.inr (hbb' ▸ hbx_edge))) hDSep
+                      | d :: qrest' =>
+                        -- Chain: b' → d → ... → w ∈ Y, with b' → x from hbx_edge.
+                        have hbd : G.edges b' d := hFwd.1
+                        have hAvoidQ : PathAvoidsInternals Z (b' :: d :: qrest') :=
+                          pathAvoidsInternals_of_all_notInZ Z hbNotZ_chain
+                        -- Case B: G.edges b x → b→x and b→d, both outgoing from b
                         by_cases hxd : x = d
                         · -- x = d: use sub-chain from x onwards (skip b)
                           subst hxd
@@ -698,10 +782,10 @@ theorem not_dsepFull_of_moralTrail
                               exact G.isAcyclic_iff_no_self_reach.mp hacyclic x e hSC.1
                                 (directedChain_reachable_from_head G hSC.2 x hw_mem)
                             have hPE : PathEndpoints (x :: e :: rest) = some (x, w) := by
-                              simp [PathEndpoints]; simpa [List.getLast?] using hLast
+                              exact pathEndpoints_cons_eq_of_getLast hLast
                             intro hDSep
-                            exact hDSep x hx w hwY hxw_ne
-                              ⟨x :: e :: rest, by simp, hPE, hSubAT⟩
+                            exact absurd_dsep_of_activeTrail G X Y Z hx hwY hxw_ne
+                              (by simp) hPE hSubAT hDSep
                         · -- x ≠ d: triple (x, b', d) with b→x, b→d (non-collider)
                           have hub : UndirectedEdge G x b' :=
                             Or.inr (by rw [hbb']; exact hbx_edge)
@@ -720,10 +804,10 @@ theorem not_dsepFull_of_moralTrail
                           · -- x = w ∈ Y: edge case
                             sorry -- x = w with G.edges b x, x ≠ d
                           · have hPE : PathEndpoints (x :: b' :: d :: qrest') = some (x, w) := by
-                              simp [PathEndpoints]; simpa [List.getLast?] using hqLast
+                              exact pathEndpoints_cons_eq_of_getLast hqLast
                             intro hDSep
-                            exact hDSep x hx w hwY hxw
-                              ⟨x :: b' :: d :: qrest', by simp, hPE, hFullAT⟩
+                            exact absurd_dsep_of_activeTrail G X Y Z hx hwY hxw
+                              (by simp) hPE hFullAT hDSep
                 · -- Spouse edge: x→c' and b→c'. Try [x, c', b, ..., w∈Y]
                   sorry -- Spouse edge with b reaching Y (needs collider analysis at c')
 

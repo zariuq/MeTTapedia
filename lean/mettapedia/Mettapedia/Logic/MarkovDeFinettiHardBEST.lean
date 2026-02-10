@@ -5,6 +5,7 @@ import Mettapedia.Logic.MarkovDeFinettiHardEmpirical
 import Mettapedia.Logic.MarkovDeFinettiHardCopyPerm
 import Mettapedia.Logic.MarkovDeFinettiHardEulerTrails
 import Mettapedia.Logic.MarkovDeFinettiHardExcursionBridge
+import Mettapedia.Logic.DiaconisFreedmanFinite
 
 /-! LLM primer:
 - `MarkovState k` encodes (start : Fin k, counts : TransCounts k).
@@ -5118,6 +5119,430 @@ private lemma abs_wr_wor_patternMass_toReal_eq_of_perm
   have h := hP [] (by simpa using hp) (by simpa using hq)
   simpa using h
 
+/-! ## Finite cardinality normalizations for pushforward terms -/
+
+private lemma sum_if_eq_const
+    {Ω Γ : Type*} [Fintype Ω] [DecidableEq Γ]
+    (lift : Ω → Γ) (γ : Γ) (c : ℝ) :
+    (∑ f : Ω, if lift f = γ then c else 0) =
+      (Fintype.card {f : Ω // lift f = γ} : ℝ) * c := by
+  classical
+  calc
+    (∑ f : Ω, if lift f = γ then c else 0)
+        = ((Finset.univ.filter (fun f : Ω => lift f = γ)).card : ℝ) * c := by
+            rw [← Finset.sum_filter]
+            simp [Finset.sum_const, nsmul_eq_mul]
+    _ = (Finset.univ.filter (fun f : Ω => lift f = γ)).card * c := by simp
+    _ = (Fintype.card {f : Ω // lift f = γ} : ℝ) * c := by
+          simp [Fintype.card_subtype]
+
+private lemma sum_if_eq_and_pred_const
+    {Ω Γ : Type*} [Fintype Ω] [DecidableEq Γ]
+    (lift : Ω → Γ) (γ : Γ) (P : Ω → Prop) [DecidablePred P] (c : ℝ) :
+    (∑ f : Ω, if lift f = γ ∧ P f then c else 0) =
+      (Fintype.card {f : Ω // lift f = γ ∧ P f} : ℝ) * c := by
+  classical
+  calc
+    (∑ f : Ω, if lift f = γ ∧ P f then c else 0)
+        = ((Finset.univ.filter (fun f : Ω => lift f = γ ∧ P f)).card : ℝ) * c := by
+            rw [← Finset.sum_filter]
+            simp [Finset.sum_const, nsmul_eq_mul]
+    _ = (Finset.univ.filter (fun f : Ω => lift f = γ ∧ P f)).card * c := by simp
+    _ = (Fintype.card {f : Ω // lift f = γ ∧ P f} : ℝ) * c := by
+          simp [Fintype.card_subtype]
+
+private lemma mu0_push_eq_card
+    {m R : ℕ} {Γ : Type*} [DecidableEq Γ]
+    (lift : (Fin m → Fin R) → Γ) (γ : Γ) :
+    (∑ f : Fin m → Fin R,
+      if lift f = γ then (1 : ℝ) / (R : ℝ) ^ m else 0) =
+      (Fintype.card {f : Fin m → Fin R // lift f = γ} : ℝ) /
+        ((R : ℝ) ^ m) := by
+  calc
+    (∑ f : Fin m → Fin R,
+      if lift f = γ then (1 : ℝ) / (R : ℝ) ^ m else 0) =
+      (Fintype.card {f : Fin m → Fin R // lift f = γ} : ℝ) *
+        ((1 : ℝ) / (R : ℝ) ^ m) := by
+          simpa using
+            (sum_if_eq_const (Ω := Fin m → Fin R) (Γ := Γ) lift γ
+              ((1 : ℝ) / (R : ℝ) ^ m))
+    _ =
+      (Fintype.card {f : Fin m → Fin R // lift f = γ} : ℝ) /
+        ((R : ℝ) ^ m) := by
+          simp [div_eq_mul_inv, mul_assoc, mul_comm, mul_left_comm]
+
+private lemma muinj_push_eq_card_scaled
+    {m R : ℕ} {Γ : Type*} [DecidableEq Γ]
+    (lift : (Fin m → Fin R) → Γ) (γ : Γ) :
+    (∑ f : Fin m → Fin R,
+      if lift f = γ then
+        (if Function.Injective f then
+          (1 : ℝ) / (R : ℝ) ^ m /
+            (∑ g : Fin m → Fin R,
+              if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0)
+        else 0)
+      else 0) =
+      (Fintype.card {f : Fin m → Fin R // lift f = γ ∧ Function.Injective f} : ℝ) *
+        ((1 : ℝ) / (R : ℝ) ^ m /
+          (∑ g : Fin m → Fin R,
+            if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0)) := by
+  classical
+  let c : ℝ :=
+    (1 : ℝ) / (R : ℝ) ^ m /
+      (∑ g : Fin m → Fin R,
+        if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0)
+  have hpoint :
+      ∀ f : Fin m → Fin R,
+        (if lift f = γ then (if Function.Injective f then c else 0) else 0) =
+          (if lift f = γ ∧ Function.Injective f then c else 0) := by
+    intro f
+    by_cases h1 : lift f = γ <;> by_cases h2 : Function.Injective f <;> simp [h1, h2]
+  calc
+    (∑ f : Fin m → Fin R,
+      if lift f = γ then
+        (if Function.Injective f then
+          (1 : ℝ) / (R : ℝ) ^ m /
+            (∑ g : Fin m → Fin R,
+              if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0)
+        else 0)
+      else 0)
+        = ∑ f : Fin m → Fin R,
+          (if lift f = γ then (if Function.Injective f then c else 0) else 0) := by
+            simp [c]
+    _ = ∑ f : Fin m → Fin R,
+          (if lift f = γ ∧ Function.Injective f then c else 0) := by
+            refine Finset.sum_congr rfl ?_
+            intro f hf
+            exact hpoint f
+    _ = (Fintype.card {f : Fin m → Fin R // lift f = γ ∧ Function.Injective f} : ℝ) * c := by
+          simpa using
+            (sum_if_eq_and_pred_const
+              (Ω := Fin m → Fin R) (Γ := Γ) lift γ
+              (fun f => Function.Injective f) c)
+    _ = (Fintype.card {f : Fin m → Fin R // lift f = γ ∧ Function.Injective f} : ℝ) *
+          ((1 : ℝ) / (R : ℝ) ^ m /
+            (∑ g : Fin m → Fin R,
+              if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0)) := by
+          simp [c]
+
+private lemma inj_norm_sum_eq_card_scaled
+    {m R : ℕ} :
+    (∑ g : Fin m → Fin R,
+      if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0) =
+      (Fintype.card {g : Fin m → Fin R // Function.Injective g} : ℝ) *
+        ((1 : ℝ) / (R : ℝ) ^ m) := by
+  calc
+    (∑ g : Fin m → Fin R,
+      if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0) =
+      ((Finset.univ.filter (fun g : Fin m → Fin R => Function.Injective g)).card : ℝ) *
+        ((1 : ℝ) / (R : ℝ) ^ m) := by
+          rw [← Finset.sum_filter]
+          simp [Finset.sum_const, nsmul_eq_mul]
+    _ =
+      (Fintype.card {g : Fin m → Fin R // Function.Injective g} : ℝ) *
+        ((1 : ℝ) / (R : ℝ) ^ m) := by
+          simp [Fintype.card_subtype]
+
+private lemma exists_map_with_fiber_card
+    {Γ Ω : Type*} [Fintype Γ] [DecidableEq Γ] [Fintype Ω]
+    (A : Γ → Nat)
+    (hA : (∑ γ : Γ, A γ) = Fintype.card Ω) :
+    ∃ f : Ω → Γ, ∀ γ : Γ, Fintype.card {ω : Ω // f ω = γ} = A γ := by
+  classical
+  let T := Σ γ : Γ, Fin (A γ)
+  have hcard : Fintype.card Ω = Fintype.card T := by
+    calc
+      Fintype.card Ω = ∑ γ : Γ, A γ := by simpa using hA.symm
+      _ = Fintype.card T := by simp [T]
+  let e : Ω ≃ T := Fintype.equivOfCardEq hcard
+  refine ⟨fun ω => (e ω).1, ?_⟩
+  intro γ
+  have hcongr :
+      Fintype.card {ω : Ω // (e ω).1 = γ} =
+        Fintype.card {t : T // t.1 = γ} := by
+    let g : {ω : Ω // (e ω).1 = γ} → {t : T // t.1 = γ} :=
+      fun ω => ⟨e ω.1, by simpa using ω.2⟩
+    have hg_bij : Function.Bijective g := by
+      constructor
+      · intro ω₁ ω₂ hω
+        ext
+        exact e.injective (Subtype.ext_iff.mp hω)
+      · intro t
+        refine ⟨⟨e.symm t.1, by simpa using t.2⟩, ?_⟩
+        apply Subtype.ext
+        simp [g]
+    exact Fintype.card_congr (Equiv.ofBijective g hg_bij)
+  calc
+    Fintype.card {ω : Ω // (fun ω => (e ω).1) ω = γ}
+      = Fintype.card {ω : Ω // (e ω).1 = γ} := by simp
+    _ = Fintype.card {t : T // t.1 = γ} := hcongr
+    _ = Fintype.card (Fin (A γ)) := by
+          refine Fintype.card_congr ?_
+          refine
+            { toFun := fun t =>
+                Fin.cast (by simpa [T] using congrArg A t.2) t.1.2
+              invFun := fun i => ⟨⟨γ, i⟩, rfl⟩
+              left_inv := ?_
+              right_inv := ?_ }
+          · intro t
+            rcases t with ⟨⟨γ', i⟩, ht⟩
+            subst ht
+            simp
+          · intro i
+            simp
+    _ = A γ := by simp
+
+private lemma exists_lift_with_pred_counts
+    {Γ Ω : Type*} [Fintype Γ] [DecidableEq Γ] [Fintype Ω]
+    (I : Ω → Prop) [DecidablePred I]
+    (A B : Γ → Nat)
+    (hA : (∑ γ : Γ, A γ) = Fintype.card Ω)
+    (hB : (∑ γ : Γ, B γ) = Fintype.card {ω : Ω // I ω})
+    (hBA : ∀ γ, B γ ≤ A γ) :
+    ∃ lift : Ω → Γ,
+      (∀ γ : Γ, Fintype.card {ω : Ω // lift ω = γ} = A γ) ∧
+      (∀ γ : Γ, Fintype.card {ω : Ω // lift ω = γ ∧ I ω} = B γ) := by
+  classical
+  let C : Γ → Nat := fun γ => A γ - B γ
+  have hsumAB :
+      (∑ γ : Γ, A γ) = (∑ γ : Γ, B γ) + (∑ γ : Γ, C γ) := by
+    calc
+      (∑ γ : Γ, A γ) = ∑ γ : Γ, (B γ + C γ) := by
+        refine Finset.sum_congr rfl ?_
+        intro γ hγ
+        simp [C, Nat.add_sub_of_le (hBA γ)]
+      _ = (∑ γ : Γ, B γ) + (∑ γ : Γ, C γ) := by
+          simp [Finset.sum_add_distrib]
+  have hC : (∑ γ : Γ, C γ) = Fintype.card {ω : Ω // ¬ I ω} := by
+    have hcardSplit :
+        Fintype.card Ω = Fintype.card {ω : Ω // I ω} + (∑ γ : Γ, C γ) := by
+      calc
+        Fintype.card Ω = ∑ γ : Γ, A γ := by simpa using hA.symm
+        _ = (∑ γ : Γ, B γ) + (∑ γ : Γ, C γ) := hsumAB
+        _ = Fintype.card {ω : Ω // I ω} + (∑ γ : Γ, C γ) := by simpa [hB]
+    have hcompl :
+        Fintype.card {ω : Ω // ¬ I ω} =
+          Fintype.card Ω - Fintype.card {ω : Ω // I ω} := by
+      simpa using (Fintype.card_subtype_compl I)
+    omega
+  obtain ⟨fInj, hfInj⟩ :=
+    exists_map_with_fiber_card (Γ := Γ) (Ω := {ω : Ω // I ω}) B hB
+  obtain ⟨fNon, hfNon⟩ :=
+    exists_map_with_fiber_card (Γ := Γ) (Ω := {ω : Ω // ¬ I ω}) C hC
+  refine ⟨(fun ω => if hω : I ω then fInj ⟨ω, hω⟩ else fNon ⟨ω, hω⟩), ?_⟩
+  refine ⟨?_, ?_⟩
+  · intro γ
+    let lift : Ω → Γ := fun ω => if hω : I ω then fInj ⟨ω, hω⟩ else fNon ⟨ω, hω⟩
+    have hsplit :
+        Fintype.card {ω : Ω // lift ω = γ} =
+          Fintype.card {ω : Ω // lift ω = γ ∧ I ω} +
+            Fintype.card {ω : Ω // lift ω = γ ∧ ¬ I ω} := by
+      let eSplit :
+          {ω : Ω // lift ω = γ} ≃
+            ({ω : Ω // lift ω = γ ∧ I ω} ⊕ {ω : Ω // lift ω = γ ∧ ¬ I ω}) :=
+        { toFun := fun ω =>
+            if hω : I ω.1 then
+              Sum.inl ⟨ω.1, ⟨ω.2, hω⟩⟩
+            else
+              Sum.inr ⟨ω.1, ⟨ω.2, hω⟩⟩
+          invFun := fun s =>
+            match s with
+            | Sum.inl ωI => ⟨ωI.1, ωI.2.1⟩
+            | Sum.inr ωN => ⟨ωN.1, ωN.2.1⟩
+          left_inv := by
+            intro ω
+            by_cases hω : I ω.1
+            · simp [hω]
+            · simp [hω]
+          right_inv := by
+            intro s
+            cases s with
+            | inl ωI =>
+                simp [ωI.2.2]
+            | inr ωN =>
+                simp [ωN.2.2] }
+      calc
+        Fintype.card {ω : Ω // lift ω = γ}
+            = Fintype.card ({ω : Ω // lift ω = γ ∧ I ω} ⊕
+                {ω : Ω // lift ω = γ ∧ ¬ I ω}) := by
+                  exact Fintype.card_congr eSplit
+        _ = Fintype.card {ω : Ω // lift ω = γ ∧ I ω} +
+              Fintype.card {ω : Ω // lift ω = γ ∧ ¬ I ω} := by
+                simp [Fintype.card_sum]
+    have hInjCard :
+        Fintype.card {ω : Ω // lift ω = γ ∧ I ω} = B γ := by
+      let e :
+          {ω : Ω // lift ω = γ ∧ I ω} ≃
+            {u : {ω : Ω // I ω} // fInj u = γ} :=
+        { toFun := fun ω =>
+            ⟨⟨ω.1, ω.2.2⟩, by
+              simpa [lift, ω.2.2] using ω.2.1⟩
+          invFun := fun u =>
+            ⟨u.1.1, by
+              refine ⟨?_, u.1.2⟩
+              simpa [lift, u.1.2] using u.2⟩
+          left_inv := by
+            intro ω
+            ext
+            rfl
+          right_inv := by
+            intro u
+            ext
+            rfl }
+      calc
+        Fintype.card {ω : Ω // lift ω = γ ∧ I ω}
+            = Fintype.card {u : {ω : Ω // I ω} // fInj u = γ} := by
+                exact Fintype.card_congr e
+        _ = B γ := hfInj γ
+    have hNonCard :
+        Fintype.card {ω : Ω // lift ω = γ ∧ ¬ I ω} = C γ := by
+      let e :
+          {ω : Ω // lift ω = γ ∧ ¬ I ω} ≃
+            {u : {ω : Ω // ¬ I ω} // fNon u = γ} :=
+        { toFun := fun ω =>
+            ⟨⟨ω.1, ω.2.2⟩, by
+              simpa [lift, ω.2.2] using ω.2.1⟩
+          invFun := fun u =>
+            ⟨u.1.1, by
+              refine ⟨?_, u.1.2⟩
+              simpa [lift, u.1.2] using u.2⟩
+          left_inv := by
+            intro ω
+            ext
+            rfl
+          right_inv := by
+            intro u
+            ext
+            rfl }
+      calc
+        Fintype.card {ω : Ω // lift ω = γ ∧ ¬ I ω}
+            = Fintype.card {u : {ω : Ω // ¬ I ω} // fNon u = γ} := by
+                exact Fintype.card_congr e
+        _ = C γ := hfNon γ
+    calc
+      Fintype.card {ω : Ω // lift ω = γ}
+          = Fintype.card {ω : Ω // lift ω = γ ∧ I ω} +
+              Fintype.card {ω : Ω // lift ω = γ ∧ ¬ I ω} := hsplit
+      _ = B γ + C γ := by rw [hInjCard, hNonCard]
+      _ = A γ := by simp [C, Nat.add_sub_of_le (hBA γ)]
+  · intro γ
+    let lift : Ω → Γ := fun ω => if hω : I ω then fInj ⟨ω, hω⟩ else fNon ⟨ω, hω⟩
+    let e :
+        {ω : Ω // lift ω = γ ∧ I ω} ≃
+          {u : {ω : Ω // I ω} // fInj u = γ} :=
+      { toFun := fun ω =>
+          ⟨⟨ω.1, ω.2.2⟩, by
+            simpa [lift, ω.2.2] using ω.2.1⟩
+        invFun := fun u =>
+          ⟨u.1.1, by
+            refine ⟨?_, u.1.2⟩
+            simpa [lift, u.1.2] using u.2⟩
+        left_inv := by
+          intro ω
+          ext
+          rfl
+        right_inv := by
+          intro u
+          ext
+          rfl }
+    calc
+      Fintype.card {ω : Ω // lift ω = γ ∧ I ω}
+          = Fintype.card {u : {ω : Ω // I ω} // fInj u = γ} := by
+              exact Fintype.card_congr e
+      _ = B γ := hfInj γ
+
+private lemma sum_fiber_counts_eq_card
+    {Γ Ω : Type*} [Fintype Γ] [Fintype Ω] [DecidableEq Γ]
+    (lift : Ω → Γ) :
+    (∑ γ : Γ, Fintype.card {ω : Ω // lift ω = γ}) = Fintype.card Ω := by
+  classical
+  let T := Σ γ : Γ, {ω : Ω // lift ω = γ}
+  have hcardT : Fintype.card T = ∑ γ : Γ, Fintype.card {ω : Ω // lift ω = γ} := by
+    simp [T]
+  let e : T ≃ Ω :=
+    { toFun := fun t => t.2.1
+      invFun := fun ω => ⟨lift ω, ⟨ω, rfl⟩⟩
+      left_inv := by
+        intro t
+        rcases t with ⟨γ, ω, hω⟩
+        subst hω
+        rfl
+      right_inv := by
+        intro ω
+        rfl }
+  calc
+    (∑ γ : Γ, Fintype.card {ω : Ω // lift ω = γ}) = Fintype.card T := by
+      symm
+      exact hcardT
+    _ = Fintype.card Ω := Fintype.card_congr e
+
+private lemma sum_inj_fiber_counts_eq_card
+    {Γ Ω : Type*} [Fintype Γ] [Fintype Ω] [DecidableEq Γ]
+    (I : Ω → Prop) [DecidablePred I]
+    (lift : Ω → Γ) :
+    (∑ γ : Γ, Fintype.card {ω : Ω // lift ω = γ ∧ I ω})
+      = Fintype.card {ω : Ω // I ω} := by
+  classical
+  let T := Σ γ : Γ, {ω : Ω // lift ω = γ ∧ I ω}
+  have hcardT : Fintype.card T = ∑ γ : Γ, Fintype.card {ω : Ω // lift ω = γ ∧ I ω} := by
+    simp [T]
+  let e : T ≃ {ω : Ω // I ω} :=
+    { toFun := fun t => ⟨t.2.1, t.2.2.2⟩
+      invFun := fun ω => ⟨lift ω.1, ⟨ω.1, ⟨rfl, ω.2⟩⟩⟩
+      left_inv := by
+        intro t
+        rcases t with ⟨γ, ω, hω, hI⟩
+        subst hω
+        rfl
+      right_inv := by
+        intro ω
+        rfl }
+  calc
+    (∑ γ : Γ, Fintype.card {ω : Ω // lift ω = γ ∧ I ω}) = Fintype.card T := by
+      symm
+      exact hcardT
+    _ = Fintype.card {ω : Ω // I ω} := Fintype.card_congr e
+
+private lemma inj_fiber_count_le_fiber_count
+    {Γ Ω : Type*} [Fintype Γ] [Fintype Ω] [DecidableEq Γ]
+    (I : Ω → Prop) [DecidablePred I]
+    (lift : Ω → Γ) (γ : Γ) :
+    Fintype.card {ω : Ω // lift ω = γ ∧ I ω}
+      ≤ Fintype.card {ω : Ω // lift ω = γ} := by
+  exact Fintype.card_subtype_mono
+    (fun ω : Ω => lift ω = γ ∧ I ω)
+    (fun ω : Ω => lift ω = γ)
+    (fun ω hω => hω.1)
+
+private lemma exists_wr_push_counts
+    {m R : ℕ} {Γ : Type*} [Fintype Γ] [DecidableEq Γ]
+    (hΓ : Nonempty Γ) :
+    let Ω := Fin m → Fin R
+    let μ0 : Ω → ℝ := fun _ => (1 : ℝ) / (R : ℝ) ^ m
+    ∃ lift : Ω → Γ, ∃ A : Γ → Nat,
+      (∑ γ : Γ, A γ) = Fintype.card Ω ∧
+      (∀ γ : Γ,
+        (∑ f : Ω, if lift f = γ then μ0 f else 0) =
+          (A γ : ℝ) / (R : ℝ) ^ m) := by
+  classical
+  intro Ω μ0
+  let γ0 : Γ := Classical.choice hΓ
+  let lift : Ω → Γ := fun _ => γ0
+  let A : Γ → Nat := fun γ => Fintype.card {f : Ω // lift f = γ}
+  refine ⟨lift, A, ?_, ?_⟩
+  · simpa [A] using
+      (sum_fiber_counts_eq_card (Γ := Γ) (Ω := Ω) lift)
+  · intro γ
+    calc
+      (∑ f : Ω, if lift f = γ then μ0 f else 0) =
+          (Fintype.card {f : Ω // lift f = γ} : ℝ) / (R : ℝ) ^ m := by
+            simpa [μ0] using
+              (mu0_push_eq_card
+                (m := m) (R := R) (Γ := Γ)
+                (lift := lift) (γ := γ))
+      _ = (A γ : ℝ) / (R : ℝ) ^ m := by
+            simp [A]
+
 /-! ## Diaconis-Freedman core lemma
 
 The key bound connecting `W(empiricalParam)` and `prefixCoeff` via the
@@ -5138,6 +5563,139 @@ ordering bijection). The key missing pieces are:
 - Fiber cardinality formula: `|fiber(N, s)| = t_s(G) × ∏_a (outdeg(a) - 1)!`
 - Excursion ordering uniformity (consequence of BEST)
 - Product decomposition of `wordProbNN` through excursion frequencies -/
+private lemma exists_pattern_pushforward_repr
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (hs : s ∈ stateFinset k N)
+    (hPnonempty :
+      ((excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList).Nonempty) :
+    let P := excursionPatternSet (k := k) (hN := hN) e s
+    let repr : Multiset (ExcursionType k) → ExcursionList k := fun mset =>
+      if hm : ∃ p ∈ P, Multiset.ofList p = mset then (Classical.choose hm) else []
+    let Ω := Fin (Nat.succ n) → Fin (returnsToStart (k := k) s)
+    let Pset : Finset (Multiset (ExcursionType k)) := P.image Multiset.ofList
+    let Γ := {mset : Multiset (ExcursionType k) // mset ∈ Pset}
+    let μ0 : Ω → ℝ := fun _ =>
+      (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)
+    let μinj : Ω → ℝ := fun f =>
+      if Function.Injective f then
+        (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) /
+          (∑ g : Ω, if Function.Injective g then
+            (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) else 0)
+      else 0
+    let classTerm : Multiset (ExcursionType k) → ℝ := fun mset =>
+      (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+        |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+          (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)
+    ∃ lift : Ω → Γ,
+      ∀ γ : Γ,
+        classTerm γ.1 =
+          abs ((∑ f : Ω, if lift f = γ then μ0 f else 0) -
+            (∑ f : Ω, if lift f = γ then μinj f else 0)) := by
+  classical
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  let repr : Multiset (ExcursionType k) → ExcursionList k := fun mset =>
+    if hm : ∃ p ∈ P, Multiset.ofList p = mset then (Classical.choose hm) else []
+  let Ω := Fin (Nat.succ n) → Fin (returnsToStart (k := k) s)
+  let Pset : Finset (Multiset (ExcursionType k)) := P.image Multiset.ofList
+  let Γ := {mset : Multiset (ExcursionType k) // mset ∈ Pset}
+  let μ0 : Ω → ℝ := fun _ =>
+    (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)
+  let μinj : Ω → ℝ := fun f =>
+    if Function.Injective f then
+      (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) /
+        (∑ g : Ω, if Function.Injective g then
+          (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) else 0)
+    else 0
+  let cInj : ℝ :=
+    (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) /
+      (∑ g : Ω, if Function.Injective g then
+        (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) else 0)
+  let classTerm : Multiset (ExcursionType k) → ℝ := fun mset =>
+    (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+      |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+        (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)
+  have hcounts :
+      ∃ A B : Γ → Nat,
+        (∑ γ : Γ, A γ) = Fintype.card Ω ∧
+        (∑ γ : Γ, B γ) = Fintype.card {f : Ω // Function.Injective f} ∧
+        (∀ γ : Γ, B γ ≤ A γ) ∧
+        (∀ γ : Γ,
+          classTerm γ.1 =
+            abs (((A γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)) -
+              ((B γ : ℝ) * cInj))) := by
+    have hΓnonempty : Nonempty Γ := by
+      rcases hPnonempty with ⟨mset, hmset⟩
+      exact ⟨⟨mset, hmset⟩⟩
+    -- Step 1 (completed): extract WR-side counts `A` with `∑ A = card Ω`.
+    have hAonly : ∃ A : Γ → Nat, (∑ γ : Γ, A γ) = Fintype.card Ω := by
+      rcases (show
+        ∃ liftA : Ω → Γ, ∃ A : Γ → Nat,
+          (∑ γ : Γ, A γ) = Fintype.card Ω ∧
+          (∀ γ : Γ,
+            (∑ f : Ω, if liftA f = γ then μ0 f else 0) =
+              (A γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n))
+        from by
+          simpa [Ω, μ0] using
+            (exists_wr_push_counts
+              (m := Nat.succ n)
+              (R := returnsToStart (k := k) s)
+              (Γ := Γ) hΓnonempty))
+        with ⟨liftA, A, hA, hAwr⟩
+      exact ⟨A, hA⟩
+    -- Remaining BEST bridge (Steps 2-3):
+    -- - produce `B` (WOR/injective class counts),
+    -- - couple with suitable `A` via `B ≤ A`,
+    -- - prove `classTerm = |A/R^m - B*cInj|`.
+    -- Temporary sorry: remove once the explicit BEST count bridge is formalized.
+    sorry
+  rcases hcounts with ⟨A, B, hA, hB, hBA, hreprAB⟩
+  rcases exists_lift_with_pred_counts
+      (Γ := Γ) (Ω := Ω) (I := Function.Injective)
+      (A := A) (B := B) hA hB hBA with ⟨lift, hliftA, hliftB⟩
+  refine ⟨lift, ?_⟩
+  intro γ
+  have hsum0 :
+      (∑ f : Ω, if lift f = γ then μ0 f else 0) =
+        (A γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) := by
+    calc
+      (∑ f : Ω, if lift f = γ then μ0 f else 0)
+          = (Fintype.card {f : Ω // lift f = γ} : ℝ) /
+              (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) := by
+                simpa [Ω, Γ, μ0] using
+                  (mu0_push_eq_card
+                    (m := Nat.succ n)
+                    (R := returnsToStart (k := k) s)
+                    (Γ := Γ)
+                    (lift := lift)
+                    (γ := γ))
+      _ = (A γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) := by
+            simp [hliftA γ]
+  have hsumInj :
+      (∑ f : Ω, if lift f = γ then μinj f else 0) =
+        (B γ : ℝ) * cInj := by
+    calc
+      (∑ f : Ω, if lift f = γ then μinj f else 0)
+          = (Fintype.card {f : Ω // lift f = γ ∧ Function.Injective f} : ℝ) *
+              cInj := by
+                simpa [Ω, Γ, μinj, cInj] using
+                  (muinj_push_eq_card_scaled
+                    (m := Nat.succ n)
+                    (R := returnsToStart (k := k) s)
+                    (Γ := Γ)
+                    (lift := lift)
+                    (γ := γ))
+      _ = (B γ : ℝ) * cInj := by
+            simp [hliftB γ]
+  calc
+    classTerm γ.1 =
+      abs (((A γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)) -
+        ((B γ : ℝ) * cInj)) := hreprAB γ
+    _ =
+      abs ((∑ f : Ω, if lift f = γ then μ0 f else 0) -
+        (∑ f : Ω, if lift f = γ then μinj f else 0)) := by
+          rw [hsum0, hsumInj]
+
 private lemma excursion_wor_wr_core
     (hk : 0 < k) (n : ℕ) (e : MarkovState k)
     {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
@@ -5184,8 +5742,8 @@ private lemma excursion_wor_wr_core
                       (worPatternMass (k := k) (hN := hN) e s q).toReal| := by
     intro mset _ p q hp hq hpm hqm
     exact abs_wr_wor_patternMass_toReal_eq_of_perm
-      (k := k) (hN := hN) (hk := hk) (e := e) (s := s) (hs := hs)
-      (p := p) (q := q) hp hq (by rw [hpm, ← hqm])
+          (k := k) (hN := hN) (hk := hk) (e := e) (s := s) (hs := hs)
+          (p := p) (q := q) hp hq (by rw [hpm, ← hqm])
   -- Subgoal B: representative-weighted bound
   -- The collapsed sum (one representative per multiset) is ≤ 4n²/R.
   have hbound_repr :
@@ -5198,11 +5756,199 @@ private lemma excursion_wor_wr_core
             (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) ≤
         (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
           (returnsToStart (k := k) s : ℝ) := by
-    -- TODO (Subgoal B): quantitative bound via DF collision lemma.
-    -- This is the exact remaining mathematical core.
-    have _ := hs
-    have _ := hRlarge
-    sorry
+    -- Subgoal B (remaining core): identify the collapsed pattern sum with a
+    -- finite pushforward L1 distance, then apply the collision bound below.
+    have hRpos : 0 < returnsToStart (k := k) s := by
+      have hquad : 0 < 4 * (Nat.succ n) * (Nat.succ n) := by positivity
+      exact lt_trans hquad hRlarge
+    have hmR : Nat.succ n ≤ returnsToStart (k := k) s := by
+      have hsq : Nat.succ n ≤ Nat.succ n * Nat.succ n := by
+        exact Nat.le_mul_of_pos_right (Nat.succ n) (Nat.succ_pos n)
+      have h4 : Nat.succ n * Nat.succ n ≤ 4 * (Nat.succ n * Nat.succ n) := by
+        calc
+          Nat.succ n * Nat.succ n = 1 * (Nat.succ n * Nat.succ n) := by simp
+          _ ≤ 4 * (Nat.succ n * Nat.succ n) := by
+              exact Nat.mul_le_mul_right (Nat.succ n * Nat.succ n) (by decide : (1 : ℕ) ≤ 4)
+      have hquad : Nat.succ n ≤ 4 * (Nat.succ n) * (Nat.succ n) := by
+        have htmp : Nat.succ n ≤ 4 * (Nat.succ n * Nat.succ n) := le_trans hsq h4
+        simpa [Nat.mul_assoc] using htmp
+      exact le_trans hquad (Nat.le_of_lt hRlarge)
+    have hcollision :
+        (∑ f : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+            abs ((1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) -
+              (if Function.Injective f then
+                (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) /
+                  (∑ g : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+                    if Function.Injective g then
+                      (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) else 0)
+                else 0)))
+          ≤ (4 : ℝ) * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ) /
+            (returnsToStart (k := k) s : ℝ) := by
+      simpa using
+        (Mettapedia.Logic.l1_iid_inj_le
+          (R := returnsToStart (k := k) s)
+          (m := Nat.succ n)
+          hRpos hmR)
+    have hbridge :
+        let P := excursionPatternSet (k := k) (hN := hN) e s
+        let repr : Multiset (ExcursionType k) → ExcursionList k := fun mset =>
+          if hm : ∃ p ∈ P, Multiset.ofList p = mset then (Classical.choose hm) else []
+        (∑ mset ∈ P.image Multiset.ofList,
+          (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+            |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+              (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) ≤
+        (∑ f : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+            abs ((1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) -
+              (if Function.Injective f then
+                (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) /
+                  (∑ g : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+                    if Function.Injective g then
+                      (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) else 0)
+                else 0))) := by
+      classical
+      let P := excursionPatternSet (k := k) (hN := hN) e s
+      let repr : Multiset (ExcursionType k) → ExcursionList k := fun mset =>
+        if hm : ∃ p ∈ P, Multiset.ofList p = mset then (Classical.choose hm) else []
+      have hcollapse :
+          (∑ mset ∈ P.image Multiset.ofList,
+            (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+              |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+                (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) =
+          (∑ mset ∈ P.image Multiset.ofList,
+            ∑ p ∈ P with Multiset.ofList p = mset,
+              |(wrPatternMass (k := k) hk n e s p).toReal -
+                (worPatternMass (k := k) (hN := hN) e s p).toReal|) := by
+        symm
+        simpa [P, repr] using
+          sum_abs_wr_wor_partition_by_excursionMultiset_eq_sum_card_mul_repr_of_const
+            (k := k) (hN := hN) (hk := hk) (e := e) (s := s) hconst
+      have hraw :
+          (∑ mset ∈ P.image Multiset.ofList,
+            ∑ p ∈ P with Multiset.ofList p = mset,
+              |(wrPatternMass (k := k) hk n e s p).toReal -
+                (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+          (∑ f : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+              abs ((1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) -
+                (if Function.Injective f then
+                  (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) /
+                    (∑ g : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+                      if Function.Injective g then
+                        (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) else 0)
+                  else 0))) := by
+        -- Remaining core bridge:
+        -- represent the multiset-collapsed pattern discrepancy as a pushforward
+        -- L1 term over index draws, then apply `l1_pushforward_le`.
+        classical
+        let Ω := Fin (Nat.succ n) → Fin (returnsToStart (k := k) s)
+        let Pset : Finset (Multiset (ExcursionType k)) := P.image Multiset.ofList
+        let Γ := {mset : Multiset (ExcursionType k) // mset ∈ Pset}
+        let μ0 : Ω → ℝ := fun _ =>
+          (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)
+        let μinj : Ω → ℝ := fun f =>
+          if Function.Injective f then
+            (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) /
+              (∑ g : Ω, if Function.Injective g then
+                (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) else 0)
+          else 0
+        let classTerm : Multiset (ExcursionType k) → ℝ := fun mset =>
+          (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+            |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+              (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)
+        by_cases hPempty : Pset = ∅
+        · have hraw0 :
+            (∑ mset ∈ P.image Multiset.ofList,
+              ∑ p ∈ P with Multiset.ofList p = mset,
+                |(wrPatternMass (k := k) hk n e s p).toReal -
+                  (worPatternMass (k := k) (hN := hN) e s p).toReal|) = 0 := by
+            simp [Pset, hPempty]
+          calc
+            (∑ mset ∈ P.image Multiset.ofList,
+              ∑ p ∈ P with Multiset.ofList p = mset,
+                |(wrPatternMass (k := k) hk n e s p).toReal -
+                  (worPatternMass (k := k) (hN := hN) e s p).toReal|) = 0 := hraw0
+            _ ≤
+              (∑ f : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+                abs ((1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) -
+                  (if Function.Injective f then
+                    (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) /
+                      (∑ g : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+                        if Function.Injective g then
+                          (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) else 0)
+                    else 0))) := by
+                positivity
+        · have hPnonempty : Pset.Nonempty := by
+            exact Finset.nonempty_iff_ne_empty.mpr hPempty
+          have hrepr :
+            ∃ lift : Ω → Γ,
+              ∀ γ : Γ,
+                classTerm γ.1 =
+                  abs ((∑ f : Ω, if lift f = γ then μ0 f else 0) -
+                    (∑ f : Ω, if lift f = γ then μinj f else 0)) := by
+            simpa [P, repr, Ω, Pset, Γ, μ0, μinj, classTerm] using
+              (exists_pattern_pushforward_repr
+                (k := k) (hk := hk) (n := n) (e := e)
+                (hN := hN) (s := s) hs hPnonempty)
+          rcases hrepr with ⟨lift, hrepr'⟩
+          have hclass_expand :
+            (∑ mset ∈ Pset, classTerm mset) = ∑ γ : Γ, classTerm γ.1 := by
+            simpa [Γ, Pset, classTerm] using
+              (Finset.sum_attach Pset (fun mset => classTerm mset)).symm
+          have hclass_push :
+            (∑ γ : Γ, classTerm γ.1) =
+              (∑ γ : Γ,
+                abs ((∑ f : Ω, if lift f = γ then μ0 f else 0) -
+                  (∑ f : Ω, if lift f = γ then μinj f else 0))) := by
+            refine Finset.sum_congr rfl ?_
+            intro γ hγ
+            exact hrepr' γ
+          have hpush_le :
+            (∑ γ : Γ,
+              abs ((∑ f : Ω, if lift f = γ then μ0 f else 0) -
+                (∑ f : Ω, if lift f = γ then μinj f else 0)))
+              ≤ ∑ f : Ω, abs (μ0 f - μinj f) := by
+            simpa [Ω, Γ, μ0, μinj] using
+              (Mettapedia.Logic.l1_pushforward_le
+                (μ := μ0) (ν := μinj) (f := lift))
+          calc
+            (∑ mset ∈ P.image Multiset.ofList,
+              ∑ p ∈ P with Multiset.ofList p = mset,
+                |(wrPatternMass (k := k) hk n e s p).toReal -
+                  (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+              (∑ mset ∈ Pset, classTerm mset) := by
+                simpa [Pset, classTerm, repr] using hcollapse.symm
+            _ = ∑ γ : Γ, classTerm γ.1 := hclass_expand
+            _ = (∑ γ : Γ,
+                  abs ((∑ f : Ω, if lift f = γ then μ0 f else 0) -
+                    (∑ f : Ω, if lift f = γ then μinj f else 0))) := hclass_push
+            _ ≤ ∑ f : Ω, abs (μ0 f - μinj f) := hpush_le
+            _ = (∑ f : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+                  abs ((1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) -
+                    (if Function.Injective f then
+                      (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) /
+                        (∑ g : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+                          if Function.Injective g then
+                            (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) else 0)
+                      else 0))) := by
+                simp [Ω, μ0, μinj]
+      calc
+        (∑ mset ∈ P.image Multiset.ofList,
+          (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
+            |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
+              (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) =
+          (∑ mset ∈ P.image Multiset.ofList,
+            ∑ p ∈ P with Multiset.ofList p = mset,
+              |(wrPatternMass (k := k) hk n e s p).toReal -
+                (worPatternMass (k := k) (hN := hN) e s p).toReal|) := hcollapse
+        _ ≤
+          (∑ f : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+            abs ((1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) -
+              (if Function.Injective f then
+                (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) /
+                  (∑ g : Fin (Nat.succ n) → Fin (returnsToStart (k := k) s),
+                    if Function.Injective g then
+                      (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) else 0)
+                else 0))) := hraw
+    exact le_trans hbridge hcollision
   exact sum_abs_wr_wor_partition_by_excursionMultiset_le_of_const
     (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
     ((4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /

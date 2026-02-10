@@ -501,6 +501,22 @@ theorem wmqueryeq_of_dsep_discharge_class
   exact wmqueryeq_of_prob_eq (bn := bn) q₁ q₂ (fun cpt =>
     CondIndepQueryEq.prob_eq (bn := bn) (cond := cond) cpt (hci cpt hcond))
 
+theorem wmqueryeq_of_dsep_discharge_via_soundness
+    (cond : DSeparationCond V)
+    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    [CondIndepQueryEq (bn := bn) cond q₁ q₂]
+    [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+    (hLM : ∀ cpt : bn.DiscreteCPT, HasLocalMarkovProperty bn cpt.jointMeasure)
+    (hSound : ∀ cpt : bn.DiscreteCPT, DSeparationSoundness bn cpt.jointMeasure) :
+    cond.holds (bn := bn) →
+      WMQueryEq (State := State (bn := bn))
+        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+  exact wmqueryeq_of_dsep_discharge_class (bn := bn) (cond := cond) (q₁ := q₁) (q₂ := q₂)
+    (hci := fun cpt hcond => by
+      letI : HasLocalMarkovProperty bn cpt.jointMeasure := hLM cpt
+      letI : DSeparationSoundness bn cpt.jointMeasure := hSound cpt
+      exact DSeparationCond.discharge_cpt (bn := bn) (cond := cond) (cpt := cpt) hcond)
+
 /-! ## Concrete cond-indep → linkProb equality (degenerate equality) -/
 
 /-! ## Explicit event-independence assumptions (non-degenerate rewrite) -/
@@ -1208,6 +1224,38 @@ theorem chain_hciCA_of_dsepFull
   exact Mettapedia.ProbabilityTheory.BayesianNetworks.Examples.chain_dsepFull_to_condIndep_CA_given_B
     (μ := cpt.jointMeasure) hcondFull
 
+theorem chain_hciCA_from_hLM
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)]
+    [∀ v : Three, Inhabited (chainBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (chainBN.stateSpace v)]
+    [StandardBorelSpace chainBN.JointSpace]
+    (hLM : ∀ cpt : chainBN.DiscreteCPT, HasLocalMarkovProperty chainBN cpt.jointMeasure) :
+    ∀ cpt : chainBN.DiscreteCPT,
+      (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) →
+        CondIndepVertices chainBN cpt.jointMeasure
+          ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
+  intro cpt hcond
+  letI : HasLocalMarkovProperty chainBN cpt.jointMeasure := hLM cpt
+  exact chain_hciCA_of_dsep (cpt := cpt) hcond
+
+theorem chain_hciCA_from_hLM_full
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)]
+    [∀ v : Three, Inhabited (chainBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (chainBN.stateSpace v)]
+    [StandardBorelSpace chainBN.JointSpace]
+    (hLM : ∀ cpt : chainBN.DiscreteCPT, HasLocalMarkovProperty chainBN cpt.jointMeasure)
+    (hcondFull :
+      Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparatedFull
+        chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three)) :
+    ∀ cpt : chainBN.DiscreteCPT,
+      CondIndepVertices chainBN cpt.jointMeasure
+        ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
+  intro cpt
+  letI : HasLocalMarkovProperty chainBN cpt.jointMeasure := hLM cpt
+  exact chain_hciCA_of_dsepFull (cpt := cpt) hcondFull
+
 theorem chain_screeningOff_wmqueryeq_of_dsep
     (valA valB valC : Bool)
     [∀ v : Three, Fintype (chainBN.stateSpace v)]
@@ -1227,10 +1275,7 @@ theorem chain_screeningOff_wmqueryeq_of_dsep
   exact wmqueryeq_screeningOff_of_dsep_CA (bn := chainBN)
     (A := Three.A) (B := Three.B) (C := Three.C)
     (valA := valA) (valB := valB) (valC := valC)
-    (hciCA := fun cpt hc =>
-      by
-        letI : HasLocalMarkovProperty chainBN cpt.jointMeasure := hLM cpt
-        exact chain_hciCA_of_dsep (cpt := cpt) hc)
+    (hciCA := chain_hciCA_from_hLM (hLM := hLM))
     hcond
 
 theorem chain_screeningOff_wmqueryeq_of_dsepFull
@@ -1253,10 +1298,8 @@ theorem chain_screeningOff_wmqueryeq_of_dsepFull
   exact wmqueryeq_screeningOff_of_dsep_CA (bn := chainBN)
     (A := Three.A) (B := Three.B) (C := Three.C)
     (valA := valA) (valB := valB) (valC := valC)
-    (hciCA := fun cpt _hc =>
-      by
-        letI : HasLocalMarkovProperty chainBN cpt.jointMeasure := hLM cpt
-        exact chain_hciCA_of_dsepFull (cpt := cpt) hcondFull)
+    (hciCA := fun cpt _hc => chain_hciCA_from_hLM_full (hLM := hLM)
+      (hcondFull := hcondFull) cpt)
     hcondFull
 
 theorem chain_screeningOff_wmqueryeq_of_moralSep
