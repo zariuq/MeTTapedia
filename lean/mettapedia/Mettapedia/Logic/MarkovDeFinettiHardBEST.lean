@@ -5646,6 +5646,74 @@ private lemma exists_wr_push_counts
       _ = (A γ : ℝ) / (R : ℝ) ^ m := by
             simp [A]
 
+private lemma wr_class_counts_of_lift
+    {m R : ℕ} {Γ : Type*} [Fintype Γ] [DecidableEq Γ]
+    (lift : (Fin m → Fin R) → Γ) :
+    let Ω := Fin m → Fin R
+    let A : Γ → Nat := fun γ => Fintype.card {f : Ω // lift f = γ}
+    (∑ γ : Γ, A γ) = Fintype.card Ω := by
+  intro Ω A
+  simpa [A] using
+    (sum_fiber_counts_eq_card (Γ := Γ) (Ω := Ω) lift)
+
+private lemma wor_class_counts_of_lift
+    {m R : ℕ} {Γ : Type*} [Fintype Γ] [DecidableEq Γ]
+    (lift : (Fin m → Fin R) → Γ) :
+    let Ω := Fin m → Fin R
+    let B : Γ → Nat := fun γ =>
+      Fintype.card {f : Ω // lift f = γ ∧ Function.Injective f}
+    (∑ γ : Γ, B γ) = Fintype.card {f : Ω // Function.Injective f} := by
+  intro Ω B
+  simpa [B] using
+    (sum_inj_fiber_counts_eq_card
+      (Γ := Γ) (Ω := Ω) (I := Function.Injective) lift)
+
+private lemma wor_le_wr_class_counts_of_lift
+    {m R : ℕ} {Γ : Type*} [Fintype Γ] [DecidableEq Γ]
+    (lift : (Fin m → Fin R) → Γ) :
+    let Ω := Fin m → Fin R
+    let A : Γ → Nat := fun γ => Fintype.card {f : Ω // lift f = γ}
+    let B : Γ → Nat := fun γ =>
+      Fintype.card {f : Ω // lift f = γ ∧ Function.Injective f}
+    (∀ γ : Γ, B γ ≤ A γ) := by
+  intro Ω A B γ
+  simpa [A, B] using
+    (inj_fiber_count_le_fiber_count
+      (Γ := Γ) (Ω := Ω) (I := Function.Injective) lift γ)
+
+private lemma wor_push_counts_of_lift
+    {m R : ℕ} {Γ : Type*} [Fintype Γ] [DecidableEq Γ]
+    (lift : (Fin m → Fin R) → Γ) :
+    let Ω := Fin m → Fin R
+    let μinj : Ω → ℝ := fun f =>
+      if Function.Injective f then
+        (1 : ℝ) / (R : ℝ) ^ m /
+          (∑ g : Ω, if Function.Injective g then
+            (1 : ℝ) / (R : ℝ) ^ m else 0)
+      else 0
+    let cInj : ℝ :=
+      (1 : ℝ) / (R : ℝ) ^ m /
+        (∑ g : Ω, if Function.Injective g then
+          (1 : ℝ) / (R : ℝ) ^ m else 0)
+    let B : Γ → Nat := fun γ =>
+      Fintype.card {f : Ω // lift f = γ ∧ Function.Injective f}
+    (∑ γ : Γ, B γ) = Fintype.card {f : Ω // Function.Injective f} ∧
+      (∀ γ : Γ,
+        (∑ f : Ω, if lift f = γ then μinj f else 0) = (B γ : ℝ) * cInj) := by
+  intro Ω μinj cInj B
+  refine ⟨?_, ?_⟩
+  · simpa [B] using
+      (sum_inj_fiber_counts_eq_card
+        (Γ := Γ) (Ω := Ω) (I := Function.Injective) lift)
+  · intro γ
+    simpa [Ω, μinj, cInj, B] using
+      (muinj_push_eq_card_scaled
+        (m := m)
+        (R := R)
+        (Γ := Γ)
+        (lift := lift)
+        (γ := γ))
+
 /-! ## Diaconis-Freedman core lemma
 
 The key bound connecting `W(empiricalParam)` and `prefixCoeff` via the
@@ -5727,32 +5795,154 @@ private lemma exists_pattern_pushforward_repr
           classTerm γ.1 =
             abs (((A γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)) -
               ((B γ : ℝ) * cInj))) := by
-    -- Step 3 (core BEST bridge): represent classTerm as pushforward discrepancy.
     have hreprLift :
-        ∃ lift : Ω → Γ,
+        ∃ lift0 : Ω → Γ,
           ∀ γ : Γ,
             classTerm γ.1 =
-              abs ((∑ f : Ω, if lift f = γ then μ0 f else 0) -
-                (∑ f : Ω, if lift f = γ then μinj f else 0)) := by
-      -- Remaining BEST bridge (single blocker):
-      -- 1) define WR-side counts A with `∑ A = card Ω`,
-      -- 2) define WOR/injective counts B with `∑ B = card {inj}` and `B ≤ A`,
-      -- 3) prove `classTerm γ = |Aγ / R^m - Bγ * cInj|` classwise.
-      -- This comment may expire once the proper BEST counting proof path lands.
-      sorry
+              abs ((∑ f : Ω, if lift0 f = γ then μ0 f else 0) -
+                (∑ f : Ω, if lift0 f = γ then μinj f else 0)) := by
+      have hΓ : Nonempty Γ := by
+        rcases hPnonempty with ⟨mset, hmset⟩
+        exact ⟨⟨mset, hmset⟩⟩
+      let γ0 : Γ := Classical.choice hΓ
+      have hfiber_card_ne_zero : (fiber k N s).card ≠ 0 :=
+        fiber_card_ne_zero_of_mem_stateFinset (k := k) (N := N) (eN := s) hs
+      rcases Finset.card_ne_zero.mp hfiber_card_ne_zero with ⟨xs0, hxs0⟩
+      have hlen0 :
+          (excursionListOfTraj (k := k) xs0).length = returnsToStart (k := k) s :=
+        excursionList_length_eq_returnsToStart (k := k) s xs0 hxs0
+      let drawList : Ω → ExcursionList k := fun f =>
+        List.ofFn (fun i : Fin (Nat.succ n) =>
+          (excursionListOfTraj (k := k) xs0).get
+            ⟨(f i).1, by simpa [hlen0] using (f i).2⟩)
+      let rawClass : Ω → Multiset (ExcursionType k) := fun f =>
+        Multiset.ofList (drawList f)
+      let lift0 : Ω → Γ := fun f =>
+        if hm : rawClass f ∈ Pset then ⟨rawClass f, hm⟩ else γ0
+      let A0 : Γ → Nat := fun γ => Fintype.card {f : Ω // lift0 f = γ}
+      let B0 : Γ → Nat := fun γ =>
+        Fintype.card {f : Ω // lift0 f = γ ∧ Function.Injective f}
+      have hwr_push_card :
+          ∀ γ : Γ,
+            (∑ f : Ω, if lift0 f = γ then μ0 f else 0) =
+              (A0 γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n) := by
+        intro γ
+        simpa [Ω, Γ, μ0, A0] using
+          (mu0_push_eq_card
+            (m := Nat.succ n)
+            (R := returnsToStart (k := k) s)
+            (Γ := Γ)
+            (lift := lift0)
+            (γ := γ))
+      have hwor_push_card :
+          ∀ γ : Γ,
+            (∑ f : Ω, if lift0 f = γ then μinj f else 0) = (B0 γ : ℝ) * cInj := by
+        intro γ
+        simpa [Ω, Γ, μinj, cInj, B0] using
+          (muinj_push_eq_card_scaled
+            (m := Nat.succ n)
+            (R := returnsToStart (k := k) s)
+            (Γ := Γ)
+            (lift := lift0)
+            (γ := γ))
+      have hwr_hwor_bridge_pushforward :
+          ∀ γ : Γ,
+            ((((P.filter (fun p => Multiset.ofList p = γ.1)).card : ℝ) *
+                (wrPatternMass (k := k) hk n e s (repr γ.1)).toReal) =
+              (∑ f : Ω, if lift0 f = γ then μ0 f else 0)) ∧
+            ((((P.filter (fun p => Multiset.ofList p = γ.1)).card : ℝ) *
+                (worPatternMass (k := k) (hN := hN) e s (repr γ.1)).toReal) =
+              (∑ f : Ω, if lift0 f = γ then μinj f else 0)) := by
+        -- Remaining BEST bridge (single theorem-level blocker):
+        -- classwise WR/WOR correspondence for the concrete `lift0`.
+        -- TODO: replace with explicit BEST counting correspondence.
+        sorry
+      have hwr_hwor_class :
+          ∀ γ : Γ,
+            ((((P.filter (fun p => Multiset.ofList p = γ.1)).card : ℝ) *
+                (wrPatternMass (k := k) hk n e s (repr γ.1)).toReal) =
+              ((A0 γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n))) ∧
+            ((((P.filter (fun p => Multiset.ofList p = γ.1)).card : ℝ) *
+                (worPatternMass (k := k) (hN := hN) e s (repr γ.1)).toReal) =
+              ((B0 γ : ℝ) * cInj)) := by
+        intro γ
+        rcases hwr_hwor_bridge_pushforward γ with ⟨hwr_bridge, hwor_bridge⟩
+        constructor
+        · calc
+            (((P.filter (fun p => Multiset.ofList p = γ.1)).card : ℝ) *
+                (wrPatternMass (k := k) hk n e s (repr γ.1)).toReal) =
+              (∑ f : Ω, if lift0 f = γ then μ0 f else 0) := hwr_bridge
+            _ = ((A0 γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)) :=
+              hwr_push_card γ
+        · calc
+            (((P.filter (fun p => Multiset.ofList p = γ.1)).card : ℝ) *
+                (worPatternMass (k := k) (hN := hN) e s (repr γ.1)).toReal) =
+              (∑ f : Ω, if lift0 f = γ then μinj f else 0) := hwor_bridge
+            _ = ((B0 γ : ℝ) * cInj) := hwor_push_card γ
+      have hclass_from_counts :
+          ∀ γ : Γ,
+            classTerm γ.1 =
+              abs (((A0 γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)) -
+                ((B0 γ : ℝ) * cInj)) := by
+        intro γ
+        rcases hwr_hwor_class γ with ⟨hwr_class, hwor_class⟩
+        set cγ : ℝ := ((P.filter (fun p => Multiset.ofList p = γ.1)).card : ℝ)
+        set wrγ : ℝ := (wrPatternMass (k := k) hk n e s (repr γ.1)).toReal
+        set worγ : ℝ := (worPatternMass (k := k) (hN := hN) e s (repr γ.1)).toReal
+        have hcγ_nonneg : 0 ≤ cγ := by
+          dsimp [cγ]
+          positivity
+        have hwr_class' :
+            cγ * wrγ =
+              ((A0 γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)) := by
+          simpa [cγ, wrγ] using hwr_class
+        have hwor_class' :
+            cγ * worγ = ((B0 γ : ℝ) * cInj) := by
+          simpa [cγ, worγ] using hwor_class
+        calc
+          classTerm γ.1 = cγ * abs (wrγ - worγ) := by
+              simp [classTerm, cγ, wrγ, worγ]
+          _ = abs (cγ * (wrγ - worγ)) := by
+              rw [abs_mul, abs_of_nonneg hcγ_nonneg]
+          _ = abs (cγ * wrγ - cγ * worγ) := by ring_nf
+          _ =
+              abs (((A0 γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)) -
+                ((B0 γ : ℝ) * cInj)) := by
+                  rw [hwr_class', hwor_class']
+      refine ⟨lift0, ?_⟩
+      intro γ
+      calc
+        classTerm γ.1 =
+            abs (((A0 γ : ℝ) / (returnsToStart (k := k) s : ℝ) ^ (Nat.succ n)) -
+              ((B0 γ : ℝ) * cInj)) := hclass_from_counts γ
+        _ =
+            abs ((∑ f : Ω, if lift0 f = γ then μ0 f else 0) -
+              (∑ f : Ω, if lift0 f = γ then μinj f else 0)) := by
+              rw [hwr_push_card γ, hwor_push_card γ]
     rcases hreprLift with ⟨lift0, hrepr0⟩
     let A : Γ → Nat := fun γ => Fintype.card {f : Ω // lift0 f = γ}
+    have hA : (∑ γ : Γ, A γ) = Fintype.card Ω := by
+      simpa [Ω, A] using
+        (wr_class_counts_of_lift
+          (m := Nat.succ n)
+          (R := returnsToStart (k := k) s)
+          (Γ := Γ)
+          (lift := lift0))
     let B : Γ → Nat := fun γ => Fintype.card {f : Ω // lift0 f = γ ∧ Function.Injective f}
-    have hAB :
-        (∑ γ : Γ, A γ) = Fintype.card Ω ∧
-        (∑ γ : Γ, B γ) = Fintype.card {f : Ω // Function.Injective f} ∧
-        (∀ γ : Γ, B γ ≤ A γ) := by
-      simpa [A, B] using
-        (counts_from_lift_with_pred
-          (Γ := Γ) (Ω := Ω) (I := Function.Injective) lift0)
-    have hA : (∑ γ : Γ, A γ) = Fintype.card Ω := hAB.1
-    have hB : (∑ γ : Γ, B γ) = Fintype.card {f : Ω // Function.Injective f} := hAB.2.1
-    have hBA : ∀ γ : Γ, B γ ≤ A γ := hAB.2.2
+    have hB : (∑ γ : Γ, B γ) = Fintype.card {f : Ω // Function.Injective f} := by
+      simpa [Ω, B] using
+        (wor_class_counts_of_lift
+          (m := Nat.succ n)
+          (R := returnsToStart (k := k) s)
+          (Γ := Γ)
+          (lift := lift0))
+    have hBA : ∀ γ : Γ, B γ ≤ A γ := by
+      simpa [Ω, A, B] using
+        (wor_le_wr_class_counts_of_lift
+          (m := Nat.succ n)
+          (R := returnsToStart (k := k) s)
+          (Γ := Γ)
+          (lift := lift0))
     have hreprAB :
         ∀ γ : Γ,
           classTerm γ.1 =
