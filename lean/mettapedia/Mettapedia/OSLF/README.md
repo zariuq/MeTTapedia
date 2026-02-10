@@ -1,29 +1,72 @@
-# OSLF: Operational Semantics in Logical Form
+# OSLF: Operational Semantics in Logical Form (WIP)
 
-**First machine-checked formalization of the OSLF algorithm in Lean 4.**
+Lean 4 formalization deriving modal operators ◇/□ from reduction relations with proven Galois connection ◇ ⊣ □.
 
-OSLF mechanically derives spatial-behavioral type systems from rewrite rules. Given any reduction relation `p ~> q`, it automatically generates modal operators ◇ (step-future) and □ (step-past) with a proven Galois connection **◇ ⊣ □**.
+## What's Formalized
 
-## What is OSLF?
+**Structures** (Framework/RewriteSystem.lean):
+- `RewriteSystem`: sorts, terms, reduction relation
+- `OSLFTypeSystem`: predicates (as Frames), modal operators ◇/□, Galois connection specification
+- `NativeTypeOf`: (sort, predicate) pairs
+- `Substitutability`: bisimilarity ↔ logical equivalence
 
-The OSLF algorithm takes a programming language's operational semantics (rewrite rules) and produces a type system where:
+**Main results**:
+1. **Four concrete `OSLFTypeSystem` instances** with proven Galois connections:
+   - ρ-calculus (RhoCalculus/Soundness.lean)
+   - λ-calculus (Framework/LambdaInstance.lean)
+   - Petri nets (Framework/PetriNetInstance.lean)
+   - TinyML (Framework/TinyMLInstance.lean)
 
-- **Types are behavioral predicates**: "processes that can reach state φ"
-- **Typing is substitutability**: bisimilar processes have the same types
-- **Modal operators arise from reduction**: ◇φ = "can step to φ", □φ = "all predecessors in φ"
-- **Galois connection is automatic**: ◇ ⊣ □ proven once, reused for any language
+2. **Type preservation** for ρ-calculus: `Γ ⊢ P : τ  ∧  P ~> Q  ⟹  Γ ⊢ Q : τ`
 
-**Input**: `RewriteSystem` (sorts, terms, reduction)
-**Output**: `OSLFTypeSystem` (predicates, ◇, □, proven Galois connection)
+3. **Executable reduction engines** with soundness proofs (RhoCalculus/Engine.lean, MeTTaIL/Engine.lean)
 
-## This Formalization
+4. **Some categorical structure**:
+   - Galois connection → Mathlib `Adjunction` (Framework/CategoryBridge.lean)
+   - Constructor categories (Framework/ConstructorCategory.lean)
+   - Beck-Chevalley analysis with proven counterexample (Framework/BeckChevalleyOSLF.lean)
 
-- **22,320 lines** across 58 Lean 4 files
-- **0 sorries** in the core OSLF pipeline
-- **4 language instances**: ρ-calculus, λ-calculus, Petri nets, TinyML
-- **Proven Galois connection** for all 4 instances
-- **Executable reduction engines** with soundness proofs
-- **Categorical bridge** to Mathlib (fibrations, adjunctions)
+**What this corresponds to in OSLF papers**:
+- Section 4: Predicates as frames (complete Heyting algebras) ✓
+- Section 6: Modal operators ◇/□ from reduction ✓
+- Section 11: Substitutability theorem ✓
+
+## Relation to Full OSLF/GSLT
+
+**Not yet formalized** (Williams & Stay 2021):
+- **§2 Structured λ-theories**: λ-theories with behavior (Definition 1-3, Theorem 4)
+- **§3 Presheaf construction P**: Embedding λ-theory into topos (Definition 6)
+- **§4 Native type theory**: Composite 2-functor λ-theory →^P Topos →^L HDTΣ
+- **§5 Applications**: Structure/behavior reasoning, encoding between languages
+
+**Not yet formalized** (Meredith & Stay 2014):
+- **§3 Full second-order signatures**: We use simplified RewriteSystem
+- **§5 GSLT category**: Full 2-categorical treatment
+- **§8-9 Behavioral equivalence**: Full bisimulation theory
+- **§10 Internalization**: Types as objects in the theory
+
+**What corresponds to our formalization**:
+- §4 (predicates as frames), §6 (modal operators), §11 (substitutability)
+
+## Scope of This Formalization
+
+**What's proven (0 sorries)**:
+- Basic OSLF algorithm: RewriteSystem → modal operators ◇/□
+- Galois connection ◇ ⊣ □ for 4 languages (ρ-calc, λ-calc, Petri nets, TinyML)
+- Executable reduction engines with soundness proofs
+- Type preservation for ρ-calculus
+- Some categorical structure (constructor categories, basic fibrations)
+
+**What's NOT formalized**:
+- Presheaf construction (λ-theory → Topos)
+- Native type theory (full HDTΣ with structure+behavior)
+- Structured λ-theories with internal operational semantics
+- Full GSLT 2-categorical framework
+- Behavior-respecting morphisms between theories
+
+**Statistics**:
+- 22,320 lines across 58 Lean 4 files
+- 0 sorries in core (29 sorries in π→ρ encoding, separate project)
 
 ## Quick Start
 
@@ -147,22 +190,27 @@ lake build Mettapedia.OSLF.RhoCalculus.Soundness
 
 ## References
 
-- Meredith & Stay, ["Operational Semantics in Logical Form"](https://arxiv.org/abs/1406.4888) (2014) — original OSLF algorithm
-- Williams & Stay, ["Native Type Theory"](https://www.cl.cam.ac.uk/events/act2021/papers/ACT_2021_paper_23.pdf) (ACT 2021) — categorical perspective
-- **This formalization**: `papers/leanOSLF.pdf` (2026 draft, 17 pages)
+**The full OSLF/GSLT framework (NOT fully formalized here)**:
+- Meredith & Stay, ["Operational Semantics in Logical Form"](https://arxiv.org/abs/1406.4888) (2014) — Full framework with presheaf construction, topos, GSLT
+- Williams & Stay, ["Native Type Theory"](https://www.cl.cam.ac.uk/events/act2021/papers/ACT_2021_paper_23.pdf) (ACT 2021) — Structured λ-theories, 2-functor λ-theory →^P Topos →^L HDTΣ
+
+**This partial formalization**:
+- `papers/leanOSLF.pdf` (2026 draft, 17 pages) — Documents what we actually formalized (basic algorithm only)
+
+**What to read to understand the gap**: Williams & Stay §2-3 explain structured λ-theories with behavior and the presheaf construction. We only formalized the modal operators ◇/□, not the full categorical machinery.
 
 ## Status
 
 | Component | Lines | Sorries | Status |
 |-----------|-------|---------|--------|
-| Framework | 4,400 | 0 | ✅ Complete |
-| RhoCalculus | 3,893 | 0 | ✅ Complete |
-| MeTTaIL | 2,929 | 0 | ✅ Complete |
-| Formula | 582 | 0 | ✅ Complete |
+| Framework | 4,400 | 0 | ✅ Proven |
+| RhoCalculus | 3,893 | 0 | ✅ Proven |
+| MeTTaIL | 2,929 | 0 | ✅ Proven |
+| Formula | 582 | 0 | ✅ Proven |
 | PiCalculus | 6,582 | 29 | ⚠️ Partial |
-| **Core Total** | **15,738** | **0** | ✅ **Complete** |
+| **Total** | **22,320** | **29** | |
 
-The 29 sorries are in `PiCalculus/RhoEncodingCorrectness.lean` (π→ρ encoding correctness, a separate project from the core OSLF algorithm).
+The 29 sorries are in π→ρ encoding correctness (separate project). Core OSLF formalization has 0 sorries.
 
 ## Contributing
 
@@ -170,4 +218,4 @@ The formalization uses Lean 4.27.0 with Mathlib. See `../../CLAUDE.md` for devel
 
 ---
 
-**First machine-checked proof that OSLF works.** 🎯
+Machine-checked formalization of OSLF modal logic (◇ ⊣ □) for 4 languages. Full categorical framework (presheaf topos, structured λ-theories) not yet formalized.

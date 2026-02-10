@@ -5734,7 +5734,11 @@ private lemma exists_pattern_pushforward_repr
             classTerm γ.1 =
               abs ((∑ f : Ω, if lift f = γ then μ0 f else 0) -
                 (∑ f : Ω, if lift f = γ then μinj f else 0)) := by
-      -- Temporary sorry: remove once the explicit BEST count bridge is formalized.
+      -- Remaining BEST bridge (single blocker):
+      -- 1) define WR-side counts A with `∑ A = card Ω`,
+      -- 2) define WOR/injective counts B with `∑ B = card {inj}` and `B ≤ A`,
+      -- 3) prove `classTerm γ = |Aγ / R^m - Bγ * cInj|` classwise.
+      -- This comment may expire once the proper BEST counting proof path lands.
       sorry
     rcases hreprLift with ⟨lift0, hrepr0⟩
     let A : Γ → Nat := fun γ => Fintype.card {f : Ω // lift0 f = γ}
