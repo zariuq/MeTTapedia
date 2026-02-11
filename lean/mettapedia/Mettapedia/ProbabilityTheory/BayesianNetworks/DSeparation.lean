@@ -265,7 +265,7 @@ theorem activeTrail_isTrail (G : DirectedGraph V) (Z : Set V) :
     ∀ {p : List V}, ActiveTrail G Z p → IsTrail G p
   | _, ActiveTrail.single v => IsTrail.single (G := G) v
   | _, ActiveTrail.two hEdge => IsTrail.cons (G := G) hEdge (IsTrail.single (G := G) _)
-  | _, ActiveTrail.cons hab hbc _ _ hTail =>
+  | _, ActiveTrail.cons hab _ _ _ hTail =>
       IsTrail.cons (G := G) hab (activeTrail_isTrail G Z hTail)
 
 theorem hasActiveTrail_hasTrail (G : DirectedGraph V) (Z : Set V) (x y : V)
@@ -341,7 +341,7 @@ theorem pathAvoidsInternals_tail {Z : Set V} :
     ∀ {a b : V} {rest : List V},
       PathAvoidsInternals Z (a :: b :: rest) →
       PathAvoidsInternals Z (b :: rest)
-  | _, _, [], h => by simpa [PathAvoidsInternals] using h
+  | _, _, [], h => by simp [PathAvoidsInternals] at h; exact h
   | _, _, _ :: _, h => And.right h
 
 theorem pathEndpoints_singleton (v : V) :
@@ -363,8 +363,8 @@ def PathVerticesIn (W : Set V) : List V → Prop
 
 theorem pathVerticesIn_append {W : Set V} :
     ∀ {p q : List V}, PathVerticesIn W p → PathVerticesIn W q → PathVerticesIn W (p ++ q)
-  | [], q, _, hq => hq
-  | v :: rest, q, ⟨hv, hrest⟩, hq =>
+  | [], _, _, hq => hq
+  | _ :: _, _, ⟨hv, hrest⟩, hq =>
       ⟨hv, pathVerticesIn_append hrest hq⟩
 
 /-- Separation in the moralized graph (scaffold definition). -/
@@ -427,7 +427,7 @@ theorem inducedSubgraph_univ (G : DirectedGraph V) :
 theorem pathVerticesIn_mono {W W' : Set V} (hWW' : W ⊆ W') :
     ∀ {p : List V}, PathVerticesIn W p → PathVerticesIn W' p
   | [], _ => trivial
-  | v :: rest, ⟨hv, hrest⟩ =>
+  | _ :: _, ⟨hv, hrest⟩ =>
       ⟨hWW' hv, pathVerticesIn_mono hWW' hrest⟩
 
 theorem pathVerticesIn_of_isTrail_induced_of_head
@@ -508,7 +508,7 @@ theorem activeTrail_isTrail_moral_of_irrefl (G : DirectedGraph V) (Z : Set V)
       IsTrail.cons (G := moralGraph G)
         (undirectedEdge_in_moral_of_irrefl G hirr hEdge)
         (IsTrail.single (G := moralGraph G) _)
-  | _, ActiveTrail.cons hab hbc _ _ hTail =>
+  | _, ActiveTrail.cons hab _ _ _ hTail =>
       IsTrail.cons (G := moralGraph G)
         (undirectedEdge_in_moral_of_irrefl G hirr hab)
         (activeTrail_isTrail_moral_of_irrefl G Z hirr hTail)
@@ -621,7 +621,7 @@ theorem isTrail_moralAncestral_of_isTrail_and_vertices
       IsTrail (moralAncestralGraph G X Y Z) p
   | [v], IsTrail.single _, ⟨_, _⟩ =>
       IsTrail.single (G := moralAncestralGraph G X Y Z) v
-  | u :: v :: rest, IsTrail.cons hEdge hTail, ⟨hu, ⟨hv, hrest⟩⟩ =>
+  | _ :: _ :: _, IsTrail.cons hEdge hTail, ⟨hu, ⟨hv, hrest⟩⟩ =>
       IsTrail.cons (G := moralAncestralGraph G X Y Z)
         (undirectedEdge_in_moralAncestral_of_vertices G X Y Z hirr hu hv hEdge)
         (isTrail_moralAncestral_of_isTrail_and_vertices G X Y Z hirr hTail ⟨hv, hrest⟩)
@@ -911,7 +911,7 @@ theorem moralUndirectedEdge_induced_of_collider
 /-- In an acyclic graph, consecutive internal vertices on an active trail
     cannot both be colliders (would create a 2-cycle). -/
 theorem no_consecutive_colliders_in_dag
-    (G : DirectedGraph V) (Z : Set V)
+    (G : DirectedGraph V) (_Z : Set V)
     (hacyclic : G.IsAcyclic)
     {a b c d : V}
     (hab : UndirectedEdge G a b) (hbc : UndirectedEdge G b c)

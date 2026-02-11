@@ -80,10 +80,21 @@ noncomputable def propEvidence (E : JointEvidence n) (A : Fin n) : Evidence :=
   ⟨countWorld (n := n) (E := E) (fun w => worldToAssignment n w A),
    countWorld (n := n) (E := E) (fun w => !(worldToAssignment n w A))⟩
 
-/-- Evidence for a link `A ⟹ B` (Beta parameters for `P(B|A)`), extracted from joint evidence. -/
-noncomputable def linkEvidence (E : JointEvidence n) (A B : Fin n) : Evidence :=
-  ⟨countWorld (n := n) (E := E) (fun w => worldToAssignment n w A && worldToAssignment n w B),
-   countWorld (n := n) (E := E) (fun w => worldToAssignment n w A && !(worldToAssignment n w B))⟩
+  /-- Evidence for a link `A ⟹ B` (Beta parameters for `P(B|A)`), extracted from joint evidence. -/
+  noncomputable def linkEvidence (E : JointEvidence n) (A B : Fin n) : Evidence :=
+    ⟨countWorld (n := n) (E := E) (fun w => worldToAssignment n w A && worldToAssignment n w B),
+     countWorld (n := n) (E := E) (fun w => worldToAssignment n w A && !(worldToAssignment n w B))⟩
+
+  /-- Boolean conjunction of a list of atoms in a world. -/
+  def allTrue (as : List (Fin n)) (w : Fin (2 ^ n)) : Bool :=
+    as.all (fun a => worldToAssignment n w a)
+
+  /-- Evidence for a conditional with multiple antecedents.
+      This is `P(B | A₁ ∧ ... ∧ A_k)` extracted from joint evidence. -/
+  noncomputable def linkCondEvidence (E : JointEvidence n) (as : List (Fin n)) (B : Fin n) :
+      Evidence :=
+    ⟨countWorld (n := n) (E := E) (fun w => allTrue (n := n) as w && worldToAssignment n w B),
+     countWorld (n := n) (E := E) (fun w => allTrue (n := n) as w && !(worldToAssignment n w B))⟩
 
 /-! ### World-model interface instance -/
 
@@ -94,21 +105,29 @@ theorem propEvidence_add (E₁ E₂ : JointEvidence n) (A : Fin n) :
       propEvidence (n := n) (E := E₁) A + propEvidence (n := n) (E := E₂) A := by
   ext <;> simp [propEvidence, countWorld_add, Evidence.hplus_def]
 
-theorem linkEvidence_add (E₁ E₂ : JointEvidence n) (A B : Fin n) :
-    linkEvidence (n := n) (E := E₁ + E₂) A B =
-      linkEvidence (n := n) (E := E₁) A B + linkEvidence (n := n) (E := E₂) A B := by
-  ext <;> simp [linkEvidence, countWorld_add, Evidence.hplus_def]
+  theorem linkEvidence_add (E₁ E₂ : JointEvidence n) (A B : Fin n) :
+      linkEvidence (n := n) (E := E₁ + E₂) A B =
+        linkEvidence (n := n) (E := E₁) A B + linkEvidence (n := n) (E := E₂) A B := by
+    ext <;> simp [linkEvidence, countWorld_add, Evidence.hplus_def]
 
-noncomputable instance instWorldModel : WorldModel (JointEvidence n) (PLNQuery (Fin n)) where
-  evidence E
-    | .prop A => JointEvidence.propEvidence (n := n) (E := E) A
-    | .link A B => JointEvidence.linkEvidence (n := n) (E := E) A B
-  evidence_add E₁ E₂ q := by
-    cases q with
-    | prop A =>
-        simpa using propEvidence_add (n := n) (E₁ := E₁) (E₂ := E₂) A
-    | link A B =>
-        simpa using linkEvidence_add (n := n) (E₁ := E₁) (E₂ := E₂) A B
+  theorem linkCondEvidence_add (E₁ E₂ : JointEvidence n) (as : List (Fin n)) (B : Fin n) :
+      linkCondEvidence (n := n) (E := E₁ + E₂) as B =
+        linkCondEvidence (n := n) (E := E₁) as B + linkCondEvidence (n := n) (E := E₂) as B := by
+    ext <;> simp [linkCondEvidence, countWorld_add, Evidence.hplus_def]
+
+  noncomputable instance instWorldModel : WorldModel (JointEvidence n) (PLNQuery (Fin n)) where
+    evidence E
+      | .prop A => JointEvidence.propEvidence (n := n) (E := E) A
+      | .link A B => JointEvidence.linkEvidence (n := n) (E := E) A B
+      | .linkCond as B => JointEvidence.linkCondEvidence (n := n) (E := E) as B
+    evidence_add E₁ E₂ q := by
+      cases q with
+      | prop A =>
+          simpa using propEvidence_add (n := n) (E₁ := E₁) (E₂ := E₂) A
+      | link A B =>
+          simpa using linkEvidence_add (n := n) (E₁ := E₁) (E₂ := E₂) A B
+      | linkCond as B =>
+          simpa using linkCondEvidence_add (n := n) (E₁ := E₁) (E₂ := E₂) as B
 
 /-! ### WTV/STV views (derived; not the core semantics) -/
 

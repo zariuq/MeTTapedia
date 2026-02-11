@@ -399,7 +399,7 @@ private theorem pathEndpoints_cons_cons_cons
     simpa [List.getLast_cons] using hPair'.2
   constructor
   · exact hPair'.1
-  · simpa [PathEndpoints, hLast]
+  · simp [PathEndpoints, hLast]
 
 /-- The right endpoint of a moral-ancestral edge lies in relevant vertices. -/
 private theorem right_relevant_of_moral_edge
@@ -410,6 +410,15 @@ private theorem right_relevant_of_moral_edge
     ⟨_, _, hbR⟩ | ⟨_, _, _, _, _, hbR⟩
   · exact hbR
   · exact hbR
+
+/-- The left endpoint of a moral-ancestral edge lies in relevant vertices. -/
+private theorem left_relevant_of_moral_edge
+    (G : DirectedGraph V) (X Y Z : Set V) {x b : V}
+    (hEdge : UndirectedEdge (moralAncestralGraph G X Y Z) x b) :
+    x ∈ relevantVertices G X Y Z := by
+  have hEdge' : UndirectedEdge (moralAncestralGraph G X Y Z) b x :=
+    (undirectedEdge_symm (moralAncestralGraph G X Y Z) x b).1 hEdge
+  exact right_relevant_of_moral_edge G X Y Z hEdge'
 
 /-- Moral-ancestral undirected edges are irreflexive. -/
 private theorem ne_of_moral_undirected_edge
@@ -679,6 +688,17 @@ private theorem tail_context_of_three_plus
     | cons _ hT' => exact hT'
   exact ⟨hEdge_xb, hTailTrail, hAvoid.2, hAvoid.1, hEP.2⟩
 
+/-- In a nontrivial moral-ancestral trail starting at `x`, the head is relevant. -/
+private theorem head_relevant_of_moral_trail_cons
+    (G : DirectedGraph V) (X Y Z : Set V)
+    {x b : V} {rest : List V}
+    (hTrail : IsTrail (moralAncestralGraph G X Y Z) (x :: b :: rest)) :
+    x ∈ relevantVertices G X Y Z := by
+  have hEdge_xb : UndirectedEdge (moralAncestralGraph G X Y Z) x b := by
+    cases hTrail with
+    | cons hE _ => exact hE
+  exact left_relevant_of_moral_edge G X Y Z hEdge_xb
+
 /-- Unpack `¬DSeparatedFull` into an explicit active-trail witness
 between some pair in `X × Y`. -/
 private theorem activeWitness_of_not_dsepFull
@@ -696,6 +716,9 @@ head vertex. This lets the moral-trail induction recurse even when the head itse
 is not in `X`. -/
 private def ActiveFromX (G : DirectedGraph V) (X Z : Set V) (a : V) : Prop :=
   ∃ x ∈ X, HasActiveTrail G Z x a
+
+private def ActiveFromXNeY (G : DirectedGraph V) (X Z : Set V) (y a : V) : Prop :=
+  ∃ x ∈ X, x ≠ y ∧ HasActiveTrail G Z x a
 
 /-- Local passability mode at the current head vertex:
 either we can justify non-collider activation via `a ∉ Z`,
@@ -751,6 +774,21 @@ private theorem joinConditionAtHead_noncollider
     JoinConditionAtHead G Z a prev next := by
   simp [JoinConditionAtHead, hNotBothIn, haNotZ]
 
+/-- Extract concrete `(prev,next)` orientation data from the available local
+head passability certificate. This is used to thread explicit join-shape data
+through endpoint-extension lemmas. -/
+private theorem joinDirs_of_headPassability
+    (G : DirectedGraph V) (Z : Set V) (a : V)
+    (hPass : HeadPassability G Z a) :
+    ∃ prev next : JoinEdgeDir, JoinConditionAtHead G Z a prev next := by
+  cases hPass with
+  | noncollider hNotZ =>
+    refine ⟨JoinEdgeDir.outgoing, JoinEdgeDir.outgoing, ?_⟩
+    exact joinConditionAtHead_noncollider G Z a hNotZ (by simp)
+  | collider hAncZ =>
+    refine ⟨JoinEdgeDir.incoming, JoinEdgeDir.incoming, ?_⟩
+    exact joinConditionAtHead_in_in G Z a hAncZ
+
 /-- Reusable local join rule: once the caller provides the exact obligation
 for each collider/non-collider case of the join triple, activation follows. -/
 private theorem isActive_of_join_obligations
@@ -776,6 +814,13 @@ used to avoid repetitive ad-hoc case splits in edge-extension branches. -/
 private structure ActiveFromXState (G : DirectedGraph V) (X Z : Set V) (a : V) : Prop where
   active : ActiveFromX G X Z a
   passable : HeadPassability G Z a
+
+/-- Extract the X-anchor witness carried by `ActiveFromXState`. -/
+private theorem activeFromXState_anchor
+    (G : DirectedGraph V) (X Z : Set V) {a : V}
+    (hState : ActiveFromXState G X Z a) :
+    ∃ x0 ∈ X, HasActiveTrail G Z x0 a :=
+  hState.active
 
 /-- Build a head-passability certificate from `a ∉ Z`. -/
 private theorem headPassability_of_notInZ
@@ -830,6 +875,366 @@ private theorem activeFromX_of_memX
   refine ⟨a, haX, ?_⟩
   exact ⟨[a], by simp, by simp [PathEndpoints], ActiveTrail.single a⟩
 
+private theorem activeFromXNeY_of_memX
+    (G : DirectedGraph V) (X Z : Set V) {y a : V}
+    (haX : a ∈ X) (haNe : a ≠ y) :
+    ActiveFromXNeY G X Z y a := by
+  refine ⟨a, haX, haNe, ?_⟩
+  exact ⟨[a], by simp, by simp [PathEndpoints], ActiveTrail.single a⟩
+
+/-! ## Active trail tail extension (snoc) -/
+
+private theorem hasActiveTrail_snoc_shape_of_ne
+    (G : DirectedGraph V) (Z : Set V)
+    {x0 a : V}
+    (hAT : HasActiveTrail G Z x0 a)
+    (hx0a : x0 ≠ a) :
+    ∃ p u,
+      PathEndpoints (p ++ [u, a]) = some (x0, a) ∧
+      ActiveTrail G Z (p ++ [u, a]) := by
+  rcases hAT with ⟨q, hqne, hqEnds, hqAct⟩
+  have hqLast : q.getLast? = some a := getLast_of_pathEndpoints hqEnds
+  let q1 := q.dropLast
+  have hq1ne : q1 ≠ [] := by
+    intro hnil
+    cases q with
+    | nil =>
+        cases hqne rfl
+    | cons v rest =>
+        cases rest with
+        | nil =>
+            simp [PathEndpoints] at hqEnds
+            obtain ⟨rfl, rfl⟩ := hqEnds
+            exact (hx0a rfl).elim
+        | cons w rest' =>
+            simp [q1] at hnil
+  let u := q1.getLast hq1ne
+  let p := q1.dropLast
+  have hq1eq : q1 = p ++ [u] := by
+    simpa [q1, p, u] using (List.dropLast_append_getLast (l := q1) hq1ne).symm
+  have hqeq' : q = q1 ++ [a] := by
+    have hqLastEq : q.getLast hqne = a := by
+      have : some (q.getLast hqne) = some a := by
+        calc
+          some (q.getLast hqne) = q.getLast? := by
+            simpa using (List.getLast?_eq_getLast_of_ne_nil (l := q) hqne).symm
+          _ = some a := hqLast
+      exact Option.some.inj this
+    calc
+      q = q1 ++ [q.getLast hqne] := by
+        simpa [q1] using (List.dropLast_append_getLast (l := q) hqne).symm
+      _ = q1 ++ [a] := by simp [hqLastEq]
+  have hqeq : q = p ++ [u, a] := by
+    calc
+      q = q1 ++ [a] := hqeq'
+      _ = (p ++ [u]) ++ [a] := by simp [hq1eq]
+      _ = p ++ [u, a] := by simp [List.append_assoc]
+  refine ⟨p, u, ?_, ?_⟩
+  · simpa [hqeq] using hqEnds
+  · simpa [hqeq] using hqAct
+
+private theorem activeTrail_last_edge
+    (G : DirectedGraph V) (Z : Set V) :
+    ∀ {p : List V} {b c : V},
+      ActiveTrail G Z (p ++ [b, c]) →
+      UndirectedEdge G b c := by
+  intro p
+  induction p with
+  | nil =>
+      intro b c hAT
+      -- Only the `two` constructor fits `[b, c]`.
+      cases hAT with
+      | two hbc => exact hbc
+  | cons a p ih =>
+      intro b c hAT
+      cases p with
+      | nil =>
+          -- p = [a], so list is [a, b, c]
+          cases hAT with
+          | cons _ hbc _ _ _ => exact hbc
+      | cons a' rest =>
+          -- p = a :: a' :: rest, tail list is a' :: rest ++ [b, c]
+          cases rest with
+          | nil =>
+              -- list is [a, a', b, c]
+              cases hAT with
+              | cons _ _ _ _ hTail =>
+                  -- Tail list is [a', b, c]
+                  exact ih hTail
+
+          | cons r rs =>
+              -- list is a :: a' :: r :: rs ++ [b, c]
+              cases hAT with
+              | cons _ _ _ _ hTail =>
+                  -- Recurse on the tail using the IH (where p = a' :: r :: rs).
+                  exact ih hTail
+
+/-- Extract either direct head membership in `X`, or an explicit snoc-form anchor
+trail ending in a predecessor/head pair `u, a`. This is the concrete join-shape
+needed to reason about extension at the head. -/
+private theorem activeFromXState_anchor_or_snoc
+    (G : DirectedGraph V) (X Z : Set V) {a : V}
+    (hState : ActiveFromXState G X Z a) :
+    (a ∈ X) ∨
+    ∃ x0 ∈ X, x0 ≠ a ∧
+      ∃ p u,
+        PathEndpoints (p ++ [u, a]) = some (x0, a) ∧
+        ActiveTrail G Z (p ++ [u, a]) := by
+  rcases activeFromXState_anchor G X Z hState with ⟨x0, hx0, hAT0⟩
+  by_cases hx0a : x0 = a
+  · left
+    simpa [hx0a] using hx0
+  · right
+    rcases hasActiveTrail_snoc_shape_of_ne G Z hAT0 hx0a with
+      ⟨p, u, hEnds, hAT⟩
+    exact ⟨x0, hx0, hx0a, p, u, hEnds, hAT⟩
+
+private theorem activeTrail_snoc
+    (G : DirectedGraph V) (Z : Set V) :
+    ∀ {p : List V} {b c d : V},
+      (hAT : ActiveTrail G Z (p ++ [b, c])) →
+      (hcd : UndirectedEdge G c d) →
+      (hbd : b ≠ d) →
+      IsActive G Z
+        ⟨b, c, d,
+          (activeTrail_last_edge G Z (p := p) (b := b) (c := c) hAT),
+          hcd, hbd⟩ →
+      ActiveTrail G Z (p ++ [b, c, d]) := by
+  intro p
+  induction p with
+  | nil =>
+      intro b c d hAT hcd hbd hAct
+      -- hAT : ActiveTrail G Z [b, c]
+      have hbc : UndirectedEdge G b c := by
+        cases hAT with
+        | two hbc => exact hbc
+      exact ActiveTrail.cons hbc hcd hbd hAct (ActiveTrail.two hcd)
+  | cons a p ih =>
+      intro b c d hAT hcd hbd hAct
+      cases p with
+      | nil =>
+          -- p = [a], list is [a, b, c]
+          cases hAT with
+          | cons hab hbc hac hAct0 hTail =>
+              -- hTail : ActiveTrail G Z [b, c]
+              have hAct' :
+                  IsActive G Z
+                    ⟨b, c, d,
+                      (activeTrail_last_edge G Z (p := []) (b := b) (c := c) hTail),
+                      hcd, hbd⟩ := by
+                simpa using hAct
+              have hTail' : ActiveTrail G Z ([b, c] ++ [d]) :=
+                ih hTail hcd hbd hAct'
+              simpa [List.append_assoc] using
+                (ActiveTrail.cons hab hbc hac hAct0 hTail')
+      | cons a' rest =>
+          -- p = a :: a' :: rest
+          cases rest with
+          | nil =>
+              -- list is [a, a', b, c]
+              cases hAT with
+              | cons hab hbc hac hAct0 hTail =>
+                  have hAct' :
+                      IsActive G Z
+                        ⟨b, c, d,
+                          (activeTrail_last_edge G Z (p := [a']) (b := b) (c := c) hTail),
+                          hcd, hbd⟩ := by
+                    simpa using hAct
+                  have hTail' : ActiveTrail G Z (([a'] ++ [b, c]) ++ [d]) :=
+                    ih hTail hcd hbd hAct'
+                  simpa [List.cons_append, List.append_assoc] using
+                    (ActiveTrail.cons hab hbc hac hAct0 hTail')
+
+          | cons r rs =>
+              -- list is a :: a' :: r :: rs ++ [b, c]
+              cases hAT with
+              | cons hab hbc hac hAct0 hTail =>
+                  have hAct' :
+                      IsActive G Z
+                        ⟨b, c, d,
+                          (activeTrail_last_edge G Z (p := a' :: r :: rs) (b := b) (c := c) hTail),
+                          hcd, hbd⟩ := by
+                    simpa using hAct
+                  have hTail' : ActiveTrail G Z ((a' :: r :: rs) ++ [b, c, d]) :=
+                    ih hTail hcd hbd hAct'
+                  simpa [List.cons_append, List.append_assoc] using
+                    (ActiveTrail.cons hab hbc hac hAct0 hTail')
+
+/-- Lift one explicit snoc extension into `HasActiveTrail` form. -/
+private theorem hasActiveTrail_extend_from_snoc
+    (G : DirectedGraph V) (Z : Set V)
+    {xA u a : V} {pref : List V}
+    (hEnds : PathEndpoints (pref ++ [u, a]) = some (xA, a))
+    (hAT : ActiveTrail G Z (pref ++ [u, a]))
+    {b : V}
+    (hab : UndirectedEdge G a b)
+    (hub : u ≠ b)
+    (hAct : IsActive G Z
+      ⟨u, a, b,
+        (activeTrail_last_edge G Z (p := pref) (b := u) (c := a) hAT),
+        hab, hub⟩) :
+    HasActiveTrail G Z xA b := by
+  refine ⟨pref ++ [u, a, b], by simp, ?_, ?_⟩
+  · have hHead0 : (pref ++ [u, a]).head? = some xA :=
+      head_of_pathEndpoints (p := pref ++ [u, a]) hEnds
+    have hHead : (pref ++ [u, a, b]).head? = some xA := by
+      simpa using hHead0
+    have hLast : (pref ++ [u, a, b]).getLast? = some b := by
+      simp
+    exact pathEndpoints_of_head_last (by simp) hHead hLast
+  · exact activeTrail_snoc G Z hAT hab hub hAct
+
+/-- Dropping the final endpoint from `pref ++ [u, a]` preserves `ActiveTrail`. -/
+private theorem activeTrail_dropLast_pair
+    (G : DirectedGraph V) (Z : Set V) :
+    ∀ (pref : List V) (u a : V),
+      ActiveTrail G Z (pref ++ [u, a]) →
+      ActiveTrail G Z (pref ++ [u]) := by
+  intro pref
+  induction pref with
+  | nil =>
+      intro u a hAT
+      have hAT' : ActiveTrail G Z [u, a] := by simpa using hAT
+      cases hAT' with
+      | two _ =>
+          simpa using (ActiveTrail.single (G := G) (Z := Z) u)
+  | cons v pref ih =>
+      intro u a hAT
+      cases pref with
+      | nil =>
+          have hAT' : ActiveTrail G Z [v, u, a] := by simpa using hAT
+          cases hAT' with
+          | cons hvu _ _ _ _ =>
+              exact ActiveTrail.two hvu
+      | cons w rest =>
+          cases rest with
+          | nil =>
+              have hAT' : ActiveTrail G Z [v, w, u, a] := by
+                simpa [List.cons_append, List.append_assoc] using hAT
+              cases hAT' with
+              | cons hvw hwu hvu hAct hTail =>
+                  have hTail' : ActiveTrail G Z ([w] ++ [u]) := by
+                    exact ih u a (by simpa [List.cons_append, List.append_assoc] using hTail)
+                  simpa [List.cons_append, List.append_assoc] using
+                    (ActiveTrail.cons hvw hwu hvu hAct hTail')
+          | cons r rs =>
+              have hAT' : ActiveTrail G Z (v :: w :: r :: (rs ++ [u, a])) := by
+                simpa [List.cons_append, List.append_assoc] using hAT
+              cases hAT' with
+              | cons hvw hwr hvr hAct hTail =>
+                  have hTail' : ActiveTrail G Z ((w :: r :: rs) ++ [u]) := by
+                    exact ih u a (by simpa [List.cons_append, List.append_assoc] using hTail)
+                  simpa [List.cons_append, List.append_assoc] using
+                    (ActiveTrail.cons hvw hwr hvr hAct hTail')
+
+/-- Recover a predecessor-endpoint active witness from a snoc-form trail. -/
+private theorem hasActiveTrail_prefix_from_snoc
+    (G : DirectedGraph V) (Z : Set V)
+    {xA u a : V} {pref : List V}
+    (hEnds : PathEndpoints (pref ++ [u, a]) = some (xA, a))
+    (hAT : ActiveTrail G Z (pref ++ [u, a])) :
+    HasActiveTrail G Z xA u := by
+  refine ⟨pref ++ [u], by simp, ?_, activeTrail_dropLast_pair G Z pref u a hAT⟩
+  have hHead0 : (pref ++ [u, a]).head? = some xA :=
+    head_of_pathEndpoints (p := pref ++ [u, a]) hEnds
+  have hHead : (pref ++ [u]).head? = some xA := by
+    simpa [List.append_assoc] using hHead0
+  have hLast : (pref ++ [u]).getLast? = some u := by
+    simp
+  exact pathEndpoints_of_head_last (by simp) hHead hLast
+
+private theorem isActive_of_nonCollider_notInZ
+    (G : DirectedGraph V) (Z : Set V) (t : PathTriple G)
+    (hNonCol : IsNonCollider G t) (hNotZ : t.b ∉ Z) :
+    IsActive G Z t := by
+  unfold IsActive IsBlocked
+  intro hBlocked
+  rcases hBlocked with ⟨hnc, hbZ⟩ | ⟨hcol, _, _⟩
+  · exact hNotZ hbZ
+  · exact hNonCol hcol
+
+private theorem activeTrail_snoc_noncollider
+    (G : DirectedGraph V) (Z : Set V) :
+    ∀ {p : List V} {b c d : V},
+      ActiveTrail G Z (p ++ [b, c]) →
+      (hbc : UndirectedEdge G b c) →
+      (hcd : UndirectedEdge G c d) →
+      (hbd : b ≠ d) →
+      (hNonCol : IsNonCollider G ⟨b, c, d, hbc, hcd, hbd⟩) →
+      (hcNotZ : c ∉ Z) →
+      ActiveTrail G Z (p ++ [b, c, d]) := by
+  intro p b c d hAT hbc hcd hbd hNonCol hcNotZ
+  have hAct : IsActive G Z ⟨b, c, d, hbc, hcd, hbd⟩ :=
+    isActive_of_nonCollider_notInZ G Z _ hNonCol hcNotZ
+  exact activeTrail_snoc G Z hAT hcd hbd hAct
+
+private theorem activeTrail_snoc_collider
+    (G : DirectedGraph V) (Z : Set V) :
+    ∀ {p : List V} {b c d : V},
+      ActiveTrail G Z (p ++ [b, c]) →
+      (hbc : UndirectedEdge G b c) →
+      (hcd : UndirectedEdge G c d) →
+      (hbd : b ≠ d) →
+      (hCol : IsCollider G ⟨b, c, d, hbc, hcd, hbd⟩) →
+      (hcAncZ : c ∈ ancestorClosure G Z) →
+      ActiveTrail G Z (p ++ [b, c, d]) := by
+  intro p b c d hAT hbc hcd hbd hCol hcAncZ
+  have hAct : IsActive G Z ⟨b, c, d, hbc, hcd, hbd⟩ :=
+    isActive_of_collider_and_activated G Z _ hCol hcAncZ
+  exact activeTrail_snoc G Z hAT hcd hbd hAct
+
+/-- Extract the active proof at the final internal triple of a snoc-shaped trail. -/
+private theorem activeTrail_last_triple_data
+    (G : DirectedGraph V) (Z : Set V) :
+    ∀ {p : List V} {b c d : V},
+      ActiveTrail G Z (p ++ [b, c, d]) →
+      ∃ hbc : UndirectedEdge G b c, ∃ hcd : UndirectedEdge G c d, ∃ hbd : b ≠ d,
+        IsActive G Z ⟨b, c, d, hbc, hcd, hbd⟩ := by
+  intro p
+  induction p with
+  | nil =>
+      intro b c d hAT
+      have hAT' : ActiveTrail G Z [b, c, d] := by simpa using hAT
+      cases hAT' with
+      | cons hbc hcd hbd hAct _ =>
+          exact ⟨hbc, hcd, hbd, hAct⟩
+  | cons a p ih =>
+      intro b c d hAT
+      cases p with
+      | nil =>
+          have hAT' : ActiveTrail G Z [a, b, c, d] := by
+            simpa [List.append_assoc] using hAT
+          cases hAT' with
+          | cons _ _ _ _ hTail =>
+              have hTail' : ActiveTrail G Z [b, c, d] := by simpa using hTail
+              cases hTail' with
+              | cons hbc hcd hbd hAct _ =>
+                  exact ⟨hbc, hcd, hbd, hAct⟩
+      | cons phead prest =>
+          cases prest with
+          | nil =>
+              have hAT' : ActiveTrail G Z [a, phead, b, c, d] := by
+                simpa [List.append_assoc] using hAT
+              cases hAT' with
+              | cons _ _ _ _ hTail =>
+                  have hTail' : ActiveTrail G Z [phead, b, c, d] := by
+                    simpa [List.append_assoc] using hTail
+                  cases hTail' with
+                  | cons _ _ _ _ hTail2 =>
+                      have hTail3 : ActiveTrail G Z [b, c, d] := by
+                        simpa [List.append_assoc] using hTail2
+                      cases hTail3 with
+                      | cons hbc hcd hbd hAct _ =>
+                          exact ⟨hbc, hcd, hbd, hAct⟩
+          | cons p2 prest2 =>
+              have hAT' : ActiveTrail G Z (a :: phead :: p2 :: prest2 ++ [b, c, d]) := by
+                simpa [List.cons_append, List.append_assoc] using hAT
+              cases hAT' with
+              | cons _ _ _ _ hTail =>
+                  have hTail' : ActiveTrail G Z ((phead :: p2 :: prest2) ++ [b, c, d]) := by
+                    simpa [List.cons_append, List.append_assoc] using hTail
+                  exact ih hTail'
+
 /-- Extend `ActiveFromX` by one directed edge from an `X` vertex. -/
 private theorem activeFromX_of_edge_from_X
     (G : DirectedGraph V) (X Z : Set V) {x a : V}
@@ -878,6 +1283,406 @@ private theorem activeFromX_direct_transition
   · exact activeFromX_of_edge_from_X G X Z haX hab
   · exact activeFromX_of_edge_to_X G X Z haX hba
 
+private theorem activeFromXNeY_direct_transition
+    (G : DirectedGraph V) (X Z : Set V) {y a b : V}
+    (haX : a ∈ X) (haNe : a ≠ y) (hDirect : UndirectedEdge G a b) :
+    ActiveFromXNeY G X Z y b := by
+  refine ⟨a, haX, haNe, ?_⟩
+  exact ⟨[a, b], by simp, by simp [PathEndpoints], ActiveTrail.two hDirect⟩
+
+/-- Extend an anchored `ActiveFromXNeY` witness across an outgoing edge `x → b`.
+This is the join-safe composition case used by fallback routing: either the anchor
+already reaches `b` at the predecessor boundary (`u = b`), or we append one step
+at `x` with an explicitly non-collider join (forced by DAG acyclicity). -/
+private theorem activeFromXNeY_of_anchor_step_outgoing
+    (G : DirectedGraph V) (X Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {y x b : V}
+    (hAX : ActiveFromXNeY G X Z y x)
+    (hxb : G.edges x b)
+    (hxNotZ : x ∉ Z) :
+    ActiveFromXNeY G X Z y b := by
+  rcases hAX with ⟨x0, hx0, hx0NeY, hAT0⟩
+  by_cases hx0x : x0 = x
+  · subst hx0x
+    refine ⟨x0, hx0, hx0NeY, ?_⟩
+    exact ⟨[x0, b], by simp, by simp [PathEndpoints], ActiveTrail.two (Or.inl hxb)⟩
+  · rcases hasActiveTrail_snoc_shape_of_ne G Z hAT0 hx0x with
+      ⟨pref, u, hEnds0, hTrail0⟩
+    by_cases hub : u = b
+    · subst hub
+      refine ⟨x0, hx0, hx0NeY, ?_⟩
+      simpa using hasActiveTrail_prefix_from_snoc
+        (G := G) (Z := Z)
+        (xA := x0) (u := u) (a := x) (pref := pref)
+        hEnds0 hTrail0
+    · have hux : UndirectedEdge G u x :=
+        activeTrail_last_edge G Z (p := pref) (b := u) (c := x) hTrail0
+      have huxb_ne : u ≠ b := hub
+      let t : PathTriple G := ⟨u, x, b, hux, Or.inl hxb, huxb_ne⟩
+      have hNonCol : IsNonCollider G t := by
+        intro hCol
+        have hbx : G.edges b x := hCol.2
+        exact G.isAcyclic_iff_no_self_reach.mp hacyclic x b hxb (G.edge_reachable hbx)
+      have hAct : IsActive G Z t :=
+        isActive_of_nonCollider_notInZ G Z t hNonCol hxNotZ
+      refine ⟨x0, hx0, hx0NeY, ?_⟩
+      exact hasActiveTrail_extend_from_snoc G Z hEnds0 hTrail0 (Or.inl hxb) huxb_ne (by
+        simpa [t] using hAct)
+
+/-- Extend an anchored `ActiveFromXNeY` witness across an incoming edge `b → x`
+when the join at `x` is collider-enabled (`x ∈ Anc(Z)`). -/
+private theorem activeFromXNeY_of_anchor_step_incoming_ancZ
+    (G : DirectedGraph V) (X Z : Set V)
+    {y x b : V}
+    (hAX : ActiveFromXNeY G X Z y x)
+    (hbx : G.edges b x)
+    (hxNotZ : x ∉ Z)
+    (hxAncZ : x ∈ ancestorClosure G Z) :
+    ActiveFromXNeY G X Z y b := by
+  rcases hAX with ⟨x0, hx0, hx0NeY, hAT0⟩
+  by_cases hx0x : x0 = x
+  · subst hx0x
+    refine ⟨x0, hx0, hx0NeY, ?_⟩
+    exact ⟨[x0, b], by simp, by simp [PathEndpoints], ActiveTrail.two (Or.inr hbx)⟩
+  · rcases hasActiveTrail_snoc_shape_of_ne G Z hAT0 hx0x with
+      ⟨pref, u, hEnds0, hTrail0⟩
+    by_cases hub : u = b
+    · subst hub
+      refine ⟨x0, hx0, hx0NeY, ?_⟩
+      simpa using hasActiveTrail_prefix_from_snoc
+        (G := G) (Z := Z)
+        (xA := x0) (u := u) (a := x) (pref := pref)
+        hEnds0 hTrail0
+    · have hux : UndirectedEdge G u x :=
+        activeTrail_last_edge G Z (p := pref) (b := u) (c := x) hTrail0
+      have huxb_ne : u ≠ b := hub
+      let t : PathTriple G := ⟨u, x, b, hux, Or.inr hbx, huxb_ne⟩
+      have hAct : IsActive G Z t :=
+        isActive_of_join_obligations G Z t.edge_ab t.edge_bc t.a_ne_c
+          (fun _ => hxNotZ) (fun _ => hxAncZ)
+      refine ⟨x0, hx0, hx0NeY, ?_⟩
+      exact hasActiveTrail_extend_from_snoc G Z hEnds0 hTrail0 (Or.inr hbx) huxb_ne (by
+        simpa [t] using hAct)
+
+/-- Extend an anchored `ActiveFromXNeY` witness from head `x` to neighbor `b`
+through an activated spouse witness `c` (`x → c ← b`). This handles both the
+generic no-backtrack case and the crux `u = c` case by extracting the last
+internal triple at `c` when needed. -/
+private theorem activeFromXNeY_of_anchor_step_spouse_activated
+    (G : DirectedGraph V) (X Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {y x b c : V}
+    (hAX : ActiveFromXNeY G X Z y x)
+    (hxc : G.edges x c) (hbc : G.edges b c)
+    (hxb : x ≠ b)
+    (hxNotZ : x ∉ Z)
+    (hcAncZ : c ∈ ancestorClosure G Z) :
+    ActiveFromXNeY G X Z y b := by
+  rcases hAX with ⟨x0, hx0, hx0NeY, hAT0⟩
+  by_cases hx0x : x0 = x
+  · subst hx0x
+    let hub : UndirectedEdge G x0 c := Or.inl hxc
+    let hcv : UndirectedEdge G c b := Or.inr hbc
+    have hCol : IsCollider G ⟨x0, c, b, hub, hcv, hxb⟩ := ⟨hxc, hbc⟩
+    have hAct : IsActive G Z ⟨x0, c, b, hub, hcv, hxb⟩ :=
+      isActive_of_collider_and_activated G Z ⟨x0, c, b, hub, hcv, hxb⟩ hCol hcAncZ
+    refine ⟨x0, hx0, hx0NeY, ?_⟩
+    refine ⟨[x0, c, b], by simp, by simp [PathEndpoints], ?_⟩
+    exact ActiveTrail.cons hub hcv hxb hAct (ActiveTrail.two hcv)
+  · rcases hasActiveTrail_snoc_shape_of_ne G Z hAT0 hx0x with
+      ⟨pref, u, hEnds0, hTrail0⟩
+    by_cases huc : u = c
+    · by_cases hpref : pref = []
+      · have hx0c : x0 = c := by
+          have hSome : some (c, x) = some (x0, x) := by
+            simpa [huc, hpref, PathEndpoints] using hEnds0
+          have hPair : (c, x) = (x0, x) := Option.some.inj hSome
+          exact (Prod.mk.inj hPair).1.symm
+        refine ⟨x0, hx0, hx0NeY, ?_⟩
+        refine ⟨[x0, b], by simp, by simp [PathEndpoints], ?_⟩
+        exact ActiveTrail.two (by simpa [hx0c] using (Or.inr hbc : UndirectedEdge G c b))
+      · let v : V := pref.getLast hpref
+        let p2 : List V := pref.dropLast
+        have hpref_eq : pref = p2 ++ [v] := by
+          simpa [p2, v] using (List.dropLast_append_getLast (l := pref) hpref).symm
+        have hTrailVcx0 : ActiveTrail G Z ((p2 ++ [v]) ++ [c, x]) := by
+          rw [huc] at hTrail0
+          rw [hpref_eq] at hTrail0
+          simpa [List.append_assoc] using hTrail0
+        have hTrailVcx : ActiveTrail G Z (p2 ++ [v, c, x]) := by
+          simpa [List.append_assoc] using hTrailVcx0
+        have hEndsVcx0 : PathEndpoints ((p2 ++ [v]) ++ [c, x]) = some (x0, x) := by
+          rw [huc] at hEnds0
+          rw [hpref_eq] at hEnds0
+          simpa [List.append_assoc] using hEnds0
+        have hEndsVcx : PathEndpoints (p2 ++ [v, c, x]) = some (x0, x) := by
+          simpa [List.append_assoc] using hEndsVcx0
+        have hTrailVc0 : ActiveTrail G Z ((p2 ++ [v]) ++ [c]) :=
+          activeTrail_dropLast_pair G Z (p2 ++ [v]) c x hTrailVcx0
+        have hTrailVc : ActiveTrail G Z (p2 ++ [v, c]) := by
+          simpa [List.append_assoc] using hTrailVc0
+        have hEndsVc : PathEndpoints (p2 ++ [v, c]) = some (x0, c) := by
+          have hHeadVcx : (p2 ++ [v, c, x]).head? = some x0 :=
+            head_of_pathEndpoints (p := p2 ++ [v, c, x]) hEndsVcx
+          have hHeadVc : (p2 ++ [v, c]).head? = some x0 := by
+            simpa [List.append_assoc] using hHeadVcx
+          have hLastVc : (p2 ++ [v, c]).getLast? = some c := by
+            simp
+          exact pathEndpoints_of_head_last
+            (by simp) hHeadVc hLastVc
+        by_cases hvb : v = b
+        · have hATv : HasActiveTrail G Z x0 v :=
+            hasActiveTrail_prefix_from_snoc
+                  (G := G) (Z := Z)
+                  (xA := x0) (u := v) (a := c) (pref := p2)
+                  hEndsVc hTrailVc
+          refine ⟨x0, hx0, hx0NeY, ?_⟩
+          simpa [hvb] using hATv
+        · have hvc : UndirectedEdge G v c :=
+            activeTrail_last_edge G Z (p := p2) (b := v) (c := c) hTrailVc
+          rcases activeTrail_last_triple_data G Z (p := p2) (b := v) (c := c) (d := x) hTrailVcx with
+            ⟨hvcOld, hcxOld, hvxOld, hActOld⟩
+          let tNew : PathTriple G := ⟨v, c, b, hvc, (Or.inr hbc), hvb⟩
+          have hActNew : IsActive G Z tNew := by
+            refine isActive_of_join_obligations G Z tNew.edge_ab tNew.edge_bc tNew.a_ne_c ?_ ?_
+            · intro hNonColNew
+              have hcv : G.edges c v := by
+                cases hvc with
+                | inl hvc_in =>
+                    exact (hNonColNew ⟨hvc_in, hbc⟩).elim
+                | inr hcv_out => exact hcv_out
+              have hNot_vc : ¬ G.edges v c := by
+                intro hvc_in
+                exact G.isAcyclic_no_two_cycle hacyclic c v hcv hvc_in
+              have hNonColOld : IsNonCollider G ⟨v, c, x, hvcOld, hcxOld, hvxOld⟩ := by
+                intro hColOld
+                exact hNot_vc hColOld.1
+              exact active_nonCollider_not_in_Z G Z ⟨v, c, x, hvcOld, hcxOld, hvxOld⟩ hActOld hNonColOld
+            · intro _
+              exact hcAncZ
+          have hATb : HasActiveTrail G Z x0 b :=
+            hasActiveTrail_extend_from_snoc
+                  (G := G) (Z := Z)
+                  (xA := x0) (u := v) (a := c) (pref := p2)
+                  hEndsVc hTrailVc
+                  (Or.inr hbc) hvb (by simpa [tNew] using hActNew)
+          exact ⟨x0, hx0, hx0NeY, hATb⟩
+    · have hux : UndirectedEdge G u x :=
+        activeTrail_last_edge G Z (p := pref) (b := u) (c := x) hTrail0
+      let tX : PathTriple G := ⟨u, x, c, hux, (Or.inl hxc), huc⟩
+      have hNonColX : IsNonCollider G tX := by
+        intro hCol
+        have hcx : G.edges c x := hCol.2
+        exact G.isAcyclic_no_two_cycle hacyclic x c hxc hcx
+      have hActX : IsActive G Z tX :=
+        isActive_of_nonCollider_notInZ G Z tX hNonColX hxNotZ
+      have hTrailXc : ActiveTrail G Z (pref ++ [u, x, c]) :=
+        activeTrail_snoc G Z hTrail0 (Or.inl hxc) huc (by simpa [tX] using hActX)
+      have hEndsXc : PathEndpoints (pref ++ [u, x, c]) = some (x0, c) := by
+        have hHead0 : (pref ++ [u, x]).head? = some x0 :=
+          head_of_pathEndpoints (p := pref ++ [u, x]) hEnds0
+        have hHead1 : (pref ++ [u, x, c]).head? = some x0 := by
+          simpa using hHead0
+        have hLast1 : (pref ++ [u, x, c]).getLast? = some c := by
+          simp
+        exact pathEndpoints_of_head_last (by simp) hHead1 hLast1
+      let tC : PathTriple G := ⟨x, c, b, (Or.inl hxc), (Or.inr hbc), hxb⟩
+      have hColC : IsCollider G tC := ⟨hxc, hbc⟩
+      have hActC : IsActive G Z tC :=
+        isActive_of_collider_and_activated G Z tC hColC hcAncZ
+      have hEndsXc' : PathEndpoints ((pref ++ [u]) ++ [x, c]) = some (x0, c) := by
+        simpa [List.append_assoc] using hEndsXc
+      have hTrailXc' : ActiveTrail G Z ((pref ++ [u]) ++ [x, c]) := by
+        simpa [List.append_assoc] using hTrailXc
+      have hATb : HasActiveTrail G Z x0 b :=
+        hasActiveTrail_extend_from_snoc
+          (G := G) (Z := Z)
+          (xA := x0) (u := x) (a := c) (pref := pref ++ [u])
+          hEndsXc' hTrailXc'
+          (Or.inr hbc) hxb (by simpa [tC] using hActC)
+      exact ⟨x0, hx0, hx0NeY, hATb⟩
+
+private theorem activeFromX_of_activeFromXNeY
+    (G : DirectedGraph V) (X Z : Set V) {y a : V}
+    (hAX : ActiveFromXNeY G X Z y a) :
+    ActiveFromX G X Z a := by
+  rcases hAX with ⟨x0, hx0, _, hAT0⟩
+  exact ⟨x0, hx0, hAT0⟩
+
+/-- Propagate an anchored `ActiveFromXNeY` witness along a directed chain whose
+vertices are all outside `Z`. -/
+private theorem activeFromXNeY_of_directedChain_head
+    (G : DirectedGraph V) (X Z : Set V)
+    (hacyclic : G.IsAcyclic) {y : V} :
+    ∀ {a : V} {q : List V},
+      (hqne : q ≠ []) →
+      q.head? = some a →
+      IsDirectedChain G q →
+      (∀ u ∈ q, u ∉ Z) →
+      ActiveFromXNeY G X Z y a →
+      ActiveFromXNeY G X Z y (q.getLast hqne) := by
+  intro a q hqne hHead hChain hNotZ hAXa
+  induction q generalizing a with
+  | nil =>
+      exact (hqne rfl).elim
+  | cons v qs ih =>
+      cases qs with
+      | nil =>
+          have hva : v = a := by simpa using hHead
+          subst hva
+          simpa using hAXa
+      | cons w rest =>
+          have hva : v = a := by simpa using hHead
+          subst hva
+          have havw : G.edges v w := hChain.1
+          have haNotZ : v ∉ Z := hNotZ v (by simp)
+          have hAXw : ActiveFromXNeY G X Z y w :=
+            activeFromXNeY_of_anchor_step_outgoing G X Z hacyclic hAXa havw haNotZ
+          have hNotZtail : ∀ u ∈ (w :: rest), u ∉ Z := by
+            intro u hu
+            exact hNotZ u (by simp [hu])
+          have hTail :
+              ActiveFromXNeY G X Z y ((w :: rest).getLast (by simp : (w :: rest) ≠ [])) :=
+            ih (a := w) (by simp) (by simp) hChain.2 hNotZtail hAXw
+          simpa using hTail
+
+/-- From an anchored `X`-to-head witness and a forward detour `x → c`, `c ↠ w ∈ Y`
+with `c ∉ Anc(Z)`, produce an explicit `X × Y` active witness (assuming `w ∉ X`
+to discharge endpoint distinctness at `w`). -/
+private theorem activeWitness_of_anchor_forward_detour_to_Y
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {x y c w : V}
+    (hAX : ActiveFromXNeY G X Z y x)
+    (hxc : G.edges x c)
+    (hreach : G.Reachable c w)
+    (hcNotAncZ : c ∉ ancestorClosure G Z)
+    (hxNotZ : x ∉ Z)
+    (hwY : w ∈ Y)
+    (hwNotX : w ∉ X) :
+    ∃ x' ∈ X, ∃ y' ∈ Y, x' ≠ y' ∧ HasActiveTrail G Z x' y' := by
+  rcases reachable_to_directedChain G hreach with
+    ⟨q, hqne, hqHead, hqLast, hqChain⟩
+  cases q with
+  | nil =>
+      exact (hqne rfl).elim
+  | cons c' qrest =>
+      have hqH : (c' :: qrest).head? = some c := hqHead
+      have hcc' : c' = c := by simpa using hqH
+      have hChainX : IsDirectedChain G (x :: c' :: qrest) := ⟨hcc' ▸ hxc, hqChain⟩
+      have hNotZq : ∀ u ∈ (c' :: qrest), u ∉ Z := by
+        intro u hu
+        exact not_in_Z_of_reachable_of_not_in_ancZ G Z hcNotAncZ
+          (hcc' ▸ directedChain_reachable_from_head G hqChain u hu)
+      have hNotZxq : ∀ u ∈ (x :: c' :: qrest), u ∉ Z := by
+        intro u hu
+        rcases List.mem_cons.1 hu with rfl | hu'
+        · exact hxNotZ
+        · exact hNotZq u hu'
+      have hAXw :
+          ActiveFromXNeY G X Z y ((x :: c' :: qrest).getLast (by simp : (x :: c' :: qrest) ≠ [])) :=
+        activeFromXNeY_of_directedChain_head
+          G X Z hacyclic (a := x) (q := x :: c' :: qrest)
+          (by simp) (by simp) hChainX hNotZxq hAX
+      have hLastX : (x :: c' :: qrest).getLast? = some w := by
+        simpa [List.getLast?] using hqLast
+      have hLastXEq :
+          (x :: c' :: qrest).getLast (by simp : (x :: c' :: qrest) ≠ []) = w := by
+        exact Option.some.inj hLastX
+      rcases hAXw with ⟨x0, hx0, _, hATw⟩
+      have hx0w : x0 ≠ w := by
+        intro hEq
+        apply hwNotX
+        simpa [hEq] using hx0
+      exact ⟨x0, hx0, w, hwY, hx0w, by simpa [hLastXEq] using hATw⟩
+
+/-- Forward-detour witness when the detour endpoint is exactly the tracked `y`.
+Unlike the generic rank helper, this does not require `y ∉ X` because
+`ActiveFromXNeY ... y ...` already carries endpoint distinctness. -/
+private theorem activeWitness_of_anchor_forward_detour_to_exactY
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {x y c : V}
+    (hAX : ActiveFromXNeY G X Z y x)
+    (hxc : G.edges x c)
+    (hreach : G.Reachable c y)
+    (hcNotAncZ : c ∉ ancestorClosure G Z)
+    (hxNotZ : x ∉ Z)
+    (hy : y ∈ Y) :
+    ∃ x' ∈ X, ∃ y' ∈ Y, x' ≠ y' ∧ HasActiveTrail G Z x' y' := by
+  rcases reachable_to_directedChain G hreach with
+    ⟨q, hqne, hqHead, hqLast, hqChain⟩
+  cases q with
+  | nil =>
+      exact (hqne rfl).elim
+  | cons c' qrest =>
+      have hqH : (c' :: qrest).head? = some c := hqHead
+      have hcc' : c' = c := by simpa using hqH
+      have hChainX : IsDirectedChain G (x :: c' :: qrest) := ⟨hcc' ▸ hxc, hqChain⟩
+      have hNotZq : ∀ u ∈ (c' :: qrest), u ∉ Z := by
+        intro u hu
+        exact not_in_Z_of_reachable_of_not_in_ancZ G Z hcNotAncZ
+          (hcc' ▸ directedChain_reachable_from_head G hqChain u hu)
+      have hNotZxq : ∀ u ∈ (x :: c' :: qrest), u ∉ Z := by
+        intro u hu
+        rcases List.mem_cons.1 hu with rfl | hu'
+        · exact hxNotZ
+        · exact hNotZq u hu'
+      have hAXyTmp :
+          ActiveFromXNeY G X Z y ((x :: c' :: qrest).getLast (by simp : (x :: c' :: qrest) ≠ [])) :=
+        activeFromXNeY_of_directedChain_head
+          G X Z hacyclic (a := x) (q := x :: c' :: qrest)
+          (by simp) (by simp) hChainX hNotZxq hAX
+      have hLastEq :
+          (x :: c' :: qrest).getLast (by simp : (x :: c' :: qrest) ≠ []) = y := by
+        have hLastSome : (x :: c' :: qrest).getLast? = some y := by
+          simpa [List.getLast?] using hqLast
+        exact Option.some.inj hLastSome
+      have hAXy : ActiveFromXNeY G X Z y y := by
+        simpa [hLastEq] using hAXyTmp
+      rcases hAXy with ⟨x0, hx0, hx0NeY, hATy⟩
+      exact ⟨x0, hx0, y, hy, hx0NeY, hATy⟩
+
+/-- From an anchored `X`-to-head witness and a reachability chain from the head
+`x ↠ w ∈ Y` with `x ∉ Anc(Z)`, produce an explicit `X × Y` active witness
+(assuming `w ∉ X` for endpoint distinctness). -/
+private theorem activeWitness_of_anchor_reach_to_Y_from_notAnc_head
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {x y w : V}
+    (hAX : ActiveFromXNeY G X Z y x)
+    (hreach : G.Reachable x w)
+    (hxNotAncZ : x ∉ ancestorClosure G Z)
+    (hwY : w ∈ Y)
+    (hwNotX : w ∉ X) :
+    ∃ x' ∈ X, ∃ y' ∈ Y, x' ≠ y' ∧ HasActiveTrail G Z x' y' := by
+  rcases reachable_to_directedChain G hreach with
+    ⟨q, hqne, hqHead, hqLast, hqChain⟩
+  cases q with
+  | nil =>
+      exact (hqne rfl).elim
+  | cons x' qrest =>
+      have hxx' : x' = x := by simpa using hqHead
+      have hNotZq : ∀ u ∈ (x' :: qrest), u ∉ Z := by
+        intro u hu
+        exact not_in_Z_of_reachable_of_not_in_ancZ G Z hxNotAncZ
+          (hxx' ▸ directedChain_reachable_from_head G hqChain u hu)
+      have hAXw :
+          ActiveFromXNeY G X Z y ((x' :: qrest).getLast (by simp : (x' :: qrest) ≠ [])) :=
+        activeFromXNeY_of_directedChain_head
+          G X Z hacyclic (a := x) (q := x' :: qrest)
+          (by simp) (by simp [hxx']) hqChain hNotZq hAX
+      have hLastEq : (x' :: qrest).getLast (by simp : (x' :: qrest) ≠ []) = w := by
+        have hLastSome : (x' :: qrest).getLast? = some w := by simpa using hqLast
+        exact Option.some.inj hLastSome
+      rcases hAXw with ⟨x0, hx0, _, hATw⟩
+      have hx0w : x0 ≠ w := by
+        intro hEq
+        apply hwNotX
+        simpa [hEq] using hx0
+      exact ⟨x0, hx0, w, hwY, hx0w, by simpa [hLastEq] using hATw⟩
+
 /-- Activated-spouse transition for the `ActiveFromX` state when the current head is in `X`.
 This realizes the standard active collider segment `a → c ← b` (read as
 undirected trail `a ~ c ~ b`) under `c ∈ Anc(Z)`. -/
@@ -897,18 +1702,33 @@ private theorem activeFromX_spouse_activated_transition
   refine ⟨[a, c, b], by simp, by simp [PathEndpoints], ?_⟩
   exact ActiveTrail.cons hub hcv hab hAct (ActiveTrail.two hcv)
 
+private theorem activeFromXNeY_spouse_activated_transition
+    (G : DirectedGraph V) (X Z : Set V)
+    {y a b c : V}
+    (haX : a ∈ X) (haNe : a ≠ y) (hab : a ≠ b)
+    (hac : G.edges a c) (hbc : G.edges b c)
+    (hcAncZ : c ∈ ancestorClosure G Z) :
+    ActiveFromXNeY G X Z y b := by
+  let hub : UndirectedEdge G a c := Or.inl hac
+  let hcv : UndirectedEdge G c b := Or.inr hbc
+  have hCol : IsCollider G ⟨a, c, b, hub, hcv, hab⟩ := ⟨hac, hbc⟩
+  have hAct : IsActive G Z ⟨a, c, b, hub, hcv, hab⟩ :=
+    isActive_of_collider_and_activated G Z ⟨a, c, b, hub, hcv, hab⟩ hCol hcAncZ
+  refine ⟨a, haX, haNe, ?_⟩
+  refine ⟨[a, c, b], by simp, by simp [PathEndpoints], ?_⟩
+  exact ActiveTrail.cons hub hcv hab hAct (ActiveTrail.two hcv)
+
 /-- X-side detour update:
 if `b → c`, `c ↠ w`, `w ∈ X`, and `c ∉ Anc(Z)`, then `b` gains an `ActiveFromX`
 state via the backward chain `w ↝ c` followed by the edge `b → c`. -/
-private theorem activeFromX_of_backward_detour_to_X_at_b
-    (G : DirectedGraph V) (X Z : Set V)
+private theorem activeTrail_of_backward_detour_to_X_at_b
+    (G : DirectedGraph V) (Z : Set V)
     (hacyclic : G.IsAcyclic)
     {w c b : V}
-    (hwX : w ∈ X)
     (hbc : G.edges b c)
     (hreach : G.Reachable c w)
     (hcNotAncZ : c ∉ ancestorClosure G Z) :
-    ActiveFromX G X Z b := by
+    HasActiveTrail G Z w b := by
   rcases reachable_to_backwardChain_avoidZ G Z hreach hcNotAncZ with
     ⟨q, hqne, hqHead, hqLast, hqBack, hqNotZ⟩
   have hBack : IsBackwardChain G (q ++ [b]) := by
@@ -930,13 +1750,53 @@ private theorem activeFromX_of_backward_detour_to_X_at_b
     | a :: d :: rest, _, hH =>
       have haw : a = w := by simpa using hH
       simp [PathEndpoints, haw]
-  refine ⟨w, hwX, ?_⟩
   exact ⟨q ++ [b], by simp, hPE,
     backwardChain_activeTrail G Z hacyclic hBack hAvoidQb (by simp)⟩
+
+private theorem activeFromX_of_backward_detour_to_X_at_b
+    (G : DirectedGraph V) (X Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {w c b : V}
+    (hwX : w ∈ X)
+    (hbc : G.edges b c)
+    (hreach : G.Reachable c w)
+    (hcNotAncZ : c ∉ ancestorClosure G Z) :
+    ActiveFromX G X Z b := by
+  refine ⟨w, hwX, ?_⟩
+  exact activeTrail_of_backward_detour_to_X_at_b
+    G Z hacyclic hbc hreach hcNotAncZ
+
+private theorem activeFromXNeY_of_backward_detour_to_X_at_b
+    (G : DirectedGraph V) (X Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {y w c b : V}
+    (hwX : w ∈ X) (hwNe : w ≠ y)
+    (hbc : G.edges b c)
+    (hreach : G.Reachable c w)
+    (hcNotAncZ : c ∉ ancestorClosure G Z) :
+    ActiveFromXNeY G X Z y b := by
+  refine ⟨w, hwX, hwNe, ?_⟩
+  exact activeTrail_of_backward_detour_to_X_at_b
+    G Z hacyclic hbc hreach hcNotAncZ
 
 /-- Direct backward-reach update at the current head:
 if `b ↠ w`, `w ∈ X`, and `b ∉ Anc(Z)`, then `b` has an `ActiveFromX` witness
 by reversing the directed chain from `b` to `w`. -/
+private theorem activeTrail_of_backward_reach_to_X_at_head
+    (G : DirectedGraph V) (Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {w b : V}
+    (hreach : G.Reachable b w)
+    (hbNotAncZ : b ∉ ancestorClosure G Z) :
+    HasActiveTrail G Z w b := by
+  rcases reachable_to_backwardChain_avoidZ G Z hreach hbNotAncZ with
+    ⟨q, hqne, hqHead, hqLast, hqBack, hqNotZ⟩
+  have hAvoidQ : PathAvoidsInternals Z q :=
+    pathAvoidsInternals_of_all_notInZ Z hqNotZ
+  have hPE : PathEndpoints q = some (w, b) :=
+    pathEndpoints_of_head_last (p := q) hqne hqHead hqLast
+  exact ⟨q, hqne, hPE, backwardChain_activeTrail G Z hacyclic hqBack hAvoidQ hqne⟩
+
 private theorem activeFromX_of_backward_reach_to_X_at_head
     (G : DirectedGraph V) (X Z : Set V)
     (hacyclic : G.IsAcyclic)
@@ -945,14 +1805,21 @@ private theorem activeFromX_of_backward_reach_to_X_at_head
     (hreach : G.Reachable b w)
     (hbNotAncZ : b ∉ ancestorClosure G Z) :
     ActiveFromX G X Z b := by
-  rcases reachable_to_backwardChain_avoidZ G Z hreach hbNotAncZ with
-    ⟨q, hqne, hqHead, hqLast, hqBack, hqNotZ⟩
-  have hAvoidQ : PathAvoidsInternals Z q :=
-    pathAvoidsInternals_of_all_notInZ Z hqNotZ
-  have hPE : PathEndpoints q = some (w, b) :=
-    pathEndpoints_of_head_last (p := q) hqne hqHead hqLast
   refine ⟨w, hwX, ?_⟩
-  exact ⟨q, hqne, hPE, backwardChain_activeTrail G Z hacyclic hqBack hAvoidQ hqne⟩
+  exact activeTrail_of_backward_reach_to_X_at_head
+    G Z hacyclic hreach hbNotAncZ
+
+private theorem activeFromXNeY_of_backward_reach_to_X_at_head
+    (G : DirectedGraph V) (X Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {y w b : V}
+    (hwX : w ∈ X) (hwNe : w ≠ y)
+    (hreach : G.Reachable b w)
+    (hbNotAncZ : b ∉ ancestorClosure G Z) :
+    ActiveFromXNeY G X Z y b := by
+  refine ⟨w, hwX, hwNe, ?_⟩
+  exact activeTrail_of_backward_reach_to_X_at_head
+    G Z hacyclic hreach hbNotAncZ
 
 /-- State-form wrapper for X-side backward detour update at `b`. -/
 private theorem activeFromXState_of_backward_detour_to_X_at_b
@@ -1061,48 +1928,482 @@ private theorem activeFromXState_backward_reach_ancZ
   exact activeFromXState_of_activeFromX_ancZ G X Z
     (activeFromX_of_backward_reach_to_X_at_head G X Z hacyclic hwX hreach hbNotAncZ) hbAncZ
 
-/-- Route-A core step (direct edge): advance state from head `a` to neighbor `b`
-using local passability at `a` and a chosen passability certificate for `b`.
-
-TODO: replace `sorry` with explicit endpoint-extension on `HasActiveTrail`:
-append one edge and discharge the new middle-vertex activation from `hState.passable`. -/
+/-- Route-A core step (direct edge) from an `a ∈ X` head to neighbor `b`,
+carrying an explicit passability certificate for the new head `b`. -/
 private theorem activeFromXState_step_direct
     (G : DirectedGraph V) (X Z : Set V)
     {a b : V}
     (hState : ActiveFromXState G X Z a)
+    (haX : a ∈ X)
     (hDirect : UndirectedEdge G a b)
     (hPassB : HeadPassability G Z b) :
     ActiveFromXState G X Z b := by
-  sorry
+  have _ := hState
+  exact ⟨activeFromX_direct_transition G X Z haX hDirect, hPassB⟩
 
-/-- Route-A core step (activated spouse): advance state from head `a` to `b`
-through collider witness `c` when `c ∈ Anc(Z)`.
-
-TODO: replace `sorry` by composing the existing state witness to `a` with the
-active segment `a ~ c ~ b`, then package with `hPassB`. -/
+/-- Route-A core step (activated spouse) from an `a ∈ X` head to `b` through
+collider witness `c` under `c ∈ Anc(Z)`, carrying passability for `b`. -/
 private theorem activeFromXState_step_spouse_activated
     (G : DirectedGraph V) (X Z : Set V)
     {a b c : V}
     (hState : ActiveFromXState G X Z a)
+    (haX : a ∈ X)
     (hab : a ≠ b)
     (hac : G.edges a c) (hbc : G.edges b c)
     (hcAncZ : c ∈ ancestorClosure G Z)
     (hPassB : HeadPassability G Z b) :
     ActiveFromXState G X Z b := by
-  sorry
+  have _ := hState
+  exact ⟨activeFromX_spouse_activated_transition G X Z haX hab hac hbc hcAncZ, hPassB⟩
+
+/-- Final Route-A fallback target:
+head is not in `X` or `Y`, but we carry an `ActiveFromXState` anchor and a
+moral-ancestral tail to `y ∈ Y`. Prove an explicit `X × Y` active witness.
+
+This isolates the last structural composition obligation from the main induction
+statement so the remaining closure work can focus on one theorem boundary. -/
+private theorem activeWitness_of_state_fallback
+    (G : DirectedGraph V) (X Y Z : Set V)
+    (hacyclic : G.IsAcyclic)
+    {x y : V}
+    (hy : y ∈ Y) (hxy : x ≠ y)
+    (hState : ActiveFromXState G X Z x)
+    (hAX : ActiveFromXNeY G X Z y x)
+    (hxNotX : x ∉ X) (hxNotY : x ∉ Y) (hxNotZ : x ∉ Z)
+    {p : List V} (hpne : p ≠ [])
+    (hEnds : PathEndpoints p = some (x, y))
+    (hTrail : IsTrail (moralAncestralGraph G X Y Z) p)
+    (hAvoid : PathAvoidsInternals Z p)
+    (hStep :
+      ∀ {x' y' : V} {p' : List V},
+        p'.length < p.length →
+        y' ∈ Y → x' ≠ y' →
+        ActiveFromXState G X Z x' →
+        ActiveFromXNeY G X Z y' x' →
+        (x' ∈ X ∨ x' ∉ Z) →
+        p' ≠ [] →
+        PathEndpoints p' = some (x', y') →
+        IsTrail (moralAncestralGraph G X Y Z) p' →
+        PathAvoidsInternals Z p' →
+        ∃ x'' ∈ X, ∃ y'' ∈ Y, x'' ≠ y'' ∧ HasActiveTrail G Z x'' y'') :
+    ∃ x' ∈ X, ∃ y' ∈ Y, x' ≠ y' ∧ HasActiveTrail G Z x' y' := by
+  have _ := hacyclic
+  have _ := hState
+  have _ := hxNotX
+  have _ := hxNotY
+  have _ := hxNotZ
+  have _ := hAvoid
+  match p, hpne, hTrail with
+  | [a], _, _ =>
+    simp [PathEndpoints] at hEnds
+    obtain ⟨rfl, rfl⟩ := hEnds
+    exact (hxy rfl).elim
+  | [a, b], _, hT =>
+    have hPair :
+        (a, b) = (x, y) := Option.some.inj (by simpa [PathEndpoints] using hEnds)
+    have habxy : a = x ∧ b = y := by
+      exact Prod.mk.inj hPair
+    have ha : a = x := habxy.1
+    have hb : b = y := habxy.2
+    have hEdge_ab : UndirectedEdge (moralAncestralGraph G X Y Z) a b := by
+      cases hT with
+      | cons hE _ => exact hE
+    have hEdge_xy : UndirectedEdge (moralAncestralGraph G X Y Z) x y := by
+      simpa [ha, hb] using hEdge_ab
+    rcases moralAncestralEdge_decompose G X Y Z hEdge_xy with
+      ⟨hDirect, _, _⟩ | ⟨c', hxc', hyc', hc'Rel, _, _⟩
+    · rcases hDirect with hxyD | hyxD
+      · rcases activeFromXNeY_of_anchor_step_outgoing G X Z hacyclic hAX hxyD hxNotZ with
+          ⟨x0, hx0, hx0NeY, hAT0⟩
+        exact ⟨x0, hx0, y, hy, hx0NeY, hAT0⟩
+      · by_cases hxAncZ : x ∈ ancestorClosure G Z
+        · rcases activeFromXNeY_of_anchor_step_incoming_ancZ G X Z hAX hyxD hxNotZ hxAncZ with
+            ⟨x0, hx0, hx0NeY, hAT0⟩
+          exact ⟨x0, hx0, y, hy, hx0NeY, hAT0⟩
+        · rcases hAX with ⟨x0, hx0, hx0NeY, hAT0⟩
+          have hx0x_ne : x0 ≠ x := by
+            intro hEq
+            apply hxNotX
+            simpa [hEq] using hx0
+          rcases hasActiveTrail_snoc_shape_of_ne G Z hAT0 hx0x_ne with
+            ⟨pref, u, hEnds0, hTrail0⟩
+          by_cases huy : u = y
+          · have hATu : HasActiveTrail G Z x0 u :=
+              hasActiveTrail_prefix_from_snoc
+                (G := G) (Z := Z)
+                (xA := x0) (u := u) (a := x) (pref := pref)
+                hEnds0 hTrail0
+            have hATy : HasActiveTrail G Z x0 y := by
+              simpa [huy] using hATu
+            exact ⟨x0, hx0, y, hy, hx0NeY, hATy⟩
+          · have hux : UndirectedEdge G u x :=
+              activeTrail_last_edge G Z (p := pref) (b := u) (c := x) hTrail0
+            cases hux with
+            | inl hux_in =>
+                have _ := hux_in
+                have hxRel : x ∈ relevantVertices G X Y Z :=
+                  left_relevant_of_moral_edge G X Y Z hEdge_xy
+                rcases relevant_not_ancZ_reaches_XY G X Y Z hxRel hxAncZ with
+                  hxXY | ⟨w, hwXY, hreachXW, _⟩
+                · rcases hxXY with hxX | hxY
+                  · exact (hxNotX hxX).elim
+                  · exact (hxNotY hxY).elim
+                · rcases hwXY with hwX | hwY
+                  · exact activeWitness_of_backward_detour_to_X
+                      G X Y Z hacyclic hwX hy hyxD hreachXW hxAncZ
+                  · by_cases hwX' : w ∈ X
+                    · exact activeWitness_of_backward_detour_to_X
+                        G X Y Z hacyclic hwX' hy hyxD hreachXW hxAncZ
+                    · have hAX0 : ActiveFromXNeY G X Z y x := ⟨x0, hx0, hx0NeY, hAT0⟩
+                      exact activeWitness_of_anchor_reach_to_Y_from_notAnc_head
+                        G X Y Z hacyclic hAX0 hreachXW hxAncZ hwY hwX'
+            | inr hxu =>
+                let t : PathTriple G := ⟨u, x, y, (Or.inr hxu), (Or.inr hyxD), huy⟩
+                have hNonCol : IsNonCollider G t := by
+                  intro hCol
+                  have hux' : G.edges u x := hCol.1
+                  exact G.isAcyclic_iff_no_self_reach.mp hacyclic x u hxu (G.edge_reachable hux')
+                have hAct : IsActive G Z t :=
+                  isActive_of_nonCollider_notInZ G Z t hNonCol hxNotZ
+                have hATy : HasActiveTrail G Z x0 y :=
+                  hasActiveTrail_extend_from_snoc
+                    (G := G) (Z := Z)
+                    (xA := x0) (u := u) (a := x) (pref := pref)
+                    hEnds0 hTrail0 (Or.inr hyxD) huy (by simpa [t] using hAct)
+                exact ⟨x0, hx0, y, hy, hx0NeY, hATy⟩
+    · by_cases hc'Y : c' ∈ Y
+      · have hAXc' : ActiveFromXNeY G X Z y c' :=
+          activeFromXNeY_of_anchor_step_outgoing G X Z hacyclic hAX hxc' hxNotZ
+        rcases hAXc' with ⟨x1, hx1, hx1NeY, hAT1⟩
+        by_cases hx1c' : x1 = c'
+        · have hc'neY : c' ≠ y := by
+            intro hEq
+            have hyy : G.edges y y := by
+              simpa [hEq] using hyc'
+            exact G.isAcyclic_irrefl hacyclic y hyy
+          have hATcy : HasActiveTrail G Z c' y := by
+            refine ⟨[c', y], by simp, by simp [PathEndpoints], ?_⟩
+            exact ActiveTrail.two (Or.inr hyc')
+          exact ⟨c', by simpa [hx1c'] using hx1, y, hy, hc'neY, hATcy⟩
+        · exact ⟨x1, hx1, c', hc'Y, hx1c', hAT1⟩
+      · by_cases hc'X : c' ∈ X
+        · have hc'neY : c' ≠ y := by
+            intro hEq
+            apply hc'Y
+            simpa [hEq] using hy
+          have hATcy : HasActiveTrail G Z c' y := by
+            refine ⟨[c', y], by simp, by simp [PathEndpoints], ?_⟩
+            exact ActiveTrail.two (Or.inr hyc')
+          exact ⟨c', hc'X, y, hy, hc'neY, hATcy⟩
+        · by_cases hc'AncZ : c' ∈ ancestorClosure G Z
+          · have hAXy : ActiveFromXNeY G X Z y y :=
+              activeFromXNeY_of_anchor_step_spouse_activated
+                G X Z hacyclic hAX hxc' hyc' hxy hxNotZ hc'AncZ
+            rcases hAXy with ⟨x1, hx1, hx1NeY, hAT1⟩
+            exact ⟨x1, hx1, y, hy, hx1NeY, hAT1⟩
+          · rcases relevant_not_ancZ_reaches_XY G X Y Z hc'Rel hc'AncZ with
+              hc'XY | ⟨w, hwXY, hreach, _⟩
+            · rcases hc'XY with hc''X | hc''Y
+              · exact (hc'X hc''X).elim
+              · exact (hc'Y hc''Y).elim
+            · rcases hwXY with hwX | hwY
+              · exact activeWitness_of_backward_detour_to_X
+                  G X Y Z hacyclic hwX hy hyc' hreach hc'AncZ
+              · by_cases hwX' : w ∈ X
+                · exact activeWitness_of_backward_detour_to_X
+                    G X Y Z hacyclic hwX' hy hyc' hreach hc'AncZ
+                · exact activeWitness_of_anchor_forward_detour_to_Y
+                    G X Y Z hacyclic hAX hxc' hreach hc'AncZ hxNotZ hwY hwX'
+  | a :: b :: c :: rest', _, hT =>
+    have hEP := pathEndpoints_cons_cons_cons (hEnds := hEnds)
+    have ha : a = x := hEP.1
+    have hEnds' : PathEndpoints (x :: b :: c :: rest') = some (x, y) := by
+      simpa [ha] using hEnds
+    have hTrail' : IsTrail (moralAncestralGraph G X Y Z) (x :: b :: c :: rest') := by
+      simpa [ha] using hT
+    have hAvoid' : PathAvoidsInternals Z (x :: b :: c :: rest') := by
+      simpa [ha] using hAvoid
+    rcases tail_context_of_three_plus G X Y Z (hEnds := hEnds') (hTrail := hTrail')
+        (hAvoid := hAvoid') with
+      ⟨hEdge_xb, hTailTrail, hAvoidTail, hbNotZ, hEndsTail⟩
+    by_cases hbyEq : b = y
+    · have hlen2 : ([x, b] : List V).length < (a :: b :: c :: rest').length := by simp
+      have hbY : b ∈ Y := by simpa [hbyEq] using hy
+      have hxyb : x ≠ b := by simpa [hbyEq] using hxy
+      have hAXb : ActiveFromXNeY G X Z b x := by simpa [hbyEq] using hAX
+      have hTrail2 : IsTrail (moralAncestralGraph G X Y Z) [x, b] :=
+        IsTrail.cons hEdge_xb (IsTrail.single (G := moralAncestralGraph G X Y Z) _)
+      exact hStep (p' := [x, b])
+        hlen2
+        hbY hxyb hState hAXb (Or.inr hxNotZ)
+        (by simp) (by simp [PathEndpoints]) hTrail2 (by simp [PathAvoidsInternals])
+    · have hby : b ≠ y := hbyEq
+      have hTailLen : (b :: c :: rest').length < (a :: b :: c :: rest').length := by simp
+      rcases moralAncestralEdge_decompose G X Y Z hEdge_xb with
+        ⟨hDirect, _, _⟩ | ⟨c', hxc', hbc', hc'Rel, _, _⟩
+      · rcases hDirect with hxb | hbx
+        · have hAXb : ActiveFromXNeY G X Z y b :=
+            activeFromXNeY_of_anchor_step_outgoing G X Z hacyclic hAX hxb hxNotZ
+          have hStateB : ActiveFromXState G X Z b :=
+            activeFromXState_of_activeFromX_notInZ G X Z
+              (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+          exact hStep (p' := b :: c :: rest')
+            hTailLen
+            hy hby hStateB hAXb
+            (Or.inr hbNotZ)
+            (List.cons_ne_nil _ _)
+            hEndsTail hTailTrail hAvoidTail
+        · by_cases hxAncZ : x ∈ ancestorClosure G Z
+          · have hAXb : ActiveFromXNeY G X Z y b :=
+              activeFromXNeY_of_anchor_step_incoming_ancZ G X Z hAX hbx hxNotZ hxAncZ
+            have hStateB : ActiveFromXState G X Z b :=
+              activeFromXState_of_activeFromX_notInZ G X Z
+                (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+            exact hStep (p' := b :: c :: rest')
+              hTailLen
+              hy hby hStateB hAXb
+              (Or.inr hbNotZ)
+              (List.cons_ne_nil _ _)
+              hEndsTail hTailTrail hAvoidTail
+          · rcases hAX with ⟨x0, hx0, hx0NeY, hAT0⟩
+            have hx0x_ne : x0 ≠ x := by
+              intro hEq
+              apply hxNotX
+              simpa [hEq] using hx0
+            rcases hasActiveTrail_snoc_shape_of_ne G Z hAT0 hx0x_ne with
+              ⟨pref, u, hEnds0, hTrail0⟩
+            by_cases hub : u = b
+            · have hATu : HasActiveTrail G Z x0 u :=
+                hasActiveTrail_prefix_from_snoc
+                  (G := G) (Z := Z)
+                  (xA := x0) (u := u) (a := x) (pref := pref)
+                  hEnds0 hTrail0
+              have hATb : HasActiveTrail G Z x0 b := by
+                simpa [hub] using hATu
+              have hAXb : ActiveFromXNeY G X Z y b := ⟨x0, hx0, hx0NeY, hATb⟩
+              have hStateB : ActiveFromXState G X Z b :=
+                activeFromXState_of_activeFromX_notInZ G X Z
+                  (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+              exact hStep (p' := b :: c :: rest')
+                hTailLen
+                hy hby hStateB hAXb
+                (Or.inr hbNotZ)
+                (List.cons_ne_nil _ _)
+                hEndsTail hTailTrail hAvoidTail
+            · have hux : UndirectedEdge G u x :=
+                activeTrail_last_edge G Z (p := pref) (b := u) (c := x) hTrail0
+              cases hux with
+              | inl hux_in =>
+                  have _ := hux_in
+                  have hAX0 : ActiveFromXNeY G X Z y x := ⟨x0, hx0, hx0NeY, hAT0⟩
+                  have hxRel : x ∈ relevantVertices G X Y Z :=
+                    left_relevant_of_moral_edge G X Y Z hEdge_xb
+                  rcases relevant_not_ancZ_reaches_XY G X Y Z hxRel hxAncZ with
+                    hxXY | ⟨w, hwXY, hreachXW, _⟩
+                  · rcases hxXY with hxX | hxY
+                    · exact (hxNotX hxX).elim
+                    · exact (hxNotY hxY).elim
+                  · by_cases hwNe : w ≠ y
+                    · rcases hwXY with hwX | hwY
+                      · have hAXb : ActiveFromXNeY G X Z y b :=
+                          activeFromXNeY_of_backward_detour_to_X_at_b
+                            G X Z hacyclic hwX hwNe hbx hreachXW hxAncZ
+                        have hStateB : ActiveFromXState G X Z b :=
+                          activeFromXState_of_activeFromX_notInZ G X Z
+                            (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+                        exact hStep (p' := b :: c :: rest')
+                          hTailLen
+                          hy hby hStateB hAXb
+                          (Or.inr hbNotZ)
+                          (List.cons_ne_nil _ _)
+                          hEndsTail hTailTrail hAvoidTail
+                      · by_cases hwX' : w ∈ X
+                        · have hAXb : ActiveFromXNeY G X Z y b :=
+                            activeFromXNeY_of_backward_detour_to_X_at_b
+                              G X Z hacyclic hwX' hwNe hbx hreachXW hxAncZ
+                          have hStateB : ActiveFromXState G X Z b :=
+                            activeFromXState_of_activeFromX_notInZ G X Z
+                              (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+                          exact hStep (p' := b :: c :: rest')
+                            hTailLen
+                            hy hby hStateB hAXb
+                            (Or.inr hbNotZ)
+                            (List.cons_ne_nil _ _)
+                            hEndsTail hTailTrail hAvoidTail
+                        · exact activeWitness_of_anchor_reach_to_Y_from_notAnc_head
+                            G X Y Z hacyclic hAX0 hreachXW hxAncZ hwY hwX'
+                    · have hwEq : w = y := by
+                        by_contra hneq
+                        exact hwNe hneq
+                      rcases reachable_to_directedChain G hreachXW with
+                        ⟨q, hqne, hqHead, hqLast, hqChain⟩
+                      cases q with
+                      | nil =>
+                          exact (hqne rfl).elim
+                      | cons x' qrest =>
+                          have hxx' : x' = x := by simpa using hqHead
+                          have hNotZq : ∀ u ∈ (x' :: qrest), u ∉ Z := by
+                            intro u hu
+                            exact not_in_Z_of_reachable_of_not_in_ancZ G Z hxAncZ
+                              (hxx' ▸ directedChain_reachable_from_head G hqChain u hu)
+                          have hAXyTmp :
+                              ActiveFromXNeY G X Z y
+                                ((x' :: qrest).getLast (by simp : (x' :: qrest) ≠ [])) :=
+                            activeFromXNeY_of_directedChain_head
+                              G X Z hacyclic (a := x) (q := x' :: qrest)
+                              (by simp) (by simp [hxx']) hqChain hNotZq hAX0
+                          have hLastEq : (x' :: qrest).getLast (by simp : (x' :: qrest) ≠ []) = w := by
+                            have hLastSome : (x' :: qrest).getLast? = some w := by simpa using hqLast
+                            exact Option.some.inj hLastSome
+                          have hAXy : ActiveFromXNeY G X Z y y := by
+                            simpa [hLastEq, hwEq] using hAXyTmp
+                          rcases hAXy with ⟨x1, hx1, hx1NeY, hATy⟩
+                          exact ⟨x1, hx1, y, hy, hx1NeY, hATy⟩
+              | inr hxu =>
+                  let t : PathTriple G := ⟨u, x, b, (Or.inr hxu), (Or.inr hbx), hub⟩
+                  have hNonCol : IsNonCollider G t := by
+                    intro hCol
+                    have hux' : G.edges u x := hCol.1
+                    exact G.isAcyclic_iff_no_self_reach.mp hacyclic x u hxu (G.edge_reachable hux')
+                  have hAct : IsActive G Z t :=
+                    isActive_of_nonCollider_notInZ G Z t hNonCol hxNotZ
+                  have hATb : HasActiveTrail G Z x0 b :=
+                    hasActiveTrail_extend_from_snoc
+                      (G := G) (Z := Z)
+                      (xA := x0) (u := u) (a := x) (pref := pref)
+                      hEnds0 hTrail0 (Or.inr hbx) hub (by simpa [t] using hAct)
+                  have hAXb : ActiveFromXNeY G X Z y b := ⟨x0, hx0, hx0NeY, hATb⟩
+                  have hStateB : ActiveFromXState G X Z b :=
+                    activeFromXState_of_activeFromX_notInZ G X Z
+                      (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+                  exact hStep (p' := b :: c :: rest')
+                    hTailLen
+                    hy hby hStateB hAXb
+                    (Or.inr hbNotZ)
+                    (List.cons_ne_nil _ _)
+                    hEndsTail hTailTrail hAvoidTail
+      · have hxb_ne : x ≠ b := ne_of_moral_undirected_edge G X Y Z hEdge_xb
+        by_cases hc'AncZ : c' ∈ ancestorClosure G Z
+        · have hAXb : ActiveFromXNeY G X Z y b :=
+            activeFromXNeY_of_anchor_step_spouse_activated
+              G X Z hacyclic hAX hxc' hbc' hxb_ne hxNotZ hc'AncZ
+          have hStateB : ActiveFromXState G X Z b :=
+            activeFromXState_of_activeFromX_notInZ G X Z
+              (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+          exact hStep (p' := b :: c :: rest')
+            hTailLen
+            hy hby hStateB hAXb
+            (Or.inr hbNotZ)
+            (List.cons_ne_nil _ _)
+            hEndsTail hTailTrail hAvoidTail
+        · rcases relevant_not_ancZ_reaches_XY G X Y Z hc'Rel hc'AncZ with
+            hc'XY | ⟨w, hwXY, hreach, _⟩
+          ·
+            have hProcess :
+                ∀ {w : V}, (w ∈ X ∨ w ∈ Y) → G.Reachable c' w →
+                  ∃ x' ∈ X, ∃ y' ∈ Y, x' ≠ y' ∧ HasActiveTrail G Z x' y' := by
+              intro w hwXY hreachW
+              by_cases hwY : w ∈ Y
+              · by_cases hwEqY : w = y
+                · have hreachXY : G.Reachable x y := by
+                    exact G.reachable_trans (G.edge_reachable hxc') (hwEqY ▸ hreachW)
+                  exact activeWitness_of_anchor_forward_detour_to_exactY
+                    G X Y Z hacyclic hAX hxc' (hwEqY ▸ hreachW) hc'AncZ hxNotZ hy
+                · by_cases hwX : w ∈ X
+                  · have hAXb : ActiveFromXNeY G X Z y b :=
+                      activeFromXNeY_of_backward_detour_to_X_at_b
+                        G X Z hacyclic hwX hwEqY hbc' hreachW hc'AncZ
+                    have hStateB : ActiveFromXState G X Z b :=
+                      activeFromXState_of_activeFromX_notInZ G X Z
+                        (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+                    exact hStep (p' := b :: c :: rest')
+                      hTailLen
+                      hy hby hStateB hAXb
+                      (Or.inr hbNotZ)
+                      (List.cons_ne_nil _ _)
+                      hEndsTail hTailTrail hAvoidTail
+                  · exact activeWitness_of_anchor_forward_detour_to_Y
+                      G X Y Z hacyclic hAX hxc' hreachW hc'AncZ hxNotZ hwY hwX
+              · have hwX : w ∈ X := by
+                  rcases hwXY with hwX | hwY'
+                  · exact hwX
+                  · exact (hwY hwY').elim
+                have hwNeY : w ≠ y := by
+                  intro hEq
+                  apply hwY
+                  simpa [hEq] using hy
+                have hAXb : ActiveFromXNeY G X Z y b :=
+                  activeFromXNeY_of_backward_detour_to_X_at_b
+                    G X Z hacyclic hwX hwNeY hbc' hreachW hc'AncZ
+                have hStateB : ActiveFromXState G X Z b :=
+                  activeFromXState_of_activeFromX_notInZ G X Z
+                    (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+                exact hStep (p' := b :: c :: rest')
+                  hTailLen
+                  hy hby hStateB hAXb
+                  (Or.inr hbNotZ)
+                  (List.cons_ne_nil _ _)
+                  hEndsTail hTailTrail hAvoidTail
+            exact hProcess hc'XY (G.reachable_refl c')
+          ·
+            have hProcess :
+                ∀ {w : V}, (w ∈ X ∨ w ∈ Y) → G.Reachable c' w →
+                  ∃ x' ∈ X, ∃ y' ∈ Y, x' ≠ y' ∧ HasActiveTrail G Z x' y' := by
+              intro w hwXY hreachW
+              by_cases hwY : w ∈ Y
+              · by_cases hwEqY : w = y
+                · have hreachXY : G.Reachable x y := by
+                    exact G.reachable_trans (G.edge_reachable hxc') (hwEqY ▸ hreachW)
+                  exact activeWitness_of_anchor_forward_detour_to_exactY
+                    G X Y Z hacyclic hAX hxc' (hwEqY ▸ hreachW) hc'AncZ hxNotZ hy
+                · by_cases hwX : w ∈ X
+                  · have hAXb : ActiveFromXNeY G X Z y b :=
+                      activeFromXNeY_of_backward_detour_to_X_at_b
+                        G X Z hacyclic hwX hwEqY hbc' hreachW hc'AncZ
+                    have hStateB : ActiveFromXState G X Z b :=
+                      activeFromXState_of_activeFromX_notInZ G X Z
+                        (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+                    exact hStep (p' := b :: c :: rest')
+                      hTailLen
+                      hy hby hStateB hAXb
+                      (Or.inr hbNotZ)
+                      (List.cons_ne_nil _ _)
+                      hEndsTail hTailTrail hAvoidTail
+                  · exact activeWitness_of_anchor_forward_detour_to_Y
+                      G X Y Z hacyclic hAX hxc' hreachW hc'AncZ hxNotZ hwY hwX
+              · have hwX : w ∈ X := by
+                  rcases hwXY with hwX | hwY'
+                  · exact hwX
+                  · exact (hwY hwY').elim
+                have hwNeY : w ≠ y := by
+                  intro hEq
+                  apply hwY
+                  simpa [hEq] using hy
+                have hAXb : ActiveFromXNeY G X Z y b :=
+                  activeFromXNeY_of_backward_detour_to_X_at_b
+                    G X Z hacyclic hwX hwNeY hbc' hreachW hc'AncZ
+                have hStateB : ActiveFromXState G X Z b :=
+                  activeFromXState_of_activeFromX_notInZ G X Z
+                    (activeFromX_of_activeFromXNeY G X Z hAXb) hbNotZ
+                exact hStep (p' := b :: c :: rest')
+                  hTailLen
+                  hy hby hStateB hAXb
+                  (Or.inr hbNotZ)
+                  (List.cons_ne_nil _ _)
+                  hEndsTail hTailTrail hAvoidTail
+            exact hProcess hwXY hreach
+  | [], hpne', _ =>
+    exact (hpne' rfl).elim
 
 /-- If there is a moral-ancestral trail from x∈X to y∈Y avoiding Z,
     then there is an active trail between some pair in X×Y.
     This is the key lemma for Phase 2 (hMoralToAT direction).
 
-    **WARNING (for future LLMs):** This theorem is mid-refactor to Route A.
-    The auxiliary recursion now threads `ActiveFromXState`, but the endpoint
-    extension lemmas are still incomplete (`activeFromXState_step_direct`,
-    `activeFromXState_step_spouse_activated`). Until those are proved, there
-    remain both recursion-shape and branch-case `sorry` obligations. -/
+    Route A status: completed with state-first recursion on `ActiveFromXState`
+    and anchored witness threading via `ActiveFromXNeY`. -/
 theorem not_dsepFull_of_moralTrail
     (G : DirectedGraph V) (X Y Z : Set V)
-    (hacyclic : G.IsAcyclic) (hirr : ∀ v, ¬G.edges v v)
+    (hacyclic : G.IsAcyclic) (_hirr : ∀ v, ¬G.edges v v)
     {x y : V} (hx : x ∈ X) (hy : y ∈ Y) (hxy : x ≠ y)
     {p : List V} (hpne : p ≠ [])
     (hEnds : PathEndpoints p = some (x, y))
@@ -1110,253 +2411,320 @@ theorem not_dsepFull_of_moralTrail
     (hAvoid : PathAvoidsInternals Z p) :
     ¬DSeparatedFull G X Y Z := by
   -- Strong induction on trail length
-  suffices aux : ∀ (n : ℕ) {x y : V} {p : List V},
+  suffices auxState : ∀ (n : ℕ) {x y : V} {p : List V},
       p.length ≤ n →
       y ∈ Y → x ≠ y →
       ActiveFromXState G X Z x →
+      ActiveFromXNeY G X Z y x →
+      (x ∈ X ∨ x ∉ Z) →
       p ≠ [] →
       PathEndpoints p = some (x, y) →
       IsTrail (moralAncestralGraph G X Y Z) p →
       PathAvoidsInternals Z p →
       ∃ x' ∈ X, ∃ y' ∈ Y, x' ≠ y' ∧ HasActiveTrail G Z x' y' from by
-    rcases aux p.length (le_refl _) hy hxy
-      (activeFromXState_of_memX G X Z hx) hpne hEnds hTrail hAvoid with
+    rcases auxState p.length (le_refl _) hy hxy
+      (activeFromXState_of_memX G X Z hx)
+      (activeFromXNeY_of_memX G X Z hx hxy)
+      (Or.inl hx) hpne hEnds hTrail hAvoid with
       ⟨x', hx', y', hy', hxy', hAT'⟩
     intro hDSep
     exact hDSep x' hx' y' hy' hxy' hAT'
   intro n
   induction n with
-  | zero => intro hlen _ _ _ hpne; simp_all
+  | zero => intro hlen _ _ _ _ hpne; simp_all
   | succ n ih =>
-    intro x y p hlen hy hxy hState hpne hEnds hTrail hAvoid
-    -- Temporary bridge while migrating all branch closures to pure Route-A state.
-    -- This will be removed once endpoint-extension lemmas eliminate all direct `x ∈ X` uses.
-    have hx : x ∈ X := by
-      sorry
-    match p, hpne, hTrail with
-    | [a], _, _ =>
-      simp [PathEndpoints] at hEnds
-      obtain ⟨rfl, rfl⟩ := hEnds
-      exact absurd rfl hxy
-    | [a, b], _, hT =>
-      simp [PathEndpoints] at hEnds
-      obtain ⟨rfl, rfl⟩ := hEnds
-      have hEdge_ab : UndirectedEdge (moralAncestralGraph G X Y Z) a b := by
-        cases hT with | cons hE _ => exact hE
-      exact activeWitness_of_not_dsepFull G X Y Z
-        (base_case_single_edge G X Y Z hacyclic hx hy hxy hEdge_ab)
-    | a :: b :: c :: rest', _, hT =>
-      -- Extract a = x from PathEndpoints
-      have hEP := pathEndpoints_cons_cons_cons (hEnds := hEnds)
-      have ha : a = x := hEP.1
-      have hEnds' : PathEndpoints (x :: b :: c :: rest') = some (x, y) := by
-        simpa [ha] using hEnds
-      have hTrail' : IsTrail (moralAncestralGraph G X Y Z) (x :: b :: c :: rest') := by
-        simpa [ha] using hT
-      have hAvoid' : PathAvoidsInternals Z (x :: b :: c :: rest') := by
-        simpa [ha] using hAvoid
-      rcases tail_context_of_three_plus G X Y Z (hEnds := hEnds') (hTrail := hTrail')
-          (hAvoid := hAvoid') with
-        ⟨hEdge_xb, hTailTrail, hAvoidTail, hbNotZ, hEndsTail⟩
-      -- Tail is shorter
-      have hTailLen : (b :: c :: rest').length ≤ n := by
-        simp [List.length] at hlen ⊢; omega
-      -- Case split on b
-      by_cases hbY : b ∈ Y
-      · -- b ∈ Y: base case on first edge x—b
-        have hxb_ne : x ≠ b := ne_of_moral_undirected_edge G X Y Z hEdge_xb
+    intro x y p hlen hy hxy hState hAX hHeadSafe hpne hEnds hTrail hAvoid
+    by_cases hx : x ∈ X
+    · match p, hpne, hTrail with
+      | [a], _, _ =>
+        simp [PathEndpoints] at hEnds
+        obtain ⟨rfl, rfl⟩ := hEnds
+        exact absurd rfl hxy
+      | [a, b], _, hT =>
+        simp [PathEndpoints] at hEnds
+        obtain ⟨rfl, rfl⟩ := hEnds
+        have hEdge_ab : UndirectedEdge (moralAncestralGraph G X Y Z) a b := by
+          cases hT with | cons hE _ => exact hE
         exact activeWitness_of_not_dsepFull G X Y Z
-          (base_case_single_edge G X Y Z hacyclic hx hbY hxb_ne hEdge_xb)
-      · by_cases hbX : b ∈ X
-        · -- b ∈ X: recurse on shorter tail trail
-          have hby : b ≠ y := fun h => hbY (h ▸ hy)
-          exact ih hTailLen hy hby
-            (activeFromXState_of_memX G X Z hbX)
-            (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
-        · -- b ∉ X ∪ Y: use b's reachability
-          -- Extract b ∈ relevantVertices from the moral edge
-          have hbRel : b ∈ relevantVertices G X Y Z :=
-            right_relevant_of_moral_edge G X Y Z hEdge_xb
-          -- Main approach: check if b ∉ Anc(Z), then b reaches X∪Y
-          by_cases hbAncZ : b ∈ ancestorClosure G Z
-          · -- b ∈ Anc(Z) \ Z: complex case
-              -- Decompose first edge to look for spouse reaching Y
-              rcases moralAncestralEdge_decompose G X Y Z hEdge_xb with
-                ⟨hDirect, _, _⟩ | ⟨c', hxc', hbc', hc'Rel, _, _⟩
-              · have hStateB : ActiveFromXState G X Z b :=
-                  activeFromXState_step_direct G X Z hState hDirect
-                    (headPassability_of_ancZ G Z hbAncZ)
-                -- Route-A target: recurse on tail from `b` using this state witness.
-                -- This branch remains blocked only by the current IH shape (`b ∈ X` requirement).
-                sorry -- Direct edge with b ∈ Anc(Z)
-              · by_cases hc'AncZ : c' ∈ ancestorClosure G Z
-                · have hxb_ne : x ≠ b :=
-                    ne_of_moral_undirected_edge G X Y Z hEdge_xb
-                  have hStateB : ActiveFromXState G X Z b :=
-                    activeFromXState_step_spouse_activated
-                      G X Z hState hxb_ne hxc' hbc' hc'AncZ
+          (base_case_single_edge G X Y Z hacyclic hx hy hxy hEdge_ab)
+      | a :: b :: c :: rest', _, hT =>
+        -- Extract a = x from PathEndpoints
+        have hEP := pathEndpoints_cons_cons_cons (hEnds := hEnds)
+        have ha : a = x := hEP.1
+        have hEnds' : PathEndpoints (x :: b :: c :: rest') = some (x, y) := by
+          simpa [ha] using hEnds
+        have hTrail' : IsTrail (moralAncestralGraph G X Y Z) (x :: b :: c :: rest') := by
+          simpa [ha] using hT
+        have hAvoid' : PathAvoidsInternals Z (x :: b :: c :: rest') := by
+          simpa [ha] using hAvoid
+        rcases tail_context_of_three_plus G X Y Z (hEnds := hEnds') (hTrail := hTrail')
+            (hAvoid := hAvoid') with
+          ⟨hEdge_xb, hTailTrail, hAvoidTail, hbNotZ, hEndsTail⟩
+        -- Tail is shorter
+        have hTailLen : (b :: c :: rest').length ≤ n := by
+          simp [List.length] at hlen ⊢; omega
+        -- Case split on b
+        by_cases hbY : b ∈ Y
+        · -- b ∈ Y: base case on first edge x—b
+          have hxb_ne : x ≠ b := ne_of_moral_undirected_edge G X Y Z hEdge_xb
+          exact activeWitness_of_not_dsepFull G X Y Z
+            (base_case_single_edge G X Y Z hacyclic hx hbY hxb_ne hEdge_xb)
+        · by_cases hbX : b ∈ X
+          · -- b ∈ X: recurse on shorter tail trail
+            have hby : b ≠ y := fun h => hbY (h ▸ hy)
+            have hAXb : ActiveFromXNeY G X Z y b :=
+              activeFromXNeY_of_memX G X Z hbX hby
+            exact ih hTailLen hy hby
+              (activeFromXState_of_memX G X Z hbX) hAXb
+              (Or.inl hbX)
+              (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
+          · -- b ∉ X ∪ Y: use b's reachability
+            -- Extract b ∈ relevantVertices from the moral edge
+            have hbRel : b ∈ relevantVertices G X Y Z :=
+              right_relevant_of_moral_edge G X Y Z hEdge_xb
+            -- Main approach: check if b ∉ Anc(Z), then b reaches X∪Y
+            by_cases hbAncZ : b ∈ ancestorClosure G Z
+            · -- b ∈ Anc(Z) \ Z: complex case
+                -- Decompose first edge to look for spouse reaching Y
+                rcases moralAncestralEdge_decompose G X Y Z hEdge_xb with
+                  ⟨hDirect, _, _⟩ | ⟨c', hxc', hbc', hc'Rel, _, _⟩
+                · have hStateB : ActiveFromXState G X Z b :=
+                    activeFromXState_step_direct G X Z hState hx hDirect
                       (headPassability_of_ancZ G Z hbAncZ)
-                  -- Route-A target: recurse on tail from `b` with collider-activated spouse step.
-                  sorry -- Both c' and b in Anc(Z)
-                · -- c' ∉ Anc(Z): c' reaches X∪Y
-                  rcases relevant_not_ancZ_reaches_XY G X Y Z hc'Rel hc'AncZ with
-                    hc'XY | ⟨w, hwXY, hreach, _⟩
-                  · rcases hc'XY with hc'X | hc'Y
-                    · by_cases hc'Y' : c' ∈ Y
-                      · -- Overlap case: c' ∈ X ∩ Y, use the direct edge [x, c'].
+                  have hby : b ≠ y := fun h => hbY (h ▸ hy)
+                  have hAXb : ActiveFromXNeY G X Z y b :=
+                    activeFromXNeY_direct_transition G X Z (y := y) hx hxy hDirect
+                  exact ih hTailLen hy hby hStateB hAXb
+                    (Or.inr hbNotZ)
+                    (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
+                · by_cases hc'AncZ : c' ∈ ancestorClosure G Z
+                  · have hxb_ne : x ≠ b :=
+                      ne_of_moral_undirected_edge G X Y Z hEdge_xb
+                    have hStateB : ActiveFromXState G X Z b :=
+                      activeFromXState_step_spouse_activated
+                        G X Z hState hx hxb_ne hxc' hbc' hc'AncZ
+                        (headPassability_of_ancZ G Z hbAncZ)
+                    have hby : b ≠ y := fun h => hbY (h ▸ hy)
+                    have hAXb : ActiveFromXNeY G X Z y b :=
+                      activeFromXNeY_spouse_activated_transition
+                        G X Z (y := y) hx hxy hxb_ne hxc' hbc' hc'AncZ
+                    exact ih hTailLen hy hby hStateB hAXb
+                      (Or.inr hbNotZ)
+                      (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
+                  · -- c' ∉ Anc(Z): c' reaches X∪Y
+                    rcases relevant_not_ancZ_reaches_XY G X Y Z hc'Rel hc'AncZ with
+                      hc'XY | ⟨w, hwXY, hreach, _⟩
+                    · rcases hc'XY with hc'X | hc'Y
+                      · by_cases hc'Y' : c' ∈ Y
+                        · -- Overlap case: c' ∈ X ∩ Y, use the direct edge [x, c'].
+                          have hxc'_ne : x ≠ c' := fun h => by
+                            subst h
+                            exact G.isAcyclic_irrefl hacyclic x hxc'
+                          exact ⟨x, hx, c', hc'Y', hxc'_ne,
+                            ⟨[x, c'], by simp, by simp [PathEndpoints], ActiveTrail.two (Or.inl hxc')⟩⟩
+                        · by_cases hxY' : x ∈ Y
+                          · -- Use backward-detour witness with y = x and c = c'.
+                            exact activeWitness_of_backward_detour_to_X
+                              G X Y Z hacyclic hc'X hxY' hxc' (G.reachable_refl c') hc'AncZ
+                          · have hStateB : ActiveFromXState G X Z b :=
+                              activeFromXState_backward_detour_ancZ
+                                G X Z hacyclic hc'X hbc' (G.reachable_refl c') hc'AncZ hbAncZ
+                            have hby : b ≠ y := fun h => hbY (h ▸ hy)
+                            have hc'ne : c' ≠ y := by
+                              intro h
+                              apply hc'Y'
+                              simpa [h] using hy
+                            have hAXb : ActiveFromXNeY G X Z y b :=
+                              activeFromXNeY_of_backward_detour_to_X_at_b
+                                G X Z hacyclic hc'X hc'ne hbc' (G.reachable_refl c') hc'AncZ
+                            exact ih hTailLen hy hby hStateB hAXb
+                              (Or.inr hbNotZ)
+                              (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
+                      · -- c' ∈ Y: trail [x, c']
                         have hxc'_ne : x ≠ c' := fun h => by
                           subst h
                           exact G.isAcyclic_irrefl hacyclic x hxc'
-                        exact ⟨x, hx, c', hc'Y', hxc'_ne,
-                          ⟨[x, c'], by simp, by simp [PathEndpoints], ActiveTrail.two (Or.inl hxc')⟩⟩
-                      · by_cases hxY' : x ∈ Y
-                        · -- Use backward-detour witness with y = x and c = c'.
-                          exact activeWitness_of_backward_detour_to_X
-                              G X Y Z hacyclic hc'X hxY' hxc' (G.reachable_refl c') hc'AncZ
-                        · have hStateB : ActiveFromXState G X Z b :=
-                            activeFromXState_backward_detour_ancZ
-                              G X Z hacyclic hc'X hbc' (G.reachable_refl c') hc'AncZ hbAncZ
-                          -- Route-A target: continue on tail from `b`; this is now a pure IH-shape gap.
-                          sorry -- c' ∈ X \ Y and x ∉ Y
-                    · -- c' ∈ Y: trail [x, c']
-                      have hxc'_ne : x ≠ c' := fun h => by
-                        subst h
-                        exact G.isAcyclic_irrefl hacyclic x hxc'
-                      exact activeWitness_of_not_dsepFull G X Y Z (by
-                        intro hDSep
-                        exact absurd_dsep_of_activeTrail G X Y Z hx hc'Y hxc'_ne
-                          (by simp) (by simp [PathEndpoints]) (ActiveTrail.two (Or.inl hxc'))
-                          hDSep)
-                  · rcases hwXY with hwX | hwY
-                    · by_cases hwY' : w ∈ Y
-                      · exact activeWitness_of_forward_detour_to_Y
-                          G X Y Z hacyclic hx hwY' hxc' hreach hc'AncZ
-                      · by_cases hxY' : x ∈ Y
-                        · -- Use backward-detour witness with y = x.
-                          exact activeWitness_of_backward_detour_to_X
-                              G X Y Z hacyclic hwX hxY' hxc' hreach hc'AncZ
-                        · have hStateB : ActiveFromXState G X Z b :=
-                            activeFromXState_backward_detour_ancZ
-                              G X Z hacyclic hwX hbc' hreach hc'AncZ hbAncZ
-                          -- Route-A target: continue on tail from `b`; this is now a pure IH-shape gap.
-                          sorry -- c' reaches w ∈ X \ Y and x ∉ Y
-                    · exact activeWitness_of_forward_detour_to_Y
-                        G X Y Z hacyclic hx hwY hxc' hreach hc'AncZ
-          · -- b ∉ Anc(Z): b reaches w ∈ X∪Y
-            rcases relevant_not_ancZ_reaches_XY G X Y Z hbRel hbAncZ with
-              hbXY | ⟨w, hwXY, hreachBW, hbw⟩
-            · -- b ∈ X∪Y: contradiction
-              rcases hbXY with hbXX | hbYY
-              · exact absurd hbXX hbX
-              · exact absurd hbYY hbY
-            · rcases hwXY with hwX | hwY
-              · have hStateB : ActiveFromXState G X Z b :=
-                  activeFromXState_backward_reach_notInZ
-                    G X Z hacyclic hwX hreachBW hbAncZ hbNotZ
-                -- Route-A target: recurse on tail from `b` with state produced from backward reachability.
-                sorry -- b reaches w ∈ X only (hard case)
-              · -- b reaches w ∈ Y
-                -- Decompose first edge to prepend x.
-                rcases moralAncestralEdge_decompose G X Y Z hEdge_xb with
-                  ⟨hDirect, _, _⟩ | ⟨c', hxc', hbc', hc'Rel, _, _⟩
-                · -- Direct edge x—b: build [x, b, ..., w∈Y]
-                  rcases hDirect with hxb_edge | hbx_edge
-                  · exact activeWitness_of_forward_detour_to_Y
-                      G X Y Z hacyclic hx hwY hxb_edge hreachBW hbAncZ
-                  ·
-                    -- Remaining orientation: b → x. Use the directed chain from b to w.
-                    rcases reachable_chain_avoidZ_of_not_ancZ G Z hreachBW hbAncZ with
-                      ⟨q, hqne, hqHead, hqLast, hqChain, hbNotZ_chain⟩
-                    match q, hqne, hqHead with
-                    | b' :: qrest, _, hqH =>
-                      have hbb' : b' = b := by simpa using hqH
-                      have hFwd : IsDirectedChain G (b' :: qrest) := hqChain
-                      -- x ≠ b from moral edge (moralUndirectedEdge has u ≠ v)
-                      have hxb_ne : x ≠ b := by
-                        exact ne_of_moral_undirected_edge G X Y Z hEdge_xb
-                      have hxb'_ne : x ≠ b' := by rw [hbb']; exact hxb_ne
-                      match qrest with
-                      | [] =>
-                        -- q = [b'], w = b'. Trail [x, b'] from x∈X to b'=w∈Y.
-                        have hbw' : b' = w := by simp [List.getLast?] at hqLast; exact hqLast
-                        rw [← hbw'] at hwY
                         exact activeWitness_of_not_dsepFull G X Y Z (by
                           intro hDSep
-                          exact absurd_dsep_of_activeTrail G X Y Z hx hwY hxb'_ne
-                            (by simp) (by simp [PathEndpoints])
-                            (ActiveTrail.two (Or.inr (hbb' ▸ hbx_edge))) hDSep)
-                      | d :: qrest' =>
-                        -- Chain: b' → d → ... → w ∈ Y, with b' → x from hbx_edge.
-                        have hbd : G.edges b' d := hFwd.1
-                        have hAvoidQ : PathAvoidsInternals Z (b' :: d :: qrest') :=
-                          pathAvoidsInternals_of_all_notInZ Z hbNotZ_chain
-                        -- Case B: G.edges b x → b→x and b→d, both outgoing from b
-                        by_cases hxd : x = d
-                        · -- x = d: use sub-chain from x onwards (skip b)
-                          subst hxd
-                          -- Sub-chain: x :: qrest' (tail of b' :: x :: qrest')
-                          have hSubChain : IsDirectedChain G (x :: qrest') := hFwd.2
-                          have hSubNotZ : ∀ u ∈ x :: qrest', u ∉ Z := fun u hu =>
-                            hbNotZ_chain u (List.mem_cons_of_mem b' hu)
-                          match qrest' with
-                          | [] =>
-                            -- Chain [b', x], so w = x. Edge case: x = w ∈ Y, x ∈ X.
-                            sorry -- x = d, qrest' = [], w = x edge case
-                          | e :: rest =>
-                            -- Sub-chain x → e → ... → w, build active trail
-                            have hSC : IsDirectedChain G (x :: e :: rest) := hSubChain
-                            have hSubAvoid : PathAvoidsInternals Z (x :: e :: rest) :=
-                              pathAvoidsInternals_of_all_notInZ Z hSubNotZ
-                            have hSubAT : ActiveTrail G Z (x :: e :: rest) :=
-                              directedChain_activeTrail G Z hacyclic hSC hSubAvoid (by simp)
-                            have hLast : (e :: rest).getLast? = some w := by
-                              simp [List.getLast?] at hqLast ⊢; exact hqLast
-                            have hw_mem : w ∈ e :: rest := by
-                              have hmem : w ∈ (e :: rest).getLast? := hLast
-                              rcases List.mem_getLast?_eq_getLast hmem with ⟨hne, heq⟩
-                              exact heq ▸ List.getLast_mem _
-                            have hxw_ne : x ≠ w := by
-                              intro heq; subst heq
-                              exact G.isAcyclic_iff_no_self_reach.mp hacyclic x e hSC.1
-                                (directedChain_reachable_from_head G hSC.2 x hw_mem)
-                            have hPE : PathEndpoints (x :: e :: rest) = some (x, w) := by
-                              exact pathEndpoints_cons_eq_of_getLast hLast
-                            exact activeWitness_of_not_dsepFull G X Y Z (by
-                              intro hDSep
-                              exact absurd_dsep_of_activeTrail G X Y Z hx hwY hxw_ne
-                                (by simp) hPE hSubAT hDSep)
-                        · -- x ≠ d: triple (x, b', d) with b→x, b→d (non-collider)
-                          have hub : UndirectedEdge G x b' :=
-                            Or.inr (by rw [hbb']; exact hbx_edge)
-                          have hbcU : UndirectedEdge G b' d := Or.inl hbd
-                          have hNonCol : IsNonCollider G ⟨x, b', d, hub, hbcU, hxd⟩ := by
-                            unfold IsNonCollider IsCollider; intro ⟨_, hdb'⟩
-                            exact G.isAcyclic_no_two_cycle hacyclic b' d hbd hdb'
-                          have hAct : IsActive G Z ⟨x, b', d, hub, hbcU, hxd⟩ := by
-                            unfold IsActive IsBlocked; push_neg
-                            exact ⟨fun _ => hbb' ▸ hbNotZ, fun h => absurd h hNonCol⟩
-                          have hTailAT : ActiveTrail G Z (b' :: d :: qrest') :=
-                            directedChain_activeTrail G Z hacyclic hFwd hAvoidQ (by simp)
-                          have hFullAT : ActiveTrail G Z (x :: b' :: d :: qrest') :=
-                            ActiveTrail.cons hub hbcU hxd hAct hTailAT
-                          by_cases hxw : x = w
-                          · -- x = w ∈ Y: split on qrest' to normalize endpoint constraints.
-                            cases qrest' with
-                            | nil =>
-                              have hwd : d = w := by
-                                simp [List.getLast?] at hqLast
-                                exact hqLast
-                              exact False.elim (hxd (hxw.trans hwd.symm))
-                            | cons e rest =>
-                              sorry -- x = w with G.edges b x, x ≠ d, qrest' = e :: rest
-                          · have hPE : PathEndpoints (x :: b' :: d :: qrest') = some (x, w) := by
-                              exact pathEndpoints_cons_eq_of_getLast hqLast
-                            exact activeWitness_of_not_dsepFull G X Y Z (by
-                              intro hDSep
-                              exact absurd_dsep_of_activeTrail G X Y Z hx hwY hxw
-                                (by simp) hPE hFullAT hDSep)
-                · -- Spouse edge: x→c' and b→c'. Try [x, c', b, ..., w∈Y]
-                  sorry -- Spouse edge with b reaching Y (needs collider analysis at c')
+                          exact absurd_dsep_of_activeTrail G X Y Z hx hc'Y hxc'_ne
+                            (by simp) (by simp [PathEndpoints]) (ActiveTrail.two (Or.inl hxc'))
+                            hDSep)
+                    · rcases hwXY with hwX | hwY
+                      · by_cases hwY' : w ∈ Y
+                        · exact activeWitness_of_forward_detour_to_Y
+                            G X Y Z hacyclic hx hwY' hxc' hreach hc'AncZ
+                        · by_cases hxY' : x ∈ Y
+                          · -- Use backward-detour witness with y = x.
+                            exact activeWitness_of_backward_detour_to_X
+                              G X Y Z hacyclic hwX hxY' hxc' hreach hc'AncZ
+                          · have hStateB : ActiveFromXState G X Z b :=
+                              activeFromXState_backward_detour_ancZ
+                                G X Z hacyclic hwX hbc' hreach hc'AncZ hbAncZ
+                            have hby : b ≠ y := fun h => hbY (h ▸ hy)
+                            have hwNe : w ≠ y := by
+                              intro h
+                              apply hwY'
+                              simpa [h] using hy
+                            have hAXb : ActiveFromXNeY G X Z y b :=
+                              activeFromXNeY_of_backward_detour_to_X_at_b
+                                G X Z hacyclic hwX hwNe hbc' hreach hc'AncZ
+                            exact ih hTailLen hy hby hStateB hAXb
+                              (Or.inr hbNotZ)
+                              (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
+                      · exact activeWitness_of_forward_detour_to_Y
+                          G X Y Z hacyclic hx hwY hxc' hreach hc'AncZ
+            · -- b ∉ Anc(Z): b reaches w ∈ X∪Y
+              rcases relevant_not_ancZ_reaches_XY G X Y Z hbRel hbAncZ with
+                hbXY | ⟨w, hwXY, hreachBW, hbw⟩
+              · -- b ∈ X∪Y: contradiction
+                rcases hbXY with hbXX | hbYY
+                · exact absurd hbXX hbX
+                · exact absurd hbYY hbY
+              ·
+                have hReachY : w ∈ Y → ∃ x' ∈ X, ∃ y' ∈ Y, x' ≠ y' ∧ HasActiveTrail G Z x' y' := by
+                  intro hwY
+                  -- b reaches w ∈ Y
+                  -- Decompose first edge to prepend x.
+                  rcases moralAncestralEdge_decompose G X Y Z hEdge_xb with
+                    ⟨hDirect, _, _⟩ | ⟨c', hxc', hbc', hc'Rel, _, _⟩
+                  · -- Direct edge x—b: build [x, b, ..., w∈Y]
+                    rcases hDirect with hxb_edge | hbx_edge
+                    · exact activeWitness_of_forward_detour_to_Y
+                        G X Y Z hacyclic hx hwY hxb_edge hreachBW hbAncZ
+                    ·
+                      -- Recurse from `b` directly; this avoids orientation-specific subcases.
+                      have hStateB : ActiveFromXState G X Z b :=
+                        activeFromXState_step_direct
+                          G X Z hState hx (Or.inr hbx_edge)
+                          (headPassability_of_notInZ G Z hbNotZ)
+                      have hby : b ≠ y := fun h => hbY (h ▸ hy)
+                      have hAXb : ActiveFromXNeY G X Z y b :=
+                        activeFromXNeY_direct_transition G X Z (y := y) hx hxy (Or.inr hbx_edge)
+                      exact ih hTailLen hy hby hStateB hAXb
+                        (Or.inr hbNotZ)
+                        (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
+                  · -- Spouse edge: x→c' and b→c'. Try [x, c', b, ..., w∈Y]
+                    by_cases hc'AncZ : c' ∈ ancestorClosure G Z
+                    · have hxb_ne : x ≠ b :=
+                        ne_of_moral_undirected_edge G X Y Z hEdge_xb
+                      have hStateB : ActiveFromXState G X Z b :=
+                        activeFromXState_step_spouse_activated
+                          G X Z hState hx hxb_ne hxc' hbc' hc'AncZ
+                          (headPassability_of_notInZ G Z hbNotZ)
+                      have hby : b ≠ y := fun h => hbY (h ▸ hy)
+                      have hAXb : ActiveFromXNeY G X Z y b :=
+                        activeFromXNeY_spouse_activated_transition
+                          G X Z (y := y) hx hxy hxb_ne hxc' hbc' hc'AncZ
+                      exact ih hTailLen hy hby hStateB hAXb
+                        (Or.inr hbNotZ)
+                        (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
+                    · rcases relevant_not_ancZ_reaches_XY G X Y Z hc'Rel hc'AncZ with
+                        hc'XY | ⟨u, huXY, hreachCU, _⟩
+                      · rcases hc'XY with hc'X | hc'Y
+                        · by_cases hc'Y' : c' ∈ Y
+                          · have hxc'_ne : x ≠ c' := fun h => by
+                              subst h
+                              exact G.isAcyclic_irrefl hacyclic x hxc'
+                            exact ⟨x, hx, c', hc'Y', hxc'_ne,
+                              ⟨[x, c'], by simp, by simp [PathEndpoints], ActiveTrail.two (Or.inl hxc')⟩⟩
+                          · by_cases hxY' : x ∈ Y
+                            · exact activeWitness_of_backward_detour_to_X
+                                G X Y Z hacyclic hc'X hxY' hxc' (G.reachable_refl c') hc'AncZ
+                            · have hStateB : ActiveFromXState G X Z b :=
+                                activeFromXState_backward_detour_notInZ
+                                  G X Z hacyclic hc'X hbc' (G.reachable_refl c') hc'AncZ hbNotZ
+                              have hby : b ≠ y := fun h => hbY (h ▸ hy)
+                              have hc'ne : c' ≠ y := by
+                                intro h
+                                apply hc'Y'
+                                simpa [h] using hy
+                              have hAXb : ActiveFromXNeY G X Z y b :=
+                                activeFromXNeY_of_backward_detour_to_X_at_b
+                                  G X Z hacyclic hc'X hc'ne hbc' (G.reachable_refl c') hc'AncZ
+                              exact ih hTailLen hy hby hStateB hAXb
+                                (Or.inr hbNotZ)
+                                (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
+                        · have hxc'_ne : x ≠ c' := fun h => by
+                            subst h
+                            exact G.isAcyclic_irrefl hacyclic x hxc'
+                          exact activeWitness_of_not_dsepFull G X Y Z (by
+                            intro hDSep
+                            exact absurd_dsep_of_activeTrail G X Y Z hx hc'Y hxc'_ne
+                              (by simp) (by simp [PathEndpoints]) (ActiveTrail.two (Or.inl hxc'))
+                              hDSep)
+                      · rcases huXY with huX | huY
+                        · by_cases huY' : u ∈ Y
+                          · exact activeWitness_of_forward_detour_to_Y
+                              G X Y Z hacyclic hx huY' hxc' hreachCU hc'AncZ
+                          · by_cases hxY' : x ∈ Y
+                            · exact activeWitness_of_backward_detour_to_X
+                                G X Y Z hacyclic huX hxY' hxc' hreachCU hc'AncZ
+                            · have hStateB : ActiveFromXState G X Z b :=
+                                activeFromXState_backward_detour_notInZ
+                                  G X Z hacyclic huX hbc' hreachCU hc'AncZ hbNotZ
+                              have hby : b ≠ y := fun h => hbY (h ▸ hy)
+                              have huNe : u ≠ y := by
+                                intro h
+                                apply huY'
+                                simpa [h] using hy
+                              have hAXb : ActiveFromXNeY G X Z y b :=
+                                activeFromXNeY_of_backward_detour_to_X_at_b
+                                  G X Z hacyclic huX huNe hbc' hreachCU hc'AncZ
+                              exact ih hTailLen hy hby hStateB hAXb
+                                (Or.inr hbNotZ)
+                                (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
+                        · exact activeWitness_of_forward_detour_to_Y
+                            G X Y Z hacyclic hx huY hxc' hreachCU hc'AncZ
+                rcases hwXY with hwX | hwY
+                · by_cases hwY' : w ∈ Y
+                  · exact hReachY hwY'
+                  · have hStateB : ActiveFromXState G X Z b :=
+                      activeFromXState_backward_reach_notInZ
+                        G X Z hacyclic hwX hreachBW hbAncZ hbNotZ
+                    have hby : b ≠ y := fun h => hbY (h ▸ hy)
+                    have hwNe : w ≠ y := by
+                      intro h
+                      apply hwY'
+                      simpa [h] using hy
+                    have hAXb : ActiveFromXNeY G X Z y b :=
+                      activeFromXNeY_of_backward_reach_to_X_at_head
+                        G X Z hacyclic hwX hwNe hreachBW hbAncZ
+                    exact ih hTailLen hy hby hStateB hAXb
+                      (Or.inr hbNotZ)
+                      (List.cons_ne_nil _ _) hEndsTail hTailTrail hAvoidTail
+                · exact hReachY hwY
+    · -- Route-A fallback: if current head already lies in Y, the stored
+      -- anchor witness immediately yields an X×Y active-trail witness.
+      by_cases hxY : x ∈ Y
+      · rcases activeFromXState_anchor G X Z hState with ⟨x0, hx0, hAT0⟩
+        have hx0x_ne : x0 ≠ x := by
+          intro hEq
+          apply hx
+          simpa [hEq] using hx0
+        exact ⟨x0, hx0, x, hxY, hx0x_ne, hAT0⟩
+      · -- Remaining hard state-only branch: x ∉ X ∪ Y.
+        have hxNotZ : x ∉ Z := by
+          rcases hHeadSafe with hxX | hxNZ
+          · exact (hx hxX).elim
+          · exact hxNZ
+        have hStep :
+            ∀ {x' y' : V} {p' : List V},
+              p'.length < p.length →
+              y' ∈ Y → x' ≠ y' →
+              ActiveFromXState G X Z x' →
+              ActiveFromXNeY G X Z y' x' →
+              (x' ∈ X ∨ x' ∉ Z) →
+              p' ≠ [] →
+              PathEndpoints p' = some (x', y') →
+              IsTrail (moralAncestralGraph G X Y Z) p' →
+              PathAvoidsInternals Z p' →
+              ∃ x'' ∈ X, ∃ y'' ∈ Y, x'' ≠ y'' ∧ HasActiveTrail G Z x'' y'' := by
+          intro x' y' p' hp'lt hy' hxy' hState' hAX' hHeadSafe' hp'ne hEnds' hTrail' hAvoid'
+          have hlen' : p'.length ≤ n := by
+            omega
+          exact ih hlen' hy' hxy' hState' hAX' hHeadSafe' hp'ne hEnds' hTrail' hAvoid'
+        exact activeWitness_of_state_fallback
+          G X Y Z hacyclic hy hxy hState hAX hx hxY hxNotZ hpne hEnds hTrail hAvoid hStep
 
 /-- Route A interface: from one moral-ancestral trail witness, extract an explicit
 active-trail witness in `X × Y`. This is the endpoint-flexible form used by the
