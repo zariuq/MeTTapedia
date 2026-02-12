@@ -562,6 +562,31 @@ lemma hasExcursionResidualBoundRate_of_biapproxCore
         (hN := hN) (s := s) (hs := hs) (hcore := hcore hN s hs)
     simpa [C] using hbound
 
+
+lemma hasExcursionResidualBoundRate_of_biapproxCore_via_robust
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (hcore : HasExcursionBiapproxCore (k := k) hk n e) :
+    HasExcursionResidualBoundRate (k := k) hk n e
+      (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) := by
+  have hWOR :
+      HasCanonicalWORTransportRate (k := k) hk n e 0
+        (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) := by
+    have hWORraw :
+        HasCanonicalWORTransportRate (k := k) hk n e 0
+          (0 + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) :=
+      hasCanonicalWORTransportRate_of_biapproxCore
+        (k := k) (hk := hk) (n := n) (e := e) (Cw := 0) hcore
+    intro N hN s hs hRpos wSurrogate hWclose
+    simpa [zero_add] using hWORraw hN s hs hRpos wSurrogate hWclose
+  intro N hN s hs hRpos
+  exact
+    (hasExcursionResidualBoundRate_of_worTransportRate
+      (k := k) (hk := hk) (n := n) (e := e)
+      (Cpc := 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) hWOR)
+      hN s hs hRpos
+
+
+
 theorem hasExcursionResidualBoundRateAll_of_biapproxCoreAll
     (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
       HasExcursionBiapproxCore (k := k) hk n e) :
@@ -616,6 +641,87 @@ theorem hasExcursionResidualBoundRateAll_of_splitRatesAll_fixed
     hWR hWOR
 
 
+
+
+theorem hasExcursionResidualBoundRateAll_of_exactSurrogateWORTransportAll
+    (hWORAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        HasCanonicalWORTransportRate (k := k) hk n e 0 Cpc) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro hk n e
+  rcases hWORAll hk n e with ⟨Cpc, hCpc, hWOR⟩
+  refine ⟨Cpc, hCpc, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_worTransportRate
+      (k := k) (hk := hk) (n := n) (e := e) (Cpc := Cpc) hWOR
+
+
+theorem hasExcursionResidualBoundRateAll_of_exactSurrogateWORTransportAll_fixed
+    (hk : 0 < k)
+    (hWORAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        HasCanonicalWORTransportRate (k := k) hk n e 0 Cpc) :
+    ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro n e
+  rcases hWORAll n e with ⟨Cpc, hCpc, hWOR⟩
+  refine ⟨Cpc, hCpc, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_worTransportRate
+      (k := k) (hk := hk) (n := n) (e := e) (Cpc := Cpc) hWOR
+
+
+theorem hasCanonicalWORTransportRateAll_of_biapproxCoreAll_exact
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        HasCanonicalWORTransportRate (k := k) hk n e 0 Cpc := by
+  intro hk n e
+  have hWORraw :
+      HasCanonicalWORTransportRate (k := k) hk n e 0
+        (0 + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) :=
+    hasCanonicalWORTransportRate_of_biapproxCore
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := 0)
+      (hcore := hcoreAll hk n e)
+  refine ⟨0 + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, ?_⟩
+  exact hWORraw
+
+
+theorem hasExcursionResidualBoundRateAll_of_biapproxCoreAll_exactSurrogate
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro hk n e
+  have hWORAll := hasCanonicalWORTransportRateAll_of_biapproxCoreAll_exact
+    (k := k) hcoreAll
+  rcases hWORAll hk n e with ⟨Cpc, hCpc, hWOR⟩
+  refine ⟨Cpc, hCpc, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_worTransportRate
+      (k := k) (hk := hk) (n := n) (e := e) (Cpc := Cpc) hWOR
+
+
+theorem hasExcursionResidualBoundRateAll_of_biapproxCoreAll_exactSurrogate_fixed
+    (hk : 0 < k)
+    (hcoreAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro n e
+  have hWORraw :
+      HasCanonicalWORTransportRate (k := k) hk n e 0
+        (0 + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) :=
+    hasCanonicalWORTransportRate_of_biapproxCore
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := 0)
+      (hcore := hcoreAll n e)
+  refine ⟨0 + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_worTransportRate
+      (k := k) (hk := hk) (n := n) (e := e)
+      (Cpc := 0 + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) hWORraw
 
 theorem hasExcursionResidualBoundRateAll_of_explicitPatternSurrogateRateAll
     (halignAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,

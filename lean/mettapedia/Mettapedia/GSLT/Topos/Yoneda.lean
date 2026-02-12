@@ -39,6 +39,20 @@ open CategoryTheory.Limits
 
 universe u v w
 
+/-! ## Theorem-to-Source Map
+
+Core provenance used by this module:
+
+- `lambdaYoneda`, `yonedaEquiv`:
+  Yoneda embedding and hom-equivalence (Mac Lane–Moerdijk, Ch. I.1;
+  Mathlib `CategoryTheory.Yoneda`).
+- `lambdaYonedaFullyFaithful`, `lambdaYonedaPreservesLimits`:
+  fully faithfulness and limit preservation of Yoneda (Mathlib theorems
+  `Yoneda.fullyFaithful`, `yonedaFunctor_preservesLimits`).
+- `presheafHasLimits` / `presheafHasColimits` / finite variants:
+  presheaf topos completeness/cocompleteness backbone (Mac Lane–Moerdijk,
+  Ch. I; instantiated through Mathlib typeclass infrastructure). -/
+
 /-! ## Presheaf Category
 
 For a category C, the presheaf category Psh(C) = Cᵒᵖ ⥤ Type

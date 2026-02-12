@@ -50,6 +50,24 @@ noncomputable def scaleEvidence (w : ℝ≥0∞) (e : Evidence) : Evidence :=
 @[simp] lemma scaleEvidence_neg (w : ℝ≥0∞) (e : Evidence) :
     (scaleEvidence w e).neg = w * e.neg := rfl
 
+/-- Regraduation via coordinatewise scaling preserves odds (finite nonzero scale). -/
+theorem toOdds_scaleEvidence (w : ℝ≥0∞) (e : Evidence)
+    (hw0 : w ≠ 0) (hwTop : w ≠ ⊤) (hneg : e.neg ≠ 0) :
+    Evidence.toOdds (scaleEvidence w e) = Evidence.toOdds e := by
+  have hscaled_neg : w * e.neg ≠ 0 := mul_ne_zero hw0 hneg
+  rw [Evidence.toOdds_eq_div _ hscaled_neg, Evidence.toOdds_eq_div _ hneg]
+  have hcancel :
+      (e.pos * w) / (e.neg * w) = e.pos / e.neg := by
+    simpa [mul_comm, mul_left_comm, mul_assoc] using
+      (ENNReal.mul_div_mul_right (a := e.pos) (b := e.neg) (c := w) hw0 hwTop)
+  simpa [mul_comm, mul_left_comm, mul_assoc] using hcancel
+
+/-- Log-odds are invariant under finite nonzero coordinatewise regraduation. -/
+theorem toLogOdds_scaleEvidence (w : ℝ≥0∞) (e : Evidence)
+    (hw0 : w ≠ 0) (hwTop : w ≠ ⊤) (hneg : e.neg ≠ 0) :
+    Evidence.toLogOdds (scaleEvidence w e) = Evidence.toLogOdds e := by
+  simp [Evidence.toLogOdds, toOdds_scaleEvidence (w := w) (e := e) hw0 hwTop hneg]
+
 /-- Scale all outputs of a scorer by a fixed evidence weight. -/
 noncomputable def scaleScorer {Goal Fact : Type*}
     (w : ℝ≥0∞) (s : Scorer Goal Fact) : Scorer Goal Fact :=
@@ -412,6 +430,21 @@ theorem poolingOperator_pointwise_unique_of_externalBayes_totalAdd
     (P.pool s₁ s₂).score g f = poolE (s₁.score g f) (s₂.score g f) := hpointwise s₁ s₂ g f
     _ = s₁.score g f + s₂.score g f := hpoolE _ _
     _ = (fuse s₁ s₂).score g f := rfl
+
+/-- Necessity of a pointwise lift for scorer-level uniqueness arguments:
+if a pooling operator admits no evidence-level pointwise kernel, it cannot be `fuse`. -/
+theorem not_fuse_of_no_pointwise_lift
+    {Goal Fact : Type*}
+    (P : PoolingOperator Goal Fact)
+    (hNoPointwise :
+      ¬ ∃ poolE : Evidence → Evidence → Evidence,
+        ∀ s₁ s₂ g f, (P.pool s₁ s₂).score g f = poolE (s₁.score g f) (s₂.score g f)) :
+    P.pool ≠ fuse := by
+  intro hEq
+  apply hNoPointwise
+  refine ⟨(fun x y => x + y), ?_⟩
+  intro s₁ s₂ g f
+  simp [hEq, fuse]
 
 /-- In the weighted-linear family, the two weights are uniquely determined by the
 pooling operator itself. -/

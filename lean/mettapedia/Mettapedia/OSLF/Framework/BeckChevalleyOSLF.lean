@@ -1,6 +1,8 @@
 import Mettapedia.OSLF.Framework.ConstructorFibration
 import Mettapedia.OSLF.Framework.ModalEquivalence
 import Mettapedia.OSLF.Framework.TypeSynthesis
+import Mettapedia.OSLF.Framework.ToposReduction
+import Mettapedia.GSLT.Topos.PredicateFibration
 import Mettapedia.OSLF.RhoCalculus.Soundness
 
 /-!
@@ -65,6 +67,45 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.RhoCalculus.Soundness
 open Mettapedia.OSLF.RhoCalculus.Reduction (possiblyProp)
 
+/-! ## Presheaf Beck–Chevalley Transport into OSLF Layer
+
+This theorem makes the presheaf-topos Beck–Chevalley result available directly
+from the OSLF framework layer, so substitution/rewrite theorems in this module
+can cite the same base-change law without dropping back to `GSLT/Topos`.
+-/
+
+/-- OSLF-layer transport of the generic presheaf Beck–Chevalley theorem.
+
+Reference:
+- `GSLT.Topos.PredicateFibration.beckChevalleyCondition_presheafChangeOfBase`. -/
+theorem presheafPrimary_beckChevalley_transport
+    (C : Type _) [CategoryTheory.Category C] :
+    Mettapedia.GSLT.Topos.BeckChevalleyCondition
+      (Mettapedia.GSLT.Topos.presheafPredicateFib (C := C))
+      (Mettapedia.GSLT.Topos.presheafChangeOfBase (C := C)) := by
+  exact
+    (Mettapedia.GSLT.Topos.beckChevalleyCondition_presheafChangeOfBase (C := C))
+
+/-- OSLF-layer bridge: `◇` can be read over the internal presheaf reduction
+graph (`E`,`source`,`target`) built in `ToposReduction`.
+
+This keeps the substitution/rewrite path on the graph object rather than only
+the binary relation presentation. -/
+theorem langDiamondUsing_graph_transport
+    (C : Type _) [CategoryTheory.Category C]
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    (lang : LanguageDef) {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    langDiamondUsing relEnv lang φ p ↔
+      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := C) relEnv lang).Edge.obj X,
+        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).source.app X e).down = p ∧
+        φ (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).target.app X e).down) := by
+  simpa using
+    (Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_graphStep
+      (C := C) (relEnv := relEnv) (lang := lang) (X := X) (φ := φ) (p := p))
+
 /-! ## Composition of Galois Connections
 
 The key tool for combining the substitution and modal adjunctions.
@@ -121,6 +162,72 @@ theorem commPb_apply (q : Pattern) (φ : Pattern → Prop) (pBody : Pattern) :
 /-- COMM direct image unfolds. -/
 theorem commDi_apply (q : Pattern) (ψ : Pattern → Prop) (r : Pattern) :
     commDi q ψ r = (∃ p, commSubst p q = r ∧ ψ p) := rfl
+
+/-- Graph-edge form of substitution/rewrite compatibility for COMM direct image.
+
+This is an explicit graph-level formulation:
+`◇ (∃_{comm} φ)` holds at `p` iff there is an internal reduction edge from `p`
+to some target that is a COMM-substitution image of a `φ`-state. -/
+theorem commDi_diamond_graph_step_iff
+    (C : Type _) [CategoryTheory.Category C]
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    (lang : LanguageDef) {X : Opposite C}
+    (q p : Pattern) (φ : Pattern → Prop) :
+    langDiamondUsing relEnv lang (commDi q φ) p ↔
+      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := C) relEnv lang).Edge.obj X,
+        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).source.app X e).down = p ∧
+        ∃ u : Pattern,
+          commSubst u q =
+            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := C) relEnv lang).target.app X e).down ∧
+          φ u := by
+  rw [langDiamondUsing_graph_transport (C := C) (relEnv := relEnv) (lang := lang)
+    (X := X) (φ := commDi q φ) (p := p)]
+  constructor
+  · rintro ⟨e, hs, hcomm⟩
+    rcases (by simpa [commDi_apply] using hcomm) with ⟨u, hu, hφ⟩
+    exact ⟨e, hs, u, hu, hφ⟩
+  · rintro ⟨e, hs, u, hu, hφ⟩
+    refine ⟨e, hs, ?_⟩
+    exact (by simpa [commDi_apply] using (show ∃ u : Pattern,
+      commSubst u q =
+        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).target.app X e).down ∧ φ u from ⟨u, hu, hφ⟩))
+
+/-- Substitution/rewrite square theorem stated directly over a packaged
+`ReductionGraphObj`.
+
+This is the graph-object form of COMM direct-image compatibility, independent
+of the specific construction of edges/source/target. -/
+theorem commDi_diamond_graphObj_square
+    (C : Type _) [CategoryTheory.Category C]
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    (lang : LanguageDef)
+    (G : Mettapedia.OSLF.Framework.ToposReduction.ReductionGraphObj C relEnv lang)
+    {X : Opposite C} (q p : Pattern) (φ : Pattern → Prop) :
+    langDiamondUsing relEnv lang (commDi q φ) p ↔
+      ∃ e : G.Edge.obj X,
+        (G.source.app X e).down = p ∧
+        ∃ u : Pattern, commSubst u q = (G.target.app X e).down ∧ φ u := by
+  constructor
+  · intro h
+    rcases (langDiamondUsing_spec relEnv lang (commDi q φ) p).1 h with ⟨r, hred, hcomm⟩
+    rcases (G.edge_endpoints_iff (X := X) (p := p) (q := r)).2 hred with ⟨e, hs, ht⟩
+    rcases (by simpa [commDi_apply] using hcomm) with ⟨u, hu, hφ⟩
+    refine ⟨e, hs, u, ?_, hφ⟩
+    simpa [ht] using hu
+  · rintro ⟨e, hs, u, hu, hφ⟩
+    let r : Pattern := (G.target.app X e).down
+    have hred : langReducesUsing relEnv lang p r :=
+      (G.edge_endpoints_iff (X := X) (p := p) (q := r)).1 ⟨e, hs, rfl⟩
+    refine (langDiamondUsing_spec relEnv lang (commDi q φ) p).2 ?_
+    refine ⟨r, hred, ?_⟩
+    have hcomm : ∃ t : Pattern, commSubst t q = r ∧ φ t := by
+      refine ⟨u, ?_, hφ⟩
+      simpa [r] using hu
+    simpa [commDi_apply] using hcomm
 
 /-! ## Composed Galois Connections: Modal + Substitution
 

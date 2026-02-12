@@ -4,6 +4,7 @@ import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.RhoCalculus.Engine
 import Mettapedia.OSLF.RhoCalculus.Reduction
 import Mettapedia.OSLF.Framework.TypeSynthesis
+import Mettapedia.OSLF.Framework.ToposReduction
 
 /-!
 # OSLF Formula Language + Verified Bounded Model Checker
@@ -162,6 +163,72 @@ theorem sem_box_eq_langBoxUsing (relEnv : RelationEnv) (lang : LanguageDef)
   ext p
   simp only [sem]
   rw [langBoxUsing_spec]
+
+/-- Formula-layer `◇` interpreted directly over the internal reduction graph.
+
+This routes formula semantics through the presheaf graph object
+(`reductionGraphUsing`) rather than only the binary relation presentation. -/
+theorem sem_dia_eq_graphStepUsing
+    (C : Type _) [CategoryTheory.Category C]
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (I : AtomSem) (φ : OSLFFormula) {X : Opposite C} :
+    sem (langReducesUsing relEnv lang) I (.dia φ) =
+      (fun p =>
+        ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).Edge.obj X,
+          ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+            (C := C) relEnv lang).source.app X e).down = p ∧
+          sem (langReducesUsing relEnv lang) I φ
+            (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := C) relEnv lang).target.app X e).down)) := by
+  funext p
+  rw [sem_dia_eq_langDiamondUsing]
+  simpa using
+    (Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_graphStep
+      (C := C) (relEnv := relEnv) (lang := lang) (X := X)
+      (φ := sem (langReducesUsing relEnv lang) I φ) (p := p))
+
+/-- Formula-layer `□` interpreted directly over incoming internal graph edges.
+
+This routes box semantics through the presheaf reduction graph object
+(`reductionGraphUsing`) instead of only the binary relation presentation. -/
+theorem sem_box_eq_graphIncomingUsing
+    (C : Type _) [CategoryTheory.Category C]
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (I : AtomSem) (φ : OSLFFormula) {X : Opposite C} :
+    sem (langReducesUsing relEnv lang) I (.box φ) =
+      (fun p =>
+        ∀ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).Edge.obj X,
+          ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+            (C := C) relEnv lang).target.app X e).down = p →
+          sem (langReducesUsing relEnv lang) I φ
+            (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := C) relEnv lang).source.app X e).down)) := by
+  funext p
+  rw [sem_box_eq_langBoxUsing]
+  simpa using
+    (Mettapedia.OSLF.Framework.ToposReduction.langBoxUsing_iff_forall_graphIncoming
+      (C := C) (relEnv := relEnv) (lang := lang) (X := X)
+      (φ := sem (langReducesUsing relEnv lang) I φ) (p := p))
+
+/-- Default-env wrapper for graph-form `□` formula semantics. -/
+theorem sem_box_eq_graphIncoming
+    (C : Type _) [CategoryTheory.Category C]
+    (lang : LanguageDef)
+    (I : AtomSem) (φ : OSLFFormula) {X : Opposite C} :
+    sem (langReduces lang) I (.box φ) =
+      (fun p =>
+        ∀ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraph
+          (C := C) lang).Edge.obj X,
+          ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraph
+            (C := C) lang).target.app X e).down = p →
+          sem (langReduces lang) I φ
+            (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraph
+              (C := C) lang).source.app X e).down)) := by
+  simpa [langReduces, Mettapedia.OSLF.Framework.ToposReduction.reductionGraph] using
+    (sem_box_eq_graphIncomingUsing (C := C) (relEnv := RelationEnv.empty)
+      (lang := lang) (I := I) (φ := φ) (X := X))
 
 /-- The formula-level Galois connection follows from the framework.
 
@@ -385,8 +452,76 @@ theorem checkLangUsing_sat_sound
       (step := rewriteWithContextWithPremisesUsing relEnv lang)
       (I_check := I_check) (I_sem := I_sem) h_atoms)
   · intro p q hq
-    exact hq
+    exact exec_to_langReducesUsing relEnv lang hq
   · exact h
+
+/-- Checker soundness corollary in graph form for `◇` formulas.
+
+If `checkLangUsing` proves `.dia φ` as `sat`, then we get an explicit
+internal reduction edge witness in the presheaf graph semantics. -/
+theorem checkLangUsing_sat_sound_graph
+    (C : Type _) [CategoryTheory.Category C]
+    {relEnv : RelationEnv} {lang : LanguageDef}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φ : OSLFFormula} {X : Opposite C}
+    (h : checkLangUsing relEnv lang I_check fuel p (.dia φ) = .sat) :
+    ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+      (C := C) relEnv lang).Edge.obj X,
+      ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := C) relEnv lang).source.app X e).down = p ∧
+      sem (langReducesUsing relEnv lang) I_sem φ
+        (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).target.app X e).down) := by
+  have hsem : sem (langReducesUsing relEnv lang) I_sem (.dia φ) p :=
+    checkLangUsing_sat_sound (relEnv := relEnv) (lang := lang)
+      (I_check := I_check) (I_sem := I_sem) h_atoms h
+  have hgraph :
+      (fun p =>
+        ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).Edge.obj X,
+          ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+            (C := C) relEnv lang).source.app X e).down = p ∧
+          sem (langReducesUsing relEnv lang) I_sem φ
+            (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := C) relEnv lang).target.app X e).down)) p := by
+    simpa [sem_dia_eq_graphStepUsing (C := C) (relEnv := relEnv) (lang := lang)
+      (I := I_sem) (φ := φ) (X := X)] using hsem
+  exact hgraph
+
+/-- Checker soundness corollary in graph form for `□` formulas.
+
+If `checkLangUsing` proves `.box φ` as `sat`, then every incoming internal
+reduction edge into `p` has source satisfying `φ`. -/
+theorem checkLangUsing_sat_sound_graph_box
+    (C : Type _) [CategoryTheory.Category C]
+    {relEnv : RelationEnv} {lang : LanguageDef}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φ : OSLFFormula} {X : Opposite C}
+    (h : checkLangUsing relEnv lang I_check fuel p (.box φ) = .sat) :
+    ∀ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+      (C := C) relEnv lang).Edge.obj X,
+      ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := C) relEnv lang).target.app X e).down = p →
+      sem (langReducesUsing relEnv lang) I_sem φ
+        (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).source.app X e).down) := by
+  have hsem : sem (langReducesUsing relEnv lang) I_sem (.box φ) p :=
+    checkLangUsing_sat_sound (relEnv := relEnv) (lang := lang)
+      (I_check := I_check) (I_sem := I_sem) h_atoms h
+  have hgraph :
+      (fun p =>
+        ∀ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).Edge.obj X,
+          ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+            (C := C) relEnv lang).target.app X e).down = p →
+          sem (langReducesUsing relEnv lang) I_sem φ
+            (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := C) relEnv lang).source.app X e).down)) p := by
+    simpa [sem_box_eq_graphIncomingUsing (C := C) (relEnv := relEnv) (lang := lang)
+      (I := I_sem) (φ := φ) (X := X)] using hsem
+  exact hgraph
 
 /-- Soundness of `checkLang` (default env). -/
 theorem checkLang_sat_sound

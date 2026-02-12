@@ -2,6 +2,7 @@ import Mettapedia.OSLF.Framework.DerivedModalities
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.RewriteSystem
 import Mettapedia.GSLT.Core.LambdaTheoryCategory
+import Mettapedia.GSLT.Topos.PredicateFibration
 import Mathlib.CategoryTheory.Category.GaloisConnection
 import Mathlib.CategoryTheory.Discrete.Basic
 import Mathlib.CategoryTheory.Monoidal.Types.Basic
@@ -56,6 +57,7 @@ In a preorder category, this IS a categorical adjunction (Mathlib's
 namespace Mettapedia.OSLF.Framework.CategoryBridge
 
 open CategoryTheory
+open Opposite
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.DerivedModalities
@@ -282,6 +284,84 @@ noncomputable def typeSortsLambdaInterface :
 /-- The default sort category used by existing OSLF constructions. -/
 abbrev SortCategory (R : RewriteSystem) : Type u := (defaultSortCategoryInterface R).Obj
 
+/-- Presheaf packaging of a sort-indexed family over the discrete sort base.
+
+For `SortCategory R = Discrete R.Sorts`, this is the canonical "old-style"
+per-sort data as a presheaf object.
+
+Reference:
+- Mac Lane–Moerdijk (1994), Ch. I.1: presheaves on a discrete base are exactly
+  indexed families. -/
+def sortFamilyPresheaf (R : RewriteSystem) (T : R.Sorts → Type v) :
+    CategoryTheory.Functor (Opposite (CategoryTheory.Discrete R.Sorts)) (Type v) where
+  obj X := T X.unop.as
+  map {X Y} f := by
+    intro x
+    exact cast (by
+      simpa using congrArg T (CategoryTheory.Discrete.eq_of_hom f.unop).symm) x
+  map_id := by
+    intro X
+    ext x
+    simp
+  map_comp := by
+    intro X Y Z f g
+    ext x
+    cases X using Opposite.rec
+    cases Y using Opposite.rec
+    cases Z using Opposite.rec
+    cases f
+    cases g
+    simp
+
+private lemma pred_cast_iff {S : Type u} (T : S → Type v)
+    (p : ∀ s : S, T s → Prop) {s t : S} (h : t = s) (x : T s) :
+    p s x ↔ p t (cast (congrArg T h.symm) x) := by
+  cases h
+  simp
+
+/-- On the discrete sort base, subfunctors of a sort-family presheaf are
+exactly pointwise predicates.
+
+This is the explicit "where-applicable" bridge from the presheaf backend to
+the prior sort-wise approximation.
+
+Reference:
+- Jacobs (1999), Ch. 1: predicates as subobjects/fibers; specialized here to
+  discrete-indexed families. -/
+noncomputable def sortFamilySubfunctorEquivPred
+    (R : RewriteSystem) (T : R.Sorts → Type v) :
+    CategoryTheory.Subfunctor (sortFamilyPresheaf R T) ≃
+      (∀ s : R.Sorts, T s → Prop) where
+  toFun G s x := x ∈ G.obj (Opposite.op (CategoryTheory.Discrete.mk s))
+  invFun p := by
+    refine
+      { obj := fun X => { x : (sortFamilyPresheaf R T).obj X | p X.unop.as x }
+        map := ?_ }
+    intro X Y f x hx
+    change p Y.unop.as ((sortFamilyPresheaf R T).map f x)
+    have hp : p X.unop.as x ↔ p Y.unop.as ((sortFamilyPresheaf R T).map f x) := by
+      let hs : Y.unop.as = X.unop.as := CategoryTheory.Discrete.eq_of_hom f.unop
+      have hcast : (sortFamilyPresheaf R T).map f x = cast (congrArg T hs.symm) x := by
+        simp [sortFamilyPresheaf]
+      have hp' : p X.unop.as x ↔ p Y.unop.as (cast (congrArg T hs.symm) x) := by
+        exact pred_cast_iff (T := T) (p := p) hs x
+      simpa [hcast] using hp'
+    exact hp.mp hx
+  left_inv G := by
+    ext X x
+    rfl
+  right_inv p := by
+    funext s
+    funext x
+    rfl
+
+/-- Specialization of `sortFamilySubfunctorEquivPred` to term families. -/
+noncomputable def sortTermSubfunctorEquivPred (R : RewriteSystem) :
+    CategoryTheory.Subfunctor
+      (sortFamilyPresheaf R (fun s => R.Term s)) ≃
+      (∀ s : R.Sorts, R.Term s → Prop) :=
+  sortFamilySubfunctorEquivPred (R := R) (T := fun s => R.Term s)
+
 /-- The predicate fibration for a rewrite system.
 
     Each sort `s` is assigned the fiber `R.Term s → Prop` (predicates on
@@ -321,6 +401,45 @@ def oslf_fibration (R : RewriteSystem) (sys : OSLFTypeSystem R) :
     Mettapedia.GSLT.Core.SubobjectFibration (SortCategory R) :=
   oslf_fibrationUsing R sys (defaultSortCategoryInterface R)
 
+/-! ## Presheaf-Topos Fibration Path (Ω/Subobject-Backed) -/
+
+/-! ### Bridge Provenance
+
+- `predFibrationPresheafUsing` / `predFibrationPresheafPrimary`:
+  wired to `Topos.presheafPredicateFib`, i.e. Ω/subobject-backed presheaf
+  fibers (Mac Lane–Moerdijk Ch. I.3; fibrational view via Jacobs Ch. 1).
+- `sortFamilyPresheaf` + `sortFamilySubfunctorEquivPred`:
+  explicit specialization of presheaf/subfunctor predicates to discrete sort
+  bases (presheaves on discrete categories as indexed families). -/
+
+/-- Selectable backend for presheaf-topos predicate fibrations.
+
+    `omegaSubobject` is the source-faithful backend: predicates are
+    represented by `Subfunctor`/`Subobject` fibers via Ω in presheaves. -/
+inductive PresheafToposBackend where
+  | omegaSubobject
+
+/-- Build a presheaf-topos predicate fibration from the selected backend.
+
+    This is wired to the Ω/subobject-backed construction in
+    `GSLT/Topos/PredicateFibration.lean`. -/
+noncomputable def predFibrationPresheafUsing
+    (C : Type u) (instC : CategoryTheory.Category C)
+    (backend : PresheafToposBackend := .omegaSubobject) :
+    Mettapedia.GSLT.Core.SubobjectFibration
+      (CategoryTheory.Functor (Opposite C) (Type v)) := by
+  let _ : CategoryTheory.Category C := instC
+  cases backend with
+  | omegaSubobject =>
+      exact (Mettapedia.GSLT.Topos.presheafPredicateFib (C := C)).toSubobjectFibration
+
+/-- Primary presheaf-topos base path: Ω/subobject-backed fibers. -/
+noncomputable abbrev predFibrationPresheafPrimary
+    (C : Type u) (instC : CategoryTheory.Category C) :
+    Mettapedia.GSLT.Core.SubobjectFibration
+      (CategoryTheory.Functor (Opposite C) (Type v)) :=
+  predFibrationPresheafUsing (C := C) instC .omegaSubobject
+
 /-- The predicate fibration for the rho-calculus. -/
 noncomputable def rhoPredFibration :
     Mettapedia.GSLT.Core.SubobjectFibration
@@ -357,6 +476,12 @@ noncomputable def typeSortsOSLFFibrationViaLambdaInterface :
 #check @predFibrationUsing
 #check @oslf_fibration
 #check @oslf_fibrationUsing
+#check @sortFamilyPresheaf
+#check @sortFamilySubfunctorEquivPred
+#check @sortTermSubfunctorEquivPred
+#check @PresheafToposBackend
+#check @predFibrationPresheafUsing
+#check @predFibrationPresheafPrimary
 #check @typeSortsPredFibrationViaLambdaInterface
 #check @typeSortsOSLFFibrationViaLambdaInterface
 
@@ -378,6 +503,9 @@ noncomputable def typeSortsOSLFFibrationViaLambdaInterface :
 5. **Concrete λ-theory interface use-site**:
    `typeSortsPredFibrationViaLambdaInterface` and
    `typeSortsOSLFFibrationViaLambdaInterface`
+6. **Presheaf-topos path**:
+   `predFibrationPresheafUsing` (selectable backend) and
+   `predFibrationPresheafPrimary` (Ω/subobject primary path)
 
 ### Connection to GSLT
 

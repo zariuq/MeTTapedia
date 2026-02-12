@@ -712,6 +712,48 @@ It is occasionally useful for intuition/debugging, but it should not be fed to
 noncomputable def toOdds (e : Evidence) : ℝ≥0∞ :=
   if e.neg = 0 then ⊤ else e.pos / e.neg
 
+/-- Log-odds diagnostic view induced by `toOdds`. -/
+noncomputable def toLogOdds (e : Evidence) : ℝ :=
+  Real.log (toOdds e).toReal
+
+/-- Nondegenerate case of `toOdds`: when `neg ≠ 0`, odds are `pos/neg`. -/
+@[simp] lemma toOdds_eq_div (e : Evidence) (hneg : e.neg ≠ 0) :
+    toOdds e = e.pos / e.neg := by
+  simp [toOdds, hneg]
+
+/-- Tensor multiplication is multiplicative in odds space. -/
+theorem toOdds_tensor_mul (x y : Evidence)
+    (hx : x.neg ≠ 0) (hy : y.neg ≠ 0) :
+    toOdds (x * y) = toOdds x * toOdds y := by
+  have hxy : x.neg * y.neg ≠ 0 := mul_ne_zero hx hy
+  rw [toOdds_eq_div (e := x * y) (by simpa [Evidence.tensor_def] using hxy),
+      toOdds_eq_div (e := x) hx, toOdds_eq_div (e := y) hy]
+  simp [Evidence.tensor_def]
+  rw [div_eq_mul_inv, div_eq_mul_inv, div_eq_mul_inv]
+  rw [← (ENNReal.mul_inv (Or.inl hx) (Or.inr hy)).symm]
+  ring
+
+/-- Tensor multiplication is additive in log-odds space (finite/nonzero regime). -/
+theorem toLogOdds_tensor_add (x y : Evidence)
+    (hx_neg : x.neg ≠ 0) (hy_neg : y.neg ≠ 0)
+    (hx_odds0 : toOdds x ≠ 0) (hy_odds0 : toOdds y ≠ 0)
+    (hx_oddsTop : toOdds x ≠ ⊤) (hy_oddsTop : toOdds y ≠ ⊤) :
+    toLogOdds (x * y) = toLogOdds x + toLogOdds y := by
+  have hmul : toOdds (x * y) = toOdds x * toOdds y :=
+    toOdds_tensor_mul x y hx_neg hy_neg
+  have hx_pos_real : 0 < (toOdds x).toReal := ENNReal.toReal_pos hx_odds0 hx_oddsTop
+  have hy_pos_real : 0 < (toOdds y).toReal := ENNReal.toReal_pos hy_odds0 hy_oddsTop
+  calc
+    toLogOdds (x * y)
+        = Real.log ((toOdds x * toOdds y).toReal) := by
+            simp [toLogOdds, hmul]
+    _ = Real.log ((toOdds x).toReal * (toOdds y).toReal) := by
+          simp [ENNReal.toReal_mul]
+    _ = Real.log (toOdds x).toReal + Real.log (toOdds y).toReal := by
+          simpa using Real.log_mul (ne_of_gt hx_pos_real) (ne_of_gt hy_pos_real)
+    _ = toLogOdds x + toLogOdds y := by
+          simp [toLogOdds]
+
 /-- Evidence weight corresponding to the standard confidence↔weight transform.
 
 For a prior size `κ`, PLN confidence is:

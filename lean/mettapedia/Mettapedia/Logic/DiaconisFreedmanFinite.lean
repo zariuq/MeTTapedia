@@ -194,15 +194,15 @@ private lemma pair_mass_le_inv
       rw [hpow]
       field_simp [hRr]
 
-/-- Sum of all ordered pair-collision masses is bounded by `m^2 / R`
-for `m = n+1`. -/
+/-- Sum of all ordered off-diagonal pair-collision masses is bounded by
+`m(m-1) / R` for `m = n+1`. -/
 private lemma pair_sum_le_sq_inv
     (R n : ℕ) (hR : 0 < R) :
     let c : ℝ := ((1 : ℝ) / (R : ℝ) ^ (n + 1))
     (∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
       if i = j then (0 : ℝ)
       else (∑ f : Fin (n + 1) → Fin R, if f i = f j then c else 0))
-      ≤ ((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ) := by
+      ≤ ((n + 1 : ℝ) * (n : ℝ)) / (R : ℝ) := by
   classical
   dsimp
   have hterm :
@@ -222,32 +222,62 @@ private lemma pair_sum_le_sq_inv
         if i = j then (0 : ℝ)
         else (∑ f : Fin (n + 1) → Fin R,
           if f i = f j then ((1 : ℝ) / (R : ℝ) ^ (n + 1)) else 0))
-      ≤ ∑ i : Fin (n + 1), ∑ j : Fin (n + 1), ((1 : ℝ) / (R : ℝ)) := by
+      ≤ ∑ i : Fin (n + 1), ∑ j : Fin (n + 1), (if i = j then (0 : ℝ) else ((1 : ℝ) / (R : ℝ))) := by
     refine Finset.sum_le_sum ?_
     intro i hi
     refine Finset.sum_le_sum ?_
     intro j hj
-    exact hterm i j
+    by_cases hij : i = j
+    · simp [hij]
+    · exact (hterm i j).trans_eq (by simp [hij])
   calc
     (∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
       if i = j then (0 : ℝ)
       else (∑ f : Fin (n + 1) → Fin R,
         if f i = f j then ((1 : ℝ) / (R : ℝ) ^ (n + 1)) else 0))
-      ≤ ∑ i : Fin (n + 1), ∑ j : Fin (n + 1), ((1 : ℝ) / (R : ℝ)) := hsum_le
-    _ = ((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ) := by
-      simp [Finset.sum_const, Fintype.card_fin, mul_comm, mul_left_comm]
-      ring
+      ≤ ∑ i : Fin (n + 1), ∑ j : Fin (n + 1), (if i = j then (0 : ℝ) else ((1 : ℝ) / (R : ℝ))) := hsum_le
+    _ = ((n + 1 : ℝ) * (n : ℝ)) / (R : ℝ) := by
+      have hinner :
+          ∀ i : Fin (n + 1),
+            (∑ j : Fin (n + 1), if i = j then (0 : ℝ) else ((1 : ℝ) / (R : ℝ)))
+              = (n : ℝ) * ((1 : ℝ) / (R : ℝ)) := by
+        intro i
+        calc
+          (∑ j : Fin (n + 1), if i = j then (0 : ℝ) else ((1 : ℝ) / (R : ℝ)))
+              = ∑ j : Fin (n + 1),
+                  (((1 : ℝ) / (R : ℝ)) - (if i = j then ((1 : ℝ) / (R : ℝ)) else 0)) := by
+                    refine Finset.sum_congr rfl ?_
+                    intro j hj
+                    by_cases hij : i = j
+                    · simp [hij]
+                    · simp [hij]
+          _ = (∑ _j : Fin (n + 1), ((1 : ℝ) / (R : ℝ))) -
+                (∑ j : Fin (n + 1), if i = j then ((1 : ℝ) / (R : ℝ)) else 0) := by
+                  rw [Finset.sum_sub_distrib]
+          _ = ((n + 1 : ℝ) * ((1 : ℝ) / (R : ℝ))) - ((1 : ℝ) / (R : ℝ)) := by
+                simp [Finset.sum_const, nsmul_eq_mul, Fintype.card_fin]
+          _ = (n : ℝ) * ((1 : ℝ) / (R : ℝ)) := by ring
+      calc
+        (∑ i : Fin (n + 1), ∑ j : Fin (n + 1), (if i = j then (0 : ℝ) else ((1 : ℝ) / (R : ℝ))))
+            = ∑ i : Fin (n + 1), ((n : ℝ) * ((1 : ℝ) / (R : ℝ))) := by
+                  refine Finset.sum_congr rfl ?_
+                  intro i hi
+                  exact hinner i
+        _ = (n + 1 : ℝ) * ((n : ℝ) * ((1 : ℝ) / (R : ℝ))) := by
+              simp [Finset.sum_const, Fintype.card_fin]
+        _ = ((n + 1 : ℝ) * (n : ℝ)) / (R : ℝ) := by ring
 
-/-- L1 distance between iid and injective distributions (collision bound).
-    This is the Diaconis–Freedman finite core estimate. -/
-lemma l1_iid_inj_le
+/-- Tight base L1 collision bound (`m(m-1)/R`) between iid and injective
+distributions. This is the finite Diaconis–Freedman core estimate in
+without-replacement form. -/
+lemma l1_iid_inj_le_choose2
     (R m : ℕ) (hR : 0 < R) (hRm : m ≤ R) :
     (∑ f : Fin m → Fin R,
         abs ((1 : ℝ) / (R : ℝ) ^ m -
           (if Function.Injective f then (1 : ℝ) / (R : ℝ) ^ m / (∑ g : Fin m → Fin R,
            if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0)
            else 0)))
-      ≤ (4 : ℝ) * (m : ℝ) * (m : ℝ) / (R : ℝ) := by
+      ≤ ((m : ℝ) * ((m : ℝ) - 1)) / (R : ℝ) := by
   classical
   cases m with
   | zero =>
@@ -454,12 +484,13 @@ lemma l1_iid_inj_le
           _ = Pbad + Pbad := by linarith [hPbad_eq]
           _ = 2 * Pbad := by ring
       have hPbad_le :
-          Pbad ≤ ((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ) := by
+          Pbad ≤ (1 / 2 : ℝ) * (((n + 1 : ℝ) * (n : ℝ)) / (R : ℝ)) := by
         have hper :
             ∀ f : Fin (n + 1) → Fin R,
               (if Function.Injective f then (0 : ℝ) else μ0)
-                ≤ ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
-                    if i = j then (0 : ℝ) else if f i = f j then μ0 else 0 := by
+                ≤ (1 / 2 : ℝ) *
+                    (∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                      if i = j then (0 : ℝ) else if f i = f j then μ0 else 0) := by
           intro f
           have hnonneg :
               ∀ i' j' : Fin (n + 1),
@@ -475,32 +506,87 @@ lemma l1_iid_inj_le
                 0 ≤ ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
                       if i = j then (0 : ℝ) else if f i = f j then μ0 else 0 := by
                 exact Finset.sum_nonneg (fun i _ => Finset.sum_nonneg (fun j _ => hnonneg i j))
-            simpa [hf] using hsum_nonneg
+            have hhalf_nonneg :
+                0 ≤ (1 / 2 : ℝ) *
+                    (∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                      if i = j then (0 : ℝ) else if f i = f j then μ0 else 0) := by
+              exact mul_nonneg (by positivity) hsum_nonneg
+            simpa [hf] using hhalf_nonneg
           · rcases Function.not_injective_iff.mp hf with ⟨i, j, hij_eq, hij_ne⟩
+            let term : Fin (n + 1) × Fin (n + 1) → ℝ :=
+              fun p => if p.1 = p.2 then (0 : ℝ) else if f p.1 = f p.2 then μ0 else 0
+            let pairs : Finset (Fin (n + 1) × Fin (n + 1)) :=
+              (Finset.univ : Finset (Fin (n + 1))).product (Finset.univ : Finset (Fin (n + 1)))
+            let pair2 : Finset (Fin (n + 1) × Fin (n + 1)) := ({(i, j), (j, i)} : Finset _)
+            have hsum_prod :
+                (∑ i' : Fin (n + 1), ∑ j' : Fin (n + 1),
+                  if i' = j' then (0 : ℝ) else if f i' = f j' then μ0 else 0)
+                  = Finset.sum pairs term := by
+              simpa [pairs, term] using
+                (Finset.sum_product
+                  (s := (Finset.univ : Finset (Fin (n + 1))))
+                  (t := (Finset.univ : Finset (Fin (n + 1))))
+                  (f := term)
+                ).symm
+            have hs2_sub :
+                pair2 ⊆ pairs := by
+              intro p hp
+              simp [pairs]
+            have hterm_nonneg : ∀ p : Fin (n + 1) × Fin (n + 1), 0 ≤ term p := by
+              intro p
+              exact hnonneg p.1 p.2
+            have htwo_terms_le :
+                Finset.sum pair2 term ≤ Finset.sum pairs term := by
+              exact Finset.sum_le_sum_of_subset_of_nonneg hs2_sub
+                (by
+                  intro p hp hpn
+                  exact hterm_nonneg p)
+            have hpair_ne : (i, j) ≠ (j, i) := by
+              intro hpair
+              exact hij_ne (by simpa using congrArg Prod.fst hpair)
+            have htwo_terms_eval :
+                Finset.sum pair2 term
+                  = μ0 + μ0 := by
+              dsimp [pair2]
+              simp [term, hpair_ne, hij_eq, hij_ne, eq_comm]
+            have htwo_mu_le :
+                (2 : ℝ) * μ0
+                  ≤ ∑ i' : Fin (n + 1), ∑ j' : Fin (n + 1),
+                      if i' = j' then (0 : ℝ) else if f i' = f j' then μ0 else 0 := by
+              calc
+                (2 : ℝ) * μ0 = μ0 + μ0 := by ring
+                _ = Finset.sum pair2 term := by
+                      rw [htwo_terms_eval]
+                _ ≤ Finset.sum pairs term := htwo_terms_le
+                _ = ∑ i' : Fin (n + 1), ∑ j' : Fin (n + 1),
+                      if i' = j' then (0 : ℝ) else if f i' = f j' then μ0 else 0 := by
+                      exact hsum_prod.symm
+            have hhalf :
+                μ0 ≤ (1 / 2 : ℝ) *
+                    (∑ i' : Fin (n + 1), ∑ j' : Fin (n + 1),
+                      if i' = j' then (0 : ℝ) else if f i' = f j' then μ0 else 0) := by
+              nlinarith [htwo_mu_le]
             calc
               (if Function.Injective f then (0 : ℝ) else μ0) = μ0 := by simp [hf]
-              _ = (if i = j then (0 : ℝ) else if f i = f j then μ0 else 0) := by
-                    simp [hij_ne, hij_eq]
-              _ ≤ ∑ j' : Fin (n + 1), (if i = j' then (0 : ℝ) else if f i = f j' then μ0 else 0) := by
-                    simpa using
-                      (Finset.single_le_sum
-                        (fun j' _ => hnonneg i j')
-                        (Finset.mem_univ j))
-              _ ≤ ∑ i' : Fin (n + 1), ∑ j' : Fin (n + 1),
-                    (if i' = j' then (0 : ℝ) else if f i' = f j' then μ0 else 0) := by
-                    simpa using
-                      (Finset.single_le_sum
-                        (fun i' _ => Finset.sum_nonneg (fun j' _ => hnonneg i' j'))
-                        (Finset.mem_univ i))
+              _ ≤ (1 / 2 : ℝ) *
+                    (∑ i' : Fin (n + 1), ∑ j' : Fin (n + 1),
+                      if i' = j' then (0 : ℝ) else if f i' = f j' then μ0 else 0) := hhalf
         have hsum_f :
             Pbad ≤
               ∑ f : Fin (n + 1) → Fin R,
-                ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
-                  if i = j then (0 : ℝ) else if f i = f j then μ0 else 0 := by
+                (1 / 2 : ℝ) * (∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                  if i = j then (0 : ℝ) else if f i = f j then μ0 else 0) := by
           dsimp [Pbad]
           refine Finset.sum_le_sum ?_
           intro f hf
           exact hper f
+        have hsum_f_scaled :
+            Pbad ≤
+              (1 / 2 : ℝ) *
+                (∑ f : Fin (n + 1) → Fin R,
+                  ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                    if i = j then (0 : ℝ) else if f i = f j then μ0 else 0) := by
+          simpa [Finset.mul_sum] using hsum_f
         have hswap :
             (∑ f : Fin (n + 1) → Fin R,
               ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
@@ -545,10 +631,17 @@ lemma l1_iid_inj_le
             (∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
               if i = j then (0 : ℝ)
               else (∑ f : Fin (n + 1) → Fin R, if f i = f j then μ0 else 0))
-            ≤ ((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ) := by
+            ≤ ((n + 1 : ℝ) * (n : ℝ)) / (R : ℝ) := by
           dsimp [μ0]
           simpa using pair_sum_le_sq_inv R n hR
-        exact hsum_f.trans (by simpa [hswap] using hpair_bound)
+        have hpair_bound_half :
+            (1 / 2 : ℝ) *
+              (∑ f : Fin (n + 1) → Fin R,
+                ∑ i : Fin (n + 1), ∑ j : Fin (n + 1),
+                  if i = j then (0 : ℝ) else if f i = f j then μ0 else 0)
+              ≤ (1 / 2 : ℝ) * (((n + 1 : ℝ) * (n : ℝ)) / (R : ℝ)) := by
+          exact mul_le_mul_of_nonneg_left (by simpa [hswap] using hpair_bound) (by positivity)
+        exact hsum_f_scaled.trans hpair_bound_half
       calc
         (∑ f : Fin (n + 1) → Fin R,
             abs ((1 : ℝ) / (R : ℝ) ^ (n + 1) -
@@ -558,23 +651,44 @@ lemma l1_iid_inj_le
             = (∑ f : Fin (n + 1) → Fin R, abs (μ0 - (if Function.Injective f then μ0 / Z else 0))) := by
               simp [μ0, Z]
         _ = 2 * Pbad := hL1_eq
-        _ ≤ 2 * (((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ)) := by
+        _ ≤ 2 * ((1 / 2 : ℝ) * (((n + 1 : ℝ) * (n : ℝ)) / (R : ℝ))) := by
               exact mul_le_mul_of_nonneg_left hPbad_le (by positivity)
-        _ ≤ (4 : ℝ) * (n + 1 : ℝ) * (n + 1 : ℝ) / (R : ℝ) := by
-              let X : ℝ := ((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ)
-              have hXnonneg : 0 ≤ X := by
-                dsimp [X]
-                positivity
-              have hmul : (2 : ℝ) * X ≤ (4 : ℝ) * X := by
-                nlinarith
-              calc
-                (2 : ℝ) * (((n + 1 : ℝ) * (n + 1 : ℝ)) / (R : ℝ))
-                    = (2 : ℝ) * X := by simp [X]
-                _ ≤ (4 : ℝ) * X := hmul
-                _ = (4 : ℝ) * (n + 1 : ℝ) * (n + 1 : ℝ) / (R : ℝ) := by
-                      dsimp [X]
-                      ring
-        _ ≤ (4 : ℝ) * ↑(n + 1) * ↑(n + 1) / ↑R := by
+        _ = ((n + 1 : ℝ) * (n : ℝ)) / (R : ℝ) := by ring
+        _ = ((n + 1 : ℝ) * ((n + 1 : ℝ) - 1)) / (R : ℝ) := by ring
+        _ = ((↑(n + 1) : ℝ) * (((↑(n + 1) : ℝ) - 1)) / (R : ℝ)) := by
               norm_num
+
+/-- Coarse L1 collision bound (legacy form). -/
+lemma l1_iid_inj_le
+    (R m : ℕ) (hR : 0 < R) (hRm : m ≤ R) :
+    (∑ f : Fin m → Fin R,
+        abs ((1 : ℝ) / (R : ℝ) ^ m -
+          (if Function.Injective f then (1 : ℝ) / (R : ℝ) ^ m / (∑ g : Fin m → Fin R,
+           if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0)
+           else 0)))
+      ≤ (4 : ℝ) * (m : ℝ) * (m : ℝ) / (R : ℝ) := by
+  have htight :
+      (∑ f : Fin m → Fin R,
+          abs ((1 : ℝ) / (R : ℝ) ^ m -
+            (if Function.Injective f then (1 : ℝ) / (R : ℝ) ^ m / (∑ g : Fin m → Fin R,
+             if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0)
+             else 0)))
+        ≤ ((m : ℝ) * ((m : ℝ) - 1)) / (R : ℝ) :=
+    l1_iid_inj_le_choose2 R m hR hRm
+  have hm1_le_m : (m : ℝ) - 1 ≤ (m : ℝ) := by nlinarith
+  have hmul : (m : ℝ) * ((m : ℝ) - 1) ≤ (m : ℝ) * (m : ℝ) := by
+    exact mul_le_mul_of_nonneg_left hm1_le_m (by positivity)
+  have hdiv :
+      ((m : ℝ) * ((m : ℝ) - 1)) / (R : ℝ) ≤ ((m : ℝ) * (m : ℝ)) / (R : ℝ) := by
+    have hRnonneg : 0 ≤ (R : ℝ) := by positivity
+    exact div_le_div_of_nonneg_right hmul hRnonneg
+  have hfactor4 :
+      ((m : ℝ) * (m : ℝ)) / (R : ℝ) ≤ (4 : ℝ) * (m : ℝ) * (m : ℝ) / (R : ℝ) := by
+    have hXnonneg : 0 ≤ ((m : ℝ) * (m : ℝ)) / (R : ℝ) := by positivity
+    calc
+      ((m : ℝ) * (m : ℝ)) / (R : ℝ)
+          ≤ (4 : ℝ) * (((m : ℝ) * (m : ℝ)) / (R : ℝ)) := by nlinarith
+      _ = (4 : ℝ) * (m : ℝ) * (m : ℝ) / (R : ℝ) := by ring
+  exact htight.trans (hdiv.trans hfactor4)
 
 end Mettapedia.Logic

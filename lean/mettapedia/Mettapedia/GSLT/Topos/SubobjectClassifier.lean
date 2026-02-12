@@ -46,11 +46,38 @@ The subobject classifier in Psh(C) is the functor Ω : Cᵒᵖ → Type
 that sends each object X to the set of sieves on X.
 -/
 
-/-- Sieves on X form a complete lattice -/
+/-! ## Theorem-to-Source Map
+
+This module keeps source-faithful references for the constructive presheaf
+classifier path:
+
+- `natTransEquivSubfunctor`:
+  characteristic maps `P ⟶ Ω` correspond to subfunctors of `P`
+  (Mac Lane–Moerdijk, Ch. I.3; Johnstone A.1.6).
+- `subobjectMk_preimageSubfunctor_eq_pullback`:
+  inverse-image/pullback compatibility for presheaf subobjects
+  (Mac Lane–Moerdijk, Ch. I.3), mechanized with Mathlib pullback/subobject APIs.
+- `presheafSubobjectRepresentableByOmega`:
+  representability witness for `Subobject.presheaf` by canonical `Ω`
+  (Mac Lane–Moerdijk, Ch. I.3).
+- `presheafCategoryHasClassifier` / `presheafCategoryHasClassifier_iff`:
+  representability criterion for classifier existence
+  (Mathlib `isRepresentable_hasClassifier_iff`, matching MM Ch. I.3).
+- `presheafSubobjectRepresentableByChosenOmega`:
+  extraction of `RepresentableBy` from chosen classifier witness
+  (Mathlib `Classifier.representableBy`). -/
+
+/-- Sieves on `X` form a complete lattice.
+
+Reference:
+- Mac Lane–Moerdijk (1994), Ch. I.2/I.3: sieve lattices in presheaf semantics. -/
 instance sieveCompleteLattice (X : C) : CompleteLattice (Sieve X) := inferInstance
 
 /-- The pullback of a sieve along a morphism.
-    If S is a sieve on Y and f : X → Y, then f*(S) is a sieve on X. -/
+    If `S` is a sieve on `Y` and `f : X → Y`, then `f*(S)` is a sieve on `X`.
+
+    Reference:
+    - Mac Lane–Moerdijk (1994), Ch. I.2: pullback action on sieves. -/
 def sievePullback {X Y : C} (f : X ⟶ Y) (S : Sieve Y) : Sieve X :=
   Sieve.pullback f S
 
@@ -76,7 +103,11 @@ theorem sievePullback_bot {X Y : C} (f : X ⟶ Y) :
 /-- The subobject classifier functor Ω : Cᵒᵖ → Type.
 
     Ω(X) = { sieves on X }
-    Ω(f) = pullback along f -/
+    Ω(f) = pullback along f
+
+    Reference:
+    - Mac Lane–Moerdijk (1994), Ch. I.3: canonical sieve-valued truth object
+      in presheaf toposes. -/
 def omegaFunctor : Cᵒᵖ ⥤ Type (max u v) where
   obj X := Sieve (unop X)
   map f S := sievePullback f.unop S
@@ -106,7 +137,10 @@ def terminalPresheaf : Cᵒᵖ ⥤ Type (max u v) where
   map _ := id
 
 /-- The "true" natural transformation: 1 → Ω.
-    At each X, it sends () to the maximal sieve ⊤. -/
+    At each `X`, it sends `()` to the maximal sieve `⊤`.
+
+    Reference:
+    - Mac Lane–Moerdijk (1994), Ch. I.3: classifier truth map `1 → Ω`. -/
 def trueNatTrans : terminalPresheaf ⟶ omegaFunctor (C := C) where
   app X := fun _ => (⊤ : Sieve (unop X))
   naturality X Y f := by
@@ -165,7 +199,11 @@ noncomputable def subfunctorOfChi (P : Cᵒᵖ ⥤ Type (max u v))
       simpa using (χ.app X x).downward_closed hx f.unop
     simp [sievePullback, Sieve.pullback, hf]
 
-/-- The explicit equivalence `(P ⟶ Ω) ≃ Subfunctor P`. -/
+/-- The explicit equivalence `(P ⟶ Ω) ≃ Subfunctor P`.
+
+Reference:
+- Mac Lane–Moerdijk (1994), Ch. I.3: characteristic-map/subobject
+  correspondence in presheaf toposes. -/
 noncomputable def natTransEquivSubfunctor (P : Cᵒᵖ ⥤ Type (max u v)) :
     (P ⟶ omegaFunctor (C := C)) ≃ CategoryTheory.Subfunctor P where
   toFun := subfunctorOfChi (C := C) P
@@ -205,7 +243,11 @@ abbrev preimageSubfunctor
 subfunctor of `G` along `f`.
 
 This is the concrete finite-data realization of inverse image for subobjects in presheaf toposes
-(`Set`-valued fibers), matching MM92 I.3. -/
+(`Set`-valued fibers), matching MM92 I.3.
+
+Reference:
+- Mac Lane–Moerdijk (1994), Ch. I.3 (subobject inverse image).
+- Mathlib `Subobject.pullback_obj` and pullback API in functor categories. -/
 private theorem subobjectMk_preimageSubfunctor_eq_pullback
     {X X' : Cᵒᵖ ⥤ Type (max u v)} (f : X ⟶ X') (G : CategoryTheory.Subfunctor X') :
     Subobject.mk ((preimageSubfunctor f G).ι) = (Subobject.pullback f).obj (Subobject.mk G.ι) := by

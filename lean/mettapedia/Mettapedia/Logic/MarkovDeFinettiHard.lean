@@ -453,6 +453,53 @@ theorem markovDeFinetti_hard_of_splitRates
   exact markovDeFinetti_hard_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll
 
+
+
+theorem markovDeFinetti_hard_of_exactSurrogateWORTransport
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hWORAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e 0 Cpc) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_exactSurrogateWORTransportAll
+      (k := k) hWORAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+
+theorem markovDeFinetti_hard_of_biapproxCore_exactSurrogate
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      MarkovDeFinettiHard.HasExcursionBiapproxCore (k := k) hk n e) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_biapproxCoreAll_exactSurrogate
+      (k := k) hcoreAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+theorem markovDeFinetti_hard_of_explicitPatternSurrogateRate
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hpatternAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧
+        MarkovDeFinettiHard.HasPatternSurrogateResidualAlignmentRate (k := k) hk n e C) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_explicitPatternSurrogateRateAll
+      (k := k) hpatternAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
 theorem markovDeFinetti_hard_via_residualRateBridge
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)

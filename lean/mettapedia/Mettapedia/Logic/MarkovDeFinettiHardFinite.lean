@@ -130,6 +130,53 @@ theorem finite_constraints_nonempty_of_splitRates
   exact finite_constraints_nonempty_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll
 
+
+
+theorem finite_constraints_nonempty_of_exactSurrogateWORTransport
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hWORAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        HasCanonicalWORTransportRate (k := k) hk n e 0 Cpc) :
+    ∀ u : Finset (ℕ × MarkovState k),
+      (⋂ p ∈ u, MarkovDeFinettiHard.constraintSet (k := k) μ p.1 p.2).Nonempty := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_exactSurrogateWORTransportAll
+      (k := k) hWORAll
+  exact finite_constraints_nonempty_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+
+theorem finite_constraints_nonempty_of_biapproxCore_exactSurrogate
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ u : Finset (ℕ × MarkovState k),
+      (⋂ p ∈ u, MarkovDeFinettiHard.constraintSet (k := k) μ p.1 p.2).Nonempty := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_biapproxCoreAll_exactSurrogate
+      (k := k) hcoreAll
+  exact finite_constraints_nonempty_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+theorem finite_constraints_nonempty_of_explicitPatternSurrogateRate
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hpatternAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧
+        HasPatternSurrogateResidualAlignmentRate (k := k) hk n e C) :
+    ∀ u : Finset (ℕ × MarkovState k),
+      (⋂ p ∈ u, MarkovDeFinettiHard.constraintSet (k := k) μ p.1 p.2).Nonempty := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_explicitPatternSurrogateRateAll
+      (k := k) hpatternAll
+  exact finite_constraints_nonempty_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
 theorem finite_constraints_nonempty_via_residualRateBridge
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)

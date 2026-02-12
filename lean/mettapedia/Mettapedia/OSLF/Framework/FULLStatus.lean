@@ -2,6 +2,9 @@ import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ConstructorCategory
 import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
+import Mettapedia.GSLT.Topos.PredicateFibration
+import Mettapedia.OSLF.Framework.ToposReduction
+import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 
 /-!
 # OSLF FULL Status Tracker
@@ -64,14 +67,14 @@ def tracker : List Milestone :=
       note := "Constructive Ω/sieve representability and classifier are formalized; base-semantics wiring into CategoryBridge remains." }
   , { area := "Reduction-as-Subobject"
       title := "Internal reduction graph with premises in topos"
-      status := .missing
-      codeRef := "Planned: OSLF reduction span internalization over presheaf objects"
-      note := "Current reduction relation remains Set-level over Pattern." }
+      status := .inProgress
+      codeRef := "Mettapedia/OSLF/Framework/ToposReduction.lean: reductionGraphObjUsing / reductionGraphUsing_edge_endpoints_iff / langDiamondUsing_iff_exists_graphStep / langBoxUsing_iff_forall_graphIncoming"
+      note := "Premise-aware one-step reduction is packaged as a reusable graph object abstraction over presheaves, with endpoint and modal (`◇`,`□`) graph-compatibility bridges." }
   , { area := "Beck-Chevalley"
       title := "Full substitution square in lifted base"
-      status := .missing
-      codeRef := "Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean (current set-level analysis)"
-      note := "Strong categorical Beck-Chevalley in full lifted base not completed." }
+      status := .inProgress
+      codeRef := "Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean: presheafPrimary_beckChevalley_transport / commDi_diamond_graphObj_square"
+      note := "OSLF layer now includes an explicit graph-object substitution/rewrite square theorem (`commDi_diamond_graphObj_square`) over `ReductionGraphObj`, alongside presheaf Beck-Chevalley transport." }
   ]
 
 /-- Count milestones with a given status. -/
@@ -98,5 +101,18 @@ These checks tie tracker statements to concrete constants in the codebase.
 #check @Mettapedia.OSLF.Framework.CategoryBridge.lambdaTheorySortInterface
 #check @Mettapedia.OSLF.Framework.CategoryBridge.predFibrationUsing
 #check @Mettapedia.OSLF.Framework.CategoryBridge.oslf_fibrationUsing
+#check @Mettapedia.GSLT.Topos.beckChevalleyCondition_presheafChangeOfBase
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.presheafPrimary_beckChevalley_transport
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.langDiamondUsing_graph_transport
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi_diamond_graph_step_iff
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi_diamond_graphObj_square
+#check @Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+#check @Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
+#check @Mettapedia.OSLF.Framework.ToposReduction.reductionSubfunctorUsing
+#check @Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing_edge_endpoints_iff
+#check @Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_graphStep
+#check @Mettapedia.OSLF.Framework.ToposReduction.langBoxUsing_iff_forall_graphIncoming
+#check @Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_internalStep
+#check @Mettapedia.OSLF.Framework.ToposReduction.langBoxUsing_iff_forall_internalStep
 
 end Mettapedia.OSLF.Framework.FULLStatus

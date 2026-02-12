@@ -2,6 +2,7 @@ import Mettapedia.OSLF.Framework.RewriteSystem
 import Mettapedia.OSLF.Framework.DerivedModalities
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 
 /-!
 # OSLF Type Synthesis: LanguageDef → OSLFTypeSystem
@@ -40,27 +41,51 @@ namespace Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.DerivedModalities
 
 /-! ## Step 1: Reduction Relation from Executable Engine -/
 
-/-- The reduction relation induced by a LanguageDef.
+/-- Executable one-step reduction induced by a `LanguageDef`.
 
-    `langReducesUsing relEnv lang p q` holds when the generic rewrite engine can
-    produce `q` from `p` in one step (including premise checks and
-    congruence/subterm rewrites), using an explicit relation environment
-    for `relationQuery`.
-
-    This wraps executable `rewriteWithContextWithPremisesUsing` as a `Prop`. -/
-def langReducesUsing (relEnv : RelationEnv) (lang : LanguageDef) (p q : Pattern) : Prop :=
+    This keeps the computational path available for model checking and extraction. -/
+def langReducesExecUsing (relEnv : RelationEnv) (lang : LanguageDef) (p q : Pattern) : Prop :=
   q ∈ rewriteWithContextWithPremisesUsing relEnv lang p
 
-/-- Default reduction relation induced by a LanguageDef.
+/-- Declarative/internal one-step reduction induced by a `LanguageDef`.
 
-    `langReduces lang p q` holds when the generic rewrite engine can
-    produce `q` from `p` in one step (including premise checks and
-    congruence/subterm rewrites).
+    This is the primary semantics used by the OSLF synthesis layer:
+    a premise-aware declarative relation (internal/propositional), not direct
+    list-membership in the executable reducer.
+
+    The executable path is bridged by
+    `langReducesUsing_iff_execUsing`. -/
+def langReducesUsing (relEnv : RelationEnv) (lang : LanguageDef) (p q : Pattern) : Prop :=
+  DeclReducesWithPremises relEnv lang p q
+
+/-- Soundness/completeness bridge: declarative/internal and executable
+    premise-aware one-step reduction coincide. -/
+theorem langReducesUsing_iff_execUsing (relEnv : RelationEnv) (lang : LanguageDef)
+    (p q : Pattern) :
+    langReducesUsing relEnv lang p q ↔ langReducesExecUsing relEnv lang p q := by
+  simpa [langReducesUsing, langReducesExecUsing] using
+    (declReducesWithPremises_iff_langReducesWithPremisesUsing
+      (relEnv := relEnv) (lang := lang) (p := p) (q := q))
+
+/-- Declarative/internal reduction implies executable reduction. -/
+theorem langReducesUsing_to_exec (relEnv : RelationEnv) (lang : LanguageDef)
+    {p q : Pattern} :
+    langReducesUsing relEnv lang p q → langReducesExecUsing relEnv lang p q :=
+  (langReducesUsing_iff_execUsing relEnv lang p q).1
+
+/-- Executable reduction implies declarative/internal reduction. -/
+theorem exec_to_langReducesUsing (relEnv : RelationEnv) (lang : LanguageDef)
+    {p q : Pattern} :
+    langReducesExecUsing relEnv lang p q → langReducesUsing relEnv lang p q :=
+  (langReducesUsing_iff_execUsing relEnv lang p q).2
+
+/-- Default declarative/internal reduction relation induced by a `LanguageDef`.
 
     This is `langReducesUsing RelationEnv.empty`. -/
 def langReduces (lang : LanguageDef) (p q : Pattern) : Prop :=

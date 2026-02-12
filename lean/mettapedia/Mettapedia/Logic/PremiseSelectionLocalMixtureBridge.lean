@@ -218,6 +218,109 @@ theorem finite_binary_statistic_tv_mixture_bound
     (finite_statistic_tv_mixture_bound
       (Γ := Bool) (R := R) (m := m) hR hRm stat)
 
+/-- Tight-constant TV transfer form.
+If the base iid-vs-injective L1 discrepancy is bounded by `m(m-1)/R`, then
+the pushforward TV discrepancy is bounded by `m(m-1)/(2R)`. -/
+theorem finite_statistic_tv_mixture_bound_choose2_of_l1
+    {Γ : Type*} [Fintype Γ] [DecidableEq Γ]
+    (R m : ℕ) (hR : 0 < R)
+    (stat : (Fin m → Fin R) → Γ)
+    (hL1tight :
+      let μ : (Fin m → Fin R) → ℝ := fun _ => (1 : ℝ) / (R : ℝ) ^ m
+      let Z : ℝ := ∑ g : Fin m → Fin R,
+        if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0
+      let ν : (Fin m → Fin R) → ℝ := fun ω =>
+        if Function.Injective ω then ((1 : ℝ) / (R : ℝ) ^ m) / Z else 0
+      (∑ ω : Fin m → Fin R, abs (μ ω - ν ω))
+        ≤ ((m : ℝ) * ((m : ℝ) - 1)) / (R : ℝ)) :
+    let μ : (Fin m → Fin R) → ℝ := fun _ => (1 : ℝ) / (R : ℝ) ^ m
+    let Z : ℝ := ∑ g : Fin m → Fin R,
+      if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0
+    let ν : (Fin m → Fin R) → ℝ := fun ω =>
+      if Function.Injective ω then ((1 : ℝ) / (R : ℝ) ^ m) / Z else 0
+    ((1 / 2 : ℝ) *
+      (∑ γ : Γ, abs ((∑ ω : Fin m → Fin R, if stat ω = γ then μ ω else 0) -
+          (∑ ω : Fin m → Fin R, if stat ω = γ then ν ω else 0))))
+      ≤ ((m : ℝ) * ((m : ℝ) - 1)) / ((2 : ℝ) * (R : ℝ)) := by
+  intro μ Z ν
+  have hpush :
+      (∑ γ : Γ, abs ((∑ ω : Fin m → Fin R, if stat ω = γ then μ ω else 0) -
+          (∑ ω : Fin m → Fin R, if stat ω = γ then ν ω else 0)))
+        ≤ ∑ ω : Fin m → Fin R, abs (μ ω - ν ω) :=
+    Mettapedia.Logic.l1_pushforward_le (μ := μ) (ν := ν) (f := stat)
+  have hl1 :
+      (∑ ω : Fin m → Fin R, abs (μ ω - ν ω))
+        ≤ ((m : ℝ) * ((m : ℝ) - 1)) / (R : ℝ) := by
+    simpa [μ, ν, Z] using hL1tight
+  have hmul :
+      (1 / 2 : ℝ) *
+        (∑ γ : Γ, abs ((∑ ω : Fin m → Fin R, if stat ω = γ then μ ω else 0) -
+            (∑ ω : Fin m → Fin R, if stat ω = γ then ν ω else 0)))
+        ≤ (1 / 2 : ℝ) * (((m : ℝ) * ((m : ℝ) - 1)) / (R : ℝ)) := by
+    exact mul_le_mul_of_nonneg_left (le_trans hpush hl1) (by positivity)
+  calc
+    (1 / 2 : ℝ) *
+        (∑ γ : Γ, abs ((∑ ω : Fin m → Fin R, if stat ω = γ then μ ω else 0) -
+            (∑ ω : Fin m → Fin R, if stat ω = γ then ν ω else 0)))
+        ≤ (1 / 2 : ℝ) * (((m : ℝ) * ((m : ℝ) - 1)) / (R : ℝ)) := hmul
+    _ = ((m : ℝ) * ((m : ℝ) - 1)) / ((2 : ℝ) * (R : ℝ)) := by
+          field_simp [show (R : ℝ) ≠ 0 by exact_mod_cast (Nat.ne_of_gt hR)]
+
+/-- Unconditional tight-constant TV bound using the base finite collision theorem
+`l1_iid_inj_le_choose2`. -/
+theorem finite_statistic_tv_mixture_bound_choose2
+    {Γ : Type*} [Fintype Γ] [DecidableEq Γ]
+    (R m : ℕ) (hR : 0 < R) (hRm : m ≤ R)
+    (stat : (Fin m → Fin R) → Γ) :
+    let μ : (Fin m → Fin R) → ℝ := fun _ => (1 : ℝ) / (R : ℝ) ^ m
+    let Z : ℝ := ∑ g : Fin m → Fin R,
+      if Function.Injective g then (1 : ℝ) / (R : ℝ) ^ m else 0
+    let ν : (Fin m → Fin R) → ℝ := fun ω =>
+      if Function.Injective ω then ((1 : ℝ) / (R : ℝ) ^ m) / Z else 0
+    ((1 / 2 : ℝ) *
+      (∑ γ : Γ, abs ((∑ ω : Fin m → Fin R, if stat ω = γ then μ ω else 0) -
+          (∑ ω : Fin m → Fin R, if stat ω = γ then ν ω else 0))))
+      ≤ ((m : ℝ) * ((m : ℝ) - 1)) / ((2 : ℝ) * (R : ℝ)) := by
+  apply finite_statistic_tv_mixture_bound_choose2_of_l1 (R := R) (m := m) (hR := hR) (stat := stat)
+  simpa using (Mettapedia.Logic.l1_iid_inj_le_choose2 R m hR hRm)
+
+/-- Concrete instantiated tight TV bound for the premise-selection neighborhood
+regime `m = 16`, `R = 4551`. -/
+theorem finite_statistic_tv_mixture_bound_m16_R4551
+    {Γ : Type*} [Fintype Γ] [DecidableEq Γ]
+    (stat : (Fin 16 → Fin 4551) → Γ) :
+    let μ : (Fin 16 → Fin 4551) → ℝ := fun _ => (1 : ℝ) / (4551 : ℝ) ^ 16
+    let Z : ℝ := ∑ g : Fin 16 → Fin 4551,
+      if Function.Injective g then (1 : ℝ) / (4551 : ℝ) ^ 16 else 0
+    let ν : (Fin 16 → Fin 4551) → ℝ := fun ω =>
+      if Function.Injective ω then ((1 : ℝ) / (4551 : ℝ) ^ 16) / Z else 0
+    ((1 / 2 : ℝ) *
+      (∑ γ : Γ, abs ((∑ ω : Fin 16 → Fin 4551, if stat ω = γ then μ ω else 0) -
+          (∑ ω : Fin 16 → Fin 4551, if stat ω = γ then ν ω else 0))))
+      ≤ (120 : ℝ) / (4551 : ℝ) := by
+  have hbase :=
+    finite_statistic_tv_mixture_bound_choose2
+      (Γ := Γ) (R := 4551) (m := 16) (hR := by decide) (hRm := by decide) stat
+  have hconst :
+      ((16 : ℝ) * ((16 : ℝ) - 1)) / ((2 : ℝ) * (4551 : ℝ)) = (120 : ℝ) / (4551 : ℝ) := by
+    norm_num
+  simpa [hconst] using hbase
+
+/-- Binary specialization of the concrete instantiated tight TV bound at
+`m = 16`, `R = 4551`. -/
+theorem finite_binary_statistic_tv_mixture_bound_m16_R4551
+    (stat : (Fin 16 → Fin 4551) → Bool) :
+    let μ : (Fin 16 → Fin 4551) → ℝ := fun _ => (1 : ℝ) / (4551 : ℝ) ^ 16
+    let Z : ℝ := ∑ g : Fin 16 → Fin 4551,
+      if Function.Injective g then (1 : ℝ) / (4551 : ℝ) ^ 16 else 0
+    let ν : (Fin 16 → Fin 4551) → ℝ := fun ω =>
+      if Function.Injective ω then ((1 : ℝ) / (4551 : ℝ) ^ 16) / Z else 0
+    ((1 / 2 : ℝ) *
+      (∑ b : Bool, abs ((∑ ω : Fin 16 → Fin 4551, if stat ω = b then μ ω else 0) -
+          (∑ ω : Fin 16 → Fin 4551, if stat ω = b then ν ω else 0))))
+      ≤ (120 : ℝ) / (4551 : ℝ) := by
+  simpa using finite_statistic_tv_mixture_bound_m16_R4551 (Γ := Bool) stat
+
 end QuantitativeFinite
 
 end Mettapedia.Logic.PremiseSelection

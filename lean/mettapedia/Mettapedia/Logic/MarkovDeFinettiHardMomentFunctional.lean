@@ -975,6 +975,68 @@ theorem empiricalWnn_tendsto_wμ_of_splitRates
   exact empiricalWnn_tendsto_wμ_of_residualRate
     (k := k) (hk := hk) (μ := μ) hμ hrec hrateAll n e
 
+
+
+theorem empiricalWnn_tendsto_wμ_of_exactSurrogateWORTransport
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hWORAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        HasCanonicalWORTransportRate (k := k) hk n e 0 Cpc)
+    (n : ℕ) (e : MarkovState k) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) n e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ n e)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_exactSurrogateWORTransportAll_fixed
+      (k := k) (hk := hk) hWORAll
+  exact empiricalWnn_tendsto_wμ_of_residualRate
+    (k := k) (hk := hk) (μ := μ) hμ hrec hrateAll n e
+
+
+theorem empiricalWnn_tendsto_wμ_of_biapproxCore_exactSurrogate
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e)
+    (n : ℕ) (e : MarkovState k) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) n e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ n e)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_biapproxCoreAll_exactSurrogate_fixed
+      (k := k) (hk := hk) hcoreAll
+  exact empiricalWnn_tendsto_wμ_of_residualRate
+    (k := k) (hk := hk) (μ := μ) hμ hrec hrateAll n e
+
+theorem empiricalWnn_tendsto_wμ_of_explicitPatternSurrogateRate
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hpatternAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧
+        HasPatternSurrogateResidualAlignmentRate (k := k) hk n e C)
+    (n : ℕ) (e : MarkovState k) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) n e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ n e)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_explicitPatternSurrogateRateAll_fixed
+      (k := k) (hk := hk) hpatternAll
+  exact empiricalWnn_tendsto_wμ_of_residualRate
+    (k := k) (hk := hk) (μ := μ) hμ hrec hrateAll n e
+
 theorem empiricalWnn_tendsto_wμ_via_residualRateBridge
     (hk : 0 < k)
     (μ : PrefixMeasure (Fin k))
@@ -1107,6 +1169,59 @@ theorem empiricalVec_tendsto_constraintVec_of_splitRates
   exact empiricalVec_tendsto_constraintVec_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll u
 
+
+
+theorem empiricalVec_tendsto_constraintVec_of_exactSurrogateWORTransport
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hWORAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        HasCanonicalWORTransportRate (k := k) hk n e 0 Cpc)
+    (u : Finset (Nat × MarkovState k)) :
+    ∃ hk : 0 < k,
+      Filter.Tendsto (fun n => empiricalVec (k := k) hk μ u n) Filter.atTop
+        (nhds (constraintVec (k := k) μ u)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_exactSurrogateWORTransportAll
+      (k := k) hWORAll
+  exact empiricalVec_tendsto_constraintVec_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
+
+theorem empiricalVec_tendsto_constraintVec_of_biapproxCore_exactSurrogate
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e)
+    (u : Finset (Nat × MarkovState k)) :
+    ∃ hk : 0 < k,
+      Filter.Tendsto (fun n => empiricalVec (k := k) hk μ u n) Filter.atTop
+        (nhds (constraintVec (k := k) μ u)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_biapproxCoreAll_exactSurrogate
+      (k := k) hcoreAll
+  exact empiricalVec_tendsto_constraintVec_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
+theorem empiricalVec_tendsto_constraintVec_of_explicitPatternSurrogateRate
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hpatternAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧
+        HasPatternSurrogateResidualAlignmentRate (k := k) hk n e C)
+    (u : Finset (Nat × MarkovState k)) :
+    ∃ hk : 0 < k,
+      Filter.Tendsto (fun n => empiricalVec (k := k) hk μ u n) Filter.atTop
+        (nhds (constraintVec (k := k) μ u)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_explicitPatternSurrogateRateAll
+      (k := k) hpatternAll
+  exact empiricalVec_tendsto_constraintVec_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
 theorem empiricalVec_tendsto_constraintVec_via_residualRateBridge
     (μ : PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
@@ -1220,6 +1335,52 @@ theorem constraintVec_mem_momentPolytope_of_splitRates
   have hrateAll :=
     hasExcursionResidualBoundRateAll_of_splitRatesAll
       (k := k) hsplitAll
+  exact constraintVec_mem_momentPolytope_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
+
+theorem constraintVec_mem_momentPolytope_of_exactSurrogateWORTransport
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hWORAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        HasCanonicalWORTransportRate (k := k) hk n e 0 Cpc)
+    (u : Finset (Nat × MarkovState k)) :
+    constraintVec (k := k) μ u ∈ momentPolytope (k := k) μ u := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_exactSurrogateWORTransportAll
+      (k := k) hWORAll
+  exact constraintVec_mem_momentPolytope_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
+
+theorem constraintVec_mem_momentPolytope_of_biapproxCore_exactSurrogate
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e)
+    (u : Finset (Nat × MarkovState k)) :
+    constraintVec (k := k) μ u ∈ momentPolytope (k := k) μ u := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_biapproxCoreAll_exactSurrogate
+      (k := k) hcoreAll
+  exact constraintVec_mem_momentPolytope_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
+theorem constraintVec_mem_momentPolytope_of_explicitPatternSurrogateRate
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hpatternAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧
+        HasPatternSurrogateResidualAlignmentRate (k := k) hk n e C)
+    (u : Finset (Nat × MarkovState k)) :
+    constraintVec (k := k) μ u ∈ momentPolytope (k := k) μ u := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_explicitPatternSurrogateRateAll
+      (k := k) hpatternAll
   exact constraintVec_mem_momentPolytope_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll u
 

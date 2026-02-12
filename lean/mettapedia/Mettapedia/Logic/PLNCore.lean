@@ -20,6 +20,10 @@ import Mettapedia.Logic.PremiseSelectionExternalBayesianity
 import Mettapedia.Logic.PremiseSelectionLocalMixtureBridge
 import Mettapedia.Logic.PremiseSelectionOperatorRoles
 import Mettapedia.Logic.PremiseSelectionPriorNB
+import Mettapedia.Logic.PremiseSelectionPUCalibration
+import Mettapedia.Logic.PremiseSelectionRankingStability
+import Mettapedia.Logic.PremiseSelectionSelectorSpec
+import Mettapedia.Logic.PremiseSelectionPartitionedPriorNB
 import Mettapedia.Logic.SoundnessCompleteness
 import Mettapedia.Logic.PLNCanonicalAPI
 
@@ -35,9 +39,20 @@ This module is a curated import surface for the currently theorem-complete PLN s
 - Premise-selection bridges and optimality transfer (`PremiseSelection*`)
 - Premise-selection coverage/submodularity surrogate (`PremiseSelectionCoverage`)
 - Premise-selection external-Bayesian commutation (`PremiseSelectionExternalBayesianity`)
+- Pooling non-uniqueness counterexample + corrected uniqueness with total-additivity
+  (`maxPoolingOperator_ne_fuse`, `poolE_eq_hplus_of_externalBayes_totalAdd`)
 - Finite de Finetti local-mixture bridge (`PremiseSelectionLocalMixtureBridge`)
+- Quantitative TV bridge forms (coarse unconditional + tight unconditional forms)
+  (`l1_iid_inj_le_choose2`, `finite_statistic_tv_mixture_bound`,
+   `finite_statistic_tv_mixture_bound_choose2`,
+   `finite_statistic_tv_mixture_bound_m16_R4551`)
 - Operator-role checklist for prior/revision/tensor composition (`PremiseSelectionOperatorRoles`)
 - Concrete Prior-NB role/commutation theorems (`PremiseSelectionPriorNB`)
+- PU-style weak-negative calibration lemmas (`PremiseSelectionPUCalibration`)
+- Ranking-stability theorems under bounded perturbations (`PremiseSelectionRankingStability`)
+- Selector-spec defaults linked to checklist assumptions (`PremiseSelectionSelectorSpec`)
+- Partitioned normalized Prior-NB composition and TV-bound aggregation
+  (`PremiseSelectionPartitionedPriorNB`)
 - Soundness/completeness tradeoff characterization (`SoundnessCompleteness`)
 
 Files with active proof debt are intentionally *not* re-exported here; those are grouped in

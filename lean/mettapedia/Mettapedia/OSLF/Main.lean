@@ -19,6 +19,7 @@ import Mettapedia.OSLF.Framework.FULLStatus
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.GeneratedTyping
 import Mettapedia.OSLF.Framework.SynthesisBridge
+import Mettapedia.OSLF.Framework.ToposReduction
 import Mettapedia.OSLF.Framework.LambdaInstance
 import Mettapedia.OSLF.Framework.PetriNetInstance
 import Mettapedia.OSLF.Framework.TinyMLInstance
@@ -264,8 +265,12 @@ export Mettapedia.OSLF.Framework.DerivedModalities (
 )
 
 export Mettapedia.OSLF.Framework.TypeSynthesis (
+  langReducesExecUsing
   langReducesUsing
   langReduces
+  langReducesUsing_iff_execUsing
+  langReducesUsing_to_exec
+  exec_to_langReducesUsing
   langRewriteSystemUsing
   langRewriteSystem
   langSpanUsing
@@ -282,6 +287,33 @@ export Mettapedia.OSLF.Framework.TypeSynthesis (
   langDiamond_spec
   langBox_spec
   langNativeType
+)
+
+export Mettapedia.OSLF.Framework.ToposReduction (
+  InternalReductionGraph
+  ReductionGraphObj
+  patternConstPresheaf
+  pairConstPresheaf
+  reductionSubfunctorUsing
+  reductionSubfunctor
+  reductionSourceUsing
+  reductionTargetUsing
+  reductionGraphUsing
+  reductionGraph
+  reductionGraphObjUsing
+  reductionGraphObj
+  mem_reductionSubfunctorUsing_iff
+  reductionGraphUsing_edge_endpoints_iff
+  langDiamondUsing_iff_exists_graphStep
+  langBoxUsing_iff_forall_graphIncoming
+  langDiamondUsing_iff_exists_internalStep
+  langBoxUsing_iff_forall_internalStep
+  langDiamond_iff_exists_graphStep
+  langBox_iff_forall_graphIncoming
+  langDiamond_iff_exists_internalStep
+  langBox_iff_forall_internalStep
+  exec_mem_reductionSubfunctorUsing
+  reductionSubfunctorUsing_mem_exec
 )
 
 export Mettapedia.OSLF.Framework.GeneratedTyping (
@@ -414,6 +446,10 @@ export Mettapedia.OSLF.Framework.DerivedTyping (
 )
 
 export Mettapedia.OSLF.Framework.BeckChevalleyOSLF (
+  presheafPrimary_beckChevalley_transport
+  langDiamondUsing_graph_transport
+  commDi_diamond_graph_step_iff
+  commDi_diamond_graphObj_square
   galoisConnection_comp
   commMap
   commPb
@@ -436,6 +472,9 @@ export Mettapedia.OSLF.Formula (
   OSLFFormula
   sem
   sem_dia_eq_langDiamondUsing
+  sem_dia_eq_graphStepUsing
+  sem_box_eq_graphIncomingUsing
+  sem_box_eq_graphIncoming
   sem_dia_eq_langDiamond
   sem_box_eq_langBoxUsing
   sem_box_eq_langBox
@@ -447,6 +486,8 @@ export Mettapedia.OSLF.Formula (
   checkLang
   check_sat_sound
   checkLangUsing_sat_sound
+  checkLangUsing_sat_sound_graph
+  checkLangUsing_sat_sound_graph_box
   checkLang_sat_sound
   aggregateBox
   aggregateBox_sat
