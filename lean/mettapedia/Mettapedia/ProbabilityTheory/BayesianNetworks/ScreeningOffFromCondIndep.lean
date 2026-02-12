@@ -18,6 +18,8 @@ abbrev CondIndepOn (A B C : V) : Prop :=
     (hm' := measurableSpaceOfVertices_le (bn := bn) ({B} : Set V))
     μ
 
+omit [Fintype V] [DecidableEq V] [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+  [StandardBorelSpace bn.JointSpace] [IsFiniteMeasure μ] in
 lemma screening_const_eq_of_ae_chain
     {sB : Set bn.JointSpace}
     {condA condC condAC : bn.JointSpace → ℝ}
@@ -43,6 +45,8 @@ lemma screening_const_eq_of_ae_chain
       _ =ᵐ[μ.restrict sB] (fun _ => condA ω0 * condC ω0) := hProdConst
   exact ae_const_eq_of_restrict_ne_zero (bn := bn) (μ := μ) (s := sB) hB0 hConstEqAE
 
+omit [Fintype V] [DecidableEq V] [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+  [StandardBorelSpace bn.JointSpace] [IsFiniteMeasure μ] in
 lemma real_inter_eq_const_mul_of_setIntegral
     (sX sB : Set bn.JointSpace)
     (hsX : @MeasurableSet bn.JointSpace (MeasurableSpace.pi) sX)
@@ -68,7 +72,12 @@ lemma real_inter_eq_const_mul_of_setIntegral
                 (MeasureTheory.setIntegral_indicator (μ := μ)
                   (s := sB) (t := sX) (f := fun _ : bn.JointSpace => (1 : ℝ)) hsX)
       _ = μ.real (sB ∩ sX) := by
-            simpa using (MeasureTheory.setIntegral_const (μ := μ) (s := sB ∩ sX) (c := (1 : ℝ)))
+            calc
+              ∫ x in sB ∩ sX, (fun _ : bn.JointSpace => (1 : ℝ)) x ∂μ
+                  = ∫ x in sB ∩ sX, (1 : ℝ) ∂μ := by simp
+              _ = μ.real (sB ∩ sX) • (1 : ℝ) := by
+                    exact MeasureTheory.setIntegral_const (μ := μ) (s := sB ∩ sX) (c := (1 : ℝ))
+              _ = μ.real (sB ∩ sX) := by simp
       _ = μ.real (sX ∩ sB) := by
             simp [Set.inter_comm]
   calc
@@ -81,6 +90,8 @@ lemma real_inter_eq_const_mul_of_setIntegral
           exact hset
     _ = condX ω0 * μ.real sB := hconst_int
 
+omit [Fintype V] [DecidableEq V] [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+  [StandardBorelSpace bn.JointSpace] in
 lemma real_inter_eq_condExp_const
     (m' : MeasurableSpace bn.JointSpace)
     (hm' : m' ≤ (MeasurableSpace.pi : MeasurableSpace bn.JointSpace))
@@ -117,6 +128,8 @@ lemma ennreal_mul_eq_of_real_mul_eq
     simpa [ENNReal.toReal_mul, ha, hb, hc, hd] using hreal
   exact (ENNReal.toReal_eq_toReal_iff' (ENNReal.mul_ne_top ha hb) (ENNReal.mul_ne_top hc hd)).1 htoReal
 
+omit [Fintype V] [DecidableEq V] [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+  [StandardBorelSpace bn.JointSpace] [IsFiniteMeasure μ] in
 lemma real_screening_mul_eq
     (sA sB sC : Set bn.JointSpace)
     {condA condC condAC : bn.JointSpace → ℝ}
@@ -148,8 +161,10 @@ lemma real_screening_mul_eq
       _ = (condA ω0 * μ.real sB) * (condC ω0 * μ.real sB) := by
             simp [hconst_eq hB0, mul_comm, mul_left_comm, mul_assoc]
       _ = μ.real (sA ∩ sB) * μ.real (sC ∩ sB) := by
-            simp [hAint, hCint, mul_comm, mul_left_comm, mul_assoc]
+            simp [hAint, hCint, mul_comm, mul_left_comm]
 
+omit [Fintype V] [DecidableEq V] [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+  [StandardBorelSpace bn.JointSpace] in
 lemma condIndep_mul_cond_core
     [IsProbabilityMeasure μ]
     (m' : MeasurableSpace bn.JointSpace)
@@ -212,6 +227,7 @@ lemma condIndep_mul_cond_core
     (MeasureTheory.measure_ne_top (μ := μ) (s := sA ∩ sB))
     (MeasureTheory.measure_ne_top (μ := μ) (s := sC ∩ sB))
 
+omit [Fintype V] [∀ v : V, StandardBorelSpace (bn.stateSpace v)] in
 theorem condIndep_eventEq_mul_cond
     [IsProbabilityMeasure μ]
     [∀ v, Inhabited (bn.stateSpace v)]

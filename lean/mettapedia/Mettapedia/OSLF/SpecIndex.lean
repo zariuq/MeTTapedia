@@ -18,12 +18,16 @@ formalization. Serves as a traceability matrix for review.
 ```
                     LanguageDef
                         |
-                   langReduces (Engine.lean)
+         +--------------+------------------+
+         |                                 |
+ langReduces (default, empty env)   langReducesUsing (explicit env)
+         |                                 |
+ rewriteWithContextWithPremises      rewriteWithContextWithPremisesUsing
                         |
               +---------+---------+
               |                   |
-      DeclReduces          DeclReducesRel
-    (matchPattern)           (MatchRel)
+      DeclReduces          DeclReducesWithPremises
+ (legacy no-premise)      (premise-aware, env-parametric)
               |                   |
               +----proven iff-----+
                         |
@@ -100,13 +104,22 @@ formalization. Serves as a traceability matrix for review.
 
 ## IV. Generic Engine & Matching
 
-### Executable Engine
-- Lean: `rewriteWithContext` (MeTTaIL/Engine.lean:67)
+### Executable Engine (Two Paths)
+- Legacy baseline (no premises): `rewriteWithContextNoPremises` and alias `rewriteWithContext`
+- Premise-aware: `rewriteWithContextWithPremisesUsing` / `rewriteWithContextWithPremises`
+- Relation environment: `RelationEnv` for pluggable `relationQuery` tuples
+- Safety choice: builtin `relationQuery "reduces"` uses the no-premise baseline
+  (`rewriteWithContextNoPremises`) to avoid recursive premise self-reference.
 
 ### Declarative Reduction
-- Lean: `DeclReduces` (MeTTaIL/DeclReduces.lean:31)
-- Soundness: `engine_sound` — `q ∈ rewriteWithContext lang p → DeclReduces lang p q`
-- Completeness: `engine_complete` — `DeclReduces lang p q → q ∈ rewriteWithContext lang p`
+- Legacy: `DeclReduces` (MeTTaIL/DeclReduces.lean)
+  - Soundness: `engine_sound`
+  - Completeness: `engine_complete`
+- Premise-aware: `DeclReducesWithPremises` (MeTTaIL/DeclReducesWithPremises.lean)
+  - Env-aware soundness/completeness:
+    `engineWithPremisesUsing_sound`, `engineWithPremisesUsing_complete`
+  - Default-env wrappers:
+    `engineWithPremises_sound`, `engineWithPremises_complete`
 
 ### Relational Matching Specification
 - Lean: `MatchRel` (MeTTaIL/MatchSpec.lean:48)
@@ -133,13 +146,23 @@ formalization. Serves as a traceability matrix for review.
 
 ### Bounded Model Checker
 - Lean: `check` (Formula.lean:211)
+- Language-bound entrypoints:
+  - `checkLangUsing` (explicit `RelationEnv`)
+  - `checkLang` (default `RelationEnv.empty`)
 - Soundness: `check_sat_sound` — `check = .sat → sem holds` (Formula.lean:290)
+- Soundness (language-bound):
+  - `checkLangUsing_sat_sound`
+  - `checkLang_sat_sound`
 - Enhanced: `checkWithPred` for □ support (Formula.lean:381)
 
 ### Semantic Bridge
 - `sem_dia_eq_langDiamond` (Formula.lean:135): formula ◇ = framework ◇
 - `sem_box_eq_langBox` (Formula.lean:142): formula □ = framework □
 - `formula_galois` (Formula.lean:152): formula-level Galois
+- Env-aware variants:
+  - `sem_dia_eq_langDiamondUsing`
+  - `sem_box_eq_langBoxUsing`
+  - `formula_galoisUsing`
 
 ## VII. Language Instances
 
@@ -182,14 +205,16 @@ formalization. Serves as a traceability matrix for review.
 
 ## IX. Sorry / Axiom Census
 
-**0 sorries. 0 custom axioms.**
+**Current OSLF status:**
+- 1 `sorry` in `Mettapedia/OSLF/RhoCalculus/Reduction.lean:276`
+- 0 custom axioms introduced in OSLF files
 
-All proofs are complete. The formalization relies only on:
+The formalization otherwise relies only on:
 - Lean 4 core axioms (propext, Quot, Classical.choice)
 - Mathlib library
 - LeanHammer automation
 
-No `sorry`, `admit`, `axiom`, or placeholder is present in any OSLF file.
+No custom `axiom` placeholders are used in this OSLF slice.
 -/
 
 namespace Mettapedia.OSLF.SpecIndex

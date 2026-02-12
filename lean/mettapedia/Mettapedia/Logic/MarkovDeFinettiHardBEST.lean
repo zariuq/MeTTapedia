@@ -12,10 +12,9 @@ import Mettapedia.Logic.DiaconisFreedmanFinite
 - `fiber k N eN` = trajectories of length N whose `stateOfTraj` = eN.
 - The BEST theorem: #EulerTrails = #arborescences(root) × ∏_{v} (outdeg(v) - 1)!
 
-Status: The main theorem `excursion_bound_from_decomposition` reduces to a single
-sorry `excursion_wor_wr_core`. This sorry IS the Diaconis-Freedman core lemma:
-for states with many returns, |W(empiricalParam) - prefixCoeff| ≤ 4n²/R.
-Proving it requires the BEST theorem for Euler trail counting.
+Status: the decomposition interface is explicit.
+`excursion_bound_from_decomposition` now consumes a semantic core package
+(`ExcursionBiapproxPackage`) instead of a false exact WR-bridge identity.
 -/
 
 noncomputable section
@@ -111,6 +110,268 @@ lemma stepProb_empiricalParam (hk : 0 < k) (s : MarkovState k) (a b : Fin k) :
   simp only [empiricalRowPMF, PMF.ofFinset_apply]
   rw [ENNReal.coe_toNNReal_eq_toReal]
   exact ENNReal.toReal_ofReal (empiricalStepProb_nonneg' hk s.counts a b)
+
+/-- Row-normalized empirical transition probability without Laplace smoothing,
+with uniform fallback on empty rows. -/
+def empiricalStepProbTarget (_hk : 0 < k) (c : TransCounts k) (prev next : Fin k) : ℝ :=
+  if _hrow : c.rowTotal prev = 0 then
+    (1 : ℝ) / (k : ℝ)
+  else
+    (c.counts prev next : ℝ) / (c.rowTotal prev : ℝ)
+
+private lemma counts_le_rowTotal (c : TransCounts k) (prev next : Fin k) :
+    c.counts prev next ≤ c.rowTotal prev := by
+  unfold TransCounts.rowTotal
+  exact Finset.single_le_sum (fun _ _ => Nat.zero_le _) (by simp)
+
+/-- Per-step Laplace-vs-target transition error,
+bounded by `k / (rowTotal + k)`. -/
+lemma abs_empiricalStepProb_sub_target_le_k_div_rowTotalPlusK
+    (hk : 0 < k) (c : TransCounts k) (prev next : Fin k) :
+    |empiricalStepProb (k := k) hk c prev next -
+        empiricalStepProbTarget (k := k) hk c prev next| ≤
+      (k : ℝ) / ((c.rowTotal prev : ℝ) + (k : ℝ)) := by
+  by_cases hr : c.rowTotal prev = 0
+  · have hsum0 : (∑ a : Fin k, c.counts prev a) = 0 := by
+      simpa [TransCounts.rowTotal] using hr
+    have hcount0 : c.counts prev next = 0 := by
+      have hzeroAll := Finset.sum_eq_zero_iff.mp hsum0
+      exact hzeroAll next (by simp)
+    have hemp :
+        empiricalStepProb (k := k) hk c prev next = (1 : ℝ) / (k : ℝ) := by
+      simp [empiricalStepProb, hr, hcount0,
+        DirichletParams.uniformPrior, DirichletParams.uniform,
+        DirichletParams.totalConcentration]
+    calc
+      |empiricalStepProb (k := k) hk c prev next -
+          empiricalStepProbTarget (k := k) hk c prev next|
+          = 0 := by simp [empiricalStepProbTarget, hr, hemp]
+      _ ≤ (k : ℝ) / ((c.rowTotal prev : ℝ) + (k : ℝ)) := by
+        have hk_nonneg : 0 ≤ (k : ℝ) := by exact_mod_cast (Nat.zero_le k)
+        have hden_nonneg : 0 ≤ (c.rowTotal prev : ℝ) + (k : ℝ) := by
+          have hrow_nonneg : 0 ≤ (c.rowTotal prev : ℝ) := by
+            exact_mod_cast (Nat.zero_le (c.rowTotal prev))
+          linarith
+        exact div_nonneg hk_nonneg hden_nonneg
+  · let rN : ℕ := c.rowTotal prev
+    let xN : ℕ := c.counts prev next
+    have hrN_pos : 0 < rN := by
+      exact Nat.pos_of_ne_zero (by simpa [rN] using hr)
+    have hrN_ne : (rN : ℝ) ≠ 0 := by
+      exact_mod_cast (Nat.ne_of_gt hrN_pos)
+    have hk_real_pos : 0 < (k : ℝ) := by
+      exact_mod_cast hk
+    have hden_pos : 0 < (rN : ℝ) + (k : ℝ) := by linarith
+    have hcount_le_nat : xN ≤ rN := by
+      simpa [xN, rN] using counts_le_rowTotal (c := c) (prev := prev) (next := next)
+    have hx_nonneg : 0 ≤ (xN : ℝ) := by exact_mod_cast (Nat.zero_le xN)
+    have hx_le : (xN : ℝ) ≤ (rN : ℝ) := by exact_mod_cast hcount_le_nat
+    have hk_nonneg : 0 ≤ (k : ℝ) := by exact_mod_cast (Nat.zero_le k)
+    have hemp :
+        empiricalStepProb (k := k) hk c prev next =
+          ((xN : ℝ) + 1) / ((rN : ℝ) + (k : ℝ)) := by
+      simp [empiricalStepProb, rN, xN,
+        DirichletParams.uniformPrior, DirichletParams.uniform,
+        DirichletParams.totalConcentration]
+    have htarget :
+        empiricalStepProbTarget (k := k) hk c prev next =
+          (xN : ℝ) / (rN : ℝ) := by
+      simp [empiricalStepProbTarget, hr, rN, xN]
+    have hden_ne : (rN : ℝ) + (k : ℝ) ≠ 0 := by linarith
+    have hrew :
+        ((xN : ℝ) + 1) / ((rN : ℝ) + (k : ℝ)) - (xN : ℝ) / (rN : ℝ) =
+          ((rN : ℝ) - (k : ℝ) * (xN : ℝ)) /
+            ((rN : ℝ) * ((rN : ℝ) + (k : ℝ))) := by
+      field_simp [hrN_ne, hden_ne]
+      ring
+    have hr_nonneg : 0 ≤ (rN : ℝ) := by positivity
+    have hk_ge_one_nat : 1 ≤ k := Nat.succ_le_of_lt hk
+    have hk_ge_one : (1 : ℝ) ≤ (k : ℝ) := by exact_mod_cast hk_ge_one_nat
+    have hnum_bound :
+        |(rN : ℝ) - (k : ℝ) * (xN : ℝ)| ≤ (k : ℝ) * (rN : ℝ) := by
+      have hupper1 : (rN : ℝ) - (k : ℝ) * (xN : ℝ) ≤ (rN : ℝ) := by
+        nlinarith [hk_nonneg, hx_nonneg]
+      have hupper2 : (rN : ℝ) ≤ (k : ℝ) * (rN : ℝ) := by
+        nlinarith [hk_ge_one, hr_nonneg]
+      have hupper : (rN : ℝ) - (k : ℝ) * (xN : ℝ) ≤ (k : ℝ) * (rN : ℝ) :=
+        le_trans hupper1 hupper2
+      have hlower1 :
+          (rN : ℝ) - (k : ℝ) * (rN : ℝ) ≤
+            (rN : ℝ) - (k : ℝ) * (xN : ℝ) := by
+        nlinarith [hk_nonneg, hx_le]
+      have hlower2 :
+          -((k : ℝ) * (rN : ℝ)) ≤ (rN : ℝ) - (k : ℝ) * (rN : ℝ) := by
+        nlinarith [hr_nonneg]
+      have hlower : -((k : ℝ) * (rN : ℝ)) ≤ (rN : ℝ) - (k : ℝ) * (xN : ℝ) :=
+        le_trans hlower2 hlower1
+      exact abs_le.mpr ⟨hlower, hupper⟩
+    have hden_prod_nonneg : 0 ≤ (rN : ℝ) * ((rN : ℝ) + (k : ℝ)) := by
+      positivity
+    have habs_rewrite :
+        |((xN : ℝ) + 1) / ((rN : ℝ) + (k : ℝ)) - (xN : ℝ) / (rN : ℝ)| =
+          |(rN : ℝ) - (k : ℝ) * (xN : ℝ)| /
+            ((rN : ℝ) * ((rN : ℝ) + (k : ℝ))) := by
+      rw [hrew, abs_div]
+      simp [abs_of_nonneg hden_prod_nonneg]
+    have hfrac :
+        |(rN : ℝ) - (k : ℝ) * (xN : ℝ)| /
+            ((rN : ℝ) * ((rN : ℝ) + (k : ℝ))) ≤
+          ((k : ℝ) * (rN : ℝ)) /
+            ((rN : ℝ) * ((rN : ℝ) + (k : ℝ))) := by
+      exact div_le_div_of_nonneg_right hnum_bound hden_prod_nonneg
+    have hcancel :
+        ((k : ℝ) * (rN : ℝ)) /
+            ((rN : ℝ) * ((rN : ℝ) + (k : ℝ))) =
+          (k : ℝ) / ((rN : ℝ) + (k : ℝ)) := by
+      field_simp [hrN_ne]
+    have hcore :
+        |((xN : ℝ) + 1) / ((rN : ℝ) + (k : ℝ)) - (xN : ℝ) / (rN : ℝ)| ≤
+          (k : ℝ) / ((rN : ℝ) + (k : ℝ)) := by
+      calc
+        |((xN : ℝ) + 1) / ((rN : ℝ) + (k : ℝ)) - (xN : ℝ) / (rN : ℝ)|
+            = |(rN : ℝ) - (k : ℝ) * (xN : ℝ)| /
+                ((rN : ℝ) * ((rN : ℝ) + (k : ℝ))) := habs_rewrite
+        _ ≤ ((k : ℝ) * (rN : ℝ)) /
+              ((rN : ℝ) * ((rN : ℝ) + (k : ℝ))) := hfrac
+        _ = (k : ℝ) / ((rN : ℝ) + (k : ℝ)) := hcancel
+    calc
+      |empiricalStepProb (k := k) hk c prev next -
+          empiricalStepProbTarget (k := k) hk c prev next|
+          = |((xN : ℝ) + 1) / ((rN : ℝ) + (k : ℝ)) - (xN : ℝ) / (rN : ℝ)| := by
+              simp [hemp, htarget]
+      _ ≤ (k : ℝ) / ((rN : ℝ) + (k : ℝ)) := hcore
+      _ = (k : ℝ) / ((c.rowTotal prev : ℝ) + (k : ℝ)) := by simp [rN]
+
+/-- Per-step Laplace-vs-target transition error in explicit `c / L` form,
+assuming `L ≤ rowTotal + k`. -/
+lemma abs_empiricalStepProb_sub_target_le_k_div_L
+    (hk : 0 < k) (c : TransCounts k) (prev next : Fin k)
+    (L : ℕ) (hLpos : 0 < L)
+    (hL : (L : ℝ) ≤ (c.rowTotal prev : ℝ) + (k : ℝ)) :
+    |empiricalStepProb (k := k) hk c prev next -
+        empiricalStepProbTarget (k := k) hk c prev next| ≤
+      (k : ℝ) / (L : ℝ) := by
+  have hbase :=
+    abs_empiricalStepProb_sub_target_le_k_div_rowTotalPlusK
+      (k := k) (hk := hk) (c := c) (prev := prev) (next := next)
+  have hk_nonneg : 0 ≤ (k : ℝ) := by exact_mod_cast (Nat.zero_le k)
+  have hinv : ((c.rowTotal prev : ℝ) + (k : ℝ))⁻¹ ≤ (L : ℝ)⁻¹ := by
+    simpa [one_div] using
+      (one_div_le_one_div_of_le (by exact_mod_cast hLpos) hL)
+  have hmul :
+      (k : ℝ) * (((c.rowTotal prev : ℝ) + (k : ℝ))⁻¹) ≤
+        (k : ℝ) * ((L : ℝ)⁻¹) :=
+    mul_le_mul_of_nonneg_left hinv hk_nonneg
+  exact le_trans hbase (by simpa [div_eq_mul_inv] using hmul)
+
+/-- For realizable states, the start-row total dominates the return-to-start count. -/
+lemma returnsToStart_le_rowTotal_start_of_mem_stateFinset
+    {N : ℕ} {s : MarkovState k} (hs : s ∈ stateFinset k N) :
+    returnsToStart (k := k) s ≤ s.counts.rowTotal s.start := by
+  have hbal :=
+    MarkovDeFinettiHardBESTCore.flow_balance_graphOfState_of_mem_stateFinset
+      (k := k) hs s.start
+  have hbal' :
+      s.counts.rowTotal s.start + (if s.last = s.start then 1 else 0) =
+        returnsToStart (k := k) s + 1 := by
+    simpa [returnsToStart,
+      MarkovDeFinettiHardBESTCore.outDeg_graphOfState_eq,
+      MarkovDeFinettiHardBESTCore.inDeg_graphOfState_eq,
+      MarkovDeFinettiHardEuler.outdeg] using hbal
+  by_cases hlast : s.last = s.start
+  · have hEq : s.counts.rowTotal s.start = returnsToStart (k := k) s := by
+      have : s.counts.rowTotal s.start + 1 = returnsToStart (k := k) s + 1 := by
+        simpa [hlast] using hbal'
+      exact Nat.succ.inj this
+    simpa [hEq] using le_rfl
+  · have hEq : s.counts.rowTotal s.start = returnsToStart (k := k) s + 1 := by
+      simpa [hlast] using hbal'
+    have hle : returnsToStart (k := k) s ≤ returnsToStart (k := k) s + 1 := Nat.le_succ _
+    simpa [hEq] using hle
+
+/-- Real-cast denominator bridge from returns-to-start to start-row total plus `k`. -/
+lemma returnsToStart_toReal_le_rowTotal_start_toReal_add_k_of_mem_stateFinset
+    {N : ℕ} {s : MarkovState k} (hs : s ∈ stateFinset k N) :
+    (returnsToStart (k := k) s : ℝ) ≤
+      (s.counts.rowTotal s.start : ℝ) + (k : ℝ) := by
+  have hnat : returnsToStart (k := k) s ≤ s.counts.rowTotal s.start :=
+    returnsToStart_le_rowTotal_start_of_mem_stateFinset (k := k) hs
+  have hcast : (returnsToStart (k := k) s : ℝ) ≤ (s.counts.rowTotal s.start : ℝ) := by
+    exact_mod_cast hnat
+  have hk_nonneg : (0 : ℝ) ≤ (k : ℝ) := by
+    exact_mod_cast (Nat.zero_le k)
+  linarith
+
+/-- Start-row specialization of the per-step Laplace-vs-target bound in `k / R` form. -/
+lemma abs_empiricalStepProb_sub_target_le_k_div_returnsToStart_start
+    (hk : 0 < k) {N : ℕ} {s : MarkovState k}
+    (hs : s ∈ stateFinset k N)
+    (hRpos : 0 < returnsToStart (k := k) s)
+    (next : Fin k) :
+    |empiricalStepProb (k := k) hk s.counts s.start next -
+        empiricalStepProbTarget (k := k) hk s.counts s.start next| ≤
+      (k : ℝ) / (returnsToStart (k := k) s : ℝ) := by
+  have hL :
+      (returnsToStart (k := k) s : ℝ) ≤
+        (s.counts.rowTotal s.start : ℝ) + (k : ℝ) :=
+    returnsToStart_toReal_le_rowTotal_start_toReal_add_k_of_mem_stateFinset
+      (k := k) hs
+  exact
+    abs_empiricalStepProb_sub_target_le_k_div_L
+      (k := k) (hk := hk) (c := s.counts) (prev := s.start) (next := next)
+      (L := returnsToStart (k := k) s) (hLpos := hRpos) (hL := hL)
+
+/-- Lift a pointwise excursion-step bound to a product bound via
+`abs_excursionsProb_diff_le_length_mul_eps`. -/
+lemma abs_excursionWithReplacementProb_sub_excursionsProb_target_le_length_mul_eps
+    (elist pref : ExcursionList k)
+    (target : ExcursionType k → ℝ)
+    (ε : ℝ)
+    (hstep :
+      ∀ a ∈ pref,
+        |empiricalExcursionProb (k := k) elist a - target a| ≤ ε)
+    (htarget_range :
+      ∀ a ∈ pref,
+        0 ≤ target a ∧ target a ≤ 1) :
+    |excursionWithReplacementProb (k := k) elist pref -
+        excursionsProb (k := k) target pref| ≤
+      (pref.length : ℝ) * ε := by
+  have hrange :
+      ∀ a ∈ pref,
+        0 ≤ empiricalExcursionProb (k := k) elist a ∧
+          empiricalExcursionProb (k := k) elist a ≤ 1 ∧
+          0 ≤ target a ∧ target a ≤ 1 := by
+    intro a ha
+    refine ⟨?_, ?_, (htarget_range a ha).1, (htarget_range a ha).2⟩
+    · simpa [empiricalExcursionProb] using
+        (probWeight_nonneg
+          ((excursionMultiset (k := k) elist).count a)
+          ((excursionMultiset (k := k) elist).card))
+    · simpa [empiricalExcursionProb] using
+        (probWeight_le_one
+          ((excursionMultiset (k := k) elist).count a)
+          ((excursionMultiset (k := k) elist).card)
+          (Multiset.count_le_card _ _))
+  have hprod :=
+    abs_excursionsProb_diff_le_length_mul_eps
+      (k := k)
+      (elist := pref)
+      (p := empiricalExcursionProb (k := k) elist)
+      (q := target)
+      (ε := ε)
+      hstep
+      hrange
+  have hwr :
+      excursionsProb (k := k) (empiricalExcursionProb (k := k) elist) pref =
+        excursionWithReplacementProb (k := k) elist pref := by
+    simpa using (excursionsProb_eq_wrProb (k := k) elist pref)
+  calc
+    |excursionWithReplacementProb (k := k) elist pref -
+        excursionsProb (k := k) target pref|
+        = |excursionsProb (k := k) (empiricalExcursionProb (k := k) elist) pref -
+            excursionsProb (k := k) target pref| := by
+              simpa [hwr]
+    _ ≤ (pref.length : ℝ) * ε := hprod
 
 /-! ## wordProbNN of empiricalParam on fiber members -/
 
@@ -2275,6 +2536,54 @@ lemma sum_shortPatternRatio_over_shortImage
       exact (ENNReal.div_eq_one_iff hden_enn hden_top).2 rfl
     simp [S, hden, hsum, hratio1]
 
+lemma shortPatternRatio_ne_top
+    (n : ℕ) (e : MarkovState k) (p : ExcursionList k) :
+    shortPatternRatio (k := k) n e p ≠ ⊤ := by
+  by_cases hden : (fiber k (Nat.succ n) e).card = 0
+  · have hfiber_empty : fiber k (Nat.succ n) e = ∅ := Finset.card_eq_zero.mp hden
+    have hshort_empty : shortPatternFiber (k := k) n e p = ∅ := by
+      unfold shortPatternFiber
+      simp [hfiber_empty]
+    unfold shortPatternRatio
+    simp [hden, hshort_empty]
+  · unfold shortPatternRatio
+    exact ENNReal.div_ne_top (by simp) (by exact_mod_cast hden)
+
+lemma toReal_sum_shortPatternRatio
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k) :
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      shortPatternRatio (k := k) n e p).toReal =
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        (shortPatternRatio (k := k) n e p).toReal := by
+  exact ENNReal.toReal_sum
+    (fun p hp => shortPatternRatio_ne_top (k := k) (n := n) (e := e) (p := p))
+
+lemma sum_shortPatternRatio_toReal
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      (shortPatternRatio (k := k) n e p).toReal =
+        (if (fiber k (Nat.succ n) e).card = 0 then 0 else 1) := by
+  have hsum_enn :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        shortPatternRatio (k := k) n e p =
+          (if (fiber k (Nat.succ n) e).card = 0 then 0 else 1) := by
+    simpa [excursionPatternSet_eq_shortImage (k := k) (hN := hN) (e := e) (s := s)] using
+      sum_shortPatternRatio_over_shortImage (k := k) (n := n) (e := e)
+  have hsum_real := congrArg ENNReal.toReal hsum_enn
+  rw [toReal_sum_shortPatternRatio (k := k) (hN := hN) (e := e) (s := s)] at hsum_real
+  by_cases hden : (fiber k (Nat.succ n) e).card = 0
+  · simpa [hden] using hsum_real
+  · simpa [hden] using hsum_real
+
+lemma sum_shortPatternRatio_toReal_le_one
+    {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      (shortPatternRatio (k := k) n e p).toReal ≤ (1 : ℝ) := by
+  have hsum := sum_shortPatternRatio_toReal (k := k) (hN := hN) (e := e) (s := s)
+  by_cases hden : (fiber k (Nat.succ n) e).card = 0
+  · simpa [hsum, hden]
+  · simpa [hsum, hden]
+
 lemma sum_prefixPatternRatio
     {n N : ℕ} (hN : Nat.succ n ≤ N) (e s : MarkovState k) :
     ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
@@ -3864,6 +4173,94 @@ lemma worPatternMass_toReal_eq_prefixRatio_toReal_mul_prefixCoeff_toReal
     _ = (prefixPatternRatio (k := k) (hN := hN) e s p).toReal *
           (prefixCoeff (k := k) (h := hN) e s).toReal := by
           simp [ENNReal.toReal_mul]
+
+/-- Canonical WR-side surrogate mass over patterns: keep the short-fiber shape,
+replace the global WR scalar by an external surrogate scalar. -/
+def canonicalWRSurrogateMass
+    (n : ℕ) (e : MarkovState k) (wSurrogate : ℝ) (p : ExcursionList k) : ℝ :=
+  (shortPatternRatio (k := k) n e p).toReal * wSurrogate
+
+lemma abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass
+    (hk : 0 < k) (n : ℕ) (e s : MarkovState k)
+    (wSurrogate : ℝ) (p : ExcursionList k) :
+    |(wrPatternMass (k := k) hk n e s p).toReal -
+      canonicalWRSurrogateMass (k := k) n e wSurrogate p| =
+      (shortPatternRatio (k := k) n e p).toReal *
+        |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+          wSurrogate| := by
+  let a : ℝ := (shortPatternRatio (k := k) n e p).toReal
+  let Wv : ℝ :=
+    (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
+  have ha_nonneg : 0 ≤ a := by
+    dsimp [a]
+    exact ENNReal.toReal_nonneg
+  calc
+    |(wrPatternMass (k := k) hk n e s p).toReal -
+      canonicalWRSurrogateMass (k := k) n e wSurrogate p|
+        = |a * Wv - a * wSurrogate| := by
+            simp [a, Wv, canonicalWRSurrogateMass,
+              wrPatternMass_toReal_eq_shortRatio_toReal_mul_W_toReal
+                (k := k) (hk := hk) (n := n) (e := e) (s := s) (p := p)]
+    _ = |a * (Wv - wSurrogate)| := by ring_nf
+    _ = |a| * |Wv - wSurrogate| := by rw [abs_mul]
+    _ = a * |Wv - wSurrogate| := by simp [abs_of_nonneg ha_nonneg]
+    _ = (shortPatternRatio (k := k) n e p).toReal *
+          |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+            wSurrogate| := by simp [a, Wv]
+
+lemma sum_abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass_le
+    (hk : 0 < k) (n : ℕ) {N : ℕ} (hN : Nat.succ n ≤ N)
+    (e s : MarkovState k)
+    (wSurrogate εW : ℝ)
+    (hWsurrogate :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        wSurrogate| ≤ εW) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        canonicalWRSurrogateMass (k := k) n e wSurrogate p| ≤ εW := by
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  let Δ : ℝ :=
+    |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+      wSurrogate|
+  have hrewrite :
+      (∑ p ∈ P,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          canonicalWRSurrogateMass (k := k) n e wSurrogate p|) =
+      (∑ p ∈ P, (shortPatternRatio (k := k) n e p).toReal) * Δ := by
+    calc
+      (∑ p ∈ P,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          canonicalWRSurrogateMass (k := k) n e wSurrogate p|)
+          = ∑ p ∈ P,
+              ((shortPatternRatio (k := k) n e p).toReal * Δ) := by
+                refine Finset.sum_congr rfl ?_
+                intro p hp
+                simp [Δ, abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass
+                  (k := k) (hk := hk) (n := n) (e := e) (s := s)
+                  (wSurrogate := wSurrogate) (p := p)]
+      _ = (∑ p ∈ P, (shortPatternRatio (k := k) n e p).toReal) * Δ := by
+            rw [Finset.sum_mul]
+  have hratio_le_one :
+      (∑ p ∈ P, (shortPatternRatio (k := k) n e p).toReal) ≤ 1 := by
+    simpa [P] using
+      (sum_shortPatternRatio_toReal_le_one (k := k) (hN := hN) (e := e) (s := s))
+  have hΔ_nonneg : 0 ≤ Δ := by
+    dsimp [Δ]
+    exact abs_nonneg _
+  have hmul_le :
+      (∑ p ∈ P, (shortPatternRatio (k := k) n e p).toReal) * Δ ≤ 1 * Δ :=
+    mul_le_mul_of_nonneg_right hratio_le_one hΔ_nonneg
+  have hΔ_le : Δ ≤ εW := by
+    simpa [Δ] using hWsurrogate
+  calc
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        canonicalWRSurrogateMass (k := k) n e wSurrogate p|)
+        = (∑ p ∈ P, (shortPatternRatio (k := k) n e p).toReal) * Δ := by
+            simpa [P] using hrewrite
+    _ ≤ 1 * Δ := hmul_le
+    _ = Δ := by ring
+    _ ≤ εW := hΔ_le
 
 lemma abs_wr_wor_patternMass_toReal_eq_abs_ratio_form
     {n N : ℕ} (hk : 0 < k) (hN : Nat.succ n ≤ N) (e s : MarkovState k)
@@ -6262,6 +6659,54 @@ private lemma class_biapprox_le_pushforward_plus_errors
     simpa [V, abs_sub_comm] using hPC
   linarith [hsplit, hpush, hWR', hPC']
 
+private lemma class_collision_bound_of_alignment_package
+    {m R : ℕ} {Γ : Type*} [Fintype Γ] [DecidableEq Γ]
+    (WR WOR : Γ → ℝ)
+    (lift : (Fin m → Fin R) → Option Γ)
+    (εW εPC : ℝ)
+    (hWR :
+      (∑ γ : Γ,
+        abs (WR γ - (∑ f : (Fin m → Fin R), if lift f = some γ then
+          (1 : ℝ) / (R : ℝ) ^ m else 0))) ≤ εW)
+    (hPC :
+      (∑ γ : Γ,
+        abs ((∑ f : (Fin m → Fin R), if lift f = some γ then
+          (if Function.Injective f then
+            (1 : ℝ) / (R : ℝ) ^ m /
+              (∑ g : (Fin m → Fin R), if Function.Injective g then
+                (1 : ℝ) / (R : ℝ) ^ m else 0)
+          else 0)
+          else 0) - WOR γ)) ≤ εPC)
+    (hGap : εW + εPC ≤ 0)
+    (hRpos : 0 < R)
+    (hmR : m ≤ R) :
+    (∑ γ : Γ, |WR γ - WOR γ|) ≤
+      (4 : ℝ) * (m : ℝ) * (m : ℝ) / (R : ℝ) := by
+  let Ω := Fin m → Fin R
+  let μ0 : Ω → ℝ := fun _ =>
+    (1 : ℝ) / (R : ℝ) ^ m
+  let μinj : Ω → ℝ := fun f =>
+    if Function.Injective f then
+      (1 : ℝ) / (R : ℝ) ^ m /
+        (∑ g : Ω, if Function.Injective g then
+          (1 : ℝ) / (R : ℝ) ^ m else 0)
+    else 0
+  have hcore :
+      (∑ γ : Γ, |WR γ - WOR γ|) ≤
+        εW + εPC + (∑ f : Ω, abs (μ0 f - μinj f)) := by
+    exact class_biapprox_le_pushforward_plus_errors
+      (WR := WR) (WOR := WOR)
+      (lift := lift) (μ0 := μ0) (μinj := μinj)
+      (εW := εW) (εPC := εPC)
+      (by simpa [Ω, μ0] using hWR)
+      (by simpa [Ω, μinj] using hPC)
+  have hcollision :
+      (∑ f : Ω, abs (μ0 f - μinj f)) ≤
+        (4 : ℝ) * (m : ℝ) * (m : ℝ) / (R : ℝ) := by
+    simpa [Ω, μ0, μinj] using
+      (Mettapedia.Logic.l1_iid_inj_le (R := R) (m := m) hRpos hmR)
+  linarith [hcore, hcollision, hGap]
+
 private lemma class_biapprox_le_collision_plus_errors
     {m R : ℕ} {Γ : Type*} [Fintype Γ] [DecidableEq Γ]
     (WR WOR : Γ → ℝ)
@@ -6321,7 +6766,7 @@ The proof requires the BEST theorem (or excursion ordering bijection):
 4. WOR/WR bound gives `4n²/R`
 -/
 
-/-- **Diaconis-Freedman core**: for `R > 4n²`, the difference between
+/- **Diaconis-Freedman core**: for `R > 4n²`, the difference between
 `W(empiricalParam s)` and `prefixCoeff` is bounded by `4n²/R`.
 
 TODO: Prove via BEST theorem consequence (Euler trail counting / excursion
@@ -6527,11 +6972,53 @@ theorem wr_bridge_counts_counterexample :
 
 end WRBridgeCounterexample
 
+/--
+Explicit core package for the excursion decomposition bound.
+
+`εW` and `εPC` are the WR-side and WOR-side class-alignment residuals.
+The package states that their sum is nonpositive and that the classwise WR/WOR
+mass discrepancy is controlled by the collision term plus `εW + εPC`.
+-/
+def ExcursionBiapproxPackage
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k) : Prop :=
+  ∃ εW εPC : ℝ,
+    (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+      εW + εPC +
+        (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+          (returnsToStart (k := k) s : ℝ)
+    ∧ εW + εPC ≤ 0
+
+private lemma excursion_wor_wr_core_from_semantic_package
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (εW εPC : ℝ)
+    (hsum_biapprox :
+      (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+        ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+        εW + εPC +
+          (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+            (returnsToStart (k := k) s : ℝ))
+    (hsemantic_gap : εW + εPC ≤ 0) :
+    (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+      (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+        (returnsToStart (k := k) s : ℝ) := by
+  linarith [hsum_biapprox, hsemantic_gap]
+
+
 private lemma excursion_wor_wr_core
     (hk : 0 < k) (n : ℕ) (e : MarkovState k)
     {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
     (hs : s ∈ stateFinset k N)
-    (hRlarge : 4 * (Nat.succ n) * (Nat.succ n) < returnsToStart (k := k) s) :
+    (hcore : ExcursionBiapproxPackage (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)) :
     ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
       |(shortPatternRatio (k := k) n e p).toReal *
           (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
@@ -6539,6 +7026,7 @@ private lemma excursion_wor_wr_core
           (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
       (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
         (returnsToStart (k := k) s : ℝ) := by
+  rcases hcore with ⟨εW, εPC, hsum_biapprox, hsemantic_gap⟩
   have hpart :=
     sum_ratioTerm_partition_by_excursionMultiset
       (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
@@ -6554,248 +7042,165 @@ private lemma excursion_wor_wr_core
   rw [hsumRatio, hpart]
   rw [sum_ratioTerm_partition_by_excursionMultiset_eq_sum_abs_wr_wor_partition_by_excursionMultiset
       (k := k) (hN := hN) (hk := hk) (e := e) (s := s) hs]
-  -- Remaining core obligation (Diaconis-Freedman/BEST):
-  -- bound each multiset fiber by adjacent-transposition uniformity + orbit
-  -- averaging, then sum those fiber bounds.
-  -- Subgoal A: multiset-fiber constancy
-  -- Patterns with the same multiset have the same |wr - wor| value.
-  have hconst :
-      ∀ mset,
-        mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList →
-          ∀ p q,
-            p ∈ excursionPatternSet (k := k) (hN := hN) e s →
-              q ∈ excursionPatternSet (k := k) (hN := hN) e s →
-                Multiset.ofList p = mset →
-                  Multiset.ofList q = mset →
-                    |(wrPatternMass (k := k) hk n e s p).toReal -
-                      (worPatternMass (k := k) (hN := hN) e s p).toReal| =
-                    |(wrPatternMass (k := k) hk n e s q).toReal -
-                      (worPatternMass (k := k) (hN := hN) e s q).toReal| := by
-    intro mset _ p q hp hq hpm hqm
-    exact abs_wr_wor_patternMass_toReal_eq_of_perm
-          (k := k) (hN := hN) (hk := hk) (e := e) (s := s) (hs := hs)
-          (p := p) (q := q) hp hq (by rw [hpm, ← hqm])
-  -- Subgoal B: representative-weighted bound in bi-approx form.
-  have hbound_repr_biapprox :
-      let P := excursionPatternSet (k := k) (hN := hN) e s
-      let repr : Multiset (ExcursionType k) → ExcursionList k := fun mset =>
-        if hm : ∃ p ∈ P, Multiset.ofList p = mset then (Classical.choose hm) else []
-      ∃ εW εPC : ℝ,
-        (∑ mset ∈ P.image Multiset.ofList,
-          (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
-            |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
-              (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) ≤
-          εW + εPC +
-            (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
-              (returnsToStart (k := k) s : ℝ) := by
-    classical
-    let P := excursionPatternSet (k := k) (hN := hN) e s
-    let repr : Multiset (ExcursionType k) → ExcursionList k := fun mset =>
-      if hm : ∃ p ∈ P, Multiset.ofList p = mset then (Classical.choose hm) else []
-    let Pset : Finset (Multiset (ExcursionType k)) := P.image Multiset.ofList
-    let mE : ℕ := returnsToStart (k := k) e
-    have hRpos : 0 < returnsToStart (k := k) s := by
-      have hquad : 0 < 4 * (Nat.succ n) * (Nat.succ n) := by positivity
-      exact lt_trans hquad hRlarge
-    have hmR : Nat.succ n ≤ returnsToStart (k := k) s := by
-      have hsq : Nat.succ n ≤ Nat.succ n * Nat.succ n := by
-        exact Nat.le_mul_of_pos_right (Nat.succ n) (Nat.succ_pos n)
-      have h4 : Nat.succ n * Nat.succ n ≤ 4 * (Nat.succ n * Nat.succ n) := by
-        calc
-          Nat.succ n * Nat.succ n = 1 * (Nat.succ n * Nat.succ n) := by simp
-          _ ≤ 4 * (Nat.succ n * Nat.succ n) := by
-              exact Nat.mul_le_mul_right (Nat.succ n * Nat.succ n) (by decide : (1 : ℕ) ≤ 4)
-      have hquad : Nat.succ n ≤ 4 * (Nat.succ n) * (Nat.succ n) := by
-        have htmp : Nat.succ n ≤ 4 * (Nat.succ n * Nat.succ n) := le_trans hsq h4
-        simpa [Nat.mul_assoc] using htmp
-      exact le_trans hquad (Nat.le_of_lt hRlarge)
-    by_cases hPempty : Pset = ∅
-    · refine ⟨0, 0, ?_⟩
-      have hraw0 :
-          (∑ mset ∈ P.image Multiset.ofList,
-            (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
-              |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
-                (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) = 0 := by
-            simp [Pset, hPempty]
-      calc
-        (∑ mset ∈ P.image Multiset.ofList,
-          (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
-            |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
-              (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) = 0 := hraw0
-        _ ≤
-          (0 : ℝ) + 0 +
-            (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
-              (returnsToStart (k := k) s : ℝ) := by
-          positivity
-    · have hPnonempty : Pset.Nonempty := by
-        exact Finset.nonempty_iff_ne_empty.mpr hPempty
-      have hmE_le_n : mE ≤ Nat.succ n := by
-        rcases hPnonempty with ⟨mset, hmset⟩
-        rcases Finset.mem_image.1 hmset with ⟨p, hpP, rfl⟩
-        have hPshort :
-            (fiber k (Nat.succ n) e).image
-              (fun ys => excursionListOfTraj (k := k) ys) = P := by
-          simpa [P] using
-            (excursionPatternSet_eq_shortImage
-              (k := k) (hN := hN) (e := e) (s := s)).symm
-        have hpP' :
-            p ∈ (fiber k (Nat.succ n) e).image
-              (fun ys => excursionListOfTraj (k := k) ys) := by
-          rw [hPshort]
-          exact hpP
-        rcases Finset.mem_image.1 hpP' with ⟨ys0, hys0, rfl⟩
-        have hprefix_le :
-            prefixExcursionCount (k := k) (n := Nat.succ n) (N := Nat.succ n) le_rfl ys0 ≤
-              Nat.succ n := by
-          simpa using
-            (prefixExcursionCount_le_n
-              (k := k) (n := Nat.succ n) (N := Nat.succ n) le_rfl ys0)
-        have hstate : stateOfTraj (k := k) ys0 = e := (Finset.mem_filter.1 hys0).2
-        have hprefix_eq :
-            prefixExcursionCount (k := k) (n := Nat.succ n) (N := Nat.succ n) le_rfl ys0 = mE := by
-          have hnum : numExcursions (k := k) ys0 = returnsToStart (k := k) e := by
-            have hnum' := numExcursions_eq_returnsToStart (k := k) ys0
-            simpa [hstate] using hnum'
-          simpa [prefixExcursionCount, trajPrefix_self, mE] using hnum
-        simpa [hprefix_eq] using hprefix_le
-      let Γ := {mset : Multiset (ExcursionType k) // mset ∈ Pset}
-      let Ω := Fin mE → Fin (returnsToStart (k := k) s)
-      let WR : Γ → ℝ := fun γ =>
-        (((P.filter (fun p => Multiset.ofList p = γ.1)).card : ℝ) *
-          (wrPatternMass (k := k) hk n e s (repr γ.1)).toReal)
-      let WOR : Γ → ℝ := fun γ =>
-        (((P.filter (fun p => Multiset.ofList p = γ.1)).card : ℝ) *
-          (worPatternMass (k := k) (hN := hN) e s (repr γ.1)).toReal)
-      let lift : Ω → Option Γ := fun _ => none
-      let εW : ℝ :=
-        (∑ γ : Γ,
-          abs (WR γ - (∑ f : Ω, if lift f = some γ then
-            (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ mE else 0)))
-      let εPC : ℝ :=
-        (∑ γ : Γ,
-          abs ((∑ f : Ω, if lift f = some γ then
-            (if Function.Injective f then
-              (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ mE /
-                (∑ g : Ω, if Function.Injective g then
-                  (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ mE else 0)
-            else 0)
-            else 0) - WOR γ))
-      have hmE_R : mE ≤ returnsToStart (k := k) s := by
-        exact le_trans hmE_le_n hmR
-      have hWR_local :
-          (∑ γ : Γ,
-            abs (WR γ - (∑ f : Ω, if lift f = some γ then
-              (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ mE else 0))) ≤ εW := by
-        simp [εW]
-      have hPC_local :
-          (∑ γ : Γ,
-            abs ((∑ f : Ω, if lift f = some γ then
-              (if Function.Injective f then
-                (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ mE /
-                  (∑ g : Ω, if Function.Injective g then
-                    (1 : ℝ) / (returnsToStart (k := k) s : ℝ) ^ mE else 0)
-              else 0)
-              else 0) - WOR γ)) ≤ εPC := by
-        simp [εPC]
-      have hclass_biapprox :
-          (∑ γ : Γ, |WR γ - WOR γ|) ≤
-            εW + εPC + (4 : ℝ) * (mE : ℝ) * (mE : ℝ) /
-              (returnsToStart (k := k) s : ℝ) := by
-        simpa [Ω] using
-          (class_biapprox_le_collision_plus_errors
-            (m := mE)
-            (R := returnsToStart (k := k) s)
-            (Γ := Γ)
-            (WR := WR)
-            (WOR := WOR)
-            (lift := lift)
-            (εW := εW)
-            (εPC := εPC)
-            (hWR := hWR_local)
-            (hPC := hPC_local)
-            hRpos hmE_R)
-      let classTerm : Multiset (ExcursionType k) → ℝ := fun mset =>
-        (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
-          |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
-            (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)
-      have hcollapse_classTerm :
-          (∑ mset ∈ P.image Multiset.ofList,
-            (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
-              |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
-                (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|)) =
-            (∑ mset ∈ Pset, classTerm mset) := by
-        simp [Pset, classTerm]
-      have hclass_expand :
-          (∑ mset ∈ Pset, classTerm mset) = ∑ γ : Γ, classTerm γ.1 := by
-        simpa [Γ, Pset, classTerm] using
-          (Finset.sum_attach Pset (fun mset => classTerm mset)).symm
-      have hclass_eq :
-          (∑ γ : Γ, classTerm γ.1) = ∑ γ : Γ, |WR γ - WOR γ| := by
-        refine Finset.sum_congr rfl ?_
-        intro γ hγ
-        set cγ : ℝ := ((P.filter (fun p => Multiset.ofList p = γ.1)).card : ℝ)
-        set wrγ : ℝ := (wrPatternMass (k := k) hk n e s (repr γ.1)).toReal
-        set worγ : ℝ := (worPatternMass (k := k) (hN := hN) e s (repr γ.1)).toReal
-        have hcγ_nonneg : 0 ≤ cγ := by
-          dsimp [cγ]
-          positivity
-        calc
-          classTerm γ.1 = cγ * abs (wrγ - worγ) := by
-            simp [classTerm, cγ, wrγ, worγ]
-          _ = abs (cγ * (wrγ - worγ)) := by
-            rw [abs_mul, abs_of_nonneg hcγ_nonneg]
-          _ = abs (cγ * wrγ - cγ * worγ) := by
-            ring_nf
-          _ = |WR γ - WOR γ| := by
-            simp [WR, WOR, cγ, wrγ, worγ]
-      have hcollision :
-          (4 : ℝ) * (mE : ℝ) * (mE : ℝ) /
-              (returnsToStart (k := k) s : ℝ) ≤
-            (4 : ℝ) * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ) /
-              (returnsToStart (k := k) s : ℝ) := by
-        have hmE_real : (mE : ℝ) ≤ ((Nat.succ n : ℕ) : ℝ) := by
-          exact_mod_cast hmE_le_n
-        have hnum_le :
-            (4 : ℝ) * (mE : ℝ) * (mE : ℝ) ≤
-              (4 : ℝ) * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ) := by
-          nlinarith
-        have hRnonneg : 0 ≤ (returnsToStart (k := k) s : ℝ) := by
-          exact Nat.cast_nonneg _
-        exact div_le_div_of_nonneg_right hnum_le hRnonneg
-      refine ⟨εW, εPC, ?_⟩
-      calc
-        (∑ mset ∈ P.image Multiset.ofList,
-          (((P.filter (fun p => Multiset.ofList p = mset)).card : ℝ) *
-            |(wrPatternMass (k := k) hk n e s (repr mset)).toReal -
-              (worPatternMass (k := k) (hN := hN) e s (repr mset)).toReal|))
-            = (∑ mset ∈ Pset, classTerm mset) := hcollapse_classTerm
-        _ = ∑ γ : Γ, classTerm γ.1 := hclass_expand
-        _ = ∑ γ : Γ, |WR γ - WOR γ| := hclass_eq
-        _ ≤ εW + εPC +
-              (4 : ℝ) * (mE : ℝ) * (mE : ℝ) /
-                (returnsToStart (k := k) s : ℝ) := hclass_biapprox
-        _ ≤ εW + εPC +
-              (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
-                (returnsToStart (k := k) s : ℝ) := by
-              linarith [hcollision]
-  rcases hbound_repr_biapprox with ⟨εW, εPC, hbound_repr_biapprox'⟩
-  have hsum_biapprox :
-      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+  exact
+    excursion_wor_wr_core_from_semantic_package
+      (k := k) (hN := hN) (hk := hk)
+      (n := n) (e := e) (s := s)
+      (εW := εW) (εPC := εPC)
+      (hsum_biapprox := hsum_biapprox)
+      (hsemantic_gap := hsemantic_gap)
+
+/-- Concrete WR-side smoothing rate for the canonical surrogate mass. -/
+theorem wr_smoothing_rate_canonicalWRSurrogate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (wSurrogate Cw : ℝ)
+    (hWclose :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ)) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        canonicalWRSurrogateMass (k := k) n e wSurrogate p| ≤
+      Cw / (returnsToStart (k := k) s : ℝ) := by
+  exact
+    sum_abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass_le
+      (k := k) (hk := hk) (n := n) (hN := hN) (e := e) (s := s)
+      (wSurrogate := wSurrogate)
+      (εW := Cw / (returnsToStart (k := k) s : ℝ))
+      hWclose
+
+/-- Concrete WOR-side transport rate from the canonical WR surrogate:
+WR-smoothing residual plus the DF collision term. -/
+theorem wor_transport_rate_canonicalWRSurrogate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (hs : s ∈ stateFinset k N)
+    (hcore : ExcursionBiapproxPackage (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s))
+    (wSurrogate Cw : ℝ)
+    (hWclose :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ)) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤
+      (Cw + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+        (returnsToStart (k := k) s : ℝ) := by
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  have hwr_canonical :
+      ∑ p ∈ P,
         |(wrPatternMass (k := k) hk n e s p).toReal -
-          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
-        εW + εPC +
-          (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
-            (returnsToStart (k := k) s : ℝ) := by
-    exact sum_abs_wr_wor_partition_by_excursionMultiset_le_of_const
-      (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
-      (εW + εPC +
+          canonicalWRSurrogateMass (k := k) n e wSurrogate p| ≤
+        Cw / (returnsToStart (k := k) s : ℝ) := by
+    simpa [P] using
+      wr_smoothing_rate_canonicalWRSurrogate
+        (k := k) (hk := hk) (n := n) (e := e)
+        (hN := hN) (s := s) (wSurrogate := wSurrogate) (Cw := Cw) hWclose
+  have hwr_wor :
+      ∑ p ∈ P,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤
         (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
-          (returnsToStart (k := k) s : ℝ))
-      hconst hbound_repr_biapprox'
-  have hsemantic_gap : εW + εPC ≤ 0 := by
-    -- Crux semantic gap: establish WR/WOR classwise approximation errors.
-    sorry
-  linarith [hsum_biapprox, hsemantic_gap]
+          (returnsToStart (k := k) s : ℝ) := by
+    have hratio :=
+      excursion_wor_wr_core (k := k) (hk := hk) (n := n) (e := e)
+        (hN := hN) (s := s) hs hcore
+    simpa [P,
+      sum_abs_wr_wor_patternMass_toReal_eq_sum_abs_ratio_form
+        (k := k) (hk := hk) (hN := hN) (e := e) (s := s) hs] using hratio
+  have htriangle :
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) ≤
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (wrPatternMass (k := k) hk n e s p).toReal| : ℝ) +
+      (∑ p ∈ P,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) := by
+    let f : ExcursionList k → ℝ := fun p =>
+      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|
+    let g : ExcursionList k → ℝ := fun p =>
+      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+        (wrPatternMass (k := k) hk n e s p).toReal| +
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|
+    have hfg : ∀ p ∈ P, f p ≤ g p := by
+      intro p hp
+      dsimp [f, g]
+      simpa [sub_eq_add_neg, add_assoc, add_comm, add_left_comm] using
+        (abs_sub_le
+          (canonicalWRSurrogateMass (k := k) n e wSurrogate p)
+          ((wrPatternMass (k := k) hk n e s p).toReal)
+          ((worPatternMass (k := k) (hN := hN) e s p).toReal))
+    have hsum_le : (∑ p ∈ P, f p) ≤ ∑ p ∈ P, g p :=
+      Finset.sum_le_sum hfg
+    calc
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) = ∑ p ∈ P, f p := by
+            simp [f]
+      _ ≤ ∑ p ∈ P, g p := hsum_le
+      _ =
+        (∑ p ∈ P,
+          |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+            (wrPatternMass (k := k) hk n e s p).toReal| : ℝ) +
+        (∑ p ∈ P,
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) := by
+              simp [g, Finset.sum_add_distrib]
+  have hcanon_wr_eq :
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (wrPatternMass (k := k) hk n e s p).toReal|) =
+      (∑ p ∈ P,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          canonicalWRSurrogateMass (k := k) n e wSurrogate p|) := by
+    refine Finset.sum_congr rfl ?_
+    intro p hp
+    exact abs_sub_comm _ _
+  have hcanon_wr :
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (wrPatternMass (k := k) hk n e s p).toReal|) ≤
+      Cw / (returnsToStart (k := k) s : ℝ) := by
+    calc
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (wrPatternMass (k := k) hk n e s p).toReal|)
+          =
+        (∑ p ∈ P,
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            canonicalWRSurrogateMass (k := k) n e wSurrogate p|) := hcanon_wr_eq
+      _ ≤ Cw / (returnsToStart (k := k) s : ℝ) := hwr_canonical
+  have hsum :
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+      Cw / (returnsToStart (k := k) s : ℝ) +
+        (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+          (returnsToStart (k := k) s : ℝ) := by
+    exact le_trans htriangle (add_le_add hcanon_wr hwr_wor)
+  have hsplit :
+      Cw / (returnsToStart (k := k) s : ℝ) +
+          (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+            (returnsToStart (k := k) s : ℝ) =
+        (Cw + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+          (returnsToStart (k := k) s : ℝ) := by
+    ring
+  calc
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|
+        = ∑ p ∈ P,
+            |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+              (worPatternMass (k := k) (hN := hN) e s p).toReal| := by
+                simp [P]
+    _ ≤ Cw / (returnsToStart (k := k) s : ℝ) +
+        (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+          (returnsToStart (k := k) s : ℝ) := hsum
+    _ = (Cw + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+          (returnsToStart (k := k) s : ℝ) := hsplit
 
 private lemma excursion_bound_from_pattern_abs_sum
     (hk : 0 < k) (n : ℕ) (e : MarkovState k)
@@ -6832,28 +7237,22 @@ private lemma excursion_bound_from_pattern_abs_sum
       (k := k) (hk := hk) (hN := hN) (e := e) (s := s) hs)
     hsumAbs
 
-/-- Adjusted decomposition bound through an explicit surrogate class law. -/
-theorem excursion_bound_from_decomposition_adjusted
+/-- Decomposition bound through an explicit surrogate law with separate WR/WOR errors. -/
+theorem excursion_bound_from_decomposition_biapprox
     (hk : 0 < k) (n : ℕ) (e : MarkovState k)
     {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
     (hs : s ∈ stateFinset k N)
-    (q : ExcursionList k → ℝ) (ε : ℝ)
+    (q : ExcursionList k → ℝ) (εW εPC : ℝ)
     (hwr_q :
       ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
-        |(wrPatternMass (k := k) hk n e s p).toReal - q p| ≤ ε)
+        |(wrPatternMass (k := k) hk n e s p).toReal - q p| ≤ εW)
     (hq_wor :
       ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
-        |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤
-          (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
-            (returnsToStart (k := k) s : ℝ)) :
+        |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) :
     |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
         - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
-      ε + (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
-        (returnsToStart (k := k) s : ℝ) := by
+      εW + εPC := by
   let P := excursionPatternSet (k := k) (hN := hN) e s
-  let C : ℝ :=
-    (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
-      (returnsToStart (k := k) s : ℝ)
   have htriangle :
       (∑ p ∈ P,
         |(wrPatternMass (k := k) hk n e s p).toReal -
@@ -6893,7 +7292,7 @@ theorem excursion_bound_from_decomposition_adjusted
   have hsumAbs :
       ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
         |(wrPatternMass (k := k) hk n e s p).toReal -
-          (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ ε + C := by
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εW + εPC := by
     calc
       ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
         |(wrPatternMass (k := k) hk n e s p).toReal -
@@ -6907,19 +7306,179 @@ theorem excursion_bound_from_decomposition_adjusted
           |(wrPatternMass (k := k) hk n e s p).toReal - q p|) +
         (∑ p ∈ P,
           |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal|) := htriangle
-      _ ≤ ε + C := by
-        exact add_le_add (by simpa [P] using hwr_q) (by simpa [P, C] using hq_wor)
+      _ ≤ εW + εPC := by
+        exact add_le_add (by simpa [P] using hwr_q) (by simpa [P] using hq_wor)
   have hfinal :=
     excursion_bound_from_pattern_abs_sum
+      (k := k) (hk := hk) (n := n) (e := e) (hN := hN)
+      (s := s) (hs := hs) (B := εW + εPC) hsumAbs
+  simpa using hfinal
+
+theorem excursion_bound_from_canonical_wr_surrogate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (hs : s ∈ stateFinset k N)
+    (wSurrogate εW εPC : ℝ)
+    (hWsurrogate :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        wSurrogate| ≤ εW)
+    (hq_wor :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) :
+    |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
+        - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
+      εW + εPC := by
+  exact
+    excursion_bound_from_decomposition_biapprox
       (k := k) (hk := hk) (n := n) (e := e)
-      (hN := hN) (s := s) (hs := hs) (B := ε + C) hsumAbs
-  simpa [C] using hfinal
+      (hN := hN) (s := s) (hs := hs)
+      (q := canonicalWRSurrogateMass (k := k) n e wSurrogate)
+      (εW := εW) (εPC := εPC)
+      (sum_abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass_le
+        (k := k) (hk := hk) (n := n) (hN := hN) (e := e) (s := s)
+        (wSurrogate := wSurrogate) (εW := εW) (hWsurrogate := hWsurrogate))
+      hq_wor
+
+/-- Adjusted decomposition bound through an explicit surrogate class law. -/
+theorem excursion_bound_from_decomposition_adjusted
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (hs : s ∈ stateFinset k N)
+    (q : ExcursionList k → ℝ) (ε : ℝ)
+    (hwr_q :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal - q p| ≤ ε)
+    (hq_wor :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤
+          (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+            (returnsToStart (k := k) s : ℝ)) :
+    |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
+        - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
+      ε + (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+        (returnsToStart (k := k) s : ℝ) := by
+  let C : ℝ :=
+    (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+      (returnsToStart (k := k) s : ℝ)
+  exact
+    excursion_bound_from_decomposition_biapprox
+      (k := k) (hk := hk) (n := n) (e := e)
+      (hN := hN) (s := s) (hs := hs)
+      (q := q) (εW := ε) (εPC := C) hwr_q (by simpa [C] using hq_wor)
+
+/-- Pattern-level WR/WOR discrepancy bound obtained from a surrogate pattern law `q`. -/
+lemma sum_abs_wr_wor_patternMass_toReal_le_of_surrogate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (q : ExcursionList k → ℝ) (εW εPC : ℝ)
+    (hwr_q :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal - q p| ≤ εW)
+    (hq_wor :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εW + εPC := by
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  have hpoint :
+      ∀ p : ExcursionList k,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤
+        |(wrPatternMass (k := k) hk n e s p).toReal - q p| +
+          |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| := by
+    intro p
+    simpa [sub_eq_add_neg, add_assoc, add_comm, add_left_comm] using
+      (abs_sub_le
+        ((wrPatternMass (k := k) hk n e s p).toReal)
+        (q p)
+        ((worPatternMass (k := k) (hN := hN) e s p).toReal))
+  calc
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|
+        = ∑ p ∈ P,
+            |(wrPatternMass (k := k) hk n e s p).toReal -
+              (worPatternMass (k := k) (hN := hN) e s p).toReal| := by
+              simp [P]
+    _ ≤
+      ∑ p ∈ P,
+        (|(wrPatternMass (k := k) hk n e s p).toReal - q p| +
+          |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal|) := by
+            refine Finset.sum_le_sum ?_
+            intro p hp
+            exact hpoint p
+    _ =
+      (∑ p ∈ P,
+        |(wrPatternMass (k := k) hk n e s p).toReal - q p|) +
+      (∑ p ∈ P,
+        |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal|) := by
+          simp [Finset.sum_add_distrib]
+    _ ≤ εW + εPC := by
+      exact add_le_add (by simpa [P] using hwr_q) (by simpa [P] using hq_wor)
+
+/-- Convert a pattern-level bi-approximation + nonpositive gap into the class-level
+`ExcursionBiapproxPackage` used by the hard-direction pipeline. -/
+lemma excursionBiapproxPackage_of_pattern_surrogate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (q : ExcursionList k → ℝ) (εW εPC : ℝ)
+    (hwr_q :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal - q p| ≤ εW)
+    (hq_wor :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC)
+    (hgap : εW + εPC ≤ 0) :
+    ExcursionBiapproxPackage (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s) := by
+  refine ⟨εW, εPC, ?_, hgap⟩
+  have hsum_pattern :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εW + εPC :=
+    sum_abs_wr_wor_patternMass_toReal_le_of_surrogate
+      (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+      (q := q) (εW := εW) (εPC := εPC) hwr_q hq_wor
+  have hpart :
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+      (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+        ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal|) :=
+    sum_abs_wr_wor_patternMass_partition_by_excursionMultiset
+      (k := k) (hN := hN) (hk := hk) (e := e) (s := s)
+  have hcollision_nonneg :
+      0 ≤
+        (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+          (returnsToStart (k := k) s : ℝ) := by
+    have hnum_nonneg :
+        0 ≤ (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) := by positivity
+    have hden_nonneg : 0 ≤ (returnsToStart (k := k) s : ℝ) := by
+      exact_mod_cast (Nat.zero_le (returnsToStart (k := k) s))
+    exact div_nonneg hnum_nonneg hden_nonneg
+  calc
+    (∑ mset ∈ (excursionPatternSet (k := k) (hN := hN) e s).image Multiset.ofList,
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s with Multiset.ofList p = mset,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) := by
+            simpa using hpart.symm
+    _ ≤ εW + εPC := hsum_pattern
+    _ ≤ εW + εPC +
+        (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+          (returnsToStart (k := k) s : ℝ) := by
+            linarith
 
 theorem excursion_bound_from_decomposition
     (hk : 0 < k) (n : ℕ) (e : MarkovState k)
     {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
     (hs : s ∈ stateFinset k N)
-    (hRlarge : 4 * (Nat.succ n) * (Nat.succ n) < returnsToStart (k := k) s) :
+    (hcore : ExcursionBiapproxPackage (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)) :
     |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
         - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
       (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
@@ -6944,7 +7503,7 @@ theorem excursion_bound_from_decomposition
             worPatternMass (k := k) (hN := hN) e s p).toReal| := by
     rw [← hWdecomp, ← hPCdecomp]
   have hsumAbsRatio :=
-    excursion_wor_wr_core (k := k) hk n e hN s hs hRlarge
+    excursion_wor_wr_core (k := k) hk n e hN s hs hcore
   have hsumAbs :
       ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
         |(wrPatternMass (k := k) hk n e s p).toReal -

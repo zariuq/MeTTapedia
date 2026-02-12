@@ -31,7 +31,7 @@ Propositional Reduces (Reduction.lean)
 Executable reduceStep (Engine.lean)
     ↓ rewriteStep agreement
 Generic rewriteWithContext (MeTTaIL/Engine.lean)
-    ↓ langReduces wraps rewriteWithContext
+    ↓ langReduces wraps rewriteWithContextWithPremises (default env)
 langDiamond / langBox (TypeSynthesis.lean)
 ```
 
@@ -74,7 +74,8 @@ recovers the same modalities as the hand-written definitions. -/
 /-! ## Layer 2 ↔ Layer 3: Derived ↔ Generated
 
 The key gap: `rhoSpan` uses `Nonempty (Reduces p q)` while `langSpan rhoCalc`
-uses `langReduces rhoCalc p q = q ∈ rewriteWithContext rhoCalc p`.
+uses `langReduces rhoCalc p q = q ∈ rewriteWithContextWithPremises rhoCalc p`
+(i.e. premise-aware execution with `RelationEnv.empty`).
 
 These are connected via soundness of the executable engine. -/
 
@@ -83,11 +84,11 @@ These are connected via soundness of the executable engine. -/
 -- a reduct, the propositional Reduces relation holds.
 --
 -- Note: `reduceStep_sound` from Engine.lean proves this for `reduceStep`.
--- The generic `rewriteWithContext` wraps `rewriteStep` (from Match.lean)
+-- The generic `rewriteWithContextWithPremises` wraps premise-aware rule application
 -- which operates on the same `rhoCalc` rules.
 --
 -- The inclusion: langReduces rhoCalc p q → Nonempty (Reduces p q)
--- requires proving that `rewriteWithContext rhoCalc` agrees with
+-- requires proving that `rewriteWithContextWithPremises rhoCalc` agrees with
 -- `reduceStep` (proven executably in the agreement test suite) and then
 -- using `reduceStep_sound`.
 
@@ -101,9 +102,10 @@ theorem langDiamond_implies_possibly_at (φ : Pattern → Prop) (p : Pattern)
     (h : langDiamond rhoCalc φ p)
     (sound : ∀ q, langReduces rhoCalc p q → Nonempty (Reduces p q)) :
     possiblyProp φ p := by
-  simp only [langDiamond, derivedDiamond, di, pb, langSpan] at h
-  obtain ⟨⟨⟨p', q⟩, hred⟩, hp_eq, hφ⟩ := h
-  exact ⟨q, sound q (hp_eq ▸ hred), hφ⟩
+  have h' : ∃ q, langReduces rhoCalc p q ∧ φ q :=
+    (langDiamond_spec (lang := rhoCalc) (φ := φ) (p := p)).1 h
+  obtain ⟨q, hred, hφ⟩ := h'
+  exact ⟨q, sound q hred, hφ⟩
 
 /-- Dually: if possibly holds and the reduction is witnessed by the engine,
     then langDiamond holds. -/
@@ -112,15 +114,15 @@ theorem possibly_implies_langDiamond_at (φ : Pattern → Prop) (p : Pattern)
     (complete : ∀ q, Nonempty (Reduces p q) → langReduces rhoCalc p q) :
     langDiamond rhoCalc φ p := by
   obtain ⟨q, hred, hφ⟩ := h
-  simp only [langDiamond, derivedDiamond, di, pb, langSpan]
-  exact ⟨⟨⟨p, q⟩, complete q hred⟩, rfl, hφ⟩
+  rw [langDiamond_spec]
+  exact ⟨q, complete q hred, hφ⟩
 
 /-! ## Unconditional Specialized Engine Bridges
 
 The specialized ρ-calculus engine (`reduceStep` from Engine.lean) is proven
 sound with respect to the propositional `Reduces` relation. This gives
 **unconditional** bridges between the specialized engine and the hand-written
-modalities, without going through the generic `rewriteWithContext` engine.
+modalities, without going through the generic premise-aware engine.
 
 ### Why use the specialized engine bridge?
 
@@ -129,7 +131,7 @@ capture-safe by construction — bound variables are de Bruijn indices, so no
 alpha-renaming occurs. However, the unconditional bridge via the specialized
 engine is still the **simplest** path for ρ-calculus, since `reduceStep_sound`
 directly connects to the propositional `Reduces` without going through the
-generic `rewriteWithContext` → `DeclReduces` → `MatchRel` chain. -/
+generic `rewriteWithContextWithPremises` → `DeclReducesWithPremises` chain. -/
 
 /-- Unconditional bridge: if the specialized engine finds a reduct satisfying φ,
     then the hand-written ◇φ holds.

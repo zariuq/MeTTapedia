@@ -138,12 +138,30 @@ theorem sem_dia_eq_langDiamond (lang : LanguageDef) (I : AtomSem) (φ : OSLFForm
   simp only [sem]
   rw [langDiamond_spec]
 
+/-- `sem` of `◇ φ` equals `langDiamondUsing` for an explicit relation env. -/
+theorem sem_dia_eq_langDiamondUsing (relEnv : RelationEnv) (lang : LanguageDef)
+    (I : AtomSem) (φ : OSLFFormula) :
+    sem (langReducesUsing relEnv lang) I (.dia φ) =
+      langDiamondUsing relEnv lang (sem (langReducesUsing relEnv lang) I φ) := by
+  ext p
+  simp only [sem]
+  rw [langDiamondUsing_spec]
+
 /-- `sem` of `□ φ` equals `langBox` applied to `sem φ`. -/
 theorem sem_box_eq_langBox (lang : LanguageDef) (I : AtomSem) (φ : OSLFFormula) :
     sem (langReduces lang) I (.box φ) = langBox lang (sem (langReduces lang) I φ) := by
   ext p
   simp only [sem]
   rw [langBox_spec]
+
+/-- `sem` of `□ φ` equals `langBoxUsing` for an explicit relation env. -/
+theorem sem_box_eq_langBoxUsing (relEnv : RelationEnv) (lang : LanguageDef)
+    (I : AtomSem) (φ : OSLFFormula) :
+    sem (langReducesUsing relEnv lang) I (.box φ) =
+      langBoxUsing relEnv lang (sem (langReducesUsing relEnv lang) I φ) := by
+  ext p
+  simp only [sem]
+  rw [langBoxUsing_spec]
 
 /-- The formula-level Galois connection follows from the framework.
 
@@ -155,6 +173,18 @@ theorem formula_galois (lang : LanguageDef) (I : AtomSem) (φ ψ : OSLFFormula) 
   rw [sem_dia_eq_langDiamond, sem_box_eq_langBox]
   have hg := langGalois lang
   exact hg (sem (langReduces lang) I φ) (sem (langReduces lang) I ψ)
+
+/-- Formula-level Galois connection for explicit relation env. -/
+theorem formula_galoisUsing (relEnv : RelationEnv) (lang : LanguageDef)
+    (I : AtomSem) (φ ψ : OSLFFormula) :
+    (∀ p, sem (langReducesUsing relEnv lang) I (.dia φ) p →
+      sem (langReducesUsing relEnv lang) I ψ p) ↔
+    (∀ p, sem (langReducesUsing relEnv lang) I φ p →
+      sem (langReducesUsing relEnv lang) I (.box ψ) p) := by
+  rw [sem_dia_eq_langDiamondUsing, sem_box_eq_langBoxUsing]
+  have hg := langGaloisUsing relEnv lang
+  exact hg (sem (langReducesUsing relEnv lang) I φ)
+    (sem (langReducesUsing relEnv lang) I ψ)
 
 /-! ## Bounded Model Checker -/
 
@@ -238,6 +268,16 @@ def check (step : Pattern → List Pattern) (I : AtomCheck)
     | .dia φ' =>
       aggregateDia ((step p).map fun q => check step I fuel q φ')
     | .box _ => .unknown
+
+/-- Formula checker entrypoint bound to a `LanguageDef` and explicit relation env. -/
+def checkLangUsing (relEnv : RelationEnv) (lang : LanguageDef) (I : AtomCheck)
+    (fuel : Nat) (p : Pattern) (φ : OSLFFormula) : CheckResult :=
+  check (rewriteWithContextWithPremisesUsing relEnv lang) I fuel p φ
+
+/-- Formula checker entrypoint bound to a `LanguageDef` (default env). -/
+def checkLang (lang : LanguageDef) (I : AtomCheck)
+    (fuel : Nat) (p : Pattern) (φ : OSLFFormula) : CheckResult :=
+  checkLangUsing RelationEnv.empty lang I fuel p φ
 
 /-! ## Soundness -/
 
@@ -332,6 +372,33 @@ theorem check_sat_sound
       exact ⟨q, h_step p q hq_mem, ih hq_check⟩
     | box _ =>
       simp [check] at h
+
+/-- Soundness of `checkLangUsing` with explicit relation env. -/
+theorem checkLangUsing_sat_sound
+    {relEnv : RelationEnv} {lang : LanguageDef}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
+    (h : checkLangUsing relEnv lang I_check fuel p φ = .sat) :
+    sem (langReducesUsing relEnv lang) I_sem φ p := by
+  apply (check_sat_sound (R := langReducesUsing relEnv lang)
+      (step := rewriteWithContextWithPremisesUsing relEnv lang)
+      (I_check := I_check) (I_sem := I_sem) h_atoms)
+  · intro p q hq
+    exact hq
+  · exact h
+
+/-- Soundness of `checkLang` (default env). -/
+theorem checkLang_sat_sound
+    {lang : LanguageDef}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
+    (h : checkLang lang I_check fuel p φ = .sat) :
+    sem (langReduces lang) I_sem φ p := by
+  simpa [checkLang, checkLangUsing, langReduces] using
+    (checkLangUsing_sat_sound (relEnv := RelationEnv.empty)
+      (lang := lang) (I_check := I_check) (I_sem := I_sem) h_atoms h)
 
 /-! ## Enhanced Checker with Bounded Box
 
@@ -565,12 +632,12 @@ instance : ToString Pattern := ⟨patternToString⟩
   IO.println s!"Demo 5: Can *(@0) reach a state that is zero?"
   IO.println s!"  check (◇(isZero ∧ (◇⊤ → ⊥))) = {result}"
 
--- Demo 6: Generic engine on rhoCalc — COMM
+-- Demo 6: Language-bound checker on rhoCalc (premise-aware default env)
 #eval! do
   let x := Pattern.fvar "x"
   let term := ppar' [poutput' x pzero', pinput' x "y" (.bvar 0)]
-  let result := check (rewriteStep rhoCalc) rhoAtoms 50 term (.dia .top)
-  IO.println s!"Demo 6: Generic engine — can COMM term reduce?"
+  let result := checkLang rhoCalc rhoAtoms 50 term (.dia .top)
+  IO.println s!"Demo 6: Lang checker — can COMM term reduce?"
   IO.println s!"  check (◇⊤) = {result}"
 
 -- Demo 7: Formula display

@@ -112,9 +112,9 @@ private theorem rewriteStep_sound {lang : LanguageDef} {p q : Pattern}
 
 private theorem rewriteInCollection_sound {lang : LanguageDef}
     {ct : CollType} {elems : List Pattern} {rest : Option String} {q : Pattern}
-    (hq : q ∈ rewriteInCollection lang ct elems rest) :
+    (hq : q ∈ rewriteInCollectionNoPremises lang ct elems rest) :
     DeclReduces lang (.collection ct elems rest) q := by
-  unfold rewriteInCollection at hq
+  unfold rewriteInCollectionNoPremises at hq
   rw [List.mem_flatMap] at hq
   obtain ⟨⟨elem, j⟩, hmem_zip, hq_map⟩ := hq
   rw [List.mem_map] at hq_map
@@ -123,7 +123,7 @@ private theorem rewriteInCollection_sound {lang : LanguageDef}
   have helem_eq := eq_getElem_of_mem_zipIdx hmem_zip hj
   subst helem_eq
   -- Decompose rewriteStep to get rule and bindings
-  unfold rewriteStep at hstep
+  unfold rewriteStepNoPremises rewriteStep at hstep
   rw [List.mem_flatMap] at hstep
   obtain ⟨rule, hrule, hq_rule⟩ := hstep
   unfold applyRule at hq_rule
@@ -138,7 +138,7 @@ private theorem rewriteInCollection_sound {lang : LanguageDef}
 theorem engine_sound {lang : LanguageDef} {p q : Pattern}
     (h : q ∈ rewriteWithContext lang p) :
     DeclReduces lang p q := by
-  unfold rewriteWithContext at h
+  unfold rewriteWithContext rewriteWithContextNoPremises at h
   rw [List.mem_append] at h
   cases h with
   | inl h_top => exact rewriteStep_sound h_top
@@ -177,14 +177,14 @@ theorem engine_complete {lang : LanguageDef} {p q : Pattern}
     q ∈ rewriteWithContext lang p := by
   cases h with
   | topRule r hr hprem bs hbs hq =>
-    unfold rewriteWithContext
+    unfold rewriteWithContext rewriteWithContextNoPremises
     rw [List.mem_append]
     exact .inl (rewriteStep_of_topRule' r hr hprem bs hbs hq)
   | @congElem elems ct rest i hi r hr hprem bs hbs q' hq =>
-    unfold rewriteWithContext
+    unfold rewriteWithContext rewriteWithContextNoPremises
     rw [List.mem_append]
     right
-    unfold rewriteInCollection
+    unfold rewriteInCollectionNoPremises
     rw [List.mem_flatMap]
     refine ⟨(elems[i], i), mem_zipIdx_of_lt elems i hi, ?_⟩
     rw [List.mem_map]

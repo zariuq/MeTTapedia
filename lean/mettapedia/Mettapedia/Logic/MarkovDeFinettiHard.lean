@@ -377,7 +377,9 @@ The mixture is stated using `lintegral` (`∫⁻`) since our prefix measures liv
 theorem markovDeFinetti_hard
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ) :
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      MarkovDeFinettiHard.HasExcursionBiapproxCore (k := k) hk n e) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
   classical
@@ -389,7 +391,7 @@ theorem markovDeFinetti_hard
     have hfin :
         ∀ u : Finset (ℕ × MarkovState k),
           (⋂ p ∈ u, constraintSet (k := k) μ p.1 p.2).Nonempty :=
-      finite_constraints_nonempty (k := k) (μ := μ) hμ hrec
+      finite_constraints_nonempty (k := k) (μ := μ) hμ hrec hcoreAll
     rcases
         (exists_probabilityMeasure_of_finite_constraints (k := k) (μ := μ) hfin)
       with ⟨π, hπ⟩
@@ -403,6 +405,67 @@ theorem markovDeFinetti_hard
   refine ⟨pi, hpi, ?_⟩
   -- Regrouping step: evidence constraints imply the per-word mixture formula.
   exact EvidenceToWords.wordProb_of_evidence_constraints (k := k) (μ := μ) hμ pi hpi hE
+
+
+theorem markovDeFinetti_hard_of_residualRate
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hrateAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧
+        MarkovDeFinettiHard.HasExcursionResidualBoundRate (k := k) hk n e C) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  classical
+  have hPi :
+      ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧ Holds (k := k) μ pi := by
+    have hfin :
+        ∀ u : Finset (ℕ × MarkovState k),
+          (⋂ p ∈ u, constraintSet (k := k) μ p.1 p.2).Nonempty :=
+      finite_constraints_nonempty_of_residualRate (k := k) (μ := μ) hμ hrec hrateAll
+    rcases
+        (exists_probabilityMeasure_of_finite_constraints (k := k) (μ := μ) hfin)
+      with ⟨π, hπ⟩
+    refine ⟨(π : Measure (MarkovParam k)), by infer_instance, ?_⟩
+    intro n e
+    have hWnn : wμ (k := k) μ n e = ∫⁻ θ, Wnn (k := k) n e θ ∂π := hπ n e
+    simpa [coe_Wnn] using hWnn
+  rcases hPi with ⟨pi, hpi, hE⟩
+  refine ⟨pi, hpi, ?_⟩
+  exact EvidenceToWords.wordProb_of_evidence_constraints (k := k) (μ := μ) hμ pi hpi hE
+
+
+
+theorem markovDeFinetti_hard_of_splitRates
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        MarkovDeFinettiHard.HasCanonicalWRSmoothingRate (k := k) hk n e Cw ∧
+        MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_splitRatesAll
+      (k := k) hsplitAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+theorem markovDeFinetti_hard_via_residualRateBridge
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      MarkovDeFinettiHard.HasExcursionBiapproxCore (k := k) hk n e) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_biapproxCoreAll
+      (k := k) hcoreAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
 
 end MarkovDeFinettiHard
 

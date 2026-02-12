@@ -50,6 +50,600 @@ open Mettapedia.Logic.MarkovDeFinettiHardBEST
 
 variable {k : ℕ}
 
+/--
+Explicit semantic-core interface for the hard excursion bridge.
+
+For each state `s` at each horizon `N`, this supplies a semantic package proving
+that the classwise WR/WOR discrepancy is controlled by the collision term once
+the residual alignment gap (`εW + εPC`) is discharged.
+-/
+def HasExcursionBiapproxCore
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      ExcursionBiapproxPackage (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+
+/--
+Pattern-level surrogate interface: provide a pattern law `q` with WR/WOR residual
+bounds and a nonpositive residual gap.
+-/
+def HasPatternSurrogateAlignment
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      ∃ q : ExcursionList k → ℝ,
+        ∃ εW εPC : ℝ,
+          (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+            |(wrPatternMass (k := k) hk n e s p).toReal - q p| ≤ εW) ∧
+          (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+            |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) ∧
+          εW + εPC ≤ 0
+
+/--
+Canonical WR-surrogate interface: control `W` by a scalar surrogate and control the
+canonical short-pattern mass against WOR masses.
+-/
+def HasCanonicalWRSurrogateAlignment
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      ∃ wSurrogate εW εPC : ℝ,
+        |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+          wSurrogate| ≤ εW ∧
+        (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+          |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) ∧
+        εW + εPC ≤ 0
+
+/--
+Pattern-level surrogate interface without forcing a zero total residual.
+-/
+def HasPatternSurrogateResidualAlignment
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      ∃ q : ExcursionList k → ℝ,
+        ∃ εW εPC : ℝ,
+          (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+            |(wrPatternMass (k := k) hk n e s p).toReal - q p| ≤ εW) ∧
+          (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+            |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC)
+
+/--
+Canonical WR-surrogate interface without forcing a zero total residual.
+-/
+def HasCanonicalWRSurrogateResidualAlignment
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      ∃ wSurrogate εW εPC : ℝ,
+        |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+          wSurrogate| ≤ εW ∧
+        (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+          |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC)
+
+/--
+Statewise decomposition bound with explicit nonnegative residual terms.
+-/
+def HasExcursionResidualBound
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      ∃ εW εPC : ℝ,
+        0 ≤ εW ∧ 0 ≤ εPC ∧
+        |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
+            - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
+          εW + εPC
+
+/--
+Rate-bearing residual interface: the WR/WOR mismatch is bounded by
+statewise nonnegative residuals whose sum is `O(1 / returnsToStart)`.
+-/
+def HasExcursionResidualBoundRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (C : ℝ) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      0 < returnsToStart (k := k) s →
+        ∃ εW εPC : ℝ,
+          0 ≤ εW ∧ 0 ≤ εPC ∧
+          εW + εPC ≤ C / (returnsToStart (k := k) s : ℝ) ∧
+          |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
+              - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
+            εW + εPC
+
+/--
+Pattern-level residual alignment with explicit `O(1 / returnsToStart)` rate.
+-/
+def HasPatternSurrogateResidualAlignmentRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (C : ℝ) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      0 < returnsToStart (k := k) s →
+        ∃ q : ExcursionList k → ℝ,
+          ∃ εW εPC : ℝ,
+            (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+              |(wrPatternMass (k := k) hk n e s p).toReal - q p| ≤ εW) ∧
+            (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+              |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) ∧
+            εW + εPC ≤ C / (returnsToStart (k := k) s : ℝ)
+
+/--
+Canonical WR-surrogate residual alignment with explicit `O(1 / returnsToStart)` rate.
+-/
+def HasCanonicalWRSurrogateResidualAlignmentRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (C : ℝ) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      0 < returnsToStart (k := k) s →
+        ∃ wSurrogate εW εPC : ℝ,
+          |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+            wSurrogate| ≤ εW ∧
+          (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+            |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+              (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) ∧
+          εW + εPC ≤ C / (returnsToStart (k := k) s : ℝ)
+
+
+/--
+WR-side smoothing residual rate:
+for each state, there is a scalar surrogate with error at most `Cw / R`.
+-/
+def HasCanonicalWRSmoothingRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      0 < returnsToStart (k := k) s →
+        ∃ wSurrogate εW : ℝ,
+          |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+            wSurrogate| ≤ εW ∧
+          εW ≤ Cw / (returnsToStart (k := k) s : ℝ)
+
+/--
+WOR-side transport residual rate relative to a chosen WR scalar surrogate.
+-/
+def HasCanonicalWORTransportRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw Cpc : ℝ) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      0 < returnsToStart (k := k) s →
+        ∀ wSurrogate : ℝ,
+          |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+            wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ) →
+            ∃ εPC : ℝ,
+              (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+                |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+                  (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) ∧
+              εPC ≤ Cpc / (returnsToStart (k := k) s : ℝ)
+
+lemma pattern_alignment_residuals_nonneg
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (q : ExcursionList k → ℝ) (εW εPC : ℝ)
+    (hwr_q :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal - q p| ≤ εW)
+    (hq_wor :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) :
+    0 ≤ εW ∧ 0 ≤ εPC := by
+  have hwr_nonneg :
+      0 ≤ ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal - q p| := by
+    refine Finset.sum_nonneg ?_
+    intro p hp
+    exact abs_nonneg _
+  have hq_nonneg :
+      0 ≤ ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| := by
+    refine Finset.sum_nonneg ?_
+    intro p hp
+    exact abs_nonneg _
+  exact ⟨le_trans hwr_nonneg hwr_q, le_trans hq_nonneg hq_wor⟩
+
+lemma pattern_alignment_witness_forces_zero_residuals
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (q : ExcursionList k → ℝ) (εW εPC : ℝ)
+    (hwr_q :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal - q p| ≤ εW)
+    (hq_wor :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC)
+    (hgap : εW + εPC ≤ 0) :
+    εW = 0 ∧ εPC = 0 := by
+  rcases pattern_alignment_residuals_nonneg
+      (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+      (q := q) (εW := εW) (εPC := εPC) hwr_q hq_wor with ⟨hWnonneg, hPCnonneg⟩
+  have hWnonpos : εW ≤ 0 := by linarith
+  have hPCnonpos : εPC ≤ 0 := by linarith
+  exact ⟨le_antisymm hWnonpos hWnonneg, le_antisymm hPCnonpos hPCnonneg⟩
+
+lemma canonical_alignment_witness_forces_zero_residuals
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (wSurrogate εW εPC : ℝ)
+    (hWsurrogate :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        wSurrogate| ≤ εW)
+    (hq_wor :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC)
+    (hgap : εW + εPC ≤ 0) :
+    εW = 0 ∧ εPC = 0 := by
+  have hwr_q :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          canonicalWRSurrogateMass (k := k) n e wSurrogate p| ≤ εW :=
+    sum_abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass_le
+      (k := k) (hk := hk) (n := n) (hN := hN) (e := e) (s := s)
+      (wSurrogate := wSurrogate) (εW := εW) (hWsurrogate := hWsurrogate)
+  exact
+    pattern_alignment_witness_forces_zero_residuals
+      (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+      (q := canonicalWRSurrogateMass (k := k) n e wSurrogate)
+      (εW := εW) (εPC := εPC)
+      hwr_q hq_wor hgap
+
+lemma hasCanonicalWRSurrogateAlignment_forces_zero_residuals
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (hcanon : HasCanonicalWRSurrogateAlignment (k := k) hk n e) :
+    ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+      s ∈ stateFinset k N →
+        ∃ wSurrogate εW εPC : ℝ,
+          |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+            wSurrogate| ≤ εW ∧
+          (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+            |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+              (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) ∧
+          εW + εPC ≤ 0 ∧ εW = 0 ∧ εPC = 0 := by
+  intro N hN s hs
+  rcases hcanon hN s hs with ⟨wSurrogate, εW, εPC, hWsurrogate, hq_wor, hgap⟩
+  have hzero :=
+    canonical_alignment_witness_forces_zero_residuals
+      (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+      (wSurrogate := wSurrogate) (εW := εW) (εPC := εPC)
+      hWsurrogate hq_wor hgap
+  exact ⟨wSurrogate, εW, εPC, hWsurrogate, hq_wor, hgap, hzero.1, hzero.2⟩
+
+lemma hasPatternSurrogateAlignment_of_canonical
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (hcanon : HasCanonicalWRSurrogateAlignment (k := k) hk n e) :
+    HasPatternSurrogateAlignment (k := k) hk n e := by
+  intro N hN s hs
+  rcases hcanon hN s hs with ⟨wSurrogate, εW, εPC, hWsurrogate, hq_wor, hgap⟩
+  refine ⟨canonicalWRSurrogateMass (k := k) n e wSurrogate, εW, εPC, ?_, hq_wor, hgap⟩
+  exact
+    sum_abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass_le
+      (k := k) (hk := hk) (n := n) (hN := hN) (e := e) (s := s)
+      (wSurrogate := wSurrogate) (εW := εW) (hWsurrogate := hWsurrogate)
+
+lemma hasExcursionBiapproxCore_of_patternSurrogateAlignment
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (halign : HasPatternSurrogateAlignment (k := k) hk n e) :
+    HasExcursionBiapproxCore (k := k) hk n e := by
+  intro N hN s hs
+  rcases halign hN s hs with ⟨q, εW, εPC, hwr_q, hq_wor, hgap⟩
+  exact
+    excursionBiapproxPackage_of_pattern_surrogate
+      (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+      (q := q) (εW := εW) (εPC := εPC)
+      hwr_q hq_wor hgap
+
+lemma hasExcursionBiapproxCore_of_canonical
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (hcanon : HasCanonicalWRSurrogateAlignment (k := k) hk n e) :
+    HasExcursionBiapproxCore (k := k) hk n e := by
+  exact
+    hasExcursionBiapproxCore_of_patternSurrogateAlignment
+      (k := k) (hk := hk) (n := n) (e := e)
+      (hasPatternSurrogateAlignment_of_canonical
+        (k := k) (hk := hk) (n := n) (e := e) hcanon)
+
+lemma hasPatternSurrogateResidualAlignment_of_canonicalResidual
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (hcanon : HasCanonicalWRSurrogateResidualAlignment (k := k) hk n e) :
+    HasPatternSurrogateResidualAlignment (k := k) hk n e := by
+  intro N hN s hs
+  rcases hcanon hN s hs with ⟨wSurrogate, εW, εPC, hWsurrogate, hq_wor⟩
+  refine ⟨canonicalWRSurrogateMass (k := k) n e wSurrogate, εW, εPC, ?_, hq_wor⟩
+  exact
+    sum_abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass_le
+      (k := k) (hk := hk) (n := n) (hN := hN) (e := e) (s := s)
+      (wSurrogate := wSurrogate) (εW := εW) (hWsurrogate := hWsurrogate)
+
+lemma hasExcursionResidualBound_of_patternSurrogateResidualAlignment
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (halign : HasPatternSurrogateResidualAlignment (k := k) hk n e) :
+    HasExcursionResidualBound (k := k) hk n e := by
+  intro N hN s hs
+  rcases halign hN s hs with ⟨q, εW, εPC, hwr_q, hq_wor⟩
+  rcases pattern_alignment_residuals_nonneg
+      (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+      (q := q) (εW := εW) (εPC := εPC) hwr_q hq_wor with ⟨hWnonneg, hPCnonneg⟩
+  refine ⟨εW, εPC, hWnonneg, hPCnonneg, ?_⟩
+  exact
+    excursion_bound_from_decomposition_biapprox
+      (k := k) (hk := hk) (n := n) (e := e)
+      (hN := hN) (s := s) (hs := hs)
+      (q := q) (εW := εW) (εPC := εPC)
+      hwr_q hq_wor
+
+lemma hasExcursionResidualBound_of_canonicalResidual
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (hcanon : HasCanonicalWRSurrogateResidualAlignment (k := k) hk n e) :
+    HasExcursionResidualBound (k := k) hk n e := by
+  exact
+    hasExcursionResidualBound_of_patternSurrogateResidualAlignment
+      (k := k) (hk := hk) (n := n) (e := e)
+      (hasPatternSurrogateResidualAlignment_of_canonicalResidual
+        (k := k) (hk := hk) (n := n) (e := e) hcanon)
+
+lemma hasPatternSurrogateResidualAlignmentRate_of_canonicalResidualRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (C : ℝ)
+    (hcanon : HasCanonicalWRSurrogateResidualAlignmentRate (k := k) hk n e C) :
+    HasPatternSurrogateResidualAlignmentRate (k := k) hk n e C := by
+  intro N hN s hs hRpos
+  rcases hcanon hN s hs hRpos with
+    ⟨wSurrogate, εW, εPC, hWsurrogate, hq_wor, hrate⟩
+  refine ⟨canonicalWRSurrogateMass (k := k) n e wSurrogate, εW, εPC, ?_, hq_wor, hrate⟩
+  exact
+    sum_abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass_le
+      (k := k) (hk := hk) (n := n) (hN := hN) (e := e) (s := s)
+      (wSurrogate := wSurrogate) (εW := εW) (hWsurrogate := hWsurrogate)
+
+lemma hasExcursionResidualBoundRate_of_patternSurrogateResidualAlignmentRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (C : ℝ)
+    (halign : HasPatternSurrogateResidualAlignmentRate (k := k) hk n e C) :
+    HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro N hN s hs hRpos
+  rcases halign hN s hs hRpos with ⟨q, εW, εPC, hwr_q, hq_wor, hrate⟩
+  rcases pattern_alignment_residuals_nonneg
+      (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+      (q := q) (εW := εW) (εPC := εPC) hwr_q hq_wor with ⟨hWnonneg, hPCnonneg⟩
+  refine ⟨εW, εPC, hWnonneg, hPCnonneg, hrate, ?_⟩
+  exact
+    excursion_bound_from_decomposition_biapprox
+      (k := k) (hk := hk) (n := n) (e := e)
+      (hN := hN) (s := s) (hs := hs)
+      (q := q) (εW := εW) (εPC := εPC)
+      hwr_q hq_wor
+
+lemma hasExcursionResidualBoundRate_of_canonicalResidualRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (C : ℝ)
+    (hcanon : HasCanonicalWRSurrogateResidualAlignmentRate (k := k) hk n e C) :
+    HasExcursionResidualBoundRate (k := k) hk n e C := by
+  exact
+    hasExcursionResidualBoundRate_of_patternSurrogateResidualAlignmentRate
+      (k := k) (hk := hk) (n := n) (e := e) (C := C)
+      (hasPatternSurrogateResidualAlignmentRate_of_canonicalResidualRate
+        (k := k) (hk := hk) (n := n) (e := e) (C := C) hcanon)
+
+
+lemma hasCanonicalWRSurrogateResidualAlignmentRate_of_splitRates
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw Cpc : ℝ)
+    (hWR : HasCanonicalWRSmoothingRate (k := k) hk n e Cw)
+    (hWOR : HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    HasCanonicalWRSurrogateResidualAlignmentRate (k := k) hk n e (Cw + Cpc) := by
+  intro N hN s hs hRpos
+  rcases hWR hN s hs hRpos with ⟨wSurrogate, εW, hWsurrogate, hWrate⟩
+  have hwclose :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ) :=
+    le_trans hWsurrogate hWrate
+  rcases hWOR hN s hs hRpos wSurrogate hwclose with ⟨εPC, hq_wor, hPCrate⟩
+  refine ⟨wSurrogate, εW, εPC, hWsurrogate, hq_wor, ?_⟩
+  have hsum : εW + εPC ≤
+      Cw / (returnsToStart (k := k) s : ℝ) + Cpc / (returnsToStart (k := k) s : ℝ) :=
+    add_le_add hWrate hPCrate
+  have hsplit :
+      Cw / (returnsToStart (k := k) s : ℝ) + Cpc / (returnsToStart (k := k) s : ℝ) =
+        (Cw + Cpc) / (returnsToStart (k := k) s : ℝ) := by
+    ring
+  simpa [hsplit] using hsum
+
+lemma hasExcursionResidualBoundRate_of_splitRates
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw Cpc : ℝ)
+    (hWR : HasCanonicalWRSmoothingRate (k := k) hk n e Cw)
+    (hWOR : HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    HasExcursionResidualBoundRate (k := k) hk n e (Cw + Cpc) := by
+  exact
+    hasExcursionResidualBoundRate_of_canonicalResidualRate
+      (k := k) (hk := hk) (n := n) (e := e) (C := Cw + Cpc)
+      (hasCanonicalWRSurrogateResidualAlignmentRate_of_splitRates
+        (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+        hWR hWOR)
+
+lemma hasCanonicalWRSmoothingRate_of_statewise_close
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ)
+    (hclose :
+      ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+        s ∈ stateFinset k N →
+          0 < returnsToStart (k := k) s →
+            ∃ wSurrogate : ℝ,
+              |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ)) :
+    HasCanonicalWRSmoothingRate (k := k) hk n e Cw := by
+  intro N hN s hs hRpos
+  rcases hclose hN s hs hRpos with ⟨wSurrogate, hWclose⟩
+  refine ⟨wSurrogate, Cw / (returnsToStart (k := k) s : ℝ), hWclose, le_rfl⟩
+
+
+/-- Robust route: build the residual-rate bound from a scalar statewise WR surrogate
+and a canonical WOR transport rate. -/
+lemma hasExcursionResidualBoundRate_of_statewise_close_and_worTransport
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw Cpc : ℝ)
+    (hclose :
+      ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+        s ∈ stateFinset k N →
+          0 < returnsToStart (k := k) s →
+            ∃ wSurrogate : ℝ,
+              |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ))
+    (hWOR : HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    HasExcursionResidualBoundRate (k := k) hk n e (Cw + Cpc) := by
+  have hWR : HasCanonicalWRSmoothingRate (k := k) hk n e Cw :=
+    hasCanonicalWRSmoothingRate_of_statewise_close
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) hclose
+  intro N hN s hs hRpos
+  exact
+    hasExcursionResidualBoundRate_of_splitRates
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+      hWR hWOR hN s hs hRpos
+
+/-- Explicit-pattern route: if a pattern surrogate rate is already available,
+it directly yields the statewise residual-rate bound. -/
+lemma hasExcursionResidualBoundRate_of_explicitPatternSurrogateRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (C : ℝ)
+    (halign : HasPatternSurrogateResidualAlignmentRate (k := k) hk n e C) :
+    HasExcursionResidualBoundRate (k := k) hk n e C := by
+  exact
+    hasExcursionResidualBoundRate_of_patternSurrogateResidualAlignmentRate
+      (k := k) (hk := hk) (n := n) (e := e) (C := C) halign
+lemma hasCanonicalWRSmoothingRate_zero
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) :
+    HasCanonicalWRSmoothingRate (k := k) hk n e 0 := by
+  intro N hN s hs hRpos
+  refine ⟨(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal, 0, ?_, ?_⟩
+  · simp
+  · have hnonneg : (0 : ℝ) ≤ 0 / (returnsToStart (k := k) s : ℝ) := by
+      positivity
+    simpa using hnonneg
+
+lemma hasCanonicalWORTransportRate_of_biapproxCore
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ)
+    (hcore : HasExcursionBiapproxCore (k := k) hk n e) :
+    HasCanonicalWORTransportRate (k := k) hk n e Cw
+      (Cw + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) := by
+  intro N hN s hs hRpos wSurrogate hWclose
+  refine ⟨(Cw + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+      (returnsToStart (k := k) s : ℝ), ?_, ?_⟩
+  · exact
+      wor_transport_rate_canonicalWRSurrogate
+        (k := k) (hk := hk) (n := n) (e := e)
+        (hN := hN) (s := s) (hs := hs)
+        (hcore := hcore hN s hs)
+        (wSurrogate := wSurrogate) (Cw := Cw)
+        hWclose
+  · simp
+
+lemma hasExcursionResidualBoundRate_of_worTransportRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cpc : ℝ)
+    (hWOR : HasCanonicalWORTransportRate (k := k) hk n e 0 Cpc) :
+    HasExcursionResidualBoundRate (k := k) hk n e Cpc := by
+  have hWR0 : HasCanonicalWRSmoothingRate (k := k) hk n e 0 :=
+    hasCanonicalWRSmoothingRate_zero (k := k) (hk := hk) (n := n) (e := e)
+  have hsplit :
+      HasExcursionResidualBoundRate (k := k) hk n e (0 + Cpc) :=
+    hasExcursionResidualBoundRate_of_splitRates
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := 0) (Cpc := Cpc)
+      hWR0 hWOR
+  intro N hN s hs hRpos
+  rcases hsplit hN s hs hRpos with ⟨εW, εPC, hWnonneg, hPCnonneg, hrate, hbound⟩
+  refine ⟨εW, εPC, hWnonneg, hPCnonneg, ?_, hbound⟩
+  simpa [zero_add] using hrate
+
+lemma hasExcursionResidualBoundRate_of_biapproxCore
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (hcore : HasExcursionBiapproxCore (k := k) hk n e) :
+    HasExcursionResidualBoundRate (k := k) hk n e
+      (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) := by
+  intro N hN s hs hRpos
+  let C : ℝ := 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)
+  refine ⟨C / (returnsToStart (k := k) s : ℝ), 0, ?_, by positivity, ?_, ?_⟩
+  · exact div_nonneg (by positivity)
+      (by exact_mod_cast (Nat.zero_le (returnsToStart (k := k) s)))
+  · simp [C]
+  · have hbound :=
+      excursion_bound_from_decomposition
+        (k := k) (hk := hk) (n := n) (e := e)
+        (hN := hN) (s := s) (hs := hs) (hcore := hcore hN s hs)
+    simpa [C] using hbound
+
+theorem hasExcursionResidualBoundRateAll_of_biapproxCoreAll
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro hk n e
+  refine ⟨4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, ?_⟩
+  exact hasExcursionResidualBoundRate_of_biapproxCore
+    (k := k) (hk := hk) (n := n) (e := e) (hcore := hcoreAll hk n e)
+
+
+theorem hasExcursionResidualBoundRateAll_of_biapproxCoreAll_fixed
+    (hk : 0 < k)
+    (hcoreAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro n e
+  refine ⟨4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, ?_⟩
+  exact hasExcursionResidualBoundRate_of_biapproxCore
+    (k := k) (hk := hk) (n := n) (e := e) (hcore := hcoreAll n e)
+
+theorem hasExcursionResidualBoundRateAll_of_splitRatesAll
+    (hsplitAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasCanonicalWRSmoothingRate (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro hk n e
+  rcases hsplitAll hk n e with ⟨Cw, Cpc, hCw, hCpc, hWR, hWOR⟩
+  refine ⟨Cw + Cpc, add_nonneg hCw hCpc, ?_⟩
+  exact hasExcursionResidualBoundRate_of_splitRates
+    (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+    hWR hWOR
+
+theorem hasExcursionResidualBoundRateAll_of_splitRatesAll_fixed
+    (hk : 0 < k)
+    (hsplitAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasCanonicalWRSmoothingRate (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro n e
+  rcases hsplitAll n e with ⟨Cw, Cpc, hCw, hCpc, hWR, hWOR⟩
+  refine ⟨Cw + Cpc, add_nonneg hCw hCpc, ?_⟩
+  exact hasExcursionResidualBoundRate_of_splitRates
+    (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+    hWR hWOR
+
+
+
+theorem hasExcursionResidualBoundRateAll_of_explicitPatternSurrogateRateAll
+    (halignAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧
+        HasPatternSurrogateResidualAlignmentRate (k := k) hk n e C) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro hk n e
+  rcases halignAll hk n e with ⟨C, hC, halign⟩
+  refine ⟨C, hC, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_explicitPatternSurrogateRate
+      (k := k) (hk := hk) (n := n) (e := e) (C := C) halign
+
+theorem hasExcursionResidualBoundRateAll_of_explicitPatternSurrogateRateAll_fixed
+    (hk : 0 < k)
+    (halignAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧
+        HasPatternSurrogateResidualAlignmentRate (k := k) hk n e C) :
+    ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro n e
+  rcases halignAll n e with ⟨C, hC, halign⟩
+  refine ⟨C, hC, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_explicitPatternSurrogateRate
+      (k := k) (hk := hk) (n := n) (e := e) (C := C) halign
+
 /-! ## Good‑state bound (Diaconis–Freedman core)
 
 The core approximation lemma: for evidence states with many returns to start,
@@ -76,12 +670,12 @@ private lemma excursion_wor_wr_bound
     (hk : 0 < k) (n : ℕ) (e : MarkovState k)
     {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
     (hs : s ∈ stateFinset k N)
-    (hRlarge : 4 * (Nat.succ n) * (Nat.succ n) < returnsToStart (k := k) s) :
+    (hcore : HasExcursionBiapproxCore (k := k) hk n e) :
     |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
         - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
       (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
         (returnsToStart (k := k) s : ℝ) := by
-  exact excursion_bound_from_decomposition hk n e hN s hs hRlarge
+  exact excursion_bound_from_decomposition hk n e hN s hs (hcore hN s hs)
 
 /-- The per‑state excursion bound: the difference between the empirical
 evidence polynomial and the prefix coefficient is bounded by `4n²/R`,
@@ -93,6 +687,7 @@ private lemma excursion_decomposition_bound
     (hk : 0 < k) (n : ℕ) (e : MarkovState k)
     {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
     (hs : s ∈ stateFinset k N)
+    (hcore : HasExcursionBiapproxCore (k := k) hk n e)
     (hRpos : 0 < returnsToStart (k := k) s) :
     |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
         - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
@@ -111,7 +706,7 @@ private lemma excursion_decomposition_bound
     linarith
   · -- Real case: R > 4(n+1)², use the excursion WOR/WR correspondence.
     have hRlarge : 4 * (Nat.succ n) * (Nat.succ n) < returnsToStart (k := k) s := by omega
-    exact excursion_wor_wr_bound (k := k) hk n e hN s hs hRlarge
+    exact excursion_wor_wr_bound (k := k) hk n e hN s hs hcore
 
 /-- The per‑state excursion bound: the difference between the empirical
 evidence polynomial and the prefix coefficient is bounded by `4n²/M`.
@@ -122,12 +717,13 @@ private lemma perState_excursion_bound
     (hk : 0 < k) (n : ℕ) (e : MarkovState k)
     {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
     (hs : s ∈ stateFinset k N)
+    (hcore : HasExcursionBiapproxCore (k := k) hk n e)
     (M : ℕ) (hM : 0 < M) (hMret : M ≤ returnsToStart (k := k) s) :
     |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
         - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤
       (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) / (M : ℝ) := by
   have hRpos : 0 < returnsToStart (k := k) s := Nat.lt_of_lt_of_le hM hMret
-  have hR := excursion_decomposition_bound (k := k) hk n e hN s hs hRpos
+  have hR := excursion_decomposition_bound (k := k) hk n e hN s hs hcore hRpos
   have hnum : (0 : ℝ) ≤ 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ) := by positivity
   calc |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
           - (prefixCoeff (k := k) (h := hN) e s).toReal|
@@ -140,7 +736,8 @@ private lemma perState_excursion_bound
 
 theorem good_state_bound
     (hk : 0 < k)
-    (n : ℕ) (e : MarkovState k) :
+    (n : ℕ) (e : MarkovState k)
+    (hcore : HasExcursionBiapproxCore (k := k) hk n e) :
     ∃ C : ℝ, 0 ≤ C ∧
       ∀ {N : ℕ} (hN : Nat.succ n ≤ N)
         (s : MarkovState k),
@@ -151,7 +748,35 @@ theorem good_state_bound
   -- The constant C = 4 * (n+1)² works universally.
   refine ⟨4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, ?_⟩
   intro N hN s hs M hM hMret
-  exact perState_excursion_bound (k := k) hk n e hN s hs M hM hMret
+  exact perState_excursion_bound (k := k) hk n e hN s hs hcore M hM hMret
+
+theorem good_state_bound_of_residualRate
+    (hk : 0 < k)
+    (n : ℕ) (e : MarkovState k)
+    (C : ℝ) (hC : 0 ≤ C)
+    (hrate : HasExcursionResidualBoundRate (k := k) hk n e C) :
+    ∃ C' : ℝ, 0 ≤ C' ∧
+      ∀ {N : ℕ} (hN : Nat.succ n ≤ N)
+        (s : MarkovState k),
+          s ∈ stateFinset k N →
+            ∀ (M : ℕ), 0 < M → M ≤ returnsToStart (k := k) s →
+              |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
+                  - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤ C' / (M : ℝ) := by
+  refine ⟨C, hC, ?_⟩
+  intro N hN s hs M hM hMret
+  have hRpos : 0 < returnsToStart (k := k) s := Nat.lt_of_lt_of_le hM hMret
+  rcases hrate hN s hs hRpos with ⟨εW, εPC, hWnonneg, hPCnonneg, hrate_le, hbound⟩
+  have hCdivR_le_CdivM :
+      C / (returnsToStart (k := k) s : ℝ) ≤ C / (M : ℝ) := by
+    refine div_le_div_of_nonneg_left hC ?_ ?_
+    · exact Nat.cast_pos.mpr hM
+    · exact_mod_cast hMret
+  calc
+    |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
+        - (prefixCoeff (k := k) (h := hN) e s).toReal|
+        ≤ εW + εPC := hbound
+    _ ≤ C / (returnsToStart (k := k) s : ℝ) := hrate_le
+    _ ≤ C / (M : ℝ) := hCdivR_le_CdivM
 
 lemma abs_weightedDiffCore_le
     (hk : 0 < k)
@@ -269,21 +894,25 @@ lemma abs_weightedDiffCore_le
     _ = C / (M : ℝ) + badMass (k := k) μ N M := rfl
 
 /-! The core asymptotic statement for the weighted difference. -/
-theorem weightedDiffCore_tendsto_zero
+private theorem weightedDiffCore_tendsto_zero_of_goodStateBound
     (hk : 0 < k)
     (μ : PrefixMeasure (Fin k))
-    (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrec : MarkovRecurrentPrefixMeasure μ)
-    (n : ℕ) (e : MarkovState k) :
+    (n : ℕ) (e : MarkovState k)
+    (hgoodPack :
+      ∃ C : ℝ, 0 ≤ C ∧
+        ∀ {N : ℕ} (hN : Nat.succ n ≤ N)
+          (s : MarkovState k),
+            s ∈ stateFinset k N →
+              ∀ (M : ℕ), 0 < M → M ≤ returnsToStart (k := k) s →
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
+                    - (prefixCoeff (k := k) (h := hN) e s).toReal| ≤ C / (M : ℝ)) :
     Filter.Tendsto (weightedDiff (k := k) hk μ n e) Filter.atTop (nhds 0) := by
   classical
-  -- Extract the Diaconis–Freedman good‑state bound.
-  obtain ⟨C, hC, hgood⟩ := good_state_bound (k := k) (hk := hk) (n := n) (e := e)
-  -- Use the metric characterization of convergence.
+  obtain ⟨C, hC, hgood⟩ := hgoodPack
   rw [Metric.tendsto_atTop]
   intro ε hε
   have hε2 : 0 < ε / 2 := by linarith
-  -- Choose M with C / M < ε/2.
   obtain ⟨M, hMpos, hMbound⟩ : ∃ M : ℕ, 0 < M ∧ C / (M : ℝ) < ε / 2 := by
     by_cases hC0 : C = 0
     · refine ⟨1, ?_⟩
@@ -304,17 +933,14 @@ theorem weightedDiffCore_tendsto_zero
         have hCne : C ≠ 0 := ne_of_gt hCpos
         field_simp [hCne]
       simpa [hleft, hright] using hmul
-  -- Bad mass goes to zero for this fixed `M`.
   have hbad := badMass_tendsto_zero (k := k) (μ := μ) (M := M) hrec
   rw [Metric.tendsto_atTop] at hbad
   obtain ⟨N0, hN0⟩ := hbad (ε / 2) hε2
-  -- Combine the good/bad split for all N ≥ max N0 (n+1).
   refine ⟨max N0 (Nat.succ n), ?_⟩
   intro N hN
   have hN0' : N0 ≤ N := Nat.le_trans (Nat.le_max_left _ _) hN
   have hN1' : Nat.succ n ≤ N := Nat.le_trans (Nat.le_max_right _ _) hN
   have hbadN := hN0 N hN0'
-  -- rewrite weightedDiff to the core sum
   have hcore : weightedDiff (k := k) hk μ n e N =
       weightedDiffCore hk μ n e N hN1' := by
     simp [weightedDiff, hN1', weightedDiffCore]
@@ -322,7 +948,6 @@ theorem weightedDiffCore_tendsto_zero
     abs_weightedDiffCore_le (k := k) (hk := hk) (μ := μ) (n := n) (e := e)
       (N := N) (hN := hN1') (M := M) (C := C) hC
       (fun s hs hret => hgood (N := N) hN1' s hs M hMpos hret)
-  -- conclude the ε‑bound
   have hbadN' : |badMass (k := k) μ N M - 0| < ε / 2 := by
     simpa [Real.dist_eq, sub_zero] using hbadN
   have hbadN'' : badMass (k := k) μ N M < ε / 2 := by
@@ -337,6 +962,34 @@ theorem weightedDiffCore_tendsto_zero
     exact lt_of_le_of_lt hle hsum
   simpa [Real.dist_eq, sub_zero] using hfinal
 
+theorem weightedDiffCore_tendsto_zero
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure μ)
+    (n : ℕ) (e : MarkovState k)
+    (hcore : HasExcursionBiapproxCore (k := k) hk n e) :
+    Filter.Tendsto (weightedDiff (k := k) hk μ n e) Filter.atTop (nhds 0) := by
+  have hgoodPack := good_state_bound (k := k) (hk := hk) (n := n) (e := e) hcore
+  exact weightedDiffCore_tendsto_zero_of_goodStateBound
+    (k := k) (hk := hk) (μ := μ) (hrec := hrec) (n := n) (e := e) hgoodPack
+
+theorem weightedDiffCore_tendsto_zero_of_residualRate
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure μ)
+    (n : ℕ) (e : MarkovState k)
+    (C : ℝ) (hC : 0 ≤ C)
+    (hrate : HasExcursionResidualBoundRate (k := k) hk n e C) :
+    Filter.Tendsto (weightedDiff (k := k) hk μ n e) Filter.atTop (nhds 0) := by
+  have hgoodPack :=
+    good_state_bound_of_residualRate
+      (k := k) (hk := hk) (n := n) (e := e)
+      (C := C) hC hrate
+  exact weightedDiffCore_tendsto_zero_of_goodStateBound
+    (k := k) (hk := hk) (μ := μ) (hrec := hrec) (n := n) (e := e) hgoodPack
+
 /-!
 ### Diaconis–Freedman approximation lemma (main remaining gap)
 
@@ -350,9 +1003,22 @@ theorem weightedDiff_tendsto_zero
     (μ : PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrec : MarkovRecurrentPrefixMeasure μ)
-    (n : ℕ) (e : MarkovState k) :
+    (n : ℕ) (e : MarkovState k)
+    (hcore : HasExcursionBiapproxCore (k := k) hk n e) :
     Filter.Tendsto (weightedDiff (k := k) hk μ n e) Filter.atTop (nhds 0) := by
-  exact weightedDiffCore_tendsto_zero (k := k) (hk := hk) (μ := μ) hμ hrec n e
+  exact weightedDiffCore_tendsto_zero (k := k) (hk := hk) (μ := μ) hμ hrec n e hcore
+
+theorem weightedDiff_tendsto_zero_of_residualRate
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure μ)
+    (n : ℕ) (e : MarkovState k)
+    (C : ℝ) (hC : 0 ≤ C)
+    (hrate : HasExcursionResidualBoundRate (k := k) hk n e C) :
+    Filter.Tendsto (weightedDiff (k := k) hk μ n e) Filter.atTop (nhds 0) := by
+  exact weightedDiffCore_tendsto_zero_of_residualRate
+    (k := k) (hk := hk) (μ := μ) hμ hrec n e C hC hrate
 
 end MarkovDeFinettiHard
 

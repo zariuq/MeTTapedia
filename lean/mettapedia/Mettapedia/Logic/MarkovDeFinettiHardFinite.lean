@@ -57,7 +57,9 @@ the finite-intersection property below.
 theorem finite_constraints_nonempty
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ) :
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e) :
     ∀ u : Finset (ℕ × MarkovState k),
       (⋂ p ∈ u, MarkovDeFinettiHard.constraintSet (k := k) μ p.1 p.2).Nonempty := by
   -- TODO (Diaconis–Freedman 1980, hard direction; finite satisfiability core):
@@ -83,11 +85,64 @@ theorem finite_constraints_nonempty
   have hmem :
       MarkovDeFinettiHard.constraintVec (k := k) μ u ∈
         MarkovDeFinettiHard.momentPolytope (k := k) μ u := by
-    exact MarkovDeFinettiHard.constraintVec_mem_momentPolytope (k := k) μ hμ hrec u
+    exact MarkovDeFinettiHard.constraintVec_mem_momentPolytope
+      (k := k) μ hμ hrec hcoreAll u
   -- Unpack membership as existence of a witness measure.
   rcases (MarkovDeFinettiHard.constraintVec_mem_momentPolytope_iff (k := k) μ u).1 hmem
     with ⟨π, hπ⟩
   exact (MarkovDeFinettiHard.finite_constraints_nonempty_iff (k := k) μ u).2 ⟨π, hπ⟩
+
+
+theorem finite_constraints_nonempty_of_residualRate
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hrateAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C) :
+    ∀ u : Finset (ℕ × MarkovState k),
+      (⋂ p ∈ u, MarkovDeFinettiHard.constraintSet (k := k) μ p.1 p.2).Nonempty := by
+  intro u
+  have hmem :
+      MarkovDeFinettiHard.constraintVec (k := k) μ u ∈
+        MarkovDeFinettiHard.momentPolytope (k := k) μ u := by
+    exact MarkovDeFinettiHard.constraintVec_mem_momentPolytope_of_residualRate
+      (k := k) μ hμ hrec hrateAll u
+  rcases (MarkovDeFinettiHard.constraintVec_mem_momentPolytope_iff (k := k) μ u).1 hmem
+    with ⟨π, hπ⟩
+  exact (MarkovDeFinettiHard.finite_constraints_nonempty_iff (k := k) μ u).2 ⟨π, hπ⟩
+
+
+
+theorem finite_constraints_nonempty_of_splitRates
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasCanonicalWRSmoothingRate (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ u : Finset (ℕ × MarkovState k),
+      (⋂ p ∈ u, MarkovDeFinettiHard.constraintSet (k := k) μ p.1 p.2).Nonempty := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_splitRatesAll
+      (k := k) hsplitAll
+  exact finite_constraints_nonempty_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+theorem finite_constraints_nonempty_via_residualRateBridge
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ u : Finset (ℕ × MarkovState k),
+      (⋂ p ∈ u, MarkovDeFinettiHard.constraintSet (k := k) μ p.1 p.2).Nonempty := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_biapproxCoreAll
+      (k := k) hcoreAll
+  exact finite_constraints_nonempty_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
 
 end MarkovDeFinettiHard
 

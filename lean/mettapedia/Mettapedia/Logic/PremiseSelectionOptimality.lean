@@ -2,6 +2,7 @@ import Mathlib.Order.Monotone.Basic
 import Mathlib.Data.Real.Basic
 import Mettapedia.Logic.PremiseSelectionKNN_PLNBridge
 import Mettapedia.Logic.PremiseSelectionFusion
+import Mettapedia.Logic.PremiseSelectionExternalBayesianity
 
 /-!
 # Optimality Transfer Lemmas for Premise Selection
@@ -251,6 +252,81 @@ lemma fusion_ranking_after_normalization_toReal_one
     (fusion_ranking_after_normalization_toReal
       (η := η) (s₁ := s₁) (s₂ := s₂) (g := g)
       (t := 1) ht htop hw h₁ h₂)
+
+lemma fusion_ranking_after_normalization_toReal_totals
+    {Goal Fact : Type*} (η : Fact -> ℝ) (s₁ s₂ : Scorer Goal Fact) (g : Goal)
+    (t₁ t₂ : ℝ≥0∞)
+    (h₁_ne : t₁ ≠ 0) (h₂_ne : t₂ ≠ 0) (h₁₂_ne : t₁ + t₂ ≠ 0)
+    (h₁_top : t₁ ≠ ⊤) (h₂_top : t₂ ≠ ⊤)
+    (hw₁ : 0 < (t₁ / (t₁ + t₂)).toReal)
+    (hw₂ : 0 < (t₂ / (t₁ + t₂)).toReal)
+    (h₁ : ∃ f, StrictMono f ∧
+      (fun x =>
+        (Evidence.toStrength ((normalizeScorer t₁ s₁).score g x)).toReal)
+        = fun x => f (η x))
+    (h₂ : ∃ f, StrictMono f ∧
+      (fun x =>
+        (Evidence.toStrength ((normalizeScorer t₂ s₂).score g x)).toReal)
+        = fun x => f (η x)) :
+    BayesOptimalRanking η
+      (fun x =>
+        (Evidence.toStrength
+          ((fuse (normalizeScorer t₁ s₁) (normalizeScorer t₂ s₂)).score g x)).toReal) := by
+  set w₁ : ℝ := (t₁ / (t₁ + t₂)).toReal
+  set w₂ : ℝ := (t₂ / (t₁ + t₂)).toReal
+  have h_fuse :
+      (fun x =>
+        (Evidence.toStrength
+          ((fuse (normalizeScorer t₁ s₁) (normalizeScorer t₂ s₂)).score g x)).toReal)
+        = fun x =>
+          w₁ * (Evidence.toStrength ((normalizeScorer t₁ s₁).score g x)).toReal
+          + w₂ * (Evidence.toStrength ((normalizeScorer t₂ s₂).score g x)).toReal := by
+    funext x
+    have hbase :=
+      fuse_toStrength_normalized_totals_toReal
+        (s₁ := s₁) (s₂ := s₂) (g := g) (f := x)
+        (t₁ := t₁) (t₂ := t₂)
+        h₁_ne h₂_ne h₁₂_ne h₁_top h₂_top
+    simpa [w₁, w₂] using hbase
+  exact fusion_ranking_after_normalization η
+    (s₁ := fun x => (Evidence.toStrength ((normalizeScorer t₁ s₁).score g x)).toReal)
+    (s₂ := fun x => (Evidence.toStrength ((normalizeScorer t₂ s₂).score g x)).toReal)
+    (s_fuse := fun x =>
+      (Evidence.toStrength
+        ((fuse (normalizeScorer t₁ s₁) (normalizeScorer t₂ s₂)).score g x)).toReal)
+    (a := w₁) (b := w₂) hw₁ hw₂ h₁ h₂ h_fuse
+
+/-! ## Commutation + normalization preserves ranking assumptions -/
+
+lemma ranking_after_commutation_normalization_iff
+    {Goal Fact : Type*} (η : Fact -> ℝ)
+    (p₁ p₂ likelihood : Scorer Goal Fact) (g : Goal) (t : ℝ≥0∞) :
+    BayesOptimalRanking η
+      (fun x =>
+        (Evidence.toStrength
+          ((normalizeScorer t (update (fuse p₁ p₂) likelihood)).score g x)).toReal)
+      ↔
+    BayesOptimalRanking η
+      (fun x =>
+        (Evidence.toStrength
+          ((normalizeScorer t (fuse (update p₁ likelihood) (update p₂ likelihood))).score g x)).toReal) := by
+  let sPoolThenUpdate : Fact → ℝ :=
+    fun x =>
+      (Evidence.toStrength
+        ((normalizeScorer t (update (fuse p₁ p₂) likelihood)).score g x)).toReal
+  let sUpdateThenPool : Fact → ℝ :=
+    fun x =>
+      (Evidence.toStrength
+        ((normalizeScorer t (fuse (update p₁ likelihood) (update p₂ likelihood))).score g x)).toReal
+  have hs :
+      sPoolThenUpdate = sUpdateThenPool := by
+    funext x
+    simp [sPoolThenUpdate, sUpdateThenPool, externalBayesianity_hplus_tensor]
+  constructor
+  · intro h
+    exact ranking_transfer η sUpdateThenPool sPoolThenUpdate hs.symm h
+  · intro h
+    exact ranking_transfer η sPoolThenUpdate sUpdateThenPool hs h
 
 /-! ## PLN inheritance (structural) -/
 

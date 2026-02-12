@@ -1,7 +1,11 @@
 import Mettapedia.GSLT.Topos.Yoneda
 import Mathlib.CategoryTheory.Sites.Sieves
+import Mathlib.CategoryTheory.Subfunctor.Sieves
+import Mathlib.CategoryTheory.Subfunctor.Subobject
 import Mathlib.CategoryTheory.Subobject.Basic
 import Mathlib.CategoryTheory.Topos.Classifier
+import Mathlib.CategoryTheory.Limits.FunctorCategory.Shapes.Pullbacks
+import Mathlib.CategoryTheory.Limits.Types.Pullbacks
 
 /-!
 # Subobject Classifier for Presheaf Categories
@@ -121,30 +125,252 @@ Key properties that make Ω a subobject classifier:
     Note: For the full Frame structure, we'd need Heyting implication on sieves. -/
 instance omegaCompleteLattice (X : C) : CompleteLattice (Sieve X) := inferInstance
 
-/-- Presheaf categories have a subobject classifier.
+/-! ## Constructive Phase-A Core: `NatTrans ↔ Subfunctor`
 
-    This is a fundamental theorem of topos theory (Mac Lane & Moerdijk, Theorem I.6.1).
-    The classifier is the sieve functor Ω, and we axiomatize this here.
+For `P : Psh(C)` we build a concrete equivalence
+`(P ⟶ Ω) ≃ Subfunctor P`.
 
-    The proof requires showing that for any presheaf P and subobject S ↪ P,
-    there exists a unique characteristic morphism χ : P → Ω such that
-    S is the pullback of true : 1 → Ω along χ.
+This is the technical core behind representability of `Subobject.presheaf` by `Ω`:
+after composing with `Subfunctor.orderIsoSubobject`, this yields
+`(P ⟶ Ω) ≃ Subobject P`.
 
-    The construction: for any subobject S ↪ P, the characteristic map χ_P
-    at component X ∈ Cᵒᵖ sends an element a ∈ P(X) to the sieve
-    { f : Y → X | P(f)(a) ∈ S(Y) }
+Literature connection:
+- Mac Lane–Moerdijk (1994), Ch. I §3 (subobject classifier in presheaf toposes).
+- van Oosten notes (Ω via sieves + pullback action). -/
 
-    This is proven in Mathlib's `CategoryTheory.Topos.Classifier` for categories
-    with a classifier, and specifically for presheaf categories we use that
-    sieves classify subfunctors of representables (Yoneda).
+/-- From a subfunctor `G ≤ P`, construct its characteristic map `P ⟶ Ω` by sending each section
+to the sieve of arrows along which it lands in `G`. -/
+noncomputable def chiOfSubfunctor (P : Cᵒᵖ ⥤ Type (max u v))
+    (G : CategoryTheory.Subfunctor P) : P ⟶ omegaFunctor (C := C) where
+  app X x := G.sieveOfSection x
+  naturality X Y f := by
+    funext x
+    apply Sieve.ext
+    intro Z g
+    simp [omegaFunctor, sievePullback, CategoryTheory.Subfunctor.sieveOfSection,
+      FunctorToTypes.map_comp_apply]
+
+/-- From a characteristic map `χ : P ⟶ Ω`, recover the corresponding subfunctor by taking sections
+whose identity arrow lies in the corresponding sieve. -/
+noncomputable def subfunctorOfChi (P : Cᵒᵖ ⥤ Type (max u v))
+    (χ : P ⟶ omegaFunctor (C := C)) : CategoryTheory.Subfunctor P where
+  obj X := { x : P.obj X | (χ.app X x).arrows (𝟙 (unop X)) }
+  map {X Y} f := by
+    intro x hx
+    change ((P.map f ≫ χ.app Y) x).arrows (𝟙 (unop Y))
+    have hnat := congrFun (NatTrans.naturality χ f) x
+    rw [hnat]
+    change (sievePullback f.unop (χ.app X x)).arrows (𝟙 (unop Y))
+    have hf : (χ.app X x).arrows f.unop := by
+      simpa using (χ.app X x).downward_closed hx f.unop
+    simp [sievePullback, Sieve.pullback, hf]
+
+/-- The explicit equivalence `(P ⟶ Ω) ≃ Subfunctor P`. -/
+noncomputable def natTransEquivSubfunctor (P : Cᵒᵖ ⥤ Type (max u v)) :
+    (P ⟶ omegaFunctor (C := C)) ≃ CategoryTheory.Subfunctor P where
+  toFun := subfunctorOfChi (C := C) P
+  invFun := chiOfSubfunctor (C := C) P
+  left_inv χ := by
+    ext X x
+    apply Sieve.ext
+    intro Z g
+    change ((subfunctorOfChi (C := C) P χ).obj (op Z) (P.map g.op x)) ↔
+      (χ.app X x).arrows g
+    change ((χ.app (op Z) (P.map g.op x)).arrows (𝟙 Z)) ↔ (χ.app X x).arrows g
+    have hnat := congrFun (NatTrans.naturality χ g.op) x
+    have hnat' : (χ.app (op Z) (P.map g.op x)) = (sievePullback g (χ.app X x)) := by
+      simpa [omegaFunctor, sievePullback] using hnat
+    rw [hnat']
+    simp [sievePullback, Sieve.pullback]
+  right_inv G := by
+    ext X x
+    change ((chiOfSubfunctor (C := C) P G).app X x).arrows (𝟙 (unop X)) ↔ x ∈ G.obj X
+    -- At identity, sieve-membership reduces to the original membership condition.
+    change P.map (𝟙 (unop X)).op x ∈ G.obj X ↔ x ∈ G.obj X
+    simp
+
+/-! ## Constructive Pullback Bridge for `Subobject.mk`
+
+To show representability by the canonical sieve object `Ω`, we need compatibility of our explicit
+`χ`-equivalence with pullback in `Subobject.presheaf`. The next lemma provides exactly that bridge.
 -/
--- TODO: Prove that presheaf categories have a subobject classifier.
--- This is Mac Lane & Moerdijk Theorem I.6.1.
--- The classifier is the sieve functor Ω defined above.
--- Requires showing that sieves classify subobjects.
-theorem presheafCategoryHasClassifier (C : Type u) [SmallCategory C] :
+
+/-- Set-theoretic preimage subfunctor alias (explicitly named for readability in the bridge proof). -/
+abbrev preimageSubfunctor
+    {X X' : Cᵒᵖ ⥤ Type (max u v)} (f : X ⟶ X') (G : CategoryTheory.Subfunctor X') :
+    CategoryTheory.Subfunctor X :=
+  CategoryTheory.Subfunctor.preimage G f
+
+/-- Pullback of `Subobject.mk G.ι` along `f` corresponds to `Subobject.mk` of the preimage
+subfunctor of `G` along `f`.
+
+This is the concrete finite-data realization of inverse image for subobjects in presheaf toposes
+(`Set`-valued fibers), matching MM92 I.3. -/
+private theorem subobjectMk_preimageSubfunctor_eq_pullback
+    {X X' : Cᵒᵖ ⥤ Type (max u v)} (f : X ⟶ X') (G : CategoryTheory.Subfunctor X') :
+    Subobject.mk ((preimageSubfunctor f G).ι) = (Subobject.pullback f).obj (Subobject.mk G.ι) := by
+  let rhs : Subobject X := (Subobject.pullback f).obj (Subobject.mk G.ι)
+  have hrhs : Subobject.mk (CategoryTheory.Subfunctor.range rhs.arrow).ι = rhs := by
+    simp [rhs]
+  have hEq : preimageSubfunctor f G = CategoryTheory.Subfunctor.range rhs.arrow := by
+    change preimageSubfunctor f G = CategoryTheory.Subfunctor.range rhs.arrow
+    have hpb : rhs = Subobject.mk (pullback.snd (Subobject.mk G.ι).arrow f) := by
+      simpa [rhs] using (Subobject.pullback_obj f (Subobject.mk G.ι))
+    have hrange : CategoryTheory.Subfunctor.range rhs.arrow =
+        CategoryTheory.Subfunctor.range (pullback.snd (Subobject.mk G.ι).arrow f) := by
+      let k := pullback.snd (Subobject.mk G.ι).arrow f
+      have h₁ : CategoryTheory.Subfunctor.range rhs.arrow =
+          CategoryTheory.Subfunctor.range ((Subobject.mk k).arrow) := by
+        simpa [hpb] using congrArg (fun S : Subobject X => CategoryTheory.Subfunctor.range S.arrow) hpb
+      have h₂ : CategoryTheory.Subfunctor.range ((Subobject.mk k).arrow) =
+          CategoryTheory.Subfunctor.range k := by
+        calc
+          CategoryTheory.Subfunctor.range ((Subobject.mk k).arrow)
+              = CategoryTheory.Subfunctor.range ((Subobject.underlyingIso k).hom ≫ k) := by
+                  have hmk : (Subobject.mk k).arrow = (Subobject.underlyingIso k).hom ≫ k := by
+                    simp
+                  exact hmk ▸ rfl
+          _ = (CategoryTheory.Subfunctor.range (Subobject.underlyingIso k).hom).image k := by
+                simpa using (CategoryTheory.Subfunctor.range_comp
+                  (f := (Subobject.underlyingIso k).hom) (g := k))
+          _ = (⊤ : CategoryTheory.Subfunctor (pullback (Subobject.mk G.ι).arrow f)).image k := by
+                rw [CategoryTheory.Subfunctor.range_eq_top (p := (Subobject.underlyingIso k).hom)]
+          _ = CategoryTheory.Subfunctor.range k := by
+                simpa using (CategoryTheory.Subfunctor.image_top
+                  (F := pullback (Subobject.mk G.ι).arrow f) (f := k))
+      exact h₁.trans h₂
+    rw [hrange]
+    ext U x
+    constructor
+    · intro hx
+      have hRG : CategoryTheory.Subfunctor.range (Subobject.mk G.ι).arrow = G :=
+        CategoryTheory.Subfunctor.range_subobjectMk_ι (F := X') G
+      have hRGU : Set.range ((Subobject.mk G.ι).arrow.app U) = G.obj U := by
+        exact congrArg (fun H : CategoryTheory.Subfunctor X' => H.obj U) hRG
+      have hGx : (f.app U x ∈ Set.range ((Subobject.mk G.ι).arrow.app U)) ↔ f.app U x ∈ G.obj U := by
+        simp [hRGU]
+      have hpre : x ∈ (f.app U) ⁻¹' Set.range ((Subobject.mk G.ι).arrow.app U) := by
+        exact hGx.mpr hx
+      have hRangeType : x ∈ Set.range (pullback.snd ((Subobject.mk G.ι).arrow.app U) (f.app U)) := by
+        simpa [CategoryTheory.Limits.Types.range_pullbackSnd] using hpre
+      have hIsoRange :
+          Set.range ((pullback.snd (Subobject.mk G.ι).arrow f).app U) =
+            Set.range (pullback.snd ((Subobject.mk G.ι).arrow.app U) (f.app U)) := by
+        ext t
+        constructor
+        · rintro ⟨y, rfl⟩
+          refine ⟨(pullbackObjIso (Subobject.mk G.ι).arrow f U).hom y, ?_⟩
+          simpa using congrFun
+            (pullbackObjIso_hom_comp_snd (f := (Subobject.mk G.ι).arrow) (g := f) U) y
+        · rintro ⟨y, hy⟩
+          refine ⟨(pullbackObjIso (Subobject.mk G.ι).arrow f U).inv y, ?_⟩
+          simpa [hy] using congrFun
+            (pullbackObjIso_inv_comp_snd (f := (Subobject.mk G.ι).arrow) (g := f) U) y
+      change x ∈ Set.range ((pullback.snd (Subobject.mk G.ι).arrow f).app U)
+      exact hIsoRange.symm ▸ hRangeType
+    · intro hx
+      have hIsoRange :
+          Set.range ((pullback.snd (Subobject.mk G.ι).arrow f).app U) =
+            Set.range (pullback.snd ((Subobject.mk G.ι).arrow.app U) (f.app U)) := by
+        ext t
+        constructor
+        · rintro ⟨y, rfl⟩
+          refine ⟨(pullbackObjIso (Subobject.mk G.ι).arrow f U).hom y, ?_⟩
+          simpa using congrFun
+            (pullbackObjIso_hom_comp_snd (f := (Subobject.mk G.ι).arrow) (g := f) U) y
+        · rintro ⟨y, hy⟩
+          refine ⟨(pullbackObjIso (Subobject.mk G.ι).arrow f U).inv y, ?_⟩
+          simpa [hy] using congrFun
+            (pullbackObjIso_inv_comp_snd (f := (Subobject.mk G.ι).arrow) (g := f) U) y
+      have hRangeType : x ∈ Set.range (pullback.snd ((Subobject.mk G.ι).arrow.app U) (f.app U)) := by
+        exact hIsoRange ▸ hx
+      have hpre : x ∈ (f.app U) ⁻¹' Set.range ((Subobject.mk G.ι).arrow.app U) := by
+        simpa [CategoryTheory.Limits.Types.range_pullbackSnd] using hRangeType
+      have hRG : CategoryTheory.Subfunctor.range (Subobject.mk G.ι).arrow = G :=
+        CategoryTheory.Subfunctor.range_subobjectMk_ι (F := X') G
+      have hRGU : Set.range ((Subobject.mk G.ι).arrow.app U) = G.obj U := by
+        exact congrArg (fun H : CategoryTheory.Subfunctor X' => H.obj U) hRG
+      have hGx : (f.app U x ∈ Set.range ((Subobject.mk G.ι).arrow.app U)) ↔ f.app U x ∈ G.obj U := by
+        simp [hRGU]
+      exact hGx.mp hpre
+  calc
+    Subobject.mk ((preimageSubfunctor f G).ι)
+        = Subobject.mk (CategoryTheory.Subfunctor.range rhs.arrow).ι := by
+          simpa using congrArg (fun H : CategoryTheory.Subfunctor X => Subobject.mk H.ι) hEq
+    _ = rhs := hrhs
+    _ = (Subobject.pullback f).obj (Subobject.mk G.ι) := rfl
+
+/-- Constructive representability of the subobject presheaf of `Psh(C)` by the canonical sieve
+truth-values object `omegaFunctor`.
+
+References:
+- Mac Lane–Moerdijk (1994), Ch. I §3 (representability criterion in presheaf toposes).
+- Implemented concretely via `NatTrans ↔ Subfunctor` + `Subfunctor ↔ Subobject`. -/
+noncomputable def presheafSubobjectRepresentableByOmega (C : Type u) [SmallCategory C] :
+    (Subobject.presheaf (Psh(C))).RepresentableBy (omegaFunctor (C := C)) where
+  homEquiv {P} :=
+    (natTransEquivSubfunctor (C := C) P).trans
+      (CategoryTheory.Subfunctor.orderIsoSubobject (F := P)).toEquiv
+  homEquiv_comp {P Q} f g := by
+    -- Source-faithful pullback compatibility witness for characteristic maps in presheaf toposes.
+    change Subobject.mk ((subfunctorOfChi (C := C) P (f ≫ g)).ι) =
+      (Subobject.pullback f).obj (Subobject.mk ((subfunctorOfChi (C := C) Q g).ι))
+    simpa [preimageSubfunctor, subfunctorOfChi] using
+      (subobjectMk_preimageSubfunctor_eq_pullback (C := C) (f := f)
+        (G := subfunctorOfChi (C := C) Q g))
+
+/-- Criterion form: `Psh(C)` has a classifier whenever its subobject presheaf is representable.
+
+    This is the direction needed for the concrete `Ω`-construction bridge. -/
+theorem presheafCategoryHasClassifier (C : Type u) [SmallCategory C]
+    (hrep : (Subobject.presheaf (Psh(C))).IsRepresentable) :
     CategoryTheory.HasClassifier (Psh(C)) := by
-  sorry
+  -- Source: Mac Lane–Moerdijk (1994), Ch. I §3 (representability criterion),
+  -- formalized in Mathlib as `isRepresentable_hasClassifier_iff`.
+  exact (CategoryTheory.isRepresentable_hasClassifier_iff (C := Psh(C))).2 hrep
+
+/-- Equivalence form re-exported for `Psh(C)`. -/
+theorem presheafCategoryHasClassifier_iff (C : Type u) [SmallCategory C] :
+    CategoryTheory.HasClassifier (Psh(C)) ↔
+      (Subobject.presheaf (Psh(C))).IsRepresentable := by
+  -- Source: Mac Lane–Moerdijk (1994), Ch. I §3, Prop. 1.
+  simpa using (CategoryTheory.isRepresentable_hasClassifier_iff (C := Psh(C)))
+
+/-- Ω-specific bridge: if the subobject presheaf is represented by the canonical sieve presheaf
+`omegaFunctor`, then `Psh(C)` has a subobject classifier.
+
+This is the concrete target for the constructive witness in Phase A. -/
+theorem presheafCategoryHasClassifier_ofOmegaRepresentableBy (C : Type u) [SmallCategory C]
+    (hΩ : (Subobject.presheaf (Psh(C))).RepresentableBy (omegaFunctor (C := C))) :
+    CategoryTheory.HasClassifier (Psh(C)) := by
+  classical
+  -- Source: Mac Lane–Moerdijk (1994), Ch. I §3:
+  -- any representation of `Subobject.presheaf` yields a classifier.
+  refine ⟨⟨CategoryTheory.Classifier.SubobjectRepresentableBy.classifier (C := Psh(C)) hΩ⟩⟩
+
+/-- Constructive classifier existence for presheaf categories using the canonical sieve object `Ω`.
+
+This closes Phase A without assuming a pre-existing `HasClassifier (Psh(C))` witness. -/
+theorem presheafCategoryHasClassifierConstructive (C : Type u) [SmallCategory C] :
+    CategoryTheory.HasClassifier (Psh(C)) := by
+  exact presheafCategoryHasClassifier_ofOmegaRepresentableBy (C := C)
+    (presheafSubobjectRepresentableByOmega (C := C))
+
+/-- If `Psh(C)` already has a classifier, recover a concrete `RepresentableBy` witness for the
+chosen truth-values object `Ω` (from the typeclass witness).
+
+This is useful for staging: we can work with an explicit witness term while the constructive
+`omegaFunctor`-specific representation is being built. -/
+noncomputable def presheafSubobjectRepresentableByChosenOmega (C : Type u) [SmallCategory C]
+    [CategoryTheory.HasClassifier (Psh(C))] :
+    (Subobject.presheaf (Psh(C))).RepresentableBy (CategoryTheory.HasClassifier.Ω (Psh(C))) := by
+  classical
+  let 𝒞 : CategoryTheory.Classifier (Psh(C)) :=
+    CategoryTheory.HasClassifier.exists_classifier (C := Psh(C)) |>.some
+  -- Source: Mathlib formalization of MM92 I.3:
+  -- `Classifier.representableBy` gives representation from a classifier.
+  simpa [CategoryTheory.HasClassifier.Ω, 𝒞] using
+    (CategoryTheory.Classifier.representableBy (𝒞 := 𝒞))
 
 /-! ## Summary
 
@@ -158,7 +384,7 @@ This file establishes the subobject classifier for presheaf categories:
 - Ω(X) is the complete lattice of sieves on X
 - Pullback along f : X → Y gives Ω(f) : Ω(Y) → Ω(X)
 - true picks the maximal sieve at each object
-- Ω classifies subobjects in Psh(C)
+- Representability criterion for `HasClassifier (Psh(C))` is available
 
 **Next Steps**:
 - `PredicateFibration.lean`: Connect Ω to the predicate fibration πΩ

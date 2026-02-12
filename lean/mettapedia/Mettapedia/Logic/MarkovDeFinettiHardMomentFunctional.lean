@@ -432,12 +432,13 @@ The succ-case proof should follow this pattern:
 Everything else is already wired into the moment-polytope framework.
 -/
 
-theorem empiricalWnn_tendsto_wμ_succ
+private theorem empiricalWnn_tendsto_wμ_succ_of_weightedDiff
     (hk : 0 < k)
     (μ : PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
-    (n : ℕ) (e : MarkovState k) :
+    (n : ℕ) (e : MarkovState k)
+    (happrox :
+      Filter.Tendsto (weightedDiff (k := k) hk μ n e) Filter.atTop (nhds 0)) :
     Filter.Tendsto
         (fun N =>
           ∫⁻ θ, Wnn (k := k) (Nat.succ n) e θ ∂(empiricalMeasure (k := k) hk μ N))
@@ -458,13 +459,6 @@ theorem empiricalWnn_tendsto_wμ_succ
   -- For every `N ≥ n+1`,
   --   wμ (n+1) e = ∑ s∈stateFinset k N, prefixCoeff (h := hN) e s * wμ N s.
   -- (This is `wμ_eq_sum_prefixCoeff_mul_wμ`.)
-
-  -- Step 3: weighted‑difference form (the approximation lemma).
-  have happrox :
-      Filter.Tendsto (weightedDiff (k := k) hk μ n e) Filter.atTop (nhds 0) := by
-    -- Diaconis–Freedman approximation (isolated in `MarkovDeFinettiHardApprox`).
-    simpa using
-      (weightedDiff_tendsto_zero (k := k) hk (μ := μ) hμ hrec n e)
 
   -- Step 4: conclude the original `ENNReal` convergence from `happrox`
   -- using the rewrite in Step 1 and the tower identity in Step 2.
@@ -710,11 +704,54 @@ theorem empiricalWnn_tendsto_wμ_succ
           simp [hw0]
     exact ne_of_lt (lt_of_le_of_lt hwμ_le ENNReal.one_lt_top)
 
+
+theorem empiricalWnn_tendsto_wμ_succ
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (n : ℕ) (e : MarkovState k)
+    (hcore : HasExcursionBiapproxCore (k := k) hk n e) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) (Nat.succ n) e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ (Nat.succ n) e)) := by
+  have happrox :
+      Filter.Tendsto (weightedDiff (k := k) hk μ n e) Filter.atTop (nhds 0) := by
+    simpa using
+      (weightedDiff_tendsto_zero (k := k) hk (μ := μ) hμ hrec n e hcore)
+  exact empiricalWnn_tendsto_wμ_succ_of_weightedDiff
+    (k := k) (hk := hk) (μ := μ) hμ n e happrox
+
+theorem empiricalWnn_tendsto_wμ_succ_of_residualRate
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (n : ℕ) (e : MarkovState k)
+    (C : ℝ) (hC : 0 ≤ C)
+    (hrate : HasExcursionResidualBoundRate (k := k) hk n e C) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) (Nat.succ n) e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ (Nat.succ n) e)) := by
+  have happrox :
+      Filter.Tendsto (weightedDiff (k := k) hk μ n e) Filter.atTop (nhds 0) := by
+    simpa using
+      (weightedDiff_tendsto_zero_of_residualRate
+        (k := k) (hk := hk) (μ := μ) hμ hrec n e C hC hrate)
+  exact empiricalWnn_tendsto_wμ_succ_of_weightedDiff
+    (k := k) (hk := hk) (μ := μ) hμ n e happrox
+
 theorem empiricalWnn_tendsto_wμ
     (hk : 0 < k)
     (μ : PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e)
     (n : ℕ) (e : MarkovState k) :
     Filter.Tendsto
         (fun N =>
@@ -805,9 +842,157 @@ theorem empiricalWnn_tendsto_wμ
         Filter.Tendsto (fun _ : ℕ => wμ (k := k) μ 0 e) Filter.atTop (nhds (wμ (k := k) μ 0 e)))
   | succ n =>
       -- Defer the genuine Diaconis–Freedman core to a dedicated lemma.
-      exact empiricalWnn_tendsto_wμ_succ (k := k) (hk := hk) (μ := μ) hμ hrec n e
+      exact empiricalWnn_tendsto_wμ_succ
+        (k := k) (hk := hk) (μ := μ) hμ hrec n e (hcoreAll n e)
   -- (Legacy proof attempt removed — the `| succ n` case is now handled by
   --  `empiricalWnn_tendsto_wμ_succ` via `weightedDiff_tendsto_zero`.)
+
+
+theorem empiricalWnn_tendsto_wμ_of_residualRate
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hrateAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C)
+    (n : ℕ) (e : MarkovState k) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) n e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ n e)) := by
+  classical
+  -- TODO (Diaconis–Freedman 1980): This is the single remaining hard lemma in the Markov hard
+  -- direction. Everything else (moment polytope, compactness, closed constraints) is already
+  -- wired so that proving this lemma completes `markovDeFinetti_hard`.
+  --
+  -- Until this lemma is proven, all downstream results depending on Markov de Finetti should
+  -- treat this as the *only* gap.
+  cases n with
+  | zero =>
+      -- Show the sequence is constant in `N`.
+      have hconst :
+          ∀ N : ℕ,
+            (∫⁻ θ, Wnn (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N)) =
+              wμ (k := k) μ 0 e := by
+        intro N
+        -- Expand the empirical integral into a finite sum over evidence states at horizon `N`.
+        have hsum :=
+          lintegral_Wnn_empiricalMeasure_eq_sum (k := k) hk (μ := μ) (N := N) (n := 0) (e := e)
+        -- Rewrite the empirical sum using `W` instead of `Wnn`.
+        have hsum' :
+            (∫⁻ θ, W (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N)) =
+              (stateFinset k N).sum (fun s =>
+                W (k := k) 0 e (empiricalParam (k := k) hk s) * wμ (k := k) μ N s) := by
+          simpa [coe_Wnn, statePMF_apply, mul_assoc] using hsum
+        -- Now compute the sum using the explicit horizon-0 formulas.
+        by_cases he0 : e ∈ stateFinset k 0
+        · -- `e` is a valid horizon-0 state.
+          have hpoint :
+              (stateFinset k N).sum (fun s =>
+                  W (k := k) 0 e (empiricalParam (k := k) hk s) * wμ (k := k) μ N s) =
+                ∑ s ∈ stateFinset k N, prefixCoeff (k := k) (h := Nat.zero_le N) e s * wμ (k := k) μ N s := by
+            refine Finset.sum_congr rfl ?_
+            intro s hs
+            simp [W_zero_empiricalParam_eq_indicator (k := k) (hk := hk) (e := e) (s := s) he0,
+              prefixCoeff_zero_eq_indicator (k := k) (N := N) (e := e) (s := s) he0 hs]
+          -- Regroup `wμ 0 e` via the tower identity at horizon `N`.
+          have hwμ :=
+            wμ_eq_sum_prefixCoeff_mul_wμ (k := k) (μ := μ) hμ (h := Nat.zero_le N) (e := e)
+          have hsum'' :
+              (∫⁻ θ, W (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N)) =
+                ∑ s ∈ stateFinset k N, prefixCoeff (k := k) (h := Nat.zero_le N) e s * wμ (k := k) μ N s := by
+            simpa [hpoint] using hsum'
+          -- The right-hand side is exactly `wμ 0 e`.
+          have hwμ' :
+              (∑ s ∈ stateFinset k N, prefixCoeff (k := k) (h := Nat.zero_le N) e s * wμ (k := k) μ N s) =
+                wμ (k := k) μ 0 e := by
+            simpa using hwμ.symm
+          -- finish
+          simpa [coe_Wnn] using (hsum''.trans hwμ')
+        · -- `e` is not realizable at horizon 0.
+          have hW0 :
+              (stateFinset k N).sum (fun s =>
+                  W (k := k) 0 e (empiricalParam (k := k) hk s) * wμ (k := k) μ N s) = 0 := by
+            refine Finset.sum_eq_zero ?_
+            intro s hs
+            have hfilter :
+                (trajFinset k 0).filter (fun xs => stateOfTraj (k := k) xs = e) = ∅ := by
+              apply Finset.filter_eq_empty_iff.2
+              intro xs hx hx'
+              -- show `stateOfTraj xs ≠ e`
+              have : e ∈ stateFinset k 0 := by
+                simpa [hx'] using (stateOfTraj_mem_stateFinset (k := k) (xs := xs))
+              exact he0 this
+            simp [W, hfilter]
+          have hw0 : wμ (k := k) μ 0 e = 0 :=
+            wμ_eq_zero_of_not_mem_stateFinset (k := k) (μ := μ) (n := 0) (e := e) he0
+          calc
+            (∫⁻ θ, Wnn (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N))
+                = (∫⁻ θ, W (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N)) := by
+                    simp [coe_Wnn]
+            _ = 0 := by simpa [hW0] using hsum'
+            _ = wμ (k := k) μ 0 e := by simp [hw0]
+      -- Now use `hconst` to conclude.
+      have hconst_fun :
+          (fun N : ℕ =>
+              ∫⁻ θ, Wnn (k := k) 0 e θ ∂(empiricalMeasure (k := k) hk μ N)) =
+            (fun _ : ℕ => wμ (k := k) μ 0 e) := by
+        funext N
+        exact hconst N
+      rw [hconst_fun]
+      exact (tendsto_const_nhds :
+        Filter.Tendsto (fun _ : ℕ => wμ (k := k) μ 0 e) Filter.atTop (nhds (wμ (k := k) μ 0 e)))
+  | succ n =>
+      -- Defer the genuine Diaconis–Freedman core to a dedicated lemma.
+      rcases hrateAll n e with ⟨C, hC, hrate⟩
+      exact empiricalWnn_tendsto_wμ_succ_of_residualRate
+        (k := k) (hk := hk) (μ := μ) hμ hrec n e C hC hrate
+  -- (Legacy proof attempt removed — the `| succ n` case is now handled by
+  --  `empiricalWnn_tendsto_wμ_succ` via `weightedDiff_tendsto_zero`.)
+
+
+
+theorem empiricalWnn_tendsto_wμ_of_splitRates
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasCanonicalWRSmoothingRate (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (n : ℕ) (e : MarkovState k) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) n e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ n e)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_splitRatesAll_fixed
+      (k := k) (hk := hk) hsplitAll
+  exact empiricalWnn_tendsto_wμ_of_residualRate
+    (k := k) (hk := hk) (μ := μ) hμ hrec hrateAll n e
+
+theorem empiricalWnn_tendsto_wμ_via_residualRateBridge
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e)
+    (n : ℕ) (e : MarkovState k) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) n e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ n e)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_biapproxCoreAll_fixed
+      (k := k) (hk := hk) hcoreAll
+  exact empiricalWnn_tendsto_wμ_of_residualRate
+    (k := k) (hk := hk) (μ := μ) hμ hrec hrateAll n e
 
 lemma empiricalVec_mem_momentPolytope (hk : 0 < k) (μ : PrefixMeasure (Fin k))
     (u : Finset (Nat × MarkovState k)) (n : ℕ) :
@@ -832,6 +1017,8 @@ theorem empiricalVec_tendsto_constraintVec
     (μ : PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e)
     (u : Finset (Nat × MarkovState k)) :
     ∃ hk : 0 < k,
       Filter.Tendsto (fun n => empiricalVec (k := k) hk μ u n) Filter.atTop
@@ -859,7 +1046,82 @@ theorem empiricalVec_tendsto_constraintVec
   intro p
   -- Reduce to the per-coordinate Diaconis–Freedman convergence lemma.
   simpa [empiricalVec, evalVec, constraintVec] using
-    empiricalWnn_tendsto_wμ (k := k) (hk := hk) (μ := μ) hμ hrec p.1.1 p.1.2
+    empiricalWnn_tendsto_wμ
+      (k := k) (hk := hk) (μ := μ) hμ hrec (hcoreAll hk) p.1.1 p.1.2
+
+
+theorem empiricalVec_tendsto_constraintVec_of_residualRate
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hrateAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C)
+    (u : Finset (Nat × MarkovState k)) :
+    ∃ hk : 0 < k,
+      Filter.Tendsto (fun n => empiricalVec (k := k) hk μ u n) Filter.atTop
+        (nhds (constraintVec (k := k) μ u)) := by
+  classical
+  -- `MarkovRecurrentPrefixMeasure` is impossible when `k = 0`, so we can extract `0 < k`.
+  have hk : 0 < k := by
+    cases k with
+    | zero =>
+        rcases hrec with ⟨P, hP, -, -⟩
+        have huniv : (Set.univ : Set (ℕ → Fin 0)) = ∅ := by
+          ext ω
+          -- `ℕ → Fin 0` is empty since `Fin 0` is empty and `ℕ` is nonempty.
+          haveI : IsEmpty (ℕ → Fin 0) := by infer_instance
+          exact (isEmptyElim ω)
+        have : (P Set.univ) = 0 := by simp [huniv]
+        have : (0 : ENNReal) = 1 := by
+          simpa [this] using (hP.measure_univ : P Set.univ = 1)
+        exact (zero_ne_one this).elim
+    | succ k' =>
+        exact Nat.succ_pos k'
+  refine ⟨hk, ?_⟩
+  -- Convergence in the product space is coordinatewise.
+  rw [tendsto_pi_nhds]
+  intro p
+  -- Reduce to the per-coordinate Diaconis–Freedman convergence lemma.
+  simpa [empiricalVec, evalVec, constraintVec] using
+    empiricalWnn_tendsto_wμ_of_residualRate
+      (k := k) (hk := hk) (μ := μ) hμ hrec (hrateAll hk) p.1.1 p.1.2
+
+
+
+theorem empiricalVec_tendsto_constraintVec_of_splitRates
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasCanonicalWRSmoothingRate (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (u : Finset (Nat × MarkovState k)) :
+    ∃ hk : 0 < k,
+      Filter.Tendsto (fun n => empiricalVec (k := k) hk μ u n) Filter.atTop
+        (nhds (constraintVec (k := k) μ u)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_splitRatesAll
+      (k := k) hsplitAll
+  exact empiricalVec_tendsto_constraintVec_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
+theorem empiricalVec_tendsto_constraintVec_via_residualRateBridge
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e)
+    (u : Finset (Nat × MarkovState k)) :
+    ∃ hk : 0 < k,
+      Filter.Tendsto (fun n => empiricalVec (k := k) hk μ u n) Filter.atTop
+        (nhds (constraintVec (k := k) μ u)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_biapproxCoreAll
+      (k := k) hcoreAll
+  exact empiricalVec_tendsto_constraintVec_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
 
 /-! ## Affine closure under two-point mixtures (convexity lemma) -/
 
@@ -911,16 +1173,70 @@ theorem constraintVec_mem_momentPolytope
     (μ : PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e)
     (u : Finset (Nat × MarkovState k)) :
     constraintVec (k := k) μ u ∈ momentPolytope (k := k) μ u := by
   -- Reduce to the empirical approximation limit + closedness of the moment polytope.
-  rcases empiricalVec_tendsto_constraintVec (k := k) (μ := μ) hμ hrec u with ⟨hk, hlim⟩
+  rcases empiricalVec_tendsto_constraintVec
+      (k := k) (μ := μ) hμ hrec hcoreAll u with ⟨hk, hlim⟩
   have hclosure :
       constraintVec (k := k) μ u ∈ closure (momentPolytope (k := k) μ u) :=
     constraintVec_mem_closure_momentPolytope_of_tendsto (k := k) hk μ u hlim
   have hclosed : IsClosed (momentPolytope (k := k) μ u) :=
     (isCompact_momentPolytope (k := k) μ u).isClosed
   simpa [hclosed.closure_eq] using hclosure
+
+theorem constraintVec_mem_momentPolytope_of_residualRate
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hrateAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C)
+    (u : Finset (Nat × MarkovState k)) :
+    constraintVec (k := k) μ u ∈ momentPolytope (k := k) μ u := by
+  -- Reduce to the empirical approximation limit + closedness of the moment polytope.
+  rcases empiricalVec_tendsto_constraintVec_of_residualRate
+      (k := k) (μ := μ) hμ hrec hrateAll u with ⟨hk, hlim⟩
+  have hclosure :
+      constraintVec (k := k) μ u ∈ closure (momentPolytope (k := k) μ u) :=
+    constraintVec_mem_closure_momentPolytope_of_tendsto (k := k) hk μ u hlim
+  have hclosed : IsClosed (momentPolytope (k := k) μ u) :=
+    (isCompact_momentPolytope (k := k) μ u).isClosed
+  simpa [hclosed.closure_eq] using hclosure
+
+
+theorem constraintVec_mem_momentPolytope_of_splitRates
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasCanonicalWRSmoothingRate (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (u : Finset (Nat × MarkovState k)) :
+    constraintVec (k := k) μ u ∈ momentPolytope (k := k) μ u := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_splitRatesAll
+      (k := k) hsplitAll
+  exact constraintVec_mem_momentPolytope_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
+theorem constraintVec_mem_momentPolytope_via_residualRateBridge
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e)
+    (u : Finset (Nat × MarkovState k)) :
+    constraintVec (k := k) μ u ∈ momentPolytope (k := k) μ u := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_biapproxCoreAll
+      (k := k) hcoreAll
+  exact constraintVec_mem_momentPolytope_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
 
 end MarkovDeFinettiHard
 

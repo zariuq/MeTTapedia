@@ -47,16 +47,28 @@ open Mettapedia.OSLF.Framework.DerivedModalities
 
 /-- The reduction relation induced by a LanguageDef.
 
-    `langReduces lang p q` holds when the generic rewrite engine can
-    produce `q` from `p` in one step (including congruence/subterm rewrites).
+    `langReducesUsing relEnv lang p q` holds when the generic rewrite engine can
+    produce `q` from `p` in one step (including premise checks and
+    congruence/subterm rewrites), using an explicit relation environment
+    for `relationQuery`.
 
-    This wraps the executable `rewriteWithContext` as a `Prop`. -/
+    This wraps executable `rewriteWithContextWithPremisesUsing` as a `Prop`. -/
+def langReducesUsing (relEnv : RelationEnv) (lang : LanguageDef) (p q : Pattern) : Prop :=
+  q ∈ rewriteWithContextWithPremisesUsing relEnv lang p
+
+/-- Default reduction relation induced by a LanguageDef.
+
+    `langReduces lang p q` holds when the generic rewrite engine can
+    produce `q` from `p` in one step (including premise checks and
+    congruence/subterm rewrites).
+
+    This is `langReducesUsing RelationEnv.empty`. -/
 def langReduces (lang : LanguageDef) (p q : Pattern) : Prop :=
-  q ∈ rewriteWithContext lang p
+  langReducesUsing RelationEnv.empty lang p q
 
 /-! ## Step 2: RewriteSystem from LanguageDef -/
 
-/-- Convert a LanguageDef into a RewriteSystem.
+/-- Convert a LanguageDef into a RewriteSystem, parameterized by relation env.
 
     - **Sorts**: `String` (from `lang.types`, e.g., "Proc", "Name")
     - **procSort**: the designated process sort (typically "Proc")
@@ -65,56 +77,82 @@ def langReduces (lang : LanguageDef) (p q : Pattern) : Prop :=
 
     The `procSort` parameter specifies which sort carries the reduction relation.
     For the ρ-calculus, this is `"Proc"`. -/
-def langRewriteSystem (lang : LanguageDef) (procSort : String := "Proc") :
+def langRewriteSystemUsing (relEnv : RelationEnv) (lang : LanguageDef)
+    (procSort : String := "Proc") :
     RewriteSystem where
   Sorts := String
   procSort := procSort
   Term := fun _ => Pattern
-  Reduces := langReduces lang
+  Reduces := langReducesUsing relEnv lang
+
+/-- Default rewrite-system wrapper using `RelationEnv.empty`. -/
+def langRewriteSystem (lang : LanguageDef) (procSort : String := "Proc") :
+    RewriteSystem :=
+  langRewriteSystemUsing RelationEnv.empty lang procSort
 
 /-! ## Step 3: Reduction Span -/
 
-/-- The reduction span for a LanguageDef.
+/-- The reduction span for a LanguageDef and relation env.
 
-    Edges are pairs `(p, q)` witnessed by a one-step reduction `q ∈ rewriteWithContext lang p`.
+    Edges are pairs `(p, q)` witnessed by a premise-aware one-step reduction.
     This is the input to the change-of-base adjunction machinery from DerivedModalities.lean. -/
-def langSpan (lang : LanguageDef) : ReductionSpan Pattern where
-  Edge := { pair : Pattern × Pattern // langReduces lang pair.1 pair.2 }
+def langSpanUsing (relEnv : RelationEnv) (lang : LanguageDef) : ReductionSpan Pattern where
+  Edge := { pair : Pattern × Pattern // langReducesUsing relEnv lang pair.1 pair.2 }
   source := fun e => e.val.1
   target := fun e => e.val.2
 
+/-- Default reduction span using `RelationEnv.empty`. -/
+def langSpan (lang : LanguageDef) : ReductionSpan Pattern :=
+  langSpanUsing RelationEnv.empty lang
+
 /-! ## Step 4: Modal Operators -/
 
-/-- The step-future modal operator ◇ for a LanguageDef.
+/-- The step-future modal operator ◇ for a LanguageDef and relation env.
 
     `langDiamond lang φ p` = "p can reduce (via lang's rules) to some q satisfying φ"
 
     Defined via the generic derivedDiamond construction. -/
-def langDiamond (lang : LanguageDef) : (Pattern → Prop) → (Pattern → Prop) :=
-  derivedDiamond (langSpan lang)
+def langDiamondUsing (relEnv : RelationEnv) (lang : LanguageDef) :
+    (Pattern → Prop) → (Pattern → Prop) :=
+  derivedDiamond (langSpanUsing relEnv lang)
 
-/-- The step-past modal operator □ for a LanguageDef.
+/-- Default step-future modal operator using `RelationEnv.empty`. -/
+def langDiamond (lang : LanguageDef) : (Pattern → Prop) → (Pattern → Prop) :=
+  langDiamondUsing RelationEnv.empty lang
+
+/-- The step-past modal operator □ for a LanguageDef and relation env.
 
     `langBox lang φ p` = "all predecessors of p (via lang's rules) satisfy φ"
 
     Defined via the generic derivedBox construction. -/
-def langBox (lang : LanguageDef) : (Pattern → Prop) → (Pattern → Prop) :=
-  derivedBox (langSpan lang)
+def langBoxUsing (relEnv : RelationEnv) (lang : LanguageDef) :
+    (Pattern → Prop) → (Pattern → Prop) :=
+  derivedBox (langSpanUsing relEnv lang)
 
-/-- The Galois connection ◇ ⊣ □ for any LanguageDef.
+/-- Default step-past modal operator using `RelationEnv.empty`. -/
+def langBox (lang : LanguageDef) : (Pattern → Prop) → (Pattern → Prop) :=
+  langBoxUsing RelationEnv.empty lang
+
+/-- The Galois connection ◇ ⊣ □ for any LanguageDef and relation env.
 
     This is an **automatic** consequence of the adjoint composition
     from DerivedModalities.lean. No manual proof needed! -/
+theorem langGaloisUsing (relEnv : RelationEnv) (lang : LanguageDef) :
+    GaloisConnection (langDiamondUsing relEnv lang) (langBoxUsing relEnv lang) :=
+  derived_galois (langSpanUsing relEnv lang)
+
+/-- Default Galois connection using `RelationEnv.empty`. -/
 theorem langGalois (lang : LanguageDef) :
     GaloisConnection (langDiamond lang) (langBox lang) :=
-  derived_galois (langSpan lang)
+  langGaloisUsing RelationEnv.empty lang
 
 /-! ## Step 5: OSLFTypeSystem -/
 
-/-- The diamond specification: `langDiamond` computes the step-future modality. -/
-theorem langDiamond_spec (lang : LanguageDef) (φ : Pattern → Prop) (p : Pattern) :
-    langDiamond lang φ p ↔ ∃ q, langReduces lang p q ∧ φ q := by
-  simp only [langDiamond, derivedDiamond, di, pb, Function.comp, langSpan]
+/-- The diamond specification: `langDiamondUsing` computes the step-future modality. -/
+theorem langDiamondUsing_spec (relEnv : RelationEnv) (lang : LanguageDef)
+    (φ : Pattern → Prop) (p : Pattern) :
+    langDiamondUsing relEnv lang φ p ↔ ∃ q, langReducesUsing relEnv lang p q ∧ φ q := by
+  simp only [langDiamondUsing, derivedDiamond, di, pb, Function.comp, langSpanUsing]
   constructor
   · rintro ⟨⟨⟨p', q⟩, hred⟩, hp_eq, hφ⟩
     simp at hp_eq
@@ -122,16 +160,29 @@ theorem langDiamond_spec (lang : LanguageDef) (φ : Pattern → Prop) (p : Patte
   · rintro ⟨q, hred, hφ⟩
     exact ⟨⟨⟨p, q⟩, hred⟩, rfl, hφ⟩
 
-/-- The box specification: `langBox` computes the step-past modality. -/
-theorem langBox_spec (lang : LanguageDef) (φ : Pattern → Prop) (p : Pattern) :
-    langBox lang φ p ↔ ∀ q, langReduces lang q p → φ q := by
-  simp only [langBox, derivedBox, ui, pb, Function.comp, langSpan]
+/-- The default diamond specification (`RelationEnv.empty`). -/
+theorem langDiamond_spec (lang : LanguageDef) (φ : Pattern → Prop) (p : Pattern) :
+    langDiamond lang φ p ↔ ∃ q, langReduces lang p q ∧ φ q := by
+  simpa [langDiamond, langReduces] using
+    (langDiamondUsing_spec RelationEnv.empty lang φ p)
+
+/-- The box specification: `langBoxUsing` computes the step-past modality. -/
+theorem langBoxUsing_spec (relEnv : RelationEnv) (lang : LanguageDef)
+    (φ : Pattern → Prop) (p : Pattern) :
+    langBoxUsing relEnv lang φ p ↔ ∀ q, langReducesUsing relEnv lang q p → φ q := by
+  simp only [langBoxUsing, derivedBox, ui, pb, Function.comp, langSpanUsing]
   constructor
   · intro h q hred
     exact h ⟨⟨q, p⟩, hred⟩ rfl
   · rintro h ⟨⟨q, p'⟩, hred⟩ (hp_eq : p' = p)
     subst hp_eq
     exact h q hred
+
+/-- The default box specification (`RelationEnv.empty`). -/
+theorem langBox_spec (lang : LanguageDef) (φ : Pattern → Prop) (p : Pattern) :
+    langBox lang φ p ↔ ∀ q, langReduces lang q p → φ q := by
+  simpa [langBox, langReduces] using
+    (langBoxUsing_spec RelationEnv.empty lang φ p)
 
 /-- The full OSLF type system generated from a LanguageDef.
 
@@ -175,7 +226,7 @@ instance : ToString Pattern := ⟨patternToString⟩
     .apply "POutput" [x, .apply "PZero" []],
     .apply "PInput" [x, .lambda (.bvar 0)]
   ] none
-  let reducts := rewriteWithContext rhoCalc term
+  let reducts := rewriteWithContextWithPremises rhoCalc term
   IO.println s!"langReduces rhoCalc COMM test:"
   IO.println s!"  term: {term}"
   IO.println s!"  reducts ({reducts.length}):"
@@ -191,7 +242,7 @@ instance : ToString Pattern := ⟨patternToString⟩
     .apply "PInput" [x, .lambda (.bvar 0)]
   ] none
   -- diamond (fun _ => True) p should be True (p can reduce to something)
-  let canReduce := !(rewriteWithContext rhoCalc p).isEmpty
+  let canReduce := !(rewriteWithContextWithPremises rhoCalc p).isEmpty
   IO.println s!"langDiamond test: can {p} reduce? {canReduce}"
 
 -- Test: langOSLF instantiation succeeds (type-checking is the test)

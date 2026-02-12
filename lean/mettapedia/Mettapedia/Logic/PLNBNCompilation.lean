@@ -1278,6 +1278,77 @@ theorem chain_screeningOff_wmqueryeq_of_dsep
     (hciCA := chain_hciCA_from_hLM (hLM := hLM))
     hcond
 
+theorem chain_screeningOff_rewrite_applies_of_dsep
+    (valA valB valC : Bool)
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)]
+    [∀ v : Three, Inhabited (chainBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (chainBN.stateSpace v)]
+    [StandardBorelSpace chainBN.JointSpace]
+    [EventPos (bn := chainBN) Three.B valB]
+    [EventPosConstraints (bn := chainBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLM : ∀ cpt : chainBN.DiscreteCPT, HasLocalMarkovProperty chainBN cpt.jointMeasure) :
+    (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) →
+      ∀ W : State (bn := chainBN),
+        ⊢q W ⇓
+          (PLNQuery.linkCond
+            ([ (⟨Three.A, valA⟩ : BNQuery.Atom (bn := chainBN))
+             , (⟨Three.B, valB⟩ : BNQuery.Atom (bn := chainBN)) ])
+            (⟨Three.C, valC⟩ : BNQuery.Atom (bn := chainBN))) ↦
+          (WorldModel.evidence
+            (State := State (bn := chainBN))
+            (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
+            W
+            (PLNQuery.link
+              (⟨Three.B, valB⟩ : BNQuery.Atom (bn := chainBN))
+              (⟨Three.C, valC⟩ : BNQuery.Atom (bn := chainBN)))) := by
+  intro hcond W
+  let qLink : PLNQuery (BNQuery.Atom (bn := chainBN)) :=
+    PLNQuery.link
+      (⟨Three.B, valB⟩ : BNQuery.Atom (bn := chainBN))
+      (⟨Three.C, valC⟩ : BNQuery.Atom (bn := chainBN))
+  let qLinkCond : PLNQuery (BNQuery.Atom (bn := chainBN)) :=
+    PLNQuery.linkCond
+      ([ (⟨Three.A, valA⟩ : BNQuery.Atom (bn := chainBN))
+       , (⟨Three.B, valB⟩ : BNQuery.Atom (bn := chainBN)) ])
+      (⟨Three.C, valC⟩ : BNQuery.Atom (bn := chainBN))
+  let r : WMRewriteRule (State (bn := chainBN)) (PLNQuery (BNQuery.Atom (bn := chainBN))) :=
+    WMRewriteBridge.rewrite_of_dsep (bn := chainBN) (State := State (bn := chainBN))
+      (CompiledPlan.deductionSide Three.A Three.B Three.C) qLink qLinkCond
+      (fun h =>
+        (chain_screeningOff_wmqueryeq_of_dsep
+          (valA := valA) (valB := valB) (valC := valC) hLM h).symm)
+  have hW : ⊢wm W := WMJudgment.axiom W
+  have happly := WMRewriteRule.apply (r := r) (W := W) hcond hW
+  simpa [r, qLink, qLinkCond] using happly
+
+theorem chain_screeningOff_strength_eq_of_dsep
+    (valA valB valC : Bool)
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)]
+    [∀ v : Three, Inhabited (chainBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (chainBN.stateSpace v)]
+    [StandardBorelSpace chainBN.JointSpace]
+    [EventPos (bn := chainBN) Three.B valB]
+    [EventPosConstraints (bn := chainBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLM : ∀ cpt : chainBN.DiscreteCPT, HasLocalMarkovProperty chainBN cpt.jointMeasure) :
+    (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) →
+      ∀ W : State (bn := chainBN),
+        WorldModel.queryStrength
+          (State := State (bn := chainBN))
+          (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
+          W (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+          =
+        WorldModel.queryStrength
+          (State := State (bn := chainBN))
+          (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
+          W (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+  intro hcond W
+  have hEq :=
+    chain_screeningOff_wmqueryeq_of_dsep
+      (valA := valA) (valB := valB) (valC := valC) hLM hcond
+  simpa [WorldModel.queryStrength] using congrArg Evidence.toStrength (hEq W)
+
 theorem chain_screeningOff_wmqueryeq_of_dsepFull
     (valA valB valC : Bool)
     [∀ v : Three, Fintype (chainBN.stateSpace v)]

@@ -1,0 +1,49 @@
+import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.Logic.PLNDerivation
+import Mettapedia.Logic.CompletePLN
+import Mettapedia.Logic.PLNWorldModel
+import Mettapedia.Logic.PLNWorldModelCalculus
+import Mettapedia.Logic.PLNJointEvidence
+import Mettapedia.Logic.PLNJointEvidenceProbability
+import Mettapedia.Logic.PLNBayesNetWorldModel
+import Mettapedia.Logic.PLNBayesNetInference
+import Mettapedia.Logic.PLNLinkCalculus
+import Mettapedia.Logic.PLNLinkCalculusSoundness
+import Mettapedia.Logic.PLNBayesNetFastRules
+import Mettapedia.Logic.PLNBNCompilation
+import Mettapedia.Logic.PremiseSelectionKNN
+import Mettapedia.Logic.PremiseSelectionKNN_PLNBridge
+import Mettapedia.Logic.PremiseSelectionFusion
+import Mettapedia.Logic.PremiseSelectionOptimality
+import Mettapedia.Logic.PremiseSelectionCoverage
+import Mettapedia.Logic.PremiseSelectionExternalBayesianity
+import Mettapedia.Logic.PremiseSelectionLocalMixtureBridge
+import Mettapedia.Logic.PremiseSelectionOperatorRoles
+import Mettapedia.Logic.PremiseSelectionPriorNB
+import Mettapedia.Logic.SoundnessCompleteness
+import Mettapedia.Logic.PLNCanonicalAPI
+
+/-!
+# PLN Core (Curated, theorem-complete entrypoint)
+
+This module is a curated import surface for the currently theorem-complete PLN stack:
+
+- Core derivation formulas (`PLNDerivation`)
+- Complete/joint evidence world-model semantics (`CompletePLN`, `PLNJointEvidence*`)
+- WM rewrite layer and BN compilation bridge (`PLNWorldModel*`, `PLNBNCompilation`)
+- BN fast-rule exactness results (`PLNBayesNetFastRules`)
+- Premise-selection bridges and optimality transfer (`PremiseSelection*`)
+- Premise-selection coverage/submodularity surrogate (`PremiseSelectionCoverage`)
+- Premise-selection external-Bayesian commutation (`PremiseSelectionExternalBayesianity`)
+- Finite de Finetti local-mixture bridge (`PremiseSelectionLocalMixtureBridge`)
+- Operator-role checklist for prior/revision/tensor composition (`PremiseSelectionOperatorRoles`)
+- Concrete Prior-NB role/commutation theorems (`PremiseSelectionPriorNB`)
+- Soundness/completeness tradeoff characterization (`SoundnessCompleteness`)
+
+Files with active proof debt are intentionally *not* re-exported here; those are grouped in
+`PLNExperimental`.
+-/
+
+namespace Mettapedia.Logic.PLNCore
+
+end Mettapedia.Logic.PLNCore

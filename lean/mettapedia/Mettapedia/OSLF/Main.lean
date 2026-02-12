@@ -4,6 +4,7 @@ import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.MeTTaIL.DeclReduces
+import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
 import Mettapedia.OSLF.RhoCalculus.Types
 import Mettapedia.OSLF.RhoCalculus.Soundness
@@ -14,12 +15,14 @@ import Mettapedia.OSLF.Framework.RewriteSystem
 import Mettapedia.OSLF.Framework.RhoInstance
 import Mettapedia.OSLF.Framework.DerivedModalities
 import Mettapedia.OSLF.Framework.CategoryBridge
+import Mettapedia.OSLF.Framework.FULLStatus
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.GeneratedTyping
 import Mettapedia.OSLF.Framework.SynthesisBridge
 import Mettapedia.OSLF.Framework.LambdaInstance
 import Mettapedia.OSLF.Framework.PetriNetInstance
 import Mettapedia.OSLF.Framework.TinyMLInstance
+import Mettapedia.OSLF.Framework.MeTTaMinimalInstance
 import Mettapedia.OSLF.Framework.ConstructorCategory
 import Mettapedia.OSLF.Framework.ConstructorFibration
 import Mettapedia.OSLF.Framework.ModalEquivalence
@@ -44,12 +47,14 @@ OSLF/
 │   ├── RhoInstance.lean           -- ρ-calculus instance (proven Galois connection)
 │   ├── DerivedModalities.lean     -- Derived ◇/□ from adjoint triple (0 sorries)
 │   ├── CategoryBridge.lean        -- Categorical lift: GaloisConnection → Adjunction
+│   ├── FULLStatus.lean            -- FULL-OSLF done/missing tracker
 │   ├── TypeSynthesis.lean         -- LanguageDef → OSLFTypeSystem (auto Galois)
 │   ├── GeneratedTyping.lean       -- Generated typing rules from grammar
 │   ├── SynthesisBridge.lean       -- Bridge: generated ↔ hand-written types
 │   ├── LambdaInstance.lean        -- Lambda calculus OSLF instance (2nd example)
 │   ├── PetriNetInstance.lean      -- Petri net OSLF instance (3rd, binder-free)
 │   ├── TinyMLInstance.lean        -- CBV λ-calculus + booleans/pairs/thunks (4th, multi-sort)
+│   ├── MeTTaMinimalInstance.lean  -- MeTTa state client (eval/unify/return)
 │   ├── ConstructorCategory.lean   -- Sort quiver + free category from LanguageDef
 │   ├── ConstructorFibration.lean  -- SubobjectFibration + ChangeOfBase over constructors
 │   ├── ModalEquivalence.lean      -- Constructor change-of-base ↔ OSLF modalities
@@ -93,9 +98,10 @@ The formalization has two layers:
 - `galois_connection`: proven diamond -| box
 - `HasType`: Typing judgment with substitutability and progress
 
-The concrete layer is fully proven (0 sorries). The abstract framework
-(`rhoOSLF`) instantiates the general OSLF construction for ρ-calculus,
-lifting the proven Galois connection.
+The concrete layer includes one currently unresolved proof in
+`RhoCalculus/Reduction.lean` (`emptyBag_SC_irreducible`) plus associated
+linter warnings. The abstract framework (`rhoOSLF`) instantiates the general
+OSLF construction for ρ-calculus, lifting the proven Galois connection.
 
 ## References
 
@@ -144,8 +150,23 @@ export Mettapedia.OSLF.MeTTaIL.Match (
 )
 
 export Mettapedia.OSLF.MeTTaIL.Engine (
+  rewriteStepNoPremises
+  rewriteWithContextNoPremises
   rewriteWithContext
+  RelationEnv
+  premiseHoldsWithEnv
+  premisesHoldWithEnv
+  applyRuleWithPremisesUsing
+  rewriteStepWithPremisesUsing
+  rewriteWithContextWithPremisesUsing
+  fullRewriteToNormalFormWithPremisesUsing
+  premiseHolds
+  premisesHold
+  applyRuleWithPremises
+  rewriteStepWithPremises
+  rewriteWithContextWithPremises
   fullRewriteToNormalForm
+  fullRewriteToNormalFormWithPremises
 )
 
 export Mettapedia.OSLF.MeTTaIL.DeclReduces (
@@ -153,6 +174,16 @@ export Mettapedia.OSLF.MeTTaIL.DeclReduces (
   engine_sound
   engine_complete
   declReduces_iff_langReduces
+)
+
+export Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises (
+  DeclReducesWithPremises
+  engineWithPremisesUsing_sound
+  engineWithPremisesUsing_complete
+  engineWithPremises_sound
+  engineWithPremises_complete
+  declReducesWithPremises_iff_langReducesWithPremisesUsing
+  declReducesWithPremises_iff_langReducesWithPremises
 )
 
 export Mettapedia.OSLF.MeTTaIL.MatchSpec (
@@ -233,13 +264,23 @@ export Mettapedia.OSLF.Framework.DerivedModalities (
 )
 
 export Mettapedia.OSLF.Framework.TypeSynthesis (
+  langReducesUsing
   langReduces
+  langRewriteSystemUsing
   langRewriteSystem
+  langSpanUsing
   langSpan
+  langDiamondUsing
   langDiamond
+  langBoxUsing
   langBox
+  langGaloisUsing
   langGalois
+  langDiamondUsing_spec
   langOSLF
+  langBoxUsing_spec
+  langDiamond_spec
+  langBox_spec
   langNativeType
 )
 
@@ -267,9 +308,28 @@ export Mettapedia.OSLF.Framework.CategoryBridge (
   langGaloisL
   langModalAdjunction
   rhoModalAdjunction
+  SortCategoryInterface
+  defaultSortCategoryInterface
+  lambdaTheorySortInterface
+  typeSortsRewriteSystem
+  typeSortsOSLF
+  typeSortsLambdaTheory
+  typeSortsLambdaInterface
   SortCategory
+  predFibrationUsing
   predFibration
+  oslf_fibrationUsing
   oslf_fibration
+  typeSortsPredFibrationViaLambdaInterface
+  typeSortsOSLFFibrationViaLambdaInterface
+)
+
+export Mettapedia.OSLF.Framework.FULLStatus (
+  MilestoneStatus
+  Milestone
+  tracker
+  countBy
+  remaining
 )
 
 export Mettapedia.OSLF.Framework.LambdaInstance (
@@ -302,6 +362,12 @@ export Mettapedia.OSLF.Framework.TinyMLInstance (
   thunk_action_eq_diamond
   inject_action_eq_box
   tinyML_typing_action_galois
+)
+
+export Mettapedia.OSLF.Framework.MeTTaMinimalInstance (
+  mettaMinimal
+  mettaMinimalOSLF
+  mettaMinimalGalois
 )
 
 export Mettapedia.OSLF.Framework.ConstructorCategory (
@@ -369,12 +435,19 @@ export Mettapedia.OSLF.Framework.BeckChevalleyOSLF (
 export Mettapedia.OSLF.Formula (
   OSLFFormula
   sem
+  sem_dia_eq_langDiamondUsing
   sem_dia_eq_langDiamond
+  sem_box_eq_langBoxUsing
   sem_box_eq_langBox
+  formula_galoisUsing
   formula_galois
   CheckResult
   check
+  checkLangUsing
+  checkLang
   check_sat_sound
+  checkLangUsing_sat_sound
+  checkLang_sat_sound
   aggregateBox
   aggregateBox_sat
   checkWithPred

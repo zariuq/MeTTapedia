@@ -327,7 +327,7 @@ private theorem chain_hasActivePath_of_hasActiveTrail_A_C_given_B
             exfalso
             -- B~B impossible in chain graph.
             unfold UndirectedEdge chainGraph at hbc
-            rcases hbc with h | h <;> simp [chainGraph] at h
+            rcases hbc with h | h <;> simp at h
         | C => rfl
       subst hc
       -- Build the legacy short active-path witness via the active triple A-B-C.
@@ -389,13 +389,13 @@ theorem chain_separatedInMoral_A_C_given_B :
                 | A =>
                     exfalso
                     have : False := by
-                      simpa [UndirectedEdge, moralGraph, moralUndirectedEdge, chainGraph] using hAB
+                      simp [UndirectedEdge, moralGraph, moralUndirectedEdge, chainGraph] at hAB
                     exact this
                 | B => rfl
                 | C =>
                     exfalso
                     have : False := by
-                      simpa [UndirectedEdge, moralGraph, moralUndirectedEdge, chainGraph] using hAB
+                      simp [UndirectedEdge, moralGraph, moralUndirectedEdge, chainGraph] at hAB
                     exact this
               subst hbB
               cases rest2 with

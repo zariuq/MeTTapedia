@@ -287,4 +287,66 @@ theorem fuse_toStrength_normalized_const_toReal_one
     (fuse_toStrength_normalized_const_toReal
       (s₁ := s₁) (s₂ := s₂) (g := g) (f := f) (t := 1) ht htop)
 
+/-- Normalization with possibly different target totals gives explicitly controlled
+mixing weights `t₁/(t₁+t₂)` and `t₂/(t₁+t₂)`, independent of raw evidence magnitudes. -/
+theorem fuse_toStrength_normalized_totals
+    {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) (g : Goal) (f : Fact)
+    (t₁ t₂ : ℝ≥0∞)
+    (h₁_ne : t₁ ≠ 0) (h₂_ne : t₂ ≠ 0) (h₁₂_ne : t₁ + t₂ ≠ 0)
+    (h₁_top : t₁ ≠ ⊤) (h₂_top : t₂ ≠ ⊤) :
+    Evidence.toStrength
+        ((fuse (normalizeScorer t₁ s₁) (normalizeScorer t₂ s₂)).score g f)
+      =
+      (t₁ / (t₁ + t₂)) * Evidence.toStrength ((normalizeScorer t₁ s₁).score g f)
+      + (t₂ / (t₁ + t₂)) * Evidence.toStrength ((normalizeScorer t₂ s₂).score g f) := by
+  have h₁ : ∀ f, ((normalizeScorer t₁ s₁).score g f).total = t₁ := by
+    intro f
+    simpa using normalizeScorer_total t₁ s₁ g f
+  have h₂ : ∀ f, ((normalizeScorer t₂ s₂).score g f).total = t₂ := by
+    intro f
+    simpa using normalizeScorer_total t₂ s₂ g f
+  simpa using
+    (fuse_toStrength_const_weights
+      (s₁ := normalizeScorer t₁ s₁) (s₂ := normalizeScorer t₂ s₂)
+      (g := g) (f := f)
+      (t₁ := t₁) (t₂ := t₂)
+      h₁ h₂ h₁_ne h₂_ne h₁₂_ne h₁_top h₂_top)
+
+theorem fuse_toStrength_normalized_totals_toReal
+    {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) (g : Goal) (f : Fact)
+    (t₁ t₂ : ℝ≥0∞)
+    (h₁_ne : t₁ ≠ 0) (h₂_ne : t₂ ≠ 0) (h₁₂_ne : t₁ + t₂ ≠ 0)
+    (h₁_top : t₁ ≠ ⊤) (h₂_top : t₂ ≠ ⊤) :
+    (Evidence.toStrength
+        ((fuse (normalizeScorer t₁ s₁) (normalizeScorer t₂ s₂)).score g f)).toReal
+      =
+      (t₁ / (t₁ + t₂)).toReal *
+          (Evidence.toStrength ((normalizeScorer t₁ s₁).score g f)).toReal
+      + (t₂ / (t₁ + t₂)).toReal *
+          (Evidence.toStrength ((normalizeScorer t₂ s₂).score g f)).toReal := by
+  have hbase :=
+    fuse_toStrength_normalized_totals
+      (s₁ := s₁) (s₂ := s₂) (g := g) (f := f)
+      (t₁ := t₁) (t₂ := t₂) h₁_ne h₂_ne h₁₂_ne h₁_top h₂_top
+  have hw₁_ne_top : t₁ / (t₁ + t₂) ≠ ⊤ := ENNReal.div_ne_top h₁_top h₁₂_ne
+  have hw₂_ne_top : t₂ / (t₁ + t₂) ≠ ⊤ := ENNReal.div_ne_top h₂_top h₁₂_ne
+  have hs₁_ne_top :
+      Evidence.toStrength ((normalizeScorer t₁ s₁).score g f) ≠ ⊤ := by
+    have hle : Evidence.toStrength ((normalizeScorer t₁ s₁).score g f) ≤ 1 :=
+      Evidence.toStrength_le_one _
+    exact ne_of_lt (lt_of_le_of_lt hle (by simp))
+  have hs₂_ne_top :
+      Evidence.toStrength ((normalizeScorer t₂ s₂).score g f) ≠ ⊤ := by
+    have hle : Evidence.toStrength ((normalizeScorer t₂ s₂).score g f) ≤ 1 :=
+      Evidence.toStrength_le_one _
+    exact ne_of_lt (lt_of_le_of_lt hle (by simp))
+  have hleft_ne_top :
+      (t₁ / (t₁ + t₂)) * Evidence.toStrength ((normalizeScorer t₁ s₁).score g f) ≠ ⊤ :=
+    ENNReal.mul_ne_top hw₁_ne_top hs₁_ne_top
+  have hright_ne_top :
+      (t₂ / (t₁ + t₂)) * Evidence.toStrength ((normalizeScorer t₂ s₂).score g f) ≠ ⊤ :=
+    ENNReal.mul_ne_top hw₂_ne_top hs₂_ne_top
+  have hbase' := congrArg ENNReal.toReal hbase
+  simpa [ENNReal.toReal_add hleft_ne_top hright_ne_top, ENNReal.toReal_mul] using hbase'
+
 end Mettapedia.Logic.PremiseSelection
