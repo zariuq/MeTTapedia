@@ -101,15 +101,15 @@ private def resolveFreshVarName (bindings : Bindings) (x : String) : Option Stri
   | none => some x
 
 /-- Pluggable relation environment for `relationQuery` premises.
-    Each relation name maps to a finite table of tuples. -/
+    A relation name and concrete query arguments map to a finite table of tuples. -/
 structure RelationEnv where
-  tuples : String → List (List Pattern)
+  tuples : String → List Pattern → List (List Pattern)
 
 namespace RelationEnv
 
 /-- Empty relation environment (no external relation tuples). -/
 def empty : RelationEnv where
-  tuples := fun _ => []
+  tuples := fun _ _ => []
 
 end RelationEnv
 
@@ -135,7 +135,7 @@ private def builtinRelationTuples (lang : LanguageDef) (rel : String) (args : Li
 private def relationQueryStep (relEnv : RelationEnv) (lang : LanguageDef)
     (bindings : Bindings) (rel : String) (args : List Pattern) : List Bindings :=
   let argPats := args.map (applyBindings bindings)
-  let tuples := builtinRelationTuples lang rel argPats ++ relEnv.tuples rel
+  let tuples := builtinRelationTuples lang rel argPats ++ relEnv.tuples rel argPats
   tuples.flatMap fun tuple =>
     (matchArgs argPats tuple).filterMap fun bPrem =>
       mergeBindings bindings bPrem
@@ -373,7 +373,7 @@ private def extRelationLang : LanguageDef := {
 }
 
 private def extRelationEnv : RelationEnv where
-  tuples := fun rel =>
+  tuples := fun rel _args =>
     if rel == "allow" then
       [[extA]]
     else

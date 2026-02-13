@@ -158,7 +158,7 @@ private def iSuperposeBind (packed : Pattern) : Pattern := .apply "SuperposeBind
 
 /-- External relation environment for spec-facing relationQuery premises. -/
 private def mettaMinimalRelEnv : RelationEnv where
-  tuples := fun rel =>
+  tuples := fun rel _args =>
     let t : Pattern := Pattern.apply "ATrue" []
     let f : Pattern := Pattern.apply "AFalse" []
     if rel = "neq" then

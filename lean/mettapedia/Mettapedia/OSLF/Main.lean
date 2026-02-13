@@ -29,7 +29,11 @@ import Mettapedia.OSLF.Framework.ConstructorFibration
 import Mettapedia.OSLF.Framework.ModalEquivalence
 import Mettapedia.OSLF.Framework.DerivedTyping
 import Mettapedia.OSLF.Framework.PLNSelectorGSLT
+import Mettapedia.OSLF.Framework.PLNSelectorLanguageDef
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
+import Mettapedia.OSLF.MeTTaCore.Premises
+import Mettapedia.OSLF.MeTTaCore.FullLanguageDef
+import Mettapedia.OSLF.Framework.MeTTaFullInstance
 import Mettapedia.OSLF.Formula
 -- SpecIndex.lean imports Main (not vice versa) — no cycle
 
@@ -483,6 +487,39 @@ export Mettapedia.OSLF.Framework.MeTTaMinimalInstance (
   mettaMinimal_checkLang_sat_sound_specAtoms
 )
 
+export Mettapedia.OSLF.MeTTaCore.Premises (
+  space0Atomspace
+  space0Entries
+  spaceEntriesOfPattern?
+  atomspaceOfPattern?
+  eqnLookupTuples
+  noEqnLookupTuples
+  neqTuples
+  typeOfTuples
+  notTypeOfTuples
+  castTuples
+  notCastTuples
+  groundedCallTuples
+  noGroundedCallTuples
+)
+
+export Mettapedia.OSLF.MeTTaCore.FullLanguageDef (
+  mettaFull
+  mettaFullOSLF
+  mettaFullGalois
+  mettaFullRelEnv
+)
+
+export Mettapedia.OSLF.Framework.MeTTaFullInstance (
+  mettaFull_pathOrder
+  mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
+  mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
+  mettaFullSpecAtomCheck
+  mettaFullSpecAtomSem
+  mettaFull_checkLangUsing_sat_sound_specAtoms
+  mettaFull_checkLang_sat_sound_specAtoms
+)
+
 export Mettapedia.OSLF.Framework.ConstructorCategory (
   LangSort
   baseSortOf
@@ -536,6 +573,20 @@ export Mettapedia.OSLF.Framework.PLNSelectorGSLT (
   plnSelectorOSLF
   oslf_diamond_extBayes2
   oslf_diamond_extBayesFamily
+)
+
+export Mettapedia.OSLF.Framework.PLNSelectorLanguageDef (
+  plnSelectorLanguageDef
+  plnSelectorLangReduces
+  NormalizeFiniteNonzero
+  EncodeInjective
+  reduces_to_langReduces_exists
+  langReduces_to_reduces_exists_of_normalizeFinite
+  langReduces_exists_iff_reduces_exists_of_normalizeFinite
+  langReduces_encode_to_encode_reduces_of_encodeInjective
+  langReduces_encode_to_encode_reduces_of_atomFree
+  plnSelector_checkLangUsing_sat_sound
+  plnSelector_checkLangUsing_sat_sound_graph
 )
 
 export Mettapedia.OSLF.Framework.BeckChevalleyOSLF (

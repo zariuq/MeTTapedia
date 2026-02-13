@@ -133,6 +133,14 @@ theorem evalFamily_map_update
             Mettapedia.Logic.PremiseSelection.update (evalFamily (x :: xs)) (eval l) := by
               simp [evalFamily]
 
+/-- Fold-level external Bayesianity: updating a fused family is equivalent to
+fusing the per-expert updates. -/
+theorem externalBayesianity_evalFamily
+    (xs : List (PLNSelectorExpr Goal Fact)) (l : PLNSelectorExpr Goal Fact) :
+    Mettapedia.Logic.PremiseSelection.update (evalFamily xs) (eval l) =
+      evalFamily (xs.map (fun e => PLNSelectorExpr.update e l)) := by
+  simpa using (evalFamily_map_update (xs := xs) (l := l)).symm
+
 /-- One-step rewrite relation for the selector-rule DSL. -/
 inductive Reduces : PLNSelectorExpr Goal Fact → PLNSelectorExpr Goal Fact → Prop where
   /-- Two-expert external-Bayesianity rewrite. -/
@@ -182,6 +190,37 @@ theorem rtc_reduces_sound_strength {e e' : PLNSelectorExpr Goal Fact}
   | tail htail hstep ih =>
       intro g f
       exact (ih g f).trans (reduces_sound_strength hstep g f)
+
+/-- Predicate family over pointwise strengths, used for rewrite invariants. -/
+def StrengthInvariant (P : Goal → Fact → ℝ≥0∞ → Prop)
+    (e : PLNSelectorExpr Goal Fact) : Prop :=
+  ∀ g f, P g f (strengthAt e g f)
+
+/-- Any pointwise strength invariant is preserved along multi-step rewrites. -/
+theorem rtc_reduces_preserves_strengthInvariant
+    {e e' : PLNSelectorExpr Goal Fact}
+    (h : Relation.ReflTransGen Reduces e e')
+    (P : Goal → Fact → ℝ≥0∞ → Prop) :
+    StrengthInvariant P e ↔ StrengthInvariant P e' := by
+  constructor
+  · intro hInv g f
+    have hEq : strengthAt e g f = strengthAt e' g f := rtc_reduces_sound_strength (h := h) g f
+    simpa [StrengthInvariant] using hEq ▸ hInv g f
+  · intro hInv g f
+    have hEq : strengthAt e g f = strengthAt e' g f := rtc_reduces_sound_strength (h := h) g f
+    have hEq' : strengthAt e' g f = strengthAt e g f := hEq.symm
+    simpa [StrengthInvariant] using hEq' ▸ hInv g f
+
+/-- Modal-style corollary: every one-step predecessor of a reachable target has
+the same pointwise strength as the source of the reachability chain. -/
+theorem rtc_reduces_box_strengthEq_source
+    {e e' : PLNSelectorExpr Goal Fact}
+    (hpath : Relation.ReflTransGen Reduces e e') :
+    ∀ g f q, Reduces q e' → strengthAt q g f = strengthAt e g f := by
+  intro g f q hstep
+  have hq : strengthAt q g f = strengthAt e' g f := reduces_sound_strength (h := hstep) g f
+  have hpathEq : strengthAt e g f = strengthAt e' g f := rtc_reduces_sound_strength (h := hpath) g f
+  exact hq.trans hpathEq.symm
 
 end PLNSelectorExpr
 

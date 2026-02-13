@@ -127,19 +127,13 @@ A concrete Czech GF grammar with non-trivial rewrite dynamics.
   `PositA(big)` reduces to `big`.
 -/
 
-/-- Czech GF abstract categories. -/
-def czechGFCategories : List Category :=
-  [Category.S, Category.NP, Category.CN, Category.VP,
-   Category.Det, Category.A, Category.AP, .base "N"]
+/-- All GF RGL categories as Category values. -/
+def allGFCategories : List Category :=
+  Category.allCategoryNames.map Category.base
 
-/-- Czech GF abstract functions as OSLF grammar rules. -/
-def czechGFGrammarRules : List GrammarRule :=
-  ([ FunctionSig.DetCN
-   , FunctionSig.PredVP
-   , FunctionSig.UseN
-   , FunctionSig.ModCN
-   , FunctionSig.PositA
-   ]).map gfFunctionSigToGrammarRule
+/-- All GF RGL grammar functions as OSLF grammar rules. -/
+def allGFGrammarRules : List GrammarRule :=
+  FunctionSig.allFunctions.map gfFunctionSigToGrammarRule
 
 /-- UseN elimination: UseN(x) ~> x.
     In Czech, N = CN (no articles), so UseN is identity.
@@ -168,18 +162,64 @@ def useNIdentityEquation : Equation :=
   , left := .apply "UseN" [.fvar "x"]
   , right := .fvar "x" }
 
-/-- The Czech GF grammar as an OSLF LanguageDef with non-trivial dynamics.
+/-- UseComp elimination: UseComp(x) ~> x.
+    Copula complement is identity wrapper. -/
+def useCompElimRewrite : RewriteRule :=
+  { name := "UseCompElim"
+  , typeContext := [("x", TypeExpr.base "Comp")]
+  , premises := []
+  , left := .apply "UseComp" [.fvar "x"]
+  , right := .fvar "x" }
 
-    Includes UseN/PositA elimination rewrites so that ◇/□ are non-vacuous:
+/-- UseV elimination: UseV(x) ~> x.
+    A bare verb used as VP is identity. -/
+def useVElimRewrite : RewriteRule :=
+  { name := "UseVElim"
+  , typeContext := [("x", TypeExpr.base "V")]
+  , premises := []
+  , left := .apply "UseV" [.fvar "x"]
+  , right := .fvar "x" }
+
+/-- UseN2 elimination: UseN2(x) ~> x.
+    Relational noun used as CN drops relational argument. -/
+def useN2ElimRewrite : RewriteRule :=
+  { name := "UseN2Elim"
+  , typeContext := [("x", TypeExpr.base "N2")]
+  , premises := []
+  , left := .apply "UseN2" [.fvar "x"]
+  , right := .fvar "x" }
+
+/-- UseA2 elimination: UseA2(x) ~> x.
+    Two-place adjective used as AP drops complement. -/
+def useA2ElimRewrite : RewriteRule :=
+  { name := "UseA2Elim"
+  , typeContext := [("x", TypeExpr.base "A2")]
+  , premises := []
+  , left := .apply "UseA2" [.fvar "x"]
+  , right := .fvar "x" }
+
+/-- All identity-wrapper elimination rewrites.
+    These give ◇/□ non-vacuous behavioral content. -/
+def allIdentityRewrites : List RewriteRule :=
+  [ useNElimRewrite, positAElimRewrite, useCompElimRewrite
+  , useVElimRewrite, useN2ElimRewrite, useA2ElimRewrite ]
+
+/-- The full GF RGL grammar as an OSLF LanguageDef.
+
+    Includes all 169 core grammar functions and identity-wrapper
+    elimination rewrites so that ◇/□ are non-vacuous:
     terms like `UseN(house)` can reduce to `house`, giving the modal
     operators actual behavioral content. -/
-def czechGFLanguageDef : LanguageDef :=
-  { name := "CzechGF"
-  , types := ["S", "NP", "CN", "VP", "Det", "A", "AP", "N"]
-  , terms := czechGFGrammarRules
+def gfRGLLanguageDef : LanguageDef :=
+  { name := "GF_RGL"
+  , types := Category.allCategoryNames
+  , terms := allGFGrammarRules
   , equations := [useNIdentityEquation]
-  , rewrites := [useNElimRewrite, positAElimRewrite]
+  , rewrites := allIdentityRewrites
   , congruenceCollections := [] }
+
+/-- Czech GF grammar — same abstract syntax as full RGL but named for Czech. -/
+def czechGFLanguageDef : LanguageDef := gfRGLLanguageDef
 
 /-! ## Phase 3: OSLF Type System for Czech GF
 
@@ -213,10 +253,17 @@ Executable tests demonstrating that ◇/□ have actual behavioral content.
 section ModalTests
 open Mettapedia.OSLF.MeTTaIL.Engine
 
+-- Verify: 169 core grammar functions, 70+ categories
+#eval! do
+  IO.println s!"GF RGL categories: {gfRGLLanguageDef.types.length}"
+  IO.println s!"GF RGL grammar rules: {gfRGLLanguageDef.terms.length}"
+  IO.println s!"GF RGL rewrites: {gfRGLLanguageDef.rewrites.length}"
+  IO.println s!"FunctionSig.allCoreFunctions: {FunctionSig.allCoreFunctions.length}"
+
 -- Test: UseN(house) reduces to house via UseNElim.
 #eval! do
   let term := Pattern.apply "UseN" [.fvar "house"]
-  let reducts := rewriteWithContextWithPremises czechGFLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
   IO.println s!"UseN(house) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -225,15 +272,31 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 -- Test: PositA(big) reduces to big via PositAElim.
 #eval! do
   let term := Pattern.apply "PositA" [.fvar "big"]
-  let reducts := rewriteWithContextWithPremises czechGFLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
   IO.println s!"PositA(big) reducts ({reducts.length}):"
+  for r in reducts do
+    IO.println s!"  -> {r}"
+
+-- Test: UseV(sleep) reduces to sleep via UseVElim.
+#eval! do
+  let term := Pattern.apply "UseV" [.fvar "sleep"]
+  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
+  IO.println s!"UseV(sleep) reducts ({reducts.length}):"
+  for r in reducts do
+    IO.println s!"  -> {r}"
+
+-- Test: UseComp(warm) reduces to warm via UseCompElim.
+#eval! do
+  let term := Pattern.apply "UseComp" [.fvar "warm"]
+  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
+  IO.println s!"UseComp(warm) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
 
 -- Test: bare leaf fvar "house" is irreducible (no ◇⊤).
 #eval! do
   let term := Pattern.fvar "house"
-  let reducts := rewriteWithContextWithPremises czechGFLanguageDef term
+  let reducts := rewriteWithContextWithPremises gfRGLLanguageDef term
   IO.println s!"house reducts ({reducts.length}): irreducible = {reducts.isEmpty}"
 
 end ModalTests
@@ -332,6 +395,7 @@ noncomputable def gfGrammarPresheafLambdaTheory
   languagePresheafLambdaTheory (gfGrammarLanguageDef name cats funs)
 
 -- Verify key constructions type-check
+#check gfRGLLanguageDef
 #check czechGFOSLF
 #check czechGF_galois
 #check czechGFNativeType
