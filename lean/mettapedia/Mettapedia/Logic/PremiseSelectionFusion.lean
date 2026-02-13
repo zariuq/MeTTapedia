@@ -13,7 +13,7 @@ reusing `Evidence.toStrength_hplus`.
 
 namespace Mettapedia.Logic.PremiseSelection
 
-open scoped Classical ENNReal
+open scoped Classical ENNReal BigOperators
 open Mettapedia.Logic.EvidenceQuantale
 
 /-- Evidence-valued scoring for a goal/fact pair. -/
@@ -56,6 +56,21 @@ theorem fuse_toStrength
       + ((s₂.score g f).total / (s₁.score g f + s₂.score g f).total) * Evidence.toStrength (s₂.score g f) := by
   simpa [fuse] using
     (Evidence.toStrength_hplus (s₁.score g f) (s₂.score g f) h₁ h₂ h₁₂ h₁_top h₂_top)
+
+/-! ### Core/bridge alias names (non-breaking) -/
+
+/-- Alias exposing revision strength as linear pooling in theorem-map naming. -/
+theorem PLN_revisionStrength_eq_linearPool
+    {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) (g : Goal) (f : Fact)
+    (h₁ : (s₁.score g f).total ≠ 0)
+    (h₂ : (s₂.score g f).total ≠ 0)
+    (h₁₂ : ((s₁.score g f + s₂.score g f).total) ≠ 0)
+    (h₁_top : (s₁.score g f).total ≠ ⊤)
+    (h₂_top : (s₂.score g f).total ≠ ⊤) :
+    Evidence.toStrength ((fuse s₁ s₂).score g f) =
+      ((s₁.score g f).total / (s₁.score g f + s₂.score g f).total) * Evidence.toStrength (s₁.score g f)
+      + ((s₂.score g f).total / (s₁.score g f + s₂.score g f).total) * Evidence.toStrength (s₂.score g f) := by
+  exact fuse_toStrength s₁ s₂ g f h₁ h₂ h₁₂ h₁_top h₂_top
 
 /-! ## Constant-weight specialization -/
 
@@ -348,5 +363,78 @@ theorem fuse_toStrength_normalized_totals_toReal
     ENNReal.mul_ne_top hw₂_ne_top hs₂_ne_top
   have hbase' := congrArg ENNReal.toReal hbase
   simpa [ENNReal.toReal_add hleft_ne_top hright_ne_top, ENNReal.toReal_mul] using hbase'
+
+/-! ## N-expert normalized pooling (finite family) -/
+
+/-- Fuse a finite family of scorers by pointwise evidence sum. -/
+noncomputable def fuseFamily {Goal Fact ι : Type*} [Fintype ι]
+    (s : ι → Scorer Goal Fact) : Scorer Goal Fact :=
+  ⟨fun g f => ∑ i, (s i).score g f⟩
+
+@[simp] lemma fuseFamily_score {Goal Fact ι : Type*} [Fintype ι]
+    (s : ι → Scorer Goal Fact) (g : Goal) (f : Fact) :
+    (fuseFamily s).score g f = ∑ i, (s i).score g f := rfl
+
+@[simp] lemma fuseFamily_pos {Goal Fact ι : Type*} [Fintype ι]
+    (s : ι → Scorer Goal Fact) (g : Goal) (f : Fact) :
+    ((fuseFamily s).score g f).pos = ∑ i, ((s i).score g f).pos := by
+  simp [fuseFamily]
+
+@[simp] lemma fuseFamily_neg {Goal Fact ι : Type*} [Fintype ι]
+    (s : ι → Scorer Goal Fact) (g : Goal) (f : Fact) :
+    ((fuseFamily s).score g f).neg = ∑ i, ((s i).score g f).neg := by
+  simp [fuseFamily]
+
+@[simp] lemma fuseFamily_total {Goal Fact ι : Type*} [Fintype ι]
+    (s : ι → Scorer Goal Fact) (g : Goal) (f : Fact) :
+    ((fuseFamily s).score g f).total = ∑ i, ((s i).score g f).total := by
+  simp [Evidence.total, fuseFamily, Finset.sum_add_distrib]
+
+@[simp] lemma normalizeScorer_pos {Goal Fact : Type*}
+    (t : ℝ≥0∞) (s : Scorer Goal Fact) (g : Goal) (f : Fact) :
+    ((normalizeScorer t s).score g f).pos = t * Evidence.toStrength (s.score g f) := by
+  simp [normalizeScorer, normalizeEvidence]
+
+/-- Finite `N`-expert normalized pooling law:
+the fused strength equals the weighted average of expert strengths with weights `t i`. -/
+theorem fuseFamily_toStrength_normalized_totals
+    {Goal Fact ι : Type*} [Fintype ι]
+    (s : ι → Scorer Goal Fact) (t : ι → ℝ≥0∞) (g : Goal) (f : Fact)
+    (htsum : (∑ i, t i) ≠ 0) :
+    Evidence.toStrength
+      ((fuseFamily (fun i => normalizeScorer (t i) (s i))).score g f)
+      =
+    (∑ i, t i * Evidence.toStrength ((s i).score g f)) / (∑ i, t i) := by
+  let sn : ι → Scorer Goal Fact := fun i => normalizeScorer (t i) (s i)
+  have hpos :
+      ((fuseFamily sn).score g f).pos
+        = ∑ i, t i * Evidence.toStrength ((s i).score g f) := by
+    simp [sn, fuseFamily, normalizeScorer, normalizeEvidence]
+  have htot :
+      ((fuseFamily sn).score g f).total = ∑ i, t i := by
+    calc
+      ((fuseFamily sn).score g f).total
+          = ∑ i, ((sn i).score g f).total := by
+              simpa using (fuseFamily_total (s := sn) (g := g) (f := f))
+      _ = ∑ i, t i := by
+            refine Finset.sum_congr rfl ?_
+            intro i hi
+            simpa [sn] using (normalizeScorer_total (t := t i) (s := s i) (g := g) (f := f))
+  have htot_ne :
+      ((fuseFamily sn).score g f).total ≠ 0 := by
+    intro h0
+    apply htsum
+    rw [← htot]
+    exact h0
+  have houter :
+      Evidence.toStrength ((fuseFamily sn).score g f)
+        = ((fuseFamily sn).score g f).pos / ((fuseFamily sn).score g f).total := by
+    unfold Evidence.toStrength
+    exact if_neg htot_ne
+  calc
+    Evidence.toStrength ((fuseFamily sn).score g f)
+        = ((fuseFamily sn).score g f).pos / ((fuseFamily sn).score g f).total := houter
+    _ = (∑ i, t i * Evidence.toStrength ((s i).score g f)) / (∑ i, t i) := by
+          rw [hpos, htot]
 
 end Mettapedia.Logic.PremiseSelection

@@ -43,6 +43,13 @@ open Mettapedia.CategoryTheory.LambdaTheories
 
     **Design Decision (2026-02-04)**: Reduces is Type-valued, not Prop-valued.
 
+    **Canonical vs Extension Policy (2026-02-13)**:
+    This low-level relation intentionally keeps both bag and set congruence
+    descent constructors. Canonical-vs-extension behavior is enforced at the
+    `LanguageDef`/`langReduces` layer (`rhoCalc` vs `rhoCalcSetExt`) via
+    `congruenceCollections`, with theorem-level comparison in
+    `Framework/TypeSynthesis.lean`.
+
     **Locally nameless**: The COMM rule no longer carries a binder name.
     Lambda patterns are `lambda body` where BVar 0 is the bound variable.
     Substitution uses `commSubst` which calls `openBVar 0 (NQuote q) body`.
@@ -243,7 +250,7 @@ theorem ioCount_SC {P Q : Pattern}
     -- so the result follows from hargs
     show ioCount (.apply f args₁) = ioCount (.apply f args₂)
     unfold ioCount
-    split <;> split <;> simp_all <;> omega
+    split <;> split <;> simp_all
   | collection_general_cong _ es₁ es₂ _ hlen _ ih =>
     simp only [ioCount]; exact ioCount_list_SC hlen ih
   | multiLambda_cong _ _ _ _ ih => simp only [ioCount]; exact ih
@@ -253,56 +260,171 @@ theorem ioCount_SC {P Q : Pattern}
     -- "NQuote" and "PDrop" are neither "POutput" nor "PInput"
     simp [ioCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
 
-/-! ## Empty Bag Irreducibility
+/-! ### SC-invariant weight for reduction sources
 
-The empty bag `.collection .hashBag [] none` cannot reduce. The proof is
-by induction on the `Reduces` derivation, generalized over SC.
+`redWeight` is designed so that:
+- it is preserved by structural congruence;
+- every `Reduces` source has strictly positive weight;
+- the empty bag has weight `0`.
 
-- `equiv`: IH + SC transitivity
-- `comm`: ioCount contradiction (COMM source has ioCount >= 2, but SC({}, P) => ioCount P = 0)
-- `drop`/`par`/`par_any`/`par_set`/`par_set_any`: ioCount decomposition + IH
+This gives a robust SC-quotiented irreducibility theorem for the empty bag.
 -/
 
-/-- The empty bag is irreducible, even modulo SC.
+/-- A structural weight compatible with QUOTE-DROP (`NQuote (PDrop n) ≡ n`). -/
+def redWeight : Pattern → Nat
+  | .bvar _ => 1
+  | .fvar _ => 1
+  | .apply f args =>
+      let s := (args.map redWeight).sum
+      -- Design rationale:
+      -- - `PZero` must contribute 0 so empty-bag source weight is 0.
+      -- - `NQuote` must decrease by one (`pred`) so `NQuote (PDrop n)` and `n`
+      --   have equal weight under the SC rule `quote_drop`.
+      -- - all other constructors contribute `+1` to enforce strict positivity
+      --   on genuine redex sources (`comm`, `drop`, and contextual variants).
+      if f = "PZero" then 0
+      else if f = "NQuote" then Nat.pred s
+      else s + 1
+  | .lambda b => redWeight b
+  | .multiLambda _ b => redWeight b
+  | .subst b r => redWeight b + redWeight r
+  | .collection _ elems _ => (elems.map redWeight).sum
 
-    Proved via a generalized helper that works with ioCount = 0 + SC hypothesis.
-    By induction on the Reduces derivation:
-    - `equiv`: SC transitivity gives SC({}, p'), then IH
-    - `comm`: ioCount >= 2, contradiction
-    - `drop`: SC({}, PDrop[NQuote[x]]) is impossible (quote_drop asymmetry)
-    - `par`/`par_any`: ioCount decomposition + IH
-    - `par_set`/`par_set_any`: collection type mismatch via SC
--/
+/-- Helper: pairwise SC on lists implies equal `redWeight` sums. -/
+private theorem redWeight_list_SC {ps qs : List Pattern} (hlen : ps.length = qs.length)
+    (hsc : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
+      redWeight (ps.get ⟨i, h₁⟩) = redWeight (qs.get ⟨i, h₂⟩)) :
+    (ps.map redWeight).sum = (qs.map redWeight).sum := by
+  induction ps generalizing qs with
+  | nil =>
+    cases qs with
+    | nil => rfl
+    | cons q qs' => simp at hlen
+  | cons p ps' ih =>
+    cases qs with
+    | nil => simp at hlen
+    | cons q qs' =>
+      simp only [List.map_cons, List.sum_cons]
+      simp only [List.length_cons] at hlen ⊢
+      have h0 : redWeight p = redWeight q := hsc 0 (Nat.zero_lt_succ _) (Nat.zero_lt_succ _)
+      have htl := ih (by omega) fun i h₁ h₂ =>
+        hsc (i + 1) (Nat.succ_lt_succ h₁) (Nat.succ_lt_succ h₂)
+      omega
+
+/-- SC preserves `redWeight`. -/
+theorem redWeight_SC {P Q : Pattern}
+    (hsc : StructuralCongruence P Q) : redWeight P = redWeight Q := by
+  induction hsc with
+  | alpha _ _ h => subst h; rfl
+  | refl _ => rfl
+  | symm _ _ _ ih => exact ih.symm
+  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+  | par_singleton p =>
+    simp [redWeight, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_nil_left p =>
+    simp [redWeight, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_nil_right p =>
+    simp [redWeight, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_comm p q =>
+    simp [redWeight, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
+  | par_assoc p q r =>
+    simp [redWeight, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
+  | par_cong ps qs hlen _ ih =>
+    simp only [redWeight]
+    exact redWeight_list_SC hlen ih
+  | par_flatten ps qs =>
+    simp [redWeight, List.map_append, List.sum_append,
+      List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_perm _ _ hperm =>
+    simp only [redWeight]
+    exact (hperm.map redWeight).sum_eq
+  | set_perm _ _ hperm =>
+    simp only [redWeight]
+    exact (hperm.map redWeight).sum_eq
+  | set_cong es₁ es₂ hlen _ ih =>
+    simp only [redWeight]
+    exact redWeight_list_SC hlen ih
+  | lambda_cong _ _ _ ih =>
+    simpa [redWeight] using ih
+  | apply_cong f args₁ args₂ hlen _ ih =>
+    have hargs := redWeight_list_SC hlen ih
+    show redWeight (.apply f args₁) = redWeight (.apply f args₂)
+    simp [redWeight, hargs]
+  | collection_general_cong _ es₁ es₂ _ hlen _ ih =>
+    simp only [redWeight]
+    exact redWeight_list_SC hlen ih
+  | multiLambda_cong _ _ _ _ ih =>
+    simpa [redWeight] using ih
+  | subst_cong _ _ _ _ _ _ ih₁ ih₂ =>
+    simp [redWeight, ih₁, ih₂]
+  | quote_drop n =>
+    simp [redWeight]
+
+/-- Every one-step reduction source has strictly positive `redWeight`. -/
+theorem redWeight_pos_of_reduces {P Q : Pattern} (hred : Reduces P Q) :
+    0 < redWeight P := by
+  induction hred with
+  | comm =>
+    simp [redWeight, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | drop =>
+    simp [redWeight]
+  | @equiv p p' q q' hsc _ _ ih =>
+    have hw : redWeight p = redWeight p' := redWeight_SC hsc
+    omega
+  | par _ ih =>
+    simp [redWeight, List.map_cons, List.sum_cons]
+    omega
+  | par_any _ ih =>
+    simp [redWeight, List.map_append, List.sum_append, List.map_cons, List.sum_cons]
+    omega
+  | par_set _ ih =>
+    simp [redWeight, List.map_cons, List.sum_cons]
+    omega
+  | par_set_any _ ih =>
+    simp [redWeight, List.map_append, List.sum_append, List.map_cons, List.sum_cons]
+    omega
+
+/-- Empty bag is irreducible modulo structural congruence (SC-quotiented). -/
 theorem emptyBag_SC_irreducible {P Q : Pattern}
     (hsc : StructuralCongruence (.collection .hashBag [] none) P)
     (hred : Reduces P Q) : False := by
-  -- Generalize: suffices to show that for any P with SC({}, P), Reduces(P, Q) is impossible
-  -- The key: induction on hred, generalizing over the SC hypothesis
-  revert hsc
-  induction hred with
-  | comm =>
-    intro hsc
-    have hio := ioCount_SC hsc
-    simp [ioCount, List.map_nil, List.sum_nil, List.map_cons, List.sum_cons,
-          List.map_append, List.sum_append] at hio
-    omega
-  | drop =>
-    -- Need: SC({}, PDrop[NQuote[x]]) -> False
-    -- This requires showing SC cannot map {} to a drop redex.
-    -- The SC rule quote_drop gives NQuote[PDrop[n]] ≡ n (NOT PDrop[NQuote[n]] ≡ n).
-    -- Formalizing this requires a structural lemma about SC.
-    intro hsc
-    sorry
-  | @equiv _ p' _ q' hsc₁ _ hsc₂ ih =>
-    intro hsc
-    exact ih (.trans _ _ _ hsc hsc₁)
-  | @par p q rest _ ih =>
-    -- SC({}, {p::rest}). Need SC({}, p) for IH.
-    -- This requires decomposing SC on bags, which is non-trivial.
-    intro hsc
-    sorry
-  | par_any => intro hsc; sorry
-  | par_set => intro hsc; sorry
-  | par_set_any => intro hsc; sorry
+  have hscw : redWeight (.collection .hashBag [] none) = redWeight P := redWeight_SC hsc
+  have hzero0 : 0 = redWeight P := by
+    simpa [redWeight, List.map_nil, List.sum_nil] using hscw
+  have hzero : redWeight P = 0 := hzero0.symm
+  have hpos : 0 < redWeight P := redWeight_pos_of_reduces hred
+  omega
+
+/-! ### Empty-bag SC invariants (MVP surface)
+
+These are the minimal SC-facing lemmas retained for current use: they expose
+the canonical invariant (`ioCount = 0`) on the SC class of the empty bag.
+-/
+
+/-- `ioCount` of the syntactic empty parallel bag is zero. -/
+theorem ioCount_emptyBag : ioCount (.collection .hashBag [] none) = 0 := by
+  simp [ioCount]
+
+/-- Any pattern SC-equivalent to the empty bag has `ioCount = 0`. -/
+theorem ioCount_eq_zero_of_SC_emptyBag {p : Pattern}
+    (hsc : StructuralCongruence p (.collection .hashBag [] none)) : ioCount p = 0 := by
+  calc
+    ioCount p = ioCount (.collection .hashBag [] none) := ioCount_SC hsc
+    _ = 0 := ioCount_emptyBag
+
+/-- Symmetric orientation of `ioCount_eq_zero_of_SC_emptyBag`. -/
+theorem ioCount_eq_zero_of_emptyBag_SC {p : Pattern}
+    (hsc : StructuralCongruence (.collection .hashBag [] none) p) : ioCount p = 0 := by
+  exact ioCount_eq_zero_of_SC_emptyBag (hsc := StructuralCongruence.symm _ _ hsc)
+
+/-! ## Empty Bag Irreducibility
+
+This file now contains the SC-quotiented irreducibility theorem
+`emptyBag_SC_irreducible` at the raw `Reduces` level.
+
+For the executable OSLF pipeline, we also keep the operational counterparts:
+- `RhoCalculus/Engine.lean` (`emptyBag_reduceStep_nil`)
+- `Framework/TypeSynthesis.lean` (`rhoCalc_emptyBag_langReduces_irreducible`)
+-/
 
 end Mettapedia.OSLF.RhoCalculus.Reduction

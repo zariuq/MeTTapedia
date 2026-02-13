@@ -169,6 +169,32 @@ theorem externalBayesianity_weighted_hplus_tensor {Goal Fact : Type*}
   · simp [weightedFuse, update, scaleScorer, scaleEvidence, Evidence.hplus_def, Evidence.tensor_def,
       add_mul, mul_assoc]
 
+/-- Updating after finite-family pooling equals pooling updated experts. -/
+theorem update_fuseFamily_commute_left {Goal Fact ι : Type*} [Fintype ι]
+    (s : ι → Scorer Goal Fact) (likelihood : Scorer Goal Fact) :
+    update (fuseFamily s) likelihood = fuseFamily (fun i => update (s i) likelihood) := by
+  apply Scorer.ext
+  intro g f
+  apply Evidence.ext'
+  · simp [update, fuseFamily, Evidence.tensor_def, Finset.sum_mul]
+  · simp [update, fuseFamily, Evidence.tensor_def, Finset.sum_mul]
+
+/-- Updating a prior with finite pooled likelihood experts equals pooling individual updates. -/
+theorem update_fuseFamily_commute_right {Goal Fact ι : Type*} [Fintype ι]
+    (prior : Scorer Goal Fact) (l : ι → Scorer Goal Fact) :
+    update prior (fuseFamily l) = fuseFamily (fun i => update prior (l i)) := by
+  apply Scorer.ext
+  intro g f
+  apply Evidence.ext'
+  · simp [update, fuseFamily, Evidence.tensor_def, Finset.mul_sum]
+  · simp [update, fuseFamily, Evidence.tensor_def, Finset.mul_sum]
+
+/-- External-Bayesianity style commutation for finite expert families. -/
+theorem externalBayesianity_fuseFamily_tensor {Goal Fact ι : Type*} [Fintype ι]
+    (s : ι → Scorer Goal Fact) (likelihood : Scorer Goal Fact) :
+    fuseFamily (fun i => update (s i) likelihood) = update (fuseFamily s) likelihood := by
+  simp [update_fuseFamily_commute_left (s := s) (likelihood := likelihood)]
+
 /-- Restricted characterization: in the weighted-linear family, two-sided neutrality forces
 `w₁ = w₂ = 1`, hence the pool is exactly `fuse`. -/
 theorem weightedFuse_unique_under_two_sided_neutrality
@@ -505,5 +531,19 @@ theorem externalBayesianity_confidence {Goal Fact : Type*}
       Evidence.toConfidence κ
         ((update (fuse s₁ s₂) likelihood).score g f) := by
   simp [externalBayesianity_hplus_tensor (s₁ := s₁) (s₂ := s₂) (likelihood := likelihood)]
+
+/-- Strength is invariant under finite-family pool/update order. -/
+theorem externalBayesianity_fuseFamily_strength {Goal Fact ι : Type*} [Fintype ι]
+    (s : ι → Scorer Goal Fact) (likelihood : Scorer Goal Fact) (g : Goal) (f : Fact) :
+    Evidence.toStrength ((fuseFamily (fun i => update (s i) likelihood)).score g f) =
+      Evidence.toStrength ((update (fuseFamily s) likelihood).score g f) := by
+  simp [externalBayesianity_fuseFamily_tensor (s := s) (likelihood := likelihood)]
+
+/-- Confidence is invariant under finite-family pool/update order. -/
+theorem externalBayesianity_fuseFamily_confidence {Goal Fact ι : Type*} [Fintype ι]
+    (κ : ℝ≥0∞) (s : ι → Scorer Goal Fact) (likelihood : Scorer Goal Fact) (g : Goal) (f : Fact) :
+    Evidence.toConfidence κ ((fuseFamily (fun i => update (s i) likelihood)).score g f) =
+      Evidence.toConfidence κ ((update (fuseFamily s) likelihood).score g f) := by
+  simp [externalBayesianity_fuseFamily_tensor (s := s) (likelihood := likelihood)]
 
 end Mettapedia.Logic.PremiseSelection

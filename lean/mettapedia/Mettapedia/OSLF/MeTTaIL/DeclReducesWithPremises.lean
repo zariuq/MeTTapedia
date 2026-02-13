@@ -41,6 +41,7 @@ inductive DeclReducesWithPremises (relEnv : RelationEnv) (lang : LanguageDef) :
       {elems : List Pattern} →
       {ct : CollType} →
       {rest : Option String} →
+      (hct : LanguageDef.allowsCongruenceIn lang ct) →
       (i : Nat) →
       (hi : i < elems.length) →
       (r : RewriteRule) →
@@ -112,22 +113,25 @@ private theorem rewriteInCollectionWithPremisesUsing_sound {relEnv : RelationEnv
     (hq : q ∈ rewriteInCollectionWithPremisesUsing relEnv lang ct elems rest) :
     DeclReducesWithPremises relEnv lang (.collection ct elems rest) q := by
   unfold rewriteInCollectionWithPremisesUsing at hq
-  rw [List.mem_flatMap] at hq
-  obtain ⟨⟨elem, j⟩, hmem_zip, hq_map⟩ := hq
-  rw [List.mem_map] at hq_map
-  obtain ⟨elem', hstep, rfl⟩ := hq_map
-  have hj := lt_length_of_mem_zipIdx hmem_zip
-  have helem_eq := eq_getElem_of_mem_zipIdx hmem_zip hj
-  subst helem_eq
-  unfold rewriteStepWithPremisesUsing at hstep
-  rw [List.mem_flatMap] at hstep
-  obtain ⟨rule, hrule, hq_rule⟩ := hstep
-  unfold applyRuleWithPremisesUsing at hq_rule
-  rw [List.mem_flatMap] at hq_rule
-  obtain ⟨bs0, hbs0, hq_map_rule⟩ := hq_rule
-  rw [List.mem_map] at hq_map_rule
-  obtain ⟨bs, hprem, rfl⟩ := hq_map_rule
-  exact .congElem j hj rule hrule bs0 hbs0 bs hprem rfl
+  split at hq
+  · rename_i hct
+    rw [List.mem_flatMap] at hq
+    obtain ⟨⟨elem, j⟩, hmem_zip, hq_map⟩ := hq
+    rw [List.mem_map] at hq_map
+    obtain ⟨elem', hstep, rfl⟩ := hq_map
+    have hj := lt_length_of_mem_zipIdx hmem_zip
+    have helem_eq := eq_getElem_of_mem_zipIdx hmem_zip hj
+    subst helem_eq
+    unfold rewriteStepWithPremisesUsing at hstep
+    rw [List.mem_flatMap] at hstep
+    obtain ⟨rule, hrule, hq_rule⟩ := hstep
+    unfold applyRuleWithPremisesUsing at hq_rule
+    rw [List.mem_flatMap] at hq_rule
+    obtain ⟨bs0, hbs0, hq_map_rule⟩ := hq_rule
+    rw [List.mem_map] at hq_map_rule
+    obtain ⟨bs, hprem, rfl⟩ := hq_map_rule
+    exact .congElem hct j hj rule hrule bs0 hbs0 bs hprem rfl
+  · simp at hq
 
 /-- **Soundness**: every result of the premise-aware engine with environment is
     a declarative reduction. -/
@@ -191,15 +195,14 @@ theorem engineWithPremisesUsing_complete {relEnv : RelationEnv}
     unfold rewriteWithContextWithPremisesUsing
     rw [List.mem_append]
     exact .inl (rewriteStepWithPremisesUsing_of_topRule' r hr bs0 hbs0 bs hprem hq)
-  | @congElem elems ct rest i hi r hr bs0 hbs0 bs hprem q' hq =>
+  | @congElem elems ct rest hct i hi r hr bs0 hbs0 bs hprem q' hq =>
     unfold rewriteWithContextWithPremisesUsing
     rw [List.mem_append]
     right
     unfold rewriteInCollectionWithPremisesUsing
-    rw [List.mem_flatMap]
-    refine ⟨(elems[i], i), mem_zipIdx_of_lt elems i hi, ?_⟩
-    rw [List.mem_map]
-    exact ⟨q', rewriteStepWithPremisesUsing_of_topRule' r hr bs0 hbs0 bs hprem hq, rfl⟩
+    simp [hct, List.mem_flatMap, List.mem_map]
+    refine ⟨elems[i], i, mem_zipIdx_of_lt elems i hi, q', ?_, rfl⟩
+    exact rewriteStepWithPremisesUsing_of_topRule' r hr bs0 hbs0 bs hprem hq
 
 /-- **Completeness (default env)**: every declarative reduction with
     `RelationEnv.empty` is produced by `rewriteWithContextWithPremises`. -/

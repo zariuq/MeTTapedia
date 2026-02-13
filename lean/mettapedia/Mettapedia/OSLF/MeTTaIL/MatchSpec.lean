@@ -481,6 +481,7 @@ inductive DeclReducesRel (lang : LanguageDef) : Pattern → Pattern → Prop whe
       {elems : List Pattern} →
       {ct : CollType} →
       {rest : Option String} →
+      (hct : LanguageDef.allowsCongruenceIn lang ct) →
       (i : Nat) →
       (hi : i < elems.length) →
       (r : RewriteRule) →
@@ -500,16 +501,16 @@ theorem declReducesRel_of_declReduces {lang : LanguageDef} {p q : Pattern}
   cases h with
   | topRule r hr hprem bs hbs hq =>
     exact .topRule r hr hprem bs (matchPattern_sound hbs) hq
-  | @congElem elems ct rest i hi r hr hprem bs hbs q' hq =>
-    exact .congElem i hi r hr hprem bs (matchPattern_sound hbs) hq
+  | @congElem elems ct rest hct i hi r hr hprem bs hbs q' hq =>
+    exact .congElem hct i hi r hr hprem bs (matchPattern_sound hbs) hq
 
 theorem declReduces_of_declReducesRel {lang : LanguageDef} {p q : Pattern}
     (h : DeclReducesRel lang p q) : DeclReduces lang p q := by
   cases h with
   | topRule r hr hprem bs hbs hq =>
     exact .topRule r hr hprem bs (matchRel_complete hbs) hq
-  | @congElem elems ct rest i hi r hr hprem bs hbs q' hq =>
-    exact .congElem i hi r hr hprem bs (matchRel_complete hbs) hq
+  | @congElem elems ct rest hct i hi r hr hprem bs hbs q' hq =>
+    exact .congElem hct i hi r hr hprem bs (matchRel_complete hbs) hq
 
 theorem declReducesRel_iff_declReduces {lang : LanguageDef} {p q : Pattern} :
     DeclReducesRel lang p q ↔ DeclReduces lang p q :=

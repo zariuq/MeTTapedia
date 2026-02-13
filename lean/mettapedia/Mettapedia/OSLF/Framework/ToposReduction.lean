@@ -319,6 +319,61 @@ theorem langBox_iff_forall_graphIncoming
     (langBoxUsing_iff_forall_graphIncoming
       (C := C) (relEnv := RelationEnv.empty) (lang := lang) (X := X) (φ := φ) (p := p))
 
+/-- Graph-object form of `◇` characterization.
+
+This is the reusable form over an abstract `ReductionGraphObj`, not tied to the
+concrete `reductionGraphUsing` construction. -/
+theorem langDiamondUsing_iff_exists_graphObjStep
+    (C : Type u) [CategoryTheory.Category.{v} C]
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (G : ReductionGraphObj C relEnv lang)
+    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    langDiamondUsing relEnv lang φ p ↔
+      ∃ e : G.Edge.obj X,
+        (G.source.app X e).down = p ∧
+        φ ((G.target.app X e).down) := by
+  constructor
+  · intro h
+    rcases (langDiamondUsing_spec relEnv lang φ p).1 h with ⟨q, hred, hφ⟩
+    rcases (G.edge_endpoints_iff (X := X) (p := p) (q := q)).2 hred with ⟨e, hs, ht⟩
+    exact ⟨e, hs, by simpa [ht] using hφ⟩
+  · rintro ⟨e, hs, hφ⟩
+    let q : Pattern := (G.target.app X e).down
+    have hred : langReducesUsing relEnv lang p q :=
+      (G.edge_endpoints_iff (X := X) (p := p) (q := q)).1 ⟨e, hs, rfl⟩
+    refine (langDiamondUsing_spec relEnv lang φ p).2 ?_
+    exact ⟨q, hred, by simpa [q] using hφ⟩
+
+/-- Graph-object form of `□` characterization.
+
+This is the reusable incoming-edge formulation over an abstract
+`ReductionGraphObj`. -/
+theorem langBoxUsing_iff_forall_graphObjIncoming
+    (C : Type u) [CategoryTheory.Category.{v} C]
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (G : ReductionGraphObj C relEnv lang)
+    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    langBoxUsing relEnv lang φ p ↔
+      ∀ e : G.Edge.obj X,
+        (G.target.app X e).down = p →
+        φ ((G.source.app X e).down) := by
+  constructor
+  · intro h e ht
+    have hred : langReducesUsing relEnv lang
+        ((G.source.app X e).down) ((G.target.app X e).down) :=
+      (G.edge_endpoints_iff
+        (X := X) (p := (G.source.app X e).down) (q := (G.target.app X e).down)).1
+        ⟨e, rfl, rfl⟩
+    exact (langBoxUsing_spec relEnv lang φ p).1 h
+      ((G.source.app X e).down)
+      (by simpa [ht] using hred)
+  · intro h
+    refine (langBoxUsing_spec relEnv lang φ p).2 ?_
+    intro q hqp
+    rcases (G.edge_endpoints_iff (X := X) (p := q) (q := p)).2 hqp with ⟨e, hs, ht⟩
+    have hq := h e ht
+    simpa [hs] using hq
+
 /-- Executable premise-aware one-step reduction gives membership in the
 internal presheaf relation. -/
 theorem exec_mem_reductionSubfunctorUsing

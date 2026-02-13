@@ -4,6 +4,7 @@ import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.RhoCalculus.Engine
 import Mettapedia.OSLF.RhoCalculus.Reduction
 import Mettapedia.OSLF.Framework.TypeSynthesis
+import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.ToposReduction
 
 /-!
@@ -212,6 +213,28 @@ theorem sem_box_eq_graphIncomingUsing
       (C := C) (relEnv := relEnv) (lang := lang) (X := X)
       (φ := sem (langReducesUsing relEnv lang) I φ) (p := p))
 
+/-- Formula-layer `□` semantics over a packaged `ReductionGraphObj`.
+
+This is the reusable graph-object form, independent of the concrete
+`reductionGraphUsing` construction. -/
+theorem sem_box_eq_graphObjIncomingUsing
+    (C : Type _) [CategoryTheory.Category C]
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (G : Mettapedia.OSLF.Framework.ToposReduction.ReductionGraphObj C relEnv lang)
+    (I : AtomSem) (φ : OSLFFormula) {X : Opposite C} :
+    sem (langReducesUsing relEnv lang) I (.box φ) =
+      (fun p =>
+        ∀ e : G.Edge.obj X,
+          (G.target.app X e).down = p →
+          sem (langReducesUsing relEnv lang) I φ
+            ((G.source.app X e).down)) := by
+  funext p
+  rw [sem_box_eq_langBoxUsing]
+  exact propext <|
+    (Mettapedia.OSLF.Framework.ToposReduction.langBoxUsing_iff_forall_graphObjIncoming
+      (C := C) (relEnv := relEnv) (lang := lang) (G := G) (X := X)
+      (φ := sem (langReducesUsing relEnv lang) I φ) (p := p))
+
 /-- Default-env wrapper for graph-form `□` formula semantics. -/
 theorem sem_box_eq_graphIncoming
     (C : Type _) [CategoryTheory.Category C]
@@ -252,6 +275,31 @@ theorem formula_galoisUsing (relEnv : RelationEnv) (lang : LanguageDef)
   have hg := langGaloisUsing relEnv lang
   exact hg (sem (langReducesUsing relEnv lang) I φ)
     (sem (langReducesUsing relEnv lang) I ψ)
+
+/-- SC-empty representatives are unsatisfiable for `◇⊤` over the specialized
+    executable ρ one-step relation (`reduceStep`). -/
+theorem rhoCalc_SC_empty_sem_diaTop_unsat_reduceStep
+    (I : AtomSem) {p : Pattern}
+    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+      (.collection .hashBag [] none) p) :
+    ¬ sem (fun a b => b ∈ reduceStep a) I (.dia .top) p := by
+  intro hsem
+  rcases hsem with ⟨q, hstep, _⟩
+  exact (rhoCalc_SC_emptyBag_reduceStep_irreducible (hsc := hsc) (q := q)) hstep
+
+/-- SC-empty representatives are unsatisfiable for generated `langReduces`
+    `◇⊤`, provided a restricted executable-path witness from `langReduces`
+    into the specialized stepper. -/
+theorem rhoCalc_SC_empty_sem_diaTop_unsat_langReduces_of_reduceStep
+    (I : AtomSem) {p : Pattern}
+    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+      (.collection .hashBag [] none) p)
+    (hToStep : ∀ {q : Pattern}, langReduces rhoCalc p q → q ∈ reduceStep p) :
+    ¬ sem (langReduces rhoCalc) I (.dia .top) p := by
+  intro hsem
+  rcases hsem with ⟨q, hred, _⟩
+  have hstep : q ∈ reduceStep p := hToStep hred
+  exact (rhoCalc_SC_emptyBag_reduceStep_irreducible (hsc := hsc) (q := q)) hstep
 
 /-! ## Bounded Model Checker -/
 
@@ -454,6 +502,221 @@ theorem checkLangUsing_sat_sound
   · intro p q hq
     exact exec_to_langReducesUsing relEnv lang hq
   · exact h
+
+/-- Proc-fiber corollary for checker soundness on `rhoCalc`.
+
+When `checkLangUsing` establishes formula satisfaction at a concrete process
+state `p`, any representable arrow whose semantic action yields `p` is a member
+of the corresponding executable `Pattern → Prop`-induced Proc fiber. -/
+theorem checkLangUsing_sat_sound_sort_fiber
+    {relEnv : RelationEnv} {lang : LanguageDef}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
+    (hSat : checkLangUsing relEnv lang I_check fuel p φf = .sat)
+    (s : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort lang)
+    (seed : Pattern)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed (sem (langReducesUsing relEnv lang) I_sem φf))
+    {X : Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)}
+    (hArrow :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s).obj X)
+    (hp : Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang hArrow seed = p) :
+    hArrow ∈
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+        lang s
+        seed (sem (langReducesUsing relEnv lang) I_sem φf) hNat).obj X := by
+  have hsem : sem (langReducesUsing relEnv lang) I_sem φf p :=
+    checkLangUsing_sat_sound (relEnv := relEnv) (lang := lang)
+      (I_check := I_check) (I_sem := I_sem) h_atoms hSat
+  change sem (langReducesUsing relEnv lang) I_sem φf
+      (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang hArrow seed)
+  simpa [hp] using hsem
+
+/-- Generic `satisfies` corollary from checker soundness through
+`languageSortFiber_ofPatternPred` membership equivalence. -/
+theorem checkLangUsing_sat_sound_sort_fiber_mem_iff
+    {relEnv : RelationEnv} {lang : LanguageDef}
+    (procSort : String := "Proc")
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
+    (hSat : checkLangUsing relEnv lang I_check fuel p φf = .sat)
+    (s : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort lang)
+    (seed : Pattern)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed (sem (langReducesUsing relEnv lang) I_sem φf))
+    {X : Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)}
+    (hArrow :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s).obj X)
+    (hp : Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang hArrow seed = p) :
+    (langOSLF lang procSort).satisfies (S := s.val)
+      (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang hArrow seed)
+      (sem (langReducesUsing relEnv lang) I_sem φf) := by
+  have hmem :
+      hArrow ∈
+        (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s
+          seed (sem (langReducesUsing relEnv lang) I_sem φf) hNat).obj X :=
+    checkLangUsing_sat_sound_sort_fiber
+      (relEnv := relEnv) (lang := lang)
+      (I_check := I_check) (I_sem := I_sem)
+      h_atoms hSat s seed hNat hArrow hp
+  exact
+    (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_mem_iff_satisfies
+      (lang := lang) (procSort := procSort)
+      (s := s) (seed := seed)
+      (φ := sem (langReducesUsing relEnv lang) I_sem φf)
+      (hNat := hNat) (h := hArrow)).1 hmem
+
+/-- Proc-fiber corollary for checker soundness on `rhoCalc`.
+
+When `checkLangUsing` establishes formula satisfaction at a concrete process
+state `p`, any representable arrow whose semantic action yields `p` is a member
+of the corresponding executable `Pattern → Prop`-induced Proc fiber. -/
+theorem checkLangUsing_sat_sound_proc_fiber
+    {relEnv : RelationEnv}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
+    (hSat : checkLangUsing relEnv rhoCalc I_check fuel p φf = .sat)
+    (seed : Pattern)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc
+        seed (sem (langReducesUsing relEnv rhoCalc) I_sem φf))
+    {X : Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj rhoCalc)}
+    (hArrow :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc).obj X)
+    (hp : Mettapedia.OSLF.Framework.ConstructorCategory.pathSem rhoCalc hArrow seed = p) :
+    hArrow ∈
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc
+        seed (sem (langReducesUsing relEnv rhoCalc) I_sem φf) hNat).obj X := by
+  simpa using
+    (checkLangUsing_sat_sound_sort_fiber
+      (relEnv := relEnv) (lang := rhoCalc)
+      (I_check := I_check) (I_sem := I_sem)
+      h_atoms hSat
+      Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc
+      seed hNat hArrow hp)
+
+/-- Interface-selected Proc-fiber corollary.
+
+This is the same checker soundness-to-fiber statement as
+`checkLangUsing_sat_sound_proc_fiber`, but routed through the
+`oslf_fibrationUsing` Proc predicate bridge into canonical representable fibers.
+-/
+theorem checkLangUsing_sat_sound_proc_fiber_using
+    {relEnv : RelationEnv}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
+    (hSat : checkLangUsing relEnv rhoCalc I_check fuel p φf = .sat)
+    (seed : Pattern)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc
+        seed (sem (langReducesUsing relEnv rhoCalc) I_sem φf))
+    {X : Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj rhoCalc)}
+    (hArrow :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc).obj X)
+    (hp : Mettapedia.OSLF.Framework.ConstructorCategory.pathSem rhoCalc hArrow seed = p) :
+    hArrow ∈
+      (Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred_to_languageSortFiber
+        seed (φ := sem (langReducesUsing relEnv rhoCalc) I_sem φf) hNat).obj X := by
+  simpa [Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred_to_languageSortFiber] using
+    (checkLangUsing_sat_sound_proc_fiber
+      (relEnv := relEnv) (I_check := I_check) (I_sem := I_sem)
+      h_atoms hSat seed hNat hArrow hp)
+
+/-- Direct `satisfies` corollary from checker soundness through the
+interface-selected Proc-fiber bridge membership equivalence. -/
+theorem checkLangUsing_sat_sound_proc_fiber_using_mem_iff
+    {relEnv : RelationEnv}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
+    (hSat : checkLangUsing relEnv rhoCalc I_check fuel p φf = .sat)
+    (seed : Pattern)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc
+        seed (sem (langReducesUsing relEnv rhoCalc) I_sem φf))
+    {X : Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj rhoCalc)}
+    (hArrow :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc).obj X)
+    (hp : Mettapedia.OSLF.Framework.ConstructorCategory.pathSem rhoCalc hArrow seed = p) :
+    (langOSLF rhoCalc "Proc").satisfies (S := "Proc")
+      (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem rhoCalc hArrow seed)
+      (sem (langReducesUsing relEnv rhoCalc) I_sem φf) := by
+  have hmem :
+      hArrow ∈
+        (Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred_to_languageSortFiber
+          seed (φ := sem (langReducesUsing relEnv rhoCalc) I_sem φf) hNat).obj X :=
+    checkLangUsing_sat_sound_proc_fiber_using
+      (relEnv := relEnv) (I_check := I_check) (I_sem := I_sem)
+      h_atoms hSat seed hNat hArrow hp
+  exact
+    (Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred_to_languageSortFiber_mem_iff
+      (seed := seed) (φ := sem (langReducesUsing relEnv rhoCalc) I_sem φf)
+      (hNat := hNat) (h := hArrow)).1 hmem
+
+/-- Default-env wrapper of `checkLangUsing_sat_sound_proc_fiber`. -/
+theorem checkLang_sat_sound_proc_fiber
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
+    (hSat : checkLang rhoCalc I_check fuel p φf = .sat)
+    (seed : Pattern)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc
+        seed (sem (langReduces rhoCalc) I_sem φf))
+    {X : Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj rhoCalc)}
+    (hArrow :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc).obj X)
+    (hp : Mettapedia.OSLF.Framework.ConstructorCategory.pathSem rhoCalc hArrow seed = p) :
+    hArrow ∈
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc
+        seed (sem (langReduces rhoCalc) I_sem φf) hNat).obj X := by
+  simpa [checkLang, checkLangUsing, langReduces] using
+    (checkLangUsing_sat_sound_proc_fiber
+      (relEnv := RelationEnv.empty) (I_check := I_check) (I_sem := I_sem)
+      h_atoms hSat seed hNat hArrow hp)
+
+/-- Default-env wrapper of `checkLangUsing_sat_sound_proc_fiber_using`. -/
+theorem checkLang_sat_sound_proc_fiber_using
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
+    (hSat : checkLang rhoCalc I_check fuel p φf = .sat)
+    (seed : Pattern)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc
+        seed (sem (langReduces rhoCalc) I_sem φf))
+    {X : Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj rhoCalc)}
+    (hArrow :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        rhoCalc Mettapedia.OSLF.Framework.ConstructorCategory.rhoProc).obj X)
+    (hp : Mettapedia.OSLF.Framework.ConstructorCategory.pathSem rhoCalc hArrow seed = p) :
+    hArrow ∈
+      (Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred_to_languageSortFiber
+        seed (φ := sem (langReduces rhoCalc) I_sem φf) hNat).obj X := by
+  simpa [checkLang, checkLangUsing, langReduces] using
+    (checkLangUsing_sat_sound_proc_fiber_using
+      (relEnv := RelationEnv.empty) (I_check := I_check) (I_sem := I_sem)
+      h_atoms hSat seed hNat hArrow hp)
 
 /-- Checker soundness corollary in graph form for `◇` formulas.
 
@@ -679,6 +942,163 @@ theorem checkWithPred_sat_sound
         rw [List.mem_map]; exact ⟨q, hq_mem, rfl⟩
       have hq_check := hall _ hq_in_map
       exact ih hq_check
+
+/-! ## Language-Level Checker with Predecessors
+
+These wrappers connect the executable predecessor-aware checker to language
+semantics (`langReducesUsing`), enabling a non-trivial `.box` path. -/
+
+/-- Language-level predecessor-aware checker with explicit relation environment. -/
+def checkLangUsingWithPred (relEnv : RelationEnv) (lang : LanguageDef)
+    (pred : Pattern → List Pattern)
+    (I : AtomCheck) (fuel : Nat) (p : Pattern) (φ : OSLFFormula) : CheckResult :=
+  checkWithPred (rewriteWithContextWithPremisesUsing relEnv lang ·) pred I fuel p φ
+
+/-- Default-env predecessor-aware checker. -/
+def checkLangWithPred (lang : LanguageDef)
+    (pred : Pattern → List Pattern)
+    (I : AtomCheck) (fuel : Nat) (p : Pattern) (φ : OSLFFormula) : CheckResult :=
+  checkLangUsingWithPred RelationEnv.empty lang pred I fuel p φ
+
+/-- Soundness of predecessor-aware checker at language level. -/
+theorem checkLangUsingWithPred_sat_sound
+    {relEnv : RelationEnv} {lang : LanguageDef}
+    {pred : Pattern → List Pattern}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    (h_pred_complete : ∀ p q, langReducesUsing relEnv lang q p → q ∈ pred p)
+    {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
+    (h : checkLangUsingWithPred relEnv lang pred I_check fuel p φ = .sat) :
+    sem (langReducesUsing relEnv lang) I_sem φ p := by
+  simpa [checkLangUsingWithPred] using
+    (checkWithPred_sat_sound
+      (R := langReducesUsing relEnv lang)
+      (step := rewriteWithContextWithPremisesUsing relEnv lang)
+      (pred := pred)
+      (I_check := I_check) (I_sem := I_sem)
+      (h_atoms := h_atoms)
+      (h_step := fun p q hq => exec_to_langReducesUsing relEnv lang hq)
+      (h_pred := h_pred_complete)
+      (h := h))
+
+/-- Checker graph-soundness for executable `.box` via predecessor semantics.
+
+Unlike `checkLangUsing`, this route can actually produce `.sat` for `.box`
+when `pred` is complete for one-step predecessors. -/
+theorem checkLangUsingWithPred_sat_sound_graph_box
+    (C : Type _) [CategoryTheory.Category C]
+    {relEnv : RelationEnv} {lang : LanguageDef}
+    {pred : Pattern → List Pattern}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    (h_pred_complete : ∀ p q, langReducesUsing relEnv lang q p → q ∈ pred p)
+    {fuel : Nat} {p : Pattern} {φ : OSLFFormula} {X : Opposite C}
+    (h : checkLangUsingWithPred relEnv lang pred I_check fuel p (.box φ) = .sat) :
+    ∀ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+      (C := C) relEnv lang).Edge.obj X,
+      ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := C) relEnv lang).target.app X e).down = p →
+      sem (langReducesUsing relEnv lang) I_sem φ
+        (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).source.app X e).down) := by
+  have hsem : sem (langReducesUsing relEnv lang) I_sem (.box φ) p :=
+    checkLangUsingWithPred_sat_sound
+      (relEnv := relEnv) (lang := lang)
+      (pred := pred)
+      (I_check := I_check) (I_sem := I_sem)
+      h_atoms h_pred_complete h
+  have hgraph :
+      (fun p =>
+        ∀ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).Edge.obj X,
+          ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+            (C := C) relEnv lang).target.app X e).down = p →
+          sem (langReducesUsing relEnv lang) I_sem φ
+            (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := C) relEnv lang).source.app X e).down)) p := by
+    simpa [sem_box_eq_graphIncomingUsing (C := C) (relEnv := relEnv)
+      (lang := lang) (I := I_sem) (φ := φ) (X := X)] using hsem
+  exact hgraph
+
+/-- Checker graph-soundness for executable `.dia` over a packaged graph object.
+
+This keeps the checker-facing existence witness in the reusable
+`ReductionGraphObj` abstraction. -/
+theorem checkLangUsingWithPred_sat_sound_graphObj_dia
+    (C : Type _) [CategoryTheory.Category C]
+    {relEnv : RelationEnv} {lang : LanguageDef}
+    {pred : Pattern → List Pattern}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (G : Mettapedia.OSLF.Framework.ToposReduction.ReductionGraphObj C relEnv lang)
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    (h_pred_complete : ∀ p q, langReducesUsing relEnv lang q p → q ∈ pred p)
+    {fuel : Nat} {p : Pattern} {φ : OSLFFormula} {X : Opposite C}
+    (h : checkLangUsingWithPred relEnv lang pred I_check fuel p (.dia φ) = .sat) :
+    ∃ e : G.Edge.obj X,
+      (G.source.app X e).down = p ∧
+      sem (langReducesUsing relEnv lang) I_sem φ ((G.target.app X e).down) := by
+  have hsem : sem (langReducesUsing relEnv lang) I_sem (.dia φ) p :=
+    checkLangUsingWithPred_sat_sound
+      (relEnv := relEnv) (lang := lang)
+      (pred := pred)
+      (I_check := I_check) (I_sem := I_sem)
+      h_atoms h_pred_complete h
+  have hdia : langDiamondUsing relEnv lang
+      (sem (langReducesUsing relEnv lang) I_sem φ) p := by
+    simpa [sem_dia_eq_langDiamondUsing (relEnv := relEnv) (lang := lang)
+      (I := I_sem) (φ := φ)] using hsem
+  exact
+    (Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_graphObjStep
+      (C := C) (relEnv := relEnv) (lang := lang) (G := G) (X := X)
+      (φ := sem (langReducesUsing relEnv lang) I_sem φ) (p := p)).1 hdia
+
+/-- Checker graph-soundness for executable `.box` over a packaged graph object.
+
+This variant avoids committing to the concrete `reductionGraphUsing`; it
+consumes any `ReductionGraphObj` carrying the endpoint law. -/
+theorem checkLangUsingWithPred_sat_sound_graphObj_box
+    (C : Type _) [CategoryTheory.Category C]
+    {relEnv : RelationEnv} {lang : LanguageDef}
+    {pred : Pattern → List Pattern}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (G : Mettapedia.OSLF.Framework.ToposReduction.ReductionGraphObj C relEnv lang)
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    (h_pred_complete : ∀ p q, langReducesUsing relEnv lang q p → q ∈ pred p)
+    {fuel : Nat} {p : Pattern} {φ : OSLFFormula} {X : Opposite C}
+    (h : checkLangUsingWithPred relEnv lang pred I_check fuel p (.box φ) = .sat) :
+    ∀ e : G.Edge.obj X,
+      (G.target.app X e).down = p →
+      sem (langReducesUsing relEnv lang) I_sem φ
+        ((G.source.app X e).down) := by
+  have hsem : sem (langReducesUsing relEnv lang) I_sem (.box φ) p :=
+    checkLangUsingWithPred_sat_sound
+      (relEnv := relEnv) (lang := lang)
+      (pred := pred)
+      (I_check := I_check) (I_sem := I_sem)
+      h_atoms h_pred_complete h
+  have hbox : langBoxUsing relEnv lang (sem (langReducesUsing relEnv lang) I_sem φ) p := by
+    simpa [sem_box_eq_langBoxUsing (relEnv := relEnv) (lang := lang)
+      (I := I_sem) (φ := φ)] using hsem
+  exact
+    (Mettapedia.OSLF.Framework.ToposReduction.langBoxUsing_iff_forall_graphObjIncoming
+      (C := C) (relEnv := relEnv) (lang := lang) (G := G) (X := X)
+      (φ := sem (langReducesUsing relEnv lang) I_sem φ) (p := p)).1 hbox
+
+/-- Default-env predecessor-aware checker soundness. -/
+theorem checkLangWithPred_sat_sound
+    {lang : LanguageDef}
+    {pred : Pattern → List Pattern}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    (h_pred_complete : ∀ p q, langReduces lang q p → q ∈ pred p)
+    {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
+    (h : checkLangWithPred lang pred I_check fuel p φ = .sat) :
+    sem (langReduces lang) I_sem φ p := by
+  simpa [checkLangWithPred, checkLangUsingWithPred, langReduces] using
+    (checkLangUsingWithPred_sat_sound
+      (relEnv := RelationEnv.empty) (lang := lang)
+      (pred := pred) (I_check := I_check) (I_sem := I_sem)
+      h_atoms h_pred_complete h)
 
 /-! ## ρ-Calculus Instantiation -/
 

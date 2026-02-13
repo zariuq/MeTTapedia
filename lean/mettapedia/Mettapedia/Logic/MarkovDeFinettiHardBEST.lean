@@ -196,52 +196,37 @@ def empiricalParamStartTarget (hk : 0 < k) (s : MarkovState k) : MarkovParam k :
 
 lemma stepProb_empiricalParamStartTarget (hk : 0 < k) (s : MarkovState k) (a b : Fin k) :
     (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) a b : ℝ) =
-      if h : a = s.start then
+      if a = s.start then
         empiricalStepProbTarget (k := k) hk s.counts a b
       else
         empiricalStepProb (k := k) hk s.counts a b := by
-  classical
   by_cases h : a = s.start
   · -- target row
-    unfold stepProb empiricalParamStartTarget empiricalRowMeasureTarget
+    unfold stepProb empiricalParamStartTarget
     dsimp only []
-    simp [h]
-    have hsum :
-        (∑ x : Fin k,
-          (Set.singleton b).indicator
-            (fun x => (empiricalRowPMFTarget (k := k) hk s.counts s.start x)) x) =
-          empiricalRowPMFTarget (k := k) hk s.counts s.start b := by
-      classical
-      have hsum' :
-          (∑ x : Fin k,
-            (Set.singleton b).indicator
-              (fun x => (empiricalRowPMFTarget (k := k) hk s.counts s.start x)) x) =
-            (Set.singleton b).indicator
-              (fun x => (empiricalRowPMFTarget (k := k) hk s.counts s.start x)) b := by
-        refine Finset.sum_eq_single_of_mem b (Finset.mem_univ b) ?_
-        intro x hx hxb
-        by_cases hx' : x ∈ (Set.singleton b)
-        · have : x = b := by simpa [Set.mem_singleton_iff] using hx'
-          exact (hxb this).elim
-        · simp [Set.indicator, hx']
-      have hbmem : b ∈ (Set.singleton b) := by
-        simp
-      have hsum'' :
-          (Set.singleton b).indicator
-              (fun x => (empiricalRowPMFTarget (k := k) hk s.counts s.start x)) b =
-            empiricalRowPMFTarget (k := k) hk s.counts s.start b := by
-        simp [Set.indicator, hbmem]
-      exact hsum'.trans hsum''
-    rw [hsum]
-    have hpmf :
-        empiricalRowPMFTarget (k := k) hk s.counts s.start b =
-          ENNReal.ofReal (empiricalStepProbTarget (k := k) hk s.counts s.start b) := by
-      unfold empiricalRowPMFTarget
-      rfl
-    rw [hpmf]
+    have hrow :
+        (if h' : a = s.start then
+          empiricalRowMeasureTarget (k := k) hk s.counts a
+        else
+          empiricalRowMeasure (k := k) hk s.counts a) =
+          empiricalRowMeasureTarget (k := k) hk s.counts a := by
+      simp [h]
+    rw [hrow]
+    unfold empiricalRowMeasureTarget
+    rw [MeasureTheory.ProbabilityMeasure.mk_apply]
+    have hsingle :
+        (empiricalRowPMFTarget (k := k) hk s.counts a).toMeasure (Set.singleton b) =
+          empiricalRowPMFTarget (k := k) hk s.counts a b := by
+      exact PMF.toMeasure_apply_singleton
+        (p := empiricalRowPMFTarget (k := k) hk s.counts a)
+        (a := b)
+        (h := measurableSet_singleton b)
+    rw [hsingle]
+    simp only [empiricalRowPMFTarget, PMF.ofFinset_apply]
     rw [ENNReal.coe_toNNReal_eq_toReal]
-    exact ENNReal.toReal_ofReal
-      (empiricalStepProbTarget_nonneg (k := k) hk s.counts s.start b)
+    simpa [h] using
+      (ENNReal.toReal_ofReal
+        (empiricalStepProbTarget_nonneg (k := k) hk s.counts a b))
   · have hstep :
         (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) a b : ℝ) =
           (stepProb (k := k) (empiricalParam (k := k) hk s) a b : ℝ) := by
@@ -249,6 +234,7 @@ lemma stepProb_empiricalParamStartTarget (hk : 0 < k) (s : MarkovState k) (a b :
         simp [h]
     simpa [h, hstep] using
       (stepProb_empiricalParam (k := k) (hk := hk) (s := s) (a := a) (b := b))
+
 
 private lemma counts_le_rowTotal (c : TransCounts k) (prev next : Fin k) :
     c.counts prev next ≤ c.rowTotal prev := by
@@ -475,6 +461,96 @@ lemma abs_stepProb_empiricalParam_sub_startTarget_le_k_div_returnsToStart
   simpa [h1, h2] using
     (abs_empiricalStepProb_sub_target_le_k_div_returnsToStart_start
       (k := k) (hk := hk) (s := s) (hs := hs) (hRpos := hRpos) (next := next))
+
+/-- Start-row L1 kernel discrepancy between `empiricalParam` and `empiricalParamStartTarget`.
+
+This is the finite-alphabet summation of the pointwise `k / returnsToStart` bound. -/
+lemma sum_abs_stepProb_empiricalParam_sub_startTarget_start_le_k_sq_div_returnsToStart
+    (hk : 0 < k) {N : ℕ} {s : MarkovState k}
+    (hs : s ∈ stateFinset k N)
+    (hRpos : 0 < returnsToStart (k := k) s) :
+    (∑ next : Fin k,
+      |(stepProb (k := k) (empiricalParam (k := k) hk s) s.start next : ℝ) -
+        (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) s.start next : ℝ)|) ≤
+      ((k : ℝ) * (k : ℝ)) / (returnsToStart (k := k) s : ℝ) := by
+  have hpt :
+      ∀ next : Fin k,
+        |(stepProb (k := k) (empiricalParam (k := k) hk s) s.start next : ℝ) -
+          (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) s.start next : ℝ)| ≤
+        (k : ℝ) / (returnsToStart (k := k) s : ℝ) := by
+    intro next
+    exact
+      abs_stepProb_empiricalParam_sub_startTarget_le_k_div_returnsToStart
+        (k := k) (hk := hk) (s := s) (hs := hs) (hRpos := hRpos) (next := next)
+  calc
+    (∑ next : Fin k,
+      |(stepProb (k := k) (empiricalParam (k := k) hk s) s.start next : ℝ) -
+        (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) s.start next : ℝ)|)
+        ≤ ∑ _next : Fin k, (k : ℝ) / (returnsToStart (k := k) s : ℝ) := by
+          refine Finset.sum_le_sum ?_
+          intro next hnext
+          exact hpt next
+    _ = (k : ℝ) * ((k : ℝ) / (returnsToStart (k := k) s : ℝ)) := by
+          simp [Fintype.card_fin]
+    _ = ((k : ℝ) * (k : ℝ)) / (returnsToStart (k := k) s : ℝ) := by
+          ring
+
+/-- Outside the start row, `empiricalParamStartTarget` equals `empiricalParam`. -/
+lemma sum_abs_stepProb_empiricalParam_sub_startTarget_nonstart_eq_zero
+    (hk : 0 < k) {s : MarkovState k} {prev : Fin k}
+    (hprev : prev ≠ s.start) :
+    (∑ next : Fin k,
+      |(stepProb (k := k) (empiricalParam (k := k) hk s) prev next : ℝ) -
+        (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) prev next : ℝ)|) = 0 := by
+  refine Finset.sum_eq_zero ?_
+  intro next hnext
+  have hstepEq :
+      (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) prev next : ℝ) =
+        empiricalStepProb (k := k) hk s.counts prev next := by
+    have h :=
+      stepProb_empiricalParamStartTarget (k := k) (hk := hk) (s := s) (a := prev) (b := next)
+    simp [hprev, empiricalStepProb] at h
+    exact h
+  have hempEq :
+      (stepProb (k := k) (empiricalParam (k := k) hk s) prev next : ℝ) =
+        empiricalStepProb (k := k) hk s.counts prev next := by
+    simpa using
+      (stepProb_empiricalParam (k := k) (hk := hk) (s := s) (a := prev) (b := next))
+  have : (stepProb (k := k) (empiricalParam (k := k) hk s) prev next : ℝ) =
+      (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) prev next : ℝ) := by
+    simpa [hstepEq] using hempEq
+  simp [this]
+
+/-- Uniform rowwise L1 discrepancy bound for `empiricalParam` vs `empiricalParamStartTarget`.
+
+Only the start row contributes; non-start rows are exactly equal. -/
+lemma sum_abs_stepProb_empiricalParam_sub_startTarget_row_le_k_sq_div_returnsToStart
+    (hk : 0 < k) {N : ℕ} {s : MarkovState k}
+    (hs : s ∈ stateFinset k N)
+    (hRpos : 0 < returnsToStart (k := k) s)
+    (prev : Fin k) :
+    (∑ next : Fin k,
+      |(stepProb (k := k) (empiricalParam (k := k) hk s) prev next : ℝ) -
+        (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) prev next : ℝ)|) ≤
+      ((k : ℝ) * (k : ℝ)) / (returnsToStart (k := k) s : ℝ) := by
+  by_cases hprev : prev = s.start
+  · subst hprev
+    exact
+      sum_abs_stepProb_empiricalParam_sub_startTarget_start_le_k_sq_div_returnsToStart
+        (k := k) (hk := hk) (s := s) (hs := hs) (hRpos := hRpos)
+  · have hzero :
+      (∑ next : Fin k,
+        |(stepProb (k := k) (empiricalParam (k := k) hk s) prev next : ℝ) -
+          (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) prev next : ℝ)|) = 0 :=
+      sum_abs_stepProb_empiricalParam_sub_startTarget_nonstart_eq_zero
+        (k := k) (hk := hk) (s := s) (prev := prev) hprev
+    have hnonneg :
+        0 ≤ ((k : ℝ) * (k : ℝ)) / (returnsToStart (k := k) s : ℝ) := by
+      have hk_nonneg : 0 ≤ (k : ℝ) := by exact_mod_cast (Nat.zero_le k)
+      have hR_nonneg : 0 ≤ (returnsToStart (k := k) s : ℝ) := by
+        exact_mod_cast (Nat.zero_le (returnsToStart (k := k) s))
+      exact div_nonneg (mul_nonneg hk_nonneg hk_nonneg) hR_nonneg
+    simpa [hzero] using hnonneg
 
 /-- Lift a pointwise excursion-step bound to a product bound via
 `abs_excursionsProb_diff_le_length_mul_eps`. -/
@@ -4418,6 +4494,142 @@ lemma sum_abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass_le
     _ = Δ := by ring
     _ ≤ εW := hΔ_le
 
+
+/-- WR-side canonical surrogate mass bound from an excursion-level representation
+error (`δrepr`) plus a per-excursion product approximation error (`ε`). -/
+theorem wr_smoothing_bound_via_excursion_target
+    (hk : 0 < k) (n : ℕ) {N : ℕ} (hN : Nat.succ n ≤ N)
+    (e s : MarkovState k)
+    (elist pref : ExcursionList k)
+    (target : ExcursionType k → ℝ)
+    (δrepr ε : ℝ)
+    (hWrepr :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        excursionWithReplacementProb (k := k) elist pref| ≤ δrepr)
+    (hstep :
+      ∀ a ∈ pref, |empiricalExcursionProb (k := k) elist a - target a| ≤ ε)
+    (htarget_range :
+      ∀ a ∈ pref, 0 ≤ target a ∧ target a ≤ 1) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        canonicalWRSurrogateMass (k := k) n e
+          (excursionsProb (k := k) target pref) p| ≤
+      δrepr + (pref.length : ℝ) * ε := by
+  have hwr_target :
+      |excursionWithReplacementProb (k := k) elist pref -
+          excursionsProb (k := k) target pref| ≤
+        (pref.length : ℝ) * ε :=
+    abs_excursionWithReplacementProb_sub_excursionsProb_target_le_length_mul_eps
+      (k := k) (elist := elist) (pref := pref) (target := target) (ε := ε)
+      hstep htarget_range
+  have hWsurrogate :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+          excursionsProb (k := k) target pref| ≤
+        δrepr + (pref.length : ℝ) * ε := by
+    have htri :=
+      abs_sub_le
+        ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal)
+        (excursionWithReplacementProb (k := k) elist pref)
+        (excursionsProb (k := k) target pref)
+    linarith
+  exact
+    sum_abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass_le
+      (k := k) (hk := hk) (n := n) (hN := hN) (e := e) (s := s)
+      (wSurrogate := excursionsProb (k := k) target pref)
+      (εW := δrepr + (pref.length : ℝ) * ε)
+      hWsurrogate
+
+/-- Scalar WR-side smoothing rate relative to an excursion target law, in explicit
+`O(1 / returnsToStart)` form. -/
+theorem wr_scalar_smoothing_rate_via_excursion_target
+    (hk : 0 < k) (n : ℕ)
+    (e s : MarkovState k)
+    (elist pref : ExcursionList k)
+    (target : ExcursionType k → ℝ)
+    (Crepr Cstep : ℝ)
+    (hWreprRate :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        excursionWithReplacementProb (k := k) elist pref| ≤
+          Crepr / (returnsToStart (k := k) s : ℝ))
+    (hstepRate :
+      ∀ a ∈ pref, |empiricalExcursionProb (k := k) elist a - target a| ≤
+        Cstep / (returnsToStart (k := k) s : ℝ))
+    (htarget_range :
+      ∀ a ∈ pref, 0 ≤ target a ∧ target a ≤ 1) :
+    |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+      excursionsProb (k := k) target pref| ≤
+      (Crepr + (pref.length : ℝ) * Cstep) / (returnsToStart (k := k) s : ℝ) := by
+  have hwr_target :
+      |excursionWithReplacementProb (k := k) elist pref -
+          excursionsProb (k := k) target pref| ≤
+        (pref.length : ℝ) * (Cstep / (returnsToStart (k := k) s : ℝ)) :=
+    abs_excursionWithReplacementProb_sub_excursionsProb_target_le_length_mul_eps
+      (k := k) (elist := elist) (pref := pref) (target := target)
+      (ε := Cstep / (returnsToStart (k := k) s : ℝ))
+      hstepRate htarget_range
+  have hsum :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+          excursionsProb (k := k) target pref| ≤
+        Crepr / (returnsToStart (k := k) s : ℝ) +
+          (pref.length : ℝ) * (Cstep / (returnsToStart (k := k) s : ℝ)) := by
+    have htri :=
+      abs_sub_le
+        ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal)
+        (excursionWithReplacementProb (k := k) elist pref)
+        (excursionsProb (k := k) target pref)
+    linarith
+  have hsplit :
+      Crepr / (returnsToStart (k := k) s : ℝ) +
+          (pref.length : ℝ) * (Cstep / (returnsToStart (k := k) s : ℝ)) =
+        (Crepr + (pref.length : ℝ) * Cstep) / (returnsToStart (k := k) s : ℝ) := by
+    calc
+      Crepr / (returnsToStart (k := k) s : ℝ) +
+          (pref.length : ℝ) * (Cstep / (returnsToStart (k := k) s : ℝ))
+          =
+        Crepr / (returnsToStart (k := k) s : ℝ) +
+          ((pref.length : ℝ) * Cstep) / (returnsToStart (k := k) s : ℝ) := by ring
+      _ =
+        (Crepr + (pref.length : ℝ) * Cstep) / (returnsToStart (k := k) s : ℝ) := by
+          rw [← add_div]
+  simpa [hsplit] using hsum
+
+/-- Pattern-mass WR smoothing rate relative to the canonical surrogate built from
+an excursion target law, in explicit `O(1 / returnsToStart)` form. -/
+theorem wr_pattern_smoothing_rate_via_excursion_target
+    (hk : 0 < k) (n : ℕ) {N : ℕ} (hN : Nat.succ n ≤ N)
+    (e s : MarkovState k)
+    (elist pref : ExcursionList k)
+    (target : ExcursionType k → ℝ)
+    (Crepr Cstep : ℝ)
+    (hWreprRate :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        excursionWithReplacementProb (k := k) elist pref| ≤
+          Crepr / (returnsToStart (k := k) s : ℝ))
+    (hstepRate :
+      ∀ a ∈ pref, |empiricalExcursionProb (k := k) elist a - target a| ≤
+        Cstep / (returnsToStart (k := k) s : ℝ))
+    (htarget_range :
+      ∀ a ∈ pref, 0 ≤ target a ∧ target a ≤ 1) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        canonicalWRSurrogateMass (k := k) n e
+          (excursionsProb (k := k) target pref) p| ≤
+      (Crepr + (pref.length : ℝ) * Cstep) / (returnsToStart (k := k) s : ℝ) := by
+  have hWsurrogate :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        excursionsProb (k := k) target pref| ≤
+      (Crepr + (pref.length : ℝ) * Cstep) / (returnsToStart (k := k) s : ℝ) :=
+    wr_scalar_smoothing_rate_via_excursion_target
+      (k := k) (hk := hk) (n := n) (e := e) (s := s)
+      (elist := elist) (pref := pref) (target := target)
+      (Crepr := Crepr) (Cstep := Cstep)
+      hWreprRate hstepRate htarget_range
+  exact
+    sum_abs_wrPatternMass_toReal_sub_canonicalWRSurrogateMass_le
+      (k := k) (hk := hk) (n := n) (hN := hN) (e := e) (s := s)
+      (wSurrogate := excursionsProb (k := k) target pref)
+      (εW := (Crepr + (pref.length : ℝ) * Cstep) / (returnsToStart (k := k) s : ℝ))
+      hWsurrogate
 lemma abs_wr_wor_patternMass_toReal_eq_abs_ratio_form
     {n N : ℕ} (hk : 0 < k) (hN : Nat.succ n ≤ N) (e s : MarkovState k)
     (hs : s ∈ stateFinset k N) (p : ExcursionList k) :
@@ -7053,6 +7265,13 @@ lemma returnsToStart_e : returnsToStart (k := k0) e = 2 := by
 lemma returnsToStart_s : returnsToStart (k := k0) s = 3 := by
   native_decide
 
+lemma prefixExcursionCount_traj0000 :
+    prefixExcursionCount (k := k0) hN0 traj0000 = 2 := by
+  native_decide
+
+lemma short_fiber_card : (fiber k0 (Nat.succ n0) e).card = 1 := by
+  native_decide
+
 lemma empiricalStepProb_00 :
     empiricalStepProb (k := k0) hk0 s.counts 0 0 = (4 / 5 : ℝ) := by
   have hcounts00 : s.counts.counts 0 0 = 3 := by
@@ -7099,6 +7318,150 @@ lemma wordProb_traj000 :
   simp [wordProb, wordProbNN, wordProbAux, hlist,
     initProb_empiricalParam_start, stepProb_empiricalParam_00,
     pow_two, mul_comm]
+
+/-- Tiny-model scalar sanity check: exact `W` value in the `k=2,n=1,N=3`
+constant-trajectory example. -/
+lemma W_toReal_tiny_example :
+    (W (k := k0) (Nat.succ n0) e (empiricalParam (k := k0) hk0 s)).toReal =
+      (4 / 5 : ℝ) ^ 2 := by
+  have hW :=
+    W_eq_card_mul_wordProb_of_mem_fiber
+      (k := k0) (N := Nat.succ n0)
+      (θ := empiricalParam (k := k0) hk0 s) (s := e)
+      traj000 traj000_mem_fiber
+  have hW' :
+      (W (k := k0) (Nat.succ n0) e (empiricalParam (k := k0) hk0 s)).toReal =
+        ((fiber k0 (Nat.succ n0) e).card : ENNReal).toReal *
+          (wordProb (k := k0) (empiricalParam (k := k0) hk0 s)
+            (trajToList (k := k0) traj000)).toReal := by
+    simpa [ENNReal.toReal_mul] using congrArg ENNReal.toReal hW
+  calc
+    (W (k := k0) (Nat.succ n0) e (empiricalParam (k := k0) hk0 s)).toReal
+        = ((fiber k0 (Nat.succ n0) e).card : ENNReal).toReal *
+            (wordProb (k := k0) (empiricalParam (k := k0) hk0 s)
+              (trajToList (k := k0) traj000)).toReal := hW'
+    _ = (1 : ℝ) * (4 / 5 : ℝ) ^ 2 := by
+          simp [short_fiber_card, wordProb_traj000]
+    _ = (4 / 5 : ℝ) ^ 2 := by ring
+
+/-- Tiny-model scalar sanity check: the WR scalar gap to surrogate `1` is
+`9/25` at `R=3`, so any global `Cw / R` bound needs `Cw ≥ 27/25` for this
+instance. -/
+lemma W_gap_to_one_tiny_example :
+    |(W (k := k0) (Nat.succ n0) e (empiricalParam (k := k0) hk0 s)).toReal - 1| =
+      (9 / 25 : ℝ) := by
+  rw [W_toReal_tiny_example]
+  norm_num
+
+lemma W_gap_times_R_tiny_example :
+    (returnsToStart (k := k0) s : ℝ) *
+      |(W (k := k0) (Nat.succ n0) e (empiricalParam (k := k0) hk0 s)).toReal - 1| =
+      (27 / 25 : ℝ) := by
+  rw [W_gap_to_one_tiny_example, returnsToStart_s]
+  norm_num
+
+/-- In the tiny counterexample state, the empty-prefix WR excursion surrogate is `1`. -/
+lemma excursionWithReplacementProb_empty_tiny :
+    excursionWithReplacementProb (k := k0)
+      (excursionListOfTraj (k := k0) traj0000) ([] : ExcursionList k0) = 1 := by
+  simp [excursionWithReplacementProb, wrProb]
+
+/-- Tiny-model WR representation-rate witness with explicit constant `Crepr = 27/25`
+against the empty-prefix excursion surrogate. -/
+lemma tiny_wr_repr_rate_to_empty_prefix :
+    |(W (k := k0) (Nat.succ n0) e (empiricalParam (k := k0) hk0 s)).toReal -
+      excursionWithReplacementProb (k := k0)
+        (excursionListOfTraj (k := k0) traj0000) ([] : ExcursionList k0)| ≤
+      (27 / 25 : ℝ) / (returnsToStart (k := k0) s : ℝ) := by
+  rw [excursionWithReplacementProb_empty_tiny, W_gap_to_one_tiny_example, returnsToStart_s]
+  norm_num
+
+/-- Sharp lower bound check: for the empty-prefix surrogate in this tiny state,
+any bound of the form `|W - surrogate| ≤ Cw / R` forces `Cw ≥ 27/25`. -/
+lemma tiny_Cw_lower_bound_for_empty_prefix
+    {Cw : ℝ}
+    (hbound :
+      |(W (k := k0) (Nat.succ n0) e (empiricalParam (k := k0) hk0 s)).toReal -
+          excursionWithReplacementProb (k := k0)
+            (excursionListOfTraj (k := k0) traj0000) ([] : ExcursionList k0)| ≤
+        Cw / (returnsToStart (k := k0) s : ℝ)) :
+    (27 / 25 : ℝ) ≤ Cw := by
+  rw [excursionWithReplacementProb_empty_tiny, W_gap_to_one_tiny_example, returnsToStart_s] at hbound
+  have hmult : (27 / 25 : ℝ) ≤ Cw := by
+    have : (9 / 25 : ℝ) ≤ Cw / 3 := by simpa using hbound
+    nlinarith
+  exact hmult
+
+/-- Two-layer constructive witness (statewise, fixed tiny instance):
+choose `pref = []`, `target = empiricalExcursionProb`, `Crepr = 27/25`, `Cstep = 0`. -/
+lemma tiny_excursion_target_statewise_witness :
+    ∃ elist pref : ExcursionList k0,
+      ∃ target : ExcursionType k0 → ℝ,
+        ∃ Crepr Cstep : ℝ,
+          |(W (k := k0) (Nat.succ n0) e (empiricalParam (k := k0) hk0 s)).toReal -
+            excursionWithReplacementProb (k := k0) elist pref| ≤
+              Crepr / (returnsToStart (k := k0) s : ℝ) ∧
+          (∀ a ∈ pref,
+            |empiricalExcursionProb (k := k0) elist a - target a| ≤
+              Cstep / (returnsToStart (k := k0) s : ℝ)) ∧
+          (∀ a ∈ pref, 0 ≤ target a ∧ target a ≤ 1) ∧
+          Crepr + (pref.length : ℝ) * Cstep ≤ (27 / 25 : ℝ) := by
+  refine ⟨excursionListOfTraj (k := k0) traj0000, [], ?_, (27 / 25 : ℝ), 0, ?_, ?_, ?_, ?_⟩
+  · exact empiricalExcursionProb (k := k0) (excursionListOfTraj (k := k0) traj0000)
+  · simpa using tiny_wr_repr_rate_to_empty_prefix
+  · intro a ha
+    cases ha
+  · intro a ha
+    cases ha
+  · norm_num
+
+/-- Nontrivial WR-side pattern-mass smoothing bound in the tiny instance,
+derived from `wr_pattern_smoothing_rate_via_excursion_target`. -/
+lemma tiny_wr_pattern_smoothing_rate :
+    ∑ p' ∈ excursionPatternSet (k := k0) (hN := hN0) e s,
+      |(wrPatternMass (k := k0) hk0 n0 e s p').toReal -
+        canonicalWRSurrogateMass (k := k0) n0 e
+          (excursionsProb (k := k0)
+            (empiricalExcursionProb (k := k0) (excursionListOfTraj (k := k0) traj0000))
+            ([] : ExcursionList k0)) p'| ≤
+      (27 / 25 : ℝ) / (returnsToStart (k := k0) s : ℝ) := by
+  have hstepRate :
+      ∀ a ∈ ([] : ExcursionList k0),
+        |empiricalExcursionProb (k := k0) (excursionListOfTraj (k := k0) traj0000) a -
+          empiricalExcursionProb (k := k0) (excursionListOfTraj (k := k0) traj0000) a| ≤
+          (0 : ℝ) / (returnsToStart (k := k0) s : ℝ) := by
+    intro a ha
+    cases ha
+  have htarget_range :
+      ∀ a ∈ ([] : ExcursionList k0),
+        0 ≤ empiricalExcursionProb (k := k0) (excursionListOfTraj (k := k0) traj0000) a ∧
+          empiricalExcursionProb (k := k0) (excursionListOfTraj (k := k0) traj0000) a ≤ 1 := by
+    intro a ha
+    cases ha
+  simpa using
+    wr_pattern_smoothing_rate_via_excursion_target
+      (k := k0) (hk := hk0) (n := n0) (hN := hN0) (e := e) (s := s)
+      (elist := excursionListOfTraj (k := k0) traj0000)
+      (pref := ([] : ExcursionList k0))
+      (target := empiricalExcursionProb (k := k0) (excursionListOfTraj (k := k0) traj0000))
+      (Crepr := (27 / 25 : ℝ)) (Cstep := 0)
+      tiny_wr_repr_rate_to_empty_prefix hstepRate htarget_range
+
+lemma tiny_wr_pattern_smoothing_rate_numeric :
+    ∑ p' ∈ excursionPatternSet (k := k0) (hN := hN0) e s,
+      |(wrPatternMass (k := k0) hk0 n0 e s p').toReal -
+        canonicalWRSurrogateMass (k := k0) n0 e
+          (excursionsProb (k := k0)
+            (empiricalExcursionProb (k := k0) (excursionListOfTraj (k := k0) traj0000))
+            ([] : ExcursionList k0)) p'| ≤
+      (9 / 25 : ℝ) := by
+  have hdiv :
+      (27 / 25 : ℝ) / (returnsToStart (k := k0) s : ℝ) = (9 / 25 : ℝ) := by
+    rw [returnsToStart_s]
+    norm_num
+  have h := tiny_wr_pattern_smoothing_rate
+  rw [hdiv] at h
+  exact h
 
 /--
 Counterexample to the WR half of `hwr_hwor_bridge_counts` at

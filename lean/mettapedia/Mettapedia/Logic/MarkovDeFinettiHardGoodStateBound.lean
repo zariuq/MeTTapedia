@@ -216,6 +216,861 @@ def HasCanonicalWORTransportRate
                   (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤ εPC) ∧
               εPC ≤ Cpc / (returnsToStart (k := k) s : ℝ)
 
+/--
+Statewise WR representation-rate witness via a concrete long-fiber trajectory family.
+
+This is the constructive witness shape consumed by
+`hasCanonicalWRSmoothingRate_of_fiber_trajectory_family`.
+-/
+def HasFiberTrajectoryWRReprRate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      0 < returnsToStart (k := k) s →
+        ∃ xs : Traj k N, xs ∈ fiber k N s ∧
+          |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+            excursionWithReplacementProb (k := k)
+              (excursionListOfTraj (k := k) xs)
+              ((excursionListOfTraj (k := k) xs).take
+                (prefixExcursionCount (k := k) hN xs))| ≤
+            Cw / (returnsToStart (k := k) s : ℝ)
+
+/--
+Scalar WR crux shape: statewise `O(1 / returnsToStart)` closeness of
+`W(empiricalParam)` to `W(empiricalParamStartTarget)`.
+-/
+def HasStatewiseStartTargetWClose
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ) : Prop :=
+  ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      0 < returnsToStart (k := k) s →
+        |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+          (W (k := k) (Nat.succ n) e (empiricalParamStartTarget (k := k) hk s)).toReal| ≤
+            Cw / (returnsToStart (k := k) s : ℝ)
+
+/-- Expand `W.toReal` into a finite real-valued sum over the evidence fiber. -/
+private lemma W_toReal_eq_sum_wordProb_toReal
+    (n : ℕ) (e : MarkovState k) (θ : MarkovParam k) :
+    (W (k := k) n e θ).toReal =
+      ∑ xs ∈ (trajFinset k n).filter (fun xs => stateOfTraj (k := k) xs = e),
+        (wordProb (k := k) θ (trajToList (k := k) xs)).toReal := by
+  classical
+  unfold W
+  refine ENNReal.toReal_sum ?_
+  intro xs hx
+  simpa [wordProb]
+
+/-- `W.toReal` expansion specialized to `empiricalParam`. -/
+private lemma W_toReal_eq_sum_wordProb_toReal_empiricalParam
+    (hk : 0 < k) (n : ℕ) (e s : MarkovState k) :
+    (W (k := k) n e (empiricalParam (k := k) hk s)).toReal =
+      ∑ xs ∈ (trajFinset k n).filter (fun xs => stateOfTraj (k := k) xs = e),
+        (wordProb (k := k) (empiricalParam (k := k) hk s) (trajToList (k := k) xs)).toReal := by
+  simpa using
+    (W_toReal_eq_sum_wordProb_toReal (k := k) (n := n) (e := e)
+      (θ := empiricalParam (k := k) hk s))
+
+/-- `W.toReal` expansion specialized to `empiricalParamStartTarget`. -/
+private lemma W_toReal_eq_sum_wordProb_toReal_empiricalParamStartTarget
+    (hk : 0 < k) (n : ℕ) (e s : MarkovState k) :
+    (W (k := k) n e (empiricalParamStartTarget (k := k) hk s)).toReal =
+      ∑ xs ∈ (trajFinset k n).filter (fun xs => stateOfTraj (k := k) xs = e),
+        (wordProb (k := k) (empiricalParamStartTarget (k := k) hk s)
+          (trajToList (k := k) xs)).toReal := by
+  simpa using
+    (W_toReal_eq_sum_wordProb_toReal (k := k) (n := n) (e := e)
+      (θ := empiricalParamStartTarget (k := k) hk s))
+
+/-- Transition probability masses are in `[0, 1]` after casting to `ℝ`. -/
+private lemma stepProb_toReal_nonneg (θ : MarkovParam k) (a b : Fin k) :
+    0 ≤ (stepProb (k := k) θ a b : ℝ) := by
+  positivity
+
+/-- Transition probability masses are in `[0, 1]` after casting to `ℝ`. -/
+private lemma stepProb_toReal_le_one (θ : MarkovParam k) (a b : Fin k) :
+    (stepProb (k := k) θ a b : ℝ) ≤ 1 := by
+  have hmonoENN : ((stepProb (k := k) θ a b : ENNReal) ≤ (1 : ENNReal)) := by
+    unfold stepProb
+    have hsubset : (Set.singleton b : Set (Fin k)) ⊆ Set.univ := by
+      intro x hx
+      simp
+    have hle :
+        ((θ.trans a : MeasureTheory.Measure (Fin k)) (Set.singleton b)) ≤
+          ((θ.trans a : MeasureTheory.Measure (Fin k)) Set.univ) :=
+      MeasureTheory.measure_mono hsubset
+    simpa using hle
+  exact_mod_cast hmonoENN
+
+/-- Finite singleton partition of a probability measure sums to `1`. -/
+private lemma sum_singleton_eq_one (μ0 : MeasureTheory.ProbabilityMeasure (Fin k)) :
+    (∑ a : Fin k, μ0 (Set.singleton a)) = 1 := by
+  classical
+  let μ : Measure (Fin k) := (μ0 : Measure (Fin k))
+  have hsum0 :
+      (∑ a ∈ (Finset.univ : Finset (Fin k)), μ (Set.singleton a)) =
+        μ (Finset.univ : Finset (Fin k)) :=
+    (MeasureTheory.sum_measure_singleton (μ := μ) (s := (Finset.univ : Finset (Fin k))))
+  have hsum :
+      (∑ a : Fin k, μ (Set.singleton a)) = μ Set.univ := by
+    simpa [μ, Finset.coe_univ] using hsum0
+  have hμuniv : μ Set.univ = 1 := by
+    simp [μ]
+  have hsum1 : (∑ a : Fin k, μ (Set.singleton a)) = (1 : ENNReal) := by
+    simpa [hμuniv] using hsum
+  have hf :
+      ∀ a ∈ (Finset.univ : Finset (Fin k)), μ (Set.singleton a) ≠ (⊤ : ENNReal) := by
+    intro a ha
+    simp [μ]
+  have htoNN :
+      ENNReal.toNNReal (∑ a : Fin k, μ (Set.singleton a)) =
+        ∑ a : Fin k, ENNReal.toNNReal (μ (Set.singleton a)) := by
+    simpa using
+      (ENNReal.toNNReal_sum (s := (Finset.univ : Finset (Fin k)))
+        (f := fun a : Fin k => μ (Set.singleton a)) hf)
+  have hpm :
+      (∑ a : Fin k, μ0 (Set.singleton a)) =
+        ∑ a : Fin k, ENNReal.toNNReal (μ (Set.singleton a)) := by
+    simp [MeasureTheory.ProbabilityMeasure.coeFn_def, μ]
+  calc
+    (∑ a : Fin k, μ0 (Set.singleton a))
+        = ∑ a : Fin k, ENNReal.toNNReal (μ (Set.singleton a)) := hpm
+    _ = ENNReal.toNNReal (∑ a : Fin k, μ (Set.singleton a)) := by
+          exact htoNN.symm
+    _ = ENNReal.toNNReal (1 : ENNReal) := by
+          simp [hsum1]
+    _ = 1 := by simp
+
+/-- Transition rows sum to one after casting to `ℝ`. -/
+private lemma sum_stepProb_toReal_eq_one (θ : MarkovParam k) (prev : Fin k) :
+    (∑ next : Fin k, (stepProb (k := k) θ prev next : ℝ)) = 1 := by
+  have hnn : (∑ next : Fin k, stepProb (k := k) θ prev next) = 1 := by
+    simpa [stepProb] using sum_singleton_eq_one (k := k) (μ0 := θ.trans prev)
+  exact_mod_cast hnn
+
+/-- Initial masses are in `[0, 1]` after casting to `ℝ`. -/
+private lemma initProb_toReal_nonneg (θ : MarkovParam k) (a : Fin k) :
+    0 ≤ (initProb (k := k) θ a : ℝ) := by
+  positivity
+
+/-- Initial masses are in `[0, 1]` after casting to `ℝ`. -/
+private lemma initProb_toReal_le_one (θ : MarkovParam k) (a : Fin k) :
+    (initProb (k := k) θ a : ℝ) ≤ 1 := by
+  have hmonoENN : ((initProb (k := k) θ a : ENNReal) ≤ (1 : ENNReal)) := by
+    unfold initProb
+    have hsubset : (Set.singleton a : Set (Fin k)) ⊆ Set.univ := by
+      intro x hx
+      simp
+    have hle :
+        ((θ.init : MeasureTheory.Measure (Fin k)) (Set.singleton a)) ≤
+          ((θ.init : MeasureTheory.Measure (Fin k)) Set.univ) :=
+      MeasureTheory.measure_mono hsubset
+    simpa using hle
+  exact_mod_cast hmonoENN
+
+/-- Tail Markov word-probability factors are nonnegative after casting to `ℝ`. -/
+private lemma wordProbAux_toReal_nonneg (θ : MarkovParam k) (prev : Fin k) :
+    ∀ xs : List (Fin k), 0 ≤ (wordProbAux (k := k) θ prev xs : ℝ) := by
+  intro xs
+  induction xs generalizing prev with
+  | nil =>
+      simp [wordProbAux]
+  | cons b xs ih =>
+      have hstep_nonneg : 0 ≤ (stepProb (k := k) θ prev b : ℝ) :=
+        stepProb_toReal_nonneg (k := k) θ prev b
+      have htail_nonneg : 0 ≤ (wordProbAux (k := k) θ b xs : ℝ) := ih (prev := b)
+      simpa [wordProbAux] using mul_nonneg hstep_nonneg htail_nonneg
+
+/-- Tail Markov word-probability factors are at most `1` after casting to `ℝ`. -/
+private lemma wordProbAux_toReal_le_one (θ : MarkovParam k) (prev : Fin k) :
+    ∀ xs : List (Fin k), (wordProbAux (k := k) θ prev xs : ℝ) ≤ 1 := by
+  intro xs
+  induction xs generalizing prev with
+  | nil =>
+      simp [wordProbAux]
+  | cons b xs ih =>
+      have hstep_nonneg : 0 ≤ (stepProb (k := k) θ prev b : ℝ) :=
+        stepProb_toReal_nonneg (k := k) θ prev b
+      have hstep_le : (stepProb (k := k) θ prev b : ℝ) ≤ 1 :=
+        stepProb_toReal_le_one (k := k) θ prev b
+      have htail_nonneg : 0 ≤ (wordProbAux (k := k) θ b xs : ℝ) :=
+        wordProbAux_toReal_nonneg (k := k) θ b xs
+      have htail_le : (wordProbAux (k := k) θ b xs : ℝ) ≤ 1 := ih (prev := b)
+      have hmul_le_one :
+          (stepProb (k := k) θ prev b : ℝ) *
+            (wordProbAux (k := k) θ b xs : ℝ) ≤ 1 := by
+        nlinarith
+      simpa [wordProbAux] using hmul_le_one
+
+/-- Pointwise step discrepancy between `empiricalParam` and `empiricalParamStartTarget`.
+Outside the start row this is exactly `0`; at the start row it is `O(k / R)`. -/
+private lemma abs_stepProb_empiricalParam_sub_startTarget_any_le_k_div_returnsToStart
+    (hk : 0 < k) {N : ℕ} {s : MarkovState k}
+    (hs : s ∈ stateFinset k N)
+    (hRpos : 0 < returnsToStart (k := k) s)
+    (prev next : Fin k) :
+    |(stepProb (k := k) (empiricalParam (k := k) hk s) prev next : ℝ) -
+        (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) prev next : ℝ)| ≤
+      (k : ℝ) / (returnsToStart (k := k) s : ℝ) := by
+  by_cases hprev : prev = s.start
+  · subst hprev
+    simpa using
+      (abs_stepProb_empiricalParam_sub_startTarget_le_k_div_returnsToStart
+        (k := k) (hk := hk) (s := s) (hs := hs) (hRpos := hRpos) (next := next))
+  · have hstepEq :
+        (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) prev next : ℝ) =
+          empiricalStepProb (k := k) hk s.counts prev next := by
+      have h :=
+        stepProb_empiricalParamStartTarget (k := k) (hk := hk) (s := s) (a := prev) (b := next)
+      simp [hprev, empiricalStepProb] at h
+      exact h
+    have hempEq :
+        (stepProb (k := k) (empiricalParam (k := k) hk s) prev next : ℝ) =
+          empiricalStepProb (k := k) hk s.counts prev next := by
+      simpa using
+        (stepProb_empiricalParam (k := k) (hk := hk) (s := s) (a := prev) (b := next))
+    have heq :
+        (stepProb (k := k) (empiricalParam (k := k) hk s) prev next : ℝ) =
+          (stepProb (k := k) (empiricalParamStartTarget (k := k) hk s) prev next : ℝ) := by
+      simpa [hstepEq] using hempEq
+    have hbound_nonneg :
+        0 ≤ (k : ℝ) / (returnsToStart (k := k) s : ℝ) := by
+      have hk_nonneg : 0 ≤ (k : ℝ) := by exact_mod_cast (Nat.zero_le k)
+      have hR_nonneg : 0 ≤ (returnsToStart (k := k) s : ℝ) := by
+        exact_mod_cast (Nat.zero_le (returnsToStart (k := k) s))
+      exact div_nonneg hk_nonneg hR_nonneg
+    simpa [heq] using hbound_nonneg
+
+/-- Trajectory-level auxiliary recursion bound:
+per-step discrepancy `O(k / R)` lifts linearly in list length. -/
+private lemma abs_wordProbAux_empiricalParam_sub_startTarget_le_length_mul
+    (hk : 0 < k) {N : ℕ} {s : MarkovState k}
+    (hs : s ∈ stateFinset k N)
+    (hRpos : 0 < returnsToStart (k := k) s) :
+    ∀ prev : Fin k, ∀ xs : List (Fin k),
+      |(wordProbAux (k := k) (empiricalParam (k := k) hk s) prev xs : ℝ) -
+          (wordProbAux (k := k) (empiricalParamStartTarget (k := k) hk s) prev xs : ℝ)| ≤
+        (xs.length : ℝ) * ((k : ℝ) / (returnsToStart (k := k) s : ℝ)) := by
+  intro prev xs
+  induction xs generalizing prev with
+  | nil =>
+      simp [wordProbAux]
+  | cons b xs ih =>
+      let θ₁ : MarkovParam k := empiricalParam (k := k) hk s
+      let θ₂ : MarkovParam k := empiricalParamStartTarget (k := k) hk s
+      let ε : ℝ := (k : ℝ) / (returnsToStart (k := k) s : ℝ)
+      have hstep :
+          |(stepProb (k := k) θ₁ prev b : ℝ) -
+              (stepProb (k := k) θ₂ prev b : ℝ)| ≤ ε := by
+        simpa [θ₁, θ₂, ε] using
+          (abs_stepProb_empiricalParam_sub_startTarget_any_le_k_div_returnsToStart
+            (k := k) (hk := hk) (s := s) (hs := hs) (hRpos := hRpos) (prev := prev) (next := b))
+      have htail :
+          |(wordProbAux (k := k) θ₁ b xs : ℝ) -
+              (wordProbAux (k := k) θ₂ b xs : ℝ)| ≤ (xs.length : ℝ) * ε := by
+        simpa [θ₁, θ₂, ε] using ih (prev := b)
+      have haux1_nonneg : 0 ≤ (wordProbAux (k := k) θ₁ b xs : ℝ) :=
+        wordProbAux_toReal_nonneg (k := k) θ₁ b xs
+      have haux1_le_one : (wordProbAux (k := k) θ₁ b xs : ℝ) ≤ 1 :=
+        wordProbAux_toReal_le_one (k := k) θ₁ b xs
+      have hstep2_nonneg : 0 ≤ (stepProb (k := k) θ₂ prev b : ℝ) :=
+        stepProb_toReal_nonneg (k := k) θ₂ prev b
+      have hstep2_le_one : (stepProb (k := k) θ₂ prev b : ℝ) ≤ 1 :=
+        stepProb_toReal_le_one (k := k) θ₂ prev b
+      have htri :
+          |(stepProb (k := k) θ₁ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ) -
+              (stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₂ b xs : ℝ)| ≤
+            |(stepProb (k := k) θ₁ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ) -
+              (stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ)| +
+            |(stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ) -
+              (stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₂ b xs : ℝ)| := by
+        simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using
+          (abs_sub_le
+            ((stepProb (k := k) θ₁ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ))
+            ((stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ))
+            ((stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₂ b xs : ℝ)))
+      have hfirst :
+          |(stepProb (k := k) θ₁ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ) -
+              (stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ)| ≤ ε := by
+        calc
+          |(stepProb (k := k) θ₁ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ) -
+              (stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ)|
+              = |((stepProb (k := k) θ₁ prev b : ℝ) -
+                    (stepProb (k := k) θ₂ prev b : ℝ)) *
+                  (wordProbAux (k := k) θ₁ b xs : ℝ)| := by ring_nf
+          _ = |((stepProb (k := k) θ₁ prev b : ℝ) -
+                  (stepProb (k := k) θ₂ prev b : ℝ))| *
+                |(wordProbAux (k := k) θ₁ b xs : ℝ)| := by rw [abs_mul]
+          _ = |((stepProb (k := k) θ₁ prev b : ℝ) -
+                  (stepProb (k := k) θ₂ prev b : ℝ))| *
+                (wordProbAux (k := k) θ₁ b xs : ℝ) := by
+                  rw [abs_of_nonneg haux1_nonneg]
+          _ ≤ ε * 1 := by gcongr
+          _ = ε := by ring
+      have hsecond :
+          |(stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ) -
+              (stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₂ b xs : ℝ)| ≤
+            (xs.length : ℝ) * ε := by
+        calc
+          |(stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ) -
+              (stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₂ b xs : ℝ)|
+              = |(stepProb (k := k) θ₂ prev b : ℝ) *
+                  ((wordProbAux (k := k) θ₁ b xs : ℝ) -
+                    (wordProbAux (k := k) θ₂ b xs : ℝ))| := by ring_nf
+          _ = |(stepProb (k := k) θ₂ prev b : ℝ)| *
+                |(wordProbAux (k := k) θ₁ b xs : ℝ) -
+                  (wordProbAux (k := k) θ₂ b xs : ℝ)| := by rw [abs_mul]
+          _ = (stepProb (k := k) θ₂ prev b : ℝ) *
+                |(wordProbAux (k := k) θ₁ b xs : ℝ) -
+                  (wordProbAux (k := k) θ₂ b xs : ℝ)| := by
+                  rw [abs_of_nonneg hstep2_nonneg]
+          _ ≤ 1 * ((xs.length : ℝ) * ε) := by gcongr
+          _ = (xs.length : ℝ) * ε := by ring
+      have hsum :
+          |(stepProb (k := k) θ₁ prev b : ℝ) * (wordProbAux (k := k) θ₁ b xs : ℝ) -
+              (stepProb (k := k) θ₂ prev b : ℝ) * (wordProbAux (k := k) θ₂ b xs : ℝ)| ≤
+            ε + (xs.length : ℝ) * ε := by
+        linarith [htri, hfirst, hsecond]
+      have hlen : ε + (xs.length : ℝ) * ε = ((List.length (b :: xs) : ℕ) : ℝ) * ε := by
+        calc
+          ε + (xs.length : ℝ) * ε = ((xs.length : ℝ) + 1) * ε := by ring
+          _ = ((xs.length + 1 : ℕ) : ℝ) * ε := by norm_num
+          _ = ((List.length (b :: xs) : ℕ) : ℝ) * ε := by simp
+      simpa [wordProbAux, θ₁, θ₂, ε, hlen] using hsum
+
+/-- Pathwise `wordProb` discrepancy at horizon `m` from the start-target perturbation. -/
+private lemma abs_wordProb_toReal_empiricalParam_sub_startTarget_of_traj
+    (hk : 0 < k) {N : ℕ} {s : MarkovState k}
+    (hs : s ∈ stateFinset k N)
+    (hRpos : 0 < returnsToStart (k := k) s)
+    {m : ℕ} (xs : Traj k m) :
+    |(wordProb (k := k) (empiricalParam (k := k) hk s) (trajToList (k := k) xs)).toReal -
+        (wordProb (k := k) (empiricalParamStartTarget (k := k) hk s) (trajToList (k := k) xs)).toReal| ≤
+      (m : ℝ) * ((k : ℝ) / (returnsToStart (k := k) s : ℝ)) := by
+  let θ₁ : MarkovParam k := empiricalParam (k := k) hk s
+  let θ₂ : MarkovParam k := empiricalParamStartTarget (k := k) hk s
+  let tail : List (Fin k) := List.ofFn (fun i : Fin m => xs i.succ)
+  have htail :
+      |(wordProbAux (k := k) θ₁ (xs 0) tail : ℝ) -
+          (wordProbAux (k := k) θ₂ (xs 0) tail : ℝ)| ≤
+        (tail.length : ℝ) * ((k : ℝ) / (returnsToStart (k := k) s : ℝ)) := by
+    simpa [tail, θ₁, θ₂] using
+      (abs_wordProbAux_empiricalParam_sub_startTarget_le_length_mul
+        (k := k) (hk := hk) (s := s) (hs := hs) (hRpos := hRpos) (prev := xs 0) (xs := tail))
+  have htail_len : tail.length = m := by
+    simp [tail]
+  have hinit_eq :
+      (initProb (k := k) θ₁ (xs 0) : ℝ) = (initProb (k := k) θ₂ (xs 0) : ℝ) := by
+    simp [θ₁, θ₂, initProb, empiricalParamStartTarget, empiricalParam]
+  have hinit_nonneg : 0 ≤ (initProb (k := k) θ₂ (xs 0) : ℝ) :=
+    initProb_toReal_nonneg (k := k) θ₂ (xs 0)
+  have hinit_le_one : (initProb (k := k) θ₂ (xs 0) : ℝ) ≤ 1 :=
+    initProb_toReal_le_one (k := k) θ₂ (xs 0)
+  calc
+    |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
+        (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal|
+        = |(initProb (k := k) θ₁ (xs 0) : ℝ) * (wordProbAux (k := k) θ₁ (xs 0) tail : ℝ) -
+            (initProb (k := k) θ₂ (xs 0) : ℝ) * (wordProbAux (k := k) θ₂ (xs 0) tail : ℝ)| := by
+              simp [wordProb, wordProbNN, trajToList, List.ofFn_succ, tail]
+    _ = |(initProb (k := k) θ₂ (xs 0) : ℝ) *
+          ((wordProbAux (k := k) θ₁ (xs 0) tail : ℝ) -
+            (wordProbAux (k := k) θ₂ (xs 0) tail : ℝ))| := by
+              rw [hinit_eq]
+              ring_nf
+    _ = |(initProb (k := k) θ₂ (xs 0) : ℝ)| *
+          |(wordProbAux (k := k) θ₁ (xs 0) tail : ℝ) -
+            (wordProbAux (k := k) θ₂ (xs 0) tail : ℝ)| := by
+              rw [abs_mul]
+    _ = (initProb (k := k) θ₂ (xs 0) : ℝ) *
+          |(wordProbAux (k := k) θ₁ (xs 0) tail : ℝ) -
+            (wordProbAux (k := k) θ₂ (xs 0) tail : ℝ)| := by
+              rw [abs_of_nonneg hinit_nonneg]
+    _ ≤ 1 *
+          ((tail.length : ℝ) * ((k : ℝ) /
+            (returnsToStart (k := k) s : ℝ))) := by
+              gcongr
+    _ = (tail.length : ℝ) * ((k : ℝ) / (returnsToStart (k := k) s : ℝ)) := by
+          ring
+    _ = (m : ℝ) * ((k : ℝ) / (returnsToStart (k := k) s : ℝ)) := by
+          simpa [htail_len]
+
+/-- `wordProb` on `trajSnoc` factors as horizon-`m` mass times the last step probability. -/
+private lemma wordProb_toReal_trajSnoc_eq_mul_stepProb
+    (θ : MarkovParam k) {m : ℕ} (ys : Traj k m) (x : Fin k) :
+    (wordProb (k := k) θ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal =
+      (wordProb (k := k) θ (trajToList (k := k) ys)).toReal *
+        (stepProb (k := k) θ (ys (Fin.last m)) x : ℝ) := by
+  have haux_tail :
+      wordProbAux (k := k) θ (ys 0) ((List.ofFn (fun i : Fin m => ys i.succ)) ++ [x]) =
+        wordProbAux (k := k) θ (ys 0) (List.ofFn (fun i : Fin m => ys i.succ)) *
+          stepProb (k := k) θ (ys (Fin.last m)) x := by
+    induction m with
+    | zero =>
+        simp [wordProbAux]
+    | succ m ih =>
+        let ysTail : Traj k m := fun i => ys i.succ
+        have htail :
+            wordProbAux (k := k) θ (ys 1) ((List.ofFn (fun i : Fin m => ys i.succ.succ)) ++ [x]) =
+              wordProbAux (k := k) θ (ys 1) (List.ofFn (fun i : Fin m => ys i.succ.succ)) *
+                stepProb (k := k) θ (ys (Fin.last (Nat.succ m))) x := by
+          simpa [ysTail] using ih (ys := ysTail)
+        calc
+          wordProbAux (k := k) θ (ys 0) ((List.ofFn (fun i : Fin (Nat.succ m) => ys i.succ)) ++ [x])
+              = wordProbAux (k := k) θ (ys 0)
+                  (ys 1 :: ((List.ofFn (fun i : Fin m => ys i.succ.succ)) ++ [x])) := by
+                    simp [List.ofFn_succ]
+          _ = stepProb (k := k) θ (ys 0) (ys 1) *
+                wordProbAux (k := k) θ (ys 1) ((List.ofFn (fun i : Fin m => ys i.succ.succ)) ++ [x]) := by
+                  simp [wordProbAux]
+          _ = stepProb (k := k) θ (ys 0) (ys 1) *
+                (wordProbAux (k := k) θ (ys 1) (List.ofFn (fun i : Fin m => ys i.succ.succ)) *
+                  stepProb (k := k) θ (ys (Fin.last (Nat.succ m))) x) := by
+                    rw [htail]
+          _ = (stepProb (k := k) θ (ys 0) (ys 1) *
+                wordProbAux (k := k) θ (ys 1) (List.ofFn (fun i : Fin m => ys i.succ.succ))) *
+                  stepProb (k := k) θ (ys (Fin.last (Nat.succ m))) x := by ring
+          _ = wordProbAux (k := k) θ (ys 0) (List.ofFn (fun i : Fin (Nat.succ m) => ys i.succ)) *
+                  stepProb (k := k) θ (ys (Fin.last (Nat.succ m))) x := by
+                simp [List.ofFn_succ, wordProbAux]
+  have hlist : trajToList (k := k) (trajSnoc (k := k) ys x) = trajToList (k := k) ys ++ [x] :=
+    trajToList_trajSnoc (k := k) (xs := ys) (x := x)
+  cases hys : trajToList (k := k) ys with
+  | nil =>
+      simp [trajToList] at hys
+  | cons a l =>
+      have htail : (List.ofFn fun i : Fin m => ys i.succ) = l := by
+        simpa [trajToList, List.ofFn_succ] using congrArg List.tail hys
+      have hhead : ys 0 = a := by
+        have hh := congrArg List.head? hys
+        simpa [trajToList, List.ofFn_succ] using hh
+      have haux' : wordProbAux (k := k) θ a (l ++ [x]) =
+          wordProbAux (k := k) θ a l * stepProb (k := k) θ (ys (Fin.last m)) x := by
+        simpa [hhead, htail] using haux_tail
+      simpa [wordProb, wordProbNN, hys, hlist, haux', mul_assoc]
+
+/-- Event-sum helper: bound a filtered discrepancy sum by the full-space `L1` sum.
+This avoids introducing a raw `card` factor at the summation step. -/
+private lemma abs_sum_filter_sub_le_sum_abs_univ
+    {α : Type*} [DecidableEq α]
+    (s : Finset α) (p : α → Prop) [DecidablePred p]
+    (f g : α → ℝ) :
+    abs ((s.filter p).sum (fun x => f x - g x)) ≤ s.sum (fun x => |f x - g x|) := by
+  have hfilter_abs :
+      abs ((s.filter p).sum (fun x => f x - g x)) ≤
+        (s.filter p).sum (fun x => |f x - g x|) := by
+    simpa using
+      (Finset.abs_sum_le_sum_abs
+        (s := s.filter p)
+        (f := fun x => f x - g x))
+  have hfilter_le_univ :
+      (s.filter p).sum (fun x => |f x - g x|) ≤ s.sum (fun x => |f x - g x|) := by
+    calc
+      (s.filter p).sum (fun x => |f x - g x|)
+          = s.sum (fun x => if p x then |f x - g x| else 0) := by
+            simp [Finset.sum_filter]
+      _ ≤ s.sum (fun x => |f x - g x|) := by
+            refine Finset.sum_le_sum ?_
+            intro x hx
+            by_cases hpx : p x
+            · simp [hpx]
+            · have hnonneg : 0 ≤ |f x - g x| := abs_nonneg _
+              simp [hpx, hnonneg]
+  exact le_trans hfilter_abs hfilter_le_univ
+
+/-- Event-level discrepancy for `W.toReal`: absolute difference is bounded by
+the `L1` sum over the same filtered event fiber. -/
+private lemma abs_W_toReal_sub_le_filtered_trajL1
+    (n : ℕ) (e : MarkovState k) (θ₁ θ₂ : MarkovParam k) :
+    |(W (k := k) n e θ₁).toReal - (W (k := k) n e θ₂).toReal| ≤
+      Finset.sum ((trajFinset k n).filter (fun xs => stateOfTraj (k := k) xs = e))
+        (fun xs =>
+          |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
+            (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal|) := by
+  classical
+  let S : Finset (Traj k n) := (trajFinset k n).filter (fun xs => stateOfTraj (k := k) xs = e)
+  let f : Traj k n → ℝ := fun xs => (wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal
+  let g : Traj k n → ℝ := fun xs => (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal
+  have hW1 :
+      (W (k := k) n e θ₁).toReal = Finset.sum S f := by
+    simp [S, f, W_toReal_eq_sum_wordProb_toReal]
+  have hW2 :
+      (W (k := k) n e θ₂).toReal = Finset.sum S g := by
+    simp [S, g, W_toReal_eq_sum_wordProb_toReal]
+  calc
+    |(W (k := k) n e θ₁).toReal - (W (k := k) n e θ₂).toReal|
+        = |Finset.sum S f - Finset.sum S g| := by simpa [hW1, hW2]
+    _ = |Finset.sum S (fun xs => f xs - g xs)| := by simp [Finset.sum_sub_distrib]
+    _ ≤ Finset.sum S (fun xs => |f xs - g xs|) := by
+          simpa using
+            (Finset.abs_sum_le_sum_abs (s := S) (f := fun xs => f xs - g xs))
+    _ =
+      Finset.sum ((trajFinset k n).filter (fun xs => stateOfTraj (k := k) xs = e))
+        (fun xs =>
+          |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
+            (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal|) := by
+          simp [S, f, g]
+
+/-- Event-level discrepancy for `W.toReal` is bounded by the global trajectory `L1`
+distance via `abs_sum_filter_sub_le_sum_abs_univ`. -/
+private lemma abs_W_toReal_sub_le_global_trajL1
+    (n : ℕ) (e : MarkovState k) (θ₁ θ₂ : MarkovParam k) :
+    |(W (k := k) n e θ₁).toReal - (W (k := k) n e θ₂).toReal| ≤
+      Finset.sum (trajFinset k n)
+        (fun xs =>
+          |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
+            (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal|) := by
+  classical
+  let S : Finset (Traj k n) := trajFinset k n
+  let P : Traj k n → Prop := fun xs => stateOfTraj (k := k) xs = e
+  let f : Traj k n → ℝ := fun xs => (wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal
+  let g : Traj k n → ℝ := fun xs => (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal
+  have hW1 :
+      (W (k := k) n e θ₁).toReal = Finset.sum (S.filter P) f := by
+    simp [S, P, f, W_toReal_eq_sum_wordProb_toReal]
+  have hW2 :
+      (W (k := k) n e θ₂).toReal = Finset.sum (S.filter P) g := by
+    simp [S, P, g, W_toReal_eq_sum_wordProb_toReal]
+  calc
+    |(W (k := k) n e θ₁).toReal - (W (k := k) n e θ₂).toReal|
+        = |Finset.sum (S.filter P) f - Finset.sum (S.filter P) g| := by simpa [hW1, hW2]
+    _ = abs ((S.filter P).sum (fun xs => f xs - g xs)) := by simp [Finset.sum_sub_distrib]
+    _ ≤ S.sum (fun xs => |f xs - g xs|) := by
+          exact
+            abs_sum_filter_sub_le_sum_abs_univ
+              (s := S) (p := P) (f := f) (g := g)
+    _ =
+      Finset.sum (trajFinset k n)
+        (fun xs =>
+          |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
+            (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal|) := by
+          simp [S, f, g]
+
+/-- Global trajectory `L1` distance at fixed horizon `n`. -/
+def trajL1 (n : ℕ) (θ₁ θ₂ : MarkovParam k) : ℝ :=
+  Finset.sum (trajFinset k n)
+    (fun xs =>
+      |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
+        (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal|)
+
+/-- Event-mass discrepancy for `W.toReal` is bounded by global trajectory `L1`. -/
+lemma abs_W_toReal_sub_le_trajL1
+    (n : ℕ) (e : MarkovState k) (θ₁ θ₂ : MarkovParam k) :
+    |(W (k := k) n e θ₁).toReal - (W (k := k) n e θ₂).toReal| ≤
+      trajL1 (k := k) n θ₁ θ₂ := by
+  simpa [trajL1] using
+    (abs_W_toReal_sub_le_global_trajL1
+      (k := k) (n := n) (e := e) (θ₁ := θ₁) (θ₂ := θ₂))
+
+private lemma sum_wordProb_toReal_eq_one (θ : MarkovParam k) (n : ℕ) :
+    Finset.sum (trajFinset k n)
+      (fun xs => (wordProb (k := k) θ (trajToList (k := k) xs)).toReal) = 1 := by
+  have hsumENN :
+      (∑ xs : Traj k n, wordProb (k := k) θ (trajToList (k := k) xs)) = 1 := by
+    simpa [sum_W_eq_one (k := k) (n := n) (θ := θ)] using
+      (sum_W_eq_one' (k := k) (n := n) (θ := θ))
+  have htoReal :
+      (Finset.sum (trajFinset k n)
+        (fun xs => wordProb (k := k) θ (trajToList (k := k) xs))).toReal =
+      Finset.sum (trajFinset k n)
+        (fun xs => (wordProb (k := k) θ (trajToList (k := k) xs)).toReal) := by
+    refine ENNReal.toReal_sum ?_
+    intro xs hx
+    simp [wordProb]
+  calc
+    Finset.sum (trajFinset k n)
+        (fun xs => (wordProb (k := k) θ (trajToList (k := k) xs)).toReal)
+        =
+      (Finset.sum (trajFinset k n)
+        (fun xs => wordProb (k := k) θ (trajToList (k := k) xs))).toReal := htoReal.symm
+    _ = (∑ xs : Traj k n, wordProb (k := k) θ (trajToList (k := k) xs)).toReal := by
+          simp [trajFinset]
+    _ = (1 : ENNReal).toReal := by simp [hsumENN]
+    _ = 1 := by simp
+
+private lemma trajL1_succ_le_trajL1_add_rowBound
+    (θ₁ θ₂ : MarkovParam k) (n : ℕ) (δ : ℝ)
+    (hrow :
+      ∀ prev : Fin k,
+        (∑ next : Fin k,
+          |(stepProb (k := k) θ₁ prev next : ℝ) -
+            (stepProb (k := k) θ₂ prev next : ℝ)|) ≤ δ)
+    (hδnonneg : 0 ≤ δ) :
+    trajL1 (k := k) (Nat.succ n) θ₁ θ₂ ≤ trajL1 (k := k) n θ₁ θ₂ + δ := by
+  let F : Traj k (Nat.succ n) → ℝ := fun xs =>
+    |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
+      (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal|
+  have hrewrite :
+      (∑ xs : Traj k (Nat.succ n), F xs) =
+        ∑ p : (Fin k) × (Traj k n), F (trajSnoc (k := k) p.2 p.1) := by
+    have hEquiv :
+        (∑ p : (Fin k) × (Traj k n), F (trajSnoc (k := k) p.2 p.1)) =
+          (∑ xs : Traj k (Nat.succ n), F xs) := by
+      refine (Fintype.sum_equiv (Fin.snocEquiv (fun _ : Fin (n + 2) => Fin k))
+        (fun p => F (trajSnoc (k := k) p.2 p.1))
+        (fun xs => F xs) ?_)
+      intro p
+      rfl
+    exact hEquiv.symm
+  calc
+    trajL1 (k := k) (Nat.succ n) θ₁ θ₂
+        = (∑ xs : Traj k (Nat.succ n), F xs) := by
+            simp [trajL1, trajFinset, F]
+    _ = ∑ p : (Fin k) × (Traj k n), F (trajSnoc (k := k) p.2 p.1) := hrewrite
+    _ = ∑ ys : Traj k n,
+          ∑ x : Fin k,
+            |(wordProb (k := k) θ₁ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal -
+              (wordProb (k := k) θ₂ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal| := by
+          simpa [F, Fintype.sum_prod_type_right]
+    _ ≤ ∑ ys : Traj k n,
+          (|(wordProb (k := k) θ₁ (trajToList (k := k) ys)).toReal -
+              (wordProb (k := k) θ₂ (trajToList (k := k) ys)).toReal| +
+            (wordProb (k := k) θ₂ (trajToList (k := k) ys)).toReal * δ) := by
+          refine Finset.sum_le_sum ?_
+          intro ys hys
+          let A1 : ℝ := (wordProb (k := k) θ₁ (trajToList (k := k) ys)).toReal
+          let A2 : ℝ := (wordProb (k := k) θ₂ (trajToList (k := k) ys)).toReal
+          let s1 : Fin k → ℝ := fun x => (stepProb (k := k) θ₁ (ys (Fin.last n)) x : ℝ)
+          let s2 : Fin k → ℝ := fun x => (stepProb (k := k) θ₂ (ys (Fin.last n)) x : ℝ)
+          have hsnoc1 : ∀ x : Fin k,
+              (wordProb (k := k) θ₁ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal = A1 * s1 x := by
+            intro x
+            simpa [A1, s1] using
+              (wordProb_toReal_trajSnoc_eq_mul_stepProb (k := k) (θ := θ₁) (ys := ys) (x := x))
+          have hsnoc2 : ∀ x : Fin k,
+              (wordProb (k := k) θ₂ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal = A2 * s2 x := by
+            intro x
+            simpa [A2, s2] using
+              (wordProb_toReal_trajSnoc_eq_mul_stepProb (k := k) (θ := θ₂) (ys := ys) (x := x))
+          have hA2_nonneg : 0 ≤ A2 := by
+            unfold A2
+            positivity
+          have hs1_nonneg : ∀ x : Fin k, 0 ≤ s1 x := by
+            intro x
+            unfold s1
+            positivity
+          have hsum1 : (∑ x : Fin k, s1 x) = 1 := by
+            simpa [s1] using sum_stepProb_toReal_eq_one (k := k) (θ := θ₁) (prev := ys (Fin.last n))
+          have hsplit :
+              (∑ x : Fin k, |A1 * s1 x - A2 * s2 x|)
+                ≤ |A1 - A2| + A2 * δ := by
+            have htri :
+                (∑ x : Fin k, |A1 * s1 x - A2 * s2 x|)
+                  ≤ (∑ x : Fin k, |A1 * s1 x - A2 * s1 x|) +
+                    (∑ x : Fin k, |A2 * s1 x - A2 * s2 x|) := by
+              calc
+                (∑ x : Fin k, |A1 * s1 x - A2 * s2 x|)
+                    ≤ ∑ x : Fin k, (|A1 * s1 x - A2 * s1 x| + |A2 * s1 x - A2 * s2 x|) := by
+                        refine Finset.sum_le_sum ?_
+                        intro x hx
+                        simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using
+                          (abs_sub_le (A1 * s1 x) (A2 * s1 x) (A2 * s2 x))
+                _ = (∑ x : Fin k, |A1 * s1 x - A2 * s1 x|) +
+                      (∑ x : Fin k, |A2 * s1 x - A2 * s2 x|) := by
+                        simp [Finset.sum_add_distrib]
+            have hfirst :
+                (∑ x : Fin k, |(A1 - A2) * s1 x|) = |A1 - A2| := by
+              calc
+                (∑ x : Fin k, |(A1 - A2) * s1 x|)
+                    = (∑ x : Fin k, |A1 - A2| * s1 x) := by
+                        refine Fintype.sum_congr (fun x => |(A1 - A2) * s1 x|) (fun x => |A1 - A2| * s1 x) ?_
+                        intro x
+                        simpa [abs_mul, abs_of_nonneg (hs1_nonneg x)]
+                _ = |A1 - A2| * (∑ x : Fin k, s1 x) := by
+                      exact (Finset.mul_sum (s := Finset.univ) (f := fun x => s1 x) (a := |A1 - A2|)).symm
+                _ = |A1 - A2| := by simp [hsum1]
+            have hsecond :
+                (∑ x : Fin k, |A2 * (s1 x - s2 x)|) ≤ A2 * δ := by
+              calc
+                (∑ x : Fin k, |A2 * (s1 x - s2 x)|)
+                    = A2 * (∑ x : Fin k, |s1 x - s2 x|) := by
+                        calc
+                          (∑ x : Fin k, |A2 * (s1 x - s2 x)|)
+                              = (∑ x : Fin k, |A2| * |s1 x - s2 x|) := by
+                                  refine Fintype.sum_congr (fun x => |A2 * (s1 x - s2 x)|)
+                                    (fun x => |A2| * |s1 x - s2 x|) ?_
+                                  intro x
+                                  simpa [abs_mul]
+                          _ = (∑ x : Fin k, A2 * |s1 x - s2 x|) := by
+                                refine Fintype.sum_congr (fun x => |A2| * |s1 x - s2 x|)
+                                  (fun x => A2 * |s1 x - s2 x|) ?_
+                                intro x
+                                rw [abs_of_nonneg hA2_nonneg]
+                          _ = A2 * (∑ x : Fin k, |s1 x - s2 x|) := by
+                                exact (Finset.mul_sum (s := Finset.univ) (f := fun x => |s1 x - s2 x|) (a := A2)).symm
+                _ ≤ A2 * δ := by
+                      gcongr
+                      simpa [s1, s2] using hrow (ys (Fin.last n))
+            have hfirst_rewrite :
+                (∑ x : Fin k, |A1 * s1 x - A2 * s1 x|) = (∑ x : Fin k, |(A1 - A2) * s1 x|) := by
+              refine Finset.sum_congr rfl ?_
+              intro x hx
+              ring_nf
+            have hsecond_rewrite :
+                (∑ x : Fin k, |A2 * s1 x - A2 * s2 x|) = (∑ x : Fin k, |A2 * (s1 x - s2 x)|) := by
+              refine Finset.sum_congr rfl ?_
+              intro x hx
+              ring_nf
+            linarith [htri, hfirst, hsecond, hfirst_rewrite, hsecond_rewrite]
+          calc
+            (∑ x : Fin k,
+              |(wordProb (k := k) θ₁ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal -
+                (wordProb (k := k) θ₂ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal|)
+                = (∑ x : Fin k, |A1 * s1 x - A2 * s2 x|) := by
+                    refine Fintype.sum_congr (fun x =>
+                      |(wordProb (k := k) θ₁ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal -
+                        (wordProb (k := k) θ₂ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal|)
+                      (fun x => |A1 * s1 x - A2 * s2 x|) ?_
+                    intro x
+                    simp [hsnoc1 x, hsnoc2 x]
+            _ ≤ |A1 - A2| + A2 * δ := hsplit
+            _ = (|(wordProb (k := k) θ₁ (trajToList (k := k) ys)).toReal -
+                    (wordProb (k := k) θ₂ (trajToList (k := k) ys)).toReal| +
+                  (wordProb (k := k) θ₂ (trajToList (k := k) ys)).toReal * δ) := by
+                    simp [A1, A2]
+    _ = trajL1 (k := k) n θ₁ θ₂ +
+          (∑ ys : Traj k n, (wordProb (k := k) θ₂ (trajToList (k := k) ys)).toReal) * δ := by
+          simp [trajL1, trajFinset, Finset.sum_add_distrib, Finset.sum_mul]
+    _ = trajL1 (k := k) n θ₁ θ₂ + 1 * δ := by
+          have hsum1' :
+              (∑ ys : Traj k n, (wordProb (k := k) θ₂ (trajToList (k := k) ys)).toReal) = 1 := by
+            simpa [trajFinset] using sum_wordProb_toReal_eq_one (k := k) (θ := θ₂) (n := n)
+          simpa [hsum1']
+    _ = trajL1 (k := k) n θ₁ θ₂ + δ := by ring
+
+private lemma trajL1_empiricalParam_startTarget_le_length_mul_rowBound
+    (hk : 0 < k) {N : ℕ} {s : MarkovState k}
+    (hs : s ∈ stateFinset k N)
+    (hRpos : 0 < returnsToStart (k := k) s)
+    (n : ℕ) :
+    trajL1 (k := k) (Nat.succ n)
+      (empiricalParam (k := k) hk s)
+      (empiricalParamStartTarget (k := k) hk s)
+      ≤
+      (Nat.succ n : ℝ) *
+        (((k : ℝ) * (k : ℝ)) / (returnsToStart (k := k) s : ℝ)) := by
+  let θ₁ : MarkovParam k := empiricalParam (k := k) hk s
+  let θ₂ : MarkovParam k := empiricalParamStartTarget (k := k) hk s
+  let δ : ℝ := ((k : ℝ) * (k : ℝ)) / (returnsToStart (k := k) s : ℝ)
+  have hδnonneg : 0 ≤ δ := by
+    unfold δ
+    have hk_nonneg : 0 ≤ (k : ℝ) := by exact_mod_cast (Nat.zero_le k)
+    have hR_nonneg : 0 ≤ (returnsToStart (k := k) s : ℝ) := by
+      exact_mod_cast (Nat.zero_le (returnsToStart (k := k) s))
+    exact div_nonneg (mul_nonneg hk_nonneg hk_nonneg) hR_nonneg
+  have hrow :
+      ∀ prev : Fin k,
+        (∑ next : Fin k,
+          |(stepProb (k := k) θ₁ prev next : ℝ) -
+            (stepProb (k := k) θ₂ prev next : ℝ)|) ≤ δ := by
+    intro prev
+    simpa [θ₁, θ₂, δ] using
+      (sum_abs_stepProb_empiricalParam_sub_startTarget_row_le_k_sq_div_returnsToStart
+        (k := k) (hk := hk) (s := s) (hs := hs) (hRpos := hRpos) (prev := prev))
+  have hbase0 :
+      trajL1 (k := k) 0 θ₁ θ₂ = 0 := by
+    unfold trajL1 trajFinset
+    refine Finset.sum_eq_zero ?_
+    intro xs hx
+    have hterm :
+        |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
+          (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal|
+          ≤
+        (0 : ℝ) * ((k : ℝ) / (returnsToStart (k := k) s : ℝ)) := by
+      simpa [θ₁, θ₂] using
+        (abs_wordProb_toReal_empiricalParam_sub_startTarget_of_traj
+          (k := k) (hk := hk) (s := s) (hs := hs) (hRpos := hRpos) (m := 0) xs)
+    have hnonneg :
+        0 ≤ |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
+              (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal| := by
+      exact abs_nonneg _
+    have hzero :
+        |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
+          (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal| = 0 := by
+      linarith
+    simpa [hzero]
+  have hrec :
+      ∀ m : ℕ, trajL1 (k := k) m θ₁ θ₂ ≤ (m : ℝ) * δ := by
+    intro m
+    induction m with
+    | zero =>
+        rw [hbase0]
+        nlinarith [hδnonneg]
+    | succ m ihm =>
+        have hstep :
+            trajL1 (k := k) (Nat.succ m) θ₁ θ₂ ≤ trajL1 (k := k) m θ₁ θ₂ + δ :=
+          trajL1_succ_le_trajL1_add_rowBound
+            (k := k) (θ₁ := θ₁) (θ₂ := θ₂) (n := m) (δ := δ) hrow hδnonneg
+        calc
+          trajL1 (k := k) (Nat.succ m) θ₁ θ₂ ≤ trajL1 (k := k) m θ₁ θ₂ + δ := hstep
+          _ ≤ (m : ℝ) * δ + δ := by gcongr
+          _ = (Nat.succ m : ℝ) * δ := by
+                calc
+                  (m : ℝ) * δ + δ = (m : ℝ) * δ + 1 * δ := by ring
+                  _ = ((m : ℝ) + 1) * δ := by ring
+                  _ = (Nat.succ m : ℝ) * δ := by norm_num
+  simpa [θ₁, θ₂, δ] using hrec (Nat.succ n)
+
+/-- First nontrivial WR-rate theorem for the start-target scalar surrogate:
+statewise `W` discrepancy is `O(1 / returnsToStart)` with explicit constant. -/
+theorem hasStatewiseStartTargetWClose_of_rowL1
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) :
+    HasStatewiseStartTargetWClose (k := k) hk n e
+      ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))) := by
+  intro N hN s hs hRpos
+  let θ₁ : MarkovParam k := empiricalParam (k := k) hk s
+  let θ₂ : MarkovParam k := empiricalParamStartTarget (k := k) hk s
+  let Cw : ℝ := (Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))
+  have hWglobal :
+      |(W (k := k) (Nat.succ n) e θ₁).toReal - (W (k := k) (Nat.succ n) e θ₂).toReal| ≤
+        trajL1 (k := k) (Nat.succ n) θ₁ θ₂ := by
+    simpa [θ₁, θ₂] using
+      (abs_W_toReal_sub_le_trajL1
+        (k := k) (n := Nat.succ n) (e := e) (θ₁ := θ₁) (θ₂ := θ₂))
+  have htrajL1 :
+      trajL1 (k := k) (Nat.succ n) θ₁ θ₂ ≤
+        Cw / (returnsToStart (k := k) s : ℝ) := by
+    have hbound :=
+      trajL1_empiricalParam_startTarget_le_length_mul_rowBound
+        (k := k) (hk := hk) (s := s) (hs := hs) (hRpos := hRpos) (n := n)
+    have hsplit :
+        (Nat.succ n : ℝ) * (((k : ℝ) * (k : ℝ)) / (returnsToStart (k := k) s : ℝ))
+          = Cw / (returnsToStart (k := k) s : ℝ) := by
+      simp [Cw]
+      ring
+    calc
+      trajL1 (k := k) (Nat.succ n) θ₁ θ₂
+          ≤ (Nat.succ n : ℝ) * (((k : ℝ) * (k : ℝ)) / (returnsToStart (k := k) s : ℝ)) := hbound
+      _ = Cw / (returnsToStart (k := k) s : ℝ) := hsplit
+  calc
+    |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        (W (k := k) (Nat.succ n) e (empiricalParamStartTarget (k := k) hk s)).toReal|
+        = |(W (k := k) (Nat.succ n) e θ₁).toReal - (W (k := k) (Nat.succ n) e θ₂).toReal| := by
+            simp [θ₁, θ₂]
+    _ ≤ trajL1 (k := k) (Nat.succ n) θ₁ θ₂ := hWglobal
+    _ ≤ Cw / (returnsToStart (k := k) s : ℝ) := htrajL1
+
+/--
+Statewise WR excursion-target witness with explicit `Crepr`/`Cstep` rates.
+
+This names the core WR-side semantic obligation so callers can target one
+predicate instead of repeating a large dependent witness type.
+-/
+def HasStatewiseExcursionTargetRates
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ) : Prop :=
+  ∀ {N : ℕ} (_hN : Nat.succ n ≤ N) (s : MarkovState k),
+    s ∈ stateFinset k N →
+      0 < returnsToStart (k := k) s →
+        ∃ elist pref : ExcursionList k,
+          ∃ target : ExcursionType k → ℝ,
+            ∃ Crepr Cstep : ℝ,
+              |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                excursionWithReplacementProb (k := k) elist pref| ≤
+                  Crepr / (returnsToStart (k := k) s : ℝ) ∧
+              (∀ a ∈ pref,
+                |empiricalExcursionProb (k := k) elist a - target a| ≤
+                  Cstep / (returnsToStart (k := k) s : ℝ)) ∧
+              (∀ a ∈ pref, 0 ≤ target a ∧ target a ≤ 1) ∧
+              Crepr + (pref.length : ℝ) * Cstep ≤ Cw
+
 lemma pattern_alignment_residuals_nonneg
     (hk : 0 < k) (n : ℕ) (e : MarkovState k)
     {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
@@ -470,7 +1325,303 @@ lemma hasCanonicalWRSmoothingRate_of_statewise_close
   rcases hclose hN s hs hRpos with ⟨wSurrogate, hWclose⟩
   refine ⟨wSurrogate, Cw / (returnsToStart (k := k) s : ℝ), hWclose, le_rfl⟩
 
+/-- Build statewise scalar WR closeness by freezing the surrogate to
+`W(empiricalParamStartTarget).toReal`. -/
+lemma statewise_close_of_startTargetWClose
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ)
+    (hcloseStart : HasStatewiseStartTargetWClose (k := k) hk n e Cw) :
+    ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+      s ∈ stateFinset k N →
+        0 < returnsToStart (k := k) s →
+          ∃ wSurrogate : ℝ,
+            |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+              wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ) := by
+  intro N hN s hs hRpos
+  refine ⟨(W (k := k) (Nat.succ n) e (empiricalParamStartTarget (k := k) hk s)).toReal, ?_⟩
+  exact hcloseStart hN s hs hRpos
 
+/-- Package `HasStatewiseStartTargetWClose` into `HasCanonicalWRSmoothingRate`. -/
+lemma hasCanonicalWRSmoothingRate_of_startTargetWClose
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ)
+    (hcloseStart : HasStatewiseStartTargetWClose (k := k) hk n e Cw) :
+    HasCanonicalWRSmoothingRate (k := k) hk n e Cw := by
+  exact
+    hasCanonicalWRSmoothingRate_of_statewise_close
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw)
+      (statewise_close_of_startTargetWClose
+        (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) hcloseStart)
+
+/-- Coarse but explicit WR smoothing rate obtained directly from start-target row-`L1`
+step control. -/
+lemma hasCanonicalWRSmoothingRate_of_rowL1StartTarget
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) :
+    HasCanonicalWRSmoothingRate (k := k) hk n e
+      ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))) := by
+  exact
+    hasCanonicalWRSmoothingRate_of_startTargetWClose
+      (k := k) (hk := hk) (n := n) (e := e)
+      (Cw := ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))))
+      (hasStatewiseStartTargetWClose_of_rowL1 (k := k) (hk := hk) (n := n) (e := e))
+
+
+
+/-- Build `HasCanonicalWRSmoothingRate` from a statewise excursion-target witness
+with explicit `O(1 / returnsToStart)` rates. -/
+lemma hasCanonicalWRSmoothingRate_of_excursion_target_rates
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ)
+    (hstate : HasStatewiseExcursionTargetRates (k := k) hk n e Cw) :
+    HasCanonicalWRSmoothingRate (k := k) hk n e Cw := by
+  intro N hN s hs hRpos
+  rcases hstate hN s hs hRpos with
+    ⟨elist, pref, target, Crepr, Cstep, hrepr, hstep, hrange, hCw⟩
+  refine ⟨excursionsProb (k := k) target pref,
+    (Crepr + (pref.length : ℝ) * Cstep) / (returnsToStart (k := k) s : ℝ), ?_, ?_⟩
+  · exact
+      wr_scalar_smoothing_rate_via_excursion_target
+        (k := k) (hk := hk) (n := n) (e := e) (s := s)
+        (elist := elist) (pref := pref) (target := target)
+        (Crepr := Crepr) (Cstep := Cstep)
+        hrepr hstep hrange
+  · have hRnonneg : 0 ≤ (returnsToStart (k := k) s : ℝ) := by
+      exact_mod_cast (Nat.zero_le (returnsToStart (k := k) s))
+    exact div_le_div_of_nonneg_right hCw hRnonneg
+
+/-- Scalar-surrogate WR closeness derived from excursion-target rates.
+
+This is the direct "statewise-close" form used by the robust split-rate route. -/
+lemma statewise_close_of_excursion_target_rates
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ)
+    (hstate : HasStatewiseExcursionTargetRates (k := k) hk n e Cw) :
+    ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+      s ∈ stateFinset k N →
+        0 < returnsToStart (k := k) s →
+          ∃ wSurrogate : ℝ,
+            |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+              wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ) := by
+  intro N hN s hs hRpos
+  rcases hstate hN s hs hRpos with
+    ⟨elist, pref, target, Crepr, Cstep, hrepr, hstep, hrange, hCw⟩
+  refine ⟨excursionsProb (k := k) target pref, ?_⟩
+  have hscalar :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        excursionsProb (k := k) target pref| ≤
+      (Crepr + (pref.length : ℝ) * Cstep) / (returnsToStart (k := k) s : ℝ) :=
+    wr_scalar_smoothing_rate_via_excursion_target
+      (k := k) (hk := hk) (n := n) (e := e) (s := s)
+      (elist := elist) (pref := pref) (target := target)
+      (Crepr := Crepr) (Cstep := Cstep)
+      hrepr hstep hrange
+  have hRnonneg : 0 ≤ (returnsToStart (k := k) s : ℝ) := by
+    exact_mod_cast (Nat.zero_le (returnsToStart (k := k) s))
+  have hrate :
+      (Crepr + (pref.length : ℝ) * Cstep) / (returnsToStart (k := k) s : ℝ) ≤
+        Cw / (returnsToStart (k := k) s : ℝ) :=
+    div_le_div_of_nonneg_right hCw hRnonneg
+  exact le_trans hscalar hrate
+
+/-- Concrete statewise excursion-target witness from a WR representation-rate hypothesis:
+choose `target = empiricalExcursionProb` and `Cstep = 0`. -/
+lemma excursion_target_statewise_witness_of_wr_repr_rate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ)
+    (hrepr :
+      ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+        s ∈ stateFinset k N →
+          0 < returnsToStart (k := k) s →
+            ∃ elist pref : ExcursionList k,
+              ∃ Crepr : ℝ,
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                  excursionWithReplacementProb (k := k) elist pref| ≤
+                    Crepr / (returnsToStart (k := k) s : ℝ) ∧
+                Crepr ≤ Cw) :
+    ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+      s ∈ stateFinset k N →
+        0 < returnsToStart (k := k) s →
+          ∃ elist pref : ExcursionList k,
+            ∃ target : ExcursionType k → ℝ,
+              ∃ Crepr Cstep : ℝ,
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                  excursionWithReplacementProb (k := k) elist pref| ≤
+                    Crepr / (returnsToStart (k := k) s : ℝ) ∧
+                (∀ a ∈ pref,
+                  |empiricalExcursionProb (k := k) elist a - target a| ≤
+                    Cstep / (returnsToStart (k := k) s : ℝ)) ∧
+                (∀ a ∈ pref, 0 ≤ target a ∧ target a ≤ 1) ∧
+                Crepr + (pref.length : ℝ) * Cstep ≤ Cw := by
+  intro N hN s hs hRpos
+  rcases hrepr hN s hs hRpos with ⟨elist, pref, Crepr, hreprBound, hCrepr⟩
+  refine ⟨elist, pref, empiricalExcursionProb (k := k) elist, Crepr, 0, hreprBound, ?_, ?_, ?_⟩
+  · intro a ha
+    have h0nonneg : (0 : ℝ) ≤ (0 : ℝ) / (returnsToStart (k := k) s : ℝ) := by
+      positivity
+    simpa using h0nonneg
+  · intro a ha
+    have hnonneg :
+        0 ≤ empiricalExcursionProb (k := k) elist a := by
+      simpa [empiricalExcursionProb] using
+        (probWeight_nonneg
+          ((excursionMultiset (k := k) elist).count a)
+          ((excursionMultiset (k := k) elist).card))
+    have hle :
+        empiricalExcursionProb (k := k) elist a ≤ 1 := by
+      simpa [empiricalExcursionProb] using
+        (probWeight_le_one
+          ((excursionMultiset (k := k) elist).count a)
+          ((excursionMultiset (k := k) elist).card)
+          (Multiset.count_le_card _ _))
+    exact ⟨hnonneg, hle⟩
+  · simpa using hCrepr
+
+/-- Package the concrete `target = empiricalExcursionProb`, `Cstep = 0`
+statewise witness into `HasCanonicalWRSmoothingRate`. -/
+lemma hasCanonicalWRSmoothingRate_of_statewise_wr_repr_rate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ)
+    (hrepr :
+      ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+        s ∈ stateFinset k N →
+          0 < returnsToStart (k := k) s →
+            ∃ elist pref : ExcursionList k,
+              ∃ Crepr : ℝ,
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                  excursionWithReplacementProb (k := k) elist pref| ≤
+                    Crepr / (returnsToStart (k := k) s : ℝ) ∧
+                Crepr ≤ Cw) :
+    HasCanonicalWRSmoothingRate (k := k) hk n e Cw := by
+  apply hasCanonicalWRSmoothingRate_of_excursion_target_rates
+    (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw)
+  exact
+    excursion_target_statewise_witness_of_wr_repr_rate
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) hrepr
+
+
+/-- Layer 1 (constructive): turn a concrete fiber-trajectory family witness into
+the statewise WR representation-rate witness shape consumed downstream. -/
+lemma statewise_wr_repr_rate_of_fiber_trajectory_family
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ)
+    (htraj : HasFiberTrajectoryWRReprRate (k := k) hk n e Cw) :
+    ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+      s ∈ stateFinset k N →
+        0 < returnsToStart (k := k) s →
+          ∃ elist pref : ExcursionList k,
+            ∃ Crepr : ℝ,
+              |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                excursionWithReplacementProb (k := k) elist pref| ≤
+                  Crepr / (returnsToStart (k := k) s : ℝ) ∧
+              Crepr ≤ Cw := by
+  intro N hN s hs hRpos
+  rcases htraj hN s hs hRpos with ⟨xs, hxs, hW⟩
+  have _hstate : stateOfTraj (k := k) xs = s := (Finset.mem_filter.1 hxs).2
+  refine ⟨excursionListOfTraj (k := k) xs,
+    (excursionListOfTraj (k := k) xs).take (prefixExcursionCount (k := k) hN xs),
+    Cw, ?_, le_rfl⟩
+  simpa using hW
+
+/-- Layer 2 (constructive): package the fiber-trajectory family witness directly
+into `HasCanonicalWRSmoothingRate`. -/
+lemma hasCanonicalWRSmoothingRate_of_fiber_trajectory_family
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw : ℝ)
+    (htraj : HasFiberTrajectoryWRReprRate (k := k) hk n e Cw) :
+    HasCanonicalWRSmoothingRate (k := k) hk n e Cw := by
+  apply hasCanonicalWRSmoothingRate_of_statewise_wr_repr_rate
+    (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw)
+  exact
+    statewise_wr_repr_rate_of_fiber_trajectory_family
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) htraj
+
+/-- Directly feed a constructive fiber-trajectory WR witness plus WOR transport
+into the split-rate residual constructor. -/
+lemma hasExcursionResidualBoundRate_of_fiberTrajectorySplitRates
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw Cpc : ℝ)
+    (htraj : HasFiberTrajectoryWRReprRate (k := k) hk n e Cw)
+    (hWOR : HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    HasExcursionResidualBoundRate (k := k) hk n e (Cw + Cpc) := by
+  have hWR :
+      HasCanonicalWRSmoothingRate (k := k) hk n e Cw :=
+    hasCanonicalWRSmoothingRate_of_fiber_trajectory_family
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) htraj
+  intro N hN s hs hRpos
+  exact
+    hasExcursionResidualBoundRate_of_splitRates
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+      hWR hWOR hN s hs hRpos
+
+/-- Family-level residual-rate constructor from fiber-trajectory split-rate data. -/
+theorem hasExcursionResidualBoundRateAll_of_fiberTrajectorySplitRatesAll
+    (hsplitTrajAll :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        ∃ Cw Cpc : ℝ,
+          0 ≤ Cw ∧ 0 ≤ Cpc ∧
+          HasFiberTrajectoryWRReprRate (k := k) hk n e Cw ∧
+          HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro hk n e
+  rcases hsplitTrajAll hk n e with ⟨Cw, Cpc, hCw, hCpc, htraj, hWOR⟩
+  refine ⟨Cw + Cpc, add_nonneg hCw hCpc, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_fiberTrajectorySplitRates
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+      htraj hWOR
+
+/-- Fixed-`k` family-level residual-rate constructor from fiber-trajectory split-rate data. -/
+theorem hasExcursionResidualBoundRateAll_fixed_of_fiberTrajectorySplitRatesAll
+    (hk : 0 < k)
+    (hsplitTrajAll :
+      ∀ n : ℕ, ∀ e : MarkovState k,
+        ∃ Cw Cpc : ℝ,
+          0 ≤ Cw ∧ 0 ≤ Cpc ∧
+          HasFiberTrajectoryWRReprRate (k := k) hk n e Cw ∧
+          HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro n e
+  rcases hsplitTrajAll n e with ⟨Cw, Cpc, hCw, hCpc, htraj, hWOR⟩
+  refine ⟨Cw + Cpc, add_nonneg hCw hCpc, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_fiberTrajectorySplitRates
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+      htraj hWOR
+
+theorem hasCanonicalWRSmoothingRate_exists_of_statewise_wr_repr_rate
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (hwitness :
+      ∃ Cw : ℝ, 0 ≤ Cw ∧
+        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+          s ∈ stateFinset k N →
+            0 < returnsToStart (k := k) s →
+              ∃ elist pref : ExcursionList k,
+                ∃ Crepr : ℝ,
+                  |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                    excursionWithReplacementProb (k := k) elist pref| ≤
+                      Crepr / (returnsToStart (k := k) s : ℝ) ∧
+                  Crepr ≤ Cw)) :
+    ∃ Cw : ℝ, 0 ≤ Cw ∧ HasCanonicalWRSmoothingRate (k := k) hk n e Cw := by
+  rcases hwitness with ⟨Cw, hCw, hrepr⟩
+  refine ⟨Cw, hCw, ?_⟩
+  exact
+    hasCanonicalWRSmoothingRate_of_statewise_wr_repr_rate
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) hrepr
+
+/-- Fixed-`k` family version of `hasCanonicalWRSmoothingRate_exists_of_statewise_wr_repr_rate`. -/
+theorem hasCanonicalWRSmoothingRateAll_fixed_of_statewise_wr_repr_rateAll
+    (hk : 0 < k)
+    (hwitnessAll :
+      ∀ n : ℕ, ∀ e : MarkovState k,
+        ∃ Cw : ℝ, 0 ≤ Cw ∧
+          (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+            s ∈ stateFinset k N →
+              0 < returnsToStart (k := k) s →
+                ∃ elist pref : ExcursionList k,
+                  ∃ Crepr : ℝ,
+                    |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                      excursionWithReplacementProb (k := k) elist pref| ≤
+                        Crepr / (returnsToStart (k := k) s : ℝ) ∧
+                    Crepr ≤ Cw)) :
+    ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw : ℝ, 0 ≤ Cw ∧ HasCanonicalWRSmoothingRate (k := k) hk n e Cw := by
+  intro n e
+  exact
+    hasCanonicalWRSmoothingRate_exists_of_statewise_wr_repr_rate
+      (k := k) (hk := hk) (n := n) (e := e) (hwitness := hwitnessAll n e)
 /-- Robust route: build the residual-rate bound from a scalar statewise WR surrogate
 and a canonical WOR transport rate. -/
 lemma hasExcursionResidualBoundRate_of_statewise_close_and_worTransport
@@ -492,6 +1643,58 @@ lemma hasExcursionResidualBoundRate_of_statewise_close_and_worTransport
     hasExcursionResidualBoundRate_of_splitRates
       (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
       hWR hWOR hN s hs hRpos
+
+/-- Robust split-rate constructor using the start-target scalar WR crux directly. -/
+lemma hasExcursionResidualBoundRate_of_startTargetWClose_and_worTransport
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw Cpc : ℝ)
+    (hcloseStart : HasStatewiseStartTargetWClose (k := k) hk n e Cw)
+    (hWOR : HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    HasExcursionResidualBoundRate (k := k) hk n e (Cw + Cpc) := by
+  exact
+    hasExcursionResidualBoundRate_of_statewise_close_and_worTransport
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+      (statewise_close_of_startTargetWClose
+        (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) hcloseStart)
+      hWOR
+
+/-- Row-`L1` start-target WR rate + WOR transport packaged directly into a
+residual-rate bound. -/
+lemma hasExcursionResidualBoundRate_of_rowL1StartTarget_and_worTransport
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cpc : ℝ)
+    (hWOR :
+      HasCanonicalWORTransportRate (k := k) hk n e
+        ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+        Cpc) :
+    HasExcursionResidualBoundRate (k := k) hk n e
+      (((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))) + Cpc) := by
+  exact
+    hasExcursionResidualBoundRate_of_startTargetWClose_and_worTransport
+      (k := k) (hk := hk) (n := n) (e := e)
+      (Cw := ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))))
+      (Cpc := Cpc)
+      (hasStatewiseStartTargetWClose_of_rowL1 (k := k) (hk := hk) (n := n) (e := e))
+      hWOR
+
+/-- Robust split-rate constructor from excursion-target WR rates and WOR transport. -/
+lemma hasExcursionResidualBoundRate_of_excursionTargetRates_and_worTransport
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k) (Cw Cpc : ℝ)
+    (hstate : HasStatewiseExcursionTargetRates (k := k) hk n e Cw)
+    (hWOR : HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    HasExcursionResidualBoundRate (k := k) hk n e (Cw + Cpc) := by
+  have hclose :
+      ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+        s ∈ stateFinset k N →
+          0 < returnsToStart (k := k) s →
+            ∃ wSurrogate : ℝ,
+              |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ) :=
+    statewise_close_of_excursion_target_rates
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) hstate
+  intro N hN s hs hRpos
+  exact
+    hasExcursionResidualBoundRate_of_statewise_close_and_worTransport
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+      hclose hWOR hN s hs hRpos
 
 /-- Explicit-pattern route: if a pattern surrogate rate is already available,
 it directly yields the statewise residual-rate bound. -/
@@ -624,6 +1827,60 @@ theorem hasExcursionResidualBoundRateAll_of_splitRatesAll
     (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
     hWR hWOR
 
+theorem hasExcursionResidualBoundRateAll_of_statewiseCloseSplitRatesAll
+    (hsplitCloseAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+          s ∈ stateFinset k N →
+            0 < returnsToStart (k := k) s →
+              ∃ wSurrogate : ℝ,
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                  wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ)) ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro hk n e
+  rcases hsplitCloseAll hk n e with ⟨Cw, Cpc, hCw, hCpc, hclose, hWOR⟩
+  refine ⟨Cw + Cpc, add_nonneg hCw hCpc, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_statewise_close_and_worTransport
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+      hclose hWOR
+
+theorem hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_worTransportAll
+    (hWORAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        HasCanonicalWORTransportRate (k := k) hk n e
+          ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+          Cpc) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro hk n e
+  rcases hWORAll hk n e with ⟨Cpc, hCpc, hWOR⟩
+  refine
+    ⟨((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))) + Cpc,
+      add_nonneg (by positivity) hCpc, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_rowL1StartTarget_and_worTransport
+      (k := k) (hk := hk) (n := n) (e := e) (Cpc := Cpc) hWOR
+
+theorem hasExcursionResidualBoundRateAll_of_excursionTargetSplitRatesAll
+    (hsplitTargetAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasStatewiseExcursionTargetRates (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro hk n e
+  rcases hsplitTargetAll hk n e with ⟨Cw, Cpc, hCw, hCpc, hstate, hWOR⟩
+  refine ⟨Cw + Cpc, add_nonneg hCw hCpc, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_excursionTargetRates_and_worTransport
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+      hstate hWOR
+
 theorem hasExcursionResidualBoundRateAll_of_splitRatesAll_fixed
     (hk : 0 < k)
     (hsplitAll : ∀ n : ℕ, ∀ e : MarkovState k,
@@ -639,6 +1896,45 @@ theorem hasExcursionResidualBoundRateAll_of_splitRatesAll_fixed
   exact hasExcursionResidualBoundRate_of_splitRates
     (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
     hWR hWOR
+
+theorem hasExcursionResidualBoundRateAll_fixed_of_statewiseCloseSplitRatesAll
+    (hk : 0 < k)
+    (hsplitCloseAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+          s ∈ stateFinset k N →
+            0 < returnsToStart (k := k) s →
+              ∃ wSurrogate : ℝ,
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                  wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ)) ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro n e
+  rcases hsplitCloseAll n e with ⟨Cw, Cpc, hCw, hCpc, hclose, hWOR⟩
+  refine ⟨Cw + Cpc, add_nonneg hCw hCpc, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_statewise_close_and_worTransport
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+      hclose hWOR
+
+theorem hasExcursionResidualBoundRateAll_fixed_of_excursionTargetSplitRatesAll
+    (hk : 0 < k)
+    (hsplitTargetAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasStatewiseExcursionTargetRates (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  intro n e
+  rcases hsplitTargetAll n e with ⟨Cw, Cpc, hCw, hCpc, hstate, hWOR⟩
+  refine ⟨Cw + Cpc, add_nonneg hCw hCpc, ?_⟩
+  exact
+    hasExcursionResidualBoundRate_of_excursionTargetRates_and_worTransport
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc)
+      hstate hWOR
 
 
 
@@ -687,6 +1983,24 @@ theorem hasCanonicalWORTransportRateAll_of_biapproxCoreAll_exact
       (hcore := hcoreAll hk n e)
   refine ⟨0 + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, ?_⟩
   exact hWORraw
+
+theorem hasCanonicalWORTransportRateAll_of_biapproxCoreAll_rowL1StartTarget
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        HasCanonicalWORTransportRate (k := k) hk n e
+          ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+          Cpc := by
+  intro hk n e
+  refine
+    ⟨((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))) +
+      4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, ?_⟩
+  exact
+    hasCanonicalWORTransportRate_of_biapproxCore
+      (k := k) (hk := hk) (n := n) (e := e)
+      (Cw := (Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+      (hcore := hcoreAll hk n e)
 
 
 theorem hasExcursionResidualBoundRateAll_of_biapproxCoreAll_exactSurrogate

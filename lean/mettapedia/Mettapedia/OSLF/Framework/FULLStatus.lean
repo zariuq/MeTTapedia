@@ -5,6 +5,9 @@ import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 import Mettapedia.GSLT.Topos.PredicateFibration
 import Mettapedia.OSLF.Framework.ToposReduction
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
+import Mettapedia.OSLF.Formula
+import Mettapedia.OSLF.Framework.TinyMLInstance
+import Mettapedia.OSLF.Framework.MeTTaMinimalInstance
 
 /-!
 # OSLF FULL Status Tracker
@@ -50,31 +53,41 @@ def tracker : List Milestone :=
       status := .done
       codeRef := "Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean: engineWithPremisesUsing_sound/complete"
       note := "Engine path with premises has soundness/completeness bridge." }
+  , { area := "Canonical vs Extension Policy"
+      title := "rhoCalc blocks set-context descent; rhoCalcSetExt enables it"
+      status := .done
+      codeRef := "Mettapedia/OSLF/Framework/TypeSynthesis.lean: rhoSetDropWitness_canonical_vs_setExt"
+      note := "Policy is enforced at LanguageDef/langReduces via `congruenceCollections`; low-level `RhoCalculus.Reduction.Reduces` remains a shared superset relation." }
+  , { area := "Category Lift"
+      title := "Presheaf-primary default consumer path"
+      status := .done
+      codeRef := "Mettapedia/OSLF/Framework/CategoryBridge.lean: SortPresheafCategory, predFibration, oslf_fibration, predFibration_presheafSortApprox_agreement"
+      note := "Consumer-facing defaults now target the Ω/subobject presheaf backend; sort-wise path is retained via explicit compatibility wrappers (`predFibrationSortApprox`, `oslf_fibrationSortApprox`) and connected by an explicit discrete-base agreement theorem." }
   , { area := "Category Lift"
       title := "Sort base no longer hard-coded to Discrete"
-      status := .inProgress
-      codeRef := "Mettapedia/OSLF/Framework/CategoryBridge.lean: SortCategoryInterface, lambdaTheorySortInterface, typeSortsLambdaInterface"
-      note := "Interface + concrete λ-theory-backed interface are defined; language-specific presheaf semantics still pending." }
+      status := .done
+      codeRef := "Mettapedia/OSLF/Framework/CategoryBridge.lean: SortCategoryInterface, lambdaTheorySortInterface, typeSortsLambdaInterface, languagePresheafLambdaTheory, languageSortRepresentableObj"
+      note := "Both interface-parametric base selection and a real language-dependent presheaf λ-theory lift are formalized." }
   , { area := "Category Lift"
       title := "Predication over interface-selected base category"
-      status := .inProgress
-      codeRef := "Mettapedia/OSLF/Framework/CategoryBridge.lean: predFibrationUsing, oslf_fibrationUsing, typeSortsPredFibrationViaLambdaInterface"
-      note := "Generic fibration constructors exist and are exercised in a non-default λ-theory-backed use-site." }
+      status := .done
+      codeRef := "Mettapedia/OSLF/Framework/CategoryBridge.lean: predFibrationUsing, oslf_fibrationUsing, typeSortsPredFibrationViaLambdaInterface, langOSLFFibrationUsing_presheafAgreement, CommDiPathSemLiftPkg, commDiPathSemLiftPkg_of_liftEq, commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order, commDiWitnessLifting_of_pathSemLiftPkg, languageSortPredNaturality_commDi_pathSemClosed_of_pkg, languageSortFiber_ofPatternPred_mem_iff_satisfies; Mettapedia/OSLF/Formula.lean: checkLangUsing_sat_sound_sort_fiber, checkLangUsing_sat_sound_sort_fiber_mem_iff"
+      note := "Interface-selected predication is closed by generic representable-fiber bridges plus explicit package-instantiation policy (manual liftEq route vs automatic path/subst+order route); checker-facing `sat → satisfies` is available at arbitrary language sorts." }
   , { area := "Presheaf Topos"
       title := "Internal Ω/sieve-based subobject semantics"
-      status := .inProgress
-      codeRef := "Mettapedia/GSLT/Topos/SubobjectClassifier.lean: presheafSubobjectRepresentableByOmega / presheafCategoryHasClassifierConstructive"
-      note := "Constructive Ω/sieve representability and classifier are formalized; base-semantics wiring into CategoryBridge remains." }
+      status := .done
+      codeRef := "Mettapedia/GSLT/Topos/SubobjectClassifier.lean: presheafSubobjectRepresentableByOmega / presheafCategoryHasClassifierConstructive; Mettapedia/OSLF/Framework/CategoryBridge.lean: languagePresheafLambdaTheory, languageSortFiber_characteristicEquiv"
+      note := "Constructive Ω/sieve classifier path is wired into OSLF bridge through concrete language-presheaf λ-theory objects and sort-fiber characteristic-map equivalence." }
   , { area := "Reduction-as-Subobject"
       title := "Internal reduction graph with premises in topos"
-      status := .inProgress
-      codeRef := "Mettapedia/OSLF/Framework/ToposReduction.lean: reductionGraphObjUsing / reductionGraphUsing_edge_endpoints_iff / langDiamondUsing_iff_exists_graphStep / langBoxUsing_iff_forall_graphIncoming"
-      note := "Premise-aware one-step reduction is packaged as a reusable graph object abstraction over presheaves, with endpoint and modal (`◇`,`□`) graph-compatibility bridges." }
+      status := .done
+      codeRef := "Mettapedia/OSLF/Framework/ToposReduction.lean: reductionGraphObjUsing / reductionGraphUsing_edge_endpoints_iff / langDiamondUsing_iff_exists_graphObjStep / langBoxUsing_iff_forall_graphObjIncoming; Mettapedia/OSLF/Formula.lean: checkLangUsingWithPred_sat_sound_graphObj_dia / checkLangUsingWithPred_sat_sound_graphObj_box"
+      note := "Premise-aware one-step reduction is packaged as a reusable graph object abstraction over presheaves, with endpoint/modal (`◇`,`□`) graph-object bridges and checker-facing soundness corollaries for both `.dia` and `.box` over `ReductionGraphObj`." }
   , { area := "Beck-Chevalley"
       title := "Full substitution square in lifted base"
-      status := .inProgress
-      codeRef := "Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean: presheafPrimary_beckChevalley_transport / commDi_diamond_graphObj_square"
-      note := "OSLF layer now includes an explicit graph-object substitution/rewrite square theorem (`commDi_diamond_graphObj_square`) over `ReductionGraphObj`, alongside presheaf Beck-Chevalley transport." }
+      status := .done
+      codeRef := "Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean: presheaf_beckChevalley_square_direct / representable_patternPred_beckChevalley / representable_commDi_patternPred_beckChevalley / representable_commDi_patternPred_beckChevalley_of_pathSemLiftPkg / representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg / commDi_diamond_graphObj_square_direct; Mettapedia/OSLF/Framework/TinyMLInstance.lean: tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph / tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq; Mettapedia/OSLF/Framework/MeTTaMinimalInstance.lean: mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph / mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq / mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto"
+      note := "Lifted-base substitution square is consumed end-to-end through package-based COMM/path-semantics transport with concrete non-rho checker→fiber→PathSemClosed BC+graph theorems for TinyML and MeTTaMinimal." }
   ]
 
 /-- Count milestones with a given status. -/
@@ -85,8 +98,8 @@ def countBy (s : MilestoneStatus) : Nat :=
 def remaining : List Milestone :=
   tracker.filter (fun m => m.status ≠ .done)
 
-/-- Quick sanity check: we do have tracked unfinished work. -/
-theorem remaining_nonempty : remaining ≠ [] := by
+/-- Quick sanity check: current tracked FULL-OSLF milestones are all done. -/
+theorem remaining_eq_nil : remaining = [] := by
   simp [remaining, tracker]
 
 /-! ## Code-Reference Anchors
@@ -95,24 +108,97 @@ These checks tie tracker statements to concrete constants in the codebase.
 -/
 
 #check @Mettapedia.OSLF.Framework.TypeSynthesis.langOSLF
+#check @Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness_canonical_vs_setExt
 #check @Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises.engineWithPremisesUsing_sound
 #check @Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises.engineWithPremisesUsing_complete
 #check @Mettapedia.OSLF.Framework.CategoryBridge.SortCategoryInterface
+#check @Mettapedia.OSLF.Framework.CategoryBridge.SortPresheafCategory
 #check @Mettapedia.OSLF.Framework.CategoryBridge.lambdaTheorySortInterface
 #check @Mettapedia.OSLF.Framework.CategoryBridge.predFibrationUsing
 #check @Mettapedia.OSLF.Framework.CategoryBridge.oslf_fibrationUsing
+#check @Mettapedia.OSLF.Framework.CategoryBridge.predFibration
+#check @Mettapedia.OSLF.Framework.CategoryBridge.oslf_fibration
+#check @Mettapedia.OSLF.Framework.CategoryBridge.predFibrationSortApprox
+#check @Mettapedia.OSLF.Framework.CategoryBridge.oslf_fibrationSortApprox
+#check @Mettapedia.OSLF.Framework.CategoryBridge.predFibration_presheafSortApprox_agreement
+#check @Mettapedia.OSLF.Framework.CategoryBridge.typeSortsOSLFFibrationUsing_presheafAgreement
+#check @Mettapedia.OSLF.Framework.CategoryBridge.langOSLFFibrationUsing_presheafAgreement
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rhoLangOSLFFibrationUsing_presheafAgreement
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languagePresheafLambdaTheory
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiPred
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting
+#check @Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred
+#check @Mettapedia.OSLF.Framework.CategoryBridge.CommDiPathSemLiftPkg
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_liftEq
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemLiftPkg
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rho_proc_pathSemLift_pkg
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rho_proc_commDiWitnessLifting_of_pkg
+#check @Mettapedia.OSLF.Framework.CategoryBridge.pathSem_commSubst
+#check @Mettapedia.OSLF.Framework.CategoryBridge.pathSemClosedPred_closed
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemClosed
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_lift
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemLift
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_characteristicMap
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_characteristicMap_spec
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_mem_iff
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_mem_iff_satisfies
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rhoProc_langOSLF_predicate_to_fiber_mem_iff
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred_to_languageSortFiber
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred_to_languageSortFiber_mem_iff
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_characteristicEquiv
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredicateFibration
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rhoProcRepresentableObj
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rhoProcSortFiber_characteristicEquiv
 #check @Mettapedia.GSLT.Topos.beckChevalleyCondition_presheafChangeOfBase
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.presheafPrimary_beckChevalley_transport
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_patternPred_beckChevalley
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_patternPred_beckChevalley
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_patternPred_beckChevalley_of_lifting
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_patternPred_beckChevalley_of_pathSemLift
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_patternPred_beckChevalley_of_pathSemClosed
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_patternPred_beckChevalley_of_pathSemLiftPkg
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_lifting
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemLift
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemClosed
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.rhoProc_commDi_bc_and_graphDiamond_of_pathSemLift_pkg
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.langDiamondUsing_graph_transport
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.langBoxUsing_graph_transport
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi_diamond_graph_step_iff
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi_diamond_graphObj_square
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi_diamond_graphObj_square_direct
 #check @Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
 #check @Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
 #check @Mettapedia.OSLF.Framework.ToposReduction.reductionSubfunctorUsing
 #check @Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing_edge_endpoints_iff
 #check @Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_graphStep
 #check @Mettapedia.OSLF.Framework.ToposReduction.langBoxUsing_iff_forall_graphIncoming
+#check @Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_graphObjStep
+#check @Mettapedia.OSLF.Framework.ToposReduction.langBoxUsing_iff_forall_graphObjIncoming
 #check @Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_internalStep
 #check @Mettapedia.OSLF.Framework.ToposReduction.langBoxUsing_iff_forall_internalStep
+#check @Mettapedia.OSLF.Formula.checkLangUsing_sat_sound_sort_fiber
+#check @Mettapedia.OSLF.Formula.checkLangUsing_sat_sound_sort_fiber_mem_iff
+#check @Mettapedia.OSLF.Formula.checkLangUsing_sat_sound_proc_fiber_using
+#check @Mettapedia.OSLF.Formula.checkLangUsing_sat_sound_proc_fiber_using_mem_iff
+#check @Mettapedia.OSLF.Formula.checkLang_sat_sound_proc_fiber_using
+#check @Mettapedia.OSLF.Formula.checkLangUsingWithPred_sat_sound_graphObj_dia
+#check @Mettapedia.OSLF.Formula.checkLangUsingWithPred_sat_sound_graphObj_box
+#check @Mettapedia.OSLF.Framework.TinyMLInstance.tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
+#check @Mettapedia.OSLF.Framework.TinyMLInstance.tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_commDiPathSemLiftPkg_of_liftEq
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
 
 end Mettapedia.OSLF.Framework.FULLStatus

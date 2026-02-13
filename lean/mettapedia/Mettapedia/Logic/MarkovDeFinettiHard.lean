@@ -4,6 +4,7 @@ import Mettapedia.Logic.MarkovDeFinettiHardBase
 import Mettapedia.Logic.MarkovDeFinettiEvidenceBasis
 import Mettapedia.Logic.MarkovDeFinettiHardRepresentability
 import Mettapedia.Logic.MarkovDeFinettiHardFinite
+import Mettapedia.Logic.MarkovDeFinettiHardWRStartTargetCounterexample
 import Mettapedia.Logic.MarkovDeFinettiRecurrence
 import Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge
 
@@ -44,6 +45,7 @@ namespace MarkovDeFinettiHard
 open Mettapedia.Logic.UniversalPrediction
 open Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge
 open Mettapedia.Logic.MarkovDeFinettiRecurrence
+open Mettapedia.Logic.MarkovDeFinettiHardExcursionModel
 
 variable {k : ℕ}
 
@@ -453,6 +455,96 @@ theorem markovDeFinetti_hard_of_splitRates
   exact markovDeFinetti_hard_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll
 
+theorem markovDeFinetti_hard_of_statewiseCloseSplitRates
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitCloseAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+          s ∈ stateFinset k N →
+            0 < returnsToStart (k := k) s →
+              ∃ wSurrogate : ℝ,
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                  wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ)) ∧
+        MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_statewiseCloseSplitRatesAll
+      (k := k) hsplitCloseAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+theorem markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hWORAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e
+          ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+          Cpc) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_worTransportAll
+      (k := k) hWORAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+theorem markovDeFinetti_hard_of_biapproxCore_rowL1StartTarget
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      MarkovDeFinettiHard.HasExcursionBiapproxCore (k := k) hk n e) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hWORAll :=
+    MarkovDeFinettiHard.hasCanonicalWORTransportRateAll_of_biapproxCoreAll_rowL1StartTarget
+      (k := k) hcoreAll
+  exact
+    markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport
+      (k := k) (μ := μ) hμ hrec hWORAll
+
+
+
+theorem markovDeFinetti_hard_of_fiberTrajectorySplitRates
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitTrajAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        MarkovDeFinettiHard.HasFiberTrajectoryWRReprRate (k := k) hk n e Cw ∧
+        MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_fiberTrajectorySplitRatesAll
+      (k := k) hsplitTrajAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+
+theorem markovDeFinetti_hard_of_excursionTargetSplitRates
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitTargetAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        MarkovDeFinettiHard.HasStatewiseExcursionTargetRates (k := k) hk n e Cw ∧
+        MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_excursionTargetSplitRatesAll
+      (k := k) hsplitTargetAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
 
 
 theorem markovDeFinetti_hard_of_exactSurrogateWORTransport

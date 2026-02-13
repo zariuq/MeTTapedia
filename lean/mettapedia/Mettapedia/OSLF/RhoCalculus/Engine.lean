@@ -122,6 +122,14 @@ def reduceStep (p : Pattern) (fuel : Nat := 100) : List Pattern :=
       [inner]
     | _ => []
 
+/-- Executable irreducibility canary for the empty bag. -/
+theorem emptyBag_reduceStep_nil (fuel : Nat) :
+    reduceStep (.collection .hashBag [] none) fuel = [] := by
+  cases fuel with
+  | zero => simp [reduceStep]
+  | succ n =>
+    simp [reduceStep, findAllComm, reduceElemsAux]
+
 /-- Reduce to normal form using a deterministic strategy (pick first reduct). -/
 def reduceToNormalForm (p : Pattern) (fuel : Nat := 1000) : Pattern :=
   match fuel with

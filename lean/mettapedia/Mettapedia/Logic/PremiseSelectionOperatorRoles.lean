@@ -17,6 +17,7 @@ external-Bayesianity commutation.
 namespace Mettapedia.Logic.PremiseSelection
 
 open scoped Classical ENNReal BigOperators
+open Mettapedia.Logic.EvidenceQuantale
 
 /-- Abstract checklist for operator-role correctness. -/
 structure OperatorRoleTheory (Goal Fact : Type*) where
@@ -47,6 +48,23 @@ structure OperatorRoleTheoryNormalized (Goal Fact : Type*)
     ∀ t p, IsPrior p → IsPrior (normalizeScorer t p)
   likelihood_normalize_closed :
     ∀ t l, IsLikelihood l → IsLikelihood (normalizeScorer t l)
+
+/-- Practical finite-normalized variant:
+normalization closure is required only in the finite nonzero regime (`t ≠ 0`, `t ≠ ⊤`). -/
+structure OperatorRoleTheoryFiniteNormalized (Goal Fact : Type*)
+    extends OperatorRoleTheory Goal Fact where
+  prior_normalize_closed_finite :
+    ∀ t p, t ≠ 0 → t ≠ ⊤ → IsPrior p → IsPrior (normalizeScorer t p)
+  likelihood_normalize_closed_finite :
+    ∀ t l, t ≠ 0 → t ≠ ⊤ → IsLikelihood l → IsLikelihood (normalizeScorer t l)
+
+/-- Evidence totals are finite (not `⊤`) at every goal/fact point. -/
+def IsFiniteScorer {Goal Fact : Type*} (s : Scorer Goal Fact) : Prop :=
+  ∀ g f, (s.score g f).total ≠ ⊤
+
+/-- Evidence totals are finite and nonzero at every goal/fact point. -/
+def IsFiniteNonzeroScorer {Goal Fact : Type*} (s : Scorer Goal Fact) : Prop :=
+  ∀ g f, (s.score g f).total ≠ 0 ∧ (s.score g f).total ≠ ⊤
 
 /-- A premise selector decomposed into role-typed components. -/
 structure RoleDisciplinedSelector {Goal Fact : Type*} (T : OperatorRoleTheory Goal Fact) where
@@ -188,5 +206,178 @@ theorem partitionedPrior_congr
     partitionedPrior (Goal := Goal) (Fact := Fact) bins₁ localPrior weight =
       partitionedPrior (Goal := Goal) (Fact := Fact) bins₂ localPrior weight := by
   simp [hbins]
+
+/-! ## Concrete non-vacuous normalized role model
+
+This model is intentionally explicit and non-vacuous:
+- Priors/likelihoods/posteriors are scorers whose evidence is **negative-only**
+  (positive coordinate `= 0`) at every goal/fact point.
+- It is closed under `fuse`, `update`, `scaleScorer`, and `normalizeScorer`.
+
+This gives a fully concrete `OperatorRoleTheoryNormalized` instance showing that
+the class is realizable with semantics-first constraints (not `True` placeholders).
+-/
+
+/-- Negative-only semantic role predicate: every score has zero positive evidence. -/
+def IsNegOnlyScorer {Goal Fact : Type*} (s : Scorer Goal Fact) : Prop :=
+  ∀ g f, (s.score g f).pos = 0
+
+lemma toStrength_eq_zero_of_pos_zero (e : Evidence) (hpos : e.pos = 0) :
+    Evidence.toStrength e = 0 := by
+  unfold Evidence.toStrength
+  by_cases htot : e.total = 0
+  · simp [htot]
+  · simp [htot, hpos]
+
+/-- A concrete, non-vacuous normalized role theory built from negative-only evidence. -/
+noncomputable def negOnlyOperatorRoleTheoryNormalized (Goal Fact : Type*) :
+    OperatorRoleTheoryNormalized Goal Fact where
+  IsPrior := IsNegOnlyScorer
+  IsLikelihood := IsNegOnlyScorer
+  IsPosterior := IsNegOnlyScorer
+  prior_fuse_closed := by
+    intro p₁ p₂ hp₁ hp₂ g f
+    simp [fuse, Evidence.hplus_def, hp₁ g f, hp₂ g f]
+  posterior_from_update := by
+    intro p l hp hl g f
+    simp [update, Evidence.tensor_def, hp g f, hl g f]
+  prior_scale_closed := by
+    intro w p hp g f
+    simp [scaleScorer, scaleEvidence, hp g f]
+  prior_normalize_closed := by
+    intro t p hp g f
+    have hs : Evidence.toStrength (p.score g f) = 0 :=
+      toStrength_eq_zero_of_pos_zero (e := p.score g f) (hp g f)
+    simp [normalizeScorer, normalizeEvidence, hs]
+  likelihood_normalize_closed := by
+    intro t l hl g f
+    have hs : Evidence.toStrength (l.score g f) = 0 :=
+      toStrength_eq_zero_of_pos_zero (e := l.score g f) (hl g f)
+    simp [normalizeScorer, normalizeEvidence, hs]
+
+/-- The concrete role model is non-vacuous: some scorers satisfy it. -/
+theorem negOnlyOperatorRoleTheoryNormalized_exists_prior
+    (Goal Fact : Type*) :
+    ∃ p : Scorer Goal Fact,
+      (negOnlyOperatorRoleTheoryNormalized Goal Fact).IsPrior p := by
+  refine ⟨zeroScorer, ?_⟩
+  intro g f
+  simp [zeroScorer, Evidence.zero]
+
+/-- The concrete role model is non-vacuous: not every scorer is a prior. -/
+theorem negOnlyOperatorRoleTheoryNormalized_not_all_priors
+    (Goal Fact : Type*) [Nonempty Goal] [Nonempty Fact] :
+    ∃ s : Scorer Goal Fact,
+      ¬ (negOnlyOperatorRoleTheoryNormalized Goal Fact).IsPrior s := by
+  let g0 : Goal := Classical.choice ‹Nonempty Goal›
+  let f0 : Fact := Classical.choice ‹Nonempty Fact›
+  refine ⟨constScorer (Goal := Goal) (Fact := Fact) 1, ?_⟩
+  intro hs
+  have h0 : ((constScorer (Goal := Goal) (Fact := Fact) 1).score g0 f0).pos = 0 := hs g0 f0
+  have h1 : ((constScorer (Goal := Goal) (Fact := Fact) 1).score g0 f0).pos = (1 : ℝ≥0∞) := by
+    rfl
+  have : (1 : ℝ≥0∞) = 0 := by
+    calc
+      (1 : ℝ≥0∞) = ((constScorer (Goal := Goal) (Fact := Fact) 1).score g0 f0).pos := by
+        simpa using h1.symm
+      _ = 0 := h0
+  exact one_ne_zero this
+
+/-! ## Concrete finite nonzero normalized regime
+
+This second role model tracks the practically relevant regime where normalized totals
+are finite and nonzero (`t ≠ 0`, `t ≠ ⊤`). Unlike `OperatorRoleTheoryNormalized`,
+its normalization closure is intentionally scoped to this regime.
+-/
+
+/-- A concrete finite-nonzero normalized role model. -/
+noncomputable def finiteNonzeroOperatorRoleTheoryFiniteNormalized (Goal Fact : Type*) :
+    OperatorRoleTheoryFiniteNormalized Goal Fact where
+  IsPrior := IsFiniteNonzeroScorer
+  IsLikelihood := IsFiniteNonzeroScorer
+  IsPosterior := IsFiniteScorer
+  prior_fuse_closed := by
+    intro p₁ p₂ hp₁ hp₂ g f
+    rcases hp₁ g f with ⟨h₁0, h₁top⟩
+    rcases hp₂ g f with ⟨h₂0, h₂top⟩
+    refine ⟨?_, ?_⟩
+    · intro hsum
+      have hsum' : (p₁.score g f).total + (p₂.score g f).total = 0 := by
+        simpa [fuse_total] using hsum
+      exact h₁0 (add_eq_zero.mp hsum').1
+    · have hsum_top : (p₁.score g f).total + (p₂.score g f).total ≠ ⊤ := by
+        exact WithTop.add_ne_top.mpr ⟨h₁top, h₂top⟩
+      simpa [fuse_total] using hsum_top
+  posterior_from_update := by
+    intro p l hp hl g f
+    rcases hp g f with ⟨_, hpTop⟩
+    rcases hl g f with ⟨_, hlTop⟩
+    have hpTot_lt : (p.score g f).total < ⊤ := lt_top_iff_ne_top.mpr hpTop
+    have hlTot_lt : (l.score g f).total < ⊤ := lt_top_iff_ne_top.mpr hlTop
+    have hpPos_le : (p.score g f).pos ≤ (p.score g f).total := by
+      simp [Evidence.total]
+    have hpNeg_le : (p.score g f).neg ≤ (p.score g f).total := by
+      simp [Evidence.total]
+    have hlPos_le : (l.score g f).pos ≤ (l.score g f).total := by
+      simp [Evidence.total]
+    have hlNeg_le : (l.score g f).neg ≤ (l.score g f).total := by
+      simp [Evidence.total]
+    have hpPos_top : (p.score g f).pos ≠ ⊤ := ne_of_lt (lt_of_le_of_lt hpPos_le hpTot_lt)
+    have hpNeg_top : (p.score g f).neg ≠ ⊤ := ne_of_lt (lt_of_le_of_lt hpNeg_le hpTot_lt)
+    have hlPos_top : (l.score g f).pos ≠ ⊤ := ne_of_lt (lt_of_le_of_lt hlPos_le hlTot_lt)
+    have hlNeg_top : (l.score g f).neg ≠ ⊤ := ne_of_lt (lt_of_le_of_lt hlNeg_le hlTot_lt)
+    have hmulPos_top :
+        (p.score g f).pos * (l.score g f).pos ≠ ⊤ := ENNReal.mul_ne_top hpPos_top hlPos_top
+    have hmulNeg_top :
+        (p.score g f).neg * (l.score g f).neg ≠ ⊤ := ENNReal.mul_ne_top hpNeg_top hlNeg_top
+    have hsum_top :
+        (p.score g f).pos * (l.score g f).pos + (p.score g f).neg * (l.score g f).neg ≠ ⊤ := by
+      exact WithTop.add_ne_top.mpr ⟨hmulPos_top, hmulNeg_top⟩
+    simpa [update, Evidence.tensor_def, Evidence.total] using hsum_top
+  prior_normalize_closed_finite := by
+    intro t p ht0 htTop _hp g f
+    refine ⟨?_, ?_⟩
+    · simpa [normalizeScorer_total] using ht0
+    · simpa [normalizeScorer_total] using htTop
+  likelihood_normalize_closed_finite := by
+    intro t l ht0 htTop _hl g f
+    refine ⟨?_, ?_⟩
+    · simpa [normalizeScorer_total] using ht0
+    · simpa [normalizeScorer_total] using htTop
+
+/-- The finite nonzero regime is non-vacuous: normalized constants inhabit it. -/
+theorem finiteNonzeroOperatorRoleTheoryFiniteNormalized_exists_prior
+    (Goal Fact : Type*) :
+    ∃ p : Scorer Goal Fact,
+      (finiteNonzeroOperatorRoleTheoryFiniteNormalized Goal Fact).IsPrior p := by
+  refine ⟨normalizeScorer (t := (1 : ℝ≥0∞)) (s := (zeroScorer : Scorer Goal Fact)), ?_⟩
+  intro g f
+  constructor
+  · have h1 : (1 : ℝ≥0∞) ≠ 0 := by simp
+    simp [normalizeScorer_total, h1]
+  · have h1top : (1 : ℝ≥0∞) ≠ ⊤ := by simp
+    simp [normalizeScorer_total, h1top]
+
+/-- The finite nonzero regime is non-vacuous: zero scorer is excluded. -/
+theorem finiteNonzeroOperatorRoleTheoryFiniteNormalized_not_all_priors
+    (Goal Fact : Type*) [Nonempty Goal] [Nonempty Fact] :
+    ∃ s : Scorer Goal Fact,
+      ¬ (finiteNonzeroOperatorRoleTheoryFiniteNormalized Goal Fact).IsPrior s := by
+  let g0 : Goal := Classical.choice ‹Nonempty Goal›
+  let f0 : Fact := Classical.choice ‹Nonempty Fact›
+  refine ⟨zeroScorer, ?_⟩
+  intro hs
+  have h0 : ((zeroScorer : Scorer Goal Fact).score g0 f0).total ≠ 0 := (hs g0 f0).1
+  exact h0 (by simp [zeroScorer, Evidence.zero, Evidence.total])
+
+/-- Practical closure lemma: normalization by finite nonzero total yields a prior in this model. -/
+theorem finiteNonzeroOperatorRoleTheoryFiniteNormalized_prior_from_normalize
+    (Goal Fact : Type*) (t : ℝ≥0∞) (ht0 : t ≠ 0) (htTop : t ≠ ⊤) (p : Scorer Goal Fact) :
+    (finiteNonzeroOperatorRoleTheoryFiniteNormalized Goal Fact).IsPrior
+      (normalizeScorer t p) := by
+  intro g f
+  constructor
+  · simpa [normalizeScorer_total] using ht0
+  · simpa [normalizeScorer_total] using htTop
 
 end Mettapedia.Logic.PremiseSelection

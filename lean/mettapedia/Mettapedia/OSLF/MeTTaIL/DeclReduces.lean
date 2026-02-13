@@ -42,6 +42,7 @@ inductive DeclReduces (lang : LanguageDef) : Pattern → Pattern → Prop where
       {elems : List Pattern} →
       {ct : CollType} →
       {rest : Option String} →
+      (hct : LanguageDef.allowsCongruenceIn lang ct) →
       (i : Nat) →
       (hi : i < elems.length) →
       (r : RewriteRule) →
@@ -115,24 +116,27 @@ private theorem rewriteInCollection_sound {lang : LanguageDef}
     (hq : q ∈ rewriteInCollectionNoPremises lang ct elems rest) :
     DeclReduces lang (.collection ct elems rest) q := by
   unfold rewriteInCollectionNoPremises at hq
-  rw [List.mem_flatMap] at hq
-  obtain ⟨⟨elem, j⟩, hmem_zip, hq_map⟩ := hq
-  rw [List.mem_map] at hq_map
-  obtain ⟨elem', hstep, rfl⟩ := hq_map
-  have hj := lt_length_of_mem_zipIdx hmem_zip
-  have helem_eq := eq_getElem_of_mem_zipIdx hmem_zip hj
-  subst helem_eq
-  -- Decompose rewriteStep to get rule and bindings
-  unfold rewriteStepNoPremises rewriteStep at hstep
-  rw [List.mem_flatMap] at hstep
-  obtain ⟨rule, hrule, hq_rule⟩ := hstep
-  unfold applyRule at hq_rule
-  split at hq_rule
-  case isTrue hprem =>
-    rw [List.mem_map] at hq_rule
-    obtain ⟨bs, hbs, rfl⟩ := hq_rule
-    exact .congElem j hj rule hrule (premises_nil_of_isEmpty hprem) bs hbs rfl
-  case isFalse => simp at hq_rule
+  split at hq
+  · rename_i hct
+    rw [List.mem_flatMap] at hq
+    obtain ⟨⟨elem, j⟩, hmem_zip, hq_map⟩ := hq
+    rw [List.mem_map] at hq_map
+    obtain ⟨elem', hstep, rfl⟩ := hq_map
+    have hj := lt_length_of_mem_zipIdx hmem_zip
+    have helem_eq := eq_getElem_of_mem_zipIdx hmem_zip hj
+    subst helem_eq
+    -- Decompose rewriteStep to get rule and bindings
+    unfold rewriteStepNoPremises rewriteStep at hstep
+    rw [List.mem_flatMap] at hstep
+    obtain ⟨rule, hrule, hq_rule⟩ := hstep
+    unfold applyRule at hq_rule
+    split at hq_rule
+    case isTrue hprem =>
+      rw [List.mem_map] at hq_rule
+      obtain ⟨bs, hbs, rfl⟩ := hq_rule
+      exact .congElem hct j hj rule hrule (premises_nil_of_isEmpty hprem) bs hbs rfl
+    case isFalse => simp at hq_rule
+  · simp at hq
 
 /-- **Soundness**: every result of the engine is a declarative reduction. -/
 theorem engine_sound {lang : LanguageDef} {p q : Pattern}
@@ -180,15 +184,14 @@ theorem engine_complete {lang : LanguageDef} {p q : Pattern}
     unfold rewriteWithContext rewriteWithContextNoPremises
     rw [List.mem_append]
     exact .inl (rewriteStep_of_topRule' r hr hprem bs hbs hq)
-  | @congElem elems ct rest i hi r hr hprem bs hbs q' hq =>
+  | @congElem elems ct rest hct i hi r hr hprem bs hbs q' hq =>
     unfold rewriteWithContext rewriteWithContextNoPremises
     rw [List.mem_append]
     right
     unfold rewriteInCollectionNoPremises
-    rw [List.mem_flatMap]
-    refine ⟨(elems[i], i), mem_zipIdx_of_lt elems i hi, ?_⟩
-    rw [List.mem_map]
-    exact ⟨q', rewriteStep_of_topRule' r hr hprem bs hbs hq, rfl⟩
+    simp [hct, List.mem_flatMap, List.mem_map]
+    refine ⟨elems[i], i, mem_zipIdx_of_lt elems i hi, q', ?_, rfl⟩
+    exact rewriteStep_of_topRule' r hr hprem bs hbs hq
 
 /-! ## Equivalence -/
 

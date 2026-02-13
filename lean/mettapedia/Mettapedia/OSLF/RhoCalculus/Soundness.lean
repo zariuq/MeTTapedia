@@ -697,6 +697,23 @@ theorem progress {p : Pattern} {τ : NativeType} :
       rfl
     · nomatch h'
 
+/-! ## SC-Irreducibility Regression Guard -/
+
+/-- A nontrivial SC-representative of the empty bag (`@(*{})`) is irreducible.
+
+    This guards the SC-quotiented theorem `emptyBag_SC_irreducible` against
+    regressions and ensures it applies beyond the literal empty-bag syntax. -/
+theorem quoteDropEmpty_irreducible {q : Pattern} :
+    ¬ Nonempty ((.apply "NQuote" [.apply "PDrop" [.collection .hashBag [] none]]) ⇝ q) := by
+  intro hred
+  rcases hred with ⟨hρ⟩
+  have hsc :
+      StructuralCongruence
+        (.collection .hashBag [] none)
+        (.apply "NQuote" [.apply "PDrop" [.collection .hashBag [] none]]) := by
+    exact StructuralCongruence.symm _ _ (StructuralCongruence.quote_drop (.collection .hashBag [] none))
+  exact emptyBag_SC_irreducible hsc hρ
+
 /-! ## Summary
 
 This file establishes the type soundness of OSLF:

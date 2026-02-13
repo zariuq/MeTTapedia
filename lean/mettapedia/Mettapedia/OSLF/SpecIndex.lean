@@ -90,9 +90,21 @@ formalization. Serves as a traceability matrix for review.
 ### Reduction Rules
 - Paper [MR] §2: COMM, DROP, structural congruence
 - Lean: `Reduces` (RhoCalculus/Reduction.lean:50)
+  - Policy note: this low-level relation is intentionally unsplit and includes
+    both bag/set congruence constructors; canonical-vs-extension behavior is
+    enforced at the `LanguageDef`/`langReduces` layer.
   - `.comm`: {n!(q) | for(<-n){p} | rest} ⇝ {substBVar p (@q) | rest}
   - `.drop`: *(@q) ⇝ q
   - `.equiv`: p ≡ p' ⇝ q' ≡ q ⇒ p ⇝ q
+
+### Canonical vs Extension Language Policy
+- Canonical language: `rhoCalc` (`congruenceCollections := [.hashBag]`)
+- Optional extension: `rhoCalcSetExt`
+  (`congruenceCollections := [.hashBag, .hashSet]`)
+- Theorem-level comparison:
+  `rhoSetDropWitness_canonical_vs_setExt`
+  (`Framework/TypeSynthesis.lean:377`) proves set-context descent is blocked
+  in canonical `rhoCalc` and enabled in `rhoCalcSetExt` for the same witness.
 
 ### Type Judgment (Locally Nameless)
 - Paper [APSS] for locally nameless representation
@@ -110,6 +122,8 @@ formalization. Serves as a traceability matrix for review.
 - Relation environment: `RelationEnv` for pluggable `relationQuery` tuples
 - Safety choice: builtin `relationQuery "reduces"` uses the no-premise baseline
   (`rewriteWithContextNoPremises`) to avoid recursive premise self-reference.
+- Canonical-vs-extension policy: `LanguageDef.congruenceCollections` controls
+  whether collection-context descent is enabled per language instance.
 
 ### Declarative Reduction
 - Legacy: `DeclReduces` (MeTTaIL/DeclReduces.lean)
@@ -136,8 +150,31 @@ formalization. Serves as a traceability matrix for review.
 
 ### Predicate Fibration
 - Paper [WS] §4: Sub(Y(X)) fibered over sorts
-- Lean: `predFibration` (Framework/CategoryBridge.lean:192)
-- Lean: `oslf_fibration` (Framework/CategoryBridge.lean:241)
+- Lean (default, presheaf-primary): `predFibration`, `oslf_fibration`
+  over `SortPresheafCategory`
+- Lean (legacy sort-wise wrappers): `predFibrationSortApprox`,
+  `oslf_fibrationSortApprox`
+- Agreement theorem (discrete-base): `predFibration_presheafSortApprox_agreement`
+- Agreement theorem (concrete type-sorted instance):
+  `typeSortsOSLFFibrationUsing_presheafAgreement`
+- Agreement theorem (generic language-wrapper instance):
+  `langOSLFFibrationUsing_presheafAgreement`
+- Agreement theorem (concrete language-wrapper instance):
+  `rhoLangOSLFFibrationUsing_presheafAgreement`
+- Lean (interface-parametric): `predFibrationUsing`, `oslf_fibrationUsing`
+- Lean (full language-presheaf λ-theory lift):
+  `languagePresheafLambdaTheory`, `languageSortRepresentableObj`,
+  `languageSortFiber`, `languageSortFiber_characteristicEquiv`,
+  `languageSortPredicateFibration`
+- Pattern-predicate bridge into representable fibers:
+  `languageSortPredNaturality`, `commDiPred`,
+  `commDiWitnessLifting`, `pathSem_commSubst`,
+  `languageSortPredNaturality_commDi`,
+  `languageSortFiber_ofPatternPred`,
+  `languageSortFiber_ofPatternPred_subobject`,
+  `languageSortFiber_ofPatternPred_characteristicMap`,
+  `languageSortFiber_ofPatternPred_characteristicMap_spec`,
+  `rhoProc_langOSLF_predicate_to_fiber_mem_iff`
 
 ## VI. Formula Checker
 
@@ -202,12 +239,20 @@ formalization. Serves as a traceability matrix for review.
 | 12 | `progress` | Soundness.lean:683 | type soundness (progress) |
 | 13 | `check_sat_sound` | Formula.lean:290 | checker soundness |
 | 14 | `sem_dia_eq_langDiamond` | Formula.lean:135 | formula↔framework bridge |
+| 15 | `rhoSetDropWitness_canonical_vs_setExt` | TypeSynthesis.lean:377 | canonical bag-only vs set-extension one-step divergence |
+| 16 | `representable_commDi_patternPred_beckChevalley` | BeckChevalleyOSLF.lean | representable-fiber BC instantiated for COMM direct image |
+| 17 | `representable_commDi_bc_and_graphDiamond` | BeckChevalleyOSLF.lean | bundles COMM representable BC and graph-◇ witness characterization |
+| 18 | `checkLangUsingWithPred_sat_sound_graphObj_dia` / `..._box` | Formula.lean | checker-facing `.dia`/`.box` soundness over packaged premise-aware `ReductionGraphObj` |
 
 ## IX. Sorry / Axiom Census
 
-**Current OSLF status:**
-- 1 `sorry` in `Mettapedia/OSLF/RhoCalculus/Reduction.lean:276`
-- 0 custom axioms introduced in OSLF files
+**Current core-OSLF status (scope of this index):**
+- 0 `sorry` in `Mettapedia/OSLF/RhoCalculus/Reduction.lean`
+- 0 custom axioms introduced in this core OSLF slice
+- Canonical-vs-extension policy is theorem-checked by
+  `rhoSetDropWitness_canonical_vs_setExt`
+
+Outside this scope, experimental Pi-calculus layers still contain open `sorry`s.
 
 The formalization otherwise relies only on:
 - Lean 4 core axioms (propext, Quot, Classical.choice)
@@ -240,14 +285,76 @@ open Mettapedia.OSLF
 #check @langGalois
 #check @langDiamond
 #check @langBox
+#check @SortPresheafCategory
+#check @predFibration
+#check @oslf_fibration
+#check @predFibrationSortApprox
+#check @oslf_fibrationSortApprox
+#check @predFibration_presheafSortApprox_agreement
+#check @Mettapedia.OSLF.Framework.TypeSynthesis.rhoSetDropWitness_canonical_vs_setExt
+#check @commDiPred
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting
+#check @Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred
+#check @Mettapedia.OSLF.Framework.CategoryBridge.CommDiPathSemLiftPkg
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_liftEq
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemLiftPkg
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rho_proc_pathSemLift_pkg
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rho_proc_commDiWitnessLifting_of_pkg
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemLift
+#check @pathSem_commSubst
+#check @Mettapedia.OSLF.Framework.CategoryBridge.pathSemClosedPred_closed
+#check @languageSortPredNaturality_commDi
+#check @Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemClosed
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_mem_iff
+#check @Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_mem_iff_satisfies
+#check @languageSortFiber_ofPatternPred_characteristicMap
+#check @languageSortFiber_ofPatternPred_characteristicMap_spec
+#check @rhoProc_langOSLF_predicate_to_fiber_mem_iff
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred_to_languageSortFiber
+#check @Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred_to_languageSortFiber_mem_iff
+#check @representable_commDi_patternPred_beckChevalley
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_patternPred_beckChevalley_of_lifting
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_patternPred_beckChevalley_of_pathSemLift
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_patternPred_beckChevalley_of_pathSemClosed
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_patternPred_beckChevalley_of_pathSemLiftPkg
+#check @representable_commDi_bc_and_graphDiamond
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_lifting
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemLift
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemClosed
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.rhoProc_commDi_bc_and_graphDiamond_of_pathSemLift_pkg
 #check @possiblyProp
 #check @relyProp
 #check @galois_connection
 #check @rhoOSLF
 #check @lambdaOSLF
 #check @petriOSLF
+#check @Mettapedia.OSLF.Framework.TinyMLInstance.tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
+#check @Mettapedia.OSLF.Framework.TinyMLInstance.tinyML_commDiPathSemLiftPkg_of_liftEq
+#check @Mettapedia.OSLF.Framework.TinyMLInstance.tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_commDiPathSemLiftPkg_of_liftEq
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_pathOrder
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaSpecAtomCheck
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaSpecAtomSem
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_checkLangUsing_sat_sound_specAtoms
+#check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_checkLang_sat_sound_specAtoms
 #check @OSLFFormula
 #check @check_sat_sound
+#check @Mettapedia.OSLF.Formula.checkLangUsing_sat_sound_sort_fiber
+#check @Mettapedia.OSLF.Formula.checkLangUsing_sat_sound_sort_fiber_mem_iff
+#check @checkLangUsing_sat_sound_proc_fiber
+#check @checkLangUsing_sat_sound_proc_fiber_using
+#check @checkLangUsing_sat_sound_proc_fiber_using_mem_iff
+#check @checkLang_sat_sound_proc_fiber
+#check @checkLang_sat_sound_proc_fiber_using
+#check @Mettapedia.OSLF.Formula.checkLangUsingWithPred_sat_sound_graphObj_dia
+#check @Mettapedia.OSLF.Formula.checkLangUsingWithPred_sat_sound_graphObj_box
 #check @sem_dia_eq_langDiamond
 #check @sem_box_eq_langBox
 #check @HasType

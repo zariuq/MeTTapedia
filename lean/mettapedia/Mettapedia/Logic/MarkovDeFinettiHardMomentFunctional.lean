@@ -37,6 +37,7 @@ open Mettapedia.Logic.UniversalPrediction
 open Mettapedia.Logic.UniversalPrediction.FiniteAlphabet
 open Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge
 open Mettapedia.Logic.MarkovDeFinettiRecurrence
+open Mettapedia.Logic.MarkovDeFinettiHardExcursionModel
 
 /-! ## Finite constraint vectors -/
 
@@ -975,6 +976,78 @@ theorem empiricalWnn_tendsto_wμ_of_splitRates
   exact empiricalWnn_tendsto_wμ_of_residualRate
     (k := k) (hk := hk) (μ := μ) hμ hrec hrateAll n e
 
+theorem empiricalWnn_tendsto_wμ_of_statewiseCloseSplitRates
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitCloseAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+          s ∈ stateFinset k N →
+            0 < returnsToStart (k := k) s →
+              ∃ wSurrogate : ℝ,
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                  wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ)) ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (n : ℕ) (e : MarkovState k) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) n e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ n e)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_fixed_of_statewiseCloseSplitRatesAll
+      (k := k) (hk := hk) hsplitCloseAll
+  exact empiricalWnn_tendsto_wμ_of_residualRate
+    (k := k) (hk := hk) (μ := μ) hμ hrec hrateAll n e
+
+
+
+theorem empiricalWnn_tendsto_wμ_of_excursionTargetSplitRates
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitTargetAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasStatewiseExcursionTargetRates (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (n : ℕ) (e : MarkovState k) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) n e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ n e)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_fixed_of_excursionTargetSplitRatesAll
+      (k := k) (hk := hk) hsplitTargetAll
+  exact empiricalWnn_tendsto_wμ_of_residualRate
+    (k := k) (hk := hk) (μ := μ) hμ hrec hrateAll n e
+
+theorem empiricalWnn_tendsto_wμ_of_fiberTrajectorySplitRates
+    (hk : 0 < k)
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitTrajAll : ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasFiberTrajectoryWRReprRate (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (n : ℕ) (e : MarkovState k) :
+    Filter.Tendsto
+        (fun N =>
+          ∫⁻ θ, Wnn (k := k) n e θ ∂(empiricalMeasure (k := k) hk μ N))
+        Filter.atTop
+        (nhds (wμ (k := k) μ n e)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_fixed_of_fiberTrajectorySplitRatesAll
+      (k := k) (hk := hk) hsplitTrajAll
+  exact empiricalWnn_tendsto_wμ_of_residualRate
+    (k := k) (hk := hk) (μ := μ) hμ hrec hrateAll n e
 
 
 theorem empiricalWnn_tendsto_wμ_of_exactSurrogateWORTransport
@@ -1169,7 +1242,70 @@ theorem empiricalVec_tendsto_constraintVec_of_splitRates
   exact empiricalVec_tendsto_constraintVec_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll u
 
+theorem empiricalVec_tendsto_constraintVec_of_statewiseCloseSplitRates
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitCloseAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+          s ∈ stateFinset k N →
+            0 < returnsToStart (k := k) s →
+              ∃ wSurrogate : ℝ,
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                  wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ)) ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (u : Finset (Nat × MarkovState k)) :
+    ∃ hk : 0 < k,
+      Filter.Tendsto (fun n => empiricalVec (k := k) hk μ u n) Filter.atTop
+        (nhds (constraintVec (k := k) μ u)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_statewiseCloseSplitRatesAll
+      (k := k) hsplitCloseAll
+  exact empiricalVec_tendsto_constraintVec_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
 
+
+
+theorem empiricalVec_tendsto_constraintVec_of_fiberTrajectorySplitRates
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitTrajAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasFiberTrajectoryWRReprRate (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (u : Finset (Nat × MarkovState k)) :
+    ∃ hk : 0 < k,
+      Filter.Tendsto (fun n => empiricalVec (k := k) hk μ u n) Filter.atTop
+        (nhds (constraintVec (k := k) μ u)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_fiberTrajectorySplitRatesAll
+      (k := k) hsplitTrajAll
+  exact empiricalVec_tendsto_constraintVec_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
+
+theorem empiricalVec_tendsto_constraintVec_of_excursionTargetSplitRates
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitTargetAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasStatewiseExcursionTargetRates (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (u : Finset (Nat × MarkovState k)) :
+    ∃ hk : 0 < k,
+      Filter.Tendsto (fun n => empiricalVec (k := k) hk μ u n) Filter.atTop
+        (nhds (constraintVec (k := k) μ u)) := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_excursionTargetSplitRatesAll
+      (k := k) hsplitTargetAll
+  exact empiricalVec_tendsto_constraintVec_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
 
 theorem empiricalVec_tendsto_constraintVec_of_exactSurrogateWORTransport
     (μ : PrefixMeasure (Fin k))
@@ -1338,6 +1474,63 @@ theorem constraintVec_mem_momentPolytope_of_splitRates
   exact constraintVec_mem_momentPolytope_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll u
 
+theorem constraintVec_mem_momentPolytope_of_statewiseCloseSplitRates
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitCloseAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+          s ∈ stateFinset k N →
+            0 < returnsToStart (k := k) s →
+              ∃ wSurrogate : ℝ,
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                  wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ)) ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (u : Finset (Nat × MarkovState k)) :
+    constraintVec (k := k) μ u ∈ momentPolytope (k := k) μ u := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_statewiseCloseSplitRatesAll
+      (k := k) hsplitCloseAll
+  exact constraintVec_mem_momentPolytope_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
+
+theorem constraintVec_mem_momentPolytope_of_fiberTrajectorySplitRates
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitTrajAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasFiberTrajectoryWRReprRate (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (u : Finset (Nat × MarkovState k)) :
+    constraintVec (k := k) μ u ∈ momentPolytope (k := k) μ u := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_fiberTrajectorySplitRatesAll
+      (k := k) hsplitTrajAll
+  exact constraintVec_mem_momentPolytope_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
+
+
+theorem constraintVec_mem_momentPolytope_of_excursionTargetSplitRates
+    (μ : PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitTargetAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasStatewiseExcursionTargetRates (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc)
+    (u : Finset (Nat × MarkovState k)) :
+    constraintVec (k := k) μ u ∈ momentPolytope (k := k) μ u := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_excursionTargetSplitRatesAll
+      (k := k) hsplitTargetAll
+  exact constraintVec_mem_momentPolytope_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll u
 
 theorem constraintVec_mem_momentPolytope_of_exactSurrogateWORTransport
     (μ : PrefixMeasure (Fin k))

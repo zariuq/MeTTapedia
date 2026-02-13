@@ -28,6 +28,7 @@ import Mettapedia.OSLF.Framework.ConstructorCategory
 import Mettapedia.OSLF.Framework.ConstructorFibration
 import Mettapedia.OSLF.Framework.ModalEquivalence
 import Mettapedia.OSLF.Framework.DerivedTyping
+import Mettapedia.OSLF.Framework.PLNSelectorGSLT
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 import Mettapedia.OSLF.Formula
 -- SpecIndex.lean imports Main (not vice versa) — no cycle
@@ -55,11 +56,12 @@ OSLF/
 │   ├── LambdaInstance.lean        -- Lambda calculus OSLF instance (2nd example)
 │   ├── PetriNetInstance.lean      -- Petri net OSLF instance (3rd, binder-free)
 │   ├── TinyMLInstance.lean        -- CBV λ-calculus + booleans/pairs/thunks (4th, multi-sort)
-│   ├── MeTTaMinimalInstance.lean  -- MeTTa state client (eval/unify/return)
+│   ├── MeTTaMinimalInstance.lean  -- MeTTa state client (eval/unify/chain/collapse/superpose/return)
 │   ├── ConstructorCategory.lean   -- Sort quiver + free category from LanguageDef
 │   ├── ConstructorFibration.lean  -- SubobjectFibration + ChangeOfBase over constructors
 │   ├── ModalEquivalence.lean      -- Constructor change-of-base ↔ OSLF modalities
 │   ├── DerivedTyping.lean         -- Generic typing rules from categorical structure
+│   ├── PLNSelectorGSLT.lean       -- Core PLN selector rules as OSLF/GSLT rewrite system
 │   └── BeckChevalleyOSLF.lean    -- Substitution ↔ change-of-base (Beck-Chevalley)
 ├── MeTTaIL/
 │   ├── Syntax.lean          -- LanguageDef AST (types, terms, equations, rewrites)
@@ -99,9 +101,7 @@ The formalization has two layers:
 - `galois_connection`: proven diamond -| box
 - `HasType`: Typing judgment with substitutability and progress
 
-The concrete layer includes one currently unresolved proof in
-`RhoCalculus/Reduction.lean` (`emptyBag_SC_irreducible`) plus associated
-linter warnings. The abstract framework (`rhoOSLF`) instantiates the general
+The concrete layer and abstract framework (`rhoOSLF`) instantiate the general
 OSLF construction for ρ-calculus, lifting the proven Galois connection.
 
 ## References
@@ -126,6 +126,7 @@ export Mettapedia.OSLF.MeTTaIL.Syntax (
   RewriteRule
   LanguageDef
   rhoCalc
+  rhoCalcSetExt
 )
 
 export Mettapedia.OSLF.MeTTaIL.Semantics (
@@ -221,6 +222,7 @@ export Mettapedia.OSLF.RhoCalculus.Soundness (
   HasType
   substitutability
   comm_preserves_type
+  quoteDropEmpty_irreducible
 )
 
 export Mettapedia.OSLF.RhoCalculus.Reduction (
@@ -228,6 +230,12 @@ export Mettapedia.OSLF.RhoCalculus.Reduction (
   possiblyProp
   relyProp
   galois_connection
+  ioCount
+  ioCount_SC
+  redWeight
+  redWeight_SC
+  redWeight_pos_of_reduces
+  emptyBag_SC_irreducible
 )
 
 -- Re-export Engine module
@@ -235,6 +243,7 @@ export Mettapedia.OSLF.RhoCalculus.Engine (
   reduceStep
   reduceToNormalForm
   reduceAll
+  emptyBag_reduceStep_nil
   reduceStep_sound
 )
 
@@ -287,6 +296,13 @@ export Mettapedia.OSLF.Framework.TypeSynthesis (
   langDiamond_spec
   langBox_spec
   langNativeType
+  rhoCalc_emptyBag_rewrite_nil
+  rhoCalc_emptyBag_langReduces_irreducible
+  rhoCalc_soundBridge_restricted
+  rhoCalc_SC_emptyBag_reduceStep_irreducible
+  rhoCalc_SC_emptyBag_langReduces_false_of_reduceStep
+  rhoCalc_SC_emptyBag_langReduces_irreducible_of_soundBridge
+  rhoCalc_SC_emptyBag_no_diamondTop_of_soundBridge
 )
 
 export Mettapedia.OSLF.Framework.ToposReduction (
@@ -306,6 +322,8 @@ export Mettapedia.OSLF.Framework.ToposReduction (
   reductionGraphUsing_edge_endpoints_iff
   langDiamondUsing_iff_exists_graphStep
   langBoxUsing_iff_forall_graphIncoming
+  langDiamondUsing_iff_exists_graphObjStep
+  langBoxUsing_iff_forall_graphObjIncoming
   langDiamondUsing_iff_exists_internalStep
   langBoxUsing_iff_forall_internalStep
   langDiamond_iff_exists_graphStep
@@ -329,6 +347,7 @@ export Mettapedia.OSLF.Framework.SynthesisBridge (
   specialized_possibly
   specialized_rely_check
   specialized_can_reduce
+  specialized_soundBridge_at
   nativeToGen
   ctxToGen
 )
@@ -348,12 +367,61 @@ export Mettapedia.OSLF.Framework.CategoryBridge (
   typeSortsLambdaTheory
   typeSortsLambdaInterface
   SortCategory
+  SortPresheafCategory
+  predFibrationSortApprox
   predFibrationUsing
   predFibration
+  predFibration_presheafSortApprox_agreement
+  oslf_fibrationSortApprox
   oslf_fibrationUsing
   oslf_fibration
   typeSortsPredFibrationViaLambdaInterface
   typeSortsOSLFFibrationViaLambdaInterface
+  typeSortsOSLFFiberFamily
+  typeSortsOSLFFibrationUsing_presheafAgreement
+  langOSLFFiberFamily
+  langOSLFFibrationUsing_presheafAgreement
+  rhoLangOSLFFiberFamily
+  rhoLangOSLFFibrationUsing_presheafAgreement
+  languagePresheafObj
+  languagePresheafLambdaTheory
+  languageSortRepresentableObj
+  languageSortFiber
+  languageSortPredNaturality
+  commDiPred
+  commDiWitnessLifting
+  PathSemClosedPred
+  CommDiPathSemLiftPkg
+  commDiPathSemLiftPkg_of_liftEq
+  commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
+  commDiWitnessLifting_of_pathSemLiftPkg
+  languageSortPredNaturality_commDi_pathSemClosed_of_pkg
+  pathSem_commSubst
+  pathSemClosedPred_closed
+  languageSortPredNaturality_commDi
+  commDiWitnessLifting_of_pathSemClosed
+  languageSortPredNaturality_commDi_pathSemClosed
+  commDiWitnessLifting_of_lift
+  commDiWitnessLifting_of_pathSemLift
+  languageSortFiber_ofPatternPred
+  languageSortFiber_ofPatternPred_map_mem
+  languageSortFiber_ofPatternPred_subobject
+  languageSortFiber_ofPatternPred_characteristicMap
+  languageSortFiber_ofPatternPred_characteristicMap_spec
+  languageSortFiber_ofPatternPred_mem_iff
+  languageSortFiber_ofPatternPred_mem_iff_satisfies
+  rhoProc_langOSLF_predicate_to_fiber_mem_iff
+  rho_proc_pathSemLift_pkg
+  rho_proc_commDiWitnessLifting_of_pkg
+  rhoProcOSLFUsingPred
+  rhoProcOSLFUsingPred_to_languageSortFiber
+  rhoProcOSLFUsingPred_to_languageSortFiber_mem_iff
+  languageSortFiber_characteristicEquiv
+  languageSortPredicateFibration
+  rhoProcRepresentableObj
+  rhoProcSortFiber
+  rhoProcSortFiber_characteristicEquiv
+  rhoSortPredicateFibration
 )
 
 export Mettapedia.OSLF.Framework.FULLStatus (
@@ -394,12 +462,25 @@ export Mettapedia.OSLF.Framework.TinyMLInstance (
   thunk_action_eq_diamond
   inject_action_eq_box
   tinyML_typing_action_galois
+  tinyML_commDiPathSemLiftPkg_of_liftEq
+  tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
+  tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
 )
 
 export Mettapedia.OSLF.Framework.MeTTaMinimalInstance (
   mettaMinimal
   mettaMinimalOSLF
   mettaMinimalGalois
+  mettaState
+  mettaMinimal_pathOrder
+  mettaMinimal_commDiPathSemLiftPkg_of_liftEq
+  mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
+  mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
+  mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
+  mettaSpecAtomCheck
+  mettaSpecAtomSem
+  mettaMinimal_checkLangUsing_sat_sound_specAtoms
+  mettaMinimal_checkLang_sat_sound_specAtoms
 )
 
 export Mettapedia.OSLF.Framework.ConstructorCategory (
@@ -445,11 +526,38 @@ export Mettapedia.OSLF.Framework.DerivedTyping (
   pdrop_action_eq_box
 )
 
+export Mettapedia.OSLF.Framework.PLNSelectorGSLT (
+  PLNSelectorSort
+  PLNSelectorExpr
+  PLNSelectorExpr.Reduces
+  PLNSelectorExpr.reduces_sound_strength
+  PLNSelectorExpr.rtc_reduces_sound_strength
+  plnSelectorRewriteSystem
+  plnSelectorOSLF
+  oslf_diamond_extBayes2
+  oslf_diamond_extBayesFamily
+)
+
 export Mettapedia.OSLF.Framework.BeckChevalleyOSLF (
   presheafPrimary_beckChevalley_transport
+  presheaf_beckChevalley_square_direct
+  representable_patternPred_beckChevalley
+  representable_commDi_patternPred_beckChevalley
+  representable_commDi_patternPred_beckChevalley_of_lifting
+  representable_commDi_patternPred_beckChevalley_of_pathSemLift
+  representable_commDi_patternPred_beckChevalley_of_pathSemClosed
+  representable_commDi_patternPred_beckChevalley_of_pathSemLiftPkg
+  representable_commDi_bc_and_graphDiamond
+  representable_commDi_bc_and_graphDiamond_of_lifting
+  representable_commDi_bc_and_graphDiamond_of_pathSemLift
+  representable_commDi_bc_and_graphDiamond_of_pathSemClosed
+  representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
+  rhoProc_commDi_bc_and_graphDiamond_of_pathSemLift_pkg
   langDiamondUsing_graph_transport
+  langBoxUsing_graph_transport
   commDi_diamond_graph_step_iff
   commDi_diamond_graphObj_square
+  commDi_diamond_graphObj_square_direct
   galoisConnection_comp
   commMap
   commPb
@@ -474,18 +582,28 @@ export Mettapedia.OSLF.Formula (
   sem_dia_eq_langDiamondUsing
   sem_dia_eq_graphStepUsing
   sem_box_eq_graphIncomingUsing
+  sem_box_eq_graphObjIncomingUsing
   sem_box_eq_graphIncoming
   sem_dia_eq_langDiamond
   sem_box_eq_langBoxUsing
   sem_box_eq_langBox
   formula_galoisUsing
   formula_galois
+  rhoCalc_SC_empty_sem_diaTop_unsat_reduceStep
+  rhoCalc_SC_empty_sem_diaTop_unsat_langReduces_of_reduceStep
   CheckResult
   check
   checkLangUsing
   checkLang
   check_sat_sound
   checkLangUsing_sat_sound
+  checkLangUsing_sat_sound_sort_fiber
+  checkLangUsing_sat_sound_sort_fiber_mem_iff
+  checkLangUsing_sat_sound_proc_fiber
+  checkLangUsing_sat_sound_proc_fiber_using
+  checkLangUsing_sat_sound_proc_fiber_using_mem_iff
+  checkLang_sat_sound_proc_fiber
+  checkLang_sat_sound_proc_fiber_using
   checkLangUsing_sat_sound_graph
   checkLangUsing_sat_sound_graph_box
   checkLang_sat_sound
@@ -493,6 +611,13 @@ export Mettapedia.OSLF.Formula (
   aggregateBox_sat
   checkWithPred
   checkWithPred_sat_sound
+  checkLangUsingWithPred
+  checkLangWithPred
+  checkLangUsingWithPred_sat_sound
+  checkLangUsingWithPred_sat_sound_graph_box
+  checkLangUsingWithPred_sat_sound_graphObj_dia
+  checkLangUsingWithPred_sat_sound_graphObj_box
+  checkLangWithPred_sat_sound
   rhoAtoms
   rhoAtomSem
   rhoAtoms_sound

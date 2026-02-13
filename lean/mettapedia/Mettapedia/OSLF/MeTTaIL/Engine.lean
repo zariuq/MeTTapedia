@@ -66,10 +66,13 @@ abbrev rewriteStepNoPremises (lang : LanguageDef) (term : Pattern) : List Patter
     Returns all possible reducts where one element was rewritten. -/
 def rewriteInCollectionNoPremises (lang : LanguageDef) (ct : CollType) (elems : List Pattern)
     (rest : Option String) : List Pattern :=
-  elems.zipIdx.flatMap fun (elem, i) =>
-    let subReducts := rewriteStepNoPremises lang elem
-    subReducts.map fun elem' =>
-      .collection ct (elems.set i elem') rest
+  if _hct : LanguageDef.allowsCongruenceIn lang ct then
+    elems.zipIdx.flatMap fun (elem, i) =>
+      let subReducts := rewriteStepNoPremises lang elem
+      subReducts.map fun elem' =>
+        .collection ct (elems.set i elem') rest
+  else
+    []
 
 /-- Apply all rules to a term, including subterms (one level of congruence).
     This handles both top-level rewriting and PAR-like congruence. -/
@@ -216,10 +219,13 @@ def rewriteStepWithPremises (lang : LanguageDef) (term : Pattern) : List Pattern
     relation environment. -/
 def rewriteInCollectionWithPremisesUsing (relEnv : RelationEnv) (lang : LanguageDef)
     (ct : CollType) (elems : List Pattern) (rest : Option String) : List Pattern :=
-  elems.zipIdx.flatMap fun (elem, i) =>
-    let subReducts := rewriteStepWithPremisesUsing relEnv lang elem
-    subReducts.map fun elem' =>
-      .collection ct (elems.set i elem') rest
+  if _hct : LanguageDef.allowsCongruenceIn lang ct then
+    elems.zipIdx.flatMap fun (elem, i) =>
+      let subReducts := rewriteStepWithPremisesUsing relEnv lang elem
+      subReducts.map fun elem' =>
+        .collection ct (elems.set i elem') rest
+  else
+    []
 
 /-- Premise-aware subterm rewriting in collections. -/
 def rewriteInCollectionWithPremises (lang : LanguageDef) (ct : CollType) (elems : List Pattern)

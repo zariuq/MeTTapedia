@@ -2,6 +2,7 @@ import Mettapedia.OSLF.Framework.ConstructorFibration
 import Mettapedia.OSLF.Framework.ModalEquivalence
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ToposReduction
+import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.GSLT.Topos.PredicateFibration
 import Mettapedia.OSLF.RhoCalculus.Soundness
 
@@ -86,6 +87,66 @@ theorem presheafPrimary_beckChevalley_transport
   exact
     (Mettapedia.GSLT.Topos.beckChevalleyCondition_presheafChangeOfBase (C := C))
 
+/-- Direct OSLF-layer Beck–Chevalley square corollary over presheaf subobjects.
+
+This uses the concrete presheaf pullback/map square theorem directly (not
+through `BeckChevalleyCondition` transport wrappers). -/
+theorem presheaf_beckChevalley_square_direct
+    (C : Type _) [CategoryTheory.Category C]
+    {P A B D : CategoryTheory.Functor (Opposite C) (Type _)}
+    (pi1 : P ⟶ A) (pi2 : P ⟶ B) (f : A ⟶ D) (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2)
+    (φ : CategoryTheory.Subobject A) :
+    (CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj φ)
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj φ) := by
+  letI : CategoryTheory.Mono f := hf
+  letI : CategoryTheory.Mono pi2 := hpi2
+  simpa using
+    (Mettapedia.GSLT.Topos.beckChevalleyPresheaf
+      (C := C) pi1 pi2 f g hpb φ)
+
+/-- Representable-object Beck–Chevalley corollary for predicates obtained from
+`Pattern → Prop` via `languageSortFiber_ofPatternPred`.
+
+This is the first bridge from executable-style predicates (`Pattern → Prop`) to
+the representable-fiber (`Sub(y(s))`) BC path in the language-presheaf lift. -/
+theorem representable_patternPred_beckChevalley
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed : Pattern) (φ : Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2) :
+    (CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed φ hNat))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed φ hNat)) := by
+  exact presheaf_beckChevalley_square_direct
+    (C := ConstructorObj lang)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+    (φ := Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+      lang s seed φ hNat)
+
 /-- OSLF-layer bridge: `◇` can be read over the internal presheaf reduction
 graph (`E`,`source`,`target`) built in `ToposReduction`.
 
@@ -104,6 +165,23 @@ theorem langDiamondUsing_graph_transport
           (C := C) relEnv lang).target.app X e).down) := by
   simpa using
     (Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_graphStep
+      (C := C) (relEnv := relEnv) (lang := lang) (X := X) (φ := φ) (p := p))
+
+/-- OSLF-layer bridge: `□` can be read over incoming edges in the internal
+presheaf reduction graph (`E`,`source`,`target`) built in `ToposReduction`. -/
+theorem langBoxUsing_graph_transport
+    (C : Type _) [CategoryTheory.Category C]
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    (lang : LanguageDef) {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    langBoxUsing relEnv lang φ p ↔
+      ∀ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := C) relEnv lang).Edge.obj X,
+        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).target.app X e).down = p →
+        φ (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := C) relEnv lang).source.app X e).down) := by
+  simpa using
+    (Mettapedia.OSLF.Framework.ToposReduction.langBoxUsing_iff_forall_graphIncoming
       (C := C) (relEnv := relEnv) (lang := lang) (X := X) (φ := φ) (p := p))
 
 /-! ## Composition of Galois Connections
@@ -163,6 +241,225 @@ theorem commPb_apply (q : Pattern) (φ : Pattern → Prop) (pBody : Pattern) :
 theorem commDi_apply (q : Pattern) (ψ : Pattern → Prop) (r : Pattern) :
     commDi q ψ r = (∃ p, commSubst p q = r ∧ ψ p) := rfl
 
+/-- Representable-fiber Beck-Chevalley instance specialized to the
+COMM substitution direct image predicate `commDi q φ`.
+
+This is a substitution/rewrite BC theorem directly over language-presheaf
+representables, instantiated from `representable_patternPred_beckChevalley`. -/
+theorem representable_commDi_patternPred_beckChevalley
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed q : Pattern) (φ : Pattern → Prop)
+    (hNatComm :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed (commDi q φ))
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2) :
+    (CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ) hNatComm))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ) hNatComm)) := by
+  exact representable_patternPred_beckChevalley
+    (lang := lang) (s := s) (seed := seed) (φ := commDi q φ)
+    (hNat := hNatComm) (pi1 := pi1) (pi2 := pi2)
+    (f := f) (g := g) (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+
+/-- Derived COMM representable Beck–Chevalley corollary from the named
+structural lifting condition.
+
+This avoids passing a bespoke naturality proof manually: naturality of
+`commDi q φ` is synthesized via
+`CategoryBridge.languageSortPredNaturality_commDi`. -/
+theorem representable_commDi_patternPred_beckChevalley_of_lifting
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed q : Pattern) (φ : Pattern → Prop)
+    (hLift :
+      Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting
+        lang s seed q φ)
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2) :
+    (CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q φ hLift)))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q φ hLift))) := by
+  exact representable_commDi_patternPred_beckChevalley
+    (lang := lang) (s := s) (seed := seed) (q := q) (φ := φ)
+    (hNatComm :=
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+        lang s seed q φ hLift)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+
+/-- `representable_commDi_patternPred_beckChevalley` with naturality derived via
+the path-based lifting constructor (`commDiWitnessLifting_of_pathSemLift`). -/
+theorem representable_commDi_patternPred_beckChevalley_of_pathSemLift
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed q : Pattern) (φ : Pattern → Prop)
+    (hLiftEq :
+      ∀ {a b : LangSort lang}
+        (g : SortPath lang a b) (h : SortPath lang b s)
+        {u : Pattern},
+          commSubst u q = pathSem lang h seed →
+          commSubst (pathSem lang g u) q = pathSem lang (g.comp h) seed)
+    (hClosed :
+      ∀ {a b : LangSort lang}
+        (g : SortPath lang a b) {u : Pattern},
+          φ u → φ (pathSem lang g u))
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2) :
+    (CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q φ
+              (Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemLift
+                lang s seed q φ hLiftEq hClosed))))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q φ
+              (Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemLift
+                lang s seed q φ hLiftEq hClosed)))) := by
+  exact representable_commDi_patternPred_beckChevalley_of_lifting
+    (lang := lang) (s := s) (seed := seed) (q := q) (φ := φ)
+    (hLift :=
+      Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemLift
+        lang s seed q φ hLiftEq hClosed)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+
+/-- `representable_commDi_patternPred_beckChevalley` with naturality derived via
+canonical path-semantics closure (`PathSemClosedPred`).
+
+This consumes only the witness-transport equation (`hLiftEq`); closure is
+discharged by `commDiWitnessLifting_of_pathSemClosed`. -/
+theorem representable_commDi_patternPred_beckChevalley_of_pathSemClosed
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed q : Pattern) (φ : Pattern → Prop)
+    (hLiftEq :
+      ∀ {a b : LangSort lang}
+        (g : SortPath lang a b) (h : SortPath lang b s)
+        {u : Pattern},
+          commSubst u q = pathSem lang h seed →
+          commSubst (pathSem lang g u) q = pathSem lang (g.comp h) seed)
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2) :
+    (CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ))
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ)
+              (Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemClosed
+                lang s seed q φ hLiftEq))))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ))
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ)
+              (Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemClosed
+                lang s seed q φ hLiftEq)))) := by
+  exact representable_commDi_patternPred_beckChevalley_of_lifting
+    (lang := lang) (s := s) (seed := seed) (q := q)
+    (φ := Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ)
+    (hLift :=
+      Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemClosed
+        lang s seed q φ hLiftEq)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+
+/-- Package form of `representable_commDi_patternPred_beckChevalley_of_pathSemClosed`. -/
+theorem representable_commDi_patternPred_beckChevalley_of_pathSemLiftPkg
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed q : Pattern) (φ : Pattern → Prop)
+    (hPkg :
+      Mettapedia.OSLF.Framework.CategoryBridge.CommDiPathSemLiftPkg
+        lang s seed q)
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2) :
+    (CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ))
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
+              lang s seed q φ hPkg)))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ))
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
+              lang s seed q φ hPkg))) := by
+  exact representable_commDi_patternPred_beckChevalley_of_pathSemClosed
+    (lang := lang) (s := s) (seed := seed) (q := q) (φ := φ)
+    (hLiftEq := hPkg.liftEq)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+
 /-- Graph-edge form of substitution/rewrite compatibility for COMM direct image.
 
 This is an explicit graph-level formulation:
@@ -196,6 +493,357 @@ theorem commDi_diamond_graph_step_iff
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := C) relEnv lang).target.app X e).down ∧ φ u from ⟨u, hu, hφ⟩))
 
+/-- One-step composition theorem: representable COMM-BC plus graph-`◇` form.
+
+This packages the representable Beck–Chevalley specialization for COMM
+direct-image predicates together with the graph-edge characterization of
+`langDiamondUsing (commDi q φ)` in one theorem. -/
+theorem representable_commDi_bc_and_graphDiamond
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed q : Pattern) (φ : Pattern → Prop)
+    (hNatComm :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed (commDi q φ))
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2)
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    {X : Opposite (ConstructorObj lang)} (p : Pattern) :
+    ((CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ) hNatComm))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ) hNatComm)))
+    ∧
+    (langDiamondUsing relEnv lang (commDi q φ) p ↔
+      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := ConstructorObj lang) relEnv lang).Edge.obj X,
+        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := ConstructorObj lang) relEnv lang).source.app X e).down = p ∧
+        ∃ u : Pattern,
+          commSubst u q =
+            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := ConstructorObj lang) relEnv lang).target.app X e).down ∧
+          φ u) := by
+  refine ⟨?_, ?_⟩
+  · exact representable_commDi_patternPred_beckChevalley
+      (lang := lang) (s := s) (seed := seed) (q := q) (φ := φ)
+      (hNatComm := hNatComm) (pi1 := pi1) (pi2 := pi2)
+      (f := f) (g := g) (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+  · simpa using
+      (commDi_diamond_graph_step_iff
+        (C := ConstructorObj lang) (relEnv := relEnv) (lang := lang)
+        (X := X) (q := q) (p := p) (φ := φ))
+
+/-- `representable_commDi_bc_and_graphDiamond` with naturality synthesized from
+`commDiWitnessLifting`. -/
+theorem representable_commDi_bc_and_graphDiamond_of_lifting
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed q : Pattern) (φ : Pattern → Prop)
+    (hLift :
+      Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting
+        lang s seed q φ)
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2)
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    {X : Opposite (ConstructorObj lang)} (p : Pattern) :
+    ((CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q φ hLift)))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q φ hLift))))
+    ∧
+    (langDiamondUsing relEnv lang (commDi q φ) p ↔
+      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := ConstructorObj lang) relEnv lang).Edge.obj X,
+        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := ConstructorObj lang) relEnv lang).source.app X e).down = p ∧
+        ∃ u : Pattern,
+          commSubst u q =
+            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := ConstructorObj lang) relEnv lang).target.app X e).down ∧
+          φ u) := by
+  exact representable_commDi_bc_and_graphDiamond
+    (lang := lang) (s := s) (seed := seed) (q := q) (φ := φ)
+    (hNatComm :=
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+        lang s seed q φ hLift)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+    (relEnv := relEnv) (X := X) (p := p)
+
+/-- `representable_commDi_bc_and_graphDiamond` with naturality derived via the
+path-based lifting constructor (`commDiWitnessLifting_of_pathSemLift`). -/
+theorem representable_commDi_bc_and_graphDiamond_of_pathSemLift
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed q : Pattern) (φ : Pattern → Prop)
+    (hLiftEq :
+      ∀ {a b : LangSort lang}
+        (g : SortPath lang a b) (h : SortPath lang b s)
+        {u : Pattern},
+          commSubst u q = pathSem lang h seed →
+          commSubst (pathSem lang g u) q = pathSem lang (g.comp h) seed)
+    (hClosed :
+      ∀ {a b : LangSort lang}
+        (g : SortPath lang a b) {u : Pattern},
+          φ u → φ (pathSem lang g u))
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2)
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    {X : Opposite (ConstructorObj lang)} (p : Pattern) :
+    ((CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q φ
+              (Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemLift
+                lang s seed q φ hLiftEq hClosed))))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed (commDi q φ)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q φ
+              (Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemLift
+                lang s seed q φ hLiftEq hClosed)))))
+    ∧
+    (langDiamondUsing relEnv lang (commDi q φ) p ↔
+      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := ConstructorObj lang) relEnv lang).Edge.obj X,
+        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := ConstructorObj lang) relEnv lang).source.app X e).down = p ∧
+        ∃ u : Pattern,
+          commSubst u q =
+            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := ConstructorObj lang) relEnv lang).target.app X e).down ∧
+          φ u) := by
+  exact representable_commDi_bc_and_graphDiamond_of_lifting
+    (lang := lang) (s := s) (seed := seed) (q := q) (φ := φ)
+    (hLift :=
+      Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemLift
+        lang s seed q φ hLiftEq hClosed)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+    (relEnv := relEnv) (X := X) (p := p)
+
+/-- `representable_commDi_bc_and_graphDiamond` with naturality derived via
+canonical path-semantics closure (`PathSemClosedPred`).
+
+This consumes only the witness-transport equation (`hLiftEq`) and packages both:
+1. the representable-fiber BC square for `commDi`,
+2. the graph-edge `◇` compatibility shape.
+-/
+theorem representable_commDi_bc_and_graphDiamond_of_pathSemClosed
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed q : Pattern) (φ : Pattern → Prop)
+    (hLiftEq :
+      ∀ {a b : LangSort lang}
+        (g : SortPath lang a b) (h : SortPath lang b s)
+        {u : Pattern},
+          commSubst u q = pathSem lang h seed →
+          commSubst (pathSem lang g u) q = pathSem lang (g.comp h) seed)
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2)
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    {X : Opposite (ConstructorObj lang)} (p : Pattern) :
+    ((CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed
+              (commDi q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ))
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ)
+              (Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemClosed
+                lang s seed q φ hLiftEq))))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed
+              (commDi q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ))
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              lang s seed q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ)
+              (Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemClosed
+                lang s seed q φ hLiftEq)))))
+    ∧
+    (langDiamondUsing relEnv lang
+      (commDi q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ)) p ↔
+      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := ConstructorObj lang) relEnv lang).Edge.obj X,
+        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := ConstructorObj lang) relEnv lang).source.app X e).down = p ∧
+        ∃ u : Pattern,
+          commSubst u q =
+            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := ConstructorObj lang) relEnv lang).target.app X e).down ∧
+          Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ u) := by
+  exact representable_commDi_bc_and_graphDiamond_of_lifting
+    (lang := lang) (s := s) (seed := seed) (q := q)
+    (φ := Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ)
+    (hLift :=
+      Mettapedia.OSLF.Framework.CategoryBridge.commDiWitnessLifting_of_pathSemClosed
+        lang s seed q φ hLiftEq)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+    (relEnv := relEnv) (X := X) (p := p)
+
+/-- Package form of `representable_commDi_bc_and_graphDiamond_of_pathSemClosed`. -/
+theorem representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed q : Pattern) (φ : Pattern → Prop)
+    (hPkg :
+      Mettapedia.OSLF.Framework.CategoryBridge.CommDiPathSemLiftPkg
+        lang s seed q)
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2)
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    {X : Opposite (ConstructorObj lang)} (p : Pattern) :
+    ((CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed
+              (commDi q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ))
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
+              lang s seed q φ hPkg)))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed
+              (commDi q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ))
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
+              lang s seed q φ hPkg))))
+    ∧
+    (langDiamondUsing relEnv lang
+      (commDi q (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ)) p ↔
+      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := ConstructorObj lang) relEnv lang).Edge.obj X,
+        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := ConstructorObj lang) relEnv lang).source.app X e).down = p ∧
+        ∃ u : Pattern,
+          commSubst u q =
+            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := ConstructorObj lang) relEnv lang).target.app X e).down ∧
+          Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred lang φ u) := by
+  exact representable_commDi_bc_and_graphDiamond_of_pathSemClosed
+    (lang := lang) (s := s) (seed := seed) (q := q) (φ := φ)
+    (hLiftEq := hPkg.liftEq)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+    (relEnv := relEnv) (X := X) (p := p)
+
+/-- Specialized rho-Proc version of the path-lift BC+graph theorem, consuming
+the concrete package `rho_proc_pathSemLift_pkg`. -/
+theorem rhoProc_commDi_bc_and_graphDiamond_of_pathSemLift_pkg
+    (seed q : Pattern)
+    (φ : Mettapedia.OSLF.Framework.CategoryBridge.rhoProcOSLFUsingPred)
+    (hPkg : Mettapedia.OSLF.Framework.CategoryBridge.rho_proc_pathSemLift_pkg seed q φ)
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj rhoCalc)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        rhoCalc rhoProc))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        rhoCalc rhoProc) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2)
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    {X : Opposite (ConstructorObj rhoCalc)} (p : Pattern) :
+    ((CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            rhoCalc rhoProc seed (commDi q φ)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              rhoCalc rhoProc seed q φ
+              (Mettapedia.OSLF.Framework.CategoryBridge.rho_proc_commDiWitnessLifting_of_pkg
+                seed q φ hPkg))))
+      =
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            rhoCalc rhoProc seed (commDi q φ)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi
+              rhoCalc rhoProc seed q φ
+              (Mettapedia.OSLF.Framework.CategoryBridge.rho_proc_commDiWitnessLifting_of_pkg
+                seed q φ hPkg)))))
+    ∧
+    (langDiamondUsing relEnv rhoCalc (commDi q φ) p ↔
+      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+        (C := ConstructorObj rhoCalc) relEnv rhoCalc).Edge.obj X,
+        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+          (C := ConstructorObj rhoCalc) relEnv rhoCalc).source.app X e).down = p ∧
+        ∃ u : Pattern,
+          commSubst u q =
+            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
+              (C := ConstructorObj rhoCalc) relEnv rhoCalc).target.app X e).down ∧
+          φ u) := by
+  exact representable_commDi_bc_and_graphDiamond_of_pathSemLift
+    (lang := rhoCalc) (s := rhoProc) (seed := seed) (q := q) (φ := φ)
+    (hLiftEq := hPkg.1) (hClosed := hPkg.2)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+    (relEnv := relEnv) (X := X) (p := p)
+
 /-- Substitution/rewrite square theorem stated directly over a packaged
 `ReductionGraphObj`.
 
@@ -228,6 +876,35 @@ theorem commDi_diamond_graphObj_square
       refine ⟨u, ?_, hφ⟩
       simpa [r] using hu
     simpa [commDi_apply] using hcomm
+
+/-- Graph-object substitution/rewrite square, proved through the graph-form
+`◇` characterization over `ReductionGraphObj`.
+
+This keeps the corollary in the OSLF graph layer rather than routing through
+relation-transport wrappers. -/
+theorem commDi_diamond_graphObj_square_direct
+    (C : Type _) [CategoryTheory.Category C]
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
+    (lang : LanguageDef)
+    (G : Mettapedia.OSLF.Framework.ToposReduction.ReductionGraphObj C relEnv lang)
+    {X : Opposite C} (q p : Pattern) (φ : Pattern → Prop) :
+    langDiamondUsing relEnv lang (commDi q φ) p ↔
+      ∃ e : G.Edge.obj X,
+        (G.source.app X e).down = p ∧
+        ∃ u : Pattern, commSubst u q = (G.target.app X e).down ∧ φ u := by
+  rw [Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_graphObjStep
+    (C := C) (relEnv := relEnv) (lang := lang) (G := G) (X := X)
+    (φ := commDi q φ) (p := p)]
+  constructor
+  · rintro ⟨e, hs, hcomm⟩
+    rcases (by simpa [commDi_apply] using hcomm) with ⟨u, hu, hφ⟩
+    exact ⟨e, hs, u, hu, hφ⟩
+  · rintro ⟨e, hs, u, hu, hφ⟩
+    refine ⟨e, hs, ?_⟩
+    exact (by
+      simpa [commDi_apply] using
+        (show ∃ t : Pattern, commSubst t q = (G.target.app X e).down ∧ φ t from
+          ⟨u, hu, hφ⟩))
 
 /-! ## Composed Galois Connections: Modal + Substitution
 

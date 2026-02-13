@@ -105,6 +105,16 @@ theorem plnKnnEvidence_pos_eq_knnRelevanceENN {Fact : Type*} [DecidableEq Fact]
   · simp [plnKnnEvidence, knnRelevanceENN, posEvidence, h, add_comm]
   · simp [plnKnnEvidence, knnRelevanceENN, posEvidence, h, add_comm]
 
+/-! ### Core/bridge alias names (non-breaking) -/
+
+/-- Alias exposing the k-NN bridge in theorem-map naming. -/
+theorem PLN_hplusPos_eq_knnRelevance {Fact : Type*} [DecidableEq Fact]
+    (goal : Fact) (N : Finset Fact) (near : Fact -> Fact -> ℝ≥0∞)
+    (deps : DepSet Fact) (tau2 : ℝ≥0∞) (phi : Fact) :
+    (plnKnnEvidence goal N near deps tau2 phi).pos =
+      knnRelevanceENN goal N near deps tau2 phi := by
+  exact plnKnnEvidence_pos_eq_knnRelevanceENN goal N near deps tau2 phi
+
 theorem plnKnnEvidence_neg_eq_zero {Fact : Type*} [DecidableEq Fact]
     (goal : Fact) (N : Finset Fact) (near : Fact -> Fact -> ℝ≥0∞)
     (deps : DepSet Fact) (tau2 : ℝ≥0∞) (phi : Fact) :

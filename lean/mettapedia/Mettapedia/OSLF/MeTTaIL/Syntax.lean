@@ -309,6 +309,10 @@ structure LanguageDef where
   terms : List GrammarRule
   equations : List Equation
   rewrites : List RewriteRule
+  /-- Collection shapes where one-step congruence descent is permitted.
+      This controls subterm/context rewriting in the generic engine.
+      By default all collection kinds are enabled. -/
+  congruenceCollections : List CollType := [.vec, .hashBag, .hashSet]
 deriving Repr
 
 namespace LanguageDef
@@ -328,6 +332,15 @@ def addEquation (lang : LanguageDef) (eq : Equation) : LanguageDef :=
 def addRewrite (lang : LanguageDef) (rw : RewriteRule) : LanguageDef :=
   { lang with rewrites := lang.rewrites ++ [rw] }
 
+/-- Predicate view for congruence-descent permission. -/
+def allowsCongruenceIn (lang : LanguageDef) (ct : CollType) : Prop :=
+  ct ∈ lang.congruenceCollections
+
+instance (lang : LanguageDef) (ct : CollType) :
+    Decidable (LanguageDef.allowsCongruenceIn lang ct) := by
+  unfold LanguageDef.allowsCongruenceIn
+  infer_instance
+
 end LanguageDef
 
 /-! ## ρ-Calculus Example
@@ -340,6 +353,11 @@ In locally nameless, rule patterns use `.fvar` for metavariables and
 def rhoCalc : LanguageDef := {
   name := "RhoCalc",
   types := ["Proc", "Name"],
+  -- Canonical ρ process contexts are parallel-bag contexts.
+  -- Source: present-moment.pdf states set accumulation is an optional extension
+  -- and "not strictly necessary ... we could simply use parallel composition
+  -- to accumulate the states."
+  congruenceCollections := [.hashBag],
   terms := [
     -- PZero . |- "0" : Proc
     { label := "PZero", category := "Proc", params := [],
@@ -410,5 +428,15 @@ def rhoCalc : LanguageDef := {
       right := .collection .hashBag [.fvar "T"] (some "rest") }
   ]
 }
+
+/-- Optional ρ extension with set-context congruence enabled.
+
+    Canonical `rhoCalc` keeps bag-only process contexts.
+    This extension models the finite-set accumulation variant discussed
+    in `present-moment.pdf` (sets are useful but optional). -/
+def rhoCalcSetExt : LanguageDef :=
+  { rhoCalc with
+      name := "RhoCalcSetExt"
+      congruenceCollections := [.hashBag, .hashSet] }
 
 end Mettapedia.OSLF.MeTTaIL.Syntax

@@ -35,6 +35,7 @@ open Mettapedia.Logic.UniversalPrediction
 open Mettapedia.Logic.UniversalPrediction.FiniteAlphabet
 open Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge
 open Mettapedia.Logic.MarkovDeFinettiRecurrence
+open Mettapedia.Logic.MarkovDeFinettiHardExcursionModel
 
 variable {k : ℕ}
 
@@ -130,6 +131,64 @@ theorem finite_constraints_nonempty_of_splitRates
   exact finite_constraints_nonempty_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll
 
+theorem finite_constraints_nonempty_of_statewiseCloseSplitRates
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitCloseAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+          s ∈ stateFinset k N →
+            0 < returnsToStart (k := k) s →
+              ∃ wSurrogate : ℝ,
+                |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+                  wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ)) ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ u : Finset (ℕ × MarkovState k),
+      (⋂ p ∈ u, MarkovDeFinettiHard.constraintSet (k := k) μ p.1 p.2).Nonempty := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_statewiseCloseSplitRatesAll
+      (k := k) hsplitCloseAll
+  exact finite_constraints_nonempty_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+
+
+theorem finite_constraints_nonempty_of_fiberTrajectorySplitRates
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitTrajAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasFiberTrajectoryWRReprRate (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ u : Finset (ℕ × MarkovState k),
+      (⋂ p ∈ u, MarkovDeFinettiHard.constraintSet (k := k) μ p.1 p.2).Nonempty := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_fiberTrajectorySplitRatesAll
+      (k := k) hsplitTrajAll
+  exact finite_constraints_nonempty_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
+
+theorem finite_constraints_nonempty_of_excursionTargetSplitRates
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hsplitTargetAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cw Cpc : ℝ,
+        0 ≤ Cw ∧ 0 ≤ Cpc ∧
+        HasStatewiseExcursionTargetRates (k := k) hk n e Cw ∧
+        HasCanonicalWORTransportRate (k := k) hk n e Cw Cpc) :
+    ∀ u : Finset (ℕ × MarkovState k),
+      (⋂ p ∈ u, MarkovDeFinettiHard.constraintSet (k := k) μ p.1 p.2).Nonempty := by
+  have hrateAll :=
+    hasExcursionResidualBoundRateAll_of_excursionTargetSplitRatesAll
+      (k := k) hsplitTargetAll
+  exact finite_constraints_nonempty_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
 
 
 theorem finite_constraints_nonempty_of_exactSurrogateWORTransport

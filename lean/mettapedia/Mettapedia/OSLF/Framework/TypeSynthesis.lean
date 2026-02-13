@@ -3,6 +3,7 @@ import Mettapedia.OSLF.Framework.DerivedModalities
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
+import Mettapedia.OSLF.RhoCalculus.Reduction
 
 /-!
 # OSLF Type Synthesis: LanguageDef → OSLFTypeSystem
@@ -44,6 +45,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.DerivedModalities
+open Mettapedia.OSLF.RhoCalculus.Reduction
 
 /-! ## Step 1: Reduction Relation from Executable Engine -/
 
@@ -238,6 +240,148 @@ def langOSLF (lang : LanguageDef) (procSort : String := "Proc") :
 def langNativeType (lang : LanguageDef) (procSort : String := "Proc") :=
   NativeTypeOf (langOSLF lang procSort)
 
+/-! ## ρ Empty-Bag Irreducibility (OSLF Operational Level)
+
+These lemmas capture irreducibility at the level actually used by the OSLF
+pipeline (`langReduces`/`langReducesUsing`), i.e. the premise-aware executable
+engine bridged to declarative semantics.
+-/
+
+/-- Executable one-step rewrite on the empty ρ-process bag yields no reducts. -/
+theorem rhoCalc_emptyBag_rewrite_nil :
+    rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc
+      (.collection .hashBag [] none) = [] := by
+  native_decide
+
+/-- No one-step `langReduces` successor exists from the empty ρ-process bag. -/
+theorem rhoCalc_emptyBag_langReduces_irreducible (q : Pattern) :
+    ¬ langReduces rhoCalc (.collection .hashBag [] none) q := by
+  intro hred
+  have hmem :
+      q ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc
+        (.collection .hashBag [] none) :=
+    langReducesUsing_to_exec (relEnv := RelationEnv.empty) (lang := rhoCalc) hred
+  simp [rhoCalc_emptyBag_rewrite_nil] at hmem
+
+/-- Concrete restricted bridge instance (assumption-free):
+    whenever a `langReduces` step is known to come from the specialized
+    executable ρ stepper (`reduceStep`), it is propositionally sound. -/
+theorem rhoCalc_soundBridge_restricted
+    {p q : Pattern}
+    (_hred : langReduces rhoCalc p q)
+    (hstep : q ∈ Mettapedia.OSLF.RhoCalculus.Engine.reduceStep p) :
+    Nonempty (p ⇝ q) := by
+  exact Mettapedia.OSLF.RhoCalculus.Engine.reduceStep_sound p q _ hstep
+
+/-- SC-empty representatives have no specialized one-step ρ reducts. -/
+theorem rhoCalc_SC_emptyBag_reduceStep_irreducible
+    {p q : Pattern}
+    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+      (.collection .hashBag [] none) p) :
+    ¬ q ∈ Mettapedia.OSLF.RhoCalculus.Engine.reduceStep p := by
+  intro hstep
+  exact emptyBag_SC_irreducible hsc
+    (Mettapedia.OSLF.RhoCalculus.Engine.reduceStep_sound p q _ hstep).some
+
+/-- Direct contradiction form at `langReduces` call sites, using the
+    specialized-step restricted bridge. -/
+theorem rhoCalc_SC_emptyBag_langReduces_false_of_reduceStep
+    {p q : Pattern}
+    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+      (.collection .hashBag [] none) p)
+    (hred : langReduces rhoCalc p q)
+    (hstep : q ∈ Mettapedia.OSLF.RhoCalculus.Engine.reduceStep p) :
+    False := by
+  have hρ : Nonempty (p ⇝ q) := rhoCalc_soundBridge_restricted hred hstep
+  exact emptyBag_SC_irreducible hsc hρ.some
+
+/-- SC-empty irreducibility lifted to `langReduces`, given a sound bridge
+    from the generated ρ-language reduction to propositional `Reduces`.
+
+    This theorem is intentionally bridge-parameterized: it connects the
+    SC-quotiented metatheory result (`emptyBag_SC_irreducible`) to the OSLF
+    generated path without hard-coding a specific engine-agreement proof here. -/
+theorem rhoCalc_SC_emptyBag_langReduces_irreducible_of_soundBridge
+    (soundBridge :
+      ∀ {p q : Pattern}, langReduces rhoCalc p q → Nonempty (p ⇝ q))
+    {p q : Pattern}
+    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+      (.collection .hashBag [] none) p) :
+    ¬ langReduces rhoCalc p q := by
+  intro hred
+  rcases soundBridge hred with ⟨hρ⟩
+  exact emptyBag_SC_irreducible hsc hρ
+
+/-- OSLF-modal corollary of SC-empty irreducibility: no `◇⊤` at SC-empty
+    representatives, under the same sound bridge assumption. -/
+theorem rhoCalc_SC_emptyBag_no_diamondTop_of_soundBridge
+    (soundBridge :
+      ∀ {p q : Pattern}, langReduces rhoCalc p q → Nonempty (p ⇝ q))
+    {p : Pattern}
+    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+      (.collection .hashBag [] none) p) :
+    ¬ langDiamond rhoCalc (fun _ => True) p := by
+  intro hdia
+  rcases (langDiamond_spec (lang := rhoCalc) (φ := fun _ => True) (p := p)).1 hdia with
+    ⟨q, hred, _⟩
+  exact (rhoCalc_SC_emptyBag_langReduces_irreducible_of_soundBridge soundBridge hsc) hred
+
+/-! ## Canonical vs Extension Policy Witness
+
+`rhoCalc` is canonical (bag-only congruence contexts), while `rhoCalcSetExt`
+optionally enables set-context congruence descent.
+-/
+
+/-- A concrete set-context DROP witness used to compare canonical vs extension
+    one-step semantics. -/
+def rhoSetDropWitness : Pattern :=
+  .collection .hashSet [.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]] none
+
+/-- Canonical one-step normal-form target for `rhoSetDropWitness` under set-context DROP. -/
+def rhoSetDropWitnessNF : Pattern :=
+  .collection .hashSet [.apply "PZero" []] none
+
+/-- In canonical `rhoCalc`, set-context congruence descent is blocked. -/
+theorem rhoSetDropWitness_exec_nil_canonical :
+    rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc rhoSetDropWitness = [] := by
+  native_decide
+
+/-- Corollary: canonical `rhoCalc` has no one-step `langReduces` successor from
+    the set-context DROP witness. -/
+theorem rhoSetDropWitness_no_langReduces_canonical (q : Pattern) :
+    ¬ langReduces rhoCalc rhoSetDropWitness q := by
+  intro hred
+  have hmem :
+      q ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc rhoSetDropWitness :=
+    langReducesUsing_to_exec (relEnv := RelationEnv.empty) (lang := rhoCalc) hred
+  simp [rhoSetDropWitness_exec_nil_canonical] at hmem
+
+/-- In `rhoCalcSetExt`, the concrete set-context DROP step is executable. -/
+theorem rhoSetDropWitness_exec_mem_setExt :
+    rhoSetDropWitnessNF ∈
+      rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalcSetExt rhoSetDropWitness := by
+  native_decide
+
+/-- Corollary: `rhoCalcSetExt` admits the corresponding one-step `langReduces`. -/
+theorem rhoSetDropWitness_langReduces_setExt :
+    langReduces rhoCalcSetExt rhoSetDropWitness rhoSetDropWitnessNF := by
+  exact exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := rhoCalcSetExt)
+    rhoSetDropWitness_exec_mem_setExt
+
+/-- Existential form of the extension witness used in policy comparisons. -/
+theorem rhoSetDropWitness_exists_langReduces_setExt :
+    ∃ q, langReduces rhoCalcSetExt rhoSetDropWitness q := by
+  exact ⟨rhoSetDropWitnessNF, rhoSetDropWitness_langReduces_setExt⟩
+
+/-- Named theorem-level comparison: canonical blocks set descent, extension allows it. -/
+theorem rhoSetDropWitness_canonical_vs_setExt :
+    (∀ q, ¬ langReduces rhoCalc rhoSetDropWitness q) ∧
+      (∃ q, langReduces rhoCalcSetExt rhoSetDropWitness q) := by
+  constructor
+  · intro q
+    exact rhoSetDropWitness_no_langReduces_canonical q
+  · exact rhoSetDropWitness_exists_langReduces_setExt
+
 /-! ## Executable Tests -/
 
 open Mettapedia.OSLF.RhoCalculus.Engine (patternToString)
@@ -269,6 +413,26 @@ instance : ToString Pattern := ⟨patternToString⟩
   -- diamond (fun _ => True) p should be True (p can reduce to something)
   let canReduce := !(rewriteWithContextWithPremises rhoCalc p).isEmpty
   IO.println s!"langDiamond test: can {p} reduce? {canReduce}"
+
+-- Test: rhoCalc congruence policy blocks Vec-context descent.
+#eval! do
+  let p : Pattern :=
+    .collection .vec [.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]] none
+  let reducts := rewriteWithContextWithPremises rhoCalc p
+  IO.println s!"langReduces rhoCalc Vec-context policy test:"
+  IO.println s!"  term: {p}"
+  IO.println s!"  reducts ({reducts.length}): {reducts}"
+
+-- Test: canonical rhoCalc vs optional rhoCalcSetExt on set-context descent.
+#eval! do
+  let pSet : Pattern :=
+    .collection .hashSet [.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]] none
+  let reductsCanonical := rewriteWithContextWithPremises rhoCalc pSet
+  let reductsSetExt := rewriteWithContextWithPremises rhoCalcSetExt pSet
+  IO.println s!"rhoCalc set-context comparison:"
+  IO.println s!"  term: {pSet}"
+  IO.println s!"  canonical rhoCalc reducts ({reductsCanonical.length}): {reductsCanonical}"
+  IO.println s!"  rhoCalcSetExt reducts ({reductsSetExt.length}): {reductsSetExt}"
 
 -- Test: langOSLF instantiation succeeds (type-checking is the test)
 #check langOSLF rhoCalc

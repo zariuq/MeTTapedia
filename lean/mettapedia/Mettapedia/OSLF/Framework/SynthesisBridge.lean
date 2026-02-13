@@ -161,6 +161,16 @@ theorem specialized_can_reduce (p : Pattern) (q : Pattern)
     possiblyProp (fun _ => True) p :=
   specialized_possibly _ p ⟨q, hq, trivial⟩
 
+/-- Tiny restricted bridge instance in the exact shape used by synthesis:
+    on the specialized executable path (`reduceStep`), one-step results are
+    propositionally sound (`Reduces`).
+
+    This is the concrete bridge we can instantiate unconditionally today. -/
+theorem specialized_soundBridge_at (p : Pattern) :
+    ∀ q, q ∈ reduceStep p → Nonempty (Reduces p q) := by
+  intro q hq
+  exact reduceStep_sound p q _ hq
+
 /-! ## The Three-Layer Architecture
 
 We can now state the full picture:

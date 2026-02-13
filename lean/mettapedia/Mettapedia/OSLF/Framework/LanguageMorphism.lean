@@ -196,21 +196,36 @@ theorem LanguageMorphism.backward_multi_eq
     For the general SC case, composing backward simulation steps requires
     bridging SC gaps: backward_sim gives sc(q_mid, mapTerm(p₁)) but the
     next reduction starts from q_mid, not mapTerm(p₁). This requires
-    SC-symmetric star closure. -/
+    a one-step SC alignment property that re-roots a single reduction
+    across an SC-related start point. -/
 theorem LanguageMorphism.backward_multi_strong
     (m : LanguageMorphism L₁ L₂ sc)
-    (_sc_refl : ∀ p, sc p p)
-    (_sc_symm : ∀ p q, sc p q → sc q p)
-    (_sc_trans : ∀ p q r, sc p q → sc q r → sc p r)
-    (_sc_star_reduces : ∀ p q, sc p q →
-      ∀ r, LangReducesStar L₂ q r →
-      ∃ r', LangReducesStar L₂ p r' ∧ sc r' r)
-    {p : Pattern} {T : Pattern} (_h : LangReducesStar L₂ (m.mapTerm p) T) :
+    (sc_refl : ∀ p, sc p p)
+    (sc_trans : ∀ p q r, sc p q → sc q r → sc p r)
+    (sc_step_reduces : ∀ p q, sc p q →
+      ∀ r, langReduces L₂ p r →
+      ∃ r', langReduces L₂ q r' ∧ sc r r')
+    {p : Pattern} {T : Pattern} (h : LangReducesStar L₂ (m.mapTerm p) T) :
     ∃ p', LangReducesStar L₁ p p' ∧ sc T (m.mapTerm p') := by
-  -- The SC-gap bridging in the backward direction requires careful induction
-  -- with symmetric SC star closure. Deferred to language-specific instances
-  -- where SC structure is concretely known.
-  sorry
+  have aux :
+      ∀ {start T : Pattern}, LangReducesStar L₂ start T →
+      ∀ {p : Pattern}, sc start (m.mapTerm p) →
+      ∃ p', LangReducesStar L₁ p p' ∧ sc T (m.mapTerm p') := by
+    intro start T hStar
+    induction hStar with
+    | refl s =>
+      intro p hsc
+      exact ⟨p, .refl _, hsc⟩
+    | step h_first _h_rest ih =>
+      intro p hsc_start
+      obtain ⟨q₀, h_aligned, hsc_mid⟩ :=
+        sc_step_reduces _ _ hsc_start _ h_first
+      obtain ⟨p₁, hsrc1, hsc_q0⟩ := m.backward_sim _ _ h_aligned
+      have hsc_qmid : sc _ (m.mapTerm p₁) :=
+        sc_trans _ _ _ hsc_mid hsc_q0
+      obtain ⟨p₂, hsrc2, hscT⟩ := ih hsc_qmid
+      exact ⟨p₂, hsrc1.trans hsrc2, hscT⟩
+  exact aux h (sc_refl _)
 
 /-! ## Diamond/Box Preservation -/
 

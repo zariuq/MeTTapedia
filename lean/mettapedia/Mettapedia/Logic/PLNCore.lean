@@ -24,6 +24,7 @@ import Mettapedia.Logic.PremiseSelectionPUCalibration
 import Mettapedia.Logic.PremiseSelectionRankingStability
 import Mettapedia.Logic.PremiseSelectionSelectorSpec
 import Mettapedia.Logic.PremiseSelectionPartitionedPriorNB
+import Mettapedia.Logic.PremiseSelectionBestPLNDraft
 import Mettapedia.Logic.SoundnessCompleteness
 import Mettapedia.Logic.PLNCanonicalAPI
 
@@ -47,12 +48,25 @@ This module is a curated import surface for the currently theorem-complete PLN s
    `finite_statistic_tv_mixture_bound_choose2`,
    `finite_statistic_tv_mixture_bound_m16_R4551`)
 - Operator-role checklist for prior/revision/tensor composition (`PremiseSelectionOperatorRoles`)
+- Concrete normalized role-model witness (`negOnlyOperatorRoleTheoryNormalized`)
+  showing role-class realizability with normalization closure
 - Concrete Prior-NB role/commutation theorems (`PremiseSelectionPriorNB`)
+- Core PLN rule aliases:
+  (`PLN_ContextualPriorRevision`, `PLN_NormalizedPriorLikelihoodTensor`,
+   `PLN_PriorNBRankingTransfer`)
+- Bridge alias families (classical-method correspondence, non-breaking):
+  (`PLN_tensorStrength_eq_nbPosterior`, `PLN_hplusPos_eq_knnRelevance`,
+   `PLN_revisionStrength_eq_linearPool`)
+- Regraduation odds/log-odds power laws in the evidence carrier
+  (`Evidence.toOdds_power_rpow`, `Evidence.toLogOdds_power_mul`)
 - PU-style weak-negative calibration lemmas (`PremiseSelectionPUCalibration`)
 - Ranking-stability theorems under bounded perturbations (`PremiseSelectionRankingStability`)
 - Selector-spec defaults linked to checklist assumptions (`PremiseSelectionSelectorSpec`)
 - Partitioned normalized Prior-NB composition and TV-bound aggregation
   (`PremiseSelectionPartitionedPriorNB`)
+- Draft "best-PLN" composition module (global prior + partitioned local prior +
+  normalized sequential tensor update) with role/ranking wrappers
+  (`PremiseSelectionBestPLNDraft`)
 - Soundness/completeness tradeoff characterization (`SoundnessCompleteness`)
 
 Files with active proof debt are intentionally *not* re-exported here; those are grouped in

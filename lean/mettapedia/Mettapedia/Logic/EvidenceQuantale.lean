@@ -3,6 +3,8 @@ import Mathlib.Data.ENNReal.Basic
 import Mathlib.Data.ENNReal.Operations
 import Mathlib.Data.ENNReal.Inv
 import Mathlib.Data.NNReal.Defs
+import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mettapedia.Logic.PLNDeduction
 import Mettapedia.Logic.EvidenceClass
 import Mettapedia.Logic.PLNWeightTV
@@ -752,6 +754,51 @@ theorem toLogOdds_tensor_add (x y : Evidence)
     _ = Real.log (toOdds x).toReal + Real.log (toOdds y).toReal := by
           simpa using Real.log_mul (ne_of_gt hx_pos_real) (ne_of_gt hy_pos_real)
     _ = toLogOdds x + toLogOdds y := by
+          simp [toLogOdds]
+
+/-- Regraduation by exponentiation in evidence space.
+
+This is the canonical power operation used for informativeness weighting. -/
+noncomputable def power (e : Evidence) (w : ℝ) : Evidence :=
+  ⟨e.pos ^ w, e.neg ^ w⟩
+
+@[simp] theorem power_pos (e : Evidence) (w : ℝ) :
+    (power e w).pos = e.pos ^ w := rfl
+
+@[simp] theorem power_neg (e : Evidence) (w : ℝ) :
+    (power e w).neg = e.neg ^ w := rfl
+
+/-- Odds under regraduation are exponentiated (finite nonnegative exponent regime). -/
+theorem toOdds_power_rpow (e : Evidence) (w : ℝ)
+    (hw : 0 ≤ w) (hneg : e.neg ≠ 0) :
+    toOdds (power e w) = (toOdds e) ^ w := by
+  have hpow_neg_ne_zero : e.neg ^ w ≠ 0 := by
+    intro h0
+    rcases (ENNReal.rpow_eq_zero_iff).1 h0 with h | h
+    · exact hneg h.1
+    · linarith [hw, h.2]
+  rw [toOdds_eq_div (e := power e w) hpow_neg_ne_zero, toOdds_eq_div (e := e) hneg]
+  simp [power, ENNReal.div_rpow_of_nonneg, hw]
+
+/-- Log-odds under regraduation scale linearly with the exponent
+in the finite nonnegative exponent regime. -/
+theorem toLogOdds_power_mul (e : Evidence) (w : ℝ)
+    (hw : 0 ≤ w)
+    (hneg : e.neg ≠ 0)
+    (hodds0 : toOdds e ≠ 0) (hoddsTop : toOdds e ≠ ⊤) :
+    toLogOdds (power e w) = w * toLogOdds e := by
+  have hpow : toOdds (power e w) = (toOdds e) ^ w :=
+    toOdds_power_rpow e w hw hneg
+  have hpos_real : 0 < (toOdds e).toReal := ENNReal.toReal_pos hodds0 hoddsTop
+  calc
+    toLogOdds (power e w)
+        = Real.log (((toOdds e) ^ w).toReal) := by
+            simp [toLogOdds, hpow]
+    _ = Real.log (((toOdds e).toReal) ^ w) := by
+          simp [ENNReal.toReal_rpow]
+    _ = w * Real.log (toOdds e).toReal := by
+          simpa using (Real.log_rpow hpos_real w)
+    _ = w * toLogOdds e := by
           simp [toLogOdds]
 
 /-- Evidence weight corresponding to the standard confidence↔weight transform.
