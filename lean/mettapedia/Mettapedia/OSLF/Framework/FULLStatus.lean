@@ -8,6 +8,7 @@ import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.Framework.TinyMLInstance
 import Mettapedia.OSLF.Framework.MeTTaMinimalInstance
+import Mettapedia.OSLF.Framework.MeTTaFullInstance
 
 /-!
 # OSLF FULL Status Tracker
@@ -86,8 +87,8 @@ def tracker : List Milestone :=
   , { area := "Beck-Chevalley"
       title := "Full substitution square in lifted base"
       status := .done
-      codeRef := "Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean: presheaf_beckChevalley_square_direct / representable_patternPred_beckChevalley / representable_commDi_patternPred_beckChevalley / representable_commDi_patternPred_beckChevalley_of_pathSemLiftPkg / representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg / commDi_diamond_graphObj_square_direct; Mettapedia/OSLF/Framework/TinyMLInstance.lean: tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph / tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq; Mettapedia/OSLF/Framework/MeTTaMinimalInstance.lean: mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph / mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq / mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto"
-      note := "Lifted-base substitution square is consumed end-to-end through package-based COMM/path-semantics transport with concrete non-rho checker→fiber→PathSemClosed BC+graph theorems for TinyML and MeTTaMinimal." }
+      codeRef := "Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean: presheaf_beckChevalley_square_direct / representable_patternPred_beckChevalley / representable_commDi_patternPred_beckChevalley / representable_commDi_patternPred_beckChevalley_of_pathSemLiftPkg / representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg / commDi_diamond_graphObj_square_direct; Mettapedia/OSLF/Framework/TinyMLInstance.lean: tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph / tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq; Mettapedia/OSLF/Framework/MeTTaMinimalInstance.lean: mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph / mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq / mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto; Mettapedia/OSLF/Framework/MeTTaFullInstance.lean: mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph / mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto / mettaFull_checkLangUsing_sat_sound_specAtoms"
+      note := "Lifted-base substitution square is consumed end-to-end through package-based COMM/path-semantics transport with concrete non-rho checker→fiber→PathSemClosed BC+graph theorems for TinyML, MeTTaMinimal, and MeTTaFull." }
   ]
 
 /-- Count milestones with a given status. -/
@@ -200,5 +201,8 @@ These checks tie tracker statements to concrete constants in the codebase.
 #check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_commDiPathSemLiftPkg_of_liftEq
 #check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
 #check @Mettapedia.OSLF.Framework.MeTTaMinimalInstance.mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
+#check @Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
+#check @Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
+#check @Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull_checkLangUsing_sat_sound_specAtoms
 
 end Mettapedia.OSLF.Framework.FULLStatus

@@ -94,8 +94,24 @@ def mettaFull : LanguageDef := {
       syntaxPattern := [.terminal "xor"] },
     { label := "eqBool", category := "Atom", params := [],
       syntaxPattern := [.terminal "eqBool"] },
-    { label := "Space0", category := "Space", params := [],
-      syntaxPattern := [.terminal "space0"] }
+    { label := "GInt", category := "Atom",
+      params := [.simple "token" (.base "Atom")],
+      syntaxPattern := [.terminal "gint", .terminal "(", .nonTerminal "token", .terminal ")"] },
+    { label := "GString", category := "Atom",
+      params := [.simple "token" (.base "Atom")],
+      syntaxPattern := [.terminal "gstring", .terminal "(", .nonTerminal "token", .terminal ")"] },
+    { label := "GStringVec", category := "Atom",
+      params := [.simple "chunks" (.collection .vec (.base "Atom"))],
+      syntaxPattern := [.terminal "gstring-vec", .terminal "(", .nonTerminal "chunks", .terminal ")"] },
+    { label := "GStringCodes", category := "Atom",
+      params := [.simple "codes" (.collection .vec (.base "Atom"))],
+      syntaxPattern := [.terminal "gstring-codes", .terminal "(", .nonTerminal "codes", .terminal ")"] },
+    { label := "Space", category := "Space",
+      params := [ .simple "eqs" (.collection .hashBag (.base "Atom"))
+                , .simple "tys" (.collection .hashBag (.base "Atom")) ],
+      syntaxPattern := [.terminal "space", .terminal "(",
+                        .nonTerminal "eqs", .terminal ",",
+                        .nonTerminal "tys", .terminal ")"] }
   ],
   equations := [],
   rewrites := [
@@ -210,7 +226,9 @@ theorem mettaFullGalois :
 
 private def aTrue : Pattern := .apply "ATrue" []
 private def aFalse : Pattern := .apply "AFalse" []
-private def space0 : Pattern := .apply "Space0" []
+private def space0 : Pattern := Mettapedia.OSLF.MeTTaCore.Premises.space0Pattern
+private def gInt (n : Int) : Pattern := .apply "GInt" [(.apply s!"{n}" [])]
+private def gString (s : String) : Pattern := .apply "GString" [(.apply s [])]
 
 private def mkState (instr : Pattern) (space : Pattern := space0) (out : Pattern := aFalse) : Pattern :=
   .apply "State" [instr, space, out]
@@ -222,6 +240,8 @@ private def iTypeCheck (atom ty : Pattern) : Pattern := .apply "TypeCheck" [atom
 private def iCast (atom ty : Pattern) : Pattern := .apply "Cast" [atom, ty]
 private def iGrounded1 (op arg : Pattern) : Pattern := .apply "Grounded1" [op, arg]
 private def iGrounded2 (op lhs rhs : Pattern) : Pattern := .apply "Grounded2" [op, lhs, rhs]
+private def gStringCodes (codes : List String) : Pattern :=
+  .apply "GStringCodes" [(.collection .vec (codes.map (fun n => .apply n [])) none)]
 
 /-- Full-slice relation environment (Atomspace-backed eqnLookup + branches). -/
 def mettaFullRelEnv : RelationEnv := Mettapedia.OSLF.MeTTaCore.Premises.mettaFullRelEnv
@@ -276,7 +296,45 @@ def mettaFullRelEnv : RelationEnv := Mettapedia.OSLF.MeTTaCore.Premises.mettaFul
   IO.println s!"MeTTaFull grounded and: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gAnd 8}"
   IO.println s!"MeTTaFull grounded miss: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gMiss 8}"
 
+-- Smoke check: grounded Int/String operations and cast conversion branches.
+#eval! do
+  let gPlus := mkState (iGrounded2 (.apply "+" []) (gInt 2) (gInt 3)) space0 aFalse
+  let gConcat := mkState (iGrounded2 (.apply "concat" []) (gString "hello") (gString "world")) space0 aFalse
+  let gConcatSpaced := mkState
+    (iGrounded2 (.apply "concat" [])
+      (.apply "GStringCodes" [(.collection .vec [(.apply "104" []), (.apply "105" []), (.apply "32" [])] none)])
+      (.apply "GStringCodes" [(.collection .vec [(.apply "116" []), (.apply "104" []), (.apply "101" []), (.apply "114" []), (.apply "101" [])] none)]))
+    space0 aFalse
+  let cStrToInt := mkState (iCast (gString "42") (.apply "Int" [])) space0 aFalse
+  let cBadStrToInt := mkState (iCast (gString "abc") (.apply "Int" [])) space0 aFalse
+  let cBoolToStr := mkState (iCast aTrue (.apply "String" [])) space0 aFalse
+  let cBadStrToBool := mkState (iCast (gString "maybe") (.apply "Bool" [])) space0 aFalse
+  IO.println s!"MeTTaFull grounded int plus: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gPlus 8}"
+  IO.println s!"MeTTaFull grounded string concat: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gConcat 8}"
+  IO.println s!"MeTTaFull grounded coded-string concat: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gConcatSpaced 8}"
+  IO.println s!"MeTTaFull cast string->int: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull cStrToInt 8}"
+  IO.println s!"MeTTaFull cast invalid string->int: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull cBadStrToInt 8}"
+  IO.println s!"MeTTaFull cast bool-symbol->string: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull cBoolToStr 8}"
+  IO.println s!"MeTTaFull cast invalid string->bool: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull cBadStrToBool 8}"
+
+/-- Direct executable normal-form shape for coded-string concat with a space. -/
+theorem coded_string_concat_normalForm_shape :
+    fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull
+      (mkState
+        (iGrounded2 (.apply "concat" [])
+          (gStringCodes ["104", "105", "32"])
+          (gStringCodes ["116", "104", "101", "114", "101"]))
+        space0 aFalse) 8
+    =
+      .apply "State"
+        [ .apply "Done" []
+        , space0
+        , gStringCodes ["104", "105", "32", "116", "104", "101", "114", "101"]
+        ] := by
+  native_decide
+
 #check mettaFullOSLF
 #check mettaFullGalois
+#check coded_string_concat_normalForm_shape
 
 end Mettapedia.OSLF.MeTTaCore.FullLanguageDef

@@ -1,35 +1,36 @@
 /-
 # Grammatical Framework (GF) Formalization in Lean
 
-Full Czech morphology ported from GF Resource Grammar Library (ResCze.gf).
+Full Czech and English morphology ported from GF Resource Grammar Library.
 
 ## Status (2026-02-13)
 
 - **Infrastructure**: Core GF abstractions (Core, Abstract, Concrete)
-- **Czech nouns**: 14 paradigms (PAN through STAVENI)
-- **Czech adjectives**: 5 paradigms (hard/soft/possessive/invariable), 56-slot dispatch
-- **Czech verbs**: copula + have + productive -ovat class, 6-person conjugation
-- **Czech pronouns**: personal (8), possessive (7), reflexive, demonstrative, interrogative
-- **Czech numerals**: 1-4 + 5+ + invariable, NumSize-governed agreement
-- **Czech agreement**: NumSize form/agr dispatch (quantitative genitive for 5+)
+- **Abstract syntax**: 985 functions, 112 categories (full GF RGL)
+- **Czech**: 14 noun paradigms, 5 adj paradigms, verbs, pronouns, numerals, agreement
+- **English**: noun paradigms (regular + irregular), verb conjugation (regular + irregular +
+  auxiliaries), adjective comparison, sentence construction (tense, aspect, polarity,
+  do-support, word order), pronouns, prepositions, conjunctions
+- **OSLF bridge**: GF grammars automatically get types via the OSLF pipeline
 - **0 sorries**: All proofs via `decide`, `simp`, or `rfl` (sound kernel reduction)
-- **Known issues**: irregular stem alternations (pes→psa), epenthesis (okno→oken)
 
 ## Usage
 
 ```lean
 import Mettapedia.Languages.GF
-open Mettapedia.Languages.GF.Czech.Declensions
+open Mettapedia.Languages.GF.English.Syntax
+open Mettapedia.Languages.GF.English.Nouns
+open Mettapedia.Languages.GF.English.Verbs
 
-def myNoun := declPAN "pán"
-#eval declineFull myNoun ⟨Case.Gen, Number.Sg⟩  -- "pána"
+-- "the cat walks"
+#eval! linUseCl .Pres .Simul .CPos
+  (linPredVP (linDetCN theDefArt (linUseN cat_N)) (predV walk_V))
 ```
 
 ## References
 
 - GF Tutorial: http://www.grammaticalframework.org/
-- GF-RGL Czech: ~/claude/gf-rgl/src/czech/
-- Grammar compression: ~/claude/grammar_compression_FAIR.txt
+- GF-RGL: ~/claude/gf-rgl/
 -/
 
 import Mettapedia.Languages.GF.Core
@@ -46,4 +47,14 @@ import Mettapedia.Languages.GF.Czech.Examples
 import Mettapedia.Languages.GF.Czech.Properties
 import Mettapedia.Languages.GF.Czech.Tests
 import Mettapedia.Languages.GF.Czech.Linearization
+import Mettapedia.Languages.GF.English.Morphology
+import Mettapedia.Languages.GF.English.Nouns
+import Mettapedia.Languages.GF.English.Verbs
+import Mettapedia.Languages.GF.English.Adjectives
+import Mettapedia.Languages.GF.English.Syntax
+import Mettapedia.Languages.GF.English.Pronouns
+import Mettapedia.Languages.GF.English.Relatives
+import Mettapedia.Languages.GF.English.Properties
+import Mettapedia.Languages.GF.English.Linearization
+import Mettapedia.Languages.GF.English.Examples
 import Mettapedia.Languages.GF.OSLFBridge

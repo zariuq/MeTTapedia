@@ -48,7 +48,11 @@ namespace Mettapedia.OSLF
 
 export Mettapedia.OSLF.MeTTaCore.Premises (
   space0Atomspace
+  space0EqEntries
+  space0TypeEntries
   space0Entries
+  mkCanonicalSpace
+  space0Pattern
   spaceEntriesOfPattern?
   atomspaceOfPattern?
   eqnLookupTuples

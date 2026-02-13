@@ -462,7 +462,7 @@ theorem markovDeFinetti_hard_of_statewiseCloseSplitRates
     (hsplitCloseAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
       ∃ Cw Cpc : ℝ,
         0 ≤ Cw ∧ 0 ≤ Cpc ∧
-        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+        (∀ {N : ℕ} (_hN : Nat.succ n ≤ N) (s : MarkovState k),
           s ∈ stateFinset k N →
             0 < returnsToStart (k := k) s →
               ∃ wSurrogate : ℝ,
@@ -494,6 +494,21 @@ theorem markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport
   exact markovDeFinetti_hard_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll
 
+theorem markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hwrworAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cdf : ℝ, 0 ≤ Cdf ∧
+        MarkovDeFinettiHard.HasPatternWRWORRate (k := k) hk n e Cdf) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternWRWORRateAll
+      (k := k) hwrworAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
 theorem markovDeFinetti_hard_of_biapproxCore_rowL1StartTarget
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
@@ -502,12 +517,12 @@ theorem markovDeFinetti_hard_of_biapproxCore_rowL1StartTarget
       MarkovDeFinettiHard.HasExcursionBiapproxCore (k := k) hk n e) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  have hWORAll :=
-    MarkovDeFinettiHard.hasCanonicalWORTransportRateAll_of_biapproxCoreAll_rowL1StartTarget
+  have hwrworAll :=
+    MarkovDeFinettiHard.hasPatternWRWORRateAll_of_biapproxCoreAll
       (k := k) hcoreAll
   exact
-    markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport
-      (k := k) (μ := μ) hμ hrec hWORAll
+    markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate
+      (k := k) (μ := μ) hμ hrec hwrworAll
 
 
 

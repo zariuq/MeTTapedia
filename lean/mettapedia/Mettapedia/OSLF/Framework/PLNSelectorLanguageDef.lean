@@ -479,36 +479,28 @@ theorem langReduces_to_reduces_exists_of_normalizeFinite
                   (ExprEncodes.update (encodeExpr_encodes q0) (encodeExpr_encodes l)))
         | atom _ =>
             exfalso
-            simp [ruleExtBayes2, encodeExpr, pAtom, pUpdate, pFuse,
-              pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+            simp [ruleExtBayes2, encodeExpr, pAtom, pUpdate, pFuse, matchPattern, matchArgs, mergeBindings] at hbs0
         | update _ _ =>
             exfalso
-            simp [ruleExtBayes2, encodeExpr, pAtom, pUpdate, pFuse,
-              pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+            simp [ruleExtBayes2, encodeExpr, pUpdate, pFuse, matchPattern, matchArgs, mergeBindings] at hbs0
         | normalize _ _ =>
             exfalso
-            simp [ruleExtBayes2, encodeExpr, pAtom, pUpdate, pFuse,
-              pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+            simp [ruleExtBayes2, encodeExpr, pUpdate, pFuse, pNormalizeNZ, matchPattern, matchArgs, mergeBindings] at hbs0
         | fuseFamily _ =>
             exfalso
-            simp [ruleExtBayes2, encodeExpr, pAtom, pUpdate, pFuse,
-              pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+            simp [ruleExtBayes2, encodeExpr, pUpdate, pFuse, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
     | atom _ =>
         exfalso
-        simp [ruleExtBayes2, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleExtBayes2, encodeExpr, pAtom, pUpdate, pFuse, matchPattern] at hbs0
     | fuse _ _ =>
         exfalso
-        simp [ruleExtBayes2, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleExtBayes2, encodeExpr, pUpdate, pFuse, matchPattern] at hbs0
     | normalize _ _ =>
         exfalso
-        simp [ruleExtBayes2, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleExtBayes2, encodeExpr, pUpdate, pFuse, pNormalizeNZ, matchPattern] at hbs0
     | fuseFamily _ =>
         exfalso
-        simp [ruleExtBayes2, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleExtBayes2, encodeExpr, pUpdate, pFuse, pFuseFamily, matchPattern] at hbs0
   · -- extBayesFamily
     have hbs : bs = bs0 := by
       simpa [ruleExtBayesFamily, applyPremisesWithEnv] using hprem
@@ -532,36 +524,28 @@ theorem langReduces_to_reduces_exists_of_normalizeFinite
                   (FamilyEncodes.mapUpdate (encodeFamily_encodes xs) (encodeExpr_encodes l)))
         | atom _ =>
             exfalso
-            simp [ruleExtBayesFamily, encodeExpr, pAtom, pUpdate, pFuse,
-              pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+            simp [ruleExtBayesFamily, encodeExpr, pAtom, pUpdate, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
         | fuse _ _ =>
             exfalso
-            simp [ruleExtBayesFamily, encodeExpr, pAtom, pUpdate, pFuse,
-              pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+            simp [ruleExtBayesFamily, encodeExpr, pUpdate, pFuse, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
         | update _ _ =>
             exfalso
-            simp [ruleExtBayesFamily, encodeExpr, pAtom, pUpdate, pFuse,
-              pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+            simp [ruleExtBayesFamily, encodeExpr, pUpdate, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
         | normalize _ _ =>
             exfalso
-            simp [ruleExtBayesFamily, encodeExpr, pAtom, pUpdate, pFuse,
-              pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+            simp [ruleExtBayesFamily, encodeExpr, pUpdate, pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
     | atom _ =>
         exfalso
-        simp [ruleExtBayesFamily, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleExtBayesFamily, encodeExpr, pAtom, pUpdate, pFuseFamily, matchPattern] at hbs0
     | fuse _ _ =>
         exfalso
-        simp [ruleExtBayesFamily, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleExtBayesFamily, encodeExpr, pUpdate, pFuse, pFuseFamily, matchPattern] at hbs0
     | normalize _ _ =>
         exfalso
-        simp [ruleExtBayesFamily, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleExtBayesFamily, encodeExpr, pUpdate, pNormalizeNZ, pFuseFamily, matchPattern] at hbs0
     | fuseFamily _ =>
         exfalso
-        simp [ruleExtBayesFamily, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleExtBayesFamily, encodeExpr, pUpdate, pFuseFamily, matchPattern] at hbs0
   · -- normalize
     have hbs : bs = bs0 := by
       simpa [ruleNormalizeStrength, applyPremisesWithEnv] using hprem
@@ -579,20 +563,16 @@ theorem langReduces_to_reduces_exists_of_normalizeFinite
         simpa [hq'] using encodeExpr_encodes e0
     | atom _ =>
         exfalso
-        simp [ruleNormalizeStrength, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleNormalizeStrength, encodeExpr, pAtom, pNormalizeNZ, matchPattern] at hbs0
     | fuse _ _ =>
         exfalso
-        simp [ruleNormalizeStrength, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleNormalizeStrength, encodeExpr, pFuse, pNormalizeNZ, matchPattern] at hbs0
     | update _ _ =>
         exfalso
-        simp [ruleNormalizeStrength, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleNormalizeStrength, encodeExpr, pUpdate, pNormalizeNZ, matchPattern] at hbs0
     | fuseFamily _ =>
         exfalso
-        simp [ruleNormalizeStrength, encodeExpr, pAtom, pUpdate, pFuse,
-          pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] at hbs0
+        simp [ruleNormalizeStrength, encodeExpr, pFuseFamily, pNormalizeNZ, matchPattern] at hbs0
 
 /-- Existence-level equivalence for one-step behavior at encoded sources:
 language reduction exists iff typed selector reduction exists (finite nonzero
@@ -638,6 +618,34 @@ theorem langReduces_encode_to_encode_reduces_of_atomFree
     PLNSelectorExpr.Reduces e e' :=
   langReduces_encode_to_encode_reduces_of_encodeInjective
     (e := e) (e' := e') hNorm hFree h
+
+/-! ### Boundary lemmas for excluded constructors -/
+
+/-- Atom nodes are excluded from the encode-injective fragment. -/
+theorem not_encodeInjective_atom
+    (s : Mettapedia.Logic.PremiseSelection.Scorer Goal Fact) :
+    ¬ EncodeInjective (.atom s) := by
+  intro h
+  cases h
+
+/-- Normalize nodes are excluded from the encode-injective fragment. -/
+theorem not_encodeInjective_normalize
+    (t : ENNReal) (e : PLNSelectorExpr Goal Fact) :
+    ¬ EncodeInjective (.normalize t e) := by
+  intro h
+  cases h
+
+/-- Atom payload is abstracted by encoding: all atoms map to the same pattern. -/
+@[simp] theorem encodeExpr_atom_const
+    (s₁ s₂ : Mettapedia.Logic.PremiseSelection.Scorer Goal Fact) :
+    encodeExpr (.atom s₁) = encodeExpr (.atom s₂) := by
+  rfl
+
+/-- Normalize scale is abstracted by encoding: only the body is retained. -/
+@[simp] theorem encodeExpr_normalize_scale_ignored
+    (t1 t2 : ENNReal) (e : PLNSelectorExpr Goal Fact) :
+    encodeExpr (.normalize t1 e) = encodeExpr (.normalize t2 e) := by
+  rfl
 
 /-! ## Checker-Facing Soundness + Examples -/
 

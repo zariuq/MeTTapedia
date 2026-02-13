@@ -138,7 +138,7 @@ theorem finite_constraints_nonempty_of_statewiseCloseSplitRates
     (hsplitCloseAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
       ∃ Cw Cpc : ℝ,
         0 ≤ Cw ∧ 0 ≤ Cpc ∧
-        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+        (∀ {N : ℕ} (_hN : Nat.succ n ≤ N) (s : MarkovState k),
           s ∈ stateFinset k N →
             0 < returnsToStart (k := k) s →
               ∃ wSurrogate : ℝ,

@@ -32,6 +32,7 @@ import Mettapedia.Languages.GF.Abstract
 import Mettapedia.Languages.GF.Core
 import Mettapedia.Languages.GF.Czech.Linearization
 import Mettapedia.OSLF.MeTTaIL.Syntax
+import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.CategoryBridge
 
@@ -41,6 +42,7 @@ open Mettapedia.Languages.GF.Core
 open Mettapedia.Languages.GF.Abstract
 open Mettapedia.Languages.GF.Czech.Linearization
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
@@ -394,13 +396,186 @@ noncomputable def gfGrammarPresheafLambdaTheory
     (funs : List FunctionSig) :=
   languagePresheafLambdaTheory (gfGrammarLanguageDef name cats funs)
 
+/-! ## Phase 6: English GF → OSLF
+
+English uses the same abstract syntax as Czech (GF RGL is language-independent
+at the abstract level). The English LanguageDef is identical to Czech's —
+the differentiation happens at the concrete linearization level.
+-/
+
+/-- English GF grammar — same abstract syntax, named for English. -/
+def englishGFLanguageDef : LanguageDef :=
+  { gfRGLLanguageDef with name := "EnglishGF" }
+
+/-- The rewrite system generated from English GF grammar. -/
+def englishGFRewriteSystem : RewriteSystem :=
+  langRewriteSystem englishGFLanguageDef "S"
+
+/-- The full OSLF type system for English GF. -/
+def englishGFOSLF : OSLFTypeSystem englishGFRewriteSystem :=
+  langOSLF englishGFLanguageDef "S"
+
+/-- English gets a Galois connection for free (same as Czech). -/
+theorem englishGF_galois :
+    GaloisConnection
+      (langDiamond englishGFLanguageDef)
+      (langBox englishGFLanguageDef) :=
+  langGalois englishGFLanguageDef
+
+/-- English native type for the process sort "S". -/
+def englishGFNativeType := langNativeType englishGFLanguageDef "S"
+
+/-- English OSLF fiber family. -/
+noncomputable abbrev englishGFOSLFFiberFamily :=
+  langOSLFFiberFamily englishGFLanguageDef "S"
+
+/-- English presheaf λ-theory. -/
+noncomputable def englishGFPresheafLambdaTheory :=
+  languagePresheafLambdaTheory englishGFLanguageDef
+
 -- Verify key constructions type-check
 #check gfRGLLanguageDef
 #check czechGFOSLF
 #check czechGF_galois
 #check czechGFNativeType
 #check czechGFOSLFFiberFamily
+#check englishGFOSLF
+#check englishGF_galois
+#check englishGFNativeType
+#check englishGFOSLFFiberFamily
 #check @gfGrammarOSLF
 #check @gfGrammar_galois
+
+/-! ## Phase 8: GF Abstract Trees → OSLF Semantic Bridge
+
+Connects GF abstract syntax trees to the OSLF formula checker and
+denotational semantics. This is the theorem-level bridge from
+GF term predicates to `checkLangUsing` / `sem`.
+
+Pipeline:
+```
+AbstractNode →[gfAbstractToPattern]→ Pattern
+  →[checkLangUsing gfRGLLanguageDef]→ CheckResult
+  →[checkLangUsing_sat_sound]→ sem (langReduces gfRGLLanguageDef) I φ p
+  →[langDiamond_spec]→ ◇/□ modal satisfaction
+```
+-/
+
+open Mettapedia.OSLF.MeTTaIL.Engine
+
+/-- If `checkLangUsing` returns `.sat` on a GF abstract tree converted to
+    a Pattern, then the formula's denotational semantics hold for that tree.
+
+    This is the master bridge: GF abstract syntax → OSLF semantics. -/
+theorem gfAbstract_checkSat_sound
+    {lang : LanguageDef}
+    {I_check : AtomCheck} {I_sem : AtomSem}
+    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {fuel : Nat} {node : AbstractNode} {φ : OSLFFormula}
+    (h : checkLangUsing .empty lang I_check fuel
+           (gfAbstractToPattern node) φ = .sat) :
+    sem (langReduces lang) I_sem φ (gfAbstractToPattern node) := by
+  exact checkLangUsing_sat_sound h_atoms h
+
+/-- If a GF abstract tree reduces under the RGL language, then the
+    OSLF diamond modality witnesses that reduction.
+
+    ◇(φ)(tree) holds when tree ⇝ q and φ(q). -/
+theorem gfAbstract_diamond_of_reduces
+    {lang : LanguageDef}
+    {φ : Pattern → Prop} {node : AbstractNode} {q : Pattern}
+    (hReduce : langReduces lang (gfAbstractToPattern node) q)
+    (hφ : φ q) :
+    langDiamond lang φ (gfAbstractToPattern node) := by
+  rw [langDiamond_spec]
+  exact ⟨q, hReduce, hφ⟩
+
+/-- Executable reduction on a GF tree implies the declarative relation.
+
+    Uses the soundness/completeness bridge: if the rewrite engine produces
+    `q` from the Pattern of a GF tree, then `langReduces` holds. -/
+theorem gfAbstract_exec_implies_reduces
+    {lang : LanguageDef} {node : AbstractNode} {q : Pattern}
+    (h : q ∈ rewriteWithContextWithPremises lang (gfAbstractToPattern node)) :
+    langReduces lang (gfAbstractToPattern node) q := by
+  exact exec_to_langReducesUsing .empty lang
+    (show langReducesExecUsing .empty lang (gfAbstractToPattern node) q from h)
+
+/-- Combining exec + diamond: if the engine reduces a GF tree to q,
+    and φ(q) holds, then ◇(φ)(tree) holds in the OSLF type system.
+
+    This is the practical bridge: run the rewriter, get a reduct,
+    check a predicate on it, conclude ◇-satisfaction. -/
+theorem gfAbstract_diamond_of_exec
+    {lang : LanguageDef}
+    {φ : Pattern → Prop} {node : AbstractNode} {q : Pattern}
+    (hExec : q ∈ rewriteWithContextWithPremises lang (gfAbstractToPattern node))
+    (hφ : φ q) :
+    langDiamond lang φ (gfAbstractToPattern node) :=
+  gfAbstract_diamond_of_reduces (gfAbstract_exec_implies_reduces hExec) hφ
+
+/-! ### Concrete GF → OSLF checker demonstrations -/
+
+section GFCheckerDemo
+
+/-- Atom check: pattern matches a specific free variable name -/
+def gfAtomCheck_isName (target : String) : AtomCheck :=
+  fun _a p => match p with
+    | .fvar n => n == target
+    | _ => false
+
+/-- Atom semantics: pattern IS the named free variable -/
+def gfAtomSem_isName (target : String) : AtomSem :=
+  fun _a p => p = .fvar target
+
+/-- Soundness: the atom check implies the atom semantics -/
+theorem gfAtomCheck_isName_sound (target : String) :
+    ∀ a p, gfAtomCheck_isName target a p = true → gfAtomSem_isName target a p := by
+  intro a p h
+  simp only [gfAtomCheck_isName] at h
+  simp only [gfAtomSem_isName]
+  match p with
+  | .fvar n =>
+    simp [BEq.beq] at h
+    exact congrArg Pattern.fvar h
+  | .apply _ _ => simp at h
+  | .collection _ _ _ => simp at h
+
+end GFCheckerDemo
+
+-- Check ◇(is_house) on UseN(house):
+-- UseN(house) ⇝ house (via UseNElim), and house is house.
+-- The checker should return `.sat`.
+#eval! do
+  let tree := AbstractNode.apply
+    { name := "UseN", type := .arrow (.base "N") (.base "CN") }
+    [.leaf "house" (.base "N")]
+  let pat := gfAbstractToPattern tree
+  let φ := OSLFFormula.dia (.atom "is_house")
+  let result := checkLangUsing .empty gfRGLLanguageDef
+    (gfAtomCheck_isName "house") 3 pat φ
+  IO.println s!"UseN(house) |= ◇(is_house): {repr result}"
+
+-- Check ◇(is_big) on PositA(big):
+-- PositA(big) ⇝ big (via PositAElim), and big is big.
+#eval! do
+  let tree := AbstractNode.apply
+    { name := "PositA", type := .arrow (.base "A") (.base "AP") }
+    [.leaf "big" (.base "A")]
+  let pat := gfAbstractToPattern tree
+  let φ := OSLFFormula.dia (.atom "is_big")
+  let result := checkLangUsing .empty gfRGLLanguageDef
+    (gfAtomCheck_isName "big") 3 pat φ
+  IO.println s!"PositA(big) |= ◇(is_big): {repr result}"
+
+-- Check that irreducible terms do NOT satisfy ◇:
+-- bare "house" has no reducts, so ◇(anything) is unsat.
+#eval! do
+  let pat := Pattern.fvar "house"
+  let φ := OSLFFormula.dia (.atom "is_house")
+  let result := checkLangUsing .empty gfRGLLanguageDef
+    (gfAtomCheck_isName "house") 3 pat φ
+  IO.println s!"house |= ◇(is_house): {repr result}"
+  -- Expected: .unsat (no reducts to check)
 
 end Mettapedia.Languages.GF.OSLFBridge

@@ -302,6 +302,35 @@ theorem mettaFull_checkLang_sat_sound_specAtoms
     (mettaFull_checkLangUsing_sat_sound_specAtoms
       (relEnv := RelationEnv.empty) (fuel := fuel) (p := p) (φ := φ) hSat)
 
+/-- Concrete coded-string concat state with whitespace in the payload. -/
+private def codedConcatSpacesState : Pattern :=
+  .apply "State"
+    [ .apply "Grounded2"
+        [ .apply "concat" []
+        , .apply "GStringCodes"
+            [(.collection .vec [(.apply "104" []), (.apply "105" []), (.apply "32" [])] none)]
+        , .apply "GStringCodes"
+            [(.collection .vec [(.apply "116" []), (.apply "104" []), (.apply "101" []), (.apply "114" []), (.apply "101" [])] none)]
+        ]
+    , Mettapedia.OSLF.MeTTaCore.Premises.space0Pattern
+    , .apply "AFalse" []
+    ]
+
+/-- Checker-level guarantee: coded-string concat with whitespace reaches a done state in two steps. -/
+theorem mettaFull_checkLangUsing_sat_coded_concat_spaces_done :
+    checkLangUsing Mettapedia.OSLF.MeTTaCore.FullLanguageDef.mettaFullRelEnv
+      mettaFull mettaFullSpecAtomCheck 8 codedConcatSpacesState (.dia (.dia (.atom "isDoneState"))) = .sat := by
+  native_decide
+
+/-- Semantic corollary for coded-string concat checker result. -/
+theorem mettaFull_sem_coded_concat_spaces_done :
+    sem (langReducesUsing Mettapedia.OSLF.MeTTaCore.FullLanguageDef.mettaFullRelEnv mettaFull)
+      mettaFullSpecAtomSem (.dia (.dia (.atom "isDoneState"))) codedConcatSpacesState := by
+  exact mettaFull_checkLangUsing_sat_sound_specAtoms
+    (relEnv := Mettapedia.OSLF.MeTTaCore.FullLanguageDef.mettaFullRelEnv)
+    (fuel := 8) (p := codedConcatSpacesState) (φ := .dia (.dia (.atom "isDoneState")))
+    mettaFull_checkLangUsing_sat_coded_concat_spaces_done
+
 #check mettaFullOSLF
 #check mettaFullGalois
 #check mettaState
@@ -311,5 +340,7 @@ theorem mettaFull_checkLang_sat_sound_specAtoms
 #check mettaFullSpecAtomCheck
 #check mettaFullSpecAtomSem
 #check mettaFull_checkLangUsing_sat_sound_specAtoms
+#check mettaFull_checkLangUsing_sat_coded_concat_spaces_done
+#check mettaFull_sem_coded_concat_spaces_done
 
 end Mettapedia.OSLF.Framework.MeTTaFullInstance
