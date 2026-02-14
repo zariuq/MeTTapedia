@@ -27,24 +27,9 @@ namespace Mettapedia.GSLT.GraphTheory
 
 open Mettapedia.GSLT.Core
 
-/-! ## extractHNF Behavior on Lambda Terms -/
+/-! ## extractHNF Behavior on Lambda Terms
 
-/-- If the body of a lambda has an HNF structure, the lambda itself has an HNF structure
-    with one additional lambda binding. -/
-theorem extractHNF_lam_some (t : LambdaTerm) (k h : Nat) (args : List LambdaTerm) :
-    extractHNF t = some (k, h, args) →
-    extractHNF (.lam t) = some (k + 1, h, args) := by
-  intro ht
-  unfold extractHNF
-  rw [ht]
-
-/-- If the body of a lambda has no HNF structure, the lambda itself has no HNF structure. -/
-theorem extractHNF_lam_none (t : LambdaTerm) :
-    extractHNF t = none →
-    extractHNF (.lam t) = none := by
-  intro ht
-  unfold extractHNF
-  rw [ht]
+`extractHNF_lam_some`, `extractHNF_lam_none` are imported from BohmTree.lean. -/
 
 /-- Lambda term has extractHNF structure iff its body does. -/
 theorem extractHNF_lam_isSome (t : LambdaTerm) :
@@ -117,13 +102,9 @@ theorem bohmTree_eq_imp_toHNF_eq (t t' : LambdaTerm) (n : Nat) :
       -- h now relates extractHNF results
       sorry -- Need to extract hnf = hnf' from structural equality
 
-/-! ## extractHNF Behavior on Applications -/
+/-! ## extractHNF Behavior on Applications
 
-/-- Application of a variable to an argument is in HNF. -/
-theorem extractHNF_app_var (n : Nat) (s : LambdaTerm) :
-    extractHNF (.app (.var n) s) = some (0, n, [s]) := by
-  unfold extractHNF
-  rfl
+`extractHNF_app_var` is imported from BohmTree.lean. -/
 
 /-! ## Summary
 This file establishes the computational infrastructure needed for Böhm tree congruence proofs.
