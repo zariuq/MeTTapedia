@@ -22,8 +22,12 @@ Each rule family provides all 5 shapes:
 
 ## Scope
 
-Currently covers **deduction** (chain A→B→C) only. Source (fork) and sink
-(collider) rules require new BN graph structure proofs not yet in the codebase.
+Currently covers:
+- **Deduction** (chain A→B→C) — full 5-shape block + Tier B/C composition
+- **Source rule / Induction** (fork A←B→C) — full 5-shape block
+
+Not yet covered:
+- **Sink rule / Abduction** (collider) — side condition investigation needed
 
 ## Concrete Proofs Used
 
@@ -365,7 +369,21 @@ variable
   [∀ v : Three, StandardBorelSpace (chainBN.stateSpace v)]
   [StandardBorelSpace chainBN.JointSpace]
 
-/-! ### Bridge lemmas: VEBridge types ↔ FastRules types -/
+/-! ### §2a Bool-generic bridge lemmas
+
+The 6 Bool-generic queryProb/queryStrength lemmas live in **PLNBNCompilation**
+(shared layer) so that source/sink derivations can reuse them:
+
+- `queryProb_prop_eq_jointMeasure` / `queryProb_link_eq_jointMeasure`
+- `queryProb_prop_le_one` / `queryProb_link_le_one`
+- `queryStrength_singleton_prop_toReal` / `queryStrength_singleton_link_toReal`
+
+These work for any BN and any state value. -/
+
+/-! ### §2b Bridge lemmas: VEBridge types ↔ FastRules types (true-specialized)
+
+These are corollaries of the Bool-generic helpers for `val = true`,
+bridging to `eventTrue` used in `chainBN_plnDeductionStrength_exact`. -/
 
 set_option linter.unusedSectionVars false in
 /-- `eventEq v true` (VEBridge) equals `eventTrue v` (FastRules). -/
@@ -593,22 +611,225 @@ theorem evidence_hplus_is_conjugate :
 
 end TierC
 
-/-! ## §4 Source / Sink Rules: Honest Status
+/-! ## §4 Source Rule: Fork BN (A ← B → C)
 
-Source rule (induction) requires fork BN (B→A, B→C) screening-off proof.
-Sink rule (abduction) requires collider BN (A→B←C) screening-off proof.
+The fork BN has edges B→A and B→C. The source rule (induction) derives
+link A→C from links B→A and B→C.
 
-Neither exists in the codebase. The formula decompositions
-(`plnInduction_eq_bayes_deduction`, `plnAbduction_eq_bayes_deduction`)
-and structural decompositions (`SourceRuleBayesDed`, `SinkRuleBayesDed`)
-exist in PLNDerivation.lean and PLNXiRuleRegistry.lean, but the concrete
-BN measure-level proofs for fork/collider graphs are missing.
+The screening-off condition is A ⊥ C | B, which holds in the fork because
+B is a non-collider on the path A-B-C. The WMQueryEq identity
 
-To derive source/sink rules, we would need:
-1. Define fork/collider BN graph structures (like `chainBN` for chains)
-2. Prove measure-level screening-off for those structures
-3. Bridge to WMQueryEq via conditional independence
-4. Then wrap in the 5-shape block
+  `linkCond [A,B] C = link B C`
+
+is exactly the screening-off content: knowing A in addition to B doesn't
+help predict C. This is proved in PLNBNCompilation.ForkExample.
+
+### Differences from Chain BN Deduction (§1)
+
+| Property | Chain (§1) | Fork (§4) |
+|----------|-----------|-----------|
+| Graph | A → B → C | A ← B → C |
+| Input links | A→B, B→C | B→A, B→C |
+| Output link | A→C | A→C |
+| Rule type | Deduction | Source (Induction) |
+| Side condition | A ⊥ C \| B | A ⊥ C \| B |
+| WMQueryEq | same form | same form |
+
+The d-sep condition is identical; the structural difference is the BN graph. -/
+
+section ForkBNSourceRule
+
+open Mettapedia.Logic.PLNBNCompilation.ForkExample
+
+variable
+  [∀ v : Three, Fintype (forkBN.stateSpace v)]
+  [∀ v : Three, DecidableEq (forkBN.stateSpace v)]
+  [∀ v : Three, Inhabited (forkBN.stateSpace v)]
+  [∀ v : Three, StandardBorelSpace (forkBN.stateSpace v)]
+  [StandardBorelSpace forkBN.JointSpace]
+
+/-- All CPTs in the fork BN satisfy the local Markov property. -/
+abbrev ForkBNLocalMarkovAll
+    [∀ v : Three, Fintype (forkBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (forkBN.stateSpace v)]
+    [∀ v : Three, Inhabited (forkBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (forkBN.stateSpace v)]
+    [StandardBorelSpace forkBN.JointSpace] :=
+  ∀ cpt : forkBN.DiscreteCPT, HasLocalMarkovProperty forkBN cpt.jointMeasure
+
+/-! ### Shape 1: Side condition derivation -/
+
+/-- The screening-off query equivalence for the fork BN source rule case,
+derived from local Markov + d-separation. -/
+theorem sourceRule_wmqueryeq_of_forkBN
+    (valA valB valC : Bool)
+    [EventPos (bn := forkBN) Three.B valB]
+    [EventPosConstraints (bn := forkBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLMarkov : ForkBNLocalMarkovAll)
+    (hDSep : (CompiledPlan.inductionSide Three.A Three.B Three.C).holds
+      (bn := forkBN)) :
+    WMQueryEq (State := BNWorldModel.State (bn := forkBN))
+      (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
+      (PLNQuery.linkCond
+        [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]
+        ⟨Three.C, valC⟩)
+      (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) :=
+  fork_screeningOff_wmqueryeq_of_dsep
+    (valA := valA) (valB := valB) (valC := valC) hLMarkov hDSep
+
+/-! ### Shape 2: Derived WMRewriteRule (NO free hSO argument) -/
+
+/-- Source rule (induction) rewrite rule for the fork BN, derived from
+local Markov + d-separation. The rule rewrites `linkCond [A,B] C` to `link B C`.
+
+Arguments are model-semantic:
+- `hLMarkov` : local Markov property (BN model axiom)
+
+There is NO abstract screening-off hypothesis.
+The d-separation condition is the rule's side condition. -/
+noncomputable def xi_sourceRule_rewrite_of_forkBN
+    (valA valB valC : Bool)
+    [EventPos (bn := forkBN) Three.B valB]
+    [EventPosConstraints (bn := forkBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLMarkov : ForkBNLocalMarkovAll) :
+    WMRewriteRule
+      (BNWorldModel.State (bn := forkBN))
+      (PLNQuery (BNQuery.Atom (bn := forkBN))) :=
+  dsep_rewrite
+    (State := BNWorldModel.State (bn := forkBN))
+    (Atom := BNQuery.Atom (bn := forkBN))
+    (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩)
+    (PLNQuery.linkCond
+      [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]
+      ⟨Three.C, valC⟩)
+    ((CompiledPlan.inductionSide Three.A Three.B Three.C).holds (bn := forkBN))
+    (fun h => (sourceRule_wmqueryeq_of_forkBN valA valB valC hLMarkov h).symm)
+
+/-- The derived rule's side condition is exactly d-separation (induction side). -/
+theorem xi_sourceRule_rewrite_of_forkBN_side
+    (valA valB valC : Bool)
+    [EventPos (bn := forkBN) Three.B valB]
+    [EventPosConstraints (bn := forkBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLMarkov : ForkBNLocalMarkovAll)
+    (hDSep : (CompiledPlan.inductionSide Three.A Three.B Three.C).holds
+      (bn := forkBN)) :
+    (xi_sourceRule_rewrite_of_forkBN valA valB valC hLMarkov).side :=
+  hDSep
+
+/-! ### Shape 3: Admissibility (actual inference theorem) -/
+
+/-- Admissibility: for any derivable WM state, the source rule produces
+a valid query judgment. This is the "PLN source rule (induction) is sound
+in fork BNs" theorem. -/
+theorem xi_sourceRule_admissible_of_forkBN
+    (valA valB valC : Bool)
+    [EventPos (bn := forkBN) Three.B valB]
+    [EventPosConstraints (bn := forkBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLMarkov : ForkBNLocalMarkovAll)
+    (hDSep : (CompiledPlan.inductionSide Three.A Three.B Three.C).holds
+      (bn := forkBN))
+    (W : BNWorldModel.State (bn := forkBN))
+    (hW : ⊢wm W) :
+    ⊢q W ⇓
+      (PLNQuery.linkCond
+        ([ (⟨Three.A, valA⟩ : BNQuery.Atom (bn := forkBN))
+         , (⟨Three.B, valB⟩ : BNQuery.Atom (bn := forkBN)) ])
+        (⟨Three.C, valC⟩ : BNQuery.Atom (bn := forkBN))) ↦
+      (xi_sourceRule_rewrite_of_forkBN valA valB valC hLMarkov).derive W :=
+  WMRewriteRule.apply
+    (xi_sourceRule_rewrite_of_forkBN_side valA valB valC hLMarkov hDSep) hW
+
+/-! ### Shape 4: OSLF evidence bridge -/
+
+/-- OSLF evidence bridge: if the OSLF atom encodes the source rule conclusion,
+its evidence equals the derived rule's output. -/
+theorem xi_sourceRule_semE_atom_of_forkBN
+    (valA valB valC : Bool)
+    [EventPos (bn := forkBN) Three.B valB]
+    [EventPosConstraints (bn := forkBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLMarkov : ForkBNLocalMarkovAll)
+    (hDSep : (CompiledPlan.inductionSide Three.A Three.B Three.C).holds
+      (bn := forkBN))
+    (R : Pattern → Pattern → Prop)
+    (W : BNWorldModel.State (bn := forkBN))
+    (enc : String → Pattern → PLNQuery (BNQuery.Atom (bn := forkBN)))
+    (a : String) (p : Pattern)
+    (hEnc : enc a p = PLNQuery.linkCond
+      [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]
+      ⟨Three.C, valC⟩) :
+    semE R
+      (wmEvidenceAtomSemQ W enc) (.atom a) p =
+      (xi_sourceRule_rewrite_of_forkBN valA valB valC hLMarkov).derive W :=
+  wmRewriteRule_semE_atom_eq_derive R
+    (xi_sourceRule_rewrite_of_forkBN valA valB valC hLMarkov)
+    (xi_sourceRule_rewrite_of_forkBN_side valA valB valC hLMarkov hDSep)
+    W enc a p hEnc
+
+/-! ### Shape 5: Threshold bridge -/
+
+/-- Threshold bridge: if the derived strength exceeds `tau`, the atom
+holds under strength-threshold semantics. -/
+theorem xi_sourceRule_threshold_of_forkBN
+    (valA valB valC : Bool)
+    [EventPos (bn := forkBN) Three.B valB]
+    [EventPosConstraints (bn := forkBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLMarkov : ForkBNLocalMarkovAll)
+    (hDSep : (CompiledPlan.inductionSide Three.A Three.B Three.C).holds
+      (bn := forkBN))
+    (R : Pattern → Pattern → Prop)
+    (W : BNWorldModel.State (bn := forkBN))
+    (tau : ℝ≥0∞)
+    (enc : String → Pattern → PLNQuery (BNQuery.Atom (bn := forkBN)))
+    (a : String) (p : Pattern)
+    (hEnc : enc a p = PLNQuery.linkCond
+      [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]
+      ⟨Three.C, valC⟩)
+    (hTau : tau ≤ Evidence.toStrength
+      ((xi_sourceRule_rewrite_of_forkBN valA valB valC hLMarkov).derive W)) :
+    sem R
+      (thresholdAtomSemOfWMQ W tau enc) (.atom a) p :=
+  wmRewriteRule_threshold_atom R
+    (xi_sourceRule_rewrite_of_forkBN valA valB valC hLMarkov)
+    (xi_sourceRule_rewrite_of_forkBN_side valA valB valC hLMarkov hDSep)
+    W tau enc a p hEnc hTau
+
+/-! ### Bonus: Strength equality (re-export from PLNBNCompilation.ForkExample) -/
+
+/-- Strength equality: under d-separation, the linkCond and link queries
+have identical strength in every WM state. -/
+theorem xi_sourceRule_strength_eq_of_forkBN
+    (valA valB valC : Bool)
+    [EventPos (bn := forkBN) Three.B valB]
+    [EventPosConstraints (bn := forkBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLMarkov : ForkBNLocalMarkovAll)
+    (hDSep : (CompiledPlan.inductionSide Three.A Three.B Three.C).holds
+      (bn := forkBN))
+    (W : BNWorldModel.State (bn := forkBN)) :
+    WorldModel.queryStrength
+      (State := BNWorldModel.State (bn := forkBN))
+      (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
+      W (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+      =
+    WorldModel.queryStrength
+      (State := BNWorldModel.State (bn := forkBN))
+      (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
+      W (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) :=
+  fork_screeningOff_strength_eq_of_dsep
+    (valA := valA) (valB := valB) (valC := valC) hLMarkov hDSep W
+
+end ForkBNSourceRule
+
+/-! ## §5 Sink Rule: Honest Status
+
+The sink rule (abduction) requires collider BN (A→C←B) screening-off.
+The side condition is `abductionSide A B C = ⟨{A}, {C}, ∅⟩`, i.e., A ⊥ C | ∅.
+
+In the collider with edges A→C, B→C, the path A→C is a direct edge,
+so A and C are NOT d-separated given ∅. The abduction formula works under
+a different independence assumption (marginal independence before
+conditioning on the collider). Instantiation requires investigating
+whether the collider BN satisfies the needed side condition under
+variable remapping.
 
 This is tracked but not disguised as done. -/
 

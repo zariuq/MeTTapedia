@@ -79,12 +79,23 @@ The core theorem-level bridges are here:
   - `Mettapedia/Logic/PLNBayesNetInference.lean:296`
   - `theorem PLN_tensorStrength_eq_nbPosterior`
   - Meaning: PLN tensor-composed evidence strength equals textbook NB posterior.
+  - Math sketch:
+    - `nbEvidence = (p+ * Π_i li+, p- * Π_i li-)`
+    - `toStrength(x+,x-) = x+ / (x+ + x-)`
+    - therefore
+      `toStrength(nbEvidence) = (p+*Π_i li+) / ((p+*Π_i li+) + (p-*Π_i li-)) = nbPosterior`.
 
 - k-NN bridge:
   - `Mettapedia/Logic/PremiseSelectionKNN_PLNBridge.lean:111`
   - `theorem PLN_hplusPos_eq_knnRelevance`
   - Meaning: PLN revision-style evidence aggregation (`hplus` positive component)
     exactly matches the k-NN relevance score (ENNReal form).
+  - Math sketch:
+    - `posEvidence(w) = (w,0)` and `hplus` adds coordinates.
+    - `plnKnnEvidence = depEv + selfEv`, where `depEv` sums
+      `tau2 * near(chi,goal)/|deps(chi)|` contributions for matching deps,
+      and `selfEv` adds `near(phi,goal)` when `phi ∈ N`.
+    - Taking `.pos` yields exactly the paper k-NN relevance sum.
 
 - Ranking-transfer/equality links:
   - `Mettapedia/Logic/PremiseSelectionOptimality.lean:333`

@@ -273,8 +273,20 @@ theorem toLogOdds_nbEvidence_likelihoodOnly
       (hlik_oddsTop := hlik_oddsTop)
   simpa [hone_log] using hmain
 
-/-- Equivalence theorem:
-`Evidence.toStrength` of the NB evidence-product equals textbook binary NB posterior. -/
+/-- Equivalence theorem (math sketch):
+
+Write
+- `prior = (p+, p-)`,
+- `likelihood i = (li+, li-)`,
+- `nbEvidence prior likelihood = (p+ * Π_i li+, p- * Π_i li-)`.
+
+Then
+`toStrength(nbEvidence prior likelihood)`
+`= (p+ * Π_i li+) / ((p+ * Π_i li+) + (p- * Π_i li-))`.
+
+The right-hand side is exactly
+`nbPosterior p+ p- (fun i => li+) (fun i => li-)`.
+-/
 theorem toStrength_nbEvidence_eq_nbPosterior
     [Fintype ι]
     (prior : Evidence) (likelihood : ι → Evidence) :
@@ -291,8 +303,22 @@ These aliases expose theorem names used by selector-side theorem maps while
 keeping existing names stable.
 -/
 
-/-- `PLN.tensorStrength_eq_nbPosterior`:
-NB posterior is the strength projection of tensor-composed evidence. -/
+/-- `PLN.tensorStrength_eq_nbPosterior` (math sketch):
+
+Let
+- `prior = (p+, p-)`
+- each feature evidence be `likelihood i = (li+, li-)`
+- tensor-composed NB evidence be
+  `nbEvidence prior likelihood = (p+ * Π_i li+, p- * Π_i li-)`.
+
+PLN strength is
+`toStrength(x+, x-) = x+ / (x+ + x-)`.
+
+So
+`toStrength (nbEvidence prior likelihood)`
+`= (p+ * Π_i li+) / ((p+ * Π_i li+) + (p- * Π_i li-))`,
+which is exactly `nbPosterior p+ p- (fun i => li+) (fun i => li-)`.
+-/
 theorem PLN_tensorStrength_eq_nbPosterior
     [Fintype ι]
     (prior : Evidence) (likelihood : ι → Evidence) :

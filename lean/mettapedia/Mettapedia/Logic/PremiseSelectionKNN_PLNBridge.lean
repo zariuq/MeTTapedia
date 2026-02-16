@@ -107,7 +107,21 @@ theorem plnKnnEvidence_pos_eq_knnRelevanceENN {Fact : Type*} [DecidableEq Fact]
 
 /-! ### Core/bridge alias names (non-breaking) -/
 
-/-- Alias exposing the k-NN bridge in theorem-map naming. -/
+/-- `PLN.hplusPos_eq_knnRelevance` (math sketch):
+
+`plnKnnEvidence` builds
+- `depEv = sum_{chi in N} posEvidence(if phi in deps chi then tau2 * (near chi goal / |deps chi|) else 0)`,
+- `selfEv = if phi in N then posEvidence(near phi goal) else 0`,
+and returns `depEv + selfEv`.
+
+Because `posEvidence(w) = (w, 0)` and `hplus` adds coordinates,
+the positive coordinate is exactly:
+
+`(if phi in N then near phi goal else 0) +
+ sum_{chi in N} if phi in deps chi then tau2 * (near chi goal / |deps chi|) else 0`,
+
+which is `knnRelevanceENN goal N near deps tau2 phi`.
+-/
 theorem PLN_hplusPos_eq_knnRelevance {Fact : Type*} [DecidableEq Fact]
     (goal : Fact) (N : Finset Fact) (near : Fact -> Fact -> ℝ≥0∞)
     (deps : DepSet Fact) (tau2 : ℝ≥0∞) (phi : Fact) :

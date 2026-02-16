@@ -183,6 +183,98 @@ theorem queryStrength_singleton_eq_queryProb [Fintype V] [DecidableEq V]
       rw [add_comm]; exact tsub_add_cancel_of_le hq
     rw [this]; exact div_one _
 
+/-! ### Bool-generic queryProb ↔ jointMeasure bridge lemmas
+
+These work for *any* BN and any state values, using `eventEq` throughout.
+They connect `queryProb` (VE-based) to `cpt.jointMeasure` (measure-based). -/
+
+/-- `queryProb` for prop at any `val` = marginal measure. -/
+lemma queryProb_prop_eq_jointMeasure [Fintype V] [DecidableEq V]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
+    [∀ v, MeasurableSingletonClass (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
+    [DecidableRel bn.graph.edges]
+    (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v) :
+    queryProb (bn := bn) cpt (PLNQuery.prop ⟨v, val⟩) =
+      cpt.jointMeasure (eventEq (bn := bn) v val) := by
+  simp only [queryProb]
+  rw [propProbVE_eq_jointMeasure_eventEq]
+
+/-- `queryProb` for link at any `valA`, `valB` = conditional probability ratio. -/
+lemma queryProb_link_eq_jointMeasure [Fintype V] [DecidableEq V]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
+    [∀ v, MeasurableSingletonClass (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
+    [DecidableRel bn.graph.edges]
+    (cpt : bn.DiscreteCPT) (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b)
+    (ha : cpt.jointMeasure (eventEq (bn := bn) a valA) ≠ 0) :
+    queryProb (bn := bn) cpt (PLNQuery.link ⟨a, valA⟩ ⟨b, valB⟩) =
+      cpt.jointMeasure (eventEq (bn := bn) a valA ∩ eventEq (bn := bn) b valB) /
+        cpt.jointMeasure (eventEq (bn := bn) a valA) := by
+  simp only [queryProb]
+  rw [linkProbVE_eq_jointMeasure_eventEq]
+  split_ifs with h
+  · exact absurd h ha
+  · rfl
+
+/-- `queryProb` for prop is at most 1. -/
+lemma queryProb_prop_le_one [Fintype V] [DecidableEq V]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
+    [∀ v, MeasurableSingletonClass (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
+    [DecidableRel bn.graph.edges]
+    (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)
+    [IsProbabilityMeasure cpt.jointMeasure] :
+    queryProb (bn := bn) cpt (PLNQuery.prop ⟨v, val⟩) ≤ 1 := by
+  rw [queryProb_prop_eq_jointMeasure]; exact prob_le_one
+
+/-- `queryProb` for link is at most 1. -/
+lemma queryProb_link_le_one [Fintype V] [DecidableEq V]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
+    [∀ v, MeasurableSingletonClass (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
+    [DecidableRel bn.graph.edges]
+    (cpt : bn.DiscreteCPT) (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b) :
+    queryProb (bn := bn) cpt (PLNQuery.link ⟨a, valA⟩ ⟨b, valB⟩) ≤ 1 := by
+  simp only [queryProb]
+  rw [linkProbVE_eq_jointMeasure_eventEq]
+  split
+  · exact zero_le_one
+  · exact le_trans (ENNReal.div_le_div_right (measure_mono Set.inter_subset_left) _)
+      ENNReal.div_self_le_one
+
+/-- Singleton prop `queryStrength.toReal` = `μ.real(eventEq v val)`. -/
+lemma queryStrength_singleton_prop_toReal [Fintype V] [DecidableEq V]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
+    [∀ v, MeasurableSingletonClass (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
+    [DecidableRel bn.graph.edges]
+    (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)
+    [IsProbabilityMeasure cpt.jointMeasure] :
+    (WorldModel.queryStrength
+      ({cpt} : State (bn := bn))
+      (PLNQuery.prop (⟨v, val⟩ : BNQuery.Atom (bn := bn)))).toReal =
+    cpt.jointMeasure.real (eventEq (bn := bn) v val) := by
+  rw [queryStrength_singleton_eq_queryProb _ _ (queryProb_prop_le_one cpt v val)]
+  rw [queryProb_prop_eq_jointMeasure]
+  simp [Measure.real]
+
+/-- Singleton link `queryStrength.toReal` = μ.real ratio.
+Note: intersection order is `eventEq b valB ∩ eventEq a valA` to match
+the convention where the numerator event is listed first. -/
+lemma queryStrength_singleton_link_toReal [Fintype V] [DecidableEq V]
+    [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
+    [∀ v, MeasurableSingletonClass (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
+    [DecidableRel bn.graph.edges]
+    (cpt : bn.DiscreteCPT) (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b)
+    (ha : cpt.jointMeasure (eventEq (bn := bn) a valA) ≠ 0) :
+    (WorldModel.queryStrength
+      ({cpt} : State (bn := bn))
+      (PLNQuery.link (⟨a, valA⟩ : BNQuery.Atom (bn := bn))
+                     (⟨b, valB⟩ : BNQuery.Atom (bn := bn)))).toReal =
+    cpt.jointMeasure.real (eventEq (bn := bn) b valB ∩ eventEq (bn := bn) a valA) /
+      cpt.jointMeasure.real (eventEq (bn := bn) a valA) := by
+  rw [queryStrength_singleton_eq_queryProb _ _ (queryProb_link_le_one cpt a b valA valB)]
+  rw [queryProb_link_eq_jointMeasure cpt a b valA valB ha]
+  rw [Set.inter_comm (eventEq (bn := bn) a valA) (eventEq (bn := bn) b valB)]
+  rw [ENNReal.toReal_div]
+  simp [Measure.real]
+
 lemma wmqueryeq_of_prob_eq
     [Fintype V] [DecidableEq V]
     (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
@@ -1461,5 +1553,78 @@ theorem chain_screeningOff_wmqueryeq_of_moralSepAncestral
     (valA := valA) (valB := valB) (valC := valC) hLM hFull
 
 end ChainExample
+
+/-! ## Fork BN Example (A ← B → C) -/
+
+namespace ForkExample
+
+open Mettapedia.ProbabilityTheory.BayesianNetworks.Examples
+open BNWorldModel
+
+theorem fork_hciCA_from_hLM
+    [∀ v : Three, Fintype (forkBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (forkBN.stateSpace v)]
+    [∀ v : Three, Inhabited (forkBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (forkBN.stateSpace v)]
+    [StandardBorelSpace forkBN.JointSpace]
+    (hLM : ∀ cpt : forkBN.DiscreteCPT, HasLocalMarkovProperty forkBN cpt.jointMeasure) :
+    ∀ cpt : forkBN.DiscreteCPT,
+      (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := forkBN) →
+        CondIndepVertices forkBN cpt.jointMeasure
+          ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
+  intro cpt _hcond
+  letI : HasLocalMarkovProperty forkBN cpt.jointMeasure := hLM cpt
+  exact fork_condIndep_CA_given_B_of_localMarkov (μ := cpt.jointMeasure)
+
+theorem fork_screeningOff_wmqueryeq_of_dsep
+    (valA valB valC : Bool)
+    [∀ v : Three, Fintype (forkBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (forkBN.stateSpace v)]
+    [∀ v : Three, Inhabited (forkBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (forkBN.stateSpace v)]
+    [StandardBorelSpace forkBN.JointSpace]
+    [EventPos (bn := forkBN) Three.B valB]
+    [EventPosConstraints (bn := forkBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLM : ∀ cpt : forkBN.DiscreteCPT, HasLocalMarkovProperty forkBN cpt.jointMeasure) :
+    (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := forkBN) →
+      WMQueryEq (State := State (bn := forkBN))
+        (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
+        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+  intro hcond
+  exact wmqueryeq_screeningOff_of_dsep_CA (bn := forkBN)
+    (A := Three.A) (B := Three.B) (C := Three.C)
+    (valA := valA) (valB := valB) (valC := valC)
+    (hciCA := fork_hciCA_from_hLM (hLM := hLM))
+    hcond
+
+theorem fork_screeningOff_strength_eq_of_dsep
+    (valA valB valC : Bool)
+    [∀ v : Three, Fintype (forkBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (forkBN.stateSpace v)]
+    [∀ v : Three, Inhabited (forkBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (forkBN.stateSpace v)]
+    [StandardBorelSpace forkBN.JointSpace]
+    [EventPos (bn := forkBN) Three.B valB]
+    [EventPosConstraints (bn := forkBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    (hLM : ∀ cpt : forkBN.DiscreteCPT, HasLocalMarkovProperty forkBN cpt.jointMeasure) :
+    (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := forkBN) →
+      ∀ W : State (bn := forkBN),
+        WorldModel.queryStrength
+          (State := State (bn := forkBN))
+          (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
+          W (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+          =
+        WorldModel.queryStrength
+          (State := State (bn := forkBN))
+          (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
+          W (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+  intro hcond W
+  have hEq :=
+    fork_screeningOff_wmqueryeq_of_dsep
+      (valA := valA) (valB := valB) (valC := valC) hLM hcond
+  simpa [WorldModel.queryStrength] using congrArg Evidence.toStrength (hEq W)
+
+end ForkExample
 
 end Mettapedia.Logic.PLNBNCompilation

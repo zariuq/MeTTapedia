@@ -37,6 +37,8 @@ This module is a curated import surface for the currently theorem-complete PLN s
 - Complete/joint evidence world-model semantics (`CompletePLN`, `PLNJointEvidence*`)
 - WM rewrite layer and BN compilation bridge (`PLNWorldModel*`, `PLNBNCompilation`)
 - BN fast-rule exactness results (`PLNBayesNetFastRules`)
+- Derived BN rules: deduction (chain) + source/induction (fork) 5-shape blocks
+  (`PLNXiDerivedBNRules` — 0 sorry, no free screening-off hypotheses)
 - Premise-selection bridges and optimality transfer (`PremiseSelection*`)
 - Premise-selection coverage/submodularity surrogate (`PremiseSelectionCoverage`)
 - Premise-selection external-Bayesian commutation (`PremiseSelectionExternalBayesianity`)

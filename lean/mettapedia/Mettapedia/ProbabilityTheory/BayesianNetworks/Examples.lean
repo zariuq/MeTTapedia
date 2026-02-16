@@ -134,6 +134,16 @@ noncomputable def forkBN : BayesianNetwork Three where
   stateSpace := fun _ => Bool
   measurableSpace := fun _ => ⊤
 
+instance forkBN_stateSpace_standardBorel (v : Three) :
+    StandardBorelSpace (forkBN.stateSpace v) := by
+  dsimp [forkBN]
+  infer_instance
+
+instance forkBN_jointSpace_standardBorel :
+    StandardBorelSpace forkBN.JointSpace := by
+  dsimp [BayesianNetwork.JointSpace]
+  infer_instance
+
 /-! ### Collider: A → C ← B -/
 
 /-- The collider graph: A → C ← B -/
@@ -541,6 +551,204 @@ theorem chain_dsepFull_to_condIndep_CA_given_B
       CondIndepVertices chainBN μ ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
   intro hdsepFull
   exact chain_dsep_to_condIndep_CA_given_B (μ := μ) hdsepFull
+
+/-! ## Fork D-Separation -/
+
+/-- In a fork A ← B → C, A and C are d-separated given {B}.
+
+    The only path A-B-C is blocked because B is a non-collider and B ∈ Z.
+    (Same blocking reason as the chain, but with reversed edge at A.) -/
+theorem fork_dsep_A_C_given_B :
+    DSeparated forkGraph {Three.A} {Three.C} {Three.B} := by
+  intro x hx y hy hxy hpath
+  simp only [Set.mem_singleton_iff] at hx hy
+  subst hx hy
+  unfold HasActivePath at hpath
+  rcases hpath with heq | ⟨hedge, _⟩ | ⟨b, hbx, hby, hxb, hby', hab, hbc, hac, hactive⟩
+  · -- Case: A = C (impossible)
+    exact Three.noConfusion heq
+  · -- Case: Direct edge A ~ C (doesn't exist in fork graph)
+    unfold UndirectedEdge forkGraph at hedge
+    rcases hedge with (⟨h, _⟩ | ⟨h, _⟩) | (⟨h, _⟩ | ⟨h, _⟩) <;>
+      exact Three.noConfusion h
+  · -- Case: Path through intermediate vertex b
+    have hbB : b = Three.B := by
+      unfold UndirectedEdge forkGraph at hab
+      rcases hab with (⟨h, _⟩ | ⟨h, _⟩) | (⟨hb, _⟩ | ⟨hb, h⟩)
+      · exact Three.noConfusion h  -- A = B is false
+      · exact Three.noConfusion h  -- A = B is false
+      · exact hb                   -- b = B ✓
+      · exact Three.noConfusion h  -- A = C is false
+    subst hbB
+    unfold IsActive at hactive
+    apply hactive
+    unfold IsBlocked
+    left
+    constructor
+    · -- B is a non-collider: ¬(A → B ∧ C → B)
+      -- In forkGraph, edges are B→A and B→C. Neither A→B nor C→B exists.
+      unfold IsNonCollider IsCollider
+      intro ⟨hab', hcb'⟩
+      -- hab' : forkGraph.edges A B, but forkGraph has B→A and B→C only
+      simp only [forkGraph] at hab'
+      rcases hab' with ⟨h, _⟩ | ⟨h, _⟩ <;> exact Three.noConfusion h
+    · -- B ∈ Z = {B}
+      simp only [Set.mem_singleton_iff]
+
+private theorem fork_hasActivePath_of_hasActiveTrail_A_C_given_B
+    (htrail :
+      HasActiveTrail forkGraph ({Three.B} : Set Three) Three.A Three.C) :
+    HasActivePath forkGraph ({Three.B} : Set Three) Three.A Three.C := by
+  rcases htrail with ⟨p, hpne, hEnds, hAct⟩
+  cases hAct with
+  | single v =>
+      exfalso
+      simp [PathEndpoints] at hEnds
+      have hAC : Three.A = Three.C := hEnds.1.symm.trans hEnds.2
+      exact Three.noConfusion hAC
+  | two hedge =>
+      exfalso
+      simp [PathEndpoints] at hEnds
+      rcases hEnds with ⟨hu, hv⟩
+      subst hu; subst hv
+      have hAC : UndirectedEdge forkGraph Three.A Three.C := hedge
+      unfold UndirectedEdge forkGraph at hAC
+      rcases hAC with (⟨h, _⟩ | ⟨h, _⟩) | (⟨h, _⟩ | ⟨h, _⟩) <;>
+        exact Three.noConfusion h
+  | @cons a b c rest hab hbc hac hActive _hTail =>
+      have ha : a = Three.A := by
+        cases rest with
+        | nil =>
+            have hpair : (a, c) = (Three.A, Three.C) := by
+              simpa [PathEndpoints] using Option.some.inj hEnds
+            exact congrArg Prod.fst hpair
+        | cons h t =>
+            have hpair : (a, (h :: t).getLast (by simp)) = (Three.A, Three.C) := by
+              simpa [PathEndpoints] using Option.some.inj hEnds
+            exact congrArg Prod.fst hpair
+      subst ha
+      have hb : b = Three.B := by
+        unfold UndirectedEdge forkGraph at hab
+        rcases hab with (⟨h, _⟩ | ⟨h, _⟩) | (⟨hb, _⟩ | ⟨hb, h⟩)
+        · exact Three.noConfusion h  -- A = B is false
+        · exact Three.noConfusion h  -- A = B is false
+        · exact hb                   -- b = B ✓
+        · exact Three.noConfusion h  -- A = C is false
+      subst hb
+      have hc : c = Three.C := by
+        have hc_ne_A : c ≠ Three.A := by
+          intro h; exact hac h.symm
+        cases c with
+        | A => exact (hc_ne_A rfl).elim
+        | B =>
+            exfalso
+            unfold UndirectedEdge forkGraph at hbc
+            rcases hbc with (⟨_, h⟩ | ⟨_, h⟩) | (⟨_, h⟩ | ⟨_, h⟩)
+            · exact Three.noConfusion h  -- B = A is false
+            · exact Three.noConfusion h  -- B = C is false
+            · exact Three.noConfusion h  -- B = A is false
+            · exact Three.noConfusion h  -- B = C is false
+        | C => rfl
+      subst hc
+      right; right
+      refine ⟨Three.B, by decide, by decide, ?_, ?_, ?_⟩
+      · -- A ~ B (undirected: forkGraph has B→A)
+        unfold UndirectedEdge forkGraph
+        right; left; exact ⟨rfl, rfl⟩
+      · -- B ~ C (undirected: forkGraph has B→C)
+        unfold UndirectedEdge forkGraph
+        left; right; exact ⟨rfl, rfl⟩
+      · refine ⟨?_, ?_, by decide, hActive⟩
+        · unfold UndirectedEdge forkGraph
+          right; left; exact ⟨rfl, rfl⟩
+        · unfold UndirectedEdge forkGraph
+          left; right; exact ⟨rfl, rfl⟩
+
+/-- Full trail-based d-separation for the fork. -/
+theorem fork_dsepFull_A_C_given_B :
+    DSeparatedFull forkGraph ({Three.A} : Set Three) ({Three.C} : Set Three)
+      ({Three.B} : Set Three) := by
+  intro x hx y hy hxy htrail
+  simp only [Set.mem_singleton_iff] at hx hy
+  subst hx; subst hy
+  have hlegacy : ¬ HasActivePath forkGraph ({Three.B} : Set Three) Three.A Three.C :=
+    fork_dsep_A_C_given_B Three.A (by simp) Three.C (by simp) (by decide)
+  exact hlegacy (fork_hasActivePath_of_hasActiveTrail_A_C_given_B htrail)
+
+/-! ## Fork graph-structural helpers + CondIndep bridge -/
+
+/-- In forkBN, C has parents {B}. -/
+theorem fork_parents_C : forkBN.parents Three.C = ({Three.B} : Set Three) := by
+  ext u
+  unfold BayesianNetwork.parents DirectedGraph.parents forkBN forkGraph
+  simp only [Set.mem_setOf_eq, Set.mem_singleton_iff]
+  constructor
+  · intro h; rcases h with ⟨rfl, _⟩ | ⟨rfl, _⟩
+    · rfl
+    · rfl
+  · intro h; subst h; right; exact ⟨rfl, trivial⟩
+
+/-- In forkBN, C has no descendants (it's a sink). -/
+theorem fork_descendants_C_empty :
+    forkBN.descendants Three.C = (∅ : Set Three) := by
+  ext u
+  constructor
+  · intro hu
+    unfold BayesianNetwork.descendants DirectedGraph.descendants at hu
+    rcases hu with ⟨hreach, hne⟩
+    have huC : u = Three.C :=
+      forkGraph_no_path_from_sink Three.C u (Or.inr rfl) hreach
+    exact (hne huC).elim
+  · intro hu; exact False.elim (Set.notMem_empty _ hu)
+
+theorem fork_graph_descendants_C_empty :
+    forkBN.graph.descendants Three.C = (∅ : Set Three) := by
+  simpa [BayesianNetwork.descendants] using fork_descendants_C_empty
+
+theorem fork_graph_parents_C :
+    forkBN.graph.parents Three.C = ({Three.B} : Set Three) := by
+  simpa [BayesianNetwork.parents] using fork_parents_C
+
+theorem fork_nonDescExceptParentsSelf_C :
+    forkBN.nonDescendantsExceptParentsAndSelf Three.C = ({Three.A} : Set Three) := by
+  ext u
+  cases u <;>
+    simp [BayesianNetwork.nonDescendantsExceptParentsAndSelf,
+      fork_graph_descendants_C_empty, fork_graph_parents_C]
+
+/-- Local Markov condition at C in forkBN gives C ⊥ {A} | {B}. -/
+theorem fork_condIndep_CA_given_B_of_localMarkov
+    [StandardBorelSpace forkBN.JointSpace]
+    (μ : MeasureTheory.Measure forkBN.JointSpace) [MeasureTheory.IsFiniteMeasure μ]
+    [HasLocalMarkovProperty forkBN μ] :
+    CondIndepVertices forkBN μ ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
+  have hmarkovC :=
+    HasLocalMarkovProperty.markov_condition (bn := forkBN) (μ := μ) Three.C
+  simpa [BayesianNetwork.LocalMarkovCondition,
+    fork_nonDescExceptParentsSelf_C, fork_graph_parents_C] using hmarkovC
+
+/-- DSeparatedFull + local Markov ⇒ CondIndepVertices for fork. -/
+theorem fork_dsep_to_condIndep_CA_given_B
+    [StandardBorelSpace forkBN.JointSpace]
+    (μ : MeasureTheory.Measure forkBN.JointSpace) [MeasureTheory.IsFiniteMeasure μ]
+    [HasLocalMarkovProperty forkBN μ] :
+    DSeparatedFull forkGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
+      CondIndepVertices forkBN μ ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
+  intro _hdsep
+  exact fork_condIndep_CA_given_B_of_localMarkov (μ := μ)
+
+/-- Full d-sep bridge for fork. -/
+theorem fork_dsepFull_to_condIndep_CA_given_B
+    [StandardBorelSpace forkBN.JointSpace]
+    (μ : MeasureTheory.Measure forkBN.JointSpace) [MeasureTheory.IsFiniteMeasure μ]
+    [HasLocalMarkovProperty forkBN μ] :
+    Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparatedFull
+      forkGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
+      CondIndepVertices forkBN μ ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
+  intro hdsepFull
+  exact fork_dsep_to_condIndep_CA_given_B (μ := μ) hdsepFull
+
+/-! ## Collider D-Separation -/
 
 /-- In a collider A → C ← B, A and B are d-separated given ∅.
 
