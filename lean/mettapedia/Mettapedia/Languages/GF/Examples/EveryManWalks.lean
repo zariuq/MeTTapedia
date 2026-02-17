@@ -166,7 +166,7 @@ The complete pipeline for "every man walks":
   Evidence:      ⨅ d : Dom, I "man_N" [d] p ⇨ I "walk_V" [d] p
 ```
 
-All steps proven with 0 sorry.
+All steps proven; no proof gaps.
 -/
 
 end Mettapedia.Languages.GF.Examples.EveryManWalks

@@ -230,7 +230,78 @@ def HasPatternWRWORRate
             (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
           Cdf / (returnsToStart (k := k) s : ℝ)
 
-/-- Family-level positive-return pattern-collision obligation. -/
+/-- Two-regime constructor for direct WR/WOR pattern rates.
+
+- Small-`R` branch (`returnsToStart ≤ R0`): uses the coarse universal bound
+  `sum_abs_wr_wor_patternMass_toReal_le_two`.
+- Large-`R` branch (`R0 < returnsToStart`): supplied by a problem-specific
+  asymptotic bound `hlarge`.
+
+This isolates the remaining math to proving only the large-`R` estimate. -/
+theorem hasPatternWRWORRate_of_smallR_largeR
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (R0 : ℕ) (Clarge : ℝ)
+    (hlarge :
+      ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+        s ∈ stateFinset k N →
+          0 < returnsToStart (k := k) s →
+          R0 < returnsToStart (k := k) s →
+            (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+              |(wrPatternMass (k := k) hk n e s p).toReal -
+                (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+              Clarge / (returnsToStart (k := k) s : ℝ)) :
+    HasPatternWRWORRate (k := k) hk n e (max (2 * (R0 : ℝ)) Clarge) := by
+  intro N hN s hs hRpos
+  let R : ℕ := returnsToStart (k := k) s
+  by_cases hsmall : R ≤ R0
+  · have hcoarse :
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤ 2 :=
+      sum_abs_wr_wor_patternMass_toReal_le_two
+        (k := k) (hk := hk) (hN := hN) (e := e) (s := s) hs
+    have hRreal : (0 : ℝ) < (R : ℝ) := by
+      exact_mod_cast hRpos
+    have hsmall_real : (R : ℝ) ≤ (R0 : ℝ) := by
+      exact_mod_cast hsmall
+    have htwo_le :
+        (2 : ℝ) ≤ (2 * (R0 : ℝ)) / (R : ℝ) := by
+      rw [le_div_iff₀ hRreal]
+      nlinarith
+    have hdiv_le :
+        (2 * (R0 : ℝ)) / (R : ℝ) ≤
+          (max (2 * (R0 : ℝ)) Clarge) / (R : ℝ) := by
+      exact
+        div_le_div_of_nonneg_right
+          (le_max_left (2 * (R0 : ℝ)) Clarge)
+          (by exact_mod_cast (Nat.zero_le R))
+    calc
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤ 2 := hcoarse
+      _ ≤ (2 * (R0 : ℝ)) / (R : ℝ) := htwo_le
+      _ ≤ (max (2 * (R0 : ℝ)) Clarge) / (R : ℝ) := hdiv_le
+      _ = (max (2 * (R0 : ℝ)) Clarge) / (returnsToStart (k := k) s : ℝ) := by
+          simp [R]
+  · have hRlarge : R0 < returnsToStart (k := k) s := by
+      exact Nat.lt_of_not_ge hsmall
+    have hlarge_bound :
+        (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+          Clarge / (returnsToStart (k := k) s : ℝ) :=
+      hlarge hN s hs hRpos hRlarge
+    have hdiv_le :
+        Clarge / (returnsToStart (k := k) s : ℝ) ≤
+          (max (2 * (R0 : ℝ)) Clarge) / (returnsToStart (k := k) s : ℝ) := by
+      exact
+        div_le_div_of_nonneg_right
+          (le_max_right (2 * (R0 : ℝ)) Clarge)
+          (by exact_mod_cast (Nat.zero_le (returnsToStart (k := k) s)))
+    exact le_trans hlarge_bound hdiv_le
+
+/-- Legacy (collision-only) family-level positive-return pattern obligation.
+Use `HasPatternWRWORRate` / split-rate constructors instead. -/
 def HasPatternCollisionPosAll : Prop :=
   ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
     ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
@@ -242,7 +313,8 @@ def HasPatternCollisionPosAll : Prop :=
             (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
               (returnsToStart (k := k) s : ℝ)
 
-/-- Family-level zero-return pattern discrepancy obligation. -/
+/-- Legacy (collision-only) family-level zero-return pattern discrepancy obligation.
+Use `HasPatternWRWORRate` route instead. -/
 def HasPatternCollisionZeroAll : Prop :=
   ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
     ∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
@@ -282,6 +354,20 @@ theorem hasPatternWRWORRate_zero_of_not_mem_shortStateFinset
     simpa [hfiber_empty]
   simp [hPempty]
 
+/-- Non-assumptive family constructor on the unrealizable short-state branch:
+if `e ∉ stateFinset k (n+1)`, then the direct WR/WOR pattern discrepancy rate
+holds with constant `Cdf = 0`. -/
+theorem hasPatternWRWORRate_family_unrealizable_shortState
+    (hk : 0 < k) (n : ℕ) :
+    ∀ e : MarkovState k,
+      e ∉ stateFinset k (Nat.succ n) →
+        ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := k) hk n e Cdf := by
+  intro e he
+  refine ⟨0, le_rfl, ?_⟩
+  exact
+    hasPatternWRWORRate_zero_of_not_mem_shortStateFinset
+      (k := k) (hk := hk) (n := n) (e := e) he
+
 namespace FixedPatternWRWORRateWitness
 
 abbrev kFix : ℕ := 2
@@ -304,6 +390,12 @@ theorem hasPatternWRWORRate_fixed :
     hasPatternWRWORRate_zero_of_not_mem_shortStateFinset
       (k := kFix) (hk := hkFix) (n := nFix) (e := eImpossible)
       eImpossible_not_mem_stateFinset
+
+/-- Concrete non-assumptive fixed witness exported at namespace level. -/
+theorem hasPatternWRWORRate_fixed_witness :
+    ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := kFix) hkFix nFix eImpossible Cdf := by
+  refine ⟨0, le_rfl, ?_⟩
+  exact hasPatternWRWORRate_fixed
 
 end FixedPatternWRWORRateWitness
 
@@ -339,6 +431,47 @@ def HasBestReprBoundAll : Prop :=
           ≤
             (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
               (returnsToStart (k := k) s : ℝ)
+
+/-- If `e` is not realizable at short horizon `Nat.succ n`, then the BEST
+representative bound is trivial (empty pattern index set). -/
+theorem hasBestReprBound_zero_of_not_mem_shortStateFinset
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (he : e ∉ stateFinset k (Nat.succ n)) :
+    HasBestReprBound (k := k) hk n e := by
+  intro N hN s hs
+  have hfiber_empty :
+      fiber k (Nat.succ n) e = ∅ :=
+    fiber_eq_empty_of_not_mem_stateFinset (k := k) (n := Nat.succ n) e he
+  have hPempty :
+      excursionPatternSet (k := k) (hN := hN) e s = ∅ := by
+    rw [excursionPatternSet_eq_shortImage (k := k) (hN := hN) (e := e) (s := s)]
+    simpa [hfiber_empty]
+  have hrhs_nonneg :
+      0 ≤
+        (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+          (returnsToStart (k := k) s : ℝ) := by
+    have hnum_nonneg :
+        0 ≤ (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) := by positivity
+    have hden_nonneg : 0 ≤ (returnsToStart (k := k) s : ℝ) := by
+      exact_mod_cast (Nat.zero_le (returnsToStart (k := k) s))
+    exact div_nonneg hnum_nonneg hden_nonneg
+  simpa [hPempty] using hrhs_nonneg
+
+/-- To prove `HasBestReprBoundAll`, it suffices to prove `HasBestReprBound` on
+realizable short states `e ∈ stateFinset k (n+1)`. Unrealizable short states
+are discharged by `hasBestReprBound_zero_of_not_mem_shortStateFinset`. -/
+theorem hasBestReprBoundAll_of_realizable_shortState
+    (hrealBest :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          HasBestReprBound (k := k) hk n e) :
+    HasBestReprBoundAll (k := k) := by
+  intro hk n e
+  by_cases he : e ∈ stateFinset k (Nat.succ n)
+  · exact hrealBest hk n e he
+  · exact
+      hasBestReprBound_zero_of_not_mem_shortStateFinset
+        (k := k) (hk := hk) (n := n) (e := e) he
 
 /--
 Statewise WR representation-rate witness via a concrete long-fiber trajectory family.
@@ -2044,107 +2177,14 @@ lemma hasCanonicalWORTransportRate_of_patternWRWORRate
     (hwrwor : HasPatternWRWORRate (k := k) hk n e Cdf) :
     HasCanonicalWORTransportRate (k := k) hk n e Cw (Cw + Cdf) := by
   intro N hN s hs hRpos wSurrogate hWclose
-  let P := excursionPatternSet (k := k) (hN := hN) e s
-  have hwr_canonical_raw :
-      (∑ p ∈ P,
-        |(wrPatternMass (k := k) hk n e s p).toReal -
-          canonicalWRSurrogateMass (k := k) n e wSurrogate p|) ≤
-      Cw / (returnsToStart (k := k) s : ℝ) := by
-    simpa [P] using
-      (wr_smoothing_rate_canonicalWRSurrogate
-        (k := k) (hk := hk) (n := n) (e := e)
-        (hN := hN) (s := s) (wSurrogate := wSurrogate) (Cw := Cw) hWclose)
-  have hwr_canonical_eq :
-      (∑ p ∈ P,
-        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-          (wrPatternMass (k := k) hk n e s p).toReal|) =
-      (∑ p ∈ P,
-        |(wrPatternMass (k := k) hk n e s p).toReal -
-          canonicalWRSurrogateMass (k := k) n e wSurrogate p|) := by
-    refine Finset.sum_congr rfl ?_
-    intro p hp
-    exact abs_sub_comm _ _
-  have hwr_canonical :
-      (∑ p ∈ P,
-        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-          (wrPatternMass (k := k) hk n e s p).toReal|) ≤
-      Cw / (returnsToStart (k := k) s : ℝ) := by
-    calc
-      (∑ p ∈ P,
-        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-          (wrPatternMass (k := k) hk n e s p).toReal|)
-          =
-        (∑ p ∈ P,
-          |(wrPatternMass (k := k) hk n e s p).toReal -
-            canonicalWRSurrogateMass (k := k) n e wSurrogate p|) := hwr_canonical_eq
-      _ ≤ Cw / (returnsToStart (k := k) s : ℝ) := hwr_canonical_raw
-  have hwr_wor :
-      (∑ p ∈ P,
-        |(wrPatternMass (k := k) hk n e s p).toReal -
-          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
-      Cdf / (returnsToStart (k := k) s : ℝ) := by
-    simpa [P] using hwrwor hN s hs hRpos
-  have htriangle :
-      (∑ p ∈ P,
-        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-          (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) ≤
-      (∑ p ∈ P,
-        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-          (wrPatternMass (k := k) hk n e s p).toReal| : ℝ) +
-      (∑ p ∈ P,
-        |(wrPatternMass (k := k) hk n e s p).toReal -
-          (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) := by
-    let f : ExcursionList k → ℝ := fun p =>
-      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-        (worPatternMass (k := k) (hN := hN) e s p).toReal|
-    let g : ExcursionList k → ℝ := fun p =>
-      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-        (wrPatternMass (k := k) hk n e s p).toReal| +
-      |(wrPatternMass (k := k) hk n e s p).toReal -
-        (worPatternMass (k := k) (hN := hN) e s p).toReal|
-    have hfg : ∀ p ∈ P, f p ≤ g p := by
-      intro p hp
-      dsimp [f, g]
-      simpa [sub_eq_add_neg, add_assoc, add_comm, add_left_comm] using
-        (abs_sub_le
-          (canonicalWRSurrogateMass (k := k) n e wSurrogate p)
-          ((wrPatternMass (k := k) hk n e s p).toReal)
-          ((worPatternMass (k := k) (hN := hN) e s p).toReal))
-    have hsum_le : (∑ p ∈ P, f p) ≤ ∑ p ∈ P, g p :=
-      Finset.sum_le_sum hfg
-    calc
-      (∑ p ∈ P,
-        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-          (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) = ∑ p ∈ P, f p := by
-            simp [f]
-      _ ≤ ∑ p ∈ P, g p := hsum_le
-      _ =
-        (∑ p ∈ P,
-          |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-            (wrPatternMass (k := k) hk n e s p).toReal| : ℝ) +
-        (∑ p ∈ P,
-          |(wrPatternMass (k := k) hk n e s p).toReal -
-            (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) := by
-              simp [g, Finset.sum_add_distrib]
   refine ⟨(Cw + Cdf) / (returnsToStart (k := k) s : ℝ), ?_, le_rfl⟩
-  calc
-    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
-      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-        (worPatternMass (k := k) (hN := hN) e s p).toReal|)
-        = (∑ p ∈ P,
-            |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-              (worPatternMass (k := k) (hN := hN) e s p).toReal|) := by
-              simp [P]
-    _ ≤
-      (∑ p ∈ P,
-        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
-          (wrPatternMass (k := k) hk n e s p).toReal|) +
-      (∑ p ∈ P,
-        |(wrPatternMass (k := k) hk n e s p).toReal -
-          (worPatternMass (k := k) (hN := hN) e s p).toReal|) := htriangle
-    _ ≤ Cw / (returnsToStart (k := k) s : ℝ) +
-          Cdf / (returnsToStart (k := k) s : ℝ) := add_le_add hwr_canonical hwr_wor
-    _ = (Cw + Cdf) / (returnsToStart (k := k) s : ℝ) := by ring
+  exact
+    surrogate_to_wor_bound
+      (k := k) (hk := hk) (n := n) (e := e)
+      (hN := hN) (s := s)
+      (wSurrogate := wSurrogate) (Cw := Cw) (Cdf := Cdf)
+      hWclose
+      (hwrwor hN s hs hRpos)
 
 /-- Build a direct WR/WOR pattern discrepancy rate from split-rate assumptions. -/
 lemma hasPatternWRWORRate_of_splitRates
@@ -2395,6 +2435,8 @@ theorem hasPatternWRWORRateAll_of_bestReprBoundAll
 
 /-- Convert direct pattern-collision + zero-return obligations into a
 family-level WR/WOR pattern discrepancy rate witness. -/
+@[deprecated "Legacy collision-only constructor. Prefer hasPatternWRWORRateAll_of_rowL1StartTarget_and_worTransportAll."
+  (since := "2026-02-17")]
 theorem hasPatternWRWORRateAll_of_patternCollision_and_zeroCaseAll
     (hposAll : HasPatternCollisionPosAll (k := k))
     (hzeroAll : HasPatternCollisionZeroAll (k := k)) :
@@ -2409,6 +2451,8 @@ theorem hasPatternWRWORRateAll_of_patternCollision_and_zeroCaseAll
 
 /-- Convert the positive-return pattern-collision family directly into
 `HasPatternWRWORRate` witnesses (no zero-return branch needed). -/
+@[deprecated "Legacy collision-only constructor. Prefer hasPatternWRWORRateAll_of_rowL1StartTarget_and_worTransportAll."
+  (since := "2026-02-17")]
 theorem hasPatternWRWORRateAll_of_patternCollisionPosAll
     (hposAll : HasPatternCollisionPosAll (k := k)) :
     ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
@@ -2435,6 +2479,57 @@ theorem hasPatternWRWORRateAll_of_realizable_shortState
     exact
       hasPatternWRWORRate_zero_of_not_mem_shortStateFinset
         (k := k) (hk := hk) (n := n) (e := e) he
+
+/-- Realizable-short-state constructor specialized to BEST representative bounds:
+to build family-level `HasPatternWRWORRate` witnesses, it suffices to provide
+`HasBestReprBound` on realizable short states. -/
+theorem hasPatternWRWORRateAll_of_bestReprBound_on_realizable_shortState
+    (hrealBest :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          HasBestReprBound (k := k) hk n e) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := k) hk n e Cdf := by
+  apply hasPatternWRWORRateAll_of_realizable_shortState (k := k)
+  intro hk n e he
+  refine
+    ⟨4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ),
+      by positivity, ?_⟩
+  exact
+    hasPatternWRWORRate_of_bestReprBound
+      (k := k) (hk := hk) (n := n) (e := e)
+      (hrealBest hk n e he)
+
+/-- Realizable-short-state WOR-transport constructor from BEST representative
+bounds, aligned with the rowL1 WR smoothing route (`Cw = (n+1)k²`). -/
+theorem hasCanonicalWORTransportRate_on_realizable_shortState_of_bestReprBound_rowL1StartTarget
+    (hrealBest :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          HasBestReprBound (k := k) hk n e) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      e ∈ stateFinset k (Nat.succ n) →
+        ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+          HasCanonicalWORTransportRate (k := k) hk n e
+            ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+            Cpc := by
+  intro hk n e he
+  let Cw : ℝ := (Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))
+  have hwrwor :
+      HasPatternWRWORRate (k := k) hk n e
+        (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) :=
+    hasPatternWRWORRate_of_bestReprBound
+      (k := k) (hk := hk) (n := n) (e := e)
+      (hrealBest hk n e he)
+  have hWOR :
+      HasCanonicalWORTransportRate (k := k) hk n e Cw
+        (Cw + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) :=
+    hasCanonicalWORTransportRate_of_patternWRWORRate
+      (k := k) (hk := hk) (n := n) (e := e)
+      (Cw := Cw)
+      (Cdf := 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ))
+      hwrwor
+  refine ⟨Cw + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, hWOR⟩
 
 /-- Extract positive-return pattern-collision obligations from a BEST-side
 core package family. -/
@@ -2481,6 +2576,44 @@ theorem hasPatternCollisionPosAll_of_bestReprBoundAll
     HasPatternCollisionPosAll (k := k) := by
   exact hasPatternCollisionPosAll_of_best_repr_boundAll
     (k := k) hreprBoundAll
+
+/-- Even when restricted to realizable short states, a biapprox-core family
+implies the legacy positive-return collision obligations. -/
+theorem hasPatternCollisionPosAll_of_biapproxCore_on_realizable_shortState
+    (hcoreReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          HasExcursionBiapproxCore (k := k) hk n e) :
+    HasPatternCollisionPosAll (k := k) := by
+  intro hk n e N hN s hs hRpos
+  by_cases he : e ∈ stateFinset k (Nat.succ n)
+  · have hwrwor :
+      HasPatternWRWORRate (k := k) hk n e
+        (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) :=
+      hasPatternWRWORRate_of_biapproxCore
+        (k := k) (hk := hk) (n := n) (e := e)
+        (hcoreReal hk n e he)
+    simpa using hwrwor hN s hs hRpos
+  · have hwrwor0 :
+      HasPatternWRWORRate (k := k) hk n e 0 :=
+      hasPatternWRWORRate_zero_of_not_mem_shortStateFinset
+        (k := k) (hk := hk) (n := n) (e := e) he
+    have h0 :
+        (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+          (0 : ℝ) / (returnsToStart (k := k) s : ℝ) :=
+      hwrwor0 hN s hs hRpos
+    have h0_le_collision :
+        (0 : ℝ) / (returnsToStart (k := k) s : ℝ) ≤
+          (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+            (returnsToStart (k := k) s : ℝ) := by
+      have hcollision_nonneg :
+          0 ≤
+            (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
+              (returnsToStart (k := k) s : ℝ) := by positivity
+      simpa using hcollision_nonneg
+    exact le_trans h0 h0_le_collision
 
 theorem hasExcursionResidualBoundRateAll_of_splitRatesAll
     (hsplitAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
@@ -2575,6 +2708,200 @@ theorem hasPatternWRWORRateAll_of_rowL1StartTarget_and_worTransportAll
     hasPatternWRWORRate_of_splitRates
       (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc) hWR hWOR
 
+/-- Realizable-short-state constructor from:
+`rowL1` WR smoothing + WOR transport rates on realizable short states only. -/
+theorem hasPatternWRWORRate_on_realizable_shortState_of_rowL1StartTarget_and_worTransport
+    (hWORReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+            HasCanonicalWORTransportRate (k := k) hk n e
+              ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+              Cpc) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      e ∈ stateFinset k (Nat.succ n) →
+        ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := k) hk n e Cdf := by
+  intro hk n e he
+  rcases hWORReal hk n e he with ⟨Cpc, hCpc, hWOR⟩
+  let Cw : ℝ := (Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))
+  have hWR :
+      HasCanonicalWRSmoothingRate (k := k) hk n e Cw :=
+    hasCanonicalWRSmoothingRate_of_rowL1StartTarget
+      (k := k) (hk := hk) (n := n) (e := e)
+  refine ⟨Cw + Cpc, add_nonneg (by positivity) hCpc, ?_⟩
+  exact
+    hasPatternWRWORRate_of_splitRates
+      (k := k) (hk := hk) (n := n) (e := e)
+      (Cw := Cw) (Cpc := Cpc) hWR hWOR
+
+/-- Realizable-short-state WOR-transport constructor from direct pattern WR/WOR
+rate witnesses, aligned with the rowL1 WR smoothing choice `Cw = (n+1)k²`. -/
+theorem hasCanonicalWORTransportRate_on_realizable_shortState_of_patternWRWORRate_rowL1StartTarget
+    (hwrworReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := k) hk n e Cdf) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      e ∈ stateFinset k (Nat.succ n) →
+        ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+          HasCanonicalWORTransportRate (k := k) hk n e
+            ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+            Cpc := by
+  intro hk n e he
+  rcases hwrworReal hk n e he with ⟨Cdf, hCdf, hwrwor⟩
+  let Cw : ℝ := (Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))
+  refine ⟨Cw + Cdf, add_nonneg (by positivity) hCdf, ?_⟩
+  exact
+    hasCanonicalWORTransportRate_of_patternWRWORRate
+      (k := k) (hk := hk) (n := n) (e := e)
+      (Cw := Cw) (Cdf := Cdf) hwrwor
+
+/-- Realizable-short-state WOR-transport constructor from a two-regime direct
+pattern estimate:
+- small-`R` is handled universally by `sum_abs_wr_wor_patternMass_toReal_le_two`,
+- large-`R` is supplied by `hlargeReal`.
+
+This keeps the remaining quantitative crux localized to the large-`R` branch. -/
+theorem hasCanonicalWORTransportRate_on_realizable_shortState_of_largeR_patternRate_rowL1StartTarget
+    (hlargeReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+            (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+              s ∈ stateFinset k N →
+                0 < returnsToStart (k := k) s →
+                (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                  (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+                    |(wrPatternMass (k := k) hk n e s p).toReal -
+                      (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                    Clarge / (returnsToStart (k := k) s : ℝ))) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      e ∈ stateFinset k (Nat.succ n) →
+        ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+          HasCanonicalWORTransportRate (k := k) hk n e
+            ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+            Cpc := by
+  intro hk n e he
+  rcases hlargeReal hk n e he with ⟨Clarge, hClarge, hlarge⟩
+  let R0 : ℕ := 4 * (Nat.succ n) * (Nat.succ n)
+  let Cdf : ℝ := max (2 * (R0 : ℝ)) Clarge
+  have hwrwor :
+      HasPatternWRWORRate (k := k) hk n e Cdf :=
+    hasPatternWRWORRate_of_smallR_largeR
+      (k := k) (hk := hk) (n := n) (e := e)
+      (R0 := R0) (Clarge := Clarge)
+      (by
+        intro N hN s hs hRpos hRlarge
+        exact hlarge hN s hs hRpos (by simpa [R0] using hRlarge))
+  let Cw : ℝ := (Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))
+  have hCdf_nonneg : 0 ≤ Cdf := by
+    have hleft_nonneg : 0 ≤ 2 * (R0 : ℝ) := by positivity
+    exact le_trans hleft_nonneg (le_max_left (2 * (R0 : ℝ)) Clarge)
+  refine ⟨Cw + Cdf, add_nonneg (by positivity) hCdf_nonneg, ?_⟩
+  exact
+    hasCanonicalWORTransportRate_of_patternWRWORRate
+      (k := k) (hk := hk) (n := n) (e := e)
+      (Cw := Cw) (Cdf := Cdf) hwrwor
+
+/-- Realizable-short-state large-`R` canonical-surrogate witness, reduced from a
+direct large-`R` WR/WOR pattern-rate family.
+
+This removes any dependency on `HasExcursionBiapproxCore` at this interface
+boundary: the only required input is a direct large-`R` WR/WOR pattern bound. -/
+theorem hasCanonicalWRSurrogateLargeR_on_realizable_shortState_of_largeR_patternRate
+    (hlargeReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+            (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+              s ∈ stateFinset k N →
+                0 < returnsToStart (k := k) s →
+                (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                  (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+                    |(wrPatternMass (k := k) hk n e s p).toReal -
+                      (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                    Clarge / (returnsToStart (k := k) s : ℝ))) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      e ∈ stateFinset k (Nat.succ n) →
+        ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+          (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+            s ∈ stateFinset k N →
+              0 < returnsToStart (k := k) s →
+              (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+                  |canonicalWRSurrogateMass (k := k) n e
+                      ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal) p -
+                    (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                  Clarge / (returnsToStart (k := k) s : ℝ)) := by
+  intro hk n e he
+  rcases hlargeReal hk n e he with ⟨Clarge, hClarge, hlarge⟩
+  refine ⟨Clarge, hClarge, ?_⟩
+  intro N hN s hs hRpos hRlarge
+  have hWclose0 :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal| ≤
+      (0 : ℝ) / (returnsToStart (k := k) s : ℝ) := by
+    simp
+  have hwrwor :
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+      Clarge / (returnsToStart (k := k) s : ℝ) :=
+    hlarge hN s hs hRpos hRlarge
+  simpa using
+    surrogate_to_wor_bound
+      (k := k) (hk := hk) (n := n) (e := e)
+      (hN := hN) (s := s)
+      (wSurrogate := (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal)
+      (Cw := 0) (Cdf := Clarge)
+      hWclose0 hwrwor
+
+/-- Realizable-short-state WOR-transport constructor from large-`R` canonical
+WR-surrogate→WOR bounds, then strict reduction to direct WR/WOR large-`R`
+pattern rates via
+`MarkovDeFinettiHardBEST.largeR_wr_wor_patternRate_of_canonicalWRSurrogate_largeR`. -/
+theorem hasCanonicalWORTransportRate_on_realizable_shortState_of_largeR_canonicalWRSurrogate_rowL1StartTarget
+    (hcanonLargeReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+            (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+              s ∈ stateFinset k N →
+                0 < returnsToStart (k := k) s →
+                (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                  (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+                    |canonicalWRSurrogateMass (k := k) n e
+                        ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal) p -
+                      (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                    Clarge / (returnsToStart (k := k) s : ℝ))) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      e ∈ stateFinset k (Nat.succ n) →
+        ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+          HasCanonicalWORTransportRate (k := k) hk n e
+            ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+            Cpc := by
+  have hlargeReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+            (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+              s ∈ stateFinset k N →
+                0 < returnsToStart (k := k) s →
+                (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                  (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+                    |(wrPatternMass (k := k) hk n e s p).toReal -
+                      (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                    Clarge / (returnsToStart (k := k) s : ℝ)) := by
+    intro hk n e he
+    rcases hcanonLargeReal hk n e he with ⟨Clarge, hClarge, hcanon⟩
+    exact
+      MarkovDeFinettiHardBEST.largeR_wr_wor_patternRate_of_canonicalWRSurrogate_largeR
+        (k := k) (hk := hk) (n := n) (e := e)
+        (hcanonLarge := ⟨Clarge, hClarge, hcanon⟩)
+  exact
+    hasCanonicalWORTransportRate_on_realizable_shortState_of_largeR_patternRate_rowL1StartTarget
+      (k := k) hlargeReal
+
 /-- Robust all-states constructor from:
 `rowL1` WR smoothing + direct pattern WR/WOR discrepancy rates. -/
 theorem hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternWRWORRateAll
@@ -2607,22 +2934,31 @@ theorem hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternWRWORRat
 
 /-- Robust all-states constructor from:
 `rowL1` WR smoothing + direct pattern-collision/zero-case obligations. -/
+@[deprecated "Legacy collision-only constructor. Prefer hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternWRWORRateAll."
+  (since := "2026-02-17")]
 theorem hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternCollision_zeroCaseAll
     (hposAll : HasPatternCollisionPosAll (k := k))
     (hzeroAll : HasPatternCollisionZeroAll (k := k)) :
     ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
       ∃ C : ℝ, 0 ≤ C ∧ HasExcursionResidualBoundRate (k := k) hk n e C := by
+  have hcoreAll :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        HasExcursionBiapproxCore (k := k) hk n e :=
+    hasExcursionBiapproxCoreAll_of_patternCollision_and_zeroCaseAll
+      (k := k) hposAll hzeroAll
   have hwrworAll :
       ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
         ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := k) hk n e Cdf :=
-    hasPatternWRWORRateAll_of_patternCollision_and_zeroCaseAll
-      (k := k) hposAll hzeroAll
+    hasPatternWRWORRateAll_of_biapproxCoreAll
+      (k := k) hcoreAll
   exact
     hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternWRWORRateAll
       (k := k) hwrworAll
 
 /-- Robust all-states constructor from:
 `rowL1` WR smoothing + positive-return pattern-collision obligations. -/
+@[deprecated "Legacy collision-only constructor. Prefer hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternWRWORRateAll."
+  (since := "2026-02-17")]
 theorem hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternCollisionPosAll
     (hposAll : HasPatternCollisionPosAll (k := k)) :
     ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
@@ -2630,8 +2966,11 @@ theorem hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternCollisio
   have hwrworAll :
       ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
         ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := k) hk n e Cdf :=
-    hasPatternWRWORRateAll_of_patternCollisionPosAll
-      (k := k) hposAll
+    by
+      intro hk n e
+      refine ⟨4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, ?_⟩
+      intro N hN s hs hRpos
+      simpa using hposAll hk n e hN s hs hRpos
   exact
     hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternWRWORRateAll
       (k := k) hwrworAll
@@ -2772,6 +3111,118 @@ theorem hasCanonicalWORTransportRateAll_of_biapproxCoreAll_rowL1StartTarget
       (k := k) (hk := hk) (n := n) (e := e)
       (Cw := (Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
       (hcore := hcoreAll hk n e)
+
+/-- Realizable-short-state constructor:
+from biapprox-core hypotheses on realizable short states `e ∈ stateFinset k (n+1)`,
+build the WOR-transport obligations needed by the rowL1 route. -/
+theorem hasCanonicalWORTransportRate_on_realizable_shortState_of_biapproxCore_rowL1StartTarget
+    (hcoreReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      e ∈ stateFinset k (Nat.succ n) →
+        ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+          HasCanonicalWORTransportRate (k := k) hk n e
+            ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+            Cpc := by
+  intro hk n e he
+  let Cw : ℝ := (Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))
+  refine
+    ⟨Cw + 4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ),
+      by positivity, ?_⟩
+  exact
+    hasCanonicalWORTransportRate_of_biapproxCore
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw)
+      (hcore := hcoreReal hk n e he)
+
+/-- Realizable-short-state canonical-surrogate large-`R` witness extracted from
+biapprox-core hypotheses. This is the exact `hcanonLargeReal` shape consumed by
+`hasCanonicalWORTransportRate_on_realizable_shortState_of_largeR_canonicalWRSurrogate_rowL1StartTarget`.
+-/
+theorem hasCanonicalWRSurrogateLargeR_on_realizable_shortState_of_biapproxCore
+    (hcoreReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      e ∈ stateFinset k (Nat.succ n) →
+        ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+          (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+            s ∈ stateFinset k N →
+              0 < returnsToStart (k := k) s →
+              (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+                  |canonicalWRSurrogateMass (k := k) n e
+                      ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal) p -
+                    (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                  Clarge / (returnsToStart (k := k) s : ℝ)) := by
+  intro hk n e he
+  refine ⟨4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, ?_⟩
+  intro N hN s hs hRpos _hRlarge
+  simpa using
+    (wor_transport_rate_canonicalWRSurrogate_exact
+      (k := k) (hk := hk) (n := n) (e := e)
+      (hN := hN) (s := s) (hs := hs)
+      (hcore := hcoreReal hk n e he hN s hs))
+
+/-- Same realizable-short-state WOR-transport obligations as
+`hasCanonicalWORTransportRate_on_realizable_shortState_of_biapproxCore_rowL1StartTarget`,
+but routed explicitly through the large-`R` canonical-surrogate interface.
+-/
+theorem hasCanonicalWORTransportRate_on_realizable_shortState_of_biapproxCore_via_largeR_canonical_rowL1StartTarget
+    (hcoreReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      e ∈ stateFinset k (Nat.succ n) →
+        ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+          HasCanonicalWORTransportRate (k := k) hk n e
+            ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+            Cpc := by
+  have hcanonLargeReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+            (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+              s ∈ stateFinset k N →
+                0 < returnsToStart (k := k) s →
+                (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                  (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+                    |canonicalWRSurrogateMass (k := k) n e
+                        ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal) p -
+                      (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                    Clarge / (returnsToStart (k := k) s : ℝ)) :=
+    hasCanonicalWRSurrogateLargeR_on_realizable_shortState_of_biapproxCore
+      (k := k) hcoreReal
+  exact
+    hasCanonicalWORTransportRate_on_realizable_shortState_of_largeR_canonicalWRSurrogate_rowL1StartTarget
+      (k := k) hcanonLargeReal
+
+/-- Realizable-short-state direct pattern-rate constructor:
+biapprox-core on realizable short states implies realizable `HasPatternWRWORRate`
+through rowL1 WR smoothing + WOR transport composition. -/
+theorem hasPatternWRWORRate_on_realizable_shortState_of_biapproxCore_rowL1StartTarget
+    (hcoreReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          HasExcursionBiapproxCore (k := k) hk n e) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      e ∈ stateFinset k (Nat.succ n) →
+        ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := k) hk n e Cdf := by
+  have hWORReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+            HasCanonicalWORTransportRate (k := k) hk n e
+              ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+              Cpc :=
+    hasCanonicalWORTransportRate_on_realizable_shortState_of_biapproxCore_rowL1StartTarget
+      (k := k) hcoreReal
+  exact
+    hasPatternWRWORRate_on_realizable_shortState_of_rowL1StartTarget_and_worTransport
+      (k := k) hWORReal
 
 
 theorem hasExcursionResidualBoundRateAll_of_biapproxCoreAll_exactSurrogate

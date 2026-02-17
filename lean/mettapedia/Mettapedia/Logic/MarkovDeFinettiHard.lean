@@ -4,6 +4,7 @@ import Mettapedia.Logic.MarkovDeFinettiHardBase
 import Mettapedia.Logic.MarkovDeFinettiEvidenceBasis
 import Mettapedia.Logic.MarkovDeFinettiHardRepresentability
 import Mettapedia.Logic.MarkovDeFinettiHardFinite
+import Mettapedia.Logic.MarkovDeFinettiHardBEST
 import Mettapedia.Logic.MarkovDeFinettiHardWRStartTargetCounterexample
 import Mettapedia.Logic.MarkovDeFinettiHardPatternCollisionCounterexample
 import Mettapedia.Logic.MarkovDeFinettiRecurrence
@@ -556,8 +557,239 @@ theorem markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate_on_realiza
     markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate
       (k := k) (μ := μ) hμ hrec hwrworAll
 
+/-- Primary hard-direction wrapper requiring WOR-transport obligations only on
+realizable short states. The WR side is supplied by the rowL1 start-target
+semantic bound. -/
+theorem markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport_on_realizable_shortState
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hWORReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+            MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e
+              ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+              Cpc) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hwrworReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cdf : ℝ, 0 ≤ Cdf ∧
+            MarkovDeFinettiHard.HasPatternWRWORRate (k := k) hk n e Cdf :=
+    MarkovDeFinettiHard.hasPatternWRWORRate_on_realizable_shortState_of_rowL1StartTarget_and_worTransport
+      (k := k) hWORReal
+  exact
+    markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate_on_realizable_shortState
+      (k := k) (μ := μ) hμ hrec hwrworReal
+
+/-- Primary route-A wrapper from realizable short-state direct pattern WR/WOR
+rate witnesses, normalized to the canonical WOR-transport endpoint. -/
+theorem markovDeFinetti_hard_of_patternWRWORRate_on_realizable_shortState_rowL1StartTarget
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hwrworReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cdf : ℝ, 0 ≤ Cdf ∧
+            MarkovDeFinettiHard.HasPatternWRWORRate (k := k) hk n e Cdf) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hWORReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+            MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e
+              ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+              Cpc :=
+    MarkovDeFinettiHard.hasCanonicalWORTransportRate_on_realizable_shortState_of_patternWRWORRate_rowL1StartTarget
+      (k := k) hwrworReal
+  exact
+    markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport_on_realizable_shortState
+      (k := k) (μ := μ) hμ hrec hWORReal
+
+/-- Primary route-A wrapper from a strict large-`R` direct pattern-rate branch.
+
+Input is exactly the non-assumptive large-`R` hypothesis shape:
+for realizable short states, provide `Clarge` such that whenever
+`4*(n+1)^2 < returnsToStart s`, the direct WR/WOR pattern discrepancy is bounded
+by `Clarge / returnsToStart s`.
+
+Small-`R` is handled by the built-in coarse bound
+`sum_abs_wr_wor_patternMass_toReal_le_two`. -/
+theorem markovDeFinetti_hard_of_largeR_patternRate_on_realizable_shortState_rowL1StartTarget
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hlargeReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+            (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+              s ∈ stateFinset k N →
+                0 < returnsToStart (k := k) s →
+                (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                  (∑ p ∈ MarkovDeFinettiHardBEST.excursionPatternSet (k := k) (hN := hN) e s,
+                    |(MarkovDeFinettiHardBEST.wrPatternMass (k := k) hk n e s p).toReal -
+                      (MarkovDeFinettiHardBEST.worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                    Clarge / (returnsToStart (k := k) s : ℝ))) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hWORReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+            MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e
+              ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+              Cpc :=
+    MarkovDeFinettiHard.hasCanonicalWORTransportRate_on_realizable_shortState_of_largeR_patternRate_rowL1StartTarget
+      (k := k) hlargeReal
+  exact
+    markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport_on_realizable_shortState
+      (k := k) (μ := μ) hμ hrec hWORReal
+
+/-- Primary route-A wrapper from strict large-`R` canonical-surrogate→WOR
+bounds on realizable short states.
+
+This keeps WR semantics explicit: `wrPatternMass` is reduced to the canonical WR
+surrogate (at `wSurrogate = W(...).toReal`) and only then compared to WOR. -/
+theorem markovDeFinetti_hard_of_largeR_canonicalWRSurrogate_on_realizable_shortState_rowL1StartTarget
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcanonLargeReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+            (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+              s ∈ stateFinset k N →
+                0 < returnsToStart (k := k) s →
+                (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                  (∑ p ∈ MarkovDeFinettiHardBEST.excursionPatternSet (k := k) (hN := hN) e s,
+                    |MarkovDeFinettiHardBEST.canonicalWRSurrogateMass (k := k) n e
+                        ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal) p -
+                      (MarkovDeFinettiHardBEST.worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                    Clarge / (returnsToStart (k := k) s : ℝ))) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hWORReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+            MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e
+              ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+              Cpc :=
+    MarkovDeFinettiHard.hasCanonicalWORTransportRate_on_realizable_shortState_of_largeR_canonicalWRSurrogate_rowL1StartTarget
+      (k := k) hcanonLargeReal
+  exact
+    markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport_on_realizable_shortState
+      (k := k) (μ := μ) hμ hrec hWORReal
+
+/-- Bridge wrapper: convert realizable short-state direct large-`R` WR/WOR
+pattern-rate assumptions into the canonical-surrogate large-`R` assumptions
+consumed by
+`markovDeFinetti_hard_of_largeR_canonicalWRSurrogate_on_realizable_shortState_rowL1StartTarget`.
+-/
+theorem markovDeFinetti_hard_of_largeR_patternRate_via_canonical_on_realizable_shortState_rowL1StartTarget
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hlargeReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+            (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+              s ∈ stateFinset k N →
+                0 < returnsToStart (k := k) s →
+                (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                  (∑ p ∈ MarkovDeFinettiHardBEST.excursionPatternSet (k := k) (hN := hN) e s,
+                    |(MarkovDeFinettiHardBEST.wrPatternMass (k := k) hk n e s p).toReal -
+                      (MarkovDeFinettiHardBEST.worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                    Clarge / (returnsToStart (k := k) s : ℝ))) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hcanonLargeReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+            (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+              s ∈ stateFinset k N →
+                0 < returnsToStart (k := k) s →
+                (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                  (∑ p ∈ MarkovDeFinettiHardBEST.excursionPatternSet (k := k) (hN := hN) e s,
+                    |MarkovDeFinettiHardBEST.canonicalWRSurrogateMass (k := k) n e
+                        ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal) p -
+                      (MarkovDeFinettiHardBEST.worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                    Clarge / (returnsToStart (k := k) s : ℝ)) :=
+    MarkovDeFinettiHard.hasCanonicalWRSurrogateLargeR_on_realizable_shortState_of_largeR_patternRate
+      (k := k) hlargeReal
+  exact
+    markovDeFinetti_hard_of_largeR_canonicalWRSurrogate_on_realizable_shortState_rowL1StartTarget
+      (k := k) (μ := μ) hμ hrec hcanonLargeReal
+
+/-- Primary route-A wrapper from realizable short-state biapprox-core
+hypotheses, via rowL1 WR smoothing + WOR transport. -/
+theorem markovDeFinetti_hard_of_biapproxCore_on_realizable_shortState_rowL1StartTarget
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          MarkovDeFinettiHard.HasExcursionBiapproxCore (k := k) hk n e) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hWORReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+            MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e
+              ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+              Cpc :=
+    MarkovDeFinettiHard.hasCanonicalWORTransportRate_on_realizable_shortState_of_biapproxCore_rowL1StartTarget
+      (k := k) hcoreReal
+  exact
+    markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport_on_realizable_shortState
+      (k := k) (μ := μ) hμ hrec hWORReal
+
+/-- Route-A variant that applies the strict large-`R` canonical-surrogate wrapper
+(`markovDeFinetti_hard_of_largeR_canonicalWRSurrogate_on_realizable_shortState_rowL1StartTarget`)
+to realizable-short-state biapprox-core hypotheses. -/
+theorem markovDeFinetti_hard_of_biapproxCore_on_realizable_shortState_via_largeR_canonical_rowL1StartTarget
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hcoreReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          MarkovDeFinettiHard.HasExcursionBiapproxCore (k := k) hk n e) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hcanonLargeReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+            (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+              s ∈ stateFinset k N →
+                0 < returnsToStart (k := k) s →
+                (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+                  (∑ p ∈ MarkovDeFinettiHardBEST.excursionPatternSet (k := k) (hN := hN) e s,
+                    |MarkovDeFinettiHardBEST.canonicalWRSurrogateMass (k := k) n e
+                        ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal) p -
+                      (MarkovDeFinettiHardBEST.worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                    Clarge / (returnsToStart (k := k) s : ℝ)) :=
+    MarkovDeFinettiHard.hasCanonicalWRSurrogateLargeR_on_realizable_shortState_of_biapproxCore
+      (k := k) hcoreReal
+  exact
+    markovDeFinetti_hard_of_largeR_canonicalWRSurrogate_on_realizable_shortState_rowL1StartTarget
+      (k := k) (μ := μ) hμ hrec hcanonLargeReal
+
 /-- Primary hard-direction wrapper when the remaining BEST-side obligations are
 given directly as pattern-collision (positive-return) and zero-return clauses. -/
+@[deprecated "Legacy collision-only wrapper. Prefer markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate."
+  (since := "2026-02-17")]
 theorem markovDeFinetti_hard_of_rowL1StartTarget_and_patternCollision_zeroCase
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
@@ -570,14 +802,23 @@ theorem markovDeFinetti_hard_of_rowL1StartTarget_and_patternCollision_zeroCase
       ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
         ∃ Cdf : ℝ, 0 ≤ Cdf ∧
           MarkovDeFinettiHard.HasPatternWRWORRate (k := k) hk n e Cdf :=
-    MarkovDeFinettiHard.hasPatternWRWORRateAll_of_patternCollision_and_zeroCaseAll
-      (k := k) hposAll hzeroAll
+    by
+      have hcoreAll :
+          ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+            MarkovDeFinettiHard.HasExcursionBiapproxCore (k := k) hk n e :=
+        MarkovDeFinettiHard.hasExcursionBiapproxCoreAll_of_patternCollision_and_zeroCaseAll
+          (k := k) hposAll hzeroAll
+      exact
+        MarkovDeFinettiHard.hasPatternWRWORRateAll_of_biapproxCoreAll
+          (k := k) hcoreAll
   exact
     markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate
       (k := k) (μ := μ) hμ hrec hwrworAll
 
 /-- Primary hard-direction wrapper when the remaining BEST-side obligation is
 the positive-return pattern-collision bound family. -/
+@[deprecated "Legacy collision-only wrapper. Prefer markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate."
+  (since := "2026-02-17")]
 theorem markovDeFinetti_hard_of_rowL1StartTarget_and_patternCollisionPos
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
@@ -589,8 +830,11 @@ theorem markovDeFinetti_hard_of_rowL1StartTarget_and_patternCollisionPos
       ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
         ∃ Cdf : ℝ, 0 ≤ Cdf ∧
           MarkovDeFinettiHard.HasPatternWRWORRate (k := k) hk n e Cdf :=
-    MarkovDeFinettiHard.hasPatternWRWORRateAll_of_patternCollisionPosAll
-      (k := k) hposAll
+    by
+      intro hk n e
+      refine ⟨4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ), by positivity, ?_⟩
+      intro N hN s hs hRpos
+      simpa using hposAll hk n e hN s hs hRpos
   exact
     markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate
       (k := k) (μ := μ) hμ hrec hwrworAll
@@ -600,6 +844,65 @@ under current WR semantics (`wrPatternMass` via `empiricalParam`). -/
 theorem not_hasPatternCollisionPosAll_k6 :
     ¬ MarkovDeFinettiHard.HasPatternCollisionPosAll (k := 6) :=
   MarkovDeFinettiHard.PatternCollisionCounterexample.not_HasPatternCollisionPosAll_k6
+
+/-- Consequence of the `k=6` collision counterexample:
+the full BEST representative-bound family cannot hold at `k=6`. -/
+theorem not_hasBestReprBoundAll_k6 :
+    ¬ MarkovDeFinettiHard.HasBestReprBoundAll (k := 6) := by
+  intro hreprAll
+  exact
+    not_hasPatternCollisionPosAll_k6
+      (MarkovDeFinettiHard.hasPatternCollisionPosAll_of_bestReprBoundAll
+        (k := 6) hreprAll)
+
+/-- Therefore the realizable-short-state BEST representative family
+also cannot hold at `k=6` (it would imply `HasBestReprBoundAll`). -/
+theorem not_bestReprBound_on_realizable_shortState_k6 :
+    ¬ (∀ hk : 0 < 6, ∀ n : ℕ, ∀ e : MarkovState 6,
+        e ∈ stateFinset 6 (Nat.succ n) →
+          MarkovDeFinettiHard.HasBestReprBound (k := 6) hk n e) := by
+  intro hrealBest
+  have hreprAll : MarkovDeFinettiHard.HasBestReprBoundAll (k := 6) :=
+    MarkovDeFinettiHard.hasBestReprBoundAll_of_realizable_shortState
+      (k := 6) hrealBest
+  exact not_hasBestReprBoundAll_k6 hreprAll
+
+/-- The realizable-short-state biapprox-core family is also impossible at `k=6`
+under current WR semantics, since it implies the same collision-only obligation. -/
+theorem not_biapproxCore_on_realizable_shortState_k6 :
+    ¬ (∀ hk : 0 < 6, ∀ n : ℕ, ∀ e : MarkovState 6,
+        e ∈ stateFinset 6 (Nat.succ n) →
+          MarkovDeFinettiHard.HasExcursionBiapproxCore (k := 6) hk n e) := by
+  intro hcoreReal
+  have hposAll : MarkovDeFinettiHard.HasPatternCollisionPosAll (k := 6) :=
+    MarkovDeFinettiHard.hasPatternCollisionPosAll_of_biapproxCore_on_realizable_shortState
+      (k := 6) hcoreReal
+  exact not_hasPatternCollisionPosAll_k6 hposAll
+
+/-- Primary hard-direction wrapper from realizable-short-state BEST representative
+bounds, routed through the rate-style WR/WOR interface. -/
+theorem markovDeFinetti_hard_of_bestReprBound_on_realizable_shortState_rowL1StartTarget
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hrealBest :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          MarkovDeFinettiHard.HasBestReprBound (k := k) hk n e) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hWORReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+            MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e
+              ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+              Cpc :=
+    MarkovDeFinettiHard.hasCanonicalWORTransportRate_on_realizable_shortState_of_bestReprBound_rowL1StartTarget
+      (k := k) hrealBest
+  exact
+    markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport_on_realizable_shortState
+      (k := k) (μ := μ) hμ hrec hWORReal
 
 /-- Primary hard-direction wrapper from the BEST representative-bound family,
 through the rowL1 start-target WR path. -/

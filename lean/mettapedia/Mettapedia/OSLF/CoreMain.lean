@@ -26,6 +26,7 @@ import Mettapedia.OSLF.Framework.MeTTaMinimalInstance
 import Mettapedia.OSLF.Framework.ConstructorCategory
 import Mettapedia.OSLF.Framework.ConstructorFibration
 import Mettapedia.OSLF.Framework.ModalEquivalence
+import Mettapedia.OSLF.Framework.ObservationalQuotient
 import Mettapedia.OSLF.Framework.DerivedTyping
 import Mettapedia.OSLF.Framework.PLNSelectorGSLT
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF

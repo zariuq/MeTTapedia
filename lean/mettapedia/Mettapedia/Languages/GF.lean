@@ -57,9 +57,14 @@ import Mettapedia.Languages.GF.English.Relatives
 import Mettapedia.Languages.GF.English.Properties
 import Mettapedia.Languages.GF.English.Linearization
 import Mettapedia.Languages.GF.English.Examples
+import Mettapedia.Languages.GF.English.RoundTripCorpus
+import Mettapedia.Languages.GF.Czech.RoundTripCorpus
+import Mettapedia.Languages.GF.RoundTripRegression
 import Mettapedia.Languages.GF.OSLFBridge
 import Mettapedia.Languages.GF.Typing
 import Mettapedia.Languages.GF.LinguisticInvariance
+import Mettapedia.Languages.GF.KernelConfluence
+import Mettapedia.Languages.GF.SemanticKernelConfluence
 import Mettapedia.Languages.GF.WorldModelSemantics
 import Mettapedia.Languages.GF.VisibleLayer
 import Mettapedia.Languages.GF.VisibleLayerGFInstance

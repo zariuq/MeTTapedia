@@ -36,6 +36,8 @@ open Mettapedia.Languages.GF.Abstract
 open Mettapedia.Languages.GF.OSLFBridge
 open Mettapedia.Languages.GF.Typing
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Formula
 
 /-! ## Lexical Containment
 
@@ -293,6 +295,70 @@ theorem cross_ling_lexical_invariance :
 theorem montague_thesis (tree : AbstractNode) (φ : Pattern → Prop) :
     φ (gfAbstractToPattern tree) ↔ φ (gfAbstractToPattern tree) :=
   Iff.rfl
+
+/-! ### OSLF-Level Cross-Lingual Invariance
+
+English and Czech do not share literally identical `LanguageDef` records:
+the `name` field differs. The operational fields used by OSLF (equations,
+rewrites, congruence policy) are the same, so reduction and modal semantics
+coincide extensionally.
+-/
+
+theorem english_czech_operational_fields_eq :
+    englishGFLanguageDef.equations = czechGFLanguageDef.equations ∧
+    englishGFLanguageDef.rewrites = czechGFLanguageDef.rewrites ∧
+    englishGFLanguageDef.congruenceCollections =
+      czechGFLanguageDef.congruenceCollections := by
+  simp [englishGFLanguageDef, czechGFLanguageDef, gfRGLLanguageDef]
+
+theorem english_czech_reduces_iff (p q : Pattern) :
+    langReduces englishGFLanguageDef p q ↔
+    langReduces czechGFLanguageDef p q := by
+  change langReducesUsing Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty
+      englishGFLanguageDef p q ↔
+    langReducesUsing Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty
+      czechGFLanguageDef p q
+  rw [langReducesUsing_iff_execUsing
+      (relEnv := Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
+      (lang := englishGFLanguageDef) (p := p) (q := q)]
+  rw [langReducesUsing_iff_execUsing
+      (relEnv := Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
+      (lang := czechGFLanguageDef) (p := p) (q := q)]
+  have hEq :
+      Mettapedia.OSLF.MeTTaIL.Engine.rewriteWithContextWithPremisesUsing
+          Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty englishGFLanguageDef p =
+        Mettapedia.OSLF.MeTTaIL.Engine.rewriteWithContextWithPremisesUsing
+          Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty czechGFLanguageDef p := by
+    rfl
+  exact Iff.of_eq (by
+    simpa [langReducesExecUsing] using congrArg (fun xs => q ∈ xs) hEq)
+
+theorem english_czech_diamond_eq (φ : Pattern → Prop) :
+    langDiamond englishGFLanguageDef φ =
+    langDiamond czechGFLanguageDef φ := by
+  funext p
+  simp [langDiamond_spec, english_czech_reduces_iff]
+
+theorem english_czech_box_eq (φ : Pattern → Prop) :
+    langBox englishGFLanguageDef φ =
+    langBox czechGFLanguageDef φ := by
+  funext p
+  simp [langBox_spec, english_czech_reduces_iff]
+
+theorem english_czech_sem_iff
+    (I : String → Pattern → Prop) (φ : OSLFFormula) (p : Pattern) :
+    sem (langReduces englishGFLanguageDef) I φ p ↔
+    sem (langReduces czechGFLanguageDef) I φ p := by
+  have hR : langReduces englishGFLanguageDef = langReduces czechGFLanguageDef := by
+    funext p q
+    exact propext (english_czech_reduces_iff p q)
+  simp [hR]
+
+theorem english_czech_tree_sem_iff
+    (I : String → Pattern → Prop) (φ : OSLFFormula) (tree : AbstractNode) :
+    sem (langReduces englishGFLanguageDef) I φ (gfAbstractToPattern tree) ↔
+    sem (langReduces czechGFLanguageDef) I φ (gfAbstractToPattern tree) := by
+  exact english_czech_sem_iff I φ (gfAbstractToPattern tree)
 
 /-! ## 5. Subcategorization as Entailment Structure
 

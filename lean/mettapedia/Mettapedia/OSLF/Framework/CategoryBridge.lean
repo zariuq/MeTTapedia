@@ -7,7 +7,7 @@ import Mettapedia.CategoryTheory.DeFinettiPermutationCone
 import Mettapedia.CategoryTheory.DeFinettiKernelInterface
 import Mettapedia.CategoryTheory.DeFinettiSequenceKernelCone
 import Mettapedia.CategoryTheory.DeFinettiHausdorffBridge
-import Mettapedia.CategoryTheory.DeFinettiStableExports
+import Mettapedia.CategoryTheory.DeFinettiExports
 import Mettapedia.GSLT.Core.LambdaTheoryCategory
 import Mettapedia.GSLT.Topos.PredicateFibration
 import Mathlib.CategoryTheory.Category.GaloisConnection

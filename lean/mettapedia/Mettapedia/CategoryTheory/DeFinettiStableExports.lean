@@ -1,11 +1,14 @@
 import Mettapedia.CategoryTheory.DeFinettiPerNDiagram
+import Mettapedia.CategoryTheory.DeFinettiGlobalFinitaryDiagram
+import Mettapedia.CategoryTheory.DeFinettiKleisliGirySkeleton
 import Mettapedia.CategoryTheory.DeFinettiSequenceKernelCone
 
 /-!
 # Stable Export Surface for Categorical de Finetti
 
-Downstream modules should prefer importing this file instead of importing
-multiple internal category-route files directly.
+This file is an internal stable alias layer.
+Downstream modules should prefer importing
+`Mettapedia.CategoryTheory.DeFinettiExports`.
 
 This module re-exports the stable theorem chain by providing lightweight alias
 theorems.
@@ -97,6 +100,36 @@ theorem deFinettiStable_sequenceKernelCone_roundTrip
           KernelRepresentsLatentTheta (X := coordProcess) κ L) :=
   sequenceKernelConeObj_roundTrip_latentThetaMediator (κ := κ)
 
+/-- Stable alias: explicit iid-prefix factorization form at kernel level.
+From a sequence-kernel cone object, obtain a unique latent `Theta` family with
+both representation and finite-prefix iid-mixture equations. -/
+theorem deFinettiStable_existsUnique_latentThetaKernel_with_iidPrefixFactorization_coord
+    (κ : ProbabilityTheory.Kernel Y (ℕ → Bool))
+    [ProbabilityTheory.IsMarkovKernel κ] :
+    SequenceKernelConeObj κ →
+      ∃! L :
+        Y →
+          Measure
+            Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.Theta,
+        KernelRepresentsLatentTheta (X := coordProcess) κ L ∧
+          (∀ (y : Y) (n : ℕ) (xs : Fin n → Bool),
+            (κ y) (seqPrefixEvent n xs) =
+              ∫⁻ θ :
+                  Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.Theta,
+                (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool)) ∂(L y)) :=
+  existsUnique_latentThetaKernel_with_iidPrefixFactorization_of_sequenceKernelConeObj
+    (κ := κ)
+
+/-- Stable alias: unique sequence-level mediator record packaging finite-prefix
+iid factorization equations. -/
+theorem deFinettiStable_existsUnique_kernelIIDPrefixMediator_of_sequenceKernelConeObj
+    (κ : ProbabilityTheory.Kernel Y (ℕ → Bool))
+    [ProbabilityTheory.IsMarkovKernel κ] :
+    SequenceKernelConeObj κ →
+      ∃! M : KernelIIDPrefixMediator (κ := κ),
+        KernelRepresentsLatentTheta (X := coordProcess) κ M.latent :=
+  existsUnique_kernelIIDPrefixMediator_of_sequenceKernelConeObj (κ := κ)
+
 /-- Stable export: forward bridge from lightweight package witnesses to
 per-`n` `IsLimit`-style witnesses. -/
 theorem deFinettiStable_limitConePackage_to_perNIsLimit
@@ -112,6 +145,121 @@ theorem deFinettiStable_isPrefixLawCone_iff_perNPrefixLawConeCommutes
     IsPrefixLawCone (Ω := Ω) X μ ↔
       ∀ n : ℕ, PerNPrefixLawConeCommutes (Ω := Ω) X μ n :=
   isPrefixLawCone_iff_perNPrefixLawConeCommutes (Ω := Ω) X μ
+
+/-- Stable export: global finitary-permutation lifted commutation is equivalent
+to `IsPrefixLawCone`. -/
+theorem deFinettiStable_isPrefixLawCone_iff_globalLiftedPrefixLawConeCommutes
+    (X : ℕ → Ω → Bool) (μ : Measure Ω) :
+    IsPrefixLawCone (Ω := Ω) X μ ↔
+      GlobalLiftedPrefixLawConeCommutes (Ω := Ω) X μ :=
+  isPrefixLawCone_iff_globalLiftedPrefixLawConeCommutes (Ω := Ω) X μ
+
+/-- Stable export: one-hop bridge from global-lifted commutation to cross-`n`
+mediator uniqueness packaging. -/
+theorem deFinettiStable_globalLiftedPrefixLawConeCommutes_to_crossNPackage
+    (X : ℕ → Ω → Bool) (μ : Measure Ω)
+    (hglobal : GlobalLiftedPrefixLawConeCommutes (Ω := Ω) X μ) :
+    Nonempty (ExchangeableCrossNLimitPackage (Ω := Ω) X μ) := by
+  refine ⟨exchangeableCrossNLimitPackage_of_isPrefixLawCone
+    (Ω := Ω) X μ ?_⟩
+  exact (deFinettiStable_isPrefixLawCone_iff_globalLiftedPrefixLawConeCommutes
+    (Ω := Ω) X μ).2 hglobal
+
+/-- Stable export: for a fixed law `μ`, global finitary lifted commutation is
+equivalent to having both:
+1. the prefix-law cone predicate, and
+2. a concrete cross-`n` mediator package witness. -/
+theorem deFinettiStable_globalLiftedPrefixLawConeCommutes_iff_prefixCone_and_crossNPackage
+    (X : ℕ → Ω → Bool) (μ : Measure Ω) :
+    GlobalLiftedPrefixLawConeCommutes (Ω := Ω) X μ ↔
+      (IsPrefixLawCone (Ω := Ω) X μ ∧
+        Nonempty (ExchangeableCrossNLimitPackage (Ω := Ω) X μ)) := by
+  constructor
+  · intro hglobal
+    refine ⟨?_, ?_⟩
+    · exact (deFinettiStable_isPrefixLawCone_iff_globalLiftedPrefixLawConeCommutes
+        (Ω := Ω) X μ).2 hglobal
+    · exact deFinettiStable_globalLiftedPrefixLawConeCommutes_to_crossNPackage
+        (Ω := Ω) X μ hglobal
+  · intro h
+    exact (deFinettiStable_isPrefixLawCone_iff_globalLiftedPrefixLawConeCommutes
+      (Ω := Ω) X μ).1 h.1
+
+/-- Stable export: true global Kleisli(Giry) `IsLimit` packaging is equivalent
+to the global mediator uniqueness property for an iid-cone skeleton. -/
+theorem deFinettiStable_isLimit_iff_globalIIDConeMediatorUnique
+    (cone : KleisliGiryIIDConeSkeleton) :
+    Nonempty (CategoryTheory.Limits.IsLimit (cone.toCone)) ↔
+      GlobalIIDConeMediatorUnique cone :=
+  isLimit_iff_globalIIDConeMediatorUnique cone
+
+/-- Stable export: specialized `P Bool` form of the true global Kleisli(Giry)
+`IsLimit` equivalence. -/
+theorem deFinettiStable_isLimit_iff_globalIIDConeMediatorUniqueProbBool
+    (cone : KleisliGiryProbBoolIIDCone) :
+    Nonempty (CategoryTheory.Limits.IsLimit (cone.toCone)) ↔
+      GlobalIIDConeMediatorUniqueProbBool cone :=
+  isLimit_iff_globalIIDConeMediatorUniqueProbBool cone
+
+/-- Stable export: horizon-`n` cylinder evaluation for `iidSequenceKernelTheta`,
+assuming the canonical Dirac latent mediator interface. -/
+theorem deFinettiStable_iidSequenceKernelTheta_prefix_apply_of_latentDirac
+    (hrep :
+      KernelRepresentsLatentTheta
+        (Y := LatentTheta) (Ω := GlobalBinarySeq) (X := coordProcess)
+        (κ := iidSequenceKernelTheta)
+        (fun θ : LatentTheta => (Measure.dirac θ : Measure LatentTheta)))
+    (θ : LatentTheta) (n : ℕ) (xs : Fin n → Bool) :
+    iidSequenceKernelTheta θ (seqPrefixEvent n xs) =
+      (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool)) :=
+  iidSequenceKernelTheta_prefix_apply_of_latentDirac hrep θ n xs
+
+/-- Stable export: for the cone built from `iidSequenceKernelTheta`, true
+`IsLimit` is equivalent to global mediator uniqueness. -/
+theorem deFinettiStable_isLimit_iff_globalIIDConeMediatorUnique_iidSequenceKernelTheta
+    (hcommutes : ∀ τ : FinSuppPermNat,
+      CategoryTheory.CategoryStruct.comp iidSequenceKleisliHomTheta (finSuppPermKleisliHom τ) =
+        iidSequenceKleisliHomTheta) :
+    Nonempty
+        (CategoryTheory.Limits.IsLimit
+          ((iidSequenceKleisliConeSkeleton hcommutes).toCone)) ↔
+      GlobalIIDConeMediatorUnique (iidSequenceKleisliConeSkeleton hcommutes) :=
+  isLimit_iff_globalIIDConeMediatorUnique_iidSequenceKernelTheta hcommutes
+
+/-- Stable export: derive the `iidSequenceKleisliHomTheta` commutation witness
+from global finitary invariance of `iidSequenceKernelTheta`. -/
+theorem deFinettiStable_iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ)) :
+    ∀ τ : FinSuppPermNat,
+      CategoryTheory.CategoryStruct.comp iidSequenceKleisliHomTheta (finSuppPermKleisliHom τ) =
+        iidSequenceKleisliHomTheta :=
+  iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance hglobal
+
+/-- Stable export: unconditional horizon-`n` prefix evaluation for
+`iidSequenceKernelTheta` from global finitary invariance, via the canonical
+latent-kernel extracted by the mediator chain. -/
+theorem deFinettiStable_iidSequenceKernelTheta_prefix_apply_of_globalFinitaryInvariance
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ))
+    (θ : LatentTheta) (n : ℕ) (xs : Fin n → Bool) :
+    iidSequenceKernelTheta θ (seqPrefixEvent n xs) =
+      ∫⁻ θ' : LatentTheta, (iidPrefixKernel n θ') ({xs} : Set (Fin n → Bool)) ∂
+        (iidSequenceKernelTheta_canonicalLatentKernel_of_globalFinitaryInvariance hglobal θ) :=
+  iidSequenceKernelTheta_prefix_apply_of_globalFinitaryInvariance hglobal θ n xs
+
+/-- Stable export: no-extra-hypothesis (beyond global finitary invariance)
+IsLimit-ready bundle for `iidSequenceKernelTheta`. -/
+theorem deFinettiStable_iidSequenceKernelTheta_isLimitReady_of_globalFinitaryInvariance
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ)) :
+    ∃ hcommutes : ∀ τ : FinSuppPermNat,
+        CategoryTheory.CategoryStruct.comp iidSequenceKleisliHomTheta (finSuppPermKleisliHom τ) =
+          iidSequenceKleisliHomTheta,
+      (∀ (θ : LatentTheta) (n : ℕ) (xs : Fin n → Bool),
+        iidSequenceKernelTheta θ (seqPrefixEvent n xs) =
+          ∫⁻ θ' : LatentTheta, (iidPrefixKernel n θ') ({xs} : Set (Fin n → Bool)) ∂
+            (iidSequenceKernelTheta_canonicalLatentKernel_of_globalFinitaryInvariance hglobal θ)) ∧
+      (Nonempty (CategoryTheory.Limits.IsLimit ((iidSequenceKleisliConeSkeleton hcommutes).toCone)) ↔
+        GlobalIIDConeMediatorUnique (iidSequenceKleisliConeSkeleton hcommutes)) :=
+  iidSequenceKernelTheta_isLimitReady_of_globalFinitaryInvariance hglobal
 
 /-- Stable export: true limit cone for the per-`n` permutation diagram. -/
 def deFinettiStable_perNPrefixDiagramLimitCone (n : ℕ) :
@@ -130,5 +278,119 @@ theorem deFinettiStable_perNIsLimit_to_trueLimitCone
 theorem deFinettiStable_hasLimit_perNPrefixDiagramFunctor (n : ℕ) :
     CategoryTheory.Limits.HasLimit (perNPrefixDiagramFunctor n) :=
   hasLimit_perNPrefixDiagramFunctor n
+
+/-- Stable export: exchangeability-induced per-`n` cone factorization through
+the fixed-point limit object. -/
+theorem deFinettiStable_exchangeablePerNLimitMediator_fac
+    (X : ℕ → Ω → Bool) (μ : Measure Ω) (n : ℕ)
+    (hcone : IsPrefixLawCone (Ω := Ω) X μ)
+    (j : PerNPermIndex n) :
+    CategoryTheory.CategoryStruct.comp
+      (exchangeablePerNLimitMediator (Ω := Ω) X μ n hcone)
+      ((perNPrefixFixedPointsCone n).π.app j) =
+    (exchangeablePerNSourceCone (Ω := Ω) X μ n hcone).π.app j :=
+  exchangeablePerNLimitMediator_fac (Ω := Ω) X μ n hcone j
+
+/-- Stable export: uniqueness of the exchangeability-induced mediator via
+`IsLimit.lift` uniqueness. -/
+theorem deFinettiStable_exchangeablePerNLimitMediator_unique
+    (X : ℕ → Ω → Bool) (μ : Measure Ω) (n : ℕ)
+    (hcone : IsPrefixLawCone (Ω := Ω) X μ)
+    (m : PUnit ⟶ PerNPrefixFixedPoints n)
+    (hm :
+      ∀ j : PerNPermIndex n,
+        CategoryTheory.CategoryStruct.comp m ((perNPrefixFixedPointsCone n).π.app j) =
+          (exchangeablePerNSourceCone (Ω := Ω) X μ n hcone).π.app j) :
+    m = exchangeablePerNLimitMediator (Ω := Ω) X μ n hcone :=
+  exchangeablePerNLimitMediator_unique (Ω := Ω) X μ n hcone m hm
+
+/-- Stable export: single rewrite bridge connecting kernel-level universal
+mediator API to per-`n` limit-mediator uniqueness packaging. -/
+theorem deFinettiStable_kernelLatentThetaUniversalMediator_iff_perNLimitMediatorUnique
+    (X : ℕ → Ω → Bool) :
+    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ↔
+      ExchangeablePerNLimitMediatorUnique (Ω := Ω) X :=
+  kernelLatentThetaUniversalMediator_iff_perNLimitMediatorUnique (Y := Y) (Ω := Ω) X
+
+/-- Stable export: one-hop bridge from kernel-level universal mediator API to the
+global cross-`n` package family. -/
+theorem deFinettiStable_kernelLatentThetaUniversalMediator_iff_crossNPackageFamily
+    (X : ℕ → Ω → Bool) :
+    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ↔
+      ∀ μ : Measure Ω, IsPrefixLawCone (Ω := Ω) X μ →
+        Nonempty (ExchangeableCrossNLimitPackage (Ω := Ω) X μ) :=
+  kernelLatentThetaUniversalMediator_iff_crossNPackageFamily (Y := Y) (Ω := Ω) X
+
+/-- Stable export: full practical qualitative chain in one theorem.
+This packages:
+1. kernel-level universal mediator API,
+2. per-`n` mediator uniqueness package,
+3. global lifted commutation → cross-`n` package witnesses. -/
+theorem deFinettiStable_kernelUniversalMediator_endToEnd_globalChain
+    (X : ℕ → Ω → Bool) :
+    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ↔
+      (ExchangeablePerNLimitMediatorUnique (Ω := Ω) X ∧
+        (∀ μ : Measure Ω, GlobalLiftedPrefixLawConeCommutes (Ω := Ω) X μ →
+          Nonempty (ExchangeableCrossNLimitPackage (Ω := Ω) X μ))) := by
+  constructor
+  · intro h
+    refine ⟨?_, ?_⟩
+    · exact
+        (deFinettiStable_kernelLatentThetaUniversalMediator_iff_perNLimitMediatorUnique
+          (Y := Y) (Ω := Ω) X).1 h
+    · intro μ hglobal
+      exact deFinettiStable_globalLiftedPrefixLawConeCommutes_to_crossNPackage
+        (Ω := Ω) X μ hglobal
+  · intro h
+    exact
+      (deFinettiStable_kernelLatentThetaUniversalMediator_iff_perNLimitMediatorUnique
+        (Y := Y) (Ω := Ω) X).2 h.1
+
+/-- Stable export: global cross-`n` categorical package from prefix-law
+exchangeability. -/
+def deFinettiStable_exchangeableCrossNLimitPackage_of_isPrefixLawCone
+    (X : ℕ → Ω → Bool) (μ : Measure Ω)
+    (hcone : IsPrefixLawCone (Ω := Ω) X μ) :
+    ExchangeableCrossNLimitPackage (Ω := Ω) X μ :=
+  exchangeableCrossNLimitPackage_of_isPrefixLawCone (Ω := Ω) X μ hcone
+
+/-- Stable export: substantive equivalence between the per-`n` uniqueness package
+and the global cross-`n` package family. -/
+theorem deFinettiStable_perNUnique_iff_crossNPackageFamily
+    (X : ℕ → Ω → Bool) :
+    ExchangeablePerNLimitMediatorUnique (Ω := Ω) X ↔
+      ∀ μ : Measure Ω, IsPrefixLawCone (Ω := Ω) X μ →
+        Nonempty (ExchangeableCrossNLimitPackage (Ω := Ω) X μ) :=
+  exchangeablePerNLimitMediatorUnique_iff_crossNPackageFamily (Ω := Ω) X
+
+/-- Stable export: non-essential check theorem using cross-`n` uniqueness. -/
+theorem deFinettiStable_exchangeableCrossNLimitPackage_mediator_eq_of_fac
+    (X : ℕ → Ω → Bool) (μ : Measure Ω)
+    (pkg : ExchangeableCrossNLimitPackage (Ω := Ω) X μ)
+    (n : ℕ) (m : PUnit ⟶ PerNPrefixFixedPoints n)
+    (hm :
+      ∀ j : PerNPermIndex n,
+        CategoryTheory.CategoryStruct.comp m ((perNPrefixFixedPointsCone n).π.app j) =
+          (exchangeablePerNSourceCone (Ω := Ω) X μ n pkg.hcone).π.app j) :
+    m = pkg.mediator n :=
+  exchangeableCrossNLimitPackage_mediator_eq_of_fac (Ω := Ω) X μ pkg n m hm
+
+/-- Stable export: uniqueness check between any two mediators satisfying the same
+cross-`n` factorization equations. -/
+theorem deFinettiStable_exchangeableCrossNLimitPackage_mediators_eq_of_fac
+    (X : ℕ → Ω → Bool) (μ : Measure Ω)
+    (pkg : ExchangeableCrossNLimitPackage (Ω := Ω) X μ)
+    (n : ℕ) (m₁ m₂ : PUnit ⟶ PerNPrefixFixedPoints n)
+    (hm₁ :
+      ∀ j : PerNPermIndex n,
+        CategoryTheory.CategoryStruct.comp m₁ ((perNPrefixFixedPointsCone n).π.app j) =
+          (exchangeablePerNSourceCone (Ω := Ω) X μ n pkg.hcone).π.app j)
+    (hm₂ :
+      ∀ j : PerNPermIndex n,
+        CategoryTheory.CategoryStruct.comp m₂ ((perNPrefixFixedPointsCone n).π.app j) =
+          (exchangeablePerNSourceCone (Ω := Ω) X μ n pkg.hcone).π.app j) :
+    m₁ = m₂ :=
+  exchangeableCrossNLimitPackage_mediators_eq_of_fac
+    (Ω := Ω) X μ pkg n m₁ m₂ hm₁ hm₂
 
 end Mettapedia.CategoryTheory

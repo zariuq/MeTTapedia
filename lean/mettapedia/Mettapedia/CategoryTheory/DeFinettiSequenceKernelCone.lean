@@ -215,4 +215,140 @@ theorem iidPrefixKernel_cone_commutes
   intro θ σ xs
   exact iidPrefixKernel_perm_singleton n σ θ xs
 
+/-- Sequence-level mediator packaging the finite-prefix factorization
+`k̃ ≫ iid = k` in kernel language. -/
+structure KernelIIDPrefixMediator
+    (κ : ProbabilityTheory.Kernel Y BinarySeq)
+    [ProbabilityTheory.IsMarkovKernel κ] where
+  latent : Y → Measure Theta
+  fac : ∀ (y : Y) (n : ℕ) (xs : Fin n → Bool),
+    (κ y) (seqPrefixEvent n xs) =
+      ∫⁻ θ : Theta, (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool)) ∂(latent y)
+
+/-- If a latent `Theta` family represents every fiber of `κ` for the coordinate
+process, then each finite-prefix event law is exactly the corresponding iid-prefix
+mixture under that latent family. -/
+theorem kernelRepresentsLatentTheta_coord_prefix_eq_iidPrefixKernel
+    (κ : ProbabilityTheory.Kernel Y BinarySeq)
+    [ProbabilityTheory.IsMarkovKernel κ]
+    (L : Y → Measure Theta)
+    (hL : KernelRepresentsLatentTheta (X := coordProcess) κ L) :
+    ∀ (y : Y) (n : ℕ) (xs : Fin n → Bool),
+      (κ y) (seqPrefixEvent n xs) =
+        ∫⁻ θ : Theta, (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool)) ∂(L y) := by
+  intro y n xs
+  rcases hL y with ⟨M, hrep, hLy⟩
+  have hrepEq :
+      (κ y) (seqPrefixEvent n xs) = ENNReal.ofReal (M.prob xs) := by
+    simpa [Represents, coordProcess, seqPrefixEvent] using hrep n xs
+  have hflatMix :
+      (∫⁻ θ : Theta, (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool))
+          ∂(Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.mixingMeasureTheta M)) =
+        ENNReal.ofReal (M.prob xs) := by
+    have hflat_apply :
+        (Mettapedia.ProbabilityTheory.HigherOrderProbability.ParametrizedDistribution.flatten
+            (Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.pd M n))
+            ({xs} : Set (Fin n → Bool)) =
+          ∫⁻ θ,
+            ((Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.pd M n).kernel θ)
+              ({xs} : Set (Fin n → Bool))
+            ∂((Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.pd M n).mixingMeasure) := by
+      exact
+        Mettapedia.ProbabilityTheory.HigherOrderProbability.ParametrizedDistribution.flatten_apply
+          (Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.pd M n)
+          ({xs} : Set (Fin n → Bool)) (by simp)
+    have hflat_apply' :
+        (Mettapedia.ProbabilityTheory.HigherOrderProbability.ParametrizedDistribution.flatten
+            (Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.pd M n))
+            ({xs} : Set (Fin n → Bool)) =
+          ∫⁻ θ : Theta, (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool))
+            ∂(Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.mixingMeasureTheta M) := by
+      simpa [iidPrefixKernel,
+        Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.pd] using hflat_apply
+    calc
+      (∫⁻ θ : Theta, (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool))
+          ∂(Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.mixingMeasureTheta M)) =
+        (Mettapedia.ProbabilityTheory.HigherOrderProbability.ParametrizedDistribution.flatten
+            (Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.pd M n))
+            ({xs} : Set (Fin n → Bool)) := by
+          simpa using hflat_apply'.symm
+      _ = ENNReal.ofReal (M.prob xs) :=
+        Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection.flatten_apply_singleton M n xs
+  have hflatL :
+      (∫⁻ θ : Theta, (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool)) ∂(L y)) =
+        ENNReal.ofReal (M.prob xs) := by
+    simpa [hLy] using hflatMix
+  calc
+    (κ y) (seqPrefixEvent n xs) = ENNReal.ofReal (M.prob xs) := hrepEq
+    _ =
+      ∫⁻ θ : Theta, (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool)) ∂(L y) := by
+        simpa using hflatL.symm
+
+/-- Build a sequence-level iid-prefix mediator from a latent-`Theta`
+representation witness. -/
+def kernelIIDPrefixMediatorOfRepresentsLatentTheta
+    (κ : ProbabilityTheory.Kernel Y BinarySeq)
+    [ProbabilityTheory.IsMarkovKernel κ]
+    (L : Y → Measure Theta)
+    (hL : KernelRepresentsLatentTheta (X := coordProcess) κ L) :
+    KernelIIDPrefixMediator (κ := κ) where
+  latent := L
+  fac := kernelRepresentsLatentTheta_coord_prefix_eq_iidPrefixKernel (κ := κ) (L := L) hL
+
+/-- Explicit universal-mediator form for sequence kernels:
+under the sequence-prefix cone law, there is a unique latent `Theta` family that
+both represents each fiber and satisfies finite-prefix iid-mixture equations. -/
+theorem existsUnique_latentThetaKernel_with_iidPrefixFactorization_of_sequenceKernelConeObj
+    (κ : ProbabilityTheory.Kernel Y BinarySeq)
+    [ProbabilityTheory.IsMarkovKernel κ]
+    (hcone : SequenceKernelConeObj κ) :
+    ∃! L : Y → Measure Theta,
+      KernelRepresentsLatentTheta (X := coordProcess) κ L ∧
+      (∀ (y : Y) (n : ℕ) (xs : Fin n → Bool),
+        (κ y) (seqPrefixEvent n xs) =
+          ∫⁻ θ : Theta, (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool)) ∂(L y)) := by
+  rcases sequenceKernelConeObj_existsUnique_latentThetaKernel (κ := κ) hcone with
+    ⟨L0, hL0, huniq0⟩
+  refine ⟨L0, ?_, ?_⟩
+  · refine ⟨hL0, ?_⟩
+    exact kernelRepresentsLatentTheta_coord_prefix_eq_iidPrefixKernel
+      (κ := κ) (L := L0) hL0
+  · intro L hL
+    exact huniq0 L hL.1
+
+/-- Same explicit universal-mediator form, with exchangeability as hypothesis
+for the coordinate process. -/
+theorem existsUnique_latentThetaKernel_with_iidPrefixFactorization_of_kernelExchangeable_coord
+    (κ : ProbabilityTheory.Kernel Y BinarySeq)
+    [ProbabilityTheory.IsMarkovKernel κ]
+    (hexch : KernelExchangeable (X := coordProcess) κ) :
+    ∃! L : Y → Measure Theta,
+      KernelRepresentsLatentTheta (X := coordProcess) κ L ∧
+      (∀ (y : Y) (n : ℕ) (xs : Fin n → Bool),
+        (κ y) (seqPrefixEvent n xs) =
+          ∫⁻ θ : Theta, (iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool)) ∂(L y)) := by
+  have hcone : SequenceKernelConeObj κ :=
+    (sequenceKernelConeObj_iff_kernelExchangeable_coord (κ := κ)).2 hexch
+  exact
+    existsUnique_latentThetaKernel_with_iidPrefixFactorization_of_sequenceKernelConeObj
+      (κ := κ) hcone
+
+/-- Equivalent unique-mediator packaging using the `KernelIIDPrefixMediator`
+record. -/
+theorem existsUnique_kernelIIDPrefixMediator_of_sequenceKernelConeObj
+    (κ : ProbabilityTheory.Kernel Y BinarySeq)
+    [ProbabilityTheory.IsMarkovKernel κ]
+    (hcone : SequenceKernelConeObj κ) :
+    ∃! M : KernelIIDPrefixMediator (κ := κ),
+      KernelRepresentsLatentTheta (X := coordProcess) κ M.latent := by
+  rcases sequenceKernelConeObj_existsUnique_latentThetaKernel (κ := κ) hcone with
+    ⟨L0, hL0, huniq0⟩
+  refine ⟨kernelIIDPrefixMediatorOfRepresentsLatentTheta (κ := κ) L0 hL0, hL0, ?_⟩
+  intro M hM
+  cases M with
+  | mk latent fac =>
+      have hLat : latent = L0 := huniq0 latent hM
+      cases hLat
+      simp [kernelIIDPrefixMediatorOfRepresentsLatentTheta]
+
 end Mettapedia.CategoryTheory

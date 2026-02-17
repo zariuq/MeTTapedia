@@ -319,7 +319,7 @@ theorem emla_scope_ordering
   Ordering:      ∃∀ ≤ ∀∃ (inverse implies surface)
 ```
 
-All steps proven with 0 sorry.
+All steps proven; no proof gaps.
 -/
 
 end Mettapedia.Languages.GF.Examples.ScopeAmbiguity

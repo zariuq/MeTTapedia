@@ -174,7 +174,7 @@ theorem ana_V4_not_base {π : WorldModelSemantics.TemporalPolicy} :
     V4 not base-reachable ✓ (store changes: {ref} → {ref, bind})
 ```
 
-All steps proven with 0 sorry.
+All steps proven; no proof gaps.
 -/
 
 end Mettapedia.Languages.GF.Examples.AnaphoraBinding

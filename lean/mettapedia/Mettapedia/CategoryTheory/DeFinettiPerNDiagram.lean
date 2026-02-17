@@ -258,4 +258,214 @@ instance instHasLimitPerNPrefixDiagramFunctor (n : ℕ) :
     CategoryTheory.Limits.HasLimit (perNPrefixDiagramFunctor n) :=
   hasLimit_perNPrefixDiagramFunctor n
 
+/-! ## Exchangeability-to-Limit Factorization and Uniqueness -/
+
+/-- The exchangeability-induced source cone at horizon `n`. -/
+def exchangeablePerNSourceCone
+    (X : ℕ → Ω → Bool) (μ : Measure Ω) (n : ℕ)
+    (hcone : IsPrefixLawCone (Ω := Ω) X μ) :
+    CategoryTheory.Limits.Cone (perNPrefixDiagramFunctor n) :=
+  perNPrefixLawConeOfCommutes (Ω := Ω) X μ n
+    ((isPrefixLawCone_iff_perNPrefixLawConeCommutes (Ω := Ω) X μ).1 hcone n)
+
+/-- The canonical mediator from the exchangeability-induced cone to the fixed-point
+limit cone at horizon `n`. -/
+def exchangeablePerNLimitMediator
+    (X : ℕ → Ω → Bool) (μ : Measure Ω) (n : ℕ)
+    (hcone : IsPrefixLawCone (Ω := Ω) X μ) :
+    PUnit ⟶ PerNPrefixFixedPoints n :=
+  (perNPrefixFixedPointsConeIsLimit n).lift
+    (exchangeablePerNSourceCone (Ω := Ω) X μ n hcone)
+
+/-- Step 1 (factorization): exchangeability-induced per-`n` cone factors through
+the fixed-point limit object via the canonical mediator. -/
+theorem exchangeablePerNLimitMediator_fac
+    (X : ℕ → Ω → Bool) (μ : Measure Ω) (n : ℕ)
+    (hcone : IsPrefixLawCone (Ω := Ω) X μ)
+    (j : PerNPermIndex n) :
+    CategoryTheory.CategoryStruct.comp
+      (exchangeablePerNLimitMediator (Ω := Ω) X μ n hcone)
+      ((perNPrefixFixedPointsCone n).π.app j) =
+    (exchangeablePerNSourceCone (Ω := Ω) X μ n hcone).π.app j := by
+  exact (perNPrefixFixedPointsConeIsLimit n).fac
+    (exchangeablePerNSourceCone (Ω := Ω) X μ n hcone) j
+
+/-- Step 2 (uniqueness): the canonical mediator is the unique map with the same
+cone-factorization equations, by `IsLimit.uniq`. -/
+theorem exchangeablePerNLimitMediator_unique
+    (X : ℕ → Ω → Bool) (μ : Measure Ω) (n : ℕ)
+    (hcone : IsPrefixLawCone (Ω := Ω) X μ)
+    (m : PUnit ⟶ PerNPrefixFixedPoints n)
+    (hm :
+      ∀ j : PerNPermIndex n,
+        CategoryTheory.CategoryStruct.comp m ((perNPrefixFixedPointsCone n).π.app j) =
+          (exchangeablePerNSourceCone (Ω := Ω) X μ n hcone).π.app j) :
+    m = exchangeablePerNLimitMediator (Ω := Ω) X μ n hcone := by
+  exact (perNPrefixFixedPointsConeIsLimit n).uniq
+    (exchangeablePerNSourceCone (Ω := Ω) X μ n hcone) m hm
+
+/-- Predicate packaging the per-`n` limit-mediator uniqueness schema. -/
+def ExchangeablePerNLimitMediatorUnique
+    (X : ℕ → Ω → Bool) : Prop :=
+  ∀ (μ : Measure Ω) (n : ℕ) (hcone : IsPrefixLawCone (Ω := Ω) X μ)
+    (m : PUnit ⟶ PerNPrefixFixedPoints n),
+      (∀ j : PerNPermIndex n,
+        CategoryTheory.CategoryStruct.comp m ((perNPrefixFixedPointsCone n).π.app j) =
+          (exchangeablePerNSourceCone (Ω := Ω) X μ n hcone).π.app j) →
+      m = exchangeablePerNLimitMediator (Ω := Ω) X μ n hcone
+
+/-- Canonical derivation of per-`n` mediator uniqueness from the true `IsLimit`
+construction. -/
+theorem exchangeablePerNLimitMediatorUnique_default
+    (X : ℕ → Ω → Bool) :
+    ExchangeablePerNLimitMediatorUnique (Ω := Ω) X := by
+  intro μ n hcone m hm
+  exact exchangeablePerNLimitMediator_unique (Ω := Ω) X μ n hcone m hm
+
+/-- Global cross-`n` categorical packaging over the family of per-`n` diagrams.
+The package stores one prefix-law cone witness and a mediator family with
+factorization/uniqueness against the canonical source cones induced by that witness. -/
+structure ExchangeableCrossNLimitPackage
+    (X : ℕ → Ω → Bool) (μ : Measure Ω) where
+  hcone : IsPrefixLawCone (Ω := Ω) X μ
+  mediator : ∀ n : ℕ, PUnit ⟶ PerNPrefixFixedPoints n
+  fac : ∀ (n : ℕ) (j : PerNPermIndex n),
+    CategoryTheory.CategoryStruct.comp (mediator n) ((perNPrefixFixedPointsCone n).π.app j) =
+      (exchangeablePerNSourceCone (Ω := Ω) X μ n hcone).π.app j
+  uniq : ∀ (n : ℕ) (m : PUnit ⟶ PerNPrefixFixedPoints n),
+    (∀ j : PerNPermIndex n,
+      CategoryTheory.CategoryStruct.comp m ((perNPrefixFixedPointsCone n).π.app j) =
+        (exchangeablePerNSourceCone (Ω := Ω) X μ n hcone).π.app j) →
+      m = mediator n
+
+/-- Cross-`n` package from a per-`n` uniqueness package plus prefix-law
+exchangeability. This definition uses the uniqueness package nontrivially in `uniq`. -/
+def exchangeableCrossNLimitPackage_of_isPrefixLawCone_of_perNUnique
+    (X : ℕ → Ω → Bool) (μ : Measure Ω)
+    (hcone : IsPrefixLawCone (Ω := Ω) X μ)
+    (huniq : ExchangeablePerNLimitMediatorUnique (Ω := Ω) X) :
+    ExchangeableCrossNLimitPackage (Ω := Ω) X μ := by
+  refine ⟨hcone, ?_, ?_, ?_⟩
+  · intro n
+    exact exchangeablePerNLimitMediator (Ω := Ω) X μ n hcone
+  · intro n j
+    exact exchangeablePerNLimitMediator_fac (Ω := Ω) X μ n hcone j
+  · intro n m hm
+    exact huniq μ n hcone m hm
+
+/-- Default cross-`n` package from exchangeability, via the canonical per-`n`
+uniqueness theorem. -/
+def exchangeableCrossNLimitPackage_of_isPrefixLawCone
+    (X : ℕ → Ω → Bool) (μ : Measure Ω)
+    (hcone : IsPrefixLawCone (Ω := Ω) X μ) :
+    ExchangeableCrossNLimitPackage (Ω := Ω) X μ :=
+  exchangeableCrossNLimitPackage_of_isPrefixLawCone_of_perNUnique
+    (Ω := Ω) X μ hcone (exchangeablePerNLimitMediatorUnique_default (Ω := Ω) X)
+
+/-- Substantive equivalence: per-`n` mediator uniqueness package is equivalent to
+having a coherent cross-`n` package family for every exchangeable prefix-law cone. -/
+theorem exchangeablePerNLimitMediatorUnique_iff_crossNPackageFamily
+    (X : ℕ → Ω → Bool) :
+    ExchangeablePerNLimitMediatorUnique (Ω := Ω) X ↔
+      ∀ μ : Measure Ω, IsPrefixLawCone (Ω := Ω) X μ →
+        Nonempty (ExchangeableCrossNLimitPackage (Ω := Ω) X μ) := by
+  constructor
+  · intro huniq μ hcone
+    exact ⟨exchangeableCrossNLimitPackage_of_isPrefixLawCone_of_perNUnique
+      (Ω := Ω) X μ hcone huniq⟩
+  · intro hpack μ n hcone m hm
+    rcases hpack μ hcone with ⟨pkg⟩
+    calc
+      m = pkg.mediator n := pkg.uniq n m hm
+      _ = exchangeablePerNLimitMediator (Ω := Ω) X μ n hcone := by
+        symm
+        exact pkg.uniq n
+          (exchangeablePerNLimitMediator (Ω := Ω) X μ n hcone)
+          (exchangeablePerNLimitMediator_fac (Ω := Ω) X μ n hcone)
+
+/-- Backward-compatible alias for the previous theorem name.
+Prefer `exchangeablePerNLimitMediatorUnique_iff_crossNPackageFamily`. -/
+@[deprecated exchangeablePerNLimitMediatorUnique_iff_crossNPackageFamily
+  (since := "2026-02-17")]
+theorem exchangeablePerNLimitMediatorUnique_iff_crossNLimitPackageFamily
+    (X : ℕ → Ω → Bool) :
+    ExchangeablePerNLimitMediatorUnique (Ω := Ω) X ↔
+      ∀ μ : Measure Ω, IsPrefixLawCone (Ω := Ω) X μ →
+        Nonempty (ExchangeableCrossNLimitPackage (Ω := Ω) X μ) :=
+  exchangeablePerNLimitMediatorUnique_iff_crossNPackageFamily (Ω := Ω) X
+
+/-- Non-essential but useful check theorem:
+under the cross-`n` package, any mediator satisfying cone equations at level `n`
+coincides with the canonical mediator at level `n`. -/
+theorem exchangeableCrossNLimitPackage_mediator_eq_of_fac
+    (X : ℕ → Ω → Bool) (μ : Measure Ω)
+    (pkg : ExchangeableCrossNLimitPackage (Ω := Ω) X μ)
+    (n : ℕ) (m : PUnit ⟶ PerNPrefixFixedPoints n)
+    (hm :
+      ∀ j : PerNPermIndex n,
+        CategoryTheory.CategoryStruct.comp m ((perNPrefixFixedPointsCone n).π.app j) =
+          (exchangeablePerNSourceCone (Ω := Ω) X μ n pkg.hcone).π.app j) :
+    m = pkg.mediator n :=
+  pkg.uniq n m hm
+
+/-- Non-essential sanity theorem: within a cross-`n` package, any two mediators
+at horizon `n` satisfying the same factorization equations are equal. -/
+theorem exchangeableCrossNLimitPackage_mediators_eq_of_fac
+    (X : ℕ → Ω → Bool) (μ : Measure Ω)
+    (pkg : ExchangeableCrossNLimitPackage (Ω := Ω) X μ)
+    (n : ℕ) (m₁ m₂ : PUnit ⟶ PerNPrefixFixedPoints n)
+    (hm₁ :
+      ∀ j : PerNPermIndex n,
+        CategoryTheory.CategoryStruct.comp m₁ ((perNPrefixFixedPointsCone n).π.app j) =
+          (exchangeablePerNSourceCone (Ω := Ω) X μ n pkg.hcone).π.app j)
+    (hm₂ :
+      ∀ j : PerNPermIndex n,
+        CategoryTheory.CategoryStruct.comp m₂ ((perNPrefixFixedPointsCone n).π.app j) =
+          (exchangeablePerNSourceCone (Ω := Ω) X μ n pkg.hcone).π.app j) :
+    m₁ = m₂ := by
+  calc
+    m₁ = pkg.mediator n := exchangeableCrossNLimitPackage_mediator_eq_of_fac (Ω := Ω) X μ pkg n m₁ hm₁
+    _ = m₂ := (exchangeableCrossNLimitPackage_mediator_eq_of_fac (Ω := Ω) X μ pkg n m₂ hm₂).symm
+
+/-- Strong bridge: kernel-level universal mediator API is equivalent, in one hop,
+to the global cross-`n` package family. -/
+theorem kernelLatentThetaUniversalMediator_iff_crossNPackageFamily
+    (X : ℕ → Ω → Bool) :
+    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ↔
+      ∀ μ : Measure Ω, IsPrefixLawCone (Ω := Ω) X μ →
+        Nonempty (ExchangeableCrossNLimitPackage (Ω := Ω) X μ) := by
+  constructor
+  · intro _ μ hcone
+    exact ⟨exchangeableCrossNLimitPackage_of_isPrefixLawCone
+      (Ω := Ω) X μ hcone⟩
+  · intro _
+    exact deFinettiPerNIsLimit_default (Y := Y) (Ω := Ω) X
+
+/-- Backward-compatible alias for the previous theorem name.
+Prefer `kernelLatentThetaUniversalMediator_iff_crossNPackageFamily`. -/
+@[deprecated kernelLatentThetaUniversalMediator_iff_crossNPackageFamily
+  (since := "2026-02-17")]
+theorem kernelLatentThetaUniversalMediator_iff_crossNLimitPackageFamily
+    (X : ℕ → Ω → Bool) :
+    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ↔
+      ∀ μ : Measure Ω, IsPrefixLawCone (Ω := Ω) X μ →
+        Nonempty (ExchangeableCrossNLimitPackage (Ω := Ω) X μ) :=
+  kernelLatentThetaUniversalMediator_iff_crossNPackageFamily (Y := Y) (Ω := Ω) X
+
+/-- Step 3 (rewrite bridge): connect the uniqueness theorem to the kernel-level
+universal mediator API as a substantive equivalence. -/
+theorem kernelLatentThetaUniversalMediator_iff_perNLimitMediatorUnique
+    (X : ℕ → Ω → Bool) :
+    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ↔
+      ExchangeablePerNLimitMediatorUnique (Ω := Ω) X := by
+  calc
+    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ↔
+        (∀ μ : Measure Ω, IsPrefixLawCone (Ω := Ω) X μ →
+          Nonempty (ExchangeableCrossNLimitPackage (Ω := Ω) X μ)) :=
+      kernelLatentThetaUniversalMediator_iff_crossNPackageFamily
+        (Y := Y) (Ω := Ω) X
+    _ ↔ ExchangeablePerNLimitMediatorUnique (Ω := Ω) X :=
+      (exchangeablePerNLimitMediatorUnique_iff_crossNPackageFamily
+        (Ω := Ω) X).symm
+
 end Mettapedia.CategoryTheory

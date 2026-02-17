@@ -7802,6 +7802,185 @@ theorem wr_smoothing_rate_canonicalWRSurrogate
       (εW := Cw / (returnsToStart (k := k) s : ℝ))
       hWclose
 
+/-- Non-assumptive surrogate→WOR transport bound:
+combine a WR→canonical-surrogate scalar closeness hypothesis with any direct
+WR/WOR pattern discrepancy rate. This does not use `HasBestReprBound` or
+`HasExcursionBiapproxCore`. -/
+theorem surrogate_to_wor_bound
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (wSurrogate Cw Cdf : ℝ)
+    (hWclose :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        wSurrogate| ≤ Cw / (returnsToStart (k := k) s : ℝ))
+    (hwrwor :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤
+        Cdf / (returnsToStart (k := k) s : ℝ)) :
+    ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal| ≤
+      (Cw + Cdf) / (returnsToStart (k := k) s : ℝ) := by
+  let P := excursionPatternSet (k := k) (hN := hN) e s
+  have hwr_canonical_raw :
+      (∑ p ∈ P,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          canonicalWRSurrogateMass (k := k) n e wSurrogate p|) ≤
+      Cw / (returnsToStart (k := k) s : ℝ) := by
+    simpa [P] using
+      (wr_smoothing_rate_canonicalWRSurrogate
+        (k := k) (hk := hk) (n := n) (e := e)
+        (hN := hN) (s := s) (wSurrogate := wSurrogate) (Cw := Cw) hWclose)
+  have hwr_canonical_eq :
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (wrPatternMass (k := k) hk n e s p).toReal|) =
+      (∑ p ∈ P,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          canonicalWRSurrogateMass (k := k) n e wSurrogate p|) := by
+    refine Finset.sum_congr rfl ?_
+    intro p hp
+    exact abs_sub_comm _ _
+  have hwr_canonical :
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (wrPatternMass (k := k) hk n e s p).toReal|) ≤
+      Cw / (returnsToStart (k := k) s : ℝ) := by
+    calc
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (wrPatternMass (k := k) hk n e s p).toReal|)
+          =
+        (∑ p ∈ P,
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            canonicalWRSurrogateMass (k := k) n e wSurrogate p|) := hwr_canonical_eq
+      _ ≤ Cw / (returnsToStart (k := k) s : ℝ) := hwr_canonical_raw
+  have htriangle :
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) ≤
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (wrPatternMass (k := k) hk n e s p).toReal| : ℝ) +
+      (∑ p ∈ P,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) := by
+    let f : ExcursionList k → ℝ := fun p =>
+      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|
+    let g : ExcursionList k → ℝ := fun p =>
+      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+        (wrPatternMass (k := k) hk n e s p).toReal| +
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|
+    have hfg : ∀ p ∈ P, f p ≤ g p := by
+      intro p hp
+      dsimp [f, g]
+      simpa [sub_eq_add_neg, add_assoc, add_comm, add_left_comm] using
+        (abs_sub_le
+          (canonicalWRSurrogateMass (k := k) n e wSurrogate p)
+          ((wrPatternMass (k := k) hk n e s p).toReal)
+          ((worPatternMass (k := k) (hN := hN) e s p).toReal))
+    have hsum_le : (∑ p ∈ P, f p) ≤ ∑ p ∈ P, g p :=
+      Finset.sum_le_sum hfg
+    calc
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) = ∑ p ∈ P, f p := by
+            simp [f]
+      _ ≤ ∑ p ∈ P, g p := hsum_le
+      _ =
+        (∑ p ∈ P,
+          |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+            (wrPatternMass (k := k) hk n e s p).toReal| : ℝ) +
+        (∑ p ∈ P,
+          |(wrPatternMass (k := k) hk n e s p).toReal -
+            (worPatternMass (k := k) (hN := hN) e s p).toReal| : ℝ) := by
+              simp [g, Finset.sum_add_distrib]
+  calc
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|) =
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) := by
+            simp [P]
+    _ ≤
+      (∑ p ∈ P,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (wrPatternMass (k := k) hk n e s p).toReal|) +
+      (∑ p ∈ P,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) := htriangle
+    _ ≤ Cw / (returnsToStart (k := k) s : ℝ) +
+          Cdf / (returnsToStart (k := k) s : ℝ) := add_le_add hwr_canonical (by simpa [P] using hwrwor)
+    _ = (Cw + Cdf) / (returnsToStart (k := k) s : ℝ) := by ring
+
+/-- Direct WR/WOR transport via the start-target scalar surrogate.
+
+This decomposes the WR/WOR gap into:
+- WR vs canonical(start-target scalar), controlled by `hWcloseStart`,
+- canonical(start-target scalar) vs WOR, provided externally as `hcanonStart`.
+
+It keeps the quantitative crux explicit: the only nontrivial input is the
+canonical-surrogate→WOR bound. -/
+theorem wr_wor_patternRate_via_startTarget_canonical
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k)
+    (Cw Cpc : ℝ)
+    (hWcloseStart :
+      |(W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal -
+        (W (k := k) (Nat.succ n) e (empiricalParamStartTarget (k := k) hk s)).toReal| ≤
+          Cw / (returnsToStart (k := k) s : ℝ))
+    (hcanonStart :
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |canonicalWRSurrogateMass (k := k) n e
+            ((W (k := k) (Nat.succ n) e (empiricalParamStartTarget (k := k) hk s)).toReal) p -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+        Cpc / (returnsToStart (k := k) s : ℝ)) :
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+      (Cw + Cpc) / (returnsToStart (k := k) s : ℝ) := by
+  let q : ExcursionList k → ℝ := fun p =>
+    canonicalWRSurrogateMass (k := k) n e
+      ((W (k := k) (Nat.succ n) e (empiricalParamStartTarget (k := k) hk s)).toReal) p
+  have hwr_q :
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal - q p|) ≤
+      Cw / (returnsToStart (k := k) s : ℝ) := by
+    simpa [q] using
+      (wr_smoothing_rate_canonicalWRSurrogate
+        (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+        (wSurrogate := (W (k := k) (Nat.succ n) e (empiricalParamStartTarget (k := k) hk s)).toReal)
+        (Cw := Cw) hWcloseStart)
+  have hq_wor :
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |q p - (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+      Cpc / (returnsToStart (k := k) s : ℝ) := by
+    simpa [q] using hcanonStart
+  have hsum :
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+      Cw / (returnsToStart (k := k) s : ℝ) +
+        Cpc / (returnsToStart (k := k) s : ℝ) :=
+    sum_abs_wr_wor_patternMass_toReal_le_of_surrogate
+      (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+      (q := q)
+      (εW := Cw / (returnsToStart (k := k) s : ℝ))
+      (εPC := Cpc / (returnsToStart (k := k) s : ℝ))
+      hwr_q hq_wor
+  calc
+    (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+      |(wrPatternMass (k := k) hk n e s p).toReal -
+        (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+      Cw / (returnsToStart (k := k) s : ℝ) +
+        Cpc / (returnsToStart (k := k) s : ℝ) := hsum
+    _ = (Cw + Cpc) / (returnsToStart (k := k) s : ℝ) := by
+      ring
+
 
 /-- Concrete exact choice for the scalar WR surrogate:
 set `wSurrogate = W(...).toReal`, yielding zero WR residual mass. -/
@@ -8200,6 +8379,63 @@ lemma sum_abs_wr_wor_patternMass_toReal_le_of_surrogate
           simp [Finset.sum_add_distrib]
     _ ≤ εW + εPC := by
       exact add_le_add (by simpa [P] using hwr_q) (by simpa [P] using hq_wor)
+
+/-- Strict large-`R` reduction through the canonical WR surrogate:
+if the canonical surrogate mass already has a large-`R` `O(1/R)` bound to WOR,
+then the direct WR/WOR pattern discrepancy has the same large-`R` bound.
+
+This isolates the remaining quantitative crux to the canonical-surrogate→WOR side. -/
+theorem largeR_wr_wor_patternRate_of_canonicalWRSurrogate_largeR
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (hcanonLarge :
+      ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+        (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+          s ∈ stateFinset k N →
+            0 < returnsToStart (k := k) s →
+            (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+              (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+                |canonicalWRSurrogateMass (k := k) n e
+                    ((W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal) p -
+                  (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+                Clarge / (returnsToStart (k := k) s : ℝ))) :
+    ∃ Clarge : ℝ, 0 ≤ Clarge ∧
+      (∀ {N : ℕ} (hN : Nat.succ n ≤ N) (s : MarkovState k),
+        s ∈ stateFinset k N →
+          0 < returnsToStart (k := k) s →
+          (4 * (Nat.succ n) * (Nat.succ n)) < returnsToStart (k := k) s →
+            (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+              |(wrPatternMass (k := k) hk n e s p).toReal -
+                (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+              Clarge / (returnsToStart (k := k) s : ℝ)) := by
+  rcases hcanonLarge with ⟨Clarge, hClarge, hcanon⟩
+  refine ⟨Clarge, hClarge, ?_⟩
+  intro N hN s hs hRpos hRlarge
+  let wSurrogate : ℝ :=
+    (W (k := k) (Nat.succ n) e (empiricalParam (k := k) hk s)).toReal
+  have hwr0 :
+      ∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          canonicalWRSurrogateMass (k := k) n e wSurrogate p| ≤ 0 := by
+    simpa [wSurrogate] using
+      (wr_smoothing_rate_canonicalWRSurrogate_exact
+        (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s))
+  have hcanon_state :
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |canonicalWRSurrogateMass (k := k) n e wSurrogate p -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+        Clarge / (returnsToStart (k := k) s : ℝ) := by
+    simpa [wSurrogate] using hcanon hN s hs hRpos hRlarge
+  have hwrwor :
+      (∑ p ∈ excursionPatternSet (k := k) (hN := hN) e s,
+        |(wrPatternMass (k := k) hk n e s p).toReal -
+          (worPatternMass (k := k) (hN := hN) e s p).toReal|) ≤
+        0 + Clarge / (returnsToStart (k := k) s : ℝ) :=
+    sum_abs_wr_wor_patternMass_toReal_le_of_surrogate
+      (k := k) (hk := hk) (n := n) (e := e) (hN := hN) (s := s)
+      (q := canonicalWRSurrogateMass (k := k) n e wSurrogate)
+      (εW := 0) (εPC := Clarge / (returnsToStart (k := k) s : ℝ))
+      hwr0 hcanon_state
+  simpa using hwrwor
 
 /-- Convert a pattern-level bi-approximation + nonpositive gap into the class-level
 `ExcursionBiapproxPackage` used by the hard-direction pipeline. -/

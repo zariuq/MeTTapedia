@@ -256,61 +256,31 @@ exact Eq.trans h1 h2
 ```
 -/
 
-/-! ## End-to-End Theorem Index
+/-! ## End-to-End Theorems (BN → WM → OSLF)
 
-The `PLNEndToEnd` module provides short-name aliases for the complete
-BN→WM→OSLF pipeline across all three topologies.
+`PLNEndToEnd` is intentionally a stable, thin surface over proved theorems.
+It avoids heavyweight wrapper statements that can trigger elaboration timeouts.
 
-| Alias | Source | Topology |
-|-------|--------|----------|
-| `chainDeductionFormula` | `xi_deduction_queryStrength_eq_plnDeduction_of_chainBN` | Chain |
-| `forkInductionFormula` | `xi_source_queryStrength_eq_plnInduction_of_forkBN` | Fork |
-| `colliderStructural` | `xi_sinkRule_strength_eq_of_colliderBN` | Collider |
-| `colliderFormulaNotExact` | `plnAbductionStrength_not_exact_collider` | Collider |
-| `colliderFormulaExactWhenScreeningOff` | `plnAbductionStrength_exact_of_screeningOff` | Collider |
+### Formula exactness
+- `PLNEndToEnd.chainFormulaExact`
+- `PLNEndToEnd.forkFormulaExact`
 
-Context lifts: `wmRewriteRule_e2e_ctx` (generic), `oslfEvidenceSoundCtx`, `oslfThresholdSoundCtx`.
+### Admissibility + OSLF bridge
+- `PLNEndToEnd.chainAdmissible`, `PLNEndToEnd.chainOSLFEvidence`, `PLNEndToEnd.chainOSLFThreshold`
+- `PLNEndToEnd.forkAdmissible`, `PLNEndToEnd.forkOSLFEvidence`, `PLNEndToEnd.forkOSLFThreshold`
+- `PLNEndToEnd.colliderAdmissible`, `PLNEndToEnd.colliderOSLFEvidence`, `PLNEndToEnd.colliderOSLFThreshold`
 
-See `Mettapedia.Logic.PLNEndToEnd` for full listing and usage patterns. -/
+### Collider split
+- `PLNEndToEnd.colliderStructural`, `PLNEndToEnd.colliderStructuralToReal`
+- `PLNEndToEnd.colliderNotExact`
+- `PLNEndToEnd.colliderExactWhenScreeningOff`
+- Singleton composition helpers: `PLNEndToEnd.colliderSingletonStep1`, `PLNEndToEnd.colliderSingletonStep2`
 
-namespace EndToEnd
-
-/-- See `PLNEndToEnd` for the full E2E theorem index.
-
-Concrete re-exports that don't depend on BN instance resolution: -/
-
-noncomputable abbrev colliderFormulaNotExact := PLNEndToEnd.colliderFormulaNotExact
-
-/-
-All other E2E theorems depend on BN typeclass instances and must be invoked
-with explicit instance resolution at the call site. Use the fully qualified names:
-
-### Formula-level
-- `PLNEndToEnd.chainDeductionFormula` — chain qS = plnDeductionStrength
-- `PLNEndToEnd.forkInductionFormula` — fork qS = plnInductionStrength
-- `PLNEndToEnd.colliderStructural` — collider qS(link) = qS(prop)
-- `PLNEndToEnd.colliderStructuralToReal` — same at ℝ level
-
-### Admissibility
-- `PLNEndToEnd.chainDeductionAdmissible` — chain WM judgment
-- `PLNEndToEnd.forkInductionAdmissible` — fork WM judgment
-- `PLNEndToEnd.colliderAbductionAdmissible` — collider WM judgment
-
-### OSLF bridges
-- `PLNEndToEnd.chainDeductionOSLFEvidence` / `...Threshold`
-- `PLNEndToEnd.forkInductionOSLFEvidence` / `...Threshold`
-- `PLNEndToEnd.colliderAbductionOSLFEvidence` / `...Threshold`
-
-### Context lifts
-- `PLNEndToEnd.wmRewriteRule_e2e_ctx` — generic context lift
-- `PLNEndToEnd.oslfEvidenceSoundCtx` — OSLF evidence under context
-- `PLNEndToEnd.oslfThresholdSoundCtx` — OSLF threshold under context
-
-### Exactness
-- `PLNEndToEnd.colliderFormulaExactWhenScreeningOff` — exact when screening-off holds
-- `PLNEndToEnd.colliderFormulaNotExact` — OR-gate counterexample
+### Generic context lifts
+- `PLNEndToEnd.wmRewriteRuleCtx`
+- `PLNEndToEnd.oslfEvidenceCtx`
+- `PLNEndToEnd.oslfThresholdCtx`
+- `PLNEndToEnd.oslfRevisionCtx`
 -/
-
-end EndToEnd
 
 end Mettapedia.Logic.PLNCanonical
