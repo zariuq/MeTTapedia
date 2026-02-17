@@ -252,6 +252,61 @@ def HasPatternCollisionZeroAll : Prop :=
             |(wrPatternMass (k := k) hk n e s p).toReal -
               (worPatternMass (k := k) (hN := hN) e s p).toReal|) = 0
 
+private lemma fiber_eq_empty_of_not_mem_stateFinset
+    {n : ℕ} (e : MarkovState k)
+    (he : e ∉ stateFinset k n) :
+    fiber k n e = ∅ := by
+  ext xs
+  constructor
+  · intro hxs
+    have hxstate : stateOfTraj (k := k) xs = e := (Finset.mem_filter.1 hxs).2
+    have hxmem : stateOfTraj (k := k) xs ∈ stateFinset k n :=
+      stateOfTraj_mem_stateFinset (k := k) xs
+    exact (he (by simpa [hxstate] using hxmem)).elim
+  · intro h
+    simpa using h
+
+/-- If `e` is not realizable at short horizon `Nat.succ n`, then the pattern
+index set is empty and the direct WR/WOR pattern discrepancy rate is `0`. -/
+theorem hasPatternWRWORRate_zero_of_not_mem_shortStateFinset
+    (hk : 0 < k) (n : ℕ) (e : MarkovState k)
+    (he : e ∉ stateFinset k (Nat.succ n)) :
+    HasPatternWRWORRate (k := k) hk n e 0 := by
+  intro N hN s hs hRpos
+  have hfiber_empty :
+      fiber k (Nat.succ n) e = ∅ :=
+    fiber_eq_empty_of_not_mem_stateFinset (k := k) (n := Nat.succ n) e he
+  have hPempty :
+      excursionPatternSet (k := k) (hN := hN) e s = ∅ := by
+    rw [excursionPatternSet_eq_shortImage (k := k) (hN := hN) (e := e) (s := s)]
+    simpa [hfiber_empty]
+  simp [hPempty]
+
+namespace FixedPatternWRWORRateWitness
+
+abbrev kFix : ℕ := 2
+abbrev nFix : ℕ := 1
+lemma hkFix : 0 < kFix := by decide
+
+/-- Concrete non-realizable short-horizon state for `k=2`, `n=1`:
+all transition counts are zero at horizon `Nat.succ nFix = 2`. -/
+def eImpossible : MarkovState kFix := ⟨0, (0 : TransCounts kFix), 0⟩
+
+lemma eImpossible_not_mem_stateFinset :
+    eImpossible ∉ stateFinset kFix (Nat.succ nFix) := by
+  native_decide
+
+/-- Concrete non-assumptive BEST-side witness (fixed `hk,n,e`):
+the pattern discrepancy bound holds with constant `Cdf = 0`. -/
+theorem hasPatternWRWORRate_fixed :
+    HasPatternWRWORRate (k := kFix) hkFix nFix eImpossible 0 := by
+  exact
+    hasPatternWRWORRate_zero_of_not_mem_shortStateFinset
+      (k := kFix) (hk := hkFix) (n := nFix) (e := eImpossible)
+      eImpossible_not_mem_stateFinset
+
+end FixedPatternWRWORRateWitness
+
 /-- BEST-side representative-multiset bound for fixed `(hk,n,e)`. -/
 def HasBestReprBound
     (hk : 0 < k) (n : ℕ) (e : MarkovState k) : Prop :=
@@ -2363,6 +2418,24 @@ theorem hasPatternWRWORRateAll_of_patternCollisionPosAll
   intro N hN s hs hRpos
   simpa using hposAll hk n e hN s hs hRpos
 
+/-- Reduction principle: to build family-level pattern WR/WOR rates, it is
+enough to prove them on realizable short-horizon states `e ∈ stateFinset k (n+1)`.
+Unrealizable `e` are discharged by the zero-rate lemma. -/
+theorem hasPatternWRWORRateAll_of_realizable_shortState
+    (hreal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := k) hk n e Cdf) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := k) hk n e Cdf := by
+  intro hk n e
+  by_cases he : e ∈ stateFinset k (Nat.succ n)
+  · exact hreal hk n e he
+  · refine ⟨0, le_rfl, ?_⟩
+    exact
+      hasPatternWRWORRate_zero_of_not_mem_shortStateFinset
+        (k := k) (hk := hk) (n := n) (e := e) he
+
 /-- Extract positive-return pattern-collision obligations from a BEST-side
 core package family. -/
 theorem hasPatternCollisionPosAll_of_biapproxCoreAll
@@ -2479,6 +2552,28 @@ theorem hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_worTransportAll
   exact
     hasExcursionResidualBoundRate_of_rowL1StartTarget_and_worTransport
       (k := k) (hk := hk) (n := n) (e := e) (Cpc := Cpc) hWOR
+
+/-- Robust all-states constructor from:
+`rowL1` WR smoothing + WOR transport rates, yielding direct pattern WR/WOR rates. -/
+theorem hasPatternWRWORRateAll_of_rowL1StartTarget_and_worTransportAll
+    (hWORAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        HasCanonicalWORTransportRate (k := k) hk n e
+          ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+          Cpc) :
+    ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cdf : ℝ, 0 ≤ Cdf ∧ HasPatternWRWORRate (k := k) hk n e Cdf := by
+  intro hk n e
+  rcases hWORAll hk n e with ⟨Cpc, hCpc, hWOR⟩
+  let Cw : ℝ := (Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ))
+  have hWR :
+      HasCanonicalWRSmoothingRate (k := k) hk n e Cw :=
+    hasCanonicalWRSmoothingRate_of_rowL1StartTarget
+      (k := k) (hk := hk) (n := n) (e := e)
+  refine ⟨Cw + Cpc, add_nonneg (by positivity) hCpc, ?_⟩
+  exact
+    hasPatternWRWORRate_of_splitRates
+      (k := k) (hk := hk) (n := n) (e := e) (Cw := Cw) (Cpc := Cpc) hWR hWOR
 
 /-- Robust all-states constructor from:
 `rowL1` WR smoothing + direct pattern WR/WOR discrepancy rates. -/

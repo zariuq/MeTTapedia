@@ -7,6 +7,7 @@ import Mettapedia.CategoryTheory.DeFinettiPermutationCone
 import Mettapedia.CategoryTheory.DeFinettiKernelInterface
 import Mettapedia.CategoryTheory.DeFinettiSequenceKernelCone
 import Mettapedia.CategoryTheory.DeFinettiHausdorffBridge
+import Mettapedia.CategoryTheory.DeFinettiStableExports
 import Mettapedia.GSLT.Core.LambdaTheoryCategory
 import Mettapedia.GSLT.Topos.PredicateFibration
 import Mathlib.CategoryTheory.Category.GaloisConnection
@@ -188,6 +189,16 @@ theorem iidPrefixKernel_cone_commutes_bridge
       (Mettapedia.CategoryTheory.iidPrefixKernel n θ) ({xs} : Set (Fin n → Bool)) =
         (Mettapedia.CategoryTheory.iidPrefixKernel n θ) ({xs ∘ σ.symm} : Set (Fin n → Bool)) := by
   simpa using Mettapedia.CategoryTheory.iidPrefixKernel_cone_commutes (n := n)
+
+/-- Stable bridge export: `HasLimit` packaging for the true per-`n`
+de Finetti permutation diagram. -/
+theorem deFinetti_perNPrefixDiagram_hasLimit_bridge
+    (n : ℕ) :
+    CategoryTheory.Limits.HasLimit
+      (Mettapedia.CategoryTheory.perNPrefixDiagramFunctor n) := by
+  simpa using
+    (Mettapedia.CategoryTheory.deFinettiStable_hasLimit_perNPrefixDiagramFunctor
+      (n := n))
 
 /-- Hausdorff uniqueness bridge:
 equality of all moments on the latent parameter space `Theta = [0,1]`

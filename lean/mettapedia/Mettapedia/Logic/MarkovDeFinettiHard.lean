@@ -5,6 +5,7 @@ import Mettapedia.Logic.MarkovDeFinettiEvidenceBasis
 import Mettapedia.Logic.MarkovDeFinettiHardRepresentability
 import Mettapedia.Logic.MarkovDeFinettiHardFinite
 import Mettapedia.Logic.MarkovDeFinettiHardWRStartTargetCounterexample
+import Mettapedia.Logic.MarkovDeFinettiHardPatternCollisionCounterexample
 import Mettapedia.Logic.MarkovDeFinettiRecurrence
 import Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge
 
@@ -494,6 +495,28 @@ theorem markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport
   exact markovDeFinetti_hard_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll
 
+/-- Same assumptions as `markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport`,
+routed through the direct pattern WR/WOR-rate interface. -/
+theorem markovDeFinetti_hard_of_rowL1StartTarget_and_worTransport_via_patternWRWORRate
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hWORAll : ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+      ∃ Cpc : ℝ, 0 ≤ Cpc ∧
+        MarkovDeFinettiHard.HasCanonicalWORTransportRate (k := k) hk n e
+          ((Nat.succ n : ℝ) * ((k : ℝ) * (k : ℝ)))
+          Cpc) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hwrworAll :=
+    MarkovDeFinettiHard.hasPatternWRWORRateAll_of_rowL1StartTarget_and_worTransportAll
+      (k := k) hWORAll
+  have hrateAll :=
+    MarkovDeFinettiHard.hasExcursionResidualBoundRateAll_of_rowL1StartTarget_and_patternWRWORRateAll
+      (k := k) hwrworAll
+  exact markovDeFinetti_hard_of_residualRate
+    (k := k) (μ := μ) hμ hrec hrateAll
+
 theorem markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
@@ -508,6 +531,30 @@ theorem markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate
       (k := k) hwrworAll
   exact markovDeFinetti_hard_of_residualRate
     (k := k) (μ := μ) hμ hrec hrateAll
+
+/-- Same as `markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate`,
+but only requires pattern WR/WOR-rate witnesses on realizable short states
+`e ∈ stateFinset k (n+1)`. Unrealizable states are discharged automatically. -/
+theorem markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate_on_realizable_shortState
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrec : MarkovRecurrentPrefixMeasure (k := k) μ)
+    (hwrworReal :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        e ∈ stateFinset k (Nat.succ n) →
+          ∃ Cdf : ℝ, 0 ≤ Cdf ∧
+            MarkovDeFinettiHard.HasPatternWRWORRate (k := k) hk n e Cdf) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hwrworAll :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        ∃ Cdf : ℝ, 0 ≤ Cdf ∧
+          MarkovDeFinettiHard.HasPatternWRWORRate (k := k) hk n e Cdf :=
+    MarkovDeFinettiHard.hasPatternWRWORRateAll_of_realizable_shortState
+      (k := k) hwrworReal
+  exact
+    markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate
+      (k := k) (μ := μ) hμ hrec hwrworAll
 
 /-- Primary hard-direction wrapper when the remaining BEST-side obligations are
 given directly as pattern-collision (positive-return) and zero-return clauses. -/
@@ -548,6 +595,12 @@ theorem markovDeFinetti_hard_of_rowL1StartTarget_and_patternCollisionPos
     markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate
       (k := k) (μ := μ) hμ hrec hwrworAll
 
+/-- Guard theorem: collision-only positive-return pattern bound is false at `k = 6`
+under current WR semantics (`wrPatternMass` via `empiricalParam`). -/
+theorem not_hasPatternCollisionPosAll_k6 :
+    ¬ MarkovDeFinettiHard.HasPatternCollisionPosAll (k := 6) :=
+  MarkovDeFinettiHard.PatternCollisionCounterexample.not_HasPatternCollisionPosAll_k6
+
 /-- Primary hard-direction wrapper from the BEST representative-bound family,
 through the rowL1 start-target WR path. -/
 theorem markovDeFinetti_hard_of_bestReprBoundAll_rowL1StartTarget
@@ -557,13 +610,15 @@ theorem markovDeFinetti_hard_of_bestReprBoundAll_rowL1StartTarget
     (hreprBoundAll : MarkovDeFinettiHard.HasBestReprBoundAll (k := k)) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  have hposAll :
-      MarkovDeFinettiHard.HasPatternCollisionPosAll (k := k) :=
-    MarkovDeFinettiHard.hasPatternCollisionPosAll_of_bestReprBoundAll
+  have hwrworAll :
+      ∀ hk : 0 < k, ∀ n : ℕ, ∀ e : MarkovState k,
+        ∃ Cdf : ℝ, 0 ≤ Cdf ∧
+          MarkovDeFinettiHard.HasPatternWRWORRate (k := k) hk n e Cdf :=
+    MarkovDeFinettiHard.hasPatternWRWORRateAll_of_bestReprBoundAll
       (k := k) hreprBoundAll
   exact
-    markovDeFinetti_hard_of_rowL1StartTarget_and_patternCollisionPos
-      (k := k) (μ := μ) hμ hrec hposAll
+    markovDeFinetti_hard_of_rowL1StartTarget_and_patternWRWORRate
+      (k := k) (μ := μ) hμ hrec hwrworAll
 
 theorem markovDeFinetti_hard_of_biapproxCore_rowL1StartTarget
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))

@@ -533,7 +533,7 @@ open Mettapedia.Logic.EvidenceBeta
 `(1 - s_B)` in `plnDeductionStrength` is positive. -/
 theorem plnStrength_lt_one (n_pos n_neg : ℕ) (hNeg : n_neg ≠ 0) :
     plnStrength n_pos n_neg < 1 := by
-  unfold plnStrength
+  unfold plnStrength Mettapedia.Logic.EvidenceCounts.plnStrength
   split
   · exact zero_lt_one
   · rename_i hTotal
@@ -568,7 +568,9 @@ theorem plnDeductionStrength_of_plnStrength
       ((nBC_pos : ℝ) / (↑nBC_pos + ↑nBC_neg))
       ((nB_pos : ℝ) / (↑nB_pos + ↑nB_neg))
       (plnStrength nC_pos nC_neg) := by
-  simp only [plnStrength, hAB, hBC, hB, ↓reduceIte]
+  rw [plnStrength_eq_improper_mean nAB_pos nAB_neg hAB]
+  rw [plnStrength_eq_improper_mean nBC_pos nBC_neg hBC]
+  rw [plnStrength_eq_improper_mean nB_pos nB_neg hB]
 
 /-- Tier C (full unfold): All four `plnStrength` values unfolded. -/
 theorem plnDeductionStrength_of_plnStrength_full
@@ -585,7 +587,10 @@ theorem plnDeductionStrength_of_plnStrength_full
       ((nBC_pos : ℝ) / (↑nBC_pos + ↑nBC_neg))
       ((nB_pos : ℝ) / (↑nB_pos + ↑nB_neg))
       ((nC_pos : ℝ) / (↑nC_pos + ↑nC_neg)) := by
-  simp only [plnStrength, hAB, hBC, hB, hC, ↓reduceIte]
+  rw [plnStrength_eq_improper_mean nAB_pos nAB_neg hAB]
+  rw [plnStrength_eq_improper_mean nBC_pos nBC_neg hBC]
+  rw [plnStrength_eq_improper_mean nB_pos nB_neg hB]
+  rw [plnStrength_eq_improper_mean nC_pos nC_neg hC]
 
 /-- Tier C connection to conjugate update: evidence aggregation (hplus) is
 Beta conjugate update. See `EvidenceBeta.evidence_aggregation_is_conjugate_update`.

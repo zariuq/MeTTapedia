@@ -4,6 +4,8 @@ import Mettapedia.Logic.PLNWMOSLFBridge
 import Mettapedia.Logic.PLNXiRuleRegistry
 import Mettapedia.Logic.PLNXiCarrierScreening
 import Mettapedia.Logic.PLNXiDerivedBNRules
+import Mettapedia.Logic.PLNColliderSingletonBridge
+import Mettapedia.Logic.PLNEndToEnd
 
 /-!
 # PLN Canonical API (Lean)
@@ -228,6 +230,8 @@ Summary of formula-level exactness across BN topologies:
 - Fork exact (queryStrength): `xi_source_queryStrength_eq_plnInduction_of_forkBN` (`PLNXiDerivedBNRules`)
 - Collider structural exact: `xi_sinkRule_strength_eq_of_colliderBN` (`PLNXiDerivedBNRules`)
 - Collider .toReal exact: `xi_sink_queryStrength_toReal_eq_of_colliderBN` (`PLNXiDerivedBNRules`)
+- Collider singleton short-name re-exports:
+  `sinkLinkEqPropToReal`, `singletonPropToReal` (`PLNColliderSingletonBridge`)
 - Collider formula counterexample: `plnAbductionStrength_not_exact_collider` (`PLNXiDerivedBNRules`)
 - Error framework: `Comparison/ErrorCharacterization.lean` (decomposition + bounds + decision criteria)
 
@@ -239,6 +243,74 @@ A PLN rule is exact when its internal screening-off assumption holds:
 
 The `ErrorCharacterization` module provides quantitative bounds on the error when
 screening-off is violated (`error_bound_by_max_violation`, `conservative_estimate_is_bound`).
+
+### Collider singleton composition pattern
+
+Use this exact two-step composition:
+```lean
+have h1 := PLNColliderSingletonBridge.sinkLinkEqPropToReal
+  valA valB hPos hLMarkov hDSep ({cpt} : BNWorldModel.State (bn := colliderBN))
+have h2 := PLNColliderSingletonBridge.singletonPropToReal
+  cpt Three.B valB
+exact Eq.trans h1 h2
+```
 -/
+
+/-! ## End-to-End Theorem Index
+
+The `PLNEndToEnd` module provides short-name aliases for the complete
+BN→WM→OSLF pipeline across all three topologies.
+
+| Alias | Source | Topology |
+|-------|--------|----------|
+| `chainDeductionFormula` | `xi_deduction_queryStrength_eq_plnDeduction_of_chainBN` | Chain |
+| `forkInductionFormula` | `xi_source_queryStrength_eq_plnInduction_of_forkBN` | Fork |
+| `colliderStructural` | `xi_sinkRule_strength_eq_of_colliderBN` | Collider |
+| `colliderFormulaNotExact` | `plnAbductionStrength_not_exact_collider` | Collider |
+| `colliderFormulaExactWhenScreeningOff` | `plnAbductionStrength_exact_of_screeningOff` | Collider |
+
+Context lifts: `wmRewriteRule_e2e_ctx` (generic), `oslfEvidenceSoundCtx`, `oslfThresholdSoundCtx`.
+
+See `Mettapedia.Logic.PLNEndToEnd` for full listing and usage patterns. -/
+
+namespace EndToEnd
+
+/-- See `PLNEndToEnd` for the full E2E theorem index.
+
+Concrete re-exports that don't depend on BN instance resolution: -/
+
+noncomputable abbrev colliderFormulaNotExact := PLNEndToEnd.colliderFormulaNotExact
+
+/-
+All other E2E theorems depend on BN typeclass instances and must be invoked
+with explicit instance resolution at the call site. Use the fully qualified names:
+
+### Formula-level
+- `PLNEndToEnd.chainDeductionFormula` — chain qS = plnDeductionStrength
+- `PLNEndToEnd.forkInductionFormula` — fork qS = plnInductionStrength
+- `PLNEndToEnd.colliderStructural` — collider qS(link) = qS(prop)
+- `PLNEndToEnd.colliderStructuralToReal` — same at ℝ level
+
+### Admissibility
+- `PLNEndToEnd.chainDeductionAdmissible` — chain WM judgment
+- `PLNEndToEnd.forkInductionAdmissible` — fork WM judgment
+- `PLNEndToEnd.colliderAbductionAdmissible` — collider WM judgment
+
+### OSLF bridges
+- `PLNEndToEnd.chainDeductionOSLFEvidence` / `...Threshold`
+- `PLNEndToEnd.forkInductionOSLFEvidence` / `...Threshold`
+- `PLNEndToEnd.colliderAbductionOSLFEvidence` / `...Threshold`
+
+### Context lifts
+- `PLNEndToEnd.wmRewriteRule_e2e_ctx` — generic context lift
+- `PLNEndToEnd.oslfEvidenceSoundCtx` — OSLF evidence under context
+- `PLNEndToEnd.oslfThresholdSoundCtx` — OSLF threshold under context
+
+### Exactness
+- `PLNEndToEnd.colliderFormulaExactWhenScreeningOff` — exact when screening-off holds
+- `PLNEndToEnd.colliderFormulaNotExact` — OR-gate counterexample
+-/
+
+end EndToEnd
 
 end Mettapedia.Logic.PLNCanonical

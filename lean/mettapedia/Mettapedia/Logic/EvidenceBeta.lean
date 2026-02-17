@@ -1,5 +1,6 @@
 import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.Exchangeability
+import Mettapedia.Logic.EvidenceCounts
 import Mettapedia.ProbabilityTheory.Distributions.BetaBernoulli
 import Mathlib.Algebra.Order.Floor.Semiring
 
@@ -136,16 +137,16 @@ end EvidenceToBeta
 section StrengthVsMean
 
 /-- PLN strength from natural number counts -/
-noncomputable def plnStrength (n_pos n_neg : ℕ) : ℝ :=
-  if n_pos + n_neg = 0 then 0 else (n_pos : ℝ) / (n_pos + n_neg : ℝ)
+noncomputable abbrev plnStrength (n_pos n_neg : ℕ) : ℝ :=
+  Mettapedia.Logic.EvidenceCounts.plnStrength n_pos n_neg
 
 /-- Uniform prior posterior mean -/
-noncomputable def uniformPosteriorMean (n_pos n_neg : ℕ) : ℝ :=
-  ((n_pos : ℝ) + 1) / ((n_pos : ℝ) + (n_neg : ℝ) + 2)
+noncomputable abbrev uniformPosteriorMean (n_pos n_neg : ℕ) : ℝ :=
+  Mettapedia.Logic.EvidenceCounts.uniformPosteriorMean n_pos n_neg
 
 /-- Jeffreys prior posterior mean -/
-noncomputable def jeffreysPosteriorMean (n_pos n_neg : ℕ) : ℝ :=
-  ((n_pos : ℝ) + 0.5) / ((n_pos : ℝ) + (n_neg : ℝ) + 1)
+noncomputable abbrev jeffreysPosteriorMean (n_pos n_neg : ℕ) : ℝ :=
+  Mettapedia.Logic.EvidenceCounts.jeffreysPosteriorMean n_pos n_neg
 
 /-! ### Prior ledger API (small convenience layer)
 
@@ -170,8 +171,7 @@ noncomputable abbrev predLaplace (n_pos n_neg : ℕ) : ℝ := uniformPosteriorMe
 -/
 theorem plnStrength_eq_improper_mean (n_pos n_neg : ℕ) (h : n_pos + n_neg ≠ 0) :
     plnStrength n_pos n_neg = (n_pos : ℝ) / (n_pos + n_neg : ℝ) := by
-  unfold plnStrength
-  simp only [h, ↓reduceIte]
+  exact Mettapedia.Logic.EvidenceCounts.plnStrength_eq_improper_mean n_pos n_neg h
 
 /-- Relationship between PLN strength and uniform posterior mean.
 
@@ -219,7 +219,7 @@ theorem strength_vs_uniform_difference (n_pos n_neg : ℕ) (h : n_pos + n_neg �
         |((n_pos : ℝ) - (n_neg : ℝ)) / (nR * (nR + 2))| := by
     have huniform :
         uniformPosteriorMean n_pos n_neg = ((n_pos : ℝ) + 1) / (nR + 2) := by
-      simp [uniformPosteriorMean, nR, add_assoc]
+      simp [uniformPosteriorMean, Mettapedia.Logic.EvidenceCounts.uniformPosteriorMean, nR, add_assoc]
     -- Reduce to the explicit difference `(n_pos/nR) - ((n_pos+1)/(nR+2))`, then apply `hdiff`.
     rw [hstrength]
     simp [huniform, hdiff]
@@ -274,7 +274,7 @@ theorem strength_vs_jeffreys_difference (n_pos n_neg : ℕ) (h : n_pos + n_neg �
   have hhalf : (0.5 : ℝ) = (1 / 2 : ℝ) := by norm_num
   have hmean : jeffreysPosteriorMean n_pos n_neg = ((n_pos : ℝ) + (1 / 2 : ℝ)) / (nR + 1) := by
     -- Rewrite the decimal `0.5` to `1/2`, then simplify the denominator.
-    simp [jeffreysPosteriorMean, nR, hhalf, add_assoc]
+    simp [jeffreysPosteriorMean, Mettapedia.Logic.EvidenceCounts.jeffreysPosteriorMean, nR, hhalf, add_assoc]
 
   -- Put the difference in a single fraction.
   have hdiff :
@@ -339,11 +339,13 @@ For the single observation `n_pos=0, n_neg=1`:
 theorem prior_matters_example :
     predHaldane 0 1 = 0 ∧ predJeffreys 0 1 = (1 / 4 : ℝ) ∧ predLaplace 0 1 = (1 / 3 : ℝ) := by
   constructor
-  · simp [predHaldane, plnStrength]
+  · simp [predHaldane, plnStrength, Mettapedia.Logic.EvidenceCounts.plnStrength]
   constructor
-  · simp [predJeffreys, jeffreysPosteriorMean]
+  · simp [predJeffreys, jeffreysPosteriorMean,
+      Mettapedia.Logic.EvidenceCounts.jeffreysPosteriorMean]
     norm_num
-  · simp [predLaplace, uniformPosteriorMean]
+  · simp [predLaplace, uniformPosteriorMean,
+      Mettapedia.Logic.EvidenceCounts.uniformPosteriorMean]
     norm_num
 
 /-- Ledger restatement: Laplace/uniform smoothing differs from Haldane/PLN strength by `O(1/n)`. -/

@@ -3,6 +3,7 @@ import Mathlib.Data.Fintype.Perm
 import Mathlib.Algebra.BigOperators.Finprod
 import Mathlib.Combinatorics.Colex
 import Mathlib.Data.Nat.Choose.Basic
+import Mettapedia.Logic.EvidenceCounts
 
 /-!
 # Exchangeability for Binary Sequences
@@ -353,12 +354,12 @@ def evidenceFromCounts (n_pos n_neg : ℕ) : ℕ × ℕ := (n_pos, n_neg)
     For exchangeable binary data with Beta(1,1) prior (uniform), this is exactly
     the posterior mean.
 -/
-noncomputable def strengthFromCounts (n_pos n_neg : ℕ) : ℝ :=
-  if n_pos + n_neg = 0 then 0 else (n_pos : ℝ) / (n_pos + n_neg : ℝ)
+noncomputable abbrev strengthFromCounts (n_pos n_neg : ℕ) : ℝ :=
+  Mettapedia.Logic.EvidenceCounts.plnStrength n_pos n_neg
 
 /-- With Jeffreys prior Beta(1/2, 1/2), the posterior mean is (k + 1/2)/(n + 1) -/
-noncomputable def jeffreysPosteriorMean (n_pos n_neg : ℕ) : ℝ :=
-  ((n_pos : ℝ) + 0.5) / ((n_pos : ℝ) + (n_neg : ℝ) + 1)
+noncomputable abbrev jeffreysPosteriorMean (n_pos n_neg : ℕ) : ℝ :=
+  Mettapedia.Logic.EvidenceCounts.jeffreysPosteriorMean n_pos n_neg
 
 /- TODO: PLN strength vs Beta posterior mean.
 

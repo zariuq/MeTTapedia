@@ -44,6 +44,24 @@ nice -n 19 lake build
 - `Languages/ProcessCalculi.lean` — process-calculus facades (`PiCalculus`, `RhoCalculus`)
 - `Algebra/OrderedSemigroups/`
 
+## Lean -> mettail-rust example
+
+MeTTaMinimal can be exported from Lean and checked end-to-end in
+`hyperon/mettail-rust`:
+
+```bash
+cd ~/claude/hyperon/mettail-rust
+
+# Full roundtrip check (Lean export -> Rust build -> one-step rewrite check)
+./scripts/roundtrip_mettaminimal.sh
+
+# Benchmark command (default 3 runs)
+./scripts/bench_mettaminimal_roundtrip.sh
+```
+
+Exporter used by the script:
+- `hyperon/mettail-rust/scripts/lean/ExportMeTTaMinimalRoundTrip.lean`
+
 ## Status & review
 
 Proof completeness varies by subproject. To check local gaps:
