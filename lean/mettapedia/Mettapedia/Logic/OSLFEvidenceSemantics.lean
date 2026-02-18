@@ -4,11 +4,17 @@ import Mettapedia.Logic.PLNWorldModel
 import Mathlib.Order.ConditionallyCompleteLattice.Finset
 
 /-!
-# Evidence-Valued OSLF Semantics
+# EvidenceQuantale Adapter for OSLF Semantics
 
-Evidence-valued formula interpretation using Evidence's Frame (complete Heyting
-algebra) structure.  This is the PRIMARY semantic layer per the
-Stay/Baez/Knuth/Meredith architecture:
+This module is an **adapter layer**: it interprets OSLF formulas in the
+canonical evidence carrier `EvidenceQuantale.Evidence`.
+
+Ownership boundary:
+- Canonical evidence semantics lives in `Mettapedia.Logic.EvidenceQuantale`
+- This file only lifts that evidence algebra into OSLF formula interpretation
+
+Evidence-valued formula interpretation uses Evidence's Frame (complete Heyting
+algebra) structure:
 
 - Evidence is a `Frame` (hence `HeytingAlgebra`, `CompleteLattice`)
 - OSLF formulas map to Evidence values via lattice operations

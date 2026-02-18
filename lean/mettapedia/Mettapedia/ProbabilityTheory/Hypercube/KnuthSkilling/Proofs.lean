@@ -34,7 +34,6 @@ In particular, nothing here proves the main K&S representation theorem.
 - `Hypercube/KnuthSkilling/ToyFreeMonoid2.lean` (toy noncommutative monoid)
 -/
 
-set_option linter.unusedVariables false
 
 namespace Mettapedia.ProbabilityTheory.Hypercube.KnuthSkilling.Proofs
 

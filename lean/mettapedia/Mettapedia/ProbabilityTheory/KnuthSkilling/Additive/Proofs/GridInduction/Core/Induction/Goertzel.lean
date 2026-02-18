@@ -1,7 +1,6 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core.Induction.ThetaPrime
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core.SeparationImpliesCommutative
 
-set_option linter.unnecessarySimpa false
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 

@@ -5,8 +5,6 @@ namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Counterexamples
 
 open Classical KnuthSkillingAlgebra
 
-set_option linter.unnecessarySimpa false
-set_option linter.unusedSimpArgs false
 
 /-!
 # A countermodel attempt: a noncommutative `KnuthSkillingAlgebra` where `KSSeparation` fails

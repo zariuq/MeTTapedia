@@ -299,7 +299,7 @@ lemma l1_iid_inj_le_choose2
             have hx' : x = default := Finset.mem_singleton.mp hx
             subst x
             simpa using hInj0
-        simpa [hfilter_eq]
+        simp [hfilter_eq]
       simp [hInj0, hcard]
   | succ n =>
       let μ0 : ℝ := (1 : ℝ) / (R : ℝ) ^ (n + 1)
@@ -387,13 +387,7 @@ lemma l1_iid_inj_le_choose2
               (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0))) +
           Finset.sum ((Finset.univ : Finset (Fin (n + 1) → Fin R)).filter (fun f => ¬ Function.Injective f))
               (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0))) := by
-        have hsplit0 :=
-          (Finset.sum_filter_add_sum_filter_not
-            (s := (Finset.univ : Finset (Fin (n + 1) → Fin R)))
-            (p := Function.Injective)
-            (f := fun f : Fin (n + 1) → Fin R =>
-              abs (μ0 - (if Function.Injective f then μ0 / Z else 0))))
-        simpa [Finset.filter_not, add_comm] using hsplit0.symm
+        simp [Finset.filter_not]
       let Sinj : Finset (Fin (n + 1) → Fin R) :=
         (Finset.univ : Finset (Fin (n + 1) → Fin R)).filter Function.Injective
       let Sbad : Finset (Fin (n + 1) → Fin R) :=
@@ -452,7 +446,7 @@ lemma l1_iid_inj_le_choose2
                 have hZinv : Z * Z⁻¹ = 1 := by field_simp [hZ_ne]
                 calc
                   Z * (1 / Z - 1) = Z * (1 / Z) - Z := by ring
-                  _ = 1 - Z := by simpa [hZinv]
+                  _ = 1 - Z := by simp [hZinv]
       have hbad :
           Finset.sum Sbad (fun f => abs (μ0 - (if Function.Injective f then μ0 / Z else 0))) = Pbad := by
         calc

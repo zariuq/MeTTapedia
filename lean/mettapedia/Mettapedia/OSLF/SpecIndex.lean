@@ -359,7 +359,7 @@ open Mettapedia.OSLF
 #check @sem_box_eq_langBox
 #check @HasType
 #check @substitutability
-#check @Mettapedia.OSLF.RhoCalculus.Soundness.progress
+#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness.progress
 #check @langModalAdjunction
 #check @rhoModalAdjunction
 

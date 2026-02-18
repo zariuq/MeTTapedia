@@ -6,10 +6,10 @@ import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.MeTTaIL.DeclReduces
 import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
-import Mettapedia.OSLF.RhoCalculus.Types
-import Mettapedia.OSLF.RhoCalculus.Soundness
-import Mettapedia.OSLF.RhoCalculus.Reduction
-import Mettapedia.OSLF.RhoCalculus.Engine
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Types
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 import Mettapedia.OSLF.Framework.RewriteSystem
 import Mettapedia.OSLF.Framework.RhoInstance
 import Mettapedia.OSLF.Framework.DerivedModalities
@@ -49,9 +49,9 @@ import Mettapedia.Logic.OSLFKripkeBridge
 
 Sorry-free core entry point for OSLF + GSLT + premise-aware rewriting pipeline.
 
-This file intentionally excludes `Mettapedia.OSLF.PiCalculus.Main`, so reviewers
-can import one entrypoint for the full core stack without pulling in current
-π-calculus WIP.
+This file intentionally excludes `Mettapedia.Languages.ProcessCalculi.PiCalculus.Main`,
+so reviewers can import one entrypoint for the full core stack without pulling
+in current π-calculus WIP.
 -/
 
 namespace Mettapedia.OSLF

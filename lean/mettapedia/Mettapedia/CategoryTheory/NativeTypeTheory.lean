@@ -40,7 +40,6 @@ Grothendieck machinery from mathlib, which requires bicategories.
 - Stay & Wells, "Generating Hypercubes of Type Systems" (hypercube.pdf)
 -/
 
-set_option linter.dupNamespace false
 
 namespace Mettapedia.CategoryTheory.NativeTypeTheory
 
@@ -56,24 +55,17 @@ are pairs (X, τ) where X is a base object and τ is an element of Sub(X).
 We construct this directly as a sigma type.
 -/
 
-/-- Native Type Theory: pairs (X, e) of proposition types and evidence values.
+/-- The carrier type for Native Type Theory: pairs (X, e) of proposition types and evidence.
 
-    This is the Grothendieck construction ∫ Sub where Sub is the subobject
-    fibration giving Evidence-valued truth values at each PLN object.
-
-    Objects are:
-    - X : PLNObj (a proposition type: Concept, Relation, or Statement)
-    - e : PLNFiber X = Evidence (numerical evidence in the fiber over X)
-
-    This implements the "types as pairs (filter, sort)" from OSLF!
+    This is the Grothendieck construction ∫ Sub where Sub is the subobject fibration.
+    Objects are: X : PLNObj (proposition type) and e : PLNFiber X = Evidence.
+    This implements "types as pairs (filter, sort)" from OSLF.
 -/
-def NativeTypeTheory : Type :=
+abbrev NativeTypeBundle : Type :=
   Σ (X : PLNObj), PLNFiber X
 
 /-- Notation: NT := ∫ Sub (following OSLF notation) -/
-notation "NT" => NativeTypeTheory
-
-namespace NativeTypeTheory
+notation "NT" => NativeTypeBundle
 
 /-! ## Step 2: Objects and Morphisms
 
@@ -82,7 +74,7 @@ Morphisms are pairs (f, φ) where f is a base morphism and φ is a fiber morphis
 -/
 
 /-- An object in Native Type Theory is a pair (X, τ) -/
-abbrev Obj := NativeTypeTheory
+abbrev Obj := NativeTypeBundle
 
 /-- Constructor for NT objects -/
 def mk (X : PLNObj) (τ : PLNFiber X) : Obj := ⟨X, τ⟩
@@ -105,7 +97,7 @@ def fiber (obj : Obj) : PLNFiber (base obj) := obj.2
     all fibers are Evidence), we only need the evidence comparison.
 -/
 def Hom (src tgt : Obj) : Type :=
-  PLift (src.fiber ≤ tgt.fiber)
+  PLift (fiber src ≤ fiber tgt)
 
 -- All Homs between same objects are equal (since ≤ is Prop-valued)
 theorem Hom.eq {src tgt : Obj} (f g : Hom src tgt) : f = g := by
@@ -114,7 +106,7 @@ theorem Hom.eq {src tgt : Obj} (f g : Hom src tgt) : f = g := by
 
 /-- Identity morphism in NT: e ≤ e holds by reflexivity -/
 @[simp]
-def idHom (X : Obj) : Hom X X := PLift.up (le_refl X.fiber)
+def idHom (X : Obj) : Hom X X := PLift.up (le_refl (fiber X))
 
 /-- Composition of morphisms in NT: transitivity of ≤ -/
 @[simp]
@@ -142,12 +134,12 @@ This enables proper topos structure and functoriality for PLN!
 -/
 
 -- Category instance for Native Type Theory
-instance objCategoryStruct : CategoryTheory.CategoryStruct NativeTypeTheory where
+instance objCategoryStruct : CategoryTheory.CategoryStruct NativeTypeBundle where
   Hom := Hom
   id := idHom
   comp := compHom
 
-instance objCategory : CategoryTheory.Category NativeTypeTheory where
+instance objCategory : CategoryTheory.Category NativeTypeBundle where
   id_comp := fun _ => Hom.eq _ _
   comp_id := fun _ => Hom.eq _ _
   assoc := fun _ _ _ => Hom.eq _ _
@@ -171,15 +163,14 @@ def fiberOver (X : PLNObj) : Type :=
 
 /-- The fiber over X is isomorphic to PLNFiber X -/
 def fiberIso (X : PLNObj) : fiberOver X ≃ PLNFiber X where
-  toFun obj := obj.val.fiber
+  toFun obj := fiber obj.val
   invFun τ := ⟨mk X τ, rfl⟩
   left_inv := fun ⟨obj, h⟩ => by
+    apply Subtype.ext
     cases obj with | mk base' fiber' =>
-    simp [fiberOver, mk, base] at h ⊢
-    -- h : base' = X
-    -- Need to show: ⟨⟨base', fiber'⟩, h⟩ = ⟨⟨X, fiber'⟩, rfl⟩
+    simp only [base] at h
     subst h
-    rfl
+    simp [mk, fiber]
   right_inv := fun _ => rfl
 
 /-! ## Step 5: Modal Types (Interface to Phase 5C)
@@ -222,8 +213,6 @@ noncomputable def modalType (spec : ModalTypeSpec) : PLNFiber spec.context :=
   -- This is a stub that gets replaced when ModalTypes is imported
   -- The real definition uses the rely-possibly formula with reduction semantics
   ⊤  -- Trivial placeholder (maximal evidence); see ModalTypes.lean for actual construction
-
-end NativeTypeTheory
 
 /-! ## Phase 5A Summary
 

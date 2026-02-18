@@ -47,7 +47,6 @@ namespace Mettapedia.ProbabilityTheory.BayesianNetworks
 open DirectedGraph
 open scoped BigOperators ENNReal
 
-set_option linter.dupNamespace false in
 /-! ## Factor Graph Structure -/
 
 /-- A **Factor Graph** represents a function that factors as a product of local potentials.

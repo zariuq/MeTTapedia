@@ -6,6 +6,8 @@ import Mettapedia.Logic.PLNXiCarrierScreening
 import Mettapedia.Logic.PLNXiDerivedBNRules
 import Mettapedia.Logic.PLNColliderSingletonBridge
 import Mettapedia.Logic.PLNEndToEnd
+import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.Logic.EvidenceSTVBridge
 
 /-!
 # PLN Canonical API (Lean)
@@ -35,6 +37,20 @@ This file is intentionally lightweight: it is an index with stable names, not a 
 namespace Mettapedia.Logic.PLNCanonical
 
 open Mettapedia.Logic
+
+/-! ## Canonical Evidence Carriers -/
+
+/-- Canonical evidence carrier for PLN in this repository. -/
+abbrev Evidence := EvidenceQuantale.Evidence
+
+/-- Canonical STV record used by rule-level formulas. -/
+abbrev STV := PLNDeduction.STV
+
+/-- Distributional STV view (kept for compatibility). -/
+abbrev DistributionalSTV := PLN.Distributional.SimpleTruthValue
+
+/-- Proven STV isomorphism between distributional and deduction views. -/
+abbrev stvIso := EvidenceSTVBridge.stvEquiv
 
 /-! ## Canonical rule-strength names -/
 
@@ -274,13 +290,14 @@ It avoids heavyweight wrapper statements that can trigger elaboration timeouts.
 - `PLNEndToEnd.colliderStructural`, `PLNEndToEnd.colliderStructuralToReal`
 - `PLNEndToEnd.colliderNotExact`
 - `PLNEndToEnd.colliderExactWhenScreeningOff`
-- Singleton composition helpers: `PLNEndToEnd.colliderSingletonStep1`, `PLNEndToEnd.colliderSingletonStep2`
+- Singleton composition helpers: `PLNColliderSingletonBridge.sinkLinkEqPropToReal`,
+  `PLNColliderSingletonBridge.singletonPropToReal`
 
 ### Generic context lifts
 - `PLNEndToEnd.wmRewriteRuleCtx`
-- `PLNEndToEnd.oslfEvidenceCtx`
-- `PLNEndToEnd.oslfThresholdCtx`
-- `PLNEndToEnd.oslfRevisionCtx`
+- `PLNWMOSLFBridge.xiDerivesAtomEvidence_sound_ctx`
+- `PLNWMOSLFBridge.xiDerivesAtomStrength_threshold_sound_ctx`
+- `PLNWMOSLFBridge.xi_atom_revision_ctx`
 -/
 
 end Mettapedia.Logic.PLNCanonical

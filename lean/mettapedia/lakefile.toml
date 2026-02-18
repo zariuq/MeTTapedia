@@ -28,3 +28,23 @@ path = "Mettapedia/Algebra/OrderedSemigroups"
 [[require]]
 name = "Foundation"
 path = "Mettapedia/Logic/Foundation"
+
+# Exchangeability (local dependency; includes ForMathlib support library)
+[[require]]
+name = "exchangeability"
+path = "Mettapedia/external/exchangeability"
+
+# BorelDeterminacy (local dependency)
+[[require]]
+name = "borel_det"
+path = "Mettapedia/SetTheory/BorelDeterminacy"
+
+# CategoricalLogic (local dependency)
+[[require]]
+name = "catLogic"
+path = "Mettapedia/CategoricalLogic"
+
+# Metatheory (local dependency)
+[[require]]
+name = "Metatheory"
+path = "Mettapedia/Metatheory"

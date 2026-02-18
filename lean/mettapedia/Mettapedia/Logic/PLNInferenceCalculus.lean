@@ -1,3 +1,4 @@
+import Mettapedia.Logic.EvidenceSTVBridge
 import Mettapedia.Logic.PLNDeduction
 import Mettapedia.Logic.PLNRevision
 import Mettapedia.Logic.EvidenceQuantale
@@ -92,14 +93,15 @@ end PLNFormula
 
 /-! ## Truth Value Type
 
-We use the existing `STV` from PLNDeduction.lean which has:
+We use the canonical STV view from `EvidenceSTVBridge` (deduction-compatible),
+which has:
 - strength ∈ [0,1]
 - confidence ∈ [0,1]
 - Built-in bounds proofs
 -/
 
 /-- Alias for clarity -/
-abbrev TV := STV
+abbrev TV := Mettapedia.Logic.EvidenceSTVBridge.DeductionSTV
 
 /-! ## Judgments and Contexts -/
 

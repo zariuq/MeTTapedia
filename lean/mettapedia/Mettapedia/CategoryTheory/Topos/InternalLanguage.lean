@@ -56,7 +56,6 @@ and their semantics follows from the internal logic interpretation!
 - Pitts, "Categorical Logic" in Handbook of Logic in Computer Science
 -/
 
-set_option linter.dupNamespace false
 
 namespace Mettapedia.CategoryTheory.Topos.InternalLanguage
 

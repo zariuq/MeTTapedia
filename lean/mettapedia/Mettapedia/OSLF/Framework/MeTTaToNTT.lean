@@ -24,14 +24,13 @@ open Mettapedia.Logic.OSLFEvidenceSemantics
 open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.CategoryTheory.NativeTypeTheory
-open Mettapedia.CategoryTheory.NativeTypeTheory.NativeTypeTheory
 
 abbrev mettaFull : LanguageDef := Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull
 
 /-! ## 1. Evidence -> NativeTypeTheory -/
 
 /-- Build a native type from a PLN object and evidence value. -/
-def mettaEvidenceToNT (X : PLNObj) (e : Evidence) : NativeTypeTheory :=
+def mettaEvidenceToNT (X : PLNObj) (e : Evidence) : NativeTypeBundle :=
   Sigma.mk X e
 
 @[simp] theorem mettaEvidenceToNT_fst (X : PLNObj) (e : Evidence) :

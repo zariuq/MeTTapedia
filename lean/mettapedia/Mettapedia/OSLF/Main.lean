@@ -6,10 +6,10 @@ import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.MeTTaIL.DeclReduces
 import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
-import Mettapedia.OSLF.RhoCalculus.Types
-import Mettapedia.OSLF.RhoCalculus.Soundness
-import Mettapedia.OSLF.RhoCalculus.Reduction
-import Mettapedia.OSLF.RhoCalculus.Engine
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Types
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 import Mettapedia.OSLF.Framework.RewriteSystem
 import Mettapedia.OSLF.Framework.RhoInstance
 import Mettapedia.OSLF.Framework.DerivedModalities
@@ -83,7 +83,7 @@ OSLF/
 │   ├── Engine.lean          -- Generic rewrite engine for any LanguageDef
 │   ├── DeclReduces.lean     -- Declarative reduction (proven ↔ engine)
 │   └── MatchSpec.lean       -- Relational matching spec (proven ↔ executable)
-├── RhoCalculus/
+├── Languages/ProcessCalculi/RhoCalculus/
 │   ├── Types.lean           -- Namespaces, codespaces, bisimulation
 │   ├── Reduction.lean       -- COMM/DROP/PAR, modal operators, Galois connection
 │   ├── Soundness.lean       -- Substitutability, progress, type preservation
@@ -217,7 +217,7 @@ export Mettapedia.OSLF.MeTTaIL.MatchSpec (
 )
 
 -- Re-export RhoCalculus modules
-export Mettapedia.OSLF.RhoCalculus (
+export Mettapedia.Languages.ProcessCalculi.RhoCalculus (
   ProcObj
   NameObj
   NamePred
@@ -227,7 +227,7 @@ export Mettapedia.OSLF.RhoCalculus (
   ProcEquiv
 )
 
-export Mettapedia.OSLF.RhoCalculus.Soundness (
+export Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness (
   NativeType
   TypingContext
   HasType
@@ -236,7 +236,7 @@ export Mettapedia.OSLF.RhoCalculus.Soundness (
   quoteDropEmpty_irreducible
 )
 
-export Mettapedia.OSLF.RhoCalculus.Reduction (
+export Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction (
   Reduces
   possiblyProp
   relyProp
@@ -250,7 +250,7 @@ export Mettapedia.OSLF.RhoCalculus.Reduction (
 )
 
 -- Re-export Engine module
-export Mettapedia.OSLF.RhoCalculus.Engine (
+export Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine (
   reduceStep
   reduceToNormalForm
   reduceAll

@@ -1,5 +1,5 @@
 import Mathlib.Order.GaloisConnection.Defs
-import Mettapedia.OSLF.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
 /-!
 # Derived Modalities from Change-of-Base Adjunctions
@@ -173,7 +173,7 @@ the general adjoint-composition argument.
 -/
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.RhoCalculus.Reduction
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
 /-- The ρ-calculus reduction span.
 

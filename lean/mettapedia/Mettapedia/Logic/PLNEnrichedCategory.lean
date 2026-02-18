@@ -146,8 +146,9 @@ theorem enriched_composition_inequality
     (hpB_small : pB < 0.99) :
     -- The quantale product is a lower bound on the composed hom
     sAB * sBC ≤ simpleDeductionStrengthFormula pA pB pC sAB sBC := by
-  -- This is exactly product_le_deduction_result from PLNQuantaleConnection
-  -- We re-prove it here to show it's the enriched category axiom
+  -- This inequality was previously recorded in the archived exploratory
+  -- strength-level packaging (`Logic/Archive/PLNQuantaleConnectionLegacy`).
+  -- We prove it here directly as the enriched category axiom.
   have h_expand : simpleDeductionStrengthFormula pA pB pC sAB sBC =
       sAB * sBC + (1 - sAB) * (pC - pB * sBC) / (1 - pB) := by
     unfold simpleDeductionStrengthFormula

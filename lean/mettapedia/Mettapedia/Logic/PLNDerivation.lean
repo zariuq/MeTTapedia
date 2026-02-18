@@ -27,7 +27,6 @@ import Mathlib.Data.Real.Basic
 import Mathlib.MeasureTheory.Measure.MeasureSpace
 import Mathlib.Probability.ConditionalProbability
 
-set_option linter.unusedSectionVars false
 
 noncomputable section
 

@@ -2,6 +2,7 @@ import Mettapedia.CategoryTheory.DeFinettiPerNDiagram
 import Mettapedia.CategoryTheory.DeFinettiGlobalFinitaryDiagram
 import Mettapedia.CategoryTheory.DeFinettiKleisliGirySkeleton
 import Mettapedia.CategoryTheory.DeFinettiSequenceKernelCone
+import Mettapedia.CategoryTheory.DeFinettiMarkovCategoryBridge
 
 /-!
 # Stable Export Surface for Categorical de Finetti
@@ -193,6 +194,21 @@ theorem deFinettiStable_isLimit_iff_globalIIDConeMediatorUnique
       GlobalIIDConeMediatorUnique cone :=
   isLimit_iff_globalIIDConeMediatorUnique cone
 
+/-- Stable export: any true `IsLimit` witness implies the Markov-only
+mediator-uniqueness property for the same cone. -/
+theorem deFinettiStable_isLimit_implies_globalIIDConeMediatorUnique_markovOnly
+    (cone : KleisliGiryIIDConeSkeleton)
+    (hlim : CategoryTheory.Limits.IsLimit (cone.toCone)) :
+    GlobalIIDConeMediatorUnique_markovOnly cone :=
+  isLimit_implies_globalIIDConeMediatorUnique_markovOnly cone hlim
+
+/-- Stable export: canonical all-sources strengthening of the kernel universal
+mediator API. -/
+theorem deFinettiStable_kernelUniversalMediator_allSources_default
+    (X : ℕ → Ω → Bool) :
+    KernelLatentThetaUniversalMediator_allSources (Ω := Ω) X :=
+  kernelLatentThetaUniversalMediator_allSources_default (Ω := Ω) X
+
 /-- Stable export: specialized `P Bool` form of the true global Kleisli(Giry)
 `IsLimit` equivalence. -/
 theorem deFinettiStable_isLimit_iff_globalIIDConeMediatorUniqueProbBool
@@ -260,6 +276,46 @@ theorem deFinettiStable_iidSequenceKernelTheta_isLimitReady_of_globalFinitaryInv
       (Nonempty (CategoryTheory.Limits.IsLimit ((iidSequenceKleisliConeSkeleton hcommutes).toCone)) ↔
         GlobalIIDConeMediatorUnique (iidSequenceKleisliConeSkeleton hcommutes)) :=
   iidSequenceKernelTheta_isLimitReady_of_globalFinitaryInvariance hglobal
+
+/-- Stable export: concrete `IsLimit` witness for the global Kleisli(Giry)
+cone built from `iidSequenceKernelTheta`, assuming:
+1. global finitary invariance, and
+2. global mediator uniqueness for the induced cone. -/
+theorem deFinettiStable_iidSequenceKernelTheta_hasIsLimit_of_globalFinitaryInvariance_and_mediatorUnique
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ))
+    (hmed :
+      GlobalIIDConeMediatorUnique
+        (iidSequenceKleisliConeSkeleton
+          (iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance hglobal))) :
+    Nonempty
+      (CategoryTheory.Limits.IsLimit
+        ((iidSequenceKleisliConeSkeleton
+          (iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance hglobal)).toCone)) := by
+  exact
+    ⟨(iidSequenceKleisliConeSkeleton
+        (iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance hglobal)).isLimitOfMediatorUnique
+      hmed⟩
+
+/-- Stable export (Path-B): if finite-prefix marginals of `iidSequenceKernelTheta`
+match Bernoulli product marginals, then the full Kleisli(Giry) IsLimit-ready
+bundle follows in one hop. -/
+theorem deFinettiStable_iidSequenceKernelTheta_isLimitReady_of_prefix_pi_marginals
+    (hprefix :
+      ∀ (θ : LatentTheta) (n : ℕ),
+        (iidSequenceKernelTheta θ).map (seqPrefixProj n) =
+          Measure.pi (fun _ : Fin n => thetaBernoulliKernel θ)) :
+    ∃ hcommutes : ∀ τ : FinSuppPermNat,
+        CategoryTheory.CategoryStruct.comp iidSequenceKleisliHomTheta (finSuppPermKleisliHom τ) =
+          iidSequenceKleisliHomTheta,
+      (∀ (θ : LatentTheta) (n : ℕ) (xs : Fin n → Bool),
+        iidSequenceKernelTheta θ (seqPrefixEvent n xs) =
+          ∫⁻ θ' : LatentTheta, (iidPrefixKernel n θ') ({xs} : Set (Fin n → Bool)) ∂
+            (iidSequenceKernelTheta_canonicalLatentKernel_of_globalFinitaryInvariance
+              (iidSequenceKernelTheta_globalFinitaryInvariance_of_iidProduct_bridge
+                (iidSequenceKernelTheta_eq_iidProduct_of_prefix_pi_marginals hprefix)) θ)) ∧
+      (Nonempty (CategoryTheory.Limits.IsLimit ((iidSequenceKleisliConeSkeleton hcommutes).toCone)) ↔
+        GlobalIIDConeMediatorUnique (iidSequenceKleisliConeSkeleton hcommutes)) :=
+  iidSequenceKernelTheta_isLimitReady_of_prefix_pi_marginals hprefix
 
 /-- Stable export: true limit cone for the per-`n` permutation diagram. -/
 def deFinettiStable_perNPrefixDiagramLimitCone (n : ℕ) :
@@ -345,6 +401,54 @@ theorem deFinettiStable_kernelUniversalMediator_endToEnd_globalChain
     exact
       (deFinettiStable_kernelLatentThetaUniversalMediator_iff_perNLimitMediatorUnique
         (Y := Y) (Ω := Ω) X).2 h.1
+
+/-- Stable export: Markov-core universal mediation plus global finitary
+invariance gives the practical Kleisli(Giry) `IsLimit`-ready route. -/
+theorem deFinettiStable_markovCore_to_kleisliRoute
+    (X : ℕ → Ω → Bool)
+    (hcore : KernelLatentThetaUniversalMediatorInMarkovCore (Y := Y) (Ω := Ω) X)
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ)) :
+    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ∧
+      (∃ hcommutes : ∀ τ : FinSuppPermNat,
+          CategoryTheory.CategoryStruct.comp iidSequenceKleisliHomTheta (finSuppPermKleisliHom τ) =
+            iidSequenceKleisliHomTheta,
+        (∀ (θ : LatentTheta) (n : ℕ) (xs : Fin n → Bool),
+          iidSequenceKernelTheta θ (seqPrefixEvent n xs) =
+            ∫⁻ θ' : LatentTheta, (iidPrefixKernel n θ') ({xs} : Set (Fin n → Bool)) ∂
+              (iidSequenceKernelTheta_canonicalLatentKernel_of_globalFinitaryInvariance hglobal θ)) ∧
+        (Nonempty (CategoryTheory.Limits.IsLimit ((iidSequenceKleisliConeSkeleton hcommutes).toCone)) ↔
+          GlobalIIDConeMediatorUnique (iidSequenceKleisliConeSkeleton hcommutes))) := by
+  refine ⟨?_, ?_⟩
+  · exact
+      (kernelLatentThetaUniversalMediatorInMarkovCore_iff_kernelLatentThetaUniversalMediator
+        (Y := Y) (Ω := Ω) X).1 hcore
+  · exact
+      deFinettiStable_iidSequenceKernelTheta_isLimitReady_of_globalFinitaryInvariance
+        hglobal
+
+/-- Stable export: Markov-core universal mediation plus global finitary
+invariance and mediator uniqueness yield a concrete global Kleisli(Giry)
+`IsLimit` witness for the `iidSequenceKernelTheta` cone. -/
+theorem deFinettiStable_markovCore_to_kleisliIsLimit
+    (X : ℕ → Ω → Bool)
+    (hcore : KernelLatentThetaUniversalMediatorInMarkovCore (Y := Y) (Ω := Ω) X)
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ))
+    (hmed :
+      GlobalIIDConeMediatorUnique
+        (iidSequenceKleisliConeSkeleton
+          (iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance hglobal))) :
+    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ∧
+      Nonempty
+        (CategoryTheory.Limits.IsLimit
+          ((iidSequenceKleisliConeSkeleton
+            (iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance hglobal)).toCone)) := by
+  refine ⟨?_, ?_⟩
+  · exact
+      (kernelLatentThetaUniversalMediatorInMarkovCore_iff_kernelLatentThetaUniversalMediator
+        (Y := Y) (Ω := Ω) X).1 hcore
+  · exact
+      deFinettiStable_iidSequenceKernelTheta_hasIsLimit_of_globalFinitaryInvariance_and_mediatorUnique
+        (hglobal := hglobal) hmed
 
 /-- Stable export: global cross-`n` categorical package from prefix-law
 exchangeability. -/

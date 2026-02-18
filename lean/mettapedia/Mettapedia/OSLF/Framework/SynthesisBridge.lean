@@ -1,7 +1,7 @@
 import Mettapedia.OSLF.Framework.GeneratedTyping
 import Mettapedia.OSLF.Framework.RhoInstance
-import Mettapedia.OSLF.RhoCalculus.Soundness
-import Mettapedia.OSLF.RhoCalculus.Engine
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 
 /-!
 # Synthesis Bridge: Generated ↔ Hand-Written Type Systems
@@ -48,9 +48,9 @@ namespace Mettapedia.OSLF.Framework.SynthesisBridge
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
-open Mettapedia.OSLF.RhoCalculus.Reduction
-open Mettapedia.OSLF.RhoCalculus.Soundness
-open Mettapedia.OSLF.RhoCalculus.Engine (reduceStep reduceStep_sound)
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine (reduceStep reduceStep_sound)
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.DerivedModalities
 open Mettapedia.OSLF.Framework.RhoInstance

@@ -14,7 +14,6 @@ no-premise engine path for backward compatibility).
 
 namespace Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 
-set_option linter.dupNamespace false
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution

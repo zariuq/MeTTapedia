@@ -32,14 +32,13 @@ open Mettapedia.Languages.GF.StoreToLogicalForm
 open Mettapedia.Languages.GF.WorldModelVisibleBridge
 open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.CategoryTheory.NativeTypeTheory
-open Mettapedia.CategoryTheory.NativeTypeTheory.NativeTypeTheory
 open Mettapedia.Languages.GF.Examples.EveryManWalks
 open Mettapedia.Logic.EvidenceQuantale
 
 /-! ## 1. Evidence → NT Object -/
 
 /-- Construct an NT object from a PLN proposition type and an evidence value. -/
-def evidenceToNT (X : PLNObj) (e : Evidence) : NativeTypeTheory :=
+def evidenceToNT (X : PLNObj) (e : Evidence) : NativeTypeBundle :=
   Sigma.mk X e
 
 theorem evidenceToNT_fst (X : PLNObj) (e : Evidence) :

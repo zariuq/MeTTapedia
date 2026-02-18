@@ -206,6 +206,9 @@ instance : BEq Pattern := ⟨fun a b => decide (a = b)⟩
 
 namespace Pattern
 
+/-- Backward-compatible alias used by legacy process-calculus files. -/
+@[match_pattern] abbrev var (name : String) : Pattern := .fvar name
+
 def mkFVar (name : String) : Pattern := .fvar name
 def mkBVar (n : Nat) : Pattern := .bvar n
 

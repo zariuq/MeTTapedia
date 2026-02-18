@@ -1,10 +1,6 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core.Prelude
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Axioms.SandwichSeparation
 
-set_option linter.unnecessarySimpa false
-set_option linter.unusedSimpArgs false
-set_option linter.unusedVariables false
-set_option linter.unusedSectionVars false
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 

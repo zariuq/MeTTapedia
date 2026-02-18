@@ -383,7 +383,6 @@ These work for any BN and any state value. -/
 These are corollaries of the Bool-generic helpers for `val = true`,
 bridging to `eventTrue` used in `chainBN_plnDeductionStrength_exact`. -/
 
-set_option linter.unusedSectionVars false in
 /-- `eventEq v true` (VEBridge) equals `eventTrue v` (FastRules). -/
 private lemma eventEq_true_eq_eventTrue (v : Three) :
     eventEq (bn := chainBN) v true = eventTrue v := by

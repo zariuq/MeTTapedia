@@ -56,7 +56,6 @@ open Classical
 
 -- Some theorems (e.g., singleton_disjoint) don't need [Fintype Ω] but share the
 -- variable context. These are foundational lemmas that could be more general.
-set_option linter.unusedSectionVars false
 
 variable {Ω : Type*} [Fintype Ω] [DecidableEq Ω]
 

@@ -1,5 +1,4 @@
 import Mettapedia.Logic.EvidenceQuantale
-import Mettapedia.Logic.EvidenceQuantale
 
 /-!
 # PLN vs Quantale Operations: Divergence Analysis
@@ -63,11 +62,15 @@ theorem revision_neq_supremum :
     ∃ (e₁ e₂ : Evidence), e₁ + e₂ ≠ e₁ ⊔ e₂ := by
   use ⟨2, 1⟩, ⟨1, 2⟩
   intro h
-  -- hplus gives (3, 3), supremum gives (2, 2)
-  simp only [Evidence.hplus_def] at h
-  -- The proof is by contradiction: if they were equal, we'd have
-  -- (3, 3) = (max 2 1, max 1 2) = (2, 2), which is absurd
-  sorry
+  have hnegL : ((⟨2, 1⟩ : Evidence) + ⟨1, 2⟩).neg = 3 := by
+    norm_num [Evidence.hplus_def]
+  have hnegR : (((⟨2, 1⟩ : Evidence) ⊔ ⟨1, 2⟩).neg) = 2 := by
+    change max (1 : ℝ≥0∞) 2 = 2
+    norm_num
+  have hneg : ((⟨2, 1⟩ : Evidence) + ⟨1, 2⟩).neg = (((⟨2, 1⟩ : Evidence) ⊔ ⟨1, 2⟩).neg) :=
+    congrArg Evidence.neg h
+  rw [hnegL, hnegR] at hneg
+  norm_num at hneg
 
 /-! ## Counterexample 2: Tensor Strength ≠ Strength Product
 
@@ -87,17 +90,18 @@ theorem tensor_neq_strength_product :
       e₁.total ≠ 0 ∧ e₂.total ≠ 0 ∧ (e₁ * e₂).total ≠ 0 ∧
       e₁.total ≠ ⊤ ∧ e₂.total ≠ ⊤ ∧ (e₁ * e₂).total ≠ ⊤ ∧
       Evidence.toStrength (e₁ * e₂) ≠ Evidence.toStrength e₁ * Evidence.toStrength e₂ := by
-  use ⟨3, 1⟩, ⟨2, 2⟩
-  constructor; · norm_num [Evidence.total]
-  constructor; · norm_num [Evidence.total]
-  constructor; · norm_num [Evidence.total, Evidence.tensor_def]
-  constructor; · norm_num [Evidence.total]
-  constructor; · norm_num [Evidence.total]
-  constructor; · norm_num [Evidence.total, Evidence.tensor_def]
-  -- Tensor: (3·2, 1·2) = (6, 2) → strength = 6/(6+2) = 3/4
-  -- Product: (3/4) · (2/4) = 3/8
-  -- Need to show 3/4 ≠ 3/8
-  sorry
+  refine ⟨⟨3, 1⟩, ⟨2, 2⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · norm_num [Evidence.total]
+  · norm_num [Evidence.total]
+  · norm_num [Evidence.total, Evidence.tensor_def]
+  · norm_num [Evidence.total]
+  · norm_num [Evidence.total]
+  · norm_num [Evidence.total, Evidence.tensor_def]
+  · intro hEq
+    have hEqR : ENNReal.toReal (Evidence.toStrength ((⟨3, 1⟩ : Evidence) * ⟨2, 2⟩)) =
+        ENNReal.toReal (Evidence.toStrength (⟨3, 1⟩ : Evidence) * Evidence.toStrength (⟨2, 2⟩)) := by
+      exact congrArg ENNReal.toReal hEq
+    norm_num [Evidence.toStrength, Evidence.total, Evidence.tensor_def] at hEqR
 
 /-! ## Positive Characterization: When Operations DO Match
 

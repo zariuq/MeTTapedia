@@ -3,7 +3,7 @@ import Mettapedia.OSLF.Framework.DerivedModalities
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
-import Mettapedia.OSLF.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
 /-!
 # OSLF Type Synthesis: LanguageDef → OSLFTypeSystem
@@ -45,7 +45,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.DerivedModalities
-open Mettapedia.OSLF.RhoCalculus.Reduction
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
 /-! ## Step 1: Reduction Relation from Executable Engine -/
 
@@ -269,28 +269,28 @@ theorem rhoCalc_emptyBag_langReduces_irreducible (q : Pattern) :
 theorem rhoCalc_soundBridge_restricted
     {p q : Pattern}
     (_hred : langReduces rhoCalc p q)
-    (hstep : q ∈ Mettapedia.OSLF.RhoCalculus.Engine.reduceStep p) :
+    (hstep : q ∈ Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine.reduceStep p) :
     Nonempty (p ⇝ q) := by
-  exact Mettapedia.OSLF.RhoCalculus.Engine.reduceStep_sound p q _ hstep
+  exact Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine.reduceStep_sound p q _ hstep
 
 /-- SC-empty representatives have no specialized one-step ρ reducts. -/
 theorem rhoCalc_SC_emptyBag_reduceStep_irreducible
     {p q : Pattern}
-    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+    (hsc : Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
       (.collection .hashBag [] none) p) :
-    ¬ q ∈ Mettapedia.OSLF.RhoCalculus.Engine.reduceStep p := by
+    ¬ q ∈ Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine.reduceStep p := by
   intro hstep
   exact emptyBag_SC_irreducible hsc
-    (Mettapedia.OSLF.RhoCalculus.Engine.reduceStep_sound p q _ hstep).some
+    (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine.reduceStep_sound p q _ hstep).some
 
 /-- Direct contradiction form at `langReduces` call sites, using the
     specialized-step restricted bridge. -/
 theorem rhoCalc_SC_emptyBag_langReduces_false_of_reduceStep
     {p q : Pattern}
-    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+    (hsc : Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
       (.collection .hashBag [] none) p)
     (hred : langReduces rhoCalc p q)
-    (hstep : q ∈ Mettapedia.OSLF.RhoCalculus.Engine.reduceStep p) :
+    (hstep : q ∈ Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine.reduceStep p) :
     False := by
   have hρ : Nonempty (p ⇝ q) := rhoCalc_soundBridge_restricted hred hstep
   exact emptyBag_SC_irreducible hsc hρ.some
@@ -305,7 +305,7 @@ theorem rhoCalc_SC_emptyBag_langReduces_irreducible_of_soundBridge
     (soundBridge :
       ∀ {p q : Pattern}, langReduces rhoCalc p q → Nonempty (p ⇝ q))
     {p q : Pattern}
-    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+    (hsc : Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
       (.collection .hashBag [] none) p) :
     ¬ langReduces rhoCalc p q := by
   intro hred
@@ -318,7 +318,7 @@ theorem rhoCalc_SC_emptyBag_no_diamondTop_of_soundBridge
     (soundBridge :
       ∀ {p q : Pattern}, langReduces rhoCalc p q → Nonempty (p ⇝ q))
     {p : Pattern}
-    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+    (hsc : Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
       (.collection .hashBag [] none) p) :
     ¬ langDiamond rhoCalc (fun _ => True) p := by
   intro hdia
@@ -384,7 +384,7 @@ theorem rhoSetDropWitness_canonical_vs_setExt :
 
 /-! ## Executable Tests -/
 
-open Mettapedia.OSLF.RhoCalculus.Engine (patternToString)
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine (patternToString)
 
 instance : ToString Pattern := ⟨patternToString⟩
 

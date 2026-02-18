@@ -336,7 +336,7 @@ private lemma fiber_eq_empty_of_not_mem_stateFinset
       stateOfTraj_mem_stateFinset (k := k) xs
     exact (he (by simpa [hxstate] using hxmem)).elim
   · intro h
-    simpa using h
+    simp at h
 
 /-- If `e` is not realizable at short horizon `Nat.succ n`, then the pattern
 index set is empty and the direct WR/WOR pattern discrepancy rate is `0`. -/
@@ -351,7 +351,7 @@ theorem hasPatternWRWORRate_zero_of_not_mem_shortStateFinset
   have hPempty :
       excursionPatternSet (k := k) (hN := hN) e s = ∅ := by
     rw [excursionPatternSet_eq_shortImage (k := k) (hN := hN) (e := e) (s := s)]
-    simpa [hfiber_empty]
+    simp [hfiber_empty]
   simp [hPempty]
 
 /-- Non-assumptive family constructor on the unrealizable short-state branch:
@@ -445,7 +445,7 @@ theorem hasBestReprBound_zero_of_not_mem_shortStateFinset
   have hPempty :
       excursionPatternSet (k := k) (hN := hN) e s = ∅ := by
     rw [excursionPatternSet_eq_shortImage (k := k) (hN := hN) (e := e) (s := s)]
-    simpa [hfiber_empty]
+    simp [hfiber_empty]
   have hrhs_nonneg :
       0 ≤
         (4 * ((Nat.succ n : ℕ) : ℝ) * ((Nat.succ n : ℕ) : ℝ)) /
@@ -515,7 +515,7 @@ private lemma W_toReal_eq_sum_wordProb_toReal
   unfold W
   refine ENNReal.toReal_sum ?_
   intro xs hx
-  simpa [wordProb]
+  simp [wordProb]
 
 /-- `W.toReal` expansion specialized to `empiricalParam`. -/
 private lemma W_toReal_eq_sum_wordProb_toReal_empiricalParam
@@ -848,7 +848,7 @@ private lemma abs_wordProb_toReal_empiricalParam_sub_startTarget_of_traj
     _ = (tail.length : ℝ) * ((k : ℝ) / (returnsToStart (k := k) s : ℝ)) := by
           ring
     _ = (m : ℝ) * ((k : ℝ) / (returnsToStart (k := k) s : ℝ)) := by
-          simpa [htail_len]
+          simp [htail_len]
 
 /-- `wordProb` on `trajSnoc` factors as horizon-`m` mass times the last step probability. -/
 private lemma wordProb_toReal_trajSnoc_eq_mul_stepProb
@@ -902,7 +902,7 @@ private lemma wordProb_toReal_trajSnoc_eq_mul_stepProb
       have haux' : wordProbAux (k := k) θ a (l ++ [x]) =
           wordProbAux (k := k) θ a l * stepProb (k := k) θ (ys (Fin.last m)) x := by
         simpa [hhead, htail] using haux_tail
-      simpa [wordProb, wordProbNN, hys, hlist, haux', mul_assoc]
+      simp [wordProb, wordProbNN, hys, hlist, haux', mul_assoc]
 
 /-- Event-sum helper: bound a filtered discrepancy sum by the full-space `L1` sum.
 This avoids introducing a raw `card` factor at the summation step. -/
@@ -954,7 +954,7 @@ private lemma abs_W_toReal_sub_le_filtered_trajL1
     simp [S, g, W_toReal_eq_sum_wordProb_toReal]
   calc
     |(W (k := k) n e θ₁).toReal - (W (k := k) n e θ₂).toReal|
-        = |Finset.sum S f - Finset.sum S g| := by simpa [hW1, hW2]
+        = |Finset.sum S f - Finset.sum S g| := by simp [hW1, hW2]
     _ = |Finset.sum S (fun xs => f xs - g xs)| := by simp [Finset.sum_sub_distrib]
     _ ≤ Finset.sum S (fun xs => |f xs - g xs|) := by
           simpa using
@@ -988,7 +988,7 @@ private lemma abs_W_toReal_sub_le_global_trajL1
     simp [S, P, g, W_toReal_eq_sum_wordProb_toReal]
   calc
     |(W (k := k) n e θ₁).toReal - (W (k := k) n e θ₂).toReal|
-        = |Finset.sum (S.filter P) f - Finset.sum (S.filter P) g| := by simpa [hW1, hW2]
+        = |Finset.sum (S.filter P) f - Finset.sum (S.filter P) g| := by simp [hW1, hW2]
     _ = abs ((S.filter P).sum (fun xs => f xs - g xs)) := by simp [Finset.sum_sub_distrib]
     _ ≤ S.sum (fun xs => |f xs - g xs|) := by
           exact
@@ -1075,7 +1075,7 @@ private lemma trajL1_succ_le_trajL1_add_rowBound
           ∑ x : Fin k,
             |(wordProb (k := k) θ₁ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal -
               (wordProb (k := k) θ₂ (trajToList (k := k) (trajSnoc (k := k) ys x))).toReal| := by
-          simpa [F, Fintype.sum_prod_type_right]
+          simp [F, Fintype.sum_prod_type_right]
     _ ≤ ∑ ys : Traj k n,
           (|(wordProb (k := k) θ₁ (trajToList (k := k) ys)).toReal -
               (wordProb (k := k) θ₂ (trajToList (k := k) ys)).toReal| +
@@ -1129,7 +1129,7 @@ private lemma trajL1_succ_le_trajL1_add_rowBound
                     = (∑ x : Fin k, |A1 - A2| * s1 x) := by
                         refine Fintype.sum_congr (fun x => |(A1 - A2) * s1 x|) (fun x => |A1 - A2| * s1 x) ?_
                         intro x
-                        simpa [abs_mul, abs_of_nonneg (hs1_nonneg x)]
+                        simp [abs_mul, abs_of_nonneg (hs1_nonneg x)]
                 _ = |A1 - A2| * (∑ x : Fin k, s1 x) := by
                       exact (Finset.mul_sum (s := Finset.univ) (f := fun x => s1 x) (a := |A1 - A2|)).symm
                 _ = |A1 - A2| := by simp [hsum1]
@@ -1144,7 +1144,7 @@ private lemma trajL1_succ_le_trajL1_add_rowBound
                                   refine Fintype.sum_congr (fun x => |A2 * (s1 x - s2 x)|)
                                     (fun x => |A2| * |s1 x - s2 x|) ?_
                                   intro x
-                                  simpa [abs_mul]
+                                  simp [abs_mul]
                           _ = (∑ x : Fin k, A2 * |s1 x - s2 x|) := by
                                 refine Fintype.sum_congr (fun x => |A2| * |s1 x - s2 x|)
                                   (fun x => A2 * |s1 x - s2 x|) ?_
@@ -1189,7 +1189,7 @@ private lemma trajL1_succ_le_trajL1_add_rowBound
           have hsum1' :
               (∑ ys : Traj k n, (wordProb (k := k) θ₂ (trajToList (k := k) ys)).toReal) = 1 := by
             simpa [trajFinset] using sum_wordProb_toReal_eq_one (k := k) (θ := θ₂) (n := n)
-          simpa [hsum1']
+          simp [hsum1']
     _ = trajL1 (k := k) n θ₁ θ₂ + δ := by ring
 
 private lemma trajL1_empiricalParam_startTarget_le_length_mul_rowBound
@@ -1242,7 +1242,7 @@ private lemma trajL1_empiricalParam_startTarget_le_length_mul_rowBound
         |(wordProb (k := k) θ₁ (trajToList (k := k) xs)).toReal -
           (wordProb (k := k) θ₂ (trajToList (k := k) xs)).toReal| = 0 := by
       linarith
-    simpa [hzero]
+    simp [hzero]
   have hrec :
       ∀ m : ℕ, trajL1 (k := k) m θ₁ θ₂ ≤ (m : ℝ) * δ := by
     intro m
@@ -1616,7 +1616,7 @@ theorem hasExcursionBiapproxCore_of_patternCollision_and_zeroCase
           ∑ p ∈ P with Multiset.ofList p = mset,
             |(wrPatternMass (k := k) hk n e s p).toReal -
               (worPatternMass (k := k) (hN := hN) e s p).toReal|) = 0 := hsum_part_zero
-        _ ≤ collision := by simpa [hcollision_zero]
+        _ ≤ collision := by simp [hcollision_zero]
   refine ⟨0, 0, ?_, by simp⟩
   simpa [collision] using hsum_part_le_collision
 
@@ -1906,7 +1906,11 @@ lemma excursion_target_statewise_witness_of_wr_repr_rate
   · intro a ha
     have h0nonneg : (0 : ℝ) ≤ (0 : ℝ) / (returnsToStart (k := k) s : ℝ) := by
       positivity
-    simpa using h0nonneg
+    have habs :
+        |empiricalExcursionProb (k := k) elist a - empiricalExcursionProb (k := k) elist a| = 0 := by
+      simp
+    rw [habs]
+    exact h0nonneg
   · intro a ha
     have hnonneg :
         0 ≤ empiricalExcursionProb (k := k) elist a := by
@@ -2166,7 +2170,7 @@ lemma hasCanonicalWRSmoothingRate_zero
   · simp
   · have hnonneg : (0 : ℝ) ≤ 0 / (returnsToStart (k := k) s : ℝ) := by
       positivity
-    simpa using hnonneg
+    exact hnonneg
 
 /-- Build WOR transport directly from a pattern-level WR/WOR discrepancy rate.
 

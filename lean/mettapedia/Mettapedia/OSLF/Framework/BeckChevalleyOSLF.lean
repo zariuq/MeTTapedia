@@ -4,7 +4,7 @@ import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ToposReduction
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.GSLT.Topos.PredicateFibration
-import Mettapedia.OSLF.RhoCalculus.Soundness
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
 
 /-!
 # Beck-Chevalley for OSLF: Substitution and Change-of-Base
@@ -65,8 +65,8 @@ open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Framework.ConstructorFibration
 open Mettapedia.OSLF.Framework.ModalEquivalence
 open Mettapedia.OSLF.Framework.TypeSynthesis
-open Mettapedia.OSLF.RhoCalculus.Soundness
-open Mettapedia.OSLF.RhoCalculus.Reduction (possiblyProp)
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction (possiblyProp)
 
 /-! ## Presheaf Beck–Chevalley Transport into OSLF Layer
 

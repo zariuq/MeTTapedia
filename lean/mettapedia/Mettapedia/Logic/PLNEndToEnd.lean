@@ -1,7 +1,5 @@
 import Mettapedia.Logic.PLNXiDerivedBNRules
-import Mettapedia.Logic.PLNWMOSLFBridge
 import Mettapedia.Logic.PLNWorldModelCalculus
-import Mettapedia.Logic.PLNColliderSingletonBridge
 
 /-!
 # PLN End-to-End (Stable Surface)
@@ -68,14 +66,6 @@ noncomputable abbrev colliderNotExact :=
 noncomputable abbrev colliderExactWhenScreeningOff :=
   @PLNXiDerivedBNRules.plnAbductionStrength_exact_of_screeningOff
 
-/-! ## Collider singleton composition helpers -/
-
-noncomputable abbrev colliderSingletonStep1 :=
-  @PLNColliderSingletonBridge.sinkLinkEqPropToReal
-
-noncomputable abbrev colliderSingletonStep2 :=
-  @PLNColliderSingletonBridge.singletonPropToReal
-
 /-! ## Generic WM context lift -/
 
 section Generic
@@ -88,15 +78,6 @@ theorem wmRewriteRuleCtx
     (hSide : r.side) (hW : PLNWorldModel.WMJudgmentCtx Γ W) :
     PLNWorldModel.WMQueryJudgmentCtx Γ W r.conclusion (r.derive W) :=
   PLNWorldModel.WMRewriteRule.applyCtx hSide hW
-
-noncomputable abbrev oslfEvidenceCtx :=
-  @PLNWMOSLFBridge.xiDerivesAtomEvidence_sound_ctx
-
-noncomputable abbrev oslfThresholdCtx :=
-  @PLNWMOSLFBridge.xiDerivesAtomStrength_threshold_sound_ctx
-
-noncomputable abbrev oslfRevisionCtx :=
-  @PLNWMOSLFBridge.xi_atom_revision_ctx
 
 end Generic
 

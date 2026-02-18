@@ -12,7 +12,6 @@ import Mathlib.MeasureTheory.Measure.Real
 import Mathlib.Probability.ConditionalProbability
 import Mathlib.Data.Real.Basic
 
-set_option linter.unusedSectionVars false
 
 noncomputable section
 
@@ -48,7 +47,7 @@ theorem sum_rule_eq_measure_union {A B : Set Ω}
     μ (A ∪ B) = μ A + μ B :=
   measure_union hDisj hB
 
-variable (μ : Measure Ω) [IsProbabilityMeasure μ] [IsFiniteMeasure μ]
+variable [IsProbabilityMeasure μ]
 
 /-- Probability of the complement of a measurable event. -/
 theorem prob_compl {A : Set Ω} (hA : MeasurableSet A) :

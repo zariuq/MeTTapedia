@@ -110,9 +110,9 @@ theorem segmentSwap_transition_pair {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
   constructor <;> split_ifs <;>
     first
     | rfl
-    | (congr 1; ext; simp only [Fin.val_mk]; omega)
-    | (exfalso; omega)
-    | (refine (to_xs0 _ ?_).trans (to_xs0 _ ?_).symm <;> simp only [Fin.val_mk] <;> omega)
+    | (congr 1; ext; simp; omega)
+    | omega
+    | (refine (to_xs0 _ ?_).trans (to_xs0 _ ?_).symm <;> simp <;> omega)
 
 /-! ## Transition count preservation -/
 
@@ -352,7 +352,7 @@ lemma segmentSwap_return_suffix {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
 the return positions are exactly `{a, a+L2, a+L1+L2}` (replacing old `{a, a+L1, a+L1+L2}`). -/
 theorem segmentSwap_return_in_range {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
     (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
-    (ha_ret : xs ⟨a, by omega⟩ = xs 0)
+    (_ha_ret : xs ⟨a, by omega⟩ = xs 0)
     (hb_ret : xs ⟨a + L1, by omega⟩ = xs 0)
     (hc_ret : xs ⟨a + L1 + L2, by omega⟩ = xs 0)
     -- No returns in excursion interiors (quantified over Fin to avoid omega-in-∀ issue)
@@ -365,7 +365,7 @@ theorem segmentSwap_return_in_range {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
   · -- Forward: if swapped position returns, must be at a+L2 or a+L1+L2
     intro hret
     simp only [segmentSwap] at hret
-    split_ifs at hret with h1 h2 h3
+    split_ifs at hret with h1 h2
     · omega
     · -- i ≤ a+L2: maps to xs(i+L1). If xs(i+L1) = xs 0, i+L1 must be a return.
       -- No returns in (a+L1, a+L1+L2), so i+L1 = a+L1+L2, giving i = a+L2.
@@ -392,7 +392,7 @@ theorem segmentSwap_return_in_range {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
         exact hc_ret
       · omega
     · -- i.val = a + L1 + L2
-      split_ifs with h1 h2 h3
+      split_ifs with h1 h2
       · omega
       · omega
       · -- maps to xs(i-L2) = xs(a+L1)
@@ -1016,7 +1016,7 @@ lemma excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp
     {N : ℕ} (xs : Traj k N) (a L1 L2 : ℕ)
     (hL1 : 0 < L1) (hL2 : 0 < L2) (hcN : a + L1 + L2 ≤ N)
     (pre suf : List (Fin (N + 1) × Fin (N + 1)))
-    (hPairsOld :
+    (_hPairsOld :
       excursionPairs (k := k) xs =
         pre ++
           [(⟨a, by omega⟩, ⟨a + L1, by omega⟩),
@@ -1052,10 +1052,6 @@ lemma excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp
     excursionListOfTraj_segmentSwap_eq_of_excursionPairs_decomp
       (k := k) (xs := xs) (a := a) (L1 := L1) (L2 := L2)
       hL1 hL2 hcN pre suf hPairsNew hPre hSuf ha_ret hb_ret hc_ret
-  -- Keep `hPairsOld` explicit in the statement: this is the decomposition
-  -- hypothesis tying `(a,L1,L2)` to consecutive middle excursions in `xs`.
-  -- It is used by downstream callers to construct `pre/suf`.
-  clear hPairsOld
   simpa [List.append_assoc] using hnew
 
 /-- Stronger ordered-list adjacent-swap bridge.
@@ -1119,6 +1115,7 @@ lemma excursionListOfTraj_segmentSwap_eq_swap_middle_of_excursionPairs_decomp_st
           (suf.map (fun p => trajSegment (k := k) xs p.1 p.2)) := by
     simpa [List.append_assoc] using hswap
   -- rewrite to caller's names
+  have _hOld_use := hOld
   simpa [hOld, hPreSeg, hSufSeg, hE1, hE2, List.append_assoc] using hswap'
 
 /-- Under the adjacent-excursion transposition decomposition hypotheses, the
@@ -1202,7 +1199,7 @@ lemma excursionListOfTraj_prefix_segmentSwap_eq_of_prefix_before_swap
     trajPrefix_segmentSwap_eq_of_prefix_before_swap
       (k := k) (h := hN) (xs := xs) (a := a) (L1 := L1) (L2 := L2)
       (hna := hna) (hL1 := hL1) (hL2 := hL2) (hcN := hcN)
-  simpa [hprefix]
+  simp [hprefix]
 
 end MarkovDeFinettiHardExcursionBridge
 

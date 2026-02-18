@@ -15,7 +15,6 @@ then proves the executable engine is both sound and complete w.r.t. it.
 
 namespace Mettapedia.OSLF.MeTTaIL.DeclReduces
 
-set_option linter.dupNamespace false
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution

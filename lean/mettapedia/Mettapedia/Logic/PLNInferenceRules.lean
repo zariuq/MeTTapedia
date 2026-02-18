@@ -469,8 +469,9 @@ Consistent story:
 - The foundational carrier in this repo is `Evidence := (n⁺, n⁻)` with a partial order and tensor
   (see `Mettapedia.Logic.EvidenceQuantale` and `Mettapedia.Logic.PLN_KS_Bridge`).
 - Strength-level `[0,1]` formulas are views/projections of that richer semantics.
-- `PLNQuantaleConnection.lean` is an exploratory strength-level packaging; it is not the canonical
-  foundation.
+- The former exploratory strength-level packaging is archived at
+  `Mettapedia/Logic/Archive/PLNQuantaleConnectionLegacy.lean`; the live module path
+  is now a compatibility shim only.
 
 Key insight: PLN inference rules form a **category enriched over [0,1]**:
 - Objects: Terms/concepts

@@ -7,6 +7,10 @@ import Mettapedia.Logic.OSLFEvidenceSemantics
 Links the WM query-rewrite calculus (`WMRewriteRule`, `WMStrengthRule`) to
 OSLF evidence semantics (`semE`, `sem`) via a generic `Query`-type bridge.
 
+This file is a bridge layer. Canonical evidence semantics remains in
+`Mettapedia.Logic.EvidenceQuantale`; `OSLFEvidenceSemantics` provides the
+OSLF adapter over that carrier.
+
 ## Core Bridge (§1)
 
 - `wmEvidenceAtomSemQ` — generic WM atom semantics (arbitrary Query type)

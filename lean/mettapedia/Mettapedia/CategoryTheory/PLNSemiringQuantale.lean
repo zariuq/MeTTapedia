@@ -18,7 +18,6 @@ This file formalizes the semiring quantale structure on Evidence:
 - Goertzel, "Weakness: A Quantale-Theoretic Approach"
 -/
 
-set_option linter.dupNamespace false
 
 namespace Mettapedia.CategoryTheory.PLNSemiringQuantale
 

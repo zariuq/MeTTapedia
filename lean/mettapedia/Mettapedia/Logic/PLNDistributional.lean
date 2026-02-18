@@ -28,8 +28,8 @@ import Mathlib.Probability.Distributions.Beta
 import Mathlib.Probability.Moments.Variance
 import Mathlib.Analysis.SpecialFunctions.Gamma.Beta
 import Mathlib.MeasureTheory.Integral.Bochner.ContinuousLinearMap
+import Mettapedia.Logic.PLNDeduction
 
-set_option linter.unusedSectionVars false
 
 noncomputable section
 
@@ -39,17 +39,12 @@ open MeasureTheory ProbabilityTheory Real Set
 
 /-! ## Simple Truth Values
 
-A Simple Truth Value in PLN consists of a strength s ∈ [0,1] and confidence c ∈ [0,1].
+Use the canonical STV carrier from `PLNDeduction` to avoid duplicate record
+definitions for the same `(strength, confidence)` object.
 -/
 
-/-- A PLN Simple Truth Value (STV) is a pair (strength, confidence) where both are in [0,1]. -/
-structure SimpleTruthValue where
-  strength : ℝ
-  confidence : ℝ
-  strength_nonneg : 0 ≤ strength
-  strength_le_one : strength ≤ 1
-  confidence_nonneg : 0 ≤ confidence
-  confidence_le_one : confidence ≤ 1
+/-- Distributional STV reuses the canonical `PLNDeduction.STV` record. -/
+abbrev SimpleTruthValue := Mettapedia.Logic.PLNDeduction.STV
 
 namespace SimpleTruthValue
 

@@ -30,19 +30,17 @@ The bridge shows that PLN truth values can parameterize MetaMo dynamics:
 -/
 
 import Mettapedia.CognitiveArchitecture.MetaMo.Main
-import Mettapedia.Logic.PLNQuantaleConnection
 import Mathlib.Data.Real.Basic
 
 namespace Mettapedia.CognitiveArchitecture.Bridges
 
 open Mettapedia.CognitiveArchitecture.MetaMo
-open Mettapedia.Logic.PLNQuantaleConnection
 open Mettapedia.Algebra.QuantaleWeakness
 open scoped ENNReal
 
 /-! ## PLN Strength as Quantale Element
 
-The strength component of a SimpleTruthValue lives in [0,1], which embeds
+The strength component of the canonical PLN STV view lives in [0,1], which embeds
 into ℝ≥0∞ (extended nonnegative reals). This lets us use PLN strengths
 as parameters in MetaMo dynamics over ℝ≥0∞.
 -/

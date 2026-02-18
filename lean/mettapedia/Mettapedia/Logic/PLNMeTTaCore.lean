@@ -1,3 +1,4 @@
+import Mettapedia.Logic.EvidenceSTVBridge
 import Mettapedia.Logic.PLNDeduction
 import Mettapedia.Logic.PLNDerivation
 import Mettapedia.Logic.PLNInferenceRules
@@ -40,7 +41,8 @@ We prove these are equivalent under valid inputs, giving a single source of trut
 
 ## References
 
-- PLNDeduction.lean: STV structure, deduction formula with clamp01
+- EvidenceSTVBridge.lean: canonical STV view
+- PLNDeduction.lean: deduction formula with clamp01
 - PLNDerivation.lean: Raw formula + measure-theoretic correctness proofs
 - MeTTaCore: Evaluation semantics
 - lib_pln.metta: MeTTa PLN implementation
@@ -52,6 +54,9 @@ open Mettapedia.Logic.PLNDeduction
 open Mettapedia.Logic.PLN
 open Mettapedia.Logic.PLNInferenceRules
 open Mettapedia.OSLF.MeTTaCore
+
+/-- Canonical STV view for this bridge module. -/
+abbrev STV := Mettapedia.Logic.EvidenceSTVBridge.DeductionSTV
 
 /-! ## Unified PLN Deduction Formula
 

@@ -316,7 +316,6 @@ def MassFunction.isBayesian (m : MassFunction Ω) : Prop :=
 def MassFunction.isVacuous (m : MassFunction Ω) : Prop :=
   m.m Finset.univ = 1 ∧ ∀ A : Finset Ω, A ≠ Finset.univ → m.m A = 0
 
-set_option linter.unusedSectionVars false in
 /-- Helper: singletons contained in A are exactly singletons intersecting A. -/
 private lemma singleton_subset_iff_inter_nonempty {A : Finset Ω} {x : Ω} :
     {x} ⊆ A ↔ ({x} ∩ A).Nonempty := by

@@ -152,6 +152,19 @@ theorem kernelPrefixCone_iff_kernelIIDFactorization_bridge
             (Mettapedia.CategoryTheory.kernelExchangeable_iff_kernelIIDFactorization
               (X := X) (κ := κ) (hX := hX))
 
+/-- Bridge theorem (via `DeFinettiExports`): in the Markov-core phrasing,
+an exchangeable kernel admits a unique latent-`Theta` mediator family. -/
+theorem kernelExchangeable_implies_markovCore_uniqueLatentThetaMediator_bridge
+    {Y : Type*} [MeasurableSpace Y]
+    (X : ℕ → Ω → Bool) (κ : ProbabilityTheory.Kernel Y Ω)
+    [ProbabilityTheory.IsMarkovKernel κ]
+    (hX : ∀ i : ℕ, Measurable (X i))
+    (hexch : Mettapedia.CategoryTheory.KernelExchangeable X κ) :
+    Mettapedia.CategoryTheory.KernelLatentThetaMediatorInMarkovCore (Y := Y) (Ω := Ω) X κ := by
+  exact
+    Mettapedia.CategoryTheory.deFinettiExport_kernelMarkovCore_exchangeable_implies_unique_latentThetaMediator
+      (Y := Y) (Ω := Ω) X κ hX hexch
+
 /-- Bridge theorem for conditional uniqueness:
 given kernel iid-factorization and fiberwise identifiability, the latent
 Bernoulli-mixture kernel family exists uniquely. -/
@@ -243,8 +256,8 @@ example (span : ReductionSpan X) :
 
 /-- The rho-calculus Galois connection as a corollary. -/
 example : GaloisConnection
-    Mettapedia.OSLF.RhoCalculus.Reduction.possiblyProp
-    Mettapedia.OSLF.RhoCalculus.Reduction.relyProp :=
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.possiblyProp
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.relyProp :=
   rho_galois_from_span
 
 /-! ## Monotonicity of Modal Operators
@@ -265,12 +278,12 @@ theorem langBox_monotone (lang : LanguageDef) :
 
 /-- `possiblyProp` is monotone. -/
 theorem possiblyProp_monotone :
-    Monotone Mettapedia.OSLF.RhoCalculus.Reduction.possiblyProp :=
+    Monotone Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.possiblyProp :=
   rho_galois_from_span.monotone_l
 
 /-- `relyProp` is monotone. -/
 theorem relyProp_monotone :
-    Monotone Mettapedia.OSLF.RhoCalculus.Reduction.relyProp :=
+    Monotone Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.relyProp :=
   rho_galois_from_span.monotone_u
 
 /-! ## Categorical Lift: Galois Connection → Adjunction

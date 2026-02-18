@@ -1,9 +1,5 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core.Induction.DeltaShift
 
-set_option linter.unnecessarySimpa false
-set_option linter.unusedSimpArgs false
-set_option linter.unusedVariables false
-set_option linter.unusedSectionVars false
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive
 

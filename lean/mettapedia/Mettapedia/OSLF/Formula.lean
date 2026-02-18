@@ -1,8 +1,8 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
-import Mettapedia.OSLF.RhoCalculus.Engine
-import Mettapedia.OSLF.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.ToposReduction
@@ -55,8 +55,8 @@ namespace Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
-open Mettapedia.OSLF.RhoCalculus.Reduction
-open Mettapedia.OSLF.RhoCalculus.Engine
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-! ## Formula AST -/
@@ -280,7 +280,7 @@ theorem formula_galoisUsing (relEnv : RelationEnv) (lang : LanguageDef)
     executable ρ one-step relation (`reduceStep`). -/
 theorem rhoCalc_SC_empty_sem_diaTop_unsat_reduceStep
     (I : AtomSem) {p : Pattern}
-    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+    (hsc : Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
       (.collection .hashBag [] none) p) :
     ¬ sem (fun a b => b ∈ reduceStep a) I (.dia .top) p := by
   intro hsem
@@ -292,7 +292,7 @@ theorem rhoCalc_SC_empty_sem_diaTop_unsat_reduceStep
     into the specialized stepper. -/
 theorem rhoCalc_SC_empty_sem_diaTop_unsat_langReduces_of_reduceStep
     (I : AtomSem) {p : Pattern}
-    (hsc : Mettapedia.OSLF.RhoCalculus.StructuralCongruence
+    (hsc : Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
       (.collection .hashBag [] none) p)
     (hToStep : ∀ {q : Pattern}, langReduces rhoCalc p q → q ∈ reduceStep p) :
     ¬ sem (langReduces rhoCalc) I (.dia .top) p := by

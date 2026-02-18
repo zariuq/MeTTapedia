@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Framework.RewriteSystem
-import Mettapedia.OSLF.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 import Mathlib.Order.GaloisConnection.Defs
 
 /-!
@@ -30,7 +30,7 @@ proven by definitional equality.
 namespace Mettapedia.OSLF.Framework.RhoInstance
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.RhoCalculus.Reduction
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 open Mettapedia.OSLF.Framework
 
 /-! ## rho-Calculus Sorts -/

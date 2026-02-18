@@ -189,7 +189,6 @@ These work for *any* BN and any state values, using `eventEq` throughout.
 They connect `queryProb` (VE-based) to `cpt.jointMeasure` (measure-based). -/
 
 -- These lemmas provide their own type-class params to be maximally generic
-set_option linter.unusedSectionVars false in
 /-- `queryProb` for prop at any `val` = marginal measure. -/
 lemma queryProb_prop_eq_jointMeasure [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
@@ -201,7 +200,6 @@ lemma queryProb_prop_eq_jointMeasure [Fintype V] [DecidableEq V]
   simp only [queryProb]
   rw [propProbVE_eq_jointMeasure_eventEq]
 
-set_option linter.unusedSectionVars false in
 /-- `queryProb` for link at any `valA`, `valB` = conditional probability ratio. -/
 lemma queryProb_link_eq_jointMeasure [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
@@ -218,7 +216,6 @@ lemma queryProb_link_eq_jointMeasure [Fintype V] [DecidableEq V]
   · exact absurd h ha
   · rfl
 
-set_option linter.unusedSectionVars false in
 /-- `queryProb` for prop is at most 1. -/
 lemma queryProb_prop_le_one [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
@@ -229,7 +226,6 @@ lemma queryProb_prop_le_one [Fintype V] [DecidableEq V]
     queryProb (bn := bn) cpt (PLNQuery.prop ⟨v, val⟩) ≤ 1 := by
   rw [queryProb_prop_eq_jointMeasure]; exact prob_le_one
 
-set_option linter.unusedSectionVars false in
 /-- `queryProb` for link is at most 1. -/
 lemma queryProb_link_le_one [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
@@ -244,7 +240,6 @@ lemma queryProb_link_le_one [Fintype V] [DecidableEq V]
   · exact le_trans (ENNReal.div_le_div_right (measure_mono Set.inter_subset_left) _)
       ENNReal.div_self_le_one
 
-set_option linter.unusedSectionVars false in
 /-- Singleton prop `queryStrength.toReal` = `μ.real(eventEq v val)`. -/
 lemma queryStrength_singleton_prop_toReal [Fintype V] [DecidableEq V]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)]
@@ -260,7 +255,6 @@ lemma queryStrength_singleton_prop_toReal [Fintype V] [DecidableEq V]
   rw [queryProb_prop_eq_jointMeasure]
   simp [Measure.real]
 
-set_option linter.unusedSectionVars false in
 /-- Singleton link `queryStrength.toReal` = μ.real ratio.
 Note: intersection order is `eventEq b valB ∩ eventEq a valA` to match
 the convention where the numerator event is listed first. -/
@@ -972,7 +966,6 @@ instance screeningOffProbEq_of_eventEq_mul
       (bn := bn) (A := A) (B := B) (C := C)
       (valA := valA) (valB := valB) (valC := valC) (cpt := cpt)⟩
 
-set_option linter.unusedSectionVars false in
 theorem screeningOffMulEq_of_condIndepVertices_CA
     [∀ v : V, Inhabited (bn.stateSpace v)]
     [∀ v : V, MeasurableSingletonClass (bn.stateSpace v)]

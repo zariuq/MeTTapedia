@@ -30,7 +30,6 @@ This provides the missing structure for quantales: we get sSup/sInf for free.
 * Lawvere, "Metric spaces, generalized logic, and closed categories" (1973)
 -/
 
-set_option linter.dupNamespace false
 
 namespace Mettapedia.CategoryTheory.LambdaTheories
 

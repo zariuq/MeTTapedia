@@ -1,5 +1,6 @@
 import Mettapedia.Logic.Exchangeability
 import Mettapedia.Logic.EvidenceQuantale
+import Mettapedia.Logic.SolomonoffMeasure
 import Mettapedia.Logic.SolomonoffPrior
 import Mathlib.Data.List.OfFn
 
@@ -117,6 +118,28 @@ namespace RestrictedSolomonoffPrior
 /-- The induced semimeasure on finite strings (cylinder weights). -/
 noncomputable def μ (M : RestrictedSolomonoffPrior) : BinString → ℝ :=
   fun x => M.U.cylinderMeasure M.programs x
+
+/-- Concrete program-mass completeness criterion: selected programs saturate the
+Kraft mass exactly (`= 1`). -/
+def ProgramMassComplete (M : RestrictedSolomonoffPrior) : Prop :=
+  kraftSum M.programs = 1
+
+/-- Program-mass completeness implies normalized root mass for the induced
+restricted Solomonoff semimeasure. -/
+theorem mu_nil_eq_one_of_programMassComplete
+    (M : RestrictedSolomonoffPrior) (hcomplete : ProgramMassComplete M) :
+    M.μ [] = 1 := by
+  classical
+  unfold RestrictedSolomonoffPrior.μ MonotoneMachine.cylinderMeasure
+  have hfilter : M.programs.filter (fun p => M.U.produces p []) = M.programs := by
+    ext p
+    simp only [Finset.mem_filter, and_iff_left_iff_imp]
+    intro _
+    unfold MonotoneMachine.produces
+    intro ⟨i, hi⟩
+    simp at hi
+  rw [hfilter]
+  simpa [ProgramMassComplete, kraftSum] using hcomplete
 
 theorem mu_same_counts (M : RestrictedSolomonoffPrior) {n : ℕ} (xs₁ xs₂ : Fin n → Bool)
     (hcount : countTrue xs₁ = countTrue xs₂) :
@@ -321,6 +344,126 @@ theorem solomonoff_exchangeable_predictBit_same_evidence (M : RestrictedSolomono
   have hcount : countTrue xs₁ = countTrue xs₂ := by
     exact Nat.cast_injective hpos
   exact solomonoff_exchangeable_predictBit_same_counts (M := M) xs₁ xs₂ hcount b
+
+/-- Bridge theorem from semimeasure-level exchangeability to measure-level
+infinite exchangeability.
+
+If a probability measure on infinite binary sequences has the same finite-prefix
+laws as a `RestrictedSolomonoffPrior`, then the coordinate process is
+`InfiniteExchangeable` under that measure. -/
+theorem restrictedSolomonoff_infiniteExchangeable_of_prefixLaw
+    (M : RestrictedSolomonoffPrior)
+    (μ : MeasureTheory.Measure Mettapedia.Logic.SolomonoffPrior.InfBinString)
+    (hμprob : MeasureTheory.IsProbabilityMeasure μ)
+    (hprefix :
+      ∀ (n : ℕ) (xs : Fin n → Bool),
+        μ {ω | ∀ i : Fin n, ω i = xs i} =
+          ENNReal.ofReal (M.μ (List.ofFn xs))) :
+    InfiniteExchangeable (fun i ω => ω i) μ := by
+  letI : MeasureTheory.IsProbabilityMeasure μ := hμprob
+  refine ⟨?_⟩
+  intro n
+  refine ⟨?_⟩
+  intro σ vals
+  have hvals :
+      μ {ω | ∀ i : Fin n, ω i = vals i} =
+        ENNReal.ofReal (M.μ (List.ofFn vals)) := hprefix n vals
+  have hpermVals :
+      μ {ω | ∀ i : Fin n, ω i = vals (σ.symm i)} =
+        ENNReal.ofReal (M.μ (List.ofFn (vals ∘ σ.symm))) := hprefix n (vals ∘ σ.symm)
+  have hμ :
+      M.μ (List.ofFn vals) = M.μ (List.ofFn (vals ∘ σ.symm)) := by
+    simpa [RestrictedSolomonoffPrior.μ, ProgramsExchangeable] using M.hexch n σ vals
+  have hreindex :
+      μ {ω | ∀ i : Fin n, ω (σ i) = vals i} =
+        μ {ω | ∀ i : Fin n, ω i = vals (σ.symm i)} := by
+    congr 1
+    ext ω
+    constructor <;> intro h i
+    · simpa using h (σ.symm i)
+    · simpa using h (σ i)
+  calc
+    μ {ω | ∀ i : Fin n, ω i = vals i}
+        = ENNReal.ofReal (M.μ (List.ofFn vals)) := hvals
+    _ = ENNReal.ofReal (M.μ (List.ofFn (vals ∘ σ.symm))) := by simp [hμ]
+    _ = μ {ω | ∀ i : Fin n, ω i = vals (σ.symm i)} := by simpa using hpermVals.symm
+    _ = μ {ω | ∀ i : Fin n, ω (σ i) = vals i} := hreindex.symm
+
+/-- One-hop version of the Solomonoff→exchangeability bridge using the named
+no-leakage cylinder-law condition from `SolomonoffMeasure`, so no external
+`hprefix` argument is required. -/
+theorem restrictedSolomonoff_infiniteExchangeable_of_noLeakageAtCylindersLaw
+    (M : RestrictedSolomonoffPrior)
+    (μ : MeasureTheory.Measure Mettapedia.Logic.SolomonoffPrior.InfBinString)
+    (hμprob : MeasureTheory.IsProbabilityMeasure μ)
+    (hNoLeak :
+      Mettapedia.Logic.NoLeakageAtCylindersLaw (U := M.U) (programs := M.programs) μ) :
+    InfiniteExchangeable (fun i ω => ω i) μ := by
+  refine restrictedSolomonoff_infiniteExchangeable_of_prefixLaw
+    (M := M) (μ := μ) (hμprob := hμprob) ?_
+  exact Mettapedia.Logic.hprefix_of_noLeakageAtCylindersLaw
+    (U := M.U) (programs := M.programs) (μ := μ) hNoLeak
+
+/-- One-hop concrete criterion packaged without external witnesses:
+if selected programs emit at every depth and root mass is normalized, then the
+canonical machine-induced measure is probability and infinite-exchangeable. -/
+theorem restrictedSolomonoff_infiniteExchangeable_exists_of_totalOutputOnPrograms
+    (M : RestrictedSolomonoffPrior)
+    (htot : Mettapedia.Logic.TotalOutputOnPrograms M.U M.programs)
+    (hroot : M.μ [] = 1) :
+    ∃ μ : MeasureTheory.Measure Mettapedia.Logic.SolomonoffPrior.InfBinString,
+      ∃ hμprob : MeasureTheory.IsProbabilityMeasure μ,
+        μ = Mettapedia.Logic.totalOutputProgramMeasure
+          (U := M.U) (programs := M.programs) htot ∧
+        @InfiniteExchangeable _ _ (fun i ω => ω i) μ hμprob := by
+  let μ : MeasureTheory.Measure Mettapedia.Logic.SolomonoffPrior.InfBinString :=
+    Mettapedia.Logic.totalOutputProgramMeasure (U := M.U) (programs := M.programs) htot
+  have hμprob : MeasureTheory.IsProbabilityMeasure μ := by
+    simpa [μ, RestrictedSolomonoffPrior.μ] using
+      (Mettapedia.Logic.isProbabilityMeasure_totalOutputProgramMeasure_of_root_one
+        (U := M.U) (programs := M.programs) (htot := htot) hroot)
+  letI : MeasureTheory.IsProbabilityMeasure μ := hμprob
+  have hNoLeak :
+      Mettapedia.Logic.NoLeakageAtCylindersLaw (U := M.U) (programs := M.programs) μ := by
+    simpa [μ] using
+      (Mettapedia.Logic.noLeakageAtCylindersLaw_totalOutputProgramMeasure
+        (U := M.U) (programs := M.programs) htot)
+  refine ⟨μ, hμprob, rfl, ?_⟩
+  exact restrictedSolomonoff_infiniteExchangeable_of_noLeakageAtCylindersLaw
+    (M := M) (μ := μ) (hμprob := hμprob) hNoLeak
+
+/-- One-hop concrete criterion with no explicit `hroot` argument:
+derive normalization from `ProgramMassComplete` and then apply the
+total-output route. -/
+theorem restrictedSolomonoff_infiniteExchangeable_exists_of_totalOutputOnPrograms_and_programMassComplete
+    (M : RestrictedSolomonoffPrior)
+    (htot : Mettapedia.Logic.TotalOutputOnPrograms M.U M.programs)
+    (hcomplete : RestrictedSolomonoffPrior.ProgramMassComplete M) :
+    ∃ μ : MeasureTheory.Measure Mettapedia.Logic.SolomonoffPrior.InfBinString,
+      ∃ hμprob : MeasureTheory.IsProbabilityMeasure μ,
+        μ = Mettapedia.Logic.totalOutputProgramMeasure
+          (U := M.U) (programs := M.programs) htot ∧
+        @InfiniteExchangeable _ _ (fun i ω => ω i) μ hμprob := by
+  exact restrictedSolomonoff_infiniteExchangeable_exists_of_totalOutputOnPrograms
+    (M := M) (htot := htot)
+    (hroot := RestrictedSolomonoffPrior.mu_nil_eq_one_of_programMassComplete
+      (M := M) hcomplete)
+
+/-- Deprecated entrypoint: use
+`restrictedSolomonoff_infiniteExchangeable_of_noLeakageAtCylindersLaw`
+or the concrete
+`restrictedSolomonoff_infiniteExchangeable_exists_of_totalOutputOnPrograms_and_programMassComplete`. -/
+theorem restrictedSolomonoff_infiniteExchangeable_of_cylinderLaw
+    (M : RestrictedSolomonoffPrior)
+    (μ : MeasureTheory.Measure Mettapedia.Logic.SolomonoffPrior.InfBinString)
+    (hμprob : MeasureTheory.IsProbabilityMeasure μ)
+    (hCylinder :
+      ∀ x : BinString,
+        μ (Mettapedia.Logic.SolomonoffPrior.InfBinString.Cylinder x) =
+          ENNReal.ofReal (M.μ x)) :
+    InfiniteExchangeable (fun i ω => ω i) μ :=
+  restrictedSolomonoff_infiniteExchangeable_of_noLeakageAtCylindersLaw
+    (M := M) (μ := μ) (hμprob := hμprob) hCylinder
 
 theorem evidenceOfFn_snoc {n : ℕ} (xs : Fin n → Bool) (b : Bool) :
     evidenceOfFn (Fin.snoc (α := fun _ : Fin (n + 1) => Bool) xs b) =

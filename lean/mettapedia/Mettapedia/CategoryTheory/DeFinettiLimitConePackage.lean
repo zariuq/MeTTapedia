@@ -35,6 +35,13 @@ def KernelLatentThetaUniversalMediator
         ∃! L : Y → Measure DeFinettiConnection.Theta,
           KernelRepresentsLatentTheta (X := X) (κ := κ) L
 
+/-- All-sources strengthening of the universal mediator API:
+the same property must hold for every source type `Y'`. -/
+def KernelLatentThetaUniversalMediator_allSources
+    (X : ℕ → Ω → Bool) : Prop :=
+  ∀ (Y' : Type*) [MeasurableSpace Y'],
+    KernelLatentThetaUniversalMediator (Y := Y') (Ω := Ω) X
+
 /-- Lightweight limit-cone package for categorical de Finetti:
 the package stores exactly the universal mediator property. -/
 structure DeFinettiLimitConePackage
@@ -49,6 +56,15 @@ theorem deFinettiLimitConePackage_default
   refine ⟨?_⟩
   intro hX κ _ hexch
   exact existsUnique_latentThetaKernel_of_kernelExchangeable (X := X) (κ := κ) hX hexch
+
+/-- Canonical construction of the all-sources universal mediator API from the
+existing kernel-level de Finetti mediator theorem chain. -/
+theorem kernelLatentThetaUniversalMediator_allSources_default
+    (X : ℕ → Ω → Bool) :
+    KernelLatentThetaUniversalMediator_allSources (Ω := Ω) X := by
+  intro Y' _ hX κ _ hexch
+  exact existsUnique_latentThetaKernel_of_kernelExchangeable
+    (Y := Y') (X := X) (κ := κ) hX hexch
 
 /-- Canonical bridge theorem:
 the lightweight package is equivalent to the existing universal mediator API. -/

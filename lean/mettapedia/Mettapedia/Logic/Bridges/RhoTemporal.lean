@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.RhoCalculus.SpiceRule
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SpiceRule
 
 /-!
 # Bridge: ρ-Calculus Spice Rule ↔ PLN Temporal Logic
@@ -33,8 +33,8 @@ The spice calculus gives agents three temporal modes:
 
 namespace Mettapedia.Logic.Bridges.RhoTemporal
 
-open Mettapedia.OSLF.RhoCalculus
-open Mettapedia.OSLF.RhoCalculus.Spice
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Spice
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-! ## Converting ρ-Calculus Processes to Temporal Predicates

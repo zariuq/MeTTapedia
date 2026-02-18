@@ -30,7 +30,6 @@ generates the modal types ⟨Cj⟩_{xk::Ak} B in Phase 5C.
 - Meredith & Stay, "Operational Semantics in Logical Form" (oslf.pdf)
 -/
 
-set_option linter.dupNamespace false
 
 namespace Mettapedia.CategoryTheory.PLNTerms
 

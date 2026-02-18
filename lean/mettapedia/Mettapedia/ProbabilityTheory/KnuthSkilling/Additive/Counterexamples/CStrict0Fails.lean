@@ -1,7 +1,6 @@
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Proofs.GridInduction.Core.Induction.Construction
 import Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Counterexamples.SemidirectNoSeparation
 
-set_option linter.unnecessarySimpa false
 
 namespace Mettapedia.ProbabilityTheory.KnuthSkilling.Additive.Counterexamples
 

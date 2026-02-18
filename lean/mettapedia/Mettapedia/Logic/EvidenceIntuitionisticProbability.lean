@@ -318,7 +318,7 @@ theorem confidence_monotone_in_total (hκ_ne_top : κ ≠ ⊤) :
   -- Goal: t₁ * (t₂ + κ) ≤ (t₁ + κ) * t₂
   calc t₁ * (t₂ + κ)
       = t₁ * t₂ + t₁ * κ := by ring
-    _ ≤ t₁ * t₂ + t₂ * κ := add_le_add_left (mul_le_mul_right' h κ) _
+    _ ≤ t₁ * t₂ + t₂ * κ := by gcongr
     _ = (t₁ + κ) * t₂ := by ring
 
 /-- The PLN 2D structure (strength, confidence) captures STRICTLY MORE

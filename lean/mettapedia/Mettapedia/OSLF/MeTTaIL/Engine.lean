@@ -1,6 +1,6 @@
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Substitution
-import Mettapedia.OSLF.RhoCalculus.Engine
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 
 /-!
 # Generic MeTTaIL Rewrite Engine
@@ -49,7 +49,7 @@ namespace Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Substitution
-open Mettapedia.OSLF.RhoCalculus.Engine (patternToString)
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine (patternToString)
 
 instance : ToString Pattern := ⟨patternToString⟩
 
@@ -337,7 +337,7 @@ private def ppar (elems : List Pattern) : Pattern :=
   let x := Pattern.fvar "x"
   let term := ppar [poutput x pzero, pinput x (.bvar 0)]
   let genericReducts := rewriteStepNoPremises rhoCalc term
-  let specialReducts := Mettapedia.OSLF.RhoCalculus.Engine.reduceStep term
+  let specialReducts := Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine.reduceStep term
   IO.println s!"Comparison test: {term}"
   IO.println s!"  generic  ({genericReducts.length}): {genericReducts.map toString}"
   IO.println s!"  special  ({specialReducts.length}): {specialReducts.map toString}"
@@ -398,7 +398,7 @@ engine also handles PAR (congruence). We compare `rewriteWithContext`
 -- Agreement test: run both engines on a term and check equality
 private def checkAgreement (label : String) (term : Pattern) : IO Unit := do
   let genericReducts := (rewriteWithContext rhoCalc term).map toString
-  let specialReducts := (Mettapedia.OSLF.RhoCalculus.Engine.reduceStep term).map toString
+  let specialReducts := (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine.reduceStep term).map toString
   -- Sort for order-independent comparison
   let gSorted := genericReducts.mergeSort (· < ·)
   let sSorted := specialReducts.mergeSort (· < ·)

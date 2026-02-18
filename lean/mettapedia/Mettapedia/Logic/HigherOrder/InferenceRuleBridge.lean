@@ -1,5 +1,6 @@
 import Mettapedia.Logic.HigherOrder.HigherOrderReduction
 import Mettapedia.Logic.PLNInferenceRules
+import Mettapedia.Logic.EvidenceSTVBridge
 
 /-!
 # Bridge to Existing PLN Inference Rules
@@ -19,11 +20,12 @@ Show that our Inheritance definition is compatible with the existing
 - Member predicate matches: `Member X S = S.pred X` (definitional)
 
 **What we CANNOT prove yet** (blockers documented):
-- Exact formula match requires interpreting SimpleTruthValue ↔ Evidence conversion
-- Need to formalize how `(s, c)` pairs map to `Evidence (pos, neg)`
+- Exact formula match still needs the HO weak-set semantics to be connected to
+  the `memberToInheritance` side conditions.
+- Measure-level interpretation of `weakness` is still missing.
 
 This file provides the structural connection, leaving exact formula proofs for
-when the Evidence/STV bridge is formalized.
+when the HO measure bridge is formalized.
 
 ## References
 
@@ -75,10 +77,10 @@ theorem inheritance_uses_conditional_prob_structure
 
 To prove that our Inheritance exactly matches `memberToInheritance`, we need:
 
-1. **Evidence ↔ SimpleTruthValue conversion**:
-   - Define `toSTV : Evidence → (ℝ × ℝ)` (strength, confidence)
-   - Define `ofSTV : (ℝ × ℝ) → Evidence` (pos, neg counts)
-   - Prove roundtrip properties
+1. **Evidence ↔ SimpleTruthValue bridge use**:
+   - Reuse `EvidenceSTVBridge.stvEquiv`
+   - Reuse `EvidenceQuantale.toSTV` / `EvidenceQuantale.ofSTV`
+   - Instantiate bridge at the exact rule inputs in this file
 
 2. **Singleton SatisfyingSet interpretation**:
    - Show `Member x ⟨singleton⟩` corresponds to single-element evidence
@@ -97,13 +99,11 @@ theorem inheritance_matches_member_conversion
     toSTV inh_ev = memberToInheritance (toSTV member_ev).1 (toSTV member_ev).2 k
 ```
 
-This will require ~50-100 lines of proof once the Evidence/STV bridge is built.
+This now mainly requires the HO-to-measure bridge and singleton interpretation.
 
 ## Blockers
 
 Cannot complete proofs without:
-- [ ] Evidence.toSTV and Evidence.ofSTV functions
-- [ ] Formalization of PLN strength/confidence semantics in Evidence
 - [ ] Connection between weakness and probability measures
 - [ ] Interpretation of weight functions as probability distributions
 

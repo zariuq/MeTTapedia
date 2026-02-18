@@ -40,7 +40,6 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Rat.Cast.CharZero
 import Mettapedia.Logic.PLNDistributional
 
-set_option linter.unusedSectionVars false
 
 namespace Mettapedia.Bridge.BitVectorEvidence
 

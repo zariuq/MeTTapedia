@@ -37,7 +37,6 @@ This gives us the quantale tensor product!
 - Meredith & Stay, "Operational Semantics in Logical Form" (oslf.pdf)
 -/
 
-set_option linter.dupNamespace false
 
 namespace Mettapedia.CategoryTheory.ModalTypes
 

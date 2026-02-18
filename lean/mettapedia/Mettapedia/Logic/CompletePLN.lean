@@ -3,7 +3,6 @@ import Mettapedia.Logic.PLNDerivation
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Data.Real.Basic
 
-set_option linter.unusedVariables false
 
 /-!
 # Complete PLN: Exact Bayesian Inference in Logical Form

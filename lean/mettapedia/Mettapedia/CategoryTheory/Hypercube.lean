@@ -43,7 +43,6 @@ which is exactly the PLN deduction formula!
 - Section 3.5: Dependent Product as β-generated modality
 -/
 
-set_option linter.dupNamespace false
 
 namespace Mettapedia.CategoryTheory.Hypercube
 
