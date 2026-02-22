@@ -206,7 +206,8 @@ formalization. Serves as a traceability matrix for review.
 ## IX. Sorry / Axiom Census
 
 **Current OSLF status:**
-- 1 `sorry` in `Mettapedia/OSLF/RhoCalculus/Reduction.lean:276`
+- 3 `sorry` in `Mettapedia/OSLF/RhoCalculus/Reduction.lean` (emptyBag_SC_irreducible: drop, par, par_any cases)
+  - 2 cases closed (par_set, par_set_any) via hashSetCount SC-invariant
 - 0 custom axioms introduced in OSLF files
 
 The formalization otherwise relies only on:

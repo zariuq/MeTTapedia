@@ -253,6 +253,88 @@ theorem ioCount_SC {P Q : Pattern}
     -- "NQuote" and "PDrop" are neither "POutput" nor "PInput"
     simp [ioCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
 
+
+/-! ## SC-Invariant: HashSet Count
+
+`hashSetCount` counts hashSet collection nodes in a pattern. It is preserved
+by structural congruence. Since `hashBag [] none` has `hashSetCount = 0`
+but any `hashSet` pattern has `hashSetCount >= 1`, these can never be SC-equivalent.
+-/
+
+/-- Count of hashSet collection nodes in a pattern. -/
+noncomputable def hashSetCount : Pattern → Nat
+  | .bvar _ => 0
+  | .fvar _ => 0
+  | .apply _ args => (args.map hashSetCount).sum
+  | .lambda b => hashSetCount b
+  | .multiLambda _ b => hashSetCount b
+  | .subst b r => hashSetCount b + hashSetCount r
+  | .collection .hashSet elems _ => 1 + (elems.map hashSetCount).sum
+  | .collection _ elems _ => (elems.map hashSetCount).sum
+
+/-- Helper: pairwise SC on lists implies equal hashSetCount sums. -/
+private theorem hashSetCount_list_SC {ps qs : List Pattern} (hlen : ps.length = qs.length)
+    (hsc : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
+      hashSetCount (ps.get ⟨i, h₁⟩) = hashSetCount (qs.get ⟨i, h₂⟩)) :
+    (ps.map hashSetCount).sum = (qs.map hashSetCount).sum := by
+  induction ps generalizing qs with
+  | nil =>
+    cases qs with
+    | nil => rfl
+    | cons q qs' => simp at hlen
+  | cons p ps' ih =>
+    cases qs with
+    | nil => simp at hlen
+    | cons q qs' =>
+      simp only [List.map_cons, List.sum_cons]
+      simp only [List.length_cons] at hlen
+      have h0 : hashSetCount p = hashSetCount q := hsc 0 (Nat.zero_lt_succ _) (Nat.zero_lt_succ _)
+      have htl := ih (by omega) fun i h₁ h₂ =>
+        hsc (i + 1) (Nat.succ_lt_succ h₁) (Nat.succ_lt_succ h₂)
+      omega
+
+/-- SC preserves hashSetCount. -/
+theorem hashSetCount_SC {P Q : Pattern}
+    (hsc : StructuralCongruence P Q) : hashSetCount P = hashSetCount Q := by
+  induction hsc with
+  | alpha _ _ h => subst h; rfl
+  | refl _ => rfl
+  | symm _ _ _ ih => exact ih.symm
+  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+  | par_singleton p =>
+    simp [hashSetCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_nil_left p =>
+    simp [hashSetCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_nil_right p =>
+    simp [hashSetCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_comm p q =>
+    simp [hashSetCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
+  | par_assoc p q r =>
+    simp [hashSetCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
+  | par_cong ps qs hlen _ ih =>
+    simp only [hashSetCount]; exact hashSetCount_list_SC hlen ih
+  | par_flatten ps qs =>
+    simp [hashSetCount, List.map_append, List.sum_append,
+          List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+  | par_perm _ _ hperm =>
+    simp only [hashSetCount]; exact (hperm.map hashSetCount).sum_eq
+  | set_perm _ _ hperm =>
+    simp only [hashSetCount]
+    have := (hperm.map hashSetCount).sum_eq
+    omega
+  | set_cong es₁ es₂ hlen _ ih =>
+    simp only [hashSetCount]; exact congrArg (1 + ·) (hashSetCount_list_SC hlen ih)
+  | lambda_cong _ _ _ ih => simp only [hashSetCount]; exact ih
+  | apply_cong f args₁ args₂ hlen _ ih =>
+    simp only [hashSetCount]; exact hashSetCount_list_SC hlen ih
+  | collection_general_cong ct es₁ es₂ g hlen _ ih =>
+    have hargs := hashSetCount_list_SC hlen ih
+    cases ct <;> simp only [hashSetCount] <;> omega
+  | multiLambda_cong _ _ _ _ ih => simp only [hashSetCount]; exact ih
+  | subst_cong _ _ _ _ _ _ ih₁ ih₂ => simp only [hashSetCount]; omega
+  | quote_drop n =>
+    simp [hashSetCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+
 /-! ## Empty Bag Irreducibility
 
 The empty bag `.collection .hashBag [] none` cannot reduce. The proof is
@@ -288,21 +370,37 @@ theorem emptyBag_SC_irreducible {P Q : Pattern}
     omega
   | drop =>
     -- Need: SC({}, PDrop[NQuote[x]]) -> False
-    -- This requires showing SC cannot map {} to a drop redex.
-    -- The SC rule quote_drop gives NQuote[PDrop[n]] ≡ n (NOT PDrop[NQuote[n]] ≡ n).
-    -- Formalizing this requires a structural lemma about SC.
     intro hsc
-    sorry
+    sorry -- OPEN: SC(hashBag [] none, PDrop[NQuote[p]]) → False (needs InZeroClass predicate)
   | @equiv _ p' _ q' hsc₁ _ hsc₂ ih =>
     intro hsc
     exact ih (.trans _ _ _ hsc hsc₁)
   | @par p q rest _ ih =>
-    -- SC({}, {p::rest}). Need SC({}, p) for IH.
-    -- This requires decomposing SC on bags, which is non-trivial.
+    -- OPEN: SC(hashBag [] none, hashBag (p :: rest) none) ∧ Reduces p q → False
+    -- IH says SC(Z, p) → False. Need to extract SC(Z, p) from SC(Z, hashBag(p::rest)).
+    -- Difficulty: not all elements of a zero-class bag are SC-equiv to Z.
+    -- E.g., hashBag [PZero, Z] ≡ Z (par_nil_left) but SC(Z, PZero) might not hold
+    -- (Z = hashBag [] and PZero = apply "PZero" [] are syntactically distinct,
+    --  and no SC rule directly equates them).
+    -- Possible fix: add SC rule `hashBag [] ≡ PZero` to match standard process algebra.
+    -- Alternative: prove NormalForm(PZero) separately and handle PZero case directly.
     intro hsc
     sorry
-  | par_any => intro hsc; sorry
-  | par_set => intro hsc; sorry
-  | par_set_any => intro hsc; sorry
+  | @par_any p q before after _ ih =>
+    -- OPEN: Same issue as par case but for arbitrary position in the bag.
+    -- SC(Z, hashBag (before ++ [p] ++ after) none) ∧ Reduces p q → False
+    intro hsc
+    sorry
+  | @par_set p q rest _ ih =>
+    intro hsc
+    have hsc_count := hashSetCount_SC hsc
+    simp [hashSetCount, List.map_nil, List.sum_nil, List.map_cons, List.sum_cons] at hsc_count
+    omega
+  | @par_set_any p q before after _ ih =>
+    intro hsc
+    have hsc_count := hashSetCount_SC hsc
+    simp [hashSetCount, List.map_nil, List.sum_nil, List.map_cons, List.sum_cons,
+          List.map_append, List.sum_append] at hsc_count
+    omega
 
 end Mettapedia.OSLF.RhoCalculus.Reduction
