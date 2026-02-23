@@ -16,6 +16,7 @@ import Mathlib.MeasureTheory.Constructions.Polish.Basic
 import Mathlib.Probability.Kernel.Composition.Comp
 import Mathlib.Probability.Kernel.Composition.CompMap
 import Mathlib.Probability.Kernel.Composition.MapComap
+import Mathlib.Probability.Kernel.Composition.MeasureComp
 import Mathlib.Probability.Kernel.IonescuTulcea.Traj
 import Mathlib.Topology.Bases
 import Mathlib.Topology.ContinuousMap.Bounded.Basic
@@ -3147,6 +3148,267 @@ def DefaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening : Pr
       ∀ (Y' : Type) [MeasurableSpace Y'],
         KernelLatentThetaUniversalMediator (Y := Y') (Ω := GlobalBinarySeq) coordProcess),
     KernelLatentThetaUniversalMediator_allSourcesKleisli_unrestricted
+
+/-- A Kleisli morphism has finite mass when all fibers have finite total mass. -/
+def KleisliIsFiniteMass {A B : KleisliGiry} (f : A ⟶ B) : Prop :=
+  ∀ a : A.1, (kleisliHomToKernel f) a Set.univ < ⊤
+
+/-- All-sources Kleisli mediator property (finite-mass):
+for every source object and every finite-mass cone-leg into `Bool^ℕ` that commutes
+with all finitary permutation arrows, there exists a unique Kleisli mediator
+through `iidSequenceKleisliHomTheta`.
+
+This is the corrected strengthening target: the unrestricted version
+(`KernelLatentThetaUniversalMediator_allSourcesKleisli_unrestricted`) is false
+(counting-measure counterexample), but the finite-mass restriction is equivalent
+to the fully-proven Markov-only version. -/
+def KernelLatentThetaUniversalMediator_allSourcesKleisli_finiteMass : Prop :=
+  ∀ (A : KleisliGiry),
+    ∀ (κhom : A ⟶ KleisliBinarySeqObj),
+      KleisliIsFiniteMass κhom →
+      (∀ τ : FinSuppPermNat,
+        CategoryTheory.CategoryStruct.comp κhom (finSuppPermKleisliHom τ) = κhom) →
+      ∃! m : A ⟶ KleisliLatentThetaObj,
+        CategoryTheory.CategoryStruct.comp m iidSequenceKleisliHomTheta = κhom
+
+theorem kleisliIsFiniteMass_of_kleisliIsMarkov
+    {A B : KleisliGiry} (f : A ⟶ B) (hm : KleisliIsMarkov f) :
+    KleisliIsFiniteMass f := by
+  intro a; have := hm a; simp [kleisliHomToKernel]
+
+/-- Markov-only universality trivially implies finite-mass universality
+(every Markov morphism has finite mass). -/
+theorem allSourcesKleisli_markovOnly_of_finiteMass
+    (huniv : KernelLatentThetaUniversalMediator_allSourcesKleisli_finiteMass) :
+    KernelLatentThetaUniversalMediator_allSourcesKleisli_markovOnly := by
+  intro A κhom hmarkov hcomm
+  exact huniv A κhom (kleisliIsFiniteMass_of_kleisliIsMarkov κhom hmarkov) hcomm
+
+private theorem bind_iidSequenceKernelTheta_totalMass_eq
+    (μ : Measure LatentTheta) :
+    (Measure.bind μ (fun θ => iidSequenceKernelTheta θ)) Set.univ = μ Set.univ := by
+  by_cases hμ : μ = 0
+  · simp [hμ, Measure.bind_zero_left]
+  · rw [Measure.bind_apply MeasurableSet.univ
+      (ProbabilityTheory.Kernel.aemeasurable iidSequenceKernelTheta)]
+    calc
+      ∫⁻ θ : LatentTheta, iidSequenceKernelTheta θ Set.univ ∂μ
+          = ∫⁻ _ : LatentTheta, (1 : ENNReal) ∂μ := by
+            refine lintegral_congr_ae ?_
+            exact Filter.Eventually.of_forall (fun θ => by simp)
+      _ = μ Set.univ := by simp
+
+private theorem smul_inv_smul_measure' {α : Type*} [MeasurableSpace α]
+    (μ : Measure α) (c : ENNReal) (hc_pos : c ≠ 0) (hc_fin : c ≠ ⊤) :
+    c • (c⁻¹ • μ) = μ := by
+  ext s _
+  simp [Measure.smul_apply, smul_eq_mul, ← mul_assoc,
+    ENNReal.mul_inv_cancel hc_pos hc_fin]
+
+private theorem measurable_piecewise_measure {α β : Type*}
+    [MeasurableSpace α] [MeasurableSpace β]
+    (f g : α → Measure β) (p : α → Prop) [DecidablePred p]
+    (hp : MeasurableSet {a | p a})
+    (hf : Measurable f) (hg : Measurable g) :
+    Measurable (fun a => if p a then f a else g a) := by
+  rw [Measure.measurable_measure]
+  intro s hs
+  have : (fun a => (if p a then f a else g a) s)
+      = fun a => if p a then (f a) s else (g a) s := by
+    ext a; split <;> rfl
+  rw [this]
+  exact Measurable.ite hp
+    ((Measure.measurable_measure.mp hf) s hs)
+    ((Measure.measurable_measure.mp hg) s hs)
+
+private theorem measurable_smul_measure {α β : Type*}
+    [MeasurableSpace α] [MeasurableSpace β]
+    (f : α → Measure β) (g : α → ENNReal)
+    (hf : Measurable f) (hg : Measurable g) :
+    Measurable (fun a => g a • f a) := by
+  rw [Measure.measurable_measure]
+  intro s hs
+  simp only [Measure.smul_apply, smul_eq_mul]
+  exact hg.mul ((Measure.measurable_measure.mp hf) s hs)
+
+/-- Factorization equation at a point for Kleisli composition through iid. -/
+private theorem kleisli_iid_fac_at {A : KleisliGiry}
+    (f : A ⟶ KleisliLatentThetaObj) (a : A.1) :
+    (CategoryTheory.CategoryStruct.comp f iidSequenceKleisliHomTheta).1 a =
+      ((kleisliHomToKernel f) a).bind (fun θ => iidSequenceKernelTheta θ) := by
+  simp [kleisliHomToKernel]
+  rfl
+
+/-- Finite-mass universality follows from Markov-only universality by
+pointwise scaling: normalize each fiber to probability, apply the Markov-only
+chain, and scale the mediator back up. -/
+theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
+    (huniv : KernelLatentThetaUniversalMediator_allSourcesKleisli_markovOnly)
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ)) :
+    KernelLatentThetaUniversalMediator_allSourcesKleisli_finiteMass := by
+  intro A κhom hfin hκcomm
+  -- ===== Setup =====
+  let κ := kleisliHomToKernel κhom
+  let θ₀ : LatentTheta := ⟨1/2, by norm_num, by norm_num⟩
+  let c : A.1 → ENNReal := fun a => κ a Set.univ
+  have hc_fin : ∀ a, c a < ⊤ := hfin
+  have hc_ne_top : ∀ a, c a ≠ ⊤ := fun a => ne_top_of_lt (hc_fin a)
+  have hc_meas : Measurable c :=
+    (Measure.measurable_measure.mp κ.measurable) Set.univ MeasurableSet.univ
+  have hp_zero : MeasurableSet {a : A.1 | c a = 0} :=
+    hc_meas (measurableSet_singleton 0)
+  -- Fiber permutation invariance
+  have hfiber_perm : ∀ a τ, (κ a).map (finSuppPermuteSeq τ) = κ a := by
+    intro a τ
+    have ha : (CategoryTheory.CategoryStruct.comp κhom (finSuppPermKleisliHom τ)).1 a = κhom.1 a :=
+      congrFun (congrArg Subtype.val (hκcomm τ)) a
+    simp only [κ, kleisliHomToKernel]
+    change (κhom.1 a).map (finSuppPermuteSeq τ) = κhom.1 a
+    have : (CategoryTheory.CategoryStruct.comp κhom (finSuppPermKleisliHom τ)).1 a =
+        (κhom.1 a).bind (fun ω => Measure.dirac (finSuppPermuteSeq τ ω)) := rfl
+    rw [this, Measure.bind_dirac_eq_map _ (measurable_finSuppPermuteSeq τ)] at ha
+    exact ha
+  -- ===== Normalized morphism =====
+  haveI hdec_c : DecidablePred (fun a : A.1 => c a = 0) := fun a => Classical.dec _
+  let κ_norm_fn : A.1 → Measure GlobalBinarySeq :=
+    fun a => if c a = 0 then iidSequenceKernelTheta θ₀ else (c a)⁻¹ • κ a
+  have hκ_norm_meas : Measurable κ_norm_fn :=
+    measurable_piecewise_measure _ _ (fun a => c a = 0) hp_zero
+      measurable_const (measurable_smul_measure _ _ κ.measurable hc_meas.inv)
+  have hκ_norm_prob : ∀ a, IsProbabilityMeasure (κ_norm_fn a) := by
+    intro a; simp only [κ_norm_fn]; split
+    · exact ProbabilityTheory.IsMarkovKernel.isProbabilityMeasure
+        (κ := iidSequenceKernelTheta) θ₀
+    · rename_i h
+      exact ⟨by simp only [Measure.smul_apply, smul_eq_mul]
+              ; exact ENNReal.inv_mul_cancel h (hc_ne_top a)⟩
+  let κ_norm_hom : A ⟶ KleisliBinarySeqObj := ⟨κ_norm_fn, hκ_norm_meas⟩
+  have hκ_norm_comm : ∀ τ : FinSuppPermNat,
+      CategoryTheory.CategoryStruct.comp κ_norm_hom (finSuppPermKleisliHom τ) = κ_norm_hom := by
+    intro τ; apply Subtype.ext; funext a
+    show (κ_norm_fn a).bind (fun ω => Measure.dirac (finSuppPermuteSeq τ ω)) = κ_norm_fn a
+    rw [Measure.bind_dirac_eq_map _ (measurable_finSuppPermuteSeq τ)]
+    simp only [κ_norm_fn]; split
+    · exact hglobal θ₀ τ
+    · rw [Measure.map_smul, hfiber_perm a τ]
+  -- ===== Apply Markov universality =====
+  rcases huniv A κ_norm_hom (fun a => hκ_norm_prob a) hκ_norm_comm with
+    ⟨m_norm, hm_norm_fac, hm_norm_uniq⟩
+  let L_norm := kleisliHomToKernel m_norm
+  have hm_norm_fac_pt : ∀ a,
+      (L_norm a).bind (fun θ => iidSequenceKernelTheta θ) = κ_norm_fn a := by
+    intro a
+    have := congrFun (congrArg Subtype.val hm_norm_fac) a
+    simpa [L_norm, kleisliHomToKernel] using this
+  -- ===== Scaled mediator =====
+  have hm_meas : Measurable (fun a => c a • L_norm a) :=
+    measurable_smul_measure _ _ L_norm.measurable hc_meas
+  let m : A ⟶ KleisliLatentThetaObj :=
+    kernelToKleisliHom
+      { toFun := fun a => c a • L_norm a
+        measurable' := hm_meas }
+  -- ===== Factorization =====
+  have hm_fac : CategoryTheory.CategoryStruct.comp m iidSequenceKleisliHomTheta = κhom := by
+    apply Subtype.ext; funext a
+    -- LHS: bind (c a • L_norm a) iid
+    have hlhs : (CategoryTheory.CategoryStruct.comp m iidSequenceKleisliHomTheta).1 a =
+        (c a • L_norm a).bind (fun θ => iidSequenceKernelTheta θ) :=
+      kleisli_iid_fac_at m a
+    rw [hlhs]
+    -- = c a • bind (L_norm a) iid
+    rw [Measure.comp_smul .., hm_norm_fac_pt a]
+    -- = c a • κ_norm_fn a = κhom.1 a
+    simp only [κ_norm_fn]
+    split
+    · -- c a = 0
+      rename_i hca0
+      have hκ_zero : κ a = 0 := Measure.measure_univ_eq_zero.mp hca0
+      simp only [hca0, zero_smul]
+      symm; simpa [κ, kleisliHomToKernel] using hκ_zero
+    · -- c a > 0: c • c⁻¹ • μ = μ
+      rename_i hca_ne0
+      show c a • ((c a)⁻¹ • κ a) = κhom.1 a
+      have : c a • ((c a)⁻¹ • κ a) = κ a :=
+        smul_inv_smul_measure' (κ a) (c a) hca_ne0 (hc_ne_top a)
+      rw [this]; rfl
+  -- ===== Uniqueness =====
+  have hm_uniq : ∀ m' : A ⟶ KleisliLatentThetaObj,
+      CategoryTheory.CategoryStruct.comp m' iidSequenceKleisliHomTheta = κhom → m' = m := by
+    intro m' hm'_fac
+    let L' := kleisliHomToKernel m'
+    -- Pointwise bind factorization
+    have hm'_bind : ∀ a,
+        (L' a).bind (fun θ => iidSequenceKernelTheta θ) = κ a := by
+      intro a
+      have := congrFun (congrArg Subtype.val hm'_fac) a
+      simpa [L', κ, kleisliHomToKernel] using this
+    -- Total mass transfer
+    have hm'_mass : ∀ a, (L' a) Set.univ = c a := by
+      intro a
+      rw [← bind_iidSequenceKernelTheta_totalMass_eq (L' a), hm'_bind a]
+    -- Construct normalized m'
+    let m'_norm_fn : A.1 → Measure LatentTheta :=
+      fun b => if c b = 0 then L_norm b else (c b)⁻¹ • L' b
+    have hm'_norm_meas : Measurable m'_norm_fn :=
+      measurable_piecewise_measure _ _ (fun b => c b = 0) hp_zero
+        L_norm.measurable (measurable_smul_measure _ _ L'.measurable hc_meas.inv)
+    let m'_norm : A ⟶ KleisliLatentThetaObj :=
+      kernelToKleisliHom ⟨m'_norm_fn, hm'_norm_meas⟩
+    -- m'_norm factors κ_norm_hom
+    have hm'_norm_fac : CategoryTheory.CategoryStruct.comp m'_norm
+        iidSequenceKleisliHomTheta = κ_norm_hom := by
+      apply Subtype.ext; funext b
+      have hlhs : (CategoryTheory.CategoryStruct.comp m'_norm iidSequenceKleisliHomTheta).1 b =
+          (m'_norm_fn b).bind (fun θ => iidSequenceKernelTheta θ) :=
+        kleisli_iid_fac_at m'_norm b
+      rw [hlhs]
+      show (m'_norm_fn b).bind (fun θ => iidSequenceKernelTheta θ) = κ_norm_fn b
+      simp only [m'_norm_fn]; split
+      · exact hm_norm_fac_pt b
+      · rename_i hcb_ne0
+        rw [Measure.comp_smul .., hm'_bind b]
+        show (c b)⁻¹ • κ b = κ_norm_fn b
+        simp only [κ_norm_fn, hcb_ne0, ↓reduceIte]
+    -- Uniqueness: m'_norm = m_norm
+    have h_eq : m'_norm = m_norm := hm_norm_uniq m'_norm hm'_norm_fac
+    -- Extract pointwise equality
+    apply Subtype.ext; funext a
+    by_cases hca0 : c a = 0
+    · -- c a = 0: L' a = 0 and c a • L_norm a = 0
+      have hL'_zero : L' a = 0 :=
+        Measure.measure_univ_eq_zero.mp (by rw [hm'_mass a, hca0])
+      show m'.1 a = m.1 a
+      have hm_a : m.1 a = (0 : Measure LatentTheta) := by
+        show c a • L_norm a = 0; rw [hca0, zero_smul]
+      rw [hm_a]
+      change L' a = 0
+      exact hL'_zero
+    · -- c a > 0: from m'_norm = m_norm, extract (c a)⁻¹ • L' a = L_norm a
+      have h_eq_a : m'_norm_fn a = L_norm a := by
+        have h := congrFun (congrArg Subtype.val h_eq) a
+        exact h
+      -- m'_norm_fn a = (c a)⁻¹ • L' a (since c a ≠ 0)
+      have h_m'_norm_val : m'_norm_fn a = (c a)⁻¹ • L' a := by
+        simp [m'_norm_fn, hca0]
+      rw [h_m'_norm_val] at h_eq_a
+      -- L' a = c a • L_norm a
+      show m'.1 a = m.1 a
+      have hL'_eq : L' a = c a • L_norm a := by
+        calc L' a = c a • ((c a)⁻¹ • L' a) :=
+              (smul_inv_smul_measure' (L' a) (c a) hca0 (hc_ne_top a)).symm
+          _ = c a • L_norm a := by rw [h_eq_a]
+      simp only [m, kernelToKleisliHom, L', kleisliHomToKernel] at hL'_eq ⊢
+      exact hL'_eq
+  exact ⟨m, hm_fac, hm_uniq⟩
+
+/-- Finite-mass universality is equivalent to Markov-only universality
+(given global finitary invariance of iid). -/
+theorem allSourcesKleisli_finiteMass_iff_markovOnly
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ)) :
+    KernelLatentThetaUniversalMediator_allSourcesKleisli_finiteMass ↔
+    KernelLatentThetaUniversalMediator_allSourcesKleisli_markovOnly :=
+  ⟨allSourcesKleisli_markovOnly_of_finiteMass,
+   fun h => allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly h hglobal⟩
 
 /-- Canonical measurable latent-kernel constructor from unrestricted
 all-sources kernel-level factorization witnesses. -/

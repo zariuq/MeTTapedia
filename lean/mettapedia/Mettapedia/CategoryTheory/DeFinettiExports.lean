@@ -27,7 +27,7 @@ It re-exports the stable theorem chain needed by downstream users.
 15. `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernelFactorization_unrestricted` (adapter)
 16. `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernel` (adapter)
 17. `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_prefixPiMarginals` (adapter)
-18. `deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_strengthening` (hard-step target hook)
+18. ~~`deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_strengthening`~~ (DEAD PATH — strengthening proven false)
 19. `deFinettiExport_iidSequenceKleisliCone_isLimit_of_allSourcesKleisli_unrestricted`
 20. `deFinettiExport_restrictedSolomonoff_prefixLaw_implies_unique_latentThetaMediator`
 21. `deFinettiExport_restrictedSolomonoff_totalOutput_implies_nupln_master_chain_and_unique_latentThetaMediator`
@@ -42,9 +42,18 @@ It re-exports the stable theorem chain needed by downstream users.
    `deFinettiExport_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`.
 4. Use unrestricted/full-`IsLimit` theorems only as adapters when you have an
    explicit commutes-to-Markov bridge (`CommutesToMarkovBridge`).
-5. Structural boundary:
-   `deFinettiExport_not_commutesToMarkovBridge_unrestricted` shows this bridge
-   is not derivable in unrestricted `Kleisli(MeasCat.Giry)`.
+5. Structural boundaries (proven negative results):
+   - `deFinettiExport_not_commutesToMarkovBridge_unrestricted`: the commutes-to-Markov
+     bridge is not derivable in unrestricted `Kleisli(MeasCat.Giry)`.
+   - `deFinettiExport_not_allSourcesKleisli_unrestricted`: the unrestricted all-sources
+     Kleisli mediator property is FALSE (counting-measure counterexample).
+   - `deFinettiExport_not_defaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening`:
+     the unrestricted strengthening hypothesis is also false.
+6. Finite-mass equivalence (corrected strengthening):
+   `deFinettiExport_allSourcesKleisli_finiteMass_iff_markovOnly` proves that
+   finite-mass universality is equivalent to Markov-only universality.
+   The fully unrestricted version is false (counting-measure counterexample),
+   but the finite-mass restriction is the maximal correct strengthening.
 
 ## Migration Map (Legacy -> Canonical/Adapter)
 - `deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_allSourcesKleisli_unrestricted`
@@ -450,6 +459,27 @@ theorem deFinettiExport_not_commutesToMarkovBridge_unrestricted :
     ¬ CommutesToMarkovBridge :=
   not_commutesToMarkovBridge_unrestricted
 
+/-- Structural boundary: the unrestricted all-sources Kleisli mediator property
+is FALSE. The counting measure on `ℕ → Bool` from PUnit commutes with all
+permutations but admits no mediator through iid(θ), because every singleton
+has iid-measure 0 for all θ while counting measure assigns mass 1. -/
+theorem deFinettiExport_not_allSourcesKleisli_unrestricted :
+    ¬ KernelLatentThetaUniversalMediator_allSourcesKleisli_unrestricted :=
+  deFinettiStable_not_allSourcesKleisli_unrestricted
+
+/-- Structural boundary: the unrestricted strengthening hypothesis is also false
+(it implies the unrestricted universality refuted above). The correct
+strengthening is the finite-mass version; see
+`deFinettiExport_allSourcesKleisli_finiteMass_iff_markovOnly`. -/
+theorem deFinettiExport_not_defaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ))
+    (hunivDefault :
+      ∀ (Y' : Type) [MeasurableSpace Y'],
+        KernelLatentThetaUniversalMediator (Y := Y') (Ω := GlobalBinarySeq) coordProcess) :
+    ¬ DefaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening :=
+  deFinettiStable_not_defaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening
+    hglobal hunivDefault
+
 /-- Canonical export theorem (full-target route, crux-isolated):
 compose
 1. default all-sources qualitative de Finetti,
@@ -600,10 +630,18 @@ theorem deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance
       iidSequenceKernelTheta_represents_latentDirac_unconditional
       hmarkov_of_commutes
 
-/-- Hard-step target hook:
-if the no-bridge strengthening is available, derive the full default-all-sources
-Kleisli `IsLimit` endpoint without an explicit `CommutesToMarkovBridge`
-assumption. -/
+/-- **DEAD PATH**: The `hstrength` hypothesis
+(`DefaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening`) is
+proven false — see `deFinettiExport_not_allSourcesKleisli_unrestricted`.
+This theorem is vacuously true and retained only for backward compatibility.
+
+Use the canonical Markov-only endpoint
+`deFinettiExport_markovCore_to_globalIIDConeMediatorUnique_markovOnly`
+or the equivalent finite-mass version
+`deFinettiExport_allSourcesKleisli_finiteMass_iff_markovOnly` instead. -/
+@[deprecated
+  deFinettiExport_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
+  (since := "2026-02-23")]
 theorem deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_strengthening
     (X : ℕ → Ω → Bool)
     (hcore : KernelLatentThetaUniversalMediatorInMarkovCore (Y := Y) (Ω := Ω) X)
@@ -1146,5 +1184,29 @@ theorem deFinettiExport_restrictedSolomonoff_totalOutput_and_programMassComplete
     (hroot :=
       Mettapedia.Logic.SolomonoffExchangeable.RestrictedSolomonoffPrior.mu_nil_eq_one_of_programMassComplete
         (M := M) hcomplete)
+
+/-- Public API: finite-mass universality is equivalent to Markov-only
+universality (given global finitary invariance).
+
+This is the corrected strengthening: the fully unrestricted version is false
+(counting-measure counterexample at `not_commutesToMarkovBridge_unrestricted`),
+but finite-mass is proven equivalent to the Markov-only version. -/
+theorem deFinettiExport_allSourcesKleisli_finiteMass_iff_markovOnly
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ)) :
+    KernelLatentThetaUniversalMediator_allSourcesKleisli_finiteMass ↔
+    KernelLatentThetaUniversalMediator_allSourcesKleisli_markovOnly :=
+  deFinettiStable_allSourcesKleisli_finiteMass_iff_markovOnly hglobal
+
+/-- Public API: finite-mass universality from global finitary invariance and
+default all-sources qualitative witness. Fully proven, no hypotheses needed
+beyond the standard de Finetti infrastructure. -/
+theorem deFinettiExport_allSourcesKleisli_finiteMass_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ))
+    (hunivDefault :
+      ∀ (Y' : Type) [MeasurableSpace Y'],
+        KernelLatentThetaUniversalMediator (Y := Y') (Ω := GlobalBinarySeq) coordProcess) :
+    KernelLatentThetaUniversalMediator_allSourcesKleisli_finiteMass :=
+  deFinettiStable_allSourcesKleisli_finiteMass_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
+    hglobal hunivDefault
 
 end Mettapedia.CategoryTheory

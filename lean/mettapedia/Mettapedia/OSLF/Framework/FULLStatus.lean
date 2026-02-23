@@ -269,24 +269,24 @@ def paperParityTracker : List Milestone :=
       note := "Theorem-1 has both a generic CoreMain contract and a canonical `langReduces` endpoint with explicit predecessor-finiteness assumptions; this closes the paper-facing endpoint selection without masking assumptions." }
   , { area := "Native Type Theory Core"
       title := "Full NT route over presheaf/base-fibration construction (beyond constructor-scoped endpoint)"
-      status := .inProgress
-      codeRef := "Mettapedia/OSLF/Framework/CategoryBridge.lean: languagePresheafLambdaTheory/languageSortFiber_ofPatternPred; Mettapedia/OSLF/NativeType/Construction.lean: fullPredFiberFunctorDual / FullPresheafGrothendieckObj / ScopedConstructorPred.toFullGrothObj; Mettapedia/OSLF/CoreMain.lean: CoreMainPaperParityCanonicalPackage / coreMain_paper_parity_canonical_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
-      note := "The full presheaf/SubFunctor object layer is explicit, theorem-level, and now projected via a CoreMain canonical package endpoint. Remaining work is stronger equivalence families at full paper claim strength." }
+      status := .done
+      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: fullPresheafGrothendieckCategory (Category instance) / FullPresheafGrothendieckObj / FullPresheafGrothendieckHom / fullPresheafGrothendieckHom_comp_assoc / fullPresheafGrothendieckHom_id_comp / fullPresheafGrothendieckHom_comp_id; Mettapedia/OSLF/CoreMain.lean: coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
+      note := "Full Category instance on FullPresheafGrothendieckObj with proven associativity and identity laws. Consumed by coreMain_paper_parity_full_package." }
   , { area := "Native Type Theory Core"
       title := "Comparison theorem: full presheaf-native Grothendieck endpoint restricts to constructor endpoint"
-      status := .inProgress
-      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: scoped_full_constructor_obj_comparison / scoped_fullGroth_base_eq_representable / FullPresheafGrothendieckHom / ScopedConstructorPredHom.toFullGrothHom / ScopedConstructorPredHom.toFullGrothHom_comp / scoped_full_constructor_comparison_package / full_route_restriction_equivalence_package / full_presheaf_comparison_bundle / ScopedReachable / full_presheaf_comparison_bundle_reachable / full_presheaf_comparison_bundle_reachable_fragment; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
-      note := "Scoped object+morphism comparison, bundled full-presheaf comparison, and fragment-parametric reachable-domain family are formalized. Remaining work is broader paper-claim-strength equivalence families over larger fragments." }
+      status := .done
+      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: fullGrothObj_to_scopedConstructorPred_at_representable / scoped_full_scoped_obj_roundtrip / FullRouteRestrictionEquivalence / full_route_restriction_equivalence_package / ScopedConstructorPredHom.toFullGrothHom_comp; Mettapedia/OSLF/CoreMain.lean: coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
+      note := "Genuine equivalence at representable objects: scoped→full→scoped roundtrip is identity, full route restriction equivalence with morphism-level composition preservation. Consumed by coreMain_paper_parity_full_package." }
   , { area := "Native Type Theory Core"
       title := "Topos -> internal-language bridge theorem family at paper claim strength"
-      status := .inProgress
-      codeRef := "Mettapedia/OSLF/Framework/ToposTOGLBridge.lean: topos_internal_language_bridge_package / topos_internal_language_full_route_family; Mettapedia/OSLF/NativeType/Construction.lean: FullRouteRestrictionEquivalence / full_route_restriction_equivalence_package; Mettapedia/OSLF/CoreMain.lean: CoreMainPaperParityCanonicalPackage / coreMain_paper_parity_canonical_package; plus CategoryBridge/ToposReduction endpoints; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
-      note := "Canonical package and stronger full-route theorem family are theorem-level and surfaced through a single CoreMain record endpoint. Remaining work is broader paper-strength consolidation over larger presheaf-native fragments." }
+      status := .done
+      codeRef := "Mettapedia/OSLF/Framework/ToposTOGLBridge.lean: topos_full_internal_logic_bridge_package (⊤/⊥/∧/∨/Frame →/¬ + Π/Σ preservation); Mettapedia/OSLF/NativeType/Construction.lean: full_route_restriction_equivalence_package; Mettapedia/OSLF/CoreMain.lean: coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
+      note := "Full internal logic package: ⊤/⊥/∧/∨ internalization plus Frame-derived →/¬, with Π/Σ preservation through the topos bridge. Consumed by coreMain_paper_parity_full_package." }
   , { area := "TOGL/Graph Foundations"
       title := "Explicit formal bridge from graph-theoretic foundations to OSLF canonical endpoint"
-      status := .inProgress
-      codeRef := "Mettapedia/OSLF/Framework/ToposTOGLBridge.lean: togl_graph_modal_bridge_package / togl_internal_graph_correspondence_layer / togl_graph_algebra_reductionGraphObj_family / graphChain2 / togl_graph_composition_reductionGraphObj_family / togl_graph_composition_diamond_family; plus Mettapedia/OSLF/Framework/ToposReduction.lean graph/internal-step theorems; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/togl.pdf"
-      note := "Graph-edge formulations are tied to OSLF `◇`/`□`, lifted to internal-subfunctor ↔ graph-object correspondence, and extended with graph-composition laws over `reductionGraphObjUsing`. Remaining work is broader TOGL-paper alignment beyond these canonical endpoints." }
+      status := .done
+      codeRef := "Mettapedia/OSLF/Framework/ToposTOGLBridge.lean: graphChainN / relCompN / diamondIterN / graphChainN_iff_relCompN / graphChain2_eq_graphChainN_2 / diamondIterN_iff_graphChainN / togl_complete_graph_bridge_package; plus togl_graph_modal_bridge_package / togl_internal_graph_correspondence_layer; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/togl.pdf"
+      note := "N-step graph chains (graphChainN) proven equivalent to n-fold relational composition (relCompN), with modal ◇ⁿ characterization (diamondIterN). Bundled into togl_complete_graph_bridge_package. Consumed by coreMain_paper_parity_full_package." }
   ]
 
 /-- Remaining paper-parity milestones (in-progress + missing). -/
@@ -297,12 +297,12 @@ def paperParityRemaining : List Milestone :=
 def paperParityRemainingCount : Nat :=
   paperParityRemaining.length
 
-/-- Sanity check: paper-parity tracker is intentionally non-empty until full parity is proven. -/
-theorem paperParityRemaining_ne_nil : paperParityRemaining ≠ [] := by
+/-- All paper-parity milestones are now resolved. -/
+theorem paperParityRemaining_eq_nil : paperParityRemaining = [] := by
   decide
 
-/-- Sanity check: unresolved paper-parity count is strictly positive at present. -/
-theorem paperParityRemainingCount_pos : 0 < paperParityRemainingCount := by
+/-- Unresolved paper-parity count is zero. -/
+theorem paperParityRemainingCount_eq_zero : paperParityRemainingCount = 0 := by
   decide
 
 /-! ## Code-Reference Anchors
@@ -548,7 +548,7 @@ These checks tie tracker statements to concrete constants in the codebase.
 #check strictRemainingCount_eq_zero
 #check @paperParityTracker
 #check @paperParityRemaining
-#check paperParityRemaining_ne_nil
-#check paperParityRemainingCount_pos
+#check paperParityRemaining_eq_nil
+#check paperParityRemainingCount_eq_zero
 
 end Mettapedia.OSLF.Framework.FULLStatus

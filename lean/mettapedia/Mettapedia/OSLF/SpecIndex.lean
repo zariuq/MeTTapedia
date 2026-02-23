@@ -416,6 +416,16 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.graphChain2
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.togl_graph_composition_reductionGraphObj_family
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.togl_graph_composition_diamond_family
+-- Paper-parity M3: full internal logic bridge
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_full_internal_logic_bridge_package
+-- Paper-parity M4: n-step graph bridge
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.graphChainN
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.relCompN
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.diamondIterN
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.graphChainN_iff_relCompN
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.graphChain2_eq_graphChainN_2
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.diamondIterN_iff_graphChainN
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.togl_complete_graph_bridge_package
 #check @Mettapedia.OSLF.NativeType.full_presheaf_comparison_bundle
 #check @Mettapedia.OSLF.NativeType.ScopedReachable
 #check @Mettapedia.OSLF.NativeType.full_presheaf_comparison_bundle_reachable
@@ -480,6 +490,14 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.coreMain_paper_parity_theorem_package_langReduces
 #check @Mettapedia.OSLF.CoreMainPaperParityCanonicalPackage
 #check @Mettapedia.OSLF.coreMain_paper_parity_canonical_package
+-- Paper-parity M1+M2: Category instance + equivalence at representables
+#check @Mettapedia.OSLF.NativeType.fullPresheafGrothendieckCategory
+#check @Mettapedia.OSLF.NativeType.fullGrothObj_to_scopedConstructorPred_at_representable
+#check @Mettapedia.OSLF.NativeType.scoped_full_scoped_obj_roundtrip
+#check @Mettapedia.OSLF.NativeType.FullRouteRestrictionEquivalence
+#check @Mettapedia.OSLF.NativeType.full_route_restriction_equivalence_package
+-- Unified paper-parity full package
+#check @Mettapedia.OSLF.coreMain_paper_parity_full_package
 #check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness.progress
 #check @langModalAdjunction
 #check @rhoModalAdjunction

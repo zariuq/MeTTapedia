@@ -99,3 +99,8 @@ For Knuth–Skilling specific structure and build targets, see:
 1. Keep proofs explicit; avoid axioms unless clearly justified.
 2. Document sources in theorem headers.
 3. Build frequently (`lake build`).
+
+## External Repo Policy
+
+Use godelclaw forks as origin and zariuq repos as upstream for embedded external repos.
+See EXTERNAL_REPOS.md for the exact remotes and sync commands.

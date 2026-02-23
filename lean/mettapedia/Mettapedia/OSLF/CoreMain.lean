@@ -686,6 +686,66 @@ theorem coreMain_paper_parity_canonical_package
       (Mettapedia.OSLF.Framework.ToposTOGLBridge.togl_graph_composition_reductionGraphObj_family
         (lang := lang) (relEnv := relEnv) (C := C) (X := X) (p := p) (r := r))
 
+/-- Extended paper-parity package: adds M1–M4 milestones on top of the canonical package.
+This bundles:
+- M1: Category instance for full presheaf Grothendieck
+- M2: Equivalence at representable objects (scoped ↔ full roundtrip)
+- M3: Full internal logic bridge (⊤/⊥/∧/∨/→/¬, Π/Σ)
+- M4: TOGL complete bridge (2-step + n-step + modal iteration) -/
+theorem coreMain_paper_parity_full_package
+    (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (A : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang)
+    (Frag : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang → Prop)
+    (hClosed : ∀ {X Y : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang},
+      Frag X → Mettapedia.OSLF.NativeType.ScopedReachable X Y → Frag Y)
+    {B C : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang}
+    (f : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang A B)
+    (g : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang B C) :
+    -- Base canonical package
+    CoreMainPaperParityCanonicalPackage lang I A Frag
+    ∧
+    -- M1: Category instance witness
+    (∃ _ : CategoryTheory.Category.{0, 1}
+      (Mettapedia.OSLF.NativeType.FullPresheafGrothendieckObj lang), True)
+    ∧
+    -- M2: Scoped ↔ full roundtrip at representable objects
+    (Mettapedia.OSLF.NativeType.fullGrothObj_to_scopedConstructorPred_at_representable
+      A.toFullGrothObj A.sort A.seed A.pred A.naturality
+      (Mettapedia.OSLF.NativeType.scoped_fullGroth_base_eq_representable A)
+      rfl = A)
+    ∧
+    -- M2: Full route restriction equivalence
+    Mettapedia.OSLF.NativeType.FullRouteRestrictionEquivalence lang A
+    ∧
+    -- M2: Composition preservation
+    ((Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
+      Mettapedia.OSLF.NativeType.FullPresheafGrothendieckHom.comp
+        f.toFullGrothHom g.toFullGrothHom)
+    ∧
+    -- M4: N-step graph chain ↔ relational composition
+    (∀ {relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv}
+        {Ct : Type _} [CategoryTheory.Category Ct]
+        {X : Opposite Ct}
+        (n : Nat) (p r : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern),
+      Mettapedia.OSLF.Framework.ToposTOGLBridge.graphChainN
+        (lang := lang) (relEnv := relEnv) (C := Ct) (X := X) n p r
+        ↔
+      Mettapedia.OSLF.Framework.ToposTOGLBridge.relCompN lang relEnv n p r) := by
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+  · exact coreMain_paper_parity_canonical_package lang I A Frag hClosed
+  · exact ⟨Mettapedia.OSLF.NativeType.fullPresheafGrothendieckCategory lang, trivial⟩
+  · exact Mettapedia.OSLF.NativeType.scoped_full_scoped_obj_roundtrip A
+  · exact (Mettapedia.OSLF.NativeType.full_route_restriction_equivalence_package
+      (A := A) f g).1
+  · exact (Mettapedia.OSLF.NativeType.full_route_restriction_equivalence_package
+      (A := A) f g).2
+  · intro relEnv Ct _ X n p r
+    exact Mettapedia.OSLF.Framework.ToposTOGLBridge.graphChainN_iff_relCompN
+      lang relEnv Ct (X := X) n p r
+
+#check @coreMain_paper_parity_full_package
+
 #check Mettapedia.OSLF.Framework.FULLStatus.remaining_eq_nil
 #check Mettapedia.OSLF.Framework.FULLStatus.remainingCount_eq_zero
 #check Mettapedia.OSLF.Framework.FULLStatus.strictRemaining_eq_nil

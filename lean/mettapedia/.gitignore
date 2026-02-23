@@ -27,7 +27,7 @@ codex_prompts/
 # Separate repositories (subprojects)
 Mettapedia/Algebra/OrderedSemigroups/
 Mettapedia/Metatheory/
-Mettapedia/Logic/Foundations/
+Mettapedia/Logic/Foundation/
 
 # LaTeX build artifacts
 *.aux

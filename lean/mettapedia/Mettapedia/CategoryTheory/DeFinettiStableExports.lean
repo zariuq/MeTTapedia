@@ -3,6 +3,7 @@ import Mettapedia.CategoryTheory.DeFinettiGlobalFinitaryDiagram
 import Mettapedia.CategoryTheory.DeFinettiKleisliGirySkeleton
 import Mettapedia.CategoryTheory.DeFinettiSequenceKernelCone
 import Mettapedia.CategoryTheory.DeFinettiMarkovCategoryBridge
+import Mettapedia.CategoryTheory.DeFinettiUnrestrictedCounterexample
 
 /-!
 # Stable Export Surface for Categorical de Finetti
@@ -26,6 +27,9 @@ theorems.
 - Legacy full-target route names:
   -> `deFinettiStable_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`
      when the markov-only endpoint is sufficient.
+- DEAD PATH (unrestricted strengthening proven false, 2026-02-23):
+  `deFinettiStable_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_strengthening`
+  -> Vacuously true; use Markov-only or finite-mass endpoints instead.
 -/
 
 set_option autoImplicit false
@@ -728,10 +732,20 @@ theorem deFinettiStable_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance
       ((defaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening_of_commutesToMarkovBridge
         (hmarkov_of_commutes := hmarkov_of_commutes)) hglobal hunivDefault)
 
-/-- Stable hard-step target hook:
-if the no-bridge strengthening is available, derive the full default-all-sources
-Kleisli `IsLimit` endpoint without an explicit `CommutesToMarkovBridge`
-assumption. -/
+/-- **DEAD PATH**: The `hstrength` hypothesis
+(`DefaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening`) is
+proven false — see `not_allSourcesKleisli_unrestricted` in
+`DeFinettiUnrestrictedCounterexample`. This theorem is therefore vacuously true
+and retained only for backward compatibility.
+
+Use the canonical Markov-only endpoint
+`deFinettiStable_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`
+or the equivalent finite-mass version
+`deFinettiStable_allSourcesKleisli_finiteMass_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`
+instead. -/
+@[deprecated
+  deFinettiStable_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
+  (since := "2026-02-23")]
 theorem deFinettiStable_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_strengthening
     (X : ℕ → Ω → Bool)
     (hcore : KernelLatentThetaUniversalMediatorInMarkovCore (Y := Y) (Ω := Ω) X)
@@ -912,5 +926,50 @@ theorem deFinettiStable_exchangeableCrossNLimitPackage_mediators_eq_of_fac
     m₁ = m₂ :=
   exchangeableCrossNLimitPackage_mediators_eq_of_fac
     (Ω := Ω) X μ pkg n m₁ m₂ hm₁ hm₂
+
+/-- Stable export: finite-mass universality is equivalent to Markov-only
+universality (given global finitary invariance).
+
+The corrected strengthening target: the fully unrestricted all-sources Kleisli
+universality (`KernelLatentThetaUniversalMediator_allSourcesKleisli_unrestricted`)
+is false (counting-measure counterexample), but the finite-mass restriction is
+equivalent to the proven Markov-only version. -/
+theorem deFinettiStable_allSourcesKleisli_finiteMass_iff_markovOnly
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ)) :
+    KernelLatentThetaUniversalMediator_allSourcesKleisli_finiteMass ↔
+    KernelLatentThetaUniversalMediator_allSourcesKleisli_markovOnly :=
+  allSourcesKleisli_finiteMass_iff_markovOnly hglobal
+
+/-- Stable export: finite-mass universality from global finitary invariance and
+default all-sources qualitative witness, using the canonical moment embedding. -/
+theorem deFinettiStable_allSourcesKleisli_finiteMass_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ))
+    (hunivDefault :
+      ∀ (Y' : Type) [MeasurableSpace Y'],
+        KernelLatentThetaUniversalMediator (Y := Y') (Ω := GlobalBinarySeq) coordProcess) :
+    KernelLatentThetaUniversalMediator_allSourcesKleisli_finiteMass :=
+  (allSourcesKleisli_finiteMass_iff_markovOnly hglobal).mpr
+    (allSourcesKleisli_markovOnly_of_defaultAllSourcesKernel_and_globalFinitaryInvariance_of_canonicalMomentEmbedding
+      (hglobal := hglobal)
+      (hunivDefault := hunivDefault))
+
+/-- Stable export: the unrestricted all-sources Kleisli mediator property is
+FALSE. The counting measure on `ℕ → Bool` (from PUnit) commutes with all
+finitary permutations but admits no mediator through `iidSequenceKleisliHomTheta`.
+See `DeFinettiUnrestrictedCounterexample` for the full proof. -/
+theorem deFinettiStable_not_allSourcesKleisli_unrestricted :
+    ¬ KernelLatentThetaUniversalMediator_allSourcesKleisli_unrestricted :=
+  not_allSourcesKleisli_unrestricted
+
+/-- Stable export: the unrestricted strengthening hypothesis is also false
+(it implies the unrestricted universality which is refuted by the counting-measure
+counterexample). -/
+theorem deFinettiStable_not_defaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening
+    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ))
+    (hunivDefault :
+      ∀ (Y' : Type) [MeasurableSpace Y'],
+        KernelLatentThetaUniversalMediator (Y := Y') (Ω := GlobalBinarySeq) coordProcess) :
+    ¬ DefaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening :=
+  not_defaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening hglobal hunivDefault
 
 end Mettapedia.CategoryTheory
