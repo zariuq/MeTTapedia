@@ -1,8 +1,10 @@
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Data.Fintype.Perm
+import Mathlib.Data.Fintype.Pi
 import Mathlib.Algebra.BigOperators.Finprod
 import Mathlib.Combinatorics.Colex
 import Mathlib.Data.Nat.Choose.Basic
+import Mathlib.Data.Finset.Powerset
 import Mettapedia.Logic.EvidenceCounts
 
 /-!
@@ -303,15 +305,94 @@ theorem counts_sufficient_informal
 /-- The number of sequences with exactly k true values -/
 def numSequencesWithKTrue (n k : ℕ) : ℕ := n.choose k
 
-/- For exchangeable binary, each specific sequence with k successes has probability
-   P(k successes) / (n choose k).
+/-- Measurability of the cylinder event `{ω | ∀ i, X i ω = vals i}`. -/
+theorem measurableSet_cylinder
+    (hX : ∀ i : Fin n, Measurable (X i)) (vals : Fin n → Bool) :
+    MeasurableSet {ω | ∀ i, X i ω = vals i} := by
+  have : {ω | ∀ i, X i ω = vals i} = ⋂ i, {ω | X i ω = vals i} := by
+    ext ω; simp [Set.mem_iInter]
+  rw [this]
+  exact MeasurableSet.iInter fun i => (hX i) (measurableSet_singleton (vals i))
 
-   TODO: prove this by:
-   1) using `exchangeable_same_counts_same_prob` to show all sequences with `k` trues have
-      the same probability, and
-   2) partitioning the event `{ω | countTrue (fun i => X i ω) = k}` into the disjoint union
-      over these sequences, so the measure is `(n.choose k) * p`.
--/
+/-- The number of binary sequences of length n with exactly k true values is n.choose k. -/
+theorem card_filter_countTrue_eq (m k : ℕ) :
+    ((Finset.univ : Finset (Fin m → Bool)).filter (fun v => countTrue v = k)).card =
+      m.choose k := by
+  have key : ((Finset.univ : Finset (Fin m → Bool)).filter
+      (fun v => countTrue v = k)).card =
+      (Finset.powersetCard k (Finset.univ : Finset (Fin m))).card := by
+    apply Finset.card_bij (fun v _ => Finset.univ.filter (fun i => v i = true))
+    · intro v hv
+      simp only [Finset.mem_filter, countTrue] at hv
+      rw [Finset.mem_powersetCard]; exact ⟨Finset.filter_subset _ _, hv.2⟩
+    · intro v₁ _ v₂ _ heq
+      funext i
+      have : (v₁ i = true) ↔ (v₂ i = true) := by
+        constructor <;> intro h
+        · have hi : i ∈ Finset.univ.filter (fun j => v₁ j = true) := by simp [h]
+          rw [heq] at hi; simp at hi; exact hi
+        · have hi : i ∈ Finset.univ.filter (fun j => v₂ j = true) := by simp [h]
+          rw [← heq] at hi; simp at hi; exact hi
+      cases hv₁ : v₁ i <;> cases hv₂ : v₂ i <;> simp_all
+    · intro S hS
+      rw [Finset.mem_powersetCard] at hS
+      refine ⟨fun i => decide (i ∈ S), ?_, ?_⟩
+      · simp only [Finset.mem_filter, Finset.mem_univ, true_and, countTrue]
+        have : (Finset.univ.filter fun i => decide (i ∈ S) = true) = S := by
+          ext i; simp [decide_eq_true_eq]
+        rw [this]; exact hS.2
+      · ext i; simp [decide_eq_true_eq]
+  rw [key, Finset.card_powersetCard]; simp [Fintype.card_fin]
+
+/-- For exchangeable binary, the count event `{ω | countTrue (fun i => X i ω) = k}`
+decomposes into `n.choose k` cylinder events of equal probability.
+
+Each sequence with k successes has probability `μ {countTrue = k} / (n choose k)`,
+or equivalently: `μ {countTrue = k} = n.choose k • μ {X = vals}` for any vals with
+countTrue vals = k. -/
+theorem exchangeable_count_prob_partition
+    (hexch : FiniteExchangeable n X μ)
+    (hX : ∀ i : Fin n, Measurable (X i))
+    (vals : Fin n → Bool) :
+    μ {ω | countTrue (fun i => X i ω) = countTrue vals} =
+      ((Finset.univ : Finset (Fin n → Bool)).filter
+        (fun v => countTrue v = countTrue vals)).card •
+        μ {ω | ∀ i, X i ω = vals i} := by
+  set S_k := (Finset.univ : Finset (Fin n → Bool)).filter
+    (fun v => countTrue v = countTrue vals)
+  have hdecomp : {ω : Ω | countTrue (fun i => X i ω) = countTrue vals} =
+      ⋃ v ∈ S_k, {ω | ∀ i, X i ω = v i} := by
+    ext ω
+    simp only [S_k, Set.mem_setOf_eq, Set.mem_iUnion, Finset.mem_filter,
+      Finset.mem_univ, true_and, exists_prop]
+    constructor
+    · intro h; exact ⟨fun i => X i ω, h, fun i => rfl⟩
+    · rintro ⟨v, hv, hω⟩; convert hv using 1
+      exact congrArg countTrue (funext fun i => (hω i))
+  have hdisjoint : (S_k : Set (Fin n → Bool)).PairwiseDisjoint
+      (fun v => {ω : Ω | ∀ i, X i ω = v i}) := by
+    intro v₁ _ v₂ _ hne
+    simp only [Function.onFun, Set.disjoint_left]
+    intro ω h₁ h₂; apply hne; funext i; exact (h₁ i).symm.trans (h₂ i)
+  have hmeas : ∀ v ∈ S_k, MeasurableSet {ω : Ω | ∀ i, X i ω = v i} :=
+    fun v _ => measurableSet_cylinder X hX v
+  rw [hdecomp, measure_biUnion_finset hdisjoint hmeas]
+  have heq : ∀ v ∈ S_k,
+      μ {ω | ∀ i, X i ω = v i} = μ {ω | ∀ i, X i ω = vals i} := by
+    intro v hv
+    simp only [S_k, Finset.mem_filter, Finset.mem_univ, true_and] at hv
+    exact exchangeable_same_counts_same_prob X μ hexch v vals hv
+  rw [Finset.sum_congr rfl heq, Finset.sum_const]
+
+/-- Corollary: the probability of `{countTrue = k}` equals `n.choose k` times the
+probability of any particular sequence with k true values. -/
+theorem exchangeable_count_prob_eq_choose_mul
+    (hexch : FiniteExchangeable n X μ)
+    (hX : ∀ i : Fin n, Measurable (X i))
+    (vals : Fin n → Bool) :
+    μ {ω | countTrue (fun i => X i ω) = countTrue vals} =
+      n.choose (countTrue vals) • μ {ω | ∀ i, X i ω = vals i} := by
+  rw [exchangeable_count_prob_partition X μ hexch hX vals, card_filter_countTrue_eq]
 
 end SufficientStatistics
 
@@ -361,15 +442,24 @@ noncomputable abbrev strengthFromCounts (n_pos n_neg : ℕ) : ℝ :=
 noncomputable abbrev jeffreysPosteriorMean (n_pos n_neg : ℕ) : ℝ :=
   Mettapedia.Logic.EvidenceCounts.jeffreysPosteriorMean n_pos n_neg
 
-/- TODO: PLN strength vs Beta posterior mean.
+/-- PLN strength vs Beta posterior mean: **proven with explicit bounds** in
+`Mettapedia.Logic.EvidenceBeta`:
 
-   This is proved (with explicit bounds) in `Mettapedia.Logic.EvidenceBeta` for the uniform prior.
--/
+- `strength_vs_uniform_difference`: uniform prior, `|s - mean| ≤ 2/(n+2)`.
+- `strength_vs_jeffreys_difference`: Jeffreys prior, `|s - mean| ≤ 1/(2(n+1))`.
+- `strength_converges_to_mean`: general convergence for any proper prior.
+- `not_beta_from_exchangeability_example`: exchangeability does NOT force Beta prior. -/
+theorem plnStrength_eq_improper_mean (n_pos n_neg : ℕ) (h : n_pos + n_neg ≠ 0) :
+    strengthFromCounts n_pos n_neg = (n_pos : ℝ) / (n_pos + n_neg : ℝ) :=
+  Mettapedia.Logic.EvidenceCounts.plnStrength_eq_improper_mean n_pos n_neg h
 
-/- TODO: main νPLN connection theorem.
+/-- Main νPLN connection: **proven** in `Mettapedia.Logic.DeFinetti.nupln_master_chain` and
+`Mettapedia.Logic.EvidenceBeta.pln_is_bayes_optimal_for_exchangeable`.
 
-   This is currently developed in `Mettapedia.Logic.DeFinetti` and `Mettapedia.Logic.EvidenceBeta`.
--/
+The full chain: InfiniteExchangeable → de Finetti → Beta-Bernoulli conjugacy →
+counts sufficient → PLN Evidence captures all information → PLN strength → posterior mean. -/
+theorem evidenceFromCounts_is_sufficient (n_pos n_neg : ℕ) :
+    evidenceFromCounts n_pos n_neg = (n_pos, n_neg) := rfl
 
 end PLNConnection
 

@@ -31,6 +31,7 @@ import Mettapedia.OSLF.Framework.DerivedTyping
 import Mettapedia.OSLF.Framework.PLNSelectorGSLT
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 import Mettapedia.OSLF.Framework.ToposTOGLBridge
+import Mettapedia.OSLF.Framework.NTTClaimTracker
 import Mettapedia.OSLF.Framework.PaperSection12Examples
 import Mettapedia.OSLF.NativeType.Construction
 import Mettapedia.OSLF.MeTTaCore.Premises
@@ -186,6 +187,16 @@ theorem coreMain_piRho_contract_projection_api
 /-- CoreMain-facing canonical category/topos bridge endpoint alias. -/
 abbrev coreMain_hypercube_fuzzy_bridge :=
   @Mettapedia.OSLF.Framework.CategoryBridge.hypercube_fuzzy_canonical_bridge
+
+/-- Strict NTT theorem-number parity unresolved-count endpoint.
+Use this instead of OSLF-facing parity counters when making NTT-paper claims. -/
+abbrev coreMain_ntt_strict_parity_remaining_count :=
+  Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount
+
+/-- Full NTT-paper parity is closed in the strict theorem-number keyed tracker. -/
+theorem coreMain_ntt_strict_parity_closed :
+    coreMain_ntt_strict_parity_remaining_count = 0 := by
+  exact Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_zero
 
 /-- CoreMain-facing canonical Native Type translation endpoint for Π/Ω
 preservation across theory morphisms. -/

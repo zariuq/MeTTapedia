@@ -44,14 +44,42 @@ This is the core "derive a type system from operational semantics" path.
   - checker-soundness bridges into semantic satisfaction and sort-fiber predicates
   - graph-object checker soundness corollaries for both `.dia` and `.box`
 
-### 4) Presheaf/Topos Lift Integration Status
+### 4) Native Type Theory (NTT) Endpoints
+
+The strict NTT claim surface tracked in
+`Mettapedia/OSLF/Framework/NTTClaimTracker.lean` is formalized in
+`Mettapedia/OSLF/NativeType/`:
+
+- `Construction.lean` — NatType, piType, sigmaType, TheoryMorphism (id, comp,
+  preservation proofs)
+- `CodomainFibration.lean` — All 6 strict NTT endpoint theorems:
+  - **Prop 12**: Indexed adjoints (∃f ⊣ f* ⊣ ∀f) with Beck-Chevalley
+  - **Prop 14**: Cosmic fibration (Frame-structured fibers)
+  - **Prop 17**: Reification right adjoint layer (χ.F = ⊓{φ ⇨ F(φ)})
+  - **Def 21**: Codomain fibration (Arrow category) + **Cartesian lifts via
+    pullbacks** with universal factorization
+  - **Sec 4**: Image-comprehension adjunction i ⊣ c with **full ↔
+    characterization** (`range(p) ≤ φ ↔ p factors through φ.ι`)
+  - **Thm 23**: Internal language package + **functorial laws** (identity and
+    composition of theory morphisms preserve Π/Ω/Prop)
+
+The strict NTT claim tracker is:
+- `Mettapedia/OSLF/Framework/NTTClaimTracker.lean` — 12/12 claims resolved
+  (11 proven, 1 assumption-scoped: Pi/Sigma under nonempty-family guard,
+  with necessity proven at `AssumptionNecessity.types_nonempty_necessary_for_piSigma`)
+
+Scope note:
+- This is strict theorem-level parity for the tracked NTT claim set, not a blanket
+  claim over every future-work extension discussed in the source paper.
+
+### 5) Presheaf/Topos Lift Integration Status
 
 The authoritative tracker is:
 - `Mettapedia/OSLF/Framework/FULLStatus.lean`
 
 Use this file for done/in-progress/missing milestones with code anchors.
 
-### 5) Concrete Clients
+### 6) Concrete Clients
 
 - `Mettapedia/OSLF/Framework/TinyMLInstance.lean`
 - `Mettapedia/OSLF/Framework/MeTTaMinimalInstance.lean`
@@ -89,13 +117,13 @@ lake build Mettapedia.OSLF.Main
 - For exact completion claims, rely on `FULLStatus.lean` and concrete theorem names,
   not static line-count snapshots.
 
-## Lean ↔ Rust Example
+## Lean ↔ Rust Roundtrip Status
 
-For the concrete Lean-export → Rust-runtime roundtrip demo (TinyML smoke):
+Validated roundtrip scripts in `hyperon/mettail-rust`:
+- `scripts/roundtrip_tinymlsmoke.sh` — passes
+- `scripts/roundtrip_mettaminimal.sh` — passes
 
-- Repo: <https://github.com/zariuq/mettail-rust>
-- Branch: <https://github.com/zariuq/mettail-rust/tree/feature/lean-language-export-tinyml-smoke>
-
-Related local files:
-- `Mettapedia/OSLF/Tools/ExportTinyMLSmokeRoundTrip.lean`
-- `hyperon/mettail-rust/scripts/roundtrip_tinymlsmoke.sh`
+Current ingestion boundary:
+- `scripts/lean/ExportMeTTaMinimalRoundTrip.lean` exports a premise-free subset
+  (`rw.premises.isEmpty`) for current Rust ingestion, so this validates the
+  current export/runtime path but is not yet full premise-rich MeTTaFull ingestion.

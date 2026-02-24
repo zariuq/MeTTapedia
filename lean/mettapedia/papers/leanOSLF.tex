@@ -43,8 +43,8 @@
 \begin{abstract}
 We present a comprehensive Lean~4 formalization of Operational Semantics in Logical
 Form (\OSLF{}), the algorithm that mechanically derives spatial-behavioral type systems
-from rewrite rules.  Our formalization spans 41{,}700+ lines across 118 Lean files
-(89 in the core \OSLF{} tree, 29 in the process-calculi layer),
+from rewrite rules.  Our formalization spans 42{,}200+ lines across 120 Lean files
+(91 in the core \OSLF{} tree, 29 in the process-calculi layer),
 with 0~sorries and 0~custom axioms across the entire pipeline.
 The formalization covers:
 (i) \MeTTaIL{}, a meta-language for defining process calculi with capture-avoiding
@@ -150,7 +150,10 @@ formalization, connecting:
 \item A \emph{strict paper-claim tracker}
   (\code{Framework/PaperClaimTracker.lean}) mapping 27 verifiable claims from
   three source papers to concrete Lean theorem names, with 25 fully proven and
-  2 assumption-scoped.
+  2 assumption-scoped.  A separate \emph{strict NTT claim tracker}
+  (\code{Framework/NTTClaimTracker.lean}) keys 12 claims to Native Type
+  Theory theorem numbers; all 12 are resolved (11~proven, 1~assumption-scoped
+  with proven necessity).
 \item \emph{Assumption-necessity counterexamples}
   (\code{Framework/AssumptionNecessity.lean}) proving that the
   \code{types.Nonempty} guard on $\Pi/\Sigma$ formation and the
@@ -169,6 +172,9 @@ outside the current core claim surface, including:
 \begin{itemize}
 \item full internal natural-transformation presentation of modalities
   (\(\Omega \to \Omega\) endomorphisms) over the presheaf route,
+\item full premise-rich Lean$\to$Rust ingestion for MeTTa exports;
+  current roundtrip validation covers TinyML smoke and the premise-free
+  MeTTaMinimal export slice,
 \item larger extensions such as stochastic and quantum variants listed as
   future-work directions in the source papers.
 \end{itemize}
@@ -212,16 +218,16 @@ The formalization is organized in seven directories plus standalone files:
 \hline
 \code{MeTTaIL/}        & 3{,}592 & 0  & Meta-language AST, substitution, matching, declarative reduction \\
 \code{MeTTaCore/}      & 3{,}839 & 0  & Interpreter specification \\
-\code{Framework/}      & 14{,}708 & 0  & Abstract \OSLF{} + categorical bridge + 6 instances \\
+\code{Framework/}      & 14{,}860 & 0  & Abstract \OSLF{} + categorical bridge + 6 instances \\
 \code{OSLF/RhoCalculus/} &    60 & 0  & \OSLF{} \rhocalc{}-calculus facades \\
-\code{NativeType/}     & 1{,}444 & 0  & Native type construction + Grothendieck \\
+\code{NativeType/}     & 1{,}775 & 0  & Native type construction + Grothendieck + strengthened endpoints \\
 \code{Formula.lean}    & 1{,}204 & 0  & Verified bounded model checker \\
 \code{Main/CoreMain/SpecIndex} & 2{,}001 & 0 & Focused \OSLF{} re-exports + spec index \\
 \hline
 \code{Languages/PiCalculus/}  & 8{,}768 & 0  & $\pi$-calculus + \rhocalc{}-encoding \\
 \code{Languages/RhoCalculus/} & 4{,}848 & 0  & Concrete \rhocalc{}-calculus + engine \\
 \hline
-\textbf{Total}         & \textbf{41{,}729} & \textbf{0} & \textbf{0 sorries, 0 axioms}
+\textbf{Total}         & \textbf{42{,}249} & \textbf{0} & \textbf{0 sorries, 0 axioms}
 \end{tabular}
 \end{center}
 
@@ -279,6 +285,14 @@ The exact endpoint names are:
 \item \codepath{AssumptionNecessity.types_nonempty_necessary_for_piSigma}
 \item \codepath{AssumptionNecessity.hClosed_necessary_for_fragment}
 \item \codepath{AssumptionNecessity.not_global_hImageFinite_rhoCoreStarRel}
+\item \codepath{NativeType.prop12_package} (indexed adjoints + Beck--Chevalley)
+\item \codepath{NativeType.prop14_cosmicFibration} (Frame fibers)
+\item \codepath{NativeType.prop17_reification} (reification right adjoint)
+\item \codepath{NativeType.def21_cartesianLift_proj} (Cartesian lift projection)
+\item \codepath{NativeType.def21_cartesianLift_universal_comp} (universal factorization)
+\item \codepath{NativeType.imageComprehension_iff} (hom-set characterization $i \dashv c$)
+\item \codepath{NativeType.thm23_functorialLaws} (identity/composition laws)
+\item \codepath{NTTClaimTracker.nttRemainingCount_zero} (strict NTT parity closed)
 \end{itemize}
 
 The \code{Framework/} directory (14{,}708 lines, 32~files) is the largest component.
@@ -314,6 +328,7 @@ Key files:
 \code{FULLStatus.lean}           &   554 & Machine-readable paper-parity tracker \\
 \code{AssumptionNecessity.lean}  &   279 & Assumption-necessity counterexamples \\
 \code{PaperClaimTracker.lean}    &   156 & Strict 27-claim paper-claim tracker \\
+\code{NTTClaimTracker.lean}     &   128 & Strict 12-claim NTT-keyed tracker \\
 \code{PaperParityCanaries.lean}  &   104 & Robustness canaries (positive + negative) \\
 \end{tabular}
 \end{center}
@@ -991,12 +1006,18 @@ require:
 \item \emph{Agreement}: proving that the internal modalities, evaluated at
   representable sorts, reproduce the Set-level modalities.
 \end{enumerate}
-Additionally, a full Grothendieck construction $\mathit{NT}(T) = \int \mathrm{Sub}$
-over $P(T)$ (packaging pairs $(P, \varphi)$ with $P \in P(T)$ and
-$\varphi \in \mathrm{Sub}(P)$) would complete the connection to
-Native Type Theory~\cite{WilliamsStay2021}.  Mathlib provides
-\code{CategoryTheory.Grothendieck} for $\mathcal{C} \to \mathbf{Cat}$ functors,
-which could be instantiated with the subobject fibration.
+The full Grothendieck construction for Native Type Theory~\cite{WilliamsStay2021}
+\emph{is} now formalized: the strict NTT claim tracker
+(\code{Framework/NTTClaimTracker.lean}) shows 12/12 claims resolved
+(11~fully proven, 1~assumption-scoped with proven necessity), including
+Prop~12 (indexed adjoints + Beck--Chevalley), Prop~14 (cosmic fibration),
+Prop~17 (reification right adjoint), Def~21 (codomain fibration with
+Cartesian lifts via pullbacks), Sec~4 (image-comprehension with full
+$\leftrightarrow$ characterization), and Thm~23 (internal language functor
+with functorial laws for identity and composition of theory morphisms).
+The sole assumption-scoped item is $\Pi/\Sigma$ type formation under
+a \code{types.Nonempty} guard, whose necessity is proven by
+\code{types\_nonempty\_necessary\_for\_piSigma}.
 Kripke--Joyal forcing semantics, not currently in Mathlib, would be needed
 to fully connect the internal language of $P(T)$ to \OSLF{} typing judgments.
 
@@ -1035,7 +1056,8 @@ The package contains four milestone bundles:
 \subsection{Traceability: Paper Claims to Lean Theorems}
 
 A machine-checked paper-claim tracker (\code{Framework/PaperClaimTracker.lean})
-maps 27 verifiable claims from three source papers to Lean theorem names:
+maps 27 verifiable claims from three source papers to Lean theorem names (plus a
+strict NTT tracker with 12 claims in \code{Framework/NTTClaimTracker.lean}):
 
 \begin{longtable}{llll}
 \textbf{Paper} & \textbf{Loc} & \textbf{Claim} & \textbf{Status} \\
@@ -1057,13 +1079,19 @@ oslf.pdf & \S 12.3 & Secrecy & proven \\
 oslf.pdf & \S 13.1 & Dependent/parametric extension & proven \\
 \hline
 NTT.pdf & \S 3 & Native type = (sort, predicate) pair & proven \\
-NTT.pdf & Thm 23 & Full presheaf Grothendieck category & proven \\
-NTT.pdf & Prop 12 & Scoped $\leftrightarrow$ full comparison & proven \\
+NTT.pdf & Def 11 & Predicate fibration $\pi_\Omega$ & proven \\
+NTT.pdf & Prop 12 & Indexed adjoints + Beck--Chevalley & proven \\
+NTT.pdf & Prop 14 & Cosmic fibration (Frame fibers) & proven \\
+NTT.pdf & Prop 17 & Reification right adjoint & proven \\
+NTT.pdf & Def 21 & Codomain fibration + Cartesian lifts & proven \\
+NTT.pdf & \S 4 & Image-comprehension adjunction (full iff) & proven \\
+NTT.pdf & Thm 23 & Internal language functor + functorial laws & proven \\
 NTT.pdf & \S 4 & Internal language: $\top/\bot/\land/\lor$ & proven \\
 NTT.pdf & \S 4 & Frame-derived $\to$/$\lnot$ & proven \\
-NTT.pdf & Prop 19 & $\Pi$/$\Sigma$ type formation & assumption-scoped \\
+NTT.pdf & \S 4 & $\Pi$/$\Sigma$ type formation & assumption-scoped \\
 NTT.pdf & \S 5 & Theory morphism $\Pi$/$\Omega$ & proven \\
 NTT.pdf & \S 5 & Colax $\Pi$/Prop rules & proven \\
+NTT.pdf & \S 5 & Necessity: nonempty-family guard & proven \\
 \hline
 togl.pdf & \S 2 & Graph reduction structure & proven \\
 togl.pdf & \S 3 & Graph-modal bridge & proven \\
@@ -1076,7 +1104,7 @@ togl.pdf & \S 5 & Internal subfunctor correspondence & proven \\
 counterexamples showing the assumptions cannot be discharged:
 \begin{itemize}
 \item \code{types\_nonempty\_necessary\_for\_piSigma}: for empty families,
-  $\bigsqcap \emptyset = \top$ and $\bigsqcup \emptyset = \bot$, so
+  $\bigcap \emptyset = \top$ and $\bigcup \emptyset = \bot$, so
   $\top \le \bot$ fails in any nontrivial Frame.
 \item \code{hClosed\_necessary\_for\_fragment}: a seed-restricted fragment
   is not closed under \code{ScopedReachable}.
@@ -1140,12 +1168,21 @@ negative canary demonstrating that the \code{hClosed} assumption does real work.
   27 paper claims tracked; 25 fully proven, 2 assumption-scoped with proven
   necessity counterexamples.  Robustness canaries on \rhocalc{}-calculus and
   $\lambda$-calculus (Section~\ref{sec:paper-parity}).
+
+\item[\checkmark] \textbf{Milestone 9}: Strict NTT parity and strengthened endpoints.
+  All 12 strict NTT claims resolved (11~proven, 1~assumption-scoped with
+  proven necessity).  Three endpoints strengthened beyond paper parity:
+  (a)~Thm~23 functorial laws (identity/composition preservation of
+  $\Pi/\Omega/\mathrm{Prop}$);
+  (b)~Def~21 Cartesian lifts via pullbacks with universal factorization;
+  (c)~image-comprehension full $\leftrightarrow$ (hom-set characterization
+  of $i \dashv c$).
 \end{enumerate}
 
 \section{Conclusion}
 
 We have presented the first machine-checked formalization of the \OSLF{} algorithm,
-spanning 41{,}700+ lines of Lean~4 across 118 files with 0~sorries and 0~custom axioms.
+spanning 42{,}200+ lines of Lean~4 across 120 files with 0~sorries and 0~custom axioms.
 The formalization demonstrates that the entire pipeline from rewrite rules to
 spatial-behavioral types can be made rigorous in a modern proof assistant.
 
@@ -1172,10 +1209,13 @@ category is constructed with Yoneda representables, subobject classifier, and
 fiber characterization (Section~\ref{sec:topos}).  The full presheaf Grothendieck
 category for Native Type Theory~\cite{WilliamsStay2021} is now formalized with
 proven associativity and identity laws, scoped/full comparison roundtrip, and
-internal-language bridge (Section~\ref{sec:paper-parity}).  The remaining
-frontier item---lifting Set-level modalities into genuine internal $\Omega \to
-\Omega$ natural transformations in $P(T)$---is precisely characterized in
-Section~\ref{sec:topos-scope}.
+internal-language bridge (Section~\ref{sec:paper-parity}).  All 12 strict NTT
+claims are resolved: the codomain fibration has Cartesian lifts via pullbacks,
+the image-comprehension adjunction has a full hom-set $\leftrightarrow$
+characterization, and the internal language functor satisfies identity and
+composition laws.  The remaining frontier item---lifting Set-level modalities
+into genuine internal $\Omega \to \Omega$ natural transformations in
+$P(T)$---is precisely characterized in Section~\ref{sec:topos-scope}.
 
 The full type synthesis pipeline is validated by six language instances
 (\rhocalc{}-calculus, lambda calculus, Petri nets, TinyML, MeTTaMinimal, and
@@ -1187,11 +1227,12 @@ from the interpreter specification back to the categorical semantics.
 
 A declarative reduction relation provides an engine-independent specification,
 and the executable engines are proven both sound and complete with respect to it.
-All eight \emph{core} implementation milestones are complete and sorry-free.
+All nine \emph{core} implementation milestones are complete and sorry-free.
 The paper-parity canonical package (Section~\ref{sec:paper-parity}) bundles
 27 verifiable claims from three source papers---25 fully proven, 2
 assumption-scoped with proven necessity counterexamples---into a single
-machine-checked endpoint.  The strict paper-claim tracker
+machine-checked endpoint.  The strict NTT tracker independently confirms
+12/12~claims resolved at theorem level.  The strict paper-claim tracker
 (\code{Framework/PaperClaimTracker.lean}) and robustness canaries
 (\code{Framework/PaperParityCanaries.lean}) provide ongoing regression
 coverage for the formalization's alignment with the mathematical literature.

@@ -4139,6 +4139,120 @@ lemma stepProb_rowKernelToMarkovParam_diracInit_lifted_eq
   simp [rowKernelToMarkovParam_diracInit, rowKernelToMarkovParam,
     liftedRowKernelFromRowProcess, stepProb]
 
+/-! ### AE-measurability of row-kernel-to-MarkovParam map
+
+The following block proves `AEMeasurable` of `rowKernelToMarkovParam_diracInit` by
+decomposing `wordProb` into products of `initProb` (measurable, Dirac indicator)
+and `stepProb` (AE-measurable via row-kernel evaluations). -/
+
+namespace AemeasurableRowKernel
+
+private lemma aemeasurable_stepProb_ennreal
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval : ∀ i b : Fin k,
+      AEMeasurable
+        (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+        (rowProcessLaw (k := k) P i))
+    (a b : Fin k) :
+    AEMeasurable
+      (fun ω : ℕ → Fin k =>
+        (stepProb (k := k)
+          (rowKernelToMarkovParam_diracInit (k := k)
+            (liftedRowKernelFromRowProcess (k := k) rowKernel) ω) a b : ENNReal)) P := by
+  have heq : (fun ω : ℕ → Fin k =>
+      (stepProb (k := k)
+        (rowKernelToMarkovParam_diracInit (k := k)
+          (liftedRowKernelFromRowProcess (k := k) rowKernel) ω) a b : ENNReal))
+    = (fun ω => (rowKernel a (rowSuccessorVisitProcess (k := k) a ω) : Measure (Fin k))
+        ({b} : Set (Fin k))) := by
+    ext ω; exact stepProb_rowKernelToMarkovParam_diracInit_lifted_eq _ ω a b
+  rw [heq]
+  exact (hEval a b).comp_measurable (measurable_rowSuccessorVisitProcess a)
+
+private lemma aemeasurable_wordProbAux_ennreal
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval : ∀ i b : Fin k,
+      AEMeasurable
+        (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+        (rowProcessLaw (k := k) P i))
+    (a : Fin k) (xs : List (Fin k)) :
+    AEMeasurable
+      (fun ω : ℕ → Fin k =>
+        (wordProbAux (k := k)
+          (rowKernelToMarkovParam_diracInit (k := k)
+            (liftedRowKernelFromRowProcess (k := k) rowKernel) ω) a xs : ENNReal)) P := by
+  induction xs generalizing a with
+  | nil => simp only [wordProbAux]; exact aemeasurable_const
+  | cons b xs ih =>
+    simp only [wordProbAux, ENNReal.coe_mul]
+    exact (aemeasurable_stepProb_ennreal P rowKernel hEval a b).mul (ih b)
+
+private lemma measurable_initProb_ennreal
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (a : Fin k) :
+    Measurable (fun ω : ℕ → Fin k =>
+      (initProb (k := k)
+        (rowKernelToMarkovParam_diracInit (k := k)
+          (liftedRowKernelFromRowProcess (k := k) rowKernel) ω) a : ENNReal)) := by
+  have heq : (fun ω : ℕ → Fin k =>
+      (initProb (k := k)
+        (rowKernelToMarkovParam_diracInit (k := k)
+          (liftedRowKernelFromRowProcess (k := k) rowKernel) ω) a : ENNReal))
+    = (fun ω => Measure.dirac (ω 0) ({a} : Set (Fin k))) := by
+    ext ω
+    simp only [initProb, rowKernelToMarkovParam_diracInit, rowKernelToMarkovParam]
+    exact ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure _ _
+  rw [heq]
+  have heq2 : (fun ω : ℕ → Fin k => Measure.dirac (ω 0) ({a} : Set (Fin k))) =
+      (fun ω => if ω 0 = a then (1 : ENNReal) else 0) := by
+    ext ω
+    rw [Measure.dirac_apply' _ (measurableSet_singleton a)]
+    simp [Set.indicator_singleton, Pi.single_apply]
+  rw [heq2]
+  apply Measurable.ite _ measurable_const measurable_const
+  have : {ω : ℕ → Fin k | ω 0 = a} = (fun f : ℕ → Fin k => f 0) ⁻¹' {a} := by ext; simp
+  rw [this]
+  exact (measurable_pi_apply 0) (measurableSet_singleton a)
+
+end AemeasurableRowKernel
+
+/-- **AE-measurability of the row-kernel-to-MarkovParam map.**
+    This discharges the `hθExt` parameter by showing that every `wordProb`
+    composition is AE-measurable: `initProb` via Dirac indicator (measurable),
+    `stepProb` via `hEval` + `AEMeasurable.comp_measurable`, products via
+    `AEMeasurable.mul`, and the NNReal→ENNReal cast via `coe_nnreal_ennreal`. -/
+theorem aemeasurable_rowKernelToMarkovParam_diracInit_lifted
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval : ∀ i b : Fin k,
+      AEMeasurable
+        (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+        (rowProcessLaw (k := k) P i)) :
+    AEMeasurable
+      (rowKernelToMarkovParam_diracInit (k := k)
+        (liftedRowKernelFromRowProcess (k := k) rowKernel)) P := by
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · haveI : IsEmpty (MarkovParam 0) := by
+      constructor; intro ⟨init, _⟩
+      have h := init.prop.measure_univ
+      rw [show (Set.univ : Set (Fin 0)) = ∅ from Set.eq_empty_of_isEmpty _] at h
+      simp at h
+    exact aemeasurable_of_subsingleton_codomain
+  · set θ₀ : MarkovParam k :=
+      { init := ⟨Measure.dirac ⟨0, hk⟩, Measure.dirac.isProbabilityMeasure⟩
+        trans := fun _ => ⟨Measure.dirac ⟨0, hk⟩, Measure.dirac.isProbabilityMeasure⟩ }
+    exact aemeasurable_into_markovParam _ P θ₀ (fun xs => by
+      induction xs with
+      | nil =>
+        simp only [wordProb, wordProbNN]
+        exact aemeasurable_const
+      | cons a xs _ =>
+        simp only [wordProb, wordProbNN, ENNReal.coe_mul]
+        exact (AemeasurableRowKernel.measurable_initProb_ennreal rowKernel a).aemeasurable.mul
+          (AemeasurableRowKernel.aemeasurable_wordProbAux_ennreal P rowKernel hEval a xs))
+
 /-- Pushforward law on `MarkovParam k` induced by row kernels. -/
 def rowKernelToMarkovParamLaw
     (P : Measure (ℕ → Fin k))
@@ -4178,9 +4292,7 @@ theorem lintegral_wordProb_rowKernelToMarkovParamLaw
   have hwordAemeas :
       AEMeasurable (fun θ : MarkovParam k => wordProb (k := k) θ xs)
         (rowKernelToMarkovParamLaw (k := k) P initKernel rowKernel) :=
-    (show Measurable (fun θ : MarkovParam k => wordProb (k := k) θ xs) from by
-      intro s hs
-      exact MeasurableSpace.measurableSet_top).aemeasurable
+    (measurable_wordProb xs).aemeasurable
   simpa [rowKernelToMarkovParamLaw] using
     (MeasureTheory.lintegral_map'
       (μ := P)
@@ -6019,9 +6131,8 @@ theorem exists_extension_rowKernelFamily_of_successorMatrixInvariance_hyp_and_pr
 This consumes the start-normalized successor-hypothesis package and produces
 the pair-prefix reconstruction equality for some extension/kernel witness.
 
-`hθExt` isolates the remaining measurable-map requirement for
-`rowKernelToMarkovParam`; once available internally, this theorem is fully
-assumption-free on the pair base. -/
+The `hθExt` measurable-map requirement is now discharged internally via
+`AemeasurableRowKernel.aemeasurable_rowKernelToMarkovParam_diracInit_lifted`. -/
 theorem exists_extension_pair_reconstruction_of_successorMatrixInvariance_hyp_and_prefix_start_eq_one
     (hk : 0 < k)
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
@@ -6035,20 +6146,7 @@ theorem exists_extension_pair_reconstruction_of_successorMatrixInvariance_hyp_an
             P (rowSuccessorValueEvent (k := k) i n a)) ∧
         (∀ (i : Fin k) (σ : Equiv.Perm ℕ), IsFiniteMeasure P →
           Measure.map (rowPermute (k := k) σ) (rowProcessLaw (k := k) P i) =
-            rowProcessLaw (k := k) P i))
-    (hθExt :
-      ∀ (P : Measure (ℕ → Fin k))
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-        (∀ i : Fin k, ∀ (m : ℕ) (sel : Fin m → ℕ), StrictMono sel →
-          Measure.map (fun r : ℕ → Fin k => fun j : Fin m => r (sel j))
-              (rowProcessLaw (k := k) P i)
-            =
-          (rowProcessLaw (k := k) P i).bind
-            (fun r => Measure.pi (fun _ : Fin m => (rowKernel i r : Measure (Fin k))))) →
-        AEMeasurable
-          (rowKernelToMarkovParam (k := k)
-            (initKernel := fun ω => ⟨Measure.dirac (ω 0), Measure.dirac.isProbabilityMeasure⟩)
-            (liftedRowKernelFromRowProcess (k := k) rowKernel)) P) :
+            rowProcessLaw (k := k) P i)) :
     ∃ (P : Measure (ℕ → Fin k)), IsProbabilityMeasure P ∧
       (∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs)) ∧
       ∃ rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k),
@@ -6071,7 +6169,7 @@ theorem exists_extension_pair_reconstruction_of_successorMatrixInvariance_hyp_an
         (rowKernelToMarkovParam (k := k)
           (initKernel := fun ω => ⟨Measure.dirac (ω 0), Measure.dirac.isProbabilityMeasure⟩)
           (liftedRowKernelFromRowProcess (k := k) rowKernel)) P :=
-    hθExt P rowKernel hrow
+    aemeasurable_rowKernelToMarkovParam_diracInit_lifted P rowKernel hEval
   have hpair :
       P (MarkovDeFinettiRecurrence.cylinder (k := k) [a, b]) =
         (∫⁻ θ, wordProb (k := k) θ [a, b]
@@ -6132,7 +6230,10 @@ theorem exists_extension_rowKernelFamily_with_aemeasurableEvalPi_of_markovExchan
   exact ⟨P, hPprob, hExt, hPstart, rowKernel, hrow, hEval, hPi⟩
 
 /-- Refined markov-exchangeable/row-recurrent pair-reconstruction route using
-the strengthened extension witness with AE-measurability data. -/
+the strengthened extension witness with AE-measurability data.
+
+The `hθExt` measurable-map requirement is now discharged internally via
+`AemeasurableRowKernel.aemeasurable_rowKernelToMarkovParam_diracInit_lifted`. -/
 theorem exists_extension_pair_reconstruction_of_markovExchangeable_rowRecurrent_and_carrierEvidenceEquivUpTo_refined
     (hk : 0 < k)
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
@@ -6148,20 +6249,7 @@ theorem exists_extension_pair_reconstruction_of_markovExchangeable_rowRecurrent_
         (∀ (i : Fin k) (σ : Equiv.Perm ℕ) (S : Finset ℕ) (v : ℕ → Fin k) (N : ℕ),
           RowVisitCylinderUpToCarrierEvidenceEquivAt (k := k) i σ N S v))
     (a b : Fin k)
-    (hstart : μ [a] = 1)
-    (hθExt :
-      ∀ (P : Measure (ℕ → Fin k))
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-        (∀ i : Fin k, ∀ (m : ℕ) (sel : Fin m → ℕ), StrictMono sel →
-          Measure.map (fun r : ℕ → Fin k => fun j : Fin m => r (sel j))
-              (rowProcessLaw (k := k) P i)
-            =
-          (rowProcessLaw (k := k) P i).bind
-            (fun r => Measure.pi (fun _ : Fin m => (rowKernel i r : Measure (Fin k))))) →
-        AEMeasurable
-          (rowKernelToMarkovParam (k := k)
-            (initKernel := fun ω => ⟨Measure.dirac (ω 0), Measure.dirac.isProbabilityMeasure⟩)
-            (liftedRowKernelFromRowProcess (k := k) rowKernel)) P) :
+    (hstart : μ [a] = 1) :
     ∃ (P : Measure (ℕ → Fin k)), IsProbabilityMeasure P ∧
       (∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs)) ∧
       ∃ rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k),
@@ -6180,7 +6268,7 @@ theorem exists_extension_pair_reconstruction_of_markovExchangeable_rowRecurrent_
         (rowKernelToMarkovParam (k := k)
           (initKernel := fun ω => ⟨Measure.dirac (ω 0), Measure.dirac.isProbabilityMeasure⟩)
           (liftedRowKernelFromRowProcess (k := k) rowKernel)) P :=
-    hθExt P rowKernel hrow
+    aemeasurable_rowKernelToMarkovParam_diracInit_lifted P rowKernel hEval
   have hpair :
       P (MarkovDeFinettiRecurrence.cylinder (k := k) [a, b]) =
         (∫⁻ θ, wordProb (k := k) θ [a, b]
@@ -6211,20 +6299,7 @@ theorem exists_extension_pair_reconstruction_of_markovExchangeable_rowRecurrent_
         (∀ (i : Fin k) (σ : Equiv.Perm ℕ) (S : Finset ℕ) (v : ℕ → Fin k) (N : ℕ),
           RowVisitCylinderUpToCarrierEvidenceEquivAt (k := k) i σ N S v))
     (a b : Fin k)
-    (hstart : μ [a] = 1)
-    (hθExt :
-      ∀ (P : Measure (ℕ → Fin k))
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-        (∀ i : Fin k, ∀ (m : ℕ) (sel : Fin m → ℕ), StrictMono sel →
-          Measure.map (fun r : ℕ → Fin k => fun j : Fin m => r (sel j))
-              (rowProcessLaw (k := k) P i)
-            =
-          (rowProcessLaw (k := k) P i).bind
-            (fun r => Measure.pi (fun _ : Fin m => (rowKernel i r : Measure (Fin k))))) →
-        AEMeasurable
-          (rowKernelToMarkovParam (k := k)
-            (initKernel := fun ω => ⟨Measure.dirac (ω 0), Measure.dirac.isProbabilityMeasure⟩)
-            (liftedRowKernelFromRowProcess (k := k) rowKernel)) P) :
+    (hstart : μ [a] = 1) :
     ∃ (P : Measure (ℕ → Fin k)), IsProbabilityMeasure P ∧
       (∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs)) ∧
       ∃ rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k),
@@ -6234,7 +6309,7 @@ theorem exists_extension_pair_reconstruction_of_markovExchangeable_rowRecurrent_
               (initKernel := fun ω => ⟨Measure.dirac (ω 0), Measure.dirac.isProbabilityMeasure⟩)
               (liftedRowKernelFromRowProcess (k := k) rowKernel))) :=
   exists_extension_pair_reconstruction_of_markovExchangeable_rowRecurrent_and_carrierEvidenceEquivUpTo_refined
-    (k := k) hk μ hμ hrowRec hgen hcarExt a b hstart hθExt
+    (k := k) hk μ hμ hrowRec hgen hcarExt a b hstart
 
 /-- `FortiniRowExchangeableConcrete` wrapper of
 `exists_extension_pair_reconstruction_of_markovExchangeable_rowRecurrent_and_carrierEvidenceEquivUpTo`. -/
@@ -6253,20 +6328,7 @@ theorem exists_extension_pair_reconstruction_of_fortiniConcrete_rowRecurrent_and
         (∀ (i : Fin k) (σ : Equiv.Perm ℕ) (S : Finset ℕ) (v : ℕ → Fin k) (N : ℕ),
           RowVisitCylinderUpToCarrierEvidenceEquivAt (k := k) i σ N S v))
     (a b : Fin k)
-    (hstart : μ [a] = 1)
-    (hθExt :
-      ∀ (P : Measure (ℕ → Fin k))
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-        (∀ i : Fin k, ∀ (m : ℕ) (sel : Fin m → ℕ), StrictMono sel →
-          Measure.map (fun r : ℕ → Fin k => fun j : Fin m => r (sel j))
-              (rowProcessLaw (k := k) P i)
-            =
-          (rowProcessLaw (k := k) P i).bind
-            (fun r => Measure.pi (fun _ : Fin m => (rowKernel i r : Measure (Fin k))))) →
-        AEMeasurable
-          (rowKernelToMarkovParam (k := k)
-            (initKernel := fun ω => ⟨Measure.dirac (ω 0), Measure.dirac.isProbabilityMeasure⟩)
-            (liftedRowKernelFromRowProcess (k := k) rowKernel)) P) :
+    (hstart : μ [a] = 1) :
     ∃ (P : Measure (ℕ → Fin k)), IsProbabilityMeasure P ∧
       (∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs)) ∧
       ∃ rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k),
@@ -6277,7 +6339,7 @@ theorem exists_extension_pair_reconstruction_of_fortiniConcrete_rowRecurrent_and
               (liftedRowKernelFromRowProcess (k := k) rowKernel))) := by
   exact
     exists_extension_pair_reconstruction_of_markovExchangeable_rowRecurrent_and_carrierEvidenceEquivUpTo_refined
-      (k := k) hk μ hμ hrowRec hgen hcarExt a b hstart hθExt
+      (k := k) hk μ hμ hrowRec hgen hcarExt a b hstart
 
 /-- Chaining lemma: carrier-evidence route + successor-matrix invariance
 implies the concrete Fortini mixture theorem, without new wrappers. -/

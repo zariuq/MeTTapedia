@@ -183,3 +183,24 @@ stack (subobject classifier, predicate fibration, Beck-Chevalley) is in the
 Use both together:
 - operational ingestion and execution via `LanguageDef`
 - categorical guarantees and lifted semantics via GSLT/topos modules
+
+## 8) Native Type Theory (NTT) Connection
+
+The GSLT presheaf infrastructure directly supports the Native Type Theory
+(Williams & Stay, ACT 2021) formalization in `Mettapedia/OSLF/NativeType/`.
+
+Key GSLT components consumed by NTT:
+- `Mettapedia/GSLT/Topos/PredicateFibration.lean`:
+  - `presheafChangeOfBase` — provides the indexed adjoints ∃f ⊣ f* ⊣ ∀f
+    used in NTT Prop 12
+  - `presheafSubfunctorFrame` — Frame instance on `Subfunctor F` used in
+    NTT Prop 14 (cosmic fibration: each fiber is a complete Heyting algebra)
+  - `beckChevalleyCondition_presheafChangeOfBase` — Beck-Chevalley condition
+    for NTT Prop 12
+
+The NTT strict claim tracker (`Mettapedia/OSLF/Framework/NTTClaimTracker.lean`)
+confirms 12/12 claims resolved (11 proven, 1 assumption-scoped with necessity
+counterexample), with 3 endpoints strengthened beyond paper parity:
+- Def 21: Cartesian lifts via pullbacks (Grothendieck fibration behavior)
+- Sec 4: full ↔ characterization of image-comprehension adjunction
+- Thm 23: functorial laws (map_id, map_comp) for the internal language package

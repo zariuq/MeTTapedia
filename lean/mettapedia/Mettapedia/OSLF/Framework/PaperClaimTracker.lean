@@ -1,11 +1,17 @@
 import Mettapedia.OSLF.CoreMain
 import Mettapedia.OSLF.Framework.AssumptionNecessity
+import Mettapedia.OSLF.Framework.NTTClaimTracker
 
 /-!
 # Paper-Claim Tracker
 
 One row per verifiable claim in the three OSLF source papers.
 Each row references a concrete Lean theorem or counterexample.
+
+Important scope note:
+- NTT rows below are the OSLF-facing NTT subset.
+- Strict theorem-number keyed NTT parity is tracked separately in
+  `Mettapedia/OSLF/Framework/NTTClaimTracker.lean`.
 
 ## Papers
 - [OSLF] Meredith & Stay, "Operational Semantics in Logical Form"
@@ -62,18 +68,18 @@ def paperClaimList : List PaperClaim :=
     "secrecy_worked_example", .proven⟩
   , ⟨"oslf.pdf", "§13.1", "Dependent/parametric type extension",
     "dependent_parametric_generated_type_system_extension", .proven⟩
-  -- Native Type Theory paper (Native_Type_Theory.pdf)
+  -- Native Type Theory paper (Native_Type_Theory.pdf), OSLF-facing subset
   , ⟨"NTT.pdf", "§3", "Native type = (sort, predicate) pair",
     "NativeTypeOf / NatType / NatTypeFiber", .proven⟩
-  , ⟨"NTT.pdf", "Thm 23", "Full presheaf Grothendieck category",
+  , ⟨"NTT.pdf", "§3-§5 (subset)", "Full presheaf Grothendieck category endpoint",
     "fullPresheafGrothendieckCategory", .proven⟩
-  , ⟨"NTT.pdf", "Prop 12", "Scoped ↔ full presheaf comparison",
+  , ⟨"NTT.pdf", "§3-§5 (subset)", "Scoped ↔ full presheaf comparison endpoint",
     "scoped_full_scoped_obj_roundtrip / full_route_restriction_equivalence_package", .proven⟩
   , ⟨"NTT.pdf", "§4", "Internal language: ⊤/⊥/∧/∨ in fibers",
     "topos_full_internal_logic_bridge_package", .proven⟩
   , ⟨"NTT.pdf", "§4", "Frame-derived →/¬ in fibers",
     "topos_full_internal_logic_bridge_package (Heyting clause)", .proven⟩
-  , ⟨"NTT.pdf", "Prop 19", "Π/Σ type formation (nonempty families)",
+  , ⟨"NTT.pdf", "§4 (guarded subset)", "Π/Σ type formation (nonempty families)",
     "topos_full_internal_logic_bridge_package (Π/Σ clause)", .assumptionScoped⟩
   , ⟨"NTT.pdf", "§5", "Theory morphism preservation (Π/Ω)",
     "TheoryMorphism.piOmega_translation_endpoint", .proven⟩
@@ -108,6 +114,11 @@ theorem provenCount_eq : claimCountByStatus .proven = 25 := by decide
 
 /-- Count of assumption-scoped claims. -/
 theorem assumptionScopedCount_eq : claimCountByStatus .assumptionScoped = 2 := by decide
+
+/-- Full NTT parity is closed: all strict NTT claims are resolved. -/
+theorem fullNTTParity_closed :
+    Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount = 0 :=
+  Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_zero
 
 /-! ## Code-Reference Anchors -/
 
@@ -149,6 +160,7 @@ theorem assumptionScopedCount_eq : claimCountByStatus .assumptionScoped = 2 := b
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.types_nonempty_necessary_for_piSigma
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.hClosed_necessary_for_fragment
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.not_global_hImageFinite_rhoCoreStarRel
+#check @fullNTTParity_closed
 
 -- Unified endpoint
 #check @Mettapedia.OSLF.coreMain_paper_parity_full_package

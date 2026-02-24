@@ -6,6 +6,7 @@ import Mettapedia.OSLF.Framework.AssumptionNecessity
 import Mettapedia.OSLF.Framework.ToposTOGLBridge
 import Mettapedia.OSLF.Framework.PaperClaimTracker
 import Mettapedia.OSLF.Framework.PaperParityCanaries
+import Mettapedia.OSLF.Framework.NTTClaimTracker
 
 /-!
 # OSLF Specification Index
@@ -511,5 +512,20 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.Framework.PaperClaimTracker.paperClaimList_all_resolved
 #check @Mettapedia.OSLF.Framework.PaperClaimTracker.provenCount_eq
 #check @Mettapedia.OSLF.Framework.PaperClaimTracker.assumptionScopedCount_eq
+-- Strict NTT theorem-number parity tracker (fully closed)
+#check @Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemaining_empty
+#check @Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_zero
+#check @Mettapedia.OSLF.Framework.NTTClaimTracker.fullNTTParity_closed
+-- NTT endpoints
+#check @Mettapedia.OSLF.NativeType.prop12_package
+#check @Mettapedia.OSLF.NativeType.prop14_cosmicFibration
+#check @Mettapedia.OSLF.NativeType.prop17_reification
+#check @Mettapedia.OSLF.NativeType.def21_codomainFibration
+#check @Mettapedia.OSLF.NativeType.def21_cartesianLift_proj
+#check @Mettapedia.OSLF.NativeType.def21_cartesianLift_universal_comp
+#check @Mettapedia.OSLF.NativeType.imageComprehensionAdjunction
+#check @Mettapedia.OSLF.NativeType.imageComprehension_iff
+#check @Mettapedia.OSLF.NativeType.thm23_internalLanguagePackage
+#check @Mettapedia.OSLF.NativeType.thm23_functorialLaws
 
 end Mettapedia.OSLF.SpecIndex

@@ -27,9 +27,6 @@ theorems.
 - Legacy full-target route names:
   -> `deFinettiStable_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`
      when the markov-only endpoint is sufficient.
-- DEAD PATH (unrestricted strengthening proven false, 2026-02-23):
-  `deFinettiStable_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_strengthening`
-  -> Vacuously true; use Markov-only or finite-mass endpoints instead.
 -/
 
 set_option autoImplicit false
@@ -731,36 +728,6 @@ theorem deFinettiStable_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance
       (Y := Y) (Ω := Ω) X hcore hglobal
       ((defaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening_of_commutesToMarkovBridge
         (hmarkov_of_commutes := hmarkov_of_commutes)) hglobal hunivDefault)
-
-/-- **DEAD PATH**: The `hstrength` hypothesis
-(`DefaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening`) is
-proven false — see `not_allSourcesKleisli_unrestricted` in
-`DeFinettiUnrestrictedCounterexample`. This theorem is therefore vacuously true
-and retained only for backward compatibility.
-
-Use the canonical Markov-only endpoint
-`deFinettiStable_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`
-or the equivalent finite-mass version
-`deFinettiStable_allSourcesKleisli_finiteMass_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`
-instead. -/
-@[deprecated
-  deFinettiStable_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
-  (since := "2026-02-23")]
-theorem deFinettiStable_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_strengthening
-    (X : ℕ → Ω → Bool)
-    (hcore : KernelLatentThetaUniversalMediatorInMarkovCore (Y := Y) (Ω := Ω) X)
-    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ))
-    (hunivDefault :
-      ∀ (Y' : Type) [MeasurableSpace Y'],
-        KernelLatentThetaUniversalMediator (Y := Y') (Ω := GlobalBinarySeq) coordProcess)
-    (hstrength : DefaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening) :
-    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ∧
-      Nonempty
-        (CategoryTheory.Limits.IsLimit
-          ((iidSequenceKleisliConeSkeleton
-            (iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance hglobal)).toCone)) := by
-  exact False.elim
-    (not_defaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening' hstrength)
 
 /-- Stable export: compatibility middle-strength route.
 If finite-prefix marginals of `iidSequenceKernelTheta` are Bernoulli product

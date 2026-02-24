@@ -2,6 +2,7 @@ import Mettapedia.CategoryTheory.DeFinettiStableExports
 import Mettapedia.CategoryTheory.DeFinettiExternalBridge
 import Mettapedia.CategoryTheory.DeFinettiMarkovCategoryBridge
 import Mettapedia.Logic.SolomonoffExchangeable
+import Mettapedia.Logic.CategoricalNuPLNBridge
 
 /-!
 # De Finetti Category Exports (Recommended Import Surface)
@@ -9,7 +10,19 @@ import Mettapedia.Logic.SolomonoffExchangeable
 This is the single recommended import path for the categorical de Finetti route.
 It re-exports the stable theorem chain needed by downstream users.
 
-## API Chain (Recommended Order)
+## Quick Start (Citation Endpoints)
+
+- `deFinetti_kleisliGiry`: Categorical de Finetti — finite-mass cone universality
+  in Kleisli(Giry). Strongest correct universal property.
+- `deFinetti_measure`: Measure-level de Finetti — unique latent-θ measure
+  from infinite exchangeability.
+
+## Structural Boundaries (Negative Results)
+- `deFinettiExport_not_allSourcesKleisli_unrestricted`: unrestricted is FALSE
+- `deFinettiExport_not_commutesToMarkovBridge_unrestricted`: bridge not derivable
+- `deFinettiExport_allSourcesKleisli_finiteMass_iff_markovOnly`: finite-mass = maximal correct
+
+## Full API Chain (Reference)
 1. `deFinettiExport_kernelUniversalMediator_iff_crossNPackageFamily`
 2. `deFinettiExport_kernelUniversalMediator_iff_perNUnique`
 3. `deFinettiExport_crossNPackage_of_prefixCone`
@@ -27,8 +40,7 @@ It re-exports the stable theorem chain needed by downstream users.
 15. `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernelFactorization_unrestricted` (adapter)
 16. `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernel` (adapter)
 17. `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_prefixPiMarginals` (adapter)
-18. ~~`deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_strengthening`~~ (DEAD PATH — strengthening proven false)
-19. `deFinettiExport_iidSequenceKleisliCone_isLimit_of_allSourcesKleisli_unrestricted`
+18. `deFinettiExport_iidSequenceKleisliCone_isLimit_of_allSourcesKleisli_unrestricted`
 20. `deFinettiExport_restrictedSolomonoff_prefixLaw_implies_unique_latentThetaMediator`
 21. `deFinettiExport_restrictedSolomonoff_totalOutput_implies_nupln_master_chain_and_unique_latentThetaMediator`
 22. `deFinettiExport_restrictedSolomonoff_totalOutput_and_programMassComplete_implies_nupln_master_chain_and_unique_latentThetaMediator`
@@ -80,8 +92,18 @@ namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
 open ProbabilityTheory
+open Mettapedia.ProbabilityTheory.HigherOrderProbability
 
 variable {Y Ω : Type*} [MeasurableSpace Y] [MeasurableSpace Ω]
+
+/-- Public API: unique latent-θ measure from infinite exchangeability (measure level). -/
+theorem deFinettiExport_existsUnique_latentThetaMeasure_of_exchangeable
+    (X : ℕ → Ω → Bool) (μ : Measure Ω)
+    [IsProbabilityMeasure μ]
+    (hX : ∀ i : ℕ, Measurable (X i))
+    (hexch : Mettapedia.Logic.Exchangeability.InfiniteExchangeable X μ) :
+    ∃! ν : Measure DeFinettiConnection.Theta, RepresentsLatentTheta X μ ν :=
+  deFinettiStable_existsUnique_latentThetaMeasure_of_exchangeable X μ hX hexch
 
 /-- Recommended export: kernel-level universal mediator API is equivalent to
 per-`n` limit-mediator uniqueness packaging. -/
@@ -641,31 +663,6 @@ theorem deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance
       hcore hglobal
       iidSequenceKernelTheta_represents_latentDirac_unconditional
       hmarkov_of_commutes
-
-/-- **DEAD PATH**: The `hstrength` hypothesis
-(`DefaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening`) is
-proven false — see `deFinettiExport_not_allSourcesKleisli_unrestricted`.
-This theorem is vacuously true and retained only for backward compatibility.
-
-Use the canonical Markov-only endpoint
-`deFinettiExport_markovCore_to_globalIIDConeMediatorUnique_markovOnly`
-or the equivalent finite-mass version
-`deFinettiExport_allSourcesKleisli_finiteMass_iff_markovOnly` instead. -/
-@[deprecated
-  deFinettiExport_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
-  (since := "2026-02-23")]
-theorem deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_strengthening
-    (X : ℕ → Ω → Bool)
-    (hcore : KernelLatentThetaUniversalMediatorInMarkovCore (Y := Y) (Ω := Ω) X)
-    (hglobal : ∀ θ : LatentTheta, GlobalFinitarySeqConeCommutes (iidSequenceKernelTheta θ))
-    (hstrength : DefaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening) :
-    KernelLatentThetaUniversalMediator (Y := Y) (Ω := Ω) X ∧
-      Nonempty
-        (CategoryTheory.Limits.IsLimit
-          ((iidSequenceKleisliConeSkeleton
-            (iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance hglobal)).toCone)) := by
-  exact False.elim
-    (not_defaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening' hstrength)
 
 /-- Compatibility wrapper retaining explicit strict iid-prefix equations. Prefer
 `deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`.
@@ -1267,5 +1264,31 @@ theorem deFinettiExport_globalIIDConeMediatorUnique_markovOnly_of_finiteMass
     (hfm : GlobalIIDConeMediatorUnique_finiteMass cone) :
     GlobalIIDConeMediatorUnique_markovOnly cone :=
   deFinettiStable_globalIIDConeMediatorUnique_markovOnly_of_finiteMass cone hfm
+
+/-- **Headline**: Categorical de Finetti in Kleisli(Giry) — finite-mass cone universality.
+This is the strongest correct universal property for the iid-sequence cone.
+Cite this theorem for the categorical result. -/
+abbrev deFinetti_kleisliGiry :=
+  @deFinettiExport_globalIIDConeMediatorUnique_finiteMass_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
+
+/-- **Headline**: Measure-level de Finetti — unique latent-θ measure from exchangeability.
+Cite this theorem for the classical probabilistic result. -/
+abbrev deFinetti_measure :=
+  @deFinettiExport_existsUnique_latentThetaMeasure_of_exchangeable
+
+/-! ## Categorical ↔ PLN Bridge Exports -/
+
+/-- Export: Categorical mixture sufficiency factors through MultiEvidence.
+    For any k-ary categorical mixture, two words with the same count vector
+    (= same `MultiEvidence k`) have the same probability. This connects
+    the categorical de Finetti infrastructure to the PLN evidence chain. -/
+abbrev deFinettiExport_categorical_pln_sufficiency :=
+  @Mettapedia.Logic.CategoricalNuPLNBridge.categorical_pln_sufficiency
+
+/-- Export: For k=2, categorical product PMF equals Bernoulli product PMF.
+    This is the compatibility theorem showing the categorical generalization
+    subsumes the binary theory. -/
+abbrev deFinettiExport_categoricalProductPMF_fin2_eq_bernoulliProductPMF :=
+  @Mettapedia.Logic.CategoricalNuPLNBridge.categoricalProductPMF_fin2_eq_bernoulliProductPMF
 
 end Mettapedia.CategoryTheory

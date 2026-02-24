@@ -8,6 +8,7 @@ import Mettapedia.OSLF.Framework.ToposReduction
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 import Mettapedia.OSLF.Framework.ToposTOGLBridge
 import Mettapedia.OSLF.Framework.AssumptionNecessity
+import Mettapedia.OSLF.Framework.NTTClaimTracker
 import Mettapedia.OSLF.Framework.PaperSection12Examples
 import Mettapedia.OSLF.Framework.IdentityEvidenceTransfer
 import Mettapedia.OSLF.Framework.ModalEquivalence
@@ -258,6 +259,10 @@ This tracker encodes parity targets against the core claims in:
 
 Unlike `tracker`/`strictTracker`, this list is intentionally conservative:
 entries remain non-`done` until their theorem-level endpoints are fully formalized.
+
+Important: this is an OSLF-facing parity surface. Full theorem-number parity for
+Native Type Theory is tracked separately in
+`Mettapedia/OSLF/Framework/NTTClaimTracker.lean`.
 -/
 
 /-- Paper-level parity milestones relative to OSLF/NTT claims. -/
@@ -304,6 +309,11 @@ theorem paperParityRemaining_eq_nil : paperParityRemaining = [] := by
 /-- Unresolved paper-parity count is zero. -/
 theorem paperParityRemainingCount_eq_zero : paperParityRemainingCount = 0 := by
   decide
+
+/-- Full NTT-paper parity is closed under the strict theorem-number keyed surface. -/
+theorem nttStrictParity_closed :
+    Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount = 0 :=
+  Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_zero
 
 /-! ## Code-Reference Anchors
 
@@ -550,5 +560,6 @@ These checks tie tracker statements to concrete constants in the codebase.
 #check @paperParityRemaining
 #check paperParityRemaining_eq_nil
 #check paperParityRemainingCount_eq_zero
+#check nttStrictParity_closed
 
 end Mettapedia.OSLF.Framework.FULLStatus
