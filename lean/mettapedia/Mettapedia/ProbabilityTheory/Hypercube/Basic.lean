@@ -969,12 +969,12 @@ theorem kolmogorov_in_namedTheories : ("Kolmogorov", kolmogorov) ∈ namedTheori
 theorem knuthSkillingGroup_isNaturalEdge :
     isNaturalEdge knuthSkilling knuthSkillingGroup := by
   -- `knuthSkillingGroup` is a one-axis update of `knuthSkilling`.
-  native_decide
+  decide
 
 /-- The group variant is strictly more specific than the monoid variant. -/
 theorem knuthSkilling_moreGeneral_than_group :
     isMoreGeneral knuthSkilling knuthSkillingGroup := by
-  native_decide
+  decide
 
 /-!
 ## §11: Edge Morphism Properties
@@ -1006,7 +1006,7 @@ theorem hammingDistance_self (V : ProbabilityVertex) : hammingDistance V V = 0 :
 /-- `knuthSkillingGroup` is one Hamming step away from `knuthSkilling`. -/
 theorem hammingDistance_knuthSkilling_knuthSkillingGroup :
     hammingDistance knuthSkilling knuthSkillingGroup = 1 := by
-  native_decide
+  decide
 
 /-- Hamming distance is symmetric. -/
 theorem hammingDistance_comm (V W : ProbabilityVertex) :
@@ -1365,7 +1365,7 @@ theorem classicalLogic_most_specific :
       ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ |
       ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ |
       ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩
-  all_goals (first | native_decide | simp_all)
+  all_goals (first | decide | simp_all)
 
 /-!
 ## §12: Quantale Structure and PLN Connection

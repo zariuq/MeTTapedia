@@ -220,11 +220,11 @@ theorem A_ne_C : tokA ≠ tokC := by decide
 theorem C_ne_D : tokC ≠ tokD := by decide
 
 /-- {D} is a dead marking: no transition matches (proven via negation). -/
-theorem D_is_dead : rewriteWithContext petriNet (marking [tokD]) = [] := by native_decide
+theorem D_is_dead : rewriteWithContext petriNet (marking [tokD]) = [] := by decide
 
 /-- {A, B} has exactly one reduct via T1. -/
 theorem AB_has_one_reduct :
-    (rewriteWithContext petriNet (marking [tokA, tokB])).length = 1 := by native_decide
+    (rewriteWithContext petriNet (marking [tokA, tokB])).length = 1 := by decide
 
 -- Verification: OSLF pipeline type-checks
 #check petriOSLF

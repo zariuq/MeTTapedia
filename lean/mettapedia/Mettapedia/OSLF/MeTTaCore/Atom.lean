@@ -100,7 +100,7 @@ theorem Atom.beq_self_eq_true (a : Atom) : (a == a) = true := by
   match a with
   | .symbol _ => simp [Atom.beq, BEq.beq]
   | .var _ => simp [Atom.beq, BEq.beq]
-  | .grounded _ => simp only [BEq.beq, Atom.beq]; native_decide
+  | .grounded _ => simp only [BEq.beq, Atom.beq]; decide
   | .expression es =>
     simp only [BEq.beq, Atom.beq]
     exact Atom.beqList_self_eq_true es (fun x _ => Atom.beq_self_eq_true x)

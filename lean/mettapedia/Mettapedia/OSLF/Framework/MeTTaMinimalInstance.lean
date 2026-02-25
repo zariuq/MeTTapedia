@@ -227,7 +227,7 @@ private theorem mettaMinimal_unaryCrossings :
        ("CollapseBind", "Atom", "Instr"),
        ("SuperposeBind", "Atom", "Instr"),
        ("Return", "Atom", "Instr")] := by
-  native_decide
+  decide
 
 /-- No unary sort-crossing arrow can target `State` in `mettaMinimal`. -/
 private theorem mettaMinimal_noArrowToState

@@ -249,15 +249,15 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
 /-! ## Structural Theorems -/
 
 /-- piCalc has exactly 6 constructors. -/
-theorem piCalc_terms_length : piCalc.terms.length = 6 := by native_decide
+theorem piCalc_terms_length : piCalc.terms.length = 6 := by decide
 
 /-- piCalc has one sort. -/
-theorem piCalc_types_length : piCalc.types.length = 1 := by native_decide
+theorem piCalc_types_length : piCalc.types.length = 1 := by decide
 
 /-- piCalc has 2 rewrite rules (COMM + ParCong). -/
-theorem piCalc_rewrites_length : piCalc.rewrites.length = 2 := by native_decide
+theorem piCalc_rewrites_length : piCalc.rewrites.length = 2 := by decide
 
 /-- piCalc has no equations (par laws handled by bag structure). -/
-theorem piCalc_equations_length : piCalc.equations.length = 0 := by native_decide
+theorem piCalc_equations_length : piCalc.equations.length = 0 := by decide
 
 end Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance

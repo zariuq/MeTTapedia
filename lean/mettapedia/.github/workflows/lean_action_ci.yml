@@ -11,4 +11,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Guard native_decide (no new uses)
+        run: ./scripts/check_native_decide_guard.sh --scope changed
       - uses: leanprover/lean-action@v1

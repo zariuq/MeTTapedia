@@ -5285,6 +5285,30 @@ theorem cylinderMixingIdentity_P_of_crossAnchorProductIdentity
       exact (wordProb_rowKernelToMarkovParam_eq_indicator_stepProd
         (k := k) rowKernel ω a b rest).symm
 
+/-- Restricting the path-space measure only decreases each row-process law. -/
+lemma rowProcessLaw_restrict_le
+    (P : Measure (ℕ → Fin k)) (S : Set (ℕ → Fin k)) (i : Fin k) :
+    rowProcessLaw (k := k) (P.restrict S) i ≤ rowProcessLaw (k := k) P i := by
+  have hle : P.restrict S ≤ P := Measure.restrict_le_self
+  have hmeas : AEMeasurable (rowSuccessorVisitProcess (k := k) i) P :=
+    (measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable
+  simpa [rowProcessLaw] using (Measure.map_mono_of_aemeasurable hle hmeas)
+
+/-- AEMeasurable row-kernel evaluations are preserved under restriction
+of the path-space measure. -/
+lemma aemeasurable_rowKernel_eval_of_rowProcessLaw_restrict
+    (P : Measure (ℕ → Fin k)) (S : Set (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (i b : Fin k)
+    (hEval :
+      AEMeasurable
+        (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+        (rowProcessLaw (k := k) P i)) :
+    AEMeasurable
+      (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+      (rowProcessLaw (k := k) (P.restrict S) i) := by
+  exact hEval.mono_measure (rowProcessLaw_restrict_le (k := k) P S i)
+
 /-- The cylinder mixing identity from row-kernel family data.
 
 **Mathematical gap**: Cross-anchor conditional independence of row processes.

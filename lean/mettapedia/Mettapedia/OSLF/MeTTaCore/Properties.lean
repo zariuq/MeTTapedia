@@ -257,9 +257,9 @@ theorem bisimilar_trans {s1 s2 s3 : MeTTaState}
 section Tests
 
 -- Value characterization
-example : isValue Atomspace.empty (.symbol "x") = true := by native_decide
-example : isValue Atomspace.empty (.grounded (.int 42)) = true := by native_decide
-example : isValue Atomspace.empty (.var "x") = true := by native_decide
+example : isValue Atomspace.empty (.symbol "x") = true := by decide
+example : isValue Atomspace.empty (.grounded (.int 42)) = true := by decide
+example : isValue Atomspace.empty (.var "x") = true := by decide
 
 -- Grounded operation determinism
 example : executeGroundedOp (.symbol "+")

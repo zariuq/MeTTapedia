@@ -360,11 +360,11 @@ def catalanNumber : ℕ → ℕ
   | n + 1 => (2 * (2 * n + 1) * catalanNumber n) / (n + 2)
 
 theorem catalan_zero : catalanNumber 0 = 1 := rfl
-theorem catalan_one : catalanNumber 1 = 1 := by native_decide
-theorem catalan_two : catalanNumber 2 = 2 := by native_decide
-theorem catalan_three : catalanNumber 3 = 5 := by native_decide
-theorem catalan_four : catalanNumber 4 = 14 := by native_decide
-theorem catalan_five : catalanNumber 5 = 42 := by native_decide
+theorem catalan_one : catalanNumber 1 = 1 := by decide
+theorem catalan_two : catalanNumber 2 = 2 := by decide
+theorem catalan_three : catalanNumber 3 = 5 := by decide
+theorem catalan_four : catalanNumber 4 = 14 := by decide
+theorem catalan_five : catalanNumber 5 = 42 := by decide
 
 /-- The cardinality of NC(n) equals the n-th Catalan number.
     Verified for small n by explicit enumeration. -/
@@ -373,10 +373,10 @@ theorem NC_card_eq_catalan_small :
     NC2.length = catalanNumber 2 ∧
     NC3.length = catalanNumber 3 := by
   constructor
-  · native_decide
+  · decide
   constructor
-  · native_decide
-  · native_decide
+  · decide
+  · decide
 
 /-!
 ## §6: Refinement Order

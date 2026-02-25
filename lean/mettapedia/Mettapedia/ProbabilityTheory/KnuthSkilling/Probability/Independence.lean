@@ -166,34 +166,34 @@ noncomputable def xorValuation : Valuation (Set XorSpace) where
 -- Cardinality facts in SUBTYPE form (for single events after simp)
 -- Goals become: Fintype.card { x // predicate }
 @[simp] lemma card_subtype_fst_true :
-    Fintype.card { x : XorSpace // x.1 = true } = 2 := by native_decide
+    Fintype.card { x : XorSpace // x.1 = true } = 2 := by decide
 @[simp] lemma card_subtype_snd_true :
-    Fintype.card { x : XorSpace // x.2 = true } = 2 := by native_decide
+    Fintype.card { x : XorSpace // x.2 = true } = 2 := by decide
 @[simp] lemma card_subtype_fst_eq_snd :
-    Fintype.card { x : XorSpace // x.1 = x.2 } = 2 := by native_decide
+    Fintype.card { x : XorSpace // x.1 = x.2 } = 2 := by decide
 -- For xorEventC = {x | x.1 ≠ x.2}, goal becomes 4 - Fintype.card{x.1 = x.2}
 @[simp] lemma card_complement :
-    (4 : ℕ) - Fintype.card { x : XorSpace // x.1 = x.2 } = 2 := by native_decide
+    (4 : ℕ) - Fintype.card { x : XorSpace // x.1 = x.2 } = 2 := by decide
 
 -- Cardinality facts in FINSET.FILTER form (for intersections after simp)
 @[simp] lemma card_filter_AB :
-    (Finset.filter (Membership.mem (xorEventA ∩ xorEventB)) Finset.univ).card = 1 := by native_decide
+    (Finset.filter (Membership.mem (xorEventA ∩ xorEventB)) Finset.univ).card = 1 := by decide
 @[simp] lemma card_filter_AC :
-    (Finset.filter (Membership.mem (xorEventA ∩ xorEventC)) Finset.univ).card = 1 := by native_decide
+    (Finset.filter (Membership.mem (xorEventA ∩ xorEventC)) Finset.univ).card = 1 := by decide
 @[simp] lemma card_filter_BC :
-    (Finset.filter (Membership.mem (xorEventB ∩ xorEventC)) Finset.univ).card = 1 := by native_decide
+    (Finset.filter (Membership.mem (xorEventB ∩ xorEventC)) Finset.univ).card = 1 := by decide
 @[simp] lemma card_filter_ABC :
-    (Finset.filter (Membership.mem ((xorEventA ∩ xorEventB) ∩ xorEventC)) Finset.univ).card = 0 := by native_decide
+    (Finset.filter (Membership.mem ((xorEventA ∩ xorEventB) ∩ xorEventC)) Finset.univ).card = 0 := by decide
 @[simp] lemma card_filter_A :
-    (Finset.filter (Membership.mem xorEventA) Finset.univ).card = 2 := by native_decide
+    (Finset.filter (Membership.mem xorEventA) Finset.univ).card = 2 := by decide
 @[simp] lemma card_filter_B :
-    (Finset.filter (Membership.mem xorEventB) Finset.univ).card = 2 := by native_decide
+    (Finset.filter (Membership.mem xorEventB) Finset.univ).card = 2 := by decide
 @[simp] lemma card_filter_C :
-    (Finset.filter (Membership.mem xorEventC) Finset.univ).card = 2 := by native_decide
+    (Finset.filter (Membership.mem xorEventC) Finset.univ).card = 2 := by decide
 
 /-! ### The "Gemini Idiom" for Fintype Cardinality
 
-**Problem:** Computing `Fintype.card {x : α | P x}` often fails with `decide` or `native_decide`
+**Problem:** Computing `Fintype.card {x : α | P x}` often fails with `decide` or `decide`
 due to instance mismatch between `Classical.propDecidable` and `Set.decidableSetOf`.
 
 **Solution (discovered with Gemini's help):**

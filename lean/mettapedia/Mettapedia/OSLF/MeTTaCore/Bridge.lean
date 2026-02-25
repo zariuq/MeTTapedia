@@ -152,16 +152,16 @@ def evaluatePattern (eqs : List Equation) (pat : Pattern) (fuel : Nat) : Multise
 
 /-- Pattern conversion preserves variable names (concrete example) -/
 theorem patternToAtom_var_example :
-    patternToAtom (.var "x") = .var "x" := by native_decide
+    patternToAtom (.var "x") = .var "x" := by decide
 
 /-- Pattern conversion preserves constructor applications (concrete example) -/
 theorem patternToAtom_apply_example :
-    patternToAtom (.apply "Nil" []) = .expression [.symbol "Nil"] := by native_decide
+    patternToAtom (.apply "Nil" []) = .expression [.symbol "Nil"] := by decide
 
 /-- Pattern conversion preserves lambda abstractions (concrete example) -/
 theorem patternToAtom_lambda_example :
     patternToAtom (.lambda "x" (.var "x")) =
-    .expression [.symbol "λ", .var "x", .var "x"] := by native_decide
+    .expression [.symbol "λ", .var "x", .var "x"] := by decide
 
 /-- Equation conversion creates proper equality atoms -/
 theorem equationToAtom_structure (eq : Equation) :
@@ -171,11 +171,11 @@ theorem equationToAtom_structure (eq : Equation) :
 /-- Round-trip check for variable patterns.
     Note: We use Option.isSome since Pattern doesn't have DecidableEq -/
 theorem roundtrip_var_succeeds :
-    (atomToPattern (patternToAtom (.var "x"))).isSome = true := by native_decide
+    (atomToPattern (patternToAtom (.var "x"))).isSome = true := by decide
 
 /-- Round-trip check for nullary applications -/
 theorem roundtrip_apply_nullary_succeeds :
-    (atomToPattern (patternToAtom (.apply "Nil" []))).isSome = true := by native_decide
+    (atomToPattern (patternToAtom (.apply "Nil" []))).isSome = true := by decide
 
 /-! ## Example: ρ-calculus Bridge -/
 
@@ -213,25 +213,25 @@ example : equationToAtom exampleCommEquation =
         .expression [.symbol "PInput", .var "x", .var "n", .var "p"]
       ],
       .expression [.symbol "subst", .var "p", .var "x", .expression [.symbol "NQuote", .var "q"]]
-    ] := by native_decide
+    ] := by decide
 
 /-! ## Unit Tests -/
 
 section Tests
 
 -- Pattern conversion
-example : patternToAtom (.var "x") = .var "x" := by native_decide
-example : patternToAtom (.apply "Nil" []) = .expression [.symbol "Nil"] := by native_decide
+example : patternToAtom (.var "x") = .var "x" := by decide
+example : patternToAtom (.apply "Nil" []) = .expression [.symbol "Nil"] := by decide
 example : patternToAtom (.apply "Cons" [.var "h", .var "t"]) =
-          .expression [.symbol "Cons", .var "h", .var "t"] := by native_decide
+          .expression [.symbol "Cons", .var "h", .var "t"] := by decide
 
 -- Lambda conversion
 example : patternToAtom (.lambda "x" (.var "x")) =
-          .expression [.symbol "λ", .var "x", .var "x"] := by native_decide
+          .expression [.symbol "λ", .var "x", .var "x"] := by decide
 
 -- Collection conversion
 example : patternToAtom (.collection .hashBag [.var "a", .var "b"] none) =
-          .expression [.symbol "Bag", .var "a", .var "b"] := by native_decide
+          .expression [.symbol "Bag", .var "a", .var "b"] := by decide
 
 -- Type expression conversion
 example : typeExprToAtom (.base "Proc") = .symbol "Proc" := rfl

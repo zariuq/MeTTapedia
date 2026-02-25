@@ -196,12 +196,12 @@ def rhoNameObj : ConstructorObj rhoCalc := ⟨rhoName⟩
 /-- Verify that NQuote is a unary crossing: Proc → Name -/
 theorem nquote_crossing :
     ("NQuote", "Proc", "Name") ∈ unaryCrossings rhoCalc := by
-  native_decide
+  decide
 
 /-- Verify that PDrop is a unary crossing: Name → Proc -/
 theorem pdrop_crossing :
     ("PDrop", "Name", "Proc") ∈ unaryCrossings rhoCalc := by
-  native_decide
+  decide
 
 /-- The NQuote arrow: Proc → Name in the sort quiver -/
 def nquoteArrow : SortArrow rhoCalc rhoProc rhoName :=

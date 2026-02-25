@@ -272,7 +272,7 @@ theorem a_is_regular : Heyting.IsRegular (a : H5) := by
   rfl
 
 theorem a_not_LEM : (a : H5) ⊔ aᶜ ≠ (⊤ : H5) := by
-  native_decide
+  decide
 
 end H5
 

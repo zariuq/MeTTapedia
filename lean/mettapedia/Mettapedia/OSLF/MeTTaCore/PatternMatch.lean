@@ -143,78 +143,78 @@ def unifiesTo (a1 a2 : Atom) (b : Bindings) : Prop :=
 
 -- Note: Full proofs of symmetry and validity require careful handling of
 -- the partial function and would benefit from a well-founded recursion
--- version. For now, we prove concrete examples using native_decide.
+-- version. Concrete examples below are kernel-checked with `decide`.
 
 /-- Symbols unify with themselves -/
 theorem symbol_unify_same :
     (unify (.symbol "x") (.symbol "x") Bindings.empty).isSuccess = true := by
-  native_decide
+  decide
 
 /-- Different symbols don't unify -/
 theorem symbol_unify_different :
     (unify (.symbol "x") (.symbol "y") Bindings.empty).isSuccess = false := by
-  native_decide
+  decide
 
 /-- Variables unify with symbols -/
 theorem var_unify_symbol :
     (unify (.var "x") (.symbol "a") Bindings.empty).isSuccess = true := by
-  native_decide
+  decide
 
 /-- Variables unify with other variables -/
 theorem var_unify_var :
     (unify (.var "x") (.var "y") Bindings.empty).isSuccess = true := by
-  native_decide
+  decide
 
 /-- Same grounded values unify -/
 theorem grounded_unify_same :
     (unify (.grounded (.int 42)) (.grounded (.int 42)) Bindings.empty).isSuccess = true := by
-  native_decide
+  decide
 
 /-- Different grounded values don't unify -/
 theorem grounded_unify_different :
     (unify (.grounded (.int 42)) (.grounded (.int 43)) Bindings.empty).isSuccess = false := by
-  native_decide
+  decide
 
 /-- Empty expressions unify -/
 theorem empty_expr_unify :
     (unify (.expression []) (.expression []) Bindings.empty).isSuccess = true := by
-  native_decide
+  decide
 
 /-- Variable self-unifies -/
 theorem var_self_unify :
     (unify (.var "x") (.var "x") Bindings.empty).isSuccess = true := by
-  native_decide
+  decide
 
 /-! ## Unit Tests -/
 
 section Tests
 
 -- Symbol unification
-example : (unify (.symbol "x") (.symbol "x") Bindings.empty).isSuccess = true := by native_decide
-example : (unify (.symbol "x") (.symbol "y") Bindings.empty).isSuccess = false := by native_decide
+example : (unify (.symbol "x") (.symbol "x") Bindings.empty).isSuccess = true := by decide
+example : (unify (.symbol "x") (.symbol "y") Bindings.empty).isSuccess = false := by decide
 
 -- Variable unification
-example : (unify (.var "x") (.symbol "a") Bindings.empty).isSuccess = true := by native_decide
+example : (unify (.var "x") (.symbol "a") Bindings.empty).isSuccess = true := by decide
 
 -- Grounded value unification
 example : (unify (.grounded (.int 42)) (.grounded (.int 42)) Bindings.empty).isSuccess = true := by
-  native_decide
+  decide
 example : (unify (.grounded (.int 42)) (.grounded (.int 43)) Bindings.empty).isSuccess = false := by
-  native_decide
+  decide
 
 -- Expression unification
 example : (unify (.expression []) (.expression []) Bindings.empty).isSuccess = true := by
-  native_decide
+  decide
 
 -- Mismatched types
 example : (unify (.symbol "x") (.grounded (.int 1)) Bindings.empty).isSuccess = false := by
-  native_decide
+  decide
 example : (unify (.symbol "x") (.expression []) Bindings.empty).isSuccess = false := by
-  native_decide
+  decide
 
 -- Variable captures value
 example : (unify (.var "x") (.symbol "hello") Bindings.empty).getBindings.bind
-            (fun b => b.lookup "x") = some (.symbol "hello") := by native_decide
+            (fun b => b.lookup "x") = some (.symbol "hello") := by decide
 
 end Tests
 

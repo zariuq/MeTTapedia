@@ -298,10 +298,10 @@ theorem chain3_lemCount : lemCount Chain3 = 2 := by
       | inl h => subst h; rfl
       | inr h => subst h; rfl
   rw [h]
-  native_decide
+  decide
 
 /-- Chain3 has exactly 3 elements -/
-theorem chain3_card : Fintype.card Chain3 = 3 := by native_decide
+theorem chain3_card : Fintype.card Chain3 = 3 := by decide
 
 /-- **The 2/3 Threshold**: Chain3 achieves exactly 2/3 LEM degree -/
 theorem chain3_lemDegree : lemDegree Chain3 = 2/3 := by

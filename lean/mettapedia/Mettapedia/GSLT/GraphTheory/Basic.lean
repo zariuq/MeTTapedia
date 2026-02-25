@@ -730,7 +730,7 @@ private theorem foldl_app_preserves_not_isAppHead (t : LambdaTerm) (args : List 
 
 /-- Helper: Omega is not an AppHead (not a variable at the head) -/
 private theorem Omega_not_isAppHead : LambdaTerm.Omega.isAppHead = false := by
-  native_decide
+  decide
 
 /-- Helper: Any term with Omega at the head position is not an AppHead -/
 private theorem foldl_app_Omega_not_isAppHead (args : List LambdaTerm) :
@@ -743,7 +743,7 @@ private theorem isHNF_app (t s : LambdaTerm) :
 
 /-- Helper: Omega is not in HNF -/
 private theorem Omega_not_isHNF : LambdaTerm.Omega.isHNF = false := by
-  native_decide
+  decide
 
 /-- Helper: foldl preserves non-HNF for applications starting from non-AppHead -/
 private theorem foldl_app_preserves_not_isHNF (t : LambdaTerm) (args : List LambdaTerm)

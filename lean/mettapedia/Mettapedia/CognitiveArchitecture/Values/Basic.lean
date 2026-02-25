@@ -166,7 +166,7 @@ def gapCount : Nat :=
 
 /-- Most values (17 of 20) have no demand equivalent -/
 theorem most_values_are_new : gapCount ≥ 17 := by
-  native_decide
+  decide
 
 /-! ## Value Properties
 
@@ -220,6 +220,6 @@ theorem total_values : allValues.length = 20 := by rfl
 /-- OpenPsi only covers 3 of 20 values (15%) -/
 theorem openPsi_coverage_limited :
     (allValues.filter (fun v => (valueToDemand v).isSome)).length ≤ 3 := by
-  native_decide
+  decide
 
 end Mettapedia.CognitiveArchitecture.Values

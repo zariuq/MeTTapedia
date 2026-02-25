@@ -181,7 +181,7 @@ theorem initial_has_workspace (a : Atom) :
 
 /-- Initial state is not done (has work) - concrete example -/
 theorem initial_not_done_example :
-    (MeTTaState.initial (.symbol "x")).isDone = false := by native_decide
+    (MeTTaState.initial (.symbol "x")).isDone = false := by decide
 
 /-- Output rule doesn't add to workspace.
 
@@ -220,7 +220,7 @@ section Tests
 example : MeTTaState.empty.isDone = true := rfl
 
 -- Initial state with symbol (workspace not empty)
-example : (MeTTaState.initial (.symbol "x")).workspaceEmpty = false := by native_decide
+example : (MeTTaState.initial (.symbol "x")).workspaceEmpty = false := by decide
 
 -- Initial state has one term in workspace
 example : (MeTTaState.initial (.symbol "x")).workspace.card = 1 := rfl

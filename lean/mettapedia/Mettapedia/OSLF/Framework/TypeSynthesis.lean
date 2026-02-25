@@ -251,7 +251,7 @@ engine bridged to declarative semantics.
 theorem rhoCalc_emptyBag_rewrite_nil :
     rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc
       (.collection .hashBag [] none) = [] := by
-  native_decide
+  decide
 
 /-- No one-step `langReduces` successor exists from the empty ρ-process bag. -/
 theorem rhoCalc_emptyBag_langReduces_irreducible (q : Pattern) :
@@ -344,7 +344,7 @@ def rhoSetDropWitnessNF : Pattern :=
 /-- In canonical `rhoCalc`, set-context congruence descent is blocked. -/
 theorem rhoSetDropWitness_exec_nil_canonical :
     rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc rhoSetDropWitness = [] := by
-  native_decide
+  decide
 
 /-- Corollary: canonical `rhoCalc` has no one-step `langReduces` successor from
     the set-context DROP witness. -/
@@ -360,7 +360,7 @@ theorem rhoSetDropWitness_no_langReduces_canonical (q : Pattern) :
 theorem rhoSetDropWitness_exec_mem_setExt :
     rhoSetDropWitnessNF ∈
       rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalcSetExt rhoSetDropWitness := by
-  native_decide
+  decide
 
 /-- Corollary: `rhoCalcSetExt` admits the corresponding one-step `langReduces`. -/
 theorem rhoSetDropWitness_langReduces_setExt :

@@ -69,7 +69,7 @@ theorem defect_dominates_cooperate :
     ∀ opponent_action : Action,
       pdPayoff1 pdDefect opponent_action ≥ pdPayoff1 pdCooperate opponent_action := by
   intro a
-  cases a <;> native_decide
+  cases a <;> decide
 
 /-- Mutual defection gives each player payoff 1. -/
 theorem mutual_defect_payoff :
@@ -84,7 +84,7 @@ theorem mutual_cooperate_payoff :
 /-- Cooperation is dominated: defecting always gives strictly higher payoff. -/
 theorem cooperate_not_best_response (opponent : Action) :
     pdPayoff1 pdDefect opponent > pdPayoff1 pdCooperate opponent := by
-  cases opponent <;> native_decide
+  cases opponent <;> decide
 
 /-! ## Coordination Game
 
@@ -118,8 +118,8 @@ theorem coord_AA_is_equilibrium :
     -- Player 2 doesn't want to deviate
     (∀ a : Action, p2 ≥ (coordPayoff Action.left a).2) := by
   constructor
-  · intro a; cases a <;> native_decide
-  · intro a; cases a <;> native_decide
+  · intro a; cases a <;> decide
+  · intro a; cases a <;> decide
 
 /-- (B, B) is also a Nash equilibrium. -/
 theorem coord_BB_is_equilibrium :
@@ -127,8 +127,8 @@ theorem coord_BB_is_equilibrium :
     (∀ a : Action, p1 ≥ (coordPayoff a Action.right).1) ∧
     (∀ a : Action, p2 ≥ (coordPayoff Action.right a).2) := by
   constructor
-  · intro a; cases a <;> native_decide
-  · intro a; cases a <;> native_decide
+  · intro a; cases a <;> decide
+  · intro a; cases a <;> decide
 
 /-- The coordination game has two distinct pure equilibria. -/
 theorem coord_two_pure_equilibria :
@@ -183,9 +183,9 @@ theorem matching_pennies_no_pure_equilibrium :
     right
     -- Find col' ≠ row so mpColPayoff row col' = +1 > -1
     cases row with
-    | left => use Action.right; native_decide
-    | right => use Action.left; native_decide
-    | stay => use Action.left; native_decide
+    | left => use Action.right; decide
+    | right => use Action.left; decide
+    | stay => use Action.left; decide
   · -- row ≠ col: row gets -1, col gets +1. Row wants to match.
     left
     use col

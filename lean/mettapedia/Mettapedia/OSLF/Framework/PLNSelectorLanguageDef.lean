@@ -704,12 +704,12 @@ def demoIrreducible : Pattern := pAtom
 example :
     checkLangUsing RelationEnv.empty plnSelectorLanguageDef selectorAtomCheck
       3 demoExtBayes2Src (.dia (.atom "isExtBayes2RHS")) = .sat := by
-  native_decide
+  decide
 
 example :
     checkLangUsing RelationEnv.empty plnSelectorLanguageDef selectorAtomCheck
       3 demoIrreducible (.dia .top) = .unsat := by
-  native_decide
+  decide
 
 theorem demoExtBayes2_sat_sem :
     sem (langReducesUsing RelationEnv.empty plnSelectorLanguageDef)
@@ -717,7 +717,7 @@ theorem demoExtBayes2_sat_sem :
   have hSat :
       checkLangUsing RelationEnv.empty plnSelectorLanguageDef selectorAtomCheck
         3 demoExtBayes2Src (.dia (.atom "isExtBayes2RHS")) = .sat := by
-    native_decide
+    decide
   exact plnSelector_checkLangUsing_sat_sound hSat
 
 end Mettapedia.OSLF.Framework.PLNSelectorLanguageDef

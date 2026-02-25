@@ -584,15 +584,15 @@ theorem fullyKnown_zero_uncertainty (u : BitVector n) :
 def example_partial : PartialVector 4 := ![some true, some true, some false, none]
 
 /-- The example has 2 positive bits. -/
-example : countPositive example_partial = 2 := by native_decide
+example : countPositive example_partial = 2 := by decide
 
 /-- The example has 1 negative bit. -/
-example : countNegative example_partial = 1 := by native_decide
+example : countNegative example_partial = 1 := by decide
 
 /-- The example has 1 unknown bit. -/
-example : countUnknown example_partial = 1 := by native_decide
+example : countUnknown example_partial = 1 := by decide
 
 /-- The example has 2 completions: [1,1,0,0] and [1,1,0,1]. -/
-example : (completions example_partial).card = 2 := by native_decide
+example : (completions example_partial).card = 2 := by decide
 
 end Mettapedia.Bridge.BitVectorEvidence

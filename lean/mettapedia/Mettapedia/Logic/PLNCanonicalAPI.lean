@@ -1,12 +1,14 @@
 import Mettapedia.Logic.PLNDerivation
 import Mettapedia.Logic.PLNWorldModelTyped
 import Mettapedia.Logic.PLNWorldModelCalculus
+import Mettapedia.Logic.PLNWorldModelCalculusTyped
 import Mettapedia.Logic.PLNWorldModelITV
 import Mettapedia.Logic.PLNWMOSLFBridge
 import Mettapedia.Logic.PLNWMOSLFBridgeTyped
 import Mettapedia.Logic.PLNXiRuleRegistry
 import Mettapedia.Logic.PLNXiCarrierScreening
 import Mettapedia.Logic.PLNXiDerivedBNRules
+import Mettapedia.Logic.PLNXiDerivedBNRulesTyped
 import Mettapedia.Logic.PLNColliderSingletonBridge
 import Mettapedia.Logic.PLNEndToEnd
 import Mettapedia.Logic.EvidenceQuantale
@@ -21,10 +23,12 @@ Small facade module that exposes the recommended, semantically grounded entry po
 - Categorical naming (`SourceRule` / `SinkRule`) as first-class aliases
 - NB bridge theorem location: `PLNBayesNetInference`
 - WM-calculus rewrite/query-equivalence types from `PLNWorldModelCalculus`
-- Srt-indexed typed WM layer (`WorldModelSigma`) from `PLNWorldModelTyped`
+- Typed WM-calculus equivalence/rewrite templates from `PLNWorldModelCalculusTyped`
+- Sort-indexed typed WM layer (`WorldModelSigma`) from `PLNWorldModelTyped`
 - Explicit ITV semantics/query layer from `PLNWorldModelITV`
 - OSLF bridge: `XiPLN`, `wmEvidenceAtomSemQ`, derivation soundness (`PLNWMOSLFBridge`)
 - Typed OSLF bridge: `XiPLNSigma`, `wmEvidenceAtomSemQSigma` (`PLNWMOSLFBridgeTyped`)
+- Typed BN rule wrappers (`WMRewriteRuleSigma`, one-sort lift) from `PLNXiDerivedBNRulesTyped`
 - **Derived BN rules**: fully proved deduction (chain) + source rule (fork) from local Markov + d-separation (`PLNXiDerivedBNRules`)
 - Schema-level templates in `Schema` namespace (for building new derived rules)
 
@@ -87,6 +91,12 @@ abbrev WMRewriteRule (State Query : Type*)
     [PLNWorldModel.WorldModel State Query] :=
   PLNWorldModel.WMRewriteRule State Query
 
+abbrev WMQueryEqSigma {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.WMQueryEqSigma
+    (State := State) (Srt := Srt) (Query := Query)
+
 abbrev WorldModelSigma (State : Type*) (Srt : Type*) (Query : Srt → Type*)
     [EvidenceClass.EvidenceType State] :=
   PLNWorldModel.WorldModelSigma State Srt Query
@@ -120,6 +130,41 @@ noncomputable abbrev queryITVSigma {State Srt Ctx : Type*} {Query : Srt → Type
   PLNWorldModel.WorldModelSigma.queryITV
     (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
 
+noncomputable def queryITVSigmaBayes95 {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    (ctx : BinaryContext) (W : State) (q : Sigma Query) : ITV :=
+  queryITVSigma (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
+    PLNWorldModel.ITVSemantics.bayesCredible95 ctx W q
+
+noncomputable def queryITVSigmaBayes90 {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    (ctx : BinaryContext) (W : State) (q : Sigma Query) : ITV :=
+  queryITVSigma (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
+    PLNWorldModel.ITVSemantics.bayesCredible90 ctx W q
+
+noncomputable def queryITVSigmaWalleyIDM {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    (ctx : IDMPredictiveContext) (W : State) (q : Sigma Query) : ITV :=
+  queryITVSigma (State := State) (Srt := Srt) (Query := Query) (Ctx := IDMPredictiveContext)
+    PLNWorldModel.ITVSemantics.walleyIDMPredictive ctx W q
+
+noncomputable def queryITVSigmaBayes95Jeffreys {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    (W : State) (q : Sigma Query) : ITV :=
+  queryITVSigmaBayes95 (State := State) (Srt := Srt) (Query := Query)
+    BinaryContext.jeffreys W q
+
+noncomputable def queryITVSigmaWalleyIDMDefault {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    (W : State) (q : Sigma Query) : ITV :=
+  queryITVSigmaWalleyIDM (State := State) (Srt := Srt) (Query := Query)
+    IDMPredictiveContext.default W q
+
 /-! ## OSLF Bridge canonical aliases -/
 
 abbrev XiPLN {State Query : Type*}
@@ -141,6 +186,29 @@ noncomputable abbrev wmEvidenceAtomSemQSigma {State Srt : Type*} {Query : Srt �
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.WorldModelSigma State Srt Query] :=
   PLNWMOSLFBridgeTyped.wmEvidenceAtomSemQSigma (State := State) (Srt := Srt) (Query := Query)
+
+abbrev MeTTaTypeOfSortTag := PLNWMOSLFBridgeTyped.MeTTaTypeOf.SortTag
+
+abbrev MeTTaTypeMarkers := PLNWMOSLFBridgeTyped.MeTTaTypeOf.SortTypeMarkers
+
+abbrev MeTTaTypeMarkersDefault := PLNWMOSLFBridgeTyped.MeTTaTypeOf.defaultMarkers
+
+abbrev MeTTaQueryBuilder := PLNWMOSLFBridgeTyped.MeTTaTypeOf.QueryBuilder
+
+abbrev queryOfAtomFromTypeOf := PLNWMOSLFBridgeTyped.MeTTaTypeOf.queryOfAtomFromTypeOf
+
+abbrev queryOfAtomFromTypeOfWith := PLNWMOSLFBridgeTyped.MeTTaTypeOf.queryOfAtomFromTypeOfWith
+
+abbrev xiPLNSigmaOfTypeOf := PLNWMOSLFBridgeTyped.MeTTaTypeOf.xiPLNSigmaOfTypeOf
+
+abbrev xi_deduction_rewrite_of_chainBN_sigma :=
+  PLNXiDerivedBNRules.Typed.xi_deduction_rewrite_of_chainBN_sigma
+
+abbrev xi_sourceRule_rewrite_of_forkBN_sigma :=
+  PLNXiDerivedBNRules.Typed.xi_sourceRule_rewrite_of_forkBN_sigma
+
+abbrev xi_sinkRule_rewrite_of_colliderBN_sigma :=
+  PLNXiDerivedBNRules.Typed.xi_sinkRule_rewrite_of_colliderBN_sigma
 
 /-! ## Derived BN Rules (canonical — no free side-condition hypotheses)
 

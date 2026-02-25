@@ -490,13 +490,13 @@ def mobiusNC : ℕ → ℤ
 
 theorem mobiusNC_zero : mobiusNC 0 = 1 := rfl
 
-theorem mobiusNC_one : mobiusNC 1 = 1 := by native_decide
+theorem mobiusNC_one : mobiusNC 1 = 1 := by decide
 
-theorem mobiusNC_two : mobiusNC 2 = -1 := by native_decide
+theorem mobiusNC_two : mobiusNC 2 = -1 := by decide
 
-theorem mobiusNC_three : mobiusNC 3 = 2 := by native_decide
+theorem mobiusNC_three : mobiusNC 3 = 2 := by decide
 
-theorem mobiusNC_four : mobiusNC 4 = -5 := by native_decide
+theorem mobiusNC_four : mobiusNC 4 = -5 := by decide
 
 end NoncrossingMobius
 

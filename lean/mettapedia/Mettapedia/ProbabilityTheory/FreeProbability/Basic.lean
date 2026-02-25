@@ -185,7 +185,7 @@ theorem catalan_values :
     catalanNumber 3 = 5 ∧
     catalanNumber 4 = 14 := by
   simp only [catalanNumber]
-  native_decide
+  decide
 
 /-!
 ## §2: Noncommutative Probability Spaces
@@ -240,13 +240,13 @@ def mobiusNC : ℕ → ℤ
 
 theorem mobiusNC_zero : mobiusNC 0 = 1 := rfl
 
-theorem mobiusNC_one : mobiusNC 1 = 1 := by native_decide
+theorem mobiusNC_one : mobiusNC 1 = 1 := by decide
 
-theorem mobiusNC_two : mobiusNC 2 = -1 := by native_decide
+theorem mobiusNC_two : mobiusNC 2 = -1 := by decide
 
-theorem mobiusNC_three : mobiusNC 3 = 2 := by native_decide
+theorem mobiusNC_three : mobiusNC 3 = 2 := by decide
 
-theorem mobiusNC_four : mobiusNC 4 = -5 := by native_decide
+theorem mobiusNC_four : mobiusNC 4 = -5 := by decide
 
 /-- Free cumulants defined recursively.
     k₁ = m₁ (mean)
@@ -791,10 +791,10 @@ theorem semicircleMoment_two : semicircleMoment 2 = 1 := by
   simp [semicircleMoment, catalanNumber]
 
 theorem semicircleMoment_four : semicircleMoment 4 = 2 := by
-  native_decide
+  decide
 
 theorem semicircleMoment_six : semicircleMoment 6 = 5 := by
-  native_decide
+  decide
 
 /-!
 ## §6: The Free Central Limit Theorem
@@ -1099,7 +1099,7 @@ Would require formalizing the S-transform and proving the multiplicative convolu
 ## §10: Summary and Research Directions
 
 ### Proven Results
-- Catalan number computation (native_decide)
+- Catalan number computation (decide)
 - Möbius function on NC(n) for small n
 - Free cumulant definitions for n ≤ 3
 - Semicircle moment formula

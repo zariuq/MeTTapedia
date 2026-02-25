@@ -33,7 +33,7 @@ def mettaState : LangSort mettaFull := ⟨"State", by decide⟩
 /-- Concrete unary sort-crossings extracted from `mettaFull`. -/
 private theorem mettaFull_unaryCrossings :
     unaryCrossings mettaFull = [("Eval", "Atom", "Instr"), ("Return", "Atom", "Instr")] := by
-  native_decide
+  decide
 
 /-- No unary sort-crossing arrow can target `State` in `mettaFull`. -/
 private theorem mettaFull_noArrowToState
@@ -320,7 +320,7 @@ private def codedConcatSpacesState : Pattern :=
 theorem mettaFull_checkLangUsing_sat_coded_concat_spaces_done :
     checkLangUsing Mettapedia.OSLF.MeTTaCore.FullLanguageDef.mettaFullRelEnv
       mettaFull mettaFullSpecAtomCheck 8 codedConcatSpacesState (.dia (.dia (.atom "isDoneState"))) = .sat := by
-  native_decide
+  decide
 
 /-- Semantic corollary for coded-string concat checker result. -/
 theorem mettaFull_sem_coded_concat_spaces_done :

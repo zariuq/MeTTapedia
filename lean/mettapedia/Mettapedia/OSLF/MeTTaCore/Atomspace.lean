@@ -338,11 +338,11 @@ section Tests
 
 -- Empty space
 example : Atomspace.empty.size = 0 := rfl
-example : Atomspace.empty.contains (.symbol "x") = false := by native_decide
+example : Atomspace.empty.contains (.symbol "x") = false := by decide
 
 -- Adding atoms
 example : (Atomspace.empty.add (.symbol "x")).size = 1 := rfl
-example : (Atomspace.empty.add (.symbol "x")).contains (.symbol "x") = true := by native_decide
+example : (Atomspace.empty.add (.symbol "x")).contains (.symbol "x") = true := by decide
 
 -- Equations
 example : Atomspace.isEquation (.expression [.symbol "=", .symbol "a", .symbol "b"]) = true := rfl

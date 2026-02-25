@@ -218,7 +218,7 @@ theorem uniformDieProb_additive (A B : Finset DieOutcome) (hAB : Disjoint A B) :
 def evenOutcomes : Finset DieOutcome := {1, 3, 5}
 
 theorem evenOutcomes_card : evenOutcomes.card = 3 := by
-  native_decide
+  decide
 
 theorem prob_even : uniformDieProb evenOutcomes = 1 / 2 := by
   simp [uniformDieProb, evenOutcomes_card]
@@ -228,7 +228,7 @@ theorem prob_even : uniformDieProb evenOutcomes = 1 / 2 := by
 def sixOutcome : Finset DieOutcome := {5}
 
 theorem sixOutcome_card : sixOutcome.card = 1 := by
-  native_decide
+  decide
 
 theorem prob_six : uniformDieProb sixOutcome = 1 / 6 := by
   simp [uniformDieProb, sixOutcome_card]

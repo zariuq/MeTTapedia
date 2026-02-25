@@ -205,15 +205,15 @@ def tinyVal : LangSort tinyML := ⟨"Val", by decide⟩
 /-- TinyML has exactly 2 sort-crossing constructors: Inject and Thunk. -/
 theorem tinyML_crossings :
     unaryCrossings tinyML = [("Inject", "Val", "Expr"), ("Thunk", "Expr", "Val")] := by
-  native_decide
+  decide
 
 /-- The Inject arrow: Val → Expr. -/
 def injectArrow : SortArrow tinyML tinyVal tinyExpr :=
-  ⟨"Inject", by native_decide⟩
+  ⟨"Inject", by decide⟩
 
 /-- The Thunk arrow: Expr → Val. -/
 def thunkArrow : SortArrow tinyML tinyExpr tinyVal :=
-  ⟨"Thunk", by native_decide⟩
+  ⟨"Thunk", by decide⟩
 
 /-- The ConstructorObj wrapper for Expr. -/
 def tinyExprObj : ConstructorObj tinyML := ⟨tinyExpr⟩
@@ -469,35 +469,35 @@ theorem boolT_ne_boolF : boolT ≠ boolF := by decide
 
 /-- inject(true) is a normal form: no reductions apply. -/
 theorem inject_boolT_is_nf :
-    rewriteWithContext tinyML (inject boolT) = [] := by native_decide
+    rewriteWithContext tinyML (inject boolT) = [] := by decide
 
 /-- inject(false) is a normal form. -/
 theorem inject_boolF_is_nf :
-    rewriteWithContext tinyML (inject boolF) = [] := by native_decide
+    rewriteWithContext tinyML (inject boolF) = [] := by decide
 
 /-- β-reduction fires on `(λ.#0) true`. -/
 theorem beta_fires :
     (rewriteWithContext tinyML
       (app (inject (lam (.bvar 0))) (inject boolT))).length = 1 := by
-  native_decide
+  decide
 
 /-- Force fires on `inject(thunk(inject(true)))`. -/
 theorem force_fires :
     (rewriteWithContext tinyML
       (inject (thunk (inject boolT)))).length = 1 := by
-  native_decide
+  decide
 
 /-- IfTrue fires when condition is inject(BoolT). -/
 theorem ifTrue_fires :
     (rewriteWithContext tinyML
       (ite (inject boolT) (inject boolT) (inject boolF))).length = 1 := by
-  native_decide
+  decide
 
 /-- FstPair fires on fst(inject(pairV(true, false))). -/
 theorem fstPair_fires :
     (rewriteWithContext tinyML
       (fst (inject (pairV boolT boolF)))).length = 1 := by
-  native_decide
+  decide
 
 /-! ## End-to-End Bridge (Checker → Fiber → PathSemClosed BC+Graph) -/
 

@@ -997,7 +997,7 @@ lemma gridBridge_of_k_eq_one {F : AtomFamily α 1} : GridBridge F := by
     -- Fin 1 has one element, so foldl over finRange 1 = [0] is one step
     simp only [mu, a]
     -- finRange 1 = [0]
-    have hlist : List.finRange 1 = [⟨0, by decide⟩] := by native_decide
+    have hlist : List.finRange 1 = [⟨0, by decide⟩] := by decide
     simp only [hlist, List.foldl_cons, List.foldl_nil, op_ident_left]
 
   -- Step 2: Show mu F (scaleMult n r) = iterate_op a (n * r 0)
@@ -1007,7 +1007,7 @@ lemma gridBridge_of_k_eq_one {F : AtomFamily α 1} : GridBridge F := by
     simp [scaleMult]
   have hnr : mu F (scaleMult n r) = iterate_op a (n * r ⟨0, by decide⟩) := by
     simp only [mu, a]
-    have hlist : List.finRange 1 = [⟨0, by decide⟩] := by native_decide
+    have hlist : List.finRange 1 = [⟨0, by decide⟩] := by decide
     simp only [hlist, List.foldl_cons, List.foldl_nil, op_ident_left, hscale]
 
   -- Step 3: Show iterate_op (mu F r) n = iterate_op a (n * r 0)

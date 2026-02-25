@@ -195,7 +195,7 @@ example : MeTTaState.empty.isDone = true := rfl
 example : MeTTaState.empty.activeCount = 0 := rfl
 
 -- Initial state
-example : (MeTTaState.initial (.symbol "x")).workspaceEmpty = false := by native_decide
+example : (MeTTaState.initial (.symbol "x")).workspaceEmpty = false := by decide
 example : (MeTTaState.initial (.symbol "x")).inputEmpty = true := rfl
 
 -- Adding to workspace

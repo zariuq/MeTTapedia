@@ -286,11 +286,11 @@ example : deconsAtom (.expression [.symbol "a", .symbol "b"]) =
 -- unifyOp
 example : (unifyOp Atomspace.empty (.symbol "x") (.symbol "x")
             (.symbol "yes") (.symbol "no") Bindings.empty).card = 1 := by
-  native_decide
+  decide
 
 -- superposeBind
 example : (superposeBind (.expression [.symbol "a", .symbol "b"]) Bindings.empty).card = 2 := by
-  native_decide
+  decide
 
 -- grounded operations
 example : executeGroundedOp (.symbol "+")

@@ -186,14 +186,14 @@ example : (Bindings.single "x" (.symbol "a")).lookup "y" = none := rfl
 -- Extension
 example : (Bindings.empty.extend "x" (.symbol "a")).lookup "x" = some (.symbol "a") := rfl
 
--- Apply to variable (partial function, so not rfl - use native_decide)
-example : (Bindings.single "x" (.symbol "a")).apply (.var "x") = .symbol "a" := by native_decide
-example : Bindings.empty.apply (.var "x") = .var "x" := by native_decide
+-- Apply to variable (partial function, so not rfl - use decide)
+example : (Bindings.single "x" (.symbol "a")).apply (.var "x") = .symbol "a" := by decide
+example : Bindings.empty.apply (.var "x") = .var "x" := by decide
 
 -- Apply to expression (partial function)
 example : (Bindings.single "x" (.grounded (.int 1))).apply
             (.expression [.symbol "+", .var "x", .grounded (.int 2)]) =
-          .expression [.symbol "+", .grounded (.int 1), .grounded (.int 2)] := by native_decide
+          .expression [.symbol "+", .grounded (.int 1), .grounded (.int 2)] := by decide
 
 end Tests
 
