@@ -36,6 +36,7 @@ import Mettapedia.OSLF.Framework.PaperSection12Examples
 import Mettapedia.OSLF.NativeType.Construction
 import Mettapedia.OSLF.MeTTaCore.Premises
 import Mettapedia.OSLF.MeTTaCore.FullLanguageDef
+import Mettapedia.OSLF.MeTTaCore.FullLanguageTests
 import Mettapedia.OSLF.Framework.MeTTaFullInstance
 import Mettapedia.OSLF.Framework.MeTTaToNTT
 import Mettapedia.OSLF.Framework.IdentityEvidenceTransfer
@@ -88,6 +89,10 @@ export Mettapedia.OSLF.MeTTaCore.FullLanguageDef (
   mettaFullOSLF
   mettaFullGalois
   mettaFullRelEnv
+)
+
+export Mettapedia.OSLF.MeTTaCore.FullLanguageTests (
+  coded_string_concat_normalForm_shape
 )
 
 export Mettapedia.OSLF.Framework.MeTTaFullInstance (

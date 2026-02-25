@@ -13,20 +13,8 @@ Downstream modules should prefer importing
 `Mettapedia.CategoryTheory.DeFinettiExports`.
 
 This module re-exports the stable theorem chain by providing lightweight alias
-theorems.
-
-## Migration Map (Legacy -> Canonical/Adapter)
-- `deFinettiStable_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_allSourcesKleisli_unrestricted`
-  -> `deFinettiStable_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKleisli_unrestricted`
-- `deFinettiStable_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_allSourcesKernelFactorization_unrestricted`
-  -> `deFinettiStable_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernelFactorization_unrestricted`
-- `deFinettiStable_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_allSourcesKernel`
-  -> `deFinettiStable_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernel`
-- `deFinettiStable_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_prefixPiMarginals`
-  -> `deFinettiStable_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_prefixPiMarginals`
-- Legacy full-target route names:
-  -> `deFinettiStable_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`
-     when the markov-only endpoint is sufficient.
+theorems. Canonical endpoints, adapters, and migration notes are documented in
+`DeFinettiExports`.
 -/
 
 set_option autoImplicit false

@@ -10,80 +10,27 @@ import Mettapedia.Logic.CategoricalNuPLNBridge
 This is the single recommended import path for the categorical de Finetti route.
 It re-exports the stable theorem chain needed by downstream users.
 
-## Quick Start (Citation Endpoints)
-
-- `deFinetti_kleisliGiry`: Categorical de Finetti — finite-mass cone universality
-  in Kleisli(Giry). Strongest correct universal property.
-- `deFinetti_measure`: Measure-level de Finetti — unique latent-θ measure
-  from infinite exchangeability.
+## Canonical Endpoints (Use These)
+- `deFinetti_kleisliGiry`: categorical de Finetti in Kleisli(Giry) — **finite-mass** cone universality.
+- `deFinettiExport_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`:
+  the canonical Markov-only endpoint.
+- `deFinettiExport_globalIIDConeMediatorUnique_finiteMass_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`:
+  the canonical **finite-mass** cone endpoint (maximal correct strengthening).
+- `deFinetti_measure`: measure-level de Finetti — unique latent-θ measure from infinite exchangeability.
 
 ## Structural Boundaries (Negative Results)
-- `deFinettiExport_not_allSourcesKleisli_unrestricted`: unrestricted is FALSE
-- `deFinettiExport_not_commutesToMarkovBridge_unrestricted`: bridge not derivable
-- `deFinettiExport_allSourcesKleisli_finiteMass_iff_markovOnly`: finite-mass = maximal correct
+- `deFinettiExport_not_allSourcesKleisli_unrestricted`: unrestricted all-sources Kleisli universality is FALSE.
+- `deFinettiExport_not_commutesToMarkovBridge_unrestricted`: commutes-to-Markov bridge is not derivable.
+- `deFinettiExport_allSourcesKleisli_finiteMass_iff_markovOnly`: finite-mass = maximal correct strengthening.
 
-## Full API Chain (Reference)
-1. `deFinettiExport_kernelUniversalMediator_iff_crossNPackageFamily`
-2. `deFinettiExport_kernelUniversalMediator_iff_perNUnique`
-3. `deFinettiExport_crossNPackage_of_prefixCone`
-4. `deFinettiExport_kernelUniversalMediator_endToEndChain`
-5. `deFinettiExport_kernelUniversalMediator_endToEnd_globalChain`
-6. `deFinettiExport_isLimit_iff_globalIIDConeMediatorUnique`
-7. `deFinettiExport_isLimit_iff_globalIIDConeMediatorUniqueProbBool`
-8. `deFinettiExport_isLimit_iff_globalIIDConeMediatorUnique_iidSequenceKernelTheta`
-9. `deFinettiExport_iidSequenceKernelTheta_isLimitReady_of_globalFinitaryInvariance`
-10. `deFinettiExport_iidSequenceKernelTheta_isLimitReady_of_prefix_pi_marginals`
-11. `deFinettiExport_markovCoreUniversal_iff_crossNPackageFamily`
-12. `deFinettiExport_markovCore_to_kleisliRoute`
-13. `deFinettiExport_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel` (canonical)
-14. `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKleisli_unrestricted` (adapter)
-15. `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernelFactorization_unrestricted` (adapter)
-16. `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernel` (adapter)
-17. `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_prefixPiMarginals` (adapter)
-18. `deFinettiExport_iidSequenceKleisliCone_isLimit_of_allSourcesKleisli_unrestricted`
-20. `deFinettiExport_restrictedSolomonoff_prefixLaw_implies_unique_latentThetaMediator`
-21. `deFinettiExport_restrictedSolomonoff_totalOutput_implies_nupln_master_chain_and_unique_latentThetaMediator`
-22. `deFinettiExport_restrictedSolomonoff_totalOutput_and_programMassComplete_implies_nupln_master_chain_and_unique_latentThetaMediator`
+## Adapters and Legacy Names
+- Adapters are suffixed `_adapter_...` and are **assumption-bearing** (use only when the
+  extra bridge hypotheses are explicitly available).
+- Legacy names are marked `[deprecated]` and mapped to canonical/adapters below.
 
-## Markov-Core Route (Recommended)
-1. Use `deFinettiExport_markovCoreUniversal_iff_crossNPackageFamily` to align
-   Markov-core universality with the cross-`n` package family.
-2. Use `deFinettiExport_markovCore_to_kleisliRoute` to obtain the concrete
-   Kleisli(Giry) `IsLimit`-ready witness bundle.
-3. Canonical endpoint:
-   `deFinettiExport_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`.
-4. Use unrestricted/full-`IsLimit` theorems only as adapters when you have an
-   explicit commutes-to-Markov bridge (`CommutesToMarkovBridge`).
-5. Structural boundaries (proven negative results):
-   - `deFinettiExport_not_commutesToMarkovBridge_unrestricted`: the commutes-to-Markov
-     bridge is not derivable in unrestricted `Kleisli(MeasCat.Giry)`.
-   - `deFinettiExport_not_allSourcesKleisli_unrestricted`: the unrestricted all-sources
-     Kleisli mediator property is FALSE (counting-measure counterexample).
-   - `deFinettiExport_not_defaultAllSourcesKernel_to_allSourcesKleisli_unrestricted_strengthening`:
-     the unrestricted strengthening hypothesis is also false.
-6. Finite-mass equivalence (corrected strengthening):
-   `deFinettiExport_allSourcesKleisli_finiteMass_iff_markovOnly` proves that
-   finite-mass universality is equivalent to Markov-only universality.
-   The fully unrestricted version is false (counting-measure counterexample),
-   but the finite-mass restriction is the maximal correct strengthening.
-7. Cone-level finite-mass API (recommended for new code):
-   `deFinettiExport_globalIIDConeMediatorUnique_finiteMass_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`
-   is the strongest correct universal property for the `iidSequenceKernelTheta` cone.
-   It subsumes the Markov-only endpoint via
-   `deFinettiExport_globalIIDConeMediatorUnique_markovOnly_of_finiteMass`.
-
-## Migration Map (Legacy -> Canonical/Adapter)
-- `deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_allSourcesKleisli_unrestricted`
-  -> `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKleisli_unrestricted`
-- `deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_allSourcesKernelFactorization_unrestricted`
-  -> `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernelFactorization_unrestricted`
-- `deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_allSourcesKernel`
-  -> `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernel`
-- `deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_prefixPiMarginals`
-  -> `deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_prefixPiMarginals`
-- Legacy full-target route names:
-  -> `deFinettiExport_markovCore_to_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`
-     when the markov-only endpoint is sufficient.
+## Reference Map
+For the full API map and legacy migration list, see the section "Migration Map" and
+the stable layer `Mettapedia.CategoryTheory.DeFinettiStableExports`.
 -/
 
 set_option autoImplicit false
@@ -340,6 +287,11 @@ theorem deFinettiExport_markovCore_to_kleisliIsLimit
   exact deFinettiStable_markovCore_to_kleisliIsLimit
     (Y := Y) (Ω := Ω) X hcore hglobal hmed
 
+/-! ### Legacy full-target wrappers (adapter behavior)
+
+These names keep older call sites working, but they are **assumption-bearing**.
+Prefer the canonical Markov-only endpoint or the explicit `_adapter_...` names. -/
+
 /-- Recommended alias theorem (full-target route): Markov-core universal
 mediation plus global finitary invariance and unrestricted all-sources Kleisli
 universality yield a concrete global Kleisli(Giry) `IsLimit` witness for
@@ -479,6 +431,8 @@ theorem deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance
     deFinettiExport_markovCore_to_kleisliIsLimit_adapter_of_globalFinitaryInvariance_and_allSourcesKernel
       (Y := Y) (Ω := Ω) (X := X)
       hcore hglobal huniv hmarkov_of_commutes
+
+/-! ### Structural boundaries (negative results) -/
 
 /-- Structural boundary: in unrestricted `Kleisli(MeasCat.Giry)`, raw
 permutation-commutation does not imply Markovness of source kernels. -/
@@ -974,10 +928,13 @@ theorem deFinettiExport_globalIIDConeMediatorUnique_markovOnly_of_globalFinitary
     (hunivDefault := fun (Y' : Type) _ =>
       kernelLatentThetaUniversalMediator_default_typeFamily (Y' := Y'))
 
+/-! ### Legacy wrappers (deprecated) -/
+
 /-- Compatibility wrapper retaining an explicit latent-Dirac witness.
 Prefer
 `deFinettiExport_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel`.
 -/
+
 @[deprecated
   deFinettiExport_globalIIDConeMediatorUnique_markovOnly_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
   (since := "2026-02-20")]
@@ -1213,9 +1170,7 @@ theorem deFinettiExport_allSourcesKleisli_finiteMass_of_globalFinitaryInvariance
   deFinettiStable_allSourcesKleisli_finiteMass_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
     hglobal hunivDefault
 
--- ============================================================
--- Cone-level finite-mass API (recommended for new downstream code)
--- ============================================================
+/-! ### Cone-level finite-mass API (recommended for new downstream code) -/
 
 /-- Public API: finite-mass cone universality for `iidSequenceKernelTheta`
 from all-sources finite-mass Kleisli universality. -/

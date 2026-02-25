@@ -99,11 +99,14 @@ partial def renderPattern : Pattern → String
           else
             "#{" ++ core ++ ", ..." ++ r ++ "}"
 
-private def renderPremise : Premise → String
+/-- Render a premise, disambiguating overloaded relation names by arity.
+    `overloaded` is the set of relation names that appear with multiple arities. -/
+private def renderPremise (overloaded : List String) : Premise → String
   | .freshness fc => s!"{fc.varName} # {renderPattern fc.term}"
   | .congruence src tgt => s!"{renderPattern src} ~> {renderPattern tgt}"
   | .relationQuery rel args =>
-      s!"{rel}({String.intercalate ", " (args.map renderPattern)})"
+      let name := if overloaded.contains rel then s!"{rel}{args.length}" else rel
+      s!"{name}({String.intercalate ", " (args.map renderPattern)})"
 
 private def renderGrammarRule (rule : GrammarRule) : String :=
   let renderedParams := (indexed rule.params).map fun (idx, p) => renderTermParam idx p
@@ -115,20 +118,20 @@ private def renderGrammarRule (rule : GrammarRule) : String :=
   let syntaxText := renderTermSyntax rule.label rule.params
   s!"        {ctorName rule.label} . {paramBlock}|- {syntaxText} : {rule.category};"
 
-private def renderEquation (idx : Nat) (eqn : Equation) : String :=
+private def renderEquation (overloaded : List String) (idx : Nat) (eqn : Equation) : String :=
   let gate :=
     if eqn.premises.isEmpty then
       "|-"
     else
-      s!"| {String.intercalate ", " (eqn.premises.map renderPremise)} |-"
+      s!"| {String.intercalate ", " (eqn.premises.map (renderPremise overloaded))} |-"
   s!"        E{idx} . {gate} {renderPattern eqn.left} = {renderPattern eqn.right};"
 
-private def renderRewrite (idx : Nat) (rw : RewriteRule) : String :=
+private def renderRewrite (overloaded : List String) (idx : Nat) (rw : RewriteRule) : String :=
   let gate :=
     if rw.premises.isEmpty then
       "|-"
     else
-      s!"| {String.intercalate ", " (rw.premises.map renderPremise)} |-"
+      s!"| {String.intercalate ", " (rw.premises.map (renderPremise overloaded))} |-"
   s!"        R{idx} . {gate} {renderPattern rw.left} ~> {renderPattern rw.right};"
 
 private def renderSection (title : String) (lines : List String) : String :=
@@ -139,12 +142,32 @@ private def renderSection (title : String) (lines : List String) : String :=
       "\n" ++ String.intercalate "\n" lines ++ "\n"
   "    " ++ title ++ " {" ++ body ++ "    }"
 
+/-- Collect (relation-name, arity) pairs from all premises in a language. -/
+private def collectRelationArities (lang : LanguageDef) : List (String × Nat) :=
+  let fromPremises (ps : List Premise) : List (String × Nat) :=
+    ps.filterMap fun p =>
+      match p with
+      | .relationQuery rel args => some (rel, args.length)
+      | _ => none
+  let fromEqs := (lang.equations.map (fun e => fromPremises e.premises)).flatten
+  let fromRws := (lang.rewrites.map (fun r => fromPremises r.premises)).flatten
+  fromEqs ++ fromRws
+
+/-- Find relation names that appear with multiple distinct arities. -/
+private def overloadedRelations (lang : LanguageDef) : List String :=
+  let pairs := collectRelationArities lang
+  let names := pairs.map Prod.fst |>.eraseDups
+  names.filter fun name =>
+    let arities := (pairs.filter (fun p => p.1 == name)).map Prod.snd |>.eraseDups
+    arities.length > 1
+
 /-- Render a Lean `LanguageDef` into Rust `language! { ... }` macro text. -/
 def renderLanguage (lang : LanguageDef) : String :=
+  let overloaded := overloadedRelations lang
   let typeLines := lang.types.map (fun t => s!"        {t}")
   let termLines := lang.terms.map renderGrammarRule
-  let eqLines := (indexed lang.equations).map (fun (idx, eqn) => renderEquation idx eqn)
-  let rwLines := (indexed lang.rewrites).map (fun (idx, rw) => renderRewrite idx rw)
+  let eqLines := (indexed lang.equations).map (fun (idx, eqn) => renderEquation overloaded idx eqn)
+  let rwLines := (indexed lang.rewrites).map (fun (idx, rw) => renderRewrite overloaded idx rw)
   String.intercalate "\n"
     [ "language! {"
     , s!"    name: {lang.name},"

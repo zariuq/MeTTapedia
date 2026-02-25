@@ -67,6 +67,13 @@ def mettaFull : LanguageDef := {
                         .nonTerminal "op", .terminal ",",
                         .nonTerminal "lhs", .terminal ",",
                         .nonTerminal "rhs", .terminal ")"] },
+    -- Conditional branching (aligned with Rust MeTTaFullState)
+    { label := "If", category := "Instr",
+      params := [.simple "cond" (.base "Atom"), .simple "thenVal" (.base "Atom"),
+                 .simple "elseVal" (.base "Atom")],
+      syntaxPattern := [.terminal "if", .terminal "(", .nonTerminal "cond", .terminal ",",
+                        .nonTerminal "thenVal", .terminal ",",
+                        .nonTerminal "elseVal", .terminal ")"] },
     { label := "Return", category := "Instr",
       params := [.simple "dst" (.base "Atom")],
       syntaxPattern := [.terminal "return", .terminal "(", .nonTerminal "dst", .terminal ")"] },
@@ -94,6 +101,46 @@ def mettaFull : LanguageDef := {
       syntaxPattern := [.terminal "xor"] },
     { label := "eqBool", category := "Atom", params := [],
       syntaxPattern := [.terminal "eqBool"] },
+    -- Integer/comparison/string op symbols (aligned with Rust MeTTaFullState)
+    { label := "add", category := "Atom", params := [],
+      syntaxPattern := [.terminal "add"] },
+    { label := "sub", category := "Atom", params := [],
+      syntaxPattern := [.terminal "sub"] },
+    { label := "mul", category := "Atom", params := [],
+      syntaxPattern := [.terminal "mul"] },
+    { label := "div", category := "Atom", params := [],
+      syntaxPattern := [.terminal "div"] },
+    { label := "modOp", category := "Atom", params := [],
+      syntaxPattern := [.terminal "modOp"] },
+    { label := "lt", category := "Atom", params := [],
+      syntaxPattern := [.terminal "lt"] },
+    { label := "le", category := "Atom", params := [],
+      syntaxPattern := [.terminal "le"] },
+    { label := "gt", category := "Atom", params := [],
+      syntaxPattern := [.terminal "gt"] },
+    { label := "ge", category := "Atom", params := [],
+      syntaxPattern := [.terminal "ge"] },
+    { label := "eqInt", category := "Atom", params := [],
+      syntaxPattern := [.terminal "eqInt"] },
+    { label := "concat", category := "Atom", params := [],
+      syntaxPattern := [.terminal "concat"] },
+    { label := "length", category := "Atom", params := [],
+      syntaxPattern := [.terminal "length"] },
+    -- Cons-list encoding for Space contents (aligned with Rust MeTTaFullState)
+    { label := "ANil", category := "Atom", params := [],
+      syntaxPattern := [.terminal "nil"] },
+    { label := "ACons", category := "Atom",
+      params := [.simple "head" (.base "Atom"), .simple "tail" (.base "Atom")],
+      syntaxPattern := [.terminal "cons", .terminal "(", .nonTerminal "head", .terminal ",",
+                        .nonTerminal "tail", .terminal ")"] },
+    { label := "AEqEntry", category := "Atom",
+      params := [.simple "src" (.base "Atom"), .simple "dst" (.base "Atom")],
+      syntaxPattern := [.terminal "eq-entry", .terminal "(", .nonTerminal "src", .terminal ",",
+                        .nonTerminal "dst", .terminal ")"] },
+    { label := "ATypeEntry", category := "Atom",
+      params := [.simple "atom" (.base "Atom"), .simple "ty" (.base "Atom")],
+      syntaxPattern := [.terminal "type-entry", .terminal "(", .nonTerminal "atom", .terminal ",",
+                        .nonTerminal "ty", .terminal ")"] },
     { label := "GInt", category := "Atom",
       params := [.simple "token" (.base "Atom")],
       syntaxPattern := [.terminal "gint", .terminal "(", .nonTerminal "token", .terminal ")"] },
@@ -101,14 +148,20 @@ def mettaFull : LanguageDef := {
       params := [.simple "token" (.base "Atom")],
       syntaxPattern := [.terminal "gstring", .terminal "(", .nonTerminal "token", .terminal ")"] },
     { label := "GStringVec", category := "Atom",
-      params := [.simple "chunks" (.collection .vec (.base "Atom"))],
+      params := [.simple "chunks" (.base "Atom")],
       syntaxPattern := [.terminal "gstring-vec", .terminal "(", .nonTerminal "chunks", .terminal ")"] },
     { label := "GStringCodes", category := "Atom",
-      params := [.simple "codes" (.collection .vec (.base "Atom"))],
+      params := [.simple "codes" (.base "Atom")],
       syntaxPattern := [.terminal "gstring-codes", .terminal "(", .nonTerminal "codes", .terminal ")"] },
+    -- User-defined symbol atom.  Preserves the symbol/string distinction:
+    -- UserAtom wraps a GStringCodes name so that (= foo 1) and (= "foo" 1) are different.
+    { label := "UserAtom", category := "Atom",
+      params := [.simple "name" (.base "Atom")],
+      syntaxPattern := [.terminal "user-atom", .terminal "(", .nonTerminal "name", .terminal ")"] },
+    -- Space uses cons-list encoded Atom fields (aligned with Rust MeTTaFullState)
     { label := "Space", category := "Space",
-      params := [ .simple "eqs" (.collection .hashBag (.base "Atom"))
-                , .simple "tys" (.collection .hashBag (.base "Atom")) ],
+      params := [ .simple "eqs" (.base "Atom")
+                , .simple "tys" (.base "Atom") ],
       syntaxPattern := [.terminal "space", .terminal "(",
                         .nonTerminal "eqs", .terminal ",",
                         .nonTerminal "tys", .terminal ")"] }
@@ -212,7 +265,26 @@ def mettaFull : LanguageDef := {
       typeContext := [("dst", .base "Atom"), ("space", .base "Space"), ("out", .base "Atom")],
       premises := [],
       left := .apply "State" [.apply "Return" [.fvar "dst"], .fvar "space", .fvar "out"],
-      right := .apply "State" [.apply "Done" [], .fvar "space", .fvar "dst"] }
+      right := .apply "State" [.apply "Done" [], .fvar "space", .fvar "dst"] },
+    -- conditional branching (aligned with Rust MeTTaFullState R15-R17)
+    { name := "StepIfTrue",
+      typeContext := [("cond", .base "Atom"), ("thenVal", .base "Atom"),
+                      ("elseVal", .base "Atom"), ("space", .base "Space"), ("out", .base "Atom")],
+      premises := [.relationQuery "eq" [.fvar "cond", .apply "GBoolTrue" []]],
+      left := .apply "State" [.apply "If" [.fvar "cond", .fvar "thenVal", .fvar "elseVal"], .fvar "space", .fvar "out"],
+      right := .apply "State" [.apply "Return" [.fvar "thenVal"], .fvar "space", .fvar "thenVal"] },
+    { name := "StepIfFalse",
+      typeContext := [("cond", .base "Atom"), ("thenVal", .base "Atom"),
+                      ("elseVal", .base "Atom"), ("space", .base "Space"), ("out", .base "Atom")],
+      premises := [.relationQuery "eq" [.fvar "cond", .apply "GBoolFalse" []]],
+      left := .apply "State" [.apply "If" [.fvar "cond", .fvar "thenVal", .fvar "elseVal"], .fvar "space", .fvar "out"],
+      right := .apply "State" [.apply "Return" [.fvar "elseVal"], .fvar "space", .fvar "elseVal"] },
+    { name := "StepIfNonBool",
+      typeContext := [("cond", .base "Atom"), ("thenVal", .base "Atom"),
+                      ("elseVal", .base "Atom"), ("space", .base "Space"), ("out", .base "Atom")],
+      premises := [.relationQuery "nonBoolAtom" [.fvar "cond"]],
+      left := .apply "State" [.apply "If" [.fvar "cond", .fvar "thenVal", .fvar "elseVal"], .fvar "space", .fvar "out"],
+      right := .apply "State" [.apply "Return" [.apply "AFalse" []], .fvar "space", .apply "AFalse" []] }
   ]
 }
 
@@ -240,8 +312,11 @@ private def iTypeCheck (atom ty : Pattern) : Pattern := .apply "TypeCheck" [atom
 private def iCast (atom ty : Pattern) : Pattern := .apply "Cast" [atom, ty]
 private def iGrounded1 (op arg : Pattern) : Pattern := .apply "Grounded1" [op, arg]
 private def iGrounded2 (op lhs rhs : Pattern) : Pattern := .apply "Grounded2" [op, lhs, rhs]
+private def iIf (cond thenVal elseVal : Pattern) : Pattern := .apply "If" [cond, thenVal, elseVal]
+private def gBoolTrue : Pattern := .apply "GBoolTrue" []
+private def gBoolFalse : Pattern := .apply "GBoolFalse" []
 private def gStringCodes (codes : List String) : Pattern :=
-  .apply "GStringCodes" [(.collection .vec (codes.map (fun n => .apply n [])) none)]
+  .apply "GStringCodes" [codes.foldr (fun tok acc => .apply "ACons" [.apply tok [], acc]) (.apply "ANil" [])]
 
 /-- Full-slice relation environment (Atomspace-backed eqnLookup + branches). -/
 def mettaFullRelEnv : RelationEnv := Mettapedia.OSLF.MeTTaCore.Premises.mettaFullRelEnv
@@ -302,8 +377,8 @@ def mettaFullRelEnv : RelationEnv := Mettapedia.OSLF.MeTTaCore.Premises.mettaFul
   let gConcat := mkState (iGrounded2 (.apply "concat" []) (gString "hello") (gString "world")) space0 aFalse
   let gConcatSpaced := mkState
     (iGrounded2 (.apply "concat" [])
-      (.apply "GStringCodes" [(.collection .vec [(.apply "104" []), (.apply "105" []), (.apply "32" [])] none)])
-      (.apply "GStringCodes" [(.collection .vec [(.apply "116" []), (.apply "104" []), (.apply "101" []), (.apply "114" []), (.apply "101" [])] none)]))
+      (gStringCodes ["104", "105", "32"])
+      (gStringCodes ["116", "104", "101", "114", "101"]))
     space0 aFalse
   let cStrToInt := mkState (iCast (gString "42") (.apply "Int" [])) space0 aFalse
   let cBadStrToInt := mkState (iCast (gString "abc") (.apply "Int" [])) space0 aFalse
@@ -317,24 +392,10 @@ def mettaFullRelEnv : RelationEnv := Mettapedia.OSLF.MeTTaCore.Premises.mettaFul
   IO.println s!"MeTTaFull cast bool-symbol->string: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull cBoolToStr 8}"
   IO.println s!"MeTTaFull cast invalid string->bool: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull cBadStrToBool 8}"
 
-/-- Direct executable normal-form shape for coded-string concat with a space. -/
-theorem coded_string_concat_normalForm_shape :
-    fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull
-      (mkState
-        (iGrounded2 (.apply "concat" [])
-          (gStringCodes ["104", "105", "32"])
-          (gStringCodes ["116", "104", "101", "114", "101"]))
-        space0 aFalse) 8
-    =
-      .apply "State"
-        [ .apply "Done" []
-        , space0
-        , gStringCodes ["104", "105", "32", "116", "104", "101", "114", "101"]
-        ] := by
-  native_decide
+-- coded_string_concat_normalForm_shape moved to FullLanguageTests.lean
+-- (kernel reduction of `decide +kernel` is dramatically faster on imported definitions)
 
 #check mettaFullOSLF
 #check mettaFullGalois
-#check coded_string_concat_normalForm_shape
 
 end Mettapedia.OSLF.MeTTaCore.FullLanguageDef

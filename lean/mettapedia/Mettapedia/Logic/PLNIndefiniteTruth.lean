@@ -144,7 +144,7 @@ theorem width_le_one (itv : ITV) : itv.width ≤ 1 := by
 
 /-! ## Construction from Evidence -/
 
-/-- Construct ITV from Evidence via Beta credible interval.
+/-- Construct ITV from Evidence via Bayesian Beta credible interval (Normal approximation).
 
 Given Evidence (n⁺, n⁻) with context (prior κ, etc.):
 1. Map to Beta parameters: α = α₀ + n⁺, β = β₀ + n⁻
@@ -156,7 +156,7 @@ Given Evidence (n⁺, n⁻) with context (prior κ, etc.):
 - `ctx` : Binary context (prior parameters)
 - `level` : Confidence level for credible interval (e.g., 0.95)
 -/
-noncomputable def fromEvidence (e : Evidence) (ctx : BinaryContext)
+noncomputable def fromBayesCredibleNormalApprox (e : Evidence) (ctx : BinaryContext)
     (level : ℝ) (hlevel : 0 < level ∧ level < 1) : ITV :=
   -- Convert Evidence to Beta parameters
   let n_pos := e.pos.toReal
@@ -210,12 +210,68 @@ noncomputable def fromEvidence (e : Evidence) (ctx : BinaryContext)
         simp }
 
 /-- Construct ITV at 95% confidence level -/
-noncomputable def fromEvidence95 (e : Evidence) (ctx : BinaryContext) : ITV :=
-  fromEvidence e ctx 0.95 ⟨by norm_num, by norm_num⟩
+noncomputable def fromBayesCredible95 (e : Evidence) (ctx : BinaryContext) : ITV :=
+  fromBayesCredibleNormalApprox e ctx 0.95 ⟨by norm_num, by norm_num⟩
 
 /-- Construct ITV at 90% confidence level -/
-noncomputable def fromEvidence90 (e : Evidence) (ctx : BinaryContext) : ITV :=
-  fromEvidence e ctx 0.90 ⟨by norm_num, by norm_num⟩
+noncomputable def fromBayesCredible90 (e : Evidence) (ctx : BinaryContext) : ITV :=
+  fromBayesCredibleNormalApprox e ctx 0.90 ⟨by norm_num, by norm_num⟩
+
+/-- Construct ITV from Evidence via Walley's IDM predictive bounds.
+
+For binary outcomes with positive count `n⁺`, negative count `n⁻`, and IDM strength `s > 0`:
+- lower = `n⁺ / (n⁺ + n⁻ + s)`
+- upper = `(n⁺ + s) / (n⁺ + n⁻ + s)`
+
+This is a predictive-interval semantics (IDM), distinct from Bayesian credible intervals.
+`credibility` is the precision proxy `n/(n+s)` where `n = n⁺ + n⁻`.
+-/
+noncomputable def fromWalleyIDMPredictive (e : Evidence) (s : ℝ) (hs : 0 < s) : ITV :=
+  let n_pos := e.pos.toReal
+  let n_neg := e.neg.toReal
+  let n_total := n_pos + n_neg
+  let denom := n_total + s
+  let lower := n_pos / denom
+  let upper := (n_pos + s) / denom
+  let cred := n_total / denom
+  have h_npos_nonneg : 0 ≤ n_pos := ENNReal.toReal_nonneg
+  have h_nneg_nonneg : 0 ≤ n_neg := ENNReal.toReal_nonneg
+  have h_denom_pos : 0 < denom := by
+    unfold denom n_total
+    linarith [h_npos_nonneg, h_nneg_nonneg, hs]
+  have h_lower_nonneg : 0 ≤ lower := by
+    unfold lower
+    exact div_nonneg h_npos_nonneg (le_of_lt h_denom_pos)
+  have h_upper_nonneg : 0 ≤ upper := by
+    unfold upper
+    apply div_nonneg
+    · linarith [h_npos_nonneg, hs.le]
+    · exact le_of_lt h_denom_pos
+  have h_lower_le_upper : lower ≤ upper := by
+    unfold lower upper
+    apply div_le_div_of_nonneg_right
+    · linarith [hs.le]
+    · exact le_of_lt h_denom_pos
+  have h_upper_le_one : upper ≤ 1 := by
+    unfold upper
+    apply (div_le_one h_denom_pos).2
+    unfold denom n_total
+    linarith [h_nneg_nonneg]
+  have h_cred_nonneg : 0 ≤ cred := by
+    unfold cred
+    exact div_nonneg (by linarith [h_npos_nonneg, h_nneg_nonneg]) (le_of_lt h_denom_pos)
+  have h_cred_le_one : cred ≤ 1 := by
+    unfold cred
+    apply (div_le_one h_denom_pos).2
+    unfold denom
+    linarith [hs.le]
+  { lower := lower
+    upper := upper
+    credibility := cred
+    lower_le_upper := h_lower_le_upper
+    lower_in_unit := ⟨h_lower_nonneg, le_trans h_lower_le_upper h_upper_le_one⟩
+    upper_in_unit := ⟨h_upper_nonneg, h_upper_le_one⟩
+    credibility_in_unit := ⟨h_cred_nonneg, h_cred_le_one⟩ }
 
 /-! ## Conversion to/from WTV -/
 
@@ -252,7 +308,7 @@ noncomputable def ofWTV (wtv : WTV) : ITV :=
 Expected: strength ≈ 0.5, moderate credibility, moderate width -/
 example : let e : Evidence := ⟨5, 5⟩
           let ctx := BinaryContext.jeffreys  -- Jeffreys prior (α₀=β₀=0.5, κ=1)
-          let itv := fromEvidence95 e ctx
+          let itv := fromBayesCredible95 e ctx
           -- Strength should be near 0.5
           itv.strength ∈ Set.Ioo (0.3 : ℝ) 0.7 ∧
           -- Credibility moderate (10 observations vs κ=1)
@@ -270,7 +326,7 @@ example : let e : Evidence := ⟨5, 5⟩
 Expected: strength ≈ 0.9, high credibility, narrow width -/
 example : let e : Evidence := ⟨20, 2⟩
           let ctx := BinaryContext.jeffreys
-          let itv := fromEvidence95 e ctx
+          let itv := fromBayesCredible95 e ctx
           -- Strength high
           itv.strength > 0.8 ∧
           -- Credibility high (22 observations)
@@ -289,7 +345,7 @@ Demonstrates orthogonality: much evidence but still uncertain.
 E.g., 50/50 split from 100 observations. -/
 example : let e : Evidence := ⟨50, 50⟩
           let ctx := BinaryContext.jeffreys
-          let itv := fromEvidence95 e ctx
+          let itv := fromBayesCredible95 e ctx
           -- High credibility (100 observations)
           itv.credibility > 0.98 ∧
           -- But still moderate width (50/50 split = high variance)
@@ -469,9 +525,10 @@ We have implemented:
 
 1. **ITV structure** with lower, upper, credibility (3 components)
 2. **Orthogonality** between credibility and interval width (by design)
-3. **fromEvidence** constructor using Beta credible intervals
-4. **Conversions** to/from WTV (with information loss warnings)
-5. **Examples** showing the three-component model in action
+3. **fromBayesCredibleNormalApprox** for Bayesian credible-interval semantics
+4. **fromWalleyIDMPredictive** for Walley IDM predictive-interval semantics
+5. **Conversions** to/from WTV (with information loss warnings)
+6. **Examples** showing the three-component model in action
 
 Next steps (Phase 3-4):
 - Heyting operations (conjunction, disjunction, implication)

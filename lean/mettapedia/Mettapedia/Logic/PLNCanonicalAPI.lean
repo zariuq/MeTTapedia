@@ -1,6 +1,9 @@
 import Mettapedia.Logic.PLNDerivation
+import Mettapedia.Logic.PLNWorldModelTyped
 import Mettapedia.Logic.PLNWorldModelCalculus
+import Mettapedia.Logic.PLNWorldModelITV
 import Mettapedia.Logic.PLNWMOSLFBridge
+import Mettapedia.Logic.PLNWMOSLFBridgeTyped
 import Mettapedia.Logic.PLNXiRuleRegistry
 import Mettapedia.Logic.PLNXiCarrierScreening
 import Mettapedia.Logic.PLNXiDerivedBNRules
@@ -18,7 +21,10 @@ Small facade module that exposes the recommended, semantically grounded entry po
 - Categorical naming (`SourceRule` / `SinkRule`) as first-class aliases
 - NB bridge theorem location: `PLNBayesNetInference`
 - WM-calculus rewrite/query-equivalence types from `PLNWorldModelCalculus`
+- Srt-indexed typed WM layer (`WorldModelSigma`) from `PLNWorldModelTyped`
+- Explicit ITV semantics/query layer from `PLNWorldModelITV`
 - OSLF bridge: `XiPLN`, `wmEvidenceAtomSemQ`, derivation soundness (`PLNWMOSLFBridge`)
+- Typed OSLF bridge: `XiPLNSigma`, `wmEvidenceAtomSemQSigma` (`PLNWMOSLFBridgeTyped`)
 - **Derived BN rules**: fully proved deduction (chain) + source rule (fork) from local Markov + d-separation (`PLNXiDerivedBNRules`)
 - Schema-level templates in `Schema` namespace (for building new derived rules)
 
@@ -81,6 +87,39 @@ abbrev WMRewriteRule (State Query : Type*)
     [PLNWorldModel.WorldModel State Query] :=
   PLNWorldModel.WMRewriteRule State Query
 
+abbrev WorldModelSigma (State : Type*) (Srt : Type*) (Query : Srt → Type*)
+    [EvidenceClass.EvidenceType State] :=
+  PLNWorldModel.WorldModelSigma State Srt Query
+
+abbrev WMRewriteRuleSigma (State : Type*) (Srt : Type*) (Query : Srt → Type*)
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.WMRewriteRuleSigma State Srt Query
+
+abbrev WMStrengthRuleSigma (State : Type*) (Srt : Type*) (Query : Srt → Type*)
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.WMStrengthRuleSigma State Srt Query
+
+/-! ## ITV semantics canonical aliases -/
+
+abbrev ITV := PLNIndefiniteTruth.ITV
+
+abbrev ITVSemantics (Ctx : Type*) := PLNWorldModel.ITVSemantics Ctx
+
+abbrev IDMPredictiveContext := PLNWorldModel.IDMPredictiveContext
+
+noncomputable abbrev queryITV {State Query Ctx : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModel State Query] :=
+  PLNWorldModel.WorldModel.queryITV (State := State) (Query := Query) (Ctx := Ctx)
+
+noncomputable abbrev queryITVSigma {State Srt Ctx : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.queryITV
+    (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx)
+
 /-! ## OSLF Bridge canonical aliases -/
 
 abbrev XiPLN {State Query : Type*}
@@ -92,6 +131,16 @@ noncomputable abbrev wmEvidenceAtomSemQ {State Query : Type*}
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.WorldModel State Query] :=
   PLNWMOSLFBridge.wmEvidenceAtomSemQ (State := State) (Query := Query)
+
+abbrev XiPLNSigma {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWMOSLFBridgeTyped.XiPLNSigma (State := State) (Srt := Srt) (Query := Query)
+
+noncomputable abbrev wmEvidenceAtomSemQSigma {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWMOSLFBridgeTyped.wmEvidenceAtomSemQSigma (State := State) (Srt := Srt) (Query := Query)
 
 /-! ## Derived BN Rules (canonical — no free side-condition hypotheses)
 

@@ -199,8 +199,15 @@ Key GSLT components consumed by NTT:
     for NTT Prop 12
 
 The NTT strict claim tracker (`Mettapedia/OSLF/Framework/NTTClaimTracker.lean`)
-confirms 12/12 claims resolved (11 proven, 1 assumption-scoped with necessity
-counterexample), with 3 endpoints strengthened beyond paper parity:
+is the authoritative source for current counts/status, including
+assumption-scoped items with necessity counterexamples. The key strengthened
+endpoints include:
 - Def 21: Cartesian lifts via pullbacks (Grothendieck fibration behavior)
 - Sec 4: full ↔ characterization of image-comprehension adjunction
 - Thm 23: functorial laws (map_id, map_comp) for the internal language package
+
+Status boundary:
+- For paper-parity/current-claim status, rely on
+  `Mettapedia/OSLF/Framework/NTTClaimTracker.lean`,
+  `Mettapedia/OSLF/Framework/PaperClaimTracker.lean`, and
+  `Mettapedia/OSLF/Framework/FULLStatus.lean` instead of README prose.
