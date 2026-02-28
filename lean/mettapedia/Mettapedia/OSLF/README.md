@@ -1,4 +1,4 @@
-# OSLF in Mettapedia
+# OSLF overview
 
 OSLF turns operational rewrite systems into a logical/type-theoretic interface.
 Lean justifies the interface mechanically.
@@ -6,7 +6,7 @@ The core idea starts from `LanguageDef`.
 The core idea connects the step relation to the executable engine.
 The core idea derives modal operators with a Galois connection.
 
-## What OSLF Is
+## OSLF is a construction
 
 OSLF is a construction.
 
@@ -21,7 +21,7 @@ The outcome is a reusable logical interface on top of operational semantics.
 Definitional equality and theorem-level contracts ground the interface.
 Ad hoc proofs don't ground the interface.
 
-### Survey (end-to-end)
+### End-to-end survey
 
 `RelationEnv` is needed for premise evaluation.
 `langRewriteSystemUsing` gets the step relation.
@@ -31,9 +31,9 @@ Ad hoc proofs don't ground the interface.
 `checkLangUsing` provides an executable checker.
 Checker soundness connects the checker to semantics.
 
-## How To Use OSLF in Lean
+## OSLF usage in Lean
 
-### Minimal path (sketch)
+### Minimal path sketch
 
 ```lean
 import Mettapedia.OSLF.CoreMain
@@ -50,13 +50,17 @@ open Mettapedia.OSLF
 
 - `Mettapedia/OSLF/Framework/TypeSynthesis.lean`
   - `langRewriteSystemUsing`
-  - `langDiamondUsing, langBoxUsing`
+  - `langDiamondUsing`
+  - `langBoxUsing`
   - `langGaloisUsing`
   - `langOSLF`
 - `Mettapedia/OSLF/Formula.lean`
-  - `OSLFFormula, sem, checkLangUsing`
+  - `OSLFFormula`
+  - `sem`
+  - `checkLangUsing`
 - `Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean`
-  - `soundness/completeness bridge`
+
+- `Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean` is a soundness-completeness bridge.
 
 ### Starting points
 
@@ -70,7 +74,7 @@ open Mettapedia.OSLF
 - `Mettapedia/OSLF/Formula.lean`
 - `Mettapedia/OSLF/MeTTaIL/Syntax.lean`
 
-### What OSLF is not
+### OSLF limit
 
 - It isn't a claim of global decidability.
 - It isn't a full MeTTa interpreter or a parser.
@@ -82,7 +86,7 @@ open Mettapedia.OSLF
 - `Mettapedia/OSLF/Framework/NTTClaimTracker.lean`
 - `Mettapedia/OSLF/Framework/FULLStatus.lean`
 
-## MeTTa Slice (Spec-Facing, Pretty-Printed Syntax)
+## MeTTa spec-facing slice
 
 The spec-facing MeTTa slice uses `Mettapedia/OSLF/MeTTaCore/FullLanguageDef.lean`.
 
@@ -126,43 +130,50 @@ This is the canonical spec-facing representation.
 
 The engine and the OSLF synthesis pipeline use this canonical representation.
 
-## Current Entry Points
+## Current entry point
 
 - `Mettapedia/OSLF/CoreMain.lean`
 - `Mettapedia/OSLF/Main.lean`
 - `Mettapedia/Languages/ProcessCalculi.lean`
 
-## What Is Implemented
+## Implemented components
 
-### 1) LanguageDef → RewriteSystem → OSLFTypeSystem
+### LanguageDef derives RewriteSystem and OSLFTypeSystem
 
 - `Mettapedia/OSLF/Framework/TypeSynthesis.lean`
   - `langRewriteSystemUsing`
-  - `langDiamondUsing, langBoxUsing`
+  - `langDiamondUsing`
+  - `langBoxUsing`
   - `langGaloisUsing`
   - `langOSLF`
 
 This is the core "derive a type system from operational semantics" path.
 
-### 2) Premise-Aware Operational Semantics
+### Premise-aware operational semantics
 
 - `Mettapedia/OSLF/MeTTaIL/Syntax.lean`
-  - `Premise, RewriteRule, LanguageDef`
+  - `Premise`
+  - `RewriteRule`
+  - `LanguageDef`
 - `Mettapedia/OSLF/MeTTaIL/Engine.lean`
   - `RelationEnv`
   - `applyRuleWithPremisesUsing`
   - `rewriteWithContextWithPremisesUsing`
 - `Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean`
-  - `executable/declarative bridge`
 
-### 3) Formula Layer + Checker Soundness
+- `Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean` is an executable-declarative bridge.
+
+### Formula-layer checker-soundness status
 
 - `Mettapedia/OSLF/Formula.lean`
-  - `OSLFFormula, sem, checkLangUsing`
-  - `checker-soundness bridges`
-  - `graph-object checker corollaries for .dia and .box`
+  - `OSLFFormula`
+  - `sem`
+  - `checkLangUsing`
 
-### 4) Native Type Theory (NTT) Endpoints
+- `Mettapedia/OSLF/Formula.lean` includes checker-soundness bridges.
+- `Mettapedia/OSLF/Formula.lean` includes graph-object checker corollaries for .dia and .box.
+
+### Native-type endpoints
 
 `Mettapedia/OSLF/NativeType/` formalizes the strict NTT claim surface.
 `Mettapedia/OSLF/Framework/NTTClaimTracker.lean` is the authoritative tracker.
@@ -170,17 +181,25 @@ The scope is tracked-claim parity.
 The scope isn't blanket future-work parity.
 
 - `Construction.lean`
-  - `NatType, piType, sigmaType, TheoryMorphism`
+  - `NatType`
+  - `piType`
+  - `sigmaType`
+  - `TheoryMorphism`
 - `CodomainFibration.lean`
-  - `Prop 12, Prop 14, Prop 17, Def 21, Sec 4, Thm 23`
+  - `Prop 12`
+  - `Prop 14`
+  - `Prop 17`
+  - `Def 21`
+  - `Sec 4`
+  - `Thm 23`
 - `Mettapedia/OSLF/Framework/NTTClaimTracker.lean`
   - `AssumptionNecessity.types_nonempty_necessary_for_piSigma`
 
-### 5) Presheaf/Topos Lift Integration Status
+### Presheaf/topos-lift status
 
 - `Mettapedia/OSLF/Framework/FULLStatus.lean`
 
-### 6) Concrete Clients
+### Concrete clients
 
 - `Mettapedia/OSLF/Framework/TinyMLInstance.lean`
 - `Mettapedia/OSLF/Framework/MeTTaMinimalInstance.lean`
@@ -188,7 +207,7 @@ The scope isn't blanket future-work parity.
 - `Mettapedia/OSLF/MeTTaCore/FullLanguageDef.lean`
 - `Mettapedia/OSLF/MeTTaCore/Premises.lean`
 
-## Practical Workflow
+## Practical workflow
 
 - LanguageDef: `types, terms, rewrites, Premise`
 - RelationEnv: `if needed`
@@ -215,13 +234,13 @@ lake build Mettapedia.OSLF.Main
 - `Mettapedia/Languages/ProcessCalculi/PiCalculus.lean`
 - `Mettapedia/Languages/ProcessCalculi/RhoCalculus.lean`
 
-## What OSLF Is Not
+## OSLF limit
 
 - It isn't a parser or a surface syntax standard.
 - It isn't a proof of "all desired properties".
 - It isn't a substitute for a concrete semantics implementation.
 
-## Lean ↔ Rust Roundtrip Status
+## Lean-Rust-roundtrip status
 
 It validates roundtrip scripts in `hyperon/mettail-rust`.
 

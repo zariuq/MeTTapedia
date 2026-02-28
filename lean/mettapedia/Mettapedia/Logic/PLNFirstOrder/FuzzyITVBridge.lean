@@ -100,6 +100,24 @@ theorem fuzzyIntervalHolds_itvWidth
       (p.LPC ≤ nearOneFraction p (itvWidthProfile itvs) ∧
         nearOneFraction p (itvWidthProfile itvs) ≤ p.UPC) := Iff.rfl
 
+/-- ITV-path existential generalization on strength coordinate:
+one near-one witness yields strictly positive fuzzy existential score. -/
+theorem fuzzyExistsScore_pos_of_itvStrengthWitness
+    [Nonempty U]
+    (p : FuzzyQuantifierParams) (itvs : U → ITV) (c : U)
+    (hc : nearOne p ((itvStrengthProfile itvs) c)) :
+    0 < fuzzyExistsScore p (itvStrengthProfile itvs) :=
+  fuzzyExistsScore_pos_of_witness_nearOne p (itvStrengthProfile itvs) c hc
+
+/-- ITV-path universal specification on strength coordinate at `PCL = 1`. -/
+theorem nearOne_itvStrength_of_fuzzyForAll_eq_one
+    [Nonempty U]
+    (p : FuzzyQuantifierParams) (itvs : U → ITV) (c : U)
+    (hForAll : fuzzyForAllHolds p (itvStrengthProfile itvs))
+    (hPCL : p.PCL = 1) :
+    nearOne p ((itvStrengthProfile itvs) c) :=
+  nearOne_of_fuzzyForAll_eq_one p (itvStrengthProfile itvs) c hForAll hPCL
+
 end Coordinates
 
 end Mettapedia.Logic.PLNFirstOrder

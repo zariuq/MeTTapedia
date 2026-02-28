@@ -147,34 +147,44 @@ structure GovFrame (w : Type*) where
                   ob Z (fun v => (Z v ∧ ¬ X v) ∨ Y v)
   ob_restrict : ∀ X Y Z, (∀ v, Y v → X v) → ob X Z → (∃ v, Y v ∧ Z v) → ob Y Z
 
-/-! ## §7 Closed Accessibility (closed under successors) -/
+/-! ## §7 Closed Accessibility (closed under successors)
+
+`ClosedGovAccessibility` is parameterized by an abstract one-step relation `step`
+so that any reactive process language — not just PyashCore — can provide a valid
+governance accessibility context.  For PyashCore, set `step := langReduces pyashCore`.
+For the `GovNormCycle` reactive loop language, `step` is the deliberate ↔ enact cycle. -/
 
 /-- A closed governance accessibility context: live is closed under successors.
-    This ensures govDDLFrameClosed is completely sorry-free. -/
+
+    The `step` relation is abstract — it can be `langReduces pyashCore`, a norm-cycle
+    relation, or any other one-step process relation.  The DDLPlus `av` is `step` and
+    `pv` is the reflexive-transitive closure of `step`. -/
 structure ClosedGovAccessibility where
-  live : Pattern → Prop
-  serial  : ∀ p, live p → ∃ q, langReduces pyashCore p q
+  live   : Pattern → Prop
+  /-- The one-step accessibility relation for this governance context. -/
+  step   : Pattern → Pattern → Prop
+  /-- Every live state has at least one live successor. -/
+  serial : ∀ p, live p → ∃ q, step p q
   /-- Successors of live states are also live. -/
-  closed  : ∀ p q, live p → langReduces pyashCore p q → live q
+  closed : ∀ p q, live p → step p q → live q
 
 /-- A GovFrame (at the live-subtype world) + ClosedGovAccessibility induces
     a DDLPlusFrame on live states.  The world type is `{p : Pattern // ga.live p}`.
 
-    Instantiating `GovFrame` at `{p // ga.live p}` avoids all subtype-coercion
-    issues: the `ob` predicate already ranges over the live subtype, so
-    sem_5a–sem_5e follow directly from `GovFrame`'s axioms without any sorry. -/
+    `av = ga.step`, `pv = Relation.ReflTransGen ga.step` (reflexive-transitive closure).
+    sem_4a and sem_4b follow from reflexive-transitive closure axioms. -/
 noncomputable def govDDLFrameClosed
     (ga : ClosedGovAccessibility)
     (gf : GovFrame { p : Pattern // ga.live p }) :
     DDLPlusFrame { p : Pattern // ga.live p } where
-  av  := fun ⟨p, _⟩ ⟨q, _⟩ => langReduces pyashCore p q
-  pv  := fun ⟨p, _⟩ ⟨q, _⟩ => LangReducesStar pyashCore p q
+  av  := fun ⟨p, _⟩ ⟨q, _⟩ => ga.step p q
+  pv  := fun ⟨p, _⟩ ⟨q, _⟩ => Relation.ReflTransGen ga.step p q
   ob  := gf.ob
   sem_3a := fun ⟨p, hp⟩ =>
     let ⟨q, hq⟩ := ga.serial p hp
     ⟨⟨q, ga.closed p q hp hq⟩, hq⟩
-  sem_4a := fun _ _ h => .single h
-  sem_4b := fun ⟨p, _⟩ => .refl p
+  sem_4a := fun _ _ h => Relation.ReflTransGen.single h
+  sem_4b := fun _ => Relation.ReflTransGen.refl
   sem_5a := gf.ob_not_bot
   sem_5b := gf.ob_cong
   sem_5c := gf.ob_conj

@@ -153,6 +153,20 @@ theorem nearOneFraction_mono_of_pointwise
       intro u hu
       exact ⟨le_trans hu.1 (hle u), hub u⟩)
 
+/-- Conservativity schema:
+if the induced `nearOne` witness signature is unchanged, near-one mass is unchanged. -/
+theorem nearOneFraction_eq_of_signatureEq
+    (p : FuzzyQuantifierParams)
+    (profile₁ profile₂ : U → ℝ)
+    (hSig : ∀ u, nearOne p (profile₁ u) ↔ nearOne p (profile₂ u)) :
+    nearOneFraction p profile₁ = nearOneFraction p profile₂ := by
+  have hPredEq :
+      (fun u => nearOne p (profile₁ u)) = (fun u => nearOne p (profile₂ u)) := by
+    funext u
+    exact propext (hSig u)
+  unfold nearOneFraction
+  simp [hPredEq]
+
 /-- Score used for existential-style Chapter-11 checks. -/
 noncomputable def fuzzyExistsScore
     (p : FuzzyQuantifierParams) (profile : U → ℝ) : ℝ :=
@@ -177,6 +191,210 @@ noncomputable def fuzzyThereExistsHolds
 def conjoinProfile (g : ℝ) (profile : U → ℝ) : U → ℝ :=
   fun u => min g (profile u)
 
+/-- Monotonicity schema:
+pointwise profile increase (under `≤ 1`) cannot decrease fuzzy existential score. -/
+theorem fuzzyExistsScore_mono_of_pointwise
+    (p : FuzzyQuantifierParams)
+    (profile₁ profile₂ : U → ℝ)
+    (hle : ∀ u, profile₁ u ≤ profile₂ u)
+    (hub : ∀ u, profile₂ u ≤ 1) :
+    fuzzyExistsScore p profile₁ ≤ fuzzyExistsScore p profile₂ := by
+  unfold fuzzyExistsScore
+  exact nearOneFraction_mono_of_pointwise p profile₁ profile₂ hle hub
+
+/-- Monotonicity schema for `ForAll`:
+pointwise profile increase preserves fuzzy-`ForAll` truth. -/
+theorem fuzzyForAllHolds_mono_of_pointwise
+    (p : FuzzyQuantifierParams)
+    (profile₁ profile₂ : U → ℝ)
+    (hle : ∀ u, profile₁ u ≤ profile₂ u)
+    (hub : ∀ u, profile₂ u ≤ 1)
+    (hForAll : fuzzyForAllHolds p profile₁) :
+    fuzzyForAllHolds p profile₂ := by
+  unfold fuzzyForAllHolds at *
+  exact le_trans hForAll (fuzzyExistsScore_mono_of_pointwise p profile₁ profile₂ hle hub)
+
+/-- Conservativity schema for interval truth:
+if the induced `nearOne` witness signature is unchanged, interval truth is unchanged. -/
+theorem fuzzyIntervalHolds_iff_of_signatureEq
+    (p : FuzzyQuantifierParams)
+    (profile₁ profile₂ : U → ℝ)
+    (hSig : ∀ u, nearOne p (profile₁ u) ↔ nearOne p (profile₂ u)) :
+    fuzzyIntervalHolds p profile₁ ↔ fuzzyIntervalHolds p profile₂ := by
+  have hEq : nearOneFraction p profile₁ = nearOneFraction p profile₂ :=
+    nearOneFraction_eq_of_signatureEq p profile₁ profile₂ hSig
+  unfold fuzzyIntervalHolds
+  simp [hEq]
+
+/-- Conservativity schema for `ForAll` truth under unchanged `nearOne` signature. -/
+theorem fuzzyForAllHolds_iff_of_signatureEq
+    (p : FuzzyQuantifierParams)
+    (profile₁ profile₂ : U → ℝ)
+    (hSig : ∀ u, nearOne p (profile₁ u) ↔ nearOne p (profile₂ u)) :
+    fuzzyForAllHolds p profile₁ ↔ fuzzyForAllHolds p profile₂ := by
+  have hEq : nearOneFraction p profile₁ = nearOneFraction p profile₂ :=
+    nearOneFraction_eq_of_signatureEq p profile₁ profile₂ hSig
+  unfold fuzzyForAllHolds
+  simp [hEq]
+
+/-- Quantifier-fuzzification composition operator over unit-interval scores. -/
+structure QFMCompose where
+  comp : ℝ → ℝ → ℝ
+  monotone_on_unit :
+    ∀ {a₁ a₂ b₁ b₂ : ℝ},
+      a₁ ∈ Set.Icc (0 : ℝ) 1 →
+      a₂ ∈ Set.Icc (0 : ℝ) 1 →
+      b₁ ∈ Set.Icc (0 : ℝ) 1 →
+      b₂ ∈ Set.Icc (0 : ℝ) 1 →
+      a₁ ≤ a₂ →
+      b₁ ≤ b₂ →
+      comp a₁ b₁ ≤ comp a₂ b₂
+
+/-- Multiplicative QFM operator on `[0,1]`, matching the current Ch.11 composition canaries. -/
+def qfmMul : QFMCompose where
+  comp := fun x y => x * y
+  monotone_on_unit := by
+    intro a₁ a₂ b₁ b₂ ha₁ ha₂ hb₁ hb₂ hA hB
+    have hb₁_nonneg : 0 ≤ b₁ := hb₁.1
+    have ha₂_nonneg : 0 ≤ a₂ := ha₂.1
+    have hleft : a₁ * b₁ ≤ a₂ * b₁ := mul_le_mul_of_nonneg_right hA hb₁_nonneg
+    have hright : a₂ * b₁ ≤ a₂ * b₂ := mul_le_mul_of_nonneg_left hB ha₂_nonneg
+    exact le_trans hleft hright
+
+/-- Minimum-based QFM operator on `[0,1]`. -/
+def qfmMin : QFMCompose where
+  comp := fun x y => min x y
+  monotone_on_unit := by
+    intro a₁ a₂ b₁ b₂ _ha₁ _ha₂ _hb₁ _hb₂ hA hB
+    exact min_le_min hA hB
+
+/-- Lukasiewicz-style QFM operator (bounded sum with floor at `0`). -/
+def qfmLukasiewicz : QFMCompose where
+  comp := fun x y => max 0 (x + y - 1)
+  monotone_on_unit := by
+    intro a₁ a₂ b₁ b₂ _ha₁ _ha₂ _hb₁ _hb₂ hA hB
+    have hsum : a₁ + b₁ - 1 ≤ a₂ + b₂ - 1 := by nlinarith
+    exact max_le_max le_rfl hsum
+
+/-- Probabilistic-sum QFM operator. -/
+def qfmProbSum : QFMCompose where
+  comp := fun x y => x + y - x * y
+  monotone_on_unit := by
+    intro a₁ a₂ b₁ b₂ _ha₁ ha₂ hb₁ _hb₂ hA hB
+    have hb1_le_one : b₁ ≤ 1 := hb₁.2
+    have ha2_le_one : a₂ ≤ 1 := ha₂.2
+    have hleft :
+        a₁ + b₁ - a₁ * b₁ ≤ a₂ + b₁ - a₂ * b₁ := by
+      have hnonneg : 0 ≤ 1 - b₁ := by linarith
+      have hscale : a₁ * (1 - b₁) ≤ a₂ * (1 - b₁) := by
+        exact mul_le_mul_of_nonneg_right hA hnonneg
+      nlinarith [hscale]
+    have hright :
+        a₂ + b₁ - a₂ * b₁ ≤ a₂ + b₂ - a₂ * b₂ := by
+      have hnonneg : 0 ≤ 1 - a₂ := by linarith
+      have hscale : b₁ * (1 - a₂) ≤ b₂ * (1 - a₂) := by
+        exact mul_le_mul_of_nonneg_right hB hnonneg
+      nlinarith [hscale]
+    exact le_trans hleft hright
+
+/-- Reusable API object for QFM-composed syllogism bounds. -/
+structure QFMSyllogismEnvelope where
+  lower : ℝ
+  upper : ℝ
+  score : ℝ
+  lower_le_score : lower ≤ score
+  score_le_upper : score ≤ upper
+
+/-- Generic QFM syllogism transport:
+compose interval bounds from two fuzzy quantifier premises into composed-score bounds. -/
+theorem qfm_compose_interval_of_fuzzyIntervals
+    (q : QFMCompose)
+    (pAB pBC : FuzzyQuantifierParams)
+    (profileAB profileBC : U → ℝ)
+    (hAB : fuzzyIntervalHolds pAB profileAB)
+    (hBC : fuzzyIntervalHolds pBC profileBC) :
+    q.comp pAB.LPC pBC.LPC ≤
+        q.comp (nearOneFraction pAB profileAB) (nearOneFraction pBC profileBC) ∧
+      q.comp (nearOneFraction pAB profileAB) (nearOneFraction pBC profileBC) ≤
+        q.comp pAB.UPC pBC.UPC := by
+  have hABu : nearOneFraction pAB profileAB ∈ Set.Icc (0 : ℝ) 1 :=
+    nearOneFraction_in_unit pAB profileAB
+  have hBCu : nearOneFraction pBC profileBC ∈ Set.Icc (0 : ℝ) 1 :=
+    nearOneFraction_in_unit pBC profileBC
+  constructor
+  · exact q.monotone_on_unit pAB.hLPC hABu pBC.hLPC hBCu hAB.1 hBC.1
+  · exact q.monotone_on_unit hABu pAB.hUPC hBCu pBC.hUPC hAB.2 hBC.2
+
+/-- Multiplicative QFM specialization of interval transport. -/
+theorem qfmMul_interval_of_fuzzyIntervals
+    (pAB pBC : FuzzyQuantifierParams)
+    (profileAB profileBC : U → ℝ)
+    (hAB : fuzzyIntervalHolds pAB profileAB)
+    (hBC : fuzzyIntervalHolds pBC profileBC) :
+    pAB.LPC * pBC.LPC ≤
+        nearOneFraction pAB profileAB * nearOneFraction pBC profileBC ∧
+      nearOneFraction pAB profileAB * nearOneFraction pBC profileBC ≤
+        pAB.UPC * pBC.UPC := by
+  simpa [qfmMul] using
+    qfm_compose_interval_of_fuzzyIntervals qfmMul pAB pBC profileAB profileBC hAB hBC
+
+/-- Minimum QFM specialization of interval transport. -/
+theorem qfmMin_interval_of_fuzzyIntervals
+    (pAB pBC : FuzzyQuantifierParams)
+    (profileAB profileBC : U → ℝ)
+    (hAB : fuzzyIntervalHolds pAB profileAB)
+    (hBC : fuzzyIntervalHolds pBC profileBC) :
+    min pAB.LPC pBC.LPC ≤
+        min (nearOneFraction pAB profileAB) (nearOneFraction pBC profileBC) ∧
+      min (nearOneFraction pAB profileAB) (nearOneFraction pBC profileBC) ≤
+        min pAB.UPC pBC.UPC := by
+  simpa [qfmMin] using
+    qfm_compose_interval_of_fuzzyIntervals qfmMin pAB pBC profileAB profileBC hAB hBC
+
+/-- Lukasiewicz QFM specialization of interval transport. -/
+theorem qfmLukasiewicz_interval_of_fuzzyIntervals
+    (pAB pBC : FuzzyQuantifierParams)
+    (profileAB profileBC : U → ℝ)
+    (hAB : fuzzyIntervalHolds pAB profileAB)
+    (hBC : fuzzyIntervalHolds pBC profileBC) :
+    max 0 (pAB.LPC + pBC.LPC - 1) ≤
+        max 0 (nearOneFraction pAB profileAB + nearOneFraction pBC profileBC - 1) ∧
+      max 0 (nearOneFraction pAB profileAB + nearOneFraction pBC profileBC - 1) ≤
+        max 0 (pAB.UPC + pBC.UPC - 1) := by
+  simpa [qfmLukasiewicz] using
+    qfm_compose_interval_of_fuzzyIntervals qfmLukasiewicz pAB pBC profileAB profileBC hAB hBC
+
+/-- Probabilistic-sum QFM specialization of interval transport. -/
+theorem qfmProbSum_interval_of_fuzzyIntervals
+    (pAB pBC : FuzzyQuantifierParams)
+    (profileAB profileBC : U → ℝ)
+    (hAB : fuzzyIntervalHolds pAB profileAB)
+    (hBC : fuzzyIntervalHolds pBC profileBC) :
+    (pAB.LPC + pBC.LPC - pAB.LPC * pBC.LPC) ≤
+        (nearOneFraction pAB profileAB + nearOneFraction pBC profileBC -
+          nearOneFraction pAB profileAB * nearOneFraction pBC profileBC) ∧
+      (nearOneFraction pAB profileAB + nearOneFraction pBC profileBC -
+          nearOneFraction pAB profileAB * nearOneFraction pBC profileBC) ≤
+        (pAB.UPC + pBC.UPC - pAB.UPC * pBC.UPC) := by
+  simpa [qfmProbSum] using
+    qfm_compose_interval_of_fuzzyIntervals qfmProbSum pAB pBC profileAB profileBC hAB hBC
+
+/-- One-call API lemma:
+bundle operator + selector fixtures + profile assumptions into a reusable bound object. -/
+noncomputable def qfm_compose_interval_bundle
+    (q : QFMCompose)
+    (pAB pBC : FuzzyQuantifierParams)
+    (profileAB profileBC : U → ℝ)
+    (hAB : fuzzyIntervalHolds pAB profileAB)
+    (hBC : fuzzyIntervalHolds pBC profileBC) :
+    QFMSyllogismEnvelope :=
+  let h := qfm_compose_interval_of_fuzzyIntervals q pAB pBC profileAB profileBC hAB hBC
+  { lower := q.comp pAB.LPC pBC.LPC
+    upper := q.comp pAB.UPC pBC.UPC
+    score := q.comp (nearOneFraction pAB profileAB) (nearOneFraction pBC profileBC)
+    lower_le_score := h.1
+    score_le_upper := h.2 }
+
 /-- If `LPC ≤ PCL`, interval-style truth implies crisp-leaning `ForAll`. -/
 theorem fuzzyInterval_implies_fuzzyForAll
     (p : FuzzyQuantifierParams) (profile : U → ℝ)
@@ -185,6 +403,67 @@ theorem fuzzyInterval_implies_fuzzyForAll
     fuzzyForAllHolds p profile := by
   unfold fuzzyIntervalHolds fuzzyForAllHolds at *
   exact le_trans h hInt.1
+
+/-- Fuzzy existential generalization:
+if one witness is near-one, the existential score is strictly positive. -/
+theorem fuzzyExistsScore_pos_of_witness_nearOne
+    [Nonempty U]
+    (p : FuzzyQuantifierParams) (profile : U → ℝ) (c : U)
+    (hc : nearOne p (profile c)) :
+    0 < fuzzyExistsScore p profile := by
+  have hcount_pos : 0 < witnessCount (fun u => nearOne p (profile u)) := by
+    unfold witnessCount
+    exact Fintype.card_pos_iff.mpr ⟨⟨c, hc⟩⟩
+  have hcard_pos_nat : 0 < Fintype.card U := by
+    exact Fintype.card_pos_iff.mpr ⟨Classical.choice inferInstance⟩
+  have hcard_ne : Fintype.card U ≠ 0 := Nat.ne_of_gt hcard_pos_nat
+  have hcount_pos_real : 0 < (witnessCount (fun u => nearOne p (profile u)) : ℝ) := by
+    exact_mod_cast hcount_pos
+  have hcard_pos_real : 0 < (Fintype.card U : ℝ) := by
+    exact_mod_cast hcard_pos_nat
+  unfold fuzzyExistsScore nearOneFraction witnessFraction
+  have hdiv : 0 < (witnessCount (fun u => nearOne p (profile u)) : ℝ) / (Fintype.card U : ℝ) :=
+    div_pos hcount_pos_real hcard_pos_real
+  simpa [hcard_ne] using hdiv
+
+/-- Fuzzy universal specification (threshold-1 form):
+if fuzzy-`ForAll` holds at threshold `PCL = 1`, every instance is near-one. -/
+theorem nearOne_of_fuzzyForAll_eq_one
+    [Nonempty U]
+    (p : FuzzyQuantifierParams) (profile : U → ℝ) (c : U)
+    (hForAll : fuzzyForAllHolds p profile)
+    (hPCL : p.PCL = 1) :
+    nearOne p (profile c) := by
+  have hfrac_ge : (1 : ℝ) ≤ nearOneFraction p profile := by
+    simpa [fuzzyForAllHolds, hPCL] using hForAll
+  have hfrac_le : nearOneFraction p profile ≤ 1 := (nearOneFraction_in_unit p profile).2
+  have hfrac_eq : nearOneFraction p profile = 1 := le_antisymm hfrac_le hfrac_ge
+  by_contra hc
+  have hcard_lt : witnessCount (fun u => nearOne p (profile u)) < Fintype.card U := by
+    simpa [witnessCount] using
+      (Fintype.card_subtype_lt (p := fun u => nearOne p (profile u)) hc)
+  have hcard_pos_nat : 0 < Fintype.card U := by
+    exact Fintype.card_pos_iff.mpr ⟨c⟩
+  have hcard_ne : Fintype.card U ≠ 0 := Nat.ne_of_gt hcard_pos_nat
+  have hnum_lt : (witnessCount (fun u => nearOne p (profile u)) : ℝ) < (Fintype.card U : ℝ) := by
+    exact_mod_cast hcard_lt
+  have hden_pos : 0 < (Fintype.card U : ℝ) := by
+    exact_mod_cast hcard_pos_nat
+  have hfrac_lt : nearOneFraction p profile < 1 := by
+    unfold nearOneFraction witnessFraction
+    have hdiv_lt :
+        (witnessCount (fun u => nearOne p (profile u)) : ℝ) / (Fintype.card U : ℝ) <
+          (Fintype.card U : ℝ) / (Fintype.card U : ℝ) := by
+      exact div_lt_div_of_pos_right hnum_lt hden_pos
+    have hden_ne : (Fintype.card U : ℝ) ≠ 0 := by
+      exact_mod_cast hcard_ne
+    have : (witnessCount (fun u => nearOne p (profile u)) : ℝ) / (Fintype.card U : ℝ) < 1 := by
+      simpa [hden_ne] using hdiv_lt
+    simpa [hcard_ne] using this
+  have hbad : (1 : ℝ) < 1 := by
+    rw [hfrac_eq] at hfrac_lt
+    exact hfrac_lt
+  exact (lt_irrefl (1 : ℝ)) hbad
 
 end Profiles
 

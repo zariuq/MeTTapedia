@@ -85,3 +85,4 @@ theorem sub17_10 :
 set_option maxHeartbeats 200000 in
 theorem sub17_11 :
     hasIndepSetAux 17 adj17Bool 5 12 [⟨11, by omega⟩] 6 = false := by decide
+

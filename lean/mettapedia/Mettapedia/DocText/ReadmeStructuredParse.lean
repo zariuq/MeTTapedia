@@ -16,12 +16,12 @@ open Mettapedia.DocText.ReadmeTree
 inductive ParsedTechnicalLine where
   | heading (level : Nat) (text : String)
   | pathItem (path : String)
-  | syntaxItem (label : String) (pattern : String)
+  | syntaxItem (label : String) (pattern : SynExpr)
   | apiPath (path : String)
   | apiMember (member : String)
   | fileRefPath (path : String)
   | fileRefDesc (desc : String)
-  deriving Repr, DecidableEq
+  deriving Repr
 
 private def ensurePeriod (s : String) : String :=
   if s.endsWith "." then s else s ++ "."
@@ -90,7 +90,7 @@ def claimBulletLines (blocks : List ReadmeBlock) : List String :=
 def technicalLines (blocks : List ReadmeBlock) : List String :=
   let headingLines := (headingEntries blocks).map headingLine
   let pathLines := (pathEntries blocks).map (fun i => "- `" ++ i.path ++ "`")
-  let syntaxLines := (syntaxEntries blocks).map (fun i => "- " ++ i.label ++ ": `" ++ i.pattern ++ "`")
+  let syntaxLines := (syntaxEntries blocks).map (fun i => "- " ++ i.label ++ ": `" ++ renderSynExpr i.pattern ++ "`")
   let apiPathLines := (apiEntries blocks).map (fun i => "- `" ++ i.path ++ "`")
   let apiMemberLines :=
     (apiEntries blocks).foldr
@@ -110,7 +110,7 @@ def parseTechnicalLine? (blocks : List ReadmeBlock) (line : String) : Option Par
       match (pathEntries blocks).find? (fun p => "- `" ++ p.path ++ "`" = line) with
       | some p => some (.pathItem p.path)
       | none =>
-          match (syntaxEntries blocks).find? (fun s => "- " ++ s.label ++ ": `" ++ s.pattern ++ "`" = line) with
+          match (syntaxEntries blocks).find? (fun s => "- " ++ s.label ++ ": `" ++ renderSynExpr s.pattern ++ "`" = line) with
           | some s => some (.syntaxItem s.label s.pattern)
           | none =>
               match (apiEntries blocks).find? (fun i => "- `" ++ i.path ++ "`" = line) with
@@ -132,17 +132,105 @@ def parseTechnicalLine? (blocks : List ReadmeBlock) (line : String) : Option Par
 def parseClaimBulletLine? {α : Type} (parseClaimLine? : String → Option α) (line : String) : Option α :=
   parseClaimLine? (stripBulletPrefix line)
 
-def blockPassesHardAudit {α : Type} (parseClaimLine? : String → Option α) : ReadmeBlock → Bool
-  | .heading _ _ => true
+/-- Heading semantic-image check:
+every heading text in `blocks` parses to a heading whose renderer matches that same text. -/
+def headingRenderImageCheck {β : Type}
+    (parseHeadingLine? : String → Option β)
+    (renderHeading : β → String)
+    (blocks : List ReadmeBlock) : Bool :=
+  (headingEntries blocks).all (fun (_, txt) =>
+    match parseHeadingLine? txt with
+    | some h => renderHeading h = txt
+    | none => false)
+
+private theorem all_true_of_mem {α : Type} (p : α → Bool) :
+    ∀ {xs : List α} (hAll : xs.all p = true) {x : α}, x ∈ xs → p x = true
+  | [], hAll, _, hMem => by cases hMem
+  | y :: ys, hAll, x, hMem => by
+      simp at hAll
+      simp at hMem
+      rcases hMem with rfl | hMemTail
+      · exact hAll.1
+      · exact all_true_of_mem p (xs := ys) (hAll := hAll.2) (x := x) hMemTail
+
+/-- If heading-image check passes, each heading entry has a parser/render witness. -/
+theorem headingRenderImageWitness {β : Type}
+    (parseHeadingLine? : String → Option β)
+    (renderHeading : β → String)
+    (blocks : List ReadmeBlock)
+    (hCheck : headingRenderImageCheck parseHeadingLine? renderHeading blocks = true)
+    {lvl : Nat} {txt : String}
+    (hMem : (lvl, txt) ∈ headingEntries blocks) :
+    ∃ h, parseHeadingLine? txt = some h ∧ renderHeading h = txt := by
+  have hAll :
+      (headingEntries blocks).all
+        (fun (_, t) =>
+          match parseHeadingLine? t with
+          | some h => renderHeading h = t
+          | none => false) = true := hCheck
+  have hPred :
+      (match parseHeadingLine? txt with
+       | some h => renderHeading h = txt
+       | none => false) = true :=
+    all_true_of_mem
+      (fun (_, t) =>
+        match parseHeadingLine? t with
+        | some h => renderHeading h = t
+        | none => false) hAll hMem
+  cases hParsed : parseHeadingLine? txt with
+  | none =>
+      simp [hParsed] at hPred
+  | some h =>
+      refine ⟨h, hParsed.symm, ?_⟩
+      simpa [hParsed] using hPred
+
+private def isDigitStr (s : String) : Bool :=
+  !s.isEmpty && s.toList.all Char.isDigit
+
+private def isIdentChar (c : Char) : Bool :=
+  c.isAlphanum || c = '_' || c = '.' || c = '-' || c = '/'
+
+private def isIdentifierAtom (s : String) : Bool :=
+  let t := s.trimAscii.toString
+  if t.isEmpty then
+    false
+  else
+    let parts := t.splitOn " "
+    match parts with
+    | [p] =>
+        p.toList.all isIdentChar &&
+          p.toList.any (fun c => c.isAlpha || c.isDigit)
+    | [tag, n] =>
+        !tag.isEmpty && tag.toList.all isIdentChar && isDigitStr n
+    | _ => false
+
+private def isIdentifierLikeMember (s : String) : Bool :=
+  let t := s.trimAscii.toString
+  !t.contains ',' && isIdentifierAtom t
+
+def blockPassesHardAuditWith {α β : Type}
+    (parseClaimLine? : String → Option α)
+    (parseHeadingLine? : String → Option β) : ReadmeBlock → Bool
+  | .heading _ text => (parseHeadingLine? text).isSome
   | .paragraph sents => sents.all (fun s => (parseClaimLine? s).isSome)
   | .claimBullets items => items.all (fun i => (parseClaimLine? i.text).isSome)
-  | .apiItems _ => true
-  | .syntaxItems _ => true
+  | .apiItems items =>
+      items.all (fun i =>
+        !i.path.trimAscii.isEmpty &&
+        i.members.all isIdentifierLikeMember &&
+        (match i.note with
+         | none => true
+         | some n => (parseClaimLine? n).isSome))
+  | .syntaxItems items =>
+      items.all (fun i => !i.label.trimAscii.isEmpty && synExprWellFormed i.pattern)
   | .pathItems _ => true
   | .codeBlock _ _ => true
   | .fileRef _ d => d = "" || (parseClaimLine? d).isSome
   | .apiList _ => true
   | .bulletList _ => false
   | .bulletItem _ => false
+
+def blockPassesHardAudit {α : Type} (parseClaimLine? : String → Option α) : ReadmeBlock → Bool :=
+  blockPassesHardAuditWith parseClaimLine? (fun _ => some ())
 
 end Mettapedia.DocText.ReadmeStructuredParse

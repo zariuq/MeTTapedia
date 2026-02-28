@@ -1,4 +1,5 @@
 import Mettapedia.OSLF.Framework.PyashCoreModel
+import Mettapedia.OSLF.Framework.GovernanceInstance
 
 namespace Mettapedia.OSLF.Framework.PyashCoreInstance
 
@@ -17,6 +18,23 @@ def pyashCoreReductionCases : List (String × Pattern × Pattern) :=
   , ("read_derive_signature_step", pyashStateReadDerive, pyashStateReadDispatched)
   , ("read_dispatch_do_step", pyashStateReadDispatched, pyashStateReadRunning)
   , ("read_run_do_step", pyashStateReadRunning, pyashStateReadDoneOk)
+  , ("write_derive_signature_step", pyashStateWriteDerive, pyashStateWriteDispatched)
+  , ("write_dispatch_do_step", pyashStateWriteDispatched, pyashStateWriteRunning)
+  , ("write_run_do_step", pyashStateWriteRunning, pyashStateWriteDoneOk)
+  , ("say_derive_signature_step", pyashStateSayDerive, pyashStateSayDispatched)
+  , ("say_dispatch_do_step", pyashStateSayDispatched, pyashStateSayRunning)
+  , ("say_run_do_step", pyashStateSayRunning, pyashStateSayDoneOk)
+  , ("map_derive_signature_step", pyashStateMapDerive, pyashStateMapDispatched)
+  , ("map_dispatch_do_step", pyashStateMapDispatched, pyashStateMapRunning)
+  , ("map_run_do_step", pyashStateMapRunning, pyashStateMapDoneOk)
+  , ("map_def_derive_signature_step", pyashStateMapDefDerive, pyashStateMapDefDispatched)
+  , ("map_def_dispatch_def_step", pyashStateMapDefDispatched, pyashStateMapDefDoneOk)
+  , ("command_derive_signature_step", pyashStateCommandDerive, pyashStateCommandDispatched)
+  , ("command_dispatch_do_step", pyashStateCommandDispatched, pyashStateCommandRunning)
+  , ("command_run_do_step", pyashStateCommandRunning, pyashStateCommandDoneOk)
+  , ("search_derive_signature_step", pyashStateSearchDerive, pyashStateSearchDispatched)
+  , ("search_dispatch_do_step", pyashStateSearchDispatched, pyashStateSearchRunning)
+  , ("search_run_do_step", pyashStateSearchRunning, pyashStateSearchDoneOk)
   , ("mind_derive_signature_step", pyashStateMindDerive, pyashStateMindDispatched)
   , ("mind_dispatch_do_step", pyashStateMindDispatched, pyashStateMindRunning)
   , ("mind_run_do_step", pyashStateMindRunning, pyashStateMindDoneOk)
@@ -152,6 +170,159 @@ theorem pyashCore_read_run_do_step :
     (label := "read_run_do_step")
     (p := pyashStateReadRunning)
     (q := pyashStateReadDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `write` signature derivation step is executable. -/
+theorem pyashCore_write_derive_signature_step :
+    langReduces pyashCore pyashStateWriteDerive pyashStateWriteDispatched := by
+  exact pyashCore_reduction_case
+    (label := "write_derive_signature_step")
+    (p := pyashStateWriteDerive)
+    (q := pyashStateWriteDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `write` dispatch path enters run mode. -/
+theorem pyashCore_write_dispatch_do_step :
+    langReduces pyashCore pyashStateWriteDispatched pyashStateWriteRunning := by
+  exact pyashCore_reduction_case
+    (label := "write_dispatch_do_step")
+    (p := pyashStateWriteDispatched)
+    (q := pyashStateWriteRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `write` run path produces a `ya` done state. -/
+theorem pyashCore_write_run_do_step :
+    langReduces pyashCore pyashStateWriteRunning pyashStateWriteDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "write_run_do_step")
+    (p := pyashStateWriteRunning)
+    (q := pyashStateWriteDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `say` signature derivation step is executable. -/
+theorem pyashCore_say_derive_signature_step :
+    langReduces pyashCore pyashStateSayDerive pyashStateSayDispatched := by
+  exact pyashCore_reduction_case
+    (label := "say_derive_signature_step")
+    (p := pyashStateSayDerive)
+    (q := pyashStateSayDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `say` dispatch path enters run mode. -/
+theorem pyashCore_say_dispatch_do_step :
+    langReduces pyashCore pyashStateSayDispatched pyashStateSayRunning := by
+  exact pyashCore_reduction_case
+    (label := "say_dispatch_do_step")
+    (p := pyashStateSayDispatched)
+    (q := pyashStateSayRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `say` run path produces a `ya` done state. -/
+theorem pyashCore_say_run_do_step :
+    langReduces pyashCore pyashStateSayRunning pyashStateSayDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "say_run_do_step")
+    (p := pyashStateSayRunning)
+    (q := pyashStateSayDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `map` signature derivation step is executable. -/
+theorem pyashCore_map_derive_signature_step :
+    langReduces pyashCore pyashStateMapDerive pyashStateMapDispatched := by
+  exact pyashCore_reduction_case
+    (label := "map_derive_signature_step")
+    (p := pyashStateMapDerive)
+    (q := pyashStateMapDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `map` dispatch path enters run mode. -/
+theorem pyashCore_map_dispatch_do_step :
+    langReduces pyashCore pyashStateMapDispatched pyashStateMapRunning := by
+  exact pyashCore_reduction_case
+    (label := "map_dispatch_do_step")
+    (p := pyashStateMapDispatched)
+    (q := pyashStateMapRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `map` run path produces a `ya` done state. -/
+theorem pyashCore_map_run_do_step :
+    langReduces pyashCore pyashStateMapRunning pyashStateMapDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "map_run_do_step")
+    (p := pyashStateMapRunning)
+    (q := pyashStateMapDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `map` (`def` mood) signature derivation step is executable. -/
+theorem pyashCore_map_def_derive_signature_step :
+    langReduces pyashCore pyashStateMapDefDerive pyashStateMapDefDispatched := by
+  exact pyashCore_reduction_case
+    (label := "map_def_derive_signature_step")
+    (p := pyashStateMapDefDerive)
+    (q := pyashStateMapDefDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `map` (`def` mood) dispatch path reaches terminal `Done`. -/
+theorem pyashCore_map_def_dispatch_def_step :
+    langReduces pyashCore pyashStateMapDefDispatched pyashStateMapDefDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "map_def_dispatch_def_step")
+    (p := pyashStateMapDefDispatched)
+    (q := pyashStateMapDefDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `command` signature derivation step is executable. -/
+theorem pyashCore_command_derive_signature_step :
+    langReduces pyashCore pyashStateCommandDerive pyashStateCommandDispatched := by
+  exact pyashCore_reduction_case
+    (label := "command_derive_signature_step")
+    (p := pyashStateCommandDerive)
+    (q := pyashStateCommandDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `command` dispatch path enters run mode. -/
+theorem pyashCore_command_dispatch_do_step :
+    langReduces pyashCore pyashStateCommandDispatched pyashStateCommandRunning := by
+  exact pyashCore_reduction_case
+    (label := "command_dispatch_do_step")
+    (p := pyashStateCommandDispatched)
+    (q := pyashStateCommandRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `command` run path produces a `ya` done state. -/
+theorem pyashCore_command_run_do_step :
+    langReduces pyashCore pyashStateCommandRunning pyashStateCommandDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "command_run_do_step")
+    (p := pyashStateCommandRunning)
+    (q := pyashStateCommandDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `search` signature derivation step is executable. -/
+theorem pyashCore_search_derive_signature_step :
+    langReduces pyashCore pyashStateSearchDerive pyashStateSearchDispatched := by
+  exact pyashCore_reduction_case
+    (label := "search_derive_signature_step")
+    (p := pyashStateSearchDerive)
+    (q := pyashStateSearchDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `search` dispatch path enters run mode. -/
+theorem pyashCore_search_dispatch_do_step :
+    langReduces pyashCore pyashStateSearchDispatched pyashStateSearchRunning := by
+  exact pyashCore_reduction_case
+    (label := "search_dispatch_do_step")
+    (p := pyashStateSearchDispatched)
+    (q := pyashStateSearchRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `search` run path produces a `ya` done state. -/
+theorem pyashCore_search_run_do_step :
+    langReduces pyashCore pyashStateSearchRunning pyashStateSearchDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "search_run_do_step")
+    (p := pyashStateSearchRunning)
+    (q := pyashStateSearchDoneOk)
     (by simp [pyashCoreReductionCases])
 
 /-- `mind` signature derivation step is executable. -/
@@ -537,5 +708,36 @@ theorem pyashCore_done_irreducible (q : Pattern) :
   have hmem : q ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty pyashCore pyashStateDoneOk := by
     simpa [langReducesExecUsing] using hExec
   simp [pyashCore_done_rewrite_nil] at hmem
+
+open Mettapedia.OSLF.Framework.GovernanceInstance (isGovLive)
+
+/-! ## §2 Liveness and Closure Analysis
+
+These results connect PyashCore's operational semantics to the `isGovLive`
+predicate from `GovernanceInstance`. The key mathematical finding is that
+`isGovLive` is NOT forward-closed under PyashCore reduction: the `RunDo`
+instruction reduces to `Done`, which exits the live set. -/
+
+/-- `pyashStateRunning` (RunDo instruction) is a live state. -/
+theorem pyashCore_isGovLive_running : isGovLive pyashStateRunning := by
+  simp [isGovLive, pyashStateRunning]
+
+/-- `pyashStateDoneOk` (Done instruction) is NOT live. -/
+theorem pyashCore_not_isGovLive_doneOk : ¬ isGovLive pyashStateDoneOk := by
+  simp [isGovLive, pyashStateDoneOk]
+
+/-- The `isGovLive` predicate is NOT forward-closed under PyashCore reduction:
+    `pyashStateRunning` is live, reduces to `pyashStateDoneOk`, which is not live.
+
+    This shows that `ClosedGovAccessibility.closed` cannot be satisfied with
+    `live = isGovLive` for PyashCore. The `isGovLiveAccessibility` function in
+    `GovernanceGSLTVertex.lean` correctly parameterizes both proofs, leaving
+    them as obligations for whoever instantiates it with a suitable live predicate. -/
+theorem pyashCore_isGovLive_not_closed :
+    ∃ p q, isGovLive p ∧ langReduces pyashCore p q ∧ ¬ isGovLive q :=
+  ⟨pyashStateRunning, pyashStateDoneOk,
+   pyashCore_isGovLive_running,
+   pyashCore_run_do_step,
+   pyashCore_not_isGovLive_doneOk⟩
 
 end Mettapedia.OSLF.Framework.PyashCoreInstance

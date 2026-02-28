@@ -57,6 +57,13 @@ cd /home/zar/claude/lean-projects/mettapedia
 ./scripts/check_ch11_quantifiers.sh
 ```
 
+Extended fuzzy-syllogism regression script:
+
+```bash
+cd /home/zar/claude/lean-projects/mettapedia
+./scripts/check_ch11_fuzzy_syllogism.sh
+```
+
 Primary Chapter-11 modules:
 
 - `Mettapedia/Logic/PLNFirstOrder/QuantifierSemantics.lean`
@@ -72,6 +79,30 @@ Key canaries:
 - `canary_ch11_fuzzySyllogism_many`
 - `canary_ch11_allHigh_forall`
 - `canary_ch11_allLow_not_thereExists`
+- `canary_ch11_most_fraction_threeQuarters`
+- `canary_ch11_few_fraction_oneQuarter`
+- `canary_ch11_most_vs_few_split_on_threeQuarters`
+- `canary_ch11_almostAll_fraction_threeQuarters`
+- `canary_ch11_almostAll_holds_on_threeQuarters`
+- `canary_ch11_aboutHalf_fraction_oneHalf`
+- `canary_ch11_aboutHalf_positive_negative_split`
+- `canary_ch11_almostNone_fraction_oneFifth`
+- `canary_ch11_almostNone_holds_on_oneFifth`
+- `canary_ch11_manyNotMost_fraction_threeFifths`
+- `canary_ch11_manyNotMost_vs_most_split`
+- `zadeh_syllogism_most_most` / `zadeh_syllogism_few_most`
+- `qfm_syllogism_most_most` / `qfm_syllogism_few_most`
+- `qfmMul_interval_of_fuzzyIntervals` / `qfmMin_interval_of_fuzzyIntervals`
+- `qfmLukasiewicz_interval_of_fuzzyIntervals` / `qfmProbSum_interval_of_fuzzyIntervals`
+- `qfmMin_syllogism_most_most` / `qfmMin_syllogism_few_most`
+- `qfmLukasiewicz_syllogism_most_most` / `qfmLukasiewicz_syllogism_few_most`
+- `qfmProbSum_syllogism_most_most` / `qfmProbSum_syllogism_few_most`
+- `qfm_selector_bundle_most_most` / `qfm_selector_bundle_few_most`
+- `qfm_instance_comparison_most_most` / `qfm_instance_comparison_few_most`
+- `canary_zadeh_most_most_fixture` / `canary_zadeh_few_most_fixture`
+- `canary_qfm_monotonicity_most`
+- `canary_qfm_forall_monotonicity_most`
+- `canary_qfm_conservativity_same_nearOne_signature`
 - `canary_ch11_rule4_not_equivalent_itvPath`
 - `canary_ch11_itv_strength_interval_of_lower_upper`
 

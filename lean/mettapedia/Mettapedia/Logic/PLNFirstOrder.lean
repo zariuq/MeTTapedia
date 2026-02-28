@@ -3,12 +3,14 @@ import Mettapedia.Logic.PLNFirstOrder.SatisfyingSet
 import Mettapedia.Logic.PLNFirstOrder.QuantifierSemantics
 import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSemantics
 import Mettapedia.Logic.PLNFirstOrder.FuzzyITVBridge
+import Mettapedia.Logic.PLNFirstOrder.FuzzySyllogismCanary
 import Mettapedia.Logic.PLNFirstOrder.WeaknessConnection
 import Mettapedia.Logic.PLNFirstOrder.FoundationBridge
 import Mettapedia.Logic.PLNFirstOrder.Soundness
 import Mettapedia.Logic.PLNFirstOrder.QuantifierCanary
 import Mettapedia.Logic.PLNFirstOrder.Chapter11Examples
 import Mettapedia.Logic.PLNFirstOrder.Chapter11Regression
+import Mettapedia.Logic.PLNFirstOrder.Chapter11FuzzySyllogismRegression
 
 /-!
 # PLN First-Order Quantifiers

@@ -7,6 +7,36 @@ No GF dependency — GF sentences arrive as pre-rendered strings.
 
 namespace Mettapedia.DocText.ReadmeTree
 
+/-- Typed syntax-expression AST for technical symbol patterns. -/
+inductive SynExpr where
+  | ident (name : String)
+  | quoted (text : String)
+  | call (fn : String) (args : List SynExpr)
+  | seq (items : List SynExpr) (sep : String)
+  | infix (lhs : SynExpr) (op : String) (rhs : SynExpr)
+  deriving Repr, BEq
+
+partial def renderSynExpr : SynExpr → String
+  | .ident n => n
+  | .quoted t => "\"" ++ t ++ "\""
+  | .call fn args =>
+      fn ++ "(" ++ String.intercalate "," (args.map renderSynExpr) ++ ")"
+  | .seq items sep =>
+      String.intercalate sep (items.map renderSynExpr)
+  | .infix lhs op rhs =>
+      renderSynExpr lhs ++ " " ++ op ++ " " ++ renderSynExpr rhs
+
+partial def synExprWellFormed : SynExpr → Bool
+  | .ident n => n != ""
+  | .quoted t => t != ""
+  | .call fn args => fn != "" && !args.isEmpty && args.all synExprWellFormed
+  | .seq items sep => !items.isEmpty && sep != "" && items.all synExprWellFormed
+  | .infix lhs op rhs => op != "" && synExprWellFormed lhs && synExprWellFormed rhs
+
+theorem synExpr_empty_quoted_forbidden :
+    synExprWellFormed (.quoted "") = false := by
+  native_decide
+
 /-- Typed API item for documentation lists. -/
 structure ApiItem where
   path : String
@@ -17,8 +47,8 @@ structure ApiItem where
 /-- Typed syntax-pattern item for documentation lists. -/
 structure SyntaxItem where
   label : String
-  pattern : String
-  deriving Repr, BEq, DecidableEq
+  pattern : SynExpr
+  deriving Repr, BEq
 
 /-- Typed path item for path-only bullet lists. -/
 structure PathItem where
@@ -60,7 +90,7 @@ private def renderApiItem (item : ApiItem) : String :=
   String.intercalate "\n" ([header] ++ memberLines ++ noteLines)
 
 private def renderSyntaxItem (item : SyntaxItem) : String :=
-  "- " ++ item.label ++ ": `" ++ item.pattern ++ "`"
+  "- " ++ item.label ++ ": `" ++ renderSynExpr item.pattern ++ "`"
 
 private def renderPathItem (item : PathItem) : String :=
   "- `" ++ item.path ++ "`"

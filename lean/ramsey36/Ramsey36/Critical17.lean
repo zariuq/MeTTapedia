@@ -7,7 +7,9 @@ triangle-free graphs on 17 vertices with independence number α = 5.
 ## LLM Notes
 - The full `decide` on `hasIndepSet 17 adj17Bool 6` causes kernel OOM.
 - Fix: IndepSplit.lean splits into 12 sub-problems (~7.7s total).
-- adj17Bool_eq_decide uses `fin_cases v <;> fin_cases w <;> decide` (289 pairs).
+- adj17Bool_spec uses `decide` on 289 pairs (fast: O(5) work each).
+- adj17NotBool_spec similarly bridges the complement for triangle-free.
+- IndepSetChecker.lean provides bridge theorems with explicit adj argument.
 -/
 
 import Mathlib.Combinatorics.SimpleGraph.Basic
@@ -18,6 +20,7 @@ import Mathlib.Data.Fin.Basic
 import Mathlib.Tactic.FinCases
 import Ramsey36.Basic
 import Ramsey36.IndepSplit
+import Ramsey36.IndepSmall
 
 open SimpleGraph Finset
 
@@ -76,14 +79,24 @@ instance : Decidable (NoKIndepSet 6 criticalGraph17) := by
 
 /-! ## Triangle-Free -/
 
-lemma criticalGraph17_triangleFree : TriangleFree criticalGraph17 := by
-  native_decide
+/-- adj17Bool agrees with the Adj predicate of criticalGraph17 for all pairs. -/
+private lemma adj17Bool_spec :
+    ∀ v w : Fin 17, adj17Bool v w = decide (criticalGraph17.Adj v w) := by decide
+
+/-- adj17NotBool agrees with the negated Adj predicate for all pairs. -/
+private lemma adj17NotBool_spec :
+    ∀ v w : Fin 17, adj17NotBool v w = !decide (criticalGraph17.Adj v w) := by decide
+
+lemma criticalGraph17_triangleFree : TriangleFree criticalGraph17 :=
+  triangleFree_of_adj_checker_false adj17NotBool_spec
+    hasIndepSet_17_adj17NotBool_3_false
 
 /-! ## No 6-Independent Set -/
 
 /-- The Graver-Yackel graph has no 6-independent set. -/
-lemma criticalGraph17_no_6_indep : NoKIndepSet 6 criticalGraph17 := by
-  native_decide
+lemma criticalGraph17_no_6_indep : NoKIndepSet 6 criticalGraph17 :=
+  noKIndepSet_of_adj_checker_false adj17Bool_spec
+    hasIndepSet_17_adj17Bool_6_false
 
 /-! ## Ramsey Lower Bound -/
 

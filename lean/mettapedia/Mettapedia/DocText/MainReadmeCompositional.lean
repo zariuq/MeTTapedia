@@ -265,42 +265,92 @@ def renderClaim : Claim → String
 
 /-! ## Document Tree -/
 
+inductive MainHeading where
+  | title
+  | primaryLeanRepos
+  | whyInteresting
+  | metamathTooling
+  | resolutionTools
+  | statusReview
+  deriving Repr, DecidableEq, BEq
+
+private def repository_N := regN "repository"
+private def tool_N := regN "tool"
+
+def renderMainHeading : MainHeading → String
+  | .title =>
+      capitalizeFirst <| (linMassPluralNP
+        (linAdjCN (linPositA (compoundA "AI-assisted"))
+          (linAdjCN (linPositA (regA "formal"))
+            (linAdjCN (linPositA (compoundA "mathematics"))
+              (linUseN (regN "project")))))).s (.NCase .Nom)
+  | .primaryLeanRepos =>
+      capitalizeFirst <| (linMassPluralNP
+        (linAdjCN (linPositA (regA "primary"))
+          (linAdjCN (linPositA (regA "Lean")) (linUseN repository_N)))).s (.NCase .Nom)
+  | .whyInteresting =>
+      capitalizeFirst <| (linMassPluralNP
+        (linAdjCN (linPositA (regA "interesting")) (linUseN repository_N))).s (.NCase .Nom)
+  | .metamathTooling =>
+      capitalizeFirst <| (linMassPluralNP
+        (linAdjCN (linPositA (regA "Metamath"))
+          (linAdjCN (linPositA (compoundA "verification")) (linUseN tool_N)))).s (.NCase .Nom)
+  | .resolutionTools =>
+      capitalizeFirst <| (linMassPluralNP
+        (linAdjCN (linPositA (regA "resolution"))
+          (linAdjCN (linPositA (regA "TPTP")) (linUseN tool_N)))).s (.NCase .Nom)
+  | .statusReview =>
+      capitalizeFirst <| (linMassNP
+        (linAdjCN (linPositA (regA "status")) (linUseN review_N))).s (.NCase .Nom)
+
+def allMainHeadings : List MainHeading :=
+  [ .title
+  , .primaryLeanRepos
+  , .whyInteresting
+  , .metamathTooling
+  , .resolutionTools
+  , .statusReview
+  ]
+
+def parseMainHeadingLine? (line : String) : Option MainHeading :=
+  allMainHeadings.find? (fun h => renderMainHeading h = line)
+
 structure RepoEntry where
   repo : RepoId
   summary : Claim
   deriving Repr
 
 structure Section where
-  heading : String
+  heading : MainHeading
   subheading : Option String := none
   prose : List Claim := []
   entries : List RepoEntry := []
   deriving Repr
 
 def mainSections : List Section :=
-  [ { heading := "Primary Lean repos (most active)"
+  [ { heading := .primaryLeanRepos
       entries :=
         [ { repo := .mettapedia, summary := .repoProvidesBroadLibrary .mettapedia }
         , { repo := .fourcolor, summary := .repoFormalizesFourColor .fourcolor }
         , { repo := .ramsey36, summary := .repoFormalizesRamseyR36 .ramsey36 }
         ] }
-  , { heading := "Why these are interesting"
+  , { heading := .whyInteresting
       subheading := some "###"
       prose :=
         [ .repoHostsInferenceProofs .mettapedia
         , .repoProvesVerifierInLean .mmLean4
         , .repoExercisesInteropPipeline .pverify
         ] }
-  , { heading := "Metamath verification / tooling"
+  , { heading := .metamathTooling
       entries :=
         [ { repo := .mmLean4, summary := .repoProvesVerifierSoundnessInLean .mmLean4 }
         , { repo := .pverify, summary := .repoProvidesPrologPettaVerifier .pverify }
         ] }
-  , { heading := "Resolution / TPTP tools"
+  , { heading := .resolutionTools
       entries :=
         [ { repo := .tptpMetta, summary := .repoProvidesConvertersPrototype .tptpMetta }
         ] }
-  , { heading := "Status & review"
+  , { heading := .statusReview
       prose :=
         [ .statusVariesBySubdirectory
         , .checkLocalStatusDocs
@@ -331,8 +381,8 @@ private def allEntries : List RepoEntry :=
 
 private def renderSectionHeading (s : Section) : String :=
   match s.subheading with
-  | some "###" => "### " ++ s.heading
-  | _ => "## " ++ s.heading
+  | some "###" => "### " ++ renderMainHeading s.heading
+  | _ => "## " ++ renderMainHeading s.heading
 
 private def renderEntryLine (e : RepoEntry) : String :=
   "- **`" ++ renderRepoPath (repoPath e.repo) ++ "/`** — " ++ ensurePeriod (renderClaim e.summary)
@@ -345,7 +395,7 @@ inductive ParsedReadmeLine where
   deriving Repr, DecidableEq
 
 def parseStructuredLine? (line : String) : Option ParsedReadmeLine :=
-  if line = "# AI‑Assisted Formal Mathematics Projects" then
+  if line = "# " ++ renderMainHeading .title then
     some .title
   else
     match mainSections.find? (fun s => renderSectionHeading s = line) with
@@ -376,7 +426,7 @@ def ambiguousClaimSurfaces : List (String × List Claim) :=
   claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
 
 def mainReadmeStructuredLines : List String :=
-  let title := ["# AI‑Assisted Formal Mathematics Projects"]
+  let title := ["# " ++ renderMainHeading .title]
   let intro := [ensurePeriod <| renderClaim (.workspaceIncludes [.lean, .metamath, .atp])]
   let sectionLines :=
     mainSections.foldr
@@ -394,7 +444,7 @@ private def sectionHeadingLevel (s : Section) : Nat :=
   | _ => 2
 
 private def sectionBlocks (s : Section) : List ReadmeBlock :=
-  let heading : ReadmeBlock := .heading (sectionHeadingLevel s) s.heading
+  let heading : ReadmeBlock := .heading (sectionHeadingLevel s) (renderMainHeading s.heading)
   let proseBlocks : List ReadmeBlock :=
     if s.prose.isEmpty then [] else [.paragraph (s.prose.map renderClaim)]
   let entryBlocks : List ReadmeBlock :=
@@ -404,14 +454,14 @@ private def sectionBlocks (s : Section) : List ReadmeBlock :=
   [heading] ++ proseBlocks ++ entryBlocks
 
 def mainReadmeBlocks : List ReadmeBlock :=
-  [ .heading 1 "AI‑Assisted Formal Mathematics Projects"
+  [ .heading 1 (renderMainHeading .title)
   , .paragraph [renderClaim (.workspaceIncludes [.lean, .metamath, .atp])]
   ] ++ (mainSections.foldr (fun s acc => sectionBlocks s ++ acc) [])
 
 inductive ParsedMainStructuredLine where
   | technical (line : ParsedTechnicalLine)
   | claim (c : Claim)
-  deriving Repr, DecidableEq
+  deriving Repr
 
 def parseSelectedStructuredMainLine? (line : String) : Option ParsedMainStructuredLine :=
   match parseTechnicalLine? mainReadmeBlocks line with
@@ -427,11 +477,26 @@ def selectedStructuredMainReadmeLines : List String :=
   (mainSections.foldr (fun s acc => (s.prose.map (ensurePeriod ∘ renderClaim)) ++ acc) [])
 
 def mainHardAuditPasses : Bool :=
-  mainReadmeBlocks.all (blockPassesHardAudit parseClaimLine?)
+  mainReadmeBlocks.all (blockPassesHardAuditWith parseClaimLine? parseMainHeadingLine?)
 
 theorem main_hard_audit :
     mainHardAuditPasses = true := by
   native_decide
+
+def mainHeadingImageCheck : Bool :=
+  headingRenderImageCheck parseMainHeadingLine? renderMainHeading mainReadmeBlocks
+
+theorem main_heading_images :
+    mainHeadingImageCheck = true := by
+  native_decide
+
+theorem main_heading_image_witness
+    {lvl : Nat} {txt : String}
+    (hMem : (lvl, txt) ∈ headingEntries mainReadmeBlocks) :
+    ∃ h, parseMainHeadingLine? txt = some h ∧ renderMainHeading h = txt := by
+  exact headingRenderImageWitness
+    parseMainHeadingLine? renderMainHeading mainReadmeBlocks
+    main_heading_images hMem
 
 /-! ## Markdown Rendering -/
 
@@ -446,7 +511,7 @@ private def renderSection (s : Section) : String :=
   heading ++ "\n\n" ++ body
 
 def mainReadmeMarkdown : String :=
-  let title := "# AI‑Assisted Formal Mathematics Projects"
+  let title := "# " ++ renderMainHeading .title
   let intro := ensurePeriod <| renderClaim (.workspaceIncludes [.lean, .metamath, .atp])
   let sections := String.intercalate "\n\n" (mainSections.map renderSection)
   title ++ "\n\n" ++ intro ++ "\n\n" ++ sections ++ "\n"
@@ -492,8 +557,8 @@ theorem parse_roundtrip_status :
   native_decide
 
 theorem parse_roundtrip_section_heading :
-    parseStructuredLine? "## Metamath verification / tooling" =
-      some (.sectionHeading "## Metamath verification / tooling") := by
+    parseStructuredLine? ("## " ++ renderMainHeading .metamathTooling) =
+      some (.sectionHeading ("## " ++ renderMainHeading .metamathTooling)) := by
   native_decide
 
 theorem parse_roundtrip_entry :
@@ -525,7 +590,10 @@ theorem parse_roundtrip_entry :
 
 #eval
   let fails := selectedStructuredMainReadmeLines.filter
-    (fun line => parseSelectedStructuredMainLine? line = none)
+    (fun line =>
+      match parseSelectedStructuredMainLine? line with
+      | none => true
+      | _ => false)
   if fails.isEmpty then
     "main parse-back check: selected headings + bullet families roundtrip"
   else

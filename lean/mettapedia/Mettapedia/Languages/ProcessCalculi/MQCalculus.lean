@@ -1,4 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.MQCalculus.MQCalculus
+import Mettapedia.Languages.ProcessCalculi.MQCalculus.Interoperability
+import Mettapedia.Languages.ProcessCalculi.MQCalculus.PaperMap
 
 /-!
 # Process Calculi: MQ-Calculus
@@ -17,7 +19,10 @@ branching probabilities from first principles (derived, not axiomatized).
 - `MQCalculus/Shift.lean` — Wire index shifting + all equational laws (sorry-free)
 - `MQCalculus/StructuralCongruence.lean` — 4 SC axioms + closure (sorry-free)
 - `MQCalculus/CommRule.lean` — Born-rule COMM branching + normalization theorem
+- `MQCalculus/Backend.lean` — statevector backend (`branchProb`, gate `NAME@i`, `alloc`, `collapse`)
 - `MQCalculus/Reduction.lean` — Full `Reduces` + `MultiStep` (sorry-free)
-- `MQCalculus/Denotational.lean` — Placeholder denotational semantics + invariance lemmas
+- `MQCalculus/Denotational.lean` — Backend-parametric denotational interpreter + default backend
 - `MQCalculus/MQCalculus.lean` — Canary theorems + π/ρ-calculus connections
+- `MQCalculus/Interoperability.lean` — MORK ↔ MQ COMM coherence wrappers
+- `MQCalculus/PaperMap.lean` — paper-clause-to-theorem mapping index
 -/

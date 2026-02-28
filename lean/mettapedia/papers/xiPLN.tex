@@ -651,6 +651,145 @@ Relative to earlier drafts, Ch.\ 12 has moved from prototype-only status to
 Solomonoff log-ratio correspondence, and one-call canonical API transport. Remaining work is
 mainly PAT/mixed-policy parity and assumption-minimal packaging.
 
+\subsection{Chapter 11 Rule-to-Theorem Index}
+\label{app:ch11-theorem-index}
+
+\begin{longtable}{p{0.30\textwidth}p{0.33\textwidth}p{0.29\textwidth}}
+\textbf{Chapter 11 rule/content} & \textbf{Lean theorem(s)} & \textbf{Module} \\
+\hline
+Quantifier exchange (De Morgan) \newline
+\textit{Tags: [PLNBook-Ch11], [Classical-DeMorgan]} &
+\code{canary\_ch11\_exists\_deMorgan},
+\code{canary\_ch11\_quantifier\_exchange} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierCanary.lean} \\
+\hline
+Existential generalization (extensional) \newline
+\textit{Tags: [PLNBook-Ch11], [Classical-FO]} &
+\code{canary\_ch11\_existential\_generalization\_ext} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierCanary.lean} \\
+\hline
+Universal specification (extensional) \newline
+\textit{Tags: [PLNBook-Ch11], [Classical-FO]} &
+\code{canary\_ch11\_universal\_specification\_ext} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierCanary.lean} \\
+\hline
+Fuzzy existential generalization (score positivity) \newline
+\textit{Tags: [PLNBook-Ch11], [Zadeh1983]} &
+\code{fuzzyExistsScore\_pos\_of\_witness\_nearOne},
+\code{fuzzyExistsScore\_pos\_of\_itvStrengthWitness} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean},
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyITVBridge.lean} \\
+\hline
+Fuzzy universal specification (`PCL = 1`) \newline
+\textit{Tags: [PLNBook-Ch11], [Zadeh1983]} &
+\code{nearOne\_of\_fuzzyForAll\_eq\_one},
+\code{nearOne\_itvStrength\_of\_fuzzyForAll\_eq\_one} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean},
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyITVBridge.lean} \\
+\hline
+Rule-4 non-equivalence witness (ITV path) \newline
+\textit{Tags: [PLNBook-Ch11], [ITV-counterexample]} &
+\code{canary\_ch11\_rule4\_not\_equivalent\_itvPath} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\hline
+ITV coordinate transfer (lower/upper $\Rightarrow$ strength) \newline
+\textit{Tags: [PLNBook-Ch11], [Walley-IDM], [QFM-bridge]} &
+\code{fuzzyIntervalHolds\_strength\_of\_lower\_upper},
+\code{canary\_ch11\_itv\_strength\_interval\_of\_lower\_upper} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyITVBridge.lean},
+\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\hline
+Finite MOST/FEW fixtures \newline
+\textit{Tags: [Zadeh1983], [Yager1984]} &
+\code{canary\_ch11\_most\_fraction\_threeQuarters},
+\code{canary\_ch11\_few\_fraction\_oneQuarter},
+\code{canary\_ch11\_most\_vs\_few\_split\_on\_threeQuarters} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\hline
+Zadeh-style quantified syllogism family (`MOST \circ MOST`, `FEW \circ MOST`) \newline
+\textit{Tags: [Zadeh1983], [Yager1984]} &
+\code{zadeh\_syllogism\_most\_most},
+\code{zadeh\_syllogism\_few\_most},
+\code{canary\_zadeh\_most\_most\_fixture},
+\code{canary\_zadeh\_few\_most\_fixture} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzySyllogismCanary.lean} \\
+\hline
+QFM abstraction + generic composition transport \newline
+\textit{Tags: [DiazHermida2018-QFM], [QFM-Axiomatic]} &
+\code{QFMCompose},
+\code{qfmMul},
+\code{qfmMin},
+\code{qfmLukasiewicz},
+\code{qfmProbSum},
+\code{qfm\_compose\_interval\_bundle},
+\code{qfm\_compose\_interval\_of\_fuzzyIntervals},
+\code{qfmMul\_interval\_of\_fuzzyIntervals},
+\code{qfmMin\_interval\_of\_fuzzyIntervals},
+\code{qfmLukasiewicz\_interval\_of\_fuzzyIntervals},
+\code{qfmProbSum\_interval\_of\_fuzzyIntervals},
+\code{qfm\_syllogism\_interval},
+\code{qfm\_syllogism\_most\_most},
+\code{qfm\_syllogism\_few\_most} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean},
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzySyllogismCanary.lean} \\
+\hline
+QFM-oriented canaries/schemas (monotonicity, conservativity-style signature invariance) \newline
+\textit{Tags: [DiazHermida2018-QFM], [Tserkovny2020]} &
+\code{fuzzyExistsScore\_mono\_of\_pointwise},
+\code{fuzzyForAllHolds\_mono\_of\_pointwise},
+\code{nearOneFraction\_eq\_of\_signatureEq},
+\code{fuzzyIntervalHolds\_iff\_of\_signatureEq},
+\code{canary\_qfm\_monotonicity\_most},
+\code{canary\_qfm\_forall\_monotonicity\_most},
+\code{canary\_qfm\_conservativity\_same\_nearOne\_signature} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean},
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzySyllogismCanary.lean} \\
+\hline
+Additional finite quantifier fixtures (`ALMOST ALL`, `ABOUT HALF`) &
+\textit{Tags: [Zadeh1983], [Glöckner2006]} \newline
+\code{canary\_ch11\_almostAll\_fraction\_threeQuarters},
+\code{canary\_ch11\_almostAll\_holds\_on\_threeQuarters},
+\code{canary\_ch11\_aboutHalf\_fraction\_oneHalf},
+\code{canary\_ch11\_aboutHalf\_positive\_negative\_split} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\hline
+Additional finite quantifier fixtures (`ALMOST NONE`, `MANY-BUT-NOT-MOST`) &
+\textit{Tags: [Zadeh1983], [Yager1984], [DiazHermida2018-QFM]} \newline
+\code{canary\_ch11\_almostNone\_fraction\_oneFifth},
+\code{canary\_ch11\_almostNone\_holds\_on\_oneFifth},
+\code{canary\_ch11\_manyNotMost\_fraction\_threeFifths},
+\code{canary\_ch11\_manyNotMost\_vs\_most\_split} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\hline
+QFM selector-bundle API endpoints \newline
+\textit{Tags: [QFM-Axiomatic], [PLNBook-Ch11]} &
+\code{qfm\_selector\_bundle\_most\_most},
+\code{qfm\_selector\_bundle\_few\_most},
+\code{qfm\_selector\_bundle\_most\_most\_sound},
+\code{qfm\_selector\_bundle\_few\_most\_sound},
+\code{qfmMin\_syllogism\_most\_most},
+\code{qfmMin\_syllogism\_few\_most} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzySyllogismCanary.lean} \\
+\hline
+Non-multiplicative QFM instance theorem families \newline
+\textit{Tags: [Lukasiewicz-tnorm], [Probabilistic-sum], [QFM-instance-comparison]} &
+\code{qfmLukasiewicz\_syllogism\_most\_most},
+\code{qfmLukasiewicz\_syllogism\_few\_most},
+\code{qfmProbSum\_syllogism\_most\_most},
+\code{qfmProbSum\_syllogism\_few\_most},
+\code{qfm\_instance\_comparison\_most\_most},
+\code{qfm\_instance\_comparison\_few\_most} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzySyllogismCanary.lean} \\
+\hline
+Regression entrypoint &
+\codepath{scripts/check\_ch11\_quantifiers.sh},
+\codepath{scripts/check\_ch11\_fuzzy\_syllogism.sh},
+\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Regression.lean},
+\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11FuzzySyllogismRegression.lean} &
+\codepath{.github/workflows/lean\_action\_ci.yml} \\
+\hline
+\end{longtable}
+
 \subsection{Module-Level Coverage Index (Legacy + Recent)}
 \label{app:pln-book-coverage-modules}
 

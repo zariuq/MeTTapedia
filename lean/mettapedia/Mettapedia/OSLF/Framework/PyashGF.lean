@@ -54,6 +54,11 @@ def PyDo : FunctionSig := ⟨"PyDo", pyashMoodCat⟩
 def PyDef : FunctionSig := ⟨"PyDef", pyashMoodCat⟩
 def PyThen : FunctionSig := ⟨"PyThen", pyashMoodCat⟩
 def PyRead : FunctionSig := ⟨"PyRead", pyashVerbCat⟩
+def PyWrite : FunctionSig := ⟨"PyWrite", pyashVerbCat⟩
+def PySay : FunctionSig := ⟨"PySay", pyashVerbCat⟩
+def PyMap : FunctionSig := ⟨"PyMap", pyashVerbCat⟩
+def PyCommand : FunctionSig := ⟨"PyCommand", pyashVerbCat⟩
+def PySearch : FunctionSig := ⟨"PySearch", pyashVerbCat⟩
 def PyMind : FunctionSig := ⟨"PyMind", pyashVerbCat⟩
 def PyChip : FunctionSig := ⟨"PyChip", pyashVerbCat⟩
 def PyHear : FunctionSig := ⟨"PyHear", pyashVerbCat⟩
@@ -77,6 +82,24 @@ def pyashGFReadDoClause : AbstractNode :=
 
 def pyashGFMindDoClause : AbstractNode :=
   .apply PyClause [.apply PyDo [], .apply PyMind []]
+
+def pyashGFWriteDoClause : AbstractNode :=
+  .apply PyClause [.apply PyDo [], .apply PyWrite []]
+
+def pyashGFSayDoClause : AbstractNode :=
+  .apply PyClause [.apply PyDo [], .apply PySay []]
+
+def pyashGFMapDoClause : AbstractNode :=
+  .apply PyClause [.apply PyDo [], .apply PyMap []]
+
+def pyashGFMapDefClause : AbstractNode :=
+  .apply PyClause [.apply PyDef [], .apply PyMap []]
+
+def pyashGFCommandDoClause : AbstractNode :=
+  .apply PyClause [.apply PyDo [], .apply PyCommand []]
+
+def pyashGFSearchDoClause : AbstractNode :=
+  .apply PyClause [.apply PyDo [], .apply PySearch []]
 
 def pyashGFReadThenClause : AbstractNode :=
   .apply PyClause [.apply PyThen [], .apply PyRead []]
@@ -140,6 +163,16 @@ private def ctorName? : AbstractNode → Option String
 private def doMoodVerbToState? (verbName : String) : Option Pattern :=
   if verbName == "PyRead" then
     some pyashStateReadDerive
+  else if verbName == "PyWrite" then
+    some pyashStateWriteDerive
+  else if verbName == "PySay" then
+    some pyashStateSayDerive
+  else if verbName == "PyMap" then
+    some pyashStateMapDerive
+  else if verbName == "PyCommand" then
+    some pyashStateCommandDerive
+  else if verbName == "PySearch" then
+    some pyashStateSearchDerive
   else if verbName == "PyMind" then
     some pyashStateMindDerive
   else if verbName == "PyChip" then
@@ -244,6 +277,8 @@ def pyashGFClauseToState? : AbstractNode → Option Pattern
               doMoodVerbToState? verbName
             else if moodName == "PyDef" ∧ verbName == "PyConfigure" then
               some pyashStateConfigureDefDerive
+            else if moodName == "PyDef" ∧ verbName == "PyMap" then
+              some pyashStateMapDefDerive
             else if moodName == "PyThen" then
               thenMoodVerbToState? verbName
             else
@@ -259,6 +294,30 @@ def pyashGFInputOf (n : AbstractNode) : Pattern :=
 
 theorem pyashGF_read_clause_maps :
     pyashGFClauseToState? pyashGFReadDoClause = some pyashStateReadDerive := by
+  decide +kernel
+
+theorem pyashGF_write_clause_maps :
+    pyashGFClauseToState? pyashGFWriteDoClause = some pyashStateWriteDerive := by
+  decide +kernel
+
+theorem pyashGF_say_clause_maps :
+    pyashGFClauseToState? pyashGFSayDoClause = some pyashStateSayDerive := by
+  decide +kernel
+
+theorem pyashGF_map_clause_maps :
+    pyashGFClauseToState? pyashGFMapDoClause = some pyashStateMapDerive := by
+  decide +kernel
+
+theorem pyashGF_map_def_clause_maps :
+    pyashGFClauseToState? pyashGFMapDefClause = some pyashStateMapDefDerive := by
+  decide +kernel
+
+theorem pyashGF_command_clause_maps :
+    pyashGFClauseToState? pyashGFCommandDoClause = some pyashStateCommandDerive := by
+  decide +kernel
+
+theorem pyashGF_search_clause_maps :
+    pyashGFClauseToState? pyashGFSearchDoClause = some pyashStateSearchDerive := by
   decide +kernel
 
 theorem pyashGF_mind_clause_maps :
@@ -344,6 +403,54 @@ theorem pyashGF_read_clause_dispatch_bridge :
       pyashStateReadDispatched := by
   unfold pyashGFInputOf
   simpa [pyashGF_read_clause_maps] using pyashCore_read_derive_signature_step
+
+/-- Bridge claim (OSLF): GF write/do clause reaches the PyashCore write dispatch stage. -/
+theorem pyashGF_write_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFWriteDoClause)
+      pyashStateWriteDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_write_clause_maps] using pyashCore_write_derive_signature_step
+
+/-- Bridge claim (OSLF): GF say/do clause reaches the PyashCore say dispatch stage. -/
+theorem pyashGF_say_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFSayDoClause)
+      pyashStateSayDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_say_clause_maps] using pyashCore_say_derive_signature_step
+
+/-- Bridge claim (OSLF): GF map/do clause reaches the PyashCore map dispatch stage. -/
+theorem pyashGF_map_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFMapDoClause)
+      pyashStateMapDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_map_clause_maps] using pyashCore_map_derive_signature_step
+
+/-- Bridge claim (OSLF): GF map/def clause reaches the PyashCore map-def dispatch stage. -/
+theorem pyashGF_map_def_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFMapDefClause)
+      pyashStateMapDefDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_map_def_clause_maps] using pyashCore_map_def_derive_signature_step
+
+/-- Bridge claim (OSLF): GF command/do clause reaches the PyashCore command dispatch stage. -/
+theorem pyashGF_command_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFCommandDoClause)
+      pyashStateCommandDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_command_clause_maps] using pyashCore_command_derive_signature_step
+
+/-- Bridge claim (OSLF): GF search/do clause reaches the PyashCore search dispatch stage. -/
+theorem pyashGF_search_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFSearchDoClause)
+      pyashStateSearchDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_search_clause_maps] using pyashCore_search_derive_signature_step
 
 /-- Bridge claim 2 (OSLF): GF mind/do clause reaches the PyashCore mind dispatch stage. -/
 theorem pyashGF_mind_clause_dispatch_bridge :
@@ -463,6 +570,91 @@ theorem pyashGF_dispatch_error_negative_bridge :
   unfold pyashGFInputOf
   simpa [pyashGF_dispatch_error_clause_maps] using
     pyashCore_dispatch_error_instr_surfaces_dispatch_error
+
+/-- `write` derive step (decomposed bridge lemma). -/
+theorem pyashGF_write_derive_step :
+    langReduces pyashCore pyashStateWriteDerive pyashStateWriteDispatched := by
+  simpa using pyashCore_write_derive_signature_step
+
+/-- `write` dispatch step (decomposed bridge lemma). -/
+theorem pyashGF_write_dispatch_step :
+    langReduces pyashCore pyashStateWriteDispatched pyashStateWriteRunning := by
+  simpa using pyashCore_write_dispatch_do_step
+
+/-- `write` run step (decomposed bridge lemma). -/
+theorem pyashGF_write_run_step :
+    langReduces pyashCore pyashStateWriteRunning pyashStateWriteDoneOk := by
+  simpa using pyashCore_write_run_do_step
+
+/-- `say` derive step (decomposed bridge lemma). -/
+theorem pyashGF_say_derive_step :
+    langReduces pyashCore pyashStateSayDerive pyashStateSayDispatched := by
+  simpa using pyashCore_say_derive_signature_step
+
+/-- `say` dispatch step (decomposed bridge lemma). -/
+theorem pyashGF_say_dispatch_step :
+    langReduces pyashCore pyashStateSayDispatched pyashStateSayRunning := by
+  simpa using pyashCore_say_dispatch_do_step
+
+/-- `say` run step (decomposed bridge lemma). -/
+theorem pyashGF_say_run_step :
+    langReduces pyashCore pyashStateSayRunning pyashStateSayDoneOk := by
+  simpa using pyashCore_say_run_do_step
+
+/-- `map` derive step (decomposed bridge lemma). -/
+theorem pyashGF_map_derive_step :
+    langReduces pyashCore pyashStateMapDerive pyashStateMapDispatched := by
+  simpa using pyashCore_map_derive_signature_step
+
+/-- `map` dispatch step (decomposed bridge lemma). -/
+theorem pyashGF_map_dispatch_step :
+    langReduces pyashCore pyashStateMapDispatched pyashStateMapRunning := by
+  simpa using pyashCore_map_dispatch_do_step
+
+/-- `map` run step (decomposed bridge lemma). -/
+theorem pyashGF_map_run_step :
+    langReduces pyashCore pyashStateMapRunning pyashStateMapDoneOk := by
+  simpa using pyashCore_map_run_do_step
+
+/-- `map/def` derive step (decomposed bridge lemma). -/
+theorem pyashGF_map_def_derive_step :
+    langReduces pyashCore pyashStateMapDefDerive pyashStateMapDefDispatched := by
+  simpa using pyashCore_map_def_derive_signature_step
+
+/-- `map/def` dispatch step (decomposed bridge lemma). -/
+theorem pyashGF_map_def_dispatch_step :
+    langReduces pyashCore pyashStateMapDefDispatched pyashStateMapDefDoneOk := by
+  simpa using pyashCore_map_def_dispatch_def_step
+
+/-- `command` derive step (decomposed bridge lemma). -/
+theorem pyashGF_command_derive_step :
+    langReduces pyashCore pyashStateCommandDerive pyashStateCommandDispatched := by
+  simpa using pyashCore_command_derive_signature_step
+
+/-- `command` dispatch step (decomposed bridge lemma). -/
+theorem pyashGF_command_dispatch_step :
+    langReduces pyashCore pyashStateCommandDispatched pyashStateCommandRunning := by
+  simpa using pyashCore_command_dispatch_do_step
+
+/-- `command` run step (decomposed bridge lemma). -/
+theorem pyashGF_command_run_step :
+    langReduces pyashCore pyashStateCommandRunning pyashStateCommandDoneOk := by
+  simpa using pyashCore_command_run_do_step
+
+/-- `search` derive step (decomposed bridge lemma). -/
+theorem pyashGF_search_derive_step :
+    langReduces pyashCore pyashStateSearchDerive pyashStateSearchDispatched := by
+  simpa using pyashCore_search_derive_signature_step
+
+/-- `search` dispatch step (decomposed bridge lemma). -/
+theorem pyashGF_search_dispatch_step :
+    langReduces pyashCore pyashStateSearchDispatched pyashStateSearchRunning := by
+  simpa using pyashCore_search_dispatch_do_step
+
+/-- `search` run step (decomposed bridge lemma). -/
+theorem pyashGF_search_run_step :
+    langReduces pyashCore pyashStateSearchRunning pyashStateSearchDoneOk := by
+  simpa using pyashCore_search_run_do_step
 
 /-- `compile` derive step (decomposed bridge lemma). -/
 theorem pyashGF_compile_derive_step :
@@ -595,6 +787,65 @@ theorem pyashGF_translation_clause_closure_bridge :
     (PyashCoreReducesStar.single pyashGF_translation_clause_dispatch_bridge).trans
       ((PyashCoreReducesStar.single pyashGF_translation_dispatch_step).trans
         (PyashCoreReducesStar.single pyashGF_translation_run_step))
+
+/-- Multi-step closure bridge: GF write/do reaches focused done state. -/
+theorem pyashGF_write_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFWriteDoClause)
+      pyashStateWriteDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_write_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_write_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_write_run_step))
+
+/-- Multi-step closure bridge: GF say/do reaches focused done state. -/
+theorem pyashGF_say_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFSayDoClause)
+      pyashStateSayDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_say_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_say_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_say_run_step))
+
+/-- Multi-step closure bridge: GF map/do reaches focused done state. -/
+theorem pyashGF_map_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFMapDoClause)
+      pyashStateMapDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_map_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_map_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_map_run_step))
+
+/-- Multi-step closure bridge: GF map/def reaches focused done state. -/
+theorem pyashGF_map_def_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFMapDefClause)
+      pyashStateMapDefDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_map_def_clause_dispatch_bridge).trans
+      (PyashCoreReducesStar.single pyashGF_map_def_dispatch_step)
+
+/-- Multi-step closure bridge: GF command/do reaches focused done state. -/
+theorem pyashGF_command_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFCommandDoClause)
+      pyashStateCommandDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_command_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_command_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_command_run_step))
+
+/-- Multi-step closure bridge: GF search/do reaches focused done state. -/
+theorem pyashGF_search_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFSearchDoClause)
+      pyashStateSearchDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_search_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_search_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_search_run_step))
 
 /-- Bridge claim 5 (OSLF): GF chip/do clause reaches the PyashCore chip dispatch stage. -/
 theorem pyashGF_chip_clause_dispatch_bridge :
@@ -1017,6 +1268,12 @@ theorem pyashGF_read_clause_diamond_bridge :
 /-- Constructor-grounded GF canary patterns (single source of truth = Lean `Pattern` states). -/
 def pyashGFCanaryCasePatterns : List (String × Pattern × Pattern) :=
   [ ("pyash_gf_read_do", pyashStateReadDerive, pyashStateReadDoneOk)
+  , ("pyash_gf_write_do", pyashStateWriteDerive, pyashStateWriteDoneOk)
+  , ("pyash_gf_say_do", pyashStateSayDerive, pyashStateSayDoneOk)
+  , ("pyash_gf_map_do", pyashStateMapDerive, pyashStateMapDoneOk)
+  , ("pyash_gf_map_def", pyashStateMapDefDerive, pyashStateMapDefDoneOk)
+  , ("pyash_gf_command_do", pyashStateCommandDerive, pyashStateCommandDoneOk)
+  , ("pyash_gf_search_do", pyashStateSearchDerive, pyashStateSearchDoneOk)
   , ("pyash_gf_mind_do", pyashStateMindDerive, pyashStateMindDoneOk)
   , ("pyash_gf_read_then_err_dispatch", pyashStateDispatchThenError, pyashStateDoneDispatchErr)
   , ("pyash_gf_configure_then_err_dispatch", pyashStateConfigureThenError, pyashStateConfigureThenDoneDispatchErr)

@@ -2,6 +2,7 @@ import Mettapedia.Logic.PLNFirstOrder.QuantifierCanary
 import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSemantics
 import Mettapedia.Logic.PLNFirstOrder.FuzzyITVBridge
 import Mettapedia.Logic.PLNFirstOrder.Chapter11Examples
+import Mettapedia.Logic.PLNFirstOrder.FuzzySyllogismCanary
 
 /-!
 # Chapter 11 Regression Target

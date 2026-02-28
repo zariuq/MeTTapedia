@@ -34,6 +34,8 @@ private def system_N := regN "system"
 private def interface_N := regN "interface"
 private def relation_N := regN "relation"
 private def engine_N := regN "engine"
+private def bridge_N := regN "bridge"
+private def corollary_N := regN "corollary"
 private def operator_N := regN "operator"
 private def checker_N := regN "checker"
 private def semantics_N := regN "semantics"
@@ -68,6 +70,19 @@ private def surface_N := regN "surface"
 private def tracker_N := regN "tracker"
 private def scope_N := regN "scope"
 private def parity_N := regN "parity"
+private def overview_N := regN "overview"
+private def usage_N := regN "usage"
+private def point_N := regN "point"
+private def client_N := regN "client"
+private def workflow_N := regN "workflow"
+private def note_N := regN "note"
+private def status_N := regN "status"
+private def api_N := regN "API"
+private def example_N := regN "example"
+private def level_N := regN "level"
+private def component_N := regN "component"
+private def limit_N := regN "limit"
+private def sketch_N := regN "sketch"
 
 private def into_Prep : EnglishPrep := mkPrep "into"
 private def on_top_of_Prep : EnglishPrep := mkPrep "on top of"
@@ -101,8 +116,12 @@ inductive OSLFClaim where
   | langDiamondAndLangBoxDeriveModalOperators
   | langGaloisUsingProvesAdjunction
   | langOSLFPackagesDerivedTypeSystem
+  | declReducesIsSoundnessCompletenessBridge
+  | declReducesIsExecutableDeclarativeBridge
   | checkLangUsingProvidesExecutableChecker
   | checkerSoundnessConnectsToSemantics
+  | formulaLayerHasCheckerSoundnessBridges
+  | formulaLayerHasGraphObjectCorollaries
   | workflowEndsWithInstanceFileAndEndToEndTheorems
   -- Synthesis pipeline
   | coreDerivePath
@@ -343,6 +362,20 @@ def renderOSLFClaim : OSLFClaim → String
           (linAdjCN (linPositA (compoundA "type")) (linUseN system_N)))
       mkPresPos subj (complV2 (mkV2 (regV "package")) objNP)
 
+  -- "`...DeclReducesWithPremises.lean` is a soundness-completeness bridge"
+  | .declReducesIsSoundnessCompletenessBridge =>
+      let subj := properNameNP "`Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean`"
+      let complement := linDetCN aIndefArt
+        (linAdjCN (linPositA (compoundA "soundness-completeness")) (linUseN bridge_N))
+      mkPresPos subj (copulaNP complement)
+
+  -- "`...DeclReducesWithPremises.lean` is an executable-declarative bridge"
+  | .declReducesIsExecutableDeclarativeBridge =>
+      let subj := properNameNP "`Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean`"
+      let complement := linDetCN aIndefArt
+        (linAdjCN (linPositA (compoundA "executable-declarative")) (linUseN bridge_N))
+      mkPresPos subj (copulaNP complement)
+
   -- "`checkLangUsing` provides an executable checker"
   | .checkLangUsingProvidesExecutableChecker =>
       let subj := properNameNP "`checkLangUsing`"
@@ -359,6 +392,24 @@ def renderOSLFClaim : OSLFClaim → String
         (complV2 (mkV2 (regV "connect")) objNP)
         (ppAdv to_Prep (linMassNP (linUseN semantics_N)))
       capitalizeFirst <| mkPresPos subj vp
+
+  -- "`.../Formula.lean` includes checker-soundness bridges"
+  | .formulaLayerHasCheckerSoundnessBridges =>
+      let subj := properNameNP "`Mettapedia/OSLF/Formula.lean`"
+      let objNP := linMassPluralNP
+        (linAdjCN (linPositA (compoundA "checker-soundness")) (linUseN bridge_N))
+      mkPresPos subj (complV2 (mkV2 (regV "include")) objNP)
+
+  -- "`.../Formula.lean` includes graph-object checker corollaries for .dia and .box"
+  | .formulaLayerHasGraphObjectCorollaries =>
+      let subj := properNameNP "`Mettapedia/OSLF/Formula.lean`"
+      let objNP := linMassPluralNP
+        (linAdjCN (linPositA (compoundA "graph-object"))
+          (linAdjCN (linPositA (regA "checker")) (linUseN corollary_N)))
+      let vp := advVP
+        (complV2 (mkV2 (regV "include")) objNP)
+        (ppAdv for_Prep (linConjNP and_Conj [properNameNP ".dia", properNameNP ".box"]))
+      mkPresPos subj vp
 
   -- "The workflow ends with an instance file and end-to-end theorems"
   | .workflowEndsWithInstanceFileAndEndToEndTheorems =>
@@ -620,20 +671,22 @@ private def claimBullet (c : OSLFClaim) : ClaimBullet :=
 private def canonicalApiItems : List ApiItem :=
   [ { path := "Mettapedia/OSLF/Framework/TypeSynthesis.lean"
       members := [ "langRewriteSystemUsing"
-                 , "langDiamondUsing, langBoxUsing"
+                 , "langDiamondUsing"
+                 , "langBoxUsing"
                  , "langGaloisUsing"
                  , "langOSLF"
                  ] }
   , { path := "Mettapedia/OSLF/Formula.lean"
-      members := [ "OSLFFormula, sem, checkLangUsing" ] }
+      members := [ "OSLFFormula", "sem", "checkLangUsing" ] }
   , { path := "Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean"
-      members := [ "soundness/completeness bridge" ] }
+      members := [] }
   ]
 
 private def synthPathApiItems : List ApiItem :=
   [ { path := "Mettapedia/OSLF/Framework/TypeSynthesis.lean"
       members := [ "langRewriteSystemUsing"
-                 , "langDiamondUsing, langBoxUsing"
+                 , "langDiamondUsing"
+                 , "langBoxUsing"
                  , "langGaloisUsing"
                  , "langOSLF"
                  ] }
@@ -641,45 +694,66 @@ private def synthPathApiItems : List ApiItem :=
 
 private def premiseAwareApiItems : List ApiItem :=
   [ { path := "Mettapedia/OSLF/MeTTaIL/Syntax.lean"
-      members := [ "Premise, RewriteRule, LanguageDef" ] }
+      members := [ "Premise", "RewriteRule", "LanguageDef" ] }
   , { path := "Mettapedia/OSLF/MeTTaIL/Engine.lean"
       members := [ "RelationEnv"
                  , "applyRuleWithPremisesUsing"
                  , "rewriteWithContextWithPremisesUsing"
                  ] }
   , { path := "Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean"
-      members := [ "executable/declarative bridge" ] }
+      members := [] }
   ]
 
 private def formulaApiItems : List ApiItem :=
   [ { path := "Mettapedia/OSLF/Formula.lean"
-      members := [ "OSLFFormula, sem, checkLangUsing"
-                 , "checker-soundness bridges"
-                 , "graph-object checker corollaries for .dia and .box"
-                 ] }
+      members := [ "OSLFFormula", "sem", "checkLangUsing" ] }
   ]
 
 private def nttEndpointApiItems : List ApiItem :=
   [ { path := "Construction.lean"
-      members := [ "NatType, piType, sigmaType, TheoryMorphism" ] }
+      members := [ "NatType", "piType", "sigmaType", "TheoryMorphism" ] }
   , { path := "CodomainFibration.lean"
-      members := [ "Prop 12, Prop 14, Prop 17, Def 21, Sec 4, Thm 23" ] }
+      members := [ "Prop 12", "Prop 14", "Prop 17", "Def 21", "Sec 4", "Thm 23" ] }
   , { path := "Mettapedia/OSLF/Framework/NTTClaimTracker.lean"
       members := [ "AssumptionNecessity.types_nonempty_necessary_for_piSigma" ] }
   ]
 
 private def mettaSyntaxItems : List SyntaxItem :=
-  [ { label := "State syntax", pattern := "\"<\" instr \"|\" space \"|\" out \">\"" }
-  , { label := "Instruction syntax", pattern := "eval(src), unify(lhs,rhs), type-of(atom,ty), cast(atom,ty)" }
-  , { label := "Grounded operations", pattern := "grounded1(op,arg), grounded2(op,lhs,rhs)" }
-  , { label := "Atom constructors", pattern := "true, false, gint(token), gstring(token)" }
+  [ { label := "State syntax"
+      pattern := .seq
+        [ .quoted "<", .ident "instr", .quoted "|", .ident "space"
+        , .quoted "|", .ident "out", .quoted ">"
+        ] " " }
+  , { label := "Instruction syntax"
+      pattern := .seq
+        [ .call "eval" [.ident "src"]
+        , .call "unify" [.ident "lhs", .ident "rhs"]
+        , .call "type-of" [.ident "atom", .ident "ty"]
+        , .call "cast" [.ident "atom", .ident "ty"]
+        ] ", " }
+  , { label := "Grounded operations"
+      pattern := .seq
+        [ .call "grounded1" [.ident "op", .ident "arg"]
+        , .call "grounded2" [.ident "op", .ident "lhs", .ident "rhs"]
+        ] ", " }
+  , { label := "Atom constructors"
+      pattern := .seq
+        [ .ident "true"
+        , .ident "false"
+        , .call "gint" [.ident "token"]
+        , .call "gstring" [.ident "token"]
+        ] ", " }
   ]
 
 private def workflowSyntaxItems : List SyntaxItem :=
-  [ { label := "LanguageDef", pattern := "types, terms, rewrites, Premise" }
-  , { label := "RelationEnv", pattern := "if needed" }
-  , { label := "langOSLF", pattern := "instantiation" }
-  , { label := "checkLangUsing", pattern := "plus soundness bridges" }
+  [ { label := "LanguageDef"
+      pattern := .seq [.ident "types", .ident "terms", .ident "rewrites", .ident "Premise"] ", " }
+  , { label := "RelationEnv"
+      pattern := .seq [.ident "if", .ident "needed"] " " }
+  , { label := "langOSLF"
+      pattern := .ident "instantiation" }
+  , { label := "checkLangUsing"
+      pattern := .seq [.ident "plus", .ident "soundness", .ident "bridges"] " " }
   ]
 
 private def startingPathItems : List PathItem :=
@@ -724,9 +798,155 @@ private def roundtripScriptPathItems : List PathItem :=
   , { path := "scripts/roundtrip_mettaminimal.sh" }
   ]
 
+inductive OSLFHeading where
+  | title
+  | whatOSLFIs
+  | surveyEndToEnd
+  | useOSLFInLean
+  | minimalPathSketch
+  | canonicalAPIs
+  | startingPoints
+  | beginnerPaths
+  | whatOSLFIsNotLocal
+  | paperLiteratureBoundary
+  | mettaSlice
+  | examplesFromDefinition
+  | positiveExample
+  | negativeExample
+  | sameExampleLeanLevel
+  | currentEntryPoints
+  | whatIsImplemented
+  | languageDefToTypeSystem
+  | premiseAwareOperationalSemantics
+  | formulaLayerCheckerSoundness
+  | nativeTypeEndpoints
+  | presheafToposLiftStatus
+  | concreteClients
+  | practicalWorkflow
+  | build
+  | notes
+  | whatOSLFIsNotFinal
+  | leanRustRoundtripStatus
+  deriving Repr, DecidableEq, BEq
+
+private def headingNP (cn : EnglishCN) : String :=
+  capitalizeFirst <| (linMassNP cn).s (.NCase .Nom)
+
+private def headingPlNP (cn : EnglishCN) : String :=
+  capitalizeFirst <| (linMassPluralNP cn).s (.NCase .Nom)
+
+private def headingFromClaim (c : OSLFClaim) : String :=
+  capitalizeFirst <| stripTerminalPeriod (renderOSLFClaim c)
+
+def renderOSLFHeading : OSLFHeading → String
+  | .title =>
+      headingNP (linAdjCN (linPositA (regA "OSLF")) (linUseN overview_N))
+  | .whatOSLFIs =>
+      headingFromClaim .oslfIsConstruction
+  | .surveyEndToEnd =>
+      headingNP (linAdjCN (linPositA (compoundA "end-to-end")) (linUseN (regN "survey")))
+  | .useOSLFInLean =>
+      headingNP (linAdvCN (linAdjCN (linPositA (regA "OSLF")) (linUseN usage_N))
+        (ppAdv in_Prep (properNameNP "Lean")))
+  | .minimalPathSketch =>
+      headingNP (linAdjCN (linPositA (regA "minimal"))
+        (linAdjCN (linPositA (regA "path")) (linUseN sketch_N)))
+  | .canonicalAPIs =>
+      headingPlNP (linAdjCN (linPositA (regA "canonical")) (linUseN api_N))
+  | .startingPoints =>
+      headingPlNP (linAdjCN (linPositA (regA "starting")) (linUseN point_N))
+  | .beginnerPaths =>
+      headingPlNP (linAdjCN (linPositA (regA "beginner")) (linUseN path_N))
+  | .whatOSLFIsNotLocal =>
+      headingNP (linAdjCN (linPositA (regA "OSLF")) (linUseN limit_N))
+  | .paperLiteratureBoundary =>
+      headingNP (linAdjCN (linPositA (compoundA "paper/literature"))
+        (linAdjCN (linPositA (regA "alignment")) (linUseN boundary_N)))
+  | .mettaSlice =>
+      headingNP (linAdjCN (linPositA (regA "MeTTa"))
+        (linAdjCN (linPositA (compoundA "spec-facing")) (linUseN slice_N)))
+  | .examplesFromDefinition =>
+      headingPlNP (linAdvCN (linUseN example_N)
+        (ppAdv from_Prep (linDetCN theDefArt (linUseN (regN "definition")))))
+  | .positiveExample =>
+      headingNP (linAdjCN (linPositA (regA "positive")) (linUseN example_N))
+  | .negativeExample =>
+      headingNP (linAdjCN (linPositA (regA "negative")) (linUseN example_N))
+  | .sameExampleLeanLevel =>
+      headingNP (linAdvCN
+        (linAdjCN (linPositA (regA "same")) (linUseN example_N))
+        (ppAdv at_Prep (linDetCN theDefArt
+          (linAdjCN (linPositA (regA "Lean")) (linUseN level_N)))))
+  | .currentEntryPoints =>
+      headingNP (linAdjCN (linPositA (regA "current"))
+        (linAdjCN (linPositA (regA "entry")) (linUseN point_N)))
+  | .whatIsImplemented =>
+      headingPlNP (linAdjCN (linPositA (regA "implemented")) (linUseN component_N))
+  | .languageDefToTypeSystem =>
+      capitalizeFirst <| stripTerminalPeriod <|
+        mkPresPos (properNameNP "LanguageDef")
+          (complV2 (mkV2 (regV "derive"))
+            (properNameNP "RewriteSystem and OSLFTypeSystem"))
+  | .premiseAwareOperationalSemantics =>
+      headingNP (linAdjCN (linPositA (compoundA "premise-aware"))
+        (linAdjCN (linPositA (regA "operational")) (linUseN semantics_N)))
+  | .formulaLayerCheckerSoundness =>
+      headingNP (linAdjCN (linPositA (compoundA "formula-layer"))
+        (linAdjCN (linPositA (compoundA "checker-soundness")) (linUseN status_N)))
+  | .nativeTypeEndpoints =>
+      headingPlNP (linAdjCN (linPositA (compoundA "native-type")) (linUseN (regN "endpoint")))
+  | .presheafToposLiftStatus =>
+      headingNP (linAdjCN (linPositA (compoundA "presheaf/topos-lift")) (linUseN status_N))
+  | .concreteClients =>
+      headingPlNP (linAdjCN (linPositA (regA "concrete")) (linUseN client_N))
+  | .practicalWorkflow =>
+      headingNP (linAdjCN (linPositA (regA "practical")) (linUseN workflow_N))
+  | .build =>
+      headingNP (linUseN (regN "build"))
+  | .notes =>
+      headingPlNP (linUseN note_N)
+  | .whatOSLFIsNotFinal =>
+      headingNP (linAdjCN (linPositA (regA "OSLF")) (linUseN limit_N))
+  | .leanRustRoundtripStatus =>
+      headingNP (linAdjCN (linPositA (compoundA "Lean-Rust-roundtrip")) (linUseN status_N))
+
+def allOSLFHeadings : List OSLFHeading :=
+  [ .title
+  , .whatOSLFIs
+  , .surveyEndToEnd
+  , .useOSLFInLean
+  , .minimalPathSketch
+  , .canonicalAPIs
+  , .startingPoints
+  , .beginnerPaths
+  , .whatOSLFIsNotLocal
+  , .paperLiteratureBoundary
+  , .mettaSlice
+  , .examplesFromDefinition
+  , .positiveExample
+  , .negativeExample
+  , .sameExampleLeanLevel
+  , .currentEntryPoints
+  , .whatIsImplemented
+  , .languageDefToTypeSystem
+  , .premiseAwareOperationalSemantics
+  , .formulaLayerCheckerSoundness
+  , .nativeTypeEndpoints
+  , .presheafToposLiftStatus
+  , .concreteClients
+  , .practicalWorkflow
+  , .build
+  , .notes
+  , .whatOSLFIsNotFinal
+  , .leanRustRoundtripStatus
+  ]
+
+def parseOSLFHeadingLine? (line : String) : Option OSLFHeading :=
+  allOSLFHeadings.find? (fun h => renderOSLFHeading h = line)
+
 def oslfReadmeBlocks : List ReadmeBlock :=
   [ -- # OSLF in Mettapedia
-    .heading 1 "OSLF in Mettapedia"
+    .heading 1 (renderOSLFHeading .title)
 
     -- Intro paragraph
   , .paragraph
@@ -738,7 +958,7 @@ def oslfReadmeBlocks : List ReadmeBlock :=
       ]
 
     -- ## What OSLF Is
-  , .heading 2 "What OSLF Is"
+  , .heading 2 (renderOSLFHeading .whatOSLFIs)
 
   , .paragraph [renderOSLFClaim .oslfIsConstruction]
 
@@ -757,7 +977,7 @@ def oslfReadmeBlocks : List ReadmeBlock :=
       , renderOSLFClaim .adHocProofsDoNotGroundInterface
       ]
 
-  , .heading 3 "Survey (end-to-end)"
+  , .heading 3 (renderOSLFHeading .surveyEndToEnd)
 
   , .paragraph
       [ renderOSLFClaim .relationEnvMayBeNeededForPremiseEvaluation
@@ -770,9 +990,9 @@ def oslfReadmeBlocks : List ReadmeBlock :=
       ]
 
     -- ## How To Use OSLF in Lean
-  , .heading 2 "How To Use OSLF in Lean"
+  , .heading 2 (renderOSLFHeading .useOSLFInLean)
 
-  , .heading 3 "Minimal path (sketch)"
+  , .heading 3 (renderOSLFHeading .minimalPathSketch)
 
   , .codeBlock "lean"
       ("import Mettapedia.OSLF.CoreMain\n" ++
@@ -784,41 +1004,43 @@ def oslfReadmeBlocks : List ReadmeBlock :=
        "-- 3) Use langOSLF to derive the type system and modal operators.\n" ++
        "-- 4) Use Formula.sem and checkLangUsing for properties.")
 
-  , .heading 3 "Canonical APIs"
+  , .heading 3 (renderOSLFHeading .canonicalAPIs)
   , .apiItems canonicalApiItems
+  , .claimBullets
+      [ claimBullet .declReducesIsSoundnessCompletenessBridge ]
 
-  , .heading 3 "Starting points"
+  , .heading 3 (renderOSLFHeading .startingPoints)
   , .pathItems startingPathItems
 
-  , .heading 3 "Beginner paths"
+  , .heading 3 (renderOSLFHeading .beginnerPaths)
   , .pathItems beginnerPathItems
 
-  , .heading 3 "What OSLF is not"
+  , .heading 3 (renderOSLFHeading .whatOSLFIsNotLocal)
   , .claimBullets
       [ claimBullet .isNotGlobalDecidabilityClaim
       , claimBullet .isNotFullMettainterpreterOrParser
       , claimBullet .doesNotPromiseUniversalPremiseComputability
       ]
 
-  , .heading 3 "Paper/literature alignment boundary"
+  , .heading 3 (renderOSLFHeading .paperLiteratureBoundary)
   , .pathItems paperBoundaryPathItems
 
     -- ## MeTTa Slice
-  , .heading 2 "MeTTa Slice (Spec-Facing, Pretty-Printed Syntax)"
+  , .heading 2 (renderOSLFHeading .mettaSlice)
 
   , .paragraph [renderOSLFClaim .specFacingSliceUsesFullLanguageDefFile]
 
   , .paragraph [renderOSLFClaim .usesExplicitSyntaxPatterns]
-  , .heading 3 "Examples from the definition"
+  , .heading 3 (renderOSLFHeading .examplesFromDefinition)
   , .syntaxItems mettaSyntaxItems
-  , .heading 3 "Positive example"
+  , .heading 3 (renderOSLFHeading .positiveExample)
   , .codeBlock ""
       "< eval(true) | space(nil, nil) | false >"
-  , .heading 3 "Negative example"
+  , .heading 3 (renderOSLFHeading .negativeExample)
   , .codeBlock ""
       "< eval(true) | true | false >"
 
-  , .heading 3 "Same example at the Lean level"
+  , .heading 3 (renderOSLFHeading .sameExampleLeanLevel)
 
   , .codeBlock "lean"
       ("import Mettapedia.OSLF.MeTTaCore.FullLanguageDef\n" ++
@@ -836,32 +1058,38 @@ def oslfReadmeBlocks : List ReadmeBlock :=
   , .paragraph [renderOSLFClaim .engineAndSynthesisPipelineUseCanonicalRepresentation]
 
     -- ## Current Entry Points
-  , .heading 2 "Current Entry Points"
+  , .heading 2 (renderOSLFHeading .currentEntryPoints)
 
   , .pathItems currentEntryPointPathItems
 
     -- ## What Is Implemented
-  , .heading 2 "What Is Implemented"
+  , .heading 2 (renderOSLFHeading .whatIsImplemented)
 
     -- ### 1) LanguageDef → RewriteSystem → OSLFTypeSystem
-  , .heading 3 "1) LanguageDef → RewriteSystem → OSLFTypeSystem"
+  , .heading 3 (renderOSLFHeading .languageDefToTypeSystem)
 
   , .apiItems synthPathApiItems
 
   , .paragraph [renderOSLFClaim .coreDerivePath]
 
     -- ### 2) Premise-Aware Operational Semantics
-  , .heading 3 "2) Premise-Aware Operational Semantics"
+  , .heading 3 (renderOSLFHeading .premiseAwareOperationalSemantics)
 
   , .apiItems premiseAwareApiItems
+  , .claimBullets
+      [ claimBullet .declReducesIsExecutableDeclarativeBridge ]
 
     -- ### 3) Formula Layer + Checker Soundness
-  , .heading 3 "3) Formula Layer + Checker Soundness"
+  , .heading 3 (renderOSLFHeading .formulaLayerCheckerSoundness)
 
   , .apiItems formulaApiItems
+  , .claimBullets
+      [ claimBullet .formulaLayerHasCheckerSoundnessBridges
+      , claimBullet .formulaLayerHasGraphObjectCorollaries
+      ]
 
     -- ### 4) Native Type Theory (NTT) Endpoints
-  , .heading 3 "4) Native Type Theory (NTT) Endpoints"
+  , .heading 3 (renderOSLFHeading .nativeTypeEndpoints)
 
   , .paragraph
       [ renderOSLFClaim .nttClaimSurfaceIsFormalizedInNativeType
@@ -872,23 +1100,23 @@ def oslfReadmeBlocks : List ReadmeBlock :=
   , .apiItems nttEndpointApiItems
 
     -- ### 5) Presheaf/Topos Lift Integration Status
-  , .heading 3 "5) Presheaf/Topos Lift Integration Status"
+  , .heading 3 (renderOSLFHeading .presheafToposLiftStatus)
 
   , .pathItems [{ path := "Mettapedia/OSLF/Framework/FULLStatus.lean" }]
 
     -- ### 6) Concrete Clients
-  , .heading 3 "6) Concrete Clients"
+  , .heading 3 (renderOSLFHeading .concreteClients)
 
   , .pathItems concreteClientPathItems
 
     -- ## Practical Workflow
-  , .heading 2 "Practical Workflow"
+  , .heading 2 (renderOSLFHeading .practicalWorkflow)
 
   , .syntaxItems workflowSyntaxItems
   , .claimBullets [claimBullet .workflowEndsWithInstanceFileAndEndToEndTheorems]
 
     -- ## Build
-  , .heading 2 "Build"
+  , .heading 2 (renderOSLFHeading .build)
 
   , .codeBlock "bash"
       ("cd lean-projects/mettapedia\n" ++
@@ -896,7 +1124,7 @@ def oslfReadmeBlocks : List ReadmeBlock :=
        "lake build Mettapedia.OSLF.Main")
 
     -- ## Notes
-  , .heading 2 "Notes"
+  , .heading 2 (renderOSLFHeading .notes)
 
   , .claimBullets
       [ claimBullet .coreMainIsRecommendedTarget
@@ -907,7 +1135,7 @@ def oslfReadmeBlocks : List ReadmeBlock :=
   , .pathItems processCalculusPathItems
 
     -- ## What OSLF Is Not
-  , .heading 2 "What OSLF Is Not"
+  , .heading 2 (renderOSLFHeading .whatOSLFIsNotFinal)
 
   , .claimBullets
       [ claimBullet .isNotParserOrStandard
@@ -916,7 +1144,7 @@ def oslfReadmeBlocks : List ReadmeBlock :=
       ]
 
     -- ## Lean ↔ Rust Roundtrip Status
-  , .heading 2 "Lean ↔ Rust Roundtrip Status"
+  , .heading 2 (renderOSLFHeading .leanRustRoundtripStatus)
 
   , .paragraph [renderOSLFClaim .validatedRoundtripScripts]
   , .pathItems roundtripScriptPathItems
@@ -1001,8 +1229,12 @@ def allOSLFClaims : List OSLFClaim :=
   , .langDiamondAndLangBoxDeriveModalOperators
   , .langGaloisUsingProvesAdjunction
   , .langOSLFPackagesDerivedTypeSystem
+  , .declReducesIsSoundnessCompletenessBridge
+  , .declReducesIsExecutableDeclarativeBridge
   , .checkLangUsingProvidesExecutableChecker
   , .checkerSoundnessConnectsToSemantics
+  , .formulaLayerHasCheckerSoundnessBridges
+  , .formulaLayerHasGraphObjectCorollaries
   , .workflowEndsWithInstanceFileAndEndToEndTheorems
   , .coreDerivePath
   , .specFacingSliceUsesFullLanguageDefFile
@@ -1035,7 +1267,7 @@ def parseOSLFClaimLine? (line : String) : Option OSLFClaim :=
 inductive ParsedOSLFStructuredLine where
   | technical (line : ParsedTechnicalLine)
   | claimBullet (claim : OSLFClaim)
-  deriving Repr, DecidableEq
+  deriving Repr
 
 def parseSelectedStructuredOSLFLine? (line : String) : Option ParsedOSLFStructuredLine :=
   match parseTechnicalLine? oslfReadmeBlocks line with
@@ -1053,11 +1285,26 @@ def selectedStructuredOSLFLines : List String :=
   claimBulletLines oslfReadmeBlocks
 
 def oslfHardAuditPasses : Bool :=
-  oslfReadmeBlocks.all (blockPassesHardAudit parseOSLFClaimLine?)
+  oslfReadmeBlocks.all (blockPassesHardAuditWith parseOSLFClaimLine? parseOSLFHeadingLine?)
 
 theorem oslf_hard_audit :
     oslfHardAuditPasses = true := by
   native_decide
+
+def oslfHeadingImageCheck : Bool :=
+  headingRenderImageCheck parseOSLFHeadingLine? renderOSLFHeading oslfReadmeBlocks
+
+theorem oslf_heading_images :
+    oslfHeadingImageCheck = true := by
+  native_decide
+
+theorem oslf_heading_image_witness
+    {lvl : Nat} {txt : String}
+    (hMem : (lvl, txt) ∈ headingEntries oslfReadmeBlocks) :
+    ∃ h, parseOSLFHeadingLine? txt = some h ∧ renderOSLFHeading h = txt := by
+  exact headingRenderImageWitness
+    parseOSLFHeadingLine? renderOSLFHeading oslfReadmeBlocks
+    oslf_heading_images hMem
 
 private def insertSurfaceBucket (acc : List (String × List OSLFClaim)) (surface : String) (c : OSLFClaim) :
     List (String × List OSLFClaim) :=
@@ -1093,7 +1340,10 @@ def ambiguousClaimSurfaces : List (String × List OSLFClaim) :=
 
 #eval
   let fails := selectedStructuredOSLFLines.filter
-    (fun line => parseSelectedStructuredOSLFLine? line = none)
+    (fun line =>
+      match parseSelectedStructuredOSLFLine? line with
+      | none => true
+      | _ => false)
   if fails.isEmpty then
     "OSLF parse-back check: selected headings + bullet families roundtrip"
   else

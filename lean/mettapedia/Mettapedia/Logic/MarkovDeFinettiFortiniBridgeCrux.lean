@@ -1120,21 +1120,26 @@ theorem crossAnchorProductIdentity_of_rowKernelData
     (hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs)) :
     CrossAnchorProductIdentity (k := k) P rowKernel := by
   have hstepData :
-      ∃ hconst :
-          ∀ a b : Fin k, StartRowSuccessorConstancy (k := k) P a a b,
-        ∃ hrow_restrict :
+      ∃ hperm :
+          ∀ (i a b : Fin k) (σ : Equiv.Perm ℕ) (n : ℕ),
+            P ({ω : ℕ → Fin k | ω 0 = a} ∩
+                rowSuccessorValueEvent (k := k) i (σ n) b)
+              =
+            P ({ω : ℕ → Fin k | ω 0 = a} ∩
+                rowSuccessorValueEvent (k := k) i n b),
+        ∃ hrow_restrict_data :
           ∀ (i a : Fin k), ∀ (m : ℕ) (sel : Fin m → ℕ), StrictMono sel →
             Measure.map (fun r : ℕ → Fin k => fun j : Fin m => r (sel j))
                 (rowProcessLaw (k := k) (P.restrict {ω : ℕ → Fin k | ω 0 = a}) i)
               =
             (rowProcessLaw (k := k) (P.restrict {ω : ℕ → Fin k | ω 0 = a}) i).bind
               (fun r => Measure.pi (fun _ : Fin m => (rowKernel i r : Measure (Fin k)))),
-        ∃ hPi_restrict :
-            ∀ (i a : Fin k),
+        ∃ hPi :
+            ∀ i : Fin k,
               AEMeasurable
                 (fun r : ℕ → Fin k =>
                   Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) (P.restrict {ω : ℕ → Fin k | ω 0 = a}) i),
+                (rowProcessLaw (k := k) P i),
           (∀ (a b c : Fin k) (xs : List (Fin k)),
             P (MarkovDeFinettiRecurrence.cylinder (k := k) (b :: c :: xs)) =
               ∫⁻ ω,
@@ -1146,12 +1151,34 @@ theorem crossAnchorProductIdentity_of_rowKernelData
                 (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: c :: xs)
                   else 0) ∂P) := by
     -- Remaining Fortini crux:
-    -- (1) derive start-conditioned constancy (`hconst`),
-    -- (2) derive start-restricted row finite-dimensional laws (`hrow_restrict`),
-    -- (3) derive Fin1 bind applicability (`hPi_restrict`),
+    -- (1) derive start-conditioned permutation invariance (`hperm`),
+    -- (2) derive start-restricted row finite-dimensional laws (`hrow_restrict_data`),
+    -- (3) derive global Fin1 pi-measurability (`hPi`),
     -- (4) derive the cons-step recursion for longer prefixes.
     sorry
-  rcases hstepData with ⟨hconst, hrow_restrict, hPi_restrict, hstep⟩
+  rcases hstepData with ⟨hperm, hrow_restrict_data, hPi, hstep⟩
+  have hconstAll :
+      ∀ (i a b : Fin k), StartRowSuccessorConstancy (k := k) P i a b :=
+    start_constancy_of_rowKernelData (k := k) μ hμ P hExt hperm
+  have hconst :
+      ∀ a b : Fin k, StartRowSuccessorConstancy (k := k) P a a b := by
+    intro a b
+    exact hconstAll a a b
+  have hrow_restrict :
+      ∀ (i a : Fin k), ∀ (m : ℕ) (sel : Fin m → ℕ), StrictMono sel →
+        Measure.map (fun r : ℕ → Fin k => fun j : Fin m => r (sel j))
+            (rowProcessLaw (k := k) (P.restrict {ω : ℕ → Fin k | ω 0 = a}) i)
+          =
+        (rowProcessLaw (k := k) (P.restrict {ω : ℕ → Fin k | ω 0 = a}) i).bind
+          (fun r => Measure.pi (fun _ : Fin m => (rowKernel i r : Measure (Fin k)))) :=
+    hrow_restrict_of_rowKernelData (k := k) P rowKernel hrow_restrict_data
+  have hPi_restrict :
+      ∀ (i a : Fin k),
+        AEMeasurable
+          (fun r : ℕ → Fin k =>
+            Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+          (rowProcessLaw (k := k) (P.restrict {ω : ℕ → Fin k | ω 0 = a}) i) :=
+    hPi_restrict_of_hPi (k := k) P rowKernel hPi
   have hpair :
       ∀ a b : Fin k,
         P (MarkovDeFinettiRecurrence.cylinder (k := k) [a, b]) =

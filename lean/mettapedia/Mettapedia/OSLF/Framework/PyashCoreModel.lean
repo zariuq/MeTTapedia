@@ -137,6 +137,16 @@ def pyashCore : LanguageDef := {
       syntaxPattern := [.terminal "plus"] },
     { label := "VRead", category := "Verb", params := [],
       syntaxPattern := [.terminal "read"] },
+    { label := "VWrite", category := "Verb", params := [],
+      syntaxPattern := [.terminal "write"] },
+    { label := "VSay", category := "Verb", params := [],
+      syntaxPattern := [.terminal "say"] },
+    { label := "VMap", category := "Verb", params := [],
+      syntaxPattern := [.terminal "map"] },
+    { label := "VCommand", category := "Verb", params := [],
+      syntaxPattern := [.terminal "command"] },
+    { label := "VSearch", category := "Verb", params := [],
+      syntaxPattern := [.terminal "search"] },
     { label := "VMind", category := "Verb", params := [],
       syntaxPattern := [.terminal "mind"] },
     { label := "VChip", category := "Verb", params := [],
@@ -465,6 +475,11 @@ def isPyashMood : Pattern → Prop
 def isPyashVerb : Pattern → Prop
   | .apply "VPlus" [] => True
   | .apply "VRead" [] => True
+  | .apply "VWrite" [] => True
+  | .apply "VSay" [] => True
+  | .apply "VMap" [] => True
+  | .apply "VCommand" [] => True
+  | .apply "VSearch" [] => True
   | .apply "VMind" [] => True
   | .apply "VChip" [] => True
   | .apply "VHear" [] => True
@@ -591,6 +606,59 @@ def pyashRoleTypesRead : Pattern :=
     .apply "RTCons" [
       .apply "RoleType" [.apply "From" [], .apply "TFilename" []],
       .apply "RTNil" []
+    ]
+  ]
+
+/-- Signature payload for `write`: payload text + destination filename. -/
+def pyashRoleTypesWrite : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Ob" [], .apply "TText" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "To" [], .apply "TFilename" []],
+      .apply "RTNil" []
+    ]
+  ]
+
+/-- Signature payload for `say`: payload text + destination filename. -/
+def pyashRoleTypesSay : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Ob" [], .apply "TText" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "To" [], .apply "TFilename" []],
+      .apply "RTNil" []
+    ]
+  ]
+
+/-- Signature payload for `map`: map name anchor. -/
+def pyashRoleTypesMap : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Su" [], .apply "TName" []],
+    .apply "RTNil" []
+  ]
+
+/-- Signature payload for `command`: command text + captured output text. -/
+def pyashRoleTypesCommand : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Ob" [], .apply "TText" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "To" [], .apply "TText" []],
+      .apply "RTNil" []
+    ]
+  ]
+
+/-- Signature payload for `search`: named output + query text + web selector + result limit. -/
+def pyashRoleTypesSearch : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Su" [], .apply "TName" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "Ob" [], .apply "TText" []],
+      .apply "RTCons" [
+        .apply "RoleType" [.apply "FromState" [], .apply "TWo" []],
+        .apply "RTCons" [
+          .apply "RoleType" [.apply "By" [], .apply "TNum" []],
+          .apply "RTNil" []
+        ]
+      ]
     ]
   ]
 
@@ -891,6 +959,213 @@ def pyashStateReadDoneOk : Pattern :=
     .apply "Done" [],
     .apply "SentenceCore" [.apply "MYa" [], .apply "VRead" [], pyashRoleTypesRead],
     .apply "Signature" [.apply "VRead" [], pyashRoleTypesRead],
+    .apply "Ok" []
+  ]
+
+/-- `write` state before signature derivation. -/
+def pyashStateWriteDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VWrite" [], pyashRoleTypesWrite],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `write` state after signature derivation. -/
+def pyashStateWriteDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VWrite" [], pyashRoleTypesWrite],
+    .apply "Signature" [.apply "VWrite" [], pyashRoleTypesWrite],
+    .apply "Ok" []
+  ]
+
+/-- `write` state after dispatch enters run phase. -/
+def pyashStateWriteRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VWrite" [], pyashRoleTypesWrite],
+    .apply "Signature" [.apply "VWrite" [], pyashRoleTypesWrite],
+    .apply "Ok" []
+  ]
+
+/-- `write` done state. -/
+def pyashStateWriteDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VWrite" [], pyashRoleTypesWrite],
+    .apply "Signature" [.apply "VWrite" [], pyashRoleTypesWrite],
+    .apply "Ok" []
+  ]
+
+/-- `say` state before signature derivation. -/
+def pyashStateSayDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VSay" [], pyashRoleTypesSay],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `say` state after signature derivation. -/
+def pyashStateSayDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VSay" [], pyashRoleTypesSay],
+    .apply "Signature" [.apply "VSay" [], pyashRoleTypesSay],
+    .apply "Ok" []
+  ]
+
+/-- `say` state after dispatch enters run phase. -/
+def pyashStateSayRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VSay" [], pyashRoleTypesSay],
+    .apply "Signature" [.apply "VSay" [], pyashRoleTypesSay],
+    .apply "Ok" []
+  ]
+
+/-- `say` done state. -/
+def pyashStateSayDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VSay" [], pyashRoleTypesSay],
+    .apply "Signature" [.apply "VSay" [], pyashRoleTypesSay],
+    .apply "Ok" []
+  ]
+
+/-- `map` state before signature derivation. -/
+def pyashStateMapDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VMap" [], pyashRoleTypesMap],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `map` state after signature derivation. -/
+def pyashStateMapDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VMap" [], pyashRoleTypesMap],
+    .apply "Signature" [.apply "VMap" [], pyashRoleTypesMap],
+    .apply "Ok" []
+  ]
+
+/-- `map` state after dispatch enters run phase. -/
+def pyashStateMapRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VMap" [], pyashRoleTypesMap],
+    .apply "Signature" [.apply "VMap" [], pyashRoleTypesMap],
+    .apply "Ok" []
+  ]
+
+/-- `map` done state. -/
+def pyashStateMapDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VMap" [], pyashRoleTypesMap],
+    .apply "Signature" [.apply "VMap" [], pyashRoleTypesMap],
+    .apply "Ok" []
+  ]
+
+/-- `map` (`def` mood) state before signature derivation. -/
+def pyashStateMapDefDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VMap" [], pyashRoleTypesMap],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `map` (`def` mood) state after signature derivation. -/
+def pyashStateMapDefDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VMap" [], pyashRoleTypesMap],
+    .apply "Signature" [.apply "VMap" [], pyashRoleTypesMap],
+    .apply "Ok" []
+  ]
+
+/-- `map` (`def` mood) terminal done state. -/
+def pyashStateMapDefDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VMap" [], pyashRoleTypesMap],
+    .apply "Signature" [.apply "VMap" [], pyashRoleTypesMap],
+    .apply "Ok" []
+  ]
+
+/-- `command` state before signature derivation. -/
+def pyashStateCommandDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VCommand" [], pyashRoleTypesCommand],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `command` state after signature derivation. -/
+def pyashStateCommandDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VCommand" [], pyashRoleTypesCommand],
+    .apply "Signature" [.apply "VCommand" [], pyashRoleTypesCommand],
+    .apply "Ok" []
+  ]
+
+/-- `command` state after dispatch enters run phase. -/
+def pyashStateCommandRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VCommand" [], pyashRoleTypesCommand],
+    .apply "Signature" [.apply "VCommand" [], pyashRoleTypesCommand],
+    .apply "Ok" []
+  ]
+
+/-- `command` done state. -/
+def pyashStateCommandDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VCommand" [], pyashRoleTypesCommand],
+    .apply "Signature" [.apply "VCommand" [], pyashRoleTypesCommand],
+    .apply "Ok" []
+  ]
+
+/-- `search` state before signature derivation. -/
+def pyashStateSearchDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VSearch" [], pyashRoleTypesSearch],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `search` state after signature derivation. -/
+def pyashStateSearchDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VSearch" [], pyashRoleTypesSearch],
+    .apply "Signature" [.apply "VSearch" [], pyashRoleTypesSearch],
+    .apply "Ok" []
+  ]
+
+/-- `search` state after dispatch enters run phase. -/
+def pyashStateSearchRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VSearch" [], pyashRoleTypesSearch],
+    .apply "Signature" [.apply "VSearch" [], pyashRoleTypesSearch],
+    .apply "Ok" []
+  ]
+
+/-- `search` done state. -/
+def pyashStateSearchDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VSearch" [], pyashRoleTypesSearch],
+    .apply "Signature" [.apply "VSearch" [], pyashRoleTypesSearch],
     .apply "Ok" []
   ]
 

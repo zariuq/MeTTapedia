@@ -166,6 +166,30 @@ theorem triangleFree_of_checker_false
     TriangleFree G :=
   cliqueFree_of_checker_false h
 
+/-- Version that accepts any `adj` extensionally equal to `decide (G.Adj ·  ·)`. -/
+theorem noKIndepSet_of_adj_checker_false
+    {n k : ℕ} {G : SimpleGraph (Fin n)} [DecidableRel G.Adj]
+    {adj : Fin n → Fin n → Bool}
+    (hadj : ∀ v w : Fin n, adj v w = decide (G.Adj v w))
+    (h : hasIndepSet n adj k = false) :
+    NoKIndepSet k G := by
+  apply noKIndepSet_of_checker_false
+  have heq : adj = fun v w => decide (G.Adj v w) :=
+    funext (fun v => funext (fun w => hadj v w))
+  rwa [← heq]
+
+/-- Version that accepts any `adjNot` extensionally equal to `!decide (G.Adj · ·)`. -/
+theorem triangleFree_of_adj_checker_false
+    {n : ℕ} {G : SimpleGraph (Fin n)} [DecidableRel G.Adj]
+    {adjNot : Fin n → Fin n → Bool}
+    (hadj : ∀ v w : Fin n, adjNot v w = !decide (G.Adj v w))
+    (h : hasIndepSet n adjNot 3 = false) :
+    TriangleFree G := by
+  apply triangleFree_of_checker_false
+  have heq : adjNot = fun v w => !decide (G.Adj v w) :=
+    funext (fun v => funext (fun w => hadj v w))
+  rwa [← heq]
+
 /-! ## Structural Decomposition Lemmas
 
 These allow splitting a large `hasIndepSetAux` computation into smaller

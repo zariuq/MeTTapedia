@@ -1,5 +1,7 @@
 import Mettapedia.OSLF.Framework.GovernanceInstance
 import Mettapedia.OSLF.Framework.HypercubeGSLTFunctor
+import Mettapedia.OSLF.Framework.PyashCoreProofs
+import Mettapedia.OSLF.Framework.GovNormCycle
 
 /-!
 # Governance GSLT Vertex Integration
@@ -43,6 +45,7 @@ open Mettapedia.Logic.DDLPlus.Core
 open Mettapedia.Logic.DDLPlus.Theorems
 open Mettapedia.Logic.DDLPlus.DTSBridge
 open Mettapedia.OSLF.Framework.GovernanceInstance
+open Mettapedia.OSLF.Framework.GovNormCycle
 
 /-! ## §1 GovernanceDDLBundle
 
@@ -151,28 +154,57 @@ theorem governanceForwardFiber_box (φ : Pattern → Prop) (p : Pattern) :
 /-! ## §4 Canonical Live Predicate
 
 `isGovLive` (from `GovernanceInstance.lean`) identifies non-terminated
-PyashCore states.  Constructing a `ClosedGovAccessibility` for `isGovLive`
-requires proving:
-  1. Seriality: every non-Done state has at least one successor.
-  2. Closure: if a state is non-Done, its successors are non-Done.
+PyashCore states (instruction ≠ Done).
 
-These are properties of PyashCore's rewrite rules.  A concrete proof
-requires case-analysis over PyashCore's instruction set.
+**Mathematical fact**: `isGovLive` is NOT forward-closed under PyashCore reduction.
+The counterexample is `pyashStateRunning` (RunDo instruction): it is live, reduces
+to `pyashStateDoneOk` (Done instruction), which is not live.  This is proven in
+`PyashCoreProofs.lean` as `pyashCore_isGovLive_not_closed`.
 
-The following structure packages `isGovLive` as the live predicate,
-requiring the user to supply the two proofs. -/
+Consequently, `ClosedGovAccessibility` with `live = isGovLive` cannot be
+instantiated for PyashCore.  The architecture is designed for infinite/reactive
+process languages where a meaningful live set IS forward-closed.
+
+The function below retains `isGovLive` as the declared live predicate and
+exposes both proofs as parameters, so the architectural wiring is complete —
+the obligation to supply the proofs surfaces only at instantiation time.  This
+is the correct design: the DDLPlus/governance reasoning infrastructure is
+language-agnostic and applies to any language with a forward-closed live set. -/
 
 /-- A closed accessibility for `isGovLive`, parameterized by the proofs of
-    seriality and closure (which depend on PyashCore's operational semantics). -/
+    seriality and closure (which depend on PyashCore's operational semantics).
+
+    **Note**: As proven by `pyashCore_isGovLive_not_closed`, the closure
+    property `hclosed` does NOT hold for PyashCore with `live = isGovLive`.
+    This function serves as the correct architectural hook; instantiation
+    requires a different live predicate for a terminating language like PyashCore. -/
 def isGovLiveAccessibility
     (hserial : ∀ p, isGovLive p → ∃ q, langReduces pyashCore p q)
     (hclosed : ∀ p q, isGovLive p → langReduces pyashCore p q → isGovLive q) :
     ClosedGovAccessibility where
   live   := isGovLive
+  step   := langReduces pyashCore
   serial := hserial
   closed := hclosed
 
-/-! ## §5 Summary
+/-! ## §5 Norm-Cycle Bundle
+
+`GovNormCycle` provides a concrete `ClosedGovAccessibility` instance with a
+2-state reactive loop (`GovDeliberate ↔ GovEnact`).  This allows constructing
+a concrete `GovernanceDDLBundle` without relying on PyashCore's operational semantics.
+
+The norm-cycle is the canonical governance accessibility model: an idealized
+deliberation–enactment loop that never terminates, satisfying both seriality and
+closure constructively. -/
+
+/-- Construct a concrete governance bundle over the norm cycle.
+    Supply a `GovFrame` for the obligation structure; accessibility is `govNormCycleAccessibility`. -/
+def govNormCycleBundle
+    (gf : GovFrame { p : Pattern // govNormLive p }) :
+    GovernanceDDLBundle :=
+  { acc := govNormCycleAccessibility, frame := gf }
+
+/-! ## §6 Summary
 
 The governance DDLPlus integration is complete:
 - `GovernanceDDLBundle`: the packaging type (acc + frame)
@@ -180,8 +212,10 @@ The governance DDLPlus integration is complete:
 - CJ_3, D, 4, 6, Kant, CJ_14a: all proven for any bundle
 - `governanceForwardFiber`: embeds PyashCore into the GSLT framework as a
   degenerate unit-indexed fiber
-- `isGovLiveAccessibility`: canonical live predicate, requiring user proofs
-  of seriality and closure
+- `isGovLiveAccessibility`: PyashCore hook (seriality + closure parameters;
+  closure NOT satisfiable for PyashCore, proven by `pyashCore_isGovLive_not_closed`)
+- `govNormCycleBundle`: concrete bundle using the deliberate ↔ enact reactive loop
+  (0 sorries, 0 axioms — seriality and closure constructively proven)
 -/
 
 #check @GovernanceDDLBundle.toDDLPlusFrame
@@ -192,5 +226,6 @@ The governance DDLPlus integration is complete:
 #check @GovernanceDDLBundle.cj14a
 #check @governanceForwardFiber
 #check @isGovLiveAccessibility
+#check @govNormCycleBundle
 
 end Mettapedia.OSLF.Framework.GovernanceGSLTVertex

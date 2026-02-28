@@ -51,6 +51,91 @@ def bothHigh : Bool → ℝ :=
 def bothLow : Bool → ℝ :=
   fun _ => 0.05
 
+/-- Shared ε=0.1 fixture with MOST-like interval `[0.7,0.9]`. -/
+def ch11MostParams : FuzzyQuantifierParams where
+  ε := 0.1
+  LPC := 0.7
+  UPC := 0.9
+  PCL := 0.7
+  hε := by norm_num
+  hLPC := by norm_num
+  hUPC := by norm_num
+  hPCL := by norm_num
+  hLPC_le_UPC := by norm_num
+
+/-- Shared ε=0.1 fixture with FEW-like interval `[0.1,0.3]`. -/
+def ch11FewParams : FuzzyQuantifierParams where
+  ε := 0.1
+  LPC := 0.1
+  UPC := 0.3
+  PCL := 0.1
+  hε := by norm_num
+  hLPC := by norm_num
+  hUPC := by norm_num
+  hPCL := by norm_num
+  hLPC_le_UPC := by norm_num
+
+/-- Shared ε=0.1 fixture with ALMOST-ALL-like interval `[0.75,1.0]`. -/
+def ch11AlmostAllParams : FuzzyQuantifierParams where
+  ε := 0.1
+  LPC := 0.75
+  UPC := 1
+  PCL := 0.75
+  hε := by norm_num
+  hLPC := by norm_num
+  hUPC := by norm_num
+  hPCL := by norm_num
+  hLPC_le_UPC := by norm_num
+
+/-- Shared ε=0.1 fixture with ABOUT-HALF-like interval `[0.45,0.55]`. -/
+def ch11AboutHalfParams : FuzzyQuantifierParams where
+  ε := 0.1
+  LPC := 0.45
+  UPC := 0.55
+  PCL := 0.45
+  hε := by norm_num
+  hLPC := by norm_num
+  hUPC := by norm_num
+  hPCL := by norm_num
+  hLPC_le_UPC := by norm_num
+
+/-- Shared ε=0.1 fixture with ALMOST-NONE-like interval `[0.0,0.2]`. -/
+def ch11AlmostNoneParams : FuzzyQuantifierParams where
+  ε := 0.1
+  LPC := 0
+  UPC := 0.2
+  PCL := 0
+  hε := by norm_num
+  hLPC := by norm_num
+  hUPC := by norm_num
+  hPCL := by norm_num
+  hLPC_le_UPC := by norm_num
+
+/-- Shared ε=0.1 fixture with MANY-BUT-NOT-MOST interval `[0.4,0.69]`. -/
+def ch11ManyNotMostParams : FuzzyQuantifierParams where
+  ε := 0.1
+  LPC := 0.4
+  UPC := 0.69
+  PCL := 0.4
+  hε := by norm_num
+  hLPC := by norm_num
+  hUPC := by norm_num
+  hPCL := by norm_num
+  hLPC_le_UPC := by norm_num
+
+/-- Finite fixture with exactly 3 near-one witnesses out of 4. -/
+def threeHighOneLow : Fin 4 → ℝ := fun u => if u = 0 then 0.05 else 0.95
+
+/-- Finite fixture with exactly 1 near-one witness out of 4. -/
+def oneHighThreeLow : Fin 4 → ℝ := fun u => if u = 0 then 0.95 else 0.05
+
+/-- Finite-5 fixture with exactly 1 near-one witness out of 5. -/
+def oneHighFourLowFin5 : Fin 5 → ℝ := fun u => if u = 0 then 0.95 else 0.05
+
+/-- Finite-5 fixture with exactly 3 near-one witnesses out of 5. -/
+def threeHighTwoLowFin5 : Fin 5 → ℝ :=
+  fun u => if u = 0 ∨ u = 1 ∨ u = 2 then 0.95 else 0.05
+
 /-- Crooked-lottery canary:
 `AFew` holds while strict `ForAll` (via `PCL=0.9`) does not. -/
 theorem canary_ch11_crookedLottery_afew_not_forall :
@@ -127,6 +212,147 @@ theorem canary_ch11_allLow_not_thereExists :
   unfold fuzzyThereExistsHolds
   rw [hBZ]
   norm_num [ch11AFewParams]
+
+/-- MOST fixture canary: expected near-one fraction is exactly `3/4`. -/
+theorem canary_ch11_most_fraction_threeQuarters :
+    nearOneFraction ch11MostParams threeHighOneLow = (3 / 4 : ℝ) := by
+  have hpred :
+      (fun u : Fin 4 => nearOne ch11MostParams (threeHighOneLow u)) = (fun u => u ≠ 0) := by
+    funext u
+    fin_cases u <;> simp [nearOne, threeHighOneLow, ch11MostParams] <;> norm_num
+  unfold nearOneFraction
+  simp [hpred, witnessFraction, witnessCount]
+
+/-- FEW fixture canary: expected near-one fraction is exactly `1/4`. -/
+theorem canary_ch11_few_fraction_oneQuarter :
+    nearOneFraction ch11FewParams oneHighThreeLow = (1 / 4 : ℝ) := by
+  have hpred :
+      (fun u : Fin 4 => nearOne ch11FewParams (oneHighThreeLow u)) = (fun u => u = 0) := by
+    funext u
+    fin_cases u <;> simp [nearOne, oneHighThreeLow, ch11FewParams] <;> norm_num
+  unfold nearOneFraction
+  simp [hpred, witnessFraction, witnessCount]
+
+/-- MOST positive + FEW negative on the same `3/4` fixture. -/
+theorem canary_ch11_most_vs_few_split_on_threeQuarters :
+    fuzzyIntervalHolds ch11MostParams threeHighOneLow ∧
+      ¬ fuzzyIntervalHolds ch11FewParams threeHighOneLow := by
+  have hfrac : nearOneFraction ch11MostParams threeHighOneLow = (3 / 4 : ℝ) := by
+    exact canary_ch11_most_fraction_threeQuarters
+  constructor
+  · unfold fuzzyIntervalHolds
+    rw [hfrac]
+    norm_num [ch11MostParams]
+  · unfold fuzzyIntervalHolds
+    have hfracFew : nearOneFraction ch11FewParams threeHighOneLow = (3 / 4 : ℝ) := by
+      have hpred :
+          (fun u : Fin 4 => nearOne ch11FewParams (threeHighOneLow u)) = (fun u => u ≠ 0) := by
+        funext u
+        fin_cases u <;> simp [nearOne, threeHighOneLow, ch11FewParams] <;> norm_num
+      unfold nearOneFraction
+      simp [hpred, witnessFraction, witnessCount]
+    rw [hfracFew]
+    norm_num [ch11FewParams]
+
+/-- ALMOST-ALL fixture canary: expected near-one fraction is exactly `3/4`. -/
+theorem canary_ch11_almostAll_fraction_threeQuarters :
+    nearOneFraction ch11AlmostAllParams threeHighOneLow = (3 / 4 : ℝ) := by
+  have hpred :
+      (fun u : Fin 4 => nearOne ch11AlmostAllParams (threeHighOneLow u)) = (fun u => u ≠ 0) := by
+    funext u
+    fin_cases u <;> simp [nearOne, threeHighOneLow, ch11AlmostAllParams] <;> norm_num
+  unfold nearOneFraction
+  simp [hpred, witnessFraction, witnessCount]
+
+/-- ALMOST-ALL positive canary on the `3/4` fixture. -/
+theorem canary_ch11_almostAll_holds_on_threeQuarters :
+    fuzzyIntervalHolds ch11AlmostAllParams threeHighOneLow := by
+  unfold fuzzyIntervalHolds
+  rw [canary_ch11_almostAll_fraction_threeQuarters]
+  norm_num [ch11AlmostAllParams]
+
+/-- ABOUT-HALF fixture canary: expected near-one fraction is exactly `1/2`. -/
+theorem canary_ch11_aboutHalf_fraction_oneHalf :
+    nearOneFraction ch11AboutHalfParams oneHighOneLow = (1 / 2 : ℝ) := by
+  have hpred :
+      (fun u : Bool => nearOne ch11AboutHalfParams (oneHighOneLow u)) = (fun u => u = true) := by
+    funext u
+    cases u <;> simp [nearOne, oneHighOneLow, ch11AboutHalfParams] <;> norm_num
+  unfold nearOneFraction
+  simp [hpred, witnessFraction, witnessCount]
+
+/-- ABOUT-HALF split canary:
+the `1/2` fixture is accepted while an all-high profile is rejected. -/
+theorem canary_ch11_aboutHalf_positive_negative_split :
+    fuzzyIntervalHolds ch11AboutHalfParams oneHighOneLow ∧
+      ¬ fuzzyIntervalHolds ch11AboutHalfParams bothHigh := by
+  constructor
+  · unfold fuzzyIntervalHolds
+    rw [canary_ch11_aboutHalf_fraction_oneHalf]
+    norm_num [ch11AboutHalfParams]
+  · unfold fuzzyIntervalHolds
+    have hAll : nearOneFraction ch11AboutHalfParams bothHigh = (1 : ℝ) := by
+      have hpred :
+          (fun u : Bool => nearOne ch11AboutHalfParams (bothHigh u)) = (fun _ => True) := by
+        funext u
+        cases u <;> simp [nearOne, bothHigh, ch11AboutHalfParams] <;> norm_num
+      unfold nearOneFraction
+      simp [hpred, witnessFraction, witnessCount]
+    rw [hAll]
+    norm_num [ch11AboutHalfParams]
+
+/-- ALMOST-NONE fixture canary: expected near-one fraction is exactly `1/5`. -/
+theorem canary_ch11_almostNone_fraction_oneFifth :
+    nearOneFraction ch11AlmostNoneParams oneHighFourLowFin5 = (1 / 5 : ℝ) := by
+  have hpred :
+      (fun u : Fin 5 => nearOne ch11AlmostNoneParams (oneHighFourLowFin5 u)) = (fun u => u = 0) := by
+    funext u
+    fin_cases u <;> simp [nearOne, oneHighFourLowFin5, ch11AlmostNoneParams] <;> norm_num
+  unfold nearOneFraction
+  simp [hpred, witnessFraction, witnessCount]
+
+/-- ALMOST-NONE positive canary on the finite-5 `1/5` fixture. -/
+theorem canary_ch11_almostNone_holds_on_oneFifth :
+    fuzzyIntervalHolds ch11AlmostNoneParams oneHighFourLowFin5 := by
+  unfold fuzzyIntervalHolds
+  rw [canary_ch11_almostNone_fraction_oneFifth]
+  norm_num [ch11AlmostNoneParams]
+
+/-- MANY-BUT-NOT-MOST fixture canary: expected near-one fraction is exactly `3/5`. -/
+theorem canary_ch11_manyNotMost_fraction_threeFifths :
+    nearOneFraction ch11ManyNotMostParams threeHighTwoLowFin5 = (3 / 5 : ℝ) := by
+  have hpred :
+      (fun u : Fin 5 => nearOne ch11ManyNotMostParams (threeHighTwoLowFin5 u)) =
+        (fun u => u = 0 ∨ u = 1 ∨ u = 2) := by
+    funext u
+    fin_cases u <;> simp [nearOne, threeHighTwoLowFin5, ch11ManyNotMostParams] <;> norm_num
+  have hcount : Fintype.card {u : Fin 5 // u = 0 ∨ u = 1 ∨ u = 2} = 3 := by
+    decide
+  unfold nearOneFraction
+  simp [hpred, witnessFraction, witnessCount, hcount]
+
+/-- MANY-BUT-NOT-MOST split canary:
+the `3/5` fixture satisfies many-but-not-most, but not MOST. -/
+theorem canary_ch11_manyNotMost_vs_most_split :
+    fuzzyIntervalHolds ch11ManyNotMostParams threeHighTwoLowFin5 ∧
+      ¬ fuzzyIntervalHolds ch11MostParams threeHighTwoLowFin5 := by
+  constructor
+  · unfold fuzzyIntervalHolds
+    rw [canary_ch11_manyNotMost_fraction_threeFifths]
+    norm_num [ch11ManyNotMostParams]
+  · unfold fuzzyIntervalHolds
+    have hMostFrac : nearOneFraction ch11MostParams threeHighTwoLowFin5 = (3 / 5 : ℝ) := by
+      have hpred :
+          (fun u : Fin 5 => nearOne ch11MostParams (threeHighTwoLowFin5 u)) =
+            (fun u => u = 0 ∨ u = 1 ∨ u = 2) := by
+        funext u
+        fin_cases u <;> simp [nearOne, threeHighTwoLowFin5, ch11MostParams] <;> norm_num
+      have hcount : Fintype.card {u : Fin 5 // u = 0 ∨ u = 1 ∨ u = 2} = 3 := by
+        decide
+      unfold nearOneFraction
+      simp [hpred, witnessFraction, witnessCount, hcount]
+    rw [hMostFrac]
+    norm_num [ch11MostParams]
 
 /-- ITV fixtures for explicit rule-4 non-equivalence witness. -/
 def itvHi : ITV where
