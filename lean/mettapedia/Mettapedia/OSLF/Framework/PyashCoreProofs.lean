@@ -44,9 +44,21 @@ def pyashCoreReductionCases : List (String × Pattern × Pattern) :=
   , ("chip_derive_signature_step", pyashStateChipDerive, pyashStateChipDispatched)
   , ("chip_dispatch_do_step", pyashStateChipDispatched, pyashStateChipRunning)
   , ("chip_run_do_step", pyashStateChipRunning, pyashStateChipDoneOk)
+  , ("chip_series_derive_signature_step", pyashStateChipSeriesDerive, pyashStateChipSeriesDispatched)
+  , ("chip_series_dispatch_do_step", pyashStateChipSeriesDispatched, pyashStateChipSeriesRunning)
+  , ("chip_series_run_do_step", pyashStateChipSeriesRunning, pyashStateChipSeriesDoneOk)
+  , ("chip_bounded_derive_signature_step", pyashStateChipBoundedDerive, pyashStateChipBoundedDispatched)
+  , ("chip_bounded_dispatch_do_step", pyashStateChipBoundedDispatched, pyashStateChipBoundedRunning)
+  , ("chip_bounded_run_do_step", pyashStateChipBoundedRunning, pyashStateChipBoundedDoneOk)
   , ("hear_derive_signature_step", pyashStateHearDerive, pyashStateHearDispatched)
   , ("hear_dispatch_do_step", pyashStateHearDispatched, pyashStateHearRunning)
   , ("hear_run_do_step", pyashStateHearRunning, pyashStateHearDoneOk)
+  , ("hear_mic_derive_signature_step", pyashStateHearMicRecordDerive, pyashStateHearMicRecordDispatched)
+  , ("hear_mic_dispatch_do_step", pyashStateHearMicRecordDispatched, pyashStateHearMicRecordRunning)
+  , ("hear_mic_run_do_step", pyashStateHearMicRecordRunning, pyashStateHearMicRecordDoneOk)
+  , ("hear_srt_derive_signature_step", pyashStateHearFileSrtDerive, pyashStateHearFileSrtDispatched)
+  , ("hear_srt_dispatch_do_step", pyashStateHearFileSrtDispatched, pyashStateHearFileSrtRunning)
+  , ("hear_srt_run_do_step", pyashStateHearFileSrtRunning, pyashStateHearFileSrtDoneOk)
   , ("configure_derive_signature_step", pyashStateConfigureDerive, pyashStateConfigureDispatched)
   , ("configure_dispatch_do_step", pyashStateConfigureDispatched, pyashStateConfigureRunning)
   , ("configure_run_do_step", pyashStateConfigureRunning, pyashStateConfigureDoneOk)
@@ -406,6 +418,60 @@ theorem pyashCore_chip_run_do_step :
     (q := pyashStateChipDoneOk)
     (by simp [pyashCoreReductionCases])
 
+/-- `chip` (series variant) signature derivation step is executable. -/
+theorem pyashCore_chip_series_derive_signature_step :
+    langReduces pyashCore pyashStateChipSeriesDerive pyashStateChipSeriesDispatched := by
+  exact pyashCore_reduction_case
+    (label := "chip_series_derive_signature_step")
+    (p := pyashStateChipSeriesDerive)
+    (q := pyashStateChipSeriesDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `chip` (series variant) dispatch path enters run mode. -/
+theorem pyashCore_chip_series_dispatch_do_step :
+    langReduces pyashCore pyashStateChipSeriesDispatched pyashStateChipSeriesRunning := by
+  exact pyashCore_reduction_case
+    (label := "chip_series_dispatch_do_step")
+    (p := pyashStateChipSeriesDispatched)
+    (q := pyashStateChipSeriesRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `chip` (series variant) run path produces a `ya` done state. -/
+theorem pyashCore_chip_series_run_do_step :
+    langReduces pyashCore pyashStateChipSeriesRunning pyashStateChipSeriesDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "chip_series_run_do_step")
+    (p := pyashStateChipSeriesRunning)
+    (q := pyashStateChipSeriesDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `chip` (bounded variant) signature derivation step is executable. -/
+theorem pyashCore_chip_bounded_derive_signature_step :
+    langReduces pyashCore pyashStateChipBoundedDerive pyashStateChipBoundedDispatched := by
+  exact pyashCore_reduction_case
+    (label := "chip_bounded_derive_signature_step")
+    (p := pyashStateChipBoundedDerive)
+    (q := pyashStateChipBoundedDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `chip` (bounded variant) dispatch path enters run mode. -/
+theorem pyashCore_chip_bounded_dispatch_do_step :
+    langReduces pyashCore pyashStateChipBoundedDispatched pyashStateChipBoundedRunning := by
+  exact pyashCore_reduction_case
+    (label := "chip_bounded_dispatch_do_step")
+    (p := pyashStateChipBoundedDispatched)
+    (q := pyashStateChipBoundedRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `chip` (bounded variant) run path produces a `ya` done state. -/
+theorem pyashCore_chip_bounded_run_do_step :
+    langReduces pyashCore pyashStateChipBoundedRunning pyashStateChipBoundedDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "chip_bounded_run_do_step")
+    (p := pyashStateChipBoundedRunning)
+    (q := pyashStateChipBoundedDoneOk)
+    (by simp [pyashCoreReductionCases])
+
 /-- `hear` signature derivation step is executable. -/
 theorem pyashCore_hear_derive_signature_step :
     langReduces pyashCore pyashStateHearDerive pyashStateHearDispatched := by
@@ -431,6 +497,60 @@ theorem pyashCore_hear_run_do_step :
     (label := "hear_run_do_step")
     (p := pyashStateHearRunning)
     (q := pyashStateHearDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `hear` (microphone-recording variant) signature derivation step is executable. -/
+theorem pyashCore_hear_mic_derive_signature_step :
+    langReduces pyashCore pyashStateHearMicRecordDerive pyashStateHearMicRecordDispatched := by
+  exact pyashCore_reduction_case
+    (label := "hear_mic_derive_signature_step")
+    (p := pyashStateHearMicRecordDerive)
+    (q := pyashStateHearMicRecordDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `hear` (microphone-recording variant) dispatch path enters run mode. -/
+theorem pyashCore_hear_mic_dispatch_do_step :
+    langReduces pyashCore pyashStateHearMicRecordDispatched pyashStateHearMicRecordRunning := by
+  exact pyashCore_reduction_case
+    (label := "hear_mic_dispatch_do_step")
+    (p := pyashStateHearMicRecordDispatched)
+    (q := pyashStateHearMicRecordRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `hear` (microphone-recording variant) run path produces a `ya` done state. -/
+theorem pyashCore_hear_mic_run_do_step :
+    langReduces pyashCore pyashStateHearMicRecordRunning pyashStateHearMicRecordDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "hear_mic_run_do_step")
+    (p := pyashStateHearMicRecordRunning)
+    (q := pyashStateHearMicRecordDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `hear` (file->subtitle-file variant) signature derivation step is executable. -/
+theorem pyashCore_hear_srt_derive_signature_step :
+    langReduces pyashCore pyashStateHearFileSrtDerive pyashStateHearFileSrtDispatched := by
+  exact pyashCore_reduction_case
+    (label := "hear_srt_derive_signature_step")
+    (p := pyashStateHearFileSrtDerive)
+    (q := pyashStateHearFileSrtDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `hear` (file->subtitle-file variant) dispatch path enters run mode. -/
+theorem pyashCore_hear_srt_dispatch_do_step :
+    langReduces pyashCore pyashStateHearFileSrtDispatched pyashStateHearFileSrtRunning := by
+  exact pyashCore_reduction_case
+    (label := "hear_srt_dispatch_do_step")
+    (p := pyashStateHearFileSrtDispatched)
+    (q := pyashStateHearFileSrtRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `hear` (file->subtitle-file variant) run path produces a `ya` done state. -/
+theorem pyashCore_hear_srt_run_do_step :
+    langReduces pyashCore pyashStateHearFileSrtRunning pyashStateHearFileSrtDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "hear_srt_run_do_step")
+    (p := pyashStateHearFileSrtRunning)
+    (q := pyashStateHearFileSrtDoneOk)
     (by simp [pyashCoreReductionCases])
 
 /-- `configure` signature derivation step is executable. -/

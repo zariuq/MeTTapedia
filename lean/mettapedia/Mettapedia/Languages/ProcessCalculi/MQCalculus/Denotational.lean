@@ -55,9 +55,9 @@ def denote : Process → QState → Option QState :=
     denoteWith backend (MQOut i) st = some st := rfl
 
 @[simp] theorem denoteWith_gate_clause (backend : MQSemanticsBackend)
-    (s : String) (p : Process) (st : QState) :
-    denoteWith backend (MQGate s p) st =
-      denoteWith backend p (backend.applyGate s st) := rfl
+    (g : GateSpec) (p : Process) (st : QState) :
+    denoteWith backend (MQGate g p) st =
+      denoteWith backend p (backend.applyGate g st) := rfl
 
 @[simp] theorem denoteWith_new_clause (backend : MQSemanticsBackend)
     (p : Process) (st : QState) :
@@ -92,7 +92,7 @@ theorem denote_totalWith (backend : MQSemanticsBackend) :
     ∀ (p : Process) (st : QState), ∃ st', denoteWith backend p st = some st'
   | .MQNil, st => ⟨st, rfl⟩
   | .MQOut _, st => ⟨st, rfl⟩
-  | .MQGate s p, st => denote_totalWith backend p (backend.applyGate s st)
+  | .MQGate g p, st => denote_totalWith backend p (backend.applyGate g st)
   | .MQNu p, st => denote_totalWith backend p (backend.allocFresh st)
   | .MQPar p q, st => by
       rcases denote_totalWith backend p st with ⟨st1, h1⟩
@@ -199,6 +199,30 @@ theorem denote_comm_step (i : ℕ) (p q : Process) (b : MeasurementBranch)
   cases h with
   | outcome_zero => left; rfl
   | outcome_one  => right; rfl
+
+/-- `MQIn` denotation equals explicit branch-state selection from measurement semantics. -/
+theorem denoteWith_comm_eq_measurementWith (backend : MQSemanticsBackend)
+    (i : ℕ) (p q : Process) (st : QState) :
+    denoteWith backend (MQIn i p q) st =
+      (if backend.branchProb i .zero st ≥ backend.branchProb i .one st then
+         some (denote_measurementWith backend i p q st).state_zero
+       else
+         some (denote_measurementWith backend i p q st).state_one) := by
+  by_cases hchoose : backend.branchProb i .zero st ≥ backend.branchProb i .one st
+  · rcases denote_totalWith backend p (backend.collapse i .zero st) with ⟨st0, h0⟩
+    simp [denoteWith, denote_measurementWith, hchoose, h0]
+  · rcases denote_totalWith backend q (backend.collapse i .one st) with ⟨st1, h1⟩
+    simp [denoteWith, denote_measurementWith, hchoose, h1]
+
+/-- Statevector specialization of `denoteWith_comm_eq_measurementWith`. -/
+theorem denote_comm_eq_measurement (i : ℕ) (p q : Process) (st : QState) :
+    denote (MQIn i p q) st =
+      (if statevectorBackend.branchProb i .zero st ≥ statevectorBackend.branchProb i .one st then
+         some (denote_measurement i p q st).state_zero
+       else
+         some (denote_measurement i p q st).state_one) := by
+  simpa [denote, denote_measurement] using
+    denoteWith_comm_eq_measurementWith statevectorBackend i p q st
 
 end
 

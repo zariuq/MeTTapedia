@@ -31,7 +31,7 @@ def shift (c : ℕ) : Process → Process
   | MQNil       => MQNil
   | MQPar p q   => MQPar (shift c p) (shift c q)
   | MQNu p      => MQNu (shift (c + 1) p)
-  | MQGate s p  => MQGate s (shift c p)
+  | MQGate g p  => MQGate g (shift c p)
   | MQOut i     => if i < c then MQOut i else MQOut (i + 1)
   | MQIn i p q  => if i < c
                    then MQIn i (shift c p) (shift c q)
@@ -47,8 +47,8 @@ def shift (c : ℕ) : Process → Process
 @[simp] theorem shift_MQNu (c : ℕ) (p : Process) :
     shift c (MQNu p) = MQNu (shift (c + 1) p) := rfl
 
-@[simp] theorem shift_MQGate (c : ℕ) (s : String) (p : Process) :
-    shift c (MQGate s p) = MQGate s (shift c p) := rfl
+@[simp] theorem shift_MQGate (c : ℕ) (g : GateSpec) (p : Process) :
+    shift c (MQGate g p) = MQGate g (shift c p) := rfl
 
 @[simp] theorem shift_MQOut_lt (c i : ℕ) (h : i < c) :
     shift c (MQOut i) = MQOut i := by simp [shift, h]
@@ -73,7 +73,7 @@ theorem shift_comm (p : Process) (c d : ℕ) (hcd : c ≤ d) :
   | MQNil => rfl
   | MQPar p q ihp ihq => simp [ihp c d hcd, ihq c d hcd]
   | MQNu p ih => simp; exact ih (c + 1) (d + 1) (Nat.succ_le_succ hcd)
-  | MQGate s p ih => simp [ih c d hcd]
+  | MQGate g p ih => simp [ih c d hcd]
   | MQOut i =>
     by_cases h1 : i < d <;> by_cases h3 : i < c
     · -- i < c ≤ d: both shifts are no-ops on i

@@ -1,11 +1,9 @@
-import Mettapedia.Languages.GF.Abstract
-import Mettapedia.OSLF.Framework.PyashCoreInstance
+import Mettapedia.OSLF.Framework.PyashGFModel
 
 /-!
-# Pyash GF Bridge (Initial)
+# Pyash GF Bridge Proofs
 
-Minimal GF-connected bridge from a tiny Pyash clause fragment into the
-`PyashCore` OSLF model, with executable bridge claims.
+Proof and closure layer over `PyashGFModel`.
 -/
 
 namespace Mettapedia.OSLF.Framework.PyashGF
@@ -16,385 +14,6 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.PyashCoreInstance
-
-/-- Lightweight multi-step closure for focused PyashCore reductions. -/
-inductive PyashCoreReducesStar : Pattern → Pattern → Prop where
-  | refl (p : Pattern) : PyashCoreReducesStar p p
-  | step {p q r : Pattern} :
-      langReduces pyashCore p q →
-        PyashCoreReducesStar q r →
-          PyashCoreReducesStar p r
-
-namespace PyashCoreReducesStar
-
-/-- Lift one-step reduction into closure. -/
-theorem single {p q : Pattern}
-    (h : langReduces pyashCore p q) :
-    PyashCoreReducesStar p q :=
-  .step h (.refl q)
-
-/-- Transitivity of closure. -/
-theorem trans {p q r : Pattern}
-    (h₁ : PyashCoreReducesStar p q)
-    (h₂ : PyashCoreReducesStar q r) :
-    PyashCoreReducesStar p r := by
-  induction h₁ with
-  | refl _ => exact h₂
-  | step hstep hrest ih => exact .step hstep (ih h₂)
-
-end PyashCoreReducesStar
-
-/-- Tiny GF-side categories for a focused Pyash clause fragment. -/
-def pyashMoodCat : Category := .base "PyashMood"
-def pyashVerbCat : Category := .base "PyashVerb"
-def pyashClauseCat : Category := .base "PyashClause"
-
-/-- Tiny GF-side constructors for focused Pyash bridge cases. -/
-def PyDo : FunctionSig := ⟨"PyDo", pyashMoodCat⟩
-def PyDef : FunctionSig := ⟨"PyDef", pyashMoodCat⟩
-def PyThen : FunctionSig := ⟨"PyThen", pyashMoodCat⟩
-def PyRead : FunctionSig := ⟨"PyRead", pyashVerbCat⟩
-def PyWrite : FunctionSig := ⟨"PyWrite", pyashVerbCat⟩
-def PySay : FunctionSig := ⟨"PySay", pyashVerbCat⟩
-def PyMap : FunctionSig := ⟨"PyMap", pyashVerbCat⟩
-def PyCommand : FunctionSig := ⟨"PyCommand", pyashVerbCat⟩
-def PySearch : FunctionSig := ⟨"PySearch", pyashVerbCat⟩
-def PyMind : FunctionSig := ⟨"PyMind", pyashVerbCat⟩
-def PyChip : FunctionSig := ⟨"PyChip", pyashVerbCat⟩
-def PyHear : FunctionSig := ⟨"PyHear", pyashVerbCat⟩
-def PyConfigure : FunctionSig := ⟨"PyConfigure", pyashVerbCat⟩
-def PyWorld : FunctionSig := ⟨"PyWorld", pyashVerbCat⟩
-def PyWorldPathIO : FunctionSig := ⟨"PyWorldPathIO", pyashVerbCat⟩
-def PyPipeline : FunctionSig := ⟨"PyPipeline", pyashVerbCat⟩
-def PyPipelineChirp : FunctionSig := ⟨"PyPipelineChirp", pyashVerbCat⟩
-def PyPipelineReentry : FunctionSig := ⟨"PyPipelineReentry", pyashVerbCat⟩
-def PyCompile : FunctionSig := ⟨"PyCompile", pyashVerbCat⟩
-def PyImport : FunctionSig := ⟨"PyImport", pyashVerbCat⟩
-def PyDownload : FunctionSig := ⟨"PyDownload", pyashVerbCat⟩
-def PyTranslation : FunctionSig := ⟨"PyTranslation", pyashVerbCat⟩
-def PyDispatchError : FunctionSig := ⟨"PyDispatchError", pyashClauseCat⟩
-def PyClause : FunctionSig :=
-  ⟨"PyClause", .arrow pyashMoodCat (.arrow pyashVerbCat pyashClauseCat)⟩
-
-/-- Focused GF clause canaries. -/
-def pyashGFReadDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyRead []]
-
-def pyashGFMindDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyMind []]
-
-def pyashGFWriteDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyWrite []]
-
-def pyashGFSayDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PySay []]
-
-def pyashGFMapDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyMap []]
-
-def pyashGFMapDefClause : AbstractNode :=
-  .apply PyClause [.apply PyDef [], .apply PyMap []]
-
-def pyashGFCommandDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyCommand []]
-
-def pyashGFSearchDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PySearch []]
-
-def pyashGFReadThenClause : AbstractNode :=
-  .apply PyClause [.apply PyThen [], .apply PyRead []]
-
-def pyashGFConfigureThenClause : AbstractNode :=
-  .apply PyClause [.apply PyThen [], .apply PyConfigure []]
-
-def pyashGFWorldThenClause : AbstractNode :=
-  .apply PyClause [.apply PyThen [], .apply PyWorld []]
-
-def pyashGFPipelineThenClause : AbstractNode :=
-  .apply PyClause [.apply PyThen [], .apply PyPipeline []]
-
-def pyashGFChipDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyChip []]
-
-def pyashGFHearDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyHear []]
-
-def pyashGFConfigureDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyConfigure []]
-
-def pyashGFConfigureDefClause : AbstractNode :=
-  .apply PyClause [.apply PyDef [], .apply PyConfigure []]
-
-def pyashGFWorldDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyWorld []]
-
-def pyashGFWorldPathDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyWorldPathIO []]
-
-def pyashGFPipelineDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyPipeline []]
-
-def pyashGFPipelineChirpDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyPipelineChirp []]
-
-def pyashGFPipelineReentryDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyPipelineReentry []]
-
-def pyashGFCompileDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyCompile []]
-
-def pyashGFImportDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyImport []]
-
-def pyashGFDownloadDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyDownload []]
-
-def pyashGFTranslationDoClause : AbstractNode :=
-  .apply PyClause [.apply PyDo [], .apply PyTranslation []]
-
-def pyashGFDispatchErrorClause : AbstractNode :=
-  .apply PyDispatchError []
-
-private def ctorName? : AbstractNode → Option String
-  | .apply f [] => some f.name
-  | .leaf name _ => some name
-  | _ => none
-
-private def doMoodVerbToState? (verbName : String) : Option Pattern :=
-  if verbName == "PyRead" then
-    some pyashStateReadDerive
-  else if verbName == "PyWrite" then
-    some pyashStateWriteDerive
-  else if verbName == "PySay" then
-    some pyashStateSayDerive
-  else if verbName == "PyMap" then
-    some pyashStateMapDerive
-  else if verbName == "PyCommand" then
-    some pyashStateCommandDerive
-  else if verbName == "PySearch" then
-    some pyashStateSearchDerive
-  else if verbName == "PyMind" then
-    some pyashStateMindDerive
-  else if verbName == "PyChip" then
-    some pyashStateChipDerive
-  else if verbName == "PyHear" then
-    some pyashStateHearDerive
-  else if verbName == "PyConfigure" then
-    some pyashStateConfigureDerive
-  else if verbName == "PyWorld" then
-    some pyashStateWorldDerive
-  else if verbName == "PyWorldPathIO" then
-    some pyashStateWorldDerive
-  else if verbName == "PyPipeline" then
-    some pyashStatePipelineDerive
-  else if verbName == "PyPipelineChirp" then
-    some pyashStatePipelineDerive
-  else if verbName == "PyPipelineReentry" then
-    some pyashStatePipelineDerive
-  else if verbName == "PyCompile" then
-    some pyashStateCompileDerive
-  else if verbName == "PyImport" then
-    some pyashStateImportDerive
-  else if verbName == "PyDownload" then
-    some pyashStateDownloadDerive
-  else if verbName == "PyTranslation" then
-    some pyashStateTranslationDerive
-  else
-    none
-
-private def pyashStateConfigureThenError : Pattern :=
-  .apply "State" [
-    .apply "Dispatch" [],
-    .apply "SentenceCore" [.apply "MThen" [], .apply "VConfigure" [], pyashRoleTypesConfigure],
-    .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigure],
-    .apply "Ok" []
-  ]
-
-private def pyashStateConfigureThenDoneDispatchErr : Pattern :=
-  .apply "State" [
-    .apply "Done" [],
-    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesConfigure],
-    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
-    .apply "ErrDispatch" []
-  ]
-
-private def pyashStateWorldThenError : Pattern :=
-  .apply "State" [
-    .apply "Dispatch" [],
-    .apply "SentenceCore" [.apply "MThen" [], .apply "VWorld" [], pyashRoleTypesWorld],
-    .apply "Signature" [.apply "VWorld" [], pyashRoleTypesWorld],
-    .apply "Ok" []
-  ]
-
-private def pyashStateWorldThenDoneDispatchErr : Pattern :=
-  .apply "State" [
-    .apply "Done" [],
-    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesWorld],
-    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
-    .apply "ErrDispatch" []
-  ]
-
-private def pyashStatePipelineThenError : Pattern :=
-  .apply "State" [
-    .apply "Dispatch" [],
-    .apply "SentenceCore" [.apply "MThen" [], .apply "VPipeline" [], pyashRoleTypesPipeline],
-    .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipeline],
-    .apply "Ok" []
-  ]
-
-private def pyashStatePipelineThenDoneDispatchErr : Pattern :=
-  .apply "State" [
-    .apply "Done" [],
-    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesPipeline],
-    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
-    .apply "ErrDispatch" []
-  ]
-
-private def thenMoodVerbToState? (verbName : String) : Option Pattern :=
-  if verbName == "PyRead" then
-    some pyashStateDispatchThenError
-  else if verbName == "PyConfigure" then
-    some pyashStateConfigureThenError
-  else if verbName == "PyWorld" then
-    some pyashStateWorldThenError
-  else if verbName == "PyPipeline" then
-    some pyashStatePipelineThenError
-  else
-    none
-
-/-- Bridge from tiny GF-side clause nodes into focused PyashCore states. -/
-def pyashGFClauseToState? : AbstractNode → Option Pattern
-  | .apply f [] =>
-      if f.name == "PyDispatchError" then
-        some pyashStateDispatchErrorInstr
-      else
-        none
-  | .apply f [moodNode, verbNode] =>
-      if f.name == "PyClause" then
-        match ctorName? moodNode, ctorName? verbNode with
-        | some moodName, some verbName =>
-            if moodName == "PyDo" then
-              doMoodVerbToState? verbName
-            else if moodName == "PyDef" ∧ verbName == "PyConfigure" then
-              some pyashStateConfigureDefDerive
-            else if moodName == "PyDef" ∧ verbName == "PyMap" then
-              some pyashStateMapDefDerive
-            else if moodName == "PyThen" then
-              thenMoodVerbToState? verbName
-            else
-              none
-        | _, _ => none
-      else
-        none
-  | _ => none
-
-/-- Total bridge endpoint for runtime/export paths (fallback = explicit dispatch error seed). -/
-def pyashGFInputOf (n : AbstractNode) : Pattern :=
-  (pyashGFClauseToState? n).getD pyashStateDispatchThenError
-
-theorem pyashGF_read_clause_maps :
-    pyashGFClauseToState? pyashGFReadDoClause = some pyashStateReadDerive := by
-  decide +kernel
-
-theorem pyashGF_write_clause_maps :
-    pyashGFClauseToState? pyashGFWriteDoClause = some pyashStateWriteDerive := by
-  decide +kernel
-
-theorem pyashGF_say_clause_maps :
-    pyashGFClauseToState? pyashGFSayDoClause = some pyashStateSayDerive := by
-  decide +kernel
-
-theorem pyashGF_map_clause_maps :
-    pyashGFClauseToState? pyashGFMapDoClause = some pyashStateMapDerive := by
-  decide +kernel
-
-theorem pyashGF_map_def_clause_maps :
-    pyashGFClauseToState? pyashGFMapDefClause = some pyashStateMapDefDerive := by
-  decide +kernel
-
-theorem pyashGF_command_clause_maps :
-    pyashGFClauseToState? pyashGFCommandDoClause = some pyashStateCommandDerive := by
-  decide +kernel
-
-theorem pyashGF_search_clause_maps :
-    pyashGFClauseToState? pyashGFSearchDoClause = some pyashStateSearchDerive := by
-  decide +kernel
-
-theorem pyashGF_mind_clause_maps :
-    pyashGFClauseToState? pyashGFMindDoClause = some pyashStateMindDerive := by
-  decide +kernel
-
-theorem pyashGF_read_then_clause_maps :
-    pyashGFClauseToState? pyashGFReadThenClause = some pyashStateDispatchThenError := by
-  decide +kernel
-
-theorem pyashGF_configure_then_clause_maps :
-    pyashGFClauseToState? pyashGFConfigureThenClause = some pyashStateConfigureThenError := by
-  decide +kernel
-
-theorem pyashGF_world_then_clause_maps :
-    pyashGFClauseToState? pyashGFWorldThenClause = some pyashStateWorldThenError := by
-  decide +kernel
-
-theorem pyashGF_pipeline_then_clause_maps :
-    pyashGFClauseToState? pyashGFPipelineThenClause = some pyashStatePipelineThenError := by
-  decide +kernel
-
-theorem pyashGF_chip_clause_maps :
-    pyashGFClauseToState? pyashGFChipDoClause = some pyashStateChipDerive := by
-  decide +kernel
-
-theorem pyashGF_hear_clause_maps :
-    pyashGFClauseToState? pyashGFHearDoClause = some pyashStateHearDerive := by
-  decide +kernel
-
-theorem pyashGF_configure_clause_maps :
-    pyashGFClauseToState? pyashGFConfigureDoClause = some pyashStateConfigureDerive := by
-  decide +kernel
-
-theorem pyashGF_configure_def_clause_maps :
-    pyashGFClauseToState? pyashGFConfigureDefClause = some pyashStateConfigureDefDerive := by
-  decide +kernel
-
-theorem pyashGF_world_clause_maps :
-    pyashGFClauseToState? pyashGFWorldDoClause = some pyashStateWorldDerive := by
-  decide +kernel
-
-theorem pyashGF_world_path_clause_maps :
-    pyashGFClauseToState? pyashGFWorldPathDoClause = some pyashStateWorldDerive := by
-  decide +kernel
-
-theorem pyashGF_pipeline_clause_maps :
-    pyashGFClauseToState? pyashGFPipelineDoClause = some pyashStatePipelineDerive := by
-  decide +kernel
-
-theorem pyashGF_pipeline_chirp_clause_maps :
-    pyashGFClauseToState? pyashGFPipelineChirpDoClause = some pyashStatePipelineDerive := by
-  decide +kernel
-
-theorem pyashGF_pipeline_reentry_clause_maps :
-    pyashGFClauseToState? pyashGFPipelineReentryDoClause = some pyashStatePipelineDerive := by
-  decide +kernel
-
-theorem pyashGF_compile_clause_maps :
-    pyashGFClauseToState? pyashGFCompileDoClause = some pyashStateCompileDerive := by
-  decide +kernel
-
-theorem pyashGF_import_clause_maps :
-    pyashGFClauseToState? pyashGFImportDoClause = some pyashStateImportDerive := by
-  decide +kernel
-
-theorem pyashGF_download_clause_maps :
-    pyashGFClauseToState? pyashGFDownloadDoClause = some pyashStateDownloadDerive := by
-  decide +kernel
-
-theorem pyashGF_translation_clause_maps :
-    pyashGFClauseToState? pyashGFTranslationDoClause = some pyashStateTranslationDerive := by
-  decide +kernel
-
-theorem pyashGF_dispatch_error_clause_maps :
-    pyashGFClauseToState? pyashGFDispatchErrorClause = some pyashStateDispatchErrorInstr := by
-  decide +kernel
 
 /-- Bridge claim 1 (OSLF): GF read/do clause reaches the PyashCore read dispatch stage. -/
 theorem pyashGF_read_clause_dispatch_bridge :
@@ -570,6 +189,36 @@ theorem pyashGF_dispatch_error_negative_bridge :
   unfold pyashGFInputOf
   simpa [pyashGF_dispatch_error_clause_maps] using
     pyashCore_dispatch_error_instr_surfaces_dispatch_error
+
+/-- `read` derive step (decomposed bridge lemma). -/
+theorem pyashGF_read_derive_step :
+    langReduces pyashCore pyashStateReadDerive pyashStateReadDispatched := by
+  simpa using pyashCore_read_derive_signature_step
+
+/-- `read` dispatch step (decomposed bridge lemma). -/
+theorem pyashGF_read_dispatch_step :
+    langReduces pyashCore pyashStateReadDispatched pyashStateReadRunning := by
+  simpa using pyashCore_read_dispatch_do_step
+
+/-- `read` run step (decomposed bridge lemma). -/
+theorem pyashGF_read_run_step :
+    langReduces pyashCore pyashStateReadRunning pyashStateReadDoneOk := by
+  simpa using pyashCore_read_run_do_step
+
+/-- `mind` derive step (decomposed bridge lemma). -/
+theorem pyashGF_mind_derive_step :
+    langReduces pyashCore pyashStateMindDerive pyashStateMindDispatched := by
+  simpa using pyashCore_mind_derive_signature_step
+
+/-- `mind` dispatch step (decomposed bridge lemma). -/
+theorem pyashGF_mind_dispatch_step :
+    langReduces pyashCore pyashStateMindDispatched pyashStateMindRunning := by
+  simpa using pyashCore_mind_dispatch_do_step
+
+/-- `mind` run step (decomposed bridge lemma). -/
+theorem pyashGF_mind_run_step :
+    langReduces pyashCore pyashStateMindRunning pyashStateMindDoneOk := by
+  simpa using pyashCore_mind_run_do_step
 
 /-- `write` derive step (decomposed bridge lemma). -/
 theorem pyashGF_write_derive_step :
@@ -847,6 +496,24 @@ theorem pyashGF_search_clause_closure_bridge :
       ((PyashCoreReducesStar.single pyashGF_search_dispatch_step).trans
         (PyashCoreReducesStar.single pyashGF_search_run_step))
 
+theorem pyashGF_read_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFReadDoClause)
+      pyashStateReadDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_read_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_read_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_read_run_step))
+
+theorem pyashGF_mind_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFMindDoClause)
+      pyashStateMindDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_mind_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_mind_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_mind_run_step))
+
 /-- Bridge claim 5 (OSLF): GF chip/do clause reaches the PyashCore chip dispatch stage. -/
 theorem pyashGF_chip_clause_dispatch_bridge :
     langReduces pyashCore
@@ -855,6 +522,20 @@ theorem pyashGF_chip_clause_dispatch_bridge :
   unfold pyashGFInputOf
   simpa [pyashGF_chip_clause_maps] using pyashCore_chip_derive_signature_step
 
+theorem pyashGF_chip_series_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFChipSeriesDoClause)
+      pyashStateChipSeriesDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_chip_series_clause_maps] using pyashCore_chip_series_derive_signature_step
+
+theorem pyashGF_chip_bounded_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFChipBoundedDoClause)
+      pyashStateChipBoundedDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_chip_bounded_clause_maps] using pyashCore_chip_bounded_derive_signature_step
+
 /-- Bridge claim 6 (OSLF): GF hear/do clause reaches the PyashCore hear dispatch stage. -/
 theorem pyashGF_hear_clause_dispatch_bridge :
     langReduces pyashCore
@@ -862,6 +543,152 @@ theorem pyashGF_hear_clause_dispatch_bridge :
       pyashStateHearDispatched := by
   unfold pyashGFInputOf
   simpa [pyashGF_hear_clause_maps] using pyashCore_hear_derive_signature_step
+
+theorem pyashGF_hear_mic_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFHearMicDoClause)
+      pyashStateHearMicRecordDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_hear_mic_clause_maps] using pyashCore_hear_mic_derive_signature_step
+
+theorem pyashGF_hear_srt_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFHearSrtDoClause)
+      pyashStateHearFileSrtDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_hear_srt_clause_maps] using pyashCore_hear_srt_derive_signature_step
+
+/-- `chip` derive step (decomposed bridge lemma). -/
+theorem pyashGF_chip_derive_step :
+    langReduces pyashCore pyashStateChipDerive pyashStateChipDispatched := by
+  simpa using pyashCore_chip_derive_signature_step
+
+/-- `chip` dispatch step (decomposed bridge lemma). -/
+theorem pyashGF_chip_dispatch_step :
+    langReduces pyashCore pyashStateChipDispatched pyashStateChipRunning := by
+  simpa using pyashCore_chip_dispatch_do_step
+
+/-- `chip` run step (decomposed bridge lemma). -/
+theorem pyashGF_chip_run_step :
+    langReduces pyashCore pyashStateChipRunning pyashStateChipDoneOk := by
+  simpa using pyashCore_chip_run_do_step
+
+theorem pyashGF_chip_series_derive_step :
+    langReduces pyashCore pyashStateChipSeriesDerive pyashStateChipSeriesDispatched := by
+  simpa using pyashCore_chip_series_derive_signature_step
+
+theorem pyashGF_chip_series_dispatch_step :
+    langReduces pyashCore pyashStateChipSeriesDispatched pyashStateChipSeriesRunning := by
+  simpa using pyashCore_chip_series_dispatch_do_step
+
+theorem pyashGF_chip_series_run_step :
+    langReduces pyashCore pyashStateChipSeriesRunning pyashStateChipSeriesDoneOk := by
+  simpa using pyashCore_chip_series_run_do_step
+
+theorem pyashGF_chip_bounded_derive_step :
+    langReduces pyashCore pyashStateChipBoundedDerive pyashStateChipBoundedDispatched := by
+  simpa using pyashCore_chip_bounded_derive_signature_step
+
+theorem pyashGF_chip_bounded_dispatch_step :
+    langReduces pyashCore pyashStateChipBoundedDispatched pyashStateChipBoundedRunning := by
+  simpa using pyashCore_chip_bounded_dispatch_do_step
+
+theorem pyashGF_chip_bounded_run_step :
+    langReduces pyashCore pyashStateChipBoundedRunning pyashStateChipBoundedDoneOk := by
+  simpa using pyashCore_chip_bounded_run_do_step
+
+/-- `hear` derive step (decomposed bridge lemma). -/
+theorem pyashGF_hear_derive_step :
+    langReduces pyashCore pyashStateHearDerive pyashStateHearDispatched := by
+  simpa using pyashCore_hear_derive_signature_step
+
+/-- `hear` dispatch step (decomposed bridge lemma). -/
+theorem pyashGF_hear_dispatch_step :
+    langReduces pyashCore pyashStateHearDispatched pyashStateHearRunning := by
+  simpa using pyashCore_hear_dispatch_do_step
+
+/-- `hear` run step (decomposed bridge lemma). -/
+theorem pyashGF_hear_run_step :
+    langReduces pyashCore pyashStateHearRunning pyashStateHearDoneOk := by
+  simpa using pyashCore_hear_run_do_step
+
+theorem pyashGF_hear_mic_derive_step :
+    langReduces pyashCore pyashStateHearMicRecordDerive pyashStateHearMicRecordDispatched := by
+  simpa using pyashCore_hear_mic_derive_signature_step
+
+theorem pyashGF_hear_mic_dispatch_step :
+    langReduces pyashCore pyashStateHearMicRecordDispatched pyashStateHearMicRecordRunning := by
+  simpa using pyashCore_hear_mic_dispatch_do_step
+
+theorem pyashGF_hear_mic_run_step :
+    langReduces pyashCore pyashStateHearMicRecordRunning pyashStateHearMicRecordDoneOk := by
+  simpa using pyashCore_hear_mic_run_do_step
+
+theorem pyashGF_hear_srt_derive_step :
+    langReduces pyashCore pyashStateHearFileSrtDerive pyashStateHearFileSrtDispatched := by
+  simpa using pyashCore_hear_srt_derive_signature_step
+
+theorem pyashGF_hear_srt_dispatch_step :
+    langReduces pyashCore pyashStateHearFileSrtDispatched pyashStateHearFileSrtRunning := by
+  simpa using pyashCore_hear_srt_dispatch_do_step
+
+theorem pyashGF_hear_srt_run_step :
+    langReduces pyashCore pyashStateHearFileSrtRunning pyashStateHearFileSrtDoneOk := by
+  simpa using pyashCore_hear_srt_run_do_step
+
+theorem pyashGF_chip_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFChipDoClause)
+      pyashStateChipDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_chip_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_chip_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_chip_run_step))
+
+theorem pyashGF_chip_series_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFChipSeriesDoClause)
+      pyashStateChipSeriesDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_chip_series_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_chip_series_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_chip_series_run_step))
+
+theorem pyashGF_chip_bounded_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFChipBoundedDoClause)
+      pyashStateChipBoundedDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_chip_bounded_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_chip_bounded_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_chip_bounded_run_step))
+
+theorem pyashGF_hear_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFHearDoClause)
+      pyashStateHearDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_hear_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_hear_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_hear_run_step))
+
+theorem pyashGF_hear_mic_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFHearMicDoClause)
+      pyashStateHearMicRecordDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_hear_mic_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_hear_mic_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_hear_mic_run_step))
+
+theorem pyashGF_hear_srt_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFHearSrtDoClause)
+      pyashStateHearFileSrtDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_hear_srt_clause_dispatch_bridge).trans
+      ((PyashCoreReducesStar.single pyashGF_hear_srt_dispatch_step).trans
+        (PyashCoreReducesStar.single pyashGF_hear_srt_run_step))
 
 /-- `configure` derive step (decomposed bridge lemma). -/
 theorem pyashGF_configure_derive_step :
@@ -960,6 +787,27 @@ theorem pyashGF_configure_def_clause_dispatch_bridge :
   unfold pyashGFInputOf
   simpa [pyashGF_configure_def_clause_maps] using pyashGF_configure_def_derive_step
 
+theorem pyashGF_configure_command_map_def_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFConfigureCommandMapDefClause)
+      pyashStateConfigureDefDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_configure_command_map_def_clause_maps] using pyashGF_configure_def_derive_step
+
+theorem pyashGF_configure_sandbox_map_def_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFConfigureSandboxMapDefClause)
+      pyashStateConfigureDefDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_configure_sandbox_map_def_clause_maps] using pyashGF_configure_def_derive_step
+
+theorem pyashGF_configure_verify_loop_map_def_clause_dispatch_bridge :
+    langReduces pyashCore
+      (pyashGFInputOf pyashGFConfigureVerifyLoopMapDefClause)
+      pyashStateConfigureDefDispatched := by
+  unfold pyashGFInputOf
+  simpa [pyashGF_configure_verify_loop_map_def_clause_maps] using pyashGF_configure_def_derive_step
+
 /-- Decomposed `configure/def` one-step bridge package from GF-mapped input. -/
 theorem pyashGF_configure_def_clause_step_decomposition :
     (pyashGFInputOf pyashGFConfigureDefClause = pyashStateConfigureDefDerive) ∧
@@ -990,6 +838,30 @@ theorem pyashGF_configure_def_clause_closure_bridge :
   exact
     (PyashCoreReducesStar.single hDerive).trans
       (PyashCoreReducesStar.single hDispatch)
+
+theorem pyashGF_configure_command_map_def_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFConfigureCommandMapDefClause)
+      pyashStateConfigureDefDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_configure_command_map_def_clause_dispatch_bridge).trans
+      (PyashCoreReducesStar.single pyashGF_configure_def_dispatch_step)
+
+theorem pyashGF_configure_sandbox_map_def_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFConfigureSandboxMapDefClause)
+      pyashStateConfigureDefDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_configure_sandbox_map_def_clause_dispatch_bridge).trans
+      (PyashCoreReducesStar.single pyashGF_configure_def_dispatch_step)
+
+theorem pyashGF_configure_verify_loop_map_def_clause_closure_bridge :
+    PyashCoreReducesStar
+      (pyashGFInputOf pyashGFConfigureVerifyLoopMapDefClause)
+      pyashStateConfigureDefDoneOk := by
+  exact
+    (PyashCoreReducesStar.single pyashGF_configure_verify_loop_map_def_clause_dispatch_bridge).trans
+      (PyashCoreReducesStar.single pyashGF_configure_def_dispatch_step)
 
 /-- `world` derive step (decomposed bridge lemma). -/
 theorem pyashGF_world_derive_step :
@@ -1284,9 +1156,16 @@ def pyashGFCanaryCasePatterns : List (String × Pattern × Pattern) :=
   , ("pyash_gf_pipeline_then_err_terminal", pyashStatePipelineThenDoneDispatchErr, pyashStatePipelineThenDoneDispatchErr)
   , ("pyash_gf_dispatch_error_instr", pyashStateDispatchErrorInstr, pyashStateDoneDispatchErr)
   , ("pyash_gf_chip_do", pyashStateChipDerive, pyashStateChipDoneOk)
+  , ("pyash_gf_chip_do_series", pyashStateChipSeriesDerive, pyashStateChipSeriesDoneOk)
+  , ("pyash_gf_chip_do_bounded", pyashStateChipBoundedDerive, pyashStateChipBoundedDoneOk)
   , ("pyash_gf_hear_do", pyashStateHearDerive, pyashStateHearDoneOk)
+  , ("pyash_gf_hear_do_mic", pyashStateHearMicRecordDerive, pyashStateHearMicRecordDoneOk)
+  , ("pyash_gf_hear_do_srt", pyashStateHearFileSrtDerive, pyashStateHearFileSrtDoneOk)
   , ("pyash_gf_configure_do", pyashStateConfigureDerive, pyashStateConfigureDoneOk)
   , ("pyash_gf_configure_def", pyashStateConfigureDefDerive, pyashStateConfigureDefDoneOk)
+  , ("pyash_gf_configure_command_map_def", pyashStateConfigureDefDerive, pyashStateConfigureDefDoneOk)
+  , ("pyash_gf_configure_sandbox_map_def", pyashStateConfigureDefDerive, pyashStateConfigureDefDoneOk)
+  , ("pyash_gf_configure_verify_loop_map_def", pyashStateConfigureDefDerive, pyashStateConfigureDefDoneOk)
   , ("pyash_gf_configure_dispatch_to_done", pyashStateConfigureDispatched, pyashStateConfigureDoneOk)
   , ("pyash_gf_configure_running_to_done", pyashStateConfigureRunning, pyashStateConfigureDoneOk)
   , ("pyash_gf_world_do", pyashStateWorldDerive, pyashStateWorldDoneOk)

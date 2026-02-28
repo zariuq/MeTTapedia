@@ -1,4 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.MORK.MORKCommBridge
+import Mettapedia.Languages.ProcessCalculi.MORK.PathMapBridge
+import Mettapedia.Languages.ProcessCalculi.MORK.MatchSpec
+import Mettapedia.Languages.ProcessCalculi.MORK.MeTTaILBridge
 
 /-!
 # MORK: Minimal Model 2 (MM2) Formalization
@@ -15,6 +18,9 @@ MORK/
   Space.lean           — Space = Finset Atom; firing semantics; matchAtom/applySubst
   ThreePhaseExec.lean  — Phase protocol: unfold (0–31), base (32–63), fold (64–95)
   MORKCommBridge.lean  — Bridge: MORK binary fold ↔ MQ-calculus CommReduction
+  PathMapBridge.lean   — Bridge: MORK space transitions ↔ PathMap lattice ops
+  MatchSpec.lean       — Relational spec of atom matching (sound/complete fragment)
+  MeTTaILBridge.lean   — Bridge: DeclReduces ↔ MORK fireRule
 ```
 
 ## Key Results
@@ -24,6 +30,10 @@ MORK/
 - `mork_fold_is_comm`: any binary MORK fold step corresponds to a MQ CommReduction
 - `mork_fold_both_outcomes_exist`: MORK fold is non-deterministic (both sub-results possible)
 - `mork_mq_nondeterminism_corresponds`: MORK non-determinism ↔ MQ comm_both_outcomes
+- `applyBase_eq_lattice_ops`: MORK base step = PathMap psubtract + pjoin
+- `applyFold_eq_lattice_ops`: MORK fold step = PathMap psubtract chain + pjoin
+- `applySubst_commutes`: MORK applySubst commutes with morkPatternToAtom
+- `declReduces_implies_mork_fire`: DeclReduces → MORK fireRule fires (topRule case)
 
 ## Spec status
 

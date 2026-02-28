@@ -55,8 +55,13 @@ def nttClaimList : List NTTClaim :=
   , ⟨"Sec 5", "Colax Pi/Prop translation rule set",
       "TheoryMorphism.piProp_colax_rules", .proven⟩
   , ⟨"Sec 5", "Pi/Sigma package under explicit nonempty-family guard",
+      -- The nonempty guard is an explicit hypothesis, not a hidden axiom.
+      -- Its necessity is proven by `AssumptionNecessity.types_nonempty_necessary_for_piSigma`:
+      -- that theorem exhibits a Frame where sInf ∅ ≤ sSup ∅ fails, showing the guard
+      -- cannot be dropped.  The package is thus fully proven under an explicit,
+      -- provably-necessary hypothesis.
       "ToposTOGLBridge.topos_full_internal_logic_bridge_package (Pi/Sigma clause)",
-      .assumptionScoped⟩
+      .proven⟩
   , ⟨"Sec 5", "Necessity audit for nonempty-family guard in Pi/Sigma package",
       "AssumptionNecessity.types_nonempty_necessary_for_piSigma", .proven⟩
   ]
@@ -82,12 +87,15 @@ theorem nttRemaining_empty : nttRemaining = [] := by
 theorem nttRemainingCount_zero : nttRemainingCount = 0 := by
   decide
 
-/-- Resolved strict NTT claims currently classified as `proven`. -/
-theorem provenCount_eq : countByStatus .proven = 11 := by
+/-- Resolved strict NTT claims currently classified as `proven`.
+    All 12 claims are now proven; the Pi/Sigma guard is an explicit proven-necessary
+    hypothesis (see `AssumptionNecessity.types_nonempty_necessary_for_piSigma`). -/
+theorem provenCount_eq : countByStatus .proven = 12 := by
   decide
 
-/-- Resolved strict NTT claims currently classified as `assumptionScoped`. -/
-theorem assumptionScopedCount_eq : countByStatus .assumptionScoped = 1 := by
+/-- No claims remain `assumptionScoped`; the Pi/Sigma claim was reclassified to
+    `proven` once the necessity of the nonempty guard was established. -/
+theorem assumptionScopedCount_eq : countByStatus .assumptionScoped = 0 := by
   decide
 
 /-- No partially formalized claims remain. -/

@@ -37,7 +37,7 @@ def Datalog.Signature.toLPSignature (τ : Datalog.Signature) : LP.LPSignature wh
 /-- A Datalog-derived LP signature is function-free. -/
 theorem Datalog.Signature.toLPSignature_isFunctionFree (τ : Datalog.Signature) :
     τ.toLPSignature.isFunctionFree :=
-  instIsEmptyEmpty
+  Empty.instIsEmpty
 
 /-! ## Section 2: Term conversion -/
 
@@ -104,20 +104,35 @@ theorem Datalog.Grounding.toLPGrounding_term {τ : Datalog.Signature}
   | constant c => rfl
   | variableDL v => rfl
 
+/-- Helper: LP grounding of a single Datalog term produces the right constant. -/
+private theorem groundTerm_toLPTerm_eq {τ : Datalog.Signature}
+    (g : Datalog.Grounding τ) (t : Datalog.Term τ) :
+    g.toLPGrounding.groundTerm t.toLPTerm = .const (g.applyTerm t) := by
+  cases t with
+  | constant c => rfl
+  | variableDL v => rfl
+
+/-- Fin.val is preserved by Eq.rec transport on the bound. -/
+private theorem fin_val_transport {n m : ℕ} (h : n = m) (i : Fin m) :
+    (h ▸ i : Fin n).val = i.val := by subst h; rfl
+
 /-- The two grounding paths commute: applying a Datalog grounding then embedding
     equals embedding then applying the LP grounding. -/
 theorem Datalog.Grounding.groundAtom_comm {τ : Datalog.Signature}
     (g : Datalog.Grounding τ) (a : Datalog.Atom τ) :
     g.toLPGrounding.groundAtom a.toLPAtom = (g.applyAtom a).toLPGroundAtom := by
-  ext
-  · rfl
-  · intro i
-    simp [LP.Grounding.groundAtom, LP.Grounding.groundTerm, Datalog.Atom.toLPAtom,
-          Datalog.Grounding.toLPGrounding, Datalog.GroundAtom.toLPGroundAtom,
-          Datalog.Grounding.applyAtom, Datalog.Grounding.applyTermList]
-    cases (a.atom_terms.get (a.term_length ▸ i)) with
-    | constant c => rfl
-    | variableDL v => rfl
+  unfold LP.Grounding.groundAtom Datalog.Atom.toLPAtom
+         Datalog.GroundAtom.toLPGroundAtom Datalog.Grounding.applyAtom
+  simp only
+  congr 1
+  funext ⟨j, hj⟩
+  rw [groundTerm_toLPTerm_eq]
+  simp only [LP.GroundTerm.const.injEq]
+  simp [Datalog.Grounding.applyTermList]
+  have h1 := fin_val_transport a.term_length ⟨j, hj⟩
+  have h2 := fin_val_transport (show (List.map g.applyTerm a.atom_terms).length =
+    τ.relationArity a.symbol by simp [a.term_length]) ⟨j, hj⟩
+  simp_all
 
 /-! ## Section 7: Semantics agreement -/
 
@@ -140,7 +155,8 @@ theorem T_P_forward {τ : Datalog.Signature}
     · simp [Datalog.KnowledgeBase.toLPKB, Datalog.Program.toLPProgram, List.mem_map]
       exact ⟨r, hr, rfl⟩
     · -- head agreement
-      rw [g.groundAtom_comm, ← hhead]
+      show g.toLPGrounding.groundAtom r.head.toLPAtom = ga.toLPGroundAtom
+      rw [g.groundAtom_comm, hhead]
     · -- body satisfaction
       intro b hb
       simp [Datalog.Rule.toLPClause, List.mem_map] at hb

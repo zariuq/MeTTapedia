@@ -26,8 +26,8 @@ inductive Reduces : Process → Process → Prop where
   | par_l  (p p' q : Process) : Reduces p p' → Reduces (MQPar p q) (MQPar p' q)
   | par_r  (p q q' : Process) : Reduces q q' → Reduces (MQPar p q) (MQPar p q')
   | nu_step  (p p' : Process) : Reduces p p' → Reduces (MQNu p) (MQNu p')
-  | gate_step (s : String) (p p' : Process) :
-      Reduces p p' → Reduces (MQGate s p) (MQGate s p')
+  | gate_step (g : GateSpec) (p p' : Process) :
+      Reduces p p' → Reduces (MQGate g p) (MQGate g p')
 
 theorem comm_zero (i : ℕ) (p q : Process) :
     Reduces (MQPar (MQOut i) (MQIn i p q)) p :=

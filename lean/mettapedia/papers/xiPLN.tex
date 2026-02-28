@@ -619,14 +619,22 @@ Ch.\ 12 & Intensional inference & Information-theoretic bridge and typed WM grou
 \codepath{Mettapedia/Logic/IntensionalInheritanceSolomonoffBridge.lean},
 \codepath{Mettapedia/Logic/PLNIntensionalWorldModel.lean},
 semantic and linked one-call endpoints in
-\codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}. & Partial \\
+\codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}, plus executable canary/regression targets:
+\codepath{Mettapedia/Logic/PLNChapter12Canary.lean},
+\codepath{Mettapedia/Logic/PLNChapter12Regression.lean},
+\codepath{scripts/check\_ch12\_intensional.sh}. & Formalized (ASSOC core) \\
 \hline
 Ch.\ 13 & Aspects of inference control & Formal inference-control components via selector
-specification, ranking transfer/stability, and aggregation-role theorems:
+specification, ranking transfer/stability, aggregation-role, and executable canary/regression
+targets:
 \codepath{Mettapedia/Logic/PremiseSelectionSelectorSpec.lean},
 \codepath{Mettapedia/Logic/PremiseSelectionOptimality.lean},
 \codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean},
-\codepath{Mettapedia/Logic/PremiseSelectionCoverage.lean}. & Partial \\
+\codepath{Mettapedia/Logic/PremiseSelectionCoverage.lean},
+\codepath{Mettapedia/Logic/PLNChapter13InferenceControl.lean},
+\codepath{Mettapedia/Logic/PLNChapter13Canary.lean},
+\codepath{Mettapedia/Logic/PLNChapter13Regression.lean},
+\codepath{scripts/check\_ch13\_inference\_control.sh}. & Formalized (core + canaries) \\
 \hline
 Ch.\ 14 & Temporal and causal inference & Temporal operator layer and causal profile:
 \codepath{Mettapedia/Logic/PLNChapter14TemporalCausal.lean}; event-calculus WM grounding:
@@ -647,9 +655,9 @@ integration) are still being extended.
 
 \paragraph{Coverage delta (current).}
 Relative to earlier drafts, Ch.\ 12 has moved from prototype-only status to
-\emph{partial formalization}: the ASSOC-channel path is now wired through typed WM semantics,
-Solomonoff log-ratio correspondence, and one-call canonical API transport. Remaining work is
-mainly PAT/mixed-policy parity and assumption-minimal packaging.
+\emph{formalized ASSOC-core coverage}: the ASSOC-channel path is now wired through typed WM semantics,
+Solomonoff log-ratio correspondence, linked/linked-strong one-call canonical API transport, and
+executable positive/negative canary regression. Remaining work is mainly PAT/mixed-policy parity.
 
 \subsection{Chapter 11 Rule-to-Theorem Index}
 \label{app:ch11-theorem-index}
@@ -753,6 +761,14 @@ Additional finite quantifier fixtures (`ALMOST ALL`, `ABOUT HALF`) &
 \code{canary\_ch11\_aboutHalf\_positive\_negative\_split} &
 \codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
 \hline
+Literature-calibrated verbal probability fixtures (`PROBABLY`, `MAYBE/POSSIBLY`) &
+\textit{Tags: [MostellerYoutz1989], [IPCC-uncertainty-guidance]} \newline
+\code{ch11ProbablyParams},
+\code{canary\_ch11\_probably\_positive\_negative\_split},
+\code{ch11MaybeParams},
+\code{canary\_ch11\_maybe\_positive\_negative\_split} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\hline
 Additional finite quantifier fixtures (`ALMOST NONE`, `MANY-BUT-NOT-MOST`) &
 \textit{Tags: [Zadeh1983], [Yager1984], [DiazHermida2018-QFM]} \newline
 \code{canary\_ch11\_almostNone\_fraction\_oneFifth},
@@ -787,6 +803,117 @@ Regression entrypoint &
 \codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Regression.lean},
 \codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11FuzzySyllogismRegression.lean} &
 \codepath{.github/workflows/lean\_action\_ci.yml} \\
+\hline
+\end{longtable}
+
+\subsection{Chapter 12 Rule-to-Theorem Index}
+\label{app:ch12-theorem-index}
+
+\begin{longtable}{p{0.30\textwidth}p{0.33\textwidth}p{0.29\textwidth}}
+\textbf{Chapter 12 content} & \textbf{Lean theorem(s)} & \textbf{Module} \\
+\hline
+Information-theoretic bridge to universal-mixture conditionals \newline
+\textit{Tags: [PLNBook-Ch12], [Solomonoff], [log-ratio]} &
+\code{intensionalFromConditional\_eq\_log2\_ratio},
+\code{intensionalFromXiSemimeasure\_eq\_log2\_ratio},
+\code{intensionalFromXiGeom\_eq\_log2\_ratio} &
+\codepath{Mettapedia/Logic/IntensionalInheritanceSolomonoffBridge.lean} \\
+\hline
+Typed WM ASSOC/PAT channel grounding \newline
+\textit{Tags: [PLNBook-Ch12], [WM-typed], [OSLF-bridge]} &
+\code{AssocScoreCorrespondence},
+\code{PATScoreCorrespondence},
+\code{mixedPolicyAssoc\_of\_assocScoreCorrespondence},
+\code{mixedPolicyAssocPat\_of\_assocPatScoreCorrespondence} &
+\codepath{Mettapedia/Logic/PLNIntensionalWorldModel.lean} \\
+\hline
+Canonical semantic packaging for concrete mixed policies \newline
+\textit{Tags: [PLNBook-Ch12], [ASSOC-core], [semantic-packaging]} &
+\code{AssocSemanticModel},
+\code{AssocPatSemanticModel},
+\code{mixedPolicyAssoc\_of\_assocSemanticModel},
+\code{mixedPolicyAssocPat\_of\_assocPatSemanticModel},
+\code{mixedRewriteRule\_assocSemantic\_of\_model},
+\code{mixedRewriteRule\_assocPatSemantic\_of\_model} &
+\codepath{Mettapedia/Logic/PLNIntensionalWorldModel.lean} \\
+\hline
+Threshold-truth transport (semantic linked strong endpoint) \newline
+\textit{Tags: [PLNBook-Ch12], [ITV], [selector-transport]} &
+\code{intensional\_mixed\_assoc\_threshold\_atom\_of\_interval\_of\_solomonoff\_semantic\_linked\_strong},
+\code{end\_to\_end\_quantale\_selector\_rewrite\_query\_threshold\_finalBundle\_inheritance\_solomonoff\_semantic\_linkedStrong\_of\_interval},
+\code{end\_to\_end\_quantale\_selector\_rewrite\_query\_threshold\_finalBundle\_inheritance\_solomonoff\_semantic\_linkedStrong\_bayesNormal},
+\code{end\_to\_end\_quantale\_selector\_rewrite\_query\_threshold\_finalBundle\_inheritance\_solomonoff\_semantic\_linkedStrong\_bayesExact},
+\code{end\_to\_end\_quantale\_selector\_rewrite\_query\_threshold\_finalBundle\_inheritance\_solomonoff\_semantic\_linkedStrong\_walley} &
+\codepath{Mettapedia/Logic/PLNCanonicalAPI.lean} \\
+\hline
+Executable canaries (positive + non-equivalence) \newline
+\textit{Tags: [PLNBook-Ch12], [canary], [non-equivalence]} &
+\code{canary\_ch12\_mixed\_extensional\_projection},
+\code{canary\_ch12\_mixed\_assoc\_projection},
+\code{canary\_ch12\_mixed\_projection\_non\_equivalent} &
+\codepath{Mettapedia/Logic/PLNChapter12Canary.lean} \\
+\hline
+Regression entrypoint &
+\codepath{Mettapedia/Logic/PLNChapter12Regression.lean},
+\codepath{scripts/check\_ch12\_intensional.sh} &
+\codepath{Mettapedia/Logic/README.md} \\
+\hline
+\end{longtable}
+
+\subsection{Chapter 13 Rule-to-Theorem Index}
+\label{app:ch13-theorem-index}
+
+\begin{longtable}{p{0.30\textwidth}p{0.33\textwidth}p{0.29\textwidth}}
+\textbf{Chapter 13 content} & \textbf{Lean theorem(s)} & \textbf{Module} \\
+\hline
+Selector defaults + checklist linkage \newline
+\textit{Tags: [PLNBook-Ch13], [selector-spec], [checklist]} &
+\code{selectorSpec\_defaults\_match\_checklist},
+\code{selectorSpec\_default\_priorNB\_ranking\_transfer},
+\code{selectorSpec\_zeroLocalGate\_fallback} &
+\codepath{Mettapedia/Logic/PremiseSelectionSelectorSpec.lean} \\
+\hline
+Ranking transfer from classical baselines \newline
+\textit{Tags: [PLNBook-Ch13], [NB], [kNN], [ranking-transfer]} &
+\code{pln\_inherits\_nb\_ranking},
+\code{pln\_inherits\_knn\_ranking},
+\code{pln\_knn\_ranking\_eq} &
+\codepath{Mettapedia/Logic/PremiseSelectionOptimality.lean} \\
+\hline
+Robustness under bounded perturbations \newline
+\textit{Tags: [PLNBook-Ch13], [ranking-stability], [margin]} &
+\code{pairwise\_lt\_stable\_of\_margin},
+\code{bayesRanking\_stable\_of\_margin\_and\_tie\_equivariant},
+\code{bayesRanking\_stable\_of\_support\_bias\_margin} &
+\codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean} \\
+\hline
+Coverage/submodularity objective family \newline
+\textit{Tags: [PLNBook-Ch13], [submodularity], [greedy-coverage]} &
+\code{dependencyCoverage\_mono},
+\code{dependencyCoverage\_diminishing\_returns},
+\code{greedyChain\_one\_minus\_exp\_bound\_sharp} &
+\codepath{Mettapedia/Logic/PremiseSelectionCoverage.lean} \\
+\hline
+Composed Chapter-13 core endpoint (selector + stability + coverage) \newline
+\textit{Tags: [PLNBook-Ch13], [composed-core], [end-to-end]} &
+\code{ch13\_selector\_default\_ranking\_iff},
+\code{ch13\_stable\_pooled\_of\_twoStage},
+\code{ch13\_inferenceControl\_end\_to\_end} &
+\codepath{Mettapedia/Logic/PLNChapter13InferenceControl.lean} \\
+\hline
+Executable canaries (positive + negative) \newline
+\textit{Tags: [PLNBook-Ch13], [canary], [non-equivalence]} &
+\code{canary\_ch13\_pln\_inherits\_nb\_ranking\_bool},
+\code{canary\_ch13\_pairwise\_stable\_of\_margin},
+\code{canary\_ch13\_ranking\_flip\_without\_margin},
+\code{canary\_ch13\_dependencyCoverage\_insert\_gain\_bool},
+\code{canary\_ch13\_selector\_default\_gate\_bounds} &
+\codepath{Mettapedia/Logic/PLNChapter13Canary.lean} \\
+\hline
+Regression entrypoint &
+\codepath{Mettapedia/Logic/PLNChapter13Regression.lean},
+\codepath{scripts/check\_ch13\_inference\_control.sh} &
+\codepath{Mettapedia/Logic/README.md} \\
 \hline
 \end{longtable}
 
@@ -837,7 +964,11 @@ the principal \emph{legacy and current} modules in Mettapedia that track PLN-boo
 \codepath{Mettapedia/Logic/PremiseSelectionCoverage.lean},
 \codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean},
 \codepath{Mettapedia/Logic/PremiseSelectionSelectorSpec.lean},
-\codepath{Mettapedia/Logic/PremiseSelectionBestPLNDraft.lean}.
+\codepath{Mettapedia/Logic/PremiseSelectionBestPLNDraft.lean},
+\codepath{Mettapedia/Logic/PLNChapter13InferenceControl.lean},
+\codepath{Mettapedia/Logic/PLNChapter13Canary.lean},
+\codepath{Mettapedia/Logic/PLNChapter13Regression.lean},
+\codepath{scripts/check\_ch13\_inference\_control.sh}.
 
 \paragraph{Ch.\ 10--11 (higher-order, quantifiers, crisp/fuzzy operators).}
 \codepath{Mettapedia/Logic/HigherOrder.lean},
@@ -860,7 +991,10 @@ the principal \emph{legacy and current} modules in Mettapedia that track PLN-boo
 \codepath{Mettapedia/Logic/IntensionalInheritance.lean},
 \codepath{Mettapedia/Logic/IntensionalInheritanceSolomonoffBridge.lean},
 \codepath{Mettapedia/Logic/PLNIntensionalWorldModel.lean},
-\codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}.
+\codepath{Mettapedia/Logic/PLNCanonicalAPI.lean},
+\codepath{Mettapedia/Logic/PLNChapter12Canary.lean},
+\codepath{Mettapedia/Logic/PLNChapter12Regression.lean},
+\codepath{scripts/check\_ch12\_intensional.sh}.
 
 \paragraph{Ch.\ 14 (temporal/causal; event calculus; OSLF/GSLT grounding).}
 \codepath{Mettapedia/Logic/PLNTemporal.lean},

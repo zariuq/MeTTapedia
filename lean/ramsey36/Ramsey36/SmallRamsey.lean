@@ -1381,7 +1381,7 @@ theorem ramsey_of_ramseyNumber_eq_3_5
 
 /-! ## Small Ramsey equalities (continued) -/
 
-theorem ramsey_three_four_proof : ramseyNumber 3 4 = 9 := by
+theorem ramsey_three_four : ramseyNumber 3 4 = 9 := by
   apply Nat.le_antisymm
   · -- upper bound
     apply csInf_le
@@ -1398,7 +1398,7 @@ theorem ramsey_three_four_proof : ramseyNumber 3 4 = 9 := by
       ⟨9, hasRamseyProperty_3_4_9⟩
     exact ramsey_three_four_ge_9_of_nonempty h_nonempty
 
-theorem ramsey_three_five_proof : ramseyNumber 3 5 = 14 := by
+theorem ramsey_three_five : ramseyNumber 3 5 = 14 := by
   apply Nat.le_antisymm
   · -- upper bound
     apply csInf_le

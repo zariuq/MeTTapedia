@@ -1,62 +1,97 @@
-# Mettapedia/CategoryTheory
+# CategoryTheory foundation
 
-Categorical foundations for OSLF, PLN, and the de Finetti theorem.
+Mettapedia/CategoryTheory provides categorical foundations for OSLF, PLN, and de Finetti formalization.
 
 ## Architecture
 
-Three main strands:
+- The architecture is three main strands.
+- Strand one is lambda theory and native type theory across seven files.
+- Strand two is categorical de Finetti across thirteen files.
+- Strand three is supporting files for fuzzy frames, graph theory, and internal language.
 
-### 1. Lambda Theory and Native Type Theory (7 files)
+### Lambda theory and native type theory strand
 
-The OSLF type-synthesis pipeline: subobject fibrations over lambda theories yield
-modal types via the Grothendieck construction.
+- `LambdaTheory.lean`
+  - LambdaTheory.lean defines SubobjectFibration and LambdaTheory with finite limits and Heyting fibers
 
-| File | Description |
-|------|-------------|
-| `LambdaTheory.lean` | SubobjectFibration, LambdaTheory with finite limits and Heyting fibers |
-| `NativeTypeTheory.lean` | NativeTypeBundle (NT) as Grothendieck construction of Sub |
-| `PLNInstance.lean` | PLN as Frame-fiber instance; deduction as modal composition |
-| `PLNTerms.lean` | PLN term syntax and reduction relation |
-| `ModalTypes.lean` | Modal types via comprehension; rely-possibly semantics |
-| `Hypercube.lean` | H_Sigma endofunctor (Stay & Wells); generates modal type systems |
-| `PLNSemiringQuantale.lean` | Semiring quantale on Evidence: tensor and plus |
+- `NativeTypeTheory.lean`
+  - NativeTypeTheory.lean defines NativeTypeBundle as a Grothendieck construction
 
-### 2. Categorical De Finetti (13 files)
+- `PLNInstance.lean`
+  - PLNInstance.lean defines PLN as a frame-fiber instance with modal composition
 
-Comprehensive categorical treatment of de Finetti's theorem through kernel-level
-interfaces, permutation cones, Hausdorff moment uniqueness, and Kleisli(Giry)
-diagrams.
+- `PLNTerms.lean`
+  - PLNTerms.lean defines PLN term syntax and reduction relation
 
-| File | Description |
-|------|-------------|
-| `DeFinettiCategoricalInterface.lean` | Qualitative factorization interface |
-| `DeFinettiPermutationCone.lean` | Finite-prefix laws commute with permutations |
-| `DeFinettiKernelInterface.lean` | Kernel-level categorical de Finetti |
-| `DeFinettiSequenceKernelCone.lean` | Sequence-kernel permutation cone on Bool^N |
-| `DeFinettiHausdorffBridge.lean` | Hausdorff moment uniqueness |
-| `DeFinettiPerNDiagram.lean` | Per-n permutation diagram surface |
-| `DeFinettiGlobalFinitaryDiagram.lean` | Global finitary-permutation index |
-| `DeFinettiLimitConePackage.lean` | Universal-property package |
-| `DeFinettiKleisliGirySkeleton.lean` | Kleisli(Giry) global diagram and IID cone |
-| `DeFinettiMarkovCategoryBridge.lean` | MarkovCategoryCore viewpoint |
-| `DeFinettiExternalBridge.lean` | Bridge to vendored exchangeability package |
-| `DeFinettiStableExports.lean` | Stable alias layer |
-| `DeFinettiExports.lean` | Recommended import surface (18-theorem chain) |
+- `ModalTypes.lean`
+  - ModalTypes.lean defines modal types via comprehension and rely-possibly semantics
 
-### 3. Other
+- `Hypercube.lean`
+  - Hypercube.lean defines the H_Sigma endofunctor for modal type generation
 
-| File | Description |
-|------|-------------|
-| `FuzzyFrame.lean` | Unit interval [0,1] as Frame for PLN truth values |
-| `TOGL.lean` | Greg Meredith's formal theory of graphs G[X,V] |
-| `Topos/InternalLanguage.lean` | Kripke-Joyal semantics for OSLF |
+- `PLNSemiringQuantale.lean`
+  - PLNSemiringQuantale.lean defines a semiring quantale on Evidence with tensor and plus
 
-## Proof Status
+### Categorical de Finetti strand
 
-- 19 of 23 files fully proven (zero sorries)
-- 4 files with sorries (6 total): TOGL (1), FuzzyFrame (2), ModalTypes (1), Hypercube (2)
+- `DeFinettiCategoricalInterface.lean`
+  - DeFinettiCategoricalInterface.lean defines a qualitative factorization interface
 
-## Dependency Flow
+- `DeFinettiPermutationCone.lean`
+  - DeFinettiPermutationCone.lean proves permutation commutation of finite-prefix laws
+
+- `DeFinettiKernelInterface.lean`
+  - DeFinettiKernelInterface.lean defines kernel-level categorical de Finetti interfaces
+
+- `DeFinettiSequenceKernelCone.lean`
+  - DeFinettiSequenceKernelCone.lean defines sequence-kernel permutation cones on Bool power N
+
+- `DeFinettiHausdorffBridge.lean`
+  - DeFinettiHausdorffBridge.lean proves Hausdorff moment uniqueness links
+
+- `DeFinettiPerNDiagram.lean`
+  - DeFinettiPerNDiagram.lean defines per-n permutation diagram surfaces
+
+- `DeFinettiGlobalFinitaryDiagram.lean`
+  - DeFinettiGlobalFinitaryDiagram.lean defines global finitary-permutation indexing
+
+- `DeFinettiLimitConePackage.lean`
+  - DeFinettiLimitConePackage.lean packages the universal-property layer
+
+- `DeFinettiKleisliGirySkeleton.lean`
+  - DeFinettiKleisliGirySkeleton.lean defines Kleisli Giry global diagrams and IID cones
+
+- `DeFinettiMarkovCategoryBridge.lean`
+  - DeFinettiMarkovCategoryBridge.lean provides a MarkovCategoryCore viewpoint
+
+- `DeFinettiExternalBridge.lean`
+  - DeFinettiExternalBridge.lean provides bridges to vendored exchangeability formalization
+
+- `DeFinettiStableExports.lean`
+  - DeFinettiStableExports.lean provides stable alias exports
+
+- `DeFinettiExports.lean`
+  - DeFinettiExports.lean provides the recommended import surface
+
+### Other
+
+- `FuzzyFrame.lean`
+  - FuzzyFrame.lean formalizes the unit interval frame for PLN truth values
+
+- `TOGL.lean`
+  - TOGL.lean formalizes Greg Meredith's theory of graphs
+
+- `Topos/InternalLanguage.lean`
+  - Topos/InternalLanguage.lean formalizes Kripke-Joyal semantics for OSLF
+
+## Proof status
+
+- Nineteen of twenty-three files are fully proven with zero sorries.
+- The remaining four files are TOGL one sorry, FuzzyFrame two sorries, ModalTypes one sorry, and Hypercube two sorries.
+
+## Dependency flow
+
+The dependency flow is the following architecture diagram.
 
 ```
 LambdaTheory -> PLNInstance -> NativeTypeTheory

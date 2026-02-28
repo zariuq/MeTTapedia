@@ -25,6 +25,7 @@ import Mettapedia.Logic.PremiseSelectionRankingStability
 import Mettapedia.Logic.PremiseSelectionSelectorSpec
 import Mettapedia.Logic.PremiseSelectionPartitionedPriorNB
 import Mettapedia.Logic.PremiseSelectionBestPLNDraft
+import Mettapedia.Logic.PLNChapter13InferenceControl
 import Mettapedia.Logic.SoundnessCompleteness
 import Mettapedia.Logic.PLNCanonicalAPI
 import Mettapedia.Logic.PLNIntensionalWorldModel
@@ -50,6 +51,8 @@ This module is a curated import surface for the currently theorem-complete PLN s
 - Premise-selection bridges and optimality transfer (`PremiseSelection*`)
 - Premise-selection coverage/submodularity surrogate (`PremiseSelectionCoverage`)
 - Premise-selection external-Bayesian commutation (`PremiseSelectionExternalBayesianity`)
+- Chapter-13 composed inference-control core (selector defaults + stability + coverage)
+  (`PLNChapter13InferenceControl`)
 - Pooling non-uniqueness counterexample + corrected uniqueness with total-additivity
   (`maxPoolingOperator_ne_fuse`, `poolE_eq_hplus_of_externalBayes_totalAdd`)
 - Finite de Finetti local-mixture bridge (`PremiseSelectionLocalMixtureBridge`)

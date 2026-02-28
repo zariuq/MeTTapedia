@@ -432,6 +432,47 @@ theorem mixedPolicyAssocPat_of_scoreModel
     enc combine model.assocScore model.patScore model.scoreToEvidence
     hMixed model.assoc_sound model.pat_sound
 
+/-- Strong ASSOC semantic package:
+bundles score-model channels with the concrete mixed ASSOC correspondence. -/
+structure AssocSemanticModel
+    (enc : InheritanceQueryBuilder Atom Query) where
+  scoreModel : IntensionalScoreModel (State := State) (Atom := Atom) (Query := Query) enc
+  combine : Evidence → Evidence → Evidence
+  mixed_sound :
+    MixedAssocScoreCorrespondence
+      (State := State) (Atom := Atom) (Query := Query)
+      enc combine scoreModel.assocScore scoreModel.scoreToEvidence
+
+/-- Strong ASSOC+PAT semantic package:
+bundles score-model channels with the concrete mixed ASSOC+PAT correspondence. -/
+structure AssocPatSemanticModel
+    (enc : InheritanceQueryBuilder Atom Query) where
+  scoreModel : IntensionalScoreModel (State := State) (Atom := Atom) (Query := Query) enc
+  combine : Evidence → Evidence → Evidence → Evidence
+  mixed_sound :
+    MixedAssocPatScoreCorrespondence
+      (State := State) (Atom := Atom) (Query := Query)
+      enc combine
+      scoreModel.assocScore scoreModel.patScore scoreModel.scoreToEvidence
+
+/-- Derive `MixedPolicyAssoc` directly from a strong ASSOC semantic package. -/
+theorem mixedPolicyAssoc_of_assocSemanticModel
+    (enc : InheritanceQueryBuilder Atom Query)
+    (m : AssocSemanticModel (State := State) (Atom := Atom) (Query := Query) enc) :
+    MixedPolicyAssoc (State := State) (Atom := Atom) (Query := Query) enc m.combine :=
+  mixedPolicyAssoc_of_scoreModel
+    (State := State) (Atom := Atom) (Query := Query)
+    enc m.combine m.scoreModel m.mixed_sound
+
+/-- Derive `MixedPolicyAssocPat` directly from a strong ASSOC+PAT semantic package. -/
+theorem mixedPolicyAssocPat_of_assocPatSemanticModel
+    (enc : InheritanceQueryBuilder Atom Query)
+    (m : AssocPatSemanticModel (State := State) (Atom := Atom) (Query := Query) enc) :
+    MixedPolicyAssocPat (State := State) (Atom := Atom) (Query := Query) enc m.combine :=
+  mixedPolicyAssocPat_of_scoreModel
+    (State := State) (Atom := Atom) (Query := Query)
+    enc m.combine m.scoreModel m.mixed_sound
+
 /-- Typed mixed-channel rewrite constructor (extensional + ASSOC). -/
 noncomputable def mixedRewriteRule_of_assoc
     (enc : InheritanceQueryBuilder Atom Query)
@@ -644,6 +685,30 @@ noncomputable def mixedRewriteRule_assocPatSemantic
         (State := State) (Atom := Atom) (Query := Query)
         enc combine assocScore patScore scoreToEvidence hMixed hAssoc hPat)
     a b
+
+/-- Canonical semantic mixed-rule constructor from a strong ASSOC semantic package
+(`Side := True`). -/
+noncomputable def mixedRewriteRule_assocSemantic_of_model
+    (enc : InheritanceQueryBuilder Atom Query)
+    (m : AssocSemanticModel (State := State) (Atom := Atom) (Query := Query) enc)
+    (a b : Atom) :
+    WorldModelSigma.WMRewriteRuleSigma State InheritanceSort (InheritanceQueryFamily Query) :=
+  mixedRewriteRule_assocSemantic
+    (State := State) (Atom := Atom) (Query := Query)
+    enc m.combine m.scoreModel.assocScore m.scoreModel.scoreToEvidence
+    m.mixed_sound m.scoreModel.assoc_sound a b
+
+/-- Canonical semantic mixed-rule constructor from a strong ASSOC+PAT semantic package
+(`Side := True`). -/
+noncomputable def mixedRewriteRule_assocPatSemantic_of_model
+    (enc : InheritanceQueryBuilder Atom Query)
+    (m : AssocPatSemanticModel (State := State) (Atom := Atom) (Query := Query) enc)
+    (a b : Atom) :
+    WorldModelSigma.WMRewriteRuleSigma State InheritanceSort (InheritanceQueryFamily Query) :=
+  mixedRewriteRule_assocPatSemantic
+    (State := State) (Atom := Atom) (Query := Query)
+    enc m.combine m.scoreModel.assocScore m.scoreModel.patScore m.scoreModel.scoreToEvidence
+    m.mixed_sound m.scoreModel.assoc_sound m.scoreModel.pat_sound a b
 
 end ConcreteMixedPolicies
 

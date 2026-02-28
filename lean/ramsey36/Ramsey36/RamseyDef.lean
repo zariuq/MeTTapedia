@@ -26,9 +26,6 @@ noncomputable def ramseyNumber (k l : ℕ) : ℕ :=
 abbrev TriangleFree (G : SimpleGraph V) : Prop := G.CliqueFree 3
 abbrev NoKIndepSet (k : ℕ) (G : SimpleGraph V) : Prop := G.IndepSetFree k
 
-def IsNIndepSet (G : SimpleGraph V) (n : ℕ) (s : Finset V) : Prop :=
-  s.card = n ∧ ∀ x ∈ s, ∀ y ∈ s, x ≠ y → ¬ G.Adj x y
-
 abbrev IsKRegular (G : SimpleGraph V) [DecidableRel G.Adj] (k : ℕ) : Prop :=
   G.IsRegularOfDegree k
 

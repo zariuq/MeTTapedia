@@ -146,4 +146,188 @@ def matchAtom {σ : LPSignature} [DecidableEq σ.vars] [DecidableEq σ.constants
     | none => .failure
     | some bs => .success (bindingsToSubst bs)
 
+/-! ## Section 6: Binding lookup -/
+
+/-- `bindingsToSubst` maps a bound variable to its ground term (head entry). -/
+private theorem bindingsToSubst_head {σ : LPSignature} [DecidableEq σ.vars]
+    (v : σ.vars) (g : GroundTerm σ) (rest : List (σ.vars × GroundTerm σ)) :
+    (bindingsToSubst ((v, g) :: rest)) v = g.toTerm := by
+  simp [bindingsToSubst]
+
+/-- `bindingsToSubst` skips non-matching head entries. -/
+private theorem bindingsToSubst_skip {σ : LPSignature} [DecidableEq σ.vars]
+    (w : σ.vars) (g' : GroundTerm σ) (rest : List (σ.vars × GroundTerm σ))
+    (v : σ.vars) (h : w ≠ v) :
+    (bindingsToSubst ((w, g') :: rest)) v = (bindingsToSubst rest) v := by
+  simp [bindingsToSubst, show (w == v) = false from by simp [h]]
+
+/-- If `(v, g) ∈ bs` and `bs` is consistent, `bindingsToSubst bs` maps `v` to `g.toTerm`. -/
+theorem bindingsToSubst_mem {σ : LPSignature} [DecidableEq σ.vars]
+    (bs : List (σ.vars × GroundTerm σ)) (v : σ.vars) (g : GroundTerm σ)
+    (hmem : (v, g) ∈ bs) (hcons : BindingsConsistent bs) :
+    (bindingsToSubst bs) v = g.toTerm := by
+  induction bs with
+  | nil => simp at hmem
+  | cons b rest ih =>
+    obtain ⟨w, g'⟩ := b
+    by_cases hwv : w = v
+    · subst hwv
+      rw [bindingsToSubst_head]
+      exact congrArg GroundTerm.toTerm (hcons _ g' g (List.mem_cons_self ..) hmem)
+    · rw [bindingsToSubst_skip w g' rest v hwv]
+      have hmem' : (v, g) ∈ rest := by
+        rcases List.mem_cons.mp hmem with h | h
+        · exact absurd (congrArg Prod.fst h).symm hwv
+        · exact h
+      exact ih hmem' (fun v₁ g₁ g₂ h1 h2 => hcons v₁ g₁ g₂
+          (List.mem_cons_of_mem _ h1) (List.mem_cons_of_mem _ h2))
+
+/-! ## Section 7: Soundness -/
+
+/-- Split equal appended lists of known lengths. -/
+private theorem append_eq_append {α : Type*} {l₁ l₂ : List α} {r₁ r₂ : List α}
+    (h : l₁ ++ r₁ = l₂ ++ r₂) (hl : l₁.length = l₂.length) :
+    l₁ = l₂ ∧ r₁ = r₂ := by
+  induction l₁ generalizing l₂ with
+  | nil =>
+    cases l₂ with
+    | nil => exact ⟨rfl, h⟩
+    | cons _ _ => simp at hl
+  | cons a l₁ ih =>
+    cases l₂ with
+    | nil => simp at hl
+    | cons b l₂ =>
+      simp only [List.cons_append, List.cons.injEq, List.length_cons] at h hl
+      obtain ⟨rfl, h⟩ := h
+      obtain ⟨hl₁, hr⟩ := ih h (by omega)
+      exact ⟨congrArg _ hl₁, hr⟩
+
+/-- Extract pointwise equality from `finToList` map equality. -/
+private theorem finToList_map_pointwise {α₁ α₂ β : Type*} {n : ℕ}
+    (f : Fin n → α₁) (g : Fin n → α₂) (F : α₁ → β) (G : α₂ → β)
+    (h : (finToList f).map F = (finToList g).map G) :
+    ∀ i : Fin n, F (f i) = G (g i) := by
+  intro i
+  simp only [finToList, List.map_map] at h
+  -- h : (List.finRange n).map (F ∘ f) = (List.finRange n).map (G ∘ g)
+  have hi₁ : i.val < ((List.finRange n).map (F ∘ f)).length := by simp
+  have hi₂ : i.val < ((List.finRange n).map (G ∘ g)).length := by simp
+  have hlhs : ((List.finRange n).map (F ∘ f))[i.val]'hi₁ = F (f i) := by
+    simp [List.getElem_map, List.getElem_finRange]
+  have hrhs : ((List.finRange n).map (G ∘ g))[i.val]'hi₂ = G (g i) := by
+    simp [List.getElem_map, List.getElem_finRange]
+  rw [← hlhs, ← hrhs]; exact getElem_congr_coll h
+
+universe u_t u_r
+
+/-- Core soundness: any substitution agreeing with bindings sends patterns
+    to their ground counterparts. -/
+theorem collectBindingsList_sound {σ : LPSignature.{u_t, u_t, u_r, u_t}}
+    [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
+    (ps : List (Term σ)) (gs : List (GroundTerm σ)) (bs : List (σ.vars × GroundTerm σ))
+    (h : collectBindingsList ps gs = some bs)
+    (θ : Subst σ) (hθ : ∀ v g, (v, g) ∈ bs → θ v = g.toTerm) :
+    ps.map θ.applyTerm = gs.map GroundTerm.toTerm := by
+  -- Strong induction on patternListSize ps
+  suffices key : ∀ n, ∀ (ps : List (Term σ)) (gs : List (GroundTerm σ))
+      (bs : List (σ.vars × GroundTerm σ)),
+      patternListSize ps ≤ n →
+      collectBindingsList ps gs = some bs →
+      ∀ (θ : Subst σ), (∀ v g, (v, g) ∈ bs → θ v = g.toTerm) →
+      ps.map θ.applyTerm = gs.map GroundTerm.toTerm from
+    key (patternListSize ps) ps gs bs le_rfl h θ hθ
+  intro n
+  induction n with
+  | zero =>
+    intro ps gs bs hle h θ hθ
+    match ps with
+    | [] =>
+      match gs with
+      | [] => simp
+      | _ :: _ => simp [collectBindingsList] at h
+    | p :: _ =>
+      exfalso; simp [patternListSize] at hle; have := Term.size_pos p; omega
+  | succ n ih =>
+    intro ps gs bs hle h θ hθ
+    match ps, gs with
+    | [], [] => simp
+    | [], _ :: _ => simp [collectBindingsList] at h
+    | _ :: _, [] =>
+      -- All patterns against empty ground list return none
+      rcases ps with ⟨⟩ | ⟨_, _⟩ <;> simp [collectBindingsList] at h
+    | .var v :: ps', g :: gs' =>
+      simp only [collectBindingsList] at h
+      -- h : (collectBindingsList ps' gs').bind (fun rest => some ((v, g) :: rest)) = some bs
+      -- which means collectBindingsList ps' gs' = some rest and bs = (v, g) :: rest
+      match h_rest : collectBindingsList ps' gs' with
+      | none => simp [h_rest] at h
+      | some rest =>
+        simp [h_rest] at h; subst h
+        simp only [List.map]
+        have hvar : θ.applyTerm (.var v) = g.toTerm := by
+          simp [Subst.applyTerm]; exact hθ v g (List.mem_cons_self ..)
+        have htail := ih ps' gs' rest
+          (by simp [patternListSize] at hle ⊢; have := Term.size_pos (.var v : Term σ); omega)
+          h_rest θ (fun v' g' hm => hθ v' g' (List.mem_cons_of_mem _ hm))
+        rw [hvar, htail]
+    | .const c :: ps', .const c' :: gs' =>
+      simp only [collectBindingsList] at h
+      split at h
+      · rename_i hcc; subst hcc
+        simp only [List.map, Subst.applyTerm, GroundTerm.toTerm]
+        exact congrArg _ (ih ps' gs' bs
+          (by simp [patternListSize] at hle ⊢; have := Term.size_pos (.const c : Term σ); omega)
+          h θ hθ)
+      · simp at h
+    | .const _ :: _, .app _ _ :: _ => simp [collectBindingsList] at h
+    | .app _ _ :: _, .const _ :: _ => simp [collectBindingsList] at h
+    | .app f ts :: ps', .app g us :: gs' =>
+      simp only [collectBindingsList] at h
+      split at h
+      · rename_i hfg; subst hfg
+        -- h : collectBindingsList (finToList ts ++ ps') (finToList us ++ gs') = some bs
+        have ih_result := ih (finToList ts ++ ps') (finToList us ++ gs') bs
+          (by have := patternListSize_finToList_app f ts ps'; omega)
+          h θ hθ
+        -- ih_result : (finToList ts ++ ps').map θ.applyTerm =
+        --             (finToList us ++ gs').map GroundTerm.toTerm
+        simp only [List.map_append] at ih_result
+        have hlen : (finToList ts).length = (finToList us).length := by simp
+        obtain ⟨hleft, hright⟩ := append_eq_append ih_result (by simp [List.length_map, hlen])
+        simp only [List.map]
+        have happ : θ.applyTerm (.app f ts) = (GroundTerm.app f us).toTerm := by
+          simp only [Subst.applyTerm, GroundTerm.toTerm]
+          congr 1; funext i
+          exact finToList_map_pointwise ts us θ.applyTerm GroundTerm.toTerm hleft i
+        rw [happ, hright]
+      · simp at h
+
+/-- Soundness for single-term matching. -/
+theorem collectBindings_sound {σ : LPSignature.{u_t, u_t, u_r, u_t}} [DecidableEq σ.vars]
+    [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
+    (p : Term σ) (gt : GroundTerm σ) (bs : List (σ.vars × GroundTerm σ))
+    (h : collectBindings p gt = some bs) (hcons : BindingsConsistent bs) :
+    (bindingsToSubst bs).applyTerm p = gt.toTerm := by
+  have hsound := collectBindingsList_sound [p] [gt] bs h
+    (bindingsToSubst bs) (fun v g hm => bindingsToSubst_mem bs v g hm hcons)
+  simpa using hsound
+
+/-- Soundness for atom matching. -/
+theorem collectAtomBindings_sound {σ : LPSignature.{u_t, u_t, u_r, u_t}} [DecidableEq σ.vars]
+    [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] [DecidableEq σ.relationSymbols]
+    (a : Atom σ) (ga : GroundAtom σ) (bs : List (σ.vars × GroundTerm σ))
+    (h : collectAtomBindings a ga = some bs) (hcons : BindingsConsistent bs) :
+    (bindingsToSubst bs).applyAtom a = ga.toAtom := by
+  obtain ⟨sa, argsa⟩ := a; obtain ⟨sga, argsga⟩ := ga
+  unfold collectAtomBindings at h
+  split at h
+  · rename_i hsym; dsimp only at hsym h; subst hsym
+    simp only [Subst.applyAtom, GroundAtom.toAtom, Atom.mk.injEq, heq_eq_eq, true_and]
+    funext i
+    have hsound := collectBindingsList_sound (finToList argsa) (finToList argsga) bs h
+      (bindingsToSubst bs) (fun v g hm => bindingsToSubst_mem bs v g hm hcons)
+    exact finToList_map_pointwise argsa argsga
+      (bindingsToSubst bs).applyTerm GroundTerm.toTerm hsound i
+  · simp at h
+
 end Mettapedia.Logic.LP

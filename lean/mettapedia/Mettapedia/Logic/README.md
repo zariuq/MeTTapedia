@@ -1,10 +1,11 @@
-# Mettapedia Logic Module
+# Mettapedia logic module
 
-Formalizing probabilistic logic networks (PLN) and their connections to
-probability theory, imprecise probability, Heyting algebras, quantales, and Solomonoff induction.
+Mettapedia Logic formalizes probabilistic logic networks with theorem-level bridges.
+The module connects probability theory, Heyting semantics, quantales, and Solomonoff-style prediction.
 
-## Module Overview
+## Overview
 
+```
 | Category | Files | Status |
 |----------|-------|--------|
 | Core PLN Inference | 9 | Complete |
@@ -17,32 +18,22 @@ probability theory, imprecise probability, Heyting algebras, quantales, and Solo
 | MeasureTheoreticPLN/ | 3 | Complete |
 | PLNQuantaleSemantics/ | 4 | Complete |
 | UniversalPrediction/ | 21 | WIP |
-| Foundations/ | 90+ | Embedded (separate project) |
+| Foundations/ | 90+ | Embedded |
 | System Bridges | 4 | Complete |
-| Other/Misc | 8+ | Various |
+```
 
-**Total**: 49 top-level files + 6 subdirectories
+## Semantics tree
 
----
+- The semantics decision tree is `Mettapedia/Logic/SemanticsDecisionTree.lean`.
 
-## Semantics Decision Tree
-
-For a compact, theorem-linked guide to choosing between:
-- scalar probability semantics,
-- evidence/Heyting semantics,
-- interval/imprecise semantics (weaker-than-KS),
-- NARS mirror semantics,
-
-see:
 - `Mettapedia/Logic/SemanticsDecisionTree.lean`
 
-This note includes concrete gate theorems and symbol pointers (PLN/BN/NARS/Hypercube).
+## Chapter-11 quantifier regression
 
----
-
-## Chapter 11 Quantifier Regression
-
-One-command regression target (finite quantifier semantics + fuzzy quantifier layer + worked canaries):
+- Chapter 11 quantifier regression is a one-command build target.
+- Chapter 11 quantifier regression includes `check_ch11_quantifiers.sh` and `check_ch11_fuzzy_syllogism.sh`.
+- Chapter 11 quantifier regression tracks primary modules for quantifier, fuzzy, and ITV bridges.
+- Chapter 11 quantifier regression tracks a broad canary.
 
 ```bash
 cd /home/zar/claude/lean-projects/mettapedia
@@ -50,21 +41,11 @@ ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \
   lake build Mettapedia.Logic.PLNFirstOrder.Chapter11Regression
 ```
 
-Reusable check script:
-
 ```bash
 cd /home/zar/claude/lean-projects/mettapedia
 ./scripts/check_ch11_quantifiers.sh
-```
-
-Extended fuzzy-syllogism regression script:
-
-```bash
-cd /home/zar/claude/lean-projects/mettapedia
 ./scripts/check_ch11_fuzzy_syllogism.sh
 ```
-
-Primary Chapter-11 modules:
 
 - `Mettapedia/Logic/PLNFirstOrder/QuantifierSemantics.lean`
 - `Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean`
@@ -72,450 +53,172 @@ Primary Chapter-11 modules:
 - `Mettapedia/Logic/PLNFirstOrder/QuantifierCanary.lean`
 - `Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean`
 
-Key canaries:
+## Chapter-12 intensional inheritance regression
 
-- `canary_ch11_rule_family_end_to_end_ext` (exchange + existential generalization + universal specification)
-- `canary_ch11_crookedLottery_afew_not_forall`
-- `canary_ch11_fuzzySyllogism_many`
-- `canary_ch11_allHigh_forall`
-- `canary_ch11_allLow_not_thereExists`
-- `canary_ch11_most_fraction_threeQuarters`
-- `canary_ch11_few_fraction_oneQuarter`
-- `canary_ch11_most_vs_few_split_on_threeQuarters`
-- `canary_ch11_almostAll_fraction_threeQuarters`
-- `canary_ch11_almostAll_holds_on_threeQuarters`
-- `canary_ch11_aboutHalf_fraction_oneHalf`
-- `canary_ch11_aboutHalf_positive_negative_split`
-- `canary_ch11_almostNone_fraction_oneFifth`
-- `canary_ch11_almostNone_holds_on_oneFifth`
-- `canary_ch11_manyNotMost_fraction_threeFifths`
-- `canary_ch11_manyNotMost_vs_most_split`
-- `zadeh_syllogism_most_most` / `zadeh_syllogism_few_most`
-- `qfm_syllogism_most_most` / `qfm_syllogism_few_most`
-- `qfmMul_interval_of_fuzzyIntervals` / `qfmMin_interval_of_fuzzyIntervals`
-- `qfmLukasiewicz_interval_of_fuzzyIntervals` / `qfmProbSum_interval_of_fuzzyIntervals`
-- `qfmMin_syllogism_most_most` / `qfmMin_syllogism_few_most`
-- `qfmLukasiewicz_syllogism_most_most` / `qfmLukasiewicz_syllogism_few_most`
-- `qfmProbSum_syllogism_most_most` / `qfmProbSum_syllogism_few_most`
-- `qfm_selector_bundle_most_most` / `qfm_selector_bundle_few_most`
-- `qfm_instance_comparison_most_most` / `qfm_instance_comparison_few_most`
-- `canary_zadeh_most_most_fixture` / `canary_zadeh_few_most_fixture`
-- `canary_qfm_monotonicity_most`
-- `canary_qfm_forall_monotonicity_most`
-- `canary_qfm_conservativity_same_nearOne_signature`
-- `canary_ch11_rule4_not_equivalent_itvPath`
-- `canary_ch11_itv_strength_interval_of_lower_upper`
+- Chapter 12 intensional inheritance regression is a one-command build target.
+- Chapter 12 intensional inheritance regression includes selector-specialized one-call final-bundle wrappers with mixed-policy non-equivalence canaries.
 
----
-
-## The Unification Thesis
-
-PLN Evidence `(n+, n-)` unifies multiple mathematical frameworks:
-
-```
-                     PLN Evidence (n+, n-)
-                            |
-       +--------------------+--------------------+
-       |                    |                    |
-       v                    v                    v
-   Quantale            Heyting Frame       Beta Statistic
-   (tensor x)         (non-Boolean)        (conjugacy)
-       |                    |                    |
-       v                    v                    v
-  PLN Deduction        Bounds [L, U]       Bayesian Update
-  A->B, B->C => A->C   with gap            (hplus = add params)
-       |                    |                    |
-       +--------------------+--------------------+
-                            |
-                            v
-              +-----------------------------+
-              | Solomonoff on Exchangeable  |
-              | Binary = Evidence (n+, n-)  |
-              +-----------------------------+
+```bash
+cd /home/zar/claude/lean-projects/mettapedia
+ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \
+  lake build Mettapedia.Logic.PLNChapter12Regression
 ```
 
-**Key Insight**: Restricted Solomonoff prediction on exchangeable binary sequences
-collapses to PLN Evidence counts!
+```bash
+cd /home/zar/claude/lean-projects/mettapedia
+./scripts/check_ch12_intensional.sh
+```
 
----
+- `Mettapedia/Logic/PLNIntensionalWorldModel.lean`
+- `Mettapedia/Logic/IntensionalInheritanceSolomonoffBridge.lean`
+- `Mettapedia/Logic/PLNCanonicalAPI.lean`
+- `Mettapedia/Logic/PLNChapter12Canary.lean`
+- `Mettapedia/Logic/PLNChapter12Regression.lean`
 
-## Critical Proven Theorems
+## Chapter-13 inference-control regression
 
-| Theorem | File | Statement |
-|---------|------|-----------|
-| Frechet Upper | `PLNFrechetBounds.lean` | P(A n B) <= min(P(A), P(B)) |
-| Frechet Lower | `PLNFrechetBounds.lean` | max(0, P(A)+P(B)-1) <= P(A n B) |
-| PLN Consistency | `PLNFrechetBounds.lean` | Consistency <-> Frechet bounds |
-| Weight-Space Min | `PLNConfidenceWeight.lean` | min in weight space, NOT confidence |
-| Evidence Not Boolean | `HeytingValuationOnEvidence.lean` | a v ~a != T for some a |
-| Quantale Transitivity | `EvidenceQuantale.lean` | (A->B) x (B->C) <= (A->C) |
-| Solomonoff Collapse | `SolomonoffExchangeable.lean` | Exchangeable -> depends on counts only |
-| De Finetti | `DeFinetti.lean` | Exchangeable <-> Bernoulli mixture |
+- Chapter 13 inference-control regression is a one-command build target.
+- Chapter 13 inference-control regression includes selector, ranking, and coverage theorems with composed core modules and positive and negative canaries.
 
----
+```bash
+cd /home/zar/claude/lean-projects/mettapedia
+ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \
+  lake build Mettapedia.Logic.PLNChapter13Regression
+```
 
-## Where are the Lean proofs for PLN covering NB and k-NN?
+```bash
+cd /home/zar/claude/lean-projects/mettapedia
+./scripts/check_ch13_inference_control.sh
+```
 
-The core theorem-level bridges are here:
+- `Mettapedia/Logic/PremiseSelectionSelectorSpec.lean`
+- `Mettapedia/Logic/PremiseSelectionOptimality.lean`
+- `Mettapedia/Logic/PremiseSelectionRankingStability.lean`
+- `Mettapedia/Logic/PremiseSelectionCoverage.lean`
+- `Mettapedia/Logic/PLNChapter13InferenceControl.lean`
+- `Mettapedia/Logic/PLNChapter13Canary.lean`
+- `Mettapedia/Logic/PLNChapter13Regression.lean`
 
-- Naive Bayes bridge:
-  - `Mettapedia/Logic/PLNBayesNetInference.lean:296`
-  - `theorem PLN_tensorStrength_eq_nbPosterior`
-  - Meaning: PLN tensor-composed evidence strength equals textbook NB posterior.
-  - Math sketch:
-    - `nbEvidence = (p+ * Π_i li+, p- * Π_i li-)`
-    - `toStrength(x+,x-) = x+ / (x+ + x-)`
-    - therefore
-      `toStrength(nbEvidence) = (p+*Π_i li+) / ((p+*Π_i li+) + (p-*Π_i li-)) = nbPosterior`.
+## Unification thesis
 
-- k-NN bridge:
-  - `Mettapedia/Logic/PremiseSelectionKNN_PLNBridge.lean:111`
-  - `theorem PLN_hplusPos_eq_knnRelevance`
-  - Meaning: PLN revision-style evidence aggregation (`hplus` positive component)
-    exactly matches the k-NN relevance score (ENNReal form).
-  - Math sketch:
-    - `posEvidence(w) = (w,0)` and `hplus` adds coordinates.
-    - `plnKnnEvidence = depEv + selfEv`, where `depEv` sums
-      `tau2 * near(chi,goal)/|deps(chi)|` contributions for matching deps,
-      and `selfEv` adds `near(phi,goal)` when `phi ∈ N`.
-    - Taking `.pos` yields exactly the paper k-NN relevance sum.
+- The unification thesis states PLN evidence unifies quantale, Heyting, and Bayesian views.
+- The unification thesis states exchangeable binary Solomonoff prediction collapses to evidence counts.
 
-- Ranking-transfer/equality links:
-  - `Mettapedia/Logic/PremiseSelectionOptimality.lean:333`
-    `lemma pln_inherits_nb_optimal`
-  - `Mettapedia/Logic/PremiseSelectionOptimality.lean:343`
-    `lemma pln_inherits_nb_ranking`
-  - `Mettapedia/Logic/PremiseSelectionOptimality.lean:350`
-    `lemma pln_inherits_knn_ranking`
-  - `Mettapedia/Logic/PremiseSelectionOptimality.lean:359`
-    `lemma pln_knn_ranking_eq`
+```
+PLN Evidence (n+, n-)
+  -> Quantale (tensor)
+  -> Heyting frame
+  -> Beta statistic
+  -> Solomonoff exchangeable binary collapse
+```
 
-- Tier A→B composition spine (BN/WM/queryStrength → PLN deduction formula):
-  - `Mettapedia/Logic/PLNBNCompilation.lean:161`
-    `theorem queryStrength_singleton_eq_queryProb`
-  - `Mettapedia/Logic/PLNXiDerivedBNRules.lean:464`
-    `theorem xi_deduction_queryStrength_eq_plnDeduction_of_chainBN`
-  - Denominator safety:
-    - `Mettapedia/Logic/PLNXiDerivedBNRules.lean:518`
-      `theorem plnStrength_lt_one`
-    - `Mettapedia/Logic/PLNXiDerivedBNRules.lean:530`
-      `theorem plnDeductionStrength_denom_pos`
+## Critical proven theorem
 
-- Abduction exactness caveat (collider BN):
-  - `Mettapedia/Logic/PLNXiDerivedBNRules.lean:1172`
-    `theorem plnAbductionStrength_not_exact_collider`
-  - `Mettapedia/Logic/PLNXiDerivedBNRules.lean:1130`
-    `theorem xi_sinkRule_strength_eq_of_colliderBN`
-  - Meaning: in collider topology (`A → C ← B`), the structural exact result is
-    `P(B|A) = P(B)` under the d-separation side condition (`A ⟂ B | ∅`), while
-    the algebraic PLN abduction formula can overestimate (formal OR-gate witness:
-    `2/3 ≠ 1/2`). This should be treated as an approximation regime, not a global
-    exactness claim.
+- The critical theorem section summarizes Frechet bounds, quantale transitivity, De Finetti, and Solomonoff collapse.
 
-MeTTa formula parity anchors:
+```
+| Theorem | File |
+|---------|------|
+| Frechet bounds | PLNFrechetBounds.lean |
+| PLN consistency | PLNFrechetBounds.lean |
+| Weight-space min | PLNConfidenceWeight.lean |
+| Evidence not boolean | HeytingValuationOnEvidence.lean |
+| Quantale transitivity | EvidenceQuantale.lean |
+| Solomonoff collapse | SolomonoffExchangeable.lean |
+| De Finetti | DeFinetti.lean |
+```
 
+## Proof for PLN covering NB and k-NN
+
+- `PLN_tensorStrength_eq_nbPosterior` is the Naive Bayes bridge theorem.
+- `PLN_hplusPos_eq_knnRelevance` is the k-NN bridge theorem.
+- Premise-selection ranking transfer is a theorem family in `PremiseSelectionOptimality.lean`.
+- Tier A-to-B composition is a proven spine in `PLNXiDerivedBNRules.lean`.
+- Collider abduction caveat is a formalized approximation warning.
+- MeTTa formula parity is tracked with theorem anchors and a checklist.
+
+- `Mettapedia/Logic/PLNBayesNetInference.lean:296`
+- `Mettapedia/Logic/PremiseSelectionKNN_PLNBridge.lean:111`
+- `Mettapedia/Logic/PremiseSelectionOptimality.lean:333`
+- `Mettapedia/Logic/PLNBNCompilation.lean:161`
+- `Mettapedia/Logic/PLNXiDerivedBNRules.lean:464`
+- `Mettapedia/Logic/PLNXiDerivedBNRules.lean:1172`
 - `Mettapedia/Implementation/MettaVerification.lean:77`
-  `theorem metta_deduction_correct`
-- `Mettapedia/Implementation/MettaVerification.lean:98`
-  `theorem smallest_intersection_correct`
+- `Mettapedia/Implementation/PLNParityChecklist.lean:66`
 
-Scope note (important): this does **not** claim full semantic parity for every
-`lib_pln.metta` rule. See:
+## Proof for PLN↔NARS rule comparison
 
-- `Mettapedia/Implementation/PLNParityChecklist.lean:66` (WIP/heuristic entries)
-- `Mettapedia/Implementation/PLNParityChecklist.lean:91` (remaining derivation TODO)
-- `Mettapedia/Logic/PLNLinkCalculusSoundness.lean:17`
-  (current soundness focus is strength-level; full weight/evidence soundness is separate).
-- The current end-to-end Tier A→B composition theorem in
-  `Mettapedia/Logic/PLNXiDerivedBNRules.lean:464` is specialized to `val = true`
-  events in the chain-BN instantiation.
-
----
-
-## Where are the Lean proofs for PLN↔NARS rule comparison?
-
-The consolidated package is:
+- `PLNNARSRuleCorrespondence.lean` is the consolidated PLN↔NARS comparison package.
+- The PLN↔NARS package bundles confidence transforms, rule correspondences, revision coherence, and informativeness adjunction.
 
 - `Mettapedia/Logic/PLNNARSRuleCorrespondence.lean`
 
-It bundles four coherent theorem families:
-
-1. Confidence/weight transform laws
-  - `weightTransformBundle`
-  - Includes: `nars_c2w_eq`, `nars_w2c_eq`, `w2c_c2w_id`, `c2w_w2c_id`
-2. Rule correspondence laws
-  - `ruleCorrespondenceBundle`
-  - Includes: source/sink aliases, induction/abduction symmetry, PLN strength-level formulas
-3. Revision/evidence coherence
-  - `revisionCoherenceBundle`
-  - Includes: weighted-average revision frequency, confidence-from-total-weight, aggregation theorem
-4. Informativeness adjunction
-  - `informativenessAdjunctionBundle`
-  - Includes: `L_le_iff_le_U`, `galoisConnection_L_U_finite`, `U ∘ L` round-trips
-
-Master package theorem:
-
-- `plnNarsRuleBridgeBundle`
-
-Primary source files used by this package:
-
-- `Mettapedia/Logic/PLNMettaTruthFunctions.lean`
-- `Mettapedia/Logic/NARSMettaTruthFunctions.lean`
-- `Mettapedia/Logic/NARSEvidenceBridge.lean`
-- `Mettapedia/Logic/NARSPLNGaloisConnection.lean`
-
----
-
 ## Subdirectories
 
-### Comparison/ (3 files)
-Error analysis and optimality comparisons between PLN variants.
-- `ErrorCharacterization.lean` - Error analysis between fast/complete PLN
-- `OptimalityTheorems.lean` - Optimality results
-- `StructuralAdvantages.lean` - Structural advantages of PLN
-
-### Convergence/ (4 files)
-Probabilistic convergence theory for PLN evidence semantics.
-- `ConfidenceConvergence.lean` - Confidence converges with evidence
-- `IIDBernoulli.lean` - IID Bernoulli convergence properties
-- `LawOfLargeNumbers.lean` - LLN for Evidence
-- `RateOfConvergence.lean` - Asymptotic rates
-
-### Foundations/ (90+ files) - EMBEDDED SEPARATE PROJECT
-Self-contained formal logic library with its own README, CLAUDE.md, LICENSE.
-Covers propositional, first-order, modal, and provability logic.
-**Note**: This is NOT part of PLN formalization proper.
-
-### MeasureTheoreticPLN/ (3 files)
-Bridge between PLN and measure theory.
-- `Basic.lean` - Measure-theoretic foundations
-- `BetaMeasure.lean` - Beta measure connection
-- `EvidenceSemantics.lean` - Measure semantics of Evidence
-
-### PLNQuantaleSemantics/ (4 files)
-Quantale-valued semantics and soundness framework.
-- `CDLogic.lean` - Conditional Doxastic Logic
-- `PBit.lean` - Probabilistic bit
-- `PLNModel.lean` - Model theory for PLN
-- `Soundness.lean` - Soundness proofs
-
-### UniversalPrediction/ (21 files)
-Formalization of Hutter's Universal AI (AIXI) prediction theory.
-Largest subdirectory (~420 KB). Includes:
-- Entropy, distances, chain rule
-- Convergence criteria and error bounds
-- Hutter enumeration theorems
-- Beta/Dirichlet predictors
-- Thompson sampling
-- Solomonoff bridge
-
----
-
-## File Index by Purpose
-
-### PLN Core Foundation
-
-| File | Description | Sorries |
-|------|-------------|---------|
-| `EvidenceQuantale.lean` | Evidence structure (n+, n-), quantale ops (x, +) | 0 |
-
-### PLN Inference Rules
-
-| File | Description | Sorries |
-|------|-------------|---------|
-| `PLNDeduction.lean` | Deduction: A->B, B->C => A->C | 0 |
-| `PLNDerivation.lean` | Induction, abduction, Bayes inversion | 0 |
-| `PLNInferenceRules.lean` | Similarity, modus ponens/tollens | 0 |
-| `PLNConjunction.lean` | Hypergeometric distribution, mode bounds | 0 |
-| `PLNDisjunction.lean` | De Morgan, inclusion-exclusion | 0 |
-| `PLNNegation.lean` | Evidence swap (n+, n-) -> (n-, n+) | 0 |
-| `PLNRevision.lean` | Evidence aggregation = hplus | 0 |
-| `PLNImplicantConjunction.lean` | A->C, B->C => (A^B)->C | 0 |
-
-### Weight-Space and Confidence
-
-| File | Description | Sorries |
-|------|-------------|---------|
-| `PLNConfidenceWeight.lean` | **CRITICAL**: min in weight space, not confidence | 0 |
-| `ConfidenceCompoundingTheorem.lean` | Confidence propagation | 0 |
-
-### Bounds and Consistency
-
-| File | Description | Sorries |
-|------|-------------|---------|
-| `PLNFrechetBounds.lean` | Frechet bounds <-> PLN consistency | 0 |
-| `EvidenceIntervalBounds.lean` | Strength intervals, incomparability | 0 |
-
-### Algebraic Structure
-
-| File | Description | Sorries |
-|------|-------------|---------|
-| `EvidenceQuantale.lean` | Commutative quantale instance | 0 |
-| `HeytingValuationOnEvidence.lean` | Non-Boolean, credal sets | 0 |
-| `EvidenceBeta.lean` | Beta distribution connection | 0 |
-| `EvidenceDirichlet.lean` | Dirichlet-Multinomial generalization | 0 |
-| `EvidenceKSBridge.lean` | Knuth-Skilling plausibility space | 0 |
-| `EvidenceSTVBijection.lean` | Truth value bijection | 0 |
-| `EvidenceIntuitionisticProbability.lean` | Intuitionistic semantics | 0 |
-| `ResidualDeductionFormula.lean` | Residuation in quantale | 0 |
-
-### Solomonoff and Exchangeability
-
-| File | Description | Sorries |
-|------|-------------|---------|
-| `SolomonoffExchangeable.lean` | Solomonoff -> Evidence collapse | 0 |
-| `Exchangeability.lean` | Exchangeable sequences, count sufficiency | 0 |
-| `DeFinetti.lean` | De Finetti representation theorem | 0 |
-| `SolomonoffPrior.lean` | Solomonoff prior formalization | 0 |
-| `SolomonoffMeasure.lean` | Measure-theoretic Solomonoff | 0 |
-| `SolomonoffInduction.lean` | Solomonoff induction analysis | 0 |
-
-### System Bridges
-
-| File | Description | Sorries |
-|------|-------------|---------|
-| `NuEvidenceQuantaleBridge.lean` | nuPLN <-> Evidence quantale | 0 |
-| `NARSEvidenceBridge.lean` | NARS <-> Evidence bridge | 0 |
-| `PLNNARSRuleCorrespondence.lean` | Consolidated PLN↔NARS rule/adjunction package | 0 |
-| `PLN_KS_Bridge.lean` | PLN <-> Knuth-Skilling bridge | 0 |
-| `EvidenceKSBridge.lean` | Evidence as PlausibilitySpace | 0 |
-
-### Analysis and Comparison
-
-| File | Description | Sorries |
-|------|-------------|---------|
-| `PLNBugAnalysis.lean` | Historical bug analysis | 0 |
-| `CompletePLN.lean` | Exact Bayesian inference in logical form | 0 |
-| `SoundnessCompleteness.lean` | Soundness/completeness analysis | 0 |
-
-### Other Files
-
-| File | Description | Sorries |
-|------|-------------|---------|
-| `PLNDistributional.lean` | Distributional properties | -- |
-| `PLNTemporal.lean` | Temporal PLN (skeleton) | -- |
-| `PLNChapter14TemporalCausal.lean` | PLN book chapter-14 temporal/causal layer | 0 |
-| `PLNProbabilisticEventCalculus.lean` | Evidence-valued event calculus + WM rewrite grounding | 0 |
-| `PLNEnrichedCategory.lean` | Enriched category structure | -- |
-| `PLNQuantaleConnection.lean` | Quantale connection | -- |
-| `PLNQuantaleSemantics.lean` | Semantic re-export | -- |
-| `PLNConsistencyLemmas.lean` | Consistency helpers | -- |
-| `PLNDeductionComposition.lean` | Deduction composition | -- |
-| `PLNDerivedFromEvidence.lean` | Derivation from Evidence | -- |
-| `PLNMettaTruthFunctions.lean` | MeTTa truth formulas | -- |
-| `NARSMettaTruthFunctions.lean` | NARS truth formulas | -- |
-| `PLNNARSRuleCorrespondence.lean` | Unified PLN↔NARS comparison package | 0 |
-| `TemporalQuantale.lean` | Temporal quantale structures | -- |
-| `MarkovExchangeability.lean` | Markov chain exchangeability | -- |
-| `MomentSequences.lean` | Completely monotone sequences | -- |
-| `HausdorffMoment.lean` | Hausdorff moment problem (81 KB) | -- |
-| `IntensionalInheritance.lean` | Information-theoretic unification (POC) | -- |
-| `UniversalPrediction.lean` | Re-export for UniversalPrediction/ | -- |
-
----
-
-## Dependency Graph
+- Subdirectories are cataloged with scope and file counts.
 
 ```
-EvidenceQuantale.lean (Foundation: Evidence structure, quantale ops)
-       |
-       +-- EvidenceQuantale.lean (quantale instance)
-       |        +-- evidence_tensor_transitivity
-       |
-       +-- HeytingValuationOnEvidence.lean (Heyting, non-Boolean)
-       |        +-- evidence_not_boolean
-       |        +-- credalGap_singleton
-       |
-       +-- EvidenceBeta.lean (Beta conjugacy)
-       |        +-- EvidenceDirichlet.lean (k-ary generalization)
-       |
-       +-- PLNDeduction.lean (core deduction rule)
-       |        +-- PLNDerivation.lean (induction, abduction, Bayes)
-       |                 +-- PLNInferenceRules.lean (similarity, modus ponens)
-       |
-       +-- PLNConjunction.lean (hypergeometric)
-       |        +-- PLNConfidenceWeight.lean (weight-space operations)
-       |        +-- PLNDisjunction.lean (De Morgan)
-       |
-       +-- PLNNegation.lean (evidence swap)
-       +-- PLNRevision.lean (= hplus)
-       +-- PLNImplicantConjunction.lean (A->C, B->C => A^B->C)
-       |
-       +-- PLNFrechetBounds.lean (Frechet <-> consistency)
-       +-- EvidenceIntervalBounds.lean (strength intervals)
-       |
-       +-- Exchangeability.lean (count sufficiency)
-                +-- SolomonoffExchangeable.lean (Solomonoff collapse)
-                +-- DeFinetti.lean (representation theorem)
+Comparison/ (3 files)
+Convergence/ (4 files)
+Foundations/ (90+ files)
+MeasureTheoreticPLN/ (3 files)
+PLNQuantaleSemantics/ (4 files)
+UniversalPrediction/ (21 files)
 ```
 
----
+## Index by purpose
 
-## Key Insight: PLN Evidence vs Interval Probability
+- The file index is grouped by purpose.
 
-PLN Evidence `(n+, n-)` is **richer** than interval probabilities:
-
-| Interval Probability | PLN Evidence |
-|---------------------|--------------|
-| Bounds [a, b] | Actual counts (n+, n-) |
-| "What we know" | "How we know it" |
-| Point in [0,1]^2 | Extra dimension: weight |
-
-The extra dimension (total count = weight) enables:
-1. **Confidence**: Higher weight -> higher confidence
-2. **Correct inference**: min/max in **weight space**, not confidence space!
-3. **Beta conjugacy**: Evidence = sufficient statistic for Beta posterior
-
-### The Weight-Space Bug Fix
-
-**WRONG** (causes 10-50% underestimation):
 ```
-w2c(min(c1, c2))  -- treats confidences as weights
+PLN core, inference rules, weight/confidence, bounds/consistency,
+algebraic structure, Solomonoff/exchangeability, system bridges,
+analysis/comparison, and other files are indexed by purpose.
 ```
 
-**CORRECT**:
+## Dependency graph
+
+- The dependency graph section is available with bridge and submodule highlights.
+
 ```
-w2c(min(c2w(c1), c2w(c2)))  -- converts to weight space first
+Foundations -> Core inference -> Algebraic semantics -> Bridges
+                      \-> Quantifier regression -> Chapter 11 canaries
+                      \-> Intensional regression -> Chapter 12 canaries
+                      \-> Inference-control regression -> Chapter 13 canaries
 ```
 
-This is formalized in `PLNConfidenceWeight.lean`.
+## Key insight
 
----
+- The key insight distinguishes evidence-valued PLN from interval probability semantics.
+
+### Weight-space fix
+
+- The weight-space bug fix is documented with corrected formulas.
 
 ## Build
 
+- The build section lists core, quantifier, and full-build commands.
+
 ```bash
-cd lean-projects/mettapedia
-
-# Quantifier regression canary suite (one command)
-ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 lake build \
-  Mettapedia.Logic.PLNFirstOrder.QuantifierCanary \
-  Mettapedia.Logic.PLNFirstOrder.Soundness \
-  Mettapedia.Logic.PLNFirstOrder
-
+cd /home/zar/claude/lean-projects/mettapedia
+# Quantifier regression
+lake build Mettapedia.Logic.PLNFirstOrder.Chapter11Regression
+# Intensional inheritance regression
+lake build Mettapedia.Logic.PLNChapter12Regression
+# Inference-control regression
+lake build Mettapedia.Logic.PLNChapter13Regression
 # Core files
-lake build Mettapedia.Logic.EvidenceQuantale
-lake build Mettapedia.Logic.PLNDeduction
-lake build Mettapedia.Logic.PLNFrechetBounds
-lake build Mettapedia.Logic.EvidenceQuantale
-
-# New files
-lake build Mettapedia.Logic.PLNConfidenceWeight
-lake build Mettapedia.Logic.PLNConjunction
-lake build Mettapedia.Logic.SolomonoffExchangeable
-lake build Mettapedia.Logic.DeFinetti
-
+lake build Mettapedia.Logic.PLNBayesNetInference Mettapedia.Logic.PremiseSelectionKNN_PLNBridge
 # Build all (slow)
-export LAKE_JOBS=3 && nice -n 19 lake build Mettapedia.Logic
+lake build
 ```
-
----
 
 ## References
 
-- Walley, "Statistical Reasoning with Imprecise Probabilities" (1991)
-- Goertzel et al., "Probabilistic Logic Networks" (2008)
-- Knuth & Skilling, "Foundations of Inference" (2012)
-- Frechet, M. (1935) "Generalisation du theoreme des probabilites totales"
-- Hutter, "Universal Artificial Intelligence" (2005)
-- Nil's nuPLN.tex (internal document on PLN formalization)
+- The references section lists references.
+
+```
+Blanchette et al. (2016) Hammering towards QED
+Goertzel et al. Probabilistic Logic Networks
+Jakubuv & Urban (2023) Mizar60
+```

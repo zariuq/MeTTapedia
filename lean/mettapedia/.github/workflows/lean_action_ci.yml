@@ -15,6 +15,8 @@ jobs:
           fetch-depth: 0
       - name: Guard native_decide (no new uses)
         run: ./scripts/check_native_decide_guard.sh --scope changed
+      - name: PyashGF 6GB clean-build gate
+        run: ./scripts/check_pyashgf_6gb.sh
       - uses: leanprover/lean-action@v1
       - name: Chapter 11 quantifier regression
         run: ./scripts/check_ch11_quantifiers.sh

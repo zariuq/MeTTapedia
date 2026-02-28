@@ -1,106 +1,129 @@
-# Mettapedia — Encyclopedia of Formalized Mathematics
+# Mettapedia formalized mathematics encyclopedia
 
-Lean 4 library of formalizations across probability, information theory, logic, set theory, and related areas.
+Mettapedia hosts formalizations across probability theory, information theory, logic, set theory, and related areas.
 
-## Layout (high-level)
+## High-level structure
+
+the structure presents the high-level Mettapedia directory layout.
 
 ```
 Mettapedia/
-├── Algebra/              Ordered semigroups, algebraic structures
-├── Analysis/             (placeholder)
-├── Bridge/               Cross-module bridges (bit-vector evidence geometry)
-├── CategoricalLogic/     Categorical logic (external port, lean-catLogic)
-├── CategoryTheory/       NativeTypeTheory, PLN instance, de Finetti categorical
-├── CognitiveArchitecture/  MetaMo, OpenPsi, MicroPsi, value systems
-├── Combinatorics/        (placeholder)
-├── Computability/        Arithmetical hierarchy (Σ⁰₂, Π⁰₂, Δ⁰₂)
-├── Examples/             Concrete instances (KS symmetry framework)
-├── GraphTheory/          Basic graph theory (Bondy & Murty, Diestel)
-├── GSLT/                 Graph-Structured Lambda Theories (OSLF spec layer)
-├── Implementation/       MeTTa PLN formula verification
-├── InformationTheory/    Shannon entropy, information measures
-├── Languages/            GF (Czech + English), π-calculus, ρ-calculus
-├── Lists/                List-Set bridge lemmas
-├── Logic/                PLN, evidence quantales, Solomonoff, exchangeability
-├── MeasureTheory/        Measure theory from KS symmetry foundations
-├── Metatheory/           Metalogic (model theory, proof theory)
-├── NumberTheory/         (placeholder)
-├── OSLF/                 Operational Semantics in Logical Form
-├── ProbabilityTheory/    Knuth-Skilling, Cox, Bayesian networks, hypercube
-├── QuantumTheory/        Quantum from symmetry (Skilling & Knuth 2018)
-├── SetTheory/            Borel determinacy
-├── UniversalAI/          AIXI, Solomonoff, reflective oracles, grain of truth
-└── external/             Vendored sub-packages (exchangeability)
+├── Algebra/
+├── Bridge/
+├── CategoricalLogic/
+├── CategoryTheory/
+├── CognitiveArchitecture/
+├── Computability/
+├── Examples/
+├── GraphTheory/
+├── GSLT/
+├── Implementation/
+├── InformationTheory/
+├── Languages/
+├── Logic/
+├── MeasureTheory/
+├── Metatheory/
+├── OSLF/
+├── ProbabilityTheory/
+├── QuantumTheory/
+├── SetTheory/
+├── UniversalAI/
+└── external/
 ```
 
 ## Toolchain
 
-- Lean 4.27.0 (see `lean-toolchain`)
-- Mathlib v4.27.0 (see `lakefile.toml`)
-- Local dependencies are included as subdirectories when needed (e.g., `Algebra/OrderedSemigroups/`).
+- The toolchain uses Lean 4.27.0 (see lean-toolchain).
+- The toolchain uses Mathlib v4.27.0 (see lakefile.toml).
+- Local dependencies live in local subdirectories when needed.
 
 ## Build
 
 ```bash
 cd lean-projects/mettapedia
-lake update && lake exe cache get   # first-time only
+lake update && lake exe cache get
 
 export LAKE_JOBS=3
 ulimit -Sv 6291456
 nice -n 19 lake build
 ```
 
-## Notable subprojects (see their READMEs for status)
+- the build runs from lean-projects/mettapedia.
+- The first build runs lake update and lake exe cache get.
+- the build uses LAKE_JOBS=3 by default.
+- the build uses a 6 GiB memory cap via ulimit -Sv 6291456.
+- the build runs nice -n 19 lake build.
 
-- `ProbabilityTheory/KnuthSkilling/` — Knuth-Skilling Foundations of Inference
-- `ProbabilityTheory/Cox/` — Cox-style probability calculus
+## Notable subprojects
+
+- `ProbabilityTheory/KnuthSkilling/`
+  - ProbabilityTheory/KnuthSkilling hosts Knuth-Skilling Foundations of Inference proofs
+
+- `ProbabilityTheory/Cox/`
+  - ProbabilityTheory/Cox hosts Cox-style probability calculus formalization
+
 - `InformationTheory/ShannonEntropy/`
-- `Logic/` — PLN, evidence quantales, Solomonoff, exchangeability, WorldModel calculus
+  - InformationTheory/ShannonEntropy hosts Shannon entropy formalization
+
+- `Logic/`
+  - Logic hosts PLN, evidence quantales, Solomonoff induction, exchangeability, and world model calculus
+
 - `SetTheory/BorelDeterminacy/`
-- `OSLF/` — core OSLF/GSLT formalizations
-- `GSLT/` — Graph-Structured Lambda Theories (categorical spec layer for OSLF)
-- `Languages/GF/` — GF abstract syntax + Czech morphology + English clause construction + semantic bridge to NTT
-- `Languages/ProcessCalculi/` — pi-calculus, rho-calculus, spice calculus, pi-to-rho encoding
-- `CategoryTheory/` — NativeTypeTheory (Grothendieck construction), PLN categorical instance, de Finetti categorical
-- `CognitiveArchitecture/` — MetaMo motivational framework, OpenPsi, MicroPsi, value systems
+  - SetTheory/BorelDeterminacy hosts Borel determinacy formalization
+
+- `OSLF/`
+  - OSLF hosts core OSLF and GSLT formalizations
+
+- `GSLT/`
+  - GSLT hosts the categorical specification layer for OSLF
+
+- `Languages/GF/`
+  - Languages/GF hosts GF abstract syntax, Czech morphology, English clause construction, and an NTT semantic bridge
+
+- `Languages/ProcessCalculi/`
+  - Languages/ProcessCalculi hosts pi-calculus, rho-calculus, spice calculus, and pi-to-rho encoding
+
+- `CategoryTheory/`
+  - CategoryTheory hosts NativeTypeTheory, a PLN categorical instance, and de Finetti categorical development
+
+- `CognitiveArchitecture/`
+  - CognitiveArchitecture hosts MetaMo, OpenPsi, MicroPsi, and value-system models
+
 - `Algebra/OrderedSemigroups/`
+  - Algebra/OrderedSemigroups hosts ordered semigroup formalization
 
-## Lean -> mettail-rust example
+## Lean to mettail-rust example
 
-MeTTaMinimal can be exported from Lean and checked end-to-end in
-`hyperon/mettail-rust`:
+The roundtrip script checks Lean export, Rust build, and one-step rewrite behavior.
+The benchmark script runs three rounds by default.
 
 ```bash
 cd ~/claude/hyperon/mettail-rust
 
-# Full roundtrip check (Lean export -> Rust build -> one-step rewrite check)
 ./scripts/roundtrip_mettaminimal.sh
-
-# Benchmark command (default 3 runs)
 ./scripts/bench_mettaminimal_roundtrip.sh
 ```
 
-Exporter used by the script:
-- `hyperon/mettail-rust/scripts/lean/ExportMeTTaMinimalRoundTrip.lean`
+- the exporter is hyperon/mettail-rust/scripts/lean/ExportMeTTaMinimalRoundTrip.lean.
 
-## Status & review
+## Status review
 
-Proof completeness varies by subproject. To check local gaps:
+- the proof completeness varies by the subproject.
+- the local check runs rg -n "sorry" Mettapedia/ to find proof gaps.
+- Mettapedia/ProbabilityTheory/KnuthSkilling/README.md contains the Knuth-Skilling structure and build targets.
 
 ```bash
 rg -n "sorry" Mettapedia/
 ```
 
-For Knuth–Skilling specific structure and build targets, see:
-`Mettapedia/ProbabilityTheory/KnuthSkilling/README.md`.
+## Contribution
 
-## Contributing
+- the contribution requires explicit proofs.
+- the contribution requires documented theorem sources.
+- the contribution requires frequent lake build checks.
 
-1. Keep proofs explicit; avoid axioms unless clearly justified.
-2. Document sources in theorem headers.
-3. Build frequently (`lake build`).
+## External repo policy
 
-## External Repo Policy
-
-Use godelclaw forks as origin and zariuq repos as upstream for embedded external repos.
-See EXTERNAL_REPOS.md for the exact remotes and sync commands.
+- the policy uses godelclaw forks as origin remotes.
+- the policy uses zariuq repos as upstream remotes.
+- the policy references EXTERNAL_REPOS.md for exact commands.

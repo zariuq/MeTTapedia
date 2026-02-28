@@ -1,63 +1,102 @@
-# Mettapedia/CognitiveArchitecture
+# Cognitive architecture framework
 
-Formalization of cognitive architecture frameworks: MetaMo (motivational meta-model),
-OpenPsi (Dorner's Psi theory), MicroPsi (Bach), and their mathematical connections.
-
-31 files, zero sorries.
+Mettapedia/CognitiveArchitecture formalizes MetaMo, OpenPsi, MicroPsi, and their mathematical bridges.
+This module doesn't contain sorries across thirty-one files.
 
 ## Modules
 
-### MetaMo/ (6 files)
-Core mathematical framework from Goertzel & Lian, "Weakness and Its Quantale."
-Motivational states as Q-modules over commutative quantales.
+### MetaMo
 
-- `Basic.lean` — Q-module structure with scalar multiplication
-- `Appraisal.lean` — Environmental stimulus evaluation functor
-- `Decision.lean` — Action selection functor
-- `Commutativity.lean` — Appraisal-decision commutativity (central theorem)
-- `Dynamics.lean` — Stability via Banach fixed-point theorem
-- `Main.lean` — Module aggregation
+MetaMo is a six-file motivational Q-module framework.
 
-### OpenPsi/ (5 files)
-Correct formalization of Dorner's Psi theory (per OpenCog 2010). 6 demands
-(Energy, Water, Integrity, Affiliation, Certainty, Competence), 4 modulators.
-Corrects prior confusion between OpenPsi and PAD emotional model.
+- `MetaMo/Basic.lean`
+  - MetaMo/Basic.lean defines Q-module structure with scalar multiplication
 
-- `Basic.lean` — Demands, modulators, action selection rule
-- `FuzzyLogic.lean` — Fuzzy satisfaction computation
-- `ActionSelection.lean` — Demand-driven action selection
-- `MetaMoInstance.lean` — OpenPsi as QModule over ENNReal (10-dim state vector)
+- `MetaMo/Appraisal.lean`
+  - MetaMo/Appraisal.lean defines environmental stimulus appraisal functors
 
-### MicroPsi/ (3 files)
-Joscha Bach's cognitive architecture. 7 demands, PAD emotional model
-(Pleasure, Arousal, Dominance). Same 10-dimensional state space as OpenPsi
-but different decomposition (3 PAD + 7 demands vs. 4 modulators + 6 demands).
+- `MetaMo/Decision.lean`
+  - MetaMo/Decision.lean defines action selection functors
 
-- `Basic.lean` — Demands, PAD model, utility-based action selection
-- `MetaMoInstance.lean` — MicroPsi as QModule over ENNReal
+- `MetaMo/Commutativity.lean`
+  - MetaMo/Commutativity.lean proves appraisal-decision commutativity
 
-### Bridges/ (5 files)
-Cross-architecture connections and analysis.
+- `MetaMo/Dynamics.lean`
+  - MetaMo/Dynamics.lean proves stability via Banach fixed-point arguments
 
-- `PLNMetaMoBridge.lean` — PLN evidence theory to MetaMo (both use commutative quantales)
-- `OpenPsiMicroPsiBridge.lean` — Formal comparison: both are MetaMo instances, same dimension, different decomposition
-- `ModelExpressiveness.lean` — Expressiveness analysis
-- `MissingValueSystems.lean` — Value systems neither model can express (both fundamentally consequentialist)
+- `MetaMo/Main.lean`
+  - MetaMo/Main.lean aggregates the MetaMo module surface
 
-### Values/ (9 files)
-Unified value system extending OpenPsi/MicroPsi with non-consequentialist frameworks.
+### OpenPsi
 
-- `SchwartzValues.lean` — Schwartz's 10 universal values (circumplex structure)
-- `MoralFoundations.lean` — Haidt's 6 moral foundations
-- `DeontologicalLayer.lean` — Duty-based constraints overriding consequentialism
-- `RelationalValues.lean` — Individual-dependent values (trust, loyalty, love)
-- `TemporalValues.lean` — Legacy, future generations, sustainability
-- `MetaValues.lean` — Values about values (learning, uncertainty, corrigibility)
-- `FOETBridge.lean` — Bridge to Foundations of Ethics
+OpenPsi is a five-file formalization of Dorner Psi with six demands and four modulators.
 
-## Key Results
+- `OpenPsi/Basic.lean`
+  - OpenPsi/Basic.lean defines demands, modulators, and action-selection rules
 
-- OpenPsi and MicroPsi are both MetaMo QModule instances (`both_are_qmodules`)
-- Appraisal-decision commutativity when Q is commutative
-- Contractivity implies unique motivational equilibrium (Banach fixed-point)
-- Both architectures are fundamentally consequentialist (formal gap analysis)
+- `OpenPsi/FuzzyLogic.lean`
+  - OpenPsi/FuzzyLogic.lean defines fuzzy satisfaction computation
+
+- `OpenPsi/ActionSelection.lean`
+  - OpenPsi/ActionSelection.lean defines demand-driven action selection
+
+- `OpenPsi/MetaMoInstance.lean`
+  - OpenPsi/MetaMoInstance.lean defines OpenPsi as a QModule over ENNReal
+
+### MicroPsi
+
+MicroPsi is a three-file formalization with seven demands and PAD decomposition.
+
+- `MicroPsi/Basic.lean`
+  - MicroPsi/Basic.lean defines demands, PAD model, and utility action selection
+
+- `MicroPsi/MetaMoInstance.lean`
+  - MicroPsi/MetaMoInstance.lean defines MicroPsi as a QModule over ENNReal
+
+### Bridges
+
+Bridges is five files of cross-architecture comparison and limits.
+
+- `Bridges/PLNMetaMoBridge.lean`
+  - Bridges/PLNMetaMoBridge.lean connects PLN evidence quantales to MetaMo
+
+- `Bridges/OpenPsiMicroPsiBridge.lean`
+  - Bridges/OpenPsiMicroPsiBridge.lean compares OpenPsi and MicroPsi as MetaMo instances
+
+- `Bridges/ModelExpressiveness.lean`
+  - Bridges/ModelExpressiveness.lean analyzes expressiveness boundaries
+
+- `Bridges/MissingValueSystems.lean`
+  - Bridges/MissingValueSystems.lean proves value-system gaps outside consequentialism
+
+### Values
+
+Values is nine files extending beyond consequentialism.
+
+- `Values/SchwartzValues.lean`
+  - Values/SchwartzValues.lean defines Schwartz ten-value circumplex structure
+
+- `Values/MoralFoundations.lean`
+  - Values/MoralFoundations.lean defines Haidt six moral foundations
+
+- `Values/DeontologicalLayer.lean`
+  - Values/DeontologicalLayer.lean defines duty constraints above consequential utility
+
+- `Values/RelationalValues.lean`
+  - Values/RelationalValues.lean defines individual-dependent relational values
+
+- `Values/TemporalValues.lean`
+  - Values/TemporalValues.lean defines legacy and future-generation value structure
+
+- `Values/MetaValues.lean`
+  - Values/MetaValues.lean defines values about values including corrigibility
+
+- `Values/FOETBridge.lean`
+  - Values/FOETBridge.lean connects value formalization to FOET
+
+## Key results
+
+- OpenPsi and MicroPsi are MetaMo QModule instances.
+- Appraisal-decision commutativity is proven when the quantale is commutative.
+- Contractivity is a sufficient condition for unique motivational equilibrium.
+- Gap analysis shows that both base architectures are fundamentally consequentialist.

@@ -1,66 +1,69 @@
-# Mettapedia/Languages
+# Languages
 
-Formal linguistics, natural language semantics, and process calculi formalization.
+Mettapedia/Languages formalizes formal linguistics, natural language semantics, and process calculi.
 
 ## Modules
 
-### GF/ (Grammatical Framework)
+### GF formalization
 
-Lean 4 formalization of a GF RGL subset: 170 abstract syntax signatures, two concrete
-grammars (Czech morphology, English clause construction), and a verified semantic bridge
-from GF abstract trees through OSLF evidence semantics to NativeTypeTheory.
+GF formalizes a Lean 4 GF RGL subset with 170 abstract signatures, two concrete grammars, and a verified semantic bridge.
+The Czech grammar includes 14 declension paradigms, verb conjugation, adjectives, pronouns, and numerals.
+The English grammar includes full clause construction with tense, aspect, polarity, do-support, and relative clauses.
 
-- **Czech**: 14 declension paradigms, verb conjugation, adjectives, pronouns, numerals
-- **English**: Full clause construction (tense/aspect/polarity), do-support, relative clauses
-- **Semantic bridge**: GF -> Pattern -> Store -> QFormula -> Evidence -> NTT
-- **Proof status**: Zero sorries, zero axioms, 36-entry roundtrip corpus (18 per language)
+- The semantic bridge is GF -> Pattern -> Store -> QFormula -> Evidence -> NTT.
+- The GF module doesn't contain sorries or axioms.
+- GF/README.md contains the full architecture and file map.
 
-See `GF/README.md` for full architecture and file map.
+#### GF SUMO pipeline
 
-#### GF/SUMO/ — SUMO Ontology Repair Pipeline
+GF/SUMO runs top-down SUMO ontology repair through the GF-OSLF-WM pipeline.
+The SUMO repair lane compares SUMO KIF, Enache's SUMO-GF encoding, and the flattened Lean encoding.
+The full SUMO pipeline is SUMO KIF -> GF Pattern -> GSLT -> OSLF -> WM checkLang.
+The class hierarchy is a rewrite system with proven Galois connection and NTT extraction.
 
-Top-down repair of the SUMO upper ontology through the GF->OSLF->WM pipeline.
-Compares three sources: SUMO KIF (387k lines), Enache's original SUMO-GF encoding
-(30k lines, GF 3.3), and our flattened Lean encoding (~50 FOET-relevant classes).
+- The SUMO lane uses six automated repair patterns.
 
-**Full pipeline**: SUMO KIF -> GF Pattern -> GSLT (LanguageDef) -> OSLF (diamond/box) -> WM (checkLang)
+#### SUMO file map
 
-The class hierarchy IS a rewrite system (subclass = coercion). Modeled as a GSLT
-with proven Galois connection, NTT extraction, and formal inconsistency detection
-via the proven-sound `checkLang` formula checker.
+- `SumoAbstract.lean`
+  - SumoAbstract.lean contains FOET-relevant classes, function signatures, and transitive closure
 
-**6 automated repair patterns**: counting, definitional unfolding, domain lookup,
-vacuity detection, superrelation widening, WM evidence evaluation.
+- `SumoOSLFBridge.lean`
+  - SumoOSLFBridge.lean contains pipeline bridge and proven Galois connection with diagnostics
 
-**File map**:
-- `SumoAbstract.lean` — ~50 FOET classes, ~350 function signatures, transitive closure
-- `SumoOSLFBridge.lean` — Pipeline bridge, Galois connection (proven), Stage 1-2 diagnostics
-- `SumoNTT.lean` — Class hierarchy as GSLT, NTT extraction, Stage 3 WM checkLang evaluation
-- `SumoRepairRunner.lean` — Three-source diff: 53 classes, flags disagreements
-- `SumoAxiomCensus.lean` — Per-concept usage evidence for flagged concepts
-- `RepairLog.lean` — 20 repair decisions (19 automatable) + 4 strengthening proposals
-- `original/` — Downloaded Enache & Angelov SUMO-GF (read-only reference)
+- `SumoNTT.lean`
+  - SumoNTT.lean contains GSLT hierarchy, NTT extraction, and WM checkLang evaluation
 
-**Current status** (2026-02-19):
-- Layer 1 (strata 0-1) complete: 33 classes, 153 transitive edges, full pipeline
-- 20 repair decisions: 19 automatable, Pain resolved via EmotionalState (39:1 peer match)
-- FOET KIF: 12 fixes applied (syntax, arg swaps, VirtuousAgent, attribute->property)
-- Formal inconsistency detection: checkLang proves (contraryAttribute Pleasure Pain) ill-typed
-- 53 classes analyzed: 25 agree, 5 missing from GF, 1 flattened, 3 infrastructure sorts, 19 FOET-only
-- 3 relation typing issues found and 1 fixed (attribute domain: Agent -> Object)
-- Transitive closure: 54 direct edges -> full closure (13 classes reach Attribute, 9 reach Object)
-- Pain/Attribute type conflict automatically detected via coercion path analysis
-- All files build clean, zero sorries
+- `SumoRepairRunner.lean`
+  - SumoRepairRunner.lean performs three-source diffs with disagreement flags
 
-### ProcessCalculi/
+- `SumoAxiomCensus.lean`
+  - SumoAxiomCensus.lean provides per-concept usage evidence
 
-Pi-calculus and rho-calculus formalized with operational semantics, structural congruence,
-and OSLF instances. Includes the Lybech (2022) pi-to-rho encoding with proven forward
-simulation, and Meredith's spice calculus (n-step lookahead).
+- `RepairLog.lean`
+  - RepairLog.lean tracks repair decisions and strengthening proposals
 
-- **Pi-calculus**: 16 files, asynchronous choice-free fragment (Lybech 2022)
-- **Rho-calculus**: 11 files, locally nameless with COMM reduction + spice rule
-- **Encoding**: Pi-to-rho forward simulation (restriction-free fragment, proven)
-- **Proof status**: Zero sorries
+- `original/`
+  - original/ is a read-only Enache and Angelov SUMO-GF reference
 
-See `ProcessCalculi/README.md` for details.
+#### SUMO current status
+
+- Layer 1 is complete with strata 0 and 1 coverage.
+- The current log is 20 repair decisions with 19 automatable.
+- FOET KIF is 12 applied fixes across syntax, argument swaps, and typing.
+- checkLang proves that contraryAttribute Pleasure Pain is ill-typed.
+- The class census is 53 analyzed classes with agreement, missing, flattened, and FOET-only buckets.
+- Relation typing is three issues found and one fixed.
+- Transitive closure is 54 direct edges with full closure diagnostics.
+- Pain-Attribute conflict is automatically detected through coercion-path analysis.
+- All SUMO files are clean with zero sorries.
+
+### Process calculi formalization
+
+ProcessCalculi formalizes pi-calculus and rho-calculus with operational semantics, structural congruence, and OSLF instances.
+The process calculi lane includes Lybech pi-to-rho forward simulation and Meredith spice calculus.
+
+- The pi-calculus module is 16 files for the asynchronous choice-free fragment.
+- The rho-calculus module is 11 files with locally nameless COMM reduction and spice rule.
+- The ProcessCalculi module doesn't contain sorries.
+- ProcessCalculi/README.md contains detailed architecture and proof status.

@@ -1,138 +1,54 @@
-# GSLT in Mettapedia
+# GSLT module
 
-`GSLT` here means **Graph-Structured Lambda Theories**: a categorical way to
-specify languages (contexts/substitutions/equality/reduction) so that OSLF can
-derive modal/native type structure from operational semantics.
+GSLT is Graph-Structured Lambda Theories in Mettapedia.
+This README specifies the formal GSLT contract that OSLF consumes.
 
-This README answers:
-1. What is a GSLT, precisely?
-2. What spec do I need to feed a programming language to OSLF?
+## Formal spec status
 
-## Where the Formal Spec Lives
+- The formal specification is the GSLT module family and OSLF MeTTaIL syntax modules.
 
-- Top-level module:
-  - `Mettapedia/GSLT.lean`
-- Core categorical objects:
-  - `Mettapedia/GSLT/Core/LambdaTheoryCategory.lean`
-  - `Mettapedia/GSLT/Core/ChangeOfBase.lean`
-- Presheaf/topos layer:
-  - `Mettapedia/GSLT/Topos/SubobjectClassifier.lean`
-  - `Mettapedia/GSLT/Topos/PredicateFibration.lean`
+- `Mettapedia/GSLT.lean`
+- `Mettapedia/GSLT/Core/LambdaTheoryCategory.lean`
+- `Mettapedia/GSLT/Core/ChangeOfBase.lean`
+- `Mettapedia/GSLT/Topos/SubobjectClassifier.lean`
+- `Mettapedia/GSLT/Topos/PredicateFibration.lean`
 
-## 1) Category-Theoretic Definition (Core GSLT)
+## Category-theoretic definition
 
-In this codebase, the core object is a lambda-theory with equality and
-fibration structure:
+- The core GSLT object is a lambda theory with equality and fibration structure.
+- SubobjectFibration is a Sub fiber over each object with frame structure.
+- LambdaTheoryWithEquality is a categorical object with cartesian closed structure, finite limits, and attached fibration.
+- ChangeOfBase is pullback and quantifier images with adjunctions exists_f left f* left forall_f.
+- Beck-Chevalley is substitution and quantification compatibility on pullback squares.
+- LambdaTheoryWithFibration is the bundled core object consumed by later semantics.
 
-1. `SubobjectFibration C`
-  - `Sub : C -> Type`
-  - each fiber `Sub X` is a `Frame` (complete Heyting algebra)
-2. `LambdaTheoryWithEquality`
-  - object type `Obj`
-  - category structure on `Obj`
-  - cartesian monoidal + monoidal closed + finite limits
-  - attached `SubobjectFibration`
-3. `ChangeOfBase` on that fibration
-  - pullback `f*`
-  - direct image `exists_f`
-  - universal image `forall_f`
-  - adjunctions: `exists_f ⊣ f* ⊣ forall_f`
-4. Beck-Chevalley condition
-  - substitution/quantification compatibility on pullback squares
-5. `LambdaTheoryWithFibration`
-  - bundles lambda-theory + change-of-base + Beck-Chevalley
+## Grammar operational interface
 
-Concrete names:
-- `SubobjectFibration`:
-  `Mettapedia/GSLT/Core/LambdaTheoryCategory.lean`
-- `LambdaTheoryWithEquality`:
-  `Mettapedia/GSLT/Core/LambdaTheoryCategory.lean`
-- `ChangeOfBase`, `BeckChevalley`, `LambdaTheoryWithFibration`:
-  `Mettapedia/GSLT/Core/ChangeOfBase.lean`
+- LanguageDef is the operational front-end for OSLF synthesis.
+- TypeExpr, CollType, GrammarRule, and TermParam are the grammar layer.
+- Pattern is the equation and rewrite pattern language with binders and collections.
+- Premise is freshness, congruence, and relationQuery constraints.
+- LanguageDef is name, types, terms, equations, rewrites, and congruence collection defaults.
 
-## 2) Grammar/Operational Interface Used by OSLF Today
+## OSLF interface
 
-For feeding a language into OSLF now, use the operational `LanguageDef`
-front-end (MeTTaIL syntax) in:
+- TypeSynthesis entry points are langRewriteSystem, langDiamond, langBox, langGalois, and langOSLF.
+- The practical contract is LanguageDef plus optional RelationEnv maps to langOSLF.
 
-- `Mettapedia/OSLF/MeTTaIL/Syntax.lean`
+- `langRewriteSystemUsing / langRewriteSystem`
+- `langDiamondUsing / langDiamond`
+- `langBoxUsing / langBox`
+- `langGaloisUsing / langGalois`
+- `langOSLF`
 
-### 2.1 Type and Term Grammar
+## New language workflow
 
-- `TypeExpr`:
-  - `base String`
-  - `arrow TypeExpr TypeExpr`
-  - `multiBinder TypeExpr`
-  - `collection CollType TypeExpr`
-- `CollType`:
-  - `vec | hashBag | hashSet`
-- `GrammarRule`:
-  - `label : String`
-  - `category : String`
-  - `params : List TermParam`
-  - `syntaxPattern : List SyntaxItem`
-- `TermParam`:
-  - `simple name ty`
-  - `abstraction name ty`
-  - `multiAbstraction name ty`
-
-### 2.2 Pattern Language for Equations/Rewrites
-
-- `Pattern` constructors:
-  - `bvar Nat` (bound var, de Bruijn index)
-  - `fvar String` (free/meta var)
-  - `apply String (List Pattern)`
-  - `lambda Pattern`
-  - `multiLambda Nat Pattern`
-  - `subst Pattern Pattern`
-  - `collection CollType (List Pattern) (Option String)` (rest-variable optional)
-
-### 2.3 Premises
-
-- `Premise`:
-  - `freshness : FreshnessCondition -> Premise`
-  - `congruence : Pattern -> Pattern -> Premise`
-  - `relationQuery : String -> List Pattern -> Premise`
-
-### 2.4 Full Language Spec
-
-- `LanguageDef` fields:
-  - `name : String`
-  - `types : List String`
-  - `terms : List GrammarRule`
-  - `equations : List Equation`
-  - `rewrites : List RewriteRule`
-  - `congruenceCollections : List CollType` (default all three)
-
-This is the spec you provide to the OSLF synthesis pipeline.
-
-## 3) Exact OSLF Pipeline Entry Points
-
-From `Mettapedia/OSLF/Framework/TypeSynthesis.lean`:
-
-1. `langRewriteSystemUsing` / `langRewriteSystem`
-2. `langDiamondUsing` / `langDiamond`
-3. `langBoxUsing` / `langBox`
-4. `langGaloisUsing` / `langGalois`
-5. `langOSLF`
-
-So the practical contract is:
-
-`LanguageDef (+ optional RelationEnv for relationQuery premises) -> langOSLF`
-
-## 4) What You Must Provide for a New PL
-
-If you want OSLF types for your language, provide:
-
-1. Sorts (`types`) and designate a process sort (default `"Proc"`).
-2. Constructors (`terms`) for your syntax/state representation.
-3. Equations (`equations`) for structural equality/normalization.
-4. Rewrite rules (`rewrites`) for one-step operational semantics.
-5. Premises (`Premise`) where needed.
-6. Optional `RelationEnv` implementation for external relations used by
-   `relationQuery`.
-
-Minimal Lean workflow:
+- A new language spec requires sort declarations and a process sort designation.
+- A new language spec requires constructor terms for syntax and state.
+- A new language spec requires equations for structural equality and normalization.
+- A new language spec requires small-step rewrite rules.
+- A new language spec requires premise constraints where needed.
+- RelationEnv is optional unless relationQuery premises are used.
 
 ```lean
 import Mettapedia.OSLF.MeTTaIL.Syntax
@@ -144,70 +60,41 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.MeTTaIL.Engine
 
 def myLang : LanguageDef := { ... }
-def myRelEnv : RelationEnv := RelationEnv.empty -- or custom
+def myRelEnv : RelationEnv := RelationEnv.empty
 
 def myOSLF := langOSLF myLang "Proc"
 def myDiamond := langDiamondUsing myRelEnv myLang
 def myBox := langBoxUsing myRelEnv myLang
 ```
 
-## 5) Is This "Any Language"?
+## Any language interface
 
-Yes for any language you can present as small-step rewrites over a structured
-term/state syntax (plus premise queries/oracles where needed).
+- The interface is any language encoded as small-step rewrites over structured states.
+- Functional languages are typically encoded by term-reduction rules.
+- Imperative languages are typically encoded as rewrites over machine states.
+- Concurrent languages are typically encoded as rewrites over process and message networks.
 
-Typical encoding pattern:
-- functional language: term-reduction rules
-- imperative language: rewrite over machine states `(pc, store, heap, ...)`
-- concurrent language: rewrite over process networks/messages
+## Practical examples
 
-## 6) Practical Demos to Copy
+- The codebase is TinyML, MeTTa, and premise-aware demos to copy.
 
-- TinyML instance:
-  - `Mettapedia/OSLF/Framework/TinyMLInstance.lean`
-- MeTTa minimal/full instances:
-  - `Mettapedia/OSLF/Framework/MeTTaMinimalInstance.lean`
-  - `Mettapedia/OSLF/Framework/MeTTaFullInstance.lean`
-- Premise-aware execution:
-  - `Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean`
-- Lean-to-Rust roundtrip smoke path:
-  - `Mettapedia/OSLF/Tools/ExportTinyMLSmokeRoundTrip.lean`
-  - <https://github.com/zariuq/mettail-rust/tree/feature/lean-language-export-tinyml-smoke>
+- `Mettapedia/OSLF/Framework/TinyMLInstance.lean`
+- `Mettapedia/OSLF/Framework/MeTTaMinimalInstance.lean`
+- `Mettapedia/OSLF/Framework/MeTTaFullInstance.lean`
+- `Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean`
+- `Mettapedia/OSLF/Tools/ExportTinyMLSmokeRoundTrip.lean`
 
-## 7) Relation to Full Presheaf/Topos GSLT
+## Relation to topos spec
 
-The `LanguageDef` front-end is operational and executable. The full categorical
-stack (subobject classifier, predicate fibration, Beck-Chevalley) is in the
-`Mettapedia/GSLT/Topos/*` files and is the semantic/categorical foundation.
+- LanguageDef is the executable ingestion layer, while GSLT Topos modules provide categorical semantics.
 
-Use both together:
-- operational ingestion and execution via `LanguageDef`
-- categorical guarantees and lifted semantics via GSLT/topos modules
+## Native Type Theory connection
 
-## 8) Native Type Theory (NTT) Connection
+- The GSLT presheaf layer is the direct infrastructure for Native Type Theory formalization.
+- PredicateFibration.lean is presheaf change-of-base, frame fibers, and Beck-Chevalley components used by NTT.
+- NTTClaimTracker.lean is the authoritative strict claim tracker for counts and assumption-scoped items.
+- Paper-parity status is tracked in NTTClaimTracker, PaperClaimTracker, and FULLStatus modules.
 
-The GSLT presheaf infrastructure directly supports the Native Type Theory
-(Williams & Stay, ACT 2021) formalization in `Mettapedia/OSLF/NativeType/`.
-
-Key GSLT components consumed by NTT:
-- `Mettapedia/GSLT/Topos/PredicateFibration.lean`:
-  - `presheafChangeOfBase` — provides the indexed adjoints ∃f ⊣ f* ⊣ ∀f
-    used in NTT Prop 12
-  - `presheafSubfunctorFrame` — Frame instance on `Subfunctor F` used in
-    NTT Prop 14 (cosmic fibration: each fiber is a complete Heyting algebra)
-  - `beckChevalleyCondition_presheafChangeOfBase` — Beck-Chevalley condition
-    for NTT Prop 12
-
-The NTT strict claim tracker (`Mettapedia/OSLF/Framework/NTTClaimTracker.lean`)
-is the authoritative source for current counts/status, including
-assumption-scoped items with necessity counterexamples. The key strengthened
-endpoints include:
-- Def 21: Cartesian lifts via pullbacks (Grothendieck fibration behavior)
-- Sec 4: full ↔ characterization of image-comprehension adjunction
-- Thm 23: functorial laws (map_id, map_comp) for the internal language package
-
-Status boundary:
-- For paper-parity/current-claim status, rely on
-  `Mettapedia/OSLF/Framework/NTTClaimTracker.lean`,
-  `Mettapedia/OSLF/Framework/PaperClaimTracker.lean`, and
-  `Mettapedia/OSLF/Framework/FULLStatus.lean` instead of README prose.
+- `Mettapedia/OSLF/Framework/NTTClaimTracker.lean`
+- `Mettapedia/OSLF/Framework/PaperClaimTracker.lean`
+- `Mettapedia/OSLF/Framework/FULLStatus.lean`

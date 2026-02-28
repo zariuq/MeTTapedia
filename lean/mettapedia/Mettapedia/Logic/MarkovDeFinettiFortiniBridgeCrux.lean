@@ -613,6 +613,34 @@ theorem start_constancy_of_rowKernelData
     (start_rowSuccessorValueEvent_const_of_markovExch
       (k := k) P μ hμ hExt i a b (fun σ n => hperm i a b σ n))
 
+/-- Global start-restricted row-successor permutation invariance for a path law. -/
+def StartRestrictedRowSuccessorPermInvariant
+    (P : Measure (ℕ → Fin k)) : Prop :=
+  ∀ (i a b : Fin k) (σ : Equiv.Perm ℕ) (n : ℕ),
+    P ({ω : ℕ → Fin k | ω 0 = a} ∩
+        rowSuccessorValueEvent (k := k) i (σ n) b)
+      =
+    P ({ω : ℕ → Fin k | ω 0 = a} ∩
+        rowSuccessorValueEvent (k := k) i n b)
+
+/-- If a concrete witness violates start-restricted permutation invariance,
+then that invariance cannot be derivable from only `hμ` and `hExt`. -/
+theorem not_derivable_startRestrictedRowSuccessorPermInvariant_of_witness
+    (hWitness :
+      ∃ (μ : FiniteAlphabet.PrefixMeasure (Fin 2)) (P : Measure (ℕ → Fin 2)),
+        IsProbabilityMeasure P ∧
+        MarkovExchangeablePrefixMeasure (k := 2) μ ∧
+        (∀ xs : List (Fin 2), μ xs = P (cylinder (k := 2) xs)) ∧
+        ¬ StartRestrictedRowSuccessorPermInvariant (k := 2) P) :
+    ¬ (∀ (μ : FiniteAlphabet.PrefixMeasure (Fin 2)) (P : Measure (ℕ → Fin 2)),
+          IsProbabilityMeasure P →
+          MarkovExchangeablePrefixMeasure (k := 2) μ →
+          (∀ xs : List (Fin 2), μ xs = P (cylinder (k := 2) xs)) →
+          StartRestrictedRowSuccessorPermInvariant (k := 2) P) := by
+  intro hDerive
+  rcases hWitness with ⟨μ, P, hPprob, hμ, hExt, hNotPerm⟩
+  exact hNotPerm (hDerive μ P hPprob hμ hExt)
+
 /-- Cesàro-limit bridge in the current row-kernel data interface.
 
 This is a typed pass-through: once a family of start-conditioned Cesàro limits

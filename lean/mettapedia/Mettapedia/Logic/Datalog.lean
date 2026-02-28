@@ -6,6 +6,7 @@ import Mettapedia.Logic.Datalog.Provenance
 import Mettapedia.Logic.Datalog.PathMapBridge
 import Mettapedia.Logic.Datalog.OSLFBridge
 import Mettapedia.Logic.Datalog.WorldModelBridge
+import Mettapedia.Logic.Datalog.Embedding
 
 /-!
 # Datalog Formalization

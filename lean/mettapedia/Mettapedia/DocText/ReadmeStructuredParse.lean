@@ -15,6 +15,9 @@ open Mettapedia.DocText.ReadmeTree
 
 inductive ParsedTechnicalLine where
   | heading (level : Nat) (text : String)
+  | theoremName (name : String)
+  | theoremStatement (statement : SynExpr)
+  | theoremFile (path : String)
   | pathItem (path : String)
   | syntaxItem (label : String) (pattern : SynExpr)
   | apiPath (path : String)
@@ -54,6 +57,14 @@ def pathEntries (blocks : List ReadmeBlock) : List PathItem :=
       | _ => acc)
     []
 
+def theoremEntries (blocks : List ReadmeBlock) : List TheoremItem :=
+  blocks.foldr
+    (fun b acc =>
+      match b with
+      | .theoremItems items => items ++ acc
+      | _ => acc)
+    []
+
 def syntaxEntries (blocks : List ReadmeBlock) : List SyntaxItem :=
   blocks.foldr
     (fun b acc =>
@@ -89,6 +100,8 @@ def claimBulletLines (blocks : List ReadmeBlock) : List String :=
 
 def technicalLines (blocks : List ReadmeBlock) : List String :=
   let headingLines := (headingEntries blocks).map headingLine
+  let theoremNameLines := (theoremEntries blocks).map (fun t => "- `" ++ t.name ++ "` : `" ++ renderSynExpr t.statement ++ "`")
+  let theoremFileLines := (theoremEntries blocks).map (fun t => "  - `" ++ t.file ++ "`")
   let pathLines := (pathEntries blocks).map (fun i => "- `" ++ i.path ++ "`")
   let syntaxLines := (syntaxEntries blocks).map (fun i => "- " ++ i.label ++ ": `" ++ renderSynExpr i.pattern ++ "`")
   let apiPathLines := (apiEntries blocks).map (fun i => "- `" ++ i.path ++ "`")
@@ -101,33 +114,39 @@ def technicalLines (blocks : List ReadmeBlock) : List String :=
     (fileRefEntries blocks).foldr
       (fun (_, d) acc => if d = "" then acc else ("  - " ++ d) :: acc)
       []
-  headingLines ++ pathLines ++ syntaxLines ++ apiPathLines ++ apiMemberLines ++ fileRefPathLines ++ fileRefDescLines
+  headingLines ++ theoremNameLines ++ theoremFileLines ++ pathLines ++ syntaxLines ++ apiPathLines ++ apiMemberLines ++ fileRefPathLines ++ fileRefDescLines
 
 def parseTechnicalLine? (blocks : List ReadmeBlock) (line : String) : Option ParsedTechnicalLine :=
   match (headingEntries blocks).find? (fun h => headingLine h = line) with
   | some (lvl, txt) => some (.heading lvl txt)
   | none =>
-      match (pathEntries blocks).find? (fun p => "- `" ++ p.path ++ "`" = line) with
-      | some p => some (.pathItem p.path)
+      match (theoremEntries blocks).find? (fun t => "- `" ++ t.name ++ "` : `" ++ renderSynExpr t.statement ++ "`" = line) with
+      | some t => some (.theoremName t.name)
       | none =>
-          match (syntaxEntries blocks).find? (fun s => "- " ++ s.label ++ ": `" ++ renderSynExpr s.pattern ++ "`" = line) with
-          | some s => some (.syntaxItem s.label s.pattern)
+          match (theoremEntries blocks).find? (fun t => "  - `" ++ t.file ++ "`" = line) with
+          | some t => some (.theoremFile t.file)
           | none =>
-              match (apiEntries blocks).find? (fun i => "- `" ++ i.path ++ "`" = line) with
-              | some i => some (.apiPath i.path)
+              match (pathEntries blocks).find? (fun p => "- `" ++ p.path ++ "`" = line) with
+              | some p => some (.pathItem p.path)
               | none =>
-                  match (apiEntries blocks).findSome? (fun i =>
-                    i.members.find? (fun m => "  - `" ++ m ++ "`" = line)) with
-                  | some m => some (.apiMember m)
+                  match (syntaxEntries blocks).find? (fun s => "- " ++ s.label ++ ": `" ++ renderSynExpr s.pattern ++ "`" = line) with
+                  | some s => some (.syntaxItem s.label s.pattern)
                   | none =>
-                      match (fileRefEntries blocks).find? (fun (p, _) => "- `" ++ p ++ "`" = line) with
-                      | some (p, _) => some (.fileRefPath p)
+                      match (apiEntries blocks).find? (fun i => "- `" ++ i.path ++ "`" = line) with
+                      | some i => some (.apiPath i.path)
                       | none =>
-                          match (fileRefEntries blocks).findSome? (fun (_, d) =>
-                            if d = "" then none else
-                            if "  - " ++ d = line then some d else none) with
-                          | some d => some (.fileRefDesc d)
-                          | none => none
+                          match (apiEntries blocks).findSome? (fun i =>
+                            i.members.find? (fun m => "  - `" ++ m ++ "`" = line)) with
+                          | some m => some (.apiMember m)
+                          | none =>
+                              match (fileRefEntries blocks).find? (fun (p, _) => "- `" ++ p ++ "`" = line) with
+                              | some (p, _) => some (.fileRefPath p)
+                              | none =>
+                                  match (fileRefEntries blocks).findSome? (fun (_, d) =>
+                                    if d = "" then none else
+                                    if "  - " ++ d = line then some d else none) with
+                                  | some d => some (.fileRefDesc d)
+                                  | none => none
 
 def parseClaimBulletLine? {α : Type} (parseClaimLine? : String → Option α) (line : String) : Option α :=
   parseClaimLine? (stripBulletPrefix line)
@@ -143,15 +162,10 @@ def headingRenderImageCheck {β : Type}
     | some h => renderHeading h = txt
     | none => false)
 
-private theorem all_true_of_mem {α : Type} (p : α → Bool) :
-    ∀ {xs : List α} (hAll : xs.all p = true) {x : α}, x ∈ xs → p x = true
-  | [], hAll, _, hMem => by cases hMem
-  | y :: ys, hAll, x, hMem => by
-      simp at hAll
-      simp at hMem
-      rcases hMem with rfl | hMemTail
-      · exact hAll.1
-      · exact all_true_of_mem p (xs := ys) (hAll := hAll.2) (x := x) hMemTail
+private theorem all_true_of_mem {α : Type} (p : α → Bool)
+    {xs : List α} (hAll : xs.all p = true) {x : α} (hMem : x ∈ xs) :
+    p x = true := by
+  exact (List.all_eq_true.mp hAll) x hMem
 
 /-- If heading-image check passes, each heading entry has a parser/render witness. -/
 theorem headingRenderImageWitness {β : Type}
@@ -181,7 +195,7 @@ theorem headingRenderImageWitness {β : Type}
   | none =>
       simp [hParsed] at hPred
   | some h =>
-      refine ⟨h, hParsed.symm, ?_⟩
+      refine ⟨h, rfl, ?_⟩
       simpa [hParsed] using hPred
 
 private def isDigitStr (s : String) : Bool :=
@@ -214,6 +228,11 @@ def blockPassesHardAuditWith {α β : Type}
   | .heading _ text => (parseHeadingLine? text).isSome
   | .paragraph sents => sents.all (fun s => (parseClaimLine? s).isSome)
   | .claimBullets items => items.all (fun i => (parseClaimLine? i.text).isSome)
+  | .theoremItems items =>
+      items.all (fun i =>
+        isIdentifierLikeMember i.name &&
+        !i.file.trimAscii.isEmpty &&
+        synExprWellFormed i.statement)
   | .apiItems items =>
       items.all (fun i =>
         !i.path.trimAscii.isEmpty &&

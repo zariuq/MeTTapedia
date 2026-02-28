@@ -1,70 +1,68 @@
-# GF Formalization in Lean 4
+# GF Lean formalization
 
-Lean 4 formalization of Grammatical Framework (GF) abstract syntax, two concrete
-grammars (Czech, English), and a verified semantic bridge to OSLF evidence semantics.
+This project formalizes Grammatical Framework in Lean 4.
+It includes an abstract syntax.
+It includes two concrete grammars for Czech and English.
+It includes a semantic bridge.
 
 ## Authorship
 
-- Primary author: **Oruží (AI)**
-- Human lead/editor: Zar
+- The primary author is Oruzi (AI).
+- The human lead editor is Zar.
 
 ## Scope
 
-This formalizes a **subset** of the GF Resource Grammar Library (RGL). It is not a
-complete port of the RGL. Specifically:
+This formalization covers a strict subset.
+This formalization doesn't port the full RGL.
 
-- **Abstract syntax**: 170 core GF RGL function signatures with typed categories
-- **Czech**: Morphology engine (14 declension paradigms, verbs, adjectives, pronouns,
-  numerals) with partial linearization. Does not cover full clause construction.
-- **English**: Morphology plus clause construction (tense/aspect/polarity, do-support,
-  relative clauses, VP slash). Broader syntactic coverage than Czech but still partial.
-- **Semantic bridge**: GF abstract trees to OSLF rewrite rules to evidence-valued
-  denotational semantics via the Grothendieck construction (NativeTypeTheory).
+- The abstract syntax includes 170 core GF RGL function signatures.
+- The Czech concrete grammar includes an engine.
+- The Czech linearization is partial.
+- The English concrete grammar includes morphology and clause construction.
+- The English syntactic coverage is broader than Czech.
+- The semantic bridge targets OSLF evidence semantics.
 
-**Not included**: PGF runtime, PMCFG parsing, chart parsing, full conjunction
-linearization, full numeral linearization in English.
+- This profile doesn't include the PGF runtime.
+- This profile doesn't include PMCFG parsing.
+- This profile doesn't include chart parsing.
+- This profile doesn't include full conjunction linearization.
+- This profile doesn't include full English numeral linearization.
 
-## Proof Status
+## Proof status
 
-Zero sorries. Zero axioms. Every theorem is proven.
+The codebase doesn't contain sorries.
+The codebase doesn't contain axioms.
+Every theorem is proven.
 
 ## Architecture
 
 ```
 Core.lean            GF categories (112), AbstractTree, ConcreteForm, Grammar
-Abstract.lean        All RGL function signatures, AbstractNode constructors
-Concrete.lean        InflectionTable, morphophonological operations
-Typing.lean          GF-to-OSLF type checking, Frege compositionality
-KernelConfluence     Proven confluence of the GF rewrite kernel
-SemanticKernel...    Proven semantic-level confluence (10 rewrite rules)
+Abstract.lean        Core RGL function signatures and abstract nodes
+Concrete.lean        Inflection tables and morphophonological operations
+Typing.lean          GF-to-OSLF type checking and compositionality
 OSLFBridge.lean      GF abstract syntax as OSLF LanguageDef
-                    (170 core signatures; 985 generated grammar rules)
-WorldModelSem...     Evidence-valued denotational semantics for GF trees
-VisibleLayer.lean    TUG visible semantic layer (V1-V4 actions)
-VisibleLayerGF...    GF-specific NPReplacer and VisibleCfg
-StoreToLogical...    GrammarState to QFormula2 conversion
-WorldModelVis...     Store-aware evidence bridge
-OSLFToNTT.lean       Composition into NativeTypeTheory (Grothendieck ∫ Sub)
-LinguisticInv...     Cross-linguistic invariance theorems
-RoundTripRegr...     Proven roundtrip regression (0 failures, both languages)
-Czech/               Czech morphology engine (see Czech/README.md)
-English/             English morphology and clause construction (see English/README.md)
-Examples/            End-to-end pipeline examples (see Examples/README.md)
+WorldModelSem.lean   Evidence-valued denotational semantics for GF trees
+English/             English morphology and clause construction
+Czech/               Czech morphology engine
+Examples/            End-to-end pipeline examples
 ```
 
-## Key Results
+### Typed-symbol patterns
 
-- **Kernel confluence**: `kernel_confluence_mod` (syntactic), plus semantic-level
-  commutation and determinism theorems
-- **Cross-linguistic invariance**: English and Czech share operational semantics
-  (`english_czech_reduces_iff`, `english_czech_sem_iff`)
-- **Roundtrip regression**: `totalFailureCount_zero` (proven 0 failures across
-  36 corpus entries)
-- **End-to-end pipeline**: Three worked examples proving the complete
-  GF tree -> Pattern -> Store -> QFormula -> Evidence pipeline
+- Tree to pattern bridge: `GF_tree -> Pattern`
+- Pattern to formula bridge: `Pattern -> QFormula`
+- Pipeline composition: `GF_tree -> Pattern -> Store -> QFormula -> Evidence`
+
+## Key results
+
+- Kernel confluence is proven.
+- Cross-linguistic invariance is proven.
+- Roundtrip regression shows zero failures across 36 corpus entries.
+- Worked examples prove the end-to-end pipeline.
 
 ## References
 
-- Ranta, A. (2004). *Grammatical Framework: Programming with Multilingual Grammars*
-- Meredith & Stay, "Operational Semantics in Logical Form"
-- GF RGL source: https://github.com/GrammaticalFramework/gf-rgl
+- Aarne Ranta 2004 is the core GF reference.
+- Meredith and Stay are a core OSLF reference.
+- The GF RGL source is https://github.com/GrammaticalFramework/gf-rgl.

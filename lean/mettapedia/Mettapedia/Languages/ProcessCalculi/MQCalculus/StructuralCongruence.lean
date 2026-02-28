@@ -32,8 +32,8 @@ inductive SC : Process → Process → Prop where
   | par_cong_l (p p' q : Process) : SC p p' → SC (p ‖ q) (p' ‖ q)
   | par_cong_r (p q q' : Process) : SC q q' → SC (p ‖ q) (p ‖ q')
   | nu_cong   (p p' : Process)    : SC p p' → SC (.MQNu p) (.MQNu p')
-  | gate_cong (s : String) (p p' : Process) :
-      SC p p' → SC (.MQGate s p) (.MQGate s p')
+  | gate_cong (g : GateSpec) (p p' : Process) :
+      SC p p' → SC (.MQGate g p) (.MQGate g p')
   | in_cong_zero (i : ℕ) (p p' q : Process) :
       SC p p' → SC (.MQIn i p q) (.MQIn i p' q)
   | in_cong_one (i : ℕ) (p q q' : Process) :

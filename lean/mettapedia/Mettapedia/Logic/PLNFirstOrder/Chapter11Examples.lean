@@ -99,6 +99,30 @@ def ch11AboutHalfParams : FuzzyQuantifierParams where
   hPCL := by norm_num
   hLPC_le_UPC := by norm_num
 
+/-- Shared ε=0.1 fixture with PROBABLY-like interval `[0.66,0.85]`. -/
+def ch11ProbablyParams : FuzzyQuantifierParams where
+  ε := 0.1
+  LPC := 0.66
+  UPC := 0.85
+  PCL := 0.66
+  hε := by norm_num
+  hLPC := by norm_num
+  hUPC := by norm_num
+  hPCL := by norm_num
+  hLPC_le_UPC := by norm_num
+
+/-- Shared ε=0.1 fixture with MAYBE/POSSIBLY-like interval `[0.3,0.7]`. -/
+def ch11MaybeParams : FuzzyQuantifierParams where
+  ε := 0.1
+  LPC := 0.3
+  UPC := 0.7
+  PCL := 0.3
+  hε := by norm_num
+  hLPC := by norm_num
+  hUPC := by norm_num
+  hPCL := by norm_num
+  hLPC_le_UPC := by norm_num
+
 /-- Shared ε=0.1 fixture with ALMOST-NONE-like interval `[0.0,0.2]`. -/
 def ch11AlmostNoneParams : FuzzyQuantifierParams where
   ε := 0.1
@@ -300,6 +324,60 @@ theorem canary_ch11_aboutHalf_positive_negative_split :
       simp [hpred, witnessFraction, witnessCount]
     rw [hAll]
     norm_num [ch11AboutHalfParams]
+
+/-- PROBABLY positive + negative split:
+`3/4` is accepted, while `1/2` is rejected. -/
+theorem canary_ch11_probably_positive_negative_split :
+    fuzzyIntervalHolds ch11ProbablyParams threeHighOneLow ∧
+      ¬ fuzzyIntervalHolds ch11ProbablyParams oneHighOneLow := by
+  constructor
+  · unfold fuzzyIntervalHolds
+    have hThreeQuarter : nearOneFraction ch11ProbablyParams threeHighOneLow = (3 / 4 : ℝ) := by
+      have hpred :
+          (fun u : Fin 4 => nearOne ch11ProbablyParams (threeHighOneLow u)) = (fun u => u ≠ 0) := by
+        funext u
+        fin_cases u <;> simp [nearOne, threeHighOneLow, ch11ProbablyParams] <;> norm_num
+      unfold nearOneFraction
+      simp [hpred, witnessFraction, witnessCount]
+    rw [hThreeQuarter]
+    norm_num [ch11ProbablyParams]
+  · unfold fuzzyIntervalHolds
+    have hHalf : nearOneFraction ch11ProbablyParams oneHighOneLow = (1 / 2 : ℝ) := by
+      have hpred :
+          (fun u : Bool => nearOne ch11ProbablyParams (oneHighOneLow u)) = (fun u => u = true) := by
+        funext u
+        cases u <;> simp [nearOne, oneHighOneLow, ch11ProbablyParams] <;> norm_num
+      unfold nearOneFraction
+      simp [hpred, witnessFraction, witnessCount]
+    rw [hHalf]
+    norm_num [ch11ProbablyParams]
+
+/-- MAYBE/POSSIBLY positive + negative split:
+`1/2` is accepted, while certainty (`1`) is rejected. -/
+theorem canary_ch11_maybe_positive_negative_split :
+    fuzzyIntervalHolds ch11MaybeParams oneHighOneLow ∧
+      ¬ fuzzyIntervalHolds ch11MaybeParams bothHigh := by
+  constructor
+  · unfold fuzzyIntervalHolds
+    have hHalf : nearOneFraction ch11MaybeParams oneHighOneLow = (1 / 2 : ℝ) := by
+      have hpred :
+          (fun u : Bool => nearOne ch11MaybeParams (oneHighOneLow u)) = (fun u => u = true) := by
+        funext u
+        cases u <;> simp [nearOne, oneHighOneLow, ch11MaybeParams] <;> norm_num
+      unfold nearOneFraction
+      simp [hpred, witnessFraction, witnessCount]
+    rw [hHalf]
+    norm_num [ch11MaybeParams]
+  · unfold fuzzyIntervalHolds
+    have hAll : nearOneFraction ch11MaybeParams bothHigh = (1 : ℝ) := by
+      have hpred :
+          (fun u : Bool => nearOne ch11MaybeParams (bothHigh u)) = (fun _ => True) := by
+        funext u
+        cases u <;> simp [nearOne, bothHigh, ch11MaybeParams] <;> norm_num
+      unfold nearOneFraction
+      simp [hpred, witnessFraction, witnessCount]
+    rw [hAll]
+    norm_num [ch11MaybeParams]
 
 /-- ALMOST-NONE fixture canary: expected near-one fraction is exactly `1/5`. -/
 theorem canary_ch11_almostNone_fraction_oneFifth :

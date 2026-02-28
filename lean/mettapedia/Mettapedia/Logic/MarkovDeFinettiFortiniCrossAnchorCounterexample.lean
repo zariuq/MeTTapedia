@@ -1,4 +1,6 @@
 import Mettapedia.Logic.MarkovDeFinettiFortiniBridgeCrux
+import Mettapedia.Logic.Bridges.CheckerReflection
+import Mettapedia.Logic.MarkovDeFinettiFortiniFiniteCheckers
 
 noncomputable section
 
@@ -405,13 +407,28 @@ theorem not_hcarrier0_strong_shape_k2 :
     exact ⟨e⟩
   exact not_hcarrier0_shape_k2 hallEquiv
 
-/-! ## Minimal deterministic witness (`μPath`) with extension equation (`hExt`) -/
+lemma carrier_n1_n0_N2_cardEqChecker_false :
+    rowVisitSingletonCarrierCardEqChecker (k := 2) s0 s1 1 2 = false := by
+  refine Mettapedia.Logic.Bridges.checker_false_of_not_prop ?_
+  intro hcard
+  have hEqv : Nonempty (carrier_n1_N2 ≃ carrier_n0_N2) := by
+    -- For finite types, equal cardinals imply an equivalence.
+    exact Fintype.card_eq.mp hcard
+  exact not_exists_equiv_carrier_n1_to_n0_N2 hEqv
 
-def pathC : ℕ → S := fun n => if n = 0 then s0 else s1
+lemma carrier_n1_n0_N2_evidenceEquivChecker_false :
+    rowVisitSingletonCarrierEvidenceEquivChecker (k := 2) s0 s1 1 2 = false := by
+  refine Mettapedia.Logic.Bridges.checker_false_of_not_prop ?_
+  intro hExists
+  rcases hExists with ⟨e, _he⟩
+  exact not_exists_equiv_carrier_n1_to_n0_N2 ⟨e⟩
 
-def Ppath : Measure (ℕ → S) := Measure.dirac pathC
+/-! ## Deterministic witness infrastructure -/
 
-lemma mem_cylinder_append_singleton_iff
+/-- Path-concentrated (Dirac) law on trajectories. -/
+def deterministicPathMeasure (path : ℕ → S) : Measure (ℕ → S) := Measure.dirac path
+
+lemma mem_cylinder_append_singleton_iff_det
     (ω : ℕ → S) (x : List S) (a : S) :
     ω ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a]) ↔
       ω ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) x ∧ ω x.length = a := by
@@ -423,10 +440,10 @@ lemma mem_cylinder_append_singleton_iff
       have hi :
           ω i.1 = (x ++ [a])[i.1] := by
         have hi' : i.1 < (x ++ [a]).length := by
-          simpa using Nat.lt_succ_of_lt i.2
+          simp [List.length_append]
         exact Set.mem_iInter.mp h ⟨i.1, hi'⟩
       have hget : (x ++ [a])[i.1] = x[i.1] := by
-        simp [List.getElem_append, i.2]
+        simp [i.2]
       exact hi.trans hget
     have hlast : ω x.length = a := by
       have hi :
@@ -441,71 +458,146 @@ lemma mem_cylinder_append_singleton_iff
     by_cases hi : i.1 < x.length
     · have hxi : ω i.1 = x[i.1] := Set.mem_iInter.mp hx ⟨i.1, hi⟩
       have hget : (x ++ [a])[i.1] = x[i.1] := by
-        simp [List.getElem_append, hi]
+        simp [hi]
       exact hxi.trans hget.symm
     · have hle : x.length ≤ i.1 := Nat.le_of_not_lt hi
       have hi_le : i.1 ≤ x.length := Nat.lt_succ_iff.mp (by simpa using i.2)
       have hi' : i.1 = x.length := Nat.le_antisymm hi_le hle
       simpa [hi', List.getElem_append] using hlast
 
-def μPath : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure S where
-  toFun xs := Ppath (MarkovDeFinettiRecurrence.cylinder (k := 2) xs)
+/-- Prefix measure induced by a deterministic path. -/
+def deterministicPrefixMeasure (path : ℕ → S) :
+    Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure S where
+  toFun xs := deterministicPathMeasure path (MarkovDeFinettiRecurrence.cylinder (k := 2) xs)
   root_eq_one' := by
-    simp [Ppath, MarkovDeFinettiRecurrence.cylinder]
+    simp [deterministicPathMeasure, MarkovDeFinettiRecurrence.cylinder]
   additive' := by
     intro x
     classical
-    by_cases hx : pathC ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) x
+    by_cases hx : path ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) x
     · have hsum :
-          (∑ a : S, (if pathC x.length = a then (1 : ENNReal) else 0)) = 1 := by
-        have h01 : pathC x.length = s0 ∨ pathC x.length = s1 := by
-          by_cases h0 : pathC x.length = s0
+          (∑ a : S, (if path x.length = a then (1 : ENNReal) else 0)) = 1 := by
+        have h01 : path x.length = s0 ∨ path x.length = s1 := by
+          by_cases h0 : path x.length = s0
           · exact Or.inl h0
           · right
-            have : pathC x.length = (1 : Fin 2) :=
-              Fin.eq_one_of_ne_zero (pathC x.length) (by simpa [s0] using h0)
+            have : path x.length = (1 : Fin 2) :=
+              Fin.eq_one_of_ne_zero (path x.length) (by simpa [s0] using h0)
             simpa [s1] using this
         rcases h01 with h0 | h1
-        · simp [Fin.sum_univ_two, s0, s1, h0]
-        · simp [Fin.sum_univ_two, s0, s1, h1]
+        · simp [s0, h0]
+        · simp [s1, h1]
       calc
-        (∑ a : S, Ppath (MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a])))
-            = (∑ a : S, if pathC ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a]) then 1 else 0) := by
+        (∑ a : S, deterministicPathMeasure path (MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a])))
+            = (∑ a : S, if path ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a]) then 1 else 0) := by
                 refine Finset.sum_congr rfl ?_
                 intro a ha
-                simp [Ppath, Measure.dirac_apply', measurableSet_cylinder, Set.indicator]
-        _ 
-            = (∑ a : S, (if pathC x.length = a then (1 : ENNReal) else 0)) := by
+                simp [deterministicPathMeasure, Measure.dirac_apply', measurableSet_cylinder, Set.indicator]
+        _
+            = (∑ a : S, (if path x.length = a then (1 : ENNReal) else 0)) := by
                 refine Finset.sum_congr rfl ?_
                 intro a ha
-                have hiff := mem_cylinder_append_singleton_iff (ω := pathC) x a
+                have hiff := mem_cylinder_append_singleton_iff_det (ω := path) x a
                 simp [hiff, hx]
         _ = 1 := hsum
-        _ = Ppath (MarkovDeFinettiRecurrence.cylinder (k := 2) x) := by
-              simp [Ppath, Measure.dirac_apply', measurableSet_cylinder, Set.indicator, hx]
+        _ = deterministicPathMeasure path (MarkovDeFinettiRecurrence.cylinder (k := 2) x) := by
+              simp [deterministicPathMeasure, Measure.dirac_apply', measurableSet_cylinder, Set.indicator, hx]
     · have hnone :
-          ∀ a : S, pathC ∉ MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a]) := by
+          ∀ a : S, path ∉ MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a]) := by
         intro a ha
-        exact hx (mem_cylinder_append_singleton_iff (ω := pathC) x a |>.1 ha |>.1)
+        exact hx (mem_cylinder_append_singleton_iff_det (ω := path) x a |>.1 ha |>.1)
       calc
-        (∑ a : S, Ppath (MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a])))
-            = (∑ a : S, if pathC ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a]) then 1 else 0) := by
+        (∑ a : S, deterministicPathMeasure path (MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a])))
+            = (∑ a : S, if path ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a]) then 1 else 0) := by
                 refine Finset.sum_congr rfl ?_
                 intro a ha
-                simp [Ppath, Measure.dirac_apply', measurableSet_cylinder, Set.indicator]
+                simp [deterministicPathMeasure, Measure.dirac_apply', measurableSet_cylinder, Set.indicator]
         _
             = (∑ a : S, (0 : ENNReal)) := by
                 refine Finset.sum_congr rfl ?_
                 intro a ha
                 simp [hnone a]
         _ = 0 := by simp
-        _ = Ppath (MarkovDeFinettiRecurrence.cylinder (k := 2) x) := by
-              simp [Ppath, Measure.dirac_apply', measurableSet_cylinder, Set.indicator, hx]
+        _ = deterministicPathMeasure path (MarkovDeFinettiRecurrence.cylinder (k := 2) x) := by
+              simp [deterministicPathMeasure, Measure.dirac_apply', measurableSet_cylinder, Set.indicator, hx]
+
+lemma hExt_deterministicPrefixMeasure (path : ℕ → S) :
+    ∀ xs : List S,
+      deterministicPrefixMeasure path xs =
+        deterministicPathMeasure path (MarkovDeFinettiRecurrence.cylinder (k := 2) xs) := by
+  intro xs
+  rfl
+
+/-- Prefix-cylinder predicate for deterministic path witnesses. -/
+def deterministicPrefixFn (path : ℕ → S) {n : ℕ} (xs : Fin (n + 1) → S) : Prop :=
+  path ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) (xs 0 :: List.ofFn (fun i => xs i.succ))
+
+lemma hμ_deterministicPrefixMeasure_of_evidenceInvariant
+    (path : ℕ → S)
+    (hcongr :
+      ∀ (n : ℕ) (x1 x2 : Fin (n + 1) → S),
+        Mettapedia.Logic.MarkovExchangeability.evidenceOf (n := n) x1
+          = Mettapedia.Logic.MarkovExchangeability.evidenceOf (n := n) x2 →
+        (deterministicPrefixFn path x1 ↔ deterministicPrefixFn path x2)) :
+    Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge.MarkovExchangeablePrefixMeasure
+      (k := 2) (deterministicPrefixMeasure path) := by
+  have hμ_ofFn_true :
+      ∀ {n : ℕ} {xs : Fin (n + 1) → S}, deterministicPrefixFn path xs →
+        deterministicPrefixMeasure path (List.ofFn xs) = (1 : ENNReal) := by
+    intro n xs hxs
+    have hm' : path ∈
+        MarkovDeFinettiRecurrence.cylinder (k := 2) (xs 0 :: List.ofFn (fun i => xs i.succ)) := hxs
+    rw [hExt_deterministicPrefixMeasure (path := path) (xs := List.ofFn xs)]
+    simp [deterministicPathMeasure, Measure.dirac_apply', measurableSet_cylinder, Set.indicator, hm']
+  have hμ_ofFn_false :
+      ∀ {n : ℕ} {xs : Fin (n + 1) → S}, ¬ deterministicPrefixFn path xs →
+        deterministicPrefixMeasure path (List.ofFn xs) = (0 : ENNReal) := by
+    intro n xs hxs
+    have hm' : path ∉
+        MarkovDeFinettiRecurrence.cylinder (k := 2) (xs 0 :: List.ofFn (fun i => xs i.succ)) := hxs
+    rw [hExt_deterministicPrefixMeasure (path := path) (xs := List.ofFn xs)]
+    simp [deterministicPathMeasure, Measure.dirac_apply', measurableSet_cylinder, Set.indicator, hm']
+  intro n x1 x2
+  exact fun he => by
+    change deterministicPrefixMeasure path (List.ofFn x1) =
+        deterministicPrefixMeasure path (List.ofFn x2)
+    have hh :
+        Mettapedia.Logic.MarkovExchangeability.evidenceOf (n := n) x1
+          = Mettapedia.Logic.MarkovExchangeability.evidenceOf (n := n) x2 →
+        (deterministicPrefixFn path x1 ↔ deterministicPrefixFn path x2) :=
+      hcongr n x1 x2
+    have hiff : deterministicPrefixFn path x1 ↔ deterministicPrefixFn path x2 := hh he
+    by_cases h1 : deterministicPrefixFn path x1
+    · have h2 : deterministicPrefixFn path x2 := hiff.mp h1
+      calc
+        deterministicPrefixMeasure path (List.ofFn x1) = (1 : ENNReal) := hμ_ofFn_true h1
+        _ = deterministicPrefixMeasure path (List.ofFn x2) := (hμ_ofFn_true h2).symm
+    · have h2 : ¬ deterministicPrefixFn path x2 := by
+        intro h2
+        exact h1 (hiff.mpr h2)
+      calc
+        deterministicPrefixMeasure path (List.ofFn x1) = (0 : ENNReal) := hμ_ofFn_false h1
+        _ = deterministicPrefixMeasure path (List.ofFn x2) := (hμ_ofFn_false h2).symm
+
+/-! ## Minimal deterministic witness (`μPath`) with extension equation (`hExt`) -/
+
+def pathC : ℕ → S := fun n => if n = 0 then s0 else s1
+
+abbrev Ppath : Measure (ℕ → S) := deterministicPathMeasure pathC
+
+lemma mem_cylinder_append_singleton_iff
+    (ω : ℕ → S) (x : List S) (a : S) :
+    ω ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) (x ++ [a]) ↔
+      ω ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) x ∧ ω x.length = a :=
+  mem_cylinder_append_singleton_iff_det (ω := ω) x a
+
+abbrev μPath : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure S :=
+  deterministicPrefixMeasure pathC
 
 lemma hExt_μPath :
     ∀ xs : List S, μPath xs = Ppath (MarkovDeFinettiRecurrence.cylinder (k := 2) xs) := by
   intro xs
-  rfl
+  simpa [μPath, Ppath] using hExt_deterministicPrefixMeasure (path := pathC) (xs := xs)
 
 def pathCPrefixFn {n : ℕ} (xs : Fin (n + 1) → S) : Prop :=
   xs 0 = s0 ∧ ∀ i : Fin n, xs (Fin.succ i) = s1
@@ -532,6 +624,12 @@ lemma pathC_mem_cylinder_ofFn_iff_pathCPrefixFn
     | succ j =>
       simpa [pathC] using (hs j).symm
 
+lemma deterministicPrefixFn_pathC_iff_pathCPrefixFn
+    {n : ℕ} (xs : Fin (n + 1) → S) :
+    deterministicPrefixFn pathC xs ↔ pathCPrefixFn xs := by
+  simpa [deterministicPrefixFn] using
+    (pathC_mem_cylinder_ofFn_iff_pathCPrefixFn (n := n) xs)
+
 lemma transCount_pos_of_transition {n : ℕ} (xs : Fin (n + 1) → S)
     (i : Fin n) (a b : S)
     (h0 : xs (Fin.castSucc i) = a) (h1 : xs (Fin.succ i) = b) :
@@ -552,13 +650,13 @@ lemma pathCPrefixFn_zeroCounts {n : ℕ} {xs : Fin (n + 1) → S}
     refine Finset.filter_eq_empty_iff.mpr ?_
     intro i _ hi
     have hs : xs (Fin.succ i) = s1 := hxs.2 i
-    exact (by decide : (s1 : S) ≠ s0) (hs.trans hi.2)
+    exact (by decide : (s1 : S) ≠ s0) (hs.symm.trans hi.2)
   · unfold Mettapedia.Logic.MarkovExchangeability.transCount
     refine Finset.card_eq_zero.mpr ?_
     refine Finset.filter_eq_empty_iff.mpr ?_
     intro i _ hi
     have hs : xs (Fin.succ i) = s1 := hxs.2 i
-    exact (by decide : (s1 : S) ≠ s0) (hs.trans hi.2)
+    exact (by decide : (s1 : S) ≠ s0) (hs.symm.trans hi.2)
 
 lemma pathCPrefixFn_of_start_and_zeroCounts {n : ℕ} {xs : Fin (n + 1) → S}
     (hstart : xs 0 = s0)
@@ -632,36 +730,117 @@ lemma pathCPrefixFn_congr_of_evidenceEq
 lemma hμ_μPath :
     Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge.MarkovExchangeablePrefixMeasure
       (k := 2) μPath := by
-  intro n xs₁ xs₂ he
-  have hiff :=
-    pathCPrefixFn_congr_of_evidenceEq (n := n) (xs₁ := xs₁) (xs₂ := xs₂) he
-  by_cases h1 : pathCPrefixFn xs₁
-  · have h2 : pathCPrefixFn xs₂ := hiff.mp h1
-    have hm1 :
-        pathC ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) (List.ofFn xs₁) := by
-      exact (pathC_mem_cylinder_ofFn_iff_pathCPrefixFn xs₁).2 h1
-    have hm2 :
-        pathC ∈ MarkovDeFinettiRecurrence.cylinder (k := 2) (List.ofFn xs₂) := by
-      exact (pathC_mem_cylinder_ofFn_iff_pathCPrefixFn xs₂).2 h2
-    rw [hExt_μPath (xs := List.ofFn xs₁), hExt_μPath (xs := List.ofFn xs₂)]
-    simp [Ppath, Measure.dirac_apply', measurableSet_cylinder, Set.indicator, hm1, hm2]
-  · have h2 : ¬ pathCPrefixFn xs₂ := by
-      intro h2
-      exact h1 (hiff.mpr h2)
-    have hm1 :
-        pathC ∉ MarkovDeFinettiRecurrence.cylinder (k := 2) (List.ofFn xs₁) := by
-      intro hm1
-      exact h1 ((pathC_mem_cylinder_ofFn_iff_pathCPrefixFn xs₁).1 hm1)
-    have hm2 :
-        pathC ∉ MarkovDeFinettiRecurrence.cylinder (k := 2) (List.ofFn xs₂) := by
-      intro hm2
-      exact h2 ((pathC_mem_cylinder_ofFn_iff_pathCPrefixFn xs₂).1 hm2)
-    rw [hExt_μPath (xs := List.ofFn xs₁), hExt_μPath (xs := List.ofFn xs₂)]
-    simp [Ppath, Measure.dirac_apply', measurableSet_cylinder, Set.indicator, hm1, hm2]
+  refine hμ_deterministicPrefixMeasure_of_evidenceInvariant (path := pathC) ?_
+  intro n x1 x2
+  exact fun he => by
+    have hiff :=
+      pathCPrefixFn_congr_of_evidenceEq (n := n) (xs₁ := x1) (xs₂ := x2) he
+    simpa [deterministicPrefixFn_pathC_iff_pathCPrefixFn (xs := x1),
+      deterministicPrefixFn_pathC_iff_pathCPrefixFn (xs := x2)] using hiff
+
+lemma not_hperm_Ppath_startRestricted :
+    ¬ (∀ (i a b : S) (σ : Equiv.Perm ℕ) (n : ℕ),
+      Ppath ({ω : ℕ → S | ω 0 = a} ∩ rowSuccessorValueEvent (k := 2) i (σ n) b) =
+        Ppath ({ω : ℕ → S | ω 0 = a} ∩ rowSuccessorValueEvent (k := 2) i n b)) := by
+  intro hperm
+  let σ : Equiv.Perm ℕ := Equiv.swap 0 1
+  let E1 : Set (ℕ → S) := {ω : ℕ → S | ω 0 = s0} ∩ rowSuccessorValueEvent (k := 2) s0 1 s1
+  let E0 : Set (ℕ → S) := {ω : ℕ → S | ω 0 = s0} ∩ rowSuccessorValueEvent (k := 2) s0 0 s1
+  have h0 :
+      Ppath ({ω : ℕ → S | ω 0 = s0} ∩ rowSuccessorValueEvent (k := 2) s0 (σ 0) s1) =
+        Ppath ({ω : ℕ → S | ω 0 = s0} ∩ rowSuccessorValueEvent (k := 2) s0 0 s1) := by
+    exact hperm s0 s0 s1 σ 0
+  have hσ : σ 0 = 1 := by simp [σ]
+  have hEq : Ppath E1 = Ppath E0 := by
+    simpa [E1, E0, hσ] using h0
+  have hE0mem : pathC ∈ E0 := by
+    refine ⟨?_, ?_⟩
+    · simp [pathC]
+    · change rowSuccessorAtNthVisit (k := 2) s0 0 pathC = s1
+      have hstart : pathC 0 = s0 := by simp [pathC]
+      calc
+        rowSuccessorAtNthVisit (k := 2) s0 0 pathC
+            = successorAt (k := 2) pathC 0 := by
+                exact rowSuccessorAtNthVisit_zero_eq_successor_of_start (k := 2) pathC s0 hstart
+        _ = s1 := by simp [successorAt, pathC]
+  have hE1not : pathC ∉ E1 := by
+    intro hmem
+    have hrow : rowSuccessorAtNthVisit (k := 2) s0 1 pathC = s1 := hmem.2
+    have hnone : nthVisitTime (k := 2) pathC s0 1 = none := by
+      refine (nthVisitTime_eq_none_iff (k := 2) pathC s0 1).2 ?_
+      intro hex
+      rcases hex with ⟨t, ht⟩
+      have ht0 : t = 0 := by
+        by_contra ht0
+        have : pathC t = s1 := by simp [pathC, ht0]
+        have hs10 : s1 = s0 := this.symm.trans ht.1
+        exact (by decide : (s1 : S) ≠ s0) hs10
+      subst ht0
+      have : visitCountBefore (k := 2) pathC s0 0 = 1 := ht.2
+      simp [visitCountBefore, pathC] at this
+    have hrow0 : rowSuccessorAtNthVisit (k := 2) s0 1 pathC = s0 := by
+      simp [rowSuccessorAtNthVisit, hnone]
+    have hs01 : s0 = s1 := hrow0.symm.trans hrow
+    exact (by decide : (s0 : S) ≠ s1) hs01
+  have hE0_meas : MeasurableSet E0 := by
+    have hs : MeasurableSet ({ω : ℕ → S | ω 0 = s0} : Set (ℕ → S)) := by
+      exact measurableSet_eq_fun (measurable_pi_apply 0) measurable_const
+    exact hs.inter (measurableSet_rowSuccessorValueEvent (k := 2) s0 0 s1)
+  have hE1_meas : MeasurableSet E1 := by
+    have hs : MeasurableSet ({ω : ℕ → S | ω 0 = s0} : Set (ℕ → S)) := by
+      exact measurableSet_eq_fun (measurable_pi_apply 0) measurable_const
+    exact hs.inter (measurableSet_rowSuccessorValueEvent (k := 2) s0 1 s1)
+  have hE0 : Ppath E0 = 1 := by
+    simp [Ppath, deterministicPathMeasure, Measure.dirac_apply', Set.indicator, hE0_meas, hE0mem]
+  have hE1 : Ppath E1 = 0 := by
+    simp [Ppath, deterministicPathMeasure, Measure.dirac_apply', Set.indicator, hE1_meas, hE1not]
+  have : (0 : ENNReal) = 1 := by
+    calc
+      (0 : ENNReal) = Ppath E1 := hE1.symm
+      _ = Ppath E0 := hEq
+      _ = 1 := hE0
+  exact zero_ne_one this
+
+theorem exists_deterministic_witness_not_hperm :
+    ∃ (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure S) (P : Measure (ℕ → S)),
+      IsProbabilityMeasure P ∧
+      Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge.MarkovExchangeablePrefixMeasure
+        (k := 2) μ ∧
+      (∀ xs : List S, μ xs = P (MarkovDeFinettiRecurrence.cylinder (k := 2) xs)) ∧
+      ¬ StartRestrictedRowSuccessorPermInvariant (k := 2) P := by
+  classical
+  have hcheckerFalse :
+      Mettapedia.Logic.Bridges.propChecker
+        (StartRestrictedRowSuccessorPermInvariant (k := 2) Ppath) = false := by
+    refine Mettapedia.Logic.Bridges.checker_false_of_not_prop ?_
+    simpa [StartRestrictedRowSuccessorPermInvariant] using not_hperm_Ppath_startRestricted
+  have hnotPerm : ¬ StartRestrictedRowSuccessorPermInvariant (k := 2) Ppath := by
+    exact
+      Mettapedia.Logic.Bridges.not_prop_of_checker_false
+        (p := StartRestrictedRowSuccessorPermInvariant (k := 2) Ppath) hcheckerFalse
+  have hPprob : IsProbabilityMeasure Ppath := by
+    change IsProbabilityMeasure (deterministicPathMeasure pathC)
+    simpa [deterministicPathMeasure] using (Measure.dirac.isProbabilityMeasure (x := pathC))
+  exact ⟨μPath, Ppath, hPprob, hμ_μPath, hExt_μPath, hnotPerm⟩
+
+theorem not_derivable_startRestrictedRowSuccessorPermInvariant :
+    ¬ (∀ (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin 2))
+          (P : Measure (ℕ → Fin 2)),
+          IsProbabilityMeasure P →
+          Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge.MarkovExchangeablePrefixMeasure
+            (k := 2) μ →
+          (∀ xs : List (Fin 2),
+              μ xs = P (MarkovDeFinettiRecurrence.cylinder (k := 2) xs)) →
+          StartRestrictedRowSuccessorPermInvariant (k := 2) P) := by
+  exact
+    not_derivable_startRestrictedRowSuccessorPermInvariant_of_witness
+      (hWitness := exists_deterministic_witness_not_hperm)
 
 /- NOTE:
-The full `hμ + hExt -> not_hperm` witness is under active development.
-This file currently provides two compiled hard refutations:
+This file now packages a deterministic witness (`μPath`, `Ppath`) showing that
+start-restricted row-successor permutation invariance is not derivable from
+`hμ + hExt` alone at `k = 2`.
+It also provides compiled hard refutations:
 1) `not_crossAnchorProductIdentity_badRowKernel`
 2) `not_hcarrier0_strong_shape_k2`.
 -/

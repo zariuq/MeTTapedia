@@ -60,12 +60,20 @@ structure ClaimBullet where
   text : String
   deriving Repr, BEq, DecidableEq
 
+/-- Typed theorem item with structured statement payload. -/
+structure TheoremItem where
+  name : String
+  statement : SynExpr
+  file : String
+  deriving Repr, BEq
+
 /-- A block in a README document tree. -/
 inductive ReadmeBlock where
   | heading (level : Nat) (text : String)
   | paragraph (sentences : List String)
   | bulletList (items : List ReadmeBlock)
   | claimBullets (items : List ClaimBullet)
+  | theoremItems (items : List TheoremItem)
   | apiItems (items : List ApiItem)
   | syntaxItems (items : List SyntaxItem)
   | pathItems (items : List PathItem)
@@ -95,6 +103,10 @@ private def renderSyntaxItem (item : SyntaxItem) : String :=
 private def renderPathItem (item : PathItem) : String :=
   "- `" ++ item.path ++ "`"
 
+private def renderTheoremItem (item : TheoremItem) : String :=
+  "- `" ++ item.name ++ "` : `" ++ renderSynExpr item.statement ++ "`\n" ++
+  "  - `" ++ item.file ++ "`"
+
 mutual
   partial def renderBlock : ReadmeBlock → String
     | .heading level text => headingPrefix level ++ text
@@ -104,6 +116,8 @@ mutual
         String.intercalate "\n" (items.map renderBulletChild)
     | .claimBullets items =>
         String.intercalate "\n" (items.map fun i => "- " ++ ensurePeriod i.text)
+    | .theoremItems items =>
+        String.intercalate "\n" (items.map renderTheoremItem)
     | .apiItems items =>
         String.intercalate "\n" (items.map renderApiItem)
     | .syntaxItems items =>
@@ -123,6 +137,9 @@ mutual
     | .fileRef path desc => "- `" ++ path ++ "`\n  - " ++ desc
     | .claimBullets items =>
         String.intercalate "\n" (items.map fun i => "  - " ++ ensurePeriod i.text)
+    | .theoremItems items =>
+        String.intercalate "\n" (items.map fun i =>
+          "  - `" ++ i.name ++ "` : `" ++ renderSynExpr i.statement ++ "`")
     | .pathItems items =>
         String.intercalate "\n" (items.map fun i => "  - `" ++ i.path ++ "`")
     | other => renderBlock other

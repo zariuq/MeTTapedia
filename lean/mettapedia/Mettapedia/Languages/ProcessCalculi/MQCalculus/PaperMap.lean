@@ -29,10 +29,10 @@ theorem paper63_out (backend : MQSemanticsBackend) (i : ℕ) (st : QState) :
 
 /-- Paper §6.3: `⟦MQGate U P⟧(st) = ⟦P⟧(applyGate(U, st))`. -/
 theorem paper63_gate (backend : MQSemanticsBackend)
-    (u : String) (p : Process) (st : QState) :
-    denoteWith backend (MQGate u p) st =
-      denoteWith backend p (backend.applyGate u st) :=
-  denoteWith_gate_clause backend u p st
+    (g : GateSpec) (p : Process) (st : QState) :
+    denoteWith backend (MQGate g p) st =
+      denoteWith backend p (backend.applyGate g st) :=
+  denoteWith_gate_clause backend g p st
 
 /-- Paper §6.3: `⟦new P⟧(st) = ⟦P⟧(allocFresh(st))`. -/
 theorem paper63_new (backend : MQSemanticsBackend)
@@ -78,6 +78,23 @@ theorem paper63_measurement_state_one (backend : MQSemanticsBackend)
     (denote_measurementWith backend i p q st).state_one =
       (denoteWith backend q (backend.collapse i .one st)).getD (backend.collapse i .one st) :=
   denote_measurementWith_state_one_eq backend i p q st
+
+/-- Paper §6.3 (statevector backend): positive-mass collapse normalizes to unit norm. -/
+theorem paper63_statevector_collapse_norm_one_of_raw_pos
+    (i : ℕ) (out : Outcome) (st : QState)
+    (hraw : 0 < rawOutcomeProb i out st) :
+    norm ((statevectorBackend.collapse i out st).ψ) = 1 := by
+  simpa [statevectorBackend] using
+    collapseByOutcome_norm_eq_one_of_raw_pos i out st hraw
+
+/-- Executable COMM denotation equals explicit branch-state selection record. -/
+theorem paper63_comm_denote_eq_measurement_selection (i : ℕ) (p q : Process) (st : QState) :
+    denote (MQIn i p q) st =
+      (if statevectorBackend.branchProb i .zero st ≥ statevectorBackend.branchProb i .one st then
+         some (denote_measurement i p q st).state_zero
+       else
+         some (denote_measurement i p q st).state_one) :=
+  denote_comm_eq_measurement i p q st
 
 /-! ## Section 3 communication reduction facts -/
 

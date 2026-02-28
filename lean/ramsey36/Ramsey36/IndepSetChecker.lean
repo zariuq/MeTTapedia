@@ -113,7 +113,7 @@ theorem hasIndepSetAux_complete
 /-! ## Bridge to SimpleGraph.IndepSetFree -/
 
 /-- If the checker says no k-independent set, then `G.IndepSetFree k`. -/
-theorem indepSetFree_of_hasIndepSet_false
+private theorem indepSetFree_of_hasIndepSet_false
     {n k : ℕ} {G : SimpleGraph (Fin n)} [DecidableRel G.Adj]
     (h : hasIndepSet n (fun v w => decide (G.Adj v w)) k = false) :
     G.IndepSetFree k := by
