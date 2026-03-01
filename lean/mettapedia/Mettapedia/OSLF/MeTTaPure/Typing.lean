@@ -161,10 +161,14 @@ inductive PureHasType : PureCtx → Pattern → Pattern → Prop where
         PureHasType ((x, A) :: Γ) (openBVar 0 (.fvar x) B) U) :
       PureHasType Γ (mkSigma A B) U
 
-  /-- Σ-introduction: `(a, b) : Σ(A, B)` when `a : A` and `b : B[a]`. -/
-  | pair_intro (Γ : PureCtx) (a b A B : Pattern)
+  /-- Σ-introduction: `(a, b) : Σ(A, B)` when `a : A`, `b : B[a]`, and `B` is
+      well-formed. The codomain witness `hB` is standard practice in DTT
+      formalizations to support subject reduction (cf. Adjedj et al. 2023). -/
+  | pair_intro (Γ : PureCtx) (L : Finset String) (a b A B : Pattern) (U : Pattern)
       (ha : PureHasType Γ a A)
-      (hb : PureHasType Γ b (openBVar 0 a B)) :
+      (hb : PureHasType Γ b (openBVar 0 a B))
+      (hB : ∀ x, x ∉ L →
+        PureHasType ((x, A) :: Γ) (openBVar 0 (.fvar x) B) U) :
       PureHasType Γ (mkPair a b) (mkSigma A B)
 
   /-- Σ-elimination (fst): `fst p : A` when `p : Σ(A, B)`. -/

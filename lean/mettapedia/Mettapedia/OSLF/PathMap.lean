@@ -13,6 +13,7 @@ import Mettapedia.OSLF.PathMap.Trie.FiniteTrie
 import Mettapedia.OSLF.PathMap.Trie.TrieRefinement
 import Mettapedia.OSLF.PathMap.Trie.TriePathMapInstance
 import Mettapedia.OSLF.PathMap.Trie.TrieZipper
+import Mettapedia.OSLF.PathMap.Trie.ZamContracts
 
 /-!
 # PathMap Formalization

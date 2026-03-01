@@ -107,27 +107,30 @@ fragments without re-checking reductions established in weaker fragments. -/
 
     The engine can safely specialize rules to stronger fragments.
     This holds for ALL languages, including those with premise-driven rules
-    (eqnLookup, typeOf, cast, groundedCall). -/
+    (eqnLookup, typeOf, cast, groundedCall), and for ANY `RelationEnv`
+    (including trie-backed stores). -/
 theorem specialization_preserves_reduction
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
-    {p q : Pattern}
-    (hred : langReducesUsing RelationEnv.empty lang₁ p q) :
-    langReducesUsing RelationEnv.empty lang₂ p q :=
+    {relEnv : RelationEnv} {p q : Pattern}
+    (hred : langReducesUsing relEnv lang₁ p q) :
+    langReducesUsing relEnv lang₂ p q :=
   declReduces_mono hrules hcong hred
 
 /-- Diamond is monotone in the rule set: if `lang₁ ⊆ lang₂` (with matching
     congruence collections), then `◇₁φ ≤ ◇₂φ`.
 
-    The engine can lift diamond-witnesses from weaker fragments. -/
+    The engine can lift diamond-witnesses from weaker fragments.
+    Works for any `RelationEnv` (including trie-backed stores). -/
 theorem diamond_mono_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    {relEnv : RelationEnv}
     (φ : Pattern → Prop) (p : Pattern)
-    (h : langDiamondUsing RelationEnv.empty lang₁ φ p) :
-    langDiamondUsing RelationEnv.empty lang₂ φ p := by
+    (h : langDiamondUsing relEnv lang₁ φ p) :
+    langDiamondUsing relEnv lang₂ φ p := by
   rw [langDiamondUsing_spec] at h ⊢
   obtain ⟨q, hred, hφ⟩ := h
   exact ⟨q, specialization_preserves_reduction hrules hcong hred, hφ⟩
@@ -136,14 +139,16 @@ theorem diamond_mono_rules
 
     This follows from the Galois connection: if the left adjoint grows,
     the right adjoint shrinks.  The engine can weaken box-guarantees when
-    moving to a stronger language. -/
+    moving to a stronger language.
+    Works for any `RelationEnv` (including trie-backed stores). -/
 theorem box_contra_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    {relEnv : RelationEnv}
     (φ : Pattern → Prop) (p : Pattern)
-    (h : langBoxUsing RelationEnv.empty lang₂ φ p) :
-    langBoxUsing RelationEnv.empty lang₁ φ p := by
+    (h : langBoxUsing relEnv lang₂ φ p) :
+    langBoxUsing relEnv lang₁ φ p := by
   rw [langBoxUsing_spec] at h ⊢
   intro q hred
   exact h q (specialization_preserves_reduction hrules hcong hred)

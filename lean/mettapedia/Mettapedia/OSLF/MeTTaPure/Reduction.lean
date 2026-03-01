@@ -161,6 +161,37 @@ theorem identity_fst_reduces :
     exact h
   exact .refl _
 
+/-! ## Inversion for Refl -/
+
+/-- If `mkRefl a` reduces in one step, the result must be `mkRefl a'`
+    for some `a'` with `PureReduces a a'`.
+    (Manual inversion avoids dependent elimination failure on `.apply` tag.) -/
+theorem reduces_mkRefl_inv {a t : Pattern}
+    (h : PureReduces (mkRefl a) t) :
+    ∃ a', t = mkRefl a' ∧ PureReduces a a' := by
+  generalize heq : mkRefl a = s at h
+  cases h with
+  | betaPi body arg => simp [mkRefl, mkApp] at heq
+  | betaSigmaFst x y => simp [mkRefl, mkFst] at heq
+  | betaSigmaSnd x y => simp [mkRefl, mkSnd] at heq
+  | congPiDom hA => simp [mkRefl, mkPi] at heq
+  | congPiCod L _ Bc Bc' hBc => simp [mkRefl, mkPi] at heq
+  | congSigmaDom hA => simp [mkRefl, mkSigma] at heq
+  | congSigmaCod L _ Bc Bc' hBc => simp [mkRefl, mkSigma] at heq
+  | congIdType hA => simp [mkRefl, mkId] at heq
+  | congIdLeft ha => simp [mkRefl, mkId] at heq
+  | congIdRight hb => simp [mkRefl, mkId] at heq
+  | congLam L body body' hB => simp [mkRefl, mkLam] at heq
+  | congAppFun hf => simp [mkRefl, mkApp] at heq
+  | congAppArg ha => simp [mkRefl, mkApp] at heq
+  | congPairFst ha => simp [mkRefl, mkPair] at heq
+  | congPairSnd hb => simp [mkRefl, mkPair] at heq
+  | congFst hp => simp [mkRefl, mkFst] at heq
+  | congSnd hp => simp [mkRefl, mkSnd] at heq
+  | congRefl ha =>
+      simp [mkRefl] at heq; obtain ⟨rfl⟩ := heq
+      exact ⟨_, rfl, ha⟩
+
 /-! ## Summary
 
 **0 sorries. 0 axioms.**

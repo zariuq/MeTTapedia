@@ -717,6 +717,17 @@ open Mettapedia.OSLF
 -- SimpleTrieZipper: ZipperIterationSound for FTrie
 #check @Mettapedia.OSLF.PathMap.Trie.SimpleTrieZipper
 
+-- XIV. ZAM Optimization Contracts (trie backend transfer of OptimizationTheorems)
+#check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.zam_relEnv_eq
+#check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.zam_diamond_false_early_termination
+#check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.zam_box_memoization_safe
+#check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.zam_deterministic_diamond_collapse
+#check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.zam_deterministic_box_collapse
+#check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.zam_diamond_mono
+#check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.zam_box_contra
+#check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.zam_substitution_reduction_fusion
+#check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.trieZipperSpace
+
 -- PeTTa OSLF instance (PeTTa → OSLF → mettail-rust pipeline)
 #check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaOSLF
 #check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaGalois

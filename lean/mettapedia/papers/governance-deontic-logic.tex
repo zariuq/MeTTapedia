@@ -41,25 +41,25 @@
 \newcommand{\OP}{\ensuremath{\mathbf{F}}}
 \newcommand{\DDL}{\textup{DDL+}}
 \newcommand{\DTS}{\textup{DTS}}
-\newcommand{\GSLT}{\textup{GSLT}}
+% \GSLT macro removed — GSLT section deleted (not relevant to governance)
 \newcommand{\PLN}{\textup{PLN}}
 \newcommand{\PGC}{\textup{PGC}}
 
 \title{Verified Dyadic Deontic Logic and Governance Reasoning in Lean~4\\
   \texttt{(DRAFT --- \today)}}
-\author{Zar \and Oru\v{z}i (Claude Anthropic)}
+\author{Zar\footnote{Corresponding author.}
+\and Claude Code (Opus 4.6)\footnote{Anthropic AI assistant. Co-authored under human direction.}}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-We present a comprehensive Lean~4 formalization of governance deontic reasoning,
-spanning the full stack from classical deontic logic to probabilistic world-model
-evidence.
+We present a Lean~4 formalization of governance deontic reasoning,
+spanning from classical deontic logic through eventuality reification to
+constructive governance models and ethical foundations.
 The formalization includes:
 (i)~a shallow semantic embedding of Carmo and Jones' Dyadic Deontic Logic (\DDL{})
-with five semantic conditions as structure fields (not axioms), giving genuine
-semantic theorems;
+with five semantic conditions;
 (ii)~a proof of all 13 Carmo-Jones axiomatic characterisation theorems (CJ\_3--CJ\_15)
 as consequences of the embedding;
 (iii)~the Deontic Traditional Scheme (\DTS{}) with obligation as the sole primitive,
@@ -74,9 +74,8 @@ and a causal-normative prohibition theorem ruling out spurious causal candidates
 obligation;
 (vii)~an abstract \code{ModalQueryEncoder} unifying event-calculus and deontic encoders
 via a shared interface; and
-(viii)~a \GSLT{} integration layer and an application to Gewirth's Principle of Generic
+(viii)~an application to Gewirth's Principle of Generic
 Consistency (\PGC{}).
-The entire stack contains 0~sorries and 0~custom axioms.
 \end{abstract}
 
 \tableofcontents
@@ -88,8 +87,8 @@ The entire stack contains 0~sorries and 0~custom axioms.
 %% ============================================================
 
 Formal governance and policy reasoning require a robust logical foundation that
-can represent obligations, permissions, and temporal dynamics while connecting
-to probabilistic evidence models.  Classical propositional deontic logic
+can represent obligations, permissions, and temporal dynamics.
+Classical propositional deontic logic
 \cite{vonWright1951} provides a starting point, but real governance scenarios
 involve:
 \begin{itemize}
@@ -109,26 +108,34 @@ that addresses all four concerns.
 The architecture layers from abstract to concrete:
 Carmo-Jones \DDL{} semantics $\to$ \DTS{} algebra $\to$ governance reasoning layer
 $\to$ reactive accessibility model $\to$ temporal and causal bridges $\to$
-\GSLT{} vertex integration $\to$ Gewirth \PGC{} application.
+Gewirth \PGC{} application.
 
 \paragraph{Contributions.}
+The primary contributions are:
 \begin{enumerate}
-\item Lean~4 shallow embedding of \DDL{} with all semantic conditions as
-      structure fields and all CJ theorems as genuine consequences (§\ref{sec:ddl}).
-\item \DTS{} algebra with a single primitive and 12 interdefinability theorems
-      (§\ref{sec:dts}).
-\item Governance reasoning layer: Hobbs eventuality reification, ISO~24617-4
-      thematic roles, deontic query encoders, and three-level verdict inference
-      (§\ref{sec:govlayer}).
-\item Constructive \code{GovNormCycle} language for seriality-closed accessibility
-      without external dependencies (§\ref{sec:govnorm}).
-\item \code{TemporallyUniformOb}: obligation persistence under time shift, and
-      causal-normative spurious prohibition (§\ref{sec:temporal}).
-\item Abstract \code{ModalQueryEncoder} unifying event-calculus and deontic
-      query dispatch (§\ref{sec:mqe}).
-\item \GSLT{} integration and Gewirth \PGC{} formalization
-      (§\S\ref{sec:gslt}--\ref{sec:pgc}).
+\item \textbf{Lean~4 port of the Benzm{\"u}ller et al.\ Isabelle/HOL DDL+ embedding}
+      \cite{Benzmuller2018}, making it available in the Lean~4 ecosystem with
+      Mathlib compatibility.  All 13 Carmo-Jones theorems are proven from
+      5 semantic conditions (§\ref{sec:ddl}--\ref{sec:cj}).
+\item \textbf{A Lean~4 port of Benzm{\"u}ller et al.'s Isabelle/HOL proof of
+      Gewirth's Principle of Generic Consistency} (\PGC{})
+      \cite{Benzmuller2019PGC}, connecting it to the DDL+ and \DTS{} layers
+      above (§\ref{sec:pgc}).
+\item \textbf{An honest architectural exploration} of whether formal deontic logic
+      can ground governance reasoning, including a negative result:
+      simple terminating languages do \emph{not} satisfy the seriality
+      requirement needed for governance accessibility (§\ref{sec:govnorm}).
+\item \textbf{A temporal-deontic bridge} formalizing obligation persistence
+      under time translation and a causal-normative prohibition theorem
+      connecting \PLN{} causal profiles to \DTS{} (§\ref{sec:temporal}).
 \end{enumerate}
+
+\noindent
+Supporting contributions include: a \DTS{} algebra with derived permission
+and optionality (§\ref{sec:dts}); a governance reasoning layer with Hobbs
+eventuality reification, ISO~24617-4 thematic roles, and a three-level
+verdict pipeline (§\ref{sec:govlayer}); and an abstract \code{ModalQueryEncoder}
+unifying event-calculus and deontic query dispatch (§\ref{sec:mqe}).
 
 %% ============================================================
 \section{Shallow Embedding of DDL+}
@@ -181,8 +188,6 @@ structure DDLPlusFrame (w : Type*) where
 The five conditions \code{sem\_3a}--\code{sem\_5e} match Carmo \& Jones (2002)
 conditions (3a), (4a), (4b), (5a)--(5e) \cite{CarmoJones2002}, pp.~290ff., and
 correspond to lines 52--59 of the Isabelle source \code{CJDDLplus.thy}.
-Crucially, all conditions are \emph{structure fields} rather than Lean axioms,
-so every theorem about \code{DDLPlusFrame} is a genuine semantic consequence.
 
 \begin{remark}
 The accessibility relation \code{av} models ``open alternatives'' (what can
@@ -253,8 +258,10 @@ The \emph{a priori necessity} operator $\Box^D$ is truth at all LD contexts:
 %% ============================================================
 
 Carmo and Jones \cite{CarmoJones2002} present 13 axioms (CJ\_3--CJ\_15) as the
-axiomatic characterisation of \DDL{}.  In our Lean~4 formalization, all 13 are
-\emph{theorems} derived from the semantic frame conditions, not axioms.
+axiomatic characterisation of \DDL{}.  Following Benzm{\"u}ller et al.\
+\cite{Benzmuller2018}, we derive all 13 from the 5 semantic frame conditions,
+confirming the soundness of the axiomatic characterisation with respect to
+the possible-worlds semantics.
 Table~\ref{tab:cj} lists each theorem with its Lean identifier and the
 primary frame condition used in its proof.
 
@@ -337,6 +344,17 @@ $\OB(p) \Rightarrow \neg\PE(\neg p)$ & \code{ob\_implies\_not\_pe\_neg} \\
 \hline
 \end{longtable}
 
+\begin{remark}[On the nature of DTS theorems]
+These interdefinability relations are largely definitional consequences of
+\code{pe} and \code{op} being defined in terms of \code{ob} and \code{neg}.
+The genuine content of the \DTS{} formalization is not any individual theorem
+but rather the \emph{structure} itself: that obligation, permission, and
+optionality form a consistent trichotomy under the consistency axiom
+$\forall p,\, \OB(p) \to \neg \OB(\neg p)$.
+The definitions do the mathematical work; the theorems confirm the
+definitions are well-chosen.
+\end{remark}
+
 \noindent
 The bridge \code{DDLPlusFrame\_to\_DTS} recovers a \DTS{} structure from a
 \DDL{} frame by instantiating \code{ob} with the frame's dyadic obligation
@@ -409,8 +427,72 @@ The \code{Judgments.lean} file defines a three-level inference pipeline:
 
 \noindent
 The pipeline mirrors the three reasoning levels of the
-\code{governance-reasoning-engine} source (eventuality\_level, statement\_level,
-conclusion\_level).
+\code{governance-reasoning-engine} source \cite{GovReasoningEngine}
+(eventuality\_level, statement\_level, conclusion\_level).
+
+\subsection{Worked Example: Rental Obligation}
+\label{sec:rental}
+
+We illustrate the full pipeline with a concrete scenario.
+
+\paragraph{Setup.}
+A rental agreement states:
+\begin{enumerate}
+\item[(P)] \emph{Primary obligation}: The tenant ought to pay rent.
+  \hfill $\OB(\text{pay})$
+\item[(CTD)] \emph{Contrary-to-duty}: If the tenant does not pay,
+  the tenant ought to give notice.
+  \hfill $\OB(\text{notice} \mid \neg\text{pay})$
+\end{enumerate}
+
+\noindent
+This is a classic Chisholm-paradox scenario \cite{Chisholm1963}.
+\DDL{}'s dyadic obligation handles it without contradiction because
+$\OB(\text{pay})$ and $\OB(\text{notice} \mid \neg\text{pay})$ live at
+different conditioning contexts.
+
+\paragraph{Level 1: Eventuality judgment.}
+The eventuality ``Alice pays Bob rent'' is encoded as:
+\begin{lstlisting}
+def e_pay : Eventuality Entity Pred :=
+  { predicate := soaPay,
+    roles := fun
+      | .agent => some Alice
+      | .patient => some Bob
+      | .theme => some Rent
+      | _ => none,
+    polarity := true }
+\end{lstlisting}
+A world-model query \code{modalQuery .obligatory e\_pay} returns evidence
+$\langle s, n \rangle$ (e.g., $s=5$ positive observations out of $n=7$ total),
+yielding:
+\begin{lstlisting}
+EventualityJudgment .obligatory e_pay evidence
+\end{lstlisting}
+
+\paragraph{Level 2: Statement judgment.}
+The eventuality judgment is lifted to a tagged statement referencing
+the lease clause:
+\begin{lstlisting}
+StatementJudgment "lease_clause_3" eventualityJudgment
+\end{lstlisting}
+
+\paragraph{Level 3: Governance verdict.}
+The verdict engine checks:
+\begin{itemize}
+\item $\OB(\text{pay})$ holds (evidence above threshold).
+\item $\PE(\text{pay})$ holds (from \code{ob\_implies\_pe}).
+\item $\neg\OB(\neg\text{pay})$ holds (\DTS{} consistency: the agreement
+      does not also oblige non-payment).
+\item No conflict detected: the \DTS{} trichotomy classifies the tenant
+      as obligated, not optional or forbidden.
+\end{itemize}
+Result: \code{GovernanceVerdict.compliant}.
+
+If the tenant fails to pay, the CTD obligation $\OB(\text{notice} \mid \neg\text{pay})$
+activates via the conditional obligation operator (\code{cond\_obl}).
+The verdict shifts to \code{violation} for the primary obligation, but the
+CTD provides a recovery path --- exactly the scenario \DDL{} was designed to handle.
 
 %% ============================================================
 \section{GovNormCycle: Constructive Reactive Accessibility}
@@ -459,9 +541,11 @@ theorem govNormCycle_closed :
   . left; rfl    -- enactToDeliberate: q = govDeliberateState
 \end{lstlisting}
 
-\begin{theorem}
-\code{govNormCycleAccessibility : ClosedGovAccessibility} is a
-sorry-free, axiom-free instance of the governance accessibility interface.
+\begin{theorem}[Constructive governance accessibility]
+The 2-state deliberate-enact cycle satisfies seriality and closure,
+providing a constructive witness that \code{ClosedGovAccessibility}
+is satisfiable: every live state has a successor, and successors of
+live states are live.
 \end{theorem}
 
 \noindent
@@ -469,6 +553,17 @@ This concrete instance can be composed with any \code{GovFrame} to produce a
 \code{GovernanceDDLBundle}.  The model is deliberately minimal: the two states
 represent the idealised governance cycle (deliberation alternates with
 enactment) without encoding any domain-specific policy content.
+
+\begin{remark}[Why not PyashCore?]
+One might expect to instantiate governance accessibility using a richer
+operational language such as PyashCore.  However, the liveness predicate
+``\code{instr $\neq$ Done}'' is \emph{not} forward-closed under reduction:
+PyashCore programs can reach \code{Done}, violating seriality.
+This is proven as \code{pyashCore\_isGovLive\_not\_closed}.
+The \code{GovNormCycle} is therefore the simplest language that satisfies
+the seriality requirement, serving as a proof of satisfiability while
+leaving richer instantiations to future work.
+\end{remark}
 
 %% ============================================================
 \section{Temporal-Deontic Bridge}
@@ -516,8 +611,7 @@ structure TemporallyUniformOb {w T : Type*} [AddCommGroup T]
 \end{lstlisting}
 
 \noindent
-The shift-invariance conditions are \emph{hypotheses}, not axioms.  Any
-concrete temporal frame must discharge them constructively.
+Any concrete temporal frame must discharge these shift-invariance conditions.
 
 \subsection{Obligation Persistence Theorem}
 
@@ -528,6 +622,15 @@ and let \code{tub : TemporallyUniformOb F}.  If $\varphi$ is ideally obligatory
 at world $(v, t_0)$, then the lag-shifted version $\varphi[\cdot - \Delta]$
 is ideally obligatory at $(v, t_0 + \Delta)$.
 \end{theorem}
+
+\paragraph{Significance.}
+This theorem captures the intuition that obligations persist under
+temporal perspective shifts.  For example, if a tenant is obligated to pay
+rent on the 1st of the month, then from the perspective of the 15th the
+obligation to \emph{have paid} 14 days ago still holds.  More precisely:
+obligations do not disappear when one changes temporal reference frame ---
+they shift with it, with the content lagging by the same amount as the
+reference point advances.
 
 \noindent
 \emph{Proof sketch.}
@@ -638,32 +741,6 @@ test harnesses written for \code{ModalQueryEncoder} apply to both the
 event-calculus and deontic encoders without duplication.
 
 %% ============================================================
-\section{GSLT Integration}
-\label{sec:gslt}
-%% ============================================================
-
-The governance layer integrates with the \GSLT{} (\emph{Galois-connection Semantics
-in Logical Form with Types}) categorical framework through the
-\code{GovernanceGSLTVertex} module.
-
-A \code{GovernanceDDLBundle} packages a \DDL{} frame together with the
-governance accessibility data and the CJ theorems:
-
-\begin{lstlisting}
-structure GovernanceDDLBundle where
-  acc   : ClosedGovAccessibility
-  frame : GovFrame { p : Pattern // acc.live p }
-\end{lstlisting}
-
-\noindent
-The \code{GovernanceForwardFiber} embeds this bundle as a
-unit-indexed presheaf fiber in the \GSLT{} vertex layer:
-the single fiber at the unit index contains the governance rewrite rules
-derived from the CJ theorems.
-\code{govNormCycleBundle} provides the concrete instance using
-\code{govNormCycleAccessibility}.
-
-%% ============================================================
 \section{Gewirth's Principle of Generic Consistency}
 \label{sec:pgc}
 %% ============================================================
@@ -675,6 +752,11 @@ The Principle of Generic Consistency (\PGC{}) \cite{Gewirth1978} asserts:
 Gewirth's argument proceeds from agency: an agent who acts on purpose must
 claim the necessary conditions for agency (freedom and well-being, \emph{FWB})
 as rights, and by universalizability must grant the same rights to all agents.
+
+Benzm{\"u}ller et al.\ \cite{Benzmuller2019PGC} gave the first machine-checked
+formalization of the \PGC{} in Isabelle/HOL, available in the Archive of Formal Proofs.
+Our Lean~4 port follows their proof structure while connecting it to the \DDL{}
+and \DTS{} layers developed in the preceding sections.
 
 The formalization in \code{Mettapedia/Ethics/} uses the \DDL{} embedding
 developed above:
@@ -703,12 +785,16 @@ representation is chosen.
 \label{sec:related}
 %% ============================================================
 
-\paragraph{Isabelle/HOL formalization.}
+\paragraph{Isabelle/HOL formalizations.}
 Benzm{\"u}ller et al.\ \cite{Benzmuller2018} formalized \DDL{} in Isabelle/HOL
-using the same shallow semantic embedding approach.
-Our Lean~4 formalization is a port of that work, extended with the governance
-reasoning layer, temporal bridges, and \PLN{} integration.
-The Isabelle source (\code{CJDDLplus.thy}, \code{ExtendedDDL.thy}) is
+using the same shallow semantic embedding approach; our Lean~4 \DDL{} formalization
+is a port of that work.
+Benzm{\"u}ller and Fuenmayor \cite{Benzmuller2019PGC} formalized the Gewirth \PGC{}
+in Isabelle/HOL, available in the Archive of Formal Proofs; our \PGC{}
+formalization is likewise a port.
+We extend both with the governance reasoning layer, temporal bridges,
+and \PLN{} causal integration.
+The Isabelle sources (\code{CJDDLplus.thy}, \code{ExtendedDDL.thy}) are
 included in the repository as a reference.
 
 \paragraph{Input/Output logic.}
@@ -716,6 +802,14 @@ Makinson and van der Torre's input/output logic \cite{MakinstonVanDerTorre2000}
 provides an alternative semantics for conditional obligation.  The \code{ob}
 dyadic relation in \DDL{} can be interpreted in their framework, though the
 present formalization does not develop this connection explicitly.
+
+\paragraph{MeTTa governance reasoning engine.}
+The \code{governance-reasoning-engine} \cite{GovReasoningEngine} implements
+a three-level inference pipeline (eventuality, statement, verdict) in MeTTa,
+using non-deterministic evaluation for governance verdict computation.
+Our formalization proves the algebraic properties that their implementation
+asserts operationally --- in particular, the \DTS{} interdefinability relations
+and the evidence lattice monotonicity.
 
 \paragraph{Event calculus in Lean.}
 The \PLN{} Probabilistic Event Calculus formalized in
@@ -734,21 +828,15 @@ stack: from \DDL{} semantic embedding to \DTS{} algebra, Hobbs eventuality
 reification, constructive reactive accessibility, temporal-deontic bridges,
 abstract modal query unification, and the Gewirth \PGC{}.
 
-The formalization is:
-\begin{itemize}
-\item \textbf{Sorry-free}: 0 uses of \code{sorry} across all files.
-\item \textbf{Axiom-free}: 0 custom \code{axiom} declarations; all
-      ``conditions'' are structure fields discharged by each concrete instance.
-\item \textbf{Compositional}: each layer is independently usable.
-\item \textbf{Grounded}: all semantic conditions trace back to published
-      sources (Carmo \& Jones 2002, von Wright 1951, Hobbs 1985, ISO~24617-4).
-\end{itemize}
+The formalization is compositional (each layer is independently usable)
+and grounded in published sources (Carmo \& Jones 2002, von Wright 1951,
+Hobbs 1985, ISO~24617-4).
 
 Future work includes:
-(i)~a full probabilistic evidence integration connecting the \DTS{} strength values
+(i)~probabilistic evidence integration connecting \DTS{} strength values
 to \PLN{} posterior-mean evidence;
-(ii)~automated synthesis of CJ-theorem instantiations for concrete policy
-domains using the \GSLT{} rewrite engine; and
+(ii)~instantiation of the governance accessibility model with richer reactive
+languages beyond the minimal \code{GovNormCycle}; and
 (iii)~temporal reasoning about norm revision and contrary-to-duty repair
 using the event calculus layer.
 

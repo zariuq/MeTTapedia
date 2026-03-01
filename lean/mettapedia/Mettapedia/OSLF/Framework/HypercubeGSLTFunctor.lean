@@ -43,23 +43,23 @@ it also reduces in a stronger vertex's language.  This follows from rule
 monotonicity (`activeRules_subset_of_le`). -/
 
 /-- Declarative one-step reduction is monotone in the rule set
-    (general version: no restriction on premises). -/
+    (general version: any RelationEnv, no restriction on premises). -/
 theorem declReduces_mono
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
-    {p q : Pattern}
-    (hred : DeclReducesWithPremises RelationEnv.empty lang₁ p q) :
-    DeclReducesWithPremises RelationEnv.empty lang₂ p q := by
+    {relEnv : RelationEnv} {p q : Pattern}
+    (hred : DeclReducesWithPremises relEnv lang₁ p q) :
+    DeclReducesWithPremises relEnv lang₂ p q := by
   induction hred with
   | topRule r hr bs0 hbs0 bs hprem hq =>
     exact .topRule r (hrules r hr) bs0 hbs0 bs
-      (applyPremisesWithEnv_mono hrules hcong RelationEnv.empty r.premises bs0 bs hprem) hq
+      (applyPremisesWithEnv_mono hrules hcong relEnv r.premises bs0 bs hprem) hq
   | @congElem _ ct _ hct i hi r hr bs0 hbs0 bs hprem _ hq =>
     have hct₂ : lang₂.allowsCongruenceIn ct := by
       simp only [LanguageDef.allowsCongruenceIn] at hct ⊢; rw [← hcong]; exact hct
     exact .congElem hct₂ i hi r (hrules r hr) bs0 hbs0 bs
-      (applyPremisesWithEnv_mono hrules hcong RelationEnv.empty r.premises bs0 bs hprem) hq
+      (applyPremisesWithEnv_mono hrules hcong relEnv r.premises bs0 bs hprem) hq
 
 /-- Reduction is monotone along the hypercube weakness order. -/
 theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
