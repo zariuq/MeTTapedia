@@ -903,4 +903,49 @@ theorem noExplicitSubst_of_openBVar {k : Nat} {u : Pattern} {p : Pattern}
       exact ⟨ih a (List.mem_cons.mpr (Or.inl rfl)) h.1,
              ih_list (fun q hq => ih q (List.mem_cons.mpr (Or.inr hq))) h.2⟩
 
+/-- `lc_at k` for `openBVar k u body` when `lc_at (k+1) body` and `lc_at k u`. -/
+theorem lc_at_openBVar_result {k : Nat} {u body : Pattern}
+    (hbody : lc_at (k + 1) body = true) (hu : lc_at k u = true) :
+    lc_at k (openBVar k u body) = true := by
+  induction body using Pattern.inductionOn generalizing k with
+  | hbvar n =>
+    simp only [openBVar]; split
+    · next h => exact hu
+    · next h =>
+      simp only [lc_at, decide_eq_true_eq] at hbody ⊢
+      simp [beq_iff_eq] at h
+      omega
+  | hfvar _ => simp [openBVar, lc_at]
+  | happly c args ih =>
+    simp only [openBVar, lc_at]
+    induction args with
+    | nil => simp [lc_at_list]
+    | cons a as ihas =>
+      simp only [List.map_cons, lc_at_list, Bool.and_eq_true]
+      simp only [lc_at, lc_at_list, Bool.and_eq_true] at hbody
+      exact ⟨ih a List.mem_cons_self hbody.1 hu,
+             ihas (fun p hp => ih p (List.mem_cons_of_mem _ hp)) hbody.2⟩
+  | hlambda body ih =>
+    simp only [openBVar, lc_at]
+    simp only [lc_at] at hbody
+    exact ih hbody (lc_at_mono hu (Nat.le_add_right k 1))
+  | hmultiLambda n body ih =>
+    simp only [openBVar, lc_at]
+    simp only [lc_at] at hbody
+    have hbody' : lc_at ((k + n) + 1) body = true := by rwa [Nat.add_right_comm] at hbody
+    exact ih hbody' (lc_at_mono hu (Nat.le_add_right k n))
+  | hsubst body repl ihb ihr =>
+    simp only [openBVar, lc_at, Bool.and_eq_true]
+    simp only [lc_at, Bool.and_eq_true] at hbody
+    exact ⟨ihb hbody.1 (lc_at_mono hu (Nat.le_add_right k 1)), ihr hbody.2 hu⟩
+  | hcollection ct elems rest ih =>
+    simp only [openBVar, lc_at]
+    induction elems with
+    | nil => simp [lc_at_list]
+    | cons a as ihas =>
+      simp only [List.map_cons, lc_at_list, Bool.and_eq_true]
+      simp only [lc_at, lc_at_list, Bool.and_eq_true] at hbody
+      exact ⟨ih a List.mem_cons_self hbody.1 hu,
+             ihas (fun p hp => ih p (List.mem_cons_of_mem _ hp)) hbody.2⟩
+
 end Mettapedia.OSLF.MeTTaIL.Substitution

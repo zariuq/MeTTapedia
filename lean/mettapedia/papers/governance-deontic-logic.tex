@@ -38,7 +38,7 @@
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\OB}{\ensuremath{\mathbf{O}}}
 \newcommand{\PE}{\ensuremath{\mathbf{P}}}
-\newcommand{\OP}{\ensuremath{\mathbf{F}}}
+\newcommand{\OP}{\ensuremath{\mathbf{Opt}}}
 \newcommand{\DDL}{\textup{DDL+}}
 \newcommand{\DTS}{\textup{DTS}}
 % \GSLT macro removed — GSLT section deleted (not relevant to governance)
@@ -359,7 +359,16 @@ definitions are well-chosen.
 The bridge \code{DDLPlusFrame\_to\_DTS} recovers a \DTS{} structure from a
 \DDL{} frame by instantiating \code{ob} with the frame's dyadic obligation
 restricted to the universal context and the reflexive world.
-This establishes that the \DDL{} frame conditions imply the \DTS{} consistency axiom.
+
+\begin{remark}[DTS consistency is not free]
+\DTS{} consistency ($\OB(p) \to \neg\OB(\neg p)$) is \emph{not} derivable
+from the \DDL{} frame conditions alone.  The \DDL{} axiom \code{sem\_5a}
+prevents $\text{ob}(X, \bot)$ but does \emph{not} prevent simultaneous
+$\text{ob}(X, p)$ and $\text{ob}(X, \neg p)$ when $X \cap p \cap \neg p = \emptyset$
+(which it always is).  The \code{frameToDTS} bridge therefore requires an
+explicit consistency hypothesis \code{hcons}, matching the Isabelle development
+where \DTS{} is an independent axiomatisation.
+\end{remark}
 
 %% ============================================================
 \section{Governance Reasoning Layer}
@@ -398,8 +407,11 @@ structure DeonticQueryEncoder (Entity Pred Query : Type*) where
 \end{lstlisting}
 
 \noindent
-The four \code{DeonticModality} constructors are: \code{rexist} (alethic,
-Hobbs' ``really exists''), \code{obligatory}, \code{permitted}, \code{optional}.
+The five \code{DeonticModality} constructors are: \code{rexist} (alethic,
+Hobbs' ``really exists''), \code{obligatory}, \code{permitted},
+\code{forbidden} ($\OB(\neg p)$), and \code{optional} ($\neg\OB(p) \wedge \neg\OB(\neg p)$).
+The \code{classify} function maps a proposition to its deontic status:
+obligatory if $\OB(p)$, forbidden if $\OB(\neg p)$, optional otherwise.
 The \code{modalQuery} field is the key interface: for a given modality and
 eventuality it produces the WM query whose evidence represents the epistemic
 degree to which that modality holds.
@@ -407,10 +419,13 @@ degree to which that modality holds.
 \subsection{Rexist Bridge}
 
 The ``really exists'' (\code{rexist}) modality implements Hobbs' principle
-that necessary possibility entails real existence.  In the Lean formalization
-the key insight is that \code{sem\_4b} (reflexivity of \code{pv}) makes
-every world a possible alternative to itself, so ideal obligation at any world
-has immediate local witnesses.
+that what really exists actually holds.  In the Lean formalization,
+\code{RexistBridge} is a \emph{hypothesis}: a \code{WMQueryEq} assumption
+stating that rexist-evidence equals ground-evidence for the same predicate.
+The bridge soundness theorem (\code{rexistBridgeRule}) simply unpacks
+this assumption.  No modal axioms are needed --- the rexist bridge is an
+interface contract between the governance layer and whatever world-model
+evidence calculus is plugged in.
 
 \subsection{Three-Level Judgment Pipeline}
 
@@ -807,9 +822,10 @@ present formalization does not develop this connection explicitly.
 The \code{governance-reasoning-engine} \cite{GovReasoningEngine} implements
 a three-level inference pipeline (eventuality, statement, verdict) in MeTTa,
 using non-deterministic evaluation for governance verdict computation.
-Our formalization proves the algebraic properties that their implementation
-asserts operationally --- in particular, the \DTS{} interdefinability relations
-and the evidence lattice monotonicity.
+Our formalization verifies several algebraic properties (\DTS{}
+interdefinability, evidence monotonicity) that correspond to structures
+used in their implementation.  No formal refinement theorem connecting
+the MeTTa rules to the Lean semantics has been established.
 
 \paragraph{Event calculus in Lean.}
 The \PLN{} Probabilistic Event Calculus formalized in
@@ -832,13 +848,105 @@ The formalization is compositional (each layer is independently usable)
 and grounded in published sources (Carmo \& Jones 2002, von Wright 1951,
 Hobbs 1985, ISO~24617-4).
 
-Future work includes:
-(i)~probabilistic evidence integration connecting \DTS{} strength values
-to \PLN{} posterior-mean evidence;
-(ii)~instantiation of the governance accessibility model with richer reactive
-languages beyond the minimal \code{GovNormCycle}; and
-(iii)~temporal reasoning about norm revision and contrary-to-duty repair
-using the event calculus layer.
+%% ============================================================
+\section{Future Developments: Toward Practical Governance}
+\label{sec:future}
+%% ============================================================
+
+The formalization presented here establishes a verified logical foundation
+but does not yet constitute a deployable governance tool.  Several
+real-world systems demonstrate that deontic logic \emph{can} deliver
+practical value, and point toward concrete development paths.
+
+\paragraph{Regulatory compliance checking.}
+Governatori and Shek's \emph{Regorous} system \cite{Governatori2013}
+uses defeasible deontic logic to check business processes (modelled in
+BPMN) against regulatory requirements, including GDPR formalization.
+A natural extension of our work would be to compile \DDL{} frame
+instances from regulatory texts (using NLP extraction or GF grammars)
+and check process traces against the resulting obligation/permission
+structure.  The \DTS{} trichotomy (obligatory/optional/forbidden) maps
+directly to compliance verdicts.
+
+\paragraph{Multi-agent governance for AI systems.}
+XMPro's Multi-Agent Generative Systems (MAGS) platform \cite{XMProMAGS}
+uses deontic principles as ``Rules of Engagement'' for industrial AI agents:
+obligations that agents must fulfil, permissions that bound their autonomy,
+and prohibitions they cannot violate.  These are encoded as \emph{deontic tokens}
+embedded in agent profiles.  Our \DDL{} formalization could provide verified
+backing for such tokens: each deontic token would carry a proof witness
+(from the CJ theorems) ensuring it is consistent with the frame conditions,
+ruling out contradictory obligations before deployment.
+
+\paragraph{Contract clause conflict detection.}
+Recent legal AI systems \cite{NormAI} use embedding-based similarity to
+detect conflicting clauses across contracts and regulatory documents.
+These systems achieve high recall but lack formal guarantees.
+A hybrid approach would use NLP to extract candidate norm pairs,
+then apply \DDL{} conflict detection (via \code{sem\_5a}: no obligation
+can require the impossible, and \code{sem\_5c}: consistent obligations
+are conjoinable) to formally verify whether detected conflicts are genuine.
+
+\paragraph{Contrary-to-duty policy repair.}
+The Chisholm paradox (§\ref{sec:rental}) shows that naive deontic logic
+produces contradictions when primary obligations are violated.  \DDL{}'s
+dyadic obligation resolves this, but the formalization does not yet support
+automated \emph{repair}: given a detected violation, synthesize the
+applicable contrary-to-duty obligations and present them as a recovery
+plan.  This would require integrating the temporal bridge (§\ref{sec:temporal})
+with a planning layer that enumerates CTD chains.
+
+\paragraph{Richer governance accessibility models.}
+The \code{GovNormCycle} (§\ref{sec:govnorm}) is a minimal 2-state
+witness of satisfiability.  A practical system needs governance
+accessibility over richer state spaces --- for instance, a reactive
+event-loop language where each ``state'' is a snapshot of active
+norms, pending obligations, and violation history.  The negative
+result for PyashCore (\code{pyashCore\_isGovLive\_not\_closed}) shows
+that terminating languages fail the seriality requirement; future
+work should explore co-inductive or stream-based state machines
+that guarantee perpetual liveness.
+
+\paragraph{Probabilistic evidence integration.}
+The three-level judgment pipeline (§\ref{sec:govlayer}) uses
+\PLN{} evidence values but does not yet connect them to posterior-mean
+inference.  Integrating the \DTS{} strength values with the
+probabilistic event calculus (via the \code{ModalQueryEncoder}) would
+allow governance verdicts to carry calibrated confidence levels,
+enabling graded compliance rather than binary pass/fail.
+
+%% ============================================================
+\section{Limitations}
+\label{sec:limitations}
+%% ============================================================
+
+\begin{itemize}
+\item \textbf{No end-to-end regulatory corpus.}
+      The formalization provides verified logical primitives but has not been
+      tested against any regulatory corpus (GDPR, SEC rules, etc.).
+\item \textbf{No natural language parser.}
+      There is no automated pipeline from regulatory text to \DDL{} frame
+      instances; all examples are hand-encoded.
+\item \textbf{No benchmark suite.}
+      We do not provide a test suite of governance scenarios with expected
+      verdicts against which implementations could be evaluated.
+\item \textbf{No executable refinement proof.}
+      The MeTTa \code{governance-reasoning-engine} and the Lean semantics
+      encode corresponding structures, but no formal refinement theorem
+      connects them.  The Lean formalization verifies properties that the
+      MeTTa code asserts, but does not prove the MeTTa code correct.
+\item \textbf{No deployed case study.}
+      The system has not been deployed in any real governance or compliance
+      setting.
+\item \textbf{DTS consistency requires external hypothesis.}
+      The \DTS{} consistency axiom ($\OB(p) \to \neg\OB(\neg p)$) is not
+      derivable from \DDL{} frame conditions alone; the bridge
+      \code{frameToDTS} requires an explicit \code{hcons} parameter
+      (see Remark in §\ref{sec:dts}).
+\item \textbf{Minimal accessibility model.}
+      The \code{GovNormCycle} is a 2-state proof of satisfiability, not a
+      practical governance state machine.
+\end{itemize}
 
 %% ============================================================
 \bibliographystyle{plain}

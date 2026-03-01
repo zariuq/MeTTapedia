@@ -21,7 +21,7 @@ This is a standard CBN-style open reduction (under all constructors).
 namespace Mettapedia.OSLF.MeTTaPure.Reduction
 
 open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern)
-open Mettapedia.OSLF.MeTTaIL.Substitution (openBVar)
+open Mettapedia.OSLF.MeTTaIL.Substitution (openBVar lc_at lc_at_list lc_at_openBVar_result)
 open Mettapedia.OSLF.MeTTaPure.Core
 open Mettapedia.OSLF.MeTTaPure.Typing (PureConv)
 
@@ -104,34 +104,76 @@ theorem PureReducesStar.single (h : PureReduces t₁ t₂) : PureReducesStar t�
 
 /-! ## Reduction implies Conversion -/
 
-/-- Every one-step reduction is a definitional equality. -/
-theorem PureReduces_implies_PureConv (h : PureReduces t₁ t₂) : PureConv t₁ t₂ := by
+/-- Every one-step reduction of a locally closed term is a definitional equality. -/
+theorem PureReduces_implies_PureConv (h : PureReduces t₁ t₂)
+    (hlc : lc_at 0 t₁ = true) : PureConv t₁ t₂ := by
   induction h with
-  | betaPi body a => exact .betaPi body a
-  | betaSigmaFst a b => exact .betaSigmaFst a b
-  | betaSigmaSnd a b => exact .betaSigmaSnd a b
-  | congPiDom _ ih => exact .congPi ∅ ih (fun _ _ => .refl _)
-  | congPiCod L _ _ _ _ ih => exact .congPi L (.refl _) (fun x hx => ih x hx)
-  | congSigmaDom _ ih => exact .congSigma ∅ ih (fun _ _ => .refl _)
-  | congSigmaCod L _ _ _ _ ih => exact .congSigma L (.refl _) (fun x hx => ih x hx)
-  | congIdType _ ih => exact .congId ih (.refl _) (.refl _)
-  | congIdLeft _ ih => exact .congId (.refl _) ih (.refl _)
-  | congIdRight _ ih => exact .congId (.refl _) (.refl _) ih
-  | congLam L _ _ _ ih => exact .congLam L (fun x hx => ih x hx)
-  | congAppFun _ ih => exact .congApp ih (.refl _)
-  | congAppArg _ ih => exact .congApp (.refl _) ih
-  | congPairFst _ ih => exact .congPair ih (.refl _)
-  | congPairSnd _ ih => exact .congPair (.refl _) ih
-  | congFst _ ih => exact .congFst ih
-  | congSnd _ ih => exact .congSnd ih
-  | congRefl _ ih => exact .congRefl ih
+  | betaPi body a =>
+      have hlcB : lc_at 1 body = true := by
+        simp only [mkApp, mkLam, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
+      have hlcA : lc_at 0 a = true := by
+        simp only [mkApp, mkLam, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2
+      exact .betaPi body a hlcB hlcA
+  | betaSigmaFst a b =>
+      have hlcA : lc_at 0 a = true := by
+        simp only [mkFst, mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
+      have hlcB : lc_at 0 b = true := by
+        simp only [mkFst, mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2
+      exact .betaSigmaFst a b hlcA hlcB
+  | betaSigmaSnd a b =>
+      have hlcA : lc_at 0 a = true := by
+        simp only [mkSnd, mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
+      have hlcB : lc_at 0 b = true := by
+        simp only [mkSnd, mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2
+      exact .betaSigmaSnd a b hlcA hlcB
+  | @congPiDom A A' B _ ih =>
+      have : lc_at 0 A = true := by
+        simp only [mkPi, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
+      exact .congPi ∅ (ih this) (fun _ _ => .refl _)
+  | congPiCod L _ _ _ _ ih =>
+      exact .congPi L (.refl _) (fun x hx => by
+        have hlcOpen := Mettapedia.OSLF.MeTTaIL.Substitution.lc_at_openBVar_result
+          (by simp only [mkPi, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2)
+          (by simp [lc_at] : lc_at 0 (.fvar x) = true)
+        exact ih x hx hlcOpen)
+  | @congSigmaDom A A' B _ ih =>
+      have : lc_at 0 A = true := by
+        simp only [mkSigma, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
+      exact .congSigma ∅ (ih this) (fun _ _ => .refl _)
+  | congSigmaCod L _ _ _ _ ih =>
+      exact .congSigma L (.refl _) (fun x hx => by
+        have hlcOpen := Mettapedia.OSLF.MeTTaIL.Substitution.lc_at_openBVar_result
+          (by simp only [mkSigma, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2)
+          (by simp [lc_at] : lc_at 0 (.fvar x) = true)
+        exact ih x hx hlcOpen)
+  | congIdType _ ih =>
+      exact .congId (ih (by simp only [mkId, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1)) (.refl _) (.refl _)
+  | congIdLeft _ ih =>
+      exact .congId (.refl _) (ih (by simp only [mkId, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2.1)) (.refl _)
+  | congIdRight _ ih =>
+      exact .congId (.refl _) (.refl _) (ih (by simp only [mkId, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2.2))
+  | congLam L _ _ _ ih =>
+      exact .congLam L (fun x hx => by
+        have hlcOpen := Mettapedia.OSLF.MeTTaIL.Substitution.lc_at_openBVar_result
+          (by simp only [mkLam, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc)
+          (by simp [lc_at] : lc_at 0 (.fvar x) = true)
+        exact ih x hx hlcOpen)
+  | congAppFun _ ih =>
+      exact .congApp (ih (by simp only [mkApp, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1)) (.refl _)
+  | congAppArg _ ih =>
+      exact .congApp (.refl _) (ih (by simp only [mkApp, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2))
+  | congPairFst _ ih =>
+      exact .congPair (ih (by simp only [mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1)) (.refl _)
+  | congPairSnd _ ih =>
+      exact .congPair (.refl _) (ih (by simp only [mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2))
+  | congFst _ ih =>
+      exact .congFst (ih (by simp only [mkFst, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc))
+  | congSnd _ ih =>
+      exact .congSnd (ih (by simp only [mkSnd, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc))
+  | congRefl _ ih =>
+      exact .congRefl (ih (by simp only [mkRefl, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc))
 
-/-- Multi-step reduction implies conversion. -/
-theorem PureReducesStar_implies_PureConv (h : PureReducesStar t₁ t₂) :
-    PureConv t₁ t₂ := by
-  induction h with
-  | refl => exact .refl _
-  | step hs _ ih => exact .trans (PureReduces_implies_PureConv hs) ih
+-- Note: PureReducesStar_implies_PureConv is in FVarSubst.lean (needs pureReduces_preserves_lc)
 
 /-! ## Concrete Reduction Examples -/
 

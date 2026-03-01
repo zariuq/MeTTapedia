@@ -16,8 +16,9 @@ These are shared between `Confluence.lean` and `SubjectReduction.lean`.
 namespace Mettapedia.OSLF.MeTTaPure.FVarSubst
 
 open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern CollType)
-open Mettapedia.OSLF.MeTTaIL.Substitution (openBVar lc_at lc_at_list openBVar_lc_at lc_at_mono lc_at_list_mem freeVars isFresh)
+open Mettapedia.OSLF.MeTTaIL.Substitution (openBVar lc_at lc_at_list openBVar_lc_at lc_at_mono lc_at_list_mem freeVars isFresh lc_at_openBVar_result)
 open Mettapedia.OSLF.MeTTaPure.Core
+open Mettapedia.OSLF.MeTTaPure.Typing (PureConv)
 open Mettapedia.OSLF.MeTTaPure.Reduction
 
 /-! ## FVar Substitution
@@ -469,51 +470,6 @@ theorem openBVar_closeBVar_cancel {k : Nat} {x : String} {p : Pattern}
 
 /-! ## lc_at preservation infrastructure -/
 
-/-- `lc_at k` for `openBVar k u body` when `lc_at (k+1) body` and `lc_at k u`. -/
-theorem lc_at_openBVar_result {k : Nat} {u body : Pattern}
-    (hbody : lc_at (k + 1) body = true) (hu : lc_at k u = true) :
-    lc_at k (openBVar k u body) = true := by
-  induction body using Pattern.inductionOn generalizing k with
-  | hbvar n =>
-    simp only [openBVar]; split
-    · next h => exact hu
-    · next h =>
-      simp only [lc_at, decide_eq_true_eq] at hbody ⊢
-      simp [beq_iff_eq] at h
-      omega
-  | hfvar _ => simp [openBVar, lc_at]
-  | happly c args ih =>
-    simp only [openBVar, lc_at]
-    induction args with
-    | nil => simp [lc_at_list]
-    | cons a as ihas =>
-      simp only [List.map_cons, lc_at_list, Bool.and_eq_true]
-      simp only [lc_at, lc_at_list, Bool.and_eq_true] at hbody
-      exact ⟨ih a List.mem_cons_self hbody.1 hu,
-             ihas (fun p hp => ih p (List.mem_cons_of_mem _ hp)) hbody.2⟩
-  | hlambda body ih =>
-    simp only [openBVar, lc_at]
-    simp only [lc_at] at hbody
-    exact ih hbody (lc_at_mono hu (Nat.le_add_right k 1))
-  | hmultiLambda n body ih =>
-    simp only [openBVar, lc_at]
-    simp only [lc_at] at hbody
-    have hbody' : lc_at ((k + n) + 1) body = true := by rwa [Nat.add_right_comm] at hbody
-    exact ih hbody' (lc_at_mono hu (Nat.le_add_right k n))
-  | hsubst body repl ihb ihr =>
-    simp only [openBVar, lc_at, Bool.and_eq_true]
-    simp only [lc_at, Bool.and_eq_true] at hbody
-    exact ⟨ihb hbody.1 (lc_at_mono hu (Nat.le_add_right k 1)), ihr hbody.2 hu⟩
-  | hcollection ct elems rest ih =>
-    simp only [openBVar, lc_at]
-    induction elems with
-    | nil => simp [lc_at_list]
-    | cons a as ihas =>
-      simp only [List.map_cons, lc_at_list, Bool.and_eq_true]
-      simp only [lc_at, lc_at_list, Bool.and_eq_true] at hbody
-      exact ⟨ih a List.mem_cons_self hbody.1 hu,
-             ihas (fun p hp => ih p (List.mem_cons_of_mem _ hp)) hbody.2⟩
-
 /-- Reverse of `lc_at_openBVar_result`: if `lc_at k (openBVar k u p)`, then `lc_at (k+1) p`.
     The key: opening at level k absorbs the bvar at level k, so the original had
     at most bvars < k+1. -/
@@ -856,5 +812,19 @@ theorem PureReducesStar.congSigmaCodLC (L : Finset String) {A B B' : Pattern}
   exact binderCongruenceAux (mkSigma A)
     (fun b b' hred => .congSigmaCod ∅ A b b' hred)
     x₀ hlcB' hx₀B' (h x₀ hx₀L) hlcB hx₀B rfl rfl
+
+/-! ## Multi-step reduction implies conversion (lc version)
+
+Moved here from Reduction.lean because it needs `pureReduces_preserves_lc`. -/
+
+/-- Multi-step reduction of a locally closed term implies conversion. -/
+theorem PureReducesStar_implies_PureConv {t₁ t₂ : Pattern}
+    (h : PureReducesStar t₁ t₂) (hlc : lc_at 0 t₁ = true) :
+    PureConv t₁ t₂ := by
+  induction h with
+  | refl => exact .refl _
+  | step hs _ ih =>
+      exact .trans (PureReduces_implies_PureConv hs hlc)
+                   (ih (pureReduces_preserves_lc hs hlc))
 
 end Mettapedia.OSLF.MeTTaPure.FVarSubst

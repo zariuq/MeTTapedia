@@ -63,12 +63,12 @@ inductive PureConv : Pattern → Pattern → Prop where
   | symm : PureConv t₁ t₂ → PureConv t₂ t₁
   | trans : PureConv t₁ t₂ → PureConv t₂ t₃ → PureConv t₁ t₃
 
-  -- β-rules
-  | betaPi (body a : Pattern) :
+  -- β-rules (require lc so PureConv preserves local closure in both directions)
+  | betaPi (body a : Pattern) (hlcBody : lc_at 1 body = true) (hlcA : lc_at 0 a = true) :
       PureConv (mkApp (mkLam body) a) (openBVar 0 a body)
-  | betaSigmaFst (a b : Pattern) :
+  | betaSigmaFst (a b : Pattern) (hlcA : lc_at 0 a = true) (hlcB : lc_at 0 b = true) :
       PureConv (mkFst (mkPair a b)) a
-  | betaSigmaSnd (a b : Pattern) :
+  | betaSigmaSnd (a b : Pattern) (hlcA : lc_at 0 a = true) (hlcB : lc_at 0 b = true) :
       PureConv (mkSnd (mkPair a b)) b
 
   -- Congruence: Pi (cofinite for codomain — under binder)

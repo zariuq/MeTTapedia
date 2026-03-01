@@ -191,10 +191,11 @@ inductive GovernanceVerdict where
 
 section Detection
 
-variable {Entity Pred : Type*} [DecidableEq Pred]
+variable {Entity Pred : Type*} [DecidableEq Pred] [DecidableEq Entity]
 
 /-- A judgment list contains a contradiction:
-    both `Rexist(e)` and `Rexist(¬e)` have positive evidence for matching predicates.
+    both `Rexist(e)` and `Rexist(¬e)` have positive evidence for the **same event**
+    (same predicate AND same roles).
 
     Matches `judgement_level.metta:27-32`. -/
 def HasContradiction
@@ -202,11 +203,12 @@ def HasContradiction
   ∃ j₁ ∈ js, ∃ j₂ ∈ js,
     j₁.modality = .rexist ∧ j₁.evidence.pos ≠ 0 ∧
     j₂.modality = .rexist ∧ j₂.evidence.pos ≠ 0 ∧
-    j₁.eventuality.predicate = j₂.eventuality.predicate ∧
+    j₁.eventuality.sameEvent j₂.eventuality ∧
     j₁.eventuality.polarity ≠ j₂.eventuality.polarity
 
 /-- A judgment list contains a violation:
-    `Obligatory(e)` has positive evidence but no matching `Rexist(e)` with positive evidence.
+    `Obligatory(e)` has positive evidence but no matching `Rexist(e)` with positive
+    evidence **for the same event** (same predicate AND same roles).
 
     Matches `judgement_level.metta:74-81`. -/
 def HasViolation
@@ -215,12 +217,13 @@ def HasViolation
     j_ob.modality = .obligatory ∧ j_ob.evidence.pos ≠ 0 ∧
     ∀ j_re ∈ js,
       j_re.modality = .rexist →
-      j_re.eventuality.predicate = j_ob.eventuality.predicate →
+      j_re.eventuality.sameEvent j_ob.eventuality →
       j_re.eventuality.polarity = j_ob.eventuality.polarity →
       j_re.evidence.pos = 0
 
 /-- A judgment list contains a conflict:
-    both `Obligatory(e)` and `Obligatory(¬e)` have positive evidence for matching predicates.
+    both `Obligatory(e)` and `Obligatory(¬e)` have positive evidence for the
+    **same event** (same predicate AND same roles).
 
     Matches `judgement_level.metta:88-99`. -/
 def HasConflict
@@ -228,7 +231,7 @@ def HasConflict
   ∃ j₁ ∈ js, ∃ j₂ ∈ js,
     j₁.modality = .obligatory ∧ j₁.evidence.pos ≠ 0 ∧
     j₂.modality = .obligatory ∧ j₂.evidence.pos ≠ 0 ∧
-    j₁.eventuality.predicate = j₂.eventuality.predicate ∧
+    j₁.eventuality.sameEvent j₂.eventuality ∧
     j₁.eventuality.polarity ≠ j₂.eventuality.polarity
 
 /-- A necessary violation: a conflict where there is also a violation.
@@ -247,13 +250,19 @@ noncomputable def governanceAnalysis
         (@ite _ (HasViolation js) (Classical.propDecidable _) .violation
           .compliant)))
 
+/-- Convenience: run governance analysis on a list of Level 2 (statement) judgments.
+    Wires Level 2 into Level 3 via `StatementJudgment.toJudgment`. -/
+noncomputable def governanceAnalysisFromStatements
+    (sjs : List (StatementJudgment Entity Pred)) : GovernanceVerdict :=
+  governanceAnalysis (sjs.map StatementJudgment.toJudgment)
+
 end Detection
 
 /-! ## §4 Soundness Theorems -/
 
 section GovernanceAnalysisSoundness
 
-variable {Entity Pred : Type*} [DecidableEq Pred]
+variable {Entity Pred : Type*} [DecidableEq Pred] [DecidableEq Entity]
 
 set_option linter.unusedSectionVars false in
 private theorem governanceAnalysis_compliant_aux
@@ -290,10 +299,10 @@ end GovernanceAnalysisSoundness
 
 section ExtractionTheorems
 
-variable {Entity Pred : Type*}
+variable {Entity Pred : Type*} [DecidableEq Pred] [DecidableEq Entity]
 
 /-- If a violation is detected, there exists an obligatory judgment with positive
-    evidence that has no matching rexist judgment. -/
+    evidence that has no matching rexist judgment for the same event. -/
 theorem violation_has_unmatched_obligation
     (js : List (EventualityJudgment Entity Pred))
     (hv : HasViolation js) :
@@ -302,12 +311,12 @@ theorem violation_has_unmatched_obligation
       j.evidence.pos ≠ 0 ∧
       ∀ j' ∈ js,
         j'.modality = .rexist →
-        j'.eventuality.predicate = j.eventuality.predicate →
+        j'.eventuality.sameEvent j.eventuality →
         j'.eventuality.polarity = j.eventuality.polarity →
         j'.evidence.pos = 0 := hv
 
 /-- If a conflict is detected, there exist two obligatory judgments on
-    opposite-polarity eventualities with the same predicate. -/
+    opposite-polarity eventualities for the same event. -/
 theorem conflict_has_opposite_obligations
     (js : List (EventualityJudgment Entity Pred))
     (hv : HasConflict js) :
@@ -316,10 +325,16 @@ theorem conflict_has_opposite_obligations
       j₂.modality = .obligatory ∧
       j₁.evidence.pos ≠ 0 ∧
       j₂.evidence.pos ≠ 0 ∧
-      j₁.eventuality.predicate = j₂.eventuality.predicate ∧
+      j₁.eventuality.sameEvent j₂.eventuality ∧
       j₁.eventuality.polarity ≠ j₂.eventuality.polarity := by
   obtain ⟨j₁, hm₁, j₂, hm₂, hmod₁, hpos₁, hmod₂, hpos₂, hpred, hpol⟩ := hv
   exact ⟨j₁, hm₁, j₂, hm₂, hmod₁, hmod₂, hpos₁, hpos₂, hpred, hpol⟩
+
+end ExtractionTheorems
+
+section DTSTheorems
+
+variable {Entity Pred : Type*}
 
 /-- Under a consistent DTS, a conflict on the same predicate is impossible:
     OB(e) and OB(¬e) cannot both hold.
@@ -333,19 +348,19 @@ theorem consistent_dts_precludes_conflict
   exact d.consistent p hob hob_neg
 
 /-- A necessary violation is at least as severe as a conflict. -/
-theorem necessaryViolation_implies_conflict
+theorem necessaryViolation_implies_conflict [DecidableEq Pred] [DecidableEq Entity]
     (js : List (EventualityJudgment Entity Pred))
     (hnv : HasNecessaryViolation js) :
     HasConflict js :=
   hnv.1
 
 /-- A necessary violation is at least as severe as a violation. -/
-theorem necessaryViolation_implies_violation
+theorem necessaryViolation_implies_violation [DecidableEq Pred] [DecidableEq Entity]
     (js : List (EventualityJudgment Entity Pred))
     (hnv : HasNecessaryViolation js) :
     HasViolation js :=
   hnv.2
 
-end ExtractionTheorems
+end DTSTheorems
 
 end Mettapedia.Logic.GovernanceReasoning.Judgments

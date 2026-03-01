@@ -97,6 +97,13 @@ theorem negate_predicate (e : Eventuality Entity Pred) :
 theorem negate_roles (e : Eventuality Entity Pred) :
     e.negate.roles = e.roles := rfl
 
+/-- Two eventualities refer to the same event: same predicate AND same roles.
+    Without role matching, `pay(agent=Alice)` and `pay(agent=Bob)` would
+    falsely unify. -/
+def sameEvent [DecidableEq Pred] [DecidableEq Entity]
+    (e₁ e₂ : Eventuality Entity Pred) : Prop :=
+  e₁.predicate = e₂.predicate ∧ e₁.roles = e₂.roles
+
 end Eventuality
 
 /-- Core triple: subject–predicate–object (ground assertion).
@@ -141,6 +148,7 @@ inductive DeonticModality where
   | rexist
   | obligatory
   | permitted
+  | forbidden
   | optional
   deriving DecidableEq, Repr, Inhabited
 
@@ -249,7 +257,22 @@ theorem ob_neg_implies_not_pe (p : P) : d.ob (d.neg p) → ¬ d.pe p := by
 /-- Classify a proposition into its deontic status. -/
 noncomputable def classify (d : DTS P) (p : P) : DeonticModality :=
   @ite _ (d.ob p) (Classical.propDecidable _) .obligatory
-    (@ite _ (d.ob (d.neg p)) (Classical.propDecidable _) .optional .permitted)
+    (@ite _ (d.ob (d.neg p)) (Classical.propDecidable _) .forbidden .optional)
+
+/-- classify returns `.obligatory` iff OB(p). -/
+theorem classify_obligatory (d : DTS P) (p : P) (h : d.ob p) :
+    classify d p = .obligatory := by
+  simp only [classify, h, ite_true]
+
+/-- classify returns `.forbidden` iff ¬OB(p) ∧ OB(¬p). -/
+theorem classify_forbidden (d : DTS P) (p : P) (h₁ : ¬ d.ob p) (h₂ : d.ob (d.neg p)) :
+    classify d p = .forbidden := by
+  simp only [classify, h₁, ite_false, h₂, ite_true]
+
+/-- classify returns `.optional` iff ¬OB(p) ∧ ¬OB(¬p). -/
+theorem classify_optional (d : DTS P) (p : P) (h₁ : ¬ d.ob p) (h₂ : ¬ d.ob (d.neg p)) :
+    classify d p = .optional := by
+  simp only [classify, h₁, ite_false, h₂, ite_false]
 
 /-- Interpret an `Eventuality` under a DTS:
     the modality is determined by the obligation status and polarity. -/
@@ -272,6 +295,7 @@ inductive DeonticAct where
   | rexist
   | obligatory
   | permitted
+  | forbidden
   | optional
   deriving DecidableEq, Repr, Inhabited
 
