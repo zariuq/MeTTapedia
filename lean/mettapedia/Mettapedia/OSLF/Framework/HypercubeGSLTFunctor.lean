@@ -42,43 +42,24 @@ The key structural lemma: if a term reduces in a weaker vertex's language,
 it also reduces in a stronger vertex's language.  This follows from rule
 monotonicity (`activeRules_subset_of_le`). -/
 
-/-- `applyPremisesWithEnv` on an empty premise list returns `[seed]`,
-    regardless of the language. -/
-private theorem applyPremisesWithEnv_nil (relEnv : RelationEnv) (lang : LanguageDef)
-    (seed : Bindings) :
-    applyPremisesWithEnv relEnv lang [] seed = [seed] := rfl
-
-/-- Declarative one-step reduction is monotone in the rule set,
-    provided all matched rules have empty premise lists and congruence
-    collections match. -/
+/-- Declarative one-step reduction is monotone in the rule set
+    (general version: no restriction on premises). -/
 theorem declReduces_mono
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
-    (hpremises : ∀ r, r ∈ lang₁.rewrites → r.premises = [])
     {p q : Pattern}
     (hred : DeclReducesWithPremises RelationEnv.empty lang₁ p q) :
     DeclReducesWithPremises RelationEnv.empty lang₂ p q := by
   induction hred with
   | topRule r hr bs0 hbs0 bs hprem hq =>
-    have hr₂ := hrules r hr
-    have hprem_nil := hpremises r hr
-    -- Since r.premises = [], applyPremisesWithEnv returns [bs0] for ANY language.
-    -- So bs ∈ [bs0] in lang₁ implies bs ∈ [bs0] in lang₂.
-    have hprem₂ : bs ∈ applyPremisesWithEnv RelationEnv.empty lang₂ r.premises bs0 := by
-      rw [hprem_nil] at hprem ⊢
-      rw [applyPremisesWithEnv_nil] at hprem ⊢
-      exact hprem
-    exact .topRule r hr₂ bs0 hbs0 bs hprem₂ hq
+    exact .topRule r (hrules r hr) bs0 hbs0 bs
+      (applyPremisesWithEnv_mono hrules hcong RelationEnv.empty r.premises bs0 bs hprem) hq
   | @congElem _ ct _ hct i hi r hr bs0 hbs0 bs hprem _ hq =>
-    have hr₂ := hrules r hr
-    have hprem_nil := hpremises r hr
     have hct₂ : lang₂.allowsCongruenceIn ct := by
       simp only [LanguageDef.allowsCongruenceIn] at hct ⊢; rw [← hcong]; exact hct
-    have hprem₂ : bs ∈ applyPremisesWithEnv RelationEnv.empty lang₂ r.premises bs0 := by
-      rw [hprem_nil] at hprem ⊢
-      exact hprem
-    exact .congElem hct₂ i hi r hr₂ bs0 hbs0 bs hprem₂ hq
+    exact .congElem hct₂ i hi r (hrules r hr) bs0 hbs0 bs
+      (applyPremisesWithEnv_mono hrules hcong RelationEnv.empty r.premises bs0 bs hprem) hq
 
 /-- Reduction is monotone along the hypercube weakness order. -/
 theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
@@ -89,7 +70,6 @@ theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
   exact declReduces_mono
     (activeRules_subset_of_le h)
     (by rfl)  -- congruenceCollections are both default
-    (fun r hr => activeRule_premises_nil hr)  -- all rules have empty premises
     hred
 
 /-! ## §2: Multi-Step Reduction Transport

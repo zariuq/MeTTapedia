@@ -1,0 +1,809 @@
+%% MeTTaIL companion note for leanOSLF
+%%
+%% Build:
+%%   pdflatex MeTTaIL.tex
+
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{amssymb}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible
+}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\codepath}[1]{\path{#1}}
+
+\title{MeTTaIL + MeTTaCore in Lean and Rust\\
+\large A Focused Companion to \code{leanOSLF.tex}}
+\author{Mettapedia Project Notes (Draft)}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+MeTTaIL is a formally verified rewrite-rule language framework embedded in Lean~4.
+It provides a syntax for pattern-matching rewrite rules with typed premises, a
+declarative one-step semantics, a proved-sound-and-complete executable engine,
+and an automatic derivation of an OSLF behavioral type system for any
+\code{LanguageDef} instance.  This note covers the MeTTa-facing slice of the
+formalization: the MeTTaIL and MeTTaCore Lean libraries, the MeTTaMinimal and
+MeTTaFull instance endpoints, the Rust execution bridge, and a machine-checked
+formalization of MQ-calculus (Stay \& Meredith 2026) as a concrete verification
+target exercising the full stack.
+\end{abstract}
+
+\section{Current Coverage}
+
+\begin{longtable}{lrr}
+\toprule
+Component & Lines & Sorries \\
+\midrule
+\endhead
+\code{Mettapedia/OSLF/MeTTaIL/} & 3,592 & 0 \\
+\code{Mettapedia/OSLF/MeTTaCore/} & 3,839 & 0 \\
+\code{Framework/MeTTaMinimalInstance.lean} & 700 & 0 \\
+\code{Framework/MeTTaFullInstance.lean} & 346 & 0 \\
+\midrule
+Total (MeTTa-focused Lean slice) & 8,477 & 0 \\
+\bottomrule
+\end{longtable}
+
+\section{Lean Side: What Is Formalized}
+
+\subsection{MeTTaIL Syntax and Rule Language}
+
+The syntax layer is the shared grammar from which all MeTTaIL language instances
+are built: any \code{LanguageDef} is assembled from these types, so getting them
+right is a prerequisite for correctness of every higher layer.
+Core syntax and rule structures (locally nameless patterns, premises, equations,
+rewrites, language definitions) are in
+\codepath{Mettapedia/OSLF/MeTTaIL/Syntax.lean}.
+
+\begin{lstlisting}[language={},caption={Core MeTTaIL structures (excerpt)}]
+inductive Pattern where
+  | bvar : Nat -> Pattern
+  | fvar : String -> Pattern
+  | apply : String -> List Pattern -> Pattern
+  | lambda : Pattern -> Pattern
+  | multiLambda : Nat -> Pattern -> Pattern
+  | subst : Pattern -> Pattern -> Pattern
+  | collection : CollType -> List Pattern -> Option String -> Pattern
+
+inductive Premise where
+  | freshness : FreshnessCondition -> Premise
+  | congruence : Pattern -> Pattern -> Premise
+  | relationQuery : String -> List Pattern -> Premise
+
+structure RewriteRule where
+  name : String
+  typeContext : List (String x TypeExpr)
+  premises : List Premise
+  left : Pattern
+  right : Pattern
+
+structure LanguageDef where
+  name : String
+  types : List String
+  terms : List GrammarRule
+  equations : List Equation
+  rewrites : List RewriteRule
+\end{lstlisting}
+
+\subsection{Premise-Aware Declarative Semantics and Engine Equivalence}
+
+The biconditional between the declarative relation and the executable engine
+is the central correctness guarantee of MeTTaIL: it means the engine can be
+used for computation while the declarative relation is used for reasoning,
+and the two are interchangeable by theorem.
+The declarative one-step relation with relation-environment premises is
+\code{DeclReducesWithPremises} in
+\codepath{Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean}, together with
+soundness/completeness against the executable engine.
+
+\begin{lstlisting}[language={},caption={Declarative semantics and engine correspondence}]
+inductive DeclReducesWithPremises (relEnv : RelationEnv) (lang : LanguageDef) :
+    Pattern -> Pattern -> Prop where
+  | topRule : ...
+  | congElem : ...
+
+theorem engineWithPremisesUsing_sound :
+    q in rewriteWithContextWithPremisesUsing relEnv lang p ->
+    DeclReducesWithPremises relEnv lang p q
+
+theorem engineWithPremisesUsing_complete :
+    DeclReducesWithPremises relEnv lang p q ->
+    q in rewriteWithContextWithPremisesUsing relEnv lang p
+
+theorem declReducesWithPremises_iff_langReducesWithPremisesUsing :
+    DeclReducesWithPremises relEnv lang p q <->
+    q in rewriteWithContextWithPremisesUsing relEnv lang p
+\end{lstlisting}
+
+\subsection{OSLF Synthesis Hooks Used by MeTTa Instances}
+
+Every \code{LanguageDef} automatically acquires a behavioral type system via
+\code{langOSLF}: the modal Galois connection $\Diamond \dashv \Box$ and the OSLF
+type system are derived, not hand-coded, which means language designers get
+behavioral typing for free.
+Language-level reduction, engine equivalence, Galois connection, and synthesized
+OSLF type system are in
+\codepath{Mettapedia/OSLF/Framework/TypeSynthesis.lean}.
+
+\begin{lstlisting}[language={},caption={TypeSynthesis bridge theorems}]
+theorem langReducesUsing_iff_execUsing (relEnv : RelationEnv) (lang : LanguageDef)
+    (p q : Pattern) :
+    langReducesUsing relEnv lang p q <-> langReducesExecUsing relEnv lang p q
+
+theorem langGaloisUsing (relEnv : RelationEnv) (lang : LanguageDef) :
+    GaloisConnection (langDiamondUsing relEnv lang) (langBoxUsing relEnv lang)
+
+def langOSLF (lang : LanguageDef) (procSort : String := "Proc") :
+    OSLFTypeSystem (langRewriteSystem lang procSort)
+\end{lstlisting}
+
+\subsection{MeTTaCore State Machine and Properties}
+
+MeTTaCore models the MeTTa runtime as an explicit state machine over
+multisets of atoms, giving precise machine-checked statements of progress
+and determinism for the grounded-operation layer.
+State and transition components are in
+\codepath{Mettapedia/OSLF/MeTTaCore/State.lean} and
+\codepath{Mettapedia/OSLF/MeTTaCore/RewriteRules.lean}; key properties are in
+\codepath{Mettapedia/OSLF/MeTTaCore/Properties.lean}.
+
+\begin{lstlisting}[language={},caption={Representative MeTTaCore properties}]
+structure MeTTaState where
+  input : Multiset Atom
+  knowledge : Atomspace
+  workspace : Multiset Atom
+  output : Multiset Atom
+
+theorem progress (s : MeTTaState) (a : Atom) (_ : a in s.workspace) :
+    s.knowledge.insensitive a = true \/
+    (s.knowledge.queryEquations a).card > 0
+
+theorem grounded_confluence (op : String) (args : List Atom) :
+    forall r1 r2,
+    executeGroundedOp (.symbol op) args = some r1 ->
+    executeGroundedOp (.symbol op) args = some r2 ->
+    r1 = r2
+\end{lstlisting}
+
+\subsection{MeTTaMinimal and MeTTaFull Instance Endpoints}
+
+These are the integration points where abstract MeTTaIL theorems become
+concrete MeTTa-language guarantees: a developer who adds a new MeTTa feature
+can check its behavioral soundness by extending one of these instances.
+MeTTa instances export checker-soundness theorems with instance-specific atom
+interpretations:
+
+\begin{lstlisting}[language={},caption={MeTTa instance API endpoints}]
+def mettaMinimalOSLF := langOSLF mettaMinimal "State"
+theorem mettaMinimal_checkLangUsing_sat_sound_specAtoms :
+    checkLangUsing ... = .sat -> sem ...
+
+def mettaFull : LanguageDef := ...
+def mettaFullOSLF := langOSLF mettaFull "State"
+def mettaFullRelEnv : RelationEnv := ...
+theorem mettaFull_checkLangUsing_sat_sound_specAtoms :
+    checkLangUsing ... = .sat -> sem ...
+\end{lstlisting}
+
+\section{Type System Limitation: No Subject Reduction}
+\label{sec:sr}
+
+\subsection{Subject Reduction in Type Theory}
+
+A type system satisfies \emph{subject reduction} (also called \emph{type preservation})
+if typing is preserved under evaluation: whenever $a : T$ and $T$ reduces to $T'$,
+we have $a : T'$.  Subject reduction is a foundational theorem in well-behaved dependent
+type theories---it holds for Martin-L\"{o}f Type Theory, the Calculus of Constructions,
+and Lean~4 itself.
+
+\subsection{MeTTa's Typing Judgment}
+
+MeTTa's type system, formalized in
+\codepath{Mettapedia/OSLF/MeTTaCore/Types.lean},
+uses a \emph{purely lookup-based} judgment:
+
+\begin{lstlisting}[language={},caption={HasType judgment (excerpt from Types.lean)}]
+inductive HasType (space : Atomspace) : Atom -> Atom -> Prop where
+  | intrinsicSymbol (s : String) :
+      HasType space (.symbol s) (.symbol "Symbol")
+  | annotated (a ty : Atom) :
+      typeAnnotation a ty in space.atoms ->
+      HasType space a ty
+  ...
+
+def typeAnnotation (a ty : Atom) : Atom :=
+  .expression [.symbol ":", a, ty]
+\end{lstlisting}
+
+The critical rule is \code{annotated}: the only way a term $a$ acquires a
+non-intrinsic type $T$ is for the literal annotation \code{(: a T)} to be present
+in the atomspace.  There is no inference rule that propagates types through
+evaluation of the type expression itself.
+
+\subsection{The Theorem}
+
+\codepath{Mettapedia/OSLF/MeTTaCore/SubjectReduction.lean} establishes:
+
+\begin{lstlisting}[language={},caption={Subject reduction definitions and main theorem}]
+def SubjectReduction
+    (HasTy : Atomspace -> Atom -> Atom -> Prop)
+    (Reduces : Atomspace -> Atom -> Atom -> Prop) : Prop :=
+  forall (space : Atomspace) (a T T' : Atom),
+    HasTy space a T -> Reduces space T T' -> HasTy space a T'
+
+-- One-step syntactic rewrite: (= a b) in space.atoms
+def AtomReduces (space : Atomspace) (a b : Atom) : Prop :=
+  .expression [.symbol "=", a, b] in space.atoms
+
+theorem metta_not_subject_reduction :
+    not (SubjectReduction HasType AtomReduces)
+\end{lstlisting}
+
+The proof is by explicit counterexample. Define the atomspace
+\[
+  \mathcal{S} \;=\; \{\;\texttt{(: t (Vec n))},\;\; \texttt{(= (Vec n) (Vec 0))}\;\}.
+\]
+Three lemmas, each closed by kernel-checked computation (\code{decide}):
+\begin{enumerate}
+\item $t : \texttt{(Vec n)}$ in $\mathcal{S}$, via \code{HasType.annotated}.
+\item $\texttt{(Vec n)}$ reduces to $\texttt{(Vec 0)}$ in $\mathcal{S}$,
+  since \texttt{(= (Vec n) (Vec 0))} $\in \mathcal{S}$.
+\item $t \not: \texttt{(Vec 0)}$ in $\mathcal{S}$: the only surviving case of the
+  \code{HasType} induction is \code{annotated}, which would require
+  \texttt{(: t (Vec 0))} $\in \mathcal{S}$---but the space contains no such atom.
+  Lean~4 closes all other constructor cases automatically via index discrimination.
+\end{enumerate}
+
+The file also establishes the companion result \code{counterSpace\_not\_eval\_closed}:
+the counterexample space fails the \emph{eval-closure} property---the atomspace-level
+condition that \emph{would} suffice for subject reduction, namely that whenever
+$\texttt{(: a T)} \in \mathcal{S}$ and $T$ reduces to $T'$, also
+$\texttt{(: a T')} \in \mathcal{S}$.
+
+\subsection{Significance}
+
+This result is not a bug in MeTTa; it is a design consequence of separating
+\emph{knowledge} (rewrite rules and annotations, stored in the atomspace) from
+\emph{computation} (evaluation via pattern matching).  In MeTTa, types and terms are
+both atoms evaluated by the same engine.  The engine can reduce a type expression, but
+the typing relation does not track this: $\texttt{HasType}$ reflects the atomspace
+at a fixed moment, not under its closure.
+
+This contrasts with MLTT/CoC, where subject reduction is proved by induction on the
+typing derivation: every rule carries a proof term that is transformed, not just
+looked up, when the type reduces.  MeTTa's expressiveness (Turing-complete rewriting
+over a uniform atom language) comes at the cost of this metatheoretic guarantee.
+Eval-closure of the atomspace is a sufficient---though not necessary---runtime
+condition for subject reduction to hold in a given MeTTa program.
+
+\section{Rust Bridge Status (\code{hyperon/mettail-rust})}
+
+The Rust side currently includes a MeTTaFull language module and test coverage:
+
+\begin{itemize}
+\item Language module: \codepath{hyperon/mettail-rust/languages/src/mettafull_from_lean.rs}
+\item Language export registration:
+  \codepath{hyperon/mettail-rust/languages/src/lib.rs}
+\item REPL registry integration + test:
+  \codepath{hyperon/mettail-rust/repl/src/registry.rs}
+\item MeTTaFull tests:
+  \codepath{hyperon/mettail-rust/languages/tests/mettafull_from_lean_tests.rs}
+\end{itemize}
+
+The relation-premise code generation path was generalized in:
+\codepath{hyperon/mettail-rust/macros/src/logic/rules.rs}
+so relation outputs can bind fresh variables (required by premises like
+\code{eqnLookup(space, src, dst)} where \code{dst} is produced by the relation).
+
+\subsection{Current Passing Rust Tests}
+
+\begin{lstlisting}[language={},caption={MeTTaFull Rust canaries (all passing)}]
+relation_query_can_bind_fresh_output_vars
+typecheck_uses_space_typing_relation
+grounded_call_boolean_not_reduces
+return_step_reaches_done_state
+default_registry_contains_mettafull
+\end{lstlisting}
+
+\section{MQ-Calculus as a Formalized Verification Target}
+
+MQ-calculus (Stay \& Meredith 2026) is a process calculus in which communication
+events are measurement events: a synchronization on wire $i$ is not just a
+handshake but a quantum measurement, selecting a continuation branch according
+to Born-rule probabilities.  The grammar is deliberately minimal---six
+constructors covering nil, parallel composition, fresh-wire allocation, gate
+application, output, and measurement-branching input---which makes the full
+formalization tractable while still exercising the semantically interesting cases.
+
+MQ-calculus is included in this formalization as a concrete stress test for the
+MeTTaIL stack.  It is not a special case; it is an instance of \code{LanguageDef}
+and inherits the full MeTTaIL pipeline automatically: the syntax is given by the
+\code{Process} inductive, the reduction relation \code{Reduces} is derived from
+\code{CommReduction} and structural congruence \code{SC}, the denotational
+semantics \code{denoteWith} is backend-parametric over \code{MQSemanticsBackend},
+and the MORK cross-calculus coherence theorem
+(\code{paper\_mork\_mq\_branching\_equiv}) connects MQ COMM branching to MORK
+binary fold branching at the theorem level.
+
+Three results distinguish the Lean formalization from a pencil-and-paper treatment.
+First, the Born-rule normalization theorem \code{born\_prob\_sum\_one} is a
+machine-checked proof from Mathlib's \code{PiLp.norm\_sq\_eq\_of\_L2}, not an
+axiom.  Second, the denotational semantics is parameterized by an abstract
+\code{MQSemanticsBackend}, so the same six denotational clauses are provably correct
+for any compliant backend without re-proving them.  Third, every clause of
+\S{}6.3 of the paper has a named Lean theorem in \code{PaperMap.lean} (see
+Appendix~\ref{app:mq-lean}), giving an explicit audit surface that connects
+narrative paper text to kernel-checked declarations.
+
+The MQ formalization also provides realistic workload profiles for
+\code{hyperon/mettail-rust}: COMM-heavy processes exercise nondeterministic
+branching and collection-heavy parallel composition, which are the known Ascent
+scaling pressure points documented in the engine performance notes.
+
+\section{MeTTa-IL as a 2-Mode Adjoint Doctrine (MaTT)}
+\label{sec:matt}
+
+The OSLF framework establishes that MeTTa-IL is an instance of a
+\emph{2-mode adjoint doctrine fragment} in the sense of
+fibrational/doctrinal logic (Lawvere hyperdoctrines, Jacobs fibred
+category theory).  This is the formal content of ``MeTTa-IL is MaTT.''
+
+\paragraph{Theoretical position.}
+MeTTa-IL-via-OSLF is not the syntactic multimodal type theory
+of~\cite{gratzer2020multimodal} (which would require modal type formers
+$\square_\mu A$, locks, and context extension).  It is instead the
+\emph{categorical/doctrinal} flavour: a mode category over a base of
+operational languages, equipped with a contravariant indexed predicate
+functor and a modal adjunction $\lozenge \dashv \square$ at each
+behavioral mode.  This places it squarely in the tradition of Lawvere
+hyperdoctrines and fibrational semantics for modal predicate logic.
+
+\paragraph{What is proved.}
+Nine claims are machine-checked.
+The capstone definition
+\code{mettaIL\_2modeDocFrag : TwoModeAdjointDocFrag}
+(\codepath{MATTFragment.lean}) packages all of them into a single
+kernel-checked Lean object; the individual components are listed in
+Table~\ref{tab:matt}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+Claim & Lean declaration & Status \\
+\midrule
+Per-language modal Galois connection &
+  \code{doctrine\_galois\_is\_langGalois} & proved \\
+Per-language modal adjunction &
+  \code{doctrine\_adjunction\_is\_langModalAdjunction} & proved \\
+Eq-category pullback functoriality &
+  \code{eqCategory\_mapPred\_functorial} & proved \\
+Mode-skeleton composition/predicate laws &
+  \code{mode2SkeletonLaws} & proved \\
+Runtime/runtime commuting square &
+  \code{runtime\_runtime\_square\_coherence} & proved \\
+Runtime/behavioral commuting square &
+  \code{runtime\_behavioral\_square\_coherence} & proved \\
+Runtime morphism diamond witness transport &
+  \code{runtime\_mode\_diamond\_transport\_comp} & proved \\
+Pure mode isolation &
+  \code{pure\_mode\_isolation} & proved \\
+mettaPure runtime$\to$behavioral transport &
+  \code{mettaPure\_runtime\_behavioral\_transport} & proved \\
+\textbf{Capstone: MeTTa-IL is \code{TwoModeAdjointDocFrag}} &
+  \code{mettaIL\_2modeDocFrag} & \textbf{proved} \\
+\midrule
+Full mode-2-category (2-cells/2-morphisms) & --- & out of scope \\
+Syntactic MTT ($\square_\mu A$, locks, context ext.) & --- & out of scope \\
+Pure-mode morphism theory & --- & deferred \\
+\bottomrule
+\end{tabular}
+\caption{MaTT claim map (doctrinal/fibrational sense).  The proved-count is
+  machine-checked: \code{provenCount\_eq : countByStatus .proven = 9}
+  (\texttt{MATTClaimMap.lean}, closed by \code{decide}).}
+\label{tab:matt}
+\end{table}
+
+\paragraph{The capstone theorem.}
+A \code{TwoModeAdjointDocFrag} packages:
+(i)~a mode category (identity, associativity laws for $\{$\texttt{pure},
+\texttt{runtime}($L$), \texttt{behavioral}($L$)$\}$);
+(ii)~a contravariant indexed predicate functor (\code{ModeHom.mapPred},
+with identity and composition laws);
+(iii)~a modal adjunction at each behavioral mode ($\lozenge \dashv \square$,
+the OSLF Galois connection); and
+(iv)~Beck-Chevalley commuting squares connecting the mode-level and
+category-level predicate pullbacks.
+The definition \code{mettaIL\_2modeDocFrag : TwoModeAdjointDocFrag}
+fills all fields from existing proved lemmas.
+The witness theorem \code{mettaIL\_is\_2mode\_adjoint\_doctrine :
+Nonempty TwoModeAdjointDocFrag} is the Lean-kernel-checked statement
+that this object exists.
+
+\paragraph{Scope boundary.}
+The out-of-scope items are explicit design choices.
+Full 2-category structure requires 2-cells (natural transformations between
+mode morphisms) and is deferred.
+Syntactic MTT modal type formers require a full dependent kernel with
+mode-indexed context extension; this is the role of MeTTa-Pure
+(Appendix~\ref{app:metta-dtt}).
+Pure-mode morphism theory is deferred pending the MeTTa-Pure bridge.
+
+\paragraph{Reproducibility.}
+\begin{lstlisting}[language={},caption={Build command for MaTT targets}]
+ulimit -Sv 6291456 && LAKE_JOBS=3 nice -n 19 lake build \
+  Mettapedia.OSLF.Framework.MATTFragment \
+  Mettapedia.OSLF.Framework.MATTClaimMap \
+  Mettapedia.OSLF.Framework.MATTProvableNow
+\end{lstlisting}
+
+The reviewer anchor in
+\codepath{Mettapedia/OSLF/SpecIndex.lean}:265 is labelled
+``Conservative MaTT Claim Map (No Overclaim)''.
+
+\section{What This Companion Covers and Does Not Cover}
+
+\textbf{Covered now:}
+\begin{itemize}
+\item MeTTaIL syntax + declarative/executable semantics bridge.
+\item MeTTaCore state machine + core progress/confluence-facing properties.
+\item MeTTaMinimal/MeTTaFull OSLF instance endpoints.
+\item Executable Rust MeTTaFull subset with relation-premise and REPL registration tests.
+\end{itemize}
+
+\textbf{Not yet full end-to-end by construction:}
+\begin{itemize}
+\item Fully automatic Lean-to-Rust premise-rich export of MeTTaFull without manual adaptation.
+\item Full Hyperon atomspace/runtime integration (beyond current encoded relation environment subset).
+\item Full CLI/REPL integration tests against production MeTTa workloads.
+\end{itemize}
+
+\section{Immediate Next Steps}
+
+\begin{enumerate}
+\item Lift MeTTaFull relation population from encoded test structures to direct atomspace ingestion.
+\item Add deterministic end-to-end REPL/CLI tests for hit/miss branches across all MeTTaFull core instructions.
+\item Tie this note into \code{leanOSLF.tex} as a companion reference once stable.
+\end{enumerate}
+
+%% ============================================================
+\appendix
+\section{WIP: Toward MeTTa-Pure --- A Dependent Kernel for MeTTa}
+\label{app:metta-dtt}
+%% ============================================================
+
+\emph{This appendix sketches a forward-looking architecture for adding a
+trusted dependent type theory (DTT) layer to MeTTa without changing the
+semantics of existing MeTTa programs. It is work-in-progress design notes,
+not a finalized specification.}
+
+\subsection{Motivation: Two Results in This Paper}
+
+Section~\ref{sec:sr} proves that MeTTa's current \code{HasType} judgment does
+not satisfy subject reduction. This is not a bug; it is a precise consequence
+of a design choice: \code{HasType} is annotation lookup, not inductive
+inference. No single-point patch can fix this while preserving the rest of
+MeTTa's open-world rewriting semantics.
+
+The productive response is architectural, not remedial: \emph{build a small
+dependent kernel alongside MeTTa, not inside it}.
+
+\subsection{The Four-Layer Stack}
+
+A clean MeTTa-DTT separates concerns across four layers:
+
+\medskip
+\begin{tabular}{lp{9cm}}
+\toprule
+Layer & Role \\
+\midrule
+\textbf{A — MeTTa-Pure} &
+  A tiny intensional DTT kernel: ordered contexts $\Gamma$, $\Pi/\Sigma$-types,
+  identity types, universes, inductive families. Bidirectionally checked.
+  Subject reduction and decidable conversion hold by construction. \\[4pt]
+\textbf{B — Elaboration boundary} &
+  A (not necessarily trusted) elaborator translating MeTTa surface syntax into
+  kernel terms. A checked reflection bridge maps quoted MeTTa atoms to kernel
+  terms and back. \\[4pt]
+\textbf{C — Full MeTTa runtime} &
+  Current MeTTa unchanged: equations, atomspaces, \code{match},
+  \code{superpose}, \code{collapse}, grounded interop, spaces,
+  nondeterminism, concurrency. The AGI language proper. \\[4pt]
+\textbf{D — OSLF overlay} &
+  Behavioral/spatial/modal types derived from the operational semantics of
+  Layer C, \emph{not} from kernel conversion. The modal adjunction
+  $\Diamond \dashv \Box$ and the presheaf/topos lift remain exactly here. \\
+\bottomrule
+\end{tabular}
+\medskip
+
+The core thesis: \textbf{DTT for the trusted structural core; OSLF for
+behavior; full MeTTa for open-world agent computation.}
+
+\subsection{Why MeTTaIL Is the Right Substrate}
+
+The kernel should be \emph{specified and implemented in MeTTaIL}, not beside it.
+MeTTaIL already provides:
+\begin{itemize}
+  \item locally nameless binder representation with cofinite quantification;
+  \item proved substitution lemmas (\code{subst\_open}, \code{subst\_lc}, etc.);
+  \item declarative one-step relation \code{DeclReducesWithPremises} with
+        soundness/completeness against the executable engine;
+  \item OSLF \code{langOSLF} synthesis from any \code{LanguageDef}.
+\end{itemize}
+A MeTTa-Pure \code{LanguageDef} is therefore a \emph{language instance} of
+the existing MeTTaIL framework, not a new implementation. The
+\code{mettaPureOSLF} type system would be a fourth instance alongside
+\code{mettaMinimalOSLF}, \code{mettaFullOSLF}, and \code{tinyMLOSLF}.
+
+\subsection{Kernel Judgment Forms}
+
+The kernel uses separate judgment forms distinguished from atomspace typing:
+
+\begin{lstlisting}[language={},caption={Proposed MeTTa-Pure judgment forms}]
+-- Well-formed type at universe level i
+Sk ; G |- A  type  i
+
+-- Synthesis: infer type of t
+Sk ; G |- t  =>  A
+
+-- Checking: verify t against A
+Sk ; G |- t  <=  A
+
+-- Definitional equality
+Sk ; G |- t  ==  u  :  A
+\end{lstlisting}
+
+The local context \code{G} is an \emph{ordered list} of typed variables
+\code{[(x1,A1), ..., (xn,An)]}---not an unordered atomspace.
+The signature \code{Sk} carries declared kernel constants.
+
+\subsection{Surface Syntax (S-Expression Style)}
+
+The kernel surface can remain MeTTa-shaped:
+
+\begin{lstlisting}[language={},caption={Proposed MeTTa-Pure surface forms}]
+(Pi   (($x A)) B)       -- dependent function type
+(lam  (($x A)) t)       -- lambda abstraction
+(app  t u)              -- application
+(Sg   (($x A)) B)       -- dependent pair type
+(pair a b)              -- pair introduction
+(fst p)  (snd p)        -- pair elimination
+(Id   A a b)            -- identity type
+(refl a)                -- reflexivity
+(Type 0)  (Type 1) ...  -- universe hierarchy
+\end{lstlisting}
+
+This keeps the S-expression aesthetic while elaborating to a real binder AST.
+At Layer C, \code{=} stays the runtime rewrite operator; the surface \code{:}
+annotation gains a second meaning as a kernel declaration when inside a
+pure context.
+
+\subsection{Kernel Conversion: What Is and Is Not Allowed}
+
+Kernel definitional equality is deliberately minimal:
+
+\begin{itemize}
+  \item $\beta$: $(\lambda x.\, t)\, u \equiv t[u/x]$ for $\Pi$/$\Sigma$ eliminations.
+  \item $\delta$: transparent kernel constant unfolding.
+  \item $\iota$: reduction rules for inductive eliminators.
+  \item $\zeta$: local \code{let}-unfolding (optional, guarded by termination).
+  \item $\eta$: function and pair extensionality, only where clearly desired.
+\end{itemize}
+
+\textbf{Not in kernel conversion:}
+\begin{itemize}
+  \item Arbitrary user-defined \code{=} rewrite rules (Layer C only).
+  \item Atomspace lookup or mutation.
+  \item \code{match}/\code{superpose}/\code{collapse} forms.
+  \item Python/native grounded calls.
+\end{itemize}
+
+If rewrite rules are later admitted to definitional equality, this requires a
+separate certified rewrite subsystem with a machine-checked
+confluence/termination certificate---the $\lambda\Pi$-modulo route
+(Dedukti/Saillard)---as a distinct upgrade, not a default.
+
+\subsection{The ``Don'ts''}
+
+Four constraints characterize the kernel boundary:
+\begin{enumerate}
+  \item \textbf{Do not} let arbitrary MeTTa rewrite rules define kernel conversion.
+  \item \textbf{Do not} use an unordered atomspace as the kernel context.
+  \item \textbf{Do not} identify OSLF native types with dependent types; the
+        two layers are orthogonal.
+  \item \textbf{Do not} allow full runtime nondeterministic evaluation inside
+        types; type-level computation must terminate.
+\end{enumerate}
+
+\subsection{Categorical Summary}
+
+The three-part categorical picture is:
+
+\begin{center}
+\begin{tabular}{lp{8cm}}
+\toprule
+Layer & Categorical home \\
+\midrule
+Kernel (MeTTa-Pure) &
+  Categories with Families (CwF); contextual categories;
+  locally cartesian closed categories; presheaf and groupoid models. \\[4pt]
+Full MeTTa / OSLF &
+  Presheaf/topos/modal/fibrational semantics over the operational rewrite
+  system; the $\Diamond \dashv \Box$ modal adjunction. \\[4pt]
+Bridge &
+  Quotation and checked reflection between kernel terms and full MeTTa atoms. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The presheaf topos semantics of OSLF (already in the Mettapedia formalization)
+wraps a CwF kernel---exactly the structure that makes the categorical split
+coherent rather than arbitrary.
+
+\subsection{Implementation Reference Points}
+
+The closest existing architectures are:
+\begin{itemize}
+  \item \textbf{Lean 4}: small total kernel, bidirectional elaborator, erasure
+        for runtime performance; \code{partial} definitions are kernel-opaque.
+  \item \textbf{Isabelle/Pure}: tiny LF-style framework underneath object
+        logics (HOL, ZF, \ldots). Pure is itself a minimal DTT.
+  \item \textbf{Isabelle/Spartan}: DTT as an object logic inside Pure,
+        directly analogous to MeTTa-Pure as an object logic inside MeTTaIL.
+\end{itemize}
+
+In one sentence: \emph{a clean MeTTa-DTT is the smallest conservative
+extension of MeTTaIL that adds a CwF-style dependent kernel with decidable
+conversion and subject reduction, while treating today's MeTTa as an effectful
+reflective metalanguage over that kernel, and OSLF as the behavioral logic of
+the resulting operational world.}
+
+\section{MQ-Calculus Lean Walkthrough}
+\label{app:mq-lean}
+
+This appendix maps paper-level MQ clauses to concrete Lean definitions.
+All listings are excerpted verbatim from the formalization.
+
+\paragraph{Files.}
+\begin{itemize}
+\item \codepath{MQCalculus/Syntax.lean} --- process grammar and gate types
+\item \codepath{MQCalculus/CommRule.lean} --- Born-rule probability and COMM rule
+\item \codepath{MQCalculus/Reduction.lean} --- full structural reduction relation
+\item \codepath{MQCalculus/Backend.lean} --- abstract semantic backend interface
+\item \codepath{MQCalculus/Denotational.lean} --- backend-parametric denotation
+\item \codepath{MQCalculus/PaperMap.lean} --- stable audit surface (paper $\to$ theorem)
+\end{itemize}
+
+\subsection*{A. Process grammar and Born-rule reduction}
+
+\begin{lstlisting}[language={},caption={Process grammar (\texttt{Syntax.lean}) and COMM rule (\texttt{CommRule.lean})}]
+-- Syntax.lean
+inductive Process : Type where
+  | MQNil  : Process
+  | MQPar  : Process -> Process -> Process
+  | MQNu   : Process -> Process                    -- new-wire binder
+  | MQGate : GateSpec -> Process -> Process        -- typed gate, then P
+  | MQOut  : Nat -> Process                        -- emit wire i
+  | MQIn   : Nat -> Process -> Process -> Process  -- measure i: 0 -> P, 1 -> Q
+
+-- CommRule.lean
+-- n-qubit Hilbert space as EuclideanSpace over Fin (2^n)
+abbrev QVec (n : Nat) := EuclideanSpace Complex (Fin (2 ^ n))
+
+-- Born-rule probability |<r|psi>|^2, proved (not axiomatized) from Mathlib
+noncomputable def born_prob (r : Outcome) (psi : QVec 1) : Real :=
+  match r with
+  | .zero => Complex.normSq (inner ket0 psi)
+  | .one  => Complex.normSq (inner ket1 psi)
+
+-- Probabilities sum to 1 for unit-norm states (proved from PiLp.norm_sq_eq_of_L2)
+theorem born_prob_sum_one (psi : QVec 1) (h : norm psi = 1) :
+    born_prob .zero psi + born_prob .one psi = 1
+
+-- COMM rule: MQOut i | MQIn i P Q can branch to either P or Q
+inductive CommReduction : Nat -> Process -> Process -> MeasurementBranch -> Prop where
+  | outcome_zero (i : Nat) (p q : Process) :
+      CommReduction i p q { outcome := .zero, result := p }
+  | outcome_one  (i : Nat) (p q : Process) :
+      CommReduction i p q { outcome := .one,  result := q }
+\end{lstlisting}
+
+\subsection*{B. Reduction relation and backend-parametric denotation}
+
+\begin{lstlisting}[language={},caption={Reduction (\texttt{Reduction.lean}) and denotation (\texttt{Denotational.lean})}]
+-- Reduction.lean
+-- Full structural reduction: COMM fires under SC, parallel, nu, gate contexts
+inductive Reduces : Process -> Process -> Prop where
+  | comm (i : Nat) (p q : Process) (b : MeasurementBranch) :
+      CommReduction i p q b ->
+      Reduces (MQPar (MQOut i) (MQIn i p q)) b.result
+  | sc       (p p' q' q : Process) :
+      SC p p' -> Reduces p' q' -> SC q' q -> Reduces p q
+  | par_l    (p p' q   : Process) : Reduces p p' -> Reduces (MQPar p q)  (MQPar p' q)
+  | par_r    (p q  q'  : Process) : Reduces q q' -> Reduces (MQPar p q)  (MQPar p q')
+  | nu_step  (p p'     : Process) : Reduces p p' -> Reduces (MQNu p)     (MQNu p')
+  | gate_step (g : GateSpec) (p p' : Process) :
+      Reduces p p' -> Reduces (MQGate g p) (MQGate g p')
+
+-- MQOut i is irreducible (cannot step)
+theorem mq_out_irreducible (i : Nat) {q : Process} (h : Reduces (MQOut i) q) : False
+
+-- Multi-step with notation p ->* q
+inductive MultiStep : Process -> Process -> Prop where
+  | refl (p : Process)   : MultiStep p p
+  | step (p q r : Process) : Reduces p q -> MultiStep q r -> MultiStep p r
+
+-- Denotational.lean
+-- Backend-parametric denotation: same 6 clauses, any compliant backend
+noncomputable def denoteWith (backend : MQSemanticsBackend) :
+    Process -> QState -> Option QState
+  | .MQNil,      st => some st
+  | .MQOut _,    st => some st
+  | .MQGate g p, st => denoteWith backend p (backend.applyGate g st)
+  | .MQNu p,     st => denoteWith backend p (backend.allocFresh st)
+  | .MQPar p q,  st => (denoteWith backend p st).bind (denoteWith backend q)
+  | .MQIn i p q, st =>
+      if backend.branchProb i .zero st >= backend.branchProb i .one st then
+        denoteWith backend p (backend.collapse i .zero st)
+      else
+        denoteWith backend q (backend.collapse i .one st)
+\end{lstlisting}
+
+\subsection*{C. Paper-map audit surface}
+
+\codepath{PaperMap.lean} exposes one named theorem per paper clause.
+To audit a specific claim, import the file and check the corresponding theorem.
+
+\begin{lstlisting}[language={},caption={Stable paper-to-theorem index (\texttt{PaperMap.lean})}]
+-- Section 6.3 denotational clauses (all rfl proofs from simp lemmas)
+theorem paper63_nil     : denoteWith backend MQNil      st = some st
+theorem paper63_out     : denoteWith backend (MQOut i)  st = some st
+theorem paper63_gate    : denoteWith backend (MQGate g p) st =
+                            denoteWith backend p (backend.applyGate g st)
+theorem paper63_new     : denoteWith backend (MQNu p)   st =
+                            denoteWith backend p (backend.allocFresh st)
+theorem paper63_par     : denoteWith backend (MQPar p q) st =
+                            (denoteWith backend p st).bind (denoteWith backend q)
+theorem paper63_in      : denoteWith backend (MQIn i p q) st =
+                            if backend.branchProb i .zero st >= ... then ...
+
+-- Norm-1 preservation under collapse (statevector backend, positive mass)
+theorem paper63_statevector_collapse_norm_one_of_raw_pos
+    (hraw : 0 < rawOutcomeProb i out st) :
+    norm (statevectorBackend.collapse i out st).psi = 1
+
+-- COMM denotation equals explicit branch-state selection
+theorem paper63_comm_denote_eq_measurement_selection (i : Nat) (p q : Process) (st : QState) :
+    denote (MQIn i p q) st = ...
+
+-- Section 3 communication reduction facts
+theorem paper3_comm_both_outcomes (i : Nat) (p q : Process) :
+    CommReduction i p q {.zero, p} /\ CommReduction i p q {.one, q}
+
+theorem paper3_comm_exhaustive (i : Nat) (p q : Process) (b : MeasurementBranch) :
+    CommReduction i p q b -> b = {.zero, p} \/ b = {.one, q}
+
+-- Cross-calculus coherence: MQ COMM branching <-> MORK binary fold branching
+theorem paper_mork_mq_branching_equiv (i : Nat) (p q : Process) :
+    (CommReduction i p q {.zero, p} /\ CommReduction i p q {.one, q}) <->
+    (forall (fold : MORK.FoldStep) (_ : fold.isBinary), ...)
+\end{lstlisting}
+
+\end{document}

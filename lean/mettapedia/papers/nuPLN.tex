@@ -410,6 +410,43 @@ the data points where $P$ is true.
 
 NEXT
 
+\section{Markov Extension: Fortini Bridge Meets Solomonoff Bounds}
+\label{sec:markov-fortini-solomonoff}
+
+The new bridge in Lean adds a capability that the earlier $\nuPLN$ chain did not provide:
+\emph{a single theorem surface that combines Markov de Finetti structure
+with Solomonoff-style regret bounds for the same finite-alphabet prefix law}.
+
+Concretely, the theorem
+\texttt{fortini\_and\_solomonoff\_of\_recurrentLatentCoherenceBridge}
+in \texttt{Mettapedia/Logic/MarkovDeFinettiFortiniBridgeCrux.lean}
+returns both outputs simultaneously:
+\begin{enumerate}
+\item a Fortini-style Markov-mixture representation (latent Markov parameter law), and
+\item a finite-horizon Solomonoff $M_2$ log-loss bound
+for that same prefix law $\mu$.
+\end{enumerate}
+
+This sits strictly above the earlier pieces:
+\begin{itemize}
+\item \textbf{Binary exchangeable / Bernoulli de Finetti} (\texttt{DeFinetti.lean}) gives
+counts-sufficiency and Bernoulli-mixture structure in the i.i.d./exchangeable binary regime.
+\item \textbf{Restricted Solomonoff exchangeable} (\texttt{SolomonoffExchangeable.lean}) gives
+predictor-level collapse to counts in the exchangeable binary regime.
+\item \textbf{PLN world-model calculus} (\texttt{PLNWorldModelCalculus.lean}) gives
+typed rewrite/equational rule infrastructure, but not Markov latent-mixture semantics
+nor Solomonoff regret guarantees.
+\end{itemize}
+
+So the new bridge contributes a distinct ``Markov memory'' layer:
+the sufficient statistics are transition-count style (Fortini/Markov exchangeability),
+and the predictor-performance side is still controlled by Solomonoff-style universal
+mixture bounds.
+
+Current scope note: the bridge theorem is conditional on the recurrent latent-coherence
+constructor interface used in the Fortini development.  This keeps the theorem honest and
+machine-checkable while isolating the exact remaining derivation gap to be minimized.
+
 \section{conclusion}
 
 \bibliographystyle{splncs04}

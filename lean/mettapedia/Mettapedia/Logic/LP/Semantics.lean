@@ -181,6 +181,13 @@ theorem T_P_LP_iter_succ_le {σ : LPSignature} (kb : KnowledgeBase σ) (n : ℕ)
     simp only [T_P_LP_iter]
     exact T_P_LP_mono kb ih
 
+/-- The iterate is monotone in the step count. -/
+theorem T_P_LP_iter_mono {σ : LPSignature} (kb : KnowledgeBase σ) (m n : ℕ) (h : m ≤ n) :
+    T_P_LP_iter kb m ⊆ T_P_LP_iter kb n := by
+  induction h with
+  | refl => exact le_refl _
+  | step _ ih => exact ih.trans (T_P_LP_iter_succ_le kb _)
+
 /-- Each iterate is contained in the least Herbrand model. -/
 theorem T_P_LP_iter_le_leastHerbrandModel {σ : LPSignature} (kb : KnowledgeBase σ) (n : ℕ) :
     T_P_LP_iter kb n ⊆ leastHerbrandModel kb := by

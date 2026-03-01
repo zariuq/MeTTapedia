@@ -1433,6 +1433,30 @@ def allFunctions : List FunctionSig :=
   idiomFunctions ++ numeralFunctions ++ structuralFunctions ++
   extendFunctions ++ constructionFunctions ++ symbolFunctions ++ lexiconFunctions
 
+/-! ## Signature Utilities -/
+
+/-- Return the argument categories of a curried GF function type. -/
+def argCategories : Category → List Category
+  | Category.base _ => []
+  | Category.arrow dom rest => dom :: argCategories rest
+
+/-- Return the result category of a (possibly curried) GF function type. -/
+def resultCategory : Category → Category
+  | Category.base s => Category.base s
+  | Category.arrow _ rest => resultCategory rest
+
+/-- Arity of a curried GF function signature. -/
+def arity (f : FunctionSig) : Nat :=
+  (argCategories f.type).length
+
+/-- Lookup a GF function signature by abstract function name. -/
+def findByName? (name : String) : Option FunctionSig :=
+  allFunctions.find? (fun f => f.name == name)
+
+/-- All function names in order (useful for coverage diagnostics). -/
+def allFunctionNames : List String :=
+  allFunctions.map (·.name)
+
 end FunctionSig
 
 /-! ## Abstract Tree Construction

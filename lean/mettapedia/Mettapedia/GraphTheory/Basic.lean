@@ -65,7 +65,7 @@ theorem adj_comm (G : SimpleGraph V) (u v : V) : G.Adj u v ↔ G.Adj v u :=
 omit [DecidableEq V] in
 /-- No vertex is adjacent to itself -/
 theorem not_adj_self (G : SimpleGraph V) (v : V) : ¬G.Adj v v :=
-  G.loopless v
+  G.loopless.irrefl v
 
 omit [DecidableEq V] in
 /-- Neighbor set -/
@@ -75,7 +75,7 @@ omit [DecidableEq V] in
 /-- A vertex is not its own neighbor -/
 theorem not_mem_neighbors_self (G : SimpleGraph V) (v : V) : v ∉ neighbors G v := by
   simp only [neighbors, SimpleGraph.neighborSet, Set.mem_setOf_eq]
-  exact G.loopless v
+  exact G.loopless.irrefl v
 
 /-- Complete graph: every pair of distinct vertices is adjacent -/
 def Complete (G : SimpleGraph V) : Prop :=

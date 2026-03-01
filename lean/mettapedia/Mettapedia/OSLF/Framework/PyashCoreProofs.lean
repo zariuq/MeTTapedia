@@ -35,6 +35,15 @@ def pyashCoreReductionCases : List (String × Pattern × Pattern) :=
   , ("search_derive_signature_step", pyashStateSearchDerive, pyashStateSearchDispatched)
   , ("search_dispatch_do_step", pyashStateSearchDispatched, pyashStateSearchRunning)
   , ("search_run_do_step", pyashStateSearchRunning, pyashStateSearchDoneOk)
+  , ("list_derive_signature_step", pyashStateListDerive, pyashStateListDispatched)
+  , ("list_dispatch_do_step", pyashStateListDispatched, pyashStateListRunning)
+  , ("list_run_do_step", pyashStateListRunning, pyashStateListDoneOk)
+  , ("input_derive_signature_step", pyashStateInputDerive, pyashStateInputDispatched)
+  , ("input_dispatch_do_step", pyashStateInputDispatched, pyashStateInputRunning)
+  , ("input_run_do_step", pyashStateInputRunning, pyashStateInputDoneOk)
+  , ("stream_derive_signature_step", pyashStateStreamDerive, pyashStateStreamDispatched)
+  , ("stream_dispatch_do_step", pyashStateStreamDispatched, pyashStateStreamRunning)
+  , ("stream_run_do_step", pyashStateStreamRunning, pyashStateStreamDoneOk)
   , ("mind_derive_signature_step", pyashStateMindDerive, pyashStateMindDispatched)
   , ("mind_dispatch_do_step", pyashStateMindDispatched, pyashStateMindRunning)
   , ("mind_run_do_step", pyashStateMindRunning, pyashStateMindDoneOk)
@@ -64,12 +73,39 @@ def pyashCoreReductionCases : List (String × Pattern × Pattern) :=
   , ("configure_run_do_step", pyashStateConfigureRunning, pyashStateConfigureDoneOk)
   , ("configure_def_derive_signature_step", pyashStateConfigureDefDerive, pyashStateConfigureDefDispatched)
   , ("configure_def_dispatch_def_step", pyashStateConfigureDefDispatched, pyashStateConfigureDefDoneOk)
+  , ("configure_command_map_def_derive_signature_step",
+      pyashStateConfigureCommandMapDefDerive, pyashStateConfigureCommandMapDefDispatched)
+  , ("configure_command_map_def_dispatch_def_step",
+      pyashStateConfigureCommandMapDefDispatched, pyashStateConfigureCommandMapDefDoneOk)
+  , ("configure_sandbox_map_def_derive_signature_step",
+      pyashStateConfigureSandboxMapDefDerive, pyashStateConfigureSandboxMapDefDispatched)
+  , ("configure_sandbox_map_def_dispatch_def_step",
+      pyashStateConfigureSandboxMapDefDispatched, pyashStateConfigureSandboxMapDefDoneOk)
+  , ("configure_verify_loop_map_def_derive_signature_step",
+      pyashStateConfigureVerifyLoopMapDefDerive, pyashStateConfigureVerifyLoopMapDefDispatched)
+  , ("configure_verify_loop_map_def_dispatch_def_step",
+      pyashStateConfigureVerifyLoopMapDefDispatched, pyashStateConfigureVerifyLoopMapDefDoneOk)
   , ("world_derive_signature_step", pyashStateWorldDerive, pyashStateWorldDispatched)
   , ("world_dispatch_do_step", pyashStateWorldDispatched, pyashStateWorldRunning)
   , ("world_run_do_step", pyashStateWorldRunning, pyashStateWorldDoneOk)
+  , ("world_path_io_derive_signature_step", pyashStateWorldPathIODerive, pyashStateWorldPathIODispatched)
+  , ("world_path_io_dispatch_do_step", pyashStateWorldPathIODispatched, pyashStateWorldPathIORunning)
+  , ("world_path_io_run_do_step", pyashStateWorldPathIORunning, pyashStateWorldPathIODoneOk)
   , ("pipeline_derive_signature_step", pyashStatePipelineDerive, pyashStatePipelineDispatched)
   , ("pipeline_dispatch_do_step", pyashStatePipelineDispatched, pyashStatePipelineRunning)
   , ("pipeline_run_do_step", pyashStatePipelineRunning, pyashStatePipelineDoneOk)
+  , ("pipeline_refinery_derive_signature_step",
+      pyashStatePipelineRefineryDerive, pyashStatePipelineRefineryDispatched)
+  , ("pipeline_refinery_dispatch_do_step",
+      pyashStatePipelineRefineryDispatched, pyashStatePipelineRefineryRunning)
+  , ("pipeline_refinery_run_do_step",
+      pyashStatePipelineRefineryRunning, pyashStatePipelineRefineryDoneOk)
+  , ("pipeline_chirp_derive_signature_step", pyashStatePipelineChirpDerive, pyashStatePipelineChirpDispatched)
+  , ("pipeline_chirp_dispatch_do_step", pyashStatePipelineChirpDispatched, pyashStatePipelineChirpRunning)
+  , ("pipeline_chirp_run_do_step", pyashStatePipelineChirpRunning, pyashStatePipelineChirpDoneOk)
+  , ("pipeline_reentry_derive_signature_step", pyashStatePipelineReentryDerive, pyashStatePipelineReentryDispatched)
+  , ("pipeline_reentry_dispatch_do_step", pyashStatePipelineReentryDispatched, pyashStatePipelineReentryRunning)
+  , ("pipeline_reentry_run_do_step", pyashStatePipelineReentryRunning, pyashStatePipelineReentryDoneOk)
   , ("compile_derive_signature_step", pyashStateCompileDerive, pyashStateCompileDispatched)
   , ("compile_dispatch_do_step", pyashStateCompileDispatched, pyashStateCompileRunning)
   , ("compile_run_do_step", pyashStateCompileRunning, pyashStateCompileDoneOk)
@@ -84,6 +120,34 @@ def pyashCoreReductionCases : List (String × Pattern × Pattern) :=
   , ("translation_run_do_step", pyashStateTranslationRunning, pyashStateTranslationDoneOk)
   , ("ret_read_derive_signature_step", pyashStateRetReadDerive, pyashStateRetReadDispatched)
   , ("ret_read_dispatch_ret_step", pyashStateRetReadDispatched, pyashStateRetReadDoneOk)
+  , ("configure_command_map_def_signature_mismatch_surfaces_error",
+      pyashStateConfigureCommandMapDefMismatch, pyashStateConfigureCommandMapDefDoneSignatureErr)
+  , ("configure_sandbox_map_def_signature_mismatch_surfaces_error",
+      pyashStateConfigureSandboxMapDefMismatch, pyashStateConfigureSandboxMapDefDoneSignatureErr)
+  , ("configure_verify_loop_map_def_signature_mismatch_surfaces_error",
+      pyashStateConfigureVerifyLoopMapDefMismatch, pyashStateConfigureVerifyLoopMapDefDoneSignatureErr)
+  , ("world_path_io_signature_mismatch_surfaces_error",
+      pyashStateWorldPathIOMismatch, pyashStateWorldPathIODoneSignatureErr)
+  , ("pipeline_refinery_signature_mismatch_surfaces_error",
+      pyashStatePipelineRefineryMismatch, pyashStatePipelineRefineryDoneSignatureErr)
+  , ("pipeline_chirp_signature_mismatch_surfaces_error",
+      pyashStatePipelineChirpMismatch, pyashStatePipelineChirpDoneSignatureErr)
+  , ("pipeline_reentry_signature_mismatch_surfaces_error",
+      pyashStatePipelineReentryMismatch, pyashStatePipelineReentryDoneSignatureErr)
+  , ("list_signature_mismatch_surfaces_error",
+      pyashStateListMismatch, pyashStateListDoneSignatureErr)
+  , ("input_signature_mismatch_surfaces_error",
+      pyashStateInputMismatch, pyashStateInputDoneSignatureErr)
+  , ("stream_signature_mismatch_surfaces_error",
+      pyashStateStreamMismatch, pyashStateStreamDoneSignatureErr)
+  , ("compile_signature_mismatch_surfaces_error",
+      pyashStateCompileMismatch, pyashStateCompileDoneSignatureErr)
+  , ("import_signature_mismatch_surfaces_error",
+      pyashStateImportMismatch, pyashStateImportDoneSignatureErr)
+  , ("download_signature_mismatch_surfaces_error",
+      pyashStateDownloadMismatch, pyashStateDownloadDoneSignatureErr)
+  , ("translation_signature_mismatch_surfaces_error",
+      pyashStateTranslationMismatch, pyashStateTranslationDoneSignatureErr)
   , ("dispatch_error_instr_surfaces_dispatch_error", pyashStateDispatchErrorInstr, pyashStateDoneDispatchErr)
   , ("dispatch_then_surfaces_dispatch_error", pyashStateDispatchThenError, pyashStateDoneDispatchErr)
   , ("malformed_signature_shape_surfaces_error",
@@ -335,6 +399,87 @@ theorem pyashCore_search_run_do_step :
     (label := "search_run_do_step")
     (p := pyashStateSearchRunning)
     (q := pyashStateSearchDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `list` signature derivation step is executable. -/
+theorem pyashCore_list_derive_signature_step :
+    langReduces pyashCore pyashStateListDerive pyashStateListDispatched := by
+  exact pyashCore_reduction_case
+    (label := "list_derive_signature_step")
+    (p := pyashStateListDerive)
+    (q := pyashStateListDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `list` dispatch path enters run mode. -/
+theorem pyashCore_list_dispatch_do_step :
+    langReduces pyashCore pyashStateListDispatched pyashStateListRunning := by
+  exact pyashCore_reduction_case
+    (label := "list_dispatch_do_step")
+    (p := pyashStateListDispatched)
+    (q := pyashStateListRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `list` run path produces a `ya` done state. -/
+theorem pyashCore_list_run_do_step :
+    langReduces pyashCore pyashStateListRunning pyashStateListDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "list_run_do_step")
+    (p := pyashStateListRunning)
+    (q := pyashStateListDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `input` signature derivation step is executable. -/
+theorem pyashCore_input_derive_signature_step :
+    langReduces pyashCore pyashStateInputDerive pyashStateInputDispatched := by
+  exact pyashCore_reduction_case
+    (label := "input_derive_signature_step")
+    (p := pyashStateInputDerive)
+    (q := pyashStateInputDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `input` dispatch path enters run mode. -/
+theorem pyashCore_input_dispatch_do_step :
+    langReduces pyashCore pyashStateInputDispatched pyashStateInputRunning := by
+  exact pyashCore_reduction_case
+    (label := "input_dispatch_do_step")
+    (p := pyashStateInputDispatched)
+    (q := pyashStateInputRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `input` run path produces a `ya` done state. -/
+theorem pyashCore_input_run_do_step :
+    langReduces pyashCore pyashStateInputRunning pyashStateInputDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "input_run_do_step")
+    (p := pyashStateInputRunning)
+    (q := pyashStateInputDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `stream` signature derivation step is executable. -/
+theorem pyashCore_stream_derive_signature_step :
+    langReduces pyashCore pyashStateStreamDerive pyashStateStreamDispatched := by
+  exact pyashCore_reduction_case
+    (label := "stream_derive_signature_step")
+    (p := pyashStateStreamDerive)
+    (q := pyashStateStreamDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `stream` dispatch path enters run mode. -/
+theorem pyashCore_stream_dispatch_do_step :
+    langReduces pyashCore pyashStateStreamDispatched pyashStateStreamRunning := by
+  exact pyashCore_reduction_case
+    (label := "stream_dispatch_do_step")
+    (p := pyashStateStreamDispatched)
+    (q := pyashStateStreamRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `stream` run path produces a `ya` done state. -/
+theorem pyashCore_stream_run_do_step :
+    langReduces pyashCore pyashStateStreamRunning pyashStateStreamDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "stream_run_do_step")
+    (p := pyashStateStreamRunning)
+    (q := pyashStateStreamDoneOk)
     (by simp [pyashCoreReductionCases])
 
 /-- `mind` signature derivation step is executable. -/
@@ -598,6 +743,72 @@ theorem pyashCore_configure_def_dispatch_def_step :
     (q := pyashStateConfigureDefDoneOk)
     (by simp [pyashCoreReductionCases])
 
+/-- `configure` (`def` command-map) signature derivation step is executable. -/
+theorem pyashCore_configure_command_map_def_derive_signature_step :
+    langReduces pyashCore
+      pyashStateConfigureCommandMapDefDerive
+      pyashStateConfigureCommandMapDefDispatched := by
+  exact pyashCore_reduction_case
+    (label := "configure_command_map_def_derive_signature_step")
+    (p := pyashStateConfigureCommandMapDefDerive)
+    (q := pyashStateConfigureCommandMapDefDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `configure` (`def` command-map) dispatch path reaches terminal `Done`. -/
+theorem pyashCore_configure_command_map_def_dispatch_def_step :
+    langReduces pyashCore
+      pyashStateConfigureCommandMapDefDispatched
+      pyashStateConfigureCommandMapDefDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "configure_command_map_def_dispatch_def_step")
+    (p := pyashStateConfigureCommandMapDefDispatched)
+    (q := pyashStateConfigureCommandMapDefDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `configure` (`def` sandbox-map) signature derivation step is executable. -/
+theorem pyashCore_configure_sandbox_map_def_derive_signature_step :
+    langReduces pyashCore
+      pyashStateConfigureSandboxMapDefDerive
+      pyashStateConfigureSandboxMapDefDispatched := by
+  exact pyashCore_reduction_case
+    (label := "configure_sandbox_map_def_derive_signature_step")
+    (p := pyashStateConfigureSandboxMapDefDerive)
+    (q := pyashStateConfigureSandboxMapDefDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `configure` (`def` sandbox-map) dispatch path reaches terminal `Done`. -/
+theorem pyashCore_configure_sandbox_map_def_dispatch_def_step :
+    langReduces pyashCore
+      pyashStateConfigureSandboxMapDefDispatched
+      pyashStateConfigureSandboxMapDefDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "configure_sandbox_map_def_dispatch_def_step")
+    (p := pyashStateConfigureSandboxMapDefDispatched)
+    (q := pyashStateConfigureSandboxMapDefDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `configure` (`def` verify-loop map) signature derivation step is executable. -/
+theorem pyashCore_configure_verify_loop_map_def_derive_signature_step :
+    langReduces pyashCore
+      pyashStateConfigureVerifyLoopMapDefDerive
+      pyashStateConfigureVerifyLoopMapDefDispatched := by
+  exact pyashCore_reduction_case
+    (label := "configure_verify_loop_map_def_derive_signature_step")
+    (p := pyashStateConfigureVerifyLoopMapDefDerive)
+    (q := pyashStateConfigureVerifyLoopMapDefDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `configure` (`def` verify-loop map) dispatch path reaches terminal `Done`. -/
+theorem pyashCore_configure_verify_loop_map_def_dispatch_def_step :
+    langReduces pyashCore
+      pyashStateConfigureVerifyLoopMapDefDispatched
+      pyashStateConfigureVerifyLoopMapDefDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "configure_verify_loop_map_def_dispatch_def_step")
+    (p := pyashStateConfigureVerifyLoopMapDefDispatched)
+    (q := pyashStateConfigureVerifyLoopMapDefDoneOk)
+    (by simp [pyashCoreReductionCases])
+
 /-- `world` signature derivation step is executable. -/
 theorem pyashCore_world_derive_signature_step :
     langReduces pyashCore pyashStateWorldDerive pyashStateWorldDispatched := by
@@ -625,6 +836,33 @@ theorem pyashCore_world_run_do_step :
     (q := pyashStateWorldDoneOk)
     (by simp [pyashCoreReductionCases])
 
+/-- `world` (path-io variant) signature derivation step is executable. -/
+theorem pyashCore_world_path_io_derive_signature_step :
+    langReduces pyashCore pyashStateWorldPathIODerive pyashStateWorldPathIODispatched := by
+  exact pyashCore_reduction_case
+    (label := "world_path_io_derive_signature_step")
+    (p := pyashStateWorldPathIODerive)
+    (q := pyashStateWorldPathIODispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `world` (path-io variant) dispatch path enters run mode. -/
+theorem pyashCore_world_path_io_dispatch_do_step :
+    langReduces pyashCore pyashStateWorldPathIODispatched pyashStateWorldPathIORunning := by
+  exact pyashCore_reduction_case
+    (label := "world_path_io_dispatch_do_step")
+    (p := pyashStateWorldPathIODispatched)
+    (q := pyashStateWorldPathIORunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `world` (path-io variant) run path produces a `ya` done state. -/
+theorem pyashCore_world_path_io_run_do_step :
+    langReduces pyashCore pyashStateWorldPathIORunning pyashStateWorldPathIODoneOk := by
+  exact pyashCore_reduction_case
+    (label := "world_path_io_run_do_step")
+    (p := pyashStateWorldPathIORunning)
+    (q := pyashStateWorldPathIODoneOk)
+    (by simp [pyashCoreReductionCases])
+
 /-- `pipeline` signature derivation step is executable. -/
 theorem pyashCore_pipeline_derive_signature_step :
     langReduces pyashCore pyashStatePipelineDerive pyashStatePipelineDispatched := by
@@ -650,6 +888,87 @@ theorem pyashCore_pipeline_run_do_step :
     (label := "pipeline_run_do_step")
     (p := pyashStatePipelineRunning)
     (q := pyashStatePipelineDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` (refinery variant) signature derivation step is executable. -/
+theorem pyashCore_pipeline_refinery_derive_signature_step :
+    langReduces pyashCore pyashStatePipelineRefineryDerive pyashStatePipelineRefineryDispatched := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_refinery_derive_signature_step")
+    (p := pyashStatePipelineRefineryDerive)
+    (q := pyashStatePipelineRefineryDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` (refinery variant) dispatch path enters run mode. -/
+theorem pyashCore_pipeline_refinery_dispatch_do_step :
+    langReduces pyashCore pyashStatePipelineRefineryDispatched pyashStatePipelineRefineryRunning := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_refinery_dispatch_do_step")
+    (p := pyashStatePipelineRefineryDispatched)
+    (q := pyashStatePipelineRefineryRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` (refinery variant) run path produces a `ya` done state. -/
+theorem pyashCore_pipeline_refinery_run_do_step :
+    langReduces pyashCore pyashStatePipelineRefineryRunning pyashStatePipelineRefineryDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_refinery_run_do_step")
+    (p := pyashStatePipelineRefineryRunning)
+    (q := pyashStatePipelineRefineryDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` (chirp variant) signature derivation step is executable. -/
+theorem pyashCore_pipeline_chirp_derive_signature_step :
+    langReduces pyashCore pyashStatePipelineChirpDerive pyashStatePipelineChirpDispatched := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_chirp_derive_signature_step")
+    (p := pyashStatePipelineChirpDerive)
+    (q := pyashStatePipelineChirpDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` (chirp variant) dispatch path enters run mode. -/
+theorem pyashCore_pipeline_chirp_dispatch_do_step :
+    langReduces pyashCore pyashStatePipelineChirpDispatched pyashStatePipelineChirpRunning := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_chirp_dispatch_do_step")
+    (p := pyashStatePipelineChirpDispatched)
+    (q := pyashStatePipelineChirpRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` (chirp variant) run path produces a `ya` done state. -/
+theorem pyashCore_pipeline_chirp_run_do_step :
+    langReduces pyashCore pyashStatePipelineChirpRunning pyashStatePipelineChirpDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_chirp_run_do_step")
+    (p := pyashStatePipelineChirpRunning)
+    (q := pyashStatePipelineChirpDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` (re-entry variant) signature derivation step is executable. -/
+theorem pyashCore_pipeline_reentry_derive_signature_step :
+    langReduces pyashCore pyashStatePipelineReentryDerive pyashStatePipelineReentryDispatched := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_reentry_derive_signature_step")
+    (p := pyashStatePipelineReentryDerive)
+    (q := pyashStatePipelineReentryDispatched)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` (re-entry variant) dispatch path enters run mode. -/
+theorem pyashCore_pipeline_reentry_dispatch_do_step :
+    langReduces pyashCore pyashStatePipelineReentryDispatched pyashStatePipelineReentryRunning := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_reentry_dispatch_do_step")
+    (p := pyashStatePipelineReentryDispatched)
+    (q := pyashStatePipelineReentryRunning)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` (re-entry variant) run path produces a `ya` done state. -/
+theorem pyashCore_pipeline_reentry_run_do_step :
+    langReduces pyashCore pyashStatePipelineReentryRunning pyashStatePipelineReentryDoneOk := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_reentry_run_do_step")
+    (p := pyashStatePipelineReentryRunning)
+    (q := pyashStatePipelineReentryDoneOk)
     (by simp [pyashCoreReductionCases])
 
 /-- `compile` signature derivation step is executable. -/
@@ -776,6 +1095,160 @@ theorem pyashCore_ret_read_dispatch_ret_step :
     (label := "ret_read_dispatch_ret_step")
     (p := pyashStateRetReadDispatched)
     (q := pyashStateRetReadDoneOk)
+    (by simp [pyashCoreReductionCases])
+
+/-- `configure` command-map mismatch is surfaced as a signature error state. -/
+theorem pyashCore_configure_command_map_def_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateConfigureCommandMapDefMismatch
+      pyashStateConfigureCommandMapDefDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "configure_command_map_def_signature_mismatch_surfaces_error")
+    (p := pyashStateConfigureCommandMapDefMismatch)
+    (q := pyashStateConfigureCommandMapDefDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `configure` sandbox-map mismatch is surfaced as a signature error state. -/
+theorem pyashCore_configure_sandbox_map_def_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateConfigureSandboxMapDefMismatch
+      pyashStateConfigureSandboxMapDefDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "configure_sandbox_map_def_signature_mismatch_surfaces_error")
+    (p := pyashStateConfigureSandboxMapDefMismatch)
+    (q := pyashStateConfigureSandboxMapDefDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `configure` verify-loop mismatch is surfaced as a signature error state. -/
+theorem pyashCore_configure_verify_loop_map_def_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateConfigureVerifyLoopMapDefMismatch
+      pyashStateConfigureVerifyLoopMapDefDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "configure_verify_loop_map_def_signature_mismatch_surfaces_error")
+    (p := pyashStateConfigureVerifyLoopMapDefMismatch)
+    (q := pyashStateConfigureVerifyLoopMapDefDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `world` path-io mismatch is surfaced as a signature error state. -/
+theorem pyashCore_world_path_io_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateWorldPathIOMismatch
+      pyashStateWorldPathIODoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "world_path_io_signature_mismatch_surfaces_error")
+    (p := pyashStateWorldPathIOMismatch)
+    (q := pyashStateWorldPathIODoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` refinery mismatch is surfaced as a signature error state. -/
+theorem pyashCore_pipeline_refinery_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStatePipelineRefineryMismatch
+      pyashStatePipelineRefineryDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_refinery_signature_mismatch_surfaces_error")
+    (p := pyashStatePipelineRefineryMismatch)
+    (q := pyashStatePipelineRefineryDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` chirp mismatch is surfaced as a signature error state. -/
+theorem pyashCore_pipeline_chirp_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStatePipelineChirpMismatch
+      pyashStatePipelineChirpDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_chirp_signature_mismatch_surfaces_error")
+    (p := pyashStatePipelineChirpMismatch)
+    (q := pyashStatePipelineChirpDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `pipeline` re-entry mismatch is surfaced as a signature error state. -/
+theorem pyashCore_pipeline_reentry_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStatePipelineReentryMismatch
+      pyashStatePipelineReentryDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "pipeline_reentry_signature_mismatch_surfaces_error")
+    (p := pyashStatePipelineReentryMismatch)
+    (q := pyashStatePipelineReentryDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `list` mismatch is surfaced as a signature error state. -/
+theorem pyashCore_list_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateListMismatch
+      pyashStateListDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "list_signature_mismatch_surfaces_error")
+    (p := pyashStateListMismatch)
+    (q := pyashStateListDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `input` mismatch is surfaced as a signature error state. -/
+theorem pyashCore_input_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateInputMismatch
+      pyashStateInputDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "input_signature_mismatch_surfaces_error")
+    (p := pyashStateInputMismatch)
+    (q := pyashStateInputDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `stream` mismatch is surfaced as a signature error state. -/
+theorem pyashCore_stream_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateStreamMismatch
+      pyashStateStreamDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "stream_signature_mismatch_surfaces_error")
+    (p := pyashStateStreamMismatch)
+    (q := pyashStateStreamDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `compile` mismatch is surfaced as a signature error state. -/
+theorem pyashCore_compile_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateCompileMismatch
+      pyashStateCompileDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "compile_signature_mismatch_surfaces_error")
+    (p := pyashStateCompileMismatch)
+    (q := pyashStateCompileDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `import` mismatch is surfaced as a signature error state. -/
+theorem pyashCore_import_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateImportMismatch
+      pyashStateImportDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "import_signature_mismatch_surfaces_error")
+    (p := pyashStateImportMismatch)
+    (q := pyashStateImportDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `download` mismatch is surfaced as a signature error state. -/
+theorem pyashCore_download_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateDownloadMismatch
+      pyashStateDownloadDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "download_signature_mismatch_surfaces_error")
+    (p := pyashStateDownloadMismatch)
+    (q := pyashStateDownloadDoneSignatureErr)
+    (by simp [pyashCoreReductionCases])
+
+/-- `translation` mismatch is surfaced as a signature error state. -/
+theorem pyashCore_translation_signature_mismatch_surfaces_error :
+    langReduces pyashCore
+      pyashStateTranslationMismatch
+      pyashStateTranslationDoneSignatureErr := by
+  exact pyashCore_reduction_case
+    (label := "translation_signature_mismatch_surfaces_error")
+    (p := pyashStateTranslationMismatch)
+    (q := pyashStateTranslationDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
 /-- Explicit dispatch-error instruction surfaces dispatch error deterministically. -/

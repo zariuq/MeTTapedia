@@ -1,5 +1,5 @@
 import Mettapedia.Logic.DDLPlus.Core
-import Mettapedia.Logic.PLNChapter14TemporalCausal
+import Mettapedia.Logic.PLNTemporalCausalInference
 import Mettapedia.Logic.GovernanceReasoning.Core
 
 /-!
@@ -37,7 +37,7 @@ These together give the **temporal-lag persistence** theorem: ideal obligation a
 namespace Mettapedia.Logic.TemporalDeonticBridge
 
 open Mettapedia.Logic.DDLPlus.Core
-open Mettapedia.Logic.PLNChapter14TemporalCausal
+open Mettapedia.Logic.PLNTemporalCausalInference
 open Mettapedia.Logic.GovernanceReasoning.Core
 
 /-! ## §1 Temporal Meanings -/
@@ -151,7 +151,7 @@ theorem pv_violation_shift
 Connects PLN causal heuristics with DTS obligation.
 
 A `SpuriousCausalCandidate` is an event x at time t that has extensional
-but not intensional predictive support (PLNChapter14TemporalCausal.lean §CausalHeuristics).
+but not intensional predictive support (PLNTemporalCausalInference.lean §CausalHeuristics).
 An obligation structure that respects intensional grounding cannot oblige spurious candidates. -/
 
 /-- An obligation structure (DTS) **obligates only intensionally-grounded events**

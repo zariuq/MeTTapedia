@@ -8,9 +8,9 @@ import Mettapedia.Logic.PLNFirstOrder.WeaknessConnection
 import Mettapedia.Logic.PLNFirstOrder.FoundationBridge
 import Mettapedia.Logic.PLNFirstOrder.Soundness
 import Mettapedia.Logic.PLNFirstOrder.QuantifierCanary
-import Mettapedia.Logic.PLNFirstOrder.Chapter11Examples
-import Mettapedia.Logic.PLNFirstOrder.Chapter11Regression
-import Mettapedia.Logic.PLNFirstOrder.Chapter11FuzzySyllogismRegression
+import Mettapedia.Logic.PLNFirstOrder.QuantifierWorkedExamples
+import Mettapedia.Logic.PLNFirstOrder.QuantifierRegression
+import Mettapedia.Logic.PLNFirstOrder.FuzzySyllogismRegression
 
 /-!
 # PLN First-Order Quantifiers

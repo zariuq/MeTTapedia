@@ -25,13 +25,17 @@ import Mettapedia.Logic.PremiseSelectionRankingStability
 import Mettapedia.Logic.PremiseSelectionSelectorSpec
 import Mettapedia.Logic.PremiseSelectionPartitionedPriorNB
 import Mettapedia.Logic.PremiseSelectionBestPLNDraft
-import Mettapedia.Logic.PLNChapter13InferenceControl
+import Mettapedia.Logic.PLNInferenceControlCore
+import Mettapedia.Logic.PLNInferenceControlAlgorithms
+import Mettapedia.Logic.PLNInferenceControlChainer
+import Mettapedia.Logic.PLNInferenceControlExamples
 import Mettapedia.Logic.SoundnessCompleteness
+import Mettapedia.Logic.PLNErrorMagnificationGrounding
 import Mettapedia.Logic.PLNCanonicalAPI
 import Mettapedia.Logic.PLNIntensionalWorldModel
 import Mettapedia.Logic.IntensionalInheritanceSolomonoffBridge
 import Mettapedia.Logic.PLNNARSRuleCorrespondence
-import Mettapedia.Logic.PLNChapter14TemporalCausal
+import Mettapedia.Logic.PLNTemporalCausalInference
 import Mettapedia.Logic.PLNProbabilisticEventCalculus
 import Mettapedia.Logic.SemanticsDecisionTree
 
@@ -52,7 +56,13 @@ This module is a curated import surface for the currently theorem-complete PLN s
 - Premise-selection coverage/submodularity surrogate (`PremiseSelectionCoverage`)
 - Premise-selection external-Bayesian commutation (`PremiseSelectionExternalBayesianity`)
 - Chapter-13 composed inference-control core (selector defaults + stability + coverage)
-  (`PLNChapter13InferenceControl`)
+  (`PLNInferenceControlCore`)
+- Chapter-13 executable greedy selector + algorithmic end-to-end bridge
+  (`PLNInferenceControlAlgorithms`)
+- Chapter-13 forward/backward/bounded chainer operator interfaces
+  (`PLNInferenceControlChainer`)
+- Chapter-13 worked finite fixtures and instantiated end-to-end theorem
+  (`PLNInferenceControlExamples`)
 - Pooling non-uniqueness counterexample + corrected uniqueness with total-additivity
   (`maxPoolingOperator_ne_fuse`, `poolE_eq_hplus_of_externalBayes_totalAdd`)
 - Finite de Finetti local-mixture bridge (`PremiseSelectionLocalMixtureBridge`)
@@ -81,11 +91,13 @@ This module is a curated import surface for the currently theorem-complete PLN s
   normalized sequential tensor update) with role/ranking wrappers
   (`PremiseSelectionBestPLNDraft`)
 - Soundness/completeness tradeoff characterization (`SoundnessCompleteness`)
+- Error-magnification grounding across WM calculus, OSLF atom semantics, and
+  evidence-derived confidence transport (`PLNErrorMagnificationGrounding`)
 - Canonical API with 3-tier theorem index (`PLNCanonicalAPI`)
 - PLN↔NARS rule correspondence package (rule-level bridge + informativeness adjunction)
   (`PLNNARSRuleCorrespondence`)
 - Chapter-14 temporal/causal relationship layer
-  (`PLNChapter14TemporalCausal`)
+  (`PLNTemporalCausalInference`)
 - Probabilistic event-calculus WM/rewrite grounding
   (`PLNProbabilisticEventCalculus`)
 - Semantics decision gate (probability vs evidence/interval/NARS mirror)

@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.PathMap.Core
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-!
 # PathMap ↔ RelationEnv Bridge
@@ -138,5 +139,62 @@ theorem query_comm_bridge {α : Type*} [RelationalSpace α] (a : α) :
     ∀ rel args,
       RelationalSpace.query (toRelationEnv a) rel args =
       RelationalSpace.query a rel args := fun _ _ => rfl
+
+/-! ## Backend Preservation: RelationalSpace → OSLF Synthesis -/
+
+open Mettapedia.OSLF.MeTTaIL.Syntax (LanguageDef)
+open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises (DeclReducesWithPremises)
+
+/-- Two `RelationEnv`s with equal `tuples` are equal. -/
+theorem RelationEnv.ext_tuples {env₁ env₂ : RelationEnv}
+    (h : env₁.tuples = env₂.tuples) : env₁ = env₂ := by
+  cases env₁; cases env₂; simp at h; exact congrArg _ h
+
+/-- If two relational spaces agree on all queries, their `toRelationEnv`
+    embeddings are equal as `RelationEnv`s. -/
+theorem toRelationEnv_eq_of_agree {α β : Type*}
+    [RelationalSpace α] [RelationalSpace β]
+    (a : α) (b : β)
+    (hagree : ∀ rel args,
+      RelationalSpace.query a rel args = RelationalSpace.query b rel args) :
+    toRelationEnv a = toRelationEnv b :=
+  RelationEnv.ext_tuples (funext fun rel => funext fun args => hagree rel args)
+
+/-- If two relational spaces agree on all queries, they induce the same
+    OSLF reduction relation. This is the key backend-equivalence theorem:
+    swapping the store preserves semantics as long as queries agree. -/
+theorem langReducesUsing_of_spacesAgree {α β : Type*}
+    [RelationalSpace α] [RelationalSpace β]
+    (a : α) (b : β)
+    (hagree : ∀ rel args,
+      RelationalSpace.query a rel args = RelationalSpace.query b rel args)
+    (lang : LanguageDef) (p q : Pattern) :
+    DeclReducesWithPremises (toRelationEnv a) lang p q ↔
+    DeclReducesWithPremises (toRelationEnv b) lang p q := by
+  rw [toRelationEnv_eq_of_agree a b hagree]
+
+/-- Backend preservation for diamond: query-agreeing spaces produce
+    the same step-future modality. -/
+theorem langDiamondUsing_of_spacesAgree {α β : Type*}
+    [RelationalSpace α] [RelationalSpace β]
+    (a : α) (b : β)
+    (hagree : ∀ rel args,
+      RelationalSpace.query a rel args = RelationalSpace.query b rel args)
+    (lang : LanguageDef) (φ : Pattern → Prop) (p : Pattern) :
+    Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing (toRelationEnv a) lang φ p ↔
+    Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing (toRelationEnv b) lang φ p := by
+  rw [toRelationEnv_eq_of_agree a b hagree]
+
+/-- Backend preservation for box: query-agreeing spaces produce
+    the same step-past modality. -/
+theorem langBoxUsing_of_spacesAgree {α β : Type*}
+    [RelationalSpace α] [RelationalSpace β]
+    (a : α) (b : β)
+    (hagree : ∀ rel args,
+      RelationalSpace.query a rel args = RelationalSpace.query b rel args)
+    (lang : LanguageDef) (φ : Pattern → Prop) (p : Pattern) :
+    Mettapedia.OSLF.Framework.TypeSynthesis.langBoxUsing (toRelationEnv a) lang φ p ↔
+    Mettapedia.OSLF.Framework.TypeSynthesis.langBoxUsing (toRelationEnv b) lang φ p := by
+  rw [toRelationEnv_eq_of_agree a b hagree]
 
 end Mettapedia.OSLF.PathMap

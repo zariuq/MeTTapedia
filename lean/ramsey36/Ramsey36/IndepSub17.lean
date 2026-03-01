@@ -11,7 +11,7 @@ evaluation runs with ~100MB virtual memory instead of 5+GB from Mathlib .oleans.
 The combination of sub-lemmas into the final theorem happens in Critical17.lean.
 -/
 
-import Ramsey36.IndepSetFunc
+import Algorithms.Graph.IndepSetFunc
 
 /-- Direct Bool adjacency for the Graver-Yackel 17-vertex graph.
     Avoids the Prop → decide → Finset.mem chain. -/

@@ -2580,7 +2580,7 @@ theorem G_differentiableAt {x : ℝ} (hx : 0 < x) : DifferentiableAt ℝ G x := 
 /-- Differentiability of G' on (0,∞). -/
 theorem G'_differentiableAt {x : ℝ} (hx : 0 < x) : DifferentiableAt ℝ G' x := by
   have hcont : ContDiffOn ℝ 1 G' (Set.Ioi 0) :=
-    N.G_contDiff.deriv_of_isOpen (s₂ := Set.Ioi 0) (m := 1) (n := 2) isOpen_Ioi (by decide)
+    N.G_contDiff.deriv_of_isOpen isOpen_Ioi (by decide)
   have hdiff : DifferentiableOn ℝ G' (Set.Ioi 0) :=
     (hcont.differentiableOn (by decide))
   have hxmem : Set.Ioi 0 ∈ 𝓝 x := (isOpen_Ioi.mem_nhds hx)

@@ -1,0 +1,1831 @@
+%% lp-core-petta.tex: Certified PeTTa — LP Semantics, Prolog Compilation, and OSLF Integration
+%%
+%% Render with:
+%%   pdflatex lp-core-petta.tex && bibtex lp-core-petta && pdflatex lp-core-petta.tex && pdflatex lp-core-petta.tex
+
+\documentclass[]{article}
+\usepackage{url}
+\usepackage[hyperindex,breaklinks]{hyperref}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,frame=single}
+\usepackage{float}
+\restylefloat{table}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage[skip=0pt]{subcaption}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{tabularx}
+\usepackage{array}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\codepath}[1]{\path{#1}}
+\newcommand{\MeTTa}{\textup{MeTTa}}
+\newcommand{\PeTTa}{\textup{PeTTa}}
+\newcommand{\MeTTaIL}{\textup{MeTTaIL}}
+\newcommand{\OSLF}{\textup{OSLF}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\emergencystretch}{3em}
+\sloppy
+
+\lstdefinelanguage{lean}{
+  keywords={def,theorem,lemma,structure,inductive,where,by,exact,simp,intro,
+             cases,match,with,fun,let,have,show,rfl,and,or,not,if,then,else,
+             open,namespace,end,abbrev,instance,class,return,do,for,in,
+             import,private,protected,noncomputable,mutual,termination_by},
+  sensitive=true,
+  comment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  morestring=[b]",
+  literate={->}{{$\to$}}1 {<-}{{$\leftarrow$}}1
+           {forall}{{$\forall$}}1
+           {exists}{{$\exists$}}1
+           {<=}{{$\le$}}1 {>=}{{$\ge$}}1
+}
+
+\title{Certified \PeTTa{}:\\Logic Programming Semantics, Prolog Compilation,\\and \OSLF{} Integration in Lean~4}
+\author{Zar \and Oru\v{z}i\footnote{``Oru\v{z}i'' denotes AI-assisted collaboration using Claude Code (Anthropic), ChatGPT, and Codex (OpenAI).  Lean~4 formalization at \url{https://github.com/mettapedia}.}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a Lean~4 formalization of the \PeTTa{} language---the Prolog-based
+implementation of \MeTTa{}---comprising 13{,}956 lines across 44 files with zero
+sorries and zero custom axioms.  The formalization establishes a certified
+semantic stack from LP foundations through Prolog-style goal evaluation to an
+\OSLF{} type system with Galois connection and Rust code export.
+
+The main contributions are: (1)~a full LP kernel with $T_P$, least Herbrand
+model via Tarski's theorem, SLD resolution, and assumption-free unification
+completeness; (2)~correctness of \MeTTaIL{} pattern matching on the
+\code{isMatchCorrect} fragment; (3)~the \MeTTaIL{}--LP bridge proving that
+\code{DeclReduces} steps imply least-model membership; (4)~\code{PeTTaEval},
+a pure evaluation relation with LP soundness for rule application;
+(5)~\code{PeTTaCmd}, a stateful effects layer for \code{add-atom},
+\code{remove-atom}, \code{get-atoms}, \code{progn}, and \code{prog1};
+(6)~a certified propositional connection-tableau chainer with DFS
+refinement and witness-level completeness; (7)~a Prolog-style goal
+language (\code{PrologGoal}) with conjunctive/disjunctive goals, \code{findall},
+and \code{assert}, together with a compilation pass
+(\code{compileExpr}) that translates \PeTTa{} expressions into Prolog goals with
+correctness theorems; (8)~a 4-argument \MeTTa{} evaluation judgment
+(\code{MeTTaEval}) with grounded oracles, standard library derived forms, and
+typed evaluation; and (9)~an \OSLF{} pipeline instance composing
+\code{pettaSpaceToLangDef} with the generic \OSLF{} type synthesis to produce
+a type system with automatic $\Diamond \dashv \Box$ Galois connection and Rust
+\code{language!\{\}} macro export, plus a GSLT forward fiber for categorical
+integration.
+
+Together these establish a certified end-to-end pipeline from \PeTTa{} source
+semantics through LP model theory to a deployable \OSLF{} type system.
+\end{abstract}
+
+\tableofcontents
+
+%% ====================================================================
+\section{Introduction}
+%% ====================================================================
+
+\MeTTa{} (Meta Type Talk) is the native programming language of the OpenCog Hyperon
+AGI framework~\cite{goertzel2009pln}.  It combines higher-order term rewriting
+with probabilistic inference and a first-class atomspace (knowledge graph), making
+it a technically demanding target for formal verification.  \PeTTa{} is the
+operational, Prolog-based implementation of \MeTTa{}, implemented as a transpiler
+from \MeTTa{} surface syntax to SWI-Prolog.
+
+Our goal in this paper is to give the pure, rule-driven fragment of \PeTTa{} a
+certified semantic foundation.  Logic programs with definite clauses provide exactly
+the right vehicle: the least Herbrand model semantics~\cite{vanEmdenKowalski1976,Lloyd1987}
+is compositional, fixed-point-theoretic, and mechanically tractable in Lean~4.
+
+\paragraph{Contribution overview.}
+We develop and verify the following stack in Lean~4 (all with zero sorries and zero
+custom axioms):
+
+\begin{enumerate}
+\item \textbf{LP kernel} (Sections~\ref{sec:lp-kernel}--\ref{sec:bridge}).
+  $T_P$ operator, least Herbrand model via Tarski's theorem, SLD resolution,
+  assumption-free unification completeness, and the \MeTTaIL{}--LP bridge
+  proving that \code{DeclReduces} steps imply least-model membership.
+
+\item \textbf{\MeTTaIL{} pattern matching} (Section~\ref{sec:matchspec}).
+  Correctness of the algorithmic matcher on the \code{isMatchCorrect} fragment.
+
+\item \textbf{\PeTTa{} evaluation and LP soundness} (Section~\ref{sec:petta}).
+  The \code{PeTTaEval} relation captures pure evaluation; LP soundness reflects
+  every \code{ruleApp} step in the least Herbrand model.
+
+\item \textbf{Stateful effects} (Section~\ref{sec:effects}).
+  \code{PeTTaCmd} models atomspace mutations with state monotonicity.
+
+\item \textbf{Certified ATP/chainer} (Section~\ref{sec:chainer}).
+  Connection-tableau DFS with soundness and witness-level completeness.
+
+\item \textbf{Prolog goal language and compilation} (Section~\ref{sec:prolog}).
+  A \code{PrologGoal} type with conjunction, disjunction, \code{findall}, and
+  \code{assert}; a compilation pass \code{compileExpr} from \PeTTa{} expressions
+  to Prolog goals with correctness theorems.
+
+\item \textbf{4-argument \MeTTa{} evaluation} (Section~\ref{sec:mettaeval}).
+  \code{MeTTaEval s ctx expr typ} with grounded oracles, standard library derived
+  forms (\code{if-equal}, \code{car-atom}, \code{let}), and type-driven evaluation.
+
+\item \textbf{\OSLF{} pipeline and GSLT integration} (Section~\ref{sec:oslf}).
+  \code{pettaOSLF} composes the \PeTTa{} space into the generic \OSLF{} type
+  synthesis, obtaining an automatic $\Diamond \dashv \Box$ Galois connection.
+  Rust \code{language!\{\}} macro export and a unit-indexed GSLT forward fiber
+  complete the integration.
+\end{enumerate}
+
+\paragraph{Architecture diagram.}
+The certified pipeline:
+
+\begin{center}
+\fbox{\parbox{0.90\linewidth}{
+\texttt{pettaOSLF} $\longrightarrow$ \OSLF{} type system ($\Diamond \dashv \Box$)
+  $\longrightarrow$ \texttt{pettaRenderRust}\\
+\texttt{pettaForwardFiber} (GSLT categorical integration)\\[2pt]
+$\uparrow$ \texttt{pettaSpaceToLangDef}\\[2pt]
+\texttt{MeTTaEval} (4-arg: space, context, expr, type)\\
+$\downarrow$ \texttt{compileExpr} (PeTTa $\to$ PrologGoal)\\
+\texttt{PeTTaCmd} (stateful: add/remove/get/progn/prog1)\\
+$\downarrow$ pureEval lift\\
+\texttt{PeTTaEval} (pure: var/ruleApp/spaceQuery/superpose/collapse)\\
+$\downarrow$ \texttt{matchPattern\_correct} + \texttt{pettaRuleSafe}\\
+$\downarrow$ \texttt{lp\_complete\_topRule} (\texttt{MeTTaILBridge})\\
+$\downarrow$ \texttt{leastHerbrandModel} ($T_P$ fixed point)
+}}
+\end{center}
+
+\paragraph{Paper structure.}
+Sections~\ref{sec:background}--\ref{sec:bridge} cover background, the LP kernel,
+\MeTTaIL{} pattern matching, and the \MeTTaIL{}--LP bridge.
+Section~\ref{sec:petta} presents \code{PeTTaEval} and LP soundness.
+Section~\ref{sec:chainer} adds the certified ATP/chainer layer.
+Section~\ref{sec:effects} covers the stateful effects layer.
+Section~\ref{sec:typesystem} formalises the \MeTTa{} type system fragment.
+Section~\ref{sec:prolog} presents the Prolog goal language and \code{compileExpr}.
+Section~\ref{sec:mettaeval} covers the 4-argument \code{MeTTaEval} judgment,
+grounded oracles, and standard library forms.
+Section~\ref{sec:oslf} integrates the \OSLF{} pipeline and GSLT fiber.
+Section~\ref{sec:related} discusses related work and Section~\ref{sec:conclusion}
+concludes.
+
+%% ====================================================================
+\section{Background}
+\label{sec:background}
+%% ====================================================================
+
+\paragraph{Logic programming.}
+A \emph{definite clause program} (or LP) is a finite set of \emph{Horn clauses}
+$H \leftarrow B_1, \ldots, B_n$ where $H$ and each $B_i$ are atoms over a fixed
+signature.  The \emph{Herbrand base} is the set of all ground atoms constructible
+from the function and constant symbols in the signature.  The immediate consequence
+operator $T_P$ maps an interpretation $I$ (a subset of the Herbrand base) to the
+set of all ground atoms that are immediate consequences of applying a grounded
+clause whose body is satisfied by $I$.  Since $T_P$ is monotone on the complete
+lattice $(\mathcal{P}(\text{HB}), \subseteq)$, the Knaster--Tarski theorem
+guarantees a least fixed point $T_P \uparrow \omega$, which equals the least
+Herbrand model~\cite{vanEmdenKowalski1976,Lloyd1987}.
+
+\paragraph{\MeTTa{} and \PeTTa{}.}
+\MeTTa{} expressions are terms over a \emph{type-free} base (atoms, applications,
+variables).  The semantics of a \MeTTa{} program is given by its rewrite rules
+\code{(= lhs rhs)}: an expression reduces to all terms reachable by matching
+its subexpressions against LHS patterns and substituting the corresponding RHS.
+The non-determinism is explicit: \code{superpose} collects alternatives and
+\code{collapse} gathers all answers via \code{findall}-style comprehension.
+
+\PeTTa{}~\cite{petta2024} is the Prolog-based implementation of \MeTTa{}.
+The transpiler (\code{transpiler.pl}) converts \MeTTa{} rules into Prolog clauses;
+\code{match \&self} queries are handled by \code{match\_term/3} in \code{spaces.pl};
+\code{superpose}/\code{collapse} map to Prolog disjunction and \code{findall/3}.
+
+\paragraph{Lean~4.}
+Lean~4~\cite{Moura2021} is a dependently-typed theorem prover and programming
+language.  Our formalization uses Mathlib~\cite{mathlib2020} for Tarski's fixed-point
+theorem (\code{OrderHom.lfp}) and basic order theory.  The \code{@[simp]} attribute
+marks rewrite lemmas for the \code{simp} tactic; \code{decide} proves decidable
+propositions by kernel reduction.
+
+%% ====================================================================
+\section{The LP Kernel}
+\label{sec:lp-kernel}
+%% ====================================================================
+
+The LP kernel lives in \code{Mettapedia/Logic/LP/} and spans three files:
+\code{Substitution.lean} (206 lines), \code{Semantics.lean} (204 lines), and
+\code{SLD.lean} (169 lines), totalling 579 lines.
+
+\subsection{Signature and Terms}
+
+\begin{lstlisting}[language=lean]
+structure LPSignature where
+  vars            : Type
+  constants       : Type
+  functionSymbols : Type
+  functionArity   : functionSymbols -> Nat
+  relationSymbols : Type
+  relationArity   : relationSymbols -> Nat
+
+inductive Term (sigma : LPSignature) where
+  | var   : sigma.vars -> Term sigma
+  | const : sigma.constants -> Term sigma
+  | app   : (f : sigma.functionSymbols) ->
+            (Fin (sigma.functionArity f) -> Term sigma) -> Term sigma
+
+structure Atom (sigma : LPSignature) where
+  symbol : sigma.relationSymbols
+  args   : Fin (sigma.relationArity symbol) -> Term sigma
+\end{lstlisting}
+
+Ground terms and atoms are defined analogously with \code{GroundTerm} and
+\code{GroundAtom}, using the same finitely-typed argument representation.  A
+\emph{grounding} \code{Grounding sigma := sigma.vars -> GroundTerm sigma}
+maps each LP variable to a ground term; applying it to a \code{Term} or \code{Atom}
+yields the corresponding \code{GroundTerm} or \code{GroundAtom}.
+
+\subsection{Clauses and Knowledge Bases}
+
+\begin{lstlisting}[language=lean]
+structure Clause (sigma : LPSignature) where
+  head : Atom sigma
+  body : List (Atom sigma)
+
+structure GroundClause (sigma : LPSignature) where
+  head : GroundAtom sigma
+  body : List (GroundAtom sigma)
+
+abbrev Program (sigma)       := List (Clause sigma)
+abbrev Interpretation (sigma) := Set (GroundAtom sigma)
+
+structure KnowledgeBase (sigma : LPSignature) where
+  prog : Program sigma
+  db   : Set (GroundAtom sigma)   -- extensional (EDB) ground atoms
+\end{lstlisting}
+
+The \code{db} field holds extensional (EDB) ground facts; \code{prog} holds
+intensional (IDB) definite clauses.
+
+\subsection{Least Herbrand Semantics}
+
+The immediate consequence operator:
+
+\begin{lstlisting}[language=lean]
+noncomputable def T_P_LP {sigma : LPSignature}
+    (kb : KnowledgeBase sigma) (I : Interpretation sigma) :
+    Interpretation sigma :=
+  kb.db
+  union { a | exists (c : Clause sigma) (g : Grounding sigma),
+              c in kb.prog
+              /\ g.groundAtom c.head = a
+              /\ forall b in c.body, g.groundAtom b in I }
+\end{lstlisting}
+
+Monotonicity of $T_P$:
+
+\begin{theorem}[Monotonicity]
+$T_P$ is monotone: if $I \subseteq J$ then $T_P(I) \subseteq T_P(J)$.
+\end{theorem}
+
+\begin{proof}
+Straightforward: for each clause witness $(c, g)$ satisfying the body in $I$,
+the same witness satisfies the body in $J \supseteq I$.
+\end{proof}
+
+Packaging $T_P$ as an \code{OrderHom} (an order-homomorphism on the complete
+lattice of sets), Tarski's least-fixed-point theorem gives the least Herbrand model:
+
+\begin{lstlisting}[language=lean]
+noncomputable def leastHerbrandModel {sigma : LPSignature}
+    (kb : KnowledgeBase sigma) : Interpretation sigma :=
+  OrderHom.lfp (T_P_LP_orderHom kb)
+\end{lstlisting}
+
+The following three theorems are the cornerstones of the LP semantics:
+
+\begin{theorem}[\code{leastHerbrandModel\_fixpoint}]
+\label{thm:lfp}
+$T_P(\mathrm{LHM}(kb)) = \mathrm{LHM}(kb)$.
+\end{theorem}
+
+\begin{theorem}[\code{leastHerbrandModel\_clause}]
+\label{thm:clause}
+If $c \in kb.prog$, $g$ is a grounding, and for all $b \in c.body$,
+$g(b) \in \mathrm{LHM}(kb)$, then $g(c.head) \in \mathrm{LHM}(kb)$.
+\end{theorem}
+
+\begin{theorem}[\code{leastHerbrandModel\_least}]
+\label{thm:least}
+If $T_P(I) \subseteq I$, then $\mathrm{LHM}(kb) \subseteq I$.
+\end{theorem}
+
+The proofs are one-liners using \code{OrderHom.isFixedPt\_lfp} and \code{OrderHom.lfp\_le}
+from Mathlib.  Theorem~\ref{thm:clause} follows immediately from
+Theorem~\ref{thm:lfp} and the definition of $T_P$: if the body holds in
+the model (which is a fixed point), then the head holds by one application of $T_P$.
+
+\subsection{SLD Resolution and All-Solutions SLD}
+
+The file \code{SLD.lean} (169 lines) formalises SLD resolution as an inductive type:
+
+\begin{lstlisting}[language=lean]
+inductive SLDTree (sigma : LPSignature) (kb : KnowledgeBase sigma)
+    : List (Atom sigma) -> Subst sigma -> Prop where
+  | success : SLDTree sigma kb [] theta
+  | resolve : ...
+\end{lstlisting}
+
+The soundness theorem (\code{sldTree\_sound}) states that if a tree witnesses a
+successful derivation of a goal $G$ with substitution $\theta$, then the grounded
+goal $\theta(G)$ is in the least Herbrand model.  The file \code{SLDAll.lean}
+(205 lines) provides \code{sldSearchAll}, which collects all answer substitutions,
+together with its soundness theorem.
+
+\subsection{Operational Completeness: Unification and SLD}
+
+The LP completeness layer extends the kernel with explicit executable-success
+theorems.
+
+\paragraph{Assumption-free semantic completeness of unification.}
+\code{Logic/LP/UnificationComplete.lean} (513 lines) internalizes the
+semantic-to-derivation bridge and proves:
+
+\begin{theorem}[\code{unifyFuel\_exists\_of\_unifies}]
+\label{thm:unifycomplete}
+If an equation list is semantically unifiable, then \code{unifyFuel} succeeds
+for some finite fuel:
+\[
+  (\exists \delta,\ \code{Unifies}\ \delta\ \code{eqs}) \Rightarrow
+  (\exists fuel\ \theta,\ \code{unifyFuel}\ fuel\ \code{eqs} = \code{some}\ \theta).
+\]
+\end{theorem}
+
+Function-free and ground specializations are also proved:
+\begin{itemize}
+\item \codepath{unifyFuel_exists_of_unifies_functionFree}
+\item \codepath{unifyFuel_exists_of_unifies_ground}
+\item \codepath{unifyFuel_exists_of_unifies_functionFree_ground}
+\end{itemize}
+with canary theorems for occurs-check rejection and non-occurs success in
+\codepath{UnificationCompletenessCanaries.lean}.
+
+\paragraph{SLD completeness bundles from least-model lifting.}
+\code{Logic/LP/SLDCompute.lean} (485 lines) introduces \code{SLDWitness}
+and proves that witness existence implies executable success
+(\code{sldSearch\_complete\_bounded}, \code{sldQuery\_complete\_bounded}).
+The main endpoint is:
+
+\begin{theorem}[\code{sldQuery\_complete\_of\_semantic\_lift}]
+\label{thm:sldcomplete}
+Given lifting data from least-model facts and one-step rule closures to
+\code{SLDWitness}, every least-Herbrand-model ground atom has a successful
+executable query:
+\[
+  ga \in \mathrm{LHM}(kb) \Rightarrow
+  \exists fuel\ \theta,\ \code{sldQuery}\ kb.prog\ ga\ fuel = \code{some}\ \theta.
+\]
+\end{theorem}
+
+The bundled endpoint
+\codepath{sldQuery_complete_sound_bundle_of_semantic_lift}
+adds soundness of returned substitutions in the same theorem. Canonical
+kit instances in \code{SLDCompletenessKit.lean} (261 lines) provide reusable
+hypothesis packages for concrete KB classes (e.g., nullary fact-only and
+nullary unary-body fragments).
+
+%% ====================================================================
+\section{\MeTTaIL{} Pattern Matching Correctness}
+\label{sec:matchspec}
+%% ====================================================================
+
+\code{OSLF/MeTTaIL/Match.lean} (201 lines) implements the algorithmic pattern
+matcher; \code{OSLF/MeTTaIL/MatchSpec.lean} (821 lines) proves its correctness.
+
+\subsection{\MeTTaIL{} Syntax}
+
+\MeTTaIL{} uses a \emph{locally nameless} representation~\cite{AydemarPOPL2008}:
+$\alpha$-equivalent patterns are syntactically identical, so no renaming is needed
+during matching or substitution.
+
+\begin{lstlisting}[language=lean]
+inductive Pattern where
+  | fvar        : String -> Pattern       -- free variable (metavariable)
+  | bvar        : Nat -> Pattern          -- de Bruijn bound variable
+  | apply       : String -> List Pattern -> Pattern
+  | lambda      : Pattern -> Pattern
+  | multiLambda : Nat -> Pattern -> Pattern
+  | collection  : CollType -> List Pattern -> Option String -> Pattern
+  | subst       : Pattern -> Pattern -> Pattern   -- explicit substitution
+
+inductive CollType where | vec | hashBag | hashSet
+
+structure RewriteRule where
+  left     : Pattern
+  right    : Pattern
+  premises : List Pattern   -- [] for unconditional rules
+\end{lstlisting}
+
+The \code{fvar} constructor represents \emph{pattern metavariables}: they match any
+term and produce a variable binding.  The \code{bvar n} constructor is a de Bruijn
+index for bound variables; it matches only \code{bvar m} with $m = n$.
+The \code{.subst body repl} form encodes explicit $\beta$-reduction:
+\code{applyBindings} evaluates it by calling \code{openBVar 0 repl body}.
+
+\subsection{Algorithmic Matching}
+
+\begin{lstlisting}[language=lean]
+def matchPattern (pat term : Pattern) : List Bindings :=
+  match pat, term with
+  | .fvar x, t                          => [[(x, t)]]
+  | .bvar n, .bvar m                    => if n == m then [[]] else []
+  | .apply c1 pargs, .apply c2 targs   =>
+      if c1 == c2 && pargs.length == targs.length
+      then matchArgs pargs targs
+      else []
+  | .lambda bodyPat, .lambda bodyConcrete =>
+      matchPattern bodyPat bodyConcrete
+  | .multiLambda npat bodyPat, .multiLambda nconc bodyConcrete =>
+      if npat == nconc then matchPattern bodyPat bodyConcrete else []
+  | .collection ct1 pelems rest1, .collection ct2 telems _rest2 =>
+      if ct1 == ct2 then matchBag pelems rest1 ct1 telems else []
+  | .subst pbody prepl, .subst tbody trepl =>
+      (matchPattern pbody tbody).flatMap fun b1 =>
+        (matchPattern prepl trepl).filterMap (mergeBindings b1)
+  | _, _                                => []
+\end{lstlisting}
+
+The function is mutually recursive with \code{matchArgs} (pairwise argument
+matching) and \code{matchBag} (multiset matching).  Termination is by
+\code{sizeOf pat}.  The return type \code{List Bindings} encodes non-determinism:
+bag matching may succeed in multiple ways.
+
+\code{applyBindings} substitutes \code{fvar} metavariables by their bindings and
+evaluates \code{.subst} nodes:
+
+\begin{lstlisting}[language=lean]
+def applyBindings (bindings : Bindings) (rhs : Pattern) : Pattern :=
+  match rhs with
+  | .fvar x   => match bindings.find? (fun p => p.1 == x) with
+                 | some (_, val) => val
+                 | none          => .fvar x
+  | .bvar n   => .bvar n
+  | .apply c args => .apply c (args.map (applyBindings bindings))
+  | .lambda body  => .lambda (applyBindings bindings body)
+  | .multiLambda n body => .multiLambda n (applyBindings bindings body)
+  | .subst body repl =>
+      openBVar 0 (applyBindings bindings repl)
+                 (applyBindings bindings body)
+  | .collection ct elems rest =>
+      let elems' := elems.map (applyBindings bindings)
+      let restElems := match rest with
+        | some rv => match bindings.find? (fun p => p.1 == rv) with
+                     | some (_, .collection _ relems _) => relems
+                     | _ => []
+        | none => []
+      .collection ct (elems' ++ restElems) none
+\end{lstlisting}
+
+\subsection{The \texttt{isMatchCorrect} Fragment}
+
+Not every pattern $p$ satisfies $\code{applyBindings}(bs, p) = t$ for all
+$bs \in \code{matchPattern}(p, t)$.  The two problematic constructors are:
+\begin{itemize}
+\item \code{.collection}: bag matching picks elements out of order, so the
+  reconstituted pattern may have a different element permutation than $t$.
+\item \code{.subst}: \code{applyBindings} evaluates the substitution node via
+  \code{openBVar}, which is not the identity.
+\end{itemize}
+
+The Boolean predicate \code{Pattern.isMatchCorrect} excludes both:
+
+\begin{lstlisting}[language=lean]
+def Pattern.isMatchCorrect (p : Pattern) : Bool :=
+  match p with
+  | .fvar _           => true
+  | .bvar _           => true
+  | .apply _ args     => args.all isMatchCorrect
+  | .lambda body      => isMatchCorrect body
+  | .multiLambda _ b  => isMatchCorrect b
+  | .subst _ _        => false
+  | .collection _ _ _ => false
+\end{lstlisting}
+
+\subsection{Correctness Theorem}
+
+The proof architecture in \code{MatchSpec.lean} is:
+(1)~define relational specifications \code{MatchRel}, \code{MatchArgsRel},
+\code{MatchBagRel} as mutual inductives independent of the algorithm;
+(2)~prove algorithmic soundness (if $bs \in \code{matchPattern}(p, t)$ then
+$\code{MatchRel}(p, t, bs)$) by strong induction on \code{sizeOf pat};
+(3)~prove that \code{MatchRel} implies \code{applyBindings bs pat = t} on the
+\code{isMatchCorrect} fragment (by structural induction on \code{MatchRel}).
+
+\begin{theorem}[\code{matchPattern\_correct}]
+\label{thm:matchcorrect}
+If $bs \in \code{matchPattern}(pat, t)$ and $\code{pat.isMatchCorrect} = \code{true}$,
+then $\code{applyBindings}(bs, pat) = t$.
+\end{theorem}
+
+\begin{proof}
+By the soundness bridge, $bs \in \code{matchPattern}(pat, t)$ implies
+$\code{MatchRel}(pat, t, bs)$.  Then \code{matchRel\_correct} (structural induction
+on \code{MatchRel}, using the \code{isMatchCorrect} guard to exclude collection and
+subst cases) gives $\code{applyBindings}(bs, pat) = t$.
+\end{proof}
+
+The \code{isMatchCorrect} guard is sharp:
+
+\begin{theorem}[\code{matchPattern\_correct\_false}]
+There exist a pattern $pat$, a term $t$, and bindings $bs$
+such that $bs \in \code{matchPattern}(pat, t)$ yet
+$\code{applyBindings}(bs, pat) \neq t$.
+\end{theorem}
+
+\begin{proof}
+Counterexample:
+\[
+  pat = \mathrm{vec}(x,y),\quad t = \mathrm{vec}(b,a).
+\]
+Bag matching with $i = 1$ first yields
+$bs = [(\text{"y"}, b), (\text{"x"}, a)]$, so
+\[
+  \code{applyBindings}(bs, pat) = [a,b] \neq [b,a] = t.
+\]
+\end{proof}
+
+%% ====================================================================
+\section{The \MeTTaIL{}--LP Bridge}
+\label{sec:bridge}
+%% ====================================================================
+
+The bridge lives in \code{Logic/LP/MeTTaILBridge.lean} (783 lines).
+
+\subsection{LP Signature for \MeTTaIL{}}
+
+\begin{lstlisting}[language=lean]
+abbrev mettailLPSig : LPSignature where
+  vars            := String
+  constants       := String
+  functionSymbols := Unit      -- single binary pairing function
+  functionArity   := fun _ => 2
+  relationSymbols := Unit      -- single "reduces" relation
+  relationArity   := fun _ => 2
+\end{lstlisting}
+
+Using \code{abbrev} (transparent) rather than \code{def} (opaque) is essential:
+it makes \code{mettailLPSig.functionArity () = 2} definitionally true, so that
+the \code{Matrix.cons} expression \code{![a, b]} typechecks for
+\code{Fin (mettailLPSig.functionArity ()) -> T}.
+
+Patterns are encoded as binary pair-spine trees:
+
+\begin{lstlisting}[language=lean]
+def pairTerm (a b : Term mettailLPSig) : Term mettailLPSig :=
+  Term.app () ![a, b]
+
+-- Encoding:
+--   .fvar x     ->  Term.var x              (LP variable)
+--   .bvar n     ->  Term.const "bv:n"       (ground token)
+--   .apply f as ->  pair("f_f", spine(as))
+--   .lambda b   ->  pair("lambda", enc(b))
+--   etc.
+\end{lstlisting}
+
+\code{patternToLPTerm} is mutually recursive with \code{patternListToLPSpine}
+(right-spine encoding of lists).  The \emph{ground} version
+\code{patternToLPGroundTerm} treats \code{.fvar x} as \code{GroundTerm.const "fv:x"}
+(making the variable name part of the constant).
+
+The \emph{fragment} predicate \code{morkTranslatable} (inherited from the MORK
+bridge) excludes patterns with \code{.subst} and rest-variable
+\code{.collection} (i.e., \code{.collection ct elems (some rv)}):
+
+\begin{lstlisting}[language=lean]
+-- from MORK bridge:
+def morkTranslatable : Pattern -> Bool
+  | .fvar _              => true
+  | .bvar _              => true
+  | .apply _ args        => morkTranslatableList args
+  | .lambda body         => morkTranslatable body
+  | .multiLambda _ body  => morkTranslatable body
+  | .collection _ _ none => morkTranslatableList elems
+  | .collection _ _ _    => false   -- rest variable: excluded
+  | .subst _ _           => false   -- explicit subst: excluded
+\end{lstlisting}
+
+\subsection{Commutation Lemma}
+
+The key algebraic property is that grounding and encoding commute:
+
+\begin{lemma}[\code{groundTerm\_commutes\_applyBindings}]
+\label{lem:commute}
+For \code{morkTranslatable} patterns $p$ and bindings $bs$:
+\[
+  \begin{aligned}
+  &\code{bindingsToGrounding}(bs).\code{groundTerm}( \\
+  &\qquad \code{patternToLPTerm}(p)) \\
+  &= \code{patternToLPGroundTerm}( \\
+  &\qquad \code{applyBindings}(bs, p))
+  \end{aligned}
+\]
+\end{lemma}
+
+\begin{proof}
+By mutual well-founded recursion on \code{sizeOf p} and \code{sizeOf ps}
+(for the list version).  The interesting cases:
+\begin{itemize}
+\item \code{.fvar x}: if $bs$ contains $(x, v)$, both sides evaluate to
+  \code{patternToLPGroundTerm v}; otherwise both give \code{GroundTerm.const "fv:x"}.
+\item \code{.bvar n}: both sides give \code{GroundTerm.const "bv:n"} (const on both
+  sides by construction).
+\item \code{.apply c args}: uses \code{groundTerm\_pairTerm} ($@[simp]$) and the
+  induction hypothesis for the spine.
+\item \code{.subst}, \code{.collection \_ \_ (some \_)}: excluded by
+  \code{morkTranslatable}.
+\end{itemize}
+The helper \code{@[simp]} lemma \code{groundTerm\_pairTerm} establishes
+that grounding distributes over \code{pairTerm} via \code{Matrix.cons\_val\_zero}
+and \code{Matrix.cons\_val\_one}.
+\end{proof}
+
+\subsection{Top-Rule Completeness}
+
+Rewrite rules are compiled to LP clauses with empty bodies:
+
+\begin{lstlisting}[language=lean]
+def rewriteRuleToLPClause (r : RewriteRule) : Clause mettailLPSig where
+  head.symbol := ()
+  head.args   := ![patternToLPTerm r.left, patternToLPTerm r.right]
+  body        := []
+\end{lstlisting}
+
+\begin{theorem}[\code{lp\_complete\_topRule}]
+\label{thm:topRule}
+Let $r \in \code{lang.rewrites}$ be a rule with $r.\code{premises} = []$
+and $\code{morkTranslatable}(r.left) = \code{true}$,
+$\code{morkTranslatable}(r.right) = \code{true}$.
+If $\code{applyBindings}(bs, r.left) = p$ and
+$\code{applyBindings}(bs, r.right) = q$,
+then
+$\code{encodeReduces}(p, q) \in \mathrm{LHM}(\code{languageDefToLPKB}(\code{lang}))$.
+\end{theorem}
+
+\begin{proof}
+(1) The LP clause $c = \code{rewriteRuleToLPClause}(r)$ is in \code{KB.prog}
+(by \code{List.mem\_append} and \code{List.mem\_map}).
+(2) The body of $c$ is empty, so the body condition is vacuously satisfied.
+(3) The commutation lemma (Lemma~\ref{lem:commute}) gives:
+\[
+  g.\code{groundTerm}(\code{patternToLPTerm}(r.left)) = \code{patternToLPGroundTerm}(p)
+\]
+where $g = \code{bindingsToGrounding}(bs)$, and similarly for $r.right$ and $q$.
+(4) A manual finitary argument over $\code{Fin 2}$ (using
+\code{Matrix.cons\_val\_zero} and \code{Matrix.cons\_val\_one}) gives
+$g.\code{groundAtom}(c.head) = \code{encodeReduces}(p, q)$.
+(5) Theorem~\ref{thm:clause} (\code{leastHerbrandModel\_clause}) with steps (1)--(4)
+gives the conclusion; using Theorem~\ref{thm:lfp} to convert from $T_P(LHM)$ to $LHM$.
+\end{proof}
+
+\subsection{Congruence Completeness}
+
+For collection rewriting (the \code{congElem} case of \code{DeclReduces}),
+two additional clause schemas are added to the LP:
+
+\begin{lstlisting}[language=lean]
+-- Head position:
+-- reduces(coll(pair(x,xs)), coll(pair(y,xs))) :- reduces(x,y).
+def collectionCongHeadClause (ct : CollType) : Clause mettailLPSig := ...
+
+-- Tail position (recursive):
+-- reduces(coll(pair(x,xs)), coll(pair(x,ys))) :- reduces(coll(xs),coll(ys)).
+def collectionCongTailClause (ct : CollType) : Clause mettailLPSig := ...
+\end{lstlisting}
+
+\begin{lemma}[\code{lp\_complete\_congElem\_none}]
+\label{lem:cong}
+Assume $\code{encodeReduces}(\text{elems}[i], q') \in \mathrm{LHM}$,
+$i < |\text{elems}|$, and \code{ct} is an enabled congruence collection kind.
+Then replacing the $i$-th element by $q'$ preserves encoded reducibility:
+\[
+  \code{encodeReduces}(C, C[i := q']) \in \mathrm{LHM},
+\]
+where $C = \code{.collection ct elems none}$.
+\end{lemma}
+
+\begin{proof}
+By list induction.  For the head position ($i = 0$): instantiate
+\code{collectionCongHeadClause ct} with the grounding $g$ mapping
+$\text{"x"} \mapsto \text{enc}(e)$, $\text{"y"} \mapsto \text{enc}(q')$,
+$\text{"xs"} \mapsto \text{enc}(\text{rest})$.  The body atom reduces to
+\code{encodeReduces}$(e, q')$, which is in the model by hypothesis.
+Theorem~\ref{thm:clause} gives the head.  For the tail position ($i = n+1$):
+use the induction hypothesis on \code{rest}, then instantiate
+\code{collectionCongTailClause ct} to lift.
+\end{proof}
+
+\subsection{Full Completeness}
+
+\begin{theorem}[\code{lp\_complete}]
+\label{thm:complete}
+If $\code{DeclReduces}(\code{lang}, p, q)$,
+all rules in \code{lang.rewrites} are \code{lpTranslatable},
+and $\code{morkTranslatable}(p) = \code{true}$,
+then $\code{encodeReduces}(p, q) \in \mathrm{LHM}(\code{languageDefToLPKB}(\code{lang}))$.
+\end{theorem}
+
+\begin{proof}
+By cases on the \code{DeclReduces} derivation:
+\begin{itemize}
+\item \textbf{\code{topRule}}: The rule $r$ is \code{lpTranslatable}, so both sides are
+  mork-translatable and the LHS is \code{isMatchCorrect}.  The hypothesis
+  $bs \in \code{matchPattern}(r.left, p)$ combined with
+  Theorem~\ref{thm:matchcorrect} (\code{matchPattern\_correct}) gives
+  $\code{applyBindings}(bs, r.left) = p$.  Then Theorem~\ref{thm:topRule}
+  (\code{lp\_complete\_topRule}) gives the conclusion.
+\item \textbf{\code{congElem}}: The inner step is handled by \code{lp\_complete\_topRule};
+  then Lemma~\ref{lem:cong} (\code{lp\_complete\_congElem\_none}) lifts to the
+  collection context.
+\end{itemize}
+\end{proof}
+
+The LP-translatability predicate is:
+\begin{lstlisting}[language=lean]
+def lpTranslatable (r : RewriteRule) : Bool :=
+  morkTranslatable r.left && morkTranslatable r.right &&
+  Pattern.isMatchCorrect r.left
+\end{lstlisting}
+
+%% ====================================================================
+\section{\PeTTa{} Evaluation and LP Soundness}
+\label{sec:petta}
+%% ====================================================================
+
+\subsection{\PeTTa{} Atomspace}
+
+\code{OSLF/PeTTa/SpaceSemantics.lean} (160 lines) defines the atomspace structure:
+
+\begin{lstlisting}[language=lean]
+structure PeTTaSpace where
+  facts : List Pattern    -- EDB ground atoms
+  rules : List RewriteRule
+
+namespace PeTTaSpace
+  def empty   : PeTTaSpace := { facts := [], rules := [] }
+  def addAtom (s : PeTTaSpace) (p : Pattern) : PeTTaSpace :=
+    { s with facts := p :: s.facts }
+  def removeAtom (s : PeTTaSpace) (p : Pattern) : PeTTaSpace :=
+    { s with facts := s.facts.filter (fun x => not (x == p)) }
+  def addRule (s : PeTTaSpace) (r : RewriteRule) : PeTTaSpace :=
+    { s with rules := r :: s.rules }
+\end{lstlisting}
+
+The space query operation models \code{(match \&self pat tmpl)} in \MeTTa{}:
+
+\begin{lstlisting}[language=lean]
+def spaceMatch (s : PeTTaSpace) (pat tmpl : Pattern) : Answers :=
+  s.facts.flatMap fun fact =>
+    (matchPattern pat fact).map fun bs => applyBindings bs tmpl
+\end{lstlisting}
+
+Soundness and completeness of \code{spaceMatch} are proven:
+every answer arises from a fact-match pair, and every fact-match pair
+produces an answer.
+
+\subsection{\PeTTa{} Evaluation Relation}
+
+\code{OSLF/PeTTa/Eval.lean} (187 lines) defines the inductive evaluation judgment:
+
+\begin{lstlisting}[language=lean]
+inductive PeTTaEval (s : PeTTaSpace) : Pattern -> Answers -> Prop where
+
+  | var (x : String) :
+      PeTTaEval s (.fvar x) [.fvar x]
+
+  | bvar (n : Nat) :
+      PeTTaEval s (.bvar n) [.bvar n]
+
+  | ground (c : String) :
+      PeTTaEval s (.apply c []) [.apply c []]
+
+  | ruleApp (r : RewriteRule) (bs : Bindings) (p q : Pattern)
+      (hr    : r in s.rules)
+      (hprem : r.premises = [])
+      (hm    : bs in matchPattern r.left p)
+      (hq    : applyBindings bs r.right = q) :
+      PeTTaEval s p [q]
+
+  | spaceQuery (pat tmpl : Pattern) (results : Answers)
+      (hres : results = s.spaceMatch pat tmpl) :
+      PeTTaEval s (.apply "match" [.apply "&self" [], pat, tmpl]) results
+
+  | superpose (alts : List Pattern) :
+      PeTTaEval s (.apply "superpose" [.collection .vec alts none]) alts
+
+  | collapse (p : Pattern) (answers : Answers)
+      (h : PeTTaEval s p answers) :
+      PeTTaEval s (.apply "collapse" [p]) [.collection .vec answers none]
+\end{lstlisting}
+
+The alignment with the HE MeTTa specification and the PeTTa transpiler is:
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{MeTTa spec} & \textbf{PeTTaEval} & \textbf{PeTTa (Prolog)} \\
+\hline
+\code{metta(Variable, ...)} & \code{var} & clause head for fvar \\
+\code{metta(Atom, ...)} & \code{ground} & fact clause \\
+\code{metta\_call(rhs, ...)} & \code{ruleApp} & top-level rule clause \\
+\code{metta(match \&self ...)} & \code{spaceQuery} & \code{match\_term/3} \\
+\code{superpose-bind} & \code{superpose} & Prolog \code{;} disjunction \\
+\code{collapse-bind} & \code{collapse} & \code{findall/3} \\
+\hline
+\end{tabular}
+\end{center}
+
+Key properties proven in \code{Eval.lean}:
+\begin{itemize}
+\item \code{petta\_eval\_var\_case}: \code{PeTTaEval s (.fvar x) [.fvar x]} holds for all $x$.
+\item \code{petta\_eval\_ruleApp\_singleton}: rule application always produces exactly one answer.
+\item \code{petta\_eval\_superpose\_nil}: \code{PeTTaEval s (superpose []) []}.
+\item \code{petta\_eval\_collapse\_singleton}: \code{collapse} always produces a singleton.
+\item \code{spaceMatch\_mono\_addAtom}: adding a fact to the space only extends \code{spaceMatch} answers.
+\end{itemize}
+
+\PeTTa{} is inherently non-deterministic: for a given expression $p$, multiple
+constructors of \code{PeTTaEval} may fire simultaneously (e.g., \code{.fvar x}
+can match both the \code{var} constructor and a \code{ruleApp} with an
+fvar-matching LHS).
+
+\subsection{Compiling \PeTTa{} Spaces to LP}
+
+\code{OSLF/PeTTa/LPSoundness.lean} (255 lines) defines the compilation:
+
+\begin{lstlisting}[language=lean]
+def pettaSpaceToLangDef (s : PeTTaSpace) : LanguageDef where
+  rewrites              := s.rules
+  congruenceCollections := []   -- flat rules only
+  ...
+
+def pettaSpaceToLPKB (s : PeTTaSpace) : KnowledgeBase mettailLPSig :=
+  languageDefToLPKB (pettaSpaceToLangDef s)
+\end{lstlisting}
+
+Only \code{s.rules} is compiled; \code{s.facts} are handled by \code{spaceMatch}.
+
+\subsection{LP Soundness}
+
+\begin{definition}[\code{pettaRuleSafe}]
+A rule $r$ is \emph{PeTTa LP-safe} if:
+$\code{morkTranslatable}(r.left) = \code{true}$,
+$\code{morkTranslatable}(r.right) = \code{true}$, and
+$\code{r.left.isMatchCorrect} = \code{true}$.
+This is exactly \code{lpTranslatable r}.
+\end{definition}
+
+\begin{theorem}[\code{petta\_ruleApp\_lp\_sound}]
+\label{thm:sound}
+Let $r$ be LP-safe with $r \in s.\code{rules}$, $r.\code{premises} = []$,
+$bs \in \code{matchPattern}(r.left, p)$, $\code{applyBindings}(bs, r.right) = q$.
+Then $\code{encodeReduces}(p, q) \in \mathrm{LHM}(\code{pettaSpaceToLPKB}(s))$.
+\end{theorem}
+
+\begin{proof}
+(1) \code{pettaRuleSafe\_iff} unpacks the safety into the three components.
+(2) Theorem~\ref{thm:matchcorrect} (\code{matchPattern\_correct}) applied to
+$bs \in \code{matchPattern}(r.left, p)$ with \code{isMatchCorrect} gives
+$\code{applyBindings}(bs, r.left) = p$.
+(3) $r \in s.\code{rules}$ lifts to $r \in (\code{pettaSpaceToLangDef}(s)).\code{rewrites}$ by \code{rfl}.
+(4) Theorem~\ref{thm:topRule} (\code{lp\_complete\_topRule}) gives the conclusion.
+\end{proof}
+
+\begin{corollary}[\code{petta\_safe\_space\_ruleApp\_lp\_sound}]
+\label{cor:safe}
+For an LP-safe space $s$ (all rules satisfy \code{pettaRuleSafe}),
+every \code{ruleApp} derivation $r \in s.\code{rules}$, $bs$, $p$, $q$
+is witnessed in $\mathrm{LHM}(\code{pettaSpaceToLPKB}(s))$.
+\end{corollary}
+
+\begin{proof}
+Immediate from Theorem~\ref{thm:sound} using $hs(r, hr)$ for the safety condition.
+\end{proof}
+
+\begin{theorem}[\code{pettaSpaceToLPKB\_addRule\_mono}]
+Adding a rule to a space preserves LP model membership: if
+$a \in \mathrm{LHM}(\code{pettaSpaceToLPKB}(s))$, then
+$a \in \mathrm{LHM}(\code{pettaSpaceToLPKB}(s.\code{addRule}(r)))$.
+\end{theorem}
+
+\begin{proof}
+Key sub-lemma: for any interpretation $I$,
+$T_P(\code{KB}(s), I) \subseteq T_P(\code{KB}(s.\code{addRule}(r)), I)$
+(proven by noting that $s.\code{rules} \subseteq r :: s.\code{rules}$ and
+using \code{List.mem\_cons\_of\_mem}).
+Then \code{leastHerbrandModel\_least} (Theorem~\ref{thm:least}) with
+$I = \mathrm{LHM}(s.\code{addRule}(r))$ being a pre-fixpoint of $T_P(KB(s))$
+gives $\mathrm{LHM}(s) \subseteq \mathrm{LHM}(s.\code{addRule}(r))$.
+\end{proof}
+
+A sanity check completes the file: the empty space compiles to the empty KB,
+$\code{pettaSpaceToLPKB}(\code{empty}) = \{prog := [], db := \emptyset\}$.
+
+\subsection{Unification}
+
+The files \code{Unification.lean} (259 lines) and \code{UnificationMGU.lean}
+(229 lines) formalise unification for the LP kernel.  The most general unifier (MGU)
+is computed and proved correct: \code{unify\_mgu} states that any unifier factors
+through the MGU.  These results are used in the SLD resolution soundness proof
+but are stated over the full LP signature (not restricted to \code{mettailLPSig}).
+
+%% ====================================================================
+\section{Certified Propositional ATP/Chainer Layer}
+\label{sec:chainer}
+%% ====================================================================
+
+\code{Logic/LP/PropositionalConnectionChainer.lean} (742 lines) provides a
+connection-tableau proof object language aligned with the \PeTTa{} leanCoP-style
+canaries.  The module contains:
+\begin{itemize}
+\item \code{TraceDerivable}/\code{ConnDerivable} (abstract derivability),
+\item executable replay checking (\code{replay}, \code{checkProof}),
+\item executable DFS search (\code{connProveDFS}),
+\item refinement and witness-level completeness theorems.
+\end{itemize}
+
+The main executable refinement theorems are:
+
+\begin{theorem}[\code{connProveDFS\_sound}]
+\label{thm:connsound}
+If \code{connProveDFS} returns \code{some tr}, then the goal is abstractly
+connection-derivable.
+\end{theorem}
+
+\begin{theorem}[\code{connProveDFS\_witness\_complete}]
+\label{thm:conncomplete}
+If a goal is connection-derivable, then there exist finite fuel and a returned
+trace from \code{connProveDFS}.
+\end{theorem}
+
+The fixture map section \code{PeTTaFixtureMap} provides theorem-level parity with
+\PeTTa{} \code{ic\_*} canaries.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{YYY}
+\hline
+\textbf{PeTTa canary intent} & \textbf{Lean theorem} & \textbf{Expected outcome} \\
+\hline
+UNSAT proof object accepted &
+\codepath{ic_unsat_checkProof_true} &
+\code{checkProof = true} \\
+SAT singleton rejects DFS proof &
+\codepath{ic_sat_connProve_none} &
+\code{connProveDFS = none} (all fuel) \\
+UNSAT DFS finds witness &
+\codepath{ic_unsat_connProve_has_proof} &
+$\exists tr,\ \code{some}\ tr$ at fuel 2 \\
+Branching proof (root $\neg p$) accepted &
+\codepath{ic_branching_negp_checkProof_true} &
+\code{checkProof = true} \\
+Branching proof (root $\neg q$) accepted &
+\codepath{ic_branching_negq_checkProof_true} &
+\code{checkProof = true} \\
+Two distinct branching roots both valid &
+\codepath{ic_branching_two_distinct_root_proofs} &
+root inequality + both checks true \\
+Branching DFS witness ($\neg p$ root) &
+\codepath{ic_branching_negp_connProve_has_proof} &
+$\exists tr,\ \code{some}\ tr$ at fuel 3 \\
+Branching DFS witness ($\neg q$ root) &
+\codepath{ic_branching_negq_connProve_has_proof} &
+$\exists tr,\ \code{some}\ tr$ at fuel 3 \\
+\hline
+\end{tabularx}
+\caption{Formal theorem map for \PeTTa{} \code{ic\_*} propositional canaries.}
+\label{tab:icmap}
+\end{table}
+
+FO status is tracked in \code{Logic/LP/FirstOrderConnectionTrace.lean}.  The
+proven FO endpoints now include replay-checker soundness
+(\code{replayFO\_sound}), executable DFS soundness
+(\code{connProveFODFS\_sound}), and witness-level DFS completeness
+(\code{connProveFODFS\_witness\_complete}).
+
+This section therefore establishes theorem-prover-style executable refinement in
+Lean for the propositional fragment, with explicit FO soundness scaffolding already
+formalized and compiled.
+
+%% ====================================================================
+\section{File Statistics}
+\label{sec:stats}
+%% ====================================================================
+
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabularx}{\linewidth}{Y r Y c}
+\hline
+\textbf{File} & \textbf{Lines} & \textbf{Key theorems} & \textbf{Sorries} \\
+\hline
+\multicolumn{4}{l}{\textit{LP Kernel (\code{Logic/LP/})}} \\
+\code{Core.lean}              & 243 & LP signature, terms, clauses & 0 \\
+\code{Substitution.lean}      & 206 & grounding algebra & 0 \\
+\code{Semantics.lean}         & 204 & $T_P$, LHM, fixpoints & 0 \\
+\code{Matching.lean}          & 333 & LP term matching & 0 \\
+\code{SLD.lean}               & 169 & SLD soundness & 0 \\
+\code{SLDAll.lean}            & 205 & all-solutions SLD & 0 \\
+\code{SLDCompute.lean}        & 485 & semantic-lift completeness & 0 \\
+\code{SLDCompletenessKit.lean} & 261 & canonical witness kits & 0 \\
+\code{SLDCompletenessCanaries.lean} & 178 & completeness canaries & 0 \\
+\code{Unification.lean}       & 259 & unifyFuel soundness & 0 \\
+\code{UnificationMGU.lean}    & 229 & MGU factoring & 0 \\
+\code{UnificationComplete.lean} & 513 & \codepath{unifyFuel_exists_of_unifies} & 0 \\
+\code{UnificationCompletenessCanaries.lean} & 122 & occurs/non-occurs canaries & 0 \\
+\code{PropositionalConnectionChainer.lean} & 1{,}245 & DFS soundness/completeness & 0 \\
+\code{PropositionalChainer.lean} & 265 & propositional chainer & 0 \\
+\code{FirstOrderConnectionTrace.lean} & 1{,}440 & FO connection trace & 0 \\
+\code{MeTTaILBridge.lean}     & 847 & commutation, LP completeness & 0 \\
+\code{FunctionFree.lean}      & 109 & function-free fragment & 0 \\
+\code{FunctionFreeEvaluation.lean} & 110 & FF evaluation & 0 \\
+\code{FunctionFreePeTTa.lean} & 481 & FF PeTTa integration & 0 \\
+\code{Provenance.lean}        & 125 & proof provenance & 0 \\
+\code{RangeRestriction.lean}  & 197 & range restriction & 0 \\
+\code{MMMeasure.lean}         & 344 & MM measure theory & 0 \\
+\code{OSLFBridge.lean}        & 172 & LP--OSLF bridge & 0 \\
+\code{PathMapBridge.lean}     & 97  & LP--PathMap bridge & 0 \\
+\code{WorldModelBridge.lean}  & 92  & LP--WM bridge & 0 \\
+\code{CertifyingDatalogBridge.lean} & 82 & Datalog bridge & 0 \\
+\hline
+\multicolumn{4}{l}{\textit{MeTTaIL Matching (\code{OSLF/MeTTaIL/})}} \\
+\code{Match.lean}             & 201 & algorithmic matcher & 0 \\
+\code{MatchSpec.lean}         & 821 & \codepath{matchPattern_correct} & 0 \\
+\hline
+\multicolumn{4}{l}{\textit{PeTTa Specification (\code{OSLF/PeTTa/})}} \\
+\code{Answers.lean}           & 121 & answer type & 0 \\
+\code{SpaceSemantics.lean}    & 160 & \codepath{spaceMatch} & 0 \\
+\code{Eval.lean}              & 187 & \codepath{PeTTaEval} & 0 \\
+\code{LPSoundness.lean}       & 255 & ruleApp LP soundness & 0 \\
+\code{Effects.lean}           & 301 & \code{PeTTaCmd} + state monotonicity & 0 \\
+\code{TypeSystem.lean}        & 374 & \code{MeTTaType} arrow typing & 0 \\
+\code{PrologBridge.lean}      & 125 & Prolog goal compilation & 0 \\
+\code{TranslateExpr.lean}     & 463 & \codepath{compileExpr} correctness & 0 \\
+\code{MeTTaEval.lean}         & 398 & 4-arg \code{MeTTaEval} judgment & 0 \\
+\code{StdLib.lean}            & 309 & \code{if-equal}, \code{car-atom}, \code{let} & 0 \\
+\code{GroundedOracle.lean}    & 297 & grounded function oracles & 0 \\
+\code{TypedEval.lean}         & 296 & type-driven evaluation & 0 \\
+\code{MinimalInstructions.lean} & 388 & minimal instruction set & 0 \\
+\code{OSLFInstance.lean}      & 144 & \codepath{pettaOSLF}, Galois, Rust export & 0 \\
+\code{GSLTVertex.lean}        & 103 & GSLT forward fiber & 0 \\
+\hline
+\textbf{Total (44 files)} & \textbf{13{,}956} & & \textbf{0} \\
+\hline
+\end{tabularx}
+\normalsize
+\caption{File statistics for the certified \PeTTa{} formalization.  All files use only
+  \code{[propext, Classical.choice, Quot.sound]}.}
+\label{tab:stats}
+\end{table}
+
+%% ====================================================================
+\section{Stateful Evaluation: Effects and Commands}
+\label{sec:effects}
+%% ====================================================================
+
+\code{OSLF/PeTTa/Effects.lean} (277 lines) extends the pure \code{PeTTaEval}
+relation with a stateful layer that models \PeTTa{}'s mutating atomspace
+operations.
+
+\subsection{Motivation}
+
+The pure \code{PeTTaEval} relation (Section~\ref{sec:petta}) captures rule
+application, space queries, \code{superpose}, and \code{collapse}, but it treats
+the atomspace as a static read-only resource.  The real \PeTTa{} interpreter
+supports imperative mutations: \code{add-atom} and \code{remove-atom} modify
+\code{\&self} in place; \code{get-atoms} retrieves all current facts; and
+\code{progn}/\code{prog1} sequence effects in a specific return-value discipline.
+Formalizing this requires a stateful layer.
+
+\subsection{Evaluation State}
+
+\begin{lstlisting}[language=lean]
+structure EvalState where
+  space : PeTTaSpace
+\end{lstlisting}
+
+\code{EvalState} wraps a \code{PeTTaSpace} (the single \code{\&self} atomspace).
+The namespace provides five operations:
+
+\begin{lstlisting}[language=lean]
+def EvalState.empty     : EvalState
+def EvalState.addAtom   (s : EvalState) (p : Pattern) : EvalState
+def EvalState.removeAtom (s : EvalState) (p : Pattern) : EvalState
+def EvalState.addRule   (s : EvalState) (r : RewriteRule) : EvalState
+def EvalState.withSpace (s : EvalState) (sp : PeTTaSpace) : EvalState
+\end{lstlisting}
+
+All operations are purely functional: they return a new \code{EvalState}.
+The unit return value for \code{add-atom} and \code{remove-atom} is:
+
+\begin{lstlisting}[language=lean]
+def unitAtom : Pattern := .apply "()" []
+\end{lstlisting}
+
+\subsection{The \texttt{PeTTaCmd} Judgment}
+
+The stateful judgment \code{PeTTaCmd s\textsubscript{0} expr s\textsubscript{1} answers}
+means: starting from state \code{s\textsubscript{0}}, evaluating \code{expr}
+transitions to state \code{s\textsubscript{1}} and produces nondeterministic
+answer set \code{answers}.
+
+\begin{lstlisting}[language=lean]
+inductive PeTTaCmd : EvalState -> Pattern -> EvalState -> Answers -> Prop where
+  | addAtomCmd (s : EvalState) (p : Pattern) :
+      PeTTaCmd s
+        (.apply "add-atom" [.apply "&self" [], p])
+        (s.addAtom p)
+        [unitAtom]
+  | removeAtomCmd (s : EvalState) (p : Pattern) :
+      PeTTaCmd s
+        (.apply "remove-atom" [.apply "&self" [], p])
+        (s.removeAtom p)
+        [unitAtom]
+  | getAtomsCmd (s : EvalState) :
+      PeTTaCmd s
+        (.apply "get-atoms" [.apply "&self" []])
+        s
+        s.space.facts
+  | pureEval (s : EvalState) (p : Pattern) (answers : Answers)
+      (h : PeTTaEval s.space p answers) :
+      PeTTaCmd s p s answers
+  | prognCmd (s0 s1 s2 : EvalState) (e1 e2 : Pattern) (ans1 ans2 : Answers)
+      (h1 : PeTTaCmd s0 e1 s1 ans1) (h2 : PeTTaCmd s1 e2 s2 ans2) :
+      PeTTaCmd s0 (.apply "progn" [e1, e2]) s2 ans2
+  | prog1Cmd (s0 s1 s2 : EvalState) (e1 e2 : Pattern) (ans1 ans2 : Answers)
+      (h1 : PeTTaCmd s0 e1 s1 ans1) (h2 : PeTTaCmd s1 e2 s2 ans2) :
+      PeTTaCmd s0 (.apply "prog1" [e1, e2]) s2 ans1
+\end{lstlisting}
+
+The six constructors cover all effectful and pure evaluation forms.
+The \code{pureEval} constructor embeds any \code{PeTTaEval} derivation
+state-preservingly into the stateful layer.  The \code{prognCmd} constructor
+sequences two commands, threading the intermediate state \code{s\textsubscript{1}}:
+the second command is evaluated in the output state of the first, and the
+final answers are those of the second.  \code{prog1Cmd} is symmetric but
+returns the answers of the first command.
+
+\subsection{Correspondence with PeTTa Prolog}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\hline
+\textbf{PeTTa Prolog predicate} & \textbf{\code{PeTTaCmd} constructor} \\
+\hline
+\code{add\_atom\_to\_space/2}                       & \code{addAtomCmd}   \\
+\code{remove\_atom\_from\_space/2}                  & \code{removeAtomCmd} \\
+\code{findall(A, get\_atom(self,A), As)}             & \code{getAtomsCmd}  \\
+pure \code{metta\_call/2}                           & \code{pureEval}     \\
+\code{progn/2} (from \code{lib\_metta4})            & \code{prognCmd}     \\
+\code{prog1/2} (from \code{lib\_metta4})            & \code{prog1Cmd}     \\
+\hline
+\end{tabular}
+\caption{Correspondence between PeTTa Prolog predicates and \code{PeTTaCmd} constructors.}
+\label{tab:cmd-prolog}
+\end{table}
+
+\subsection{Key Theorems}
+
+\begin{lemma}[\code{pureEval\_lifts}]
+Any \code{PeTTaEval} derivation lifts to a state-preserving \code{PeTTaCmd}:
+if \code{PeTTaEval s.space p ans}, then \code{PeTTaCmd s p s ans}.
+\end{lemma}
+
+\begin{lemma}[\code{addAtomCmd\_mem\_facts}]
+The added atom is a member of the output state's fact list:
+$p \in (\code{s.addAtom}\ p)\code{.space.facts}$.
+\end{lemma}
+
+\begin{lemma}[\code{addAtomCmd\_preserves\_facts}]
+Existing facts survive an \code{addAtomCmd}: if $q \in \code{s.space.facts}$
+then $q \in (\code{s.addAtom}\ p)\code{.space.facts}$.
+\end{lemma}
+
+\begin{lemma}[\code{removeAtomCmd\_subset\_facts}]
+\code{removeAtomCmd} only removes the targeted atom: any fact surviving in
+the output state was already present in the input state.
+\end{lemma}
+
+\begin{lemma}[\code{pettaCmd\_shape}]
+Exhaustive case analysis: given any \code{PeTTaCmd s p s\textsubscript{1} ans},
+exactly one of the following characterizes the expression form and state transition:
+\begin{enumerate}
+  \item $p = \code{(add-atom \&self}\ q\code{)}$ and $s_1 = \code{s.addAtom}\ q$,
+  \item $p = \code{(remove-atom \&self}\ q\code{)}$ and $s_1 = \code{s.removeAtom}\ q$,
+  \item $p = \code{(get-atoms \&self)}$ and $s_1 = s$ and $ans = \code{s.space.facts}$,
+  \item $s_1 = s$ and $\code{PeTTaEval}\ \code{s.space}\ p\ ans$,
+  \item $\exists\, e_1, e_2,\ p = \code{(progn}\ e_1\ e_2\code{)}$, or
+  \item $\exists\, e_1, e_2,\ p = \code{(prog1}\ e_1\ e_2\code{)}$.
+\end{enumerate}
+\end{lemma}
+
+\begin{theorem}[\code{example\_addThenGet}]
+Concrete derivation: evaluating \code{(progn (add-atom \&self (foo)) (get-atoms \&self))}
+from the empty state yields \code{[.apply "foo" []]}:
+\begin{lstlisting}[language=lean]
+theorem example_addThenGet :
+    PeTTaCmd EvalState.empty
+      (.apply "progn"
+        [ .apply "add-atom" [.apply "&self" [], .apply "foo" []]
+        , .apply "get-atoms" [.apply "&self" []] ])
+      { space := { facts := [.apply "foo" []], rules := [] } }
+      [.apply "foo" []] :=
+  PeTTaCmd.prognCmd _ _ _ _ _ _ _
+    (PeTTaCmd.addAtomCmd EvalState.empty (.apply "foo" []))
+    (PeTTaCmd.getAtomsCmd _)
+\end{lstlisting}
+\end{theorem}
+
+%% ====================================================================
+\section{MeTTa Type System Fragment}
+\label{sec:typesystem}
+%% ====================================================================
+
+\code{OSLF/PeTTa/TypeSystem.lean} (374 lines) formalizes the static fragment of
+MeTTa's type system as an inductive judgment \code{MeTTaType s p t},
+meaning ``in atomspace \code{s}, pattern \code{p} has type \code{t}''.
+
+\subsection{Special Type Atoms}
+
+MeTTa uses a handful of distinguished type-level atoms:
+
+\begin{lstlisting}[language=lean]
+def undefinedType   : Pattern := .apply "%Undefined%" []  -- supertype
+def emptyType       : Pattern := .apply "%Empty%" []      -- bottom
+def atomType        : Pattern := .apply "Atom" []         -- nullary apps
+def expressionType  : Pattern := .apply "Expression" []   -- all apps
+def arrowType (A B : Pattern) : Pattern := .apply "->" [A, B]
+def typeAnnotationPat (p t : Pattern) : Pattern := .apply ":" [p, t]
+\end{lstlisting}
+
+Type annotations are stored as facts in the atomspace: \code{(: p t) $\in$ s.facts}
+directly asserts that \code{p} has type \code{t}.
+
+\subsection{The Type Judgment}
+
+\begin{lstlisting}[language=lean]
+inductive MeTTaType (s : PeTTaSpace) : Pattern -> Pattern -> Prop where
+
+  | typeAnnotation (p t : Pattern)
+      (h : typeAnnotationPat p t in s.facts) :
+      MeTTaType s p t
+
+  | undefinedIsTop (p : Pattern) :
+      MeTTaType s p undefinedType
+
+  | arrowApp (c : String) (x argTy retTy : Pattern)
+      (hf : MeTTaType s (.apply c []) (arrowType argTy retTy))
+      (hx : MeTTaType s x argTy) :
+      MeTTaType s (.apply c [x]) retTy
+
+  | arrowAppUnknown (c : String) (x argTy retTy : Pattern)
+      (hf : MeTTaType s (.apply c []) (arrowType argTy retTy)) :
+      MeTTaType s (.apply c [x]) undefinedType
+
+  | arrowMultiApp (c : String) (x argTy midTy retTy : Pattern)
+      (hf : MeTTaType s (.apply c []) (arrowType argTy (arrowType midTy retTy)))
+      (hx : MeTTaType s x argTy) :
+      MeTTaType s (.apply c [x]) (arrowType midTy retTy)
+
+  | symbolIsAtom (c : String) :
+      MeTTaType s (.apply c []) atomType
+
+  | appIsExpression (c : String) (args : List Pattern) (hne : args /= []) :
+      MeTTaType s (.apply c args) expressionType
+
+  | varIsUndefined (x : String) :
+      MeTTaType s (.fvar x) undefinedType
+\end{lstlisting}
+
+The eight constructors cover the key cases from the MeTTa spec's
+\code{check\_if\_function\_type\_is\_applicable} and \code{check\_argument\_type}
+predicates.  Arrow constructors use \code{c : String} as the function head
+(since \code{Pattern.apply : String $\to$ List Pattern $\to$ Pattern} requires a
+string head); a bare symbol \code{f} is represented as \code{.apply c []}.
+
+\subsection{Design Decisions}
+
+\paragraph{Types as patterns.}  The type language is \emph{the same} language as
+the term language; there is no separate sort.  This mirrors MeTTa's philosophy of
+a single, uniform atom space.
+
+\paragraph{Non-determinism.}  \code{MeTTaType} is a relation, not a function:
+a pattern may have multiple types simultaneously (e.g., every pattern has
+\code{\%Undefined\%} via \code{undefinedIsTop}, and separately may have a
+specific annotated type).
+
+\paragraph{Non-dependent fragment.}  We do not model type-level computation,
+dependent types, or the \code{Expression} type's special structural role in
+the full MeTTa spec.  These are left for future work.
+
+\paragraph{Function head restriction.}  Arrow rules require the function to be
+a bare symbol (\code{.apply c []}), not an arbitrary expression.  The
+\code{arrowApp} constructor therefore carries \code{c : String} rather than a
+general pattern.  This is the normal use case in MeTTa (function symbols are
+declared with \code{(: f (-> A B))} where \code{f} is a bare symbol).
+
+\subsection{Key Theorems}
+
+\begin{theorem}[\code{all\_spaces\_well\_typed}]
+Every \code{PeTTaSpace} is well-typed: for all \code{p}, \code{t},
+if \code{(: p t) $\in$ s.facts} then \code{MeTTaType s p t}.
+\end{theorem}
+
+\begin{proof}
+Directly by \code{MeTTaType.typeAnnotation}.
+\end{proof}
+
+\begin{theorem}[\code{typeOf\_mono\_addAtom}]
+Type judgments are monotone: if \code{MeTTaType s p t}, then
+\code{MeTTaType (s.addAtom f) p t} for any new fact \code{f}.
+\end{theorem}
+
+\begin{proof}
+By induction on the \code{MeTTaType} derivation, with
+\code{PeTTaSpace.mem\_facts\_addAtom} for the annotation case.
+\end{proof}
+
+\begin{theorem}[\code{every\_pattern\_has\_undefined\_type}]
+No pattern is type-less: \code{MeTTaType s p \%Undefined\%} for all \code{s} and \code{p}.
+\end{theorem}
+
+\begin{proof}
+Immediate by \code{MeTTaType.undefinedIsTop}.
+\end{proof}
+
+\begin{theorem}[\code{arrowApp\_implies\_f\_has\_arrow\_type}]
+If \code{(c x)} has a non-trivial type $t$ (i.e., $t \neq \code{\%Undefined\%}$,
+$t \neq \code{Expression}$) that does not arise from a direct annotation
+\code{(: (c x) t) $\in$ s.facts}, then the bare symbol \code{c} has some arrow type
+$\code{(-> A B)}$ in \code{s}.
+\end{theorem}
+
+\begin{proof}
+By cases on the \code{MeTTaType} derivation for \code{(.apply c [x])}; the
+\code{typeAnnotation} case is ruled out by hypothesis, \code{undefinedIsTop}
+by $t \neq \code{\%Undefined\%}$, \code{appIsExpression} by $t \neq \code{Expression}$;
+the remaining arrow cases all carry an \code{hf} witness.
+\end{proof}
+
+\subsection{Annotated Types Query}
+
+\begin{lstlisting}[language=lean]
+def PeTTaSpace.annotatedTypes (s : PeTTaSpace) (p : Pattern) : List Pattern :=
+  s.facts.filterMap fun fact =>
+    match fact with
+    | .apply ":" [p', t] => if p' == p then some t else none
+    | _                  => none
+\end{lstlisting}
+
+\begin{theorem}[\code{annotatedTypes\_sound}]
+Every type returned by \code{annotatedTypes s p} is derivable:
+$t \in \code{annotatedTypes}\ s\ p \Rightarrow \code{MeTTaType}\ s\ p\ t$.
+\end{theorem}
+
+\begin{proof}
+Via a private helper lemma \code{annotatedTypes\_filterMap\_aux} that performs
+case analysis on the \code{filterMap} body: only \code{.apply ":" [p', t']}
+facts where \code{p' = p} contribute, giving \code{(: p' t) $\in$ s.facts},
+from which \code{typeAnnotation} applies.  The \code{c $\neq$ ":"} branch
+uses \code{split} + head-symbol extraction to derive a contradiction.
+\end{proof}
+
+\subsection{Alignment with the MeTTa Specification}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{YY}
+\hline
+\textbf{MeTTa spec predicate} & \textbf{\code{MeTTaType} constructor} \\
+\hline
+\code{(: p t) $\in$ space}                                   & \code{typeAnnotation} \\
+\code{\%Undefined\%} as supertype                             & \code{undefinedIsTop} \\
+\codepath{check_if_function_type_is_applicable}               & \code{arrowApp}, \code{arrowMultiApp} \\
+\code{check\_argument\_type} (unknown arg)                    & \code{arrowAppUnknown} \\
+Bare symbols have type \code{Atom}                            & \code{symbolIsAtom} \\
+Non-nullary applications have type \code{Expression}          & \code{appIsExpression} \\
+Unbound variables have type \code{\%Undefined\%}              & \code{varIsUndefined} \\
+\hline
+\end{tabularx}
+\end{center}
+
+The \code{arrowAppUnknown} constructor handles the MeTTa spec's fallback: when
+argument type checking fails (the argument type does not match or is unknown),
+the result type is \code{\%Undefined\%} rather than a type error.
+
+%% ====================================================================
+\section{Prolog Goal Language and Expression Compilation}
+\label{sec:prolog}
+%% ====================================================================
+
+\PeTTa{}'s \code{translator.pl} compiles \MeTTa{} expressions into Prolog
+goals before evaluation.  We formalize this pipeline in three files.
+
+\subsection{Prolog Goal Language}
+
+\code{Logic/Prolog/Prolog.lean} (referenced via \code{PrologBridge.lean}, 125 lines)
+defines a Prolog-style goal language:
+
+\begin{lstlisting}[language=lean]
+inductive PrologGoal where
+  | reduceCall  : List Pattern -> PrologGoal
+  | spaceMatch  : Pattern -> Pattern -> PrologGoal
+  | findall     : String -> PrologGoal -> PrologGoal
+  | assertGoal  : Pattern -> PrologGoal
+  | conjGoal    : PrologGoal -> PrologGoal -> PrologGoal
+  | disjGoal    : PrologGoal -> PrologGoal -> PrologGoal
+  | trueGoal    : PrologGoal
+\end{lstlisting}
+
+The \code{reduceCall} constructor models PeTTa's \code{reduce/2} predicate;
+\code{findall} models \code{findall/3}; \code{assertGoal} models Prolog
+\code{assert/1}.  The constructors mirror the Prolog goal forms emitted by
+\code{translate\_expr/3}.
+
+\subsection{MeTTa Prolog Oracle}
+
+\code{PrologBridge.lean} wires the abstract \code{EvalOracle} to
+concrete \PeTTa{} semantics:
+
+\begin{lstlisting}[language=lean]
+def meTTaPrologOracle (s : PeTTaSpace) : EvalOracle where
+  call args outs := match args with
+    | [e] => PeTTaEval s e outs
+    | _   => False
+\end{lstlisting}
+
+The semantic contract: \code{oracle.call [e] outs $\leftrightarrow$
+PeTTaEval s e outs}.
+
+\subsection{Expression Compilation (\code{compileExpr})}
+
+\code{TranslateExpr.lean} (463 lines) defines the compilation pass and proves
+its correctness:
+
+\begin{lstlisting}[language=lean]
+def compileExpr : Pattern -> PrologGoal
+  | .fvar x               => .reduceCall [.fvar x]
+  | .apply c []           => .reduceCall [.apply c []]
+  | .apply "superpose" [.collection .vec alts none] =>
+      disjList (alts.map compileExpr)
+  | .apply "collapse" [body] =>
+      .findall "Out" (compileExpr body)
+  | .apply "match" [.apply "&self" [], pat, tmpl] =>
+      .spaceMatch pat tmpl
+  | e                     => .reduceCall [e]
+\end{lstlisting}
+
+\begin{theorem}[\code{compileExpr\_ruleApp\_iff}]
+For rule applications, compilation is sound and complete: a \code{reduceCall}
+Prolog evaluation of \code{compileExpr (.apply c args)} produces answer \code{q}
+if and only if \code{PeTTaEval s (.apply c args) [q]} holds via \code{ruleApp}.
+\end{theorem}
+
+\begin{theorem}[\code{compileExpr\_match\_correct}]
+For space queries, \code{compileExpr (match \&self pat tmpl)} evaluates under
+the Prolog oracle to exactly the answers produced by \code{PeTTaEval.spaceQuery}.
+\end{theorem}
+
+\begin{theorem}[\code{compileExpr\_superpose\_sound}]
+For superpose, the compiled disjunction is sound: each branch of the
+Prolog disjunction corresponds to a member of the superpose alternatives list.
+\end{theorem}
+
+The compilation covers \code{fvar}, ground atoms, \code{superpose},
+\code{collapse}, \code{match}, \code{if}, \code{let}, \code{case}, and a
+conservative catch-all for unrecognised forms.
+
+%% ====================================================================
+\section{4-Argument \MeTTa{} Evaluation}
+\label{sec:mettaeval}
+%% ====================================================================
+
+\code{OSLF/PeTTa/MeTTaEval.lean} (398 lines) refines \code{PeTTaEval} with three
+orthogonal features: binding threading, error propagation, and type-driven pass-through.
+
+\subsection{The \code{MeTTaEval} Judgment}
+
+\begin{lstlisting}[language=lean]
+inductive MeTTaEval (s : PeTTaSpace)
+    : Pattern -> Pattern -> Bindings -> EvalResult -> Prop where
+  | symbolPassThrough (c : String) (ty : Pattern) (bs : Bindings) :
+      MeTTaEval s (.apply c []) ty bs [(.apply c [], bs)]
+  | varPassThrough (x : String) (ty : Pattern) (bs : Bindings) :
+      MeTTaEval s (.fvar x) ty bs [(.fvar x, bs)]
+  | errorPassThrough (atom msg : Pattern) (ty : Pattern) (bs : Bindings) :
+      MeTTaEval s (.apply "Error" [atom, msg]) ty bs
+        [(.apply "Error" [atom, msg], bs)]
+  | ruleApp (r : RewriteRule) (mbs : Bindings) (p q : Pattern)
+      (ty : Pattern) (bs : Bindings)
+      (hr : r in s.rules) (hprem : r.premises = [])
+      (hm : mbs in matchPattern r.left p)
+      (hq : applyBindings mbs r.right = q) :
+      MeTTaEval s p ty bs [(q, mbs ++ bs)]
+  | spaceQuery ...
+  | superpose ...
+  | collapse ...
+\end{lstlisting}
+
+The type parameter \code{ty} flows through but does not affect reduction in the
+current fragment---it gates pass-through for special types
+(\code{\%Undefined\%}, \code{Atom}, \code{Expression}).
+
+\subsection{Embedding into \code{PeTTaEval}}
+
+\begin{theorem}[\code{meTTaEval\_ruleApp\_to\_pettaEval}]
+The \code{ruleApp} case of \code{MeTTaEval} projects faithfully to
+\code{PeTTaEval.ruleApp}.
+\end{theorem}
+
+Similar projection theorems hold for \code{spaceQuery}, \code{superpose},
+and \code{collapse}.
+
+\subsection{Standard Library (\code{StdLib.lean}, 309 lines)}
+
+\code{StdLib.lean} defines derived evaluation forms for \PeTTa{}'s standard
+operations: \code{if-equal} (conditional on pattern equality), \code{car-atom}
+(head extraction), \code{cdr-atom} (tail extraction), \code{let} and
+\code{let*} (sequential binding), \code{case} (pattern matching), and
+\code{sealed} (scope isolation).  Each is defined as a specialized
+\code{MeTTaEval} step and proved sound against the base evaluation relation.
+
+\subsection{Grounded Oracles (\code{GroundedOracle.lean}, 297 lines)}
+
+\code{GroundedOracle.lean} formalizes the interface for grounded (external)
+functions in \MeTTa{}: arithmetic, string operations, and type-checking predicates.
+A \code{GroundedFn} is a deterministic function \code{List Pattern $\to$
+Option (List Pattern)}; the \code{groundedApp} evaluation constructor fires
+when the head symbol is a registered grounded function and the oracle succeeds.
+
+\subsection{Typed Evaluation (\code{TypedEval.lean}, 296 lines)}
+
+\code{TypedEval.lean} integrates \code{MeTTaType} (Section~\ref{sec:typesystem})
+with \code{MeTTaEval}: the \code{TypedEvalStep} judgment combines a type
+derivation with an evaluation step, ensuring that the input expression and
+its type are consistent.  Key properties include type preservation under
+evaluation and type soundness for the pass-through cases.
+
+%% ====================================================================
+\section{\OSLF{} Pipeline and GSLT Integration}
+\label{sec:oslf}
+%% ====================================================================
+
+\code{OSLF/PeTTa/OSLFInstance.lean} (144 lines) and
+\code{OSLF/PeTTa/GSLTVertex.lean} (103 lines) compose the \PeTTa{} specification
+stack into the \OSLF{} framework.
+
+\subsection{OSLF Type System}
+
+The key definition composes \code{pettaSpaceToLangDef} (from
+Section~\ref{sec:petta}) with the generic \OSLF{} type synthesis:
+
+\begin{lstlisting}[language=lean]
+def pettaOSLF (s : PeTTaSpace) :=
+  langOSLF (pettaSpaceToLangDef s) "Expr"
+
+theorem pettaGalois (s : PeTTaSpace) :
+    GaloisConnection (langDiamond (pettaSpaceToLangDef s))
+                     (langBox (pettaSpaceToLangDef s)) :=
+  langGalois (pettaSpaceToLangDef s)
+\end{lstlisting}
+
+The Galois connection $\Diamond \dashv \Box$ is obtained automatically from
+the generic \OSLF{} infrastructure.
+
+\begin{theorem}[\code{pettaDiamond\_spec}]
+$\Diamond\varphi(p) \leftrightarrow \exists q,\ \code{langReduces}\ p\ q \wedge \varphi(q)$.
+\end{theorem}
+
+\begin{theorem}[\code{pettaBox\_spec}]
+$\Box\varphi(p) \leftrightarrow \forall q,\ \code{langReduces}\ q\ p \to \varphi(q)$.
+\end{theorem}
+
+\subsection{LP Soundness Bridge}
+
+\begin{theorem}[\code{pettaOSLF\_lp\_sound}]
+For LP-safe \PeTTa{} spaces, any \OSLF{} diamond witness via \code{ruleApp}
+is backed by LP model membership.
+\end{theorem}
+
+This composes \code{matchPattern\_correct} (Section~\ref{sec:matchspec}) with
+\code{lp\_complete\_topRule} (Section~\ref{sec:bridge}) through the \OSLF{} pipeline.
+
+\subsection{Rust Export}
+
+\begin{lstlisting}[language=lean]
+def pettaRenderRust (s : PeTTaSpace) : String :=
+  renderLanguage (pettaSpaceToLangDef s)
+
+def pettaWriteRust (path : FilePath) (s : PeTTaSpace) : IO Unit :=
+  writeLanguage path (pettaSpaceToLangDef s)
+\end{lstlisting}
+
+These produce \code{language! \{ ... \}} macro text consumable by the
+\code{mettail-rust} runtime.
+
+\subsection{GSLT Forward Fiber}
+
+\code{GSLTVertex.lean} provides a unit-indexed GSLT forward fiber, following the
+governance pattern from the companion \OSLF{} paper:
+
+\begin{lstlisting}[language=lean]
+def pettaIdMorphism (s : PeTTaSpace) :
+    ForwardMorphism (pettaSpaceToLangDef s)
+                    (pettaSpaceToLangDef s) where
+  mapTerm := id
+  forward_sim _ q hred := <q, .single hred, rfl>
+
+def pettaForwardFiber (s : PeTTaSpace) : ForwardFiber Unit where
+  lang  := fun _ => pettaSpaceToLangDef s
+  morph := fun _ => pettaIdMorphism s
+\end{lstlisting}
+
+This places \PeTTa{} as a degenerate (constant) vertex in the GSLT hypercube,
+enabling categorical composition with other language fibers (PathMap, Governance,
+Temporal).
+
+%% ====================================================================
+\section{Related Work}
+\label{sec:related}
+%% ====================================================================
+
+\paragraph{LP semantics.}
+The Herbrand model semantics for LP was established by van Emden and
+Kowalski~\cite{vanEmdenKowalski1976}, who proved the equivalence of operational
+(SLD resolution) and declarative (least model) semantics for Horn clause programs.
+Lloyd's monograph~\cite{Lloyd1987} remains the standard reference.  Our
+formalization follows Chapter~2 of Lloyd directly, using \code{OrderHom.lfp}
+from Mathlib to realise Tarski's theorem on the set lattice.
+
+\paragraph{Lean 4 LP/logic formalization.}
+The Mettapedia project contains a separate Datalog formalization
+(formerly in \code{Mettapedia/Logic/Datalog/}, now consolidated into \code{Logic/LP/}),
+which covered the Datalog fragment without function symbols.  The present
+LP kernel generalises this to function symbols, enabling the pattern encoding.
+We are not aware of other full-stack LP-to-pattern-matching soundness formalizations
+in Lean~4.
+
+\paragraph{\MeTTa{} and Hyperon.}
+MeTTa and the Hyperon architecture are described in Goertzel et al.~\cite{goertzel2009pln}.
+The PLN reasoning layer is formalized in other Mettapedia papers
+(see \code{Mettapedia/Logic/PLNCore.lean} et al.).
+The \OSLF{} framework and its modal type system are formalized separately
+in the companion paper~\cite{leanOSLF2025}.
+
+\paragraph{Certified pattern matching.}
+Pattern matching correctness for a locally-nameless $\lambda$-calculus was studied
+by Aydemir et al.~\cite{AydemarPOPL2008}.  Our \code{isMatchCorrect} fragment
+corresponds to the ``linear'' fragment where each pattern variable occurs exactly
+once, plus the exclusion of collection patterns whose bag-matching non-determinism
+prevents uniqueness of the reconstructed term.
+
+\paragraph{Prolog formalization.}
+Formalizations of SLD resolution correctness are a classical topic; our treatment
+follows Lloyd's presentation~\cite{Lloyd1987} mechanized in Lean~4's type theory.
+
+\paragraph{Connection tableaux and leanCoP lineage.}
+Connection-style calculi go back to Bibel's matrix/connection method
+tradition~\cite{Bibel1987}.  leanCoP operationalized this line with a compact
+Prolog implementation and practical connection-tableau search control
+~\cite{Otten2010leanCoP}.  Our propositional chainer layer is not a full reproof
+of leanCoP, but it follows the same proof-object shape (reduce/extend traces),
+and, crucially, adds Lean-certified replay soundness and executable DFS
+refinement theorems.
+
+%% ====================================================================
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+%% ====================================================================
+
+We have presented a Lean~4 formalization of the \PeTTa{} language comprising
+13{,}956 lines across 44 files with zero sorries and zero custom axioms.
+The formalization establishes a certified end-to-end pipeline: from LP
+foundations (Herbrand model, SLD resolution, unification completeness) through
+\MeTTaIL{} pattern matching correctness and LP soundness for \PeTTa{}
+rule application, to a Prolog-style goal language with expression compilation,
+a full 4-argument evaluation judgment with grounded oracles and standard
+library forms, and finally an \OSLF{} type system with automatic
+$\Diamond \dashv \Box$ Galois connection and Rust code export.
+
+\paragraph{Future work.}
+\begin{itemize}
+\item \textbf{Bridge converse direction.} The current bridge completeness result
+  shows $\code{DeclReduces} \Rightarrow \mathrm{LHM}$; the converse
+  ($\mathrm{LHM} \Rightarrow \code{DeclReduces}$) requires a constrained
+  encoding discipline and a constructive lifting theorem from LP witnesses back
+  into \MeTTaIL{} reductions.  Range restriction (\code{RangeRestriction.lean})
+  is partially formalized.
+\item \textbf{First-order connection search refinement.} The propositional
+  connection-tableau layer is fully certified; extending executable refinement
+  and witness-level completeness to the full first-order
+  trace/substitution layer (\code{FirstOrderConnectionTrace.lean}) is
+  ongoing work.
+\item \textbf{Dependent types.} The current type system fragment covers
+  annotations, arrow application, and pass-through types.  Formalizing
+  type-level computation and dependent types would complete the alignment
+  with the HE \MeTTa{} spec.
+\item \textbf{Multi-space evaluation.} The current formalization uses a single
+  \code{\&self} atomspace.  Extending to multi-space evaluation
+  (\code{new-space}, \code{bind!}) would capture the full \MeTTa{} import
+  and module system.
+\end{itemize}
+
+\appendix
+\section{Theorem Index}
+
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabularx}{\linewidth}{YYc}
+\hline
+\textbf{Layer} & \textbf{Canonical theorem} & \textbf{Status} \\
+\hline
+\multicolumn{3}{l}{\textit{LP Kernel}} \\
+Unification (FO, semantic $\Rightarrow$ executable) &
+\codepath{unifyFuel_exists_of_unifies} &
+proved \\
+Unification (function-free) &
+\codepath{unifyFuel_exists_of_unifies_functionFree} &
+proved \\
+SLD query completeness from semantic lift &
+\codepath{sldQuery_complete_of_semantic_lift} &
+proved \\
+SLD query complete+sound bundle &
+\codepath{sldQuery_complete_sound_bundle_of_semantic_lift} &
+proved \\
+\hline
+\multicolumn{3}{l}{\textit{ATP/Chainer}} \\
+Propositional connection DFS soundness &
+\codepath{connProveDFS_sound} &
+proved \\
+Propositional connection DFS witness completeness &
+\codepath{connProveDFS_witness_complete} &
+proved \\
+FO connection DFS soundness &
+\codepath{connProveFODFS_sound} &
+proved \\
+FO connection DFS witness completeness &
+\codepath{connProveFODFS_witness_complete} &
+proved \\
+\hline
+\multicolumn{3}{l}{\textit{MeTTaIL/PeTTa Bridge}} \\
+Pattern matching correctness &
+\codepath{matchPattern_correct} &
+proved \\
+MeTTaIL--LP completeness &
+\codepath{lp_complete} &
+proved \\
+PeTTa ruleApp LP soundness &
+\codepath{petta_ruleApp_lp_sound} &
+proved \\
+\hline
+\multicolumn{3}{l}{\textit{Prolog Compilation}} \\
+compileExpr ruleApp correctness &
+\codepath{compileExpr_ruleApp_iff} &
+proved \\
+compileExpr match correctness &
+\codepath{compileExpr_match_correct} &
+proved \\
+compileExpr superpose soundness &
+\codepath{compileExpr_superpose_sound} &
+proved \\
+\hline
+\multicolumn{3}{l}{\textit{OSLF Pipeline}} \\
+PeTTa Galois connection &
+\codepath{pettaGalois} &
+proved \\
+OSLF LP soundness bridge &
+\codepath{pettaOSLF_lp_sound} &
+proved \\
+GSLT forward fiber &
+\codepath{pettaForwardFiber} &
+proved \\
+\hline
+\end{tabularx}
+\normalsize
+\caption{Compact theorem index for the certified \PeTTa{} formalization.}
+\label{tab:completeness-index}
+\end{table}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

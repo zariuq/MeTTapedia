@@ -17,8 +17,14 @@ jobs:
         run: ./scripts/check_native_decide_guard.sh --scope changed
       - name: PyashGF 6GB clean-build gate
         run: ./scripts/check_pyashgf_6gb.sh
+      - name: Pyash English semantic coverage gate
+        run: ./scripts/check_pyash_english_semantic_coverage.sh
+      - name: GF English linearization coverage gate
+        run: ./scripts/check_gf_english_linearization_coverage.sh
       - uses: leanprover/lean-action@v1
       - name: Chapter 11 quantifier regression
         run: ./scripts/check_ch11_quantifiers.sh
       - name: Chapter 11 fuzzy syllogism regression
         run: ./scripts/check_ch11_fuzzy_syllogism.sh
+      - name: Chapter 13 inference-control regression
+        run: ./scripts/check_ch13_inference_control.sh

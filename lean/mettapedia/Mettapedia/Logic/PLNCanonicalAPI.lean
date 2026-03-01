@@ -9,9 +9,13 @@ import Mettapedia.Logic.PLNXiCarrierScreening
 import Mettapedia.Logic.PLNXiDerivedBNRules
 import Mettapedia.Logic.PLNIntensionalWorldModel
 import Mettapedia.Logic.IntensionalInheritanceSolomonoffBridge
-import Mettapedia.Logic.PLNChapter13InferenceControl
+import Mettapedia.Logic.PLNInferenceControlCore
+import Mettapedia.Logic.PLNInferenceControlAlgorithms
+import Mettapedia.Logic.PLNInferenceControlChainer
+import Mettapedia.Logic.PLNInferenceControlExamples
 import Mettapedia.Logic.PLNProbabilisticEventCalculus
 import Mettapedia.Logic.PLNColliderSingletonBridge
+import Mettapedia.Logic.PLNErrorMagnificationGrounding
 import Mettapedia.Logic.PLNNARSRuleCorrespondence
 import Mettapedia.Logic.PLNEndToEnd
 import Mettapedia.Logic.EvidenceQuantale
@@ -101,19 +105,67 @@ abbrev plnToNARSTV :=
 /-! ## Chapter-13 Inference-Control Core Endpoints -/
 
 noncomputable abbrev ch13ScorePooled :=
-  @Mettapedia.Logic.PLNChapter13InferenceControl.ch13ScorePooled
+  @Mettapedia.Logic.PLNInferenceControlCore.ch13ScorePooled
 
 noncomputable abbrev ch13ScoreTwoStage :=
-  @Mettapedia.Logic.PLNChapter13InferenceControl.ch13ScoreTwoStage
+  @Mettapedia.Logic.PLNInferenceControlCore.ch13ScoreTwoStage
 
 abbrev ch13_selector_default_ranking_iff :=
-  @Mettapedia.Logic.PLNChapter13InferenceControl.ch13_selector_default_ranking_iff
+  @Mettapedia.Logic.PLNInferenceControlCore.ch13_selector_default_ranking_iff
 
 abbrev ch13_stable_pooled_of_twoStage :=
-  @Mettapedia.Logic.PLNChapter13InferenceControl.ch13_stable_pooled_of_twoStage
+  @Mettapedia.Logic.PLNInferenceControlCore.ch13_stable_pooled_of_twoStage
 
 abbrev ch13_inferenceControl_end_to_end :=
-  @Mettapedia.Logic.PLNChapter13InferenceControl.ch13_inferenceControl_end_to_end
+  @Mettapedia.Logic.PLNInferenceControlCore.ch13_inferenceControl_end_to_end
+
+noncomputable abbrev ch13_greedyPick? :=
+  @Mettapedia.Logic.PLNInferenceControlAlgorithms.greedyPick?
+
+noncomputable abbrev ch13_greedySelect :=
+  @Mettapedia.Logic.PLNInferenceControlAlgorithms.greedySelect
+
+abbrev ch13_greedySelect_chain_of_le_card :=
+  @Mettapedia.Logic.PLNInferenceControlAlgorithms.greedySelect_chain_of_le_card
+
+abbrev ch13_inferenceControl_end_to_end_algorithmic :=
+  @Mettapedia.Logic.PLNInferenceControlAlgorithms.ch13_inferenceControl_end_to_end_algorithmic
+
+noncomputable abbrev ch13_forwardStep :=
+  @Mettapedia.Logic.PLNInferenceControlChainer.forwardStep
+
+noncomputable abbrev ch13_forwardSearch :=
+  @Mettapedia.Logic.PLNInferenceControlChainer.forwardSearch
+
+noncomputable abbrev ch13_backwardStep :=
+  @Mettapedia.Logic.PLNInferenceControlChainer.backwardStep
+
+noncomputable abbrev ch13_backwardSearch :=
+  @Mettapedia.Logic.PLNInferenceControlChainer.backwardSearch
+
+noncomputable abbrev ch13_boundedSearch :=
+  @Mettapedia.Logic.PLNInferenceControlChainer.boundedSearch
+
+abbrev ch13_forwardSearch_chain_of_le_card :=
+  @Mettapedia.Logic.PLNInferenceControlChainer.forwardSearch_chain_of_le_card
+
+abbrev ch13_forwardSearch_one_minus_exp_bound_of_le_card :=
+  @Mettapedia.Logic.PLNInferenceControlChainer.forwardSearch_one_minus_exp_bound_of_le_card
+
+abbrev ch13_boundedSearch_eq_forwardSearch_of_card_le_topK :=
+  @Mettapedia.Logic.PLNInferenceControlChainer.boundedSearch_eq_forwardSearch_of_card_le_topK
+
+abbrev ch13_bool_end_to_end_algorithmic :=
+  Mettapedia.Logic.PLNInferenceControlExamples.ch13_bool_end_to_end_algorithmic
+
+abbrev ch13_bool_coverage_exact_one :=
+  Mettapedia.Logic.PLNInferenceControlExamples.ch13_bool_coverage_exact_one
+
+abbrev ch13_fin3_end_to_end_algorithmic_topK2 :=
+  Mettapedia.Logic.PLNInferenceControlExamples.ch13_fin3_end_to_end_algorithmic_topK2
+
+abbrev ch13_fin3_coverage_exact_two :=
+  Mettapedia.Logic.PLNInferenceControlExamples.ch13_fin3_coverage_exact_two
 
 /-! ## Canonical rule-strength names -/
 
@@ -163,6 +215,44 @@ abbrev WMStrengthRuleSigma (State : Type*) (Srt : Type*) (Query : Srt → Type*)
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.WorldModelSigma State Srt Query] :=
   PLNWorldModel.WorldModelSigma.WMStrengthRuleSigma State Srt Query
+
+/-! ## Error-Magnification Grounding Aliases -/
+
+noncomputable abbrev queryConfidence {State Query : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModel State Query] :=
+  @PLNErrorMagnificationGrounding.queryConfidence
+
+noncomputable abbrev queryConfidenceSigma {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  @PLNErrorMagnificationGrounding.queryConfidenceSigma
+
+noncomputable abbrev thresholdAtomSemOfWMQConfidence {State Query : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModel State Query] :=
+  @PLNErrorMagnificationGrounding.thresholdAtomSemOfWMQConfidence
+
+noncomputable abbrev thresholdAtomSemOfWMQSigmaConfidence {State Srt : Type*}
+    {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  @PLNErrorMagnificationGrounding.thresholdAtomSemOfWMQSigmaConfidence
+
+abbrev wmRewriteRule_threshold_atom_confidence :=
+  @PLNErrorMagnificationGrounding.wmRewriteRule_threshold_atom_confidence
+
+abbrev wmRewriteRuleSigma_threshold_atom_confidence :=
+  @PLNErrorMagnificationGrounding.wmRewriteRuleSigma_threshold_atom_confidence
+
+abbrev rewrite_then_queryEq_threshold_atom_confidence_sigma :=
+  @PLNErrorMagnificationGrounding.rewrite_then_queryEq_threshold_atom_confidence_sigma
+
+abbrev double_damping_underestimates_of_queries :=
+  @PLNErrorMagnificationGrounding.double_damping_underestimates_of_queries
+
+abbrev threshold_gap_of_double_damping_of_queries :=
+  @PLNErrorMagnificationGrounding.threshold_gap_of_double_damping_of_queries
 
 /-! ## ITV semantics canonical aliases -/
 

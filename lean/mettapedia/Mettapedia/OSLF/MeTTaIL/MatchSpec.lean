@@ -526,35 +526,296 @@ theorem engine_complete_rel {lang : LanguageDef} {p q : Pattern}
     (h : DeclReducesRel lang p q) : q ∈ rewriteWithContext lang p :=
   engine_complete (declReduces_of_declReducesRel h)
 
+/-! ## mergeBindings Subsumption
+
+Fold invariants for `mergeBindings b1 b2 = some bs`:
+- Left: every binding in `b1` is preserved in `bs`.
+- Right: every binding in `b2` is present in `bs`. -/
+
+/-- Fold invariant (left): if `(x, v)` is findable in the accumulator before the fold,
+    it remains findable (with the same value) in the final result. -/
+private theorem foldlM_merge_preserves_left (b2 : Bindings) (acc bs : Bindings)
+    (hfold : List.foldlM (fun acc' pair =>
+      match acc'.find? (·.1 == pair.1) with
+      | none => some (pair :: acc')
+      | some (_, existing) => if existing == pair.2 then some acc' else none) acc b2 = some bs)
+    {x : String} {v : Pattern}
+    (hx : acc.find? (·.1 == x) = some (x, v)) :
+    bs.find? (·.1 == x) = some (x, v) := by
+  induction b2 generalizing acc with
+  | nil =>
+    simp only [List.foldlM_nil, Option.pure_def, Option.some.injEq] at hfold
+    subst hfold; exact hx
+  | cons pair tl ih =>
+    obtain ⟨name, val⟩ := pair
+    simp only [List.foldlM_cons] at hfold
+    dsimp only [Bind.bind, Option.bind] at hfold
+    cases hn : acc.find? (fun p => p.1 == (name, val).1) with
+    | none =>
+      simp only [hn] at hfold
+      apply ih _ hfold
+      simp only [List.find?_cons]
+      by_cases hname : (name, val).1 == x
+      · simp only [hname]
+        have : (fun (p : String × Pattern) => p.1 == name) = (·.1 == x) := by
+          ext p; simp [show name = x from beq_iff_eq.mp hname]
+        rw [this] at hn; rw [hn] at hx; exact absurd hx (by simp)
+      · simp only [hname]; exact hx
+    | some p =>
+      obtain ⟨s, e⟩ := p
+      simp only [hn] at hfold
+      cases heq : (e == (name, val).2)
+      · simp only [heq] at hfold; simp at hfold
+      · simp only [heq] at hfold; exact ih _ hfold hx
+
+/-- If `(x, v)` is in `b1` and `mergeBindings b1 b2 = some bs`, then `bs` finds `x → v`. -/
+theorem mergeBindings_subsumed_left {b1 b2 bs : Bindings}
+    (hm : mergeBindings b1 b2 = some bs)
+    {x : String} {v : Pattern}
+    (hx : b1.find? (·.1 == x) = some (x, v)) :
+    bs.find? (·.1 == x) = some (x, v) := by
+  apply foldlM_merge_preserves_left b2 b1 bs _ hx
+  simpa [mergeBindings] using hm
+
+/-- Helper: extract the first component from a successful `find?` on `Bindings`. -/
+private theorem find?_fst_eq {bs : Bindings} {x : String} {p : String × Pattern}
+    (hf : bs.find? (·.1 == x) = some p) : p.1 = x := by
+  have := List.find?_some hf
+  exact beq_iff_eq.mp this
+
+/-- If `(x, v)` is in `b2` and `mergeBindings b1 b2 = some bs`, then `bs` finds `x → v`. -/
+theorem mergeBindings_subsumed_right {b1 b2 bs : Bindings}
+    (hm : mergeBindings b1 b2 = some bs)
+    {x : String} {v : Pattern}
+    (hx : b2.find? (·.1 == x) = some (x, v)) :
+    bs.find? (·.1 == x) = some (x, v) := by
+  induction b2 generalizing b1 with
+  | nil => simp at hx
+  | cons pair tl ih =>
+    obtain ⟨name, val⟩ := pair
+    simp only [List.find?_cons] at hx
+    simp only [mergeBindings, List.foldlM_cons] at hm
+    dsimp only [Bind.bind, Option.bind] at hm
+    by_cases hname : name == x
+    · -- head matches x: hx says (name, val) = (x, v)
+      simp only [hname, Option.some.injEq] at hx
+      have hneq : name = x := (Prod.ext_iff.mp hx).1
+      have hveq : val = v := (Prod.ext_iff.mp hx).2
+      rw [hneq, hveq] at hm
+      cases hn : b1.find? (fun p => p.1 == x) with
+      | none =>
+        rw [show (fun (p : String × Pattern) => p.1 == (x, v).1) = (fun p => p.1 == x) from rfl,
+            hn] at hm
+        apply foldlM_merge_preserves_left tl ((x, v) :: b1) bs
+        · exact hm
+        · simp
+      | some p =>
+        obtain ⟨s, e⟩ := p
+        rw [show (fun (p : String × Pattern) => p.1 == (x, v).1) = (fun p => p.1 == x) from rfl,
+            hn] at hm
+        cases heq : (e == v)
+        · simp only [heq] at hm; simp at hm
+        · simp only [heq] at hm
+          have hs : s = x := by
+            have := List.find?_some hn; exact beq_iff_eq.mp this
+          have he : e = v := beq_iff_eq.mp heq
+          subst hs he
+          apply foldlM_merge_preserves_left tl b1 bs
+          · exact hm
+          · exact hn
+    · -- head doesn't match x → recurse into tail
+      simp only [hname] at hx
+      cases hn : b1.find? (fun p => p.1 == (name, val).1) with
+      | none =>
+        simp only [hn] at hm
+        exact ih hm hx
+      | some p =>
+        obtain ⟨s, e⟩ := p
+        simp only [hn] at hm
+        cases heq : (e == (name, val).2)
+        · simp only [heq] at hm; simp at hm
+        · simp only [heq] at hm
+          exact ih hm hx
+
+/-! ## Bindings Extension -/
+
+/-- Bindings `bs'` extends `bs`: every variable value in `bs` is preserved in `bs'`. -/
+def BindingsExtends (bs bs' : Bindings) : Prop :=
+  ∀ x v, bs.find? (·.1 == x) = some (x, v) → bs'.find? (·.1 == x) = some (x, v)
+
+private theorem extends_trans {b1 b2 b3 : Bindings}
+    (h12 : BindingsExtends b1 b2) (h23 : BindingsExtends b2 b3) : BindingsExtends b1 b3 :=
+  fun x v hx => h23 x v (h12 x v hx)
+
+private theorem extends_of_mergeBindings_left {b1 b2 bs : Bindings}
+    (hm : mergeBindings b1 b2 = some bs) : BindingsExtends b1 bs :=
+  fun _ _ hx => mergeBindings_subsumed_left hm hx
+
+private theorem extends_of_mergeBindings_right {b1 b2 bs : Bindings}
+    (hm : mergeBindings b1 b2 = some bs) : BindingsExtends b2 bs :=
+  fun _ _ hx => mergeBindings_subsumed_right hm hx
+
+/-! ## isMatchCorrectListAux ↔ forall -/
+
+private theorem isMatchCorrectListAux_iff_forall (l : List Pattern) :
+    isMatchCorrectListAux l = true ↔ ∀ p ∈ l, Pattern.isMatchCorrect p = true := by
+  induction l with
+  | nil => simp [isMatchCorrectListAux]
+  | cons p ps ih =>
+    simp only [isMatchCorrectListAux, Bool.and_eq_true,
+               List.mem_cons, forall_eq_or_imp]
+    exact ⟨fun ⟨hp, hps⟩ => ⟨hp, ih.mp hps⟩, fun ⟨hp, hps⟩ => ⟨hp, ih.mpr hps⟩⟩
+
+/-! ## matchRel_correct: Correctness for isMatchCorrect patterns
+
+The stronger `correct_all_strong` proves: for `isMatchCorrect` patterns,
+`applyBindings bs' pat = t` for **any** extension `bs' ⊇ bs`. This handles
+the `MatchArgsRel.cons` case where child bindings `hb` and `tb` are merged
+into `bs`, but the IH is over `hb` (resp. `tb`), not `bs`.
+-/
+
+private theorem correct_all_strong (n : Nat) :
+    (∀ pat t bs, sizeOf pat ≤ n →
+      Pattern.isMatchCorrect pat = true →
+      MatchRel pat t bs →
+      ∀ bs', BindingsExtends bs bs' → applyBindings bs' pat = t) ∧
+    (∀ pargs targs bs, sizeOf pargs ≤ n →
+      (∀ p ∈ pargs, Pattern.isMatchCorrect p = true) →
+      MatchArgsRel pargs targs bs →
+      ∀ bs', BindingsExtends bs bs' → pargs.map (applyBindings bs') = targs) := by
+  induction n with
+  | zero =>
+    refine ⟨?_, ?_⟩
+    · intro pat _ _ hle; exact absurd hle (by have := sizeOf_pattern_pos pat; omega)
+    · intro pargs _ _ hle _ h
+      cases h with
+      | nil => intro _ _; rfl
+      | cons => exact absurd hle (by simp [sizeOf, List._sizeOf_1]; try omega)
+  | succ m ih =>
+    obtain ⟨ih_pat, ih_args⟩ := ih
+    refine ⟨?_, ?_⟩
+    -- MatchRel case
+    · intro pat t bs hle hmc h bs' hext
+      cases h with
+      | fvar =>
+        rename_i x
+        simp only [applyBindings]
+        have : bs'.find? (·.1 == x) = some (x, t) :=
+          hext x t (by simp [List.find?])
+        simp [this]
+      | bvar => simp [applyBindings]
+      | apply hargs hlen =>
+        rename_i pargs targs c
+        simp only [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
+        simp only [applyBindings]; congr 1
+        exact ih_args pargs targs bs
+          (by have := sizeOf_args_lt_apply c pargs; omega)
+          ((isMatchCorrectListAux_iff_forall pargs).mp hmc) hargs bs' hext
+      | lambda hmatch =>
+        rename_i bodyPat bodyConcrete
+        simp only [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
+        simp only [applyBindings]; congr 1
+        exact ih_pat bodyPat bodyConcrete bs
+          (by have := sizeOf_body_lt_lambda bodyPat; omega) hmc hmatch bs' hext
+      | multiLambda hmatch =>
+        rename_i bodyPat bodyConcrete n'
+        simp only [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
+        simp only [applyBindings]; congr 1
+        exact ih_pat bodyPat bodyConcrete bs
+          (by have := sizeOf_body_lt_multiLambda n' bodyPat; omega) hmc hmatch bs' hext
+      | collection _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
+      | subst _ _ _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
+    -- MatchArgsRel case
+    · intro pargs targs bs hle hmc h bs' hext
+      cases h with
+      | nil => simp [List.map]
+      | cons hmatch hargs hmerge =>
+        rename_i p t hb ps ts tb
+        simp only [List.map, List.cons.injEq]
+        constructor
+        · exact ih_pat p t hb
+            (by have := sizeOf_head_lt_cons p ps; omega)
+            (hmc p (List.mem_cons_self))
+            hmatch bs'
+            (extends_trans (extends_of_mergeBindings_left hmerge) hext)
+        · exact ih_args ps ts tb
+            (by have := sizeOf_tail_lt_cons p ps; omega)
+            (fun q hq => hmc q (List.mem_cons_of_mem p hq))
+            hargs bs'
+            (extends_trans (extends_of_mergeBindings_right hmerge) hext)
+
+/-! ## Public API -/
+
+/-- For `isMatchCorrect` patterns, `MatchRel pat t bs` implies `applyBindings bs pat = t`. -/
+theorem matchRel_correct {pat t : Pattern} {bs : Bindings}
+    (h : MatchRel pat t bs)
+    (hmc : Pattern.isMatchCorrect pat = true) :
+    applyBindings bs pat = t :=
+  (correct_all_strong (sizeOf pat)).1 pat t bs (Nat.le_refl _) hmc h bs (fun _ _ hx => hx)
+
+/-- For `isMatchCorrect` arg lists, correctness of `applyBindings` over the list. -/
+theorem matchArgsRel_correct {pargs targs : List Pattern} {bs : Bindings}
+    (h : MatchArgsRel pargs targs bs)
+    (hmc : ∀ p ∈ pargs, Pattern.isMatchCorrect p = true) :
+    pargs.map (applyBindings bs) = targs :=
+  (correct_all_strong (sizeOf pargs)).2 pargs targs bs (Nat.le_refl _) hmc h bs
+    (fun _ _ hx => hx)
+
+/-- If `bs ∈ matchPattern pat t` and `pat.isMatchCorrect`, then `applyBindings bs pat = t`. -/
+theorem matchPattern_correct {pat t : Pattern} {bs : Bindings}
+    (h : bs ∈ matchPattern pat t)
+    (hmc : Pattern.isMatchCorrect pat = true) :
+    applyBindings bs pat = t :=
+  matchRel_correct (matchPattern_sound h) hmc
+
+/-! ## Falsity: matchPattern_correct is FALSE without isMatchCorrect
+
+Bag matching can pick elements out of order, producing bindings where
+`applyBindings bs pat` reorders elements vs. the target `t`. -/
+
+/-- Explicit counterexample: bag matching can produce incorrect bindings.
+    Pattern `[fvar x, fvar y]` matched against `[b, a]` can yield `bs = [x→a, y→b]`
+    via `matchBag` picking `i=1` first, so `applyBindings bs pat = [a, b] ≠ [b, a]`. -/
+theorem matchPattern_correct_false :
+    ∃ (pat t : Pattern) (bs : Bindings),
+        bs ∈ matchPattern pat t ∧ applyBindings bs pat ≠ t := by
+  refine ⟨.collection .vec [.fvar "x", .fvar "y"] none,
+           .collection .vec [.apply "b" [], .apply "a" []] none,
+           [("y", .apply "b" []), ("x", .apply "a" [])], ?_, ?_⟩
+  · -- membership: matchBag picks i=1 first, giving x→a, y→b (swapped order)
+    simp only [matchPattern, matchBag, List.flatMap, List.zipIdx,
+               mergeBindings, BEq.beq]
+    decide
+  · -- applyBindings gives [a, b] ≠ [b, a]
+    simp [applyBindings, List.find?, List.map, List.append_nil]
+
 /-! ## Summary
 
 **0 sorries. 0 axioms.**
 
 ### Relational Specification
-- `MatchRel`: relational spec of `matchPattern`
-- `MatchArgsRel`: relational spec of `matchArgs`
-- `MatchBagRel`: relational spec of `matchBag`
+- `MatchRel`, `MatchArgsRel`, `MatchBagRel`
 
-### Soundness (executable -> relational)
-- `matchPattern_sound`: `bs ∈ matchPattern pat t -> MatchRel pat t bs`
-- `matchArgs_sound`: `bs ∈ matchArgs pargs targs -> MatchArgsRel pargs targs bs`
-- `matchBag_sound`: `bs ∈ matchBag ppats rest ct telems -> MatchBagRel ppats rest ct telems bs`
+### Soundness / Completeness / Equivalence
+- `matchPattern_sound` / `matchRel_complete` / `matchPattern_iff_matchRel`
+- `matchArgs_sound` / `matchArgsRel_complete` / `matchArgs_iff_matchArgsRel`
+- `matchBag_sound` / `matchBagRel_complete` / `matchBag_iff_matchBagRel`
 
-### Completeness (relational -> executable)
-- `matchRel_complete`: `MatchRel pat t bs -> bs ∈ matchPattern pat t`
-- `matchArgsRel_complete`: `MatchArgsRel pargs targs bs -> bs ∈ matchArgs pargs targs`
-- `matchBagRel_complete`: `MatchBagRel ppats rest ct telems bs -> bs ∈ matchBag ppats rest ct telems`
+### mergeBindings Subsumption
+- `mergeBindings_subsumed_left` / `mergeBindings_subsumed_right`
 
-### Full Equivalences
-- `matchPattern_iff_matchRel`
-- `matchArgs_iff_matchArgsRel`
-- `matchBag_iff_matchBagRel`
+### Correctness (isMatchCorrect fragment)
+- `matchRel_correct`: `MatchRel pat t bs → pat.isMatchCorrect → applyBindings bs pat = t`
+- `matchArgsRel_correct`: same for argument lists
+- `matchPattern_correct`: `bs ∈ matchPattern pat t → pat.isMatchCorrect → applyBindings bs pat = t`
+
+### Falsity (outside isMatchCorrect)
+- `matchPattern_correct_false`: explicit bag-collection counterexample
 
 ### Independent Reduction
-- `DeclReducesRel`: uses `MatchRel` instead of `matchPattern`
-- `declReducesRel_iff_declReduces`: equivalence with `DeclReduces`
-- `engine_sound_rel`: engine -> `DeclReducesRel`
-- `engine_complete_rel`: `DeclReducesRel` -> engine
+- `DeclReducesRel`, `declReducesRel_iff_declReduces`
+- `engine_sound_rel`, `engine_complete_rel`
 -/
 
 end Mettapedia.OSLF.MeTTaIL.MatchSpec
+

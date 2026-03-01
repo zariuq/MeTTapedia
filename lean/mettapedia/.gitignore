@@ -27,6 +27,10 @@ codex_prompts/
 
 # LaTeX build artifacts
 /papers/_minted/
+/papers/.cache-luaotfload/
+/papers/.texmf-var/
+/.cache-luaotfload/
+/.texmf-var/
 
 # Separate repositories (subprojects)
 Mettapedia/Algebra/OrderedSemigroups/

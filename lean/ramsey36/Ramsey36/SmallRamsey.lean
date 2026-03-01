@@ -1,5 +1,5 @@
 import Ramsey36.RamseyDef
-import Ramsey36.IndepSetChecker
+import Ramsey36.IndepSetBridge
 import Ramsey36.IndepSmall
 import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import Mathlib.Data.Fin.Basic

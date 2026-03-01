@@ -1,0 +1,519 @@
+%% DocText GF README V1
+%%
+%% Render with:
+%%   cd papers && pdflatex doctext-gf-readme-v1.tex && pdflatex doctext-gf-readme-v1.tex
+
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{url}
+\usepackage[hyperindex,breaklinks]{hyperref}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,frame=single,
+        keywordstyle=\bfseries,commentstyle=\itshape}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\codepath}[1]{\path{#1}}
+\newcommand{\GF}{\textup{GF}}
+
+\title{Typed GF Abstract Syntax Trees for Repository Documentation:\\
+A Lean~4 Implementation\\\texttt{(Working Draft: 2026-02-28)}}
+\author{Zar \and Oru\v{z}i (Codex + Claude Code)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Every sentence, heading, and bullet in the Mettapedia repository's README files is
+produced by composing typed Lean~4 functions over Grammatical Framework (GF) abstract
+syntax trees---not by hand-writing prose strings.
+This note explains what was built, how it works, and how to extend it.
+
+The current deployment covers 14 README modules producing 318 generated claim lines
+under Lean~4.28.0 with GF~3.12.  An executable audit pipeline checks type correctness,
+structural constraints, grammar agreement, and runtime GF parseback.
+The audit passes on the full current claim set.
+
+This note also serves as a mission brief for future contributors and Claude agents
+working on this pipeline.
+\end{abstract}
+
+\section{The Core Idea}
+
+The mission is this: if you can say it compositionally, generate it compositionally.
+
+Every README in the Mettapedia repo contains claims about what the code does.
+Those claims are now first-class Lean values.  An inductive type enumerates
+exactly which claims a module's README is allowed to make.  A function maps
+each constructor to an English sentence assembled from typed GF combinators.
+A document tree collects those sentences into sections and paragraphs.
+An integrity theorem, checked by the Lean kernel, guarantees that every sentence
+in the rendered document round-trips through the claim type.
+
+The result: deterministic, version-controlled, structurally correct-by-construction
+documentation.  There is no paraphrase drift between author intent and rendered text,
+because the intent \emph{is} the Lean constructor, and the text \emph{is} its image
+under the renderer.
+
+\subsection{Why this matters}
+
+\begin{itemize}
+\item \textbf{No prose drift.}  Renaming a concept means updating a constructor;
+  the change propagates deterministically to all generated text.
+\item \textbf{Structural guarantees.}  Raw prose literals are banned in canonical
+  trees---bullet items must be claim constructors, not strings.
+\item \textbf{Independently auditable.}  An external GF runtime can parse and
+  linearize every generated sentence, confirming reproducibility without reading
+  any Lean source.
+\item \textbf{Composable vocabulary.}  Morphology is shared (plurals, articles,
+  agreement) so adding a new claim costs one constructor and one rendering arm,
+  not a morphology fix.
+\end{itemize}
+
+\section{Architecture}
+
+The pipeline has five layers.  Each layer is a concrete Lean file or set of files.
+
+\subsection{Layer 1: GF English morphology (Lean)}
+
+GF English combinators are implemented directly in Lean~4.
+\codepath{Mettapedia/Languages/GF/English/Syntax.lean} defines:
+
+\begin{lstlisting}[caption={Core GF English types in Lean}]
+structure EnglishNP where
+  s   : NPCase -> String    -- inflected forms by case
+  agr : Agr                 -- agreement class
+
+structure EnglishVP where
+  inf    : String           -- "walk"
+  pres   : Agr -> String    -- "walks" / "walk"
+  compl  : Agr -> String    -- complement (object string)
+  adv    : String           -- adverbial modifier
+  -- (past, ppart, prpart, particle also present)
+
+structure EnglishCN where
+  s : Number -> Case -> String  -- inflected common noun
+  g : Gender
+\end{lstlisting}
+
+The key combinators are:
+
+\begin{lstlisting}[caption={Selected GF combinators}]
+-- V2 + NP object -> VP
+def complV2 (v : EnglishV2) (obj : EnglishNP) : EnglishVP
+
+-- Attach adverbial modifier to VP
+def advVP (vp : EnglishVP) (adv : String) : EnglishVP
+
+-- Determiner + CN -> NP  ("the system", "a connection")
+def linDetCN (det : EnglishDet) (cn : EnglishCN) : EnglishNP
+
+-- Adjective + CN -> CN  ("operational rewrite system")
+def linAdjCN (adj : EnglishAP) (cn : EnglishCN) : EnglishCN
+
+-- Present-tense positive declarative clause
+def mkPresPos (subj : EnglishNP) (vp : EnglishVP) : String
+\end{lstlisting}
+
+\noindent These are standard GF RGL combinators,
+re-implemented in Lean so that rendering is a pure Lean computation,
+kernel-verifiable without any external tool call.
+
+\subsection{Layer 2: Domain lexicon}
+
+Each README module declares exactly the vocabulary it needs.
+Lexical entries are typed term declarations using the morphology layer:
+
+\begin{lstlisting}[caption={Typical domain lexicon declarations}]
+def system_N  : EnglishCN := regN "system"
+def interface_N : EnglishCN := regN "interface"
+def into_Prep : EnglishPrep := mkPrep "into"
+def operational_A : EnglishAP := linPositA (compoundA "operational")
+\end{lstlisting}
+
+\noindent \code{regN}, \code{regV}, \code{compoundA} apply English inflection rules
+automatically, so \code{regN "system"} knows that the plural is \code{"systems"}.
+
+\subsection{Layer 3: Claim inductive type and renderer}
+
+The central abstraction: each README module defines an inductive type whose
+constructors are the claims the document is allowed to make.
+
+\begin{lstlisting}[caption={OSLFClaim (abridged; 160 constructors total)}]
+inductive OSLFClaim where
+  | oslfTurnsRewriteSystemsIntoInterface
+  | interfaceIsMechanicallyJustifiedInLean
+  | coreIdeaStartsFromLanguageDef
+  | coreIdeaConnectsStepRelationToExecutableEngine
+  | derivesModalOperatorsWithGaloisConnection
+  | oslfIsConstruction
+  | takesRewriteSystemWithPremises
+  -- ... 153 more constructors
+  deriving Repr, DecidableEq, BEq
+\end{lstlisting}
+
+A \code{renderOSLFClaim} function maps each constructor to an English string
+assembled from the GF combinators:
+
+\begin{lstlisting}[caption={Renderer arm for oslfTurnsRewriteSystemsIntoInterface}]
+-- Generates: "OSLF turns operational rewrite systems into a logical/type-theoretic interface"
+| .oslfTurnsRewriteSystemsIntoInterface =>
+    let subj      := properNameNP "OSLF"
+    let objNP     := linDetCN aIndefArt
+                      (linAdjCN (linPositA (compoundA "logical/type-theoretic"))
+                        (linUseN interface_N))
+    let directObj := linMassPluralNP
+                      (linAdjCN (linPositA (compoundA "operational"))
+                        (linAdjCN (linPositA (compoundA "rewrite"))
+                          (linUseN system_N)))
+    let vp := advVP
+                (complV2 (mkV2 (regV "turn")) directObj)
+                (ppAdv into_Prep objNP)
+    mkPresPos subj vp
+\end{lstlisting}
+
+\noindent The output is a pure string, computed by the Lean kernel,
+requiring no GF runtime at build time.
+
+\subsection{Layer 4: Document tree}
+
+\codepath{Mettapedia/DocText/ReadmeTree.lean} defines a typed document tree:
+
+\begin{lstlisting}[caption={ReadmeBlock: the canonical document node type}]
+inductive ReadmeBlock where
+  | heading      (level : Nat) (text : String)
+  | paragraph    (sentences : List String)
+  | claimBullets (items : List ClaimBullet)
+  | theoremItems (items : List TheoremItem)
+  | apiItems     (items : List ApiItem)
+  | syntaxItems  (items : List SyntaxItem)
+  | pathItems    (items : List PathItem)
+  | codeBlock    (lang : String) (code : String)
+  | fileRef      (path : String) (desc : String)
+  -- NOTE: bulletList and bulletItem are intentionally absent from
+  -- canonical trees; they exist only for backwards-compat in
+  -- legacy output and are BANNED by the hard audit.
+\end{lstlisting}
+
+A renderer walks the tree and emits Markdown.
+Only \code{paragraph} and \code{claimBullets} contain prose sentences---and
+those sentences must come from the claim renderer, never from raw string literals.
+
+\subsection{Layer 5: Integrity theorems}
+
+\codepath{Mettapedia/DocText/ReadmeStructuredParse.lean} defines the audit predicate:
+
+\begin{lstlisting}[caption={blockPassesHardAuditWith (key cases)}]
+def blockPassesHardAuditWith
+    (parseClaimLine? : String -> Option alpha)
+    (parseHeadingLine? : String -> Option beta)
+    : ReadmeBlock -> Bool
+  | .heading _ text  => (parseHeadingLine? text).isSome
+  | .paragraph sents => sents.all (fun s => (parseClaimLine? s).isSome)
+  | .claimBullets bs => bs.all (fun b => (parseClaimLine? b.text).isSome)
+  | .bulletList  _   => false   -- unconditionally banned
+  | .bulletItem  _   => false   -- unconditionally banned
+  | ...
+\end{lstlisting}
+
+Each module then closes a theorem using \code{decide}:
+
+\begin{lstlisting}[caption={Module integrity theorem}]
+-- True iff every ReadmeBlock in the canonical tree passes the audit predicate.
+def oslfHardAuditPasses : Bool :=
+  oslfReadmeBlocks.all (blockPassesHardAudit parsOSLFClaimLine?)
+
+theorem oslf_hard_audit : oslfHardAuditPasses = true := by decide
+\end{lstlisting}
+
+\noindent This theorem is checked by the Lean kernel---it is a machine-verified
+certificate that every sentence in the OSLF README is a valid rendered claim.
+
+\section{Concrete Example: End to End}
+
+Here is the complete path from Lean constructor to rendered English.
+
+\medskip
+\noindent\textbf{Input:} The Lean constructor \code{OSLFClaim.oslfTurnsRewriteSystemsIntoInterface}.
+
+\medskip
+\noindent\textbf{Rendering pipeline:}
+\begin{enumerate}
+\item \code{renderOSLFClaim .oslfTurnsRewriteSystemsIntoInterface} calls GF combinators
+  to build an \code{EnglishVP} from \code{complV2}, \code{advVP}, and \code{ppAdv}.
+\item \code{mkPresPos subj vp} applies subject--verb agreement and produces the string.
+\item The string is placed in a \code{ReadmeBlock.paragraph} node in the canonical tree.
+\item The hard-audit predicate checks that \code{parsOSLFClaimLine? s = some .oslfTurnsRewriteSystemsIntoInterface}.
+\item The integrity theorem \code{oslf\_hard\_audit} closes with \code{by decide}.
+\end{enumerate}
+
+\medskip
+\noindent\textbf{Output:}
+\begin{lstlisting}[caption={Generated first paragraph of Mettapedia/OSLF/README.md}]
+# OSLF overview
+
+OSLF turns operational rewrite systems into a logical/type-theoretic interface.
+Lean justifies the interface mechanically.
+The core idea starts from `LanguageDef`.
+The core idea connects the step relation to the executable engine.
+The core idea derives modal operators with a Galois connection.
+\end{lstlisting}
+
+\noindent The article, plural form, prepositional phrase, and subject--verb agreement
+are all determined by the GF combinator tree---not by hand.
+
+\section{Currently Generated Modules}
+
+\IfFileExists{generated/doctext_gf_readme_v1/module_inventory_table.tex}{%
+  \input{generated/doctext_gf_readme_v1/module_inventory_table.tex}
+}{%
+  \begin{longtable}{>{\raggedright\arraybackslash}p{0.44\linewidth}
+                    >{\raggedright\arraybackslash}p{0.44\linewidth}
+                    r}
+  \toprule
+  Module & Output path & Claims \\
+  \midrule
+  AtpsReadmeCompositional & \code{Mettapedia/atps/README.md} & -- \\
+  BridgeReadmeCompositional & \code{Mettapedia/Logic/Bridge/README.md} & -- \\
+  CategoricalLogicReadmeCompositional & \code{Mettapedia/CategoricalLogic/README.md} & -- \\
+  CategoryTheoryReadmeCompositional & \code{Mettapedia/CategoryTheory/README.md} & -- \\
+  CognitiveArchitectureReadmeCompositional & \code{Mettapedia/CogArch/README.md} & -- \\
+  GFReadmeCompositional & \code{Mettapedia/Languages/GF/README.md} & -- \\
+  GSLTReadmeCompositional & \code{Mettapedia/OSLF/GSLT/README.md} & -- \\
+  LanguagesReadmeCompositional & \code{Mettapedia/Languages/README.md} & -- \\
+  LogicReadmeCompositional & \code{Mettapedia/Logic/README.md} & -- \\
+  MainReadmeCompositional & \code{README.md} & 0 (not yet populated) \\
+  MetatheoryReadmeCompositional & \code{Mettapedia/Metatheory/README.md} & -- \\
+  MettapediaReadmeCompositional & \code{Mettapedia/README.md} & -- \\
+  MmLean4ReadmeCompositional & \code{Mettapedia/MmLean4/README.md} & -- \\
+  OSLFReadmeCompositional & \code{Mettapedia/OSLF/README.md} & 160 \\
+  \midrule
+  \textbf{Total (V1 audited)} & & \textbf{318} \\
+  \bottomrule
+  \end{longtable}
+  \begin{itemize}
+  \item Run \codepath{papers/scripts/generate_doctext_gf_readme_v1_artifacts.py}
+    to populate live claim counts from a fresh audit run.
+  \end{itemize}
+}
+
+\section{Audit Checks}
+
+The audit pipeline (\codepath{scripts/audit\_doctext\_readme.sh}) runs seven stages.
+These are quality checks that come for free from the architecture---not a compliance
+ritual imposed from outside.
+
+\begin{enumerate}
+\item \textbf{Generator presence.}  Every DocText module must have a wired generator
+  script.  Catches missing wiring early.
+
+\item \textbf{Build pass.}  All DocText Lean targets build.  Catches type errors in
+  claim renderers and document trees.
+
+\item \textbf{No \code{bulletList}/\code{bulletItem}.}  Canonical trees must not contain
+  raw prose bullets.  Enforced by \code{blockPassesHardAuditWith}.
+
+\item \textbf{No literal \code{heading "..."}.}  Heading text must round-trip through
+  the heading parser.  Prevents ad-hoc heading strings.
+
+\item \textbf{Hard-audit theorem.}  Each module's \code{*\_hard\_audit} theorem must
+  exist and be closed (by \code{decide}, not \code{sorry}).
+
+\item \textbf{Grammar lint.}  Common subject-verb agreement and
+  plural/singular errors in generated English are flagged.
+
+\item \textbf{Runtime GF parseback.}  Every generated claim line is fed to the GF~3.12
+  runtime (\codepath{Mettapedia/Languages/GF/SUMO/eng/gf}).  Each line must parse with
+  exactly one parse tree and linearize back to the original string.
+  This is a reproducibility check: it confirms the generated English is well-formed
+  according to an \emph{independent} tool with no knowledge of the Lean source.
+\end{enumerate}
+
+\subsection{What the audit does not yet check}
+
+\begin{itemize}
+\item \textbf{Semantic faithfulness beyond roundtrip.}  A sentence can be
+  GF-parseable, roundtrip-correct, and still misrepresent what the code does.
+  Catching paraphrase drift---where the text is syntactically valid but
+  semantically misaligned---is a V2 concern.
+
+\item \textbf{Grammar coverage for all prose.}  The V1 parseback grammar is
+  surface-derived from the current generated set.  Sentences outside that
+  surface space would fail parseback, not pass it incorrectly.
+  A shared structured semantic grammar (subject/predicate/object families) is V2.
+\end{itemize}
+
+V1 is an honest reproducibility and structural-integrity baseline.
+V2 will tighten the semantic coverage.
+
+\subsection{Observed pass record (live audit)}
+
+\IfFileExists{generated/doctext_gf_readme_v1/audit_run_summary.tex}{%
+  \input{generated/doctext_gf_readme_v1/audit_run_summary.tex}
+}{%
+  \begin{itemize}
+  \item Run \codepath{papers/scripts/generate_doctext_gf_readme_v1_artifacts.py}
+    to populate this section from a live audit run.
+  \end{itemize}
+}
+
+\section{Mission Brief for Contributors}
+
+This section is addressed to future developers and Claude agents working on this pipeline.
+
+\subsection{Five rules}
+
+\begin{enumerate}
+\item \textbf{If it is decomposable English, generate it compositionally.}
+  A sentence like ``OSLF turns operational rewrite systems into a logical interface''
+  is built from: a subject NP, a V2, a bare-plural direct object, a prepositional
+  adverb, and a present-tense clause constructor.
+  Each of those parts has a typed GF representation.  Use it.
+
+\item \textbf{If it is a technical atom, use a typed literal node.}
+  File paths, API identifiers, Lean expressions, and shell commands go into
+  \code{pathItems}, \code{apiItems}, \code{syntaxItems}, or \code{codeBlock}
+  nodes---never into prose sentences.
+
+\item \textbf{No raw prose literals in canonical trees.}
+  \code{bulletItem "..."} is banned.  \code{paragraph ["Some string."]},
+  where the string is not a valid rendered claim, is banned.
+  The hard-audit theorem will catch this at build time.
+
+\item \textbf{Keep canonical sources in \codepath{Mettapedia/DocText/}.}
+  All \code{*ReadmeCompositional.lean} files live there.
+  Generator scripts live in \codepath{scripts/}.
+  Do not scatter claim types across unrelated modules.
+
+\item \textbf{Prefer clarity over audit complexity.}
+  The goal is readable, correct documentation.  Adding a new constructor should
+  take minutes, not hours.  If the pipeline feels heavy, simplify it.
+\end{enumerate}
+
+\subsection{Definition of done for a new README module}
+
+A new README module is complete when all of the following hold:
+
+\begin{enumerate}
+\item \textbf{Canonical source:}
+  \codepath{Mettapedia/DocText/*ReadmeCompositional.lean} exists with:
+  \begin{itemize}
+  \item an inductive claim type (e.g., \code{FooClaim}),
+  \item a renderer \code{renderFooClaim : FooClaim -> String},
+  \item a list of \code{ReadmeBlock}s built from rendered claims,
+  \item a \code{fooHardAuditPasses : Bool} definition, and
+  \item a closed theorem \code{foo\_hard\_audit : fooHardAuditPasses = true := by decide}.
+  \end{itemize}
+
+\item \textbf{Generator wiring:}
+  \codepath{scripts/GenerateFooReadme.lean} (Lean executable entrypoint) and
+  \codepath{scripts/generate\_foo\_readme.sh} (shell wrapper) both exist.
+
+\item \textbf{Human judgment pass:}
+  Read the generated README.  It should say what the code does, in plain English,
+  with correct facts.  Byte-level roundtrip is necessary but not sufficient---the
+  human must judge semantic faithfulness.
+
+\item \textbf{Audit pass:}
+  \codepath{bash scripts/audit\_doctext\_readme.sh} exits~0.
+\end{enumerate}
+
+\subsection{Layered vocabulary growth}
+
+When a new module needs vocabulary not in the shared helpers
+(\codepath{Mettapedia/DocText/ReadmeGFHelpers.lean}):
+\begin{enumerate}
+\item Add domain-specific nouns/verbs/adjectives at the top of the
+  \code{*ReadmeCompositional.lean} file using \code{regN}, \code{regV},
+  \code{compoundA}, etc.
+\item If the same word appears in three or more modules, move it to the shared helpers.
+\item Never add a raw string to a prose node to avoid adding a lexical entry.
+\end{enumerate}
+
+\section{V2 Priorities}
+
+\begin{enumerate}
+\item \textbf{Shared semantic claim grammar.}
+  Replace the surface-derived parseback grammar with a structured grammar over
+  subject/predicate/object families.  This will detect paraphrase drift: a sentence
+  that is syntactically valid GF but semantically wrong for the module.
+
+\item \textbf{Per-module coverage reports.}
+  Emit claim counts and parseback coverage per module after each audit run.
+  Gate on no regression.
+
+\item \textbf{Populate \code{MainReadmeCompositional}.}
+  The top-level \code{README.md} is the highest-visibility entry point.
+  Its canonical module currently generates zero claims.
+
+\item \textbf{CI gating.}
+  Add \codepath{scripts/audit\_doctext\_readme.sh} to the CI pipeline so that
+  every merge is guaranteed to pass the full audit.
+\end{enumerate}
+
+\section{Conclusion}
+
+The Mettapedia DocText pipeline makes documentation a typed Lean artifact.
+Claims are constructors.  Sentences are pure functions.
+Structure is enforced by the kernel.
+An external GF runtime confirms reproducibility independently.
+
+This is not a compliance artifact.  It is a commitment: if we cannot express
+a README sentence as a typed GF tree in Lean, we should not be writing that
+sentence at all.
+
+\appendix
+\section{Gate-Status Matrix (Live Run)}
+
+\IfFileExists{generated/doctext_gf_readme_v1/gate_status_matrix.tex}{%
+  \input{generated/doctext_gf_readme_v1/gate_status_matrix.tex}
+}{%
+  \begin{itemize}
+  \item Run \codepath{papers/scripts/generate_doctext_gf_readme_v1_artifacts.py}
+    to populate this section from a live audit run.
+  \end{itemize}
+}
+
+\section{V2 Gate Contract}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.22\linewidth}
+                  >{\raggedright\arraybackslash}p{0.49\linewidth}
+                  >{\raggedright\arraybackslash}p{0.21\linewidth}}
+\toprule
+Gate & Requirement & Pass criterion \\
+\midrule
+G0: Reproducibility & Artifact generator produces inventory + audit summary + log. & Files generated, exit code 0. \\
+G1: Build integrity & All DocText README Lean targets build. & 100\% module build pass. \\
+G2: Structural integrity & Hard-audit theorems reject prose bypass patterns. & Zero violations. \\
+G3: Lint quality & Grammar lint reports no blocking findings. & Zero blocking findings. \\
+G4: Runtime parseback & GF runtime parseback: unique parse + exact roundtrip. & 100\% claim-line pass. \\
+G5: Coverage reporting & Per-module claim counts + global totals emitted. & Complete report. \\
+G6: Failure taxonomy & Every non-pass tagged with a normalized failure class. & 100\% classified. \\
+\bottomrule
+\end{longtable}
+
+\section{Failure Taxonomy (V2 Reporting)}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.28\linewidth}
+                  >{\raggedright\arraybackslash}p{0.64\linewidth}}
+\toprule
+Class & Definition \\
+\midrule
+\code{build\_failure} & Module did not compile. \\
+\code{missing\_generator} & DocText module has no generator wiring. \\
+\code{structure\_violation} & Canonical tree violates hard-audit structural constraints. \\
+\code{lint\_agreement} & Grammar lint found a blocking agreement/format issue. \\
+\code{parse\_zero} & GF runtime produced zero parses for a claim line. \\
+\code{parse\_ambiguous} & GF runtime produced more than one parse tree. \\
+\code{roundtrip\_mismatch} & Parsed tree linearized to a different surface from the original. \\
+\code{coverage\_gap} & Claim-like line is outside the current parseback claim family. \\
+\code{semantic\_gap} & Surface passes parseback but fails shared semantic-grammar alignment (V2). \\
+\bottomrule
+\end{longtable}
+
+\end{document}

@@ -1,26 +1,24 @@
-import Mettapedia.Logic.Datalog.Core
-import Mettapedia.Logic.Datalog.Substitution
-import Mettapedia.Logic.Datalog.Semantics
-import Mettapedia.Logic.Datalog.Evaluation
-import Mettapedia.Logic.Datalog.Provenance
-import Mettapedia.Logic.Datalog.PathMapBridge
-import Mettapedia.Logic.Datalog.OSLFBridge
-import Mettapedia.Logic.Datalog.WorldModelBridge
-import Mettapedia.Logic.Datalog.Embedding
+import Mettapedia.Logic.LP
 
 /-!
-# Datalog Formalization
+# Datalog (Retired → LP)
 
-Barrel import for the Datalog module stack:
+The standalone Datalog formalization has been retired. LP (Logic Programming)
+is the single semantic core; Datalog = LP restricted to function-free signatures.
 
-| File | Contents |
-|------|----------|
-| `Core` | Signature, Term, Atom, Rule, KnowledgeBase, GroundAtom |
-| `Substitution` | Grounding, applyAtom, groundBodySatisfied |
-| `Semantics` | T_P operator, leastModel (OrderHom.lfp), fixpoint theorems |
-| `Evaluation` | HerbrandBase, finiteness, iteration completeness |
-| `Provenance` | SemiringWithMonus, K-relations, T_P_K, homomorphism theorem |
-| `PathMapBridge` | DatalogQuery, evidence counting, leastModel monotonicity |
-| `OSLFBridge` | datalogToRelEnv, mem_datalogToRelEnv, leastModelRelEnv |
-| `WorldModelBridge` | datalogModelEvidence, monotonicity, EDB positivity |
+All Datalog functionality is now available through the LP module:
+
+| Old Datalog | LP Equivalent |
+|---|---|
+| `Core` (Signature, Term, Atom, Rule, KB) | `LP.Core` (LPSignature, Term, Atom, Clause, KB) |
+| `Substitution` (Grounding, applyAtom) | `LP.Substitution` (Grounding, Subst) |
+| `Semantics` (T_P, leastModel) | `LP.Semantics` (T_P_LP, leastHerbrandModel) |
+| `Evaluation` (HerbrandBase, finiteness) | `LP.FunctionFreeEvaluation` |
+| `Provenance` (K-relations, T_P_K) | `LP.Provenance` (KRelation, T_P_K_LP) |
+| `PathMapBridge` (DatalogQuery, evidence) | `LP.PathMapBridge` (LPQuery, evidence) |
+| `OSLFBridge` (datalogToRelEnv) | `LP.OSLFBridge` (lpToRelEnv) |
+| `WorldModelBridge` (evidence monotonicity) | `LP.WorldModelBridge` |
+| `Embedding` (Datalog ⊂ LP) | `LP.CertifyingDatalogBridge` (CDLGroundAtom ≃ GroundAtom) |
+
+Original files archived at `Mettapedia/_archive/Datalog/`.
 -/

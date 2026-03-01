@@ -36,7 +36,6 @@ theorem langReduces_mono_vertex_temporal {v w : ProbabilityVertex} (h : v ≤ w)
   exact declReduces_mono
     (activeRulesWithTemporal_subset_of_le h)
     (by rfl)
-    (fun r hr => activeRuleWithTemporal_premises_nil hr)
     hred
 
 theorem langReducesStar_mono_vertex_temporal {v w : ProbabilityVertex} (h : v ≤ w)

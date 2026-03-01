@@ -182,6 +182,51 @@ theorem star_eq_union_future (p : Pattern) :
   · intro ⟨n, ⟨h⟩⟩
     exact ⟨reducesN_to_star h⟩
 
+/-! ## Parallel Congruence for Future States
+
+If a component can evolve, the whole parallel composition can evolve.
+These theorems lift n-step futures through parallel contexts, which is
+essential for compositional reasoning about SPICE agents.
+-/
+
+/-- Future states lift through parallel (head position).
+
+    If `q ∈ futureStates p n` then the parallel composition with `rest`
+    also has a corresponding n-step future. -/
+theorem futureStates_par_head {p : Pattern} {rest : List Pattern} {n : ℕ}
+    {q : Pattern} (hq : q ∈ futureStates p n) :
+    .collection .hashBag (q :: rest) none ∈
+      futureStates (.collection .hashBag (p :: rest) none) n := by
+  obtain ⟨h⟩ := hq
+  exact ⟨ReducesN.par_head h⟩
+
+/-- Future states lift through parallel (any position). -/
+theorem futureStates_par_any {p : Pattern} {before after : List Pattern} {n : ℕ}
+    {q : Pattern} (hq : q ∈ futureStates p n) :
+    .collection .hashBag (before ++ [q] ++ after) none ∈
+      futureStates (.collection .hashBag (before ++ [p] ++ after) none) n := by
+  obtain ⟨h⟩ := hq
+  exact ⟨ReducesN.par_any_pos h⟩
+
+/-- Present moment lifts through parallel (head position).
+
+    If an agent `p` has `q` in its present moment, then `{| p, rest |}` has
+    `{| q, rest |}` in its present moment. Agents don't lose interactions
+    by being placed in parallel. -/
+theorem presentMoment_par_head {p : Pattern} {rest : List Pattern}
+    {q : Pattern} (hq : q ∈ presentMoment p) :
+    .collection .hashBag (q :: rest) none ∈
+      presentMoment (.collection .hashBag (p :: rest) none) :=
+  futureStates_par_head hq
+
+/-- Reachable states lift through parallel (head position). -/
+theorem reachableStates_par_head {p : Pattern} {rest : List Pattern} {n : ℕ}
+    {q : Pattern} (hq : q ∈ reachableStates p n) :
+    .collection .hashBag (q :: rest) none ∈
+      reachableStates (.collection .hashBag (p :: rest) none) n := by
+  obtain ⟨k, hk, ⟨h⟩⟩ := hq
+  exact ⟨k, hk, ⟨ReducesN.par_head h⟩⟩
+
 /-! ## Spice Evaluation (Precognitive Agents)
 
 The spice calculus allows agents to evaluate their environment n steps into

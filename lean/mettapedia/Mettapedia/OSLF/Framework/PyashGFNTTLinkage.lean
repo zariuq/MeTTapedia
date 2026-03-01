@@ -76,6 +76,36 @@ def pyashGFAllCanaryNTTLinks : List PyashGFCanaryNTTLink :=
   , mkCanaryLink "pyash_gf_search_do"
       pyashStateSearchDerive pyashStateSearchDoneOk
       pyashGF_search_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_list_do"
+      pyashStateListDerive pyashStateListDoneOk
+      pyashGF_list_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_list_err_signature"
+      pyashStateListMismatch pyashStateListDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_list_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_list_err_terminal"
+      pyashStateListDoneSignatureErr pyashStateListDoneSignatureErr
+      pyashGF_list_err_terminal_closure
+  , mkCanaryLink "pyash_gf_input_do"
+      pyashStateInputDerive pyashStateInputDoneOk
+      pyashGF_input_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_input_err_signature"
+      pyashStateInputMismatch pyashStateInputDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_input_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_input_err_terminal"
+      pyashStateInputDoneSignatureErr pyashStateInputDoneSignatureErr
+      pyashGF_input_err_terminal_closure
+  , mkCanaryLink "pyash_gf_stream_do"
+      pyashStateStreamDerive pyashStateStreamDoneOk
+      pyashGF_stream_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_stream_err_signature"
+      pyashStateStreamMismatch pyashStateStreamDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_stream_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_stream_err_terminal"
+      pyashStateStreamDoneSignatureErr pyashStateStreamDoneSignatureErr
+      pyashGF_stream_err_terminal_closure
   , mkCanaryLink "pyash_gf_mind_do"
       pyashStateMindDerive pyashStateMindDoneOk
       pyashGF_mind_clause_closure_bridge
@@ -128,14 +158,46 @@ def pyashGFAllCanaryNTTLinks : List PyashGFCanaryNTTLink :=
       pyashStateConfigureDefDerive pyashStateConfigureDefDoneOk
       pyashGF_configure_def_clause_closure_bridge
   , mkCanaryLink "pyash_gf_configure_command_map_def"
-      pyashStateConfigureDefDerive pyashStateConfigureDefDoneOk
+      pyashStateConfigureCommandMapDefDerive pyashStateConfigureCommandMapDefDoneOk
       pyashGF_configure_command_map_def_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_configure_command_map_def_dispatch_to_done"
+      pyashStateConfigureCommandMapDefDispatched pyashStateConfigureCommandMapDefDoneOk
+      pyashGF_configure_command_map_def_dispatched_closure_bridge
   , mkCanaryLink "pyash_gf_configure_sandbox_map_def"
-      pyashStateConfigureDefDerive pyashStateConfigureDefDoneOk
+      pyashStateConfigureSandboxMapDefDerive pyashStateConfigureSandboxMapDefDoneOk
       pyashGF_configure_sandbox_map_def_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_configure_sandbox_map_def_dispatch_to_done"
+      pyashStateConfigureSandboxMapDefDispatched pyashStateConfigureSandboxMapDefDoneOk
+      pyashGF_configure_sandbox_map_def_dispatched_closure_bridge
   , mkCanaryLink "pyash_gf_configure_verify_loop_map_def"
-      pyashStateConfigureDefDerive pyashStateConfigureDefDoneOk
+      pyashStateConfigureVerifyLoopMapDefDerive pyashStateConfigureVerifyLoopMapDefDoneOk
       pyashGF_configure_verify_loop_map_def_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_configure_verify_loop_map_def_dispatch_to_done"
+      pyashStateConfigureVerifyLoopMapDefDispatched pyashStateConfigureVerifyLoopMapDefDoneOk
+      pyashGF_configure_verify_loop_map_def_dispatched_closure_bridge
+  , mkCanaryLink "pyash_gf_configure_command_map_def_err_signature"
+      pyashStateConfigureCommandMapDefMismatch pyashStateConfigureCommandMapDefDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_configure_command_map_def_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_configure_command_map_def_err_terminal"
+      pyashStateConfigureCommandMapDefDoneSignatureErr pyashStateConfigureCommandMapDefDoneSignatureErr
+      pyashGF_configure_command_map_def_err_terminal_closure
+  , mkCanaryLink "pyash_gf_configure_sandbox_map_def_err_signature"
+      pyashStateConfigureSandboxMapDefMismatch pyashStateConfigureSandboxMapDefDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_configure_sandbox_map_def_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_configure_sandbox_map_def_err_terminal"
+      pyashStateConfigureSandboxMapDefDoneSignatureErr pyashStateConfigureSandboxMapDefDoneSignatureErr
+      pyashGF_configure_sandbox_map_def_err_terminal_closure
+  , mkCanaryLink "pyash_gf_configure_verify_loop_map_def_err_signature"
+      pyashStateConfigureVerifyLoopMapDefMismatch
+      pyashStateConfigureVerifyLoopMapDefDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_configure_verify_loop_map_def_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_configure_verify_loop_map_def_err_terminal"
+      pyashStateConfigureVerifyLoopMapDefDoneSignatureErr
+      pyashStateConfigureVerifyLoopMapDefDoneSignatureErr
+      pyashGF_configure_verify_loop_map_def_err_terminal_closure
   , mkCanaryLink "pyash_gf_configure_dispatch_to_done"
       pyashStateConfigureDispatched pyashStateConfigureDoneOk
       pyashGF_configure_dispatched_closure_bridge
@@ -146,8 +208,24 @@ def pyashGFAllCanaryNTTLinks : List PyashGFCanaryNTTLink :=
       pyashStateWorldDerive pyashStateWorldDoneOk
       pyashGF_world_clause_closure_bridge
   , mkCanaryLink "pyash_gf_world_path_io_do"
-      pyashStateWorldDerive pyashStateWorldDoneOk
+      pyashStateWorldPathIODerive pyashStateWorldPathIODoneOk
       pyashGF_world_path_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_world_path_io_action_do"
+      pyashStateWorldPathIODerive pyashStateWorldPathIODoneOk
+      pyashGF_world_path_io_action_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_world_path_io_dispatch_to_done"
+      pyashStateWorldPathIODispatched pyashStateWorldPathIODoneOk
+      pyashGF_world_path_dispatched_closure_bridge
+  , mkCanaryLink "pyash_gf_world_path_io_running_to_done"
+      pyashStateWorldPathIORunning pyashStateWorldPathIODoneOk
+      pyashGF_world_path_running_closure_bridge
+  , mkCanaryLink "pyash_gf_world_path_io_err_signature"
+      pyashStateWorldPathIOMismatch pyashStateWorldPathIODoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_world_path_io_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_world_path_io_err_terminal"
+      pyashStateWorldPathIODoneSignatureErr pyashStateWorldPathIODoneSignatureErr
+      pyashGF_world_path_err_terminal_closure
   , mkCanaryLink "pyash_gf_world_dispatch_to_done"
       pyashStateWorldDispatched pyashStateWorldDoneOk
       pyashGF_world_dispatched_closure_bridge
@@ -157,12 +235,57 @@ def pyashGFAllCanaryNTTLinks : List PyashGFCanaryNTTLink :=
   , mkCanaryLink "pyash_gf_pipeline_do"
       pyashStatePipelineDerive pyashStatePipelineDoneOk
       pyashGF_pipeline_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_refinery_do"
+      pyashStatePipelineRefineryDerive pyashStatePipelineRefineryDoneOk
+      pyashGF_pipeline_refinery_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_refinery_dispatch_to_done"
+      pyashStatePipelineRefineryDispatched pyashStatePipelineRefineryDoneOk
+      pyashGF_pipeline_refinery_dispatched_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_refinery_running_to_done"
+      pyashStatePipelineRefineryRunning pyashStatePipelineRefineryDoneOk
+      pyashGF_pipeline_refinery_running_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_refinery_err_signature"
+      pyashStatePipelineRefineryMismatch pyashStatePipelineRefineryDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_pipeline_refinery_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_pipeline_refinery_err_terminal"
+      pyashStatePipelineRefineryDoneSignatureErr pyashStatePipelineRefineryDoneSignatureErr
+      pyashGF_pipeline_refinery_err_terminal_closure
   , mkCanaryLink "pyash_gf_pipeline_chirp_do"
-      pyashStatePipelineDerive pyashStatePipelineDoneOk
+      pyashStatePipelineChirpDerive pyashStatePipelineChirpDoneOk
       pyashGF_pipeline_chirp_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_chirp_dispatch_to_done"
+      pyashStatePipelineChirpDispatched pyashStatePipelineChirpDoneOk
+      pyashGF_pipeline_chirp_dispatched_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_chirp_running_to_done"
+      pyashStatePipelineChirpRunning pyashStatePipelineChirpDoneOk
+      pyashGF_pipeline_chirp_running_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_chirp_err_signature"
+      pyashStatePipelineChirpMismatch pyashStatePipelineChirpDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_pipeline_chirp_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_pipeline_chirp_err_terminal"
+      pyashStatePipelineChirpDoneSignatureErr pyashStatePipelineChirpDoneSignatureErr
+      pyashGF_pipeline_chirp_err_terminal_closure
   , mkCanaryLink "pyash_gf_pipeline_reentry_do"
-      pyashStatePipelineDerive pyashStatePipelineDoneOk
+      pyashStatePipelineReentryDerive pyashStatePipelineReentryDoneOk
       pyashGF_pipeline_reentry_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_reentry_cycle_do"
+      pyashStatePipelineReentryDerive pyashStatePipelineReentryDoneOk
+      pyashGF_pipeline_reentry_cycle_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_reentry_dispatch_to_done"
+      pyashStatePipelineReentryDispatched pyashStatePipelineReentryDoneOk
+      pyashGF_pipeline_reentry_dispatched_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_reentry_running_to_done"
+      pyashStatePipelineReentryRunning pyashStatePipelineReentryDoneOk
+      pyashGF_pipeline_reentry_running_closure_bridge
+  , mkCanaryLink "pyash_gf_pipeline_reentry_err_signature"
+      pyashStatePipelineReentryMismatch pyashStatePipelineReentryDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_pipeline_reentry_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_pipeline_reentry_err_terminal"
+      pyashStatePipelineReentryDoneSignatureErr pyashStatePipelineReentryDoneSignatureErr
+      pyashGF_pipeline_reentry_err_terminal_closure
   , mkCanaryLink "pyash_gf_pipeline_dispatch_to_done"
       pyashStatePipelineDispatched pyashStatePipelineDoneOk
       pyashGF_pipeline_dispatched_closure_bridge
@@ -172,15 +295,67 @@ def pyashGFAllCanaryNTTLinks : List PyashGFCanaryNTTLink :=
   , mkCanaryLink "pyash_gf_compile_do"
       pyashStateCompileDerive pyashStateCompileDoneOk
       pyashGF_compile_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_compile_dispatch_to_done"
+      pyashStateCompileDispatched pyashStateCompileDoneOk
+      pyashGF_compile_dispatched_closure_bridge
+  , mkCanaryLink "pyash_gf_compile_running_to_done"
+      pyashStateCompileRunning pyashStateCompileDoneOk
+      pyashGF_compile_running_closure_bridge
+  , mkCanaryLink "pyash_gf_compile_err_signature"
+      pyashStateCompileMismatch pyashStateCompileDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_compile_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_compile_err_terminal"
+      pyashStateCompileDoneSignatureErr pyashStateCompileDoneSignatureErr
+      pyashGF_compile_err_terminal_closure
   , mkCanaryLink "pyash_gf_import_do"
       pyashStateImportDerive pyashStateImportDoneOk
       pyashGF_import_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_import_dispatch_to_done"
+      pyashStateImportDispatched pyashStateImportDoneOk
+      pyashGF_import_dispatched_closure_bridge
+  , mkCanaryLink "pyash_gf_import_running_to_done"
+      pyashStateImportRunning pyashStateImportDoneOk
+      pyashGF_import_running_closure_bridge
+  , mkCanaryLink "pyash_gf_import_err_signature"
+      pyashStateImportMismatch pyashStateImportDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_import_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_import_err_terminal"
+      pyashStateImportDoneSignatureErr pyashStateImportDoneSignatureErr
+      pyashGF_import_err_terminal_closure
   , mkCanaryLink "pyash_gf_download_do"
       pyashStateDownloadDerive pyashStateDownloadDoneOk
       pyashGF_download_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_download_dispatch_to_done"
+      pyashStateDownloadDispatched pyashStateDownloadDoneOk
+      pyashGF_download_dispatched_closure_bridge
+  , mkCanaryLink "pyash_gf_download_running_to_done"
+      pyashStateDownloadRunning pyashStateDownloadDoneOk
+      pyashGF_download_running_closure_bridge
+  , mkCanaryLink "pyash_gf_download_err_signature"
+      pyashStateDownloadMismatch pyashStateDownloadDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_download_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_download_err_terminal"
+      pyashStateDownloadDoneSignatureErr pyashStateDownloadDoneSignatureErr
+      pyashGF_download_err_terminal_closure
   , mkCanaryLink "pyash_gf_translation_do"
       pyashStateTranslationDerive pyashStateTranslationDoneOk
       pyashGF_translation_clause_closure_bridge
+  , mkCanaryLink "pyash_gf_translation_dispatch_to_done"
+      pyashStateTranslationDispatched pyashStateTranslationDoneOk
+      pyashGF_translation_dispatched_closure_bridge
+  , mkCanaryLink "pyash_gf_translation_running_to_done"
+      pyashStateTranslationRunning pyashStateTranslationDoneOk
+      pyashGF_translation_running_closure_bridge
+  , mkCanaryLink "pyash_gf_translation_err_signature"
+      pyashStateTranslationMismatch pyashStateTranslationDoneSignatureErr
+      (PyashCoreReducesStar.single
+        pyashGF_translation_invalid_signature_negative_bridge)
+  , mkCanaryLink "pyash_gf_translation_err_terminal"
+      pyashStateTranslationDoneSignatureErr pyashStateTranslationDoneSignatureErr
+      pyashGF_translation_err_terminal_closure
   ]
 
 theorem pyashGFAllCanaryNTTLinkLabels :

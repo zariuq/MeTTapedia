@@ -3,10 +3,13 @@
 %% Render with: lualatex nuPLN_v1.tex && bibtex nuPLN_v1 && lualatex nuPLN_v1.tex
 
 \documentclass[]{article}
+\usepackage{iftex}
 \usepackage{url}
 \usepackage{minted}
 \usepackage[hyperindex,breaklinks]{hyperref}
+\ifPDFTeX
 \usepackage{breakurl}
+\fi
 \usepackage{listings}
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=false,frame=single}
 \usepackage{float}
@@ -22,7 +25,7 @@
 
 % For ≞ (requires the LuaLaTeX engine)
 \usepackage{unicode-math}
-\setmathfont{Stix Two Math}
+\IfFontExistsTF{Stix Two Math}{\setmathfont{Stix Two Math}}{\setmathfont{Latin Modern Math}}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}[theorem]{Lemma}
@@ -1192,6 +1195,40 @@ statistics are the \emph{transition counts}: how many times each
 state-to-state transition occurred.  This suggests a ``Markov-PLN''
 where evidence consists of a transition count matrix rather than
 simple $(n^+, n^-)$ counts.
+
+\subsection{Fortini Bridge Interface (Current Lean Surface)}
+In the current Lean development, we now separate the public theorem
+surface from internal proof plumbing.  The canonical path is:
+\begin{enumerate}
+\item \texttt{BuildRowKernelOnRecurrentExtension}: on a recurrent extension
+$P$, construct a row-kernel family with the exact local data needed by
+the crux;
+\item \texttt{RecurrentLatentCoherenceBridgeTheorem}: package the
+recurrent extension plus constructed row-kernel data in one interface;
+\item \texttt{fortiniSuccessorMatrixInvarianceTheorem\_of\_recurrentLatentCoherenceBridge}:
+derive the Markov mixture representation.
+\end{enumerate}
+
+This cleanup removes redundant aliases and keeps a single theorem route.
+The remaining mathematical gap is now explicit: deriving the constructor
+payload in \texttt{BuildRowKernelOnRecurrentExtension} from recurrence
+and exchangeability alone, without adding ad-hoc assumptions.
+
+What this adds over the existing binary $\nuPLN$ chain is a genuine
+Markov-memory layer.  The theorem
+\texttt{fortini\_and\_solomonoff\_of\_recurrentLatentCoherenceBridge}
+now provides, for the same finite-alphabet prefix law $\mu$, both:
+\begin{enumerate}
+\item a Fortini-style Markov-mixture representation, and
+\item a Solomonoff $M_2$ finite-horizon log-loss bound
+(\texttt{FiniteAlphabet.FiniteHorizon.relEntropy} against
+\texttt{FiniteAlphabet.SolomonoffBridge.M2}).
+\end{enumerate}
+This is stronger than the earlier exchangeable-binary collapse
+(\texttt{solomonoff\_exchangeable\_predictBit\_same\_counts}), and
+orthogonal to the world-model calculus layer, which provides typed
+rewrite infrastructure but not Markov latent-mixture semantics nor
+Solomonoff regret guarantees.
 
 \subsection{Categorical de Finetti in Kleisli(Giry)}
 \label{sec:categorical-definetti}

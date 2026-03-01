@@ -16,6 +16,6 @@ import Mettapedia.UniversalAI.TimeBoundedAIXI
 import Mettapedia.UniversalAI.TimeBoundedAIXI.Core
 import Mettapedia.UniversalAI.TimeBoundedAIXI.CoreToPartrec
 import Mettapedia.UniversalAI.TimeBoundedAIXI.CoreProvability
-import Mettapedia.UniversalAI.Chapter6_7_Bridge
-import Mettapedia.UniversalAI.Chapter6_7_Bridge_Core
+import Mettapedia.UniversalAI.UniversalAIBridge
+import Mettapedia.UniversalAI.UniversalAIBridgeCore
 import Mettapedia.UniversalAI.Intelligence.Basic

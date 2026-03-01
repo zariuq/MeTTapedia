@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.Common.Common
 
 /-!
 # Multi-Step Reduction for ρ-Calculus
@@ -81,6 +82,31 @@ theorem one_iff_reduces (p q : Pattern) :
   · intro ⟨h⟩
     exact ⟨succ h (zero q)⟩
 
+/-! ### n-Step Parallel Congruence Lifting (SPICE infrastructure) -/
+
+/-- Lift n-step reduction through parallel composition (head position).
+
+    If `p ⇝[n] q` then `{| p, rest... |} ⇝[n] {| q, rest... |}`.
+    Essential for SPICE calculus: futureStates lifts through par. -/
+noncomputable def par_head {n : ℕ} {p q : Pattern} {rest : List Pattern}
+    (h : p ⇝[n] q) :
+    ReducesN n (.collection .hashBag (p :: rest) none)
+              (.collection .hashBag (q :: rest) none) := by
+  induction h with
+  | zero => exact .zero _
+  | succ hr _ ih => exact .succ (Reduces.par hr) ih
+
+/-- Lift n-step reduction through parallel (any position).
+
+    If `p ⇝[n] q` then `{| before ++ [p] ++ after |} ⇝[n] {| before ++ [q] ++ after |}`. -/
+noncomputable def par_any_pos {n : ℕ} {p q : Pattern} {before after : List Pattern}
+    (h : p ⇝[n] q) :
+    ReducesN n (.collection .hashBag (before ++ [p] ++ after) none)
+              (.collection .hashBag (before ++ [q] ++ after) none) := by
+  induction h with
+  | zero => exact .zero _
+  | succ hr _ ih => exact .succ (Reduces.par_any hr) ih
+
 end ReducesN
 
 /-- Star closure includes n-step for all n (def since returns Type-valued data) -/
@@ -142,5 +168,40 @@ theorem reducesN_succ_iff {n : ℕ} {p r : Pattern} :
     | succ h_step h_zero =>
       cases h_zero  -- h_zero : q' ⇝[0] q means q' = q
       exact ReducesN.succ h_step hn
+
+/-! ## Parallel Congruence Lifting (NEW — was missing from ρ-calculus) -/
+
+/-- Lift multi-step reduction through parallel composition (head position).
+
+    If `p ⇝* q` then `{| p, rest... |} ⇝* {| q, rest... |}`. -/
+noncomputable def ReducesStar.par_head {p q : Pattern} {rest : List Pattern}
+    (h : p ⇝* q) :
+    ReducesStar (.collection .hashBag (p :: rest) none)
+                (.collection .hashBag (q :: rest) none) := by
+  induction h with
+  | refl => exact .refl _
+  | step hr _ ih => exact .step (Reduces.par hr) ih
+
+/-- Lift multi-step reduction through parallel (any position).
+
+    If `p ⇝* q` then `{| before ++ [p] ++ after |} ⇝* {| before ++ [q] ++ after |}`. -/
+noncomputable def ReducesStar.par_any_pos {p q : Pattern} {before after : List Pattern}
+    (h : p ⇝* q) :
+    ReducesStar (.collection .hashBag (before ++ [p] ++ after) none)
+                (.collection .hashBag (before ++ [q] ++ after) none) := by
+  induction h with
+  | refl => exact .refl _
+  | step hr _ ih => exact .step (Reduces.par_any hr) ih
+
+/-! ## Common Infrastructure Instances -/
+
+open _root_.ProcessCalculi
+
+/-- ρ-calculus SC is Prop-valued; directly wraps StructuralCongruence. -/
+instance : HasSC Pattern where
+  sc := StructuralCongruence
+  sc_refl := StructuralCongruence.refl
+  sc_symm := StructuralCongruence.symm
+  sc_trans := StructuralCongruence.trans
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

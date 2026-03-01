@@ -1,0 +1,408 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{listings}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\lstdefinelanguage{Lean4}{
+  morekeywords={
+    import,namespace,end,open,section,noncomputable,abbrev,structure,inductive,
+    def,theorem,lemma,where,match,with,if,then,else,by,fun,let,in,
+    simp,calc,have,show,exact,rcases,cases,constructor,intro,apply
+  },
+  sensitive=true,
+  morecomment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  morestring=[b]"
+}
+
+\lstset{
+  language=Lean4,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries\color{blue!50!black},
+  commentstyle=\itshape\color{green!40!black},
+  stringstyle=\color{red!50!black},
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  framerule=0.3pt,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  keepspaces=true,
+  columns=fullflexible
+}
+
+\title{The MQ-Calculus in Lean~4:\\
+Communication-as-Measurement, Operational and Denotational Semantics}
+\author{Zar \and Oru\v{z}i\footnote{``Oru\v{z}i'' denotes AI-assisted collaboration
+using Claude Code (Anthropic), ChatGPT, and Codex (OpenAI).
+Formalization of the MQ-calculus by Stay and Meredith~\cite{stay-meredith-mq}.}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a Lean~4 formalization of the MQ-calculus of Stay and
+Meredith~\cite{stay-meredith-mq}, comprising 1{,}413 lines across 10 files
+with zero sorries and zero custom axioms.  The MQ-calculus unifies
+communication and quantum measurement: a COMM event produces a binary
+measurement outcome governed by Born-rule probabilities.
+
+The formalization covers: (1)~process syntax with de~Bruijn wire indices;
+(2)~the COMM reduction rule with constructive both-outcomes witness;
+(3)~structural congruence (parallel laws, scope extrusion via shift);
+(4)~full operational reduction with contextual closure;
+(5)~a backend-parametric denotational semantics with a statevector
+instantiation including post-collapse normalization; and
+(6)~clause-level theorem handles (\texttt{paper63\_*}) for paper auditing.
+
+Cross-calculus bridges connect MQ measurement branching to MORK binary-fold
+outcomes and place the calculus in the broader OSLF type synthesis pipeline.
+\end{abstract}
+
+\section{Why MQ-Calculus Matters}
+The calculus serves three simultaneous roles.
+\begin{enumerate}[leftmargin=1.5em]
+  \item It stress-tests the MeTTaIL formal stack on a nontrivial stochastic process calculus.
+  \item It provides concrete benchmarks for stochastic simulators beyond the stochastic $\pi$-calculus setting.
+  \item It grounds the OSLF program in physically meaningful scenarios where observations (experiments) are represented structurally in the reduction semantics.
+\end{enumerate}
+
+A central methodological point is to represent interpretational choices as program structure, not as external metaphysical commitments. Distinct quantum narratives correspond to distinct valid programs with distinct typing/behavioral footprints.
+
+\section{Paper-to-Lean Map}
+The Lean formalization is organized under
+\texttt{Mettapedia/Languages/ProcessCalculi/MQCalculus/}:
+
+\begin{center}
+\small
+\begin{tabular}{llr}
+\toprule
+\textbf{File} & \textbf{Contents} & \textbf{Lines} \\
+\midrule
+\texttt{Syntax.lean} & Process grammar, gate specs & 120 \\
+\texttt{CommRule.lean} & COMM rule, measurement branches & 95 \\
+\texttt{Reduction.lean} & Operational reduction, multi-step & 172 \\
+\texttt{StructuralCongruence.lean} & SC: par laws, scope extrusion & 205 \\
+\texttt{Shift.lean} & De Bruijn wire shifting & 110 \\
+\texttt{Backend.lean} & QState, Born probs, collapse, backend & 248 \\
+\texttt{Denotational.lean} & \texttt{denoteWith}, weighted branches & 165 \\
+\texttt{PaperMap.lean} & \texttt{paper63\_*} theorem handles & 130 \\
+\texttt{Interoperability.lean} & MORK binary-fold bridge & 78 \\
+\texttt{MQCalculus.lean} & Barrel import & 10 \\
+\midrule
+\textbf{Total} & \textbf{0 sorries, 0 axioms} & \textbf{1{,}413} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Core Syntax in Lean}
+The process grammar is encoded with de Bruijn-style wire indexing and typed gate specifications.
+
+\begin{lstlisting}[caption={Process and gate syntax (from \texttt{Syntax.lean})}]
+inductive GateOp : Type where
+  | H
+  | X
+  | Z
+  | custom (name : String)
+  deriving DecidableEq, Repr
+
+structure GateSpec where
+  op : GateOp
+  target : Nat
+  deriving DecidableEq, Repr
+
+def gateSpecOfString : String -> GateSpec := GateSpec.ofString
+
+inductive Process : Type where
+  | MQNil  : Process
+  | MQPar  : Process -> Process -> Process
+  | MQNu   : Process -> Process
+  | MQGate : GateSpec -> Process -> Process
+  | MQOut  : Nat -> Process
+  | MQIn   : Nat -> Process -> Process -> Process
+  deriving DecidableEq, Repr
+\end{lstlisting}
+
+This representation keeps the surface small while supporting typed gate routing and explicit branch continuations for measurement outcomes.
+
+\section{Communication as Measurement}
+The communication rule is represented by a branch type plus a small-step relation that produces both outcome branches constructively.
+
+\begin{lstlisting}[caption={COMM branching object and witnesses (from \texttt{CommRule.lean})}]
+inductive Outcome : Type where
+  | zero : Outcome
+  | one  : Outcome
+  deriving DecidableEq
+
+structure MeasurementBranch where
+  outcome : Outcome
+  result  : Process
+
+inductive CommReduction : Nat -> Process -> Process -> MeasurementBranch -> Prop where
+  | outcome_zero (i : Nat) (p q : Process) :
+      CommReduction i p q (.zero, p)
+  | outcome_one (i : Nat) (p q : Process) :
+      CommReduction i p q (.one, q)
+
+theorem comm_both_outcomes (i : Nat) (p q : Process) :
+    CommReduction i p q (.zero, p) /\ CommReduction i p q (.one, q) :=
+  (.outcome_zero i p q, .outcome_one i p q)
+\end{lstlisting}
+
+Born-style probabilities are defined separately on vectors. The branch relation itself remains structural and proof-friendly.
+
+\section{Operational Reduction Relation}
+Full one-step reduction includes COMM firing, structural congruence closure, and contextual closure under parallel/new/gate constructors.
+
+\begin{lstlisting}[caption={One-step and multi-step reduction (from \texttt{Reduction.lean})}]
+inductive Reduces : Process -> Process -> Prop where
+  | comm (i : Nat) (p q : Process) (b : MeasurementBranch) :
+      CommReduction i p q b ->
+      Reduces (MQPar (MQOut i) (MQIn i p q)) b.result
+  | sc (p p' q' q : Process) :
+      SC p p' -> Reduces p' q' -> SC q' q -> Reduces p q
+  | par_l  (p p' q : Process) : Reduces p p' -> Reduces (MQPar p q) (MQPar p' q)
+  | par_r  (p q q' : Process) : Reduces q q' -> Reduces (MQPar p q) (MQPar p q')
+  | nu_step  (p p' : Process) : Reduces p p' -> Reduces (MQNu p) (MQNu p')
+  | gate_step (g : GateSpec) (p p' : Process) :
+      Reduces p p' -> Reduces (MQGate g p) (MQGate g p')
+
+inductive MultiStep : Process -> Process -> Prop where
+  | refl (p : Process) : MultiStep p p
+  | step (p q r : Process) : Reduces p q -> MultiStep q r -> MultiStep p r
+\end{lstlisting}
+
+\section{Backend-Parametric Denotational Semantics}
+The semantics is parameterized by a backend interface with explicit operations for gate action, fresh allocation, branch probabilities, and collapse.
+
+\begin{lstlisting}[caption={Runtime state and backend interface (from \texttt{Backend.lean})}]
+structure QState where
+  n : Nat
+  psi : QVec n
+
+def rawOutcomeProb (i : Nat) (out : Outcome) (st : QState) : Real :=
+  Finset.univ.sum (fun k : Fin (2 ^ st.n) =>
+    if bitMatches i k.1 out then Complex.normSq (st.psi.ofLp k) else 0)
+
+def collapseByOutcome (i : Nat) (out : Outcome) (st : QState) : QState :=
+  let p := rawOutcomeProb i out st
+  if p = 0 then st else
+    let z : Complex := ((Real.sqrt p) : Complex)
+    let psi' : QVec st.n :=
+      Finset.univ.sum (fun k : Fin (2 ^ st.n) =>
+        EuclideanSpace.single k
+          (if bitMatches i k.1 out then st.psi.ofLp k / z else 0))
+    (st.n, psi')
+
+structure MQSemanticsBackend where
+  branchProb : Nat -> Outcome -> QState -> Real
+  branchProb_nonneg : forall i out st, 0 <= branchProb i out st
+  branchProb_sum_one : forall i st,
+    branchProb i .zero st + branchProb i .one st = 1
+  applyGate : GateSpec -> QState -> QState
+  allocFresh : QState -> QState
+  collapse : Nat -> Outcome -> QState -> QState
+\end{lstlisting}
+
+The current \texttt{statevectorBackend} instantiation gives executable semantics while preserving theorem-level invariants such as nonnegativity, normalization splits, and collapse behavior.
+
+\section{Executable Denotation and Measurement Selection}
+The denotation function is structurally recursive on process syntax and resolves \texttt{MQIn} by comparing branch probabilities.
+
+\begin{lstlisting}[caption={Denotational clauses and weighted measurement view (from \texttt{Denotational.lean})}]
+def denoteWith (backend : MQSemanticsBackend) : Process -> QState -> Option QState
+  | .MQNil,      st => some st
+  | .MQOut _,    st => some st
+  | .MQGate s p, st => denoteWith backend p (backend.applyGate s st)
+  | .MQNu p,     st => denoteWith backend p (backend.allocFresh st)
+  | .MQPar p q,  st => (denoteWith backend p st).bind (denoteWith backend q)
+  | .MQIn i p q, st =>
+      if backend.branchProb i .zero st >= backend.branchProb i .one st then
+        denoteWith backend p (backend.collapse i .zero st)
+      else
+        denoteWith backend q (backend.collapse i .one st)
+
+structure WeightedBranch where
+  prob_zero    : Real
+  prob_one     : Real
+  state_zero   : QState
+  state_one    : QState
+  prob_zero_nn : 0 <= prob_zero
+  prob_one_nn  : 0 <= prob_one
+  prob_sum_le  : prob_zero + prob_one <= 1
+\end{lstlisting}
+
+This gives two aligned views: deterministic branch selection for executable denotation and explicit two-branch packaging for proof/audit work.
+
+\section{Clause-Level Theorem Map}
+The theorem index module makes paper auditing straightforward.
+
+\begin{lstlisting}[caption={Paper-clause theorem handles (from \texttt{PaperMap.lean})}]
+theorem paper63_nil ...
+theorem paper63_out ...
+theorem paper63_gate ...
+theorem paper63_new ...
+theorem paper63_par ...
+theorem paper63_in ...
+theorem paper63_measurement_probs_sum_one ...
+theorem paper63_measurement_state_zero ...
+theorem paper63_measurement_state_one ...
+theorem paper63_statevector_collapse_norm_one_of_raw_pos ...
+theorem paper63_comm_denote_eq_measurement_selection ...
+\end{lstlisting}
+
+\noindent
+A key normalization result used in review is:
+\begin{lstlisting}[caption={Post-collapse normalization (from \texttt{Backend.lean})}]
+theorem collapseByOutcome_norm_eq_one_of_raw_pos
+    (i : Nat) (out : Outcome) (st : QState)
+    (hraw : 0 < rawOutcomeProb i out st) :
+    norm ((collapseByOutcome i out st).psi) = 1
+\end{lstlisting}
+
+\section{Cross-Calculus Bridges}
+
+\subsection{MQ and MORK}
+MQ measurement branching is linked to MORK binary-fold branching via an explicit
+bridge theorem:
+
+\begin{lstlisting}[caption={MQ--MORK bridge (from \texttt{Interoperability.lean})}]
+theorem comm_nondeterminism_iff_mork_binary (i : Nat) (p q : Process) :
+    (CommReduction i p q (.zero, p) /\ CommReduction i p q (.one, q)) <->
+    forall (fold : FoldStep) (_hb : fold.isBinary),
+      (exists (f0 : FoldStep) (_ : f0.isBinary),
+        FoldPicksSubResult f0 hbin .subResult0) /\
+      (exists (f1 : FoldStep) (_ : f1.isBinary),
+        FoldPicksSubResult f1 hbin .subResult1)
+\end{lstlisting}
+
+This ties communication-level nondeterminism in MQ directly into the MORK
+three-phase execution model.
+
+\subsection{Shared Process Calculus Infrastructure}
+
+The Mettapedia formalization contains three process calculi---$\pi$-calculus
+(8{,}768 lines), $\rho$-calculus (4{,}848 lines), and MQ-calculus---that
+share $\sim$40\% of their reduction/congruence infrastructure.  A shared
+library in \texttt{ProcessCalculi/Common/} eliminates this duplication:
+
+\begin{center}
+\small
+\begin{tabular}{llr}
+\toprule
+\textbf{File} & \textbf{Contents} & \textbf{Lines} \\
+\midrule
+\texttt{Common/Star.lean} & \texttt{RTClosure} (Type) + \texttt{RTClosureProp} (Prop) closures & 140 \\
+ & Generic lifters: \texttt{liftUnary}, \texttt{liftBinLeft}, \texttt{liftBinRight} & \\
+\texttt{Common/Congruence.lean} & \texttt{HasSC} typeclass, \texttt{reduces\_modulo\_sc} & 65 \\
+\texttt{Common/ProcessAlgebra.lean} & \texttt{HasPar}, \texttt{HasNu}, \texttt{HasNil} typeclasses & 30 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Each calculus registers instances:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{$\pi$-calculus}: \texttt{HasPar}, \texttt{HasNil}, \texttt{HasSC}
+    (wrapping Type-valued SC in \texttt{Nonempty}).
+  \item \textbf{$\rho$-calculus}: \texttt{HasSC} (Prop-valued SC directly).
+    The $\rho$-calculus also \emph{gained} multi-step parallel congruence lifting
+    (\texttt{ReducesStar.par\_head}, \texttt{ReducesStar.par\_any\_pos}) that was
+    previously missing.
+  \item \textbf{MQ-calculus}: \texttt{HasPar}, \texttt{HasNil}, \texttt{HasNu},
+    \texttt{HasSC}.
+\end{itemize}
+
+All three calculi share:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Structural congruence}: equivalence relation with parallel
+    commutativity/associativity and scope extrusion, unified via \texttt{HasSC}.
+  \item \textbf{COMM rule shape}: sender + receiver $\to$ result,
+    differing only in payload consumption (substitution in $\pi$/$\rho$,
+    measurement in MQ).
+\end{itemize}
+
+\subsection{Spice Calculus and Present Moment}
+
+The Spice calculus (formalized in \texttt{RhoCalculus/SpiceRule.lean})
+extends $\rho$-calculus COMM with $n$-step lookahead: agents receive
+the set of states reachable in $\leq n$ steps before committing to an
+interaction.  When $n = 0$ this recovers standard $\rho$-calculus COMM;
+the ``present moment'' ($n = 1$) gives agents awareness of their immediate
+interaction possibilities.
+
+The new \texttt{ReducesN.par\_head} and \texttt{ReducesN.par\_any\_pos}
+theorems (n-step parallel congruence lifting) enable compositional
+reasoning about Spice agents: an agent's future states lift cleanly through
+parallel contexts (\texttt{futureStates\_par\_head},
+\texttt{presentMoment\_par\_head}, \texttt{reachableStates\_par\_head}).
+This is essential for the Spice rule, where agents must evaluate their
+environment's $n$-step evolution.
+
+\section{Wigner-Style Program Distinctions}
+A practical interpretational takeaway is representational: one can encode a fully unitary evolution program and, separately, a staged-communication program where measurement-triggering communications occur between stages. In this framework they are different programs with different transition structures. The formal machinery does not force them to collapse into a single execution narrative.
+
+\section{OSLF Context and AGI-Relevant Direction}
+The Leifer--Milner--Sewell context-generation perspective provides the right conceptual anchor: contexts act as experiments. In MQ settings this dovetails with communication-as-measurement and gives a principled route from rewrite semantics to observational structure.
+
+For AGI-motivated scientific discovery workflows, the important systems consequence is that physical theories can be encoded as rewrite theories, transformed, and evaluated in a semantics-aware loop. Extending from MQ-calculus to additional physics rewrite systems (e.g., GR-oriented systems) becomes a matter of language-instance construction and bridge theorems, not ad hoc simulator rewrites.
+
+\section{Next Formalization Targets}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Multi-qubit gate semantics} beyond single-wire gate action.
+  \item \textbf{Stronger collapse theory}: preservation under composition,
+    idempotence of repeated measurement on the same wire.
+  \item \textbf{OSLF integration}: MQ process experiments as OSLF language
+    instances with $\Diamond \dashv \Box$ Galois connection, paralleling the
+    PeTTa and Governance OSLF instances.
+  \item \textbf{Spice--MQ bridge}: connect the $\rho$-calculus Spice
+    $n$-step lookahead to MQ measurement prediction (agents observing
+    future measurement outcomes).
+\end{enumerate}
+
+\begin{thebibliography}{9}
+\bibitem{stay-meredith-mq}
+M.~Stay and L.~G.~Meredith,
+\emph{The MQ-Calculus: A Calculus for Quantum Processes Involving Intermittent
+  Measurement},
+2026 working draft.
+
+\bibitem{meredith-present-moment}
+L.~G.~Meredith,
+\emph{How the Agents Got Their Present Moment},
+2026.
+
+\bibitem{meredith-radestock-2005}
+L.~G.~Meredith and M.~Radestock,
+\emph{A Reflective Higher-Order Calculus},
+\textit{Electronic Notes in Theoretical Computer Science}, 141(5), 2005.
+
+\bibitem{gay-nagarajan-cqp}
+S.~J.~Gay and R.~Nagarajan,
+\emph{Communicating Quantum Processes},
+POPL, 2005.
+
+\bibitem{leifer-milner}
+J.~Leifer and R.~Milner,
+\emph{Deriving Bisimulation Congruences for Reactive Systems},
+CONCUR, 2000.
+\end{thebibliography}
+
+\end{document}

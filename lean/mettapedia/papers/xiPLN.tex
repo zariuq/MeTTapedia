@@ -611,7 +611,7 @@ bridge:
 \code{canary\_ch11\_itv\_strength\_interval\_of\_lower\_upper}; crisp operators:
 \codepath{Mettapedia/Logic/PLNCrispEvidence.lean},
 \codepath{Mettapedia/Logic/PLNNoisyOr.lean}; regression target:
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Regression.lean},
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierRegression.lean},
 \codepath{scripts/check\_ch11\_quantifiers.sh}. & Partial \\
 \hline
 Ch.\ 12 & Intensional inference & Information-theoretic bridge and typed WM grounding:
@@ -620,8 +620,8 @@ Ch.\ 12 & Intensional inference & Information-theoretic bridge and typed WM grou
 \codepath{Mettapedia/Logic/PLNIntensionalWorldModel.lean},
 semantic and linked one-call endpoints in
 \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}, plus executable canary/regression targets:
-\codepath{Mettapedia/Logic/PLNChapter12Canary.lean},
-\codepath{Mettapedia/Logic/PLNChapter12Regression.lean},
+\codepath{Mettapedia/Logic/PLNIntensionalCanary.lean},
+\codepath{Mettapedia/Logic/PLNIntensionalRegression.lean},
 \codepath{scripts/check\_ch12\_intensional.sh}. & Formalized (ASSOC core) \\
 \hline
 Ch.\ 13 & Aspects of inference control & Formal inference-control components via selector
@@ -631,13 +631,13 @@ targets:
 \codepath{Mettapedia/Logic/PremiseSelectionOptimality.lean},
 \codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean},
 \codepath{Mettapedia/Logic/PremiseSelectionCoverage.lean},
-\codepath{Mettapedia/Logic/PLNChapter13InferenceControl.lean},
-\codepath{Mettapedia/Logic/PLNChapter13Canary.lean},
-\codepath{Mettapedia/Logic/PLNChapter13Regression.lean},
+\codepath{Mettapedia/Logic/PLNInferenceControlCore.lean},
+\codepath{Mettapedia/Logic/PLNInferenceControlCanary.lean},
+\codepath{Mettapedia/Logic/PLNInferenceControlRegression.lean},
 \codepath{scripts/check\_ch13\_inference\_control.sh}. & Formalized (core + canaries) \\
 \hline
 Ch.\ 14 & Temporal and causal inference & Temporal operator layer and causal profile:
-\codepath{Mettapedia/Logic/PLNChapter14TemporalCausal.lean}; event-calculus WM grounding:
+\codepath{Mettapedia/Logic/PLNTemporalCausalInference.lean}; event-calculus WM grounding:
 \codepath{Mettapedia/Logic/PLNProbabilisticEventCalculus.lean}; temporal OSLF/GSLT and one-call
 event endpoints:
 \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean} (event bundle/final-bundle endpoints). & Formalized (core) \\
@@ -698,21 +698,21 @@ Fuzzy universal specification (`PCL = 1`) \newline
 Rule-4 non-equivalence witness (ITV path) \newline
 \textit{Tags: [PLNBook-Ch11], [ITV-counterexample]} &
 \code{canary\_ch11\_rule4\_not\_equivalent\_itvPath} &
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierWorkedExamples.lean} \\
 \hline
 ITV coordinate transfer (lower/upper $\Rightarrow$ strength) \newline
 \textit{Tags: [PLNBook-Ch11], [Walley-IDM], [QFM-bridge]} &
 \code{fuzzyIntervalHolds\_strength\_of\_lower\_upper},
 \code{canary\_ch11\_itv\_strength\_interval\_of\_lower\_upper} &
 \codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyITVBridge.lean},
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierWorkedExamples.lean} \\
 \hline
 Finite MOST/FEW fixtures \newline
 \textit{Tags: [Zadeh1983], [Yager1984]} &
 \code{canary\_ch11\_most\_fraction\_threeQuarters},
 \code{canary\_ch11\_few\_fraction\_oneQuarter},
 \code{canary\_ch11\_most\_vs\_few\_split\_on\_threeQuarters} &
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierWorkedExamples.lean} \\
 \hline
 Zadeh-style quantified syllogism family (`MOST \circ MOST`, `FEW \circ MOST`) \newline
 \textit{Tags: [Zadeh1983], [Yager1984]} &
@@ -759,7 +759,7 @@ Additional finite quantifier fixtures (`ALMOST ALL`, `ABOUT HALF`) &
 \code{canary\_ch11\_almostAll\_holds\_on\_threeQuarters},
 \code{canary\_ch11\_aboutHalf\_fraction\_oneHalf},
 \code{canary\_ch11\_aboutHalf\_positive\_negative\_split} &
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierWorkedExamples.lean} \\
 \hline
 Literature-calibrated verbal probability fixtures (`PROBABLY`, `MAYBE/POSSIBLY`) &
 \textit{Tags: [MostellerYoutz1989], [IPCC-uncertainty-guidance]} \newline
@@ -767,7 +767,7 @@ Literature-calibrated verbal probability fixtures (`PROBABLY`, `MAYBE/POSSIBLY`)
 \code{canary\_ch11\_probably\_positive\_negative\_split},
 \code{ch11MaybeParams},
 \code{canary\_ch11\_maybe\_positive\_negative\_split} &
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierWorkedExamples.lean} \\
 \hline
 Additional finite quantifier fixtures (`ALMOST NONE`, `MANY-BUT-NOT-MOST`) &
 \textit{Tags: [Zadeh1983], [Yager1984], [DiazHermida2018-QFM]} \newline
@@ -775,7 +775,7 @@ Additional finite quantifier fixtures (`ALMOST NONE`, `MANY-BUT-NOT-MOST`) &
 \code{canary\_ch11\_almostNone\_holds\_on\_oneFifth},
 \code{canary\_ch11\_manyNotMost\_fraction\_threeFifths},
 \code{canary\_ch11\_manyNotMost\_vs\_most\_split} &
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean} \\
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierWorkedExamples.lean} \\
 \hline
 QFM selector-bundle API endpoints \newline
 \textit{Tags: [QFM-Axiomatic], [PLNBook-Ch11]} &
@@ -800,8 +800,8 @@ Non-multiplicative QFM instance theorem families \newline
 Regression entrypoint &
 \codepath{scripts/check\_ch11\_quantifiers.sh},
 \codepath{scripts/check\_ch11\_fuzzy\_syllogism.sh},
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Regression.lean},
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11FuzzySyllogismRegression.lean} &
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierRegression.lean},
+\codepath{Mettapedia/Logic/PLNFirstOrder/FuzzySyllogismRegression.lean} &
 \codepath{.github/workflows/lean\_action\_ci.yml} \\
 \hline
 \end{longtable}
@@ -851,10 +851,10 @@ Executable canaries (positive + non-equivalence) \newline
 \code{canary\_ch12\_mixed\_extensional\_projection},
 \code{canary\_ch12\_mixed\_assoc\_projection},
 \code{canary\_ch12\_mixed\_projection\_non\_equivalent} &
-\codepath{Mettapedia/Logic/PLNChapter12Canary.lean} \\
+\codepath{Mettapedia/Logic/PLNIntensionalCanary.lean} \\
 \hline
 Regression entrypoint &
-\codepath{Mettapedia/Logic/PLNChapter12Regression.lean},
+\codepath{Mettapedia/Logic/PLNIntensionalRegression.lean},
 \codepath{scripts/check\_ch12\_intensional.sh} &
 \codepath{Mettapedia/Logic/README.md} \\
 \hline
@@ -899,7 +899,84 @@ Composed Chapter-13 core endpoint (selector + stability + coverage) \newline
 \code{ch13\_selector\_default\_ranking\_iff},
 \code{ch13\_stable\_pooled\_of\_twoStage},
 \code{ch13\_inferenceControl\_end\_to\_end} &
-\codepath{Mettapedia/Logic/PLNChapter13InferenceControl.lean} \\
+\codepath{Mettapedia/Logic/PLNInferenceControlCore.lean} \\
+\hline
+Executable greedy algorithm endpoint \newline
+\textit{Tags: [PLNBook-Ch13], [algorithmic], [end-to-end]} &
+\code{ch13\_inferenceControl\_end\_to\_end\_algorithmic},
+\code{greedySelect\_chain\_of\_le\_card},
+\code{greedySelect\_one\_minus\_exp\_bound\_of\_le\_card} &
+\codepath{Mettapedia/Logic/PLNInferenceControlAlgorithms.lean} \\
+\hline
+Operator-style forward/backward chainer interfaces \newline
+\textit{Tags: [PLNBook-Ch13], [chainer], [MeTTa/PeTTa-style]} &
+\code{forwardStep},
+\code{forwardSearch},
+\code{backwardStep},
+\code{backwardSearch},
+\code{boundedSearch},
+\code{forwardSearch\_chain\_of\_le\_card},
+\code{boundedSearch\_eq\_forwardSearch\_of\_card\_le\_topK} &
+\codepath{Mettapedia/Logic/PLNInferenceControlChainer.lean} \\
+\hline
+PeTTa-style propositional connection-tableau ATP model \newline
+\textit{Tags: [PLNBook-Ch13], [ATP], [connection-tableau], [proof-trace-checker], [executable-DFS], [PeTTa-aligned]} &
+\code{replay\_sound},
+\code{replay\_complete},
+\code{checkProof\_true\_iff\_root\_mem\_and\_traceDerivable},
+\code{checkProof\_sound},
+\code{exists\_checkProof\_true\_of\_root\_mem\_and\_connDerivable},
+\code{connProveDFS\_sound},
+\code{connProveDFS\_complete\_of\_trace},
+\code{connProveDFS\_witness\_complete},
+\code{op\_check\_proof\_sound} &
+\codepath{Mettapedia/Logic/LP/PropositionalConnectionChainer.lean} \\
+\hline
+PeTTa fixture-parity map (\code{test\_leancop\_*} naming) \newline
+\textit{Tags: [PLNBook-Ch13], [fixture-map], [parity], [ic\_unsat], [ic\_branching]} &
+\code{ic\_unsat\_checkProof\_true},
+\code{ic\_sat\_connProve\_none},
+\code{ic\_unsat\_connProve\_has\_proof},
+\code{ic\_branching\_two\_distinct\_root\_proofs},
+\code{ic\_branching\_negp\_connProve\_has\_proof},
+\code{ic\_branching\_negq\_connProve\_has\_proof} &
+\codepath{Mettapedia/Logic/LP/PropositionalConnectionChainer.lean} \\
+\hline
+First-order proof-trace checker soundness (\code{proof\_fo} shape) \newline
+\textit{Tags: [PLNBook-Ch13], [ATP], [FO], [proof-trace-checker], [substitution]} &
+\code{traceDerivableFO\_of\_replayFO\_true},
+\code{replayFO\_sound} &
+\codepath{Mettapedia/Logic/LP/FirstOrderConnectionTrace.lean} \\
+\hline
+FO fixture map + branch-complete root-membership (PeTTa \code{fo\_*} naming) \newline
+\textit{Tags: [PLNBook-Ch13], [ATP], [FO], [fixture-map], [collectProofsAll]} &
+\code{fo\_unsat\_ground},
+\code{fo\_unsat\_unify},
+\code{fo\_sat\_singleton},
+\code{proof\_mem\_collectProofsAllFO\_of\_root\_mem\_trace\_mem},
+\code{fo\_unsat\_ground\_proof\_mem\_collectProofsAllFO},
+\code{fo\_unsat\_unify\_proof\_mem\_collectProofsAllFO} &
+\codepath{Mettapedia/Logic/LP/FirstOrderConnectionTrace.lean} \\
+\hline
+Operator-contract parity rows for bundle/topK outputs (\code{op\_leancop\_ch13\_bundle*}) \newline
+\textit{Tags: [PLNBook-Ch13], [ATP], [operator-contract], [topK], [bundle]} &
+\code{ch13Bundle\_proofs\_eq\_collectProofs},
+\code{ch13Bundle\_topK\_eq\_topKCollectProofs},
+\code{ch13BundleAll\_proofs\_eq\_collectProofsAll},
+\code{ch13BundleAll\_topK\_eq\_topKCollectProofsAll},
+\code{mem\_ch13BundleAll\_topK\_implies\_mem\_ch13BundleAll\_proofs},
+\code{topKCollectProofsAllFO\_contract},
+\code{mem\_topKCollectProofsAllFO\_implies\_mem\_collectProofsAllFO} &
+\codepath{Mettapedia/Logic/LP/PropositionalConnectionChainer.lean},
+\codepath{Mettapedia/Logic/LP/FirstOrderConnectionTrace.lean} \\
+\hline
+Worked finite fixtures (`topK=1` and nontrivial `topK=2`) \newline
+\textit{Tags: [PLNBook-Ch13], [worked-example], [finite-fixture]} &
+\code{ch13\_bool\_end\_to\_end\_algorithmic},
+\code{ch13\_bool\_coverage\_exact\_one},
+\code{ch13\_fin3\_end\_to\_end\_algorithmic\_topK2},
+\code{ch13\_fin3\_coverage\_exact\_two} &
+\codepath{Mettapedia/Logic/PLNInferenceControlExamples.lean} \\
 \hline
 Executable canaries (positive + negative) \newline
 \textit{Tags: [PLNBook-Ch13], [canary], [non-equivalence]} &
@@ -908,10 +985,10 @@ Executable canaries (positive + negative) \newline
 \code{canary\_ch13\_ranking\_flip\_without\_margin},
 \code{canary\_ch13\_dependencyCoverage\_insert\_gain\_bool},
 \code{canary\_ch13\_selector\_default\_gate\_bounds} &
-\codepath{Mettapedia/Logic/PLNChapter13Canary.lean} \\
+\codepath{Mettapedia/Logic/PLNInferenceControlCanary.lean} \\
 \hline
 Regression entrypoint &
-\codepath{Mettapedia/Logic/PLNChapter13Regression.lean},
+\codepath{Mettapedia/Logic/PLNInferenceControlRegression.lean},
 \codepath{scripts/check\_ch13\_inference\_control.sh} &
 \codepath{Mettapedia/Logic/README.md} \\
 \hline
@@ -965,9 +1042,9 @@ the principal \emph{legacy and current} modules in Mettapedia that track PLN-boo
 \codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean},
 \codepath{Mettapedia/Logic/PremiseSelectionSelectorSpec.lean},
 \codepath{Mettapedia/Logic/PremiseSelectionBestPLNDraft.lean},
-\codepath{Mettapedia/Logic/PLNChapter13InferenceControl.lean},
-\codepath{Mettapedia/Logic/PLNChapter13Canary.lean},
-\codepath{Mettapedia/Logic/PLNChapter13Regression.lean},
+\codepath{Mettapedia/Logic/PLNInferenceControlCore.lean},
+\codepath{Mettapedia/Logic/PLNInferenceControlCanary.lean},
+\codepath{Mettapedia/Logic/PLNInferenceControlRegression.lean},
 \codepath{scripts/check\_ch13\_inference\_control.sh}.
 
 \paragraph{Ch.\ 10--11 (higher-order, quantifiers, crisp/fuzzy operators).}
@@ -978,8 +1055,8 @@ the principal \emph{legacy and current} modules in Mettapedia that track PLN-boo
 \codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean},
 \codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyITVBridge.lean},
 \codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierCanary.lean},
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean},
-\codepath{Mettapedia/Logic/PLNFirstOrder/Chapter11Regression.lean},
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierWorkedExamples.lean},
+\codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierRegression.lean},
 \codepath{Mettapedia/Logic/PLNFirstOrder/Soundness.lean},
 \codepath{Mettapedia/Logic/PLNCrispEvidence.lean},
 \codepath{Mettapedia/Logic/PLNNoisyOr.lean},
@@ -992,14 +1069,14 @@ the principal \emph{legacy and current} modules in Mettapedia that track PLN-boo
 \codepath{Mettapedia/Logic/IntensionalInheritanceSolomonoffBridge.lean},
 \codepath{Mettapedia/Logic/PLNIntensionalWorldModel.lean},
 \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean},
-\codepath{Mettapedia/Logic/PLNChapter12Canary.lean},
-\codepath{Mettapedia/Logic/PLNChapter12Regression.lean},
+\codepath{Mettapedia/Logic/PLNIntensionalCanary.lean},
+\codepath{Mettapedia/Logic/PLNIntensionalRegression.lean},
 \codepath{scripts/check\_ch12\_intensional.sh}.
 
 \paragraph{Ch.\ 14 (temporal/causal; event calculus; OSLF/GSLT grounding).}
 \codepath{Mettapedia/Logic/PLNTemporal.lean},
 \codepath{Mettapedia/Logic/TemporalQuantale.lean},
-\codepath{Mettapedia/Logic/PLNChapter14TemporalCausal.lean},
+\codepath{Mettapedia/Logic/PLNTemporalCausalInference.lean},
 \codepath{Mettapedia/Logic/PLNProbabilisticEventCalculus.lean},
 \codepath{Mettapedia/OSLF/Framework/VertexTemporalRewriteRules.lean},
 \codepath{Mettapedia/OSLF/Framework/HypercubeTemporalGSLTFunctor.lean},

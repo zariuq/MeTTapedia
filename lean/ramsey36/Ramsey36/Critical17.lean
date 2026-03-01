@@ -19,6 +19,7 @@ import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Fin.Basic
 import Mathlib.Tactic.FinCases
 import Ramsey36.Basic
+import Ramsey36.IndepSetBridge
 import Ramsey36.IndepSplit
 import Ramsey36.IndepSmall
 

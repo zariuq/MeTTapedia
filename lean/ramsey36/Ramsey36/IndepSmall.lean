@@ -13,7 +13,7 @@ proves no 3-clique (triangle-free).
 Imports only IndepSetFunc.lean (no Mathlib) to keep virtual memory low.
 -/
 
-import Ramsey36.IndepSetFunc
+import Algorithms.Graph.IndepSetFunc
 import Ramsey36.IndepSub17
 
 /-! ## R(3,3): Fin 5, C5 cycle -/

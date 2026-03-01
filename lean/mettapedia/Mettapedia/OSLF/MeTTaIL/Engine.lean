@@ -234,6 +234,156 @@ def premiseHolds (lang : LanguageDef) (bindings : Bindings) (premise : Premise) 
 def premisesHold (lang : LanguageDef) (bindings : Bindings) (premises : List Premise) : Bool :=
   premisesHoldWithEnv RelationEnv.empty lang bindings premises
 
+/-! ## Monotonicity of Premise Evaluation
+
+If `lang₁.rewrites ⊆ lang₂.rewrites` (every rule of `lang₁` is also a rule of `lang₂`)
+and `lang₁.congruenceCollections = lang₂.congruenceCollections`, then premise evaluation
+with `lang₁` produces a subset of premise evaluation with `lang₂`.
+
+This is because `premiseStepWithEnv` depends on the language only through
+`rewriteWithContextNoPremises` (via `.congruence` and `.relationQuery` premises),
+and `rewriteWithContextNoPremises` is monotone in the rule set. -/
+
+/-- `rewriteStepNoPremises` is monotone in the rule set. -/
+theorem rewriteStepNoPremises_mono {lang₁ lang₂ : LanguageDef}
+    (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (term : Pattern) :
+    ∀ p, p ∈ rewriteStepNoPremises lang₁ term → p ∈ rewriteStepNoPremises lang₂ term := by
+  intro p hp
+  simp only [rewriteStepNoPremises, rewriteStep] at hp ⊢
+  rw [List.mem_flatMap] at hp ⊢
+  obtain ⟨rule, hrmem, hpin⟩ := hp
+  exact ⟨rule, hrules rule hrmem, hpin⟩
+
+/-- `rewriteInCollectionNoPremises` is monotone in the rule set. -/
+theorem rewriteInCollectionNoPremises_mono {lang₁ lang₂ : LanguageDef}
+    (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (ct : CollType) (elems : List Pattern) (rest : Option String) :
+    ∀ p, p ∈ rewriteInCollectionNoPremises lang₁ ct elems rest →
+      p ∈ rewriteInCollectionNoPremises lang₂ ct elems rest := by
+  intro p hp
+  unfold rewriteInCollectionNoPremises at hp ⊢
+  have hct₁ : LanguageDef.allowsCongruenceIn lang₁ ct := by
+    by_contra h; rw [dif_neg h] at hp; cases hp
+  have hct₂ : LanguageDef.allowsCongruenceIn lang₂ ct := by
+    simp only [LanguageDef.allowsCongruenceIn] at hct₁ ⊢; rw [← hcong]; exact hct₁
+  rw [dif_pos hct₁] at hp; rw [dif_pos hct₂]
+  rw [List.mem_flatMap] at hp ⊢
+  obtain ⟨⟨elem, i⟩, himem, hpin⟩ := hp
+  refine ⟨⟨elem, i⟩, himem, ?_⟩
+  rw [List.mem_map] at hpin ⊢
+  obtain ⟨elem', helem', hpeq⟩ := hpin
+  exact ⟨elem', rewriteStepNoPremises_mono hrules _ _ helem', hpeq⟩
+
+/-- `rewriteWithContextNoPremises` is monotone in the rule set. -/
+theorem rewriteWithContextNoPremises_mono {lang₁ lang₂ : LanguageDef}
+    (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (term : Pattern) :
+    ∀ p, p ∈ rewriteWithContextNoPremises lang₁ term →
+      p ∈ rewriteWithContextNoPremises lang₂ term := by
+  intro p hp
+  unfold rewriteWithContextNoPremises at hp ⊢
+  rw [List.mem_append] at hp ⊢
+  rcases hp with htop | hsub
+  · exact Or.inl (rewriteStepNoPremises_mono hrules term p htop)
+  · right
+    revert hsub
+    cases term with
+    | collection ct elems rest =>
+        exact rewriteInCollectionNoPremises_mono hrules hcong ct elems rest p
+    | _ => intro h; exact h
+
+/-- Helper: `builtinRelationTuples` is monotone in the rule set.
+    The only language-dependent case is `"reduces"`, which uses
+    `rewriteWithContextNoPremises`. -/
+private theorem builtinRelationTuples_mono {lang₁ lang₂ : LanguageDef}
+    (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (rel : String) (args : List Pattern) :
+    ∀ t, t ∈ builtinRelationTuples lang₁ rel args →
+      t ∈ builtinRelationTuples lang₂ rel args := by
+  intro t ht
+  unfold builtinRelationTuples at ht ⊢
+  -- Both ht and goal match on the same (rel, args), just different lang.
+  -- Revert ht so split handles both simultaneously.
+  revert ht; split
+  · -- "reduces" case
+    intro ht; rw [List.mem_map] at ht ⊢
+    obtain ⟨tgt, htgt, hteq⟩ := ht
+    exact ⟨tgt, rewriteWithContextNoPremises_mono hrules hcong _ _ htgt, hteq⟩
+  · intro ht; exact ht  -- "eq" case: language-independent
+  · intro ht; exact ht  -- default case: empty list
+
+/-- `relationQueryStep` is monotone in the rule set. -/
+private theorem relationQueryStep_mono {lang₁ lang₂ : LanguageDef}
+    (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (relEnv : RelationEnv) (bindings : Bindings) (rel : String) (args : List Pattern) :
+    ∀ bs, bs ∈ relationQueryStep relEnv lang₁ bindings rel args →
+      bs ∈ relationQueryStep relEnv lang₂ bindings rel args := by
+  intro bs hbs
+  simp only [relationQueryStep] at hbs ⊢
+  rw [List.mem_flatMap] at hbs ⊢
+  obtain ⟨tuple, htmem, hbmem⟩ := hbs
+  refine ⟨tuple, ?_, hbmem⟩
+  rw [List.mem_append] at htmem ⊢
+  rcases htmem with hbuiltin | hext
+  · exact Or.inl (builtinRelationTuples_mono hrules hcong rel _ tuple hbuiltin)
+  · exact Or.inr hext
+
+/-- `premiseStepWithEnv` is monotone in the rule set. -/
+theorem premiseStepWithEnv_mono {lang₁ lang₂ : LanguageDef}
+    (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (relEnv : RelationEnv) (bindings : Bindings) (prem : Premise) :
+    ∀ bs, bs ∈ premiseStepWithEnv relEnv lang₁ bindings prem →
+      bs ∈ premiseStepWithEnv relEnv lang₂ bindings prem := by
+  intro bs hbs
+  match prem with
+  | .freshness _ => exact hbs
+  | .congruence src tgt =>
+      simp only [premiseStepWithEnv] at hbs ⊢
+      rw [List.mem_flatMap] at hbs ⊢
+      obtain ⟨cand, hcmem, hbmem⟩ := hbs
+      exact ⟨cand, rewriteWithContextNoPremises_mono hrules hcong _ cand hcmem, hbmem⟩
+  | .relationQuery rel args =>
+      simp only [premiseStepWithEnv] at hbs ⊢
+      exact relationQueryStep_mono hrules hcong relEnv bindings rel args bs hbs
+
+/-- `applyPremisesWithEnv` is monotone in the rule set:
+    if every rule of `lang₁` is in `lang₂`, then any binding set
+    produced by premise evaluation under `lang₁` is also produced
+    under `lang₂`. -/
+theorem applyPremisesWithEnv_mono {lang₁ lang₂ : LanguageDef}
+    (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (relEnv : RelationEnv) (premises : List Premise) (seed : Bindings) :
+    ∀ bs, bs ∈ applyPremisesWithEnv relEnv lang₁ premises seed →
+      bs ∈ applyPremisesWithEnv relEnv lang₂ premises seed := by
+  unfold applyPremisesWithEnv
+  -- Strengthen: if acc₁ ⊆ acc₂ then foldl f₁ acc₁ ⊆ foldl f₂ acc₂
+  suffices h : ∀ (acc₁ acc₂ : List Bindings),
+      (∀ b, b ∈ acc₁ → b ∈ acc₂) →
+      ∀ bs, bs ∈ premises.foldl
+        (fun acc prem => acc.flatMap fun bs => premiseStepWithEnv relEnv lang₁ bs prem) acc₁ →
+      bs ∈ premises.foldl
+        (fun acc prem => acc.flatMap fun bs => premiseStepWithEnv relEnv lang₂ bs prem) acc₂ by
+    exact h [seed] [seed] (fun b hb => hb)
+  induction premises with
+  | nil => intro acc₁ acc₂ hsub bs hbs; exact hsub bs hbs
+  | cons prem prems ih =>
+      intro acc₁ acc₂ hsub bs hbs
+      simp only [List.foldl_cons] at hbs ⊢
+      apply ih
+      · -- Show: acc₁.flatMap (... lang₁ ...) ⊆ acc₂.flatMap (... lang₂ ...)
+        intro b hb
+        rw [List.mem_flatMap] at hb ⊢
+        obtain ⟨a, hamem, hbmem⟩ := hb
+        exact ⟨a, hsub a hamem, premiseStepWithEnv_mono hrules hcong relEnv a prem b hbmem⟩
+      · exact hbs
+
 /-- Apply a single rule using premise-aware filtering on bindings, with a
     pluggable relation environment. -/
 def applyRuleWithPremisesUsing (relEnv : RelationEnv) (lang : LanguageDef)

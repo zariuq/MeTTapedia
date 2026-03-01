@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.MQCalculus.CommRule
+import Mettapedia.Languages.ProcessCalculi.Common.Common
 
 /-!
 # MQ-Calculus: Full Reduction Relation
@@ -87,5 +88,24 @@ theorem MultiStep.par_r (p : Process) {q q' : Process} (h : q →* q') :
   induction h with
   | refl => exact .refl _
   | step _ _ _ hr _ ih => exact .step _ _ _ (Reduces.par_r _ _ _ hr) ih
+
+/-! ## Common Infrastructure Instances -/
+
+open _root_.ProcessCalculi
+
+instance : HasPar Process where
+  par := MQPar
+
+instance : HasNil Process where
+  nil := MQNil
+
+instance : HasNu Process where
+  nu := MQNu
+
+instance : HasSC Process where
+  sc := SC
+  sc_refl := SC.refl
+  sc_symm := SC.symm
+  sc_trans := SC.trans
 
 end Mettapedia.Languages.ProcessCalculi.MQCalculus

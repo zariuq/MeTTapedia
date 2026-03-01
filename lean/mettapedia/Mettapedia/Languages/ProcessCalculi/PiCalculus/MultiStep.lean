@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.Common.Common
 
 /-!
 # Multi-Step Reduction for π-Calculus
@@ -49,5 +50,23 @@ noncomputable def MultiStep.nu {x : Name} {P P' : Process} (h : MultiStep P P') 
   | refl _ => exact MultiStep.refl _
   | step _ _ _ h_red _ ih =>
       exact MultiStep.trans (MultiStep.single (Reduces.res _ _ _ h_red)) ih
+
+/-! ## Common Infrastructure Instances -/
+
+open _root_.ProcessCalculi
+
+instance : HasPar Process where
+  par := Process.par
+
+instance : HasNil Process where
+  nil := Process.nil
+
+/-- π-calculus SC is Type-valued; HasSC wraps in Nonempty for Prop. -/
+instance : HasSC Process where
+  sc P Q := Nonempty (P ≡ Q)
+  sc_refl P := ⟨StructuralCongruence.refl P⟩
+  sc_symm P Q h := h.elim fun h => ⟨StructuralCongruence.symm P Q h⟩
+  sc_trans P Q R h1 h2 := h1.elim fun h1 => h2.elim fun h2 =>
+    ⟨StructuralCongruence.trans P Q R h1 h2⟩
 
 end Mettapedia.Languages.ProcessCalculi.PiCalculus

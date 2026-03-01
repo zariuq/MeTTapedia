@@ -409,15 +409,15 @@ theorem not_hcarrier0_strong_shape_k2 :
 
 lemma carrier_n1_n0_N2_cardEqChecker_false :
     rowVisitSingletonCarrierCardEqChecker (k := 2) s0 s1 1 2 = false := by
-  refine Mettapedia.Logic.Bridges.checker_false_of_not_prop ?_
-  intro hcard
-  have hEqv : Nonempty (carrier_n1_N2 ≃ carrier_n0_N2) := by
-    -- For finite types, equal cardinals imply an equivalence.
-    exact Fintype.card_eq.mp hcard
-  exact not_exists_equiv_carrier_n1_to_n0_N2 hEqv
+  simpa [rowVisitSingletonCarrierCardEqChecker, prefixCarrierCardEqChecker,
+    carrier_n1_N2, carrier_n0_N2] using
+    (finsetSubtypeCardEqChecker_false_of_not_nonempty_equiv
+      (s := carrier_n1_N2) (t := carrier_n0_N2)
+      not_exists_equiv_carrier_n1_to_n0_N2)
 
 lemma carrier_n1_n0_N2_evidenceEquivChecker_false :
     rowVisitSingletonCarrierEvidenceEquivChecker (k := 2) s0 s1 1 2 = false := by
+  classical
   refine Mettapedia.Logic.Bridges.checker_false_of_not_prop ?_
   intro hExists
   rcases hExists with ⟨e, _he⟩
@@ -801,6 +801,131 @@ lemma not_hperm_Ppath_startRestricted :
       _ = 1 := hE0
   exact zero_ne_one this
 
+lemma rowSucc_s0_0_pathC :
+    rowSuccessorAtNthVisit (k := 2) s0 0 pathC = s1 := by
+  have hstart : pathC 0 = s0 := by simp [pathC]
+  calc
+    rowSuccessorAtNthVisit (k := 2) s0 0 pathC
+        = successorAt (k := 2) pathC 0 := by
+            exact rowSuccessorAtNthVisit_zero_eq_successor_of_start (k := 2) pathC s0 hstart
+    _ = s1 := by simp [successorAt, pathC]
+
+lemma nthVisitTime_s0_eq_none_of_pos (n : ℕ) (hn : 0 < n) :
+    nthVisitTime (k := 2) pathC s0 n = none := by
+  refine (nthVisitTime_eq_none_iff (k := 2) pathC s0 n).2 ?_
+  intro hex
+  rcases hex with ⟨t, ht⟩
+  have ht0 : t = 0 := by
+    by_contra ht0
+    have : pathC t = s1 := by simp [pathC, ht0]
+    have hs10 : s1 = s0 := this.symm.trans ht.1
+    exact (by decide : (s1 : S) ≠ s0) hs10
+  subst ht0
+  have : visitCountBefore (k := 2) pathC s0 0 = n := ht.2
+  simp [visitCountBefore] at this
+  exact (Nat.ne_of_gt hn) this.symm
+
+lemma rowSucc_s0_1_pathC :
+    rowSuccessorAtNthVisit (k := 2) s0 1 pathC = s0 := by
+  have hnone : nthVisitTime (k := 2) pathC s0 1 = none :=
+    nthVisitTime_s0_eq_none_of_pos 1 (by decide)
+  simp [rowSuccessorAtNthVisit, hnone]
+
+lemma rowSucc_s0_2_pathC :
+    rowSuccessorAtNthVisit (k := 2) s0 2 pathC = s0 := by
+  have hnone : nthVisitTime (k := 2) pathC s0 2 = none :=
+    nthVisitTime_s0_eq_none_of_pos 2 (by decide)
+  simp [rowSuccessorAtNthVisit, hnone]
+
+/-- Concrete witness test for the direct `hperm` derivability route:
+the deterministic `Ppath` witness cannot satisfy the `hrow` finite-dimensional
+row-law premise (already at `i = s0`, `m = 2`). -/
+theorem not_exists_rowKernel_hrow_for_Ppath :
+    ¬ ∃ rowKernel : S → (ℕ → S) → ProbabilityMeasure S,
+      ∀ i : S, ∀ (m : ℕ) (sel : Fin m → ℕ), StrictMono sel →
+        Measure.map (fun r : ℕ → S => fun j : Fin m => r (sel j))
+            (rowProcessLaw (k := 2) Ppath i)
+          =
+        (rowProcessLaw (k := 2) Ppath i).bind
+          (fun r => Measure.pi (fun _ : Fin m => (rowKernel i r : Measure S))) := by
+  intro hExists
+  rcases hExists with ⟨rowKernel, hrow⟩
+  let sel01 : Fin 2 → ℕ := fun j => if (j : ℕ) = 0 then 0 else 1
+  let sel12 : Fin 2 → ℕ := fun j => if (j : ℕ) = 0 then 1 else 2
+  let f01 : (ℕ → S) → (Fin 2 → S) := fun r => fun j => r (sel01 j)
+  let f12 : (ℕ → S) → (Fin 2 → S) := fun r => fun j => r (sel12 j)
+  let A : Set (Fin 2 → S) := {x : Fin 2 → S | x 0 = s1 ∧ x 1 = s0}
+  have hsel01 : StrictMono sel01 := by
+    intro x y hxy
+    fin_cases x <;> fin_cases y <;> simp [sel01] at hxy ⊢
+  have hsel12 : StrictMono sel12 := by
+    intro x y hxy
+    fin_cases x <;> fin_cases y <;> simp [sel12] at hxy ⊢
+  have h01 := hrow s0 2 sel01 hsel01
+  have h12 := hrow s0 2 sel12 hsel12
+  have hL :
+      Measure.map f01 (rowProcessLaw (k := 2) Ppath s0) =
+        Measure.map f12 (rowProcessLaw (k := 2) Ppath s0) := by
+    exact h01.trans h12.symm
+  have hA_meas : MeasurableSet A := by
+    have h0 : MeasurableSet ({x : Fin 2 → S | x 0 = s1} : Set (Fin 2 → S)) := by
+      exact measurableSet_eq_fun (measurable_pi_apply 0) measurable_const
+    have h1 : MeasurableSet ({x : Fin 2 → S | x 1 = s0} : Set (Fin 2 → S)) := by
+      exact measurableSet_eq_fun (measurable_pi_apply 1) measurable_const
+    simpa [A, Set.setOf_and] using h0.inter h1
+  have hf01 : Measurable f01 := by
+    exact measurable_pi_lambda _ (fun j => measurable_pi_apply (sel01 j))
+  have hf12 : Measurable f12 := by
+    exact measurable_pi_lambda _ (fun j => measurable_pi_apply (sel12 j))
+  have hrowLaw_s0 :
+      rowProcessLaw (k := 2) Ppath s0 =
+        Measure.dirac (rowSuccessorVisitProcess (k := 2) s0 pathC) := by
+    simpa [rowProcessLaw, Ppath, deterministicPathMeasure] using
+      (Measure.map_dirac (measurable_rowSuccessorVisitProcess (k := 2) s0) pathC)
+  have hmap01 :
+      Measure.map f01 (rowProcessLaw (k := 2) Ppath s0) =
+        Measure.dirac (f01 (rowSuccessorVisitProcess (k := 2) s0 pathC)) := by
+    simpa [hrowLaw_s0] using
+      (Measure.map_dirac hf01 (rowSuccessorVisitProcess (k := 2) s0 pathC))
+  have hmap12 :
+      Measure.map f12 (rowProcessLaw (k := 2) Ppath s0) =
+        Measure.dirac (f12 (rowSuccessorVisitProcess (k := 2) s0 pathC)) := by
+    simpa [hrowLaw_s0] using
+      (Measure.map_dirac hf12 (rowSuccessorVisitProcess (k := 2) s0 pathC))
+  have hmem01 : f01 (rowSuccessorVisitProcess (k := 2) s0 pathC) ∈ A := by
+    refine ⟨?_, ?_⟩ <;> simp [f01, sel01, rowSuccessorVisitProcess, rowSucc_s0_0_pathC, rowSucc_s0_1_pathC]
+  have hnotmem12 : f12 (rowSuccessorVisitProcess (k := 2) s0 pathC) ∉ A := by
+    intro hA
+    have h0 : f12 (rowSuccessorVisitProcess (k := 2) s0 pathC) 0 = s1 := hA.1
+    have h0s0 :
+        f12 (rowSuccessorVisitProcess (k := 2) s0 pathC) 0 = s0 := by
+      simp [f12, sel12, rowSuccessorVisitProcess, rowSucc_s0_1_pathC]
+    exact (by decide : (s0 : S) ≠ s1) (h0s0.symm.trans h0)
+  have hA01 :
+      (Measure.map f01 (rowProcessLaw (k := 2) Ppath s0)) A = 1 := by
+    calc
+      (Measure.map f01 (rowProcessLaw (k := 2) Ppath s0)) A
+          = (Measure.dirac (f01 (rowSuccessorVisitProcess (k := 2) s0 pathC))) A := by
+              simpa using congrArg (fun M => M A) hmap01
+      _ = 1 := by simp [Measure.dirac_apply', hA_meas, hmem01]
+  have hA12 :
+      (Measure.map f12 (rowProcessLaw (k := 2) Ppath s0)) A = 0 := by
+    calc
+      (Measure.map f12 (rowProcessLaw (k := 2) Ppath s0)) A
+          = (Measure.dirac (f12 (rowSuccessorVisitProcess (k := 2) s0 pathC))) A := by
+              simpa using congrArg (fun M => M A) hmap12
+      _ = 0 := by simp [Measure.dirac_apply', hA_meas, hnotmem12]
+  have hEqA :
+      (Measure.map f01 (rowProcessLaw (k := 2) Ppath s0)) A =
+        (Measure.map f12 (rowProcessLaw (k := 2) Ppath s0)) A :=
+    congrArg (fun M => M A) hL
+  have honezero : (1 : ENNReal) = 0 := by
+    calc
+      (1 : ENNReal) = (Measure.map f01 (rowProcessLaw (k := 2) Ppath s0)) A := hA01.symm
+      _ = (Measure.map f12 (rowProcessLaw (k := 2) Ppath s0)) A := hEqA
+      _ = 0 := hA12
+  exact one_ne_zero honezero
+
 theorem exists_deterministic_witness_not_hperm :
     ∃ (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure S) (P : Measure (ℕ → S)),
       IsProbabilityMeasure P ∧
@@ -822,6 +947,40 @@ theorem exists_deterministic_witness_not_hperm :
     change IsProbabilityMeasure (deterministicPathMeasure pathC)
     simpa [deterministicPathMeasure] using (Measure.dirac.isProbabilityMeasure (x := pathC))
   exact ⟨μPath, Ppath, hPprob, hμ_μPath, hExt_μPath, hnotPerm⟩
+
+/-- Strengthened deterministic witness test for the direct
+`hrow+hEval+hμ+hExt ⟹ hperm` route:
+the same witness has `hμ+hExt+¬hperm`, and no row-kernel can satisfy
+`hrow` (hence no witness with both `hrow` and `hEval`). -/
+theorem deterministic_witness_blocks_hrow_hEval_derivation_test :
+    ∃ (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure S)
+      (P : Measure (ℕ → S)),
+      IsProbabilityMeasure P ∧
+      Mettapedia.Logic.UniversalPrediction.MarkovExchangeabilityBridge.MarkovExchangeablePrefixMeasure
+        (k := 2) μ ∧
+      (∀ xs : List S, μ xs = P (MarkovDeFinettiRecurrence.cylinder (k := 2) xs)) ∧
+      ¬ StartRestrictedRowSuccessorPermInvariant (k := 2) P ∧
+      ¬ (∃ rowKernel : S → (ℕ → S) → ProbabilityMeasure S,
+            (∀ i : S, ∀ (m : ℕ) (sel : Fin m → ℕ), StrictMono sel →
+              Measure.map (fun r : ℕ → S => fun j : Fin m => r (sel j))
+                  (rowProcessLaw (k := 2) P i)
+                =
+              (rowProcessLaw (k := 2) P i).bind
+                (fun r => Measure.pi (fun _ : Fin m => (rowKernel i r : Measure S)))) ∧
+            (∀ i : S, ∀ b : S,
+              AEMeasurable
+                (fun r : ℕ → S => (rowKernel i r : Measure S) ({b} : Set S))
+                (rowProcessLaw (k := 2) P i))) := by
+  have hPprob : IsProbabilityMeasure Ppath := by
+    simpa [Ppath, deterministicPathMeasure] using
+      (Measure.dirac.isProbabilityMeasure (x := pathC))
+  have hnotPerm : ¬ StartRestrictedRowSuccessorPermInvariant (k := 2) Ppath := by
+    simpa [StartRestrictedRowSuccessorPermInvariant] using not_hperm_Ppath_startRestricted
+  refine ⟨μPath, Ppath, hPprob, hμ_μPath, hExt_μPath, hnotPerm, ?_⟩
+  intro hExists
+  rcases hExists with ⟨rowKernel, hrow, _hEval⟩
+  have hNoHrow := not_exists_rowKernel_hrow_for_Ppath
+  exact hNoHrow ⟨rowKernel, hrow⟩
 
 theorem not_derivable_startRestrictedRowSuccessorPermInvariant :
     ¬ (∀ (μ : Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin 2))

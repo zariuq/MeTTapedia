@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.Main
 import Mettapedia.OSLF.CoreMain
-import Mettapedia.Logic.Datalog
+import Mettapedia.OSLF.PeTTa
+import Mettapedia.Logic.LP
 import Mettapedia.OSLF.PathMap
 import Mettapedia.Logic.OSLFImageFinite
 import Mettapedia.OSLF.Framework.PiRhoCanonicalBridge
@@ -262,7 +263,28 @@ formalization. Serves as a traceability matrix for review.
 | 17 | `representable_commDi_bc_and_graphDiamond` | BeckChevalleyOSLF.lean | bundles COMM representable BC and graph-◇ witness characterization |
 | 18 | `checkLangUsingWithPred_sat_sound_graphObj_dia` / `..._box` | Formula.lean | checker-facing `.dia`/`.box` soundness over packaged premise-aware `ReductionGraphObj` |
 
-## IX. Sorry / Axiom Census
+## IX. Conservative MaTT Claim Map (No Overclaim)
+
+This section indexes only currently-proven MaTT-style claims in the
+runtime/behavioral layer:
+
+| # | Theorem | File | Scope |
+|---|---------|------|-------|
+| 1 | `doctrine_galois_is_langGalois` | MATTProvableNow.lean | runtime/behavioral indexed doctrine carries per-language Galois |
+| 2 | `doctrine_adjunction_is_langModalAdjunction` | MATTProvableNow.lean | doctrine recovers per-language modal adjunction |
+| 3 | `mode2SkeletonLaws` | Mode2SkeletonLaws.lean | bundled mode-skeleton id/assoc/mapPred laws |
+| 4 | `runtime_runtime_square_coherence` | MATTProvableNow.lean | runtime/runtime mapPred commuting square |
+| 5 | `runtime_behavioral_square_coherence` | MATTProvableNow.lean | runtime/behavioral mapPred commuting square |
+| 6 | `runtime_mode_diamond_transport_comp` | MATTProvableNow.lean | composed runtime morphism diamond witness transport |
+| 7 | `matt_canonical_runtime_behavioral_package` | MATTClaimMap.lean | canonical composed package: doctrine + mapPred functoriality + commuting squares + transport |
+| 8 | `pure_mode_isolation` | MATTProvableNow.lean | current pure boundary: any morphism touching pure is pure identity |
+| 9 | `mettaPure_runtime_behavioral_transport` | MATTProvableNow.lean | specialized runtime→behavioral witness transport for `mettaPure` |
+
+Intentionally out of current theorem scope:
+- full mode-2-category formalization
+- pure-mode morphism theory (deferred until MeTTa-Pure bridge is established)
+
+## X. Sorry / Axiom Census
 
 **Current core-OSLF status (scope of this index):**
 - 0 `sorry` in `Mettapedia/OSLF/RhoCalculus/Reduction.lean`
@@ -518,6 +540,18 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemaining_empty
 #check @Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_zero
 #check @Mettapedia.OSLF.Framework.NTTClaimTracker.fullNTTParity_closed
+-- Conservative MaTT theorem map
+#check @Mettapedia.OSLF.Framework.Mode2SkeletonLaws.mode2SkeletonLaws
+#check @Mettapedia.OSLF.Framework.Mode2SkeletonLaws.mapPred_comp_holds
+#check @Mettapedia.OSLF.Framework.MATTProvableNow.doctrine_galois_is_langGalois
+#check @Mettapedia.OSLF.Framework.MATTProvableNow.doctrine_adjunction_is_langModalAdjunction
+#check @Mettapedia.OSLF.Framework.MATTProvableNow.runtime_runtime_square_coherence
+#check @Mettapedia.OSLF.Framework.MATTProvableNow.runtime_behavioral_square_coherence
+#check @Mettapedia.OSLF.Framework.MATTProvableNow.runtime_mode_diamond_transport_comp
+#check @Mettapedia.OSLF.Framework.MATTProvableNow.pure_mode_isolation
+#check @Mettapedia.OSLF.Framework.MATTProvableNow.mettaPure_runtime_behavioral_transport
+#check @Mettapedia.OSLF.Framework.MATTClaimMap.matt_pure_boundary_package
+#check @Mettapedia.OSLF.Framework.MATTClaimMap.matt_canonical_runtime_behavioral_package
 -- NTT endpoints
 #check @Mettapedia.OSLF.NativeType.prop12_package
 #check @Mettapedia.OSLF.NativeType.prop14_cosmicFibration
@@ -632,40 +666,62 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.PathMap.WorldModelBridge.finset_multiset_evidence_agree
 #check @Mettapedia.OSLF.PathMap.WorldModelBridge.multisetWorldModel_finset_eq
 
--- Datalog formalization (M1-M8)
--- M1: Core syntax
-#check @Mettapedia.Logic.Datalog.Signature
-#check @Mettapedia.Logic.Datalog.GroundAtom
-#check @Mettapedia.Logic.Datalog.KnowledgeBase
--- M2: Substitution/grounding
-#check @Mettapedia.Logic.Datalog.Grounding.applyAtom
-#check @Mettapedia.Logic.Datalog.groundBodySatisfied
--- M3: Semantics
-#check @Mettapedia.Logic.Datalog.T_P
-#check @Mettapedia.Logic.Datalog.leastModel
-#check @Mettapedia.Logic.Datalog.leastModel_fixpoint
-#check @Mettapedia.Logic.Datalog.leastModel_least
--- M4: Evaluation
-#check @Mettapedia.Logic.Datalog.HerbrandBase
-#check @Mettapedia.Logic.Datalog.leastModel_finite
-#check @Mettapedia.Logic.Datalog.leastModel_eq_iter_sup
--- M5: Provenance
-#check @Mettapedia.Logic.Datalog.SemiringWithMonus
-#check @Mettapedia.Logic.Datalog.T_P_K
-#check @Mettapedia.Logic.Datalog.T_P_K_hom
--- M6: PathMapBridge
-#check @Mettapedia.Logic.Datalog.DatalogQuery
-#check @Mettapedia.Logic.Datalog.positiveEvidence
-#check @Mettapedia.Logic.Datalog.evidence_total
-#check @Mettapedia.Logic.Datalog.leastModel_monotone_in_rules
--- M7: OSLFBridge
-#check @Mettapedia.Logic.Datalog.datalogToRelEnv
-#check @Mettapedia.Logic.Datalog.mem_datalogToRelEnv
-#check @Mettapedia.Logic.Datalog.leastModelRelEnv
--- M8: WorldModelBridge
-#check @Mettapedia.Logic.Datalog.datalogModelEvidence
-#check @Mettapedia.Logic.Datalog.datalogLeastModelEvidence
-#check @Mettapedia.Logic.Datalog.datalogEvidence_monotone
-#check @Mettapedia.Logic.Datalog.datalogEDB_posEvidence
+-- PeTTa OSLF instance (PeTTa → OSLF → mettail-rust pipeline)
+#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaOSLF
+#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaGalois
+#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaDiamond_spec
+#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaBox_spec
+#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaOSLF_lp_sound
+#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaRenderRust
+#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaWriteRust
+-- PeTTa GSLT fiber
+#check @Mettapedia.OSLF.PeTTa.GSLTVertex.pettaIdMorphism
+#check @Mettapedia.OSLF.PeTTa.GSLTVertex.pettaForwardFiber
+#check @Mettapedia.OSLF.PeTTa.GSLTVertex.pettaForwardFiber_oslf
+
+-- LP Kernel (unified semantic core; Datalog retired to _archive/Datalog/)
+-- LP-M1: Core syntax (generalizes Datalog with function symbols)
+#check @Mettapedia.Logic.LP.LPSignature
+#check @Mettapedia.Logic.LP.GroundAtom
+#check @Mettapedia.Logic.LP.KnowledgeBase
+-- LP-M2: Substitution/grounding
+#check @Mettapedia.Logic.LP.Grounding.groundAtom
+-- LP-M3: Semantics
+#check @Mettapedia.Logic.LP.T_P_LP
+#check @Mettapedia.Logic.LP.leastHerbrandModel
+#check @Mettapedia.Logic.LP.leastHerbrandModel_fixpoint
+#check @Mettapedia.Logic.LP.leastHerbrandModel_least
+-- LP-M3b: SLD resolution
+#check @Mettapedia.Logic.LP.SLDTree
+#check @Mettapedia.Logic.LP.SLDTree_sound
+-- LP-M3c: Executable SLD
+#check @Mettapedia.Logic.LP.sldSearch
+#check @Mettapedia.Logic.LP.sldSearch_sound
+-- LP-M4: Function-free fragment + evaluation
+#check @Mettapedia.Logic.LP.GroundTerm.equivConst
+#check @Mettapedia.Logic.LP.HerbrandBase
+#check @Mettapedia.Logic.LP.leastHerbrandModel_finite
+#check @Mettapedia.Logic.LP.leastHerbrandModel_eq_iter_sup
+-- LP-M4b: CertifyingDatalog bridge
+#check @Mettapedia.Logic.LP.CDLGroundAtom
+#check @Mettapedia.Logic.LP.GroundAtom.equivCDL
+-- LP-M5: Provenance
+#check @Mettapedia.Logic.LP.SemiringWithMonus
+#check @Mettapedia.Logic.LP.T_P_K_LP
+#check @Mettapedia.Logic.LP.T_P_K_LP_hom
+-- LP-M6: PathMapBridge
+#check @Mettapedia.Logic.LP.LPQuery
+#check @Mettapedia.Logic.LP.positiveEvidence
+#check @Mettapedia.Logic.LP.evidence_total
+#check @Mettapedia.Logic.LP.leastHerbrandModel_monotone_in_rules
+-- LP-M7: OSLFBridge
+#check @Mettapedia.Logic.LP.lpToRelEnv
+#check @Mettapedia.Logic.LP.mem_lpToRelEnv
+#check @Mettapedia.Logic.LP.leastHerbrandModelRelEnv
+-- LP-M8: WorldModelBridge
+#check @Mettapedia.Logic.LP.lpModelEvidence
+#check @Mettapedia.Logic.LP.lpLeastModelEvidence
+#check @Mettapedia.Logic.LP.lpEvidence_monotone
+#check @Mettapedia.Logic.LP.lpEDB_posEvidence
 
 end Mettapedia.OSLF.SpecIndex

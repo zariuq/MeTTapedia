@@ -1,0 +1,760 @@
+%% governance-deontic-logic: Verified Dyadic Deontic Logic and Governance Reasoning in Lean 4
+%%
+%% Render with:
+%%   pdflatex governance-deontic-logic.tex && bibtex governance-deontic-logic \
+%%   && pdflatex governance-deontic-logic.tex && pdflatex governance-deontic-logic.tex
+
+\documentclass[]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage[hyperindex,breaklinks]{hyperref}
+\usepackage{breakurl}
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  extendedchars=false,
+  literate={->}{$\to$}{2} {<->}{$\leftrightarrow$}{3}
+           {forall}{$\forall$}{6} {exists}{$\exists$}{6}
+           {<|}{{$\langle$}}{1} {|>}{{$\rangle$}}{1}
+}
+\usepackage{float}
+\restylefloat{table}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\OB}{\ensuremath{\mathbf{O}}}
+\newcommand{\PE}{\ensuremath{\mathbf{P}}}
+\newcommand{\OP}{\ensuremath{\mathbf{F}}}
+\newcommand{\DDL}{\textup{DDL+}}
+\newcommand{\DTS}{\textup{DTS}}
+\newcommand{\GSLT}{\textup{GSLT}}
+\newcommand{\PLN}{\textup{PLN}}
+\newcommand{\PGC}{\textup{PGC}}
+
+\title{Verified Dyadic Deontic Logic and Governance Reasoning in Lean~4\\
+  \texttt{(DRAFT --- \today)}}
+\author{Zar \and Oru\v{z}i (Claude Anthropic)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a comprehensive Lean~4 formalization of governance deontic reasoning,
+spanning the full stack from classical deontic logic to probabilistic world-model
+evidence.
+The formalization includes:
+(i)~a shallow semantic embedding of Carmo and Jones' Dyadic Deontic Logic (\DDL{})
+with five semantic conditions as structure fields (not axioms), giving genuine
+semantic theorems;
+(ii)~a proof of all 13 Carmo-Jones axiomatic characterisation theorems (CJ\_3--CJ\_15)
+as consequences of the embedding;
+(iii)~the Deontic Traditional Scheme (\DTS{}) with obligation as the sole primitive,
+derived permission and optionality, and all 12 von Wright interdefinability relations
+as theorems;
+(iv)~a governance reasoning layer with Hobbs-style eventuality reification, ISO~24617-4
+thematic roles, a deontic query encoder, and a three-level judgment pipeline;
+(v)~a constructive 2-state reactive loop (\code{GovNormCycle}) providing a provably
+seriality-closed accessibility context;
+(vi)~a temporal-deontic bridge formalizing obligation persistence under time translation
+and a causal-normative prohibition theorem ruling out spurious causal candidates from
+obligation;
+(vii)~an abstract \code{ModalQueryEncoder} unifying event-calculus and deontic encoders
+via a shared interface; and
+(viii)~a \GSLT{} integration layer and an application to Gewirth's Principle of Generic
+Consistency (\PGC{}).
+The entire stack contains 0~sorries and 0~custom axioms.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% ============================================================
+\section{Introduction}
+\label{sec:intro}
+%% ============================================================
+
+Formal governance and policy reasoning require a robust logical foundation that
+can represent obligations, permissions, and temporal dynamics while connecting
+to probabilistic evidence models.  Classical propositional deontic logic
+\cite{vonWright1951} provides a starting point, but real governance scenarios
+involve:
+\begin{itemize}
+\item \emph{Contrary-to-duty obligations} --- norms that apply precisely when
+      a primary obligation is violated \cite{CarmoJones2002};
+\item \emph{Eventuality reification} --- treating events and states as
+      first-class entities so that thematic roles and temporal structure
+      can be reasoned about explicitly \cite{Hobbs1985};
+\item \emph{Temporal dynamics} --- obligations that persist, shift, or
+      expire as time advances; and
+\item \emph{Causal spuriousness} --- distinguishing genuine causal obligations
+      from extensional correlates that lack intensional support.
+\end{itemize}
+
+This paper describes a Lean~4 formalization in the \code{Mettapedia} repository
+that addresses all four concerns.
+The architecture layers from abstract to concrete:
+Carmo-Jones \DDL{} semantics $\to$ \DTS{} algebra $\to$ governance reasoning layer
+$\to$ reactive accessibility model $\to$ temporal and causal bridges $\to$
+\GSLT{} vertex integration $\to$ Gewirth \PGC{} application.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item Lean~4 shallow embedding of \DDL{} with all semantic conditions as
+      structure fields and all CJ theorems as genuine consequences (§\ref{sec:ddl}).
+\item \DTS{} algebra with a single primitive and 12 interdefinability theorems
+      (§\ref{sec:dts}).
+\item Governance reasoning layer: Hobbs eventuality reification, ISO~24617-4
+      thematic roles, deontic query encoders, and three-level verdict inference
+      (§\ref{sec:govlayer}).
+\item Constructive \code{GovNormCycle} language for seriality-closed accessibility
+      without external dependencies (§\ref{sec:govnorm}).
+\item \code{TemporallyUniformOb}: obligation persistence under time shift, and
+      causal-normative spurious prohibition (§\ref{sec:temporal}).
+\item Abstract \code{ModalQueryEncoder} unifying event-calculus and deontic
+      query dispatch (§\ref{sec:mqe}).
+\item \GSLT{} integration and Gewirth \PGC{} formalization
+      (§\S\ref{sec:gslt}--\ref{sec:pgc}).
+\end{enumerate}
+
+%% ============================================================
+\section{Shallow Embedding of DDL+}
+\label{sec:ddl}
+%% ============================================================
+
+\subsection{Types and Semantic Foundation}
+
+The \DDL{} embedding follows the standard \emph{possible-worlds semantics}
+tradition, representing propositions as truth-sets over a world type.
+We adopt Kaplan's two-dimensional semantics \cite{Kaplan1989} to handle
+context-dependent propositions (``characters'').
+
+\begin{definition}[World-Proposition and Meaning]
+A \emph{world-proposition} over worlds \code{w} is a predicate
+\code{WProp w}~$=$ \code{w -> Prop}.
+A \emph{meaning} (Kaplan's character) is a context-dependent proposition
+\code{Meaning c w}~$=$ \code{c -> w -> Prop}.
+\end{definition}
+
+These correspond to Isabelle types \texttt{wo = w => bool} and
+\texttt{m = c => w => bool} in the source formalization \cite{Benzmuller2018}.
+
+\subsection{The DDL+ Frame}
+
+The semantic foundation of \DDL{} is a \emph{frame} bundling two accessibility
+relations and a dyadic obligation relation:
+
+\begin{lstlisting}
+structure DDLPlusFrame (w : Type*) where
+  av : w -> w -> Prop   -- actual-version accessibility
+  pv : w -> w -> Prop   -- possible-version accessibility
+  ob : WProp w -> WProp w -> Prop  -- dyadic obligation
+  sem_3a : forall v, exists v', av v v'      -- av is serial
+  sem_4a : forall v v', av v v' -> pv v v'   -- av <= pv
+  sem_4b : forall v, pv v v                  -- pv is reflexive
+  sem_5a : forall X, not (ob X (fun _ => False))
+  sem_5b : forall X Y Z, (forall v, (X v /\ Y v) <-> (X v /\ Z v)) ->
+             (ob X Y <-> ob X Z)
+  sem_5c : forall X Y Z, (exists v, X v /\ Y v /\ Z v) ->
+             ob X Y -> ob X Z -> ob X (fun v => Y v /\ Z v)
+  sem_5d : forall X Y Z, (forall v, Y v -> X v) -> ob X Y ->
+             (forall v, X v -> Z v) ->
+             ob Z (fun v => (Z v /\ not (X v)) \/ Y v)
+  sem_5e : forall X Y Z, (forall v, Y v -> X v) -> ob X Z ->
+             (exists v, Y v /\ Z v) -> ob Y Z
+\end{lstlisting}
+
+\noindent
+The five conditions \code{sem\_3a}--\code{sem\_5e} match Carmo \& Jones (2002)
+conditions (3a), (4a), (4b), (5a)--(5e) \cite{CarmoJones2002}, pp.~290ff., and
+correspond to lines 52--59 of the Isabelle source \code{CJDDLplus.thy}.
+Crucially, all conditions are \emph{structure fields} rather than Lean axioms,
+so every theorem about \code{DDLPlusFrame} is a genuine semantic consequence.
+
+\begin{remark}
+The accessibility relation \code{av} models ``open alternatives'' (what can
+actually happen), while \code{pv} models ``possible alternatives'' (what could
+ideally happen).  Condition \code{sem\_4a} ensures open alternatives are a
+subset of possible ones, and \code{sem\_4b} ensures reflexivity of \code{pv}.
+\end{remark}
+
+\subsection{Modal and Deontic Operators}
+
+Six modal operators are defined over \code{DDLPlusFrame}:
+
+\begin{lstlisting}
+def box_a (phi : Meaning c w) : Meaning c w :=  -- actual necessity
+  fun ctx v => forall v', F.av v v' -> phi ctx v'
+def box_p (phi : Meaning c w) : Meaning c w :=  -- possible necessity
+  fun ctx v => forall v', F.pv v v' -> phi ctx v'
+def box_S5 (phi : Meaning c w) : Meaning c w :=  -- unrestricted
+  fun ctx _ => forall v, phi ctx v
+\end{lstlisting}
+
+\noindent
+Diamond operators are defined dually.
+Three deontic operators are then derived:
+
+\begin{lstlisting}
+-- Conditional obligation O<phi|sigma>
+def cond_obl (phi sigma : Meaning c w) : Meaning c w :=
+  fun ctx _ => F.ob (sigma ctx) (phi ctx)
+
+-- Actual obligation: ob relative to av, with violation witness
+def actual_obl (phi : Meaning c w) : Meaning c w :=
+  fun ctx v => F.ob (F.av v) (phi ctx)
+    /\ exists v', F.av v v' /\ not (phi ctx v')
+
+-- Ideal obligation: ob relative to pv, with violation witness
+def ideal_obl (phi : Meaning c w) : Meaning c w :=
+  fun ctx v => F.ob (F.pv v) (phi ctx)
+    /\ exists v', F.pv v v' /\ not (phi ctx v')
+\end{lstlisting}
+
+\noindent
+The violation-witness condition (the $\exists v'$ clause) is standard in
+contrary-to-duty frameworks: an obligation is ``ideal'' only when there exist
+possible worlds where it is not satisfied.
+
+\subsection{Kaplanian Context and LD Validity}
+
+To model indexical statements, we follow Kaplan's two-dimensional structure \cite{Kaplan1989}:
+
+\begin{lstlisting}
+structure KaplanianContext (c w e : Type*) where
+  agent : c -> e    -- agent of the context
+  world : c -> w    -- world of the context
+\end{lstlisting}
+
+\noindent
+\emph{LD validity} (truth in every context at its own world) is strictly weaker
+than classical modal validity.
+This distinction is proven as a theorem:
+\code{modal\_implies\_ld} shows that modal validity entails LD validity, but not conversely.
+The \emph{a priori necessity} operator $\Box^D$ is truth at all LD contexts:
+\code{box\_D phi ctx := ld\_valid phi}.
+
+%% ============================================================
+\section{Carmo-Jones Axiomatic Characterisation}
+\label{sec:cj}
+%% ============================================================
+
+Carmo and Jones \cite{CarmoJones2002} present 13 axioms (CJ\_3--CJ\_15) as the
+axiomatic characterisation of \DDL{}.  In our Lean~4 formalization, all 13 are
+\emph{theorems} derived from the semantic frame conditions, not axioms.
+Table~\ref{tab:cj} lists each theorem with its Lean identifier and the
+primary frame condition used in its proof.
+
+\begin{longtable}{lll}
+\caption{Carmo-Jones theorems proven semantically in Lean~4}\label{tab:cj}\\
+\textbf{Theorem} & \textbf{Lean identifier} & \textbf{Key condition} \\
+\hline
+CJ\_3: $\Box_p \Rightarrow \Box_a$ & \code{CJ\_3} & \code{sem\_4a} \\
+CJ\_4: $\neg O\langle \bot | A \rangle$ & \code{CJ\_4} & \code{sem\_5a} \\
+CJ\_5$^-$: conjunction of obligations & \code{CJ\_5\_minus} & \code{sem\_5c} \\
+CJ\_6: obligation closed under conjunction & \code{CJ\_6} & \code{sem\_5e} \\
+CJ\_7: modal equivalence preservation & \code{CJ\_7} & \code{sem\_5e} \\
+CJ\_8: conditional equivalence preservation & \code{CJ\_8} & \code{C\_6} \\
+CJ\_9a: $\Diamond_p O \Rightarrow \Box_p O$ & \code{CJ\_9a} & $O$ is world-independent \\
+CJ\_9p: $\Diamond_a O \Rightarrow \Box_a O$ & \code{CJ\_9p} & $O$ is world-independent \\
+CJ\_9\_var\_a: $O \Rightarrow \Box_a O$ & \code{CJ\_9\_var\_a} & definitional \\
+CJ\_9\_var\_b: $O \Rightarrow \Box_p O$ & \code{CJ\_9\_var\_b} & definitional \\
+CJ\_10: restriction under possibility witness & \code{CJ\_10} & \code{sem\_5e} \\
+CJ\_11a\_var: conjunction of actual obligations & \code{CJ\_11a\_var} & \code{sem\_5c, sem\_3a} \\
+CJ\_15: commitment extension & \code{CJ\_15} & \code{sem\_5d, sem\_5e} \\
+\hline
+\end{longtable}
+
+\begin{remark}
+CJ\_7 and CJ\_8 hold under \emph{classical modal validity} but not under the
+weaker LD validity.  The Lean proofs make this explicit: they take a hypothesis
+\code{modal\_valid (pequ A B)} rather than its LD-valid version, matching the
+standard caveat in Carmo \& Jones (2002), §5.
+\end{remark}
+
+Additionally, the bridge between conditional, actual, and ideal obligation is
+established in \code{DDLPlus/DTSBridge.lean}:
+\code{axiomD\_actual} shows that actual obligation satisfies the KD axiom
+(seriality of obligation), and \code{DDLPlusFrame\_to\_DTS} extracts a
+\DTS{} structure from any \DDL{} frame.
+
+%% ============================================================
+\section{Deontic Traditional Scheme}
+\label{sec:dts}
+%% ============================================================
+
+The Deontic Traditional Scheme (\DTS{}) \cite{AlchourrónBulygin1971,vonWright1951}
+provides a three-valued classification of propositions: obligatory, permitted,
+or optional.
+We formalize it with a single primitive \code{ob} and derive the rest:
+
+\begin{lstlisting}
+structure DTS (P : Type*) where
+  ob        : P -> Prop         -- obligation (primitive)
+  neg       : P -> P            -- negation on propositions
+  neg_neg   : forall p, neg (neg p) = p
+  consistent : forall p, ob p -> not (ob (neg p))
+
+-- Derived modalities
+def DTS.pe (d : DTS P) (p : P) : Prop := not (d.ob (d.neg p))
+def DTS.op (d : DTS P) (p : P) : Prop :=
+  not (d.ob p) /\ not (d.ob (d.neg p))
+\end{lstlisting}
+
+\noindent
+With these definitions, all 12 von Wright interdefinability relations become
+theorems (Table~\ref{tab:dts}).
+
+\begin{longtable}{ll}
+\caption{DTS interdefinability theorems in Lean~4}\label{tab:dts}\\
+\textbf{Statement} & \textbf{Lean identifier} \\
+\hline
+$\OB(p) \Rightarrow \PE(p)$ & \code{ob\_implies\_pe} \\
+$\PE(p) \Leftrightarrow \neg\OB(\neg p)$ & \code{pe\_iff\_not\_ob\_neg} \\
+$\OP(p) \Leftrightarrow \neg\OB(p) \wedge \neg\OB(\neg p)$ & \code{op\_iff} \\
+$\neg\PE(p) \Rightarrow \OB(\neg p)$ & \code{not\_pe\_implies\_ob\_neg} \\
+$\neg\OP(p) \Leftrightarrow \OB(p) \vee \OB(\neg p)$ & \code{not\_op\_iff} \\
+$\PE(p) \wedge \PE(\neg p) \Leftrightarrow \OP(p)$ & \code{pe\_and\_pe\_neg\_iff\_op} \\
+$\OB(p) \Rightarrow \neg\OP(p)$ & \code{ob\_implies\_not\_op} \\
+$\OP(p) \Rightarrow \PE(p)$ & \code{pe\_of\_op} \\
+$\OP(p) \Rightarrow \PE(\neg p)$ & \code{pe\_neg\_of\_op} \\
+Trichotomy: $\OB(p) \vee \OP(p) \vee \OB(\neg p)$ & \code{dts\_trichotomy} \\
+Exclusion: at most one of the three holds & \code{dts\_exclusive} \\
+$\OB(p) \Rightarrow \neg\PE(\neg p)$ & \code{ob\_implies\_not\_pe\_neg} \\
+\hline
+\end{longtable}
+
+\noindent
+The bridge \code{DDLPlusFrame\_to\_DTS} recovers a \DTS{} structure from a
+\DDL{} frame by instantiating \code{ob} with the frame's dyadic obligation
+restricted to the universal context and the reflexive world.
+This establishes that the \DDL{} frame conditions imply the \DTS{} consistency axiom.
+
+%% ============================================================
+\section{Governance Reasoning Layer}
+\label{sec:govlayer}
+%% ============================================================
+
+\subsection{Hobbs Eventuality Reification}
+
+Following Hobbs \cite{Hobbs1985}, we treat events, states, and actions as
+first-class entities:
+
+\begin{lstlisting}
+structure Eventuality (Entity Pred : Type*) where
+  predicate : Pred                         -- e.g., soaMoor, soaPay
+  roles     : ThematicRole -> Option Entity -- ISO 24617-4 assignments
+  polarity  : Bool := true                 -- positive or negated
+\end{lstlisting}
+
+\noindent
+The \code{ThematicRole} type enumerates 15 roles from ISO~24617-4:2014
+\cite{ISO246174}: agent, patient, theme, experiencer, beneficiary, instrument,
+location, time, source, goal, cause, result, manner, purpose, condition.
+Polarity enables negated eventualities without duplicating the type:
+\code{Eventuality.negate e} flips \code{e.polarity}, and
+\code{negate\_negate} is a theorem (\code{!(!e) = e}).
+
+\subsection{Deontic Query Encoder}
+
+The \code{DeonticQueryEncoder} structure bridges the governance type system
+and any world-model evidence calculus:
+
+\begin{lstlisting}
+structure DeonticQueryEncoder (Entity Pred Query : Type*) where
+  modalQuery  : DeonticModality -> Eventuality Entity Pred -> Query
+  groundQuery : CTTriple Entity Pred -> Query
+\end{lstlisting}
+
+\noindent
+The four \code{DeonticModality} constructors are: \code{rexist} (alethic,
+Hobbs' ``really exists''), \code{obligatory}, \code{permitted}, \code{optional}.
+The \code{modalQuery} field is the key interface: for a given modality and
+eventuality it produces the WM query whose evidence represents the epistemic
+degree to which that modality holds.
+
+\subsection{Rexist Bridge}
+
+The ``really exists'' (\code{rexist}) modality implements Hobbs' principle
+that necessary possibility entails real existence.  In the Lean formalization
+the key insight is that \code{sem\_4b} (reflexivity of \code{pv}) makes
+every world a possible alternative to itself, so ideal obligation at any world
+has immediate local witnesses.
+
+\subsection{Three-Level Judgment Pipeline}
+
+The \code{Judgments.lean} file defines a three-level inference pipeline:
+
+\begin{enumerate}
+\item \textbf{Eventuality level}: evidence that an eventuality exists with
+      a given modality (\code{EventualityJudgment}).
+\item \textbf{Statement level}: lifting eventuality judgments to meta-triples
+      with identity tags (\code{StatementJudgment}).
+\item \textbf{Verdict level}: a \code{GovernanceVerdict} combining multiple
+      statement judgments into an overall governance outcome.
+\end{enumerate}
+
+\noindent
+The pipeline mirrors the three reasoning levels of the
+\code{governance-reasoning-engine} source (eventuality\_level, statement\_level,
+conclusion\_level).
+
+%% ============================================================
+\section{GovNormCycle: Constructive Reactive Accessibility}
+\label{sec:govnorm}
+%% ============================================================
+
+The \code{ClosedGovAccessibility} structure requires two proofs:
+\emph{seriality} (every live state has a successor) and
+\emph{closure} (successors of live states are live).
+A naive approach using a terminating language such as PyashCore fails:
+the liveness predicate ``\code{instr $\neq$ Done}'' is not forward-closed under
+reduction, as witnessed by \code{pyashCore\_isGovLive\_not\_closed}.
+
+\paragraph{The GovNormCycle language.}
+We provide a purpose-built 2-state reactive loop:
+
+\begin{lstlisting}
+def govDeliberateState : Pattern := .apply "GovDeliberate" []
+def govEnactState      : Pattern := .apply "GovEnact" []
+
+inductive GovNormCycleStep : Pattern -> Pattern -> Prop where
+  | deliberateToEnact : GovNormCycleStep govDeliberateState govEnactState
+  | enactToDeliberate : GovNormCycleStep govEnactState govDeliberateState
+
+def govNormLive : Pattern -> Prop :=
+  fun p => p = govDeliberateState \/ p = govEnactState
+\end{lstlisting}
+
+\noindent
+Both states are permanently live.  Seriality and closure follow directly from
+the two constructors:
+
+\begin{lstlisting}
+theorem govNormCycle_serial :
+    forall p, govNormLive p -> exists q, GovNormCycleStep p q := by
+  intro p hp
+  rcases hp with rfl | rfl
+  . exact <|govEnactState, .deliberateToEnact|>
+  . exact <|govDeliberateState, .enactToDeliberate|>
+
+theorem govNormCycle_closed :
+    forall p q, govNormLive p -> GovNormCycleStep p q -> govNormLive q := by
+  intro p q _hp hpq
+  cases hpq
+  . right; rfl   -- deliberateToEnact: q = govEnactState
+  . left; rfl    -- enactToDeliberate: q = govDeliberateState
+\end{lstlisting}
+
+\begin{theorem}
+\code{govNormCycleAccessibility : ClosedGovAccessibility} is a
+sorry-free, axiom-free instance of the governance accessibility interface.
+\end{theorem}
+
+\noindent
+This concrete instance can be composed with any \code{GovFrame} to produce a
+\code{GovernanceDDLBundle}.  The model is deliberately minimal: the two states
+represent the idealised governance cycle (deliberation alternates with
+enactment) without encoding any domain-specific policy content.
+
+%% ============================================================
+\section{Temporal-Deontic Bridge}
+\label{sec:temporal}
+%% ============================================================
+
+\subsection{Temporal Meanings}
+
+To model time-varying obligations we pair a base world type with a time type:
+
+\begin{lstlisting}
+abbrev TemporalWorld (w T : Type*) := w x T
+abbrev TemporalMeaning (c w T : Type*) := Meaning c (w x T)
+\end{lstlisting}
+
+\noindent
+Lead (future) and lag (past) shifts on meanings capture how propositions vary
+with time (where \code{T} has \code{[Add T]} or \code{[Sub T]} respectively):
+
+\begin{lstlisting}
+-- phi evaluated Delta time units ahead
+def meaningLead (phi : TemporalMeaning c w T) (Delta : T) :=
+  fun ctx (v, t) => phi ctx (v, t + Delta)
+
+-- phi evaluated Delta time units in the past
+def meaningLag (phi : TemporalMeaning c w T) (Delta : T) :=
+  fun ctx (v, t) => phi ctx (v, t - Delta)
+\end{lstlisting}
+
+\subsection{Temporally Uniform Obligation}
+
+A \code{DDLPlusFrame} on $w \times T$ is \emph{temporally uniform} if the
+accessibility and obligation relations are stable under time translation:
+
+\begin{lstlisting}
+structure TemporallyUniformOb {w T : Type*} [AddCommGroup T]
+    (F : DDLPlusFrame (w x T)) where
+  -- pv is translation-invariant
+  pv_shift : forall (Delta : T) (v : w) (t : T) (v' : w) (t' : T),
+      F.pv (v, t) (v', t') <-> F.pv (v, t + Delta) (v', t' + Delta)
+  -- ob is compatible with base-point shift (content lags by Delta)
+  ob_shift : forall (Delta : T) (v : w) (t : T) (Y : WProp (w x T)),
+      F.ob (F.pv (v, t)) Y <->
+        F.ob (F.pv (v, t + Delta)) (fun p => Y (p.1, p.2 - Delta))
+\end{lstlisting}
+
+\noindent
+The shift-invariance conditions are \emph{hypotheses}, not axioms.  Any
+concrete temporal frame must discharge them constructively.
+
+\subsection{Obligation Persistence Theorem}
+
+\begin{theorem}[Temporal-lag persistence of ideal obligation]
+\label{thm:temporal}
+Let $F$ be a \code{DDLPlusFrame} on $w \times T$ where $T$ is an abelian group,
+and let \code{tub : TemporallyUniformOb F}.  If $\varphi$ is ideally obligatory
+at world $(v, t_0)$, then the lag-shifted version $\varphi[\cdot - \Delta]$
+is ideally obligatory at $(v, t_0 + \Delta)$.
+\end{theorem}
+
+\noindent
+\emph{Proof sketch.}
+The proof has three parts:
+\begin{enumerate}
+\item \emph{ob part}: \code{ob\_shift} maps
+      $F.\text{ob}(F.\text{pv}\,(v, t_0),\, \varphi)$ to
+      $F.\text{ob}(F.\text{pv}\,(v, t_0+\Delta),\, \lambda p.\,\varphi(p_1, p_2{-}\Delta))$,
+      which is exactly \code{meaningLag phi Delta}.
+\item \emph{pv part}: the violation witness $(v_w, t_w)$ is
+      shifted to $(v_w, t_w + \Delta)$ using \code{pv\_shift}.
+\item \emph{Negation}: at the shifted witness, \code{add\_sub\_cancel\_right}
+      reduces the lag-shift evaluation back to the original negation. \qed
+\end{enumerate}
+
+\begin{remark}
+The ``lag'' direction is the only direction provable from \code{ob\_shift} as
+stated: the frame does not directly relate $\text{ob}$ at two different base
+times without the content shift.  Shifting the reference time forward requires
+adjusting all content backward to keep the same relative obligations.
+\end{remark}
+
+\subsection{Causal-Normative Prohibition}
+
+We connect the temporal-deontic bridge to \PLN{}'s causal heuristics
+\cite{GoertzelPLN2008}.
+A \emph{spurious causal candidate} is an element $x$ at time $t$ with
+extensional but not intensional predictive support:
+
+\begin{lstlisting}
+structure SpuriousCausalCandidate
+    (profile : PredictiveCausalProfile Domain Time)
+    (x : Domain) (t : Time) : Prop where
+  extensional    : profile.extensional x t
+  not_intensional : not (profile.intensional x t)
+\end{lstlisting}
+
+\begin{theorem}[Spurious prohibition]
+If a \DTS{} obligation structure obliges only intensionally-grounded elements
+(\code{ObligesOnlyIntensional}), then no spurious causal candidate can be
+obligated.
+\end{theorem}
+
+\noindent
+The proof is a one-line contradiction: \code{hSpur.not\_intensional}
+contradicts \code{hGnd.ob\_intensional x hOb t}.
+The contrapositive (\code{obligatory\_not\_spurious}) is derived immediately.
+
+%% ============================================================
+\section{Abstract Modal Query Encoder}
+\label{sec:mqe}
+%% ============================================================
+
+The event-calculus \cite{KowalskiSergot1986,Shanahan1999} and the governance
+reasoning layer both define query encoders of the form
+\code{Modality -> Referent -> Query}, but they were independently defined.
+We introduce an abstract structure that unifies both:
+
+\begin{lstlisting}
+structure ModalQueryEncoder (Modality Referent Query : Type*) where
+  encode : Modality -> Referent -> Query
+\end{lstlisting}
+
+\paragraph{Event-calculus instance.}
+The event calculus uses three temporal modalities:
+
+\begin{lstlisting}
+inductive EventModality where
+  | holdsAt      -- fluent holds at time t
+  | initiatedAt  -- fluent initiated at t
+  | terminatedAt -- fluent terminated at t
+\end{lstlisting}
+
+\noindent
+An \code{EventQueryEncoder Event Time Query} (with fields \code{holdsAt},
+\code{initiatedAt}, \code{terminatedAt}) is equivalent to a
+\code{ModalQueryEncoder EventModality (Event x Time) Query}:
+
+\begin{lstlisting}
+def eventQueryEncoderToModal (enc : EventQueryEncoder Event Time Query) :
+    ModalQueryEncoder EventModality (Event x Time) Query where
+  encode
+    | .holdsAt,      (e, t) => enc.holdsAt e t
+    | .initiatedAt,  (e, t) => enc.initiatedAt e t
+    | .terminatedAt, (e, t) => enc.terminatedAt e t
+\end{lstlisting}
+
+\begin{theorem}[Event-encoder roundtrip]
+The maps \code{eventQueryEncoderToModal} and \code{modalToEventQueryEncoder}
+are mutually inverse.
+Both roundtrips are proven as simp lemmas using \code{cases modality} and \code{rfl}.
+\end{theorem}
+
+\paragraph{Deontic instance.}
+The \code{DeonticQueryEncoder.modalQuery} field has exactly the shape
+\code{DeonticModality -> Eventuality Entity Pred -> Query}, giving:
+
+\begin{lstlisting}
+def deonticQueryEncoderToModal (d : DeonticQueryEncoder Entity Pred Query) :
+    ModalQueryEncoder DeonticModality (Eventuality Entity Pred) Query where
+  encode := d.modalQuery
+\end{lstlisting}
+
+\noindent
+The embedding is a direct field projection.
+With this unification, dispatch infrastructure, traversal utilities, and
+test harnesses written for \code{ModalQueryEncoder} apply to both the
+event-calculus and deontic encoders without duplication.
+
+%% ============================================================
+\section{GSLT Integration}
+\label{sec:gslt}
+%% ============================================================
+
+The governance layer integrates with the \GSLT{} (\emph{Galois-connection Semantics
+in Logical Form with Types}) categorical framework through the
+\code{GovernanceGSLTVertex} module.
+
+A \code{GovernanceDDLBundle} packages a \DDL{} frame together with the
+governance accessibility data and the CJ theorems:
+
+\begin{lstlisting}
+structure GovernanceDDLBundle where
+  acc   : ClosedGovAccessibility
+  frame : GovFrame { p : Pattern // acc.live p }
+\end{lstlisting}
+
+\noindent
+The \code{GovernanceForwardFiber} embeds this bundle as a
+unit-indexed presheaf fiber in the \GSLT{} vertex layer:
+the single fiber at the unit index contains the governance rewrite rules
+derived from the CJ theorems.
+\code{govNormCycleBundle} provides the concrete instance using
+\code{govNormCycleAccessibility}.
+
+%% ============================================================
+\section{Gewirth's Principle of Generic Consistency}
+\label{sec:pgc}
+%% ============================================================
+
+The Principle of Generic Consistency (\PGC{}) \cite{Gewirth1978} asserts:
+\begin{quote}
+\emph{Act in accord with the generic rights of your recipients as well as of yourself.}
+\end{quote}
+Gewirth's argument proceeds from agency: an agent who acts on purpose must
+claim the necessary conditions for agency (freedom and well-being, \emph{FWB})
+as rights, and by universalizability must grant the same rights to all agents.
+
+The formalization in \code{Mettapedia/Ethics/} uses the \DDL{} embedding
+developed above:
+
+\begin{itemize}
+\item \code{Core.lean}: introduces the agent world type, purpose-directed
+      action predicate \code{PPA}, and the generic rights type \code{FWBRight}.
+\item \code{GewirthPGC.lean}: packages a \code{PGCInterpretation} (frame +
+      assignments) and states the main theorem:
+      \code{PGC\_strong\_ofAssumptions} proves that any agent satisfying
+      \code{PGCAssumptions} is ideally obligated to respect the FWB rights
+      of all purposive agents.
+\item \code{GewirthBridge.lean}: connects the local \code{Oi} and \code{Ocond}
+      operators in \code{GewirthPGC.lean} to the corresponding \code{ideal\_obl}
+      and \code{cond\_obl} from \code{DDLPlus.Core}, making the bridge explicit.
+\end{itemize}
+
+\noindent
+The \DTS{} interdefinability theorems (§\ref{sec:dts}) underlie the Gewirth
+formalization: the equivalences between obligation, permission, and optionality
+ensure that the logical structure of the PGC proof is sound regardless of which
+representation is chosen.
+
+%% ============================================================
+\section{Related Work}
+\label{sec:related}
+%% ============================================================
+
+\paragraph{Isabelle/HOL formalization.}
+Benzm{\"u}ller et al.\ \cite{Benzmuller2018} formalized \DDL{} in Isabelle/HOL
+using the same shallow semantic embedding approach.
+Our Lean~4 formalization is a port of that work, extended with the governance
+reasoning layer, temporal bridges, and \PLN{} integration.
+The Isabelle source (\code{CJDDLplus.thy}, \code{ExtendedDDL.thy}) is
+included in the repository as a reference.
+
+\paragraph{Input/Output logic.}
+Makinson and van der Torre's input/output logic \cite{MakinstonVanDerTorre2000}
+provides an alternative semantics for conditional obligation.  The \code{ob}
+dyadic relation in \DDL{} can be interpreted in their framework, though the
+present formalization does not develop this connection explicitly.
+
+\paragraph{Event calculus in Lean.}
+The \PLN{} Probabilistic Event Calculus formalized in
+\code{PLNProbabilisticEventCalculus.lean} (this repository) follows the
+Kowalski-Sergot \cite{KowalskiSergot1986} and Shanahan \cite{Shanahan1999}
+presentations.  The \code{ModalQueryEncoder} of §\ref{sec:mqe} unifies this
+with the deontic layer.
+
+%% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+%% ============================================================
+
+We have presented a Lean~4 formalization of the full governance deontic logic
+stack: from \DDL{} semantic embedding to \DTS{} algebra, Hobbs eventuality
+reification, constructive reactive accessibility, temporal-deontic bridges,
+abstract modal query unification, and the Gewirth \PGC{}.
+
+The formalization is:
+\begin{itemize}
+\item \textbf{Sorry-free}: 0 uses of \code{sorry} across all files.
+\item \textbf{Axiom-free}: 0 custom \code{axiom} declarations; all
+      ``conditions'' are structure fields discharged by each concrete instance.
+\item \textbf{Compositional}: each layer is independently usable.
+\item \textbf{Grounded}: all semantic conditions trace back to published
+      sources (Carmo \& Jones 2002, von Wright 1951, Hobbs 1985, ISO~24617-4).
+\end{itemize}
+
+Future work includes:
+(i)~a full probabilistic evidence integration connecting the \DTS{} strength values
+to \PLN{} posterior-mean evidence;
+(ii)~automated synthesis of CJ-theorem instantiations for concrete policy
+domains using the \GSLT{} rewrite engine; and
+(iii)~temporal reasoning about norm revision and contrary-to-duty repair
+using the event calculus layer.
+
+%% ============================================================
+\bibliographystyle{plain}
+\bibliography{references}
+%% ============================================================
+
+\end{document}

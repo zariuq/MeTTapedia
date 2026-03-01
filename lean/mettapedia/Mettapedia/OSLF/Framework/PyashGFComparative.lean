@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.Framework.PyashGF
 import Mettapedia.OSLF.Framework.PyashGFInventory
+import Mettapedia.OSLF.Framework.PyashGFEnglishFragment
 
 /-!
 # Pyash vs English Comparative Claims (Focused GF Corpus)
@@ -12,6 +13,7 @@ namespace Mettapedia.OSLF.Framework.PyashGFComparative
 
 open Mettapedia.OSLF.Framework.PyashGF
 open Mettapedia.OSLF.Framework.PyashGFInventory
+open Mettapedia.OSLF.Framework.PyashGFEnglishFragment
 
 /-- Comparative advantage claim: Pyash has explicit `def` mood lexicalization
     in the observed be-word inventory, while English-head inventory does not. -/
@@ -71,15 +73,62 @@ theorem pyashCopulaHeadWeakerPathBool_true :
     pyashCopulaHeadWeakerPathBool = true := by
   decide
 
+/-- Executable canary for controlled-English WDF semantic coverage bundle. -/
+def pyashEnglishWDFSemanticCoverageBool : Bool :=
+  pyashEnglishSemanticCoverageCanaries.all (fun row => row.2)
+
+theorem pyashEnglishWDFSemanticCoverageBool_true :
+    pyashEnglishWDFSemanticCoverageBool = true := by
+  simpa [pyashEnglishWDFSemanticCoverageBool] using
+    pyashEnglishSemanticCoverageCanaries_all_true
+
+/-- The semantic English inventory supports every clause in the controlled WDF list. -/
+def pyashEnglishSemanticInventorySupportsAllClauses : Prop :=
+  ∀ c ∈ pyashEnglishWDFAll,
+    ∃ mood head,
+      head ∈ pyashEnglishSemanticHeadInventory ∧
+      pyashEnglishMoodHeadToWDFClause? mood head = some c ∧
+      pyashEnglishMoodHeadToState? mood head = some c.expectedState
+
+theorem pyashEnglishSemanticInventorySupportsAllClauses_true :
+    pyashEnglishSemanticInventorySupportsAllClauses := by
+  intro c _hmem
+  exact pyashEnglishSemantic_inventory_clause_complete c
+
+/-- Observed-head mapping floor claim inherited from the semantic bridge module. -/
+def pyashEnglishObservedHeadCoverageFloorClaim : Prop :=
+  pyashEnglishObservedMappedHeadFloor ≤ pyashEnglishObservedMappedHeadCount
+
+theorem pyashEnglishObservedHeadCoverageFloorClaim_true :
+    pyashEnglishObservedHeadCoverageFloorClaim := by
+  simpa [pyashEnglishObservedMappedHeadCount] using pyashEnglishObservedMappedHeadFloor_holds
+
+/-- Executable boolean canary for the observed-head mapping floor claim. -/
+def pyashEnglishObservedHeadCoverageFloorBool : Bool :=
+  Nat.ble pyashEnglishObservedMappedHeadFloor pyashEnglishObservedMappedHeadCount
+
+theorem pyashEnglishObservedHeadCoverageFloorBool_true :
+    pyashEnglishObservedHeadCoverageFloorBool = true := by
+  unfold pyashEnglishObservedHeadCoverageFloorBool
+  simpa [Nat.ble_eq] using pyashEnglishObservedHeadCoverageFloorClaim_true
+
 /-- Executable comparison canary bundle (label, claim-satisfied). -/
 def pyashEnglishComparativeCanaries : List (String × Bool) :=
   [ ("pyash_adv_def_mood_lexical", pyashDefMoodLexicalAdvantageBool)
   , ("pyash_adv_clause_mapping_deterministic", pyashClauseMappingDeterministicBool)
   , ("pyash_weaker_copula_head", pyashCopulaHeadWeakerPathBool)
+  , ("pyash_en_wdf_semantic_coverage", pyashEnglishWDFSemanticCoverageBool)
+  , ("pyash_en_observed_head_coverage_floor",
+      pyashEnglishObservedHeadCoverageFloorBool)
   ]
 
 theorem pyashEnglishComparativeCanaries_all_true :
     pyashEnglishComparativeCanaries.all (fun row => row.2) = true := by
-  decide
+  unfold pyashEnglishComparativeCanaries
+  simp [pyashDefMoodLexicalAdvantageBool_true,
+    pyashClauseMappingDeterministicBool_true,
+    pyashCopulaHeadWeakerPathBool_true,
+    pyashEnglishWDFSemanticCoverageBool_true,
+    pyashEnglishObservedHeadCoverageFloorBool_true]
 
 end Mettapedia.OSLF.Framework.PyashGFComparative

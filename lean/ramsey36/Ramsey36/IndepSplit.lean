@@ -9,7 +9,7 @@ Split into 12 sub-problems (one per first vertex), each fast for the kernel.
 - Combination uses hasIndepSetAux_false_of_compat from IndepSetChecker.
 -/
 
-import Ramsey36.IndepSetChecker
+import Algorithms.Graph.IndepSetChecker
 import Ramsey36.IndepSub17
 
 /-! ## Combination -/

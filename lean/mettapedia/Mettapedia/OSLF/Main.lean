@@ -14,6 +14,17 @@ import Mettapedia.OSLF.Framework.RewriteSystem
 import Mettapedia.OSLF.Framework.RhoInstance
 import Mettapedia.OSLF.Framework.DerivedModalities
 import Mettapedia.OSLF.Framework.CategoryBridge
+import Mettapedia.OSLF.Framework.LanguageMorphism
+import Mettapedia.OSLF.Framework.LanguageEqCategory
+import Mettapedia.OSLF.Framework.LanguageEqCategoryLaws
+import Mettapedia.OSLF.Framework.ModeTheory
+import Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
+import Mettapedia.OSLF.Framework.Mode2Skeleton
+import Mettapedia.OSLF.Framework.Mode2PureBoundary
+import Mettapedia.OSLF.Framework.Mode2SkeletonLaws
+import Mettapedia.OSLF.Framework.ModeMapPredCommutingSquares
+import Mettapedia.OSLF.Framework.MATTProvableNow
+import Mettapedia.OSLF.Framework.MATTClaimMap
 import Mettapedia.OSLF.Framework.FULLStatus
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.GeneratedTyping
@@ -433,6 +444,125 @@ export Mettapedia.OSLF.Framework.CategoryBridge (
   rhoProcSortFiber
   rhoProcSortFiber_characteristicEquiv
   rhoSortPredicateFibration
+)
+
+export Mettapedia.OSLF.Framework.LangMorphism (
+  LangReducesStar
+  TargetSC
+  LanguageMorphism
+  idLanguageMorphism
+  composeLanguageMorphism
+  LanguageMorphism.forward_multi_eq
+  LanguageMorphism.backward_multi_eq
+  LanguageMorphism.preserves_diamond
+  LanguageMorphism.operational_correspondence_forward
+)
+
+export Mettapedia.OSLF.Framework.LanguageEqCategory (
+  Obj
+  Hom
+  id
+  comp
+  HomEq
+  mapPred
+  mapPred_comp_fn
+)
+
+export Mettapedia.OSLF.Framework.LanguageEqCategoryLaws (
+  EqCategoryLaws
+  languageEqCategoryLaws
+  left_id_holds
+  right_id_holds
+  assoc_holds
+  mapPred_id_holds
+  mapPred_comp_holds
+)
+
+export Mettapedia.OSLF.Framework.ModeTheory (
+  RuntimeBehavioralIndexedDoctrine
+  mettaILRuntimeBehavioralDoctrine
+  doctrine_modalAdjunction_eq
+  doctrine_galois_eq
+  doctrine_fiberAgreement
+  doctrine_morphism_preserves_diamond
+)
+
+export Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor (
+  LanguageEqHom
+  predPullback
+  IndexedPredFunctor
+  runtimePredicatePullbackFunctor
+  diamond_witness_transport
+  diamond_witness_transport_comp
+)
+
+export Mettapedia.OSLF.Framework.Mode2Skeleton (
+  ModeObj
+  ModeHom
+  runtimeToBehavioralCanonical
+  runtimeToBehavioral_diamond_witness
+  behavioralModalAdjunction
+)
+
+export Mettapedia.OSLF.Framework.Mode2PureBoundary (
+  no_pure_to_runtime
+  no_pure_to_behavioral
+  no_runtime_to_pure
+  no_behavioral_to_pure
+  pure_endo_unique
+  pure_boundary_characterization
+  mettaPureRuntimeObj
+  mettaPureBehavioralObj
+  mettaPureRuntimeToBehavioral
+  mettaPure_runtime_behavioral_diamond_transport
+)
+
+export Mettapedia.OSLF.Framework.Mode2SkeletonLaws (
+  ModeHomLaws
+  mode2SkeletonLaws
+  left_id_holds
+  right_id_holds
+  assoc_holds
+  mapPred_id_holds
+  mapPred_comp_holds
+)
+
+export Mettapedia.OSLF.Framework.ModeMapPredCommutingSquares (
+  runtime_runtime_square
+  runtime_runtime_square_comp
+  runtime_behavioral_square
+  runtime_behavioral_square_comp
+  mapPred_commuting_squares_bundle
+)
+
+export Mettapedia.OSLF.Framework.MATTProvableNow (
+  doctrine_galois_is_langGalois
+  doctrine_adjunction_is_langModalAdjunction
+  eqCategory_mapPred_functorial
+  eqCategory_law_bundle_agrees
+  runtime_mode_mapPred_agrees
+  runtime_mode_termMap_agrees
+  runtime_mode_comp_coherence
+  runtime_runtime_square_coherence
+  runtime_behavioral_square_coherence
+  runtime_mode_diamond_transport
+  runtime_mode_diamond_transport_comp
+  pure_mode_isolation
+  mettaPure_runtime_behavioral_transport
+  matt_provable_now_bundle
+  matt_provable_now_bundle_ext
+  matt_provable_now_bundle_transport
+)
+
+export Mettapedia.OSLF.Framework.MATTClaimMap (
+  MATTClaimStatus
+  MATTClaim
+  mattClaimList
+  countByStatus
+  provenCount_eq
+  outOfScopeCount_eq
+  matt_pure_boundary_package
+  matt_canonical_runtime_behavioral_package
 )
 
 export Mettapedia.OSLF.Framework.FULLStatus (

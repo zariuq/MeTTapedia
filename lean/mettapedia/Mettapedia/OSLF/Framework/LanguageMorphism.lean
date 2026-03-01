@@ -263,6 +263,77 @@ theorem LanguageMorphism.operational_correspondence_forward
     ∃ T, LangReducesStar L₂ (m.mapTerm p) T ∧ sc T (m.mapTerm q) :=
   m.forward_multi_strong sc_refl sc_trans sc_star h
 
+/-! ## Canonical `Eq` Morphism Composition
+
+These are the canonical identity/composition operations for the common
+`sc := Eq` specialization. They are used to package a category-like
+infrastructure over `LanguageDef` without overclaiming proof-field equality
+for arbitrary `sc`.
+-/
+
+variable {L₃ L₄ : LanguageDef}
+
+/-- Identity language morphism (`Eq` specialization). -/
+def idLanguageMorphism (L : LanguageDef) : LanguageMorphism L L Eq where
+  mapTerm := id
+  forward_sim := by
+    intro p q hred
+    exact ⟨q, LangReducesStar.single hred, rfl⟩
+  backward_sim := by
+    intro p T hred
+    exact ⟨T, LangReducesStar.single hred, rfl⟩
+
+/-- Composition of `Eq`-specialized language morphisms. -/
+def composeLanguageMorphism
+    (m₁₂ : LanguageMorphism L₁ L₂ Eq)
+    (m₂₃ : LanguageMorphism L₂ L₃ Eq) :
+    LanguageMorphism L₁ L₃ Eq where
+  mapTerm := fun p => m₂₃.mapTerm (m₁₂.mapTerm p)
+  forward_sim := by
+    intro p q hred
+    obtain ⟨t₁, hstar₁, ht₁⟩ := m₁₂.forward_sim p q hred
+    subst ht₁
+    obtain ⟨t₂, hstar₂, ht₂⟩ :=
+      LanguageMorphism.forward_multi_eq (m := m₂₃) hstar₁
+    exact ⟨t₂, hstar₂, ht₂⟩
+  backward_sim := by
+    intro p t hred
+    obtain ⟨p₂, hstar₂, hp₂⟩ := m₂₃.backward_sim (m₁₂.mapTerm p) t hred
+    obtain ⟨p₁, hstar₁, hp₁⟩ :=
+      LanguageMorphism.backward_multi_eq (m := m₁₂) hstar₂
+    refine ⟨p₁, hstar₁, ?_⟩
+    subst hp₂
+    subst hp₁
+    rfl
+
+@[simp] theorem idLanguageMorphism_mapTerm (L : LanguageDef) (p : Pattern) :
+    (idLanguageMorphism L).mapTerm p = p := rfl
+
+@[simp] theorem composeLanguageMorphism_mapTerm
+    (m₁₂ : LanguageMorphism L₁ L₂ Eq)
+    (m₂₃ : LanguageMorphism L₂ L₃ Eq)
+    (p : Pattern) :
+    (composeLanguageMorphism m₁₂ m₂₃).mapTerm p = m₂₃.mapTerm (m₁₂.mapTerm p) := rfl
+
+/-- Left identity law for canonical composition, at map-term level. -/
+@[simp] theorem composeLanguageMorphism_id_left_mapTerm
+    (m : LanguageMorphism L₁ L₂ Eq) (p : Pattern) :
+    (composeLanguageMorphism (idLanguageMorphism L₁) m).mapTerm p = m.mapTerm p := rfl
+
+/-- Right identity law for canonical composition, at map-term level. -/
+@[simp] theorem composeLanguageMorphism_id_right_mapTerm
+    (m : LanguageMorphism L₁ L₂ Eq) (p : Pattern) :
+    (composeLanguageMorphism m (idLanguageMorphism L₂)).mapTerm p = m.mapTerm p := rfl
+
+/-- Associativity law for canonical composition, at map-term level. -/
+@[simp] theorem composeLanguageMorphism_assoc_mapTerm
+    (m₁₂ : LanguageMorphism L₁ L₂ Eq)
+    (m₂₃ : LanguageMorphism L₂ L₃ Eq)
+    (m₃₄ : LanguageMorphism L₃ L₄ Eq)
+    (p : Pattern) :
+    (composeLanguageMorphism (composeLanguageMorphism m₁₂ m₂₃) m₃₄).mapTerm p =
+      (composeLanguageMorphism m₁₂ (composeLanguageMorphism m₂₃ m₃₄)).mapTerm p := rfl
+
 /-! ## Framework-Level Formula Transfer Fragments
 
 Generic fragment-level transfer lemmas that are independent of any

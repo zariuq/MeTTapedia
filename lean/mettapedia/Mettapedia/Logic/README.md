@@ -38,7 +38,7 @@ The module connects probability theory, Heyting semantics, quantales, and Solomo
 ```bash
 cd /home/zar/claude/lean-projects/mettapedia
 ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \
-  lake build Mettapedia.Logic.PLNFirstOrder.Chapter11Regression
+  lake build Mettapedia.Logic.PLNFirstOrder.QuantifierRegression
 ```
 
 ```bash
@@ -51,7 +51,7 @@ cd /home/zar/claude/lean-projects/mettapedia
 - `Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean`
 - `Mettapedia/Logic/PLNFirstOrder/FuzzyITVBridge.lean`
 - `Mettapedia/Logic/PLNFirstOrder/QuantifierCanary.lean`
-- `Mettapedia/Logic/PLNFirstOrder/Chapter11Examples.lean`
+- `Mettapedia/Logic/PLNFirstOrder/QuantifierWorkedExamples.lean`
 
 ## Chapter-12 intensional inheritance regression
 
@@ -61,7 +61,7 @@ cd /home/zar/claude/lean-projects/mettapedia
 ```bash
 cd /home/zar/claude/lean-projects/mettapedia
 ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \
-  lake build Mettapedia.Logic.PLNChapter12Regression
+  lake build Mettapedia.Logic.PLNIntensionalRegression
 ```
 
 ```bash
@@ -72,8 +72,8 @@ cd /home/zar/claude/lean-projects/mettapedia
 - `Mettapedia/Logic/PLNIntensionalWorldModel.lean`
 - `Mettapedia/Logic/IntensionalInheritanceSolomonoffBridge.lean`
 - `Mettapedia/Logic/PLNCanonicalAPI.lean`
-- `Mettapedia/Logic/PLNChapter12Canary.lean`
-- `Mettapedia/Logic/PLNChapter12Regression.lean`
+- `Mettapedia/Logic/PLNIntensionalCanary.lean`
+- `Mettapedia/Logic/PLNIntensionalRegression.lean`
 
 ## Chapter-13 inference-control regression
 
@@ -83,7 +83,7 @@ cd /home/zar/claude/lean-projects/mettapedia
 ```bash
 cd /home/zar/claude/lean-projects/mettapedia
 ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \
-  lake build Mettapedia.Logic.PLNChapter13Regression
+  lake build Mettapedia.Logic.PLNInferenceControlRegression
 ```
 
 ```bash
@@ -95,9 +95,9 @@ cd /home/zar/claude/lean-projects/mettapedia
 - `Mettapedia/Logic/PremiseSelectionOptimality.lean`
 - `Mettapedia/Logic/PremiseSelectionRankingStability.lean`
 - `Mettapedia/Logic/PremiseSelectionCoverage.lean`
-- `Mettapedia/Logic/PLNChapter13InferenceControl.lean`
-- `Mettapedia/Logic/PLNChapter13Canary.lean`
-- `Mettapedia/Logic/PLNChapter13Regression.lean`
+- `Mettapedia/Logic/PLNInferenceControlCore.lean`
+- `Mettapedia/Logic/PLNInferenceControlCanary.lean`
+- `Mettapedia/Logic/PLNInferenceControlRegression.lean`
 
 ## Unification thesis
 
@@ -202,11 +202,11 @@ Foundations -> Core inference -> Algebraic semantics -> Bridges
 ```bash
 cd /home/zar/claude/lean-projects/mettapedia
 # Quantifier regression
-lake build Mettapedia.Logic.PLNFirstOrder.Chapter11Regression
+lake build Mettapedia.Logic.PLNFirstOrder.QuantifierRegression
 # Intensional inheritance regression
-lake build Mettapedia.Logic.PLNChapter12Regression
+lake build Mettapedia.Logic.PLNIntensionalRegression
 # Inference-control regression
-lake build Mettapedia.Logic.PLNChapter13Regression
+lake build Mettapedia.Logic.PLNInferenceControlRegression
 # Core files
 lake build Mettapedia.Logic.PLNBayesNetInference Mettapedia.Logic.PremiseSelectionKNN_PLNBridge
 # Build all (slow)

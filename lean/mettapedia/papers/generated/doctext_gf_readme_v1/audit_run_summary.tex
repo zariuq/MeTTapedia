@@ -1,0 +1,22 @@
+\begin{itemize}
+\item Generated at (UTC): \code{2026-02-28T14:13:46+00:00}
+\item Audit command: \codepath{bash scripts/audit\_doctext\_readme.sh}
+\item Exit status: \code{0}
+\item Full log: \codepath{papers/generated/doctext\_gf\_readme\_v1/audit\_run.log}
+\item JSON summary: \codepath{papers/generated/doctext\_gf\_readme\_v1/audit\_run\_summary.json}
+\item Runtime window (UTC): \code{2026-02-28T14:13:05+00:00} to \code{2026-02-28T14:13:46+00:00}
+\item Runtime parseback status: \code{PASS}, claim lines: \code{318}, unique surfaces: \code{318}
+\item Key output lines:
+\begin{lstlisting}
+[1/7] Verifying generator presence per DocText module
+[2/7] Building DocText README targets
+[3/7] Enforcing no generic prose bullet blocks in canonical trees
+[4/7] Enforcing no literal heading strings in canonical trees
+[5/7] Verifying hard-audit theorems exist
+[6/7] Running grammar agreement lint
+PASS: DocText grammar lint found no suspected plural/copula agreement issues.
+[7/7] Running runtime GF parseback checks
+PASS: GF runtime parseback passed (318 claim lines, 318 unique surfaces).
+PASS: DocText README audit checks passed for 14 modules.
+\end{lstlisting}
+\end{itemize}

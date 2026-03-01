@@ -48,3 +48,8 @@ path = "Mettapedia/CategoricalLogic"
 [[require]]
 name = "Metatheory"
 path = "Mettapedia/Metatheory"
+
+# Pure algorithm checker kernels (Init-only)
+[[require]]
+name = "algorithms"
+path = "../algorithms"

@@ -147,6 +147,12 @@ def pyashCore : LanguageDef := {
       syntaxPattern := [.terminal "command"] },
     { label := "VSearch", category := "Verb", params := [],
       syntaxPattern := [.terminal "search"] },
+    { label := "VList", category := "Verb", params := [],
+      syntaxPattern := [.terminal "list"] },
+    { label := "VInput", category := "Verb", params := [],
+      syntaxPattern := [.terminal "input"] },
+    { label := "VStream", category := "Verb", params := [],
+      syntaxPattern := [.terminal "stream"] },
     { label := "VMind", category := "Verb", params := [],
       syntaxPattern := [.terminal "mind"] },
     { label := "VChip", category := "Verb", params := [],
@@ -480,6 +486,9 @@ def isPyashVerb : Pattern → Prop
   | .apply "VMap" [] => True
   | .apply "VCommand" [] => True
   | .apply "VSearch" [] => True
+  | .apply "VList" [] => True
+  | .apply "VInput" [] => True
+  | .apply "VStream" [] => True
   | .apply "VMind" [] => True
   | .apply "VChip" [] => True
   | .apply "VHear" [] => True
@@ -662,6 +671,39 @@ def pyashRoleTypesSearch : Pattern :=
     ]
   ]
 
+/-- Signature payload for `list`: source location + rendered list output text. -/
+def pyashRoleTypesList : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "From" [], .apply "TFilename" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "To" [], .apply "TText" []],
+      .apply "RTNil" []
+    ]
+  ]
+
+/-- Signature payload for `input`: prompt text + captured output text. -/
+def pyashRoleTypesInput : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "FromText" [], .apply "TText" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "ToText" [], .apply "TText" []],
+      .apply "RTNil" []
+    ]
+  ]
+
+/-- Signature payload for `stream`: named source + source text + streamed output text. -/
+def pyashRoleTypesStream : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Su" [], .apply "TName" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "FromText" [], .apply "TText" []],
+      .apply "RTCons" [
+        .apply "RoleType" [.apply "ToText" [], .apply "TText" []],
+        .apply "RTNil" []
+      ]
+    ]
+  ]
+
 /-- Signature payload for `mind`: subject name + object text + destination text. -/
 def pyashRoleTypesMind : Pattern :=
   .apply "RTCons" [
@@ -800,6 +842,45 @@ def pyashRoleTypesConfigure : Pattern :=
     ]
   ]
 
+/-- `configure` def-signature payload for command-map definitions. -/
+def pyashRoleTypesConfigureCommandMapDef : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Su" [], .apply "TName" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "Ob" [], .apply "TText" []],
+      .apply "RTCons" [
+        .apply "RoleType" [.apply "ToText" [], .apply "TText" []],
+        .apply "RTNil" []
+      ]
+    ]
+  ]
+
+/-- `configure` def-signature payload for sandbox-map definitions. -/
+def pyashRoleTypesConfigureSandboxMapDef : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Su" [], .apply "TName" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "FromState" [], .apply "TWo" []],
+      .apply "RTCons" [
+        .apply "RoleType" [.apply "ToText" [], .apply "TText" []],
+        .apply "RTNil" []
+      ]
+    ]
+  ]
+
+/-- `configure` def-signature payload for verify-loop map definitions. -/
+def pyashRoleTypesConfigureVerifyLoopMapDef : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Su" [], .apply "TName" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "During" [], .apply "TNum" []],
+      .apply "RTCons" [
+        .apply "RoleType" [.apply "ToText" [], .apply "TText" []],
+        .apply "RTNil" []
+      ]
+    ]
+  ]
+
 /-- Signature payload for `world`: subject name + world input text + world output text. -/
 def pyashRoleTypesWorld : Pattern :=
   .apply "RTCons" [
@@ -813,6 +894,19 @@ def pyashRoleTypesWorld : Pattern :=
     ]
   ]
 
+/-- Alternate `world` signature payload for path I/O actions. -/
+def pyashRoleTypesWorldPathIO : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Su" [], .apply "TName" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "From" [], .apply "TFilename" []],
+      .apply "RTCons" [
+        .apply "RoleType" [.apply "To" [], .apply "TFilename" []],
+        .apply "RTNil" []
+      ]
+    ]
+  ]
+
 /-- Signature payload for `pipeline`: subject name + source state + destination state. -/
 def pyashRoleTypesPipeline : Pattern :=
   .apply "RTCons" [
@@ -821,6 +915,48 @@ def pyashRoleTypesPipeline : Pattern :=
       .apply "RoleType" [.apply "FromState" [], .apply "TWo" []],
       .apply "RTCons" [
         .apply "RoleType" [.apply "Become" [], .apply "TWo" []],
+        .apply "RTNil" []
+      ]
+    ]
+  ]
+
+/-- Alternate `pipeline` signature payload for chirp-style text flow. -/
+def pyashRoleTypesPipelineChirp : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Su" [], .apply "TName" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "FromText" [], .apply "TText" []],
+      .apply "RTCons" [
+        .apply "RoleType" [.apply "ToText" [], .apply "TText" []],
+        .apply "RTNil" []
+      ]
+    ]
+  ]
+
+/-- Alternate `pipeline` signature payload for re-entry cycles with explicit duration. -/
+def pyashRoleTypesPipelineReentry : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Su" [], .apply "TName" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "FromState" [], .apply "TWo" []],
+      .apply "RTCons" [
+        .apply "RoleType" [.apply "Become" [], .apply "TWo" []],
+        .apply "RTCons" [
+          .apply "RoleType" [.apply "During" [], .apply "TNum" []],
+          .apply "RTNil" []
+        ]
+      ]
+    ]
+  ]
+
+/-- Alternate `pipeline` signature payload for refinery input/output execution. -/
+def pyashRoleTypesPipelineRefinery : Pattern :=
+  .apply "RTCons" [
+    .apply "RoleType" [.apply "Ob" [], .apply "TText" []],
+    .apply "RTCons" [
+      .apply "RoleType" [.apply "From" [], .apply "TName" []],
+      .apply "RTCons" [
+        .apply "RoleType" [.apply "ToText" [], .apply "TText" []],
         .apply "RTNil" []
       ]
     ]
@@ -1166,6 +1302,114 @@ def pyashStateSearchDoneOk : Pattern :=
     .apply "Done" [],
     .apply "SentenceCore" [.apply "MYa" [], .apply "VSearch" [], pyashRoleTypesSearch],
     .apply "Signature" [.apply "VSearch" [], pyashRoleTypesSearch],
+    .apply "Ok" []
+  ]
+
+/-- `list` state before signature derivation. -/
+def pyashStateListDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VList" [], pyashRoleTypesList],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `list` state after signature derivation. -/
+def pyashStateListDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VList" [], pyashRoleTypesList],
+    .apply "Signature" [.apply "VList" [], pyashRoleTypesList],
+    .apply "Ok" []
+  ]
+
+/-- `list` state after dispatch enters run phase. -/
+def pyashStateListRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VList" [], pyashRoleTypesList],
+    .apply "Signature" [.apply "VList" [], pyashRoleTypesList],
+    .apply "Ok" []
+  ]
+
+/-- `list` done state. -/
+def pyashStateListDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VList" [], pyashRoleTypesList],
+    .apply "Signature" [.apply "VList" [], pyashRoleTypesList],
+    .apply "Ok" []
+  ]
+
+/-- `input` state before signature derivation. -/
+def pyashStateInputDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VInput" [], pyashRoleTypesInput],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `input` state after signature derivation. -/
+def pyashStateInputDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VInput" [], pyashRoleTypesInput],
+    .apply "Signature" [.apply "VInput" [], pyashRoleTypesInput],
+    .apply "Ok" []
+  ]
+
+/-- `input` state after dispatch enters run phase. -/
+def pyashStateInputRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VInput" [], pyashRoleTypesInput],
+    .apply "Signature" [.apply "VInput" [], pyashRoleTypesInput],
+    .apply "Ok" []
+  ]
+
+/-- `input` done state. -/
+def pyashStateInputDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VInput" [], pyashRoleTypesInput],
+    .apply "Signature" [.apply "VInput" [], pyashRoleTypesInput],
+    .apply "Ok" []
+  ]
+
+/-- `stream` state before signature derivation. -/
+def pyashStateStreamDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VStream" [], pyashRoleTypesStream],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `stream` state after signature derivation. -/
+def pyashStateStreamDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VStream" [], pyashRoleTypesStream],
+    .apply "Signature" [.apply "VStream" [], pyashRoleTypesStream],
+    .apply "Ok" []
+  ]
+
+/-- `stream` state after dispatch enters run phase. -/
+def pyashStateStreamRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VStream" [], pyashRoleTypesStream],
+    .apply "Signature" [.apply "VStream" [], pyashRoleTypesStream],
+    .apply "Ok" []
+  ]
+
+/-- `stream` done state. -/
+def pyashStateStreamDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VStream" [], pyashRoleTypesStream],
+    .apply "Signature" [.apply "VStream" [], pyashRoleTypesStream],
     .apply "Ok" []
   ]
 
@@ -1520,6 +1764,87 @@ def pyashStateConfigureDefDoneOk : Pattern :=
     .apply "Ok" []
   ]
 
+/-- `configure` (`def` command-map) state before signature derivation. -/
+def pyashStateConfigureCommandMapDefDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureCommandMapDef],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `configure` (`def` command-map) state after signature derivation. -/
+def pyashStateConfigureCommandMapDefDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureCommandMapDef],
+    .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigureCommandMapDef],
+    .apply "Ok" []
+  ]
+
+/-- `configure` (`def` command-map) terminal done state. -/
+def pyashStateConfigureCommandMapDefDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureCommandMapDef],
+    .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigureCommandMapDef],
+    .apply "Ok" []
+  ]
+
+/-- `configure` (`def` sandbox-map) state before signature derivation. -/
+def pyashStateConfigureSandboxMapDefDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureSandboxMapDef],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `configure` (`def` sandbox-map) state after signature derivation. -/
+def pyashStateConfigureSandboxMapDefDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureSandboxMapDef],
+    .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigureSandboxMapDef],
+    .apply "Ok" []
+  ]
+
+/-- `configure` (`def` sandbox-map) terminal done state. -/
+def pyashStateConfigureSandboxMapDefDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureSandboxMapDef],
+    .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigureSandboxMapDef],
+    .apply "Ok" []
+  ]
+
+/-- `configure` (`def` verify-loop map) state before signature derivation. -/
+def pyashStateConfigureVerifyLoopMapDefDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureVerifyLoopMapDef],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `configure` (`def` verify-loop map) state after signature derivation. -/
+def pyashStateConfigureVerifyLoopMapDefDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureVerifyLoopMapDef],
+    .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigureVerifyLoopMapDef],
+    .apply "Ok" []
+  ]
+
+/-- `configure` (`def` verify-loop map) terminal done state. -/
+def pyashStateConfigureVerifyLoopMapDefDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureVerifyLoopMapDef],
+    .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigureVerifyLoopMapDef],
+    .apply "Ok" []
+  ]
+
 /-- `world` state before signature derivation. -/
 def pyashStateWorldDerive : Pattern :=
   .apply "State" [
@@ -1556,6 +1881,42 @@ def pyashStateWorldDoneOk : Pattern :=
     .apply "Ok" []
   ]
 
+/-- `world` (path-io variant) state before signature derivation. -/
+def pyashStateWorldPathIODerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VWorld" [], pyashRoleTypesWorldPathIO],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `world` (path-io variant) state after signature derivation. -/
+def pyashStateWorldPathIODispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VWorld" [], pyashRoleTypesWorldPathIO],
+    .apply "Signature" [.apply "VWorld" [], pyashRoleTypesWorldPathIO],
+    .apply "Ok" []
+  ]
+
+/-- `world` (path-io variant) state after dispatch enters run phase. -/
+def pyashStateWorldPathIORunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VWorld" [], pyashRoleTypesWorldPathIO],
+    .apply "Signature" [.apply "VWorld" [], pyashRoleTypesWorldPathIO],
+    .apply "Ok" []
+  ]
+
+/-- `world` (path-io variant) done state. -/
+def pyashStateWorldPathIODoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VWorld" [], pyashRoleTypesWorldPathIO],
+    .apply "Signature" [.apply "VWorld" [], pyashRoleTypesWorldPathIO],
+    .apply "Ok" []
+  ]
+
 /-- `pipeline` state before signature derivation. -/
 def pyashStatePipelineDerive : Pattern :=
   .apply "State" [
@@ -1589,6 +1950,114 @@ def pyashStatePipelineDoneOk : Pattern :=
     .apply "Done" [],
     .apply "SentenceCore" [.apply "MYa" [], .apply "VPipeline" [], pyashRoleTypesPipeline],
     .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipeline],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (refinery variant) state before signature derivation. -/
+def pyashStatePipelineRefineryDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineRefinery],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (refinery variant) state after signature derivation. -/
+def pyashStatePipelineRefineryDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineRefinery],
+    .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineRefinery],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (refinery variant) state after dispatch enters run phase. -/
+def pyashStatePipelineRefineryRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineRefinery],
+    .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineRefinery],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (refinery variant) done state. -/
+def pyashStatePipelineRefineryDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VPipeline" [], pyashRoleTypesPipelineRefinery],
+    .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineRefinery],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (chirp variant) state before signature derivation. -/
+def pyashStatePipelineChirpDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineChirp],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (chirp variant) state after signature derivation. -/
+def pyashStatePipelineChirpDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineChirp],
+    .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineChirp],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (chirp variant) state after dispatch enters run phase. -/
+def pyashStatePipelineChirpRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineChirp],
+    .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineChirp],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (chirp variant) done state. -/
+def pyashStatePipelineChirpDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VPipeline" [], pyashRoleTypesPipelineChirp],
+    .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineChirp],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (re-entry variant) state before signature derivation. -/
+def pyashStatePipelineReentryDerive : Pattern :=
+  .apply "State" [
+    .apply "DeriveSignature" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineReentry],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (re-entry variant) state after signature derivation. -/
+def pyashStatePipelineReentryDispatched : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineReentry],
+    .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineReentry],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (re-entry variant) state after dispatch enters run phase. -/
+def pyashStatePipelineReentryRunning : Pattern :=
+  .apply "State" [
+    .apply "RunDo" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineReentry],
+    .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineReentry],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` (re-entry variant) done state. -/
+def pyashStatePipelineReentryDoneOk : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VPipeline" [], pyashRoleTypesPipelineReentry],
+    .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineReentry],
     .apply "Ok" []
   ]
 
@@ -1736,6 +2205,90 @@ def pyashStateTranslationDoneOk : Pattern :=
     .apply "Ok" []
   ]
 
+/-- `compile` (`do`) mismatch with an incompatible compile signature shape. -/
+def pyashStateCompileMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VCompile" [], pyashRoleTypesCompile],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VCompile" [], pyashRoleTypesCompile],
+      .apply "Signature" [.apply "VCompile" [], pyashRoleTypesImport]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `compile` mismatch terminal signature error state. -/
+def pyashStateCompileDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesCompile],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `import` (`do`) mismatch with an incompatible import signature shape. -/
+def pyashStateImportMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VImport" [], pyashRoleTypesImport],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VImport" [], pyashRoleTypesImport],
+      .apply "Signature" [.apply "VImport" [], pyashRoleTypesDownload]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `import` mismatch terminal signature error state. -/
+def pyashStateImportDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesImport],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `download` (`do`) mismatch with an incompatible download signature shape. -/
+def pyashStateDownloadMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VDownload" [], pyashRoleTypesDownload],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VDownload" [], pyashRoleTypesDownload],
+      .apply "Signature" [.apply "VDownload" [], pyashRoleTypesImport]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `download` mismatch terminal signature error state. -/
+def pyashStateDownloadDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesDownload],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `translation` (`do`) mismatch with an incompatible translation signature shape. -/
+def pyashStateTranslationMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VTranslation" [], pyashRoleTypesTranslation],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VTranslation" [], pyashRoleTypesTranslation],
+      .apply "Signature" [.apply "VTranslation" [], pyashRoleTypesCompile]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `translation` mismatch terminal signature error state. -/
+def pyashStateTranslationDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesTranslation],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
 /-- `ret`/`read` state before signature derivation. -/
 def pyashStateRetReadDerive : Pattern :=
   .apply "State" [
@@ -1788,6 +2341,216 @@ def pyashStateDoneDispatchErr : Pattern :=
     .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesRead],
     .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
     .apply "ErrDispatch" []
+  ]
+
+/-- `list` (`do`) mismatch with an incompatible list signature shape. -/
+def pyashStateListMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VList" [], pyashRoleTypesList],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VList" [], pyashRoleTypesList],
+      .apply "Signature" [.apply "VList" [], pyashRoleTypesInput]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `list` mismatch terminal signature error state. -/
+def pyashStateListDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesList],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `input` (`do`) mismatch with an incompatible input signature shape. -/
+def pyashStateInputMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VInput" [], pyashRoleTypesInput],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VInput" [], pyashRoleTypesInput],
+      .apply "Signature" [.apply "VInput" [], pyashRoleTypesStream]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `input` mismatch terminal signature error state. -/
+def pyashStateInputDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesInput],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `stream` (`do`) mismatch with an incompatible stream signature shape. -/
+def pyashStateStreamMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VStream" [], pyashRoleTypesStream],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VStream" [], pyashRoleTypesStream],
+      .apply "Signature" [.apply "VStream" [], pyashRoleTypesInput]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `stream` mismatch terminal signature error state. -/
+def pyashStateStreamDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesStream],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `configure` command-map (`def`) mismatch with baseline configure signature. -/
+def pyashStateConfigureCommandMapDefMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureCommandMapDef],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigureCommandMapDef],
+      .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigure]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `configure` command-map mismatch terminal error state. -/
+def pyashStateConfigureCommandMapDefDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesConfigureCommandMapDef],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `configure` sandbox-map (`def`) mismatch with baseline configure signature. -/
+def pyashStateConfigureSandboxMapDefMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureSandboxMapDef],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigureSandboxMapDef],
+      .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigure]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `configure` sandbox-map mismatch terminal error state. -/
+def pyashStateConfigureSandboxMapDefDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesConfigureSandboxMapDef],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `configure` verify-loop (`def`) mismatch with baseline configure signature. -/
+def pyashStateConfigureVerifyLoopMapDefMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDef" [], .apply "VConfigure" [], pyashRoleTypesConfigureVerifyLoopMapDef],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigureVerifyLoopMapDef],
+      .apply "Signature" [.apply "VConfigure" [], pyashRoleTypesConfigure]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `configure` verify-loop mismatch terminal error state. -/
+def pyashStateConfigureVerifyLoopMapDefDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesConfigureVerifyLoopMapDef],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `world` path-io (`do`) mismatch with baseline world signature. -/
+def pyashStateWorldPathIOMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VWorld" [], pyashRoleTypesWorldPathIO],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VWorld" [], pyashRoleTypesWorldPathIO],
+      .apply "Signature" [.apply "VWorld" [], pyashRoleTypesWorld]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `world` path-io mismatch terminal error state. -/
+def pyashStateWorldPathIODoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesWorldPathIO],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `pipeline` refinery (`do`) mismatch with baseline pipeline signature. -/
+def pyashStatePipelineRefineryMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineRefinery],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineRefinery],
+      .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipeline]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` refinery mismatch terminal error state. -/
+def pyashStatePipelineRefineryDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesPipelineRefinery],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `pipeline` chirp (`do`) mismatch with baseline pipeline signature. -/
+def pyashStatePipelineChirpMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineChirp],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineChirp],
+      .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipeline]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` chirp mismatch terminal error state. -/
+def pyashStatePipelineChirpDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesPipelineChirp],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
+  ]
+
+/-- `pipeline` re-entry (`do`) mismatch with baseline pipeline signature. -/
+def pyashStatePipelineReentryMismatch : Pattern :=
+  .apply "State" [
+    .apply "Dispatch" [],
+    .apply "SentenceCore" [.apply "MDo" [], .apply "VPipeline" [], pyashRoleTypesPipelineReentry],
+    .apply "SigMismatch" [
+      .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipelineReentry],
+      .apply "Signature" [.apply "VPipeline" [], pyashRoleTypesPipeline]
+    ],
+    .apply "Ok" []
+  ]
+
+/-- `pipeline` re-entry mismatch terminal error state. -/
+def pyashStatePipelineReentryDoneSignatureErr : Pattern :=
+  .apply "State" [
+    .apply "Done" [],
+    .apply "SentenceCore" [.apply "MYa" [], .apply "VError" [], pyashRoleTypesPipelineReentry],
+    .apply "Signature" [.apply "VError" [], .apply "RTNil" []],
+    .apply "ErrSignature" []
   ]
 
 /-- Malformed nested signature shape used as a negative signature regression case. -/

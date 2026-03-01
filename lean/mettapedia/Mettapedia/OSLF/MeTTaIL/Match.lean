@@ -149,6 +149,30 @@ def applyBindings (bindings : Bindings) (rhs : Pattern) : Pattern :=
     .collection ct (elems' ++ restElems) none
 termination_by sizeOf rhs
 
+/-! ## isMatchCorrect Fragment -/
+
+mutual
+def isMatchCorrectAux : Pattern → Bool
+  | .fvar _           => true
+  | .bvar _           => true
+  | .apply _ args     => isMatchCorrectListAux args
+  | .lambda body      => isMatchCorrectAux body
+  | .multiLambda _ b  => isMatchCorrectAux b
+  | .subst _ _        => false
+  | .collection _ _ _ => false
+
+def isMatchCorrectListAux : List Pattern → Bool
+  | []      => true
+  | p :: ps => isMatchCorrectAux p && isMatchCorrectListAux ps
+end
+
+/-- A pattern is "match-correct" if `applyBindings bs pat = t` holds for every
+    `bs ∈ matchPattern pat t`. Excludes:
+    - `.subst`: `applyBindings` evaluates via `openBVar`, not identity.
+    - `.collection`: bag matching can pick elements out of order, so
+      `applyBindings bs pat` may reorder elements vs. the target `t`. -/
+def Pattern.isMatchCorrect (p : Pattern) : Bool := isMatchCorrectAux p
+
 /-! ## Rule Application -/
 
 /-- Apply a single rewrite rule to a term (top-level match only).

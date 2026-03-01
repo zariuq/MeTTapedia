@@ -1,4 +1,4 @@
-import Mettapedia.Logic.PLNFirstOrder.Chapter11Examples
+import Mettapedia.Logic.PLNFirstOrder.QuantifierWorkedExamples
 
 /-!
 # Chapter 11 Extended Fuzzy-Syllogism Canaries

@@ -1,0 +1,166 @@
+{
+  "audit_command": "bash scripts/audit_doctext_readme.sh",
+  "audit_json_path": "papers/generated/doctext_gf_readme_v1/audit_run_summary.json",
+  "audit_log_path": "papers/generated/doctext_gf_readme_v1/audit_run.log",
+  "exit_status": 0,
+  "finished_at_utc": "2026-02-28T14:13:46+00:00",
+  "gates": [
+    {
+      "check": "Verifying generator presence per DocText module",
+      "stage": "G1",
+      "status": "PASS"
+    },
+    {
+      "check": "Building DocText README targets",
+      "stage": "G2",
+      "status": "PASS"
+    },
+    {
+      "check": "Enforcing no generic prose bullet blocks in canonical trees",
+      "stage": "G3",
+      "status": "PASS"
+    },
+    {
+      "check": "Enforcing no literal heading strings in canonical trees",
+      "stage": "G4",
+      "status": "PASS"
+    },
+    {
+      "check": "Verifying hard-audit theorems exist",
+      "stage": "G5",
+      "status": "PASS"
+    },
+    {
+      "check": "Running grammar agreement lint",
+      "stage": "G6",
+      "status": "PASS"
+    },
+    {
+      "check": "Running runtime GF parseback checks",
+      "stage": "G7",
+      "status": "PASS"
+    }
+  ],
+  "generated_at_utc": "2026-02-28T14:13:46+00:00",
+  "global_parseback": {
+    "claim_lines": 318,
+    "status": "PASS",
+    "unique_surfaces": 318
+  },
+  "key_lines": [
+    "[1/7] Verifying generator presence per DocText module",
+    "[2/7] Building DocText README targets",
+    "[3/7] Enforcing no generic prose bullet blocks in canonical trees",
+    "[4/7] Enforcing no literal heading strings in canonical trees",
+    "[5/7] Verifying hard-audit theorems exist",
+    "[6/7] Running grammar agreement lint",
+    "PASS: DocText grammar lint found no suspected plural/copula agreement issues.",
+    "[7/7] Running runtime GF parseback checks",
+    "PASS: GF runtime parseback passed (318 claim lines, 318 unique surfaces).",
+    "PASS: DocText README audit checks passed for 14 modules."
+  ],
+  "module_count": 14,
+  "modules": [
+    {
+      "claim_count": 30,
+      "hard_audit_theorem": "atps_hard_audit",
+      "module_file": "Mettapedia/DocText/AtpsReadmeCompositional.lean",
+      "pass_count": 30,
+      "readme_path": "/home/zar/claude/atps/README.md"
+    },
+    {
+      "claim_count": 8,
+      "hard_audit_theorem": "bridge_hard_audit",
+      "module_file": "Mettapedia/DocText/BridgeReadmeCompositional.lean",
+      "pass_count": 8,
+      "readme_path": "Mettapedia/Bridge/README.md"
+    },
+    {
+      "claim_count": 3,
+      "hard_audit_theorem": "categoricalLogic_hard_audit",
+      "module_file": "Mettapedia/DocText/CategoricalLogicReadmeCompositional.lean",
+      "pass_count": 3,
+      "readme_path": "Mettapedia/CategoricalLogic/README.md"
+    },
+    {
+      "claim_count": 8,
+      "hard_audit_theorem": "categoryTheory_hard_audit",
+      "module_file": "Mettapedia/DocText/CategoryTheoryReadmeCompositional.lean",
+      "pass_count": 8,
+      "readme_path": "Mettapedia/CategoryTheory/README.md"
+    },
+    {
+      "claim_count": 11,
+      "hard_audit_theorem": "cognitiveArchitecture_hard_audit",
+      "module_file": "Mettapedia/DocText/CognitiveArchitectureReadmeCompositional.lean",
+      "pass_count": 11,
+      "readme_path": "Mettapedia/CognitiveArchitecture/README.md"
+    },
+    {
+      "claim_count": 29,
+      "hard_audit_theorem": "gf_hard_audit",
+      "module_file": "Mettapedia/DocText/GFReadmeCompositional.lean",
+      "pass_count": 29,
+      "readme_path": "Mettapedia/Languages/GF/README.md"
+    },
+    {
+      "claim_count": 32,
+      "hard_audit_theorem": "gslt_hard_audit",
+      "module_file": "Mettapedia/DocText/GSLTReadmeCompositional.lean",
+      "pass_count": 32,
+      "readme_path": "Mettapedia/GSLT/README.md"
+    },
+    {
+      "claim_count": 27,
+      "hard_audit_theorem": "languages_hard_audit",
+      "module_file": "Mettapedia/DocText/LanguagesReadmeCompositional.lean",
+      "pass_count": 27,
+      "readme_path": "Mettapedia/Languages/README.md"
+    },
+    {
+      "claim_count": 26,
+      "hard_audit_theorem": "logic_hard_audit",
+      "module_file": "Mettapedia/DocText/LogicReadmeCompositional.lean",
+      "pass_count": 26,
+      "readme_path": "Mettapedia/Logic/README.md"
+    },
+    {
+      "claim_count": 0,
+      "hard_audit_theorem": "main_hard_audit",
+      "module_file": "Mettapedia/DocText/MainReadmeCompositional.lean",
+      "pass_count": 0,
+      "readme_path": null
+    },
+    {
+      "claim_count": 54,
+      "hard_audit_theorem": "metatheory_hard_audit",
+      "module_file": "Mettapedia/DocText/MetatheoryReadmeCompositional.lean",
+      "pass_count": 54,
+      "readme_path": "Mettapedia/Metatheory/README.md"
+    },
+    {
+      "claim_count": 22,
+      "hard_audit_theorem": "mettapedia_hard_audit",
+      "module_file": "Mettapedia/DocText/MettapediaReadmeCompositional.lean",
+      "pass_count": 22,
+      "readme_path": "README.md"
+    },
+    {
+      "claim_count": 25,
+      "hard_audit_theorem": "mmLean4_hard_audit",
+      "module_file": "Mettapedia/DocText/MmLean4ReadmeCompositional.lean",
+      "pass_count": 25,
+      "readme_path": "/home/zar/claude/hyperon/metamath/mm-lean4/README.md"
+    },
+    {
+      "claim_count": 43,
+      "hard_audit_theorem": "oslf_hard_audit",
+      "module_file": "Mettapedia/DocText/OSLFReadmeCompositional.lean",
+      "pass_count": 43,
+      "readme_path": "Mettapedia/OSLF/README.md"
+    }
+  ],
+  "started_at_utc": "2026-02-28T14:13:05+00:00",
+  "total_claim_lines": 318,
+  "total_passed_lines": 318
+}

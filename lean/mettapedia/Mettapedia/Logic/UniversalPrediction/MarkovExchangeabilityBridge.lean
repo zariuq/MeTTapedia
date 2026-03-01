@@ -2,6 +2,7 @@ import Mathlib.Data.List.OfFn
 import Mettapedia.Logic.MarkovExchangeability
 import Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.PrefixMeasure
 import Mettapedia.Logic.UniversalPrediction.MarkovDirichletPredictor
+import Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.SolomonoffBridge
 
 /-!
 # Markov Exchangeability Bridge (Domain Test ⇒ Transition-Count Evidence)
@@ -307,6 +308,39 @@ theorem mu_append_singleton_eq_of_same_summary_list
     μ (xs ++ [x]) = μ (List.ofFn xsFn ++ [x]) := hμx
     _ = μ (List.ofFn ysFn ++ [x]) := h
     _ = μ (ys ++ [x]) := hμy.symm
+
+/-- Connection theorem (Markov domain test + Solomonoff-style regret):
+for lower-semicomputable Markov-exchangeable prefix measures on `Fin k`,
+one-step prediction depends only on Markov transition-count evidence, and the
+finite-alphabet universal Solomonoff mixture gives the standard log-loss bound. -/
+theorem markovExchangeable_summary_and_solomonoff_regret
+    (μ : PrefixMeasure (Fin k))
+    (hμMarkov : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hμLSC :
+      Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.LowerSemicomputablePrefixMeasure
+        (α := Fin k) μ) :
+    (∀ (xs ys : List (Fin k)) (hlen : xs.length = ys.length) (hx : 0 < xs.length)
+      (_hstart : xs.get ⟨0, hx⟩ = ys.get ⟨0, by simpa [hlen] using hx⟩)
+      (_hsum : TransCounts.summary (k := k) xs = TransCounts.summary (k := k) ys)
+      (x : Fin k),
+      μ (xs ++ [x]) = μ (ys ++ [x])) ∧
+    (∀ n : ℕ,
+      ∃ c : ENNReal, c ≠ 0 ∧
+        Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.Dominates
+          (Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.SolomonoffBridge.M₂
+            (α := Fin k)) μ c ∧
+          Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.FiniteHorizon.relEntropy μ
+            (Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.SolomonoffBridge.M₂
+              (α := Fin k)) n ≤
+            Real.log (1 / c.toReal)) := by
+  refine ⟨?_, ?_⟩
+  · intro xs ys hlen hx hstart hsum x
+    exact mu_append_singleton_eq_of_same_summary_list
+      (k := k) (μ := μ) (hμ := hμMarkov) xs ys hlen hx hstart hsum x
+  · intro n
+    simpa using
+      (Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.SolomonoffBridge.relEntropy_le_log_inv_M₂
+        (α := Fin k) (μ := μ) hμLSC n)
 
 end MarkovExchangeabilityBridge
 
