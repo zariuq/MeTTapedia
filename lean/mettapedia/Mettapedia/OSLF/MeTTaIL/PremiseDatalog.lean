@@ -65,7 +65,8 @@ deriving Repr, Inhabited
 /-- A condition/guard in a datalog rule body.
 
 Guards are evaluated left-to-right. Variable-binding guards (deconstruct,
-compute, relQuery) introduce new variables available to subsequent guards. -/
+compute, computeMany, relQuery) introduce new variables available to
+subsequent guards. -/
 inductive PGuard where
   /-- Structural equality: `eq(lhs, rhs)`. -/
   | eq : PExpr → PExpr → PGuard
@@ -79,6 +80,10 @@ inductive PGuard where
       `compute("int_add", [lhs, rhs], "result")` calls the builtin and
       binds the output to "result". -/
   | compute : String → List PExpr → String → PGuard
+  /-- Call a builtin function that may return multiple outputs.
+      `computeMany("queryEq", [space, atom], "rhs")` iterates all returned
+      values, binding each to "rhs". -/
+  | computeMany : String → List PExpr → String → PGuard
   /-- Negation-as-failure: succeeds when the relation has no matching tuples.
       `notIn("eqnLookup", [sp, src, wild])` — true if no equation maps src. -/
   | notIn : String → List PExpr → PGuard
@@ -281,6 +286,7 @@ partial def PExpr.freeVars : PExpr → List String
 def PGuard.bindsVars : PGuard → List String
   | .deconstruct _ _ names => names.filter (· ≠ "_")
   | .compute _ _ result => [result]
+  | .computeMany _ _ result => [result]
   | .collIter _ _ elem => [elem]
   | .relQuery _ args => args.flatMap fun
     | .var x => [x]  -- variables in relQuery args get bound if not already

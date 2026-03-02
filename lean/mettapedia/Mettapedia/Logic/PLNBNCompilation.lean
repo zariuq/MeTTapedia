@@ -521,6 +521,15 @@ variable (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
 variable [HasLocalMarkovProperty bn μ]
 variable [DSeparationSoundness bn μ]
 
+/-- Package assumption: every BN discrete CPT satisfies local Markov. -/
+class AllDiscreteCPTLocalMarkov : Prop where
+  localMarkov : ∀ cpt : bn.DiscreteCPT, HasLocalMarkovProperty bn cpt.jointMeasure
+
+theorem allDiscreteCPTLocalMarkov_of
+    (hLM : ∀ cpt : bn.DiscreteCPT, HasLocalMarkovProperty bn cpt.jointMeasure) :
+    AllDiscreteCPTLocalMarkov (bn := bn) :=
+  ⟨hLM⟩
+
 /-! ## CondIndep → QueryEq (parameterized interface) -/
 
 /-- A parameterized interface: conditional independence implies query equality.
@@ -648,6 +657,27 @@ theorem wmqueryeq_of_dsep_discharge_via_soundness
       letI : HasLocalMarkovProperty bn cpt.jointMeasure := hLM cpt
       letI : DSeparationSoundness bn cpt.jointMeasure := hSound cpt
       exact DSeparationCond.discharge_cpt (bn := bn) (cond := cond) (cpt := cpt) hcond)
+
+theorem wmqueryeq_of_dsep_discharge_via_soundness_allLocalMarkov
+    (cond : DSeparationCond V)
+    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    [CondIndepQueryEq (bn := bn) cond q₁ q₂]
+    [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
+    [AllDiscreteCPTLocalMarkov (bn := bn)]
+    (hSound : ∀ cpt : bn.DiscreteCPT,
+      letI : HasLocalMarkovProperty bn cpt.jointMeasure :=
+        AllDiscreteCPTLocalMarkov.localMarkov (bn := bn) cpt
+      DSeparationSoundness bn cpt.jointMeasure) :
+    cond.holds (bn := bn) →
+      WMQueryEq (State := State (bn := bn))
+        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+  exact wmqueryeq_of_dsep_discharge_via_soundness
+    (bn := bn) (cond := cond) (q₁ := q₁) (q₂ := q₂)
+    (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := bn))
+    (hSound := fun cpt => by
+      letI : HasLocalMarkovProperty bn cpt.jointMeasure :=
+        AllDiscreteCPTLocalMarkov.localMarkov (bn := bn) cpt
+      exact hSound cpt)
 
 /-! ## Concrete cond-indep → linkProb equality (degenerate equality) -/
 
@@ -1371,6 +1401,20 @@ theorem chain_hciCA_from_hLM
   letI : HasLocalMarkovProperty chainBN cpt.jointMeasure := hLM cpt
   exact chain_hciCA_of_dsep (cpt := cpt) hcond
 
+theorem chain_hciCA_from_allLocalMarkov
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)]
+    [∀ v : Three, Inhabited (chainBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (chainBN.stateSpace v)]
+    [StandardBorelSpace chainBN.JointSpace]
+    [AllDiscreteCPTLocalMarkov (bn := chainBN)] :
+    ∀ cpt : chainBN.DiscreteCPT,
+      (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) →
+        CondIndepVertices chainBN cpt.jointMeasure
+          ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
+  exact chain_hciCA_from_hLM
+    (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := chainBN))
+
 theorem chain_hciCA_from_hLM_full
     [∀ v : Three, Fintype (chainBN.stateSpace v)]
     [∀ v : Three, DecidableEq (chainBN.stateSpace v)]
@@ -1409,6 +1453,25 @@ theorem chain_screeningOff_wmqueryeq_of_dsep
     (valA := valA) (valB := valB) (valC := valC)
     (hciCA := chain_hciCA_from_hLM (hLM := hLM))
     hcond
+
+theorem chain_screeningOff_wmqueryeq_of_dsep_allLocalMarkov
+    (valA valB valC : Bool)
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)]
+    [∀ v : Three, Inhabited (chainBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (chainBN.stateSpace v)]
+    [StandardBorelSpace chainBN.JointSpace]
+    [EventPos (bn := chainBN) Three.B valB]
+    [EventPosConstraints (bn := chainBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    [AllDiscreteCPTLocalMarkov (bn := chainBN)] :
+    (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) →
+      WMQueryEq (State := State (bn := chainBN))
+        (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
+        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+  exact chain_screeningOff_wmqueryeq_of_dsep
+    (valA := valA) (valB := valB) (valC := valC)
+    (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := chainBN))
 
 theorem chain_screeningOff_rewrite_applies_of_dsep
     (valA valB valC : Bool)
@@ -1577,6 +1640,20 @@ theorem fork_hciCA_from_hLM
   letI : HasLocalMarkovProperty forkBN cpt.jointMeasure := hLM cpt
   exact fork_condIndep_CA_given_B_of_localMarkov (μ := cpt.jointMeasure)
 
+theorem fork_hciCA_from_allLocalMarkov
+    [∀ v : Three, Fintype (forkBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (forkBN.stateSpace v)]
+    [∀ v : Three, Inhabited (forkBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (forkBN.stateSpace v)]
+    [StandardBorelSpace forkBN.JointSpace]
+    [AllDiscreteCPTLocalMarkov (bn := forkBN)] :
+    ∀ cpt : forkBN.DiscreteCPT,
+      (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := forkBN) →
+        CondIndepVertices forkBN cpt.jointMeasure
+          ({Three.C} : Set Three) ({Three.A} : Set Three) ({Three.B} : Set Three) := by
+  exact fork_hciCA_from_hLM
+    (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := forkBN))
+
 theorem fork_screeningOff_wmqueryeq_of_dsep
     (valA valB valC : Bool)
     [∀ v : Three, Fintype (forkBN.stateSpace v)]
@@ -1598,6 +1675,25 @@ theorem fork_screeningOff_wmqueryeq_of_dsep
     (valA := valA) (valB := valB) (valC := valC)
     (hciCA := fork_hciCA_from_hLM (hLM := hLM))
     hcond
+
+theorem fork_screeningOff_wmqueryeq_of_dsep_allLocalMarkov
+    (valA valB valC : Bool)
+    [∀ v : Three, Fintype (forkBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (forkBN.stateSpace v)]
+    [∀ v : Three, Inhabited (forkBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (forkBN.stateSpace v)]
+    [StandardBorelSpace forkBN.JointSpace]
+    [EventPos (bn := forkBN) Three.B valB]
+    [EventPosConstraints (bn := forkBN) [⟨Three.A, valA⟩, ⟨Three.B, valB⟩]]
+    [AllDiscreteCPTLocalMarkov (bn := forkBN)] :
+    (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := forkBN) →
+      WMQueryEq (State := State (bn := forkBN))
+        (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
+        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+  exact fork_screeningOff_wmqueryeq_of_dsep
+    (valA := valA) (valB := valB) (valC := valC)
+    (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := forkBN))
 
 theorem fork_screeningOff_strength_eq_of_dsep
     (valA valB valC : Bool)
@@ -1657,6 +1753,20 @@ theorem collider_hciAB_from_hLM
   letI : HasLocalMarkovProperty colliderBN cpt.jointMeasure := hLM cpt
   exact collider_condIndep_AB_given_empty_of_localMarkov (μ := cpt.jointMeasure)
 
+theorem collider_hciAB_from_allLocalMarkov
+    [∀ v : Three, Fintype (colliderBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (colliderBN.stateSpace v)]
+    [∀ v : Three, Inhabited (colliderBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (colliderBN.stateSpace v)]
+    [StandardBorelSpace colliderBN.JointSpace]
+    [AllDiscreteCPTLocalMarkov (bn := colliderBN)] :
+    ∀ cpt : colliderBN.DiscreteCPT,
+      (CompiledPlan.abductionSide Three.A Three.C Three.B).holds (bn := colliderBN) →
+        CondIndepVertices colliderBN cpt.jointMeasure
+          ({Three.A} : Set Three) ({Three.B} : Set Three) ∅ := by
+  exact collider_hciAB_from_hLM
+    (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := colliderBN))
+
 theorem collider_screeningOff_wmqueryeq_of_dsep
     (valA valB : Bool)
     [∀ v : Three, Fintype (colliderBN.stateSpace v)]
@@ -1681,6 +1791,24 @@ theorem collider_screeningOff_wmqueryeq_of_dsep
         (cpt := cpt)
         (collider_hciAB_from_hLM hLM cpt hcond)
         (EventPos.pos (bn := colliderBN) (A := Three.A) (valA := valA) cpt))
+
+theorem collider_screeningOff_wmqueryeq_of_dsep_allLocalMarkov
+    (valA valB : Bool)
+    [∀ v : Three, Fintype (colliderBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (colliderBN.stateSpace v)]
+    [∀ v : Three, Inhabited (colliderBN.stateSpace v)]
+    [∀ v : Three, StandardBorelSpace (colliderBN.stateSpace v)]
+    [StandardBorelSpace colliderBN.JointSpace]
+    [EventPos (bn := colliderBN) Three.A valA]
+    [AllDiscreteCPTLocalMarkov (bn := colliderBN)] :
+    (CompiledPlan.abductionSide Three.A Three.C Three.B).holds (bn := colliderBN) →
+      WMQueryEq (State := State (bn := colliderBN))
+        (Query := PLNQuery (BNQuery.Atom (bn := colliderBN)))
+        (PLNQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
+        (PLNQuery.prop ⟨Three.B, valB⟩) := by
+  exact collider_screeningOff_wmqueryeq_of_dsep
+    (valA := valA) (valB := valB)
+    (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := colliderBN))
 
 theorem collider_screeningOff_strength_eq_of_dsep
     (valA valB : Bool)

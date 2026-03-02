@@ -61,10 +61,27 @@ variable {State Query : Type*} [EvidenceType State] [WorldModel State Query]
 noncomputable def queryStrength (W : State) (q : Query) : ℝ≥0∞ :=
   Evidence.toStrength (WorldModel.evidence (State := State) (Query := Query) W q)
 
+/-- Context-aware posterior-mean strength view of a query. -/
+noncomputable def queryStrengthWith
+    (ctx : BinaryContext) (W : State) (q : Query) : ℝ≥0∞ :=
+  Evidence.strengthWith ctx (WorldModel.evidence (State := State) (Query := Query) W q)
+
+/-- Confidence view of a query (with prior/context size parameter `κ`). -/
+noncomputable def queryConfidence (κ : ℝ≥0∞) (W : State) (q : Query) : ℝ≥0∞ :=
+  Evidence.toConfidence κ (WorldModel.evidence (State := State) (Query := Query) W q)
+
 /-- WTV view for a query, using the canonical `Evidence → WTV` map with prior size `κ`.
 This is operational plumbing; the core state remains `Evidence`. -/
 noncomputable def queryWTV (κ : ℝ≥0∞) (W : State) (q : Query) : PLNWeightTV.WTV :=
   Evidence.toWTV κ (WorldModel.evidence (State := State) (Query := Query) W q)
+
+/-- Generic context-dependent interpretation view of a query. -/
+def queryInterpret
+    {Ctx Val : Type*}
+    [InterpretableEvidence Ctx Evidence Val]
+    (ctx : Ctx) (W : State) (q : Query) : Val :=
+  InterpretableEvidence.interpret ctx
+    (WorldModel.evidence (State := State) (Query := Query) W q)
 
 theorem evidence_add' (W₁ W₂ : State) (q : Query) :
     WorldModel.evidence (State := State) (Query := Query) (W₁ + W₂) q =
@@ -339,9 +356,28 @@ def evidenceAt (W : State) {s : Srt} (q : Query s) : Evidence :=
 noncomputable def queryStrength (W : State) (q : Sigma Query) : ℝ≥0∞ :=
   Evidence.toStrength (WorldModelSigma.evidence W q)
 
+/-- Context-aware posterior-mean strength view for a typed query. -/
+noncomputable def queryStrengthWith
+    (ctx : BinaryContext) (W : State) (q : Sigma Query) : ℝ≥0∞ :=
+  Evidence.strengthWith ctx (WorldModelSigma.evidence W q)
+
 /-- Posterior-mean strength view with explicit sort index. -/
 noncomputable def queryStrengthAt (W : State) {s : Srt} (q : Query s) : ℝ≥0∞ :=
   queryStrength W ⟨s, q⟩
+
+/-- Context-aware posterior-mean strength view with explicit sort index. -/
+noncomputable def queryStrengthWithAt
+    (ctx : BinaryContext) (W : State) {s : Srt} (q : Query s) : ℝ≥0∞ :=
+  queryStrengthWith ctx W ⟨s, q⟩
+
+/-- Confidence view for a typed query (with prior/context size parameter `κ`). -/
+noncomputable def queryConfidence (κ : ℝ≥0∞) (W : State) (q : Sigma Query) : ℝ≥0∞ :=
+  Evidence.toConfidence κ (WorldModelSigma.evidence W q)
+
+/-- Confidence view with explicit sort index. -/
+noncomputable def queryConfidenceAt
+    (κ : ℝ≥0∞) (W : State) {s : Srt} (q : Query s) : ℝ≥0∞ :=
+  queryConfidence κ W ⟨s, q⟩
 
 /-- WTV view for a typed query. -/
 noncomputable def queryWTV (κ : ℝ≥0∞) (W : State) (q : Sigma Query) : PLNWeightTV.WTV :=
@@ -351,6 +387,20 @@ noncomputable def queryWTV (κ : ℝ≥0∞) (W : State) (q : Sigma Query) : PLN
 noncomputable def queryWTVAt (κ : ℝ≥0∞) (W : State) {s : Srt} (q : Query s) :
     PLNWeightTV.WTV :=
   queryWTV κ W ⟨s, q⟩
+
+/-- Generic context-dependent interpretation view of a typed query. -/
+def queryInterpret
+    {Ctx Val : Type*}
+    [InterpretableEvidence Ctx Evidence Val]
+    (ctx : Ctx) (W : State) (q : Sigma Query) : Val :=
+  InterpretableEvidence.interpret ctx (WorldModelSigma.evidence W q)
+
+/-- Generic context-dependent interpretation view with explicit sort index. -/
+def queryInterpretAt
+    {Ctx Val : Type*}
+    [InterpretableEvidence Ctx Evidence Val]
+    (ctx : Ctx) (W : State) {s : Srt} (q : Query s) : Val :=
+  queryInterpret (Query := Query) (Ctx := Ctx) (Val := Val) ctx W ⟨s, q⟩
 
 theorem evidence_add' (W₁ W₂ : State) (q : Sigma Query) :
     WorldModelSigma.evidence (W₁ + W₂) q =

@@ -88,7 +88,7 @@ open Mettapedia.OSLF
 
 ## MeTTa spec-facing slice
 
-The spec-facing MeTTa slice uses `Mettapedia/OSLF/MeTTaCore/FullLanguageDef.lean`.
+The spec-facing MeTTa slice uses `Mettapedia/Languages/MeTTa/Core/FullLanguageDef.lean`.
 
 It uses explicit syntax patterns for display.
 
@@ -114,21 +114,43 @@ It uses explicit syntax patterns for display.
 ### Same example at the Lean level
 
 ```lean
-import Mettapedia.OSLF.MeTTaCore.FullLanguageDef
-import Mettapedia.OSLF.MeTTaCore.Premises
+import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
+import Mettapedia.Languages.MeTTa.Core.Premises
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 def exState : Pattern :=
   .apply "State"
     [ .apply "Eval" [.apply "ATrue" []]
-    , Mettapedia.OSLF.MeTTaCore.Premises.space0Pattern
+    , Mettapedia.Languages.MeTTa.Core.Premises.space0Pattern
     , .apply "AFalse" [] ]
 ```
 
 This is the canonical spec-facing representation.
 
 The engine and the OSLF synthesis pipeline use this canonical representation.
+
+## MeTTaIL vs runtime boundary
+
+`Mettapedia/OSLF/MeTTaIL` is the semantic IL and export boundary:
+
+- `Syntax`, `LanguageDef`, declarative/executable reduction bridges
+- OSLF synthesis hooks (`langRewriteSystem`, `langOSLF`, `langGalois`)
+- export-oriented tooling and metadata paths
+
+Executable runtime implementations belong in the separate lightweight project:
+
+- `lean-projects/algorithms/Algorithms/MeTTa/...`
+- simple interpreter/runtime path
+- staged/specialized runtime path
+
+### Positive example
+
+- proving a language-level property (`langGalois` / `DeclReducesWithPremises`) belongs in `OSLF/MeTTaIL`.
+
+### Negative example
+
+- putting mutable runtime/session implementation details into `OSLF/MeTTaIL` does not belong there; keep that in `algorithms`.
 
 ## Current entry point
 

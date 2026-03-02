@@ -1,5 +1,5 @@
-import Mettapedia.OSLF.PeTTa.MeTTaEval
-import Mettapedia.OSLF.PeTTa.StdLib
+import Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval
+import Mettapedia.Languages.MeTTa.PeTTa.StdLib
 
 /-!
 # Shared Let* Interface for MeTTa-Like Evaluators
@@ -27,7 +27,7 @@ namespace Mettapedia.Logic.GovernanceReasoning.LetStarInterface
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.OSLF.PeTTa
+open Mettapedia.Languages.MeTTa.PeTTa
 
 /-! ## §1 MeTTaLike Typeclass -/
 

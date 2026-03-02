@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.HE.Interpreter
-import Mettapedia.OSLF.MeTTaCore.Bridge
+import Mettapedia.Languages.MeTTa.Core.Bridge
 import Mettapedia.Logic.GovernanceReasoning.PeTTaRefinement
 
 /-!
@@ -47,8 +47,8 @@ Pattern ↔ Atom bridge is lossy (Pattern has 7 constructors, Atom has 4).
 namespace Mettapedia.Logic.GovernanceReasoning.HECanonicalConformance
 
 open Mettapedia.Languages.MeTTa.HE
-open Mettapedia.OSLF.MeTTaCore (Atom)
-open Mettapedia.OSLF.MeTTaCore.Bridge
+open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.Core.Bridge
 open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern)
 open Mettapedia.Logic.GovernanceReasoning.Core
 open Mettapedia.Logic.GovernanceReasoning.PeTTaRefinement

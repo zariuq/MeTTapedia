@@ -191,6 +191,16 @@ abbrev WMQueryEq {State Query : Type*}
     [PLNWorldModel.WorldModel State Query] :=
   PLNWorldModel.WMQueryEq (State := State) (Query := Query)
 
+abbrev WMEvidenceLE {State Query : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModel State Query] :=
+  PLNWorldModel.WMEvidenceLE (State := State) (Query := Query)
+
+abbrev WMViewEq {State Query : Type*} {α : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModel State Query] :=
+  PLNWorldModel.WMViewEq (State := State) (Query := Query) (α := α)
+
 abbrev WMRewriteRule (State Query : Type*)
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.WorldModel State Query] :=
@@ -201,6 +211,18 @@ abbrev WMQueryEqSigma {State Srt : Type*} {Query : Srt → Type*}
     [PLNWorldModel.WorldModelSigma State Srt Query] :=
   PLNWorldModel.WorldModelSigma.WMQueryEqSigma
     (State := State) (Srt := Srt) (Query := Query)
+
+abbrev WMEvidenceLESigma {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.WMEvidenceLESigma
+    (State := State) (Srt := Srt) (Query := Query)
+
+abbrev WMViewEqSigma {State Srt : Type*} {Query : Srt → Type*} {α : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.WMViewEqSigma
+    (State := State) (Srt := Srt) (Query := Query) (α := α)
 
 abbrev WorldModelSigma (State : Type*) (Srt : Type*) (Query : Srt → Type*)
     [EvidenceClass.EvidenceType State] :=
@@ -215,6 +237,78 @@ abbrev WMStrengthRuleSigma (State : Type*) (Srt : Type*) (Query : Srt → Type*)
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.WorldModelSigma State Srt Query] :=
   PLNWorldModel.WorldModelSigma.WMStrengthRuleSigma State Srt Query
+
+/-! ## WM-Core View Aliases (Strength/Confidence/Interpretation) -/
+
+/-  Naming convention:
+`wmQuery*` aliases expose ENNReal-valued core views (not the Chapter-8 `Real` wrappers).
+Use `wmQueryEq*_to_*` aliases for transport/equivalence lemmas on those core views. -/
+
+noncomputable abbrev wmQueryStrengthWith {State Query : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModel State Query] :=
+  PLNWorldModel.WorldModel.queryStrengthWith (State := State) (Query := Query)
+
+noncomputable abbrev wmQueryConfidenceENN {State Query : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModel State Query] :=
+  PLNWorldModel.WorldModel.queryConfidence (State := State) (Query := Query)
+
+abbrev wmQueryInterpret {State Query : Type*} {Ctx Val : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModel State Query]
+    [EvidenceClass.InterpretableEvidence Ctx Evidence Val] :=
+  PLNWorldModel.WorldModel.queryInterpret
+    (State := State) (Query := Query) (Ctx := Ctx) (Val := Val)
+
+noncomputable abbrev wmQueryStrengthWithSigma {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.queryStrengthWith
+    (State := State) (Srt := Srt) (Query := Query)
+
+noncomputable abbrev wmQueryConfidenceSigmaENN {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query] :=
+  PLNWorldModel.WorldModelSigma.queryConfidence
+    (State := State) (Srt := Srt) (Query := Query)
+
+abbrev wmQueryInterpretSigma {State Srt : Type*} {Query : Srt → Type*} {Ctx Val : Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    [EvidenceClass.InterpretableEvidence Ctx Evidence Val] :=
+  PLNWorldModel.WorldModelSigma.queryInterpret
+    (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx) (Val := Val)
+
+abbrev wmQueryEq_to_queryStrengthWith :=
+  @PLNWorldModel.WMQueryEq.to_queryStrengthWith
+
+abbrev wmQueryEq_to_queryStrengthWith_threshold :=
+  @PLNWorldModel.WMQueryEq.to_queryStrengthWith_threshold
+
+abbrev wmQueryEq_to_queryConfidenceENN :=
+  @PLNWorldModel.WMQueryEq.to_queryConfidence
+
+abbrev wmQueryEq_to_queryConfidenceENN_threshold :=
+  @PLNWorldModel.WMQueryEq.to_queryConfidence_threshold
+
+abbrev wmQueryEq_to_queryInterpret :=
+  @PLNWorldModel.WMQueryEq.to_queryInterpret
+
+abbrev wmQueryEqSigma_to_queryStrengthWith :=
+  @PLNWorldModel.WorldModelSigma.WMQueryEqSigma.to_queryStrengthWith
+
+abbrev wmQueryEqSigma_to_queryStrengthWith_threshold :=
+  @PLNWorldModel.WorldModelSigma.WMQueryEqSigma.to_queryStrengthWith_threshold
+
+abbrev wmQueryEqSigma_to_queryConfidenceENN :=
+  @PLNWorldModel.WorldModelSigma.WMQueryEqSigma.to_queryConfidence
+
+abbrev wmQueryEqSigma_to_queryConfidenceENN_threshold :=
+  @PLNWorldModel.WorldModelSigma.WMQueryEqSigma.to_queryConfidence_threshold
+
+abbrev wmQueryEqSigma_to_queryInterpret :=
+  @PLNWorldModel.WorldModelSigma.WMQueryEqSigma.to_queryInterpret
 
 /-! ## Error-Magnification Grounding Aliases -/
 
@@ -1291,6 +1385,188 @@ def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_of_interval
     { reachability := hReach
       quantale_coherence := hWeak
       truth_transport := hTruth }
+
+/-! ## Chapter-8 style threshold-acceptance endpoint -/
+
+/-- Chapter-8 style threshold acceptance on the target side:
+OSLF threshold-atom truth after WM rewrite + quantale/coherence transport. -/
+def ch8ThresholdAccepted
+    {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    {L₁ L₂ : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef}
+    (i : WMIntervalSemantics)
+    (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
+    (m : Mettapedia.OSLF.Framework.LangMorphism.LanguageMorphism L₁ L₂ Eq)
+    (ctx : CtxOfInterval i)
+    (W₂ : State)
+    (queryOfAtom₂ : String → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Sigma Query)
+    (a0 : String)
+    (p : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+    (coord : ITV → ℝ) (tau : ℝ) : Prop :=
+  Mettapedia.OSLF.Formula.sem R
+    (PLNWMOSLFBridgeITVTyped.thresholdAtomSemOfWMITVQSigma
+      (State := State) (Srt := Srt) (Query := Query)
+      (Ctx := CtxOfInterval i)
+      (semanticsOfInterval i) ctx W₂ tau coord queryOfAtom₂)
+    (.atom a0) (m.mapTerm p)
+
+/-- Any final-bundle witness gives Chapter-8 threshold acceptance directly. -/
+theorem ch8_thresholdAccepted_of_finalBundle
+    {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    {L₁ L₂ : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef}
+    (i : WMIntervalSemantics)
+    (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
+    (m : Mettapedia.OSLF.Framework.LangMorphism.LanguageMorphism L₁ L₂ Eq)
+    (ctx : CtxOfInterval i)
+    (W₁ W₂ : State)
+    (queryOfAtom₁ queryOfAtom₂ :
+      String → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Sigma Query)
+    (a0 : String)
+    (p : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+    (coord : ITV → ℝ) (tau : ℝ)
+    (H : Finset (Unit × Unit))
+    (bundle :
+      EndToEndQuantaleSelectorRewriteQueryThresholdFinalBundle
+        (State := State) (Srt := Srt) (Query := Query)
+        (i := i) (R := R) (m := m) (ctx := ctx)
+        W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0 p coord tau H) :
+    ch8ThresholdAccepted
+      (State := State) (Srt := Srt) (Query := Query)
+      (i := i) (R := R) (m := m) (ctx := ctx)
+      W₂ queryOfAtom₂ a0 p coord tau := by
+  simpa [ch8ThresholdAccepted] using bundle.truth_transport ()
+
+/-- Single Chapter-8 one-call endpoint:
+WM rewrite + OSLF transport + threshold acceptance as one theorem. -/
+theorem ch8_wm_rewrite_oslf_threshold_acceptance_of_interval
+    {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    {L₁ L₂ : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef}
+    (i : WMIntervalSemantics)
+    (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
+    (m : Mettapedia.OSLF.Framework.LangMorphism.LanguageMorphism L₁ L₂ Eq)
+    (ctx : CtxOfInterval i)
+    {r : WMRewriteRuleSigma State Srt Query} {W₁ W₂ : State}
+    (queryOfAtom₁ queryOfAtom₂ :
+      String → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Sigma Query)
+    (a0 : String)
+    (p : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+    (coord : ITV → ℝ) (tau : ℝ)
+    (hSide : r.side) (hW : PLNWorldModel.WMJudgment W₁)
+    (hTau :
+      tau ≤ coord ((semanticsOfInterval i).eval ctx (r.derive W₁)))
+    (hEq : WMQueryEqSigma (State := State) (Srt := Srt) (Query := Query)
+      r.conclusion (queryOfAtom₁ a0 p))
+    (hVal : ∀ p',
+      PLNWMOSLFBridgeITVTyped.wmPatternValuation
+        (State := State) (Srt := Srt) (Query := Query) W₂ queryOfAtom₂ a0 (m.mapTerm p') =
+      PLNWMOSLFBridgeITVTyped.wmPatternValuation
+        (State := State) (Srt := Srt) (Query := Query) W₁ queryOfAtom₁ a0 p')
+    (H : Finset (Unit × Unit)) :
+    ch8ThresholdAccepted
+      (State := State) (Srt := Srt) (Query := Query)
+      (i := i) (R := R) (m := m) (ctx := ctx)
+      W₂ queryOfAtom₂ a0 p coord tau := by
+  exact ch8_thresholdAccepted_of_finalBundle
+    (State := State) (Srt := Srt) (Query := Query)
+    (i := i) (R := R) (m := m) (ctx := ctx)
+    (W₁ := W₁) (W₂ := W₂)
+    (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
+    (a0 := a0) (p := p) (coord := coord) (tau := tau) (H := H)
+    (end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_of_interval
+      (State := State) (Srt := Srt) (Query := Query)
+      (i := i) (R := R) (m := m) (ctx := ctx)
+      (r := r) (W₁ := W₁) (W₂ := W₂)
+      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
+      (a0 := a0) (p := p) (coord := coord) (tau := tau)
+      hSide hW hTau hEq hVal H)
+
+/-! ## Chapter-9 positive composition endpoint (selector + rewrite + threshold) -/
+
+/-- One-call composed endpoint for non-counterexample Chapter-9 development:
+combine Chapter-13 algorithmic selector guarantees with Chapter-8
+rewrite→OSLF→threshold acceptance.
+
+The selector output `G` is mapped into the hypercube witness carrier via
+`selectorWitness`, making the composition explicit while keeping the two
+semantic layers modular. -/
+theorem ch9_selector_rewrite_threshold_end_to_end_of_interval
+    {Goal Fact Bin : Type*} [Fintype Fact] [DecidableEq Fact]
+    (A : Mettapedia.Logic.PremiseSelection.PriorNBAssumptionChecklist Goal Fact Bin)
+    (η : Fact → ℝ)
+    (globalPrior localPrior likelihood : Mettapedia.Logic.PremiseSelection.Scorer Goal Fact)
+    (g : Goal)
+    (hLocal : A.localExchangeabilityInBin)
+    (δ : Fact → ℝ) (ε : ℝ)
+    (hTwoStage :
+      Mettapedia.Logic.PremiseSelectionOptimality.BayesOptimalRanking η
+        (ch13ScoreTwoStage globalPrior localPrior likelihood g))
+    (hbound : ∀ x, |δ x| ≤ ε)
+    (hmargin : ∀ x y, η x < η y →
+      ch13ScorePooled globalPrior localPrior likelihood g y
+        - ch13ScorePooled globalPrior localPrior likelihood g x > 2 * ε)
+    (htie : ∀ x y, η x = η y → δ x = δ y)
+    (D : Finset Fact)
+    {State Srt : Type*} {Query : Srt → Type*}
+    [EvidenceClass.EvidenceType State]
+    [PLNWorldModel.WorldModelSigma State Srt Query]
+    {L₁ L₂ : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef}
+    (i : WMIntervalSemantics)
+    (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
+      Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
+    (m : Mettapedia.OSLF.Framework.LangMorphism.LanguageMorphism L₁ L₂ Eq)
+    (ctx : CtxOfInterval i)
+    {r : WMRewriteRuleSigma State Srt Query} {W₁ W₂ : State}
+    (queryOfAtom₁ queryOfAtom₂ :
+      String → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Sigma Query)
+    (a0 : String)
+    (p : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+    (coord : ITV → ℝ) (tau : ℝ)
+    (hSide : r.side) (hW : PLNWorldModel.WMJudgment W₁)
+    (hTau :
+      tau ≤ coord ((semanticsOfInterval i).eval ctx (r.derive W₁)))
+    (hEq : WMQueryEqSigma (State := State) (Srt := Srt) (Query := Query)
+      r.conclusion (queryOfAtom₁ a0 p))
+    (hVal : ∀ p',
+      PLNWMOSLFBridgeITVTyped.wmPatternValuation
+        (State := State) (Srt := Srt) (Query := Query) W₂ queryOfAtom₂ a0 (m.mapTerm p') =
+      PLNWMOSLFBridgeITVTyped.wmPatternValuation
+        (State := State) (Srt := Srt) (Query := Query) W₁ queryOfAtom₁ a0 p')
+    (selectorWitness : Finset Fact → Finset (Unit × Unit)) :
+    let G := PLNInferenceControlAlgorithms.greedySelect D A.topK
+    (A.topK ≤ Fintype.card Fact
+      ∧ (∀ g' f',
+          0 ≤ (Mettapedia.Logic.PremiseSelection.selectorDefaults_halfGate Goal Fact).gate g' f'
+            ∧ (Mettapedia.Logic.PremiseSelection.selectorDefaults_halfGate Goal Fact).gate g' f' ≤ 1)
+      ∧ Mettapedia.Logic.PremiseSelectionOptimality.BayesOptimalRanking η
+          (Mettapedia.Logic.PremiseSelectionOptimality.perturbedScore
+            (ch13ScorePooled globalPrior localPrior likelihood g) δ)
+      ∧ (1 - Real.exp (-1)) * (Nat.min A.topK D.card : ℝ) ≤
+          Mettapedia.Logic.PremiseSelection.dependencyCoverage D G)
+      ∧ ch8ThresholdAccepted
+          (State := State) (Srt := Srt) (Query := Query)
+          (i := i) (R := R) (m := m) (ctx := ctx)
+          W₂ queryOfAtom₂ a0 p coord tau := by
+  intro G
+  refine ⟨?_, ?_⟩
+  · simpa [G] using
+      (ch13_inferenceControl_end_to_end_algorithmic
+        (A := A) (η := η)
+        (globalPrior := globalPrior) (localPrior := localPrior)
+        (likelihood := likelihood) (g := g)
+        hLocal (δ := δ) (ε := ε) hTwoStage hbound hmargin htie
+        (D := D))
+  · exact ch8_wm_rewrite_oslf_threshold_acceptance_of_interval
+      (State := State) (Srt := Srt) (Query := Query)
+      (i := i) (R := R) (m := m) (ctx := ctx)
+      (r := r) (W₁ := W₁) (W₂ := W₂)
+      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
+      (a0 := a0) (p := p) (coord := coord) (tau := tau)
+      hSide hW hTau hEq hVal (selectorWitness G)
 
 /-! ## Intensional Inheritance (Chapter 12) canonical endpoints -/
 

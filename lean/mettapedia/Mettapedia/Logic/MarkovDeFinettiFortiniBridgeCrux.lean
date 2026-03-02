@@ -198,6 +198,117 @@ lemma hPi_restrict_of_hPi
   exact (hPi i).mono_measure
     (rowProcessLaw_restrict_le (k := k) P {ω : ℕ → Fin k | ω 0 = a} i)
 
+/-- Finite-state lift:
+from AE-measurability of singleton evaluations, obtain AE-measurability of
+evaluation on any measurable subset of `Fin k`. -/
+lemma aemeasurable_rowKernel_eval_set_of_hEval_singletons
+    (P : Measure (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval :
+      ∀ i : Fin k, ∀ b : Fin k,
+        AEMeasurable
+          (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+          (rowProcessLaw (k := k) P i)) :
+    ∀ i : Fin k, ∀ B : Set (Fin k), MeasurableSet B →
+      AEMeasurable
+        (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) B)
+        (rowProcessLaw (k := k) P i) := by
+  intro i B hB
+  classical
+  let s : Finset (Fin k) := B.toFinset
+  have hs : (s : Set (Fin k)) = B := by
+    simp [s]
+  have hsum :
+      (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) B) =
+      (fun r : ℕ → Fin k =>
+        ∑ b ∈ s, (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k))) := by
+    funext r
+    have hss :
+        (∑ b ∈ s, (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+          = (rowKernel i r : Measure (Fin k)) s := by
+      simp [sum_measure_singleton]
+    calc
+      (rowKernel i r : Measure (Fin k)) B
+          = (rowKernel i r : Measure (Fin k)) (s : Set (Fin k)) := by simp [hs]
+      _ = ∑ b ∈ s, (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)) := hss.symm
+  rw [hsum]
+  exact s.aemeasurable_fun_sum (fun b hb => hEval i b)
+
+/-- If all row-kernel evaluations are measurable (for measurable sets), then the
+`Fin 1` product-kernel map is AE-measurable on each row-process law. This is a
+clean helper to reduce explicit `hPi` assumptions once measurable-eval lemmas
+are available. -/
+lemma hPi_of_measurable_eval
+    (P : Measure (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEvalAll :
+      ∀ i : Fin k, ∀ B : Set (Fin k), MeasurableSet B →
+        Measurable (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) B)) :
+    ∀ i : Fin k,
+      AEMeasurable
+      (fun r : ℕ → Fin k =>
+        Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+      (rowProcessLaw (k := k) P i) := by
+  intro i
+  have hpiMeas :
+      Measurable
+        (fun r : ℕ → Fin k =>
+          Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k)))) :=
+    measurable_measure_pi
+      (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)))
+      (fun r => by
+        infer_instance)
+      (hEvalAll i)
+  exact hpiMeas.aemeasurable
+
+/-- Under completeness of each row-process law, singleton AE-measurability is
+enough to derive `hPi` for `Fin 1` product kernels. -/
+lemma hPi_of_hEval_of_complete
+    (P : Measure (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval :
+      ∀ i : Fin k, ∀ b : Fin k,
+        AEMeasurable
+          (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+          (rowProcessLaw (k := k) P i))
+    (hComplete : ∀ i : Fin k, (rowProcessLaw (k := k) P i).IsComplete) :
+    ∀ i : Fin k,
+      AEMeasurable
+        (fun r : ℕ → Fin k =>
+          Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+        (rowProcessLaw (k := k) P i) := by
+  intro i
+  have hEvalAllMeas :
+      ∀ j : Fin k, ∀ B : Set (Fin k), MeasurableSet B →
+        Measurable (fun r : ℕ → Fin k => (rowKernel j r : Measure (Fin k)) B) := by
+    intro j B hB
+    letI : (rowProcessLaw (k := k) P j).IsComplete := hComplete j
+    have hAE :
+        AEMeasurable
+          (fun r : ℕ → Fin k => (rowKernel j r : Measure (Fin k)) B)
+          (rowProcessLaw (k := k) P j) :=
+      aemeasurable_rowKernel_eval_set_of_hEval_singletons
+        (k := k) P rowKernel hEval j B hB
+    exact (aemeasurable_iff_measurable (μ := rowProcessLaw (k := k) P j)).1 hAE
+  exact hPi_of_measurable_eval (k := k) P rowKernel hEvalAllMeas i
+
+@[deprecated hPi_of_hEval_of_complete (since := "2026-03-02")]
+lemma hPi_of_hEval
+    (P : Measure (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval :
+      ∀ i : Fin k, ∀ b : Fin k,
+        AEMeasurable
+          (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+          (rowProcessLaw (k := k) P i))
+    (hComplete : ∀ i : Fin k, (rowProcessLaw (k := k) P i).IsComplete) :
+    ∀ i : Fin k,
+      AEMeasurable
+        (fun r : ℕ → Fin k =>
+          Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+        (rowProcessLaw (k := k) P i) :=
+  hPi_of_hEval_of_complete (k := k) P rowKernel hEval hComplete
+
 /-- Equivalent `Fin 1` bind-applicability form used in pair/Cesàro computations. -/
 lemma bind_apply_fin1_eq_lintegral_eval_of_hPi_restrict
     (P : Measure (ℕ → Fin k))
@@ -264,6 +375,32 @@ lemma rowProcessLaw_restrict_apply_coord
       P ({ω : ℕ → Fin k | ω 0 = a} ∩
         rowSuccessorValueEvent (k := k) i n b) := by
           refine congrArg (fun t => P ({ω : ℕ → Fin k | ω 0 = a} ∩ t)) ?_
+          ext ω
+          simp [rowSuccessorValueEvent, rowSuccessorVisitProcess, rowSuccessorAtNthVisit]
+
+/-- Coordinate-event form of `rowProcessLaw` (unrestricted). -/
+lemma rowProcessLaw_apply_coord
+    (P : Measure (ℕ → Fin k))
+    (i b : Fin k) (n : ℕ) :
+    rowProcessLaw (k := k) P i ({r : ℕ → Fin k | r n = b})
+      =
+    P (rowSuccessorValueEvent (k := k) i n b) := by
+  have hset_meas : MeasurableSet ({r : ℕ → Fin k | r n = b} : Set (ℕ → Fin k)) := by
+    change MeasurableSet ((fun r : ℕ → Fin k => r n) ⁻¹' Set.singleton b)
+    exact (measurable_pi_apply n) (MeasurableSet.singleton b)
+  calc
+    rowProcessLaw (k := k) P i ({r : ℕ → Fin k | r n = b})
+        =
+      P ((rowSuccessorVisitProcess (k := k) i) ⁻¹' ({r : ℕ → Fin k | r n = b})) := by
+          simpa [rowProcessLaw] using
+            (Measure.map_apply
+              (μ := P)
+              (f := rowSuccessorVisitProcess (k := k) i)
+              (s := ({r : ℕ → Fin k | r n = b} : Set (ℕ → Fin k)))
+              (measurable_rowSuccessorVisitProcess (k := k) i)
+              hset_meas)
+    _ = P (rowSuccessorValueEvent (k := k) i n b) := by
+          refine congrArg P ?_
           ext ω
           simp [rowSuccessorValueEvent, rowSuccessorVisitProcess, rowSuccessorAtNthVisit]
 
@@ -688,6 +825,14 @@ theorem recurrentExtensionData_of_markovRecurrent
     MarkovRecurrentPrefixMeasure.exists_extension_ae_infinite_returns_to_start
       (k := k) μ hrec
 
+/-- Strong recurrence on a concrete path law: for every anchor state `i`, whenever
+`i` is visited at least once, all visit indices exist. This mirrors the
+literature's infinite-row condition without introducing a dummy state. -/
+def StrongRecurrence
+    (P : Measure (ℕ → Fin k)) : Prop :=
+  ∀ i : Fin k, ∀ᵐ ω ∂P,
+    (∃ t : ℕ, ω t = i) → ∀ n : ℕ, nthVisitTimeExists (k := k) ω i n
+
 /-- Cross-anchor product identity from row-kernel data.
 
 Explicit interface: requires the start-restricted invariance/row-law data and
@@ -765,10 +910,10 @@ theorem rowKernelToMarkovParamLaw_reconstruction_all_diracInit_of_lifted_rowKern
             (liftedRowKernelFromRowProcess (k := k) rowKernel)
             (x :: y :: rest) hθ
 
-/-- Fortini bridge (explicit internal interface):
+/-- Fortini bridge (internal explicit interface):
 from a concrete extension `P` together with explicit row-kernel crux data,
 derive the Markov mixture representation. -/
-def FortiniSuccessorMatrixInvarianceTheoremExplicit (k : ℕ) : Prop :=
+def FortiniSuccessorMatrixInvarianceTheoremInternal (k : ℕ) : Prop :=
   ∀ μ : FiniteAlphabet.PrefixMeasure (Fin k),
     (∃ (P : Measure (ℕ → Fin k)), IsProbabilityMeasure P ∧
       (∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs)) ∧
@@ -777,9 +922,14 @@ def FortiniSuccessorMatrixInvarianceTheoremExplicit (k : ℕ) : Prop :=
       ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
         ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi
 
-/-- **Proof** of the explicit internal Fortini bridge theorem. -/
-theorem fortiniSuccessorMatrixInvarianceTheoremExplicit_proved :
-    FortiniSuccessorMatrixInvarianceTheoremExplicit k := by
+/-- Backwards-compatible alias; internal theorem naming is now canonical. -/
+@[deprecated FortiniSuccessorMatrixInvarianceTheoremInternal (since := "2026-03-02")]
+abbrev FortiniSuccessorMatrixInvarianceTheoremExplicit (k : ℕ) : Prop :=
+  FortiniSuccessorMatrixInvarianceTheoremInternal k
+
+/-- **Proof** of the internal explicit Fortini bridge theorem. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremInternal_proved :
+    FortiniSuccessorMatrixInvarianceTheoremInternal k := by
   intro μ ⟨P, hPprob, hExt, rowKernel, hcrux⟩
   rcases hcrux with ⟨hEval, hrow_restrict_data, hPi, hstep⟩
   letI : IsProbabilityMeasure P := hPprob
@@ -800,6 +950,12 @@ theorem fortiniSuccessorMatrixInvarianceTheoremExplicit_proved :
   rw [hExt xs]
   exact hall xs
 
+/-- Backwards-compatible theorem alias; internal naming is canonical. -/
+@[deprecated fortiniSuccessorMatrixInvarianceTheoremInternal_proved (since := "2026-03-02")]
+theorem fortiniSuccessorMatrixInvarianceTheoremExplicit_proved :
+    FortiniSuccessorMatrixInvarianceTheoremInternal k :=
+  fortiniSuccessorMatrixInvarianceTheoremInternal_proved (k := k)
+
 /-- Fortini successor-matrix invariance theorem (literature-facing surface):
 Markov exchangeability + recurrence imply Markov-mixture representation. -/
 def FortiniSuccessorMatrixInvarianceTheorem (k : ℕ) : Prop :=
@@ -815,6 +971,150 @@ def RowSuccessorMatrixInvariance
     (P : Measure (ℕ → Fin k))
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)) : Prop :=
   CylinderMixingIdentity_P (k := k) P rowKernel
+
+/-- Joint partial exchangeability of the full successor matrix:
+for finite selections across anchors and visit indices, independent finite
+within-row permutations leave the joint law invariant. -/
+def SuccessorMatrixPartialExchangeable
+    (P : Measure (ℕ → Fin k)) : Prop :=
+  ∀ (m : ℕ) (anchor : Fin m → Fin k) (idx : Fin m → ℕ)
+    (σ : Fin k → Equiv.Perm ℕ),
+      Measure.map
+        (fun ω : ℕ → Fin k =>
+          fun j : Fin m =>
+            rowSuccessorVisitProcess (k := k) (anchor j) ω ((σ (anchor j)) (idx j))) P
+      =
+      Measure.map
+        (fun ω : ℕ → Fin k =>
+          fun j : Fin m =>
+            rowSuccessorVisitProcess (k := k) (anchor j) ω (idx j)) P
+
+/-- First nontrivial fragment from successor-matrix partial exchangeability:
+row-successor value events are permutation-invariant in the visit index
+(without start restriction). -/
+theorem rowSuccessorValueEvent_permInvariant_of_successorMatrixPE
+    (P : Measure (ℕ → Fin k))
+    (hPE : SuccessorMatrixPartialExchangeable P)
+    (i b : Fin k) (σ : Equiv.Perm ℕ) (n : ℕ) :
+    P (rowSuccessorValueEvent (k := k) i (σ n) b)
+      =
+    P (rowSuccessorValueEvent (k := k) i n b) := by
+  classical
+  let σrow : Fin k → Equiv.Perm ℕ :=
+    fun j => if j = i then σ else Equiv.refl ℕ
+  have hmap :
+      Measure.map
+        (fun ω : ℕ → Fin k =>
+          fun j : Fin 1 =>
+            rowSuccessorVisitProcess (k := k) i ω ((σrow i) n)) P
+      =
+      Measure.map
+        (fun ω : ℕ → Fin k =>
+          fun j : Fin 1 =>
+            rowSuccessorVisitProcess (k := k) i ω n) P := by
+    simpa [σrow] using
+      hPE 1 (fun _ : Fin 1 => i) (fun _ : Fin 1 => n) σrow
+  have hset1_meas : MeasurableSet ({x : Fin 1 → Fin k | x 0 = b} : Set (Fin 1 → Fin k)) := by
+    change MeasurableSet ((fun x : Fin 1 → Fin k => x 0) ⁻¹' Set.singleton b)
+    exact (measurable_pi_apply 0) (MeasurableSet.singleton b)
+  have hmap_eval :
+      (Measure.map
+        (fun ω : ℕ → Fin k =>
+          fun j : Fin 1 =>
+            rowSuccessorVisitProcess (k := k) i ω ((σrow i) n)) P)
+          ({x : Fin 1 → Fin k | x 0 = b})
+      =
+      (Measure.map
+        (fun ω : ℕ → Fin k =>
+          fun j : Fin 1 =>
+            rowSuccessorVisitProcess (k := k) i ω n) P)
+          ({x : Fin 1 → Fin k | x 0 = b}) := by
+    exact congrArg (fun M => M ({x : Fin 1 → Fin k | x 0 = b})) hmap
+  have hleft :
+      (Measure.map
+        (fun ω : ℕ → Fin k =>
+          fun j : Fin 1 =>
+            rowSuccessorVisitProcess (k := k) i ω ((σrow i) n)) P)
+          ({x : Fin 1 → Fin k | x 0 = b})
+        =
+      P (rowSuccessorValueEvent (k := k) i (σ n) b) := by
+    have hmeasL :
+        Measurable
+          (fun ω : ℕ → Fin k =>
+            fun j : Fin 1 => rowSuccessorVisitProcess (k := k) i ω ((σrow i) n)) := by
+      exact measurable_pi_lambda _ (fun _ : Fin 1 =>
+        (measurable_pi_apply ((σrow i) n)).comp
+          (measurable_rowSuccessorVisitProcess (k := k) i))
+    calc
+      (Measure.map
+        (fun ω : ℕ → Fin k =>
+          fun j : Fin 1 => rowSuccessorVisitProcess (k := k) i ω ((σrow i) n)) P)
+          ({x : Fin 1 → Fin k | x 0 = b})
+          =
+        P
+          ((fun ω : ℕ → Fin k =>
+            fun j : Fin 1 => rowSuccessorVisitProcess (k := k) i ω ((σrow i) n)) ⁻¹'
+              ({x : Fin 1 → Fin k | x 0 = b})) := by
+                simpa using
+                  (Measure.map_apply
+                    (μ := P)
+                    (f := fun ω : ℕ → Fin k =>
+                      fun j : Fin 1 => rowSuccessorVisitProcess (k := k) i ω ((σrow i) n))
+                    (s := ({x : Fin 1 → Fin k | x 0 = b} : Set (Fin 1 → Fin k)))
+                    hmeasL hset1_meas)
+      _ = P (rowSuccessorValueEvent (k := k) i (σ n) b) := by
+            refine congrArg P ?_
+            ext ω
+            simp [rowSuccessorValueEvent, rowSuccessorVisitProcess, rowSuccessorAtNthVisit, σrow]
+  have hright :
+      (Measure.map
+        (fun ω : ℕ → Fin k =>
+          fun j : Fin 1 =>
+            rowSuccessorVisitProcess (k := k) i ω n) P)
+          ({x : Fin 1 → Fin k | x 0 = b})
+        =
+      P (rowSuccessorValueEvent (k := k) i n b) := by
+    have hmeasR :
+        Measurable
+          (fun ω : ℕ → Fin k =>
+            fun j : Fin 1 => rowSuccessorVisitProcess (k := k) i ω n) := by
+      exact measurable_pi_lambda _ (fun _ : Fin 1 =>
+        (measurable_pi_apply n).comp
+          (measurable_rowSuccessorVisitProcess (k := k) i))
+    calc
+      (Measure.map
+        (fun ω : ℕ → Fin k =>
+          fun j : Fin 1 => rowSuccessorVisitProcess (k := k) i ω n) P)
+          ({x : Fin 1 → Fin k | x 0 = b})
+          =
+        P
+          ((fun ω : ℕ → Fin k =>
+            fun j : Fin 1 => rowSuccessorVisitProcess (k := k) i ω n) ⁻¹'
+              ({x : Fin 1 → Fin k | x 0 = b})) := by
+                simpa using
+                  (Measure.map_apply
+                    (μ := P)
+                    (f := fun ω : ℕ → Fin k =>
+                      fun j : Fin 1 => rowSuccessorVisitProcess (k := k) i ω n)
+                    (s := ({x : Fin 1 → Fin k | x 0 = b} : Set (Fin 1 → Fin k)))
+                    hmeasR hset1_meas)
+      _ = P (rowSuccessorValueEvent (k := k) i n b) := by
+            refine congrArg P ?_
+            ext ω
+            simp [rowSuccessorValueEvent, rowSuccessorVisitProcess, rowSuccessorAtNthVisit]
+  calc
+    P (rowSuccessorValueEvent (k := k) i (σ n) b)
+        = (Measure.map
+            (fun ω : ℕ → Fin k =>
+              fun j : Fin 1 =>
+                rowSuccessorVisitProcess (k := k) i ω ((σrow i) n)) P)
+            ({x : Fin 1 → Fin k | x 0 = b}) := hleft.symm
+    _ = (Measure.map
+            (fun ω : ℕ → Fin k =>
+              fun j : Fin 1 =>
+                rowSuccessorVisitProcess (k := k) i ω n) P)
+            ({x : Fin 1 → Fin k | x 0 = b}) := hmap_eval
+    _ = P (rowSuccessorValueEvent (k := k) i n b) := hright
 
 /-- Internal builder output on a fixed extension `P`:
 `rowKernel` carries the row-evaluation measurability, start-restricted row-law
@@ -855,6 +1155,24 @@ theorem builtRowKernelOnExtension_of_components
     (hInv : RowSuccessorMatrixInvariance (k := k) P rowKernel) :
     BuiltRowKernelOnExtension (k := k) P rowKernel := by
   exact ⟨hEval, hstart, hPi, hInv⟩
+
+/-- Constructor into `BuiltRowKernelOnExtension` that derives the `Fin 1`
+product-kernel AE-measurability field from singleton-evaluation AE-measurability,
+under completeness of each row-process law. -/
+theorem builtRowKernelOnExtension_of_components_of_complete
+    (P : Measure (ℕ → Fin k))
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval :
+      ∀ i : Fin k, ∀ b : Fin k,
+        AEMeasurable
+          (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+          (rowProcessLaw (k := k) P i))
+    (hstart : StartRestrictedRowKernelData (k := k) P rowKernel)
+    (hComplete : ∀ i : Fin k, (rowProcessLaw (k := k) P i).IsComplete)
+    (hInv : RowSuccessorMatrixInvariance (k := k) P rowKernel) :
+    BuiltRowKernelOnExtension (k := k) P rowKernel := by
+  refine ⟨hEval, hstart, ?_, hInv⟩
+  exact hPi_of_hEval_of_complete (k := k) P rowKernel hEval hComplete
 
 /-- Row-successor matrix invariance upgrades to full shared latent-transition
 coherence by adding the `[]` and singleton `[a]` base cases. -/
@@ -919,6 +1237,77 @@ theorem sharedLatentTransitionCoherence_of_rowSuccessorMatrixInvariance
     | cons b rest =>
       exact hInv (a :: b :: rest) (by simp)
 
+/-- Convert extension-level built row-kernel data into crux data by upgrading
+row-successor matrix invariance to shared latent-transition coherence. -/
+theorem rowKernelCruxData_of_builtRowKernelOnExtension
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hbuilt : BuiltRowKernelOnExtension (k := k) P rowKernel) :
+    RowKernelCruxData (k := k) P rowKernel := by
+  rcases hbuilt with ⟨hEval, hstart, hPi, hInv⟩
+  have hcoh :
+      SharedLatentTransitionCoherence (k := k) P rowKernel :=
+    sharedLatentTransitionCoherence_of_rowSuccessorMatrixInvariance
+      (k := k) P rowKernel hInv
+  exact rowKernelCruxData_of_startData_and_sharedLatentCoherence
+    (k := k) P rowKernel hEval hstart hPi hcoh
+
+/-- Built extension-level row-kernel payload implies cross-anchor product identity. -/
+theorem crossAnchorProductIdentity_of_builtRowKernelOnExtension
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hbuilt : BuiltRowKernelOnExtension (k := k) P rowKernel) :
+    CrossAnchorProductIdentity (k := k) P rowKernel := by
+  exact
+    crossAnchorProductIdentity_of_rowKernelData
+      (k := k) P rowKernel
+      (rowKernelCruxData_of_builtRowKernelOnExtension
+        (k := k) P rowKernel hbuilt)
+
+/-- Built extension-level row-kernel payload implies cylinder-word mixing identity. -/
+theorem cylinderMixingIdentity_P_of_builtRowKernelOnExtension
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hbuilt : BuiltRowKernelOnExtension (k := k) P rowKernel) :
+    CylinderMixingIdentity_P (k := k) P rowKernel := by
+  exact
+    cylinderMixingIdentity_P_of_crossAnchorProductIdentity
+      (k := k) P rowKernel
+      (crossAnchorProductIdentity_of_builtRowKernelOnExtension
+        (k := k) P rowKernel hbuilt)
+
+/-- Extension-level reconstruction from row-kernel singleton-eval AE-measurability
+and cross-anchor product identity. -/
+theorem exists_markovParamLaw_of_hEval_and_crossAnchor
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
+    (hEval :
+      ∀ i : Fin k, ∀ b : Fin k,
+        AEMeasurable
+          (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+          (rowProcessLaw (k := k) P i))
+    (hcross : CrossAnchorProductIdentity (k := k) P rowKernel) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), P (cylinder (k := k) xs) = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  have hθ :=
+    aemeasurable_rowKernelToMarkovParam_diracInit_lifted P rowKernel hEval
+  have hCM :=
+    cylinderMixingIdentity_P_of_crossAnchorProductIdentity
+      (k := k) P rowKernel hcross
+  have hall :=
+    rowKernelToMarkovParamLaw_reconstruction_all_diracInit_of_lifted_rowKernel
+      (k := k) P rowKernel hθ hCM
+  set law := rowKernelToMarkovParamLaw (k := k) P
+      (initKernel := fun ω => ⟨Measure.dirac (ω 0), Measure.dirac.isProbabilityMeasure⟩)
+      (liftedRowKernelFromRowProcess (k := k) rowKernel) with hlaw_def
+  have hlaw_prob : IsProbabilityMeasure law :=
+    Measure.isProbabilityMeasure_map (f := rowKernelToMarkovParam (k := k)
+      (initKernel := fun ω => ⟨Measure.dirac (ω 0), Measure.dirac.isProbabilityMeasure⟩)
+      (liftedRowKernelFromRowProcess (k := k) rowKernel)) hθ
+  refine ⟨law, hlaw_prob, ?_⟩
+  intro xs
+  exact hall xs
+
 /-- Bridge skeleton (subgoals separated):
 extract a recurrent extension `P` from recurrence, then ask for row-kernel
 construction on that extension with row-successor matrix invariance; finally
@@ -930,10 +1319,89 @@ def BuildRowKernelOnRecurrentExtension (k : ℕ) : Prop :=
     (_hP : IsProbabilityMeasure P)
     (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
     (_hrecAe : ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0}),
+          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+        BuiltRowKernelOnExtension (k := k) P rowKernel
+
+/-- Successor-matrix bridge (recurrent-prefix level):
+extract an extension and prove successor-matrix partial exchangeability. -/
+def SuccessorMatrixPEBridgeTheorem (k : ℕ) : Prop :=
+  ∀ μ : FiniteAlphabet.PrefixMeasure (Fin k),
+    MarkovExchangeablePrefixMeasure (k := k) μ →
+    MarkovRecurrentPrefixMeasure (k := k) μ →
+      ∃ (P : Measure (ℕ → Fin k)), IsProbabilityMeasure P ∧
+        (∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs)) ∧
+        SuccessorMatrixPartialExchangeable (k := k) P
+
+/-- Builder adapter from successor-matrix PE to internal row-kernel payload. -/
+def SuccessorMatrixPEToBuiltRowKernelOnExtension (k : ℕ) : Prop :=
+  ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P),
+      SuccessorMatrixPartialExchangeable (k := k) P →
       ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
         BuiltRowKernelOnExtension (k := k) P rowKernel
 
-/- 
+/-- Route-A local bridge on a fixed extension:
+from successor-matrix partial exchangeability plus a builder assumption, obtain
+an explicit row-kernel witness with cross-anchor product identity. -/
+theorem exists_rowKernel_with_crossAnchor_of_successorMatrixPE
+    (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
+    (hBuildFromPE : SuccessorMatrixPEToBuiltRowKernelOnExtension k)
+    (hPE : SuccessorMatrixPartialExchangeable (k := k) P) :
+    ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
+      BuiltRowKernelOnExtension (k := k) P rowKernel ∧
+      CrossAnchorProductIdentity (k := k) P rowKernel := by
+  rcases hBuildFromPE P inferInstance hPE with ⟨rowKernel, hbuilt⟩
+  have hcross :
+      CrossAnchorProductIdentity (k := k) P rowKernel :=
+    crossAnchorProductIdentity_of_builtRowKernelOnExtension
+      (k := k) P rowKernel hbuilt
+  exact ⟨rowKernel, hbuilt, hcross⟩
+
+/-- Strong-recurrence variant of the literature-facing theorem surface:
+Markov exchangeability plus an extension with strong recurrence imply a Markov
+mixture representation. -/
+def FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence (k : ℕ) : Prop :=
+  ∀ μ : FiniteAlphabet.PrefixMeasure (Fin k),
+    MarkovExchangeablePrefixMeasure (k := k) μ →
+    (∃ (P : Measure (ℕ → Fin k)), IsProbabilityMeasure P ∧
+      (∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs)) ∧
+      StrongRecurrence (k := k) P) →
+      ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+        ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi
+
+/-- Strong-recurrence successor-matrix bridge assumption. -/
+def SuccessorMatrixPE_of_markovExchangeable_strongRecurrence (k : ℕ) : Prop :=
+  ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (P : Measure (ℕ → Fin k))
+    (_hP : IsProbabilityMeasure P),
+      MarkovExchangeablePrefixMeasure (k := k) μ →
+      (∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs)) →
+      StrongRecurrence (k := k) P →
+      SuccessorMatrixPartialExchangeable (k := k) P
+
+/-- Route-A composition theorem:
+if strong-recurrence Markov exchangeability yields successor-matrix PE, and PE
+yields the internal row-kernel payload, then the strong-recurrence Fortini
+theorem follows. -/
+theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_successorMatrixPE
+    (hPEStrong : SuccessorMatrixPE_of_markovExchangeable_strongRecurrence k)
+    (hBuildFromPE : SuccessorMatrixPEToBuiltRowKernelOnExtension k) :
+    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
+  intro μ hμ hExtStrong
+  rcases hExtStrong with ⟨P, hP, hExt, hStrong⟩
+  have hPE : SuccessorMatrixPartialExchangeable (k := k) P :=
+    hPEStrong μ P hP hμ hExt hStrong
+  letI : IsProbabilityMeasure P := hP
+  rcases exists_rowKernel_with_crossAnchor_of_successorMatrixPE
+      (k := k) (P := P) hBuildFromPE hPE with ⟨rowKernel, hbuilt, hcross⟩
+  rcases hbuilt with ⟨hEval, hstart, hPi, hInv⟩
+  rcases exists_markovParamLaw_of_hEval_and_crossAnchor
+      (k := k) (P := P) rowKernel hEval hcross with ⟨pi, hpi, hreprP⟩
+  refine ⟨pi, hpi, ?_⟩
+  intro xs
+  rw [hExt xs]
+  exact hreprP xs
+
+/-
 Canonical Fortini bridge surface used in this file:
 
 1. `BuildRowKernelOnRecurrentExtension` is the only extra constructor assumption.
@@ -980,6 +1448,17 @@ def RecurrentLatentCoherenceBridgeTheorem (k : ℕ) : Prop :=
         ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
           BuiltRowKernelOnExtension (k := k) P rowKernel
 
+/-- Compose successor-matrix PE bridge assumptions into the recurrent-latent
+coherence bridge used by the canonical Fortini theorem path. -/
+theorem recurrentLatentCoherenceBridgeTheorem_of_successorMatrixPE_bridges
+    (hPEBridge : SuccessorMatrixPEBridgeTheorem k)
+    (hBuildFromPE : SuccessorMatrixPEToBuiltRowKernelOnExtension k) :
+    RecurrentLatentCoherenceBridgeTheorem k := by
+  intro μ hμ hrec
+  rcases hPEBridge μ hμ hrec with ⟨P, hP, hExt, hPE⟩
+  rcases hBuildFromPE P hP hPE with ⟨rowKernel, hbuilt⟩
+  exact ⟨P, hP, hExt, rowKernel, hbuilt⟩
+
 theorem recurrentLatentCoherenceBridgeTheorem_proved
     (hBuildOnRecurrentExtension : BuildRowKernelOnRecurrentExtension k) :
     RecurrentLatentCoherenceBridgeTheorem k := by
@@ -995,18 +1474,32 @@ theorem fortiniSuccessorMatrixInvarianceTheorem_of_recurrentLatentCoherenceBridg
     FortiniSuccessorMatrixInvarianceTheorem k := by
   intro μ hμ hrec
   rcases hBridge μ hμ hrec with ⟨P, hP, hExt, rowKernel, hbuilt⟩
-  rcases hbuilt with ⟨hEval, hstart, hPi, hInv⟩
   letI : IsProbabilityMeasure P := hP
-  have hcoh :
-      SharedLatentTransitionCoherence (k := k) P rowKernel :=
-    sharedLatentTransitionCoherence_of_rowSuccessorMatrixInvariance
-      (k := k) P rowKernel hInv
-  have hcrux :
-      RowKernelCruxData (k := k) P rowKernel :=
-    rowKernelCruxData_of_startData_and_sharedLatentCoherence
-      (k := k) P rowKernel hEval hstart hPi hcoh
-  have hExplicit := fortiniSuccessorMatrixInvarianceTheoremExplicit_proved (k := k)
-  exact hExplicit μ ⟨P, hP, hExt, rowKernel, hcrux⟩
+  have hcross :
+      CrossAnchorProductIdentity (k := k) P rowKernel :=
+    crossAnchorProductIdentity_of_builtRowKernelOnExtension
+      (k := k) P rowKernel hbuilt
+  rcases hbuilt with ⟨hEval, hstart, hPi, hInv⟩
+  rcases exists_markovParamLaw_of_hEval_and_crossAnchor
+      (k := k) (P := P) rowKernel hEval hcross with ⟨pi, hpi, hreprP⟩
+  refine ⟨pi, hpi, ?_⟩
+  intro xs
+  rw [hExt xs]
+  exact hreprP xs
+
+/-- Route-A composition for the literature-facing recurrence theorem:
+successor-matrix bridge + builder bridge imply the public Fortini theorem. -/
+theorem fortiniSuccessorMatrixInvarianceTheorem_of_successorMatrixPE_bridges
+    (hPEBridge : SuccessorMatrixPEBridgeTheorem k)
+    (hBuildFromPE : SuccessorMatrixPEToBuiltRowKernelOnExtension k) :
+    FortiniSuccessorMatrixInvarianceTheorem k := by
+  have hBridge :
+      RecurrentLatentCoherenceBridgeTheorem k :=
+    recurrentLatentCoherenceBridgeTheorem_of_successorMatrixPE_bridges
+      (k := k) hPEBridge hBuildFromPE
+  exact
+    fortiniSuccessorMatrixInvarianceTheorem_of_recurrentLatentCoherenceBridge
+      (k := k) hBridge
 
 /-- Unified bridge (Fortini + Solomonoff, finite alphabet):
 from recurrent Markov exchangeability and a recurrent-latent-coherence bridge,

@@ -29,7 +29,7 @@ spec here AND in `MORKCommBridge.lean` whenever MORK evolves.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.OSLF.MeTTaCore (Atom)
+open Mettapedia.Languages.MeTTa.Core (Atom)
 
 /-! ## Phase type -/
 

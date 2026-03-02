@@ -19,9 +19,9 @@ Mettapedia.Logic.LP           ← pure Horn clauses, SLD resolution (existing)
   ↑ extended by
 Mettapedia.Logic.Prolog       ← Prolog built-ins + operational semantics (this module)
   ↑ instantiated by
-Mettapedia.OSLF.PeTTa.PrologBridge  ← wires reduceCall → PeTTaEval (bridge, TBD)
+Mettapedia.Languages.MeTTa.PeTTa.PrologBridge  ← wires reduceCall → PeTTaEval (bridge, TBD)
   ↑ used in
-Mettapedia.OSLF.PeTTa.TranslateExpr ← translate_expr formalization + correctness (TBD)
+Mettapedia.Languages.MeTTa.PeTTa.TranslateExpr ← translate_expr formalization + correctness (TBD)
 ```
 
 ## File Index

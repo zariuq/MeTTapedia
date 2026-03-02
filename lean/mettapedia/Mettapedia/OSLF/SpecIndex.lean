@@ -1,6 +1,6 @@
 import Mettapedia.OSLF.Main
 import Mettapedia.OSLF.CoreMain
-import Mettapedia.OSLF.PeTTa
+import Mettapedia.Languages.MeTTa.PeTTa
 import Mettapedia.Logic.LP
 import Mettapedia.OSLF.PathMap
 import Mettapedia.Logic.OSLFImageFinite
@@ -729,17 +729,17 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.trieZipperSpace
 
 -- PeTTa OSLF instance (PeTTa → OSLF → mettail-rust pipeline)
-#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaOSLF
-#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaGalois
-#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaDiamond_spec
-#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaBox_spec
-#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaOSLF_lp_sound
-#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaRenderRust
-#check @Mettapedia.OSLF.PeTTa.OSLFInstance.pettaWriteRust
+#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaOSLF
+#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaGalois
+#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaDiamond_spec
+#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaBox_spec
+#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaOSLF_lp_sound
+#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaRenderRust
+#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaWriteRust
 -- PeTTa GSLT fiber
-#check @Mettapedia.OSLF.PeTTa.GSLTVertex.pettaIdMorphism
-#check @Mettapedia.OSLF.PeTTa.GSLTVertex.pettaForwardFiber
-#check @Mettapedia.OSLF.PeTTa.GSLTVertex.pettaForwardFiber_oslf
+#check @Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex.pettaIdMorphism
+#check @Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex.pettaForwardFiber
+#check @Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex.pettaForwardFiber_oslf
 
 -- LP Kernel (unified semantic core; Datalog retired to _archive/Datalog/)
 -- LP-M1: Core syntax (generalizes Datalog with function symbols)

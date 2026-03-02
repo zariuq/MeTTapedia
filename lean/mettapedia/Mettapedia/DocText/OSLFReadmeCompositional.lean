@@ -1043,15 +1043,15 @@ def oslfReadmeBlocks : List ReadmeBlock :=
   , .heading 3 (renderOSLFHeading .sameExampleLeanLevel)
 
   , .codeBlock "lean"
-      ("import Mettapedia.OSLF.MeTTaCore.FullLanguageDef\n" ++
-       "import Mettapedia.OSLF.MeTTaCore.Premises\n" ++
+      ("import Mettapedia.Languages.MeTTa.Core.FullLanguageDef\n" ++
+       "import Mettapedia.Languages.MeTTa.Core.Premises\n" ++
        "\n" ++
        "open Mettapedia.OSLF.MeTTaIL.Syntax\n" ++
        "\n" ++
        "def exState : Pattern :=\n" ++
        "  .apply \"State\"\n" ++
        "    [ .apply \"Eval\" [.apply \"ATrue\" []]\n" ++
-       "    , Mettapedia.OSLF.MeTTaCore.Premises.space0Pattern\n" ++
+       "    , Mettapedia.Languages.MeTTa.Core.Premises.space0Pattern\n" ++
        "    , .apply \"AFalse\" [] ]")
 
   , .paragraph [renderOSLFClaim .canonicalSpecFacingRepresentation]

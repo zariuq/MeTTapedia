@@ -180,9 +180,9 @@ theorem pure_mode_isolation
 `mettaPure` in the current mode skeleton. -/
 theorem mettaPure_runtime_behavioral_transport
     {φ : Pattern → Prop} {p : Pattern}
-    (h : langDiamond Mettapedia.OSLF.MeTTaPure.Core.mettaPure φ p) :
-    ∃ q, langReduces Mettapedia.OSLF.MeTTaPure.Core.mettaPure p q ∧ φ q ∧
-      ∃ T, LangReducesStar Mettapedia.OSLF.MeTTaPure.Core.mettaPure
+    (h : langDiamond Mettapedia.Languages.MeTTa.Pure.Core.mettaPure φ p) :
+    ∃ q, langReduces Mettapedia.Languages.MeTTa.Pure.Core.mettaPure p q ∧ φ q ∧
+      ∃ T, LangReducesStar Mettapedia.Languages.MeTTa.Pure.Core.mettaPure
         (mettaPureRuntimeToBehavioral.termMap p) T ∧
         T = mettaPureRuntimeToBehavioral.termMap q :=
   mettaPure_runtime_behavioral_diamond_transport h

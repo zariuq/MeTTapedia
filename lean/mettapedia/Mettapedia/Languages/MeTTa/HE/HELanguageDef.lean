@@ -101,16 +101,16 @@ def mettaHE : LanguageDef := {
     -- metta(atom, type): top-level entry point
     -- Ref: metta.md lines 240-272
     { label := "Metta", category := "Instr",
-      params := [simple "atom", simple "type"],
+      params := [simple "atom", simple "ty"],
       syntaxPattern := [.terminal "metta", .terminal "(", .nonTerminal "atom",
-                        .terminal ",", .nonTerminal "type", .terminal ")"] },
+                        .terminal ",", .nonTerminal "ty", .terminal ")"] },
 
     -- interpretExpression(atom, type): interpret expression
     -- Ref: metta.md lines 316-356
     { label := "InterpExpr", category := "Instr",
-      params := [simple "atom", simple "type"],
+      params := [simple "atom", simple "ty"],
       syntaxPattern := [.terminal "interp-expr", .terminal "(", .nonTerminal "atom",
-                        .terminal ",", .nonTerminal "type", .terminal ")"] },
+                        .terminal ",", .nonTerminal "ty", .terminal ")"] },
 
     -- interpretFunction(atom, opType, retType): interpret function call
     -- Ref: metta.md lines 452-478
@@ -141,16 +141,16 @@ def mettaHE : LanguageDef := {
     -- mettaCall(atom, type): call MeTTa expression
     -- Ref: metta.md lines 509-552
     { label := "MettaCall", category := "Instr",
-      params := [simple "atom", simple "type"],
+      params := [simple "atom", simple "ty"],
       syntaxPattern := [.terminal "metta-call", .terminal "(", .nonTerminal "atom",
-                        .terminal ",", .nonTerminal "type", .terminal ")"] },
+                        .terminal ",", .nonTerminal "ty", .terminal ")"] },
 
     -- typeCast(atom, type): type cast
     -- Ref: metta.md lines 274-314
     { label := "TypeCast", category := "Instr",
-      params := [simple "atom", simple "type"],
+      params := [simple "atom", simple "ty"],
       syntaxPattern := [.terminal "type-cast", .terminal "(", .nonTerminal "atom",
-                        .terminal ",", .nonTerminal "type", .terminal ")"] },
+                        .terminal ",", .nonTerminal "ty", .terminal ")"] },
 
     -- Return(result): deliver a computed result
     { label := "Return", category := "Instr",
@@ -177,8 +177,8 @@ def mettaHE : LanguageDef := {
 
     -- Error codes
     { label := "BadArgType", category := "Atom",
-      params := [simple "pos", simple "expected", simple "actual"],
-      syntaxPattern := [.terminal "BadArgType", .terminal "(", .nonTerminal "pos",
+      params := [simple "argpos", simple "expected", simple "actual"],
+      syntaxPattern := [.terminal "BadArgType", .terminal "(", .nonTerminal "argpos",
                         .terminal ",", .nonTerminal "expected", .terminal ",",
                         .nonTerminal "actual", .terminal ")"] },
 
@@ -226,16 +226,16 @@ def mettaHE : LanguageDef := {
 
     -- Grounded values (integers, strings, booleans)
     { label := "GInt", category := "Atom",
-      params := [simple "value"],
-      syntaxPattern := [.terminal "gint", .terminal "(", .nonTerminal "value",
+      params := [simple "intTok"],
+      syntaxPattern := [.terminal "gint", .terminal "(", .nonTerminal "intTok",
                         .terminal ")"] },
     { label := "GString", category := "Atom",
-      params := [simple "value"],
-      syntaxPattern := [.terminal "gstring", .terminal "(", .nonTerminal "value",
+      params := [simple "strTok"],
+      syntaxPattern := [.terminal "gstring", .terminal "(", .nonTerminal "strTok",
                         .terminal ")"] },
     { label := "GBool", category := "Atom",
-      params := [simple "value"],
-      syntaxPattern := [.terminal "gbool", .terminal "(", .nonTerminal "value",
+      params := [simple "boolTok"],
+      syntaxPattern := [.terminal "gbool", .terminal "(", .nonTerminal "boolTok",
                         .terminal ")"] },
 
     -- Symbol atom (user-defined name)
@@ -277,11 +277,11 @@ def mettaHE : LanguageDef := {
     { label := "OpEq", category := "Atom", params := [],
       syntaxPattern := [.terminal "=="] },
 
-    -- Equation entry in space: (= lhs rhs)
+    -- Equation entry in space: (= left right)
     { label := "EqAtom", category := "Atom",
-      params := [simple "lhs", simple "rhs"],
-      syntaxPattern := [.terminal "=", .terminal "(", .nonTerminal "lhs",
-                        .terminal ",", .nonTerminal "rhs", .terminal ")"] },
+      params := [simple "left", simple "right"],
+      syntaxPattern := [.terminal "=", .terminal "(", .nonTerminal "left",
+                        .terminal ",", .nonTerminal "right", .terminal ")"] },
 
     -- Type annotation in space: (: atom type)
     { label := "TypeAnnotation", category := "Atom",
@@ -310,30 +310,30 @@ def mettaHE : LanguageDef := {
     -- M1: Empty atom → return unchanged
     -- if $atom == Empty: return [($atom, $bindings)]
     { name := "M_Empty",
-      typeContext := [("atom", atom), ("type", atom), ("space", .base "Space"),
+      typeContext := [("atom", atom), ("ty", atom), ("space", .base "Space"),
                       ("out", atom)],
       premises := [.relationQuery "isEmpty" [.fvar "atom"]],
-      left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "type"],
+      left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
                                 .fvar "space", .fvar "atom"] },
 
     -- M2: Error atom → return unchanged
     { name := "M_Error",
-      typeContext := [("atom", atom), ("type", atom), ("space", .base "Space"),
+      typeContext := [("atom", atom), ("ty", atom), ("space", .base "Space"),
                       ("out", atom)],
       premises := [.relationQuery "isError" [.fvar "atom"]],
-      left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "type"],
+      left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
                                 .fvar "space", .fvar "atom"] },
 
     -- M3: type == Atom or type == metatype or metatype == Variable → return unchanged
     { name := "M_TypeMatch",
-      typeContext := [("atom", atom), ("type", atom), ("space", .base "Space"),
+      typeContext := [("atom", atom), ("ty", atom), ("space", .base "Space"),
                       ("out", atom)],
-      premises := [.relationQuery "typeMatchesMetaOrAtom" [.fvar "atom", .fvar "type"]],
-      left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "type"],
+      premises := [.relationQuery "typeMatchesMetaOrAtom" [.fvar "atom", .fvar "ty"]],
+      left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
                                 .fvar "space", .fvar "atom"] },
@@ -341,22 +341,22 @@ def mettaHE : LanguageDef := {
     -- M4: Symbol or Grounded → typeCast
     -- if metaType(atom) ∈ {Symbol, Grounded} or atom == ()
     { name := "M_SymbolOrGrounded",
-      typeContext := [("atom", atom), ("type", atom), ("space", .base "Space"),
+      typeContext := [("atom", atom), ("ty", atom), ("space", .base "Space"),
                       ("out", atom)],
-      premises := [.relationQuery "needsTypeCast" [.fvar "atom", .fvar "type"]],
-      left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "type"],
+      premises := [.relationQuery "needsTypeCast" [.fvar "atom", .fvar "ty"]],
+      left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
-      right := .apply "State" [.apply "TypeCast" [.fvar "atom", .fvar "type"],
+      right := .apply "State" [.apply "TypeCast" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"] },
 
     -- M5: Expression → interpretExpression
     { name := "M_Expression",
-      typeContext := [("atom", atom), ("type", atom), ("space", .base "Space"),
+      typeContext := [("atom", atom), ("ty", atom), ("space", .base "Space"),
                       ("out", atom)],
-      premises := [.relationQuery "needsInterpExpr" [.fvar "atom", .fvar "type"]],
-      left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "type"],
+      premises := [.relationQuery "needsInterpExpr" [.fvar "atom", .fvar "ty"]],
+      left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
-      right := .apply "State" [.apply "InterpExpr" [.fvar "atom", .fvar "type"],
+      right := .apply "State" [.apply "InterpExpr" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"] },
 
     -- #### IE: interpretExpression rules (metta.md lines 316-356)
@@ -364,12 +364,12 @@ def mettaHE : LanguageDef := {
     -- IE1: Expression with applicable function type → interpretFunction → mettaCall
     -- For each function type that passes checkIfFunctionTypeIsApplicable
     { name := "IE_FuncType",
-      typeContext := [("atom", atom), ("type", atom), ("opType", atom),
+      typeContext := [("atom", atom), ("ty", atom), ("opType", atom),
                       ("retType", atom), ("space", .base "Space"), ("out", atom)],
       premises := [.relationQuery "applicableFuncType"
-                     [.fvar "space", .fvar "atom", .fvar "type",
+                     [.fvar "space", .fvar "atom", .fvar "ty",
                       .fvar "opType", .fvar "retType"]],
-      left  := .apply "State" [.apply "InterpExpr" [.fvar "atom", .fvar "type"],
+      left  := .apply "State" [.apply "InterpExpr" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "InterpFunc" [.fvar "atom", .fvar "opType",
                                                      .fvar "retType"],
@@ -377,97 +377,98 @@ def mettaHE : LanguageDef := {
 
     -- IE2: No applicable function type + has non-function types → interpretTuple → mettaCall
     { name := "IE_TupleType",
-      typeContext := [("atom", atom), ("type", atom),
+      typeContext := [("atom", atom), ("ty", atom),
                       ("space", .base "Space"), ("out", atom)],
       premises := [.relationQuery "needsTupleInterp"
-                     [.fvar "space", .fvar "atom", .fvar "type"]],
-      left  := .apply "State" [.apply "InterpExpr" [.fvar "atom", .fvar "type"],
+                     [.fvar "space", .fvar "atom", .fvar "ty"]],
+      left  := .apply "State" [.apply "InterpExpr" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "InterpTuple" [.fvar "atom"],
                                 .fvar "space", .fvar "out"] },
 
     -- IE3: Not an expression → return unchanged
     { name := "IE_NotExpr",
-      typeContext := [("atom", atom), ("type", atom),
+      typeContext := [("atom", atom), ("ty", atom),
                       ("space", .base "Space"), ("out", atom)],
       premises := [.relationQuery "notExpression" [.fvar "atom"]],
-      left  := .apply "State" [.apply "InterpExpr" [.fvar "atom", .fvar "type"],
+      left  := .apply "State" [.apply "InterpExpr" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
                                 .fvar "space", .fvar "atom"] },
 
     -- #### IF: interpretFunction rules (metta.md lines 452-478)
 
-    -- IF1: Evaluate operator, then arguments, reconstruct expression
-    -- This is multi-step: metta(op) → interpretArgs(args) → reconstruct
-    -- For now, we combine into a premise-driven single step
+    -- IF1: InterpFunc advances to MettaCall.
+    -- NOTE: This keeps the current executable behavior (pass-through InterpFunc)
+    -- while removing recursive semantic work from premise builtins.
+    -- Future continuation-style semantics should refine this into explicit
+    -- call/return frame rewrites.
     { name := "IF_Eval",
       typeContext := [("atom", atom), ("opType", atom), ("retType", atom),
-                      ("result", atom), ("space", .base "Space"), ("out", atom)],
-      premises := [.relationQuery "interpFuncResult"
-                     [.fvar "space", .fvar "atom", .fvar "opType",
-                      .fvar "retType", .fvar "result"]],
+                      ("space", .base "Space"), ("out", atom)],
+      premises := [],
       left  := .apply "State" [.apply "InterpFunc" [.fvar "atom", .fvar "opType",
                                                      .fvar "retType"],
                                 .fvar "space", .fvar "out"],
-      right := .apply "State" [.apply "MettaCall" [.fvar "result", .fvar "retType"],
+      right := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "retType"],
                                 .fvar "space", .fvar "out"] },
 
     -- #### IT: interpretTuple rules (metta.md lines 358-382)
 
-    -- IT1: Evaluate each element of expression
+    -- IT1: InterpTuple returns the tuple atom unchanged.
+    -- Like IF_Eval above, this removes recursive builtin evaluation from
+    -- premises while preserving current executable behavior.
     { name := "IT_Eval",
-      typeContext := [("atom", atom), ("result", atom),
+      typeContext := [("atom", atom),
                       ("space", .base "Space"), ("out", atom)],
-      premises := [.relationQuery "interpTupleResult"
-                     [.fvar "space", .fvar "atom", .fvar "result"]],
+      premises := [],
       left  := .apply "State" [.apply "InterpTuple" [.fvar "atom"],
                                 .fvar "space", .fvar "out"],
-      right := .apply "State" [.apply "Return" [.fvar "result"],
-                                .fvar "space", .fvar "result"] },
+      right := .apply "State" [.apply "Return" [.fvar "atom"],
+                                .fvar "space", .fvar "atom"] },
 
     -- #### MC: mettaCall rules (metta.md lines 509-552)
 
     -- MC1: Error passthrough
     { name := "MC_Error",
-      typeContext := [("atom", atom), ("type", atom),
+      typeContext := [("atom", atom), ("ty", atom),
                       ("space", .base "Space"), ("out", atom)],
       premises := [.relationQuery "isError" [.fvar "atom"]],
-      left  := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "type"],
+      left  := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
                                 .fvar "space", .fvar "atom"] },
 
     -- MC2: Grounded dispatch → execute → metta each result
     { name := "MC_Grounded",
-      typeContext := [("atom", atom), ("type", atom), ("result", atom),
+      typeContext := [("atom", atom), ("ty", atom), ("result", atom),
                       ("space", .base "Space"), ("out", atom)],
       premises := [.relationQuery "groundedCallResult"
                      [.fvar "space", .fvar "atom", .fvar "result"]],
-      left  := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "type"],
+      left  := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
-      right := .apply "State" [.apply "Metta" [.fvar "result", .fvar "type"],
+      right := .apply "State" [.apply "Metta" [.fvar "result", .fvar "ty"],
                                 .fvar "space", .fvar "out"] },
 
     -- MC3: Non-grounded → equation query → metta each resolved result
     { name := "MC_Equation",
-      typeContext := [("atom", atom), ("type", atom), ("rhs", atom),
+      typeContext := [("atom", atom), ("ty", atom), ("rhs", atom),
                       ("space", .base "Space"), ("out", atom)],
       premises := [.relationQuery "eqQueryResult"
                      [.fvar "space", .fvar "atom", .fvar "rhs"],
                    .relationQuery "notExecutable" [.fvar "atom"]],
-      left  := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "type"],
+      left  := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
-      right := .apply "State" [.apply "Metta" [.fvar "rhs", .fvar "type"],
+      right := .apply "State" [.apply "Metta" [.fvar "rhs", .fvar "ty"],
                                 .fvar "space", .fvar "out"] },
 
     -- MC4: Non-grounded, no equations → return unchanged
     { name := "MC_NoMatch",
-      typeContext := [("atom", atom), ("type", atom),
+      typeContext := [("atom", atom), ("ty", atom),
                       ("space", .base "Space"), ("out", atom)],
       premises := [.relationQuery "noEqQuery" [.fvar "space", .fvar "atom"],
                    .relationQuery "notExecutable" [.fvar "atom"]],
-      left  := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "type"],
+      left  := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
                                 .fvar "space", .fvar "atom"] },
@@ -476,28 +477,28 @@ def mettaHE : LanguageDef := {
 
     -- TC1: Type matches → return unchanged
     { name := "TC_Match",
-      typeContext := [("atom", atom), ("type", atom),
+      typeContext := [("atom", atom), ("ty", atom),
                       ("space", .base "Space"), ("out", atom)],
-      premises := [.relationQuery "typeOf" [.fvar "space", .fvar "atom", .fvar "type"]],
-      left  := .apply "State" [.apply "TypeCast" [.fvar "atom", .fvar "type"],
+      premises := [.relationQuery "typeOf" [.fvar "space", .fvar "atom", .fvar "ty"]],
+      left  := .apply "State" [.apply "TypeCast" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
                                 .fvar "space", .fvar "atom"] },
 
     -- TC2: Type mismatch → Error(atom, BadType(expected, actual))
     { name := "TC_Mismatch",
-      typeContext := [("atom", atom), ("type", atom), ("actual", atom),
+      typeContext := [("atom", atom), ("ty", atom), ("actual", atom),
                       ("space", .base "Space"), ("out", atom)],
       premises := [.relationQuery "typeMismatch"
-                     [.fvar "space", .fvar "atom", .fvar "type", .fvar "actual"]],
-      left  := .apply "State" [.apply "TypeCast" [.fvar "atom", .fvar "type"],
+                     [.fvar "space", .fvar "atom", .fvar "ty", .fvar "actual"]],
+      left  := .apply "State" [.apply "TypeCast" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return"
                   [.apply "ErrorAtom" [.fvar "atom",
-                    .apply "BadType" [.fvar "type", .fvar "actual"]]],
+                    .apply "BadType" [.fvar "ty", .fvar "actual"]]],
                                 .fvar "space",
                                 .apply "ErrorAtom" [.fvar "atom",
-                                  .apply "BadType" [.fvar "type", .fvar "actual"]]] },
+                                  .apply "BadType" [.fvar "ty", .fvar "actual"]]] },
 
     -- #### R: Return/Done rules
 

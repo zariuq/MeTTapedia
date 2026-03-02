@@ -20,7 +20,7 @@ Uses computable (List-based) representation to enable `decide` proofs.
 
 namespace Mettapedia.Languages.MeTTa.HE
 
-open Mettapedia.OSLF.MeTTaCore (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
 
 /-! ## Space
 

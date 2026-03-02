@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.PeTTa.Eval
+import Mettapedia.Languages.MeTTa.PeTTa.Eval
 import Mettapedia.Logic.GovernanceReasoning.Core
 import Mettapedia.Logic.GovernanceReasoning.LetStarInterface
 
@@ -29,7 +29,7 @@ namespace Mettapedia.Logic.GovernanceReasoning.PeTTaRefinement
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.OSLF.PeTTa
+open Mettapedia.Languages.MeTTa.PeTTa
 open Mettapedia.Logic.GovernanceReasoning.Core
 
 /-! ## §1 Pattern Interpretation
@@ -356,7 +356,7 @@ The complex DTS rules (DTS.metta lines 14-135) use `let*` chains.
 Via `LetStarInterface.MeTTaLike`, PeTTa can unfold these chains. -/
 
 open Mettapedia.Logic.GovernanceReasoning.LetStarInterface
-open Mettapedia.OSLF.PeTTa (letStarRecRule letStarBaseRule)
+open Mettapedia.Languages.MeTTa.PeTTa (letStarRecRule letStarBaseRule)
 
 /-- The let* unfolding works for PeTTaEval: a 2-binding `let*`
     unfolds in three steps (two recursive + base). -/

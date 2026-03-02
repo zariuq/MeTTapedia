@@ -38,6 +38,7 @@ import Mettapedia.Logic.PLNNARSRuleCorrespondence
 import Mettapedia.Logic.PLNTemporalCausalInference
 import Mettapedia.Logic.PLNProbabilisticEventCalculus
 import Mettapedia.Logic.SemanticsDecisionTree
+import Mettapedia.Logic.PLNLargeScaleInferenceCounterexamples
 
 /-!
 # PLN Core (Curated, theorem-complete entrypoint)
@@ -102,6 +103,11 @@ This module is a curated import surface for the currently theorem-complete PLN s
   (`PLNProbabilisticEventCalculus`)
 - Semantics decision gate (probability vs evidence/interval/NARS mirror)
   with weaker-than-KS references (`SemanticsDecisionTree`)
+- Large-scale inference counterexample index:
+  inclusion-exclusion identifiability no-go, trail-free non-stabilization witness,
+  pooling non-uniqueness/corrected-uniqueness aliases, plus
+  coverage/cardinality insufficiency for risk-sensitive selection
+  (`PLNLargeScaleInferenceCounterexamples`)
 
 ## Where are the Lean proofs that PLN covers NB and k-NN?
 

@@ -1,6 +1,6 @@
 import Mettapedia.OSLF.MeTTaIL.ExportBackend
-import Mettapedia.OSLF.MeTTaCore.FullLanguageDef
-import Mettapedia.OSLF.MeTTaCore.FullPremises
+import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
+import Mettapedia.Languages.MeTTa.Core.FullPremises
 
 /-!
 # MeTTa Full Export Tool
@@ -15,8 +15,8 @@ Or print to stdout for inspection.
 -/
 
 open Mettapedia.OSLF.MeTTaIL.ExportBackend
-open Mettapedia.OSLF.MeTTaCore.FullLanguageDef (mettaFull)
-open Mettapedia.OSLF.MeTTaCore.FullPremises (mettaFullPremises)
+open Mettapedia.Languages.MeTTa.Core.FullLanguageDef (mettaFull)
+open Mettapedia.Languages.MeTTa.Core.FullPremises (mettaFullPremises)
 
 def main : IO Unit := do
   let output := renderLanguageFull mettaFull mettaFullPremises

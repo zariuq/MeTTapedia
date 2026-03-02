@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Framework.Mode2Skeleton
-import Mettapedia.OSLF.MeTTaPure.Core
+import Mettapedia.Languages.MeTTa.Pure.Core
 
 /-!
 # Mode2PureBoundary
@@ -14,7 +14,7 @@ namespace Mettapedia.OSLF.Framework.Mode2PureBoundary
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.Mode2Skeleton
-open Mettapedia.OSLF.MeTTaPure.Core
+open Mettapedia.Languages.MeTTa.Pure.Core
 
 theorem no_pure_to_runtime (L : LanguageDef) :
     ModeHom .pure (.runtime L) → False := by

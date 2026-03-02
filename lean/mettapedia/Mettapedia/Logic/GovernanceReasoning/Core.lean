@@ -134,14 +134,15 @@ end MetaTriple
 
 /-! ## §3 Deontic Traditional Scheme
 
-The DTS provides four modalities with algebraic interdefinabilities.
+The DTS provides five modalities with algebraic interdefinabilities.
 We take `ob` (obligation) as primitive and **derive** `pe` (permission) and
 `op` (optionality) as abbreviations.  All DTS axioms become **theorems**. -/
 
-/-- The four deontic modalities used in the governance-reasoning-engine.
+/-- The five deontic modalities used in the governance-reasoning-engine.
     - `rexist`: alethic modality ("really exists", Hobbs)
     - `obligatory`: deontic obligation
     - `permitted`: deontic permission
+    - `forbidden`: deontic prohibition (OB(¬p))
     - `optional`: deontic optionality
     Matches `governance-reasoning-engine/base/modality.metta`. -/
 inductive DeonticModality where
@@ -285,7 +286,7 @@ end DTS
 
 /-! ## §4 Modal μ-Calculus Embedding
 
-Embed the four deontic modalities as actions in the modal μ-calculus
+Embed the five deontic modalities as actions in the modal μ-calculus
 from `ModalMuCalculus.lean`.  The deontic box/diamond operators
 recover the DTS axioms under appropriate accessibility constraints. -/
 

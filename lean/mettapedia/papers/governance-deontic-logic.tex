@@ -8,7 +8,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{url}
 \usepackage[hyperindex,breaklinks]{hyperref}
-\usepackage{breakurl}
+%\usepackage{breakurl}  % disabled: incompatible with pdflatex/tectonic
 \usepackage{listings}
 \lstset{
   basicstyle=\ttfamily\footnotesize,
@@ -47,7 +47,9 @@
 \title{Verified Dyadic Deontic Logic and Governance Reasoning in Lean~4\\
   \texttt{(DRAFT --- \today)}}
 \author{Zar\footnote{Corresponding author.}
-\and Claude Code (Opus 4.6)\footnote{Anthropic AI assistant. Co-authored under human direction.}}
+\and Oru\v{z}i\footnote{``Oru\v{z}i'' denotes AI-assisted collaboration
+using Claude Code (Anthropic, Opus 4.6), Codex (OpenAI, GPT-5.*), and
+ChatGPT Pro (GPT-5.*). Co-authored under human direction.}}
 
 \begin{document}
 \maketitle
@@ -79,6 +81,16 @@ Consistency (\PGC{}); and
 to the Lean \DTS{} semantics, via a shared \code{MeTTaLike} evaluator abstraction
 covering both PeTTa and HE~MeTTa evaluation, with proven \code{let*} unfolding
 equivalences and kernel-checked canonical HE interpreter conformance tests.
+We further formalize subsumption-based compliance between abstract and concrete
+eventualities, and illustrate its use with a minimal proof-carrying treaty
+kernel for AI-to-AI subcontracting.
+Finally,~(x) we introduce an evidence-graded actuality layer that replaces the
+metaphysical ``really exists'' reading of \code{rexist} with a two-layer
+semantics: graded eventuality evidence and policy-relative categorical
+acceptance.  A provenance-aware accepted-trace mechanism gates treaty
+compliance on attestor trust and evidence quality, with a proven
+soundness theorem linking the existing \code{RexistBridge} to
+acceptance equivalence for any policy.
 \end{abstract}
 
 \tableofcontents
@@ -153,12 +165,25 @@ unfolding equivalences (§\ref{sec:refinement}).
 \label{sec:ddl}
 %% ============================================================
 
+\noindent
+\textbf{Source attribution.}
+The shallow-embedding architecture in this section --- including the
+two-dimensional \code{WProp}/\code{Meaning} type structure, the
+\code{DDLPlusFrame} with its five semantic conditions, the Kaplanian context
+setup, and the LD-validity notion --- is a Lean~4 port and abstraction of the
+Isabelle/HOL formalization by Benz{\"u}ller, Farjami, and Parent
+\cite{Benzmuller2018}.  The Isabelle source files \code{CJDDLplus.thy} and
+\code{ExtendedDDL.thy} are the direct predecessors of the Lean types defined
+here.  Our contribution is the port to Lean~4 and the integration with the
+\DTS{} governance layer.
+
 \subsection{Types and Semantic Foundation}
 
 The \DDL{} embedding follows the standard \emph{possible-worlds semantics}
 tradition, representing propositions as truth-sets over a world type.
-We adopt Kaplan's two-dimensional semantics \cite{Kaplan1989} to handle
-context-dependent propositions (``characters'').
+We adopt Kaplan's two-dimensional semantics as used by Benz{\"u}ller et al.\
+\cite{Benzmuller2018,Kaplan1989} to handle context-dependent propositions
+(``characters'').
 
 \begin{definition}[World-Proposition and Meaning]
 A \emph{world-proposition} over worlds \code{w} is a predicate
@@ -247,7 +272,8 @@ possible worlds where it is not satisfied.
 
 \subsection{Kaplanian Context and LD Validity}
 
-To model indexical statements, we follow Kaplan's two-dimensional structure \cite{Kaplan1989}:
+To model indexical statements, we follow the two-dimensional structure used by
+Benz{\"u}ller et al.\ \cite{Benzmuller2018} (adapting Kaplan \cite{Kaplan1989}):
 
 \begin{lstlisting}
 structure KaplanianContext (c w e : Type*) where
@@ -427,16 +453,79 @@ The \code{modalQuery} field is the key interface: for a given modality and
 eventuality it produces the WM query whose evidence represents the epistemic
 degree to which that modality holds.
 
-\subsection{Rexist Bridge}
+\subsection{Rexist Bridge and Evidence-Graded Actuality}
+\label{sec:actuality}
 
 The ``really exists'' (\code{rexist}) modality implements Hobbs' principle
-that what really exists actually holds.  In the Lean formalization,
+that what really exists actually holds~\cite{Hobbs1985}.  In the Lean formalization,
 \code{RexistBridge} is a \emph{hypothesis}: a \code{WMQueryEq} assumption
 stating that rexist-evidence equals ground-evidence for the same predicate.
 The bridge soundness theorem (\code{rexistBridgeRule}) simply unpacks
 this assumption.  No modal axioms are needed --- the rexist bridge is an
 interface contract between the governance layer and whatever world-model
 evidence calculus is plugged in.
+
+\paragraph{From ``really exists'' to eventuality evidence.}
+The name \code{rexist} suggests binary metaphysical existence, but the
+evidence it extracts is graded: a \PLN{} evidence pair $(n^+, n^-)$,
+not a Boolean.  We therefore reinterpret \code{rexist} as an
+\emph{eventuality-occurrence evidence channel}: ``how much evidence is
+there that this eventuality obtained?''  The file
+\code{ActualityPolicy.lean} introduces thin wrappers making this reading
+explicit:
+\begin{itemize}
+\item \code{eventualityEvidence}~(alias: \code{eventEvidence}) ---
+      extracts graded evidence that an eventuality occurred;
+\item \code{projectionEvidence}~(alias for \code{groundEvidence}) ---
+      extracts evidence for a structured factual projection (CT-triple);
+\item \code{AcceptancePolicy} --- a predicate on evidence determining
+      when graded evidence is sufficient for categorical governance
+      acceptance.
+\end{itemize}
+
+\noindent
+Categorical ``actuality for governance'' is then a downstream
+\emph{acceptance policy}, not certainty-1 truth.  This follows the
+formal-belief literature's separation of graded belief from categorical
+acceptance, avoiding the lottery paradox that arises from naive
+fixed-threshold approaches~\cite{Foley1993,Hawthorne2009}.
+
+\paragraph{Three bridge strengths.}
+The existing \code{RexistBridge} (evidence equality) is the strongest
+possible bridge between the occurrence and projection channels.  We
+introduce a weaker \code{AcceptanceBridge}: for a given policy~$\pi$,
+occurrence is accepted if and only if the corresponding projection is
+accepted, in every world-model state.  The key soundness theorem is:
+
+\begin{theorem}[Acceptance bridge soundness]
+\label{thm:acceptance-bridge}
+For any acceptance policy~$\pi$, if the \code{RexistBridge} holds
+(evidence equality), then the \code{AcceptanceBridge} holds.
+\end{theorem}
+
+\noindent
+This shows the existing strong bridge is conservative over the weaker
+acceptance-level bridge.  Three bridge strengths form a hierarchy:
+evidence equality (strongest) $\Rightarrow$ strength agreement
+(intermediate, future work) $\Rightarrow$ acceptance agreement (weakest,
+most operationally realistic).
+
+\paragraph{Support/confidence preorder.}
+The raw coordinatewise order on evidence
+($e_1 \le e_2 \Leftrightarrow n^+_1 \le n^+_2 \wedge n^-_1 \le n^-_2$)
+is unsuitable for strength-based acceptance, since more evidence in that
+order includes more negative evidence.  We define a parameterized
+\emph{support/confidence preorder}:
+\[
+  e_1 \preceq_{(\alpha,\kappa)} e_2
+  \;\;\Longleftrightarrow\;\;
+  \mathrm{strength}_\alpha(e_1) \le \mathrm{strength}_\alpha(e_2)
+  \;\wedge\;
+  \mathrm{confidence}_\kappa(e_1) \le \mathrm{confidence}_\kappa(e_2)
+\]
+where $\alpha$ is a prior context and $\kappa$ a confidence parameter.
+This is one member of a \emph{family} of preorders (reflexivity and
+transitivity are proved), not a single canonical order on evidence.
 
 \subsection{Three-Level Judgment Pipeline}
 
@@ -445,8 +534,9 @@ The \code{Judgments.lean} file defines a three-level inference pipeline:
 \begin{enumerate}
 \item \textbf{Eventuality level}: evidence that an eventuality exists with
       a given modality (\code{EventualityJudgment}).
-\item \textbf{Statement level}: lifting eventuality judgments to meta-triples
-      with identity tags (\code{StatementJudgment}).
+\item \textbf{Statement level}: lifting eventuality judgments via derivation
+      constructors --- Rexist bridge, DTS derivation, negation inference
+      (\code{StatementJudgment}).
 \item \textbf{Verdict level}: a \code{GovernanceVerdict} combining multiple
       statement judgments into an overall governance outcome.
 \end{enumerate}
@@ -455,6 +545,68 @@ The \code{Judgments.lean} file defines a three-level inference pipeline:
 The pipeline mirrors the three reasoning levels of the
 \code{governance-reasoning-engine} source \cite{GovReasoningEngine}
 (eventuality\_level, statement\_level, conclusion\_level).
+
+\subsection{Subsumption-Based Compliance and Treaty Kernel}
+
+The verdict layer detects contradiction, conflict, and violation using exact
+event identity (\code{sameEvent}): same predicate and same role assignment.
+This is appropriate for low-level consistency checking, but too rigid for
+practical compliance, where an abstract norm is often satisfied by a more
+specific concrete event.
+
+We add a pure event-subsumption relation \code{eventSubsumes}, requiring
+agreement on predicate and polarity together with role inclusion: every
+thematic role specified in the abstract eventuality must be matched by the
+concrete one.  This is the Lean counterpart of the MeTTa engine's
+\code{is\_complied\_with\_by} relation, factored as a pure event relation.
+To preserve backward compatibility, statement identities are introduced by a
+wrapper \code{IdStatementJudgment} rather than by modifying the
+\code{StatementJudgment} inductive.  The existing \code{governanceAnalysis}
+remains exact-match; subsumption is introduced locally in a new treaty layer.
+
+On top of event subsumption we define a minimal \emph{TreatyKernel} for
+bilateral agent agreements.  A treaty clause specifies an obligor, obligee,
+modality, eventuality pattern, optional deadline, and optional repair-clause
+pointer.  The kernel distinguishes obligation fulfilment from prohibition
+violation via separate predicates (\code{obligationFulfilled},
+\code{prohibitionViolated}), avoiding the mistake of treating a forbidden
+action as ``clause satisfaction.''  A concrete three-clause
+confidential-subcall treaty (delivery deadline, nondisclosure,
+refund-on-breach) demonstrates that more specific runtime events can discharge
+abstract obligations and trigger breach detection.
+
+\paragraph{Provenance-aware accepted traces.}
+The treaty kernel operates over raw event traces, but real governance
+requires distinguishing verified events from unreliable reports.
+\code{TreatyKernelAcceptance.lean} introduces an
+\code{AssessedTreatyEvent} wrapper pairing each treaty event with a
+\PLN{} evidence assessment and attestor identity (using the existing
+\code{attestedBy} field on \code{TreatyEvent}).  A provenance-aware
+acceptance predicate filters the raw trace to an \emph{accepted base
+trace}: only events from trusted attestors are admitted.
+
+In the concrete subcall example, four candidate events arrive:
+\begin{enumerate}
+\item a self-claimed delivery by the specialist ($\langle 2,2\rangle$,
+      attested by ``specialist'') --- \textbf{rejected};
+\item a hash-verified delivery confirmed by an escrow oracle
+      ($\langle 8,0\rangle$, ``hash-verifier'') --- \textbf{accepted};
+\item a disclosure detected by a network monitor
+      ($\langle 5,1\rangle$, ``monitor'') --- \textbf{accepted};
+\item an unverified rumor from a gossip channel
+      ($\langle 1,4\rangle$, ``gossip'') --- \textbf{rejected}.
+\end{enumerate}
+
+\noindent
+Treaty compliance is then checked on the accepted trace:
+the verified delivery fulfils the deliver-by-10 obligation, and the
+monitor-detected leak violates the nondisclosure prohibition.
+All acceptance decisions, the trace computation, and the treaty
+compliance theorems are kernel-checked (\code{rfl}-proofs for
+acceptance decisions, direct construction for compliance).  This
+demonstrates the clean architectural separation: the evidence/attestation
+layer decides which events are \emph{admitted}; the treaty layer
+stays crisp and classical over the admitted trace.
 
 \subsection{Worked Example: Rental Obligation}
 \label{sec:rental}
@@ -500,7 +652,7 @@ EventualityJudgment .obligatory e_pay evidence
 The eventuality judgment is lifted to a tagged statement referencing
 the lease clause:
 \begin{lstlisting}
-StatementJudgment "lease_clause_3" eventualityJudgment
+StatementJudgment.fromL1 eventualityJudgment
 \end{lstlisting}
 
 \paragraph{Level 3: Governance verdict.}
@@ -1133,14 +1285,15 @@ backing for such tokens: each deontic token would carry a proof witness
 (from the CJ theorems) ensuring it is consistent with the frame conditions,
 ruling out contradictory obligations before deployment.
 
-\paragraph{Contract clause conflict detection.}
-Recent legal AI systems \cite{NormAI} use embedding-based similarity to
-detect conflicting clauses across contracts and regulatory documents.
-These systems achieve high recall but lack formal guarantees.
-A hybrid approach would use NLP to extract candidate norm pairs,
-then apply \DDL{} conflict detection (via \code{sem\_5a}: no obligation
-can require the impossible, and \code{sem\_5c}: consistent obligations
-are conjoinable) to formally verify whether detected conflicts are genuine.
+\paragraph{AI-to-AI treaty layer.}
+The minimal \code{TreatyKernel} introduced here points toward a more general
+treaty layer for decentralized agent economies: machine-checkable bilateral or
+multilateral agreements specifying delegated tasks, deadlines, privacy
+constraints, payment conditions, and contrary-to-duty repair chains.  In such a
+setting, abstract norms should be checked against concrete runtime traces via
+subsumption rather than exact event identity.  The next step is to extend the
+kernel with activation conditions, repair discharge, delegation scope, and
+compositional reasoning over networks of treaties.
 
 \paragraph{Contrary-to-duty policy repair.}
 The Chisholm paradox (§\ref{sec:rental}) shows that naive deontic logic
@@ -1170,6 +1323,41 @@ probabilistic event calculus (via the \code{ModalQueryEncoder}) would
 allow governance verdicts to carry calibrated confidence levels,
 enabling graded compliance rather than binary pass/fail.
 
+\paragraph{Occurrence semantics beyond \code{rexist}.}
+A more temporally explicit alternative to the Hobbs-style \code{rexist}
+predicate is to model actuality through event occurrence and fluent
+persistence, in the style of the Event Calculus~\cite{KowalskiSergot1986}:
+occurrence at time~$t$, together with initiates/terminates relations, yields
+time-indexed holding conditions rather than a timeless actuality marker.  The
+present treaty kernel already provides a lightweight step in this direction
+via timestamped treaty events and deadline reasoning (the \code{occursAt}
+predicate in \code{OccurrenceMVP.lean}).  A natural extension is to replace
+timeless \code{rexist}-queries with policy-filtered accepted occurrences and
+then lift treaty reasoning to time-indexed fluents such as escrow status,
+data-retention status, and breach status.
+
+\paragraph{Explicit reasons and provenance.}
+Another extension is to integrate justification-style reason
+terms into the governance/world-model interface.  Instead of
+representing only that an eventuality is obligatory, forbidden, or
+accepted as having occurred, one could represent the explicit
+\emph{reasons} supporting these statuses: attestations, sensor reports,
+derivation rules, or policy certificates.  The \code{attestedBy} field
+on \code{TreatyEvent} already exposes a provenance hook; a dedicated
+\emph{attestation query sort} would lift provenance into the typed
+world-model interface.  This connects naturally to W3C PROV and to
+justification logic, where modal claims are unfolded into explicit
+reason terms $t : \varphi$.
+
+\paragraph{Typed governance query sorts.}
+The current \code{DeonticQueryEncoder} distinguishes two query channels
+(modal/eventuality and ground/triple).  A natural refinement is to
+introduce explicit governance query sorts --- \emph{norm}, \emph{occurrence},
+\emph{projection}, \emph{attestation} --- as a sort-indexed typed layer
+over the abstract world-model interface.  The existing \code{WorldModelSigma}
+typed query infrastructure already supports this without modifying the
+untyped WM calculus core.
+
 %% ============================================================
 \section{Conclusion}
 \label{sec:conclusion}
@@ -1187,6 +1375,15 @@ levels --- inductive semantics (PeTTa and HE~MeTTa), a shared evaluator
 abstraction with \code{let*} unfolding, and kernel-checked canonical
 interpreter conformance.  For the DTS rule subset, the Lean kernel
 itself performs the HE evaluation and verifies the output.
+
+The addition of event subsumption and a minimal treaty kernel moves the work
+from static governance verdicts toward proof-carrying treaty execution over
+concrete agent interaction traces.  The evidence-graded actuality layer
+(§\ref{sec:actuality}) replaces the metaphysical ``really exists'' reading
+of \code{rexist} with a two-layer semantics --- graded eventuality
+evidence and policy-relative categorical acceptance --- and the
+provenance-aware accepted-trace mechanism demonstrates the full pipeline
+from evidence assessment through attestor filtering to treaty compliance.
 
 The formalization is compositional (each layer is independently usable)
 and grounded in published sources (Carmo \& Jones 2002, von Wright 1951,

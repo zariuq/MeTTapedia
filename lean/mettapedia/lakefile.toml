@@ -53,3 +53,8 @@ path = "Mettapedia/Metatheory"
 [[require]]
 name = "algorithms"
 path = "../algorithms"
+
+# Shared batteries-only MeTTaIL executable core
+[[require]]
+name = "mettail_core"
+path = "../batteries/mettail-core"

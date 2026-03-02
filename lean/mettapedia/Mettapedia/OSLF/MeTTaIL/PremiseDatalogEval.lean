@@ -107,6 +107,10 @@ partial def evalGuard (store : RelStore) (builtins : List BuiltinFn)
       -- The Lean evaluator leaves this unimplemented by default.
       -- Override with `BuiltinEvalFn` for concrete testing.
       []
+  | .computeMany _fnName _args _result =>
+      -- Like `compute`, concrete builtin evaluation is backend-specific.
+      -- This variant models nondeterministic outputs.
+      []
   | .notIn rel args =>
       let evaluatedArgs := args.map (evalExpr env builtins)
       -- Check if the relation has any matching tuples

@@ -34,7 +34,7 @@ MORK's transitions reduce to:
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.OSLF.MeTTaCore (Atom)
+open Mettapedia.Languages.MeTTa.Core (Atom)
 open Mettapedia.PathMap (AlgebraicResult)
 
 -- Short aliases for the two typeclass methods we use

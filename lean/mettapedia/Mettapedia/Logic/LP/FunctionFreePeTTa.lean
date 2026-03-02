@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.PeTTa.Eval
+import Mettapedia.Languages.MeTTa.PeTTa.Eval
 import Mettapedia.Logic.LP.Semantics
 import Mettapedia.Logic.LP.FunctionFree
 import Mettapedia.OSLF.MeTTaIL.Substitution
@@ -62,7 +62,7 @@ establishing the stronger `q = r.left` uniqueness and showing LHM = EDB.
 
 namespace Mettapedia.Logic.LP.FunctionFreePeTTa
 
-open Mettapedia.OSLF.PeTTa
+open Mettapedia.Languages.MeTTa.PeTTa
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Substitution

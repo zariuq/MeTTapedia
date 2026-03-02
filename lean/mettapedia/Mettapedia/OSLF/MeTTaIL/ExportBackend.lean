@@ -1,8 +1,8 @@
 import Mettapedia.OSLF.MeTTaIL.PremiseDatalog
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Export
-import Mettapedia.OSLF.MeTTaCore.FullPremises
-import Mettapedia.OSLF.MeTTaCore.FullLanguageDef
+import Mettapedia.Languages.MeTTa.Core.FullPremises
+import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
 
 /-!
 # Backend Renderers for PremiseProgram
@@ -39,62 +39,89 @@ open Mettapedia.OSLF.MeTTaIL.Export (renderLanguage)
 private def zipWithIdx {α : Type} (xs : List α) : List (Nat × α) :=
   (List.range xs.length).zipWith (fun a b => (a, b)) xs
 
+/-- Local list flatMap helper (keeps compatibility across Lean versions). -/
+private def listFlatMap {α β : Type} (xs : List α) (f : α → List β) : List β :=
+  xs.foldr (fun x acc => f x ++ acc) []
+
+private def ctorCategoryFor (lang : LanguageDef) (ctorName : String) : Option String :=
+  (lang.terms.find? (fun t => t.label == ctorName)).map (·.category)
+
 /-! ## 1. Ascent Expression Rendering -/
 
 /-- Render a PExpr as an Ascent expression (Rust code). -/
-partial def renderAscentExpr (atomTy : String := "Atom") : PExpr → String
+partial def renderAscentExpr (lang : LanguageDef) (atomTy : String := "Atom") : PExpr → String
   | .var name => name
   | .ctor ctorName args =>
-      let argStrs := args.map (renderAscentExpr atomTy)
-      s!"{atomTy}::C_{ctorName}({", ".intercalate argStrs})"
-  | .literal pat => renderAscentPattern atomTy pat
+      let ctorTy := (ctorCategoryFor lang ctorName).getD atomTy
+      let argStrs := args.map (renderAscentExpr lang atomTy)
+      if argStrs.isEmpty then
+        s!"{ctorTy}::C_{ctorName}"
+      else
+        s!"{ctorTy}::C_{ctorName}({", ".intercalate argStrs})"
+  | .literal pat => renderAscentPattern lang atomTy pat
   | .call fnName args =>
-      let argStrs := args.map (renderAscentExpr atomTy)
+      let argStrs := args.map (renderAscentExpr lang atomTy)
       s!"{fnName}({", ".intercalate argStrs})"
   | .wild => "_"
 where
-  renderAscentPattern (atomTy : String) : Pattern → String
-    | .apply name [] => s!"{atomTy}::C_{name}"
+  renderAscentPattern (lang : LanguageDef) (atomTy : String) : Pattern → String
+    | .apply name [] =>
+        let ctorTy := (ctorCategoryFor lang name).getD atomTy
+        s!"{ctorTy}::C_{name}"
     | .apply name args =>
-        let argStrs := args.map (renderAscentPattern atomTy)
-        s!"{atomTy}::C_{name}({", ".intercalate argStrs})"
+        let ctorTy := (ctorCategoryFor lang name).getD atomTy
+        let argStrs := args.map (renderAscentPattern lang atomTy)
+        s!"{ctorTy}::C_{name}({", ".intercalate argStrs})"
     | .fvar x => x
     | .bvar n => s!"_b{n}"
     | _ => "/* unsupported pattern */"
 
 /-! ## 2. Ascent Guard Rendering -/
 
-def renderAscentGuard (prog : PremiseProgram) (atomTy : String := "Atom")
+def renderAscentGuard (lang : LanguageDef) (prog : PremiseProgram)
+    (atomTy : String := "Atom")
     : PGuard → List String
   | .eq lhs rhs =>
-      [s!"if {renderAscentExpr atomTy lhs} == {renderAscentExpr atomTy rhs}"]
+      [s!"if {renderAscentExpr lang atomTy lhs} == {renderAscentExpr lang atomTy rhs}"]
   | .neq lhs rhs =>
-      [s!"if {renderAscentExpr atomTy lhs} != {renderAscentExpr atomTy rhs}"]
+      [s!"if {renderAscentExpr lang atomTy lhs} != {renderAscentExpr lang atomTy rhs}"]
   | .deconstruct expr ctorName fieldNames =>
-      let exprStr := renderAscentExpr atomTy expr
+      let exprStr := renderAscentExpr lang atomTy expr
+      let ctorTy := (ctorCategoryFor lang ctorName).getD atomTy
       let fields := fieldNames.map fun n =>
         if n == "_" || n.startsWith "_" then "_" else s!"ref {n}0"
       let bindings := fieldNames.filterMap fun n =>
         if n == "_" || n.startsWith "_" then none
         else some s!"let {n} = (**{n}0).clone()"
-      [s!"if let {atomTy}::C_{ctorName}({", ".intercalate fields}) = {exprStr}"]
+      [s!"if let {ctorTy}::C_{ctorName}({", ".intercalate fields}) = {exprStr}"]
         ++ bindings
   | .compute fnName args result =>
       let hint := prog.hintFor fnName "ascent"
       match hint with
       | some template =>
-          let argStrs := args.map (renderAscentExpr atomTy)
+          let argStrs := args.map (renderAscentExpr lang atomTy)
           let filled := (zipWithIdx argStrs).foldl (fun s (i, a) =>
             s.replace s!"\{{i}}" a) template
           [s!"if let Some({result}) = {filled}"]
       | none =>
-          let argStrs := args.map (renderAscentExpr atomTy)
+          let argStrs := args.map (renderAscentExpr lang atomTy)
           [s!"if let Some({result}) = {fnName}({", ".intercalate argStrs})"]
+  | .computeMany fnName args result =>
+      let hint := prog.hintFor fnName "ascent"
+      match hint with
+      | some template =>
+          let argStrs := args.map (renderAscentExpr lang atomTy)
+          let filled := (zipWithIdx argStrs).foldl (fun s (i, a) =>
+            s.replace s!"\{{i}}" a) template
+          [s!"for {result} in {filled}.into_iter()"]
+      | none =>
+          let argStrs := args.map (renderAscentExpr lang atomTy)
+          [s!"for {result} in {fnName}({", ".intercalate argStrs}).into_iter()"]
   | .notIn rel args =>
-      let argStrs := args.map (renderAscentExpr atomTy)
+      let argStrs := args.map (renderAscentExpr lang atomTy)
       [s!"!{rel}({", ".intercalate argStrs})"]
   | .relQuery rel args =>
-      let argStrs := args.map (renderAscentExpr atomTy)
+      let argStrs := args.map (renderAscentExpr lang atomTy)
       [s!"{rel}({", ".intercalate argStrs})"]
   | .collIter _expr _ct _elem =>
       ["/* collIter: not yet supported in Ascent backend */"]
@@ -102,11 +129,66 @@ def renderAscentGuard (prog : PremiseProgram) (atomTy : String := "Atom")
 
 /-! ## 3. Ascent Rule Rendering -/
 
-def renderAscentRule (prog : PremiseProgram) (rule : PRule)
+private partial def varsInExpr : PExpr → List String
+  | .var n => [n]
+  | .ctor _ args | .call _ args => listFlatMap args varsInExpr
+  | .literal pat => varsInPattern pat
+  | .wild => []
+where
+  varsInPattern : Pattern → List String
+    | .apply _ args => listFlatMap args varsInPattern
+    | .fvar x => [x]
+    | _ => []
+
+private def varsUsedInGuard : PGuard → List String
+  | .eq l r | .neq l r => varsInExpr l ++ varsInExpr r
+  | .deconstruct e _ _ => varsInExpr e
+  | .compute _ args _ | .computeMany _ args _ =>
+      listFlatMap args varsInExpr
+  | .notIn _ args | .relQuery _ args =>
+      listFlatMap args varsInExpr
+  | .collIter e _ _ => varsInExpr e
+  | .trueGuard => []
+
+private def varsIntroducedByGuard : PGuard → List String
+  | .deconstruct _ _ fields =>
+      fields.filter (fun n => n != "_" && !n.startsWith "_")
+  | .compute _ _ result | .computeMany _ _ result =>
+      [result]
+  | .collIter _ _ elem =>
+      [elem]
+  | _ => []
+
+private def headVarTypes (prog : PremiseProgram) (rule : PRule) : List (String × String) :=
+  let declTy : List String :=
+    match prog.relations.find? (fun d => d.name == rule.headRel) with
+    | some d => d.paramTypes
+    | none => []
+  (rule.headArgs.zip declTy).filterMap fun (arg, ty) =>
+    match arg with
+    | .var n => some (n, ty)
+    | _ => none
+
+private def atomOrSpaceBinder (varTyMap : List (String × String)) (v : String) : String :=
+  let ty? := (varTyMap.find? (fun (n, _) => n == v)).map (·.2)
+  match ty? with
+  | some "Space" => s!"space({v})"
+  | some _ => s!"atom({v})"
+  | none =>
+      if v.startsWith "sp" then s!"space({v})" else s!"atom({v})"
+
+def renderAscentRule (lang : LanguageDef) (prog : PremiseProgram) (rule : PRule)
     (atomTy : String := "Atom") : String :=
-  let headArgs := rule.headArgs.map (renderAscentExpr atomTy)
+  let headArgs := rule.headArgs.map (renderAscentExpr lang atomTy)
   let head := s!"{rule.headRel}({", ".intercalate headArgs})"
-  let bodyParts := rule.body.flatMap (renderAscentGuard prog atomTy)
+  let headVars := listFlatMap rule.headArgs varsInExpr
+  let usedVars := listFlatMap rule.body varsUsedInGuard
+  let introduced := listFlatMap rule.body varsIntroducedByGuard
+  let needsBind := (List.eraseDups (headVars ++ usedVars)).filter (fun v =>
+    v != "_" && !v.startsWith "_" && !(List.contains introduced v))
+  let varTyMap := headVarTypes prog rule
+  let binders := List.map (atomOrSpaceBinder varTyMap ·) needsBind
+  let bodyParts := binders ++ (rule.body.flatMap (renderAscentGuard lang prog atomTy))
   let comment := match rule.clauseName with
     | some name => s!"// {name}\n        "
     | none => ""
@@ -119,14 +201,15 @@ def renderAscentRule (prog : PremiseProgram) (rule : PRule)
 def renderAscentRelDecls (prog : PremiseProgram)
     (atomTy : String := "Atom") : String :=
   let decls := prog.relations.map fun decl =>
-    let params := decl.paramTypes.map fun _ => atomTy
+    let params := decl.paramTypes.map fun ty =>
+      if ty.isEmpty then atomTy else ty
     s!"relation {decl.name}({", ".intercalate params});"
   "\n        ".intercalate decls
 
-def renderAscentPremiseRules (prog : PremiseProgram)
+def renderAscentPremiseRules (lang : LanguageDef) (prog : PremiseProgram)
     (atomTy : String := "Atom") : String :=
   let relDecls := renderAscentRelDecls prog atomTy
-  let rules := prog.rules.map (renderAscentRule prog · atomTy)
+  let rules := prog.rules.map (renderAscentRule lang prog · atomTy)
   let rulesStr := "\n\n        ".intercalate rules
   s!"        // ═══ Premise relation declarations ═══
         {relDecls}
@@ -279,61 +362,61 @@ def renderQueryScoping (lang : LanguageDef) : String :=
   if queries.isEmpty then ""
   else
     let (stateType, instrType, _) := langTypeNames lang
-    -- Group by relation name
-    let relNames := (queries.map (·.1)).eraseDups
-    let lines := relNames.flatMap fun rel =>
-      let relQueries := queries.filter (·.1 == rel)
-      -- Generate a query relation: relQuery(args...) <-- state(st), if let Instr::C_X(fields..) = instr
-      let queryRelName := s!"{rel}Query"
-      relQueries.filterMap fun (_, arity, instrLabel) =>
-        -- Find the instruction rule to get its parameter structure
-        let instrRule := lang.terms.find? (·.label == instrLabel)
-        match instrRule with
-        | none => none
-        | some rule =>
-            let stateRule := findStateRule lang
-            match stateRule with
-            | none => none
-            | some sr =>
-                let stateTotal := sr.params.length
-                let instrIdx := (zipWithIdx sr.params).find?
-                  (fun (_, p) => paramCategory p == instrType)
-                match instrIdx with
-                | none => none
-                | some (iIdx, _) =>
-                    let statePattern := (List.range stateTotal).map fun i =>
-                      if i == iIdx then "ref instr" else
-                        -- Also extract space if the relation needs it
-                        let cat := match sr.params[i]? with
-                  | some p => paramCategory p
-                  | none => ""
-                        if cat == "Space" then "ref sp0" else "_"
-                    let statePatStr := ", ".intercalate statePattern
-                    let instrParams := rule.params
-                    let instrTotal := instrParams.length
-                    let instrFields := (List.range instrTotal).map fun i =>
-                      s!"ref arg{i}0"
-                    let instrPatStr := ", ".intercalate instrFields
-                    let bindings := (List.range instrTotal).map fun i =>
-                      s!"let arg{i} = (**arg{i}0).clone()"
-                    -- Build the query tuple: space + instruction args (up to arity)
-                    let spBinding := "let sp = (**sp0).clone()"
-                    let allBindings := [spBinding] ++ bindings
-                    let queryArgs := if arity > instrTotal + 1
-                      then ["sp"] ++ (List.range instrTotal).map (s!"arg{·}")
-                      else ["sp"] ++ (List.range (min (arity - 1) instrTotal)).map (s!"arg{·}")
-                    let queryHead := s!"{queryRelName}({", ".intercalate queryArgs})"
-                    let bodyLines := [
-                      "state(st)",
-                      s!"if let {stateType}::C_{sr.label}({statePatStr}) = st",
-                      s!"if let {instrType}::C_{instrLabel}({instrPatStr}) = &**instr"
-                    ] ++ allBindings
-                    let bodyStr := ",\n            ".intercalate bodyLines
-                    some s!"{queryHead} <--\n            {bodyStr};"
-    if lines.isEmpty then ""
+    let entries := queries.filterMap fun (rel, arity, instrLabel) =>
+      let instrRule := lang.terms.find? (·.label == instrLabel)
+      match instrRule with
+      | none => none
+      | some rule =>
+          let stateRule := findStateRule lang
+          match stateRule with
+          | none => none
+          | some sr =>
+              let stateTotal := sr.params.length
+              let instrIdx := (zipWithIdx sr.params).find?
+                (fun (_, p) => paramCategory p == instrType)
+              match instrIdx with
+              | none => none
+              | some (iIdx, _) =>
+                  let statePattern := (List.range stateTotal).map fun i =>
+                    if i == iIdx then "ref instr" else
+                      let cat := match sr.params[i]? with
+                        | some p => paramCategory p
+                        | none => ""
+                      if cat == "Space" then "ref sp0" else "_"
+                  let statePatStr := ", ".intercalate statePattern
+                  let instrParams := rule.params
+                  let instrTotal := instrParams.length
+                  let instrFields := (List.range instrTotal).map fun i => s!"ref arg{i}0"
+                  let instrPatStr := ", ".intercalate instrFields
+                  let bindings := (List.range instrTotal).map fun i => s!"let arg{i} = (**arg{i}0).clone()"
+                  -- Build the query tuple: space + instruction args (up to relation arity)
+                  let spBinding := "let sp = (**sp0).clone()"
+                  let allBindings := [spBinding] ++ bindings
+                  let queryArgs := if arity > instrTotal + 1
+                    then ["sp"] ++ (List.range instrTotal).map (s!"arg{·}")
+                    else ["sp"] ++ (List.range (min (arity - 1) instrTotal)).map (s!"arg{·}")
+                  let qArity := queryArgs.length
+                  let queryRelName := s!"{rel}Query{qArity}"
+                  let declTys := if qArity == 0 then []
+                    else ["Space"] ++ List.replicate (qArity - 1) "Atom"
+                  let decl := s!"relation {queryRelName}({", ".intercalate declTys});"
+                  let queryHead := s!"{queryRelName}({", ".intercalate queryArgs})"
+                  let bodyLines := [
+                    "state(st)",
+                    s!"if let {stateType}::C_{sr.label}({statePatStr}) = st",
+                    s!"if let {instrType}::C_{instrLabel}({instrPatStr}) = &**instr"
+                  ] ++ allBindings
+                  let bodyStr := ",\n            ".intercalate bodyLines
+                  let ruleLine := s!"{queryHead} <--\n            {bodyStr};"
+                  some (decl, ruleLine)
+    if entries.isEmpty then ""
     else
       let header := "\n\n        // ═══ Query scoping (auto-generated from rewrite premises) ═══\n"
-      header ++ "        " ++ "\n\n        ".intercalate lines
+      let declLines := (entries.map (·.1)).eraseDups
+      let ruleLines := entries.map (·.2)
+      let declBlock := "        " ++ "\n        ".intercalate declLines
+      let ruleBlock := "        " ++ "\n\n        ".intercalate ruleLines
+      header ++ declBlock ++ "\n\n" ++ ruleBlock
 
 /-! ## 6. Full Pipeline -/
 
@@ -347,7 +430,7 @@ deriving Repr, Inhabited
 def renderAscentLogicFull (lang : LanguageDef) (prog : PremiseProgram) : String :=
   let domain := renderDomainExtraction lang
   let scoping := renderQueryScoping lang
-  let premises := renderAscentPremiseRules prog
+  let premises := renderAscentPremiseRules lang prog
   "    logic {\n" ++ domain ++ scoping ++ "\n\n" ++ premises ++ "\n    }"
 
 /-- Render a complete `language! { ... }` block with logic section.
@@ -365,7 +448,7 @@ def renderLanguageFull (lang : LanguageDef) (prog : PremiseProgram)
       -- Find and replace the trailing "}" with logic + "}"
       -- renderLanguage ends with "\n}"
       if base.endsWith "}" then
-        base.dropRight 1 ++ "\n" ++ logicSection ++ "\n}"
+        (base.dropEnd 1).toString ++ "\n" ++ logicSection ++ "\n}"
       else
         base ++ "\n\n" ++ logicSection ++ "\n}"
   | .mork => "/* MORK backend not yet implemented */"
@@ -382,19 +465,20 @@ def writeLanguageFull (path : System.FilePath)
 -- Render just the premise rules for mettaFullPremises
 #eval! do
   let output := renderAscentPremiseRules
-    Mettapedia.OSLF.MeTTaCore.FullPremises.mettaFullPremises
+    Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFull
+    Mettapedia.Languages.MeTTa.Core.FullPremises.mettaFullPremises
   IO.println s!"=== Premise rules ({output.length} chars) ==="
 
 -- Render domain extraction for mettaFull
 #eval! do
   let output := renderDomainExtraction
-    Mettapedia.OSLF.MeTTaCore.FullLanguageDef.mettaFull
+    Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFull
   IO.println output
 
 -- Render query scoping for mettaFull
 #eval! do
   let output := renderQueryScoping
-    Mettapedia.OSLF.MeTTaCore.FullLanguageDef.mettaFull
+    Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFull
   IO.println output
 
 end Mettapedia.OSLF.MeTTaIL.ExportBackend

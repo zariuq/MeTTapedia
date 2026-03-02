@@ -21,7 +21,7 @@ All tests are kernel-checked via `rfl` or `decide` (no axioms, no sorry).
 
 namespace Mettapedia.Languages.MeTTa.HE.Conformance
 
-open Mettapedia.OSLF.MeTTaCore (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
 open Mettapedia.Languages.MeTTa.HE
 
 /-! ## Test Infrastructure -/

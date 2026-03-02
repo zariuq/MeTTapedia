@@ -6,7 +6,7 @@
 \documentclass[]{article}
 \usepackage{url}
 \usepackage[hyperindex,breaklinks]{hyperref}
-\usepackage{breakurl}
+\IfFileExists{breakurl.sty}{\usepackage{breakurl}}{}
 \usepackage{listings}
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,frame=single}
 \usepackage{float}
@@ -578,10 +578,13 @@ Ch.\ 7 & Distributional truth values & Beta/Dirichlet distributional layer:
 \codepath{Mettapedia/Logic/EvidenceDirichlet.lean}; deeper Kyburg-style reduction track remains
 separate (\codepath{Mettapedia/Logic/HigherOrder/PLNKyburgReduction.lean}). & Partial \\
 \hline
-Ch.\ 8 & Error magnification & Error characterization and soundness diagnostics:
+Ch.\ 8 & Error magnification & Confidence-level WM transport and OSLF-threshold grounding:
+\codepath{Mettapedia/Logic/PLNErrorMagnificationGrounding.lean},
+canonical one-call endpoints in \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+(including \code{ch8\_wm\_rewrite\_oslf\_threshold\_acceptance\_of\_interval});
+diagnostic/characterization layers remain in
 \codepath{Mettapedia/Logic/PLNBugAnalysis.lean},
-\codepath{Mettapedia/Logic/Comparison/ErrorCharacterization.lean},
-\codepath{Mettapedia/Logic/SoundnessCompleteness.lean}. & Partial \\
+\codepath{Mettapedia/Logic/Comparison/ErrorCharacterization.lean}. & Formalized (core) \\
 \hline
 Ch.\ 9 & Large-scale inference strategies & Two tracks:
 (i) structural BN compilation/rewrite pipeline
@@ -591,7 +594,9 @@ Ch.\ 9 & Large-scale inference strategies & Two tracks:
 (\codepath{Mettapedia/Logic/PremiseSelectionSelectorSpec.lean},
 \codepath{Mettapedia/Logic/PremiseSelectionOptimality.lean},
 \codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean},
-\codepath{Mettapedia/Logic/PremiseSelectionCoverage.lean}). & Partial \\
+\codepath{Mettapedia/Logic/PremiseSelectionCoverage.lean}).
+Counterexample-first no-go/corrected-positive index:
+\codepath{Mettapedia/Logic/PLNLargeScaleInferenceCounterexamples.lean}. & Partial (counterexample-first core formalized) \\
 \hline
 Ch.\ 10 & Higher-order extensional inference & HOI$\to$FOI reduction formalized:
 \codepath{Mettapedia/Logic/HigherOrder/Basic.lean},
@@ -658,6 +663,104 @@ Relative to earlier drafts, Ch.\ 12 has moved from prototype-only status to
 \emph{formalized ASSOC-core coverage}: the ASSOC-channel path is now wired through typed WM semantics,
 Solomonoff log-ratio correspondence, linked/linked-strong one-call canonical API transport, and
 executable positive/negative canary regression. Remaining work is mainly PAT/mixed-policy parity.
+
+\subsection{Chapter 8 Rule-to-Theorem Index}
+\label{app:ch8-theorem-index}
+
+\begin{longtable}{p{0.30\textwidth}p{0.33\textwidth}p{0.29\textwidth}}
+\textbf{Chapter 8 content} & \textbf{Lean theorem(s)} & \textbf{Module} \\
+\hline
+Confidence transport under WM query equivalence \newline
+\textit{Tags: [PLNBook-Ch8], [WM-queryEq], [confidence]} &
+\code{WMQueryEq.to\_queryConfidence},
+\code{WMQueryEq.to\_queryConfidence\_threshold},
+\code{WMQueryEqSigma.to\_queryConfidence},
+\code{WMQueryEqSigma.to\_queryConfidence\_threshold} &
+\codepath{Mettapedia/Logic/PLNWorldModelCalculus.lean} \\
+\hline
+Confidence-threshold atom semantics and rewrite soundness \newline
+\textit{Tags: [PLNBook-Ch8], [threshold-semantics], [OSLF]} &
+\code{thresholdAtomSemOfWMQConfidence},
+\code{thresholdAtomSemOfWMQSigmaConfidence},
+\code{wmRewriteRule\_threshold\_atom\_confidence},
+\code{wmRewriteRuleSigma\_threshold\_atom\_confidence},
+\code{rewrite\_then\_queryEq\_threshold\_atom\_confidence\_sigma} &
+\codepath{Mettapedia/Logic/PLNErrorMagnificationGrounding.lean} \\
+\hline
+Double-damping threshold-gap characterization \newline
+\textit{Tags: [PLNBook-Ch8], [double-damping], [gap]} &
+\code{double\_damping\_strict\_lt},
+\code{threshold\_gap\_of\_double\_damping\_of\_queries} &
+\codepath{Mettapedia/Logic/PLNErrorMagnificationGrounding.lean} \\
+\hline
+One-call WM rewrite $\to$ OSLF truth transport $\to$ threshold acceptance \newline
+\textit{Tags: [PLNBook-Ch8], [end-to-end], [canonical-API]} &
+\code{ch8ThresholdAccepted},
+\code{ch8\_thresholdAccepted\_of\_finalBundle},
+\code{ch8\_wm\_rewrite\_oslf\_threshold\_acceptance\_of\_interval},
+\code{end\_to\_end\_quantale\_selector\_rewrite\_query\_threshold\_finalBundle\_of\_interval} &
+\codepath{Mettapedia/Logic/PLNCanonicalAPI.lean} \\
+\hline
+\end{longtable}
+
+\subsection{Chapter 9 Counterexample-First Theorem Index}
+\label{app:ch9-counterexample-index}
+
+\paragraph{Notation used in this table.}
+For a selected premise set $S$ and ground-truth dependency set $D$:
+``coverage'' means $\mathrm{dependencyCoverage}(D,S)=|S \cap D|$ and
+``card'' means $|S|$ (the selected-set cardinality).
+
+\begin{longtable}{p{0.30\textwidth}p{0.33\textwidth}p{0.29\textwidth}}
+\textbf{Chapter 9 content} & \textbf{Lean theorem(s)} & \textbf{Module} \\
+\hline
+Two-term inclusion-exclusion is not identifiable for union mass \newline
+\textit{Tags: [PLNBook-Ch9], [multideduction], [identifiability-no-go]} &
+\code{same\_first\_two\_terms\_different\_union},
+\code{ch9\_ie\_sameFirstTwo\_differentUnion} &
+\codepath{Mettapedia/Logic/PLNInclusionExclusionIdentifiability.lean},
+\codepath{Mettapedia/Logic/PLNLargeScaleInferenceCounterexamples.lean} \\
+\hline
+No universal predictor from first-two-term statistics \newline
+\textit{Tags: [PLNBook-Ch9], [no-universal-estimator]} &
+\code{no\_universal\_union\_predictor\_from\_first\_two\_terms},
+\code{ch9\_ie\_noUniversalPredictor},
+\code{no\_single\_additive\_correction\_for\_both\_models},
+\code{ch9\_ie\_noSingleAdditiveCorrection} &
+\codepath{Mettapedia/Logic/PLNInclusionExclusionIdentifiability.lean},
+\codepath{Mettapedia/Logic/PLNLargeScaleInferenceCounterexamples.lean} \\
+\hline
+Trail-free deterministic update can fail to stabilize (2-cycle) \newline
+\textit{Tags: [PLNBook-Ch9], [protocol-dynamics], [counterexample]} &
+\code{orbit\_not\_eventually\_constant},
+\code{ch9\_trailFree\_notEventualConstant} &
+\codepath{Mettapedia/Logic/PLNTrailFreeDynamicsCounterexample.lean},
+\codepath{Mettapedia/Logic/PLNLargeScaleInferenceCounterexamples.lean} \\
+\hline
+Pooling axioms are insufficient to characterize additive fusion \newline
+\textit{Tags: [PLNBook-Ch9], [pooling], [non-uniqueness]} &
+\code{maxPoolingOperator\_ne\_fuse},
+\code{ch9\_poolingAxioms\_notUnique} &
+\codepath{Mettapedia/Logic/PremiseSelectionExternalBayesianity.lean},
+\codepath{Mettapedia/Logic/PLNLargeScaleInferenceCounterexamples.lean} \\
+\hline
+Corrected uniqueness: external-Bayes + total-additivity recovers additive pool \newline
+\textit{Tags: [PLNBook-Ch9], [pooling], [corrected-positive]} &
+\code{poolE\_eq\_hplus\_of\_externalBayes\_totalAdd},
+\code{ch9\_poolingUnique\_of\_externalBayes\_totalAdd} &
+\codepath{Mettapedia/Logic/PremiseSelectionExternalBayesianity.lean},
+\codepath{Mettapedia/Logic/PLNLargeScaleInferenceCounterexamples.lean} \\
+\hline
+Coverage/cardinality surrogate is insufficient for risk-sensitive selection \newline
+\textit{Tags: [PLNBook-Ch9], [premise-selection], [surrogate-no-go]} &
+\code{sameCoverageAndCard\_differentFalsePositiveRisk},
+\code{no\_universal\_risk\_predictor\_from\_coverage\_and\_card},
+\code{ch9\_coverageCard\_not\_sufficient\_for\_risk},
+\code{ch9\_noUniversalRiskPredictor\_fromCoverageCard} &
+\codepath{Mettapedia/Logic/PremiseSelectionCoverageCounterexamples.lean},
+\codepath{Mettapedia/Logic/PLNLargeScaleInferenceCounterexamples.lean} \\
+\hline
+\end{longtable}
 
 \subsection{Chapter 11 Rule-to-Theorem Index}
 \label{app:ch11-theorem-index}

@@ -51,12 +51,15 @@ target exercising the full stack.
 Component & Lines & Sorries \\
 \midrule
 \endhead
-\code{Mettapedia/OSLF/MeTTaIL/} & 3,592 & 0 \\
-\code{Mettapedia/OSLF/MeTTaCore/} & 3,839 & 0 \\
+\code{Mettapedia/OSLF/MeTTaIL/} & 5,250 & 0 \\
+\code{Mettapedia/OSLF/MeTTaCore/} & 4,666 & 0 \\
+\code{Mettapedia/Languages/MeTTa/HE/} & 2,774 & 0 \\
+\code{Mettapedia/OSLF/PeTTa/} & 3,921 & 0 \\
+\code{Mettapedia/Logic/GovernanceReasoning/} (MeTTa) & 1,140 & 0 \\
 \code{Framework/MeTTaMinimalInstance.lean} & 700 & 0 \\
 \code{Framework/MeTTaFullInstance.lean} & 346 & 0 \\
 \midrule
-Total (MeTTa-focused Lean slice) & 8,477 & 0 \\
+Total (MeTTa-focused Lean slice) & 18,797 & 0 \\
 \bottomrule
 \end{longtable}
 
@@ -181,6 +184,113 @@ theorem grounded_confluence (op : String) (args : List Atom) :
     r1 = r2
 \end{lstlisting}
 
+\subsection{HE MeTTa: Computable Recursive Interpreter}
+
+The Hyperon Experimental (HE) MeTTa semantics are formalized as a set of
+six mutually recursive fuel-bounded functions in
+\codepath{Mettapedia/Languages/MeTTa/HE/}, directly corresponding to
+\code{metta}, \code{interpret\_expression}, \code{interpret\_atom},
+\code{interpret\_symbol}, \code{interpret\_type}, and
+\code{chain\_results} from the
+\href{https://trueagi-io.github.io/hyperon-experimental/metta/}{HE specification}.
+
+\begin{lstlisting}[language={},caption={HE MeTTa interpreter core (excerpt from Interpreter.lean)}]
+mutual
+  def mettaCall (fuel : Nat) (space : Space) (bindings : Bindings)
+      (atom : Atom) (typ : Atom) : ResultSet
+  def interpretExpression (fuel : Nat) (space : Space) (bindings : Bindings)
+      (atom : Atom) (typ : Atom) : ResultSet
+  def interpretAtom (fuel : Nat) (space : Space) (bindings : Bindings)
+      (atom : Atom) (typ : Atom) : ResultSet
+  -- ... (6 mutually recursive functions)
+end
+\end{lstlisting}
+
+Supporting modules formalize the full HE runtime:
+\begin{itemize}
+\item \code{Types.lean}: ErrorCode, Bindings, ResultSet
+\item \code{Space.lean}: Space, queryEquations, GroundedDispatch
+\item \code{Matching.lean}: matchAtoms, mergeBindings
+\item \code{TypeCheck.lean}: typeCast
+\end{itemize}
+
+\paragraph{Conformance.}
+37 kernel-checked conformance theorems in \code{Conformance.lean} verify
+concrete evaluations against expected results, all closed by \code{rfl}
+(no axioms, no \code{native\_decide}).
+
+\paragraph{OSLF pipeline export.}
+The HE interpreter is also exported as an OSLF \code{LanguageDef}
+(\code{HELanguageDef.lean}) and a \code{PremiseProgram}
+(\code{HEPremises.lean}), enabling automatic generation of the Rust
+Ascent backend.  The \code{PremiseProgram} specifies 19 premise
+relations and their datalog rules as first-order data that the Lean
+exporter renders to Ascent syntax.
+
+\subsection{PeTTa: Logic-Programming MeTTa Semantics}
+
+PeTTa formalizes MeTTa evaluation through a Prolog-inspired
+logic-programming lens.  The core is \code{MeTTaEval}, an inductive
+big-step evaluation relation in
+\codepath{Mettapedia/OSLF/PeTTa/MeTTaEval.lean}:
+
+\begin{lstlisting}[language={},caption={MeTTaEval inductive relation (excerpt)}]
+inductive MeTTaEval : PeTTaSpace -> Pattern -> Atom -> List Pattern -> Prop where
+  | symbolLookup (sp : PeTTaSpace) (sym : String) (results : List Pattern) :
+      sp.queryEquations (.symbol sym) = results ->
+      results != [] ->
+      MeTTaEval sp (.symbol sym) undefinedType results
+  | groundedDispatch ...
+  | expressionInterpretation ...
+\end{lstlisting}
+
+This relation is the shared core that both HE and PeTTa agree on at the
+answer level: the refinement proofs (Section~\ref{sec:governance}) show
+that PeTTa refines HE evaluation.
+
+Additional PeTTa modules include:
+\begin{itemize}
+\item \code{LPSoundness.lean}: LP-engine soundness for rewrite-only evaluation
+\item \code{GroundedOracle.lean}: typed grounded-operation interface
+\item \code{TypedEval.lean} / \code{TypeSystem.lean}: type-enriched evaluation
+\item \code{Effects.lean} / \code{MinimalInstructions.lean}: effect tracking and instruction set
+\item \code{TranslateExpr.lean}: expression-to-pattern translation
+\end{itemize}
+
+\subsection{Governance Refinement Proofs}
+\label{sec:governance}
+
+The governance reasoning layer
+(\codepath{Mettapedia/Logic/GovernanceReasoning/}) connects MeTTa
+evaluation to deontic temporal logic via DDL+.  This is the
+end-to-end chain: evaluate MeTTa code $\to$ decode results $\to$
+interpret as deontic modalities $\to$ apply DTS theorems.
+
+\paragraph{Shared interface.}
+\code{LetStarInterface.lean} defines a \code{MeTTaLike} typeclass
+parametric over any evaluator supporting rewrite-rule application.
+Both HE and PeTTa instantiate it, so let* unfolding theorems are
+proved once and work for both implementations.
+
+\paragraph{HE refinement.}
+\code{HERefinement.lean} bridges \code{MeTTaEval} to the governance
+DTS obligations with explicit type/binding tracking. Seven semantic
+refinement theorems are proved, including let* integration
+(\code{he\_letStar\_full\_2}, \code{he\_letStar\_full\_3}).
+
+\paragraph{PeTTa refinement.}
+\code{PeTTaRefinement.lean} establishes the PeTTa-side DTS refinement
+and let* unfolding at the PeTTa level.
+
+\paragraph{HE canonical conformance.}
+\code{HECanonicalConformance.lean} connects the canonical computable
+HE interpreter to governance DTS theorems.  Seven conformance theorems
+prove end-to-end: HE eval produces correct OB$\Rightarrow$PE results for
+concrete governance scenarios (soaMoor, payRent, giveNotice), all closed
+by \code{rfl} or \code{simp}.
+
+All files: 0 sorries, 0 custom axioms.
+
 \subsection{MeTTaMinimal and MeTTaFull Instance Endpoints}
 
 These are the integration points where abstract MeTTaIL theorems become
@@ -294,26 +404,58 @@ condition for subject reduction to hold in a given MeTTa program.
 
 \section{Rust Bridge Status (\code{hyperon/mettail-rust})}
 
-The Rust side currently includes a MeTTaFull language module and test coverage:
+The Rust side implements three MeTTa language backends, all registered
+in the REPL and augmented with the meta-introspection and Python oracle
+systems.
+
+\subsection{Language Backends}
 
 \begin{itemize}
-\item Language module: \codepath{hyperon/mettail-rust/languages/src/mettafull_from_lean.rs}
-\item Language export registration:
-  \codepath{hyperon/mettail-rust/languages/src/lib.rs}
-\item REPL registry integration + test:
-  \codepath{hyperon/mettail-rust/repl/src/registry.rs}
-\item MeTTaFull tests:
-  \codepath{hyperon/mettail-rust/languages/tests/mettafull_from_lean_tests.rs}
+\item \textbf{MeTTaHE} (780 lines):
+  \codepath{languages/src/mettahe\_from\_lean.rs}---the HE MeTTa backend,
+  generated from the Lean OSLF pipeline (\code{HELanguageDef.lean} +
+  \code{HEPremises.lean}).  Defines 44 term constructors across 4 types
+  (State, Instr, Atom, Space), 17 rewrite rules, and 19 premise relations
+  implemented as Ascent datalog rules.  Eight builtin helper functions
+  provide structural dispatchers for grounded arithmetic, equation lookup,
+  type annotation search, and function-type resolution.
+
+\item \textbf{MeTTaFullState} (1,618 lines, legacy):
+  \codepath{languages/src/mettafull\_legacy.rs}---the original MeTTaFull
+  backend with hand-written premise rules and \code{eval\_ground\_call\_core}
+  recursive evaluator.  Retained for regression testing; the HE backend
+  supersedes it for HE-conformant evaluation.
+
+\item \textbf{PeTTa} (226 lines):
+  \codepath{languages/src/petta\_from\_lean.rs}---currently delegates to
+  MeTTaFullState with library aliases.  Planned for standalone
+  reimplementation from Lean PeTTa specs.
 \end{itemize}
 
-The relation-premise code generation path was generalized in:
-\codepath{hyperon/mettail-rust/macros/src/logic/rules.rs}
-so relation outputs can bind fresh variables (required by premises like
-\code{eqnLookup(space, src, dst)} where \code{dst} is produced by the relation).
+All three are registered in \codepath{repl/src/registry.rs} with the
+\code{OracleAugmentedLanguage} wrapper, which adds the meta-introspection
+oracle (types/terms/rewrites/relations counts and membership queries) and
+the gated Python oracle.
+
+\subsection{Premise Program IR}
+
+The MeTTaHE backend demonstrates the \code{PremiseProgram} pipeline:
+premise semantics are specified as first-order datalog rules in Lean,
+then rendered to Ascent syntax for the Rust backend.  Negation over
+derived relations (forbidden by Ascent stratification) is handled via
+positive complement relations (e.g., \code{typeNotMatchesMetaOrAtom}
+instead of \code{!typeMatchesMetaOrAtom}).
+
+\paragraph{Macro hygiene note.}
+The \code{language!} proc macro generates parser functions with internal
+variables (\code{pos}, \code{lhs}, \code{rhs}, \code{value}, etc.).
+Term constructor field names that collide with these produce confusing
+type errors.  The HE backend documents the required renames in its file
+header.
 
 \subsection{Current Passing Rust Tests}
 
-\begin{lstlisting}[language={},caption={MeTTaFull Rust canaries (all passing)}]
+\begin{lstlisting}[language={},caption={MeTTa Rust canaries (all passing)}]
 relation_query_can_bind_fresh_output_vars
 typecheck_uses_space_typing_relation
 grounded_call_boolean_not_reduces
@@ -461,24 +603,39 @@ The reviewer anchor in
 
 \textbf{Covered now:}
 \begin{itemize}
-\item MeTTaIL syntax + declarative/executable semantics bridge.
+\item MeTTaIL syntax + declarative/executable semantics bridge (sound and complete).
 \item MeTTaCore state machine + core progress/confluence-facing properties.
 \item MeTTaMinimal/MeTTaFull OSLF instance endpoints.
-\item Executable Rust MeTTaFull subset with relation-premise and REPL registration tests.
+\item HE MeTTa: computable recursive interpreter, 37 conformance theorems,
+  OSLF \code{LanguageDef} + \code{PremiseProgram} export.
+\item PeTTa: inductive big-step evaluation, LP soundness, grounded oracle,
+  typed evaluation, effect tracking.
+\item Governance refinement: shared \code{MeTTaLike} interface, HE/PeTTa
+  DTS bridges, let* unfolding, canonical conformance (OB$\Rightarrow$PE).
+\item Executable Rust backends: MeTTaHE (from Lean pipeline), MeTTaFullState
+  (legacy), PeTTa (alias wrapper), all with REPL + oracle integration.
+\item MeTTa-IL as 2-mode adjoint doctrine fragment (MaTT, 9 proved claims).
 \end{itemize}
 
 \textbf{Not yet full end-to-end by construction:}
 \begin{itemize}
-\item Fully automatic Lean-to-Rust premise-rich export of MeTTaFull without manual adaptation.
-\item Full Hyperon atomspace/runtime integration (beyond current encoded relation environment subset).
-\item Full CLI/REPL integration tests against production MeTTa workloads.
+\item Fully automatic Lean-to-Rust export without any manual adaptation
+  (field-name hygiene and builtin rendering still require hand-editing).
+\item Standalone PeTTa Rust backend (currently delegates to MeTTaFullState).
+\item Full HE test suite validation against the Rust MeTTaHE backend.
+\item Full Hyperon atomspace/runtime integration (beyond encoded relation
+  environment subset).
 \end{itemize}
 
 \section{Immediate Next Steps}
 
 \begin{enumerate}
-\item Lift MeTTaFull relation population from encoded test structures to direct atomspace ingestion.
-\item Add deterministic end-to-end REPL/CLI tests for hit/miss branches across all MeTTaFull core instructions.
+\item Run the HE test suite against the Rust MeTTaHE backend to validate
+  semantic correctness of the generated premise rules.
+\item Build a standalone PeTTa Rust backend from the Lean PeTTa specs,
+  replacing the current MeTTaFullState delegation.
+\item Fix the \code{language!} proc macro to use hygienic variable names
+  in generated parser code, preventing field-name collisions.
 \item Tie this note into \code{leanOSLF.tex} as a companion reference once stable.
 \end{enumerate}
 

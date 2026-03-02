@@ -29,15 +29,13 @@ type applicability, equation query, grounded dispatch, etc.
 | notExecutable | 1 | Negation of isExecutable |
 | typeOf | 3 | Atom has type in space (via annotations) |
 | typeMismatch | 4 | Atom's actual type != expected type |
-| interpFuncResult | 5 | interpretFunction multi-step result |
-| interpTupleResult | 3 | interpretTuple multi-step result |
+| interpFuncResult | (removed) | moved to explicit rewrite transitions |
+| interpTupleResult | (removed) | moved to explicit rewrite transitions |
 
 ## Design Notes
 
-- Relations like `interpFuncResult` and `interpTupleResult` are "macro" relations
-  that encapsulate multi-step evaluation. In the Ascent backend, these will be
-  implemented as Rust helper functions (builtins) rather than pure datalog,
-  because they involve recursive evaluation.
+- Recursive evaluation semantics should be encoded as explicit rewrite transitions
+  in `HELanguageDef.lean`, not hidden in opaque premise builtins.
 - Simpler relations (isEmpty, isError, metaType) are pure structural checks
   that compile directly to Ascent pattern matching.
 -/
@@ -110,17 +108,17 @@ private def metaTypeRules : List PRule :=
 private def typeMatchesMetaOrAtomRules : List PRule :=
   [ -- type == Atom
     { headRel := "typeMatchesMetaOrAtom"
-      headArgs := [.var "atom", .var "type"]
-      body := [.eq (.var "type") (.ctor "AtomType" [])]
+      headArgs := [.var "atom", .var "ty"]
+      body := [.eq (.var "ty") (.ctor "AtomType" [])]
       clauseName := some "typeMatch_atomType" }
   , -- type == metatype(atom)
     { headRel := "typeMatchesMetaOrAtom"
-      headArgs := [.var "atom", .var "type"]
-      body := [.relQuery "metaType" [.var "atom", .var "type"]]
+      headArgs := [.var "atom", .var "ty"]
+      body := [.relQuery "metaType" [.var "atom", .var "ty"]]
       clauseName := some "typeMatch_sameMetaType" }
   , -- metatype(atom) == Variable
     { headRel := "typeMatchesMetaOrAtom"
-      headArgs := [.var "atom", .var "type"]
+      headArgs := [.var "atom", .var "ty"]
       body := [.relQuery "metaType" [.var "atom", .ctor "VariableType" []]]
       clauseName := some "typeMatch_variable" }
   ]
@@ -131,25 +129,25 @@ private def typeMatchesMetaOrAtomRules : List PRule :=
 private def needsTypeCastRules : List PRule :=
   [ -- Symbol atom, type doesn't match
     { headRel := "needsTypeCast"
-      headArgs := [.var "atom", .var "type"]
+      headArgs := [.var "atom", .var "ty"]
       body := [ .relQuery "metaType" [.var "atom", .ctor "SymbolType" []]
-              , .notIn "typeMatchesMetaOrAtom" [.var "atom", .var "type"]
+              , .notIn "typeMatchesMetaOrAtom" [.var "atom", .var "ty"]
               , .notIn "isEmpty" [.var "atom"]
               , .notIn "isError" [.var "atom"] ]
       clauseName := some "needsTypeCast_symbol" }
   , -- Grounded atom, type doesn't match
     { headRel := "needsTypeCast"
-      headArgs := [.var "atom", .var "type"]
+      headArgs := [.var "atom", .var "ty"]
       body := [ .relQuery "metaType" [.var "atom", .ctor "GroundedType" []]
-              , .notIn "typeMatchesMetaOrAtom" [.var "atom", .var "type"]
+              , .notIn "typeMatchesMetaOrAtom" [.var "atom", .var "ty"]
               , .notIn "isEmpty" [.var "atom"]
               , .notIn "isError" [.var "atom"] ]
       clauseName := some "needsTypeCast_grounded" }
   , -- Unit expression ()
     { headRel := "needsTypeCast"
-      headArgs := [.var "atom", .var "type"]
+      headArgs := [.var "atom", .var "ty"]
       body := [ .eq (.var "atom") (.ctor "ExprNil" [])
-              , .notIn "typeMatchesMetaOrAtom" [.var "atom", .var "type"]
+              , .notIn "typeMatchesMetaOrAtom" [.var "atom", .var "ty"]
               , .notIn "isEmpty" [.var "atom"]
               , .notIn "isError" [.var "atom"] ]
       clauseName := some "needsTypeCast_unit" }
@@ -160,9 +158,9 @@ private def needsTypeCastRules : List PRule :=
     Ref: metta.md lines 261-272. -/
 private def needsInterpExprRules : List PRule :=
   [ { headRel := "needsInterpExpr"
-      headArgs := [.var "atom", .var "type"]
+      headArgs := [.var "atom", .var "ty"]
       body := [ .relQuery "metaType" [.var "atom", .ctor "ExpressionType" []]
-              , .notIn "typeMatchesMetaOrAtom" [.var "atom", .var "type"]
+              , .notIn "typeMatchesMetaOrAtom" [.var "atom", .var "ty"]
               , .notIn "isEmpty" [.var "atom"]
               , .notIn "isError" [.var "atom"] ]
       clauseName := some "needsInterpExpr_expression" } ]
@@ -225,7 +223,7 @@ private def eqQueryResultRules : List PRule :=
   [ { headRel := "eqQueryResult"
       headArgs := [.var "sp", .var "atom", .var "rhs"]
       body := [ .deconstruct (.var "sp") "Space" ["atoms"]
-              , .compute "queryEquationsBuiltin" [.var "atoms", .var "atom"] "rhs" ]
+              , .computeMany "queryEquationsAll" [.var "atoms", .var "atom"] "rhs" ]
       clauseName := some "eqQueryResult_match" } ]
 
 /-- `noEqQuery(space, atom)`: no equations match in space. -/
@@ -246,9 +244,9 @@ they involve recursive evaluation (the HE interpreter's mutual recursion). -/
     Combines: getAtomTypes → filter funcTypes → checkIfFunctionTypeIsApplicable. -/
 private def applicableFuncTypeRules : List PRule :=
   [ { headRel := "applicableFuncType"
-      headArgs := [.var "sp", .var "atom", .var "type", .var "opType", .var "retType"]
+      headArgs := [.var "sp", .var "atom", .var "ty", .var "opType", .var "retType"]
       body := [ .compute "findApplicableFuncType"
-                  [.var "sp", .var "atom", .var "type"] "opType_retType"
+                  [.var "sp", .var "atom", .var "ty"] "opType_retType"
               , .deconstruct (.var "opType_retType") "ExprCons" ["opType", "retType"] ]
       clauseName := some "applicableFuncType_check" } ]
 
@@ -257,30 +255,11 @@ private def applicableFuncTypeRules : List PRule :=
     Ref: metta.md lines 350-355. -/
 private def needsTupleInterpRules : List PRule :=
   [ { headRel := "needsTupleInterp"
-      headArgs := [.var "sp", .var "atom", .var "type"]
+      headArgs := [.var "sp", .var "atom", .var "ty"]
       body := [ .notIn "applicableFuncType"
-                  [.var "sp", .var "atom", .var "type", .wild, .wild]
+                  [.var "sp", .var "atom", .var "ty", .wild, .wild]
               , .compute "hasNonFuncTypes" [.var "sp", .var "atom"] "_" ]
       clauseName := some "needsTupleInterp_check" } ]
-
-/-- `interpFuncResult(space, atom, opType, retType, result)`:
-    Result of interpretFunction: evaluate op, evaluate args, reconstruct.
-    Multi-step computation implemented as builtin. -/
-private def interpFuncResultRules : List PRule :=
-  [ { headRel := "interpFuncResult"
-      headArgs := [.var "sp", .var "atom", .var "opType", .var "retType", .var "result"]
-      body := [ .compute "evalInterpFunc"
-                  [.var "sp", .var "atom", .var "opType", .var "retType"] "result" ]
-      clauseName := some "interpFuncResult_eval" } ]
-
-/-- `interpTupleResult(space, atom, result)`:
-    Result of interpretTuple: evaluate each element.
-    Multi-step computation implemented as builtin. -/
-private def interpTupleResultRules : List PRule :=
-  [ { headRel := "interpTupleResult"
-      headArgs := [.var "sp", .var "atom", .var "result"]
-      body := [ .compute "evalInterpTuple" [.var "sp", .var "atom"] "result" ]
-      clauseName := some "interpTupleResult_eval" } ]
 
 /-- `groundedCallResult(space, atom, result)`:
     Grounded dispatch result.
@@ -298,11 +277,9 @@ private def groundedCallResultRules : List PRule :=
 private def heBuiltins : List BuiltinFn :=
   [ { name := "checkExecutable", arity := 1 }
   , { name := "findTypeAnnotation", arity := 2 }
-  , { name := "queryEquationsBuiltin", arity := 2 }
+  , { name := "queryEquationsAll", arity := 2 }
   , { name := "findApplicableFuncType", arity := 3 }
   , { name := "hasNonFuncTypes", arity := 2 }
-  , { name := "evalInterpFunc", arity := 4 }
-  , { name := "evalInterpTuple", arity := 2 }
   , { name := "evalGroundedDispatch", arity := 2 }
   ]
 
@@ -311,16 +288,12 @@ private def heAscentHints : List BackendHint :=
       template := "is_executable_grounded({0})" }
   , { builtinName := "findTypeAnnotation", backend := "ascent"
       template := "find_type_annotation({0}, {1})" }
-  , { builtinName := "queryEquationsBuiltin", backend := "ascent"
-      template := "query_equations_builtin({0}, {1})" }
+  , { builtinName := "queryEquationsAll", backend := "ascent"
+      template := "query_equations_all({0}, {1})" }
   , { builtinName := "findApplicableFuncType", backend := "ascent"
       template := "find_applicable_func_type({0}, {1}, {2})" }
   , { builtinName := "hasNonFuncTypes", backend := "ascent"
       template := "has_non_func_types({0}, {1})" }
-  , { builtinName := "evalInterpFunc", backend := "ascent"
-      template := "eval_interp_func({0}, {1}, {2}, {3})" }
-  , { builtinName := "evalInterpTuple", backend := "ascent"
-      template := "eval_interp_tuple({0}, {1})" }
   , { builtinName := "evalGroundedDispatch", backend := "ascent"
       template := "eval_grounded_dispatch({0}, {1})" }
   ]
@@ -351,8 +324,6 @@ def mettaHEPremises : PremiseProgram where
     , { name := "applicableFuncType", paramTypes := ["Space", "Atom", "Atom", "Atom", "Atom"]
         hasNegation := true }
     , { name := "needsTupleInterp", paramTypes := ["Space", "Atom", "Atom"] }
-    , { name := "interpFuncResult", paramTypes := ["Space", "Atom", "Atom", "Atom", "Atom"] }
-    , { name := "interpTupleResult", paramTypes := ["Space", "Atom", "Atom"] }
     ]
   rules :=
     isEmptyRules
@@ -371,8 +342,6 @@ def mettaHEPremises : PremiseProgram where
     ++ groundedCallResultRules
     ++ applicableFuncTypeRules
     ++ needsTupleInterpRules
-    ++ interpFuncResultRules
-    ++ interpTupleResultRules
   builtins := heBuiltins
   backendHints := heAscentHints
   coreGroundEvalRelation := none  -- HE does not use a fast-path evaluator

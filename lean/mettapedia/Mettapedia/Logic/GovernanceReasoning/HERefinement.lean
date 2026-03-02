@@ -31,7 +31,7 @@ instead of `PeTTaEval s p [q]`.
 
 ## References
 
-- MeTTaEval: `Mettapedia.OSLF.PeTTa.MeTTaEval`
+- MeTTaEval: `Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval`
 - HE MeTTa spec: `trueagi-io.github.io/hyperon-experimental/metta/`
 - DTS theorems: `Mettapedia.Logic.GovernanceReasoning.Core`
 -/
@@ -40,7 +40,7 @@ namespace Mettapedia.Logic.GovernanceReasoning.HERefinement
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.OSLF.PeTTa
+open Mettapedia.Languages.MeTTa.PeTTa
 open Mettapedia.Logic.GovernanceReasoning.Core
 open Mettapedia.Logic.GovernanceReasoning.PeTTaRefinement
 open Mettapedia.Logic.GovernanceReasoning.LetStarInterface

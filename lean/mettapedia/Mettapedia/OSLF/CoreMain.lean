@@ -34,9 +34,9 @@ import Mettapedia.OSLF.Framework.ToposTOGLBridge
 import Mettapedia.OSLF.Framework.NTTClaimTracker
 import Mettapedia.OSLF.Framework.PaperSection12Examples
 import Mettapedia.OSLF.NativeType.Construction
-import Mettapedia.OSLF.MeTTaCore.Premises
-import Mettapedia.OSLF.MeTTaCore.FullLanguageDef
-import Mettapedia.OSLF.MeTTaCore.FullLanguageTests
+import Mettapedia.Languages.MeTTa.Core.Premises
+import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
+import Mettapedia.Languages.MeTTa.Core.FullLanguageTests
 import Mettapedia.OSLF.Framework.MeTTaFullInstance
 import Mettapedia.OSLF.Framework.MeTTaToNTT
 import Mettapedia.OSLF.Framework.IdentityEvidenceTransfer
@@ -68,7 +68,7 @@ endpoint for downstream OSLF consumers.
 
 namespace Mettapedia.OSLF
 
-export Mettapedia.OSLF.MeTTaCore.Premises (
+export Mettapedia.Languages.MeTTa.Core.Premises (
   space0Atomspace
   space0EqEntries
   space0TypeEntries
@@ -88,14 +88,14 @@ export Mettapedia.OSLF.MeTTaCore.Premises (
   noGroundedCallTuples
 )
 
-export Mettapedia.OSLF.MeTTaCore.FullLanguageDef (
+export Mettapedia.Languages.MeTTa.Core.FullLanguageDef (
   mettaFull
   mettaFullOSLF
   mettaFullGalois
   mettaFullRelEnv
 )
 
-export Mettapedia.OSLF.MeTTaCore.FullLanguageTests (
+export Mettapedia.Languages.MeTTa.Core.FullLanguageTests (
   coded_string_concat_normalForm_shape
 )
 
@@ -781,8 +781,8 @@ theorem coreMain_paper_parity_full_package
 #check Mettapedia.OSLF.Framework.FULLStatus.remainingCount_eq_zero
 #check Mettapedia.OSLF.Framework.FULLStatus.strictRemaining_eq_nil
 #check Mettapedia.OSLF.Framework.FULLStatus.strictRemainingCount_eq_zero
-#check Mettapedia.OSLF.MeTTaCore.FullLanguageDef.mettaFull
-#check Mettapedia.OSLF.MeTTaCore.FullLanguageDef.mettaFullOSLF
+#check Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFull
+#check Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullOSLF
 #check Mettapedia.Logic.OSLFImageFinite.imageFinite_langReduces
 #check Mettapedia.Logic.OSLFImageFinite.hm_converse_langReduces
 #check @Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.piRho_coreMain_canonical_contract_end_to_end

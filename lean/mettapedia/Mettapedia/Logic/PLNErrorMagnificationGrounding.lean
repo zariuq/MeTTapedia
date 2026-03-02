@@ -36,7 +36,7 @@ variable [EvidenceType State] [WorldModel State Query]
 
 /-- Confidence view for a WM query, derived from evidence totals. -/
 noncomputable def queryConfidence (κ : ℝ≥0∞) (W : State) (q : Query) : ℝ :=
-  (Evidence.toConfidence κ (WorldModel.evidence (State := State) (Query := Query) W q)).toReal
+  (WorldModel.queryConfidence (State := State) (Query := Query) κ W q).toReal
 
 /-- Query equivalence transports the confidence view. -/
 theorem WMQueryEq.to_queryConfidence
@@ -45,7 +45,10 @@ theorem WMQueryEq.to_queryConfidence
     (κ : ℝ≥0∞) (W : State) :
     queryConfidence (State := State) (Query := Query) κ W q₁ =
       queryConfidence (State := State) (Query := Query) κ W q₂ := by
-  simp [queryConfidence, hEq W]
+  simpa [queryConfidence] using
+    congrArg ENNReal.toReal
+      (PLNWorldModel.WMQueryEq.to_queryConfidence
+        (State := State) (Query := Query) hEq κ W)
 
 /-- Query equivalence transports confidence-threshold judgments. -/
 theorem WMQueryEq.to_queryConfidence_threshold
@@ -71,7 +74,12 @@ theorem wmRewriteRule_confidence_atom_eq_derive
     (hEnc : queryOfAtom a p = r.conclusion) :
     queryConfidence (State := State) (Query := Query) κ W (queryOfAtom a p) =
       (Evidence.toConfidence κ (r.derive W)).toReal := by
-  simp [queryConfidence, hEnc, (r.sound hSide W).symm]
+  rw [hEnc]
+  have hEq :
+      WorldModel.queryConfidence (State := State) (Query := Query) κ W r.conclusion =
+        Evidence.toConfidence κ (r.derive W) := by
+    simp [WorldModel.queryConfidence, r.sound hSide W]
+  exact congrArg ENNReal.toReal hEq
 
 /-- Confidence-threshold consequence for an atom from a WM rewrite rule. -/
 theorem wmRewriteRule_threshold_atom_confidence
@@ -142,8 +150,7 @@ variable [EvidenceType State] [WorldModelSigma State Srt Query]
 /-- Confidence view for a typed WM query. -/
 noncomputable def queryConfidenceSigma
     (κ : ℝ≥0∞) (W : State) (q : Sigma Query) : ℝ :=
-  (Evidence.toConfidence κ
-    (WorldModelSigma.evidence (State := State) (Srt := Srt) (Query := Query) W q)).toReal
+  (WorldModelSigma.queryConfidence (State := State) (Srt := Srt) (Query := Query) κ W q).toReal
 
 /-- Typed query equivalence transports confidence view. -/
 theorem WMQueryEqSigma.to_queryConfidence
@@ -153,7 +160,10 @@ theorem WMQueryEqSigma.to_queryConfidence
     (κ : ℝ≥0∞) (W : State) :
     queryConfidenceSigma (State := State) (Srt := Srt) (Query := Query) κ W q₁ =
       queryConfidenceSigma (State := State) (Srt := Srt) (Query := Query) κ W q₂ := by
-  simp [queryConfidenceSigma, hEq W]
+  simpa [queryConfidenceSigma] using
+    congrArg ENNReal.toReal
+      (PLNWorldModel.WorldModelSigma.WMQueryEqSigma.to_queryConfidence
+        (State := State) (Srt := Srt) (Query := Query) hEq κ W)
 
 /-- Typed query equivalence transports confidence-threshold judgments. -/
 theorem WMQueryEqSigma.to_queryConfidence_threshold
@@ -181,7 +191,13 @@ theorem wmRewriteRuleSigma_confidence_atom_eq_derive
     (hEnc : queryOfAtom a p = r.conclusion) :
     queryConfidenceSigma (State := State) (Srt := Srt) (Query := Query) κ W (queryOfAtom a p) =
       (Evidence.toConfidence κ (r.derive W)).toReal := by
-  simp [queryConfidenceSigma, hEnc, (r.sound hSide W).symm]
+  rw [hEnc]
+  have hEq :
+      WorldModelSigma.queryConfidence (State := State) (Srt := Srt) (Query := Query) κ W
+          r.conclusion =
+        Evidence.toConfidence κ (r.derive W) := by
+    simp [WorldModelSigma.queryConfidence, r.sound hSide W]
+  exact congrArg ENNReal.toReal hEq
 
 /-- Typed confidence-threshold consequence for an atom from a WM rewrite rule. -/
 theorem wmRewriteRuleSigma_threshold_atom_confidence
