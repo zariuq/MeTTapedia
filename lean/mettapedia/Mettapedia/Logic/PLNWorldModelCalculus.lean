@@ -186,6 +186,80 @@ theorem WMStrengthJudgment.deterministic {W : State} {q : Query} {s₁ s₂ : �
     s₁ = WorldModel.queryStrength (State := State) (Query := Query) W q := hs₁
     _ = s₂ := hs₂.symm
 
+/-! ## Strength consequence layer (inequality rules) -/
+
+/-- Pointwise strength consequence relation between two queries. -/
+def WMStrengthLE (q₁ q₂ : Query) : Prop :=
+  ∀ W : State,
+    WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+      WorldModel.queryStrength (State := State) (Query := Query) W q₂
+
+theorem WMStrengthLE.refl (q : Query) :
+    WMStrengthLE (State := State) (Query := Query) q q := by
+  intro W
+  exact le_rfl
+
+theorem WMStrengthLE.trans {q₁ q₂ q₃ : Query} :
+    WMStrengthLE (State := State) (Query := Query) q₁ q₂ →
+    WMStrengthLE (State := State) (Query := Query) q₂ q₃ →
+    WMStrengthLE (State := State) (Query := Query) q₁ q₃ := by
+  intro h12 h23 W
+  exact le_trans (h12 W) (h23 W)
+
+theorem WMQueryEq.to_strengthLE {q₁ q₂ : Query} :
+    WMQueryEq (State := State) (Query := Query) q₁ q₂ →
+    WMStrengthLE (State := State) (Query := Query) q₁ q₂ := by
+  intro h W
+  simpa [WMQueryEq.to_queryStrength (State := State) (Query := Query) h W]
+    using (le_rfl :
+      WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+        WorldModel.queryStrength (State := State) (Query := Query) W q₁)
+
+theorem WMStrengthLE.transport_left {q₁ q₁' q₂ : Query} :
+    WMQueryEq (State := State) (Query := Query) q₁ q₁' →
+    WMStrengthLE (State := State) (Query := Query) q₁' q₂ →
+    WMStrengthLE (State := State) (Query := Query) q₁ q₂ := by
+  intro hEq hLe W
+  simpa [WMQueryEq.to_queryStrength (State := State) (Query := Query) hEq W]
+    using hLe W
+
+theorem WMStrengthLE.transport_right {q₁ q₂ q₂' : Query} :
+    WMStrengthLE (State := State) (Query := Query) q₁ q₂ →
+    WMQueryEq (State := State) (Query := Query) q₂ q₂' →
+    WMStrengthLE (State := State) (Query := Query) q₁ q₂' := by
+  intro hLe hEq W
+  simpa [WMQueryEq.to_queryStrength (State := State) (Query := Query) hEq W]
+    using hLe W
+
+/-- A Σ-guarded consequence rule at strength level:
+under side conditions, premise strength is bounded by conclusion strength. -/
+structure WMConsequenceRule (State Query : Type*) [EvidenceType State] [WorldModel State Query] where
+  side : Prop
+  premise : Query
+  conclusion : Query
+  sound : side →
+    WMStrengthLE (State := State) (Query := Query) premise conclusion
+
+namespace WMConsequenceRule
+
+variable {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+
+theorem apply {r : WMConsequenceRule State Query} {W : State} :
+    r.side → (⊢wm W) →
+      WorldModel.queryStrength (State := State) (Query := Query) W r.premise ≤
+        WorldModel.queryStrength (State := State) (Query := Query) W r.conclusion := by
+  intro hSide _hW
+  exact r.sound hSide W
+
+theorem applyCtx {r : WMConsequenceRule State Query} {Γ : Set State} {W : State} :
+    r.side → (⊢wm[Γ] W) →
+      WorldModel.queryStrength (State := State) (Query := Query) W r.premise ≤
+        WorldModel.queryStrength (State := State) (Query := Query) W r.conclusion := by
+  intro hSide _hW
+  exact r.sound hSide W
+
+end WMConsequenceRule
+
 /-! ## Query-rewrite rules (Σ-guarded) -/
 /-! ## Query-rewrite rules (Σ-guarded) -/
 
