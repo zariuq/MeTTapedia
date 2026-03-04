@@ -268,10 +268,6 @@ def evalIntrinsic (I : Interface σ) (s : σ) (term : Pattern) : Option (σ × L
         some (s1, I.dedupPatterns out)
       else
         none
-  | .apply "add-translator-rule!" [_] =>
-      some (s, [trueAtom])
-  | .apply "remove-translator-rule!" [_] =>
-      some (s, [trueAtom])
   | .apply "import!" [_space, _path] =>
       some (s, [trueAtom])
   | .apply "import!" [_space, _path, _opts] =>

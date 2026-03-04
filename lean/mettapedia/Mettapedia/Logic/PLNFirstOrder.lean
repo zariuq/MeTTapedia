@@ -2,6 +2,7 @@ import Mettapedia.Logic.PLNFirstOrder.Basic
 import Mettapedia.Logic.PLNFirstOrder.SatisfyingSet
 import Mettapedia.Logic.PLNFirstOrder.QuantifierSemantics
 import Mettapedia.Logic.PLNFirstOrder.ThirdOrderQuantifierSemantics
+import Mettapedia.Logic.PLNFirstOrder.QuantifierAlgorithmTheorems
 import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSemantics
 import Mettapedia.Logic.PLNFirstOrder.FuzzyITVBridge
 import Mettapedia.Logic.PLNFirstOrder.FuzzySyllogismCanary

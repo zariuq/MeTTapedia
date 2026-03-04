@@ -5,6 +5,8 @@ import Algorithms.MeTTa.Simple.Semantics.PredicateControl
 import Algorithms.MeTTa.Simple.Semantics.ControlFlow
 import Algorithms.MeTTa.Simple.Semantics.Dispatch
 import Algorithms.MeTTa.Simple.Semantics.SpaceOps
+import Algorithms.MeTTa.Simple.Semantics.ImportOps
+import Algorithms.MeTTa.Simple.Semantics.TranslatorOps
 import Algorithms.MeTTa.Simple.Semantics.PeTTaCore
 
 namespace Algorithms.MeTTa.Simple
@@ -29,6 +31,9 @@ structure Session where
   syntaxSpec : SyntaxSpec := MeTTailCore.MeTTaSyntax.petta
   maxSteps : Nat
   maxNodes : Nat
+  moduleSources : List (String × String) := []
+  loadedModules : List String := []
+  translatorRuleHeads : List String := []
   diag : Diagnostics := {}
 
 namespace Session
@@ -50,6 +55,9 @@ def load (s : Session) (bundle : SpecBundle) : Session :=
       bundle := bundle
       maxSteps := bundle.policy.maxFuel
       maxNodes := defaultMaxNodes bundle.policy.maxFuel }
+
+def withModuleSources (s : Session) (sources : List (String × String)) : Session :=
+  { s with moduleSources := sources }
 
 def withSyntax (s : Session) (syntaxSpec : SyntaxSpec) : Session :=
   { s with syntaxSpec := syntaxSpec }
@@ -82,6 +90,7 @@ private def spaceRelationName? : Pattern → Option String :=
 
 private def spaceMutationInterface : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
   bundle := fun s => s.bundle
+  rewrites := fun s => s.bundle.language.rewrites
   setBundle := fun s b => { s with bundle := b }
   eval := fun s _ => (s, [])
   applyBindings := fun _ p => p
@@ -93,6 +102,7 @@ private def spaceMutationInterface : Algorithms.MeTTa.Simple.Semantics.SpaceOps.
 private def factsForSpace (s : Session) (space : Pattern) : List Pattern :=
   let I : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
     bundle := fun s => s.bundle
+    rewrites := fun s => s.bundle.language.rewrites
     setBundle := fun s b => { s with bundle := b }
     eval := fun s _ => (s, [])
     applyBindings := fun _ p => p
@@ -184,6 +194,7 @@ private def dedupPatternList (xs : List Pattern) : List Pattern :=
 private def matchFactsAgainstSpace (facts : List Pattern) : Pattern → List Bindings :=
   let I : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
     bundle := fun s => s.bundle
+    rewrites := fun s => s.bundle.language.rewrites
     setBundle := fun s b => { s with bundle := b }
     eval := fun s _ => (s, [])
     applyBindings := fun _ p => p
@@ -209,6 +220,15 @@ private def reduceArgsFirst (ctor : String) : Bool :=
   ctor = "==" || ctor = "!=" ||
   ctor = "<" || ctor = ">" || ctor = "<=" || ctor = ">=" ||
   ctor = "+" || ctor = "-" || ctor = "*" || ctor = "/" || ctor = "%"
+
+private def deterministicPreserveArgs (ctor : String) : Bool :=
+  ctor = "let" || ctor = "let*" ||
+  ctor = "match" || ctor = "case" || ctor = "foldall" || ctor = "forall" ||
+  ctor = "progn" || ctor = "prog1" ||
+  ctor = "add-atom" || ctor = "remove-atom" || ctor = "remove-all-atoms" ||
+  ctor = "get-atoms" || ctor = "import!" ||
+  ctor = "call" || ctor = "eval" || ctor = "reduce" || ctor = "chain" ||
+  ctor = "quote"
 
 private partial def hasFreeVars : Pattern → Bool
   | .fvar _ => true
@@ -257,15 +277,29 @@ private def compatRewriteInterface : Algorithms.MeTTa.Simple.Semantics.Dispatch.
   matchPattern := matchPatternMeTTa
 }
 
+private def translatorInterface : Algorithms.MeTTa.Simple.Semantics.TranslatorOps.Interface Session := {
+  rewrites := fun s => s.bundle.language.rewrites
+  applyBindings := applyBindingsCompat
+  matchPattern := matchPatternMeTTa
+}
+
 def step (s : Session) (term : Pattern) : List Pattern :=
   let intrinsic := intrinsicStep s term
-  let compat := Algorithms.MeTTa.Simple.Semantics.Dispatch.compatRewriteStep compatRewriteInterface s term
+  let translated :=
+    Algorithms.MeTTa.Simple.Semantics.TranslatorOps.translateCall
+      translatorInterface s s.translatorRuleHeads term
+  let compat :=
+    if translated.isEmpty then
+      Algorithms.MeTTa.Simple.Semantics.Dispatch.compatRewriteStep compatRewriteInterface s term
+    else
+      []
   let generated :=
-    if compat.isEmpty then
+    if compat.isEmpty && translated.isEmpty then
       SpecBundle.rewriteWithContext s.bundle term
     else
       []
-  dedupPatterns (intrinsic ++ compat ++ generated)
+  let intrinsic' := if compat.isEmpty then intrinsic else []
+  dedupPatterns (intrinsic' ++ translated ++ compat ++ generated)
 
 private def withMessage (s : Session) (msg : String) : Session :=
   { s with diag := { s.diag with messages := msg :: s.diag.messages } }
@@ -401,27 +435,45 @@ mutual
             | some false => evalDeterministicCore s1 fuel elseBr
             | none => (s1, .apply "if" [condV, thenBr, elseBr])
         | .apply ctor args =>
-            let (s1, argsV) := evalDeterministicArgs s fuel args
-            let callV := .apply ctor argsV
-            let direct := intrinsicDirect s1 ctor argsV
-            if !direct.isEmpty then
-              let out := direct.headD callV
-              if out == callV then
-                (s1, out)
+            let callRaw := .apply ctor args
+            let translated :=
+              Algorithms.MeTTa.Simple.Semantics.TranslatorOps.translateCall
+                translatorInterface s s.translatorRuleHeads callRaw
+            if !translated.isEmpty then
+              let out := translated.headD callRaw
+              if out == callRaw then
+                (s, out)
               else
-                evalDeterministicCore s1 fuel out
+                evalDeterministicCore s fuel out
             else
-              match firstRuleReduction? s1 callV with
-              | some rhs =>
-                  evalDeterministicCore s1 fuel rhs
-              | none =>
-                  let arities := rewriteAritiesForHead s1 ctor
-                  let hasExact := arities.any (fun n => n == argsV.length)
-                  let hasLarger := arities.any (fun n => n > argsV.length)
-                  if hasLarger && !hasExact then
-                    (s1, partialPattern ctor argsV)
-                  else
-                    (s1, callV)
+            let (s1, argsV) :=
+              if deterministicPreserveArgs ctor then
+                (s, args)
+              else
+                evalDeterministicArgs s fuel args
+            let callV := .apply ctor argsV
+            if ctor == "=" then
+              (s1, callV)
+            else
+              let direct := intrinsicDirect s1 ctor argsV
+              if !direct.isEmpty then
+                let out := direct.headD callV
+                if out == callV then
+                  (s1, out)
+                else
+                  evalDeterministicCore s1 fuel out
+              else
+                match firstRuleReduction? s1 callV with
+                | some rhs =>
+                    evalDeterministicCore s1 fuel rhs
+                | none =>
+                    let arities := rewriteAritiesForHead s1 ctor
+                    let hasExact := arities.any (fun n => n == argsV.length)
+                    let hasLarger := arities.any (fun n => n > argsV.length)
+                    if hasLarger && !hasExact && !argsV.isEmpty then
+                      (s1, partialPattern ctor argsV)
+                    else
+                      (s1, callV)
         | _ => (s, term)
 
   private partial def evalAuxStateful (s : Session) (fuel : Nat)
@@ -475,6 +527,7 @@ mutual
       (space pat tmpl : Pattern) : Session × List Pattern :=
     let I : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
       bundle := fun s => s.bundle
+      rewrites := fun s => s.bundle.language.rewrites
       setBundle := fun s b => { s with bundle := b }
       eval := evalWithStateCore
       applyBindings := applyBindingsCompat
@@ -487,6 +540,7 @@ mutual
   private partial def findBindingsInSpace (s : Session) (space pat : Pattern) : List Bindings :=
     let I : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
       bundle := fun s => s.bundle
+      rewrites := fun s => s.bundle.language.rewrites
       setBundle := fun s b => { s with bundle := b }
       eval := fun s _ => (s, [])
       applyBindings := applyBindingsCompat
@@ -686,22 +740,28 @@ mutual
       (fun (acc : Session × List Bindings) c =>
         let sess := acc.1
         let curr := acc.2
-        match decodePredicateSpacePattern? sess c with
-        | some (space, pat) =>
-            let nextFacts := findBindingsInSpace sess space pat
-            let nextRules :=
-              if space == selfSpaceAtom then
-                findBindingsInRules sess pat
-              else
-                []
-            let next := nextFacts ++ nextRules
-            (sess, mergeBindingsLists curr next)
-        | none =>
-            let (sess', out) := evalWithStateCore sess c
-            if out.any isTruthy then
-              (sess', curr)
-            else
-              (sess', []))
+        match c with
+        | .apply "True" [] | .apply "true" [] =>
+            (sess, curr)
+        | .apply "False" [] | .apply "false" [] =>
+            (sess, [])
+        | _ =>
+            match decodePredicateSpacePattern? sess c with
+            | some (space, pat) =>
+                let nextFacts := findBindingsInSpace sess space pat
+                let nextRules :=
+                  if space == selfSpaceAtom then
+                    findBindingsInRules sess pat
+                  else
+                    []
+                let next := nextFacts ++ nextRules
+                (sess, mergeBindingsLists curr next)
+            | none =>
+                let (sess', out) := evalWithStateCore sess c
+                if out.any isTruthy then
+                  (sess', curr)
+                else
+                  (sess', []))
       (s, [[]])
 
   private partial def evalLetIntrinsic (s : Session)
@@ -1174,6 +1234,7 @@ mutual
     | .apply "add-atom" [space, fact] =>
         let I : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
           bundle := fun s => s.bundle
+          rewrites := fun s => s.bundle.language.rewrites
           setBundle := fun s b => { s with bundle := b }
           eval := evalWithStateCore
           applyBindings := applyBindingsCompat
@@ -1186,6 +1247,7 @@ mutual
     | .apply "remove-atom" [space, fact] =>
         let I : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
           bundle := fun s => s.bundle
+          rewrites := fun s => s.bundle.language.rewrites
           setBundle := fun s b => { s with bundle := b }
           eval := evalWithStateCore
           applyBindings := applyBindingsCompat
@@ -1198,6 +1260,7 @@ mutual
     | .apply "remove-all-atoms" [space] =>
         let I : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
           bundle := fun s => s.bundle
+          rewrites := fun s => s.bundle.language.rewrites
           setBundle := fun s b => { s with bundle := b }
           eval := evalWithStateCore
           applyBindings := applyBindingsCompat
@@ -1210,6 +1273,7 @@ mutual
     | .apply "get-atoms" [space] =>
         let I : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
           bundle := fun s => s.bundle
+          rewrites := fun s => s.bundle.language.rewrites
           setBundle := fun s b => { s with bundle := b }
           eval := evalWithStateCore
           applyBindings := applyBindingsCompat
@@ -1266,6 +1330,12 @@ mutual
           some (s2, outFallback)
         else
           some (s1, out)
+    | .apply "add-translator-rule!" [arg] =>
+        let heads' := Algorithms.MeTTa.Simple.Semantics.TranslatorOps.addHead s.translatorRuleHeads arg
+        some ({ s with translatorRuleHeads := heads' }, [patternOfBool true])
+    | .apply "remove-translator-rule!" [arg] =>
+        let heads' := Algorithms.MeTTa.Simple.Semantics.TranslatorOps.removeHead s.translatorRuleHeads arg
+        some ({ s with translatorRuleHeads := heads' }, [patternOfBool true])
     | .apply "once" [arg] =>
         let (s', out) := evalWithStateCore s arg
         match out with
@@ -1366,38 +1436,42 @@ mutual
     | .apply ctor args =>
         let detRuleCount := rewriteCountForHeadArity s ctor args.length
         let detFuel := Nat.max 4096 (s.maxSteps * 65536)
+        let fallback : Session × List Pattern :=
+          let fromHeads := compatFunctionHeadRewrite s (.apply ctor args)
+          if !fromHeads.isEmpty then
+            (s, dedupPatternList fromHeads)
+          else if hasCompatHeadConstraintRule s ctor args.length then
+            (s, [])
+          else
+            let rec reduceArgs (prefixRev : List Pattern) (rest : List Pattern) : List Pattern :=
+              match rest with
+              | [] => []
+              | a :: tail =>
+                  let aRed := step s a
+                  let rebuilt :=
+                    aRed.map (fun a' => .apply ctor (prefixRev.reverse ++ (a' :: tail)))
+                  rebuilt ++ reduceArgs (a :: prefixRev) tail
+            let reducts := dedupPatternList (reduceArgs [] args)
+            if reducts.isEmpty then
+              let arities := rewriteAritiesForHead s ctor
+              let hasExact := arities.any (fun n => n == args.length)
+              let hasLarger := arities.any (fun n => n > args.length)
+              if hasLarger && !hasExact && !args.isEmpty then
+                (s, [partialPattern ctor args])
+              else
+                (s, [])
+            else
+              (s, reducts)
         if detRuleCount == 1 && !(hasFreeVars (.apply ctor args)) then
           let (sDet, detOut) := evalDeterministicCore s detFuel (.apply ctor args)
           if detOut != .apply ctor args then
             some (sDet, [detOut])
           else
-            none
+            let out := fallback.2
+            if out.isEmpty then none else some fallback
         else
-        let fromHeads := compatFunctionHeadRewrite s (.apply ctor args)
-        if !fromHeads.isEmpty then
-          some (s, dedupPatternList fromHeads)
-        else if hasCompatHeadConstraintRule s ctor args.length then
-          some (s, [])
-        else
-          let rec reduceArgs (prefixRev : List Pattern) (rest : List Pattern) : List Pattern :=
-            match rest with
-            | [] => []
-            | a :: tail =>
-                let aRed := step s a
-                let rebuilt :=
-                  aRed.map (fun a' => .apply ctor (prefixRev.reverse ++ (a' :: tail)))
-                rebuilt ++ reduceArgs (a :: prefixRev) tail
-          let reducts := dedupPatternList (reduceArgs [] args)
-          if reducts.isEmpty then
-            let arities := rewriteAritiesForHead s ctor
-            let hasExact := arities.any (fun n => n == args.length)
-            let hasLarger := arities.any (fun n => n > args.length)
-            if hasLarger && !hasExact then
-              some (s, [partialPattern ctor args])
-            else
-              none
-          else
-            some (s, reducts)
+          let out := fallback.2
+          if out.isEmpty then none else some fallback
     | _ => none
 
   private partial def runNestedEffectsArgs (s : Session) (parentCallable : Bool)
@@ -1484,7 +1558,7 @@ mutual
       if isRoot then
         (s, .apply "match" args, false)
       else
-          let (s1, args', changedArgs) := runNestedEffectsArgs s false args [] false
+          let (s1, args', changedArgs) := runNestedEffectsArgs s true args [] false
           (s1, .apply "match" args', changedArgs)
     | .apply "collapse" args =>
       if isRoot then
@@ -1681,8 +1755,16 @@ def applyStmt (s : Session) (stmt : SyntaxStmt) : Session × List Pattern :=
         right := rhs
       }
       let rules' := s.bundle.language.rewrites ++ [rule]
-      let s0 := (noteApplied s).loadRules rules'
-      let s' := withMessage s0 s!"loaded rule {rule.name}"
+      let eqFact := .apply "=" [lhs, rhs]
+      let row : RelationTuple := { relation := "selfFact", tuple := [eqFact] }
+      let env' := addRelationTuple s.bundle.relationEnv row
+      let bundle' : SpecBundle := {
+        s.bundle with
+          language := { s.bundle.language with rewrites := rules' }
+          relationEnv := env'
+      }
+      let s0 := noteApplied { s with bundle := bundle' }
+      let s' := withMessage s0 s!"loaded rule {rule.name} and added selfFact/1 equation fact"
       (s', [])
   | .defineType lhs rhs =>
       let p := .apply ":" [lhs, rhs]
@@ -1795,14 +1877,46 @@ def evalExpr (s : Session) (input : String) : Except String (Session × List Pat
   let s' := withMessage (noteEval s1) s!"evalExpr produced {out.length} result(s)"
   pure (s', out)
 
-private def runParsed (s : Session) (lineNo : Nat) (stmt : SyntaxStmt) :
-    Session × Option (Nat × List Pattern) :=
-  let s1 := noteParsed s
-  let (s2, out) := applyStmt s1 stmt
-  if out.isEmpty then
-    (s2, none)
-  else
-    (s2, some (lineNo, out))
+mutual
+  private partial def runImportIfNeeded (s : Session) (stmt : SyntaxStmt) : Session :=
+    match Algorithms.MeTTa.Simple.Semantics.ImportOps.moduleNameOfStmt? stmt with
+    | none => s
+    | some modName =>
+        let loadedKey := Algorithms.MeTTa.Simple.Semantics.ImportOps.stripMettaExt modName
+        if s.loadedModules.contains loadedKey then
+          s
+        else
+          match Algorithms.MeTTa.Simple.Semantics.ImportOps.lookupModuleSource? s.moduleSources modName with
+          | none => s
+          | some text =>
+              let s0 : Session := { s with loadedModules := loadedKey :: s.loadedModules }
+              match parseProgramWith s0.syntaxSpec text with
+              | .ok program =>
+                  let (s1, _outs) := runProgramAux s0 program
+                  s1
+              | .error err =>
+                  noteError s0 s!"import parse failed for {modName}: {err}"
+
+  private partial def runParsed (s : Session) (lineNo : Nat) (stmt : SyntaxStmt) :
+      Session × Option (Nat × List Pattern) :=
+    let s1 := noteParsed s
+    let (s2, out) := applyStmt s1 stmt
+    let s3 := runImportIfNeeded s2 stmt
+    if out.isEmpty then
+      (s3, none)
+    else
+      (s3, some (lineNo, out))
+
+  private partial def runProgramAux (s : Session) :
+      List (Nat × SyntaxStmt) → Session × List (Nat × List Pattern)
+    | [] => (s, [])
+    | (lineNo, stmt) :: rest =>
+        let (s1, out?) := runParsed s lineNo stmt
+        let (s2, outs) := runProgramAux s1 rest
+        match out? with
+        | none => (s2, outs)
+        | some out => (s2, out :: outs)
+end
 
 private def runLine (s : Session) (lineNo : Nat) (line : String) :
     Session × Option (Nat × List Pattern) :=
@@ -1824,16 +1938,6 @@ private def runLinesAux (s : Session) (lineNo : Nat) :
 
 def runLines (s : Session) (lines : List String) : Session × List (Nat × List Pattern) :=
   runLinesAux s 1 lines
-
-private def runProgramAux (s : Session) :
-    List (Nat × SyntaxStmt) → Session × List (Nat × List Pattern)
-  | [] => (s, [])
-  | (lineNo, stmt) :: rest =>
-      let (s1, out?) := runParsed s lineNo stmt
-      let (s2, outs) := runProgramAux s1 rest
-      match out? with
-      | none => (s2, outs)
-      | some out => (s2, out :: outs)
 
 def runText (s : Session) (text : String) : Session × List (Nat × List Pattern) :=
   match parseProgramWith s.syntaxSpec text with

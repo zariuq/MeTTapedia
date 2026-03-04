@@ -1341,9 +1341,10 @@ a pattern may have multiple types simultaneously (e.g., every pattern has
 \code{\%Undefined\%} via \code{undefinedIsTop}, and separately may have a
 specific annotated type).
 
-\paragraph{Non-dependent fragment.}  We do not model type-level computation,
-dependent types, or the \code{Expression} type's special structural role in
-the full MeTTa spec.  These are left for future work.
+\paragraph{Non-dependent fragment.}  We do not model type-level computation or
+the \code{Expression} type's special structural role in the full HE
+\MeTTa{} evaluation path.  Rich dependent-type style extensions are treated as
+post-spec extensions, not part of current HE alignment.
 
 \paragraph{Function head restriction.}  Arrow rules require the function to be
 a bare symbol (\code{.apply c []}), not an arbitrary expression.  The
@@ -1534,47 +1535,68 @@ The compilation covers \code{fvar}, ground atoms, \code{superpose},
 \code{collapse}, \code{match}, \code{if}, \code{let}, \code{case}, and a
 conservative catch-all for unrecognised forms.
 
-\subsection{ISO Conformance Harness}
+%% ====================================================================
+\section{ISO Conformance Harness}
+\label{sec:iso-conformance}
+%% ====================================================================
 
 A three-tier conformance suite validates \code{PrologEval} against the
-ISO Prolog standard:
+ISO Prolog standard, providing executable evidence that the formal
+semantics agrees with real Prolog implementations on a substantial
+fragment.
 
-\begin{enumerate}
-\item \textbf{Lean-aligned fixtures}
-  (\code{FixtureCorpus.lean}, 2{,}379 lines).
-  Each fixture theorem is sourced from a specific Logtalk ISO test ID
-  (e.g.\ \code{iso\_true\_0\_01}, \code{iso\_unify\_2\_17}) and proven
-  by constructing the corresponding \code{PrologEval} derivation.
-  A SWI-Prolog runner (\code{swi\_fixture\_runner.pl}) executes the same
-  goals; a parity checker (\code{check\_lean\_swi\_parity.py}) enforces
-  that every \code{lean\_aligned} case has both a Lean theorem and a
-  passing SWI execution.
-  Current count: 194 fixture theorems covering 63 unique ISO IDs drawn
-  from 9~upstream Logtalk test files (control: \code{true/0},
-  \code{fail/0}, conjunction, disjunction; predicates: \code{once/1},
-  \code{$\backslash$+/1}, \code{=/2}, \code{$\backslash$=/2},
-  \code{findall/3}).
+\subsection{Lean-Aligned Fixtures}
 
-\item \textbf{Runtime-error boundary probes}
-  (\code{RuntimeErrorSpec.lean}, 62 lines).
-  The typed \code{PrologGoal} AST intentionally excludes non-callable
-  terms; four ISO cases that require runtime error detection
-  (\code{iso\_not\_1\_06}, \code{iso\_not\_1\_07},
-  \code{iso\_findall\_3\_07}, \code{iso\_findall\_3\_08}) are formalized
-  as theorem-level boundary declarations mapping each ISO~ID to its
-  expected \code{RuntimeErrorClass} (instantiation error or
-  type-error-callable), all proved by \code{rfl}.
+\code{FixtureCorpus.lean} (2{,}379 lines) contains 242 proven fixture
+theorems, each sourced from a specific Logtalk ISO test ID
+(e.g.\ \code{iso\_true\_0\_01}, \code{iso\_unify\_2\_17}) and proven
+by constructing the corresponding \code{PrologEval} derivation.
+A SWI-Prolog runner (\code{swi\_fixture\_runner.pl}) executes the same
+goals; a parity checker (\code{check\_lean\_swi\_parity.py}) enforces
+that every \code{lean\_aligned} case has both a Lean theorem and a
+passing SWI execution.
 
-\item \textbf{Logtalk ISO-ID coverage}
-  (\code{report\_logtalk\_iso\_coverage.py}).
-  Extracts all \code{iso\_*} identifiers from the 9~upstream Logtalk
-  test files and checks that every ID is represented by both a Lean
-  theorem and a \code{lean\_aligned} case.
-  Hard threshold: 63/63 exact coverage for both theorem and case IDs.
-\end{enumerate}
+Current count: 183 \code{lean\_aligned} cases covering 63 unique ISO IDs
+drawn from 9~upstream Logtalk test files (control: \code{true/0},
+\code{fail/0}, conjunction, disjunction; predicates: \code{once/1},
+\code{$\backslash$+/1}, \code{=/2}, \code{$\backslash$=/2},
+\code{findall/3}).
+
+\subsection{Runtime-Error Boundary Probes}
+
+\code{RuntimeErrorSpec.lean} (62 lines) handles the boundary between
+the typed \code{PrologGoal} AST and ISO runtime errors.  The AST
+intentionally excludes non-callable terms; four ISO cases that require
+runtime error detection are formalized as theorem-level boundary
+declarations mapping each ISO~ID to its expected
+\code{RuntimeErrorClass}:
+
+\begin{itemize}
+\item \code{iso\_not\_1\_06} $\mapsto$ \code{typeErrorCallable} (\code{$\backslash$+ 3})
+\item \code{iso\_not\_1\_07} $\mapsto$ \code{instantiationError} (\code{$\backslash$+ G} uninstantiated)
+\item \code{iso\_findall\_3\_07} $\mapsto$ \code{instantiationError} (\code{findall(\_, G, \_)} uninstantiated)
+\item \code{iso\_findall\_3\_08} $\mapsto$ \code{typeErrorCallable} (\code{findall(\_, 4, \_)})
+\end{itemize}
 
 \noindent
-The full suite is orchestrated by \code{scripts/prolog/run\_conformance.sh}.
+All four are proved by \code{rfl}.
+
+\subsection{Logtalk ISO-ID Coverage Gate}
+
+\code{report\_logtalk\_iso\_coverage.py} extracts all \code{iso\_*}
+identifiers from 9~upstream Logtalk test files
+(\url{https://github.com/LogtalkDotOrg/logtalk3}) and checks that every
+ID is represented by both a Lean theorem and a \code{lean\_aligned}
+case.  Hard threshold: 63/63 exact coverage for both theorem and case
+IDs.
+
+\subsection{Orchestration}
+
+The full suite is orchestrated by \code{scripts/prolog/run\_conformance.sh},
+which sequentially: (1)~runs SWI fixture execution, (2)~checks
+Lean$\leftrightarrow$SWI parity, (3)~validates runtime-error boundary
+probes, and (4)~reports Logtalk ISO-ID coverage with hard pass/fail
+thresholds.
 
 %% ====================================================================
 \section{4-Argument \MeTTa{} Evaluation}
@@ -1801,10 +1823,13 @@ $\Diamond \dashv \Box$ Galois connection and Rust code export.
   and witness-level completeness to the full first-order
   trace/substitution layer (\code{FirstOrderConnectionTrace.lean}) is
   ongoing work.
-\item \textbf{Dependent types.} The current type system fragment covers
-  annotations, arrow application, and pass-through types.  Formalizing
-  type-level computation and dependent types would complete the alignment
-  with the HE \MeTTa{} spec.
+\item \textbf{HE type-system completion.} The current type-system fragment
+  covers annotation lookup, arrow application, and pass-through types.
+  Completing full HE alignment requires formalizing the remaining
+  \code{check\_if\_function\_type\_is\_applicable} /
+  \code{check\_argument\_type} branches (including
+  \code{BadArgType}/\code{BadType} paths, non-symbol operator handling, and
+  \code{Expression} return-type behavior).
 \item \textbf{Multi-space evaluation.} The current formalization uses a single
   \code{\&self} atomspace.  Extending to multi-space evaluation
   (\code{new-space}, \code{bind!}) would capture the full \MeTTa{} import

@@ -652,6 +652,57 @@ theorem quoteSubstEnv_liftSub_find
             symm
             exact SubstEnv.find_extend_ne hnk'
 
+/-- Expand `quoteSubstEnv` for lifted substitutions under a binder-consed source/destination env. -/
+theorem quoteSubstEnv_liftSub_envCons_expand
+    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m) (σ : Sub n m) :
+    quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ) =
+      SubstEnv.extend
+        (quoteSubstEnv ν (k + 1) ρsrc (envCons (ν k) ρdst) (fun i => rename wk (σ i)))
+        (ν k) (.fvar (ν k)) := by
+  simp [quoteSubstEnv, envCons, liftSub, quoteTmWith]
+
+/-- If a name is absent from source keys, `quoteSubstEnv` lookup returns `none` for it. -/
+theorem quoteSubstEnv_find_none_of_source_absent
+    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m) (σ : Sub n m)
+    (name : String) (habsent : ∀ i : Fin n, ρsrc i ≠ name) :
+    (quoteSubstEnv ν k ρsrc ρdst σ).find name = none := by
+  induction n with
+  | zero =>
+      simp [quoteSubstEnv, SubstEnv.find, SubstEnv.empty]
+  | succ n ih =>
+      have hhead : ρsrc 0 ≠ name := habsent 0
+      have htail :
+          (quoteSubstEnv ν k (fun i : Fin n => ρsrc i.succ) ρdst
+            (fun i : Fin n => σ i.succ)).find name = none :=
+        ih (ρsrc := fun i : Fin n => ρsrc i.succ)
+           (σ := fun i : Fin n => σ i.succ)
+           (habsent := fun i => habsent i.succ)
+      simpa [quoteSubstEnv, SubstEnv.find_extend_ne hhead] using htail
+
+/-- In the lifted tail env, the current binder name `ν k` is absent from source keys. -/
+theorem quoteSubstEnv_liftSub_tail_find_none_k
+    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m) (σ : Sub n m)
+    (hcompatSrc : QuoteCompat ν k ρsrc) :
+    (quoteSubstEnv ν (k + 1) ρsrc (envCons (ν k) ρdst) (fun i => rename wk (σ i))).find (ν k) = none := by
+  exact quoteSubstEnv_find_none_of_source_absent
+    ν (k + 1) ρsrc (envCons (ν k) ρdst) (fun i => rename wk (σ i)) (ν k)
+    (fun i => hcompatSrc.2 i k (by omega))
+
+/-- Drop the inert binder-head extension for lifted substitutions. -/
+theorem applySubst_quoteSubstEnv_liftSub_envCons_drop_head
+    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m) (σ : Sub n m)
+    (hcompatSrc : QuoteCompat ν k ρsrc) (p : Pattern) :
+    applySubst
+      (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ))
+      p
+    =
+    applySubst
+      (quoteSubstEnv ν (k + 1) ρsrc (envCons (ν k) ρdst) (fun i => rename wk (σ i)))
+      p := by
+  rw [quoteSubstEnv_liftSub_envCons_expand]
+  exact applySubst_extend_fvar_self_of_find_none
+    _ _ _ (quoteSubstEnv_liftSub_tail_find_none_k ν k ρsrc ρdst σ hcompatSrc)
+
 mutual
   theorem noExplicitSubst_closeFVar (k : Nat) (x : String) (p : Pattern) :
       noExplicitSubst (closeFVar k x p) = noExplicitSubst p := by
@@ -1117,6 +1168,26 @@ theorem isFresh_quoteTmWith_prev
   rcases freeVars_quoteTmWith_mem_env ν (k + 1) ρ t hz with ⟨i, hi⟩
   exact (hcompat.2 i k (by omega)) hi
 
+/-- Closing the current binder name after weakening-quote through `envCons` is inert:
+`rename wk` removes references to the newly consed head, and freshness discharges the close. -/
+theorem closeFVar_quoteTmWith_rename_wk_envCons
+    {ν : Nat → String} {k : Nat} {ρ : QuoteEnv n}
+    (hcompat : QuoteCompat ν k ρ) (t : PureTm n) :
+    closeFVar 0 (ν k)
+      (quoteTmWith ν (k + 1) (envCons (ν k) ρ) (rename wk t))
+    =
+    quoteTmWith ν (k + 1) ρ t := by
+  calc
+    closeFVar 0 (ν k)
+        (quoteTmWith ν (k + 1) (envCons (ν k) ρ) (rename wk t))
+      =
+      closeFVar 0 (ν k) (quoteTmWith ν (k + 1) ρ t) := by
+        simpa using congrArg (closeFVar 0 (ν k))
+          (quoteTmWith_rename_wk_envCons ν (k + 1) (ν k) ρ t)
+    _ = quoteTmWith ν (k + 1) ρ t := by
+        exact closeFVar_fresh_id 0 (ν k) (quoteTmWith ν (k + 1) ρ t)
+          (isFresh_quoteTmWith_prev hcompat t)
+
 /-- Binder transport for the lifted substitution environment under explicit closing.
 This aligns the lifted env (`k+1`, `envCons`, `liftSub`) with the base env at
 the same quote depth (`k+1`) through a `closeFVar` at arbitrary depth `ℓ`. -/
@@ -1278,6 +1349,45 @@ theorem noExplicitSubst_quoteTmWith (ν : Nat → String) (k : Nat) (ρ : QuoteE
       simp [quoteTmWith, mkSnd, noExplicitSubst, allNoExplicitSubst, ih (k := k)]
   | refl a iha =>
       simp [quoteTmWith, mkRefl, noExplicitSubst, allNoExplicitSubst, iha (k := k)]
+
+/-- Specialized depth-lowering transport through a quoted weakened term.
+This is the concrete `k+1 -> k` bridge used in binder recursion over lifted substitutions. -/
+theorem closeFVar_applySubst_quoteSubstEnv_liftSub_lower_wkQuote
+    (ν : Nat → String) (k : Nat)
+    (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m) (σ : Sub n m)
+    (hcompatSrc : QuoteCompat ν k ρsrc)
+    (hcompatDst : QuoteCompat ν k ρdst)
+    (t : PureTm n) :
+    closeFVar 0 (ν k)
+      (applySubst
+        (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ))
+        (quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t)))
+    =
+    applySubst (quoteSubstEnv ν (k + 1) ρsrc ρdst σ)
+      (quoteTmWith ν (k + 1) ρsrc t) := by
+  have hnes :
+      noExplicitSubst
+        (quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t)) = true := by
+    simpa using
+      noExplicitSubst_quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t)
+  calc
+    closeFVar 0 (ν k)
+        (applySubst
+          (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ))
+          (quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t)))
+      =
+      applySubst (quoteSubstEnv ν (k + 1) ρsrc ρdst σ)
+        (closeFVar 0 (ν k)
+          (quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t))) := by
+            simpa using
+              closeFVar_applySubst_quoteSubstEnv_liftSub_align
+                ν k ρsrc ρdst σ hcompatDst
+                (quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t))
+                0 hnes
+    _ =
+      applySubst (quoteSubstEnv ν (k + 1) ρsrc ρdst σ)
+        (quoteTmWith ν (k + 1) ρsrc t) := by
+          simp [closeFVar_quoteTmWith_rename_wk_envCons, hcompatSrc]
 
 theorem lc_quoteTmWith (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) (t : PureTm n) :
     lc_at 0 (quoteTmWith ν k ρ t) = true := by

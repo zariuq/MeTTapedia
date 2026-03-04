@@ -1,4 +1,5 @@
 import Algorithms.MeTTa.Simple.Session
+import Algorithms.MeTTa.Simple.Semantics.ImportOps
 import Algorithms.MeTTa.LookupPlans
 
 namespace Algorithms.MeTTa.Simple.Main
@@ -524,39 +525,6 @@ private def renderRunJson (queries : List (Nat × List Pattern)) (diag : Diagnos
 private def basenameOfPathString (s : String) : String :=
   (s.splitOn "/").getLastD s
 
-private def stripMettaExt (name : String) : String :=
-  match name.splitOn "." with
-  | [] => name
-  | stem :: rest =>
-      if rest.isEmpty then name else stem
-
-private def unquoteToken (tok : String) : String :=
-  match tok.toList with
-  | '"' :: rest =>
-      match rest.reverse with
-      | '"' :: innerRev => String.ofList innerRev.reverse
-      | _ => tok
-  | _ => tok
-
-private def importModuleNameOfStmt? (stmt : Session.SyntaxStmt) : Option String :=
-  match stmt with
-  | .import path =>
-      let p := path.trimAscii.toString
-      if p.isEmpty then none else some p
-  | .eval (.apply "import!" [_space, path]) =>
-      match path with
-      | .apply tok [] =>
-          let t := (unquoteToken tok).trimAscii.toString
-          if t.isEmpty then none else some t
-      | _ => none
-  | .eval (.apply "import!" [_space, path, _opts]) =>
-      match path with
-      | .apply tok [] =>
-          let t := (unquoteToken tok).trimAscii.toString
-          if t.isEmpty then none else some t
-      | _ => none
-  | _ => none
-
 private def insertModuleSource (acc : List (String × String)) (key text : String) :
     List (String × String) :=
   if key.isEmpty || acc.any (fun p => p.1 == key) then
@@ -577,66 +545,16 @@ private def collectSiblingModuleSources (path : System.FilePath) : IO (List (Str
   for entry in entries do
     let txt ← IO.FS.readFile entry
     let base := basenameOfPathString (toString entry)
-    let stem := stripMettaExt base
+    let stem := Algorithms.MeTTa.Simple.Semantics.ImportOps.stripMettaExt base
     acc := insertModuleSource acc stem txt
     acc := insertModuleSource acc base txt
   pure acc
 
-private def lookupModuleSource? (sources : List (String × String)) (name : String) : Option String :=
-  let n := name.trimAscii.toString
-  let candidates :=
-    if n.endsWith ".metta" then
-      [n, stripMettaExt n]
-    else
-      [n, n ++ ".metta"]
-  candidates.findSome? (fun k => (sources.find? (fun p => p.1 == k)).map Prod.snd)
-
-private partial def runProgramWithImports
-    (sources : List (String × String)) (seen : List String)
-    (s : Session) (program : List (Nat × Session.SyntaxStmt)) :
-    Session × List (Nat × List Pattern) :=
-  match program with
-  | [] => (s, [])
-  | (lineNo, stmt) :: rest =>
-      let (s1, out) := Session.applyStmt s stmt
-      let (s2, seen2) :=
-        match importModuleNameOfStmt? stmt with
-        | none => (s1, seen)
-        | some modName =>
-            if seen.contains modName then
-              (s1, seen)
-            else
-              match lookupModuleSource? sources modName with
-              | none => (s1, seen)
-              | some text =>
-                  match Session.parseProgramWith s1.syntaxSpec text with
-                  | .ok imported =>
-                      let (sImp, _outs) := runProgramWithImports sources (modName :: seen) s1 imported
-                      (sImp, modName :: seen)
-                  | .error _ =>
-                      (Session.loadText s1 text, modName :: seen)
-      let (s3, outs) := runProgramWithImports sources seen2 s2 rest
-      if out.isEmpty then
-        (s3, outs)
-      else
-        (s3, (lineNo, out) :: outs)
-
 private def runScriptFile (path : System.FilePath) : IO (Session × List (Nat × List Pattern)) := do
   let text ← IO.FS.readFile path
   let moduleSources ← collectSiblingModuleSources path
-  let sess0 := emptySession
-  match Session.parseProgramWith sess0.syntaxSpec text with
-  | .ok program =>
-      if program.any (fun (_, stmt) => (importModuleNameOfStmt? stmt).isSome) then
-        pure (runProgramWithImports moduleSources [] sess0 program)
-      else
-        pure (Session.runText sess0 text)
-  | .error err =>
-      let diag' : Diagnostics :=
-        { sess0.diag with
-            errors := sess0.diag.errors + 1
-            messages := err :: sess0.diag.messages }
-      pure ({ sess0 with diag := diag' }, [])
+  let sess0 := Session.withModuleSources emptySession moduleSources
+  pure (Session.runText sess0 text)
 
 private def printRunHuman (path : System.FilePath) (queries : List (Nat × List Pattern))
     (diag : Diagnostics) : IO Unit := do

@@ -28,12 +28,45 @@ def defaultPolicy : Policy :=
 
 structure Interface (σ : Type) where
   bundle : σ → SpecBundle
+  rewrites : σ → List RewriteRule
   setBundle : σ → SpecBundle → σ
   eval : σ → Pattern → σ × List Pattern
   applyBindings : Bindings → Pattern → Pattern
   normalizePattern : Pattern → Pattern
   matchPattern : Pattern → Pattern → List Bindings
   dedupPatterns : List Pattern → List Pattern
+
+private def dedupBindings (xs : List Bindings) : List Bindings :=
+  (xs.foldl
+    (fun acc x => if acc.contains x then acc else x :: acc)
+    []).reverse
+
+private def eqBindingsFromRules (I : Interface σ) (lhs rhs : Pattern)
+    (rules : List RewriteRule) : List Bindings :=
+  rules.foldl
+    (fun acc rule =>
+      if rule.premises.isEmpty then
+        let fromLhs := I.matchPattern rule.left lhs
+        let out :=
+          fromLhs.flatMap (fun bL =>
+            let lhsSub := I.applyBindings bL lhs
+            let ruleLeftSub := I.applyBindings bL rule.left
+            let lhsCheck := I.matchPattern lhsSub ruleLeftSub
+            if lhsCheck.isEmpty then
+              []
+            else
+              lhsCheck.flatMap (fun bCheck =>
+                match mergeBindings bL bCheck with
+                | none => []
+                | some bLC =>
+                    let rhsSub := I.applyBindings bLC rhs
+                    let ruleRightSub := I.applyBindings bLC rule.right
+                    (I.matchPattern rhsSub ruleRightSub).filterMap
+                      (fun bR => mergeBindings bLC bR)))
+        acc ++ out
+      else
+        acc)
+    []
 
 private def eqFactToRule? (idx : Nat) (fact : Pattern) : Option RewriteRule :=
   match fact with
@@ -84,7 +117,16 @@ partial def matchFactsAgainstSpace (I : Interface σ) (facts : List Pattern) : P
 
 def findBindingsInSpace (I : Interface σ) (P : Policy) (s : σ) (space pat : Pattern) :
     List Bindings :=
-  matchFactsAgainstSpace I (factsForSpace I P s space) pat
+  let factBs := matchFactsAgainstSpace I (factsForSpace I P s space) pat
+  let ruleBs :=
+    match P.relationNameOfSpace? space, I.normalizePattern pat with
+    | some rel, .apply "=" [lhs, rhs] =>
+        if rel == P.selfRelationName then
+          eqBindingsFromRules I lhs rhs (I.rewrites s)
+        else
+          []
+    | _, _ => []
+  dedupBindings (factBs ++ ruleBs)
 
 private partial def evalSequence (I : Interface σ) (s : σ)
     (terms : List Pattern) (acc : List Pattern) : σ × List Pattern :=
@@ -96,8 +138,7 @@ private partial def evalSequence (I : Interface σ) (s : σ)
 
 def evalMatchIntrinsic (I : Interface σ) (P : Policy) (s : σ)
     (space pat tmpl : Pattern) : σ × List Pattern :=
-  let facts := factsForSpace I P s space
-  let bindings := matchFactsAgainstSpace I facts pat
+  let bindings := findBindingsInSpace I P s space pat
   let (sDyn, outRev) :=
     bindings.foldl
       (fun (acc : σ × List Pattern) bs =>

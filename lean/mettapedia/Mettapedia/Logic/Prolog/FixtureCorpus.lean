@@ -338,7 +338,7 @@ theorem iso_unify_2_13 {oracle : EvalOracle} :
       []
       (.normal []) := by
   refine PrologEval.unify_fail _ _ _ ?_
-  native_decide
+  simp [applyBindings, matchPattern, one, two, matchArgs]
 
 /-- Source: Logtalk ISO test `iso_unify_2_14` (`predicates/unify_2/tests.lgt`). -/
 theorem iso_unify_2_14 {oracle : EvalOracle} :
@@ -349,7 +349,7 @@ theorem iso_unify_2_14 {oracle : EvalOracle} :
       []
       (.normal []) := by
   refine PrologEval.unify_fail _ _ _ ?_
-  native_decide
+  simp [applyBindings, matchPattern, one, two, matchArgs]
 
 /-- Source: Logtalk ISO test `iso_unify_2_15` (`predicates/unify_2/tests.lgt`). -/
 theorem iso_unify_2_15 {oracle : EvalOracle} :
@@ -360,7 +360,7 @@ theorem iso_unify_2_15 {oracle : EvalOracle} :
       []
       (.normal []) := by
   refine PrologEval.unify_fail _ _ _ ?_
-  native_decide
+  simp [applyBindings, matchPattern, one, two, matchArgs]
 
 /-- Source: Logtalk ISO test `iso_unify_2_16` (`predicates/unify_2/tests.lgt`). -/
 theorem iso_unify_2_16 {oracle : EvalOracle} :
@@ -371,7 +371,7 @@ theorem iso_unify_2_16 {oracle : EvalOracle} :
       []
       (.normal []) := by
   refine PrologEval.unify_fail _ _ _ ?_
-  native_decide
+  simp [applyBindings, matchPattern, one, two, matchArgs]
 
 /-! ## \=/2 -/
 
@@ -466,7 +466,7 @@ theorem iso_not_unifiable_2_12 {oracle : EvalOracle} :
       []
       (.normal [[]]) := by
   refine PrologEval.notUnify_succ _ _ _ ?_
-  native_decide
+  simp [applyBindings, matchPattern, one, two, matchArgs]
 
 /-- Source: Logtalk ISO test `iso_not_unifiable_2_13` (`predicates/not_unifiable_2/tests.lgt`). -/
 theorem iso_not_unifiable_2_13 {oracle : EvalOracle} :
@@ -477,7 +477,7 @@ theorem iso_not_unifiable_2_13 {oracle : EvalOracle} :
       []
       (.normal [[]]) := by
   refine PrologEval.notUnify_succ _ _ _ ?_
-  native_decide
+  simp [applyBindings, matchPattern, one, two, matchArgs]
 
 /-- Source: Logtalk ISO test `iso_not_unifiable_2_14` (`predicates/not_unifiable_2/tests.lgt`). -/
 theorem iso_not_unifiable_2_14 {oracle : EvalOracle} :
@@ -488,7 +488,7 @@ theorem iso_not_unifiable_2_14 {oracle : EvalOracle} :
       []
       (.normal [[]]) := by
   refine PrologEval.notUnify_succ _ _ _ ?_
-  native_decide
+  simp [applyBindings, matchPattern, one, two, matchArgs]
 
 /-- Source: Logtalk ISO test `iso_not_unifiable_2_15` (`predicates/not_unifiable_2/tests.lgt`). -/
 theorem iso_not_unifiable_2_15 {oracle : EvalOracle} :
@@ -499,7 +499,7 @@ theorem iso_not_unifiable_2_15 {oracle : EvalOracle} :
       []
       (.normal [[]]) := by
   refine PrologEval.notUnify_succ _ _ _ ?_
-  native_decide
+  simp [applyBindings, matchPattern, one, two, matchArgs]
 
 /-! ## Env-Aware Unification Fixtures -/
 
@@ -1693,7 +1693,7 @@ theorem iso_findall_3_05 {oracle : EvalOracle} :
       [("X", Pattern.mkList [two, one])]
       (.normal []) := by
     refine PrologEval.unify_fail _ _ _ ?_
-    native_decide
+    simp [applyBindings, matchPattern, one, two, matchArgs]
   refine PrologEval.conj_normal _ _ [] [[("X", Pattern.mkList [two, one])]]
     [([("X", Pattern.mkList [two, one])], [])] hfind ?_ ?_
   · simp
@@ -1722,7 +1722,11 @@ theorem iso_findall_3_06 {oracle : EvalOracle} :
       [("X", Pattern.mkList [one, two])]
       (.normal [[("X", Pattern.mkList [one, two]), ("Z", two), ("Y", one)]]) := by
     refine PrologEval.unify_succ _ _ _ _ ?_
-    native_decide
+    have hmatch :
+        [("Z", two), ("Y", one)] ∈
+          matchPattern (Pattern.mkList [(.fvar "Y"), (.fvar "Z")]) (Pattern.mkList [one, two]) := by
+      simp [Pattern.mkList, matchPattern, matchArgs, mergeBindings, one, two]
+    simpa [applyBindings, one, two] using hmatch
   refine PrologEval.conj_normal _ _ [] [[("X", Pattern.mkList [one, two])]]
     [([("X", Pattern.mkList [one, two])], [[("X", Pattern.mkList [one, two]), ("Z", two), ("Y", one)]])] hfind ?_ ?_
   · simp

@@ -517,6 +517,41 @@ exact, sampled approximate, or quasi-Borel/infinite.
 
 See \code{PLNFirstOrder/QuantifierSemantics.lean}.
 
+\subsection{Algorithmic Quantifier Theorem Pack (Ch.~11)}
+
+\code{PLNFirstOrder/QuantifierAlgorithmTheorems.lean} (361 lines, 0~sorries)
+proves three families of results about the algorithmic fuzzy-quantifier
+layer:
+
+\paragraph{Parameter monotonicity.}
+The near-one, near-zero, and near-one-fraction scores are monotone in
+$\varepsilon$ (\code{nearOne\_mono\_of\_epsilon\_le},
+\code{nearZero\_mono\_of\_epsilon\_le},
+\code{nearOneFraction\_mono\_of\_epsilon\_le}).  Relaxing $\varepsilon$
+or~PCL weakens the for-all threshold
+(\code{fuzzyForAllHolds\_of\_epsilon\_and\_PCL\_relax},
+\code{fuzzyIntervalHolds\_of\_wider\_bounds}).
+
+\paragraph{Crisp endpoints.}
+When $\mathrm{PCL}=1$ the fuzzy for-all collapses to a fraction-equals-one
+test (\code{fuzzyForAllHolds\_iff\_fraction\_eq\_one\_of\_PCL\_eq\_one}),
+and the fuzzy there-exists collapses to a near-zero-fraction-equals-zero
+test (\code{fuzzyThereExistsHolds\_iff\_nearZeroFraction\_eq\_zero\_of\_PCL\_eq\_one}).
+At the fully crisp endpoint $\varepsilon=0$ the for-all is equivalent to
+all scores being~1 (\code{crispForAll\_endpoint\_iff\_allEqOne}).
+
+\paragraph{Rule-4 discrepancy bounds.}
+Rule-4 measures the gap between conjunction-based and quantification-based
+scoring.  In the \emph{high-gate} regime
+($g\ge$ all individual scores), the discrepancy vanishes when the gate
+covers all witnesses
+(\code{rule4Discrepancy\_bound\_of\_gate\_high},
+\code{rule4Discrepancy\_eq\_zero\_of\_gate\_high\_and\_cover}).
+In the \emph{low-gate} regime ($g<$ all scores), the discrepancy
+equals the minimum score and is bounded by~$g$
+(\code{rule4Discrepancy\_eq\_minScore\_of\_gate\_low},
+\code{rule4Discrepancy\_le\_g\_of\_gate\_low}).
+
 
 \subsection{Higher-order quantification}
 
@@ -534,6 +569,30 @@ completeness metatheorems analogous to FO settings.
 \item \textbf{Quasi-Borel / measurable HO as the long game.}
 HO quantification can be interpreted as integration over function
 spaces---difficult, but mathematically well-defined.
+\end{itemize}
+
+\subsection{Third-Order Quantifier Semantics}
+
+\code{PLNFirstOrder/ThirdOrderQuantifierSemantics.lean} (200 lines,
+0~sorries) makes the ``distribution over second-order uncertainty'' layer
+explicit.  Each domain element carries a \code{SecondOrderUncertainty}
+(a probability distribution over latent outcomes, each with an
+\code{Evidence} value); the collection over the domain forms a
+\code{ThirdOrderQuantifierModel}.
+
+The key results:
+\begin{itemize}[leftmargin=2em]
+\item Universal evidence from the full domain bounds observed evidence
+  (\code{forAllEvidenceUniversal\_le\_observed}), with equality when all
+  elements are observed
+  (\code{forAllEvidenceObserved\_univ\_eq\_universal}).
+\item Universal confidence is bounded by finite-observation confidence
+  (\code{confidence\_universal\_le\_observed}).
+\item A \emph{weakness bridge} connects the third-order model to the
+  existing \code{forAllEval} semantics under explicit pointwise
+  assumptions
+  (\code{forAllEvalWeakness\_eq\_forAllEval\_of\_assumptions},
+  \code{forAllEvalWeakness\_confidence\_eq\_of\_assumptions}).
 \end{itemize}
 
 
@@ -600,6 +659,18 @@ Completeness is stated relative to a declared semantics and fragment:
 This is not a retreat. It is how serious proof theory works: different
 fragments have different theorems.
 
+\paragraph{Scope of HOL/FOL completeness wrappers.}
+The infinitary HOL and FOL completeness modules
+(\code{PLNWorldModelHOLInfinitaryCompleteness.lean},
+\code{PLNWorldModelFOLInfinitaryCompleteness.lean}) provide
+\emph{implication-level closure wrappers} over declared
+soundness/completeness assumptions of the underlying proof systems: given
+a pointwise implication $\varphi \Rightarrow \psi$ (or its singleton-strength
+equivalent), they produce a \code{WMConsequenceRule} witnessing
+$\Strength(W,\varphi) \le \Strength(W,\psi)$ for all multiset states~$W$.
+These are not global WM-shell completeness results; they transport
+proof-system guarantees into WM strength inequalities.
+
 
 %% ============================================================
 \section{Lean Artifact Map}
@@ -643,6 +714,12 @@ The main Lean artifacts (all in \code{Mettapedia/}):
 \code{Logic/PLNCanonicalAPI.lean} & One-call end-to-end endpoints \\
 \code{Logic/PLNFirstOrder/QuantifierSemantics.lean} & Extensional vs
   typicality quantifiers \\
+\code{Logic/PLNFirstOrder/QuantifierAlgorithmTheorems.lean} &
+  Ch.~11 algorithmic quantifier monotonicity, crisp endpoints, rule-4
+  discrepancy bounds (361 lines) \\
+\code{Logic/PLNFirstOrder/ThirdOrderQuantifierSemantics.lean} &
+  Third-order distribution model, weakness bridge,
+  confidence-degradation bound (200 lines) \\
 \code{ProbabilityTheory/BayesianNetworks/FactorGraph.lean} & Factor graph
   semantics \\
 \code{ProbabilityTheory/BayesianNetworks/VariableElimination.lean} & VE
@@ -681,6 +758,20 @@ The main Lean artifacts (all in \code{Mettapedia/}):
   Stochastic-channel Blackwell utility layer + weighted/trusted-source transfer \\
 \code{Logic/PLNWorldModelExperimentStochasticRegression.lean} &
   Finite stochastic Blackwell/weighted-policy fixture regression \\
+\code{Logic/PLNWorldModelHOLInfinitary.lean} &
+  Countable $\bigwedge$/$\bigvee$ HOL WM instance, singleton adequacy,
+  pointwise-implication strength transfer (291 lines) \\
+\code{Logic/PLNWorldModelHOLInfinitaryCompleteness.lean} &
+  Implication-closure wrappers: \code{WMConsequenceRule} from
+  pointwise/singleton-strength (89 lines) \\
+\code{Logic/PLNWorldModelFOLInfinitary.lean} &
+  Countable $\bigwedge$/$\bigvee$ FOL WM instance, singleton adequacy,
+  pointwise-implication strength transfer (297 lines) \\
+\code{Logic/PLNWorldModelFOLInfinitaryCompleteness.lean} &
+  Implication-closure wrappers: \code{WMConsequenceRule} from
+  pointwise/singleton-strength (93 lines) \\
+\code{Logic/PLNWorldModelInfinitaryRegression.lean} &
+  Concrete HOL+FOL infinitary fixture endpoints (129 lines) \\
 \hline
 \end{longtable}
 
@@ -905,11 +996,15 @@ For clarity on what is \emph{not} proved:
 \item The \textbf{governance translation is partial and lossy}: $\mu$/$\nu$
   formulas map to \code{none}, and all governance action labels collapse.
   It is a bridge for a fragment.
-\item The \textbf{multiset semantics is uniform-weight}: each pointed model
-  contributes one count. Source reliability, weighting, dependence, and
-  correlation are not yet modelled.
-\item A \textbf{weighted/source-dependent multiset semantics} with
-  dependence correction has not yet been formalized.
+\item The \textbf{base multiset semantics is uniform-count}: each pointed
+  model contributes one count.  A \textbf{weighted/source-aware variant}
+  is now formalized (\code{PLNWorldModelKripkeWeighted.lean}:
+  source-labelled weighted states, trusted-source gating, weight-1
+  specialization bridge) and extended to stochastic channels
+  (\code{PLNWorldModelExperimentStochastic.lean}: Blackwell utility
+  transfer under arbitrary source weights).  The remaining gap is
+  \textbf{dependence and correlation correction}: the current weighted
+  semantics treats sources as independent.
 \end{enumerate}
 
 

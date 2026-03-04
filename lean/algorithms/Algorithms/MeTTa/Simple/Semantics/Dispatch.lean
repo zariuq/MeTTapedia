@@ -220,16 +220,16 @@ def matchHeadArgWithEval (I : Interface σ) (s : σ)
           if byOutput.isEmpty then
             []
           else
-            let firstArgBindings :=
-              match callArgs with
-              | outPat :: _ =>
-                  match I.normalizePattern outPat with
-                  | .fvar x => [[(x, termArg)]]
-                  | _ => [[]]
-              | [] => [[]]
-            byOutput.flatMap
-              (fun bOut =>
-                firstArgBindings.filterMap (fun bFirst => mergeBindings bOut bFirst))
+          byOutput.flatMap
+            (fun bOut =>
+              let firstArgBindings :=
+                match callArgs with
+                | outPat :: _ =>
+                    match I.normalizePattern outPat with
+                    | .fvar x => [[(x, I.applyBindings bOut termArg)]]
+                    | _ => [[]]
+                | [] => [[]]
+              firstArgBindings.filterMap (fun bFirst => mergeBindings bOut bFirst))
     | _ =>
         []
 
