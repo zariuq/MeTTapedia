@@ -46,6 +46,46 @@ private def listFlatMap {α β : Type} (xs : List α) (f : α → List β) : Lis
 private def ctorCategoryFor (lang : LanguageDef) (ctorName : String) : Option String :=
   (lang.terms.find? (fun t => t.label == ctorName)).map (·.category)
 
+private def lookupVarSubst (subst : List (String × PExpr)) (name : String) : Option PExpr :=
+  (subst.find? (fun (n, _) => n == name)).map (·.2)
+
+private partial def substExpr (subst : List (String × PExpr)) : PExpr → PExpr
+  | .var n =>
+      match lookupVarSubst subst n with
+      | some e => e
+      | none => .var n
+  | .ctor c args => .ctor c (args.map (substExpr subst))
+  | .literal p => .literal p
+  | .call fn args => .call fn (args.map (substExpr subst))
+  | .wild => .wild
+
+private def computeManyWitnessEmptyGuard? (prog : PremiseProgram) (rel : String)
+    (negArgs : List PExpr) : Option (String × List PExpr) := do
+  -- Expected witness shape:
+  --   hasRel(head...) :- relQuery rawRel(head..., _)
+  let witnessRules := prog.rulesFor rel
+  let witnessRule ← witnessRules.head?
+  guard (witnessRules.tail.isEmpty)
+  let .relQuery rawRel _rawArgs ← witnessRule.body.head?
+    | none
+  guard (witnessRule.body.tail.isEmpty)
+  guard (witnessRule.headArgs.length == negArgs.length)
+  -- Bind witness head vars to the concrete negation args.
+  let subst : List (String × PExpr) :=
+    (witnessRule.headArgs.zip negArgs).filterMap fun
+      | (.var n, arg) => some (n, arg)
+      | _ => none
+  -- Raw relation shape:
+  --   rawRel(..., result) :- computeMany(fn, computeArgs, result)
+  let rawRules := prog.rulesFor rawRel
+  let rawRule ← rawRules.head?
+  guard (rawRules.tail.isEmpty)
+  let .computeMany fnName computeArgs _result ← rawRule.body.head?
+    | none
+  guard (rawRule.body.tail.isEmpty)
+  let loweredArgs := computeArgs.map (substExpr subst)
+  some (fnName, loweredArgs)
+
 /-! ## 1. Ascent Expression Rendering -/
 
 /-- Render a PExpr as an Ascent expression (Rust code). -/
@@ -118,8 +158,21 @@ def renderAscentGuard (lang : LanguageDef) (prog : PremiseProgram)
           let argStrs := args.map (renderAscentExpr lang atomTy)
           [s!"for {result} in {fnName}({", ".intercalate argStrs}).into_iter()"]
   | .notIn rel args =>
-      let argStrs := args.map (renderAscentExpr lang atomTy)
-      [s!"!{rel}({", ".intercalate argStrs})"]
+      match computeManyWitnessEmptyGuard? prog rel args with
+      | some (fnName, loweredArgs) =>
+          let hint := prog.hintFor fnName "ascent"
+          let argStrs := loweredArgs.map (renderAscentExpr lang atomTy)
+          let filled := match hint with
+            | some template =>
+                (zipWithIdx argStrs).foldl (fun (s : String) (ia : Nat × String) =>
+                  let (i, a) := ia
+                  String.replace s s!"\{{i}}" a) template
+            | none =>
+                s!"{fnName}({", ".intercalate argStrs})"
+          [s!"if {filled}.into_iter().next().is_none()"]
+      | none =>
+          let argStrs := args.map (renderAscentExpr lang atomTy)
+          [s!"!{rel}({", ".intercalate argStrs})"]
   | .relQuery rel args =>
       let argStrs := args.map (renderAscentExpr lang atomTy)
       [s!"{rel}({", ".intercalate argStrs})"]
@@ -145,14 +198,18 @@ private def varsUsedInGuard : PGuard → List String
   | .deconstruct e _ _ => varsInExpr e
   | .compute _ args _ | .computeMany _ args _ =>
       listFlatMap args varsInExpr
-  | .notIn _ args | .relQuery _ args =>
+  | .notIn _ args =>
       listFlatMap args varsInExpr
+  | .relQuery _ _ =>
+      []
   | .collIter e _ _ => varsInExpr e
   | .trueGuard => []
 
 private def varsIntroducedByGuard : PGuard → List String
   | .deconstruct _ _ fields =>
       fields.filter (fun n => n != "_" && !n.startsWith "_")
+  | .relQuery _ args =>
+      (listFlatMap args varsInExpr).filter (fun n => n != "_" && !n.startsWith "_")
   | .compute _ _ result | .computeMany _ _ result =>
       [result]
   | .collIter _ _ elem =>
@@ -182,10 +239,17 @@ def renderAscentRule (lang : LanguageDef) (prog : PremiseProgram) (rule : PRule)
   let headArgs := rule.headArgs.map (renderAscentExpr lang atomTy)
   let head := s!"{rule.headRel}({", ".intercalate headArgs})"
   let headVars := listFlatMap rule.headArgs varsInExpr
-  let usedVars := listFlatMap rule.body varsUsedInGuard
-  let introduced := listFlatMap rule.body varsIntroducedByGuard
-  let needsBind := (List.eraseDups (headVars ++ usedVars)).filter (fun v =>
-    v != "_" && !v.startsWith "_" && !(List.contains introduced v))
+  let isValidVar := fun (v : String) => v != "_" && !v.startsWith "_"
+  let step := fun (acc : List String × List String) (g : PGuard) =>
+    let introduced := acc.1
+    let needed := acc.2
+    let usedNow := (varsUsedInGuard g).filter (fun v => isValidVar v && !(List.contains introduced v))
+    let introducedNow := (varsIntroducedByGuard g).filter isValidVar
+    let introduced' := List.eraseDups (introduced ++ introducedNow)
+    (introduced', needed ++ usedNow)
+  let (introducedByBody, neededByBody) := rule.body.foldl step ([], [])
+  let headNeeds := headVars.filter (fun v => isValidVar v && !(List.contains introducedByBody v))
+  let needsBind := List.eraseDups (neededByBody ++ headNeeds)
   let varTyMap := headVarTypes prog rule
   let binders := List.map (atomOrSpaceBinder varTyMap ·) needsBind
   let bodyParts := binders ++ (rule.body.flatMap (renderAscentGuard lang prog atomTy))

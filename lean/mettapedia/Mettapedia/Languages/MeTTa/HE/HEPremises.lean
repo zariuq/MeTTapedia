@@ -24,7 +24,8 @@ type applicability, equation query, grounded dispatch, etc.
 | needsTupleInterp | 3 | No applicable func type + has non-func types |
 | notExpression | 1 | Atom is not an Expression (metatype != Expression) |
 | eqQueryResult | 3 | Equation query: (= pattern rhs) matched, rhs resolved |
-| noEqQuery | 2 | No matching equations in space |
+| eqQueryHas | 2 | Witness that at least one equation matched |
+| noEqQuery | 2 | No matching equations in space (index-backed check) |
 | groundedCallResult | 3 | Grounded dispatch → Ok result |
 | isExecutable | 1 | Atom is an executable grounded atom |
 | notExecutable | 1 | Negation of isExecutable |
@@ -120,6 +121,39 @@ private def metaTypeRules : List PRule :=
       headArgs := [.var "atom", .ctor "GroundedType" []]
       body := [.deconstruct (.var "atom") "GBool" ["_"]]
       clauseName := some "metaType_grounded_bool" }
+  , -- Built-in grounded operators
+    { headRel := "metaType"
+      headArgs := [.var "atom", .ctor "GroundedType" []]
+      body := [.eq (.var "atom") (.ctor "OpAdd" [])]
+      clauseName := some "metaType_grounded_op_add" }
+  , { headRel := "metaType"
+      headArgs := [.var "atom", .ctor "GroundedType" []]
+      body := [.eq (.var "atom") (.ctor "OpSub" [])]
+      clauseName := some "metaType_grounded_op_sub" }
+  , { headRel := "metaType"
+      headArgs := [.var "atom", .ctor "GroundedType" []]
+      body := [.eq (.var "atom") (.ctor "OpMul" [])]
+      clauseName := some "metaType_grounded_op_mul" }
+  , { headRel := "metaType"
+      headArgs := [.var "atom", .ctor "GroundedType" []]
+      body := [.eq (.var "atom") (.ctor "OpDiv" [])]
+      clauseName := some "metaType_grounded_op_div" }
+  , { headRel := "metaType"
+      headArgs := [.var "atom", .ctor "GroundedType" []]
+      body := [.eq (.var "atom") (.ctor "OpMod" [])]
+      clauseName := some "metaType_grounded_op_mod" }
+  , { headRel := "metaType"
+      headArgs := [.var "atom", .ctor "GroundedType" []]
+      body := [.eq (.var "atom") (.ctor "OpLt" [])]
+      clauseName := some "metaType_grounded_op_lt" }
+  , { headRel := "metaType"
+      headArgs := [.var "atom", .ctor "GroundedType" []]
+      body := [.eq (.var "atom") (.ctor "OpGt" [])]
+      clauseName := some "metaType_grounded_op_gt" }
+  , { headRel := "metaType"
+      headArgs := [.var "atom", .ctor "GroundedType" []]
+      body := [.eq (.var "atom") (.ctor "OpEq" [])]
+      clauseName := some "metaType_grounded_op_eq" }
   ]
 
 /-! ## Metta Dispatch Relations -/
@@ -252,20 +286,33 @@ private def funcArgTypesRules : List PRule :=
     Equation query: finds (= pattern rhs) in space where pattern matches atom.
     Returns the resolved rhs (with bindings applied).
     Ref: metta.md line 538. -/
+private def eqQueryRawRules : List PRule :=
+  [ { headRel := "eqQueryRaw"
+      headArgs := [.var "sp", .var "atom", .var "rhs"]
+      body := [ .computeMany "queryEquationsInSpace" [.var "sp", .var "atom"] "rhs" ]
+      clauseName := some "eqQueryRaw_match" } ]
+
+/-- `eqQueryResult(space, atom, rhs)`:
+    projected equation query relation derived from `eqQueryRaw`. -/
 private def eqQueryResultRules : List PRule :=
   [ { headRel := "eqQueryResult"
       headArgs := [.var "sp", .var "atom", .var "rhs"]
-      body := [ .deconstruct (.var "sp") "Space" ["atoms"]
-              , .computeMany "queryEquationsAll" [.var "atoms", .var "atom"] "rhs" ]
-      clauseName := some "eqQueryResult_match" } ]
+      body := [ .relQuery "eqQueryRaw" [.var "sp", .var "atom", .var "rhs"] ]
+      clauseName := some "eqQueryResult_from_raw" } ]
+
+/-- `eqQueryHas(space, atom)`: witness that an equation query has at least one rhs. -/
+private def eqQueryHasRules : List PRule :=
+  [ { headRel := "eqQueryHas"
+      headArgs := [.var "sp", .var "atom"]
+      body := [ .relQuery "eqQueryRaw" [.var "sp", .var "atom", .wild] ]
+      clauseName := some "eqQueryHas_witness" } ]
 
 /-- `noEqQuery(space, atom)`: no equations match in space. -/
 private def noEqQueryRules : List PRule :=
   [ { headRel := "noEqQuery"
       headArgs := [.var "sp", .var "atom"]
-      body := [ .deconstruct (.var "sp") "Space" ["atoms"]
-              , .compute "noEquationMatch" [.var "atoms", .var "atom"] "_" ]
-      clauseName := some "noEqQuery_check" } ]
+      body := [ .notIn "eqQueryHas" [.var "sp", .var "atom"] ]
+      clauseName := some "noEqQuery_notIn_has" } ]
 
 /-! ## Complex Structural Relations (Builtins)
 
@@ -310,8 +357,7 @@ private def heBuiltins : List BuiltinFn :=
   [ { name := "checkExecutable", arity := 1 }
   , { name := "checkNotExecutable", arity := 1 }
   , { name := "findTypeAnnotation", arity := 2 }
-  , { name := "queryEquationsAll", arity := 2 }
-  , { name := "noEquationMatch", arity := 2 }
+  , { name := "queryEquationsInSpace", arity := 2 }
   , { name := "findApplicableFuncType", arity := 3 }
   , { name := "hasNonFuncTypes", arity := 2 }
   , { name := "noApplicableFuncType", arity := 2 }
@@ -325,10 +371,8 @@ private def heAscentHints : List BackendHint :=
       template := "is_not_executable_grounded({0})" }
   , { builtinName := "findTypeAnnotation", backend := "ascent"
       template := "find_type_annotation({0}, {1})" }
-  , { builtinName := "queryEquationsAll", backend := "ascent"
-      template := "query_equations_all({0}, {1})" }
-  , { builtinName := "noEquationMatch", backend := "ascent"
-      template := "no_equation_match({0}, {1})" }
+  , { builtinName := "queryEquationsInSpace", backend := "ascent"
+      template := "query_equations_in_space({0}, {1})" }
   , { builtinName := "findApplicableFuncType", backend := "ascent"
       template := "find_applicable_func_type({0}, {1}, {2})" }
   , { builtinName := "hasNonFuncTypes", backend := "ascent"
@@ -362,9 +406,10 @@ def mettaHEPremises : PremiseProgram where
     , { name := "funcArgTypes", paramTypes := ["Atom", "Atom"] }
     , { name := "changedToEmpty", paramTypes := ["Atom", "Atom"] }
     , { name := "changedToError", paramTypes := ["Atom", "Atom"] }
-    , { name := "eqQueryResult", paramTypes := ["Space", "Atom", "Atom"]
-        hasNegation := true }
-    , { name := "noEqQuery", paramTypes := ["Space", "Atom"] }
+    , { name := "eqQueryRaw", paramTypes := ["Space", "Atom", "Atom"] }
+    , { name := "eqQueryResult", paramTypes := ["Space", "Atom", "Atom"] }
+    , { name := "eqQueryHas", paramTypes := ["Space", "Atom"] }
+    , { name := "noEqQuery", paramTypes := ["Space", "Atom"], hasNegation := true }
     , { name := "groundedCallResult", paramTypes := ["Space", "Atom", "Atom"] }
     , { name := "applicableFuncType", paramTypes := ["Space", "Atom", "Atom", "Atom", "Atom"]
         hasNegation := true }
@@ -386,7 +431,9 @@ def mettaHEPremises : PremiseProgram where
     ++ typeOfRules
     ++ typeMismatchRules
     ++ funcArgTypesRules
+    ++ eqQueryRawRules
     ++ eqQueryResultRules
+    ++ eqQueryHasRules
     ++ noEqQueryRules
     ++ groundedCallResultRules
     ++ applicableFuncTypeRules

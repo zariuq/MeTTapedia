@@ -1,5 +1,6 @@
 import Mettapedia.Logic.Prolog.Core
 import Mettapedia.Logic.Prolog.Eval
+import Mettapedia.Logic.Prolog.FixtureCorpus
 
 /-!
 # Prolog Semantics Barrel
@@ -9,7 +10,7 @@ Barrel import for the Prolog built-in goal language and its operational semantic
 This module formalizes **Prolog = LP + Built-ins**:
 - The LP kernel (pure Horn clauses, SLD resolution) lives in `Mettapedia.Logic.LP`.
 - This module adds the **built-in goal constructors** used by PeTTa's `translate_expr`:
-  `succeed`, `fail`, `cut`, `conj`, `disj`, `ite`, `once`, `neg`, `unify`, `notUnify`,
+  `succeed`, `fail`, `cut`, `conj`, `disj`, `ite`, `once`, `neg`, `isVar`, `unify`, `notUnify`,
   `findall`, `spaceMatch`, `reduceCall`.
 
 ## Architecture
@@ -30,6 +31,7 @@ Mettapedia.Languages.MeTTa.PeTTa.TranslateExpr ← translate_expr formalization 
 |------|----------|
 | `Core` | `PrologGoal` (12 constructors), `PEnv`, `Pattern.mkList`, `conjList`, `disjList` |
 | `Eval` | `EvalOracle`, `PrologSpace`, `PrologEvalResult` (normal/cutThrown), `PrologEval` (inductive), `PrologConjAll` (derived Prop) |
+| `FixtureCorpus` | ISO/Logtalk-sourced fixture theorems (positive + negative constructor-level regressions) |
 
 ## Key Design Decisions
 
@@ -37,8 +39,9 @@ Mettapedia.Languages.MeTTa.PeTTa.TranslateExpr ← translate_expr formalization 
   still expressing "run g on each element of a list" inside the `PrologEval` inductive.
 - **`EvalOracle`** abstracts `reduceCall` (re-entry into MeTTa evaluator) as a
   `Prop`-valued relation, keeping the Prolog layer standalone and kernel-checkable.
-- **Cut semantics**: `cutThrown` is caught by `disj`, `findall`, and `once`; it propagates
-  through `conj` (when thrown by g1). Cut from g2 in conjunction is deferred.
+- **Cut semantics**: `cutThrown` is caught by `disj`, `findall`, and `once`; in conjunction,
+  g2 runs left-to-right over g1 answers; if a cut is thrown in either g1/g2,
+  current-branch answers are kept and suffix branches are pruned.
 - **`PrologConjAll`** is a derived `Prop` (not an inductive type), using the pairs witness.
 
 ## References

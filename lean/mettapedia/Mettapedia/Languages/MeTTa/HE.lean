@@ -5,6 +5,7 @@ import Mettapedia.Languages.MeTTa.HE.TypeCheck
 import Mettapedia.Languages.MeTTa.HE.Interpreter
 import Mettapedia.Languages.MeTTa.HE.Conformance
 import Mettapedia.Languages.MeTTa.HE.Properties
+import Mettapedia.Languages.MeTTa.HE.LookupPlan
 
 /-!
 # Hyperon Experimental MeTTa Semantics

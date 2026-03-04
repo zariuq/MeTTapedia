@@ -3,6 +3,9 @@ import Mettapedia.Logic.PLNDerivation
 import Mettapedia.Logic.CompletePLN
 import Mettapedia.Logic.PLNWorldModel
 import Mettapedia.Logic.PLNWorldModelCalculus
+import Mettapedia.Logic.PLNWorldModelPureKernelBridge
+import Mettapedia.Logic.PLNWorldModelInstitution
+import Mettapedia.Logic.PLNWorldModelHyperdoctrine
 import Mettapedia.Logic.PLNJointEvidence
 import Mettapedia.Logic.PLNJointEvidenceProbability
 import Mettapedia.Logic.PLNBayesNetWorldModel
@@ -40,6 +43,9 @@ import Mettapedia.Logic.PLNTemporalCausalInference
 import Mettapedia.Logic.PLNProbabilisticEventCalculus
 import Mettapedia.Logic.SemanticsDecisionTree
 import Mettapedia.Logic.PLNLargeScaleInferenceCounterexamples
+import Mettapedia.Logic.PLNMultideductionResidual
+import Mettapedia.Logic.PLNTrailFreeDampedConvergence
+import Mettapedia.Logic.PremiseSelectionBRGI
 
 /-!
 # PLN Core (Curated, theorem-complete entrypoint)
@@ -111,6 +117,18 @@ This module is a curated import surface for the currently theorem-complete PLN s
   pooling non-uniqueness/corrected-uniqueness aliases, plus
   coverage/cardinality insufficiency for risk-sensitive selection
   (`PLNLargeScaleInferenceCounterexamples`)
+- Multideduction positive residual decomposition + indexed agreement endpoint
+  (`PLNMultideductionResidual`)
+- Indexed n-way multideduction residual decomposition + indexed agreement family
+  (`PLNMultideductionResidual`)
+- Damped SP/SPN constructive convergence endpoint under eventual fresh evidence
+  (`PLNTrailFreeDampedConvergence`)
+- Damped SP/SPN bounded-gap fairness reset bounds with explicit time windows
+  (`PLNTrailFreeDampedConvergence`)
+- Finite BRGI object with policy-sensitive optimum characterization
+  (`PremiseSelectionBRGI`)
+- Graph-level BRGI object/refinement wrappers preserving finite-set optimality
+  (`PremiseSelectionBRGI`)
 
 ## Where are the Lean proofs that PLN covers NB and k-NN?
 

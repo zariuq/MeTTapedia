@@ -210,10 +210,7 @@ theorem WMQueryEq.to_strengthLE {q₁ q₂ : Query} :
     WMQueryEq (State := State) (Query := Query) q₁ q₂ →
     WMStrengthLE (State := State) (Query := Query) q₁ q₂ := by
   intro h W
-  simpa [WMQueryEq.to_queryStrength (State := State) (Query := Query) h W]
-    using (le_rfl :
-      WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-        WorldModel.queryStrength (State := State) (Query := Query) W q₁)
+  simp [WMQueryEq.to_queryStrength (State := State) (Query := Query) h W]
 
 theorem WMStrengthLE.transport_left {q₁ q₁' q₂ : Query} :
     WMQueryEq (State := State) (Query := Query) q₁ q₁' →
@@ -259,6 +256,48 @@ theorem applyCtx {r : WMConsequenceRule State Query} {Γ : Set State} {W : State
   exact r.sound hSide W
 
 end WMConsequenceRule
+
+/-- A state-indexed strength consequence rule:
+side conditions are checked per-state instead of globally. -/
+structure WMConsequenceRuleOn (State Query : Type*) [EvidenceType State] [WorldModel State Query] where
+  side : State → Prop
+  premise : Query
+  conclusion : Query
+  sound : ∀ {W : State},
+    side W →
+      WorldModel.queryStrength (State := State) (Query := Query) W premise ≤
+        WorldModel.queryStrength (State := State) (Query := Query) W conclusion
+
+namespace WMConsequenceRuleOn
+
+variable {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+
+/-- Apply a state-indexed consequence rule to a derivable WM state. -/
+theorem apply {r : WMConsequenceRuleOn State Query} {W : State} :
+    r.side W → (⊢wm W) →
+      WorldModel.queryStrength (State := State) (Query := Query) W r.premise ≤
+        WorldModel.queryStrength (State := State) (Query := Query) W r.conclusion := by
+  intro hSide _hW
+  exact r.sound hSide
+
+/-- Apply a state-indexed consequence rule to a context-derivable WM state. -/
+theorem applyCtx {r : WMConsequenceRuleOn State Query} {Γ : Set State} {W : State} :
+    r.side W → (⊢wm[Γ] W) →
+      WorldModel.queryStrength (State := State) (Query := Query) W r.premise ≤
+        WorldModel.queryStrength (State := State) (Query := Query) W r.conclusion := by
+  intro hSide _hW
+  exact r.sound hSide
+
+/-- Promote a global-side consequence rule to a state-indexed one. -/
+def ofGlobal (r : WMConsequenceRule State Query) : WMConsequenceRuleOn State Query where
+  side := fun _ => r.side
+  premise := r.premise
+  conclusion := r.conclusion
+  sound := by
+    intro W hSide
+    exact r.sound hSide W
+
+end WMConsequenceRuleOn
 
 /-! ## Query-rewrite rules (Σ-guarded) -/
 /-! ## Query-rewrite rules (Σ-guarded) -/

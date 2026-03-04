@@ -28,6 +28,22 @@ The module connects probability theory, Heyting semantics, quantales, and Solomo
 
 - `Mettapedia/Logic/SemanticsDecisionTree.lean`
 
+## Generalized open-map bridge map
+
+- The generalized-open-map core lives in `Mettapedia/CategoryTheory/GeneralizedOpenMaps.lean`.
+- Weighted bridge file: `Mettapedia/Logic/WeightedOpenMaps.lean`
+  - theorem: `weightedBisim_iff_gopen_span`
+- OSLF bridge file: `Mettapedia/Logic/OSLFOpenMapBridge.lean`
+  - theorems: `pathBisim_implies_bisimilar`, `fullOpenWitness_implies_obsEq`,
+    `fullOpenWitness_not_distinguished`
+- Regression file: `Mettapedia/Logic/OpenMapBridgeRegression.lean`
+  - theorem checks: `weighted_equiv_regression`,
+    `pathBisim_to_bisimilar_regression`,
+    `fullOpenWitness_obsEq_regression`,
+    `fullOpenWitness_not_distinguished_regression`
+- Pi/ρ bridge location: `Mettapedia/Languages/ProcessCalculi/PiCalculus/WeakBisimOpenMapBridge.lean`
+  - theorem: `weakRestrictedBisim_iff_pathBisim`
+
 ## Chapter-11 quantifier regression
 
 - Chapter 11 quantifier regression is a one-command build target.
@@ -98,6 +114,25 @@ cd /home/zar/claude/lean-projects/mettapedia
 - `Mettapedia/Logic/PLNInferenceControlCore.lean`
 - `Mettapedia/Logic/PLNInferenceControlCanary.lean`
 - `Mettapedia/Logic/PLNInferenceControlRegression.lean`
+
+## Chapter-8 neighborhood consequence regression
+
+- Chapter 8 neighborhood consequence regression checks state-indexed WM consequence rules,
+  neighborhood modal/deontic lifts, and governance formula translation preservation.
+
+```bash
+cd /home/zar/claude/lean-projects/mettapedia
+ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \
+  lake build Mettapedia.Logic.PLNWorldModelNeighborhoodConsequence
+```
+
+```bash
+cd /home/zar/claude/lean-projects/mettapedia
+./scripts/check_ch8_neighborhood.sh
+```
+
+- `Mettapedia/Logic/PLNWorldModelNeighborhoodConsequence.lean`
+- `scripts/check_ch8_neighborhood.sh`
 
 ## Chapter-9 positive regression
 

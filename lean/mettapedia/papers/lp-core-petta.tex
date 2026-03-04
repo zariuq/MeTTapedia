@@ -59,7 +59,7 @@
 
 \begin{abstract}
 We present a Lean~4 formalization of the \PeTTa{} language---the Prolog-based
-implementation of \MeTTa{}---comprising 13{,}956 lines across 44 files with zero
+implementation of \MeTTa{}---comprising 14{,}624 lines across 47 files with zero
 sorries and zero custom axioms.  The formalization establishes a certified
 semantic stack from LP foundations through Prolog-style goal evaluation to an
 \OSLF{} type system with Galois connection and Rust code export.
@@ -568,7 +568,7 @@ $bs = [(\text{"y"}, b), (\text{"x"}, a)]$, so
 \label{sec:bridge}
 %% ====================================================================
 
-The bridge lives in \code{Logic/LP/MeTTaILBridge.lean} (783 lines).
+The bridge lives in \code{Logic/LP/MeTTaILBridge.lean} (847 lines).
 
 \subsection{LP Signature for \MeTTaIL{}}
 
@@ -772,7 +772,7 @@ def lpTranslatable (r : RewriteRule) : Bool :=
 
 \subsection{\PeTTa{} Atomspace}
 
-\code{OSLF/PeTTa/SpaceSemantics.lean} (160 lines) defines the atomspace structure:
+\code{Languages/MeTTa/PeTTa/SpaceSemantics.lean} (160 lines) defines the atomspace structure:
 
 \begin{lstlisting}[language=lean]
 structure PeTTaSpace where
@@ -803,7 +803,7 @@ produces an answer.
 
 \subsection{\PeTTa{} Evaluation Relation}
 
-\code{OSLF/PeTTa/Eval.lean} (187 lines) defines the inductive evaluation judgment:
+\code{Languages/MeTTa/PeTTa/Eval.lean} (187 lines) defines the inductive evaluation judgment:
 
 \begin{lstlisting}[language=lean]
 inductive PeTTaEval (s : PeTTaSpace) : Pattern -> Answers -> Prop where
@@ -869,7 +869,7 @@ fvar-matching LHS).
 
 \subsection{Compiling \PeTTa{} Spaces to LP}
 
-\code{OSLF/PeTTa/LPSoundness.lean} (255 lines) defines the compilation:
+\code{Languages/MeTTa/PeTTa/LPSoundness.lean} (255 lines) defines the compilation:
 
 \begin{lstlisting}[language=lean]
 def pettaSpaceToLangDef (s : PeTTaSpace) : LanguageDef where
@@ -952,7 +952,7 @@ but are stated over the full LP signature (not restricted to \code{mettailLPSig}
 \label{sec:chainer}
 %% ====================================================================
 
-\code{Logic/LP/PropositionalConnectionChainer.lean} (742 lines) provides a
+\code{Logic/LP/PropositionalConnectionChainer.lean} (1{,}245 lines) provides a
 connection-tableau proof object language aligned with the \PeTTa{} leanCoP-style
 canaries.  The module contains:
 \begin{itemize}
@@ -1070,7 +1070,12 @@ formalized and compiled.
 \code{Match.lean}             & 201 & algorithmic matcher & 0 \\
 \code{MatchSpec.lean}         & 821 & \codepath{matchPattern_correct} & 0 \\
 \hline
-\multicolumn{4}{l}{\textit{PeTTa Specification (\code{OSLF/PeTTa/})}} \\
+\multicolumn{4}{l}{\textit{Prolog Goal Language (\code{Logic/Prolog/})}} \\
+\code{Core.lean}              & 215 & \code{PrologGoal} inductive & 0 \\
+\code{Eval.lean}              & 404 & Prolog evaluation relation & 0 \\
+\code{Prolog.lean}            & 49  & module re-export & 0 \\
+\hline
+\multicolumn{4}{l}{\textit{PeTTa Specification (\code{Languages/MeTTa/PeTTa/})}} \\
 \code{Answers.lean}           & 121 & answer type & 0 \\
 \code{SpaceSemantics.lean}    & 160 & \codepath{spaceMatch} & 0 \\
 \code{Eval.lean}              & 187 & \codepath{PeTTaEval} & 0 \\
@@ -1087,7 +1092,7 @@ formalized and compiled.
 \code{OSLFInstance.lean}      & 144 & \codepath{pettaOSLF}, Galois, Rust export & 0 \\
 \code{GSLTVertex.lean}        & 103 & GSLT forward fiber & 0 \\
 \hline
-\textbf{Total (44 files)} & \textbf{13{,}956} & & \textbf{0} \\
+\textbf{Total (47 files)} & \textbf{14{,}624} & & \textbf{0} \\
 \hline
 \end{tabularx}
 \normalsize
@@ -1101,7 +1106,7 @@ formalized and compiled.
 \label{sec:effects}
 %% ====================================================================
 
-\code{OSLF/PeTTa/Effects.lean} (277 lines) extends the pure \code{PeTTaEval}
+\code{Languages/MeTTa/PeTTa/Effects.lean} (301 lines) extends the pure \code{PeTTaEval}
 relation with a stateful layer that models \PeTTa{}'s mutating atomspace
 operations.
 
@@ -1260,7 +1265,7 @@ theorem example_addThenGet :
 \label{sec:typesystem}
 %% ====================================================================
 
-\code{OSLF/PeTTa/TypeSystem.lean} (374 lines) formalizes the static fragment of
+\code{Languages/MeTTa/PeTTa/TypeSystem.lean} (374 lines) formalizes the static fragment of
 MeTTa's type system as an inductive judgment \code{MeTTaType s p t},
 meaning ``in atomspace \code{s}, pattern \code{p} has type \code{t}''.
 
@@ -1441,8 +1446,9 @@ goals before evaluation.  We formalize this pipeline in three files.
 
 \subsection{Prolog Goal Language}
 
-\code{Logic/Prolog/Prolog.lean} (referenced via \code{PrologBridge.lean}, 125 lines)
-defines a Prolog-style goal language:
+\code{Logic/Prolog/Core.lean} (215 lines) defines a Prolog-style goal language
+(re-exported via \code{Logic/Prolog/Prolog.lean} and referenced by
+\code{PrologBridge.lean}):
 
 \begin{lstlisting}[language=lean]
 inductive PrologGoal where
@@ -1518,7 +1524,7 @@ conservative catch-all for unrecognised forms.
 \label{sec:mettaeval}
 %% ====================================================================
 
-\code{OSLF/PeTTa/MeTTaEval.lean} (398 lines) refines \code{PeTTaEval} with three
+\code{Languages/MeTTa/PeTTa/MeTTaEval.lean} (398 lines) refines \code{PeTTaEval} with three
 orthogonal features: binding threading, error propagation, and type-driven pass-through.
 
 \subsection{The \code{MeTTaEval} Judgment}
@@ -1588,8 +1594,8 @@ evaluation and type soundness for the pass-through cases.
 \label{sec:oslf}
 %% ====================================================================
 
-\code{OSLF/PeTTa/OSLFInstance.lean} (144 lines) and
-\code{OSLF/PeTTa/GSLTVertex.lean} (103 lines) compose the \PeTTa{} specification
+\code{Languages/MeTTa/PeTTa/OSLFInstance.lean} (144 lines) and
+\code{Languages/MeTTa/PeTTa/GSLTVertex.lean} (103 lines) compose the \PeTTa{} specification
 stack into the \OSLF{} framework.
 
 \subsection{OSLF Type System}
@@ -1716,7 +1722,7 @@ refinement theorems.
 %% ====================================================================
 
 We have presented a Lean~4 formalization of the \PeTTa{} language comprising
-13{,}956 lines across 44 files with zero sorries and zero custom axioms.
+14{,}624 lines across 47 files with zero sorries and zero custom axioms.
 The formalization establishes a certified end-to-end pipeline: from LP
 foundations (Herbrand model, SLD resolution, unification completeness) through
 \MeTTaIL{} pattern matching correctness and LP soundness for \PeTTa{}
@@ -1799,7 +1805,7 @@ proved \\
 \hline
 \multicolumn{3}{l}{\textit{Prolog Compilation}} \\
 compileExpr ruleApp correctness &
-\codepath{compileExpr_ruleApp_iff} &
+\codepath{compileExpr_reduceCall_iff} &
 proved \\
 compileExpr match correctness &
 \codepath{compileExpr_match_correct} &

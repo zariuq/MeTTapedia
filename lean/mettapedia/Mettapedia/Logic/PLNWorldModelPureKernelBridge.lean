@@ -1,0 +1,191 @@
+import Mettapedia.Logic.PLNWorldModelCalculus
+import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
+
+/-!
+# PureKernel -> WM Obligation Bridge (Assumption-Parameterized)
+
+This module provides an explicit interpretation interface from closed PureKernel
+judgments into WM strength obligations, while keeping kernel/profile bridge
+assumptions parameterized.
+
+It does **not** alter PureKernel semantics; it only consumes already-proved
+bridge theorems as inputs.
+-/
+
+namespace Mettapedia.Logic.PLNWorldModelPureKernelBridge
+
+open Mettapedia.Logic.PLNWorldModel
+open Mettapedia.Logic.EvidenceClass
+open Mettapedia.Languages.MeTTa.PureKernel.Syntax
+open Mettapedia.Languages.MeTTa.PureKernel.Reduction
+open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+open Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
+open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
+open Mettapedia.OSLF.MeTTaIL.Syntax
+open scoped ENNReal
+
+/-- Closed bridge contract from PureKernel one-step reduction to C1 profile theory. -/
+abbrev PureClosedTheoryBridge : Prop :=
+  ∀ {t u : PureTm 0}, Red t u →
+    PureProfileTheoryStep (quoteClosedTm t) (quoteClosedTm u)
+
+/-- Closed bridge contract from PureKernel star reduction to C1 profile-theory star. -/
+abbrev PureClosedTheoryBridgeStar : Prop :=
+  ∀ {t u : PureTm 0}, RedStar t u →
+    PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u)
+
+/-- Star bridge is derivable from the one-step bridge by closure induction. -/
+theorem pureClosedTheoryBridge_to_star
+    (hbridge : PureClosedTheoryBridge) :
+    PureClosedTheoryBridgeStar := by
+  intro t u hstar
+  induction hstar with
+  | refl =>
+      exact Relation.ReflTransGen.refl
+  | tail hxy hyz ih =>
+      exact Relation.ReflTransGen.tail ih (hbridge hyz)
+
+/-- Local WM strength obligation for a fixed state/query pair. -/
+abbrev WMStrengthObligation
+    (State Query : Type*) [EvidenceType State] [WorldModel State Query]
+    (W : State) (q₁ q₂ : Query) : Prop :=
+  WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+    WorldModel.queryStrength (State := State) (Query := Query) W q₂
+
+/-- Explicit interpretation map from Pure/profile judgments into WM obligations.
+
+`encode` maps quoted `Pattern` terms into WM queries.
+`profileStep_sound` is the semantic contract: one C1 profile step transports to
+the corresponding WM strength inequality under `side` conditions.
+-/
+structure PureJudgmentWMInterface
+    (State Query : Type*) [EvidenceType State] [WorldModel State Query] where
+  encode : Pattern → Query
+  side : State → Prop := fun _ => True
+  profileStep_sound :
+    ∀ {W : State} {p q : Pattern},
+      side W →
+      PureProfileTheoryStep p q →
+      WMStrengthObligation State Query W (encode p) (encode q)
+
+namespace PureJudgmentWMInterface
+
+variable {State Query : Type*}
+variable [EvidenceType State] [WorldModel State Query]
+
+/-- C1 star closure transports to WM inequalities by transitivity. -/
+theorem profileStepStar_sound
+    (I : PureJudgmentWMInterface State Query)
+    {W : State} {p q : Pattern}
+    (hW : I.side W)
+    (hstar : PureProfileTheoryStepStar p q) :
+    WMStrengthObligation State Query W (I.encode p) (I.encode q) := by
+  induction hstar with
+  | refl =>
+      exact le_rfl
+  | tail hxy hyz ih =>
+      exact le_trans ih (I.profileStep_sound hW hyz)
+
+end PureJudgmentWMInterface
+
+variable {State Query : Type*}
+variable [EvidenceType State] [WorldModel State Query]
+
+/-- One-step closed PureKernel reduction transports to a WM strength obligation,
+provided an explicit closed bridge theorem is supplied. -/
+theorem pureTheoryStep_to_wmStrengthObligation
+    (I : PureJudgmentWMInterface State Query)
+    (hbridge : PureClosedTheoryBridge)
+    {W : State} {t u : PureTm 0}
+    (hW : I.side W)
+    (hred : Red t u) :
+    WMStrengthObligation State Query W
+      (I.encode (quoteClosedTm t))
+      (I.encode (quoteClosedTm u)) :=
+  I.profileStep_sound hW (hbridge hred)
+
+/-- Star closed PureKernel reduction transports to a WM strength obligation,
+using the same one-step closed bridge via closure lifting. -/
+theorem pureTheoryStepStar_to_wmStrengthObligation
+    (I : PureJudgmentWMInterface State Query)
+    (hbridge : PureClosedTheoryBridge)
+    {W : State} {t u : PureTm 0}
+    (hW : I.side W)
+    (hred : RedStar t u) :
+    WMStrengthObligation State Query W
+      (I.encode (quoteClosedTm t))
+      (I.encode (quoteClosedTm u)) := by
+  have hbridgeStar : PureClosedTheoryBridgeStar :=
+    pureClosedTheoryBridge_to_star hbridge
+  exact
+    I.profileStepStar_sound hW (hbridgeStar hred)
+
+/-- Package a closed PureKernel one-step as a state-indexed WM consequence rule. -/
+def wmConsequenceRuleOn_of_closed_pureTheoryStep
+    (I : PureJudgmentWMInterface State Query)
+    (hbridge : PureClosedTheoryBridge)
+    {t u : PureTm 0}
+    (hred : Red t u) :
+    WMConsequenceRuleOn State Query where
+  side := I.side
+  premise := I.encode (quoteClosedTm t)
+  conclusion := I.encode (quoteClosedTm u)
+  sound := by
+    intro W hW
+    exact pureTheoryStep_to_wmStrengthObligation I hbridge hW hred
+
+/-- Package a closed PureKernel star reduction as a state-indexed WM consequence rule. -/
+def wmConsequenceRuleOn_of_closed_pureTheoryStepStar
+    (I : PureJudgmentWMInterface State Query)
+    (hbridge : PureClosedTheoryBridge)
+    {t u : PureTm 0}
+    (hred : RedStar t u) :
+    WMConsequenceRuleOn State Query where
+  side := I.side
+  premise := I.encode (quoteClosedTm t)
+  conclusion := I.encode (quoteClosedTm u)
+  sound := by
+    intro W hW
+    exact pureTheoryStepStar_to_wmStrengthObligation I hbridge hW hred
+
+/-! ## WM-side regression canaries (consume existing PureKernel regressions) -/
+
+/-- Canary: the one-nested-binder beta transport theorem from `CoreEmbedding`
+induces a concrete WM obligation witness under the interpretation interface. -/
+theorem canary_betaPi_bridge_regression_one_nestedLam_wm
+    (I : PureJudgmentWMInterface State Query)
+    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
+    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
+    {W : State}
+    (hW : I.side W) :
+    ∃ p q : Pattern,
+      PureProfileTheoryStep p q ∧
+      WMStrengthObligation State Query W (I.encode p) (I.encode q) := by
+  let hreg :=
+    betaPi_bridge_regression_one_nestedLam_assuming_inst0 hinst0 hcompat0
+  have hregExists : ∃ p q : Pattern, PureProfileTheoryStep p q := by
+    exact ⟨_, _, hreg⟩
+  rcases hregExists with ⟨p, q, hstep⟩
+  refine ⟨p, q, hstep, ?_⟩
+  exact I.profileStep_sound hW hstep
+
+/-- Canary: the two-nested-binder beta transport theorem from `CoreEmbedding`
+induces a concrete WM obligation witness under the interpretation interface. -/
+theorem canary_betaPi_bridge_regression_two_nestedLam_wm
+    (I : PureJudgmentWMInterface State Query)
+    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
+    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
+    {W : State}
+    (hW : I.side W) :
+    ∃ p q : Pattern,
+      PureProfileTheoryStep p q ∧
+      WMStrengthObligation State Query W (I.encode p) (I.encode q) := by
+  let hreg :=
+    betaPi_bridge_regression_two_nestedLam_assuming_inst0 hinst0 hcompat0
+  have hregExists : ∃ p q : Pattern, PureProfileTheoryStep p q := by
+    exact ⟨_, _, hreg⟩
+  rcases hregExists with ⟨p, q, hstep⟩
+  refine ⟨p, q, hstep, ?_⟩
+  exact I.profileStep_sound hW hstep
+
+end Mettapedia.Logic.PLNWorldModelPureKernelBridge

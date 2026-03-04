@@ -1,6 +1,7 @@
 import Mettapedia.Logic.PLNIntensionalWorldModel
 import Mettapedia.Logic.IntensionalInheritanceSolomonoffBridge
 import Mettapedia.Logic.PLNCanonicalAPI
+import Mettapedia.Logic.PLNIntensionalAssocPatClosure
 import Mettapedia.Logic.PLNIntensionalCanary
 
 /-!

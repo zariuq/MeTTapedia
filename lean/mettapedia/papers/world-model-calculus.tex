@@ -1,0 +1,1038 @@
+%% World-Model Calculus for Probabilistic Logic Networks
+%%
+%% Render with:
+%%   tectonic world-model-calculus.tex
+%% Or:
+%%   pdflatex world-model-calculus.tex && bibtex world-model-calculus \
+%%   && pdflatex world-model-calculus.tex && pdflatex world-model-calculus.tex
+
+\documentclass[]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage[hyperindex,breaklinks]{hyperref}
+%\usepackage{breakurl}  % incompatible with pdflatex/tectonic
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  extendedchars=false,
+  literate={->}{$\to$}{2} {<->}{$\leftrightarrow$}{3}
+           {forall}{$\forall$}{6} {exists}{$\exists$}{6}
+}
+\usepackage{float}
+\restylefloat{table}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{enumitem}
+\usepackage{booktabs}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\Evidence}{\mathsf{Evidence}}
+\newcommand{\State}{\mathsf{State}}
+\newcommand{\Query}{\mathsf{Query}}
+\newcommand{\WM}{\mathsf{WM}}
+\newcommand{\revise}{\mathbin{\oplus}}
+\newcommand{\tensor}{\mathbin{\otimes}}
+\newcommand{\Strength}{\mathsf{strength}}
+\newcommand{\ev}{\mathsf{evidence}}
+\newcommand{\side}{\Sigma}
+
+\title{World-Model Calculus for Probabilistic Logic Networks:\\
+  Evidence, Views, and $\Sigma$-Guarded Compiled Inference\\
+  \texttt{(DRAFT --- \today)}}
+\author{Zar\footnote{Corresponding author.}
+\and Oru\v{z}i\footnote{``Oru\v{z}i'' denotes AI-assisted collaboration
+using Claude Code (Anthropic, Opus 4.6), Codex (OpenAI, GPT-5.*), and
+ChatGPT Pro (GPT-5.*). Co-authored under human direction.}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a \emph{World-Model (WM) calculus} for Probabilistic Logic
+Networks (PLN), formalized in Lean~4 as part of the \code{Mettapedia}
+repository.
+
+The guiding principle is: \emph{PLN inference is stateful posterior revision
+plus evidence extraction}, and ``fast PLN rules'' are \emph{compiled,
+$\Sigma$-guarded rewrites} whose soundness is discharged relative to a
+declared \emph{world-model class} (Bayesian network, factor graph, joint
+evidence, etc.).
+
+We separate:
+(i)~\textbf{evidence} as a rich algebraic object (quantale/Heyting-valued),
+(ii)~\textbf{views} (probabilities, STVs/WTVs, typicalities) as explicit
+projections from evidence, and
+(iii)~\textbf{tractable sublayers} where inference is exact relative to
+assumptions (e.g.\ d-separation).
+We explain how this architecture supports message passing / activation
+spreading, how to make approximation risk explicit, and how to integrate
+quantifiers via satisfying-set semantics and Goertzel-style weakness.
+We show that the WM calculus is not merely an abstract evidence API: it
+can faithfully host both Kripke and neighborhood modal semantics as
+concrete instantiations, recovering ordinary pointed-model truth on
+singleton states and yielding an evidential ensemble semantics on
+multisets. The neighborhood instance admits the strongest bridge: an
+implication-level soundness/completeness theorem connecting proof-theoretic
+derivability to WM consequence inequalities. A partial governance-fragment
+translation into neighborhood semantics is also provided.
+
+Finally, we outline soundness and (fragmented) completeness results
+relative to chosen semantics.
+
+\paragraph{Status note.}
+Lean-proven claims are those tied to explicit Lean file/theorem references
+(primarily \S\ref{sec:artifacts}). Other sections are research synthesis,
+design rationale, or roadmap. Verify against current build outputs before
+citing as formalization state.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% ============================================================
+\section{Introduction}
+\label{sec:intro}
+%% ============================================================
+
+PLN aims to support \emph{probabilistic reasoning in open-ended domains}:
+uncertain facts, imperfect independence, and large-scale inference control.
+The historical friction is well-known:
+
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Local truth-value rules are not globally complete.}
+Even with local evidence for $A,B,C$ and links $A\Rightarrow B$,
+$B\Rightarrow C$, the \emph{exact} evidence for $A\Rightarrow C$ cannot in
+general be computed without joint correlation information.
+\item \textbf{Independence assumptions are the real price.}
+When is a Markov/d-separation assumption justified? What happens when it is
+violated? How do you quantify drift~\cite{Pearl1988}?
+\item \textbf{Operational factor graphs are not automatically semantics.}
+A message-passing graph whose factors are ``deduction'' or ``induction''
+update formulas is useful for search, but semantically correct only when
+those factors are \emph{compiled} from a true world-model factorization (or
+guarded by explicit assumptions).
+\end{itemize}
+
+The design answer:
+
+\begin{quote}
+\textbf{Keep the semantic kernel small and honest.}
+World-model states revise under evidence, and queries extract evidence.
+Everything else---truth values, probabilities, ``fast rules'', message
+passing---are \emph{explicit views and $\Sigma$-guarded tactics} whose
+validity is proved \emph{relative to a declared model class}.
+\end{quote}
+
+This aligns several foundational perspectives:
+Kolmogorov/Cox/Knuth--Skilling give valuation axioms and regraduation
+principles~\cite{KnuthSkilling2012},
+Kohlas--Shenoy give algebraic local computation~\cite{KohlasShenoy2000},
+and Meredith/Stay want the categorical/process structure to stay
+compositional.
+
+
+%% ============================================================
+\section{The WM Kernel: States, Revision, and Queries}
+\label{sec:kernel}
+%% ============================================================
+
+\subsection{World-model interface}
+
+At the semantic core we posit:
+\begin{itemize}[leftmargin=2em]
+\item a type of world-model states $W:\State$,
+\item a type of queries $q:\Query$,
+\item an evidence type $\Evidence$, and
+\item operations \emph{revision} and \emph{evidence extraction}.
+\end{itemize}
+
+Conceptually:
+\[
+  W \revise \Delta \;\;\text{is revision of state $W$ by new evidence
+  $\Delta$,} \qquad
+  \ev(W,q)\in \Evidence \;\;\text{is evidence for $q$ in state $W$.}
+\]
+
+In Lean this is packaged as a \code{WorldModel} typeclass with an
+\code{EvidenceType} for states. The essential law is \textbf{additivity of
+evidence extraction under revision}:
+\[
+  \ev(W_1 \revise W_2, q) = \ev(W_1,q) \revise \ev(W_2,q).
+\]
+This is the ``semantic spine'' that makes revision and querying behave like
+a calculus.
+
+For the concrete \code{PathMap}/\code{Finset}$\,\alpha$ instance, this law
+is Lean-proven as \code{pjoin\_evidence\_additive} in
+\code{OSLF/PathMap/PLNBridge.lean}: for disjoint stores $W_1 \perp W_2$,
+\[
+  \ev(W_1 \cup W_2, q) = \ev(W_1,q) \oplus \ev(W_2,q),
+\]
+where $\ev(W,q) = (|W \cap q|,\, |W \setminus q|)$. The proof also
+establishes the K\&S sum rule ($n^+ + n^- = |W|$), monotonicity, the
+Bayesian conditioning partition, and the STV connection
+($\Strength = |W\cap q|/|W|$). Axioms: standard Lean kernel only.
+
+A \code{Multiset}$\,\alpha$ variant (\code{WorldModelBridge.lean})
+resolves the idempotency obstacle: \code{Finset} union is idempotent
+($W \cup W = W$), breaking \code{evidence\_add} for non-disjoint pairs.
+\code{Multiset} sum is the free commutative monoid, enabling proper
+non-idempotent revision.
+
+
+\subsection{Judgments as a proof-calculus skeleton}
+\label{sec:judgments}
+
+The WM kernel yields sequent-style judgments:
+
+\begin{itemize}[leftmargin=2em]
+\item $\vdash_{\WM} W$ --- \emph{$W$ is a derivable WM state},
+\item $\vdash_q\, W \Downarrow q \mapsto e$ --- \emph{from state $W$,
+  query $q$ yields evidence $e$},
+\item $\vdash_s\, W \Downarrow q \mapsto s$ --- a scalar \emph{strength
+  view}.
+\end{itemize}
+
+This is already a \emph{proof calculus}, but a \emph{stateful} one: proof
+objects are states and evidence terms, not only formulas.
+
+Three judgment variants track provenance at increasing precision:
+
+\begin{enumerate}[leftmargin=2em]
+\item \code{WMJudgment W} --- context-free: ``$W$ is derivable.''
+\item \code{WMJudgmentCtx}~$\Gamma$~$W$ --- set-indexed: ``$W$ is
+  derivable from states in $\Gamma$.'' Tightens the trust boundary.
+\item \code{WMJudgmentMulti}~$\Gamma$~$W$ --- multiset-indexed: tracks
+  multiplicities. Records if the same observation was used twice.
+\end{enumerate}
+
+
+\subsection{Query equivalence and $\Sigma$-guarded rewrites}
+\label{sec:rewrites}
+
+\begin{definition}[Query equivalence]
+Two queries $q_1,q_2$ are \emph{evidence-equivalent} if
+\[
+  \forall W.\;\; \ev(W,q_1)=\ev(W,q_2).
+\]
+\end{definition}
+
+A ``PLN inference rule'' is packaged as a sound rewrite:
+
+\begin{definition}[$\Sigma$-guarded rewrite rule]
+\label{def:rewrite}
+A rewrite rule consists of:
+\begin{itemize}[leftmargin=2em]
+\item a side condition $\side$ (a proposition),
+\item a conclusion query $q$,
+\item a derived evidence term $\mathrm{derive}(W)$, and
+\item a proof that $\side \Rightarrow \forall W.\;
+  \mathrm{derive}(W)=\ev(W,q)$.
+\end{itemize}
+\end{definition}
+
+Many PLN rules rewrite only the \emph{strength view}: they prove an
+identity about $\Strength(\ev(W,q))$ rather than about full evidence.
+
+Query equivalence admits three levels of refinement, all formalized:
+\begin{itemize}[leftmargin=2em]
+\item \code{WMQueryEq} --- full evidence equality (strongest).
+\item \code{WMEvidenceLE} --- pointwise dominance (preorder).
+  Antisymmetry recovers \code{WMQueryEq}.
+\item \code{WMViewEq} --- agreement after projecting through a view
+  function $v : \Evidence \to X$ (weakest).
+\end{itemize}
+
+
+%% ============================================================
+\section{Evidence vs Views}
+\label{sec:evidence}
+%% ============================================================
+
+\subsection{Evidence as an algebraic object}
+
+PLN needs an evidence object that encodes positive and negative support,
+partial truth / paraconsistency, monotone aggregation, and (in some
+sublayers) conjugate-prior counts.
+
+The concrete type is:
+\[
+  \Evidence = (n^+, n^-) \in \mathbb{R}_{\ge 0}^\infty \times
+  \mathbb{R}_{\ge 0}^\infty.
+\]
+This forms:
+\begin{itemize}[leftmargin=2em]
+\item a \textbf{complete lattice} (coordinatewise $\le$),
+\item a \textbf{commutative monoid} under $\oplus$ (coordinatewise
+  addition: evidence aggregation),
+\item a \textbf{commutative monoid} under $\otimes$ (coordinatewise
+  product: sequential composition),
+\item a \textbf{quantale}: $\otimes$ distributes over arbitrary joins.
+\end{itemize}
+
+All algebraic laws are Lean-proven in \code{EvidenceQuantale.lean}.
+
+
+\subsection{Views as projections}
+
+A \textbf{view} is a function $v:\Evidence\to X$, chosen for operational
+convenience:
+\[
+  \text{strength}\quad s(e) \in [0,1], \qquad
+  \text{confidence}\quad c(e) \in [0,1], \qquad
+  \text{ITV}\quad [l,u] \subseteq [0,1].
+\]
+Views \emph{must be explicit}, because they necessarily forget information.
+This enforcement prevents silent unsoundness.
+
+\begin{remark}[The totality gate]
+If $\Evidence$ has incomparable elements, there is no faithful
+order-embedding into $\mathbb{R}$. So a single real-valued view cannot be
+globally complete. This is not a bug; it is a statement about what
+information you are discarding.
+\end{remark}
+
+The view layer is parameterized by \code{InterpretableEvidence}:
+\begin{itemize}[leftmargin=2em]
+\item \code{BinaryContext} (Beta priors) --- Bayesian strength/confidence.
+\item \code{ContinuousContext} (Normal-Gamma) --- continuous inference.
+\item \code{CategoricalContext} (Dirichlet) --- multinomial inference.
+\end{itemize}
+
+ITV (Indefinite Truth Value) semantics provide credible intervals on both
+Bayesian (Beta posterior) and Walley IDM
+branches~\cite{Walley1996BagOfMarbles}.
+
+
+%% ============================================================
+\section{No-Go Theorem}
+\label{sec:nogo}
+%% ============================================================
+
+A foundational result proved in Lean:
+
+\begin{theorem}[No local complete link-deduction rule]
+\label{thm:nogo}
+There is no function
+\[
+  f:\Evidence^5\to \Evidence
+\]
+that takes only local link/proposition evidence (for $A,B,C$ and
+$A\Rightarrow B$, $B\Rightarrow C$) and returns the exact evidence for
+$A\Rightarrow C$ for all world-model states.
+\end{theorem}
+
+\noindent
+Interpretation: \textbf{correlations live in the joint state.} ``Fast PLN
+rules'' must be framed as admissible rewrites under assumptions; they are
+not globally complete. This no-go is the reason the WM calculus is
+\emph{state-first}: the state carries whatever correlation structure is
+needed.
+
+See \code{PLNJointEvidenceNoGo.lean} for the Lean proof.
+
+
+%% ============================================================
+\section{Tractable Sublayers}
+\label{sec:sublayers}
+%% ============================================================
+
+\subsection{World-model classes and $\Sigma$ side conditions}
+
+To scale, we restrict the class of admissible states:
+\[
+  \mathcal{C} \subseteq \State
+  \quad \text{(e.g.\ DAG-factorizing BNs, Markov random fields, etc.)}.
+\]
+Inside such a class, additional theorems (screening-off, d-separation) hold
+and can be compiled into admissible rewrite rules~\cite{Pearl1988}.
+
+Side conditions $\side$ include:
+\begin{itemize}[leftmargin=2em]
+\item structural hypotheses (a particular DAG/factorization),
+\item conditional independence (from d-separation),
+\item positivity/nondegeneracy (to avoid division by $0$),
+\item approximation/error ledger invariants.
+\end{itemize}
+
+
+\subsection{Variable elimination as exact query engine}
+
+Given a discrete factor graph (or BN compiled to a factor graph), we
+compute unnormalized weights by variable elimination (VE)~\cite{Dechter1999}:
+\[
+  Z(\text{constraints}) \;=\; \sum_{\text{consistent assignments}}
+  \prod_f \phi_f.
+\]
+In Lean, a generic VE engine is implemented for factor graphs parameterized
+by a semiring $K$, with specialization to $\mathbb{R}_{\ge 0}^\infty$.
+
+\begin{remark}
+A \code{CommSemiring} assumption is \emph{stronger} than separate
+\code{AddCommMonoid}+\code{Mul}, but it is not ``making it a ring.''
+Rings add additive inverses; semirings do not. VE is ``sum of products''
+and needs distributivity.
+\end{remark}
+
+
+\subsection{Fast PLN rules as compiled tactics}
+
+A PLN rule (e.g.\ deduction) becomes:
+
+\begin{quote}
+A $\Sigma$-guarded rewrite of a hard query into smaller queries, together
+with a proof that the strength view of the conclusion equals the rule
+formula applied to the strength views of the premises.
+\end{quote}
+
+This is a \emph{strength-level} rewrite unless the model class supplies a
+law of evidence flow. The evidence for the conclusion is still obtained by
+querying the WM state, unless stronger results hold.
+
+Concrete instances include BN screening-off
+(\code{PLNBNCompilation.lean}) and fast Bayesian-network
+rules (\code{PLNBayesNetFastRules.lean}).
+
+
+%% ============================================================
+\section{Knuth--Skilling Bridges}
+\label{sec:ks}
+%% ============================================================
+
+Knuth--Skilling (K\&S) ``foundations of inference'' axiomatize valuation
+schemes on lattices~\cite{KnuthSkilling2012}. In our setting, K\&S plays
+two roles:
+
+\begin{enumerate}[leftmargin=2em]
+\item \textbf{Probability as a valuation/view.}
+Within Boolean world sets, probabilities arise as valuations.
+\item \textbf{Regraduation bridges for computation.}
+K\&S representation theorems justify mapping an abstract valuation to a
+real scale where combination becomes addition:
+\[
+  \Theta(x \star y) = \Theta(x) + \Theta(y).
+\]
+This is explicitly a \textbf{scale change}, not probability normalization.
+\end{enumerate}
+
+This matters for PLN because it provides a principled bridge between
+abstract evidence/valuation objects and numerical algorithms; it lets the
+VE engine operate over K\&S-valued factor graphs after regrading; and it
+keeps ``probability'' as a \emph{view} rather than the foundational type.
+
+The Lean formalization lives in
+\code{KnuthSkilling/Bridges/ValuationAlgebra.lean}.
+
+
+%% ============================================================
+\section{Factor Graphs: Semantics vs Control}
+\label{sec:fg}
+%% ============================================================
+
+A key conceptual cleanup:
+
+\begin{enumerate}[leftmargin=2em]
+\item \textbf{Semantic factor graphs:} factors \emph{are the model}.
+They represent a genuine factorization (BN/MRF), and VE / junction tree is
+exact relative to that model class.
+\item \textbf{Operational factor graphs:} factors are rule schemas or
+control edges. Message passing is a heuristic that schedules which queries
+to ask. It becomes \emph{semantics} only after compilation: each
+operational factor is justified by a semantic factor (or by a proven
+admissible rewrite under $\Sigma$).
+\end{enumerate}
+
+
+\subsection{Evidence ledgers and provenance}
+
+Message passing, activation spreading, and positive feedback loops are not
+disallowed. They need accountability:
+
+\begin{itemize}[leftmargin=2em]
+\item Track provenance and overlap to avoid double-counting evidence.
+\item Track $\Sigma$ hypotheses explicitly.
+\item Maintain a ledger of approximation error / drift estimates.
+\end{itemize}
+
+Evidence sources can overlap (shared observations, ``data incest'').
+A principled fix is a \textbf{partial} commutative monoid (separation
+algebra): $W_1 \revise W_2$ is defined only when fragments are known
+independent/disjoint. If disjointness is uncertain, either keep fragments
+separate (delayed fusion) or fuse conservatively using
+bounds~\cite{Walley1996BagOfMarbles}.
+
+
+%% ============================================================
+\section{Quantifiers in the WM Calculus}
+\label{sec:quantifiers}
+%% ============================================================
+
+PLN must support probabilistic reasoning over quantified claims.
+
+\subsection{Satisfying sets and weakness}
+
+A clean PLN-compatible semantics treats a predicate as a frame-valued
+satisfying set:
+\[
+  \chi_P : U \to \Evidence,
+\]
+analogous to a subobject classifier in a
+topos~\cite{MacLaneMoerdijk1992}. Universal quantification is evaluated
+via Goertzel's \emph{weakness} on the diagonal relation:
+\[
+  \forall x.\,P(x)
+  \quad\leadsto\quad
+  \mathrm{weakness}_\mu\big(\{(u,v)\mid P(u)\wedge P(v)\}\big).
+\]
+
+Two distinct quantifier views are kept separate:
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Extensional (classical) quantifiers:} ``all individuals satisfy.''
+\item \textbf{Typicality quantifiers:} ``generality'' measured by
+  weakness/diagonal mass.
+\end{itemize}
+
+The separation prevents subtle category mistakes: typicality is not
+classical $\forall$, but it is exactly what many PLN uses want.
+
+In the WM architecture, quantified statements are simply queries $q$: the
+world model state decides how to compute $\ev(W,q)$. Different
+world-model classes yield different quantifier semantics: finite-domain
+exact, sampled approximate, or quasi-Borel/infinite.
+
+See \code{PLNFirstOrder/QuantifierSemantics.lean}.
+
+
+\subsection{Higher-order quantification}
+
+Quantifying over predicates is hard in crisp logics.
+Probabilistic semantics changes the game:
+
+\begin{itemize}[leftmargin=2em]
+\item \textbf{HO probabilities can be flattened.}
+Kyburg argues that second-order probabilities add no conceptual
+power~\cite{Kyburg1988}: they can be represented as ordinary joint
+distributions over expanded spaces.
+\item \textbf{Henkin semantics as a pragmatic HO target.}
+Quantify only over a chosen collection of predicates, yielding
+completeness metatheorems analogous to FO settings.
+\item \textbf{Quasi-Borel / measurable HO as the long game.}
+HO quantification can be interpreted as integration over function
+spaces---difficult, but mathematically well-defined.
+\end{itemize}
+
+
+%% ============================================================
+\section{Connections}
+\label{sec:connections}
+%% ============================================================
+
+\subsection{Temporal/fixpoint reasoning}
+
+Once reasoning becomes stateful (WM revision) and iterative (message
+passing), temporal/fixpoint logics become natural. The modal
+$\mu$-calculus provides a bridge: temporal operators (``eventually'',
+``always'') can be presented as least/greatest fixpoints; PLN temporal
+operators embed under a suitable semantics; and fixpoint structure aligns
+with recurrent ``anchor states'' and invariant tracking.
+
+\subsection{Process calculi and linear logic}
+
+WM states can be treated as \emph{resources} (linear logic flavor).
+Revision is a commutative monoidal addition of evidence/resources. Query
+answering is a form of observation (a morphism out of state). Operational
+factor graphs become process networks, while the WM semantics provides
+correctness conditions.
+
+\subsection{Intensional world models}
+
+The intensional layer (\code{PLNIntensionalWorldModel.lean}) extends
+queries with sort-indexed channels: extensional, intensional-ASSOC,
+intensional-PAT, and mixed inheritance. This is packaged as
+\code{WorldModelSigma} --- a typed variant where queries form a dependent
+family $\Query : \mathsf{Srt} \to \mathsf{Type}$.
+
+
+%% ============================================================
+\section{What ``Sound and Complete'' Should Mean Here}
+\label{sec:metatheory}
+%% ============================================================
+
+\subsection{Soundness}
+
+For a fragment $\mathcal{L}$ and semantics $[\![\cdot]\!]$:
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Kernel soundness:} revision/query laws (additivity).
+\item \textbf{Rewrite soundness:} each $\Sigma$-guarded rule preserves
+  the chosen view.
+\item \textbf{Approximate soundness:} rules preserve bounds or carry
+  explicit error budget.
+\end{itemize}
+
+\subsection{Completeness (fragmented, but meaningful)}
+
+Completeness is stated relative to a declared semantics and fragment:
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Propositional:} evidence-quantale semantics vs
+  IPL/intermediate logics.
+\item \textbf{First-order:} satisfying-set/weakness quantifiers (finite
+  or Henkin FO).
+\item \textbf{BN fragment:} completeness relative to BN query answering
+  (VE/junction tree).
+\item \textbf{Higher-order:} Henkin completeness; QBS as aspirational.
+\end{itemize}
+
+This is not a retreat. It is how serious proof theory works: different
+fragments have different theorems.
+
+
+%% ============================================================
+\section{Lean Artifact Map}
+\label{sec:artifacts}
+%% ============================================================
+
+The main Lean artifacts (all in \code{Mettapedia/}):
+
+\begin{longtable}{p{0.55\textwidth}p{0.4\textwidth}}
+\hline
+\textbf{File} & \textbf{Role} \\ \hline
+\endhead
+\code{Logic/EvidenceClass.lean} & Evidence typeclasses,
+  \code{InterpretableEvidence}, contexts \\
+\code{Logic/EvidenceQuantale.lean} & \code{Evidence} structure, complete
+  lattice, quantale, views \\
+\code{Logic/PLNWorldModel.lean} & WM kernel: \code{WorldModel},
+  \code{PLNQuery}, \code{WMJudgment} \\
+\code{Logic/PLNWorldModelCalculus.lean} & $\Sigma$-guarded rewrites,
+  \code{WMQueryEq}, strength rules \\
+\code{Logic/PLNJointEvidence.lean} & \code{JointEvidence} (Dirichlet over
+  worlds) \\
+\code{Logic/PLNJointEvidenceNoGo.lean} & No-go theorem
+  (Theorem~\ref{thm:nogo}) \\
+\code{Logic/PLNBayesNetWorldModel.lean} & BN sublayer: CPT evidence,
+  marginalization \\
+\code{Logic/PLNBNCompilation.lean} & Screening-off rewrites for BN \\
+\code{Logic/PLNBayesNetFastRules.lean} & Compiled fast BN rules \\
+\code{Logic/PLNIntensionalWorldModel.lean} & Sort-indexed queries,
+  \code{WorldModelSigma} \\
+\code{Logic/PLNWorldModelITV.lean} & ITV semantics (Bayes and
+  Walley~IDM) \\
+\code{Logic/PLNWorldModelITVHypercube.lean} & Interval-selector layer,
+  typed ITV transport \\
+\code{Logic/PLNCanonicalAPI.lean} & One-call end-to-end endpoints \\
+\code{Logic/PLNFirstOrder/QuantifierSemantics.lean} & Extensional vs
+  typicality quantifiers \\
+\code{ProbabilityTheory/BayesianNetworks/FactorGraph.lean} & Factor graph
+  semantics \\
+\code{ProbabilityTheory/BayesianNetworks/VariableElimination.lean} & VE
+  query engine \\
+\code{ProbabilityTheory/KnuthSkilling/Bridges/ValuationAlgebra.lean} &
+  K\&S regraduation bridge \\
+\code{OSLF/PathMap/PLNBridge.lean} & PathMap $\leftrightarrow$ PLN
+  evidence bridge \\
+\code{OSLF/PathMap/WorldModelBridge.lean} & Multiset WM instance \\
+\code{Logic/LP/WorldModelBridge.lean} & LP least Herbrand model bridge \\
+\code{OSLF/Framework/QuantaleCoherence.lean} & Quantale
+  transport/coherence \\
+\code{Logic/PLNWorldModelKripke.lean} & Kripke WM instance,
+  singleton adequacy \\
+\code{Logic/PLNWorldModelKripkeConsequence.lean} & Deontic Kripke
+  consequence rules \\
+\code{Logic/PLNWorldModelKripkeCompleteness.lean} & Kripke
+  sound/complete proof-theoretic bridge \\
+\code{Logic/PLNWorldModelNeighborhood.lean} & Neighborhood WM instance,
+  singleton adequacy \\
+\code{Logic/PLNWorldModelNeighborhoodCompleteness.lean} &
+  Sound/complete proof-theoretic bridge \\
+\code{Logic/PLNWorldModelNeighborhoodConsequence.lean} & Governance
+  translation, modal families \\
+\code{Logic/PLNWorldModelKripkeNeighborhoodEmbedding.lean} &
+  Generic Kripke-to-neighborhood embedding \\
+\code{Logic/PLNWorldModelKripkeNeighborhoodCanonical.lean} &
+  Canonical representation bridge \\
+\code{Logic/PLNWorldModelKripkeWeighted.lean} &
+  Weighted/trusted-gate multiset semantics \\
+\hline
+\end{longtable}
+
+All files build with zero sorries and standard Lean kernel axioms only
+(\code{propext}, \code{Classical.choice}, \code{Quot.sound}).
+
+
+%% ============================================================
+\section{Modal Semantics Instantiations}
+\label{sec:modal}
+%% ============================================================
+
+The generic WM kernel (\S\ref{sec:kernel}) is a semantic evaluation
+framework: every state is derivable, and query judgments deterministically
+extract evidence. The question is whether this framework can host
+\emph{real} modal semantics---not merely as illustration, but with genuine
+adequacy and proof-theoretic closure. This section describes nine Lean
+files (2{,}913 lines total, zero sorries) that answer affirmatively.
+
+
+\subsection{Kripke WM instance}
+\label{sec:kripke-wm}
+
+A \code{PointedKripke} structure pairs a Kripke model (frame + valuation)
+with a designated world. A multiset of such structures forms a WM state,
+and evidence is extracted by counting satisfaction and refutation across
+the ensemble:
+\[
+  \ev(\{m_1,\ldots,m_n\},\,\varphi)
+  = \bigl(|\{i \mid m_i \models \varphi\}|,\;
+         |\{i \mid m_i \not\models \varphi\}|\bigr).
+\]
+
+Here $m$ denotes a \emph{pointed Kripke model} (a Kripke frame with
+valuation plus a designated world), $\varphi$ is a modal formula
+(\code{Formula~$\mathbb{N}$} in the Lean source), and $W$ is a multiset
+of such pointed models.
+The key adequacy result recovers crisp modal truth on singleton
+(single-pointed-model) states:
+
+\begin{theorem}[Singleton adequacy]
+\label{thm:singleton-kripke}
+For any pointed Kripke model $m$ and modal formula $\varphi$,
+$m \models \varphi \;\iff\; \Strength(\{m\},\,\varphi) = 1.$
+\end{theorem}
+
+\noindent
+This is Lean-proven as \code{singleton\_adequacy\_strength\_one} in
+\code{PLNWorldModelKripke.lean} (242~lines).
+
+There is also a \emph{consequence lifting} theorem: if
+$\forall m.\;m \models \varphi \Rightarrow m \models \psi$ (quantifying
+over all pointed Kripke models $m$), then
+$\Strength(W,\varphi) \le \Strength(W,\psi)$ for every multiset state
+$W$ (a \code{Multiset PointedKripke}).
+Singleton semantic implication is equivalent to singleton strength
+consequence (\code{pointwiseImplies\_iff\_singletonStrengthLE}).
+
+
+\subsection{Deontic Kripke consequence rules}
+\label{sec:deontic-kripke}
+
+A \code{PointedDeonticKripke} structure extends the above with
+labelled-transition-system deontic accessibility. Two modal/deontic
+theorems are lifted into WM consequence rules:
+
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Reflexive rule:}
+  $\Strength(W,\,\mathrm{rexist}(\varphi)) \le \Strength(W,\,\varphi)$.
+\item \textbf{DTS obligation--permission:}
+  $\Strength(W,\,\mathrm{ob}(\varphi)) \le \Strength(W,\,\mathrm{pe}(\varphi))$.
+\end{itemize}
+
+\noindent
+Both are packaged as \code{WMConsequenceRule} instances (see
+\code{PLNWorldModelKripkeConsequence.lean}, 206~lines). This turns
+modal/deontic theorems into \emph{operational WM consequence rules}
+rather than leaving them as abstract semantic lemmas.
+
+
+\subsection{Neighborhood WM instance}
+\label{sec:neighborhood-wm}
+
+The neighborhood instantiation is structurally parallel to the Kripke one:
+a \code{PointedNeighborhood} pairs a neighborhood model with a world, and
+evidence counts neighborhood-satisfaction across a multiset ensemble.
+Singleton adequacy and consequence lifting hold by the same schema
+(\code{PLNWorldModelNeighborhood.lean}, 274~lines).
+
+
+\subsection{Neighborhood soundness/completeness bridge}
+\label{sec:neighborhood-sc}
+
+The strongest result in this batch connects proof-theoretic derivability
+to WM consequence. Given a neighborhood proof system $\mathcal{S}$ and a
+frame class $C$ equipped with imported \code{Sound} and \code{Complete}
+instances:
+
+\begin{theorem}[Implication-level bridge]
+\label{thm:neighborhood-sc}
+$\mathcal{S} \vdash (\varphi \to \psi)
+\;\iff\;
+\mathrm{singletonStrengthLE}_C\,\varphi\,\psi.$
+\end{theorem}
+
+\noindent
+From provable implication, one obtains a multiset WM strength inequality
+over all states whose pointed models lie in the target frame class.
+
+Concrete instantiations are given for $E$, $\mathit{EMN}$,
+$\mathit{EMT}$ (reflexive), and $\mathit{ED}$ (serial). See
+\code{PLNWorldModelNeighborhoodCompleteness.lean} (315~lines).
+
+An analogous Kripke proof-theoretic bridge is proved in
+\code{PLNWorldModelKripkeCompleteness.lean} (238~lines): for a normal
+modal logic with Kripke completeness on a frame class $C$,
+$\mathcal{S} \vdash (\varphi \to \psi)
+\iff \mathrm{singletonStrengthLE}_C\,\varphi\,\psi$
+on Kripke WM states. Both semantic regimes now stand at the same
+metatheoretic level.
+
+A canonical Kripke-to-neighborhood \emph{representation bridge} is
+proved in \code{PLNWorldModelKripkeNeighborhoodCanonical.lean}
+(365~lines): each Kripke frame is embedded as a neighborhood frame
+via the standard presentation $\mathcal{N}(w)=\{X\mid R[w]\subseteq X\}$,
+satisfaction is preserved, and singleton/multiset WM strength agrees
+under the embedding. This makes the ``unification'' thesis concrete:
+the two instantiations are not merely parallel---they are connected by
+a proven transport.
+
+These results are \emph{not} completeness of the generic WM calculus;
+they \emph{are} implication-level proof-theoretic closure theorems for
+instantiated modal WM semantics. The distinction matters:
+
+\begin{remark}
+The generic WM shell remains a \textbf{semantic evaluation framework},
+not a standalone logic with a deep state-derivability proof theory.
+Every state is trivially derivable
+(\code{WMJudgment.axiom}); query judgments are deterministic
+(\code{WMQueryJudgment}). The modal instantiations make the shell
+\emph{useful} by giving it strong imported semantics.
+\end{remark}
+
+
+\subsection{Governance-to-neighborhood translation}
+\label{sec:gov-translation}
+
+The file \code{PLNWorldModelNeighborhoodConsequence.lean} (613~lines)
+packages neighborhood consequence rules and provides a recursive
+governance-fragment translation:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Governance modality} & \textbf{Neighborhood image} \\
+\midrule
+$\mathrm{rexist}(\varphi)$ & $\Box\varphi$ \\
+$\mathrm{obligatory}(\varphi)$ & $\Box\varphi$ \\
+$\mathrm{permitted}(\varphi)$ & $\Diamond\varphi$ \\
+$\mathrm{forbidden}(\varphi)$ & $\Box\lnot\varphi$ \\
+$\mathrm{optional}(\varphi)$ & $\Diamond\varphi \wedge \Diamond\lnot\varphi$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The translation handles propositional connectives recursively and returns
+\code{none} for $\mu$/$\nu$ formulas (explicitly outside the current
+fragment). All governance action labels on box/diamond operators collapse
+to a single neighborhood $\Box$/$\Diamond$. This is a \textbf{disciplined
+interoperability layer for a fragment}, not a full faithful embedding of
+the governance modal-$\mu$ language.
+
+Modal family theorems are proved for $K$, $C$ (conjunction closure),
+McKinsey ($\Box\Diamond\varphi \le \Diamond\Box\varphi$), and Makinson,
+with concrete frame class instantiations ($EK$, $EMK$, $EC$, $EMC$).
+Endpoint block theorems collect all governance-side inequalities.
+
+
+\subsection{Philosophical assessment}
+\label{sec:modal-philosophy}
+
+Three points emerge from this development.
+
+\paragraph{A.\ The WM calculus is becoming a semantic unifier.}
+The WM layer is broad enough to host crisp Kripke semantics on singleton
+states, evidential aggregation over multiset ensembles, and neighborhood
+semantics with proof-theoretic closure. The right philosophical role for
+the WM calculus is not ``this is the final logic of reasoning,'' but
+rather: \emph{this is a common evidential/query-calculus interface in
+which multiple semantic regimes can live.}
+
+\paragraph{B.\ Multisets of pointed models are an evidential ensemble
+semantics.}
+A multiset of pointed models reads as a bag of candidate scenarios,
+source-indexed hypotheses, or observations with multiplicity. Then
+$\Strength(W,\varphi)$ becomes ``how much of the evidential ensemble
+supports $\varphi$?'' rather than ``is $\varphi$ true at the actual
+world?'' This makes modal semantics relevant to PLN-style evidence
+reasoning: it is no longer only about one actual world with
+accessibility; it is \emph{structured evidence over candidate worlds}.
+
+\paragraph{C.\ Neighborhood semantics is the more native long-term fit.}
+Kripke is the natural first adequacy witness. But neighborhood semantics
+supports weaker and non-normal modal behavior (proof systems $E$,
+$\mathit{EMN}$, $\mathit{EMT}$, $\mathit{ED}$, etc.), and the
+soundness/completeness bridge transports those proof systems into WM
+strength inequalities. This is directly relevant if the long-term aim
+includes governance, evidence, non-normal modalities, and
+context-sensitive support.
+
+
+\subsection{Limitations}
+\label{sec:modal-limits}
+
+For clarity on what is \emph{not} proved:
+
+\begin{enumerate}[leftmargin=2em]
+\item The \textbf{generic WM calculus does not have a nontrivial global
+  proof theory.} The modal instantiations supply semantics; they do not
+  give the shell itself a deep derivability structure.
+\item The \textbf{governance translation is partial and lossy}: $\mu$/$\nu$
+  formulas map to \code{none}, and all governance action labels collapse.
+  It is a bridge for a fragment.
+\item The \textbf{multiset semantics is uniform-weight}: each pointed model
+  contributes one count. Source reliability, weighting, dependence, and
+  correlation are not yet modelled.
+\item A \textbf{weighted/source-dependent multiset semantics} with
+  dependence correction has not yet been formalized.
+\end{enumerate}
+
+
+%% ============================================================
+\section{Related Work}
+\label{sec:related}
+%% ============================================================
+
+\subsection{Evidence logic and evidence dynamics}
+
+The closest prior work to the WM calculus is the \emph{evidence logic}
+program of van Benthem, Fern\'andez-Duque, and
+Pacuit~\cite{vanBenthemFernandezDuquePacuit2014,vanBenthemEtAl2013EvidencePlausibility}.
+Their \emph{evidence models} $\mathcal{M}=\langle W,E,V\rangle$ assign
+to each state a family of evidence sets (neighborhoods). The modal
+operator $\Box\varphi$ means ``the agent has evidence for $\varphi$'' and
+is non-normal: $\Box\varphi \wedge \Box\psi$ need not imply
+$\Box(\varphi\wedge\psi)$, because evidence pieces may be individually
+consistent but jointly contradictory. Belief $B\varphi$ is then
+\emph{derived} from evidence via a scenario-combination policy. This
+architecture---evidence as a first-class structure, queries evaluate
+against it, belief/views are derived---is the same pattern as the WM
+calculus.
+
+Van Benthem and Pacuit~\cite{vanBenthemPacuit2011} extend this to
+\emph{dynamic} evidence management: new evidence is added, old evidence
+revised, and belief updates accordingly. Their ``revise evidence, then
+extract belief'' pipeline is the closest prior analogue to our
+$W \revise \Delta$ followed by $\ev(W,q)$.
+
+The key difference is the evidence type. In evidence logic, evidence
+consists of \emph{sets of worlds} (Boolean neighborhoods). In the WM
+calculus, evidence is \emph{quantitative}: a pair
+$(n^+,n^-)\in\mathbb{R}_{\ge 0}^\infty\times\mathbb{R}_{\ge 0}^\infty$
+carrying positive and negative support counts. This makes the WM
+calculus oriented toward PLN-style numerical inference rather than
+epistemic modal reasoning. But the structural insight---that evidence
+should be algebraically rich, not collapsed to a truth value---is shared.
+
+A further distinction: the WM calculus uses \emph{commutative} additive
+revision ($W_1 \revise W_2 = W_2 \revise W_1$), reflecting that evidence
+aggregation is order-independent. The evidence-dynamics
+literature~\cite{vanBenthemPacuit2011} includes richer non-commutative
+update operators (public announcement, evidence addition with priority)
+where revision order matters. Extending the WM calculus with
+order-sensitive revision is future work.
+
+Fitting~\cite{Fitting2017ParaconsistentEvidence} formalizes a
+complementary perspective: BLE (Basic Logic of Evidence) allows evidence
+to be \emph{incomplete or contradictory}, with a modal embedding into
+KX4 where $\Box X$ reads as ``there is implicit evidence for $X$.'' This
+structurally parallels the WM's evidence pairs $(n^+,n^-)$ where both
+components can be nonzero, though Fitting's framework is qualitative
+(justification terms) rather than numeric counts.
+
+
+\subsection{Neighborhood semantics}
+
+The neighborhood WM instances (\S\ref{sec:neighborhood-wm}--\ref{sec:neighborhood-sc})
+build directly on the neighborhood semantics tradition surveyed by
+Pacuit~\cite{Pacuit2017NeighborhoodSemantics}. Neighborhood frames
+generalize Kripke frames and provide semantics for non-normal modal
+logics, including the monotone logics $E$, $\mathit{EMN}$,
+$\mathit{EMT}$, and $\mathit{ED}$ for which we prove
+soundness/completeness bridges into WM consequence.
+
+
+\subsection{Provenance semantics and quantale-valued logics}
+
+The WM's evidence quantale and the additivity law
+$\ev(W_1 \revise W_2,\, q) = \ev(W_1,q) + \ev(W_2,q)$ (where $+$ is
+coordinatewise addition on evidence) place it in the
+tradition of \emph{semiring provenance semantics}. Dannert and
+Gr\"adel~\cite{DannertGraedel2021SemiringProvenance} show that
+semiring-valued model checking for guarded logics yields algebraic
+provenance values tracking \emph{how and why} a formula holds---not
+merely whether it does. The WM's \code{WMQueryEq} (certified rewrite
+producing the same evidence) and \code{evidence\_add} (compositional
+aggregation) are instances of this pattern.
+
+Abramsky and Vickers~\cite{AbramskyVickers1993Quantales} establish
+quantales as algebraic semantics for logics and processes, unifying
+lattice order, monoidal composition, and infinitary join distribution.
+This motivates the choice of a quantale (rather than a bare lattice or
+semiring) for $\Evidence$: quantale structure is exactly what makes
+$\otimes$-distributing-over-joins a theorem rather than an assumption.
+Bacci et al.~\cite{BacciMardarePanangadenPlotkin2023} develop
+propositional logics interpreted in the Lawvere quantale with proof
+systems and decidable completeness results, providing a modern precedent
+for quantale-valued views.
+
+
+%% ============================================================
+\section{Roadmap}
+\label{sec:roadmap}
+%% ============================================================
+
+The most valuable next theorems:
+
+\begin{enumerate}[leftmargin=2em]
+\item \textbf{Shell-clarifying theorems.}
+Make the meta-status of the generic WM core explicit:
+(a)~\emph{triviality}: $\forall W,\; \vdash_{\WM} W$;
+(b)~\emph{determinism}: if $\vdash_q W \Downarrow q \mapsto e_1$ and
+$\vdash_q W \Downarrow q \mapsto e_2$, then $e_1 = e_2$.
+\item \textbf{Weighted / source-labeled multisets.}
+Replace plain multisets with source labels, provenance classes, or
+weighted multiplicities, so the ensemble semantics models source
+reliability and dependence.
+\item \textbf{Independence-to-screening-off bridge.}
+Prove that d-separation implies the screening-off equalities required by
+PLN deduction rules, under explicit positivity.
+\item \textbf{VE correctness as a WM-strength rule.}
+Show that VE computes the same strength view as querying the BN world
+model.
+\item \textbf{Quantifier rewrite rules with explicit approximation
+  ledgers.}
+Hook satisfying-set quantifiers into the rewrite layer with soundness
+under stated domain hypotheses (finite, sampled, exchangeable, etc.).
+\item \textbf{Operational integration (MORK).}
+Implement message passing as inference control that proposes
+$\Sigma$-guarded rewrites, while the WM layer remains the single source
+of semantic truth.
+\end{enumerate}
+
+
+%% ============================================================
+\section*{Acknowledgments}
+%% ============================================================
+
+This paper compiles ideas emerging from ongoing collaboration around PLN,
+MeTTa, and the Lean formalization in \code{Mettapedia}, with conceptual
+inspiration from: Knuth--Skilling foundations of inference, valuation
+algebras, belief propagation / junction trees, topos semantics of
+quantifiers, and higher-order process calculi.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

@@ -32,7 +32,7 @@ strict positivity checker accepts this without a `mutual` block.
 
 | Context | Cut behavior |
 |---------|-------------|
-| `conj g1 g2` | cut from g1 propagates (g2 skipped); cut from g2 is future work |
+| `conj g1 g2` | run g2 left-to-right on g1 answers; any cut in g1/g2 propagates after current branch |
 | `disj g1 g2` | cut from g1 is CAUGHT (g2 pruned, signal absorbed) |
 | `findall v g` | cut barrier: g's cut is absorbed |
 | `once g`      | cut barrier |
@@ -124,10 +124,39 @@ inductive PrologEval (oracle : EvalOracle) : PrologGoal → PEnv → PrologEvalR
       (h_each : ∀ p ∈ pairs, PrologEval oracle g2 p.1 (.normal p.2)) :
       PrologEval oracle (.conj g1 g2) env (.normal (pairs.flatMap Prod.snd))
 
-  /-- `G1, G2` — g1 throws cut; propagate it (g2 is skipped). -/
+  /-- `G1, G2` — g1 normal; g2 throws cut for the first time at one branch.
+      Prefix branches are evaluated normally; suffix branches are pruned. -/
+  | conj_g2_cut (g1 g2 : PrologGoal) (env : PEnv) (envs1 : List PEnv)
+      (pref : List (PEnv × List PEnv)) (cutEnv : PEnv) (cutOut : List PEnv)
+      (suff : List PEnv)
+      (h1 : PrologEval oracle g1 env (.normal envs1))
+      (h_split : envs1 = pref.map Prod.fst ++ cutEnv :: suff)
+      (h_prefix_each : ∀ p ∈ pref, PrologEval oracle g2 p.1 (.normal p.2))
+      (h_cut : PrologEval oracle g2 cutEnv (.cutThrown cutOut)) :
+      PrologEval oracle (.conj g1 g2) env
+        (.cutThrown (pref.flatMap Prod.snd ++ cutOut))
+
+  /-- `G1, G2` — g1 throws cut; g2 still runs on each answer from g1, then cut propagates.
+      This matches Prolog behavior where `!` commits choice points but does not
+      skip subsequent goals in the conjunction. -/
   | conj_g1_cut (g1 g2 : PrologGoal) (env : PEnv) (envs1 : List PEnv)
-      (h1 : PrologEval oracle g1 env (.cutThrown envs1)) :
-      PrologEval oracle (.conj g1 g2) env (.cutThrown envs1)
+      (pairs : List (PEnv × List PEnv))
+      (h1 : PrologEval oracle g1 env (.cutThrown envs1))
+      (h_dom : envs1 = pairs.map Prod.fst)
+      (h_each : ∀ p ∈ pairs, PrologEval oracle g2 p.1 (.normal p.2)) :
+      PrologEval oracle (.conj g1 g2) env (.cutThrown (pairs.flatMap Prod.snd))
+
+  /-- `G1, G2` — g1 already threw cut; while running g2, an inner cut is thrown
+      on one branch. Prefix branches are evaluated normally; suffix branches are pruned. -/
+  | conj_g1_cut_g2_cut (g1 g2 : PrologGoal) (env : PEnv) (envs1 : List PEnv)
+      (pref : List (PEnv × List PEnv)) (cutEnv : PEnv) (cutOut : List PEnv)
+      (suff : List PEnv)
+      (h1 : PrologEval oracle g1 env (.cutThrown envs1))
+      (h_split : envs1 = pref.map Prod.fst ++ cutEnv :: suff)
+      (h_prefix_each : ∀ p ∈ pref, PrologEval oracle g2 p.1 (.normal p.2))
+      (h_cut : PrologEval oracle g2 cutEnv (.cutThrown cutOut)) :
+      PrologEval oracle (.conj g1 g2) env
+        (.cutThrown (pref.flatMap Prod.snd ++ cutOut))
 
   /-- `G1 ; G2` — g1 throws cut; cut is CAUGHT here (g2 pruned, signal absorbed). -/
   | disj_g1_cut (g1 g2 : PrologGoal) (env : PEnv) (envs1 : List PEnv)
@@ -190,23 +219,33 @@ inductive PrologEval (oracle : EvalOracle) : PrologGoal → PEnv → PrologEvalR
       (h_ne : r.answers = first :: rest) :
       PrologEval oracle (.neg g) env (.normal [])
 
-  /-- `P = Q` — pattern unification. -/
+  /-- `var(P)` — succeeds iff `P` stays a free variable after applying env bindings. -/
+  | isVar_succ (p : Pattern) (env : PEnv) (v : String)
+      (h : applyBindings env p = .fvar v) :
+      PrologEval oracle (.isVar p) env (.normal [env])
+
+  | isVar_fail (p : Pattern) (env : PEnv)
+      (h : ¬ ∃ v : String, applyBindings env p = .fvar v) :
+      PrologEval oracle (.isVar p) env (.normal [])
+
+  /-- `P = Q` — pattern unification under the current environment.
+      Existing environment bindings are applied before matching. -/
   | unify_succ (p q : Pattern) (env : PEnv) (bs : Bindings)
-      (h : bs ∈ matchPattern p q) :
+      (h : bs ∈ matchPattern (applyBindings env p) (applyBindings env q)) :
       PrologEval oracle (.unify p q) env (.normal [env ++ bs])
 
   | unify_fail (p q : Pattern) (env : PEnv)
-      (h : matchPattern p q = []) :
+      (h : matchPattern (applyBindings env p) (applyBindings env q) = []) :
       PrologEval oracle (.unify p q) env (.normal [])
 
-  /-- `P \= Q` — unification failure. -/
+  /-- `P \= Q` — unification failure under the current environment. -/
   | notUnify_succ (p q : Pattern) (env : PEnv)
-      (h : matchPattern p q = []) :
+      (h : matchPattern (applyBindings env p) (applyBindings env q) = []) :
       PrologEval oracle (.notUnify p q) env (.normal [env])
 
   | notUnify_fail (p q : Pattern) (env : PEnv)
       (bs : Bindings) (rest : List Bindings)
-      (h : matchPattern p q = bs :: rest) :
+      (h : matchPattern (applyBindings env p) (applyBindings env q) = bs :: rest) :
       PrologEval oracle (.notUnify p q) env (.normal [])
 
   /-- `findall(V, G, _)` — all-solutions collection (cut barrier).

@@ -78,11 +78,29 @@ Mettapedia/CategoryTheory provides categorical foundations for OSLF, PLN, and de
 - `FuzzyFrame.lean`
   - FuzzyFrame.lean formalizes the unit interval frame for PLN truth values
 
+- `GeneralizedOpenMaps.lean`
+  - GeneralizedOpenMaps.lean defines the minimal generalized-open-map core:
+    `BisimulationKit`, `GOpen`, `PathBisim`, `StrongPathBisim`, and `(E,S)`-style
+    span witness equivalence (`pathBisim_iff_esBisimilar`)
+
 - `TOGL.lean`
   - TOGL.lean formalizes Greg Meredith's theory of graphs
 
 - `Topos/InternalLanguage.lean`
   - Topos/InternalLanguage.lean formalizes Kripke-Joyal semantics for OSLF
+
+## Open-map bridge map
+
+- `GeneralizedOpenMaps.lean`
+  - Core theorem: `pathBisim_iff_esBisimilar`
+- `../Languages/ProcessCalculi/PiCalculus/WeakBisimOpenMapBridge.lean`
+  - Core theorem: `weakRestrictedBisim_iff_pathBisim`
+- `../Languages/ProcessCalculi/PiCalculus/BranchingBisim.lean`
+  - Core theorem: `branching_implies_weak`
+- `../Logic/WeightedOpenMaps.lean`
+  - Core theorem: `weightedBisim_iff_gopen_span`
+- `../Logic/OSLFOpenMapBridge.lean`
+  - Core theorem: `fullOpenWitness_implies_obsEq`
 
 ## Proof status
 

@@ -1,6 +1,7 @@
 import Mettapedia.Languages.MeTTa.HE
 import Mettapedia.Languages.MeTTa.Core
 import Mettapedia.Languages.MeTTa.PeTTa
+import Mettapedia.Languages.MeTTa.CoreProfile
 
 /-!
 # MeTTa Language Formalizations

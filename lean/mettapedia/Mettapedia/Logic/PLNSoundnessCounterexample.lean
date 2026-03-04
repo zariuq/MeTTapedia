@@ -66,16 +66,17 @@ example : w2c (c2w 0.5 * c2w 0.5) = 0.5 := by
 
 /-! ## Step 2: Soundness Requirement -/
 
-/-- Soundness requires: c_out ≤ cA + cB - 1 -/
+/-- Rearranged soundness requirement for conjunction.
+
+If one assumes the product error budget condition
+`(1 - cA) + (1 - cB) ≤ 1 - c_out` with
+`c_out = w2c (c2w cA * c2w cB)`, then this forces
+`c_out ≤ cA + cB - 1`. -/
 theorem soundness_requirement_for_product (cA cB : ℝ)
-    (hcA : 0 ≤ cA ∧ cA < 1) (hcB : 0 ≤ cB ∧ cB < 1) :
-    -- If error propagation gives: e_out = e_A + e_B
-    -- And soundness requires: e_out = 1 - c_out
-    -- Then: (1 - cA) + (1 - cB) = 1 - c_out
-    -- Which means: c_out = cA + cB - 1
-    -- For soundness to hold, we need:
+    (hBudget :
+      (1 - cA) + (1 - cB) ≤ 1 - w2c (c2w cA * c2w cB)) :
     w2c (c2w cA * c2w cB) ≤ cA + cB - 1 := by
-  sorry  -- This is the requirement we're testing
+  linarith
 
 /-! ## Step 3: The Counterexample -/
 

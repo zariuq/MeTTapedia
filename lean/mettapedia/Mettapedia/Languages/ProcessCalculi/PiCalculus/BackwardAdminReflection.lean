@@ -1932,6 +1932,101 @@ theorem weak_backward_reflection_star_encodedSC_partition_trace_sensitive_target
           (N := N) (src := src) (tgt := _) hsrc ⟨hfirst⟩
       exact Or.inr ⟨_, ⟨hfirst⟩, ⟨hrest⟩, by simpa using hpart⟩
 
+/-- Fully general backward-simulation endpoint over EncodedSC step-sources.
+It flattens the trace-sensitive decomposition into three branches:
+refl, admin-progress, or reflected π-step data with explicit head/tail trace. -/
+theorem weak_backward_full_simulation_encodedSC
+    {N : Finset String} {src tgt : Pattern}
+    (hsrc : EncodedSCStepSource N src)
+    (hstep : Nonempty (src ⇝ᵈ* tgt)) :
+    src = tgt
+    ∨
+    (∃ tgt' canon,
+      Nonempty (src ⇝ᵈ* tgt') ∧
+      AdminCanonicalTarget src canon ∧
+      WeakRestrictedBisimD N tgt' canon)
+    ∨
+    (∃ mid,
+      Nonempty (src ⇝ᵈ mid) ∧
+      Nonempty (mid ⇝ᵈ* tgt) ∧
+      Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
+      ∃ P P' n v tgt',
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
+        Nonempty (P ⇝ P') ∧
+        Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
+        WeakRestrictedBisimD N tgt' (encode P' n v)) := by
+  rcases weak_backward_reflection_star_encodedSC_partition_trace_sensitive_target_sensitive
+      (N := N) (src := src) (tgt := tgt) hsrc hstep with hrefl | htail
+  · exact Or.inl hrefl
+  · rcases htail with ⟨mid, hmid, hrest, hbranch⟩
+    rcases hbranch with hadmin | hpi
+    · rcases hadmin with ⟨tgt', canon, hstar, hcanon, hbisim⟩
+      exact Or.inr (Or.inl ⟨tgt', canon, hstar, hcanon, hbisim⟩)
+    · rcases hpi with ⟨hcore, P, P', n, v, tgt', hsrcSC, hpi, hstar, hbisim⟩
+      exact Or.inr (Or.inr
+        ⟨mid, hmid, hrest, hcore, P, P', n, v, tgt', hsrcSC, hpi, hstar, hbisim⟩)
+
+/-- Encoded-source specialization of the full backward-simulation endpoint:
+requires an `EncodedSCStepSource` classifier witness for `encode P n v`. -/
+theorem weak_backward_full_simulation_encode
+    {N : Finset String} {P : Process} {n v : String} {tgt : Pattern}
+    (hsrc : EncodedSCStepSource N (encode P n v))
+    (hstep : Nonempty ((encode P n v) ⇝ᵈ* tgt)) :
+    encode P n v = tgt
+    ∨
+    (∃ tgt' canon,
+      Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
+      AdminCanonicalTarget (encode P n v) canon ∧
+      WeakRestrictedBisimD N tgt' canon)
+    ∨
+    (∃ mid,
+      Nonempty ((encode P n v) ⇝ᵈ mid) ∧
+      Nonempty (mid ⇝ᵈ* tgt) ∧
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces (encode P n v) mid) ∧
+      ∃ P0 P1 n0 v0 tgt',
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
+          (encode P n v) (encode P0 n0 v0) ∧
+        Nonempty (P0 ⇝ P1) ∧
+        Nonempty ((encode P0 n0 v0) ⇝ᵈ* tgt') ∧
+        WeakRestrictedBisimD N tgt' (encode P1 n0 v0)) := by
+  exact weak_backward_full_simulation_encodedSC
+    (N := N) (src := encode P n v) (tgt := tgt) hsrc hstep
+
+/-- RF-step-at encoded-source specialization:
+builds the `EncodedSCStepSource` classifier from a concrete RF witness and
+instantiates `weak_backward_full_simulation_encode`. -/
+theorem weak_backward_full_simulation_encode_rfStepAt
+    {N : Finset String} {P Q : Process} {n v : String} {tgt : Pattern}
+    (h : ForwardSimulation.ReducesRF P Q)
+    (hrf : ForwardSimulation.RestrictionFree P)
+    (hsafe : ForwardSimulation.CommSafe h)
+    (hstep : Nonempty ((encode P n v) ⇝ᵈ* tgt)) :
+    encode P n v = tgt
+    ∨
+    (∃ tgt' canon,
+      Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
+      AdminCanonicalTarget (encode P n v) canon ∧
+      WeakRestrictedBisimD N tgt' canon)
+    ∨
+    (∃ mid,
+      Nonempty ((encode P n v) ⇝ᵈ mid) ∧
+      Nonempty (mid ⇝ᵈ* tgt) ∧
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces (encode P n v) mid) ∧
+      ∃ P0 P1 n0 v0 tgt',
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
+          (encode P n v) (encode P0 n0 v0) ∧
+        Nonempty (P0 ⇝ P1) ∧
+        Nonempty ((encode P0 n0 v0) ⇝ᵈ* tgt') ∧
+        WeakRestrictedBisimD N tgt' (encode P1 n0 v0)) := by
+  exact weak_backward_full_simulation_encode
+    (N := N) (P := P) (n := n) (v := v) (tgt := tgt)
+    (hsrc := EncodedSCStepSource.rfStepAt
+      (P := P) (Q := Q) (n := n) (v := v) h hrf hsafe
+      (Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence.refl _))
+    hstep
+
 /-- Observation-set weakening for trace-sensitive+target-sensitive star
 decomposition over EncodedSC step-sources. -/
 theorem weak_backward_reflection_star_encodedSC_partition_trace_sensitive_target_sensitive_of_obsSuperset

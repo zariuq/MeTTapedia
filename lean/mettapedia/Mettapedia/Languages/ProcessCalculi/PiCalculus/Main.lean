@@ -2,24 +2,31 @@ import Mettapedia.Languages.ProcessCalculi.PiCalculus.Syntax
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.StructuralCongruence
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Reduction
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.MultiStep
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.RhoEncoding
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakBisim
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakBisimDerived
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakBisimOpenMapBridge
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.BranchingBisim
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.OpenMapBridgeRegression
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.EncodingMorphism
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardAdminReflection
 
 /-!
 # π-Calculus Formalization
 
-Main entry point that re-exports all π-calculus modules.
+Main entry point that re-exports the core π-calculus modules plus open-map bridges.
 
 ## Contents
 - Syntax: Process syntax and names
 - StructuralCongruence: α-equivalence and ≡ relation
 - Reduction: Operational semantics
 - MultiStep: Reflexive-transitive closure of reduction
-
-## Future Work
-- Bisimulation: Behavioral equivalence
+- ForwardSimulation: π→ρ simulation infrastructure
+- WeakBisim / WeakBisimDerived: restricted weak bisimilarity
+- WeakBisimOpenMapBridge / BranchingBisim: generalized open-map bridges
+- OpenMapBridgeRegression: theorem-level bridge regressions
 - RhoEncoding: Encoding π → ρ (Lybech 2022)
-- SeparationTheorem: Proof that π ⊄ ρ (Lybech 2022, Theorem 1)
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.PiCalculus
@@ -1447,6 +1454,78 @@ theorem userObs_excludes_all_reserved_of_encodingFresh
     userObs_excludes_ns_z_of_encodingFresh (N := N) (P := P) hobs hfresh,
     userObs_excludes_ns_seed_of_encodingFresh (N := N) (P := P) hobs hfresh
   ⟩
+
+/-- Fully general backward-simulation endpoint (calculus API wrapper):
+refl, admin-progress, or reflected π-step branch with explicit head/tail trace. -/
+theorem calculus_backward_simulation_full_general
+    {N : Finset String} {src tgt : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}
+    (hsrc : BackwardAdminReflection.EncodedSCStepSource N src)
+    (hstep :
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt)) :
+    src = tgt
+    ∨
+    (∃ tgt' canon,
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
+      BackwardAdminReflection.AdminCanonicalTarget src canon ∧
+      Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+    ∨
+    (∃ mid,
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src mid) ∧
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar mid tgt) ∧
+      Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
+      ∃ P P' n v tgt',
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
+        Nonempty (P ⇝ P') ∧
+        Nonempty
+          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar
+            (encode P n v) tgt') ∧
+        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt'
+          (encode P' n v)) := by
+  exact BackwardAdminReflection.weak_backward_full_simulation_encodedSC
+    (N := N) (src := src) (tgt := tgt) hsrc hstep
+
+/-- Encoded-source specialization of `calculus_backward_simulation_full_general`. -/
+theorem calculus_backward_simulation_full_general_encode
+    {N : Finset String} {P : Process} {n v : String}
+    {tgt : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}
+    (hsrc : BackwardAdminReflection.EncodedSCStepSource N (encode P n v))
+    (hstep :
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar
+          (encode P n v) tgt)) :
+    encode P n v = tgt
+    ∨
+    (∃ tgt' canon,
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar
+          (encode P n v) tgt') ∧
+      BackwardAdminReflection.AdminCanonicalTarget (encode P n v) canon ∧
+      Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+    ∨
+    (∃ mid,
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived
+          (encode P n v) mid) ∧
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar
+          mid tgt) ∧
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces (encode P n v) mid) ∧
+      ∃ P0 P1 n0 v0 tgt',
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
+          (encode P n v) (encode P0 n0 v0) ∧
+        Nonempty (P0 ⇝ P1) ∧
+        Nonempty
+          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar
+            (encode P0 n0 v0) tgt') ∧
+        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt'
+          (encode P1 n0 v0)) := by
+  exact BackwardAdminReflection.weak_backward_full_simulation_encode
+    (N := N) (P := P) (n := n) (v := v) (tgt := tgt) hsrc hstep
 
 /-- Design-boundary corollary:
 the non-empty seed-listener observation set `{ns_z}` cannot satisfy user-observation

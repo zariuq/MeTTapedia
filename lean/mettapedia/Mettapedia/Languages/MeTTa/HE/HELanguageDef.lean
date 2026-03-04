@@ -353,7 +353,7 @@ def mettaHE : LanguageDef := {
       left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
-                                .fvar "space", .fvar "atom"] },
+                                .fvar "space", .fvar "out"] },
 
     -- M2: Error atom → return unchanged
     { name := "M_Error",
@@ -363,7 +363,7 @@ def mettaHE : LanguageDef := {
       left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
-                                .fvar "space", .fvar "atom"] },
+                                .fvar "space", .fvar "out"] },
 
     -- M3: type == Atom or type == metatype or metatype == Variable → return unchanged
     { name := "M_TypeMatch",
@@ -373,7 +373,7 @@ def mettaHE : LanguageDef := {
       left  := .apply "State" [.apply "Metta" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
-                                .fvar "space", .fvar "atom"] },
+                                .fvar "space", .fvar "out"] },
 
     -- M4: Symbol or Grounded → typeCast
     -- if metaType(atom) ∈ {Symbol, Grounded} or atom == ()
@@ -431,7 +431,7 @@ def mettaHE : LanguageDef := {
       left  := .apply "State" [.apply "InterpExpr" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
-                                .fvar "space", .fvar "atom"] },
+                                .fvar "space", .fvar "out"] },
 
     -- #### IF: interpretFunction rules (metta.md lines 452-478)
     -- Explicit call/return frames encoded in State.out.
@@ -776,7 +776,7 @@ def mettaHE : LanguageDef := {
       left  := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
-                                .fvar "space", .fvar "atom"] },
+                                .fvar "space", .fvar "out"] },
 
     -- MC2: Grounded dispatch → execute → metta each result
     { name := "MC_Grounded",
@@ -810,7 +810,7 @@ def mettaHE : LanguageDef := {
       left  := .apply "State" [.apply "MettaCall" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
-                                .fvar "space", .fvar "atom"] },
+                                .fvar "space", .fvar "out"] },
 
     -- #### TC: typeCast rules (metta.md lines 274-314)
 
@@ -822,7 +822,7 @@ def mettaHE : LanguageDef := {
       left  := .apply "State" [.apply "TypeCast" [.fvar "atom", .fvar "ty"],
                                 .fvar "space", .fvar "out"],
       right := .apply "State" [.apply "Return" [.fvar "atom"],
-                                .fvar "space", .fvar "atom"] },
+                                .fvar "space", .fvar "out"] },
 
     -- TC2: Type mismatch → Error(atom, BadType(expected, actual))
     { name := "TC_Mismatch",
@@ -836,8 +836,7 @@ def mettaHE : LanguageDef := {
                   [.apply "ErrorAtom" [.fvar "atom",
                     .apply "BadType" [.fvar "ty", .fvar "actual"]]],
                                 .fvar "space",
-                                .apply "ErrorAtom" [.fvar "atom",
-                                  .apply "BadType" [.fvar "ty", .fvar "actual"]]] },
+                                .fvar "out"] },
 
     -- #### R: Return/Done rules
 

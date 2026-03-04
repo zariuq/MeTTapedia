@@ -19,7 +19,7 @@
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{unicode-math}
-\setmathfont{Stix Two Math}
+\IfFontExistsTF{Stix Two Math}{\setmathfont{Stix Two Math}}{\setmathfont{STIX Math}}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}[theorem]{Lemma}
@@ -791,12 +791,176 @@ WM consequence-rule layer and Kripke deontic lifts (strength inequalities) \newl
 \textit{Tags: [PLNBook-Ch8], [WMConsequenceRule], [Kripke], [modal-lift]} &
 \code{WMStrengthLE},
 \code{WMConsequenceRule},
+\code{WMConsequenceRuleOn},
+\code{WMConsequenceRuleOn.ofGlobal},
 \code{wm\_rexist\_reflexive\_strength\_le},
 \code{wm\_dts\_ob\_pe\_strength\_le},
 \code{wmRexistReflexiveConsequenceRule},
 \code{wmDtsObPeConsequenceRule} &
 \codepath{Mettapedia/Logic/PLNWorldModelCalculus.lean},
 \codepath{Mettapedia/Logic/PLNWorldModelKripkeConsequence.lean} \\
+\hline
+WM shell clarifiers (state-level permissive, query-level deterministic) \newline
+\textit{Tags: [PLNBook-Ch8], [WM], [determinism], [judgment-boundary]} &
+\code{WMJudgment.trivial},
+\code{WMJudgment.query\_deterministic},
+\code{WMJudgmentCtx.query\_deterministic} &
+\codepath{Mettapedia/Logic/PLNWorldModel.lean} \\
+\hline
+PureKernel closed-judgment $\rightarrow$ WM obligation interface (assumption-parameterized) \newline
+\textit{Tags: [PLNBook-Ch8], [PureKernel], [WM], [bridge], [canary]} &
+\code{PureClosedTheoryBridge},
+\code{pureClosedTheoryBridge\_to\_star},
+\code{PureJudgmentWMInterface.profileStepStar\_sound},
+\code{pureTheoryStep\_to\_wmStrengthObligation},
+\code{pureTheoryStepStar\_to\_wmStrengthObligation},
+\code{wmConsequenceRuleOn\_of\_closed\_pureTheoryStep},
+\code{wmConsequenceRuleOn\_of\_closed\_pureTheoryStepStar},
+\code{canary\_betaPi\_bridge\_regression\_one\_nestedLam\_wm},
+\code{canary\_betaPi\_bridge\_regression\_two\_nestedLam\_wm} &
+\codepath{Mettapedia/Logic/PLNWorldModelPureKernelBridge.lean} \\
+\hline
+HOL/FOL implication closure wrappers into WM consequence rules \newline
+\textit{Tags: [PLNBook-Ch8], [HOL], [FOL], [WMConsequenceRule], [closure]} &
+\code{wmConsequenceRule\_of\_pointwise},
+\code{wmConsequenceRuleOn\_of\_pointwise},
+\code{wmConsequenceRuleOn\_of\_singletonStrengthLE},
+\code{pointwiseImpliesOnTheory\_of\_consequence},
+\code{multiset\_strength\_le\_of\_consequence},
+\code{wmConsequenceRuleOn\_of\_consequence},
+\code{multiset\_strength\_le\_of\_provable\_imp},
+\code{wmConsequenceRuleOn\_of\_provable\_imp} &
+\codepath{Mettapedia/Logic/PLNWorldModelHOLCompleteness.lean},
+\codepath{Mettapedia/Logic/PLNWorldModelFOLCompleteness.lean} \\
+\hline
+Singleton iff-consequence adequacy and multiset lifting \newline
+\textit{Tags: [PLNBook-Ch8], [Kripke], [Neighborhood], [adequacy], [singleton], [multiset]} &
+\code{singleton\_adequacy\_strength\_one},
+\code{pointwiseImplies\_iff\_singletonStrengthLE},
+\code{multiset\_strength\_le\_of\_singletonStrengthLE},
+\code{singleton\_consequence\_schema\_parallel},
+\code{multiset\_lift\_schema\_parallel} &
+\codepath{Mettapedia/Logic/PLNWorldModelKripke.lean},
+\codepath{Mettapedia/Logic/PLNWorldModelNeighborhood.lean} \\
+\hline
+Kripke proof-theoretic closure (sound/complete implication bridge) \newline
+\textit{Tags: [PLNBook-Ch8], [Kripke], [Sound], [Complete], [K], [KT], [KD], [K4]} &
+\code{pointwiseImpliesOn\_iff\_singletonStrengthLEOn},
+\code{provable\_imp\_iff\_singletonStrengthLEOn},
+\code{multiset\_strength\_le\_of\_provable\_imp},
+\code{provable\_imp\_iff\_singletonStrengthLEOn\_K},
+\code{provable\_imp\_iff\_singletonStrengthLEOn\_KT},
+\code{provable\_imp\_iff\_singletonStrengthLEOn\_KD},
+\code{provable\_imp\_iff\_singletonStrengthLEOn\_K4},
+\code{multiset\_strength\_le\_of\_provable\_imp\_K},
+\code{multiset\_strength\_le\_of\_provable\_imp\_KT},
+\code{multiset\_strength\_le\_of\_provable\_imp\_KD},
+\code{multiset\_strength\_le\_of\_provable\_imp\_K4},
+\code{multiset\_ob\_pe\_strength\_le\_of\_provable},
+\code{multiset\_rexist\_strength\_le\_of\_provable\_KT},
+\code{multiset\_ob\_pe\_strength\_le\_of\_provable\_KD} &
+\codepath{Mettapedia/Logic/PLNWorldModelKripkeCompleteness.lean} \\
+\hline
+Kripke $\rightarrow$ neighborhood embedding transport and governance-facing mapped consequence \newline
+\textit{Tags: [PLNBook-Ch8], [Kripke], [Neighborhood], [embedding], [transport], [governance]} &
+\code{evidence\_mapState\_eq},
+\code{queryStrength\_mapState\_eq},
+\code{singletonStrengthLEOnEmbedding\_iff\_kripke},
+\code{mapState\_strength\_le\_of\_provable\_imp},
+\code{mapState\_governance\_ob\_pe\_strength\_le\_of\_provable} &
+\codepath{Mettapedia/Logic/PLNWorldModelKripkeNeighborhoodEmbedding.lean} \\
+\hline
+Canonical Kripke $\rightarrow$ neighborhood representation and mapped WM consequence corollaries \newline
+\textit{Tags: [PLNBook-Ch8], [Kripke], [Neighborhood], [canonical], [representation], [governance]} &
+\code{satisfies\_iff\_kripke\_toNeighborhood},
+\code{pointed\_satisfies\_iff},
+\code{queryStrength\_mapState\_eq\_canonical},
+\code{singletonStrengthLEOn\_canonical\_iff\_kripke},
+\code{mapState\_strength\_le\_of\_provable\_imp\_canonical},
+\code{mapState\_governance\_ob\_pe\_strength\_le\_of\_provable\_canonical},
+\code{parallel\_strength\_le\_of\_provable\_imp\_canonical},
+\code{parallel\_governance\_ob\_pe\_strength\_le\_of\_provable\_canonical},
+\code{parallel\_strength\_le\_of\_provable\_imp\_KT\_EMT\_canonical},
+\code{parallel\_strength\_le\_of\_provable\_imp\_KD\_ED\_canonical},
+\code{parallel\_governance\_rexist\_strength\_le\_KT\_EMT\_canonical},
+\code{parallel\_governance\_ob\_pe\_strength\_le\_KD\_ED\_canonical} &
+\codepath{Mettapedia/Logic/PLNWorldModelKripkeNeighborhoodCanonical.lean} \\
+\hline
+Weighted/source-aware Kripke WM specialization and weight-$1$ transfer theorems \newline
+\textit{Tags: [PLNBook-Ch8], [Kripke], [weighted], [provenance], [transfer]} &
+\code{weightedExpansion},
+\code{weightedCountP\_toWeightOne\_eq\_countP},
+\code{weightedEvidence\_toWeightOne\_eq\_kripkeEvidence},
+\code{queryStrength\_toWeightOne\_eq\_kripke},
+\code{queryStrength\_eq\_kripkeExpansion},
+\code{weighted\_strength\_le\_of\_provable\_imp},
+\code{trustedGate},
+\code{trustedGate\_ob\_pe\_strength\_le\_of\_provable},
+\code{wmTrustedGateObPeConsequenceRule},
+\code{toWeightOne\_strength\_le\_of\_provable\_imp} &
+\codepath{Mettapedia/Logic/PLNWorldModelKripkeWeighted.lean} \\
+\hline
+Neighborhood proof-theoretic closure (sound/complete implication bridge) \newline
+\textit{Tags: [PLNBook-Ch8], [Neighborhood], [Sound], [Complete], [E], [EMN], [EMT], [ED]} &
+\code{pointwiseImpliesOn\_iff\_singletonStrengthLEOn},
+\code{provable\_imp\_iff\_singletonStrengthLEOn},
+\code{multiset\_strength\_le\_of\_provable\_imp},
+\code{provable\_imp\_iff\_singletonStrengthLEOn\_E},
+\code{provable\_imp\_iff\_singletonStrengthLEOn\_EMN},
+\code{provable\_imp\_iff\_singletonStrengthLEOn\_EMT},
+\code{provable\_imp\_iff\_singletonStrengthLEOn\_ED},
+\code{multiset\_strength\_le\_of\_provable\_imp\_E},
+\code{multiset\_strength\_le\_of\_provable\_imp\_EMN},
+\code{multiset\_strength\_le\_of\_provable\_imp\_EMT},
+\code{multiset\_strength\_le\_of\_provable\_imp\_ED} &
+\codepath{Mettapedia/Logic/PLNWorldModelNeighborhoodCompleteness.lean} \\
+\hline
+Neighborhood modal/deontic-style consequence refinement and Kripke-parallel endpoints \newline
+\textit{Tags: [PLNBook-Ch8], [Neighborhood], [WMConsequenceRuleOn], [box], [diamond], [governance], [parallel], [K], [C], [Mk], [McK]} &
+\code{wmConsequenceRule\_of\_provable\_imp},
+\code{wmBoxConsequenceRule\_of\_provable\_imp},
+\code{wmDiaConsequenceRule\_of\_provable\_imp},
+\code{wm\_rexist\_reflexive\_strength\_le\_EMT},
+\code{wm\_ob\_pe\_strength\_le\_ED},
+\code{wmRexistReflexiveConsequenceRuleNeighborhood},
+\code{wmDtsObPeConsequenceRuleNeighborhood},
+\code{wm\_k\_curried\_strength\_le\_of\_provable},
+\code{wm\_c\_strength\_le\_of\_provable},
+\code{wm\_mck\_strength\_le\_of\_provable},
+\code{wm\_mk\_strength\_le\_of\_provable},
+\code{wm\_mck\_strength\_le\_of\_axiomMcK},
+\code{wm\_mk\_strength\_le\_of\_axiomMk},
+\code{wmMcKConsequenceRule\_of\_axiom},
+\code{wmMkConsequenceRule\_of\_axiom},
+\code{wm\_k\_curried\_strength\_le\_EK},
+\code{wm\_k\_curried\_strength\_le\_EMK},
+\code{wm\_c\_strength\_le\_EC},
+\code{wm\_c\_strength\_le\_EMC},
+\code{governanceModalityToNeighborhood},
+\code{wm\_governance\_rexist\_strength\_le},
+\code{wm\_governance\_ob\_pe\_strength\_le},
+\code{governance\_translation\_endpoint\_block},
+\code{kripke\_neighborhood\_rexist\_parallel},
+\code{kripke\_neighborhood\_ob\_pe\_parallel} &
+\codepath{Mettapedia/Logic/PLNWorldModelNeighborhoodConsequence.lean} \\
+\hline
+State-indexed governance translation preservation (formula-level recursive map) \newline
+\textit{Tags: [PLNBook-Ch8], [WMConsequenceRuleOn], [governance], [translation], [preservation], [recursive]} &
+\code{governanceBoxActionToNeighborhood},
+\code{governanceDiamondActionToNeighborhood},
+\code{translateGovernanceFormulaToNeighborhood},
+\code{translateGovernanceFormulaToNeighborhood\_rexistFormula},
+\code{translateGovernanceFormulaToNeighborhood\_obFormula},
+\code{translateGovernanceFormulaToNeighborhood\_peFormula},
+\code{translateGovernanceFormulaToNeighborhood\_forbiddenBox},
+\code{translateGovernanceFormulaToNeighborhood\_optionalDiamond},
+\code{wm\_governance\_rexist\_strength\_le\_of\_translation},
+\code{wm\_governance\_ob\_pe\_strength\_le\_of\_translation},
+\code{wm\_governance\_forbidden\_shape\_of\_translation},
+\code{wm\_governance\_optional\_shape\_of\_translation},
+\code{governance\_translation\_endpoint\_block\_of\_formula},
+\code{governance\_translation\_endpoint\_block\_of\_formula\_extended} &
+\codepath{Mettapedia/Logic/PLNWorldModelNeighborhoodConsequence.lean} \\
 \hline
 \end{longtable}
 
@@ -835,12 +999,40 @@ No universal predictor from first-two-term statistics \newline
 \codepath{Mettapedia/Logic/PLNInclusionExclusionIdentifiability.lean},
 \codepath{Mettapedia/Logic/PLNLargeScaleInferenceCounterexamples.lean} \\
 \hline
+Multideduction residual decomposition + indexed agreement endpoint \newline
+\textit{Tags: [PLNBook-Ch9], [multideduction], [positive-core], [residual]} &
+\code{unionCard\_eq\_twoTerm\_plus\_residualZ},
+\code{correctedEstimate\_agrees\_of\_residualAssumption},
+\code{repeatedDeductionRevision\_agrees\_of\_residualAssumption},
+\code{no\_universal\_constant\_correction} &
+\codepath{Mettapedia/Logic/PLNMultideductionResidual.lean} \\
+\hline
+Indexed n-way residual decomposition + indexed agreement family \newline
+\textit{Tags: [PLNBook-Ch9], [multideduction], [n-way], [positive-core]} &
+\code{unionCardN\_eq\_twoTerm\_plus\_residualNZ},
+\code{correctedEstimateN\_agrees\_of\_residualAssumptionN},
+\code{repeatedDeductionRevisionN\_agrees\_of\_residualAssumptionN} &
+\codepath{Mettapedia/Logic/PLNMultideductionResidual.lean} \\
+\hline
 Trail-free deterministic update can fail to stabilize (2-cycle) \newline
 \textit{Tags: [PLNBook-Ch9], [protocol-dynamics], [counterexample]} &
 \code{orbit\_not\_eventually\_constant},
 \code{ch9\_trailFree\_notEventualConstant} &
 \codepath{Mettapedia/Logic/PLNTrailFreeDynamicsCounterexample.lean},
 \codepath{Mettapedia/Logic/PLNLargeScaleInferenceCounterexamples.lean} \\
+\hline
+Damped SP/SPN positive convergence under eventual fresh evidence \newline
+\textit{Tags: [PLNBook-Ch9], [protocol-dynamics], [SP/SPN], [convergence]} &
+\code{damped\_sp\_spn\_eventually\_constant\_of\_eventual\_fresh},
+\code{inconsistency\_eventually\_zero\_of\_eventual\_fresh},
+\code{dampedOrbit\_noFresh\_not\_eventually\_constant} &
+\codepath{Mettapedia/Logic/PLNTrailFreeDampedConvergence.lean} \\
+\hline
+Bounded-gap fairness reset bounds for damped SP/SPN \newline
+\textit{Tags: [PLNBook-Ch9], [protocol-dynamics], [SP/SPN], [fairness], [bound]} &
+\code{inconsistency\_zero\_within\_bound\_of\_boundedGapFresh},
+\code{inconsistency\_zero\_within\_bound\_of\_eventually\_boundedGapFresh} &
+\codepath{Mettapedia/Logic/PLNTrailFreeDampedConvergence.lean} \\
 \hline
 Pooling axioms are insufficient to characterize additive fusion \newline
 \textit{Tags: [PLNBook-Ch9], [pooling], [non-uniqueness]} &
@@ -864,6 +1056,23 @@ Coverage/cardinality surrogate is insufficient for risk-sensitive selection \new
 \code{ch9\_noUniversalRiskPredictor\_fromCoverageCard} &
 \codepath{Mettapedia/Logic/PremiseSelectionCoverageCounterexamples.lean},
 \codepath{Mettapedia/Logic/PLNLargeScaleInferenceCounterexamples.lean} \\
+\hline
+Finite BRGI object + policy-sensitive optimum characterization \newline
+\textit{Tags: [PLNBook-Ch9], [BRGI], [positive-core], [optimization], [policy]} &
+\code{mem\_feasibleSets\_iff},
+\code{exists\_optimal\_feasible\_set},
+\code{exists\_optimal\_feasible\_set\_with\_policy\_characterization},
+\code{optimal\_value\_eq\_min\_of\_policy},
+\code{ch9\_brgi\_toy\_optimal\_value} &
+\codepath{Mettapedia/Logic/PremiseSelectionBRGI.lean} \\
+\hline
+Graph-level BRGI object + optimality-preserving refinement wrappers \newline
+\textit{Tags: [PLNBook-Ch9], [BRGI], [graph-object], [refinement], [policy]} &
+\code{exists\_optimal\_feasible\_set\_brg},
+\code{exists\_optimal\_feasible\_set\_brg\_with\_policy\_characterization},
+\code{brg\_optimal\_value\_eq\_min\_of\_policy},
+\code{ch9\_brg\_graph\_toy\_optimal\_value} &
+\codepath{Mettapedia/Logic/PremiseSelectionBRGI.lean} \\
 \hline
 Class-packaged BN d-separation discharge (non-counterexample positive path) \newline
 \textit{Tags: [PLNBook-Ch9], [BN-bridge], [assumption-packaging]} &
@@ -906,6 +1115,12 @@ xi_sourceRule_threshold_concrete_true_fixture
 xi_sinkRule_threshold_concrete_true_fixture
 ch9_selector_rewrite_threshold_end_to_end_of_interval
 bool_selector_rewrite_threshold_end_to_end_fixture
+ch9_brgi_toy_optimal_value
+repeatedDeductionRevision_agrees_of_residualAssumption
+repeatedDeductionRevisionN_agrees_of_residualAssumptionN
+damped_sp_spn_eventually_constant_of_eventual_fresh
+inconsistency_zero_within_bound_of_boundedGapFresh
+ch9_brg_graph_toy_optimal_value
 noisyOrMulti_replicate
 atLeastOneHeadProb_eq_noisyOr_replicate
 \end{lstlisting}
@@ -914,6 +1129,12 @@ atLeastOneHeadProb_eq_noisyOr_replicate
 \begin{itemize}
 \item Counterexample-first coverage checked: inclusion-exclusion, pooling, trail-free dynamics, coverage/card risk.
 \item Positive BN bridge coverage checked: chain/fork/collider d-separation to WM/OSLF/threshold endpoints.
+\item Multideduction positive core checked: explicit residual decomposition + assumption-indexed agreement endpoint.
+\item Multideduction n-way extension checked: indexed-family decomposition + indexed agreement family.
+\item SP/SPN positive dynamics checked: eventual-fresh damping convergence + inconsistency-to-zero endpoint.
+\item SP/SPN fairness bounds checked: bounded-gap reset theorem with explicit `B+1` window.
+\item BRGI object coverage checked: feasible-set gate, objective bounds, and finite optimality endpoint.
+\item BRGI graph refinement checked: graph-object wrappers preserve policy-sensitive optimum characterization.
 \item Independent-cause canary checked: noisy-or replicate and finite concrete points.
 \item Selector$\to$rewrite$\to$threshold endpoint checked (canonical + worked fixture).
 \item Note: operational runtimes are not implemented in Lean here; this section tracks theorem-level semantic/bridge coverage.
@@ -1250,6 +1471,13 @@ Linked-strong selector-specialized theorem wrappers \newline
 \code{intensional\_mixed\_assoc\_threshold\_atom\_bayesExact\_of\_solomonoff\_semantic\_linked\_strong},
 \code{intensional\_mixed\_assoc\_threshold\_atom\_walley\_of\_solomonoff\_semantic\_linked\_strong} &
 \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean} \\
+\hline
+Concrete ASSOC+PAT semantic fixture endpoints \newline
+\textit{Tags: [PLNBook-Ch12], [ASSOC+PAT], [concrete-end-to-end]} &
+\code{end\_to\_end\_assocPat\_bayesNormal\_lower},
+\code{end\_to\_end\_assocPat\_bayesExact\_lower},
+\code{end\_to\_end\_assocPat\_walley\_lower} &
+\codepath{Mettapedia/Logic/PLNIntensionalAssocPatClosure.lean} \\
 \hline
 Executable canaries (positive + non-equivalence) \newline
 \textit{Tags: [PLNBook-Ch12], [canary], [non-equivalence]} &

@@ -20,6 +20,7 @@ the following **built-in goal constructors**:
 | `ite`       | `C -> T ; E` | if-then-else |
 | `once`      | `once(G)` | at most one answer |
 | `neg`       | `\+ G` | negation-as-failure |
+| `isVar`     | `var(P)` | succeeds iff `P` is an unbound variable |
 | `unify`     | `P = Q` | pattern unification |
 | `notUnify`  | `P \= Q` | unification failure |
 | `findall`   | `findall(V, G, Vs)` | all-answers collection |
@@ -121,6 +122,9 @@ inductive PrologGoal where
   /-- `\+ G` — negation-as-failure: succeeds iff `G` has no answers. -/
   | neg : PrologGoal → PrologGoal
 
+  /-- `var(P)` — succeeds iff `P` is an unbound variable under current environment. -/
+  | isVar : Pattern → PrologGoal
+
   /-- `P = Q` — unify two patterns. Succeeds (extending the environment) iff
       `P` and `Q` can be unified via `matchPattern`. -/
   | unify : Pattern → Pattern → PrologGoal
@@ -195,6 +199,7 @@ def PrologGoal.size : PrologGoal → ℕ
   | .ite c t e     => 1 + c.size + t.size + e.size
   | .once g        => 1 + g.size
   | .neg g         => 1 + g.size
+  | .isVar _       => 1
   | .unify _ _     => 1
   | .notUnify _ _  => 1
   | .findall _ g   => 1 + g.size

@@ -6,6 +6,9 @@ import Mettapedia.Languages.ProcessCalculi.PiCalculus.RhoEncoding
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakBisim
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakBisimDerived
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakBisimOpenMapBridge
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.BranchingBisim
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.OpenMapBridgeRegression
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardNormalization
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.EncodingMorphism
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardAdminReflection
