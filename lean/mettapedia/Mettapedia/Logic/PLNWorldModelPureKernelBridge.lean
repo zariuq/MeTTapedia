@@ -1,4 +1,5 @@
 import Mettapedia.Logic.PLNWorldModelCalculus
+import Mettapedia.Logic.PLNWorldModelCategoricalBridge
 import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 
 /-!
@@ -14,6 +15,7 @@ bridge theorems as inputs.
 
 namespace Mettapedia.Logic.PLNWorldModelPureKernelBridge
 
+open CategoryTheory
 open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Languages.MeTTa.PureKernel.Syntax
@@ -51,6 +53,12 @@ abbrev WMStrengthObligation
     (W : State) (q₁ q₂ : Query) : Prop :=
   WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
     WorldModel.queryStrength (State := State) (Query := Query) W q₂
+
+/-- Alias for the unified categorical endpoint surface used by WM wrappers. -/
+abbrev WMCategoricalEndpointSurface
+    {State : Type*} [EvidenceType State]
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State) : Prop :=
+  Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointSurface (H := H)
 
 /-- Explicit interpretation map from Pure/profile judgments into WM obligations.
 
@@ -104,6 +112,22 @@ theorem pureTheoryStep_to_wmStrengthObligation
       (I.encode (quoteClosedTm u)) :=
   I.profileStep_sound hW (hbridge hred)
 
+/-- Categorical-aligned wrapper:
+same Pure one-step WM obligation transport, with explicit endpoint-surface input. -/
+theorem pureTheoryStep_to_wmStrengthObligation_categorical
+    (I : PureJudgmentWMInterface State Query)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (_hcat : WMCategoricalEndpointSurface (H := H))
+    {X : H.Obj} (_φc : H.query X)
+    (hbridge : PureClosedTheoryBridge)
+    {W : State} {t u : PureTm 0}
+    (hW : I.side W)
+    (hred : Red t u) :
+    WMStrengthObligation State Query W
+      (I.encode (quoteClosedTm t))
+      (I.encode (quoteClosedTm u)) :=
+  pureTheoryStep_to_wmStrengthObligation I hbridge hW hred
+
 /-- Star closed PureKernel reduction transports to a WM strength obligation,
 using the same one-step closed bridge via closure lifting. -/
 theorem pureTheoryStepStar_to_wmStrengthObligation
@@ -119,6 +143,22 @@ theorem pureTheoryStepStar_to_wmStrengthObligation
     pureClosedTheoryBridge_to_star hbridge
   exact
     I.profileStepStar_sound hW (hbridgeStar hred)
+
+/-- Categorical-aligned wrapper:
+same Pure star WM obligation transport, with explicit endpoint-surface input. -/
+theorem pureTheoryStepStar_to_wmStrengthObligation_categorical
+    (I : PureJudgmentWMInterface State Query)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (_hcat : WMCategoricalEndpointSurface (H := H))
+    {X : H.Obj} (_φc : H.query X)
+    (hbridge : PureClosedTheoryBridge)
+    {W : State} {t u : PureTm 0}
+    (hW : I.side W)
+    (hred : RedStar t u) :
+    WMStrengthObligation State Query W
+      (I.encode (quoteClosedTm t))
+      (I.encode (quoteClosedTm u)) :=
+  pureTheoryStepStar_to_wmStrengthObligation I hbridge hW hred
 
 /-- Package a closed PureKernel one-step as a state-indexed WM consequence rule. -/
 def wmConsequenceRuleOn_of_closed_pureTheoryStep
@@ -147,6 +187,48 @@ def wmConsequenceRuleOn_of_closed_pureTheoryStepStar
   sound := by
     intro W hW
     exact pureTheoryStepStar_to_wmStrengthObligation I hbridge hW hred
+
+/-- Categorical-aligned packaging of a closed PureKernel one-step as a
+state-indexed WM consequence rule. -/
+def wmConsequenceRuleOn_of_closed_pureTheoryStep_categorical
+    (I : PureJudgmentWMInterface State Query)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (_hcat : WMCategoricalEndpointSurface (H := H))
+    {X : H.Obj} (_φc : H.query X)
+    (hbridge : PureClosedTheoryBridge)
+    {t u : PureTm 0}
+    (hred : Red t u) :
+    WMConsequenceRuleOn State Query where
+  side := I.side
+  premise := I.encode (quoteClosedTm t)
+  conclusion := I.encode (quoteClosedTm u)
+  sound := by
+    intro W hW
+    exact
+      pureTheoryStep_to_wmStrengthObligation_categorical
+        (I := I) (H := H) (_hcat := _hcat) (_φc := _φc)
+        (hbridge := hbridge) (W := W) (hW := hW) hred
+
+/-- Categorical-aligned packaging of a closed PureKernel star reduction as a
+state-indexed WM consequence rule. -/
+def wmConsequenceRuleOn_of_closed_pureTheoryStepStar_categorical
+    (I : PureJudgmentWMInterface State Query)
+    (H : Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
+    (_hcat : WMCategoricalEndpointSurface (H := H))
+    {X : H.Obj} (_φc : H.query X)
+    (hbridge : PureClosedTheoryBridge)
+    {t u : PureTm 0}
+    (hred : RedStar t u) :
+    WMConsequenceRuleOn State Query where
+  side := I.side
+  premise := I.encode (quoteClosedTm t)
+  conclusion := I.encode (quoteClosedTm u)
+  sound := by
+    intro W hW
+    exact
+      pureTheoryStepStar_to_wmStrengthObligation_categorical
+        (I := I) (H := H) (_hcat := _hcat) (_φc := _φc)
+        (hbridge := hbridge) (W := W) (hW := hW) hred
 
 /-! ## WM-side regression canaries (consume existing PureKernel regressions) -/
 

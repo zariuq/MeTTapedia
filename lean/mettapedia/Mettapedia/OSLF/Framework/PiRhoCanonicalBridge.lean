@@ -7,6 +7,7 @@ import Mettapedia.Logic.ModalMuCalculus
 import Mettapedia.Logic.OSLFKripkeBridge
 import Mettapedia.Logic.OSLFImageFinite
 import Mettapedia.Logic.OSLFKSUnificationSketch
+import Mettapedia.Logic.OSLFDistinctionGraph
 
 /-!
 # π→ρ Canonical Package Bridge (Pre-OSLF)
@@ -548,6 +549,414 @@ theorem hm_converse_rhoDerivedCanonicalRel
       (I := I)
       (hImageFinite := imageFinite_rhoDerivedCanonicalRel)
       hobs
+
+/-- Full classical HM iff on the canonical executable core relation:
+observer-indistinguishability coincides with full bisimilarity under explicit
+forward/backward image-finiteness (forward is discharged here). -/
+theorem hm_iff_fullBisim_rhoCoreCanonicalRel
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (hPredFinite : ∀ p : Pattern, Set.Finite {q : Pattern | rhoCoreCanonicalRel q p})
+    (p q : Pattern) :
+    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      rhoCoreCanonicalRel I p q
+    ↔
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      rhoCoreCanonicalRel I p q := by
+  exact
+    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+      (R := rhoCoreCanonicalRel)
+      (I := I)
+      (hImageFinite := imageFinite_rhoCoreCanonicalRel)
+      (hPredFinite := hPredFinite)
+      p q
+
+/-- Full classical HM iff on the canonical executable derived-facing relation:
+observer-indistinguishability coincides with full bisimilarity under explicit
+forward/backward image-finiteness (forward is discharged here). -/
+theorem hm_iff_fullBisim_rhoDerivedCanonicalRel
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (hPredFinite : ∀ p : Pattern, Set.Finite {q : Pattern | rhoDerivedCanonicalRel q p})
+    (p q : Pattern) :
+    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      rhoDerivedCanonicalRel I p q
+    ↔
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      rhoDerivedCanonicalRel I p q := by
+  exact
+    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+      (R := rhoDerivedCanonicalRel)
+      (I := I)
+      (hImageFinite := imageFinite_rhoDerivedCanonicalRel)
+      (hPredFinite := hPredFinite)
+      p q
+
+/-- Restrict a relation to a finite carrier on both source and target. -/
+abbrev finiteCarrierRel
+    (R : Pattern → Pattern → Prop)
+    (carrier : Finset Pattern) : Pattern → Pattern → Prop :=
+  fun p q => p ∈ carrier ∧ q ∈ carrier ∧ R p q
+
+/-- Forward image-finiteness for finite-carrier restricted relations. -/
+theorem imageFinite_finiteCarrierRel
+    (R : Pattern → Pattern → Prop)
+    (carrier : Finset Pattern)
+    (p : Pattern) :
+    Set.Finite {q : Pattern | finiteCarrierRel R carrier p q} := by
+  refine Set.Finite.subset carrier.finite_toSet ?_
+  intro q hq
+  exact hq.2.1
+
+/-- Backward image-finiteness for finite-carrier restricted relations. -/
+theorem predFinite_finiteCarrierRel
+    (R : Pattern → Pattern → Prop)
+    (carrier : Finset Pattern)
+    (p : Pattern) :
+    Set.Finite {q : Pattern | finiteCarrierRel R carrier q p} := by
+  refine Set.Finite.subset carrier.finite_toSet ?_
+  intro q hq
+  exact hq.1
+
+/-- Scoped canonical executable core relation over a finite carrier. -/
+abbrev rhoCoreCanonicalRelOn
+    (carrier : Finset Pattern) : Pattern → Pattern → Prop :=
+  finiteCarrierRel rhoCoreCanonicalRel carrier
+
+/-- Scoped canonical executable derived-facing relation over a finite carrier. -/
+abbrev rhoDerivedCanonicalRelOn
+    (carrier : Finset Pattern) : Pattern → Pattern → Prop :=
+  finiteCarrierRel rhoDerivedCanonicalRel carrier
+
+/-- Forward image-finiteness for scoped canonical executable core relation. -/
+theorem imageFinite_rhoCoreCanonicalRelOn
+    (carrier : Finset Pattern)
+    (p : Pattern) :
+    Set.Finite {q : Pattern | rhoCoreCanonicalRelOn carrier p q} := by
+  simpa [rhoCoreCanonicalRelOn] using
+    imageFinite_finiteCarrierRel rhoCoreCanonicalRel carrier p
+
+/-- Backward image-finiteness for scoped canonical executable core relation. -/
+theorem predFinite_rhoCoreCanonicalRelOn
+    (carrier : Finset Pattern)
+    (p : Pattern) :
+    Set.Finite {q : Pattern | rhoCoreCanonicalRelOn carrier q p} := by
+  simpa [rhoCoreCanonicalRelOn] using
+    predFinite_finiteCarrierRel rhoCoreCanonicalRel carrier p
+
+/-- Forward image-finiteness for scoped canonical executable derived-facing
+relation. -/
+theorem imageFinite_rhoDerivedCanonicalRelOn
+    (carrier : Finset Pattern)
+    (p : Pattern) :
+    Set.Finite {q : Pattern | rhoDerivedCanonicalRelOn carrier p q} := by
+  simpa [rhoDerivedCanonicalRelOn] using
+    imageFinite_finiteCarrierRel rhoDerivedCanonicalRel carrier p
+
+/-- Backward image-finiteness for scoped canonical executable derived-facing
+relation. -/
+theorem predFinite_rhoDerivedCanonicalRelOn
+    (carrier : Finset Pattern)
+    (p : Pattern) :
+    Set.Finite {q : Pattern | rhoDerivedCanonicalRelOn carrier q p} := by
+  simpa [rhoDerivedCanonicalRelOn] using
+    predFinite_finiteCarrierRel rhoDerivedCanonicalRel carrier p
+
+/-- Full classical HM iff on finite-carrier-scoped core canonical relation,
+with both image-finiteness sides discharged by construction. -/
+theorem hm_iff_fullBisim_rhoCoreCanonicalRelOn
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (carrier : Finset Pattern)
+    (p q : Pattern) :
+    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      (rhoCoreCanonicalRelOn carrier) I p q
+    ↔
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      (rhoCoreCanonicalRelOn carrier) I p q := by
+  exact
+    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+      (R := rhoCoreCanonicalRelOn carrier)
+      (I := I)
+      (hImageFinite := imageFinite_rhoCoreCanonicalRelOn carrier)
+      (hPredFinite := predFinite_rhoCoreCanonicalRelOn carrier)
+      p q
+
+/-- Full classical HM iff on finite-carrier-scoped derived canonical relation,
+with both image-finiteness sides discharged by construction. -/
+theorem hm_iff_fullBisim_rhoDerivedCanonicalRelOn
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (carrier : Finset Pattern)
+    (p q : Pattern) :
+    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      (rhoDerivedCanonicalRelOn carrier) I p q
+    ↔
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      (rhoDerivedCanonicalRelOn carrier) I p q := by
+  exact
+    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+      (R := rhoDerivedCanonicalRelOn carrier)
+      (I := I)
+      (hImageFinite := imageFinite_rhoDerivedCanonicalRelOn carrier)
+      (hPredFinite := predFinite_rhoDerivedCanonicalRelOn carrier)
+      p q
+
+/-- Assumption-free concrete canary: HM iff on scoped core canonical relation
+over a two-state carrier. -/
+theorem hm_iff_fullBisim_rhoCoreCanonicalRelOn_pair_canary
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (p q : Pattern) :
+    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      (rhoCoreCanonicalRelOn ({p, q} : Finset Pattern)) I p q
+    ↔
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      (rhoCoreCanonicalRelOn ({p, q} : Finset Pattern)) I p q := by
+  simpa using
+    hm_iff_fullBisim_rhoCoreCanonicalRelOn
+      (I := I) ({p, q} : Finset Pattern) p q
+
+/-- Assumption-free concrete canary: HM iff on scoped derived canonical relation
+over a two-state carrier. -/
+theorem hm_iff_fullBisim_rhoDerivedCanonicalRelOn_pair_canary
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (p q : Pattern) :
+    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      (rhoDerivedCanonicalRelOn ({p, q} : Finset Pattern)) I p q
+    ↔
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      (rhoDerivedCanonicalRelOn ({p, q} : Finset Pattern)) I p q := by
+  simpa using
+    hm_iff_fullBisim_rhoDerivedCanonicalRelOn
+      (I := I) ({p, q} : Finset Pattern) p q
+
+/-- Scoped SC-quotiented canonical executable core relation on a finite carrier.
+Source/target are restricted to `carrier`, and the canonical step is taken up
+to ρ structural congruence on both ends. -/
+abbrev rhoCoreCanonicalSCQuotRelOn
+    (carrier : Finset Pattern) : Pattern → Pattern → Prop :=
+  fun p q =>
+    p ∈ carrier ∧
+    q ∈ carrier ∧
+    ∃ p' q',
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence p p' ∧
+      rhoCoreCanonicalRel p' q' ∧
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence q' q
+
+/-- Scoped SC-quotiented canonical executable derived-facing relation on a
+finite carrier. -/
+abbrev rhoDerivedCanonicalSCQuotRelOn
+    (carrier : Finset Pattern) : Pattern → Pattern → Prop :=
+  fun p q =>
+    p ∈ carrier ∧
+    q ∈ carrier ∧
+    ∃ p' q',
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence p p' ∧
+      rhoDerivedCanonicalRel p' q' ∧
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence q' q
+
+/-- Forward image-finiteness for scoped SC-quotiented core relation. -/
+theorem imageFinite_rhoCoreCanonicalSCQuotRelOn
+    (carrier : Finset Pattern)
+    (p : Pattern) :
+    Set.Finite {q : Pattern | rhoCoreCanonicalSCQuotRelOn carrier p q} := by
+  refine Set.Finite.subset carrier.finite_toSet ?_
+  intro q hq
+  exact hq.2.1
+
+/-- Backward image-finiteness for scoped SC-quotiented core relation. -/
+theorem predFinite_rhoCoreCanonicalSCQuotRelOn
+    (carrier : Finset Pattern)
+    (p : Pattern) :
+    Set.Finite {q : Pattern | rhoCoreCanonicalSCQuotRelOn carrier q p} := by
+  refine Set.Finite.subset carrier.finite_toSet ?_
+  intro q hq
+  exact hq.1
+
+/-- Forward image-finiteness for scoped SC-quotiented derived relation. -/
+theorem imageFinite_rhoDerivedCanonicalSCQuotRelOn
+    (carrier : Finset Pattern)
+    (p : Pattern) :
+    Set.Finite {q : Pattern | rhoDerivedCanonicalSCQuotRelOn carrier p q} := by
+  refine Set.Finite.subset carrier.finite_toSet ?_
+  intro q hq
+  exact hq.2.1
+
+/-- Backward image-finiteness for scoped SC-quotiented derived relation. -/
+theorem predFinite_rhoDerivedCanonicalSCQuotRelOn
+    (carrier : Finset Pattern)
+    (p : Pattern) :
+    Set.Finite {q : Pattern | rhoDerivedCanonicalSCQuotRelOn carrier q p} := by
+  refine Set.Finite.subset carrier.finite_toSet ?_
+  intro q hq
+  exact hq.1
+
+/-- Full classical HM iff on scoped SC-quotiented canonical core relation.
+Both image-finiteness sides are discharged globally for this chosen relation
+family. -/
+theorem hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (carrier : Finset Pattern)
+    (p q : Pattern) :
+    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      (rhoCoreCanonicalSCQuotRelOn carrier) I p q
+    ↔
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      (rhoCoreCanonicalSCQuotRelOn carrier) I p q := by
+  exact
+    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+      (R := rhoCoreCanonicalSCQuotRelOn carrier)
+      (I := I)
+      (hImageFinite := imageFinite_rhoCoreCanonicalSCQuotRelOn carrier)
+      (hPredFinite := predFinite_rhoCoreCanonicalSCQuotRelOn carrier)
+      p q
+
+/-- Full classical HM iff on scoped SC-quotiented canonical derived relation.
+Both image-finiteness sides are discharged globally for this chosen relation
+family. -/
+theorem hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (carrier : Finset Pattern)
+    (p q : Pattern) :
+    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      (rhoDerivedCanonicalSCQuotRelOn carrier) I p q
+    ↔
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      (rhoDerivedCanonicalSCQuotRelOn carrier) I p q := by
+  exact
+    Mettapedia.Logic.OSLFDistinctionGraph.indist_iff_fullBisim_imageFinite
+      (R := rhoDerivedCanonicalSCQuotRelOn carrier)
+      (I := I)
+      (hImageFinite := imageFinite_rhoDerivedCanonicalSCQuotRelOn carrier)
+      (hPredFinite := predFinite_rhoDerivedCanonicalSCQuotRelOn carrier)
+      p q
+
+/-- Assumption-free concrete canary: HM iff on scoped SC-quotiented core
+relation over a two-state carrier. -/
+theorem hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn_pair_canary
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (p q : Pattern) :
+    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      (rhoCoreCanonicalSCQuotRelOn ({p, q} : Finset Pattern)) I p q
+    ↔
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      (rhoCoreCanonicalSCQuotRelOn ({p, q} : Finset Pattern)) I p q := by
+  simpa using
+    hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn
+      (I := I) ({p, q} : Finset Pattern) p q
+
+/-- Assumption-free concrete canary: HM iff on scoped SC-quotiented derived
+relation over a two-state carrier. -/
+theorem hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn_pair_canary
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (p q : Pattern) :
+    Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+      (rhoDerivedCanonicalSCQuotRelOn ({p, q} : Finset Pattern)) I p q
+    ↔
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      (rhoDerivedCanonicalSCQuotRelOn ({p, q} : Finset Pattern)) I p q := by
+  simpa using
+    hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn
+      (I := I) ({p, q} : Finset Pattern) p q
+
+/-- Lift a concrete canonical core step into the scoped SC-quotiented core
+relation (nontrivial edge witness). -/
+theorem rhoCoreCanonicalSCQuotRelOn_of_core_step
+    (carrier : Finset Pattern)
+    {p q : Pattern}
+    (hp : p ∈ carrier)
+    (hq : q ∈ carrier)
+    (hstep : rhoCoreCanonicalRel p q) :
+    rhoCoreCanonicalSCQuotRelOn carrier p q := by
+  refine ⟨hp, hq, p, q, ?_, hstep, ?_⟩
+  · exact Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence.refl p
+  · exact Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence.refl q
+
+/-- Lift a concrete canonical derived-facing step into the scoped SC-quotiented
+derived relation (nontrivial edge witness). -/
+theorem rhoDerivedCanonicalSCQuotRelOn_of_derived_step
+    (carrier : Finset Pattern)
+    {p q : Pattern}
+    (hp : p ∈ carrier)
+    (hq : q ∈ carrier)
+    (hstep : rhoDerivedCanonicalRel p q) :
+    rhoDerivedCanonicalSCQuotRelOn carrier p q := by
+  refine ⟨hp, hq, p, q, ?_, hstep, ?_⟩
+  · exact Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence.refl p
+  · exact Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence.refl q
+
+/-- Regression canary: a nontrivial scoped SC-quotiented core edge is preserved
+while the same endpoint yields full bisimilarity via assumption-free HM iff. -/
+theorem hm_scoped_coreSC_edge_preservation_canary
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (carrier : Finset Pattern)
+    {p q : Pattern}
+    (hp : p ∈ carrier)
+    (hq : q ∈ carrier)
+    (hstep : rhoCoreCanonicalRel p q)
+    (hobs :
+      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+        (rhoCoreCanonicalSCQuotRelOn carrier) I p q) :
+    rhoCoreCanonicalSCQuotRelOn carrier p q ∧
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      (rhoCoreCanonicalSCQuotRelOn carrier) I p q := by
+  refine ⟨rhoCoreCanonicalSCQuotRelOn_of_core_step carrier hp hq hstep, ?_⟩
+  exact (hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn I carrier p q).1 hobs
+
+/-- Regression canary: a nontrivial scoped SC-quotiented derived edge is
+preserved while the same endpoint yields full bisimilarity via assumption-free
+HM iff. -/
+theorem hm_scoped_derivedSC_edge_preservation_canary
+    (I : Mettapedia.OSLF.Formula.AtomSem)
+    (carrier : Finset Pattern)
+    {p q : Pattern}
+    (hp : p ∈ carrier)
+    (hq : q ∈ carrier)
+    (hstep : rhoDerivedCanonicalRel p q)
+    (hobs :
+      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+        (rhoDerivedCanonicalSCQuotRelOn carrier) I p q) :
+    rhoDerivedCanonicalSCQuotRelOn carrier p q ∧
+    Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+      (rhoDerivedCanonicalSCQuotRelOn carrier) I p q := by
+  refine ⟨rhoDerivedCanonicalSCQuotRelOn_of_derived_step carrier hp hq hstep, ?_⟩
+  exact (hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn I carrier p q).1 hobs
+
+attribute
+  [deprecated rhoCoreCanonicalSCQuotRelOn (since := "2026-03-04")]
+  rhoCoreCanonicalRelOn
+
+attribute
+  [deprecated rhoDerivedCanonicalSCQuotRelOn (since := "2026-03-04")]
+  rhoDerivedCanonicalRelOn
+
+attribute
+  [deprecated imageFinite_rhoCoreCanonicalSCQuotRelOn (since := "2026-03-04")]
+  imageFinite_rhoCoreCanonicalRelOn
+
+attribute
+  [deprecated predFinite_rhoCoreCanonicalSCQuotRelOn (since := "2026-03-04")]
+  predFinite_rhoCoreCanonicalRelOn
+
+attribute
+  [deprecated imageFinite_rhoDerivedCanonicalSCQuotRelOn (since := "2026-03-04")]
+  imageFinite_rhoDerivedCanonicalRelOn
+
+attribute
+  [deprecated predFinite_rhoDerivedCanonicalSCQuotRelOn (since := "2026-03-04")]
+  predFinite_rhoDerivedCanonicalRelOn
+
+attribute
+  [deprecated hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn (since := "2026-03-04")]
+  hm_iff_fullBisim_rhoCoreCanonicalRelOn
+
+attribute
+  [deprecated hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn (since := "2026-03-04")]
+  hm_iff_fullBisim_rhoDerivedCanonicalRelOn
+
+attribute
+  [deprecated hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn_pair_canary (since := "2026-03-04")]
+  hm_iff_fullBisim_rhoCoreCanonicalRelOn_pair_canary
+
+attribute
+  [deprecated hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn_pair_canary (since := "2026-03-04")]
+  hm_iff_fullBisim_rhoDerivedCanonicalRelOn_pair_canary
 
 /-- Predecessor-domain pair for two endpoints under the same relation. -/
 abbrev PredDomainPair

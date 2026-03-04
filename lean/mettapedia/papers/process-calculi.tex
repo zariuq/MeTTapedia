@@ -84,7 +84,8 @@ MeTTa-calculus, and modal $\mu$-calculus---together with three
 cross-calculus bridges: a $\pi$-to-$\rho$ encoding with forward
 simulation and backward admin reflection, an MQ-to-MORK
 interoperability bridge, and a MeTTa-to-$\rho$ shared-fragment
-translation with open-map self-bisimulation witness.
+translation with open-map self-bisimulation witness and forward
+simulation.
 The formalization totals over 17{,}500 lines of Lean~4.28 across 55
 files with zero \texttt{sorry} and zero custom axioms.
 Shared infrastructure---typeclasses for parallel composition,
@@ -155,12 +156,12 @@ Table~\ref{tab:summary} gives line counts; total formalization exceeds
 $\rho$-calculus  & \texttt{ProcessCalculi/RhoCalculus/} & 11 & 4{,}954 \\
 $\pi$-calculus   & \texttt{ProcessCalculi/PiCalculus/}  & 19 & 9{,}134 \\
 MQ-calculus      & \texttt{ProcessCalculi/MQCalculus/}  & 10 & 1{,}433 \\
-MeTTa-calculus   & \texttt{ProcessCalculi/MeTTaCalculus/} &  9 &   904 \\
+MeTTa-calculus   & \texttt{ProcessCalculi/MeTTaCalculus/} &  9 & 1{,}174 \\
 Common infra     & \texttt{ProcessCalculi/Common/}      &  4 &   246 \\
 Modal $\mu$-calc & \texttt{Logic/ModalMuCalculus.lean}   &  1 &   360 \\
 Quantale sem.    & \texttt{Logic/ModalQuantaleSemantics.lean} & 1 & 520 \\
 \midrule
-\textbf{Grand total} & & \textbf{55} & \textbf{17{,}551} \\
+\textbf{Grand total} & & \textbf{55} & \textbf{17{,}821} \\
 \bottomrule
 \end{tabular}
 \caption{Formalization summary: 0 sorries, 0 custom axioms throughout.}
@@ -469,6 +470,79 @@ a MORK binary fold step.
 This ties communication-level nondeterminism in MQ directly into the
 MORK three-phase execution model~\cite{MeredithStayOSLF2020}.
 
+\paragraph{Executable witness.}
+Two MM2 scripts exercise the bridge concretely on the MORK runtime.
+MORK operates on a fact database: an \texttt{exec} rule matches facts
+against a pattern (after the comma) and rewrites them via a template
+(\texttt{(+ ...)} adds a fact, \texttt{(- ...)} removes one).
+Both scripts set up identical initial facts and an identical fold rule,
+differing only in which branch is selected.
+
+\smallskip\noindent
+\textbf{Script~1} (\texttt{binary\_fold\_pick0.mm2})---selects branch~0:
+
+\begin{lstlisting}[caption={Pick outcome 0 (from \texttt{binary\_fold\_pick0.mm2})}]
+; Initial facts: a pending query with two candidate sub-results
+(wait q1)
+(subResult q1 0 P)
+(subResult q1 1 Q)
+
+; Choose branch 0 in this run
+(pick q1 0)
+
+; Fold rule: when (wait $q), (pick $q $i), and (subResult $q $i $r)
+; all match, emit (commOutcome $q $i $r) and consume the wait token
+(exec (0 fold)
+  (, (wait $q)
+     (pick $q $i)
+     (subResult $q $i $r))
+  (O (+ (commOutcome $q $i $r))
+     (- (wait $q))))
+\end{lstlisting}
+
+\noindent
+The pattern binds \texttt{\$q}=\texttt{q1},
+\texttt{\$i}=\texttt{0}, \texttt{\$r}=\texttt{P} (since
+\texttt{(pick q1 0)} selects index~0).  The template emits
+\texttt{(commOutcome q1 0 P)}.
+
+\smallskip\noindent
+\textbf{Script~2} (\texttt{binary\_fold\_pick1.mm2})---selects branch~1:
+
+\begin{lstlisting}[caption={Pick outcome 1 (from \texttt{binary\_fold\_pick1.mm2})}]
+; Same initial facts
+(wait q1)
+(subResult q1 0 P)
+(subResult q1 1 Q)
+
+; Choose branch 1 in this run
+(pick q1 1)
+
+; Same fold rule
+(exec (0 fold)
+  (, (wait $q)
+     (pick $q $i)
+     (subResult $q $i $r))
+  (O (+ (commOutcome $q $i $r))
+     (- (wait $q))))
+\end{lstlisting}
+
+\noindent
+Now \texttt{\$i}=\texttt{1} and \texttt{\$r}=\texttt{Q}, so
+the template emits \texttt{(commOutcome q1 1 Q)}.
+
+\noindent
+The two outputs---\texttt{(commOutcome q1 0 P)} and
+\texttt{(commOutcome q1 1 Q)}---are the operational witnesses for
+\texttt{mork\_mq\_nondeterminism\_corresponds}: the \emph{same}
+fold rule, applied to the \emph{same} query with the \emph{same}
+two candidate sub-results, produces \emph{either} outcome depending
+solely on the branch selection.  This is precisely the structural
+binary nondeterminism that \texttt{comm\_nondeterminism\_iff\_mork\_binary}
+formalizes in Lean: MQ's two \texttt{CommReduction} outcomes (zero$\to P$,
+one$\to Q$) biject with MORK's two \texttt{FoldPicksSubResult} choices
+(\texttt{subResult0}, \texttt{subResult1}).
+
 
 %% ====================================================================
 \section{The MeTTa-Calculus}
@@ -478,7 +552,7 @@ MORK three-phase execution model~\cite{MeredithStayOSLF2020}.
 The MeTTa-calculus~\cite{MeredithMeTTaCalculus2024} formalizes the core
 of the MeTTa language as a symmetric reflective higher-order concurrent
 calculus with backchaining.  The formalization comprises 9~files
-totaling 904~lines under \texttt{ProcessCalculi/MeTTaCalculus/}.
+totaling 1{,}174~lines under \texttt{ProcessCalculi/MeTTaCalculus/}.
 
 \subsection{Syntax}
 
@@ -663,10 +737,11 @@ Positive and negative canaries validate both rules at the kernel level:
   produces no output.
 \end{itemize}
 
-\subsection{Premise IR and Adequacy}
+\subsection{Premise Intermediate Representation and Adequacy}
 
 \texttt{Premises.lean} (88~lines) declares a \texttt{PremiseProgram}---a
-datalog-style IR with two relations and two builtins:
+datalog-style intermediate representation (IR) with two relations and
+two builtins:
 \[
   \mathit{mettaComm}(t, u, P, Q, P', Q') \qquad
   \mathit{mettaStepNoReflect}(\mathit{src}, \mathit{tgt})
@@ -698,13 +773,14 @@ The following are proven:
 
 \subsection{Interoperability with \texorpdfstring{$\rho$}{rho}-Calculus}
 
-\texttt{Interoperability.lean} (113~lines) provides a shared-fragment
+\texttt{Interoperability.lean} (301~lines) provides a shared-fragment
 translation from the quote/drop/parallel subset of MeTTa-calculus into
 $\rho$-calculus.  The translation \texttt{toRhoSharedProc?}~succeeds on
 the translatable fragment and fails gracefully outside it.
 
-For any successfully translated process, the file proves that the
-$\rho$-image has a canonical open-map path-bisimulation witness:
+For any successfully translated process, the file proves path-bisimulation
+self-witnesses, intrinsic rho-side inversion, and shared-core
+forward/backward simulation:
 
 \begin{itemize}
 \item \texttt{shared\_translation\_pathBisim\_self}: the translated image
@@ -712,22 +788,42 @@ $\rho$-image has a canonical open-map path-bisimulation witness:
   \texttt{BisimulationKit}.
 \item \texttt{shared\_translation\_esBisim\_self}: the corresponding
   $(E,S)$-bisimilarity corollary.
-\item \texttt{paper\_shared\_to\_rho\_openmap\_self}: the paper-mapped
-  wrapper.
+\item \texttt{rhoSharedCore\_step\_inversion}: intrinsic inversion of
+  \texttt{RhoSharedCoreReduces}.
+\item \texttt{rhoSharedCore\_stepStar\_inversion}: intrinsic inversion of
+  \texttt{RhoSharedCoreReducesStar}.
+\item \texttt{sharedCore\_step\_forward\_restricted}: one-step forward
+  simulation on the quote/drop/parallel shared-core fragment.
+\item \texttt{sharedCore\_step\_backward\_restricted}: source-anchored
+  one-step backward simulation.
+\item \texttt{sharedCore\_step\_bisimulation}: combined one-step
+  forward+backward shared-core bisimulation correspondence.
+\item \texttt{sharedCore\_stepStar\_forward\_restricted}: reflexive-transitive
+  forward simulation.
+\item \texttt{sharedCore\_stepStar\_backward\_restricted}: reflexive-transitive
+  backward simulation.
+\item \texttt{sharedCore\_stepStar\_bisimulation}: combined star-level
+  forward+backward shared-core bisimulation correspondence.
 \end{itemize}
 
 \noindent
-This establishes the shared-fragment translation as well-typed with
-respect to the open-map framework, but is \emph{not yet} a full
-cross-language bisimulation theorem.  The next step is to prove
-forward/backward simulation for translated shared-fragment steps, then
-upgrade to a full MeTTa$\leftrightarrow$$\rho$ bisimulation theorem.
+Thus, forward and backward simulation are now formalized for translated
+shared-core quote/drop/parallel steps (and their star closure).  Remaining
+future work is to extend this from shared-core to the full MeTTa fragment
+(including \textsc{Comm}/\textsc{Refl}) and prove an assumption-free
+cross-language bisimulation theorem.
 
 \subsection{Regression and Paper Map}
 
-\texttt{PaperMap.lean} (65~lines) provides a theorem-level index mapping
+\texttt{PaperMap.lean} (147~lines) provides a theorem-level index mapping
 each clause of the specification~\cite{MeredithMeTTaCalculus2024} to its
-Lean proof.
+Lean proof, including wrappers for step/star forward simulation, backward
+simulation, intrinsic backward inversion, and combined bisimulation
+(\texttt{paper\_shared\_to\_rho\_*} theorems).
+\texttt{CoreMain.lean} now also exposes an explicit HM endpoint map
+(\texttt{coreMain\_hm\_endpoint\_recommendation\_map}) distinguishing global
+canonical wrappers (assumption-scoped predecessor-finiteness) from the
+assumption-free scoped SC-quotiented family.
 \texttt{Regression.lean} (65~lines) provides a regression corpus with
 positive and negative test cases for both COMM and REFL rules.
 \texttt{RelationNames.lean} (28~lines) is a single source of truth for
@@ -758,7 +854,8 @@ fixed point.
 
 \subsection{Rho-Calculus as LTS}
 
-The $\rho$-calculus reduction relation $p \leadsto q$ is an LTS with
+The $\rho$-calculus reduction relation $p \leadsto q$ is a labelled
+transition system (LTS) with
 states = patterns, actions = $()$ (unlabeled), and transitions =
 $\leadsto$.  This directly induces modal operators:
 
@@ -969,7 +1066,7 @@ $\pi$/$\rho$, measurement in MQ).
 
 We have presented a comprehensive Lean~4.28 formalization of five
 process-algebraic systems and three cross-calculus bridges, totaling
-17{,}551 lines with zero \texttt{sorry} and zero custom axioms
+17{,}821 lines with zero \texttt{sorry} and zero custom axioms
 (Table~\ref{tab:summary}).
 
 Key results include:
@@ -977,17 +1074,19 @@ Key results include:
   \item The Galois connection in $\rho$-calculus \emph{is} modal
     diamond-box duality (Theorem~\ref{thm:galois}), validating the OSLF
     construction.
-  \item Forward simulation of the $\pi$-to-$\rho$ encoding
-    (Theorem~\ref{thm:forward-sim}) following
-    Lybech~\cite{Lybech2022}, with 2{,}650~lines of backward admin
-    reflection.
+  \item Weak operational correspondence for restriction-free
+    $\pi$-processes (\texttt{calculus\_weak\_correspondence\_full\_encode}):
+    forward simulation (Theorem~\ref{thm:forward-sim}), backward admin
+    reflection with three-branch decomposition (reflexive,
+    admin-canonical, or reflected $\pi$-step), and their composition
+    into a single theorem---under restriction-freeness and Barendregt
+    hygiene hypotheses, totaling 2{,}745~lines.
   \item Constructive both-outcomes witness for MQ measurement branching,
     with backend-parametric denotational semantics and post-collapse
     normalization.
   \item We conjecture that $\rho$-calculus is strictly more expressive
     than $\mu$-calculus (Conjecture~\ref{conj:rho-mu-expressiveness}):
     reflection cannot be captured by behavioral observation.
-    A full formalization remains future work.
   \item Complete quantale-valued $\mu$-calculus semantics with
     environment monotonicity (Theorem~\ref{thm:env-mono}), enabling
     Knaster-Tarski fixed-point computation across probabilistic, fuzzy,
@@ -995,34 +1094,46 @@ Key results include:
   \item Spice calculus $n$-step lookahead is exactly iterated diamond
     $\langle\rangle^n$, proving that precognitive agents compute
     $\mu$-calculus temporal properties.
+  \item Classical Hennessy-Milner equivalence (observational
+    indistinguishability iff bisimilarity) proved assumption-free for
+    finite-carrier SC-quotiented canonical $\rho$-relations, and under
+    predecessor-finiteness for the global relation.  Forward
+    image-finiteness is auto-discharged for all
+    \texttt{LanguageDef}-based relations.
   \item MeTTa-calculus with executable COMM/REFL reduction, premise-IR
     adequacy bridge, and a shared-fragment translation into
-    $\rho$-calculus with open-map self-bisimulation witness
+    $\rho$-calculus with forward/backward shared-core simulation and
+    bisimulation at both step and step$^*$ levels
     (Section~\ref{sec:metta-calc}).
 \end{enumerate}
 
 \subsection{Future Work}
 
 \begin{enumerate}[leftmargin=1.5em]
-  \item \textbf{Full backward simulation}: complete the
-    $\pi$-to-$\rho$ backward simulation using the admin reflection
-    infrastructure already formalized.
+  \item \textbf{Unrestricted $\pi$-to-$\rho$ bisimulation}: extend the
+    weak correspondence from restriction-free processes to full
+    $\pi$-calculus (including $\nu$ and replication), which requires
+    encoding name-server apparatus into the theorem statement.  Remove
+    Barendregt side conditions via explicit alpha-renaming.  Package a
+    single assumption-minimal weak bisimulation iff.
+  \item \textbf{Global Hennessy-Milner for $\rho$-calculus}: lift the
+    finite-carrier SC-quotiented HM~iff to the global unquotiented
+    $\rho$-relation by proving predecessor-finiteness or quotienting to
+    a finite-image semantics.
+  \item \textbf{Full MeTTa$\leftrightarrow$$\rho$ bisimulation}: extend
+    the shared-core (quote/drop/parallel) forward/backward simulation to
+    \textsc{Comm} and \textsc{Refl} fragments; remove the
+    source-anchored restriction by proving translation injectivity.
   \item \textbf{Multi-qubit MQ gates}: extend gate semantics beyond
-    single-wire action; prove stronger collapse theory (preservation
-    under composition, idempotence of repeated measurement).
-  \item \textbf{PLN bridge completion}: formalize PLN's full inference
-    calculus and prove temporal operators correspond to modal formulas
-    with time-indexed LTS.
+    single-wire action; prove collapse preservation under composition
+    and measurement idempotence.
+  \item \textbf{PLN temporal bridge}: prove that PLN temporal operators
+    correspond to modal formulas over a time-indexed LTS.
   \item \textbf{OSLF integration for MQ}: instantiate MQ processes as an
     OSLF language instance with $\Diamond \dashv \Box$ Galois
-    connection, paralleling existing PeTTa and Governance instances.
+    connection.
   \item \textbf{Spice-MQ bridge}: connect $\rho$-calculus Spice
     $n$-step lookahead to MQ measurement prediction.
-  \item \textbf{Hennessy-Milner theorem}: prove the classical result
-    for the $\rho$-calculus LTS using \texttt{presentMoment\_finite}.
-  \item \textbf{Full MeTTa$\leftrightarrow$$\rho$ bisimulation}: prove
-    forward/backward simulation for translated shared-fragment steps,
-    then upgrade to a full cross-language bisimulation theorem.
 \end{enumerate}
 
 \bibliographystyle{plain}

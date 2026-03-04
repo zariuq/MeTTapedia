@@ -19,7 +19,17 @@
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{unicode-math}
+\IfFileExists{newunicodechar.sty}{
+  \usepackage{newunicodechar}
+  \newunicodechar{∘}{\ensuremath{\circ}}
+}{}
 \IfFontExistsTF{Stix Two Math}{\setmathfont{Stix Two Math}}{\setmathfont{STIX Math}}
+
+% Compatibility fallback for older TeX bundles (e.g., Tectonic 2021-era
+% kernel/hyperref hook stacks) where this hook target may be missing.
+\makeatletter
+\providecommand{\headerps@out}{}
+\makeatother
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}[theorem]{Lemma}
@@ -478,7 +488,7 @@ The core Lean artifacts supporting \xiPLN{} are:
 \item \codepath{Mettapedia/OSLF/Framework/QuantaleCoherence.lean}: reusable quantale transport/coherence bundle;
 \item \codepath{Mettapedia/ProbabilityTheory/BayesianNetworks/VariableElimination.lean}: exact VE engine;
 \item \codepath{Mettapedia/ProbabilityTheory/BayesianNetworks/ValuationAlgebra.lean}: valuation-algebra semantics + VE correctness spine;
-\item \codepath{Mettapedia/ProbabilityTheory/BayesianNetworks/VEBridge.lean}: joint-measure ↔ VE probability bridge;
+\item \codepath{Mettapedia/ProbabilityTheory/BayesianNetworks/VEBridge.lean}: joint-measure $\leftrightarrow$ VE probability bridge;
 \item \codepath{Mettapedia/ProbabilityTheory/KnuthSkilling/Bridges/ValuationAlgebra.lean}: KS → valuation-algebra bridge;
 \item \codepath{Mettapedia/Logic/PLNJointEvidenceNoGo.lean}: the local-completeness no-go theorem.
 \end{itemize}
@@ -807,15 +817,39 @@ WM shell clarifiers (state-level permissive, query-level deterministic) \newline
 \code{WMJudgmentCtx.query\_deterministic} &
 \codepath{Mettapedia/Logic/PLNWorldModel.lean} \\
 \hline
+Categorical WM transport layer (institution satisfaction + hyperdoctrine Beck-Chevalley + unified endpoint) \newline
+\textit{Tags: [PLNBook-Ch8], [WM], [institution], [hyperdoctrine], [Beck-Chevalley], [transport]} &
+\code{satisfactionCondition\_evidence},
+\code{satisfactionCondition\_strength},
+\code{satisfactionCondition\_strengthWith},
+\code{satisfactionCondition\_confidence},
+\code{WMInstitution.sat\_condition\_strength},
+\code{beckChevalley\_transport\_exists},
+\code{EndpointStatement},
+\code{institution\_beckChevalley\_endpoint},
+\code{endpointSurface\_of\_hyperdoctrine},
+\code{ch8\_institution\_beckChevalley\_endpoint\_id\_fixture},
+\code{ch8\_hol\_categorical\_wrapper\_bool\_fixture},
+\code{ch8\_fol\_categorical\_consequence\_singleton\_fixture} &
+\codepath{Mettapedia/Logic/PLNWorldModelInstitution.lean},
+\codepath{Mettapedia/Logic/PLNWorldModelHyperdoctrine.lean},
+\codepath{Mettapedia/Logic/PLNWorldModelCategoricalBridge.lean},
+\codepath{Mettapedia/Logic/PLNWorldModelCategoricalRegression.lean} \\
+\hline
 PureKernel closed-judgment $\rightarrow$ WM obligation interface (assumption-parameterized) \newline
 \textit{Tags: [PLNBook-Ch8], [PureKernel], [WM], [bridge], [canary]} &
 \code{PureClosedTheoryBridge},
 \code{pureClosedTheoryBridge\_to\_star},
+\code{WMCategoricalEndpointSurface},
 \code{PureJudgmentWMInterface.profileStepStar\_sound},
 \code{pureTheoryStep\_to\_wmStrengthObligation},
+\code{pureTheoryStep\_to\_wmStrengthObligation\_categorical},
 \code{pureTheoryStepStar\_to\_wmStrengthObligation},
+\code{pureTheoryStepStar\_to\_wmStrengthObligation\_categorical},
 \code{wmConsequenceRuleOn\_of\_closed\_pureTheoryStep},
+\code{wmConsequenceRuleOn\_of\_closed\_pureTheoryStep\_categorical},
 \code{wmConsequenceRuleOn\_of\_closed\_pureTheoryStepStar},
+\code{wmConsequenceRuleOn\_of\_closed\_pureTheoryStepStar\_categorical},
 \code{canary\_betaPi\_bridge\_regression\_one\_nestedLam\_wm},
 \code{canary\_betaPi\_bridge\_regression\_two\_nestedLam\_wm} &
 \codepath{Mettapedia/Logic/PLNWorldModelPureKernelBridge.lean} \\
@@ -825,11 +859,19 @@ HOL/FOL implication closure wrappers into WM consequence rules \newline
 \code{wmConsequenceRule\_of\_pointwise},
 \code{wmConsequenceRuleOn\_of\_pointwise},
 \code{wmConsequenceRuleOn\_of\_singletonStrengthLE},
+\code{multiset\_strength\_le\_of\_pointwise\_categorical},
+\code{multiset\_strength\_le\_of\_singletonStrengthLE\_categorical},
+\code{wmConsequenceRuleOn\_of\_pointwise\_categorical},
+\code{wmConsequenceRuleOn\_of\_singletonStrengthLE\_categorical},
 \code{pointwiseImpliesOnTheory\_of\_consequence},
 \code{multiset\_strength\_le\_of\_consequence},
 \code{wmConsequenceRuleOn\_of\_consequence},
 \code{multiset\_strength\_le\_of\_provable\_imp},
-\code{wmConsequenceRuleOn\_of\_provable\_imp} &
+\code{wmConsequenceRuleOn\_of\_provable\_imp},
+\code{multiset\_strength\_le\_of\_consequence\_categorical},
+\code{wmConsequenceRuleOn\_of\_consequence\_categorical},
+\code{multiset\_strength\_le\_of\_provable\_imp\_categorical},
+\code{wmConsequenceRuleOn\_of\_provable\_imp\_categorical} &
 \codepath{Mettapedia/Logic/PLNWorldModelHOLCompleteness.lean},
 \codepath{Mettapedia/Logic/PLNWorldModelFOLCompleteness.lean} \\
 \hline
@@ -972,6 +1014,10 @@ and \code{threshold\_dia\_total} additionally requires finite branching.
 Without these conditions, use the boundary theorems
 \code{threshold\_or\_counterexample} and \code{threshold\_dia\_fails}.
 
+\paragraph{Chapter 8 categorical regression target.}
+Script-level target for the new WM categorical layer:
+\codepath{scripts/check\_wm\_categorical.sh}.
+
 \subsection{Chapter 9 Counterexample-First Theorem Index}
 \label{app:ch9-counterexample-index}
 
@@ -1106,6 +1152,19 @@ Independent-cause union canary (``at least one head in $n$ biased flips'') \newl
 \code{atLeastOneHeadProb\_coin4\_p01} &
 \codepath{Mettapedia/Logic/PLNNoisyOr.lean} \\
 \hline
+Stochastic experiment layer: Blackwell factorization, weighted source policies, trusted-gate transfer \newline
+\textit{Tags: [PLNBook-Ch9], [experiment], [Blackwell], [weighted-policy], [trusted-gate]} &
+\code{expectedUtility\_eq\_of\_blackwellFactor},
+\code{optimalValue\_mono\_of\_blackwellFactor},
+\code{optimalValueWeighted\_mono\_of\_blackwellFactor},
+\code{optimalValuePolicy\_mono\_of\_blackwellFactor},
+\code{optimalValue\_trustedGate\_mono\_of\_blackwellFactor},
+\code{fixture\_expectedUtility\_eq\_lifted},
+\code{fixture\_optimalValue\_mono},
+\code{fixture\_trustedPolicy\_optimalValue\_mono} &
+\codepath{Mettapedia/Logic/PLNWorldModelExperimentStochastic.lean},
+\codepath{Mettapedia/Logic/PLNWorldModelExperimentStochasticRegression.lean} \\
+\hline
 \end{longtable}
 
 \paragraph{Chapter 9 MeTTa/PeTTa Usage Snippet (theorem-name anchors only).}
@@ -1123,6 +1182,10 @@ inconsistency_zero_within_bound_of_boundedGapFresh
 ch9_brg_graph_toy_optimal_value
 noisyOrMulti_replicate
 atLeastOneHeadProb_eq_noisyOr_replicate
+expectedUtility_eq_of_blackwellFactor
+optimalValue_mono_of_blackwellFactor
+optimalValuePolicy_mono_of_blackwellFactor
+fixture_trustedPolicy_optimalValue_mono
 \end{lstlisting}
 
 \paragraph{Chapter 9 Session Checklist (summary-template).}
@@ -1136,6 +1199,7 @@ atLeastOneHeadProb_eq_noisyOr_replicate
 \item BRGI object coverage checked: feasible-set gate, objective bounds, and finite optimality endpoint.
 \item BRGI graph refinement checked: graph-object wrappers preserve policy-sensitive optimum characterization.
 \item Independent-cause canary checked: noisy-or replicate and finite concrete points.
+\item Stochastic experiment layer checked: Blackwell utility monotonicity plus weighted/trusted-source policy transfer.
 \item Selector$\to$rewrite$\to$threshold endpoint checked (canonical + worked fixture).
 \item Note: operational runtimes are not implemented in Lean here; this section tracks theorem-level semantic/bridge coverage.
 \end{itemize}
@@ -1324,7 +1388,7 @@ Finite MOST/FEW fixtures \newline
 \code{canary\_ch11\_most\_vs\_few\_split\_on\_threeQuarters} &
 \codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierWorkedExamples.lean} \\
 \hline
-Zadeh-style quantified syllogism family (`MOST \circ MOST`, `FEW \circ MOST`) \newline
+Zadeh-style quantified syllogism family (`MOST $\circ$ MOST`, `FEW $\circ$ MOST`) \newline
 \textit{Tags: [Zadeh1983], [Yager1984]} &
 \code{zadeh\_syllogism\_most\_most},
 \code{zadeh\_syllogism\_few\_most},
@@ -1424,6 +1488,48 @@ Regression entrypoint &
 \codepath{.github/workflows/lean\_action\_ci.yml} \\
 \hline
 \end{longtable}
+
+\subsection{FO/HO Steelman Survey (PLN-Side)}
+\label{app:fo-ho-steelman-survey}
+
+\begin{longtable}{p{0.25\textwidth}p{0.30\textwidth}p{0.37\textwidth}}
+\textbf{PLN book statement class} & \textbf{Strongest steelmanned formal form} & \textbf{Lean theorem(s)} \\
+\hline
+Chapter 5 FO extensional implication rules & Explicit probabilistic derivation under measurable-space assumptions (not heuristic-only formulas) & \code{pln\_deduction\_from\_total\_probability},
+\code{pln\_deduction\_from\_total\_probability\_ctx},
+\code{pln\_deduction\_decomposition},
+\code{pln\_deduction\_uniform\_simplifies} \\
+\hline
+Chapter 10 HO implication/equivalence value equalities & Unconditional equalities are false; strongest valid endpoints are side-conditioned bridges plus piecewise iff closures & \code{forAll\_himp\_not\_equal\_inheritance\_ratio\_unconditional},
+\code{forAll\_equivalence\_not\_equal\_similarity\_ratio\_unconditional},
+\code{forAll\_himp\_to\_inheritance\_ratio\_of\_sideConditions},
+\code{forAll\_equivalence\_to\_similarity\_ratio\_of\_sideConditions},
+\code{forAll\_himp\_ratio\_iff\_piecewise},
+\code{forAll\_equivalence\_ratio\_iff\_piecewise} \\
+\hline
+Chapter 10 HOJ/HOS/Hyp/Context layer & Context soundness exposed with explicit source-truth-clean side conditions and concrete positive/negative fixtures & \code{context\_macro\_sound\_of\_hoj\_alignment\_srcTruthClean},
+\code{ch10\_context\_hyp\_fixture\_math\_sound},
+\code{ch10\_context\_hyp\_fixture\_juggling\_sound},
+\code{ch10\_context\_hyp\_fixture\_mismatch\_not\_sound} \\
+\hline
+Chapter 11 quantifier layer & Finite-model FO + fuzzy/QFM endpoint families with monotonicity and conservativity-style transport & \code{fuzzyExistsScore\_mono\_of\_pointwise},
+\code{fuzzyForAllHolds\_mono\_of\_pointwise},
+\code{qfm\_composedScore\_mono\_of\_pointwise},
+\code{qfm\_composedScore\_eq\_of\_signatureEq},
+\code{qfm\_composedInterval\_iff\_of\_signatureEq} \\
+\hline
+HOL/FOL consequence closure into WM/PLN transport (categorical surface) & Consequence wrappers are not only generic: concrete HOL and FOL fixture theorems consume the categorical endpoint layer & \code{multiset\_strength\_le\_of\_pointwise\_categorical},
+\code{multiset\_strength\_le\_of\_consequence\_categorical},
+\code{ch8\_hol\_categorical\_wrapper\_bool\_fixture},
+\code{ch8\_fol\_categorical\_consequence\_singleton\_fixture} \\
+\hline
+\end{longtable}
+
+\paragraph{Scope note (Chapter 11).}
+Current Chapter 11 quantifier theorems are intentionally finite-model
+(\code{[Fintype U]}) results. The strongest present formal claims are finite
+FO/fuzzy-QFM statements above; infinitary FO/HOL quantifier extensions remain
+separate future layers.
 
 \subsection{Chapter 12 Rule-to-Theorem Index}
 \label{app:ch12-theorem-index}

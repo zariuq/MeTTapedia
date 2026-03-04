@@ -338,6 +338,40 @@ theorem SubstEnv.find_extend_ne {env : SubstEnv} {x y : String} {q : Pattern}
     (SubstEnv.extend env x q).find y = env.find y := by
   simp [SubstEnv.extend, SubstEnv.find, beq_eq_false_iff_ne.mpr hxy]
 
+/-- `applySubst` is extensional in `SubstEnv.find`. -/
+theorem applySubst_congr_find
+    {env₁ env₂ : SubstEnv}
+    (hfind : ∀ name, env₁.find name = env₂.find name) :
+    ∀ p : Pattern, applySubst env₁ p = applySubst env₂ p := by
+  intro p
+  induction p using Pattern.inductionOn with
+  | hbvar n =>
+      simp [applySubst]
+  | hfvar name =>
+      simp [applySubst, hfind name]
+  | happly c args ih =>
+      simp [applySubst]
+      intro a ha
+      exact ih a ha
+  | hlambda body ih =>
+      simpa [applySubst] using ih
+  | hmultiLambda n body ih =>
+      simpa [applySubst] using ih
+  | hsubst body repl ihb ihr =>
+      simp [applySubst, ihb, ihr]
+  | hcollection ct elems rest ih =>
+      simp [applySubst]
+      intro a ha
+      exact ih a ha
+
+/-- `closeFVar` transport over extensionally equal substitution environments. -/
+theorem closeFVar_applySubst_congr_find
+    {env₁ env₂ : SubstEnv}
+    (hfind : ∀ name, env₁.find name = env₂.find name)
+    (ℓ : Nat) (x : String) (p : Pattern) :
+    closeFVar ℓ x (applySubst env₁ p) = closeFVar ℓ x (applySubst env₂ p) := by
+  simp [applySubst_congr_find hfind p]
+
 /-- Extending an environment with `x ↦ fvar x` is a no-op when `x` is not already bound. -/
 theorem applySubst_extend_fvar_self_of_find_none
     (env : SubstEnv) (x : String) (p : Pattern)
@@ -474,6 +508,51 @@ theorem applySubst_of_isIdentity
   | hcollection ct elems rest ih =>
       simp [applySubst]
       exact list_map_eq_self_local (fun a ha => ih a ha (allNoExplicitSubst_mem hnes ha))
+
+/-- If `env` is identity-on-lookup, extending it with `x ↦ q` is observationally
+equivalent to extending `empty` with `x ↦ q` on patterns without explicit substitutions. -/
+theorem applySubst_extend_identity_inert
+    (env : SubstEnv) (hId : SubstEnvIsIdentity env)
+    (x : String) (q : Pattern) (p : Pattern)
+    (hnes : noExplicitSubst p = true) :
+    applySubst (SubstEnv.extend env x q) p =
+      applySubst (SubstEnv.extend SubstEnv.empty x q) p := by
+  induction p using Pattern.inductionOn with
+  | hbvar n =>
+      simp [applySubst]
+  | hfvar name =>
+      by_cases hname : name = x
+      · subst hname
+        simp [applySubst, SubstEnv.find_extend_eq]
+      · have hne : x ≠ name := fun h => hname h.symm
+        have hleft : (SubstEnv.extend env x q).find name = env.find name :=
+          SubstEnv.find_extend_ne hne
+        have hright : (SubstEnv.extend SubstEnv.empty x q).find name = none :=
+          by
+            rw [SubstEnv.find_extend_ne hne]
+            simp [SubstEnv.find, SubstEnv.empty]
+        cases hEnv : env.find name with
+        | none =>
+            simp [applySubst, hleft, hright, hEnv]
+        | some r =>
+            have hr : r = .fvar name := hId name r hEnv
+            simp [applySubst, hleft, hright, hEnv, hr]
+  | happly c args ih =>
+      simp [applySubst]
+      intro a ha
+      exact ih a ha (allNoExplicitSubst_mem hnes ha)
+  | hlambda body ih =>
+      simpa [applySubst, noExplicitSubst] using
+        ih (by simpa [noExplicitSubst] using hnes)
+  | hmultiLambda n body ih =>
+      simpa [applySubst, noExplicitSubst] using
+        ih (by simpa [noExplicitSubst] using hnes)
+  | hsubst body repl _ _ =>
+      exact absurd hnes Bool.false_ne_true
+  | hcollection ct elems rest ih =>
+      simp [applySubst]
+      intro a ha
+      exact ih a ha (allNoExplicitSubst_mem hnes ha)
 
 theorem quoteSubstEnv_ids_isIdentity
     (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) :
@@ -1004,6 +1083,89 @@ theorem isFresh_quoteTmWith_next
     (hcompat : QuoteCompat ν k ρ) (t : PureTm n) :
     isFresh (ν (k + 1)) (quoteTmWith ν k ρ t) = true :=
   isFresh_quoteTmWith_future hcompat t (j := k + 1) (by omega)
+
+theorem quoteSubstEnv_liftSub_find_head
+    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m)
+    (σ : Sub n m) :
+    (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ)).find (ν k)
+      = some (.fvar (ν k)) := by
+  simpa [SubstEnv.find_extend_eq] using
+    (quoteSubstEnv_liftSub_find ν k ρsrc ρdst σ (ν k))
+
+theorem quoteSubstEnv_liftSub_find_ne
+    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m)
+    (σ : Sub n m) (name : String) (hneq : name ≠ ν k) :
+    (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ)).find name =
+      (quoteSubstEnv ν (k + 1) ρsrc ρdst σ).find name := by
+  calc
+    (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ)).find name
+        = ((quoteSubstEnv ν (k + 1) ρsrc ρdst σ).extend (ν k) (.fvar (ν k))).find name :=
+            quoteSubstEnv_liftSub_find ν k ρsrc ρdst σ name
+    _ = (quoteSubstEnv ν (k + 1) ρsrc ρdst σ).find name :=
+          SubstEnv.find_extend_ne (fun h => hneq h.symm)
+
+/-- At quote depth `k + 1`, the previous binder name `ν k` remains fresh under `QuoteCompat ν k`. -/
+theorem isFresh_quoteTmWith_prev
+    {ν : Nat → String} {k : Nat} {ρ : QuoteEnv n}
+    (hcompat : QuoteCompat ν k ρ) (t : PureTm n) :
+    isFresh (ν k) (quoteTmWith ν (k + 1) ρ t) = true := by
+  unfold isFresh
+  rw [Bool.not_eq_true']
+  apply Bool.eq_false_iff.mpr
+  intro hcontains
+  have hz : ν k ∈ freeVars (quoteTmWith ν (k + 1) ρ t) := List.contains_iff_mem.mp hcontains
+  rcases freeVars_quoteTmWith_mem_env ν (k + 1) ρ t hz with ⟨i, hi⟩
+  exact (hcompat.2 i k (by omega)) hi
+
+/-- Binder transport for the lifted substitution environment under explicit closing.
+This aligns the lifted env (`k+1`, `envCons`, `liftSub`) with the base env at
+the same quote depth (`k+1`) through a `closeFVar` at arbitrary depth `ℓ`. -/
+theorem closeFVar_applySubst_quoteSubstEnv_liftSub_align
+    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m)
+    (σ : Sub n m) (hcompatDst : QuoteCompat ν k ρdst)
+    (p : Pattern) (ℓ : Nat) (hnes : noExplicitSubst p = true) :
+    closeFVar ℓ (ν k)
+      (applySubst
+        (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ))
+        p)
+    =
+    applySubst (quoteSubstEnv ν (k + 1) ρsrc ρdst σ)
+      (closeFVar ℓ (ν k) p) := by
+  induction p using Pattern.inductionOn generalizing ℓ with
+  | hbvar n =>
+      simp [applySubst, closeFVar]
+  | hfvar name =>
+      by_cases hname : name = ν k
+      · subst hname
+        simp [applySubst, closeFVar, quoteSubstEnv_liftSub_find_head]
+      · have hfind := quoteSubstEnv_liftSub_find_ne ν k ρsrc ρdst σ name hname
+        cases hbase : (quoteSubstEnv ν (k + 1) ρsrc ρdst σ).find name with
+        | none =>
+            simp [applySubst, closeFVar, hname, hfind, hbase]
+        | some r =>
+            have hsome : (quoteSubstEnv ν (k + 1) ρsrc ρdst σ).find name = some r := hbase
+            rcases quoteSubstEnv_find_some_exists ν (k + 1) ρsrc ρdst σ hsome with ⟨i, _, hr⟩
+            have hfresh : isFresh (ν k) r = true := by
+              subst hr
+              exact isFresh_quoteTmWith_prev hcompatDst (σ i)
+            have hclose : closeFVar ℓ (ν k) r = r := closeFVar_fresh_id ℓ (ν k) r hfresh
+            simp [applySubst, closeFVar, hname, hfind, hbase, hclose]
+  | happly c args ih =>
+      simp [applySubst, closeFVar]
+      intro a ha
+      exact ih a ha ℓ (allNoExplicitSubst_mem hnes ha)
+  | hlambda body ih =>
+      simpa [applySubst, closeFVar] using
+        ih (ℓ + 1) (by simpa [noExplicitSubst] using hnes)
+  | hmultiLambda n body ih =>
+      simpa [applySubst, closeFVar] using
+        ih (ℓ + n) (by simpa [noExplicitSubst] using hnes)
+  | hsubst body repl ihb ihr =>
+      exact absurd hnes Bool.false_ne_true
+  | hcollection ct elems rest ih =>
+      simp [applySubst, closeFVar]
+      intro a ha
+      exact ih a ha ℓ (allNoExplicitSubst_mem hnes ha)
 
 /-- Commute singleton substitution past closing the *next* binder name, for quoted arguments. -/
 theorem applySubst_single_closeFVar_comm_quote_next

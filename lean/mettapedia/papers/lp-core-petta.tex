@@ -59,7 +59,7 @@
 
 \begin{abstract}
 We present a Lean~4 formalization of the \PeTTa{} language---the Prolog-based
-implementation of \MeTTa{}---comprising 14{,}624 lines across 47 files with zero
+implementation of \MeTTa{}---comprising 17{,}114 lines across 49 files with zero
 sorries and zero custom axioms.  The formalization establishes a certified
 semantic stack from LP foundations through Prolog-style goal evaluation to an
 \OSLF{} type system with Galois connection and Rust code export.
@@ -74,8 +74,9 @@ a pure evaluation relation with LP soundness for rule application;
 \code{remove-atom}, \code{get-atoms}, \code{progn}, and \code{prog1};
 (6)~a certified propositional connection-tableau chainer with DFS
 refinement and witness-level completeness; (7)~a Prolog-style goal
-language (\code{PrologGoal}) with conjunctive/disjunctive goals, \code{findall},
-and \code{assert}, together with a compilation pass
+language (\code{PrologGoal}) with 14~goal forms including conjunctive/disjunctive goals,
+cut, negation, if-then-else, unification, and \code{findall},
+together with an ISO conformance harness and a compilation pass
 (\code{compileExpr}) that translates \PeTTa{} expressions into Prolog goals with
 correctness theorems; (8)~a 4-argument \MeTTa{} evaluation judgment
 (\code{MeTTaEval}) with grounded oracles, standard library derived forms, and
@@ -1071,9 +1072,11 @@ formalized and compiled.
 \code{MatchSpec.lean}         & 821 & \codepath{matchPattern_correct} & 0 \\
 \hline
 \multicolumn{4}{l}{\textit{Prolog Goal Language (\code{Logic/Prolog/})}} \\
-\code{Core.lean}              & 215 & \code{PrologGoal} inductive & 0 \\
-\code{Eval.lean}              & 404 & Prolog evaluation relation & 0 \\
-\code{Prolog.lean}            & 49  & module re-export & 0 \\
+\code{Core.lean}              & 220 & \code{PrologGoal} inductive (14 ctors) & 0 \\
+\code{Eval.lean}              & 443 & Prolog evaluation relation & 0 \\
+\code{Prolog.lean}            & 54  & module re-export & 0 \\
+\code{FixtureCorpus.lean}     & 2{,}379 & ISO/Logtalk conformance fixtures & 0 \\
+\code{RuntimeErrorSpec.lean}  & 62  & ISO runtime-error boundary & 0 \\
 \hline
 \multicolumn{4}{l}{\textit{PeTTa Specification (\code{Languages/MeTTa/PeTTa/})}} \\
 \code{Answers.lean}           & 121 & answer type & 0 \\
@@ -1092,7 +1095,7 @@ formalized and compiled.
 \code{OSLFInstance.lean}      & 144 & \codepath{pettaOSLF}, Galois, Rust export & 0 \\
 \code{GSLTVertex.lean}        & 103 & GSLT forward fiber & 0 \\
 \hline
-\textbf{Total (47 files)} & \textbf{14{,}624} & & \textbf{0} \\
+\textbf{Total (49 files)} & \textbf{17{,}114} & & \textbf{0} \\
 \hline
 \end{tabularx}
 \normalsize
@@ -1442,29 +1445,41 @@ the result type is \code{\%Undefined\%} rather than a type error.
 %% ====================================================================
 
 \PeTTa{}'s \code{translator.pl} compiles \MeTTa{} expressions into Prolog
-goals before evaluation.  We formalize this pipeline in three files.
+goals before evaluation.  We formalize this pipeline in five files.
 
 \subsection{Prolog Goal Language}
 
-\code{Logic/Prolog/Core.lean} (215 lines) defines a Prolog-style goal language
-(re-exported via \code{Logic/Prolog/Prolog.lean} and referenced by
+\code{Logic/Prolog/Core.lean} (220 lines) defines a Prolog-style goal language
+with 14~constructors covering the ISO Prolog control and meta-predicate
+repertoire (re-exported via \code{Logic/Prolog/Prolog.lean} and referenced by
 \code{PrologBridge.lean}):
 
 \begin{lstlisting}[language=lean]
 inductive PrologGoal where
-  | reduceCall  : List Pattern -> PrologGoal
-  | spaceMatch  : Pattern -> Pattern -> PrologGoal
-  | findall     : String -> PrologGoal -> PrologGoal
-  | assertGoal  : Pattern -> PrologGoal
-  | conjGoal    : PrologGoal -> PrologGoal -> PrologGoal
-  | disjGoal    : PrologGoal -> PrologGoal -> PrologGoal
-  | trueGoal    : PrologGoal
+  | succeed | fail | cut
+  | conj      : PrologGoal -> PrologGoal -> PrologGoal
+  | disj      : PrologGoal -> PrologGoal -> PrologGoal
+  | ite       : PrologGoal -> PrologGoal -> PrologGoal
+              -> PrologGoal
+  | once      : PrologGoal -> PrologGoal
+  | neg       : PrologGoal -> PrologGoal
+  | isVar     : Pattern -> PrologGoal
+  | unify     : Pattern -> Pattern -> PrologGoal
+  | notUnify  : Pattern -> Pattern -> PrologGoal
+  | findall   : String -> PrologGoal -> PrologGoal
+  | spaceMatch : Pattern -> Pattern -> PrologGoal
+  | reduceCall : List Pattern -> PrologGoal
 \end{lstlisting}
 
-The \code{reduceCall} constructor models PeTTa's \code{reduce/2} predicate;
-\code{findall} models \code{findall/3}; \code{assertGoal} models Prolog
-\code{assert/1}.  The constructors mirror the Prolog goal forms emitted by
-\code{translate\_expr/3}.
+\noindent
+The constructors mirror ISO Prolog goal forms:
+\code{succeed}/\code{fail}/\code{cut} for control,
+\code{conj}/\code{disj}/\code{ite} for logical connectives,
+\code{once}/\code{neg} for determinism and negation-as-failure,
+\code{unify}/\code{notUnify} for unification predicates,
+\code{findall} for \code{findall/3},
+\code{spaceMatch} for \MeTTaIL{} space queries, and
+\code{reduceCall} for \PeTTa{}'s \code{reduce/2} predicate.
 
 \subsection{MeTTa Prolog Oracle}
 
@@ -1518,6 +1533,48 @@ Prolog disjunction corresponds to a member of the superpose alternatives list.
 The compilation covers \code{fvar}, ground atoms, \code{superpose},
 \code{collapse}, \code{match}, \code{if}, \code{let}, \code{case}, and a
 conservative catch-all for unrecognised forms.
+
+\subsection{ISO Conformance Harness}
+
+A three-tier conformance suite validates \code{PrologEval} against the
+ISO Prolog standard:
+
+\begin{enumerate}
+\item \textbf{Lean-aligned fixtures}
+  (\code{FixtureCorpus.lean}, 2{,}379 lines).
+  Each fixture theorem is sourced from a specific Logtalk ISO test ID
+  (e.g.\ \code{iso\_true\_0\_01}, \code{iso\_unify\_2\_17}) and proven
+  by constructing the corresponding \code{PrologEval} derivation.
+  A SWI-Prolog runner (\code{swi\_fixture\_runner.pl}) executes the same
+  goals; a parity checker (\code{check\_lean\_swi\_parity.py}) enforces
+  that every \code{lean\_aligned} case has both a Lean theorem and a
+  passing SWI execution.
+  Current count: 194 fixture theorems covering 63 unique ISO IDs drawn
+  from 9~upstream Logtalk test files (control: \code{true/0},
+  \code{fail/0}, conjunction, disjunction; predicates: \code{once/1},
+  \code{$\backslash$+/1}, \code{=/2}, \code{$\backslash$=/2},
+  \code{findall/3}).
+
+\item \textbf{Runtime-error boundary probes}
+  (\code{RuntimeErrorSpec.lean}, 62 lines).
+  The typed \code{PrologGoal} AST intentionally excludes non-callable
+  terms; four ISO cases that require runtime error detection
+  (\code{iso\_not\_1\_06}, \code{iso\_not\_1\_07},
+  \code{iso\_findall\_3\_07}, \code{iso\_findall\_3\_08}) are formalized
+  as theorem-level boundary declarations mapping each ISO~ID to its
+  expected \code{RuntimeErrorClass} (instantiation error or
+  type-error-callable), all proved by \code{rfl}.
+
+\item \textbf{Logtalk ISO-ID coverage}
+  (\code{report\_logtalk\_iso\_coverage.py}).
+  Extracts all \code{iso\_*} identifiers from the 9~upstream Logtalk
+  test files and checks that every ID is represented by both a Lean
+  theorem and a \code{lean\_aligned} case.
+  Hard threshold: 63/63 exact coverage for both theorem and case IDs.
+\end{enumerate}
+
+\noindent
+The full suite is orchestrated by \code{scripts/prolog/run\_conformance.sh}.
 
 %% ====================================================================
 \section{4-Argument \MeTTa{} Evaluation}
@@ -1722,7 +1779,7 @@ refinement theorems.
 %% ====================================================================
 
 We have presented a Lean~4 formalization of the \PeTTa{} language comprising
-14{,}624 lines across 47 files with zero sorries and zero custom axioms.
+17{,}114 lines across 49 files with zero sorries and zero custom axioms.
 The formalization establishes a certified end-to-end pipeline: from LP
 foundations (Herbrand model, SLD resolution, unification completeness) through
 \MeTTaIL{} pattern matching correctness and LP soundness for \PeTTa{}

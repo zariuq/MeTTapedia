@@ -64,6 +64,194 @@ example : toRhoSharedName? (nQuote pZero) = some (.apply "NQuote" [.apply "PZero
 example : toRhoSharedProc? (pReflect demoChan demoCommSource) = none := by
   native_decide
 
+/-! ## Shared-core simulation layer -/
+
+/-- Shared-core MeTTa one-step relation used for interoperability:
+quote/drop plus binary bag congruence lifting. -/
+inductive SharedCoreReduces : Proc → Proc → Prop where
+  | drop (p : Proc) :
+      SharedCoreReduces (pDrop (nQuote p)) p
+  | par_left {p p' q : Proc} :
+      SharedCoreReduces p p' →
+      SharedCoreReduces (pPar [p, q]) (pPar [p', q])
+  | par_right {p q q' : Proc} :
+      SharedCoreReduces q q' →
+      SharedCoreReduces (pPar [p, q]) (pPar [p, q'])
+
+abbrev SharedCoreReducesStar := ProcessCalculi.RTClosureProp SharedCoreReduces
+
+/-- ρ-side restricted shared-core one-step relation:
+exact image of translated shared-core MeTTa one-steps. -/
+def RhoSharedCoreReduces (rp rq : Pattern) : Prop :=
+  ∃ p q : Proc,
+    toRhoSharedProc? p = some rp ∧
+    SharedCoreReduces p q ∧
+    toRhoSharedProc? q = some rq
+
+/-- Source-anchored variant of `RhoSharedCoreReduces` for simulation statements. -/
+def RhoSharedCoreReducesFrom (p : Proc) (rp rq : Pattern) : Prop :=
+  toRhoSharedProc? p = some rp ∧
+  ∃ q : Proc, SharedCoreReduces p q ∧ toRhoSharedProc? q = some rq
+
+/-- ρ-side restricted shared-core star relation:
+exact image of translated shared-core MeTTa star reductions. -/
+def RhoSharedCoreReducesStar (rp rq : Pattern) : Prop :=
+  ∃ p q : Proc,
+    toRhoSharedProc? p = some rp ∧
+    SharedCoreReducesStar p q ∧
+    toRhoSharedProc? q = some rq
+
+/-- Source-anchored variant of `RhoSharedCoreReducesStar`. -/
+def RhoSharedCoreReducesStarFrom (p : Proc) (rp rq : Pattern) : Prop :=
+  toRhoSharedProc? p = some rp ∧
+  ∃ q : Proc, SharedCoreReducesStar p q ∧ toRhoSharedProc? q = some rq
+
+/-- Intrinsic inversion for the rho-side restricted shared-core one-step relation:
+unpacks a translated MeTTa shared-core witness pair, without fixing any source process. -/
+theorem rhoSharedCore_step_inversion
+    {rp rq : Pattern}
+    (hρ : RhoSharedCoreReduces rp rq) :
+    ∃ p q : Proc,
+      toRhoSharedProc? p = some rp ∧
+      SharedCoreReduces p q ∧
+      toRhoSharedProc? q = some rq := by
+  exact hρ
+
+/-- Intrinsic inversion for the rho-side restricted shared-core star relation:
+unpacks a translated MeTTa shared-core star witness pair, without fixing any source process. -/
+theorem rhoSharedCore_stepStar_inversion
+    {rp rq : Pattern}
+    (hρ : RhoSharedCoreReducesStar rp rq) :
+    ∃ p q : Proc,
+      toRhoSharedProc? p = some rp ∧
+      SharedCoreReducesStar p q ∧
+      toRhoSharedProc? q = some rq := by
+  exact hρ
+
+/-- If a shared-core step starts from a translatable source, its target is
+also translatable. -/
+private theorem sharedCore_target_translatable
+    {p q : Proc} {rp : Pattern}
+    (htr : toRhoSharedProc? p = some rp)
+    (hstep : SharedCoreReduces p q) :
+    ∃ rq : Pattern, toRhoSharedProc? q = some rq := by
+  induction hstep generalizing rp with
+  | drop p =>
+      cases hp : toRhoSharedProc? p with
+      | none =>
+          simp [pDrop, nQuote, toRhoSharedProc?, toRhoSharedName?, hp] at htr
+      | some rp0 =>
+          exact ⟨rp0, by simp⟩
+  | @par_left p p' q hpp' ih =>
+      cases hp : toRhoSharedProc? p with
+      | none =>
+          simp [pPar, toRhoSharedProc?, hp] at htr
+      | some rpl =>
+          cases hq : toRhoSharedProc? q with
+          | none =>
+              simp [pPar, toRhoSharedProc?, hp, hq] at htr
+          | some rpr =>
+              obtain ⟨rpl', hp'⟩ := ih hp
+              refine ⟨.collection .hashBag [rpl', rpr] none, ?_⟩
+              simp [pPar, toRhoSharedProc?, hp', hq]
+  | @par_right p q q' hqq' ih =>
+      cases hp : toRhoSharedProc? p with
+      | none =>
+          simp [pPar, toRhoSharedProc?, hp] at htr
+      | some rpl =>
+          cases hq : toRhoSharedProc? q with
+          | none =>
+              simp [pPar, toRhoSharedProc?, hp, hq] at htr
+          | some rpr =>
+              obtain ⟨rpr', hq'⟩ := ih hq
+              refine ⟨.collection .hashBag [rpl, rpr'] none, ?_⟩
+              simp [pPar, toRhoSharedProc?, hp, hq']
+
+/-- Forward simulation (one-step), shared-core restricted. -/
+theorem sharedCore_step_forward_restricted
+    {p q : Proc} {rp : Pattern}
+    (htr : toRhoSharedProc? p = some rp)
+    (hstep : SharedCoreReduces p q) :
+    ∃ rq : Pattern,
+      toRhoSharedProc? q = some rq ∧
+      RhoSharedCoreReduces rp rq ∧
+      RhoSharedCoreReducesFrom p rp rq := by
+  rcases sharedCore_target_translatable htr hstep with ⟨rq, hq⟩
+  exact ⟨rq, hq, ⟨p, q, htr, hstep, hq⟩, ⟨htr, q, hstep, hq⟩⟩
+
+/-- Backward simulation (one-step), shared-core restricted and source-anchored. -/
+theorem sharedCore_step_backward_restricted
+    {p : Proc} {rp rq : Pattern}
+    (hρ : RhoSharedCoreReducesFrom p rp rq) :
+    ∃ q : Proc, SharedCoreReduces p q ∧ toRhoSharedProc? q = some rq := by
+  rcases hρ with ⟨_, q, hstep, hq⟩
+  exact ⟨q, hstep, hq⟩
+
+/-- Combined one-step shared-core bisimulation correspondence
+(forward + backward), source-anchored at `p`. -/
+theorem sharedCore_step_bisimulation
+    {p : Proc} {rp : Pattern}
+    (htr : toRhoSharedProc? p = some rp) :
+    (∀ q : Proc, SharedCoreReduces p q →
+      ∃ rq : Pattern,
+        toRhoSharedProc? q = some rq ∧
+        RhoSharedCoreReduces rp rq ∧
+        RhoSharedCoreReducesFrom p rp rq) ∧
+    (∀ rq : Pattern, RhoSharedCoreReducesFrom p rp rq →
+      ∃ q : Proc, SharedCoreReduces p q ∧ toRhoSharedProc? q = some rq) := by
+  constructor
+  · intro q hq
+    exact sharedCore_step_forward_restricted htr hq
+  · intro rq hρ
+    exact sharedCore_step_backward_restricted hρ
+
+/-- Forward simulation (star), shared-core restricted. -/
+theorem sharedCore_stepStar_forward_restricted
+    {p q : Proc} {rp : Pattern}
+    (htr : toRhoSharedProc? p = some rp)
+    (hsteps : SharedCoreReducesStar p q) :
+    ∃ rq : Pattern,
+      toRhoSharedProc? q = some rq ∧
+      RhoSharedCoreReducesStar rp rq ∧
+      RhoSharedCoreReducesStarFrom p rp rq := by
+  induction hsteps generalizing rp with
+  | refl p =>
+      exact ⟨rp, htr, ⟨p, p, htr, ProcessCalculi.RTClosureProp.refl p, htr⟩,
+        ⟨htr, p, ProcessCalculi.RTClosureProp.refl p, htr⟩⟩
+  | @step p m q hpm hmq ih =>
+      rcases sharedCore_step_forward_restricted (p := p) (q := m) (rp := rp) htr hpm with
+        ⟨rm, htm, _, _⟩
+      rcases ih htm with ⟨rq, htq, _, _⟩
+      refine ⟨rq, htq, ?_, ?_⟩
+      · exact ⟨p, q, htr, ProcessCalculi.RTClosureProp.step hpm hmq, htq⟩
+      · exact ⟨htr, q, ProcessCalculi.RTClosureProp.step hpm hmq, htq⟩
+
+/-- Backward simulation (star), shared-core restricted and source-anchored. -/
+theorem sharedCore_stepStar_backward_restricted
+    {p : Proc} {rp rq : Pattern}
+    (hρ : RhoSharedCoreReducesStarFrom p rp rq) :
+    ∃ q : Proc, SharedCoreReducesStar p q ∧ toRhoSharedProc? q = some rq := by
+  rcases hρ with ⟨_, q, hsteps, hq⟩
+  exact ⟨q, hsteps, hq⟩
+
+/-- Combined star-level shared-core bisimulation correspondence
+(forward + backward), source-anchored at `p`. -/
+theorem sharedCore_stepStar_bisimulation
+    {p : Proc} {rp : Pattern}
+    (htr : toRhoSharedProc? p = some rp) :
+    (∀ q : Proc, SharedCoreReducesStar p q →
+      ∃ rq : Pattern,
+        toRhoSharedProc? q = some rq ∧
+        RhoSharedCoreReducesStar rp rq ∧
+        RhoSharedCoreReducesStarFrom p rp rq) ∧
+    (∀ rq : Pattern, RhoSharedCoreReducesStarFrom p rp rq →
+      ∃ q : Proc, SharedCoreReducesStar p q ∧ toRhoSharedProc? q = some rq) := by
+  constructor
+  · intro q hq
+    exact sharedCore_stepStar_forward_restricted htr hq
+  · intro rq hρ
+    exact sharedCore_stepStar_backward_restricted hρ
+
 /-! ## Open-map kit over ρ reductions -/
 
 /-- Open-map kit reusing the existing ρ reduction/closure layer. -/

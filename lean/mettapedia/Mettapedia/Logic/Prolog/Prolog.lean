@@ -1,5 +1,6 @@
 import Mettapedia.Logic.Prolog.Core
 import Mettapedia.Logic.Prolog.Eval
+import Mettapedia.Logic.Prolog.RuntimeErrorSpec
 import Mettapedia.Logic.Prolog.FixtureCorpus
 
 /-!
@@ -31,6 +32,7 @@ Mettapedia.Languages.MeTTa.PeTTa.TranslateExpr ← translate_expr formalization 
 |------|----------|
 | `Core` | `PrologGoal` (12 constructors), `PEnv`, `Pattern.mkList`, `conjList`, `disjList` |
 | `Eval` | `EvalOracle`, `PrologSpace`, `PrologEvalResult` (normal/cutThrown), `PrologEval` (inductive), `PrologConjAll` (derived Prop) |
+| `RuntimeErrorSpec` | theorem-level ISO runtime-error boundary map (`instantiation_error`, `type_error(callable, ...)`) |
 | `FixtureCorpus` | ISO/Logtalk-sourced fixture theorems (positive + negative constructor-level regressions) |
 
 ## Key Design Decisions

@@ -2,6 +2,7 @@ import Mathlib.Data.Multiset.AddSub
 import Mathlib.Data.Multiset.Count
 import Mettapedia.Logic.PLNWorldModelFOL
 import Mettapedia.Logic.PLNWorldModelCalculus
+import Mettapedia.Logic.PLNWorldModelCategoricalBridge
 import Foundation.FirstOrder.Completeness.Completeness
 
 /-!
@@ -20,6 +21,7 @@ open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNWorldModelFOL
+open Mettapedia.Logic.PLNWorldModelHyperdoctrine
 open scoped ENNReal
 
 universe u
@@ -27,6 +29,12 @@ universe u
 abbrev FOLQuery (L : Language.{u}) := Mettapedia.Logic.PLNWorldModelFOL.FOLQuery L
 abbrev PointedFOL (L : Language.{u}) := Mettapedia.Logic.PLNWorldModelFOL.PointedFOL L
 abbrev FOLState (L : Language.{u}) := Multiset (PointedFOL L)
+
+/-- Alias for the unified categorical endpoint surface, specialized to FOL WM
+states. -/
+abbrev WMCategoricalEndpointSurface {L : Language.{u}}
+    (H : WMHyperdoctrine (FOLState L)) : Prop :=
+  Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointSurface (H := H)
 
 /-- State-side condition: every pointed structure in `W` is a model of `T`. -/
 def stateModelsTheory {L : Language.{u}} (T : Theory L) (W : FOLState L) : Prop :=
@@ -149,6 +157,20 @@ theorem multiset_strength_le_of_consequence {L : Language.{u}}
     pointwiseImpliesOnTheory_of_consequence (T := T) (φ := φ) (ψ := ψ) hcons
   exact queryStrength_le_of_pointwise_on (T := T) (W := W) (φ := φ) (ψ := ψ) hW himp
 
+/-- Categorical-aligned FOL consequence wrapper:
+same multiset strength inequality with explicit endpoint-surface input. -/
+theorem multiset_strength_le_of_consequence_categorical {L : Language.{u}}
+    (H : WMHyperdoctrine (FOLState L))
+    (_hcat : WMCategoricalEndpointSurface (H := H))
+    {X : H.Obj} (_φc : H.query X)
+    (T : Theory L)
+    (W : FOLState L) (φ ψ : FOLQuery L)
+    (hW : stateModelsTheory T W)
+    (hcons : T ⊨[SmallStruc L] (φ ➝ ψ)) :
+    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
+      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ :=
+  multiset_strength_le_of_consequence (T := T) (W := W) (φ := φ) (ψ := ψ) hW hcons
+
 /-- Rule packaging for Foundation semantic consequence into WM inequalities. -/
 def wmConsequenceRuleOn_of_consequence {L : Language.{u}}
     (T : Theory L) (φ ψ : FOLQuery L)
@@ -163,6 +185,17 @@ def wmConsequenceRuleOn_of_consequence {L : Language.{u}}
       multiset_strength_le_of_consequence
         (T := T) (W := W) (φ := φ) (ψ := ψ) hW hcons
 
+/-- Categorical-aligned packaging of Foundation semantic consequence into
+state-indexed WM consequence rules. -/
+def wmConsequenceRuleOn_of_consequence_categorical {L : Language.{u}}
+    (H : WMHyperdoctrine (FOLState L))
+    (_hcat : WMCategoricalEndpointSurface (H := H))
+    {X : H.Obj} (_φc : H.query X)
+    (T : Theory L) (φ ψ : FOLQuery L)
+    (hcons : T ⊨[SmallStruc L] (φ ➝ ψ)) :
+    WMConsequenceRuleOn (FOLState L) (FOLQuery L) :=
+  wmConsequenceRuleOn_of_consequence (T := T) (φ := φ) (ψ := ψ) hcons
+
 /-- Provability wrapper via Foundation soundness (`smallSound!`). -/
 theorem multiset_strength_le_of_provable_imp {L : Language.{u}}
     (T : Theory L)
@@ -175,6 +208,20 @@ theorem multiset_strength_le_of_provable_imp {L : Language.{u}}
     multiset_strength_le_of_consequence
       (T := T) (W := W) (φ := φ) (ψ := ψ) hW (smallSound! hprov)
 
+/-- Categorical-aligned FOL provability wrapper:
+same multiset strength inequality with explicit endpoint-surface input. -/
+theorem multiset_strength_le_of_provable_imp_categorical {L : Language.{u}}
+    (H : WMHyperdoctrine (FOLState L))
+    (_hcat : WMCategoricalEndpointSurface (H := H))
+    {X : H.Obj} (_φc : H.query X)
+    (T : Theory L)
+    (W : FOLState L) (φ ψ : FOLQuery L)
+    (hW : stateModelsTheory T W)
+    (hprov : T ⊢ (φ ➝ ψ)) :
+    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
+      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ :=
+  multiset_strength_le_of_provable_imp (T := T) (W := W) (φ := φ) (ψ := ψ) hW hprov
+
 /-- Rule packaging for provable implication into WM consequence rules. -/
 def wmConsequenceRuleOn_of_provable_imp {L : Language.{u}}
     (T : Theory L) (φ ψ : FOLQuery L)
@@ -182,5 +229,16 @@ def wmConsequenceRuleOn_of_provable_imp {L : Language.{u}}
     WMConsequenceRuleOn (FOLState L) (FOLQuery L) :=
   wmConsequenceRuleOn_of_consequence
     (T := T) (φ := φ) (ψ := ψ) (smallSound! hprov)
+
+/-- Categorical-aligned packaging of Foundation provability into state-indexed
+WM consequence rules. -/
+def wmConsequenceRuleOn_of_provable_imp_categorical {L : Language.{u}}
+    (H : WMHyperdoctrine (FOLState L))
+    (_hcat : WMCategoricalEndpointSurface (H := H))
+    {X : H.Obj} (_φc : H.query X)
+    (T : Theory L) (φ ψ : FOLQuery L)
+    (hprov : T ⊢ (φ ➝ ψ)) :
+    WMConsequenceRuleOn (FOLState L) (FOLQuery L) :=
+  wmConsequenceRuleOn_of_provable_imp (T := T) (φ := φ) (ψ := ψ) hprov
 
 end Mettapedia.Logic.PLNWorldModelFOLCompleteness

@@ -21,6 +21,8 @@ open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.EvidenceQuantale
 open scoped ENNReal
 
+universe x
+
 /-- Signature object for typed WM queries. -/
 structure WMSignature where
   Srt : Type
@@ -65,7 +67,7 @@ def comp {sig1 sig2 sig3 : WMSignature}
   cases q
   rfl
 
-variable {State : Type} [EvidenceType State]
+variable {State : Type x} [EvidenceType State]
 
 /-- Reindex a typed WM instance along a signature/query transport map. -/
 def reindexWorldModelSigma

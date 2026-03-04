@@ -1527,6 +1527,62 @@ theorem calculus_backward_simulation_full_general_encode
   exact BackwardAdminReflection.weak_backward_full_simulation_encode
     (N := N) (P := P) (n := n) (v := v) (tgt := tgt) hsrc hstep
 
+/-- Full encoded-source weak correspondence package:
+bundles RF forward simulation and full backward star decomposition in one theorem. -/
+theorem calculus_weak_correspondence_full_encode
+    {N : Finset String} {P P' : Process} {n v : String}
+    {tgt : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}
+    (hforward : Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.MultiStepRF P P')
+    (hrf : Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.RestrictionFree P)
+    (hsafe : Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.MultiCommSafe hforward)
+    (hsrc : BackwardAdminReflection.EncodedSCStepSource N (encode P n v))
+    (hstep :
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar
+          (encode P n v) tgt)) :
+    (∃ T,
+      Nonempty
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.ReducesStar
+          (encode P n v) T) ∧
+      Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisim N T
+        (encode P' n v))
+    ∧
+    (encode P n v = tgt
+      ∨
+      (∃ tgt' canon,
+        Nonempty
+          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar
+            (encode P n v) tgt') ∧
+        BackwardAdminReflection.AdminCanonicalTarget (encode P n v) canon ∧
+        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      ∨
+      (∃ mid,
+        Nonempty
+          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived
+            (encode P n v) mid) ∧
+        Nonempty
+          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar
+            mid tgt) ∧
+        Nonempty
+          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces
+            (encode P n v) mid) ∧
+        ∃ P0 P1 n0 v0 tgt',
+          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
+            (encode P n v) (encode P0 n0 v0) ∧
+          Nonempty (P0 ⇝ P1) ∧
+          Nonempty
+            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar
+              (encode P0 n0 v0) tgt') ∧
+          Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt'
+            (encode P1 n0 v0))) := by
+  refine ⟨?_, ?_⟩
+  · exact
+      Mettapedia.Languages.ProcessCalculi.PiCalculus.EncodingMorphism.forward_multi_step_bisim
+        (N := N) (P := P) (P' := P') hforward hrf hsafe n v
+  · exact
+      calculus_backward_simulation_full_general_encode
+        (N := N) (P := P) (n := n) (v := v) (tgt := tgt) hsrc hstep
+
 /-- Design-boundary corollary:
 the non-empty seed-listener observation set `{ns_z}` cannot satisfy user-observation
 discipline (`N ⊆ fn(P)`) under `EncodingFresh P`. -/

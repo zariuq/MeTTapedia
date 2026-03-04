@@ -630,6 +630,12 @@ The main Lean artifacts (all in \code{Mettapedia/}):
 \code{Logic/PLNBayesNetFastRules.lean} & Compiled fast BN rules \\
 \code{Logic/PLNIntensionalWorldModel.lean} & Sort-indexed queries,
   \code{WorldModelSigma} \\
+\code{Logic/PLNWorldModelInstitution.lean} & Institution-style signature
+  transport with explicit satisfaction-condition theorems \\
+\code{Logic/PLNWorldModelHyperdoctrine.lean} & Hyperdoctrine-style typed
+  query fibers, change-of-base, Beck-Chevalley transport \\
+\code{Logic/PLNWorldModelCategoricalBridge.lean} & Unified endpoint
+  theorem linking institution transport and Beck-Chevalley transport \\
 \code{Logic/PLNWorldModelITV.lean} & ITV semantics (Bayes and
   Walley~IDM) \\
 \code{Logic/PLNWorldModelITVHypercube.lean} & Interval-selector layer,
@@ -667,6 +673,14 @@ The main Lean artifacts (all in \code{Mettapedia/}):
   Canonical representation bridge \\
 \code{Logic/PLNWorldModelKripkeWeighted.lean} &
   Weighted/trusted-gate multiset semantics \\
+\code{Logic/PLNWorldModelExperiment.lean} &
+  Deterministic experiment/channel WM interface + Blackwell consequence wrapper \\
+\code{Logic/PLNWorldModelExperimentRegression.lean} &
+  Finite deterministic experiment fixture regression \\
+\code{Logic/PLNWorldModelExperimentStochastic.lean} &
+  Stochastic-channel Blackwell utility layer + weighted/trusted-source transfer \\
+\code{Logic/PLNWorldModelExperimentStochasticRegression.lean} &
+  Finite stochastic Blackwell/weighted-policy fixture regression \\
 \hline
 \end{longtable}
 
@@ -897,6 +911,72 @@ For clarity on what is \emph{not} proved:
 \item A \textbf{weighted/source-dependent multiset semantics} with
   dependence correction has not yet been formalized.
 \end{enumerate}
+
+
+\subsection{Categorical WM Transport Layer}
+\label{sec:categorical-wm-transport}
+
+Beyond modal instantiations, the WM layer now has an explicit categorical
+transport surface:
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Institution transport} over typed WM signatures:
+  \code{satisfactionCondition\_evidence},
+  \code{satisfactionCondition\_strength},
+  \code{satisfactionCondition\_strengthWith},
+  \code{satisfactionCondition\_confidence},
+  and derived \code{WMInstitution.sat\_condition\_strength}
+  (\code{PLNWorldModelInstitution.lean}).
+\item \textbf{Hyperdoctrine transport} over typed query fibers with
+  change-of-base and Beck-Chevalley:
+  \code{beckChevalley\_transport\_exists}
+  (\code{PLNWorldModelHyperdoctrine.lean}).
+\item \textbf{Unified endpoint}:
+  \code{EndpointStatement},
+  \code{institution\_beckChevalley\_endpoint},
+  \code{endpointSurface\_of\_hyperdoctrine}
+  (\code{PLNWorldModelCategoricalBridge.lean}),
+  which packages institution-level satisfaction transport and
+  hyperdoctrine-level Beck-Chevalley transport in one theorem statement.
+\item \textbf{Concrete Ch.8 fixture}:
+  \code{ch8\_institution\_beckChevalley\_endpoint\_id\_fixture}
+  (\code{PLNWorldModelCategoricalRegression.lean}),
+  instantiating the unified endpoint on an identity pullback square.
+\item \textbf{Aligned closure wrappers}:
+  categorical-surface variants are exposed for the PureKernel$\rightarrow$WM
+  bridge and for HOL/FOL WM consequence closures
+  (\code{PLNWorldModelPureKernelBridge.lean},
+   \code{PLNWorldModelHOLCompleteness.lean},
+   \code{PLNWorldModelFOLCompleteness.lean}).
+\end{itemize}
+
+For executable regression coverage, the script-level target is
+\code{scripts/check\_wm\_categorical.sh}.
+
+\subsection{Stochastic Experiment Layer Theorem Index}
+\label{sec:stochastic-experiment-index}
+
+\begin{longtable}{p{0.42\textwidth}p{0.39\textwidth}p{0.15\textwidth}}
+\hline
+\textbf{Content} & \textbf{Lean theorem(s)} & \textbf{Module} \\ \hline
+\endhead
+Blackwell factorization utility transport and optimal-value monotonicity &
+\code{expectedUtility\_eq\_of\_blackwellFactor},
+\code{optimalValue\_mono\_of\_blackwellFactor},
+\code{optimalValueWeighted\_mono\_of\_blackwellFactor},
+\code{optimalValuePolicy\_mono\_of\_blackwellFactor},
+\code{optimalValue\_trustedGate\_mono\_of\_blackwellFactor} &
+\code{PLNWorldModelExperimentStochastic} \\
+\hline
+Concrete finite stochastic fixture endpoints &
+\code{fixture\_expectedUtility\_eq\_lifted},
+\code{fixture\_optimalValue\_mono},
+\code{fixture\_trustedPolicy\_optimalValue\_mono} &
+\code{PLNWorldModelExperimentStochasticRegression} \\
+\hline
+\end{longtable}
+
+Script-level regression target for this layer:
+\code{scripts/check\_wm\_experiment.sh}.
 
 
 %% ============================================================

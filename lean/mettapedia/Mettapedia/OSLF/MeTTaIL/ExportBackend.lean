@@ -59,8 +59,12 @@ private partial def substExpr (subst : List (String × PExpr)) : PExpr → PExpr
   | .call fn args => .call fn (args.map (substExpr subst))
   | .wild => .wild
 
-private def computeManyWitnessEmptyGuard? (prog : PremiseProgram) (rel : String)
-    (negArgs : List PExpr) : Option (String × List PExpr) := do
+private inductive WitnessCall where
+  | one (fnName : String) (args : List PExpr)
+  | many (fnName : String) (args : List PExpr)
+
+private def computeWitnessEmptyGuard? (prog : PremiseProgram) (rel : String)
+    (negArgs : List PExpr) : Option WitnessCall := do
   -- Expected witness shape:
   --   hasRel(head...) :- relQuery rawRel(head..., _)
   let witnessRules := prog.rulesFor rel
@@ -76,15 +80,25 @@ private def computeManyWitnessEmptyGuard? (prog : PremiseProgram) (rel : String)
       | (.var n, arg) => some (n, arg)
       | _ => none
   -- Raw relation shape:
+  --   rawRel(..., result) :- compute(fn, computeArgs, result)
+  -- or
   --   rawRel(..., result) :- computeMany(fn, computeArgs, result)
   let rawRules := prog.rulesFor rawRel
   let rawRule ← rawRules.head?
   guard (rawRules.tail.isEmpty)
-  let .computeMany fnName computeArgs _result ← rawRule.body.head?
-    | none
+  let rawHead ← rawRule.body.head?
   guard (rawRule.body.tail.isEmpty)
-  let loweredArgs := computeArgs.map (substExpr subst)
-  some (fnName, loweredArgs)
+  let loweredArgs := match rawHead with
+    | .compute _ computeArgs _ => computeArgs.map (substExpr subst)
+    | .computeMany _ computeArgs _ => computeArgs.map (substExpr subst)
+    | _ => []
+  match rawHead with
+  | .compute fnName _ _ =>
+      some (.one fnName loweredArgs)
+  | .computeMany fnName _ _ =>
+      some (.many fnName loweredArgs)
+  | _ =>
+      none
 
 /-! ## 1. Ascent Expression Rendering -/
 
@@ -158,8 +172,14 @@ def renderAscentGuard (lang : LanguageDef) (prog : PremiseProgram)
           let argStrs := args.map (renderAscentExpr lang atomTy)
           [s!"for {result} in {fnName}({", ".intercalate argStrs}).into_iter()"]
   | .notIn rel args =>
-      match computeManyWitnessEmptyGuard? prog rel args with
-      | some (fnName, loweredArgs) =>
+      match computeWitnessEmptyGuard? prog rel args with
+      | some call =>
+          let loweredArgs := match call with
+            | .one _ loweredArgs => loweredArgs
+            | .many _ loweredArgs => loweredArgs
+          let fnName := match call with
+            | .one fnName _ => fnName
+            | .many fnName _ => fnName
           let hint := prog.hintFor fnName "ascent"
           let argStrs := loweredArgs.map (renderAscentExpr lang atomTy)
           let filled := match hint with
@@ -169,7 +189,11 @@ def renderAscentGuard (lang : LanguageDef) (prog : PremiseProgram)
                   String.replace s s!"\{{i}}" a) template
             | none =>
                 s!"{fnName}({", ".intercalate argStrs})"
-          [s!"if {filled}.into_iter().next().is_none()"]
+          match call with
+          | .many _ _ =>
+              [s!"if {filled}.into_iter().next().is_none()"]
+          | .one _ _ =>
+              [s!"if {filled}.is_none()"]
       | none =>
           let argStrs := args.map (renderAscentExpr lang atomTy)
           [s!"!{rel}({", ".intercalate argStrs})"]

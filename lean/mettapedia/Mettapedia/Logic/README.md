@@ -118,12 +118,14 @@ cd /home/zar/claude/lean-projects/mettapedia
 ## Chapter-8 neighborhood consequence regression
 
 - Chapter 8 neighborhood consequence regression checks state-indexed WM consequence rules,
-  neighborhood modal/deontic lifts, and governance formula translation preservation.
+  neighborhood modal/deontic lifts, governance formula translation preservation, and
+  categorical institution/Beck-Chevalley endpoint fixtures.
 
 ```bash
 cd /home/zar/claude/lean-projects/mettapedia
 ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \
-  lake build Mettapedia.Logic.PLNWorldModelNeighborhoodConsequence
+  lake build Mettapedia.Logic.PLNWorldModelNeighborhoodConsequence \
+             Mettapedia.Logic.PLNWorldModelCategoricalRegression
 ```
 
 ```bash
@@ -132,6 +134,7 @@ cd /home/zar/claude/lean-projects/mettapedia
 ```
 
 - `Mettapedia/Logic/PLNWorldModelNeighborhoodConsequence.lean`
+- `Mettapedia/Logic/PLNWorldModelCategoricalRegression.lean`
 - `scripts/check_ch8_neighborhood.sh`
 
 ## Chapter-9 positive regression

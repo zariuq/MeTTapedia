@@ -50,6 +50,26 @@ namespace SatisfyingSet
 
 variable {U : Type*} [Fintype U]
 
+/-! ## Set-Comprehension Views -/
+
+/-- Set-comprehension view of a satisfying set:
+`{u | isTrue (S.pred u)}`. -/
+def comprehension (S : SatisfyingSet U) : Set U :=
+  { u | isTrue (S.pred u) }
+
+/-- Finite-comprehension view over a finite domain:
+`{u ∈ U | isTrue (S.pred u)}` as a `Finset`. -/
+noncomputable def comprehensionFinset (S : SatisfyingSet U) : Finset U :=
+  Finset.univ.filter (fun u => isTrue (S.pred u))
+
+theorem mem_comprehension (S : SatisfyingSet U) (u : U) :
+    u ∈ comprehension S ↔ isTrue (S.pred u) :=
+  Iff.rfl
+
+theorem mem_comprehensionFinset (S : SatisfyingSet U) (u : U) :
+    u ∈ comprehensionFinset S ↔ isTrue (S.pred u) := by
+  simp [comprehensionFinset]
+
 /-! ## Diagonal Relation -/
 
 /-- The diagonal relation: pairs (u,v) where both u and v satisfy the predicate.
@@ -71,6 +91,12 @@ theorem mem_diagonal (S : SatisfyingSet U) (uv : U × U) :
     uv ∈ diagonal S ↔ isTrue (S.pred uv.1) ∧ isTrue (S.pred uv.2) := by
   simp [diagonal]
 
+theorem mem_diagonal_iff_mem_comprehensionFinset
+    (S : SatisfyingSet U) (uv : U × U) :
+    uv ∈ diagonal S ↔
+      uv.1 ∈ comprehensionFinset S ∧ uv.2 ∈ comprehensionFinset S := by
+  simp [mem_diagonal, mem_comprehensionFinset]
+
 theorem mem_complement_diagonal (S : SatisfyingSet U) (uv : U × U) :
     uv ∈ complement_diagonal S ↔ ¬(isTrue (S.pred uv.1) ∧ isTrue (S.pred uv.2)) := by
   simp [complement_diagonal]
@@ -85,6 +111,12 @@ theorem diagonal_disjoint_complement (S : SatisfyingSet U) :
   intro heq
   rw [← heq] at hy
   exact hy hx
+
+/-- The diagonal is exactly the Cartesian square of the comprehension set. -/
+theorem diagonal_eq_product_comprehensionFinset (S : SatisfyingSet U) :
+    diagonal S = (comprehensionFinset S).product (comprehensionFinset S) := by
+  ext uv
+  simp [mem_diagonal_iff_mem_comprehensionFinset]
 
 /-! ## NOTE: Why Diagonal Monotonicity Fails
 

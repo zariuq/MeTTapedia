@@ -6,6 +6,7 @@ import Mettapedia.Logic.PLNWorldModelCalculus
 import Mettapedia.Logic.PLNWorldModelPureKernelBridge
 import Mettapedia.Logic.PLNWorldModelInstitution
 import Mettapedia.Logic.PLNWorldModelHyperdoctrine
+import Mettapedia.Logic.PLNWorldModelCategoricalBridge
 import Mettapedia.Logic.PLNJointEvidence
 import Mettapedia.Logic.PLNJointEvidenceProbability
 import Mettapedia.Logic.PLNBayesNetWorldModel

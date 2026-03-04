@@ -62,4 +62,86 @@ theorem paper_shared_to_rho_openmap_self {p : Proc} {rp : Proc}
     Mettapedia.CategoryTheory.GeneralizedOpenMaps.PathBisim RhoSharedOpenInst rp rp :=
   shared_translation_pathBisim_self htr
 
+/-- Shared-core forward simulation map (step level). -/
+theorem paper_shared_to_rho_forward_simulation_step
+    {p q : Proc} {rp : Proc}
+    (htr : toRhoSharedProc? p = some rp)
+    (hstep : SharedCoreReduces p q) :
+    ∃ rq : Proc,
+      toRhoSharedProc? q = some rq ∧
+      RhoSharedCoreReduces rp rq ∧
+      RhoSharedCoreReducesFrom p rp rq :=
+  sharedCore_step_forward_restricted htr hstep
+
+/-- Shared-core backward simulation map (step level, source-anchored). -/
+theorem paper_shared_to_rho_backward_simulation_step
+    {p : Proc} {rp rq : Proc}
+    (hρ : RhoSharedCoreReducesFrom p rp rq) :
+    ∃ q : Proc, SharedCoreReduces p q ∧ toRhoSharedProc? q = some rq :=
+  sharedCore_step_backward_restricted hρ
+
+/-- Shared-core backward inversion map (step level, intrinsic rho-side relation). -/
+theorem paper_shared_to_rho_backward_inversion_step
+    {rp rq : Proc}
+    (hρ : RhoSharedCoreReduces rp rq) :
+    ∃ p q : Proc,
+      toRhoSharedProc? p = some rp ∧
+      SharedCoreReduces p q ∧
+      toRhoSharedProc? q = some rq :=
+  rhoSharedCore_step_inversion hρ
+
+/-- Shared-core bisimulation map (step level, forward + backward). -/
+theorem paper_shared_to_rho_step_bisimulation
+    {p : Proc} {rp : Proc}
+    (htr : toRhoSharedProc? p = some rp) :
+    (∀ q : Proc, SharedCoreReduces p q →
+      ∃ rq : Proc,
+        toRhoSharedProc? q = some rq ∧
+        RhoSharedCoreReduces rp rq ∧
+        RhoSharedCoreReducesFrom p rp rq) ∧
+    (∀ rq : Proc, RhoSharedCoreReducesFrom p rp rq →
+      ∃ q : Proc, SharedCoreReduces p q ∧ toRhoSharedProc? q = some rq) :=
+  sharedCore_step_bisimulation htr
+
+/-- Shared-core forward simulation map (star level). -/
+theorem paper_shared_to_rho_forward_simulation_stepStar
+    {p q : Proc} {rp : Proc}
+    (htr : toRhoSharedProc? p = some rp)
+    (hsteps : SharedCoreReducesStar p q) :
+    ∃ rq : Proc,
+      toRhoSharedProc? q = some rq ∧
+      RhoSharedCoreReducesStar rp rq ∧
+      RhoSharedCoreReducesStarFrom p rp rq :=
+  sharedCore_stepStar_forward_restricted htr hsteps
+
+/-- Shared-core backward simulation map (star level, source-anchored). -/
+theorem paper_shared_to_rho_backward_simulation_stepStar
+    {p : Proc} {rp rq : Proc}
+    (hρ : RhoSharedCoreReducesStarFrom p rp rq) :
+    ∃ q : Proc, SharedCoreReducesStar p q ∧ toRhoSharedProc? q = some rq :=
+  sharedCore_stepStar_backward_restricted hρ
+
+/-- Shared-core backward inversion map (star level, intrinsic rho-side relation). -/
+theorem paper_shared_to_rho_backward_inversion_stepStar
+    {rp rq : Proc}
+    (hρ : RhoSharedCoreReducesStar rp rq) :
+    ∃ p q : Proc,
+      toRhoSharedProc? p = some rp ∧
+      SharedCoreReducesStar p q ∧
+      toRhoSharedProc? q = some rq :=
+  rhoSharedCore_stepStar_inversion hρ
+
+/-- Shared-core bisimulation map (star level, forward + backward). -/
+theorem paper_shared_to_rho_stepStar_bisimulation
+    {p : Proc} {rp : Proc}
+    (htr : toRhoSharedProc? p = some rp) :
+    (∀ q : Proc, SharedCoreReducesStar p q →
+      ∃ rq : Proc,
+        toRhoSharedProc? q = some rq ∧
+        RhoSharedCoreReducesStar rp rq ∧
+        RhoSharedCoreReducesStarFrom p rp rq) ∧
+    (∀ rq : Proc, RhoSharedCoreReducesStarFrom p rp rq →
+      ∃ q : Proc, SharedCoreReducesStar p q ∧ toRhoSharedProc? q = some rq) :=
+  sharedCore_stepStar_bisimulation htr
+
 end Mettapedia.Languages.ProcessCalculi.MeTTaCalculus

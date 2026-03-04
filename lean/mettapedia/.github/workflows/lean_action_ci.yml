@@ -28,3 +28,16 @@ jobs:
         run: ./scripts/check_ch11_fuzzy_syllogism.sh
       - name: Chapter 13 inference-control regression
         run: ./scripts/check_ch13_inference_control.sh
+      - name: Install SWI-Prolog (conformance gate)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y swi-prolog-nox
+      - name: Fetch Logtalk ISO conformance corpus
+        run: |
+          mkdir -p ../_ext/prolog-tests
+          git clone --depth 1 https://github.com/LogtalkDotOrg/logtalk3.git ../_ext/prolog-tests/logtalk3
+      - name: Prolog conformance + ISO coverage gate
+        run: |
+          ./scripts/prolog/run_conformance.sh \
+            artifacts/prolog/swi_fixture_results_ci.jsonl \
+            ../_ext/prolog-tests/logtalk3/tests/prolog

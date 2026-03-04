@@ -36,7 +36,7 @@ def singletonSig (X : H.Obj) : WMSignature where
 
 /-- Singleton-signature morphism induced by query reindexing along `f`. -/
 def singletonReindexSigMorphism {X Y : H.Obj} (f : X ⟶ Y) :
-    WMSigMorphism (H.singletonSig Y) (H.singletonSig X) where
+    WMSigMorphism (singletonSig (H := H) Y) (singletonSig (H := H) X) where
   mapSort := fun _ => PUnit.unit
   mapQuery := by
     intro _ q
@@ -46,12 +46,47 @@ def singletonReindexSigMorphism {X Y : H.Obj} (f : X ⟶ Y) :
 def singletonWorldModelSigma (X : H.Obj) :
     WorldModelSigma State PUnit (fun _ => H.query X) where
   evidence := fun W q =>
+    letI : WorldModelSigma State H.Obj H.query := H.worldModel
     WorldModelSigma.evidenceAt (State := State) (Srt := H.Obj) (Query := H.query) W q.2
   evidence_add := by
     intro W₁ W₂ q
+    letI : WorldModelSigma State H.Obj H.query := H.worldModel
     simpa [WorldModelSigma.evidenceAt] using
       (WorldModelSigma.evidenceAt_add
         (State := State) (Srt := H.Obj) (Query := H.query) W₁ W₂ q.2)
+
+/-- Categorical endpoint surface combining institution transport and
+Beck-Chevalley transport. -/
+abbrev EndpointStatement
+    {P A B D : H.Obj}
+    (π₁ : P ⟶ A) (π₂ : P ⟶ B) (f : A ⟶ D) (g : B ⟶ D)
+    (W : State) (φ : H.query B) : Prop :=
+  (letI : WorldModelSigma State
+    (singletonSig (H := H) A).Srt (singletonSig (H := H) A).Query :=
+      singletonWorldModelSigma (H := H) A
+   letI : WorldModelSigma State
+    (singletonSig (H := H) D).Srt (singletonSig (H := H) D).Query :=
+      reindexWorldModelSigma
+        (State := State)
+        (sigma := singletonReindexSigMorphism (H := H) f)
+   satEvidence (State := State) (singletonSig (H := H) D) W
+     ⟨PUnit.unit, H.existsQuery g φ⟩ =
+    satEvidence (State := State) (singletonSig (H := H) A) W
+      (mapSentence (singletonReindexSigMorphism (H := H) f)
+        ⟨PUnit.unit, H.existsQuery g φ⟩))
+  ∧
+  H.interpret (H.reindexQuery f (H.existsQuery g φ)) =
+    H.interpret (H.existsQuery π₁ (H.reindexQuery π₂ φ))
+
+/-- Categorical endpoint surface combining institution transport and
+Beck-Chevalley transport. -/
+abbrev EndpointSurface (H : WMHyperdoctrine State) : Prop :=
+  ∀ {P A B D : H.Obj}
+    (π₁ : P ⟶ A) (π₂ : P ⟶ B) (f : A ⟶ D) (g : B ⟶ D)
+    (_hpb : IsPullback π₁ π₂ f g)
+    [Mono f] [Mono π₂]
+    (W : State) (φ : H.query B),
+    EndpointStatement (H := H) π₁ π₂ f g W φ
 
 /-- Unified endpoint:
 institution satisfaction transport for reindexing and
@@ -62,24 +97,27 @@ theorem institution_beckChevalley_endpoint
     (hpb : IsPullback π₁ π₂ f g)
     [Mono f] [Mono π₂]
     (W : State) (φ : H.query B) :
-    let sigB := H.singletonSig B
-    let sigA := H.singletonSig A
-    let sigma := H.singletonReindexSigMorphism f
-    letI : WorldModelSigma State sigA.Srt sigA.Query :=
-      H.singletonWorldModelSigma A
-    letI : WorldModelSigma State sigB.Srt sigB.Query :=
-      reindexWorldModelSigma (State := State) (sig1 := sigB) (sig2 := sigA) sigma
-    satEvidence (State := State) sigB W ⟨PUnit.unit, H.existsQuery g φ⟩ =
-      satEvidence (State := State) sigA W
-        (mapSentence sigma ⟨PUnit.unit, H.existsQuery g φ⟩)
-    ∧
-    H.interpret (H.reindexQuery f (H.existsQuery g φ)) =
-      H.interpret (H.existsQuery π₁ (H.reindexQuery π₂ φ)) := by
+    EndpointStatement (H := H) π₁ π₂ f g W φ := by
   constructor
-  · simp [singletonSig, singletonReindexSigMorphism, satEvidence,
-      satisfactionCondition_evidence, reindexWorldModelSigma, mapSentence,
-      singletonWorldModelSigma, WorldModelSigma.evidenceAt]
+  · letI : WorldModelSigma State
+      (singletonSig (H := H) A).Srt (singletonSig (H := H) A).Query :=
+        singletonWorldModelSigma (H := H) A
+    simpa using
+      (satisfactionCondition_evidence
+        (State := State)
+        (sig1 := singletonSig (H := H) D)
+        (sig2 := singletonSig (H := H) A)
+        (sigma := singletonReindexSigMorphism (H := H) f)
+        W
+        ⟨PUnit.unit, H.existsQuery g φ⟩)
   · simpa using H.beckChevalley_transport_exists π₁ π₂ f g hpb φ
+
+/-- The new categorical endpoint surface is derivable directly from the unified
+endpoint theorem. -/
+theorem endpointSurface_of_hyperdoctrine
+    (H : WMHyperdoctrine State) :
+    EndpointSurface (H := H) :=
+  institution_beckChevalley_endpoint (H := H)
 
 end WMHyperdoctrine
 

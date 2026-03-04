@@ -123,6 +123,18 @@ export Mettapedia.OSLF.Framework.MeTTaToNTT (
 
 export Mettapedia.OSLF.Framework.PiRhoCanonicalBridge (
   piRho_coreMain_canonical_contract_end_to_end
+  rhoCoreCanonicalSCQuotRelOn
+  rhoDerivedCanonicalSCQuotRelOn
+  imageFinite_rhoCoreCanonicalSCQuotRelOn
+  predFinite_rhoCoreCanonicalSCQuotRelOn
+  imageFinite_rhoDerivedCanonicalSCQuotRelOn
+  predFinite_rhoDerivedCanonicalSCQuotRelOn
+  hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn
+  hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn
+  hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn_pair_canary
+  hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn_pair_canary
+  hm_scoped_coreSC_edge_preservation_canary
+  hm_scoped_derivedSC_edge_preservation_canary
 )
 
 export Mettapedia.OSLF.Framework.PaperSection12Examples (
@@ -537,6 +549,79 @@ theorem coreMain_theorem1_langReduces_imageFinite
     (I := I)
     (hImageFinite := Mettapedia.Logic.OSLFImageFinite.imageFinite_langReduces lang)
     hPredFinite
+
+/-- CoreMain-facing global-vs-scoped HM endpoint map for canonical π→ρ
+relations.
+
+- Global canonical core/derived endpoints require explicit predecessor
+  image-finiteness assumptions.
+- Scoped SC-quotiented canonical core/derived endpoints are assumption-free
+  (both image-finiteness directions discharged internally for the selected
+  relation family). -/
+structure CoreMainHMEndpointMap : Prop where
+  global_core :
+    ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
+      (hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
+        Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
+          Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel q p})
+      (p q : Mettapedia.OSLF.Framework.Pat),
+      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+        Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel I p q
+      ↔
+      Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+        Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel I p q
+  global_derived :
+    ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
+      (hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
+        Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
+          Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalRel q p})
+      (p q : Mettapedia.OSLF.Framework.Pat),
+      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+        Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalRel I p q
+      ↔
+      Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+        Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalRel I p q
+  scoped_scquot_core :
+    ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
+      (carrier : Finset Mettapedia.OSLF.Framework.Pat)
+      (p q : Mettapedia.OSLF.Framework.Pat),
+      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+        (Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalSCQuotRelOn carrier)
+        I p q
+      ↔
+      Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+        (Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalSCQuotRelOn carrier)
+        I p q
+  scoped_scquot_derived :
+    ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
+      (carrier : Finset Mettapedia.OSLF.Framework.Pat)
+      (p q : Mettapedia.OSLF.Framework.Pat),
+      Mettapedia.Logic.OSLFDistinctionGraph.indistObs
+        (Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalSCQuotRelOn carrier)
+        I p q
+      ↔
+      Mettapedia.Logic.OSLFDistinctionGraph.FullBisimilar
+        (Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalSCQuotRelOn carrier)
+        I p q
+
+/-- CoreMain-facing canonical HM endpoint recommendation package:
+keep global wrappers when predecessor-finiteness is available, otherwise use
+the scoped SC-quotiented endpoint family for assumption-free iff theorems. -/
+theorem coreMain_hm_endpoint_recommendation_map :
+    CoreMainHMEndpointMap := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · intro I hPredFinite p q
+    exact Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.hm_iff_fullBisim_rhoCoreCanonicalRel
+      I hPredFinite p q
+  · intro I hPredFinite p q
+    exact Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.hm_iff_fullBisim_rhoDerivedCanonicalRel
+      I hPredFinite p q
+  · intro I carrier p q
+    exact Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn
+      I carrier p q
+  · intro I carrier p q
+    exact Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.hm_iff_fullBisim_rhoDerivedCanonicalSCQuotRelOn
+      I carrier p q
 
 /-- CoreMain-facing paper-parity theorem package:
 projects Theorem-1 canonical contract, fragment-parametric reachable full-route

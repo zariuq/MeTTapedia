@@ -319,16 +319,33 @@ private def noEqQueryRules : List PRule :=
 These builtins are structural queries over the current space/atom data.
 Recursive evaluation is encoded in `HELanguageDef.lean` rewrite transitions. -/
 
+/-- `applicableFuncTypeRaw(space, atom, expectedType, opType_retType)`:
+    Raw lookup for applicable function type candidates (packed pair). -/
+private def applicableFuncTypeRawRules : List PRule :=
+  [ { headRel := "applicableFuncTypeRaw"
+      headArgs := [.var "sp", .var "atom", .var "ty", .var "opType_retType"]
+      body := [ .compute "findApplicableFuncType"
+                  [.var "sp", .var "atom", .var "ty"] "opType_retType" ]
+      clauseName := some "applicableFuncTypeRaw_check" } ]
+
 /-- `applicableFuncType(space, atom, expectedType, opType, retType)`:
-    A function type is applicable to this expression.
-    Combines: getAtomTypes → filter funcTypes → checkIfFunctionTypeIsApplicable. -/
+    Projected relation derived from raw applicable function-type lookup. -/
 private def applicableFuncTypeRules : List PRule :=
   [ { headRel := "applicableFuncType"
       headArgs := [.var "sp", .var "atom", .var "ty", .var "opType", .var "retType"]
-      body := [ .compute "findApplicableFuncType"
-                  [.var "sp", .var "atom", .var "ty"] "opType_retType"
+      body := [ .relQuery "applicableFuncTypeRaw"
+                  [.var "sp", .var "atom", .var "ty", .var "opType_retType"]
               , .deconstruct (.var "opType_retType") "ExprCons" ["opType", "retType"] ]
-      clauseName := some "applicableFuncType_check" } ]
+      clauseName := some "applicableFuncType_from_raw" } ]
+
+/-- `applicableFuncTypeHas(space, atom, expectedType)`:
+    Witness that at least one applicable function type exists. -/
+private def applicableFuncTypeHasRules : List PRule :=
+  [ { headRel := "applicableFuncTypeHas"
+      headArgs := [.var "sp", .var "atom", .var "ty"]
+      body := [ .relQuery "applicableFuncTypeRaw"
+                  [.var "sp", .var "atom", .var "ty", .wild] ]
+      clauseName := some "applicableFuncTypeHas_witness" } ]
 
 /-- `needsTupleInterp(space, atom, type)`:
     No applicable function type AND has non-function types.
@@ -337,7 +354,7 @@ private def needsTupleInterpRules : List PRule :=
   [ { headRel := "needsTupleInterp"
       headArgs := [.var "sp", .var "atom", .var "ty"]
       body := [ .compute "hasNonFuncTypes" [.var "sp", .var "atom"] "ty"
-              , .compute "noApplicableFuncType" [.var "sp", .var "atom"] "_" ]
+              , .notIn "applicableFuncTypeHas" [.var "sp", .var "atom", .var "ty"] ]
       clauseName := some "needsTupleInterp_check" } ]
 
 /-- `groundedCallResult(space, atom, result)`:
@@ -360,7 +377,6 @@ private def heBuiltins : List BuiltinFn :=
   , { name := "queryEquationsInSpace", arity := 2 }
   , { name := "findApplicableFuncType", arity := 3 }
   , { name := "hasNonFuncTypes", arity := 2 }
-  , { name := "noApplicableFuncType", arity := 2 }
   , { name := "evalGroundedDispatch", arity := 2 }
   ]
 
@@ -374,11 +390,9 @@ private def heAscentHints : List BackendHint :=
   , { builtinName := "queryEquationsInSpace", backend := "ascent"
       template := "query_equations_in_space({0}, {1})" }
   , { builtinName := "findApplicableFuncType", backend := "ascent"
-      template := "find_applicable_func_type({0}, {1}, {2})" }
+      template := "find_applicable_func_type({0}, {1}, &{2})" }
   , { builtinName := "hasNonFuncTypes", backend := "ascent"
       template := "has_non_func_types({0}, {1})" }
-  , { builtinName := "noApplicableFuncType", backend := "ascent"
-      template := "no_applicable_func_type({0}, {1})" }
   , { builtinName := "evalGroundedDispatch", backend := "ascent"
       template := "eval_grounded_dispatch({0}.clone(), {1}.clone())" }
   ]
@@ -411,8 +425,9 @@ def mettaHEPremises : PremiseProgram where
     , { name := "eqQueryHas", paramTypes := ["Space", "Atom"] }
     , { name := "noEqQuery", paramTypes := ["Space", "Atom"], hasNegation := true }
     , { name := "groundedCallResult", paramTypes := ["Space", "Atom", "Atom"] }
-    , { name := "applicableFuncType", paramTypes := ["Space", "Atom", "Atom", "Atom", "Atom"]
-        hasNegation := true }
+    , { name := "applicableFuncTypeRaw", paramTypes := ["Space", "Atom", "Atom", "Atom"] }
+    , { name := "applicableFuncType", paramTypes := ["Space", "Atom", "Atom", "Atom", "Atom"] }
+    , { name := "applicableFuncTypeHas", paramTypes := ["Space", "Atom", "Atom"] }
     , { name := "needsTupleInterp", paramTypes := ["Space", "Atom", "Atom"] }
     ]
   rules :=
@@ -436,7 +451,9 @@ def mettaHEPremises : PremiseProgram where
     ++ eqQueryHasRules
     ++ noEqQueryRules
     ++ groundedCallResultRules
+    ++ applicableFuncTypeRawRules
     ++ applicableFuncTypeRules
+    ++ applicableFuncTypeHasRules
     ++ needsTupleInterpRules
   builtins := heBuiltins
   backendHints := heAscentHints
