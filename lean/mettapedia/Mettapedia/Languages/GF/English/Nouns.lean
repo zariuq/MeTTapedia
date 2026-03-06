@@ -136,33 +136,33 @@ def babyBoom_N : EnglishNoun := compoundN "baby" (regN "boom")
 /-! ## Tests -/
 
 -- Regular pluralization
-#eval! cat_N.s .Pl .Nom      -- "cats"
-#eval! city_N.s .Pl .Nom     -- "cities"
-#eval! bus_N.s .Pl .Nom      -- "buses"
-#eval! box_N.s .Pl .Nom      -- "boxes"
-#eval! church_N.s .Pl .Nom   -- "churches"
-#eval! hero_N.s .Pl .Nom     -- "heroes"
-#eval! radio_N.s .Pl .Nom    -- "radios"
-#eval! boy_N.s .Pl .Nom      -- "boys"
-#eval! fly_N.s .Pl .Nom      -- "flies"
-#eval! baby_N.s .Pl .Nom     -- "babies"
-#eval! kiss_N.s .Pl .Nom     -- "kisses"
+-- #eval! cat_N.s .Pl .Nom      -- "cats"
+-- #eval! city_N.s .Pl .Nom     -- "cities"
+-- #eval! bus_N.s .Pl .Nom      -- "buses"
+-- #eval! box_N.s .Pl .Nom      -- "boxes"
+-- #eval! church_N.s .Pl .Nom   -- "churches"
+-- #eval! hero_N.s .Pl .Nom     -- "heroes"
+-- #eval! radio_N.s .Pl .Nom    -- "radios"
+-- #eval! boy_N.s .Pl .Nom      -- "boys"
+-- #eval! fly_N.s .Pl .Nom      -- "flies"
+-- #eval! baby_N.s .Pl .Nom     -- "babies"
+-- #eval! kiss_N.s .Pl .Nom     -- "kisses"
 
 -- Genitive forms
-#eval! cat_N.s .Sg .Gen      -- "cat's"
-#eval! cat_N.s .Pl .Gen      -- "cats'"
-#eval! man_N.s .Sg .Gen      -- "man's"
-#eval! man_N.s .Pl .Gen      -- "men's"
-#eval! bus_N.s .Pl .Gen      -- "buses'"
+-- #eval! cat_N.s .Sg .Gen      -- "cat's"
+-- #eval! cat_N.s .Pl .Gen      -- "cats'"
+-- #eval! man_N.s .Sg .Gen      -- "man's"
+-- #eval! man_N.s .Pl .Gen      -- "men's"
+-- #eval! bus_N.s .Pl .Gen      -- "buses'"
 
 -- Irregular nouns
-#eval! man_N.s .Pl .Nom      -- "men"
-#eval! child_N.s .Pl .Nom    -- "children"
-#eval! woman_N.s .Pl .Nom    -- "women"
+-- #eval! man_N.s .Pl .Nom      -- "men"
+-- #eval! child_N.s .Pl .Nom    -- "children"
+-- #eval! woman_N.s .Pl .Nom    -- "women"
 
 -- Compound nouns
-#eval! babyBoom_N.s .Sg .Nom  -- "baby boom"
-#eval! babyBoom_N.s .Pl .Nom  -- "baby booms"
+-- #eval! babyBoom_N.s .Sg .Nom  -- "baby boom"
+-- #eval! babyBoom_N.s .Pl .Nom  -- "baby booms"
 
 /-! ## Correctness Properties -/
 

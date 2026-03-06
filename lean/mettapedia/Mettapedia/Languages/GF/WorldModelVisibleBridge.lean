@@ -656,6 +656,51 @@ theorem frame_closed_any_atom
        qsemE2 _ I Dom (storeToEnv (s.store + {a})) φ s.term
   exact qsemE2_closed_env_irrel _ I Dom hclosed _ _ s.term
 
+/-! ## 14b. Pronoun-Specific Frame Locality
+
+Visible updates are variable-local: binding pronoun `pr` can only affect
+formulas that actually mention `pr` free. This is stronger than
+`frame_closed_any_atom` and aligns with dynamic-semantics locality. -/
+
+/-- If `pr` is not free in `φ`, adding `bind pr r` leaves evidence unchanged.
+
+    This is a free-variable-locality theorem: pronoun-binding updates are
+    semantically inert for formulas that do not mention that pronoun. -/
+theorem frame_bind_irrel_if_not_free
+    {cfg : VisibleCfg} {π : TemporalPolicy}
+    (I : QEvidenceAtomSem) (Dom : Domain2) (φ : QFormula2)
+    (s : GrammarState) (pr r : String)
+    (hfb : functionalBind s.store) (hur : uniqueRef s.store)
+    (hnotfree : pr ∉ freeVarsQF2 φ) :
+    let s' : GrammarState := ⟨s.term, s.store + {StoreAtom.bind pr r}⟩
+    gsemE2Full cfg π I Dom φ s = gsemE2Full cfg π I Dom φ s' := by
+  show qsemE2 _ I Dom (storeToEnv s.store) φ s.term =
+       qsemE2 _ I Dom (storeToEnv (s.store + {StoreAtom.bind pr r})) φ s.term
+  apply qsemE2_env_agree_on_free
+  intro x hx
+  have hne : x ≠ pr := by
+    intro hxp
+    apply hnotfree
+    simpa [hxp] using hx
+  simpa using (storeToEnv_add_bind_ne s.store pr x r hne hfb hur).symm
+
+/-- V4 step is semantically inert on formulas that do not mention the bound
+pronoun free. This pairs operational reachability with semantic locality. -/
+theorem V4_preserves_unmentioned_formula
+    {cfg : VisibleCfg} {π : TemporalPolicy}
+    (pr r : String) (pos : Pattern) (s : GrammarState)
+    (href_pos : StoreAtom.ref r pos ∈ s.store)
+    (hfresh : ∀ r', StoreAtom.bind pr r' ∉ s.store)
+    (hfb : functionalBind s.store) (hur : uniqueRef s.store)
+    (I : QEvidenceAtomSem) (Dom : Domain2) (φ : QFormula2)
+    (hnotfree : pr ∉ freeVarsQF2 φ) :
+    let s' : GrammarState := ⟨s.term, s.store + {StoreAtom.bind pr r}⟩
+    gfReducesFull cfg π s s' ∧
+    gsemE2Full cfg π I Dom φ s = gsemE2Full cfg π I Dom φ s' := by
+  constructor
+  · exact Or.inr (Or.inr (.pronounBind pr r s ⟨pos, href_pos⟩ hfresh))
+  · exact frame_bind_irrel_if_not_free (cfg := cfg) (π := π) I Dom φ s pr r hfb hur hnotfree
+
 /-! ## 15. Operational Commutation: V4+V4 Diamond
 
 Two independent V4 steps (binding different pronouns) commute: both

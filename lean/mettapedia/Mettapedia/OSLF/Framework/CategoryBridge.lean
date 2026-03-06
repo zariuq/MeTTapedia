@@ -1591,13 +1591,19 @@ The `SubobjectFibration` structure bridges to `GSLT/Core/`:
 
 ### What Remains (Full Topos Lift)
 
-With concrete language λ-theory lift now in place:
-1. Connect sort-embedded representable fibers to executable OSLF synthesis
-   (`langOSLF`) via an explicit compatibility theorem.
-2. Use `ToposReduction` to make reduction edges primary as internal relations
-   over language-presheaf objects (not only transport lemmas).
-3. Integrate substitution/rewrite Beck-Chevalley directly over
-   `languagePresheafLambdaTheory` representables.
+Recent closures (now implemented):
+1. Canonical modal subobject endpoint package over representables
+   (`ModalSubobjectBridge`: membership iff, naturality, BC endpoint).
+2. BC + reduction-graph witness unified endpoint over concrete MeTTaFull route
+   (`ModalSubobjectBridge.mettaFull_modalSubobject_commDi_bc_graph_endpoint`).
+3. OSLF -> NTT -> WM triangle wrappers (atom + formula graph-witness endpoints)
+   in `OSLFNTTWMBridge`.
+
+Remaining semantic closure work:
+1. Lift formula-level OSLF -> NTT -> WM transport from wrapper endpoints to a
+   fully compositional theory-level obligation package over derived rules.
+2. Tighten tracker/paper parity wording so endpoint closure is not read as full
+   operational modal adequacy.
 -/
 
 end Mettapedia.OSLF.Framework.CategoryBridge

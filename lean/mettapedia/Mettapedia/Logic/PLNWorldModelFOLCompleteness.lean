@@ -6,11 +6,19 @@ import Mettapedia.Logic.PLNWorldModelCategoricalBridge
 import Foundation.FirstOrder.Completeness.Completeness
 
 /-!
-# FOL WM Consequence Closure from Foundation Consequence
+# FOL WM Consequence/Completeness Bridge from Foundation Consequence
 
 This module bridges Foundation first-order semantic consequence
-`T ⊨[SmallStruc L] (φ ➝ ψ)` into WM multiset strength inequalities and
-packages the result as `WMConsequenceRuleOn`.
+`T ⊨[SmallStruc L] (φ ➝ ψ)` into WM singleton/multiset strength inequalities,
+packages the result as `WMConsequenceRuleOn`, and provides a proof-theoretic
+`provable ↔ singleton consequence` bridge for implication queries over `T`-models.
+
+## Scope note
+The historical filename `*FOLCompleteness` is retained for compatibility.
+This module's strongest theorem-level claim is implication-fragment bridge
+equivalence over `T`-models:
+`(T ⊢ (φ ➝ ψ)) ↔ singletonStrengthLEOnTheory T φ ψ`.
+It is not a global completeness theorem for generic WM judgments.
 -/
 
 namespace Mettapedia.Logic.PLNWorldModelFOLCompleteness
@@ -45,6 +53,81 @@ def pointwiseImpliesOnTheory {L : Language.{u}}
     (T : Theory L) (φ ψ : FOLQuery L) : Prop :=
   ∀ S : PointedFOL L, S ⊧* T → folSatisfies S φ → folSatisfies S ψ
 
+/-- Singleton-strength consequence restricted to pointed structures that model
+`T`. -/
+def singletonStrengthLEOnTheory {L : Language.{u}}
+    (T : Theory L) (φ ψ : FOLQuery L) : Prop :=
+  ∀ S : PointedFOL L, S ⊧* T →
+    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+        ({S} : FOLState L) φ ≤
+      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+        ({S} : FOLState L) ψ
+
+/-- Naming alias: singleton consequence on models of `T`. -/
+abbrev singletonConsequenceOnTheory {L : Language.{u}}
+    (T : Theory L) (φ ψ : FOLQuery L) : Prop :=
+  singletonStrengthLEOnTheory T φ ψ
+
+/-- Fixed-structure singleton WM consequence is equivalent to semantic
+implication at that structure. -/
+theorem singletonStrengthLE_singleton_iff_imp {L : Language.{u}}
+    (S : PointedFOL L) (φ ψ : FOLQuery L) :
+    (WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+        ({S} : FOLState L) φ ≤
+      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+        ({S} : FOLState L) ψ) ↔
+      (folSatisfies S φ → folSatisfies S ψ) := by
+  constructor
+  · intro hle hφ
+    by_contra hψ
+    have h1 :
+        WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+            ({S} : FOLState L) φ = 1 :=
+      Mettapedia.Logic.PLNWorldModelFOL.queryStrength_singleton_of_satisfies
+        (S := S) (φ := φ) hφ
+    have h0 :
+        WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+            ({S} : FOLState L) ψ = 0 :=
+      Mettapedia.Logic.PLNWorldModelFOL.queryStrength_singleton_of_not_satisfies
+        (S := S) (φ := ψ) hψ
+    have h10 : (1 : ℝ≥0∞) ≤ 0 := by
+      have h10' := hle
+      rw [h1, h0] at h10'
+      exact h10'
+    exact (not_le_of_gt (by simp : (0 : ℝ≥0∞) < 1)) h10
+  · intro himp
+    by_cases hφ : folSatisfies S φ
+    · have hψ : folSatisfies S ψ := himp hφ
+      rw [Mettapedia.Logic.PLNWorldModelFOL.queryStrength_singleton_of_satisfies
+            (S := S) (φ := φ) hφ]
+      rw [Mettapedia.Logic.PLNWorldModelFOL.queryStrength_singleton_of_satisfies
+            (S := S) (φ := ψ) hψ]
+    · rw [Mettapedia.Logic.PLNWorldModelFOL.queryStrength_singleton_of_not_satisfies
+            (S := S) (φ := φ) hφ]
+      exact zero_le _
+
+/-- Model-restricted pointwise implication iff model-restricted singleton WM
+consequence. -/
+theorem pointwiseImpliesOnTheory_iff_singletonStrengthLEOnTheory {L : Language.{u}}
+    (T : Theory L) (φ ψ : FOLQuery L) :
+    pointwiseImpliesOnTheory T φ ψ ↔ singletonStrengthLEOnTheory T φ ψ := by
+  constructor
+  · intro himp S hT
+    exact
+      (singletonStrengthLE_singleton_iff_imp (S := S) (φ := φ) (ψ := ψ)).2
+        (himp S hT)
+  · intro hsing S hT hφ
+    exact
+      (singletonStrengthLE_singleton_iff_imp (S := S) (φ := φ) (ψ := ψ)).1
+        (hsing S hT) hφ
+
+/-- Naming alias for the same bridge with `singletonConsequence` terminology. -/
+theorem pointwiseImpliesOnTheory_iff_singletonConsequenceOnTheory {L : Language.{u}}
+    (T : Theory L) (φ ψ : FOLQuery L) :
+    pointwiseImpliesOnTheory T φ ψ ↔ singletonConsequenceOnTheory T φ ψ :=
+  pointwiseImpliesOnTheory_iff_singletonStrengthLEOnTheory
+    (T := T) (φ := φ) (ψ := ψ)
+
 /-- Foundation semantic consequence implies model-restricted pointwise implication. -/
 theorem pointwiseImpliesOnTheory_of_consequence {L : Language.{u}}
     {T : Theory L} {φ ψ : FOLQuery L}
@@ -56,6 +139,59 @@ theorem pointwiseImpliesOnTheory_of_consequence {L : Language.{u}}
     (Semantics.Imp.models_imply (𝓜 := S) (φ := φ) (ψ := ψ)).mp hImp
   have hψ : S ⊧ ψ := hStep (by simpa [folSatisfies] using hφ)
   simpa [folSatisfies] using hψ
+
+/-- Model-restricted pointwise implication yields Foundation semantic
+consequence. -/
+theorem consequence_of_pointwiseImpliesOnTheory {L : Language.{u}}
+    {T : Theory L} {φ ψ : FOLQuery L}
+    (himp : pointwiseImpliesOnTheory T φ ψ) :
+    T ⊨[SmallStruc L] (φ ➝ ψ) := by
+  intro S hT
+  exact
+    (Semantics.Imp.models_imply (𝓜 := S) (φ := φ) (ψ := ψ)).2
+      (by
+        intro hφ
+        exact himp S hT (by simpa [folSatisfies] using hφ))
+
+/-- Foundation semantic implication consequence iff model-restricted singleton
+WM consequence. -/
+theorem consequence_iff_singletonStrengthLEOnTheory {L : Language.{u}}
+    (T : Theory L) (φ ψ : FOLQuery L) :
+    T ⊨[SmallStruc L] (φ ➝ ψ) ↔ singletonStrengthLEOnTheory T φ ψ := by
+  constructor
+  · intro hcons
+    exact
+      (pointwiseImpliesOnTheory_iff_singletonStrengthLEOnTheory
+        (T := T) (φ := φ) (ψ := ψ)).1
+        (pointwiseImpliesOnTheory_of_consequence (T := T) (φ := φ) (ψ := ψ) hcons)
+  · intro hsing
+    exact
+      consequence_of_pointwiseImpliesOnTheory
+        ((pointwiseImpliesOnTheory_iff_singletonStrengthLEOnTheory
+          (T := T) (φ := φ) (ψ := ψ)).2 hsing)
+
+/-- Proof-theoretic bridge for FOL implication:
+provability is equivalent to singleton WM consequence on `T`-models. -/
+theorem provable_imp_iff_singletonStrengthLEOnTheory {L : Language.{u}}
+    (T : Theory L) (φ ψ : FOLQuery L) :
+    (T ⊢ (φ ➝ ψ)) ↔ singletonStrengthLEOnTheory T φ ψ := by
+  constructor
+  · intro hprov
+    exact
+      (consequence_iff_singletonStrengthLEOnTheory
+        (T := T) (φ := φ) (ψ := ψ)).1 (smallSound! hprov)
+  · intro hsing
+    exact
+      FirstOrder.complete
+        ((consequence_iff_singletonStrengthLEOnTheory
+          (T := T) (φ := φ) (ψ := ψ)).2 hsing)
+
+/-- Naming alias: proof-theoretic implication iff singleton WM consequence on
+models of `T`. -/
+theorem provable_imp_iff_singletonConsequenceOnTheory {L : Language.{u}}
+    (T : Theory L) (φ ψ : FOLQuery L) :
+    (T ⊢ (φ ➝ ψ)) ↔ singletonConsequenceOnTheory T φ ψ :=
+  provable_imp_iff_singletonStrengthLEOnTheory (T := T) (φ := φ) (ψ := ψ)
 
 private theorem countP_le_countP_of_imp_on {L : Language.{u}}
     (W : FOLState L)
@@ -207,6 +343,17 @@ theorem multiset_strength_le_of_provable_imp {L : Language.{u}}
   exact
     multiset_strength_le_of_consequence
       (T := T) (W := W) (φ := φ) (ψ := ψ) hW (smallSound! hprov)
+
+/-- Naming alias: soundness transfer from provability to multiset WM
+consequence on states satisfying `T`. -/
+theorem multiset_consequence_of_provable_imp {L : Language.{u}}
+    (T : Theory L)
+    (W : FOLState L) (φ ψ : FOLQuery L)
+    (hW : stateModelsTheory T W)
+    (hprov : T ⊢ (φ ➝ ψ)) :
+    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
+      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ :=
+  multiset_strength_le_of_provable_imp (T := T) (W := W) (φ := φ) (ψ := ψ) hW hprov
 
 /-- Categorical-aligned FOL provability wrapper:
 same multiset strength inequality with explicit endpoint-surface input. -/

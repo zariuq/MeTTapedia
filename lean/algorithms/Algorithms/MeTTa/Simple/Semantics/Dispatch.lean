@@ -7,6 +7,7 @@ open MeTTailCore.MeTTaIL.Match
 
 structure Interface (σ : Type) where
   rewrites : σ → List RewriteRule
+  premiseFreeRulesForHeadArity : σ → String → Nat → List RewriteRule
   eval : σ → Pattern → σ × List Pattern
   evalForRuleEnumeration : σ → Pattern → σ × List Pattern
   applyBindings : Bindings → Pattern → Pattern
@@ -52,6 +53,41 @@ private partial def hasFreeVar : Pattern → Bool
   | .subst body repl => hasFreeVar body || hasFreeVar repl
   | .collection _ elems _ => elems.any hasFreeVar
 
+private def isVarLikePattern : Pattern → Bool
+  | .fvar _ => true
+  | .apply ctor [] =>
+      ctor.startsWith "$" && !(ctor.drop 1).isEmpty
+  | _ => false
+
+private def varNameOf? : Pattern → Option String
+  | .fvar x => some x
+  | .apply ctor [] =>
+      if ctor.startsWith "$" then
+        let name := (ctor.drop 1).toString
+        if name.isEmpty then none else some name
+      else
+        none
+  | _ => none
+
+private def dollarHeadVarName? : Pattern → Option String
+  | .apply ctor [] =>
+      if ctor.startsWith "$" then
+        let name := (ctor.drop 1).toString
+        if name.isEmpty then none else some name
+      else
+        none
+  | _ => none
+
+private partial def containsCompatTaggedVar : Pattern → Bool
+  | .fvar x => x.contains "__fh::"
+  | .bvar _ => false
+  | .apply ctor args =>
+      ctor.contains "__fh::" || args.any containsCompatTaggedVar
+  | .lambda body => containsCompatTaggedVar body
+  | .multiLambda _ body => containsCompatTaggedVar body
+  | .subst body repl => containsCompatTaggedVar body || containsCompatTaggedVar repl
+  | .collection _ elems _ => elems.any containsCompatTaggedVar
+
 private partial def renameFVarsWith (tag : String) : Pattern → Pattern
   | .fvar x =>
       if x == "constraint" then
@@ -74,6 +110,19 @@ private partial def renameFVarsWith (tag : String) : Pattern → Pattern
   | .multiLambda n body => .multiLambda n (renameFVarsWith tag body)
   | .subst body repl => .subst (renameFVarsWith tag body) (renameFVarsWith tag repl)
   | .collection ct elems rest => .collection ct (elems.map (renameFVarsWith tag)) rest
+
+private def fnv64Offset : UInt64 := 14695981039346656037
+private def fnv64Prime : UInt64 := 1099511628211
+
+private def hashText (text : String) : UInt64 :=
+  text.toList.foldl
+    (fun h c => (h ^^^ (UInt64.ofNat c.toNat)) * fnv64Prime)
+    fnv64Offset
+
+private def scopedRuleTag (ruleName : String) (args : List Pattern) : String :=
+  let scopeText := String.intercalate "|" (args.map reprStr)
+  let h := hashText scopeText
+  s!"__fh::{ruleName}::{h.toNat}::"
 
 def compatRewriteStep (I : CompatRewriteInterface σ) (s : σ) (term : Pattern) :
     List Pattern :=
@@ -203,9 +252,36 @@ def evalGeneratorValues (I : Interface σ) (s : σ) (genExpr : Pattern) :
 def matchHeadArgWithEval (I : Interface σ) (s : σ)
     (patArg termArg : Pattern) : List Bindings :=
   let patN := I.normalizePattern patArg
-  let direct := I.matchPattern patN termArg
-  if !direct.isEmpty then
-    direct
+  let termN := I.normalizePattern termArg
+  let callLikePatternArg :=
+    match patN with
+    | .apply _ (_ :: _) => true
+    | _ => false
+  let variableLikeTermArg := isVarLikePattern termN
+  let reverseCapture :=
+    if variableLikeTermArg then
+      I.matchPattern termN patN
+    else
+      []
+  let direct :=
+    if callLikePatternArg && variableLikeTermArg then
+      []
+    else
+      I.matchPattern patN termArg
+  let directRev :=
+    if variableLikeTermArg then
+      -- If the pattern-side argument is a call-like expression, prefer
+      -- generator evaluation over reverse variable-capture first; we keep
+      -- reverse-capture as a fallback when generator expansion yields no matches.
+      if callLikePatternArg then
+        []
+      else
+        I.matchPattern termN patN
+    else
+      []
+  let directAll := I.dedupBindings (direct ++ directRev)
+  if !callLikePatternArg && !directAll.isEmpty then
+    directAll
   else
     match patN with
     | .apply rel callArgs =>
@@ -213,25 +289,55 @@ def matchHeadArgWithEval (I : Interface σ) (s : σ)
         if genOut0.isEmpty then
           []
         else
-          let byOutput :=
+          let targetVar? := varNameOf? termN
+          let byOutputRaw :=
             I.dedupBindings <|
-            genOut0.flatMap (fun v =>
-              (I.matchPattern termArg v) ++ (I.matchPattern v termArg))
+              genOut0.flatMap (fun v =>
+                (I.matchPattern termArg v) ++ (I.matchPattern v termArg))
+          let byOutput :=
+            match targetVar? with
+            | some _ =>
+                -- For variable-argument inversion, discard unconstrained empty
+                -- matches while preserving concrete generator-derived bindings.
+                byOutputRaw.filter (fun (bs : Bindings) => !bs.isEmpty)
+            | none =>
+                byOutputRaw
           if byOutput.isEmpty then
-            []
+            if targetVar?.isSome then
+              []
+            else
+              I.dedupBindings reverseCapture
           else
           byOutput.flatMap
             (fun bOut =>
-              let firstArgBindings :=
+              -- Preserve shared-variable constraints from the rule output position:
+              -- match the first call argument against the term, not just bare fvar heads.
+              let outputArgBindings :=
                 match callArgs with
                 | outPat :: _ =>
-                    match I.normalizePattern outPat with
-                    | .fvar x => [[(x, I.applyBindings bOut termArg)]]
-                    | _ => [[]]
+                    let outPatSub := I.normalizePattern (I.applyBindings bOut outPat)
+                    let termSub := I.normalizePattern (I.applyBindings bOut termArg)
+                    let byOutPat := I.matchPattern outPatSub termSub
+                    let byOutPatRev := I.matchPattern termSub outPatSub
+                    let merged := I.dedupBindings (byOutPat ++ byOutPatRev)
+                    if merged.isEmpty then
+                      match outPatSub with
+                      | .fvar x => [[(x, termSub)]]
+                      | _ =>
+                          match dollarHeadVarName? outPatSub with
+                          | some x => [[(x, termSub)]]
+                          | none => [[]]
+                    else
+                      merged
                 | [] => [[]]
-              firstArgBindings.filterMap (fun bFirst => mergeBindings bOut bFirst))
+              let mergedOut :=
+                outputArgBindings.filterMap (fun bFirst => mergeBindings bOut bFirst)
+              if mergedOut.isEmpty then
+                [bOut]
+              else
+                mergedOut)
     | _ =>
-        []
+        I.dedupBindings reverseCapture
 
 def matchHeadArgsWithEval (I : Interface σ) (s : σ)
     (patArgs termArgs : List Pattern) (states : List Bindings) : List Bindings :=
@@ -247,31 +353,54 @@ def matchHeadArgsWithEval (I : Interface σ) (s : σ)
   | _, _ => []
 
 def compatFunctionHeadRewrite (I : Interface σ) (s : σ) (term : Pattern) :
-    List Pattern :=
+    σ × List Pattern :=
   match term with
   | .apply ctor tArgs =>
-      (I.rewrites s).foldl
-        (fun acc rule =>
-          if rule.premises.isEmpty then
-            let tag := s!"__fh::{rule.name}::"
-            let leftFresh := renameFVarsWith tag rule.left
-            let rightFresh := renameFVarsWith tag rule.right
-            match leftFresh with
-            | .apply lCtor pArgs =>
-                if lCtor == ctor && pArgs.length == tArgs.length then
-                  let matchedBs := matchHeadArgsWithEval I s pArgs tArgs [[]]
-                  let outs := matchedBs.map (fun bs => I.applyBindings bs rightFresh)
-                  acc ++ outs
+      (I.premiseFreeRulesForHeadArity s ctor tArgs.length).foldl
+        (fun (acc : σ × List Pattern) rule =>
+          let sess := acc.1
+          let outAcc := acc.2
+          let tag := scopedRuleTag rule.name tArgs
+          let leftFresh := renameFVarsWith tag rule.left
+          let rightFresh := renameFVarsWith tag rule.right
+          match leftFresh with
+          | .apply _ pArgs =>
+              if pArgs.length == tArgs.length then
+                let matchedBs := matchHeadArgsWithEval I sess pArgs tArgs [[]]
+                let hasCompatArg : Pattern → Bool
+                  | .apply _ [] => true
+                  | .apply _ (_ :: _) => true
+                  | .collection _ (_ :: _) _ => true
+                  | _ => false
+                if pArgs.any hasCompatArg then
+                  matchedBs.foldl
+                    (fun (accBs : σ × List Pattern) bs =>
+                      let sessBs := accBs.1
+                      let outBs := accBs.2
+                      let rhs := I.applyBindings bs rightFresh
+                      let (sessRhs, vals) :=
+                        if hasFreeVar rhs then
+                          (sessBs, [rhs])
+                        else
+                          let (sessRhs, vals0) := I.evalForRuleEnumeration sessBs rhs
+                          (sessRhs, if vals0.isEmpty then [rhs] else vals0)
+                      let valsFiltered :=
+                        vals.filter (fun v => !containsCompatTaggedVar v)
+                      (sessRhs, outBs ++ valsFiltered))
+                    (sess, outAcc)
                 else
-                  acc
-            | _ =>
-                acc
-          else
-            acc)
-        []
-  | _ => []
+                  let outs0 := matchedBs.map (fun bs => I.applyBindings bs rightFresh)
+                  let outs := outs0.filter (fun out => !containsCompatTaggedVar out)
+                  (sess, outAcc ++ outs)
+              else
+                (sess, outAcc)
+          | _ =>
+            (sess, outAcc))
+        (s, [])
+  | _ => (s, [])
 
 private def hasCompatHeadConstraintArg : Pattern → Bool
+  | .apply _ [] => true
   | .apply _ (_ :: _) => true
   | .collection _ (_ :: _) _ => true
   | _ => false
@@ -292,36 +421,39 @@ def constrainedCallBindingsAndValues (I : Interface σ) (s : σ) (expr : Pattern
     σ × List (Bindings × Pattern) :=
   match expr with
   | .apply ctor tArgs =>
-      (I.rewrites s).foldl
+      (I.premiseFreeRulesForHeadArity s ctor tArgs.length).foldl
         (fun (acc : σ × List (Bindings × Pattern)) rule =>
           let sess := acc.1
           let outAcc := acc.2
-          if rule.premises.isEmpty then
-            let tag := s!"__fh::{rule.name}::"
-            let leftFresh := renameFVarsWith tag rule.left
-            let rightFresh := renameFVarsWith tag rule.right
-            match leftFresh with
-            | .apply lCtor pArgs =>
-                if lCtor == ctor &&
-                   pArgs.length == tArgs.length &&
-                   pArgs.any hasCompatHeadConstraintArg then
-                  let matchedBs := matchHeadArgsWithEval I sess pArgs tArgs [[]]
-                  let (sess', out') :=
-                    matchedBs.foldl
-                      (fun (accBs : σ × List (Bindings × Pattern)) bs =>
-                        let sessBs := accBs.1
-                        let outBs := accBs.2
-                        let rhs := I.applyBindings bs rightFresh
-                        let (sessRhs, vals0) := I.eval sessBs rhs
-                        (sessRhs, outBs ++ (vals0.map (fun v => (bs, v)))))
-                      (sess, outAcc)
-                  (sess', out')
-                else
-                  (sess, outAcc)
-            | _ =>
+          let tag := scopedRuleTag rule.name tArgs
+          let leftFresh := renameFVarsWith tag rule.left
+          let rightFresh := renameFVarsWith tag rule.right
+          match leftFresh with
+          | .apply _ pArgs =>
+              if pArgs.length == tArgs.length &&
+                 pArgs.any hasCompatHeadConstraintArg then
+                let matchedBs := matchHeadArgsWithEval I sess pArgs tArgs [[]]
+                let (sess', out') :=
+                  matchedBs.foldl
+                    (fun (accBs : σ × List (Bindings × Pattern)) bs =>
+                      let sessBs := accBs.1
+                      let outBs := accBs.2
+                      let rhs := I.applyBindings bs rightFresh
+                      let (sessRhs, vals) :=
+                        if hasFreeVar rhs then
+                          (sessBs, [rhs])
+                        else
+                          let (sessRhs, vals0) := I.eval sessBs rhs
+                          (sessRhs, if vals0.isEmpty then [rhs] else vals0)
+                      let valsFiltered :=
+                        vals.filter (fun v => !containsCompatTaggedVar v)
+                      (sessRhs, outBs ++ (valsFiltered.map (fun v => (bs, v)))))
+                    (sess, outAcc)
+                (sess', out')
+              else
                 (sess, outAcc)
-          else
-            (sess, outAcc))
+          | _ =>
+              (sess, outAcc))
         (s, [])
   | _ =>
       (s, [])

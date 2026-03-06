@@ -37,8 +37,12 @@ import Mettapedia.OSLF.NativeType.Construction
 import Mettapedia.Languages.MeTTa.Core.Premises
 import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
 import Mettapedia.Languages.MeTTa.Core.FullLanguageTests
-import Mettapedia.OSLF.Framework.MeTTaFullInstance
-import Mettapedia.OSLF.Framework.MeTTaToNTT
+import Mettapedia.OSLF.Framework.MeTTaFullLegacyInstance
+import Mettapedia.OSLF.Framework.MeTTaLegacyToNTT
+import Mettapedia.OSLF.Framework.OSLFNTTWMBridge
+import Mettapedia.OSLF.Framework.OSLFNTTTheoryClosure
+import Mettapedia.OSLF.Framework.ModalSubobjectBridge
+import Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure
 import Mettapedia.OSLF.Framework.IdentityEvidenceTransfer
 import Mettapedia.OSLF.Framework.QuantaleCoherence
 import Mettapedia.OSLF.Framework.WMProbabilityEmbedding
@@ -89,6 +93,10 @@ export Mettapedia.Languages.MeTTa.Core.Premises (
 )
 
 export Mettapedia.Languages.MeTTa.Core.FullLanguageDef (
+  mettaFullLegacy
+  mettaFullLegacyOSLF
+  mettaFullLegacyGalois
+  mettaFullLegacyRelEnv
   mettaFull
   mettaFullOSLF
   mettaFullGalois
@@ -100,6 +108,13 @@ export Mettapedia.Languages.MeTTa.Core.FullLanguageTests (
 )
 
 export Mettapedia.OSLF.Framework.MeTTaFullInstance (
+  mettaFullLegacy_pathOrder
+  mettaFullLegacy_checker_sat_to_pathSemClosed_commDi_bc_graph
+  mettaFullLegacy_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
+  mettaFullLegacySpecAtomCheck
+  mettaFullLegacySpecAtomSem
+  mettaFullLegacy_checkLangUsing_sat_sound_specAtoms
+  mettaFullLegacy_checkLang_sat_sound_specAtoms
   mettaFull_pathOrder
   mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
   mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
@@ -119,6 +134,102 @@ export Mettapedia.OSLF.Framework.MeTTaToNTT (
   mettaFormulaToNT_snd
   mettaFormulaToNT_atom
   mettaFormulaToNT_hom
+)
+
+export Mettapedia.OSLF.Framework.OSLFNTTWMBridge (
+  oslf_atom_ntt_wm_triangle
+  oslf_atom_ntt_wm_triangle_categorical
+  oslf_formula_ntt_evidence_component
+  oslf_dia_formula_graph_witness_transport
+  oslf_dia_formula_ntt_graph_witness_transport
+  oslf_formula_ntt_graph_triangle
+  oslf_formula_ntt_graph_triangle_categorical
+)
+
+export Mettapedia.OSLF.Framework.OSLFNTTTheoryClosure (
+  OSLFTheoryStep
+  OSLFTheoryStepStar
+  FormulaEndpointBridge
+  formulaEndpointBridge_of_oslf_formula_ntt_graph_triangle
+  FormulaCategoricalEndpointBridge
+  formulaCategoricalEndpointBridge_of_oslf_formula_ntt_graph_triangle
+  WMEvidenceObligation
+  WMEvidenceConsequenceRuleOn
+  OSLFNTTWMEvidenceInterface
+  OSLFNTTWMEvidenceInterface.stepStar_sound
+  OSLFNTTWMEvidenceInterface.to_strengthInterface
+  WMStrengthObligation
+  OSLFNTTWMInterface
+  OSLFNTTWMInterface.stepStar_sound
+  wmConsequenceRuleOn_of_oslfTheoryStep
+  wmConsequenceRuleOn_of_oslfTheoryStepStar
+  wmEvidenceConsequenceRuleOn_of_oslfTheoryStep
+  wmEvidenceConsequenceRuleOn_of_oslfTheoryStepStar
+  StepEvidenceMonotoneFragment
+  StepEvidenceMonotoneControlledFragment
+  ControlledStepPolicy
+  StepEvidenceControlledByPolicy
+  StepEvidenceControlledByPolicy.toAssumptionFragment
+  semE_step_mono_of_atom_step_mono
+  semE_step_mono_imp_of
+  semE_step_mono_dia_of_successor_inclusion
+  semE_step_mono_box_of_predecessor_inclusion
+  semE_step_mono_controlled_of_atom_step_mono
+  semE_step_mono_of_policy
+  semEState
+  semEState_step_evidence_mono
+  semEFragmentEvidenceInterface
+  semEPolicyEvidenceInterface
+  semE_fragment_formulaCategoricalEndpoint_step
+  semE_fragment_formulaCategoricalEndpoint_stepStar
+  semE_fragment_formulaCategoricalEndpoint_stepStar_of_policy
+  semE_fragment_evidenceRuleOn_of_formulaCategoricalEndpoint_stepStar
+  semE_fragment_evidenceRuleOn_of_formulaCategoricalEndpoint_stepStar_of_policy
+)
+
+export Mettapedia.OSLF.Framework.ModalSubobjectBridge (
+  modalFiberOfPatternPred
+  modalSubobjectOfPatternPred
+  modalSubobjectAsFiber
+  modalSubobjectAsFiber_eq_modalFiber
+  modalFiber_mem_iff
+  modalSubobject_mem_iff
+  modalFiber_map_mem
+  modalSubobject_subst_map_mem
+  ModalSubobjectControlledPolicy
+  modalSubobject_commDi_bc_graph_endpoint_of_policy
+  modalSubobject_policy_semE_step_mono
+  modalSubobject_commDi_beckChevalley_of_pathSemLiftPkg
+  modalSubobject_commDi_bc_graph_endpoint_of_pathSemLiftPkg
+  mettaFullLegacy_modalSubobject_commDi_bc_graph_endpoint
+  mettaFull_modalSubobject_commDi_bc_graph_endpoint
+)
+
+export Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure (
+  CanonicalClosureContext
+  CanonicalModalSquare
+  CanonicalHyperSquare
+  CanonicalFormulaArgs
+  CanonicalGoalArgs
+  CanonicalTransportGoalArgs
+  oslf_ntt_wm_step_sound
+  oslf_ntt_wm_star_sound
+  canonicalEvidenceObligation_compact
+  canonicalEvidenceConsequenceRuleOn_compact
+  canonicalEvidenceConsequenceRuleOn_compact_of_goal
+  canonicalEvidenceConsequenceRuleOn_compact_of_goal_canary
+  canonicalConsequenceRuleOn_compact
+  canonicalConsequenceRuleOn_compact_of_goal
+  canonicalConsequenceRuleOn_compact_fixpoint
+  canonicalConsequenceRuleOn_compact_fixpoint_of_goal
+  canonical_rulePack_transport_pack_and_fixpoint_endpoint_compact
+  canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_goal
+  canonical_prop12_transport_pack_and_fixpoint_endpoint_compact
+  canonical_prop12_transport_pack_and_fixpoint_endpoint_of_goal
+  canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal
+  canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal
+  canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal
+  canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal
 )
 
 export Mettapedia.OSLF.Framework.PiRhoCanonicalBridge (
@@ -262,6 +373,27 @@ theorem coreMain_nativeType_piOmegaProp_translation_endpoint
       Mettapedia.OSLF.NativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) := by
   exact F.piOmegaProp_translation_endpoint S types φ ψ
 
+/-- CoreMain-facing Native Type translation endpoint for Π/Σ/Ω/Prop implication
+preservation across theory morphisms. -/
+theorem coreMain_nativeType_piSigmaOmegaProp_translation_endpoint
+    {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
+    (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
+    (S : L₁.Obj)
+    (types : Set (L₁.fibration.Sub S))
+    (φ ψ : L₁.fibration.Sub S) :
+    F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S types) =
+      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S) (F.mapPred '' types)
+    ∧
+    F.mapPred (Mettapedia.OSLF.NativeType.sigmaType L₁ S types) =
+      Mettapedia.OSLF.NativeType.sigmaType L₂ (F.mapSort S) (F.mapPred '' types)
+    ∧
+    (F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
+      (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred
+    ∧
+    F.mapPred (Mettapedia.OSLF.NativeType.implType L₁ S φ ψ) =
+      Mettapedia.OSLF.NativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) := by
+  exact F.piSigmaOmegaProp_translation_endpoint S types φ ψ
+
 /-- CoreMain-facing bundled endpoint: Π/Ω/Prop translation together with
 nontrivial constructor-category cross-sort transport composition. -/
 theorem coreMain_nativeType_piOmegaProp_constructor_transport_bundle
@@ -329,6 +461,15 @@ theorem coreMain_nativeType_piProp_colax_rules_endpoint
     F.PiPropColaxRuleSet S := by
   exact F.piProp_colax_rules S
 
+/-- CoreMain-facing canonical colax/lax Π/Σ/Prop rule-set endpoint for theory
+translations. -/
+theorem coreMain_nativeType_piSigmaProp_colax_rules_endpoint
+    {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
+    (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
+    (S : L₁.Obj) :
+    F.PiSigmaPropColaxRuleSet S := by
+  exact F.piSigmaProp_colax_rules S
+
 /-- CoreMain-facing identity-canary for the Native Type Π/Ω endpoint. -/
 theorem coreMain_nativeType_id_piOmega_canary
     (L : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory)
@@ -345,6 +486,199 @@ theorem coreMain_nativeType_id_piOmega_canary
       (Mettapedia.OSLF.NativeType.NatType.full (L := L)
         ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)).pred) := by
   simpa using Mettapedia.OSLF.NativeType.TheoryMorphism.id_piOmega_translation_endpoint L S types
+
+/-- CoreMain-facing identity-canary for the Native Type Π/Σ/Ω/Prop endpoint. -/
+theorem coreMain_nativeType_id_piSigmaOmegaProp_canary
+    (L : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory)
+    (S : L.Obj)
+    (types : Set (L.fibration.Sub S))
+    (φ ψ : L.fibration.Sub S) :
+    ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred
+      (Mettapedia.OSLF.NativeType.piType L S types) =
+        Mettapedia.OSLF.NativeType.piType L
+          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)
+          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred '' types))
+    ∧
+    ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred
+      (Mettapedia.OSLF.NativeType.sigmaType L S types) =
+        Mettapedia.OSLF.NativeType.sigmaType L
+          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)
+          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred '' types))
+    ∧
+    (((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapNatType
+      (Mettapedia.OSLF.NativeType.NatType.full (L := L) S)).pred =
+      (Mettapedia.OSLF.NativeType.NatType.full (L := L)
+        ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)).pred)
+    ∧
+    ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred
+      (Mettapedia.OSLF.NativeType.implType L S φ ψ)) =
+      Mettapedia.OSLF.NativeType.implType L
+        ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)
+        ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred φ)
+        ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred ψ) := by
+  simpa using
+    Mettapedia.OSLF.NativeType.TheoryMorphism.id_piSigmaOmegaProp_translation_endpoint
+      L S types φ ψ
+
+/-- CoreMain-facing canonical representable Π/Σ transport endpoint routed
+through the Prop-12 ΠΣ predicate-rule pack. -/
+theorem coreMain_representable_patternPred_piSigma_transport_via_rulePack
+    (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
+    (s : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort lang)
+    (seed : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+    (φ : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    (hPiSigmaPack :
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+        (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
+    {D : CategoryTheory.Functor
+      (Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (χ ψ : CategoryTheory.Subfunctor D) :
+    ((((Mettapedia.GSLT.Topos.presheafChangeOfBase
+        (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)).directImage f)
+        ((Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat :
+          CategoryTheory.Subfunctor
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+      ≤ ψ)
+      ↔
+      ((show CategoryTheory.Subfunctor
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)
+          from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat)
+      ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase
+        (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)).pullback f) ψ))
+    ∧
+    ((((Mettapedia.GSLT.Topos.presheafChangeOfBase
+        (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)).pullback f) χ
+      ≤
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+        lang s seed φ hNat)
+      ↔
+      (χ ≤
+        ((Mettapedia.GSLT.Topos.presheafChangeOfBase
+          (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)).universalImage f)
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat))) := by
+  exact
+    Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_rulePack
+      (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+      (hPiSigmaPack := hPiSigmaPack)
+      (f := f) (χ := χ) (ψ := ψ)
+
+/-- CoreMain-facing canonical representable Π/Σ transport endpoint routed
+through the Prop-12 ΠΣ predicate-rule pack. -/
+theorem coreMain_representable_patternPred_piSigma_transport_via_prop12_pack
+    (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
+    (s : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort lang)
+    (seed : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+    (φ : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    {D : CategoryTheory.Functor
+      (Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (χ ψ : CategoryTheory.Subfunctor D) :
+    ((((Mettapedia.GSLT.Topos.presheafChangeOfBase
+        (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)).directImage f)
+        ((Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat :
+          CategoryTheory.Subfunctor
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+      ≤ ψ)
+      ↔
+      ((show CategoryTheory.Subfunctor
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)
+          from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat)
+      ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase
+        (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)).pullback f) ψ))
+    ∧
+    ((((Mettapedia.GSLT.Topos.presheafChangeOfBase
+        (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)).pullback f) χ
+      ≤
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+        lang s seed φ hNat)
+      ↔
+      (χ ≤
+        ((Mettapedia.GSLT.Topos.presheafChangeOfBase
+          (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)).universalImage f)
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat))) := by
+  exact
+    Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_prop12_pack
+      (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+      (f := f) (χ := χ) (ψ := ψ)
+
+/-- CoreMain-facing packaged representable Π/Σ transport API (Σ-BC + Σ/Π
+transport), routed through the Prop-12 predicate-fibration rule exports. -/
+theorem coreMain_representable_patternPred_piSigma_transport_pack_via_rulePack
+    (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
+    (s : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort lang)
+    (seed : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+    (φ : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    (hPiSigmaPack :
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+        (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
+    {D : CategoryTheory.Functor
+      (Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D) :
+    Mettapedia.OSLF.Framework.BeckChevalleyOSLF.RepresentablePiSigmaTransportPack
+      (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat) (f := f) := by
+  exact
+    Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_rulePack
+      (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+      (hPiSigmaPack := hPiSigmaPack) (f := f)
+
+/-- CoreMain-facing packaged representable Π/Σ transport API (Σ-BC + Σ/Π
+transport), routed through the Prop-12 predicate-fibration rule exports. -/
+theorem coreMain_representable_patternPred_piSigma_transport_pack
+    (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
+    (s : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort lang)
+    (seed : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
+    (φ : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    {D : CategoryTheory.Functor
+      (Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D) :
+    Mettapedia.OSLF.Framework.BeckChevalleyOSLF.RepresentablePiSigmaTransportPack
+      (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat) (f := f) := by
+  exact
+    Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_prop12
+      (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+      (f := f)
+
+/-- CoreMain-facing compact canonical endpoint:
+rule-pack transport package + WM star-to-fixpoint closure. -/
+abbrev coreMain_canonical_rulePack_transport_pack_and_fixpoint_endpoint_compact :=
+  @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_pack_and_fixpoint_endpoint_compact
+
+/-- CoreMain-facing compact canonical endpoint via Prop-12 compatibility
+instantiation. -/
+abbrev coreMain_canonical_prop12_transport_pack_and_fixpoint_endpoint_compact :=
+  @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonical_prop12_transport_pack_and_fixpoint_endpoint_compact
+
+/-- CoreMain-facing compact canonical fixpoint canary for WM consequence-rule
+consumption. -/
+abbrev coreMain_canonicalConsequenceRuleOn_compact_fixpoint :=
+  @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonicalConsequenceRuleOn_compact_fixpoint
 
 /-- CoreMain-facing constructor-category cross-sort native transport endpoint
 (identity morphism). -/
@@ -561,7 +895,7 @@ relations.
 structure CoreMainHMEndpointMap : Prop where
   global_core :
     ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
-      (hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
+      (_hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
         Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
           Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel q p})
       (p q : Mettapedia.OSLF.Framework.Pat),
@@ -572,7 +906,7 @@ structure CoreMainHMEndpointMap : Prop where
         Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel I p q
   global_derived :
     ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
-      (hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
+      (_hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
         Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
           Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalRel q p})
       (p q : Mettapedia.OSLF.Framework.Pat),
@@ -877,10 +1211,42 @@ theorem coreMain_paper_parity_full_package
 #check @coreMain_identity_semantic_transfer_endpoint
 #check @coreMain_nativeType_piOmega_translation_endpoint
 #check @coreMain_nativeType_piOmegaProp_translation_endpoint
+#check @coreMain_nativeType_piSigmaOmegaProp_translation_endpoint
 #check @coreMain_nativeType_piOmegaProp_constructor_transport_bundle
 #check @coreMain_nativeType_comp_piOmegaProp_constructor_transport_bundle
 #check @coreMain_nativeType_piProp_colax_rules_endpoint
+#check @coreMain_nativeType_piSigmaProp_colax_rules_endpoint
 #check @coreMain_nativeType_id_piOmega_canary
+#check @coreMain_nativeType_id_piSigmaOmegaProp_canary
+#check @coreMain_representable_patternPred_piSigma_transport_via_rulePack
+#check @coreMain_representable_patternPred_piSigma_transport_via_prop12_pack
+#check @coreMain_representable_patternPred_piSigma_transport_pack_via_rulePack
+#check @coreMain_representable_patternPred_piSigma_transport_pack
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.CanonicalClosureContext
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.CanonicalModalSquare
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.CanonicalHyperSquare
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.CanonicalFormulaArgs
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.CanonicalGoalArgs
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.CanonicalTransportGoalArgs
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonicalEvidenceObligation_compact
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonicalEvidenceConsequenceRuleOn_compact
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonicalEvidenceConsequenceRuleOn_compact_of_goal
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonicalEvidenceConsequenceRuleOn_compact_of_goal_canary
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonicalConsequenceRuleOn_compact
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonicalConsequenceRuleOn_compact_of_goal
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonicalConsequenceRuleOn_compact_fixpoint
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonicalConsequenceRuleOn_compact_fixpoint_of_goal
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_pack_and_fixpoint_endpoint_compact
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_goal
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonical_prop12_transport_pack_and_fixpoint_endpoint_compact
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonical_prop12_transport_pack_and_fixpoint_endpoint_of_goal
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal
+#check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal
+#check @coreMain_canonical_rulePack_transport_pack_and_fixpoint_endpoint_compact
+#check @coreMain_canonical_prop12_transport_pack_and_fixpoint_endpoint_compact
+#check @coreMain_canonicalConsequenceRuleOn_compact_fixpoint
 #check @coreMain_nativeType_constructor_transport_endpoint
 #check @coreMain_nativeType_constructor_transport_crossSort_comp
 #check @coreMain_nativeType_constructor_roundtrip_canary

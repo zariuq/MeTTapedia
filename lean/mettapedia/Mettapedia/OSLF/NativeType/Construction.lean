@@ -6,6 +6,7 @@ import Mathlib.CategoryTheory.Grothendieck
 import Mathlib.CategoryTheory.Subobject.Basic
 import Mathlib.Order.Category.Preord
 import Mettapedia.CategoryTheory.LambdaTheory
+import Mettapedia.CategoryTheory.ModalTypes
 import Mettapedia.OSLF.Framework.ConstructorFibration
 import Mettapedia.OSLF.Framework.CategoryBridge
 
@@ -998,6 +999,40 @@ noncomputable def piType (S : L.Obj) (types : Set (L.fibration.Sub S)) :
     L.fibration.Sub S :=
   sInf types
 
+/-- Π-β (elimination): `Π types` is below each member. -/
+theorem pi_beta
+    (S : L.Obj) (types : Set (L.fibration.Sub S))
+    {τ : L.fibration.Sub S} (hτ : τ ∈ types) :
+    piType L S types ≤ τ := by
+  change sInf types ≤ τ
+  exact sInf_le hτ
+
+/-- Π-η (introduction): any lower bound is below `Π types`. -/
+theorem pi_eta
+    (S : L.Obj) (types : Set (L.fibration.Sub S))
+    {χ : L.fibration.Sub S}
+    (hχ : ∀ τ ∈ types, χ ≤ τ) :
+    χ ≤ piType L S types := by
+  change χ ≤ sInf types
+  exact le_sInf hχ
+
+/-- Σ-β (introduction): each member is below `Σ types`. -/
+theorem sigma_beta
+    (S : L.Obj) (types : Set (L.fibration.Sub S))
+    {τ : L.fibration.Sub S} (hτ : τ ∈ types) :
+    τ ≤ sigmaType L S types := by
+  change τ ≤ sSup types
+  exact le_sSup hτ
+
+/-- Σ-η (elimination): `Σ types` is below any upper bound. -/
+theorem sigma_eta
+    (S : L.Obj) (types : Set (L.fibration.Sub S))
+    {χ : L.fibration.Sub S}
+    (hχ : ∀ τ ∈ types, τ ≤ χ) :
+    sigmaType L S types ≤ χ := by
+  change sSup types ≤ χ
+  exact sSup_le hχ
+
 /-- Implication type: Heyting implication -/
 def implType (S : L.Obj) (φ ψ : L.fibration.Sub S) : L.fibration.Sub S :=
   φ ⇨ ψ
@@ -1112,9 +1147,22 @@ theorem colax_piType (S : L₁.Obj) (types : Set (L₁.fibration.Sub S)) :
 /-- Lax direction for Π-preservation (`Π map ≤ map Π`), paired with colax to
 recover equality when needed. -/
 theorem lax_piType (S : L₁.Obj) (types : Set (L₁.fibration.Sub S)) :
-    piType L₂ (F.mapSort S) (F.mapPred '' types) ≤
+      piType L₂ (F.mapSort S) (F.mapPred '' types) ≤
       F.mapPred (piType L₁ S types) := by
   simp [F.preserves_piType S types]
+
+/-- Colax direction for Σ-preservation (`map Σ ≤ Σ map`). -/
+theorem colax_sigmaType (S : L₁.Obj) (types : Set (L₁.fibration.Sub S)) :
+    F.mapPred (sigmaType L₁ S types) ≤
+      sigmaType L₂ (F.mapSort S) (F.mapPred '' types) := by
+  simp [F.preserves_sigmaType S types]
+
+/-- Lax direction for Σ-preservation (`Σ map ≤ map Σ`), paired with colax to
+recover equality when needed. -/
+theorem lax_sigmaType (S : L₁.Obj) (types : Set (L₁.fibration.Sub S)) :
+    sigmaType L₂ (F.mapSort S) (F.mapPred '' types) ≤
+      F.mapPred (sigmaType L₁ S types) := by
+  simp [F.preserves_sigmaType S types]
 
 /-- Colax direction for Prop-implication preservation (`map (φ ⇨ ψ) ≤ map φ ⇨ map ψ`). -/
 theorem colax_propImp (S : L₁.Obj) (φ ψ : L₁.fibration.Sub S) :
@@ -1146,6 +1194,28 @@ theorem colax_pi_intro (S : L₁.Obj) (types : Set (L₁.fibration.Sub S))
     F.mapPred χ ≤ F.mapPred (piType L₁ S types) := by
   rw [F.preserves_piType S types]
   refine le_sInf ?_
+  intro y hy
+  rcases hy with ⟨τ, hτ, rfl⟩
+  exact hχ τ hτ
+
+/-- Σ-introduction transport: each translated member is below translated Σ. -/
+theorem colax_sigma_intro (S : L₁.Obj) (types : Set (L₁.fibration.Sub S))
+    {τ : L₁.fibration.Sub S} (hτ : τ ∈ types) :
+    F.mapPred τ ≤ F.mapPred (sigmaType L₁ S types) := by
+  calc
+    F.mapPred τ ≤ sigmaType L₂ (F.mapSort S) (F.mapPred '' types) := by
+      exact le_sSup ⟨τ, hτ, rfl⟩
+    _ = F.mapPred (sigmaType L₁ S types) := by
+      symm
+      exact F.preserves_sigmaType S types
+
+/-- Σ-elimination transport on translated predicates. -/
+theorem colax_sigma_elim (S : L₁.Obj) (types : Set (L₁.fibration.Sub S))
+    {χ : L₁.fibration.Sub S}
+    (hχ : ∀ τ ∈ types, F.mapPred τ ≤ F.mapPred χ) :
+    F.mapPred (sigmaType L₁ S types) ≤ F.mapPred χ := by
+  rw [F.preserves_sigmaType S types]
+  refine sSup_le ?_
   intro y hy
   rcases hy with ⟨τ, hτ, rfl⟩
   exact hχ τ hτ
@@ -1192,6 +1262,48 @@ structure PiPropColaxRuleSet (S : L₁.Obj) : Prop where
       (F.mapPred χ ⊓ F.mapPred φ ≤ F.mapPred ψ) →
       F.mapPred χ ≤ F.mapPred (implType L₁ S φ ψ)
 
+/-- Full colax/lax rule-set for Π/Σ/Prop translation at a fixed sort. -/
+structure PiSigmaPropColaxRuleSet (S : L₁.Obj) : Prop where
+  colax_pi :
+    ∀ (types : Set (L₁.fibration.Sub S)),
+      F.mapPred (piType L₁ S types) ≤ piType L₂ (F.mapSort S) (F.mapPred '' types)
+  lax_pi :
+    ∀ (types : Set (L₁.fibration.Sub S)),
+      piType L₂ (F.mapSort S) (F.mapPred '' types) ≤ F.mapPred (piType L₁ S types)
+  pi_elim :
+    ∀ (types : Set (L₁.fibration.Sub S)) {τ : L₁.fibration.Sub S},
+      τ ∈ types → F.mapPred (piType L₁ S types) ≤ F.mapPred τ
+  pi_intro :
+    ∀ (types : Set (L₁.fibration.Sub S)) {χ : L₁.fibration.Sub S},
+      (∀ τ ∈ types, F.mapPred χ ≤ F.mapPred τ) →
+      F.mapPred χ ≤ F.mapPred (piType L₁ S types)
+  colax_sigma :
+    ∀ (types : Set (L₁.fibration.Sub S)),
+      F.mapPred (sigmaType L₁ S types) ≤ sigmaType L₂ (F.mapSort S) (F.mapPred '' types)
+  lax_sigma :
+    ∀ (types : Set (L₁.fibration.Sub S)),
+      sigmaType L₂ (F.mapSort S) (F.mapPred '' types) ≤ F.mapPred (sigmaType L₁ S types)
+  sigma_intro :
+    ∀ (types : Set (L₁.fibration.Sub S)) {τ : L₁.fibration.Sub S},
+      τ ∈ types → F.mapPred τ ≤ F.mapPred (sigmaType L₁ S types)
+  sigma_elim :
+    ∀ (types : Set (L₁.fibration.Sub S)) {χ : L₁.fibration.Sub S},
+      (∀ τ ∈ types, F.mapPred τ ≤ F.mapPred χ) →
+      F.mapPred (sigmaType L₁ S types) ≤ F.mapPred χ
+  colax_prop :
+    ∀ (φ ψ : L₁.fibration.Sub S),
+      F.mapPred (implType L₁ S φ ψ) ≤ implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ)
+  lax_prop :
+    ∀ (φ ψ : L₁.fibration.Sub S),
+      implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) ≤ F.mapPred (implType L₁ S φ ψ)
+  prop_mp :
+    ∀ (φ ψ : L₁.fibration.Sub S),
+      (F.mapPred φ) ⊓ (F.mapPred (implType L₁ S φ ψ)) ≤ F.mapPred ψ
+  prop_intro :
+    ∀ (χ φ ψ : L₁.fibration.Sub S),
+      (F.mapPred χ ⊓ F.mapPred φ ≤ F.mapPred ψ) →
+      F.mapPred χ ≤ F.mapPred (implType L₁ S φ ψ)
+
 /-- Canonical colax/lax rule-set endpoint for Π/Prop translation. -/
 theorem piProp_colax_rules (S : L₁.Obj) : F.PiPropColaxRuleSet S := by
   refine
@@ -1215,6 +1327,46 @@ theorem piProp_colax_rules (S : L₁.Obj) : F.PiPropColaxRuleSet S := by
     exact F.colax_pi_elim S types hτ
   · intro types χ hχ
     exact F.colax_pi_intro S types hχ
+  · intro φ ψ
+    exact F.colax_prop_mp S φ ψ
+  · intro χ φ ψ h
+    exact F.colax_prop_intro S χ φ ψ h
+
+/-- Canonical colax/lax rule-set endpoint for Π/Σ/Prop translation. -/
+theorem piSigmaProp_colax_rules (S : L₁.Obj) : F.PiSigmaPropColaxRuleSet S := by
+  refine
+    { colax_pi := ?_
+      lax_pi := ?_
+      pi_elim := ?_
+      pi_intro := ?_
+      colax_sigma := ?_
+      lax_sigma := ?_
+      sigma_intro := ?_
+      sigma_elim := ?_
+      colax_prop := ?_
+      lax_prop := ?_
+      prop_mp := ?_
+      prop_intro := ?_ }
+  · intro types
+    exact F.colax_piType S types
+  · intro types
+    exact F.lax_piType S types
+  · intro types τ hτ
+    exact F.colax_pi_elim S types hτ
+  · intro types χ hχ
+    exact F.colax_pi_intro S types hχ
+  · intro types
+    exact F.colax_sigmaType S types
+  · intro types
+    exact F.lax_sigmaType S types
+  · intro types τ hτ
+    exact F.colax_sigma_intro S types hτ
+  · intro types χ hχ
+    exact F.colax_sigma_elim S types hχ
+  · intro φ ψ
+    exact F.colax_propImp S φ ψ
+  · intro φ ψ
+    exact F.lax_propImp S φ ψ
   · intro φ ψ
     exact F.colax_prop_mp S φ ψ
   · intro χ φ ψ h
@@ -1255,6 +1407,27 @@ theorem piOmegaProp_translation_endpoint
     F.mapPred (implType L₁ S φ ψ) =
       implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) := by
   exact ⟨F.preserves_piType S types, F.preserves_fullNatType_pred S, F.preserves_propImp S φ ψ⟩
+
+/-- Extended Native Type translation endpoint for Π/Σ/Ω/Prop implication.
+
+This is the strongest translation endpoint at this layer: both quantifier-like
+fiber constructors (`Π`,`Σ`), Ω-truth, and Prop implication are transported by
+one theorem. -/
+theorem piSigmaOmegaProp_translation_endpoint
+    (S : L₁.Obj) (types : Set (L₁.fibration.Sub S)) (φ ψ : L₁.fibration.Sub S) :
+    F.mapPred (piType L₁ S types) =
+      piType L₂ (F.mapSort S) (F.mapPred '' types)
+    ∧
+    F.mapPred (sigmaType L₁ S types) =
+      sigmaType L₂ (F.mapSort S) (F.mapPred '' types)
+    ∧
+    (F.mapNatType (NatType.full (L := L₁) S)).pred =
+      (NatType.full (L := L₂) (F.mapSort S)).pred
+    ∧
+    F.mapPred (implType L₁ S φ ψ) =
+      implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) := by
+  exact ⟨F.preserves_piType S types, F.preserves_sigmaType S types,
+    F.preserves_fullNatType_pred S, F.preserves_propImp S φ ψ⟩
 
 /-- Unified endpoint: Π/Ω/Prop translation plus nontrivial constructor-category
 cross-sort transport composition.
@@ -1353,6 +1526,12 @@ theorem comp_piProp_colax_rules {L₃ : LambdaTheory}
     (TheoryMorphism.comp G F).PiPropColaxRuleSet S :=
   (TheoryMorphism.comp G F).piProp_colax_rules S
 
+/-- Π/Σ/Prop colax rule-set is stable under composition of translations. -/
+theorem comp_piSigmaProp_colax_rules {L₃ : LambdaTheory}
+    (G : TheoryMorphism L₂ L₃) (S : L₁.Obj) :
+    (TheoryMorphism.comp G F).PiSigmaPropColaxRuleSet S :=
+  (TheoryMorphism.comp G F).piSigmaProp_colax_rules S
+
 /-- Identity translation on a lambda theory satisfies the Π/Ω contract. -/
 def id (L : LambdaTheory) : TheoryMorphism L L where
   mapSort := fun S => S
@@ -1392,10 +1571,28 @@ theorem id_piOmegaProp_translation_endpoint
   simpa using (TheoryMorphism.piOmegaProp_translation_endpoint
     (F := id L) S types φ ψ)
 
+/-- Identity translation sanity canary for the Π/Σ/Ω/Prop endpoint. -/
+theorem id_piSigmaOmegaProp_translation_endpoint
+    (L : LambdaTheory) (S : L.Obj)
+    (types : Set (L.fibration.Sub S)) (φ ψ : L.fibration.Sub S) :
+    (id L).mapPred (piType L S types) =
+      piType L ((id L).mapSort S) ((id L).mapPred '' types)
+    ∧
+    (id L).mapPred (sigmaType L S types) =
+      sigmaType L ((id L).mapSort S) ((id L).mapPred '' types)
+    ∧
+    ((id L).mapNatType (NatType.full (L := L) S)).pred =
+      (NatType.full (L := L) ((id L).mapSort S)).pred
+    ∧
+    (id L).mapPred (implType L S φ ψ) =
+      implType L ((id L).mapSort S) ((id L).mapPred φ) ((id L).mapPred ψ) := by
+  simpa using (TheoryMorphism.piSigmaOmegaProp_translation_endpoint
+    (F := id L) S types φ ψ)
+
 end TheoryMorphism
 end TheoryMorphism
 
-/-! ## Modal Types (Placeholder)
+/-! ## Modal Types (Canonical Route)
 
 Modal types ⟨Cj⟩_{xk::Ak} B from OSLF are constructed via comprehension.
 The actual construction requires the reduction relation from the lambda theory.
@@ -1403,8 +1600,43 @@ The actual construction requires the reduction relation from the lambda theory.
 See `Mettapedia/CategoryTheory/LambdaTheory.lean` for:
 - `RewriteRule` - base rewrites
 - `RewriteContext` - one-hole contexts
-- `ModalTypeSpec` - specification of modal types
-- `modalType` - construction of modal types
+
+Canonical predicate/subobject semantics and bridge endpoints are in:
+- `Mettapedia/CategoryTheory/ModalTypes.lean`
+- `Mettapedia/OSLF/Framework/ModalSubobjectBridge.lean`
 -/
+
+/-- Canonical modal comprehension wrapper (set of fillers) routed through the
+predicate-first semantics in `CategoryTheory.ModalTypes`. -/
+abbrev canonicalModalComprehension
+    {rule : Mettapedia.CategoryTheory.PLNTerms.RewriteRule}
+    (rwCtx : Mettapedia.CategoryTheory.PLNTerms.RewriteContext rule)
+    (relies : List Mettapedia.CategoryTheory.ModalTypes.RelyCondition)
+    (B : Mettapedia.CategoryTheory.PLNTerms.PLNTerm → Prop) :
+    Set Mettapedia.CategoryTheory.PLNTerms.PLNTerm :=
+  Mettapedia.CategoryTheory.ModalTypes.modalComprehension rwCtx relies B
+
+/-- Canonical modal subtype wrapper (subobject-like term-level carrier) routed
+through `CategoryTheory.ModalTypes`. -/
+abbrev canonicalModalSubtype
+    {rule : Mettapedia.CategoryTheory.PLNTerms.RewriteRule}
+    (rwCtx : Mettapedia.CategoryTheory.PLNTerms.RewriteContext rule)
+    (relies : List Mettapedia.CategoryTheory.ModalTypes.RelyCondition)
+    (B : Mettapedia.CategoryTheory.PLNTerms.PLNTerm → Prop) : Type :=
+  Mettapedia.CategoryTheory.ModalTypes.modalSubtype rwCtx relies B
+
+/-- Membership/specification endpoint for canonical modal comprehension wrappers. -/
+theorem canonicalModalComprehension_mem_iff
+    {rule : Mettapedia.CategoryTheory.PLNTerms.RewriteRule}
+    (rwCtx : Mettapedia.CategoryTheory.PLNTerms.RewriteContext rule)
+    (relies : List Mettapedia.CategoryTheory.ModalTypes.RelyCondition)
+    (B : Mettapedia.CategoryTheory.PLNTerms.PLNTerm → Prop)
+    (t : Mettapedia.CategoryTheory.PLNTerms.PLNTerm) :
+    t ∈ canonicalModalComprehension rwCtx relies B
+      ↔
+    Mettapedia.CategoryTheory.ModalTypes.relyPossiblyPred rwCtx relies B t := by
+  simpa [canonicalModalComprehension] using
+    (Mettapedia.CategoryTheory.ModalTypes.modalComprehension_mem_iff
+      (rwCtx := rwCtx) (relies := relies) (B := B) (t := t))
 
 end Mettapedia.OSLF.NativeType

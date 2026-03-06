@@ -54,6 +54,28 @@ private def mkRulesAux (idx : Nat) : List FrozenPeTTaRule → List RewriteRule
       }
       rewrite :: mkRulesAux (idx + 1) rest
 
+private def headCtor? : Pattern → Option String
+  | .apply c _ => some c
+  | _ => none
+
+private theorem mkRulesAux_length (idx : Nat) (rules : List FrozenPeTTaRule) :
+    (mkRulesAux idx rules).length = rules.length := by
+  induction rules generalizing idx with
+  | nil =>
+      simp [mkRulesAux]
+  | cons rule rest ih =>
+      simp [mkRulesAux, ih]
+
+private theorem mkRulesAux_heads (idx : Nat) (rules : List FrozenPeTTaRule) :
+    (mkRulesAux idx rules).map (fun r => headCtor? r.left) =
+      rules.map (fun r => headCtor? r.lhs) := by
+  induction rules generalizing idx with
+  | nil =>
+      simp [mkRulesAux]
+  | cons rule rest ih =>
+      simp [mkRulesAux, headCtor?]
+      simpa using ih (idx + 1)
+
 def toLanguageDef (cfg : FrozenPeTTaConfig) : LanguageDef := {
   name := "FrozenPeTTa"
   types := ["Pattern"]
@@ -62,6 +84,17 @@ def toLanguageDef (cfg : FrozenPeTTaConfig) : LanguageDef := {
   rewrites := mkRulesAux 0 cfg.rules
   congruenceCollections := []
 }
+
+/-! ## Lowering No-Loss Contracts -/
+
+theorem toLanguageDef_rewrite_count_preserved (cfg : FrozenPeTTaConfig) :
+    (toLanguageDef cfg).rewrites.length = cfg.rules.length := by
+  simpa [toLanguageDef] using mkRulesAux_length 0 cfg.rules
+
+theorem toLanguageDef_rewrite_heads_preserved (cfg : FrozenPeTTaConfig) :
+    (toLanguageDef cfg).rewrites.map (fun r => headCtor? r.left) =
+      cfg.rules.map (fun r => headCtor? r.lhs) := by
+  simpa [toLanguageDef] using mkRulesAux_heads 0 cfg.rules
 
 private def matchFactsAgainstSpace (facts : List Pattern) : Pattern → List Bindings
   | .apply "," [lhs, rhs] =>
@@ -88,6 +121,22 @@ private def spaceMatchFromFacts (facts : List Pattern) (args : List Pattern) :
         [pat', tmpl']
   | _ => []
 
+theorem spaceMatchFromFacts_noLoss_two_args
+    (facts : List Pattern) (pat tmpl : Pattern) (bs : Bindings)
+    (hbs : bs ∈ matchFactsAgainstSpace facts pat) :
+    [applyBindings bs pat, applyBindings bs tmpl] ∈
+      spaceMatchFromFacts facts [pat, tmpl] := by
+  unfold spaceMatchFromFacts
+  exact List.mem_map.mpr ⟨bs, hbs, rfl⟩
+
+theorem spaceMatchFromFacts_noLoss_three_args
+    (facts : List Pattern) (pat tmpl out : Pattern) (bs : Bindings)
+    (hbs : bs ∈ matchFactsAgainstSpace facts pat) :
+    [applyBindings bs pat, applyBindings bs tmpl, applyBindings bs tmpl] ∈
+      spaceMatchFromFacts facts [pat, tmpl, out] := by
+  unfold spaceMatchFromFacts
+  exact List.mem_map.mpr ⟨bs, hbs, rfl⟩
+
 private def builtinsOfConfig (cfg : FrozenPeTTaConfig) : BuiltinTable :=
   let extensional := builtinTableOfTuples cfg.builtinFacts
   let pettaBuiltins : BuiltinTable :=
@@ -108,6 +157,13 @@ def toSpecBundle (cfg : FrozenPeTTaConfig) : SpecBundle := {
     normalizeToFixedPoint := false
   }
 }
+
+theorem toSpecBundle_spaceMatch_contains_fact_row
+    (cfg : FrozenPeTTaConfig) (args row : List Pattern)
+    (hrow : row ∈ spaceMatchFromFacts cfg.facts args) :
+    row ∈ (toSpecBundle cfg).builtins.relation "spaceMatch" args := by
+  unfold toSpecBundle builtinsOfConfig
+  simp [mergeBuiltinTables, hrow]
 
 def toSession (cfg : FrozenPeTTaConfig) : Algorithms.MeTTa.Simple.Session :=
   (Algorithms.MeTTa.Simple.Session.new (toSpecBundle cfg)).withBounds cfg.maxSteps cfg.maxNodes

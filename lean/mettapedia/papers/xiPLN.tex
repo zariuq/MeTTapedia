@@ -679,9 +679,10 @@ integration) are still being extended.
 
 \paragraph{Coverage delta (current).}
 Relative to earlier drafts, Ch.\ 12 has moved from prototype-only status to
-\emph{formalized ASSOC-core coverage}: the ASSOC-channel path is now wired through typed WM semantics,
-Solomonoff log-ratio correspondence, linked/linked-strong one-call canonical API transport, and
-executable positive/negative canary regression. Remaining work is mainly PAT/mixed-policy parity.
+\emph{formalized ASSOC+PAT semantic coverage}: typed WM channel grounding, canonical
+\code{AssocPatSemanticModel} packaging, selector-specialized end-to-end endpoints, and a
+theorem-level no-go witness (\code{no\_binary\_mixed\_policy\_for\_assocPat\_fixture}) that rules out
+collapsing the concrete ASSOC+PAT mixed channel to a universal binary extensional+ASSOC law.
 
 \subsection{Chapter 7 Rule-to-Theorem Index}
 \label{app:ch7-theorem-index}
@@ -854,16 +855,35 @@ PureKernel closed-judgment $\rightarrow$ WM obligation interface (assumption-par
 \code{canary\_betaPi\_bridge\_regression\_two\_nestedLam\_wm} &
 \codepath{Mettapedia/Logic/PLNWorldModelPureKernelBridge.lean} \\
 \hline
-HOL/FOL implication closure wrappers into WM consequence rules \newline
-\textit{Tags: [PLNBook-Ch8], [HOL], [FOL], [WMConsequenceRule], [closure]} &
+GF syntactic transport $\rightarrow$ WM obligation adapters (Pure-interface aligned) + functor boundary witness \newline
+\textit{Tags: [PLNBook-Ch8], [GF], [WM], [bridge], [category], [expressivity]} &
+\code{gfSyntaxHom\_to\_wmStrengthObligation},
+\code{gfTreePatternEq\_to\_wmStrengthObligation},
+\code{wmConsequenceRuleOn\_of\_gfSyntaxHom\_viaPureInterface},
+\code{wmConsequenceRuleOn\_of\_gfTreePatternEq\_viaPureInterface},
+\code{wmConsequenceRuleOn\_of\_fregeStrong\_viaPureInterface},
+\code{syntaxToWMFunctor\_not\_full\_of\_constant\_evidence},
+\code{canary\_gfSyntaxHom\_to\_pureStyleObligation},
+\code{canary\_endToEnd\_gfRule\_to\_pureStyleObligation},
+\code{canary\_fregeStrong\_to\_pureStyleObligation},
+\code{canary\_notFull\_constantEvidence} &
+\codepath{Mettapedia/Languages/GF/GFWMObligationAdapter.lean},
+\codepath{Mettapedia/Languages/GF/GFWMObligationAdapterRegression.lean} \\
+\hline
+HOL/FOL implication consequence-transfer wrappers into WM consequence rules \newline
+\textit{Tags: [PLNBook-Ch8], [HOL], [FOL], [WMConsequenceRule], [transfer]} &
 \code{wmConsequenceRule\_of\_pointwise},
 \code{wmConsequenceRuleOn\_of\_pointwise},
 \code{wmConsequenceRuleOn\_of\_singletonStrengthLE},
+\code{externalImplication\_iff\_singletonConsequence\_of\_sound\_complete},
 \code{multiset\_strength\_le\_of\_pointwise\_categorical},
 \code{multiset\_strength\_le\_of\_singletonStrengthLE\_categorical},
 \code{wmConsequenceRuleOn\_of\_pointwise\_categorical},
 \code{wmConsequenceRuleOn\_of\_singletonStrengthLE\_categorical},
 \code{pointwiseImpliesOnTheory\_of\_consequence},
+\code{pointwiseImpliesOnTheory\_iff\_singletonStrengthLEOnTheory},
+\code{consequence\_iff\_singletonStrengthLEOnTheory},
+\code{provable\_imp\_iff\_singletonStrengthLEOnTheory},
 \code{multiset\_strength\_le\_of\_consequence},
 \code{wmConsequenceRuleOn\_of\_consequence},
 \code{multiset\_strength\_le\_of\_provable\_imp},
@@ -889,7 +909,9 @@ Kripke proof-theoretic closure (sound/complete implication bridge) \newline
 \textit{Tags: [PLNBook-Ch8], [Kripke], [Sound], [Complete], [K], [KT], [KD], [K4]} &
 \code{pointwiseImpliesOn\_iff\_singletonStrengthLEOn},
 \code{provable\_imp\_iff\_singletonStrengthLEOn},
+\code{provable\_imp\_iff\_singletonConsequenceOn},
 \code{multiset\_strength\_le\_of\_provable\_imp},
+\code{multiset\_consequence\_of\_provable\_imp},
 \code{provable\_imp\_iff\_singletonStrengthLEOn\_K},
 \code{provable\_imp\_iff\_singletonStrengthLEOn\_KT},
 \code{provable\_imp\_iff\_singletonStrengthLEOn\_KD},
@@ -946,7 +968,9 @@ Neighborhood proof-theoretic closure (sound/complete implication bridge) \newlin
 \textit{Tags: [PLNBook-Ch8], [Neighborhood], [Sound], [Complete], [E], [EMN], [EMT], [ED]} &
 \code{pointwiseImpliesOn\_iff\_singletonStrengthLEOn},
 \code{provable\_imp\_iff\_singletonStrengthLEOn},
+\code{provable\_imp\_iff\_singletonConsequenceOn},
 \code{multiset\_strength\_le\_of\_provable\_imp},
+\code{multiset\_consequence\_of\_provable\_imp},
 \code{provable\_imp\_iff\_singletonStrengthLEOn\_E},
 \code{provable\_imp\_iff\_singletonStrengthLEOn\_EMN},
 \code{provable\_imp\_iff\_singletonStrengthLEOn\_EMT},
@@ -1013,6 +1037,14 @@ the explicit side conditions recorded by the theorem row above:
 and \code{threshold\_dia\_total} additionally requires finite branching.
 Without these conditions, use the boundary theorems
 \code{threshold\_or\_counterexample} and \code{threshold\_dia\_fails}.
+
+\paragraph{Chapter 8 naming scope note (HOL/FOL wrappers).}
+Modules \code{PLNWorldModelHOLCompleteness.lean} and
+\code{PLNWorldModelFOLCompleteness.lean} retain historical
+\code{*Completeness} filenames, but the listed Ch.~8 endpoints are
+consequence-transfer/closure wrappers. The FOL side includes a concrete
+implication bridge over theory-models; the HOL side is schema-level pending
+imported concrete proof-system instances.
 
 \paragraph{Chapter 8 categorical regression target.}
 Script-level target for the new WM categorical layer:
@@ -1518,8 +1550,8 @@ Chapter 11 quantifier layer & Finite-model FO + fuzzy/QFM endpoint families with
 \code{qfm\_composedScore\_eq\_of\_signatureEq},
 \code{qfm\_composedInterval\_iff\_of\_signatureEq} \\
 \hline
-HOL/FOL consequence closure into WM/PLN transport (categorical surface) & Consequence wrappers are not only generic: concrete HOL and FOL fixture theorems consume the categorical endpoint layer & \code{multiset\_strength\_le\_of\_pointwise\_categorical},
-\code{multiset\_strength\_le\_of\_consequence\_categorical},
+HOL/FOL consequence transfer into WM/PLN transport (categorical surface) & Besides concrete HOL/FOL categorical fixtures, FOL now has a full implication bridge \code{T |- (phi -> psi) <-> singleton consequence on T-models} & \code{multiset\_strength\_le\_of\_pointwise\_categorical},
+\code{provable\_imp\_iff\_singletonStrengthLEOnTheory},
 \code{ch8\_hol\_categorical\_wrapper\_bool\_fixture},
 \code{ch8\_fol\_categorical\_consequence\_singleton\_fixture} \\
 \hline
@@ -1583,6 +1615,11 @@ Concrete ASSOC+PAT semantic fixture endpoints \newline
 \code{end\_to\_end\_assocPat\_bayesNormal\_lower},
 \code{end\_to\_end\_assocPat\_bayesExact\_lower},
 \code{end\_to\_end\_assocPat\_walley\_lower} &
+\codepath{Mettapedia/Logic/PLNIntensionalAssocPatClosure.lean} \\
+\hline
+Canonicality no-go witness for binary collapse \newline
+\textit{Tags: [PLNBook-Ch12], [ASSOC+PAT], [no-go], [canonicality]} &
+\code{no\_binary\_mixed\_policy\_for\_assocPat\_fixture} &
 \codepath{Mettapedia/Logic/PLNIntensionalAssocPatClosure.lean} \\
 \hline
 Executable canaries (positive + non-equivalence) \newline

@@ -19,6 +19,9 @@ import Mettapedia.Languages.GF.English.Syntax
 import Mettapedia.Languages.GF.English.Pronouns
 import Mettapedia.Languages.GF.English.Relatives
 import Mettapedia.Languages.GF.English.Properties
+import Mettapedia.Languages.GF.English.Linearization.Types
+import Mettapedia.Languages.GF.English.Linearization.Compose
+import Mettapedia.Languages.GF.English.Linearization.Render
 
 namespace Mettapedia.Languages.GF.English.Linearization
 
@@ -27,685 +30,6 @@ open Core Abstract
 open English
 open Syntax Pronouns Relatives
 open Nouns Verbs Adjectives
-
-/-! ## English Linearization Environment -/
-
-/-- Environment hooks for overriding lexical entries during linearization.
-All hooks default to `none`; built-in fallbacks are then used. -/
-structure EnglishLinEnv where
-  lookupCN : String → Option EnglishNoun := fun _ => none
-  lookupN : String → Option EnglishNoun := fun _ => none
-  lookupA : String → Option EnglishAdj := fun _ => none
-  lookupV : String → Option EnglishVerb := fun _ => none
-  lookupV2 : String → Option EnglishV2 := fun _ => none
-  lookupDet : String → Option EnglishDet := fun _ => none
-  lookupNP : String → Option EnglishNP := fun _ => none
-  lookupAdv : String → Option String := fun _ => none
-  lookupPrep : String → Option EnglishPrep := fun _ => none
-  lookupConj : String → Option EnglishConj := fun _ => none
-  lookupSubj : String → Option EnglishSubj := fun _ => none
-
-/-- Linearize a leaf noun in a case/number context.
-Kept as a focused helper/theorem target. -/
-def linearizeLeaf (env : EnglishLinEnv) (name : String) (c : Case) (n : Number) : String :=
-  match env.lookupCN name <|> env.lookupN name with
-  | some cn => cn.s n c
-  | none => name
-
-/-! ## Normalization Helpers -/
-
-private def decodeGFToken (s : String) : String :=
-  String.ofList <| s.toList.map fun ch =>
-    if ch = '_' || ch = '7' || ch = '8' then ' ' else ch
-
-private def dropSuffixIf (s suffix : String) : String :=
-  if strEndsWith s suffix then
-    strDropEnd s suffix.toList.length
-  else s
-
-private def stemFrom (name suffix : String) : String :=
-  decodeGFToken (dropSuffixIf name suffix)
-
-private def normalizeInterrogativeStem (s : String) : String :=
-  match s with
-  | "whatSg" => "what"
-  | "whatPl" => "what"
-  | "whoSg" => "who"
-  | "whoPl" => "who"
-  | other => other
-
-private def agrFromNumber (n : Number) : Agr :=
-  match n with
-  | .Sg => .AgP3Sg .Neutr
-  | .Pl => .AgP3Pl
-
-private def mkLiteralNP (txt : String) : EnglishNP :=
-  { s := fun _ => txt, agr := .AgP3Sg .Neutr }
-
-private def joinWithConj (xs : List String) (conj : String) : String :=
-  match xs with
-  | [] => ""
-  | [x] => x
-  | x :: rest =>
-    let rec loop : List String → String
-      | [] => ""
-      | [y] => y
-      | y :: ys => y ++ ", " ++ loop ys
-    x ++ " " ++ conj ++ " " ++ loop rest
-
-/-! ## Typed Evaluator Domain -/
-
-structure EnglishTemp where
-  tense : Tense := .Pres
-  ant : Anteriority := .Simul
-  deriving DecidableEq, Repr, Inhabited
-
-structure EnglishQuant where
-  sSg : String
-  sPl : String
-  isDef : Bool := false
-  deriving DecidableEq, Repr, Inhabited
-
-structure EnglishNumInfo where
-  n : Number := .Sg
-  card : String := ""
-  deriving DecidableEq, Repr, Inhabited
-
-structure EnglishOrdInfo where
-  s : String
-  deriving DecidableEq, Repr, Inhabited
-
-structure EnglishComp where
-  render : Agr → String
-
-structure EnglishV3Frame where
-  verb : EnglishVerb
-  c2 : String := ""
-  c3 : String := ""
-
-inductive EnglishV2CompKind where
-  | vp
-  | s
-  | qs
-  | ap
-  deriving DecidableEq, Repr, Inhabited
-
-structure EnglishV2CompFrame where
-  verb : EnglishVerb
-  objPrep : String := ""
-  compPrep : String := ""
-  kind : EnglishV2CompKind
-
-structure EnglishQVP where
-  s : String
-
-inductive EngValue where
-  | noun (n : EnglishNoun)
-  | cn (cn : EnglishCN)
-  | adj (a : EnglishAdj)
-  | ap (ap : EnglishAP)
-  | quant (q : EnglishQuant)
-  | num (n : EnglishNumInfo)
-  | card (s : String)
-  | ord (o : EnglishOrdInfo)
-  | det (d : EnglishDet)
-  | np (np : EnglishNP)
-  | verb (v : EnglishVerb)
-  | verb2 (v : EnglishV2)
-  | verb3 (v : EnglishV3Frame)
-  | verb2comp (v : EnglishV2CompFrame)
-  | vp (vp : EnglishVP)
-  | comp (c : EnglishComp)
-  | vpslash (vps : EnglishVPSlash)
-  | clslash (cls : EnglishClSlash)
-  | qvp (qvp : EnglishQVP)
-  | cls (cl : EnglishClause)
-  | qcl (cl : EnglishClause)
-  | rcl (rcl : EnglishRCl)
-  | rs (rs : EnglishRS)
-  | rp (rp : EnglishRP)
-  | prep (p : EnglishPrep)
-  | conj (c : EnglishConj)
-  | subj (s : EnglishSubj)
-  | adv (s : String)
-  | tense (t : Tense)
-  | ant (a : Anteriority)
-  | temp (t : EnglishTemp)
-  | pol (p : CPolarity)
-  | listNP (xs : List EnglishNP)
-  | listCN (xs : List EnglishCN)
-  | listAP (xs : List EnglishAP)
-  | listRS (xs : List EnglishRS)
-  | listAdv (xs : List String)
-  | listAdV (xs : List String)
-  | listIAdv (xs : List String)
-  | listDet (xs : List EnglishDet)
-  | listVPS (xs : List String)
-  | listVPI (xs : List String)
-  | listVPS2 (xs : List String)
-  | listVPI2 (xs : List String)
-  | listComp (xs : List String)
-  | listImp (xs : List String)
-  | listSymb (xs : List String)
-  | listS (xs : List String)
-  | raw (cat : Category) (txt : String)
-  deriving Inhabited
-
-private def EngValue.asN? : EngValue → Option EnglishNoun
-  | EngValue.noun x => some x
-  | EngValue.cn x => some x
-  | _ => none
-
-private def EngValue.asCN? : EngValue → Option EnglishCN
-  | EngValue.cn x => some x
-  | EngValue.noun x => some x
-  | _ => none
-
-private def EngValue.asA? : EngValue → Option EnglishAdj
-  | EngValue.adj x => some x
-  | _ => none
-
-private def EngValue.asAP? : EngValue → Option EnglishAP
-  | EngValue.ap x => some x
-  | _ => none
-
-private def EngValue.asDet? : EngValue → Option EnglishDet
-  | EngValue.det x => some x
-  | _ => none
-
-private def EngValue.asQuant? : EngValue → Option EnglishQuant
-  | EngValue.quant q => some q
-  | EngValue.det d => some { sSg := d.s, sPl := d.s, isDef := d.isDef }
-  | _ => none
-
-private def EngValue.asNum? : EngValue → Option EnglishNumInfo
-  | EngValue.num n => some n
-  | _ => none
-
-private def EngValue.asCard? : EngValue → Option String
-  | EngValue.card s => some s
-  | EngValue.raw (.base "Card") s => some s
-  | _ => none
-
-private def EngValue.asOrd? : EngValue → Option EnglishOrdInfo
-  | EngValue.ord o => some o
-  | _ => none
-
-private def EngValue.asNP? : EngValue → Option EnglishNP
-  | EngValue.np x => some x
-  | _ => none
-
-private def EngValue.asV? : EngValue → Option EnglishVerb
-  | EngValue.verb x => some x
-  | _ => none
-
-private def EngValue.asV2? : EngValue → Option EnglishV2
-  | EngValue.verb2 x => some x
-  | _ => none
-
-private def EngValue.asV3? : EngValue → Option EnglishV3Frame
-  | EngValue.verb3 x => some x
-  | _ => none
-
-private def EngValue.asV2Comp? : EngValue → Option EnglishV2CompFrame
-  | EngValue.verb2comp x => some x
-  | _ => none
-
-private def EngValue.asVP? : EngValue → Option EnglishVP
-  | EngValue.vp x => some x
-  | _ => none
-
-private def EngValue.asComp? : EngValue → Option EnglishComp
-  | EngValue.comp x => some x
-  | _ => none
-
-private def EngValue.asVPSlash? : EngValue → Option EnglishVPSlash
-  | EngValue.vpslash x => some x
-  | _ => none
-
-private def EngValue.asClSlash? : EngValue → Option EnglishClSlash
-  | EngValue.clslash x => some x
-  | _ => none
-
-private def EngValue.asQVP? : EngValue → Option EnglishQVP
-  | EngValue.qvp x => some x
-  | EngValue.raw (.base "QVP") s => some ⟨s⟩
-  | _ => none
-
-private def EngValue.asCl? : EngValue → Option EnglishClause
-  | EngValue.cls x => some x
-  | _ => none
-
-private def EngValue.asQCl? : EngValue → Option EnglishClause
-  | EngValue.qcl x => some x
-  | _ => none
-
-private def EngValue.asRCl? : EngValue → Option EnglishRCl
-  | EngValue.rcl x => some x
-  | _ => none
-
-private def EngValue.asRS? : EngValue → Option EnglishRS
-  | EngValue.rs x => some x
-  | _ => none
-
-private def EngValue.asRP? : EngValue → Option EnglishRP
-  | EngValue.rp x => some x
-  | _ => none
-
-private def EngValue.asPrep? : EngValue → Option EnglishPrep
-  | EngValue.prep x => some x
-  | _ => none
-
-private def EngValue.asConj? : EngValue → Option EnglishConj
-  | EngValue.conj x => some x
-  | _ => none
-
-private def EngValue.asSubj? : EngValue → Option EnglishSubj
-  | EngValue.subj x => some x
-  | _ => none
-
-private def EngValue.asAdv? : EngValue → Option String
-  | EngValue.adv x => some x
-  | EngValue.raw (.base "Adv") x => some x
-  | EngValue.raw (.base "AdV") x => some x
-  | EngValue.raw (.base "IAdv") x => some x
-  | _ => none
-
-private def EngValue.asPConj? : EngValue → Option String
-  | EngValue.raw (.base "PConj") x => some x
-  | _ => none
-
-private def EngValue.asVoc? : EngValue → Option String
-  | EngValue.raw (.base "Voc") x => some x
-  | _ => none
-
-private def EngValue.asTemp? : EngValue → Option EnglishTemp
-  | EngValue.temp x => some x
-  | EngValue.tense x => some ⟨x, .Simul⟩
-  | _ => none
-
-private def EngValue.asPol? : EngValue → Option CPolarity
-  | EngValue.pol x => some x
-  | _ => none
-
-private def EngValue.asListNP? : EngValue → Option (List EnglishNP)
-  | EngValue.listNP xs => some xs
-  | EngValue.np x => some [x]
-  | _ => none
-
-private def EngValue.asListCN? : EngValue → Option (List EnglishCN)
-  | EngValue.listCN xs => some xs
-  | EngValue.cn x => some [x]
-  | EngValue.noun x => some [x]
-  | _ => none
-
-private def EngValue.asListAP? : EngValue → Option (List EnglishAP)
-  | EngValue.listAP xs => some xs
-  | EngValue.ap x => some [x]
-  | _ => none
-
-private def EngValue.asListRS? : EngValue → Option (List EnglishRS)
-  | EngValue.listRS xs => some xs
-  | EngValue.rs x => some [x]
-  | _ => none
-
-private def EngValue.asListAdv? : EngValue → Option (List String)
-  | EngValue.listAdv xs => some xs
-  | EngValue.adv x => some [x]
-  | EngValue.raw (.base "Adv") x => some [x]
-  | _ => none
-
-private def EngValue.asListAdV? : EngValue → Option (List String)
-  | EngValue.listAdV xs => some xs
-  | EngValue.adv x => some [x]
-  | EngValue.raw (.base "AdV") x => some [x]
-  | _ => none
-
-private def EngValue.asListIAdv? : EngValue → Option (List String)
-  | EngValue.listIAdv xs => some xs
-  | EngValue.adv x => some [x]
-  | EngValue.raw (.base "IAdv") x => some [x]
-  | _ => none
-
-private def EngValue.asListDet? : EngValue → Option (List EnglishDet)
-  | EngValue.listDet xs => some xs
-  | EngValue.det d => some [d]
-  | _ => none
-
-private def EngValue.asListS? : EngValue → Option (List String)
-  | EngValue.listS xs => some xs
-  | EngValue.raw (.base "S") s => some [s]
-  | EngValue.raw (.base "QS") s => some [s]
-  | EngValue.raw (.base "SC") s => some [s]
-  | _ => none
-
-private def EngValue.asListVPS? : EngValue → Option (List String)
-  | EngValue.listVPS xs => some xs
-  | EngValue.raw (.base "VPS") s => some [s]
-  | _ => none
-
-private def EngValue.asListVPI? : EngValue → Option (List String)
-  | EngValue.listVPI xs => some xs
-  | EngValue.raw (.base "VPI") s => some [s]
-  | _ => none
-
-private def EngValue.asListVPS2? : EngValue → Option (List String)
-  | EngValue.listVPS2 xs => some xs
-  | EngValue.raw (.base "VPS2") s => some [s]
-  | _ => none
-
-private def EngValue.asListVPI2? : EngValue → Option (List String)
-  | EngValue.listVPI2 xs => some xs
-  | EngValue.raw (.base "VPI2") s => some [s]
-  | _ => none
-
-private def EngValue.asListComp? : EngValue → Option (List String)
-  | EngValue.listComp xs => some xs
-  | EngValue.comp c => some [c.render (.AgP3Sg .Neutr)]
-  | EngValue.raw (.base "Comp") s => some [s]
-  | _ => none
-
-private def EngValue.asListImp? : EngValue → Option (List String)
-  | EngValue.listImp xs => some xs
-  | EngValue.raw (.base "Imp") s => some [s]
-  | _ => none
-
-private def EngValue.asListSymb? : EngValue → Option (List String)
-  | EngValue.listSymb xs => some xs
-  | EngValue.raw (.base "Symb") s => some [s]
-  | _ => none
-
-private def copulaVP (renderComp : Agr → String) : EnglishVP :=
-  { inf := "be"
-    pres := fun agr => match agr with
-      | .AgP3Sg _ => "is"
-      | _ => "are"
-    past := "was"
-    ppart := "been"
-    prpart := "being"
-    particle := ""
-    compl := renderComp
-    adv := "" }
-
-private def addCompPrep (prep : String) (s : String) : String :=
-  if prep == "" then s else prep ++ " " ++ s
-
-private def vpCompSurface (vp : EnglishVP) : String :=
-  joinWords [vp.inf, vp.particle, vp.compl (.AgP3Sg .Neutr), vp.adv]
-
-private def applyV3Slash (v3 : EnglishV3Frame) (filled : String) (missingPrep : String) : EnglishVPSlash :=
-  let base : EnglishVP :=
-    { (predV v3.verb) with compl := fun _ => filled }
-  { base with c2 := missingPrep }
-
-private def applyV2CompSlash (v2c : EnglishV2CompFrame) (compText : String) : EnglishVPSlash :=
-  let compWithPrep := addCompPrep v2c.compPrep compText
-  let base : EnglishVP :=
-    { (predV v2c.verb) with adv := compWithPrep }
-  { base with c2 := v2c.objPrep }
-
-private def fillSlashPreservingBase (vps : EnglishVPSlash) (obj : EnglishNP) : EnglishVP :=
-  let objStr :=
-    if vps.c2 == "" then obj.s .NPAcc
-    else vps.c2 ++ " " ++ obj.s .NPAcc
-  let baseComp := vps.toEnglishVP.compl (.AgP3Sg .Neutr)
-  let combined :=
-    if baseComp == "" then objStr
-    else if objStr == "" then baseComp
-    else baseComp ++ " " ++ objStr
-  { vps.toEnglishVP with compl := fun _ => combined }
-
-private def applyCompVerb (v2c : EnglishV2CompFrame) (compText : String) : EnglishVP :=
-  let compWithPrep := addCompPrep v2c.compPrep compText
-  { (predV v2c.verb) with adv := compWithPrep }
-
-private def fixedClause (s : String) : EnglishClause :=
-  { s := fun _ _ _ _ => s }
-
-private def fixedQClause (s : String) : EnglishClause :=
-  { s := fun _ _ _ ord =>
-      match ord with
-      | .OQuest => s
-      | _ => s }
-
-private def prefixNP (pfx : String) (np : EnglishNP) : EnglishNP :=
-  { s := fun npc => joinWords [pfx, np.s npc]
-    agr := np.agr }
-
-private def suffixNP (np : EnglishNP) (sfx : String) : EnglishNP :=
-  { s := fun npc => joinWords [np.s npc, sfx]
-    agr := np.agr }
-
-private def unitsWord : Nat → String
-  | 0 => "zero"
-  | 1 => "one"
-  | 2 => "two"
-  | 3 => "three"
-  | 4 => "four"
-  | 5 => "five"
-  | 6 => "six"
-  | 7 => "seven"
-  | 8 => "eight"
-  | _ => "nine"
-
-private def teenWord : Nat → String
-  | 10 => "ten"
-  | 11 => "eleven"
-  | 12 => "twelve"
-  | 13 => "thirteen"
-  | 14 => "fourteen"
-  | 15 => "fifteen"
-  | 16 => "sixteen"
-  | 17 => "seventeen"
-  | 18 => "eighteen"
-  | _ => "nineteen"
-
-private def tensWord : Nat → String
-  | 2 => "twenty"
-  | 3 => "thirty"
-  | 4 => "forty"
-  | 5 => "fifty"
-  | 6 => "sixty"
-  | 7 => "seventy"
-  | 8 => "eighty"
-  | _ => "ninety"
-
-private partial def natCardinalWords : Nat → String
-  | n =>
-    if n < 10 then
-      unitsWord n
-    else if n < 20 then
-      teenWord n
-    else if n < 100 then
-      let t := n / 10
-      let u := n % 10
-      if u = 0 then tensWord t else tensWord t ++ "-" ++ unitsWord u
-    else if n < 1000 then
-      let h := n / 100
-      let r := n % 100
-      if r = 0 then unitsWord h ++ " hundred"
-      else unitsWord h ++ " hundred " ++ natCardinalWords r
-    else if n < 1000000 then
-      let th := n / 1000
-      let r := n % 1000
-      if r = 0 then natCardinalWords th ++ " thousand"
-      else natCardinalWords th ++ " thousand " ++ natCardinalWords r
-    else if n < 1000000000 then
-      let m := n / 1000000
-      let r := n % 1000000
-      if r = 0 then natCardinalWords m ++ " million"
-      else natCardinalWords m ++ " million " ++ natCardinalWords r
-    else
-      let b := n / 1000000000
-      let r := n % 1000000000
-      if r = 0 then natCardinalWords b ++ " billion"
-      else natCardinalWords b ++ " billion " ++ natCardinalWords r
-
-private def stripSuffix? (s suffix : String) : Option String :=
-  if strEndsWith s suffix then
-    some (strDropEnd s suffix.toList.length)
-  else
-    none
-
-private def ordinalizeCardinal (s : String) : String :=
-  match stripSuffix? s "one" with
-  | some p => p ++ "first"
-  | none =>
-    match stripSuffix? s "two" with
-    | some p => p ++ "second"
-    | none =>
-      match stripSuffix? s "three" with
-      | some p => p ++ "third"
-      | none =>
-        match stripSuffix? s "five" with
-        | some p => p ++ "fifth"
-        | none =>
-          match stripSuffix? s "eight" with
-          | some p => p ++ "eighth"
-          | none =>
-            match stripSuffix? s "nine" with
-            | some p => p ++ "ninth"
-            | none =>
-              match stripSuffix? s "twelve" with
-              | some p => p ++ "twelfth"
-              | none =>
-                if strEndsWith s "y" then
-                  strDropEnd s 1 ++ "ieth"
-                else
-                  s ++ "th"
-
-private def decimalCardinalWords (s : String) : String :=
-  if s.contains '.' then
-    let parts := s.splitOn "."
-    match parts with
-    | [lhs, rhs] =>
-      let sign := if lhs.startsWith "-" then "minus " else ""
-      let lhsAbs := if lhs.startsWith "-" then lhs.drop 1 else lhs
-      let lhsNat? := lhsAbs.toNat?
-      let lhsWords := match lhsNat? with | some n => natCardinalWords n | none => lhs
-      let rhsWords := String.intercalate " " (rhs.toList.map (fun ch => unitsWord (ch.toNat - '0'.toNat)))
-      sign ++ lhsWords ++ " point " ++ rhsWords
-    | _ => s
-  else
-    match s.toNat? with
-    | some n => natCardinalWords n
-    | none => s
-
-private def passiveVP (v2 : EnglishV2) : EnglishVP :=
-  { inf := "be"
-    pres := fun agr => auxBe.pres .Pos agr
-    past := "was"
-    ppart := "been"
-    prpart := "being"
-    particle := ""
-    compl := fun _ =>
-      if v2.c2 == "" then v2.toEnglishVerb.s .VPPart
-      else v2.toEnglishVerb.s .VPPart ++ " " ++ v2.c2
-    adv := "" }
-
-private def parseNatCard? (s : String) : Option Nat :=
-  s.toNat?
-
-private def cardNat (n : Nat) : EngValue :=
-  .card (toString n)
-
-private def mulCard? (a b : String) : Option EngValue := do
-  let x ← parseNatCard? a
-  let y ← parseNatCard? b
-  pure (cardNat (x * y))
-
-private def addCard? (a b : String) : Option EngValue := do
-  let x ← parseNatCard? a
-  let y ← parseNatCard? b
-  pure (cardNat (x + y))
-
-structure RenderParams where
-  case : Case := .Nom
-  number : Number := .Sg
-  tense : Tense := .Pres
-  ant : Anteriority := .Simul
-  pol : CPolarity := .CPos
-  order : Order := .ODir true
-  deriving DecidableEq, Repr, Inhabited
-
-private def renderValue (v : EngValue) (p : RenderParams) : String :=
-  match v with
-  | .noun n => n.s p.number p.case
-  | .cn cn => cn.s p.number p.case
-  | .adj a => a.s (.AAdj .Pos p.case)
-  | .ap ap => ap.s (agrFromNumber p.number)
-  | .quant q => if p.number == .Pl then q.sPl else q.sSg
-  | .num n => if n.card == "" then (if n.n == .Pl then "plural" else "singular") else n.card
-  | .card s => s
-  | .ord o => o.s
-  | .det d => d.s
-  | .np np => np.s (.NCase p.case)
-  | .verb v => v.s .VInf
-  | .verb2 v2 => v2.toEnglishVerb.s .VInf
-  | .verb3 v3 => v3.verb.s .VInf
-  | .verb2comp v2c => v2c.verb.s .VInf
-  | .vp vp =>
-    let cl := mkClause "it" (.AgP3Sg .Neutr) vp
-    cl.s p.tense p.ant p.pol p.order
-  | .comp c =>
-    c.render (agrFromNumber p.number)
-  | .vpslash vps =>
-    let cl := mkClause "it" (.AgP3Sg .Neutr) vps.toEnglishVP
-    cl.s p.tense p.ant p.pol p.order
-  | .clslash cls =>
-    cls.s p.tense p.ant p.pol p.order
-  | .qvp qvp =>
-    qvp.s
-  | .cls cl => cl.s p.tense p.ant p.pol p.order
-  | .qcl cl => cl.s p.tense p.ant p.pol .OQuest
-  | .rcl rcl => rcl.s p.tense p.ant p.pol (agrFromNumber p.number)
-  | .rs rs => rs.s (agrFromNumber p.number)
-  | .rp rp => rp.s (.RC .Neutr (.NCase .Nom))
-  | .prep prep => prep.s
-  | .conj conj => conj.s2
-  | .subj subj => subj.s
-  | .adv s => s
-  | .tense .Pres => "present"
-  | .tense .Past => "past"
-  | .tense .Fut => "future"
-  | .tense .Cond => "conditional"
-  | .ant .Simul => "simple"
-  | .ant .Anter => "perfect"
-  | .temp t =>
-    let tstr := match t.tense with
-      | .Pres => "present"
-      | .Past => "past"
-      | .Fut => "future"
-      | .Cond => "conditional"
-    let astr := match t.ant with
-      | .Simul => "simple"
-      | .Anter => "perfect"
-    tstr ++ " " ++ astr
-  | .pol .CPos => "positive"
-  | .pol (.CNeg true) => "negative contracted"
-  | .pol (.CNeg false) => "negative"
-  | .listNP xs => joinWithConj (xs.map (fun np => np.s (.NCase p.case))) "and"
-  | .listCN xs => joinWithConj (xs.map (fun cn => cn.s p.number p.case)) "and"
-  | .listAP xs => joinWithConj (xs.map (fun ap => ap.s (agrFromNumber p.number))) "and"
-  | .listRS xs => joinWithConj (xs.map (fun rs => rs.s (.AgP3Sg .Neutr))) "and"
-  | .listAdv xs => joinWithConj xs "and"
-  | .listAdV xs => joinWithConj xs "and"
-  | .listIAdv xs => joinWithConj xs "and"
-  | .listDet xs => joinWithConj (xs.map (fun d => d.s)) "and"
-  | .listVPS xs => joinWithConj xs "and"
-  | .listVPI xs => joinWithConj xs "and"
-  | .listVPS2 xs => joinWithConj xs "and"
-  | .listVPI2 xs => joinWithConj xs "and"
-  | .listComp xs => joinWithConj xs "and"
-  | .listImp xs => joinWithConj xs "and"
-  | .listSymb xs => joinWithConj xs "and"
-  | .listS xs => joinWithConj xs "and"
-  | .raw _ txt => txt
-
-private def fallbackAppString (name : String) (args : List EngValue) : String :=
-  let rendered := args.map (fun v => renderValue v {})
-  name ++ "(" ++ String.intercalate ", " rendered ++ ")"
-
 /-! ## Lexical Leaves -/
 
 private def nounByName? (name : String) : Option EnglishNoun :=
@@ -880,7 +204,7 @@ private def digitByName? (name : String) : Option String :=
   | "D_1" => some "1"
   | _ => none
 
-private def evalLeafValue (env : EnglishLinEnv) (name : String) (cat : Category) : EngValue :=
+def evalLeafValue (env : EnglishLinEnv) (name : String) (cat : Category) : EngValue :=
   match cat with
   | .base "N" =>
     match env.lookupN name <|> env.lookupCN name <|> nounByName? name with
@@ -1070,7 +394,48 @@ private def evalLeafValue (env : EnglishLinEnv) (name : String) (cat : Category)
 
 /-! ## Core Apply Dispatch -/
 
-private def dispatchApply (f : FunctionSig) (args : List EngValue) : Option EngValue :=
+inductive DispatchTag where
+  | useN
+  | detCN
+  | slashV2a
+  | complSlash
+  | passV2
+  | predVP
+  deriving DecidableEq, Repr, Inhabited
+
+/-- Small tagged front-end for proof-facing constructor reduction.
+This starts the migration away from the monolithic string dispatcher without
+changing external behavior. -/
+def dispatchTag? : String → Option DispatchTag
+  | "UseN" => some .useN
+  | "DetCN" => some .detCN
+  | "SlashV2a" => some .slashV2a
+  | "ComplSlash" => some .complSlash
+  | "PassV2" => some .passV2
+  | "PredVP" => some .predVP
+  | _ => none
+
+/-- Tagged semantics for the witness-critical constructor fragment. -/
+def dispatchApplyTagged (tag : DispatchTag) (args : List EngValue) : Option EngValue :=
+  match tag, args with
+  | .useN, [x] => x.asN? |>.map (fun n => .cn (linUseN n))
+  | .detCN, [d, cn] =>
+    match d.asDet?, cn.asCN? with
+    | some det, some noun => some (.np (linDetCN det noun))
+    | _, _ => none
+  | .slashV2a, [v2] => v2.asV2? |>.map (fun x => .vpslash (slashV2a x))
+  | .complSlash, [vps, np] =>
+    match vps.asVPSlash?, np.asNP? with
+    | some x, some y => some (.vp (fillSlashPreservingBase x y))
+    | _, _ => none
+  | .passV2, [v2] => v2.asV2? |>.map (fun x => .vp (passiveVP x))
+  | .predVP, [np, vp] =>
+    match np.asNP?, vp.asVP? with
+    | some s, some v => some (.cls (linPredVP s v))
+    | _, _ => none
+  | _, _ => none
+
+private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Option EngValue :=
   match f.name, args with
   -- Core noun phrase pipeline
   | "UseN", [x] => x.asN? |>.map (fun n => .cn (linUseN n))
@@ -2359,10 +1724,112 @@ private def dispatchApply (f : FunctionSig) (args : List EngValue) : Option EngV
 
   | _, _ => none
 
-partial def evalNode (env : EnglishLinEnv) : AbstractNode → EngValue
+/-- Public dispatch entrypoint.
+
+The tagged path gives proof-facing reductions a small, stable surface for the
+most-used witness constructors, while the legacy matcher preserves the full
+current behavior for everything else. -/
+def dispatchApply (f : FunctionSig) (args : List EngValue) : Option EngValue :=
+  match dispatchTag? f.name with
+  | some tag =>
+    match dispatchApplyTagged tag args with
+    | some v => some v
+    | none => dispatchApplyLegacy f args
+  | none => dispatchApplyLegacy f args
+
+/-! ## Proof-Facing Reduction Lemmas -/
+
+theorem evalLeafValue_cat_N :
+    evalLeafValue {} "cat_N" (.base "N") = .noun cat_N := by
+  change
+    (match ({} : EnglishLinEnv).lookupN "cat_N" <|>
+        ({} : EnglishLinEnv).lookupCN "cat_N" <|> nounByName? "cat_N" with
+      | some n => EngValue.noun n
+      | none => EngValue.noun (regN (stemFrom "cat_N" "_N"))) = EngValue.noun cat_N
+  have hstem : stemFrom "cat_N" "_N" = "cat" := by decide
+  simp [nounByName?, cat_N, hstem]
+
+theorem evalLeafValue_dog_N :
+    evalLeafValue {} "dog_N" (.base "N") = .noun dog_N := by
+  change
+    (match ({} : EnglishLinEnv).lookupN "dog_N" <|>
+        ({} : EnglishLinEnv).lookupCN "dog_N" <|> nounByName? "dog_N" with
+      | some n => EngValue.noun n
+      | none => EngValue.noun (regN (stemFrom "dog_N" "_N"))) = EngValue.noun dog_N
+  have hstem : stemFrom "dog_N" "_N" = "dog" := by decide
+  simp [nounByName?, dog_N, hstem]
+
+theorem evalLeafValue_the_Det :
+    evalLeafValue {} "the_Det" (.base "Det") = .det theDefArt := by
+  change
+    (match ({} : EnglishLinEnv).lookupDet "the_Det" <|> detByName? "the_Det" with
+      | some d => EngValue.det d
+      | none => EngValue.det { s := stemFrom "the_Det" "_Det", n := .Sg, isDef := false }) =
+        EngValue.det theDefArt
+  simp [detByName?]
+
+theorem evalLeafValue_love_V2 :
+    evalLeafValue {} "love_V2" (.base "V2") = .verb2 love_V2 := by
+  change
+    (match ({} : EnglishLinEnv).lookupV2 "love_V2" <|> v2ByName? "love_V2" with
+      | some v2 => EngValue.verb2 v2
+      | none => EngValue.verb2 (regV2 (stemFrom "love_V2" "_V2"))) = EngValue.verb2 love_V2
+  simp [v2ByName?]
+
+theorem dispatchApply_UseN_noun (n : EnglishNoun) :
+    dispatchApply
+        { name := "UseN", type := .arrow (.base "N") (.base "CN") }
+        [.noun n] =
+      some (.cn (linUseN n)) := by
+  unfold dispatchApply dispatchTag? dispatchApplyTagged
+  simp [EngValue.asN?]
+
+theorem dispatchApply_DetCN (det : EnglishDet) (noun : EnglishCN) :
+    dispatchApply
+        { name := "DetCN", type := .arrow (.base "Det") (.arrow (.base "CN") (.base "NP")) }
+        [.det det, .cn noun] =
+      some (.np (linDetCN det noun)) := by
+  unfold dispatchApply dispatchTag? dispatchApplyTagged
+  simp [EngValue.asDet?, EngValue.asCN?]
+
+theorem dispatchApply_SlashV2a (v2 : EnglishV2) :
+    dispatchApply
+        { name := "SlashV2a", type := .arrow (.base "V2") (.base "VPSlash") }
+        [.verb2 v2] =
+      some (.vpslash (slashV2a v2)) := by
+  unfold dispatchApply dispatchTag? dispatchApplyTagged
+  simp [EngValue.asV2?]
+
+theorem dispatchApply_ComplSlash (vps : EnglishVPSlash) (np : EnglishNP) :
+    dispatchApply
+        { name := "ComplSlash", type := .arrow (.base "VPSlash") (.arrow (.base "NP") (.base "VP")) }
+        [.vpslash vps, .np np] =
+      some (.vp (fillSlashPreservingBase vps np)) := by
+  unfold dispatchApply dispatchTag? dispatchApplyTagged
+  simp [EngValue.asVPSlash?, EngValue.asNP?]
+
+theorem dispatchApply_PassV2 (v2 : EnglishV2) :
+    dispatchApply
+        { name := "PassV2", type := .arrow (.base "V2") (.base "VP") }
+        [.verb2 v2] =
+      some (.vp (passiveVP v2)) := by
+  unfold dispatchApply dispatchTag? dispatchApplyTagged
+  simp [EngValue.asV2?]
+
+theorem dispatchApply_PredVP (np : EnglishNP) (vp : EnglishVP) :
+    dispatchApply
+        { name := "PredVP", type := .arrow (.base "NP") (.arrow (.base "VP") (.base "Cl")) }
+        [.np np, .vp vp] =
+      some (.cls (linPredVP np vp)) := by
+  unfold dispatchApply dispatchTag? dispatchApplyTagged
+  simp [EngValue.asNP?, EngValue.asVP?]
+
+mutual
+
+def evalNode (env : EnglishLinEnv) : AbstractNode → EngValue
   | .leaf name cat => evalLeafValue env name cat
   | .apply f args =>
-    let argVals := args.map (evalNode env)
+    let argVals := evalArgs env args
     match dispatchApply f argVals with
     | some v => v
     | none =>
@@ -2370,6 +1837,24 @@ partial def evalNode (env : EnglishLinEnv) : AbstractNode → EngValue
         evalLeafValue env f.name (FunctionSig.resultCategory f.type)
       else
         .raw (FunctionSig.resultCategory f.type) (fallbackAppString f.name argVals)
+termination_by
+  n => sizeOf n
+
+def evalArgs (env : EnglishLinEnv) : List AbstractNode → List EngValue
+  | [] => []
+  | a :: as => evalNode env a :: evalArgs env as
+termination_by
+  xs => sizeOf xs
+
+decreasing_by
+  ·
+    simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      (Nat.lt_succ_of_le (Nat.le_add_right (sizeOf a) (sizeOf as)))
+  ·
+    simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+      (Nat.lt_succ_of_le (Nat.le_add_left (sizeOf as) (sizeOf a)))
+
+end
 
 /-! ## Public Linearization API -/
 
@@ -2438,156 +1923,5 @@ def englishSentenceLinearize (env : EnglishLinEnv)
         ant := sp.anteriority
         pol := sp.polarity
         order := sp.order }
-
-/-! ## Coverage Diagnostics -/
-
-/-- Function names with explicit typed semantics in `dispatchApply`. -/
-def explicitApplyFunctionNames : List String :=
-  [ "UseN", "AdNum", "OrdNumeralSuperl", "ComplN2", "ComplN3", "UseN2", "Use2N3", "Use3N3"
-  , "SentCN", "ApposCN", "PossNP", "PartNP", "AdjDAP", "DetDAP"
-  , "ComplA2", "ReflA2", "UseA2", "UseComparA", "CAdvAP", "AdjOrd", "SentAP", "AdAP", "AdvAP"
-  , "PositAdvAdj", "ComparAdvAdj", "ComparAdvAdjS", "AdAdv", "PositAdAAdj", "SubjS", "AdnCAdv"
-  , "TEmpty", "TFullStop", "TQuestMark", "TExclMark", "no_Utt", "yes_Utt", "language_title_Utt", "FunRP"
-  , "DetCN", "DetQuant", "DetQuantOrd", "PredetNP", "PPartNP", "AdvNP", "ExtAdvNP"
-  , "RelNP", "CountNP", "QuantityNP", "MassNP", "UsePron", "UsePN", "AdjCN", "AdvCN"
-  , "DefArt", "IndefArt", "DetNP", "NumSg", "NumPl", "NumCard", "NumDigits", "NumDecimal"
-  , "NumNumeral", "num", "pot01", "pot0", "pot0as1", "pot110", "pot111", "pot1to19", "pot1"
-  , "pot1plus", "pot1as2", "pot21", "pot2", "pot2plus", "pot2as3", "pot31", "pot3", "pot3plus"
-  , "pot3as4", "pot3decimal", "pot41", "pot4", "pot4plus", "pot4as5", "pot4decimal", "pot51"
-  , "pot5", "pot5plus", "pot5decimal", "IDig", "IIDig", "PosDecimal", "NegDecimal", "IFrac"
-  , "OrdDigits", "OrdNumeral", "OrdSuperl", "PossPron"
-  , "PositA", "ComparA", "UseV", "ComplVV", "ComplVS", "ComplVQ", "ComplVA", "PassV2"
-  , "SlashVV", "SlashV2VNP", "ReflVP", "ExtAdvVP", "AdVVP", "CompNP", "CompAP", "CompAdv", "CompCN"
-  , "UseComp", "UseCopula", "SlashV2a", "AdvVPSlash", "AdVVPSlash", "VPSlashPrep"
-  , "Slash2V3", "Slash3V3", "SlashV2V", "SlashV2S", "SlashV2Q", "SlashV2A", "ComplSlash", "AdvVP"
-  , "ImpersCl", "GenericCl", "CleftNP", "CleftAdv", "ExistNP", "ExistIP", "ExistNPAdv", "ExistIPAdv"
-  , "ProgrVP", "ImpPl1", "ImpP3", "SelfAdvVP", "SelfAdVVP", "SelfNP"
-  , "PredVP", "PredSCVP", "SlashVP", "AdvSlash", "SlashPrep"
-  , "QuestCl", "QuestVP", "QuestSlash", "PiedPipingQuestSlash", "StrandQuestSlash"
-  , "QuestIAdv", "QuestIComp", "IdetCN", "IdetIP", "AdvIP", "IdetQuant"
-  , "PrepIP", "AdvIAdv", "CompIAdv", "CompIP", "ICompAP", "IAdvAdv", "CompIQuant", "GenIP"
-  , "ExistS", "ExistNPQS", "ExistIPQS", "ComplSlashIP", "AdvQVP", "AddAdvQVP", "QuestQVP"
-  , "TTAnt", "PPos", "PNeg", "TPres", "TPast", "TFut"
-  , "TCond", "ASimul", "AAnter", "ImpVP", "AdvImp", "EmbedS", "EmbedQS", "EmbedVP", "UseSlash", "SlashVS"
-  , "AdvS", "ExtAdvS", "RelS", "UseCl", "UseQCl"
-  , "IdRP", "RelCl", "RelVP", "RelSlash", "PiedPipingRelSlash", "StrandRelSlash", "EmptyRelSlash"
-  , "UseRCl", "RelCN", "GenRP", "PrepNP", "SSubjS"
-  , "NoPConj", "PConjConj", "NoVoc", "VocNP", "PhrUtt", "UttS", "UttQS", "UttImpSg", "UttImpPl", "UttImpPol"
-  , "UttIP", "UttIAdv", "UttNP", "UttAdv", "UttVP", "UttCN", "UttCard", "UttAP", "UttInterj"
-  , "GenNP", "GenModNP", "GenModIP", "CompBareCN", "ProDrop", "PrepCN"
-  , "FocusObj", "FocusAdv", "FocusAdV", "FocusAP", "PresPartAP", "EmbedPresPart", "PastPartAP"
-  , "PastPartAgentAP", "PassVPSlash", "PassAgentVPSlash", "NominalizeVPSlashNP"
-  , "MkVPS", "ConjVPS", "PredVPS", "SQuestVPS", "QuestVPS", "RelVPS", "BaseVPS", "ConsVPS"
-  , "MkVPI", "ConjVPI", "ComplVPIVV", "BaseVPI", "ConsVPI"
-  , "MkVPS2", "ConjVPS2", "ComplVPS2", "ReflVPS2", "BaseVPS2", "ConsVPS2"
-  , "MkVPI2", "ConjVPI2", "ComplVPI2", "BaseVPI2", "ConsVPI2"
-  , "ConjComp", "BaseComp", "ConsComp", "ConjImp", "BaseImp", "ConsImp"
-  , "MkSymb", "BaseSymb", "ConsSymb", "SymbPN", "IntPN", "FloatPN", "NumPN"
-  , "CNNumNP", "CNIntNP", "CNSymbNP", "SymbS", "SymbNum", "SymbOrd"
-  , "BaseNP", "ConsNP", "ConjNP", "BaseCN", "ConsCN", "ConjCN", "BaseRS", "ConsRS", "ConjRS"
-  , "BaseAdv", "ConsAdv", "ConjAdv", "BaseAdV", "ConsAdV", "ConjAdV"
-  , "BaseIAdv", "ConsIAdv", "ConjIAdv", "BaseDAP", "ConsDAP", "ConjDet"
-  , "BaseAP", "ConsAP", "ConjAP", "BaseS", "ConsS", "ConjS" ]
-
-/-- Result categories that are typed by `evalLeafValue` (not raw fallback). -/
-def typedLeafResultCategories : List Category :=
-  [ Category.base "N", Category.base "CN", Category.base "N2", Category.base "N3"
-  , Category.base "A", Category.base "A2", Category.base "Predet", Category.base "AdA", Category.base "AdN", Category.base "CAdv"
-  , Category.base "V", Category.base "V2"
-  , Category.base "VV", Category.base "VS", Category.base "VQ", Category.base "VA"
-  , Category.base "V3", Category.base "V2V", Category.base "V2S", Category.base "V2Q", Category.base "V2A"
-  , Category.base "Quant", Category.base "Num", Category.base "Card", Category.base "Ord"
-  , Category.base "Digit", Category.base "Dig", Category.base "Digits", Category.base "Decimal", Category.base "Numeral"
-  , Category.base "Sub10", Category.base "Sub100", Category.base "Sub1000", Category.base "Sub1000000"
-  , Category.base "Sub1000000000", Category.base "Sub1000000000000"
-  , Category.base "Det", Category.base "DAP", Category.base "Pron", Category.base "NP"
-  , Category.base "Adv", Category.base "AdV", Category.base "IAdv"
-  , Category.base "Text"
-  , Category.base "IP", Category.base "IComp", Category.base "IDet", Category.base "IQuant", Category.base "RP"
-  , Category.base "Prep", Category.base "Conj", Category.base "Subj", Category.base "Interj"
-  , Category.base "PConj", Category.base "Voc"
-  , Category.base "Tense", Category.base "Ant", Category.base "Pol" ]
-
-/-- Zero-arity constructors handled by typed leaf linearization. -/
-def typedLeafFunctionNames : List String :=
-  FunctionSig.allFunctions.foldl
-    (fun acc f =>
-      if f.arity = 0 && typedLeafResultCategories.contains (FunctionSig.resultCategory f.type) then
-        f.name :: acc
-      else
-        acc)
-    []
-
-/-- Complete typed-handler set: explicit apply handlers + typed leaf handlers. -/
-def explicitlyHandledFunctionNames : List String :=
-  (explicitApplyFunctionNames ++ typedLeafFunctionNames).eraseDups
-
-/-- Non-lexical GF abstract functions (core grammar constructors only).
-Excludes lexicon entries to provide a meaningful grammar-coverage signal. -/
-def nonLexicalFunctionNames : List String :=
-  ( FunctionSig.allCoreFunctions ++ FunctionSig.adverbFunctions ++ FunctionSig.tenseFunctions
-    ++ FunctionSig.textFunctions ++ FunctionSig.idiomFunctions ++ FunctionSig.numeralFunctions
-    ++ FunctionSig.structuralFunctions ++ FunctionSig.extendFunctions
-    ++ FunctionSig.constructionFunctions ++ FunctionSig.symbolFunctions
-  ).map (·.name)
-
-/-- Explicitly handled non-lexical function names. -/
-def explicitlyHandledNonLexicalFunctionNames : List String :=
-  nonLexicalFunctionNames.filter (fun name => explicitlyHandledFunctionNames.contains name)
-
-/-- Non-lexical function names still without explicit typed handlers. -/
-def uncoveredNonLexicalFunctionNames : List String :=
-  nonLexicalFunctionNames.filter (fun name => !(explicitlyHandledFunctionNames.contains name))
-
-/-- Number of GF abstract functions with explicit typed handlers. -/
-def explicitCoverageCount : Nat :=
-  FunctionSig.allFunctions.foldl
-    (fun acc f => if explicitlyHandledFunctionNames.contains f.name then acc + 1 else acc)
-    0
-
-/-- Number of functions with explicit `dispatchApply` handlers. -/
-def explicitApplyCoverageCount : Nat :=
-  FunctionSig.allFunctions.foldl
-    (fun acc f => if explicitApplyFunctionNames.contains f.name then acc + 1 else acc)
-    0
-
-/-- Number of zero-arity functions covered by typed leaf linearization. -/
-def typedLeafCoverageCount : Nat :=
-  FunctionSig.allFunctions.foldl
-    (fun acc f => if typedLeafFunctionNames.contains f.name then acc + 1 else acc)
-    0
-
-/-- Number of names that are both explicit apply handlers and typed leaf handlers. -/
-def applyLeafOverlapCount : Nat :=
-  explicitApplyFunctionNames.foldl
-    (fun acc name => if typedLeafFunctionNames.contains name then acc + 1 else acc)
-    0
-
-/-- Number of non-lexical GF abstract functions. -/
-def nonLexicalFunctionCount : Nat :=
-  nonLexicalFunctionNames.length
-
-/-- Number of non-lexical functions with explicit typed handlers. -/
-def explicitNonLexicalCoverageCount : Nat :=
-  explicitlyHandledNonLexicalFunctionNames.length
-
-/-- Explicit non-lexical semantic coverage ratio in percentage points. -/
-def explicitNonLexicalCoveragePercent : Float :=
-  if nonLexicalFunctionCount = 0 then 0.0
-  else (Float.ofNat explicitNonLexicalCoverageCount / Float.ofNat nonLexicalFunctionCount) * 100.0
-
-/-- Total number of GF abstract functions declared in `Abstract.lean`. -/
-def totalFunctionCount : Nat := FunctionSig.allFunctions.length
-
-/-- Explicit semantic coverage ratio in percentage points. -/
-def explicitCoveragePercent : Float :=
-  if totalFunctionCount = 0 then 0.0
-  else (Float.ofNat explicitCoverageCount / Float.ofNat totalFunctionCount) * 100.0
-
-/-- GF abstract function names without explicit typed handlers.
-They still linearize through deterministic symbolic fallback. -/
-def uncoveredFunctionNames : List String :=
-  FunctionSig.allFunctionNames.filter
-    (fun name => !(explicitlyHandledFunctionNames.contains name))
 
 end Mettapedia.Languages.GF.English.Linearization

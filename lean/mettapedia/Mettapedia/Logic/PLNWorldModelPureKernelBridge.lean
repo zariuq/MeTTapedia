@@ -3,14 +3,21 @@ import Mettapedia.Logic.PLNWorldModelCategoricalBridge
 import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 
 /-!
-# PureKernel -> WM Obligation Bridge (Assumption-Parameterized)
+# PureKernel -> WM Obligation Bridge (A/B/C Aligned)
 
 This module provides an explicit interpretation interface from closed PureKernel
 judgments into WM strength obligations, while keeping kernel/profile bridge
-assumptions parameterized.
+contracts explicit.
 
 It does **not** alter PureKernel semantics; it only consumes already-proved
 bridge theorems as inputs.
+
+Layering:
+- A: executable closed fragment (`PureOpStep`) in `CoreEmbedding`
+- B: kernel theory reduction (`Red`)
+- C: profile theory closure (`PureProfileTheoryStep`)
+
+This file consumes B -> C (closed quotation) to transport WM obligations.
 -/
 
 namespace Mettapedia.Logic.PLNWorldModelPureKernelBridge
@@ -236,15 +243,13 @@ def wmConsequenceRuleOn_of_closed_pureTheoryStepStar_categorical
 induces a concrete WM obligation witness under the interpretation interface. -/
 theorem canary_betaPi_bridge_regression_one_nestedLam_wm
     (I : PureJudgmentWMInterface State Query)
-    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
-    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
     {W : State}
     (hW : I.side W) :
     ∃ p q : Pattern,
       PureProfileTheoryStep p q ∧
       WMStrengthObligation State Query W (I.encode p) (I.encode q) := by
   let hreg :=
-    betaPi_bridge_regression_one_nestedLam_assuming_inst0 hinst0 hcompat0
+    betaPi_bridge_regression_one_nestedLam
   have hregExists : ∃ p q : Pattern, PureProfileTheoryStep p q := by
     exact ⟨_, _, hreg⟩
   rcases hregExists with ⟨p, q, hstep⟩
@@ -255,15 +260,13 @@ theorem canary_betaPi_bridge_regression_one_nestedLam_wm
 induces a concrete WM obligation witness under the interpretation interface. -/
 theorem canary_betaPi_bridge_regression_two_nestedLam_wm
     (I : PureJudgmentWMInterface State Query)
-    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
-    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
     {W : State}
     (hW : I.side W) :
     ∃ p q : Pattern,
       PureProfileTheoryStep p q ∧
       WMStrengthObligation State Query W (I.encode p) (I.encode q) := by
   let hreg :=
-    betaPi_bridge_regression_two_nestedLam_assuming_inst0 hinst0 hcompat0
+    betaPi_bridge_regression_two_nestedLam
   have hregExists : ∃ p q : Pattern, PureProfileTheoryStep p q := by
     exact ⟨_, _, hreg⟩
   rcases hregExists with ⟨p, q, hstep⟩

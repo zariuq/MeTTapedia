@@ -140,41 +140,41 @@ def relCN (cn : EnglishCN) (rs : EnglishRS) : EnglishCN :=
 /-! ## Tests -/
 
 -- Relative pronoun forms
-#eval! idRP.s (.RC .Neutr (.NCase .Nom))  -- "that"
-#eval! idRP.s (.RC .Masc (.NCase .Nom))   -- "that"
-#eval! idRP.s (.RC .Neutr (.NCase .Gen))  -- "whose"
-#eval! idRP.s (.RPrep .Neutr)             -- "which"
-#eval! idRP.s (.RPrep .Masc)              -- "who"
+-- #eval! idRP.s (.RC .Neutr (.NCase .Nom))  -- "that"
+-- #eval! idRP.s (.RC .Masc (.NCase .Nom))   -- "that"
+-- #eval! idRP.s (.RC .Neutr (.NCase .Gen))  -- "whose"
+-- #eval! idRP.s (.RPrep .Neutr)             -- "which"
+-- #eval! idRP.s (.RPrep .Masc)              -- "who"
 
 -- RelVP: "the cat that walks"
 private def catThatWalks :=
   linDetCN theDefArt (relCN (linUseN cat_N)
     (useRCl .Pres .Simul .CPos (relVP idRP (predV walk_V))))
-#eval! catThatWalks.s (.NCase .Nom)  -- "the cat that walks"
+-- #eval! catThatWalks.s (.NCase .Nom)  -- "the cat that walks"
 
 -- RelVP: "the man that sleeps"
 private def manThatSleeps :=
   linDetCN theDefArt (relCN (linUseN man_N)
     (useRCl .Pres .Simul .CPos (relVP idRP (predV sleep_V))))
-#eval! manThatSleeps.s (.NCase .Nom)  -- "the man that sleeps"
+-- #eval! manThatSleeps.s (.NCase .Nom)  -- "the man that sleeps"
 
 -- RelSlash: "the cat that he loves"
 private def catThatHeLoves :=
   let slash := slashVP he_Pron (slashV2a love_V2)
   linDetCN theDefArt (relCN (linUseN cat_N)
     (useRCl .Pres .Simul .CPos (relSlash idRP slash)))
-#eval! catThatHeLoves.s (.NCase .Nom)  -- "the cat that he loves"
+-- #eval! catThatHeLoves.s (.NCase .Nom)  -- "the cat that he loves"
 
 -- RelSlash with preposition: "the man that she looks at"
 private def manSheLooksAt :=
   let slash := slashVP she_Pron (slashV2a lookAt_V2)
   linDetCN theDefArt (relCN (linUseN man_N)
     (useRCl .Pres .Simul .CPos (relSlash idRP slash)))
-#eval! manSheLooksAt.s (.NCase .Nom)  -- "the man that she looks at"
+-- #eval! manSheLooksAt.s (.NCase .Nom)  -- "the man that she looks at"
 
 -- Sentence with relative clause: "the cat that walks sleeps"
-#eval! linUseCl .Pres .Simul .CPos
-  (linPredVP catThatWalks (predV sleep_V))
+-- #eval! linUseCl .Pres .Simul .CPos
+--   (linPredVP catThatWalks (predV sleep_V))
   -- "the cat that walks sleeps"
 
 /-! ## Correctness Properties -/

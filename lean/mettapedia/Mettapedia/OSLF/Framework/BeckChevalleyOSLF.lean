@@ -4,6 +4,7 @@ import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ToposReduction
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.GSLT.Topos.PredicateFibration
+import Mettapedia.OSLF.NativeType.CodomainFibration
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
 
 /-!
@@ -146,6 +147,439 @@ theorem representable_patternPred_beckChevalley
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
     (φ := Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
       lang s seed φ hNat)
+
+/-- Σ-facing representable Beck–Chevalley wrapper on the canonical
+predicate-fiber object (`Pattern → Prop` lifted to `Sub(y(s))`).
+
+This is a direct named endpoint for existential/direct-image transport over
+real substitution squares. -/
+theorem representable_patternPred_sigma_beckChevalley
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed : Pattern) (φ : Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+    (pi1 : P ⟶
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s))
+    (pi2 : P ⟶ B)
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (g : B ⟶ D)
+    (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
+    (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2) :
+    (CategoryTheory.Subobject.pullback g).obj
+        ((CategoryTheory.Subobject.map f).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed φ hNat))
+      =
+    (CategoryTheory.Subobject.map pi2).obj
+        ((CategoryTheory.Subobject.pullback pi1).obj
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+            lang s seed φ hNat)) := by
+  simpa using (representable_patternPred_beckChevalley
+    (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+    (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+    (hpb := hpb) (hf := hf) (hpi2 := hpi2)).symm
+
+/-- Σ-facing representable transport wrapper:
+left-adjoint (`∃`) law over the canonical predicate object, routed through the
+Prop-12 ΠΣ rule pack endpoint. -/
+theorem representable_patternPred_sigma_transport_via_prop12_pack
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed : Pattern) (φ : Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    {D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (ψ : CategoryTheory.Subfunctor D) :
+    (((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).directImage f)
+        ((Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat :
+          CategoryTheory.Subfunctor
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+      ≤ ψ)
+      ↔
+    ((show CategoryTheory.Subfunctor
+        (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)
+        from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat)
+      ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) ψ) := by
+  let Δ : Mettapedia.OSLF.NativeType.PresheafDepCtx (C := ConstructorObj lang) :=
+    { A := Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s
+      B := D
+      f := f }
+  have hSigmaEta :
+      (((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).directImage f)
+          ((Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat :
+            CategoryTheory.Subfunctor
+              (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+        ≤ ψ)
+        ↔
+      ((show CategoryTheory.Subfunctor
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)
+          from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat)
+        ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) ψ) := by
+    simpa [Δ, Mettapedia.OSLF.NativeType.PresheafDepCtx.pb,
+      Mettapedia.OSLF.NativeType.PresheafDepCtx.sigmaForm] using
+      (Mettapedia.OSLF.NativeType.prop12_sigmaEta_presheaf
+        (C := ConstructorObj lang) (Δ := Δ)
+        (φ := (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat :
+          CategoryTheory.Subfunctor
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+        (ψ := ψ))
+  exact hSigmaEta
+
+/-- Π-facing representable transport wrapper:
+right-adjoint (`∀`) law over the same canonical predicate object.
+
+This is the universal-image transport endpoint paired with the Σ-facing
+Beck–Chevalley wrapper above. -/
+theorem representable_patternPred_pi_transport_via_prop12_pack
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed : Pattern) (φ : Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    {D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (χ : CategoryTheory.Subfunctor D) :
+    ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f
+      χ
+      ≤
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+        lang s seed φ hNat)
+      ↔
+    (χ ≤
+      (Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f
+        (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat)) := by
+  let Δ : Mettapedia.OSLF.NativeType.PresheafDepCtx (C := ConstructorObj lang) :=
+    { A := Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s
+      B := D
+      f := f }
+  have hPiEta :
+      ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f χ ≤
+        Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat)
+        ↔
+      (χ ≤
+        (Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat)) := by
+    simpa [Δ, Mettapedia.OSLF.NativeType.PresheafDepCtx.pb,
+      Mettapedia.OSLF.NativeType.PresheafDepCtx.piForm] using
+      (Mettapedia.OSLF.NativeType.prop12_piEta_presheaf
+        (C := ConstructorObj lang) (Δ := Δ)
+        (ψ := χ)
+        (φ := Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat))
+  exact hPiEta
+
+/-- Π-facing representable transport wrapper:
+right-adjoint (`∀`) law over the same canonical predicate object.
+
+This is the universal-image transport endpoint paired with the Σ-facing
+Beck–Chevalley wrapper above. -/
+theorem representable_patternPred_pi_transport
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed : Pattern) (φ : Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    {D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (χ : CategoryTheory.Subfunctor D) :
+    ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f
+      χ
+      ≤
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+        lang s seed φ hNat)
+      ↔
+    (χ ≤
+      (Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f
+        (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat)) := by
+  exact representable_patternPred_pi_transport_via_prop12_pack
+    (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+    (f := f) (χ := χ)
+
+/-- Unified representable Π/Σ transport endpoint over the canonical predicate
+object, with both adjoint laws routed through the Prop-12 ΠΣ rule pack. -/
+theorem representable_patternPred_piSigma_transport_via_rulePack
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed : Pattern) (φ : Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    (hPiSigmaPack :
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+        (C := ConstructorObj lang))
+    {D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (χ ψ : CategoryTheory.Subfunctor D) :
+    ((((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).directImage f)
+        ((Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat :
+          CategoryTheory.Subfunctor
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+      ≤ ψ)
+      ↔
+      ((show CategoryTheory.Subfunctor
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)
+          from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat)
+      ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) ψ))
+    ∧
+    ((((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) χ
+      ≤
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+        lang s seed φ hNat)
+      ↔
+      (χ ≤
+        ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f)
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat))) := by
+  let Δ : Mettapedia.OSLF.NativeType.PresheafDepCtx (C := ConstructorObj lang) :=
+    { A := Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s
+      B := D
+      f := f }
+  have hSigmaEta :
+      (((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).directImage f)
+          ((Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat :
+            CategoryTheory.Subfunctor
+              (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+        ≤ ψ)
+        ↔
+      ((show CategoryTheory.Subfunctor
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)
+          from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat)
+        ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) ψ) := by
+    simpa [Δ, Mettapedia.OSLF.NativeType.PresheafDepCtx.pb,
+      Mettapedia.OSLF.NativeType.PresheafDepCtx.sigmaForm] using
+      (hPiSigmaPack.sigmaEta Δ
+        (φ := (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat :
+          CategoryTheory.Subfunctor
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+        (ψ := ψ))
+  have hPiEta :
+      ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f χ ≤
+        Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat)
+        ↔
+      (χ ≤
+        (Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat)) := by
+    simpa [Δ, Mettapedia.OSLF.NativeType.PresheafDepCtx.pb,
+      Mettapedia.OSLF.NativeType.PresheafDepCtx.piForm] using
+      (hPiSigmaPack.piEta Δ
+        (ψ := χ)
+        (φ := (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat :
+          CategoryTheory.Subfunctor
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+        )
+  exact ⟨hSigmaEta, hPiEta⟩
+
+/-- Unified representable Π/Σ transport endpoint over the canonical predicate
+object, with both adjoint laws routed through the Prop-12 ΠΣ rule pack. -/
+theorem representable_patternPred_piSigma_transport_via_prop12_pack
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed : Pattern) (φ : Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    {D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D)
+    (χ ψ : CategoryTheory.Subfunctor D) :
+    ((((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).directImage f)
+        ((Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat :
+          CategoryTheory.Subfunctor
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+      ≤ ψ)
+      ↔
+      ((show CategoryTheory.Subfunctor
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)
+          from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat)
+      ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) ψ))
+    ∧
+    ((((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) χ
+      ≤
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+        lang s seed φ hNat)
+      ↔
+      (χ ≤
+        ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f)
+          (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat))) := by
+  exact representable_patternPred_piSigma_transport_via_rulePack
+    (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
+      (C := ConstructorObj lang))
+    (f := f) (χ := χ) (ψ := ψ)
+
+/-- Packaged representable Π/Σ transport API on the canonical predicate object:
+includes Σ-Beck-Chevalley transport plus Σ/Π adjoint transport laws, all routed
+through the Prop-12 predicate-fibration rule pack exports. -/
+structure RepresentablePiSigmaTransportPack
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed : Pattern) (φ : Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    {D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D) : Prop where
+  sigma_beckChevalley :
+    ∀ {P B : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
+      (pi1 : P ⟶
+        (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+          lang s))
+      (pi2 : P ⟶ B)
+      (g : B ⟶ D)
+      (_ : CategoryTheory.IsPullback pi1 pi2 f g)
+      (_ : CategoryTheory.Mono f) (_ : CategoryTheory.Mono pi2),
+      (CategoryTheory.Subobject.pullback g).obj
+          ((CategoryTheory.Subobject.map f).obj
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+              lang s seed φ hNat))
+        =
+      (CategoryTheory.Subobject.map pi2).obj
+          ((CategoryTheory.Subobject.pullback pi1).obj
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
+              lang s seed φ hNat))
+  sigma_transport :
+    ∀ (ψ : CategoryTheory.Subfunctor D),
+      ((((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).directImage f)
+          ((Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat :
+            CategoryTheory.Subfunctor
+              (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+        ≤ ψ)
+        ↔
+        ((show CategoryTheory.Subfunctor
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)
+            from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+              lang s seed φ hNat)
+          ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) ψ))
+  pi_transport :
+    ∀ (χ : CategoryTheory.Subfunctor D),
+      ((((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) χ
+        ≤
+        Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat)
+        ↔
+        (χ ≤
+          ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+              lang s seed φ hNat)))
+  piSigma_transport :
+    ∀ (χ ψ : CategoryTheory.Subfunctor D),
+      ((((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).directImage f)
+          ((Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+            lang s seed φ hNat :
+            CategoryTheory.Subfunctor
+              (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)))
+        ≤ ψ)
+        ↔
+        ((show CategoryTheory.Subfunctor
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s)
+            from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+              lang s seed φ hNat)
+          ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) ψ))
+      ∧
+      ((((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) χ
+        ≤
+        Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+          lang s seed φ hNat)
+        ↔
+        (χ ≤
+          ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f)
+            (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+              lang s seed φ hNat)))
+
+/-- Canonical constructor for the representable Π/Σ transport pack, using the
+named Beck-Chevalley and Prop-12 transport endpoints. -/
+theorem representable_patternPred_piSigma_transport_pack_via_rulePack
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed : Pattern) (φ : Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    (hPiSigmaPack :
+      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack
+        (C := ConstructorObj lang))
+    {D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D) :
+    RepresentablePiSigmaTransportPack
+      (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat) (f := f) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · intro P B pi1 pi2 g hpb hf hpi2
+    exact representable_patternPred_sigma_beckChevalley
+      (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+      (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
+      (hpb := hpb) (hf := hf) (hpi2 := hpi2)
+  · intro ψ
+    exact
+      (representable_patternPred_piSigma_transport_via_rulePack
+        (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+        (hPiSigmaPack := hPiSigmaPack) (f := f)
+        (χ := (⊤ : CategoryTheory.Subfunctor D)) (ψ := ψ)).1
+  · intro χ
+    exact
+      (representable_patternPred_piSigma_transport_via_rulePack
+        (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+        (hPiSigmaPack := hPiSigmaPack) (f := f)
+        (χ := χ) (ψ := (⊤ : CategoryTheory.Subfunctor D))).2
+  · intro χ ψ
+    exact representable_patternPred_piSigma_transport_via_rulePack
+      (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+      (hPiSigmaPack := hPiSigmaPack) (f := f) (χ := χ) (ψ := ψ)
+
+/-- Canonical constructor for the representable Π/Σ transport pack, using the
+named Beck-Chevalley and Prop-12 transport endpoints. -/
+theorem representable_patternPred_piSigma_transport_pack_via_prop12
+    (lang : LanguageDef) (s : LangSort lang)
+    (seed : Pattern) (φ : Pattern → Prop)
+    (hNat :
+      Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
+        lang s seed φ)
+    {D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) Type}
+    (f :
+      (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
+        lang s) ⟶ D) :
+    RepresentablePiSigmaTransportPack
+      (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat) (f := f) := by
+  exact representable_patternPred_piSigma_transport_pack_via_rulePack
+    (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
+    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
+      (C := ConstructorObj lang))
+    (f := f)
 
 /-- OSLF-layer bridge: `◇` can be read over the internal presheaf reduction
 graph (`E`,`source`,`target`) built in `ToposReduction`.

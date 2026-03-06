@@ -5,10 +5,10 @@ import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 import Mettapedia.OSLF.Formula
 
 /-!
-# MeTTa Full LanguageDef Client (OSLF)
+# MeTTa Full Legacy LanguageDef Client (OSLF)
 
-End-to-end OSLF bridge for the first spec-facing `MeTTaCore.FullLanguageDef`
-language slice.
+End-to-end OSLF bridge for the first spec-facing legacy
+`MeTTaCore.FullLanguageDef` language slice.
 -/
 
 namespace Mettapedia.OSLF.Framework.MeTTaFullInstance
@@ -19,16 +19,25 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Formula
 
-abbrev mettaFull : LanguageDef := Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFull
-abbrev mettaFullOSLF := Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullOSLF
+abbrev mettaFullLegacy : LanguageDef :=
+  Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullLegacy
+abbrev mettaFullLegacyOSLF :=
+  Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullLegacyOSLF
+
+/-- Compatibility aliases retained for downstream imports during migration. -/
+abbrev mettaFull : LanguageDef := mettaFullLegacy
+abbrev mettaFullOSLF := mettaFullLegacyOSLF
 
 /-- Automatic modal Galois connection for the first full MeTTa slice. -/
 theorem mettaFullGalois :
     GaloisConnection (langDiamond mettaFull) (langBox mettaFull) :=
   langGalois mettaFull
 
-/-- The `State` process sort in the constructor-category view of `mettaFull`. -/
-def mettaState : LangSort mettaFull := ⟨"State", by decide⟩
+/-- The `State` process sort in the constructor-category view of `mettaFullLegacy`. -/
+def mettaLegacyState : LangSort mettaFullLegacy := ⟨"State", by decide⟩
+
+/-- Compatibility alias retained for downstream imports during migration. -/
+abbrev mettaState : LangSort mettaFull := mettaLegacyState
 
 /-- Concrete unary sort-crossings extracted from `mettaFull`. -/
 private theorem mettaFull_unaryCrossings :
@@ -332,6 +341,19 @@ theorem mettaFull_sem_coded_concat_spaces_done :
     (relEnv := Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullRelEnv)
     (fuel := 8) (p := codedConcatSpacesState) (φ := .dia (.dia (.atom "isDoneState")))
     mettaFull_checkLangUsing_sat_coded_concat_spaces_done
+
+/-- Legacy-canonical aliases for public endpoint migration. -/
+abbrev mettaFullLegacy_pathOrder := @mettaFull_pathOrder
+abbrev mettaFullLegacy_checker_sat_to_pathSemClosed_commDi_bc_graph :=
+  @mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
+abbrev mettaFullLegacy_checker_sat_to_pathSemClosed_commDi_bc_graph_auto :=
+  @mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
+abbrev mettaFullLegacySpecAtomCheck := mettaFullSpecAtomCheck
+abbrev mettaFullLegacySpecAtomSem := mettaFullSpecAtomSem
+abbrev mettaFullLegacy_checkLangUsing_sat_sound_specAtoms :=
+  @mettaFull_checkLangUsing_sat_sound_specAtoms
+abbrev mettaFullLegacy_checkLang_sat_sound_specAtoms :=
+  @mettaFull_checkLang_sat_sound_specAtoms
 
 #check mettaFullOSLF
 #check mettaFullGalois

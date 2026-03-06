@@ -275,45 +275,45 @@ def toggle_V2 : EnglishV2 := mkV2 toggle_V
 /-! ## Tests -/
 
 -- Regular conjugation
-#eval! walk_V.s .VInf       -- "walk"
-#eval! walk_V.s .VPres      -- "walks"
-#eval! walk_V.s .VPast      -- "walked"
-#eval! walk_V.s .VPPart     -- "walked"
-#eval! walk_V.s .VPresPart  -- "walking"
+-- #eval! walk_V.s .VInf       -- "walk"
+-- #eval! walk_V.s .VPres      -- "walks"
+-- #eval! walk_V.s .VPast      -- "walked"
+-- #eval! walk_V.s .VPPart     -- "walked"
+-- #eval! walk_V.s .VPresPart  -- "walking"
 
 -- -e ending
-#eval! love_V.s .VPast      -- "loved"
-#eval! love_V.s .VPresPart  -- "loving"
+-- #eval! love_V.s .VPast      -- "loved"
+-- #eval! love_V.s .VPresPart  -- "loving"
 
 -- -y ending
-#eval! try_V.s .VPres       -- "tries"
-#eval! try_V.s .VPast       -- "tried"
-#eval! try_V.s .VPresPart   -- "trying"
+-- #eval! try_V.s .VPres       -- "tries"
+-- #eval! try_V.s .VPast       -- "tried"
+-- #eval! try_V.s .VPresPart   -- "trying"
 
 -- -ie ending
-#eval! die_V.s .VPresPart   -- "dying"
+-- #eval! die_V.s .VPresPart   -- "dying"
 
 -- Sibilant
-#eval! kiss_V.s .VPres      -- "kisses"
+-- #eval! kiss_V.s .VPres      -- "kisses"
 
 -- Irregular verbs
-#eval! go_V.s .VPast        -- "went"
-#eval! eat_V.s .VPPart      -- "eaten"
-#eval! run_V.s .VPresPart   -- "running"
+-- #eval! go_V.s .VPast        -- "went"
+-- #eval! eat_V.s .VPPart      -- "eaten"
+-- #eval! run_V.s .VPresPart   -- "running"
 
 -- Auxiliaries
-#eval! auxBe.pres .Pos (.AgP1 .Sg)     -- "am"
-#eval! auxBe.pres .Pos (.AgP3Sg .Masc) -- "is"
-#eval! auxBe.pres .Neg (.AgP3Sg .Masc) -- "isn't"
-#eval! auxBe.past .Pos (.AgP1 .Sg)     -- "was"
-#eval! auxBe.past .Neg (.AgP1 .Pl)     -- "weren't"
-#eval! auxDo.pres .Pos (.AgP3Sg .Fem)  -- "does"
-#eval! auxDo.pres .Neg (.AgP2 .Sg)     -- "don't"
+-- #eval! auxBe.pres .Pos (.AgP1 .Sg)     -- "am"
+-- #eval! auxBe.pres .Pos (.AgP3Sg .Masc) -- "is"
+-- #eval! auxBe.pres .Neg (.AgP3Sg .Masc) -- "isn't"
+-- #eval! auxBe.past .Pos (.AgP1 .Sg)     -- "was"
+-- #eval! auxBe.past .Neg (.AgP1 .Pl)     -- "weren't"
+-- #eval! auxDo.pres .Pos (.AgP3Sg .Fem)  -- "does"
+-- #eval! auxDo.pres .Neg (.AgP2 .Sg)     -- "don't"
 
 -- Reflexive pronouns
-#eval! reflPron (.AgP1 .Sg)     -- "myself"
-#eval! reflPron (.AgP3Sg .Fem)  -- "herself"
-#eval! reflPron .AgP3Pl         -- "themselves"
+-- #eval! reflPron (.AgP1 .Sg)     -- "myself"
+-- #eval! reflPron (.AgP3Sg .Fem)  -- "herself"
+-- #eval! reflPron .AgP3Pl         -- "themselves"
 
 /-! ## Correctness Properties -/
 

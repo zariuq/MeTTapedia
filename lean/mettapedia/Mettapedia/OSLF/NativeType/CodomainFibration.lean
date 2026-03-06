@@ -69,6 +69,187 @@ noncomputable def prop12_package (C : Type u) [Category.{w} C] :
   univRight f := (GSLT.Topos.presheafChangeOfBase C).pullback_universal_adj f
   beckChevalley := GSLT.Topos.beckChevalleyCondition_presheafChangeOfBase C
 
+/-! ### Prop 12 Export: Explicit Π/Σ Predicate Rule Package -/
+
+section PiSigmaPredicateRules
+
+variable {C : Type u} [Category.{w} C]
+
+/-- A small context bundle for predicate-fibration Π/Σ transport over a map
+`f : A ⟶ B` in the presheaf base. -/
+structure PresheafDepCtx where
+  A : Cᵒᵖ ⥤ Type
+  B : Cᵒᵖ ⥤ Type
+  f : A ⟶ B
+
+namespace PresheafDepCtx
+
+/-- Reindexing/pullback along the dependent projection. -/
+noncomputable def pb (Δ : PresheafDepCtx (C := C)) :
+    CategoryTheory.Subfunctor Δ.B → CategoryTheory.Subfunctor Δ.A :=
+  (GSLT.Topos.presheafChangeOfBase C).pullback Δ.f
+
+/-- Σ-forming operator (left adjoint to pullback). -/
+noncomputable def sigmaForm (Δ : PresheafDepCtx (C := C)) :
+    CategoryTheory.Subfunctor Δ.A → CategoryTheory.Subfunctor Δ.B :=
+  (GSLT.Topos.presheafChangeOfBase C).directImage Δ.f
+
+/-- Π-forming operator (right adjoint to pullback). -/
+noncomputable def piForm (Δ : PresheafDepCtx (C := C)) :
+    CategoryTheory.Subfunctor Δ.A → CategoryTheory.Subfunctor Δ.B :=
+  (GSLT.Topos.presheafChangeOfBase C).universalImage Δ.f
+
+/-- Σ-η/adjunction law in predicate-fibration form. -/
+theorem sigmaEta_presheaf
+    (Δ : PresheafDepCtx (C := C))
+    {φ : CategoryTheory.Subfunctor Δ.A}
+    {ψ : CategoryTheory.Subfunctor Δ.B} :
+    Δ.sigmaForm φ ≤ ψ ↔ φ ≤ Δ.pb ψ := by
+  rcases prop12_indexedAdjoints (C := C) Δ.f with ⟨hSigma, _hPi⟩
+  simpa [pb, sigmaForm] using (hSigma φ ψ)
+
+/-- Π-η/adjunction law in predicate-fibration form. -/
+theorem piEta_presheaf
+    (Δ : PresheafDepCtx (C := C))
+    {ψ : CategoryTheory.Subfunctor Δ.B}
+    {φ : CategoryTheory.Subfunctor Δ.A} :
+    Δ.pb ψ ≤ φ ↔ ψ ≤ Δ.piForm φ := by
+  rcases prop12_indexedAdjoints (C := C) Δ.f with ⟨_hSigma, hPi⟩
+  simpa [pb, piForm] using (hPi ψ φ)
+
+/-- Σ-introduction (unit specialization). -/
+theorem sigmaIntro_presheaf
+    (Δ : PresheafDepCtx (C := C)) (φ : CategoryTheory.Subfunctor Δ.A) :
+    φ ≤ Δ.pb (Δ.sigmaForm φ) := by
+  exact (sigmaEta_presheaf (C := C) (Δ := Δ)).1 le_rfl
+
+/-- Σ-elimination (left-adjoint direction). -/
+theorem sigmaElim_presheaf
+    (Δ : PresheafDepCtx (C := C))
+    {φ : CategoryTheory.Subfunctor Δ.A}
+    {ψ : CategoryTheory.Subfunctor Δ.B}
+    (h : φ ≤ Δ.pb ψ) :
+    Δ.sigmaForm φ ≤ ψ := by
+  exact (sigmaEta_presheaf (C := C) (Δ := Δ)).2 h
+
+/-- Σ-β (counit specialization). -/
+theorem sigmaBeta_presheaf
+    (Δ : PresheafDepCtx (C := C)) (ψ : CategoryTheory.Subfunctor Δ.B) :
+    Δ.sigmaForm (Δ.pb ψ) ≤ ψ := by
+  exact (sigmaEta_presheaf (C := C) (Δ := Δ)).2 le_rfl
+
+/-- Π-introduction (right-adjoint direction). -/
+theorem piIntro_presheaf
+    (Δ : PresheafDepCtx (C := C))
+    {ψ : CategoryTheory.Subfunctor Δ.B}
+    {φ : CategoryTheory.Subfunctor Δ.A}
+    (h : Δ.pb ψ ≤ φ) :
+    ψ ≤ Δ.piForm φ := by
+  exact (piEta_presheaf (C := C) (Δ := Δ)).1 h
+
+/-- Π-elimination (adjunction converse). -/
+theorem piElim_presheaf
+    (Δ : PresheafDepCtx (C := C))
+    {ψ : CategoryTheory.Subfunctor Δ.B}
+    {φ : CategoryTheory.Subfunctor Δ.A}
+    (h : ψ ≤ Δ.piForm φ) :
+    Δ.pb ψ ≤ φ := by
+  exact (piEta_presheaf (C := C) (Δ := Δ)).2 h
+
+/-- Π-β (counit specialization). -/
+theorem piBeta_presheaf
+    (Δ : PresheafDepCtx (C := C)) (φ : CategoryTheory.Subfunctor Δ.A) :
+    Δ.pb (Δ.piForm φ) ≤ φ := by
+  exact (piEta_presheaf (C := C) (Δ := Δ)).2 le_rfl
+
+end PresheafDepCtx
+
+/-- Reusable theorem package exporting Prop 12 as explicit Π/Σ rule endpoints. -/
+structure PiSigmaPredicateRulePack (C : Type u) [Category.{w} C] where
+  piIntro :
+    ∀ (Δ : PresheafDepCtx (C := C))
+      {ψ : CategoryTheory.Subfunctor Δ.B}
+      {φ : CategoryTheory.Subfunctor Δ.A},
+      Δ.pb ψ ≤ φ → ψ ≤ Δ.piForm φ
+  piElim :
+    ∀ (Δ : PresheafDepCtx (C := C))
+      {ψ : CategoryTheory.Subfunctor Δ.B}
+      {φ : CategoryTheory.Subfunctor Δ.A},
+      ψ ≤ Δ.piForm φ → Δ.pb ψ ≤ φ
+  piBeta :
+    ∀ (Δ : PresheafDepCtx (C := C)) (φ : CategoryTheory.Subfunctor Δ.A),
+      Δ.pb (Δ.piForm φ) ≤ φ
+  piEta :
+    ∀ (Δ : PresheafDepCtx (C := C))
+      {ψ : CategoryTheory.Subfunctor Δ.B}
+      {φ : CategoryTheory.Subfunctor Δ.A},
+      Δ.pb ψ ≤ φ ↔ ψ ≤ Δ.piForm φ
+  sigmaIntro :
+    ∀ (Δ : PresheafDepCtx (C := C)) (φ : CategoryTheory.Subfunctor Δ.A),
+      φ ≤ Δ.pb (Δ.sigmaForm φ)
+  sigmaElim :
+    ∀ (Δ : PresheafDepCtx (C := C))
+      {φ : CategoryTheory.Subfunctor Δ.A}
+      {ψ : CategoryTheory.Subfunctor Δ.B},
+      φ ≤ Δ.pb ψ → Δ.sigmaForm φ ≤ ψ
+  sigmaBeta :
+    ∀ (Δ : PresheafDepCtx (C := C)) (ψ : CategoryTheory.Subfunctor Δ.B),
+      Δ.sigmaForm (Δ.pb ψ) ≤ ψ
+  sigmaEta :
+    ∀ (Δ : PresheafDepCtx (C := C))
+      {φ : CategoryTheory.Subfunctor Δ.A}
+      {ψ : CategoryTheory.Subfunctor Δ.B},
+      Δ.sigmaForm φ ≤ ψ ↔ φ ≤ Δ.pb ψ
+
+/-- Prop 12 packaged as explicit Π/Σ predicate rules over presheaf fibers. -/
+noncomputable def prop12_piSigmaPredicateRulePack :
+    PiSigmaPredicateRulePack C where
+  piIntro := by
+    intro Δ ψ φ h
+    exact PresheafDepCtx.piIntro_presheaf (C := C) (Δ := Δ) h
+  piElim := by
+    intro Δ ψ φ h
+    exact PresheafDepCtx.piElim_presheaf (C := C) (Δ := Δ) h
+  piBeta := by
+    intro Δ φ
+    exact PresheafDepCtx.piBeta_presheaf (C := C) (Δ := Δ) φ
+  piEta := by
+    intro Δ ψ φ
+    exact PresheafDepCtx.piEta_presheaf (C := C) (Δ := Δ)
+  sigmaIntro := by
+    intro Δ φ
+    exact PresheafDepCtx.sigmaIntro_presheaf (C := C) (Δ := Δ) φ
+  sigmaElim := by
+    intro Δ φ ψ h
+    exact PresheafDepCtx.sigmaElim_presheaf (C := C) (Δ := Δ) h
+  sigmaBeta := by
+    intro Δ ψ
+    exact PresheafDepCtx.sigmaBeta_presheaf (C := C) (Δ := Δ) ψ
+  sigmaEta := by
+    intro Δ φ ψ
+    exact PresheafDepCtx.sigmaEta_presheaf (C := C) (Δ := Δ)
+
+/-- Direct exported Π-η endpoint from the Prop 12 ΠΣ rule pack.
+This avoids consumers needing to project fields from the packed structure. -/
+theorem prop12_piEta_presheaf
+    (Δ : PresheafDepCtx (C := C))
+    {ψ : CategoryTheory.Subfunctor Δ.B}
+    {φ : CategoryTheory.Subfunctor Δ.A} :
+    Δ.pb ψ ≤ φ ↔ ψ ≤ Δ.piForm φ := by
+  simpa using (prop12_piSigmaPredicateRulePack (C := C)).piEta Δ (ψ := ψ) (φ := φ)
+
+/-- Direct exported Σ-η endpoint from the Prop 12 ΠΣ rule pack.
+This avoids consumers needing to project fields from the packed structure. -/
+theorem prop12_sigmaEta_presheaf
+    (Δ : PresheafDepCtx (C := C))
+    {φ : CategoryTheory.Subfunctor Δ.A}
+    {ψ : CategoryTheory.Subfunctor Δ.B} :
+    Δ.sigmaForm φ ≤ ψ ↔ φ ≤ Δ.pb ψ := by
+  simpa using
+    (prop12_piSigmaPredicateRulePack (C := C)).sigmaEta Δ (φ := φ) (ψ := ψ)
+
+end PiSigmaPredicateRules
+
 /-! ## NTT Proposition 14: Cosmic Fibration -/
 
 /-- NTT Prop 14: cosmic fibration structure.

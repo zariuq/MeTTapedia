@@ -1,231 +1,184 @@
 import Mettapedia.CategoryTheory.LambdaTheory
 import Mettapedia.CategoryTheory.PLNInstance
-import Mettapedia.CategoryTheory.NativeTypeTheory
 import Mettapedia.CategoryTheory.PLNTerms
 import Mettapedia.Logic.EvidenceQuantale
 
 /-!
-# Modal Types via Comprehension
+# Modal Types: Predicate-First Semantics
 
-This file implements Phase 5C of the hypercube formalization plan:
-constructing modal types ⟨Cj⟩_{xk::Ak} B via comprehension.
+Canonical modal semantics are defined here as explicit predicates/comprehensions
+on hole fillers (`PLNTerm → Prop`), with context instantiation and one-step
+reduction witnesses.
 
-## Main Construction
-
-Given a rewrite context Cj and rely conditions xk::Ak, the modal type is:
-
-  ⟨Cj⟩_{xk::Ak} B := { t : context | ∀xk. (∧ xk::Ak) → ∃p. Cj[t]⇝p ∧ p::B }
-
-This is the "rely-possibly" semantics from Stay-Wells-Meredith:
-- "For all parameters xk satisfying the rely conditions Ak"
-- "If we place t in context Cj[-]"
-- "It's POSSIBLE to reach a reduct p with p::B in one step"
-
-## Key Insight
-
-In classical logic (Prop), comprehension is just conjunction:
-  { t : Prop | φ(t) } ≅ ∀t:Prop. t → φ(t)
-
-For the fiber PLNFiber X = Prop, the modal type becomes:
-  ⟨Cj⟩_{xk::Ak} B = ∀relies. ∃p. (Cj[_]⇝p ∧ p = B)
-
-This gives us the quantale tensor product!
-
-## References
-
-- Stay & Wells, "Generating Hypercubes of Type Systems" (hypercube.pdf)
-- Meredith & Stay, "Operational Semantics in Logical Form" (oslf.pdf)
+No meet-fold/scalar modal summary is used as a semantic source of truth in this
+module.
 -/
-
 
 namespace Mettapedia.CategoryTheory.ModalTypes
 
 open Mettapedia.CategoryTheory.LambdaTheories
 open Mettapedia.CategoryTheory.PLNInstance
-open Mettapedia.CategoryTheory.NativeTypeTheory
 open Mettapedia.CategoryTheory.PLNTerms
 open Mettapedia.Logic.EvidenceQuantale
 
-/-! ## Step 1: The Rely-Possibly Formula
+/-! ## Predicate-First Modal Semantics -/
 
-The modal type ⟨Cj⟩_{xk::Ak} B has the semantics:
+/-- Environments assign concrete terms to parameter names. -/
+abbrev Env := String → PLNTerm
 
-  ∀xk. (∧ xk::Ak) → ∃p. Cj[t]⇝p ∧ p::B
+/-- Rely conditions in the predicate layer. -/
+abbrev RelyCondition := String × (PLNTerm → Prop)
 
-With Evidence fibers, this becomes a formula about combining evidence values.
-The rely-possibly formula computes the evidence for the modal composition.
--/
+/-- Identity-like environment used in concrete fixtures. -/
+def idEnv : Env := fun x => PLNTerm.atom x
 
-/-- The rely-possibly formula for a modal type with Evidence fibers.
+/-- Instantiate a term under an environment (variable replacement on atoms). -/
+def instantiateTerm (ρ : Env) : PLNTerm → PLNTerm
+  | PLNTerm.atom x => ρ x
+  | PLNTerm.impl A B => PLNTerm.impl (instantiateTerm ρ A) (instantiateTerm ρ B)
+  | PLNTerm.conj A B => PLNTerm.conj (instantiateTerm ρ A) (instantiateTerm ρ B)
+  | PLNTerm.disj A B => PLNTerm.disj (instantiateTerm ρ A) (instantiateTerm ρ B)
+  | PLNTerm.neg A => PLNTerm.neg (instantiateTerm ρ A)
+  | PLNTerm.truth e => PLNTerm.truth e
 
-    Given:
-    - t : the term filling the hole
-    - relies : list of (parameter, evidence) pairs
-    - context : the rewrite context
-    - result : the target evidence value
+/-- Instantiate all embedded terms in a one-hole context. -/
+def instantiateContext (ρ : Env) : Context → Context
+  | Context.hole => Context.hole
+  | Context.implLeft C B => Context.implLeft (instantiateContext ρ C) (instantiateTerm ρ B)
+  | Context.implRight A C => Context.implRight (instantiateTerm ρ A) (instantiateContext ρ C)
+  | Context.conjLeft C B => Context.conjLeft (instantiateContext ρ C) (instantiateTerm ρ B)
+  | Context.conjRight A C => Context.conjRight (instantiateTerm ρ A) (instantiateContext ρ C)
+  | Context.disjLeft C B => Context.disjLeft (instantiateContext ρ C) (instantiateTerm ρ B)
+  | Context.disjRight A C => Context.disjRight (instantiateTerm ρ A) (instantiateContext ρ C)
+  | Context.negCtx C => Context.negCtx (instantiateContext ρ C)
 
-    For PLN, the modal composition combines evidence via the deduction formula.
-    The result is the computed evidence for the conclusion.
--/
-noncomputable def relyPossibly
-    (_t : PLNTerm)
-    (relies : List (String × Evidence))
-    (_context : Context)
-    (result : Evidence) : Evidence :=
-  -- Combine the rely evidences with the result
-  -- For deduction: E_AC = deductionEvidence(E_AB, E_BC, pB, pC)
-  -- For simplicity, take the meet of all evidences
-  relies.foldl (fun acc ⟨_, e⟩ => acc ⊓ e) result
+/-- Instantiating then filling equals filling in the instantiated context. -/
+theorem instantiateContext_fill (ρ : Env) (C : Context) (t : PLNTerm) :
+    instantiateTerm ρ (C.fill t) =
+      (instantiateContext ρ C).fill (instantiateTerm ρ t) := by
+  induction C with
+  | hole =>
+      simp [Context.fill, instantiateContext]
+  | implLeft C B ih =>
+      simp [Context.fill, instantiateContext, instantiateTerm, ih]
+  | implRight A C ih =>
+      simp [Context.fill, instantiateContext, instantiateTerm, ih]
+  | conjLeft C B ih =>
+      simp [Context.fill, instantiateContext, instantiateTerm, ih]
+  | conjRight A C ih =>
+      simp [Context.fill, instantiateContext, instantiateTerm, ih]
+  | disjLeft C B ih =>
+      simp [Context.fill, instantiateContext, instantiateTerm, ih]
+  | disjRight A C ih =>
+      simp [Context.fill, instantiateContext, instantiateTerm, ih]
+  | negCtx C ih =>
+      simp [Context.fill, instantiateContext, instantiateTerm, ih]
 
-/-! ## Step 2: Modal Type as Comprehension
+/-- Environment `ρ` satisfies all listed rely predicates. -/
+def satisfiesRelies (ρ : Env) (relies : List RelyCondition) : Prop :=
+  ∀ x A, (x, A) ∈ relies → A (ρ x)
 
-The modal type is the set of all t satisfying relyPossibly.
+/-- One-step reachability obligation for a fixed environment and filler term. -/
+def reachesResultInOneStep {rule : RewriteRule}
+    (rwCtx : RewriteContext rule)
+    (B : PLNTerm → Prop)
+    (ρ : Env)
+    (t : PLNTerm) : Prop :=
+  ∃ p,
+    Reduces ((instantiateContext ρ rwCtx.ctx).fill (instantiateTerm ρ t)) p ∧
+      B p
 
-With Evidence fibers, the modal type is an Evidence value computed
-by combining the rely evidences.
--/
+/-- Canonical rely-possibly predicate:
+`t` is admissible when every rely-satisfying environment admits a one-step reduct
+in the result predicate `B`. -/
+def relyPossiblyPred {rule : RewriteRule}
+    (rwCtx : RewriteContext rule)
+    (relies : List RelyCondition)
+    (B : PLNTerm → Prop) : PLNTerm → Prop :=
+  fun t => ∀ ρ, satisfiesRelies ρ relies → reachesResultInOneStep rwCtx B ρ t
 
-/-- Construct the modal type from a specification.
+/-- Predicate monotonicity in the result postcondition. -/
+theorem relyPossiblyPred_mono_result {rule : RewriteRule}
+    (rwCtx : RewriteContext rule)
+    (relies : List RelyCondition)
+    {B₁ B₂ : PLNTerm → Prop}
+    (hMono : ∀ p, B₁ p → B₂ p)
+    {t : PLNTerm} :
+    relyPossiblyPred rwCtx relies B₁ t →
+      relyPossiblyPred rwCtx relies B₂ t := by
+  intro h ρ hRel
+  rcases h ρ hRel with ⟨p, hRed, hB⟩
+  exact ⟨p, hRed, hMono p hB⟩
 
-    With Evidence fibers, the modal type is the combined evidence
-    from the rely conditions and the result.
+/-- The modal type as an explicit comprehension (set of fillers). -/
+def modalComprehension {rule : RewriteRule}
+    (rwCtx : RewriteContext rule)
+    (relies : List RelyCondition)
+    (B : PLNTerm → Prop) : Set PLNTerm :=
+  { t | relyPossiblyPred rwCtx relies B t }
 
-    For PLN deduction, this will be the deductionEvidence formula.
--/
-noncomputable def constructModalType (spec : NativeTypeTheory.ModalTypeSpec) :
-    PLNFiber spec.context :=
-  -- Combine the rely evidences with the result using meet (⊓)
-  -- Note: Each rely is a sigma (X : PLNObj, e : PLNFiber X = Evidence)
-  -- Since all fibers are Evidence, we can take the meet
-  spec.relies.foldl (fun (acc : Evidence) (rely : Σ X, PLNFiber X) => acc ⊓ rely.2) spec.result
+theorem modalComprehension_mem_iff {rule : RewriteRule}
+    (rwCtx : RewriteContext rule)
+    (relies : List RelyCondition)
+    (B : PLNTerm → Prop)
+    (t : PLNTerm) :
+    t ∈ modalComprehension rwCtx relies B ↔ relyPossiblyPred rwCtx relies B t := by
+  rfl
 
-/-! ## Step 3: The Deduction Modal Type (Example)
+/-- Subtype form of modal comprehension (set-theoretic subobject at term level). -/
+def modalSubtype {rule : RewriteRule}
+    (rwCtx : RewriteContext rule)
+    (relies : List RelyCondition)
+    (B : PLNTerm → Prop) : Type :=
+  { t : PLNTerm // t ∈ modalComprehension rwCtx relies B }
 
-Let's construct the actual modal type for PLN deduction!
+theorem reachesResultInOneStep_false_result_not {rule : RewriteRule}
+    (rwCtx : RewriteContext rule)
+    (ρ : Env)
+    (t : PLNTerm) :
+    ¬ reachesResultInOneStep rwCtx (fun _ => False) ρ t := by
+  intro h
+  rcases h with ⟨p, _hRed, hFalse⟩
+  exact hFalse
 
-Given:
-- Context C₁ = ([-] → B) ∧ (B → C)
-- Relies: B::τB, C::τC
-- Result: (A→C)::τAC
+/-! ### Concrete Positive/Negative Fixtures -/
 
-The modal type states:
-  "For all B,C with truth values τB, τC, if we plug A into C₁,
-   we can deduce (A→C) with truth value τAC"
--/
+/-- Concrete positive fixture: deduction context reaches its canonical RHS under
+the identity-like environment. -/
+theorem deduction_reaches_rhs_identity :
+    reachesResultInOneStep deductionRewriteContext
+      (fun p => p = deductionRule.rhs) idEnv (PLNTerm.atom "A") := by
+  refine ⟨deductionRule.rhs, ?_, rfl⟩
+  simpa [reachesResultInOneStep, idEnv, deductionRewriteContext, deductionRule,
+    deductionContext, instantiateContext, instantiateTerm, Context.fill]
+    using (Reduces.deduction
+      (A := PLNTerm.atom "A")
+      (B := PLNTerm.atom "B")
+      (C := PLNTerm.atom "C"))
 
-/-- The deduction modal type specification with Evidence fibers -/
-noncomputable def deductionModalSpec
-    (E_B E_C E_AC : Evidence) : NativeTypeTheory.ModalTypeSpec where
-  context := PLNLambdaTheory.Pr
-  result := E_AC
-  relies := [
-    ⟨PLNLambdaTheory.Pr, E_B⟩,  -- B has evidence E_B
-    ⟨PLNLambdaTheory.Pr, E_C⟩   -- C has evidence E_C
-  ]
+/-- Concrete negative fixture: with the false result predicate, no one-step
+modal witness exists. -/
+theorem deduction_not_reach_false_identity :
+    ¬ reachesResultInOneStep deductionRewriteContext
+        (fun _ => False) idEnv (PLNTerm.atom "A") := by
+  exact reachesResultInOneStep_false_result_not deductionRewriteContext idEnv (PLNTerm.atom "A")
 
-/-- The deduction modal type itself -/
-noncomputable def deductionModalType (E_B E_C E_AC : Evidence) :
-    PLNFiber PLNLambdaTheory.Pr :=
-  constructModalType (deductionModalSpec E_B E_C E_AC)
+/-! ## Existing Quantale-Modal Bridge Endpoints -/
 
-/-! ## Step 4: Connection to Quantale Tensor
-
-The key theorem: modal composition IS the tensor product in the quantale!
-
-For the deduction rule:
-- Modal type for A→B: ⟨C₁⟩_{A::τA} B::τB
-- Modal type for B→C: ⟨C₂⟩_{B::τB} C::τC
-- Composition: ⟨C₁∘C₂⟩_{A::τA} C::τAC
-
-This composition is exactly the Frame meet (⊓), which is the quantale tensor!
--/
-
-/-- Modal composition is meet in the Frame.
-
-    This is the quantale tensor product!
-
-    By definition in LambdaTheory.lean:248, modalCompose is just meet (⊓).
-    This is THE key connection: the quantale tensor IS the Frame meet!
--/
+/-- Modal composition is meet in the frame fibers. -/
 theorem modalCompose_is_meet
     (m1 m2 : PLNFiber PLNLambdaTheory.Pr) :
-    -- Modal composition (from LambdaTheory.lean)
-    modalCompose PLNLambdaTheory m1 m2 =
-    -- Is just meet in the Frame
-    m1 ⊓ m2 := by
-  -- By definition in LambdaTheory.lean, modalCompose = ⊓
+    modalCompose PLNLambdaTheory m1 m2 = m1 ⊓ m2 := by
   unfold modalCompose
   rfl
 
-/-! ## Step 5: The PLN Deduction Formula Connection
-
-Now we can finally connect to the PLN deduction formula!
-
-The deduction strength formula:
-  s_AC = s_AB * s_BC + (1 - s_AB) * complementStrength
-
-Is exactly the modal composition of:
-  ⟨C₁⟩_{A::τA, B::τB} (A→B)::s_AB
-  ⟨C₂⟩_{B::τB, C::τC} (B→C)::s_BC
-
-Composed to give:
-  ⟨C₁∘C₂⟩_{A::τA, C::τC} (A→C)::s_AC
-
-TODO (Phase 5E): Prove this connection rigorously!
--/
-
-/-- The PLN deduction formula decomposes into direct and indirect paths.
-
-    This is the structural decomposition that shows HOW the rely-possibly
-    semantics generates the deduction formula:
-
-    s_AC = direct_path + indirect_path
-         = (s_AB * s_BC) + (1 - s_AB) * complementStrength
-
-    The direct path is the tensor product (multiplicative composition).
-    The indirect path handles the case where the intermediate B is false.
-
-    This explains WHY the PLN formula has this specific form - it arises
-    from the two possible paths through the rewrite context!
--/
+/-- Structural decomposition of PLN deduction strength into direct+indirect paths. -/
 theorem pln_deduction_structural_decomposition
     (sAB sBC pB pC : ENNReal) :
     Evidence.deductionStrength sAB sBC pB pC =
-    -- Direct path: tensor product s_AB * s_BC
-    Evidence.directPathStrength sAB sBC +
-    -- Indirect path: (1 - s_AB) * complementStrength
-    Evidence.indirectPathStrength sAB pB pC sBC := by
-  -- This is definitional!
+      Evidence.directPathStrength sAB sBC +
+      Evidence.indirectPathStrength sAB pB pC sBC := by
   unfold Evidence.deductionStrength
   rfl
-
-/-! ## Phase 5C Summary
-
-We have successfully constructed modal types via comprehension:
-
-1. ✅ Defined relyPossibly formula (rely-possibly semantics)
-2. ✅ Constructed modalType via comprehension
-3. ✅ Defined the deduction modal type as an example
-4. ✅ Proved modalCompose = meet (the quantale tensor!)
-5. ⚠️ Stated (but not yet proved) the connection to PLN deduction formula
-
-**Key achievement**: Modal types are now properly defined, not axiomatized!
-
-The construction uses comprehension (set-theoretic) rather than the
-subobject classifier (topos-theoretic), which is appropriate for Prop fibers.
-
-**What's working**:
-- modalType is now `constructModalType`, not `sorry`
-- modalCompose = ⊓ is proved by reflexivity
-- We have the deduction modal type as a concrete example
-
-**What's left (Phase 5D-5E)**:
-- Prove that modalCompose satisfies the quantale law (should follow from Frame)
-- Connect deduction formula to modal composition rigorously
-- Show Evidence.tensor corresponds to modal composition
-
-**Next step (Phase 5D)**: Prove the quantale law for modalCompose
-**Next step (Phase 5E)**: Prove pln_deduction_is_modal_compose
--/
 
 end Mettapedia.CategoryTheory.ModalTypes

@@ -58,15 +58,18 @@ def heProfile : MeTTaCoreProfile where
   premises := Mettapedia.Languages.MeTTa.HE.Premises.mettaHEPremises
   stateConstructor := some "State"
 
-/-- Current full/core state-machine profile. -/
-def fullProfile : MeTTaCoreProfile where
-  name := "Full"
-  lang := Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFull
+/-- Legacy full/core state-machine profile. -/
+def fullLegacyProfile : MeTTaCoreProfile where
+  name := "FullLegacy"
+  lang := Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullLegacy
   premises := Mettapedia.Languages.MeTTa.Core.FullPremises.mettaFullPremises
   stateConstructor := some "State"
 
+/-- Compatibility alias retained for downstream imports during migration. -/
+abbrev fullProfile : MeTTaCoreProfile := fullLegacyProfile
+
 def coreProfiles : List MeTTaCoreProfile :=
-  [pureProfile, heProfile, fullProfile]
+  [pureProfile, heProfile, fullLegacyProfile]
 
 def findProfile (name : ProfileName) : Option MeTTaCoreProfile :=
   coreProfiles.find? (fun p => p.name == name)

@@ -107,35 +107,35 @@ def far_A : EnglishAdj := irregA "far" "farther" "farthest" "far"
 /-! ## Tests -/
 
 -- Regular
-#eval! big_A.s (.AAdj .Pos .Nom)    -- "big"
-#eval! big_A.s (.AAdj .Comp .Nom)   -- "bigger"
-#eval! big_A.s (.AAdj .Super .Nom)  -- "biggest"
-#eval! big_A.s .AAdv                -- "bigly"
+-- #eval! big_A.s (.AAdj .Pos .Nom)    -- "big"
+-- #eval! big_A.s (.AAdj .Comp .Nom)   -- "bigger"
+-- #eval! big_A.s (.AAdj .Super .Nom)  -- "biggest"
+-- #eval! big_A.s .AAdv                -- "bigly"
 
 -- -y ending
-#eval! happy_A.s (.AAdj .Comp .Nom)  -- "happier"
-#eval! happy_A.s (.AAdj .Super .Nom) -- "happiest"
-#eval! happy_A.s .AAdv               -- "happily"
+-- #eval! happy_A.s (.AAdj .Comp .Nom)  -- "happier"
+-- #eval! happy_A.s (.AAdj .Super .Nom) -- "happiest"
+-- #eval! happy_A.s .AAdv               -- "happily"
 
 -- -e ending
-#eval! large_A.s (.AAdj .Comp .Nom)  -- "larger"
-#eval! large_A.s (.AAdj .Super .Nom) -- "largest"
+-- #eval! large_A.s (.AAdj .Comp .Nom)  -- "larger"
+-- #eval! large_A.s (.AAdj .Super .Nom) -- "largest"
 
 -- Compound
-#eval! beautiful_A.s (.AAdj .Comp .Nom)  -- "more beautiful"
-#eval! beautiful_A.s (.AAdj .Super .Nom) -- "most beautiful"
-#eval! beautiful_A.s .AAdv               -- "beautifully"
+-- #eval! beautiful_A.s (.AAdj .Comp .Nom)  -- "more beautiful"
+-- #eval! beautiful_A.s (.AAdj .Super .Nom) -- "most beautiful"
+-- #eval! beautiful_A.s .AAdv               -- "beautifully"
 
 -- Irregular
-#eval! good_A.s (.AAdj .Comp .Nom)   -- "better"
-#eval! good_A.s (.AAdj .Super .Nom)  -- "best"
-#eval! good_A.s .AAdv                -- "well"
+-- #eval! good_A.s (.AAdj .Comp .Nom)   -- "better"
+-- #eval! good_A.s (.AAdj .Super .Nom)  -- "best"
+-- #eval! good_A.s .AAdv                -- "well"
 
 -- Adverb formation
-#eval! adj2Adv "possible"    -- "possibly"
-#eval! adj2Adv "happy"       -- "happily"
-#eval! adj2Adv "full"        -- "fully"
-#eval! adj2Adv "quick"       -- "quickly"
+-- #eval! adj2Adv "possible"    -- "possibly"
+-- #eval! adj2Adv "happy"       -- "happily"
+-- #eval! adj2Adv "full"        -- "fully"
+-- #eval! adj2Adv "quick"       -- "quickly"
 
 /-! ## Correctness Properties -/
 

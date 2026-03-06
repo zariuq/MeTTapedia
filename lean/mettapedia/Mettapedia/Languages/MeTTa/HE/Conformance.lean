@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.HE.Interpreter
+import Mettapedia.Languages.MeTTa.Core.MinimalOps
 
 /-!
 # HE MeTTa Conformance Matrix
@@ -30,6 +31,16 @@ private def emptySpace : Space := Space.empty
 private def emptyB : Bindings := Bindings.empty
 private def noDispatch : GroundedDispatch := .none
 private def fuel : Nat := 50
+
+private def emptyCoreSpace : Mettapedia.Languages.MeTTa.Core.Atomspace :=
+  Mettapedia.Languages.MeTTa.Core.Atomspace.empty
+
+private def emptyCoreB : Mettapedia.Languages.MeTTa.Core.Bindings :=
+  Mettapedia.Languages.MeTTa.Core.Bindings.empty
+
+private def singletonCoreResult (a : Atom) :
+    Mettapedia.Languages.MeTTa.Core.EvalResultSet :=
+  {(a, emptyCoreB)}
 
 /-- Evaluate with standard test parameters. -/
 private def testEval (atom : Atom) (space : Space) (type_ : Atom := Atom.undefinedType) :=
@@ -312,6 +323,106 @@ theorem e2e_no_reduction :
     eval (.expression [.symbol "unknown", .symbol "arg"]) emptySpace =
     [(.expression [.symbol "unknown", .symbol "arg"], emptyB)] := rfl
 
+/-! ## 8. HE minimal internal-instruction fixtures (context-space/call-native) -/
+
+/-- Internal instruction fixture:
+    `(context-space)` yields an opaque atomspace handle. -/
+theorem minimal_context_space_fixture :
+    Mettapedia.Languages.MeTTa.Core.evalStep emptyCoreSpace
+      (.expression [.symbol "context-space"])
+      emptyCoreB
+    =
+      singletonCoreResult (.grounded (.custom "Atomspace" "size=0")) := rfl
+
+/-- Internal instruction fixture:
+    malformed `(context-space ...)` emits explicit error atom. -/
+theorem minimal_context_space_arity_error_fixture :
+    Mettapedia.Languages.MeTTa.Core.evalStep emptyCoreSpace
+      (.expression [.symbol "context-space", .symbol "extra"])
+      emptyCoreB
+    =
+      singletonCoreResult
+        (.error (.expression [.symbol "context-space", .symbol "extra"])
+          (.symbol "expected:(context-space)")) := rfl
+
+/-- Internal instruction fixture:
+    `(call-native + ptr (2 3))` evaluates via grounded op dispatch. -/
+theorem minimal_call_native_fixture :
+    Mettapedia.Languages.MeTTa.Core.evalStep emptyCoreSpace
+      (.expression [.symbol "call-native", .symbol "+", .symbol "opaque",
+        .expression [.grounded (.int 2), .grounded (.int 3)]])
+      emptyCoreB
+    =
+      singletonCoreResult (.grounded (.int 5)) := rfl
+
+/-- Internal instruction fixture:
+    malformed `(call-native ...)` shape emits explicit error atom. -/
+theorem minimal_call_native_arity_error_fixture :
+    Mettapedia.Languages.MeTTa.Core.evalStep emptyCoreSpace
+      (.expression [.symbol "call-native", .symbol "+", .symbol "opaque"])
+      emptyCoreB
+    =
+      singletonCoreResult
+        (.error (.expression [.symbol "call-native", .symbol "+", .symbol "opaque"])
+          (.symbol "expected:(call-native name ptr args)")) := rfl
+
+/-- Internal instruction fixture:
+    unsupported native function name emits explicit error atom. -/
+theorem minimal_call_native_unsupported_fixture :
+    Mettapedia.Languages.MeTTa.Core.evalStep emptyCoreSpace
+      (.expression [.symbol "call-native", .symbol "mystery", .symbol "opaque",
+        .expression [.grounded (.int 2), .grounded (.int 3)]])
+      emptyCoreB
+    =
+      singletonCoreResult
+        (.error (.expression [.symbol "call-native", .symbol "mystery", .symbol "opaque",
+          .expression [.grounded (.int 2), .grounded (.int 3)]])
+          (.symbol "unsupported-native-function:mystery")) := rfl
+
+/-! ## 9. HE extension fixtures (switch family) -/
+
+/-- Extension fixture:
+    `switch-minimal` selects the first matching case. -/
+theorem extension_switch_minimal_first_match :
+    testEval (.expression [.symbol "switch-minimal", .symbol "a",
+      .expression [
+        .expression [.symbol "a", .symbol "ok"],
+        .expression [.symbol "b", .symbol "bad"]]])
+      emptySpace
+    = [(.symbol "ok", emptyB)] := rfl
+
+/-- Extension fixture:
+    `switch` returns `Empty` when no case matches. -/
+theorem extension_switch_no_match_empty :
+    testEval (.expression [.symbol "switch", .symbol "z",
+      .expression [
+        .expression [.symbol "a", .symbol "ok"],
+        .expression [.symbol "b", .symbol "bad"]]])
+      emptySpace
+    = [(Atom.empty, emptyB)] := rfl
+
+/-- Extension fixture:
+    `assert` returns unit when expression evaluates to `True`. -/
+theorem extension_assert_true :
+    testEval (.expression [.symbol "assert", .symbol "True"]) emptySpace
+    = [(Atom.unit, emptyB)] := rfl
+
+/-- Extension fixture:
+    `assert` returns explicit error when expression is not `True`. -/
+theorem extension_assert_false_error :
+    testEval (.expression [.symbol "assert", .symbol "False"]) emptySpace
+    = [(.error (.expression [.symbol "assert", .symbol "False"])
+          (.expression [.symbol "False", .symbol "not", .symbol "True"]), emptyB)] := rfl
+
+/-- Extension fixture:
+    `case` delegates branch selection to switch-minimal per evaluated result. -/
+theorem extension_case_first_match :
+    testEval (.expression [.symbol "case", .symbol "a",
+      .expression [
+        .expression [.symbol "a", .symbol "ok"],
+        .expression [.symbol "b", .symbol "bad"]]]) emptySpace
+    = [(.symbol "ok", emptyB)] := rfl
+
 /-! ## Conformance Summary
 
 | Spec Section | Clause | Status | Theorem |
@@ -354,6 +465,16 @@ theorem e2e_no_reduction :
 | e2e | pattern var | exact | e2e_pattern_var |
 | e2e | nondeterministic | exact | e2e_nondeterministic |
 | e2e | no reduction | exact | e2e_no_reduction |
+| minimal internal | context-space | exact | minimal_context_space_fixture |
+| minimal internal | context-space arity error | exact | minimal_context_space_arity_error_fixture |
+| minimal internal | call-native success | exact | minimal_call_native_fixture |
+| minimal internal | call-native arity error | exact | minimal_call_native_arity_error_fixture |
+| minimal internal | call-native unsupported op | exact | minimal_call_native_unsupported_fixture |
+| extension (he-0.2.10) | switch-minimal first-match | exact | extension_switch_minimal_first_match |
+| extension (he-0.2.10) | switch no-match empty | exact | extension_switch_no_match_empty |
+| extension (he-0.2.10) | assert true -> unit | exact | extension_assert_true |
+| extension (he-0.2.10) | assert false -> Error | exact | extension_assert_false_error |
+| extension (he-0.2.10) | case first-match | exact | extension_case_first_match |
 -/
 
 end Mettapedia.Languages.MeTTa.HE.Conformance

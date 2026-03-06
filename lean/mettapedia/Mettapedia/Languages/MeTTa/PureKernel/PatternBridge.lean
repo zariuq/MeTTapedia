@@ -33,7 +33,15 @@ def quoteRaw : PureTm n → Pattern
   | .snd p => mkSnd (quoteRaw p)
   | .refl a => mkRefl (quoteRaw a)
 
-def defaultBinderName (k : Nat) : String := "__pk_" ++ toString k
+def defaultBinderName (k : Nat) : String := String.ofList (List.replicate (k + 1) '_')
+
+theorem defaultBinderName_injective : Function.Injective defaultBinderName := by
+  intro a b hab
+  have h := congrArg String.toList hab
+  simp only [defaultBinderName, String.toList_ofList] at h
+  have hlen := congrArg List.length h
+  simp [List.length_replicate] at hlen
+  omega
 
 /-- Contextual locally-nameless quote:
 `PureTm` variables are mapped to `fvar`s via `ρ`,

@@ -1,6 +1,5 @@
 import Mettapedia.CategoryTheory.LambdaTheory
 import Mettapedia.CategoryTheory.PLNInstance
-import Mettapedia.CategoryTheory.NativeTypeTheory
 
 /-!
 # PLN Term Syntax and Reduction Relation
@@ -35,7 +34,6 @@ namespace Mettapedia.CategoryTheory.PLNTerms
 
 open Mettapedia.CategoryTheory.LambdaTheories
 open Mettapedia.CategoryTheory.PLNInstance
-open Mettapedia.CategoryTheory.NativeTypeTheory
 
 /-! ## Step 1: PLN Term Syntax
 
@@ -219,24 +217,13 @@ structure RewriteContext (rule : RewriteRule) where
   /-- Proof that filling gives the lhs -/
   fillsToLhs : ctx.fill holeTerm = rule.lhs
 
-/-! ## Step 5: Modal Type Specification from Rewrites
+/-! ## Step 5: Modal Type Semantics from Rewrites
 
-Given a rewrite context Cj for rule L ⇝ R, we can generate the modal type:
-
-  ⟨Cj⟩_{xk::Ak} B
-
-This captures "for all parameters xk satisfying xk::Ak, if we place t in
-context Cj, it's possible to reach a reduct p with p::B in one step."
+Canonical modal-type semantics from rewrite contexts are provided in:
+- `Mettapedia/CategoryTheory/ModalTypes.lean` (`relyPossiblyPred`,
+  `modalComprehension`)
+- `Mettapedia/OSLF/Framework/ModalSubobjectBridge.lean`
 -/
-
-/-- Generate a modal type specification from a rewrite context -/
-noncomputable def modalTypeFromRewrite (rule : RewriteRule) (_rwCtx : RewriteContext rule)
-    (relies : List (String × PLNFiber PLNLambdaTheory.Pr))
-    (result : PLNFiber PLNLambdaTheory.Pr) :
-    NativeTypeTheory.ModalTypeSpec where
-  context := PLNLambdaTheory.Pr  -- The hole lives in Pr
-  result := result  -- Target truth value
-  relies := relies.map (fun (_, τ) => ⟨PLNLambdaTheory.Pr, τ⟩)
 
 /-! ## Step 6: The Deduction Modal Type
 

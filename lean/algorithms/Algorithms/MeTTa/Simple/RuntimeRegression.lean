@@ -40,11 +40,24 @@ private def runFixture (text : String) : Diagnostics × List (Nat × List Patter
   let (s1, out) := Session.runText s0 text
   (Session.diagnostics s1, out)
 
+private def runFixtureWithSyntax
+    (syntaxSpec : MeTTailCore.MeTTaSyntax.SyntaxSpec)
+    (text : String) : Diagnostics × List (Nat × List Pattern) :=
+  let s0 := Session.withSyntax (Session.new emptyBundle) syntaxSpec
+  let (s1, out) := Session.runText s0 text
+  (Session.diagnostics s1, out)
+
 private def queryOutputs (out : List (Nat × List Pattern)) : List (List Pattern) :=
   out.map Prod.snd
 
 private def fixtureMatchesExpected (text : String) (expected : List (List Pattern)) : Bool :=
   let (diag, out) := runFixture text
+  diag.errors = 0 && queryOutputs out = expected
+
+private def fixtureMatchesExpectedWithSyntax
+    (syntaxSpec : MeTTailCore.MeTTaSyntax.SyntaxSpec)
+    (text : String) (expected : List (List Pattern)) : Bool :=
+  let (diag, out) := runFixtureWithSyntax syntaxSpec text
   diag.errors = 0 && queryOutputs out = expected
 
 def onceFixture : String :=
@@ -239,6 +252,76 @@ def predicateControlFocusedFixture : String :=
     , ""
     ]
 
+def booleanSolverFocusedFixture : String :=
+  String.intercalate "\n"
+    [ "!(test (if (and (or $x True) $y) ($x $y))"
+    , "       ((True True) (False True)))"
+    , ""
+    ]
+
+def booleanNestedFocusedFixture : String :=
+  String.intercalate "\n"
+    [ "!(test (if (and (or $x True) $y) ($x $y) miss)"
+    , "       ((True True) (False True)))"
+    , "!(test (if (or (and $x $y) (and (not $x) $y)) ($x $y) miss)"
+    , "       ((True True) (False True)))"
+    , "!(test (if (and (< 1 2) $x) $x fallback)"
+    , "       True)"
+    , "!(test (if (and (> 1 2) $x) then else)"
+    , "       else)"
+    , "!(test (if (or (and $x (not $x)) (and (not $x) True)) $x bad)"
+    , "       False)"
+    , "!(test (if (and (== (+ 1 1) 2) (or $x False)) $x nope)"
+    , "       True)"
+    , "!(test (if (and (or $x False) (or (not $x) False)) branch else)"
+    , "       else)"
+    , "!(test (if (or $x (not $x)) (if $x T F) bad)"
+    , "       (T F))"
+    , "!(test (if (xor True False) ok bad)"
+    , "       ok)"
+    , "!(test (if (xor True True) ok bad)"
+    , "       bad)"
+    , "!(test (if (xor (== 2 2) (> 2 3)) ok bad)"
+    , "       ok)"
+    , "!(test (if (xor (== 2 2) (> 3 2)) ok bad)"
+    , "       bad)"
+    , "!(test (if (and (xor True False) (< 1 2)) pass fail)"
+    , "       pass)"
+    , "!(test (if (and (xor True False) (> 1 2)) pass fail)"
+    , "       fail)"
+    , "!(test (if (or (xor True True) (== (+ 1 1) 2)) yes no)"
+    , "       yes)"
+    , "!(test (if (xor (<= 2 2) (>= 3 3)) yes no)"
+    , "       no)"
+    , "!(test (if (xor (< 1 2) (> 1 2)) yes no)"
+    , "       yes)"
+    , "!(test (if (xor $x (not $x)) (if $x T F) bad)"
+    , "       (T F))"
+    , "!(test (if (and (xor $x $x) True) then else)"
+    , "       else)"
+    , "!(test (if (and (xor $x False) (xor $x True)) then else)"
+    , "       else)"
+    , ""
+    ]
+
+def stateFocusedFixture : String :=
+  String.intercalate "\n"
+    [ "!(bind! state (new-state rest))"
+    , "!(get-state state)"
+    , "!(change-state! state active)"
+    , "!(get-state state)"
+    , ""
+    ]
+
+def streamOpsFocusedFixture : String :=
+  String.intercalate "\n"
+    [ "!(collapse (unique (superpose (a b c d d))))"
+    , "!(collapse (union (superpose (a b b c)) (superpose (b c c d))))"
+    , "!(collapse (intersection (superpose (a b c c)) (superpose (b c c c d))))"
+    , "!(collapse (subtraction (superpose (a b b c)) (superpose (b c c d))))"
+    , ""
+    ]
+
 def atomOpsFocusedFixture : String :=
   String.intercalate "\n"
     [ "!(test (cons-atom 1 (2 3)) (1 2 3))"
@@ -282,6 +365,43 @@ def partialApplyFocusedFixture : String :=
     , "!(repr (add3 1))"
     , "!(test (add3 1 2 3) 6)"
     , "!(test (map-atom (1 2) (add3 10 20)) (31 32))"
+    , ""
+    ]
+
+def heSymRewriteFallbackFixture : String :=
+  String.intercalate "\n"
+    [ "(= (Expr (Sym f) (Sym a)) (Sym b))"
+    , "(= (Expr (Sym wrap) $x) (Expr (Sym boxed) $x))"
+    , "!(test (Expr (Sym f) (Sym a)) (Sym b))"
+    , "!(test (Expr (Sym wrap) (Sym hi)) (Expr (Sym boxed) (Sym hi)))"
+    , ""
+    ]
+
+def heAssertCommandsFixture : String :=
+  String.intercalate "\n"
+    [ "(= (coin) heads)"
+    , "(= (coin) tails)"
+    , "!(assertEqual (+ 1 2) 3)"
+    , "!(assertEqualToResult (unknown arg) ((unknown arg)))"
+    , "!(assertEqual (coin) (superpose (heads tails)))"
+    , ""
+    ]
+
+def heMatchNormalizedFixture : String :=
+  String.intercalate "\n"
+    [ "(Expr (Sym f) (Sym a))"
+    , "(Expr (Sym f) (Sym b))"
+    , "!(msort (collapse (match &self (f $x) (hit $x))))"
+    , "!(msort (collapse (match &self (Expr (Sym f) $x) (hit2 $x))))"
+    , ""
+    ]
+
+def dispatchSharedOutputVarFixture : String :=
+  String.intercalate "\n"
+    [ "(= (id $v) $v)"
+    , "(= (f (id (pair $x $x))) $x)"
+    , "!(f (pair a a))"
+    , "!(f (pair a b))"
     , ""
     ]
 
@@ -357,6 +477,46 @@ private def predicateControlFocusedExpected : List (List Pattern) :=
   , parsePatterns ["True"]
   ]
 
+private def booleanSolverFocusedExpected : List (List Pattern) :=
+  [ parsePatterns ["True"] ]
+
+private def booleanNestedFocusedExpected : List (List Pattern) :=
+  [ parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  ]
+
+private def stateFocusedExpected : List (List Pattern) :=
+  [ parsePatterns ["True"]
+  , parsePatterns ["rest"]
+  , parsePatterns ["True"]
+  , parsePatterns ["active"]
+  ]
+
+private def streamOpsFocusedExpected : List (List Pattern) :=
+  [ parsePatterns ["(a b c d)"]
+  , parsePatterns ["(a b b c b c c d)"]
+  , parsePatterns ["(b c c)"]
+  , parsePatterns ["(a b)"]
+  ]
+
 private def atomOpsFocusedExpected : List (List Pattern) :=
   [ parsePatterns ["True"]
   , parsePatterns ["True"]
@@ -391,6 +551,27 @@ private def partialApplyFocusedExpected : List (List Pattern) :=
   , parsePatterns ["True"]
   ]
 
+private def heSymRewriteFallbackExpected : List (List Pattern) :=
+  [ parsePatterns ["True"]
+  , parsePatterns ["True"]
+  ]
+
+private def heAssertCommandsExpected : List (List Pattern) :=
+  [ parsePatterns ["True"]
+  , parsePatterns ["True"]
+  , parsePatterns ["True"]
+  ]
+
+private def heMatchNormalizedExpected : List (List Pattern) :=
+  [ parsePatterns ["(Expr (hit a) (hit b))"]
+  , parsePatterns ["(Expr (hit2 a) (hit2 b))"]
+  ]
+
+private def dispatchSharedOutputVarExpected : List (List Pattern) :=
+  [ parsePatterns ["a"]
+  , parsePatterns ["(f (pair a b))"]
+  ]
+
 def checkOnceFixture : Bool := fixtureMatchesExpected onceFixture onceExpected
 def checkCutFixture : Bool := fixtureMatchesExpected cutFixture cutExpected
 def checkSpaceFixture : Bool := fixtureMatchesExpected spaceFixture spaceExpected
@@ -407,6 +588,14 @@ def checkFoldallForallFocusedFixture : Bool :=
   fixtureMatchesExpected foldallForallFocusedFixture foldallForallFocusedExpected
 def checkPredicateControlFocusedFixture : Bool :=
   fixtureMatchesExpected predicateControlFocusedFixture predicateControlFocusedExpected
+def checkBooleanSolverFocusedFixture : Bool :=
+  fixtureMatchesExpected booleanSolverFocusedFixture booleanSolverFocusedExpected
+def checkBooleanNestedFocusedFixture : Bool :=
+  fixtureMatchesExpected booleanNestedFocusedFixture booleanNestedFocusedExpected
+def checkStateFocusedFixture : Bool :=
+  fixtureMatchesExpected stateFocusedFixture stateFocusedExpected
+def checkStreamOpsFocusedFixture : Bool :=
+  fixtureMatchesExpected streamOpsFocusedFixture streamOpsFocusedExpected
 def checkAtomOpsFocusedFixture : Bool :=
   fixtureMatchesExpected atomOpsFocusedFixture atomOpsFocusedExpected
 def checkMetaEvalFocusedFixture : Bool :=
@@ -415,6 +604,17 @@ def checkTypeImportFocusedFixture : Bool :=
   fixtureMatchesExpected typeImportFocusedFixture typeImportFocusedExpected
 def checkPartialApplyFocusedFixture : Bool :=
   fixtureMatchesExpected partialApplyFocusedFixture partialApplyFocusedExpected
+def checkHeSymRewriteFallbackFixture : Bool :=
+  fixtureMatchesExpected heSymRewriteFallbackFixture heSymRewriteFallbackExpected
+def checkHeAssertCommandsFixture : Bool :=
+  fixtureMatchesExpected heAssertCommandsFixture heAssertCommandsExpected
+def checkHeMatchNormalizedFixture : Bool :=
+  fixtureMatchesExpectedWithSyntax
+    MeTTailCore.MeTTaSyntax.he
+    heMatchNormalizedFixture
+    heMatchNormalizedExpected
+def checkDispatchSharedOutputVarFixture : Bool :=
+  fixtureMatchesExpected dispatchSharedOutputVarFixture dispatchSharedOutputVarExpected
 
 def allRuntimeChecks : List (String × Bool) :=
   [ ("onceFixture", checkOnceFixture)
@@ -431,10 +631,18 @@ def allRuntimeChecks : List (String × Bool) :=
   , ("caseFocusedFixture", checkCaseFocusedFixture)
   , ("foldallForallFocusedFixture", checkFoldallForallFocusedFixture)
   , ("predicateControlFocusedFixture", checkPredicateControlFocusedFixture)
+  , ("booleanSolverFocusedFixture", checkBooleanSolverFocusedFixture)
+  , ("booleanNestedFocusedFixture", checkBooleanNestedFocusedFixture)
+  , ("stateFocusedFixture", checkStateFocusedFixture)
+  , ("streamOpsFocusedFixture", checkStreamOpsFocusedFixture)
   , ("atomOpsFocusedFixture", checkAtomOpsFocusedFixture)
   , ("metaEvalFocusedFixture", checkMetaEvalFocusedFixture)
   , ("typeImportFocusedFixture", checkTypeImportFocusedFixture)
   , ("partialApplyFocusedFixture", checkPartialApplyFocusedFixture)
+  , ("heSymRewriteFallbackFixture", checkHeSymRewriteFallbackFixture)
+  , ("heAssertCommandsFixture", checkHeAssertCommandsFixture)
+  , ("heMatchNormalizedFixture", checkHeMatchNormalizedFixture)
+  , ("dispatchSharedOutputVarFixture", checkDispatchSharedOutputVarFixture)
   ]
 
 def allRuntimeChecksPass : Bool :=
@@ -454,10 +662,18 @@ def allRuntimeChecksPass : Bool :=
 #guard checkCaseFocusedFixture = true
 #guard checkFoldallForallFocusedFixture = true
 #guard checkPredicateControlFocusedFixture = true
+#guard checkBooleanSolverFocusedFixture = true
+#guard checkBooleanNestedFocusedFixture = true
+#guard checkStateFocusedFixture = true
+#guard checkStreamOpsFocusedFixture = true
 #guard checkAtomOpsFocusedFixture = true
 #guard checkMetaEvalFocusedFixture = true
 #guard checkTypeImportFocusedFixture = true
 #guard checkPartialApplyFocusedFixture = true
+#guard checkHeSymRewriteFallbackFixture = true
+#guard checkHeAssertCommandsFixture = true
+#guard checkHeMatchNormalizedFixture = true
+#guard checkDispatchSharedOutputVarFixture = true
 #guard allRuntimeChecksPass = true
 
 #eval allRuntimeChecks

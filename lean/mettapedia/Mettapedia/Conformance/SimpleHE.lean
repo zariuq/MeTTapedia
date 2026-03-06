@@ -89,6 +89,24 @@ private def spacePatternVar : Space :=
       (.expression [.symbol "result", .var "x"])
   ]
 
+private def spaceDuplicate : Space :=
+  Space.ofList [
+    Atom.equality
+      (.expression [.symbol "dup"])
+      (.symbol "x"),
+    Atom.equality
+      (.expression [.symbol "dup"])
+      (.symbol "x")
+  ]
+
+private def cfgDuplicate : FrozenHEConfig :=
+  { equations :=
+      [ { lhs := .expr [.symbol "dup"], rhs := .symbol "x" }
+      , { lhs := .expr [.symbol "dup"], rhs := .symbol "x" }
+      ]
+    maxSteps := 100
+    maxNodes := 8192 }
+
 private def cfgPremiseRelation : FrozenHEConfig :=
   { equations :=
       [ { lhs := .expr [.symbol "fromRel"]
@@ -120,6 +138,7 @@ private def expectedNested : List Atom := [.symbol "b"]
 private def expectedNondet : List Atom := [.symbol "red", .symbol "blue"]
 private def expectedNoReduction : List Atom := [.expression [.symbol "unknown", .symbol "arg"]]
 private def expectedPatternVar : List Atom := [.expression [.symbol "result", .symbol "hello"]]
+private def expectedDuplicate : List Atom := [.symbol "x", .symbol "x"]
 private def expectedPremiseRelation : List Atom := [.symbol "alpha", .symbol "beta"]
 private def expectedPremiseBuiltin : List Atom := [.symbol "warm", .symbol "cool"]
 
@@ -153,6 +172,11 @@ def checkPatternVar : Bool :=
       runHE spacePatternVar (.expression [.symbol "f", .symbol "hello"])
   )
 
+def checkDuplicate : Bool :=
+  decide (
+    runSimpleWithCfg cfgDuplicate (.expr [.symbol "dup"]) = expectedDuplicate
+  )
+
 def checkPremiseRelationLowering : Bool :=
   decide (
     runSimpleWithCfg cfgPremiseRelation (.expr [.symbol "fromRel"]) =
@@ -171,6 +195,7 @@ def allChecks : List (String × Bool) :=
   , ("nondet", checkNondet)
   , ("noReduction", checkNoReduction)
   , ("patternVar", checkPatternVar)
+  , ("duplicate", checkDuplicate)
   , ("premiseRelationLowering", checkPremiseRelationLowering)
   , ("premiseBuiltinLowering", checkPremiseBuiltinLowering)
   ]
@@ -208,6 +233,55 @@ theorem premise_builtin_lowering_of_check
   unfold checkPremiseBuiltinLowering at h
   exact (decide_eq_true_eq.mp h)
 
+/-! ## I/O fixture theorem anchors (by fixture ID) -/
+
+theorem he_io_anchor_he_simple_rewrite :
+    (h : checkSimple = true) →
+    runSimple spaceSimple (.expression [.symbol "f", .symbol "a"]) =
+      runHE spaceSimple (.expression [.symbol "f", .symbol "a"]) := by
+  intro h
+  unfold checkSimple at h
+  exact (decide_eq_true_eq.mp h)
+
+theorem he_io_anchor_he_nested_rewrite :
+    (h : checkNested = true) →
+    runSimple spaceNested (.expression [.symbol "g", .symbol "a"]) =
+      runHE spaceNested (.expression [.symbol "g", .symbol "a"]) := by
+  intro h
+  unfold checkNested at h
+  exact (decide_eq_true_eq.mp h)
+
+theorem he_io_anchor_he_nondet_choose_bag :
+    (h : checkNondet = true) →
+    runSimple spaceNondet (.expression [.symbol "choose"]) =
+      runHE spaceNondet (.expression [.symbol "choose"]) := by
+  intro h
+  unfold checkNondet at h
+  exact (decide_eq_true_eq.mp h)
+
+theorem he_io_anchor_he_unknown_expr_preserved :
+    (h : checkNoReduction = true) →
+    runSimple Space.empty (.expression [.symbol "unknown", .symbol "arg"]) =
+      runHE Space.empty (.expression [.symbol "unknown", .symbol "arg"]) := by
+  intro h
+  unfold checkNoReduction at h
+  exact (decide_eq_true_eq.mp h)
+
+theorem he_io_anchor_he_pattern_variable_substitution :
+    (h : checkPatternVar = true) →
+    runSimple spacePatternVar (.expression [.symbol "f", .symbol "hello"]) =
+      runHE spacePatternVar (.expression [.symbol "f", .symbol "hello"]) := by
+  intro h
+  unfold checkPatternVar at h
+  exact (decide_eq_true_eq.mp h)
+
+theorem he_io_anchor_he_duplicate_multiplicity_preserved :
+    (h : checkDuplicate = true) →
+    runSimpleWithCfg cfgDuplicate (.expr [.symbol "dup"]) = expectedDuplicate := by
+  intro h
+  unfold checkDuplicate at h
+  exact (decide_eq_true_eq.mp h)
+
 #eval ("expectedSimple", expectedSimple)
 #eval ("runtimeSimple", runSimple spaceSimple (.expression [.symbol "f", .symbol "a"]))
 #eval ("specSimple", runHE spaceSimple (.expression [.symbol "f", .symbol "a"]))
@@ -227,6 +301,9 @@ theorem premise_builtin_lowering_of_check
 #eval ("expectedPatternVar", expectedPatternVar)
 #eval ("runtimePatternVar", runSimple spacePatternVar (.expression [.symbol "f", .symbol "hello"]))
 #eval ("specPatternVar", runHE spacePatternVar (.expression [.symbol "f", .symbol "hello"]))
+
+#eval ("expectedDuplicate", expectedDuplicate)
+#eval ("runtimeDuplicate", runSimpleWithCfg cfgDuplicate (.expr [.symbol "dup"]))
 
 #eval ("expectedPremiseRelation", expectedPremiseRelation)
 #eval ("runtimePremiseRelation", runSimpleWithCfg cfgPremiseRelation (.expr [.symbol "fromRel"]))

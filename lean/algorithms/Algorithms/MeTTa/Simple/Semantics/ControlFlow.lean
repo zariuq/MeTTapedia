@@ -7,6 +7,7 @@ open MeTTailCore.MeTTaIL.Match
 
 structure Interface (σ : Type) where
   eval : σ → Pattern → σ × List Pattern
+  evalKeyValues : σ → Pattern → σ × List Pattern
   applyBindings : Bindings → Pattern → Pattern
   matchPattern : Pattern → Pattern → List Bindings
   evalCallableApply : σ → Pattern → List Pattern → σ × List Pattern
@@ -53,7 +54,7 @@ private partial def evalCaseValueForBindings (I : Interface σ) (s : σ)
 
 partial def evalCaseIntrinsic (I : Interface σ) (s : σ)
     (keyExpr branchesExpr : Pattern) : σ × List Pattern :=
-  let (sK, keyOut) := I.eval s keyExpr
+  let (sK, keyOut) := I.evalKeyValues s keyExpr
   let keys := if keyOut.isEmpty then [keyExpr] else keyOut
   let pairs := decodeCasePairs? branchesExpr
   match pairs with

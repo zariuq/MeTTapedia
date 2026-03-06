@@ -364,43 +364,43 @@ private def sleepVP := predV sleep_V
 private def eatVP := predV eat_V
 
 -- NP surface forms
-#eval! theCat.s (.NCase .Nom)    -- "the cat"
-#eval! theCat.s (.NCase .Gen)    -- "the cat's"
-#eval! aDog.s (.NCase .Nom)      -- "a dog"
-#eval! theBigCat.s (.NCase .Nom) -- "the big cat"
-#eval! theMan.s (.NCase .Nom)    -- "the man"
+-- #eval! theCat.s (.NCase .Nom)    -- "the cat"
+-- #eval! theCat.s (.NCase .Gen)    -- "the cat's"
+-- #eval! aDog.s (.NCase .Nom)      -- "a dog"
+-- #eval! theBigCat.s (.NCase .Nom) -- "the big cat"
+-- #eval! theMan.s (.NCase .Nom)    -- "the man"
 
 -- Declarative sentences
-#eval! linUseCl .Pres .Simul .CPos (linPredVP theCat walkVP)
+-- #eval! linUseCl .Pres .Simul .CPos (linPredVP theCat walkVP)
   -- "the cat walks"
-#eval! linUseCl .Pres .Simul (.CNeg true) (linPredVP theCat walkVP)
+-- #eval! linUseCl .Pres .Simul (.CNeg true) (linPredVP theCat walkVP)
   -- "the cat doesn't walk"
-#eval! linUseCl .Past .Simul .CPos (linPredVP theCat walkVP)
+-- #eval! linUseCl .Past .Simul .CPos (linPredVP theCat walkVP)
   -- "the cat walked"
-#eval! linUseCl .Fut .Simul .CPos (linPredVP theCat walkVP)
+-- #eval! linUseCl .Fut .Simul .CPos (linPredVP theCat walkVP)
   -- "the cat will walk"
-#eval! linUseCl .Pres .Anter .CPos (linPredVP theCat walkVP)
+-- #eval! linUseCl .Pres .Anter .CPos (linPredVP theCat walkVP)
   -- "the cat has walked"
-#eval! linUseCl .Cond .Simul .CPos (linPredVP theCat walkVP)
+-- #eval! linUseCl .Cond .Simul .CPos (linPredVP theCat walkVP)
   -- "the cat would walk"
 
 -- Questions
-#eval! linQuestCl .Pres .Simul .CPos (linPredVP theCat walkVP)
+-- #eval! linQuestCl .Pres .Simul .CPos (linPredVP theCat walkVP)
   -- "does the cat walk"
-#eval! linQuestCl .Past .Simul .CPos (linPredVP theCat walkVP)
+-- #eval! linQuestCl .Past .Simul .CPos (linPredVP theCat walkVP)
   -- "did the cat walk"
-#eval! linQuestCl .Fut .Simul .CPos (linPredVP theCat walkVP)
+-- #eval! linQuestCl .Fut .Simul .CPos (linPredVP theCat walkVP)
   -- "will the cat walk"
 
 -- Irregular verbs
-#eval! linUseCl .Past .Simul .CPos (linPredVP theMan (predV eat_V))
+-- #eval! linUseCl .Past .Simul .CPos (linPredVP theMan (predV eat_V))
   -- "the man ate"
-#eval! linUseCl .Pres .Anter .CPos (linPredVP theMan (predV eat_V))
+-- #eval! linUseCl .Pres .Anter .CPos (linPredVP theMan (predV eat_V))
   -- "the man has eaten"
 
 -- a/an selection
 private def anApple := linDetCN aIndefArt (linUseN (regN "apple"))
-#eval! anApple.s (.NCase .Nom)  -- "an apple"
+-- #eval! anApple.s (.NCase .Nom)  -- "an apple"
 
 /-! ## Correctness Properties -/
 

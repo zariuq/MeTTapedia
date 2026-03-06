@@ -36,15 +36,16 @@ lake build Mettapedia.Logic.Prolog.Prolog
 | [FixtureCorpus.lean](FixtureCorpus.lean) | 242 proven fixture theorems sourced from Logtalk ISO tests |
 | [Prolog.lean](Prolog.lean) | Aggregates all modules; includes architecture diagram |
 
-## Conformance harness
+## Conformance
 
-The executable conformance suite lives in [scripts/prolog](../../../scripts/prolog).
-It runs SWI-Prolog against the same goals formalized in `FixtureCorpus.lean` and
-checks parity:
+Two levels of validation:
 
-```bash
-scripts/prolog/run_conformance.sh
-```
+- **Lean theorem-level** (this directory): 242 proven fixture theorems
+  matching ISO Prolog behavior, cross-checked against SWI-Prolog via
+  [scripts/prolog](../../../scripts/prolog).
+  Run: `scripts/prolog/run_conformance.sh`
+- **PeTTa runtime unit suite**: 69 assertions testing the concrete
+  interpreter.  Run: `cd hyperon/PeTTa && ./unit/run_petta_unit_69.sh`
 
 ## Related
 

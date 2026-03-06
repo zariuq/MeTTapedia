@@ -117,4 +117,48 @@ theorem ch8_fol_categorical_consequence_singleton_fixture
       (ψ := (⊤ : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L))
       hW hcons
 
+/-- Ch.8 concrete FOL fixture (proof-theoretic path):
+consume `provable_imp_iff_singletonStrengthLEOnTheory` to obtain provability,
+then build and execute a `wmConsequenceRuleOn_of_provable_imp` endpoint on a
+singleton state. -/
+theorem ch8_fol_provable_bridge_rule_singleton_fixture
+    {L : Language.{u}}
+    (S : Mettapedia.Logic.PLNWorldModelFOLCompleteness.PointedFOL L) :
+    WorldModel.queryStrength
+        (State := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
+        (Query := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L)
+        ({S} : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
+        (⊥ : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L) ≤
+      WorldModel.queryStrength
+        (State := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
+        (Query := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L)
+        ({S} : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
+        (⊤ : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L) := by
+  let T : Theory L := (∅ : Theory L)
+  let φ : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L :=
+    (⊥ : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L)
+  let ψ : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L :=
+    (⊤ : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L)
+  have hpoint :
+      Mettapedia.Logic.PLNWorldModelFOLCompleteness.pointwiseImpliesOnTheory
+        T φ ψ := by
+    intro S' _hT hφ
+    exact (False.elim (by simpa [φ] using hφ))
+  have hsing :
+      Mettapedia.Logic.PLNWorldModelFOLCompleteness.singletonStrengthLEOnTheory
+        T φ ψ :=
+    (Mettapedia.Logic.PLNWorldModelFOLCompleteness.pointwiseImpliesOnTheory_iff_singletonStrengthLEOnTheory
+      (T := T) (φ := φ) (ψ := ψ)).1 hpoint
+  have hprov : T ⊢ (φ ➝ ψ) :=
+    (Mettapedia.Logic.PLNWorldModelFOLCompleteness.provable_imp_iff_singletonStrengthLEOnTheory
+      (T := T) (φ := φ) (ψ := ψ)).2 hsing
+  let rule :=
+    Mettapedia.Logic.PLNWorldModelFOLCompleteness.wmConsequenceRuleOn_of_provable_imp
+      (T := T) (φ := φ) (ψ := ψ) hprov
+  have hside : rule.side ({S} : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L) := by
+    intro S' hmem
+    simp [T]
+  simpa [rule, T, φ, ψ] using
+    (rule.sound hside)
+
 end Mettapedia.Logic.PLNWorldModelCategoricalRegression

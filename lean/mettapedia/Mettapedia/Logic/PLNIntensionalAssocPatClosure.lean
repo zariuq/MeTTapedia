@@ -425,6 +425,98 @@ theorem mixed_not_assoc_only :
       congrArg EvidenceQuantale.Evidence.pos hEq''
   norm_num at h65
 
+/-- Two-state witness with identical ext/ASSOC channels and different PAT channel. -/
+def Wpat0 : ConcreteState :=
+  (constScore 3, constScore 2, constScore 0)
+
+/-- Two-state witness with identical ext/ASSOC channels and different PAT channel. -/
+def Wpat1 : ConcreteState :=
+  (constScore 3, constScore 2, constScore 1)
+
+/-- No-go theorem (canonical-binary collapse fails):
+there is no binary mixed law over `(extensional, ASSOC)` that can reproduce the
+concrete ASSOC+PAT mixed channel on all states. -/
+theorem no_binary_mixed_policy_for_assocPat_fixture :
+    ¬ ∃ combine2 : EvidenceQuantale.Evidence → EvidenceQuantale.Evidence → EvidenceQuantale.Evidence,
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedPolicyAssoc
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery) enc combine2 := by
+  intro h
+  rcases h with ⟨combine2, hPolicy⟩
+  let a : Pattern := Pattern.fvar "a0"
+  let b : Pattern := Pattern.fvar "p"
+  have hW0 := hPolicy Wpat0 a b
+  have hW1 := hPolicy Wpat1 a b
+  have hExt :
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.extensionalEvidence
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+        Wpat0 enc a b =
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.extensionalEvidence
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+        Wpat1 enc a b := by
+    rfl
+  have hAssoc :
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalAssocEvidence
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+        Wpat0 enc a b =
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalAssocEvidence
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+        Wpat1 enc a b := by
+    rfl
+  have hMixedEq :
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+        Wpat0 enc a b =
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+        Wpat1 enc a b := by
+    calc
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence
+          (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+          Wpat0 enc a b
+        =
+          combine2
+            (PLNIntensionalWorldModel.InheritanceQueryBuilder.extensionalEvidence
+              (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+              Wpat0 enc a b)
+            (PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalAssocEvidence
+              (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+              Wpat0 enc a b) := hW0
+      _ =
+          combine2
+            (PLNIntensionalWorldModel.InheritanceQueryBuilder.extensionalEvidence
+              (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+              Wpat1 enc a b)
+            (PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalAssocEvidence
+              (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+              Wpat1 enc a b) := by
+            simp [hExt, hAssoc]
+      _ =
+          PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence
+            (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+            Wpat1 enc a b := hW1.symm
+  have hMixedNe :
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+        Wpat0 enc a b
+      ≠
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
+        Wpat1 enc a b := by
+    intro hEq
+    have h01 :
+        (scoreToEvidenceNNReal 3 + scoreToEvidenceNNReal 2) + scoreToEvidenceNNReal 0 =
+          (scoreToEvidenceNNReal 3 + scoreToEvidenceNNReal 2) + scoreToEvidenceNNReal 1 := by
+      simpa [Wpat0, Wpat1, constScore, a, b,
+        PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence,
+        PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedQ, enc] using hEq
+    have hPosEq : (2 + 3 : ENNReal) = 1 + (2 + 3) := by
+      simpa [scoreToEvidenceNNReal, Evidence.hplus_def, add_assoc, add_left_comm, add_comm] using
+        congrArg EvidenceQuantale.Evidence.pos h01
+    have hPosNe : (2 + 3 : ENNReal) ≠ 1 + (2 + 3) := by
+      norm_num
+    exact hPosNe hPosEq
+  exact hMixedNe hMixedEq
+
 /-- End-to-end Chapter-12 ASSOC+PAT theorem:
 Bayes-normal selector, lower threshold, concrete semantic model. -/
 theorem end_to_end_assocPat_bayesNormal_lower :

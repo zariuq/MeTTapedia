@@ -3,6 +3,7 @@ import MeTTailCore
 namespace Algorithms.MeTTa.Simple
 
 open MeTTailCore.MeTTaIL.Syntax
+open MeTTailCore.MeTTaIL.Match
 open MeTTailCore.MeTTaIL.Engine
 open MeTTailCore.MeTTaIL.Profile
 
@@ -172,6 +173,19 @@ private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
       match out with
       | some b => [[patternOfBool b]]
       | none => []
+  | "xor", xs =>
+      let bs := xs.map fun x =>
+        match x with
+        | .apply "True" [] => some true
+        | .apply "true" [] => some true
+        | .apply "False" [] => some false
+        | .apply "false" [] => some false
+        | _ => none
+      if bs.all Option.isSome then
+        let trueCount := (bs.filter (fun b => b == some true)).length
+        [[patternOfBool (trueCount % 2 = 1)]]
+      else
+        []
   | "append", [lhs, rhs] =>
       [[MeTTailCore.MeTTaIL.Match.tupleOfElems
           (MeTTailCore.MeTTaIL.Match.tupleElems lhs ++
@@ -215,13 +229,14 @@ private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
       match numericOfPattern? lhs, numericOfPattern? rhs with
       | some a, some b => [[patternOfBool (Float.abs (a - b) > numericEqTol)]]
       | _, _ => [[patternOfBool (!(decide (lhs = rhs)))]]
-  | "+", args =>
-      match args.mapM intOfPattern? with
+  | "+", x :: y :: rest =>
+      match (x :: y :: rest).mapM intOfPattern? with
       | some ns => [[patternOfInt (ns.foldl (fun acc n => acc + n) 0)]]
       | none =>
-          match args.mapM numericOfPattern? with
+          match (x :: y :: rest).mapM numericOfPattern? with
           | some ns => [[patternOfFloat (ns.foldl (fun acc n => acc + n) 0.0)]]
           | none => []
+  | "+", _ => []
   | "-", [] => []
   | "-", [x] =>
       match intOfPattern? x with
@@ -239,13 +254,14 @@ private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
           | some n0, some rest =>
               [[patternOfFloat (rest.foldl (fun acc n => acc - n) n0)]]
           | _, _ => []
-  | "*", args =>
-      match args.mapM intOfPattern? with
+  | "*", x :: y :: rest =>
+      match (x :: y :: rest).mapM intOfPattern? with
       | some ns => [[patternOfInt (ns.foldl (fun acc n => acc * n) 1)]]
       | none =>
-          match args.mapM numericOfPattern? with
+          match (x :: y :: rest).mapM numericOfPattern? with
           | some ns => [[patternOfFloat (ns.foldl (fun acc n => acc * n) 1.0)]]
           | none => []
+  | "*", _ => []
   | "/", [lhs, rhs] =>
       match intOfPattern? lhs, intOfPattern? rhs with
       | some a, some b =>
@@ -332,8 +348,7 @@ private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
       | some n => [[patternOfBool (!Float.isNaN n && !Float.isFinite n)]]
       | none => []
   | "cons", [head, tail] =>
-      [[MeTTailCore.MeTTaIL.Match.tupleOfElems
-          (head :: MeTTailCore.MeTTaIL.Match.tupleElems tail)]]
+      [[tupleOfElems (head :: tupleElems tail)]]
   | "min-atom", [xs] =>
       match intListOfPattern? xs with
       | none => []

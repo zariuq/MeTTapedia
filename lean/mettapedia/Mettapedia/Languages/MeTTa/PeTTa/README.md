@@ -21,6 +21,21 @@ lake build Mettapedia.Languages.MeTTa.PeTTa
 
 ## Modules
 
+### 3-layer spec pack (audit-first)
+
+This PeTTa formalization is organized as a 3-layer spec pack:
+
+1. **Pure declarative core**: `PeTTaEval` / `PureDecl`.
+2. **Stateful declarative core**: `PeTTaCmd` / `CoreDecl`.
+3. **Operational minimal-step layer**: `MeTTaStep`.
+
+Bridge theorem anchors:
+- `pureDecl_iff_pettaEval` ([DeclarativeSpec.lean](DeclarativeSpec.lean))
+- `coreDecl_iff_pettaCmd` ([DeclarativeSpec.lean](DeclarativeSpec.lean))
+- `evalStep_implies_pettaEval` ([MinimalInstructions.lean](MinimalInstructions.lean))
+- `translatePredicate_query_to_pettaEval_match` ([DeclarativeSpec.lean](DeclarativeSpec.lean))
+- `catch_fallback_to_pettaEval` ([DeclarativeSpec.lean](DeclarativeSpec.lean))
+
 ### Core evaluation
 
 | Module | What it does |
@@ -51,6 +66,17 @@ lake build Mettapedia.Languages.MeTTa.PeTTa
 | [GroundedOracle.lean](GroundedOracle.lean) | Grounded oracle interface for built-in operations |
 | [OSLFInstance.lean](OSLFInstance.lean) | OSLF language instance with Galois connection and Rust export |
 | [GSLTVertex.lean](GSLTVertex.lean) | GSLT forward fiber for categorical integration |
+
+## Testing
+
+Two complementary levels of validation:
+
+- **Lean theorem-level**: 242 proven ISO fixture theorems + SWI parity checks.
+  See [Prolog layer](../../../Logic/Prolog) and [conformance harness](../../../../scripts/prolog).
+- **Runtime unit suite**: 5 files, 69 assertions testing the concrete PeTTa
+  interpreter on rewrite dispatch, function-head matching, arithmetic/control,
+  superposition/collapse, and atomspace operations.
+  Run: `cd hyperon/PeTTa && ./unit/run_petta_unit_69.sh`
 
 ## Related
 

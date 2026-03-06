@@ -2,16 +2,18 @@ import Mettapedia.OSLF.NativeType.CodomainFibration
 import Mettapedia.OSLF.Framework.ToposTOGLBridge
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.AssumptionNecessity
+import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 
 /-!
 # Native Type Theory Strict Claim Tracker
 
-This tracker is keyed to the claim structure in:
+This tracker is keyed to endpoint-claim anchors in:
 `/home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf`.
 
-It is intentionally stricter than the OSLF-facing parity tracker: anything not
-fully formalized as a theorem-level endpoint is marked unresolved.
-This prevents accidental "full NTT parity" overclaims.
+It tracks theorem-level endpoint anchors only. Semantic adequacy of the
+operational modal route is tracked separately in canonical bridge modules
+(`ModalSubobjectBridge`, `OSLFNTTWMBridge`); endpoint closure here must not be
+read as "all semantic layers are closed."
 -/
 
 namespace Mettapedia.OSLF.Framework.NTTClaimTracker
@@ -32,7 +34,7 @@ structure NTTClaim where
   status : NTTClaimStatus
   deriving DecidableEq, Repr
 
-/-- Strict NTT claim surface (paper keyed). -/
+/-- Strict NTT endpoint-claim surface (paper keyed). -/
 def nttClaimList : List NTTClaim :=
   [ ⟨"Def 11", "Predicate fibration piOmega over the base category",
       "CategoryBridge.predFibration / CategoryBridge.oslf_fibration", .proven⟩
@@ -50,17 +52,12 @@ def nttClaimList : List NTTClaim :=
       "NativeType.imageComprehensionAdjunction (with iff_characterization) / imageComprehension_iff", .proven⟩
   , ⟨"Thm 23", "Internal language functor L : Topos -> HDT_Sigma + functorial laws",
       "NativeType.thm23_internalLanguagePackage / thm23_functorialLaws", .proven⟩
-  , ⟨"Sec 5", "Theory morphism preservation for Pi/Omega translation",
-      "TheoryMorphism.piOmega_translation_endpoint", .proven⟩
-  , ⟨"Sec 5", "Colax Pi/Prop translation rule set",
-      "TheoryMorphism.piProp_colax_rules", .proven⟩
-  , ⟨"Sec 5", "Pi/Sigma package under explicit nonempty-family guard",
-      -- The nonempty guard is an explicit hypothesis, not a hidden axiom.
-      -- Its necessity is proven by `AssumptionNecessity.types_nonempty_necessary_for_piSigma`:
-      -- that theorem exhibits a Frame where sInf ∅ ≤ sSup ∅ fails, showing the guard
-      -- cannot be dropped.  The package is thus fully proven under an explicit,
-      -- provably-necessary hypothesis.
-      "ToposTOGLBridge.topos_full_internal_logic_bridge_package (Pi/Sigma clause)",
+  , ⟨"Sec 5", "Theory morphism preservation for Pi/Sigma/Omega translation",
+      "TheoryMorphism.piSigmaOmegaProp_translation_endpoint", .proven⟩
+  , ⟨"Sec 5", "Colax Pi/Sigma/Prop translation rule set",
+      "TheoryMorphism.piSigmaProp_colax_rules", .proven⟩
+  , ⟨"Sec 5", "Representable Pi/Sigma transport package (rule-pack-first endpoint; Prop-12 wrappers for compatibility)",
+      "ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_rulePack / ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_rulePack / ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_prop12 / ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_prop12_pack / OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_goal / OSLFNTTWMCanonicalClosure.canonical_prop12_transport_pack_and_fixpoint_endpoint_of_goal / OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal / OSLFNTTWMCanonicalClosure.canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal / OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal / OSLFNTTWMCanonicalClosure.canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal",
       .proven⟩
   , ⟨"Sec 5", "Necessity audit for nonempty-family guard in Pi/Sigma package",
       "AssumptionNecessity.types_nonempty_necessary_for_piSigma", .proven⟩
@@ -79,22 +76,20 @@ def nttRemaining : List NTTClaim :=
 def nttRemainingCount : Nat :=
   nttRemaining.length
 
-/-- No unresolved NTT claims remain. -/
+/-- No unresolved endpoint claims remain in this tracker. -/
 theorem nttRemaining_empty : nttRemaining = [] := by
   decide
 
-/-- Strict NTT unresolved count is zero. -/
+/-- Endpoint unresolved count is zero for this tracker surface. -/
 theorem nttRemainingCount_zero : nttRemainingCount = 0 := by
   decide
 
-/-- Resolved strict NTT claims currently classified as `proven`.
-    All 12 claims are now proven; the Pi/Sigma guard is an explicit proven-necessary
-    hypothesis (see `AssumptionNecessity.types_nonempty_necessary_for_piSigma`). -/
+/-- Resolved endpoint claims currently classified as `proven`.
+    This is an endpoint-surface count only. -/
 theorem provenCount_eq : countByStatus .proven = 12 := by
   decide
 
-/-- No claims remain `assumptionScoped`; the Pi/Sigma claim was reclassified to
-    `proven` once the necessity of the nonempty guard was established. -/
+/-- No strict endpoint remains `assumptionScoped` in this tracker. -/
 theorem assumptionScopedCount_eq : countByStatus .assumptionScoped = 0 := by
   decide
 
@@ -106,7 +101,7 @@ theorem partialCount_eq : countByStatus .partiallyFormalized = 0 := by
 theorem missingCount_eq : countByStatus .notFormalized = 0 := by
   decide
 
-/-- Full NTT parity is closed. -/
+/-- Endpoint parity surface in this tracker is closed. -/
 theorem fullNTTParity_closed : nttRemainingCount = 0 :=
   nttRemainingCount_zero
 
@@ -115,13 +110,26 @@ theorem fullNTTParity_closed : nttRemainingCount = 0 :=
 #check @Mettapedia.OSLF.NativeType.NatType
 #check @Mettapedia.OSLF.Framework.CategoryBridge.predFibration
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_full_internal_logic_bridge_package
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_rulePack
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_rulePack
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_prop12
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_prop12_pack
 #check @Mettapedia.OSLF.NativeType.TheoryMorphism.piOmega_translation_endpoint
+#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piSigmaOmegaProp_translation_endpoint
 #check @Mettapedia.OSLF.NativeType.TheoryMorphism.piProp_colax_rules
+#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piSigmaProp_colax_rules
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.types_nonempty_necessary_for_piSigma
 
 -- NTT endpoints (CodomainFibration.lean)
 #check @Mettapedia.OSLF.NativeType.prop12_package
 #check @Mettapedia.OSLF.NativeType.prop12_beckChevalley
+#check @Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
+#check @Mettapedia.OSLF.NativeType.prop12_piEta_presheaf
+#check @Mettapedia.OSLF.NativeType.prop12_sigmaEta_presheaf
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.RepresentablePiSigmaTransportPack
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_patternPred_piSigma_transport_pack_via_rulePack
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_patternPred_piSigma_transport_pack_via_prop12
+#check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_patternPred_piSigma_transport_via_rulePack
 #check @Mettapedia.OSLF.NativeType.prop14_cosmicFibration
 #check @Mettapedia.OSLF.NativeType.prop17_reification
 #check @Mettapedia.OSLF.NativeType.def21_codomainFibration

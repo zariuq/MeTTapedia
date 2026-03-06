@@ -1,4 +1,5 @@
 import Algorithms.MeTTa.Simple.Session
+import Algorithms.MeTTa.Simple.RuntimeProfile
 import Algorithms.MeTTa.Simple.Semantics.ImportOps
 import Algorithms.MeTTa.LookupPlans
 
@@ -30,6 +31,26 @@ private def emptyBundle : SpecBundle := {
 
 private def emptySession : Session :=
   Session.new emptyBundle
+
+private def sessionForProfile (profile : RuntimeProfile) : Session :=
+  Session.withAssertionPolicy
+    (Session.withSyntax emptySession profile.syntaxSpec)
+    profile.assertionPolicy
+
+private def parseEnvBool? (raw : String) : Option Bool :=
+  let v := raw.trimAscii.toString.toLower
+  if v.isEmpty then none
+  else if v = "1" || v = "true" || v = "yes" || v = "on" then some true
+  else if v = "0" || v = "false" || v = "no" || v = "off" then some false
+  else none
+
+private def applyCompiledIndexModeFromEnv (s : Session) : IO Session := do
+  match (← IO.getEnv "SIMPLE_METTA_USE_COMPILED_INDEXES") with
+  | some raw =>
+      match parseEnvBool? raw with
+      | some enabled => pure (Session.withCompiledIndexes s enabled)
+      | none => pure s
+  | none => pure s
 
 private def renderPattern (p : Pattern) : String :=
   reprStr p
@@ -550,11 +571,237 @@ private def collectSiblingModuleSources (path : System.FilePath) : IO (List (Str
     acc := insertModuleSource acc base txt
   pure acc
 
-private def runScriptFile (path : System.FilePath) : IO (Session × List (Nat × List Pattern)) := do
+private def collectModuleSourcesFromDir (dir : System.FilePath) (recursive : Bool := false) :
+    IO (List (String × String)) := do
+  if !(← dir.pathExists) then
+    return []
+  let nodes ← System.FilePath.walkDir dir
+  let entries :=
+    nodes.toList.filter fun p =>
+      let extOk :=
+        match p.extension with
+        | some ext => ext = "metta"
+        | none => false
+      if !extOk then
+        false
+      else if recursive then
+        true
+      else
+        p.parent == some dir
+  let mut acc : List (String × String) := []
+  for entry in entries do
+    let txt ← IO.FS.readFile entry
+    let base := basenameOfPathString (toString entry)
+    let stem := Algorithms.MeTTa.Simple.Semantics.ImportOps.stripMettaExt base
+    acc := insertModuleSource acc stem txt
+    acc := insertModuleSource acc base txt
+  pure acc
+
+private def mergeModuleSources (base extra : List (String × String)) : List (String × String) :=
+  extra.foldl
+    (fun acc kv => insertModuleSource acc kv.1 kv.2)
+    base
+
+private def stringTokenValue? : Pattern → Option String
+  | .apply tok [] =>
+      let raw := Algorithms.MeTTa.Simple.Semantics.ImportOps.unquoteToken tok
+      let v := raw.trimAscii.toString
+      if v.isEmpty then none else some v
+  | _ => none
+
+private def gitImportSpecOfStmt? (stmt : Session.SyntaxStmt) : Option (String × Option String) :=
+  match stmt with
+  | .eval (.apply "git-import!" [url]) =>
+      match stringTokenValue? url with
+      | some u => some (u, none)
+      | none => none
+  | .eval (.apply "git-import!" [url, build]) =>
+      match stringTokenValue? url with
+      | some u => some (u, stringTokenValue? build)
+      | none => none
+  | _ => none
+
+private def dedupGitSpecs (xs : List (String × Option String)) : List (String × Option String) :=
+  (xs.foldl
+    (fun acc x => if acc.contains x then acc else x :: acc)
+    []).reverse
+
+private def stripSuffix (s suff : String) : String :=
+  if s.endsWith suff then
+    (s.take (s.length - suff.length)).toString
+  else
+    s
+
+private def repoNameFromGitUrl (url : String) : String :=
+  let slash := (url.splitOn "/").getLastD url
+  let colon := (slash.splitOn ":").getLastD slash
+  stripSuffix colon ".git"
+
+private def collectGitImportSpecs (text : String) : List (String × Option String) :=
+  match Session.parseProgramWith MeTTailCore.MeTTaSyntax.petta text with
+  | .error _ => []
+  | .ok stmts =>
+      dedupGitSpecs <|
+        stmts.foldl
+          (fun acc (_lineNo, stmt) =>
+            match gitImportSpecOfStmt? stmt with
+            | some spec => spec :: acc
+            | none => acc)
+          []
+
+private def ensureGitRepoCached (cacheDir : System.FilePath)
+    (url : String) (buildCmd? : Option String) : IO (Option System.FilePath) := do
+  let repo := repoNameFromGitUrl url
+  if repo.isEmpty then
+    return none
+  IO.FS.createDirAll cacheDir
+  let localDir := cacheDir / repo
+  if !(← localDir.pathExists) then
+    let cloneOut ← IO.Process.output
+      { cmd := "git"
+        args := #["clone", "--depth", "1", url, toString localDir] }
+    if cloneOut.exitCode ≠ 0 then
+      return none
+    match buildCmd? with
+    | some cmd =>
+        let c := cmd.trimAscii.toString
+        if !c.isEmpty then
+          let _buildOut ← IO.Process.output
+            { cmd := "sh"
+              args := #["-c", c]
+              cwd := some localDir }
+          pure ()
+        else
+          pure ()
+    | none => pure ()
+  return some localDir
+
+private def collectGitImportedModuleSources (path : System.FilePath) (text : String) :
+    IO (List (String × String)) := do
+  let specs := collectGitImportSpecs text
+  if specs.isEmpty then
+    return []
+  let cacheDir := (path.parent.getD (System.FilePath.mk ".")) / ".git_import_cache"
+  let mut acc : List (String × String) := []
+  for (url, buildCmd?) in specs do
+    match (← ensureGitRepoCached cacheDir url buildCmd?) with
+    | none => pure ()
+    | some dir =>
+        let srcs ← collectModuleSourcesFromDir dir true
+        acc := mergeModuleSources acc srcs
+  pure acc
+
+private def collectDefaultPeTTaLibrarySources : IO (List (String × String)) := do
+  let libDir :=
+    match (← IO.getEnv "PETTA_LIB_DIR") with
+    | some p => System.FilePath.mk p
+    | none => System.FilePath.mk "/home/zar/claude/hyperon/PeTTa/lib"
+  collectModuleSourcesFromDir libDir false
+
+private def loadDefaultHELibrary (s : Session) : IO Session := do
+  let libPath :=
+    match (← IO.getEnv "HE_LIB_FILE") with
+    | some p => System.FilePath.mk p
+    | none => System.FilePath.mk "/home/zar/claude/hyperon/PeTTa/lib/lib_he.metta"
+  if !(← libPath.pathExists) then
+    pure s
+  else
+    let libText ← IO.FS.readFile libPath
+    pure (Session.loadText s libText)
+
+private def runScriptFileWith
+    (baseSession : Session)
+    (path : System.FilePath)
+    (includeDefaultPeTTaLib : Bool := true)
+    (includeDefaultHELib : Bool := false) :
+    IO (Session × List (Nat × List Pattern)) := do
   let text ← IO.FS.readFile path
-  let moduleSources ← collectSiblingModuleSources path
-  let sess0 := Session.withModuleSources emptySession moduleSources
-  pure (Session.runText sess0 text)
+  let siblingSources ← collectSiblingModuleSources path
+  let libSources ←
+    if includeDefaultPeTTaLib then
+      collectDefaultPeTTaLibrarySources
+    else
+      pure []
+  let gitSources ← collectGitImportedModuleSources path text
+  let moduleSources := mergeModuleSources (mergeModuleSources siblingSources libSources) gitSources
+  let baseSession' ← applyCompiledIndexModeFromEnv baseSession
+  let sess0 := Session.withModuleSources baseSession' moduleSources
+  let sess1 ←
+    if includeDefaultHELib then
+      loadDefaultHELibrary sess0
+    else
+      pure sess0
+  pure (Session.runText sess1 text)
+
+private def runScriptFile (path : System.FilePath) : IO (Session × List (Nat × List Pattern)) :=
+  runScriptFileWith emptySession path true
+
+private def runScriptFileHE (path : System.FilePath) : IO (Session × List (Nat × List Pattern)) :=
+  runScriptFileWith (sessionForProfile runtimeProfileHE) path false true
+
+private structure StrictFileRun where
+  errors : Nat
+  timedOut : Bool := false
+  execFailed : Bool := false
+deriving Repr
+
+private structure StrictModeRun where
+  exitCode : UInt32
+  errors : Nat
+  timedOut : Bool := false
+  execFailed : Bool := false
+  stdout : String := ""
+deriving Repr
+
+private def strictFileTimeoutSec : IO Nat := do
+  match (← IO.getEnv "SIMPLE_METTA_FILE_TIMEOUT_SEC") with
+  | some raw =>
+      match raw.toNat? with
+      | some n => pure n
+      | none => pure 30
+  | none => pure 30
+
+private def runStrictFileWithMode
+    (path : System.FilePath)
+    (timeoutSec : Nat)
+    (compiledMode? : Option Bool := none) : IO StrictModeRun := do
+  if timeoutSec = 0 then
+    let baseSession :=
+      match compiledMode? with
+      | some enabled => Session.withCompiledIndexes emptySession enabled
+      | none => emptySession
+    let (sess, queries) ← runScriptFileWith baseSession path true false
+    let diag := Session.diagnostics sess
+    return { exitCode := if diag.errors = 0 then 0 else 2
+             errors := diag.errors
+             stdout := renderRunJson queries diag }
+  else
+    let appPath ← IO.appPath
+    let envMods :=
+      match compiledMode? with
+      | some enabled =>
+          #[("SIMPLE_METTA_USE_COMPILED_INDEXES", some (if enabled then "1" else "0"))]
+      | none => #[]
+    let proc ← IO.Process.output
+      { cmd := "timeout"
+        args := #[
+          "--kill-after=2s",
+          s!"{timeoutSec}s",
+          toString appPath,
+          "run",
+          "--json",
+          toString path
+        ]
+        env := envMods }
+    match proc.exitCode with
+    | 0 => return { exitCode := 0, errors := 0, stdout := proc.stdout }
+    | 2 => return { exitCode := 2, errors := 1, stdout := proc.stdout }
+    | 124 => return { exitCode := 124, errors := 1, timedOut := true, stdout := proc.stdout }
+    | c => return { exitCode := c, errors := 1, execFailed := true, stdout := proc.stdout }
+
+private def runStrictFile (path : System.FilePath) (timeoutSec : Nat) : IO StrictFileRun := do
+  let res ← runStrictFileWithMode path timeoutSec none
+  return { errors := res.errors, timedOut := res.timedOut, execFailed := res.execFailed }
 
 private def printRunHuman (path : System.FilePath) (queries : List (Nat × List Pattern))
     (diag : Diagnostics) : IO Unit := do
@@ -567,14 +814,23 @@ private def printRunHuman (path : System.FilePath) (queries : List (Nat × List 
     for m in diag.messages do
       IO.println s!"  - {m}"
 
-private def runFileCommand (path : System.FilePath) (asJson : Bool) : IO UInt32 := do
-  let (sess, queries) ← runScriptFile path
+private def runFileCommandWith
+    (runner : System.FilePath → IO (Session × List (Nat × List Pattern)))
+    (path : System.FilePath)
+    (asJson : Bool) : IO UInt32 := do
+  let (sess, queries) ← runner path
   let diag := Session.diagnostics sess
   if asJson then
     IO.println (renderRunJson queries diag)
   else
     printRunHuman path queries diag
   pure (if diag.errors = 0 then 0 else 2)
+
+private def runFileCommand (path : System.FilePath) (asJson : Bool) : IO UInt32 :=
+  runFileCommandWith runScriptFile path asJson
+
+private def runFileCommandHE (path : System.FilePath) (asJson : Bool) : IO UInt32 :=
+  runFileCommandWith runScriptFileHE path asJson
 
 private def collectMettaFiles (root : System.FilePath) : IO (List System.FilePath) := do
   let nodes ← System.FilePath.walkDir root
@@ -585,6 +841,39 @@ private def collectMettaFiles (root : System.FilePath) : IO (List System.FilePat
 
 private def sortFiles (files : List System.FilePath) : List System.FilePath :=
   (files.toArray.qsort (fun a b => toString a < toString b)).toList
+
+private def runStrictDiff (root : System.FilePath) : IO UInt32 := do
+  let timeoutSec ← strictFileTimeoutSec
+  IO.println s!"strict diff per-file timeout (sec): {timeoutSec}"
+  let files ← collectMettaFiles root
+  let files := sortFiles files
+  if files.isEmpty then
+    IO.println s!"no .metta files found under: {root}"
+    return 1
+  let mut ok : Nat := 0
+  let mut drift : Nat := 0
+  for f in files do
+    let refRes ← runStrictFileWithMode f timeoutSec (some false)
+    let cmpRes ← runStrictFileWithMode f timeoutSec (some true)
+    let same :=
+      if refRes.timedOut || cmpRes.timedOut then
+        refRes.timedOut == cmpRes.timedOut
+      else if refRes.execFailed || cmpRes.execFailed then
+        refRes.execFailed == cmpRes.execFailed &&
+          refRes.exitCode == cmpRes.exitCode
+      else
+        refRes.exitCode == cmpRes.exitCode &&
+          refRes.stdout.trimAscii.toString == cmpRes.stdout.trimAscii.toString
+    if same then
+      ok := ok + 1
+      IO.println s!"[ok] {f}"
+    else
+      drift := drift + 1
+      IO.println s!"[drift] {f}"
+      IO.println s!"  ref: exit={refRes.exitCode} timeout={refRes.timedOut} execFailed={refRes.execFailed}"
+      IO.println s!"  cmp: exit={cmpRes.exitCode} timeout={cmpRes.timedOut} execFailed={cmpRes.execFailed}"
+  IO.println s!"strict diff summary: ok={ok} drift={drift} total={files.length}"
+  pure (if drift = 0 then 0 else 3)
 
 private def nthNat (xs : List Nat) (idx : Nat) : Nat :=
   xs.getD idx 0
@@ -710,6 +999,8 @@ private def runStrictBenchmark (root : System.FilePath)
     (writeFeatureDir? : Option System.FilePath := none)
     (featureGateExpected? : Option System.FilePath := none)
     (gateOnly : Bool := false) : IO UInt32 := do
+  let timeoutSec ← strictFileTimeoutSec
+  IO.println s!"strict benchmark per-file timeout (sec): {timeoutSec}"
   let files ← collectMettaFiles root
   let files := sortFiles files
   if files.isEmpty then
@@ -737,10 +1028,9 @@ private def runStrictBenchmark (root : System.FilePath)
     let src ← IO.FS.readFile f
     let (hasBool, hasArith, hasMatch) := classifyFeatures (toString f) src
     let t0 ← IO.monoMsNow
-    let (sess, _queries) ← runScriptFile f
+    let runRes ← runStrictFile f timeoutSec
     let t1 ← IO.monoMsNow
     let elapsed := t1 - t0
-    let diag := Session.diagnostics sess
     sumMs := sumMs + elapsed
     times := elapsed :: times
     if hasBool then
@@ -752,7 +1042,7 @@ private def runStrictBenchmark (root : System.FilePath)
     if hasMatch then
       matchTotal := matchTotal + 1
       matchAll := f :: matchAll
-    if diag.errors = 0 then
+    if runRes.errors = 0 then
       ok := ok + 1
       passing := f :: passing
       if hasBool then
@@ -768,7 +1058,12 @@ private def runStrictBenchmark (root : System.FilePath)
     else
       failed := failed + 1
       failing := f :: failing
-      IO.println s!"[fail] {f} errors={diag.errors} ms={elapsed}"
+      if runRes.timedOut then
+        IO.println s!"[timeout] {f} ms={elapsed}"
+      else if runRes.execFailed then
+        IO.println s!"[fail-exec] {f} ms={elapsed}"
+      else
+        IO.println s!"[fail] {f} errors={runRes.errors} ms={elapsed}"
   match writeSplitDir? with
   | some outDir =>
       writeSplitFiles outDir root passing.reverse failing.reverse
@@ -818,7 +1113,103 @@ private def runStrictBenchmark (root : System.FilePath)
   else
     pure (if failed = 0 then 0 else 2)
 
-private def runCorpus (root : System.FilePath) : IO UInt32 := do
+private def pettaPerfSubset : List String :=
+  [ "ifcasenondet.metta"
+  , "state.metta"
+  , "streamops.metta"
+  , "spaces3.metta"
+  , "unify_eval_demo.metta"
+  , "mutex_and_transaction.metta"
+  ]
+
+private def runLeanPerfOnce (path : System.FilePath) : IO (Nat × Bool) := do
+  let t0 ← IO.monoMsNow
+  let (sess, _queries) ← runScriptFile path
+  let t1 ← IO.monoMsNow
+  let ok := (Session.diagnostics sess).errors = 0
+  pure (t1 - t0, ok)
+
+private def runPeTTaPerfOnce (runScript path : System.FilePath) : IO (Nat × Bool) := do
+  let t0 ← IO.monoMsNow
+  let out ← IO.Process.output
+    { cmd := "sh"
+      args := #[toString runScript, toString path, "--silent"] }
+  let t1 ← IO.monoMsNow
+  pure (t1 - t0, out.exitCode = 0)
+
+private def runPeTTaPerf (examplesRoot : System.FilePath) (repeats : Nat := 3) : IO UInt32 := do
+  let reps := Nat.max repeats 1
+  let runScript := (examplesRoot.parent.getD examplesRoot) / "run.sh"
+  if !(← runScript.pathExists) then
+    IO.println s!"missing PeTTa runner: {runScript}"
+    return 1
+  IO.println s!"petta-perf subset size={pettaPerfSubset.length} repeats={reps} target_ratio<=2.5"
+  let mut missing : Nat := 0
+  let mut leanFailed : Nat := 0
+  let mut pettaFailed : Nat := 0
+  let mut ratioSum : Float := 0.0
+  let mut ratioCount : Nat := 0
+  for rel in pettaPerfSubset do
+    let file := examplesRoot / rel
+    if !(← file.pathExists) then
+      missing := missing + 1
+      IO.println s!"[missing] {file}"
+    else
+      let mut leanTimes : List Nat := []
+      let mut pettaTimes : List Nat := []
+      let mut leanOkAll := true
+      let mut pettaOkAll := true
+      for _ in List.range reps do
+        let (leanMs, leanOk) ← runLeanPerfOnce file
+        let (pettaMs, pettaOk) ← runPeTTaPerfOnce runScript file
+        leanTimes := leanMs :: leanTimes
+        pettaTimes := pettaMs :: pettaTimes
+        if !leanOk then leanOkAll := false
+        if !pettaOk then pettaOkAll := false
+      let leanMed :=
+        let total := leanTimes.foldl (init := 0) (· + ·)
+        total / leanTimes.length
+      let pettaMed :=
+        let total := pettaTimes.foldl (init := 0) (· + ·)
+        total / pettaTimes.length
+      let ratio :=
+        Float.ofNat leanMed / Float.ofNat (Nat.max pettaMed 1)
+      ratioSum := ratioSum + ratio
+      ratioCount := ratioCount + 1
+      if !leanOkAll then leanFailed := leanFailed + 1
+      if !pettaOkAll then pettaFailed := pettaFailed + 1
+      IO.println s!"[{rel}] lean_avg_ms={leanMed} petta_avg_ms={pettaMed} ratio={ratio} lean_ok={leanOkAll} petta_ok={pettaOkAll}"
+  let avgRatio :=
+    if ratioCount = 0 then
+      0.0
+    else
+      ratioSum / Float.ofNat ratioCount
+  IO.println s!"petta-perf summary: files={pettaPerfSubset.length} measured={ratioCount} missing={missing} lean_failed={leanFailed} petta_failed={pettaFailed} avg_ratio={avgRatio}"
+  let allOk := missing = 0 && leanFailed = 0 && pettaFailed = 0
+  if !allOk then
+    pure 2
+  else
+    pure (if avgRatio <= 2.5 then 0 else 3)
+
+private def runPeTTaUnifiedVerify
+    (strictExpected : System.FilePath)
+    (strictRoot : System.FilePath)
+    (examplesRoot : System.FilePath)
+    (repeats : Nat := 3) : IO UInt32 := do
+  IO.println s!"verify-petta: strict-gate expected={strictExpected} root={strictRoot}"
+  let strictCode ← runStrictBenchmark strictRoot none none (some strictExpected) true
+  IO.println s!"verify-petta: strict-gate exit={strictCode}"
+  IO.println s!"verify-petta: petta-perf examples={examplesRoot} repeats={Nat.max repeats 1}"
+  let perfCode ← runPeTTaPerf examplesRoot repeats
+  IO.println s!"verify-petta: petta-perf exit={perfCode}"
+  let strictPass := strictCode == 0
+  let perfPass := perfCode == 0
+  IO.println s!"verify-petta summary: strict_pass={strictPass} perf_pass={perfPass}"
+  pure (if strictPass && perfPass then 0 else 2)
+
+private def runCorpusWith
+    (runner : System.FilePath → IO (Session × List (Nat × List Pattern)))
+    (root : System.FilePath) : IO UInt32 := do
   let files ← collectMettaFiles root
   if files.isEmpty then
     IO.println s!"no .metta files found under: {root}"
@@ -826,7 +1217,7 @@ private def runCorpus (root : System.FilePath) : IO UInt32 := do
   let mut ok : Nat := 0
   let mut failed : Nat := 0
   for f in files do
-    let (sess, _queries) ← runScriptFile f
+    let (sess, _queries) ← runner f
     let diag := Session.diagnostics sess
     if diag.errors = 0 then
       ok := ok + 1
@@ -836,6 +1227,9 @@ private def runCorpus (root : System.FilePath) : IO UInt32 := do
       IO.println s!"[fail] {f} errors={diag.errors}"
   IO.println s!"corpus summary: ok={ok} fail={failed} total={files.length}"
   pure (if failed = 0 then 0 else 2)
+
+private def runCorpus (root : System.FilePath) : IO UInt32 :=
+  runCorpusWith runScriptFile root
 
 private partial def replLoop (sess : Session) : IO UInt32 := do
   let out ← IO.getStdout
@@ -892,11 +1286,18 @@ private def usage : String :=
     [ "simpleMeTTa commands:"
     , "  run <file.metta>"
     , "  run --json <file.metta>"
+    , "  run --dialect <he|petta> <file.metta>"
+    , "  run --dialect <he|petta> --json <file.metta>"
+    , "  he-run <file.metta>"
+    , "  he-run --json <file.metta>"
     , "  test-corpus <path>"
     , "  strict-benchmark <path>"
+    , "  strict-diff <path>"
     , "  strict-benchmark --write-split <out-dir> <path>"
     , "  strict-benchmark --write-feature-buckets <out-dir> <path>"
     , "  strict-gate <expected-file> <path>"
+    , "  petta-perf <petta-examples-dir> [repeats]"
+    , "  verify-petta <strict-expected-file> <strict-root> <petta-examples-dir> [repeats]"
     , "  syntax-spec export <he|petta> <out-dir>"
     , "  syntax-spec export-all <out-dir>"
     , "  syntax-spec check <he|petta> <out-dir>"
@@ -912,53 +1313,99 @@ private def usage : String :=
     , "  lookup-plan check <he|petta> <out-dir>"
     , "  lookup-plan check-all <out-dir>"
     , "  repl"
+    , "  repl --dialect <he|petta>"
+    , "  he-repl"
     ]
 
 def mainImpl (args : List String) : IO UInt32 := do
-  match args with
-  | ["run", "--json", file] => runFileCommand file true
-  | ["run", file] => runFileCommand file false
-  | ["test-corpus", path] => runCorpus path
-  | ["strict-benchmark", path] => runStrictBenchmark path
-  | ["strict-benchmark", "--write-split", outDir, path] =>
-      runStrictBenchmark path (some outDir)
-  | ["strict-benchmark", "--write-feature-buckets", outDir, path] =>
-      runStrictBenchmark path none (some outDir)
-  | ["strict-gate", expected, path] =>
-      runStrictBenchmark path none none (some expected) true
-  | ["syntax-spec", "export", dialect, outDir] =>
-      exportSyntaxSpecCommand dialect outDir
-  | ["syntax-spec", "export-all", outDir] =>
-      exportAllSyntaxSpecsCommand outDir
-  | ["syntax-spec", "check", dialect, outDir] =>
-      checkSyntaxSpecCommand dialect outDir
-  | ["syntax-spec", "check-all", outDir] =>
-      checkAllSyntaxSpecsCommand outDir
-  | ["syntax-spec", "export-grammar", dialect, outDir] =>
-      exportGrammarSpecCommand dialect outDir
-  | ["syntax-spec", "export-grammar-all", outDir] =>
-      exportAllGrammarSpecsCommand outDir
-  | ["syntax-spec", "check-grammar", dialect, outDir] =>
-      checkGrammarSpecCommand dialect outDir
-  | ["syntax-spec", "check-grammar-all", outDir] =>
-      checkAllGrammarSpecsCommand outDir
-  | ["syntax-spec", "check-parser-drift", dialect, outDir] =>
-      checkParserDriftCommand dialect outDir
-  | ["syntax-spec", "check-parser-drift-all", outDir] =>
-      checkAllParserDriftCommand outDir
-  | ["lookup-plan", "export", dialect, outDir] =>
-      exportLookupPlanCommand dialect outDir
-  | ["lookup-plan", "export-all", outDir] =>
-      exportAllLookupPlansCommand outDir
-  | ["lookup-plan", "check", dialect, outDir] =>
-      checkLookupPlanCommand dialect outDir
-  | ["lookup-plan", "check-all", outDir] =>
-      checkAllLookupPlansCommand outDir
-  | ["repl"] => replLoop emptySession
-  | [file] => runFileCommand file false
-  | _ =>
-      IO.println usage
-      pure 1
+  match runDialectDispatch? args with
+  | some (profile, asJson, file) =>
+      runFileCommandWith
+        (fun p =>
+          runScriptFileWith
+            (sessionForProfile profile)
+            p
+            profile.includeDefaultPeTTaLibrary
+            (profile.dialect == "he"))
+        file asJson
+  | none =>
+      match replDialectDispatch? args with
+      | some profile =>
+          replLoop (sessionForProfile profile)
+      | none =>
+          match args with
+          | ["run", "--dialect", dialect, "--json", _file] =>
+              IO.println s!"unknown dialect: {dialect} (expected: he|petta)"
+              pure 1
+          | ["run", "--dialect", dialect, _file] =>
+              IO.println s!"unknown dialect: {dialect} (expected: he|petta)"
+              pure 1
+          | ["repl", "--dialect", dialect] =>
+              IO.println s!"unknown dialect: {dialect} (expected: he|petta)"
+              pure 1
+          | ["run", "--json", file] => runFileCommand file true
+          | ["run", file] => runFileCommand file false
+          | ["he-run", "--json", file] => runFileCommandHE file true
+          | ["he-run", file] => runFileCommandHE file false
+          | ["test-corpus", path] => runCorpus path
+          | ["strict-benchmark", path] => runStrictBenchmark path
+          | ["strict-diff", path] => runStrictDiff path
+          | ["strict-benchmark", "--write-split", outDir, path] =>
+              runStrictBenchmark path (some outDir)
+          | ["strict-benchmark", "--write-feature-buckets", outDir, path] =>
+              runStrictBenchmark path none (some outDir)
+          | ["strict-gate", expected, path] =>
+              runStrictBenchmark path none none (some expected) true
+          | ["petta-perf", examplesRoot] =>
+              runPeTTaPerf examplesRoot
+          | ["petta-perf", examplesRoot, repeatsRaw] =>
+              match repeatsRaw.toNat? with
+              | some n => runPeTTaPerf examplesRoot n
+              | none =>
+                  IO.println s!"invalid repeats value: {repeatsRaw}"
+                  pure 1
+          | ["verify-petta", strictExpected, strictRoot, examplesRoot] =>
+              runPeTTaUnifiedVerify strictExpected strictRoot examplesRoot
+          | ["verify-petta", strictExpected, strictRoot, examplesRoot, repeatsRaw] =>
+              match repeatsRaw.toNat? with
+              | some n => runPeTTaUnifiedVerify strictExpected strictRoot examplesRoot n
+              | none =>
+                  IO.println s!"invalid repeats value: {repeatsRaw}"
+                  pure 1
+          | ["syntax-spec", "export", dialect, outDir] =>
+              exportSyntaxSpecCommand dialect outDir
+          | ["syntax-spec", "export-all", outDir] =>
+              exportAllSyntaxSpecsCommand outDir
+          | ["syntax-spec", "check", dialect, outDir] =>
+              checkSyntaxSpecCommand dialect outDir
+          | ["syntax-spec", "check-all", outDir] =>
+              checkAllSyntaxSpecsCommand outDir
+          | ["syntax-spec", "export-grammar", dialect, outDir] =>
+              exportGrammarSpecCommand dialect outDir
+          | ["syntax-spec", "export-grammar-all", outDir] =>
+              exportAllGrammarSpecsCommand outDir
+          | ["syntax-spec", "check-grammar", dialect, outDir] =>
+              checkGrammarSpecCommand dialect outDir
+          | ["syntax-spec", "check-grammar-all", outDir] =>
+              checkAllGrammarSpecsCommand outDir
+          | ["syntax-spec", "check-parser-drift", dialect, outDir] =>
+              checkParserDriftCommand dialect outDir
+          | ["syntax-spec", "check-parser-drift-all", outDir] =>
+              checkAllParserDriftCommand outDir
+          | ["lookup-plan", "export", dialect, outDir] =>
+              exportLookupPlanCommand dialect outDir
+          | ["lookup-plan", "export-all", outDir] =>
+              exportAllLookupPlansCommand outDir
+          | ["lookup-plan", "check", dialect, outDir] =>
+              checkLookupPlanCommand dialect outDir
+          | ["lookup-plan", "check-all", outDir] =>
+              checkAllLookupPlansCommand outDir
+          | ["repl"] => replLoop emptySession
+          | ["he-repl"] => replLoop (sessionForProfile runtimeProfileHE)
+          | [file] => runFileCommand file false
+          | _ =>
+              IO.println usage
+              pure 1
 
 end Algorithms.MeTTa.Simple.Main
 

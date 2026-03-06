@@ -6,9 +6,9 @@ import Mettapedia.CategoryTheory.NativeTypeTheory
 import Mettapedia.CategoryTheory.PLNInstance
 
 /-!
-# MeTTaFull OSLF -> NTT Bridge
+# MeTTaFullLegacy OSLF -> NTT Bridge
 
-This module provides the direct evidence-to-NTT bridge for the MeTTaFull OSLF
+This module provides the direct evidence-to-NTT bridge for the MeTTaFullLegacy OSLF
 instance, parallel to the GF `OSLFToNTT` composition layer.
 -/
 
@@ -25,7 +25,9 @@ open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.CategoryTheory.NativeTypeTheory
 
-abbrev mettaFull : LanguageDef := Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull
+abbrev mettaFullLegacy : LanguageDef := Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFullLegacy
+/-- Compatibility alias retained for downstream imports during migration. -/
+abbrev mettaFull : LanguageDef := mettaFullLegacy
 
 /-! ## 1. Evidence -> NativeTypeTheory -/
 
@@ -52,7 +54,7 @@ variable {State : Type*}
 variable [Mettapedia.Logic.EvidenceClass.EvidenceType State]
 variable [Mettapedia.Logic.PLNWorldModel.WorldModel State Pattern]
 
-/-- Evidence semantics for MeTTaFull formulas from a world-model state. -/
+/-- Evidence semantics for MeTTaFullLegacy formulas from a world-model state. -/
 noncomputable def mettaSemE
     (relEnv : RelationEnv)
     (W : State)

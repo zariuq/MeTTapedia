@@ -4,7 +4,7 @@ import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.Languages.MeTTa.Core.Premises
 
 /-!
-# MeTTa Full LanguageDef (First Spec-Facing Slice)
+# MeTTa Full Legacy LanguageDef (First Spec-Facing Slice)
 
 This module provides a first `LanguageDef` client aimed at fuller MeTTa-style
 machine semantics:
@@ -25,9 +25,13 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
-/-- First full-oriented MeTTa machine language slice. -/
-def mettaFull : LanguageDef := {
-  name := "MeTTaFullState",
+/-- Legacy full-oriented MeTTa machine language slice.
+
+This model is retained as a backward-compatible legacy profile while the active
+runtime-facing targets move toward HE/PeTTa-aligned profiles.
+-/
+def mettaFullLegacy : LanguageDef := {
+  name := "MeTTaFullLegacyState",
   types := ["State", "Instr", "Atom", "Space"],
   terms := [
     { label := "State", category := "State",
@@ -305,13 +309,24 @@ def mettaFull : LanguageDef := {
   ]
 }
 
-/-- OSLF synthesis for the first full-oriented MeTTa language slice. -/
-def mettaFullOSLF := langOSLF mettaFull "State"
+/-- Compatibility alias retained for downstream imports during migration. -/
+abbrev mettaFull : LanguageDef := mettaFullLegacy
+
+/-- OSLF synthesis for the first full-legacy MeTTa language slice. -/
+def mettaFullLegacyOSLF := langOSLF mettaFullLegacy "State"
+
+/-- Compatibility alias retained for downstream imports during migration. -/
+abbrev mettaFullOSLF := mettaFullLegacyOSLF
 
 /-- Automatic modal Galois connection from the generic pipeline. -/
+theorem mettaFullLegacyGalois :
+    GaloisConnection (langDiamond mettaFullLegacy) (langBox mettaFullLegacy) :=
+  langGalois mettaFullLegacy
+
+/-- Compatibility alias retained for downstream imports during migration. -/
 theorem mettaFullGalois :
     GaloisConnection (langDiamond mettaFull) (langBox mettaFull) :=
-  langGalois mettaFull
+  mettaFullLegacyGalois
 
 private def aTrue : Pattern := .apply "ATrue" []
 private def aFalse : Pattern := .apply "AFalse" []
@@ -336,8 +351,11 @@ private def gBoolFalse : Pattern := .apply "GBoolFalse" []
 private def gStringCodes (codes : List String) : Pattern :=
   .apply "GStringCodes" [codes.foldr (fun tok acc => .apply "ACons" [.apply tok [], acc]) (.apply "ANil" [])]
 
-/-- Full-slice relation environment (Atomspace-backed eqnLookup + branches). -/
-def mettaFullRelEnv : RelationEnv := Mettapedia.Languages.MeTTa.Core.Premises.mettaFullRelEnv
+/-- Full-legacy relation environment (Atomspace-backed eqnLookup + branches). -/
+def mettaFullLegacyRelEnv : RelationEnv := Mettapedia.Languages.MeTTa.Core.Premises.mettaFullRelEnv
+
+/-- Compatibility alias retained for downstream imports during migration. -/
+abbrev mettaFullRelEnv : RelationEnv := mettaFullLegacyRelEnv
 
 -- Smoke check: one equation-application step from Eval(true).
 #eval! do

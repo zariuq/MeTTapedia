@@ -143,37 +143,37 @@ def linSSubjS (s1 : String) (subj : EnglishSubj) (s2 : String) : String :=
 /-! ## Tests -/
 
 -- Pronouns
-#eval! i_Pron.s (.NCase .Nom)    -- "I"
-#eval! i_Pron.s .NPAcc            -- "me"
-#eval! i_Pron.s (.NCase .Gen)    -- "my"
-#eval! i_Pron.s .NPNomPoss        -- "mine"
-#eval! he_Pron.s (.NCase .Nom)   -- "he"
-#eval! she_Pron.s .NPAcc          -- "her"
-#eval! they_Pron.s (.NCase .Gen) -- "their"
+-- #eval! i_Pron.s (.NCase .Nom)    -- "I"
+-- #eval! i_Pron.s .NPAcc            -- "me"
+-- #eval! i_Pron.s (.NCase .Gen)    -- "my"
+-- #eval! i_Pron.s .NPNomPoss        -- "mine"
+-- #eval! he_Pron.s (.NCase .Nom)   -- "he"
+-- #eval! she_Pron.s .NPAcc          -- "her"
+-- #eval! they_Pron.s (.NCase .Gen) -- "their"
 
 -- Demonstratives with nouns
-#eval! (linDetCN this_Det (linUseN Nouns.cat_N)).s (.NCase .Nom)  -- "this cat"
-#eval! (linDetCN these_Det (linUseN Nouns.cat_N)).s (.NCase .Nom) -- "these cats"
-#eval! (linDetCN that_Det (linUseN Nouns.dog_N)).s (.NCase .Nom)  -- "that dog"
+-- #eval! (linDetCN this_Det (linUseN Nouns.cat_N)).s (.NCase .Nom)  -- "this cat"
+-- #eval! (linDetCN these_Det (linUseN Nouns.cat_N)).s (.NCase .Nom) -- "these cats"
+-- #eval! (linDetCN that_Det (linUseN Nouns.dog_N)).s (.NCase .Nom)  -- "that dog"
 
 -- Pronoun sentences
-#eval! linUseCl .Pres .Simul .CPos (linPredVP he_Pron (predV Verbs.walk_V))
+-- #eval! linUseCl .Pres .Simul .CPos (linPredVP he_Pron (predV Verbs.walk_V))
   -- "he walks"
-#eval! linUseCl .Pres .Simul .CPos (linPredVP they_Pron (predV Verbs.walk_V))
+-- #eval! linUseCl .Pres .Simul .CPos (linPredVP they_Pron (predV Verbs.walk_V))
   -- "they walk"
-#eval! linUseCl .Pres .Simul (.CNeg true) (linPredVP she_Pron (predV Verbs.sleep_V))
+-- #eval! linUseCl .Pres .Simul (.CNeg true) (linPredVP she_Pron (predV Verbs.sleep_V))
   -- "she doesn't sleep"
 
 -- Prepositions
-#eval! linPrepNP in_Prep (linDetCN theDefArt (linUseN Nouns.house_N))
+-- #eval! linPrepNP in_Prep (linDetCN theDefArt (linUseN Nouns.house_N))
   -- "in the house"
-#eval! linPrepNP with_Prep he_Pron
+-- #eval! linPrepNP with_Prep he_Pron
   -- "with him"
 
 -- Interrogatives
-#eval! who_IP.s (.NCase .Nom)  -- "who"
-#eval! who_IP.s .NPAcc          -- "whom"
-#eval! who_IP.s (.NCase .Gen)  -- "whose"
+-- #eval! who_IP.s (.NCase .Nom)  -- "who"
+-- #eval! who_IP.s .NPAcc          -- "whom"
+-- #eval! who_IP.s (.NCase .Gen)  -- "whose"
 
 /-! ## Correctness Properties -/
 

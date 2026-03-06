@@ -33,8 +33,17 @@ structure Interface (σ : Type) where
   eval : σ → Pattern → σ × List Pattern
   applyBindings : Bindings → Pattern → Pattern
   normalizePattern : Pattern → Pattern
+  normalizeForSpaceMatch : Pattern → Pattern
   matchPattern : Pattern → Pattern → List Bindings
   dedupPatterns : List Pattern → List Pattern
+
+structure Preservation (I : Interface σ) (P : σ → Prop) where
+  eval_preserves :
+    ∀ {s : σ} {term : Pattern} {s' : σ} {out : List Pattern},
+      I.eval s term = (s', out) → P s → P s'
+  setBundle_preserves :
+    ∀ {s : σ} {bundle : SpecBundle},
+      P s → P (I.setBundle s bundle)
 
 private def dedupBindings (xs : List Bindings) : List Bindings :=
   (xs.foldl
@@ -103,17 +112,28 @@ partial def matchFactsAgainstSpace (I : Interface σ) (facts : List Pattern) : P
       (matchFactsAgainstSpace I facts lhs).flatMap fun bL =>
         (matchFactsAgainstSpace I facts rhs).filterMap fun bR =>
           mergeBindings bL bR
+  | .apply ctor [] =>
+      if ctor.startsWith "$" then
+        let name := (ctor.drop 1).toString
+        if name.isEmpty then
+          []
+        else
+          facts.filterMap fun fact =>
+            match I.normalizeForSpaceMatch fact with
+            | .apply head _ => some [(name, .apply head [])]
+            | _ => none
+      else
+        let patN := I.normalizeForSpaceMatch (I.normalizePattern (.apply ctor []))
+        facts.flatMap fun fact =>
+          I.matchPattern patN (I.normalizeForSpaceMatch fact)
   | pat =>
-      let patN := I.normalizePattern pat
+      let patN := I.normalizeForSpaceMatch (I.normalizePattern pat)
       match patN with
       | .fvar x =>
-          facts.filterMap fun fact =>
-            match fact with
-            | .apply _ [] => some [(x, fact)]
-            | _ => none
+          facts.map (fun fact => [(x, fact)])
       | _ =>
           facts.flatMap fun fact =>
-            I.matchPattern patN fact
+            I.matchPattern patN (I.normalizeForSpaceMatch fact)
 
 def findBindingsInSpace (I : Interface σ) (P : Policy) (s : σ) (space pat : Pattern) :
     List Bindings :=
@@ -128,13 +148,41 @@ def findBindingsInSpace (I : Interface σ) (P : Policy) (s : σ) (space pat : Pa
     | _, _ => []
   dedupBindings (factBs ++ ruleBs)
 
-private partial def evalSequence (I : Interface σ) (s : σ)
+/-- Find bindings using an externally provided candidate fact list.
+    Semantics are unchanged; only fact enumeration can differ. -/
+def findBindingsInSpaceWithFacts (I : Interface σ) (P : Policy) (s : σ)
+    (candidateFacts : List Pattern) (space pat : Pattern) : List Bindings :=
+  let factBs := matchFactsAgainstSpace I candidateFacts pat
+  let ruleBs :=
+    match P.relationNameOfSpace? space, I.normalizePattern pat with
+    | some rel, .apply "=" [lhs, rhs] =>
+        if rel == P.selfRelationName then
+          eqBindingsFromRules I lhs rhs (I.rewrites s)
+        else
+          []
+    | _, _ => []
+  dedupBindings (factBs ++ ruleBs)
+
+private def evalSequence (I : Interface σ) (s : σ)
     (terms : List Pattern) (acc : List Pattern) : σ × List Pattern :=
   match terms with
   | [] => (s, acc)
   | t :: ts =>
       let (s1, out) := I.eval s t
       evalSequence I s1 ts (acc ++ out)
+
+private theorem evalSequence_preserves
+    (I : Interface σ) (P : σ → Prop) (H : Preservation I P)
+    (s : σ) (terms : List Pattern) (acc : List Pattern) :
+    P s → P (evalSequence I s terms acc).1 := by
+  intro hP
+  induction terms generalizing s acc with
+  | nil =>
+      simpa [evalSequence] using hP
+  | cons t ts ih =>
+      let out := I.eval s t
+      have h1 : P out.1 := H.eval_preserves rfl hP
+      simpa [evalSequence, out] using ih out.1 (acc ++ out.2) h1
 
 def evalMatchIntrinsic (I : Interface σ) (P : Policy) (s : σ)
     (space pat tmpl : Pattern) : σ × List Pattern :=
@@ -164,6 +212,63 @@ def evalMatchIntrinsic (I : Interface σ) (P : Policy) (s : σ)
       | _ => none
   (sDyn, dynamicOut ++ builtinOut3 ++ builtinOut2)
 
+theorem evalMatchIntrinsic_preserves
+    (I : Interface σ) (Pred : σ → Prop) (H : Preservation I Pred)
+    (P : Policy) (s : σ) (space pat tmpl : Pattern) :
+    Pred s → Pred (evalMatchIntrinsic I P s space pat tmpl).1 := by
+  intro hP
+  unfold evalMatchIntrinsic
+  let bindings := findBindingsInSpace I P s space pat
+  let f := fun (acc : σ × List Pattern) bs =>
+    let sess := acc.1
+    let collected := acc.2
+    let tmplSub := I.applyBindings bs tmpl
+    let (sess', out) :=
+      match tmplSub with
+      | .apply "Expr" elems => evalSequence I sess elems []
+      | _ => I.eval sess tmplSub
+    (sess', out.reverse ++ collected)
+  have hFold :
+      ∀ (bsList : List Bindings) (sess : σ) (collected : List Pattern),
+        Pred sess →
+        Pred ((bsList.foldl f (sess, collected)).1) := by
+    intro bsList
+    induction bsList with
+    | nil =>
+        intro sess collected hSess
+        simp [f, hSess]
+    | cons bs rest ih =>
+        intro sess collected hSess
+        simp [f]
+        let tmplSub := I.applyBindings bs tmpl
+        have hStep :
+            Pred
+              ((match tmplSub with
+                | .apply "Expr" elems => evalSequence I sess elems []
+                | _ => I.eval sess tmplSub).1) := by
+          cases hT : tmplSub with
+          | fvar x =>
+              simpa [hT] using H.eval_preserves (s := sess) (term := .fvar x) rfl hSess
+          | bvar n =>
+              simpa [hT] using H.eval_preserves (s := sess) (term := .bvar n) rfl hSess
+          | apply ctor args =>
+              by_cases hCtor : ctor = "Expr"
+              · subst hCtor
+                simpa [hT] using evalSequence_preserves I Pred H sess args [] hSess
+              · simpa [hT, hCtor] using
+                  H.eval_preserves (s := sess) (term := .apply ctor args) rfl hSess
+          | lambda body =>
+              simpa [hT] using H.eval_preserves (s := sess) (term := .lambda body) rfl hSess
+          | multiLambda n body =>
+              simpa [hT] using H.eval_preserves (s := sess) (term := .multiLambda n body) rfl hSess
+          | subst body repl =>
+              simpa [hT] using H.eval_preserves (s := sess) (term := .subst body repl) rfl hSess
+          | collection ct elems restTail =>
+              simpa [hT] using H.eval_preserves
+                (s := sess) (term := .collection ct elems restTail) rfl hSess
+        exact ih _ _ hStep
+  simpa [bindings, f] using hFold bindings s [] hP
+
 def addAtom (I : Interface σ) (P : Policy) (s : σ) (space fact : Pattern) : σ × List Pattern :=
   match P.relationNameOfSpace? space with
   | none => (s, [])
@@ -187,6 +292,16 @@ def addAtom (I : Interface σ) (P : Policy) (s : σ) (space fact : Pattern) : σ
       let bundle' : SpecBundle := { bundle0 with language := lang' }
       (I.setBundle s bundle', [fact])
 
+theorem addAtom_preserves
+    (I : Interface σ) (Pred : σ → Prop) (H : Preservation I Pred)
+    (P : Policy) (s : σ) (space fact : Pattern) :
+    Pred s → Pred (addAtom I P s space fact).1 := by
+  intro hP
+  unfold addAtom
+  split
+  · simpa using hP
+  · exact H.setBundle_preserves hP
+
 def removeAtom (I : Interface σ) (P : Policy) (s : σ) (space fact : Pattern) : σ × List Pattern :=
   match P.relationNameOfSpace? space with
   | none => (s, [])
@@ -207,6 +322,16 @@ def removeAtom (I : Interface σ) (P : Policy) (s : σ) (space fact : Pattern) :
       let bundle' : SpecBundle := { bundle0 with language := lang' }
       (I.setBundle s bundle', [fact])
 
+theorem removeAtom_preserves
+    (I : Interface σ) (Pred : σ → Prop) (H : Preservation I Pred)
+    (P : Policy) (s : σ) (space fact : Pattern) :
+    Pred s → Pred (removeAtom I P s space fact).1 := by
+  intro hP
+  unfold removeAtom
+  split
+  · simpa using hP
+  · exact H.setBundle_preserves hP
+
 def removeAllAtoms (I : Interface σ) (P : Policy) (s : σ) (space : Pattern)
     (echo : Pattern) : σ × List Pattern :=
   match P.relationNameOfSpace? space with
@@ -226,7 +351,23 @@ def removeAllAtoms (I : Interface σ) (P : Policy) (s : σ) (space : Pattern)
       let bundle' : SpecBundle := { I.bundle s with relationEnv := env', language := lang' }
       (I.setBundle s bundle', [echo])
 
+theorem removeAllAtoms_preserves
+    (I : Interface σ) (Pred : σ → Prop) (H : Preservation I Pred)
+    (P : Policy) (s : σ) (space echo : Pattern) :
+    Pred s → Pred (removeAllAtoms I P s space echo).1 := by
+  intro hP
+  unfold removeAllAtoms
+  split
+  · simpa using hP
+  · exact H.setBundle_preserves hP
+
 def getAtoms (I : Interface σ) (P : Policy) (s : σ) (space : Pattern) : σ × List Pattern :=
   (s, factsForSpace I P s space)
+
+theorem getAtoms_preserves
+    (I : Interface σ) (Pred : σ → Prop) (P : Policy) (s : σ) (space : Pattern) :
+    Pred s → Pred (getAtoms I P s space).1 := by
+  intro hP
+  simp [getAtoms, hP]
 
 end Algorithms.MeTTa.Simple.Semantics.SpaceOps

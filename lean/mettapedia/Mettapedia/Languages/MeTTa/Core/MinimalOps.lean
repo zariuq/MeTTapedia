@@ -84,6 +84,40 @@ def executeGroundedOp (head : Atom) (args : List Atom) : Option Atom :=
   | .symbol "not" => GroundedType.execute (α := Bool) "not" args
   | _ => none
 
+/-! ## HE Core Internal Instructions -/
+
+/-- Construct a standard internal-instruction error atom. -/
+def internalInstrError (src : Atom) (msg : String) : Atom :=
+  Atom.error src (.symbol msg)
+
+/-- Opaque atomspace handle returned by `(context-space)`.
+    We expose only a stable textual tag plus current size, not the full store. -/
+def contextSpaceAtom (space : Atomspace) : Atom :=
+  .grounded (.custom "Atomspace" s!"size={space.size}")
+
+/-- Execute `(context-space)`; expects no arguments.
+    On arity mismatch, return an explicit error atom (matching HE runtime style). -/
+def contextSpace (space : Atomspace) (src : Atom) (args : List Atom) : Atom :=
+  match args with
+  | [] => contextSpaceAtom space
+  | _ => internalInstrError src "expected:(context-space)"
+
+/-- Execute `(call-native name ptr args)` in the minimal model.
+    The pointer argument is treated as opaque. We dispatch by symbolic `name`
+    into the known grounded-operation table when `args` is an expression tuple.
+    Invalid shapes return explicit error atoms (HE interpreter.rs style). -/
+def callNativeOp (_space : Atomspace) (src name ptr args : Atom) : Atom :=
+  let _opaquePtr := ptr
+  match name, args with
+  | .symbol op, .expression nativeArgs =>
+      match executeGroundedOp (.symbol op) nativeArgs with
+      | some result => result
+      | none => internalInstrError src s!"unsupported-native-function:{op}"
+  | .symbol _, _ =>
+      internalInstrError src "expected-native-args-expression"
+  | _, _ =>
+      internalInstrError src "expected-native-name-symbol"
+
 /-! ## Single Evaluation Step -/
 
 /-- evalStep: Single evaluation step for an atom.
@@ -129,6 +163,13 @@ partial def evalStep (space : Atomspace) (a : Atom) (b : Bindings) : EvalResultS
       else
         -- No equation match: try evaluating the head
         match head with
+        | .symbol "context-space" =>
+            {(contextSpace space a args, b)}
+        | .symbol "call-native" =>
+            match args with
+            | [name, ptr, nativeArgs] =>
+                {(callNativeOp space a name ptr nativeArgs, b)}
+            | _ => {(internalInstrError a "expected:(call-native name ptr args)", b)}
         | .symbol "=" =>
             -- Equation definition: this is knowledge, not evaluation
             {(a, b)}
@@ -296,6 +337,33 @@ example : executeGroundedOp (.symbol "+")
 example : executeGroundedOp (.symbol "concat")
             [.grounded (.string "a"), .grounded (.string "b")] =
           some (.grounded (.string "ab")) := rfl
+
+-- context-space / call-native (HE core internal instructions)
+example : contextSpace Atomspace.empty (.expression [.symbol "context-space"]) [] =
+          (.grounded (.custom "Atomspace" "size=0")) := rfl
+example : contextSpace Atomspace.empty (.expression [.symbol "context-space", .symbol "x"])
+            [.symbol "x"] =
+          Atom.error (.expression [.symbol "context-space", .symbol "x"])
+            (.symbol "expected:(context-space)") := rfl
+example : callNativeOp Atomspace.empty
+            (.expression [.symbol "call-native", .symbol "+", .symbol "opaque",
+              .expression [.grounded (.int 2), .grounded (.int 3)]])
+            (.symbol "+") (.symbol "opaque")
+            (.expression [.grounded (.int 2), .grounded (.int 3)]) =
+          (.grounded (.int 5)) := rfl
+example : callNativeOp Atomspace.empty
+            (.expression [.symbol "call-native", .symbol "mystery", .symbol "opaque",
+              .expression [.grounded (.int 2), .grounded (.int 3)]])
+            (.symbol "mystery") (.symbol "opaque")
+            (.expression [.grounded (.int 2), .grounded (.int 3)]) =
+          Atom.error (.expression [.symbol "call-native", .symbol "mystery", .symbol "opaque",
+              .expression [.grounded (.int 2), .grounded (.int 3)]])
+            (.symbol "unsupported-native-function:mystery") := rfl
+example : callNativeOp Atomspace.empty
+            (.expression [.symbol "call-native", .symbol "+", .symbol "opaque", .symbol "bad"])
+            (.symbol "+") (.symbol "opaque") (.symbol "bad") =
+          Atom.error (.expression [.symbol "call-native", .symbol "+", .symbol "opaque", .symbol "bad"])
+            (.symbol "expected-native-args-expression") := rfl
 
 end Tests
 

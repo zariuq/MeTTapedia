@@ -62,20 +62,78 @@
 We present a comprehensive Lean~4 formalization connecting the Grammatical
 Framework (\GF{}) to Operational Semantics in Logical Form (\OSLF{}), yielding
 verified multilingual semantics for natural language grammars.  Our
-formalization covers: (i)~the complete modeled \GF{} Resource Grammar Library core abstract
-syntax (985~functions, 112~categories); (ii)~full English and Czech concrete
-grammars with morphology, syntax, and linearization; (iii)~an automatic bridge
+formalization covers: (i)~the \GF{} Resource Grammar Library core abstract
+syntax (985~function signatures, 112~categories); (ii)~substantial English and Czech concrete
+grammar subsets---English with morphology, clause construction, and linearization
+for ${\sim}284$ abstract functions; Czech with 14~declension paradigms,
+adjective/verb morphology, and agreement, but not yet sentence-level linearization; (iii)~an automatic bridge
 from \GF{} grammars to \OSLF{} type systems with proven Galois connections
 $\Dia \dashv \Bx$; (iv)~a three-layer semantic pipeline: internal syntax
 rewrites, temporal policy, and visible semantic rules for scope,
-binding, and anaphora;
-and (v)~460+~theorems capturing genuine linguistic properties---lexical
-entailment, monotonicity of modification, garden-path disambiguation,
-cross-linguistic invariance, subcategorization as entailment, store
-monotonicity, scope nondeterminism, and world-model grounding.
-The formalization spans 13,900+ lines across 41~files, with
-\textbf{zero sorries} and zero axioms.
+binding, and anaphora; and (v)~a highlighted semantic spine of
+120+ paper-facing theorems covering scope completeness via linear
+extensions, pronoun-binding locality, store-to-environment invariance,
+evidence-valued world-model semantics, lexical compositional monotonicity,
+and garden-path disambiguation within a
+broader \GF{} Lean subtree currently containing 664 theorem/lemma declarations.
+The broader \GF{} subtree spans 43,162 lines across 91~Lean files, with
+\textbf{zero \code{sorry} declarations} and zero axiom/opaque declarations.
 \end{abstract}
+
+\section*{What Is Formally Proved}
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.26\linewidth}p{0.22\linewidth}p{0.14\linewidth}p{0.28\linewidth}@{}}
+\toprule
+\textbf{Lean declaration} & \textbf{Paper claim} & \textbf{Status} & \textbf{Why it matters} \\
+\midrule
+\code{translation\_preserves\_type} &
+Abstract-tree typing is translation-invariant &
+\textbf{Proved (D)} &
+Meaningful grammatical types live on shared abstract syntax, not on surface form. \\
+\code{montague\_thesis} &
+Language-parametric architectural invariance &
+\textbf{Proved (D)} &
+The grammar-to-semantics interface is correct by construction. \\
+\code{adjModification\_preserves\_lexical} &
+Compositional lexical-containment monotonicity &
+\textbf{Proved (Sem)} &
+Adjectival modification preserves previously present lexical material. \\
+\code{garden\_path\_lexical\_disambiguation} &
+Ambiguous parses can differ in lexical content &
+\textbf{Proved (Sem)} &
+The system distinguishes genuine lexical ambiguity, not just constructor shape. \\
+\code{translation\_preserves\_evidence\_allW} &
+Evidence is translation-invariant in all world models &
+\textbf{Proved (Sem)} &
+Abstract-tree equality already propagates into evidence semantics. \\
+\code{translation\_preserves\_strength\_allW} &
+World-model strength is translation-invariant &
+\textbf{Proved (Sem)} &
+Behavioral and evidential semantics stay aligned across concrete languages. \\
+\code{checker\_sat\_implies\_wm\_semantics\_general} &
+Checker soundness lifts to WM semantics &
+\textbf{Proved (Sem)} &
+Executable checking is connected to denotational evidence-grounded semantics. \\
+\code{checker\_sat\_atom\_implies\_wm\_query\_judgment} &
+Checker success yields WM query judgment on atoms &
+\textbf{Proved (Sem)} &
+The bounded checker reaches the world-model judgment layer. \\
+\code{scopeOrderingNTBridge} &
+Visible scope ordering reaches the \NTT{} layer &
+\textbf{Proved (Sem)} &
+Quantified/discourse structure already feeds into native-type semantics. \\
+\code{closedFormula\_envInvariant\_NT} &
+Closed quantified formulas are environment-invariant &
+\textbf{Proved (Sem)} &
+The quantified layer has genuine semantic stability theorems. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent
+The main paper highlights a coherent theorem spine of 120+ paper-facing results.
+The broader \code{Mettapedia/Languages/GF} subtree currently contains 664
+theorem/lemma declarations across 91~Lean files.
 
 \tableofcontents
 
@@ -113,6 +171,13 @@ The key distinction is between \emph{behavioral} semantics and
 rewriting behavior; the world-model layer chooses how atomic predicates are
 interpreted and supplies evidence values used by \code{semE}.
 
+\paragraph{Roadmap.}  The paper proceeds from the \GF{} formalization
+(\S\ref{sec:formalization}) to the \GF{}$\to$\OSLF{} bridge
+(\S\ref{sec:bridge}), then to abstract-tree invariance
+(\S\ref{sec:invariance}), evidence-grounded semantics
+(\S\ref{sec:worldmodel}), the visible layer (\S\ref{sec:visible}), and
+the interface/\NTT{} extensions (\S\ref{sec:extensions}).
+
 Two independent research programs have developed powerful abstractions for
 natural language: the Grammatical Framework (\GF{})~\cite{Ranta2004,Ranta2011}
 provides language-independent abstract syntax with language-specific
@@ -129,36 +194,49 @@ Galois adjunction $\Dia \dashv \Bx$.  The resulting type system lets us
 \emph{prove} properties of natural language that linguists care about:
 
 \begin{itemize}
-\item \textbf{Monotonicity of modification}: Adding an adjective to a noun
-  phrase enriches its semantic content but never removes what was already
-  there (universally quantified, not just for concrete examples).
+\item \textbf{Scope completeness}: Reachable scope orders for a
+  quantifier fragment are exactly the linear extensions of the
+  dependency partial order.
+\item \textbf{Pronoun-binding locality}: Binding a pronoun preserves
+  the evidence of any formula that does not mention the bound pronoun free.
+\item \textbf{Store-environment invariance}: Stores that agree on
+  bind/ref membership produce identical variable environments.
+\item \textbf{Evidence-grounded semantics}: Evidence-valued world-model
+  semantics with checker soundness, cross-linguistic evidence invariance,
+  and strength transport.
+\item \textbf{Lexical compositional monotonicity}: Adding an adjective
+  to a noun phrase preserves previously present lexical material
+  (universally quantified, not just for concrete examples).
 \item \textbf{Garden-path disambiguation}: The two parses of ``the old man
   the boats'' have provably different lexical profiles---not just different
   constructors, but different \emph{words}.
-\item \textbf{Cross-linguistic invariance}: English ``the cat'' and Czech
-  ``ko\v{c}ka'' share an abstract tree, so all \OSLF{} types and lexical
-  containment predicates are identical by construction.
-\item \textbf{Subcategorization as entailment}: Transitive verbs lexically
-  entail their objects; intransitive verbs don't.
 \end{itemize}
 
-\paragraph{Scale.}  The formalization comprises 13,900+ lines of Lean~4 across
-41~files with \textbf{zero sorries} and zero axioms.
+\paragraph{Scale.}  The broader \code{Mettapedia/Languages/GF} subtree currently
+comprises 43,162 lines of Lean~4 across 91~files with
+\textbf{zero \code{sorry} declarations} and zero axiom/opaque declarations.
+The theorem spine highlighted in this paper is a 120+ result semantic slice
+inside that larger development.
 
 \paragraph{Contributions.}
 \begin{enumerate}
 \item To our knowledge, the first formalization of the \GF{} \RGL{} core abstract
   syntax in a proof assistant (985~function signatures, 112~categories).
-\item Full English and Czech concrete grammars (morphology, syntax,
-  linearization) with 80+ proven properties.
+\item Substantial English and Czech concrete grammar subsets (morphology,
+  clause construction, linearization) with 80+ proven properties.
 \item An automatic bridge from any \GF{} grammar to an \OSLF{} type system
   with proven Galois connection.
 \item A three-layer semantic pipeline: internal syntax rewrites + temporal
   policy + visible rules for quantifier scope, discourse referents,
-  and pronoun binding.
-\item 137+~theorems about constructor types, modal properties, world-model
-  grounding, and genuine linguistic invariants, classified by claim strength
-  (Table~\ref{tab:claims}).
+  and pronoun binding.  Key results include scope completeness via
+  linear extensions, pronoun-binding locality, and store-to-environment
+  invariance.
+\item Evidence-valued world-model semantics with checker soundness and
+  cross-linguistic evidence/strength invariance.
+\item A highlighted semantic spine of 120+ paper-facing theorems,
+  situated inside a broader \GF{} subtree with 664 theorem/lemma
+  declarations and classified by claim strength in
+  Table~\ref{tab:claims}.
 \end{enumerate}
 
 \begin{table}[t]
@@ -183,7 +261,7 @@ Frege compositionality                     & S  & $\checkmark$ & \code{simp} \\
 Constructor exclusivity / partition        & S  & $\checkmark$ & \code{intro}/\code{decide} \\
 Parse disambiguation (type-level)          & S  &         & \code{simp} \\
 Lexical entailment (concrete)              & Sem &        & \code{simp} \\
-Monotonicity of modification               & Sem & $\checkmark$ & \code{unfold}/\code{simp} \\
+Lexical compositional monotonicity          & Sem & $\checkmark$ & \code{unfold}/\code{simp} \\
 General compositionality                   & Sem & $\checkmark$ & induction \\
 Garden-path lexical disambiguation         & Sem &        & \code{simp} \\
 Subcategorization as entailment            & Sem &        & \code{simp} \\
@@ -266,6 +344,7 @@ rewriting), and \code{rfl} (definitional equality).
 
 %% ===================================================================
 \section{GF Formalization in Lean 4}
+\label{sec:formalization}
 \label{sec:gf}
 
 \subsection{Core Abstractions}
@@ -311,7 +390,7 @@ Question  & 17 & \code{QuestCl}, \code{QuestVP}, \code{QuestSlash} \\
 Relative  &  5 & \code{RelCl}, \code{RelVP}, \code{RelSlash} \\
 Phrase    & 19 & \code{PhrUtt}, \code{UttS}, \code{UttNP} \\
 Conjunction & 27 & \code{ConjNP}, \code{ConjAP}, \code{BaseS}/\code{ConsS} \\
-Tense     & 27 & \code{TTAnt}, \code{TPres}, \code{TPast} \\
+Tense     &  9 & \code{TTAnt}, \code{TPres}, \code{TPast} \\
 Structural & 50+ & \code{and\_Conj}, \code{every\_Det}, \code{he\_Pron} \\
 Other     & 700+ & Numerals, Idiom, Extra, Lexicon \\
 \midrule
@@ -322,7 +401,18 @@ Other     & 700+ & Numerals, Idiom, Extra, Lexicon \\
 
 \subsection{English Concrete Grammar}
 
-The English grammar (11~files, 2,360~lines) implements:
+The English grammar (20~files, 5,890~lines) linearizes approximately 284 of
+the 985~abstract functions---covering the core Noun, Verb, Adjective,
+Sentence, Question, Relative, Phrase, Conjunction, Adverb, and Tense
+modules but not yet the full Extend, Construction, or Symbol modules.
+The runtime linearization layer is split into a core API
+(\code{Linearization.lean}), typed domain helpers
+(\code{Linearization/Types.lean}), composition helpers
+(\code{Linearization/Compose.lean}), rendering
+(\code{Linearization/Render.lean}), witness proofs
+(\code{Linearization/Witnesses.lean}), and coverage accounting
+(\code{Linearization/Coverage.lean}).
+The grammar implements:
 
 \paragraph{Noun morphology.}  Three paradigms: \emph{regular} (8 pluralization
 rules handling sibilants, consonant+y, final~-o, etc.), \emph{irregular}
@@ -344,7 +434,10 @@ beautiful$\to$most beautiful), and irregular (good$\to$better$\to$best).
 
 \subsection{Czech Concrete Grammar}
 
-The Czech grammar (12~files, 2,865~lines) implements:
+The Czech grammar (12~files, 2,865~lines) formalizes the morphological
+layer---declension, conjugation, and agreement---but does not yet include
+sentence-level linearization comparable to the English grammar.
+It implements:
 
 \paragraph{Declension system.}  14~complete noun paradigms across 4~genders
 (masculine animate/inanimate, feminine, neuter) and 7~cases (nominative,
@@ -414,17 +507,42 @@ names (\code{arg0}, \code{arg1}, \ldots).  The full \GF{} \RGL{} becomes
 
 \subsection{Rewrite Rules: Non-Vacuous Modalities}
 
-The bridge defines directed rewrite rules for identity-wrapper constructors:
+The bridge defines two families of directed rewrite rules.
+
+\paragraph{Identity-wrapper eliminations} (\code{allIdentityRewrites}).
+Six rules eliminate constructor wrappers that carry no independent semantic
+content:
 \begin{align*}
   \code{UseN}(x) &\rightsquigarrow x & \text{(noun identity)} \\
   \code{PositA}(x) &\rightsquigarrow x & \text{(positive adjective)} \\
   \code{UseV}(x) &\rightsquigarrow x & \text{(verb identity)} \\
-  \code{UseComp}(x) &\rightsquigarrow x & \text{(complement identity)}
+  \code{UseComp}(x) &\rightsquigarrow x & \text{(complement identity)} \\
+  \code{UseN2}(x) &\rightsquigarrow x & \text{(relational noun identity)} \\
+  \code{UseA2}(x) &\rightsquigarrow x & \text{(relational adjective identity)}
 \end{align*}
-
-These rules give $\Dia$ and $\Bx$ \emph{non-vacuous} behavioral content:
+These give $\Dia$ and $\Bx$ non-vacuous behavioral content:
 $\Dia(\text{is\_cat})$ holds for $\code{UseN}(\code{cat})$ because it reduces
 to \code{cat}, but not for bare \code{cat} (which is irreducible).
+
+\paragraph{Semantic entailment rewrites} (\code{allSemanticRewrites}).
+Four rules capture genuine entailment or tense-grounding:
+\begin{align*}
+  \code{PredVP}(np_1,\code{ComplSlash}(\code{SlashV2a}(v),np_2))
+    &\rightsquigarrow \code{PredVP}(np_2,\code{PassV2}(v))
+    & \text{(active$\to$passive)} \\
+  \code{UseCl}(\code{TTAnt}(\code{TPres},\code{ASimul}),\code{PPos},cl)
+    &\rightsquigarrow \mathtt{{\otimes}temporal}(cl,0)
+    & \text{(present)} \\
+  \code{UseCl}(\code{TTAnt}(\code{TPast},\code{ASimul}),\code{PPos},cl)
+    &\rightsquigarrow \mathtt{{\otimes}temporal}(cl,-1)
+    & \text{(past)} \\
+  \code{UseCl}(\code{TTAnt}(\code{TFut},\code{ASimul}),\code{PPos},cl)
+    &\rightsquigarrow \mathtt{{\otimes}temporal}(cl,1)
+    & \text{(future)}
+\end{align*}
+The active$\to$passive rule holds in one direction only.  Tense rewrites tag
+clauses with a temporal offset ($0 =$ present, $-1 =$ past, $1 =$ future)
+for the evidence-semantics layer.
 
 \subsection{Automatic Galois Connection}
 
@@ -495,12 +613,16 @@ Formally, equal argument patterns imply equal result patterns.
 \end{theorem}
 
 %% ===================================================================
-\section{Linguistic Invariance Theorems}
+\section{Lexical and Structural Invariance Theorems}
 \label{sec:invariance}
 
-The most novel contribution is a set of theorems that capture genuine
-properties of natural language (\code{LinguisticInvariance.lean},
-362~lines, 15~theorems).
+This section presents warm-up theorems about lexical containment and
+structural invariance (\code{LinguisticInvariance.lean},
+362~lines, 15~theorems).  These results demonstrate that the
+\GF{}$\to$\OSLF{} bridge carries genuine linguistic content; the deeper
+semantic results (scope completeness, pronoun-binding locality,
+store-environment invariance) follow in \S\ref{sec:visible} and
+\S\ref{sec:extensions}.
 
 \subsection{Lexical Containment}
 
@@ -539,8 +661,7 @@ theorem catSleeps_entails :
 
 \subsection{Monotonicity of Modification}
 
-The deepest theorem is universally quantified over all adjectives, nouns,
-and lexical items:
+The key compositional lexical-containment invariance theorem is:
 
 \begin{lstlisting}[language=ml,caption={Monotonicity (universally quantified)}]
 theorem adjModification_preserves_lexical
@@ -551,10 +672,15 @@ theorem adjModification_preserves_lexical
 \end{lstlisting}
 
 This says: for \emph{any} adjective and \emph{any} common noun, adding the
-adjective as a modifier preserves all existing lexical content.  Modification
-is \emph{monotone}---it enriches semantic content but never destroys it.
-This is a formal version of Frege's compositionality
-principle~\cite{Frege1892} at the lexical level.
+adjective preserves previously present lexical items under
+\code{containsLexical}.  This is a \emph{lexical monotonicity} theorem
+for adjectival modification---it establishes that symbol occurrence in
+the abstract-tree-to-pattern encoding is compositionally monotone,
+a Frege-style compositionality result at the lexical level~\cite{Frege1892}.
+It does \emph{not} by itself imply full truth-conditional semantic
+monotonicity in a world model; that stronger claim requires additional
+semantic assumptions and is handled separately in the world-model semantics
+layer.
 
 A companion theorem proves the adjective is also \emph{added}:
 
@@ -636,7 +762,8 @@ theorem cross_ling_lexical_invariance :
       (gfAbstractToPattern theCat_pair.tree) = true
 \end{lstlisting}
 
-The deepest statement is Montague's thesis~\cite{Montague1973} formalized:
+The cleanest architectural invariance endpoint is Montague's
+thesis~\cite{Montague1973} formalized:
 
 \begin{lstlisting}[language=ml]
 theorem montague_thesis (tree : AbstractNode)
@@ -688,10 +815,13 @@ verb \emph{determines} what entities are semantically accessible in the VP.
 The behavioral semantics of \S\ref{sec:invariance} captures structural
 properties (lexical containment, reduction accessibility) but not
 \emph{grounded} meaning.  \code{WorldModelSemantics.lean} (1,352~lines,
-70~theorems) provides the grounding layer: \OSLF{} formulas receive
-evidence-valued interpretations via a world-model state.
+70~theorems) now already implements both tree-level denotation
+\code{gfEvidenceDenote} and formula-level evidence semantics
+\code{gfWMFormulaSemE}; the threshold-Prop semantics \code{gfWMFormulaSem}
+is retained as a projection for checker soundness rather than as the primary
+semantic layer.
 
-\subsection{Evidence-Valued Semantics}
+\subsection{Primary Evidence-Valued Semantics}
 
 The core definition assigns each \OSLF{} formula an evidence value (from a
 complete lattice) at each pattern:
@@ -707,14 +837,27 @@ noncomputable def semE (R : Pattern → Pattern → Prop)
   | ...
 \end{lstlisting}
 
-The key bridge theorem connects Boolean \code{sem} to evidence-valued
-\code{semE}: \code{sem\_iff\_semE\_pos} shows they agree when the evidence
-threshold is positive.
+At the tree level, denotation is
+\[
+  \texttt{gfEvidenceDenote}\; W\; t
+  = \texttt{WorldModel.evidence}\; W\; (\texttt{gfAbstractToPattern}\; t).
+\]
+At the formula level, the primary endpoint is
+\[
+  \texttt{gfWMFormulaSemE}\; W\; \varphi\; p
+  := \texttt{semE}(\texttt{langReduces}\;\texttt{gfRGLLanguageDef},
+      \texttt{gfEvidenceAtomSemFromWM}\; W,\; \varphi,\; p).
+\]
+The paper-facing bridge theorems are already proved in Lean:
+\code{translation\_preserves\_evidence\_allW},
+\code{translation\_preserves\_strength\_allW},
+\code{checker\_sat\_implies\_wm\_semantics\_general}, and
+\code{checker\_sat\_atom\_implies\_wm\_query\_judgment}.
 
 \subsection{Rewrite Rules: 10 Directed Rules}
 
-The bridge defines 10~directed rewrite rules covering identity wrappers,
-compositional structure, and voice:
+The bridge defines 10~directed rewrite rules in two groups
+(\code{allIdentityRewrites} + \code{allSemanticRewrites}):
 
 \begin{enumerate}
 \setlength{\itemsep}{0pt}
@@ -722,12 +865,12 @@ compositional structure, and voice:
 \item \code{PositA}$(x) \rightsquigarrow x$ (positive adjective)
 \item \code{UseV}$(x) \rightsquigarrow x$ (verb identity)
 \item \code{UseComp}$(x) \rightsquigarrow x$ (complement identity)
-\item \code{DetCN}$(\_, cn) \rightsquigarrow cn$ (det elimination)
-\item \code{PredVP}$(\_, vp) \rightsquigarrow vp$ (subj elimination)
-\item \code{AdjCN}$(\_, cn) \rightsquigarrow cn$ (adj elimination)
-\item \code{ComplSlash}$(vs, \_) \rightsquigarrow vs$ (obj elimination)
-\item \code{PassV2}$(v) \rightsquigarrow v$ (active--passive)
-\item \code{UseCl}$(\_, \_, \_, cl) \rightsquigarrow cl$ (tense elimination)
+\item \code{UseN2}$(x) \rightsquigarrow x$ (relational noun identity)
+\item \code{UseA2}$(x) \rightsquigarrow x$ (relational adjective identity)
+\item Active$\to$passive: $\code{PredVP}(np_1, \code{ComplSlash}(\code{SlashV2a}(v), np_2)) \rightsquigarrow \code{PredVP}(np_2, \code{PassV2}(v))$
+\item Present tense: $\code{UseCl}(\code{TTAnt}(\code{TPres},\code{ASimul}),\code{PPos},cl) \rightsquigarrow \mathtt{{\otimes}temporal}(cl,0)$
+\item Past tense: \ldots $\rightsquigarrow \mathtt{{\otimes}temporal}(cl,-1)$
+\item Future tense: \ldots $\rightsquigarrow \mathtt{{\otimes}temporal}(cl,1)$
 \end{enumerate}
 
 \subsection{Temporal Policy}
@@ -737,9 +880,8 @@ Temporal expressions like tense and aspect are handled by a
 
 \begin{lstlisting}[language=ml,caption={Temporal policy (extensible)}]
 inductive TemporalPolicy where
-  | syntaxOnly    -- no temporal rewriting
-  | pastToPresent -- past → present grounding
-  | custom (f : Pattern → Option Pattern) -- user-defined
+  | syntaxOnly                                    -- no temporal steps (default)
+  | withStep (step : Pattern -> Pattern -> Prop)  -- user-supplied relation
 \end{lstlisting}
 
 The \code{TemporalStepLaws} record packages well-scopedness: temporal
@@ -765,7 +907,7 @@ the accessibility relation.
 \section{Scope and Binding Step Layer}
 \label{sec:visible}
 
-The deepest semantic extension implements an explicit \emph{scope-and-binding}
+The central semantic extension implements an explicit \emph{scope-and-binding}
 transition layer.
 While internal syntax rewrites are silent (they simplify tree structure
 without semantic choice), \emph{visible rules} make meaning-bearing
@@ -914,7 +1056,8 @@ Proofs use sound kernel reduction throughout:
   simple Bool evaluations.
 \item \textbf{\code{rfl}}: Definitional equality.  Used for design theorems
   and sort assignment.
-\item \textbf{\code{native\_decide}}: Not used in the \GF{} modules.
+\item \textbf{\code{native\_decide}}: No remaining uses in the checked
+  \GF{} theorem modules.
 \end{itemize}
 
 \subsection{Scope and Limits}
@@ -929,8 +1072,9 @@ determine which words appear in a parse tree and which constructor
 wrappers can be eliminated by rewriting.  The \OSLF{} types are
 \emph{behavioral} (what reductions are available).  However, the
 formalization already contains the substrate for genuine
-\emph{evidence-valued} denotational semantics; \S\ref{sec:evidence}
-describes this path.
+\emph{evidence-valued} denotational semantics; \S\ref{sec:worldmodel}
+describes the implemented main layer and \S\ref{app:evidence} gives
+supplementary details.
 
 \paragraph{Cross-linguistic invariance.}  Theorem~\code{montague\_thesis}
 is an \emph{architectural} guarantee, not a deep semantic result.  It
@@ -1010,10 +1154,129 @@ Our work connects three traditions:
   type-theoretic interpretation of \GF{} uses Martin-L\"{o}f type theory.
   Our approach uses \OSLF{}'s frame-valued predicates instead, giving modal
   operators automatically.
-\item \textbf{Abstract Categorial Grammars}~\cite{dGroote2001}: ACGs also
+\item \textbf{Abstract Categorial Grammars}~\cite{deGroote2001}: ACGs also
   use $\lambda$-calculus as abstract syntax.  Our approach adds rewrite-rule
   semantics and automatic Galois connections.
+\item \textbf{GF meets Coq}~\cite{BernardyChatzikyriakidis2017}:
+  Bernardy and Chatzikyriakidis connect \GF{} to Coq for the FraCaS test
+  suite, using type-theoretical semantics for textual inference.  Our
+  contribution differs in scope: we formalize the full \RGL{} abstract
+  signature (985 functions) and target \OSLF{} rewrite-rule semantics
+  rather than model-theoretic denotations.
 \end{itemize}
+
+%% ===================================================================
+\section{Extended Theorem Families}
+\label{sec:extensions}
+
+This section documents additional theorem families beyond the core
+formalization, organized by module.
+The interface refinement, UG-core quotient, and categorical packaging results
+are developed in a companion paper~\cite{UGCores2026}.
+
+\subsection{Modal Theorem Family (\code{SemanticHighlights.lean})}
+
+Four theorems characterize how the accessibility relation interacts with the
+formula fragment:
+
+\begin{itemize}
+\item \textbf{Positive-fragment monotonicity.}  If $R_1 \subseteq R_2$ and
+  $\varphi$ is positive (no $\Bx$), then $\mathrm{sem}_{R_1} \varphi \; p$
+  implies $\mathrm{sem}_{R_2} \varphi \; p$
+  (\code{modal\_positive\_monotone}).
+\item \textbf{Modal-free relation irrelevance.}  If $\varphi$ contains no
+  $\Dia$/$\Bx$, its truth value is independent of $R$:
+  $\mathrm{sem}_{R_1} \varphi \; p \Leftrightarrow \mathrm{sem}_{R_2} \varphi \; p$
+  (\code{modal\_free\_relation\_irrelevant}).
+\item \textbf{Box antitonicity.}  $\Bx$ is anti-monotone: if $R_2 \subseteq R_1$,
+  then $\mathrm{sem}_{R_1} (\Bx\varphi) \; p$ implies $\mathrm{sem}_{R_2} (\Bx\varphi) \; p$
+  for modal-free $\varphi$ (\code{modal\_box\_antitone}).
+\item \textbf{Syntax lifts to temporal.}  Any positive theorem over syntax reductions
+  transfers to the combined temporal relation
+  (\code{modal\_syntax\_lifts\_to\_temporal}).
+\end{itemize}
+
+\subsection{Temporal Asymmetry (\code{SemanticHighlights.lean})}
+
+A sharp positive/negative pair:
+
+\begin{itemize}
+\item \textbf{Negative.}  Under \code{syntaxOnly}, present temporal nodes
+  have no $\Dia$-progress:
+\begin{lstlisting}[language=ml]
+theorem temporal_asymmetry_syntaxOnly :
+    ¬ sem (gfReducesTemporal .syntaxOnly) I (.dia φ)
+        (.apply "⊛temporal" [cl, .apply "0" []])
+\end{lstlisting}
+\item \textbf{Positive.}  If the temporal policy supplies an edge from
+  present to past, $\Dia(\top)$ is obtainable
+  (\code{temporal\_progress\_with\_policy\_edge}).
+\end{itemize}
+
+\subsection{Scope Ordering and Completeness}
+
+\paragraph{Scope ordering as an inequality (\code{SemanticHighlights.lean}).}
+For the ``every man loves some woman'' (EMLA) witness:
+\begin{lstlisting}[language=ml]
+theorem emla_scope_inverse_le_surface :
+    qsemE2 R I Dom env (∃q2, ∀q1, ...) p ≤
+    qsemE2 R I Dom env (∀q1, ∃q2, ...) p
+\end{lstlisting}
+$\exists\forall$ evidence is dominated by $\forall\exists$ evidence---the
+surface scope is the ``stronger'' reading in the evidence order.
+
+\paragraph{Scope completeness (\code{ScopeLinearExtension.lean}).}
+For the two-quantifier EMLA fragment, reachable scope orders are
+\emph{exactly} the linear extensions of the (dependency-free) partial order:
+\begin{lstlisting}[language=ml]
+theorem emla_scope_completeness_linearExtensions (ord : List String) :
+    emlaReachableScopeOrder ord ↔ emlaLinearExtension ord
+-- i.e. iff ord = ["q1","q2"] ∨ ord = ["q2","q1"]
+\end{lstlisting}
+This is also stated against the generic finite-DAG linear-extension notion
+(\code{emla\_scope\_completeness\_dag}).
+
+\subsection{Pronoun-Binding Locality (\code{SemanticHighlights.lean})}
+
+Binding step V4 preserves the evidence of any formula that does not
+mention the bound pronoun free---a dynamic-semantics locality statement:
+\begin{lstlisting}[language=ml]
+theorem v4_preserves_unmentioned_formula
+    (pr r : String) ... (hnotfree : pr ∉ freeVarsQF2 φ) :
+    let s' := ⟨s.term, s.store + {StoreAtom.bind pr r}⟩
+    gfReducesFull cfg π s s' ∧
+    gsemE2Full cfg π I Dom φ s = gsemE2Full cfg π I Dom φ s'
+\end{lstlisting}
+Contrast: V4 \emph{can} change evidence for formulas that mention the pronoun
+(\code{V4\_post\_step\_semantic\_change}).
+
+\subsection{Store-to-Environment Invariance (\code{SemanticHighlights.lean})}
+
+If two stores agree on all \code{bind} and \code{ref} memberships, they
+produce identical variable environments---a store-equivalence semantic
+invariance result stronger than multiset commutativity:
+\begin{lstlisting}[language=ml]
+theorem store_env_invariant_equiv :
+    (∀ pr r, bind pr r ∈ σ₁ ↔ bind pr r ∈ σ₂) →
+    (∀ r pos, ref r pos ∈ σ₁ ↔ ref r pos ∈ σ₂) →
+    storeToEnv σ₁ = storeToEnv σ₂
+\end{lstlisting}
+
+\subsection{NTT and Quantified Bridge (\code{GFWMConnections.lean})}
+
+The quantified/discourse layer is no longer only background machinery.  Two
+paper-facing endpoints show that visible and world-model semantics already reach
+the \NTT{}/GSLT route:
+\begin{lstlisting}[language=ml]
+noncomputable def scopeOrderingNTBridge : ...
+theorem closedFormula_envInvariant_NT : ...
+\end{lstlisting}
+\code{scopeOrderingNTBridge} transports visible scope-ordering information into
+the native-type semantics, while
+\code{closedFormula\_envInvariant\_NT} shows that closed quantified formulas are
+invariant under environment change.  These endpoints connect the visible grammar semantics to the
+native-type layer; the UG-core constructions that build on them
+are developed in a companion paper~\cite{UGCores2026}.
 
 %% ===================================================================
 \section{Related Work}
@@ -1045,22 +1308,28 @@ We have presented a comprehensive Lean~4 formalization connecting the
 Grammatical Framework to \OSLF{}, demonstrating that natural language
 grammars automatically receive verified type systems with three semantic
 layers: internal syntax rewrites, temporal policy, and visible rules for
-scope and binding.  The formalization covers the complete modeled \GF{} \RGL{}
-core abstract syntax (985~functions, 112~categories), full English and Czech
-concrete grammars, evidence-valued world-model semantics (70~theorems),
-and visible scope/binding rules---totaling 460+~theorems across
-13,900+~lines.
+scope and binding.  The formalization covers the \GF{} \RGL{}
+core abstract syntax (985~function signatures, 112~categories), substantial English and Czech
+concrete grammar subsets, evidence-valued world-model semantics (70~theorems),
+and visible scope/binding rules.
+The broader \GF{} subtree now contains 664 theorem/lemma declarations across
+91~Lean files (43,162~lines), while the main paper highlights a 120+ theorem
+semantic spine.  The interface refinement and UG-core quotient constructions
+that build on this foundation are developed in a companion paper~\cite{UGCores2026}.
 
-The key results are: the universally quantified monotonicity theorem
-(modification enriches but never destroys); the garden-path lexical
-disambiguation theorem (ambiguous parses have provably different word
-content); the formalized Montague thesis (translation preserves
-meaning by construction); store monotonicity for visible steps;
-and scope nondeterminism (both orderings of two quantifiers are
-reachable from the same state).
+The key results are: scope completeness via linear extensions
+(reachable scope orders are exactly the linear extensions of the
+dependency partial order); pronoun-binding locality (binding preserves
+evidence for formulas not mentioning the bound pronoun);
+store-to-environment invariance (stores with the same bind/ref
+membership produce identical environments); evidence-valued
+world-model semantics with checker soundness; and compositional
+lexical-containment monotonicity (modification preserves previously
+present lexical material).
 
-All code is available in the Mettapedia repository with zero sorries,
-zero axioms, and sound proofs throughout.
+All code is available in the Mettapedia repository with zero
+\code{sorry} declarations, zero axiom/opaque declarations, and sound proofs
+throughout the checked \GF{} theorem modules.
 
 \paragraph{Future work.}  We plan to: (1)~make the \OSLF{} rewrite engine
 kernel-reducible to enable modal proofs via \code{decide}; (2)~add more
@@ -1082,23 +1351,21 @@ layer with evidence-valued inference.
 \begin{verbatim}
 $ cd lean-projects/mettapedia
 $ lean --version
-Lean (version 4.27.0, ...)
+Lean (version 4.28.0, ...)
 $ export LAKE_JOBS=3 && nice -n 19 lake build \
     Mettapedia.Languages.GF
 Build completed successfully.
-$ grep -rcw "sorry" Mettapedia/Languages/GF/ | \
-    awk -F: '{s+=$2} END{print s}'
+$ rg '^\s*sorry\b' Mettapedia/Languages/GF/ --type lean | wc -l
 0
-$ grep -rP "^\s*native_decide" Mettapedia/Languages/GF/ | \
-    wc -l
+$ rg '^\s*native_decide' Mettapedia/Languages/GF/ --type lean | wc -l
 0
 $ lake build 2>&1 | grep -c "^error:"
 0
 \end{verbatim}
 
-\textbf{Lean 4.27.0} with \textbf{Mathlib v4.27.0}.
+\textbf{Lean 4.28.0} with \textbf{Mathlib v4.28.0}.
 0~errors, 0~warnings, 0~\code{sorry},
-0~\code{native\_decide}, 0~axioms.
+0~\code{native\_decide}, 0~axiom/opaque declarations.
 \end{quote}
 
 \bibliographystyle{plain}
@@ -1112,9 +1379,9 @@ $ lake build 2>&1 | grep -c "^error:"
 \small
 \begin{verbatim}
 Repository commit: e0b3f54 (mettapedia, main)
-Lean toolchain:   leanprover/lean4:v4.27.0
-Mathlib pin:      v4.27.0
-LeanHammer pin:   v4.27.0
+Lean toolchain:   leanprover/lean4:v4.28.0
+Mathlib pin:      v4.28.0
+LeanHammer pin:   v4.28.0
 
 Build command:
   export LAKE_JOBS=3 && nice -n 19 lake build
@@ -1123,62 +1390,72 @@ Build output (final lines):
   Build completed successfully.
 
 Integrity checks:
-  grep -rcw "sorry" Mettapedia/Languages/GF/  => 0
-  grep -rP "^\s*native_decide" Mettapedia/Languages/GF/ | wc -l  => 0
-  grep -rc "axiom" Mettapedia/Languages/GF/  => 0
+  rg '^\s*sorry\b' Mettapedia/Languages/GF/ --type lean | wc -l  => 0
+  rg '^\s*native_decide' Mettapedia/Languages/GF/ --type lean | wc -l  => 0
+  rg '^(axiom|opaque)\s' Mettapedia/Languages/GF/ --type lean | wc -l  => 0
   lake env printPaths | grep -c error  => 0
 
-GF module stats:
-  Files: 41    Lines: 13,900+
+GF subtree stats:
+  Files: 91    Lines: 43,162
   Abstract functions: 985    Categories: 112
-  English files: 11 (2,360 lines)
+  English files: 20 (5,890 lines)
   Czech files: 12 (2,865 lines)
   WorldModelSemantics: 1,352 lines, 70 theorems
   VisibleLayer: 319 lines, 11 theorems
   VisibleLayerGFInstance: 97 lines
   SemanticKernelConfluence: 39 theorems
-  WorldModelVisibleBridge: 32 theorems
-  Total theorems: 460+ (Typing 38, Invariance 21,
-    WorldModel 70, VisibleLayer 11,
-    SemanticKernelConfluence 37, Bridge 32, ...)
+  WorldModelVisibleBridge: 34 theorems
+  Total theorem/lemma declarations: 664
+  Paper-facing theorem spine: 120+
 \end{verbatim}
 \end{quote}
 
+\noindent
+Executable English demonstration scripts are kept outside the
+Mettapedia Lean library under \code{Demos/GF/English/}, so normal
+library builds do not replay English demo \code{\#eval!} output.
+English library modules retain example outputs only as comments or
+theorem regressions.  (Some non-English utility modules such as
+\code{CommentCNLEng.lean} still contain \code{\#eval} examples.)
+
 %% ===================================================================
-\section{Toward Evidence-Grounded Semantics}
+\section{Evidence-Grounded Semantics Details}
 \label{app:evidence}
 \label{sec:evidence}
 
-The behavioral semantics of \S\ref{sec:invariance} (lexical containment,
-reduction accessibility) leave a natural question: can we assign genuine
-\emph{denotational} content to \GF{} trees?  The Mettapedia codebase
-already contains the substrate for an answer: an evidence-valued
-world-model calculus~\cite{goertzel2009pln} formalized in Lean~4.  This
-appendix describes the integration path and the theorems it will yield.
+The main text (\S\ref{sec:worldmodel}) already uses the implemented
+evidence-grounded layer.  This appendix records the exact denotational
+interfaces and theorem endpoints connecting \GF{}/\OSLF{} semantics to the
+world-model/evidence calculus~\cite{goertzel2009pln}.
 
 \paragraph{Status.}  The modules referenced below are implemented and
-sorry-free.  The \emph{bridge} connecting them to \GF{}/\OSLF{} is
-prospective (not yet implemented in Lean).  Table~\ref{tab:status}
-distinguishes proved results from prospective ones.
+sorry-free.  The \GF{}/\OSLF{} evidence bridge is already formalized in Lean:
+\code{gfEvidenceDenote} gives tree-level denotation,
+\code{gfWMFormulaSemE} is the primary evidence-valued formula semantics,
+\code{gfWMFormulaSem} is its thresholded Prop projection, and the checker-to-WM
+bridge theorems are proved.  Table~\ref{tab:status} distinguishes fully proved
+results from conditional generalizations and remaining expansion items.
 
 \subsection{The Denotation Equation}
 
-The key definition assigns each \GF{} abstract tree $t$ an evidence value
-relative to a world-model state $W$:
+The implemented tree-level denotation assigns each \GF{} abstract tree $t$ an
+evidence value relative to a world-model state $W$:
 \begin{equation}
 \label{eq:denote}
   \llbracket t \rrbracket_W
-    \;:=\; \texttt{WorldModel.evidence}\; W\;
-           (\texttt{queryOf}\;(\texttt{gfAbstractToPattern}\; t))
+    \;:=\; \texttt{gfEvidenceDenote}\; W\; t
+    \;=\; \texttt{WorldModel.evidence}\; W\;
+           (\texttt{gfAbstractToPattern}\; t)
 \end{equation}
 where:
 \begin{itemize}
 \item \code{gfAbstractToPattern} converts a \GF{} tree to an \OSLF{}
   pattern (\code{OSLFBridge.lean}:96);
-\item \code{queryOf} maps a pattern to a PLN query (to be defined);
 \item \code{WorldModel.evidence} extracts binary evidence $(n^+, n^-)
   \in \mathbb{R}_{\ge 0}^{\infty} \times \mathbb{R}_{\ge 0}^{\infty}$
-  from the posterior state (\code{PLNWorldModel.lean}:48).
+  from the posterior state (\code{PLNWorldModel.lean}:48);
+\item formula-level atom semantics uses the concrete query encoder
+  \code{queryOfAtom} rather than a hypothetical generic \code{queryOf}.
 \end{itemize}
 World-model states $W$ replace possible worlds; \code{Evidence} values
 $(n^+, n^-)$ replace truth values.  This is model-theoretic semantics
@@ -1252,28 +1529,29 @@ extraction.
 
 \subsection{Design Choice: Prop-Threshold vs.\ Evidence-Valued}
 
-We choose \textbf{Prop-valued threshold semantics} as the first
-implementation target because it reuses the existing
-\code{sem}/\code{checkLangUsing\_sat\_sound} chain without modifying
-the \OSLF{} core.  A richer alternative is \textbf{evidence-valued
-connective semantics}:
+The current code keeps \textbf{both} layers, with a clear priority order.
+\textbf{Evidence-valued semantics} is primary:
 \[
-  \texttt{esem} : \texttt{OSLFFormula} \to \texttt{Pattern} \to
-    \texttt{Evidence}
+  \texttt{gfWMFormulaSemE} : \texttt{State} \to \texttt{OSLFFormula} \to
+    \texttt{Pattern} \to \texttt{Evidence}
 \]
-with $\wedge$ as evidence meet ($\sqcap$), $\vee$ as join ($\sqcup$),
-$\Dia$ aggregating via $\bigsqcup$ over successors, and a cut theorem:
+\textbf{Threshold-Prop semantics} is a projection used by the checker soundness
+pipeline:
 \[
-  \tau \le \texttt{toStrength}(\texttt{esem}\; \varphi\; p)
-  \;\;\Longleftrightarrow\;\;
-  \texttt{sem}\;(\ldots)\;\texttt{atomSem}_W\; \varphi\; p
+  \texttt{gfWMFormulaSem}\; W\; \tau\; \varphi\; p
+  := \texttt{sem}(\ldots,\texttt{gfAtomSemFromWM}\; W\; \tau,\varphi,p)
 \]
-This is future work item~(4b).
+This split keeps the existing \OSLF{} checker interface intact while exposing a
+strictly richer evidence-valued semantics in the same repository.  The relevant
+agreement lemmas are \code{gfAtomSemFromWM\_eq\_threshold},
+\code{gfRGLSemantics\_formulaSemE}, and the paper-facing checker-to-WM theorems
+listed in Table~\ref{tab:status}.
 
 \subsection{Assumptions}
 
-The bridge relies on three interface assumptions (to be discharged
-during implementation):
+The currently proved bridge fixes a concrete atom-query encoding
+\code{queryOfAtom}.  Pushing beyond that concrete interface relies on three
+further assumptions:
 
 \begin{enumerate}
 \item \textbf{Query extraction totality.}  Every \OSLF{} pattern maps to a
@@ -1342,7 +1620,7 @@ during implementation):
     (\code{LinguisticInvariance.lean}) \\
 \code{adjModification\_preserves\_lexical}
   & \textbf{Proved}
-  & Lexical monotonicity of modification
+  & Compositional lexical-containment monotonicity
     (\code{LinguisticInvariance.lean}) \\
 \code{evidence\_add'}
   & \textbf{Proved}

@@ -1,6 +1,7 @@
 import Mettapedia.Languages.MeTTa.CoreProfile
 import Mettapedia.Languages.MeTTa.PureKernel.TypedLangDef
 import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+import Mettapedia.Languages.MeTTa.PureKernel.Inst0BridgeDerived
 import Mettapedia.Languages.MeTTa.PureKernel.Reduction
 import Mettapedia.Languages.MeTTa.PureKernel.Renaming
 import Mettapedia.Languages.MeTTa.PureKernel.Substitution
@@ -241,7 +242,7 @@ theorem pureOpStepStar_sound_pureProfileTheoryStep_quoteClosed {t u : PureTm 0}
 /-- **B -> C1 (parametric)**:
 If kernel `inst0` commutes with quotation/opening for a naming policy `ν`,
 then every kernel one-step reduction is sound into C1 at that quotation. -/
-theorem pureTheoryStep_sound_pureProfileTheoryStep_quoteTmWith_assuming_inst0
+private theorem pureTheoryStep_sound_pureProfileTheoryStep_quoteTmWith_assuming_inst0
     (ν : Nat → String)
     (hinst0 : Inst0OpenBridgeCompat ν)
     {n : Nat} (k : Nat) (ρ : QuoteEnv n) {t u : PureTm n}
@@ -409,7 +410,7 @@ theorem pureTheoryStep_sound_pureProfileTheoryStep_quoteTmWith_assuming_inst0
 
 /-- Closed specialization of `pureTheoryStep_sound_pureProfileTheoryStep_quoteTmWith_assuming_inst0`
 for the default binder naming policy. -/
-theorem pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed_assuming_inst0
+private theorem pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed_assuming_inst0
     (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
     (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
     {t u : PureTm 0} (h : PureTheoryStep t u) :
@@ -419,7 +420,7 @@ theorem pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed_assuming_inst0
       (ν := defaultBinderName) hinst0 (k := 0) (ρ := emptyEnv) hcompat0 h
 
 /-- Star-closure transport for B -> C1 under the same `inst0` bridge assumption. -/
-theorem pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed_assuming_inst0
+private theorem pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed_assuming_inst0
     (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
     (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
     {t u : PureTm 0} (h : PureTheoryStepStar t u) :
@@ -441,21 +442,27 @@ theorem pureTheoryStep_sound_pureProfileTheoryStep_quoteTmWith
   pureTheoryStep_sound_pureProfileTheoryStep_quoteTmWith_assuming_inst0
     (ν := ν) hinst0 (k := k) (ρ := ρ) hcompat h
 
-/-- Closed B -> C1 transport (parameterized by an `inst0` bridge witness). -/
+private theorem defaultBinderName_quoteCompat0 :
+    QuoteCompat defaultBinderName 0 emptyEnv :=
+  quoteCompat_empty defaultBinderName defaultBinderName_injective 0
+
+/-- Closed default-binder B -> C1 transport without external bridge arguments. -/
 theorem pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed
-    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
-    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
     {t u : PureTm 0} (h : PureTheoryStep t u) :
     PureProfileTheoryStep (quoteClosedTm t) (quoteClosedTm u) :=
-  pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed_assuming_inst0 hinst0 hcompat0 h
+  pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed_assuming_inst0
+    inst0OpenBridgeCompat_defaultBinderName
+    defaultBinderName_quoteCompat0
+    h
 
-/-- Closed star transport B* -> C1* (parameterized by an `inst0` bridge witness). -/
+/-- Closed default-binder star transport B* -> C1* without external bridge arguments. -/
 theorem pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed
-    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
-    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
     {t u : PureTm 0} (h : PureTheoryStepStar t u) :
     PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) :=
-  pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed_assuming_inst0 hinst0 hcompat0 h
+  pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed_assuming_inst0
+    inst0OpenBridgeCompat_defaultBinderName
+    defaultBinderName_quoteCompat0
+    h
 
 private def betaPiOneNestedLamRedex : PureTm 0 :=
   .app (.lam (.lam (.var (Fin.succ (0 : Fin 1))))) .u0
@@ -470,7 +477,7 @@ private def betaPiTwoNestedLamContractum : PureTm 0 :=
   .lam (.lam .u0)
 
 /-- Regression: one nested binder in βΠ body still transports to C1. -/
-theorem betaPi_bridge_regression_one_nestedLam_assuming_inst0
+private theorem betaPi_bridge_regression_one_nestedLam_assuming_inst0
     (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
     (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv) :
     PureProfileTheoryStep
@@ -483,7 +490,7 @@ theorem betaPi_bridge_regression_one_nestedLam_assuming_inst0
   exact pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed_assuming_inst0 hinst0 hcompat0 hred
 
 /-- Regression: two nested binders in βΠ body still transports to C1. -/
-theorem betaPi_bridge_regression_two_nestedLam_assuming_inst0
+private theorem betaPi_bridge_regression_two_nestedLam_assuming_inst0
     (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
     (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv) :
     PureProfileTheoryStep
@@ -494,6 +501,24 @@ theorem betaPi_bridge_regression_two_nestedLam_assuming_inst0
       rename, wk] using
       (Red.betaPi (.lam (.lam (.var (Fin.succ (Fin.succ (0 : Fin 1)))))) (.u0))
   exact pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed_assuming_inst0 hinst0 hcompat0 hred
+
+/-- Default-binder regression: one nested binder in βΠ body still transports to C1. -/
+theorem betaPi_bridge_regression_one_nestedLam :
+    PureProfileTheoryStep
+      (quoteClosedTm betaPiOneNestedLamRedex)
+      (quoteClosedTm betaPiOneNestedLamContractum) :=
+  betaPi_bridge_regression_one_nestedLam_assuming_inst0
+    inst0OpenBridgeCompat_defaultBinderName
+    defaultBinderName_quoteCompat0
+
+/-- Default-binder regression: two nested binders in βΠ body still transports to C1. -/
+theorem betaPi_bridge_regression_two_nestedLam :
+    PureProfileTheoryStep
+      (quoteClosedTm betaPiTwoNestedLamRedex)
+      (quoteClosedTm betaPiTwoNestedLamContractum) :=
+  betaPi_bridge_regression_two_nestedLam_assuming_inst0
+    inst0OpenBridgeCompat_defaultBinderName
+    defaultBinderName_quoteCompat0
 
 /-- Backwards-compatible name for the A-layer step relation. -/
 abbrev ClosedComputationStep : PureTm 0 → PureTm 0 → Prop := PureOpStep

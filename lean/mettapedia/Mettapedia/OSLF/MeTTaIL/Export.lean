@@ -50,13 +50,26 @@ private def commaJoin (parts : List (List String)) : List String :=
   | first :: rest =>
       rest.foldl (fun acc p => acc ++ [quote ","] ++ p) first
 
-private def renderTermSyntax (label : String) (params : List TermParam) : String :=
+private def renderCtorSyntax (label : String) (params : List TermParam) : String :=
   let paramTokens := (indexed params).map fun (idx, p) => renderParamSyntaxTokens idx p
   match paramTokens with
   | [] => quote (ctorName label)
   | _ =>
       let args := commaJoin paramTokens
       String.intercalate " " ([quote (ctorName label), quote "("] ++ args ++ [quote ")"])
+
+private def renderSyntaxItem : SyntaxItem → String
+  | .terminal t => quote t
+  | .nonTerminal n => n
+  | .separator s => quote s
+  | .delimiter l r => String.intercalate " " [quote l, quote r]
+
+private def renderUserSyntax (rule : GrammarRule) : String :=
+  let tokens := rule.syntaxPattern.map renderSyntaxItem
+  if tokens.isEmpty then
+    renderCtorSyntax rule.label rule.params
+  else
+    String.intercalate " " tokens
 
 partial def renderPattern : Pattern → String
   | .bvar n => s!"bvar{n}"
@@ -115,7 +128,17 @@ private def renderGrammarRule (rule : GrammarRule) : String :=
       ""
     else
       String.intercalate ", " renderedParams ++ " "
-  let syntaxText := renderTermSyntax rule.label rule.params
+  let syntaxText := renderCtorSyntax rule.label rule.params
+  s!"        {ctorName rule.label} . {paramBlock}|- {syntaxText} : {rule.category};"
+
+private def renderGrammarRuleWithUserSyntax (rule : GrammarRule) : String :=
+  let renderedParams := (indexed rule.params).map fun (idx, p) => renderTermParam idx p
+  let paramBlock :=
+    if renderedParams.isEmpty then
+      ""
+    else
+      String.intercalate ", " renderedParams ++ " "
+  let syntaxText := renderUserSyntax rule
   s!"        {ctorName rule.label} . {paramBlock}|- {syntaxText} : {rule.category};"
 
 private def renderEquation (overloaded : List String) (idx : Nat) (eqn : Equation) : String :=
@@ -166,6 +189,28 @@ def renderLanguage (lang : LanguageDef) : String :=
   let overloaded := overloadedRelations lang
   let typeLines := lang.types.map (fun t => s!"        {t}")
   let termLines := lang.terms.map renderGrammarRule
+  let eqLines := (indexed lang.equations).map (fun (idx, eqn) => renderEquation overloaded idx eqn)
+  let rwLines := (indexed lang.rewrites).map (fun (idx, rw) => renderRewrite overloaded idx rw)
+  String.intercalate "\n"
+    [ "language! {"
+    , s!"    name: {lang.name},"
+    , ""
+    , renderSection "types" typeLines ++ ","
+    , ""
+    , renderSection "terms" termLines ++ ","
+    , ""
+    , renderSection "equations" eqLines ++ ","
+    , ""
+    , renderSection "rewrites" rwLines ++ ","
+    , "}"
+    ]
+
+/-- Render a Lean `LanguageDef` into Rust `language! { ... }` macro text,
+using `syntaxPattern` for concrete term parsing when provided. -/
+def renderLanguageWithUserSyntax (lang : LanguageDef) : String :=
+  let overloaded := overloadedRelations lang
+  let typeLines := lang.types.map (fun t => s!"        {t}")
+  let termLines := lang.terms.map renderGrammarRuleWithUserSyntax
   let eqLines := (indexed lang.equations).map (fun (idx, eqn) => renderEquation overloaded idx eqn)
   let rwLines := (indexed lang.rewrites).map (fun (idx, rw) => renderRewrite overloaded idx rw)
   String.intercalate "\n"

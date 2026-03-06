@@ -68,8 +68,7 @@ structure TypedLangDef where
 
 /-- MeTTa-Pure as a `TypedLangDef`.
 
-    Uses `mettaPure_subject_reduction` (currently sorry, pending
-    completion of the substitution lemma). -/
+    Uses `mettaPure_subject_reduction` from `SubjectReduction.lean`. -/
 noncomputable def mettaPureTyped : TypedLangDef where
   lang := mettaPure
   Ctx := PureCtx
@@ -115,19 +114,11 @@ theorem mettaPure_reduction_star_sound {t t' : Pattern}
 
 /-! ## Milestone Status
 
-**Milestone 1** (MeTTa-Pure kernel): 4/5 files complete, 2 sorries remaining.
+**Milestone 1** (MeTTa-Pure kernel): substitution and subject-reduction
+theorems are present in `SubjectReduction.lean`.
 
-The crown theorem (`mettaPure_subject_reduction`) and its substitution
-dependency (`typing_subst`) remain open.
-It is provable by standard locally nameless metatheory:
-
-1. **Substitution lemma**: fvar substitution preserves `PureHasType`
-2. **Generation lemmas**: inversion of typing for each constructor
-3. **Subject reduction**: induction on `PureHasType` × `PureReduces`
-
-Infrastructure for (1) exists in `Substitution.lean` (`subst_intro`,
-`applySubst_openBVar_comm`). The typing rules use cofinite quantification,
-making the substitution lemma's β-case follow directly from `subst_intro`.
+Current integration status should be read from project build targets and
+framework trackers (rather than this historical milestone note).
 
 **Milestone 2** (Bridge to `langReduces`): future.
 **Milestone 3** (MeTTa-Core assembly): future. -/

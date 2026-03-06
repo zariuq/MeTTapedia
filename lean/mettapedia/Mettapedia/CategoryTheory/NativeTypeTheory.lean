@@ -173,46 +173,17 @@ def fiberIso (X : PLNObj) : fiberOver X ≃ PLNFiber X where
     simp [mk, fiber]
   right_inv := fun _ => rfl
 
-/-! ## Step 5: Modal Types (Interface to Phase 5C)
+/-! ## Step 5: Modal Types (Canonical Externalization)
 
-Modal types ⟨Cj⟩_{xk::Ak} B will be certain subobjects in NT,
-constructed via comprehension using the subobject classifier.
+Canonical modal semantics are predicate/subobject-based and live in:
+- `Mettapedia/CategoryTheory/ModalTypes.lean`
+  (`relyPossiblyPred`, `modalComprehension`)
+- `Mettapedia/OSLF/Framework/ModalSubobjectBridge.lean`
 
-For now, we provide the interface that will be filled in Phase 5C.
+This file intentionally does not define:
+- a scalar `modalType` summary constant, or
+- an internal modal-spec container.
 -/
-
-/-- A modal type specification.
-
-    This captures the rely-possibly formula:
-    ∀xk. (∧ xk::Ak) → ∃p. Cj[t]⇝p ∧ p::B
-
-    - context: The base object where the hole lives
-    - result: The target truth value B
-    - relies: The rely conditions for free variables
--/
-structure ModalTypeSpec where
-  /-- The context object (where the hole lives) -/
-  context : PLNObj
-  /-- The result type B -/
-  result : PLNFiber PLNLambdaTheory.Pr
-  /-- Parameters with their rely conditions -/
-  relies : List (Σ (X : PLNObj), PLNFiber X)
-
-/-- The modal type as a subobject (constructed in Phase 5C).
-
-    This is the comprehension:
-    { t : context | ∀xk. (∧ xk::Ak) → ∃p. Cj[t]⇝p ∧ p::result }
-
-    Using the subobject classifier in a topos, this becomes a morphism
-    context → Ω where Ω is the subobject classifier.
-
-    The implementation is provided by ModalTypes.constructModalType.
--/
-noncomputable def modalType (spec : ModalTypeSpec) : PLNFiber spec.context :=
-  -- Forward declaration: actual implementation in ModalTypes.constructModalType
-  -- This is a stub that gets replaced when ModalTypes is imported
-  -- The real definition uses the rely-possibly formula with reduction semantics
-  ⊤  -- Trivial placeholder (maximal evidence); see ModalTypes.lean for actual construction
 
 /-! ## Phase 5A Summary
 
@@ -220,18 +191,17 @@ We have successfully constructed Native Type Theory as the sigma type ∫ Sub:
 
 1. ✅ Defined NT as Σ (X : PLNObj), PLNFiber X
 2. ✅ Defined morphisms as implications τ → σ
-3. ⚠️ **INCOMPLETE**: Category instance commented out (type inference issues)
+3. ✅ Category instance for the sigma-shell NT category
 4. ✅ Defined the projection functor π : NT → PLNObj
 5. ✅ Showed fibers are exactly the truth value frames
-6. ✅ Provided interface for modal types (Phase 5C)
+6. ✅ Externalized modal semantics to canonical predicate/subobject modules
 
-**Key achievement**: We now have a proper topos-theoretic foundation!
+**Key achievement**: We now have a robust sigma/Grothendieck-style categorical shell.
 Objects (X, τ) are "types as pairs (filter, sort)" from OSLF.
 
-**✅ FIXED**: The Category instance now works! (lines 146-167)
-- Added `@[ext] theorem Hom.ext` for morphism extensionality
-- Used full path `CategoryTheory.CategoryStruct` and `CategoryTheory.Category`
-- Proved laws using `ext` + `rfl` (reduces to function composition properties)
+**Category-shell status**: the NT sigma category instance is in place.
+- Uses `CategoryTheory.CategoryStruct` / `CategoryTheory.Category` over `Hom`.
+- Category laws are discharged via proof-irrelevance of `PLift`ed order proofs (`Hom.eq`).
 
 This enables:
 - ✅ Proper functoriality of projection π : NT → PLNObj
@@ -242,11 +212,11 @@ This enables:
 **Future refactoring**: Change `PLNFiber X = Prop` to `Evidence` or `[0,1]`
 to match PLN's actual semantics (as proved in Phase 5E).
 
-**Phases 5B-5E**: All COMPLETE! ✅
-- 5B: Term syntax and reduction ✅
-- 5C: Modal types via comprehension ✅
-- 5D: Proved tensor = meet ✅
-- 5E: Proved deduction = evidence composition ✅
+**Status note**:
+- This file's category-level shell is complete.
+- No scalar `modalType` constant is defined in this file.
+- Canonical predicate-first/modal-subobject semantics are implemented in
+  `CategoryTheory/ModalTypes.lean`.
 -/
 
 end Mettapedia.CategoryTheory.NativeTypeTheory

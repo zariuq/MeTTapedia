@@ -8,6 +8,7 @@ import Mettapedia.Languages.MeTTa.PureKernel.Confluence
 import Mettapedia.Languages.MeTTa.PureKernel.Typing
 import Mettapedia.Languages.MeTTa.PureKernel.SubjectReduction
 import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+import Mettapedia.Languages.MeTTa.PureKernel.Inst0BridgeDerived
 import Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
 import Mettapedia.Languages.MeTTa.PureKernel.TypedLangDef
 import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding

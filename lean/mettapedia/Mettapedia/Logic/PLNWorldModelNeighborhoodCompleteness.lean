@@ -41,6 +41,10 @@ def singletonStrengthLEOn (C : Neighborhood.FrameClass) (φ ψ : ModalQuery) : P
       WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         ({pn} : Multiset PointedNeighborhood) ψ
 
+/-- Naming alias: singleton consequence on frame class `C`. -/
+abbrev singletonConsequenceOn (C : Neighborhood.FrameClass) (φ ψ : ModalQuery) : Prop :=
+  singletonStrengthLEOn C φ ψ
+
 /-- Frame-class local singleton consequence iff pointwise implication. -/
 theorem pointwiseImpliesOn_iff_singletonStrengthLEOn
     (C : Neighborhood.FrameClass) (φ ψ : ModalQuery) :
@@ -225,6 +229,16 @@ theorem provable_imp_iff_singletonStrengthLEOn
   · intro hsing
     exact provable_imp_of_singletonStrengthLEOn (S := S) (𝓢 := 𝓢) (C := C) hsing
 
+/-- Naming alias: proof-theoretic implication iff singleton WM consequence. -/
+theorem provable_imp_iff_singletonConsequenceOn
+    {S : Type*} [Entailment S ModalQuery]
+    {𝓢 : S}
+    {C : Neighborhood.FrameClass}
+    [Sound 𝓢 C] [Complete 𝓢 C]
+    {φ ψ : ModalQuery} :
+    (𝓢 ⊢ (φ ➝ ψ)) ↔ singletonConsequenceOn C φ ψ :=
+  provable_imp_iff_singletonStrengthLEOn (S := S) (𝓢 := 𝓢) (C := C)
+
 /-- Soundness-to-executable consequence bridge on multisets in frame class `C`. -/
 theorem multiset_strength_le_of_provable_imp
     {S : Type*} [Entailment S ModalQuery]
@@ -239,6 +253,20 @@ theorem multiset_strength_le_of_provable_imp
   have hsing : singletonStrengthLEOn C φ ψ :=
     singletonStrengthLEOn_of_provable_imp (S := S) (𝓢 := 𝓢) (C := C) hprov
   exact multiset_strength_le_of_singletonStrengthLEOn C W φ ψ hW hsing
+
+/-- Naming alias: soundness transfer from provability to multiset WM
+consequence in frame class `C`. -/
+theorem multiset_consequence_of_provable_imp
+    {S : Type*} [Entailment S ModalQuery]
+    {𝓢 : S}
+    {C : Neighborhood.FrameClass}
+    [Sound 𝓢 C]
+    {W : Multiset PointedNeighborhood} {φ ψ : ModalQuery}
+    (hW : ∀ pn ∈ W, pn.model.toFrame ∈ C)
+    (hprov : 𝓢 ⊢ (φ ➝ ψ)) :
+    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
+      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ :=
+  multiset_strength_le_of_provable_imp (S := S) (𝓢 := 𝓢) (C := C) hW hprov
 
 /-! ## Concrete Foundation instantiations: E and EMN -/
 

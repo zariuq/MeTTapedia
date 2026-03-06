@@ -43,8 +43,12 @@ import Mettapedia.OSLF.Framework.PLNSelectorLanguageDef
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 import Mettapedia.Languages.MeTTa.Core.Premises
 import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
-import Mettapedia.OSLF.Framework.MeTTaFullInstance
-import Mettapedia.OSLF.Framework.MeTTaToNTT
+import Mettapedia.OSLF.Framework.MeTTaFullLegacyInstance
+import Mettapedia.OSLF.Framework.MeTTaLegacyToNTT
+import Mettapedia.OSLF.Framework.OSLFNTTWMBridge
+import Mettapedia.OSLF.Framework.OSLFNTTTheoryClosure
+import Mettapedia.OSLF.Framework.ModalSubobjectBridge
+import Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure
 import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.Decidability
 import Mettapedia.OSLF.QuantifiedFormula
@@ -646,6 +650,10 @@ export Mettapedia.Languages.MeTTa.Core.Premises (
 )
 
 export Mettapedia.Languages.MeTTa.Core.FullLanguageDef (
+  mettaFullLegacy
+  mettaFullLegacyOSLF
+  mettaFullLegacyGalois
+  mettaFullLegacyRelEnv
   mettaFull
   mettaFullOSLF
   mettaFullGalois
@@ -653,6 +661,13 @@ export Mettapedia.Languages.MeTTa.Core.FullLanguageDef (
 )
 
 export Mettapedia.OSLF.Framework.MeTTaFullInstance (
+  mettaFullLegacy_pathOrder
+  mettaFullLegacy_checker_sat_to_pathSemClosed_commDi_bc_graph
+  mettaFullLegacy_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
+  mettaFullLegacySpecAtomCheck
+  mettaFullLegacySpecAtomSem
+  mettaFullLegacy_checkLangUsing_sat_sound_specAtoms
+  mettaFullLegacy_checkLang_sat_sound_specAtoms
   mettaFull_pathOrder
   mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
   mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
@@ -672,6 +687,36 @@ export Mettapedia.OSLF.Framework.MeTTaToNTT (
   mettaFormulaToNT_snd
   mettaFormulaToNT_atom
   mettaFormulaToNT_hom
+)
+
+export Mettapedia.OSLF.Framework.OSLFNTTWMBridge (
+  oslf_atom_ntt_wm_triangle
+  oslf_atom_ntt_wm_triangle_categorical
+  oslf_formula_ntt_evidence_component
+  oslf_dia_formula_graph_witness_transport
+  oslf_dia_formula_ntt_graph_witness_transport
+  oslf_formula_ntt_graph_triangle
+  oslf_formula_ntt_graph_triangle_categorical
+)
+
+export Mettapedia.OSLF.Framework.ModalSubobjectBridge (
+  modalFiberOfPatternPred
+  modalSubobjectOfPatternPred
+  modalSubobjectAsFiber
+  modalSubobjectAsFiber_eq_modalFiber
+  modalFiber_mem_iff
+  modalSubobject_mem_iff
+  modalFiber_map_mem
+  modalSubobject_subst_map_mem
+  modalSubobject_commDi_beckChevalley_of_pathSemLiftPkg
+  modalSubobject_commDi_bc_graph_endpoint_of_pathSemLiftPkg
+  mettaFullLegacy_modalSubobject_commDi_bc_graph_endpoint
+  mettaFull_modalSubobject_commDi_bc_graph_endpoint
+)
+
+export Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure (
+  oslf_ntt_wm_step_sound
+  oslf_ntt_wm_star_sound
 )
 
 export Mettapedia.OSLF.Framework.ConstructorCategory (

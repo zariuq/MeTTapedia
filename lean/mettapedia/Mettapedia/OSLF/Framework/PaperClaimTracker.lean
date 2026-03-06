@@ -71,20 +71,20 @@ def paperClaimList : List PaperClaim :=
   -- Native Type Theory paper (Native_Type_Theory.pdf), OSLF-facing subset
   , ⟨"NTT.pdf", "§3", "Native type = (sort, predicate) pair",
     "NativeTypeOf / NatType / NatTypeFiber", .proven⟩
-  , ⟨"NTT.pdf", "§3-§5 (subset)", "Full presheaf Grothendieck category endpoint",
+  , ⟨"NTT.pdf", "§3-§5 (endpoint subset)", "Full presheaf Grothendieck category endpoint",
     "fullPresheafGrothendieckCategory", .proven⟩
-  , ⟨"NTT.pdf", "§3-§5 (subset)", "Scoped ↔ full presheaf comparison endpoint",
+  , ⟨"NTT.pdf", "§3-§5 (endpoint subset)", "Scoped ↔ full presheaf comparison endpoint",
     "scoped_full_scoped_obj_roundtrip / full_route_restriction_equivalence_package", .proven⟩
-  , ⟨"NTT.pdf", "§4", "Internal language: ⊤/⊥/∧/∨ in fibers",
+  , ⟨"NTT.pdf", "§4 (fiber-logic subset)", "Internal language: ⊤/⊥/∧/∨ in fibers",
     "topos_full_internal_logic_bridge_package", .proven⟩
-  , ⟨"NTT.pdf", "§4", "Frame-derived →/¬ in fibers",
+  , ⟨"NTT.pdf", "§4 (fiber-logic subset)", "Frame-derived →/¬ in fibers",
     "topos_full_internal_logic_bridge_package (Heyting clause)", .proven⟩
-  , ⟨"NTT.pdf", "§4 (guarded subset)", "Π/Σ type formation (nonempty families)",
-    "topos_full_internal_logic_bridge_package (Π/Σ clause)", .assumptionScoped⟩
-  , ⟨"NTT.pdf", "§5", "Theory morphism preservation (Π/Ω)",
-    "TheoryMorphism.piOmega_translation_endpoint", .proven⟩
-  , ⟨"NTT.pdf", "§5", "Colax Π/Prop rules",
-    "TheoryMorphism.piProp_colax_rules", .proven⟩
+  , ⟨"NTT.pdf", "§4 (endpoint subset)", "Representable Π/Σ transport package (rule-pack-first; Prop-12 compatibility wrappers)",
+    "topos_representable_patternPred_piSigma_transport_pack_via_rulePack / topos_representable_patternPred_piSigma_transport_via_rulePack / topos_representable_patternPred_piSigma_transport_pack_via_prop12 / topos_representable_patternPred_piSigma_transport_via_prop12_pack / canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_goal / canonical_prop12_transport_pack_and_fixpoint_endpoint_of_goal / canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal / canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal", .proven⟩
+  , ⟨"NTT.pdf", "§5", "Theory morphism preservation (Π/Σ/Ω/Prop endpoint)",
+    "TheoryMorphism.piSigmaOmegaProp_translation_endpoint", .proven⟩
+  , ⟨"NTT.pdf", "§5", "Colax Π/Σ/Prop rules",
+    "TheoryMorphism.piSigmaProp_colax_rules", .proven⟩
   -- TOGL paper (togl.pdf)
   , ⟨"togl.pdf", "§2", "Graph reduction structure",
     "reductionGraphObjUsing", .proven⟩
@@ -110,10 +110,10 @@ theorem paperClaimList_all_resolved :
   decide
 
 /-- Count of fully proven claims. -/
-theorem provenCount_eq : claimCountByStatus .proven = 25 := by decide
+theorem provenCount_eq : claimCountByStatus .proven = 26 := by decide
 
 /-- Count of assumption-scoped claims. -/
-theorem assumptionScopedCount_eq : claimCountByStatus .assumptionScoped = 2 := by decide
+theorem assumptionScopedCount_eq : claimCountByStatus .assumptionScoped = 1 := by decide
 
 /-- Full NTT parity is closed: all strict NTT claims are resolved. -/
 theorem fullNTTParity_closed :
@@ -146,8 +146,14 @@ theorem fullNTTParity_closed :
 #check @Mettapedia.OSLF.NativeType.scoped_full_scoped_obj_roundtrip
 #check @Mettapedia.OSLF.NativeType.full_route_restriction_equivalence_package
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_full_internal_logic_bridge_package
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_rulePack
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_rulePack
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_prop12
+#check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_prop12_pack
 #check @Mettapedia.OSLF.NativeType.TheoryMorphism.piOmega_translation_endpoint
+#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piSigmaOmegaProp_translation_endpoint
 #check @Mettapedia.OSLF.NativeType.TheoryMorphism.piProp_colax_rules
+#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piSigmaProp_colax_rules
 
 -- TOGL
 #check @Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing

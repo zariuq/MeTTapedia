@@ -40,6 +40,10 @@ def singletonStrengthLEOn (C : Kripke.FrameClass) (φ ψ : ModalQuery) : Prop :=
       WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
         ({pk} : Multiset PointedKripke) ψ
 
+/-- Naming alias: singleton consequence on frame class `C`. -/
+abbrev singletonConsequenceOn (C : Kripke.FrameClass) (φ ψ : ModalQuery) : Prop :=
+  singletonStrengthLEOn C φ ψ
+
 /-- Frame-class local singleton consequence iff pointwise implication. -/
 theorem pointwiseImpliesOn_iff_singletonStrengthLEOn
     (C : Kripke.FrameClass) (φ ψ : ModalQuery) :
@@ -224,6 +228,16 @@ theorem provable_imp_iff_singletonStrengthLEOn
   · intro hsing
     exact provable_imp_of_singletonStrengthLEOn (S := S) (𝓢 := 𝓢) (C := C) hsing
 
+/-- Naming alias: proof-theoretic implication iff singleton WM consequence. -/
+theorem provable_imp_iff_singletonConsequenceOn
+    {S : Type*} [Entailment S ModalQuery]
+    {𝓢 : S}
+    {C : Kripke.FrameClass}
+    [Sound 𝓢 C] [Complete 𝓢 C]
+    {φ ψ : ModalQuery} :
+    (𝓢 ⊢ (φ ➝ ψ)) ↔ singletonConsequenceOn C φ ψ :=
+  provable_imp_iff_singletonStrengthLEOn (S := S) (𝓢 := 𝓢) (C := C)
+
 /-- Soundness-to-executable consequence bridge on multisets in frame class `C`. -/
 theorem multiset_strength_le_of_provable_imp
     {S : Type*} [Entailment S ModalQuery]
@@ -238,6 +252,20 @@ theorem multiset_strength_le_of_provable_imp
   have hsing : singletonStrengthLEOn C φ ψ :=
     singletonStrengthLEOn_of_provable_imp (S := S) (𝓢 := 𝓢) (C := C) hprov
   exact multiset_strength_le_of_singletonStrengthLEOn C W φ ψ hW hsing
+
+/-- Naming alias: soundness transfer from provability to multiset WM
+consequence in frame class `C`. -/
+theorem multiset_consequence_of_provable_imp
+    {S : Type*} [Entailment S ModalQuery]
+    {𝓢 : S}
+    {C : Kripke.FrameClass}
+    [Sound 𝓢 C]
+    {W : Multiset PointedKripke} {φ ψ : ModalQuery}
+    (hW : ∀ pk ∈ W, pk.model.toFrame ∈ C)
+    (hprov : 𝓢 ⊢ (φ ➝ ψ)) :
+    WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery) W φ ≤
+      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery) W ψ :=
+  multiset_strength_le_of_provable_imp (S := S) (𝓢 := 𝓢) (C := C) hW hprov
 
 /-! ## Concrete Foundation instantiations: K and KT -/
 

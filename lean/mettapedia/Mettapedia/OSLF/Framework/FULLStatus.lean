@@ -18,7 +18,7 @@ import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.Decidability
 import Mettapedia.OSLF.Framework.TinyMLInstance
 import Mettapedia.OSLF.Framework.MeTTaMinimalInstance
-import Mettapedia.OSLF.Framework.MeTTaFullInstance
+import Mettapedia.OSLF.Framework.MeTTaFullLegacyInstance
 import Mettapedia.Languages.GF.WorldModelSemantics
 import Mettapedia.Languages.GF.IdentityEvidenceSemantics
 import Mettapedia.Logic.IdentityEvidence
@@ -159,10 +159,10 @@ def tracker : List Milestone :=
       codeRef := "Mettapedia/OSLF/Framework/CategoryBridge.lean: languageSortPredNaturality_and / languageSortPredNaturality_or / languageSortFiber_ofPatternPred_mem_iff_and / languageSortFiber_ofPatternPred_mem_iff_or / languageSort_conj_disj_topos_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/oslf.pdf (\"Conjunction. TBD\" / \"Disjunction. TBD\")"
       note := "Conjunction/disjunction are now packaged as a canonical presheaf-topos endpoint: naturality closure, Ω-characteristic-map round-trip, and representable-membership semantics are proved together." }
   , { area := "Literature Alignment"
-      title := "Theory-translation preservation of Π/Ω in Native Type route"
+      title := "Theory-translation preservation of Π/Σ/Ω in Native Type route"
       status := .done
-      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: TheoryMorphism, TheoryMorphism.preserves_piType, TheoryMorphism.preserves_omegaTop, TheoryMorphism.preserves_propImp, TheoryMorphism.piOmega_translation_endpoint, TheoryMorphism.piOmegaProp_translation_endpoint, TheoryMorphism.id_piOmega_translation_endpoint, TheoryMorphism.id_piOmegaProp_translation_endpoint; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf (future-work discussion on preserving Π and Ω)"
-      note := "Native Type translation conditions are now explicit and theorem-level: a sort-indexed `TheoryMorphism` contract certifies Π (`sInf`), Ω-top, and fiber implication (`Prop` constructor), with canonical bundled endpoints and identity-canary instances." }
+      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: TheoryMorphism, TheoryMorphism.preserves_piType, TheoryMorphism.preserves_sigmaType, TheoryMorphism.preserves_omegaTop, TheoryMorphism.preserves_propImp, TheoryMorphism.piOmega_translation_endpoint, TheoryMorphism.piOmegaProp_translation_endpoint, TheoryMorphism.piSigmaOmegaProp_translation_endpoint, TheoryMorphism.id_piOmega_translation_endpoint, TheoryMorphism.id_piOmegaProp_translation_endpoint, TheoryMorphism.id_piSigmaOmegaProp_translation_endpoint; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf (future-work discussion on preserving Π and Ω)"
+      note := "Native Type translation conditions are explicit and theorem-level: a sort-indexed `TheoryMorphism` contract certifies Π (`sInf`), Σ (`sSup`), Ω-top, and fiber implication (`Prop` constructor), with canonical bundled endpoints and identity-canary instances." }
   ]
 
 /-- Count milestones with a given status. -/
@@ -217,10 +217,10 @@ def strictTracker : List Milestone :=
       codeRef := "Mettapedia/OSLF/Framework/GeneratedTyping.lean: depDiamond/depBox/paramDiamond/paramBox, dep_quote/dep_drop/param_quote/param_drop, dependent_parametric_generated_type_system_extension, rhoCalc_dependent_parametric_generated_type_system_extension; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/oslf.pdf §13.1"
       note := "Generated typing now includes theorem-level dependent and parametric extension endpoints: modal semantics (`◇`,`□`) lifted over index families and quote/drop typing transport rules, bundled as a canonical extension package." }
   , { area := "Native Type Theory Future Work"
-      title := "Colax preservation rules for Π/Prop under theory translation"
+      title := "Colax preservation rules for Π/Σ/Prop under theory translation"
       status := .done
-      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: TheoryMorphism.colax_piType/lax_piType, TheoryMorphism.colax_propImp/lax_propImp, TheoryMorphism.colax_pi_elim/colax_pi_intro, TheoryMorphism.colax_prop_mp/colax_prop_intro, TheoryMorphism.PiPropColaxRuleSet, TheoryMorphism.piProp_colax_rules, TheoryMorphism.comp, TheoryMorphism.comp_piProp_colax_rules; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf lines ~514, ~676"
-      note := "Full theorem-level colax/lax rule-set is formalized for Π/Prop translation: directional preservation, intro/elim rules, and composition stability are packaged as a canonical endpoint." }
+      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: TheoryMorphism.colax_piType/lax_piType, TheoryMorphism.colax_sigmaType/lax_sigmaType, TheoryMorphism.colax_propImp/lax_propImp, TheoryMorphism.colax_pi_elim/colax_pi_intro, TheoryMorphism.colax_sigma_intro/colax_sigma_elim, TheoryMorphism.colax_prop_mp/colax_prop_intro, TheoryMorphism.PiPropColaxRuleSet, TheoryMorphism.PiSigmaPropColaxRuleSet, TheoryMorphism.piProp_colax_rules, TheoryMorphism.piSigmaProp_colax_rules, TheoryMorphism.comp, TheoryMorphism.comp_piProp_colax_rules, TheoryMorphism.comp_piSigmaProp_colax_rules; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf lines ~514, ~676"
+      note := "Full theorem-level colax/lax rule-sets are formalized for Π/Σ/Prop translation: directional preservation, intro/elim rules, and composition stability are packaged as canonical endpoints." }
   , { area := "OSLF/GSLT Future Work"
       title := "Internal constructor-category restriction of `stepForward` to modal fiber action"
       status := .done
@@ -273,20 +273,20 @@ def paperParityTracker : List Milestone :=
       codeRef := "Mettapedia/OSLF/Framework/SubstitutabilityTheorem1.lean: Theorem1SubstitutabilityEquiv / theorem1_substitutability_forward / theorem1_substitutability_imageFinite; Mettapedia/OSLF/CoreMain.lean: CoreMainTheorem1CanonicalContract / coreMain_theorem1_canonical_contract / coreMain_theorem1_langReduces_imageFinite / coreMain_paper_parity_theorem_package / coreMain_paper_parity_theorem_package_langReduces; plus Mettapedia/OSLF/Framework/RewriteSystem.lean: Substitutability; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/oslf.pdf §11"
       note := "Theorem-1 has both a generic CoreMain contract and a canonical `langReduces` endpoint with explicit predecessor-finiteness assumptions; this closes the paper-facing endpoint selection without masking assumptions." }
   , { area := "Native Type Theory Core"
-      title := "Full NT route over presheaf/base-fibration construction (beyond constructor-scoped endpoint)"
+      title := "Full NT route over presheaf/base-fibration construction (endpoint subset)"
       status := .done
       codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: fullPresheafGrothendieckCategory (Category instance) / FullPresheafGrothendieckObj / FullPresheafGrothendieckHom / fullPresheafGrothendieckHom_comp_assoc / fullPresheafGrothendieckHom_id_comp / fullPresheafGrothendieckHom_comp_id; Mettapedia/OSLF/CoreMain.lean: coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
-      note := "Full Category instance on FullPresheafGrothendieckObj with proven associativity and identity laws. Consumed by coreMain_paper_parity_full_package." }
+      note := "Endpoint subset: Full Category instance on FullPresheafGrothendieckObj with proven associativity and identity laws. Consumed by coreMain_paper_parity_full_package." }
   , { area := "Native Type Theory Core"
       title := "Comparison theorem: full presheaf-native Grothendieck endpoint restricts to constructor endpoint"
       status := .done
       codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: fullGrothObj_to_scopedConstructorPred_at_representable / scoped_full_scoped_obj_roundtrip / FullRouteRestrictionEquivalence / full_route_restriction_equivalence_package / ScopedConstructorPredHom.toFullGrothHom_comp; Mettapedia/OSLF/CoreMain.lean: coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
       note := "Genuine equivalence at representable objects: scoped→full→scoped roundtrip is identity, full route restriction equivalence with morphism-level composition preservation. Consumed by coreMain_paper_parity_full_package." }
   , { area := "Native Type Theory Core"
-      title := "Topos -> internal-language bridge theorem family at paper claim strength"
+      title := "Topos -> internal-language bridge theorem family (fiber-logic endpoint subset)"
       status := .done
-      codeRef := "Mettapedia/OSLF/Framework/ToposTOGLBridge.lean: topos_full_internal_logic_bridge_package (⊤/⊥/∧/∨/Frame →/¬ + Π/Σ preservation); Mettapedia/OSLF/NativeType/Construction.lean: full_route_restriction_equivalence_package; Mettapedia/OSLF/CoreMain.lean: coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
-      note := "Full internal logic package: ⊤/⊥/∧/∨ internalization plus Frame-derived →/¬, with Π/Σ preservation through the topos bridge. Consumed by coreMain_paper_parity_full_package." }
+      codeRef := "Mettapedia/OSLF/Framework/ToposTOGLBridge.lean: topos_full_internal_logic_bridge_package (⊤/⊥/∧/∨/Frame →/¬) + topos_representable_patternPred_piSigma_transport_via_rulePack + topos_representable_patternPred_piSigma_transport_pack_via_rulePack + topos_representable_patternPred_piSigma_transport_pack_via_prop12 + topos_representable_patternPred_piSigma_transport_via_prop12_pack; Mettapedia/OSLF/NativeType/CodomainFibration.lean: prop12_piSigmaPredicateRulePack / prop12_piEta_presheaf / prop12_sigmaEta_presheaf; Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean: representable_patternPred_piSigma_transport_via_rulePack / representable_patternPred_piSigma_transport_pack_via_rulePack / representable_patternPred_piSigma_transport_via_prop12_pack / RepresentablePiSigmaTransportPack / representable_patternPred_piSigma_transport_pack_via_prop12; Mettapedia/OSLF/Framework/OSLFNTTWMCanonicalClosure.lean: canonical_rulePack_transport_pack_and_fixpoint_endpoint_compact / canonical_prop12_transport_pack_and_fixpoint_endpoint_compact / canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal / canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal / canonicalConsequenceRuleOn_compact_fixpoint; Mettapedia/OSLF/CoreMain.lean: coreMain_representable_patternPred_piSigma_transport_via_rulePack / coreMain_representable_patternPred_piSigma_transport_pack_via_rulePack / coreMain_representable_patternPred_piSigma_transport_via_prop12_pack / coreMain_representable_patternPred_piSigma_transport_pack / coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
+      note := "Endpoint subset: ⊤/⊥/∧/∨ internalization plus Frame-derived →/¬ and a representable Π/Σ transport surface that is rule-pack-first (`...via_rulePack`), with explicit Prop-12 compatibility wrappers (`...via_prop12...`) and compact canonical WM-closure endpoints." }
   , { area := "TOGL/Graph Foundations"
       title := "Explicit formal bridge from graph-theoretic foundations to OSLF canonical endpoint"
       status := .done

@@ -254,6 +254,7 @@ theorem surfaceScope_closed : closedQF2 surfaceScope := by
 theorem inverseScope_closed : closedQF2 inverseScope := by
   simp [closedQF2, inverseScope, freeVarsQF2, freeVarsAtom,
         freeVarsTerms, freeVarsTerm]
+  decide
 
 /-! ## Stage 7: Evidence Structure -/
 

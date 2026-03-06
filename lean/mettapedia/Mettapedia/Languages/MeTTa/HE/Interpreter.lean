@@ -24,6 +24,57 @@ namespace Mettapedia.Languages.MeTTa.HE
 
 open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
 
+/-! ## HE Stdlib Extension Helpers (selected)
+
+Small, high-impact subset used to close key HE runtime extension gaps.
+Current slice: `switch`, `switch-minimal`, `switch-internal`.
+-/
+
+/-- Parse one switch case pair `(pattern template)`. -/
+private def parseSwitchCasePair? : Atom → Option (Atom × Atom)
+  | .expression [pattern, template] => some (pattern, template)
+  | _ => none
+
+/-- Parse case tuple for `(switch ... cases)` / `(switch-minimal ... cases)`. -/
+private def parseSwitchCases? : Atom → Option (List (Atom × Atom))
+  | .expression cases => cases.mapM parseSwitchCasePair?
+  | _ => none
+
+/-- Parse deconsed payload used by `(switch-internal atom ((pattern template) tail))`. -/
+private def parseSwitchInternalCases? : Atom → Option (List (Atom × Atom))
+  | .expression [headCase, tailCases] =>
+      match parseSwitchCasePair? headCase, parseSwitchCases? tailCases with
+      | some h, some tail => some (h :: tail)
+      | _, _ => none
+  | _ => none
+
+/-- Select first matching switch case (nondeterministic within a matched case). -/
+private def selectSwitchTemplate
+    (scrutinee : Atom)
+    (cases : List (Atom × Atom))
+    (b : Bindings)
+    (fuel : Nat) : List (Atom × Bindings) :=
+  match fuel with
+  | 0 => [(.symbol "NotReducible", b)]
+  | n + 1 =>
+      match cases with
+      | [] => [(.symbol "NotReducible", b)]
+      | (pattern, template) :: tail =>
+          let matched := matchAtoms scrutinee pattern n
+          let merged := matched.flatMap (fun mb => mergeBindings b mb n)
+          let rendered :=
+            merged.filter (fun mb => !mb.hasLoop)
+              |>.map (fun mb => (mb.apply template n, mb))
+          if rendered.isEmpty then
+            selectSwitchTemplate scrutinee tail b n
+          else
+            rendered
+
+/-- Error shape used by stdlib `assert` when a result is not `True`. -/
+private def mkAssertNotTrueError (asserted : Atom) : Atom :=
+  Atom.error (.expression [.symbol "assert", asserted])
+    (.expression [asserted, .symbol "not", .symbol "True"])
+
 /-! ## Core Interpreter
 
 All 6 functions use a shared `fuel : Nat` parameter for termination.
@@ -287,23 +338,80 @@ def mettaCall (atom type_ : Atom) (space : Space) (b : Bindings)
             -- Line 536
             [(atom, b)]
         else
-          -- Non-grounded: query equations (line 538)
-          let queryResults := queryEquations space atom n
-          if !queryResults.isEmpty then
-            let results := queryResults.flatMap fun (rhs, qb) =>
-              let merged := mergeBindings qb b n
-              merged.flatMap fun mb =>
-                if mb.hasLoop then []
+          -- Selected HE stdlib extension support (switch family).
+          if op == .symbol "switch" || op == .symbol "switch-minimal" then
+            match args with
+            | [scrutinee, rawCases] =>
+                match parseSwitchCases? rawCases with
+                | none => [(atom, b)]
+                | some cases =>
+                    let scrutineeResults := metta scrutinee Atom.undefinedType space b dispatch evaluated n
+                    scrutineeResults.flatMap fun (scrutineeVal, sb) =>
+                      let selected := selectSwitchTemplate scrutineeVal cases sb n
+                      selected.flatMap fun (out, ob) =>
+                        if out == .symbol "NotReducible" then
+                          [(Atom.empty, ob)]
+                        else
+                          metta out type_ space ob dispatch evaluated n
+            | _ => [(atom, b)]
+          else if op == .symbol "switch-internal" then
+            match args with
+            | [scrutinee, deconsedCases] =>
+                match parseSwitchInternalCases? deconsedCases with
+                | none => [(atom, b)]
+                | some cases =>
+                    let scrutineeResults := metta scrutinee Atom.undefinedType space b dispatch evaluated n
+                    scrutineeResults.flatMap fun (scrutineeVal, sb) =>
+                      let selected := selectSwitchTemplate scrutineeVal cases sb n
+                      selected.flatMap fun (out, ob) =>
+                        if out == .symbol "NotReducible" then
+                          [(Atom.empty, ob)]
+                        else
+                          metta out type_ space ob dispatch evaluated n
+            | _ => [(atom, b)]
+          else if op == .symbol "assert" then
+            match args with
+            | [asserted] =>
+                let assertedResults := metta asserted Atom.undefinedType space b dispatch evaluated n
+                assertedResults.flatMap fun (av, ab) =>
+                  let matched := matchAtoms av (.symbol "True") n
+                  let merged := matched.flatMap (fun mb => mergeBindings ab mb n)
+                  if merged.isEmpty then
+                    [(mkAssertNotTrueError asserted, ab)]
+                  else
+                    merged.filter (fun mb => !mb.hasLoop)
+                      |>.map (fun mb => (Atom.unit, mb))
+            | _ => [(atom, b)]
+          else if op == .symbol "case" then
+            match args with
+            | [scrutinee, rawCases] =>
+                let scrutineeResults := metta scrutinee Atom.undefinedType space b dispatch evaluated n
+                if scrutineeResults.isEmpty then
+                  mettaCall (.expression [.symbol "switch-minimal", Atom.empty, rawCases])
+                    type_ space b dispatch evaluated n
                 else
-                  -- Get value of $X from bindings
-                  let resolved := mb.apply rhs n
-                  metta resolved type_ space mb dispatch evaluated n
-            if results.isEmpty then
-              [(Atom.empty, b)]
-            else results
+                  scrutineeResults.flatMap fun (sv, sb) =>
+                    mettaCall (.expression [.symbol "switch-minimal", sv, rawCases])
+                      type_ space sb dispatch evaluated n
+            | _ => [(atom, b)]
           else
-            -- No equations match → return unchanged (line 546)
-            [(atom, b)]
+            -- Non-grounded: query equations (line 538)
+            let queryResults := queryEquations space atom n
+            if !queryResults.isEmpty then
+              let results := queryResults.flatMap fun (rhs, qb) =>
+                let merged := mergeBindings qb b n
+                merged.flatMap fun mb =>
+                  if mb.hasLoop then []
+                  else
+                    -- Get value of $X from bindings
+                    let resolved := mb.apply rhs n
+                    metta resolved type_ space mb dispatch evaluated n
+              if results.isEmpty then
+                [(Atom.empty, b)]
+              else results
+            else
+              -- No equations match → return unchanged (line 546)
+              [(atom, b)]
       | _ =>
         -- Not an expression → return unchanged
         [(atom, b)]
@@ -363,6 +471,49 @@ private def s3 : Space := Space.ofList [
 
 -- color is a symbol → typeCast, not equation query
 example : eval (.symbol "color") s3 = [(.symbol "color", Bindings.empty)] := rfl
+
+-- switch-minimal: first matching case wins
+example : eval
+    (.expression [.symbol "switch-minimal", .symbol "a",
+      .expression [
+        .expression [.symbol "a", .symbol "ok"],
+        .expression [.symbol "b", .symbol "bad"]]])
+    Space.empty =
+    [(.symbol "ok", Bindings.empty)] := rfl
+
+-- switch: no match yields Empty
+example : eval
+    (.expression [.symbol "switch", .symbol "z",
+      .expression [
+        .expression [.symbol "a", .symbol "ok"],
+        .expression [.symbol "b", .symbol "bad"]]])
+    Space.empty =
+    [(Atom.empty, Bindings.empty)] := rfl
+
+-- switch-minimal: variable pattern binds into template
+example : eval
+    (.expression [.symbol "switch-minimal", .symbol "z",
+      .expression [
+        .expression [.var "x", .expression [.symbol "tag", .var "x"]]]])
+    Space.empty =
+    [(.expression [.symbol "tag", .symbol "z"], Bindings.empty.assign "x" (.symbol "z"))] := rfl
+
+-- assert: true result returns unit atom
+example : eval (.expression [.symbol "assert", .symbol "True"]) Space.empty =
+    [(Atom.unit, Bindings.empty)] := rfl
+
+-- assert: non-true result yields explicit Error
+example : eval (.expression [.symbol "assert", .symbol "False"]) Space.empty =
+    [(mkAssertNotTrueError (.symbol "False"), Bindings.empty)] := rfl
+
+-- case delegates to switch-minimal per evaluated branch
+example : eval
+    (.expression [.symbol "case", .symbol "a",
+      .expression [
+        .expression [.symbol "a", .symbol "ok"],
+        .expression [.symbol "b", .symbol "bad"]]])
+    Space.empty =
+    [(.symbol "ok", Bindings.empty)] := rfl
 
 end Tests
 

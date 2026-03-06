@@ -609,6 +609,10 @@ $\mu$-calculus provides a bridge: temporal operators (``eventually'',
 ``always'') can be presented as least/greatest fixpoints; PLN temporal
 operators embed under a suitable semantics; and fixpoint structure aligns
 with recurrent ``anchor states'' and invariant tracking.
+The WM side now includes an explicit Hyperseed-style consequence-closure
+operator with least-fixpoint semantics
+(\code{PLNWorldModelFixpointClosure.lean}) and concrete positive/negative
+finite fixtures (\code{PLNWorldModelFixpointClosureRegression.lean}).
 
 \subsection{Process calculi and linear logic}
 
@@ -750,6 +754,25 @@ The main Lean artifacts (all in \code{Mettapedia/}):
   Canonical representation bridge \\
 \code{Logic/PLNWorldModelKripkeWeighted.lean} &
   Weighted/trusted-gate multiset semantics \\
+\code{Logic/PLNWorldModelHOLCompleteness.lean} &
+  HOL consequence-transfer wrappers +
+  external-implication sound/complete bridge schema \\
+\code{Logic/PLNWorldModelFOLCompleteness.lean} &
+  FOL consequence transfer +
+  provable $\Leftrightarrow$ singleton consequence on $T$-models \\
+\code{Logic/PLNWorldModelSetTheoryBridge.lean} &
+  Set-theory specialization (\code{Z/ZF/ZC/ZFC}) of the FOL
+  implication bridge + categorical wrappers \\
+\code{Logic/PLNWorldModelSetTheoryBridgeRegression.lean} &
+  Concrete singleton ZF fixture endpoints for rule packaging
+  and categorical transport \\
+\code{Languages/GF/GFWMObligationAdapter.lean} &
+  GF syntax$\rightarrow$WM obligation adapters aligned to
+  \code{PureJudgmentWMInterface}, plus
+  faithful/non-full functor characterization \\
+\code{Languages/GF/GFWMObligationAdapterRegression.lean} &
+  GF$\rightarrow$WM regression fixtures: direct transport, end-to-end
+  rule consumption, and non-fullness witness \\
 \code{Logic/PLNWorldModelExperiment.lean} &
   Deterministic experiment/channel WM interface + Blackwell consequence wrapper \\
 \code{Logic/PLNWorldModelExperimentRegression.lean} &
@@ -758,17 +781,22 @@ The main Lean artifacts (all in \code{Mettapedia/}):
   Stochastic-channel Blackwell utility layer + weighted/trusted-source transfer \\
 \code{Logic/PLNWorldModelExperimentStochasticRegression.lean} &
   Finite stochastic Blackwell/weighted-policy fixture regression \\
+\code{Logic/PLNWorldModelFixpointClosure.lean} &
+  Monotone WM consequence operator, least-fixpoint closure, and
+  threshold-soundness transport \\
+\code{Logic/PLNWorldModelFixpointClosureRegression.lean} &
+  Positive/negative finite closure fixtures (rule-driven growth vs empty-rule collapse) \\
 \code{Logic/PLNWorldModelHOLInfinitary.lean} &
   Countable $\bigwedge$/$\bigvee$ HOL WM instance, singleton adequacy,
   pointwise-implication strength transfer (291 lines) \\
 \code{Logic/PLNWorldModelHOLInfinitaryCompleteness.lean} &
-  Implication-closure wrappers: \code{WMConsequenceRule} from
+  Implication consequence-transfer wrappers: \code{WMConsequenceRule} from
   pointwise/singleton-strength (89 lines) \\
 \code{Logic/PLNWorldModelFOLInfinitary.lean} &
   Countable $\bigwedge$/$\bigvee$ FOL WM instance, singleton adequacy,
   pointwise-implication strength transfer (297 lines) \\
 \code{Logic/PLNWorldModelFOLInfinitaryCompleteness.lean} &
-  Implication-closure wrappers: \code{WMConsequenceRule} from
+  Implication consequence-transfer wrappers: \code{WMConsequenceRule} from
   pointwise/singleton-strength (93 lines) \\
 \code{Logic/PLNWorldModelInfinitaryRegression.lean} &
   Concrete HOL+FOL infinitary fixture endpoints (129 lines) \\
@@ -903,7 +931,8 @@ the two instantiations are not merely parallel---they are connected by
 a proven transport.
 
 These results are \emph{not} completeness of the generic WM calculus;
-they \emph{are} implication-level proof-theoretic closure theorems for
+they \emph{are} implication-level proof-theoretic consequence-transfer
+theorems for
 instantiated modal WM semantics. The distinction matters:
 
 \begin{remark}
@@ -1036,13 +1065,66 @@ transport surface:
   \code{ch8\_institution\_beckChevalley\_endpoint\_id\_fixture}
   (\code{PLNWorldModelCategoricalRegression.lean}),
   instantiating the unified endpoint on an identity pullback square.
-\item \textbf{Aligned closure wrappers}:
+\item \textbf{Aligned consequence-transfer wrappers}:
   categorical-surface variants are exposed for the PureKernel$\rightarrow$WM
-  bridge and for HOL/FOL WM consequence closures
+  bridge and for HOL/FOL WM consequence transfer
   (\code{PLNWorldModelPureKernelBridge.lean},
    \code{PLNWorldModelHOLCompleteness.lean},
    \code{PLNWorldModelFOLCompleteness.lean}).
+  The FOL layer now includes a full implication bridge
+  \code{T |- (phi -> psi) <-> singletonConsequenceOnTheory T phi psi},
+  while HOL exposes a proof-system-agnostic sound/complete schema
+  (\code{externalImplication\_iff\_singletonConsequence\_of\_sound\_complete}).
+\item \textbf{Set-theory specialization}: the FOL bridge is now instantiated for
+  set language $\mathcal L_{\mathrm{set}}$ (\code{L\_set}) and
+  \code{Z/ZF/ZC/ZFC}
+  (\code{PLNWorldModelSetTheoryBridge.lean}), including
+  \code{provable\_imp\_iff\_singletonStrengthLEOnTheory},
+  multiset consequence transport, and categorical-surface wrappers.
+\item \textbf{OSLF$\rightarrow$NTT$\rightarrow$WM canonical endpoint}: presheaf/subobject
+  modal transport and formula-level graph witness transport are exposed via
+  \code{modalSubobject\_commDi\_bc\_graph\_endpoint\_of\_pathSemLiftPkg},
+  \code{mettaFull\_modalSubobject\_commDi\_bc\_graph\_endpoint},
+  \code{oslf\_formula\_ntt\_graph\_triangle\_categorical}. The closure layer
+  now also exposes an evidence-first endpoint
+  \code{semE\_fragment\_formulaCategoricalEndpoint\_step} plus regression
+  projection
+  \code{semE\_fragment\_categorical\_endpoint\_step\_fixture}, so the
+  institution/Beck-Chevalley endpoint and one-step semE evidence closure are
+  consumable together before any strength-view lift assumptions. Direct
+  fixtures include
+  regression fixtures
+  \code{formula\_graph\_triangle\_fixture} and
+  \code{formula\_graph\_triangle\_categorical\_fixture}
+  (\code{OSLF/Framework/ModalSubobjectBridge.lean},
+   \code{OSLF/Framework/OSLFNTTWMBridge.lean},
+   \code{OSLF/Framework/OSLFNTTTheoryClosure.lean},
+   \code{OSLF/Framework/OSLFNTTWMBridgeRegression.lean}).
+\item \textbf{GF$\rightarrow$WM obligation adapters}:
+  GF syntactic transports are consumable on the same
+  \code{PureJudgmentWMInterface} surface used by Pure-kernel bridge wrappers,
+  via
+  \code{gfSyntaxHom\_to\_wmStrengthObligation},
+  \code{wmConsequenceRuleOn\_of\_gfSyntaxHom\_viaPureInterface},
+  \code{wmConsequenceRuleOn\_of\_fregeStrong\_viaPureInterface}, with
+  category-side characterization theorem
+  \code{syntaxToWMFunctor\_not\_full\_of\_constant\_evidence}
+  (\code{Languages/GF/GFWMObligationAdapter.lean},
+   \code{Languages/GF/GFWMObligationAdapterRegression.lean}).
 \end{itemize}
+
+\paragraph{Theorem-index scope split (FOL vs HOL).}
+For readers tracking theorem strength precisely: the FOL side is now a full
+implication bridge over theory-models
+\code{(T |- (phi -> psi)) <-> singletonConsequenceOnTheory T phi psi}
+and is consumable through concrete WM rule constructors
+(\code{wmConsequenceRuleOn\_of\_provable\_imp} with regression fixture
+\code{ch8\_fol\_provable\_bridge\_rule\_singleton\_fixture}). The HOL side, by
+contrast, is intentionally schema-level in this module: it provides
+proof-system-agnostic transfer templates pending concrete imported HOL
+sound/complete instances. File names currently retain the
+\code{*Completeness} suffix for import stability, but this layer should be
+read as consequence-transfer closure wrappers.
 
 For executable regression coverage, the script-level target is
 \code{scripts/check\_wm\_categorical.sh}.

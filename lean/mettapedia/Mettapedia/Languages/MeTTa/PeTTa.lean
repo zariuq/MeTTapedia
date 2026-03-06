@@ -11,6 +11,11 @@ import Mettapedia.Languages.MeTTa.PeTTa.StdLib
 import Mettapedia.Languages.MeTTa.PeTTa.GroundedOracle
 import Mettapedia.Languages.MeTTa.PeTTa.PrologBridge
 import Mettapedia.Languages.MeTTa.PeTTa.TranslateExpr
+import Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec
+import Mettapedia.Languages.MeTTa.PeTTa.ProfileBridge
 import Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance
 import Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex
+import Mettapedia.Languages.MeTTa.PeTTa.TransitionSpec
+import Mettapedia.Languages.MeTTa.PeTTa.RewriteIR
+import Mettapedia.Languages.MeTTa.PeTTa.Artifacts
 import Mettapedia.Languages.MeTTa.PeTTa.Unit

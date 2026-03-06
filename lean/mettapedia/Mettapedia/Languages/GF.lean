@@ -58,6 +58,9 @@ import Mettapedia.Languages.GF.English.Properties
 import Mettapedia.Languages.GF.English.Linearization
 import Mettapedia.Languages.GF.English.Examples
 import Mettapedia.Languages.GF.English.RoundTripCorpus
+import Mettapedia.Languages.GF.English.InterfaceContrast
+import Mettapedia.Languages.GF.English.InterfaceRefinement
+import Mettapedia.Languages.GF.English.SemanticHighlights
 import Mettapedia.Languages.GF.Czech.RoundTripCorpus
 import Mettapedia.Languages.GF.RoundTripRegression
 import Mettapedia.Languages.GF.OSLFBridge
@@ -74,4 +77,5 @@ import Mettapedia.Languages.GF.StoreToLogicalForm
 import Mettapedia.Languages.GF.OSLFToNTT
 import Mettapedia.Languages.GF.Examples.EveryManWalks
 import Mettapedia.Languages.GF.Examples.ScopeAmbiguity
+import Mettapedia.Languages.GF.Examples.ScopeLinearExtension
 import Mettapedia.Languages.GF.Examples.AnaphoraBinding

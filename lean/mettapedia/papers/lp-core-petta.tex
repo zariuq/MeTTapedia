@@ -1598,6 +1598,35 @@ Lean$\leftrightarrow$SWI parity, (3)~validates runtime-error boundary
 probes, and (4)~reports Logtalk ISO-ID coverage with hard pass/fail
 thresholds.
 
+\subsection{PeTTa Runtime Unit Suite}
+\label{sec:petta-runtime-unit}
+
+The Lean conformance in Sections~\ref{sec:iso-conformance}
+and~\ref{sec:prolog} proves properties of the \emph{formal model}.
+A separate runtime suite tests the \emph{concrete interpreter}: 5~files
+totalling 69~assertions, each exercising a distinct slice of \PeTTa{}
+semantics (rewrite dispatch, constrained function-head matching,
+arithmetic and control flow, superposition/collapse non-determinism, and
+atomspace mutation/query).  The files are distilled from canonical
+\PeTTa{} examples (\code{functionhead3}, \code{spaces},
+\code{matchnested}, \code{collapse}, \code{if2}--\code{if4}) and
+reduced to focused unit-scale witnesses.
+
+A shell runner executes each file through the real \PeTTa{} entrypoint
+and enforces two hard checks per file: zero failures and an exact pass
+count.
+
+\begin{lstlisting}[language=bash]
+cd hyperon/PeTTa
+./unit/run_petta_unit_69.sh
+\end{lstlisting}
+
+\noindent
+Together with the Lean theorem layer, this gives both proof-level and
+implementation-level validation of the \PeTTa{} semantics.
+Appendix~\ref{app:runtime-unit-matrix} maps each file to the spec
+features it exercises.
+
 %% ====================================================================
 \section{4-Argument \MeTTa{} Evaluation}
 \label{sec:mettaeval}
@@ -1911,6 +1940,37 @@ proved \\
 \normalsize
 \caption{Compact theorem index for the certified \PeTTa{} formalization.}
 \label{tab:completeness-index}
+\end{table}
+
+\section{Runtime Unit Coverage Matrix}
+\label{app:runtime-unit-matrix}
+
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabularx}{\linewidth}{YcY}
+\hline
+\textbf{File} & \textbf{Tests} & \textbf{Features exercised} \\
+\hline
+\code{01\_core\_rewrite.metta} & 15 &
+Deterministic rewrite, symbol/term pass-through,
+basic \code{superpose}/\code{collapse} \\
+\code{02\_function\_head.metta} & 8 &
+Constrained function-head matching (\code{in}), guarded arithmetic,
+membership filtering \\
+\code{03\_arith\_control.metta} & 17 &
+Grounded arithmetic/comparison, \code{if}, \code{let}, \code{let*} \\
+\code{04\_superpose\_nondet.metta} & 10 &
+Nested non-determinism, \code{superpose}/\code{collapse},
+sorted answer normalization \\
+\code{05\_atomspace\_match.metta} & 19 &
+\code{add-atom}/\code{remove-atom}/\code{match} over
+\code{\&self} and \code{\&wuspace}, join-like queries \\
+\hline
+\end{tabularx}
+\normalsize
+\caption{\PeTTa{} runtime unit suite: 5 files, 69 tests.}
+\label{tab:petta-runtime-unit-matrix}
 \end{table}
 
 \bibliographystyle{plain}
