@@ -3,3 +3,4 @@ import Mettapedia.CognitiveArchitecture.GodelClaw.PolicyKernel
 import Mettapedia.CognitiveArchitecture.GodelClaw.Mindlock
 import Mettapedia.CognitiveArchitecture.GodelClaw.GateChain
 import Mettapedia.CognitiveArchitecture.GodelClaw.MetaMoBridge
+import Mettapedia.CognitiveArchitecture.GodelClaw.EpistemicLove
