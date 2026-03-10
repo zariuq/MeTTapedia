@@ -57,6 +57,60 @@ structure Template where
   sinks : List Sink
   deriving Repr, DecidableEq
 
+/-! ## Oracle/resource-side syntax -/
+
+/-- External resources requested by the runtime.
+
+These are resource descriptors at the MORK runtime boundary, not workspace
+atoms. They cover the currently active external mechanisms:
+- `act name`: external ACT/file-backed data source
+- `z3 name`: solver instance / oracle resource
+-/
+inductive ResourceRequest where
+  | act : String → ResourceRequest
+  | z3 : String → ResourceRequest
+  deriving Repr, DecidableEq
+
+/-- Oracle-side queries supported by the current runtime architecture.
+
+These live on the oracle seam, not the generic source-factor/query seam. -/
+inductive OracleQuery where
+  | actMatch : String → Atom → OracleQuery
+  | z3CheckSat : String → List Atom → OracleQuery
+  | z3GetModel : String → List Atom → OracleQuery
+  deriving Repr, DecidableEq
+
+/-- Responses returned by an oracle resource.
+
+`model` and `factSet` carry atom payloads that can later be interpreted as a
+space for matching; `sat` and `unsat` carry no payload. -/
+inductive OracleResponse where
+  | sat : OracleResponse
+  | unsat : OracleResponse
+  | model : List Atom → OracleResponse
+  | factSet : List Atom → OracleResponse
+  deriving Repr, DecidableEq
+
+/-- Route an oracle query to the underlying resource it needs. -/
+def OracleQuery.resourceRequest : OracleQuery → ResourceRequest
+  | .actMatch name _ => .act name
+  | .z3CheckSat name _ => .z3 name
+  | .z3GetModel name _ => .z3 name
+
+/-- Extract the atom payload carried by an oracle response. -/
+def OracleResponse.payloadAtoms : OracleResponse → List Atom
+  | .sat => []
+  | .unsat => []
+  | .model atoms => atoms
+  | .factSet atoms => atoms
+
+/-- Whether an oracle response carries a nonempty payload channel. -/
+def OracleResponse.hasPayload : OracleResponse → Bool
+  | .sat => false
+  | .unsat => false
+  | .model _ => true
+  | .factSet _ => true
+
 /-- A MORK exec rule with priority, name, pattern, and template. -/
 structure ExecRule where
   priority : ℕ

@@ -1,11 +1,13 @@
-import Mettapedia
 import Mettapedia.Languages.MeTTa.HE.LookupPlan
 import Mettapedia.Languages.MeTTa.HE.TransitionSpec
 import Mettapedia.Languages.MeTTa.HE.RewriteIR
+import Mettapedia.Languages.MeTTa.PurePrototypeEval
 
 private def usage : String :=
   String.intercalate "\n"
     [ "mettapedia commands:"
+    , "  pure-eval <file>"
+    , "  pure-eval <file> --fuel <n>"
     , "  lookup-plan export-he <out-dir>"
     , "  lookup-plan export-he            (default out-dir: artifacts/lookup)"
     , "  lookup-plan check-he <out-dir>"
@@ -26,8 +28,20 @@ private def defaultLookupOutDir : System.FilePath :=
 private def defaultTransitionOutDir : System.FilePath :=
   "artifacts/transition"
 
+private def parseFuelArg? (s : String) : Option Nat :=
+  s.toNat?
+
 def main (args : List String) : IO UInt32 := do
   match args with
+  | ["pure-eval", file] =>
+      Mettapedia.Languages.MeTTa.PurePrototypeEval.runPureEvalFile file
+  | ["pure-eval", file, "--fuel", fuelText] =>
+      match parseFuelArg? fuelText with
+      | some fuel =>
+          Mettapedia.Languages.MeTTa.PurePrototypeEval.runPureEvalFile file fuel
+      | none =>
+          IO.eprintln s!"invalid fuel: {fuelText}"
+          pure 1
   | ["lookup-plan", "export-he", outDir] =>
       Mettapedia.Languages.MeTTa.HE.LookupPlan.exportHeLookupPlan outDir
   | ["lookup-plan", "export-he"] =>

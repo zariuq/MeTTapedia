@@ -15,9 +15,11 @@ import Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec
 import Mettapedia.Languages.MeTTa.PeTTa.ProfileBridge
 import Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance
 import Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex
+import Mettapedia.Languages.MeTTa.PeTTa.ExecutionContract
 import Mettapedia.Languages.MeTTa.PeTTa.TransitionSpec
 import Mettapedia.Languages.MeTTa.PeTTa.RewriteIR
 import Mettapedia.Languages.MeTTa.PeTTa.RewriteIRV2
+import Mettapedia.Languages.MeTTa.PeTTa.ExecutionContract
 import Mettapedia.Languages.MeTTa.PeTTa.Artifacts
 import Mettapedia.Languages.MeTTa.PeTTa.CoreFragment
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceCoreFragment

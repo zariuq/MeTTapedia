@@ -2522,6 +2522,67 @@ mutual
         | _ =>
             (s, [])
 
+  private def referenceIntrinsicApplyDispatchTailN
+      (fuel : Nat)
+      (dispatchIface : Algorithms.MeTTa.Simple.Semantics.Dispatch.Interface Session)
+      (s : Session) (ctor : String) (args : List Pattern) :
+      Option (Session × List Pattern) :=
+    let (sFH, fromHeads) :=
+      Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
+        dispatchIface s (.apply ctor args)
+    match fromHeads with
+    | _ :: _ => some (sFH, fromHeads)
+    | [] =>
+        if Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
+            dispatchIface s ctor args.length then
+          none
+        else
+          let reducts : List Pattern :=
+            (List.range args.length).foldl (fun acc i =>
+              let a := args.getD i (.apply "" [])
+              let aRed0 :=
+                match referenceIntrinsicStatefulN fuel s a with
+                | some (_sA, outA) =>
+                    if outA.isEmpty then step s a else outA
+                | none => step s a
+              let aRed := aRed0.filter (fun a' => a' != a)
+              let built :=
+                aRed.map (fun a' =>
+                  .apply ctor (args.take i ++ [a'] ++ args.drop (i + 1)))
+              acc ++ built) []
+          match reducts with
+          | _ :: _ => some (s, reducts)
+          | [] =>
+              let arities := rewriteAritiesForHead s ctor
+              let hasExact := arities.any (fun n => n == args.length)
+              let hasLarger := arities.any (fun n => n > args.length)
+              if hasLarger && !hasExact && !args.isEmpty then
+                some (s, [partialPattern ctor args])
+              else
+                none
+
+  private def referenceIntrinsicApplyFallbackN
+      (fuel : Nat) (s : Session) (ctor : String) (args : List Pattern) :
+      Option (Session × List Pattern) :=
+    let dispatchIface : Algorithms.MeTTa.Simple.Semantics.Dispatch.Interface Session := {
+      rewrites := fun s => s.bundle.language.rewrites
+      premiseFreeRulesForHeadArity := premiseFreeRulesForHeadArity
+      eval := fun s term => referenceEvalWithStateCoreN fuel s term
+      evalForRuleEnumeration := fun s expr => referenceEvalForRuleEnumerationN fuel s expr
+      applyBindings := applyBindingsCompat
+      matchPattern := matchPatternMeTTa
+      normalizePattern := normalizeDollarVars
+      dedupBindings := dedupBindings
+    }
+    match builtinPartialMinArity? ctor with
+    | some minArity =>
+        if args.length < minArity then
+          some (s, [partialPattern ctor args])
+        else
+          referenceIntrinsicApplyDispatchTailN fuel dispatchIface s ctor args
+    | none =>
+        referenceIntrinsicApplyDispatchTailN fuel dispatchIface s ctor args
+
   private def referenceIntrinsicStatefulN : Nat → Session → Pattern → Option (Session × List Pattern)
     | 0, _s, _term => none
     | fuel + 1, s, term =>
@@ -3041,60 +3102,7 @@ mutual
                 -- Sub-case C: hasCompatHeadConstraintRule — out empty → none.
                 -- Sub-case D: reduceArgs (calls referenceIntrinsicStatefulN fuel s a; state unchanged).
                 -- Sub-case E: arities/hasLarger — state unchanged.
-                | .apply ctor args =>
-                    let needsPartial : Bool :=
-                      match builtinPartialMinArity? ctor with
-                      | some minArity => decide (args.length < minArity)
-                      | none => false
-                    if needsPartial then
-                      some (s, [partialPattern ctor args])
-                    else
-                      -- Inline dispatch interface (def-equal to referenceDispatchInterfaceN fuel)
-                      let dispatchIface : Algorithms.MeTTa.Simple.Semantics.Dispatch.Interface Session := {
-                        rewrites := fun s => s.bundle.language.rewrites
-                        premiseFreeRulesForHeadArity := premiseFreeRulesForHeadArity
-                        eval := fun s term => referenceEvalWithStateCoreN fuel s term
-                        evalForRuleEnumeration :=
-                          fun s expr => referenceEvalForRuleEnumerationN fuel s expr
-                        applyBindings := applyBindingsCompat
-                        matchPattern := matchPatternMeTTa
-                        normalizePattern := normalizeDollarVars
-                        dedupBindings := dedupBindings
-                      }
-                      let (sFH, fromHeads) :=
-                        Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
-                          dispatchIface s (.apply ctor args)
-                      if !fromHeads.isEmpty then
-                        some (sFH, fromHeads)
-                      else if Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
-                              dispatchIface s ctor args.length then
-                        none
-                      else
-                        -- Enumerate each position and try reducing the argument there.
-                        -- Equivalent to the live reduceArgs [] args (range+foldl avoids let rec in mutual).
-                        let reducts : List Pattern :=
-                          (List.range args.length).foldl (fun acc i =>
-                            let a := args.getD i (.apply "" [])
-                            let aRed0 :=
-                              match referenceIntrinsicStatefulN fuel s a with
-                              | some (_sA, outA) =>
-                                  if outA.isEmpty then step s a else outA
-                              | none => step s a
-                            let aRed := aRed0.filter (fun a' => a' != a)
-                            let built :=
-                              aRed.map (fun a' =>
-                                .apply ctor (args.take i ++ [a'] ++ args.drop (i + 1)))
-                            acc ++ built) []
-                        if reducts.isEmpty then
-                          let arities := rewriteAritiesForHead s ctor
-                          let hasExact := arities.any (fun n => n == args.length)
-                          let hasLarger := arities.any (fun n => n > args.length)
-                          if hasLarger && !hasExact && !args.isEmpty then
-                            some (s, [partialPattern ctor args])
-                          else
-                            none
-                        else
-                          some (s, reducts)
+                | .apply ctor args => referenceIntrinsicApplyFallbackN fuel s ctor args
                 | _ => none
 end
 
@@ -3501,6 +3509,106 @@ private theorem compiledConsistent_of_referenceCompatFunctionHeadRewriteN_result
       (fuel := fuel) (hEvalCorePres := hEvalCorePres) (hEvalForRulePres := hEvalForRulePres)
       (s := s) (term := term) hs
   simpa [hEval] using hCC
+
+private theorem referenceIntrinsicApplyDispatchTailN_stateCases
+    (fuel : Nat)
+    (dispatchIface : Algorithms.MeTTa.Simple.Semantics.Dispatch.Interface Session)
+    {s s' : Session} {ctor : String} {args : List Pattern} {out : List Pattern}
+    (h :
+      referenceIntrinsicApplyDispatchTailN fuel dispatchIface s ctor args =
+        some (s', out)) :
+    s' = s ∨
+    s' =
+      (Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
+        dispatchIface s (.apply ctor args)).1 := by
+  unfold referenceIntrinsicApplyDispatchTailN at h
+  cases hCompat :
+      Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
+        dispatchIface s (.apply ctor args) with
+  | mk sFH fromHeads =>
+      cases fromHeads with
+      | nil =>
+          by_cases hConstraint :
+              Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
+                dispatchIface s ctor args.length
+          · simp [hCompat, hConstraint] at h
+          · have hTail := h
+            simp [hCompat, hConstraint] at hTail
+            cases hReducts :
+                (List.map
+                    (fun x2 =>
+                      List.map
+                        (fun a' =>
+                          Pattern.apply ctor (List.take x2 args ++ a' :: List.drop (x2 + 1) args))
+                        (List.filter (fun a' => a' != args[x2]?.getD (Pattern.apply "" []))
+                          (match referenceIntrinsicStatefulN fuel s (args[x2]?.getD (Pattern.apply "" [])) with
+                          | some (_sA, outA) =>
+                              if outA = [] then s.step (args[x2]?.getD (Pattern.apply "" [])) else outA
+                          | none => s.step (args[x2]?.getD (Pattern.apply "" [])))))
+                    (List.range args.length)).flatten with
+            | nil =>
+                simp [hReducts] at hTail
+                exact Or.inl hTail.2.1.symm
+            | cons hd tl =>
+                simp [hReducts] at hTail
+                exact Or.inl hTail.1.symm
+      | cons hd tl =>
+          simp [hCompat] at h
+          exact Or.inr (by
+            simpa [hCompat] using h.1.symm)
+
+private theorem referenceIntrinsicApplyFallbackN_stateCases
+    (fuel : Nat)
+    {s s' : Session} {ctor : String} {args : List Pattern} {out : List Pattern}
+    (h :
+      referenceIntrinsicApplyFallbackN fuel s ctor args = some (s', out)) :
+    s' = s ∨
+    s' =
+      (Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
+        (referenceDispatchInterfaceN fuel) s (.apply ctor args)).1 := by
+  unfold referenceIntrinsicApplyFallbackN at h
+  split at h
+  · rename_i minArity
+    split at h
+    · exact Or.inl ((congrArg Prod.fst (Option.some.inj h)).symm)
+    · exact
+        referenceIntrinsicApplyDispatchTailN_stateCases
+          fuel (referenceDispatchInterfaceN fuel)
+          (by simpa [referenceDispatchInterfaceN] using h)
+  · exact
+      referenceIntrinsicApplyDispatchTailN_stateCases
+        fuel (referenceDispatchInterfaceN fuel)
+        (by simpa [referenceDispatchInterfaceN] using h)
+
+private theorem compiledConsistent_of_referenceIntrinsicApplyFallbackN_result
+    (fuel : Nat)
+    (hEvalCorePres :
+      ∀ (s : Session) (term : Pattern),
+        CompiledConsistent s →
+        CompiledConsistent (referenceEvalWithStateCoreN fuel s term).1)
+    (hEvalForRulePres :
+      ∀ (s : Session) (expr : Pattern),
+        CompiledConsistent s →
+        CompiledConsistent (referenceEvalForRuleEnumerationN fuel s expr).1)
+    {s s' : Session} {ctor : String} {args : List Pattern} {out : List Pattern}
+    (h :
+      referenceIntrinsicApplyFallbackN fuel s ctor args = some (s', out))
+    (hs : CompiledConsistent s) :
+    CompiledConsistent s' := by
+  have hCases :=
+    referenceIntrinsicApplyFallbackN_stateCases
+      (fuel := fuel) (s := s) (s' := s') (ctor := ctor) (args := args) (out := out) h
+  cases hCases with
+  | inl hState =>
+      simpa [hState] using hs
+  | inr hState =>
+      have hCompat :
+          CompiledConsistent
+            (Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
+              (referenceDispatchInterfaceN fuel) s (.apply ctor args)).1 :=
+        compiledConsistent_of_referenceCompatFunctionHeadRewriteN
+          fuel hEvalCorePres hEvalForRulePres hs
+      simpa [hState] using hCompat
 
 private theorem compiledConsistent_of_referenceRefineCallableOutN
     (fuel : Nat)
@@ -6833,26 +6941,19 @@ private theorem p4_apply_fallback_preserves
       ∀ (s : Session) (term : Pattern),
         CompiledConsistent s →
         CompiledConsistent (referenceEvalWithStateCoreN fuel s term).1)
-    (hEvalCallablePres :
-      ∀ (s : Session) (fn : Pattern) (args : List Pattern),
-        CompiledConsistent s →
-        CompiledConsistent (referenceEvalCallableApplyN fuel s fn args).1)
     (hEvalForRulePres :
       ∀ (s : Session) (expr : Pattern),
         CompiledConsistent s →
         CompiledConsistent (referenceEvalForRuleEnumerationN fuel s expr).1)
-    (hIntrinsicPres :
-      ∀ (s : Session) (term : Pattern) (s' : Session) (out : List Pattern),
-        referenceIntrinsicStatefulN fuel s term = some (s', out) →
-        CompiledConsistent s →
-        CompiledConsistent s')
     {s s' : Session} {ctor : String} {args : List Pattern} {out : List Pattern}
     (h :
-      referenceIntrinsicStatefulN (fuel + 1) s (.apply ctor args) =
+      referenceIntrinsicApplyFallbackN fuel s ctor args =
         some (s', out))
     (hs : CompiledConsistent s) :
     CompiledConsistent s' := by
-  sorry
+  exact
+    compiledConsistent_of_referenceIntrinsicApplyFallbackN_result
+      fuel hEvalCorePres hEvalForRulePres h hs
 
 private theorem p4_apply_branch_preserves
     (fuel : Nat)
@@ -6860,163 +6961,19 @@ private theorem p4_apply_branch_preserves
       ∀ (s : Session) (term : Pattern),
         CompiledConsistent s →
         CompiledConsistent (referenceEvalWithStateCoreN fuel s term).1)
-    (hEvalCallablePres :
-      ∀ (s : Session) (fn : Pattern) (args : List Pattern),
-        CompiledConsistent s →
-        CompiledConsistent (referenceEvalCallableApplyN fuel s fn args).1)
     (hEvalForRulePres :
       ∀ (s : Session) (expr : Pattern),
         CompiledConsistent s →
         CompiledConsistent (referenceEvalForRuleEnumerationN fuel s expr).1)
-    (hIntrinsicPres :
-      ∀ (s : Session) (term : Pattern) (s' : Session) (out : List Pattern),
-        referenceIntrinsicStatefulN fuel s term = some (s', out) →
-        CompiledConsistent s →
-        CompiledConsistent s')
     {s s' : Session} {ctor : String} {args : List Pattern} {out : List Pattern}
     (h :
-      referenceIntrinsicStatefulN (fuel + 1) s (.apply ctor args) =
+      referenceIntrinsicApplyFallbackN fuel s ctor args =
         some (s', out))
     (hs : CompiledConsistent s) :
     CompiledConsistent s' := by
-  by_cases hAdd : ctor = "add-atom"
-  · subst hAdd
-    cases args with
-    | nil =>
-        exact
-          p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-            hEvalForRulePres hIntrinsicPres h hs
-    | cons space rest =>
-        cases rest with
-        | nil =>
-            exact
-              p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-                hEvalForRulePres hIntrinsicPres h hs
-        | cons fact rest' =>
-            cases rest' with
-            | nil =>
-                exact
-                  p4_addatom_branch_preserves fuel hEvalCorePres hEvalCallablePres
-                    hIntrinsicPres h hs
-            | cons _ _ =>
-                exact
-                  p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-                    hEvalForRulePres hIntrinsicPres h hs
-  by_cases hAddBang : ctor = "add-atom!"
-  · subst hAddBang
-    cases args with
-    | nil =>
-        exact
-          p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-            hEvalForRulePres hIntrinsicPres h hs
-    | cons space rest =>
-        cases rest with
-        | nil =>
-            exact
-              p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-                hEvalForRulePres hIntrinsicPres h hs
-        | cons fact rest' =>
-            cases rest' with
-            | nil =>
-                exact
-                  p4_addatom_bang_branch_preserves fuel hEvalCorePres hEvalCallablePres
-                    hIntrinsicPres h hs
-            | cons _ _ =>
-                exact
-                  p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-                    hEvalForRulePres hIntrinsicPres h hs
-  by_cases hRemove : ctor = "remove-atom"
-  · subst hRemove
-    cases args with
-    | nil =>
-        exact
-          p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-            hEvalForRulePres hIntrinsicPres h hs
-    | cons space rest =>
-        cases rest with
-        | nil =>
-            exact
-              p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-                hEvalForRulePres hIntrinsicPres h hs
-        | cons fact rest' =>
-            cases rest' with
-            | nil =>
-                exact
-                  p4_removeatom_branch_preserves fuel hEvalCorePres hEvalCallablePres
-                    hIntrinsicPres h hs
-            | cons _ _ =>
-                exact
-                  p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-                    hEvalForRulePres hIntrinsicPres h hs
-  by_cases hRemoveBang : ctor = "remove-atom!"
-  · subst hRemoveBang
-    cases args with
-    | nil =>
-        exact
-          p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-            hEvalForRulePres hIntrinsicPres h hs
-    | cons space rest =>
-        cases rest with
-        | nil =>
-            exact
-              p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-                hEvalForRulePres hIntrinsicPres h hs
-        | cons fact rest' =>
-            cases rest' with
-            | nil =>
-                exact
-                  p4_removeatom_bang_branch_preserves fuel hEvalCorePres hEvalCallablePres
-                    hIntrinsicPres h hs
-            | cons _ _ =>
-                exact
-                  p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-                    hEvalForRulePres hIntrinsicPres h hs
-  first
-  | exact
-      p4_case_branch_preserves fuel hEvalCorePres hEvalCallablePres hEvalForRulePres
-        hIntrinsicPres h hs
-  | exact
-      p4_foldall_branch_preserves fuel hEvalCorePres hEvalCallablePres hEvalForRulePres
-        hIntrinsicPres h hs
-  | exact
-      p4_forall_branch_preserves fuel hEvalCorePres hEvalCallablePres hEvalForRulePres
-        hIntrinsicPres h hs
-  | exact
-      p4_match3_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_match2_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_once_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_atomof_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_nop_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_catch1_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_msort_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_expr_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_repr_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_addatom_bang_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_removeatom_bang_branch_preserves fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
-        h hs
-  | exact
-      p4_apply_fallback_preserves fuel hEvalCorePres hEvalCallablePres
-        hEvalForRulePres hIntrinsicPres h hs
+  exact
+    p4_apply_fallback_preserves
+      fuel hEvalCorePres hEvalForRulePres h hs
 
 private theorem compiledConsistent_of_referenceIntrinsicStatefulN_step
     (fuel : Nat)

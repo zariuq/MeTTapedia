@@ -43,10 +43,44 @@ def pettaSpaceMatchFamily : LookupFamilyPlan :=
         exactResult := false
         stratifiedNegationSafe := true } }
 
+/-- Minimal PeTTa lookup-family contract for `(get-atoms &self)`.
+
+This is the direct "enumerate all current facts" sibling of `spaceMatch`. -/
+def pettaGetAtomsFamily : LookupFamilyPlan :=
+  { family := "selfFacts"
+    logicalRelationId := "petta.self_facts"
+    factRelation := "selfFact"
+    rawRelation := "selfFactRaw"
+    hasRelation := "selfFactHas"
+    resultRelation := some "selfFactResult"
+    queryArity := 1
+    payloadArity := 1
+    keyPositions := [0]
+    demand :=
+      [ { relation := "get-atoms"
+          logicalRelationId := "petta.self_facts.result"
+          scopeSignature := "b0+f1"
+          arity := 2
+          args := [argB 0, argF 1]
+          usageKind := .enumerate
+          hotPath := true }
+      , { relation := "get-atoms-has"
+          logicalRelationId := "petta.self_facts.has"
+          scopeSignature := "b0"
+          arity := 1
+          args := [argB 0]
+          usageKind := .exists
+          hotPath := true }
+      ]
+    contracts :=
+      { noFalseNegatives := true
+        exactResult := true
+        stratifiedNegationSafe := true } }
+
 def pettaLookupPlanArtifact : LookupPlanArtifact :=
   { schemaVersion := 2
     dialect := "petta"
-    families := [pettaSpaceMatchFamily] }
+    families := [pettaSpaceMatchFamily, pettaGetAtomsFamily] }
 
 def lookupPlanByDialect? (dialect : String) : Option (String × LookupPlanArtifact) :=
   if dialect = "petta" then

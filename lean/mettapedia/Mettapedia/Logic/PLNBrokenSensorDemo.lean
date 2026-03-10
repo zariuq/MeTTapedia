@@ -261,7 +261,67 @@ theorem nightShift_temp_realizable : nightShift.tempEvidence.Realizable := by
   · exact single_realizable _
   · exact single_realizable _
 
-/-! ## §7: Main Theorems -/
+/-! ## §7: Bridge Theorems — Closed-Form Posterior Parameters
+
+These theorems pin the posterior parameters to closed-form symbolic expressions,
+bridging the Lean formalization to the Python numerical layer.  The Python script
+`scripts/wm_pln_posterior.py` computes credible intervals, predictive densities,
+and exceedance probabilities from (μₙ, κₙ, αₙ, βₙ); these theorems guarantee
+the formulas are the same. -/
+
+/-- Posterior mean after morning shift: affine combination of prior and data. -/
+theorem morningShift_posterior_mu :
+    (posterior sensorPrior morningShift.tempEvidence).μ₀ =
+      (sensorPrior.κ₀ * sensorPrior.μ₀ + morningShift.tempEvidence.sum) /
+      (sensorPrior.κ₀ + morningShift.tempEvidence.n) :=
+  posterior_mu_eq_of_realizable _ _ morningShift_temp_realizable
+
+/-- Posterior κ after morning shift. -/
+theorem morningShift_posterior_kappa :
+    (posterior sensorPrior morningShift.tempEvidence).κ₀ =
+      sensorPrior.κ₀ + morningShift.tempEvidence.n := rfl
+
+/-- Posterior α after morning shift. -/
+theorem morningShift_posterior_alpha :
+    (posterior sensorPrior morningShift.tempEvidence).α₀ =
+      sensorPrior.α₀ + (morningShift.tempEvidence.n : ℝ) / 2 := rfl
+
+/-- Posterior β after morning shift: closed form under realizability. -/
+theorem morningShift_posterior_beta :
+    (posterior sensorPrior morningShift.tempEvidence).β₀ =
+      sensorPrior.β₀ +
+        (morningShift.tempEvidence.sumSq + sensorPrior.κ₀ * sensorPrior.μ₀ ^ 2
+          - (sensorPrior.κ₀ * sensorPrior.μ₀ + morningShift.tempEvidence.sum) ^ 2 /
+            (sensorPrior.κ₀ + morningShift.tempEvidence.n)) / 2 :=
+  posterior_beta_eq_of_realizable _ _ morningShift_temp_realizable
+
+/-- Posterior mean after night shift. -/
+theorem nightShift_posterior_mu :
+    (posterior sensorPrior nightShift.tempEvidence).μ₀ =
+      (sensorPrior.κ₀ * sensorPrior.μ₀ + nightShift.tempEvidence.sum) /
+      (sensorPrior.κ₀ + nightShift.tempEvidence.n) :=
+  posterior_mu_eq_of_realizable _ _ nightShift_temp_realizable
+
+/-- Posterior κ after night shift. -/
+theorem nightShift_posterior_kappa :
+    (posterior sensorPrior nightShift.tempEvidence).κ₀ =
+      sensorPrior.κ₀ + nightShift.tempEvidence.n := rfl
+
+/-- Posterior α after night shift. -/
+theorem nightShift_posterior_alpha :
+    (posterior sensorPrior nightShift.tempEvidence).α₀ =
+      sensorPrior.α₀ + (nightShift.tempEvidence.n : ℝ) / 2 := rfl
+
+/-- Posterior β after night shift: closed form under realizability. -/
+theorem nightShift_posterior_beta :
+    (posterior sensorPrior nightShift.tempEvidence).β₀ =
+      sensorPrior.β₀ +
+        (nightShift.tempEvidence.sumSq + sensorPrior.κ₀ * sensorPrior.μ₀ ^ 2
+          - (sensorPrior.κ₀ * sensorPrior.μ₀ + nightShift.tempEvidence.sum) ^ 2 /
+            (sensorPrior.κ₀ + nightShift.tempEvidence.n)) / 2 :=
+  posterior_beta_eq_of_realizable _ _ nightShift_temp_realizable
+
+/-! ## §8: Main Theorems -/
 
 /-- **Sleep consolidation**: replaying deferred observations into sufficient statistics
     preserves the posterior. Batch replay = sequential Bayesian update.

@@ -83,6 +83,9 @@ private def mkHeEqQueryFamily (payloadArity : Nat) : LookupFamilyPlan :=
         exactResult := false
         stratifiedNegationSafe := true } }
 
+def heEqQueryFamily : LookupFamilyPlan :=
+  mkHeEqQueryFamily 1
+
 theorem mkHeEqQueryFamily_negatesHas_notResult (payloadArity : Nat) :
     ∃ d ∈ (mkHeEqQueryFamily payloadArity).demand,
       d.relation = "noEqQuery"
@@ -140,6 +143,13 @@ def deriveHeLookupPlanArtifact? (prog : PremiseProgram) : Except String LookupPl
 
 def deriveFromHEPremises? : Except String LookupPlanArtifact :=
   deriveHeLookupPlanArtifact? Mettapedia.Languages.MeTTa.HE.Premises.mettaHEPremises
+
+theorem heEqQueryFamily_negatesHas_notResult :
+    ∃ d ∈ heEqQueryFamily.demand,
+      d.relation = "noEqQuery"
+        ∧ d.usageKind = .negatedExists
+        ∧ d.negatedTarget = some "eqQueryHas" := by
+  simpa [heEqQueryFamily] using mkHeEqQueryFamily_negatesHas_notResult 1
 
 def derivationIsOk : Bool :=
   match deriveFromHEPremises? with

@@ -1,7 +1,12 @@
+import Mettapedia.Languages.MeTTa.ElaboratedCoreBase
+import Mettapedia.Languages.MeTTa.PureCertificateFragment
+import Mettapedia.Languages.MeTTa.PureCheckingService
+import Mettapedia.Languages.MeTTa.PureCheckingExtensions
 import Mettapedia.Languages.MeTTa.RuntimeExec
 import Mettapedia.Languages.MeTTa.Core.Bridge
-import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
-import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+import Mettapedia.Languages.MeTTa.InductiveCertificateInterface
+import Mettapedia.Languages.MeTTa.InductiveKernelExtension
+import Mettapedia.Languages.MeTTa.FixpointCertificateInterface
 import Mettapedia.Languages.MeTTa.PureRuntimeFrontier
 
 /-!
@@ -31,162 +36,58 @@ namespace Mettapedia.Languages.MeTTa.ElaboratedCore
 open Mettapedia.Languages.MeTTa.DialectProfile
 open Mettapedia.Languages.MeTTa.RuntimeSpec
 open Mettapedia.Languages.MeTTa.RuntimeExec
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
-open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 open Mettapedia.Languages.MeTTa.Core.Bridge
+open Mettapedia.Languages.MeTTa.PureKernel.Syntax
+open Mettapedia.Languages.MeTTa.PureKernel.Typing
+open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
 open Mettapedia.OSLF.MeTTaIL.Syntax
-
-/-- The first explicit region split for elaborated MeTTa-Core. -/
-inductive ElaboratedRegion where
-  | pureKernelRegion
-  | runtimeExecRegion
-  | oracleRegion
-  | metaRegion
-deriving DecidableEq, Repr
-
-/-- Shared artifact substrate used by both proof and runtime views. -/
-structure SharedArtifact where
-  pattern : Pattern
-
-/-- Runtime-side lowering target. This is intentionally smaller than "all
-runtime semantics": it only records the current theoremic seams. -/
-inductive RuntimeLowering where
-  | exec (surface : MeTTaRuntimeExecSurface)
-  | query (surface : MeTTaRuntimeQuerySurface)
-  | auditOnly
-
-def RuntimeLowering.backendName : RuntimeLowering → String
-  | RuntimeLowering.exec surface => surface.backendName
-  | RuntimeLowering.query surface => surface.backendName
-  | RuntimeLowering.auditOnly => "audit-only"
-
-/-- Current overlap classification between the proof side and the runtime side.
-
-`artifactOnly` is the present honest overlap for closed Pure terms: they share a
-quoted MeTTa artifact and WM-facing semantic landing, but they do not yet lower
-through the direct `R_exec₀` source-rule bridge.
-
-`directExec` is reserved for future fragments that genuinely elaborate to both a
-trusted proof target and the current theoremic runtime execution seam. -/
-inductive OverlapClass where
-  | artifactOnly
-  | directExec (surface : MeTTaRuntimeExecSurface)
-
-def OverlapClass.name : OverlapClass → String
-  | .artifactOnly => "artifact-only"
-  | .directExec surface => surface.backendName
-
-/-- Small binder-aware surface syntax for the first real pure fragment above
-`PureKernel`.
-
-This mirrors the trusted Pure syntax closely on purpose: the immediate goal is
-to make the first dual-view certificate real, not to invent a second kernel. -/
-inductive SurfacePureTm : Nat → Type where
-  | var : Fin n → SurfacePureTm n
-  | u0 : SurfacePureTm n
-  | u1 : SurfacePureTm n
-  | pi : SurfacePureTm n → SurfacePureTm (n + 1) → SurfacePureTm n
-  | sigma : SurfacePureTm n → SurfacePureTm (n + 1) → SurfacePureTm n
-  | id : SurfacePureTm n → SurfacePureTm n → SurfacePureTm n → SurfacePureTm n
-  | lam : SurfacePureTm (n + 1) → SurfacePureTm n
-  | app : SurfacePureTm n → SurfacePureTm n → SurfacePureTm n
-  | pair : SurfacePureTm n → SurfacePureTm n → SurfacePureTm n
-  | fst : SurfacePureTm n → SurfacePureTm n
-  | snd : SurfacePureTm n → SurfacePureTm n
-  | refl : SurfacePureTm n → SurfacePureTm n
-deriving DecidableEq, Repr
-
-namespace SurfacePureTm
-
-def toPureTm : SurfacePureTm n → PureTm n
-  | .var i => .var i
-  | .u0 => .u0
-  | .u1 => .u1
-  | .pi A B => .pi (toPureTm A) (toPureTm B)
-  | .sigma A B => .sigma (toPureTm A) (toPureTm B)
-  | .id A a b => .id (toPureTm A) (toPureTm a) (toPureTm b)
-  | .lam b => .lam (toPureTm b)
-  | .app f a => .app (toPureTm f) (toPureTm a)
-  | .pair a b => .pair (toPureTm a) (toPureTm b)
-  | .fst p => .fst (toPureTm p)
-  | .snd p => .snd (toPureTm p)
-  | .refl a => .refl (toPureTm a)
-
-def toPatternWith (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) : SurfacePureTm n → Pattern
-  | .var i => .fvar (ρ i)
-  | .u0 => Mettapedia.Languages.MeTTa.Pure.Core.u0
-  | .u1 => Mettapedia.Languages.MeTTa.Pure.Core.u1
-  | .pi A B =>
-      let x := ν k
-      Mettapedia.Languages.MeTTa.Pure.Core.mkPi (toPatternWith ν k ρ A)
-        (Mettapedia.OSLF.MeTTaIL.Substitution.closeFVar 0 x
-          (toPatternWith ν (k + 1) (envCons x ρ) B))
-  | .sigma A B =>
-      let x := ν k
-      Mettapedia.Languages.MeTTa.Pure.Core.mkSigma (toPatternWith ν k ρ A)
-        (Mettapedia.OSLF.MeTTaIL.Substitution.closeFVar 0 x
-          (toPatternWith ν (k + 1) (envCons x ρ) B))
-  | .id A a b =>
-      Mettapedia.Languages.MeTTa.Pure.Core.mkId
-        (toPatternWith ν k ρ A) (toPatternWith ν k ρ a) (toPatternWith ν k ρ b)
-  | .lam b =>
-      let x := ν k
-      Mettapedia.Languages.MeTTa.Pure.Core.mkLam
-        (Mettapedia.OSLF.MeTTaIL.Substitution.closeFVar 0 x
-          (toPatternWith ν (k + 1) (envCons x ρ) b))
-  | .app f a =>
-      Mettapedia.Languages.MeTTa.Pure.Core.mkApp (toPatternWith ν k ρ f) (toPatternWith ν k ρ a)
-  | .pair a b =>
-      Mettapedia.Languages.MeTTa.Pure.Core.mkPair (toPatternWith ν k ρ a) (toPatternWith ν k ρ b)
-  | .fst p => Mettapedia.Languages.MeTTa.Pure.Core.mkFst (toPatternWith ν k ρ p)
-  | .snd p => Mettapedia.Languages.MeTTa.Pure.Core.mkSnd (toPatternWith ν k ρ p)
-  | .refl a => Mettapedia.Languages.MeTTa.Pure.Core.mkRefl (toPatternWith ν k ρ a)
-
-def toPattern (ρ : QuoteEnv n) (t : SurfacePureTm n) : Pattern :=
-  toPatternWith defaultBinderName 0 ρ t
-
-def toClosedPattern (t : SurfacePureTm 0) : Pattern :=
-  toPattern emptyEnv t
-
-theorem toPatternWith_eq_quoteTmWith
-    (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) :
-    ∀ t : SurfacePureTm n, toPatternWith ν k ρ t = quoteTmWith ν k ρ (toPureTm t)
-  | .var i => rfl
-  | .u0 => rfl
-  | .u1 => rfl
-  | .pi A B => by
-      simp [toPatternWith, toPureTm, quoteTmWith, toPatternWith_eq_quoteTmWith]
-  | .sigma A B => by
-      simp [toPatternWith, toPureTm, quoteTmWith, toPatternWith_eq_quoteTmWith]
-  | .id A a b => by
-      simp [toPatternWith, toPureTm, quoteTmWith, toPatternWith_eq_quoteTmWith]
-  | .lam b => by
-      simp [toPatternWith, toPureTm, quoteTmWith, toPatternWith_eq_quoteTmWith]
-  | .app f a => by
-      simp [toPatternWith, toPureTm, quoteTmWith, toPatternWith_eq_quoteTmWith]
-  | .pair a b => by
-      simp [toPatternWith, toPureTm, quoteTmWith, toPatternWith_eq_quoteTmWith]
-  | .fst p => by
-      simp [toPatternWith, toPureTm, quoteTmWith, toPatternWith_eq_quoteTmWith]
-  | .snd p => by
-      simp [toPatternWith, toPureTm, quoteTmWith, toPatternWith_eq_quoteTmWith]
-  | .refl a => by
-      simp [toPatternWith, toPureTm, quoteTmWith, toPatternWith_eq_quoteTmWith]
-
-theorem toPattern_eq_quoteTm (ρ : QuoteEnv n) (t : SurfacePureTm n) :
-    toPattern ρ t = quoteTm ρ (toPureTm t) := by
-  simpa [toPattern, quoteTm] using toPatternWith_eq_quoteTmWith defaultBinderName 0 ρ t
-
-theorem toClosedPattern_eq_quoteClosedTm (t : SurfacePureTm 0) :
-    toClosedPattern t = quoteClosedTm (toPureTm t) := by
-  simpa [toClosedPattern, quoteClosedTm] using toPattern_eq_quoteTm emptyEnv t
-
-end SurfacePureTm
 
 abbrev CoreAtom := Mettapedia.Languages.MeTTa.Core.Atom
 abbrev CoreAtomspace := Mettapedia.Languages.MeTTa.Core.Atomspace
 abbrev CoreGroundedValue := Mettapedia.Languages.MeTTa.Core.GroundedValue
+
+/-- Thin elaborated-core wrapper around the explicit Pure checking/conversion
+service. This keeps the proof-side checking API visibly attached to the middle
+layer rather than buried only inside the certificate fragment file. -/
+noncomputable def elaborateCheckedPureConversion
+    (cert : CheckedPureCertificate)
+    (targetType : PureTm 0)
+    (h : Conv cert.claimedType targetType) :
+    CheckedPureConversion :=
+  convertCheckedPureCertificate cert targetType h
+
+theorem elaborateCheckedPureConversion_region
+    (cert : CheckedPureCertificate)
+    (targetType : PureTm 0)
+    (h : Conv cert.claimedType targetType) :
+    (elaborateCheckedPureConversion cert targetType h).region =
+      ElaboratedRegion.pureKernelRegion := by
+  rfl
+
+theorem elaborateCheckedPureConversion_overlap
+    (cert : CheckedPureCertificate)
+    (targetType : PureTm 0)
+    (h : Conv cert.claimedType targetType) :
+    (elaborateCheckedPureConversion cert targetType h).overlapClass =
+      cert.overlapClass := by
+  rfl
+
+theorem elaborateCheckedPureConversion_typing
+    (cert : CheckedPureCertificate)
+    (targetType : PureTm 0)
+    (h : Conv cert.claimedType targetType) :
+    HasType .nil
+      (elaborateCheckedPureConversion cert targetType h).term
+      targetType := by
+  exact (elaborateCheckedPureConversion cert targetType h).typing
+
+theorem elaborateCheckedPureConversion_quoteAgreement
+    (cert : CheckedPureCertificate)
+    (targetType : PureTm 0)
+    (h : Conv cert.claimedType targetType) :
+    (elaborateCheckedPureConversion cert targetType h).artifact.pattern =
+      quoteClosedTm (elaborateCheckedPureConversion cert targetType h).term := by
+  exact (elaborateCheckedPureConversion cert targetType h).quoteAgreement
 
 /-- Small typed MeTTa-Core surface fragment whose atoms already have a shared
 artifact view through `Core.Bridge.atomToPattern`.
@@ -384,46 +285,6 @@ theorem checkType_true_implies_hasType
 
 end SurfaceCoreTypedAtom
 
-/-- Certificate for the trusted Pure branch. -/
-structure PureCertificate where
-  term : PureTm 0
-  artifact : SharedArtifact
-  artifact_eq : artifact.pattern = quoteClosedTm term
-  abcSurface : PureClosedABCSurface := defaultPureClosedABCSurface
-
-/-- First real overlap certificate for a shared pure surface fragment.
-
-This is the first nontrivial "both views at once" object:
-- one binder-aware surface term,
-- one trusted PureKernel term,
-- one shared MeTTa artifact,
-- and a proof that the two downstream views agree. -/
-structure SharedPureOverlapCertificate where
-  surface : SurfacePureTm 0
-  pure : PureCertificate
-  overlapClass : OverlapClass
-  pure_eq : pure.term = surface.toPureTm
-  artifact_eq_surface : pure.artifact.pattern = surface.toClosedPattern
-  artifact_eq_pure : pure.artifact.pattern = quoteClosedTm pure.term
-
-def SharedPureOverlapCertificate.backendName (_ : SharedPureOverlapCertificate) : String :=
-  "PureKernel+Artifact"
-
-def certifySurfacePure (surface : SurfacePureTm 0) : SharedPureOverlapCertificate :=
-  let pure : PureCertificate := {
-    term := surface.toPureTm
-    artifact := ⟨surface.toClosedPattern⟩
-    artifact_eq := by simpa using surface.toClosedPattern_eq_quoteClosedTm
-  }
-  {
-    surface := surface
-    pure := pure
-    overlapClass := OverlapClass.artifactOnly
-    pure_eq := rfl
-    artifact_eq_surface := rfl
-    artifact_eq_pure := pure.artifact_eq
-  }
-
 /-- Certificate for the first typed MeTTa-Core fragment above both the proof and
 runtime branches.
 
@@ -492,10 +353,124 @@ structure MetaCertificate where
   description : String
   artifact : SharedArtifact
 
+/-- Certificate for the first inductive-family objects admitted into the
+elaborated middle layer.
+
+This stays intentionally modest: it packages the already-built bridge between
+the proof-side inductive interface, the future Pure-kernel hook, and the
+current runtime-friendly constructor artifact candidate. -/
+structure InductiveElaborationCertificate where
+  bridge : Mettapedia.Languages.MeTTa.InductiveOverlapBridge
+  overlapClass : OverlapClass
+  overlap_eq : overlapClass = bridge.proofKernel.proofInterface.overlapClass
+
+def InductiveElaborationCertificate.artifact
+    (cert : InductiveElaborationCertificate) : SharedArtifact :=
+  cert.bridge.runtimeCandidate.artifact
+
+def InductiveElaborationCertificate.kernelInterface
+    (cert : InductiveElaborationCertificate) :
+    Mettapedia.Languages.MeTTa.PureInductiveKernelInterface :=
+  cert.bridge.proofKernel.kernelInterface
+
+def InductiveElaborationCertificate.kernelBoundary
+    (cert : InductiveElaborationCertificate) :
+    Mettapedia.Languages.MeTTa.InductiveKernelBoundary :=
+  cert.bridge.proofKernel.kernelBoundary
+
+def InductiveElaborationCertificate.familyName
+    (cert : InductiveElaborationCertificate) : String :=
+  cert.bridge.familyName
+
+theorem InductiveElaborationCertificate.familyName_eq
+    (cert : InductiveElaborationCertificate) :
+    cert.familyName = cert.bridge.runtimeCandidate.family.name := by
+  simpa [InductiveElaborationCertificate.familyName] using
+    cert.bridge.familyName_eq
+
+theorem InductiveElaborationCertificate.kernelBoundary_region
+    (cert : InductiveElaborationCertificate) :
+    cert.kernelBoundary.region = ElaboratedRegion.pureKernelRegion := by
+  exact cert.bridge.proofKernel.kernelBoundary_region
+
+theorem InductiveElaborationCertificate.kernelBoundary_overlap
+    (cert : InductiveElaborationCertificate) :
+    cert.kernelBoundary.overlapClass = OverlapClass.artifactOnly := by
+  exact cert.bridge.proofKernel.kernelBoundary_overlap
+
+theorem InductiveElaborationCertificate.kernelBoundary_supports_familyDeclaration
+    (cert : InductiveElaborationCertificate) :
+    Mettapedia.Languages.MeTTa.InductiveKernelJudgmentKind.familyDeclaration ∈
+      cert.kernelBoundary.supportedJudgments := by
+  exact cert.bridge.proofKernel.kernelBoundary_supports_familyDeclaration
+
+theorem InductiveElaborationCertificate.kernelBoundary_supports_generatedRecursor
+    (cert : InductiveElaborationCertificate) :
+    Mettapedia.Languages.MeTTa.InductiveKernelJudgmentKind.generatedRecursor ∈
+      cert.kernelBoundary.supportedJudgments := by
+  exact cert.bridge.proofKernel.kernelBoundary_supports_generatedRecursor
+
+theorem InductiveElaborationCertificate.kernelBoundary_supports_structuralRecursion
+    (cert : InductiveElaborationCertificate) :
+    Mettapedia.Languages.MeTTa.InductiveKernelJudgmentKind.structuralRecursion ∈
+      cert.kernelBoundary.supportedJudgments := by
+  exact cert.bridge.proofKernel.kernelBoundary_supports_structuralRecursion
+
+theorem InductiveElaborationCertificate.kernelBoundary_positivity_holds
+    (cert : InductiveElaborationCertificate) :
+    cert.kernelInterface.hookInterface.family.strictlyPositive = true := by
+  exact cert.bridge.proofKernel.kernelBoundary_positivity_holds
+
+def certifyInductiveOverlap
+    (bridge : Mettapedia.Languages.MeTTa.InductiveOverlapBridge) :
+    InductiveElaborationCertificate :=
+  { bridge := bridge
+    overlapClass := bridge.proofKernel.proofInterface.overlapClass
+    overlap_eq := rfl }
+
+/-- Certificate for the first structural-fixpoint objects admitted into the
+elaborated middle layer.
+
+As with starter inductives, this remains deliberately modest:
+- proof-side overlap is currently `artifactOnly`
+- runtime-side compatibility is currently only at the artifact/query level
+- no actual fixpoint implementation in `MeTTa-Pure` is claimed here
+-/
+structure FixpointElaborationCertificate where
+  bridge : Mettapedia.Languages.MeTTa.FixpointOverlapBridge
+  overlapClass : OverlapClass
+  overlap_eq : overlapClass = bridge.proofInterface.overlapClass
+
+def FixpointElaborationCertificate.artifact
+    (cert : FixpointElaborationCertificate) : SharedArtifact :=
+  cert.bridge.runtimeCandidate.artifact
+
+def FixpointElaborationCertificate.kernelInterface
+    (cert : FixpointElaborationCertificate) :
+    Mettapedia.Languages.MeTTa.StructuralFixpointKernelInterface :=
+  cert.bridge.runtimeCandidate.kernelInterface
+
+def FixpointElaborationCertificate.functionName
+    (cert : FixpointElaborationCertificate) : String :=
+  cert.bridge.runtimeCandidate.kernelInterface.hook.functionName
+
+theorem FixpointElaborationCertificate.functionName_eq
+    (cert : FixpointElaborationCertificate) :
+    cert.functionName = cert.bridge.runtimeCandidate.kernelInterface.hook.functionName := rfl
+
+def certifyFixpointOverlap
+    (bridge : Mettapedia.Languages.MeTTa.FixpointOverlapBridge) :
+    FixpointElaborationCertificate :=
+  { bridge := bridge
+    overlapClass := bridge.proofInterface.overlapClass
+    overlap_eq := rfl }
+
 /-- The first explicit elaborated-core object. -/
 inductive ElaboratedNode where
   | pureNode (cert : PureCertificate)
   | coreTypedNode (cert : CoreTypedCertificate)
+  | inductiveNode (cert : InductiveElaborationCertificate)
+  | fixpointNode (cert : FixpointElaborationCertificate)
   | runtimeNode (cert : RuntimeCertificate)
   | oracleNode (cert : OracleCertificate)
   | metaNode (cert : MetaCertificate)
@@ -503,6 +478,8 @@ inductive ElaboratedNode where
 def ElaboratedNode.region : ElaboratedNode → ElaboratedRegion
   | ElaboratedNode.pureNode _ => ElaboratedRegion.pureKernelRegion
   | ElaboratedNode.coreTypedNode _ => ElaboratedRegion.pureKernelRegion
+  | ElaboratedNode.inductiveNode _ => ElaboratedRegion.pureKernelRegion
+  | ElaboratedNode.fixpointNode _ => ElaboratedRegion.pureKernelRegion
   | ElaboratedNode.runtimeNode _ => ElaboratedRegion.runtimeExecRegion
   | ElaboratedNode.oracleNode _ => ElaboratedRegion.oracleRegion
   | ElaboratedNode.metaNode _ => ElaboratedRegion.metaRegion
@@ -510,6 +487,8 @@ def ElaboratedNode.region : ElaboratedNode → ElaboratedRegion
 def ElaboratedNode.artifact : ElaboratedNode → SharedArtifact
   | ElaboratedNode.pureNode cert => cert.artifact
   | ElaboratedNode.coreTypedNode cert => cert.artifact
+  | ElaboratedNode.inductiveNode cert => cert.artifact
+  | ElaboratedNode.fixpointNode cert => cert.artifact
   | ElaboratedNode.runtimeNode cert => cert.artifact
   | ElaboratedNode.oracleNode cert => cert.artifact
   | ElaboratedNode.metaNode cert => cert.artifact
@@ -522,6 +501,8 @@ downstream split explicit before committing to a richer elaborator.
 inductive SurfaceNode where
   | surfacePureClosed (term : SurfacePureTm 0)
   | coreTypedAtom (surface : SurfaceCoreTypedAtom)
+  | starterInductive (bridge : Mettapedia.Languages.MeTTa.InductiveOverlapBridge)
+  | starterFixpoint (bridge : Mettapedia.Languages.MeTTa.FixpointOverlapBridge)
   | heRuntimeRule (pattern : Pattern)
   | heRuntimeQuery (pattern : Pattern)
   | pettaRuntimeRule (pattern : Pattern)
@@ -541,6 +522,10 @@ noncomputable def elaborate : SurfaceNode → ElaboratedNode
       ElaboratedNode.pureNode (certifySurfacePure term).pure
   | SurfaceNode.coreTypedAtom surface =>
       ElaboratedNode.coreTypedNode (certifySurfaceCoreTypedAtom surface)
+  | SurfaceNode.starterInductive bridge =>
+      ElaboratedNode.inductiveNode (certifyInductiveOverlap bridge)
+  | SurfaceNode.starterFixpoint bridge =>
+      ElaboratedNode.fixpointNode (certifyFixpointOverlap bridge)
   | SurfaceNode.heRuntimeRule pattern =>
       ElaboratedNode.runtimeNode {
         dialect := heDialectProfile
@@ -603,6 +588,16 @@ theorem elaborate_coreTypedAtom_region (surface : SurfaceCoreTypedAtom) :
     ElaboratedNode.region (elaborate (SurfaceNode.coreTypedAtom surface)) =
       ElaboratedRegion.pureKernelRegion := rfl
 
+theorem elaborate_starterInductive_region
+    (bridge : Mettapedia.Languages.MeTTa.InductiveOverlapBridge) :
+    ElaboratedNode.region (elaborate (SurfaceNode.starterInductive bridge)) =
+      ElaboratedRegion.pureKernelRegion := rfl
+
+theorem elaborate_starterFixpoint_region
+    (bridge : Mettapedia.Languages.MeTTa.FixpointOverlapBridge) :
+    ElaboratedNode.region (elaborate (SurfaceNode.starterFixpoint bridge)) =
+      ElaboratedRegion.pureKernelRegion := rfl
+
 theorem elaborate_heRuntimeRule_region (pattern : Pattern) :
     ElaboratedNode.region (elaborate (SurfaceNode.heRuntimeRule pattern)) =
       ElaboratedRegion.runtimeExecRegion := rfl
@@ -633,6 +628,32 @@ theorem elaborate_coreTypedAtom_artifact
     (ElaboratedNode.artifact (elaborate (SurfaceNode.coreTypedAtom surface))).pattern =
       surface.pattern := rfl
 
+theorem elaborate_starterInductive_artifact
+    (bridge : Mettapedia.Languages.MeTTa.InductiveOverlapBridge) :
+    ElaboratedNode.artifact (elaborate (SurfaceNode.starterInductive bridge)) =
+      bridge.runtimeCandidate.artifact := rfl
+
+theorem elaborate_starterFixpoint_artifact
+    (bridge : Mettapedia.Languages.MeTTa.FixpointOverlapBridge) :
+    ElaboratedNode.artifact (elaborate (SurfaceNode.starterFixpoint bridge)) =
+      bridge.runtimeCandidate.artifact := rfl
+
+theorem elaborate_starterInductive_familyName
+    (bridge : Mettapedia.Languages.MeTTa.InductiveOverlapBridge) :
+    match elaborate (SurfaceNode.starterInductive bridge) with
+    | ElaboratedNode.inductiveNode cert => cert.familyName = bridge.runtimeCandidate.family.name
+    | _ => False := by
+  simpa [elaborate, certifyInductiveOverlap] using
+    (certifyInductiveOverlap bridge).familyName_eq
+
+theorem elaborate_starterFixpoint_functionName
+    (bridge : Mettapedia.Languages.MeTTa.FixpointOverlapBridge) :
+    match elaborate (SurfaceNode.starterFixpoint bridge) with
+    | ElaboratedNode.fixpointNode cert =>
+        cert.functionName = bridge.runtimeCandidate.kernelInterface.hook.functionName
+    | _ => False := by
+  simp [elaborate, certifyFixpointOverlap, FixpointElaborationCertificate.functionName]
+
 theorem elaborate_surfacePureClosed_term
     (term : SurfacePureTm 0) :
     match elaborate (SurfaceNode.surfacePureClosed term) with
@@ -643,7 +664,7 @@ theorem elaborate_surfacePureClosed_term
 theorem elaborate_surfacePureClosed_quoteAgreement
     (term : SurfacePureTm 0) :
     (ElaboratedNode.artifact (elaborate (SurfaceNode.surfacePureClosed term))).pattern =
-      quoteClosedTm term.toPureTm := by
+      Mettapedia.Languages.MeTTa.PureKernel.PatternBridge.quoteClosedTm term.toPureTm := by
   simpa [elaborate, certifySurfacePure] using term.toClosedPattern_eq_quoteClosedTm
 
 theorem elaborate_surfacePureClosed_abcSurface
@@ -682,37 +703,325 @@ artifact view at the MeTTaIL substrate. -/
 noncomputable def pureArtifactCertificate (term : SurfacePureTm 0) : SharedArtifact :=
   ElaboratedNode.artifact (elaborate (SurfaceNode.surfacePureClosed term))
 
-theorem certifySurfacePure_backendName (term : SurfacePureTm 0) :
-    (certifySurfacePure term).backendName = "PureKernel+Artifact" := rfl
-
-theorem certifySurfaceCoreTypedAtom_backendName (surface : SurfaceCoreTypedAtom) :
-    (certifySurfaceCoreTypedAtom surface).backendName = "CoreTypes+Artifact" := rfl
-
-theorem certifySurfacePure_overlapClass (term : SurfacePureTm 0) :
-    (certifySurfacePure term).overlapClass = OverlapClass.artifactOnly := rfl
-
 theorem certifySurfaceCoreTypedAtom_overlapClass (surface : SurfaceCoreTypedAtom) :
     (certifySurfaceCoreTypedAtom surface).overlapClass = OverlapClass.artifactOnly := rfl
 
-theorem certifySurfacePure_overlapName (term : SurfacePureTm 0) :
-    OverlapClass.name (certifySurfacePure term).overlapClass = "artifact-only" := rfl
-
 theorem certifySurfaceCoreTypedAtom_overlapName (surface : SurfaceCoreTypedAtom) :
     OverlapClass.name (certifySurfaceCoreTypedAtom surface).overlapClass = "artifact-only" := rfl
-
-/-- Current Pure overlap is already real, but it is not direct runtime source
-execution. The frontier theorem lives at the language/rewrite level; this
-certificate-level theorem records the same conclusion in elaborated-core terms. -/
-theorem surfacePureClosed_overlap_is_not_directExec
-    (term : SurfacePureTm 0) :
-    (certifySurfacePure term).overlapClass ≠ OverlapClass.directExec morkRuntimeExec0 := by
-  simp [certifySurfacePure]
 
 theorem surfaceCoreTypedAtom_overlap_is_not_directExec
     (surface : SurfaceCoreTypedAtom) :
     (certifySurfaceCoreTypedAtom surface).overlapClass ≠
       OverlapClass.directExec morkRuntimeExec0 := by
   simp [certifySurfaceCoreTypedAtom]
+
+theorem starterInductive_overlap_eq_proofOverlap
+    (bridge : Mettapedia.Languages.MeTTa.InductiveOverlapBridge) :
+    (certifyInductiveOverlap bridge).overlapClass =
+      bridge.proofKernel.proofInterface.overlapClass := rfl
+
+theorem starterFixpoint_overlap_eq_proofOverlap
+    (bridge : Mettapedia.Languages.MeTTa.FixpointOverlapBridge) :
+    (certifyFixpointOverlap bridge).overlapClass =
+      bridge.proofInterface.overlapClass := rfl
+
+theorem unitStarterInductive_overlap_is_artifactOnly :
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.unitOverlapBridge).overlapClass =
+      OverlapClass.artifactOnly := rfl
+
+theorem boolTrueStarterInductive_overlap_is_artifactOnly :
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.boolTrueOverlapBridge).overlapClass =
+      OverlapClass.artifactOnly := rfl
+
+theorem natZeroStarterInductive_overlap_is_artifactOnly :
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.natZeroOverlapBridge).overlapClass =
+      OverlapClass.artifactOnly := rfl
+
+theorem unitStarterInductive_supports_familyDeclaration :
+    Mettapedia.Languages.MeTTa.InductiveKernelJudgmentKind.familyDeclaration ∈
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.unitOverlapBridge).kernelBoundary.supportedJudgments := by
+  exact
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.unitOverlapBridge).kernelBoundary_supports_familyDeclaration
+
+theorem boolTrueStarterInductive_supports_familyDeclaration :
+    Mettapedia.Languages.MeTTa.InductiveKernelJudgmentKind.familyDeclaration ∈
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.boolTrueOverlapBridge).kernelBoundary.supportedJudgments := by
+  exact
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.boolTrueOverlapBridge).kernelBoundary_supports_familyDeclaration
+
+theorem natZeroStarterInductive_supports_familyDeclaration :
+    Mettapedia.Languages.MeTTa.InductiveKernelJudgmentKind.familyDeclaration ∈
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.natZeroOverlapBridge).kernelBoundary.supportedJudgments := by
+  exact
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.natZeroOverlapBridge).kernelBoundary_supports_familyDeclaration
+
+theorem unitStarterInductive_supports_generatedRecursor :
+    Mettapedia.Languages.MeTTa.InductiveKernelJudgmentKind.generatedRecursor ∈
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.unitOverlapBridge).kernelBoundary.supportedJudgments := by
+  exact
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.unitOverlapBridge).kernelBoundary_supports_generatedRecursor
+
+theorem boolTrueStarterInductive_supports_generatedRecursor :
+    Mettapedia.Languages.MeTTa.InductiveKernelJudgmentKind.generatedRecursor ∈
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.boolTrueOverlapBridge).kernelBoundary.supportedJudgments := by
+  exact
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.boolTrueOverlapBridge).kernelBoundary_supports_generatedRecursor
+
+theorem natZeroStarterInductive_supports_generatedRecursor :
+    Mettapedia.Languages.MeTTa.InductiveKernelJudgmentKind.generatedRecursor ∈
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.natZeroOverlapBridge).kernelBoundary.supportedJudgments := by
+  exact
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.natZeroOverlapBridge).kernelBoundary_supports_generatedRecursor
+
+theorem natIsZeroStarterFixpoint_overlap_is_artifactOnly :
+    (certifyFixpointOverlap Mettapedia.Languages.MeTTa.natIsZeroFixpointOverlapBridge).overlapClass =
+      OverlapClass.artifactOnly := rfl
+
+theorem natPredStarterFixpoint_overlap_is_artifactOnly :
+    (certifyFixpointOverlap Mettapedia.Languages.MeTTa.natPredFixpointOverlapBridge).overlapClass =
+      OverlapClass.artifactOnly := rfl
+
+theorem unitStarterInductive_queryCompatible :
+    let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+      (ElaboratedNode.artifact
+        (elaborate (SurfaceNode.starterInductive Mettapedia.Languages.MeTTa.unitOverlapBridge))).pattern
+    ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a) := by
+  simpa [elaborate_starterInductive_artifact] using
+    Mettapedia.Languages.MeTTa.unitDualTargetCandidate_queryCompatible
+
+theorem boolTrueStarterInductive_queryCompatible :
+    let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+      (ElaboratedNode.artifact
+        (elaborate (SurfaceNode.starterInductive Mettapedia.Languages.MeTTa.boolTrueOverlapBridge))).pattern
+    ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a) := by
+  simpa [elaborate_starterInductive_artifact] using
+    Mettapedia.Languages.MeTTa.boolTrueDualTargetCandidate_queryCompatible
+
+theorem natZeroStarterInductive_queryCompatible :
+    let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+      (ElaboratedNode.artifact
+        (elaborate (SurfaceNode.starterInductive Mettapedia.Languages.MeTTa.natZeroOverlapBridge))).pattern
+    ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a) := by
+  simpa [elaborate_starterInductive_artifact] using
+    Mettapedia.Languages.MeTTa.natZeroDualTargetCandidate_queryCompatible
+
+theorem natIsZeroStarterFixpoint_queryCompatible :
+    let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+      (ElaboratedNode.artifact
+        (elaborate (SurfaceNode.starterFixpoint Mettapedia.Languages.MeTTa.natIsZeroFixpointOverlapBridge))).pattern
+    ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a) := by
+  simpa [elaborate_starterFixpoint_artifact] using
+    Mettapedia.Languages.MeTTa.natIsZeroFixpoint_queryCompatible
+
+theorem natPredStarterFixpoint_queryCompatible :
+    let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+      (ElaboratedNode.artifact
+        (elaborate (SurfaceNode.starterFixpoint Mettapedia.Languages.MeTTa.natPredFixpointOverlapBridge))).pattern
+    ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a) := by
+  simpa [elaborate_starterFixpoint_artifact] using
+    Mettapedia.Languages.MeTTa.natPredFixpoint_queryCompatible
+
+theorem unitStarterInductive_refines_pureCheckingBoundary :
+    (ElaboratedNode.inductiveNode
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.unitOverlapBridge)).region =
+      pureCheckingBoundary.region ∧
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.unitOverlapBridge).overlapClass =
+      pureCheckingBoundary.overlapClass := by
+  constructor <;> rfl
+
+theorem boolTrueStarterInductive_refines_pureCheckingBoundary :
+    (ElaboratedNode.inductiveNode
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.boolTrueOverlapBridge)).region =
+      pureCheckingBoundary.region ∧
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.boolTrueOverlapBridge).overlapClass =
+      pureCheckingBoundary.overlapClass := by
+  constructor <;> rfl
+
+theorem natZeroStarterInductive_refines_pureCheckingBoundary :
+    (ElaboratedNode.inductiveNode
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.natZeroOverlapBridge)).region =
+      pureCheckingBoundary.region ∧
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.natZeroOverlapBridge).overlapClass =
+      pureCheckingBoundary.overlapClass := by
+  constructor <;> rfl
+
+theorem natIsZeroStarterFixpoint_refines_pureCheckingBoundary :
+    (ElaboratedNode.fixpointNode
+      (certifyFixpointOverlap Mettapedia.Languages.MeTTa.natIsZeroFixpointOverlapBridge)).region =
+      pureCheckingBoundary.region ∧
+    (certifyFixpointOverlap Mettapedia.Languages.MeTTa.natIsZeroFixpointOverlapBridge).overlapClass =
+      pureCheckingBoundary.overlapClass := by
+  constructor <;> rfl
+
+theorem natPredStarterFixpoint_refines_pureCheckingBoundary :
+    (ElaboratedNode.fixpointNode
+      (certifyFixpointOverlap Mettapedia.Languages.MeTTa.natPredFixpointOverlapBridge)).region =
+      pureCheckingBoundary.region ∧
+    (certifyFixpointOverlap Mettapedia.Languages.MeTTa.natPredFixpointOverlapBridge).overlapClass =
+      pureCheckingBoundary.overlapClass := by
+  constructor <;> rfl
+
+theorem unitStarterInductive_overlap_is_artifactOnly_but_queryCompatible :
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.unitOverlapBridge).overlapClass =
+      OverlapClass.artifactOnly ∧
+    (let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+      (ElaboratedNode.artifact
+        (elaborate (SurfaceNode.starterInductive Mettapedia.Languages.MeTTa.unitOverlapBridge))).pattern;
+      ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a)) := by
+  constructor
+  · rfl
+  · simpa [elaborate_starterInductive_artifact] using
+      Mettapedia.Languages.MeTTa.unitDualTargetCandidate_queryCompatible
+
+theorem boolTrueStarterInductive_overlap_is_artifactOnly_but_queryCompatible :
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.boolTrueOverlapBridge).overlapClass =
+      OverlapClass.artifactOnly ∧
+    (let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+      (ElaboratedNode.artifact
+        (elaborate (SurfaceNode.starterInductive Mettapedia.Languages.MeTTa.boolTrueOverlapBridge))).pattern;
+      ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a)) := by
+  constructor
+  · rfl
+  · simpa [elaborate_starterInductive_artifact] using
+      Mettapedia.Languages.MeTTa.boolTrueDualTargetCandidate_queryCompatible
+
+theorem natZeroStarterInductive_overlap_is_artifactOnly_but_queryCompatible :
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.natZeroOverlapBridge).overlapClass =
+      OverlapClass.artifactOnly ∧
+    (let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+      (ElaboratedNode.artifact
+        (elaborate (SurfaceNode.starterInductive Mettapedia.Languages.MeTTa.natZeroOverlapBridge))).pattern;
+      ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a)) := by
+  constructor
+  · rfl
+  · simpa [elaborate_starterInductive_artifact] using
+      Mettapedia.Languages.MeTTa.natZeroDualTargetCandidate_queryCompatible
+
+theorem unitStarterInductive_refines_kernelExtension :
+    let ext := Mettapedia.Languages.MeTTa.unitKernelExtension
+    (ElaboratedNode.inductiveNode
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.unitOverlapBridge)).region =
+      ext.checkingBoundary.region ∧
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.unitOverlapBridge).overlapClass =
+      ext.checkingBoundary.overlapClass := by
+  constructor <;> rfl
+
+theorem boolTrueStarterInductive_refines_kernelExtension :
+    let ext := Mettapedia.Languages.MeTTa.boolKernelExtension
+    (ElaboratedNode.inductiveNode
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.boolTrueOverlapBridge)).region =
+      ext.checkingBoundary.region ∧
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.boolTrueOverlapBridge).overlapClass =
+      ext.checkingBoundary.overlapClass := by
+  constructor <;> rfl
+
+theorem natZeroStarterInductive_refines_kernelExtension :
+    let ext := Mettapedia.Languages.MeTTa.natKernelExtension
+    (ElaboratedNode.inductiveNode
+      (certifyInductiveOverlap Mettapedia.Languages.MeTTa.natZeroOverlapBridge)).region =
+      ext.checkingBoundary.region ∧
+    (certifyInductiveOverlap Mettapedia.Languages.MeTTa.natZeroOverlapBridge).overlapClass =
+      ext.checkingBoundary.overlapClass := by
+  constructor <;> rfl
+
+theorem unitStarterInductive_extension_has_queryCompatibleCtor :
+    ∃ ctor, ctor ∈ Mettapedia.Languages.MeTTa.unitKernelExtension.declaration.ctors ∧
+      ctor.name = "unit" ∧ ctor.argCount = 0 ∧
+      (let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+        (ElaboratedNode.artifact
+          (elaborate (SurfaceNode.starterInductive Mettapedia.Languages.MeTTa.unitOverlapBridge))).pattern
+       ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a)) := by
+  simpa [elaborate_starterInductive_artifact] using
+    Mettapedia.Languages.MeTTa.unitKernelExtension_has_queryCompatibleCtor
+
+theorem boolTrueStarterInductive_extension_has_queryCompatibleCtor :
+    ∃ ctor, ctor ∈ Mettapedia.Languages.MeTTa.boolKernelExtension.declaration.ctors ∧
+      ctor.name = "true" ∧ ctor.argCount = 0 ∧
+      (let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+        (ElaboratedNode.artifact
+          (elaborate (SurfaceNode.starterInductive Mettapedia.Languages.MeTTa.boolTrueOverlapBridge))).pattern
+       ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a)) := by
+  simpa [elaborate_starterInductive_artifact] using
+    Mettapedia.Languages.MeTTa.boolKernelExtension_has_queryCompatibleCtor
+
+theorem natZeroStarterInductive_extension_has_queryCompatibleCtor :
+    ∃ ctor, ctor ∈ Mettapedia.Languages.MeTTa.natKernelExtension.declaration.ctors ∧
+      ctor.name = "zero" ∧ ctor.argCount = 0 ∧
+      (let a := Mettapedia.Languages.ProcessCalculi.MORK.morkPatternToAtom
+        (ElaboratedNode.artifact
+          (elaborate (SurfaceNode.starterInductive Mettapedia.Languages.MeTTa.natZeroOverlapBridge))).pattern
+       ([], a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] ({a}) (.btm a)) := by
+  simpa [elaborate_starterInductive_artifact] using
+    Mettapedia.Languages.MeTTa.natKernelExtension_has_queryCompatibleCtor
+
+theorem checkedUnitFamily_refines_kernelExtension :
+    Mettapedia.Languages.MeTTa.checkedUnitFamily.extension.declaration.familyName =
+      Mettapedia.Languages.MeTTa.unitKernelExtension.declaration.familyName ∧
+    Mettapedia.Languages.MeTTa.checkedUnitFamily.extension.declaration.recursorName =
+      Mettapedia.Languages.MeTTa.unitKernelExtension.declaration.recursorName := by
+  constructor <;> rfl
+
+theorem checkedBoolFamily_refines_kernelExtension :
+    Mettapedia.Languages.MeTTa.checkedBoolFamily.extension.declaration.familyName =
+      Mettapedia.Languages.MeTTa.boolKernelExtension.declaration.familyName ∧
+    Mettapedia.Languages.MeTTa.checkedBoolFamily.extension.declaration.recursorName =
+      Mettapedia.Languages.MeTTa.boolKernelExtension.declaration.recursorName := by
+  constructor <;> rfl
+
+theorem checkedNatFamily_refines_kernelExtension :
+    Mettapedia.Languages.MeTTa.checkedNatFamily.extension.declaration.familyName =
+      Mettapedia.Languages.MeTTa.natKernelExtension.declaration.familyName ∧
+    Mettapedia.Languages.MeTTa.checkedNatFamily.extension.declaration.recursorName =
+      Mettapedia.Languages.MeTTa.natKernelExtension.declaration.recursorName := by
+  constructor <;> rfl
+
+theorem checkedUnitFamily_overlap_is_artifactOnly :
+    Mettapedia.Languages.MeTTa.checkedUnitFamily.service.overlapClass =
+      OverlapClass.artifactOnly := by
+  simp [Mettapedia.Languages.MeTTa.checkedUnitFamily,
+    Mettapedia.Languages.MeTTa.checkOrdinaryFamilyCanonical,
+    Mettapedia.Languages.MeTTa.PureCheckingBoundary.checkOrdinaryFamily,
+    pureCheckingBoundary]
+
+theorem checkedBoolFamily_overlap_is_artifactOnly :
+    Mettapedia.Languages.MeTTa.checkedBoolFamily.service.overlapClass =
+      OverlapClass.artifactOnly := by
+  simp [Mettapedia.Languages.MeTTa.checkedBoolFamily,
+    Mettapedia.Languages.MeTTa.checkOrdinaryFamilyCanonical,
+    Mettapedia.Languages.MeTTa.PureCheckingBoundary.checkOrdinaryFamily,
+    pureCheckingBoundary]
+
+theorem checkedNatFamily_overlap_is_artifactOnly :
+    Mettapedia.Languages.MeTTa.checkedNatFamily.service.overlapClass =
+      OverlapClass.artifactOnly := by
+  simp [Mettapedia.Languages.MeTTa.checkedNatFamily,
+    Mettapedia.Languages.MeTTa.checkOrdinaryFamilyCanonical,
+    Mettapedia.Languages.MeTTa.PureCheckingBoundary.checkOrdinaryFamily,
+    pureCheckingBoundary]
+
+theorem checkedNatIsZeroFixpoint_refines_pureCheckingBoundary :
+    Mettapedia.Languages.MeTTa.checkedNatIsZeroFixpoint.region =
+      pureCheckingBoundary.region ∧
+    Mettapedia.Languages.MeTTa.checkedNatIsZeroFixpoint.overlapClass =
+      pureCheckingBoundary.overlapClass := by
+  constructor <;> rfl
+
+theorem checkedNatPredFixpoint_refines_pureCheckingBoundary :
+    Mettapedia.Languages.MeTTa.checkedNatPredFixpoint.region =
+      pureCheckingBoundary.region ∧
+    Mettapedia.Languages.MeTTa.checkedNatPredFixpoint.overlapClass =
+      pureCheckingBoundary.overlapClass := by
+  constructor <;> rfl
+
+theorem checkedNatIsZeroFixpoint_recursorName :
+    Mettapedia.Languages.MeTTa.checkedNatIsZeroFixpoint.iface.hook.recursorContractStub =
+      "Nat.rec" := by
+  exact Mettapedia.Languages.MeTTa.checkedNatIsZeroFixpoint_recursor
+
+theorem checkedNatPredFixpoint_recursorName :
+    Mettapedia.Languages.MeTTa.checkedNatPredFixpoint.iface.hook.recursorContractStub =
+      "Nat.rec" := by
+  exact Mettapedia.Languages.MeTTa.checkedNatPredFixpoint_recursor
 
 /-- Language-level summary imported from `PureRuntimeFrontier`: the current
 `mettaPure` rewrite system still does not satisfy the direct `R_exec₀`

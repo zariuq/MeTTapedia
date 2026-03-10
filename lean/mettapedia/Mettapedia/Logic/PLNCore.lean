@@ -37,6 +37,9 @@ import Mettapedia.Logic.SoundnessCompleteness
 import Mettapedia.Logic.PLNErrorMagnificationGrounding
 import Mettapedia.Logic.PLNCanonicalAPI
 import Mettapedia.Logic.SufficientStatisticSurface
+import Mettapedia.Logic.GenericWorldModelForgetting
+import Mettapedia.Logic.PLNWorldModelPreorder
+import Mettapedia.Logic.PLNGaussianEMExtension
 import Mettapedia.Logic.HigherOrder.PLNKyburgReduction
 import Mettapedia.Logic.PLNIntensionalWorldModel
 import Mettapedia.Logic.IntensionalInheritanceSolomonoffBridge
@@ -106,6 +109,13 @@ This module is a curated import surface for the currently theorem-complete PLN s
 - Error-magnification grounding across WM calculus, OSLF atom semantics, and
   evidence-derived confidence transport (`PLNErrorMagnificationGrounding`)
 - Canonical API with 3-tier theorem index (`PLNCanonicalAPI`)
+- Additive multiset WM singleton-surface classification / uniqueness
+  (`SufficientStatisticSurface`)
+- Forgetting layer with scope invariance and scoped no-go for exact inverse forgetting
+  (`GenericWorldModelForgetting`)
+- Selector-induced evidence/view preorders (`PLNWorldModelPreorder`)
+- Advanced weighted Gaussian / one-step E/M extension with hard-label reduction
+  (`PLNGaussianEMExtension`)
 - PLN↔NARS rule correspondence package (rule-level bridge + informativeness adjunction)
   (`PLNNARSRuleCorrespondence`)
 - Chapter-14 temporal/causal relationship layer

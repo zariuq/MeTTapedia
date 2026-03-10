@@ -21,6 +21,10 @@ import Mettapedia.Logic.PLNNARSRuleCorrespondence
 import Mettapedia.Logic.PLNEndToEnd
 import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.EvidenceSTVBridge
+import Mettapedia.Logic.SufficientStatisticSurface
+import Mettapedia.Logic.GenericWorldModelForgetting
+import Mettapedia.Logic.PLNWorldModelPreorder
+import Mettapedia.Logic.PLNGaussianEMExtension
 
 /-!
 # PLN Canonical API (Lean)
@@ -117,6 +121,62 @@ abbrev ch7_worked_example_strength_uniform_3_1 :=
 
 abbrev ch7_distributional_kyburg_bridge_available :=
   Mettapedia.Logic.PLNKyburgReduction.chapter7_distributional_kyburg_bridge_available
+
+/-! ## Additive WM Singleton-Surface Endpoints -/
+
+abbrev wm_multiset_singletonSurface :=
+  @Mettapedia.Logic.SufficientStatisticSurface.singletonSurface
+
+abbrev wm_multiset_additive_evidence_eq_aggregate :=
+  @Mettapedia.Logic.SufficientStatisticSurface.evidence_eq_aggregate_singletonSurface_of_zero
+
+abbrev wm_multiset_additive_extension_unique :=
+  @Mettapedia.Logic.SufficientStatisticSurface.existsUnique_additiveExtension_of_singletonSurface_zero
+
+/-! ## Forgetting Endpoints -/
+
+abbrev WMZeroPreserving :=
+  @Mettapedia.Logic.GenericWorldModelZeroPreserving
+
+abbrev WMForgettingLayer :=
+  Mettapedia.Logic.ForgettingLayer
+
+abbrev wm_no_exactInverse_revision_of_nonzero_outside_scope :=
+  @Mettapedia.Logic.ForgettingLayer.no_exactInverse_revision_of_nonzero_outside_scope
+
+/-! ## View-Induced Preorder Endpoints -/
+
+abbrev wm_selectorPreorder :=
+  @Mettapedia.Logic.PLNWorldModelPreorder.selectorPreorder
+
+abbrev wm_selectorProductPreorder :=
+  @Mettapedia.Logic.PLNWorldModelPreorder.selectorProductPreorder
+
+noncomputable abbrev wm_supportConfidencePreorder :=
+  Mettapedia.Logic.PLNWorldModelPreorder.supportConfidencePreorder
+
+/-! ## Advanced Gaussian / One-Step EM Endpoints -/
+
+abbrev advancedWeightedNormalGammaEvidence :=
+  Mettapedia.Logic.WeightedNormalGammaEvidence
+
+abbrev advancedWeightedNormalGammaPrior :=
+  Mettapedia.Logic.WeightedNormalGammaPrior
+
+abbrev advancedGaussianMixtureState :=
+  Mettapedia.Logic.GaussianMixtureState
+
+abbrev ch7_weightedGaussianStatistic :=
+  @Mettapedia.Logic.SufficientStatisticSurface.weightedGaussianStatistic
+
+abbrev ch7_hardLabelWeightedAggregate_eq_gaussianFilter :=
+  @Mettapedia.Logic.SufficientStatisticSurface.indicatorGaussianStatistic_aggregate_eq_ofDiscrete_filter
+
+abbrev ch7_hardLabelWeightedPosterior_eq_gaussianFilter :=
+  @Mettapedia.Logic.SufficientStatisticSurface.indicatorGaussianStatistic_posterior_eq_gaussian_filter
+
+abbrev ch7_gaussianEM_unit_mStep_eq_gaussian :=
+  @Mettapedia.Logic.PLNGaussianEM.GaussianMixtureState.mStepPosterior_unit_eq_gaussian
 
 /-! ## PLN↔NARS Rule Correspondence canonical aliases -/
 

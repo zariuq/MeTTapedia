@@ -187,9 +187,17 @@ theorem wf_evalWithState_of_faithful_done_and_deterministic_agreement
       (Session.evalWithState s term).1 =
         (SessionReferenceTotal.evalWithStateCore s term).1 := by
     exact congrArg Prod.fst hEq
+  have hTotPair :
+      SessionReferenceTotal.evalWithStateCore s term = (s', out) ∧
+        SessionReferenceTotal.SessionWF s' := by
+    exact SessionReferenceAdequacy.eval_done_eq_total_and_preserves_public s term hdone hs
+  have hTotEqFst :
+      (SessionReferenceTotal.evalWithStateCore s term).1 = s' := by
+    exact congrArg Prod.fst hTotPair.1
   have hTot :
       SessionWF (SessionReferenceTotal.evalWithStateCore s term).1 := by
-    exact (SessionReferenceAdequacy.eval_done_eq_total_and_preserves_public s term hdone hs).2
+    rw [hTotEqFst]
+    exact hTotPair.2
   rw [hEqFst]
   exact hTot
 

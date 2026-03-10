@@ -10,6 +10,8 @@ theorem surface can use them without pulling in governance dependencies.
 
 ## Contents
 
+- `selectorPreorder` — generic preorder induced by a selector/view
+- `selectorProductPreorder` — generic two-view preorder
 - `EvidenceQualityLE` — pos↑ neg↓ preorder (better evidence = more positive, less negative)
 - `supportConfidenceLE` — context-parameterized strength+confidence preorder
 
@@ -28,6 +30,25 @@ namespace Mettapedia.Logic.PLNWorldModelPreorder
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceClass
 open scoped ENNReal
+
+/-! ## Generic Selector-Induced Preorders -/
+
+/-- A selector/view into a preordered codomain induces a preorder on the source
+type by pulling back `≤`. -/
+def selectorPreorder {α β : Type*} [Preorder β] (view : α → β) : Preorder α where
+  le x y := view x ≤ view y
+  le_refl x := le_rfl
+  le_trans _ _ _ := le_trans
+
+/-- Two selectors/views jointly induce a preorder by requiring monotonicity in
+both views. This is the abstract form of the strength+confidence selector order
+used by the WM paper. -/
+def selectorProductPreorder
+    {α β γ : Type*} [Preorder β] [Preorder γ]
+    (view₁ : α → β) (view₂ : α → γ) : Preorder α where
+  le x y := view₁ x ≤ view₁ y ∧ view₂ x ≤ view₂ y
+  le_refl x := ⟨le_rfl, le_rfl⟩
+  le_trans _ _ _ hxy hyz := ⟨le_trans hxy.1 hyz.1, le_trans hxy.2 hyz.2⟩
 
 /-! ## Evidence Quality Preorder -/
 
@@ -56,6 +77,14 @@ noncomputable def supportConfidenceLE
     (ctx : BinaryContext) (κ : ℝ≥0∞) (e₁ e₂ : Evidence) : Prop :=
   Evidence.strengthWith ctx e₁ ≤ Evidence.strengthWith ctx e₂ ∧
   Evidence.toConfidence κ e₁ ≤ Evidence.toConfidence κ e₂
+
+/-- The selector-induced preorder corresponding to strength-with-context and
+confidence. -/
+noncomputable def supportConfidencePreorder
+    (ctx : BinaryContext) (κ : ℝ≥0∞) : Preorder Evidence :=
+  selectorProductPreorder
+    (fun e => Evidence.strengthWith ctx e)
+    (fun e => Evidence.toConfidence κ e)
 
 theorem supportConfidenceLE_refl
     (ctx : BinaryContext) (κ : ℝ≥0∞) (e : Evidence) :

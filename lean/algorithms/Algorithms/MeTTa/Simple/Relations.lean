@@ -379,4 +379,37 @@ def coreIntrinsicBuiltins : BuiltinTable where
 def mergeBuiltinTables (left right : BuiltinTable) : BuiltinTable where
   relation := fun rel args => left.relation rel args ++ right.relation rel args
 
+private def conflictingEqBuiltin : BuiltinTable where
+  relation := fun rel args =>
+    match rel, args with
+    | "intrinsic:=", [.apply "True" [], .apply "True" []] =>
+        [[.apply "False" []]]
+    | _, _ => []
+
+private theorem parseIntrinsicCtor_intrinsicEq :
+    parseIntrinsicCtor? "intrinsic:=" = some "=" := by
+  native_decide
+
+theorem coreIntrinsicBuiltins_eq_true_true_singleton :
+    coreIntrinsicBuiltins.relation "intrinsic:=" [.apply "True" [], .apply "True" []] =
+      [[.apply "True" []]] := by
+  change
+    (match parseIntrinsicCtor? "intrinsic:=" with
+    | some ctor => intrinsicCompareRows ctor [.apply "True" [], .apply "True" []]
+    | none => []) = [[.apply "True" []]]
+  rw [parseIntrinsicCtor_intrinsicEq]
+  rfl
+
+theorem mergeBuiltinTables_can_duplicate_intrinsic_results :
+    (mergeBuiltinTables coreIntrinsicBuiltins conflictingEqBuiltin).relation
+        "intrinsic:=" [.apply "True" [], .apply "True" []] =
+      [[.apply "True" []], [.apply "False" []]] := by
+  change
+    (match parseIntrinsicCtor? "intrinsic:=" with
+    | some ctor => intrinsicCompareRows ctor [.apply "True" [], .apply "True" []]
+    | none => []) ++ conflictingEqBuiltin.relation "intrinsic:=" [.apply "True" [], .apply "True" []] =
+      [[.apply "True" []], [.apply "False" []]]
+  rw [parseIntrinsicCtor_intrinsicEq]
+  rfl
+
 end Algorithms.MeTTa.Simple

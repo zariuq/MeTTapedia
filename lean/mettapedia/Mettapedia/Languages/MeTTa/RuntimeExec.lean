@@ -1,6 +1,7 @@
 import Mettapedia.Languages.MeTTa.RuntimeSpec
 import Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
 import Mettapedia.Languages.ProcessCalculi.MORK.Conformance
+import Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment
 
 /-!
 # MeTTa Runtime Execution Surface
@@ -265,5 +266,128 @@ theorem morkRuntimeQueryExec0_backendName :
 
 theorem morkRuntimeQueryExec0_baseSourceFactor :
     morkRuntimeQueryExec0.baseSourceFactor = fun p => SourceFactor.btm (patternTranslation p) := rfl
+
+/-- Space-effect sibling surface for `add-atom` and `remove-atom`. -/
+structure MeTTaRuntimeSpaceEffectSurface where
+  backendName : String
+  objectLanguage : String
+  baseExecSurface : MeTTaRuntimeExecSurface
+  addAtomSourceRule : SourceExecRule
+  removeAtomSourceRule : SourceExecRule
+  addAtomSourceFire :
+    ∀ (p : ILP) {workspace : Space},
+      morkPatternToAtom (.apply "add-atom" [.apply "&self" [], p]) ∈ workspace →
+      applySinks workspace [("x", morkPatternToAtom p)] addAtomSourceRule.tmpl ∈
+        fireSourceRule workspace addAtomSourceRule
+  removeAtomSourceFire :
+    ∀ (p : ILP) {workspace : Space},
+      morkPatternToAtom (.apply "remove-atom" [.apply "&self" [], p]) ∈ workspace →
+      applySinks workspace [("x", morkPatternToAtom p)] removeAtomSourceRule.tmpl ∈
+        fireSourceRule workspace removeAtomSourceRule
+
+/-- Oracle request/response surface for ACT and Z3 resources.
+
+This is intentionally weaker than the exec/query/effect seams:
+- positive example: request and response syntax are now explicit and shared
+- negative example: this does not yet prove full executable correctness for ACT
+  or Z3 subprocess interaction
+-/
+structure MeTTaRuntimeOracleSurface where
+  backendName : String
+  objectLanguage : String
+  requestEncoding : OracleQuery → ResourceRequest
+  responsePayload : OracleResponse → List Atom
+  actRequestsExternal :
+    ∀ (name : String) (pat : Atom),
+      requestEncoding (OracleQuery.actMatch name pat) = ResourceRequest.act name
+  z3CheckSatRequestsSolver :
+    ∀ (name : String) (assertions : List Atom),
+      requestEncoding (OracleQuery.z3CheckSat name assertions) = ResourceRequest.z3 name
+  z3GetModelRequestsSolver :
+    ∀ (name : String) (assertions : List Atom),
+      requestEncoding (OracleQuery.z3GetModel name assertions) = ResourceRequest.z3 name
+  satHasNoPayload :
+    responsePayload OracleResponse.sat = []
+  unsatHasNoPayload :
+    responsePayload OracleResponse.unsat = []
+  modelCarriesPayload :
+    ∀ (atoms : List Atom), responsePayload (OracleResponse.model atoms) = atoms
+
+/-- The current explicit runtime kernel triad:
+
+- rule execution
+- query
+- space effect
+
+This is the backend-facing operational heart of the current MeTTa runtime story.
+-/
+structure MeTTaRuntimeKernelTriad where
+  ruleExec : MeTTaRuntimeExecSurface
+  query : MeTTaRuntimeQuerySurface
+  spaceEffect : MeTTaRuntimeSpaceEffectSurface
+
+/-- Canonical space-effect sibling of `R_exec₀`: the current direct-exec
+surface for `add-atom` and `remove-atom` over the default atomspace. -/
+def morkRuntimeSpaceEffectExec0 : MeTTaRuntimeSpaceEffectSurface where
+  backendName := "MORK/MM2"
+  objectLanguage := "MeTTaIL"
+  baseExecSurface := morkRuntimeExec0
+  addAtomSourceRule := Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment.addAtomSourceExecRule
+  removeAtomSourceRule := Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment.removeAtomSourceExecRule
+  addAtomSourceFire := Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment.addAtom_fireSourceRule_mem
+  removeAtomSourceFire := Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment.removeAtom_fireSourceRule_mem
+
+theorem morkRuntimeSpaceEffectExec0_backendName :
+    morkRuntimeSpaceEffectExec0.backendName = "MORK/MM2" := rfl
+
+/-- Canonical runtime kernel triad over the current proved MORK/MM2 seams. -/
+noncomputable def morkRuntimeKernelTriad : MeTTaRuntimeKernelTriad where
+  ruleExec := morkRuntimeExec0
+  query := morkRuntimeQueryExec0
+  spaceEffect := morkRuntimeSpaceEffectExec0
+
+/-- Canonical oracle-side sibling of the MORK/MM2 runtime kernel. -/
+def morkRuntimeOracleExec0 : MeTTaRuntimeOracleSurface where
+  backendName := "MORK/MM2"
+  objectLanguage := "MeTTaIL"
+  requestEncoding := OracleQuery.resourceRequest
+  responsePayload := OracleResponse.payloadAtoms
+  actRequestsExternal := by intro name pat; rfl
+  z3CheckSatRequestsSolver := by intro name assertions; rfl
+  z3GetModelRequestsSolver := by intro name assertions; rfl
+  satHasNoPayload := rfl
+  unsatHasNoPayload := rfl
+  modelCarriesPayload := by intro atoms; rfl
+
+theorem morkRuntimeKernelTriad_ruleExec :
+    morkRuntimeKernelTriad.ruleExec = morkRuntimeExec0 := rfl
+
+theorem morkRuntimeKernelTriad_query :
+    morkRuntimeKernelTriad.query = morkRuntimeQueryExec0 := rfl
+
+theorem morkRuntimeKernelTriad_spaceEffect :
+    morkRuntimeKernelTriad.spaceEffect = morkRuntimeSpaceEffectExec0 := rfl
+
+theorem morkRuntimeOracleExec0_backendName :
+    morkRuntimeOracleExec0.backendName = "MORK/MM2" := rfl
+
+theorem morkRuntimeOracleExec0_actRequest
+    (name : String) (pat : Atom) :
+    morkRuntimeOracleExec0.requestEncoding (OracleQuery.actMatch name pat) = ResourceRequest.act name :=
+  rfl
+
+theorem morkRuntimeOracleExec0_z3CheckSatRequest
+    (name : String) (assertions : List Atom) :
+    morkRuntimeOracleExec0.requestEncoding (OracleQuery.z3CheckSat name assertions) = ResourceRequest.z3 name :=
+  rfl
+
+theorem morkRuntimeOracleExec0_z3GetModelRequest
+    (name : String) (assertions : List Atom) :
+    morkRuntimeOracleExec0.requestEncoding (OracleQuery.z3GetModel name assertions) = ResourceRequest.z3 name :=
+  rfl
+
+theorem morkRuntimeOracleExec0_modelPayload
+    (atoms : List Atom) :
+    morkRuntimeOracleExec0.responsePayload (OracleResponse.model atoms) = atoms := rfl
 
 end Mettapedia.Languages.MeTTa.RuntimeExec

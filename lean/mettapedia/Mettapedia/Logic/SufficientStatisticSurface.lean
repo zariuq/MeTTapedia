@@ -177,6 +177,154 @@ theorem inducedWorldModel_evidence_eq_of_isAdditiveExtension
 
 end Additive
 
+section GenericMultisetClassification
+
+variable {Obs Query Ev : Type*}
+variable [AddCommMonoid Ev]
+
+/-- A generic world model over multisets of observations, using the canonical
+multiset revision structure. -/
+abbrev MultisetGenericWorldModel (Obs Query Ev : Type*) [AddCommMonoid Ev] :=
+  letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+  GenericWorldModel (Multiset Obs) Query Ev
+
+/-- Extract the singleton observation surface from a generic multiset world
+model. This is the atomic observation encoder that the classification theorem
+recovers. -/
+def singletonSurface (G : MultisetGenericWorldModel Obs Query Ev) :
+    SufficientStatisticSurface Obs Query Ev where
+  observe o q :=
+    letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+    letI : GenericWorldModel (Multiset Obs) Query Ev := G
+    GenericWorldModel.evidence
+      (State := Multiset Obs) (Query := Query) (Ev := Ev) ({o} : Multiset Obs) q
+
+@[simp] theorem singletonSurface_observe_eq_evidence_singleton
+    (G : MultisetGenericWorldModel Obs Query Ev) (o : Obs) (q : Query) :
+    letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+    letI : GenericWorldModel (Multiset Obs) Query Ev := G
+    (singletonSurface (Obs := Obs) (Query := Query) (Ev := Ev) G).observe o q =
+      GenericWorldModel.evidence
+        (State := Multiset Obs) (Query := Query) (Ev := Ev) ({o} : Multiset Obs) q := by
+  rfl
+
+/-- A zero-preserving generic multiset world model is the additive extension of
+its singleton observation surface. This is the paper-facing classification
+theorem in its honest form: additivity alone does not determine `evidence 0`. -/
+theorem evidence_isAdditiveExtension_of_zero
+    (G : MultisetGenericWorldModel Obs Query Ev)
+    (hzero :
+      ∀ q,
+        letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+        letI : GenericWorldModel (Multiset Obs) Query Ev := G
+        GenericWorldModel.evidence
+          (State := Multiset Obs) (Query := Query) (Ev := Ev) (0 : Multiset Obs) q = 0) :
+    letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+    GenIsAdditiveExtension
+      (singletonSurface (Obs := Obs) (Query := Query) (Ev := Ev) G).observe
+      (fun σ q =>
+        letI : GenericWorldModel (Multiset Obs) Query Ev := G
+        GenericWorldModel.evidence
+          (State := Multiset Obs) (Query := Query) (Ev := Ev) σ q) := by
+  letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+  letI : GenericWorldModel (Multiset Obs) Query Ev := G
+  refine
+    { zero := hzero
+      singleton := ?_
+      add := ?_ }
+  · intro o q
+    rfl
+  · intro σ₁ σ₂ q
+    exact GenericWorldModel.evidence_add
+      (State := Multiset Obs) (Query := Query) (Ev := Ev) σ₁ σ₂ q
+
+/-- Classification theorem: a zero-preserving additive generic multiset world
+model is recovered pointwise by aggregating its singleton observation surface. -/
+@[simp] theorem evidence_eq_aggregate_singletonSurface_of_zero
+    (G : MultisetGenericWorldModel Obs Query Ev)
+    (hzero :
+      ∀ q,
+        letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+        letI : GenericWorldModel (Multiset Obs) Query Ev := G
+        GenericWorldModel.evidence
+          (State := Multiset Obs) (Query := Query) (Ev := Ev) (0 : Multiset Obs) q = 0)
+    (σ : Multiset Obs) (q : Query) :
+    letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+    letI : GenericWorldModel (Multiset Obs) Query Ev := G
+    GenericWorldModel.evidence
+        (State := Multiset Obs) (Query := Query) (Ev := Ev) σ q =
+      aggregate
+        (singletonSurface (Obs := Obs) (Query := Query) (Ev := Ev) G) σ q := by
+  letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+  letI : GenericWorldModel (Multiset Obs) Query Ev := G
+  have hEq :=
+    aggregate_eq_of_isAdditiveExtension
+      (S := singletonSurface (Obs := Obs) (Query := Query) (Ev := Ev) G)
+      (E := fun σ q =>
+        GenericWorldModel.evidence
+          (State := Multiset Obs) (Query := Query) (Ev := Ev) σ q)
+      (evidence_isAdditiveExtension_of_zero
+        (Obs := Obs) (Query := Query) (Ev := Ev) G hzero)
+  exact congrFun (congrFun hEq σ) q
+
+/-- The induced world model built from the singleton surface of a zero-preserving
+generic multiset world model recovers the original evidence extractor pointwise. -/
+@[simp] theorem inducedWorldModel_evidence_eq_of_singletonSurface_zero
+    (G : MultisetGenericWorldModel Obs Query Ev)
+    (hzero :
+      ∀ q,
+        letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+        letI : GenericWorldModel (Multiset Obs) Query Ev := G
+        GenericWorldModel.evidence
+          (State := Multiset Obs) (Query := Query) (Ev := Ev) (0 : Multiset Obs) q = 0)
+    (σ : Multiset Obs) (q : Query) :
+    letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+    letI : GenericWorldModel (Multiset Obs) Query Ev :=
+      (singletonSurface (Obs := Obs) (Query := Query) (Ev := Ev) G).inducedWorldModel
+    GenericWorldModel.evidence
+        (State := Multiset Obs) (Query := Query) (Ev := Ev) σ q =
+      letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+      letI : GenericWorldModel (Multiset Obs) Query Ev := G
+      GenericWorldModel.evidence
+        (State := Multiset Obs) (Query := Query) (Ev := Ev) σ q := by
+  rw [inducedWorldModel_evidence_eq_aggregate]
+  exact
+    (evidence_eq_aggregate_singletonSurface_of_zero
+      (Obs := Obs) (Query := Query) (Ev := Ev) G hzero σ q).symm
+
+/-- Uniqueness form of the classification theorem: once `evidence 0 = 0`, the
+original evidence extractor is the unique additive extension of the singleton
+surface. -/
+theorem existsUnique_additiveExtension_of_singletonSurface_zero
+    (G : MultisetGenericWorldModel Obs Query Ev)
+    (hzero :
+      ∀ q,
+        letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+        letI : GenericWorldModel (Multiset Obs) Query Ev := G
+        GenericWorldModel.evidence
+          (State := Multiset Obs) (Query := Query) (Ev := Ev) (0 : Multiset Obs) q = 0) :
+    letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+    ∃! E : Multiset Obs → Query → Ev,
+      GenIsAdditiveExtension
+        (singletonSurface (Obs := Obs) (Query := Query) (Ev := Ev) G).observe E := by
+  letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
+  refine ⟨
+    (fun σ q =>
+      letI : GenericWorldModel (Multiset Obs) Query Ev := G
+      GenericWorldModel.evidence
+        (State := Multiset Obs) (Query := Query) (Ev := Ev) σ q),
+    evidence_isAdditiveExtension_of_zero (Obs := Obs) (Query := Query) (Ev := Ev) G hzero,
+    ?_⟩
+  intro E hE
+  ext σ q
+  rw [aggregate_eq_of_isAdditiveExtension
+    (S := singletonSurface (Obs := Obs) (Query := Query) (Ev := Ev) G) hE]
+  exact
+    (evidence_eq_aggregate_singletonSurface_of_zero
+      (Obs := Obs) (Query := Query) (Ev := Ev) G hzero σ q).symm
+
+end GenericMultisetClassification
+
 section AdditiveEvidence
 
 variable {Obs Query : Type*}
