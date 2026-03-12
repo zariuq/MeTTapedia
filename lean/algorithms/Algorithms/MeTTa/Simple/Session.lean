@@ -4800,6 +4800,179 @@ abbrev GetAtomsBangUnaryEvalAgreement (fuel : Nat) : Prop :=
     referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg]) =
       referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg])
 
+/-- Constrained unary evaluator-agreement contract for `get-atoms`,
+    parameterized by a fragment predicate over session/template argument pairs. -/
+abbrev GetAtomsUnaryEvalAgreementOn
+    (fuel : Nat) (Q : Session → Pattern → Prop) : Prop :=
+  ∀ (sess : Session) (spaceArg : Pattern),
+    Q sess spaceArg →
+      referenceEvalWithStateCore sess (.apply "get-atoms" [spaceArg]) =
+        referenceEvalWithStateCoreN fuel sess (.apply "get-atoms" [spaceArg])
+
+/-- Constrained unary evaluator-agreement contract for `get-atoms!`,
+    parameterized by a fragment predicate over session/template argument pairs. -/
+abbrev GetAtomsBangUnaryEvalAgreementOn
+    (fuel : Nat) (Q : Session → Pattern → Prop) : Prop :=
+  ∀ (sess : Session) (spaceArg : Pattern),
+    Q sess spaceArg →
+      referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg]) =
+        referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg])
+
+/-- If `sess.maxNodes = 0` and `fuel > 0`, both live-reference and fuel-indexed
+    total-reference evaluators immediately return the pending root term, so they
+    agree on all inputs. -/
+theorem referenceEvalWithStateCore_eq_N_of_maxNodes_zero
+    (fuel : Nat) (hFuel : fuel ≠ 0)
+    (sess : Session) (term : Pattern)
+    (hNodes : sess.maxNodes = 0) :
+    referenceEvalWithStateCore sess term =
+      referenceEvalWithStateCoreN fuel sess term := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      simp [referenceEvalWithStateCore, referenceEvalWithStateCoreN,
+        Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore] at *
+      have hMaxRef : referenceEvalInterface.maxNodes sess = 0 := by
+        simpa [referenceEvalInterface] using hNodes
+      rw [hMaxRef]
+      rw [hNodes]
+      simp [Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful]
+
+/-- First proved constrained fragment instance for `get-atoms` unary evaluator
+    agreement: sessions with `maxNodes = 0`. -/
+theorem getAtomsUnaryEvalAgreementOn_zeroMaxNodes
+    (fuel : Nat) (hFuel : fuel ≠ 0) :
+    GetAtomsUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxNodes = 0) := by
+  intro sess spaceArg hNodes
+  exact referenceEvalWithStateCore_eq_N_of_maxNodes_zero
+    (fuel := fuel) hFuel sess (.apply "get-atoms" [spaceArg]) hNodes
+
+/-- First proved constrained fragment instance for `get-atoms!` unary evaluator
+    agreement: sessions with `maxNodes = 0`. -/
+theorem getAtomsBangUnaryEvalAgreementOn_zeroMaxNodes
+    (fuel : Nat) (hFuel : fuel ≠ 0) :
+    GetAtomsBangUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxNodes = 0) := by
+  intro sess spaceArg hNodes
+  exact referenceEvalWithStateCore_eq_N_of_maxNodes_zero
+    (fuel := fuel) hFuel sess (.apply "get-atoms!" [spaceArg]) hNodes
+
+@[simp] private theorem referenceEvalAuxStateful_pending_nil
+    (iface : Algorithms.MeTTa.Simple.Backend.ReferenceEval.Interface Session)
+    (sess : Session) (fuel : Nat) (normals : List Pattern) :
+    Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful iface sess fuel [] normals =
+      (sess, normals.reverse) := by
+  induction fuel with
+  | zero =>
+      simp [Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful]
+  | succ fuel ih =>
+      simp [Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+        Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux]
+
+/-- If `sess.maxSteps = 0` and `fuel > 0`, both evaluators stop at depth 0 before
+    intrinsic reduction, so they agree on `get-atoms` root terms. -/
+theorem referenceEvalWithStateCore_getAtoms_eq_N_of_maxSteps_zero
+    (fuel : Nat) (hFuel : fuel ≠ 0)
+    (sess : Session) (spaceArg : Pattern)
+    (hSteps : sess.maxSteps = 0) :
+    referenceEvalWithStateCore sess (.apply "get-atoms" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      cases hNodes : sess.maxNodes with
+      | zero =>
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful, hNodes]
+      | succ m =>
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects.eq_def,
+            hSteps, hNodes]
+
+/-- Stronger constrained fragment instance for `get-atoms` unary evaluator
+    agreement: sessions with `maxSteps = 0`. -/
+theorem getAtomsUnaryEvalAgreementOn_zeroMaxSteps
+    (fuel : Nat) (hFuel : fuel ≠ 0) :
+    GetAtomsUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxSteps = 0) := by
+  intro sess spaceArg hSteps
+  exact referenceEvalWithStateCore_getAtoms_eq_N_of_maxSteps_zero
+    (fuel := fuel) hFuel sess spaceArg hSteps
+
+/-- If `sess.maxSteps = 0` and `fuel > 0`, both evaluators stop at depth 0 before
+    intrinsic reduction, so they agree on `get-atoms!` root terms. -/
+theorem referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxSteps_zero
+    (fuel : Nat) (hFuel : fuel ≠ 0)
+    (sess : Session) (spaceArg : Pattern)
+    (hSteps : sess.maxSteps = 0) :
+    referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      cases hNodes : sess.maxNodes with
+      | zero =>
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful, hNodes]
+      | succ m =>
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects.eq_def,
+            hSteps, hNodes]
+
+/-- Stronger constrained fragment instance for `get-atoms!` unary evaluator
+    agreement: sessions with `maxSteps = 0`. -/
+theorem getAtomsBangUnaryEvalAgreementOn_zeroMaxSteps
+    (fuel : Nat) (hFuel : fuel ≠ 0) :
+    GetAtomsBangUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxSteps = 0) := by
+  intro sess spaceArg hSteps
+  exact referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxSteps_zero
+    (fuel := fuel) hFuel sess spaceArg hSteps
+
+/-- One-step evaluator agreement for `get-atoms` at `maxNodes = 1`, factored through
+    a local intrinsic-agreement hypothesis on the root term. This isolates the
+    remaining hard subproof from the evaluator plumbing. -/
+theorem referenceEvalWithStateCore_getAtoms_eq_N_of_maxNodes_one_of_intrinsic_agreement
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1)
+    (hIntr :
+      intrinsicStateful sess (.apply "get-atoms" [spaceArg]) =
+        referenceIntrinsicStatefulN (fuel - 1) sess (.apply "get-atoms" [spaceArg])) :
+    referenceEvalWithStateCore sess (.apply "get-atoms" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      cases n with
+      | zero =>
+          contradiction
+      | succ k =>
+          have hIntr' :
+              intrinsicStateful sess (.apply "get-atoms" [spaceArg]) =
+                referenceIntrinsicStatefulN (k + 1) sess (.apply "get-atoms" [spaceArg]) := by
+            simpa using hIntr
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects.eq_def,
+            hNodes, hIntr']
+
 /-- Lift a unary `get-atoms` evaluator-agreement hypothesis to the exact
     substituted-template `hEval` shape used by compositional `match` adequacy. -/
 theorem referenceMatch_getAtomsTemplate_hEval_of_unary_eval_agreement

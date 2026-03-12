@@ -6,6 +6,7 @@
 \documentclass[11pt,openany]{report}
 \usepackage{pln-common}
 \usepackage{tikz}
+\usepackage{url}
 \usetikzlibrary{arrows.meta,positioning}
 
 \title{WM-PLN:\\[4pt]
@@ -1060,7 +1061,7 @@ its WM-PLN formalization.  The left column uses the terminology of
 the PLN book~\cite{goertzel2009pln}; the right column gives the Lean
 module or theorem that formalizes the concept.
 
-\begin{table}[H]
+\begin{table}[ht]
 \centering
 \caption{PLN concept $\to$ WM-PLN formalization.}
 \label{tab:pln-wm-map}
@@ -1145,6 +1146,55 @@ division is deliberate.  WM-PLN's distinctive contribution is not
 ``better tabular accuracy at all costs,'' but queryable uncertainty,
 replay semantics, soft evidence, and explicit reasoning about which
 experiment channel is more informative.
+
+\paragraph{Comparator taxonomy.}
+To keep the empirical claims honest, the manuscript uses three
+\emph{different kinds of comparator}, and they should not be conflated.
+\begin{enumerate}
+\item \textbf{WM-PLN models.} These are the evidence/world-model systems
+formalized in Lean and evaluated in the main applied chapters.
+\item \textbf{Proper probabilistic-programming baselines.} When the book
+refers to \emph{Stan} in the PPLBench appendix, it means the standard
+PPLBench Stan backend under \codepath{pplbench/ppls/stan/}, not an
+ad hoc one-off script.  The same family includes PyMC, JAGS, NumPyro,
+and BeanMachine where available.
+\item \textbf{External statistical/ML baselines.} \texttt{GaussianNB},
+\texttt{XGBoost}, and Windowed Gaussian are not WM-PLN variants; they are
+separate classical baselines used to show where WM-style semantics help,
+where they do not, and when WM is acting as a governance/support layer
+rather than a replacement predictor.
+\end{enumerate}
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{0.96}
+\caption{Comparator families used in the empirical sections.}
+\label{tab:comparator-taxonomy}
+\begin{tabular}{p{2.6cm}p{3.0cm}p{7.8cm}}
+\toprule
+Family & Representative tools & Meaning in this book \\
+\midrule
+WM-PLN &
+Lean-backed evidence/world-models &
+Primary object of study: typed evidence accumulation, replay, confidence,
+forgetting, and governance semantics. \\
+\addlinespace
+Proper PPL baselines &
+Stan, PyMC, JAGS, NumPyro, BeanMachine &
+Used to compare against mainstream probabilistic inference systems on
+shared benchmark models in PPLBench.  ``Stan'' refers to the standard
+PPLBench Stan backend, not a scratch prototype. \\
+\addlinespace
+Classical statistical / ML baselines &
+\texttt{GaussianNB}, \texttt{XGBoost}, Windowed Gaussian &
+Used in the applied studies to distinguish same-model-class wins
+(\texttt{GaussianNB}), stronger discriminative baselines
+(\texttt{XGBoost}), and standard anomaly controls (Windowed Gaussian). \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 % [CodexTODO] Cross-dataset role-split table: Steel same-model-class validation, Gas governance, NAB case study.
 \begin{table}[htbp]
@@ -1867,28 +1917,99 @@ collapses to essentially null-detector performance.  We therefore keep
 NAB in this chapter only as a \emph{case study}: it shows that the
 formally verified Kalman update equations plug into a real anomaly
 scoring pipeline, but it does \emph{not} support a competitive
-leaderboard claim.  A simple support-layer hybrid that combines the
-Kalman score with the official Windowed Gaussian score also fails to
-recover the corpus benchmark (raw sums $-43.1$ on the standard profile
-and $-77.2$ on the low-FP profile), so the stronger empirical stories in
-this chapter remain the Steel selective-prediction results and the Gas
-drift/replay results.
+leaderboard claim.
 
-For NAB, the most defensible \emph{positive} WM role is governance and
-auditability rather than leaderboard detection score.  Concretely: keep a
-strong base detector fixed, and use WM order-cost checks as an
-audit/control layer.  The theorem-backed metrics are then:
+For NAB, the defensible \emph{positive} WM role is still a narrow
+\emph{governance layer} over a fixed strong detector, not detector
+replacement.  To prevent tune-on-test leakage, we now report a
+\textbf{strict frozen protocol} only: the policy family is frozen in
+advance, categories are split deterministically into train/holdout, all
+threshold fitting and policy selection happen on train only, and we
+report holdout metrics only.
+
+\begin{table}[htbp]
+\centering
+\caption{NAB strict frozen holdout governance summary, including matched-budget
+Windowed Gaussian comparators (matched on train, evaluated on holdout).}
+\label{tab:nab-governance-summary}
+\input{../results/nab_governance_summary_table.tex}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.78\textwidth]{../results/figures/nab_governance_delta.pdf}
+\caption{NAB strict holdout deltas versus Windowed Gaussian, including
+train-matched FP and train-matched alert comparators.  All holdout deltas
+remain negative in this split.}
+\label{fig:nab-governance-delta}
+\end{figure}
+
+In the current strict split, both profiles select \code{wmGateTau0.6},
+but holdout performance remains negative ($-4.843$ standard,
+$-4.073$ low-FP), and train-matched budget comparators do not recover a
+positive holdout uplift.  Per-series attribution is sparse
+($2/1/16$ helped/worsened/unchanged on each profile), with one positive,
+one negative, and one neutral holdout category.
+
+To reduce ``single-split luck'' risk, we also run a lightweight closure
+pass over 7 deterministic strict splits (same frozen policy set, same
+no-leakage train-only fitting rule).  The holdout delta remains
+non-positive in aggregate: mean $-5.448$ (standard) and $-1.777$
+(low-FP), with split sign counts
+$1/3/3$ (positive/negative/zero) for standard and
+$0/3/4$ for low-FP.  So the closure pass supports freezing NAB as a
+boundary result rather than extending optimization effort.
+
+\begin{table}[htbp]
+\centering
+\caption{NAB strict-multisplit closure aggregate over 7 deterministic
+rotations (same frozen policy set, train-only fitting, no holdout retuning).}
+\label{tab:nab-governance-multisplit-aggregate}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Profile & Splits & Mean $\Delta$ vs WG & Median $\Delta$ vs WG & Split signs (+/-/0) \\
+\midrule
+standard & 7 & $-5.448$ & $0.000$ & $1/3/3$ \\
+reward\_low\_FP\_rate & 7 & $-1.777$ & $0.000$ & $0/3/4$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Artifacts for this closure pass are
+\codepath{results/nab\_governance\_strict\_multisplit.csv},
+\codepath{results/nab\_governance\_strict\_multisplit\_aggregate.csv},
+\codepath{results/nab\_governance\_strict\_multisplit.json},
+generated by \codepath{scripts/wm\_pln\_nab\_strict\_multisplit.py}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.86\textwidth]{../results/figures/nab_governance_frontier_series.pdf}
+\caption{Per-series frontier on strict holdout:
+$\Delta$FP vs.\ $\Delta$score with rationale labels
+(helped/harmed under suppression cost).}
+\label{fig:nab-governance-frontier-series}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.86\textwidth]{../results/figures/nab_governance_frontier_category.pdf}
+\caption{Category frontier on strict holdout:
+category-level $\Sigma\Delta$FP vs.\ $\Sigma\Delta$score, showing where
+governance suppression helps or harms.}
+\label{fig:nab-governance-frontier-category}
+\end{figure}
+
+So NAB remains a protocol-faithful negative boundary where WM currently
+contributes chiefly as audit/governance instrumentation:
 \begin{enumerate}
-\item certificate pass/fail rate from
+\item certificate pass/fail from
   \code{runtimePairwiseOrderCheck\_certifies\_scheduleErrorBound},
 \item policy-threshold compliance from
   \code{runtimePairwiseOrderCheck\_certifies\_policyThreshold},
-\item downstream abstain/retrain decisions tied to certified budget
-  violations near anomaly windows.
+\item escalation hooks (abstain/retrain/review) when certified order-cost
+  budgets are violated near anomaly windows.
 \end{enumerate}
-This yields an auditable \emph{when-to-trust / when-to-escalate} signal,
-which is a more realistic NAB contribution for WM-PLN than claiming a new
-state-of-the-art detector.
 
 See \codepath{Mettapedia/Logic/PLNNABSleepDemo.lean} (327~lines, 0~sorry).
 
@@ -2537,6 +2658,197 @@ right panel is the collider negative control.
 \label{fig:proof-carrying-contraction-school}
 \end{figure}
 
+\subsection{Probabilistically Guarded Admissibility on Real BN Benchmarks}
+
+The toy fixture above establishes the theorem-backed exact fragment in a
+fully worked micro-example.  The next question is whether the same
+discipline helps on canonical benchmark BNs.  We therefore evaluate
+Pathfinder and Hailfinder against exact variable elimination from the BIF
+truthmaker, while keeping the derived object discipline explicit:
+\[
+  (\text{query}, \text{value}, \Sigma, \text{provenance}, g?, \delta?,
+    \text{fallback}?).
+\]
+The guarded layer is an inference-control discipline on top of exact BN
+semantics, not a replacement for that semantics.
+
+\begin{center}
+\fbox{\begin{minipage}{0.92\textwidth}
+\textbf{Three-mode guarded admissibility.}
+\smallskip
+Discharged $\Sigma$ gives exact firing.  Masked $\Sigma$ blocks the
+contraction.  Uncertain $\Sigma$ moves to a bounded semantic guard or to
+an explicit soft fallback layer.
+\small
+\begin{tabular}{@{}p{0.23\textwidth}p{0.67\textwidth}@{}}
+\toprule
+Mode & Status and returned object \\
+\midrule
+Hard-gated exact &
+\textit{Semantic, theorem-backed.} Fire only when $\Sigma$ is
+discharged.  The returned query answer keeps its carried $\Sigma$ and
+provenance; there is no reusable bare derived edge. \\
+Bounded violation &
+\textit{Semantic guard.} Return an estimate plus an explicit certified
+radius or interval against the BN truthmaker. \\
+Soft-guarded mixture &
+\textit{Operational / governance.} Return
+$\hat p = g \cdot p_{\mathrm{rule}} + (1-g) \cdot p_{\mathrm{fallback}}$
+with explicit fallback.  This is useful for ranking, abstention, and
+trigger logic, but it is not automatically the semantic posterior. \\
+\bottomrule
+\end{tabular}
+\end{minipage}}
+\end{center}
+
+\paragraph{Pathfinder.}
+Pathfinder is the stronger context-heavy benchmark.  In the selected
+fork motif, keeping \code{Fault} explicit in $\Sigma$ yields an exact
+hard-gated contraction:
+\[
+\begin{aligned}
+P(F104{=}\code{x\_50} \mid {}&F103{=}\code{Almost\_all\_poor\_def}, \\
+  &\code{Fault}{=}\code{T\_immunob\_lrg}) = 0.4.
+\end{aligned}
+\]
+But if the same motif is evaluated with \code{Fault} omitted from
+$\Sigma$, the exact semantic answer drops to $0.14998\ldots$, and the
+hard gate blocks.  The bounded mode then returns the rule estimate
+$0.31236\ldots$ together with the certified interval
+$[0.14998\ldots, 0.47474\ldots]$, while the soft-gated operational layer
+returns $0.28599\ldots$ with explicit fallback to the exact semantic
+query.  This is the intended result: Pathfinder does not show that
+``free PLN chaining works'' on a large medical BN; it shows that
+carried $\Sigma$ is necessary, and that context-erasing contractions
+must be blocked or degraded gracefully.
+
+\paragraph{Hailfinder.}
+Hailfinder is the cleaner forecasting-structured benchmark.  The exact
+forecast chain
+\[
+  P(\code{MountainFcst}{=}\code{SIG} \mid
+    \code{AMInstabMt}{=}\code{Strong}) = 0.5
+\]
+fires cleanly, and a longer forecast/update path still matches exact BN
+semantics:
+\[
+  P(\code{CapChange}{=}\code{Increasing} \mid
+    \code{CldShadeOth}{=}\code{Cloudy}) = 0.508284\ldots
+\]
+The negative control remains equally important.  In the selected
+collider motif, the exact semantic answer is $0.23595\ldots$, but the
+hard gate still blocks unrestricted reuse; bounded mode returns the
+interval $[0.23595\ldots, 0.27959\ldots]$, and soft mode returns an
+explicit operational mixture with semantic fallback.  So Hailfinder says
+there is still a real exact forecasting-style chaining fragment, while
+the blocked cases preserve the ``yes, but not everywhere'' boundary.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.04}
+\begin{tabular}{@{}p{0.17\textwidth}p{0.10\textwidth}p{0.25\textwidth}p{0.34\textwidth}@{}}
+\toprule
+Case & Exact BN & Guarded output & Why it matters \\
+\midrule
+Pathfinder full-$\Sigma$ fork &
+$0.400$ &
+Hard fires.\par Bounded $\delta = 0$.\par Soft $g = 1$. &
+When \code{Fault} stays in $\Sigma$, PLN-style contraction is exact. \\
+Pathfinder masked-$\Sigma$ fork &
+$0.150$ &
+Hard blocks.\par Bounded $0.312$ in $[0.150, 0.475]$.\par Soft $0.286$. &
+Omitting \code{Fault} changes the answer sharply; carried context is
+necessary. \\
+Hailfinder exact forecast chain &
+$0.500$ &
+Hard fires.\par Bounded $\delta = 0$.\par Soft $g = 1$. &
+There is still a clean exact chaining fragment for forecasting-style
+paths. \\
+Hailfinder forecast collider negative &
+$0.236$ &
+Hard blocks.\par Bounded $0.258$ in $[0.236, 0.280]$.\par Soft $0.257$. &
+The guarded layer preserves the no-free-abduction boundary even in the
+forecasting BN. \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1}
+\caption{Compact guarded-admissibility summary for the current real BN benchmarks.  Exact BN semantics remains the truthmaker in every row.}
+\label{tab:prob-guarded-benchmark-summary}
+\end{table}
+
+The guard-model sweep now adds broader motif coverage and a calibrated
+cross-network control layer.  The current dataset has $207$ evaluated
+rows over $142$ motif groups ($62$ Hailfinder, $145$ Pathfinder).  As a
+coverage result, Pathfinder is exactly where we expected the stress to
+appear: every Pathfinder row requires extra context support, and
+$55.2\%$ of rows are masked-$\Sigma$ cases where contraction is blocked.
+For cross-network operation, a conformal shrink layer is now applied to
+the calibrated guard score before policy decisions; this materially
+improves calibration in the harder Hailfinder$\to$Pathfinder transfer
+setting while preserving the semantic contract that exact BN answers
+remain the truthmaker.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.03}
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Slice & Rows & Groups & Hard & Blocked & $\epsilon$-exact & ECE iso$\to$conf & Brier iso$\to$conf \\
+\midrule
+Hailfinder coverage & 62 & 62 & 0.629 & 0.371 & 0.758 & 0.205$\to$0.205 & 0.188$\to$0.188 \\
+Pathfinder coverage & 145 & 80 & 0.448 & 0.552 & 0.634 & 0.074$\to$0.074 & 0.064$\to$0.064 \\
+Cross H$\to$P guard transfer & 145 & -- & 0.448 & 0.552 & 0.634 & 0.323$\to$0.190 & 0.307$\to$0.237 \\
+Cross P$\to$H guard transfer & 62 & -- & 0.629 & 0.371 & 0.758 & 0.119$\to$0.110 & 0.118$\to$0.117 \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1}
+\caption{Motif-coverage and calibrated guard-transfer summary.
+``Hard'' and ``Blocked'' are structural admissibility rates;
+$\epsilon$-exact uses $\epsilon=0.02$. The conformal guard is operational
+confidence shaping, not posterior semantics.}
+\label{tab:prob-guarded-coverage-calibration}
+\end{table}
+
+For these real-network cases, the bounded mode is currently
+\emph{evaluation-certified} from the exact BN truthmaker rather than
+derived from a general theoremic bound calculus over arbitrary BNs.
+That limitation should be read as a strength of the presentation rather
+than a weakness: the semantic anchor stays exact, and the guarded layer
+is explicit about where it is theorem-backed, where it is certified by
+comparison against the truthmaker, and where it is merely operational.
+
+\begin{center}
+\fbox{\begin{minipage}{0.92\textwidth}
+\textbf{Reproducibility block.}
+\small
+\textit{Scripts.}
+\codepath{scripts/wm\_pln\_pathfinder\_prob\_guarded.py}
+\codepath{scripts/wm\_pln\_hailfinder\_prob\_guarded.py}
+\codepath{scripts/wm\_pln\_guard\_xgb\_dataset.py}
+\codepath{scripts/wm\_pln\_guard\_xgb\_train.py}
+\codepath{scripts/wm\_pln\_guard\_xgb\_eval.py}
+
+\smallskip
+\textit{Results.}
+\codepath{results/pathfinder/pathfinder\_prob\_guarded.csv}
+\codepath{results/hailfinder/hailfinder\_prob\_guarded.csv}
+\codepath{results/guard\_model/guard\_dataset.csv}
+\codepath{results/guard\_model/metrics.json}
+\codepath{results/guard\_model/motif\_coverage\_by\_dataset.csv}
+\codepath{results/guard\_model/motif\_coverage\_by\_dataset\_motif.csv}
+
+\smallskip
+\textit{Lean demo.}
+\codepath{Mettapedia/Logic/PLNProbGuardedAdmissibilityDemo.lean}
+
+\smallskip
+\textit{Lean regression.}
+\codepath{Mettapedia/Logic/PLNProbGuardedAdmissibilityRegression.lean}
+\end{minipage}}
+\end{center}
+
 \section{Bridge Theorems: Naive Bayes and k-NN}
 
 The BN world-model framework connects PLN to two standard machine-learning
@@ -2700,14 +3012,203 @@ See \codepath{Mettapedia/Logic/PLNWorldModelInstitution.lean} and
 \chapter{Higher-Order Reduction}
 \label{ch:higher-order}
 
-Higher-order extensional inference in PLN deals with relationships between
-predicates and concepts, not just between atoms.  The key question: can
-higher-order relationships be reduced to first-order ones without loss?
+This chapter is now grounded in a real higher-order logic layer rather than
+treating higher-order PLN as only a satisfying-set reduction trick.
 
-\section{Satisfying Sets}
+The formal architecture is:
+\[
+  \text{Set semantics} \longrightarrow \text{HOL} \longleftrightarrow \text{WM},
+  \qquad
+  \text{FOL} \longrightarrow \text{HOL},
+  \qquad
+  \text{Set theory} \longrightarrow \text{FOL} \longleftrightarrow \text{WM}.
+\]
 
-The bridge between higher-order and first-order is the \emph{satisfying set}
-construction.
+The key point is that these arrows mean different things:
+\begin{itemize}
+\item \textbf{Set semantics $\to$ HOL} is semantic grounding: set-theoretic
+  structures induce Henkin models for higher-order logic.
+\item \textbf{FOL $\to$ HOL} is a language embedding: first-order syntax is
+  translated into the higher-order language.
+\item \textbf{HOL $\leftrightarrow$ WM} is the world-model lens: satisfaction,
+  consequence, and rewrite structure are transported into PLN-style evidence
+  extraction over world-model states.
+\end{itemize}
+
+This gives a cleaner and more faithful foundation for higher-order PLN than
+the older story in which higher-order talk was largely reduced immediately to
+first-order extensional set manipulations.
+
+\section{Canonical Higher-Order Layer}
+
+The canonical higher-order object language is now Church-style simple type
+theory:
+\begin{itemize}
+\item base types, proposition type, and arrow types,
+\item lambda abstraction and application,
+\item equality at every type,
+\item universal and existential quantification at every type.
+\end{itemize}
+
+This layer lives in
+\codepath{Mettapedia/Logic/HOL/Syntax/Type.lean},
+\codepath{Mettapedia/Logic/HOL/Syntax/Term.lean},
+\codepath{Mettapedia/Logic/HOL/Derivation.lean}, and
+\codepath{Mettapedia/Logic/HOL/Semantics/Henkin.lean}.
+
+The semantics are Henkin rather than full standard higher-order semantics.
+This matters because Henkin semantics are still first-order-manageable at the
+metatheoretic level, while preserving the cleaner higher-order rule language.
+So one can speak directly about
+\[
+  \lambda x.\, t,\qquad f = g,\qquad \forall P : \iota \to o,\; \varphi(P),
+\]
+instead of encoding those patterns awkwardly inside a purely first-order
+surface.
+
+\begin{theorem}[HOL soundness over Henkin models (\claimCore{})]
+If a closed HOL formula is derivable in the real HOL calculus, then it is
+satisfied by every Henkin model.
+\end{theorem}
+
+This is formalized in
+\codepath{Mettapedia/Logic/HOL/Soundness.lean}.
+
+\section{FOL Embedding into HOL}
+
+First-order syntax is embedded into HOL by choosing one distinguished
+individual base type and interpreting first-order function and relation
+symbols as typed higher-order constants.  This embedding is separate from the
+set-semantics grounding:
+\begin{itemize}
+\item \textbf{FOL $\to$ HOL} says how first-order formulas are expressed in the
+  higher-order language.
+\item \textbf{Set semantics $\to$ HOL} says how higher-order formulas are
+  interpreted in directly induced Henkin models.
+\end{itemize}
+
+This separation keeps the architecture honest.  An embedding is not the same
+thing as a semantic grounding.
+
+The embedding is formalized in
+\codepath{Mettapedia/Logic/HOL/Embedding/FirstOrder.lean}.
+
+\section{HOL as a World-Model Lens}
+
+The world-model side of the higher-order story is now based on genuine HOL
+satisfaction, not a placeholder predicate-code proxy.
+
+The state is a multiset of pointed Henkin models, the query is a closed HOL
+formula, and evidence is extracted by counting satisfiers and non-satisfiers.
+So for a HOL formula $\varphi$ and WM state $W$:
+\[
+  \mathrm{strength}(W,\varphi)
+\]
+is the normalized support for $\varphi$ across the higher-order models in
+$W$.
+
+The core bridge says:
+\begin{itemize}
+\item singleton adequacy: $M \models \varphi$ iff the singleton state
+  $\{M\}$ gives strength $1$ to $\varphi$;
+\item pointwise implication is equivalent to singleton-strength consequence;
+\item pointwise equivalence is equivalent to WM query equivalence.
+\end{itemize}
+
+This is formalized in
+\codepath{Mettapedia/Logic/HOL/WorldModel.lean},
+\codepath{Mettapedia/Logic/HOL/WorldModelCompleteness.lean}, and publicly
+packaged in
+\codepath{Mettapedia/Logic/PLNWorldModelHOL.lean}.
+
+\section{Direct Set-Semantics Grounding of HOL}
+
+The low-level arrow from set semantics to HOL is now explicit.
+
+Given a pointed set-theoretic structure, the formalization induces a genuine
+Henkin HOL model directly, rather than routing everything through first-order
+syntax first.  This is the semantic arrow
+\[
+  \text{Set semantics} \longrightarrow \text{HOL}.
+\]
+
+The directly grounded set/HOL model then inherits the HOL-to-WM bridge, giving
+the public route
+\[
+  \text{Set semantics} \longrightarrow \text{HOL} \longrightarrow \text{WM}.
+\]
+
+This is formalized in
+\codepath{Mettapedia/Logic/HOL/Semantics/SetBased.lean} and
+\codepath{Mettapedia/Logic/PLNWorldModelHOLSetBridge.lean}.
+
+\begin{theorem}[Direct set/HOL singleton adequacy (\claimCore{})]
+For a pointed set structure $S$ and closed HOL query $\varphi$,
+$S \models_{\mathrm{HOL}} \varphi$ if and only if the singleton world-model
+state $\{S\}$ assigns strength $1$ to $\varphi$.
+\end{theorem}
+
+On embedded first-order set-theory sentences, the older route
+\[
+  \text{Set theory} \longrightarrow \text{FOL} \longrightarrow \text{WM}
+\]
+and the newer route
+\[
+  \text{Set semantics} \longrightarrow \text{HOL} \longrightarrow \text{WM}
+\]
+agree exactly on evidence and query strength.  Moreover, on theory-model
+states, mutual implication now yields equality of the direct HOL-routed
+evidence and query-strength values.
+
+\section{Higher-Order PLN over HOL and WM}
+
+Higher-order PLN now sits \emph{above} both the HOL core and the HOL-to-WM
+bridge.
+
+The key rule surface is not a second semantics.  It is a theorem-backed layer
+over real HOL derivability:
+\begin{itemize}
+\item proved HOL implications become WM consequence rules,
+\item proved HOL equivalences become WM rewrite and query-equivalence rules,
+\item conjunction, disjunction, negation, implication monotonicity, and
+  eta-equality all transport through the higher-order bridge.
+\end{itemize}
+
+This layer is formalized in
+\codepath{Mettapedia/Logic/PLNHigherOrderHOLCore.lean},
+\codepath{Mettapedia/Logic/PLNHigherOrderHOLRules.lean},
+\codepath{Mettapedia/Logic/PLNHigherOrderHOLSoundness.lean},
+\codepath{Mettapedia/Logic/PLNHigherOrderHOLConsequence.lean}, and
+\codepath{Mettapedia/Logic/PLNHigherOrderHOLLinkBridge.lean}.
+
+The direct set/HOL/WM route is already exercised by genuinely higher-order
+positive and negative fixtures:
+\begin{itemize}
+\item higher-order reflexivity and eta-equality, both at the object-function
+  level and at the predicate-function level,
+\item quantified predicate laws such as
+  $\forall P:\iota \to o.\,\forall x:\iota.\, P(x)\to P(x)$,
+\item conjunction/disjunction commutativity as WM query equivalence,
+\item negation transport,
+\item multiset consequence transport through higher-order rules,
+\item concrete countermodels on small carriers, including the failure of
+  $\forall P:\iota \to o.\,\forall x:\iota.\, P(x)$ on a two-point carrier.
+\end{itemize}
+
+In other words, the direct route is no longer limited to endofunction-shaped
+examples.  It already supports genuinely quantified predicate-level higher-order
+queries, predicate-level eta-equality, and WM-side transport of higher-order
+rules whose principal formulas quantify over predicates.
+
+See
+\codepath{Mettapedia/Logic/PLNWorldModelHOLSetBridgeRegression.lean} and
+\codepath{Mettapedia/Logic/PLNHigherOrderHOLRegression.lean}.
+
+\section{Where Satisfying-Set Reduction Still Fits}
+
+The older satisfying-set reduction remains mathematically useful, but it is
+now best understood as a \emph{finite extensional fragment} of the higher-order
+story rather than as the foundational higher-order layer.
 
 \begin{definition}[Satisfying set]
 Given a predicate $P$ over a finite universe $U$, its satisfying set is
@@ -2716,82 +3217,45 @@ $\mathrm{Sat}(P) = \{x \in U \mid P(x)\}$.
 
 \begin{definition}[Weakness-based inheritance]
 For satisfying sets $A, B \subseteq U$ and a weight function
-$\mu : U \to \mathbb{R}_{\ge 0}$, the inheritance (conditional probability
-proxy) is:
+$\mu : U \to \mathbb{R}_{\ge 0}$, the inheritance proxy is:
 \[
   \mathrm{Inheritance}(A, B, \mu) =
-  \frac{\mathrm{weakness}(A \cap B, \mu)}{\mathrm{weakness}(A, \mu)}
-  = \frac{\sum_{u,v \in A \cap B} \mu(u) \cdot \mu(v)}
-         {\sum_{u,v \in A} \mu(u) \cdot \mu(v)}
-\]
-When $\mu$ is uniform, this reduces to
-$|A \cap B|^2 / |A|^2 = (|A \cap B| / |A|)^2$, so inheritance tracks the
-square of the conditional probability under the squared-weakness convention.
-\end{definition}
-
-\begin{definition}[Similarity]
-The Jaccard-style similarity is:
-\[
-  \mathrm{Similarity}(A, B, \mu) =
-  \frac{\mathrm{weakness}(A \cap B, \mu)}{\mathrm{weakness}(A \cup B, \mu)}
+  \frac{\mathrm{weakness}(A \cap B, \mu)}{\mathrm{weakness}(A, \mu)}.
 \]
 \end{definition}
 
-\section{What Reduces Cleanly}
+This finite extensional layer still proves useful structural facts such as
+pointwise implication collapse and corrected inheritance/similarity transport,
+but it should not be mistaken for the entire higher-order semantics.
 
-\begin{theorem}[Pointwise implication collapse (\claimConditional{})]
-When $\forall x,\; R_1(A, x) \Rightarrow R_2(B, x)$ holds pointwise,
-the weakness numerators align:
+Those finite extensional results live in
+\codepath{Mettapedia/Logic/HigherOrder/HigherOrderReduction.lean} and
+\codepath{Mettapedia/Logic/HigherOrder/Basic.lean}.
+
+\section{Higher-Order Probability: Real but Still Parallel}
+
+The codebase already contains real higher-order probability theory and a real
+PLN-to-Kyburg bridge:
+\begin{itemize}
+\item Kyburg flattening and expectation preservation,
+\item Giry-style monadic laws for the flattening,
+\item posterior-mean identities linking PLN evidence updates to higher-order
+  probability.
+\end{itemize}
+
+See
+\codepath{Mettapedia/ProbabilityTheory/HigherOrderProbability/KyburgFlattening.lean},
+\codepath{Mettapedia/ProbabilityTheory/HigherOrderProbability/GiryMonad.lean},
+and \codepath{Mettapedia/Logic/PLNKyburgReduction.lean}.
+
+What is still missing is the fully fused object
 \[
-  \{(u,v) \mid R_1(A,u) \wedge R_1(A,v) \wedge R_2(B,u) \wedge R_2(B,v)\}
-  = \{(u,v) \mid R_1(A,u) \wedge R_1(A,v)\}
+  \text{``probability of higher-order formulas over a measure on Henkin models.''}
 \]
-and therefore $\mathrm{Inheritance}(A, B) = 1$.
-\end{theorem}
-
-\begin{theorem}[Perfect inheritance corner (\claimConditional{})]
-When $\mathrm{weakness}(S).{\mathrm{pos}} \ne 0$,
-$\mathrm{weakness}(S).{\mathrm{pos}} \ne \top$, and
-$\mathrm{weakness}(S).{\mathrm{neg}} = 0$, then
-$\mathrm{Inheritance}(A, B) = \mathrm{pTrue}$ (the top corner of
-the evidence lattice).
-\end{theorem}
-
-\section{What Fails: Unconditional Equalities}
-
-Some original PLN formulas for higher-order inference are stated as
-unconditional equalities.  The formalization shows that several of these
-fail without additional assumptions:
-\begin{itemize}
-\item The composition rule
-  $\mathrm{Inh}(A, C) = f(\mathrm{Inh}(A,B), \mathrm{Inh}(B,C))$
-  requires screening-off conditions analogous to those in the deduction
-  rule: $P(C \mid A, B) = P(C \mid B)$.
-\item Without these conditions, counterexamples exist where the formula
-  gives incorrect results due to untracked correlations between
-  $A$, $B$, $C$.
-\item The corrected versions carry explicit side conditions: positivity
-  ($P(B) \in (0,1)$), screening-off, and finite-model restrictions.
-\end{itemize}
-
-See \codepath{Mettapedia/Logic/HigherOrder/HigherOrderReduction.lean}
-and \codepath{Mettapedia/Logic/HigherOrder/Basic.lean}.
-
-\section{Kyburg Flattening}
-
-The Kyburg flattening operation reduces higher-order distributional
-truth values (distributions over distributions) to first-order ones.
-The key results:
-\begin{itemize}
-\item \code{kyburg\_flattening}: the flattening preserves expectation.
-\item \code{kyburg\_no\_advantage}: under the flattening, higher-order
-  distributional reasoning offers no advantage over first-order reasoning
-  for expectation-based decisions.
-\item The de~Finetti singleton bridge connects the distributional layer
-  to the Kyburg flattening.
-\end{itemize}
-
-See \codepath{Mettapedia/Logic/HigherOrder/PLNKyburgReduction.lean}.
+So the present higher-order chapter is already grounded in real HOL and real
+world-model semantics, while the next probabilistic strengthening is to put a
+genuine probability measure on higher-order models and show the current
+multiset WM semantics as the empirical special case.
 
 
 \chapter{Quantifiers and the Fuzzy/QFM Layer}
@@ -3496,8 +3960,448 @@ beginning of a trustworthy reasoner.
 
 
 %% ═══════════════════════════════════════════════════════════════════
+\part*{Appendices}
+\addcontentsline{toc}{part}{Appendices}
 \appendix
 %% ═══════════════════════════════════════════════════════════════════
+
+\chapter{Advanced-AI Outcomes (WM Scaffold)}
+\label{app:ai-outcomes}
+
+This appendix records the current WM-PLN analysis status for
+\emph{advanced-AI outcomes} without over-claiming posterior precision.
+The objective is to keep one auditable pipeline from evidence ingestion
+to predicate- and lens-level query outputs.
+
+\section{WM Query Form}
+
+The current data bundle does \emph{not} justify a single exclusive
+global terminal-outcome atom.  Different regions can instantiate
+different governance and control regimes simultaneously, and benefit,
+lock-in, mixed, and catastrophic pressures can co-occur across
+jurisdictions and time horizons.  The appendix therefore treats the
+world-model state as a richer situation state
+\[
+  S = (g, t, G, A, I, U, F),
+\]
+where $g$ is geography/region, $t$ is horizon, $G$ is
+governance/auditability structure, $A$ is authoritarian/lock-in
+pressure, $I$ is the incident/harm surface, $U$ is the benefit-side
+capability surface, and $F$ is the forecast-target/reliability layer.
+Given prior world-model state $W_0$, evidence bundle $E$, and a declared
+scenario-regime scaffold $\mathcal{R}$, the revised state is
+\[
+  W_E := \mathrm{revise}(W_0, E; \mathcal{R}),
+\]
+and the basic query form is predicate-valued:
+\[
+  q_{\varphi} := P(\varphi(S) \mid W_E).
+\]
+The familiar labels
+\code{beneficial\_pluralistic\_transition},
+\code{mixed\_reversible\_world},
+\code{authoritarian\_lock\_in},
+\code{catastrophic\_disempowerment}, and \code{extinction} are used here
+only as \emph{coarse reporting lenses} over $S$, not as primitive
+exhaustive atoms.
+
+In the current appendix build, coarse-lens queries are reported in an
+\emph{abstention-first interval form}
+\[
+  q_{\varphi} \in [L_{\varphi}, U_{\varphi}],
+\]
+with explicit status labels (theorem-certified exact, evaluation-certified
+bound, or abstain/operational-only).
+
+\section{What the Current Data Actually Supports}
+
+The normalized sources support factor-level analysis much more directly
+than terminal-world labels.  In particular:
+\begin{itemize}
+\item the forecast layer supports question families by target tag, horizon,
+  source platform, and resolution status;
+\item the governance layer supports organization-, commitment-, and
+  capability-domain-conditioned queries;
+\item the incident layer supports geography-, domain-, harm-, and
+  severity-conditioned pressure queries;
+\item the authoritarian and benefit proxy layers support thin but explicit
+  directional pressure predicates.
+\end{itemize}
+For external review, the primary empirical surface is the normalized
+table bundle itself.  That bundle is intentionally small enough to audit:
+each table has a clear granularity, a short list of key axes, a declared
+WM role, and a visible caveat.
+
+\begin{table}[htbp]
+\centering
+\caption{Normalized appendix datasets for review: what each table is,
+what it supports, and its main limitation.}
+\label{tab:ai-outcomes-dataset-inventory}
+\IfFileExists{../results/ai_outcomes/ai_outcomes_dataset_inventory_table.tex}{%
+  \input{../results/ai_outcomes/ai_outcomes_dataset_inventory_table.tex}
+}{%
+  \small
+  \begin{tabular}{p{0.24\textwidth}cp{0.46\textwidth}}
+  \toprule
+  Normalized table & Rows & Status \\
+  \midrule
+  (artifact missing) & n/a & run \code{scripts/wm\_pln\_ai\_outcomes\_aggregate.py}. \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Factor families directly supported by the current normalized
+advanced-AI appendix bundle.}
+\label{tab:ai-outcomes-factor-support}
+\IfFileExists{../results/ai_outcomes/ai_outcomes_factor_support_table.tex}{%
+  \input{../results/ai_outcomes/ai_outcomes_factor_support_table.tex}
+}{%
+  \small
+  \begin{tabular}{p{0.25\textwidth}cp{0.45\textwidth}}
+  \toprule
+  Factor family & Rows & Status \\
+  \midrule
+  (artifact missing) & n/a & run \code{scripts/wm\_pln\_ai\_outcomes\_aggregate.py}. \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+The six normalized tables should be read as follows:
+\begin{itemize}
+\item \code{forecast\_questions.csv}: target-family and horizon evidence,
+  plus calibration substrate;
+\item \code{source\_reliability\_candidates.csv}: source trust layer;
+\item \code{preparedness\_governance\_events.csv}: governance and
+  auditability events;
+\item \code{incident\_signals.csv}: harm/misuse/incident surface;
+\item \code{authoritarian\_risk\_proxies.csv}: thin lock-in pressure proxies;
+\item \code{benefit\_side\_proxies.csv}: thin upside capability proxies.
+\end{itemize}
+
+\section{Derived Outcome Queries}
+
+We therefore treat the familiar outcome names as shorthand query
+families, not as globally exclusive state atoms:
+\begin{align*}
+  p_{\mathrm{doom}}(t) &:= P(\varphi_{\mathrm{global\_disemp}}(t)
+    \,\lor\, \varphi_{\mathrm{global\_ext}}(t) \mid W_E),\\
+  p_{1984}(g,t) &:= P(\varphi_{\mathrm{lock\_in}}(g,t) \mid W_E),\\
+  p_{\mathrm{BGI}}(g,t) &:= P(\varphi_{\mathrm{beneficial\_pluralistic}}(g,t)
+    \mid W_E).
+\end{align*}
+The region-conditioned form is the better-founded starting point.
+Scalarized ``world'' summaries require an explicit aggregation functional
+over geographies and horizons, and the current appendix does not yet
+calibrate that functional.
+
+For $p_{\mathrm{doom}}$, Fr\'{e}chet-safe union bounds are available
+without assuming exclusivity:
+\[
+  \max\!\bigl(0,\;L_c + L_e - 1\bigr)
+  \le p_{\mathrm{doom}}(t) \le
+  \min\!\bigl(1,\;U_c + U_e\bigr).
+\]
+
+\section{Current Status}
+
+At this stage, the formal/evaluative contract is:
+\begin{itemize}
+\item \textbf{Data-method layer:} present and reproducible.
+\item \textbf{Provenance layer:} explicit for each normalized table row.
+\item \textbf{Predicate/lens-level intervals:} abstention-first outputs
+  (currently full-width where calibration is insufficient).
+\item \textbf{Global scalarization:} intentionally deferred until
+  region/horizon aggregation and structural priors are better calibrated.
+\end{itemize}
+The current forecast substrate is also highly imbalanced: the normalized
+direct-target rows currently break down as
+\code{mixed\_outcomes} $= 627$,
+\code{beneficial\_pluralistic\_transition} $= 40$,
+\code{extinction} $= 12$,
+\code{authoritarian\_lock\_in} $= 10$, and
+\code{catastrophic\_disempowerment} $= 8$.  That is enough to support
+factor and lens analysis, but not enough to justify a sharp posterior
+over exclusive world-histories.
+The appendix tables below are generated artifacts and are expected to be
+refreshed as new source snapshots are normalized
+(\code{scripts/wm\_pln\_ai\_outcomes\_aggregate.py}).
+
+\begin{table}[htbp]
+\centering
+\caption{Current coarse-lens status surface from the generated
+aggregation summary artifact.}
+\label{tab:ai-outcomes-branch-status}
+\IfFileExists{../results/ai_outcomes/ai_outcomes_branch_status_table.tex}{%
+  \input{../results/ai_outcomes/ai_outcomes_branch_status_table.tex}
+}{%
+  \small
+  \begin{tabular}{p{0.28\textwidth}p{0.30\textwidth}c}
+  \toprule
+  Coarse outcome lens & Status & Interval \\
+  \midrule
+  (artifact missing) & run \code{scripts/wm\_pln\_ai\_outcomes\_aggregate.py} & n/a \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Generated source-role summary used for manuscript-facing
+discussion and review auditability.}
+\label{tab:ai-outcomes-source-summary}
+\IfFileExists{../results/ai_outcomes/manuscript_ready_summary_table.tex}{%
+  \input{../results/ai_outcomes/manuscript_ready_summary_table.tex}
+}{%
+  \small
+  \begin{tabular}{p{0.32\textwidth}p{0.50\textwidth}}
+  \toprule
+  Artifact & Status \\
+  \midrule
+  \code{results/ai\_outcomes/manuscript\_ready\_summary\_table.tex} &
+  missing; regenerate via \code{scripts/wm\_pln\_ai\_outcomes\_aggregate.py}. \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\section{Interpretation Rule}
+
+This appendix should be read with one strict rule:
+\begin{quote}
+\emph{Do not interpret operational confidence scores or sparse-coverage
+snapshots as semantic posteriors.}
+\end{quote}
+The world-model remains the truthmaker; coarse-lens outputs stay
+interval-valued until enough direct target evidence and calibration
+support a narrower posterior claim, and any global scalarization must
+first specify how region- and horizon-conditioned predicates are being
+aggregated.
+
+\chapter{PPLBench Refresh and Holdout Demo}
+\label{app:pplbench-petta-refresh}
+
+This appendix turns the earlier PPLBench $\leftrightarrow$ PeTTa refresh
+into a small didactic benchmark story.  The point is not to claim a broad
+PPL victory; it is to show that the current WM-PLN stack now supports:
+\begin{enumerate}
+\item a reliable native Python $\to$ PeTTa path via Janus,
+\item rule-surface checks against the current xiPLN libraries, and
+\item one full typed continuous-evidence lane that runs through the real
+PPLBench interface and can be scored on held-out data.
+\end{enumerate}
+
+When this appendix says ``Stan'' or ``proper PPL baseline,'' the intended
+reference is the standard PPLBench integration under
+\codepath{pplbench/ppls/stan/}.  The repository does contain standalone
+exploratory comparison scripts, but those are not the manuscript's
+authoritative Stan surface.  The authoritative comparison surface is the
+PPLBench backend family itself.
+
+\section{What We Tested}
+
+We organized the refresh into three deliberately small task families:
+\begin{description}
+\item[Task 1: Bridge smoke tests.] Can Python call PeTTa directly, with the
+same codebase retaining deterministic subprocess fallback?
+\item[Task 2: Rule-surface checks.] Do the current xiPLN rewrite and STV
+surfaces still behave as expected on the refreshed bridge?
+\item[Task 3: A real benchmark lane.] Can one concrete typed evidence model
+run end-to-end inside PPLBench and produce sensible held-out predictive
+behavior, rather than only one-off unit checks?
+\end{description}
+
+For Task 3 we used a deliberately transparent benchmark:
+\begin{quote}
+\emph{Normal-Normal conjugate inference with known observation variance,
+implemented as typed sufficient-statistic evidence in PeTTa and exposed to
+PPLBench through the PLN inference wrapper.}
+\end{quote}
+This is a good first lane because the expected posterior is analytically
+known, so the PeTTa-backed implementation can be checked against a closed
+form rather than only against itself.
+
+\section{Archive Snapshot}
+
+Before re-running the easy experiments, we archived the current PPLBench
+state bundle (code + status snapshots) at:
+\begin{itemize}
+\item \codepath{pplbench/archive/pplbench\_pre\_janus\_refresh\_20260312\_073958/pplbench\_snapshot.tar.gz}
+\item \codepath{pplbench/archive/pplbench\_pre\_janus\_refresh\_20260312\_073958/pplbench\_git\_status.txt}
+\item \codepath{pplbench/archive/pplbench\_pre\_janus\_refresh\_20260312\_073958/petta\_git\_status.txt}
+\item \codepath{pplbench/archive/pplbench\_pre\_janus\_refresh\_20260312\_073958/python\_backend\_check.txt}
+\end{itemize}
+
+\section{Scripts and Model Lane}
+
+The refreshed lane now has an explicit benchmark model and example config:
+\begin{itemize}
+\item \codepath{pplbench/pplbench/models/normal\_normal.py}
+\item \codepath{pplbench/pplbench/ppls/pln/normal\_normal.py}
+\item \codepath{pplbench/examples/normal\_normal\_pln.json}
+\end{itemize}
+
+The two manuscript-facing report scripts are:
+\begin{itemize}
+\item \codepath{scripts/wm\_pln\_pplbench\_easy\_refresh.py}
+\item \codepath{scripts/wm\_pln\_pplbench\_holdout\_report.py}
+\end{itemize}
+
+\section{Easy Refresh Protocol}
+
+The refresh script is:
+\begin{itemize}
+\item \codepath{scripts/wm\_pln\_pplbench\_easy\_refresh.py}
+\end{itemize}
+
+Run command:
+\begin{lstlisting}
+cd ~/claude/lean-projects/mettapedia
+ulimit -v 6291456
+python3 scripts/wm_pln_pplbench_easy_refresh.py
+\end{lstlisting}
+
+Generated artifacts:
+\begin{itemize}
+\item \codepath{results/pplbench\_easy\_refresh\_summary.csv}
+\item \codepath{results/pplbench\_easy\_refresh\_summary.json}
+\item \codepath{results/pplbench\_easy\_refresh\_table.tex}
+\end{itemize}
+
+\section{Refresh Checks}
+
+Figure~\ref{fig:pplbench-refresh-checks} gives the high-level view of the
+first task family.  The important operational point is that the same Python
+entry point now talks to native Janus successfully, while still retaining a
+deterministic subprocess fallback path in the bridge.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.96\textwidth]{../results/figures/pplbench_refresh_checks.pdf}
+\caption{Bridge and rule-surface checks for the refreshed PPLBench $\leftrightarrow$
+PeTTa path.  The checks are intentionally small and auditable: arithmetic
+smoke, xiPLN deterministic rewrite loading, one discrete STV projection, one
+Normal-Normal posterior query, and one continuous xiPLN probability-STV
+sanity check.}
+\label{fig:pplbench-refresh-checks}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{PPLBench easy refresh on the Janus-backed PeTTa Python bridge.
+  All checks in the scripted refresh passed in this run.}
+\label{tab:pplbench-petta-refresh}
+\IfFileExists{../results/pplbench_easy_refresh_table.tex}{%
+  \input{../results/pplbench_easy_refresh_table.tex}
+}{%
+  \small
+  \begin{tabular}{p{0.40\textwidth}cp{0.44\textwidth}}
+  \toprule
+  Experiment & Status & Note / first result \\
+  \midrule
+  (artifact missing) & n/a & run \code{scripts/wm\_pln\_pplbench\_easy\_refresh.py}. \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\noindent
+Companion regression checks against the updated bridge also passed for:
+\codepath{test\_petta\_connection.py},
+\codepath{test\_pln\_simple.py}, and
+\codepath{test\_petta\_normal.py}.
+
+\section{Held-Out Normal-Normal Demo}
+
+The second script lifts the refresh into a proper held-out benchmark report:
+\begin{lstlisting}
+cd ~/claude/lean-projects/mettapedia
+ulimit -v 6291456
+python3 scripts/wm_pln_pplbench_holdout_report.py
+\end{lstlisting}
+
+It reads the refresh status bundle, then runs the concrete
+\codepath{normal\_normal} PPLBench lane across multiple train/test splits,
+evaluated under both the native \code{janus} backend and the deterministic
+\code{subprocess} fallback.  The protocol is intentionally simple:
+\begin{enumerate}
+\item generate synthetic data from a latent mean,
+\item fit the PeTTa-backed Normal-Normal model on the training split,
+\item score posterior predictive log-likelihood on the held-out split,
+\item compare the PeTTa posterior parameters to the analytical conjugate
+posterior.
+\end{enumerate}
+
+Generated artifacts:
+\begin{itemize}
+\item \codepath{results/pplbench\_holdout\_runs.csv}
+\item \codepath{results/pplbench\_holdout\_aggregate.csv}
+\item \codepath{results/pplbench\_holdout\_summary.json}
+\item \codepath{results/pplbench\_holdout\_table.tex}
+\item \codepath{results/figures/pplbench\_normal\_holdout.pdf}
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{../results/figures/pplbench_normal_holdout.pdf}
+\caption{Held-out Normal-Normal benchmark lane through the real PPLBench PLN
+interface.  Top left: final held-out predictive log-likelihood improves as
+more of the dataset is used for training.  Top right: posterior mean error to
+the true latent mean shrinks with more training data.  Bottom left: the Janus
+path is much faster than subprocess on the same workload.  Bottom right: the
+PeTTa posterior mean matches the analytical conjugate posterior exactly on the
+evaluated grid.}
+\label{fig:pplbench-normal-holdout}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Aggregate held-out Normal-Normal results by backend and training
+fraction.  In this run the Janus path averaged about $12.8\times$ the speed
+of subprocess while preserving exact posterior agreement with the analytical
+conjugate update.}
+\label{tab:pplbench-holdout}
+\IfFileExists{../results/pplbench_holdout_table.tex}{%
+  \input{../results/pplbench_holdout_table.tex}
+}{%
+  \small
+  \begin{tabular}{lcccccc}
+  \toprule
+  Backend & Train frac & $n_{train}$ & Final PLL & Mean error & Time (s) & Max exact gap \\
+  \midrule
+  (artifact missing) & n/a & n/a & n/a & n/a & n/a & n/a \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\section{Interpretation}
+
+This appendix is best read as a \emph{capability confirmation}, not as a
+competitive leaderboard claim.  The main takeaways are:
+\begin{enumerate}
+\item The native PeTTa-in-Python route is now real enough to support repeated
+benchmark calls, not just one-off manual snippets.
+\item The current xiPLN library surface still exposes the expected rewrite and
+STV behavior after the bridge refresh.
+\item A full typed continuous-evidence lane now runs inside PPLBench, produces
+held-out predictive scores, and agrees exactly with the analytical
+Normal-Normal posterior on the evaluated grid.
+\end{enumerate}
+
+That is a good first benchmark appendix because it shows both kinds of
+evidence we need:
+\begin{description}
+\item[Positive example.] Janus gives a substantial runtime win over subprocess
+on the same typed benchmark lane, while preserving the expected posterior.
+\item[Negative example.] This is still only one transparent conjugate family;
+it does not yet show that PLN beats broader PPL systems on harder
+non-conjugate workloads.
+\end{description}
 
 \chapter{Notation and Symbol Glossary}
 \label{app:notation}

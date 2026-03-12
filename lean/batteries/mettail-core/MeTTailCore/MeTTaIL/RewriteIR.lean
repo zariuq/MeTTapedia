@@ -1,4 +1,8 @@
+import MeTTailCore.MeTTaIL.RewriteIRV2
+
 namespace MeTTailCore.MeTTaIL.RewriteIR
+
+open MeTTailCore.MeTTaIL.RewriteIRV2
 
 structure RewriteIRRule where
   ruleId : String
@@ -12,6 +16,12 @@ structure RewriteIRRule where
   lhsJson : Option String := none
   rhsJson : Option String := none
   premisesJson : Option String := none
+  lhsVars : List String := []
+  premiseVarFlow : List PremiseVarFlow := []
+  rhsVars : List String := []
+  rhsFreshVars : List String := []
+  rhsEvalRequires : List String := []
+  rootUpdate : Option RootUpdateHint := none
 deriving Repr, DecidableEq, BEq
 
 structure RewriteIRArtifact where
@@ -23,10 +33,32 @@ deriving Repr, DecidableEq, BEq
 private def sortListByKey {α : Type} (xs : List α) (key : α → String) : List α :=
   (xs.toArray.qsort (fun a b => key a < key b)).toList
 
+private def orderedUniq (xs : List String) : List String :=
+  xs.eraseDups
+
+private def orderedUniqNat (xs : List Nat) : List Nat :=
+  xs.eraseDups
+
+private def normalizeFlow (f : PremiseVarFlow) : PremiseVarFlow :=
+  { f with
+    premiseVars := orderedUniq f.premiseVars
+    introducedVars := orderedUniq f.introducedVars }
+
+private def normalizeRootUpdate (h : RootUpdateHint) : RootUpdateHint :=
+  { h with
+    preservedArgPositions := orderedUniqNat h.preservedArgPositions
+    changedArgPositions := orderedUniqNat h.changedArgPositions }
+
 private def normalizeRule (r : RewriteIRRule) : RewriteIRRule :=
   { r with
     sourceLabel := if r.sourceLabel.isEmpty then r.sourceInstr else r.sourceLabel
-    premiseRelations := (sortListByKey r.premiseRelations id).eraseDups }
+    premiseRelations := (sortListByKey r.premiseRelations id).eraseDups
+    lhsVars := orderedUniq r.lhsVars
+    premiseVarFlow := r.premiseVarFlow.map normalizeFlow
+    rhsVars := orderedUniq r.rhsVars
+    rhsFreshVars := orderedUniq r.rhsFreshVars
+    rhsEvalRequires := orderedUniq r.rhsEvalRequires
+    rootUpdate := r.rootUpdate.map normalizeRootUpdate }
 
 private def normalizeArtifact (a : RewriteIRArtifact) : RewriteIRArtifact :=
   { a with
@@ -52,6 +84,29 @@ private def jsonStr (s : String) : String :=
 private def jsonNat (n : Nat) : String :=
   toString n
 
+private def renderStringList (xs : List String) : String :=
+  "[" ++ String.intercalate "," (xs.map jsonStr) ++ "]"
+
+private def renderNatList (xs : List Nat) : String :=
+  "[" ++ String.intercalate "," (xs.map jsonNat) ++ "]"
+
+private def renderPremiseVarFlow (f : PremiseVarFlow) : String :=
+  "{"
+    ++ "\"premise_index\":" ++ jsonNat f.premiseIndex ++ ","
+    ++ "\"premise_vars\":" ++ renderStringList f.premiseVars ++ ","
+    ++ "\"introduced_vars\":" ++ renderStringList f.introducedVars
+  ++ "}"
+
+private def renderRootUpdateHint (h : RootUpdateHint) : String :=
+  "{"
+    ++ "\"lhs_root_ctor\":" ++ jsonStr h.lhsRootCtor ++ ","
+    ++ "\"rhs_root_ctor\":" ++ jsonStr h.rhsRootCtor ++ ","
+    ++ "\"lhs_arity\":" ++ jsonNat h.lhsArity ++ ","
+    ++ "\"rhs_arity\":" ++ jsonNat h.rhsArity ++ ","
+    ++ "\"preserved_arg_positions\":" ++ renderNatList h.preservedArgPositions ++ ","
+    ++ "\"changed_arg_positions\":" ++ renderNatList h.changedArgPositions
+  ++ "}"
+
 private def renderRule (r : RewriteIRRule) : String :=
   "{"
     ++ "\"rule_id\":" ++ jsonStr r.ruleId ++ ","
@@ -66,7 +121,18 @@ private def renderRule (r : RewriteIRRule) : String :=
     ++ "],"
     ++ "\"lhs\":" ++ (r.lhsJson.getD "null") ++ ","
     ++ "\"rhs\":" ++ (r.rhsJson.getD "null") ++ ","
-    ++ "\"premises\":" ++ (r.premisesJson.getD "[]")
+    ++ "\"premises\":" ++ (r.premisesJson.getD "[]") ++ ","
+    ++ "\"lhs_vars\":" ++ renderStringList r.lhsVars ++ ","
+    ++ "\"premise_var_flow\":["
+    ++ String.intercalate "," (r.premiseVarFlow.map renderPremiseVarFlow)
+    ++ "],"
+    ++ "\"rhs_vars\":" ++ renderStringList r.rhsVars ++ ","
+    ++ "\"rhs_fresh_vars\":" ++ renderStringList r.rhsFreshVars ++ ","
+    ++ "\"rhs_eval_requires\":" ++ renderStringList r.rhsEvalRequires ++ ","
+    ++ "\"root_update\":"
+    ++ (match r.rootUpdate with
+      | some h => renderRootUpdateHint h
+      | none => "null")
   ++ "}"
 
 def RewriteIRArtifact.renderJson (a : RewriteIRArtifact) : String :=
@@ -112,7 +178,23 @@ private def lintRule (r : RewriteIRRule) : List String :=
     let empties := r.premiseRelations.any String.isEmpty
     (if dup then [s!"{r.ruleId}: premise_relations contains duplicates"] else [])
       ++ (if empties then [s!"{r.ruleId}: premise_relations cannot contain empty strings"] else [])
-  idErrs ++ nameErrs ++ sourceErrs ++ reprErrs ++ premErrs
+  let flowErrs :=
+    r.premiseVarFlow.filterMap fun f =>
+      if f.introducedVars.all (fun x => f.premiseVars.contains x) then
+        none
+      else
+        some s!"{r.ruleId}: premise flow {f.premiseIndex} introduces vars not present in premise_vars"
+  let rhsErrs :=
+    let freshOutside :=
+      r.rhsFreshVars.filter (fun x => !(r.rhsVars.contains x))
+    let evalOutside :=
+      r.rhsEvalRequires.filter (fun x => !(r.rhsVars.contains x))
+    (if freshOutside.isEmpty then [] else
+      [s!"{r.ruleId}: rhs_fresh_vars must be a subset of rhs_vars"])
+    ++
+    (if evalOutside.isEmpty then [] else
+      [s!"{r.ruleId}: rhs_eval_requires must be a subset of rhs_vars"])
+  idErrs ++ nameErrs ++ sourceErrs ++ reprErrs ++ premErrs ++ flowErrs ++ rhsErrs
 
 def RewriteIRArtifact.lintErrors (a : RewriteIRArtifact) : List String :=
   let norm := normalizeArtifact a

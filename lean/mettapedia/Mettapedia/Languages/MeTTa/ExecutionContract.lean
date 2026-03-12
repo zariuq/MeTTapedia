@@ -119,6 +119,12 @@ inductive AggregationSourceKind where
   | subevalAllResults
 deriving Repr, DecidableEq, BEq
 
+/-- Structural control families that orchestrate nested certified evaluation. -/
+inductive ControlBuiltinKind where
+  | bindThenBody
+  | sequenceLastResult
+deriving Repr, DecidableEq, BEq
+
 /-- Structural eligibility conditions for executable lanes.
 
 These do not assign ownership of a surface head forever. They describe when a
@@ -340,6 +346,24 @@ structure AggregationBuiltinContract where
   theoremRefs : List String := []
 deriving Repr, DecidableEq, BEq
 
+/-- Sixth contract lane: control forms that sequence or bind nested certified
+execution without inventing a parallel evaluator. -/
+structure ControlBuiltinContract where
+  head : String
+  minArity : Nat
+  maxArity : Option Nat := none
+  controlKind : ControlBuiltinKind
+  owner : ExecutionOwner
+  kernelClass : RuntimeKernelClass := .metaPhase
+  effectClass : EffectClass
+  resourceClass : RuntimeResourceClass
+  backendName : String
+  supportedMemoShapes : List MemoShape := []
+  eligibility : LaneEligibilityKind := .always
+  residualPolicy : ResidualPolicy := .failClosed
+  theoremRefs : List String := []
+deriving Repr, DecidableEq, BEq
+
 def LookupQueryContract.permission (c : LookupQueryContract) : ExecutionPermission :=
   { owner := c.owner
     kernelClass := c.kernelClass
@@ -402,6 +426,15 @@ def GroundedBuiltinContract.permission (c : GroundedBuiltinContract) : Execution
     theoremRefs := c.theoremRefs }
 
 def AggregationBuiltinContract.permission (c : AggregationBuiltinContract) : ExecutionPermission :=
+  { owner := c.owner
+    kernelClass := c.kernelClass
+    effectClass := c.effectClass
+    resourceClass := c.resourceClass
+    backendName := c.backendName
+    supportedMemoShapes := c.supportedMemoShapes
+    theoremRefs := c.theoremRefs }
+
+def ControlBuiltinContract.permission (c : ControlBuiltinContract) : ExecutionPermission :=
   { owner := c.owner
     kernelClass := c.kernelClass
     effectClass := c.effectClass
@@ -525,6 +558,7 @@ inductive ExecutionContractEntry where
   | intrinsicBuiltin (entry : IntrinsicBuiltinContract)
   | groundedBuiltin (entry : GroundedBuiltinContract)
   | aggregationBuiltin (entry : AggregationBuiltinContract)
+  | controlBuiltin (entry : ControlBuiltinContract)
 deriving Repr, DecidableEq, BEq
 
 def ExecutionContractEntry.head : ExecutionContractEntry → String
@@ -535,6 +569,7 @@ def ExecutionContractEntry.head : ExecutionContractEntry → String
   | .intrinsicBuiltin entry => entry.head
   | .groundedBuiltin entry => entry.head
   | .aggregationBuiltin entry => entry.head
+  | .controlBuiltin entry => entry.head
 
 def ExecutionContractEntry.arity : ExecutionContractEntry → Nat
   | .lookupQuery entry => entry.arity
@@ -544,6 +579,7 @@ def ExecutionContractEntry.arity : ExecutionContractEntry → Nat
   | .intrinsicBuiltin entry => entry.minArity
   | .groundedBuiltin entry => entry.minArity
   | .aggregationBuiltin entry => entry.minArity
+  | .controlBuiltin entry => entry.minArity
 
 def ExecutionContractEntry.lookupFamily? : ExecutionContractEntry → Option LookupFamilyPlan
   | .lookupQuery entry => some entry.lookupFamily
@@ -553,6 +589,7 @@ def ExecutionContractEntry.lookupFamily? : ExecutionContractEntry → Option Loo
   | .intrinsicBuiltin _ => none
   | .groundedBuiltin _ => none
   | .aggregationBuiltin _ => none
+  | .controlBuiltin _ => none
 
 def ExecutionContractEntry.permission : ExecutionContractEntry → ExecutionPermission
   | .lookupQuery entry => entry.permission
@@ -562,6 +599,7 @@ def ExecutionContractEntry.permission : ExecutionContractEntry → ExecutionPerm
   | .intrinsicBuiltin entry => entry.permission
   | .groundedBuiltin entry => entry.permission
   | .aggregationBuiltin entry => entry.permission
+  | .controlBuiltin entry => entry.permission
 
 def ExecutionContractEntry.sortKey : ExecutionContractEntry → String
   | .lookupQuery entry =>
@@ -606,15 +644,20 @@ def ExecutionContractEntry.sortKey : ExecutionContractEntry → String
         match entry.sourceKind with
         | .subevalAllResults => "subeval_all_results"
       s!"aggregation_builtin:{sourceKey}:{collectionKey}:{entry.head}:{entry.minArity}"
+  | .controlBuiltin entry =>
+      let controlKey :=
+        match entry.controlKind with
+        | .bindThenBody => "bind_then_body"
+        | .sequenceLastResult => "sequence_last_result"
+      s!"control_builtin:{controlKey}:{entry.head}:{entry.minArity}"
 
 def coreIntrinsicEntries : List ExecutionContractEntry :=
   coreIntrinsicContracts.map ExecutionContractEntry.intrinsicBuiltin
 
-/-- Shared artifact exported for runtime consumers. Schema version 3 widens the
-grounded and aggregation vocabularies with `parse_term`, `min_atom`, and
-`max_atom` lanes. -/
+/-- Shared artifact exported for runtime consumers. Schema version 4 widens the
+contract vocabulary with explicit control lanes. -/
 structure ExecutionContractArtifact where
-  schemaVersion : Nat := 3
+  schemaVersion : Nat := 4
   dialect : String
   entries : List ExecutionContractEntry
 deriving Repr, DecidableEq, BEq
@@ -713,6 +756,10 @@ private def renderAggregationCollectionKind : AggregationCollectionKind → Stri
 
 private def renderAggregationSourceKind : AggregationSourceKind → String
   | .subevalAllResults => "subeval_all_results"
+
+private def renderControlBuiltinKind : ControlBuiltinKind → String
+  | .bindThenBody => "bind_then_body"
+  | .sequenceLastResult => "sequence_last_result"
 
 private def renderLaneEligibilityKind : LaneEligibilityKind → String
   | .always => "always"
@@ -914,6 +961,18 @@ private def normalizeAggregationBuiltin (e : AggregationBuiltinContract) : Aggre
     theoremRefs := p.theoremRefs
   }
 
+private def normalizeControlBuiltin (e : ControlBuiltinContract) : ControlBuiltinContract :=
+  let p := normalizePermission e.permission
+  { e with
+    owner := p.owner
+    kernelClass := p.kernelClass
+    effectClass := p.effectClass
+    resourceClass := p.resourceClass
+    backendName := p.backendName
+    supportedMemoShapes := p.supportedMemoShapes
+    theoremRefs := p.theoremRefs
+  }
+
 private def normalizeEntry : ExecutionContractEntry → ExecutionContractEntry
   | .lookupQuery entry => .lookupQuery (normalizeLookupQuery entry)
   | .spaceEffect entry => .spaceEffect (normalizeSpaceEffect entry)
@@ -922,6 +981,7 @@ private def normalizeEntry : ExecutionContractEntry → ExecutionContractEntry
   | .intrinsicBuiltin entry => .intrinsicBuiltin (normalizeIntrinsicBuiltin entry)
   | .groundedBuiltin entry => .groundedBuiltin (normalizeGroundedBuiltin entry)
   | .aggregationBuiltin entry => .aggregationBuiltin (normalizeAggregationBuiltin entry)
+  | .controlBuiltin entry => .controlBuiltin (normalizeControlBuiltin entry)
 
 private def normalizeArtifact (a : ExecutionContractArtifact) : ExecutionContractArtifact :=
   { a with
@@ -1108,6 +1168,24 @@ private def renderAggregationBuiltin (e : AggregationBuiltinContract) : String :
     ++ renderTheoremRefsField p
   ++ "}"
 
+private def renderControlBuiltin (e : ControlBuiltinContract) : String :=
+  let p := e.permission
+  "{"
+    ++ "\"entry_kind\":\"control_builtin\","
+    ++ "\"head\":" ++ jsonStr e.head ++ ","
+    ++ "\"min_arity\":" ++ jsonNat e.minArity ++ ","
+    ++ "\"max_arity\":"
+      ++ (match e.maxArity with
+          | some n => jsonNat n
+          | none => "null") ++ ","
+    ++ "\"control_kind\":" ++ jsonStr (renderControlBuiltinKind e.controlKind) ++ ","
+    ++ renderPermissionCore p ++ ","
+    ++ renderMemoShapesField p ++ ","
+    ++ "\"eligibility\":" ++ jsonStr (renderLaneEligibilityKind e.eligibility) ++ ","
+    ++ "\"residual_policy\":" ++ jsonStr (renderResidualPolicy e.residualPolicy) ++ ","
+    ++ renderTheoremRefsField p
+  ++ "}"
+
 private def renderEntry : ExecutionContractEntry → String
   | .lookupQuery entry => renderLookupQuery entry
   | .spaceEffect entry => renderSpaceEffect entry
@@ -1116,6 +1194,7 @@ private def renderEntry : ExecutionContractEntry → String
   | .intrinsicBuiltin entry => renderIntrinsicBuiltin entry
   | .groundedBuiltin entry => renderGroundedBuiltin entry
   | .aggregationBuiltin entry => renderAggregationBuiltin entry
+  | .controlBuiltin entry => renderControlBuiltin entry
 
 def ExecutionContractArtifact.renderJson (a : ExecutionContractArtifact) : String :=
   let norm := normalizeArtifact a
@@ -1390,6 +1469,34 @@ private def lintAggregationBuiltin (e : AggregationBuiltinContract) : List Strin
     else []
   headErrs ++ arityErrs ++ ownerErrs ++ kernelErrs ++ effectErrs ++ theoremErrs
 
+private def lintControlBuiltin (e : ControlBuiltinContract) : List String :=
+  let entryTag := s!"control_builtin/{e.head}"
+  let p := e.permission
+  let headErrs :=
+    if e.head.isEmpty then
+      ["control_builtin entry head must be non-empty"]
+    else []
+  let arityErrs :=
+    match e.maxArity with
+    | some maxA =>
+        if e.minArity <= maxA then [] else
+          [s!"{entryTag}: min_arity cannot exceed max_arity"]
+    | none => []
+  let ownerErrs :=
+    if p.owner = .artifactBackend then [] else
+      [s!"{entryTag}: control_builtin entries must use owner=artifact_backend"]
+  let kernelErrs :=
+    if p.kernelClass = .metaPhase then [] else
+      [s!"{entryTag}: control_builtin entries must use fragment_kind=meta_phase"]
+  let effectErrs :=
+    if p.effectClass = .writesState then [] else
+      [s!"{entryTag}: control_builtin entries must conservatively use effect_class=writes_state"]
+  let theoremErrs :=
+    if p.theoremRefs.isEmpty then
+      [s!"{entryTag}: theorem_refs cannot be empty"]
+    else []
+  headErrs ++ arityErrs ++ ownerErrs ++ kernelErrs ++ effectErrs ++ theoremErrs
+
 def ExecutionContractArtifact.lintErrors (a : ExecutionContractArtifact) : List String :=
   let norm := normalizeArtifact a
   let schemaErrs :=
@@ -1422,7 +1529,8 @@ def ExecutionContractArtifact.lintErrors (a : ExecutionContractArtifact) : List 
         | .spaceEffectPayload e => lintSpaceEffectPayload e
         | .intrinsicBuiltin e => lintIntrinsicBuiltin e
         | .groundedBuiltin e => lintGroundedBuiltin e
-        | .aggregationBuiltin e => lintAggregationBuiltin e)
+        | .aggregationBuiltin e => lintAggregationBuiltin e
+        | .controlBuiltin e => lintControlBuiltin e)
       []
   schemaErrs ++ dialectErrs ++ lookupErrs ++ dupErrs ++ entryErrs
 

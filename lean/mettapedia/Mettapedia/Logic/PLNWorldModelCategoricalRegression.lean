@@ -14,6 +14,7 @@ namespace Mettapedia.Logic.PLNWorldModelCategoricalRegression
 open CategoryTheory
 open LO
 open LO.FirstOrder
+open Mettapedia.Logic.HOL
 open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.Logic.PLNWorldModelInstitution
 open Mettapedia.Logic.EvidenceClass
@@ -39,43 +40,61 @@ theorem ch8_institution_beckChevalley_endpoint_id_fixture
       (hpb := CategoryTheory.IsPullback.id_horiz (f := (𝟙 X)))
       (W := W) (φ := φ))
 
-abbrev holBoolFalseQuery :
-    Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLQuery Bool := .comp_not .trivial
-abbrev holBoolTrueQuery :
-    Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLQuery Bool := .trivial
+abbrev HOLFixtureBase := PUnit
+abbrev HOLFixtureConst (_ : Ty HOLFixtureBase) := PEmpty
 
-def holBoolFixtureState :
-    Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLState Bool :=
-  ({⟨true⟩} : Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLState Bool) +
-    ({⟨false⟩} : Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLState Bool)
+def holFixtureModel :
+    HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst :=
+  HenkinModel.standard (Base := HOLFixtureBase) (Const := HOLFixtureConst)
+    (Carrier := fun _ => PUnit)
+    (constDen := by intro τ c; nomatch c)
 
-theorem holBoolFalse_to_true_pointwise :
-    Mettapedia.Logic.PLNWorldModelHOLCompleteness.pointwiseImplies
-      holBoolFalseQuery holBoolTrueQuery := by
-  intro pw _h
-  simp [Mettapedia.Logic.PLNWorldModelHOL.PointedHOL.satisfies,
-    Mettapedia.Logic.HigherOrder.evalPred]
+abbrev holFalseQuery :
+    Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLQuery
+      (Base := HOLFixtureBase) HOLFixtureConst := .bot
+abbrev holTrueQuery :
+    Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLQuery
+      (Base := HOLFixtureBase) HOLFixtureConst := .top
+
+def holFixtureState :
+    Multiset (HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst) :=
+  ({holFixtureModel} :
+      Multiset (HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst)) +
+    ({holFixtureModel} :
+      Multiset (HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst))
+
+theorem holFalse_to_true_pointwise :
+    ∀ M : HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst,
+      Mettapedia.Logic.HOL.WorldModel.holSatisfies
+        (Base := HOLFixtureBase) (Const := HOLFixtureConst) M holFalseQuery →
+      Mettapedia.Logic.HOL.WorldModel.holSatisfies
+        (Base := HOLFixtureBase) (Const := HOLFixtureConst) M holTrueQuery := by
+  intro M hFalse
+  exact False.elim ((HenkinModel.models_bot M) hFalse)
 
 /-- Ch.8 concrete HOL fixture:
 consume the categorical HOL wrapper endpoint on a fixed Bool state/query pair. -/
 theorem ch8_hol_categorical_wrapper_bool_fixture
-    (H : WMHyper (Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLState Bool))
+    (H : WMHyper
+      (Multiset (HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst)))
     (hcat :
-      Mettapedia.Logic.PLNWorldModelHOLCompleteness.WMCategoricalEndpointSurface (H := H))
+      Mettapedia.Logic.PLNWorldModelHOLCompleteness.WMCategoricalEndpointSurface
+        (Base := HOLFixtureBase) (Const := HOLFixtureConst) (H := H))
     {X : H.Obj} (φc : H.query X) :
     WorldModel.queryStrength
-        (State := Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLState Bool)
-        (Query := Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLQuery Bool)
-        holBoolFixtureState holBoolFalseQuery ≤
+        (State := Multiset (HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst))
+        (Query := Mettapedia.Logic.HOL.WorldModel.HOLQuery HOLFixtureConst)
+        holFixtureState holFalseQuery ≤
       WorldModel.queryStrength
-        (State := Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLState Bool)
-        (Query := Mettapedia.Logic.PLNWorldModelHOLCompleteness.HOLQuery Bool)
-        holBoolFixtureState holBoolTrueQuery := by
+        (State := Multiset (HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst))
+        (Query := Mettapedia.Logic.HOL.WorldModel.HOLQuery HOLFixtureConst)
+        holFixtureState holTrueQuery := by
   exact
-    Mettapedia.Logic.PLNWorldModelHOLCompleteness.multiset_strength_le_of_pointwise_categorical
+    Mettapedia.Logic.HOL.WorldModelCompleteness.multiset_strength_le_of_pointwise_categorical
+      (Base := HOLFixtureBase) (Const := HOLFixtureConst)
       (H := H) (_hcat := hcat) (X := X) (_φc := φc)
-      (W := holBoolFixtureState) (q₁ := holBoolFalseQuery) (q₂ := holBoolTrueQuery)
-      holBoolFalse_to_true_pointwise
+      (W := holFixtureState) (φ := holFalseQuery) (ψ := holTrueQuery)
+      holFalse_to_true_pointwise
 
 /-- Ch.8 concrete FOL fixture:
 `T ⊨ (φ ➝ ψ)` (here `⊥ ➝ ⊤` under empty theory) transported to a WM inequality

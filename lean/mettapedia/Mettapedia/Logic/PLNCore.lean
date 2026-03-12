@@ -41,6 +41,8 @@ import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierRegressionInf
 import Mettapedia.Logic.PLNFirstOrder.ChoquetQuantifierRegression
 import Mettapedia.Logic.PLNFirstOrder.FuzzyDomainQuantifierRegression
 import Mettapedia.Logic.PLNFirstOrder.FuzzySyllogismRegressionFin
+import Mettapedia.Logic.PLNWorldModelHOLSetBridge
+import Mettapedia.Logic.PLNHigherOrderHOLRegression
 import Mettapedia.Logic.SufficientStatisticSurface
 import Mettapedia.Logic.GenericWorldModelForgetting
 import Mettapedia.Logic.PLNSemitopology
@@ -127,6 +129,12 @@ This module is a curated import surface for the currently theorem-complete PLN s
   (`PLNFirstOrder.FuzzyDomainQuantifierRegression`, plus canonical aliases in `PLNCanonicalAPI`)
 - Finite/counting fuzzy Chapter-11 syllogism surface
   (`PLNFirstOrder.FuzzySyllogismRegressionFin`)
+- Higher-order PLN layer over real Church/Henkin HOL plus the real HOL WM bridge
+  (`PLNHigherOrderHOLRegression`, plus canonical aliases in `PLNCanonicalAPI`)
+- Direct set-semantics to HOL grounding and public `Set -> HOL -> WM` bridge,
+  together with comparison theorems against the older FOL-routed set bridge
+  (`HOL.Semantics.SetBased`, `PLNWorldModelHOLSetBridge`, plus canonical aliases in
+  `PLNCanonicalAPI`)
 - Additive multiset WM singleton-surface classification / uniqueness
   (`SufficientStatisticSurface`)
 - Forgetting layer with scope invariance and scoped no-go for exact inverse forgetting

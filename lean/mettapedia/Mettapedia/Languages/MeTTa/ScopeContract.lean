@@ -28,6 +28,8 @@ inductive ScopeKind where
   | letLike
   | chainLike
   | letStarLike
+  | lambdaLike
+  | caseLike
   | sourceRulePayload
 deriving Repr, DecidableEq, BEq
 
@@ -89,6 +91,8 @@ private def renderScopeKind : ScopeKind → String
   | .letLike => "let_like"
   | .chainLike => "chain_like"
   | .letStarLike => "let_star_like"
+  | .lambdaLike => "lambda_like"
+  | .caseLike => "case_like"
   | .sourceRulePayload => "source_rule_payload"
 
 private def renderPayloadPatternShapeKind : PayloadPatternShapeKind → String
@@ -193,6 +197,24 @@ private def lintEntry (e : ScopeContractEntry) : List String :=
             [s!"{tag}: let_star_like expects values=[0], body=[1], and no top-level binder positions"]
         let seqErrs :=
           if e.sequential then [] else [s!"{tag}: let_star_like must be sequential"]
+        posErrs ++ seqErrs
+    | .lambdaLike =>
+        let posErrs :=
+          if e.binderPositions = [0] && e.bodyPositions = [1] && e.valuePositions.isEmpty then
+            []
+          else
+            [s!"{tag}: lambda_like expects binder=[0], body=[1], and no value positions"]
+        let seqErrs :=
+          if !e.sequential then [] else [s!"{tag}: lambda_like must not be sequential"]
+        posErrs ++ seqErrs
+    | .caseLike =>
+        let posErrs :=
+          if e.valuePositions = [0] && e.bodyPositions = [1] && e.binderPositions.isEmpty then
+            []
+          else
+            [s!"{tag}: case_like expects scrutinee/value=[0], branches/body=[1], and no top-level binder positions"]
+        let seqErrs :=
+          if !e.sequential then [] else [s!"{tag}: case_like must not be sequential"]
         posErrs ++ seqErrs
     | .sourceRulePayload =>
         let payloadErrs :=

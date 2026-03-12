@@ -1,6 +1,7 @@
 import Mettapedia.Languages.MeTTa.PureCertificateFragment
 import Mettapedia.Languages.MeTTa.PureKernel.Confluence
 import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+import Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics
 
 /-!
 # Pure Checking Service
@@ -23,6 +24,8 @@ open Mettapedia.Languages.MeTTa.PureKernel.Typing
 open Mettapedia.Languages.MeTTa.PureKernel.Reduction
 open Mettapedia.Languages.MeTTa.PureKernel.Confluence
 open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+open Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv
+open Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics
 
 /-- A theoremic conversion witness between two closed Pure types, packaged by
 exhibiting a common reduct. -/
@@ -384,5 +387,82 @@ theorem PureCheckingBoundary.checkClosedTerm_typing
       (svc.checkClosedTerm term claimedType typing).term
       claimedType := by
   simpa [PureCheckingBoundary.checkClosedTerm] using typing
+
+/-! ## Declaration-aware closed constant checking -/
+
+/-- Parser-free checked declaration unfolding result for one closed constant.
+This stays in the declaration-aware proof lane (`HasTypeDecl`/`RedDecl`) and is
+packaged through the same Pure checking boundary object. -/
+structure CheckedDeclaredConstantDelta where
+  env : DeclEnv
+  wellFormed : DeclEnvWellFormed env
+  constName : DeclName
+  declaredType : PureTm 0
+  unfoldedValue : PureTm 0
+  typeLookup : typeOf? env constName = some declaredType
+  valueLookup : valueOf? env constName = some unfoldedValue
+  sourceTyping :
+    HasTypeDecl env .nil ((.const constName : PureTm 0)) (liftClosed declaredType)
+  deltaStep :
+    RedDecl env ((.const constName : PureTm 0)) (liftClosed unfoldedValue)
+  targetTyping :
+    HasTypeDecl env .nil (liftClosed unfoldedValue) (liftClosed declaredType)
+
+def CheckedDeclaredConstantDelta.sourceTerm
+    (result : CheckedDeclaredConstantDelta) : PureTm 0 :=
+  .const result.constName
+
+def CheckedDeclaredConstantDelta.targetTerm
+    (result : CheckedDeclaredConstantDelta) : PureTm 0 :=
+  liftClosed result.unfoldedValue
+
+def CheckedDeclaredConstantDelta.sourceArtifact
+    (result : CheckedDeclaredConstantDelta) : SharedArtifact :=
+  ⟨quoteClosedTm result.sourceTerm⟩
+
+def CheckedDeclaredConstantDelta.targetArtifact
+    (result : CheckedDeclaredConstantDelta) : SharedArtifact :=
+  ⟨quoteClosedTm result.targetTerm⟩
+
+theorem CheckedDeclaredConstantDelta.sourceQuoteAgreement
+    (result : CheckedDeclaredConstantDelta) :
+    result.sourceArtifact.pattern = quoteClosedTm result.sourceTerm := rfl
+
+theorem CheckedDeclaredConstantDelta.targetQuoteAgreement
+    (result : CheckedDeclaredConstantDelta) :
+    result.targetArtifact.pattern = quoteClosedTm result.targetTerm := rfl
+
+def PureCheckingBoundary.checkDeclaredConstantDelta
+    (_svc : PureCheckingBoundary)
+    (E : DeclEnv)
+    (hWf : DeclEnvWellFormed E)
+    (c : DeclName)
+    (A0 v0 : PureTm 0)
+    (hType : typeOf? E c = some A0)
+    (hVal : valueOf? E c = some v0) :
+    CheckedDeclaredConstantDelta :=
+  { env := E
+    wellFormed := hWf
+    constName := c
+    declaredType := A0
+    unfoldedValue := v0
+    typeLookup := hType
+    valueLookup := hVal
+    sourceTyping := .const hType
+    deltaStep := .deltaConst hVal
+    targetTyping := hWf.valuesWellTyped hType hVal }
+
+theorem PureCheckingBoundary.checkDeclaredConstantDelta_preserves_type
+    (svc : PureCheckingBoundary)
+    (E : DeclEnv)
+    (hWf : DeclEnvWellFormed E)
+    (c : DeclName)
+    (A0 v0 : PureTm 0)
+    (hType : typeOf? E c = some A0)
+    (hVal : valueOf? E c = some v0) :
+    HasTypeDecl E .nil
+      (PureCheckingBoundary.checkDeclaredConstantDelta svc E hWf c A0 v0 hType hVal).targetTerm
+      (liftClosed A0) := by
+  exact (PureCheckingBoundary.checkDeclaredConstantDelta svc E hWf c A0 v0 hType hVal).targetTyping
 
 end Mettapedia.Languages.MeTTa.ElaboratedCore

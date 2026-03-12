@@ -457,7 +457,7 @@ theorem proof92 (x : ℕ) (h : 2 + x = 4) : x = 2 := by
 
 /-- 93. Proof via decidable if-then-else -/
 theorem proof93 (x : ℕ) (h : 2 + x = 4) : x = 2 := by
-  exact if hx : x = 2 then hx else (absurd h (by omega)).elim
+  exact if hx : x = 2 then hx else False.elim (hx (by omega))
 
 /-- 94. Multiple rewrites -/
 theorem proof94 (x : ℕ) (h : 2 + x = 4) : x = 2 := by

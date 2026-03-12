@@ -9,7 +9,11 @@ import Mettapedia.Languages.MeTTa.PureKernel.Confluence
 import Mettapedia.Languages.MeTTa.PureKernel.DefEq
 import Mettapedia.Languages.MeTTa.PureKernel.Typing
 import Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics
+import Mettapedia.Languages.MeTTa.PureKernel.DeclarationPilotScaffold
 import Mettapedia.Languages.MeTTa.PureKernel.DeclarationUnitPilot
+import Mettapedia.Languages.MeTTa.PureKernel.DeclarationBoolPilot
+import Mettapedia.Languages.MeTTa.PureKernel.DeclarationNatPilot
+import Mettapedia.Languages.MeTTa.PureKernel.DeclarationRecursorPilot
 import Mettapedia.Languages.MeTTa.PureKernel.AlgorithmicTyping
 import Mettapedia.Languages.MeTTa.PureKernel.SubjectReduction
 import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge

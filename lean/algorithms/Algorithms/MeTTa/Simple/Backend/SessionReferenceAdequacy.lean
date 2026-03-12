@@ -91,6 +91,64 @@ abbrev PublicGetAtomsUnaryEvalAgreement (s : Session) : Prop :=
 abbrev PublicGetAtomsBangUnaryEvalAgreement (s : Session) : Prop :=
   Session.GetAtomsBangUnaryEvalAgreement (SessionReferenceTotal.referenceFuel s)
 
+/-- Public-fuel constrained unary evaluator-agreement contract for `get-atoms`. -/
+abbrev PublicGetAtomsUnaryEvalAgreementOn
+    (s : Session) (Q : Session → Pattern → Prop) : Prop :=
+  Session.GetAtomsUnaryEvalAgreementOn (SessionReferenceTotal.referenceFuel s) Q
+
+/-- Public-fuel constrained unary evaluator-agreement contract for `get-atoms!`. -/
+abbrev PublicGetAtomsBangUnaryEvalAgreementOn
+    (s : Session) (Q : Session → Pattern → Prop) : Prop :=
+  Session.GetAtomsBangUnaryEvalAgreementOn (SessionReferenceTotal.referenceFuel s) Q
+
+/-- First proved constrained-fragment instance of the public-fuel `get-atoms`
+    unary evaluator-agreement contract: sessions with `maxNodes = 0`. -/
+theorem public_getAtoms_unary_eval_agreement_on_zeroMaxNodes
+    (s : Session) :
+    PublicGetAtomsUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxNodes = 0) := by
+  exact
+    Session.getAtomsUnaryEvalAgreementOn_zeroMaxNodes
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.ne_of_gt (Nat.lt_of_lt_of_le (by decide : (0 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes)))
+
+/-- Stronger constrained-fragment instance of the public-fuel `get-atoms` unary
+    evaluator-agreement contract: sessions with `maxSteps = 0`. -/
+theorem public_getAtoms_unary_eval_agreement_on_zeroMaxSteps
+    (s : Session) :
+    PublicGetAtomsUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxSteps = 0) := by
+  exact
+    Session.getAtomsUnaryEvalAgreementOn_zeroMaxSteps
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.ne_of_gt (Nat.lt_of_lt_of_le (by decide : (0 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes)))
+
+/-- First proved constrained-fragment instance of the public-fuel `get-atoms!`
+    unary evaluator-agreement contract: sessions with `maxNodes = 0`. -/
+theorem public_getAtomsBang_unary_eval_agreement_on_zeroMaxNodes
+    (s : Session) :
+    PublicGetAtomsBangUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxNodes = 0) := by
+  exact
+    Session.getAtomsBangUnaryEvalAgreementOn_zeroMaxNodes
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.ne_of_gt (Nat.lt_of_lt_of_le (by decide : (0 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes)))
+
+/-- Stronger constrained-fragment instance of the public-fuel `get-atoms!`
+    unary evaluator-agreement contract: sessions with `maxSteps = 0`. -/
+theorem public_getAtomsBang_unary_eval_agreement_on_zeroMaxSteps
+    (s : Session) :
+    PublicGetAtomsBangUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxSteps = 0) := by
+  exact
+    Session.getAtomsBangUnaryEvalAgreementOn_zeroMaxSteps
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.ne_of_gt (Nat.lt_of_lt_of_le (by decide : (0 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes)))
+
 /-- First compositional public-fuel `match` adequacy handle for `get-atoms` templates.
     This is still hypothesis-driven: it isolates the exact two lower facts still needed
     to turn the `match` slice into a fully unconditional adequacy theorem. -/

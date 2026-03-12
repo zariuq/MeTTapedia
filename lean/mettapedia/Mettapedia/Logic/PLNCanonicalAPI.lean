@@ -41,6 +41,14 @@ import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSoundnessInf
 import Mettapedia.Logic.PLNFirstOrder.ChoquetQuantifierSemantics
 import Mettapedia.Logic.PLNFirstOrder.FuzzyDomainQuantifiers
 import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSemanticsFin
+import Mettapedia.Logic.HOL
+import Mettapedia.Logic.PLNWorldModelHOL
+import Mettapedia.Logic.PLNWorldModelHOLCompleteness
+import Mettapedia.Logic.PLNWorldModelHOLConsequence
+import Mettapedia.Logic.PLNWorldModelHOLSetBridge
+import Mettapedia.Logic.PLNHigherOrderHOL
+import Mettapedia.Logic.PLNWorldModelPredCodeConsequence
+import Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness
 import Mettapedia.Logic.PLNWorldModelPreorder
 import Mettapedia.Logic.PLNGaussianEMExtension
 
@@ -218,6 +226,242 @@ abbrev pln_nearOneInf :=
 
 abbrev pln_nearZeroInf :=
   @Mettapedia.Logic.PLNFirstOrder.nearZeroInf
+
+/-! ## Real HOL Endpoints -/
+
+abbrev PLNHOLTy := Mettapedia.Logic.HOL.Ty
+
+abbrev PLNHOLTerm := @Mettapedia.Logic.HOL.Term
+
+abbrev PLNHOLClosedFormula := @_root_.Mettapedia.Logic.HOL.ClosedFormula
+
+abbrev PLNHenkinModel := @_root_.Mettapedia.Logic.HOL.HenkinModel
+
+abbrev PLNHOLDerivation := @_root_.Mettapedia.Logic.HOL.Derivation
+
+abbrev pln_hol_models := @_root_.Mettapedia.Logic.HOL.HenkinModel.models
+
+abbrev pln_hol_theorem_sound := @_root_.Mettapedia.Logic.HOL.Soundness.theorem_sound
+
+abbrev pln_hol_embedSentence := @_root_.Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence
+
+abbrev PLNHOLQuery := @_root_.Mettapedia.Logic.PLNWorldModelHOL.HOLQuery
+
+abbrev PLNHOLState := @_root_.Mettapedia.Logic.PLNWorldModelHOL.HOLState
+
+abbrev pln_hol_singleton_adequacy_strength_one :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOL.singleton_adequacy_strength_one
+
+abbrev pln_hol_pointwiseImplies_iff_singletonConsequence :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLCompleteness.pointwiseImplies_iff_singletonConsequence
+
+abbrev pln_hol_pointwiseIff_iff_queryEq :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLCompleteness.pointwiseIff_iff_queryEq
+
+abbrev pln_hol_wmConsequenceRuleOn_of_pointwise :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLConsequence.wmConsequenceRuleOn_of_pointwise
+
+/-! ## Direct Set-Semantics -> HOL -> WM Endpoints -/
+
+abbrev PLNSetHOLQuery :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.SetHOLQuery
+
+abbrev PLNSetHOLState :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.SetState
+
+abbrev PLNSetHOLModel :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.SetHOLModel
+
+abbrev pln_setHol_denote_embedSentence_iff :=
+  @_root_.Mettapedia.Logic.HOL.Semantics.SetBased.pointed_denote_embedSentence_iff
+
+abbrev pln_setHol_singleton_adequacy_strength_one :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.singleton_adequacy_strength_one
+
+abbrev pln_setHol_pointwiseImplies_iff_singletonStrengthLE :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.pointwiseImplies_iff_singletonStrengthLE
+
+abbrev pln_setHol_queryEq_of_pointwiseIff :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.queryEq_of_pointwiseIff
+
+abbrev pln_setHol_pointwiseIff_iff_queryEq :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.pointwiseIff_iff_queryEq
+
+abbrev pln_setHol_queryStrength_eq_of_pointwiseIff :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.queryStrength_eq_of_pointwiseIff
+
+abbrev pln_setHol_evidence_eq_of_mutual_consequence_embed :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.setHolEvidence_eq_of_mutual_consequence_embed
+
+abbrev pln_setHol_evidence_eq_of_mutual_provable_imp_embed :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.setHolEvidence_eq_of_mutual_provable_imp_embed
+
+abbrev pln_setHol_queryStrength_eq_of_mutual_consequence_embed :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.queryStrength_eq_of_mutual_consequence_embed
+
+abbrev pln_setHol_queryStrength_eq_of_mutual_provable_imp_embed :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.queryStrength_eq_of_mutual_provable_imp_embed
+
+abbrev pln_setHol_queryStrength_embedSentence_eq_setQueryStrength :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.queryStrength_embedSentence_eq_setQueryStrength
+
+abbrev pln_setHol_consequence_iff_singletonStrengthLEOnTheory_embed :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.consequence_iff_singletonStrengthLEOnTheory_embed
+
+abbrev pln_setHol_provable_imp_iff_singletonStrengthLEOnTheory_embed :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.provable_imp_iff_singletonStrengthLEOnTheory_embed
+
+abbrev pln_setHol_wmConsequenceRuleOn_of_provable_imp_embed :=
+  @_root_.Mettapedia.Logic.PLNWorldModelHOLSetBridge.wmConsequenceRuleOn_of_provable_imp_embed
+
+/-! ## Higher-Order PLN Endpoints -/
+
+abbrev PLNHigherOrderHOLQuery :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLCore.HOLQuery
+
+abbrev PLNHigherOrderHOLState :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState
+
+abbrev pln_higherOrderHOLProvable :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLCore.HOLProvable
+
+abbrev pln_higherOrderHOLProvImp :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLCore.HOLProvImp
+
+abbrev pln_higherOrderHOLProvEq :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLCore.HOLProvEq
+
+abbrev pln_higherOrderHOLProvIff :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.HOLProvIff
+
+abbrev pln_higherOrderHOLProvPointwiseEq :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.HOLProvPointwiseEq
+
+abbrev pln_higherOrderHOLProvImp_refl :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLCore.holProvImp_refl
+
+abbrev pln_higherOrderHOLProvImp_top :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLCore.holProvImp_top
+
+abbrev pln_higherOrderHOLProvImp_trans :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLCore.holProvImp_trans
+
+abbrev pln_higherOrderHOLProvIff_refl :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvIff_refl
+
+abbrev pln_higherOrderHOLProvIff_symm :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvIff_symm
+
+abbrev pln_higherOrderHOLProvIff_trans :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvIff_trans
+
+abbrev pln_higherOrderHOLProvImp_and_mono :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvImp_and_mono
+
+abbrev pln_higherOrderHOLProvImp_or_mono :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvImp_or_mono
+
+abbrev pln_higherOrderHOLProvImp_and_left :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvImp_and_left
+
+abbrev pln_higherOrderHOLProvImp_and_right :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvImp_and_right
+
+abbrev pln_higherOrderHOLProvImp_and_intro :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvImp_and_intro
+
+abbrev pln_higherOrderHOLProvImp_or_intro_left :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvImp_or_intro_left
+
+abbrev pln_higherOrderHOLProvImp_or_intro_right :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvImp_or_intro_right
+
+abbrev pln_higherOrderHOLProvImp_or_elim :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvImp_or_elim
+
+abbrev pln_higherOrderHOLProvImp_not_of :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvImp_not_of
+
+abbrev pln_higherOrderHOLProvImp_imp_mono :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvImp_imp_mono
+
+abbrev pln_higherOrderHOLProvIff_and_mono :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvIff_and_mono
+
+abbrev pln_higherOrderHOLProvIff_or_mono :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvIff_or_mono
+
+abbrev pln_higherOrderHOLProvIff_not :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvIff_not
+
+abbrev pln_higherOrderHOLProvIff_imp_mono :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvIff_imp_mono
+
+abbrev pln_higherOrderHOLProvIff_and_comm :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvIff_and_comm
+
+abbrev pln_higherOrderHOLProvIff_or_comm :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLRules.holProvIff_or_comm
+
+abbrev pln_higherOrderHOLProvable_models :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvable_models
+
+abbrev pln_higherOrderHOLProvImp_implies_pointwise :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvImp_implies_pointwise
+
+abbrev pln_higherOrderHOLProvImp_implies_singletonConsequence :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvImp_implies_singletonConsequence
+
+abbrev pln_higherOrderHOLProvImp_implies_multisetConsequence :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvImp_implies_multisetConsequence
+
+abbrev pln_higherOrderHOLEq_models :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvEq_models
+
+abbrev pln_higherOrderHOLProvIff_implies_queryEq :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvIff_implies_queryEq
+
+abbrev pln_higherOrderHOLProvIff_implies_strengthEq :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvIff_implies_strengthEq
+
+noncomputable abbrev pln_higherOrderHOL_wmConsequenceRule_of_holProvImp :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLConsequence.wmConsequenceRule_of_holProvImp
+
+noncomputable abbrev pln_higherOrderHOL_wmConsequenceRuleOn_of_holProvImp :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLConsequence.wmConsequenceRuleOn_of_holProvImp
+
+noncomputable abbrev pln_higherOrderHOL_wmRewriteRule_of_holProvIff :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLConsequence.wmRewriteRule_of_holProvIff
+
+abbrev pln_higherOrderHOL_holdsLinkWM :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLLinkBridge.holdsLinkWM
+
+abbrev pln_higherOrderHOL_holdsLinkWM_mono_of_holProvImp :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLLinkBridge.holdsLinkWM_mono_of_holProvImp
+
+abbrev pln_higherOrderHOL_holdsTermWM_transport_of_holProvIff :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLLinkBridge.holdsTermWM_transport_of_holProvIff
+
+abbrev pln_higherOrderHOL_holdsLinkWM_of_holProvIff_left :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLLinkBridge.holdsLinkWM_of_holProvIff_left
+
+abbrev pln_higherOrderHOL_holdsLinkWM_of_holProvIff_right :=
+  @_root_.Mettapedia.Logic.PLNHigherOrderHOLLinkBridge.holdsLinkWM_of_holProvIff_right
+
+/-! ## Predicate-Code Legacy Endpoints -/
+
+abbrev PLNPredCodeQuery := _root_.Mettapedia.Logic.PLNWorldModelPredCode.PredCodeQuery
+
+abbrev PLNPredCodeState := _root_.Mettapedia.Logic.PLNWorldModelPredCode.PredCodeState
+
+abbrev PLNPredCodeInfQuery :=
+  _root_.Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery
+
+abbrev pln_predCode_pointwiseImplies_iff_singletonConsequence :=
+  @_root_.Mettapedia.Logic.PLNWorldModelPredCodeCompleteness.pointwiseImplies_iff_singletonConsequence
+
+abbrev pln_predCodeInf_wmConsequenceRule_of_pointwise :=
+  @_root_.Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.wmConsequenceRule_of_pointwise
 
 noncomputable abbrev pln_sugenoIntegral :=
   @Mettapedia.Logic.PLNFirstOrder.FuzzyCapacity.sugenoIntegral

@@ -38,6 +38,18 @@ private def letStarTheoremRefs : List String :=
   , "Algorithms.MeTTa.Simple.Session.eval"
   ]
 
+private def lambdaTheoremRefs : List String :=
+  [ "Mettapedia.Languages.MeTTa.PeTTa.MinimalInstructions.MeTTaStep.lambdaAbstract"
+  , "Mettapedia.Languages.MeTTa.PeTTa.MinimalInstructions.lambdaAbstract_betaReduce"
+  ]
+
+private def caseTheoremRefs : List String :=
+  [ "Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec.ControlDeclClause.caseSuccessStep"
+  , "Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec.ControlDeclClause.caseFailureStep"
+  , "Mettapedia.Languages.MeTTa.PeTTa.StdLib.case_single_branch_reduces"
+  , "Mettapedia.Languages.MeTTa.PeTTa.StdLib.case_single_branch_failure"
+  ]
+
 private def sourceRulePayloadTheoremRefs : List String :=
   [ "Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment.addAtom_fireSourceRule_mem"
   , "Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment.removeAtom_fireSourceRule_mem"
@@ -74,6 +86,26 @@ def letStarScopeEntry : ScopeContractEntry where
   sequential := true
   allowsWildcard := true
   theoremRefs := letStarTheoremRefs
+
+def lambdaArrowScopeEntry : ScopeContractEntry where
+  head := "|->"
+  arity := 2
+  scopeKind := .lambdaLike
+  binderPositions := [0]
+  bodyPositions := [1]
+  sequential := false
+  allowsWildcard := true
+  theoremRefs := lambdaTheoremRefs
+
+def caseScopeEntry : ScopeContractEntry where
+  head := "case"
+  arity := 2
+  scopeKind := .caseLike
+  valuePositions := [0]
+  bodyPositions := [1]
+  sequential := false
+  allowsWildcard := true
+  theoremRefs := caseTheoremRefs
 
 def addAtomSourceRulePayloadScopeEntry : ScopeContractEntry where
   head := "add-atom"
@@ -126,6 +158,8 @@ def pettaScopeContractArtifact : ScopeContractArtifact where
     [ letScopeEntry
     , chainScopeEntry
     , letStarScopeEntry
+    , lambdaArrowScopeEntry
+    , caseScopeEntry
     , addAtomSourceRulePayloadScopeEntry
     , addAtomBangSourceRulePayloadScopeEntry
     , removeAtomSourceRulePayloadScopeEntry

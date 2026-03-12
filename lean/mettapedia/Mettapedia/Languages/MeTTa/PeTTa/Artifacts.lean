@@ -15,7 +15,7 @@ Single PeTTa-side entrypoint for the shared native-runner artifact trio:
 - `petta.lookup_plan.*`
 - `petta.execution_contract.*`
 - `petta.transition_spec.*`
-- `petta.rewrite_ir.*`
+- `petta.rewrite_ir.*` (structured rule payload plus derived rule-analysis fields)
 
 The lookup plan is dialect-level and static. The transition and rewrite
 artifacts are program-level and derived from a concrete `PeTTaSpace`.

@@ -71,14 +71,16 @@ theorem CheckedCanonicalEvaluation.canonicalQuoteAgreement
   result.canonical.quoteAgreement
 
 theorem CheckedCanonicalEvaluation.profileBridge
-    (result : CheckedCanonicalEvaluation) :
+    (result : CheckedCanonicalEvaluation)
+    (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
+    (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv) :
     PureProfileTheoryStepStar
       (quoteClosedTm result.input)
       (quoteClosedTm result.canonical.canonicalDevelopment) := by
   have hred : RedStar result.input result.canonical.canonicalDevelopment := by
     simpa [result.canonicalInput_eq] using
       result.canonical.reductionToCanonicalDevelopment
-  exact pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed hred
+  exact pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed hinst0 hcompat0 hred
 
 def PureCheckingBoundary.checkAndCanonicalizeClosedTerm
     (svc : PureCheckingBoundary)

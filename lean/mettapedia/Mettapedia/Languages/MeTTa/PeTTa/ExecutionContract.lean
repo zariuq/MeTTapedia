@@ -54,6 +54,9 @@ Positive example:
   results into one tuple-style PeTTa value.
 - `min-atom` and `max-atom` are exposed as structural aggregation lanes over
   nested tuple/list results, not smuggled into the numeric MM2 intrinsic set.
+- `let`, `chain`, and `progn` are exposed as explicit control lanes that
+  sequence nested certified evaluation instead of forcing Rust to improvise a
+  separate control evaluator.
 
 Negative example:
 - this file still does not certify premise-bearing rewrite execution or arbitrary
@@ -654,6 +657,83 @@ private def atomExtremaAggregationTheoremRefs : List String :=
   , "Mettapedia.Languages.MeTTa.RuntimeKernel.query_memo_outcomeSet"
   ]
 
+private def controlBuiltinTheoremRefs : List String :=
+  [ "Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec.ControlDeclClause.letToChain"
+  , "Mettapedia.Languages.MeTTa.PeTTa.StdLib.let_to_chain"
+  , "Mettapedia.Languages.MeTTa.PeTTa.StdLib.chain_reduces"
+  , "Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec.CoreDecl.progn"
+  , "Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec.PredicateControlDeclClause.prognStateful"
+  ]
+
+/--
+`let`, `chain`, and `progn` currently use explicit control contracts.
+
+Why control lanes:
+- these forms orchestrate nested evaluation and binding/sequence structure
+  rather than denoting standalone query/effect primitives
+- the scope artifact already classifies the binder/value/body structure for
+  `let` and `chain`, so the runtime can consume that structure instead of
+  inventing per-head control behavior
+
+Why conservatively `writes_state`:
+- these control forms may sequence nested space effects such as `add-atom`
+  and `remove-atom`
+- the control lane therefore must not pretend to be pure or memo-safe
+-/
+def letControlContract : ControlBuiltinContract where
+  head := "let"
+  minArity := 3
+  maxArity := some 3
+  controlKind := .bindThenBody
+  owner := .artifactBackend
+  kernelClass := .metaPhase
+  effectClass := spaceEffectFragment.effectClass
+  resourceClass := spaceEffectFragment.resourceClass
+  backendName := spaceEffectFragment.backendName
+  supportedMemoShapes := []
+  eligibility := .always
+  residualPolicy := .failClosed
+  theoremRefs := controlBuiltinTheoremRefs
+
+def letControlEntry : ExecutionContractEntry :=
+  .controlBuiltin letControlContract
+
+def chainControlContract : ControlBuiltinContract where
+  head := "chain"
+  minArity := 3
+  maxArity := some 3
+  controlKind := .bindThenBody
+  owner := .artifactBackend
+  kernelClass := .metaPhase
+  effectClass := spaceEffectFragment.effectClass
+  resourceClass := spaceEffectFragment.resourceClass
+  backendName := spaceEffectFragment.backendName
+  supportedMemoShapes := []
+  eligibility := .always
+  residualPolicy := .failClosed
+  theoremRefs := controlBuiltinTheoremRefs
+
+def chainControlEntry : ExecutionContractEntry :=
+  .controlBuiltin chainControlContract
+
+def prognControlContract : ControlBuiltinContract where
+  head := "progn"
+  minArity := 1
+  maxArity := none
+  controlKind := .sequenceLastResult
+  owner := .artifactBackend
+  kernelClass := .metaPhase
+  effectClass := spaceEffectFragment.effectClass
+  resourceClass := spaceEffectFragment.resourceClass
+  backendName := spaceEffectFragment.backendName
+  supportedMemoShapes := []
+  eligibility := .always
+  residualPolicy := .failClosed
+  theoremRefs := controlBuiltinTheoremRefs
+
+def prognControlEntry : ExecutionContractEntry :=
+  .controlBuiltin prognControlContract
+
 def collapseAggregationContract : AggregationBuiltinContract where
   head := "collapse"
   minArity := 1
@@ -729,6 +809,9 @@ def pettaExecutionContractArtifact : ExecutionContractArtifact where
     , removeAtomBangFactPayloadEntry
     , removeAtomRulePayloadEntry
     , removeAtomBangRulePayloadEntry
+    , letControlEntry
+    , chainControlEntry
+    , prognControlEntry
     , collapseAggregationEntry
     , minAtomAggregationEntry
     , maxAtomAggregationEntry
