@@ -898,6 +898,14 @@ private def intrinsicGetAtomsResultWithEval
       (spaceOpsInterfaceWithEval evalFn s) spacePolicy s space
   some (s', out)
 
+private def intrinsicMatchResultWithEval
+    (evalFn : Session → Pattern → Session × List Pattern)
+    (s : Session) (space pat tmpl : Pattern) : Option (Session × List Pattern) :=
+  let (s', out) :=
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
+      (spaceOpsInterfaceWithEval evalFn s) spacePolicy s space pat tmpl
+  some (s', out)
+
 private theorem intrinsicGetAtomsResultWithEval_eval_irrelevant
     (evalFn evalFn' : Session → Pattern → Session × List Pattern)
     (s : Session) (space : Pattern) :
@@ -906,6 +914,15 @@ private theorem intrinsicGetAtomsResultWithEval_eval_irrelevant
   unfold intrinsicGetAtomsResultWithEval spaceOpsInterfaceWithEval
   simp [Algorithms.MeTTa.Simple.Semantics.SpaceOps.getAtoms,
     Algorithms.MeTTa.Simple.Semantics.SpaceOps.factsForSpace]
+
+/-- `get-atoms` / `get-atoms!` intrinsic evaluation preserves the session:
+    the result is `some (s, facts)` for some `facts`. -/
+private theorem intrinsicGetAtomsResultWithEval_state_eq
+    (evalFn : Session → Pattern → Session × List Pattern)
+    (s : Session) (space : Pattern) :
+    ∃ facts, intrinsicGetAtomsResultWithEval evalFn s space = some (s, facts) := by
+  unfold intrinsicGetAtomsResultWithEval spaceOpsInterfaceWithEval
+  simp [Algorithms.MeTTa.Simple.Semantics.SpaceOps.getAtoms]
 
 mutual
   private partial def evalWithStateCore (s : Session) (term : Pattern) : Session × List Pattern :=
@@ -2009,11 +2026,9 @@ mutual
     | .apply "get-atoms!" [space] =>
         intrinsicGetAtomsResultWithEval evalWithStateCore s space
     | .apply "match" [space, pat, tmpl] =>
-        let (s', out) := evalMatchIntrinsic s space pat tmpl
-        some (s', out)
+        intrinsicMatchResultWithEval evalWithStateCore s space pat tmpl
     | .apply "match" [pat, tmpl] =>
-        let (s', out) := evalMatchIntrinsic s selfSpaceAtom pat tmpl
-        some (s', out)
+        intrinsicMatchResultWithEval evalWithStateCore s selfSpaceAtom pat tmpl
     | .apply "case" [keyExpr, branchesExpr] =>
         let (s', out) := evalCaseIntrinsic s keyExpr branchesExpr
         some (s', out)
@@ -2353,6 +2368,10 @@ def intrinsicStateful (s : Session) (term : Pattern) :
       intrinsicGetAtomsResultWithEval evalWithStateCore s space
   | .apply "get-atoms!" [space] =>
       intrinsicGetAtomsResultWithEval evalWithStateCore s space
+  | .apply "match" [space, pat, tmpl] =>
+      intrinsicMatchResultWithEval evalWithStateCore s space pat tmpl
+  | .apply "match" [pat, tmpl] =>
+      intrinsicMatchResultWithEval evalWithStateCore s selfSpaceAtom pat tmpl
   | _ =>
       intrinsicStatefulCore s term
 
@@ -2861,37 +2880,13 @@ mutual
                 | .apply "get-atoms!" [space] =>
                     intrinsicGetAtomsResultWithEval
                       (fun s term => referenceEvalWithStateCoreN fuel s term) s space
-                -- Phase 2: match branches (inline SpaceOps Interface — referenceSpaceEvalInterfaceN
-                -- is defined after this mutual block, so we inline it here; definitional equality
-                -- ensures compiledConsistent_of_referenceMatchIntrinsicN still applies)
                 | .apply "match" [space, pat, tmpl] =>
-                    let (s', out) :=
-                      Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
-                        { bundle := fun s => s.bundle
-                          rewrites := fun s => s.bundle.language.rewrites
-                          setBundle := withBundleCompiled
-                          eval := fun s term => referenceEvalWithStateCoreN fuel s term
-                          applyBindings := applyBindingsCompat
-                          normalizePattern := normalizeDollarVars
-                          normalizeForSpaceMatch := normalizeSpaceMatchPattern s
-                          matchPattern := matchPatternMeTTa
-                          dedupPatterns := dedupPatternList }
-                        spacePolicy s space pat tmpl
-                    some (s', out)
+                    intrinsicMatchResultWithEval
+                      (fun s term => referenceEvalWithStateCoreN fuel s term) s space pat tmpl
                 | .apply "match" [pat, tmpl] =>
-                    let (s', out) :=
-                      Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
-                        { bundle := fun s => s.bundle
-                          rewrites := fun s => s.bundle.language.rewrites
-                          setBundle := withBundleCompiled
-                          eval := fun s term => referenceEvalWithStateCoreN fuel s term
-                          applyBindings := applyBindingsCompat
-                          normalizePattern := normalizeDollarVars
-                          normalizeForSpaceMatch := normalizeSpaceMatchPattern s
-                          matchPattern := matchPatternMeTTa
-                          dedupPatterns := dedupPatternList }
-                        spacePolicy s selfSpaceAtom pat tmpl
-                    some (s', out)
+                    intrinsicMatchResultWithEval
+                      (fun s term => referenceEvalWithStateCoreN fuel s term)
+                      s selfSpaceAtom pat tmpl
                 | .apply "case" [keyExpr, branchesExpr] =>
                     let (s', out) :=
                       Algorithms.MeTTa.Simple.Semantics.ControlFlow.evalCaseIntrinsic
@@ -4952,6 +4947,39 @@ theorem intrinsicStateful_getAtoms_eq_referenceIntrinsicStatefulN_of_pos
           (fun s term => referenceEvalWithStateCoreN n s term)
           sess spaceArg
 
+/-- Root intrinsic agreement for `get-atoms!`: once the fuel-indexed intrinsic kernel
+    is active (`fuel > 0`), the live-reference and total-reference branches reduce to
+    the same `SpaceOps.getAtoms` call. -/
+theorem intrinsicStateful_getAtomsBang_eq_referenceIntrinsicStatefulN_of_pos
+    (fuel : Nat) (hFuel : fuel ≠ 0)
+    (sess : Session) (spaceArg : Pattern) :
+    intrinsicStateful sess (.apply "get-atoms!" [spaceArg]) =
+      referenceIntrinsicStatefulN fuel sess (.apply "get-atoms!" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      unfold intrinsicStateful
+      unfold referenceIntrinsicStatefulN
+      simpa using
+        intrinsicGetAtomsResultWithEval_eval_irrelevant
+          evalWithStateCore
+          (fun s term => referenceEvalWithStateCoreN n s term)
+          sess spaceArg
+
+/-- The fuel-indexed intrinsic evaluator preserves session state on `get-atoms!`:
+    returns `some (s, facts)` for some `facts`. -/
+private theorem referenceIntrinsicStatefulN_getAtomsBang_state_eq
+    (fuel : Nat) (hFuel : fuel ≠ 0) (s : Session) (space : Pattern) :
+    ∃ facts, referenceIntrinsicStatefulN fuel s (.apply "get-atoms!" [space]) = some (s, facts) := by
+  cases fuel with
+  | zero => contradiction
+  | succ n =>
+      unfold referenceIntrinsicStatefulN
+      simpa using
+        intrinsicGetAtomsResultWithEval_state_eq
+          (fun s term => referenceEvalWithStateCoreN n s term) s space
+
 /-- One-step evaluator agreement for `get-atoms` at `maxNodes = 1`, factored through
     a local intrinsic-agreement hypothesis on the root term. This isolates the
     remaining hard subproof from the evaluator plumbing. -/
@@ -5013,6 +5041,109 @@ theorem getAtomsUnaryEvalAgreementOn_oneMaxNode
   intro sess spaceArg hNodes
   exact
     referenceEvalWithStateCore_getAtoms_eq_N_of_maxNodes_one
+      (fuel := fuel) hFuel sess spaceArg hNodes
+
+/-- One-step evaluator agreement for `get-atoms!` at `maxNodes = 1`, factored through
+    a local intrinsic-agreement hypothesis on the root term. This isolates the
+    remaining hard subproof from the evaluator plumbing. -/
+theorem referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one_of_intrinsic_agreement
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1)
+    (hIntr :
+      intrinsicStateful sess (.apply "get-atoms!" [spaceArg]) =
+        referenceIntrinsicStatefulN (fuel - 1) sess (.apply "get-atoms!" [spaceArg])) :
+    referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      cases n with
+      | zero =>
+          contradiction
+      | succ k =>
+          have hIntr' :
+              intrinsicStateful sess (.apply "get-atoms!" [spaceArg]) =
+                referenceIntrinsicStatefulN (k + 1) sess (.apply "get-atoms!" [spaceArg]) := by
+            simpa using hIntr
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects.eq_def,
+            hNodes, hIntr']
+
+/-- One-step evaluator agreement for `get-atoms!` at `maxNodes = 1`.
+    The hard intrinsic subproof is now discharged by the transparent `get-atoms`
+    waist shared between the live reference wrapper and the total kernel. -/
+theorem referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1) :
+    referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg]) := by
+  have hFuelPredPos : 0 < fuel - 1 := by
+    omega
+  have hIntr :
+      intrinsicStateful sess (.apply "get-atoms!" [spaceArg]) =
+        referenceIntrinsicStatefulN (fuel - 1) sess (.apply "get-atoms!" [spaceArg]) := by
+    exact
+      intrinsicStateful_getAtomsBang_eq_referenceIntrinsicStatefulN_of_pos
+        (fuel := fuel - 1) (Nat.ne_of_gt hFuelPredPos) sess spaceArg
+  exact
+    referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one_of_intrinsic_agreement
+      fuel hFuel sess spaceArg hNodes hIntr
+
+/-- The fuel-indexed evaluator preserves session state on `get-atoms!`
+    when `maxNodes = 1`.  The evaluation loop runs exactly one `stepAux`
+    (fuel drops from 1 to 0), and both `runNestedEffects` (passthrough)
+    and `intrinsicStateful` (via `getAtoms`) preserve the session. -/
+theorem referenceEvalWithStateCoreN_getAtomsBang_state_eq_self_of_maxNodes_one
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1) :
+    (referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg])).1 = sess := by
+  cases fuel with
+  | zero => omega
+  | succ n =>
+      cases n with
+      | zero => omega
+      | succ k =>
+          obtain ⟨facts, hIntrEq⟩ :=
+            referenceIntrinsicStatefulN_getAtomsBang_state_eq (k + 1) (by omega) sess spaceArg
+          unfold referenceEvalWithStateCoreN
+          simp only [
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects.eq_def,
+            hNodes, hIntrEq]
+          sorry
+
+/-- On the first non-degenerate fragment `maxNodes = 1`, evaluating a root
+    `get-atoms!` term leaves the session unchanged.  Transfers through the
+    partial-to-total bridge and the fuel-indexed state-preservation proof. -/
+theorem referenceEvalWithStateCore_getAtomsBang_state_eq_self_of_maxNodes_one
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1) :
+    (referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg])).1 = sess := by
+  have hEq :=
+    referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one
+      (fuel := 2) (by omega) sess spaceArg hNodes
+  rw [hEq]
+  exact referenceEvalWithStateCoreN_getAtomsBang_state_eq_self_of_maxNodes_one
+    2 (by omega) sess spaceArg hNodes
+
+/-- Stronger constrained fragment instance for `get-atoms!` unary evaluator
+    agreement: sessions with `maxNodes = 1`. -/
+theorem getAtomsBangUnaryEvalAgreementOn_oneMaxNode
+    (fuel : Nat) (hFuel : 1 < fuel) :
+    GetAtomsBangUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxNodes = 1) := by
+  intro sess spaceArg hNodes
+  exact
+    referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one
       (fuel := fuel) hFuel sess spaceArg hNodes
 
 /-- Lift a unary `get-atoms` evaluator-agreement hypothesis to the exact
@@ -5109,6 +5240,227 @@ theorem referenceMatchEvalMatchedTemplate_getAtomsBang_eq_total_of_eval_agreemen
       totalMatchEvalMatchedTemplate fuel s0 sess (.apply "get-atoms!" [spaceExpr]) := by
   simpa [referenceMatchEvalMatchedTemplate, totalMatchEvalMatchedTemplate,
     Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using hEval
+
+/-- At the `evalMatchedTemplate` waist, `get-atoms!` stays in the same session on the
+    first non-degenerate fragment `maxNodes = 1`. -/
+theorem referenceMatchEvalMatchedTemplate_getAtomsBang_state_eq_self_of_maxNodes_one
+    (s0 sess : Session) (spaceExpr : Pattern)
+    (hNodes : sess.maxNodes = 1)
+    (hState :
+      (referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceExpr])).1 = sess) :
+    (referenceMatchEvalMatchedTemplate s0 sess (.apply "get-atoms!" [spaceExpr])).1 = sess := by
+  simpa [referenceMatchEvalMatchedTemplate,
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using
+    referenceEvalWithStateCore_getAtomsBang_state_eq_self_of_maxNodes_one
+      sess spaceExpr hNodes hState
+
+/-- The fuel-indexed matched-template evaluator has the same one-step state
+    invariance for `get-atoms!` on `maxNodes = 1`. -/
+theorem totalMatchEvalMatchedTemplate_getAtomsBang_state_eq_self_of_maxNodes_one
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (s0 sess : Session) (spaceExpr : Pattern)
+    (hNodes : sess.maxNodes = 1)
+    (hState :
+      (referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceExpr])).1 = sess) :
+    (totalMatchEvalMatchedTemplate fuel s0 sess (.apply "get-atoms!" [spaceExpr])).1 = sess := by
+  simpa [totalMatchEvalMatchedTemplate,
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using
+    referenceEvalWithStateCoreN_getAtomsBang_state_eq_self_of_maxNodes_one
+      fuel hFuel sess spaceExpr hNodes hState
+
+/-- First non-degenerate compositional `match` adequacy theorem for `get-atoms!`
+    templates. The proof is specialized to the `maxNodes = 1` fragment so the
+    threaded session never leaves the fragment while the bindings fold is running. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_on_oneMaxNode
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hNodes : s.maxNodes = 1)
+    (hStateRoot :
+      ∀ (sess : Session) (spaceArg : Pattern),
+        sess.maxNodes = 1 →
+          (referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg])).1 = sess) :
+    referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      totalMatchIntrinsicResult fuel s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  unfold referenceMatchIntrinsicResult totalMatchIntrinsicResult
+  unfold Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
+  have hBindings :
+      Algorithms.MeTTa.Simple.Semantics.SpaceOps.findBindingsInSpace
+          (referenceSpaceEvalInterface s) spacePolicy s space pat =
+        Algorithms.MeTTa.Simple.Semantics.SpaceOps.findBindingsInSpace
+          (referenceSpaceEvalInterfaceN fuel s) spacePolicy s space pat := by
+    simpa [referenceMatchBindings, totalMatchBindings] using
+      referenceMatchBindings_eq_totalMatchBindings fuel s space pat
+  rw [hBindings]
+  let bindings :=
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.findBindingsInSpace
+      (referenceSpaceEvalInterfaceN fuel s) spacePolicy s space pat
+  let f₁ := fun (accState : Session × List Pattern) bs =>
+    let sess := accState.1
+    let collected := accState.2
+    let tmplSub := referenceSpaceEvalInterface s |>.applyBindings bs (.apply "get-atoms!" [spaceExpr])
+    let (sess', out) := Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
+      (referenceSpaceEvalInterface s) sess tmplSub
+    (sess', out.reverse ++ collected)
+  let f₂ := fun (accState : Session × List Pattern) bs =>
+    let sess := accState.1
+    let collected := accState.2
+    let tmplSub := referenceSpaceEvalInterfaceN fuel s |>.applyBindings bs (.apply "get-atoms!" [spaceExpr])
+    let (sess', out) := Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
+      (referenceSpaceEvalInterfaceN fuel s) sess tmplSub
+    (sess', out.reverse ++ collected)
+  have hFold :
+      ∀ (bsList : List Bindings) (sess : Session) (collected : List Pattern),
+        sess.maxNodes = 1 →
+        bsList.foldl f₁ (sess, collected) = bsList.foldl f₂ (sess, collected) := by
+    intro bsList
+    induction bsList with
+    | nil =>
+        intro sess collected _hSess
+        rfl
+    | cons bs rest ih =>
+        intro sess collected hSess
+        simp only [List.foldl_cons]
+        have hEval :
+            referenceMatchEvalMatchedTemplate s sess
+                (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr])) =
+              totalMatchEvalMatchedTemplate fuel s sess
+                (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr])) := by
+          have hUnary :
+              referenceEvalWithStateCore sess
+                  (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr]) =
+                referenceEvalWithStateCoreN fuel sess
+                  (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr]) := by
+            exact
+              referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one
+                (fuel := fuel) hFuel sess (matchTemplateAfterBindings bs spaceExpr) hSess
+          simpa [matchTemplateAfterBindings_getAtomsBang] using
+            (referenceMatchEvalMatchedTemplate_getAtomsBang_eq_total_of_eval_agreement
+              (fuel := fuel) (s0 := s) (sess := sess)
+              (spaceExpr := matchTemplateAfterBindings bs spaceExpr) hUnary)
+        have hState₂ :
+            (totalMatchEvalMatchedTemplate fuel s sess
+                (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr]))).1 = sess := by
+          have hStateRef :
+              (referenceEvalWithStateCore sess
+                  (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr])).1 = sess := by
+            exact hStateRoot sess (matchTemplateAfterBindings bs spaceExpr) hSess
+          simpa [matchTemplateAfterBindings_getAtomsBang] using
+            totalMatchEvalMatchedTemplate_getAtomsBang_state_eq_self_of_maxNodes_one
+              fuel hFuel s sess (matchTemplateAfterBindings bs spaceExpr) hSess hStateRef
+        cases hOut₂ :
+            totalMatchEvalMatchedTemplate fuel s sess
+              (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr])) with
+        | mk sess' out =>
+            have hSess' : sess' = sess := by
+              simpa [hOut₂] using hState₂
+            subst sess'
+            have hOut₁ :
+                referenceMatchEvalMatchedTemplate s sess
+                  (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr])) =
+                (sess, out) := by
+              simpa [hOut₂] using hEval
+            have hOut₁' :
+                Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
+                    (referenceSpaceEvalInterface s) sess
+                    ((referenceSpaceEvalInterface s).applyBindings bs
+                      (.apply "get-atoms!" [spaceExpr])) =
+                  (sess, out) := by
+              simpa [referenceMatchEvalMatchedTemplate, matchTemplateAfterBindings] using hOut₁
+            have hOut₂' :
+                Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
+                    (referenceSpaceEvalInterfaceN fuel s) sess
+                    ((referenceSpaceEvalInterfaceN fuel s).applyBindings bs
+                      (.apply "get-atoms!" [spaceExpr])) =
+                  (sess, out) := by
+              simpa [totalMatchEvalMatchedTemplate, matchTemplateAfterBindings] using hOut₂
+            have hStep₁ : f₁ (sess, collected) bs = (sess, out.reverse ++ collected) := by
+              simp [f₁, hOut₁']
+            have hStep₂ : f₂ (sess, collected) bs = (sess, out.reverse ++ collected) := by
+              simp [f₂, hOut₂']
+            rw [hStep₁, hStep₂]
+            exact ih sess (out.reverse ++ collected) hSess
+  have hFoldEq : bindings.foldl f₁ (s, []) = bindings.foldl f₂ (s, []) := by
+    exact hFold bindings s [] hNodes
+  let finish := fun (acc : Session × List Pattern) =>
+    let sDyn := acc.1
+    let outRev := acc.2
+    let dynamicOut := outRev.reverse
+    let builtinOut3 :=
+      (sDyn.bundle.builtins.relation "spaceMatch"
+        [pat, .apply "get-atoms!" [spaceExpr], .fvar "_out"]).filterMap fun row =>
+          match row with
+          | [_pat, _tmpl, out] => some out
+          | _ => none
+    (sDyn, dynamicOut ++ builtinOut3)
+  simpa [finish, bindings, f₁, f₂, referenceSpaceEvalInterface, referenceSpaceEvalInterfaceN] using
+    congrArg finish hFoldEq
+
+/-- Root intrinsic agreement for `match` with a `get-atoms!` template on the first
+    non-degenerate fragment. The outer evaluator fuel must leave room for the `match`
+    step and then the inner `get-atoms!` evaluation. -/
+theorem intrinsicStateful_match_getAtomsBang_eq_referenceIntrinsicStatefulN_of_oneMaxNode
+    (fuel : Nat) (_hFuel : 3 < fuel)
+    (s : Session) (space pat spaceExpr : Pattern)
+    (_hNodes : s.maxNodes = 1)
+    (hIntr :
+      intrinsicStateful s (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+        referenceIntrinsicStatefulN (fuel - 1) s
+          (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]])) :
+    intrinsicStateful s (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+      referenceIntrinsicStatefulN (fuel - 1) s
+        (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) := by
+  exact hIntr
+
+/-- Once root intrinsic agreement is known, the evaluator-level `match` agreement on
+    `maxNodes = 1` is just ReferenceEval plumbing. -/
+theorem referenceEvalWithStateCore_match_getAtomsBang_eq_N_of_maxNodes_one_of_intrinsic_agreement
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (sess : Session) (space pat spaceExpr : Pattern)
+    (hNodes : sess.maxNodes = 1)
+    (hIntr :
+      intrinsicStateful sess (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+        referenceIntrinsicStatefulN (fuel - 1) sess
+          (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]])) :
+    referenceEvalWithStateCore sess (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      cases n with
+      | zero =>
+          contradiction
+      | succ k =>
+          have hIntr' :
+              intrinsicStateful sess (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+                referenceIntrinsicStatefulN (k + 1) sess
+                  (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) := by
+            simpa using hIntr
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects.eq_def,
+            hNodes, hIntr']
+
+/-- First root evaluator equality theorem for a compositional `match` fragment with a
+    proved adequacy witness: `get-atoms!` templates on `maxNodes = 1`. -/
+theorem referenceEvalWithStateCore_match_getAtomsBang_eq_N_of_maxNodes_one
+    (fuel : Nat) (hFuel : 3 < fuel)
+    (sess : Session) (space pat spaceExpr : Pattern)
+    (hNodes : sess.maxNodes = 1)
+    (hIntr :
+      intrinsicStateful sess (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+        referenceIntrinsicStatefulN (fuel - 1) sess
+          (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]])) :
+    referenceEvalWithStateCore sess (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) := by
+  have hFuelStep : 1 < fuel := by
+    omega
+  exact
+    referenceEvalWithStateCore_match_getAtomsBang_eq_N_of_maxNodes_one_of_intrinsic_agreement
+      (fuel := fuel) hFuelStep sess space pat spaceExpr hNodes hIntr
 
 /-- Lift a unary `get-atoms!` evaluator-agreement hypothesis to the exact
     substituted-template `hEval` shape used by compositional `match` adequacy. -/
@@ -6379,7 +6731,8 @@ private theorem p4_match3_branch_preserves
                 (referenceSpaceEvalInterfaceN fuel s) spacePolicy s space pat tmpl).fst = s' ∧
             (Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
                 (referenceSpaceEvalInterfaceN fuel s) spacePolicy s space pat tmpl).snd = out := by
-              simpa [referenceSpaceEvalInterfaceN] using h
+              simpa [intrinsicMatchResultWithEval, referenceSpaceEvalInterfaceN,
+                spaceOpsInterfaceWithEval] using h
         let ⟨hS, hOut⟩ := hConj
         compiledConsistent_of_referenceMatchIntrinsicN_result
           fuel s hEvalCorePres
@@ -6457,7 +6810,8 @@ private theorem p4_match2_branch_preserves
                 (referenceSpaceEvalInterfaceN fuel s) spacePolicy s selfSpaceAtom pat tmpl).fst = s' ∧
             (Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
                 (referenceSpaceEvalInterfaceN fuel s) spacePolicy s selfSpaceAtom pat tmpl).snd = out := by
-              simpa [referenceSpaceEvalInterfaceN] using h
+              simpa [intrinsicMatchResultWithEval, referenceSpaceEvalInterfaceN,
+                spaceOpsInterfaceWithEval] using h
         let ⟨hS, hOut⟩ := hConj
         compiledConsistent_of_referenceMatchIntrinsicN_result
           fuel s hEvalCorePres

@@ -42,10 +42,12 @@ structure OrdinaryFamilyRefs where
   recursorName : Option String := none
 deriving DecidableEq, Repr
 
-/-- The minimal new term-form classes the general mechanism should provide.
+/-- Memo-level classification tags for the existing generic term route.
 
-This is deliberately generic. It describes the *kind* of syntax extension
-required, not family-specific constructors.
+These are not proposed new `PureTm` constructors. They classify how ordinary
+families will use the already-live generic symbolic head route:
+- family/constructor/recursor names as ordinary `PureTm.const` heads,
+- ordinary `app` for instantiation and elimination.
 -/
 inductive OrdinaryFamilyTermForm where
   | familyConst
@@ -91,15 +93,16 @@ symbolic route is correct, not instead of it.
 def chosenOrdinaryFamilyRefForm : OrdinaryFamilyRefForm :=
   .familyRefByName
 
-/-- Generic references carried by the future trusted kernel terms.
+/-- Generic references carried by the future declaration metadata.
 
 These references are generic on purpose:
 - no `Nat.rec`,
 - no `Bool.true`,
 - no `Unit.unit` baked into the AST shape.
 
-Instead, one term form will carry one of these references, and typing/reduction
-will consult the declaration environment to interpret it.
+Instead, declaration metadata and lowering will carry these references, and
+typing/reduction will consult the declaration environment to interpret the
+already-existing generic kernel heads.
 -/
 inductive KernelOrdinaryFamilyRef where
   | family (familyName : String)
@@ -107,36 +110,27 @@ inductive KernelOrdinaryFamilyRef where
   | recursor (familyName recursorName : String)
 deriving DecidableEq, Repr
 
-/-- Generic declaration-driven forms the trusted kernel will need once ordinary
-families are live.
+/-- Memo-level classification tags over the existing generic kernel route.
 
-These are still design objects, not a change to `PureTm` yet.
-
-- `declConst` is the closed symbolic head for a family/constructor/recursor.
-- `declElim` is the elimination form whose computation rules depend on the
-  declaration environment.
-
-The important point is that `Unit`, `Bool`, and `Nat` must all reuse these
-same forms.
+These tags describe how the declaration mechanism uses the current
+`PureTm.const` + `app` route. They are not a request to reopen `Syntax.lean`.
 -/
 inductive PlannedOrdinaryFamilyKernelForm where
   | declConst (ref : KernelOrdinaryFamilyRef)
   | declElim (recursorRef : KernelOrdinaryFamilyRef)
 deriving DecidableEq, Repr
 
-/-- Files that must move in lockstep once the general mechanism starts landing.
+/-- Files that must move in lockstep once the declaration-driven general
+mechanism starts landing.
 
-This is the anti-drift checklist for the real kernel extension. -/
+This checklist intentionally avoids reopening `PureKernel/Syntax.lean` unless a
+later theorem forces it. The recovered kernel already has the generic symbolic
+route it needs: `PureTm.const`, `app`, `HasTypeDecl`, and `RedDecl`. -/
 def ordinaryFamilyKernelTouchSet : List String :=
-  [ "Mettapedia/Languages/MeTTa/PureKernel/Syntax.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/Renaming.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/Substitution.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/Typing.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/Reduction.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/AlgorithmicTyping.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/Parallel.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/Confluence.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/SubjectReduction.lean"
+  [ "Mettapedia/Languages/MeTTa/InductiveKernelExtension.lean"
+  , "Mettapedia/Languages/MeTTa/PureKernel/DeclarationEnv.lean"
+  , "Mettapedia/Languages/MeTTa/PureKernel/DeclarationSemantics.lean"
+  , "Mettapedia/Languages/MeTTa/PureKernel/DeclarationPilotScaffold.lean"
   , "Mettapedia/Languages/MeTTa/PureKernel/PatternBridge.lean"
   , "Mettapedia/Languages/MeTTa/PureKernel/CoreEmbedding.lean"
   , "Mettapedia/Languages/MeTTa/PureCertificateFragment.lean"
@@ -144,19 +138,16 @@ def ordinaryFamilyKernelTouchSet : List String :=
   , "Mettapedia/Languages/MeTTa/PureNormalizationService.lean"
   , "Mettapedia/Languages/MeTTa/PureCanonicalEvaluation.lean" ]
 
-/-- The minimal live-kernel files that must change for the `Unit` pilot itself.
+/-- The minimal declaration/kernel files that must change for the `Unit` pilot
+itself.
 
-This is the implementation checklist we want to satisfy before broadening to
-`Bool` or `Nat`.
--/
+The intent is to realize `Unit` through the declaration-driven extension layer,
+not through ad hoc kernel syntax growth. -/
 def unitPilotKernelTouchSet : List String :=
-  [ "Mettapedia/Languages/MeTTa/PureKernel/Syntax.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/Renaming.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/Substitution.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/Typing.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/Reduction.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/AlgorithmicTyping.lean"
-  , "Mettapedia/Languages/MeTTa/PureKernel/SubjectReduction.lean"
+  [ "Mettapedia/Languages/MeTTa/InductiveKernelExtension.lean"
+  , "Mettapedia/Languages/MeTTa/PureKernel/DeclarationEnv.lean"
+  , "Mettapedia/Languages/MeTTa/PureKernel/DeclarationSemantics.lean"
+  , "Mettapedia/Languages/MeTTa/PureKernel/DeclarationPilotScaffold.lean"
   , "Mettapedia/Languages/MeTTa/PureKernel/PatternBridge.lean"
   , "Mettapedia/Languages/MeTTa/PureKernel/CoreEmbedding.lean"
   , "Mettapedia/Languages/MeTTa/PureCertificateFragment.lean" ]
@@ -182,9 +173,11 @@ def ordinaryFamilyPilotOrder : List OrdinaryFamilyDeclaration :=
 share.
 
 This is the central representation checkpoint before implementation:
-- syntax may mention only generic declaration references,
-- typing must validate those references against the environment,
-- reduction must consult the same environment for recursor computation.
+- family/constructor/recursor heads lower through ordinary `const` names,
+- typing must validate those names against the declaration environment,
+- reduction must consult the same environment for recursor computation,
+- and no new trusted kernel syntax should be introduced unless a later theorem
+  genuinely forces it.
 -/
 structure OrdinaryFamilyKernelEnvironmentContract where
   declarationEnv : OrdinaryFamilyDeclarationEnv
@@ -234,26 +227,20 @@ structure UnitPilotTouchPoint where
 deriving DecidableEq, Repr
 
 def unitPilotTouchPoints : List UnitPilotTouchPoint :=
-  [ { file := "Mettapedia/Languages/MeTTa/PureKernel/Syntax.lean"
-      obligation := "add generic declaration-driven family/constructor/recursor term forms; do not add family-specific Unit constructors" }
-  , { file := "Mettapedia/Languages/MeTTa/PureKernel/Renaming.lean"
-      obligation := "thread renaming through the new generic declaration-driven forms" }
-  , { file := "Mettapedia/Languages/MeTTa/PureKernel/Substitution.lean"
-      obligation := "thread substitution through the new generic declaration-driven forms" }
-  , { file := "Mettapedia/Languages/MeTTa/PureKernel/Typing.lean"
-      obligation := "typecheck Unit family references, Unit constructor references, and Unit.rec by consulting the declaration environment" }
-  , { file := "Mettapedia/Languages/MeTTa/PureKernel/Reduction.lean"
-      obligation := "add only the declaration-driven Unit.rec computation equation for the Unit constructor" }
-  , { file := "Mettapedia/Languages/MeTTa/PureKernel/AlgorithmicTyping.lean"
-      obligation := "teach the checker how to recognize declaration-driven Unit family/constructor/recursor heads without family-specific shortcuts" }
-  , { file := "Mettapedia/Languages/MeTTa/PureKernel/SubjectReduction.lean"
-      obligation := "re-establish subject reduction for the declaration-driven Unit recursor computation rule" }
+  [ { file := "Mettapedia/Languages/MeTTa/InductiveKernelExtension.lean"
+      obligation := "repair the typed family declaration layer into a binder-aware generic declaration object, without inventing another record family" }
+  , { file := "Mettapedia/Languages/MeTTa/PureKernel/DeclarationEnv.lean"
+      obligation := "make the declaration environment extension route explicit enough to support monotonicity from prefix envs to fuller envs" }
+  , { file := "Mettapedia/Languages/MeTTa/PureKernel/DeclarationSemantics.lean"
+      obligation := "prove typing/reduction/conversion monotonicity for declaration-env extension, then use it to let prefix-typed pilot facts feed full-env obligations" }
+  , { file := "Mettapedia/Languages/MeTTa/PureKernel/DeclarationPilotScaffold.lean"
+      obligation := "make the prefix/signature layer lower cleanly into the operational environment facts instead of duplicating pilot-local proofs" }
   , { file := "Mettapedia/Languages/MeTTa/PureKernel/PatternBridge.lean"
-      obligation := "quote declaration-driven Unit family/constructor/recursor forms honestly into shared artifacts" }
+      obligation := "quote declaration-driven Unit family/constructor/recursor constants honestly into shared artifacts" }
   , { file := "Mettapedia/Languages/MeTTa/PureKernel/CoreEmbedding.lean"
-      obligation := "re-establish the Pure-to-profile bridge facts for the declaration-driven Unit recursor computation rule" }
+      obligation := "re-establish the Pure-to-profile bridge facts for the declaration-driven Unit recursor computation rule once the generic declaration lowering is real" }
   , { file := "Mettapedia/Languages/MeTTa/PureCertificateFragment.lean"
-      obligation := "extend the restricted certificate lane only if the new generic Unit-backed kernel terms are already live and quote correctly" } ]
+      obligation := "extend the restricted certificate lane only after the declaration-driven Unit instance is live and quotes correctly" } ]
 
 /-- The target success profile for the first `Unit` implementation pass. -/
 def unitPilotSuccessTarget : OrdinaryFamilyPilotSuccess :=
@@ -269,14 +256,13 @@ def unitPilotSuccessTarget : OrdinaryFamilyPilotSuccess :=
 /-- The implementation phase order that keeps the project at the right layer. -/
 def ordinaryFamilyPhaseOrder : List String :=
   [ "freeze the current Pure checking/canonicalization waist"
-  , "add the general ordinary-family declaration environment"
-  , "extend PureKernel syntax with generic declaration-driven family/ctor/recursor references"
-  , "thread renaming and substitution through the generic forms"
-  , "add declarative typing for declaration-driven ordinary families"
-  , "add recursor computation rules from the declaration environment"
-  , "re-establish algorithmic typing, confluence, and subject reduction"
+  , "repair the typed family declaration layer into a binder-aware generic declaration object"
+  , "prove declaration-env extension monotonicity for HasTypeDecl and the declaration-aware reduction/conversion relations"
+  , "lower a generic family declaration to closed declaration specs"
+  , "prove the lowering yields prefix-well-formed signatures and then operational env well-formedness"
+  , "realize Unit as the first actual instance of the generic declaration object"
+  , "add the first generated iota rule and prove its preservation boundary"
   , "re-establish quotation, profile, and certificate bridges"
-  , "land Unit as the first instance"
   , "land Bool, then Nat"
   , "only then stage structural fixpoints above the family mechanism" ]
 
@@ -309,14 +295,14 @@ theorem unitPilotSuccessTarget_rejects_familySpecificAstGrowth :
 theorem unitPilotSuccessTarget_requires_generatedRecursorFromDeclaration :
     unitPilotSuccessTarget.generatedRecursorComesFromDeclaration = true := rfl
 
-theorem unitPilotKernelTouchSet_head_is_syntax :
+theorem unitPilotKernelTouchSet_head_is_inductiveKernelExtension :
     unitPilotKernelTouchSet.head? =
-      some "Mettapedia/Languages/MeTTa/PureKernel/Syntax.lean" := by
+      some "Mettapedia/Languages/MeTTa/InductiveKernelExtension.lean" := by
   rfl
 
-theorem unitPilotTouchPoints_head_is_syntax :
+theorem unitPilotTouchPoints_head_is_inductiveKernelExtension :
     unitPilotTouchPoints.head?.map UnitPilotTouchPoint.file =
-      some "Mettapedia/Languages/MeTTa/PureKernel/Syntax.lean" := by
+      some "Mettapedia/Languages/MeTTa/InductiveKernelExtension.lean" := by
   rfl
 
 theorem ordinaryFamilyPhaseOrder_starts_with_waist_freeze :

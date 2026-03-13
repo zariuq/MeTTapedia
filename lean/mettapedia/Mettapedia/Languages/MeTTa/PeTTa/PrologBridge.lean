@@ -44,11 +44,12 @@ open Mettapedia.Logic.Prolog
 
 /-- Adapt a `PeTTaSpace` to the abstract `PrologSpace` interface.
 
-    The `matchFacts` operation queries the PeTTa space for all facts matching `pat`,
-    returning the facts themselves (not the template instantiations).
-    This corresponds to PeTTa's `'get-atoms'(&self)` followed by pattern matching. -/
+    The `matchFacts` operation queries the PeTTa space for all stored atoms
+    matching `pat`, returning those atoms themselves (not the template
+    instantiations). This corresponds to PeTTa's `'get-atoms'(&self)` followed
+    by pattern matching. -/
 def peTTaSpaceAdapter (s : PeTTaSpace) : PrologSpace where
-  matchFacts pat := s.facts.filter (fun fact => (matchPattern pat fact).length > 0)
+  matchFacts pat := s.storedAtoms.filter (fun atom => (matchPattern pat atom).length > 0)
 
 /-! ## MeTTa Prolog Oracle -/
 
@@ -88,10 +89,10 @@ theorem meTTaOracle_call_non_single (s : PeTTaSpace) (args : List Pattern) (outs
   | [_]    => simp at h
   | _ :: _ :: _ => simp
 
-/-- The space adapter's `matchFacts` returns exactly the facts that match `pat`. -/
+/-- The space adapter's `matchFacts` returns exactly the stored atoms that match `pat`. -/
 theorem peTTaSpaceAdapter_matchFacts (s : PeTTaSpace) (pat : Pattern) :
     (peTTaSpaceAdapter s).matchFacts pat =
-    s.facts.filter (fun fact => (matchPattern pat fact).length > 0) := rfl
+    s.storedAtoms.filter (fun atom => (matchPattern pat atom).length > 0) := rfl
 
 /-- The MeTTa oracle's `matchEval` correctly dispatches to `PeTTaSpace.spaceMatch`. -/
 theorem meTTaOracle_matchEval (s : PeTTaSpace) (pat tmpl : Pattern) (outs : List Pattern) :

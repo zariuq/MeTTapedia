@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.Pure.Typing
+import Mettapedia.Languages.MeTTa.Pure.Fragment
 
 /-!
 # MeTTa-Pure: Reduction Relation
@@ -24,6 +25,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern)
 open Mettapedia.OSLF.MeTTaIL.Substitution (openBVar lc_at lc_at_list lc_at_openBVar_result)
 open Mettapedia.Languages.MeTTa.Pure.Core
 open Mettapedia.Languages.MeTTa.Pure.Typing (PureConv)
+open Mettapedia.Languages.MeTTa.Pure.Fragment
 
 /-! ## One-Step Reduction -/
 
@@ -104,74 +106,131 @@ theorem PureReducesStar.single (h : PureReduces t₁ t₂) : PureReducesStar t�
 
 /-! ## Reduction implies Conversion -/
 
-/-- Every one-step reduction of a locally closed term is a definitional equality. -/
+ /-- Every one-step reduction of a locally closed pure term is a definitional equality. -/
 theorem PureReduces_implies_PureConv (h : PureReduces t₁ t₂)
-    (hlc : lc_at 0 t₁ = true) : PureConv t₁ t₂ := by
+    (hlc : lc_at 0 t₁ = true) (hpure : PureTmPattern t₁) : PureConv t₁ t₂ := by
+  revert hlc hpure
   induction h with
   | betaPi body a =>
+      intro hlc hpure
       have hlcB : lc_at 1 body = true := by
         simp only [mkApp, mkLam, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
       have hlcA : lc_at 0 a = true := by
         simp only [mkApp, mkLam, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2
-      exact .betaPi body a hlcB hlcA
+      have hPureApp : PureTmPattern (mkLam body) ∧ PureTmPattern a := pure_app_inv hpure
+      have hPureBody : PureTmPattern body := pure_lam_inv hPureApp.1
+      exact .betaPi body a hPureBody hPureApp.2 hlcB hlcA
   | betaSigmaFst a b =>
+      intro hlc hpure
       have hlcA : lc_at 0 a = true := by
         simp only [mkFst, mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
       have hlcB : lc_at 0 b = true := by
         simp only [mkFst, mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2
-      exact .betaSigmaFst a b hlcA hlcB
+      have hPurePair : PureTmPattern (mkPair a b) := pure_fst_inv hpure
+      have hPureAB : PureTmPattern a ∧ PureTmPattern b := pure_pair_inv hPurePair
+      exact .betaSigmaFst a b hPureAB.1 hPureAB.2 hlcA hlcB
   | betaSigmaSnd a b =>
+      intro hlc hpure
       have hlcA : lc_at 0 a = true := by
         simp only [mkSnd, mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
       have hlcB : lc_at 0 b = true := by
         simp only [mkSnd, mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2
-      exact .betaSigmaSnd a b hlcA hlcB
+      have hPurePair : PureTmPattern (mkPair a b) := pure_snd_inv hpure
+      have hPureAB : PureTmPattern a ∧ PureTmPattern b := pure_pair_inv hPurePair
+      exact .betaSigmaSnd a b hPureAB.1 hPureAB.2 hlcA hlcB
   | @congPiDom A A' B _ ih =>
+      intro hlc hpure
       have : lc_at 0 A = true := by
         simp only [mkPi, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
-      exact .congPi ∅ (ih this) (fun _ _ => .refl _)
-  | congPiCod L _ _ _ _ ih =>
-      exact .congPi L (.refl _) (fun x hx => by
+      have hPureAB : PureTmPattern A ∧ PureTmPattern B := pure_pi_inv hpure
+      exact .congPi ∅ (ih this hPureAB.1) (fun x _ => .refl _ (pureTm_openBVar_fvar x hPureAB.2))
+  | congPiCod L A B B' _ ih =>
+      intro hlc hpure
+      have hPureAB : PureTmPattern A ∧ PureTmPattern B := pure_pi_inv hpure
+      exact .congPi L (.refl _ hPureAB.1) (fun x hx => by
+        have hOpenPure : PureTmPattern (openBVar 0 (.fvar x) B) := pureTm_openBVar_fvar x hPureAB.2
         have hlcOpen := Mettapedia.OSLF.MeTTaIL.Substitution.lc_at_openBVar_result
           (by simp only [mkPi, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2)
           (by simp [lc_at] : lc_at 0 (.fvar x) = true)
-        exact ih x hx hlcOpen)
+        exact ih x hx hlcOpen hOpenPure)
   | @congSigmaDom A A' B _ ih =>
+      intro hlc hpure
       have : lc_at 0 A = true := by
         simp only [mkSigma, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
-      exact .congSigma ∅ (ih this) (fun _ _ => .refl _)
-  | congSigmaCod L _ _ _ _ ih =>
-      exact .congSigma L (.refl _) (fun x hx => by
+      have hPureAB : PureTmPattern A ∧ PureTmPattern B := pure_sigma_inv hpure
+      exact .congSigma ∅ (ih this hPureAB.1) (fun x _ => .refl _ (pureTm_openBVar_fvar x hPureAB.2))
+  | congSigmaCod L A B B' _ ih =>
+      intro hlc hpure
+      have hPureAB : PureTmPattern A ∧ PureTmPattern B := pure_sigma_inv hpure
+      exact .congSigma L (.refl _ hPureAB.1) (fun x hx => by
+        have hOpenPure : PureTmPattern (openBVar 0 (.fvar x) B) := pureTm_openBVar_fvar x hPureAB.2
         have hlcOpen := Mettapedia.OSLF.MeTTaIL.Substitution.lc_at_openBVar_result
           (by simp only [mkSigma, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2)
           (by simp [lc_at] : lc_at 0 (.fvar x) = true)
-        exact ih x hx hlcOpen)
-  | congIdType _ ih =>
-      exact .congId (ih (by simp only [mkId, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1)) (.refl _) (.refl _)
-  | congIdLeft _ ih =>
-      exact .congId (.refl _) (ih (by simp only [mkId, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2.1)) (.refl _)
-  | congIdRight _ ih =>
-      exact .congId (.refl _) (.refl _) (ih (by simp only [mkId, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2.2))
-  | congLam L _ _ _ ih =>
+        exact ih x hx hlcOpen hOpenPure)
+  | @congIdType A A' a b _ ih =>
+      intro hlc hpure
+      have hPureId : PureTmPattern A ∧ PureTmPattern a ∧ PureTmPattern b := pure_id_inv hpure
+      exact .congId
+        (ih (by simp only [mkId, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1) hPureId.1)
+        (.refl _ hPureId.2.1)
+        (.refl _ hPureId.2.2)
+  | @congIdLeft a a' A b _ ih =>
+      intro hlc hpure
+      have hPureId : PureTmPattern A ∧ PureTmPattern a ∧ PureTmPattern b := pure_id_inv hpure
+      exact .congId
+        (.refl _ hPureId.1)
+        (ih (by simp only [mkId, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2.1) hPureId.2.1)
+        (.refl _ hPureId.2.2)
+  | @congIdRight b b' A a _ ih =>
+      intro hlc hpure
+      have hPureId : PureTmPattern A ∧ PureTmPattern a ∧ PureTmPattern b := pure_id_inv hpure
+      exact .congId
+        (.refl _ hPureId.1)
+        (.refl _ hPureId.2.1)
+        (ih (by simp only [mkId, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2.2) hPureId.2.2)
+  | congLam L body body' _ ih =>
+      intro hlc hpure
       exact .congLam L (fun x hx => by
+        have hPureBody : PureTmPattern body := pure_lam_inv hpure
+        have hOpenPure : PureTmPattern (openBVar 0 (.fvar x) body) := pureTm_openBVar_fvar x hPureBody
         have hlcOpen := Mettapedia.OSLF.MeTTaIL.Substitution.lc_at_openBVar_result
           (by simp only [mkLam, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc)
           (by simp [lc_at] : lc_at 0 (.fvar x) = true)
-        exact ih x hx hlcOpen)
-  | congAppFun _ ih =>
-      exact .congApp (ih (by simp only [mkApp, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1)) (.refl _)
-  | congAppArg _ ih =>
-      exact .congApp (.refl _) (ih (by simp only [mkApp, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2))
-  | congPairFst _ ih =>
-      exact .congPair (ih (by simp only [mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1)) (.refl _)
-  | congPairSnd _ ih =>
-      exact .congPair (.refl _) (ih (by simp only [mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2))
+        exact ih x hx hlcOpen hOpenPure)
+  | @congAppFun f f' a _ ih =>
+      intro hlc hpure
+      have hPureApp : PureTmPattern f ∧ PureTmPattern a := pure_app_inv hpure
+      exact .congApp
+        (ih (by simp only [mkApp, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1) hPureApp.1)
+        (.refl _ hPureApp.2)
+  | @congAppArg a a' f _ ih =>
+      intro hlc hpure
+      have hPureApp : PureTmPattern f ∧ PureTmPattern a := pure_app_inv hpure
+      exact .congApp
+        (.refl _ hPureApp.1)
+        (ih (by simp only [mkApp, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2) hPureApp.2)
+  | @congPairFst a a' b _ ih =>
+      intro hlc hpure
+      have hPurePair : PureTmPattern a ∧ PureTmPattern b := pure_pair_inv hpure
+      exact .congPair
+        (ih (by simp only [mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1) hPurePair.1)
+        (.refl _ hPurePair.2)
+  | @congPairSnd b b' a _ ih =>
+      intro hlc hpure
+      have hPurePair : PureTmPattern a ∧ PureTmPattern b := pure_pair_inv hpure
+      exact .congPair
+        (.refl _ hPurePair.1)
+        (ih (by simp only [mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.2) hPurePair.2)
   | congFst _ ih =>
-      exact .congFst (ih (by simp only [mkFst, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc))
+      intro hlc hpure
+      exact .congFst (ih (by simp only [mkFst, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc) (pure_fst_inv hpure))
   | congSnd _ ih =>
-      exact .congSnd (ih (by simp only [mkSnd, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc))
+      intro hlc hpure
+      exact .congSnd (ih (by simp only [mkSnd, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc) (pure_snd_inv hpure))
   | congRefl _ ih =>
-      exact .congRefl (ih (by simp only [mkRefl, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc))
+      intro hlc hpure
+      exact .congRefl (ih (by simp only [mkRefl, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc) (pure_refl_inv hpure))
 
 -- Note: PureReducesStar_implies_PureConv is in FVarSubst.lean (needs pureReduces_preserves_lc)
 

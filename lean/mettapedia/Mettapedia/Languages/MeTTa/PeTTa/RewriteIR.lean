@@ -1,5 +1,6 @@
 import MeTTailCore
 import Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
+import Mettapedia.Languages.MeTTa.PeTTa.ScopeContract
 import Mettapedia.Languages.MeTTa.PeTTa.TransitionSpec
 import Mettapedia.Languages.MeTTa.PeTTa.RewriteIRV2
 import Mettapedia.OSLF.MeTTaIL.Substitution
@@ -18,6 +19,7 @@ open MeTTailCore.MeTTaIL.RewriteIR
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
+open Mettapedia.Languages.MeTTa.PeTTa.ScopeContract
 open Mettapedia.Languages.MeTTa.PeTTa.TransitionSpec
 open Mettapedia.Languages.MeTTa.PeTTa
 
@@ -60,11 +62,11 @@ private def premiseRelations (rw : RewriteRule) : List String :=
 
 private def premiseVars : Premise → List String
   | .freshness fc =>
-      orderedUniq (fc.varName :: freeVars fc.term)
+      orderedUniq (fc.varName :: orderedScopedFreeVars fc.term)
   | .congruence lhs rhs =>
-      orderedUniq (freeVars lhs ++ freeVars rhs)
+      orderedUniq (orderedScopedFreeVars lhs ++ orderedScopedFreeVars rhs)
   | .relationQuery _ args =>
-      orderedUniq (args.flatMap freeVars)
+      orderedUniq (args.flatMap orderedScopedFreeVars)
 
 private def premiseVarFlowAux
     (seen : List String) (idx : Nat) :
@@ -82,6 +84,35 @@ private def derivePremiseVarFlow
     (lhsVars : List String) (premises : List Premise) :
     List MeTTailCore.MeTTaIL.RewriteIRV2.PremiseVarFlow :=
   premiseVarFlowAux lhsVars 0 premises
+
+private def rhsMissingVars
+    (lhsVars : List String)
+    (premiseVarFlow : List MeTTailCore.MeTTaIL.RewriteIRV2.PremiseVarFlow)
+    (rhsVars : List String) : List String :=
+  let available := orderedUniq (lhsVars ++ premiseVarFlow.flatMap (·.introducedVars))
+  orderedUniq (rhsVars.filter (fun x => !(available.contains x)))
+
+/--
+Split RHS vars that are still missing after the ordinary lhs/premise flow.
+
+For premise-free rewrites, the runtime dispatch semantics can still emit a
+symbolic RHS when free vars remain after substitution: ordinary rule
+enumeration goes through `evalForRuleEnumeration`, and compat-head rewrites use
+the same "emit symbolic term if free vars remain" discipline in
+`compatFunctionHeadRewrite`.
+
+Premise-bearing rewrites stay conservative for now: if a RHS var is still
+missing after lhs/premise-introduced flow, we export it as requiring eager
+binding rather than guessing symbolic-output support that Rust/MM2 does not yet
+realize generally.
+-/
+private def splitRhsVarObligations
+    (premises : List Premise) (rhsMissing : List String) :
+    List String × List String :=
+  if premises.isEmpty then
+    (rhsMissing, [])
+  else
+    ([], rhsMissing)
 
 private def rootUpdateHint? :
     Pattern → Pattern → Option MeTTailCore.MeTTaIL.RewriteIRV2.RootUpdateHint
@@ -118,6 +149,33 @@ private def ruleModeOf
   else
     .symbolicOutput
 
+private def deriveRule (rw : RewriteRule) (idx : Nat) : DerivedRule :=
+  let key := sourceKeyOfPattern rw.left
+  let premJsonList := rw.premises.map Premise.renderJson
+  let lhsVars := orderedUniq (orderedScopedFreeVars rw.left)
+  let premiseVarFlow := derivePremiseVarFlow lhsVars rw.premises
+  let rhsVars := orderedUniq (orderedScopedFreeVars rw.right)
+  let rhsMissing := rhsMissingVars lhsVars premiseVarFlow rhsVars
+  let (rhsFreshVars, rhsEvalRequires) := splitRhsVarObligations rw.premises rhsMissing
+  { ruleId := s!"R{idx}"
+    ruleName := rw.name
+    sourceInstr := sourceInstrOfKey key
+    sourceLabel := sourceLabelOfKey key
+    priority := idx
+    leftRepr := reprStr rw.left
+    rightRepr := reprStr rw.right
+    premiseRelations := premiseRelations rw
+    lhsJson := rw.left.renderJson
+    rhsJson := rw.right.renderJson
+    premisesJson := "[" ++ String.intercalate "," premJsonList ++ "]"
+    lhsVars := lhsVars
+    premiseVarFlow := premiseVarFlow
+    rhsVars := rhsVars
+    rhsFreshVars := rhsFreshVars
+    rhsEvalRequires := rhsEvalRequires
+    ruleMode := ruleModeOf rw.left rhsFreshVars
+    rootUpdate := rootUpdateHint? rw.left rw.right }
+
 private def foldRewriteRules
     (rules : List RewriteRule)
     (idx : Nat)
@@ -125,36 +183,7 @@ private def foldRewriteRules
   match rules with
   | [] => acc
   | rw :: rest =>
-      let key := sourceKeyOfPattern rw.left
-      let premJsonList := rw.premises.map Premise.renderJson
-      let lhsVars := orderedUniq (freeVars rw.left)
-      let premiseVarFlow := derivePremiseVarFlow lhsVars rw.premises
-      let available := orderedUniq (lhsVars ++ premiseVarFlow.flatMap (·.introducedVars))
-      let rhsVars := orderedUniq (freeVars rw.right)
-      let rhsEvalRequires := orderedUniq (rhsVars.filter (fun x => !(available.contains x)))
-      let rhsFreshVars :=
-        if rw.premises.isEmpty then
-          rhsEvalRequires
-        else
-          []
-      let next := acc ++ [{ ruleId := s!"R{idx}"
-                            ruleName := rw.name
-                            sourceInstr := sourceInstrOfKey key
-                            sourceLabel := sourceLabelOfKey key
-                            priority := idx
-                            leftRepr := reprStr rw.left
-                            rightRepr := reprStr rw.right
-                            premiseRelations := premiseRelations rw
-                            lhsJson := rw.left.renderJson
-                            rhsJson := rw.right.renderJson
-                            premisesJson := "[" ++ String.intercalate "," premJsonList ++ "]"
-                            lhsVars := lhsVars
-                            premiseVarFlow := premiseVarFlow
-                            rhsVars := rhsVars
-                            rhsFreshVars := rhsFreshVars
-                            rhsEvalRequires := if rw.premises.isEmpty then [] else rhsEvalRequires
-                            ruleMode := ruleModeOf rw.left rhsFreshVars
-                            rootUpdate := rootUpdateHint? rw.left rw.right }]
+      let next := acc ++ [deriveRule rw idx]
       foldRewriteRules rest (idx + 1) next
 
 private theorem foldRewriteRules_length
@@ -164,46 +193,7 @@ private theorem foldRewriteRules_length
   | nil =>
       simp [foldRewriteRules]
   | cons rw rest ih =>
-      let next :=
-        acc ++ [{
-          ruleId := s!"R{idx}"
-          ruleName := rw.name
-          sourceInstr := sourceInstrOfKey (sourceKeyOfPattern rw.left)
-          sourceLabel := sourceLabelOfKey (sourceKeyOfPattern rw.left)
-          priority := idx
-          leftRepr := reprStr rw.left
-          rightRepr := reprStr rw.right
-          premiseRelations := premiseRelations rw
-          lhsJson := rw.left.renderJson
-          rhsJson := rw.right.renderJson
-          premisesJson := "[" ++ String.intercalate "," (rw.premises.map Premise.renderJson) ++ "]"
-          lhsVars := orderedUniq (freeVars rw.left)
-          premiseVarFlow := derivePremiseVarFlow (orderedUniq (freeVars rw.left)) rw.premises
-          rhsVars := orderedUniq (freeVars rw.right)
-          rhsFreshVars :=
-            let lhsVars := orderedUniq (freeVars rw.left)
-            let premiseVarFlow := derivePremiseVarFlow lhsVars rw.premises
-            let available := orderedUniq (lhsVars ++ premiseVarFlow.flatMap (·.introducedVars))
-            let rhsMissing :=
-              orderedUniq ((orderedUniq (freeVars rw.right)).filter (fun x => !(available.contains x)))
-            if rw.premises.isEmpty then rhsMissing else []
-          rhsEvalRequires :=
-            let lhsVars := orderedUniq (freeVars rw.left)
-            let premiseVarFlow := derivePremiseVarFlow lhsVars rw.premises
-            let available := orderedUniq (lhsVars ++ premiseVarFlow.flatMap (·.introducedVars))
-            let rhsMissing :=
-              orderedUniq ((orderedUniq (freeVars rw.right)).filter (fun x => !(available.contains x)))
-            if rw.premises.isEmpty then [] else rhsMissing
-          ruleMode :=
-            let lhsVars := orderedUniq (freeVars rw.left)
-            let premiseVarFlow := derivePremiseVarFlow lhsVars rw.premises
-            let available := orderedUniq (lhsVars ++ premiseVarFlow.flatMap (·.introducedVars))
-            let rhsMissing :=
-              orderedUniq ((orderedUniq (freeVars rw.right)).filter (fun x => !(available.contains x)))
-            let rhsFreshVars := if rw.premises.isEmpty then rhsMissing else []
-            ruleModeOf rw.left rhsFreshVars
-          rootUpdate := rootUpdateHint? rw.left rw.right
-        }]
+      let next := acc ++ [deriveRule rw idx]
       have hnext : (foldRewriteRules rest (idx + 1) next).length = next.length + rest.length :=
         ih (idx + 1) next
       calc
@@ -237,8 +227,6 @@ private def toArtifactRule (r : DerivedRule) : RewriteIRRule :=
 def derivePeTTaRewriteIR? (s : PeTTaSpace) : Except String RewriteIRArtifact := do
   let lang := pettaSpaceToLangDef s
   let derived := foldRewriteRules lang.rewrites 0 []
-  if derived.isEmpty then
-    throw "PeTTa rewrite-ir derivation failed: space has no rewrite rules"
   let artifact : RewriteIRArtifact :=
     { schemaVersion := 2
       dialect := "petta"
@@ -309,5 +297,60 @@ def sampleDerivationIsOk : Bool :=
   | .error _ => false
 
 #guard sampleDerivationIsOk = true
+
+private def symbolicOutputSampleSpace : PeTTaSpace :=
+  { facts := []
+    rules :=
+      [{ name := "tail_rule"
+         typeContext := []
+         premises := []
+         left := .apply "tail" [.fvar "xs"]
+         right := .apply "cons" [.fvar "x", .fvar "xs"] }] }
+
+def symbolicOutputSampleDerivationIsOk : Bool :=
+  match derivePeTTaRewriteIR? symbolicOutputSampleSpace with
+  | .ok artifact =>
+      match artifact.rules with
+      | [rule] =>
+          rule.rhsFreshVars = ["x"] &&
+          rule.rhsEvalRequires = [] &&
+          rule.ruleMode = .symbolicOutput
+      | _ => false
+  | .error _ => false
+
+#guard symbolicOutputSampleDerivationIsOk = true
+
+private def compatHeadSampleSpace : PeTTaSpace :=
+  { facts := []
+    rules :=
+      [{ name := "use_wrap"
+         typeContext := []
+         premises := []
+         left := .apply "use" [.apply "mk" [.fvar "x"], .fvar "y"]
+         right := .apply "pair" [.fvar "x", .fvar "y"] }] }
+
+def compatHeadSampleDerivationIsOk : Bool :=
+  match derivePeTTaRewriteIR? compatHeadSampleSpace with
+  | .ok artifact =>
+      match artifact.rules with
+      | [rule] =>
+          rule.rhsFreshVars = [] &&
+          rule.rhsEvalRequires = [] &&
+          rule.ruleMode = .compatHead
+      | _ => false
+  | .error _ => false
+
+#guard compatHeadSampleDerivationIsOk = true
+
+private def emptySampleSpace : PeTTaSpace :=
+  { facts := []
+    rules := [] }
+
+def emptySampleDerivationIsOk : Bool :=
+  match derivePeTTaRewriteIR? emptySampleSpace with
+  | .ok artifact => artifact.rules = []
+  | .error _ => false
+
+#guard emptySampleDerivationIsOk = true
 
 end Mettapedia.Languages.MeTTa.PeTTa.RewriteIR

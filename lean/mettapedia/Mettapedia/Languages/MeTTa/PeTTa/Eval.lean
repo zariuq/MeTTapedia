@@ -147,16 +147,27 @@ theorem petta_eval_spaceQuery_correct (s : PeTTaSpace) (pat tmpl : Pattern) :
     PeTTaEval s (.apply "match" [.apply "&self" [], pat, tmpl]) (s.spaceMatch pat tmpl) :=
   PeTTaEval.spaceQuery pat tmpl _ rfl
 
+/-- `collapse` composed with the certified `match &self` query returns the
+singleton collection of all `spaceMatch` answers.
+
+This is the first direct theorem for the next widening target:
+query composition under the existing `collapse` aggregation lane. -/
+theorem petta_eval_collapse_spaceQuery (s : PeTTaSpace) (pat tmpl : Pattern) :
+    PeTTaEval s
+      (.apply "collapse" [.apply "match" [.apply "&self" [], pat, tmpl]])
+      [.collection .vec (s.spaceMatch pat tmpl) none] :=
+  PeTTaEval.collapse _ _ (petta_eval_spaceQuery_correct s pat tmpl)
+
 /-! ## Monotonicity for spaceMatch -/
 
-/-- **spaceMatch monotone in facts**: adding a fact only adds answers to spaceMatch.
+/-- **spaceMatch monotone in facts**: adding an ordinary fact only adds answers to `spaceMatch`.
     This is stated directly on `spaceMatch` (which is a function, not an inductive). -/
 theorem spaceMatch_mono_addAtom (s : PeTTaSpace) (pat tmpl : Pattern) (newFact : Pattern) :
     ∀ q ∈ s.spaceMatch pat tmpl, q ∈ (s.addAtom newFact).spaceMatch pat tmpl := by
   intro q hq
   rw [PeTTaSpace.mem_spaceMatch] at hq ⊢
-  obtain ⟨fact, hfact, bs, hbs, heq⟩ := hq
-  exact ⟨fact, PeTTaSpace.mem_facts_addAtom hfact, bs, hbs, heq⟩
+  obtain ⟨atom, hatom, bs, hbs, heq⟩ := hq
+  exact ⟨atom, PeTTaSpace.mem_storedAtoms_addAtom hatom, bs, hbs, heq⟩
 
 /-! ## Summary
 

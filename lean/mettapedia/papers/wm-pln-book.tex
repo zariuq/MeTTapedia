@@ -2696,8 +2696,8 @@ side-condition context $\Sigma$:
 \toprule
 Benchmark & Domain & Primary artifact & What the variables mean & Why we use it here \\
 \midrule
-Pathfinder & Lymph-node pathology diagnosis & A hand-built Bayesian network with expert CPTs and a disease-class root (\code{Fault}) & One latent diagnosis plus many coded pathology findings in the benchmark release & Hidden-context stress test: can proof-carrying contractions survive when crucial diagnostic context is omitted? \\
 Hailfinder & Severe summer hail forecasting in northeastern Colorado & A hand-built Bayesian weather-forecast BN with expert CPTs; \code{hailfinder.csv} is secondary to \code{hailfinder.bif} & Meteorological conditions, scenario summaries, and forecast targets & Readable positive lane: exact local chaining still works on a real forecast network. \\
+Pathfinder & Lymph-node pathology diagnosis & A hand-built Bayesian network with expert CPTs and a disease-class root (\code{Fault}) & One latent diagnosis plus many coded pathology findings in the benchmark release & Hidden-context stress test: can proof-carrying contractions survive when crucial diagnostic context is omitted? \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1}
@@ -2741,63 +2741,27 @@ trigger logic, but it is not automatically the semantic posterior. \\
 \end{minipage}}
 \end{center}
 
-\paragraph{Pathfinder.}
-Pathfinder is the stronger context-heavy benchmark.  In the selected
-motifs, \code{Fault} is the latent disease hypothesis and the
-\code{F\ldots} variables are benchmark-coded pathology findings from the
-network file.
-\par
-\begin{table}[ht]
-\centering
-\footnotesize
-\renewcommand{\arraystretch}{1.03}
-\begin{tabular}{@{}p{0.17\textwidth}p{0.17\textwidth}p{0.24\textwidth}p{0.30\textwidth}@{}}
-\toprule
-Network & Variable & Reader gloss & Role in the selected motifs \\
-\midrule
-Pathfinder & \code{Fault} & Latent disease hypothesis / diagnosis class & The hidden diagnostic context that often has to stay in $\Sigma$. \\
-Pathfinder & \code{F3}, \code{F4}, \code{F103} & Benchmark-coded observed pathology clues & Upstream evidence nodes in the selected fork and long-path motifs. \\
-Pathfinder & \code{F97}, \code{F105} & Benchmark-coded intermediate pathology factors & Intermediate shared nodes through which the admissible contraction travels. \\
-Pathfinder & \code{F101}, \code{F102}, \code{F104} & Benchmark-coded downstream pathology targets & Queried consequences used to test exactness and hidden-context sensitivity. \\
-Hailfinder & \code{AMInstabMt}, \code{InsInMt}, \code{MountainFcst} & Morning mountain instability, mountain instability, mountain forecast & The clean local forecast-update chain. \\
-Hailfinder & \code{CldShadeOth}, \code{AreaMesoALS}, \code{CompPlFcst}, \code{CapChange} & Cloud shading, mesoscale-area summary, composite plains forecast, capping change & The longer readable forecast/update path. \\
-Hailfinder & \code{AMCINInScen}, \code{CapInScen} & Scenario-specific convective inhibition and cap state & The collider-style negative boundary. \\
-\bottomrule
-\end{tabular}
-\renewcommand{\arraystretch}{1}
-\caption{Mini glossary for the variables actually used in the current benchmark motifs.  Pathfinder keeps the compact benchmark coding from the released network; Hailfinder uses more readable meteorological names.}
-\label{tab:bn-benchmark-motif-glossary}
-\end{table}
+\paragraph{Task framing.}
+Methodologically, the real question is no longer merely ``can we
+classify admissibility?''  It is \emph{topology-conditioned
+latent-context inference control}: given a source condition and a target
+query inside a declared BN truthmaker, should the controller continue by
+exact rewrite, softened continuation, bounded continuation, context
+reveal, local exact fallback, or abstention?  Topology matters because
+it tells us which kinds of approximation assumptions are likely to
+survive transport through the graph and which are likely to fail.
+Hailfinder is the readable positive lane for this task.  Pathfinder is
+the hostile hidden-context lane.
 
-In the selected
-fork motif, keeping \code{Fault} explicit in $\Sigma$ yields an exact
-hard-gated contraction:
-\[
-\begin{aligned}
-P(F104{=}\code{x\_50} \mid {}&F103{=}\code{Almost\_all\_poor\_def}, \\
-  &\code{Fault}{=}\code{T\_immunob\_lrg}) = 0.4.
-\end{aligned}
-\]
-But if the same motif is evaluated in the \emph{context-missing} regime,
-with \code{Fault} omitted from $\Sigma$, the exact semantic answer drops
-to $0.14998\ldots$, and the hard gate blocks.  The bounded mode then
-returns the rule estimate
-$0.31236\ldots$ together with the certified interval
-$[0.14998\ldots, 0.47474\ldots]$, while the soft-gated operational layer
-returns $0.28599\ldots$ with explicit fallback to the exact semantic
-query.  This is the intended result: Pathfinder does not show that
-``free PLN chaining works'' on a large medical BN; it shows that
-carried $\Sigma$ is necessary, and that context-erasing contractions
-must be blocked or degraded gracefully.
-
-\paragraph{Hailfinder.}
+\paragraph{Hailfinder first: readable exact contraction.}
 Hailfinder is the cleaner forecasting-structured benchmark.  The exact
 variables are meteorological conditions and forecast targets, so the
 benchmark reads like an actual forecast/update chain rather than an
-opaque medical codebook.
+opaque medical codebook.  This is the best first example for readers:
+it teaches what a proof-carrying local contraction looks like before the
+topology becomes adversarial.
 \par
-The exact
-forecast chain
+The exact forecast chain
 \[
   P(\code{MountainFcst}{=}\code{SIG} \mid
     \code{AMInstabMt}{=}\code{Strong}) = 0.5
@@ -2816,6 +2780,73 @@ explicit operational mixture with semantic fallback.  So Hailfinder says
 there is still a real exact forecasting-style chaining fragment, while
 the blocked cases preserve the ``yes, but not everywhere'' boundary.
 
+\paragraph{Pathfinder next: the same calculus under hostile topology.}
+Pathfinder is the stronger context-heavy benchmark.  In the current BIF
+release it has $109$ nodes and $195$ arcs; \code{Fault} has $63$ states
+and $106$ outgoing children, and $56$ nodes have multiple parents.  So
+omitted context is not a side issue here.  It is the main structural
+fact of the dataset.  In the selected motifs, \code{Fault} is the latent
+disease hypothesis and the \code{F\ldots} variables are benchmark-coded
+pathology findings from the network file.  For exposition, it is often
+better to read the main fork/chain path as
+\textit{observation $\rightarrow$ bridge $\rightarrow$ downstream
+consequence}, with the actual BN names supplied by
+Table~\ref{tab:bn-benchmark-motif-glossary}.
+\par
+The main Pathfinder stress question is therefore not ``does local
+chaining ever work?'' but ``what happens to the same local contraction
+when hidden diagnostic context is omitted, partially restored, or
+completed?''  In the widened suite the same path family is explicitly
+tracked across five regime types:
+\emph{context-missing}, \emph{alt-support-only}, \emph{hub-only},
+\emph{context-pair}, and \emph{oracle-context-complete}.  That is the
+second-order object in practice: uncertainty over which
+context/admissibility regime the step is really in.
+\par
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.03}
+\begin{tabular}{@{}p{0.17\textwidth}p{0.17\textwidth}p{0.24\textwidth}p{0.30\textwidth}@{}}
+\toprule
+Network & Variable & Reader gloss & Role in the selected motifs \\
+\midrule
+Hailfinder & \code{AMInstabMt}, \code{InsInMt}, \code{MountainFcst} & Morning mountain instability, mountain instability, mountain forecast & The clean local forecast-update chain. \\
+Hailfinder & \code{CldShadeOth}, \code{AreaMesoALS}, \code{CompPlFcst}, \code{CapChange} & Cloud shading, mesoscale-area summary, composite plains forecast, capping change & The longer readable forecast/update path. \\
+Hailfinder & \code{AMCINInScen}, \code{CapInScen} & Scenario-specific convective inhibition and cap state & The collider-style negative boundary. \\
+Pathfinder & \code{Fault} & Latent disease hypothesis / diagnosis class & The hidden diagnostic context that often has to stay in $\Sigma$. \\
+Pathfinder & \code{F3}, \code{F4}, \code{F103} & Benchmark-coded observed pathology clues & Upstream evidence nodes in the selected fork and long-path motifs. \\
+Pathfinder & \code{F97}, \code{F105} & Benchmark-coded intermediate pathology factors & Intermediate shared nodes through which the admissible contraction travels. \\
+Pathfinder & \code{F101}, \code{F102}, \code{F104} & Benchmark-coded downstream pathology targets & Queried consequences used to test exactness and hidden-context sensitivity. \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1}
+\caption{Mini glossary for the variables actually used in the current benchmark motifs.  Pathfinder keeps the compact benchmark coding from the released network; Hailfinder uses more readable meteorological names.}
+\label{tab:bn-benchmark-motif-glossary}
+\end{table}
+
+In the selected fork motif, keeping \code{Fault} explicit in $\Sigma$
+yields an exact
+hard-gated contraction:
+\[
+\begin{aligned}
+P(F104{=}\code{x\_50} \mid {}&F103{=}\code{Almost\_all\_poor\_def}, \\
+  &\code{Fault}{=}\code{T\_immunob\_lrg}) = 0.4.
+\end{aligned}
+\]
+But if the same motif is evaluated in the \emph{context-missing} regime,
+with \code{Fault} omitted from $\Sigma$, the exact semantic answer drops
+to $0.14998\ldots$, and the hard gate blocks.  The bounded mode then
+returns the rule estimate
+$0.31236\ldots$ together with the certified interval
+$[0.14998\ldots, 0.47474\ldots]$, while the soft-gated operational layer
+returns $0.28599\ldots$ with explicit fallback to the exact semantic
+query.  This is the intended result: Pathfinder does not show that
+``free PLN chaining works'' on a large medical BN; it shows that
+proof-carrying local contraction survives only when the hidden
+diagnostic context is carried, and that context-erasing contractions
+must be blocked or degraded gracefully.
+
 \begin{table}[ht]
 \centering
 \footnotesize
@@ -2824,15 +2855,6 @@ the blocked cases preserve the ``yes, but not everywhere'' boundary.
 \toprule
 Case & Exact BN & Guarded output & Why it matters \\
 \midrule
-Pathfinder context-complete fork &
-$0.400$ &
-Hard fires.\par Bounded $\delta = 0$.\par Soft $g = 1$. &
-When \code{Fault} stays in $\Sigma$, PLN-style contraction is exact. \\
-Pathfinder context-missing fork &
-$0.150$ &
-Hard blocks.\par Bounded $0.312$ in $[0.150, 0.475]$.\par Soft $0.286$. &
-Omitting \code{Fault} changes the answer sharply; carried context is
-necessary. \\
 Hailfinder exact forecast chain &
 $0.500$ &
 Hard fires.\par Bounded $\delta = 0$.\par Soft $g = 1$. &
@@ -2843,12 +2865,323 @@ $0.236$ &
 Hard blocks.\par Bounded $0.258$ in $[0.236, 0.280]$.\par Soft $0.257$. &
 The guarded layer preserves the no-free-abduction boundary even in the
 forecasting BN. \\
+Pathfinder context-complete fork &
+$0.400$ &
+Hard fires.\par Bounded $\delta = 0$.\par Soft $g = 1$. &
+When \code{Fault} stays in $\Sigma$, PLN-style contraction is exact. \\
+Pathfinder context-missing fork &
+$0.150$ &
+Hard blocks.\par Bounded $0.312$ in $[0.150, 0.475]$.\par Soft $0.286$. &
+Omitting \code{Fault} changes the answer sharply; carried context is
+necessary. \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1}
 \caption{Compact guarded-admissibility summary for the current real BN benchmarks.  Exact BN semantics remains the truthmaker in every row.}
 \label{tab:prob-guarded-benchmark-summary}
 \end{table}
+
+The next question is why adventurous continuation sometimes wins the
+original broad Pathfinder task and sometimes does not.  Here the most
+useful abstraction is no longer a single guard score.  It is a
+topology-conditioned latent-context controller.  Let $C$ denote
+unresolved hidden context, typically including \code{Fault} and, in some
+paths, an auxiliary support variable.  Before any reveal action, the
+target is the broad query $P(Q \mid E)$.  After revealing one context
+value $c$, the target becomes the refined query $P(Q \mid E, C{=}c)$.
+These are different tasks.  Exact reveal wins the refined task because
+it conditions on the right branch explicitly.  But it need not minimize
+error against the original broad task, because the broad query
+marginalizes over the still unresolved context:
+\[
+  P(Q \mid E) = \sum_c P(Q \mid E, C{=}c)\,P(C{=}c \mid E).
+\]
+A controlled soft continuation,
+\[
+  \hat p_{\mathrm{soft}} =
+  g\,p_{\mathrm{rule}} + (1-g)\,p_{\mathrm{fallback}},
+\]
+can therefore be a better \emph{operational} estimator for the original
+broad query than prematurely collapsing onto a single revealed branch,
+even though we do not yet claim that the current learned $g$ is itself
+the semantic posterior.  But the widened Pathfinder suite shows that
+this is not universal.  The topology label is precisely what tells us
+which approximation assumptions are more or less plausible.  In
+hub-dominated cases, omitted-context mass is often concentrated around
+one dominant diagnostic direction, so direct continuation can stay close
+to the unresolved broad marginal.  In loopy-dense or partial-support
+cases, several live alternatives can remain active, and then softened or
+marginalization-aware continuation becomes more attractive.  So the
+current benchmark-side explanation is already informative: topology is
+not a decorative covariate but a guide to which kinds of assumptions do
+or do not transport well.  The new point is that the finite
+regime-mixture layer is now theorem-backed in Lean, in
+\code{PLNRegimeMixtureTheorems.lean},
+\code{PLNRegimeMixtureBenchmarkBridge.lean},
+\code{PLNWorldModelRegimeAdmissibility.lean}, and
+\code{PLNProbHOLPlannerBridge.lean}.  If $R$ is a finite regime space,
+$w_r$ are posterior regime weights, and $q_r$ are branch query values,
+then the unresolved broad-query predictor is
+\[
+  m = \sum_{r \in R} w_r q_r.
+\]
+For any designated branch $r_0$, the direct-continuation approximation
+error obeys the residual-mass bound
+\[
+  |m - q_{r_0}| \le (1 - w_{r_0}) \cdot
+  \max_{r \neq r_0} |q_r - q_{r_0}|.
+\]
+Under squared loss, the constant-predictor risk decomposes as
+\[
+  \sum_{r \in R} w_r (x - q_r)^2
+  = \underbrace{\sum_{r \in R} w_r (m - q_r)^2}_{\text{mixture variance}}
+    + (x - m)^2,
+\]
+so the unresolved mixture predictor $m$ is optimal among constant
+predictors, and exact reveal is preferred once
+\[
+  \text{gain}_{\mathrm{reveal}}
+  = \text{mixture variance} - c_{\mathrm{reveal}} > 0.
+\]
+This is already enough to turn the higher-order direct/soft/reveal split
+into a theoremic finite-regime statement: direct continuation is
+justified when posterior mass concentrates tightly around one branch;
+soft continuation is justified because the mixture predictor minimizes
+unrevealed squared-loss risk; and reveal/context completion is justified
+once value-of-information beats reveal cost.  What remains empirical at
+present is the \emph{topology-conditioned proxy story}: labels such as
+``hub-dominated'' or ``loopy-dense'' are still benchmark-side ways of
+predicting when concentration, spread, and latent support are likely to
+take those theoremically relevant shapes.
+
+\paragraph{Three higher-order claims.}
+The current benchmark supports three proposition-shaped claims that keep
+the semantics/control split clean.
+\begin{enumerate}
+\item \textbf{Objective mismatch under reveal.} Revealing hidden context
+  changes the target from a broad marginalized query to a refined
+  conditional query, so reveal can improve refined fidelity while
+  worsening broad-query utility.
+\item \textbf{Topology-conditioned continuation preference.}
+  Hub-dominated slices often reward direct continuation; partial-support
+  and some loopy-dense slices leave more live alternatives and therefore
+  make softened continuation more competitive.
+\item \textbf{Higher-order flattening at decision time.} Even when
+  admissibility and trust are modeled explicitly, action choice need not
+  recurse through an ever taller explicit tower; it can flatten to
+  expected utility, interval dominance, or abstention at decision time.
+\end{enumerate}
+
+We now make that higher-order split explicit.  The second-order variable
+$G_{\mathrm{step}}$ means ``this local contraction is admissible enough
+in the current structural regime'', so the live second-order object is
+best read as a regime posterior $\pi(r \mid \text{local state})$ over
+hidden-context/admissibility regimes rather than as one free-floating
+confidence scalar.  A third-order trust layer then records how much
+confidence to place in the current model of $G_{\mathrm{step}}$ for the
+present topology/context class.  The point is not infinite regress for
+its own sake, but an explicit separation between object-level belief,
+admissibility belief, and trust in the admissibility model itself.
+Fourth-order and higher concerns are then handled, for the benchmark, as
+flattening or robustness questions rather than as an endlessly explicit
+tower.  In the widened sweep, Hailfinder
+\emph{context-complete} paths have mean third-order meta-trust $0.819$
+with reveal pressure $0.147$, while Pathfinder has meta-trust $0.563$
+with reveal pressure $0.761$ in the \emph{context-missing} regime,
+$0.603/0.545$ in the \emph{alt-support-only} regime,
+$0.764/0.184$ in the \emph{context-pair} regime, and
+$0.798/0.159$ in the \emph{oracle-context-complete} regime.  So the
+planner is not only asking ``can I chain?'' but also ``how much do I
+trust my own admissibility estimate here, in this topology and context
+class?''  In the current architecture these planner-facing
+second-/third-order quantities are intended as empirical control
+shadows of the semantic ProbHOL $\rightarrow$ belief-process
+$\rightarrow$ planner bridge, not as replacement semantics.
+
+\begin{table}[ht]
+\centering
+\scriptsize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}p{0.26\textwidth}p{0.11\textwidth}p{0.12\textwidth}p{0.22\textwidth}p{0.19\textwidth}@{}}
+\toprule
+Regime slice & Meta-trust & Reveal pressure & Best broad-query action & Best refined-query action \\
+\midrule
+Hailfinder forecast chain, context-complete &
+$0.819$ &
+$0.147$ &
+\code{Regime-mixture} / exact chain, MAE $0.0000$. &
+\code{Regime-mixture} / exact chain, MAE $0.0000$. \\
+Pathfinder hub-dominated, context-missing &
+$0.590$ &
+$0.769$ &
+\code{Anchored regime-mixture}, MAE $0.0090$ (one-shot). &
+Context-complete / exact fallback, refined MAE $0.0000$. \\
+Pathfinder hub-dominated, alt-support-only &
+$0.555$ &
+$0.596$ &
+\code{Anchored regime-mixture}, MAE $0.2584$. &
+Context-complete / exact fallback, refined MAE $0.0000$. \\
+Pathfinder loopy-dense, context-missing &
+$0.548$ &
+$0.757$ &
+\code{Anchored regime-mixture}, MAE $0.0489$ (one-shot). &
+Context-complete / exact fallback, refined MAE $0.0000$. \\
+Pathfinder loopy-dense, oracle-context-complete &
+$0.926$ &
+$0.074$ &
+\code{Anchored regime-mixture}, MAE $0.2646$. &
+\code{Rule-only}, refined MAE $0.0087$. \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1}
+\caption{Compact topology-conditioned higher-order split in the widened benchmark sweep.  One-shot broad-query winners are often anchored regime-mixture actions, while refined-query winners still mostly come from explicit context completion or exact fallback.}
+\label{tab:second-third-order-query-split}
+\end{table}
+
+Table~\ref{tab:second-third-order-query-split} also shows why the
+higher-order story is genuinely interesting rather than merely cautious.
+The current benchmark no longer supports the simpler claim that ``soft
+continuation wins the hardest broad-query cases''.  Instead, the better
+statement is now more precise.  After anchoring the explicit
+regime-mixture continuation to the current broad-query branch, the
+strongest \emph{one-shot} broad-query action is often the anchored
+regime-mixture policy, including the widened Pathfinder
+\emph{context-missing} rows.  Mechanistically, the hub-dominated slices
+look like unresolved broad queries whose mass is already concentrated in
+one main diagnostic direction, so a small anchored mixture smooths the
+remaining uncertainty without collapsing to one refined branch.  The
+alt-support and loopy slices keep more hidden-context alternatives live,
+which is why structured regime averaging helps more than blunt
+\code{rule-only} continuation at the one-shot level.  But the stricter
+\emph{higher-order chain-composition} benchmark still leaves several
+multi-step \emph{context-missing} slices to \code{rule-only} chain
+continuation.  So the present result is not ``the planner is solved'',
+but ``the broad/refined objective split is real, the best adventurous
+one-shot action depends on topology and hidden-context regime, and the
+best full-chain action can still be different''.  In this sense,
+topology is functioning as a compact summary of which kinds of
+independence, concentration, and branch-mixing assumptions are likely to
+work in a local region of the graph.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.04}
+\begin{tabular}{@{}p{0.19\textwidth}p{0.19\textwidth}p{0.12\textwidth}p{0.18\textwidth}p{0.24\textwidth}@{}}
+\toprule
+Slice & Best broad one-shot policy & Broad MAE & Best full-chain policy & Main takeaway \\
+\midrule
+Hailfinder forecast chain, context-complete &
+\code{Explicit regime-mixture} &
+$0.0000$ &
+\code{Rule-only} chain (exact) &
+In the clean lane the higher-order controller collapses back to the
+exact fragment. \\
+Pathfinder hub-dominated, context-missing &
+\code{Explicit regime-mixture} &
+$0.0090$ &
+\code{Rule-only} chain &
+Anchored regime averaging helps at the one-shot level, but full
+multi-step composition still prefers blunt continuation. \\
+Pathfinder loopy-dense, context-missing &
+\code{Explicit regime-mixture} &
+$0.0489$ &
+\code{Rule-only} chain &
+One-shot smoothing helps, but loopy full-chain continuation still
+resists a universal adventurous policy. \\
+Pathfinder multi-support revision &
+\code{Base-plus-support revision} &
+$0.0197$ / $0.0854$ &
+-- &
+Combining hub/nonhub/pair supports is the clearest PLN-style positive
+result on the widened suite (hub-dominated / loopy-dense). \\
+Reveal as value of information on Pathfinder context-missing &
+Continue for the broad query &
+$\Delta_{\mathrm{refined}} = +0.715$ / $+0.067$ &
+Reveal only for the refined task &
+Reveal improves refined fidelity, but usually solves the wrong task for
+the original broad query and incurs large broad-query regret. \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1}
+\caption{Stabilized higher-order benchmark takeaways after explicit regime-mixture continuation, PLN-style multi-support revision, reveal-as-value-of-information evaluation, and higher-order chain composition.  The two numbers in the multi-support and VOI rows correspond to the hub-dominated and loopy-dense Pathfinder slices respectively.}
+\label{tab:stabilized-higher-order-benchmark}
+\end{table}
+
+To keep the setup fully auditable, we make the protocol explicit here.
+The pipeline is:
+\code{scripts/wm\_pln\_pathfinder\_context\_regimes.py}
+$\rightarrow$
+\code{scripts/wm\_pln\_second\_order\_admissibility.py}
+$\rightarrow$
+\code{scripts/wm\_pln\_third\_order\_trust.py}
+$\rightarrow$
+\code{scripts/wm\_pln\_regime\_mixture\_eval.py}
+$\rightarrow$
+\code{scripts/wm\_pln\_reveal\_voi\_eval.py}
+$\rightarrow$
+\code{scripts/wm\_pln\_higher\_order\_chain\_composition.py}.
+The corresponding stable artifacts are written under
+\codepath{results/second\_order\_admissibility/}, including
+\code{pathfinder\_context\_regimes.csv},
+\code{second\_order\_admissibility.csv},
+\code{third\_order\_trust\_summary.csv},
+\code{regime\_mixture\_eval\_winners.csv},
+\code{reveal\_voi\_eval\_summary.csv},
+\code{multi\_support\_revision\_summary.csv}, and
+\code{higher\_order\_chain\_composition\_summary.csv}.
+\par
+The one-shot continuation policy set in this pass is
+\code{force\_rule\_only\_continue},
+\code{force\_soft\_continue},
+\code{marginalization\_aware\_soft\_continue},
+\code{explicit\_regime\_mixture\_continue},
+\code{force\_reveal\_context},
+\code{force\_local\_exact\_fallback}, and
+\code{adaptive\_topology\_broad\_planner}.
+The full-chain policy set is
+\code{exact\_only\_chain},
+\code{rule\_only\_chain},
+\code{soft\_chain},
+\code{explicit\_regime\_mixture\_chain},
+\code{reveal\_then\_exact},
+\code{fallback\_chain}, and
+\code{adaptive\_chain}.
+\par
+The scoring function used by the regime-mixture and chain benchmarks is
+\[
+\text{score}
+=
+1
+- 2\cdot \text{primary-error}
+- 0.08\cdot \text{plan-cost}
+- \lambda_{\text{reveal}}\cdot \#\text{reveals},
+\]
+with $\lambda_{\text{reveal}}=0.12$ for broad-query utility,
+$0.04$ for refined-query fidelity, and $0.08$ for the balanced
+objective.  Action-cost parameters are
+\[
+\begin{aligned}
+\text{hard} &= 0.8 + 0.6\cdot \text{edges},\\
+\text{guarded} &= 0.6 + 0.4\cdot \text{edges},\\
+\text{fallback} &= 2.0 + 0.8\cdot \text{edges},\\
+\text{reveal} &= 0.7\cdot \#\text{missing-required-context-vars}.
+\end{aligned}
+\]
+\par
+Pathfinder topology labels are assigned directly from local graph
+statistics in the benchmark scripts:
+\emph{hub-dominated} if \code{Fault} is on-path or max node degree
+$\ge 50$; \emph{loopy-dense} if downstream multi-parent count $\ge 2$ or
+mean local branching $\ge 4$.
+The widened Pathfinder suite in this pass is $16$ path families
+($4$ anchors + $12$ discovered) and $77$ regime rows
+($16$ context-missing, $16$ hub-only, $16$ alt-support-only,
+$16$ oracle-context-complete, $13$ context-pair).  Importantly, those
+$12$ discovered paths come from a deterministic curated shortlist in
+\code{wm\_pln\_pathfinder\_context\_regimes.py}; this is substantially
+wider than the original four-path slice, but it is still not an
+exhaustive Pathfinder crawl.
 
 The guard-model sweep now adds broader motif coverage and a calibrated
 cross-network control layer.  The current dataset has $207$ evaluated
@@ -2921,6 +3254,182 @@ comparison against the truthmaker, and where it is merely operational.
 \codepath{Mettapedia/Logic/PLNProbGuardedAdmissibilityRegression.lean}
 \end{minipage}}
 \end{center}
+
+\subsection{Hetionet / Rephetio: the next flagship benchmark}
+
+At this point the project has three ingredients in place.  First, the
+Pathfinder/Hailfinder lane already gives us a real small-to-medium
+benchmark story for exact contraction, guarded continuation, reveal as
+value of information, multi-support revision, and higher-order chain
+composition.  Second, Chapter~11 now exposes the semantic
+ProbHOL $\rightarrow$ belief-process $\rightarrow$ planner-shadow bridge
+as the canonical waist of the architecture.  Third, we now have a
+concrete large-scale benchmark candidate in hand: the Hetionet /
+Rephetio drug-repurposing stack.\cite{Himmelstein2017Rephetio,DhimmelHetioRepData}
+The motive for moving there is simple.  Hetionet is large, typed,
+path-rich, and explanation-oriented, so it is a better stress test of
+higher-order chaining than another toy relational dataset.  It is also
+already rich enough that there is no single clean leaderboard; instead
+there is a cluster of benchmark traditions with different task
+definitions, path semantics, explanation targets, and reproducibility
+caveats.\cite{Liu2021NeuralMultiHopBioKG,Jimenez2024XG4Repo,Himmelstein2022HetnetConnectivity,Nunes2024RExDrugRepurposing,Bonner2022KGEDrugDiscovery,PerdomoQuinteiro2024KGDrugRepurposingReview,KGScopingReview2025DrugRepurposing}
+
+\begin{table}[ht]
+\centering
+\scriptsize
+\renewcommand{\arraystretch}{1.02}
+\begin{tabular}{@{}p{0.18\textwidth}p{0.22\textwidth}p{0.20\textwidth}p{0.25\textwidth}@{}}
+\toprule
+Paper & Role for this project & What it contributes & Main caution \\
+\midrule
+Rephetio / Hetionet \cite{Himmelstein2017Rephetio} &
+Canonical benchmark definition &
+Defines the graph, the \code{Compound-treats-Disease} target, and the
+metapath / DWPC setup. &
+Original setup is not itself a higher-order control benchmark. \\
+PoLo-style logical multi-hop \cite{Liu2021NeuralMultiHopBioKG} &
+Closest chaining comparator &
+Shows that typed logical multi-hop reasoning on biomedical KGs is a real
+comparison class. &
+Not the same semantic / reveal / regime split as our WM lane. \\
+XG4Repo \cite{Jimenez2024XG4Repo} &
+Explainable path-completion comparator &
+Direct path-based Hetionet drug-repurposing benchmark with rule and RL
+comparisons. &
+Reported Hetionet test slices are small, so hard SOTA claims are shaky. \\
+Hetnet connectivity search \cite{Himmelstein2022HetnetConnectivity} &
+Unsupervised path-family discovery &
+Finds degree-adjusted important path families without a supervised gold
+label. &
+Analysis tool, not a full continuation controller. \\
+REx \cite{Nunes2024RExDrugRepurposing} &
+Explanation-ranking comparator &
+Benchmarks explanatory path quality using Hetionet-style drug
+repurposing hypotheses. &
+Optimizes explanation quality rather than the broad/refined control
+tradeoff directly. \\
+Bonner et al.\ \cite{Bonner2022KGEDrugDiscovery} &
+Benchmark-sensitivity warning &
+Shows that ranking changes materially with split, hyperparameters, and
+seed. &
+Raw score-chasing without protocol control is misleading. \\
+Reviews \cite{PerdomoQuinteiro2024KGDrugRepurposingReview,KGScopingReview2025DrugRepurposing} &
+Broader field orientation &
+Situate Hetionet among larger drug-repurposing KGs and method families. &
+Useful context, but not benchmark semantics by themselves. \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1}
+\caption{Research landscape for the next large-scale benchmark.  The right reading is not ``one SOTA leaderboard'', but a cluster of benchmark traditions around path reasoning, explanation, and evaluation protocol.}
+\label{tab:hetionet-research-landscape}
+\end{table}
+
+The dataset itself also needs to be described clearly, because the
+benchmark object is not one flat table.  Hetionet is the heterogeneous
+biomedical graph; Rephetio is the benchmark-facing drug-repurposing
+layer built on top of it.  In the current public browser-table bundle we
+have a typed graph with $47{,}031$ nodes, $2{,}250{,}197$ relationships,
+and $24$ edge types, together with benchmark-facing tables for $1{,}538$
+compounds, $136$ diseases, $1{,}206$ metapaths, $1{,}000$
+compound-conditioned prediction tables, and $136$
+disease-conditioned prediction tables.\cite{Himmelstein2017Rephetio,DhimmelHetioRepData}
+This is exactly the shape we want: small enough to inspect, large enough
+to matter, and rich enough that typed multi-hop support families are not
+an afterthought.
+
+\begin{table}[ht]
+\centering
+\scriptsize
+\renewcommand{\arraystretch}{1.02}
+\begin{tabular}{@{}p{0.20\textwidth}p{0.31\textwidth}p{0.33\textwidth}@{}}
+\toprule
+Artifact & What it contains & Why it matters for HO chaining \\
+\midrule
+Hetionet graph &
+$47{,}031$ nodes, $2{,}250{,}197$ relations, $24$ edge types &
+Semantic heterogeneous substrate and typed path space. \\
+Rephetio compounds table &
+$1{,}538$ compounds, with $755$ treatments and $390$ palliations &
+Compound-side query inventory and positive label counts. \\
+Rephetio diseases table &
+$136$ diseases, with the same treatment/palliation support counts &
+Disease-side query inventory and target coverage. \\
+Rephetio metapaths table &
+$1{,}206$ metapaths of length $2$--$4$, with $\Delta$AUROC and fitted coefficients &
+Typed support families and regime candidates. \\
+Per-compound predictions &
+$1{,}000$ tables, each scoring one compound against all diseases &
+Broad compound-conditioned support surface. \\
+Per-disease predictions &
+$136$ tables, each scoring one disease against all compounds &
+Disease-conditioned scoring and explanation surface. \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1}
+\caption{What the Hetionet / Rephetio benchmark actually consists of in the current public bundle.  The graph is the heterogeneous biomedical substrate; the Rephetio tables provide the benchmark-facing task surface.}
+\label{tab:hetionet-dataset-surface}
+\end{table}
+
+The flagship query for this benchmark is
+\[
+  \code{treats}(\textit{compound}, \textit{disease}).
+\]
+The methods/motives follow directly from the work already in hand.
+Pathfinder and Hailfinder taught us that the interesting control problem
+is not merely whether a local step is exact, but how to act when context
+is incomplete, several support families are live, and reveal can change
+the target from a broad unresolved query to a refined conditional one.
+Hetionet / Rephetio is where that question becomes typed and large-scale.
+For example, metapaths such as
+\code{CbGaD} (Compound--binds--Gene--associates--Disease),
+\code{CrCtD} (Compound--resembles--Compound--treats--Disease), and
+\code{CiPCiCtD} (Compound--includes--Pharmacologic Class--includes--Compound--treats--Disease)
+already look like natural higher-order support families rather than
+accidental path fragments.
+\par
+The planned protocol is therefore:
+\begin{enumerate}
+\item \textbf{One-shot regime-mixture continuation.}  Treat typed
+  metapath/support families as second-order regimes and compare
+  \code{rule-only}, explicit regime-mixture continuation, reveal, and
+  fallback on the broad \code{treats(c,d)} task.
+\item \textbf{PLN-style multi-support revision.}  Combine several live
+  support families for the same query with explicit overlap penalties or
+  residual ignorance terms instead of pretending free independence.
+\item \textbf{Reveal as value of information.}  Ask when inspecting an
+  additional mechanism family or context slice improves refined fidelity
+  enough to justify its cost, instead of silently changing the target.
+\item \textbf{Higher-order chain composition.}  Evaluate whether
+  higher-order guarded continuation survives over interpretable
+  compound--gene--disease and compound--compound--disease chains, not
+  just one-shot scoring.
+\end{enumerate}
+At the semantic level, the split is the same as in the current
+benchmark lane:
+\begin{itemize}
+\item \textbf{1st order}: support for \code{treats(c,d)};
+\item \textbf{2nd order}: uncertainty over metapath/context/support
+  regime;
+\item \textbf{3rd order}: trust in the regime estimator;
+\item \textbf{4th and beyond}: flattened to expected utility, interval
+  dominance, or abstention at action time.
+\end{itemize}
+This means the next benchmark consumer is already aligned with the
+Chapter~11 architecture:
+\[
+  \text{truth}
+  \to \text{hierarchical semantic probability}
+  \to \text{belief tracking}
+  \to \text{planner shadow}.
+\]
+What we are \emph{not} claiming yet is equally important.  This section
+does not report finished Hetionet results, and it does not treat the
+Rephetio browser tables as a semantic oracle by themselves.  Rather, it
+states the next flagship benchmark plan now that the semantic
+ProbHOL $\rightarrow$ belief $\rightarrow$ planner waist is finally in
+place: the benchmark-side regime and trust fields should become
+principled projections of that bridge, not one more layer of bespoke
+scores.
 
 \section{Bridge Theorems: Naive Bayes and k-NN}
 
@@ -3305,7 +3814,7 @@ Those finite extensional results live in
 \codepath{Mettapedia/Logic/HigherOrder/HigherOrderReduction.lean} and
 \codepath{Mettapedia/Logic/HigherOrder/Basic.lean}.
 
-\section{Higher-Order Probability: Real but Still Parallel}
+\section{Higher-Order Probability: Now Semantically Grounded}
 
 The codebase already contains real higher-order probability theory and a real
 PLN-to-Kyburg bridge:
@@ -3321,14 +3830,112 @@ See
 \codepath{Mettapedia/ProbabilityTheory/HigherOrderProbability/GiryMonad.lean},
 and \codepath{Mettapedia/Logic/PLNKyburgReduction.lean}.
 
-What is still missing is the fully fused object
+What was still missing at the previous checkpoint was the fully semantic object
 \[
   \text{``probability of higher-order formulas over a measure on Henkin models.''}
 \]
-So the present higher-order chapter is already grounded in real HOL and real
-world-model semantics, while the next probabilistic strengthening is to put a
-genuine probability measure on higher-order models and show the current
-multiset WM semantics as the empirical special case.
+The repository now contains an infinitary-first semantic version of that
+construction.  The new subtree
+\codepath{Mettapedia/Logic/HOL/Probabilistic/} defines:
+\begin{itemize}
+\item measurable indexed spaces of pointed Henkin models in
+  \codepath{Mettapedia/Logic/HOL/Probabilistic/ModelSpace.lean},
+\item sentence probabilities for closed HOL formulas in
+  \codepath{Mettapedia/Logic/HOL/Probabilistic/Semantics.lean},
+\item the thin probabilistic WM-facing lens in
+  \codepath{Mettapedia/Logic/HOL/Probabilistic/WorldModelBridge.lean}, and
+\item the theorem that the existing empirical HOL$\leftrightarrow$WM multiset
+  semantics is a special case in
+  \codepath{Mettapedia/Logic/HOL/Probabilistic/EmpiricalSpecialCase.lean}.
+\end{itemize}
+
+So the higher-order picture is no longer merely ``real HOL here, real
+higher-order probability there.''  It now includes a semantic probability layer
+for closed HOL formulas.  What remains missing is the \emph{full dynamic
+fusion}: beliefs over higher-order formulas that simultaneously interact with
+logical-induction-style deductive dynamics and this semantic model-measure
+layer.
+
+\subsection{Hierarchical and Infinite-Order Probabilistic HOL}
+
+The semantic probabilistic HOL layer now also supports a clean
+infinite-order reading: uncertainty over \emph{measures on indexed model
+spaces}, rather than only one flat measure or an explicit syntax of nested
+``probability of probability of probability.''  This is the right semantic form
+for the higher-order probability literature
+(\cite{Kyburg1988,Gaifman1986HigherOrder,AtkinsonPeijnenburg2013InfiniteOrder})
+and for the current guarded higher-order benchmarks.
+
+The key new files are:
+\begin{itemize}
+\item \codepath{Mettapedia/Logic/HOL/Probabilistic/HierarchicalState.lean},
+  which defines hierarchical uncertainty as a probability distribution over
+  probability measures on a fixed indexed model space;
+\item \codepath{Mettapedia/Logic/HOL/Probabilistic/Flattening.lean}, which
+  proves that hierarchical sentence probabilities are computed by flattening the
+  hierarchy to the predictive marginal;
+\item \codepath{Mettapedia/Logic/HOL/Probabilistic/BenchmarkBridge.lean}, which
+  interprets the current guarded higher-order benchmark payloads as one concrete
+  finite hierarchical instance; and
+\item \codepath{Mettapedia/Logic/HOL/Probabilistic/BenchmarkBeliefBridge.lean},
+  which derives a benchmark-facing LI-style belief day and process from that
+  semantic benchmark marginal, while proving that this adapter is
+  query-focused rather than a replacement for the benchmark semantics; and
+\item \codepath{Mettapedia/Logic/PLNProbHOLPlannerBridge.lean}, which packages
+  the carried guarded query together with that theorem-backed belief shadow, so
+  planner/control layers can consume semantically justified prices and tracking
+  results without becoming the canonical semantics; and
+\item \codepath{Mettapedia/Logic/PLNProbHOLPlannerBridgeRegression.lean}, which
+  records positive and negative planner-facing bridge fixtures for the concrete
+  higher-order leaky benchmark step; and
+\item \codepath{Mettapedia/Logic/HOL/Probabilistic/HierarchicalRegression.lean},
+  which packages positive and negative canaries for the infinitary,
+  empirical-special-case, and guarded-benchmark routes.
+\end{itemize}
+
+The semantic picture is:
+\[
+\begin{array}{c}
+\text{latent regime } \theta \\
+\downarrow\scriptstyle{\text{kernel } K(\theta, -) \text{ on model indices}} \\
+\text{measure on pointed Henkin-model indices} \\
+\downarrow\scriptstyle{\text{flatten / predictive marginal}} \\
+\text{sentence probability of } \varphi \\
+\downarrow\scriptstyle{\text{thin WM lens}} \\
+\text{probabilistic query strength / evidence}
+\end{array}
+\]
+
+This is elegant for two reasons.  First, it keeps semantic truth in pointed
+Henkin models primary.  Second, it lets finite and empirical cases become
+theorem-proved special cases rather than the canonical meaning of
+higher-order uncertainty.
+
+The current benchmark bridge is intentionally modest: it interprets the
+existing guarded three-regime payload as the first concrete hierarchical seed.
+That is already enough to show how branch-level admissibility values become
+component sentence probabilities, and how the benchmark's flattened value is the
+predictive marginal of that hierarchy.  The broader Pathfinder-style hierarchy
+over hidden context, admissibility, trust, and topology is the natural next
+semantic refinement, not an ad hoc tower.  For the benchmark itself, this means
+that second-order uncertainty can live over latent regimes, third-order
+uncertainty can live over trust in the regime model, and higher orders beyond
+that should usually be read through flattening, robustness, or abstention
+criteria rather than through an endlessly explicit public syntax.
+
+The planner-facing consequence is now explicit.  A mixed-mode higher-order
+guarded step can be consumed as a \emph{belief price} precisely because the
+repository proves that the carried value agrees with the benchmark belief
+shadow derived from semantic ProbHOL.  In Lean this is exposed by
+\codepath{Mettapedia/Logic/PLNProbHOLPlannerBridge.lean}, including theorems
+\texttt{leakyHigherOrderPlan\_C\_current\_value\_eq\_benchmarkBeliefPrice} and
+\texttt{leakyHigherOrderPlan\_C\_current\_gateConfidence\_eq\_higherOrderGuardConfidence}.
+So the control layer is no longer merely carrying a higher-order-looking score:
+it is carrying a value with an explicit semantic provenance, together with a
+separate belief-process shadow that tracks the same benchmark query on the
+designated sample.  The paired regression surface in
+\codepath{Mettapedia/Logic/PLNProbHOLPlannerBridgeRegression.lean} then records
+both the positive tracking fixture and the negative expanded-sample guardrail.
 
 \section{Logical-Induction-Ready Dynamic Belief Infrastructure}
 
@@ -3366,10 +3973,58 @@ This interface layer is now explicit in the codebase.  The new subtree
 \end{itemize}
 
 The corresponding lightweight top-level wrapper is now
-\codepath{Mettapedia/Logic/ProbHOL.lean}.  It re-exports this
-logical-induction-ready layer under a shorter name, while still explicitly
-avoiding the stronger claim that the repository already contains the full fused
-theory of probability measures over Henkin models queried by HOL formulas.
+\codepath{Mettapedia/Logic/ProbHOL.lean}.  It re-exports both:
+\begin{itemize}
+\item the new semantic probabilistic HOL layer, and
+\item the logical-induction-ready dynamic belief layer.
+\end{itemize}
+It still explicitly avoids the stronger claim that the repository already
+contains the fully fused dynamic theory of logical-induction belief processes
+over semantic probabilities of Henkin-model events.
+
+There is now also one precise benchmark-facing bridge back from semantic
+probability to LI-style pricing.  The file
+\codepath{Mettapedia/Logic/HOL/Probabilistic/BenchmarkBeliefBridge.lean}
+constructs a benchmark belief day whose visible price on the benchmark query is
+the carried guarded higher-order value \emph{because} that value is already
+proved equal to the hierarchical semantic benchmark marginal.  The key tracking
+theorems are
+\texttt{benchmarkBeliefDay\_tracks\_benchmarkHierarchicalProbOn} and
+\texttt{benchmarkBeliefProcess\_eventuallyTracks\_benchmarkHierarchicalProbOn}.
+Just as importantly, the negative theorem
+\texttt{benchmarkBeliefDay\_not\_tracks\_benchmarkHierarchicalProbOn\_with\_top}
+shows that this adapter is intentionally narrow: it prices the benchmark query
+correctly, but it is not presented as a global belief oracle for unrelated HOL
+sentences.
+
+The generic comparison waist is now explicit in
+\codepath{Mettapedia/Logic/HOL/Probabilistic/BeliefBridge.lean}.  Its central
+predicates are \texttt{BeliefDayTracksHierarchicalProbOn} and
+\texttt{BeliefProcessEventuallyTracksHierarchicalProbOn}: these say exactly
+when a day-level price assignment or a time-indexed belief process matches the
+semantic hierarchical ProbHOL query strength on a chosen finite sample of coded
+HOL formulas.  The benchmark layer then instantiates those generic predicates,
+rather than inventing a second benchmark-only notion of tracking.  In Lean this
+is visible through theorems such as
+\texttt{benchmarkBeliefDay\_tracks\_benchmarkLatentHierarchicalProbOn} in
+\codepath{Mettapedia/Logic/HOL/Probabilistic/BenchmarkBeliefBridge.lean} and
+\texttt{benchmarkPlannerShadow\_process\_tracks\_benchmarkLatentHierarchicalProbOn}
+in \codepath{Mettapedia/Logic/PLNProbHOLPlannerBridge.lean}.  So the intended
+four-layer example is now theorem-traceable:
+\[
+\text{HOL truth for } \varphi
+\;\Longrightarrow\;
+\text{hierarchical semantic probability of } \varphi
+\;\Longrightarrow\;
+\text{belief-process tracking on the benchmark sample}
+\;\Longrightarrow\;
+\text{planner-facing query shadow}.
+\]
+Here the richer benchmark latent coordinates for hidden context, trust, and
+topology live explicitly in
+\codepath{Mettapedia/Logic/HOL/Probabilistic/BenchmarkBridge.lean}; the bridge
+to planner control remains downstream of the generic semantic-vs-belief layer
+rather than becoming a new semantics in its own right.
 
 \[
 \begin{array}{c@{\qquad\qquad}c}
@@ -3378,8 +4033,10 @@ theory of probability measures over Henkin models queried by HOL formulas.
 \text{closed HOL formulas} \\
 \downarrow\scriptstyle{\text{Henkin semantics}} \\
 \text{truth in pointed Henkin models} \\
-\downarrow\scriptstyle{\text{static HOL}\leftrightarrow\text{WM lens}} \\
-\text{static WM evidence/strength}
+\downarrow\scriptstyle{\text{measurable indexed model spaces}} \\
+\text{semantic sentence probability } \mu\{i \mid M_i \models \varphi\} \\
+\downarrow\scriptstyle{\text{empirical multiset special case}} \\
+\text{static HOL}\leftrightarrow\text{WM strength}
 \end{array}
 &
 \begin{array}{c}
@@ -3388,6 +4045,7 @@ theory of probability measures over Henkin models queried by HOL formulas.
 \downarrow\scriptstyle{\text{deductive process } D_n} \\
 \text{belief days } P_n(\varphi) \\
 \downarrow\scriptstyle{\text{day-level WM-facing strength}} \\
+\text{belief-day strength/evidence} \\
 \text{dynamic belief/evidence interface}
 \end{array}
 \end{array}
@@ -3404,15 +4062,19 @@ So Chapter~\ref{ch:higher-order} now has three clearly separated higher-order
 levels:
 \begin{enumerate}
 \item semantic truth in Henkin HOL,
-\item static WM evidence/strength for HOL queries, and
-\item dynamic belief-process scaffolding for future probabilistic HOL.
+\item semantic probability over measurable indexed model spaces of pointed
+  Henkin models,
+\item the empirical HOL$\leftrightarrow$WM strength layer as a theorem-proved
+  special case, and
+\item dynamic belief-process scaffolding for future logical-induction-aware
+  probabilistic HOL.
 \end{enumerate}
 
 This is the right place to stop for now.  It is already enough to keep future
 ProbHOL and higher-order uncertain reasoning from being forced through a
-hard-coded prover or a single static model measure, but it does \emph{not} yet
-claim a full logical-inductor construction or the full fused layer of
-probability measures over Henkin models.
+hard-coded prover or a single empirical model sample, but it does \emph{not}
+yet claim a full logical-inductor construction or the full dynamic fusion of
+belief processes with semantic probabilities over Henkin models.
 
 
 \chapter{Quantifiers and the Fuzzy/QFM Layer}
@@ -3499,6 +4161,28 @@ transport.
 
 See \codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean}
 and \codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyITVBridge.lean}.
+
+\paragraph{Arbitrary-domain graded fuzzy layer.}
+The repository now also exposes a reusable arbitrary-domain graded
+specialization layer.  Instead of treating the Sugeno/proxy-cut and
+Choquet branches as unrelated surfaces, Lean factors out their honest
+common spine via
+\codepath{Mettapedia/Logic/PLNFirstOrder/GradedQuantifierSpecialization.lean}.
+The generic interface \code{GradedQuantifierSemantics} packages:
+\begin{itemize}
+\item score-based interval and universal predicates,
+\item complement-dual existential predicates,
+\item fuzzy-domain restriction via \code{domainRestrict},
+\item and equality / monotonicity transport on the restricted domain.
+\end{itemize}
+The current Sugeno and Choquet branches are then explicit instances
+(\code{sugenoGradedQuantifierSemantics},
+\code{choquetGradedQuantifierSemantics}), while the fuzzy-domain layer is a
+further specialization of that shared graded interface rather than a
+duplicated theory.  Direct graded canaries now live in
+\codepath{Mettapedia/Logic/PLNFirstOrder/GradedQuantifierCanary.lean}, so the
+shared graded spine is itself exercised by positive and negative examples,
+not only through the specialized fuzzy-domain wrappers.
 
 \section{Scope Note: Stable Finite-Domain Bundle vs.\ Infinitary Semantics}
 
@@ -4000,6 +4684,17 @@ This chapter provides a compact, family-level summary of the formalization.
   with a critical distinction: $T_{P,K,\mathrm{LP}}$ at $K = \mathbb{R}_{\ge 0}^\infty$
   computes \emph{bag} semantics, not distribution semantics.
   The correct path is: total-choice $\to$ residual KB $\to$ least Herbrand model.
+\item \textbf{MLN bridge (finite-support countable fragment):} the
+  world-model infrastructure now also subsumes an infinite-first MLN
+  semantics, specialized under locality/finite-support witnesses:
+  \[
+    \mathrm{queryStrength}(\{\mathrm{compiledMassSemantics}(M, h_s)\}, q)
+      = \mathrm{queryProb}_{M}(q)
+  \]
+  where the equality factors through a finite restriction theorem and an
+  exact factor-graph compilation.  This is a semantic import theorem for
+  the countable finite-support fragment, \emph{not} a claim that MLN KB
+  union is identical to WM additive revision.
 \item \textbf{Noisy-OR:} $s_{\mathrm{combined}} = 1 - \prod_{i}(1 - s_i)$
   for independent causes, with delta-method variance propagation and
   \textbf{posterior mean scoring}:
@@ -4061,13 +4756,40 @@ structure is a worthy future goal but is explicitly not attempted here.
 
 \section{MLN Import and Subsumption}
 
-A classical Markov Logic Network benchmark such as UW-CSE
-\cite{richardson2006markov} is a natural next canary for
-MLN-to-WM import and subsumption.  Weighted clauses translate to
-factor-graph fragments whose marginals embed as world-model
-strength obligations.  This is not the main empirical target of the
-current Gaussian/hybrid chapter, but serves as a compact interoperability
-test for the factor-graph bridge layer.
+The Lean development now contains an \emph{infinite-first} MLN import
+layer.  The formal route is:
+\begin{enumerate}
+\item abstract mass semantics for MLN-style world weights and query mass;
+\item countable semantics via $\sum$ over worlds;
+\item a finite-support restriction theorem under locality witnesses;
+\item exact specialization of that finite restriction to a factor graph;
+\item transfer of the compiled factor graph into a singleton WM state.
+\end{enumerate}
+
+The terminal theorem says that if a countable MLN semantics $M$ admits a
+finite-support witness $h_s$, then the compiled singleton world-model
+state satisfies
+\[
+  \mathrm{queryStrength}(\{\mathrm{compiledMassSemantics}(M, h_s)\}, q)
+    = \mathrm{queryProb}_{M}(q).
+\]
+So the finite factor graph is not the foundation; it is the first exact
+computable shadow of the general semantics.
+
+This result is intentionally scoped.  It covers the countable,
+finite-support fragment needed for a precise subsumption theorem.  It
+does \emph{not} yet claim:
+\begin{itemize}
+\item lifted MLN inference;
+\item approximate inference;
+\item open-universe MLNs;
+\item or that MLN knowledge-base union is the same operation as additive
+  WM revision.
+\end{itemize}
+
+A benchmark such as UW-CSE \cite{richardson2006markov} remains the right
+next empirical canary, but it is now downstream of an exact semantic
+bridge rather than the starting point.
 
 \section{DeFi Hybrid Risk Monitoring}
 
@@ -4320,6 +5042,94 @@ discussion and review auditability.}
   Artifact & Status \\
   \midrule
   \code{results/ai\_outcomes/manuscript\_ready\_summary\_table.tex} &
+  missing; regenerate via \code{scripts/wm\_pln\_ai\_outcomes\_aggregate.py}. \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\section{What Can and Cannot Be Said}
+
+The next question is not ``what single number should we output?'', but
+``which interval narrowing is actually earned by the current evidence
+bundle, and which would require extra structural assumptions?''  The
+answer is now reported as an explicit assumption ladder.  At rung
+\textbf{A0} we use only evidence hygiene and keep lens intervals at full
+width.  At \textbf{A1} we allow weak direct-target numeric summaries
+already embedded in the normalized forecast rows, such as the single
+public Metaculus extinction snapshot and camp-prior conditionals from
+the adversarial-collaboration dataset.  At \textbf{A2} we retain only
+those weak numeric summaries whose source families pass the current
+reliability filter.  At \textbf{A3} we add monotone regime-ordering
+claims from the scenario scaffold, but we still do not convert proxy or
+governance channels into posterior numbers.
+
+This separation matters.  In the current bundle, weak direct-target
+numeric summaries can narrow some coarse lenses at \textbf{A1}:
+\code{extinction} narrows to $[0.02, 0.50]$,
+\code{authoritarian\_lock\_in} to $[0.10, 0.20]$,
+\code{beneficial\_pluralistic\_transition} to $[0.02, 0.43]$, and the
+Fr\'{e}chet-safe upper bound for $p_{\mathrm{doom}}$ tightens to $0.90$.
+But these are weak and heterogeneous summaries.  Once we move to
+\textbf{A2} and require source families with stronger resolved-item or
+row-level calibration support, the same lenses reopen to $[0,1]$ in the
+current local bundle.  So the strongest present conclusion is not a
+sharp posterior; it is an explicit frontier between data-driven
+narrowing and assumption-driven rhetoric.
+
+\begin{table}[htbp]
+\centering
+\caption{Assumption ladder for the advanced-AI outcome lenses.  Only
+weak direct-target numerics narrow intervals in the current bundle; the
+reliability-filtered rung mostly reopens them.}
+\label{tab:ai-outcomes-assumption-ladder}
+\IfFileExists{../results/ai_outcomes/ai_outcomes_assumption_ladder.tex}{%
+  \input{../results/ai_outcomes/ai_outcomes_assumption_ladder.tex}
+}{%
+  \small
+  \begin{tabular}{p{0.32\textwidth}p{0.42\textwidth}}
+  \toprule
+  Artifact & Status \\
+  \midrule
+  \code{results/ai\_outcomes/ai\_outcomes\_assumption\_ladder.tex} &
+  missing; regenerate via \code{scripts/wm\_pln\_ai\_outcomes\_aggregate.py}. \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+The region-conditioned tables make the same point more concretely.
+\(p_{1984}(g,t)\) and \(p_{\mathrm{BGI}}(g,t)\) are better-founded as
+coarse region/horizon query families than as a single scalar ``world''
+summary, but the present evidence is still asymmetric.  Forecast rows are
+mostly global rather than regional, incident and proxy channels are often
+region-specific but not posterior-identifying, and benefit-side support
+is largely global.  So these tables are useful for showing where
+pressure, support, and ignorance sit, not for pretending the current
+bundle already resolves regional advanced-AI futures.  The numeric hull
+columns in Table~\ref{tab:ai-outcomes-region-horizon} are therefore
+\emph{global horizon-conditioned direct-target intervals} repeated
+across region rows for comparison; the genuinely region-conditioned
+content is carried by the region-specific support counts and the
+assumption-driven ordering/pressure column.
+
+\begin{table}[htbp]
+\centering
+\caption{Coarse region-horizon surface for \(p_{1984}(g,t)\) and
+\(p_{\mathrm{BGI}}(g,t)\).  The numeric hull columns are global
+horizon-conditioned direct-target intervals rather than region-specific
+posteriors; the ordering column records assumption-driven directional
+claims only.}
+\label{tab:ai-outcomes-region-horizon}
+\IfFileExists{../results/ai_outcomes/ai_outcomes_region_horizon_table.tex}{%
+  \input{../results/ai_outcomes/ai_outcomes_region_horizon_table.tex}
+}{%
+  \small
+  \begin{tabular}{p{0.32\textwidth}p{0.42\textwidth}}
+  \toprule
+  Artifact & Status \\
+  \midrule
+  \code{results/ai\_outcomes/ai\_outcomes\_region\_horizon\_table.tex} &
   missing; regenerate via \code{scripts/wm\_pln\_ai\_outcomes\_aggregate.py}. \\
   \bottomrule
   \end{tabular}
@@ -4622,6 +5432,874 @@ a good \emph{negative example} because it is still only one transparent lane.
 We should not read it as evidence that WM-PLN dominates Stan in general, and
 we should be especially careful with compile-time rhetoric here because the
 Stan compile timing in this run is warm-cache rather than cold-start.
+
+\section{Exact Hook-B Adaptive Normal-Normal}
+\label{app:pplbench-hookb-normal}
+
+The next step was to make the ``adaptive'' single-mean lane genuinely
+WM-PLN-like from the start, rather than reviving the older meta-evidence
+wrapper.  The active semantics here are a \emph{discrete hyperprior mixture}
+over prior-variance contexts:
+\[
+  \tau_0^2 \in \{ 2^k : k \in [-5,5] \},
+\]
+with geometric Hook-B weights.  The carried state remains the same
+context-free continuous evidence monoid
+\[
+  (n, \sum x_i, \sum x_i^2),
+\]
+but the queried posterior view is now a mixture over explicit context
+hypotheses instead of a single fixed prior variance.
+
+This is exactly the direction already signposted in
+\codepath{hyperon/PeTTa/pln\_inference/pln\_continuous\_evidence.metta},
+which warns that the old single-level empirical-context shortcut is not
+theoretically justified and points instead to Hook-B hyperprior mixtures.
+The formal story in Lean is the universal-prediction Hook-B family in
+\codepath{Mettapedia/Logic/UniversalPrediction/MarkovHyperpriorMixture.lean}:
+pick a countable family of tractable contexts, assign computable weights, and
+form a mixture that competes with each component up to the log inverse weight.
+
+In the benchmark lane that gives us a very clean split:
+\begin{itemize}
+\item carried semantics: continuous evidence plus explicit context-mixture
+  posterior state,
+\item queried views: posterior mixture mean, variance, and component weights,
+\item Python role: only batching and posterior sampling from the queried
+  component-wise mixture, with no operational scheduler.
+\end{itemize}
+
+The stable manuscript artifacts are:
+\begin{itemize}
+\item \codepath{results/pplbench\_normal\_normal\_adaptive\_exact\_calibration.json}
+\item \codepath{results/pplbench\_normal\_normal\_adaptive\_stan\_vs\_pln\_summary.json}
+\item \codepath{results/pplbench\_normal\_normal\_adaptive\_stan\_vs\_pln\_table.tex}
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Exact Hook-B adaptive Normal-Normal comparison.  This is one of the
+cleanest WM-PLN lanes in the appendix because both the carrier and the full
+inference procedure are exact: the only sampling is from the exact queried
+posterior mixture itself.}
+\label{tab:pplbench-hookb-normal}
+\IfFileExists{../results/pplbench_normal_normal_adaptive_stan_vs_pln_table.tex}{%
+  \input{../results/pplbench_normal_normal_adaptive_stan_vs_pln_table.tex}
+}{%
+  \small
+  \begin{tabular}{lcccc}
+  \toprule
+  Backend & Posterior mean & $| \mu - \mu_{\mathrm{analytic}} |$ & Final PLL & Median $n_{\mathrm{eff}}$/s \\
+  \midrule
+  (artifact missing) & n/a & n/a & n/a & n/a \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+In the current run the analytic Hook-B posterior mean is approximately
+$-1.5955$.  Stan's sampled posterior mean is approximately $-1.5815$, while
+WM-PLN's sampled posterior mean is approximately $-1.6007$.  So WM-PLN is
+closer on posterior mean (and also on posterior standard deviation) in this
+recorded run, but Stan is slightly better on held-out PLL:
+approximately $-49.8802$ for Stan versus $-49.9538$ for WM-PLN.
+
+That is a good \emph{positive example} because it gives us an exact adaptive
+lane where the WM-PLN carrier pattern and the inference procedure are both
+promotable.  It is also a good \emph{negative example} because ``adaptive''
+does not magically imply a win over Stan on every metric: here the WM-PLN
+lane is semantically cleaner than the legacy wrapper and very competitive,
+but it still trails slightly on held-out predictive likelihood in this run.
+
+\section{Semantic Noisy-Or Upgrade}
+\label{app:pplbench-noisy-or-semantic}
+
+The next battletest was deliberately less forgiving than
+\codepath{normal\_normal}: the \codepath{noisy\_or\_topic} benchmark has a real
+latent DAG with leak, topic-to-topic influence, and topic-to-word influence.
+That makes it a better place to test whether WM-PLN is being applied
+\emph{semantically} rather than merely wrapped in friendly names.
+
+Our earlier noisy-or PLN lane was fast, but it made two overly aggressive
+simplifications:
+\begin{enumerate}
+\item it treated most topic evidence independently, and
+\item it used a heuristic weak-negative update for absent words.
+\end{enumerate}
+This produced a useful prototype, but not a faithful semantic use of the
+benchmark model.  In the refreshed lane we replaced that approximation with a
+small semantic factor-graph WM:
+\begin{itemize}
+\item exact local noisy-or forward probabilities remain in PeTTa,
+\item child-to-parent updates use cavity-style residual likelihoods, and
+\item Python only schedules damped message passing and posterior sampling over
+the benchmark DAG.
+\end{itemize}
+
+The strengthened WM-PLN point is that the scheduler no longer carries bare
+posterior logits as its semantic state.  Instead it carries an explicit
+additive likelihood-message object for each topic,
+\[
+  M_k = (\log L_k^{\mathrm{on}}, \log L_k^{\mathrm{off}}),
+\]
+where independent child factors revise the topic by componentwise addition and
+posterior probability is queried only as a \emph{view} from the resulting topic
+state.  This follows the discipline stated earlier in ``Why Views Are Not
+Proof Objects'' and keeps the factor graph on the semantic side of the
+``Factor Graphs: Semantic vs.\ Operational'' split.  The Bayes-net
+compatibility story is not invented ad hoc here: it is already anticipated in
+the PLN book's ``PLN and Bayes Nets'' discussion, and in our Lean layer it
+matches the evidence-first BN/CPT surface in
+\codepath{Mettapedia/Logic/PLNBayesNetWorldModel.lean}.
+
+\begin{table}[htbp]
+\centering
+\caption{Rule provenance for the refreshed noisy-or lane.  This makes explicit
+which pieces are classical PLN-like local kernels, which are compiled xiPLN
+semantic factor kernels, and which are merely operational scheduling.}
+\label{tab:pplbench-noisy-or-provenance}
+\small
+\begin{tabular}{p{0.24\textwidth}p{0.18\textwidth}p{0.22\textwidth}p{0.27\textwidth}}
+\toprule
+Artifact & Layer & Role & Provenance \\
+\midrule
+\code{pln-fuzzy-or}, \code{noisy-or-to-strength} &
+Classical PLN-like local kernel &
+Independent-cause combination and noisy-or edge strength &
+PLN book, ``PLN and Bayes Nets'' plus
+\codepath{Mettapedia/Logic/PLNNoisyOr.lean} \\
+\code{noisy-or-cavity-survival},
+\code{noisy-or-child-likelihood-pair},
+\code{noisy-or-prior-prob-from-beliefs} &
+xiPLN semantic factor kernel &
+Compiled local noisy-or factor semantics for child-to-parent and forward
+messages &
+This book: ``semantic baseline is exact factor-graph elimination'' and
+``Factor Graphs: Semantic vs.\ Operational''; evidence-first BN/CPT bridge in
+\codepath{Mettapedia/Logic/PLNBayesNetWorldModel.lean} \\
+\code{NoisyOrMessage}, \code{NoisyOrTopicState} in
+\codepath{pplbench/ppls/pln/noisy_or_topic.py} &
+WM carrier / queried view &
+Explicit additive message state; posterior probability extracted only as a
+view &
+This book: ``Why Views Are Not Proof Objects'' and
+\codepath{Mettapedia/Logic/PLNWorldModelGeneric.lean} \\
+Python damped iteration and sampling loop in
+\codepath{pplbench/ppls/pln/noisy_or_topic.py} &
+Operational scheduler &
+Scheduling and approximate fixed-point search over the semantic carrier &
+This book: ``Factor Graphs: Semantic vs.\ Operational'' \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This distinction matters.  A good \emph{positive example} is
+\code{noisy-or-to-strength}: it is a local algebraic kernel with a clear
+noisy-or reading.  A good \emph{negative example} is the scheduler loop
+itself: it is important machinery, but it is not being claimed as a classical
+PLN rule.
+
+We also ran a tiny exact-DAG calibration to decide whether this pattern is
+ready for promotion beyond the single benchmark lane.  The resulting artifact
+is \codepath{results/pplbench\_noisy\_or\_exact\_calibration.json}.  The result
+is encouraging but mixed:
+\begin{itemize}
+\item the carried-message pattern is exact on a two-topic independent case,
+\item it remains reasonably close on a small collider / explaining-away case,
+\item but it still shows visible error on a topic-chain case where downstream
+  evidence must propagate upstream.
+\end{itemize}
+So the right current conclusion is: the \emph{carrier pattern} is reusable, but
+the current damped scheduler should still be treated as an approximate noisy-or
+engine rather than a broadly promotable exact-ish inference algorithm.
+
+The benchmark command is:
+\begin{lstlisting}
+cd ~/claude/pplbench
+ulimit -v 10485760
+python3 -m pplbench examples/noisy_or_topic_stan_vs_pln.json
+\end{lstlisting}
+
+The stable exported manuscript artifacts are:
+\begin{itemize}
+\item \codepath{results/pplbench\_noisy\_or\_topic\_stan\_vs\_pln\_summary.json}
+\item \codepath{results/pplbench\_noisy\_or\_topic\_legacy\_summary.json}
+\item \codepath{results/pplbench\_noisy\_or\_exact\_calibration.json}
+\item \codepath{results/pplbench\_noisy\_or\_topic\_semantic\_upgrade\_table.tex}
+\item \codepath{results/figures/pplbench\_noisy\_or\_topic\_pll.png}
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Noisy-or upgrade story on the same small PPLBench family.  The
+legacy heuristic PLN lane was extremely fast but statistically weak.  The
+semantic factor-graph WM-PLN lane is slower, but it closes the predictive-fit
+gap dramatically and slightly exceeds Stan on final PLL in this recorded run.}
+\label{tab:pplbench-noisy-or-upgrade}
+\IfFileExists{../results/pplbench_noisy_or_topic_semantic_upgrade_table.tex}{%
+  \input{../results/pplbench_noisy_or_topic_semantic_upgrade_table.tex}
+}{%
+  \small
+  \begin{tabular}{lcccc}
+  \toprule
+  Backend & Final PLL & Compile (s) & Infer (s) & Median $n_{\mathrm{eff}}$/s \\
+  \midrule
+  (artifact missing) & n/a & n/a & n/a & n/a \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_noisy_or_topic_pll.png}
+\caption{Stan vs semantic WM-PLN on the refreshed noisy-or lane.  The semantic
+WM-PLN run tracks Stan closely across the held-out PLL curve on this small
+configuration, in contrast to the earlier heuristic lane.}
+\label{fig:pplbench-noisy-or-pll}
+\end{figure}
+
+Numerically, the earlier heuristic PLN lane finished at roughly $-8.1619$
+final PLL, while the refreshed semantic lane finishes at roughly $-5.1735$.
+Stan finishes at roughly $-5.3275$ on the same configuration.  So the semantic
+upgrade improves the WM-PLN lane by about $2.99$ PLL units relative to the
+earlier heuristic version, and by about $0.154$ PLL units relative to Stan in
+this recorded run.
+
+This is a good \emph{positive example} because it shows exactly the kind of
+iteration PPLBench is for: we used the benchmark to expose that a previous PLN
+application was too loose, replaced it with a more semantically honest WM, and
+measured a large improvement.  It is also a good \emph{negative example}
+because the new lane is still approximate inference, not an exact proof that
+WM-PLN has ``the'' noisy-or posterior.  The improvement is real, but it does
+not license broad claims until we repeat the pattern on more lanes and larger
+configurations.
+
+\section{Crowd Annotation via Multiclass Message State}
+\label{app:pplbench-crowd-annotation}
+
+The next lane asks a different question from noisy-or.  Crowd-sourced
+annotation is not about independent causes explaining one child.  It is about
+\emph{competing latent classes} and \emph{latent labeler reliability}.  That
+means a faithful WM-PLN application should not decompose the problem into
+independent binary truth-values.  Instead it should carry an explicit
+multiclass message state and query posterior class probabilities only as a
+view.
+
+The refreshed lane therefore carries three explicit objects:
+\begin{itemize}
+\item \code{CategoryLogMessage}: additive per-class log-likelihood support
+from observed labels,
+\item \code{DirichletCountState}: additive count state for class prevalence and
+for each confusion-matrix row, and
+\item \code{ItemPosteriorState}: the queried posterior view obtained by
+combining a prior log-probability vector with the accumulated category
+message.
+\end{itemize}
+In the implementation, PeTTa owns the local semantic kernels
+\code{crowd-label-log-message} and \code{crowd-dirichlet-mean}, while Python
+owns only the operational E/M scheduler.  This is the same
+``semantic carrier, operational scheduler'' split we wanted from the noisy-or
+upgrade, but applied to a genuinely different benchmark family.  The active
+backend imports the semantic-only module
+\codepath{hyperon/PeTTa/pln\_inference/crowd\_annotation\_semantic.metta},
+while the older heuristic constructors remain fenced in
+\codepath{hyperon/PeTTa/pln\_inference/crowd\_annotation.metta} as legacy
+reference material rather than active local semantics.
+
+The first thing we checked was not the full benchmark.  It was the exact
+fixed-parameter E-step.  The artifact
+\codepath{results/pplbench\_crowd\_annotation\_exact\_calibration.json} records
+three tiny cases:
+\begin{itemize}
+\item one labeler, two classes,
+\item two labelers, two classes with additive evidence, and
+\item two labelers, three classes.
+\end{itemize}
+All three match the exact posterior to floating-point precision.  So the
+right current promotion boundary is:
+\begin{description}
+\item[Positive example.] The multiclass carried-message pattern is promotable.
+\item[Negative example.] The iterative EM scheduler is still an operational
+layer and should not yet be promoted as a general reusable inference engine.
+\end{description}
+
+The benchmark command is:
+\begin{lstlisting}
+cd ~/claude/pplbench
+ulimit -v 10485760
+python3 -m pplbench examples/crowd_sourced_annotation_stan_vs_pln.json
+\end{lstlisting}
+
+The stable exported manuscript artifacts are:
+\begin{itemize}
+\item \codepath{results/pplbench\_crowd\_annotation\_exact\_calibration.json}
+\item \codepath{results/pplbench\_crowd\_annotation\_scheduler\_sanity.json}
+\item \codepath{results/pplbench\_crowd\_sourced\_annotation\_stan\_vs\_pln\_summary.json}
+\item \codepath{results/pplbench\_crowd\_sourced\_annotation\_stan\_vs\_pln\_table.tex}
+\item \codepath{results/figures/pplbench\_crowd\_sourced\_annotation\_pll.png}
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Crowd-sourced annotation comparison on the refreshed WM-PLN lane.
+Stan retains a small predictive-fit edge on this run, but the WM-PLN lane now
+matches the right abstraction boundary and remains materially faster.}
+\label{tab:pplbench-crowd-annotation}
+\IfFileExists{../results/pplbench_crowd_sourced_annotation_stan_vs_pln_table.tex}{%
+  \input{../results/pplbench_crowd_sourced_annotation_stan_vs_pln_table.tex}
+}{%
+  \small
+  \begin{tabular}{lcccc}
+  \toprule
+  Backend & Final PLL & Compile (s) & Infer (s) & Median $n_{\mathrm{eff}}$/s \\
+  \midrule
+  (artifact missing) & n/a & n/a & n/a & n/a \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_crowd_sourced_annotation_pll.png}
+\caption{Stan vs refreshed WM-PLN on the crowd annotation lane.  The WM-PLN
+curve stays close to Stan while using the explicit multiclass message carrier
+rather than the archived hybrid heuristic.}
+\label{fig:pplbench-crowd-annotation-pll}
+\end{figure}
+
+Numerically, the recorded run finishes at roughly $-326.584$ final PLL for
+Stan and $-326.952$ for WM-PLN.  So Stan keeps a small predictive-fit edge of
+about $0.368$ PLL units here.  But compile time drops from about $22.795$s to
+$0.128$s, inference time drops from about $1.773$s to $0.851$s, and the median
+effective-sample-size-per-second metric rises from about $296.1$ to $931.9$.
+That makes this a good second-lane result: not a win-by-default story, but a
+clean demonstration that the promoted multiclass carrier pattern survives in a
+more realistic latent-class model and remains competitive.  We also keep one
+explicit guardrail around that claim: the scheduler-sanity regression only
+certifies finite, stable, simplex-respecting behavior on tiny cases.  It is a
+useful non-promotion check, not a proof that the whole E/M loop is exact.
+
+\section{Exact Dirichlet-Categorical Lane}
+\label{app:pplbench-dirichlet-categorical}
+
+After the crowd lane, the cleanest next question was whether the same
+multiclass count carrier could power an \emph{exact} benchmark lane rather
+than another scheduler-bound one.  Dirichlet-Categorical is the right test:
+the carried object is just an additive count vector, revision is ordinary
+count addition, and the queried posterior is the exact Dirichlet posterior.
+So this lane gives us a rare case where both the carrier and the inference
+procedure are promotable.
+
+The refreshed implementation therefore does three intentionally simple things:
+\begin{itemize}
+\item it extracts the shared \code{DirichletCountState} into
+\codepath{pplbench/ppls/pln/dirichlet\_carrier.py},
+\item it uses a semantic-only PeTTa module
+\codepath{hyperon/PeTTa/pln\_inference/dirichlet\_categorical\_semantic.metta}
+for named revision and posterior-query kernels, and
+\item it keeps Python scheduler-free: the active backend
+\codepath{pplbench/ppls/pln/dirichlet\_categorical.py} just accumulates count
+evidence, queries the exact posterior state, and samples from the resulting
+Dirichlet distribution.
+\end{itemize}
+
+That is a good \emph{positive example} because the full procedure remains
+``carry evidence, query posterior'' all the way through.  A good
+\emph{negative example} is the archived
+\codepath{pplbench/ppls/pln/dirichlet\_categorical\_legacy.py}: it is still
+useful as reference material, but it is no longer the active benchmark
+surface.
+
+The first check was exact calibration, not the benchmark.  The artifact
+\codepath{results/pplbench\_dirichlet\_categorical\_exact\_calibration.json}
+records:
+\begin{itemize}
+\item single-observation posterior update,
+\item batched multiclass revision,
+\item symmetric-prior symmetric-evidence behavior,
+\item associativity of batched revision, and
+\item exact predictive log-likelihood under the posterior mean.
+\end{itemize}
+All of these match analytic Dirichlet-Categorical formulas to floating-point
+precision.  So the right promotion boundary for this lane is stronger than for
+the crowd lane:
+\begin{description}
+\item[Positive example.] The Dirichlet count carrier is promotable.
+\item[Positive example.] The full inference procedure is also promotable,
+because this lane has no approximate scheduler.
+\item[Negative example.] This exactness does not automatically promote the
+crowd E/M scheduler or other multiclass approximate loops.
+\end{description}
+
+The benchmark command is:
+\begin{lstlisting}
+cd ~/claude/pplbench
+ulimit -v 10485760
+python3 -m pplbench examples/dirichlet_categorical_stan_vs_pln.json
+\end{lstlisting}
+
+The stable exported manuscript artifacts are:
+\begin{itemize}
+\item \codepath{results/pplbench\_dirichlet\_categorical\_exact\_calibration.json}
+\item \codepath{results/pplbench\_dirichlet\_categorical\_stan\_vs\_pln\_summary.json}
+\item \codepath{results/pplbench\_dirichlet\_categorical\_stan\_vs\_pln\_table.tex}
+\item \codepath{results/figures/pplbench\_dirichlet\_categorical\_pll.png}
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Exact Dirichlet-Categorical comparison on the refreshed WM-PLN lane.
+This is one of the cleanest benchmark stories in the appendix: both the
+carried state and the full inference procedure are exact on the WM-PLN side,
+and the recorded run slightly exceeds Stan on final PLL while staying closer
+to the analytic posterior mean vector.}
+\label{tab:pplbench-dirichlet-categorical}
+\IfFileExists{../results/pplbench_dirichlet_categorical_stan_vs_pln_table.tex}{%
+  \input{../results/pplbench_dirichlet_categorical_stan_vs_pln_table.tex}
+}{%
+  \small
+  \begin{tabular}{lcccc}
+  \toprule
+  Backend & $L_1$ mean error & Final PLL & Compile (s) & Infer (s) \\
+  \midrule
+  (artifact missing) & n/a & n/a & n/a & n/a \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_dirichlet_categorical_pll.png}
+\caption{Stan vs exact WM-PLN on the Dirichlet-Categorical lane.  Because both
+sides are exact conjugate updates here, the comparison isolates sampling and
+benchmark-surface behavior rather than scheduler quality.}
+\label{fig:pplbench-dirichlet-categorical-pll}
+\end{figure}
+
+Numerically, the recorded run finishes at roughly $-124.5035$ final PLL for
+Stan and $-124.4707$ for WM-PLN, so the exact WM-PLN lane is ahead by about
+$0.0328$ PLL units on this run.  More importantly, the posterior mean vector
+is closer to the analytic Dirichlet posterior on the WM-PLN side: the
+$L_1$ mean error is about $0.00824$ for Stan and about $0.00208$ for WM-PLN.
+Compile time drops from about $17.82$s to about $0.125$s and inference time
+drops from about $0.042$s to about $0.0082$s.  This is exactly the sort of
+result we wanted from an exact multiclass lane: not a claim that WM-PLN always
+beats Stan, but a clean demonstration that the promoted Dirichlet count
+carrier is not merely philosophically nice; it works as an exact benchmark
+surface.
+
+\section{Hierarchical \texttt{n\_schools} via Carried Evidence State}
+\label{app:pplbench-n-schools}
+
+The next lane is the first explicitly \emph{hierarchical} WM-PLN rebuild.
+This matters because hierarchical models are exactly where it is easiest to
+backslide into carrying shrinkage formulas rather than carrying evidence.
+The refreshed lane therefore uses the opposite discipline:
+\begin{itemize}
+\item the carried objects are additive weighted Normal evidence states and
+zero-centered hierarchical priors,
+\item the local posterior and pooling updates are queried through semantic
+PeTTa kernels, and
+\item shrinkage appears only as a \emph{view} of the revised hierarchical
+state, not as the carried semantics itself.
+\end{itemize}
+
+Concretely, the active backend
+\codepath{pplbench/ppls/pln/n\_schools.py} carries:
+\begin{itemize}
+\item \code{NormalEvidenceState} for weighted local Gaussian evidence,
+\item \code{NormalPriorState} and \code{HierarchicalNormalState} for pooled
+family priors, and
+\item \code{NSchoolsPosteriorState} as the full queried state over baseline,
+state, district, and type effects.
+\end{itemize}
+The semantic-only PeTTa kernels live in
+\codepath{hyperon/PeTTa/pln\_inference/n\_schools\_semantic.metta}.  Those
+kernels provide exact local Normal posterior queries and exact
+precision-weighted hierarchical pooling under the chosen priors.  Python owns
+only the coordinate-style residual scheduler.
+
+There are two caveats, and it is better to say them plainly.
+First, the refreshed WM-PLN lane now supports the same \emph{Student-$t$}
+baseline family at the carried/query boundary, but it still extracts posterior
+moments for that baseline numerically rather than carrying a full sampled
+Student-$t$ latent state through the whole scheduler.  Second, the exported
+\code{sigma\_state}, \code{sigma\_district}, and \code{sigma\_type} values are
+currently queried coupling-scale views repeated across draws, not full posterior
+draws for those scale parameters.  That is an honest operational simplification,
+not something we want hidden inside the benchmark narrative.
+
+The first check, as with the crowd and noisy-or lanes, was a tiny exact
+calibration rather than a headline benchmark.  The artifact
+\codepath{results/pplbench\_n\_schools\_exact\_calibration.json} records:
+\begin{itemize}
+\item one-family one-group reduction to the Normal-Normal posterior,
+\item a symmetric two-group case, and
+\item a two-group known-coupling case, plus a direct Student-$t$ baseline
+local-view match against an independent high-resolution quadrature reference.
+\end{itemize}
+All three match the analytic posterior exactly in the carried-state layer.
+So the current promotion boundary is:
+\begin{description}
+\item[Positive example.] The hierarchical Normal carrier pattern is promotable.
+\item[Negative example.] The coordinate residual scheduler is still an
+operational layer and is not yet promoted as reusable inference semantics.
+\end{description}
+
+We also keep one explicit scheduler guardrail artifact,
+\codepath{results/pplbench\_n\_schools\_scheduler\_sanity.json}, which checks
+that tiny balanced, near-zero, and mixed cases stay finite, positive-precision,
+and symmetry-respecting.  As before, that is a non-promotion sanity test rather
+than a whole-procedure exactness theorem.
+
+The benchmark command is:
+\begin{lstlisting}
+cd ~/claude/pplbench
+ulimit -v 10485760
+python3 -m pplbench examples/n_schools_stan_vs_pln.json
+\end{lstlisting}
+
+The stable exported manuscript artifacts are:
+\begin{itemize}
+\item \codepath{results/pplbench\_n\_schools\_exact\_calibration.json}
+\item \codepath{results/pplbench\_n\_schools\_scheduler\_sanity.json}
+\item \codepath{results/pplbench\_n\_schools\_stan\_vs\_pln\_summary.json}
+\item \codepath{results/pplbench\_n\_schools\_stan\_vs\_pln\_table.tex}
+\item \codepath{results/figures/pplbench\_n\_schools\_pll.png}
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Hierarchical \texttt{n\_schools} comparison on the refreshed WM-PLN
+lane.  Stan keeps a modest predictive-fit edge on this run, while WM-PLN is
+substantially faster and keeps the hierarchical carrier/query split explicit.}
+\label{tab:pplbench-n-schools}
+\IfFileExists{../results/pplbench_n_schools_stan_vs_pln_table.tex}{%
+  \input{../results/pplbench_n_schools_stan_vs_pln_table.tex}
+}{%
+  \small
+  \begin{tabular}{lcccc}
+  \toprule
+  Backend & Final PLL & Compile (s) & Infer (s) & Median $n_{\mathrm{eff}}$/s \\
+  \midrule
+  (artifact missing) & n/a & n/a & n/a & n/a \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_n_schools_pll.png}
+\caption{Stan vs refreshed WM-PLN on the hierarchical \texttt{n\_schools}
+lane.  The WM-PLN curve stays close to Stan while using explicit hierarchical
+evidence carriers rather than the archived hybrid shrinkage wrapper.}
+\label{fig:pplbench-n-schools-pll}
+\end{figure}
+
+Numerically, the recorded run finishes at roughly $-284.604$ final PLL for
+Stan and $-286.014$ for WM-PLN, so Stan keeps a modest edge of about $1.41$
+PLL units on this configuration.  But compile time drops from about $21.55$s
+to effectively zero, inference time drops from about $0.91$s to about $0.35$s,
+and the median effective-sample-size-per-second metric rises from about
+$159.5$ to about $2306.2$.  That makes this a good hierarchical benchmark
+result:
+\begin{description}
+\item[Positive example.] The promoted hierarchical evidence-carrier pattern
+survives contact with a real pooling benchmark and remains competitive.
+\item[Negative example.] The current coordinate scheduler and deterministic
+scale views are still operational simplifications, so this is not yet a claim
+that WM-PLN has matched the full Stan posterior family on hierarchical models.
+\end{description}
+
+\noindent
+The lesson here is the same one the earlier lanes kept teaching us:
+PPLBench is useful not because it lets us declare victory quickly, but because
+it forces us to say exactly which part of a WM-PLN design is reusable,
+which part is only a scheduler, and which approximations we are still carrying.
+
+\chapter{Logistic Regression: Bernoulli-Logit Site Carrier}
+\label{app:pplbench-logistic-regression}
+
+The last native PPLBench lane was also the most delicate one to refresh
+honestly.  There was already an archived ``PLN logistic regression'' wrapper in
+\codepath{pplbench/ppls/pln/logistic\_regression\_legacy.py}, but it was a
+stratified binning model rather than the actual Bernoulli-logit benchmark model
+used by Stan.  That older work is still useful as theory context: the Lean
+\code{StratifiedPLN} development shows why histogram-style PLN can be a
+consistent estimator on logistic-regression tasks.  But that is not the same as
+the PPLBench logistic model, so we did not reuse it as the active benchmark
+surface.
+
+Instead, the refreshed lane treats logistic regression as a WM-PLN problem with
+three explicit carried pieces:
+\begin{itemize}
+\item additive weighted-Normal evidence for the intercept and each coefficient,
+\item Bernoulli-logit site hyperstates \((\xi_i, \omega_i)\) coming from the
+local quadratic variational bound, and
+\item queried Gaussian posterior views for \(\alpha\) and \(\beta\).
+\end{itemize}
+The active backend is
+\codepath{pplbench/ppls/pln/logistic\_regression.py}, and the local semantic
+kernels live in
+\codepath{hyperon/PeTTa/pln\_inference/logistic\_regression\_semantic.metta}.
+Those kernels define:
+\begin{itemize}
+\item \code{logistic-site-xi},
+\item \code{logistic-site-weight},
+\item \code{logistic-site-evidence}, and
+\item \code{logistic-normal-posterior-params}.
+\end{itemize}
+So the active lane is no longer ``bin features and hope for the best.''  It is
+an explicit carried-site approximation to the actual Bernoulli-logit model.
+This is also the right historical reading of PLN: the original PLN book's
+``PLN and Bayes Nets'' discussion explicitly puts first-order PLN near loopy
+Bayes nets and iterative relaxation methods, while its later ``Using Bayes
+Nets to Augment PLN Inference'' section treats Bayes-net style acceleration as
+compatible with the broader PLN agenda rather than alien to it
+\cite[Sec.~1.6.3]{goertzel2009pln}\cite[Sec.~9.4]{goertzel2009pln}.  So the
+right criticism of this lane is not that it uses a Bayes-net-like scheduler at
+all, but that the particular scheduler is still only an operational
+approximation rather than promoted reusable semantics.
+
+The promotion boundary here is exactly the one the council would want us to
+state plainly:
+\begin{description}
+\item[Positive example.] With fixed site hyperstates, the local Bernoulli-logit
+message reduces \emph{exactly} to additive weighted-Normal carried evidence.
+\item[Negative example.] The full \((\xi, \omega)\) scheduler is still a
+diagonal variational approximation, so it is not yet promoted as reusable exact
+logistic inference semantics.
+\end{description}
+
+The fixed-site calibration artifact
+\codepath{results/pplbench\_logistic\_regression\_exact\_calibration.json}
+records:
+\begin{itemize}
+\item an intercept-only fixed-site case,
+\item a zero-feature case that correctly leaves the coefficient at its prior,
+and
+\item an additive two-site composition case.
+\end{itemize}
+All three match exactly, so the carrier pattern is genuinely reusable.  The
+separate scheduler guardrail artifact
+\codepath{results/pplbench\_logistic\_regression\_scheduler\_sanity.json}
+checks that on a tiny monotone one-feature classifier:
+\begin{itemize}
+\item the site weights stay finite and in \((0, 1/4]\),
+\item the fitted coefficient is positive, and
+\item the predicted probabilities increase monotonically with the feature.
+\end{itemize}
+Again, this is a sanity check rather than a proof that the whole variational
+loop is exact.
+
+The benchmark command is:
+\begin{lstlisting}
+cd ~/claude/pplbench
+ulimit -v 10485760
+python3 -m pplbench examples/logistic_regression_stan_vs_pln.json
+\end{lstlisting}
+
+The stable exported manuscript artifacts are:
+\begin{itemize}
+\item \codepath{results/pplbench\_logistic\_regression\_exact\_calibration.json}
+\item \codepath{results/pplbench\_logistic\_regression\_scheduler\_sanity.json}
+\item \codepath{results/pplbench\_logistic\_regression\_query\_profile.json}
+\item \codepath{results/pplbench\_logistic\_regression\_stan\_vs\_pln\_summary.json}
+\item \codepath{results/pplbench\_logistic\_regression\_stan\_vs\_pln\_table.tex}
+\item \codepath{results/figures/pplbench\_logistic\_regression\_pll.png}
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Logistic-regression comparison on the refreshed WM-PLN lane.  The new
+lane finally matches the benchmark model family rather than a stratified proxy,
+but the current variational scheduler still lags Stan on both fit and runtime.}
+\label{tab:pplbench-logistic-regression}
+\IfFileExists{../results/pplbench_logistic_regression_stan_vs_pln_table.tex}{%
+  \input{../results/pplbench_logistic_regression_stan_vs_pln_table.tex}
+}{%
+  \small
+  \begin{tabular}{lcccc}
+  \toprule
+  Backend & Final PLL & Compile (s) & Infer (s) & Median $n_{\mathrm{eff}}$/s \\
+  \midrule
+  (artifact missing) & n/a & n/a & n/a & n/a \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_logistic_regression_pll.png}
+\caption{Stan vs refreshed WM-PLN on the logistic-regression lane.  The WM-PLN
+curve is stable and model-matched, but the diagonal variational scheduler keeps
+a clear gap to Stan on this first slice.}
+\label{fig:pplbench-logistic-regression-pll}
+\end{figure}
+
+Numerically, the refreshed batched run finishes at roughly $-9.152$ final PLL
+for Stan and $-10.115$ for WM-PLN, so WM-PLN is about $0.96$ PLL units behind
+on this configuration.  Compile time remains low on the WM-PLN side, changing
+from about $0.06$s for Stan to about $0.16$s for WM-PLN, while inference time
+now rises only from about $0.30$s to about $0.37$s.  That is still slower than
+Stan, but it is far better than the earlier unbatched WM-PLN logistic run.  The
+median effective-sample-size-per-second metric now moves from about $986.5$ for
+Stan to about $2070.8$ for WM-PLN.  The separate query-profile artifact confirms
+why: after introducing batched Prolog-side hyperstate, site-evidence, and
+posterior helpers, the fit loop drops to roughly $225$ bridge calls and about
+$225$ evaluated expressions over $25$ iterations, down from roughly $350$ calls
+and $40{,}150$ expressions before batching.  The same profile also shows that
+the remaining cost is dense numeric reduction rather than keyed lookup, so
+\code{MapSpace}/\code{SetSpace} remain a later option rather than the next
+optimization move.  This is therefore an honest boundary result with real
+runtime progress:
+\begin{description}
+\item[Positive example.] The weighted-Normal carrier plus explicit site
+hyperstate gives us a crisp WM-PLN logistic lane that matches the benchmark
+model family instead of falling back to stratified bins.
+\item[Negative example.] The current diagonal variational scheduler is still
+too slow and too weak relative to Stan, so it is not yet a promotable reusable
+logistic inference engine.
+\end{description}
+
+\noindent
+That is still useful progress.  It means the remaining work on logistic is now
+squarely about the scheduler, not about whether we are carrying the wrong
+semantic object.
+
+\chapter{Robust Regression: Continuous Carrier Under Heavy-Tailed Noise}
+\label{app:pplbench-robust-regression}
+
+The next lane keeps the same carrier-first discipline, but under a harder
+robustness requirement.  The benchmark model
+\codepath{pplbench/models/robust\_regression.py} is linear regression with
+Student-\(t\) noise.  A bad way to port that into WM-PLN would be to hide a
+closed-form or matrix solve in Python and merely expose its outputs through a
+PLN-looking wrapper.  We deliberately did not do that.
+
+Instead, the refreshed lane carries:
+\begin{itemize}
+\item additive weighted Gaussian evidence for the intercept and each
+coefficient,
+\item an explicit residual-scale hyperstate, and
+\item a queried tail-shape view.
+\end{itemize}
+The active semantics live in
+\codepath{hyperon/PeTTa/pln\_inference/robust\_regression\_semantic.metta},
+while the operational scheduler lives in
+\codepath{pplbench/ppls/pln/robust\_regression.py}.  The split is:
+\begin{description}
+\item[Promotable.] The weighted continuous carrier pattern:
+explicit additive evidence state, queried posterior view.
+\item[Not yet promotable.] The current iterative Student-\(t\)-style
+reweighting scheduler.
+\end{description}
+
+This is an honest partial match to the Stan model rather than a fake full
+posterior-family claim.  In particular:
+\begin{itemize}
+\item \code{alpha} and \code{beta} are sampled from the queried Gaussian views
+of the carried evidence states;
+\item \code{sigma} is a queried robust residual-scale view repeated across
+draws; and
+\item \code{nu} is a fixed queried tail-shape view in this v1 lane, not a full
+WM-carried posterior random variable.
+\end{itemize}
+That limitation is visible by design.
+
+The first check, before any benchmark headline, was the tiny exact calibration
+artifact \codepath{results/pplbench\_robust\_regression\_exact\_calibration.json}.
+It records:
+\begin{itemize}
+\item a one-feature Gaussian reduction case,
+\item a symmetric centered-feature case, and
+\item a direct residual-weight comparison showing that larger residuals receive
+strictly smaller Student-\(t\)-style weights.
+\end{itemize}
+The carried continuous state matches the analytic Gaussian posterior exactly on
+the first two cases, and the weight ordering behaves as intended on the third.
+So the current promotion boundary is:
+\begin{description}
+\item[Positive example.] The weighted continuous carrier pattern is promotable.
+\item[Negative example.] The iterative robust scheduler is still operational and
+is not yet promoted as reusable robust inference semantics.
+\end{description}
+
+We also keep one explicit scheduler guardrail artifact,
+\codepath{results/pplbench\_robust\_regression\_scheduler\_sanity.json}.  It
+checks that the refreshed lane stays finite on clean and contaminated toy data,
+and that it resists a single large outlier better than plain unweighted OLS.
+Again, this is a non-promotion sanity test rather than a theorem that the full
+robust scheduler is exact.
+
+The benchmark command is:
+\begin{lstlisting}
+cd ~/claude/pplbench
+ulimit -v 10485760
+python3 -m pplbench examples/robust_regression_stan_vs_pln.json
+\end{lstlisting}
+
+The stable exported manuscript artifacts are:
+\begin{itemize}
+\item \codepath{results/pplbench\_robust\_regression\_exact\_calibration.json}
+\item \codepath{results/pplbench\_robust\_regression\_scheduler\_sanity.json}
+\item \codepath{results/pplbench\_robust\_regression\_stan\_vs\_pln\_summary.json}
+\item \codepath{results/pplbench\_robust\_regression\_stan\_vs\_pln\_table.tex}
+\item \codepath{results/figures/pplbench\_robust\_regression\_pll.png}
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Robust-regression comparison on the refreshed WM-PLN lane.  The
+continuous evidence carrier remains honest and stable, but Stan keeps both the
+predictive-fit and runtime edge on this first heavy-tailed benchmark slice.}
+\label{tab:pplbench-robust-regression}
+\IfFileExists{../results/pplbench_robust_regression_stan_vs_pln_table.tex}{%
+  \input{../results/pplbench_robust_regression_stan_vs_pln_table.tex}
+}{%
+  \small
+  \begin{tabular}{lcccc}
+  \toprule
+  Backend & Final PLL & Compile (s) & Infer (s) & Median $n_{\mathrm{eff}}$/s \\
+  \midrule
+  (artifact missing) & n/a & n/a & n/a & n/a \\
+  \bottomrule
+  \end{tabular}
+}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{../results/figures/pplbench_robust_regression_pll.png}
+\caption{Stan vs refreshed WM-PLN on the robust-regression lane.  The WM-PLN
+curve is stable, but the current robust scheduler pays both a predictive-fit
+and runtime penalty relative to Stan on this first run.}
+\label{fig:pplbench-robust-regression-pll}
+\end{figure}
+
+Numerically, the recorded run finishes at roughly $-778.317$ final PLL for
+Stan and $-781.575$ for WM-PLN, so WM-PLN is about $3.26$ PLL units behind on
+this configuration.  Compile time drops from about $22.28$s to effectively
+zero, but inference time rises from about $0.11$s to about $1.29$s, and the
+median effective-sample-size-per-second metric falls from about $5673.6$ to
+about $622.2$.  This is therefore a useful negative boundary result:
+\begin{description}
+\item[Positive example.] The continuous evidence carrier pattern survives a
+heavy-tailed regression benchmark without collapsing back into disguised
+coefficient fitting.
+\item[Negative example.] The current robust scheduler is slower and less
+predictively accurate than Stan on this first slice, so it is not yet a
+promotable reusable inference engine.
+\end{description}
+
+\noindent
+That is still good PPLBench progress.  It tells us the next optimization target
+is no longer the carrier boundary; it is the robust scheduler itself.
 
 \chapter{Notation and Symbol Glossary}
 \label{app:notation}

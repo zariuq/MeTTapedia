@@ -221,18 +221,13 @@ def RewriteIRArtifact.lintErrors (a : RewriteIRArtifact) : List String :=
       ["dialect must be non-empty"]
     else
       []
-  let ruleErrs :=
-    if norm.rules.isEmpty then
-      ["rules cannot be empty"]
-    else
-      []
   let dupRuleIds :=
     let ids := norm.rules.map (·.ruleId)
     if ids.length == ids.eraseDups.length then
       []
     else
       ["rule_id values must be unique"]
-  schemaErrs ++ dialectErrs ++ ruleErrs ++ dupRuleIds
+  schemaErrs ++ dialectErrs ++ dupRuleIds
     ++ (norm.rules.map lintRule).foldl (· ++ ·) []
 
 def RewriteIRArtifact.isLintClean (a : RewriteIRArtifact) : Bool :=

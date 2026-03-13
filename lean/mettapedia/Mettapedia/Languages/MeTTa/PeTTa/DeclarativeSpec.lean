@@ -249,6 +249,22 @@ theorem collapse_intro (s : PeTTaSpace) (p ty : Pattern) (bs : Bindings) (inner 
   refine ⟨h, ?_⟩
   exact MeTTaEval.collapse p ty bs inner h
 
+/-- Declarative clause packaging for `collapse (match &self pat tmpl)`.
+
+This is the clean composition theorem for the first nested certified query
+family: the inner `match &self` query is certified already, and `collapse`
+packages exactly its threaded answers into a singleton collection. -/
+theorem collapse_spaceQuery_intro
+    (s : PeTTaSpace) (pat tmpl ty : Pattern) (bs : Bindings) :
+    collapse s
+      (.apply "match" [.apply "&self" [], pat, tmpl])
+      ty
+      bs
+      ((s.spaceMatch pat tmpl).map (·, bs)) := by
+  exact collapse_intro _ _ _ _
+    ((s.spaceMatch pat tmpl).map (·, bs))
+    (MeTTaEval.spaceQuery pat tmpl ty bs _ rfl)
+
 end FullDeclClause
 
 /-! ## Declarative Control Clauses (`if`/`let`/`case`) -/
@@ -652,7 +668,7 @@ inductive CoreDecl : EvalState → Pattern → EvalState → Answers → Prop wh
       CoreDecl s
         (.apply "get-atoms" [.apply "&self" []])
         s
-        s.space.facts
+        s.space.storedAtoms
   | pure (s : EvalState) (p : Pattern) (answers : Answers)
       (h : PureDecl s.space p answers) :
       CoreDecl s p s answers

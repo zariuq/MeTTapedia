@@ -18,6 +18,9 @@ import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierRegressionInf
 import Mettapedia.Logic.PLNFirstOrder.ChoquetQuantifierSemantics
 import Mettapedia.Logic.PLNFirstOrder.ChoquetQuantifierCanary
 import Mettapedia.Logic.PLNFirstOrder.ChoquetQuantifierRegression
+import Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSpecialization
+import Mettapedia.Logic.PLNFirstOrder.GradedQuantifierCanary
+import Mettapedia.Logic.PLNFirstOrder.GradedQuantifierRegression
 import Mettapedia.Logic.PLNFirstOrder.FuzzyDomainQuantifiers
 import Mettapedia.Logic.PLNFirstOrder.FuzzyDomainQuantifierCanary
 import Mettapedia.Logic.PLNFirstOrder.FuzzyDomainQuantifierRegression
@@ -40,6 +43,7 @@ Complete formalization of PLN first-order quantifiers via:
 - **Arbitrary-domain infinitary semantics**: exported through `PLNFirstOrder.Infinite`
 - **Arbitrary-domain fuzzy semantics**: exported through `FuzzyMeasureCore`,
   `SugenoIntegral`, `ChoquetQuantifierSemantics`,
+  `GradedQuantifierSpecialization`,
   `FuzzyQuantifierSemanticsInf`, and `FuzzyDomainQuantifiers`
 - **Finite/counting fuzzy semantics**: now explicitly packaged through
   `FuzzyQuantifierSemanticsFin` and companion `...Fin` wrappers
@@ -58,8 +62,13 @@ Complete formalization of PLN first-order quantifiers via:
 - `nearOneMassInf` / `nearZeroMassInf` / `fuzzyExistsScoreInf` /
   `fuzzyForAllHoldsInf` / `fuzzyThereExistsHoldsInf` - arbitrary-domain fuzzy
   quantifier semantics
-- `choquetScoreInf` / `choquetForAllHoldsInf` / `choquetThereExistsHoldsInf` -
+  - `choquetScoreInf` / `choquetForAllHoldsInf` / `choquetThereExistsHoldsInf` -
   Choquet-style arbitrary-domain fuzzy semantics
+- `GradedQuantifierSemantics` / `sugenoGradedQuantifierSemantics` /
+  `choquetGradedQuantifierSemantics` - shared graded quantifier specialization
+  layer with explicit Sugeno and Choquet instances
+- `GradedQuantifierCanary` / `GradedQuantifierRegression` - direct canary and
+  regression surfaces for the shared graded layer itself
 - `domainRestrict` / `eqOnDomain` / `fuzzyAllOnDomainHoldsInf` /
   `choquetAllOnDomainHoldsInf` - fuzzy-domain restriction and relativization layer
 - `FuzzyQuantifierParamsFin` / `nearOneFractionFin` / `nearZeroFractionFin` /
@@ -78,6 +87,12 @@ Complete formalization of PLN first-order quantifiers via:
     arbitrary-domain fuzzy theorem surface
   - `choquetScoreInf_mono` / `choquetScoreInf_constantOne_eq_one` -
     Choquet-style theorem surface
+  - `scoreOnDomain_eq_of_eqOnDomain` /
+    `forAllOnDomainHolds_mono_of_pointwise` -
+    shared graded specialization theorems
+  - `canary_graded_nat_sugeno_lives_on` /
+    `canary_graded_nat_choquet_singleton_not_strict` -
+    direct graded canaries for the shared Sugeno/Choquet spine
   - `fuzzyExistsOnDomainScoreInf_eq_of_eqOnDomain` /
     `choquetOnDomainScoreInf_eq_of_eqOnDomain` -
     fuzzy-domain "living on the domain" theorem surface
@@ -108,6 +123,7 @@ Complete formalization of PLN first-order quantifiers via:
 - Arbitrary-domain theorem/canary/regression surface ✅
 - Arbitrary-domain fuzzy theorem/canary/regression surface ✅
 - Choquet infinitary fuzzy branch ✅
+- Shared graded specialization branch ✅
 - Fuzzy-domain restriction / relativization branch ✅
 - Finite/counting fuzzy layer explicitly rebased as an instance ✅
 

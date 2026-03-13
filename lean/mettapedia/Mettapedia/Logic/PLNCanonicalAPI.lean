@@ -15,6 +15,15 @@ import Mettapedia.Logic.PLNInferenceControlChainer
 import Mettapedia.Logic.PLNInferenceControlExamples
 import Mettapedia.Logic.PLNGuardedHigherOrderSemantics
 import Mettapedia.Logic.PLNMixedModeChainComposition
+import Mettapedia.Logic.PLNProbHOLPlannerBridge
+import Mettapedia.Logic.PLNRegimeMixtureBenchmarkBridge
+import Mettapedia.Logic.PLNRegimeMixtureRegression
+import Mettapedia.Logic.PLNMarkovLogicAbstract
+import Mettapedia.Logic.PLNMarkovLogicCountable
+import Mettapedia.Logic.PLNMarkovLogicFiniteRestriction
+import Mettapedia.Logic.PLNMarkovLogicFactorGraph
+import Mettapedia.Logic.PLNMarkovLogicWorldModel
+import Mettapedia.Logic.PLNMarkovLogicRegression
 import Mettapedia.Logic.PLNProbabilisticEventCalculus
 import Mettapedia.Logic.PLNColliderSingletonBridge
 import Mettapedia.Logic.PLNErrorMagnificationGrounding
@@ -41,6 +50,7 @@ import Mettapedia.Logic.PLNFirstOrder.InfiniteSoundness
 import Mettapedia.Logic.PLNFirstOrder.InfiniteCanary
 import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSoundnessInf
 import Mettapedia.Logic.PLNFirstOrder.ChoquetQuantifierSemantics
+import Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSpecialization
 import Mettapedia.Logic.PLNFirstOrder.FuzzyDomainQuantifiers
 import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSemanticsFin
 import Mettapedia.Logic.HOL
@@ -72,6 +82,11 @@ Facade module exposing recommended, semantically grounded entry points:
 - Documentation index for derived BN rules, exactness matrix, end-to-end theorems
 - Real HOL, direct `Set -> HOL -> WM`, higher-order PLN, and the
   logical-induction-ready HOL belief/process layer
+- Planner-facing higher-order belief shadows derived from semantic `ProbHOL`
+- Finite regime-mixture theorem layer for direct/soft/reveal higher-order
+  continuation criteria
+- Infinite-first MLN semantics plus finite-support factor-graph / WM
+  subsumption
 
 BN-topology-specific endpoints (chain/fork/collider) and sort-variant
 specializations are available directly from `PLNXiDerivedBNRules` and
@@ -119,6 +134,9 @@ abbrev PLNGuardedSemanticQuery :=
 abbrev PLNMixedModePlan :=
   Mettapedia.Logic.PLNMixedModeChainComposition.MixedModePlan
 
+abbrev PLNBenchmarkPlannerShadow :=
+  Mettapedia.Logic.BenchmarkPlannerShadow
+
 abbrev pln_guarded_startPlan :=
   Mettapedia.Logic.PLNMixedModeChainComposition.startPlan
 
@@ -133,6 +151,12 @@ abbrev pln_guarded_higher_order_demo :=
 
 abbrev pln_guarded_bounded_composition_demo :=
   Mettapedia.Logic.PLNMixedModeChainComposition.boundedThenExactPlan_D
+
+noncomputable abbrev pln_guarded_benchmarkPlannerShadow :=
+  @_root_.Mettapedia.Logic.benchmarkPlannerShadow
+
+noncomputable abbrev pln_guarded_leakyHigherOrderPlannerShadow :=
+  @_root_.Mettapedia.Logic.leakyHigherOrderPlannerShadow
 
 /-! ## Chapter-7 Distributional / Kyburg Endpoints -/
 
@@ -481,6 +505,309 @@ abbrev pln_higherOrderHOL_holdsLinkWM_of_holProvIff_left :=
 abbrev pln_higherOrderHOL_holdsLinkWM_of_holProvIff_right :=
   @_root_.Mettapedia.Logic.PLNHigherOrderHOLLinkBridge.holdsLinkWM_of_holProvIff_right
 
+/-! ## Semantic Probabilistic HOL Endpoints -/
+
+abbrev PLNProbHOLModelSpace :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.ModelSpace
+
+noncomputable abbrev pln_probHol_sentenceProb :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.sentenceProb
+
+abbrev pln_probHol_sentenceProb_top_eq_one :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.sentenceProb_top_eq_one
+
+abbrev pln_probHol_sentenceProb_bot_eq_zero :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.sentenceProb_bot_eq_zero
+
+abbrev pln_probHol_sentenceProb_mono_of_pointwiseImplies :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.sentenceProb_mono_of_pointwiseImplies
+
+abbrev pln_probHol_sentenceProb_eq_of_pointwiseIff :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.sentenceProb_eq_of_pointwiseIff
+
+noncomputable abbrev pln_probHol_probEvidence :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.probEvidence
+
+noncomputable abbrev pln_probHol_probQueryStrength :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.probQueryStrength
+
+abbrev pln_probHol_probQueryStrength_eq_sentenceProb :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.probQueryStrength_eq_sentenceProb
+
+abbrev pln_probHol_probQueryStrength_mono_of_pointwiseImplies :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.probQueryStrength_mono_of_pointwiseImplies
+
+abbrev pln_probHol_probQueryStrength_eq_of_pointwiseIff :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.probQueryStrength_eq_of_pointwiseIff
+
+abbrev pln_probHol_empiricalSentenceProb_eq_staticQueryStrength :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.empiricalSentenceProb_eq_staticQueryStrength
+
+abbrev pln_probHol_empiricalProbQueryStrength_eq_staticQueryStrength :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.empiricalProbQueryStrength_eq_staticQueryStrength
+
+abbrev PLNHierarchicalProbHOLState :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.HierarchicalState
+
+noncomputable abbrev pln_probHol_hierarchicalSentenceProb :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchicalSentenceProb
+
+abbrev pln_probHol_hierarchicalSentenceProb_eq_flat_sentenceProb :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchicalSentenceProb_eq_flat_sentenceProb
+
+abbrev pln_probHol_hierarchicalSentenceProb_eq_integral_componentSentenceProb :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchicalSentenceProb_eq_integral_componentSentenceProb
+
+abbrev pln_probHol_hierarchicalSentenceProb_mono_of_pointwiseImplies :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchicalSentenceProb_mono_of_pointwiseImplies
+
+abbrev pln_probHol_hierarchicalSentenceProb_eq_of_pointwiseIff :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchicalSentenceProb_eq_of_pointwiseIff
+
+noncomputable abbrev pln_probHol_hierarchicalProbEvidence :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchicalProbEvidence
+
+noncomputable abbrev pln_probHol_hierarchicalProbQueryStrength :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchicalProbQueryStrength
+
+abbrev pln_probHol_hierarchicalProbQueryStrength_eq_sentenceProb :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchicalProbQueryStrength_eq_sentenceProb
+
+abbrev pln_probHol_hierarchicalProbQueryStrength_mono_of_pointwiseImplies :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchicalProbQueryStrength_mono_of_pointwiseImplies
+
+abbrev pln_probHol_hierarchicalProbQueryStrength_eq_of_pointwiseIff :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchicalProbQueryStrength_eq_of_pointwiseIff
+
+abbrev pln_probHol_hierarchical_regression_empirical_probStrength_eq_static :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.hierarchical_regression_empirical_probStrength_eq_static
+
+abbrev PLNBeliefDayTracksSentenceProb :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.BeliefDayTracksSentenceProb
+
+abbrev PLNBeliefDayTracksSentenceProbOn :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.BeliefDayTracksSentenceProbOn
+
+abbrev PLNBeliefDayTracksHierarchicalProb :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.BeliefDayTracksHierarchicalProb
+
+abbrev PLNBeliefDayTracksHierarchicalProbOn :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.BeliefDayTracksHierarchicalProbOn
+
+abbrev PLNBeliefProcessEventuallyTracksSentenceProbOn :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.BeliefProcessEventuallyTracksSentenceProbOn
+
+abbrev PLNBeliefProcessEventuallyTracksHierarchicalProbOn :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.BeliefProcessEventuallyTracksHierarchicalProbOn
+
+abbrev pln_probHol_beliefDayTracksSentenceProbOn_singleton :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.beliefDayTracksSentenceProbOn_singleton
+
+abbrev pln_probHol_beliefDayTracksHierarchicalProbOn_singleton :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.beliefDayTracksHierarchicalProbOn_singleton
+
+abbrev pln_probHol_guardedBenchmark_componentSentenceProb_eq_branchMass :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.componentSentenceProb_eq_branchMass
+
+abbrev pln_probHol_guardedBenchmark_hierarchicalSentenceProb_eq_integral_branchMass :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkHierarchicalSentenceProb_eq_integral_branchMass
+
+abbrev pln_probHol_guardedBenchmark_hierarchicalSentenceProb_eq_higherOrderSemanticValue :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkHierarchicalSentenceProb_eq_higherOrderSemanticValue
+
+noncomputable abbrev pln_probHol_guardedBenchmark_defaultBenchmarkLatentProfile :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.defaultBenchmarkLatentProfile
+
+noncomputable abbrev pln_probHol_guardedBenchmark_benchmarkLatentHierarchicalState :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkLatentHierarchicalState
+
+abbrev pln_probHol_guardedBenchmark_benchmarkLatentHierarchicalSentenceProb_eq_benchmarkHierarchicalSentenceProb :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkLatentHierarchicalSentenceProb_eq_benchmarkHierarchicalSentenceProb
+
+abbrev pln_probHol_guardedBenchmark_benchmarkLatentHierarchicalSentenceProb_eq_higherOrderSemanticValue :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkLatentHierarchicalSentenceProb_eq_higherOrderSemanticValue
+
+abbrev pln_probHol_guardedBenchmark_benchmarkLatentHierarchicalProbQueryStrength_eq_higherOrderSemanticValue :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkLatentHierarchicalProbQueryStrength_eq_higherOrderSemanticValue
+
+noncomputable abbrev pln_probHol_guardedBenchmark_benchmarkBeliefPrice :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkBeliefPrice
+
+noncomputable abbrev pln_probHol_guardedBenchmark_benchmarkBeliefDay :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkBeliefDay
+
+abbrev pln_probHol_guardedBenchmark_benchmarkBeliefDay_tracks_benchmarkHierarchicalProbOn :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkBeliefDay_tracks_benchmarkHierarchicalProbOn
+
+abbrev pln_probHol_guardedBenchmark_benchmarkBeliefDay_tracks_benchmarkLatentHierarchicalProbOn :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkBeliefDay_tracks_benchmarkLatentHierarchicalProbOn
+
+abbrev pln_probHol_guardedBenchmark_benchmarkBeliefProcess_eventuallyTracks_benchmarkHierarchicalProbOn :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkBeliefProcess_eventuallyTracks_benchmarkHierarchicalProbOn
+
+abbrev pln_probHol_guardedBenchmark_benchmarkBeliefProcess_eventuallyTracks_benchmarkLatentHierarchicalProbOn :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkBeliefProcess_eventuallyTracks_benchmarkLatentHierarchicalProbOn
+
+abbrev pln_probHol_guardedBenchmark_benchmarkBeliefDay_not_tracks_benchmarkHierarchicalProbOn_with_top :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkBeliefDay_not_tracks_benchmarkHierarchicalProbOn_with_top
+
+abbrev pln_probHol_guardedBenchmark_benchmarkBeliefDay_not_tracks_benchmarkLatentHierarchicalProbOn_with_top :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.benchmarkBeliefDay_not_tracks_benchmarkLatentHierarchicalProbOn_with_top
+
+abbrev pln_probHol_guardedBenchmark_higherOrderSemanticContraction_value_eq_benchmarkBeliefPrice :=
+  @_root_.Mettapedia.Logic.HOL.Probabilistic.higherOrderSemanticContraction_value_eq_benchmarkBeliefPrice
+
+abbrev pln_probHolPlanner_benchmarkPlannerShadow_carried_value_eq_benchmarkBeliefPrice :=
+  @_root_.Mettapedia.Logic.benchmarkPlannerShadow_carried_value_eq_benchmarkBeliefPrice
+
+abbrev pln_probHolPlanner_benchmarkPlannerShadow_process_tracks_hierarchicalProbOn :=
+  @_root_.Mettapedia.Logic.benchmarkPlannerShadow_process_tracks_hierarchicalProbOn
+
+abbrev pln_probHolPlanner_benchmarkPlannerShadow_day_tracks_benchmarkLatentHierarchicalProbOn :=
+  @_root_.Mettapedia.Logic.benchmarkPlannerShadow_day_tracks_benchmarkLatentHierarchicalProbOn
+
+abbrev pln_probHolPlanner_benchmarkPlannerShadow_process_tracks_benchmarkLatentHierarchicalProbOn :=
+  @_root_.Mettapedia.Logic.benchmarkPlannerShadow_process_tracks_benchmarkLatentHierarchicalProbOn
+
+abbrev pln_probHolPlanner_benchmarkPlannerShadow_day_not_tracks_benchmarkLatentExpandedSample :=
+  @_root_.Mettapedia.Logic.benchmarkPlannerShadow_day_not_tracks_benchmarkLatentExpandedSample
+
+abbrev pln_probHolPlanner_leakyHigherOrderPayload_valid01 :=
+  @_root_.Mettapedia.Logic.leakyHigherOrderPayload_valid01
+
+abbrev pln_probHolPlanner_leakyHigherOrderPlan_C_current_value_eq_benchmarkBeliefPrice :=
+  @_root_.Mettapedia.Logic.leakyHigherOrderPlan_C_current_value_eq_benchmarkBeliefPrice
+
+abbrev pln_probHolPlanner_leakyHigherOrderPlan_C_current_gateConfidence_eq_higherOrderGuardConfidence :=
+  @_root_.Mettapedia.Logic.leakyHigherOrderPlan_C_current_gateConfidence_eq_higherOrderGuardConfidence
+
+abbrev pln_probHolPlanner_leakyHigherOrderPlan_C_current_records_payload :=
+  @_root_.Mettapedia.Logic.leakyHigherOrderPlan_C_current_records_payload
+
+abbrev pln_probHolPlanner_leakyHigherOrderPlannerShadow_process_tracks_defaultBenchmarkLatentHierarchicalProbOn :=
+  @_root_.Mettapedia.Logic.leakyHigherOrderPlannerShadow_process_tracks_defaultBenchmarkLatentHierarchicalProbOn
+
+/-! ## Finite Regime-Mixture Endpoints -/
+
+abbrev PLNRegimeMixtureValidWeights :=
+  @_root_.Mettapedia.Logic.PLNRegimeMixtureTheorems.ValidRegimeWeights
+
+noncomputable abbrev pln_regimeMixture_mixtureValue :=
+  @_root_.Mettapedia.Logic.PLNRegimeMixtureTheorems.mixtureValue
+
+noncomputable abbrev pln_regimeMixture_branchRadius :=
+  @_root_.Mettapedia.Logic.PLNRegimeMixtureTheorems.branchRadius
+
+noncomputable abbrev pln_regimeMixture_expectedSquaredLoss :=
+  @_root_.Mettapedia.Logic.PLNRegimeMixtureTheorems.expectedSquaredLoss
+
+noncomputable abbrev pln_regimeMixture_mixtureVariance :=
+  @_root_.Mettapedia.Logic.PLNRegimeMixtureTheorems.mixtureVariance
+
+noncomputable abbrev pln_regimeMixture_revealGain :=
+  @_root_.Mettapedia.Logic.PLNRegimeMixtureTheorems.revealGain
+
+abbrev pln_regimeMixture_directApprox_error_le_residualMass_mul_branchRadius :=
+  @_root_.Mettapedia.Logic.PLNRegimeMixtureTheorems.directApprox_error_le_residualMass_mul_branchRadius
+
+abbrev pln_regimeMixture_expectedSquaredLoss_decomposition :=
+  @_root_.Mettapedia.Logic.PLNRegimeMixtureTheorems.expectedSquaredLoss_decomposition
+
+abbrev pln_regimeMixture_expectedSquaredLoss_mixture_le :=
+  @_root_.Mettapedia.Logic.PLNRegimeMixtureTheorems.expectedSquaredLoss_mixture_le
+
+abbrev pln_regimeMixture_revealPreferred_if_cost_lt_variance :=
+  @_root_.Mettapedia.Logic.PLNRegimeMixtureTheorems.revealPreferred_if_cost_lt_variance
+
+abbrev pln_regimeMixture_benchmarkMixtureValue_eq_higherOrderSemanticValue :=
+  @_root_.Mettapedia.Logic.benchmarkMixtureValue_eq_higherOrderSemanticValue
+
+abbrev pln_regimeMixture_benchmarkMixtureValue_eq_benchmarkBeliefPrice :=
+  @_root_.Mettapedia.Logic.benchmarkMixtureValue_eq_benchmarkBeliefPrice
+
+abbrev pln_regimeMixture_benchmarkDirectApprox_exactBranch_bound :=
+  @_root_.Mettapedia.Logic.benchmarkDirectApprox_exactBranch_bound
+
+abbrev pln_regimeMixture_benchmarkMixtureSquaredLoss_le_exactBranchRisk :=
+  @_root_.Mettapedia.Logic.benchmarkMixtureSquaredLoss_le_exactBranchRisk
+
+abbrev pln_regimeMixture_benchmarkRevealPreferred_if_cost_lt_variance :=
+  @_root_.Mettapedia.Logic.benchmarkRevealPreferred_if_cost_lt_variance
+
+abbrev pln_regimeMixture_regression_leaky_value_eq_concrete :=
+  @_root_.Mettapedia.Logic.regimeMixture_regression_leaky_value_eq_concrete
+
+abbrev pln_regimeMixture_regression_leaky_mixtureVariance_le_exactBranchRisk :=
+  @_root_.Mettapedia.Logic.regimeMixture_regression_leaky_mixtureVariance_le_exactBranchRisk
+
+abbrev pln_regimeMixture_regression_leaky_reveal_preferred_at_zero_cost :=
+  @_root_.Mettapedia.Logic.regimeMixture_regression_leaky_reveal_preferred_at_zero_cost
+
+abbrev pln_regimeMixture_regression_leaky_reveal_not_preferred_at_cost_one :=
+  @_root_.Mettapedia.Logic.regimeMixture_regression_leaky_reveal_not_preferred_at_cost_one
+
+abbrev pln_regimeMixture_regression_sameWM_differentRegimes_differentAdmissibleDiscoveries :=
+  @_root_.Mettapedia.Logic.regimeMixture_regression_sameWM_differentRegimes_differentAdmissibleDiscoveries
+
+/-! ## Infinite-First MLN Endpoints -/
+
+abbrev PLNAbstractMLNSemantics :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicAbstract.AbstractMLNSemantics
+
+abbrev PLNMLNMassSemantics :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicAbstract.MassSemantics
+
+abbrev PLNMLNMassState :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicAbstract.MassState
+
+abbrev PLNCountableMLNSemantics :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicCountable.CountableMLNSemantics
+
+abbrev PLNFiniteSupportWitness :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicFiniteRestriction.FiniteSupportWitness
+
+abbrev PLNRestrictedMLNWorld :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicFiniteRestriction.RestrictedWorld
+
+abbrev pln_mln_queryStrength_eq_queryProb_of_evidence_eq :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicAbstract.queryStrength_eq_queryProb_of_evidence_eq
+
+noncomputable abbrev pln_mln_logWeightPotential :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicCountable.logWeightPotential
+
+abbrev pln_mln_restricted_queryProb_eq_full_queryProb_of_finite_support :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicFiniteRestriction.restricted_queryProb_eq_full_queryProb_of_finite_support
+
+abbrev pln_mln_compiledJoint_eq_restrictedWorldWeight :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicFactorGraph.compiledJoint_eq_restrictedWorldWeight
+
+abbrev pln_mln_compiledQueryMass_eq_restrictedQueryMass :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicFactorGraph.compiledQueryMass_eq_restrictedQueryMass
+
+abbrev pln_mln_compiledPartition_eq_restrictedTotalMass :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicFactorGraph.compiledPartition_eq_restrictedTotalMass
+
+abbrev pln_mln_wm_queryStrength_eq_restricted_queryProb :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicWorldModel.wm_queryStrength_eq_restricted_queryProb
+
+abbrev pln_mln_wm_queryStrength_eq_full_queryProb_of_finite_support :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicWorldModel.wm_queryStrength_eq_full_queryProb_of_finite_support
+
+abbrev pln_mln_regression_demo_compiledPartition_eq_three :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicRegression.demo_compiledPartition_eq_three
+
+abbrev pln_mln_regression_wm_queryStrength_ideal_eq_two_thirds :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicRegression.wm_queryStrength_ideal_eq_two_thirds
+
+abbrev pln_mln_regression_wm_queryStrength_reachable_eq_one :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicRegression.wm_queryStrength_reachable_eq_one
+
+abbrev pln_mln_regression_wm_queryStrength_impossible_eq_zero :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicRegression.wm_queryStrength_impossible_eq_zero
+
+abbrev pln_mln_regression_additive_revision_changes_evidence :=
+  @_root_.Mettapedia.Logic.PLNMarkovLogicRegression.additive_revision_changes_evidence
+
 /-! ## Logical-Induction-Ready HOL Belief Endpoints -/
 
 abbrev PLNHOLClosedFormulaCode :=
@@ -591,6 +918,36 @@ noncomputable abbrev pln_sugenoScoreInf :=
 noncomputable abbrev pln_choquetIntegral :=
   @Mettapedia.Logic.PLNFirstOrder.FuzzyCapacity.choquetIntegral
 
+abbrev PLNGradedQuantifierSemantics :=
+  _root_.Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSemantics
+
+abbrev pln_gradedIntervalHolds :=
+  @_root_.Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSemantics.intervalHolds
+
+abbrev pln_gradedForAllHolds :=
+  @_root_.Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSemantics.forAllHolds
+
+abbrev pln_gradedThereExistsHolds :=
+  @_root_.Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSemantics.thereExistsHolds
+
+abbrev pln_gradedScoreOnDomain :=
+  @_root_.Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSemantics.scoreOnDomain
+
+abbrev pln_gradedIntervalOnDomainHolds :=
+  @_root_.Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSemantics.intervalOnDomainHolds
+
+abbrev pln_gradedForAllOnDomainHolds :=
+  @_root_.Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSemantics.forAllOnDomainHolds
+
+abbrev pln_gradedThereExistsOnDomainHolds :=
+  @_root_.Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSemantics.thereExistsOnDomainHolds
+
+abbrev pln_sugenoGradedQuantifierSemantics :=
+  @Mettapedia.Logic.PLNFirstOrder.sugenoGradedQuantifierSemantics
+
+noncomputable abbrev pln_choquetGradedQuantifierSemantics :=
+  @Mettapedia.Logic.PLNFirstOrder.choquetGradedQuantifierSemantics
+
 noncomputable abbrev pln_choquetScoreInf :=
   @Mettapedia.Logic.PLNFirstOrder.choquetScoreInf
 
@@ -689,6 +1046,12 @@ abbrev pln_choquetForAllOnDomainHoldsInf_iff_of_eqOnDomain :=
 
 abbrev pln_choquetAllOnDomainHoldsInf_relativized :=
   @Mettapedia.Logic.PLNFirstOrder.choquetAllOnDomainHoldsInf_relativized
+
+abbrev pln_gradedScoreOnDomain_eq_of_eqOnDomain :=
+  @_root_.Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSemantics.scoreOnDomain_eq_of_eqOnDomain
+
+abbrev pln_gradedForAllOnDomainHolds_mono_of_pointwise :=
+  @_root_.Mettapedia.Logic.PLNFirstOrder.GradedQuantifierSemantics.forAllOnDomainHolds_mono_of_pointwise
 
 /-! ## Finite/Counting Fuzzy Quantifier Endpoints -/
 

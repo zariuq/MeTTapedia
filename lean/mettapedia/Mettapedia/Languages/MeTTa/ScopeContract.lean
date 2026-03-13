@@ -28,6 +28,7 @@ inductive ScopeKind where
   | letLike
   | chainLike
   | letStarLike
+  | matchLike
   | lambdaLike
   | caseLike
   | sourceRulePayload
@@ -91,6 +92,7 @@ private def renderScopeKind : ScopeKind → String
   | .letLike => "let_like"
   | .chainLike => "chain_like"
   | .letStarLike => "let_star_like"
+  | .matchLike => "match_like"
   | .lambdaLike => "lambda_like"
   | .caseLike => "case_like"
   | .sourceRulePayload => "source_rule_payload"
@@ -197,6 +199,15 @@ private def lintEntry (e : ScopeContractEntry) : List String :=
             [s!"{tag}: let_star_like expects values=[0], body=[1], and no top-level binder positions"]
         let seqErrs :=
           if e.sequential then [] else [s!"{tag}: let_star_like must be sequential"]
+        posErrs ++ seqErrs
+    | .matchLike =>
+        let posErrs :=
+          if e.binderPositions = [1] && e.valuePositions = [0] && e.bodyPositions = [2] then
+            []
+          else
+            [s!"{tag}: match_like expects binder=[1], value=[0], body=[2]"]
+        let seqErrs :=
+          if !e.sequential then [] else [s!"{tag}: match_like must not be sequential"]
         posErrs ++ seqErrs
     | .lambdaLike =>
         let posErrs :=

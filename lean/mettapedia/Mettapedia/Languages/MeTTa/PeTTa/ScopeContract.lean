@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.ScopeContract
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment
+import Mettapedia.OSLF.MeTTaIL.Substitution
 
 /-!
 # PeTTa Scope Contract
@@ -36,6 +37,12 @@ private def chainTheoremRefs : List String :=
 private def letStarTheoremRefs : List String :=
   [ "Algorithms.MeTTa.Simple.Session.evalLetStarDeterministic"
   , "Algorithms.MeTTa.Simple.Session.eval"
+  ]
+
+private def matchTheoremRefs : List String :=
+  [ "Mettapedia.Languages.MeTTa.PeTTa.Eval.petta_eval_spaceQuery_correct"
+  , "Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval.meTTaEval_spaceQuery_to_pettaEval"
+  , "Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec.FullDeclClause.match_intro"
   ]
 
 private def lambdaTheoremRefs : List String :=
@@ -86,6 +93,17 @@ def letStarScopeEntry : ScopeContractEntry where
   sequential := true
   allowsWildcard := true
   theoremRefs := letStarTheoremRefs
+
+def matchScopeEntry : ScopeContractEntry where
+  head := "match"
+  arity := 3
+  scopeKind := .matchLike
+  binderPositions := [1]
+  valuePositions := [0]
+  bodyPositions := [2]
+  sequential := false
+  allowsWildcard := true
+  theoremRefs := matchTheoremRefs
 
 def lambdaArrowScopeEntry : ScopeContractEntry where
   head := "|->"
@@ -158,6 +176,7 @@ def pettaScopeContractArtifact : ScopeContractArtifact where
     [ letScopeEntry
     , chainScopeEntry
     , letStarScopeEntry
+    , matchScopeEntry
     , lambdaArrowScopeEntry
     , caseScopeEntry
     , addAtomSourceRulePayloadScopeEntry
@@ -165,6 +184,249 @@ def pettaScopeContractArtifact : ScopeContractArtifact where
     , removeAtomSourceRulePayloadScopeEntry
     , removeAtomBangSourceRulePayloadScopeEntry
     ]
+
+private abbrev Pattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
+
+open Mettapedia.OSLF.MeTTaIL.Substitution
+
+private def orderedUniq (xs : List String) : List String :=
+  xs.eraseDups
+
+private def wildcardSymbol : String :=
+  pettaScopeContractArtifact.wildcardSymbol
+
+private def listGet? {α : Type} : List α → Nat → Option α
+  | [], _ => none
+  | x :: _, 0 => some x
+  | _ :: xs, n + 1 => listGet? xs n
+
+private def isRewriteEqRulePayload : Pattern → Bool
+  | .apply "=" [_lhs, _rhs] => true
+  | _ => false
+
+private def payloadMatchesShape
+    (node : Pattern)
+    (shape : Mettapedia.Languages.MeTTa.ExecutionContract.PayloadPatternShapeKind) : Bool :=
+  if _h :
+      shape =
+        Mettapedia.Languages.MeTTa.ExecutionContract.PayloadPatternShapeKind.anyPattern then
+    true
+  else if _h :
+      shape =
+        Mettapedia.Languages.MeTTa.ExecutionContract.PayloadPatternShapeKind.nonRewritePattern then
+      !isRewriteEqRulePayload node
+  else
+    isRewriteEqRulePayload node
+
+private def matchingScopeEntry? (ctor : String) (args : List Pattern) :
+    Option ScopeContractEntry :=
+  pettaScopeContractArtifact.entries.find? fun entry =>
+    entry.head = ctor
+      && entry.arity = args.length
+      && match entry.payloadShape with
+        | none => true
+        | some shape =>
+            entry.scopedPayloadPositions.all fun pos =>
+              match listGet? args pos with
+              | some arg => payloadMatchesShape arg shape
+              | none => false
+
+private def extractTupleElements : Pattern → List Pattern
+  | .apply "expr" args => args
+  | node => [node]
+
+private def letStarBindingNodes : Pattern → Option (List Pattern)
+  | .collection _ elements none => some elements
+  | .apply "expr" args => some args
+  | _ => none
+
+private def normalizeBinderPattern : Pattern → Pattern
+  | .apply ctor [] =>
+      if ctor.startsWith "$" then
+        .fvar (ctor.drop 1).toString
+      else
+        .apply ctor []
+  | pat => pat
+
+private def letStarBindingParts : Pattern → Option (Pattern × Pattern)
+  | .apply ctor [value] =>
+      if ctor.startsWith "$" then
+        some (.fvar (ctor.drop 1).toString, value)
+      else
+        none
+  | .apply "expr" [binder, value] =>
+      some (normalizeBinderPattern binder, value)
+  | .apply "pair" [binder, value] =>
+      some (normalizeBinderPattern binder, value)
+  | .collection _ [binder, value] none =>
+      some (normalizeBinderPattern binder, value)
+  | _ => none
+
+private def boundNamesFromPattern (bound : List String) (pat : Pattern) : List String :=
+  orderedUniq <|
+    (freeVars (normalizeBinderPattern pat)).filter fun name =>
+      name != wildcardSymbol && !(bound.contains name)
+
+private def patternFuel : Pattern → Nat
+  | .bvar _ => 1
+  | .fvar _ => 1
+  | .apply _ args =>
+      1 + args.foldl (fun acc arg => acc + patternFuel arg) 0
+  | .lambda body => 1 + patternFuel body
+  | .multiLambda _ body => 1 + patternFuel body
+  | .subst body repl => 1 + patternFuel body + patternFuel repl
+  | .collection _ elements rest =>
+      1 + elements.foldl (fun acc element => acc + patternFuel element) 0
+        + match rest with
+          | some _ => 1
+          | none => 0
+
+private def orderedScopedFreeVarsWithFuel
+    (fuel : Nat) (bound : List String) (pat : Pattern) : List String :=
+  match fuel with
+  | 0 => []
+  | fuel + 1 =>
+    match pat with
+    | .bvar _ => []
+    | .fvar name =>
+      if name = wildcardSymbol || bound.contains name then
+        []
+      else
+        [name]
+    | .apply ctor args =>
+      match matchingScopeEntry? ctor args with
+      | some entry =>
+          match entry.scopeKind with
+          | .letLike
+          | .chainLike
+          | .matchLike =>
+              match listGet? entry.binderPositions 0, listGet? entry.valuePositions 0, listGet? entry.bodyPositions 0 with
+              | some binderIdx, some valueIdx, some bodyIdx =>
+                  let valueVars :=
+                    match listGet? args valueIdx with
+                    | some value => orderedScopedFreeVarsWithFuel fuel bound value
+                    | none => []
+                  let binderVars :=
+                    match listGet? args binderIdx with
+                    | some binder => boundNamesFromPattern bound binder
+                    | none => []
+                  let bodyVars :=
+                    match listGet? args bodyIdx with
+                    | some body =>
+                        orderedScopedFreeVarsWithFuel fuel (orderedUniq (bound ++ binderVars)) body
+                    | none => []
+                  orderedUniq (valueVars ++ bodyVars)
+              | _, _, _ =>
+                  orderedUniq (args.flatMap (orderedScopedFreeVarsWithFuel fuel bound))
+          | .letStarLike =>
+              match listGet? entry.valuePositions 0, listGet? entry.bodyPositions 0 with
+              | some valuesIdx, some bodyIdx =>
+                  match listGet? args valuesIdx with
+                  | some values =>
+                      match letStarBindingNodes values with
+                      | some bindings =>
+                          let (bindingVars, finalBound) :=
+                            bindings.foldl
+                              (fun (acc : List String × List String) binding =>
+                                let (accVars, accBound) := acc
+                                match letStarBindingParts binding with
+                                | some (binder, value) =>
+                                    let valueVars :=
+                                      orderedScopedFreeVarsWithFuel fuel accBound value
+                                    let bound' :=
+                                      orderedUniq (accBound ++ boundNamesFromPattern accBound binder)
+                                    (orderedUniq (accVars ++ valueVars), bound')
+                                | none =>
+                                    let bindingVars :=
+                                      orderedScopedFreeVarsWithFuel fuel accBound binding
+                                    (orderedUniq (accVars ++ bindingVars), accBound))
+                              ([], bound)
+                          let bodyVars :=
+                            match listGet? args bodyIdx with
+                            | some body => orderedScopedFreeVarsWithFuel fuel finalBound body
+                            | none => []
+                          orderedUniq (bindingVars ++ bodyVars)
+                      | none =>
+                          let valuesVars := orderedScopedFreeVarsWithFuel fuel bound values
+                          let bodyVars :=
+                            match listGet? args bodyIdx with
+                            | some body => orderedScopedFreeVarsWithFuel fuel bound body
+                            | none => []
+                          orderedUniq (valuesVars ++ bodyVars)
+                  | none =>
+                      orderedUniq (args.flatMap (orderedScopedFreeVarsWithFuel fuel bound))
+              | _, _ =>
+                  orderedUniq (args.flatMap (orderedScopedFreeVarsWithFuel fuel bound))
+          | .lambdaLike =>
+              match listGet? entry.binderPositions 0, listGet? entry.bodyPositions 0 with
+              | some binderIdx, some bodyIdx =>
+                  let binderVars :=
+                    match listGet? args binderIdx with
+                    | some binder => boundNamesFromPattern bound binder
+                    | none => []
+                  match listGet? args bodyIdx with
+                  | some body =>
+                      orderedScopedFreeVarsWithFuel fuel (orderedUniq (bound ++ binderVars)) body
+                  | none => []
+              | _, _ =>
+                  orderedUniq (args.flatMap (orderedScopedFreeVarsWithFuel fuel bound))
+          | .caseLike =>
+              match listGet? entry.valuePositions 0, listGet? entry.bodyPositions 0 with
+              | some valueIdx, some bodyIdx =>
+                  let valueVars :=
+                    match listGet? args valueIdx with
+                    | some value => orderedScopedFreeVarsWithFuel fuel bound value
+                    | none => []
+                  let branchVars :=
+                    match listGet? args bodyIdx with
+                    | some branches =>
+                        (extractTupleElements branches).flatMap fun branch =>
+                          match extractTupleElements branch with
+                          | binder :: body :: [] =>
+                              orderedScopedFreeVarsWithFuel
+                                fuel
+                                (orderedUniq (bound ++ boundNamesFromPattern bound binder))
+                                body
+                          | _ => orderedScopedFreeVarsWithFuel fuel bound branch
+                    | none => []
+                  orderedUniq (valueVars ++ branchVars)
+              | _, _ =>
+                  orderedUniq (args.flatMap (orderedScopedFreeVarsWithFuel fuel bound))
+          | .sourceRulePayload =>
+              let (vars, _) :=
+                args.foldl
+                  (fun (acc : List String × Nat) arg =>
+                    let (accVars, idx) := acc
+                    let here :=
+                      if entry.scopedPayloadPositions.contains idx then
+                        []
+                      else
+                        orderedScopedFreeVarsWithFuel fuel bound arg
+                    (orderedUniq (accVars ++ here), idx + 1))
+                  ([], 0)
+              vars
+      | none =>
+          orderedUniq (args.flatMap (orderedScopedFreeVarsWithFuel fuel bound))
+    | .lambda body =>
+        orderedScopedFreeVarsWithFuel fuel bound body
+    | .multiLambda _ body =>
+        orderedScopedFreeVarsWithFuel fuel bound body
+    | .subst body repl =>
+      orderedUniq
+        (orderedScopedFreeVarsWithFuel fuel bound body
+          ++ orderedScopedFreeVarsWithFuel fuel bound repl)
+    | .collection _ elements rest =>
+      let elementVars := orderedUniq (elements.flatMap (orderedScopedFreeVarsWithFuel fuel bound))
+      let restVars :=
+        match rest with
+        | some name =>
+            if name = wildcardSymbol || bound.contains name then [] else [name]
+        | none => []
+      orderedUniq (elementVars ++ restVars)
+termination_by fuel
+
+def orderedScopedFreeVars (pat : Pattern) : List String :=
+  orderedScopedFreeVarsWithFuel (patternFuel pat) [] pat
 
 def exportPeTTaScopeContract (outDir : System.FilePath) : IO UInt32 := do
   let artifact := pettaScopeContractArtifact

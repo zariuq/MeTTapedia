@@ -52,6 +52,14 @@ private theorem foldlState_preserves
       have hStep' : P (step st x).1 := hStep st x hP
       simpa [List.foldl] using ih (step st x) hStep'
 
+private theorem map_pair_snd (bs : Bindings) (xs : List Pattern) :
+    (xs.map (fun v => (bs, v))).map Prod.snd = xs := by
+  induction xs with
+  | nil =>
+      simp
+  | cons x xs ih =>
+      simp [ih]
+
 private partial def lambdaParamNames : Pattern → List String
   | .fvar x => [x]
   | .apply "Expr" elems =>
@@ -560,6 +568,12 @@ def matchHeadArgsWithEval (I : Interface σ) (s : σ)
       matchHeadArgsWithEval I s ps ts nextStates
   | _, _ => []
 
+private def hasCompatHeadConstraintArg : Pattern → Bool
+  | .apply _ [] => true
+  | .apply _ (_ :: _) => true
+  | .collection _ (_ :: _) _ => true
+  | _ => false
+
 def compatFunctionHeadRewrite (I : Interface σ) (s : σ) (term : Pattern) :
     σ × List Pattern :=
   match term with
@@ -575,12 +589,7 @@ def compatFunctionHeadRewrite (I : Interface σ) (s : σ) (term : Pattern) :
           | .apply _ pArgs =>
               if pArgs.length == tArgs.length then
                 let matchedBs := matchHeadArgsWithEval I sess pArgs tArgs [[]]
-                let hasCompatArg : Pattern → Bool
-                  | .apply _ [] => true
-                  | .apply _ (_ :: _) => true
-                  | .collection _ (_ :: _) _ => true
-                  | _ => false
-                if pArgs.any hasCompatArg then
+                if pArgs.any hasCompatHeadConstraintArg then
                   matchedBs.foldl
                     (fun (accBs : σ × List Pattern) bs =>
                       let sessBs := accBs.1
@@ -606,12 +615,6 @@ def compatFunctionHeadRewrite (I : Interface σ) (s : σ) (term : Pattern) :
             (sess, outAcc))
         (s, [])
   | _ => (s, [])
-
-private def hasCompatHeadConstraintArg : Pattern → Bool
-  | .apply _ [] => true
-  | .apply _ (_ :: _) => true
-  | .collection _ (_ :: _) _ => true
-  | _ => false
 
 def hasCompatHeadConstraintRule (I : Interface σ) (s : σ) (ctor : String) (arity : Nat) : Bool :=
   (I.rewrites s).any (fun rule =>
@@ -666,6 +669,129 @@ def constrainedCallBindingsAndValues (I : Interface σ) (s : σ) (expr : Pattern
   | _ =>
       (s, [])
 
+/-- For a fixed compat-head rule rhs and a fixed list of matched bindings,
+the plain compat-head value accumulator is exactly the `Prod.snd` projection of
+the richer binding-carrying accumulator, provided rule-enumeration evaluation
+agrees with ordinary evaluation on the rhs terms being processed.
+
+This is the small operational seam used by conformance theorems: once head
+matching has produced concrete bindings, the remaining difference between
+value-only compat rewriting and binding-carrying compat rewriting is just the
+presence of those carried bindings. -/
+theorem compatMatchedBs_projection
+    (I : Interface σ)
+    (hEvalEq : ∀ (s : σ) (rhs : Pattern),
+      I.evalForRuleEnumeration s rhs = I.eval s rhs)
+    (rightFresh : Pattern) (matchedBs : List Bindings)
+    (sess : σ) (outVals : List Pattern) (outPairs : List (Bindings × Pattern))
+    (hout : outVals = outPairs.map Prod.snd) :
+    let valsState :=
+      matchedBs.foldl
+        (fun (accBs : σ × List Pattern) bs =>
+          let sessBs := accBs.1
+          let outBs := accBs.2
+          let rhs := I.applyBindings bs rightFresh
+          let (sessRhs, vals) :=
+            if hasFreeVar rhs then
+              (sessBs, [rhs])
+            else
+              let (sessRhs, vals0) := I.evalForRuleEnumeration sessBs rhs
+              (sessRhs, if vals0.isEmpty then [rhs] else vals0)
+          let valsFiltered := vals.filter (fun v => !containsCompatTaggedVar v)
+          (sessRhs, outBs ++ valsFiltered))
+        (sess, outVals)
+    let pairState :=
+      matchedBs.foldl
+        (fun (accBs : σ × List (Bindings × Pattern)) bs =>
+          let sessBs := accBs.1
+          let outBs := accBs.2
+          let rhs := I.applyBindings bs rightFresh
+          let (sessRhs, vals) :=
+            if hasFreeVar rhs then
+              (sessBs, [rhs])
+            else
+              let (sessRhs, vals0) := I.eval sessBs rhs
+              (sessRhs, if vals0.isEmpty then [rhs] else vals0)
+          let valsFiltered := vals.filter (fun v => !containsCompatTaggedVar v)
+          (sessRhs, outBs ++ (valsFiltered.map (fun v => (bs, v)))))
+        (sess, outPairs)
+    valsState.1 = pairState.1 ∧ valsState.2 = pairState.2.map Prod.snd := by
+  induction matchedBs generalizing sess outVals outPairs with
+  | nil =>
+      simp [hout]
+  | cons bs rest ih =>
+      simp only [List.foldl]
+      let rhs := I.applyBindings bs rightFresh
+      by_cases hFree : hasFreeVar rhs
+      · let valsFiltered := [rhs].filter (fun v => !containsCompatTaggedVar v)
+        have hout' :
+          outVals ++ valsFiltered =
+            (outPairs ++ valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+          calc
+            outVals ++ valsFiltered
+                = outPairs.map Prod.snd ++ valsFiltered := by simp [hout]
+            _ = outPairs.map Prod.snd ++ (valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+                  rw [map_pair_snd]
+            _ = (outPairs ++ valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+                  simp
+        have hTail :=
+          ih sess (outVals ++ valsFiltered)
+            (outPairs ++ valsFiltered.map (fun v => (bs, v))) hout'
+        simpa only [hFree, rhs, valsFiltered] using hTail
+      · cases hEval : I.eval sess rhs with
+        | mk sessRhs vals0 =>
+            have hEvalFor : I.evalForRuleEnumeration sess rhs = (sessRhs, vals0) := by
+              simpa [hEval] using hEvalEq sess rhs
+            let valsFiltered := (if vals0.isEmpty then [rhs] else vals0).filter
+              (fun v => !containsCompatTaggedVar v)
+            have hout' :
+                outVals ++ valsFiltered =
+                  (outPairs ++ valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+              calc
+                outVals ++ valsFiltered
+                    = outPairs.map Prod.snd ++ valsFiltered := by simp [hout]
+                _ = outPairs.map Prod.snd ++ (valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+                      rw [map_pair_snd]
+                _ = (outPairs ++ valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+                      simp
+            have hTail :=
+              ih sessRhs (outVals ++ valsFiltered)
+                (outPairs ++ valsFiltered.map (fun v => (bs, v))) hout'
+            simpa only [hFree, hEval, hEvalFor, rhs, valsFiltered] using hTail
+
+/-- Operational singleton-rule compat-head seam: if the active head/arity index
+returns exactly one compat-head rule, then the plain compat-head outputs are
+exactly the `Prod.snd` projection of the binding-carrying compat-head results.
+
+This is the first theorem that directly connects the public Dispatch entrypoints
+`compatFunctionHeadRewrite` and `constrainedCallBindingsAndValues`. It is small
+enough to prove where the operational definitions live, and strong enough for
+downstream conformance/rust staging arguments. -/
+theorem compatFunctionHeadRewrite_eq_constrained_projection_singleton
+    (I : Interface σ)
+    (hEvalEq : ∀ (s : σ) (rhs : Pattern),
+      I.evalForRuleEnumeration s rhs = I.eval s rhs)
+    (s : σ) (ctor : String) (tArgs : List Pattern)
+    (rule : RewriteRule) (pArgs : List Pattern)
+    (hRules : I.premiseFreeRulesForHeadArity s ctor tArgs.length = [rule])
+    (hLeft :
+      renameFVarsWith (scopedRuleTag rule.name tArgs) rule.left = .apply ctor pArgs)
+    (hLen : pArgs.length == tArgs.length)
+    (hCompat : pArgs.any hasCompatHeadConstraintArg = true) :
+    let valsState := compatFunctionHeadRewrite I s (.apply ctor tArgs)
+    let pairState := constrainedCallBindingsAndValues I s (.apply ctor tArgs)
+    valsState.1 = pairState.1 ∧ valsState.2 = pairState.2.map Prod.snd := by
+  have hLenEq : pArgs.length = tArgs.length := by
+    simpa using hLen
+  have hCompatExists :
+      ∃ x, x ∈ pArgs ∧ hasCompatHeadConstraintArg x = true := by
+    simpa [List.mem_map] using List.any_eq_true.mp hCompat
+  simp [compatFunctionHeadRewrite, constrainedCallBindingsAndValues, hRules, hLeft, hLenEq,
+    hCompatExists]
+  simpa using compatMatchedBs_projection I hEvalEq
+    (renameFVarsWith (scopedRuleTag rule.name tArgs) rule.right)
+    (matchHeadArgsWithEval I s pArgs tArgs [[]]) s [] [] rfl
+
 -- Helper: inner foldl step over `matchedBs` in `compatFunctionHeadRewrite` preserves P.
 private theorem compatFunctionHeadRewriteInner_preserves
     (I : Interface σ) (P : σ → Prop) (H : Preservation I P)
@@ -717,12 +843,7 @@ theorem compatFunctionHeadRewrite_preserves
           | apply _ pArgs =>
               by_cases hLen : pArgs.length == tArgs.length
               · simp only [hLen, ↓reduceIte]
-                by_cases hCompat : pArgs.any (fun p =>
-                    match p with
-                    | .apply _ [] => true
-                    | .apply _ (_ :: _) => true
-                    | .collection _ (_ :: _) _ => true
-                    | _ => false)
+                by_cases hCompat : pArgs.any hasCompatHeadConstraintArg
                 · simp only [hCompat, ↓reduceIte]
                   exact compatFunctionHeadRewriteInner_preserves I P H
                     (renameFVarsWith (scopedRuleTag rule.name tArgs) rule.right)

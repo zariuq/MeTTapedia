@@ -42,8 +42,10 @@ profile because the restricted profile is exactly the parity domain. -/
 theorem canary_fuzzy_domain_nat_proxy_forall :
     fuzzyForAllOnDomainHoldsInf natProxyParams natThreeLevelCapacity
       natParityProfile (FuzzyProfile.const (U := Nat) (1 : I)) := by
-  unfold fuzzyForAllOnDomainHoldsInf fuzzyForAllHoldsInf
-  rw [domainRestrict_constOne]
+  simp [fuzzyForAllOnDomainHoldsInf, GradedQuantifierSemantics.forAllOnDomainHolds,
+    GradedQuantifierSemantics.forAllHolds, sugenoGradedQuantifierSemantics, domainRestrict_constOne]
+  change natProxyParams.PCL ≤
+    (nearOneMassInf natProxyParams natThreeLevelCapacity natParityProfile : ℝ)
   rw [canary_inf_fuzzy_nat_support_contrast.1]
   norm_num [natProxyParams]
 
@@ -52,8 +54,8 @@ profile because the restricted profile is exactly the parity domain. -/
 theorem canary_fuzzy_domain_nat_choquet_forall :
     choquetForAllOnDomainHoldsInf natProxyParams natThreeLevelCapacity
       natParityProfile (FuzzyProfile.const (U := Nat) (1 : I)) := by
-  unfold choquetForAllOnDomainHoldsInf choquetForAllHoldsInf
-  rw [domainRestrict_constOne]
+  simp [choquetForAllOnDomainHoldsInf, GradedQuantifierSemantics.forAllOnDomainHolds,
+    GradedQuantifierSemantics.forAllHolds, choquetGradedQuantifierSemantics, domainRestrict_constOne]
   rw [canary_choquet_nat_parity]
   norm_num [natProxyParams]
 

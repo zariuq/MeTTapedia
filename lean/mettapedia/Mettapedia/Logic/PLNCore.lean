@@ -35,6 +35,10 @@ import Mettapedia.Logic.PLNInferenceControlChainer
 import Mettapedia.Logic.PLNInferenceControlExamples
 import Mettapedia.Logic.PLNGuardedHigherOrderSemantics
 import Mettapedia.Logic.PLNMixedModeChainComposition
+import Mettapedia.Logic.PLNProbHOLPlannerBridge
+import Mettapedia.Logic.PLNRegimeMixtureBenchmarkBridge
+import Mettapedia.Logic.PLNRegimeMixtureRegression
+import Mettapedia.Logic.PLNMarkovLogicRegression
 import Mettapedia.Logic.SoundnessCompleteness
 import Mettapedia.Logic.PLNErrorMagnificationGrounding
 import Mettapedia.Logic.PLNCanonicalAPI
@@ -137,9 +141,27 @@ This module is a curated import surface for the currently theorem-complete PLN s
   together with comparison theorems against the older FOL-routed set bridge
   (`HOL.Semantics.SetBased`, `PLNWorldModelHOLSetBridge`, plus canonical aliases in
   `PLNCanonicalAPI`)
+- Infinitary semantic probabilistic HOL over measurable indexed spaces of
+  pointed Henkin models, together with the theorem that the existing empirical
+  HOL↔WM semantics is a special case
+  (`HOL.Probabilistic`, plus canonical aliases in `PLNCanonicalAPI`)
 - Logical-induction-ready dynamic belief/process infrastructure over closed HOL
   formulas, kept strictly separate from Henkin truth and the static HOL↔WM lens
   (`HOL.LogicalInduction`, plus canonical aliases in `PLNCanonicalAPI`)
+- Planner-facing higher-order belief shadows derived from semantic `ProbHOL`,
+  so benchmark/control layers can consume theorem-backed prices and tracking
+  results without becoming the canonical semantics
+  (`PLNProbHOLPlannerBridge`, plus canonical aliases in `PLNCanonicalAPI`)
+- Finite regime-mixture theorems and benchmark regressions for direct
+  continuation approximation, soft-mixture squared-loss optimality, and
+  reveal/value-of-information criteria in the higher-order Chapter-11 lane
+  (`PLNRegimeMixtureBenchmarkBridge`, `PLNRegimeMixtureRegression`, plus
+  canonical aliases in `PLNCanonicalAPI`)
+- Infinite-first Markov Logic semantics over countable worlds, with
+  finite-support restriction, factor-graph specialization, and WM
+  subsumption under locality witnesses
+  (`PLNMarkovLogic*`, regression canary in `PLNMarkovLogicRegression`, plus
+  canonical aliases in `PLNCanonicalAPI`)
 - Additive multiset WM singleton-surface classification / uniqueness
   (`SufficientStatisticSurface`)
 - Forgetting layer with scope invariance and scoped no-go for exact inverse forgetting

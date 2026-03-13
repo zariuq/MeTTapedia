@@ -171,6 +171,28 @@ theorem public_getAtomsBang_unary_eval_agreement_on_zeroMaxSteps
         unfold SessionReferenceTotal.referenceFuel
         exact Nat.ne_of_gt (Nat.lt_of_lt_of_le (by decide : (0 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes)))
 
+/-- First non-degenerate constrained-fragment instance of the public-fuel
+    `get-atoms!` unary evaluator-agreement contract: sessions with `maxNodes = 1`. -/
+theorem public_getAtomsBang_unary_eval_agreement_on_oneMaxNode
+    (s : Session) :
+    PublicGetAtomsBangUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxNodes = 1) := by
+  exact
+    Session.getAtomsBangUnaryEvalAgreementOn_oneMaxNode
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.lt_of_lt_of_le (by decide : (1 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes))
+
+/-- Public local-reference equality witness for `get-atoms!` on the first
+    non-degenerate covered fragment, namely `maxNodes = 1`. -/
+theorem getAtomsBang_eval_eq_public_total_of_oneMaxNode
+    (s : Session) (spaceArg : Pattern)
+    (hNodes : s.maxNodes = 1) :
+    Session.referenceEvalWithStateCore s (.apply "get-atoms!" [spaceArg]) =
+      SessionReferenceTotal.evalWithStateCore s (.apply "get-atoms!" [spaceArg]) := by
+  simpa [SessionReferenceTotal.evalWithStateCore] using
+    (public_getAtomsBang_unary_eval_agreement_on_oneMaxNode s) s spaceArg hNodes
+
 /-- First compositional public-fuel `match` adequacy handle for `get-atoms` templates.
     This is still hypothesis-driven: it isolates the exact two lower facts still needed
     to turn the `match` slice into a fully unconditional adequacy theorem. -/
@@ -274,6 +296,48 @@ theorem match_getAtomsBang_intrinsic_eq_total_of_unary_eval_agreement
   simpa using
     Session.referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_unary_eval_agreement_autoBindings
       (fuel := SessionReferenceTotal.referenceFuel s) s space pat spaceExpr hEvalUnary
+
+/-- First non-degenerate public `match` adequacy theorem for `get-atoms!` templates:
+    the bindings fold stays inside the `maxNodes = 1` fragment, so the constrained
+    unary theorem is enough to discharge the whole intrinsic boundary. -/
+theorem match_getAtomsBang_intrinsic_eq_total_of_oneMaxNode
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hNodes : s.maxNodes = 1)
+    (hStateRoot :
+      ∀ (sess : Session) (spaceArg : Pattern),
+        sess.maxNodes = 1 →
+          (Session.referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg])).1 = sess) :
+    Session.referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      Session.totalMatchIntrinsicResult
+        (SessionReferenceTotal.referenceFuel s) s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  simpa using
+    Session.referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_on_oneMaxNode
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.lt_of_lt_of_le (by decide : (1 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes))
+      s space pat spaceExpr hNodes hStateRoot
+
+/-- Public local-reference equality witness for the first compositional
+    `get-atoms!` fragment: a three-argument `match` whose template head is
+    `get-atoms!`, on sessions with `maxNodes = 1`. -/
+theorem match_getAtomsBang_eval_eq_public_total_of_oneMaxNode
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hNodes : s.maxNodes = 1)
+    (hIntr :
+      Session.intrinsicStateful s (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+        Session.intrinsicStatefulN (SessionReferenceTotal.referenceFuel s - 1) s
+          (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]])) :
+    Session.referenceEvalWithStateCore s (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+      SessionReferenceTotal.evalWithStateCore s
+        (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) := by
+  simpa [SessionReferenceTotal.evalWithStateCore] using
+    Session.referenceEvalWithStateCore_match_getAtomsBang_eq_N_of_maxNodes_one
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.lt_of_lt_of_le (by decide : (3 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes))
+      s space pat spaceExpr hNodes hIntr
 
 /-- Successful faithful intrinsic evaluation agrees with the public total intrinsic evaluator
     at the same fuel. This is the first adequacy bridge: faithful explicit-status kernel to
