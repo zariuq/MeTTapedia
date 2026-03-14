@@ -34,9 +34,9 @@ import Mettapedia.OSLF.Framework.ToposTOGLBridge
 import Mettapedia.OSLF.Framework.NTTClaimTracker
 import Mettapedia.OSLF.Framework.PaperSection12Examples
 import Mettapedia.OSLF.NativeType.Construction
-import Mettapedia.Languages.MeTTa.Core.Premises
-import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
-import Mettapedia.Languages.MeTTa.Core.FullLanguageTests
+import Mettapedia.Languages.MeTTa.OSLFCore.Premises
+import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
+import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageTests
 import Mettapedia.OSLF.Framework.MeTTaFullLegacyInstance
 import Mettapedia.OSLF.Framework.MeTTaLegacyToNTT
 import Mettapedia.OSLF.Framework.OSLFNTTWMBridge
@@ -72,7 +72,7 @@ endpoint for downstream OSLF consumers.
 
 namespace Mettapedia.OSLF
 
-export Mettapedia.Languages.MeTTa.Core.Premises (
+export Mettapedia.Languages.MeTTa.OSLFCore.Premises (
   space0Atomspace
   space0EqEntries
   space0TypeEntries
@@ -92,7 +92,7 @@ export Mettapedia.Languages.MeTTa.Core.Premises (
   noGroundedCallTuples
 )
 
-export Mettapedia.Languages.MeTTa.Core.FullLanguageDef (
+export Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef (
   mettaFullLegacy
   mettaFullLegacyOSLF
   mettaFullLegacyGalois
@@ -103,7 +103,7 @@ export Mettapedia.Languages.MeTTa.Core.FullLanguageDef (
   mettaFullRelEnv
 )
 
-export Mettapedia.Languages.MeTTa.Core.FullLanguageTests (
+export Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageTests (
   coded_string_concat_normalForm_shape
 )
 
@@ -1200,8 +1200,8 @@ theorem coreMain_paper_parity_full_package
 #check Mettapedia.OSLF.Framework.FULLStatus.remainingCount_eq_zero
 #check Mettapedia.OSLF.Framework.FULLStatus.strictRemaining_eq_nil
 #check Mettapedia.OSLF.Framework.FULLStatus.strictRemainingCount_eq_zero
-#check Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFull
-#check Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullOSLF
+#check Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFull
+#check Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullOSLF
 #check Mettapedia.Logic.OSLFImageFinite.imageFinite_langReduces
 #check Mettapedia.Logic.OSLFImageFinite.hm_converse_langReduces
 #check @Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.piRho_coreMain_canonical_contract_end_to_end

@@ -20,7 +20,7 @@ Uses computable (List-based) representation to enable `decide` proofs.
 
 namespace Mettapedia.Languages.MeTTa.HE
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 
 /-! ## Space
 
@@ -90,22 +90,55 @@ end Space
 /-! ## Type Queries
 
 Ref: metta.md line 287 `<list of the types of the $atom from the $space>`.
-The HE spec collects types from:
-1. Explicit `(: atom type)` annotations in space
-2. Intrinsic meta-type if no annotations found
+Ref: `types.rs:get_atom_types` (ground truth).
+
+Type resolution dispatches by atom kind:
+1. **Variables** → no type (falls back to `%Undefined%`)
+2. **Grounded atoms** → intrinsic type from `Grounded::type_()` trait
+3. **Symbols** → explicit `(: atom type)` annotations in space
+4. **Expressions** → space annotations (application type inference deferred)
+
+If no type is found, returns `[%Undefined%]`.
 -/
 
-/-- Get all types for an atom from space annotations.
-    If no annotations found, returns `[%Undefined%]`.
-    Ref: `types.rs:get_atom_types`, metta.md line 287. -/
-def getAtomTypes (space : Space) (a : Atom) : List Atom :=
-  let annotated := space.atoms.filterMap fun atom =>
+/-- Get the intrinsic HE type of a grounded value.
+    Ref: `hyperon-atom/src/gnd/{number,bool,str}.rs` — `Grounded::type_()` impl.
+    HE uses `Number` (not `Int`) for all numeric grounded values. -/
+def getGroundedType : GroundedValue → Atom
+  | .int _       => .symbol "Number"
+  | .bool _      => .symbol "Bool"
+  | .string _    => .symbol "String"
+  | .custom t _  => .symbol t
+
+/-- Collect explicit `(: atom type)` annotations for an atom from space.
+    Ref: `types.rs:query_types`. -/
+def getAnnotatedTypes (space : Space) (a : Atom) : List Atom :=
+  space.atoms.filterMap fun atom =>
     match atom with
     | .expression [.symbol ":", a', ty] =>
       if a' == a then some ty else none
     | _ => none
-  if annotated.isEmpty then [Atom.undefinedType]
-  else annotated
+
+/-- Get all types for an atom from the space.
+    Ref: `types.rs:get_atom_types`, metta.md line 287.
+
+    Dispatches by atom kind following the Rust implementation:
+    - Variables: no type → `%Undefined%`
+    - Grounded: intrinsic type from `Grounded::type_()`
+    - Symbols: `(: atom type)` annotations in space
+    - Expressions: space annotations (application type inference deferred) -/
+def getAtomTypes (space : Space) (a : Atom) : List Atom :=
+  let types := match a with
+    | .var _ => []
+    | .grounded g =>
+      let ty := getGroundedType g
+      if ty == Atom.undefinedType then [] else [ty]
+    | .symbol _ => getAnnotatedTypes space a
+    | .expression es =>
+      if es.isEmpty then []
+      else getAnnotatedTypes space a
+  if types.isEmpty then [Atom.undefinedType]
+  else types
 
 /-! ## Equation Query
 
@@ -148,15 +181,68 @@ where
       | none => none
     | _, _, _, _ => none
 
+/-- Collect all variable names occurring in an atom (with duplicates).
+    Fuel-bounded with `where`-clause list traversal for kernel reduction
+    (nested-inductive `Atom` requires explicit structural recursion). -/
+def collectVars (a : Atom) (fuel : Nat := 100) : List String :=
+  match fuel with
+  | 0 => []
+  | n + 1 =>
+    match a with
+    | .var v => [v]
+    | .expression es => collectVarsList es n
+    | _ => []
+where
+  collectVarsList : List Atom → Nat → List String
+    | [], _ => []
+    | a :: as, fuel => collectVars a fuel ++ collectVarsList as fuel
+
+/-- Rename variables in an atom according to a mapping.
+    Fuel-bounded with `where`-clause list traversal for kernel reduction. -/
+def renameVars (mapping : List (String × String)) (a : Atom) (fuel : Nat := 100) : Atom :=
+  match fuel with
+  | 0 => a
+  | n + 1 =>
+    match a with
+    | .var v => .var (mapping.find? (fun p => p.1 == v) |>.map Prod.snd |>.getD v)
+    | .expression es => .expression (renameVarsList mapping es n)
+    | a => a
+where
+  renameVarsList (mapping : List (String × String)) : List Atom → Nat → List Atom
+    | [], _ => []
+    | a :: as, fuel => renameVars mapping a fuel :: renameVarsList mapping as fuel
+
+/-- Build a fresh variable mapping for one equation's variables.
+    Each distinct variable name gets a unique suffix `#counter`.
+    Returns the mapping and the updated counter.
+    Ref: Rust HE uses `CachingMapper` + `VariableAtom::make_unique()`. -/
+def freshMapping (counter : Nat) (vars : List String) : List (String × String) × Nat :=
+  vars.foldl (fun (acc, n) v =>
+    if acc.any (fun p => p.1 == v) then (acc, n)
+    else ((v, s!"{v}#{n}") :: acc, n + 1))
+  ([], counter)
+
+/-- Alpha-rename equation-local variables using the equation's index as a
+    unique prefix. Returns `(renamed_lhs, renamed_rhs)`.
+    Uses the same fuel as the parent query for kernel reduction. -/
+def freshenEquation (idx : Nat) (lhs rhs : Atom) (fuel : Nat := 100) : Atom × Atom :=
+  let vars := (collectVars lhs fuel ++ collectVars rhs fuel).eraseDups
+  let (mapping, _) := freshMapping idx vars
+  (renameVars mapping lhs fuel, renameVars mapping rhs fuel)
+
 /-- Query equations `(= lhs rhs)` in space where `lhs` matches `atom`.
     Returns list of `(rhs, bindings)` pairs.
-    Ref: metta.md line 538 `query($space, (= $atom $X))`. -/
+    Equation-local variables are alpha-renamed with unique suffixes to prevent
+    collisions across recursive equation applications.
+    Ref: metta.md line 538 `query($space, (= $atom $X))`.
+    Ref: Rust HE `hyperon-space/src/index/trie.rs:261-359` (CachingMapper). -/
 def queryEquations (space : Space) (atom : Atom) (fuel : Nat := 100) : List (Atom × Bindings) :=
-  space.atoms.filterMap fun eq =>
+  space.atoms.zipIdx.filterMap fun (eq, idx) =>
     match eq with
     | .expression [.symbol "=", lhs, rhs] =>
-      match simpleMatch lhs atom Bindings.empty fuel with
-      | some b => some (rhs, b)
+      let (lhs', rhs') := freshenEquation idx lhs rhs fuel
+      match simpleMatch lhs' atom Bindings.empty fuel with
+      | some b => some (rhs', b)
       | none => none
     | _ => none
 
@@ -222,8 +308,18 @@ private def testSpace : Space :=
     .expression [.symbol "=", .symbol "foo", .grounded (.int 42)]
   ]
 
+-- Symbol with annotation → annotated type
 example : getAtomTypes testSpace (.symbol "foo") = [.symbol "Int"] := rfl
+-- Symbol without annotation → %Undefined%
 example : getAtomTypes testSpace (.symbol "baz") = [Atom.undefinedType] := rfl
+-- Grounded int → Number (intrinsic, not from space)
+example : getAtomTypes testSpace (.grounded (.int 42)) = [.symbol "Number"] := rfl
+-- Grounded bool → Bool
+example : getAtomTypes testSpace (.grounded (.bool true)) = [.symbol "Bool"] := rfl
+-- Grounded string → String
+example : getAtomTypes testSpace (.grounded (.string "hi")) = [.symbol "String"] := rfl
+-- Variable → %Undefined%
+example : getAtomTypes testSpace (.var "x") = [Atom.undefinedType] := rfl
 
 -- queryEquations
 example : queryEquations testSpace (.symbol "foo") =

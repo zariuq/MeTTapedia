@@ -294,6 +294,30 @@ theorem meTTaEval_collapse_to_pettaEval {s : PeTTaSpace} {p : Pattern}
               [.collection .vec (results.map Prod.fst) none] :=
   PeTTaEval.collapse p (results.map Prod.fst) ih
 
+/-- `collapse` composed with the binding-threaded `match &self` query returns a
+singleton collection of the `spaceMatch` answers, carrying the ambient bindings
+through unchanged. -/
+theorem meTTaEval_collapse_spaceQuery
+    {s : PeTTaSpace} {pat tmpl ty : Pattern} {bindings : Bindings} :
+    MeTTaEval s
+      (.apply "collapse" [.apply "match" [.apply "&self" [], pat, tmpl]])
+      ty bindings
+      [(.collection .vec (s.spaceMatch pat tmpl) none, bindings)] := by
+  have hproj :
+      List.map Prod.fst ((s.spaceMatch pat tmpl).map (·, bindings)) =
+        s.spaceMatch pat tmpl := by
+    induction s.spaceMatch pat tmpl with
+    | nil => rfl
+    | cons x xs ih =>
+        simp [ih]
+  simpa [hproj] using
+    (MeTTaEval.collapse
+      (.apply "match" [.apply "&self" [], pat, tmpl])
+      ty
+      bindings
+      ((s.spaceMatch pat tmpl).map (·, bindings))
+      (MeTTaEval.spaceQuery pat tmpl ty bindings _ rfl))
+
 /-! ## Monotonicity -/
 
 /-- **Monotonicity for `ruleApp`**: adding a fact to the atomspace preserves rule

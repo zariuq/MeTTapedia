@@ -204,8 +204,6 @@ private def toSpecRule (t : DerivedTransition) : TransitionRule :=
 def derivePeTTaTransitionSpec? (s : PeTTaSpace) : Except String TransitionSpecArtifact := do
   let lang := pettaSpaceToLangDef s
   let derived := foldRewriteTransitions lang.rewrites 0 []
-  if derived.isEmpty then
-    throw "PeTTa transition-spec derivation failed: space has no rewrite rules"
   let sources :=
     derived.foldl
       (fun acc t => addRuleToSource acc t.sourceInstr t.sourceLabel t.ruleId)
@@ -281,5 +279,16 @@ def sampleDerivationIsOk : Bool :=
   | .error _ => false
 
 #guard sampleDerivationIsOk = true
+
+private def emptySampleSpace : PeTTaSpace :=
+  { facts := []
+    rules := [] }
+
+def emptySampleDerivationIsOk : Bool :=
+  match derivePeTTaTransitionSpec? emptySampleSpace with
+  | .ok artifact => artifact.sources = [] && artifact.rules = []
+  | .error _ => false
+
+#guard emptySampleDerivationIsOk = true
 
 end Mettapedia.Languages.MeTTa.PeTTa.TransitionSpec

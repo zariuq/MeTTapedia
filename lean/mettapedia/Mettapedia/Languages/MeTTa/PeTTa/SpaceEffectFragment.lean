@@ -20,7 +20,7 @@ round-trip for compound patterns, which is an MM2 compiler invariant.
 
 namespace Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.Languages.MeTTa.PeTTa (unitAtom)
 

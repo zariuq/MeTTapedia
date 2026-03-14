@@ -1,6 +1,8 @@
 import Mettapedia.Languages.MeTTa.PeTTa.ExecutionContract
+import Mettapedia.Languages.MeTTa.PeTTa.ScopeContract
 
 open Mettapedia.Languages.MeTTa.PeTTa.ExecutionContract
+open Mettapedia.Languages.MeTTa.PeTTa.ScopeContract
 
 private def defaultOutDir : System.FilePath :=
   "/home/zar/claude/lean-projects/mettapedia/artifacts/transition"
@@ -15,4 +17,12 @@ def main (args : List String) : IO UInt32 := do
   if exportCode != 0 then
     pure exportCode
   else
-    checkPeTTaExecutionContract outPath
+    let scopeExportCode ← exportPeTTaScopeContract outPath
+    if scopeExportCode != 0 then
+      pure scopeExportCode
+    else
+      let checkCode ← checkPeTTaExecutionContract outPath
+      if checkCode != 0 then
+        pure checkCode
+      else
+        checkPeTTaScopeContract outPath

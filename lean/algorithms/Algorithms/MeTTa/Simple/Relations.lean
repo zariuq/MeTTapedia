@@ -1,5 +1,7 @@
 import MeTTailCore
 
+set_option maxHeartbeats 400000
+
 namespace Algorithms.MeTTa.Simple
 
 open MeTTailCore.MeTTaIL.Syntax
@@ -105,11 +107,27 @@ def builtinTableOfTuples (rows : List RelationTuple) : BuiltinTable where
 def intrinsicRelationName (ctor : String) : String :=
   s!"intrinsic:{ctor}"
 
-private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
-    List (List Pattern) :=
+-- rowsOf? lifts an optional single result into the row-list format used by BuiltinTable.
+-- Every branch of intrinsicCompareRow? returns at most one result (Option), so the
+-- singleton theorem below is structural rather than brute-forced.
+private def rowsOf? (o : Option Pattern) : List (List Pattern) :=
+  match o with
+  | some p => [[p]]
+  | none => []
+
+private theorem rowsOf?_length_le_one (o : Option Pattern) :
+    (rowsOf? o).length ≤ 1 := by
+  cases o <;> simp [rowsOf?]
+
+-- NOTE: hAgreeRaw is LIKELY STILL FALSE even with the 7 runtime guards.
+-- A third falsity vector (translator/root-rule fires before arg eval; ref can still expose
+-- arg-level reductions on the same term) has NOT yet been ruled out.
+-- Do NOT prove raw hAgreeRaw; prove hAgreeSupported (SupportedDeterministic-gated) first.
+
+private def intrinsicCompareRow? (ctor : String) (args : List Pattern) : Option Pattern :=
   match ctor, args with
   | "=", [lhs, rhs] =>
-      [[patternOfBool (decide (lhs = rhs))]]
+      some (patternOfBool (decide (lhs = rhs)))
   | "if", [cond, thenBr, elseBr] =>
       let condB :=
         match cond with
@@ -119,9 +137,9 @@ private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
         | .apply "false" [] => some false
         | _ => none
       match condB with
-      | some true => [[thenBr]]
-      | some false => [[elseBr]]
-      | none => []
+      | some true => some thenBr
+      | some false => some elseBr
+      | none => none
   | "if", [cond, thenBr] =>
       let condB :=
         match cond with
@@ -131,9 +149,9 @@ private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
         | .apply "false" [] => some false
         | _ => none
       match condB with
-      | some true => [[thenBr]]
-      | some false => [[.apply "()" []]]
-      | none => []
+      | some true => some thenBr
+      | some false => some (.apply "()" [])
+      | none => none
   | "and", xs =>
       let bs := xs.map fun x =>
         match x with
@@ -143,11 +161,11 @@ private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
         | .apply "false" [] => some false
         | _ => none
       if bs.any (fun b => b = some false) then
-        [[patternOfBool false]]
+        some (patternOfBool false)
       else if bs.all (fun b => b = some true) then
-        [[patternOfBool true]]
+        some (patternOfBool true)
       else
-        []
+        none
   | "or", xs =>
       let bs := xs.map fun x =>
         match x with
@@ -157,11 +175,11 @@ private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
         | .apply "false" [] => some false
         | _ => none
       if bs.any (fun b => b = some true) then
-        [[patternOfBool true]]
+        some (patternOfBool true)
       else if bs.all (fun b => b = some false) then
-        [[patternOfBool false]]
+        some (patternOfBool false)
       else
-        []
+        none
   | "not", [arg] =>
       let out :=
         match arg with
@@ -171,8 +189,8 @@ private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
         | .apply "false" [] => some true
         | _ => none
       match out with
-      | some b => [[patternOfBool b]]
-      | none => []
+      | some b => some (patternOfBool b)
+      | none => none
   | "xor", xs =>
       let bs := xs.map fun x =>
         match x with
@@ -183,185 +201,195 @@ private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
         | _ => none
       if bs.all Option.isSome then
         let trueCount := (bs.filter (fun b => b == some true)).length
-        [[patternOfBool (trueCount % 2 = 1)]]
+        some (patternOfBool (trueCount % 2 = 1))
       else
-        []
+        none
   | "append", [lhs, rhs] =>
-      [[MeTTailCore.MeTTaIL.Match.tupleOfElems
+      some (MeTTailCore.MeTTaIL.Match.tupleOfElems
           (MeTTailCore.MeTTaIL.Match.tupleElems lhs ++
-            MeTTailCore.MeTTaIL.Match.tupleElems rhs)]]
+            MeTTailCore.MeTTaIL.Match.tupleElems rhs))
   | "is-member", [x, xs] =>
       let elems := MeTTailCore.MeTTaIL.Match.tupleElems xs
-      [[patternOfBool (elems.any (fun e => decide (e = x)))]]
+      some (patternOfBool (elems.any (fun e => decide (e = x))))
   | "<", [lhs, rhs] =>
       match intOfPattern? lhs, intOfPattern? rhs with
-      | some a, some b => [[patternOfBool (a < b)]]
+      | some a, some b => some (patternOfBool (a < b))
       | _, _ =>
           match numericOfPattern? lhs, numericOfPattern? rhs with
-          | some a, some b => [[patternOfBool (a < b)]]
-          | _, _ => []
+          | some a, some b => some (patternOfBool (a < b))
+          | _, _ => none
   | ">", [lhs, rhs] =>
       match intOfPattern? lhs, intOfPattern? rhs with
-      | some a, some b => [[patternOfBool (a > b)]]
+      | some a, some b => some (patternOfBool (a > b))
       | _, _ =>
           match numericOfPattern? lhs, numericOfPattern? rhs with
-          | some a, some b => [[patternOfBool (a > b)]]
-          | _, _ => []
+          | some a, some b => some (patternOfBool (a > b))
+          | _, _ => none
   | "<=", [lhs, rhs] =>
       match intOfPattern? lhs, intOfPattern? rhs with
-      | some a, some b => [[patternOfBool (a <= b)]]
+      | some a, some b => some (patternOfBool (a <= b))
       | _, _ =>
           match numericOfPattern? lhs, numericOfPattern? rhs with
-          | some a, some b => [[patternOfBool (a <= b)]]
-          | _, _ => []
+          | some a, some b => some (patternOfBool (a <= b))
+          | _, _ => none
   | ">=", [lhs, rhs] =>
       match intOfPattern? lhs, intOfPattern? rhs with
-      | some a, some b => [[patternOfBool (a >= b)]]
+      | some a, some b => some (patternOfBool (a >= b))
       | _, _ =>
           match numericOfPattern? lhs, numericOfPattern? rhs with
-          | some a, some b => [[patternOfBool (a >= b)]]
-          | _, _ => []
+          | some a, some b => some (patternOfBool (a >= b))
+          | _, _ => none
   | "==", [lhs, rhs] =>
       match numericOfPattern? lhs, numericOfPattern? rhs with
-      | some a, some b => [[patternOfBool (Float.abs (a - b) <= numericEqTol)]]
-      | _, _ => [[patternOfBool (decide (lhs = rhs))]]
+      | some a, some b => some (patternOfBool (Float.abs (a - b) <= numericEqTol))
+      | _, _ => some (patternOfBool (decide (lhs = rhs)))
   | "!=", [lhs, rhs] =>
       match numericOfPattern? lhs, numericOfPattern? rhs with
-      | some a, some b => [[patternOfBool (Float.abs (a - b) > numericEqTol)]]
-      | _, _ => [[patternOfBool (!(decide (lhs = rhs)))]]
+      | some a, some b => some (patternOfBool (Float.abs (a - b) > numericEqTol))
+      | _, _ => some (patternOfBool (!(decide (lhs = rhs))))
   | "+", x :: y :: rest =>
       match (x :: y :: rest).mapM intOfPattern? with
-      | some ns => [[patternOfInt (ns.foldl (fun acc n => acc + n) 0)]]
+      | some ns => some (patternOfInt (ns.foldl (fun acc n => acc + n) 0))
       | none =>
           match (x :: y :: rest).mapM numericOfPattern? with
-          | some ns => [[patternOfFloat (ns.foldl (fun acc n => acc + n) 0.0)]]
-          | none => []
-  | "+", _ => []
-  | "-", [] => []
+          | some ns => some (patternOfFloat (ns.foldl (fun acc n => acc + n) 0.0))
+          | none => none
+  | "+", _ => none
+  | "-", [] => none
   | "-", [x] =>
       match intOfPattern? x with
-      | some n => [[patternOfInt (-n)]]
+      | some n => some (patternOfInt (-n))
       | none =>
           match numericOfPattern? x with
-          | some n => [[patternOfFloat (-n)]]
-          | none => []
+          | some n => some (patternOfFloat (-n))
+          | none => none
   | "-", x :: xs =>
       match intOfPattern? x, xs.mapM intOfPattern? with
       | some n0, some rest =>
-          [[patternOfInt (rest.foldl (fun acc n => acc - n) n0)]]
+          some (patternOfInt (rest.foldl (fun acc n => acc - n) n0))
       | _, _ =>
           match numericOfPattern? x, xs.mapM numericOfPattern? with
           | some n0, some rest =>
-              [[patternOfFloat (rest.foldl (fun acc n => acc - n) n0)]]
-          | _, _ => []
+              some (patternOfFloat (rest.foldl (fun acc n => acc - n) n0))
+          | _, _ => none
   | "*", x :: y :: rest =>
       match (x :: y :: rest).mapM intOfPattern? with
-      | some ns => [[patternOfInt (ns.foldl (fun acc n => acc * n) 1)]]
+      | some ns => some (patternOfInt (ns.foldl (fun acc n => acc * n) 1))
       | none =>
           match (x :: y :: rest).mapM numericOfPattern? with
-          | some ns => [[patternOfFloat (ns.foldl (fun acc n => acc * n) 1.0)]]
-          | none => []
-  | "*", _ => []
+          | some ns => some (patternOfFloat (ns.foldl (fun acc n => acc * n) 1.0))
+          | none => none
+  | "*", _ => none
   | "/", [lhs, rhs] =>
       match intOfPattern? lhs, intOfPattern? rhs with
       | some a, some b =>
-          if b = 0 then [] else [[patternOfInt (a / b)]]
+          if b = 0 then none else some (patternOfInt (a / b))
       | _, _ =>
           match numericOfPattern? lhs, numericOfPattern? rhs with
           | some a, some b =>
-              if Float.abs b <= numericEqTol then [] else [[patternOfFloat (a / b)]]
-          | _, _ => []
+              if Float.abs b <= numericEqTol then none else some (patternOfFloat (a / b))
+          | _, _ => none
   | "%", [lhs, rhs] =>
       match intOfPattern? lhs, intOfPattern? rhs with
       | some a, some b =>
-          if b = 0 then [] else [[patternOfInt (a % b)]]
-      | _, _ => []
+          if b = 0 then none else some (patternOfInt (a % b))
+      | _, _ => none
   | "pow-math", [lhs, rhs] =>
       match floatOfPattern? lhs, floatOfPattern? rhs with
-      | some a, some b => [[patternOfFloat (Float.pow a b)]]
-      | _, _ => []
+      | some a, some b => some (patternOfFloat (Float.pow a b))
+      | _, _ => none
   | "sqrt-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfFloat (Float.sqrt n)]]
-      | none => []
+      | some n => some (patternOfFloat (Float.sqrt n))
+      | none => none
   | "abs-math", [x] =>
       match intOfPattern? x, floatOfPattern? x with
-      | some n, _ => [[patternOfInt (Int.ofNat (Int.natAbs n))]]
-      | none, some n => [[patternOfFloat (Float.abs n)]]
-      | _, _ => []
+      | some n, _ => some (patternOfInt (Int.ofNat (Int.natAbs n)))
+      | none, some n => some (patternOfFloat (Float.abs n))
+      | _, _ => none
   | "log-math", [base, x] =>
       match floatOfPattern? base, floatOfPattern? x with
       | some b, some n =>
           if b == 0.0 || b == 1.0 || n <= 0.0 then
-            []
+            none
           else
-            [[patternOfFloat (Float.log n / Float.log b)]]
-      | _, _ => []
+            some (patternOfFloat (Float.log n / Float.log b))
+      | _, _ => none
   | "trunc-math", [x] =>
       match floatOfPattern? x with
       | some n =>
           let t := if n < 0.0 then Float.ceil n else Float.floor n
-          [[patternOfFloat t]]
-      | none => []
+          some (patternOfFloat t)
+      | none => none
   | "ceil-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfFloat (Float.ceil n)]]
-      | none => []
+      | some n => some (patternOfFloat (Float.ceil n))
+      | none => none
   | "floor-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfFloat (Float.floor n)]]
-      | none => []
+      | some n => some (patternOfFloat (Float.floor n))
+      | none => none
   | "round-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfFloat (Float.round n)]]
-      | none => []
+      | some n => some (patternOfFloat (Float.round n))
+      | none => none
   | "sin-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfFloat (Float.sin n)]]
-      | none => []
+      | some n => some (patternOfFloat (Float.sin n))
+      | none => none
   | "asin-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfFloat (Float.asin n)]]
-      | none => []
+      | some n => some (patternOfFloat (Float.asin n))
+      | none => none
   | "cos-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfFloat (Float.cos n)]]
-      | none => []
+      | some n => some (patternOfFloat (Float.cos n))
+      | none => none
   | "acos-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfFloat (Float.acos n)]]
-      | none => []
+      | some n => some (patternOfFloat (Float.acos n))
+      | none => none
   | "tan-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfFloat (Float.tan n)]]
-      | none => []
+      | some n => some (patternOfFloat (Float.tan n))
+      | none => none
   | "atan-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfFloat (Float.atan n)]]
-      | none => []
+      | some n => some (patternOfFloat (Float.atan n))
+      | none => none
   | "isnan-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfBool (Float.isNaN n)]]
-      | none => []
+      | some n => some (patternOfBool (Float.isNaN n))
+      | none => none
   | "isinf-math", [x] =>
       match floatOfPattern? x with
-      | some n => [[patternOfBool (!Float.isNaN n && !Float.isFinite n)]]
-      | none => []
+      | some n => some (patternOfBool (!Float.isNaN n && !Float.isFinite n))
+      | none => none
   | "cons", [head, tail] =>
-      [[tupleOfElems (head :: tupleElems tail)]]
+      some (tupleOfElems (head :: tupleElems tail))
   | "min-atom", [xs] =>
       match intListOfPattern? xs with
-      | none => []
-      | some [] => []
+      | none => none
+      | some [] => none
       | some (x :: rest) =>
-          [[patternOfInt (rest.foldl (fun acc n => if n < acc then n else acc) x)]]
+          some (patternOfInt (rest.foldl (fun acc n => if n < acc then n else acc) x))
   | "max-atom", [xs] =>
       match intListOfPattern? xs with
-      | none => []
-      | some [] => []
+      | none => none
+      | some [] => none
       | some (x :: rest) =>
-          [[patternOfInt (rest.foldl (fun acc n => if n > acc then n else acc) x)]]
-  | _, _ => []
+          some (patternOfInt (rest.foldl (fun acc n => if n > acc then n else acc) x))
+  | _, _ => none
+
+-- Every intrinsicCompareRow? branch returns at most one result (Option), so the row-list
+-- wrapper also has length ≤ 1.  This is structural, not a brute-force case split.
+private def intrinsicCompareRows (ctor : String) (args : List Pattern) :
+    List (List Pattern) :=
+  rowsOf? (intrinsicCompareRow? ctor args)
+
+theorem intrinsicCompareRows_length_le_one (ctor : String) (args : List Pattern) :
+    (intrinsicCompareRows ctor args).length ≤ 1 := by
+  simpa [intrinsicCompareRows] using rowsOf?_length_le_one (intrinsicCompareRow? ctor args)
 
 private def parseIntrinsicCtor? (rel : String) : Option String :=
   if rel.startsWith "intrinsic:" then
@@ -389,6 +417,13 @@ private def conflictingEqBuiltin : BuiltinTable where
 private theorem parseIntrinsicCtor_intrinsicEq :
     parseIntrinsicCtor? "intrinsic:=" = some "=" := by
   native_decide
+
+theorem coreIntrinsicBuiltins_relation_length_le_one (rel : String) (args : List Pattern) :
+    (coreIntrinsicBuiltins.relation rel args).length ≤ 1 := by
+  simp only [coreIntrinsicBuiltins]
+  match parseIntrinsicCtor? rel with
+  | some ctor => exact intrinsicCompareRows_length_le_one ctor args
+  | none => simp
 
 theorem coreIntrinsicBuiltins_eq_true_true_singleton :
     coreIntrinsicBuiltins.relation "intrinsic:=" [.apply "True" [], .apply "True" []] =

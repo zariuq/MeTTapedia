@@ -29,7 +29,7 @@ can execute as work-queue firings.
 namespace Mettapedia.Languages.ProcessCalculi.MORK.PLNRules
 
 open Mettapedia.Languages.ProcessCalculi.MORK
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
 /-! ## MeTTaIL type aliases (same as MeTTaILBridge.lean) -/
 

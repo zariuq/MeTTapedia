@@ -62,6 +62,7 @@ structure Session where
   translatorRuleHeads : List String := []
   stateCells : List (String × Pattern) := []
   vectorSpaces : List (String × VectorSpace) := []
+  coreBuiltinsUnmodified : Bool := true
   diag : Diagnostics := {}
 
 namespace Session
@@ -326,90 +327,118 @@ private def normalizeSpaceMatchPattern (s : Session) : Pattern → Pattern :=
   else
     normalizeDollarVars
 
-private partial def applyBindingsCompat (bs : Bindings) : Pattern → Pattern :=
-  let rec go (visited : List String) : Pattern → Pattern
-    | .fvar x =>
-        if visited.contains x then
-          .fvar x
-        else
-          match bindingLookup bs x with
-          | some (.fvar y) =>
-              if y == x then
-                .fvar x
+private def patternHeight : Pattern → Nat
+  | .fvar _ => 1
+  | .bvar _ => 1
+  | .apply _ args =>
+      1 + args.foldl (fun h a => Nat.max h (patternHeight a)) 0
+  | .lambda body =>
+      1 + patternHeight body
+  | .multiLambda _ body =>
+      1 + patternHeight body
+  | .subst body repl =>
+      1 + Nat.max (patternHeight body) (patternHeight repl)
+  | .collection _ elems _ =>
+      1 + elems.foldl (fun h a => Nat.max h (patternHeight a)) 0
+
+private def bindingVarBudget (bs : Bindings) : Nat :=
+  (bs.map (·.1)).eraseDups.length
+
+private def applyBindingsCompatFuel
+    (bs : Bindings) : Nat → List String → Pattern → Pattern
+  | 0, _visited, p => p
+  | fuel + 1, visited, p =>
+      match p with
+      | .fvar x =>
+          if visited.contains x then
+            .fvar x
+          else
+            match bindingLookup bs x with
+            | some (.fvar y) =>
+                if y == x then
+                  .fvar x
+                else
+                  applyBindingsCompatFuel bs fuel (x :: visited) (.fvar y)
+            | some v =>
+                applyBindingsCompatFuel bs fuel (x :: visited) v
+            | none => .fvar x
+      | .apply ctor [] =>
+          match dollarHeadVarName? (.apply ctor []) with
+          | some x =>
+              if visited.contains x then
+                .apply ctor []
               else
-                go (x :: visited) (.fvar y)
-          | some v => go (x :: visited) v
-          | none => .fvar x
-    | .apply ctor [] =>
-        match dollarHeadVarName? (.apply ctor []) with
-        | some x =>
-            if visited.contains x then
-              .apply ctor []
-            else
-              match bindingLookup bs x with
-              | some v => go (x :: visited) v
-              | none => .apply ctor []
-        | none => .apply ctor []
-    | .apply "|->" [params, body] =>
-        let bound := lambdaParamNamesCompat params
-        let bs' := bs.filter (fun b => !(bound.contains b.1))
-        .apply "|->" [params, applyBindingsCompat bs' body]
-    | .apply ctor args =>
-        let args' := args.map (go visited)
-        match dollarHeadVarName? (.apply ctor []) with
-        | some x =>
-            if visited.contains x then
-              .apply ctor args'
-            else
-              match bindingLookup bs x with
-              | some (.apply c []) => .apply c args'
-              | some v =>
-                  let v' := go (x :: visited) v
-                  match v' with
-                  | .apply "partial" [_base, _bound] =>
-                      if args'.isEmpty then
-                        v'
-                      else
-                        .apply "Expr" (v' :: args')
-                  | .apply "|->" _ =>
-                      if args'.isEmpty then
-                        v'
-                      else
-                        .apply "Expr" (v' :: args')
-                  | .lambda _ =>
-                      if args'.isEmpty then
-                        v'
-                      else
-                        .apply "Expr" (v' :: args')
-                  | .multiLambda _ _ =>
-                      if args'.isEmpty then
-                        v'
-                      else
-                        .apply "Expr" (v' :: args')
-                  | .apply c boundArgs =>
-                      if boundArgs.isEmpty then
-                        .apply c args'
-                      else if args'.isEmpty then
-                        v'
-                      else
-                        .apply "Expr" (v' :: args')
-                  | _ =>
-                      if args'.isEmpty then
-                        v'
-                      else
-                        .apply "Expr" (v' :: args')
-              | none => .apply ctor args'
-        | none => .apply ctor args'
-    | .lambda body =>
-        .lambda (go visited body)
-    | .multiLambda n body =>
-        .multiLambda n (go visited body)
-    | .subst body repl =>
-        .subst (go visited body) (go visited repl)
-    | .collection ct elems rest =>
-        .collection ct (elems.map (go visited)) rest
-    | .bvar n => .bvar n
-  go []
+                match bindingLookup bs x with
+                | some v =>
+                    applyBindingsCompatFuel bs fuel (x :: visited) v
+                | none => .apply ctor []
+          | none => .apply ctor []
+      | .apply "|->" [params, body] =>
+          let bound := lambdaParamNamesCompat params
+          let bs' := bs.filter (fun b => !(bound.contains b.1))
+          .apply "|->" [params, applyBindingsCompatFuel bs' fuel visited body]
+      | .apply ctor args =>
+          let args' := args.map (fun a => applyBindingsCompatFuel bs fuel visited a)
+          match dollarHeadVarName? (.apply ctor []) with
+          | some x =>
+              if visited.contains x then
+                .apply ctor args'
+              else
+                match bindingLookup bs x with
+                | some (.apply c []) => .apply c args'
+                | some v =>
+                    let v' := applyBindingsCompatFuel bs fuel (x :: visited) v
+                    match v' with
+                    | .apply "partial" [_base, _bound] =>
+                        if args'.isEmpty then
+                          v'
+                        else
+                          .apply "Expr" (v' :: args')
+                    | .apply "|->" _ =>
+                        if args'.isEmpty then
+                          v'
+                        else
+                          .apply "Expr" (v' :: args')
+                    | .lambda _ =>
+                        if args'.isEmpty then
+                          v'
+                        else
+                          .apply "Expr" (v' :: args')
+                    | .multiLambda _ _ =>
+                        if args'.isEmpty then
+                          v'
+                        else
+                          .apply "Expr" (v' :: args')
+                    | .apply c boundArgs =>
+                        if boundArgs.isEmpty then
+                          .apply c args'
+                        else if args'.isEmpty then
+                          v'
+                        else
+                          .apply "Expr" (v' :: args')
+                    | _ =>
+                        if args'.isEmpty then
+                          v'
+                        else
+                          .apply "Expr" (v' :: args')
+                | none => .apply ctor args'
+          | none => .apply ctor args'
+      | .lambda body =>
+          .lambda (applyBindingsCompatFuel bs fuel visited body)
+      | .multiLambda n body =>
+          .multiLambda n (applyBindingsCompatFuel bs fuel visited body)
+      | .subst body repl =>
+          .subst
+            (applyBindingsCompatFuel bs fuel visited body)
+            (applyBindingsCompatFuel bs fuel visited repl)
+      | .collection ct elems rest =>
+          .collection ct (elems.map (fun a => applyBindingsCompatFuel bs fuel visited a)) rest
+      | .bvar n => .bvar n
+
+private def applyBindingsCompat (bs : Bindings) : Pattern → Pattern :=
+  fun p =>
+    let fuel := bindingVarBudget bs + patternHeight p + 1
+    applyBindingsCompatFuel bs fuel [] p
 
 private def insertUniquePattern (xs : List Pattern) (x : Pattern) : List Pattern :=
   if xs.contains x then xs else x :: xs
@@ -605,6 +634,43 @@ mutual
     | _ => []
 end
 
+-- ─── Transparent (non-partial) versions of intrinsicStep / intrinsicReduceArgs ──
+-- These are identical in behavior but provably terminating via sizeOf.
+-- Used in proof-mode to avoid the opacity of the partial def mutual block above.
+
+mutual
+  private def intrinsicReduceArgsT (s : Session) : List Pattern → List (List Pattern)
+    | [] => []
+    | arg :: rest =>
+        let headRed := intrinsicStepT s arg
+        if !headRed.isEmpty then
+          headRed.map (fun arg' => arg' :: rest)
+        else
+          (intrinsicReduceArgsT s rest).map (fun rest' => arg :: rest')
+  termination_by args => sizeOf args
+  decreasing_by
+    · simp_wf; omega
+    · simp_wf; omega
+
+  private def intrinsicStepT (s : Session) : Pattern → List Pattern
+    | .apply ctor args =>
+        if reduceArgsFirst ctor then
+          let reducedArgs := intrinsicReduceArgsT s args
+          if !reducedArgs.isEmpty then
+            reducedArgs.map (fun args' => .apply ctor args')
+          else
+            intrinsicDirect s ctor args
+        else
+          let direct := intrinsicDirect s ctor args
+          if !direct.isEmpty then
+            direct
+          else
+            (intrinsicReduceArgsT s args).map (fun args' => .apply ctor args')
+    | _ => []
+  termination_by term => sizeOf term
+  decreasing_by all_goals simp_wf; omega
+end
+
 def dedupPatterns (xs : List Pattern) : List Pattern :=
   (xs.foldl
     (fun acc x => if acc.contains x then acc else x :: acc)
@@ -623,7 +689,7 @@ private def translatorInterface : Algorithms.MeTTa.Simple.Semantics.TranslatorOp
 }
 
 def step (s : Session) (term : Pattern) : List Pattern :=
-  let intrinsic := intrinsicStep s term
+  let intrinsic := intrinsicStepT s term
   let translated :=
     Algorithms.MeTTa.Simple.Semantics.TranslatorOps.translateCall
       translatorInterface s s.translatorRuleHeads term
@@ -639,6 +705,86 @@ def step (s : Session) (term : Pattern) : List Pattern :=
       []
   let intrinsic' := if compat.isEmpty then intrinsic else []
   intrinsic' ++ translated ++ compat ++ generated
+
+-- ─── Step result-shape lemmas ────────────────────────────────────────────────
+
+/-- When translateCall, compatRewriteStep, and rewriteWithContext all return [],
+    `step` reduces to just `intrinsicStepT`. -/
+theorem step_eq_intrinsicStepT_of_no_external_reducts
+    (s : Session) (term : Pattern)
+    (hT : Algorithms.MeTTa.Simple.Semantics.TranslatorOps.translateCall
+            translatorInterface s s.translatorRuleHeads term = [])
+    (hC : Algorithms.MeTTa.Simple.Semantics.Dispatch.compatRewriteStep
+            compatRewriteInterface s term = [])
+    (hG : SpecBundle.rewriteWithContext s.bundle term = []) :
+    step s term = intrinsicStepT s term := by
+  simp only [step, hT, hC, hG, List.isEmpty_nil, Bool.true_and, ite_true,
+    List.append_nil]
+
+/-- When args have no reductions (i.e., `intrinsicStepT` returns [] for each arg),
+    `intrinsicReduceArgsT` returns []. -/
+theorem intrinsicReduceArgsT_empty_of_irreducible_args
+    (s : Session) (args : List Pattern)
+    (hIrred : ∀ a ∈ args, intrinsicStepT s a = []) :
+    intrinsicReduceArgsT s args = [] := by
+  induction args with
+  | nil => simp [intrinsicReduceArgsT]
+  | cons hd tl ih =>
+      simp [intrinsicReduceArgsT]
+      have hhd := hIrred hd List.mem_cons_self
+      simp [hhd]
+      exact ih (fun a ha => hIrred a (List.mem_cons_of_mem hd ha))
+
+/-- For a `reduceArgsFirst` head with irreducible args, `intrinsicStepT` returns
+    exactly `intrinsicDirect`. -/
+theorem intrinsicStepT_reduceFirst_irreducible
+    (s : Session) (ctor : String) (args : List Pattern)
+    (hRedFirst : reduceArgsFirst ctor = true)
+    (hIrred : ∀ a ∈ args, intrinsicStepT s a = []) :
+    intrinsicStepT s (.apply ctor args) = intrinsicDirect s ctor args := by
+  simp [intrinsicStepT, hRedFirst]
+  have hEmpty := intrinsicReduceArgsT_empty_of_irreducible_args s args hIrred
+  simp [hEmpty]
+
+/-- For a non-`reduceArgsFirst` head, if `intrinsicDirect` returns a non-empty list,
+    `intrinsicStepT` returns that list. -/
+theorem intrinsicStepT_direct_nonempty
+    (s : Session) (ctor : String) (args : List Pattern)
+    (hNotRedFirst : reduceArgsFirst ctor = false)
+    (hDirect : (intrinsicDirect s ctor args).isEmpty = false) :
+    intrinsicStepT s (.apply ctor args) = intrinsicDirect s ctor args := by
+  simp [intrinsicStepT, hNotRedFirst, hDirect]
+
+-- ─── Public proof API for DeterministicBridge layer ──────────────────────────
+-- Thin wrappers exposing private functions needed by the bridge proofs.
+-- The bridge layer (Backend/DeterministicBridge/) imports Session and uses these.
+-- NOTE: detEvalInterface and detEvalInterface_eq_standalone are placed later in
+-- this file (after evalWithStateCoreN) because they reference forward declarations.
+
+/-- The `translateCall` component of `step`, exposed for bridge proofs. -/
+def stepTranslateCall (s : Session) (term : Pattern) : List Pattern :=
+  Algorithms.MeTTa.Simple.Semantics.TranslatorOps.translateCall
+    translatorInterface s s.translatorRuleHeads term
+
+/-- The `compatRewriteStep` component of `step`, exposed for bridge proofs. -/
+def stepCompatRewrite (s : Session) (term : Pattern) : List Pattern :=
+  Algorithms.MeTTa.Simple.Semantics.Dispatch.compatRewriteStep
+    compatRewriteInterface s term
+
+/-- The `rewriteWithContext` component of `step`, exposed for bridge proofs. -/
+def stepGeneratedRewrite (s : Session) (term : Pattern) : List Pattern :=
+  SpecBundle.rewriteWithContext s.bundle term
+
+/-- Decomposition of `step` in terms of its public components. -/
+theorem step_eq_components (s : Session) (term : Pattern) :
+    step s term =
+      let intrinsic := intrinsicStepT s term
+      let translated := stepTranslateCall s term
+      let compat := if translated.isEmpty then stepCompatRewrite s term else []
+      let generated := if compat.isEmpty && translated.isEmpty then stepGeneratedRewrite s term else []
+      let intrinsic' := if compat.isEmpty then intrinsic else []
+      intrinsic' ++ translated ++ compat ++ generated := by
+  rfl
 
 private def withMessage (s : Session) (msg : String) : Session :=
   { s with diag := { s.diag with messages := msg :: s.diag.messages } }
@@ -848,13 +994,61 @@ private def collectPremiseFreeRulesForHeadArity
   Algorithms.MeTTa.Simple.Backend.CompiledBundle.scanPremiseFreeRulesForHeadArity
     rules ctor arity
 
+private def spaceOpsInterfaceWithEval
+    (evalFn : Session → Pattern → Session × List Pattern)
+    (s : Session) : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
+  bundle := fun s => s.bundle
+  rewrites := fun s => s.bundle.language.rewrites
+  setBundle := withBundleCompiled
+  eval := evalFn
+  applyBindings := applyBindingsCompat
+  normalizePattern := normalizeDollarVars
+  normalizeForSpaceMatch := normalizeSpaceMatchPattern s
+  matchPattern := matchPatternMeTTa
+  dedupPatterns := dedupPatternList
+}
+
+private def intrinsicGetAtomsResultWithEval
+    (evalFn : Session → Pattern → Session × List Pattern)
+    (s : Session) (space : Pattern) : Option (Session × List Pattern) :=
+  let (s', out) :=
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.getAtoms
+      (spaceOpsInterfaceWithEval evalFn s) spacePolicy s space
+  some (s', out)
+
+private def intrinsicMatchResultWithEval
+    (evalFn : Session → Pattern → Session × List Pattern)
+    (s : Session) (space pat tmpl : Pattern) : Option (Session × List Pattern) :=
+  let (s', out) :=
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
+      (spaceOpsInterfaceWithEval evalFn s) spacePolicy s space pat tmpl
+  some (s', out)
+
+private theorem intrinsicGetAtomsResultWithEval_eval_irrelevant
+    (evalFn evalFn' : Session → Pattern → Session × List Pattern)
+    (s : Session) (space : Pattern) :
+    intrinsicGetAtomsResultWithEval evalFn s space =
+      intrinsicGetAtomsResultWithEval evalFn' s space := by
+  unfold intrinsicGetAtomsResultWithEval spaceOpsInterfaceWithEval
+  simp [Algorithms.MeTTa.Simple.Semantics.SpaceOps.getAtoms,
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.factsForSpace]
+
+/-- `get-atoms` / `get-atoms!` intrinsic evaluation preserves the session:
+    the result is `some (s, facts)` for some `facts`. -/
+private theorem intrinsicGetAtomsResultWithEval_state_eq
+    (evalFn : Session → Pattern → Session × List Pattern)
+    (s : Session) (space : Pattern) :
+    ∃ facts, intrinsicGetAtomsResultWithEval evalFn s space = some (s, facts) := by
+  unfold intrinsicGetAtomsResultWithEval spaceOpsInterfaceWithEval
+  simp [Algorithms.MeTTa.Simple.Semantics.SpaceOps.getAtoms]
+
 mutual
   private partial def evalWithStateCore (s : Session) (term : Pattern) : Session × List Pattern :=
     let iface : Algorithms.MeTTa.Simple.Backend.ReferenceEval.Interface Session := {
       maxNodes := fun s => s.maxNodes
       maxSteps := fun s => s.maxSteps
       runNestedEffects := runNestedEffects
-      intrinsicStateful := intrinsicStateful
+      intrinsicStateful := intrinsicStatefulCore
       isEagerCallableHead := isEagerCallableHead
       step := step
       enqueueNext := enqueueNext
@@ -907,7 +1101,7 @@ mutual
       maxNodes := fun s => s.maxNodes
       maxSteps := fun s => s.maxSteps
       runNestedEffects := runNestedEffects
-      intrinsicStateful := intrinsicStateful
+      intrinsicStateful := intrinsicStatefulCore
       isEagerCallableHead := isEagerCallableHead
       step := step
       enqueueNext := enqueueNext
@@ -923,7 +1117,7 @@ mutual
       maxNodes := fun s => s.maxNodes
       maxSteps := fun s => s.maxSteps
       runNestedEffects := runNestedEffects
-      intrinsicStateful := intrinsicStateful
+      intrinsicStateful := intrinsicStatefulCore
       isEagerCallableHead := isEagerCallableHead
       step := step
       enqueueNext := enqueueNext
@@ -1164,7 +1358,7 @@ mutual
         let (sCond, condOut) :=
           match cond with
           | .apply "superpose" [_] =>
-              match intrinsicStateful s cond with
+              match intrinsicStatefulCore s cond with
               | some (s1, out) =>
                   let vals := if out.isEmpty then [cond] else out
                   (s1, vals)
@@ -1387,7 +1581,7 @@ mutual
       fun sess key =>
         match key with
         | .apply "superpose" [_] =>
-            match intrinsicStateful sess key with
+            match intrinsicStatefulCore sess key with
             | some (sess', out) =>
                 let vals := if out.isEmpty then [key] else out
                 (sess', vals)
@@ -1413,7 +1607,7 @@ mutual
 
   private partial def evalForRuleEnumeration (s : Session) (expr : Pattern) :
       Session × List Pattern :=
-    match intrinsicStateful s expr with
+    match intrinsicStatefulCore s expr with
     | some (s1, out) =>
         let out' := if out.isEmpty then [expr] else out
         (s1, out')
@@ -1784,7 +1978,7 @@ mutual
     | .collection _ elems _ =>
         "(" ++ String.intercalate " " (elems.map patternToSExpr) ++ ")"
 
-  partial def intrinsicStateful (s : Session)
+  partial def intrinsicStatefulCore (s : Session)
       (term : Pattern) : Option (Session × List Pattern) :=
     let pIface : Algorithms.MeTTa.Simple.Semantics.PeTTaCore.Interface Session := {
       eval := evalWithStateCore
@@ -1813,7 +2007,7 @@ mutual
           | none =>
               let streamI : Algorithms.MeTTa.Simple.Semantics.StreamOps.Interface Session := {
                 evalValues := fun sess expr =>
-                  match intrinsicStateful sess expr with
+                  match intrinsicStatefulCore sess expr with
                   | some (s1, out0) =>
                       let out := if out0.isEmpty then [expr] else out0
                       (s1, out)
@@ -1946,39 +2140,13 @@ mutual
         let (s', out) := Algorithms.MeTTa.Simple.Semantics.SpaceOps.removeAllAtoms I spacePolicy s space term
         some (s', out)
     | .apply "get-atoms" [space] =>
-        let I : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
-          bundle := fun s => s.bundle
-          rewrites := fun s => s.bundle.language.rewrites
-          setBundle := withBundleCompiled
-          eval := evalWithStateCore
-          applyBindings := applyBindingsCompat
-          normalizePattern := normalizeDollarVars
-          normalizeForSpaceMatch := normalizeSpaceMatchPattern s
-          matchPattern := matchPatternMeTTa
-          dedupPatterns := dedupPatternList
-        }
-        let (s', out) := Algorithms.MeTTa.Simple.Semantics.SpaceOps.getAtoms I spacePolicy s space
-        some (s', out)
+        intrinsicGetAtomsResultWithEval evalWithStateCore s space
     | .apply "get-atoms!" [space] =>
-        let I : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
-          bundle := fun s => s.bundle
-          rewrites := fun s => s.bundle.language.rewrites
-          setBundle := withBundleCompiled
-          eval := evalWithStateCore
-          applyBindings := applyBindingsCompat
-          normalizePattern := normalizeDollarVars
-          normalizeForSpaceMatch := normalizeSpaceMatchPattern s
-          matchPattern := matchPatternMeTTa
-          dedupPatterns := dedupPatternList
-        }
-        let (s', out) := Algorithms.MeTTa.Simple.Semantics.SpaceOps.getAtoms I spacePolicy s space
-        some (s', out)
+        intrinsicGetAtomsResultWithEval evalWithStateCore s space
     | .apply "match" [space, pat, tmpl] =>
-        let (s', out) := evalMatchIntrinsic s space pat tmpl
-        some (s', out)
+        intrinsicMatchResultWithEval evalWithStateCore s space pat tmpl
     | .apply "match" [pat, tmpl] =>
-        let (s', out) := evalMatchIntrinsic s selfSpaceAtom pat tmpl
-        some (s', out)
+        intrinsicMatchResultWithEval evalWithStateCore s selfSpaceAtom pat tmpl
     | .apply "case" [keyExpr, branchesExpr] =>
         let (s', out) := evalCaseIntrinsic s keyExpr branchesExpr
         some (s', out)
@@ -2095,7 +2263,7 @@ mutual
     | .apply "atom-of" [x] =>
         let (s1, x1, _) := runNestedEffects s true false x
         let (s2, out) :=
-          match intrinsicStateful s1 x1 with
+          match intrinsicStatefulCore s1 x1 with
           | some (sI, outI) =>
               if outI.isEmpty then
                 (sI, [x1])
@@ -2251,7 +2419,7 @@ mutual
                 | [] => []
                 | a :: tail =>
                     let aRed0 :=
-                      match intrinsicStateful s a with
+                      match intrinsicStatefulCore s a with
                       | some (_sA, outA) =>
                           if outA.isEmpty then step s a else outA
                       | none => step s a
@@ -2281,7 +2449,7 @@ mutual
       maxNodes := fun s => s.maxNodes
       maxSteps := fun s => s.maxSteps
       runNestedEffects := runNestedEffects
-      intrinsicStateful := intrinsicStateful
+      intrinsicStateful := intrinsicStatefulCore
       isEagerCallableHead := isEagerCallableHead
       step := step
       enqueueNext := enqueueNext
@@ -2299,7 +2467,7 @@ mutual
       maxNodes := fun s => s.maxNodes
       maxSteps := fun s => s.maxSteps
       runNestedEffects := runNestedEffects
-      intrinsicStateful := intrinsicStateful
+      intrinsicStateful := intrinsicStatefulCore
       isEagerCallableHead := isEagerCallableHead
       step := step
       enqueueNext := enqueueNext
@@ -2310,6 +2478,95 @@ mutual
       iface s isRoot _parentCallable term
 
 end
+
+-- ─── Public wrappers for private helpers (used by DeterministicBridge) ───────
+-- These expose private functions needed by the bridge proofs while keeping
+-- the originals private to Session.lean.
+
+/-- Public wrapper for `intrinsicDirect`. -/
+def intrinsicDirectPub (s : Session) (ctor : String) (args : List Pattern) : List Pattern :=
+  intrinsicDirect s ctor args
+
+/-- Public wrapper for `builtinPartialMinArity?`. -/
+def builtinPartialMinArityPub (ctor : String) : Option Nat :=
+  builtinPartialMinArity? ctor
+
+/-- Public wrapper for `firstRuleReduction?`. -/
+def firstRuleReductionPub (s : Session) (term : Pattern) : Option Pattern :=
+  firstRuleReduction? s term
+
+/-- Public wrapper for `rewriteAritiesForHead`. -/
+def rewriteAritiesForHeadPub (s : Session) (ctor : String) : List Nat :=
+  rewriteAritiesForHead s ctor
+
+/-- Public wrapper for `partialPattern`. -/
+def partialPatternPub (ctor : String) (args : List Pattern) : Pattern :=
+  partialPattern ctor args
+
+/-- If `step s a = []` then `intrinsicStepT s a = []`.
+    (intrinsicStepT is one component of step's concatenation.) -/
+private theorem intrinsicStepT_nil_of_step_nil
+    (s : Session) (a : Pattern) (hS : step s a = []) :
+    intrinsicStepT s a = [] := by
+  simp only [step] at hS
+  -- hS : (intrinsic' ++ translated ++ compat_branch) ++ generated_branch = []
+  rw [List.append_eq_nil_iff] at hS
+  have ⟨h123, _h4⟩ := hS
+  rw [List.append_eq_nil_iff] at h123
+  have ⟨h12, h3⟩ := h123
+  rw [List.append_eq_nil_iff] at h12
+  have ⟨h1, h2⟩ := h12
+  -- h2 : translated = []
+  -- h3 : compat_branch = [] (i.e., if translated.isEmpty then compatRewrite else [] = [])
+  -- h1 : intrinsic' = [] (i.e., if compat_branch.isEmpty then intrinsicStepT else [] = [])
+  -- Since translated = [] (h2), translated.isEmpty = true, so compat_branch = compatRewrite
+  -- Since compat_branch = [] (h3), compat_branch.isEmpty = true, so intrinsic' = intrinsicStepT
+  -- Since intrinsic' = [] (h1), intrinsicStepT = []
+  simp [h2, List.isEmpty] at h3
+  simp [h2, h3, List.isEmpty] at h1
+  exact h1
+
+/-- Under strict conditions (no external reducts, args irreducible),
+    `step` produces exactly `intrinsicDirectPub`.
+    This is the key shape lemma for the DeterministicBridge. -/
+theorem step_apply_eq_intrinsicDirectPub_of_strict
+    (s : Session) (ctor : String) (argsV : List Pattern)
+    (hT : stepTranslateCall s (.apply ctor argsV) = [])
+    (hC : stepCompatRewrite s (.apply ctor argsV) = [])
+    (hG : stepGeneratedRewrite s (.apply ctor argsV) = [])
+    (hIrred : ∀ a ∈ argsV, step s a = []) :
+    step s (.apply ctor argsV) = intrinsicDirectPub s ctor argsV := by
+  -- step = intrinsic' ++ translated ++ compat ++ generated
+  -- Under strict: translated=[], compat=[], generated=[]
+  -- So step = intrinsicStepT (since compat=[])
+  have hStep := step_eq_intrinsicStepT_of_no_external_reducts s (.apply ctor argsV) hT hC hG
+  rw [hStep]
+  -- Show args are intrinsicStepT-irreducible from step-irreducibility
+  have hIrredT : ∀ a ∈ argsV, intrinsicStepT s a = [] := by
+    intro a ha
+    exact intrinsicStepT_nil_of_step_nil s a (hIrred a ha)
+  -- intrinsicStepT with irreducible args = intrinsicDirect
+  unfold intrinsicDirectPub
+  by_cases hRed : reduceArgsFirst ctor = true
+  · exact intrinsicStepT_reduceFirst_irreducible s ctor argsV hRed hIrredT
+  · simp at hRed
+    simp [intrinsicStepT, hRed]
+    have hEmpty := intrinsicReduceArgsT_empty_of_irreducible_args s argsV hIrredT
+    simp [hEmpty]
+
+def intrinsicStateful (s : Session) (term : Pattern) :
+    Option (Session × List Pattern) :=
+  match term with
+  | .apply "get-atoms" [space] =>
+      intrinsicGetAtomsResultWithEval evalWithStateCore s space
+  | .apply "get-atoms!" [space] =>
+      intrinsicGetAtomsResultWithEval evalWithStateCore s space
+  | .apply "match" [space, pat, tmpl] =>
+      intrinsicMatchResultWithEval evalWithStateCore s space pat tmpl
+  | .apply "match" [pat, tmpl] =>
+      intrinsicMatchResultWithEval evalWithStateCore s selfSpaceAtom pat tmpl
+  | _ =>
+      intrinsicStatefulCore s term
 
 def referenceEvalInterface :
     Algorithms.MeTTa.Simple.Backend.ReferenceEval.Interface Session := {
@@ -2366,7 +2623,7 @@ private def referenceEvalDeterministicCore (s : Session) (fuel : Nat)
   Algorithms.MeTTa.Simple.Semantics.DeterministicEval.eval
     deterministicEvalInterface s fuel term
 
-private def referenceProofFuel (s : Session) : Nat :=
+def referenceProofFuel (s : Session) : Nat :=
   Nat.max 4096 s.maxNodes
 
 -- ─── FuelResult: explicit fuel-exhaustion status ─────────────────────────────
@@ -2402,6 +2659,34 @@ end FuelResult
 instance : Monad FuelResult where
   pure := FuelResult.done
   bind := FuelResult.bind
+
+-- ─── Parameterized deterministic interface builder ──────────────────────────
+-- Extracted so that both the mutual N-kernel block and the public
+-- optimizedBackendInterface share the same interface construction.
+-- The only varying parts are evalCore and evalCallableApply (partial-def
+-- vs fuel-indexed).
+
+def mkDeterministicEvalInterface
+    (evalCore : Session → Pattern → Session × List Pattern)
+    (evalCallableApply : Session → Pattern → List Pattern → Session × List Pattern) :
+    Algorithms.MeTTa.Simple.Semantics.DeterministicEval.Interface Session := {
+  evalTupleIntrinsic := evalTupleIntrinsicWith evalCore evalCallableApply isRuleCallableHead
+  translateCall := fun s callRaw =>
+    Algorithms.MeTTa.Simple.Semantics.TranslatorOps.translateCall
+      translatorInterface s s.translatorRuleHeads callRaw
+  deterministicPreserveArgs := deterministicPreserveArgs
+  intrinsicDirect := intrinsicDirect
+  firstRuleReduction? := firstRuleReduction?
+  rewriteAritiesForHead := rewriteAritiesForHead
+  builtinPartialMinArity := builtinPartialMinArity?
+  partialPattern := partialPattern
+  memoLimit := detMemoLimit
+}
+
+theorem mkDeterministicEvalInterface_eq_deterministicEvalInterface :
+    mkDeterministicEvalInterface evalWithStateCore evalCallableApply =
+      deterministicEvalInterface := by
+  rfl
 
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -2587,23 +2872,11 @@ mutual
     | 0, _s, _term => none
     | fuel + 1, s, term =>
         let referenceEvalDeterministicCoreN (s : Session) (detFuel : Nat) (term : Pattern) : Session × Pattern :=
-          let detIface : Algorithms.MeTTa.Simple.Semantics.DeterministicEval.Interface Session := {
-            evalTupleIntrinsic := evalTupleIntrinsicWith
+          Algorithms.MeTTa.Simple.Semantics.DeterministicEval.eval
+            (mkDeterministicEvalInterface
               (fun s term => referenceEvalWithStateCoreN fuel s term)
-              (fun s fn args => referenceEvalCallableApplyN fuel s fn args)
-              isRuleCallableHead
-            translateCall := fun s callRaw =>
-              Algorithms.MeTTa.Simple.Semantics.TranslatorOps.translateCall
-                translatorInterface s s.translatorRuleHeads callRaw
-            deterministicPreserveArgs := deterministicPreserveArgs
-            intrinsicDirect := intrinsicDirect
-            firstRuleReduction? := firstRuleReduction?
-            rewriteAritiesForHead := rewriteAritiesForHead
-            builtinPartialMinArity := builtinPartialMinArity?
-            partialPattern := partialPattern
-            memoLimit := detMemoLimit
-          }
-          Algorithms.MeTTa.Simple.Semantics.DeterministicEval.eval detIface s detFuel term
+              (fun s fn args => referenceEvalCallableApplyN fuel s fn args))
+            s detFuel term
         let pIface : Algorithms.MeTTa.Simple.Semantics.PeTTaCore.Interface Session := {
           eval := fun s term => referenceEvalWithStateCoreN fuel s term
           evalDeterministic := referenceEvalDeterministicCoreN
@@ -2811,68 +3084,18 @@ mutual
                         spaceI spacePolicy s space term
                     some (s', out)
                 | .apply "get-atoms" [space] =>
-                    let spaceI : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
-                      bundle := fun s => s.bundle
-                      rewrites := fun s => s.bundle.language.rewrites
-                      setBundle := withBundleCompiled
-                      eval := fun s term => referenceEvalWithStateCoreN fuel s term
-                      applyBindings := applyBindingsCompat
-                      normalizePattern := normalizeDollarVars
-                      normalizeForSpaceMatch := normalizeSpaceMatchPattern s
-                      matchPattern := matchPatternMeTTa
-                      dedupPatterns := dedupPatternList
-                    }
-                    let (s', out) :=
-                      Algorithms.MeTTa.Simple.Semantics.SpaceOps.getAtoms
-                        spaceI spacePolicy s space
-                    some (s', out)
+                    intrinsicGetAtomsResultWithEval
+                      (fun s term => referenceEvalWithStateCoreN fuel s term) s space
                 | .apply "get-atoms!" [space] =>
-                    let spaceI : Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
-                      bundle := fun s => s.bundle
-                      rewrites := fun s => s.bundle.language.rewrites
-                      setBundle := withBundleCompiled
-                      eval := fun s term => referenceEvalWithStateCoreN fuel s term
-                      applyBindings := applyBindingsCompat
-                      normalizePattern := normalizeDollarVars
-                      normalizeForSpaceMatch := normalizeSpaceMatchPattern s
-                      matchPattern := matchPatternMeTTa
-                      dedupPatterns := dedupPatternList
-                    }
-                    let (s', out) :=
-                      Algorithms.MeTTa.Simple.Semantics.SpaceOps.getAtoms
-                        spaceI spacePolicy s space
-                    some (s', out)
-                -- Phase 2: match branches (inline SpaceOps Interface — referenceSpaceEvalInterfaceN
-                -- is defined after this mutual block, so we inline it here; definitional equality
-                -- ensures compiledConsistent_of_referenceMatchIntrinsicN still applies)
+                    intrinsicGetAtomsResultWithEval
+                      (fun s term => referenceEvalWithStateCoreN fuel s term) s space
                 | .apply "match" [space, pat, tmpl] =>
-                    let (s', out) :=
-                      Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
-                        { bundle := fun s => s.bundle
-                          rewrites := fun s => s.bundle.language.rewrites
-                          setBundle := withBundleCompiled
-                          eval := fun s term => referenceEvalWithStateCoreN fuel s term
-                          applyBindings := applyBindingsCompat
-                          normalizePattern := normalizeDollarVars
-                          normalizeForSpaceMatch := normalizeSpaceMatchPattern s
-                          matchPattern := matchPatternMeTTa
-                          dedupPatterns := dedupPatternList }
-                        spacePolicy s space pat tmpl
-                    some (s', out)
+                    intrinsicMatchResultWithEval
+                      (fun s term => referenceEvalWithStateCoreN fuel s term) s space pat tmpl
                 | .apply "match" [pat, tmpl] =>
-                    let (s', out) :=
-                      Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
-                        { bundle := fun s => s.bundle
-                          rewrites := fun s => s.bundle.language.rewrites
-                          setBundle := withBundleCompiled
-                          eval := fun s term => referenceEvalWithStateCoreN fuel s term
-                          applyBindings := applyBindingsCompat
-                          normalizePattern := normalizeDollarVars
-                          normalizeForSpaceMatch := normalizeSpaceMatchPattern s
-                          matchPattern := matchPatternMeTTa
-                          dedupPatterns := dedupPatternList }
-                        spacePolicy s selfSpaceAtom pat tmpl
-                    some (s', out)
+                    intrinsicMatchResultWithEval
+                      (fun s term => referenceEvalWithStateCoreN fuel s term)
+                      s selfSpaceAtom pat tmpl
                 | .apply "case" [keyExpr, branchesExpr] =>
                     let (s', out) :=
                       Algorithms.MeTTa.Simple.Semantics.ControlFlow.evalCaseIntrinsic
@@ -3105,6 +3328,21 @@ mutual
                 | .apply ctor args => referenceIntrinsicApplyFallbackN fuel s ctor args
                 | _ => none
 end
+
+-- ─── Standalone N-kernel deterministic core ─────────────────────────────────
+-- Matches the `let referenceEvalDeterministicCoreN` inside
+-- `referenceIntrinsicStatefulN`, but is a top-level definition usable from
+-- `optimizedBackendInterface` and in proof modules.
+-- `outerFuel` controls sub-expression evaluation depth (for Expr handling);
+-- `detFuel` controls the det evaluator's own recursion depth.
+
+def referenceEvalDeterministicCoreNStandalone
+    (outerFuel : Nat) (s : Session) (detFuel : Nat) (term : Pattern) : Session × Pattern :=
+  Algorithms.MeTTa.Simple.Semantics.DeterministicEval.eval
+    (mkDeterministicEvalInterface
+      (fun s' t => referenceEvalWithStateCoreN outerFuel s' t)
+      (fun s' fn args => referenceEvalCallableApplyN outerFuel s' fn args))
+    s detFuel term
 
 -- Faithful fuel-indexed mirror of ReferenceEval.runNestedEffects.
 -- Unlike referenceRunNestedEffectsN, I.runNestedEffects is wired to the
@@ -4548,6 +4786,19 @@ private theorem compiledConsistent_of_referenceForallIntrinsicInlineN_conj
       fuel hEvalCorePres hEvalCallablePres hEvalForRulePres hIntrinsicPres
       (hEval := Prod.ext hS hOut) hs
 
+private def referenceSpaceEvalInterface (s0 : Session) :
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
+  bundle := fun s => s.bundle
+  rewrites := fun s => s.bundle.language.rewrites
+  setBundle := withBundleCompiled
+  eval := referenceEvalWithStateCore
+  applyBindings := applyBindingsCompat
+  normalizePattern := normalizeDollarVars
+  normalizeForSpaceMatch := normalizeSpaceMatchPattern s0
+  matchPattern := matchPatternMeTTa
+  dedupPatterns := dedupPatternList
+}
+
 private def referenceSpaceEvalInterfaceN (fuel : Nat) (s0 : Session) :
     Algorithms.MeTTa.Simple.Semantics.SpaceOps.Interface Session := {
   bundle := fun s => s.bundle
@@ -4560,6 +4811,898 @@ private def referenceSpaceEvalInterfaceN (fuel : Nat) (s0 : Session) :
   matchPattern := matchPatternMeTTa
   dedupPatterns := dedupPatternList
 }
+
+/-- Evaluate a substituted `match` template through the live reference interface.
+    This is a public wrapper exposing the compositional `SpaceOps` boundary without
+    leaking the private interface record itself. -/
+def matchTemplateAfterBindings
+    (bs : Bindings) (tmpl : Pattern) : Pattern :=
+  applyBindingsCompat bs tmpl
+
+/-- Substituting a `get-atoms` template preserves the outer head and only
+    substitutes its argument. -/
+theorem matchTemplateAfterBindings_getAtoms
+    (bs : Bindings) (spaceExpr : Pattern) :
+    matchTemplateAfterBindings bs (.apply "get-atoms" [spaceExpr]) =
+      .apply "get-atoms" [matchTemplateAfterBindings bs spaceExpr] := by
+  have hHead : dollarHeadVarName? (.apply "get-atoms" []) = none := by
+    native_decide
+  have hHeight :
+      patternHeight (.apply "get-atoms" [spaceExpr]) = 1 + patternHeight spaceExpr := by
+    simp [patternHeight, Nat.max_eq_right (Nat.zero_le _)]
+  unfold matchTemplateAfterBindings applyBindingsCompat
+  rw [hHeight]
+  simp [bindingVarBudget, Nat.add_assoc, Nat.add_comm]
+  have hFuel :
+      1 + (1 + (patternHeight spaceExpr + (List.map (fun x => x.fst) bs).eraseDups.length)) =
+        Nat.succ (1 + (patternHeight spaceExpr + (List.map (fun x => x.fst) bs).eraseDups.length)) := by
+    omega
+  rw [hFuel]
+  simp [applyBindingsCompatFuel, hHead]
+
+/-- Substituting a `get-atoms!` template preserves the outer head and only
+    substitutes its argument. -/
+theorem matchTemplateAfterBindings_getAtomsBang
+    (bs : Bindings) (spaceExpr : Pattern) :
+    matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr]) =
+      .apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr] := by
+  have hHead : dollarHeadVarName? (.apply "get-atoms!" []) = none := by
+    native_decide
+  have hHeight :
+      patternHeight (.apply "get-atoms!" [spaceExpr]) = 1 + patternHeight spaceExpr := by
+    simp [patternHeight, Nat.max_eq_right (Nat.zero_le _)]
+  unfold matchTemplateAfterBindings applyBindingsCompat
+  rw [hHeight]
+  simp [bindingVarBudget, Nat.add_assoc, Nat.add_comm]
+  have hFuel :
+      1 + (1 + (patternHeight spaceExpr + (List.map (fun x => x.fst) bs).eraseDups.length)) =
+        Nat.succ (1 + (patternHeight spaceExpr + (List.map (fun x => x.fst) bs).eraseDups.length)) := by
+    omega
+  rw [hFuel]
+  simp [applyBindingsCompatFuel, hHead]
+
+/-- Evaluate a substituted `match` template through the live reference interface.
+    This is a public wrapper exposing the compositional `SpaceOps` boundary without
+    leaking the private interface record itself. -/
+def referenceMatchEvalMatchedTemplate
+    (s0 sess : Session) (tmplSub : Pattern) : Session × List Pattern :=
+  Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
+    (referenceSpaceEvalInterface s0) sess tmplSub
+
+/-- Evaluate a substituted `match` template through the fuel-indexed total reference
+    interface. -/
+def totalMatchEvalMatchedTemplate
+    (fuel : Nat) (s0 sess : Session) (tmplSub : Pattern) : Session × List Pattern :=
+  Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
+    (referenceSpaceEvalInterfaceN fuel s0) sess tmplSub
+
+/-- Intrinsic `match` result at the live-reference boundary. -/
+def referenceMatchIntrinsicResult
+    (s : Session) (space pat tmpl : Pattern) : Session × List Pattern :=
+  Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
+    (referenceSpaceEvalInterface s) spacePolicy s space pat tmpl
+
+/-- Intrinsic `match` result at the fuel-indexed total-reference boundary. -/
+def totalMatchIntrinsicResult
+    (fuel : Nat) (s : Session) (space pat tmpl : Pattern) : Session × List Pattern :=
+  Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
+    (referenceSpaceEvalInterfaceN fuel s) spacePolicy s space pat tmpl
+
+/-- Binding enumeration used by the live-reference `match` intrinsic boundary. -/
+def referenceMatchBindings
+    (s : Session) (space pat : Pattern) : List Bindings :=
+  Algorithms.MeTTa.Simple.Semantics.SpaceOps.findBindingsInSpace
+    (referenceSpaceEvalInterface s) spacePolicy s space pat
+
+/-- Binding enumeration used by the fuel-indexed total-reference `match` boundary. -/
+def totalMatchBindings
+    (fuel : Nat) (s : Session) (space pat : Pattern) : List Bindings :=
+  Algorithms.MeTTa.Simple.Semantics.SpaceOps.findBindingsInSpace
+    (referenceSpaceEvalInterfaceN fuel s) spacePolicy s space pat
+
+/-- Live-reference and fuel-indexed total-reference `match` binding enumeration agree
+    because `findBindingsInSpace` is independent of the interface `eval` field. -/
+theorem referenceMatchBindings_eq_totalMatchBindings
+    (fuel : Nat) (s : Session) (space pat : Pattern) :
+    referenceMatchBindings s space pat = totalMatchBindings fuel s space pat := by
+  unfold referenceMatchBindings totalMatchBindings
+  have hIface :
+      referenceSpaceEvalInterfaceN fuel s =
+        { referenceSpaceEvalInterface s with
+            eval := fun s term => referenceEvalWithStateCoreN fuel s term } := by
+    rfl
+  rw [hIface]
+  simpa using
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.findBindingsInSpace_eval_irrelevant
+      (I := referenceSpaceEvalInterface s)
+      (eval' := fun s term => referenceEvalWithStateCoreN fuel s term)
+      (P := spacePolicy) (s := s) (space := space) (pat := pat)
+
+/-- Compositional adequacy for the intrinsic `match` boundary.
+    This is the primary theorem shape to use downstream: if live-reference and
+    fuel-indexed total-reference agree on evaluating the specific substituted
+    templates that arise from the match bindings, then the intrinsic `match`
+    enumeration itself agrees. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_bindingwise_evalMatchedTemplate_agreement
+    (fuel : Nat) (s : Session) (space pat tmpl : Pattern)
+    (hBindings : referenceMatchBindings s space pat = totalMatchBindings fuel s space pat)
+    (hEval :
+      ∀ (sess : Session) (bs : Bindings),
+        referenceMatchEvalMatchedTemplate s sess (matchTemplateAfterBindings bs tmpl) =
+          totalMatchEvalMatchedTemplate fuel s sess (matchTemplateAfterBindings bs tmpl)) :
+    referenceMatchIntrinsicResult s space pat tmpl =
+      totalMatchIntrinsicResult fuel s space pat tmpl := by
+  unfold referenceMatchIntrinsicResult totalMatchIntrinsicResult
+  apply Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic_eq_of_evalMatchedTemplate_agreement
+  · exact hBindings
+  · intro bs term
+    rfl
+  · intro sess
+    rfl
+  · intro sess bs
+    simpa [matchTemplateAfterBindings, referenceMatchEvalMatchedTemplate, totalMatchEvalMatchedTemplate] using
+      hEval sess bs
+
+/-- Stronger corollary of the bindingwise theorem: agreement on all substituted
+    templates implies intrinsic `match` agreement. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_evalMatchedTemplate_agreement
+    (fuel : Nat) (s : Session) (space pat tmpl : Pattern)
+    (hBindings : referenceMatchBindings s space pat = totalMatchBindings fuel s space pat)
+    (hEval :
+      ∀ (sess : Session) (tmplSub : Pattern),
+        referenceMatchEvalMatchedTemplate s sess tmplSub =
+          totalMatchEvalMatchedTemplate fuel s sess tmplSub) :
+    referenceMatchIntrinsicResult s space pat tmpl =
+      totalMatchIntrinsicResult fuel s space pat tmpl := by
+  apply referenceMatchIntrinsicResult_eq_total_of_bindingwise_evalMatchedTemplate_agreement
+  · exact hBindings
+  intro sess bs
+  exact hEval sess (matchTemplateAfterBindings bs tmpl)
+
+/-- Corollary of the compositional `match` theorem from direct evaluator agreement.
+    This is the first theorem to target when lifting fragment-local equality from
+    template evaluation up to the intrinsic `match` boundary. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_eval_agreement
+    (fuel : Nat) (s : Session) (space pat tmpl : Pattern)
+    (hBindings : referenceMatchBindings s space pat = totalMatchBindings fuel s space pat)
+    (hEval :
+      ∀ (sess : Session) (term : Pattern),
+        referenceEvalWithStateCore sess term =
+          referenceEvalWithStateCoreN fuel sess term) :
+    referenceMatchIntrinsicResult s space pat tmpl =
+      totalMatchIntrinsicResult fuel s space pat tmpl := by
+  apply referenceMatchIntrinsicResult_eq_total_of_bindingwise_evalMatchedTemplate_agreement
+  · exact hBindings
+  intro sess bs
+  exact
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate_eq_of_eval_agreement
+      (referenceSpaceEvalInterface s)
+      (referenceSpaceEvalInterfaceN fuel s)
+      sess (matchTemplateAfterBindings bs tmpl)
+      (by
+        intro sess' term
+        simpa [referenceSpaceEvalInterface, referenceSpaceEvalInterfaceN] using
+          hEval sess' term)
+
+/-- Direct matched-template equality for already-substituted `get-atoms` terms.
+    This isolates the non-`Expr` case of `evalMatchedTemplate` and is the smallest
+    reusable step toward discharging the template-equality hypothesis in the first
+    compositional `match` theorem. -/
+theorem referenceMatchEvalMatchedTemplate_getAtoms_eq_total_of_eval_agreement
+    (fuel : Nat) (s0 sess : Session) (spaceExpr : Pattern)
+    (hEval :
+      referenceEvalWithStateCore sess (.apply "get-atoms" [spaceExpr]) =
+        referenceEvalWithStateCoreN fuel sess (.apply "get-atoms" [spaceExpr])) :
+    referenceMatchEvalMatchedTemplate s0 sess (.apply "get-atoms" [spaceExpr]) =
+      totalMatchEvalMatchedTemplate fuel s0 sess (.apply "get-atoms" [spaceExpr]) := by
+  simpa [referenceMatchEvalMatchedTemplate, totalMatchEvalMatchedTemplate,
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using hEval
+
+/-- Unary evaluator-agreement contract for the `get-atoms` head. -/
+abbrev GetAtomsUnaryEvalAgreement (fuel : Nat) : Prop :=
+  ∀ (sess : Session) (spaceArg : Pattern),
+    referenceEvalWithStateCore sess (.apply "get-atoms" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms" [spaceArg])
+
+/-- Unary evaluator-agreement contract for the `get-atoms!` head. -/
+abbrev GetAtomsBangUnaryEvalAgreement (fuel : Nat) : Prop :=
+  ∀ (sess : Session) (spaceArg : Pattern),
+    referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg])
+
+/-- Constrained unary evaluator-agreement contract for `get-atoms`,
+    parameterized by a fragment predicate over session/template argument pairs. -/
+abbrev GetAtomsUnaryEvalAgreementOn
+    (fuel : Nat) (Q : Session → Pattern → Prop) : Prop :=
+  ∀ (sess : Session) (spaceArg : Pattern),
+    Q sess spaceArg →
+      referenceEvalWithStateCore sess (.apply "get-atoms" [spaceArg]) =
+        referenceEvalWithStateCoreN fuel sess (.apply "get-atoms" [spaceArg])
+
+/-- Constrained unary evaluator-agreement contract for `get-atoms!`,
+    parameterized by a fragment predicate over session/template argument pairs. -/
+abbrev GetAtomsBangUnaryEvalAgreementOn
+    (fuel : Nat) (Q : Session → Pattern → Prop) : Prop :=
+  ∀ (sess : Session) (spaceArg : Pattern),
+    Q sess spaceArg →
+      referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg]) =
+        referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg])
+
+/-- If `sess.maxNodes = 0` and `fuel > 0`, both live-reference and fuel-indexed
+    total-reference evaluators immediately return the pending root term, so they
+    agree on all inputs. -/
+theorem referenceEvalWithStateCore_eq_N_of_maxNodes_zero
+    (fuel : Nat) (hFuel : fuel ≠ 0)
+    (sess : Session) (term : Pattern)
+    (hNodes : sess.maxNodes = 0) :
+    referenceEvalWithStateCore sess term =
+      referenceEvalWithStateCoreN fuel sess term := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      simp [referenceEvalWithStateCore, referenceEvalWithStateCoreN,
+        Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore] at *
+      have hMaxRef : referenceEvalInterface.maxNodes sess = 0 := by
+        simpa [referenceEvalInterface] using hNodes
+      rw [hMaxRef]
+      rw [hNodes]
+      simp [Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful]
+
+/-- First proved constrained fragment instance for `get-atoms` unary evaluator
+    agreement: sessions with `maxNodes = 0`. -/
+theorem getAtomsUnaryEvalAgreementOn_zeroMaxNodes
+    (fuel : Nat) (hFuel : fuel ≠ 0) :
+    GetAtomsUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxNodes = 0) := by
+  intro sess spaceArg hNodes
+  exact referenceEvalWithStateCore_eq_N_of_maxNodes_zero
+    (fuel := fuel) hFuel sess (.apply "get-atoms" [spaceArg]) hNodes
+
+/-- First proved constrained fragment instance for `get-atoms!` unary evaluator
+    agreement: sessions with `maxNodes = 0`. -/
+theorem getAtomsBangUnaryEvalAgreementOn_zeroMaxNodes
+    (fuel : Nat) (hFuel : fuel ≠ 0) :
+    GetAtomsBangUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxNodes = 0) := by
+  intro sess spaceArg hNodes
+  exact referenceEvalWithStateCore_eq_N_of_maxNodes_zero
+    (fuel := fuel) hFuel sess (.apply "get-atoms!" [spaceArg]) hNodes
+
+@[simp] private theorem referenceEvalAuxStateful_pending_nil
+    (iface : Algorithms.MeTTa.Simple.Backend.ReferenceEval.Interface Session)
+    (sess : Session) (fuel : Nat) (normals : List Pattern) :
+    Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful iface sess fuel [] normals =
+      (sess, normals.reverse) := by
+  induction fuel with
+  | zero =>
+      simp [Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful]
+  | succ fuel ih =>
+      simp [Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+        Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux]
+
+/-- If `sess.maxSteps = 0` and `fuel > 0`, both evaluators stop at depth 0 before
+    intrinsic reduction, so they agree on `get-atoms` root terms. -/
+theorem referenceEvalWithStateCore_getAtoms_eq_N_of_maxSteps_zero
+    (fuel : Nat) (hFuel : fuel ≠ 0)
+    (sess : Session) (spaceArg : Pattern)
+    (hSteps : sess.maxSteps = 0) :
+    referenceEvalWithStateCore sess (.apply "get-atoms" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      cases hNodes : sess.maxNodes with
+      | zero =>
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful, hNodes]
+      | succ m =>
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects.eq_def,
+            hSteps, hNodes]
+
+/-- Stronger constrained fragment instance for `get-atoms` unary evaluator
+    agreement: sessions with `maxSteps = 0`. -/
+theorem getAtomsUnaryEvalAgreementOn_zeroMaxSteps
+    (fuel : Nat) (hFuel : fuel ≠ 0) :
+    GetAtomsUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxSteps = 0) := by
+  intro sess spaceArg hSteps
+  exact referenceEvalWithStateCore_getAtoms_eq_N_of_maxSteps_zero
+    (fuel := fuel) hFuel sess spaceArg hSteps
+
+/-- If `sess.maxSteps = 0` and `fuel > 0`, both evaluators stop at depth 0 before
+    intrinsic reduction, so they agree on `get-atoms!` root terms. -/
+theorem referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxSteps_zero
+    (fuel : Nat) (hFuel : fuel ≠ 0)
+    (sess : Session) (spaceArg : Pattern)
+    (hSteps : sess.maxSteps = 0) :
+    referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      cases hNodes : sess.maxNodes with
+      | zero =>
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful, hNodes]
+      | succ m =>
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects.eq_def,
+            hSteps, hNodes]
+
+/-- Stronger constrained fragment instance for `get-atoms!` unary evaluator
+    agreement: sessions with `maxSteps = 0`. -/
+theorem getAtomsBangUnaryEvalAgreementOn_zeroMaxSteps
+    (fuel : Nat) (hFuel : fuel ≠ 0) :
+    GetAtomsBangUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxSteps = 0) := by
+  intro sess spaceArg hSteps
+  exact referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxSteps_zero
+    (fuel := fuel) hFuel sess spaceArg hSteps
+
+/-- Root intrinsic agreement for `get-atoms`: once the fuel-indexed intrinsic kernel
+    is active (`fuel > 0`), the live-reference and total-reference branches reduce to
+    the same `SpaceOps.getAtoms` call. -/
+theorem intrinsicStateful_getAtoms_eq_referenceIntrinsicStatefulN_of_pos
+    (fuel : Nat) (hFuel : fuel ≠ 0)
+    (sess : Session) (spaceArg : Pattern) :
+    intrinsicStateful sess (.apply "get-atoms" [spaceArg]) =
+      referenceIntrinsicStatefulN fuel sess (.apply "get-atoms" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      unfold intrinsicStateful
+      unfold referenceIntrinsicStatefulN
+      simpa using
+        intrinsicGetAtomsResultWithEval_eval_irrelevant
+          evalWithStateCore
+          (fun s term => referenceEvalWithStateCoreN n s term)
+          sess spaceArg
+
+/-- Root intrinsic agreement for `get-atoms!`: once the fuel-indexed intrinsic kernel
+    is active (`fuel > 0`), the live-reference and total-reference branches reduce to
+    the same `SpaceOps.getAtoms` call. -/
+theorem intrinsicStateful_getAtomsBang_eq_referenceIntrinsicStatefulN_of_pos
+    (fuel : Nat) (hFuel : fuel ≠ 0)
+    (sess : Session) (spaceArg : Pattern) :
+    intrinsicStateful sess (.apply "get-atoms!" [spaceArg]) =
+      referenceIntrinsicStatefulN fuel sess (.apply "get-atoms!" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      unfold intrinsicStateful
+      unfold referenceIntrinsicStatefulN
+      simpa using
+        intrinsicGetAtomsResultWithEval_eval_irrelevant
+          evalWithStateCore
+          (fun s term => referenceEvalWithStateCoreN n s term)
+          sess spaceArg
+
+/-- The fuel-indexed intrinsic evaluator preserves session state on `get-atoms!`:
+    returns `some (s, facts)` for some `facts`. -/
+private theorem referenceIntrinsicStatefulN_getAtomsBang_state_eq
+    (fuel : Nat) (hFuel : fuel ≠ 0) (s : Session) (space : Pattern) :
+    ∃ facts, referenceIntrinsicStatefulN fuel s (.apply "get-atoms!" [space]) = some (s, facts) := by
+  cases fuel with
+  | zero => contradiction
+  | succ n =>
+      unfold referenceIntrinsicStatefulN
+      simpa using
+        intrinsicGetAtomsResultWithEval_state_eq
+          (fun s term => referenceEvalWithStateCoreN n s term) s space
+
+/-- One-step evaluator agreement for `get-atoms` at `maxNodes = 1`, factored through
+    a local intrinsic-agreement hypothesis on the root term. This isolates the
+    remaining hard subproof from the evaluator plumbing. -/
+theorem referenceEvalWithStateCore_getAtoms_eq_N_of_maxNodes_one_of_intrinsic_agreement
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1)
+    (hIntr :
+      intrinsicStateful sess (.apply "get-atoms" [spaceArg]) =
+        referenceIntrinsicStatefulN (fuel - 1) sess (.apply "get-atoms" [spaceArg])) :
+    referenceEvalWithStateCore sess (.apply "get-atoms" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      cases n with
+      | zero =>
+          contradiction
+      | succ k =>
+          have hIntr' :
+              intrinsicStateful sess (.apply "get-atoms" [spaceArg]) =
+                referenceIntrinsicStatefulN (k + 1) sess (.apply "get-atoms" [spaceArg]) := by
+            simpa using hIntr
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects.eq_def,
+            hNodes, hIntr']
+
+/-- One-step evaluator agreement for `get-atoms` at `maxNodes = 1`.
+    The hard intrinsic subproof is now discharged by the transparent `get-atoms`
+    waist shared between the live reference wrapper and the total kernel. -/
+theorem referenceEvalWithStateCore_getAtoms_eq_N_of_maxNodes_one
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1) :
+    referenceEvalWithStateCore sess (.apply "get-atoms" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms" [spaceArg]) := by
+  have hFuelPredPos : 0 < fuel - 1 := by
+    omega
+  have hIntr :
+      intrinsicStateful sess (.apply "get-atoms" [spaceArg]) =
+        referenceIntrinsicStatefulN (fuel - 1) sess (.apply "get-atoms" [spaceArg]) := by
+    exact
+      intrinsicStateful_getAtoms_eq_referenceIntrinsicStatefulN_of_pos
+        (fuel := fuel - 1) (Nat.ne_of_gt hFuelPredPos) sess spaceArg
+  exact
+    referenceEvalWithStateCore_getAtoms_eq_N_of_maxNodes_one_of_intrinsic_agreement
+      fuel hFuel sess spaceArg hNodes hIntr
+
+/-- Stronger constrained fragment instance for `get-atoms` unary evaluator
+    agreement: sessions with `maxNodes = 1`. -/
+theorem getAtomsUnaryEvalAgreementOn_oneMaxNode
+    (fuel : Nat) (hFuel : 1 < fuel) :
+    GetAtomsUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxNodes = 1) := by
+  intro sess spaceArg hNodes
+  exact
+    referenceEvalWithStateCore_getAtoms_eq_N_of_maxNodes_one
+      (fuel := fuel) hFuel sess spaceArg hNodes
+
+/-- One-step evaluator agreement for `get-atoms!` at `maxNodes = 1`, factored through
+    a local intrinsic-agreement hypothesis on the root term. This isolates the
+    remaining hard subproof from the evaluator plumbing. -/
+theorem referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one_of_intrinsic_agreement
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1)
+    (hIntr :
+      intrinsicStateful sess (.apply "get-atoms!" [spaceArg]) =
+        referenceIntrinsicStatefulN (fuel - 1) sess (.apply "get-atoms!" [spaceArg])) :
+    referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg]) := by
+  cases fuel with
+  | zero =>
+      contradiction
+  | succ n =>
+      cases n with
+      | zero =>
+          contradiction
+      | succ k =>
+          have hIntr' :
+              intrinsicStateful sess (.apply "get-atoms!" [spaceArg]) =
+                referenceIntrinsicStatefulN (k + 1) sess (.apply "get-atoms!" [spaceArg]) := by
+            simpa using hIntr
+          unfold referenceEvalWithStateCore referenceEvalWithStateCoreN
+          simp [referenceEvalInterface,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalAuxStateful,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.stepAux,
+            Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects.eq_def,
+            hNodes, hIntr']
+
+/-- One-step evaluator agreement for `get-atoms!` at `maxNodes = 1`.
+    The hard intrinsic subproof is now discharged by the transparent `get-atoms`
+    waist shared between the live reference wrapper and the total kernel. -/
+theorem referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1) :
+    referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg]) =
+      referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg]) := by
+  have hFuelPredPos : 0 < fuel - 1 := by
+    omega
+  have hIntr :
+      intrinsicStateful sess (.apply "get-atoms!" [spaceArg]) =
+        referenceIntrinsicStatefulN (fuel - 1) sess (.apply "get-atoms!" [spaceArg]) := by
+    exact
+      intrinsicStateful_getAtomsBang_eq_referenceIntrinsicStatefulN_of_pos
+        (fuel := fuel - 1) (Nat.ne_of_gt hFuelPredPos) sess spaceArg
+  exact
+    referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one_of_intrinsic_agreement
+      fuel hFuel sess spaceArg hNodes hIntr
+
+/-- The fuel-indexed evaluator preserves session state on `get-atoms!`
+    when `maxNodes = 1`.  The evaluation loop runs exactly one `stepAux`
+    (fuel drops from 1 to 0), and both `runNestedEffects` (passthrough)
+    and `intrinsicStateful` (via `getAtoms`) preserve the session. -/
+theorem referenceEvalWithStateCoreN_getAtomsBang_state_eq_self_of_maxNodes_one
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1) :
+    (referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceArg])).1 = sess := by
+  cases fuel with
+  | zero => omega
+  | succ n =>
+      cases n with
+      | zero => omega
+      | succ k =>
+          -- Precondition 2: intrinsicStatefulN returns (sess, facts)
+          obtain ⟨facts, hIntrEq⟩ :=
+            referenceIntrinsicStatefulN_getAtomsBang_state_eq (k + 1) (by omega) sess spaceArg
+          -- Unfold one level of referenceEvalWithStateCoreN to expose evalWithStateCore iface
+          unfold referenceEvalWithStateCoreN
+          -- Precondition 1: runNestedEffects is passthrough for get-atoms!
+          have hRNE : Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects
+              { maxNodes := fun s => s.maxNodes, maxSteps := fun s => s.maxSteps,
+                runNestedEffects := fun s isRoot p term =>
+                  referenceRunNestedEffectsN (k + 1) s isRoot p term,
+                intrinsicStateful := fun s term => referenceIntrinsicStatefulN (k + 1) s term,
+                isEagerCallableHead := isEagerCallableHead, step := step,
+                enqueueNext := enqueueNext, insertUnique := insertUnique,
+                dedupPatterns := dedupPatterns }
+              sess true false (.apply "get-atoms!" [spaceArg]) =
+              (sess, .apply "get-atoms!" [spaceArg], false) := by
+            simp [Algorithms.MeTTa.Simple.Backend.ReferenceEval.runNestedEffects]
+          -- Apply the generic framework lemma
+          exact Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore_s_eq_of_passthrough_one_step
+            _ sess (.apply "get-atoms!" [spaceArg]) hNodes
+            (.apply "get-atoms!" [spaceArg]) false facts hRNE hIntrEq
+
+/-- On the first non-degenerate fragment `maxNodes = 1`, evaluating a root
+    `get-atoms!` term leaves the session unchanged.  Transfers through the
+    partial-to-total bridge and the fuel-indexed state-preservation proof. -/
+theorem referenceEvalWithStateCore_getAtomsBang_state_eq_self_of_maxNodes_one
+    (sess : Session) (spaceArg : Pattern)
+    (hNodes : sess.maxNodes = 1) :
+    (referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg])).1 = sess := by
+  have hEq :=
+    referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one
+      (fuel := 2) (by omega) sess spaceArg hNodes
+  rw [hEq]
+  exact referenceEvalWithStateCoreN_getAtomsBang_state_eq_self_of_maxNodes_one
+    2 (by omega) sess spaceArg hNodes
+
+/-- Stronger constrained fragment instance for `get-atoms!` unary evaluator
+    agreement: sessions with `maxNodes = 1`. -/
+theorem getAtomsBangUnaryEvalAgreementOn_oneMaxNode
+    (fuel : Nat) (hFuel : 1 < fuel) :
+    GetAtomsBangUnaryEvalAgreementOn fuel (fun sess _spaceArg => sess.maxNodes = 1) := by
+  intro sess spaceArg hNodes
+  exact
+    referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one
+      (fuel := fuel) hFuel sess spaceArg hNodes
+
+/-- Lift a unary `get-atoms` evaluator-agreement hypothesis to the exact
+    substituted-template `hEval` shape used by compositional `match` adequacy. -/
+theorem referenceMatch_getAtomsTemplate_hEval_of_unary_eval_agreement
+    (fuel : Nat) (spaceExpr : Pattern)
+    (hEvalUnary : GetAtomsUnaryEvalAgreement fuel) :
+    ∀ (sess : Session) (bs : Bindings),
+      referenceEvalWithStateCore sess
+          (.apply "get-atoms" [matchTemplateAfterBindings bs spaceExpr]) =
+        referenceEvalWithStateCoreN fuel sess
+          (.apply "get-atoms" [matchTemplateAfterBindings bs spaceExpr]) := by
+  intro sess bs
+  exact hEvalUnary sess (matchTemplateAfterBindings bs spaceExpr)
+
+/-- First template-family specialization for compositional `match` adequacy:
+    if substituted `get-atoms` templates agree at the `evalMatchedTemplate`
+    boundary, then the surrounding `match` intrinsic agrees. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsTemplate_evalMatchedTemplate_agreement
+    (fuel : Nat) (s : Session) (space pat spaceExpr : Pattern)
+    (hBindings : referenceMatchBindings s space pat = totalMatchBindings fuel s space pat)
+    (hEval :
+      ∀ (sess : Session) (bs : Bindings),
+        referenceMatchEvalMatchedTemplate s sess
+            (matchTemplateAfterBindings bs (.apply "get-atoms" [spaceExpr])) =
+          totalMatchEvalMatchedTemplate fuel s sess
+            (matchTemplateAfterBindings bs (.apply "get-atoms" [spaceExpr]))) :
+    referenceMatchIntrinsicResult s space pat (.apply "get-atoms" [spaceExpr]) =
+      totalMatchIntrinsicResult fuel s space pat (.apply "get-atoms" [spaceExpr]) := by
+  apply referenceMatchIntrinsicResult_eq_total_of_bindingwise_evalMatchedTemplate_agreement
+  · exact hBindings
+  intro sess bs
+  exact hEval sess bs
+
+/-- `get-atoms`-templated compositional `match` adequacy from direct evaluator
+    equality on the already-substituted template term. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsTemplate_eval_agreement
+    (fuel : Nat) (s : Session) (space pat spaceExpr : Pattern)
+    (hBindings : referenceMatchBindings s space pat = totalMatchBindings fuel s space pat)
+    (hEval :
+      ∀ (sess : Session) (bs : Bindings),
+        referenceEvalWithStateCore sess
+            (.apply "get-atoms" [matchTemplateAfterBindings bs spaceExpr]) =
+          referenceEvalWithStateCoreN fuel sess
+            (.apply "get-atoms" [matchTemplateAfterBindings bs spaceExpr])) :
+    referenceMatchIntrinsicResult s space pat (.apply "get-atoms" [spaceExpr]) =
+      totalMatchIntrinsicResult fuel s space pat (.apply "get-atoms" [spaceExpr]) := by
+  apply referenceMatchIntrinsicResult_eq_total_of_getAtomsTemplate_evalMatchedTemplate_agreement
+  · exact hBindings
+  · intro sess bs
+    simpa [matchTemplateAfterBindings_getAtoms] using
+      (referenceMatchEvalMatchedTemplate_getAtoms_eq_total_of_eval_agreement
+        fuel s sess (matchTemplateAfterBindings bs spaceExpr) (hEval sess bs))
+
+/-- Practical `get-atoms`-template specialization: the binding-enumeration side
+    is discharged automatically from `referenceMatchBindings_eq_totalMatchBindings`. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsTemplate_eval_agreement_autoBindings
+    (fuel : Nat) (s : Session) (space pat spaceExpr : Pattern)
+    (hEval :
+      ∀ (sess : Session) (bs : Bindings),
+        referenceEvalWithStateCore sess
+            (.apply "get-atoms" [matchTemplateAfterBindings bs spaceExpr]) =
+          referenceEvalWithStateCoreN fuel sess
+            (.apply "get-atoms" [matchTemplateAfterBindings bs spaceExpr])) :
+    referenceMatchIntrinsicResult s space pat (.apply "get-atoms" [spaceExpr]) =
+      totalMatchIntrinsicResult fuel s space pat (.apply "get-atoms" [spaceExpr]) := by
+  exact
+    referenceMatchIntrinsicResult_eq_total_of_getAtomsTemplate_eval_agreement
+      (fuel := fuel) (s := s) (space := space) (pat := pat) (spaceExpr := spaceExpr)
+      (hBindings := referenceMatchBindings_eq_totalMatchBindings fuel s space pat)
+      hEval
+
+/-- Unary-entry variant for `get-atoms` templates:
+    supply evaluator agreement per substituted space argument, and the theorem
+    discharges the `bs`-indexed `hEval` plumbing automatically. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsTemplate_unary_eval_agreement_autoBindings
+    (fuel : Nat) (s : Session) (space pat spaceExpr : Pattern)
+    (hEvalUnary : GetAtomsUnaryEvalAgreement fuel) :
+    referenceMatchIntrinsicResult s space pat (.apply "get-atoms" [spaceExpr]) =
+      totalMatchIntrinsicResult fuel s space pat (.apply "get-atoms" [spaceExpr]) := by
+  exact
+    referenceMatchIntrinsicResult_eq_total_of_getAtomsTemplate_eval_agreement_autoBindings
+      (fuel := fuel) (s := s) (space := space) (pat := pat) (spaceExpr := spaceExpr)
+      (referenceMatch_getAtomsTemplate_hEval_of_unary_eval_agreement
+        (fuel := fuel) (spaceExpr := spaceExpr) hEvalUnary)
+
+/-- Direct matched-template equality for already-substituted `get-atoms!` terms. -/
+theorem referenceMatchEvalMatchedTemplate_getAtomsBang_eq_total_of_eval_agreement
+    (fuel : Nat) (s0 sess : Session) (spaceExpr : Pattern)
+    (hEval :
+      referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceExpr]) =
+        referenceEvalWithStateCoreN fuel sess (.apply "get-atoms!" [spaceExpr])) :
+    referenceMatchEvalMatchedTemplate s0 sess (.apply "get-atoms!" [spaceExpr]) =
+      totalMatchEvalMatchedTemplate fuel s0 sess (.apply "get-atoms!" [spaceExpr]) := by
+  simpa [referenceMatchEvalMatchedTemplate, totalMatchEvalMatchedTemplate,
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using hEval
+
+/-- At the `evalMatchedTemplate` waist, `get-atoms!` stays in the same session on the
+    first non-degenerate fragment `maxNodes = 1`. -/
+theorem referenceMatchEvalMatchedTemplate_getAtomsBang_state_eq_self_of_maxNodes_one
+    (s0 sess : Session) (spaceExpr : Pattern)
+    (hNodes : sess.maxNodes = 1) :
+    (referenceMatchEvalMatchedTemplate s0 sess (.apply "get-atoms!" [spaceExpr])).1 = sess := by
+  simpa [referenceMatchEvalMatchedTemplate,
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using
+    referenceEvalWithStateCore_getAtomsBang_state_eq_self_of_maxNodes_one
+      sess spaceExpr hNodes
+
+/-- The fuel-indexed matched-template evaluator has the same one-step state
+    invariance for `get-atoms!` on `maxNodes = 1`. -/
+theorem totalMatchEvalMatchedTemplate_getAtomsBang_state_eq_self_of_maxNodes_one
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (s0 sess : Session) (spaceExpr : Pattern)
+    (hNodes : sess.maxNodes = 1) :
+    (totalMatchEvalMatchedTemplate fuel s0 sess (.apply "get-atoms!" [spaceExpr])).1 = sess := by
+  simpa [totalMatchEvalMatchedTemplate,
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate] using
+    referenceEvalWithStateCoreN_getAtomsBang_state_eq_self_of_maxNodes_one
+      fuel hFuel sess spaceExpr hNodes
+
+/-- First non-degenerate compositional `match` adequacy theorem for `get-atoms!`
+    templates. The proof is specialized to the `maxNodes = 1` fragment so the
+    threaded session never leaves the fragment while the bindings fold is running. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_on_oneMaxNode
+    (fuel : Nat) (hFuel : 1 < fuel)
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hNodes : s.maxNodes = 1)
+    (_hStateRoot :
+      ∀ (sess : Session) (spaceArg : Pattern),
+        sess.maxNodes = 1 →
+          (referenceEvalWithStateCore sess (.apply "get-atoms!" [spaceArg])).1 = sess) :
+    referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      totalMatchIntrinsicResult fuel s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  unfold referenceMatchIntrinsicResult totalMatchIntrinsicResult
+  unfold Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
+  have hBindings :
+      Algorithms.MeTTa.Simple.Semantics.SpaceOps.findBindingsInSpace
+          (referenceSpaceEvalInterface s) spacePolicy s space pat =
+        Algorithms.MeTTa.Simple.Semantics.SpaceOps.findBindingsInSpace
+          (referenceSpaceEvalInterfaceN fuel s) spacePolicy s space pat := by
+    simpa [referenceMatchBindings, totalMatchBindings] using
+      referenceMatchBindings_eq_totalMatchBindings fuel s space pat
+  rw [hBindings]
+  let bindings :=
+    Algorithms.MeTTa.Simple.Semantics.SpaceOps.findBindingsInSpace
+      (referenceSpaceEvalInterfaceN fuel s) spacePolicy s space pat
+  let f₁ := fun (accState : Session × List Pattern) bs =>
+    let sess := accState.1
+    let collected := accState.2
+    let tmplSub := referenceSpaceEvalInterface s |>.applyBindings bs (.apply "get-atoms!" [spaceExpr])
+    let (sess', out) := Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
+      (referenceSpaceEvalInterface s) sess tmplSub
+    (sess', out.reverse ++ collected)
+  let f₂ := fun (accState : Session × List Pattern) bs =>
+    let sess := accState.1
+    let collected := accState.2
+    let tmplSub := referenceSpaceEvalInterfaceN fuel s |>.applyBindings bs (.apply "get-atoms!" [spaceExpr])
+    let (sess', out) := Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
+      (referenceSpaceEvalInterfaceN fuel s) sess tmplSub
+    (sess', out.reverse ++ collected)
+  have hFold :
+      ∀ (bsList : List Bindings) (sess : Session) (collected : List Pattern),
+        sess.maxNodes = 1 →
+        bsList.foldl f₁ (sess, collected) = bsList.foldl f₂ (sess, collected) := by
+    intro bsList
+    induction bsList with
+    | nil =>
+        intro sess collected _hSess
+        rfl
+    | cons bs rest ih =>
+        intro sess collected hSess
+        simp only [List.foldl_cons]
+        have hEval :
+            referenceMatchEvalMatchedTemplate s sess
+                (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr])) =
+              totalMatchEvalMatchedTemplate fuel s sess
+                (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr])) := by
+          have hUnary :
+              referenceEvalWithStateCore sess
+                  (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr]) =
+                referenceEvalWithStateCoreN fuel sess
+                  (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr]) := by
+            exact
+              referenceEvalWithStateCore_getAtomsBang_eq_N_of_maxNodes_one
+                (fuel := fuel) hFuel sess (matchTemplateAfterBindings bs spaceExpr) hSess
+          simpa [matchTemplateAfterBindings_getAtomsBang] using
+            (referenceMatchEvalMatchedTemplate_getAtomsBang_eq_total_of_eval_agreement
+              (fuel := fuel) (s0 := s) (sess := sess)
+              (spaceExpr := matchTemplateAfterBindings bs spaceExpr) hUnary)
+        have hState₂ :
+            (totalMatchEvalMatchedTemplate fuel s sess
+                (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr]))).1 = sess := by
+          simpa [matchTemplateAfterBindings_getAtomsBang] using
+            totalMatchEvalMatchedTemplate_getAtomsBang_state_eq_self_of_maxNodes_one
+              fuel hFuel s sess (matchTemplateAfterBindings bs spaceExpr) hSess
+        cases hOut₂ :
+            totalMatchEvalMatchedTemplate fuel s sess
+              (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr])) with
+        | mk sess' out =>
+            have hSess' : sess' = sess := by
+              simpa [hOut₂] using hState₂
+            subst sess'
+            have hOut₁ :
+                referenceMatchEvalMatchedTemplate s sess
+                  (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr])) =
+                (sess, out) := by
+              simpa [hOut₂] using hEval
+            have hOut₁' :
+                Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
+                    (referenceSpaceEvalInterface s) sess
+                    ((referenceSpaceEvalInterface s).applyBindings bs
+                      (.apply "get-atoms!" [spaceExpr])) =
+                  (sess, out) := by
+              simpa [referenceMatchEvalMatchedTemplate, matchTemplateAfterBindings] using hOut₁
+            have hOut₂' :
+                Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchedTemplate
+                    (referenceSpaceEvalInterfaceN fuel s) sess
+                    ((referenceSpaceEvalInterfaceN fuel s).applyBindings bs
+                      (.apply "get-atoms!" [spaceExpr])) =
+                  (sess, out) := by
+              simpa [totalMatchEvalMatchedTemplate, matchTemplateAfterBindings] using hOut₂
+            have hStep₁ : f₁ (sess, collected) bs = (sess, out.reverse ++ collected) := by
+              simp [f₁, hOut₁']
+            have hStep₂ : f₂ (sess, collected) bs = (sess, out.reverse ++ collected) := by
+              simp [f₂, hOut₂']
+            rw [hStep₁, hStep₂]
+            exact ih sess (out.reverse ++ collected) hSess
+  have hFoldEq : bindings.foldl f₁ (s, []) = bindings.foldl f₂ (s, []) := by
+    exact hFold bindings s [] hNodes
+  let finish := fun (acc : Session × List Pattern) =>
+    let sDyn := acc.1
+    let outRev := acc.2
+    let dynamicOut := outRev.reverse
+    let builtinOut3 :=
+      (sDyn.bundle.builtins.relation "spaceMatch"
+        [pat, .apply "get-atoms!" [spaceExpr], .fvar "_out"]).filterMap fun row =>
+          match row with
+          | [_pat, _tmpl, out] => some out
+          | _ => none
+    (sDyn, dynamicOut ++ builtinOut3)
+  simpa [finish, bindings, f₁, f₂, referenceSpaceEvalInterface, referenceSpaceEvalInterfaceN] using
+    congrArg finish hFoldEq
+
+/-- Lift a unary `get-atoms!` evaluator-agreement hypothesis to the exact
+    substituted-template `hEval` shape used by compositional `match` adequacy. -/
+theorem referenceMatch_getAtomsBangTemplate_hEval_of_unary_eval_agreement
+    (fuel : Nat) (spaceExpr : Pattern)
+    (hEvalUnary : GetAtomsBangUnaryEvalAgreement fuel) :
+    ∀ (sess : Session) (bs : Bindings),
+      referenceEvalWithStateCore sess
+          (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr]) =
+        referenceEvalWithStateCoreN fuel sess
+          (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr]) := by
+  intro sess bs
+  exact hEvalUnary sess (matchTemplateAfterBindings bs spaceExpr)
+
+/-- `get-atoms!` specialization for compositional `match` adequacy. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_evalMatchedTemplate_agreement
+    (fuel : Nat) (s : Session) (space pat spaceExpr : Pattern)
+    (hBindings : referenceMatchBindings s space pat = totalMatchBindings fuel s space pat)
+    (hEval :
+      ∀ (sess : Session) (bs : Bindings),
+        referenceMatchEvalMatchedTemplate s sess
+            (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr])) =
+          totalMatchEvalMatchedTemplate fuel s sess
+            (matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr]))) :
+    referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      totalMatchIntrinsicResult fuel s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  apply referenceMatchIntrinsicResult_eq_total_of_bindingwise_evalMatchedTemplate_agreement
+  · exact hBindings
+  intro sess bs
+  exact hEval sess bs
+
+/-- `get-atoms!`-templated compositional `match` adequacy from direct evaluator
+    equality on the already-substituted template term. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_eval_agreement
+    (fuel : Nat) (s : Session) (space pat spaceExpr : Pattern)
+    (hBindings : referenceMatchBindings s space pat = totalMatchBindings fuel s space pat)
+    (hEval :
+      ∀ (sess : Session) (bs : Bindings),
+        referenceEvalWithStateCore sess
+            (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr]) =
+          referenceEvalWithStateCoreN fuel sess
+            (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr])) :
+    referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      totalMatchIntrinsicResult fuel s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  apply referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_evalMatchedTemplate_agreement
+  · exact hBindings
+  · intro sess bs
+    simpa [matchTemplateAfterBindings_getAtomsBang] using
+      (referenceMatchEvalMatchedTemplate_getAtomsBang_eq_total_of_eval_agreement
+        fuel s sess (matchTemplateAfterBindings bs spaceExpr) (hEval sess bs))
+
+/-- Practical `get-atoms!`-template specialization: the binding-enumeration side
+    is discharged automatically from `referenceMatchBindings_eq_totalMatchBindings`. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_eval_agreement_autoBindings
+    (fuel : Nat) (s : Session) (space pat spaceExpr : Pattern)
+    (hEval :
+      ∀ (sess : Session) (bs : Bindings),
+        referenceEvalWithStateCore sess
+            (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr]) =
+          referenceEvalWithStateCoreN fuel sess
+            (.apply "get-atoms!" [matchTemplateAfterBindings bs spaceExpr])) :
+    referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      totalMatchIntrinsicResult fuel s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  exact
+    referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_eval_agreement
+      (fuel := fuel) (s := s) (space := space) (pat := pat) (spaceExpr := spaceExpr)
+      (hBindings := referenceMatchBindings_eq_totalMatchBindings fuel s space pat)
+      hEval
+
+/-- Unary-entry variant for `get-atoms!` templates:
+    supply evaluator agreement per substituted space argument, and the theorem
+    discharges the `bs`-indexed `hEval` plumbing automatically. -/
+theorem referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_unary_eval_agreement_autoBindings
+    (fuel : Nat) (s : Session) (space pat spaceExpr : Pattern)
+    (hEvalUnary : GetAtomsBangUnaryEvalAgreement fuel) :
+    referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      totalMatchIntrinsicResult fuel s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  exact
+    referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_eval_agreement_autoBindings
+      (fuel := fuel) (s := s) (space := space) (pat := pat) (spaceExpr := spaceExpr)
+      (referenceMatch_getAtomsBangTemplate_hEval_of_unary_eval_agreement
+        (fuel := fuel) (spaceExpr := spaceExpr) hEvalUnary)
 
 private theorem referenceSpaceEvalInterfaceN_preservation
     (fuel : Nat) (s0 : Session)
@@ -5748,7 +6891,8 @@ private theorem p4_match3_branch_preserves
                 (referenceSpaceEvalInterfaceN fuel s) spacePolicy s space pat tmpl).fst = s' ∧
             (Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
                 (referenceSpaceEvalInterfaceN fuel s) spacePolicy s space pat tmpl).snd = out := by
-              simpa [referenceSpaceEvalInterfaceN] using h
+              simpa [intrinsicMatchResultWithEval, referenceSpaceEvalInterfaceN,
+                spaceOpsInterfaceWithEval] using h
         let ⟨hS, hOut⟩ := hConj
         compiledConsistent_of_referenceMatchIntrinsicN_result
           fuel s hEvalCorePres
@@ -5826,7 +6970,8 @@ private theorem p4_match2_branch_preserves
                 (referenceSpaceEvalInterfaceN fuel s) spacePolicy s selfSpaceAtom pat tmpl).fst = s' ∧
             (Algorithms.MeTTa.Simple.Semantics.SpaceOps.evalMatchIntrinsic
                 (referenceSpaceEvalInterfaceN fuel s) spacePolicy s selfSpaceAtom pat tmpl).snd = out := by
-              simpa [referenceSpaceEvalInterfaceN] using h
+              simpa [intrinsicMatchResultWithEval, referenceSpaceEvalInterfaceN,
+                spaceOpsInterfaceWithEval] using h
         let ⟨hS, hOut⟩ := hConj
         compiledConsistent_of_referenceMatchIntrinsicN_result
           fuel s hEvalCorePres
@@ -6430,6 +7575,13 @@ private theorem compiledConsistent_of_stateEq
     CompiledConsistent s' := by
   exact h ▸ hs
 
+private theorem compiledConsistent_of_stateEq_conj
+    {s s' : Session} {out0 out : List Pattern}
+    (h : s = s' ∧ out0 = out)
+    (hs : CompiledConsistent s) :
+    CompiledConsistent s' := by
+  exact compiledConsistent_of_stateEq h.1 hs
+
 private theorem compiledConsistent_of_somePairEq
     {p q : Session × List Pattern}
     (h : some p = some q)
@@ -6450,6 +7602,18 @@ private theorem compiledConsistent_of_evalCoreState
     CompiledConsistent s' := by
   exact hState ▸ hEvalCorePres s term hs
 
+private theorem compiledConsistent_of_evalCoreState_conj
+    (fuel : Nat)
+    (hEvalCorePres :
+      ∀ (s : Session) (term : Pattern),
+        CompiledConsistent s →
+        CompiledConsistent (referenceEvalWithStateCoreN fuel s term).1)
+    {s s' : Session} {term : Pattern} {out0 out : List Pattern}
+    (h : (referenceEvalWithStateCoreN fuel s term).fst = s' ∧ out0 = out)
+    (hs : CompiledConsistent s) :
+    CompiledConsistent s' := by
+  exact compiledConsistent_of_evalCoreState fuel hEvalCorePres h.1 hs
+
 private theorem compiledConsistent_of_evalCoreChainState
     (fuel : Nat)
     (hEvalCorePres :
@@ -6463,6 +7627,48 @@ private theorem compiledConsistent_of_evalCoreChainState
   have hs1 : CompiledConsistent (referenceEvalWithStateCoreN fuel s term1).1 :=
     hEvalCorePres s term1 hs
   exact hState ▸ hEvalCorePres (referenceEvalWithStateCoreN fuel s term1).1 term2 hs1
+
+private theorem compiledConsistent_of_evalCoreChainState_conj
+    (fuel : Nat)
+    (hEvalCorePres :
+      ∀ (s : Session) (term : Pattern),
+        CompiledConsistent s →
+        CompiledConsistent (referenceEvalWithStateCoreN fuel s term).1)
+    {s s' : Session} {term1 term2 : Pattern} {out0 out : List Pattern}
+    (h :
+      (referenceEvalWithStateCoreN fuel (referenceEvalWithStateCoreN fuel s term1).1 term2).fst = s' ∧
+        out0 = out)
+    (hs : CompiledConsistent s) :
+    CompiledConsistent s' := by
+  exact compiledConsistent_of_evalCoreChainState fuel hEvalCorePres h.1 hs
+
+private theorem compiledConsistent_of_vectorSpaceState
+    {s s' : Session} {name : String} {vs : VectorSpace}
+    (hState : withVectorSpace s name vs = s')
+    (hs : CompiledConsistent s) :
+    CompiledConsistent s' := by
+  exact hState ▸ compiledConsistent_withVectorSpace s name vs hs
+
+private theorem compiledConsistent_of_vectorSpaceState_conj
+    {s s' : Session} {name : String} {vs : VectorSpace} {out0 out : List Pattern}
+    (h : withVectorSpace s name vs = s' ∧ out0 = out)
+    (hs : CompiledConsistent s) :
+    CompiledConsistent s' := by
+  exact compiledConsistent_of_vectorSpaceState h.1 hs
+
+private theorem compiledConsistent_of_translatorRuleHeadsState
+    {s s' : Session} {heads : List String}
+    (hState : { s with translatorRuleHeads := heads } = s')
+    (hs : CompiledConsistent s) :
+    CompiledConsistent s' := by
+  exact hState ▸ compiledConsistent_withTranslatorRuleHeads s heads hs
+
+private theorem compiledConsistent_of_translatorRuleHeadsState_conj
+    {s s' : Session} {heads : List String} {out0 out : List Pattern}
+    (h : { s with translatorRuleHeads := heads } = s' ∧ out0 = out)
+    (hs : CompiledConsistent s) :
+    CompiledConsistent s' := by
+  exact compiledConsistent_of_translatorRuleHeadsState h.1 hs
 
 private structure RefNPres (fuel : Nat) where
   callable :
@@ -6975,6 +8181,512 @@ private theorem p4_apply_branch_preserves
     p4_apply_fallback_preserves
       fuel hEvalCorePres hEvalForRulePres h hs
 
+set_option maxHeartbeats 800000 in
+private theorem compiledConsistent_of_referenceIntrinsicStatefulN_apply_step
+    (fuel : Nat)
+    (hEvalCorePres :
+      ∀ (s : Session) (term : Pattern),
+        CompiledConsistent s →
+        CompiledConsistent (referenceEvalWithStateCoreN fuel s term).1)
+    (hEvalCallablePres :
+      ∀ (s : Session) (fn : Pattern) (args : List Pattern),
+        CompiledConsistent s →
+        CompiledConsistent (referenceEvalCallableApplyN fuel s fn args).1)
+    (hEvalForRulePres :
+      ∀ (s : Session) (expr : Pattern),
+        CompiledConsistent s →
+        CompiledConsistent (referenceEvalForRuleEnumerationN fuel s expr).1)
+    (hIntrinsicPres :
+      ∀ (s : Session) (term : Pattern) (s' : Session) (out : List Pattern),
+        referenceIntrinsicStatefulN fuel s term = some (s', out) →
+        CompiledConsistent s →
+        CompiledConsistent s')
+    {s : Session} {ctor : String} {args : List Pattern} {s' : Session} {out : List Pattern}
+    (h : referenceIntrinsicStatefulN (fuel + 1) s (.apply ctor args) = some (s', out))
+    (hs : CompiledConsistent s) :
+    CompiledConsistent s' := by
+  have h0 := h
+  unfold referenceIntrinsicStatefulN at h
+  simp only [] at h
+  split at h
+  · rename_i _ out1 hPeTTa
+    have hout : out1 = (s', out) := Option.some.inj h
+    subst hout
+    exact
+      compiledConsistent_of_referencePettaCoreEvalIntrinsicN_result
+        fuel hEvalCorePres hEvalCallablePres hPeTTa hs
+  · split at h
+    · rename_i _ _ _ out1 hPre
+      split at hPre
+      · rename_i out2 hStateE
+        have hout : out2 = (s', out) :=
+          (Option.some.inj hPre).trans (Option.some.inj h)
+        subst hout
+        exact
+          compiledConsistent_of_referenceStateEffectsEvalIntrinsicN_result
+            fuel hEvalCorePres hStateE hs
+      · have hout : out1 = (s', out) := Option.some.inj h
+        subst hout
+        exact
+          compiledConsistent_of_referenceStreamOpsEvalIntrinsicN_result
+            fuel hEvalCorePres hIntrinsicPres hPre hs
+    ·
+      by_cases hProgn : ctor = "progn"
+      · subst hProgn
+        simp at h
+        exact compiledConsistent_of_stateEq_conj h hs
+      · by_cases hProg1 : ctor = "prog1"
+        · subst hProg1
+          simp at h
+          exact compiledConsistent_of_stateEq_conj h hs
+        · by_cases hExpr : ctor = "Expr"
+          · subst hExpr
+            exact
+              p4_expr_branch_preserves
+                fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                (h := by simpa using h0) hs
+          ·
+            cases args with
+            | nil =>
+                by_cases hCut : ctor = "cut"
+                · subst hCut
+                  simp at h
+                  exact compiledConsistent_of_stateEq_conj h hs
+                ·
+                  have hFallback :
+                      referenceIntrinsicApplyFallbackN fuel s ctor [] = some (s', out) := by
+                    simpa [hCut] using h
+                  exact
+                    p4_apply_branch_preserves
+                      fuel hEvalCorePres hEvalForRulePres hFallback hs
+            | cons a rest =>
+                cases rest with
+                | nil =>
+                    by_cases hRemoveAll : ctor = "remove-all-atoms"
+                    · subst hRemoveAll
+                      simp at h
+                      exact
+                        compiledConsistent_of_referenceRemoveAllAtomsN_conj
+                          fuel s hEvalCorePres h.1 h.2 hs
+                    · by_cases hRemoveAllBang : ctor = "remove-all-atoms!"
+                      · subst hRemoveAllBang
+                        simp at h
+                        exact
+                          compiledConsistent_of_referenceRemoveAllAtomsN_conj
+                            fuel s hEvalCorePres h.1 h.2 hs
+                      · by_cases hGetAtoms : ctor = "get-atoms"
+                        · subst hGetAtoms
+                          simp [intrinsicGetAtomsResultWithEval, spaceOpsInterfaceWithEval] at h
+                          exact
+                            compiledConsistent_of_referenceGetAtomsN_conj
+                              fuel s h.1 h.2 hs
+                        · by_cases hGetAtomsBang : ctor = "get-atoms!"
+                          · subst hGetAtomsBang
+                            simp [intrinsicGetAtomsResultWithEval, spaceOpsInterfaceWithEval] at h
+                            exact
+                              compiledConsistent_of_referenceGetAtomsN_conj
+                                fuel s h.1 h.2 hs
+                          · by_cases hPredicate : ctor = "Predicate"
+                            · subst hPredicate
+                              simp at h
+                              exact compiledConsistent_of_stateEq_conj h hs
+                            · by_cases hSucceeds : ctor = "succeedsPredicate"
+                              · subst hSucceeds
+                                cases hDec : decodePredicateSpacePattern? s a with
+                                | none =>
+                                    simp [hDec] at h
+                                    exact compiledConsistent_of_stateEq_conj h hs
+                                | some sp =>
+                                    by_cases hEmpty : (findBindingsInSpace s sp.1 sp.2).isEmpty = true
+                                    · simp [hDec, hEmpty] at h
+                                      exact compiledConsistent_of_stateEq_conj h hs
+                                    · simp [hDec, hEmpty] at h
+                                      exact compiledConsistent_of_stateEq_conj h hs
+                              · by_cases hAddTR : ctor = "add-translator-rule!"
+                                · subst hAddTR
+                                  simp at h
+                                  exact compiledConsistent_of_translatorRuleHeadsState_conj h hs
+                                · by_cases hRemoveTR : ctor = "remove-translator-rule!"
+                                  · subst hRemoveTR
+                                    simp at h
+                                    exact compiledConsistent_of_translatorRuleHeadsState_conj h hs
+                                  · by_cases hOnce : ctor = "once"
+                                    · subst hOnce
+                                      exact
+                                        p4_once_branch_preserves
+                                          fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                          (h := by simpa using h0) hs
+                                    · by_cases hNop : ctor = "nop"
+                                      · subst hNop
+                                        exact
+                                          p4_nop_branch_preserves
+                                            fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                            (h := by simpa using h0) hs
+                                      · by_cases hCatch1 : ctor = "catch"
+                                        · subst hCatch1
+                                          exact
+                                            p4_catch1_branch_preserves
+                                              fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                              (h := by simpa using h0) hs
+                                        · by_cases hMsort : ctor = "msort"
+                                          · subst hMsort
+                                            exact
+                                              p4_msort_branch_preserves
+                                                fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                                (h := by simpa using h0) hs
+                                          · by_cases hSuperpose : ctor = "superpose"
+                                            · subst hSuperpose
+                                              simp at h
+                                              exact
+                                                compiledConsistent_of_evalCoreState_conj
+                                                  fuel hEvalCorePres h hs
+                                            · by_cases hHide : ctor = "hide"
+                                              · subst hHide
+                                                simp at h
+                                                exact
+                                                  compiledConsistent_of_evalCoreState_conj
+                                                    fuel hEvalCorePres h hs
+                                              · by_cases hCollapse : ctor = "collapse"
+                                                · subst hCollapse
+                                                  simp at h
+                                                  exact
+                                                    compiledConsistent_of_evalCoreState_conj
+                                                      fuel hEvalCorePres h hs
+                                                · by_cases hTranslate : ctor = "translatePredicate"
+                                                  · subst hTranslate
+                                                    simp at h
+                                                    exact
+                                                      compiledConsistent_of_evalCoreState_conj
+                                                        fuel hEvalCorePres h hs
+                                                  · by_cases hRepr : ctor = "repr"
+                                                    · subst hRepr
+                                                      exact
+                                                        p4_repr_branch_preserves
+                                                          fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                                          (h := by simpa using h0) hs
+                                                    · by_cases hAtomOf : ctor = "atom-of"
+                                                      · subst hAtomOf
+                                                        exact
+                                                          p4_atomof_branch_preserves
+                                                            fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                                            (h := by simpa using h0) hs
+                                                      ·
+                                                        have hFallback :
+                                                            referenceIntrinsicApplyFallbackN fuel s ctor [a] =
+                                                              some (s', out) := by
+                                                          simpa [hRemoveAll, hRemoveAllBang,
+                                                            hGetAtoms, hGetAtomsBang, hPredicate,
+                                                            hSucceeds, hAddTR, hRemoveTR, hOnce,
+                                                            hNop, hCatch1, hMsort, hSuperpose,
+                                                            hHide, hCollapse, hTranslate, hRepr,
+                                                            hAtomOf] using h
+                                                        exact
+                                                          p4_apply_branch_preserves
+                                                            fuel hEvalCorePres hEvalForRulePres hFallback hs
+                | cons b rest2 =>
+                    cases rest2 with
+                    | nil =>
+                        by_cases hAddBang : ctor = "add-atom!"
+                        · subst hAddBang
+                          exact
+                            p4_addatom_bang_branch_preserves
+                              fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                              (h := by simpa using h0) hs
+                        · by_cases hRemoveBang : ctor = "remove-atom!"
+                          · subst hRemoveBang
+                            exact
+                              p4_removeatom_bang_branch_preserves
+                                fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                (h := by simpa using h0) hs
+                          · by_cases hAdd : ctor = "add-atom"
+                            · subst hAdd
+                              exact
+                                p4_addatom_branch_preserves
+                                  fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                  (h := by simpa using h0) hs
+                            · by_cases hRemove : ctor = "remove-atom"
+                              · subst hRemove
+                                exact
+                                  p4_removeatom_branch_preserves
+                                    fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                    (h := by simpa using h0) hs
+                              · by_cases hMatch : ctor = "match"
+                                · subst hMatch
+                                  exact
+                                    p4_match2_branch_preserves
+                                      fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                      (h := by simpa using h0) hs
+                                · by_cases hCase : ctor = "case"
+                                  · subst hCase
+                                    exact
+                                      p4_case_branch_preserves
+                                        fuel hEvalCorePres hEvalCallablePres hEvalForRulePres
+                                        hIntrinsicPres (h := by simpa using h0) hs
+                                  · by_cases hForall : ctor = "forall"
+                                    · subst hForall
+                                      exact
+                                        p4_forall_branch_preserves
+                                          fuel hEvalCorePres hEvalCallablePres hEvalForRulePres
+                                          hIntrinsicPres (h := by simpa using h0) hs
+                                    · by_cases hFind : ctor = "find"
+                                      · subst hFind
+                                        by_cases hEmpty : (findBindingsInSpace s a b).isEmpty = true
+                                        · simp [hEmpty] at h
+                                          exact compiledConsistent_of_stateEq_conj h hs
+                                        · simp [hEmpty] at h
+                                          exact compiledConsistent_of_stateEq_conj h hs
+                                      · by_cases hNewVS : ctor = "new-atom-vectorspace"
+                                        · subst hNewVS
+                                          cases hName : vectorSpaceName? a with
+                                          | none =>
+                                              simp [hName] at h
+                                              exact compiledConsistent_of_stateEq_conj h hs
+                                          | some name =>
+                                              cases hDim : intOfPattern? b with
+                                              | none =>
+                                                  simp [hName, hDim] at h
+                                                  exact compiledConsistent_of_stateEq_conj h hs
+                                              | some dimI =>
+                                                  by_cases hLe : dimI <= 0
+                                                  · simp [hName, hDim, hLe] at h
+                                                    exact compiledConsistent_of_stateEq_conj h hs
+                                                  · simp [hName, hDim, hLe] at h
+                                                    exact compiledConsistent_of_vectorSpaceState_conj h hs
+                                        · by_cases hAddSRI : ctor = "add-atom-SRI"
+                                          · subst hAddSRI
+                                            cases hName : vectorSpaceName? a with
+                                            | none =>
+                                                simp [hName] at h
+                                                exact compiledConsistent_of_stateEq_conj h hs
+                                            | some name =>
+                                                cases hVS : lookupVectorSpace? s name with
+                                                | none =>
+                                                    simp [hName, hVS] at h
+                                                    exact compiledConsistent_of_stateEq_conj h hs
+                                                | some vs =>
+                                                    simp [hName, hVS] at h
+                                                    exact compiledConsistent_of_vectorSpaceState_conj h hs
+                                          · by_cases hSpace : ctor = "space"
+                                            · subst hSpace
+                                              simp at h
+                                              exact
+                                                compiledConsistent_of_evalCoreChainState_conj
+                                                  fuel hEvalCorePres h hs
+                                            · by_cases hIf2 : ctor = "if"
+                                              · subst hIf2
+                                                simp at h
+                                                exact
+                                                  compiledConsistent_of_evalCoreChainState_conj
+                                                    fuel hEvalCorePres h hs
+                                              · by_cases hLetStar : ctor = "let*"
+                                                · subst hLetStar
+                                                  simp at h
+                                                  exact
+                                                    compiledConsistent_of_evalCoreState_conj
+                                                      fuel hEvalCorePres h hs
+                                                ·
+                                                  have hFallback :
+                                                      referenceIntrinsicApplyFallbackN fuel s ctor [a, b] =
+                                                        some (s', out) := by
+                                                    simpa [hAddBang, hRemoveBang, hAdd, hRemove,
+                                                      hMatch, hCase, hForall, hFind, hNewVS,
+                                                      hAddSRI, hSpace, hIf2, hLetStar] using h
+                                                  exact
+                                                    p4_apply_branch_preserves
+                                                      fuel hEvalCorePres hEvalForRulePres hFallback hs
+                    | cons c rest3 =>
+                        cases rest3 with
+                        | nil =>
+                            by_cases hMatch : ctor = "match"
+                            · subst hMatch
+                              exact
+                                p4_match3_branch_preserves
+                                  fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+                                  (h := by simpa using h0) hs
+                            · by_cases hFoldall : ctor = "foldall"
+                              · subst hFoldall
+                                exact
+                                  p4_foldall_branch_preserves
+                                    fuel hEvalCorePres hEvalCallablePres hEvalForRulePres
+                                    hIntrinsicPres (h := by simpa using h0) hs
+                              · by_cases hAddVec : ctor = "add-atom-vector"
+                                · subst hAddVec
+                                  cases hName : vectorSpaceName? a with
+                                  | none =>
+                                      simp [hName] at h
+                                      exact compiledConsistent_of_stateEq_conj h hs
+                                  | some name =>
+                                      cases hVec : vectorOfPattern? c with
+                                      | none =>
+                                          simp [hName, hVec] at h
+                                          exact compiledConsistent_of_stateEq_conj h hs
+                                      | some vec =>
+                                          cases hVS : lookupVectorSpace? s name with
+                                          | none =>
+                                              simp [hName, hVec, hVS] at h
+                                              exact compiledConsistent_of_stateEq_conj h hs
+                                          | some vs =>
+                                              simp [hName, hVec, hVS] at h
+                                              exact compiledConsistent_of_vectorSpaceState_conj h hs
+                                · by_cases hMatchK : ctor = "match-k"
+                                  · subst hMatchK
+                                    cases hK : intOfPattern? a with
+                                    | none =>
+                                        simp [hK] at h
+                                        exact compiledConsistent_of_stateEq_conj h hs
+                                    | some kI =>
+                                        cases hName : vectorSpaceName? b with
+                                        | none =>
+                                            simp [hK, hName] at h
+                                            exact compiledConsistent_of_stateEq_conj h hs
+                                        | some name =>
+                                            cases hVec : vectorOfPattern? c with
+                                            | none =>
+                                                simp [hK, hName, hVec] at h
+                                                exact compiledConsistent_of_stateEq_conj h hs
+                                            | some qv =>
+                                                cases hVS : lookupVectorSpace? s name with
+                                                | none =>
+                                                    simp [hK, hName, hVec, hVS] at h
+                                                    exact compiledConsistent_of_stateEq_conj h hs
+                                                | some vs =>
+                                                    simp [hK, hName, hVec, hVS] at h
+                                                    exact compiledConsistent_of_stateEq_conj h hs
+                                  · by_cases hMatchSri : ctor = "match-sri"
+                                    · subst hMatchSri
+                                      cases hK : intOfPattern? a with
+                                      | none =>
+                                          simp [hK] at h
+                                          exact compiledConsistent_of_stateEq_conj h hs
+                                      | some kI =>
+                                          cases hName : vectorSpaceName? b with
+                                          | none =>
+                                              simp [hK, hName] at h
+                                              exact compiledConsistent_of_stateEq_conj h hs
+                                          | some name =>
+                                              cases hVS : lookupVectorSpace? s name with
+                                              | none =>
+                                                  simp [hK, hName, hVS] at h
+                                                  exact compiledConsistent_of_stateEq_conj h hs
+                                              | some vs =>
+                                                  simp [hK, hName, hVS] at h
+                                                  exact compiledConsistent_of_stateEq_conj h hs
+                                    · by_cases hMatchSRI : ctor = "match-SRI"
+                                      · subst hMatchSRI
+                                        cases hK : intOfPattern? a with
+                                        | none =>
+                                            simp [hK] at h
+                                            exact compiledConsistent_of_stateEq_conj h hs
+                                        | some kI =>
+                                            cases hName : vectorSpaceName? b with
+                                            | none =>
+                                                simp [hK, hName] at h
+                                                exact compiledConsistent_of_stateEq_conj h hs
+                                            | some name =>
+                                                cases hVS : lookupVectorSpace? s name with
+                                                | none =>
+                                                    simp [hK, hName, hVS] at h
+                                                    exact compiledConsistent_of_stateEq_conj h hs
+                                                | some vs =>
+                                                    simp [hK, hName, hVS] at h
+                                                    exact compiledConsistent_of_stateEq_conj h hs
+                                      · by_cases hCatch3 : ctor = "catch"
+                                        · subst hCatch3
+                                          simp at h
+                                          exact
+                                            compiledConsistent_of_evalCoreChainState_conj
+                                              fuel hEvalCorePres h hs
+                                        · by_cases hIf3 : ctor = "if"
+                                          · subst hIf3
+                                            simp at h
+                                            exact
+                                              compiledConsistent_of_evalCoreChainState_conj
+                                                fuel hEvalCorePres h hs
+                                          · by_cases hLet : ctor = "let"
+                                            · subst hLet
+                                              simp at h
+                                              exact
+                                                compiledConsistent_of_evalCoreChainState_conj
+                                                  fuel hEvalCorePres h hs
+                                            ·
+                                              have hFallback :
+                                                  referenceIntrinsicApplyFallbackN fuel s ctor [a, b, c] =
+                                                    some (s', out) := by
+                                                simpa [hMatch, hFoldall, hAddVec, hMatchK,
+                                                  hMatchSri, hMatchSRI, hCatch3, hIf3, hLet] using h
+                                              exact
+                                                p4_apply_branch_preserves
+                                                  fuel hEvalCorePres hEvalForRulePres hFallback hs
+                        | cons d rest4 =>
+                            have hFallback :
+                                referenceIntrinsicApplyFallbackN fuel s ctor (a :: b :: c :: d :: rest4) =
+                                  some (s', out) := by
+                              simpa using h
+                            exact
+                              p4_apply_branch_preserves
+                                fuel hEvalCorePres hEvalForRulePres hFallback hs
+
+private theorem compiledConsistent_of_referenceIntrinsicStatefulN_nonapply_step
+    (fuel : Nat)
+    (hEvalCorePres :
+      ∀ (s : Session) (term : Pattern),
+        CompiledConsistent s →
+        CompiledConsistent (referenceEvalWithStateCoreN fuel s term).1)
+    (hEvalCallablePres :
+      ∀ (s : Session) (fn : Pattern) (args : List Pattern),
+        CompiledConsistent s →
+        CompiledConsistent (referenceEvalCallableApplyN fuel s fn args).1)
+    (hIntrinsicPres :
+      ∀ (s : Session) (term : Pattern) (s' : Session) (out : List Pattern),
+        referenceIntrinsicStatefulN fuel s term = some (s', out) →
+        CompiledConsistent s →
+        CompiledConsistent s')
+    {s : Session} {term : Pattern} {s' : Session} {out : List Pattern}
+    (hNotApply : ∀ ctor args, term ≠ .apply ctor args)
+    (h : referenceIntrinsicStatefulN (fuel + 1) s term = some (s', out))
+    (hs : CompiledConsistent s) :
+    CompiledConsistent s' := by
+  unfold referenceIntrinsicStatefulN at h
+  simp only [] at h
+  split at h
+  · rename_i _ out1 hPeTTa
+    have hout : out1 = (s', out) := Option.some.inj h
+    subst hout
+    exact
+      compiledConsistent_of_referencePettaCoreEvalIntrinsicN_result
+        fuel hEvalCorePres hEvalCallablePres hPeTTa hs
+  · split at h
+    · rename_i _ _ _ out1 hPre
+      split at hPre
+      · rename_i out2 hStateE
+        have hout : out2 = (s', out) :=
+          (Option.some.inj hPre).trans (Option.some.inj h)
+        subst hout
+        exact
+          compiledConsistent_of_referenceStateEffectsEvalIntrinsicN_result
+            fuel hEvalCorePres hStateE hs
+      · have hout : out1 = (s', out) := Option.some.inj h
+        subst hout
+        exact
+          compiledConsistent_of_referenceStreamOpsEvalIntrinsicN_result
+            fuel hEvalCorePres hIntrinsicPres hPre hs
+    ·
+      cases term with
+      | fvar x =>
+          simp at h
+      | bvar n =>
+          simp at h
+      | lambda body =>
+          simp at h
+      | multiLambda n body =>
+          simp at h
+      | subst body repl =>
+          simp at h
+      | collection ct elems rest =>
+          simp at h
+      | apply ctor args =>
+          exact False.elim (hNotApply ctor args rfl)
+
 private theorem compiledConsistent_of_referenceIntrinsicStatefulN_step
     (fuel : Nat)
     (hEvalCorePres :
@@ -6998,7 +8710,41 @@ private theorem compiledConsistent_of_referenceIntrinsicStatefulN_step
     (h : referenceIntrinsicStatefulN (fuel + 1) s term = some (s', out))
     (hs : CompiledConsistent s) :
     CompiledConsistent s' := by
-  sorry
+  cases term with
+  | fvar x =>
+      exact
+        compiledConsistent_of_referenceIntrinsicStatefulN_nonapply_step
+          fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+          (fun ctor args hEq => by cases hEq) h hs
+  | bvar n =>
+      exact
+        compiledConsistent_of_referenceIntrinsicStatefulN_nonapply_step
+          fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+          (fun ctor args hEq => by cases hEq) h hs
+  | lambda body =>
+      exact
+        compiledConsistent_of_referenceIntrinsicStatefulN_nonapply_step
+          fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+          (fun ctor args hEq => by cases hEq) h hs
+  | multiLambda n body =>
+      exact
+        compiledConsistent_of_referenceIntrinsicStatefulN_nonapply_step
+          fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+          (fun ctor args hEq => by cases hEq) h hs
+  | subst body repl =>
+      exact
+        compiledConsistent_of_referenceIntrinsicStatefulN_nonapply_step
+          fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+          (fun ctor args hEq => by cases hEq) h hs
+  | collection ct elems rest =>
+      exact
+        compiledConsistent_of_referenceIntrinsicStatefulN_nonapply_step
+          fuel hEvalCorePres hEvalCallablePres hIntrinsicPres
+          (fun ctor args hEq => by cases hEq) h hs
+  | apply ctor args =>
+      exact
+        compiledConsistent_of_referenceIntrinsicStatefulN_apply_step
+          fuel hEvalCorePres hEvalCallablePres hEvalForRulePres hIntrinsicPres h hs
 
 
 -- Joint fuel-induction: all four ...N functions preserve CompiledConsistent simultaneously.
@@ -7174,6 +8920,22 @@ theorem evalWithStateCoreN_preserves
     WF (evalWithStateCoreN fuel s term).1 :=
   compiledConsistent_of_referenceEvalWithStateCoreN fuel s term hs
 
+/-- The `DeterministicEval.Interface` used by the N-kernel deterministic evaluator.
+    Exposed for the DeterministicBridge proof layer. -/
+def detEvalInterface (outerFuel : Nat) :
+    Algorithms.MeTTa.Simple.Semantics.DeterministicEval.Interface Session :=
+  mkDeterministicEvalInterface
+    (fun s' t => evalWithStateCoreN outerFuel s' t)
+    (fun s' fn args => referenceEvalCallableApplyN outerFuel s' fn args)
+
+theorem detEvalInterface_eq_standalone (outerFuel : Nat) (s : Session) (detFuel : Nat)
+    (term : Pattern) :
+    Algorithms.MeTTa.Simple.Semantics.DeterministicEval.eval
+      (detEvalInterface outerFuel) s detFuel term =
+    referenceEvalDeterministicCoreNStandalone outerFuel s detFuel term := by
+  unfold detEvalInterface evalWithStateCoreN referenceEvalDeterministicCoreNStandalone
+  rfl
+
 /-- Fuel-indexed total reference intrinsic evaluator (no `partial def`, no `sorry`).
     Returns `none` when the term is not an intrinsic or when fuel is exhausted.
     Unconditionally preserves `WF` on `some` outputs. -/
@@ -7188,6 +8950,30 @@ theorem intrinsicStatefulN_preserves
     (h : intrinsicStatefulN fuel s term = some (s', out))
     (hs : WF s) : WF s' :=
   compiledConsistent_of_referenceIntrinsicStatefulN fuel h hs
+
+/-- At positive fuel, the faithful evaluator is definitionally just the explicit-status
+    wrapper around the total N-kernel evaluator. -/
+theorem evalWithStateCoreF_eq_done_of_pos
+    (fuel : Nat) (s : Session) (term : Pattern)
+    (hFuel : 0 < fuel) :
+    evalWithStateCoreF fuel s term = .done (evalWithStateCoreN fuel s term) := by
+  cases fuel with
+  | zero =>
+      cases Nat.not_lt_zero 0 hFuel
+  | succ n =>
+      rfl
+
+/-- At positive fuel, the faithful intrinsic evaluator is definitionally just the
+    explicit-status wrapper around the total N-kernel intrinsic evaluator. -/
+theorem intrinsicStatefulF_eq_done_of_pos
+    (fuel : Nat) (s : Session) (term : Pattern)
+    (hFuel : 0 < fuel) :
+    intrinsicStatefulF fuel s term = .done (intrinsicStatefulN fuel s term) := by
+  cases fuel with
+  | zero =>
+      cases Nat.not_lt_zero 0 hFuel
+  | succ n =>
+      rfl
 
 private theorem compiledConsistent_of_evalDeterministicCore
     (hEvalCorePres :
@@ -7660,6 +9446,10 @@ private def hasMultipleRootRuleChoices (s : Session) (term : Pattern) : Bool :=
   Algorithms.MeTTa.Simple.Backend.SessionDeterministic.hasMultipleRootRuleChoices
     deterministicSearchInterface s term
 
+private def noDeterministicReducerOverlap (s : Session) : Bool :=
+  Algorithms.MeTTa.Simple.Backend.SessionDeterministic.noDeterministicReducerOverlap
+    deterministicSearchInterface s
+
 theorem premiseFreeRulesForHeadArity_eq_index_when_enabled
     (s : Session) (ctor : String) (arity : Nat)
     (hEnabled : s.useCompiledIndexes = true) :
@@ -7815,12 +9605,26 @@ def optimizedBackendInterface : Algorithms.MeTTa.Simple.Backend.OptimizedEval.In
     Algorithms.MeTTa.Simple.Semantics.DeterministicStrategy.shouldUseDeterministicInStrict
   hasDeterministicBlockingRewriteBodies := hasDeterministicBlockingRewriteBodies
   hasMultipleRootRuleChoices := hasMultipleRootRuleChoices
-  evalDeterministicCore := evalDeterministicCore
-  evalWithStateCore := referenceEvalWithStateCore
+  noDeterministicReducerOverlap := noDeterministicReducerOverlap
+  noCoreBuiltinOverrides := fun s => s.coreBuiltinsUnmodified
+  evalDeterministicCore := fun s detFuel term =>
+    referenceEvalDeterministicCoreNStandalone (referenceProofFuel s) s detFuel term
+  evalWithStateCore := fun s term => referenceEvalWithStateCoreN (referenceProofFuel s) s term
   isResolvedDeterministicResult :=
     Algorithms.MeTTa.Simple.Semantics.DeterministicStrategy.isResolvedDeterministicResult
   acceptUnchangedDeterministic := acceptUnchangedDeterministic
 }
+
+/-- When `optimizedBackendInterface.noDeterministicReducerOverlap s = true`,
+    every rewrite rule satisfies `ruleDisjointFromBuiltins`. -/
+theorem noOverlap_implies_disjoint_rules (s : Session)
+    (h : optimizedBackendInterface.noDeterministicReducerOverlap s = true) :
+    ∀ r ∈ s.bundle.language.rewrites,
+      Algorithms.MeTTa.Simple.Backend.SessionDeterministic.ruleDisjointFromBuiltins r = true := by
+  simp only [optimizedBackendInterface, noDeterministicReducerOverlap,
+    Algorithms.MeTTa.Simple.Backend.SessionDeterministic.noDeterministicReducerOverlap,
+    deterministicSearchInterface] at h
+  exact List.all_eq_true.mp h
 
 def evalWithState (s : Session) (term : Pattern) : Session × List Pattern :=
   Algorithms.MeTTa.Simple.Backend.OptimizedEval.evalWithState optimizedBackendInterface s term
@@ -7832,10 +9636,10 @@ theorem evalWithState_eq_optimizedBackend
         optimizedBackendInterface s term := by
   rfl
 
-theorem optimizedBackendInterface_evalWithStateCore_eq_reference
+theorem optimizedBackendInterface_evalWithStateCore_eq_N
     (s : Session) (term : Pattern) :
     optimizedBackendInterface.evalWithStateCore s term =
-      referenceEvalWithStateCore s term := by
+      evalWithStateCoreN (referenceProofFuel s) s term := by
   rfl
 
 theorem evalWithState_eq_reference_of_guard_failure
@@ -7844,6 +9648,8 @@ theorem evalWithState_eq_reference_of_guard_failure
       optimizedBackendInterface.shouldUseDeterministicInStrict term = false ∨
       optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = true ∨
       optimizedBackendInterface.hasMultipleRootRuleChoices s term = true ∨
+      optimizedBackendInterface.noDeterministicReducerOverlap s = false ∨
+      optimizedBackendInterface.noCoreBuiltinOverrides s = false ∨
       optimizedBackendInterface.isResolvedDeterministicResult
         ((optimizedBackendInterface.evalDeterministicCore s
           (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = false ∨
@@ -7861,6 +9667,8 @@ theorem evalWithState_eq_reference_of_deterministic_agreement
         optimizedBackendInterface.shouldUseDeterministicInStrict term = true →
         optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         optimizedBackendInterface.hasMultipleRootRuleChoices s term = false →
+        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         optimizedBackendInterface.isResolvedDeterministicResult
           ((optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →
@@ -7885,6 +9693,8 @@ theorem evalWithState_eq_reference_of_deterministic_agreement_raw_guard
         optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         optimizedBackendInterface.hasMultipleRootRuleChoices
           (withCompiledIndexes s false) term = false →
+        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         optimizedBackendInterface.isResolvedDeterministicResult
           ((optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →
@@ -7899,47 +9709,61 @@ theorem evalWithState_eq_reference_of_deterministic_agreement_raw_guard
   by_cases hStrict : optimizedBackendInterface.shouldUseDeterministicInStrict term = true
   · by_cases hBlocked : optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false
     · by_cases hMulti : optimizedBackendInterface.hasMultipleRootRuleChoices s term = false
-      · by_cases hResolved :
-          optimizedBackendInterface.isResolvedDeterministicResult
-            ((optimizedBackendInterface.evalDeterministicCore s
-              (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true
-        · by_cases hAccept :
-            (((optimizedBackendInterface.evalDeterministicCore s
-                (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-              optimizedBackendInterface.acceptUnchangedDeterministic term) = true
-          · have hEqRaw :
-                optimizedBackendInterface.hasMultipleRootRuleChoices s term =
-                  optimizedBackendInterface.hasMultipleRootRuleChoices
-                    (withCompiledIndexes s false) term :=
-              hasMultipleRootRuleChoices_eq_raw_of_compiledRules_consistent
-                (s := s) (term := term) hs
-            have hMultiRaw :
-                optimizedBackendInterface.hasMultipleRootRuleChoices
-                  (withCompiledIndexes s false) term = false := by
-              simpa [hMulti] using hEqRaw
-            exact hAgreeRaw s term hStrict hBlocked hMultiRaw hResolved hAccept
-          · have hAcceptFalse :
-                (((optimizedBackendInterface.evalDeterministicCore s
-                    (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-                  optimizedBackendInterface.acceptUnchangedDeterministic term) = false := by
-                cases hA :
-                  (((optimizedBackendInterface.evalDeterministicCore s
-                      (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-                    optimizedBackendInterface.acceptUnchangedDeterministic term) <;>
-                  simp [hA] at hAccept ⊢
-            exact evalWithState_eq_reference_of_guard_failure s term <|
-              Or.inr <| Or.inr <| Or.inr <| Or.inr hAcceptFalse
-        · have hResolvedFalse :
+      · by_cases hOverlap : optimizedBackendInterface.noDeterministicReducerOverlap s = true
+        · by_cases hCore : optimizedBackendInterface.noCoreBuiltinOverrides s = true
+          · by_cases hResolved :
               optimizedBackendInterface.isResolvedDeterministicResult
                 ((optimizedBackendInterface.evalDeterministicCore s
-                  (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = false := by
-              cases hR :
-                optimizedBackendInterface.isResolvedDeterministicResult
-                  ((optimizedBackendInterface.evalDeterministicCore s
-                    (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) <;>
-                simp [hR] at hResolved ⊢
+                  (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true
+            · by_cases hAccept :
+                (((optimizedBackendInterface.evalDeterministicCore s
+                    (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
+                  optimizedBackendInterface.acceptUnchangedDeterministic term) = true
+              · have hEqRaw :
+                    optimizedBackendInterface.hasMultipleRootRuleChoices s term =
+                      optimizedBackendInterface.hasMultipleRootRuleChoices
+                        (withCompiledIndexes s false) term :=
+                  hasMultipleRootRuleChoices_eq_raw_of_compiledRules_consistent
+                    (s := s) (term := term) hs
+                have hMultiRaw :
+                    optimizedBackendInterface.hasMultipleRootRuleChoices
+                      (withCompiledIndexes s false) term = false := by
+                  simpa [hMulti] using hEqRaw
+                exact hAgreeRaw s term hStrict hBlocked hMultiRaw hOverlap hCore hResolved hAccept
+              · have hAcceptFalse :
+                    (((optimizedBackendInterface.evalDeterministicCore s
+                        (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
+                      optimizedBackendInterface.acceptUnchangedDeterministic term) = false := by
+                    cases hA :
+                      (((optimizedBackendInterface.evalDeterministicCore s
+                          (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
+                        optimizedBackendInterface.acceptUnchangedDeterministic term) <;>
+                      simp [hA] at hAccept ⊢
+                exact evalWithState_eq_reference_of_guard_failure s term <|
+                  Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inr hAcceptFalse
+            · have hResolvedFalse :
+                  optimizedBackendInterface.isResolvedDeterministicResult
+                    ((optimizedBackendInterface.evalDeterministicCore s
+                      (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = false := by
+                  cases hR :
+                    optimizedBackendInterface.isResolvedDeterministicResult
+                      ((optimizedBackendInterface.evalDeterministicCore s
+                        (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) <;>
+                    simp [hR] at hResolved ⊢
+              exact evalWithState_eq_reference_of_guard_failure s term <|
+                Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inl hResolvedFalse
+          · have hCoreFalse :
+                optimizedBackendInterface.noCoreBuiltinOverrides s = false := by
+              cases hC : optimizedBackendInterface.noCoreBuiltinOverrides s <;>
+                simp [hC] at hCore ⊢
+            exact evalWithState_eq_reference_of_guard_failure s term <|
+              Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inl hCoreFalse
+        · have hOverlapFalse :
+              optimizedBackendInterface.noDeterministicReducerOverlap s = false := by
+            cases hO : optimizedBackendInterface.noDeterministicReducerOverlap s <;>
+              simp [hO] at hOverlap ⊢
           exact evalWithState_eq_reference_of_guard_failure s term <|
-            Or.inr <| Or.inr <| Or.inr <| Or.inl hResolvedFalse
+            Or.inr <| Or.inr <| Or.inr <| Or.inl hOverlapFalse
       · have hMultiTrue :
             optimizedBackendInterface.hasMultipleRootRuleChoices s term = true := by
           cases hM : optimizedBackendInterface.hasMultipleRootRuleChoices s term <;>
@@ -7971,6 +9795,8 @@ theorem compiledConsistent_evalWithState_of_reference_and_deterministic_agreemen
         optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         optimizedBackendInterface.hasMultipleRootRuleChoices
           (withCompiledIndexes s false) term = false →
+        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         optimizedBackendInterface.isResolvedDeterministicResult
           ((optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →
@@ -8170,7 +9996,12 @@ def applyStmt (s : Session) (stmt : SyntaxStmt) : Session × List Pattern :=
       let builtins' := addBuiltinTuple s.bundle.builtins row
       let bundle' : SpecBundle := { s.bundle with builtins := builtins' }
       let s0 := noteApplied (withBundleCompiled s bundle')
-      let s' := withMessage s0 s!"added builtin fact {rel}/{tuple.length}"
+      let s1 :=
+        if rel.startsWith "intrinsic:" then
+          { s0 with coreBuiltinsUnmodified := false }
+        else
+          s0
+      let s' := withMessage s1 s!"added builtin fact {rel}/{tuple.length}"
       (s', [])
   | .setFuel n =>
       let policy' : RuntimePolicy := { s.bundle.policy with maxFuel := n }
@@ -8276,6 +10107,8 @@ theorem compiledConsistent_applyStmt_eval_of_reference_and_deterministic_agreeme
         optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         optimizedBackendInterface.hasMultipleRootRuleChoices
           (withCompiledIndexes s false) term = false →
+        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         optimizedBackendInterface.isResolvedDeterministicResult
           ((optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →

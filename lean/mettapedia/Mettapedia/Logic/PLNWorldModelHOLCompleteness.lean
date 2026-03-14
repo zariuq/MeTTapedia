@@ -1,206 +1,113 @@
-import Mettapedia.Logic.PLNWorldModelHOL
-import Mettapedia.Logic.PLNWorldModelCalculus
-import Mettapedia.Logic.PLNWorldModelCategoricalBridge
+import Mettapedia.Logic.HOL.WorldModelCompleteness
 
 /-!
 # HOL WM Consequence-Closure Wrappers
 
-This module exposes implication-consequence transfer wrappers from the HOL WM
-instance to `WMConsequenceRule` / `WMConsequenceRuleOn`.
-
-It also provides a proof-system-agnostic bridge schema:
-if an external HOL implication relation is sound/complete with respect to
-pointwise implication, then it is equivalent to singleton WM consequence.
-
-## Scope note
-Despite the historical filename `*HOLCompleteness`, this module does not import
-concrete Foundation HOL proof-system sound/complete instances. It provides
-schema-level consequence-transfer wrappers and sound/complete bridge templates
-parameterized by an external implication relation.
+Public PLN-facing aliases for the real Church-style HOL consequence bridge.
 -/
 
 namespace Mettapedia.Logic.PLNWorldModelHOLCompleteness
 
 open Mettapedia.Logic.PLNWorldModel
-open Mettapedia.Logic.EvidenceClass
-open Mettapedia.Logic.EvidenceQuantale
-open Mettapedia.Logic.PLNWorldModelHOL
 open Mettapedia.Logic.PLNWorldModelHyperdoctrine
-open scoped ENNReal
+open Mettapedia.Logic.HOL
 
-abbrev HOLQuery (U : Type*) := Mettapedia.Logic.PLNWorldModelHOL.HOLQuery U
-abbrev PointedHOL (U : Type*) := Mettapedia.Logic.PLNWorldModelHOL.PointedHOL U
-abbrev HOLState (U : Type*) := Multiset (PointedHOL U)
+universe u v w
 
-/-- Alias for the unified categorical endpoint surface, specialized to HOL WM
-states. -/
-abbrev WMCategoricalEndpointSurface {U : Type*}
-    (H : WMHyperdoctrine (HOLState U)) : Prop :=
-  Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointSurface (H := H)
+variable {Base : Type u} {Const : Ty Base → Type v}
 
-/-- Pointwise HOL implication between query predicates. -/
-def pointwiseImplies {U : Type*} (q₁ q₂ : HOLQuery U) : Prop :=
-  ∀ pw : PointedHOL U, pw.satisfies q₁ → pw.satisfies q₂
+/-- Public HOL query alias. -/
+abbrev HOLQuery := @Mettapedia.Logic.HOL.WorldModelCompleteness.HOLQuery
 
-/-- Singleton-strength consequence alias for the HOL WM instance. -/
-abbrev singletonStrengthLE {U : Type*} (q₁ q₂ : HOLQuery U) : Prop :=
-  Mettapedia.Logic.PLNWorldModelHOL.singletonStrengthLE q₁ q₂
+/-- Public pointed HOL model alias. -/
+abbrev PointedHOL := @Mettapedia.Logic.HOL.HenkinModel
 
-/-- Naming alias: singleton consequence on HOL WM states. -/
-abbrev singletonConsequence {U : Type*} (q₁ q₂ : HOLQuery U) : Prop :=
-  singletonStrengthLE q₁ q₂
+/-- Public HOL state alias. -/
+abbrev HOLState := @Mettapedia.Logic.HOL.WorldModelCompleteness.HOLState
 
-theorem pointwiseImplies_iff_singletonStrengthLE {U : Type*}
-    (q₁ q₂ : HOLQuery U) :
-    pointwiseImplies q₁ q₂ ↔ singletonStrengthLE q₁ q₂ := by
-  simpa [pointwiseImplies, singletonStrengthLE] using
-    (Mettapedia.Logic.PLNWorldModelHOL.pointwiseImplies_iff_singletonStrengthLE
-      (q₁ := q₁) (q₂ := q₂))
+/-- Public categorical endpoint alias for HOL world-model states. -/
+abbrev WMCategoricalEndpointSurface :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.WMCategoricalEndpointSurface
 
-/-- Naming alias for the same bridge with `singletonConsequence` terminology. -/
-theorem pointwiseImplies_iff_singletonConsequence {U : Type*}
-    (q₁ q₂ : HOLQuery U) :
-    pointwiseImplies q₁ q₂ ↔ singletonConsequence q₁ q₂ :=
-  pointwiseImplies_iff_singletonStrengthLE (q₁ := q₁) (q₂ := q₂)
+/-- Public pointwise implication relation for closed HOL formulas. -/
+abbrev pointwiseImplies (φ ψ : HOLQuery (Base := Base) Const) : Prop :=
+  ∀ M : Mettapedia.Logic.HOL.HenkinModel.{u, v, w} Base Const,
+    Mettapedia.Logic.HOL.WorldModel.holSatisfies (Base := Base) (Const := Const) M φ →
+      Mettapedia.Logic.HOL.WorldModel.holSatisfies (Base := Base) (Const := Const) M ψ
 
-/-- Pointwise HOL implication lifts to a multiset WM strength inequality. -/
-theorem multiset_strength_le_of_pointwise {U : Type*}
-    (W : HOLState U) (q₁ q₂ : HOLQuery U)
-    (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₂ := by
-  exact
-    Mettapedia.Logic.PLNWorldModelHOL.queryStrength_le_of_pointwise
-      (W := W) (q₁ := q₁) (q₂ := q₂) himp
+/-- Public singleton-strength relation for closed HOL formulas. -/
+abbrev singletonStrengthLE (φ ψ : HOLQuery (Base := Base) Const) : Prop :=
+  ∀ M : Mettapedia.Logic.HOL.HenkinModel.{u, v, w} Base Const,
+    WorldModel.queryStrength
+        (State := HOLState (Base := Base) Const)
+        (Query := HOLQuery (Base := Base) Const)
+        ({M} : HOLState (Base := Base) Const) φ ≤
+      WorldModel.queryStrength
+        (State := HOLState (Base := Base) Const)
+        (Query := HOLQuery (Base := Base) Const)
+        ({M} : HOLState (Base := Base) Const) ψ
 
-/-- Naming alias: transfer from pointwise implication to multiset consequence. -/
-theorem multiset_consequence_of_pointwise {U : Type*}
-    (W : HOLState U) (q₁ q₂ : HOLQuery U)
-    (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₂ :=
-  multiset_strength_le_of_pointwise (W := W) (q₁ := q₁) (q₂ := q₂) himp
+/-- Naming alias for the singleton-strength consequence relation. -/
+abbrev singletonConsequence (φ ψ : HOLQuery (Base := Base) Const) : Prop :=
+  ∀ M : Mettapedia.Logic.HOL.HenkinModel.{u, v, w} Base Const,
+    WorldModel.queryStrength
+        (State := HOLState (Base := Base) Const)
+        (Query := HOLQuery (Base := Base) Const)
+        ({M} : HOLState (Base := Base) Const) φ ≤
+      WorldModel.queryStrength
+        (State := HOLState (Base := Base) Const)
+        (Query := HOLQuery (Base := Base) Const)
+        ({M} : HOLState (Base := Base) Const) ψ
 
-/-- Categorical-aligned HOL implication closure wrapper:
-same multiset strength inequality with explicit endpoint-surface input. -/
-theorem multiset_strength_le_of_pointwise_categorical {U : Type*}
-    (H : WMHyperdoctrine (HOLState U))
-    (_hcat : WMCategoricalEndpointSurface (H := H))
-    {X : H.Obj} (_φc : H.query X)
-    (W : HOLState U) (q₁ q₂ : HOLQuery U)
-    (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₂ :=
-  multiset_strength_le_of_pointwise (W := W) (q₁ := q₁) (q₂ := q₂) himp
+abbrev pointwiseImplies_iff_singletonStrengthLE :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.pointwiseImplies_iff_singletonStrengthLE
 
-/-- Singleton-strength consequence lifts to multiset WM strength inequality. -/
-theorem multiset_strength_le_of_singletonStrengthLE {U : Type*}
-    (W : HOLState U) (q₁ q₂ : HOLQuery U)
-    (hsing : singletonStrengthLE q₁ q₂) :
-    WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₂ := by
-  exact
-    Mettapedia.Logic.PLNWorldModelHOL.multiset_strength_le_of_singletonStrengthLE
-      (W := W) (q₁ := q₁) (q₂ := q₂) hsing
+abbrev pointwiseImplies_iff_singletonConsequence :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.pointwiseImplies_iff_singletonConsequence
 
-/-- Naming alias: transfer from singleton consequence to multiset consequence. -/
-theorem multiset_consequence_of_singletonConsequence {U : Type*}
-    (W : HOLState U) (q₁ q₂ : HOLQuery U)
-    (hsing : singletonConsequence q₁ q₂) :
-    WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₂ :=
-  multiset_strength_le_of_singletonStrengthLE (W := W) (q₁ := q₁) (q₂ := q₂) hsing
+abbrev pointwiseIff_iff_queryEq :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.pointwiseIff_iff_queryEq
 
-/-- Proof-system-agnostic bridge schema:
-if an external implication relation is sound and complete for pointwise HOL
-implication, then it is equivalent to singleton HOL WM consequence. -/
-theorem externalImplication_iff_singletonConsequence_of_sound_complete {U : Type*}
-    (ProvImp : HOLQuery U → HOLQuery U → Prop)
-    (hSound : ∀ {q₁ q₂}, ProvImp q₁ q₂ → pointwiseImplies q₁ q₂)
-    (hComplete : ∀ {q₁ q₂}, pointwiseImplies q₁ q₂ → ProvImp q₁ q₂)
-    (q₁ q₂ : HOLQuery U) :
-    ProvImp q₁ q₂ ↔ singletonConsequence q₁ q₂ := by
-  constructor
-  · intro hprov
-    exact (pointwiseImplies_iff_singletonConsequence (q₁ := q₁) (q₂ := q₂)).1 (hSound hprov)
-  · intro hsing
-    exact hComplete ((pointwiseImplies_iff_singletonConsequence (q₁ := q₁) (q₂ := q₂)).2 hsing)
+abbrev multiset_strength_le_of_pointwise :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.multiset_strength_le_of_pointwise
 
-/-- Proof-system-agnostic soundness transfer:
-if an external implication relation is sound w.r.t. pointwise HOL implication,
-then it yields multiset HOL WM consequence inequalities. -/
-theorem multiset_consequence_of_externalImplication_sound {U : Type*}
-    (ProvImp : HOLQuery U → HOLQuery U → Prop)
-    (hSound : ∀ {q₁ q₂}, ProvImp q₁ q₂ → pointwiseImplies q₁ q₂)
-    (W : HOLState U) (q₁ q₂ : HOLQuery U)
-    (hprov : ProvImp q₁ q₂) :
-    WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₂ :=
-  multiset_consequence_of_pointwise (W := W) (q₁ := q₁) (q₂ := q₂) (hSound hprov)
+abbrev multiset_consequence_of_pointwise :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.multiset_consequence_of_pointwise
 
-/-- Categorical-aligned HOL singleton-strength closure wrapper:
-same multiset strength inequality with explicit endpoint-surface input. -/
-theorem multiset_strength_le_of_singletonStrengthLE_categorical {U : Type*}
-    (H : WMHyperdoctrine (HOLState U))
-    (_hcat : WMCategoricalEndpointSurface (H := H))
-    {X : H.Obj} (_φc : H.query X)
-    (W : HOLState U) (q₁ q₂ : HOLQuery U)
-    (hsing : singletonStrengthLE q₁ q₂) :
-    WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := HOLState U) (Query := HOLQuery U) W q₂ :=
-  multiset_strength_le_of_singletonStrengthLE (W := W) (q₁ := q₁) (q₂ := q₂) hsing
+abbrev multiset_strength_le_of_pointwise_categorical :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.multiset_strength_le_of_pointwise_categorical
 
-/-- Implication-closure wrapper: package pointwise HOL implication as a
-global-side `WMConsequenceRule`. -/
-def wmConsequenceRule_of_pointwise {U : Type*} (q₁ q₂ : HOLQuery U) :
-    WMConsequenceRule (HOLState U) (HOLQuery U) where
-  side := pointwiseImplies q₁ q₂
-  premise := q₁
-  conclusion := q₂
-  sound := by
-    intro hSide W
-    exact multiset_strength_le_of_pointwise (W := W) (q₁ := q₁) (q₂ := q₂) hSide
+abbrev multiset_strength_le_of_singletonStrengthLE :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.multiset_strength_le_of_singletonStrengthLE
 
-/-- Implication-closure wrapper from singleton-strength side conditions. -/
-def wmConsequenceRule_of_singletonStrengthLE {U : Type*} (q₁ q₂ : HOLQuery U) :
-    WMConsequenceRule (HOLState U) (HOLQuery U) where
-  side := singletonStrengthLE q₁ q₂
-  premise := q₁
-  conclusion := q₂
-  sound := by
-    intro hSide W
-    exact
-      multiset_strength_le_of_singletonStrengthLE
-        (W := W) (q₁ := q₁) (q₂ := q₂) hSide
+abbrev multiset_consequence_of_singletonConsequence :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.multiset_consequence_of_singletonConsequence
 
-/-- State-indexed wrapper promoted from the global implication-closure rule. -/
-def wmConsequenceRuleOn_of_pointwise {U : Type*} (q₁ q₂ : HOLQuery U) :
-    WMConsequenceRuleOn (HOLState U) (HOLQuery U) :=
-  WMConsequenceRuleOn.ofGlobal (wmConsequenceRule_of_pointwise (q₁ := q₁) (q₂ := q₂))
+abbrev externalImplication_iff_singletonConsequence_of_sound_complete :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.externalImplication_iff_singletonConsequence_of_sound_complete
 
-/-- Categorical-aligned state-indexed wrapper from HOL pointwise implication. -/
-def wmConsequenceRuleOn_of_pointwise_categorical {U : Type*}
-    (H : WMHyperdoctrine (HOLState U))
-    (_hcat : WMCategoricalEndpointSurface (H := H))
-    {X : H.Obj} (_φc : H.query X)
-    (q₁ q₂ : HOLQuery U) :
-    WMConsequenceRuleOn (HOLState U) (HOLQuery U) :=
-  wmConsequenceRuleOn_of_pointwise (q₁ := q₁) (q₂ := q₂)
+abbrev multiset_consequence_of_externalImplication_sound :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.multiset_consequence_of_externalImplication_sound
 
-/-- State-indexed wrapper promoted from singleton-strength side conditions. -/
-def wmConsequenceRuleOn_of_singletonStrengthLE {U : Type*} (q₁ q₂ : HOLQuery U) :
-    WMConsequenceRuleOn (HOLState U) (HOLQuery U) :=
-  WMConsequenceRuleOn.ofGlobal
-    (wmConsequenceRule_of_singletonStrengthLE (q₁ := q₁) (q₂ := q₂))
+abbrev multiset_strength_le_of_singletonStrengthLE_categorical :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.multiset_strength_le_of_singletonStrengthLE_categorical
 
-/-- Categorical-aligned state-indexed wrapper from HOL singleton-strength side
-conditions. -/
-def wmConsequenceRuleOn_of_singletonStrengthLE_categorical {U : Type*}
-    (H : WMHyperdoctrine (HOLState U))
-    (_hcat : WMCategoricalEndpointSurface (H := H))
-    {X : H.Obj} (_φc : H.query X)
-    (q₁ q₂ : HOLQuery U) :
-    WMConsequenceRuleOn (HOLState U) (HOLQuery U) :=
-  wmConsequenceRuleOn_of_singletonStrengthLE (q₁ := q₁) (q₂ := q₂)
+abbrev wmConsequenceRule_of_pointwise :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRule_of_pointwise
+
+abbrev wmConsequenceRule_of_singletonStrengthLE :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRule_of_singletonStrengthLE
+
+abbrev wmConsequenceRuleOn_of_pointwise :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRuleOn_of_pointwise
+
+abbrev wmConsequenceRuleOn_of_pointwise_categorical :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRuleOn_of_pointwise_categorical
+
+abbrev wmConsequenceRuleOn_of_singletonStrengthLE :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRuleOn_of_singletonStrengthLE
+
+abbrev wmConsequenceRuleOn_of_singletonStrengthLE_categorical :=
+  @Mettapedia.Logic.HOL.WorldModelCompleteness.wmConsequenceRuleOn_of_singletonStrengthLE_categorical
 
 end Mettapedia.Logic.PLNWorldModelHOLCompleteness

@@ -45,7 +45,7 @@ Type-level canaries (`#check`) confirm the API is correctly typed.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
 /-! ## Space type -/
 

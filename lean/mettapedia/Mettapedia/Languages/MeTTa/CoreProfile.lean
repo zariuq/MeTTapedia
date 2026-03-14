@@ -2,8 +2,8 @@ import Mettapedia.OSLF.MeTTaIL.PremiseDatalog
 import Mettapedia.Languages.MeTTa.Pure.Core
 import Mettapedia.Languages.MeTTa.HE.HELanguageDef
 import Mettapedia.Languages.MeTTa.HE.HEPremises
-import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
-import Mettapedia.Languages.MeTTa.Core.FullPremises
+import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
+import Mettapedia.Languages.MeTTa.OSLFCore.FullPremises
 
 /-!
 # MeTTa Core Profile Interface
@@ -61,8 +61,8 @@ def heProfile : MeTTaCoreProfile where
 /-- Legacy full/core state-machine profile. -/
 def fullLegacyProfile : MeTTaCoreProfile where
   name := "FullLegacy"
-  lang := Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullLegacy
-  premises := Mettapedia.Languages.MeTTa.Core.FullPremises.mettaFullPremises
+  lang := Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullLegacy
+  premises := Mettapedia.Languages.MeTTa.OSLFCore.FullPremises.mettaFullPremises
   stateConstructor := some "State"
 
 /-- Compatibility alias retained for downstream imports during migration. -/
@@ -83,7 +83,7 @@ theorem pureProfile_wellFormed : pureProfile.wellFormed = true := by
 theorem pureProfile_stratified : pureProfile.stratified = true := by
   native_decide
 
-theorem pureProfile_three_rewrites :
+theorem pureProfile_eight_rewrites :
     pureProfile.lang.rewrites.length = 3 := by
   change Mettapedia.Languages.MeTTa.Pure.Core.mettaPure.rewrites.length = 3
   decide

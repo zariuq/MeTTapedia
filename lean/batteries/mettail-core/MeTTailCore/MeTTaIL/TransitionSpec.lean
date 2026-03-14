@@ -218,16 +218,6 @@ def TransitionSpecArtifact.lintErrors (a : TransitionSpecArtifact) : List String
     if norm.dialect.isEmpty then
       ["dialect must be non-empty"]
     else []
-  let sourceErrs :=
-    if norm.sources.isEmpty then
-      ["sources cannot be empty"]
-    else
-      []
-  let rulesErrs :=
-    if norm.rules.isEmpty then
-      ["rules cannot be empty"]
-    else
-      []
   let dupSourceErrs :=
     let ids := norm.sources.map (·.sourceInstr)
     if ids.length == ids.eraseDups.length then
@@ -246,7 +236,7 @@ def TransitionSpecArtifact.lintErrors (a : TransitionSpecArtifact) : List String
       let miss := src.orderedRules.filter (fun rid => !ruleIds.contains rid)
       if miss.isEmpty then acc
       else acc ++ [s!"{src.sourceInstr}: ordered_rules missing semantic rule entries: {String.intercalate ", " miss}"]) []
-  schemaErrs ++ dialectErrs ++ sourceErrs ++ rulesErrs ++ dupSourceErrs ++ dupTransitionErrs ++ coverageErrs
+  schemaErrs ++ dialectErrs ++ dupSourceErrs ++ dupTransitionErrs ++ coverageErrs
     ++ (norm.sources.map lintSource).foldl (· ++ ·) []
     ++ (norm.rules.map lintRule).foldl (· ++ ·) []
 

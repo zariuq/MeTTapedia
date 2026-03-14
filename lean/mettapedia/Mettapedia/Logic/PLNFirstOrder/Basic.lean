@@ -1,6 +1,6 @@
 import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Algebra.QuantaleWeakness
-import Mettapedia.Logic.Foundation.Foundation.Logic.Predicate.Quantifier
+import Foundation.Logic.Predicate.Quantifier
 import Mettapedia.Logic.PLNQuantaleSemantics.PBit
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Basic

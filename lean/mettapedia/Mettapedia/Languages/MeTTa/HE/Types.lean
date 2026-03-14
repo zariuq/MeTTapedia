@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.Core.Bindings
+import Mettapedia.Languages.MeTTa.OSLFCore.Bindings
 
 /-!
 # HE MeTTa Types
@@ -18,7 +18,7 @@ Foundation types for the Hyperon Experimental MeTTa interpreter formalization.
 
 namespace Mettapedia.Languages.MeTTa.HE
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 
 /-! ## Error Codes
 
@@ -149,14 +149,14 @@ where
 
 /-- Convert to MeTTaCore.Bindings (only when equalities are empty/discharged).
     Returns `none` if equalities are present. -/
-def toCore? (b : Bindings) : Option Mettapedia.Languages.MeTTa.Core.Bindings :=
+def toCore? (b : Bindings) : Option Mettapedia.Languages.MeTTa.OSLFCore.Bindings :=
   if b.equalities.isEmpty then
     some ⟨fun v => b.lookup v⟩
   else
     none
 
 /-- Convert from MeTTaCore.Bindings (given a finite list of known variables). -/
-def fromCore (cb : Mettapedia.Languages.MeTTa.Core.Bindings) (vars : List String) : Bindings :=
+def fromCore (cb : Mettapedia.Languages.MeTTa.OSLFCore.Bindings) (vars : List String) : Bindings :=
   let assignments := vars.filterMap fun v =>
     match cb.map v with
     | some a => some (v, a)

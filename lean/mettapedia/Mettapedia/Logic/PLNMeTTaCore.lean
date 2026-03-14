@@ -2,9 +2,9 @@ import Mettapedia.Logic.EvidenceSTVBridge
 import Mettapedia.Logic.PLNDeduction
 import Mettapedia.Logic.PLNDerivation
 import Mettapedia.Logic.PLNInferenceRules
-import Mettapedia.Languages.MeTTa.Core.Atom
-import Mettapedia.Languages.MeTTa.Core.Atomspace
-import Mettapedia.Languages.MeTTa.Core.MinimalOps
+import Mettapedia.Languages.MeTTa.OSLFCore.Atom
+import Mettapedia.Languages.MeTTa.OSLFCore.Atomspace
+import Mettapedia.Languages.MeTTa.OSLFCore.MinimalOps
 
 /-!
 # PLN-MeTTaCore Bridge
@@ -53,7 +53,7 @@ namespace Mettapedia.Logic.PLNMeTTaCore
 open Mettapedia.Logic.PLNDeduction
 open Mettapedia.Logic.PLN
 open Mettapedia.Logic.PLNInferenceRules
-open Mettapedia.Languages.MeTTa.Core
+open Mettapedia.Languages.MeTTa.OSLFCore
 
 /-- Canonical STV view for this bridge module. -/
 abbrev STV := Mettapedia.Logic.EvidenceSTVBridge.DeductionSTV

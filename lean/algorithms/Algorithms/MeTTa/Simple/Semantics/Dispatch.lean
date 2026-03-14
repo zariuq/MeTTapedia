@@ -52,6 +52,14 @@ private theorem foldlState_preserves
       have hStep' : P (step st x).1 := hStep st x hP
       simpa [List.foldl] using ih (step st x) hStep'
 
+private theorem map_pair_snd (bs : Bindings) (xs : List Pattern) :
+    (xs.map (fun v => (bs, v))).map Prod.snd = xs := by
+  induction xs with
+  | nil =>
+      simp
+  | cons x xs ih =>
+      simp [ih]
+
 private partial def lambdaParamNames : Pattern → List String
   | .fvar x => [x]
   | .apply "Expr" elems =>
@@ -110,7 +118,8 @@ private partial def containsCompatTaggedVar : Pattern → Bool
   | .subst body repl => containsCompatTaggedVar body || containsCompatTaggedVar repl
   | .collection _ elems _ => elems.any containsCompatTaggedVar
 
-private partial def renameFVarsWith (tag : String) : Pattern → Pattern
+mutual
+private def renameFVarsWith (tag : String) : Pattern → Pattern
   | .fvar x =>
       if x == "constraint" then
         .fvar x
@@ -127,11 +136,35 @@ private partial def renameFVarsWith (tag : String) : Pattern → Pattern
             "$" ++ tag ++ name
         else
           ctor
-      .apply ctor' (args.map (renameFVarsWith tag))
+      .apply ctor' (renameFVarsWithList tag args)
   | .lambda body => .lambda (renameFVarsWith tag body)
   | .multiLambda n body => .multiLambda n (renameFVarsWith tag body)
   | .subst body repl => .subst (renameFVarsWith tag body) (renameFVarsWith tag repl)
-  | .collection ct elems rest => .collection ct (elems.map (renameFVarsWith tag)) rest
+  | .collection ct elems rest => .collection ct (renameFVarsWithList tag elems) rest
+
+private def renameFVarsWithList (tag : String) : List Pattern → List Pattern
+  | [] => []
+  | x :: xs => renameFVarsWith tag x :: renameFVarsWithList tag xs
+end
+
+private theorem renameFVarsWithList_eq_map (tag : String) (args : List Pattern) :
+    renameFVarsWithList tag args = args.map (renameFVarsWith tag) := by
+  induction args with
+  | nil => simp [renameFVarsWithList]
+  | cons x xs ih => simp [renameFVarsWithList, ih]
+
+/-- `renameFVarsWith` preserves the head constructor of `.apply ctor args`
+    when `ctor` does not start with "$". -/
+private theorem renameFVarsWith_apply_head (tag : String) (ctor : String)
+    (args : List Pattern) (hNoDollar : ctor.startsWith "$" = false) :
+    ∃ args', renameFVarsWith tag (.apply ctor args) = .apply ctor args' :=
+  ⟨renameFVarsWithList tag args, by simp [renameFVarsWith, hNoDollar]⟩
+
+private theorem renameFVarsWithList_length (tag : String) (args : List Pattern) :
+    (renameFVarsWithList tag args).length = args.length := by
+  induction args with
+  | nil => simp [renameFVarsWithList]
+  | cons x xs ih => simp [renameFVarsWithList, ih]
 
 private def fnv64Offset : UInt64 := 14695981039346656037
 private def fnv64Prime : UInt64 := 1099511628211
@@ -560,6 +593,53 @@ def matchHeadArgsWithEval (I : Interface σ) (s : σ)
       matchHeadArgsWithEval I s ps ts nextStates
   | _, _ => []
 
+private def hasCompatHeadConstraintArg : Pattern → Bool
+  | .apply _ [] => true
+  | .apply _ (_ :: _) => true
+  | .collection _ (_ :: _) _ => true
+  | _ => false
+
+private theorem hasCompatHeadConstraintArg_apply (ctor : String) (args : List Pattern) :
+    hasCompatHeadConstraintArg (.apply ctor args) = true := by
+  cases args <;> rfl
+
+private theorem renameFVarsWith_preserves_hasCompatHeadConstraintArg
+    (tag : String) (p : Pattern) :
+    hasCompatHeadConstraintArg (renameFVarsWith tag p) =
+      hasCompatHeadConstraintArg p := by
+  cases p with
+  | apply ctor args =>
+      simp only [renameFVarsWith]
+      -- renameFVarsWith on .apply produces .apply ctor' (renameFVarsWithList ...),
+      -- and hasCompatHeadConstraintArg (.apply _ _) = true for any args
+      split
+      · split
+        · rw [hasCompatHeadConstraintArg_apply, hasCompatHeadConstraintArg_apply]
+        · rw [hasCompatHeadConstraintArg_apply, hasCompatHeadConstraintArg_apply]
+      · rw [hasCompatHeadConstraintArg_apply, hasCompatHeadConstraintArg_apply]
+  | collection ct elems rest =>
+      simp only [renameFVarsWith]
+      cases elems with
+      | nil => simp [renameFVarsWithList, hasCompatHeadConstraintArg]
+      | cons hd tl => simp [renameFVarsWithList, hasCompatHeadConstraintArg]
+  | fvar x =>
+      simp only [renameFVarsWith]
+      split <;> simp [hasCompatHeadConstraintArg]
+  | bvar n => rfl
+  | lambda body => simp [renameFVarsWith, hasCompatHeadConstraintArg]
+  | multiLambda n body => simp [renameFVarsWith, hasCompatHeadConstraintArg]
+  | subst body repl => simp [renameFVarsWith, hasCompatHeadConstraintArg]
+
+private theorem renameFVarsWithList_preserves_any_hasCompatHeadConstraintArg
+    (tag : String) (args : List Pattern) :
+    (renameFVarsWithList tag args).any hasCompatHeadConstraintArg =
+      args.any hasCompatHeadConstraintArg := by
+  induction args with
+  | nil => simp [renameFVarsWithList]
+  | cons x xs ih =>
+      simp only [renameFVarsWithList, List.any_cons,
+        renameFVarsWith_preserves_hasCompatHeadConstraintArg, ih]
+
 def compatFunctionHeadRewrite (I : Interface σ) (s : σ) (term : Pattern) :
     σ × List Pattern :=
   match term with
@@ -575,12 +655,7 @@ def compatFunctionHeadRewrite (I : Interface σ) (s : σ) (term : Pattern) :
           | .apply _ pArgs =>
               if pArgs.length == tArgs.length then
                 let matchedBs := matchHeadArgsWithEval I sess pArgs tArgs [[]]
-                let hasCompatArg : Pattern → Bool
-                  | .apply _ [] => true
-                  | .apply _ (_ :: _) => true
-                  | .collection _ (_ :: _) _ => true
-                  | _ => false
-                if pArgs.any hasCompatArg then
+                if pArgs.any hasCompatHeadConstraintArg then
                   matchedBs.foldl
                     (fun (accBs : σ × List Pattern) bs =>
                       let sessBs := accBs.1
@@ -606,12 +681,6 @@ def compatFunctionHeadRewrite (I : Interface σ) (s : σ) (term : Pattern) :
             (sess, outAcc))
         (s, [])
   | _ => (s, [])
-
-private def hasCompatHeadConstraintArg : Pattern → Bool
-  | .apply _ [] => true
-  | .apply _ (_ :: _) => true
-  | .collection _ (_ :: _) _ => true
-  | _ => false
 
 def hasCompatHeadConstraintRule (I : Interface σ) (s : σ) (ctor : String) (arity : Nat) : Bool :=
   (I.rewrites s).any (fun rule =>
@@ -666,6 +735,129 @@ def constrainedCallBindingsAndValues (I : Interface σ) (s : σ) (expr : Pattern
   | _ =>
       (s, [])
 
+/-- For a fixed compat-head rule rhs and a fixed list of matched bindings,
+the plain compat-head value accumulator is exactly the `Prod.snd` projection of
+the richer binding-carrying accumulator, provided rule-enumeration evaluation
+agrees with ordinary evaluation on the rhs terms being processed.
+
+This is the small operational seam used by conformance theorems: once head
+matching has produced concrete bindings, the remaining difference between
+value-only compat rewriting and binding-carrying compat rewriting is just the
+presence of those carried bindings. -/
+theorem compatMatchedBs_projection
+    (I : Interface σ)
+    (hEvalEq : ∀ (s : σ) (rhs : Pattern),
+      I.evalForRuleEnumeration s rhs = I.eval s rhs)
+    (rightFresh : Pattern) (matchedBs : List Bindings)
+    (sess : σ) (outVals : List Pattern) (outPairs : List (Bindings × Pattern))
+    (hout : outVals = outPairs.map Prod.snd) :
+    let valsState :=
+      matchedBs.foldl
+        (fun (accBs : σ × List Pattern) bs =>
+          let sessBs := accBs.1
+          let outBs := accBs.2
+          let rhs := I.applyBindings bs rightFresh
+          let (sessRhs, vals) :=
+            if hasFreeVar rhs then
+              (sessBs, [rhs])
+            else
+              let (sessRhs, vals0) := I.evalForRuleEnumeration sessBs rhs
+              (sessRhs, if vals0.isEmpty then [rhs] else vals0)
+          let valsFiltered := vals.filter (fun v => !containsCompatTaggedVar v)
+          (sessRhs, outBs ++ valsFiltered))
+        (sess, outVals)
+    let pairState :=
+      matchedBs.foldl
+        (fun (accBs : σ × List (Bindings × Pattern)) bs =>
+          let sessBs := accBs.1
+          let outBs := accBs.2
+          let rhs := I.applyBindings bs rightFresh
+          let (sessRhs, vals) :=
+            if hasFreeVar rhs then
+              (sessBs, [rhs])
+            else
+              let (sessRhs, vals0) := I.eval sessBs rhs
+              (sessRhs, if vals0.isEmpty then [rhs] else vals0)
+          let valsFiltered := vals.filter (fun v => !containsCompatTaggedVar v)
+          (sessRhs, outBs ++ (valsFiltered.map (fun v => (bs, v)))))
+        (sess, outPairs)
+    valsState.1 = pairState.1 ∧ valsState.2 = pairState.2.map Prod.snd := by
+  induction matchedBs generalizing sess outVals outPairs with
+  | nil =>
+      simp [hout]
+  | cons bs rest ih =>
+      simp only [List.foldl]
+      let rhs := I.applyBindings bs rightFresh
+      by_cases hFree : hasFreeVar rhs
+      · let valsFiltered := [rhs].filter (fun v => !containsCompatTaggedVar v)
+        have hout' :
+          outVals ++ valsFiltered =
+            (outPairs ++ valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+          calc
+            outVals ++ valsFiltered
+                = outPairs.map Prod.snd ++ valsFiltered := by simp [hout]
+            _ = outPairs.map Prod.snd ++ (valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+                  rw [map_pair_snd]
+            _ = (outPairs ++ valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+                  simp
+        have hTail :=
+          ih sess (outVals ++ valsFiltered)
+            (outPairs ++ valsFiltered.map (fun v => (bs, v))) hout'
+        simpa only [hFree, rhs, valsFiltered] using hTail
+      · cases hEval : I.eval sess rhs with
+        | mk sessRhs vals0 =>
+            have hEvalFor : I.evalForRuleEnumeration sess rhs = (sessRhs, vals0) := by
+              simpa [hEval] using hEvalEq sess rhs
+            let valsFiltered := (if vals0.isEmpty then [rhs] else vals0).filter
+              (fun v => !containsCompatTaggedVar v)
+            have hout' :
+                outVals ++ valsFiltered =
+                  (outPairs ++ valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+              calc
+                outVals ++ valsFiltered
+                    = outPairs.map Prod.snd ++ valsFiltered := by simp [hout]
+                _ = outPairs.map Prod.snd ++ (valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+                      rw [map_pair_snd]
+                _ = (outPairs ++ valsFiltered.map (fun v => (bs, v))).map Prod.snd := by
+                      simp
+            have hTail :=
+              ih sessRhs (outVals ++ valsFiltered)
+                (outPairs ++ valsFiltered.map (fun v => (bs, v))) hout'
+            simpa only [hFree, hEval, hEvalFor, rhs, valsFiltered] using hTail
+
+/-- Operational singleton-rule compat-head seam: if the active head/arity index
+returns exactly one compat-head rule, then the plain compat-head outputs are
+exactly the `Prod.snd` projection of the binding-carrying compat-head results.
+
+This is the first theorem that directly connects the public Dispatch entrypoints
+`compatFunctionHeadRewrite` and `constrainedCallBindingsAndValues`. It is small
+enough to prove where the operational definitions live, and strong enough for
+downstream conformance/rust staging arguments. -/
+theorem compatFunctionHeadRewrite_eq_constrained_projection_singleton
+    (I : Interface σ)
+    (hEvalEq : ∀ (s : σ) (rhs : Pattern),
+      I.evalForRuleEnumeration s rhs = I.eval s rhs)
+    (s : σ) (ctor : String) (tArgs : List Pattern)
+    (rule : RewriteRule) (pArgs : List Pattern)
+    (hRules : I.premiseFreeRulesForHeadArity s ctor tArgs.length = [rule])
+    (hLeft :
+      renameFVarsWith (scopedRuleTag rule.name tArgs) rule.left = .apply ctor pArgs)
+    (hLen : pArgs.length == tArgs.length)
+    (hCompat : pArgs.any hasCompatHeadConstraintArg = true) :
+    let valsState := compatFunctionHeadRewrite I s (.apply ctor tArgs)
+    let pairState := constrainedCallBindingsAndValues I s (.apply ctor tArgs)
+    valsState.1 = pairState.1 ∧ valsState.2 = pairState.2.map Prod.snd := by
+  have hLenEq : pArgs.length = tArgs.length := by
+    simpa using hLen
+  have hCompatExists :
+      ∃ x, x ∈ pArgs ∧ hasCompatHeadConstraintArg x = true := by
+    simpa [List.mem_map] using List.any_eq_true.mp hCompat
+  simp [compatFunctionHeadRewrite, constrainedCallBindingsAndValues, hRules, hLeft, hLenEq,
+    hCompatExists]
+  simpa using compatMatchedBs_projection I hEvalEq
+    (renameFVarsWith (scopedRuleTag rule.name tArgs) rule.right)
+    (matchHeadArgsWithEval I s pArgs tArgs [[]]) s [] [] rfl
+
 -- Helper: inner foldl step over `matchedBs` in `compatFunctionHeadRewrite` preserves P.
 private theorem compatFunctionHeadRewriteInner_preserves
     (I : Interface σ) (P : σ → Prop) (H : Preservation I P)
@@ -717,12 +909,7 @@ theorem compatFunctionHeadRewrite_preserves
           | apply _ pArgs =>
               by_cases hLen : pArgs.length == tArgs.length
               · simp only [hLen, ↓reduceIte]
-                by_cases hCompat : pArgs.any (fun p =>
-                    match p with
-                    | .apply _ [] => true
-                    | .apply _ (_ :: _) => true
-                    | .collection _ (_ :: _) _ => true
-                    | _ => false)
+                by_cases hCompat : pArgs.any hasCompatHeadConstraintArg
                 · simp only [hCompat, ↓reduceIte]
                   exact compatFunctionHeadRewriteInner_preserves I P H
                     (renameFVarsWith (scopedRuleTag rule.name tArgs) rule.right)
@@ -744,5 +931,145 @@ theorem compatFunctionHeadRewrite_preserves
   | multiLambda n body => simpa [compatFunctionHeadRewrite] using hP
   | subst body repl => simpa [compatFunctionHeadRewrite] using hP
   | collection ct elems rest => simpa [compatFunctionHeadRewrite] using hP
+
+/-- Public bridge: given a singleton compat-head rule whose head constructor
+    doesn't start with "$", the plain compat-head outputs equal the `Prod.snd`
+    projection of the binding-carrying outputs.
+
+    This theorem hides the internal `renameFVarsWith` mechanism — callers need
+    only supply the rule shape and constructor properties. -/
+theorem compatFunctionHeadRewrite_singleton_bridge
+    (I : Interface σ)
+    (hEvalEq : ∀ (s : σ) (rhs : Pattern),
+      I.evalForRuleEnumeration s rhs = I.eval s rhs)
+    (s : σ) (ctor : String) (tArgs : List Pattern)
+    (rule : RewriteRule) (ruleArgs : List Pattern)
+    (hRules : I.premiseFreeRulesForHeadArity s ctor tArgs.length = [rule])
+    (hNoDollar : ctor.startsWith "$" = false)
+    (hRuleLeft : rule.left = .apply ctor ruleArgs)
+    (hLen : ruleArgs.length == tArgs.length)
+    (hCompat : ruleArgs.any hasCompatHeadConstraintArg = true) :
+    let valsState := compatFunctionHeadRewrite I s (.apply ctor tArgs)
+    let pairState := constrainedCallBindingsAndValues I s (.apply ctor tArgs)
+    valsState.1 = pairState.1 ∧ valsState.2 = pairState.2.map Prod.snd := by
+  -- Extract the renamed form: renameFVarsWith preserves ctor when !startsWith "$"
+  have ⟨pArgs, hLeft⟩ := renameFVarsWith_apply_head
+    (scopedRuleTag rule.name tArgs) ctor ruleArgs hNoDollar
+  -- Lift hLeft from rule.left to the actual call
+  have hLeft' : renameFVarsWith (scopedRuleTag rule.name tArgs) rule.left = .apply ctor pArgs := by
+    rw [hRuleLeft]; exact hLeft
+  -- Length preservation: pArgs.length = ruleArgs.length = tArgs.length
+  have hLenP : pArgs.length == tArgs.length := by
+    have hShape := renameFVarsWith_apply_head (scopedRuleTag rule.name tArgs) ctor ruleArgs hNoDollar
+    -- pArgs = renameFVarsWithList tag ruleArgs by construction
+    have hPArgs : pArgs = renameFVarsWithList (scopedRuleTag rule.name tArgs) ruleArgs := by
+      have := hLeft
+      simp [renameFVarsWith, hNoDollar] at this
+      exact this.symm
+    rw [hPArgs, renameFVarsWithList_length]
+    exact hLen
+  -- Compat preservation: pArgs.any hasCompatHeadConstraintArg = true
+  have hCompatP : pArgs.any hasCompatHeadConstraintArg = true := by
+    have hPArgs : pArgs = renameFVarsWithList (scopedRuleTag rule.name tArgs) ruleArgs := by
+      have := hLeft
+      simp [renameFVarsWith, hNoDollar] at this
+      exact this.symm
+    rw [hPArgs, renameFVarsWithList_preserves_any_hasCompatHeadConstraintArg]
+    exact hCompat
+  exact compatFunctionHeadRewrite_eq_constrained_projection_singleton
+    I hEvalEq s ctor tArgs rule pArgs hRules hLeft' hLenP hCompatP
+
+/- N-ary generalization: for ALL rules (not just a singleton), the compat-head
+   portion of `compatFunctionHeadRewrite` equals the `Prod.snd` projection of
+   `constrainedCallBindingsAndValues`.
+
+   Deferred because the two functions diverge on non-compat rules:
+   `compatFunctionHeadRewrite` processes both compat and non-compat rules in its
+   foldl, while `constrainedCallBindingsAndValues` skips non-compat rules entirely.
+   Stating the projection cleanly requires tracking which rules contribute to which
+   slice of the accumulator, or restricting to rule lists where ALL rules are compat.
+
+   The singleton bridge theorem above covers the practical case (one compat-head
+   rule per head/arity). -/
+-- TODO(N-ary-composition): prove when needed for multi-rule compat-head dispatch
+-- theorem compatFunctionHeadRewrite_eq_constrained_projection
+--     (I : Interface σ)
+--     (hEvalEq : ∀ (s : σ) (rhs : Pattern),
+--       I.evalForRuleEnumeration s rhs = I.eval s rhs)
+--     (s : σ) (ctor : String) (tArgs : List Pattern)
+--     (hNoDollar : ctor.startsWith "$" = false)
+--     (hAllCompat : ∀ rule ∈ I.premiseFreeRulesForHeadArity s ctor tArgs.length,
+--       ∃ ruleArgs, rule.left = .apply ctor ruleArgs ∧
+--         ruleArgs.length == tArgs.length ∧
+--         ruleArgs.any hasCompatHeadConstraintArg = true) :
+--     let valsState := compatFunctionHeadRewrite I s (.apply ctor tArgs)
+--     let pairState := constrainedCallBindingsAndValues I s (.apply ctor tArgs)
+--     valsState.1 = pairState.1 ∧ valsState.2 = pairState.2.map Prod.snd := by
+--   sorry
+
+-- ─── Separation: compatRewriteStep returns [] when no rule LHS matches ────────
+
+private theorem flatMap_eq_nil_of_forall' {α β : Type _} (l : List α) (f : α → List β)
+    (h : ∀ x ∈ l, f x = []) : l.flatMap f = [] := by
+  induction l with
+  | nil => simp
+  | cons hd tl ih =>
+    simp [List.flatMap_cons, h hd List.mem_cons_self,
+          ih (fun x hx => h x (List.mem_cons_of_mem _ hx))]
+
+/-- `compatRewriteStep` returns `[]` for `.apply ctor args` when every rule's LHS
+    has a head disjoint from `ctor` (and not "$"-prefixed, not "cons"),
+    and `matchPattern` returns `[]` for mismatched heads.
+
+    The caller proves `hMatchDiffHead` and `hMatchNonApply` from the concrete
+    `matchPatternMeTTa` semantics; the `h ≠ "cons"` condition handles the
+    cons-decomposition fallback path in `matchPatternMeTTa`. -/
+theorem compatRewriteStep_empty_of_disjoint_heads
+    (I : CompatRewriteInterface σ) (s : σ)
+    (ctor : String) (args : List Pattern)
+    (hRules : ∀ r ∈ I.rewrites s,
+      (∀ h as, r.left = .apply h as → h ≠ ctor ∧ h.startsWith "$" = false ∧ h ≠ "cons") ∧
+      (∀ x, r.left ≠ .fvar x))
+    (hMatchDiffHead : ∀ h pArgs, h ≠ ctor → h ≠ "cons" →
+      I.matchPattern (.apply h pArgs) (.apply ctor args) = [])
+    (hMatchNonApply : ∀ p,
+      (∀ h as, p ≠ .apply h as) → (∀ x, p ≠ .fvar x) →
+      I.matchPattern p (.apply ctor args) = []) :
+    compatRewriteStep I s (.apply ctor args) = [] := by
+  unfold compatRewriteStep
+  apply flatMap_eq_nil_of_forall'
+  intro rule hrule
+  obtain ⟨hHead, hNoFvar⟩ := hRules rule hrule
+  by_cases hPrem : rule.premises.isEmpty
+  · simp only [hPrem, ite_true]
+    cases hL : rule.left with
+    | apply h as =>
+        obtain ⟨hNe, hND, hNCons⟩ := hHead h as hL
+        obtain ⟨pArgs, hLeft⟩ := renameFVarsWith_apply_head _ h as hND
+        rw [hLeft, hMatchDiffHead h pArgs hNe hNCons]
+        simp
+    | fvar x => exact absurd hL (hNoFvar x)
+    | bvar n =>
+        simp only [renameFVarsWith]
+        rw [hMatchNonApply _ (fun h as hc => by cases hc) (fun x hc => by cases hc)]
+        simp
+    | lambda body =>
+        simp only [renameFVarsWith]
+        rw [hMatchNonApply _ (fun h as hc => by cases hc) (fun x hc => by cases hc)]
+        simp
+    | multiLambda n body =>
+        simp only [renameFVarsWith]
+        rw [hMatchNonApply _ (fun h as hc => by cases hc) (fun x hc => by cases hc)]
+        simp
+    | subst body repl =>
+        simp only [renameFVarsWith]
+        rw [hMatchNonApply _ (fun h as hc => by cases hc) (fun x hc => by cases hc)]
+        simp
+    | collection ct elems rest =>
+        simp only [renameFVarsWith]
+        rw [hMatchNonApply _ (fun h as hc => by cases hc) (fun x hc => by cases hc)]
+        simp
+  · simp at hPrem
+    simp [hPrem]
 
 end Algorithms.MeTTa.Simple.Semantics.Dispatch

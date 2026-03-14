@@ -1,5 +1,7 @@
 # PeTTa Evaluation Layer
 
+Upstream: https://github.com/trueagi-io/PeTTa
+
 PeTTa (Prolog-based MeTTa) evaluates MeTTa expressions by compiling them
 into Prolog-style goals and resolving them against an LP kernel.  This
 directory formalizes that pipeline: from raw MeTTa expressions through

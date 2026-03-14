@@ -15,6 +15,7 @@ def liftRen (ρ : Ren n m) : Ren (n + 1) (m + 1) :=
 
 def rename (ρ : Ren n m) : PureTm n → PureTm m
   | .var i => .var (ρ i)
+  | .const c => .const c
   | .u0 => .u0
   | .u1 => .u1
   | .pi A B => .pi (rename ρ A) (rename (liftRen ρ) B)
@@ -55,6 +56,8 @@ theorem rename_ext {ρ ξ : Ren n m} (hρ : ∀ i, ρ i = ξ i) :
   induction t generalizing m with
   | var i =>
     simp [rename, hρ i]
+  | const c =>
+    rfl
   | u0 =>
     rfl
   | u1 =>
@@ -87,6 +90,8 @@ theorem rename_ext {ρ ξ : Ren n m} (hρ : ∀ i, ρ i = ξ i) :
   induction t with
   | var i =>
     rfl
+  | const c =>
+    rfl
   | u0 =>
     rfl
   | u1 =>
@@ -116,6 +121,8 @@ theorem rename_ext {ρ ξ : Ren n m} (hρ : ∀ i, ρ i = ξ i) :
   intro n m k ρ₂ ρ₁ t
   induction t generalizing m k ρ₂ with
   | var i =>
+    rfl
+  | const c =>
     rfl
   | u0 =>
     rfl

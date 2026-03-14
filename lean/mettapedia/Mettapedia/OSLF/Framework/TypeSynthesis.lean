@@ -211,30 +211,53 @@ theorem langBox_spec (lang : LanguageDef) (φ : Pattern → Prop) (p : Pattern) 
   simpa [langBox, langReduces] using
     (langBoxUsing_spec RelationEnv.empty lang φ p)
 
-/-- The full OSLF type system generated from a LanguageDef.
+/-- The full OSLF type system generated from a LanguageDef, parameterized by
+    relation environment.
 
-    This is the **main result**: given any LanguageDef, we mechanically produce
-    an OSLFTypeSystem with:
+    This is the **main result**: given any LanguageDef and RelationEnv, we
+    mechanically produce an OSLFTypeSystem with:
     - Predicates: `Pattern → Prop` at every sort (a Frame via Mathlib)
     - Modal operators: derived from the reduction span
     - Galois connection: **proven automatically** by adjoint composition
-    - Specs: diamond and box characterized by their operational meaning -/
-def langOSLF (lang : LanguageDef) (procSort : String := "Proc") :
-    OSLFTypeSystem (langRewriteSystem lang procSort) where
+    - Specs: diamond and box characterized by their operational meaning
+
+    The `relEnv` parameter controls which premise-aware rules participate in
+    the reduction relation. With `RelationEnv.empty`, only premise-free rules
+    fire (the default `langOSLF` behavior). Richer environments enable more
+    reductions and correspondingly richer OSLF type systems. -/
+def langOSLFUsing (relEnv : RelationEnv) (lang : LanguageDef)
+    (procSort : String := "Proc") :
+    OSLFTypeSystem (langRewriteSystemUsing relEnv lang procSort) where
   Pred := fun _ => Pattern → Prop
   frame := fun _ => inferInstance
   satisfies := fun t φ => φ t
-  diamond := langDiamond lang
-  diamond_spec := fun φ p => langDiamond_spec lang φ p
-  box := langBox lang
-  box_spec := fun φ p => langBox_spec lang φ p
+  diamond := langDiamondUsing relEnv lang
+  diamond_spec := fun φ p => langDiamondUsing_spec relEnv lang φ p
+  box := langBoxUsing relEnv lang
+  box_spec := fun φ p => langBoxUsing_spec relEnv lang φ p
   galois := by
     intro φ ψ
-    have h := (langGalois lang) φ ψ
+    have h := (langGaloisUsing relEnv lang) φ ψ
     simp only [Pi.le_def] at h
     exact h
 
+/-- The default OSLF type system using `RelationEnv.empty`.
+
+    Thin wrapper over `langOSLFUsing`. -/
+def langOSLF (lang : LanguageDef) (procSort : String := "Proc") :
+    OSLFTypeSystem (langRewriteSystem lang procSort) :=
+  langOSLFUsing RelationEnv.empty lang procSort
+
+/-- `langOSLF` is definitionally equal to `langOSLFUsing RelationEnv.empty`. -/
+theorem langOSLF_eq_langOSLFUsing_empty (lang : LanguageDef) (procSort : String) :
+    langOSLF lang procSort = langOSLFUsing RelationEnv.empty lang procSort := rfl
+
 /-! ## Step 6: Native Types -/
+
+/-- A native type for a generated type system (with relation env): a (sort, predicate) pair. -/
+def langNativeTypeUsing (relEnv : RelationEnv) (lang : LanguageDef)
+    (procSort : String := "Proc") :=
+  NativeTypeOf (langOSLFUsing relEnv lang procSort)
 
 /-- A native type for a generated type system: a (sort, predicate) pair. -/
 def langNativeType (lang : LanguageDef) (procSort : String := "Proc") :=

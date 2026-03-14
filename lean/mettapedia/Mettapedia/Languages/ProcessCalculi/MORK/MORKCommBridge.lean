@@ -51,7 +51,7 @@ there is a MQ `CommReduction` with the same branch selection.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MQCalculus (
   Process CommReduction MeasurementBranch Outcome
   comm_both_outcomes)

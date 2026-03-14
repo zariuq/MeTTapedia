@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.Core.Atom
+import Mettapedia.Languages.MeTTa.OSLFCore.Atom
 
 /-!
 # MORK: MM2 Syntax
@@ -19,7 +19,7 @@ Sink      ::= (+ Atom)                      -- add atom to space
 
 ## Reuse
 
-`Atom` is imported from `Mettapedia.Languages.MeTTa.Core.Atom` — same S-expression type
+`Atom` is imported from `Mettapedia.Languages.MeTTa.OSLFCore.Atom` — same S-expression type
 used throughout MeTTaCore. MORK S-expressions are a subset of MeTTa atoms.
 
 ## Connection to MQ-Calculus
@@ -32,7 +32,7 @@ An MM2 exec rule fires like a quantum measurement branch:
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
 /-! ## MORK-specific Syntax -/
 

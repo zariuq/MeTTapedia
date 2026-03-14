@@ -3,7 +3,8 @@
 
 The fifth applied example exercising continuous (Gaussian) world models in PLN.
 Based on real data from the UCI Steel Plates Faults Dataset
-(DOI 10.24432/C53P4W, Semeion Research Center, CC BY 4.0).
+(current UCI repository citation DOI 10.24432/C5J88N; older project
+draft notes used 10.24432/C53P4W; Semeion Research Center, CC BY 4.0).
 
 ## The Model
 
@@ -226,7 +227,8 @@ LogOfAreas measurements for each fault type.  The feature captures the
 logarithm of the defect area; K_Scratch faults are characteristically
 larger (pop. mean ~3.6, σ ~0.70) than Pastry (~2.4, σ ~0.48) or Bumps (~2.1, σ ~0.36).
 
-Source: UCI Steel Plates Faults Dataset, DOI 10.24432/C53P4W. -/
+Source: UCI Steel Plates Faults Dataset; current UCI repository
+citation DOI 10.24432/C5J88N (older draft notes used 10.24432/C53P4W). -/
 
 /-- Pastry fault observations (LogOfAreas). Sample mean ~2.39.
     First 5 Pastry rows from dataset (population mean ~2.38, σ ~0.48). -/

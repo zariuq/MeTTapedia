@@ -1,5 +1,6 @@
 import Mathlib.Data.Multiset.AddSub
 import Mathlib.Data.Multiset.Count
+import Mettapedia.Logic.PLNWorldModelCrispSpecialization
 import Mettapedia.Logic.PLNWorldModel
 import Foundation.FirstOrder.Basic
 
@@ -43,6 +44,15 @@ noncomputable def folEvidence {L : Language.{u}}
   exact
     ⟨(Multiset.countP (fun S => folSatisfies S φ) W : ℝ≥0∞),
      (Multiset.countP (fun S => ¬ folSatisfies S φ) W : ℝ≥0∞)⟩
+
+/-- The FOL bridge is a direct instance of the generic crisp-specialization
+evidence extractor. -/
+theorem folEvidence_eq_crispEvidence {L : Language.{u}}
+    (W : Multiset (PointedFOL L)) (φ : FOLQuery L) :
+    folEvidence W φ =
+      Mettapedia.Logic.PLNWorldModelCrispSpecialization.crispEvidence
+        folSatisfies W φ := by
+  rfl
 
 theorem folEvidence_add {L : Language.{u}}
     (W₁ W₂ : Multiset (PointedFOL L)) (φ : FOLQuery L) :
@@ -109,6 +119,19 @@ theorem singleton_adequacy_strength_one {L : Language.{u}}
                 ({S} : Multiset (PointedFOL L)) φ := h0.symm
           _ = 1 := h
       exact False.elim (zero_ne_one h01)
+
+/-- Explicit witness that the singleton adequacy theorem for the FOL bridge is
+an instance of the generic crisp-specialization theorem family. -/
+theorem singleton_adequacy_strength_one_is_crispSpecialization {L : Language.{u}}
+    (S : PointedFOL L) (φ : FOLQuery L) :
+    folSatisfies S φ ↔
+      WorldModel.queryStrength (State := Multiset (PointedFOL L)) (Query := FOLQuery L)
+        ({S} : Multiset (PointedFOL L)) φ = 1 := by
+  simpa [Mettapedia.Logic.PLNWorldModelCrispSpecialization.crispQueryStrength,
+    WorldModel.queryStrength, folEvidence_eq_crispEvidence]
+    using
+      (Mettapedia.Logic.PLNWorldModelCrispSpecialization.singleton_adequacy_strength_one
+        (satisfies := folSatisfies) S φ)
 
 /-! ## Consequence adequacy on singleton and multiset FOL states -/
 

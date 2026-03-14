@@ -32,7 +32,7 @@ what the abstract phase steps do.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
 /-! ## Phase-band preservation
 

@@ -44,7 +44,7 @@ Negative example:
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK.Z3Oracle
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 open Mettapedia.Languages.ProcessCalculi.MORK
 
 /-! ## 1. Oracle environment -/

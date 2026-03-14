@@ -14,6 +14,7 @@ def liftSub (σ : Sub n m) : Sub (n + 1) (m + 1) :=
 
 def subst (σ : Sub n m) : PureTm n → PureTm m
   | .var i => σ i
+  | .const c => .const c
   | .u0 => .u0
   | .u1 => .u1
   | .pi A B => .pi (subst σ A) (subst (liftSub σ) B)
@@ -59,6 +60,8 @@ theorem subst_ext {σ τ : Sub n m} (hστ : ∀ i, σ i = τ i) :
   induction t generalizing m with
   | var i =>
     simp [subst, hστ i]
+  | const c =>
+    rfl
   | u0 =>
     rfl
   | u1 =>
@@ -113,6 +116,8 @@ theorem subst_ext {σ τ : Sub n m} (hστ : ∀ i, σ i = τ i) :
   induction t with
   | var i =>
     rfl
+  | const c =>
+    rfl
   | u0 =>
     rfl
   | u1 =>
@@ -162,6 +167,8 @@ theorem rename_subst :
   intro n m k ρ σ t
   induction t generalizing m k ρ with
   | var i =>
+    rfl
+  | const c =>
     rfl
   | u0 =>
     rfl
@@ -224,6 +231,8 @@ theorem subst_rename :
   intro n m k σ ρ t
   induction t generalizing m k σ with
   | var i =>
+    rfl
+  | const c =>
     rfl
   | u0 =>
     rfl
@@ -328,6 +337,8 @@ theorem subst_rename :
   intro n m k τ σ t
   induction t generalizing m k τ with
   | var i =>
+    rfl
+  | const c =>
     rfl
   | u0 =>
     rfl

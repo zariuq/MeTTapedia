@@ -268,7 +268,7 @@ through guarded source rules, not the current relationQuery-only bridge.
 theorem topRuleWithPremises_toMorkSourceFire
     {relEnv : ILRelEnv} {r : ILRewriteRule} {bs0 bs : ILBindings}
     {p q : ILPattern} {workspace : Mettapedia.Languages.ProcessCalculi.MORK.Space}
-    {witnesses : List Mettapedia.Languages.MeTTa.Core.Atom}
+    {witnesses : List Mettapedia.Languages.MeTTa.OSLFCore.Atom}
     (hr : r ∈ mettaHE.rewrites)
     (hbs0 : bs0 ∈ matchPattern r.left p)
     (_hbs : bs ∈ applyPremisesWithEnv relEnv mettaHE r.premises bs0)
@@ -306,7 +306,7 @@ fragment and below any larger runtime redesign. The additional hypothesis
 theorem topRuleWithExtPremises_toMorkSourceFire
     {relEnv : ILRelEnv} {r : ILRewriteRule} {bs0 bs : ILBindings}
     {p q : ILPattern} {workspace : Mettapedia.Languages.ProcessCalculi.MORK.Space}
-    {witnesses : List Mettapedia.Languages.MeTTa.Core.Atom}
+    {witnesses : List Mettapedia.Languages.MeTTa.OSLFCore.Atom}
     (hr : r ∈ mettaHE.rewrites)
     (hbs0 : bs0 ∈ matchPattern r.left p)
     (_hbs : bs ∈ applyPremisesWithEnv relEnv mettaHE r.premises bs0)
@@ -428,7 +428,7 @@ theorem hePremiseCoreStep_to_computableFire
     (workspace : CSpace) (hnodup : workspace.Nodup)
     (hp_in : morkPatternToAtom p ∈ workspace)
     -- Premise witness chain
-    (witnesses : List Mettapedia.Languages.MeTTa.Core.Atom)
+    (witnesses : List Mettapedia.Languages.MeTTa.OSLFCore.Atom)
     (hchain : PremiseChain relEnv mettaHE workspace.toFinset bs0 r.premises witnesses bs)
     (hnodup_wit : witnesses.Nodup)
     (hwit_ne_p : ∀ a ∈ witnesses, a ≠ morkPatternToAtom p)

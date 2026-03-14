@@ -259,6 +259,22 @@ theorem assocEvidence_eq_scoreToEvidence_of_assocScore_eq
     intensionalAssocEvidence W enc a b = scoreToEvidence s := by
   simpa [hScore] using hAssoc W a b
 
+/-- Canonical PAT score-to-evidence lift law.
+If a score model identifies `patScore W a b` with `s`, then typed PAT evidence
+at `(W,a,b)` is exactly `scoreToEvidence s`. -/
+theorem patEvidence_eq_scoreToEvidence_of_patScore_eq
+    (enc : InheritanceQueryBuilder Atom Query)
+    (patScore : State → Atom → Atom → ℝ)
+    (scoreToEvidence : ℝ → Evidence)
+    (hPat :
+      PATScoreCorrespondence
+        (State := State) (Atom := Atom) (Query := Query)
+        enc patScore scoreToEvidence)
+    {W : State} {a b : Atom} {s : ℝ}
+    (hScore : patScore W a b = s) :
+    intensionalPATEvidence W enc a b = scoreToEvidence s := by
+  simpa [hScore] using hPat W a b
+
 /-- Chapter-12 ASSOC subset semantics:
 whenever `subsetRel` holds between concept pairs, ASSOC score is monotone. -/
 def AssocSubsetSemantics
@@ -540,6 +556,29 @@ theorem mixedRewriteRule_of_assoc_apply
       (combine (extensionalEvidence W enc a b) (intensionalAssocEvidence W enc a b)) := by
   exact WorldModelSigma.WMRewriteRuleSigma.apply
     (r := mixedRewriteRule_of_assoc enc combine Side hSound a b)
+    hSide hW
+
+/-- Admissibility helper for `mixedRewriteRule_of_assoc_pat`. -/
+theorem mixedRewriteRule_of_assoc_pat_apply
+    (enc : InheritanceQueryBuilder Atom Query)
+    (combine : Evidence → Evidence → Evidence → Evidence)
+    (Side : Prop)
+    (hSound : Side →
+      MixedPolicyAssocPat (State := State) (Atom := Atom) (Query := Query) enc combine)
+    (a b : Atom)
+    (W : State)
+    (hSide : Side)
+    (hW : WMJudgment W) :
+    WorldModelSigma.WMQueryJudgmentSigma (State := State) (Srt := InheritanceSort)
+      (Query := InheritanceQueryFamily Query)
+      W
+      (mixedQ enc a b)
+      (combine
+        (extensionalEvidence W enc a b)
+        (intensionalAssocEvidence W enc a b)
+        (intensionalPATEvidence W enc a b)) := by
+  exact WorldModelSigma.WMRewriteRuleSigma.apply
+    (r := mixedRewriteRule_of_assoc_pat enc combine Side hSound a b)
     hSide hW
 
 end InheritanceQueryBuilder

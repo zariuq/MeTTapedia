@@ -37,7 +37,7 @@ special case of work-queue execution with phase-aligned priorities.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
 /-! ## Exec fact extraction -/
 

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.Pure.SubjectReduction
-import Mettapedia.Languages.MeTTa.Core.SubjectReduction
+import Mettapedia.Languages.MeTTa.OSLFCore.SubjectReduction
 
 /-!
 # MeTTa-Pure: Typed Language Definition Assembly
@@ -35,7 +35,7 @@ lookup) provably fails subject reduction, while MeTTa-Pure's `PureHasType`
 | `Core.lean` | 0 | 0 | `mettaPure : LanguageDef`, OSLF pipeline |
 | `Typing.lean` | 0 | 0 | `PureHasType`, `PureConv` (cofinite) |
 | `Reduction.lean` | 0 | 0 | `PureReduces`, `PureReducesStar` |
-| `SubjectReduction.lean` | 2 | 0 | `typing_subst`, `mettaPure_subject_reduction` (WIP) |
+| `SubjectReduction.lean` | 0 | 0 | `typing_subst`, `mettaPure_subject_reduction` |
 | `TypedLangDef.lean` | 0 | 0 | `TypedLangDef`, `mettaPureTyped` |
 -/
 
@@ -43,6 +43,7 @@ namespace Mettapedia.Languages.MeTTa.Pure.Assembly
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.Languages.MeTTa.Pure.Core
+open Mettapedia.Languages.MeTTa.Pure.Fragment
 open Mettapedia.Languages.MeTTa.Pure.Typing
 open Mettapedia.Languages.MeTTa.Pure.Reduction
 open Mettapedia.Languages.MeTTa.Pure.SubjectReduction
@@ -83,10 +84,10 @@ noncomputable def mettaPureTyped : TypedLangDef where
 
     This is the sorry-free theorem from `MeTTaCore/SubjectReduction.lean`. -/
 theorem metta_current_sr_fails :
-    ¬ Mettapedia.Languages.MeTTa.Core.SubjectReduction
-      Mettapedia.Languages.MeTTa.Core.HasType
-      Mettapedia.Languages.MeTTa.Core.AtomReduces :=
-  Mettapedia.Languages.MeTTa.Core.metta_not_subject_reduction
+    ¬ Mettapedia.Languages.MeTTa.OSLFCore.SubjectReduction
+      Mettapedia.Languages.MeTTa.OSLFCore.HasType
+      Mettapedia.Languages.MeTTa.OSLFCore.AtomReduces :=
+  Mettapedia.Languages.MeTTa.OSLFCore.metta_not_subject_reduction
 
 /-! ## Architectural Properties -/
 
@@ -104,13 +105,23 @@ theorem mettaPure_thirteen_constructors : mettaPure.terms.length = 13 := by deci
 
 /-- Every one-step reduction of a locally closed term is a definitional equality. -/
 theorem mettaPure_reduction_sound {t t' : Pattern}
-    (hlc : lc_at 0 t = true) (h : PureReduces t t') : PureConv t t' :=
-  PureReduces_implies_PureConv h hlc
+    (hlc : lc_at 0 t = true) (hpure : PureTmPattern t) (h : PureReduces t t') : PureConv t t' :=
+  PureReduces_implies_PureConv h hlc hpure
 
 /-- Multi-step reduction of a locally closed term is a definitional equality. -/
 theorem mettaPure_reduction_star_sound {t t' : Pattern}
-    (hlc : lc_at 0 t = true) (h : PureReducesStar t t') : PureConv t t' :=
-  PureReducesStar_implies_PureConv h hlc
+    (hlc : lc_at 0 t = true) (hpure : PureTmPattern t) (h : PureReducesStar t t') : PureConv t t' :=
+  PureReducesStar_implies_PureConv h hlc hpure
+
+/-- Typed one-step reduction is a definitional equality. -/
+theorem mettaPure_typed_reduction_sound {Γ : PureCtx} {t t' A : Pattern}
+    (ht : PureHasType Γ t A) (h : PureReduces t t') : PureConv t t' :=
+  PureReduces_implies_PureConv h (typing_lc ht) (typing_term_pure ht)
+
+/-- Typed multi-step reduction is a definitional equality. -/
+theorem mettaPure_typed_reduction_star_sound {Γ : PureCtx} {t t' A : Pattern}
+    (ht : PureHasType Γ t A) (h : PureReducesStar t t') : PureConv t t' :=
+  PureReducesStar_implies_PureConv h (typing_lc ht) (typing_term_pure ht)
 
 /-! ## Milestone Status
 

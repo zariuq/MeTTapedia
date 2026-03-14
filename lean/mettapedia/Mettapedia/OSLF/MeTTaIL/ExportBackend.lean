@@ -1,8 +1,8 @@
 import Mettapedia.OSLF.MeTTaIL.PremiseDatalog
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Export
-import Mettapedia.Languages.MeTTa.Core.FullPremises
-import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
+import Mettapedia.Languages.MeTTa.OSLFCore.FullPremises
+import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
 
 /-!
 # Backend Renderers for PremiseProgram
@@ -553,20 +553,20 @@ def writeLanguageFull (path : System.FilePath)
 -- Render just the premise rules for mettaFullPremises
 #eval! do
   let output := renderAscentPremiseRules
-    Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFull
-    Mettapedia.Languages.MeTTa.Core.FullPremises.mettaFullPremises
+    Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFull
+    Mettapedia.Languages.MeTTa.OSLFCore.FullPremises.mettaFullPremises
   IO.println s!"=== Premise rules ({output.length} chars) ==="
 
 -- Render domain extraction for mettaFull
 #eval! do
   let output := renderDomainExtraction
-    Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFull
+    Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFull
   IO.println output
 
 -- Render query scoping for mettaFull
 #eval! do
   let output := renderQueryScoping
-    Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFull
+    Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFull
   IO.println output
 
 end Mettapedia.OSLF.MeTTaIL.ExportBackend

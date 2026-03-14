@@ -36,7 +36,7 @@ This bridge is proved only for rules where:
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
 /-! ## MeTTaIL type aliases (avoid name clashes with MORK names) -/
 

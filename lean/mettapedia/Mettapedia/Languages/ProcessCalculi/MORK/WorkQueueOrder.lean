@@ -31,7 +31,7 @@ can connect `atomKey` to exact byte encoding.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 
 /-! ## Lexicographic comparison -/
 

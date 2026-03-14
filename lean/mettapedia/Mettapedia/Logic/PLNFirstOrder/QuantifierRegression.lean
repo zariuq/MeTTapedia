@@ -1,13 +1,14 @@
 import Mettapedia.Logic.PLNFirstOrder.QuantifierCanary
-import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSemantics
-import Mettapedia.Logic.PLNFirstOrder.FuzzyITVBridge
-import Mettapedia.Logic.PLNFirstOrder.QuantifierWorkedExamples
-import Mettapedia.Logic.PLNFirstOrder.FuzzySyllogismCanary
+import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSemanticsFin
+import Mettapedia.Logic.PLNFirstOrder.FuzzyITVBridgeFin
+import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierWorkedExamplesFin
+import Mettapedia.Logic.PLNFirstOrder.FuzzySyllogismCanaryFin
 
 /-!
-# Chapter 11 Regression Target
+# Chapter 11 Finite/Counting Regression Target
 
-Single-entry build target for Chapter-11 quantifier semantics and canaries.
+Single-entry build target for the finite/counting Chapter-11 quantifier semantics,
+ITV bridge, worked examples, and fuzzy syllogism canaries.
 
 Build command:
 

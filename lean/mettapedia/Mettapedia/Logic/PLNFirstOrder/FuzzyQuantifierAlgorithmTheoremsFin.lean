@@ -1,0 +1,36 @@
+import Mettapedia.Logic.PLNFirstOrder.QuantifierAlgorithmTheorems
+import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierSemanticsFin
+
+/-!
+# Finite Fuzzy Quantifier Algorithm Theorems
+
+Finite/counting theorem pack for the Chapter-11 algorithmic layer.
+-/
+
+namespace Mettapedia.Logic.PLNFirstOrder
+
+abbrev nearOneFin_mono_of_epsilon_le := @nearOne_mono_of_epsilon_le
+abbrev nearZeroFin_mono_of_epsilon_le := @nearZero_mono_of_epsilon_le
+abbrev nearOneFractionFin_mono_of_epsilon_le := @nearOneFraction_mono_of_epsilon_le
+abbrev fuzzyExistsScoreFin_mono_of_epsilon_le := @fuzzyExistsScore_mono_of_epsilon_le
+abbrev fuzzyForAllHoldsFin_of_epsilon_and_PCL_relax := @fuzzyForAllHolds_of_epsilon_and_PCL_relax
+abbrev fuzzyIntervalHoldsFin_of_wider_bounds := @fuzzyIntervalHolds_of_wider_bounds
+abbrev fuzzyForAllHoldsFin_of_lowerPCL_sameEpsilon := @fuzzyForAllHolds_of_lowerPCL_sameEpsilon
+abbrev witnessFractionFin_false := @witnessFraction_false
+abbrev witnessFractionFin_true := @witnessFraction_true
+abbrev fuzzyForAllHoldsFin_iff_fraction_eq_one_of_PCL_eq_one :=
+  @fuzzyForAllHolds_iff_fraction_eq_one_of_PCL_eq_one
+abbrev fuzzyThereExistsHoldsFin_iff_nearZeroFraction_eq_zero_of_PCL_eq_one :=
+  @fuzzyThereExistsHolds_iff_nearZeroFraction_eq_zero_of_PCL_eq_one
+abbrev crispForAllFin_endpoint_iff_allEqOne := @crispForAll_endpoint_iff_allEqOne
+noncomputable abbrev rule4DiscrepancyFin := @rule4Discrepancy
+abbrev rule4DiscrepancyFin_nonneg := @rule4Discrepancy_nonneg
+abbrev nearOneFractionFin_conjoin_eq_of_gate_high := @nearOneFraction_conjoin_eq_of_gate_high
+abbrev fuzzyExistsScoreFin_conjoin_eq_of_gate_high := @fuzzyExistsScore_conjoin_eq_of_gate_high
+abbrev rule4DiscrepancyFin_bound_of_gate_high := @rule4Discrepancy_bound_of_gate_high
+abbrev rule4DiscrepancyFin_eq_zero_of_gate_high_and_cover := @rule4Discrepancy_eq_zero_of_gate_high_and_cover
+abbrev nearOneFractionFin_conjoin_eq_zero_of_gate_low := @nearOneFraction_conjoin_eq_zero_of_gate_low
+abbrev rule4DiscrepancyFin_eq_minScore_of_gate_low := @rule4Discrepancy_eq_minScore_of_gate_low
+abbrev rule4DiscrepancyFin_le_g_of_gate_low := @rule4Discrepancy_le_g_of_gate_low
+
+end Mettapedia.Logic.PLNFirstOrder

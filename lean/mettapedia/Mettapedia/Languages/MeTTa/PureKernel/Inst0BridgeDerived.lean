@@ -39,16 +39,4 @@ theorem quoteTmWith_defaultBinderName_inst0_apply
           (envCons (defaultBinderName k) ρ) body) :=
   inst0ApplyBridgeCompat_defaultBinderName k ρ a body hcompat
 
-/-- Default-binder open-form `inst0` theorem without external bridge arguments. -/
-theorem quoteTmWith_defaultBinderName_inst0_open
-    (k : Nat) (ρ : QuoteEnv n) (hcompat : QuoteCompat defaultBinderName k ρ)
-    (a : PureTm n) (body : PureTm (n + 1)) :
-    quoteTmWith defaultBinderName k ρ (inst0 a body) =
-      openBVar 0 (quoteTmWith defaultBinderName k ρ a)
-        (closeFVar 0 (defaultBinderName k)
-          (quoteTmWith defaultBinderName (k + 1)
-            (envCons (defaultBinderName k) ρ) body)) :=
-  quoteTmWith_defaultBinderName_inst0_open_of_applyCompat
-    inst0ApplyBridgeCompat_defaultBinderName k ρ hcompat a body
-
 end Mettapedia.Languages.MeTTa.PureKernel.PatternBridge

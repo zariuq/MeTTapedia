@@ -10,6 +10,7 @@ open Mettapedia.Languages.MeTTa.PureKernel.Reduction
 /-- Parallel one-step reduction for the Pure kernel. -/
 inductive ParRed : PureTm n → PureTm n → Prop where
   | var (i : Fin n) : ParRed (.var i) (.var i)
+  | const (c : DeclName) : ParRed (.const c : PureTm n) (.const c)
   | u0 : ParRed (.u0 : PureTm n) .u0
   | u1 : ParRed (.u1 : PureTm n) .u1
   | pi {A A' : PureTm n} {B B' : PureTm (n + 1)} :
@@ -44,6 +45,7 @@ inductive ParRed : PureTm n → PureTm n → Prop where
   intro t
   induction t with
   | var i => exact .var i
+  | const c => exact .const c
   | u0 => exact .u0
   | u1 => exact .u1
   | pi A B ihA ihB => exact .pi ihA ihB
@@ -100,6 +102,8 @@ theorem par_rename {n m : Nat} (ρ : Ren n m) {t u : PureTm n}
   induction h generalizing m with
   | var i =>
       exact .var (ρ i)
+  | const c =>
+      exact .const c
   | u0 =>
       exact .u0
   | u1 =>
@@ -139,6 +143,8 @@ theorem par_subst {n m : Nat} {σ σ' : Sub n m}
   induction h generalizing m with
   | var i =>
       exact hσ i
+  | const c =>
+      exact .const c
   | u0 =>
       exact .u0
   | u1 =>
@@ -206,6 +212,8 @@ theorem par_inst0 {a a' : PureTm n} {b b' : PureTm (n + 1)}
 theorem par_to_redStar {t u : PureTm n} (h : ParRed t u) : RedStar t u := by
   induction h with
   | var i =>
+      exact .refl _
+  | const c =>
       exact .refl _
   | u0 =>
       exact .refl _

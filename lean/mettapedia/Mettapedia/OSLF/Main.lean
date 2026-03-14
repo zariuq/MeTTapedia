@@ -41,8 +41,8 @@ import Mettapedia.OSLF.Framework.DerivedTyping
 import Mettapedia.OSLF.Framework.PLNSelectorGSLT
 import Mettapedia.OSLF.Framework.PLNSelectorLanguageDef
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
-import Mettapedia.Languages.MeTTa.Core.Premises
-import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
+import Mettapedia.Languages.MeTTa.OSLFCore.Premises
+import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
 import Mettapedia.OSLF.Framework.MeTTaFullLegacyInstance
 import Mettapedia.OSLF.Framework.MeTTaLegacyToNTT
 import Mettapedia.OSLF.Framework.OSLFNTTWMBridge
@@ -629,7 +629,7 @@ export Mettapedia.OSLF.Framework.MeTTaMinimalInstance (
   mettaMinimal_checkLang_sat_sound_specAtoms
 )
 
-export Mettapedia.Languages.MeTTa.Core.Premises (
+export Mettapedia.Languages.MeTTa.OSLFCore.Premises (
   space0Atomspace
   space0EqEntries
   space0TypeEntries
@@ -649,7 +649,7 @@ export Mettapedia.Languages.MeTTa.Core.Premises (
   noGroundedCallTuples
 )
 
-export Mettapedia.Languages.MeTTa.Core.FullLanguageDef (
+export Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef (
   mettaFullLegacy
   mettaFullLegacyOSLF
   mettaFullLegacyGalois

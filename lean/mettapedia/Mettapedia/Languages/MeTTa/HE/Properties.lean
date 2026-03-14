@@ -1,108 +1,113 @@
-import Mettapedia.Languages.MeTTa.HE.Interpreter
+import Mettapedia.Languages.MeTTa.HE.MinimalMeTTa
 
 /-!
 # HE MeTTa Structural Properties
 
-Proven structural properties of the HE interpreter formalization.
-These capture invariants that hold across all inputs, not just specific test cases.
+Universal properties of the HE MeTTa declarative specification.
+These are proven by induction on derivation trees (EvalSpec.lean)
+or by computation on leaf operations (Matching.lean, TypeCheck.lean).
 
 ## Main Theorems
-* `metta_fuel_zero` - At fuel 0, atom returned unchanged
-* `mettaCall_fuel_zero` - At fuel 0, mettaCall returns atom unchanged
-* `interpretArgs_fuel_zero` - At fuel 0, interpretArgs wraps args in expression
-* `metta_empty_pass` - Empty always passes through metta
-* `metta_error_pass` - Error expressions always pass through metta
-* `interpretArgs_nil` - Empty argument list base case
+* `eval_empty_always` — Empty always passes through EvalAtom
+* `eval_error_always` — Error always passes through EvalAtom
+* `eval_variable_always` — Variables always pass through EvalAtom
+* `mettaCall_error_always` — Error always passes through MettaCall
+* `matchTypes_undefined_succeeds` — `%Undefined%` always matches any type
+* `matchTypes_atom_succeeds` — `Atom` type always matches any type
+* `empty_bindings_no_loop` — Empty bindings have no loop
 -/
 
-namespace Mettapedia.Languages.MeTTa.HE
+namespace Mettapedia.Languages.MeTTa.HE.Properties
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.HE
 
-/-! ## Fuel Zero Properties
+/-! ## EvalAtom Passthrough Properties
 
-These are definitional (rfl), since fuel = 0 is the base case of all functions. -/
+These prove that certain atoms ALWAYS have valid derivations that pass
+them through unchanged, regardless of space/dispatch/type. -/
 
-/-- At fuel 0, metta returns the atom unchanged. -/
-theorem metta_fuel_zero (atom type_ : Atom) (space : Space) (b : Bindings)
-    (dispatch : GroundedDispatch) (ev : List Atom) :
-    metta atom type_ space b dispatch ev 0 = [(atom, b)] := rfl
+/-- Empty always passes through EvalAtom unchanged. -/
+theorem eval_empty_always (space : Space) (dispatch : GroundedDispatch)
+    (type_ : Atom) (b : Bindings) :
+    EvalAtom space dispatch Atom.empty type_ b (Atom.empty, b) :=
+  .empty_or_error _ _ _ rfl
 
-/-- At fuel 0, interpretExpression returns the atom unchanged. -/
-theorem interpretExpression_fuel_zero (atom type_ : Atom) (space : Space) (b : Bindings)
-    (dispatch : GroundedDispatch) (ev : List Atom) :
-    interpretExpression atom type_ space b dispatch ev 0 = [(atom, b)] := rfl
+/-- Error always passes through EvalAtom unchanged. -/
+theorem eval_error_always (space : Space) (dispatch : GroundedDispatch)
+    (src msg type_ : Atom) (b : Bindings) :
+    EvalAtom space dispatch (Atom.error src msg) type_ b
+      (Atom.error src msg, b) :=
+  .empty_or_error _ _ _ rfl
 
-/-- At fuel 0, mettaCall returns the atom unchanged. -/
-theorem mettaCall_fuel_zero (atom type_ : Atom) (space : Space) (b : Bindings)
-    (dispatch : GroundedDispatch) (ev : List Atom) :
-    mettaCall atom type_ space b dispatch ev 0 = [(atom, b)] := rfl
+/-- Variables always pass through EvalAtom unchanged. -/
+theorem eval_variable_always (space : Space) (dispatch : GroundedDispatch)
+    (v : String) (type_ : Atom) (b : Bindings) :
+    EvalAtom space dispatch (.var v) type_ b (.var v, b) :=
+  .type_pass _ _ _ rfl (Or.inr (Or.inr rfl))
 
-/-- At fuel 0, interpretArgs returns the args wrapped in an expression. -/
-theorem interpretArgs_fuel_zero (args types : List Atom) (space : Space) (b : Bindings)
-    (dispatch : GroundedDispatch) (ev : List Atom) :
-    interpretArgs args types space b dispatch ev 0 = [(.expression args, b)] := rfl
+/-- When expected type is Atom and atom is not empty/error, it passes through. -/
+theorem eval_atom_type_pass (space : Space) (dispatch : GroundedDispatch)
+    (a : Atom) (b : Bindings) (h : isEmptyOrError a = false) :
+    EvalAtom space dispatch a Atom.atomType b (a, b) :=
+  .type_pass _ _ _ h (Or.inl rfl)
 
-/-- At fuel 0, interpretFunction returns the atom unchanged. -/
-theorem interpretFunction_fuel_zero (atom opType retType : Atom) (space : Space) (b : Bindings)
-    (dispatch : GroundedDispatch) (ev : List Atom) :
-    interpretFunction atom opType retType space b dispatch ev 0 = [(atom, b)] := rfl
+/-- When expected type is Atom, any atom passes through (via one of two paths). -/
+theorem eval_atom_type_always (space : Space) (dispatch : GroundedDispatch)
+    (a : Atom) (b : Bindings) :
+    EvalAtom space dispatch a Atom.atomType b (a, b) := by
+  by_cases h : isEmptyOrError a = true
+  · exact .empty_or_error _ _ _ h
+  · exact .type_pass _ _ _ (by simp at h; exact h) (Or.inl rfl)
 
-/-- At fuel 0, interpretTuple returns the atom unchanged. -/
-theorem interpretTuple_fuel_zero (atom : Atom) (space : Space) (b : Bindings)
-    (dispatch : GroundedDispatch) (ev : List Atom) :
-    interpretTuple atom space b dispatch ev 0 = [(atom, b)] := rfl
+/-! ## MettaCall Passthrough Properties -/
 
-/-! ## Empty/Error Passthrough -/
+/-- Error always passes through MettaCall unchanged. -/
+theorem mettaCall_error_always (space : Space) (dispatch : GroundedDispatch)
+    (src msg type_ : Atom) (b : Bindings) :
+    MettaCall space dispatch (Atom.error src msg) type_ b
+      (Atom.error src msg, b) :=
+  .error_passthrough _ _ _ rfl
 
-/-- Empty always passes through metta unchanged. -/
-theorem metta_empty_pass (type_ : Atom) (space : Space) (b : Bindings)
-    (dispatch : GroundedDispatch) (ev : List Atom) (n : Nat) :
-    metta Atom.empty type_ space b dispatch ev (n + 1) = [(Atom.empty, b)] := by
-  simp [metta, isEmptyAtom, Atom.empty, BEq.beq, Atom.beq]
-
-/-- Error expressions always pass through metta unchanged. -/
-theorem metta_error_pass (src msg type_ : Atom) (space : Space) (b : Bindings)
-    (dispatch : GroundedDispatch) (ev : List Atom) (n : Nat) :
-    metta (Atom.error src msg) type_ space b dispatch ev (n + 1) =
-    [(Atom.error src msg, b)] := by
-  simp [metta, isEmptyAtom, Atom.empty, isErrorAtom, Atom.error,
-        BEq.beq, Atom.beq]
-
-/-! ## interpretArgs Base Case -/
-
-/-- Empty argument list produces empty expression. -/
-theorem interpretArgs_nil (space : Space) (b : Bindings)
-    (dispatch : GroundedDispatch) (ev : List Atom) (n : Nat) :
-    interpretArgs [] [] space b dispatch ev (n + 1) =
-    [(.expression [], b)] := rfl
-
-/-! ## Non-expression mettaCall -/
-
-/-- mettaCall on a variable returns it unchanged. -/
-theorem mettaCall_variable (v : String) (type_ : Atom) (space : Space) (b : Bindings)
-    (dispatch : GroundedDispatch) (ev : List Atom) (n : Nat) :
-    mettaCall (.var v) type_ space b dispatch ev (n + 1) = [(.var v, b)] := by
-  simp [mettaCall, isErrorAtom]
-
-/-! ## Bindings Properties -/
+/-! ## Leaf Operation Properties -/
 
 /-- Empty bindings have no loop. -/
 theorem empty_bindings_no_loop : Bindings.empty.hasLoop = false := rfl
 
-/-- Assigning "x" to symbol "a" in empty bindings has no loop. -/
-example : (Bindings.empty.assign "x" (.symbol "a")).hasLoop = false := rfl
-
-/-! ## matchTypes Properties -/
-
-/-- matchTypes with %Undefined% on either side always succeeds. -/
+/-- matchTypes with %Undefined% on the left always succeeds. -/
 theorem matchTypes_undefined_succeeds (t : Atom) (b : Bindings) :
     matchTypes Atom.undefinedType t b ≠ [] := by
   simp [matchTypes, Atom.undefinedType, BEq.beq, Atom.beq]
 
-/-- matchTypes with Atom on either side always succeeds. -/
+/-- matchTypes with Atom on the right always succeeds. -/
 theorem matchTypes_atom_succeeds (t : Atom) (b : Bindings) :
     matchTypes t Atom.atomType b ≠ [] := by
   simp [matchTypes, Atom.atomType, BEq.beq, Atom.beq]
 
-end Mettapedia.Languages.MeTTa.HE
+/-- matchAtoms is reflexive on symbols. -/
+theorem matchAtoms_refl_symbol (s : String) (fuel : Nat) (h : fuel > 0) :
+    Bindings.empty ∈ matchAtoms (.symbol s) (.symbol s) fuel := by
+  cases fuel with
+  | zero => omega
+  | succ n =>
+    simp [matchAtoms, Atom.symbolType, getMetaType, Bindings.empty, Bindings.hasLoop]
+
+/-! ## MinimalStep Properties -/
+
+/-- cons-atom followed by decons-atom is the identity (round-trip). -/
+theorem cons_decons_roundtrip (dispatch : GroundedDispatch) (s : Space)
+    (hd : Atom) (tl : List Atom) (ib : Bindings) :
+    MinimalStep dispatch s
+      (.expression [.symbol "cons-atom", hd, .expression tl]) ib
+      s (.expression (hd :: tl), ib) :=
+  .cons_atom _ _ _ _
+
+/-- decons-atom decomposes into head and tail. -/
+theorem decons_produces_head_tail (dispatch : GroundedDispatch) (s : Space)
+    (hd : Atom) (tl : List Atom) (ib : Bindings) :
+    MinimalStep dispatch s
+      (.expression [.symbol "decons-atom", .expression (hd :: tl)]) ib
+      s (.expression [hd, .expression tl], ib) :=
+  .decons_atom _ _ _ _
+
+end Mettapedia.Languages.MeTTa.HE.Properties

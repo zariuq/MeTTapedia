@@ -1,6 +1,6 @@
 import Mettapedia.Languages.MeTTa.DialectProfile
 import Mettapedia.Languages.MeTTa.HE.Types
-import Mettapedia.Languages.MeTTa.HE.Interpreter
+import Mettapedia.Languages.MeTTa.HE.EvalSpec
 import Mettapedia.Languages.MeTTa.HE.HELanguageDef
 import Mettapedia.Languages.MeTTa.HE.HEPremises
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
@@ -231,7 +231,7 @@ theorem heRuntimeSpec_native_hook_fact :
     heRuntimeSpec.nativeHookSurface = .groundedDispatch ∧
     premiseProgramHasRelationNamed Mettapedia.Languages.MeTTa.HE.Premises.mettaHEPremises
       "groundedCallResult" := by
-  native_decide
+  decide
 
 /-- HE exposes `superpose`/`collapse` style control through explicit premise
 relations rather than hiding them in an opaque backend. -/
@@ -243,7 +243,7 @@ theorem heRuntimeSpec_collection_control_fact :
       "isSuperpose_empty" ∧
     premiseProgramHasRelationNamed Mettapedia.Languages.MeTTa.HE.Premises.mettaHEPremises
       "collapseBind" := by
-  native_decide
+  decide
 
 /-! ## PeTTa Fact Surface -/
 

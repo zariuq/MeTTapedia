@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
+import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ConstructorCategory
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
@@ -20,9 +20,9 @@ open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Formula
 
 abbrev mettaFullLegacy : LanguageDef :=
-  Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullLegacy
+  Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullLegacy
 abbrev mettaFullLegacyOSLF :=
-  Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullLegacyOSLF
+  Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullLegacyOSLF
 
 /-- Compatibility aliases retained for downstream imports during migration. -/
 abbrev mettaFull : LanguageDef := mettaFullLegacy
@@ -321,7 +321,7 @@ private def codedConcatSpacesState : Pattern :=
         , .apply "GStringCodes"
             [(.collection .vec [(.apply "116" []), (.apply "104" []), (.apply "101" []), (.apply "114" []), (.apply "101" [])] none)]
         ]
-    , Mettapedia.Languages.MeTTa.Core.Premises.space0Pattern
+    , Mettapedia.Languages.MeTTa.OSLFCore.Premises.space0Pattern
     , .apply "AFalse" []
     ]
 
@@ -329,16 +329,16 @@ set_option maxRecDepth 8192 in
 set_option maxHeartbeats 1600000 in
 /-- Checker-level guarantee: coded-string concat with whitespace reaches a done state in two steps. -/
 theorem mettaFull_checkLangUsing_sat_coded_concat_spaces_done :
-    checkLangUsing Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullRelEnv
+    checkLangUsing Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullRelEnv
       mettaFull mettaFullSpecAtomCheck 8 codedConcatSpacesState (.dia (.dia (.atom "isDoneState"))) = .sat := by
   decide +kernel
 
 /-- Semantic corollary for coded-string concat checker result. -/
 theorem mettaFull_sem_coded_concat_spaces_done :
-    sem (langReducesUsing Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullRelEnv mettaFull)
+    sem (langReducesUsing Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullRelEnv mettaFull)
       mettaFullSpecAtomSem (.dia (.dia (.atom "isDoneState"))) codedConcatSpacesState := by
   exact mettaFull_checkLangUsing_sat_sound_specAtoms
-    (relEnv := Mettapedia.Languages.MeTTa.Core.FullLanguageDef.mettaFullRelEnv)
+    (relEnv := Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullRelEnv)
     (fuel := 8) (p := codedConcatSpacesState) (φ := .dia (.dia (.atom "isDoneState")))
     mettaFull_checkLangUsing_sat_coded_concat_spaces_done
 

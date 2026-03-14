@@ -98,32 +98,50 @@ private def mcCollapsePremises : List Premise :=
   , .relationQuery "collapseBind" [.fvar "expr", .fvar "ty", .fvar "packed"]
   ]
 
+/-- Public summary value for the current `collapseBind` oracle premise batch. -/
+def collapseBindSummary : Option RuleEffectSummary :=
+  summaryForPremises mcCollapsePremises
+
+theorem collapseBind_effect_oracleIO :
+    heRelationEffectClass "collapseBind" = some .oracleIO := rfl
+
+theorem collapseBind_overallEffect_oracleIO :
+    collapseBindSummary.map RuleEffectSummary.overallEffect =
+      some .oracleIO := by
+  decide
+
+theorem collapseBind_memoization_inadmissible :
+    collapseBindSummary.map
+        (fun s => s.memoizationContractAdmissible) =
+      some false := by
+  decide
+
 example : (summaryForPremises mcGroundedPremises).map RuleEffectSummary.overallEffect =
     some .readOnlyLookup := by
-  native_decide
+  decide
 
 example : (summaryForPremises mcGroundedPremises).map (fun s => s.supportsMemoShape .scalar) =
     some true := by
-  native_decide
+  decide
 
 example : (summaryForPremises mcEquationPremises).map RuleEffectSummary.overallEffect =
     some .nondeterministicReadOnly := by
-  native_decide
+  decide
 
 example : (summaryForPremises mcEquationPremises).map (fun s => s.supportsMemoShape .scalar) =
     some false := by
-  native_decide
+  decide
 
 example : (summaryForPremises mcEquationPremises).map (fun s => s.supportsMemoShape .outcomeSet) =
     some true := by
-  native_decide
+  decide
 
 example : (summaryForPremises mcCollapsePremises).map RuleEffectSummary.overallEffect =
     some .oracleIO := by
-  native_decide
+  decide
 
 example : (summaryForPremises mcCollapsePremises).map (fun s => s.memoizationContractAdmissible) =
     some false := by
-  native_decide
+  decide
 
 end Mettapedia.Languages.MeTTa.HE.MemoSafety

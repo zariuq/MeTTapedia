@@ -47,11 +47,15 @@ open Mettapedia.Logic.LP.MeTTaILBridge (encodeReduces mettailLPSig)
 
 /-! ## §1 OSLF Type System -/
 
-/-- The OSLF type system for a PeTTa space.
+/-- The OSLF type system for a PeTTa space (sourceCore, no premise relations).
 
     The sort parameter `"Expr"` reflects PeTTa's single-sorted nature
     (all values are MeTTa expressions).  This is analogous to PathMap's
-    `pathMapOSLF := langOSLF pathMapLang "V"`. -/
+    `pathMapOSLF := langOSLF pathMapLang "V"`.
+
+    **Canonical form**: `bundleOSLF (mkBundle .sourceCore s ts ir)`.
+    This definition is a compatibility alias for existing code that
+    predates the semantic bundle.  See `SemanticBundle.lean`. -/
 def pettaOSLF (s : PeTTaSpace) := langOSLF (pettaSpaceToLangDef s) "Expr"
 
 /-- The Galois connection ◇ ⊣ □ for any PeTTa space.
@@ -129,7 +133,7 @@ theorem pettaLangDef_congruenceCollections (s : PeTTaSpace) :
 **0 sorries. 0 axioms.**
 
 ### OSLF Pipeline
-- `pettaOSLF` — `PeTTaSpace → OSLFTypeSystem`
+- `pettaOSLF` — `PeTTaSpace → OSLFTypeSystem` (uses `RelationEnv.empty`)
 - `pettaGalois` — automatic ◇ ⊣ □ Galois connection
 - `pettaDiamond_spec` / `pettaBox_spec` — operational characterizations
 
@@ -139,6 +143,13 @@ theorem pettaLangDef_congruenceCollections (s : PeTTaSpace) :
 ### Rust Export
 - `pettaRenderRust` — `PeTTaSpace → String` (Rust macro text)
 - `pettaWriteRust` — `FilePath → PeTTaSpace → IO Unit`
+
+### Staged OSLF
+This file provides the `sourceCore`-level OSLF (no premise-aware relations).
+For per-stage OSLF type systems with richer `relEnv`, see
+`Mettapedia.Languages.MeTTa.PeTTa.StageFiber`:
+- `pettaStageOSLF` — per-stage OSLF using `langOSLFUsing`
+- `pettaStageOSLF_sourceCore_eq_pettaOSLF` — compatibility with `pettaOSLF`
 -/
 
 end Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance

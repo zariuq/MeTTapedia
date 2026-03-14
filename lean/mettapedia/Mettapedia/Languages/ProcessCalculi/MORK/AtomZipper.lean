@@ -36,7 +36,7 @@ replacement at path `[i+1]` with `List.set i`.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
 /-! ## Core types -/
 

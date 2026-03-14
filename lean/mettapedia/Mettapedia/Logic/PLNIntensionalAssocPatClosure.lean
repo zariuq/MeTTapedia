@@ -517,6 +517,15 @@ theorem no_binary_mixed_policy_for_assocPat_fixture :
     exact hPosNe hPosEq
   exact hMixedNe hMixedEq
 
+/-- Book-facing no-go alias:
+the corrected three-channel mixed law cannot collapse to any binary
+extensional+ASSOC policy on the concrete Chapter-12 fixture family. -/
+theorem binary_mixed_policy_collapse_no_go :
+    ¬ ∃ combine2 : EvidenceQuantale.Evidence → EvidenceQuantale.Evidence → EvidenceQuantale.Evidence,
+      PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedPolicyAssoc
+        (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery) enc combine2 :=
+  no_binary_mixed_policy_for_assocPat_fixture
+
 /-- End-to-end Chapter-12 ASSOC+PAT theorem:
 Bayes-normal selector, lower threshold, concrete semantic model. -/
 theorem end_to_end_assocPat_bayesNormal_lower :

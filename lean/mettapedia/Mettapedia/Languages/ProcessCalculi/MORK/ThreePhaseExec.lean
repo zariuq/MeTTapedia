@@ -29,7 +29,7 @@ spec here AND in `MORKCommBridge.lean` whenever MORK evolves.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
 /-! ## Phase type -/
 
@@ -353,7 +353,7 @@ instance instDecidableAggregatorConsistent (fold : FoldStep) :
 
 section AggregatorCanaries
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 
 -- count of 3 sub-results = 3
 example : applyAggregator .count [.symbol "a", .symbol "b", .symbol "c"] =

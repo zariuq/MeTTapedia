@@ -33,8 +33,8 @@ Mettapedia/
 
 ## Toolchain
 
-- The toolchain uses Lean 4.27.0 (see lean-toolchain).
-- The toolchain uses Mathlib v4.27.0 (see lakefile.toml).
+- The toolchain uses Lean 4.28.0 (see lean-toolchain).
+- The toolchain uses Mathlib v4.28.0 (see lakefile.toml).
 - Local dependencies live in local subdirectories when needed.
 
 ## Build
@@ -91,6 +91,27 @@ nice -n 19 lake build
 
 - `Algebra/OrderedSemigroups/`
   - Algebra/OrderedSemigroups hosts ordered semigroup formalization
+
+- `UniversalAI/`
+  - UniversalAI hosts Hutter (2005) Chapters 4–7: AIXI agents, value functions, intelligence measure, time-bounded AIXI, problem classes, multi-agent extensions, self-modification, Gödel machines (~27K lines, 71 files)
+
+- `Logic/HOL/`
+  - Logic/HOL hosts Church-style higher-order logic: Henkin semantics, classical + intuitionistic soundness, Lindenbaum quotients, Henkinization, logical induction, probabilistic semantics (54 files)
+
+- `Logic/UniversalPrediction/`
+  - Logic/UniversalPrediction hosts Solomonoff–Hutter universal prediction theory (Chapters 2–3): prefix measures, enumeration, convergence, loss/error bounds, optimality (37 files, ~12.9K lines)
+
+- `Languages/MeTTa/PureKernel/`
+  - Languages/MeTTa/PureKernel hosts the trusted proof kernel for dependently-typed MeTTa Pure: Pi/Sigma/Id/universes, general declaration mechanism, pilot families (Bool, Nat, Unit)
+
+- `Ethics/`
+  - Ethics hosts Gewirth PGC formalization (port of Fuenmayor & Benzmüller AFP Isabelle/HOL work into Lean 4; drops 5 of 8 axioms as unnecessary)
+
+- `Conformance/`
+  - Conformance hosts runtime/spec boundary testing: kernel-checked I→O derivation proofs matching unit test expectations (6 files, ~2.7K lines)
+
+- `CategoricalLogic/`
+  - CategoricalLogic hosts categorical logic formalization
 
 ## Lean to mettail-rust example
 

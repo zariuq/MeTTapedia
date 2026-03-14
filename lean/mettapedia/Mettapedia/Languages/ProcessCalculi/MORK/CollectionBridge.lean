@@ -38,7 +38,7 @@ congruence surface:
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 private abbrev ILP := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern

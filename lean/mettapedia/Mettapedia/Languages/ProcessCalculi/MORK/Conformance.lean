@@ -26,7 +26,7 @@ The `.mm2` source for each test is included in the fixture's docstring.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK.Conformance
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
 
 /-! ## Spec-level expression matching -/
@@ -42,7 +42,7 @@ end Mettapedia.Languages.ProcessCalculi.MORK.Conformance
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK.Conformance.Computable
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
 
 /-- A computable space is `List Atom` (bag semantics). -/
@@ -50,7 +50,7 @@ abbrev CSpace := List Atom
 
 end Mettapedia.Languages.ProcessCalculi.MORK.Conformance.Computable
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
 
 mutual
@@ -84,7 +84,7 @@ end
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK.Conformance
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
 
 namespace Computable

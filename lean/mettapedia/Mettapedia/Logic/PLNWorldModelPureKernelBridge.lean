@@ -1,6 +1,8 @@
 import Mettapedia.Logic.PLNWorldModelCalculus
 import Mettapedia.Logic.PLNWorldModelCategoricalBridge
 import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
+import Mettapedia.Languages.MeTTa.PureKernel.Inst0BridgeDerived
+import Provenance.Util.ValueTypeString
 
 /-!
 # PureKernel -> WM Obligation Bridge (A/B/C Aligned)
@@ -44,23 +46,76 @@ open scoped ENNReal
 
 /-- Closed A -> C1 bridge alias from the canonical PureKernel A/B/C surface. -/
 abbrev PureClosedOperationalBridge : Prop :=
-  Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding.PureClosedOperationalBridge
+  ∀ {t u : PureTm 0}, PureOpStep t u →
+    PureProfileTheoryStep (quoteClosedTm t) (quoteClosedTm u)
 
 /-- Closed A* -> C1* bridge alias from the canonical PureKernel A/B/C surface. -/
 abbrev PureClosedOperationalBridgeStar : Prop :=
-  Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding.PureClosedOperationalBridgeStar
+  ∀ {t u : PureTm 0}, PureOpStepStar t u →
+    PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u)
 
 /-- Closed B -> C1 bridge alias from the canonical PureKernel A/B/C surface. -/
 abbrev PureClosedTheoryBridge : Prop :=
-  Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding.PureClosedTheoryBridge
+  ∀ {t u : PureTm 0}, Red t u →
+    PureProfileTheoryStep (quoteClosedTm t) (quoteClosedTm u)
 
 /-- Closed B* -> C1* bridge alias from the canonical PureKernel A/B/C surface. -/
 abbrev PureClosedTheoryBridgeStar : Prop :=
-  Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding.PureClosedTheoryBridgeStar
+  ∀ {t u : PureTm 0}, RedStar t u →
+    PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u)
 
-/-- Canonical bundled A/B/C bridge surface re-exported for WM adapters. -/
-abbrev PureClosedABCSurface :=
-  Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding.PureClosedABCSurface
+private theorem defaultBinderName_injective : Function.Injective defaultBinderName := by
+  intro a b hab
+  rw [← natStringValue_repr a, ← natStringValue_repr b]
+  simpa [defaultBinderName, natStringValue] using congrArg natStringValue hab
+
+private theorem defaultBinderName_quoteCompat0 :
+    QuoteCompat defaultBinderName 0 emptyEnv :=
+  quoteCompat_empty defaultBinderName defaultBinderName_injective 0
+
+/-- Canonical theoremic A -> C1 bridge specialized to the default binder policy. -/
+theorem pureClosedOperationalBridge_default :
+    PureClosedOperationalBridge :=
+  pureOpStep_sound_pureProfileTheoryStep_quoteClosed
+
+/-- Canonical theoremic A* -> C1* bridge specialized to the default binder policy. -/
+theorem pureClosedOperationalBridgeStar_default :
+    PureClosedOperationalBridgeStar :=
+  pureOpStepStar_sound_pureProfileTheoryStep_quoteClosed
+
+/-- Canonical theoremic B -> C1 bridge specialized to the default binder policy. -/
+theorem pureClosedTheoryBridge_default :
+    PureClosedTheoryBridge :=
+  pureTheoryStep_sound_pureProfileTheoryStep_quoteClosed
+    inst0OpenBridgeCompat_defaultBinderName
+    defaultBinderName_quoteCompat0
+
+/-- Canonical theoremic B* -> C1* bridge specialized to the default binder policy. -/
+theorem pureClosedTheoryBridgeStar_default :
+    PureClosedTheoryBridgeStar :=
+  pureTheoryStepStar_sound_pureProfileTheoryStepStar_quoteClosed
+    inst0OpenBridgeCompat_defaultBinderName
+    defaultBinderName_quoteCompat0
+
+/-- Default-binder regression wrapper: one nested β binder still transports to C1. -/
+theorem betaPi_bridge_regression_one_nestedLam :
+    PureProfileTheoryStep
+      (quoteClosedTm
+        (.app (.lam (.lam (.var (Fin.succ (0 : Fin 1))))) .u0))
+      (quoteClosedTm (.lam .u0)) :=
+  betaPi_bridge_regression_one_nestedLam_assuming_inst0
+    inst0OpenBridgeCompat_defaultBinderName
+    defaultBinderName_quoteCompat0
+
+/-- Default-binder regression wrapper: two nested β binders still transport to C1. -/
+theorem betaPi_bridge_regression_two_nestedLam :
+    PureProfileTheoryStep
+      (quoteClosedTm
+        (.app (.lam (.lam (.lam (.var (Fin.succ (Fin.succ (0 : Fin 1))))))) .u0))
+      (quoteClosedTm (.lam (.lam .u0))) :=
+  betaPi_bridge_regression_two_nestedLam_assuming_inst0
+    inst0OpenBridgeCompat_defaultBinderName
+    defaultBinderName_quoteCompat0
 
 /-- Star bridge is derivable from the one-step bridge by closure induction. -/
 theorem pureClosedTheoryBridge_to_star

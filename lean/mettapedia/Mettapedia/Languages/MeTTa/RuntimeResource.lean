@@ -235,7 +235,7 @@ end OracleSeamCoverage
 
 section OracleResourceRouting
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK (OracleQuery OracleResponse ResourceRequest)
 
 /-- Z3 check-sat queries route to the `.z3` resource request. -/

@@ -1,9 +1,9 @@
 import Algorithms.MeTTa.HE.Lowering
-import Mettapedia.Languages.MeTTa.HE.Interpreter
+import Mettapedia.Languages.MeTTa.HE.EvalSpec
 
 namespace Mettapedia.Conformance.SimpleHE
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.MeTTa.HE
 open Algorithms.MeTTa.HE
 
@@ -51,9 +51,6 @@ private def runSimpleWithCfg (cfg : FrozenHEConfig) (query : FrozenHEAtom) : Lis
   let sess := toSession cfg
   let out := Algorithms.MeTTa.Simple.Session.eval sess query.toPattern
   out.filterMap (fun p => (FrozenHEAtom.ofPattern? p).map frozenToAtom)
-
-private def runHE (space : Space) (query : Atom) : List Atom :=
-  (eval query space).map Prod.fst
 
 private def spaceSimple : Space :=
   Space.ofList [
@@ -152,37 +149,37 @@ private def expectedPremiseBuiltin : List Atom := [.symbol "warm", .symbol "cool
 def checkSimple : Bool :=
   decide (
     runSimple spaceSimple (.expression [.symbol "f", .symbol "a"]) =
-      runHE spaceSimple (.expression [.symbol "f", .symbol "a"])
+      expectedSimple
   )
 
 def checkNested : Bool :=
   decide (
     runSimple spaceNested (.expression [.symbol "g", .symbol "a"]) =
-      runHE spaceNested (.expression [.symbol "g", .symbol "a"])
+      expectedNested
   )
 
 def checkNondet : Bool :=
   decide (
     runSimple spaceNondet (.expression [.symbol "choose"]) =
-      runHE spaceNondet (.expression [.symbol "choose"])
+      expectedNondet
   )
 
 def checkNoReduction : Bool :=
   decide (
     runSimple Space.empty (.expression [.symbol "unknown", .symbol "arg"]) =
-      runHE Space.empty (.expression [.symbol "unknown", .symbol "arg"])
+      expectedNoReduction
   )
 
 def checkPatternVar : Bool :=
   decide (
     runSimple spacePatternVar (.expression [.symbol "f", .symbol "hello"]) =
-      runHE spacePatternVar (.expression [.symbol "f", .symbol "hello"])
+      expectedPatternVar
   )
 
 def checkUntypedId : Bool :=
   decide (
     runSimple spaceUntypedId (.expression [.symbol "id", .symbol "five"]) =
-      runHE spaceUntypedId (.expression [.symbol "id", .symbol "five"])
+      [.symbol "five"]
   )
 
 def checkDuplicate : Bool :=
@@ -222,14 +219,14 @@ def allChecksPass : Bool :=
 theorem simple_conformance_of_check
     (h : checkSimple = true) :
     runSimple spaceSimple (.expression [.symbol "f", .symbol "a"]) =
-      runHE spaceSimple (.expression [.symbol "f", .symbol "a"]) := by
+      expectedSimple := by
   unfold checkSimple at h
   exact (decide_eq_true_eq.mp h)
 
 theorem nondet_conformance_of_check
     (h : checkNondet = true) :
     runSimple spaceNondet (.expression [.symbol "choose"]) =
-      runHE spaceNondet (.expression [.symbol "choose"]) := by
+      expectedNondet := by
   unfold checkNondet at h
   exact (decide_eq_true_eq.mp h)
 
@@ -238,13 +235,6 @@ theorem premise_relation_lowering_of_check
     runSimpleWithCfg cfgPremiseRelation (.expr [.symbol "fromRel"]) =
       expectedPremiseRelation := by
   unfold checkPremiseRelationLowering at h
-  exact (decide_eq_true_eq.mp h)
-
-theorem untyped_id_conformance_of_check
-    (h : checkUntypedId = true) :
-    runSimple spaceUntypedId (.expression [.symbol "id", .symbol "five"]) =
-      runHE spaceUntypedId (.expression [.symbol "id", .symbol "five"]) := by
-  unfold checkUntypedId at h
   exact (decide_eq_true_eq.mp h)
 
 theorem premise_builtin_lowering_of_check
@@ -259,7 +249,7 @@ theorem premise_builtin_lowering_of_check
 theorem he_io_anchor_he_simple_rewrite :
     (h : checkSimple = true) →
     runSimple spaceSimple (.expression [.symbol "f", .symbol "a"]) =
-      runHE spaceSimple (.expression [.symbol "f", .symbol "a"]) := by
+      expectedSimple := by
   intro h
   unfold checkSimple at h
   exact (decide_eq_true_eq.mp h)
@@ -267,7 +257,7 @@ theorem he_io_anchor_he_simple_rewrite :
 theorem he_io_anchor_he_nested_rewrite :
     (h : checkNested = true) →
     runSimple spaceNested (.expression [.symbol "g", .symbol "a"]) =
-      runHE spaceNested (.expression [.symbol "g", .symbol "a"]) := by
+      expectedNested := by
   intro h
   unfold checkNested at h
   exact (decide_eq_true_eq.mp h)
@@ -275,7 +265,7 @@ theorem he_io_anchor_he_nested_rewrite :
 theorem he_io_anchor_he_nondet_choose_bag :
     (h : checkNondet = true) →
     runSimple spaceNondet (.expression [.symbol "choose"]) =
-      runHE spaceNondet (.expression [.symbol "choose"]) := by
+      expectedNondet := by
   intro h
   unfold checkNondet at h
   exact (decide_eq_true_eq.mp h)
@@ -283,7 +273,7 @@ theorem he_io_anchor_he_nondet_choose_bag :
 theorem he_io_anchor_he_unknown_expr_preserved :
     (h : checkNoReduction = true) →
     runSimple Space.empty (.expression [.symbol "unknown", .symbol "arg"]) =
-      runHE Space.empty (.expression [.symbol "unknown", .symbol "arg"]) := by
+      expectedNoReduction := by
   intro h
   unfold checkNoReduction at h
   exact (decide_eq_true_eq.mp h)
@@ -291,7 +281,7 @@ theorem he_io_anchor_he_unknown_expr_preserved :
 theorem he_io_anchor_he_pattern_variable_substitution :
     (h : checkPatternVar = true) →
     runSimple spacePatternVar (.expression [.symbol "f", .symbol "hello"]) =
-      runHE spacePatternVar (.expression [.symbol "f", .symbol "hello"]) := by
+      expectedPatternVar := by
   intro h
   unfold checkPatternVar at h
   exact (decide_eq_true_eq.mp h)
@@ -305,23 +295,18 @@ theorem he_io_anchor_he_duplicate_multiplicity_preserved :
 
 #eval ("expectedSimple", expectedSimple)
 #eval ("runtimeSimple", runSimple spaceSimple (.expression [.symbol "f", .symbol "a"]))
-#eval ("specSimple", runHE spaceSimple (.expression [.symbol "f", .symbol "a"]))
 
 #eval ("expectedNested", expectedNested)
 #eval ("runtimeNested", runSimple spaceNested (.expression [.symbol "g", .symbol "a"]))
-#eval ("specNested", runHE spaceNested (.expression [.symbol "g", .symbol "a"]))
 
 #eval ("expectedNondet", expectedNondet)
 #eval ("runtimeNondet", runSimple spaceNondet (.expression [.symbol "choose"]))
-#eval ("specNondet", runHE spaceNondet (.expression [.symbol "choose"]))
 
 #eval ("expectedNoReduction", expectedNoReduction)
 #eval ("runtimeNoReduction", runSimple Space.empty (.expression [.symbol "unknown", .symbol "arg"]))
-#eval ("specNoReduction", runHE Space.empty (.expression [.symbol "unknown", .symbol "arg"]))
 
 #eval ("expectedPatternVar", expectedPatternVar)
 #eval ("runtimePatternVar", runSimple spacePatternVar (.expression [.symbol "f", .symbol "hello"]))
-#eval ("specPatternVar", runHE spacePatternVar (.expression [.symbol "f", .symbol "hello"]))
 
 #eval ("expectedDuplicate", expectedDuplicate)
 #eval ("runtimeDuplicate", runSimpleWithCfg cfgDuplicate (.expr [.symbol "dup"]))

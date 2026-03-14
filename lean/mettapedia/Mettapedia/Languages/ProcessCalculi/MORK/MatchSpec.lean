@@ -12,7 +12,7 @@ Expression-pattern matching is intentionally unsupported in `matchAtom` today.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 
 /-- Relational spec for atom matching. -/
 inductive MatchAtomRel : Subst → Atom → Atom → Subst → Prop where

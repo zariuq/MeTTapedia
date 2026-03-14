@@ -183,6 +183,18 @@ noncomputable def thereExistsEvalInf {U : Type*}
     (μ : WeightFunctionInf U Evidence) : Evidence :=
   Evidence.compl (forAllEvalInf (SatisfyingSetInf.neg S) μ)
 
+/-! ## Extensional (Meet/Join) Quantifier Views -/
+
+/-- **Extensional ∀** over an arbitrary domain: infimum of all pointwise evidences. -/
+noncomputable def forAllEvalExtInf {U : Type*}
+    (S : SatisfyingSetInf U) : Evidence :=
+  sInf { e | ∃ u : U, e = S.pred u }
+
+/-- **Extensional ∃** over an arbitrary domain: supremum of all pointwise evidences. -/
+noncomputable def thereExistsEvalExtInf {U : Type*}
+    (S : SatisfyingSetInf U) : Evidence :=
+  sSup { e | ∃ u : U, e = S.pred u }
+
 /-! ## Basic Theorems -/
 
 variable {U : Type*}
@@ -220,6 +232,179 @@ theorem forAllEvalInf_constantFalse (μ : WeightFunctionInf U Evidence) :
 theorem deMorgan_inf (S : SatisfyingSetInf U) (μ : WeightFunctionInf U Evidence) :
     thereExistsEvalInf S μ =
     Evidence.compl (forAllEvalInf (SatisfyingSetInf.neg S) μ) := rfl
+
+@[simp] theorem thereExistsEvalInf_deMorgan
+    (S : SatisfyingSetInf U) (μ : WeightFunctionInf U Evidence) :
+    thereExistsEvalInf S μ =
+    Evidence.compl (forAllEvalInf (SatisfyingSetInf.neg S) μ) := rfl
+
+theorem forAllEvalExtInf_congr
+    (S₁ S₂ : SatisfyingSetInf U)
+    (h : ∀ u, S₁.pred u = S₂.pred u) :
+    forAllEvalExtInf S₁ = forAllEvalExtInf S₂ := by
+  unfold forAllEvalExtInf
+  congr 1
+  ext e
+  constructor
+  · intro he
+    rcases he with ⟨u, hu⟩
+    exact ⟨u, by simpa [h u] using hu⟩
+  · intro he
+    rcases he with ⟨u, hu⟩
+    exact ⟨u, by simpa [h u] using hu⟩
+
+theorem thereExistsEvalExtInf_congr
+    (S₁ S₂ : SatisfyingSetInf U)
+    (h : ∀ u, S₁.pred u = S₂.pred u) :
+    thereExistsEvalExtInf S₁ = thereExistsEvalExtInf S₂ := by
+  unfold thereExistsEvalExtInf
+  congr 1
+  ext e
+  constructor
+  · intro he
+    rcases he with ⟨u, hu⟩
+    exact ⟨u, by simpa [h u] using hu⟩
+  · intro he
+    rcases he with ⟨u, hu⟩
+    exact ⟨u, by simpa [h u] using hu⟩
+
+theorem forAllEvalExtInf_le_of_pointwise
+    (S₁ S₂ : SatisfyingSetInf U)
+    (h : ∀ u, S₁.pred u ≤ S₂.pred u) :
+    forAllEvalExtInf S₁ ≤ forAllEvalExtInf S₂ := by
+  unfold forAllEvalExtInf
+  apply le_sInf
+  intro e he
+  rcases he with ⟨u, rfl⟩
+  exact le_trans (sInf_le ⟨u, rfl⟩) (h u)
+
+theorem thereExistsEvalExtInf_le_of_pointwise
+    (S₁ S₂ : SatisfyingSetInf U)
+    (h : ∀ u, S₁.pred u ≤ S₂.pred u) :
+    thereExistsEvalExtInf S₁ ≤ thereExistsEvalExtInf S₂ := by
+  unfold thereExistsEvalExtInf
+  apply sSup_le
+  intro e he
+  rcases he with ⟨u, rfl⟩
+  exact le_trans (h u) (le_sSup ⟨u, rfl⟩)
+
+theorem forAllEvalExtInf_le
+    (S : SatisfyingSetInf U) (u : U) :
+    forAllEvalExtInf S ≤ S.pred u := by
+  unfold forAllEvalExtInf
+  exact sInf_le ⟨u, rfl⟩
+
+theorem le_thereExistsEvalExtInf
+    (S : SatisfyingSetInf U) (u : U) :
+    S.pred u ≤ thereExistsEvalExtInf S := by
+  unfold thereExistsEvalExtInf
+  exact le_sSup ⟨u, rfl⟩
+
+theorem forAllEvalExtInf_le_thereExistsEvalExtInf
+    [Nonempty U] (S : SatisfyingSetInf U) :
+    forAllEvalExtInf S ≤ thereExistsEvalExtInf S := by
+  let u0 : U := Classical.choice ‹Nonempty U›
+  exact le_trans (forAllEvalExtInf_le S u0) (le_thereExistsEvalExtInf S u0)
+
+theorem forAllEvalExtInf_eq_top_of_isEmpty
+    [IsEmpty U] (S : SatisfyingSetInf U) :
+    forAllEvalExtInf S = ⊤ := by
+  unfold forAllEvalExtInf
+  have hset : ({ e : Evidence | ∃ u : U, e = S.pred u } : Set Evidence) = ∅ := by
+    ext e
+    constructor
+    · intro he
+      rcases he with ⟨u, _⟩
+      exact isEmptyElim u
+    · intro he
+      simp at he
+  rw [hset, sInf_empty]
+
+theorem thereExistsEvalExtInf_eq_bot_of_isEmpty
+    [IsEmpty U] (S : SatisfyingSetInf U) :
+    thereExistsEvalExtInf S = ⊥ := by
+  unfold thereExistsEvalExtInf
+  have hset : ({ e : Evidence | ∃ u : U, e = S.pred u } : Set Evidence) = ∅ := by
+    ext e
+    constructor
+    · intro he
+      rcases he with ⟨u, _⟩
+      exact isEmptyElim u
+    · intro he
+      simp at he
+  rw [hset, sSup_empty]
+
+theorem forAllEvalExtInf_constantTrue
+    [Nonempty U] :
+    forAllEvalExtInf (SatisfyingSetInf.constantTrue : SatisfyingSetInf U) = pTrue := by
+  have hset :
+      ({ e : Evidence | ∃ u : U, e = SatisfyingSetInf.constantTrue.pred u } : Set Evidence) =
+        ({ pTrue } : Set Evidence) := by
+    ext e
+    constructor
+    · intro he
+      rcases he with ⟨u, rfl⟩
+      simp [SatisfyingSetInf.constantTrue]
+    · intro he
+      simp only [Set.mem_singleton_iff] at he
+      let u0 : U := Classical.choice ‹Nonempty U›
+      exact ⟨u0, by simpa [SatisfyingSetInf.constantTrue] using he⟩
+  unfold forAllEvalExtInf
+  rw [hset, sInf_singleton]
+
+theorem thereExistsEvalExtInf_constantTrue
+    [Nonempty U] :
+    thereExistsEvalExtInf (SatisfyingSetInf.constantTrue : SatisfyingSetInf U) = pTrue := by
+  have hset :
+      ({ e : Evidence | ∃ u : U, e = SatisfyingSetInf.constantTrue.pred u } : Set Evidence) =
+        ({ pTrue } : Set Evidence) := by
+    ext e
+    constructor
+    · intro he
+      rcases he with ⟨u, rfl⟩
+      simp [SatisfyingSetInf.constantTrue]
+    · intro he
+      simp only [Set.mem_singleton_iff] at he
+      let u0 : U := Classical.choice ‹Nonempty U›
+      exact ⟨u0, by simpa [SatisfyingSetInf.constantTrue] using he⟩
+  unfold thereExistsEvalExtInf
+  rw [hset, sSup_singleton]
+
+theorem forAllEvalExtInf_constantFalse
+    [Nonempty U] :
+    forAllEvalExtInf (SatisfyingSetInf.constantFalse : SatisfyingSetInf U) = pFalse := by
+  have hset :
+      ({ e : Evidence | ∃ u : U, e = SatisfyingSetInf.constantFalse.pred u } : Set Evidence) =
+        ({ pFalse } : Set Evidence) := by
+    ext e
+    constructor
+    · intro he
+      rcases he with ⟨u, rfl⟩
+      simp [SatisfyingSetInf.constantFalse]
+    · intro he
+      simp only [Set.mem_singleton_iff] at he
+      let u0 : U := Classical.choice ‹Nonempty U›
+      exact ⟨u0, by simpa [SatisfyingSetInf.constantFalse] using he⟩
+  unfold forAllEvalExtInf
+  rw [hset, sInf_singleton]
+
+theorem thereExistsEvalExtInf_constantFalse
+    [Nonempty U] :
+    thereExistsEvalExtInf (SatisfyingSetInf.constantFalse : SatisfyingSetInf U) = pFalse := by
+  have hset :
+      ({ e : Evidence | ∃ u : U, e = SatisfyingSetInf.constantFalse.pred u } : Set Evidence) =
+        ({ pFalse } : Set Evidence) := by
+    ext e
+    constructor
+    · intro he
+      rcases he with ⟨u, rfl⟩
+      simp [SatisfyingSetInf.constantFalse]
+    · intro he
+      simp only [Set.mem_singleton_iff] at he
+      let u0 : U := Classical.choice ‹Nonempty U›
+      exact ⟨u0, by simpa [SatisfyingSetInf.constantFalse] using he⟩
+  unfold thereExistsEvalExtInf
+  rw [hset, sSup_singleton]
 
 /-! ## Weakness Properties -/
 

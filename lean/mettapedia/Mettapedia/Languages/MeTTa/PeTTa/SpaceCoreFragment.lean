@@ -16,7 +16,7 @@ It already exercises the atomspace/query side of PeTTa while staying inside the
 existing theoremic MORK source-query machinery.
 
 Positive example:
-- querying any fact in `&self` with a single free variable pattern.
+- querying any stored atom in `&self` with a single free variable pattern.
 
 Negative example:
 - this does not yet cover collection-pattern bag matching.
@@ -38,36 +38,37 @@ private abbrev CSpace :=
 
 This packages the simplest non-sham atomspace/query fragment:
 - the pattern is a single free variable
-- a fact from the current space instantiates that variable
+- a stored atom from the current space instantiates that variable
 - the instantiated template is the reported answer
-- or the current fact is returned directly via `(get-atoms &self)`
+- or the current stored atom is returned directly via `(get-atoms &self)`
 -/
 inductive PeTTaSpaceCoreQuery (s : Mettapedia.Languages.MeTTa.PeTTa.PeTTaSpace) :
     ILPattern → ILPattern → Prop where
-  | anyFactMatch (x : String) (tmpl fact q : ILPattern)
-      (hfact : fact ∈ s.facts)
+  | anyFactMatch (x : String) (tmpl atom q : ILPattern)
+      (hatom : atom ∈ s.storedAtoms)
       (htrans_tmpl : morkTranslatable tmpl = true)
-      (hq : Mettapedia.OSLF.MeTTaIL.Match.applyBindings [(x, fact)] tmpl = q) :
+      (hq : Mettapedia.OSLF.MeTTaIL.Match.applyBindings [(x, atom)] tmpl = q) :
       PeTTaSpaceCoreQuery s
         (.apply "match" [.apply "&self" [], .fvar x, tmpl]) q
-  | getAtoms (fact : ILPattern)
-      (hfact : fact ∈ s.facts) :
-      PeTTaSpaceCoreQuery s (.apply "get-atoms" [.apply "&self" []]) fact
+  | getAtoms (atom : ILPattern)
+      (hatom : atom ∈ s.storedAtoms) :
+      PeTTaSpaceCoreQuery s (.apply "get-atoms" [.apply "&self" []]) atom
 
 /-- Reflexive-transitive closure of the first PeTTa space-query core fragment. -/
 abbrev PeTTaSpaceCoreQueryStar (s : Mettapedia.Languages.MeTTa.PeTTa.PeTTaSpace) :=
   Relation.ReflTransGen (PeTTaSpaceCoreQuery s)
 
 /-- This fragment is a genuine subset of `spaceMatch`: each answer arises from
-matching a single fact against `.fvar x`. -/
+matching a single stored atom against `.fvar x`. -/
 theorem anyFactMatch_mem_spaceMatch
     {s : Mettapedia.Languages.MeTTa.PeTTa.PeTTaSpace}
-    {x : String} {tmpl fact q : ILPattern}
-    (hfact : fact ∈ s.facts)
-    (hq : Mettapedia.OSLF.MeTTaIL.Match.applyBindings [(x, fact)] tmpl = q) :
+    {x : String} {tmpl atom q : ILPattern}
+    (hatom : atom ∈ s.storedAtoms)
+    (hq : Mettapedia.OSLF.MeTTaIL.Match.applyBindings [(x, atom)] tmpl = q) :
     q ∈ s.spaceMatch (.fvar x) tmpl := by
   exact hq ▸ Mettapedia.Languages.MeTTa.PeTTa.PeTTaSpace.spaceMatch_complete
-    s (.fvar x) tmpl fact [(x, fact)] hfact (by simp [Mettapedia.OSLF.MeTTaIL.Match.matchPattern])
+    s (.fvar x) tmpl atom [(x, atom)] hatom
+      (by simp [Mettapedia.OSLF.MeTTaIL.Match.matchPattern])
 
 /-- Forget the packaged fragment back to the raw `spaceMatch` semantics. -/
 theorem toSpaceMatch
@@ -81,55 +82,55 @@ theorem toSpaceMatch
       | .apply "match" [.apply "&self" [], .fvar _, tmpl] => tmpl
       | _ => .fvar "")
     | .apply "get-atoms" [.apply "&self" []] =>
-        q ∈ s.facts
+        q ∈ s.storedAtoms
     | _ => False := by
   cases h with
-  | anyFactMatch x tmpl fact q hfact _ hq =>
-      simpa using anyFactMatch_mem_spaceMatch hfact hq
-  | getAtoms fact hfact =>
-      simpa using hfact
+  | anyFactMatch x tmpl atom q hatom _ hq =>
+      simpa using anyFactMatch_mem_spaceMatch hatom hq
+  | getAtoms atom hatom =>
+      simpa using hatom
 
 /-- A packaged `match &self $x tmpl` query lands on the current MORK source-query
 seam. -/
 theorem anyFactMatch_toMorkSourceQuery
     {s : Mettapedia.Languages.MeTTa.PeTTa.PeTTaSpace}
-    {x : String} {tmpl fact q : ILPattern}
-    (_hfact : fact ∈ s.facts)
+    {x : String} {tmpl atom q : ILPattern}
+    (_hatom : atom ∈ s.storedAtoms)
     (htrans_tmpl : morkTranslatable tmpl = true)
-    (hq : Mettapedia.OSLF.MeTTaIL.Match.applyBindings [(x, fact)] tmpl = q)
+    (hq : Mettapedia.OSLF.MeTTaIL.Match.applyBindings [(x, atom)] tmpl = q)
     {workspace : Space}
-    (hfact_in : morkPatternToAtom fact ∈ workspace) :
+    (hatom_in : morkPatternToAtom atom ∈ workspace) :
     let src := morkRuntimeQueryExec0.baseSourceFactor (.fvar x)
     ∃ σ a,
       (σ, a) ∈ morkRuntimeQueryExec0.sourceFactorMatch [] workspace src ∧
       applySubst σ (morkPatternToAtom tmpl) = morkPatternToAtom q := by
   dsimp [morkRuntimeQueryExec0]
-  refine ⟨bindingsToSubst [(x, fact)], morkPatternToAtom fact, ?_, ?_⟩
-  · change (bindingsToSubst [(x, fact)], morkPatternToAtom fact) ∈
+  refine ⟨bindingsToSubst [(x, atom)], morkPatternToAtom atom, ?_, ?_⟩
+  · change (bindingsToSubst [(x, atom)], morkPatternToAtom atom) ∈
       matchSourceFactor [] workspace (.btm (morkPatternToAtom (.fvar x)))
     simp only [matchSourceFactor]
     apply matchOneInSpace_mem
-    · exact hfact_in
+    · exact hatom_in
     · simpa [morkPatternToAtom, bindingsToSubst] using
-        (matchAtom_var_bindingsToSubst_new ([] : ILBindings) x fact (by simp))
-  · simpa [hq] using applySubst_commutes [(x, fact)] tmpl htrans_tmpl
+        (matchAtom_var_bindingsToSubst_new ([] : ILBindings) x atom (by simp))
+  · simpa [hq] using applySubst_commutes [(x, atom)] tmpl htrans_tmpl
 
 /-- Computable version of the same MORK source-query witness on list spaces. -/
 theorem anyFactMatch_toComputableSourceQuery
     {s : Mettapedia.Languages.MeTTa.PeTTa.PeTTaSpace}
-    {x : String} {tmpl fact q : ILPattern}
-    (hfact : fact ∈ s.facts)
+    {x : String} {tmpl atom q : ILPattern}
+    (hatom : atom ∈ s.storedAtoms)
     (htrans_tmpl : morkTranslatable tmpl = true)
-    (hq : Mettapedia.OSLF.MeTTaIL.Match.applyBindings [(x, fact)] tmpl = q)
+    (hq : Mettapedia.OSLF.MeTTaIL.Match.applyBindings [(x, atom)] tmpl = q)
     {workspace : CSpace}
-    (hfact_in : morkPatternToAtom fact ∈ workspace) :
+    (hatom_in : morkPatternToAtom atom ∈ workspace) :
     let src := morkRuntimeQueryExec0.baseSourceFactor (.fvar x)
     ∃ σ a,
       (σ, a) ∈ morkRuntimeQueryExec0.computableSourceFactorMatch [] workspace src ∧
       applySubst σ (morkPatternToAtom tmpl) = morkPatternToAtom q := by
   obtain ⟨σ, a, hsrc, htmpl⟩ :=
-    anyFactMatch_toMorkSourceQuery hfact htrans_tmpl hq
-      (workspace := workspace.toFinset) (by exact List.mem_toFinset.mpr hfact_in)
+    anyFactMatch_toMorkSourceQuery hatom htrans_tmpl hq
+      (workspace := workspace.toFinset) (by exact List.mem_toFinset.mpr hatom_in)
   refine ⟨σ, a, ?_, htmpl⟩
   exact morkRuntimeQueryExec0.sourceFactorComplete [] workspace _ σ a hsrc
 
@@ -137,27 +138,27 @@ theorem anyFactMatch_toComputableSourceQuery
 seam: any fact can be witnessed by a single free-variable source factor. -/
 theorem getAtoms_toComputableSourceQuery
     {s : Mettapedia.Languages.MeTTa.PeTTa.PeTTaSpace}
-    {fact : ILPattern}
-    (_hfact : fact ∈ s.facts)
+    {atom : ILPattern}
+    (_hatom : atom ∈ s.storedAtoms)
     {workspace : CSpace}
-    (hfact_in : morkPatternToAtom fact ∈ workspace) :
+    (hatom_in : morkPatternToAtom atom ∈ workspace) :
     let src := morkRuntimeQueryExec0.baseSourceFactor (.fvar "__fact")
     ∃ σ a,
       (σ, a) ∈ morkRuntimeQueryExec0.computableSourceFactorMatch [] workspace src ∧
-      applySubst σ (morkPatternToAtom (.fvar "__fact")) = morkPatternToAtom fact := by
-  refine ⟨bindingsToSubst [("__fact", fact)], morkPatternToAtom fact, ?_, ?_⟩
+      applySubst σ (morkPatternToAtom (.fvar "__fact")) = morkPatternToAtom atom := by
+  refine ⟨bindingsToSubst [("__fact", atom)], morkPatternToAtom atom, ?_, ?_⟩
   · exact
       morkRuntimeQueryExec0.sourceFactorComplete [] workspace _ _ _
         (by
-          change (bindingsToSubst [("__fact", fact)], morkPatternToAtom fact) ∈
+          change (bindingsToSubst [("__fact", atom)], morkPatternToAtom atom) ∈
             matchSourceFactor [] workspace.toFinset (.btm (morkPatternToAtom (.fvar "__fact")))
           simp only [matchSourceFactor]
           apply matchOneInSpace_mem
-          · exact List.mem_toFinset.mpr hfact_in
+          · exact List.mem_toFinset.mpr hatom_in
           · simpa [morkPatternToAtom, bindingsToSubst] using
-              (matchAtom_var_bindingsToSubst_new ([] : ILBindings) "__fact" fact (by simp)))
-  · show (([("__fact", morkPatternToAtom fact)] : Subst).lookup "__fact").getD (.var "__fact") =
-      morkPatternToAtom fact
+              (matchAtom_var_bindingsToSubst_new ([] : ILBindings) "__fact" atom (by simp)))
+  · show (([("__fact", morkPatternToAtom atom)] : Subst).lookup "__fact").getD (.var "__fact") =
+      morkPatternToAtom atom
     simp
 
 end Mettapedia.Languages.MeTTa.PeTTa.SpaceCoreFragment

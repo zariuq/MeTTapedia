@@ -166,6 +166,8 @@ abbrev sourceExecFactExtraction := @extractSourceExecFact
 /-- Source-aware firing: matchInputSpec pipeline. -/
 noncomputable abbrev sourceExecFactFiring := @fireSourceExecFact
 
+/-! ### Hybrid source extension (generator/resource-backed factors) -/
+
 /-- Compat-mode source firing agrees with regular fireRule. -/
 abbrev sourceRuleCompat := @fireSourceRule_compat
 

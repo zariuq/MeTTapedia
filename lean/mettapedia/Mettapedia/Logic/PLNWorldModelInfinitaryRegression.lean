@@ -1,15 +1,15 @@
-import Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness
+import Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness
 import Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness
 
 /-!
-# Infinitary WM Regression Fixtures (HOL + FOL)
+# Infinitary WM Regression Fixtures (PredCode + FOL)
 
 Concrete theorem-level fixtures exercising the new countable-connective wrappers:
 
 - `iAnd → component` (elimination)
 - `component → iOr` (introduction)
 
-for both infinitary HOL and infinitary FOL WM layers.
+for both infinitary predicate-code and infinitary FOL WM layers.
 -/
 
 namespace Mettapedia.Logic.PLNWorldModelInfinitaryRegression
@@ -18,56 +18,59 @@ open LO
 open LO.FirstOrder
 open Mettapedia.Logic.PLNWorldModel
 
-/-! ## HOL fixtures -/
+/-! ## Predicate-code fixtures -/
 
-abbrev holInfFalse : Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfQuery Bool :=
+abbrev predCodeInfFalse :
+    Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool :=
   .atom (.comp_not .trivial)
 
-abbrev holInfTrue : Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfQuery Bool :=
+abbrev predCodeInfTrue :
+    Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool :=
   .atom .trivial
 
-def holInfSeq : Nat → Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfQuery Bool
-  | 0 => holInfFalse
-  | _ => holInfTrue
+def predCodeInfSeq :
+    Nat → Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool
+  | 0 => predCodeInfFalse
+  | _ => predCodeInfTrue
 
-def holInfFixtureState :
-    Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfState Bool :=
-  ({⟨true⟩} : Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfState Bool) +
-    ({⟨false⟩} : Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfState Bool)
+def predCodeInfFixtureState :
+    Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool :=
+  ({⟨true⟩} : Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool) +
+    ({⟨false⟩} : Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool)
 
-/-- HOL infinitary fixture: conjunction-elimination transport via wrapper API. -/
-theorem holInf_iAnd_component_fixture :
+/-- Predicate-code infinitary fixture: conjunction-elimination transport via wrapper API. -/
+theorem predCodeInf_iAnd_component_fixture :
     WorldModel.queryStrength
-        (State := Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfState Bool)
-        (Query := Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfQuery Bool)
-        holInfFixtureState (.iAnd holInfSeq) ≤
+        (State := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool)
+        (Query := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool)
+        predCodeInfFixtureState (.iAnd predCodeInfSeq) ≤
       WorldModel.queryStrength
-        (State := Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfState Bool)
-        (Query := Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfQuery Bool)
-        holInfFixtureState (holInfSeq 0) := by
+        (State := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool)
+        (Query := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool)
+        predCodeInfFixtureState (predCodeInfSeq 0) := by
   exact
-    (Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.wmConsequenceRule_of_pointwise
-      (q₁ := .iAnd holInfSeq) (q₂ := holInfSeq 0)).sound
-      (Mettapedia.Logic.PLNWorldModelHOLInfinitary.pointwise_iAnd_to_component
-        (F := holInfSeq) (n := 0))
-      holInfFixtureState
+    (Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.wmConsequenceRule_of_pointwise
+      (q₁ := .iAnd predCodeInfSeq) (q₂ := predCodeInfSeq 0)).sound
+      (Mettapedia.Logic.PLNWorldModelPredCodeInfinitary.pointwise_iAnd_to_component
+        (F := predCodeInfSeq) (n := 0))
+      predCodeInfFixtureState
 
-/-- HOL infinitary fixture: disjunction-introduction transport via wrapper API. -/
-theorem holInf_component_iOr_fixture :
+/-- Predicate-code infinitary fixture: disjunction-introduction transport via wrapper API. -/
+theorem predCodeInf_component_iOr_fixture :
     WorldModel.queryStrength
-        (State := Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfState Bool)
-        (Query := Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfQuery Bool)
-        holInfFixtureState (holInfSeq 0) ≤
+        (State := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool)
+        (Query := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool)
+        predCodeInfFixtureState (predCodeInfSeq 0) ≤
       WorldModel.queryStrength
-        (State := Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfState Bool)
-        (Query := Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.HOLInfQuery Bool)
-        holInfFixtureState (.iOr holInfSeq) := by
+        (State := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool)
+        (Query := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool)
+        predCodeInfFixtureState (.iOr predCodeInfSeq) := by
   exact
-    (Mettapedia.Logic.PLNWorldModelHOLInfinitaryCompleteness.wmConsequenceRule_of_pointwise
-      (q₁ := holInfSeq 0) (q₂ := .iOr holInfSeq)).sound
-      (Mettapedia.Logic.PLNWorldModelHOLInfinitary.pointwise_component_to_iOr
-        (F := holInfSeq) (n := 0))
-      holInfFixtureState
+    (Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.wmConsequenceRule_of_pointwise
+      (q₁ := predCodeInfSeq 0) (q₂ := .iOr predCodeInfSeq)).sound
+      (Mettapedia.Logic.PLNWorldModelPredCodeInfinitary.pointwise_component_to_iOr
+        (F := predCodeInfSeq) (n := 0))
+      predCodeInfFixtureState
 
 /-! ## FOL fixtures -/
 
@@ -125,4 +128,3 @@ theorem folInf_component_iOr_singleton_fixture
       ({S} : Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfState L)
 
 end Mettapedia.Logic.PLNWorldModelInfinitaryRegression
-

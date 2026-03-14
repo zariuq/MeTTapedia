@@ -24,7 +24,7 @@ Negative example:
 
 namespace Mettapedia.Languages.MeTTa.RuntimeExec
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
 

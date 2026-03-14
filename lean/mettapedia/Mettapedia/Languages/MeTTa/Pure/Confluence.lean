@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.Pure.Reduction
 import Mettapedia.Languages.MeTTa.Pure.FVarSubst
+import Mettapedia.Languages.MeTTa.Pure.Fragment
 
 /-!
 # MeTTa-Pure: Confluence and Pi/Sigma Injectivity
@@ -27,9 +28,10 @@ namespace Mettapedia.Languages.MeTTa.Pure.Confluence
 open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern)
 open Mettapedia.OSLF.MeTTaIL.Substitution (openBVar lc_at lc_at_list openBVar_lc_at lc_at_openBVar_result lc_at_mono lc_at_list_mem freeVars isFresh)
 open Mettapedia.Languages.MeTTa.Pure.Core
-open Mettapedia.Languages.MeTTa.Pure.Typing (PureConv)
+open Mettapedia.Languages.MeTTa.Pure.Typing (PureConv PureConv_pure_both PureConv_rightPure)
 open Mettapedia.Languages.MeTTa.Pure.Reduction
 open Mettapedia.Languages.MeTTa.Pure.FVarSubst
+open Mettapedia.Languages.MeTTa.Pure.Fragment
 
 /-! ## Head Preservation for Single-Step Reduction
 
@@ -356,21 +358,21 @@ theorem PureConv_preserves_lc_both {s t : Pattern} (h : PureConv s t) :
     (lc_at 0 s = true → lc_at 0 t = true) ∧
     (lc_at 0 t = true → lc_at 0 s = true) := by
   induction h with
-  | refl _ => exact ⟨id, id⟩
+  | refl _ _ => exact ⟨id, id⟩
   | symm _ ih => exact ⟨ih.2, ih.1⟩
   | trans _ _ ih₁ ih₂ => exact ⟨fun h => ih₂.1 (ih₁.1 h), fun h => ih₁.2 (ih₂.2 h)⟩
-  | betaPi body a hlcBody hlcA =>
+  | betaPi body a _ _ hlcBody hlcA =>
       constructor
       · intro hlc
         exact lc_at_openBVar_result hlcBody hlcA
       · intro _
         simp only [mkApp, mkLam, lc_at, lc_at_list, Bool.and_eq_true, and_true]
         exact ⟨hlcBody, hlcA⟩
-  | betaSigmaFst a b hlcA hlcB =>
+  | betaSigmaFst a b _ _ hlcA hlcB =>
       exact ⟨fun _ => hlcA, fun _ => by
         simp only [mkFst, mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true]
         exact ⟨hlcA, hlcB⟩⟩
-  | betaSigmaSnd a b hlcA hlcB =>
+  | betaSigmaSnd a b _ _ hlcA hlcB =>
       exact ⟨fun _ => hlcB, fun _ => by
         simp only [mkSnd, mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true]
         exact ⟨hlcA, hlcB⟩⟩
@@ -577,8 +579,7 @@ private theorem openBVar_comm_fvar {j k : Nat} {x y : String} (hjk : j ≠ k)
     · by_cases hnj : n = j
       · subst hnj
         simp [show (n == k) = false from beq_eq_false_iff_ne.mpr hnk,
-              show (n == j) = true from beq_iff_eq.mpr rfl, openBVar,
-              show (n == k) = false from beq_eq_false_iff_ne.mpr hnk]
+              show (n == j) = true from beq_iff_eq.mpr rfl, openBVar]
       · simp [show (n == k) = false from beq_eq_false_iff_ne.mpr hnk,
               show (n == j) = false from beq_eq_false_iff_ne.mpr hnj, openBVar]
   | hfvar z => simp [openBVar]
@@ -772,234 +773,6 @@ theorem parRed_openBVar_fvar {y : String} {p q : Pattern}
 
 /-! ### ParRed substitution -/
 
-/-- Pure MeTTa-Pure term fragment embedded in ambient `Pattern`.
-    This excludes ambient host constructors (`.lambda`, `.multiLambda`,
-    `.subst`, `.collection`) and non-kernel `.apply` heads. -/
-inductive PureTmPattern : Pattern → Prop where
-  | bvar (n : Nat) : PureTmPattern (.bvar n)
-  | fvar (x : String) : PureTmPattern (.fvar x)
-  | u0 : PureTmPattern u0
-  | u1 : PureTmPattern u1
-  | pi {A B : Pattern} : PureTmPattern A → PureTmPattern B → PureTmPattern (mkPi A B)
-  | sigma {A B : Pattern} : PureTmPattern A → PureTmPattern B → PureTmPattern (mkSigma A B)
-  | id {A a b : Pattern} : PureTmPattern A → PureTmPattern a → PureTmPattern b → PureTmPattern (mkId A a b)
-  | lam {body : Pattern} : PureTmPattern body → PureTmPattern (mkLam body)
-  | app {f a : Pattern} : PureTmPattern f → PureTmPattern a → PureTmPattern (mkApp f a)
-  | pair {a b : Pattern} : PureTmPattern a → PureTmPattern b → PureTmPattern (mkPair a b)
-  | fst {p : Pattern} : PureTmPattern p → PureTmPattern (mkFst p)
-  | snd {p : Pattern} : PureTmPattern p → PureTmPattern (mkSnd p)
-  | refl {a : Pattern} : PureTmPattern a → PureTmPattern (mkRefl a)
-
-/-- Opening a pure term with an fvar remains in the pure fragment. -/
-private theorem pureTm_openBVar_fvar (x : String) {k : Nat} {p : Pattern}
-    (hp : PureTmPattern p) : PureTmPattern (openBVar k (.fvar x) p) := by
-  induction hp generalizing k with
-  | bvar n =>
-    simp [openBVar]
-    split
-    · exact .fvar x
-    · exact .bvar n
-  | fvar y =>
-    simpa [openBVar] using (PureTmPattern.fvar y)
-  | u0 =>
-    simpa [u0, openBVar] using PureTmPattern.u0
-  | u1 =>
-    simpa [u1, openBVar] using PureTmPattern.u1
-  | pi hA hB ihA ihB =>
-    simpa [openBVar_mkPi] using PureTmPattern.pi (ihA (k := k)) (ihB (k := k + 1))
-  | sigma hA hB ihA ihB =>
-    simpa [openBVar_mkSigma] using PureTmPattern.sigma (ihA (k := k)) (ihB (k := k + 1))
-  | id hA ha hb ihA iha ihb =>
-    simpa [openBVar_mkId] using PureTmPattern.id (ihA (k := k)) (iha (k := k)) (ihb (k := k))
-  | lam hBody ihBody =>
-    simpa [openBVar_mkLam] using PureTmPattern.lam (ihBody (k := k + 1))
-  | app hf ha ihf iha =>
-    simpa [openBVar_mkApp] using PureTmPattern.app (ihf (k := k)) (iha (k := k))
-  | pair ha hb iha ihb =>
-    simpa [openBVar_mkPair] using PureTmPattern.pair (iha (k := k)) (ihb (k := k))
-  | fst hp ihp =>
-    simpa [openBVar_mkFst] using PureTmPattern.fst (ihp (k := k))
-  | snd hp ihp =>
-    simpa [openBVar_mkSnd] using PureTmPattern.snd (ihp (k := k))
-  | refl ha iha =>
-    simpa [openBVar_mkRefl] using PureTmPattern.refl (iha (k := k))
-
-/-- Opening a pure term with a pure substituent stays in the pure fragment. -/
-private theorem pureTm_openBVar {u : Pattern} (hu : PureTmPattern u) {k : Nat} {p : Pattern}
-    (hp : PureTmPattern p) : PureTmPattern (openBVar k u p) := by
-  induction hp generalizing k with
-  | bvar n =>
-    simp [openBVar]
-    split
-    · exact hu
-    · exact .bvar n
-  | fvar y =>
-    simpa [openBVar] using (PureTmPattern.fvar y)
-  | u0 =>
-    simpa [u0, openBVar] using PureTmPattern.u0
-  | u1 =>
-    simpa [u1, openBVar] using PureTmPattern.u1
-  | pi hA hB ihA ihB =>
-    simpa [openBVar_mkPi] using PureTmPattern.pi (ihA (k := k)) (ihB (k := k + 1))
-  | sigma hA hB ihA ihB =>
-    simpa [openBVar_mkSigma] using PureTmPattern.sigma (ihA (k := k)) (ihB (k := k + 1))
-  | id hA ha hb ihA iha ihb =>
-    simpa [openBVar_mkId] using PureTmPattern.id (ihA (k := k)) (iha (k := k)) (ihb (k := k))
-  | lam hBody ihBody =>
-    simpa [openBVar_mkLam] using PureTmPattern.lam (ihBody (k := k + 1))
-  | app hf ha ihf iha =>
-    simpa [openBVar_mkApp] using PureTmPattern.app (ihf (k := k)) (iha (k := k))
-  | pair ha hb iha ihb =>
-    simpa [openBVar_mkPair] using PureTmPattern.pair (iha (k := k)) (ihb (k := k))
-  | fst hp ihp =>
-    simpa [openBVar_mkFst] using PureTmPattern.fst (ihp (k := k))
-  | snd hp ihp =>
-    simpa [openBVar_mkSnd] using PureTmPattern.snd (ihp (k := k))
-  | refl ha iha =>
-    simpa [openBVar_mkRefl] using PureTmPattern.refl (iha (k := k))
-
-/-- Closing a pure term by abstracting an fvar stays in the pure fragment. -/
-private theorem pureTm_closeBVar (x : String) {k : Nat} {p : Pattern}
-    (hp : PureTmPattern p) : PureTmPattern (closeBVar k x p) := by
-  induction hp generalizing k with
-  | bvar n =>
-    simpa [closeBVar] using (PureTmPattern.bvar n)
-  | fvar y =>
-    simp [closeBVar]
-    split
-    · exact .bvar k
-    · exact .fvar y
-  | u0 =>
-    simpa [u0, closeBVar] using PureTmPattern.u0
-  | u1 =>
-    simpa [u1, closeBVar] using PureTmPattern.u1
-  | pi hA hB ihA ihB =>
-    simpa [mkPi, closeBVar] using PureTmPattern.pi (ihA (k := k)) (ihB (k := k + 1))
-  | sigma hA hB ihA ihB =>
-    simpa [mkSigma, closeBVar] using PureTmPattern.sigma (ihA (k := k)) (ihB (k := k + 1))
-  | id hA ha hb ihA iha ihb =>
-    simpa [mkId, closeBVar] using PureTmPattern.id (ihA (k := k)) (iha (k := k)) (ihb (k := k))
-  | lam hBody ihBody =>
-    simpa [mkLam, closeBVar] using PureTmPattern.lam (ihBody (k := k + 1))
-  | app hf ha ihf iha =>
-    simpa [mkApp, closeBVar] using PureTmPattern.app (ihf (k := k)) (iha (k := k))
-  | pair ha hb iha ihb =>
-    simpa [mkPair, closeBVar] using PureTmPattern.pair (iha (k := k)) (ihb (k := k))
-  | fst hp ihp =>
-    simpa [mkFst, closeBVar] using PureTmPattern.fst (ihp (k := k))
-  | snd hp ihp =>
-    simpa [mkSnd, closeBVar] using PureTmPattern.snd (ihp (k := k))
-  | refl ha iha =>
-    simpa [mkRefl, closeBVar] using PureTmPattern.refl (iha (k := k))
-
-/-- Recover purity of `p` from purity of an opened form, when the opening var is fresh. -/
-private theorem pureTm_of_openBVar_fresh (x : String) {p : Pattern}
-    (hopen : PureTmPattern (openBVar 0 (.fvar x) p))
-    (hfresh : isFresh x p = true) : PureTmPattern p := by
-  have hclose : PureTmPattern (closeBVar 0 x (openBVar 0 (.fvar x) p)) :=
-    pureTm_closeBVar x (k := 0) hopen
-  simpa [closeBVar_openBVar_cancel hfresh] using hclose
-
-private theorem pure_pi_inv {A B : Pattern}
-    (h : PureTmPattern (mkPi A B)) : PureTmPattern A ∧ PureTmPattern B := by
-  have h' : ∀ t : Pattern, PureTmPattern t → t = mkPi A B → PureTmPattern A ∧ PureTmPattern B := by
-    intro t ht
-    cases ht <;> intro hEq <;>
-      simp [u0, u1, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at hEq
-    case pi hA hB =>
-      rcases hEq with ⟨rfl, rfl⟩
-      exact ⟨hA, hB⟩
-  exact h' _ h rfl
-
-private theorem pure_sigma_inv {A B : Pattern}
-    (h : PureTmPattern (mkSigma A B)) : PureTmPattern A ∧ PureTmPattern B := by
-  have h' : ∀ t : Pattern, PureTmPattern t → t = mkSigma A B → PureTmPattern A ∧ PureTmPattern B := by
-    intro t ht
-    cases ht <;> intro hEq <;>
-      simp [u0, u1, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at hEq
-    case sigma hA hB =>
-      rcases hEq with ⟨rfl, rfl⟩
-      exact ⟨hA, hB⟩
-  exact h' _ h rfl
-
-private theorem pure_lam_inv {body : Pattern}
-    (h : PureTmPattern (mkLam body)) : PureTmPattern body := by
-  have h' : ∀ t : Pattern, PureTmPattern t → t = mkLam body → PureTmPattern body := by
-    intro t ht
-    cases ht <;> intro hEq <;>
-      simp [u0, u1, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at hEq
-    case lam hBody =>
-      subst hEq
-      exact hBody
-  exact h' _ h rfl
-
-private theorem pure_app_inv {f a : Pattern}
-    (h : PureTmPattern (mkApp f a)) : PureTmPattern f ∧ PureTmPattern a := by
-  have h' : ∀ t : Pattern, PureTmPattern t → t = mkApp f a → PureTmPattern f ∧ PureTmPattern a := by
-    intro t ht
-    cases ht <;> intro hEq <;>
-      simp [u0, u1, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at hEq
-    case app hf ha =>
-      rcases hEq with ⟨rfl, rfl⟩
-      exact ⟨hf, ha⟩
-  exact h' _ h rfl
-
-private theorem pure_pair_inv {a b : Pattern}
-    (h : PureTmPattern (mkPair a b)) : PureTmPattern a ∧ PureTmPattern b := by
-  have h' : ∀ t : Pattern, PureTmPattern t → t = mkPair a b → PureTmPattern a ∧ PureTmPattern b := by
-    intro t ht
-    cases ht <;> intro hEq <;>
-      simp [u0, u1, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at hEq
-    case pair ha hb =>
-      rcases hEq with ⟨rfl, rfl⟩
-      exact ⟨ha, hb⟩
-  exact h' _ h rfl
-
-private theorem pure_fst_inv {p : Pattern}
-    (h : PureTmPattern (mkFst p)) : PureTmPattern p := by
-  have h' : ∀ t : Pattern, PureTmPattern t → t = mkFst p → PureTmPattern p := by
-    intro t ht
-    cases ht <;> intro hEq <;>
-      simp [u0, u1, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at hEq
-    case fst hp =>
-      subst hEq
-      exact hp
-  exact h' _ h rfl
-
-private theorem pure_snd_inv {p : Pattern}
-    (h : PureTmPattern (mkSnd p)) : PureTmPattern p := by
-  have h' : ∀ t : Pattern, PureTmPattern t → t = mkSnd p → PureTmPattern p := by
-    intro t ht
-    cases ht <;> intro hEq <;>
-      simp [u0, u1, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at hEq
-    case snd hp =>
-      subst hEq
-      exact hp
-  exact h' _ h rfl
-
-private theorem pure_id_inv {A a b : Pattern}
-    (h : PureTmPattern (mkId A a b)) : PureTmPattern A ∧ PureTmPattern a ∧ PureTmPattern b := by
-  have h' :
-      ∀ t : Pattern, PureTmPattern t → t = mkId A a b → PureTmPattern A ∧ PureTmPattern a ∧ PureTmPattern b := by
-    intro t ht
-    cases ht <;> intro hEq <;>
-      simp [u0, u1, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at hEq
-    case id hA ha hb =>
-      rcases hEq with ⟨rfl, rfl, rfl⟩
-      exact ⟨hA, ha, hb⟩
-  exact h' _ h rfl
-
-private theorem pure_refl_inv {a : Pattern}
-    (h : PureTmPattern (mkRefl a)) : PureTmPattern a := by
-  have h' : ∀ t : Pattern, PureTmPattern t → t = mkRefl a → PureTmPattern a := by
-    intro t ht
-    cases ht <;> intro hEq <;>
-      simp [u0, u1, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at hEq
-    case refl ha =>
-      subst hEq
-      exact ha
-  exact h' _ h rfl
-
 /-- Parallel reduction preserves the pure fragment when started from a pure source. -/
 private theorem parRed_preserves_pure {p q : Pattern}
     (h : ParRed p q) (hp : PureTmPattern p) : PureTmPattern q := by
@@ -1097,7 +870,7 @@ private theorem parRed_substFVar_both {x : String} {u u' : Pattern}
     ParRed (substFVar x u t) (substFVar x u' t) := by
   induction hpure with
   | bvar n =>
-    simp [substFVar]
+    simp
     exact .bvar n
   | fvar y =>
     simp only [substFVar]
@@ -1142,7 +915,7 @@ theorem parRed_substFVar {x : String} {u u' : Pattern}
   | bvar n =>
     intro hp
     cases hp
-    simp [substFVar]
+    simp
     exact .bvar n
   | fvar y =>
     intro hp
@@ -1255,7 +1028,7 @@ private theorem parRed_substFVar_same {x : String} {u p q : Pattern}
     ParRed (substFVar x u p) (substFVar x u q) := by
   induction h with
   | bvar n =>
-    simp [substFVar]
+    simp
     exact .bvar n
   | fvar y =>
     simp only [substFVar]
@@ -1557,7 +1330,7 @@ theorem parRed_to_pureReducesStar {p q : Pattern} (h : ParRed p q)
 
 /-- Inversion for ParRed on mkLam: the result is always mkLam of a related body. -/
 theorem parRed_lam_inv {body t : Pattern} (h : ParRed (mkLam body) t)
-    (hlc : lc_at 0 (mkLam body) = true) :
+    (_hlc : lc_at 0 (mkLam body) = true) :
     (∃ bd' : Pattern, ∃ L : Finset String, t = mkLam bd' ∧
       ∀ x, x ∉ L → ParRed (openBVar 0 (.fvar x) body) (openBVar 0 (.fvar x) bd')) ∨
     t = mkLam body := by
@@ -1583,7 +1356,7 @@ theorem parRed_lam_inv {body t : Pattern} (h : ParRed (mkLam body) t)
 
 /-- Inversion for ParRed on mkPair. -/
 theorem parRed_pair_inv {a b t : Pattern} (h : ParRed (mkPair a b) t)
-    (hlc : lc_at 0 (mkPair a b) = true) :
+    (_hlc : lc_at 0 (mkPair a b) = true) :
     (∃ a' b', t = mkPair a' b' ∧ ParRed a a' ∧ ParRed b b') ∨
     t = mkPair a b := by
   generalize heq : mkPair a b = s at h
@@ -1684,7 +1457,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
               rw [← hopen_wB]; exact substFVar_intro wB hfreshWB 0] at key
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .pi L₁ hA₁ hB₁⟩
-    | _ => simp [mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at heq
   | @sigma A A' B B' L₁ hA₁ hB₁ ihA ihB =>
     intro hpure
     let hAB := pure_sigma_inv hpure
@@ -1727,7 +1500,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
               rw [← hopen_wB]; exact substFVar_intro wB hfreshWB 0] at key
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .sigma L₁ hA₁ hB₁⟩
-    | _ => simp [mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at heq
   | @lam bd bd' L₁ hbd₁ ihbd =>
     intro hpure
     have hPureBd : PureTmPattern bd := pure_lam_inv hpure
@@ -1767,7 +1540,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
               rw [← hopen_wB]; exact substFVar_intro wB hfreshWB 0] at key
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .lam L₁ hbd₁⟩
-    | _ => simp [mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, mkRefl] at heq
   | @app f f' a a' hf₁ ha₁ ihf iha =>
     intro hpure
     have hPureFA : PureTmPattern f ∧ PureTmPattern a := pure_app_inv hpure
@@ -1788,7 +1561,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
       -- t₁ = mkApp f' a', t₂ = openBVar 0 aS_t bodyS_t
       simp [mkApp] at heq; obtain ⟨rfl, rfl⟩ := heq
       have hlcBodyS_h : lc_at 1 bodyS_h = true := by
-        simp [mkLam, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlcF; exact hlcF
+        simp [mkLam, lc_at, lc_at_list] at hlcF; exact hlcF
       have hPureBodyS_h : PureTmPattern bodyS_h := by
         have hPureLam : PureTmPattern (mkLam bodyS_h) := by
           simpa [mkLam] using hPureFA.1
@@ -1814,7 +1587,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
         subst hf₁_eq
         have hlcBd_f' : lc_at 1 body_f' = true := by
           have h := parRed_preserves_lc hf₁ hlcF
-          simp [mkLam, lc_at, lc_at_list, Bool.and_eq_true, and_true] at h; exact h
+          simp [mkLam, lc_at, lc_at_list] at h; exact h
         have hlcF' : lc_at 0 (mkLam body_f') = true := parRed_preserves_lc hf₁ hlcF
         obtain ⟨wbd, Lwf₁, hwf₁_eq, hwf₁_bd⟩ | hwf₁_eq := parRed_lam_inv hwf₁ hlcF'
         · subst hwf₁_eq  -- wf = mkLam wbd
@@ -1862,7 +1635,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
               parRed_openBVar ∅ (fun x _ => parRed_refl _) hPureBodyS_t hwa₂ hlcA₂' (parRed_preserves_lc hwa₂ hlcA₂')⟩
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .app hf₁ ha₁⟩
-    | _ => simp [mkApp, mkPi, mkSigma, mkLam, mkPair, mkFst, mkSnd, mkId, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkApp, mkPi, mkSigma, mkLam, mkPair, mkFst, mkSnd, mkId, mkRefl] at heq
   | @pair a a' b b' ha₁ hb₁ iha ihb =>
     intro hpure
     let hab := pure_pair_inv hpure
@@ -1879,7 +1652,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
       exact ⟨mkPair wa wb, .pair hwa₁ hwb₁, .pair hwa₂ hwb₂⟩
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .pair ha₁ hb₁⟩
-    | _ => simp [mkPair, mkPi, mkSigma, mkLam, mkApp, mkFst, mkSnd, mkId, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkPair, mkPi, mkSigma, mkLam, mkApp, mkFst, mkSnd, mkId, mkRefl] at heq
   | @fst p p' hp₁ ihp =>
     intro hpure
     have hPureP : PureTmPattern p := pure_fst_inv hpure
@@ -1937,7 +1710,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
             exact ⟨_, .betaSigmaFst (parRed_refl _) (parRed_refl _), parRed_refl _⟩
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .fst hp₁⟩
-    | _ => simp [mkFst, mkPi, mkSigma, mkLam, mkApp, mkPair, mkSnd, mkId, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkFst, mkPi, mkSigma, mkLam, mkApp, mkPair, mkSnd, mkId, mkRefl] at heq
   | @snd p p' hp₁ ihp =>
     intro hpure
     have hPureP : PureTmPattern p := pure_snd_inv hpure
@@ -1995,7 +1768,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
             exact ⟨_, .betaSigmaSnd (parRed_refl _) (parRed_refl _), parRed_refl _⟩
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .snd hp₁⟩
-    | _ => simp [mkSnd, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkId, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkSnd, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkId, mkRefl] at heq
   | @id A A' a a' b b' hA₁ ha₁ hb₁ ihA iha ihb =>
     intro hpure
     let hId := pure_id_inv hpure
@@ -2015,7 +1788,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
       exact ⟨mkId wA wa wb, .id hwA₁ hwa₁ hwb₁, .id hwA₂ hwa₂ hwb₂⟩
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .id hA₁ ha₁ hb₁⟩
-    | _ => simp [mkId, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkId, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkRefl] at heq
   | @refl a a' ha₁ iha =>
     intro hpure
     have hPureA : PureTmPattern a := pure_refl_inv hpure
@@ -2029,7 +1802,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
       exact ⟨mkRefl wa, .refl hwa₁, .refl hwa₂⟩
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .refl ha₁⟩
-    | _ => simp [mkRefl, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkRefl, mkPi, mkSigma, mkLam, mkApp, mkPair, mkFst, mkSnd, mkId] at heq
   | @betaPi bodyS bodyS' aS aS' L₁ hbody₁ ha₁ hlcBodyS hlcAS ihbody iha =>
     intro hpure
     -- source is mkApp (mkLam bodyS) aS
@@ -2104,7 +1877,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
           parRed_openBVar (L₁ ∪ {x₀}) hbody_left hPureBodyS' hwa₁ hlcA' (parRed_preserves_lc hwa₁ hlcA'),
           .betaPi (Lf₂ ∪ {x₀}) hbody_right hwa₂
             (by have h := parRed_preserves_lc hf₂ hlcF
-                simp [mkLam, lc_at, lc_at_list, Bool.and_eq_true, and_true] at h; exact h)
+                simp [mkLam, lc_at, lc_at_list] at h; exact h)
             (parRed_preserves_lc ha₂ hlcA)⟩
       · -- hf₂ is refl_pat: f₂' = mkLam bodyS (body unchanged on h₂ side)
         subst hf₂_eq
@@ -2167,7 +1940,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
         parRed_openBVar (L₂ ∪ {x₀}) hbody_right hPureBodyS_t hwa₂ hlcA₂' (parRed_preserves_lc hwa₂ hlcA₂')⟩
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .betaPi L₁ hbody₁ ha₁ hlcBodyS hlcAS⟩
-    | _ => simp [mkApp, mkPi, mkSigma, mkLam, mkPair, mkFst, mkSnd, mkId, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkApp, mkPi, mkSigma, mkLam, mkPair, mkFst, mkSnd, mkId, mkRefl] at heq
   | @betaSigmaFst aS aS' bS bS' haS₁ hbS₁ iha ihb =>
     intro hpure
     have hPurePair : PureTmPattern (mkPair aS bS) := pure_fst_inv hpure
@@ -2183,7 +1956,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
       simp [mkFst] at heq; obtain ⟨rfl⟩ := heq
       -- hp₂ : ParRed (mkPair aS bS) p₂'. Use pair_inv.
       obtain ⟨wa₂, wb₂, hp₂_eq, hwa₂_rel, hwb₂_rel⟩ | hp₂_eq := parRed_pair_inv hp₂ (by
-        simp [mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true]; exact ⟨hlcA, hlcB⟩)
+        simp [mkPair, lc_at, lc_at_list]; exact ⟨hlcA, hlcB⟩)
       · subst hp₂_eq
         obtain ⟨wa, hwa₁, hwa₂⟩ := iha hlcA hwa₂_rel hPureAB.1
         -- t₁ = aS', t₂ = mkFst (mkPair wa₂ wb₂)
@@ -2200,7 +1973,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
       exact ⟨wa, hwa₁, hwa₂⟩
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .betaSigmaFst haS₁ hbS₁⟩
-    | _ => simp [mkFst, mkPair, mkPi, mkSigma, mkLam, mkApp, mkSnd, mkId, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkFst, mkPair, mkPi, mkSigma, mkLam, mkApp, mkSnd, mkId, mkRefl] at heq
   | @betaSigmaSnd aS aS' bS bS' haS₁ hbS₁ iha ihb =>
     intro hpure
     have hPurePair : PureTmPattern (mkPair aS bS) := pure_snd_inv hpure
@@ -2214,7 +1987,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
     | @snd _ _ hp₂ =>
       simp [mkSnd] at heq; obtain ⟨rfl⟩ := heq
       obtain ⟨wa₂, wb₂, hp₂_eq, hwa₂_rel, hwb₂_rel⟩ | hp₂_eq := parRed_pair_inv hp₂ (by
-        simp [mkPair, lc_at, lc_at_list, Bool.and_eq_true, and_true]; exact ⟨hlcA, hlcB⟩)
+        simp [mkPair, lc_at, lc_at_list]; exact ⟨hlcA, hlcB⟩)
       · subst hp₂_eq
         obtain ⟨wb, hwb₁, hwb₂⟩ := ihb hlcB hwb₂_rel hPureAB.2
         exact ⟨wb, hwb₁, .betaSigmaSnd (parRed_refl wa₂) hwb₂⟩
@@ -2226,7 +1999,7 @@ theorem diamond_parRed {s t₁ t₂ : Pattern}
       exact ⟨wb, hwb₁, hwb₂⟩
     | refl_pat _ =>
       subst heq; exact ⟨_, parRed_refl _, .betaSigmaSnd haS₁ hbS₁⟩
-    | _ => simp [mkSnd, mkPair, mkPi, mkSigma, mkLam, mkApp, mkFst, mkId, mkRefl, Pattern.bvar, Pattern.fvar] at heq
+    | _ => simp [mkSnd, mkPair, mkPi, mkSigma, mkLam, mkApp, mkFst, mkId, mkRefl] at heq
 
 /-! ## Church-Rosser
 
@@ -2270,7 +2043,7 @@ theorem church_rosser_lc {s t : Pattern} (h : PureConv s t)
     (hlc : lc_at 0 s = true) :
     ∃ u, PureReducesStar s u ∧ PureReducesStar t u := by
   induction h with
-  | refl t => exact ⟨t, .refl t, .refl t⟩
+  | refl t _ => exact ⟨t, .refl t, .refl t⟩
   | symm hsub ih =>
       have hlcT := (PureConv_preserves_lc_both hsub).2 hlc
       obtain ⟨u, h₁, h₂⟩ := ih hlcT
@@ -2279,13 +2052,14 @@ theorem church_rosser_lc {s t : Pattern} (h : PureConv s t)
       have hlcMid := PureConv_preserves_lc h₁₂ hlc
       obtain ⟨u₁, hs_u₁, hmid_u₁⟩ := ih₁ hlc
       obtain ⟨u₂, hmid_u₂, ht_u₂⟩ := ih₂ hlcMid
-      obtain ⟨w, hu₁_w, hu₂_w⟩ := reduceStar_confluence_lc hlcMid hmid_u₁ hmid_u₂
+      obtain ⟨w, hu₁_w, hu₂_w⟩ :=
+        reduceStar_confluence_lc hlcMid hmid_u₁ hmid_u₂ (PureConv_rightPure h₁₂)
       exact ⟨w, hs_u₁.trans hu₁_w, ht_u₂.trans hu₂_w⟩
-  | betaPi body a hlcBody hlcA =>
+  | betaPi body a _ _ _ _ =>
       exact ⟨_, PureReducesStar.single (.betaPi body a), .refl _⟩
-  | betaSigmaFst a b _ _ =>
+  | betaSigmaFst a b _ _ _ _ =>
       exact ⟨_, PureReducesStar.single (.betaSigmaFst a b), .refl _⟩
-  | betaSigmaSnd a b _ _ =>
+  | betaSigmaSnd a b _ _ _ _ =>
       exact ⟨_, PureReducesStar.single (.betaSigmaSnd a b), .refl _⟩
   | @congApp f₁ f₂ a₁ a₂ _ _ ihf iha =>
       have hlcF : lc_at 0 f₁ = true := by
@@ -2566,13 +2340,14 @@ with unconditional bidirectional head preservation) is impossible. -/
 
 /-- β fires: (λx.x)(Π(X,Y)) ≡ Π(X,Y) — conversion from non-Pi to Pi. -/
 theorem conv_nonPi_to_Pi (X Y : Pattern)
+    (hPureX : PureTmPattern X) (hPureY : PureTmPattern Y)
     (hlcX : lc_at 0 X = true) (hlcY : lc_at 1 Y = true) :
     PureConv (mkApp (mkLam (.bvar 0)) (mkPi X Y)) (mkPi X Y) := by
   have hlcBody : lc_at 1 (.bvar 0 : Pattern) = true := by simp [lc_at]
   have hlcPi : lc_at 0 (mkPi X Y) = true := by
     simp [mkPi, lc_at, lc_at_list, Bool.and_eq_true]
     exact ⟨hlcX, hlcY⟩
-  have h := PureConv.betaPi (.bvar 0) (mkPi X Y) hlcBody hlcPi
+  have h := PureConv.betaPi (.bvar 0) (mkPi X Y) (PureTmPattern.bvar 0) (.pi hPureX hPureY) hlcBody hlcPi
   simp [openBVar, mkPi] at h
   exact h
 
@@ -2593,6 +2368,9 @@ theorem pi_injectivity {A₁ B₁ A₂ B₂ : Pattern}
     PureConv A₁ A₂ ∧
       (∃ L : Finset String, ∀ x, x ∉ L →
         PureConv (openBVar 0 (.fvar x) B₁) (openBVar 0 (.fvar x) B₂)) := by
+  have hPure : PureTmPattern (mkPi A₁ B₁) ∧ PureTmPattern (mkPi A₂ B₂) := PureConv_pure_both h
+  have hPureAB₁ : PureTmPattern A₁ ∧ PureTmPattern B₁ := pure_pi_inv hPure.1
+  have hPureAB₂ : PureTmPattern A₂ ∧ PureTmPattern B₂ := pure_pi_inv hPure.2
   have hlcA₁ : lc_at 0 A₁ = true := by
     simp only [mkPi, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
   have hlcB₁ : lc_at 1 B₁ = true := by
@@ -2607,15 +2385,17 @@ theorem pi_injectivity {A₁ B₁ A₂ B₂ : Pattern}
   subst heq
   obtain ⟨hdomL, Ll, hcodL⟩ := reduceStar_pi_decomp h₁
   obtain ⟨hdomR, Lr, hcodR⟩ := reduceStar_pi_decomp h₂
-  exact ⟨.trans (PureReducesStar_implies_PureConv hdomL hlcA₁)
-               (.symm (PureReducesStar_implies_PureConv hdomR hlcA₂)),
+  exact ⟨.trans (PureReducesStar_implies_PureConv hdomL hlcA₁ hPureAB₁.1)
+               (.symm (PureReducesStar_implies_PureConv hdomR hlcA₂ hPureAB₂.1)),
          Ll ∪ Lr, fun x hx =>
            .trans (PureReducesStar_implies_PureConv
                     (hcodL x (fun h => hx (Finset.mem_union_left _ h)))
-                    (lc_at_openBVar_result hlcB₁ (by simp [lc_at])))
+                    (lc_at_openBVar_result hlcB₁ (by simp [lc_at]))
+                    (pureTm_openBVar_fvar x hPureAB₁.2))
                   (.symm (PureReducesStar_implies_PureConv
                     (hcodR x (fun h => hx (Finset.mem_union_right _ h)))
-                    (lc_at_openBVar_result hlcB₂ (by simp [lc_at]))))⟩
+                    (lc_at_openBVar_result hlcB₂ (by simp [lc_at]))
+                    (pureTm_openBVar_fvar x hPureAB₂.2)))⟩
 
 /-- Sigma-injectivity: convertible Sigma types have convertible components. -/
 theorem sigma_injectivity {A₁ B₁ A₂ B₂ : Pattern}
@@ -2624,6 +2404,9 @@ theorem sigma_injectivity {A₁ B₁ A₂ B₂ : Pattern}
     PureConv A₁ A₂ ∧
       (∃ L : Finset String, ∀ x, x ∉ L →
         PureConv (openBVar 0 (.fvar x) B₁) (openBVar 0 (.fvar x) B₂)) := by
+  have hPure : PureTmPattern (mkSigma A₁ B₁) ∧ PureTmPattern (mkSigma A₂ B₂) := PureConv_pure_both h
+  have hPureAB₁ : PureTmPattern A₁ ∧ PureTmPattern B₁ := pure_sigma_inv hPure.1
+  have hPureAB₂ : PureTmPattern A₂ ∧ PureTmPattern B₂ := pure_sigma_inv hPure.2
   have hlcA₁ : lc_at 0 A₁ = true := by
     simp only [mkSigma, lc_at, lc_at_list, Bool.and_eq_true, and_true] at hlc; exact hlc.1
   have hlcB₁ : lc_at 1 B₁ = true := by
@@ -2638,14 +2421,16 @@ theorem sigma_injectivity {A₁ B₁ A₂ B₂ : Pattern}
   subst heq
   obtain ⟨hdomL, Ll, hcodL⟩ := reduceStar_sigma_decomp h₁
   obtain ⟨hdomR, Lr, hcodR⟩ := reduceStar_sigma_decomp h₂
-  exact ⟨.trans (PureReducesStar_implies_PureConv hdomL hlcA₁)
-               (.symm (PureReducesStar_implies_PureConv hdomR hlcA₂)),
+  exact ⟨.trans (PureReducesStar_implies_PureConv hdomL hlcA₁ hPureAB₁.1)
+               (.symm (PureReducesStar_implies_PureConv hdomR hlcA₂ hPureAB₂.1)),
          Ll ∪ Lr, fun x hx =>
            .trans (PureReducesStar_implies_PureConv
                     (hcodL x (fun h => hx (Finset.mem_union_left _ h)))
-                    (lc_at_openBVar_result hlcB₁ (by simp [lc_at])))
+                    (lc_at_openBVar_result hlcB₁ (by simp [lc_at]))
+                    (pureTm_openBVar_fvar x hPureAB₁.2))
                   (.symm (PureReducesStar_implies_PureConv
                     (hcodR x (fun h => hx (Finset.mem_union_right _ h)))
-                    (lc_at_openBVar_result hlcB₂ (by simp [lc_at]))))⟩
+                    (lc_at_openBVar_result hlcB₂ (by simp [lc_at]))
+                    (pureTm_openBVar_fvar x hPureAB₂.2)))⟩
 
 end Mettapedia.Languages.MeTTa.Pure.Confluence

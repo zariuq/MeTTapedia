@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.MeTTaIL.OptManifest
-import Mettapedia.Languages.MeTTa.Core.FullLanguageDef
+import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
 
 /-!
 # Export Optimization Manifest to JSON
@@ -14,7 +14,7 @@ lean --run Mettapedia/OSLF/Tools/ExportOptManifest.lean output.json  # file
 -/
 
 open Mettapedia.OSLF.MeTTaIL.OptManifest
-open Mettapedia.Languages.MeTTa.Core.FullLanguageDef (mettaFull)
+open Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef (mettaFull)
 
 def main (args : List String) : IO UInt32 := do
   let manifest := manifestFor mettaFull [

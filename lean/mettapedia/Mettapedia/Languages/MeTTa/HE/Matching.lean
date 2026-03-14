@@ -21,7 +21,7 @@ Follows metta.md sections "Match atoms", "Merge bindings", "Add variable binding
 
 namespace Mettapedia.Languages.MeTTa.HE
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 
 /-! ## Match Atoms and Bindings Operations
 
@@ -70,7 +70,13 @@ def matchAtoms (left right : Atom) (fuel : Nat) : List Bindings :=
           else []
         | _, _ => []
       else if ml == .symbol "Grounded" && mr == .symbol "Grounded" then
-        -- Both grounded → structural equality check
+        -- Spec vs implementation divergence (author question):
+        -- The published spec (metta.md) returns `[{}]` here (always succeeds),
+        -- but this fallback is unreachable in practice because all grounded
+        -- atoms in interpreter.rs have custom matchers that use equality.
+        -- We follow the implementation behavior (structural equality) since
+        -- it matches `metta` CLI conformance testing. The spec's `[{}]`
+        -- fallback would make `(match 42 43)` succeed, which no user expects.
         if left == right then [Bindings.empty] else []
       else
         -- All other cases → no match

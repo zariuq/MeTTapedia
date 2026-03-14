@@ -143,7 +143,6 @@ structure PureCertificate where
   term : PureTm 0
   artifact : SharedArtifact
   artifact_eq : artifact.pattern = quoteClosedTm term
-  abcSurface : PureClosedABCSurface := defaultPureClosedABCSurface
 
 /-- First real overlap certificate for a shared pure surface fragment.
 
@@ -318,10 +317,15 @@ theorem CheckedPureCertificate.artifact_eq_imported
 theorem CheckedPureCertificate.quoteAgreement
     (cert : CheckedPureCertificate) :
     cert.artifact.pattern = quoteClosedTm cert.term := by
-  simpa [CheckedPureCertificate.artifact, CheckedPureCertificate.term,
-    PureCertificateImport.toPureCertificate_artifact,
-    PureCertificateImport.toPureCertificate_term] using
-    cert.imported.toPureCertificate_artifact_eq
+  cases cert with
+  | mk imported claimedType typing =>
+      cases imported with
+      | pure importedCert =>
+          simpa [CheckedPureCertificate.artifact, CheckedPureCertificate.term]
+            using importedCert.artifact_eq
+      | overlap importedCert =>
+          simpa [CheckedPureCertificate.artifact, CheckedPureCertificate.term]
+            using importedCert.artifact_eq_pure
 
 theorem CheckedPureCertificate.emptyContextTyping
     (cert : CheckedPureCertificate) :

@@ -33,11 +33,43 @@ import Mettapedia.Logic.PLNInferenceControlCore
 import Mettapedia.Logic.PLNInferenceControlAlgorithms
 import Mettapedia.Logic.PLNInferenceControlChainer
 import Mettapedia.Logic.PLNInferenceControlExamples
+import Mettapedia.Logic.PLNGuardedHigherOrderSemantics
+import Mettapedia.Logic.PLNMixedModeChainComposition
+import Mettapedia.Logic.PLNProbHOLPlannerBridge
+import Mettapedia.Logic.PLNRegimeMixtureBenchmarkBridge
+import Mettapedia.Logic.PLNRegimeMixtureRegression
+import Mettapedia.Logic.PLNHigherOrderChainingTheorems
+import Mettapedia.Logic.PLNHigherOrderChainingRegression
+import Mettapedia.Logic.PLNHigherOrderCertifiedEstimates
+import Mettapedia.Logic.PLNUntrustedOracleAdapters
+import Mettapedia.Logic.PLNHigherOrderChainBounds
+import Mettapedia.Logic.PLNHigherOrderDecisionTheorems
+import Mettapedia.Logic.PLNGWASHigherOrderBridge
+import Mettapedia.Logic.PLNHigherOrderCertifiedChainingRegression
+import Mettapedia.Logic.PLNUntrustedOracleAdapterRegression
+import Mettapedia.Logic.PLNTopologyCPTNoGo
+import Mettapedia.Logic.PLNVarianceChainNoGo
+import Mettapedia.Logic.PLNHigherOrderNoGoBridge
+import Mettapedia.Logic.PLNMarkovLogicRegression
+import Mettapedia.Logic.PLNMarkovLogicClauseSemantics
+import Mettapedia.Logic.PLNMarkovLogicClauseFactorGraph
+import Mettapedia.Logic.PLNMarkovLogicClauseWorldModel
+import Mettapedia.Logic.PLNMarkovLogicClauseRegression
 import Mettapedia.Logic.SoundnessCompleteness
 import Mettapedia.Logic.PLNErrorMagnificationGrounding
 import Mettapedia.Logic.PLNCanonicalAPI
+import Mettapedia.Logic.PLNFirstOrder.InfiniteRegression
+import Mettapedia.Logic.PLNFirstOrder.FuzzyQuantifierRegressionInf
+import Mettapedia.Logic.PLNFirstOrder.ChoquetQuantifierRegression
+import Mettapedia.Logic.PLNFirstOrder.FuzzyDomainQuantifierRegression
+import Mettapedia.Logic.PLNFirstOrder.FuzzySyllogismRegressionFin
+import Mettapedia.Logic.PLNWorldModelHOLSetBridge
+import Mettapedia.Logic.PLNHigherOrderHOLRegression
 import Mettapedia.Logic.SufficientStatisticSurface
 import Mettapedia.Logic.GenericWorldModelForgetting
+import Mettapedia.Logic.PLNSemitopology
+import Mettapedia.Logic.PLNSemitopologyProvenanceBridge
+import Mettapedia.Logic.PLNWorldModelAudit
 import Mettapedia.Logic.PLNWorldModelPreorder
 import Mettapedia.Logic.PLNGaussianEMExtension
 import Mettapedia.Logic.HigherOrder.PLNKyburgReduction
@@ -109,10 +141,61 @@ This module is a curated import surface for the currently theorem-complete PLN s
 - Error-magnification grounding across WM calculus, OSLF atom semantics, and
   evidence-derived confidence transport (`PLNErrorMagnificationGrounding`)
 - Canonical API with 3-tier theorem index (`PLNCanonicalAPI`)
+- Arbitrary-domain PLN first-order quantifier surface
+  (`PLNFirstOrder.InfiniteRegression`, plus canonical aliases in `PLNCanonicalAPI`)
+- Arbitrary-domain fuzzy first-order quantifier surface
+  (`PLNFirstOrder.FuzzyQuantifierRegressionInf`, plus canonical aliases in `PLNCanonicalAPI`)
+- Choquet-style arbitrary-domain fuzzy first-order branch
+  (`PLNFirstOrder.ChoquetQuantifierRegression`, plus canonical aliases in `PLNCanonicalAPI`)
+- Fuzzy-domain arbitrary-domain first-order branch
+  (`PLNFirstOrder.FuzzyDomainQuantifierRegression`, plus canonical aliases in `PLNCanonicalAPI`)
+- Finite/counting fuzzy Chapter-11 syllogism surface
+  (`PLNFirstOrder.FuzzySyllogismRegressionFin`)
+- Higher-order PLN layer over real Church/Henkin HOL plus the real HOL WM bridge
+  (`PLNHigherOrderHOLRegression`, plus canonical aliases in `PLNCanonicalAPI`)
+- Direct set-semantics to HOL grounding and public `Set -> HOL -> WM` bridge,
+  together with comparison theorems against the older FOL-routed set bridge
+  (`HOL.Semantics.SetBased`, `PLNWorldModelHOLSetBridge`, plus canonical aliases in
+  `PLNCanonicalAPI`)
+- Infinitary semantic probabilistic HOL over measurable indexed spaces of
+  pointed Henkin models, together with the theorem that the existing empirical
+  HOL↔WM semantics is a special case
+  (`HOL.Probabilistic`, plus canonical aliases in `PLNCanonicalAPI`)
+- Logical-induction-ready dynamic belief/process infrastructure over closed HOL
+  formulas, kept strictly separate from Henkin truth and the static HOL↔WM lens
+  (`HOL.LogicalInduction`, plus canonical aliases in `PLNCanonicalAPI`)
+- Planner-facing higher-order belief shadows derived from semantic `ProbHOL`,
+  so benchmark/control layers can consume theorem-backed prices and tracking
+  results without becoming the canonical semantics
+  (`PLNProbHOLPlannerBridge`, plus canonical aliases in `PLNCanonicalAPI`)
+- Finite regime-mixture theorems and benchmark regressions for direct
+  continuation approximation, soft-mixture squared-loss optimality, and
+  reveal/value-of-information criteria in the higher-order Chapter-11 lane
+  (`PLNRegimeMixtureBenchmarkBridge`, `PLNRegimeMixtureRegression`, plus
+  canonical aliases in `PLNCanonicalAPI`)
+- Clause-native MLN subsumption (primary MLN result): grounded clause semantics,
+  clause-scope factor-graph compilation, ValuationWorldModel bridge, and
+  `queryStrength = queryProb` with three regression canaries (3/4, 3/5, 0)
+  (`PLNMarkovLogicClause*`, canonical aliases in `PLNCanonicalAPI`)
+- Abstract infinite-first MLN semantics over countable worlds (supporting infrastructure),
+  with finite-support restriction, extensional factor-graph specialization, and
+  abstract MassState WM bridge
+  (`PLNMarkovLogic{Abstract,Countable,FiniteRestriction,FactorGraph,WorldModel}`,
+  regression canary in `PLNMarkovLogicRegression`)
 - Additive multiset WM singleton-surface classification / uniqueness
   (`SufficientStatisticSurface`)
 - Forgetting layer with scope invariance and scoped no-go for exact inverse forgetting
   (`GenericWorldModelForgetting`)
+- Coalition/semitopology layer for quorum/actionable-coalition reasoning with
+  local-consensus/conflict lemmas and bridges into overlap/support forgetting
+  (`PLNSemitopology`)
+- Provenance-backed tracked forgetting and overlap-remainder support recovery
+  for the non-additive perimeter (`PLNSemitopologyProvenanceBridge`)
+- Runtime-audit oriented WM wrappers for conservation/order-cost/overlap-separation
+  signals (`PLNWorldModelAudit`)
+- Scope-labelled tracked provenance state with non-empty-scope exact forgetting
+  under support containment plus clean-base hypotheses
+  (`PLNScopedTrackedWhichState`)
 - Selector-induced evidence/view preorders (`PLNWorldModelPreorder`)
 - Advanced weighted Gaussian / one-step E/M extension with hard-label reduction
   (`PLNGaussianEMExtension`)

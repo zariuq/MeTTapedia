@@ -1,10 +1,10 @@
-# Mettapedia/Languages/ProcessCalculi
+# Process Calculi
 
-Formalization of six process calculus layers with operational semantics,
-structural congruence, OSLF instances, cross-calculus bridges, and the
-pi-to-rho encoding.
+Lean 4.28 formalization of five process-algebraic systems with cross-calculus
+bridges. **17,821 lines across 55 files. Zero sorry. Zero custom axioms.**
 
-65 files total (6 sorries across 3 files; the rest sorry-free).
+Paper: `papers/process-calculi.tex` — *Process Calculi Formalized in Lean 4:
+Rho, Pi, MQ, and Modal Mu-Calculus with Cross-Calculus Bridges* (March 2026)
 
 ## Common Infrastructure (4 files)
 

@@ -407,6 +407,8 @@ termination_by p => sizeOf p
 theorem freeVars_quoteRaw_staging {n : Nat} (t : PureTm n) : freeVars (quoteRaw t) = [] := by
   induction t with
   | var i => simp [quoteRaw, freeVars]
+  | const c =>
+      simp [quoteRaw, quoteConst, freeVars]
   | u0 => simp [quoteRaw, Mettapedia.Languages.MeTTa.Pure.Core.u0, freeVars]
   | u1 => simp [quoteRaw, Mettapedia.Languages.MeTTa.Pure.Core.u1, freeVars]
   | pi A B ihA ihB =>
@@ -515,6 +517,8 @@ theorem quoteTmWith_eq_multiOpenAt_quoteRaw_staging
         constructor
         · exact Nat.zero_le _
         · simp [i.isLt]
+  | const c =>
+      simp [quoteTmWith, quoteRaw, quoteConst, multiOpenAtStaging]
   | u0 =>
       simp [quoteTmWith, quoteRaw, Mettapedia.Languages.MeTTa.Pure.Core.u0, multiOpenAtStaging, List.map]
   | u1 =>
@@ -1343,6 +1347,10 @@ theorem inst0BinderTargetEqDistinct_var
     applySubst env Mettapedia.Languages.MeTTa.Pure.Core.u1 = Mettapedia.Languages.MeTTa.Pure.Core.u1 := by
   simp [Mettapedia.Languages.MeTTa.Pure.Core.u1, applySubst]
 
+@[simp] theorem applySubst_quoteConst (env : SubstEnv) (c : DeclName) :
+    applySubst env (quoteConst c) = quoteConst c := by
+  simp [quoteConst, applySubst]
+
 @[simp] theorem closeRange_u0 (ν : Nat → String) (k m : Nat) :
     closeRange ν k m Mettapedia.Languages.MeTTa.Pure.Core.u0 = Mettapedia.Languages.MeTTa.Pure.Core.u0 := by
   induction m generalizing k with
@@ -1458,6 +1466,15 @@ theorem inst0BinderTargetEqDistinct_var
       simp [closeAmbient, Mettapedia.Languages.MeTTa.Pure.Core.u1]
   | succ m ih =>
       simpa [closeAmbient, closeFVar, Mettapedia.Languages.MeTTa.Pure.Core.u1] using ih (d := d + 1) (k := k)
+
+@[simp] theorem closeAmbient_quoteConst
+    (d : Nat) (ν : Nat → String) (k m : Nat) (c : DeclName) :
+    closeAmbient d ν k m (quoteConst c) = quoteConst c := by
+  induction m generalizing d k with
+  | zero =>
+      simp [closeAmbient, quoteConst]
+  | succ m ih =>
+      simpa [closeAmbient, closeFVar, quoteConst] using ih (d := d + 1) (k := k)
 
 @[simp] theorem closeAmbient_mkId
     (d : Nat) (ν : Nat → String) (k m : Nat) (A a b : Pattern) :
@@ -3885,6 +3902,56 @@ theorem inst0AmbientDistinctTargetEq_all
       inst0AmbientDistinctTargetEq e ν m k ρ a t
   | _, e, m, k, ρ, a, .var i, hcompat =>
       inst0AmbientDistinctTargetEq_var hcompat e m a i
+  | _, e, m, k, ρ, a, .const c, _ =>
+      by
+        unfold inst0AmbientDistinctTargetEq inst0AmbientDistinctClosedLhs inst0AmbientDistinctClosedTarget
+        have hInnerL :
+            closeAmbient 0 ν (k + m) e (Pattern.apply (Lean.Name.toString c) []) =
+              Pattern.apply (Lean.Name.toString c) [] := by
+          simpa [quoteConst] using
+            (closeAmbient_quoteConst (d := 0) (ν := ν) (k := k + m) (m := e) c)
+        have hLeft :
+            closeAmbient e ν k m
+              (closeAmbient 0 ν (k + m) e (Pattern.apply (Lean.Name.toString c) [])) =
+                Pattern.apply (Lean.Name.toString c) [] := by
+          rw [hInnerL]
+          simpa [quoteConst] using
+            (closeAmbient_quoteConst (d := e) (ν := ν) (k := k) (m := m) c)
+        have hInnerR0 :
+            closeAmbient 0 ν (k + m + 1) e (Pattern.apply (Lean.Name.toString c) []) =
+              Pattern.apply (Lean.Name.toString c) [] := by
+          simpa [quoteConst] using
+            (closeAmbient_quoteConst (d := 0) (ν := ν) (k := k + m + 1) (m := e) c)
+        have hInnerR :
+            closeAmbient e ν (k + 1) m
+              (closeAmbient 0 ν (k + m + 1) e (Pattern.apply (Lean.Name.toString c) [])) =
+                Pattern.apply (Lean.Name.toString c) [] := by
+          rw [hInnerR0]
+          simpa [quoteConst] using
+            (closeAmbient_quoteConst (d := e) (ν := ν) (k := k + 1) (m := m) c)
+        have hRightExpanded :
+            closeAmbient e ν (k + 1) m
+              (closeAmbient 0 ν (k + m + 1) e
+                (quoteTmWith ν (k + m + e + 1)
+                  (buildEnv ν (k + 1) (m + e) (envCons (ν k) ρ)) (.const c))) =
+                quoteConst c := by
+          simpa [quoteTmWith, quoteConst] using hInnerR
+        calc
+          closeAmbient e ν k m
+              (closeAmbient 0 ν (k + m) e
+                (quoteTmWith ν (k + m + e) (buildEnv ν k (m + e) ρ)
+                  (subst (liftSubN (m + e) (subst0 a)) (.const c))))
+              = quoteConst c := by
+                exact hLeft
+          _ = applySubst (SubstEnv.empty.extend (ν k) (quoteTmWith ν (k + m) ρ a))
+                (quoteConst c) := by
+                simp
+          _ = applySubst (SubstEnv.empty.extend (ν k) (quoteTmWith ν (k + m) ρ a))
+                (closeAmbient e ν (k + 1) m
+                  (closeAmbient 0 ν (k + m + 1) e
+                    (quoteTmWith ν (k + m + e + 1)
+                      (buildEnv ν (k + 1) (m + e) (envCons (ν k) ρ)) (.const c)))) := by
+                rw [hRightExpanded]
   | _, e, m, k, ρ, a, .u0, _ =>
       inst0AmbientDistinctTargetEq_u0 ν e m k ρ a
   | _, e, m, k, ρ, a, .u1, _ =>

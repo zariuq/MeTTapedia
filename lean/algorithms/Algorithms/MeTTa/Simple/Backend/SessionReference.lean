@@ -9,7 +9,8 @@ abbrev SessionWF : Session → Prop := Session.WF
 
 abbrev referenceEvalInterface := Session.referenceEvalInterface
 
-abbrev evalWithStateCore := Session.referenceEvalWithStateCore
+def evalWithStateCore (s : Session) (term : Pattern) : Session × List Pattern :=
+  Session.evalWithStateCoreN (Session.referenceProofFuel s) s term
 
 abbrev evalAuxStateful := Session.referenceEvalAuxStateful
 
@@ -20,29 +21,10 @@ abbrev runNestedEffectsArgs := Session.referenceRunNestedEffectsArgs
 abbrev runNestedEffects := Session.referenceRunNestedEffects
 
 theorem evalWithStateCore_preserves
-    (hIntrinsicPres :
-      ∀ (s : Session) (term : Pattern) (s' : Session) (out : List Pattern),
-        Session.intrinsicStateful s term = some (s', out) →
-        SessionWF s →
-        SessionWF s')
     (s : Session) (term : Pattern)
     (hs : SessionWF s) :
     SessionWF (evalWithStateCore s term).1 := by
-  have hPres :
-      Algorithms.MeTTa.Simple.Backend.ReferenceEval.Preservation
-        referenceEvalInterface SessionWF := by
-    have hIntrinsicPresRef :
-        ∀ {s : Session} {term : Pattern} {s' : Session} {out : List Pattern},
-          referenceEvalInterface.intrinsicStateful s term = some (s', out) →
-          SessionWF s →
-          SessionWF s' := by
-      intro s term s' out hIntr hs
-      simpa [referenceEvalInterface] using hIntrinsicPres s term s' out hIntr hs
-    exact
-      Algorithms.MeTTa.Simple.Backend.ReferenceEval.preservation_of_intrinsicStateful
-        referenceEvalInterface SessionWF hIntrinsicPresRef
-  simpa [evalWithStateCore, referenceEvalInterface] using
-    Algorithms.MeTTa.Simple.Backend.ReferenceEval.evalWithStateCore_preserves
-      referenceEvalInterface SessionWF hPres s term hs
+  unfold evalWithStateCore
+  exact Session.evalWithStateCoreN_preserves (Session.referenceProofFuel s) s term hs
 
 end Algorithms.MeTTa.Simple.Backend.SessionReference

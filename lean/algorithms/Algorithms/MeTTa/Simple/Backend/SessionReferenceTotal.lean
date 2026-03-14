@@ -36,9 +36,9 @@ abbrev totalIntrinsicStateful := Session.intrinsicStatefulN
 abbrev totalEvalWithStateCore := Session.evalWithStateCoreN
 
 /-- Default fuel policy for the total reference backend.
-    This mirrors the deterministic-path floor already used elsewhere. -/
+    Same formula as `Session.referenceProofFuel`. -/
 def referenceFuel (s : Session) : Nat :=
-  Nat.max 4096 s.maxNodes
+  Session.referenceProofFuel s
 
 /-- Public theorem-bearing total reference intrinsic evaluator. -/
 def intrinsicStateful (s : Session) (term : Pattern) : Option (Session × List Pattern) :=

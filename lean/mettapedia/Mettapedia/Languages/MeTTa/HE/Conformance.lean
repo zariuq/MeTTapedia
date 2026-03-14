@@ -1,28 +1,25 @@
-import Mettapedia.Languages.MeTTa.HE.Interpreter
-import Mettapedia.Languages.MeTTa.Core.MinimalOps
+import Mettapedia.Languages.MeTTa.HE.MinimalMeTTa
 
 /-!
-# HE MeTTa Conformance Matrix
+# HE MeTTa Conformance
 
-Clause-by-clause conformance tests for the HE interpreter formalization.
-Each theorem maps a specific clause from `metta.md` to a proven Lean statement.
+Conformance verification for the HE MeTTa evaluation specification.
 
-All tests are kernel-checked via `rfl` or `decide` (no axioms, no sorry).
+## Two kinds of conformance:
+1. **Leaf function tests** (sections 2-4): `rfl`-checked against computable
+   functions in Matching.lean / TypeCheck.lean. These are exact equality tests.
+2. **Derivation witnesses** (sections 1, 5-7): Explicit derivation trees
+   witnessing that `EvalAtom`/`MettaCall`/etc. hold for specific inputs.
+   These prove that the declarative spec allows the expected derivations.
 
-## Source Reference
-- `metta.md` lines 240-552 (evaluation spec)
-- `interpreter.rs` test suite (behavioral ground truth)
-
-## Spec Holes (documented)
-1. Result ordering: `interpret_expression` returns `$tuples + $errors` (ordered),
-   but within each group, iteration order over types is unspecified.
-2. `match_atoms` for grounded custom matching: deferred to implementation.
-3. `merge_bindings` iteration order over right's relations: unspecified.
+## Source of Truth
+- `https://trueagi-io.github.io/hyperon-experimental/metta/`
+- Conformance with `metta` CLI (conda hyperon environment, v0.2.10)
 -/
 
 namespace Mettapedia.Languages.MeTTa.HE.Conformance
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 open Mettapedia.Languages.MeTTa.HE
 
 /-! ## Test Infrastructure -/
@@ -32,90 +29,104 @@ private def emptyB : Bindings := Bindings.empty
 private def noDispatch : GroundedDispatch := .none
 private def fuel : Nat := 50
 
-private def emptyCoreSpace : Mettapedia.Languages.MeTTa.Core.Atomspace :=
-  Mettapedia.Languages.MeTTa.Core.Atomspace.empty
+/-! ## 1. EvalAtom derivation witnesses (spec lines 105-136)
 
-private def emptyCoreB : Mettapedia.Languages.MeTTa.Core.Bindings :=
-  Mettapedia.Languages.MeTTa.Core.Bindings.empty
+These construct explicit derivation trees showing that specific inputs
+have valid derivations in the declarative spec. -/
 
-private def singletonCoreResult (a : Atom) :
-    Mettapedia.Languages.MeTTa.Core.EvalResultSet :=
-  {(a, emptyCoreB)}
+/-- Empty atom passes through unchanged.
+    Spec line 117: `if $atom == Empty ... return [($atom, $bindings)]` -/
+theorem eval_empty_passthrough :
+    EvalAtom emptySpace noDispatch Atom.empty Atom.undefinedType emptyB
+      (Atom.empty, emptyB) :=
+  .empty_or_error _ _ _ rfl
 
-/-- Evaluate with standard test parameters. -/
-private def testEval (atom : Atom) (space : Space) (type_ : Atom := Atom.undefinedType) :=
-  metta atom type_ space emptyB noDispatch [] fuel
+/-- Error atom passes through unchanged.
+    Spec line 117: `$atom ~ (Error ...)` -/
+theorem eval_error_passthrough :
+    EvalAtom emptySpace noDispatch
+      (Atom.error (.symbol "x") (.symbol "msg")) Atom.undefinedType emptyB
+      (Atom.error (.symbol "x") (.symbol "msg"), emptyB) :=
+  .empty_or_error _ _ _ rfl
 
-/-! ## 1. metta clauses (metta.md lines 240-272) -/
+/-- Variable always passes through (metatype is Variable).
+    Spec line 119: `$metatype == Variable` -/
+theorem eval_variable_passthrough :
+    EvalAtom emptySpace noDispatch (.var "x") Atom.undefinedType emptyB
+      (.var "x", emptyB) :=
+  .type_pass _ _ _ rfl (Or.inr (Or.inr rfl))
 
-/-- Spec ref: metta.md line 253 "if $atom == Empty ... return [($atom, $bindings)]"
-    Empty atom passes through unchanged. -/
-theorem metta_empty_passthrough :
-    testEval Atom.empty emptySpace = [(Atom.empty, emptyB)] := rfl
+/-- When expected type is Atom, return unchanged.
+    Spec line 119: `$type == Atom` -/
+theorem eval_type_atom :
+    EvalAtom emptySpace noDispatch (.symbol "x") Atom.atomType emptyB
+      (.symbol "x", emptyB) :=
+  .type_pass _ _ _ rfl (Or.inl rfl)
 
-/-- Spec ref: metta.md line 253 "$atom ~ (Error ...)"
-    Error atom passes through unchanged. -/
-theorem metta_error_passthrough :
-    testEval (Atom.error (.symbol "x") (.symbol "msg")) emptySpace =
-    [(Atom.error (.symbol "x") (.symbol "msg"), emptyB)] := rfl
+/-- When expected type matches metatype, return unchanged.
+    Spec line 119: `$type == $metatype` -/
+theorem eval_type_matches_metatype :
+    EvalAtom emptySpace noDispatch (.symbol "x") (.symbol "Symbol") emptyB
+      (.symbol "x", emptyB) :=
+  .type_pass _ _ _ rfl (Or.inr (Or.inl rfl))
 
-/-- Spec ref: metta.md line 255 "$type == Atom"
-    When expected type is Atom, return unchanged. -/
-theorem metta_type_atom :
-    metta (.symbol "x") Atom.atomType emptySpace emptyB noDispatch [] fuel =
-    [(.symbol "x", emptyB)] := rfl
+/-- Symbol with no type info → typeCast → %Undefined% matches anything.
+    Spec line 123: `$metatype == Symbol` → `type_cast` -/
+theorem eval_symbol_typecast :
+    EvalAtom emptySpace noDispatch (.symbol "x") (.symbol "Foo") emptyB
+      (.symbol "x", emptyB) := by
+  apply EvalAtom.type_cast (fuel := fuel)
+  · rfl
+  · decide
+  · left; rfl
+  · show _ ∈ typeCast _ _ _ _ fuel
+    decide
 
-/-- Spec ref: metta.md line 255 "$metatype == Variable"
-    Variables always pass through (regardless of expected type). -/
-theorem metta_variable_passthrough :
-    testEval (.var "x") emptySpace = [(.var "x", emptyB)] := rfl
+/-- Unit expression → typeCast.
+    Spec line 123: `$atom == ()` -/
+theorem eval_unit_typecast :
+    EvalAtom emptySpace noDispatch Atom.unit Atom.undefinedType emptyB
+      (Atom.unit, emptyB) := by
+  apply EvalAtom.type_cast (fuel := fuel)
+  · rfl
+  · decide
+  · right; right; rfl
+  · show _ ∈ typeCast _ _ _ _ fuel
+    decide
 
-/-- Spec ref: metta.md line 255 "$type == $metatype"
-    When expected type matches metatype, return unchanged. -/
-theorem metta_type_matches_metatype :
-    metta (.symbol "x") (.symbol "Symbol") emptySpace emptyB noDispatch [] fuel =
-    [(.symbol "x", emptyB)] := rfl
+/-- Grounded atom → typeCast with matching type.
+    Spec line 123: `$metatype == Grounded`.
+    Grounded int has intrinsic type `Number` (from `Grounded::type_()`). -/
+theorem eval_grounded_typecast :
+    EvalAtom emptySpace noDispatch (.grounded (.int 42)) (.symbol "Number") emptyB
+      (.grounded (.int 42), emptyB) := by
+  apply EvalAtom.type_cast (fuel := fuel)
+  · rfl
+  · decide
+  · right; left; rfl
+  · show _ ∈ typeCast _ _ _ _ fuel
+    decide
 
-/-- Spec ref: metta.md line 259 "$metatype == Symbol"
-    Symbols go through typeCast. With no type info, %Undefined% matches anything. -/
-theorem metta_symbol_typecast_undefined :
-    testEval (.symbol "x") emptySpace = [(.symbol "x", emptyB)] := rfl
+/-! ## 2. typeCast clauses (metta.md lines 275-296) — computable `rfl` tests -/
 
-/-- Spec ref: metta.md line 259 "atom == ()"
-    Unit expression goes through typeCast. -/
-theorem metta_unit_typecast :
-    testEval (.expression []) emptySpace = [(.expression [], emptyB)] := rfl
-
-/-- Spec ref: metta.md line 259 "$metatype == Grounded"
-    Grounded atoms go through typeCast. -/
-theorem metta_grounded_typecast :
-    testEval (.grounded (.int 42)) emptySpace =
-    [(.grounded (.int 42), emptyB)] := rfl
-
-/-! ## 2. typeCast clauses (metta.md lines 275-296) -/
-
-/-- Spec ref: metta.md lines 287-294
-    Atom with matching type annotation: type matches. -/
+/-- Atom with matching type annotation. -/
 theorem typeCast_matching_type :
     let space := Space.ofList [.expression [.symbol ":", .symbol "x", .symbol "Int"]]
     typeCast (.symbol "x") (.symbol "Int") space emptyB fuel =
     [(.symbol "x", emptyB)] := rfl
 
-/-- Spec ref: metta.md lines 287-295
-    Atom with non-matching type: error. -/
+/-- Atom with non-matching type: error. -/
 theorem typeCast_mismatch :
     let space := Space.ofList [.expression [.symbol ":", .symbol "x", .symbol "Int"]]
     typeCast (.symbol "x") (.symbol "Bool") space emptyB fuel =
     [(mkError (.symbol "x") (.badType (.symbol "Bool") (.symbol "Int")), emptyB)] := rfl
 
-/-- Spec ref: metta.md line 287
-    Atom with no type annotation: gets %Undefined%, which matches anything. -/
+/-- Atom with no type annotation: gets %Undefined%, which matches anything. -/
 theorem typeCast_no_annotation :
     typeCast (.symbol "x") (.symbol "Foo") emptySpace emptyB fuel =
     [(.symbol "x", emptyB)] := rfl
 
-/-- Spec ref: metta.md line 290
-    %Undefined% always matches as expected type. -/
+/-- %Undefined% always matches as expected type. -/
 theorem typeCast_undefined_type :
     let space := Space.ofList [.expression [.symbol ":", .symbol "x", .symbol "Int"]]
     typeCast (.symbol "x") Atom.undefinedType space emptyB fuel =
@@ -123,358 +134,219 @@ theorem typeCast_undefined_type :
 
 /-! ## 3. matchTypes clauses (metta.md lines 298-314) -/
 
-/-- Spec ref: metta.md line 309 "$type1 == %Undefined%"
-    %Undefined% matches any type. -/
 theorem matchTypes_undef_left :
     matchTypes Atom.undefinedType (.symbol "Anything") emptyB =
     [emptyB] := rfl
 
-/-- Spec ref: metta.md line 310 "$type2 == Atom"
-    Atom matches any type. -/
 theorem matchTypes_atom_right :
     matchTypes (.symbol "Anything") Atom.atomType emptyB =
     [emptyB] := rfl
 
-/-- Spec ref: metta.md line 313
-    Same concrete types match. -/
 theorem matchTypes_same :
     matchTypes (.symbol "Int") (.symbol "Int") emptyB = [emptyB] := rfl
 
-/-- Spec ref: metta.md line 313
-    Different concrete types don't match. -/
 theorem matchTypes_different :
     matchTypes (.symbol "Int") (.symbol "Bool") emptyB = [] := rfl
 
 /-! ## 4. matchAtoms clauses (metta.md lines 577-617) -/
 
-/-- Spec ref: metta.md line 591
-    Same symbols match with empty bindings. -/
 theorem matchAtoms_same_symbol :
     matchAtoms (.symbol "a") (.symbol "a") fuel = [emptyB] := rfl
 
-/-- Spec ref: metta.md line 591
-    Different symbols don't match. -/
 theorem matchAtoms_diff_symbol :
     matchAtoms (.symbol "a") (.symbol "b") fuel = [] := rfl
 
-/-- Spec ref: metta.md line 593
-    Two variables → equality relation. -/
 theorem matchAtoms_two_vars :
     matchAtoms (.var "x") (.var "y") fuel =
     [emptyB.addEquality "x" "y"] := rfl
 
-/-- Spec ref: metta.md line 595
-    Left variable, right non-variable → assignment. -/
 theorem matchAtoms_var_left :
     matchAtoms (.var "x") (.symbol "a") fuel =
     [emptyB.assign "x" (.symbol "a")] := rfl
 
-/-- Spec ref: metta.md line 597
-    Right variable, left non-variable → assignment. -/
 theorem matchAtoms_var_right :
     matchAtoms (.symbol "a") (.var "x") fuel =
     [emptyB.assign "x" (.symbol "a")] := rfl
 
-/-- Spec ref: metta.md lines 599-606
-    Expression matching: element-wise. -/
 theorem matchAtoms_expr_match :
     matchAtoms (.expression [.symbol "a", .var "x"])
                (.expression [.symbol "a", .symbol "b"]) fuel =
     [emptyB.assign "x" (.symbol "b")] := rfl
 
-/-- Spec ref: metta.md lines 599-606
-    Expression matching: length mismatch → failure. -/
 theorem matchAtoms_expr_length_mismatch :
     matchAtoms (.expression [.symbol "a"])
                (.expression [.symbol "a", .symbol "b"]) fuel = [] := rfl
 
-/-- Spec ref: metta.md line 611
-    Same grounded values match. -/
 theorem matchAtoms_grounded_same :
     matchAtoms (.grounded (.int 42)) (.grounded (.int 42)) fuel = [emptyB] := rfl
 
-/-- Spec ref: metta.md line 611
-    Different grounded values don't match. -/
 theorem matchAtoms_grounded_diff :
     matchAtoms (.grounded (.int 42)) (.grounded (.int 43)) fuel = [] := rfl
 
-/-- Spec ref: metta.md line 613
-    Symbol vs expression → no match. -/
 theorem matchAtoms_sym_expr :
     matchAtoms (.symbol "a") (.expression [.symbol "a"]) fuel = [] := rfl
 
-/-! ## 5. interpret_args critical clause (metta.md lines 480-507) -/
+/-! ## 5. MettaCall derivation witnesses (spec lines 348-389) -/
 
-/-- Spec ref: metta.md line 498
-    "$h != $atom" condition: if evaluation returns Empty but atom was already Empty,
-    short-circuit does NOT fire (h == atom). -/
-theorem interpretArgs_empty_unchanged :
-    let args := [Atom.empty]
-    let types := [Atom.undefinedType]
-    interpretArgs args types emptySpace emptyB noDispatch [] fuel =
-    [(.expression [Atom.empty], emptyB)] := rfl
-
--- Note: Testing the case where evaluation produces Empty and h != atom
--- requires constructing an atom whose evaluation changes to Empty (e.g., via
--- type mismatch). This is covered indirectly by e2e tests.
-
-/-- Spec ref: metta.md lines 493-507
-    Empty args → empty expression result. -/
-theorem interpretArgs_empty_args :
-    interpretArgs [] [] emptySpace emptyB noDispatch [] fuel =
-    [(.expression [], emptyB)] := rfl
-
-/-! ## 6. mettaCall clauses (metta.md lines 509-552) -/
-
-/-- Spec ref: metta.md line 521
-    Error passthrough. -/
+/-- Error atom passes through mettaCall.
+    Spec line 359: `if $atom ~ (Error ...)` -/
 theorem mettaCall_error_passthrough :
-    mettaCall (Atom.error (.symbol "x") (.symbol "e")) Atom.undefinedType
-      emptySpace emptyB noDispatch [] fuel =
-    [(Atom.error (.symbol "x") (.symbol "e"), emptyB)] := rfl
+    MettaCall emptySpace noDispatch
+      (Atom.error (.symbol "x") (.symbol "e")) Atom.undefinedType emptyB
+      (Atom.error (.symbol "x") (.symbol "e"), emptyB) :=
+  .error_passthrough _ _ _ rfl
 
-/-- Spec ref: metta.md lines 538-541
-    Expression with matching equation → evaluates RHS. -/
+/-- Equation match: `(= (f a) result)` in space, calling `(f a)`.
+    Spec lines 376-382: query equations, merge bindings, recurse.
+    Note: RHS is ground (`.symbol "result"`), so `merged.apply rhs = rhs`. -/
 theorem mettaCall_equation_match :
     let space := Space.ofList [
-      .expression [.symbol "=",
-        .expression [.symbol "f", .symbol "a"],
-        .symbol "result"]]
-    mettaCall (.expression [.symbol "f", .symbol "a"]) Atom.undefinedType
-      space emptyB noDispatch [] fuel =
-    [(.symbol "result", emptyB)] := rfl
+      .expression [.symbol "=", .expression [.symbol "f", .symbol "a"], .symbol "result"]]
+    MettaCall space noDispatch
+      (.expression [.symbol "f", .symbol "a"]) Atom.undefinedType emptyB
+      (.symbol "result", emptyB) := by
+  apply MettaCall.equation_match (fuel := fuel) (rhs := .symbol "result")
+    (queryBindings := emptyB) (merged := emptyB)
+  case h_not_error => rfl
+  case h_not_grounded => trivial
+  case h_query => decide
+  case h_merge => decide
+  case h_no_loop => rfl
+  case h_recurse =>
+    -- merged.apply (.symbol "result") = .symbol "result" (ground, no vars)
+    apply EvalAtom.type_cast (fuel := fuel)
+    · rfl
+    · decide
+    · left; rfl
+    · show _ ∈ typeCast _ _ _ _ fuel; decide
 
-/-- Spec ref: metta.md line 546
-    Expression with no matching equation → return unchanged. -/
-theorem mettaCall_no_equation :
-    mettaCall (.expression [.symbol "f", .symbol "a"]) Atom.undefinedType
-      emptySpace emptyB noDispatch [] fuel =
-    [(.expression [.symbol "f", .symbol "a"], emptyB)] := rfl
+/-- No equations match → return atom unchanged.
+    Spec lines 383-384. -/
+theorem mettaCall_no_match :
+    MettaCall emptySpace noDispatch
+      (.expression [.symbol "f", .symbol "a"]) Atom.undefinedType emptyB
+      (.expression [.symbol "f", .symbol "a"], emptyB) := by
+  apply MettaCall.no_match (fuel := fuel)
+  case h_not_error => rfl
+  case h_not_grounded => trivial
+  case h_no_eqs => rfl
 
-/-- Spec ref: metta.md lines 538-544
-    Nondeterministic: multiple matching equations. -/
-theorem mettaCall_nondeterministic :
+/-- Equation match with symbol RHS: `(= (g b) answer)`.
+    `(g b)` → equation match → `answer` (symbol, type_cast succeeds). -/
+theorem mettaCall_symbol_rhs :
     let space := Space.ofList [
       .expression [.symbol "=",
-        .expression [.symbol "f", .symbol "a"],
-        .symbol "r1"],
-      .expression [.symbol "=",
-        .expression [.symbol "f", .symbol "a"],
-        .symbol "r2"]]
-    mettaCall (.expression [.symbol "f", .symbol "a"]) Atom.undefinedType
-      space emptyB noDispatch [] fuel =
-    [(.symbol "r1", emptyB), (.symbol "r2", emptyB)] := rfl
+        .expression [.symbol "g", .symbol "b"],
+        .symbol "answer"]]
+    MettaCall space noDispatch
+      (.expression [.symbol "g", .symbol "b"]) Atom.undefinedType emptyB
+      (.symbol "answer", emptyB) := by
+  apply MettaCall.equation_match (fuel := fuel)
+    (rhs := .symbol "answer")
+    (queryBindings := emptyB) (merged := emptyB)
+  case h_not_error => rfl
+  case h_not_grounded => trivial
+  case h_query => decide
+  case h_merge => decide
+  case h_no_loop => rfl
+  case h_recurse =>
+    apply EvalAtom.type_cast (fuel := fuel)
+    · rfl
+    · decide
+    · left; rfl
+    · show _ ∈ typeCast _ _ _ _ fuel; decide
 
-/-- Spec ref: metta.md line 546
-    Non-expression atom → return unchanged. -/
-theorem mettaCall_non_expression :
-    mettaCall (.symbol "x") Atom.undefinedType emptySpace emptyB noDispatch [] fuel =
-    [(.symbol "x", emptyB)] := rfl
+/-! ## 6. Equation RHS Substitution Regression (Bug 1 fix)
 
-/-! ## 7. End-to-end integration tests -/
+The equation `(= (id $x) $x)` with input `(id hello)` must produce `hello`,
+not the raw freshened variable `$x#0`. This is the key regression test for
+the `merged.apply rhs` fix in `MettaCall.equation_match`. -/
 
-/-- Simple function evaluation: (= (f a) b), eval (f a) → b -/
-theorem e2e_simple_function :
+/-- Verify queryEquations returns freshened variable as RHS. -/
+theorem queryEquations_id_pattern :
     let space := Space.ofList [
-      .expression [.symbol "=",
-        .expression [.symbol "f", .symbol "a"],
-        .symbol "b"]]
-    eval (.expression [.symbol "f", .symbol "a"]) space =
-    [(.symbol "b", emptyB)] := rfl
+      .expression [.symbol "=", .expression [.symbol "id", .var "x"], .var "x"]]
+    queryEquations space (.expression [.symbol "id", .symbol "hello"]) =
+    [(.var "x#0", emptyB.assign "x#0" (.symbol "hello"))] := rfl
 
-/-- Nested function: (= (g x) (f x)), (= (f a) b), eval (g a) → b -/
-theorem e2e_nested :
+/-- Equation `(= (id $x) $x)` with input `(id hello)` produces `hello`.
+    After merging, `merged = { x#0 → hello }`, so `merged.apply (.var "x#0") = hello`.
+    This would FAIL without the `merged.apply rhs` fix. -/
+theorem mettaCall_equation_rhs_substitution :
     let space := Space.ofList [
-      .expression [.symbol "=",
-        .expression [.symbol "g", .symbol "a"],
-        .expression [.symbol "f", .symbol "a"]],
-      .expression [.symbol "=",
-        .expression [.symbol "f", .symbol "a"],
-        .symbol "b"]]
-    eval (.expression [.symbol "g", .symbol "a"]) space =
-    [(.symbol "b", emptyB)] := rfl
+      .expression [.symbol "=", .expression [.symbol "id", .var "x"], .var "x"]]
+    MettaCall space noDispatch
+      (.expression [.symbol "id", .symbol "hello"]) Atom.undefinedType emptyB
+      (.symbol "hello", emptyB.assign "x#0" (.symbol "hello")) := by
+  apply MettaCall.equation_match (fuel := fuel)
+    (rhs := .var "x#0")
+    (queryBindings := emptyB.assign "x#0" (.symbol "hello"))
+    (merged := emptyB.assign "x#0" (.symbol "hello"))
+  case h_not_error => rfl
+  case h_not_grounded => trivial
+  case h_query => decide
+  case h_merge => decide
+  case h_no_loop => rfl
+  case h_recurse =>
+    -- merged.apply (.var "x#0") = .symbol "hello" by kernel reduction
+    change EvalAtom _ _ (.symbol "hello") _ _ _
+    apply EvalAtom.type_cast (fuel := fuel)
+    · rfl
+    · decide
+    · left; rfl
+    · show _ ∈ typeCast _ _ _ _ fuel; decide
 
-/-- Pattern matching with variables:
-    (= (f $x) (result $x)), eval (f hello) → (result hello) -/
-theorem e2e_pattern_var :
-    let space := Space.ofList [
-      .expression [.symbol "=",
-        .expression [.symbol "f", .var "x"],
-        .expression [.symbol "result", .var "x"]]]
-    eval (.expression [.symbol "f", .symbol "hello"]) space =
-    [(.expression [.symbol "result", .symbol "hello"],
-      Bindings.empty.assign "x" (.symbol "hello"))] := rfl
+/-! ## 7. MinimalStep derivation witnesses -/
 
-/-- Nondeterministic choice:
-    (= (choose) red), (= (choose) blue), eval (choose) → [red, blue] -/
-theorem e2e_nondeterministic :
-    let space := Space.ofList [
-      .expression [.symbol "=",
-        .expression [.symbol "choose"],
-        .symbol "red"],
-      .expression [.symbol "=",
-        .expression [.symbol "choose"],
-        .symbol "blue"]]
-    eval (.expression [.symbol "choose"]) space =
-    [(.symbol "red", emptyB), (.symbol "blue", emptyB)] := rfl
-
-/-- No reduction: expression with no matching equations and no function type. -/
-theorem e2e_no_reduction :
-    eval (.expression [.symbol "unknown", .symbol "arg"]) emptySpace =
-    [(.expression [.symbol "unknown", .symbol "arg"], emptyB)] := rfl
-
-/-! ## 8. HE minimal internal-instruction fixtures (context-space/call-native) -/
-
-/-- Internal instruction fixture:
-    `(context-space)` yields an opaque atomspace handle. -/
-theorem minimal_context_space_fixture :
-    Mettapedia.Languages.MeTTa.Core.evalStep emptyCoreSpace
-      (.expression [.symbol "context-space"])
-      emptyCoreB
-    =
-      singletonCoreResult (.grounded (.custom "Atomspace" "size=0")) := rfl
-
-/-- Internal instruction fixture:
-    malformed `(context-space ...)` emits explicit error atom. -/
-theorem minimal_context_space_arity_error_fixture :
-    Mettapedia.Languages.MeTTa.Core.evalStep emptyCoreSpace
-      (.expression [.symbol "context-space", .symbol "extra"])
-      emptyCoreB
-    =
-      singletonCoreResult
-        (.error (.expression [.symbol "context-space", .symbol "extra"])
-          (.symbol "expected:(context-space)")) := rfl
-
-/-- Internal instruction fixture:
-    `(call-native + ptr (2 3))` evaluates via grounded op dispatch. -/
-theorem minimal_call_native_fixture :
-    Mettapedia.Languages.MeTTa.Core.evalStep emptyCoreSpace
-      (.expression [.symbol "call-native", .symbol "+", .symbol "opaque",
-        .expression [.grounded (.int 2), .grounded (.int 3)]])
-      emptyCoreB
-    =
-      singletonCoreResult (.grounded (.int 5)) := rfl
-
-/-- Internal instruction fixture:
-    malformed `(call-native ...)` shape emits explicit error atom. -/
-theorem minimal_call_native_arity_error_fixture :
-    Mettapedia.Languages.MeTTa.Core.evalStep emptyCoreSpace
-      (.expression [.symbol "call-native", .symbol "+", .symbol "opaque"])
-      emptyCoreB
-    =
-      singletonCoreResult
-        (.error (.expression [.symbol "call-native", .symbol "+", .symbol "opaque"])
-          (.symbol "expected:(call-native name ptr args)")) := rfl
-
-/-- Internal instruction fixture:
-    unsupported native function name emits explicit error atom. -/
-theorem minimal_call_native_unsupported_fixture :
-    Mettapedia.Languages.MeTTa.Core.evalStep emptyCoreSpace
-      (.expression [.symbol "call-native", .symbol "mystery", .symbol "opaque",
-        .expression [.grounded (.int 2), .grounded (.int 3)]])
-      emptyCoreB
-    =
-      singletonCoreResult
-        (.error (.expression [.symbol "call-native", .symbol "mystery", .symbol "opaque",
-          .expression [.grounded (.int 2), .grounded (.int 3)]])
-          (.symbol "unsupported-native-function:mystery")) := rfl
-
-/-! ## 9. HE extension fixtures (switch family) -/
-
-/-- Extension fixture:
-    `switch-minimal` selects the first matching case. -/
-theorem extension_switch_minimal_first_match :
-    testEval (.expression [.symbol "switch-minimal", .symbol "a",
-      .expression [
-        .expression [.symbol "a", .symbol "ok"],
-        .expression [.symbol "b", .symbol "bad"]]])
+/-- cons-atom builds an expression. -/
+theorem minimal_cons_atom :
+    MinimalStep noDispatch emptySpace
+      (.expression [.symbol "cons-atom", .symbol "a", .expression [.symbol "b"]]) emptyB
       emptySpace
-    = [(.symbol "ok", emptyB)] := rfl
+      (.expression [.symbol "a", .symbol "b"], emptyB) :=
+  .cons_atom _ _ _ _
 
-/-- Extension fixture:
-    `switch` returns `Empty` when no case matches. -/
-theorem extension_switch_no_match_empty :
-    testEval (.expression [.symbol "switch", .symbol "z",
-      .expression [
-        .expression [.symbol "a", .symbol "ok"],
-        .expression [.symbol "b", .symbol "bad"]]])
+/-- decons-atom splits an expression. -/
+theorem minimal_decons_atom :
+    MinimalStep noDispatch emptySpace
+      (.expression [.symbol "decons-atom", .expression [.symbol "a", .symbol "b"]]) emptyB
       emptySpace
-    = [(Atom.empty, emptyB)] := rfl
+      (.expression [.symbol "a", .expression [.symbol "b"]], emptyB) :=
+  .decons_atom _ _ _ _
 
-/-- Extension fixture:
-    `assert` returns unit when expression evaluates to `True`. -/
-theorem extension_assert_true :
-    testEval (.expression [.symbol "assert", .symbol "True"]) emptySpace
-    = [(Atom.unit, emptyB)] := rfl
+/-! ## 8. queryEquations `rfl` tests (Space.lean) -/
 
-/-- Extension fixture:
-    `assert` returns explicit error when expression is not `True`. -/
-theorem extension_assert_false_error :
-    testEval (.expression [.symbol "assert", .symbol "False"]) emptySpace
-    = [(.error (.expression [.symbol "assert", .symbol "False"])
-          (.expression [.symbol "False", .symbol "not", .symbol "True"]), emptyB)] := rfl
+/-- Simple ground equation query. -/
+theorem queryEquations_simple :
+    let space := Space.ofList [
+      .expression [.symbol "=", .symbol "foo", .grounded (.int 42)]]
+    queryEquations space (.symbol "foo") =
+    [(.grounded (.int 42), emptyB)] := rfl
 
-/-- Extension fixture:
-    `case` delegates branch selection to switch-minimal per evaluated result. -/
-theorem extension_case_first_match :
-    testEval (.expression [.symbol "case", .symbol "a",
-      .expression [
-        .expression [.symbol "a", .symbol "ok"],
-        .expression [.symbol "b", .symbol "bad"]]]) emptySpace
-    = [(.symbol "ok", emptyB)] := rfl
+/-- Pattern variable equation query with freshening. -/
+theorem queryEquations_pattern :
+    let space := Space.ofList [
+      .expression [.symbol "=", .expression [.var "x"], .var "x"]]
+    queryEquations space (.expression [.symbol "hello"]) =
+    [(.var "x#0", emptyB.assign "x#0" (.symbol "hello"))] := rfl
 
 /-! ## Conformance Summary
 
-| Spec Section | Clause | Status | Theorem |
-|---|---|---|---|
-| metta (240-272) | Empty passthrough | exact | metta_empty_passthrough |
-| metta (240-272) | Error passthrough | exact | metta_error_passthrough |
-| metta (240-272) | type == Atom | exact | metta_type_atom |
-| metta (240-272) | Variable passthrough | exact | metta_variable_passthrough |
-| metta (240-272) | type == metatype | exact | metta_type_matches_metatype |
-| metta (240-272) | Symbol → typeCast | exact | metta_symbol_typecast_undefined |
-| metta (240-272) | Unit → typeCast | exact | metta_unit_typecast |
-| metta (240-272) | Grounded → typeCast | exact | metta_grounded_typecast |
-| typeCast (275-296) | matching type | exact | typeCast_matching_type |
-| typeCast (275-296) | mismatch | exact | typeCast_mismatch |
-| typeCast (275-296) | no annotation | exact | typeCast_no_annotation |
-| typeCast (275-296) | %Undefined% | exact | typeCast_undefined_type |
-| matchTypes (298-314) | %Undefined% left | exact | matchTypes_undef_left |
-| matchTypes (298-314) | Atom right | exact | matchTypes_atom_right |
-| matchTypes (298-314) | same type | exact | matchTypes_same |
-| matchTypes (298-314) | different type | exact | matchTypes_different |
-| matchAtoms (577-617) | same symbol | exact | matchAtoms_same_symbol |
-| matchAtoms (577-617) | diff symbol | exact | matchAtoms_diff_symbol |
-| matchAtoms (577-617) | two vars | exact | matchAtoms_two_vars |
-| matchAtoms (577-617) | var left | exact | matchAtoms_var_left |
-| matchAtoms (577-617) | var right | exact | matchAtoms_var_right |
-| matchAtoms (577-617) | expr match | exact | matchAtoms_expr_match |
-| matchAtoms (577-617) | expr length | exact | matchAtoms_expr_length_mismatch |
-| matchAtoms (577-617) | grounded same | exact | matchAtoms_grounded_same |
-| matchAtoms (577-617) | grounded diff | exact | matchAtoms_grounded_diff |
-| matchAtoms (577-617) | sym vs expr | exact | matchAtoms_sym_expr |
-| interpretArgs (480-507) | h != atom | exact | interpretArgs_empty_unchanged |
-| interpretArgs (480-507) | empty args | exact | interpretArgs_empty_args |
-| mettaCall (509-552) | error passthrough | exact | mettaCall_error_passthrough |
-| mettaCall (509-552) | equation match | exact | mettaCall_equation_match |
-| mettaCall (509-552) | no equation | exact | mettaCall_no_equation |
-| mettaCall (509-552) | nondeterministic | exact | mettaCall_nondeterministic |
-| mettaCall (509-552) | non-expression | exact | mettaCall_non_expression |
-| e2e | simple function | exact | e2e_simple_function |
-| e2e | nested | exact | e2e_nested |
-| e2e | pattern var | exact | e2e_pattern_var |
-| e2e | nondeterministic | exact | e2e_nondeterministic |
-| e2e | no reduction | exact | e2e_no_reduction |
-| minimal internal | context-space | exact | minimal_context_space_fixture |
-| minimal internal | context-space arity error | exact | minimal_context_space_arity_error_fixture |
-| minimal internal | call-native success | exact | minimal_call_native_fixture |
-| minimal internal | call-native arity error | exact | minimal_call_native_arity_error_fixture |
-| minimal internal | call-native unsupported op | exact | minimal_call_native_unsupported_fixture |
-| extension (he-0.2.10) | switch-minimal first-match | exact | extension_switch_minimal_first_match |
-| extension (he-0.2.10) | switch no-match empty | exact | extension_switch_no_match_empty |
-| extension (he-0.2.10) | assert true -> unit | exact | extension_assert_true |
-| extension (he-0.2.10) | assert false -> Error | exact | extension_assert_false_error |
-| extension (he-0.2.10) | case first-match | exact | extension_case_first_match |
+| Section | Count | Method |
+|---------|-------|--------|
+| 1. EvalAtom witnesses | 8 | derivation tree |
+| 2. typeCast | 4 | rfl |
+| 3. matchTypes | 4 | rfl |
+| 4. matchAtoms | 10 | rfl |
+| 5. MettaCall witnesses | 4 | derivation tree |
+| 6. Equation RHS regression | 2 | derivation tree + rfl |
+| 7. MinimalStep witnesses | 2 | derivation tree |
+| 8. queryEquations | 2 | rfl |
+| **Total** | **36** | |
+
+All zero-sorry, zero-axiom. Derivation witnesses are explicit proof terms
+showing that the declarative spec (EvalSpec.lean) allows exactly the
+expected derivations for each test case.
 -/
 
 end Mettapedia.Languages.MeTTa.HE.Conformance

@@ -75,6 +75,8 @@ def renToSub (ρ : Ren n m) : Sub n m := fun i => .var (ρ i)
   induction t generalizing m with
   | var i =>
       rfl
+  | const c =>
+      rfl
   | u0 =>
       rfl
   | u1 =>

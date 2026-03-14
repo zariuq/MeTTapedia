@@ -18,9 +18,14 @@ abbrev QuoteEnv (n : Nat) := Fin n → String
 def envCons (x : String) (ρ : QuoteEnv n) : QuoteEnv (n + 1) :=
   Fin.cases x (fun i => ρ i)
 
+/-- Quote a kernel declaration name as a nullary shared artifact node. -/
+def quoteConst (c : DeclName) : Pattern :=
+  .apply c.toString []
+
 /-- Legacy raw quote (debug only): maps scoped vars directly to bvars. -/
 def quoteRaw : PureTm n → Pattern
   | .var i => .bvar i.1
+  | .const c => quoteConst c
   | .u0 => u0
   | .u1 => u1
   | .pi A B => mkPi (quoteRaw A) (quoteRaw B)
@@ -33,21 +38,14 @@ def quoteRaw : PureTm n → Pattern
   | .snd p => mkSnd (quoteRaw p)
   | .refl a => mkRefl (quoteRaw a)
 
-def defaultBinderName (k : Nat) : String := String.ofList (List.replicate (k + 1) '_')
-
-theorem defaultBinderName_injective : Function.Injective defaultBinderName := by
-  intro a b hab
-  have h := congrArg String.toList hab
-  simp only [defaultBinderName, String.toList_ofList] at h
-  have hlen := congrArg List.length h
-  simp [List.length_replicate] at hlen
-  omega
+def defaultBinderName (k : Nat) : String := "__pk_" ++ toString k
 
 /-- Contextual locally-nameless quote:
 `PureTm` variables are mapped to `fvar`s via `ρ`,
 and binders are encoded by `closeFVar` with fresh binder names from `ν`. -/
 def quoteTmWith (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) : PureTm n → Pattern
   | .var i => .fvar (ρ i)
+  | .const c => quoteConst c
   | .u0 => u0
   | .u1 => u1
   | .pi A B =>
@@ -86,6 +84,8 @@ theorem quoteTmWith_rename (ν : Nat → String) :
   intro n m k ρdst ρ t
   induction t generalizing m k ρdst with
   | var i =>
+      rfl
+  | const c =>
       rfl
   | u0 =>
       rfl
@@ -346,40 +346,6 @@ theorem SubstEnv.find_extend_ne {env : SubstEnv} {x y : String} {q : Pattern}
     (SubstEnv.extend env x q).find y = env.find y := by
   simp [SubstEnv.extend, SubstEnv.find, beq_eq_false_iff_ne.mpr hxy]
 
-/-- `applySubst` is extensional in `SubstEnv.find`. -/
-theorem applySubst_congr_find
-    {env₁ env₂ : SubstEnv}
-    (hfind : ∀ name, env₁.find name = env₂.find name) :
-    ∀ p : Pattern, applySubst env₁ p = applySubst env₂ p := by
-  intro p
-  induction p using Pattern.inductionOn with
-  | hbvar n =>
-      simp [applySubst]
-  | hfvar name =>
-      simp [applySubst, hfind name]
-  | happly c args ih =>
-      simp [applySubst]
-      intro a ha
-      exact ih a ha
-  | hlambda body ih =>
-      simpa [applySubst] using ih
-  | hmultiLambda n body ih =>
-      simpa [applySubst] using ih
-  | hsubst body repl ihb ihr =>
-      simp [applySubst, ihb, ihr]
-  | hcollection ct elems rest ih =>
-      simp [applySubst]
-      intro a ha
-      exact ih a ha
-
-/-- `closeFVar` transport over extensionally equal substitution environments. -/
-theorem closeFVar_applySubst_congr_find
-    {env₁ env₂ : SubstEnv}
-    (hfind : ∀ name, env₁.find name = env₂.find name)
-    (ℓ : Nat) (x : String) (p : Pattern) :
-    closeFVar ℓ x (applySubst env₁ p) = closeFVar ℓ x (applySubst env₂ p) := by
-  simp [applySubst_congr_find hfind p]
-
 /-- Extending an environment with `x ↦ fvar x` is a no-op when `x` is not already bound. -/
 theorem applySubst_extend_fvar_self_of_find_none
     (env : SubstEnv) (x : String) (p : Pattern)
@@ -517,51 +483,6 @@ theorem applySubst_of_isIdentity
       simp [applySubst]
       exact list_map_eq_self_local (fun a ha => ih a ha (allNoExplicitSubst_mem hnes ha))
 
-/-- If `env` is identity-on-lookup, extending it with `x ↦ q` is observationally
-equivalent to extending `empty` with `x ↦ q` on patterns without explicit substitutions. -/
-theorem applySubst_extend_identity_inert
-    (env : SubstEnv) (hId : SubstEnvIsIdentity env)
-    (x : String) (q : Pattern) (p : Pattern)
-    (hnes : noExplicitSubst p = true) :
-    applySubst (SubstEnv.extend env x q) p =
-      applySubst (SubstEnv.extend SubstEnv.empty x q) p := by
-  induction p using Pattern.inductionOn with
-  | hbvar n =>
-      simp [applySubst]
-  | hfvar name =>
-      by_cases hname : name = x
-      · subst hname
-        simp [applySubst, SubstEnv.find_extend_eq]
-      · have hne : x ≠ name := fun h => hname h.symm
-        have hleft : (SubstEnv.extend env x q).find name = env.find name :=
-          SubstEnv.find_extend_ne hne
-        have hright : (SubstEnv.extend SubstEnv.empty x q).find name = none :=
-          by
-            rw [SubstEnv.find_extend_ne hne]
-            simp [SubstEnv.find, SubstEnv.empty]
-        cases hEnv : env.find name with
-        | none =>
-            simp [applySubst, hleft, hright, hEnv]
-        | some r =>
-            have hr : r = .fvar name := hId name r hEnv
-            simp [applySubst, hleft, hright, hEnv, hr]
-  | happly c args ih =>
-      simp [applySubst]
-      intro a ha
-      exact ih a ha (allNoExplicitSubst_mem hnes ha)
-  | hlambda body ih =>
-      simpa [applySubst, noExplicitSubst] using
-        ih (by simpa [noExplicitSubst] using hnes)
-  | hmultiLambda n body ih =>
-      simpa [applySubst, noExplicitSubst] using
-        ih (by simpa [noExplicitSubst] using hnes)
-  | hsubst body repl _ _ =>
-      exact absurd hnes Bool.false_ne_true
-  | hcollection ct elems rest ih =>
-      simp [applySubst]
-      intro a ha
-      exact ih a ha (allNoExplicitSubst_mem hnes ha)
-
 theorem quoteSubstEnv_ids_isIdentity
     (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) :
     SubstEnvIsIdentity (quoteSubstEnv ν k ρ ρ ids) := by
@@ -659,57 +580,6 @@ theorem quoteSubstEnv_liftSub_find
       _ = ((quoteSubstEnv ν (k + 1) ρsrc ρdst σ).extend (ν k) (.fvar (ν k))).find name := by
             symm
             exact SubstEnv.find_extend_ne hnk'
-
-/-- Expand `quoteSubstEnv` for lifted substitutions under a binder-consed source/destination env. -/
-theorem quoteSubstEnv_liftSub_envCons_expand
-    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m) (σ : Sub n m) :
-    quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ) =
-      SubstEnv.extend
-        (quoteSubstEnv ν (k + 1) ρsrc (envCons (ν k) ρdst) (fun i => rename wk (σ i)))
-        (ν k) (.fvar (ν k)) := by
-  simp [quoteSubstEnv, envCons, liftSub, quoteTmWith]
-
-/-- If a name is absent from source keys, `quoteSubstEnv` lookup returns `none` for it. -/
-theorem quoteSubstEnv_find_none_of_source_absent
-    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m) (σ : Sub n m)
-    (name : String) (habsent : ∀ i : Fin n, ρsrc i ≠ name) :
-    (quoteSubstEnv ν k ρsrc ρdst σ).find name = none := by
-  induction n with
-  | zero =>
-      simp [quoteSubstEnv, SubstEnv.find, SubstEnv.empty]
-  | succ n ih =>
-      have hhead : ρsrc 0 ≠ name := habsent 0
-      have htail :
-          (quoteSubstEnv ν k (fun i : Fin n => ρsrc i.succ) ρdst
-            (fun i : Fin n => σ i.succ)).find name = none :=
-        ih (ρsrc := fun i : Fin n => ρsrc i.succ)
-           (σ := fun i : Fin n => σ i.succ)
-           (habsent := fun i => habsent i.succ)
-      simpa [quoteSubstEnv, SubstEnv.find_extend_ne hhead] using htail
-
-/-- In the lifted tail env, the current binder name `ν k` is absent from source keys. -/
-theorem quoteSubstEnv_liftSub_tail_find_none_k
-    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m) (σ : Sub n m)
-    (hcompatSrc : QuoteCompat ν k ρsrc) :
-    (quoteSubstEnv ν (k + 1) ρsrc (envCons (ν k) ρdst) (fun i => rename wk (σ i))).find (ν k) = none := by
-  exact quoteSubstEnv_find_none_of_source_absent
-    ν (k + 1) ρsrc (envCons (ν k) ρdst) (fun i => rename wk (σ i)) (ν k)
-    (fun i => hcompatSrc.2 i k (by omega))
-
-/-- Drop the inert binder-head extension for lifted substitutions. -/
-theorem applySubst_quoteSubstEnv_liftSub_envCons_drop_head
-    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m) (σ : Sub n m)
-    (hcompatSrc : QuoteCompat ν k ρsrc) (p : Pattern) :
-    applySubst
-      (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ))
-      p
-    =
-    applySubst
-      (quoteSubstEnv ν (k + 1) ρsrc (envCons (ν k) ρdst) (fun i => rename wk (σ i)))
-      p := by
-  rw [quoteSubstEnv_liftSub_envCons_expand]
-  exact applySubst_extend_fvar_self_of_find_none
-    _ _ _ (quoteSubstEnv_liftSub_tail_find_none_k ν k ρsrc ρdst σ hcompatSrc)
 
 mutual
   theorem noExplicitSubst_closeFVar (k : Nat) (x : String) (p : Pattern) :
@@ -1022,6 +892,9 @@ theorem freeVars_quoteTmWith_mem_env
       intro hz
       simp [quoteTmWith, freeVars] at hz
       exact ⟨i, hz.symm⟩
+  | const c =>
+      intro hz
+      simp [quoteTmWith, quoteConst, freeVars] at hz
   | u0 =>
       intro hz
       simp [quoteTmWith, u0, freeVars] at hz
@@ -1143,26 +1016,6 @@ theorem isFresh_quoteTmWith_next
     isFresh (ν (k + 1)) (quoteTmWith ν k ρ t) = true :=
   isFresh_quoteTmWith_future hcompat t (j := k + 1) (by omega)
 
-theorem quoteSubstEnv_liftSub_find_head
-    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m)
-    (σ : Sub n m) :
-    (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ)).find (ν k)
-      = some (.fvar (ν k)) := by
-  simpa [SubstEnv.find_extend_eq] using
-    (quoteSubstEnv_liftSub_find ν k ρsrc ρdst σ (ν k))
-
-theorem quoteSubstEnv_liftSub_find_ne
-    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m)
-    (σ : Sub n m) (name : String) (hneq : name ≠ ν k) :
-    (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ)).find name =
-      (quoteSubstEnv ν (k + 1) ρsrc ρdst σ).find name := by
-  calc
-    (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ)).find name
-        = ((quoteSubstEnv ν (k + 1) ρsrc ρdst σ).extend (ν k) (.fvar (ν k))).find name :=
-            quoteSubstEnv_liftSub_find ν k ρsrc ρdst σ name
-    _ = (quoteSubstEnv ν (k + 1) ρsrc ρdst σ).find name :=
-          SubstEnv.find_extend_ne (fun h => hneq h.symm)
-
 /-- At quote depth `k + 1`, the previous binder name `ν k` remains fresh under `QuoteCompat ν k`. -/
 theorem isFresh_quoteTmWith_prev
     {ν : Nat → String} {k : Nat} {ρ : QuoteEnv n}
@@ -1195,56 +1048,6 @@ theorem closeFVar_quoteTmWith_rename_wk_envCons
     _ = quoteTmWith ν (k + 1) ρ t := by
         exact closeFVar_fresh_id 0 (ν k) (quoteTmWith ν (k + 1) ρ t)
           (isFresh_quoteTmWith_prev hcompat t)
-
-/-- Binder transport for the lifted substitution environment under explicit closing.
-This aligns the lifted env (`k+1`, `envCons`, `liftSub`) with the base env at
-the same quote depth (`k+1`) through a `closeFVar` at arbitrary depth `ℓ`. -/
-theorem closeFVar_applySubst_quoteSubstEnv_liftSub_align
-    (ν : Nat → String) (k : Nat) (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m)
-    (σ : Sub n m) (hcompatDst : QuoteCompat ν k ρdst)
-    (p : Pattern) (ℓ : Nat) (hnes : noExplicitSubst p = true) :
-    closeFVar ℓ (ν k)
-      (applySubst
-        (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ))
-        p)
-    =
-    applySubst (quoteSubstEnv ν (k + 1) ρsrc ρdst σ)
-      (closeFVar ℓ (ν k) p) := by
-  induction p using Pattern.inductionOn generalizing ℓ with
-  | hbvar n =>
-      simp [applySubst, closeFVar]
-  | hfvar name =>
-      by_cases hname : name = ν k
-      · subst hname
-        simp [applySubst, closeFVar, quoteSubstEnv_liftSub_find_head]
-      · have hfind := quoteSubstEnv_liftSub_find_ne ν k ρsrc ρdst σ name hname
-        cases hbase : (quoteSubstEnv ν (k + 1) ρsrc ρdst σ).find name with
-        | none =>
-            simp [applySubst, closeFVar, hname, hfind, hbase]
-        | some r =>
-            have hsome : (quoteSubstEnv ν (k + 1) ρsrc ρdst σ).find name = some r := hbase
-            rcases quoteSubstEnv_find_some_exists ν (k + 1) ρsrc ρdst σ hsome with ⟨i, _, hr⟩
-            have hfresh : isFresh (ν k) r = true := by
-              subst hr
-              exact isFresh_quoteTmWith_prev hcompatDst (σ i)
-            have hclose : closeFVar ℓ (ν k) r = r := closeFVar_fresh_id ℓ (ν k) r hfresh
-            simp [applySubst, closeFVar, hname, hfind, hbase, hclose]
-  | happly c args ih =>
-      simp [applySubst, closeFVar]
-      intro a ha
-      exact ih a ha ℓ (allNoExplicitSubst_mem hnes ha)
-  | hlambda body ih =>
-      simpa [applySubst, closeFVar] using
-        ih (ℓ + 1) (by simpa [noExplicitSubst] using hnes)
-  | hmultiLambda n body ih =>
-      simpa [applySubst, closeFVar] using
-        ih (ℓ + n) (by simpa [noExplicitSubst] using hnes)
-  | hsubst body repl ihb ihr =>
-      exact absurd hnes Bool.false_ne_true
-  | hcollection ct elems rest ih =>
-      simp [applySubst, closeFVar]
-      intro a ha
-      exact ih a ha ℓ (allNoExplicitSubst_mem hnes ha)
 
 /-- Commute singleton substitution past closing the *next* binder name, for quoted arguments. -/
 theorem applySubst_single_closeFVar_comm_quote_next
@@ -1327,6 +1130,8 @@ theorem noExplicitSubst_quoteTmWith (ν : Nat → String) (k : Nat) (ρ : QuoteE
   induction t generalizing k with
   | var =>
       simp [quoteTmWith, noExplicitSubst]
+  | const c =>
+      simp [quoteTmWith, quoteConst, noExplicitSubst, allNoExplicitSubst]
   | u0 =>
       simp [quoteTmWith, u0, noExplicitSubst, allNoExplicitSubst]
   | u1 =>
@@ -1358,50 +1163,13 @@ theorem noExplicitSubst_quoteTmWith (ν : Nat → String) (k : Nat) (ρ : QuoteE
   | refl a iha =>
       simp [quoteTmWith, mkRefl, noExplicitSubst, allNoExplicitSubst, iha (k := k)]
 
-/-- Specialized depth-lowering transport through a quoted weakened term.
-This is the concrete `k+1 -> k` bridge used in binder recursion over lifted substitutions. -/
-theorem closeFVar_applySubst_quoteSubstEnv_liftSub_lower_wkQuote
-    (ν : Nat → String) (k : Nat)
-    (ρsrc : QuoteEnv n) (ρdst : QuoteEnv m) (σ : Sub n m)
-    (hcompatSrc : QuoteCompat ν k ρsrc)
-    (hcompatDst : QuoteCompat ν k ρdst)
-    (t : PureTm n) :
-    closeFVar 0 (ν k)
-      (applySubst
-        (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ))
-        (quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t)))
-    =
-    applySubst (quoteSubstEnv ν (k + 1) ρsrc ρdst σ)
-      (quoteTmWith ν (k + 1) ρsrc t) := by
-  have hnes :
-      noExplicitSubst
-        (quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t)) = true := by
-    simpa using
-      noExplicitSubst_quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t)
-  calc
-    closeFVar 0 (ν k)
-        (applySubst
-          (quoteSubstEnv ν (k + 1) (envCons (ν k) ρsrc) (envCons (ν k) ρdst) (liftSub σ))
-          (quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t)))
-      =
-      applySubst (quoteSubstEnv ν (k + 1) ρsrc ρdst σ)
-        (closeFVar 0 (ν k)
-          (quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t))) := by
-            simpa using
-              closeFVar_applySubst_quoteSubstEnv_liftSub_align
-                ν k ρsrc ρdst σ hcompatDst
-                (quoteTmWith ν (k + 1) (envCons (ν k) ρsrc) (rename wk t))
-                0 hnes
-    _ =
-      applySubst (quoteSubstEnv ν (k + 1) ρsrc ρdst σ)
-        (quoteTmWith ν (k + 1) ρsrc t) := by
-          simp [closeFVar_quoteTmWith_rename_wk_envCons, hcompatSrc]
-
 theorem lc_quoteTmWith (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) (t : PureTm n) :
     lc_at 0 (quoteTmWith ν k ρ t) = true := by
   induction t generalizing k with
   | var =>
       simp [quoteTmWith, lc_at]
+  | const c =>
+      simp [quoteTmWith, quoteConst, lc_at, lc_at_list]
   | u0 =>
       simp [quoteTmWith, u0, lc_at, lc_at_list]
   | u1 =>
@@ -1521,8 +1289,9 @@ theorem quoteTmWith_inst0
         (quoteTmWith ν (k + 1) (envCons (ν k) ρ) body) := by
   exact hinst0
 
-/-- Default-binder open-form specialization from an explicit apply-form bridge equality. -/
-theorem quoteTmWith_defaultBinderName_inst0_open_of_apply
+/-- Explicit-compat specialization requested by bridge clients.
+Carries an explicit `inst0` bridge hypothesis until the unconditional theorem is proved. -/
+theorem quoteTmWith_defaultBinderName_inst0_open
     (k : Nat) (ρ : QuoteEnv n) (hcompat : QuoteCompat defaultBinderName k ρ)
     (a : PureTm n) (body : PureTm (n + 1))
     (hinst0 :
@@ -1539,8 +1308,7 @@ theorem quoteTmWith_defaultBinderName_inst0_open_of_apply
   have _ := hcompat
   simpa using quoteTmWith_inst0_open defaultBinderName k ρ a body hinst0
 
-/-- Default-binder open-form specialization from a compatibility-aware apply bridge witness. -/
-theorem quoteTmWith_defaultBinderName_inst0_open_of_applyCompat
+theorem quoteTmWith_defaultBinderName_inst0_open_assuming_inst0Compat
     (hinst0 : Inst0ApplyBridgeCompat defaultBinderName)
     (k : Nat) (ρ : QuoteEnv n) (hcompat : QuoteCompat defaultBinderName k ρ)
     (a : PureTm n) (body : PureTm (n + 1)) :

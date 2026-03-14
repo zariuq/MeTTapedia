@@ -2,6 +2,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.Effects
 import Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval
 import Mettapedia.Languages.MeTTa.PeTTa.StdLib
 import Mettapedia.Languages.MeTTa.PeTTa.TranslateExpr
+import Mettapedia.Languages.MeTTa.ExecutionContract
 
 /-!
 # PeTTa Declarative Core Spec (Grammar-Style)
@@ -38,12 +39,72 @@ Bridge theorem index in this module:
 - `coreDecl_iff_pettaCmd`
 - `PredicateControlDeclClause.translatePredicate_query_to_pettaEval_match`
 - `PredicateControlDeclClause.catch_fallback_to_pettaEval`
+
+- There is the intention fro this file to be similar to HE MeTTa specs: https://trueagi-io.github.io/hyperon-experimental/metta/
+
 -/
 
 namespace Mettapedia.Languages.MeTTa.PeTTa
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.Languages.MeTTa.ExecutionContract
+
+/-! ## Numeric Result Shape
+
+PeTTa inherits the observable integer-vs-float result distinction from the
+actual Prolog implementation in `hyperon/PeTTa/src/metta.pl` together with
+SWI-Prolog arithmetic behavior.
+
+This belongs in the declarative spec surface because programs can observe it.
+
+Positive examples:
+- `(+ 2 3)` returns `5`, not `5.0`
+- `(sqrt-math 9)` returns `3.0`, not `3`
+- `(round-math 5.4)` returns `5`, not `5.0`
+
+Negative example:
+- numeric result shape is not just presentation sugar; it is observable
+  evaluation behavior and therefore part of the language specification.
+-/
+
+/-- Operator-class component of PeTTa numeric result-shape semantics.
+
+This captures the fixed operator-family part. Concrete evaluation still depends
+on the dynamic numeric class of the arguments where noted. -/
+def numericResultShapeOf : String → Option NumericResultShape
+  | "+" => some .preserveIntegralIfExact
+  | "-" => some .preserveIntegralIfExact
+  | "*" => some .preserveIntegralIfExact
+  | "/" => some .preserveIntegralIfExact
+  | "pow-math" => some .preserveIntegralIfExact
+  | "%" => some .alwaysInteger
+  | "round-math" => some .alwaysInteger
+  | "trunc-math" => some .alwaysInteger
+  | "ceil-math" => some .alwaysInteger
+  | "floor-math" => some .alwaysInteger
+  | "sqrt-math" => some .alwaysFloat
+  | "log-math" => some .alwaysFloat
+  | "sin-math" => some .alwaysFloat
+  | "asin-math" => some .alwaysFloat
+  | "cos-math" => some .alwaysFloat
+  | "acos-math" => some .alwaysFloat
+  | "tan-math" => some .alwaysFloat
+  | "atan-math" => some .alwaysFloat
+  | "abs-math" => some .preserveInputNumericClass
+  | _ => none
+
+theorem numericResultShapeOf_add :
+    numericResultShapeOf "+" = some .preserveIntegralIfExact := rfl
+
+theorem numericResultShapeOf_round :
+    numericResultShapeOf "round-math" = some .alwaysInteger := rfl
+
+theorem numericResultShapeOf_sqrt :
+    numericResultShapeOf "sqrt-math" = some .alwaysFloat := rfl
+
+theorem numericResultShapeOf_abs :
+    numericResultShapeOf "abs-math" = some .preserveInputNumericClass := rfl
 
 /-! ## Pure Declarative Core -/
 
@@ -188,6 +249,22 @@ theorem collapse_intro (s : PeTTaSpace) (p ty : Pattern) (bs : Bindings) (inner 
   refine ⟨h, ?_⟩
   exact MeTTaEval.collapse p ty bs inner h
 
+/-- Declarative clause packaging for `collapse (match &self pat tmpl)`.
+
+This is the clean composition theorem for the first nested certified query
+family: the inner `match &self` query is certified already, and `collapse`
+packages exactly its threaded answers into a singleton collection. -/
+theorem collapse_spaceQuery_intro
+    (s : PeTTaSpace) (pat tmpl ty : Pattern) (bs : Bindings) :
+    collapse s
+      (.apply "match" [.apply "&self" [], pat, tmpl])
+      ty
+      bs
+      ((s.spaceMatch pat tmpl).map (·, bs)) := by
+  exact collapse_intro _ _ _ _
+    ((s.spaceMatch pat tmpl).map (·, bs))
+    (MeTTaEval.spaceQuery pat tmpl ty bs _ rfl)
+
 end FullDeclClause
 
 /-! ## Declarative Control Clauses (`if`/`let`/`case`) -/
@@ -290,8 +367,14 @@ end LetStarDeclClause
 
 namespace PredicateControlDeclClause
 
+/-- Whether a string begins with `&` (kernel-reducible, unlike `String.startsWith`). -/
+private def startsWithAmp (s : String) : Bool :=
+  match s.data with
+  | '&' :: _ => true
+  | _ => false
+
 /-- Decode a predicate-like query into a match pattern over `&self`. -/
-partial def decodePredicateQuery? : Pattern → Option Pattern
+def decodePredicateQuery? : Pattern → Option Pattern
   | .apply "Predicate" [inner] =>
       decodePredicateQuery? inner
   | .apply "&self" (relHead :: args) =>
@@ -299,7 +382,7 @@ partial def decodePredicateQuery? : Pattern → Option Pattern
       | .apply rel [] => some (.apply rel args)
       | _ => none
   | .apply rel args =>
-      if rel.startsWith "&" then none else some (.apply rel args)
+      if startsWithAmp rel then none else some (.apply rel args)
   | _ => none
 
 /-- Executable answer policy for predicate queries:
@@ -514,11 +597,14 @@ theorem predicate_translatePredicate_positive :
   have hdecode :
       PredicateControlDeclClause.decodePredicateQuery?
         (.apply "Predicate" [.apply "p" []]) = some (.apply "p" []) := by
-    native_decide
+    simp [PredicateControlDeclClause.decodePredicateQuery?,
+          PredicateControlDeclClause.startsWithAmp]; rfl
   have hsm :
       ({ facts := [.apply "p" []], rules := [] } : PeTTaSpace).spaceMatch (.apply "p" []) (.apply "p" []) =
       [.apply "p" []] := by
-    native_decide
+    simp [PeTTaSpace.spaceMatch, PeTTaSpace.storedAtoms,
+          PeTTaSpace.storedRuleAtoms,
+          matchPattern, matchArgs, applyBindings]
   have hquery :
       PredicateControlDeclClause.PredicateControlEval
         ({ facts := [.apply "p" []], rules := [] } : PeTTaSpace)
@@ -555,7 +641,8 @@ theorem predicate_catch_positive :
         [.apply "fail" []] := by
     exact PredicateControlDeclClause.translatePredicate_noDecode_intro
       ({ facts := [], rules := [] } : PeTTaSpace) (.apply "&unknown" [])
-      (by native_decide)
+      (by simp [PredicateControlDeclClause.decodePredicateQuery?,
+                PredicateControlDeclClause.startsWithAmp]; rfl)
   have hfb :
       PeTTaEval ({ facts := [], rules := [] } : PeTTaSpace)
         (.apply "fallback" []) [.apply "fallback" []] := by
@@ -591,7 +678,7 @@ inductive CoreDecl : EvalState → Pattern → EvalState → Answers → Prop wh
       CoreDecl s
         (.apply "get-atoms" [.apply "&self" []])
         s
-        s.space.facts
+        s.space.storedAtoms
   | pure (s : EvalState) (p : Pattern) (answers : Answers)
       (h : PureDecl s.space p answers) :
       CoreDecl s p s answers

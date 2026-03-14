@@ -244,6 +244,23 @@ def stepAux (I : Interface σ) (st : AuxState σ) : AuxStepOut σ :=
                   let pending' := I.enqueueNext rest (depth + 1) reducts
                   .inl { s := s0, fuel := fuel, pending := pending', normals := st.normals }
 
+/-- When `runNestedEffects` passes state through and `intrinsicStateful` returns
+    `some (s, out)` (same state), every branch of `stepAux` preserves `.s`. -/
+theorem stepAux_s_eq_of_passthrough
+    (I : Interface σ) (s : σ) (term term' : Pattern) (changed : Bool) (out : List Pattern)
+    (fuel depth : Nat) (rest : List (Pattern × Nat)) (normals : List Pattern)
+    (hRNE : runNestedEffects I s true false term = (s, term', changed))
+    (hIntr : I.intrinsicStateful s term' = some (s, out)) :
+    match stepAux I ⟨s, fuel + 1, (term, depth) :: rest, normals⟩ with
+    | .inl st' => st'.s = s
+    | .inr out' => out'.1 = s := by
+  simp only [stepAux, hRNE, hIntr]
+  split
+  all_goals rename_i _ _ heq
+  all_goals
+    split at heq <;> (try split at heq) <;> (try split at heq) <;> (try split at heq)
+    <;> simp at heq <;> (try subst heq) <;> rfl
+
 theorem stepAux_preserves (I : Interface σ) (P : σ → Prop) (H : Preservation I P)
     (st : AuxState σ) :
     P st.s →
@@ -370,6 +387,46 @@ theorem evalWithStateCore_preserves (I : Interface σ) (P : σ → Prop) (H : Pr
     P s → P (evalWithStateCore I s term).1 := by
   simpa [evalWithStateCore] using
     evalAuxStateful_preserves I P H s (I.maxNodes s) [(term, 0)] []
+
+/-- When `maxNodes = 1` and both `runNestedEffects` and `intrinsicStateful` pass state
+    through, the one-step evaluator preserves state.  Composes `stepAux_s_eq_of_passthrough`
+    with the `evalAuxStateful` loop at fuel 1 (one iteration → fuel 0 base case). -/
+theorem evalWithStateCore_s_eq_of_passthrough_one_step
+    (I : Interface σ) (s : σ) (term : Pattern) (hNodes : I.maxNodes s = 1)
+    (term' : Pattern) (changed : Bool) (out : List Pattern)
+    (hRNE : runNestedEffects I s true false term = (s, term', changed))
+    (hIntr : I.intrinsicStateful s term' = some (s, out)) :
+    (evalWithStateCore I s term).1 = s := by
+  simp only [evalWithStateCore, hNodes]
+  have hPass := stepAux_s_eq_of_passthrough I s term term' changed out 0 0 [] [] hRNE hIntr
+  simp only [evalAuxStateful]
+  cases h : stepAux I { s := s, fuel := 1, pending := [(term, 0)], normals := [] } with
+  | inl st' =>
+      simp only [h] at hPass
+      simp only [hPass]
+  | inr out' =>
+      simp only [h] at hPass
+      exact hPass
+
+-- ─── Phase 2-D exact control lemmas ────────────────────────────────────────
+
+/-- One-step unfolding of `evalAuxStateful` when `intrinsicStateful` returns `none`:
+    takes one iteration of the work-queue loop, reducing via `I.step`. -/
+theorem evalAuxStateful_step_of_intrinsicNone
+    (I : Interface σ) (s s0 : σ) (term term0 : Pattern) (changed : Bool) (depth : Nat)
+    (rest : List (Pattern × Nat)) (normals : List Pattern) (fuel : Nat)
+    (hRNE : runNestedEffects I s true false term = (s0, term0, changed))
+    (hDepth : depth < I.maxSteps s)
+    (hIntr : I.intrinsicStateful s0 term0 = none) :
+    evalAuxStateful I s (fuel + 1) ((term, depth) :: rest) normals =
+    let reducts := I.step s0 term0
+    if reducts.isEmpty then
+      evalAuxStateful I s0 fuel rest (term0 :: normals)
+    else
+      evalAuxStateful I s0 fuel (I.enqueueNext rest (depth + 1) reducts) normals := by
+  have hNotDepth : ¬(depth ≥ I.maxSteps s) := by omega
+  simp only [evalAuxStateful, stepAux, hRNE, if_neg hNotDepth, hIntr]
+  cases (I.step s0 term0).isEmpty <;> simp
 
 def evalSequenceStateful (I : Interface σ) (s : σ)
     (terms : List Pattern) (acc : List Pattern) : σ × List Pattern :=

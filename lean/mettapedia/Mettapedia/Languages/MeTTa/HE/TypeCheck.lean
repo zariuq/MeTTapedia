@@ -17,7 +17,7 @@ Type checking and type casting for the HE interpreter.
 
 namespace Mettapedia.Languages.MeTTa.HE
 
-open Mettapedia.Languages.MeTTa.Core (Atom GroundedValue)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 
 /-! ## Check Argument Type
 

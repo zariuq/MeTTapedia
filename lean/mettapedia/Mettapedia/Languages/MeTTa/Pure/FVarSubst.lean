@@ -474,7 +474,7 @@ theorem lc_at_substFVar {k : Nat} {x : String} {u p : Pattern}
     (hp : lc_at k p = true) (hu : lc_at k u = true) :
     lc_at k (substFVar x u p) = true := by
   induction p using Pattern.inductionOn generalizing k with
-  | hbvar n => simp [substFVar]; exact hp
+  | hbvar _ => simpa using hp
   | hfvar y => simp [substFVar]; split <;> simp [lc_at, *]
   | happly c args ih =>
     simp only [substFVar, lc_at] at hp ⊢
@@ -602,7 +602,7 @@ theorem substFVar_self (x : String) (p : Pattern) :
   | hmultiLambda n body ih =>
     simp only [substFVar, ih]
   | hsubst body repl ihb ihr =>
-    unfold substFVar; congr 1 <;> assumption
+    simp [substFVar, ihb, ihr]
   | hcollection ct elems rest ih =>
     unfold substFVar; congr 1
     exact list_map_eq_self fun a ha => ih a ha
@@ -853,12 +853,14 @@ Moved here from Reduction.lean because it needs `pureReduces_preserves_lc`. -/
 
 /-- Multi-step reduction of a locally closed term implies conversion. -/
 theorem PureReducesStar_implies_PureConv {t₁ t₂ : Pattern}
-    (h : PureReducesStar t₁ t₂) (hlc : lc_at 0 t₁ = true) :
+    (h : PureReducesStar t₁ t₂) (hlc : lc_at 0 t₁ = true)
+    (hpure : Mettapedia.Languages.MeTTa.Pure.Fragment.PureTmPattern t₁) :
     PureConv t₁ t₂ := by
   induction h with
-  | refl => exact .refl _
+  | refl => exact .refl _ hpure
   | step hs _ ih =>
-      exact .trans (PureReduces_implies_PureConv hs hlc)
-                   (ih (pureReduces_preserves_lc hs hlc))
+      let hstep := PureReduces_implies_PureConv hs hlc hpure
+      have hmidPure := Mettapedia.Languages.MeTTa.Pure.Typing.PureConv_rightPure hstep
+      exact .trans hstep (ih (pureReduces_preserves_lc hs hlc) hmidPure)
 
 end Mettapedia.Languages.MeTTa.Pure.FVarSubst

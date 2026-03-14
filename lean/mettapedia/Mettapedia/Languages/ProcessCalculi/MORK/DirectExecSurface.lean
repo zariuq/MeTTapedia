@@ -40,7 +40,7 @@ Plus one honest bridge theorem: PeTTa eval/evalc steps fire through this seam.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK.DirectExecSurface
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.Languages.MeTTa.PeTTa.CoreFragment
 open Mettapedia.Languages.MeTTa.PeTTa.SpaceCoreFragment

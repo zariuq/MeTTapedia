@@ -1,3 +1,4 @@
+import Algorithms.MeTTa.Simple.Backend.SessionReference
 import Algorithms.MeTTa.Simple.Backend.SessionReferenceFaithful
 import Algorithms.MeTTa.Simple.Backend.SessionReferenceTotal
 
@@ -82,6 +83,269 @@ def CoveredByReferenceN : Pattern → Prop
   | .apply "Expr" _elems => True
   | .apply "repr" [_arg] => True
   | _ => False
+
+/-- After the fuel-indexed refactoring, `SessionReference.evalWithStateCore` and
+    `SessionReferenceTotal.evalWithStateCore` use identical definitions (both delegate
+    to `Session.evalWithStateCoreN` at `Session.referenceProofFuel`).  This makes
+    reference-to-total adequacy unconditional for all terms and sessions. -/
+theorem reference_eq_total (s : Session) (term : Pattern) :
+    SessionReference.evalWithStateCore s term =
+      SessionReferenceTotal.evalWithStateCore s term := by
+  simp [SessionReference.evalWithStateCore, SessionReferenceTotal.evalWithStateCore,
+    SessionReferenceTotal.totalEvalWithStateCore, Session.evalWithStateCoreN,
+    SessionReferenceTotal.referenceFuel]
+
+/-- Public-fuel unary evaluator-agreement contract for `get-atoms`. -/
+abbrev PublicGetAtomsUnaryEvalAgreement (s : Session) : Prop :=
+  Session.GetAtomsUnaryEvalAgreement (SessionReferenceTotal.referenceFuel s)
+
+/-- Public-fuel unary evaluator-agreement contract for `get-atoms!`. -/
+abbrev PublicGetAtomsBangUnaryEvalAgreement (s : Session) : Prop :=
+  Session.GetAtomsBangUnaryEvalAgreement (SessionReferenceTotal.referenceFuel s)
+
+/-- Public-fuel constrained unary evaluator-agreement contract for `get-atoms`. -/
+abbrev PublicGetAtomsUnaryEvalAgreementOn
+    (s : Session) (Q : Session → Pattern → Prop) : Prop :=
+  Session.GetAtomsUnaryEvalAgreementOn (SessionReferenceTotal.referenceFuel s) Q
+
+/-- Public-fuel constrained unary evaluator-agreement contract for `get-atoms!`. -/
+abbrev PublicGetAtomsBangUnaryEvalAgreementOn
+    (s : Session) (Q : Session → Pattern → Prop) : Prop :=
+  Session.GetAtomsBangUnaryEvalAgreementOn (SessionReferenceTotal.referenceFuel s) Q
+
+/-- First proved constrained-fragment instance of the public-fuel `get-atoms`
+    unary evaluator-agreement contract: sessions with `maxNodes = 0`. -/
+theorem public_getAtoms_unary_eval_agreement_on_zeroMaxNodes
+    (s : Session) :
+    PublicGetAtomsUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxNodes = 0) := by
+  exact
+    Session.getAtomsUnaryEvalAgreementOn_zeroMaxNodes
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.ne_of_gt (Nat.lt_of_lt_of_le (by decide : (0 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes)))
+
+/-- Stronger constrained-fragment instance of the public-fuel `get-atoms` unary
+    evaluator-agreement contract: sessions with `maxSteps = 0`. -/
+theorem public_getAtoms_unary_eval_agreement_on_zeroMaxSteps
+    (s : Session) :
+    PublicGetAtomsUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxSteps = 0) := by
+  exact
+    Session.getAtomsUnaryEvalAgreementOn_zeroMaxSteps
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.ne_of_gt (Nat.lt_of_lt_of_le (by decide : (0 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes)))
+
+/-- First non-degenerate constrained-fragment instance of the public-fuel
+    `get-atoms` unary evaluator-agreement contract: sessions with `maxNodes = 1`. -/
+theorem public_getAtoms_unary_eval_agreement_on_oneMaxNode
+    (s : Session) :
+    PublicGetAtomsUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxNodes = 1) := by
+  exact
+    Session.getAtomsUnaryEvalAgreementOn_oneMaxNode
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.lt_of_lt_of_le (by decide : (1 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes))
+
+/-- Public local-reference equality witness for `get-atoms` on the first
+    non-degenerate covered fragment, namely `maxNodes = 1`. -/
+theorem getAtoms_eval_eq_public_total_of_oneMaxNode
+    (s : Session) (spaceArg : Pattern)
+    (hNodes : s.maxNodes = 1) :
+    Session.referenceEvalWithStateCore s (.apply "get-atoms" [spaceArg]) =
+      SessionReferenceTotal.evalWithStateCore s (.apply "get-atoms" [spaceArg]) := by
+  simpa [SessionReferenceTotal.evalWithStateCore] using
+    (public_getAtoms_unary_eval_agreement_on_oneMaxNode s) s spaceArg hNodes
+
+/-- First proved constrained-fragment instance of the public-fuel `get-atoms!`
+    unary evaluator-agreement contract: sessions with `maxNodes = 0`. -/
+theorem public_getAtomsBang_unary_eval_agreement_on_zeroMaxNodes
+    (s : Session) :
+    PublicGetAtomsBangUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxNodes = 0) := by
+  exact
+    Session.getAtomsBangUnaryEvalAgreementOn_zeroMaxNodes
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.ne_of_gt (Nat.lt_of_lt_of_le (by decide : (0 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes)))
+
+/-- Stronger constrained-fragment instance of the public-fuel `get-atoms!`
+    unary evaluator-agreement contract: sessions with `maxSteps = 0`. -/
+theorem public_getAtomsBang_unary_eval_agreement_on_zeroMaxSteps
+    (s : Session) :
+    PublicGetAtomsBangUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxSteps = 0) := by
+  exact
+    Session.getAtomsBangUnaryEvalAgreementOn_zeroMaxSteps
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.ne_of_gt (Nat.lt_of_lt_of_le (by decide : (0 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes)))
+
+/-- First non-degenerate constrained-fragment instance of the public-fuel
+    `get-atoms!` unary evaluator-agreement contract: sessions with `maxNodes = 1`. -/
+theorem public_getAtomsBang_unary_eval_agreement_on_oneMaxNode
+    (s : Session) :
+    PublicGetAtomsBangUnaryEvalAgreementOn s (fun sess _spaceArg => sess.maxNodes = 1) := by
+  exact
+    Session.getAtomsBangUnaryEvalAgreementOn_oneMaxNode
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel
+        exact Nat.lt_of_lt_of_le (by decide : (1 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes))
+
+/-- Public local-reference equality witness for `get-atoms!` on the first
+    non-degenerate covered fragment, namely `maxNodes = 1`. -/
+theorem getAtomsBang_eval_eq_public_total_of_oneMaxNode
+    (s : Session) (spaceArg : Pattern)
+    (hNodes : s.maxNodes = 1) :
+    Session.referenceEvalWithStateCore s (.apply "get-atoms!" [spaceArg]) =
+      SessionReferenceTotal.evalWithStateCore s (.apply "get-atoms!" [spaceArg]) := by
+  simpa [SessionReferenceTotal.evalWithStateCore] using
+    (public_getAtomsBang_unary_eval_agreement_on_oneMaxNode s) s spaceArg hNodes
+
+/-- First compositional public-fuel `match` adequacy handle for `get-atoms` templates.
+    This is still hypothesis-driven: it isolates the exact two lower facts still needed
+    to turn the `match` slice into a fully unconditional adequacy theorem. -/
+theorem match_getAtoms_intrinsic_eq_total_of_bindingwise_evalMatchedTemplate_agreement
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hBindings :
+      Session.referenceMatchBindings s space pat =
+        Session.totalMatchBindings (SessionReferenceTotal.referenceFuel s) s space pat)
+    (hEval :
+      ∀ (sess : Session) (bs : MeTTailCore.MeTTaIL.Match.Bindings),
+        Session.referenceMatchEvalMatchedTemplate s sess
+            (Session.matchTemplateAfterBindings bs (.apply "get-atoms" [spaceExpr])) =
+          Session.totalMatchEvalMatchedTemplate
+            (SessionReferenceTotal.referenceFuel s) s sess
+            (Session.matchTemplateAfterBindings bs (.apply "get-atoms" [spaceExpr]))) :
+    Session.referenceMatchIntrinsicResult s space pat (.apply "get-atoms" [spaceExpr]) =
+      Session.totalMatchIntrinsicResult
+        (SessionReferenceTotal.referenceFuel s) s space pat (.apply "get-atoms" [spaceExpr]) := by
+  simpa using
+    Session.referenceMatchIntrinsicResult_eq_total_of_getAtomsTemplate_evalMatchedTemplate_agreement
+      (fuel := SessionReferenceTotal.referenceFuel s) s space pat spaceExpr hBindings hEval
+
+/-- Public-fuel `get-atoms`-template `match` adequacy with binding enumeration
+    equality discharged automatically from the generic `SpaceOps` theorem. -/
+theorem match_getAtoms_intrinsic_eq_total_of_eval_agreement
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hEval :
+      ∀ (sess : Session) (bs : MeTTailCore.MeTTaIL.Match.Bindings),
+        Session.referenceEvalWithStateCore sess
+            (.apply "get-atoms" [Session.matchTemplateAfterBindings bs spaceExpr]) =
+          Session.evalWithStateCoreN (SessionReferenceTotal.referenceFuel s) sess
+            (.apply "get-atoms" [Session.matchTemplateAfterBindings bs spaceExpr])) :
+    Session.referenceMatchIntrinsicResult s space pat (.apply "get-atoms" [spaceExpr]) =
+      Session.totalMatchIntrinsicResult
+        (SessionReferenceTotal.referenceFuel s) s space pat (.apply "get-atoms" [spaceExpr]) := by
+  simpa using
+    Session.referenceMatchIntrinsicResult_eq_total_of_getAtomsTemplate_eval_agreement_autoBindings
+      (fuel := SessionReferenceTotal.referenceFuel s) s space pat spaceExpr hEval
+
+/-- Public-fuel `get-atoms`-template `match` adequacy from a unary evaluator-agreement
+    contract (per substituted space argument), with binding-side plumbing discharged
+    by the Session-level auto-bindings theorem. -/
+theorem match_getAtoms_intrinsic_eq_total_of_unary_eval_agreement
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hEvalUnary : PublicGetAtomsUnaryEvalAgreement s) :
+    Session.referenceMatchIntrinsicResult s space pat (.apply "get-atoms" [spaceExpr]) =
+      Session.totalMatchIntrinsicResult
+        (SessionReferenceTotal.referenceFuel s) s space pat (.apply "get-atoms" [spaceExpr]) := by
+  simpa using
+    Session.referenceMatchIntrinsicResult_eq_total_of_getAtomsTemplate_unary_eval_agreement_autoBindings
+      (fuel := SessionReferenceTotal.referenceFuel s) s space pat spaceExpr hEvalUnary
+
+/-- First compositional public-fuel `match` adequacy handle for `get-atoms!` templates.
+    This mirrors the `get-atoms` theorem and keeps the `hEval` side local to substituted
+    templates while using the generic intrinsic boundary theorem. -/
+theorem match_getAtomsBang_intrinsic_eq_total_of_bindingwise_evalMatchedTemplate_agreement
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hBindings :
+      Session.referenceMatchBindings s space pat =
+        Session.totalMatchBindings (SessionReferenceTotal.referenceFuel s) s space pat)
+    (hEval :
+      ∀ (sess : Session) (bs : MeTTailCore.MeTTaIL.Match.Bindings),
+        Session.referenceMatchEvalMatchedTemplate s sess
+            (Session.matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr])) =
+          Session.totalMatchEvalMatchedTemplate
+            (SessionReferenceTotal.referenceFuel s) s sess
+            (Session.matchTemplateAfterBindings bs (.apply "get-atoms!" [spaceExpr]))) :
+    Session.referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      Session.totalMatchIntrinsicResult
+        (SessionReferenceTotal.referenceFuel s) s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  simpa using
+    Session.referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_evalMatchedTemplate_agreement
+      (fuel := SessionReferenceTotal.referenceFuel s) s space pat spaceExpr hBindings hEval
+
+/-- Public-fuel `get-atoms!`-template `match` adequacy with binding enumeration
+    equality discharged automatically from the generic `SpaceOps` theorem. -/
+theorem match_getAtomsBang_intrinsic_eq_total_of_eval_agreement
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hEval :
+      ∀ (sess : Session) (bs : MeTTailCore.MeTTaIL.Match.Bindings),
+        Session.referenceEvalWithStateCore sess
+            (.apply "get-atoms!" [Session.matchTemplateAfterBindings bs spaceExpr]) =
+          Session.evalWithStateCoreN (SessionReferenceTotal.referenceFuel s) sess
+            (.apply "get-atoms!" [Session.matchTemplateAfterBindings bs spaceExpr])) :
+    Session.referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      Session.totalMatchIntrinsicResult
+        (SessionReferenceTotal.referenceFuel s) s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  simpa using
+    Session.referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_eval_agreement_autoBindings
+      (fuel := SessionReferenceTotal.referenceFuel s) s space pat spaceExpr hEval
+
+/-- Public-fuel `get-atoms!`-template `match` adequacy from a unary evaluator-agreement
+    contract (per substituted space argument), with binding-side plumbing discharged
+    by the Session-level auto-bindings theorem. -/
+theorem match_getAtomsBang_intrinsic_eq_total_of_unary_eval_agreement
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hEvalUnary : PublicGetAtomsBangUnaryEvalAgreement s) :
+    Session.referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      Session.totalMatchIntrinsicResult
+        (SessionReferenceTotal.referenceFuel s) s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  simpa using
+    Session.referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_unary_eval_agreement_autoBindings
+      (fuel := SessionReferenceTotal.referenceFuel s) s space pat spaceExpr hEvalUnary
+
+/-- First non-degenerate public `match` adequacy theorem for `get-atoms!` templates:
+    the bindings fold stays inside the `maxNodes = 1` fragment, so the constrained
+    unary theorem is enough to discharge the whole intrinsic boundary. -/
+theorem match_getAtomsBang_intrinsic_eq_total_of_oneMaxNode
+    (s : Session) (space pat spaceExpr : Pattern)
+    (hNodes : s.maxNodes = 1) :
+    Session.referenceMatchIntrinsicResult s space pat (.apply "get-atoms!" [spaceExpr]) =
+      Session.totalMatchIntrinsicResult
+        (SessionReferenceTotal.referenceFuel s) s space pat (.apply "get-atoms!" [spaceExpr]) := by
+  exact
+    Session.referenceMatchIntrinsicResult_eq_total_of_getAtomsBangTemplate_on_oneMaxNode
+      (fuel := SessionReferenceTotal.referenceFuel s)
+      (by
+        unfold SessionReferenceTotal.referenceFuel Session.referenceProofFuel
+        exact Nat.lt_of_lt_of_le (by decide : (1 : Nat) < 4096) (Nat.le_max_left 4096 s.maxNodes))
+      s space pat spaceExpr hNodes
+      (fun sess spaceArg hN =>
+        Session.referenceEvalWithStateCore_getAtomsBang_state_eq_self_of_maxNodes_one sess spaceArg hN)
+
+/-- Public local-reference equality witness for the compositional
+    `get-atoms!` match fragment.  After the fuel-indexed refactoring this is
+    just an instance of `reference_eq_total`. -/
+theorem match_getAtomsBang_eval_eq_public_total
+    (s : Session) (space pat spaceExpr : Pattern) :
+    SessionReference.evalWithStateCore s (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+      SessionReferenceTotal.evalWithStateCore s
+        (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) :=
+  reference_eq_total s _
+
+/-- Backward-compatible alias (maxNodes parameter is vestigial). -/
+theorem match_getAtomsBang_eval_eq_public_total_of_oneMaxNode
+    (s : Session) (space pat spaceExpr : Pattern)
+    (_hNodes : s.maxNodes = 1) :
+    SessionReference.evalWithStateCore s (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) =
+      SessionReferenceTotal.evalWithStateCore s
+        (.apply "match" [space, pat, .apply "get-atoms!" [spaceExpr]]) :=
+  match_getAtomsBang_eval_eq_public_total s space pat spaceExpr
 
 /-- Successful faithful intrinsic evaluation agrees with the public total intrinsic evaluator
     at the same fuel. This is the first adequacy bridge: faithful explicit-status kernel to

@@ -17,7 +17,7 @@ The exec-rule and source-rule fire witnesses use the ad-hoc
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK.ExtendedBridge
 
-open Mettapedia.Languages.MeTTa.Core (Atom)
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
 
 private abbrev ILP := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern

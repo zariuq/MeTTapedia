@@ -14,6 +14,7 @@ open Mettapedia.Languages.MeTTa.PureKernel.Typing
 /-- Complete development for parallel reduction. -/
 def cdev : PureTm n → PureTm n
   | .var i => .var i
+  | .const c => .const c
   | .u0 => .u0
   | .u1 => .u1
   | .pi A B => .pi (cdev A) (cdev B)
@@ -35,6 +36,8 @@ theorem par_to_cdev : ∀ {t u : PureTm n}, ParRed t u → ParRed u (cdev t) := 
   induction h with
   | var i =>
       simp [cdev]
+  | const c =>
+      simp [cdev]
   | u0 =>
       simp [cdev]
   | u1 =>
@@ -50,6 +53,8 @@ theorem par_to_cdev : ∀ {t u : PureTm n}, ParRed t u → ParRed u (cdev t) := 
   | @app _ f f' a a' hf ha ihf iha =>
       cases f with
       | var i =>
+          simpa [cdev] using ParRed.app ihf iha
+      | const c =>
           simpa [cdev] using ParRed.app ihf iha
       | u0 =>
           simpa [cdev] using ParRed.app ihf iha
@@ -83,6 +88,8 @@ theorem par_to_cdev : ∀ {t u : PureTm n}, ParRed t u → ParRed u (cdev t) := 
       cases p with
       | var i =>
           simpa [cdev] using ParRed.fst ih
+      | const c =>
+          simpa [cdev] using ParRed.fst ih
       | u0 =>
           simpa [cdev] using ParRed.fst ih
       | u1 =>
@@ -112,6 +119,8 @@ theorem par_to_cdev : ∀ {t u : PureTm n}, ParRed t u → ParRed u (cdev t) := 
   | @snd _ p p' hp ih =>
       cases p with
       | var i =>
+          simpa [cdev] using ParRed.snd ih
+      | const c =>
           simpa [cdev] using ParRed.snd ih
       | u0 =>
           simpa [cdev] using ParRed.snd ih

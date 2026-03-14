@@ -1,6 +1,7 @@
 import MeTTailCore
 import Algorithms.MeTTa.Simple.Backend.CompiledBundle
 import Algorithms.MeTTa.Simple.Semantics.DeterministicEval
+import Algorithms.MeTTa.Simple.Semantics.DeterministicStrategy
 
 namespace Algorithms.MeTTa.Simple.Backend.SessionDeterministic
 
@@ -119,5 +120,28 @@ def acceptUnchangedDeterministic : Pattern → Bool
   | .apply "chain" _ => true
   | .apply "quote" _ => true
   | _ => false
+
+/-- Extract the head constructor from a rule's LHS, if it is an `.apply`. -/
+private def ruleHead? (rule : RewriteRule) : Option String :=
+  match rule.left with
+  | .apply head _ => some head
+  | _ => none
+
+/-- A rule's LHS has an `.apply` head whose constructor is NOT a builtin
+    and does not start with "$" (which gets renamed unpredictably),
+    or is a non-`.apply`/non-`.fvar` pattern (which can't match `.apply` terms). -/
+def ruleDisjointFromBuiltins (rule : RewriteRule) : Bool :=
+  match rule.left with
+  | .apply head _ =>
+      !Semantics.DeterministicStrategy.intrinsicBuiltinHeads.contains head &&
+      !head.startsWith "$"
+  | .fvar _ => false   -- variable-LHS rules match any term
+  | _ => true          -- other forms can't match `.apply` terms
+
+/-- No rewrite rule has an LHS that could match a builtin-headed `.apply` term.
+    Session-level check — prevents reducer overlap at all recursion levels.
+    Rejects rules with: (a) builtin head constructors, (b) variable LHS. -/
+def noDeterministicReducerOverlap (I : Interface σ) (s : σ) : Bool :=
+  (I.rewrites s).all ruleDisjointFromBuiltins
 
 end Algorithms.MeTTa.Simple.Backend.SessionDeterministic
