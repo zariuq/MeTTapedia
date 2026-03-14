@@ -108,6 +108,8 @@ private def renderGroundedBuiltinHostKind : GroundedBuiltinHostKind → String
   | .printlnTerm => "println_term"
   | .metaTypeOfTerm => "meta_type_of_term"
   | .typeOfTerm => "type_of_term"
+  | .quoteTerm => "quote_term"
+  | .testAssertion => "test_assertion"
 
 private def renderAggregationCollectionKind : AggregationCollectionKind → String
   | .tupleExpr => "tuple_expr"
@@ -797,6 +799,8 @@ private def lintGroundedBuiltin (e : GroundedBuiltinContract) : List String :=
     | .printlnTerm, .always => []
     | .metaTypeOfTerm, .always => []
     | .typeOfTerm, .always => []
+    | .quoteTerm, .always => []
+    | .testAssertion, .always => []
     | _, .always =>
         [s!"{entryTag}: grounded_builtin lanes should declare an explicit non-trivial eligibility condition"]
     | _, _ => []

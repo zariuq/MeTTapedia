@@ -721,4 +721,124 @@ theorem eval_preserves (I : Interface σ) (P : σ → Prop) (H : Preservation I 
   unfold eval
   simpa using evalMemo_preserves I P H fuel s [] term hP
 
+-- ─── Result-shape lemmas ───────────────────────────────────────────────────
+
+/-- `evalMemo` on a non-`.apply` term returns `(s, memo, term)` unchanged. -/
+private theorem evalMemo_non_apply (I : Interface σ) (s : σ) (fuel : Nat)
+    (memo : DetMemo) (term : Pattern)
+    (hNonApply : ∀ ctor args, term ≠ .apply ctor args) :
+    evalMemo I s fuel memo term = (s, memo, term) := by
+  cases fuel with
+  | zero => simp [evalMemo.eq_def]
+  | succ fuel =>
+      cases term with
+      | fvar x => simp [evalMemo.eq_def]
+      | bvar n => simp [evalMemo.eq_def]
+      | lambda body => simp [evalMemo.eq_def]
+      | multiLambda n body => simp [evalMemo.eq_def]
+      | subst body repl => simp [evalMemo.eq_def]
+      | collection ct elems rest => simp [evalMemo.eq_def]
+      | apply ctor args => exact absurd rfl (hNonApply ctor args)
+
+/-- `eval` on a non-`.apply` term returns `(s, term)` unchanged. -/
+theorem eval_non_apply (I : Interface σ) (s : σ) (fuel : Nat)
+    (term : Pattern)
+    (hNonApply : ∀ ctor args, term ≠ .apply ctor args) :
+    eval I s fuel term = (s, term) := by
+  unfold eval
+  rw [evalMemo_non_apply I s fuel [] term hNonApply]
+
+/-- At zero fuel, `evalMemo` returns `(s, memo, term)` unchanged. -/
+private theorem evalMemo_zero_fuel (I : Interface σ) (s : σ) (memo : DetMemo) (term : Pattern) :
+    evalMemo I s 0 memo term = (s, memo, term) := by
+  simp [evalMemo.eq_def]
+
+/-- At zero fuel, `eval` returns `(s, term)` unchanged. -/
+theorem eval_zero_fuel (I : Interface σ) (s : σ) (term : Pattern) :
+    eval I s 0 term = (s, term) := by
+  unfold eval
+  rw [evalMemo_zero_fuel I s [] term]
+
+-- ─── Phase 2-D: directIntrinsic branch theorem ──────────────────────────────
+
+/-- `evalMemo` in the no-builtinMinArity direct-intrinsic branch:
+    when translateCall is empty, args are preserved, builtinPartialMinArity = none,
+    and intrinsicDirect returns a singleton [result] with result ≠ callV,
+    the state and output of evalMemo equal those of recursing on result. -/
+private theorem evalMemo_apply_directIntrinsic_eq
+    (I : Interface σ) (s : σ) (fuel : Nat) (memo : DetMemo)
+    (ctor : String) (argsV : List Pattern) (result : Pattern)
+    (hMemoMiss : (if DeterministicStrategy.isMemoizableDeterministicCall (.apply ctor argsV)
+                   then detMemoLookup memo (.apply ctor argsV) else none) = none)
+    (hNotEq : ctor ≠ "=")
+    -- evalMemo has special branches for "if" [a,b,c] and "Expr"; callers must avoid them
+    (hNotIf : ctor ≠ "if")
+    (hNotExpr : ctor ≠ "Expr")
+    (hTranslate : I.translateCall s (.apply ctor argsV) = [])
+    (hPreserveArgs : I.deterministicPreserveArgs ctor = true)
+    (hArity : I.builtinPartialMinArity ctor = none)
+    (hDirect : I.intrinsicDirect s ctor argsV = [result])
+    (hNotSelf : result ≠ .apply ctor argsV) :
+    (evalMemo I s (fuel + 1) memo (.apply ctor argsV)).1 =
+      (evalMemo I s fuel memo result).1 ∧
+    (evalMemo I s (fuel + 1) memo (.apply ctor argsV)).2.2 =
+      (evalMemo I s fuel memo result).2.2 := by
+  have hNotEqBEq : (ctor == "=") = false := beq_eq_false_iff_ne.mpr hNotEq
+  have hbeq : (result == .apply ctor argsV) = false := beq_eq_false_iff_ne.mpr hNotSelf
+  -- Project from the full evalMemo equality
+  suffices hFull : evalMemo I s (fuel + 1) memo (.apply ctor argsV) =
+      (let r := evalMemo I s fuel memo result
+       let memoizable :=
+         DeterministicStrategy.isMemoizableDeterministicCall (.apply ctor argsV)
+       (r.1, if memoizable then detMemoInsert r.2.1 (.apply ctor argsV) r.2.2 (I.memoLimit r.1)
+              else r.2.1, r.2.2)) by
+    constructor <;> simp [hFull]
+  -- Unfold evalMemo once; simp applies Nat ι-reduction; split cases on Pattern match.
+  rw [evalMemo.eq_def]; simp only []
+  split
+  · -- "if" [a,b,c] branch: ctor must be "if", contradicts hNotIf
+    rename_i a b c h
+    simp only [Pattern.apply.injEq] at h
+    exact absurd h.1 hNotIf
+  · -- "Expr" elems branch: ctor must be "Expr", contradicts hNotExpr
+    rename_i elems h
+    simp only [Pattern.apply.injEq] at h
+    exact absurd h.1 hNotExpr
+  · -- generic .apply ctor✝ args✝ branch: split introduces
+    --   term✝ : Pattern, ctor✝ : String, args✝ : List Pattern,
+    --   x✝¹ (not-if), x✝ (not-Expr), heq✝ : Pattern.apply ctor argsV = .apply ctor✝ args✝
+    rename_i _ c as _ _ heq
+    simp only [Pattern.apply.injEq] at heq
+    obtain ⟨rfl, rfl⟩ := heq
+    simp only [hMemoMiss, hTranslate, List.isEmpty_nil, Bool.not_true, Bool.false_eq_true,
+               ite_false, hPreserveArgs, ite_true, hNotEqBEq, hArity, hDirect,
+               List.headD_cons, List.isEmpty_cons, Bool.not_false, hbeq]
+  · -- non-apply wildcard: impossible since term = .apply ctor argsV
+    rename_i h
+    simp [Pattern.apply.injEq] at h
+
+/-- `eval` in the direct-intrinsic branch (starting from empty memo):
+    when translateCall is empty, args are preserved, builtinPartialMinArity = none,
+    and intrinsicDirect returns [result] ≠ callV,
+    `eval` at fuel+1 on the call equals `eval` at fuel on the result. -/
+theorem eval_apply_directIntrinsic_onestep
+    (I : Interface σ) (s : σ) (fuel : Nat)
+    (ctor : String) (argsV : List Pattern) (result : Pattern)
+    (hNotEq : ctor ≠ "=")
+    (hNotIf : ctor ≠ "if")
+    (hNotExpr : ctor ≠ "Expr")
+    (hTranslate : I.translateCall s (.apply ctor argsV) = [])
+    (hPreserveArgs : I.deterministicPreserveArgs ctor = true)
+    (hArity : I.builtinPartialMinArity ctor = none)
+    (hDirect : I.intrinsicDirect s ctor argsV = [result])
+    (hNotSelf : result ≠ .apply ctor argsV) :
+    eval I s (fuel + 1) (.apply ctor argsV) = eval I s fuel result := by
+  unfold eval
+  have hMemoMiss : (if DeterministicStrategy.isMemoizableDeterministicCall (.apply ctor argsV)
+                    then detMemoLookup [] (.apply ctor argsV) else none) = none := by
+    simp [detMemoLookup]
+  have h := evalMemo_apply_directIntrinsic_eq I s fuel [] ctor argsV result
+    hMemoMiss hNotEq hNotIf hNotExpr hTranslate hPreserveArgs hArity hDirect hNotSelf
+  exact Prod.ext h.1 h.2
+
 end Algorithms.MeTTa.Simple.Semantics.DeterministicEval

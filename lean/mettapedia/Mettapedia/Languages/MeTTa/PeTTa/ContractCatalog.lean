@@ -801,6 +801,90 @@ def maxAtomAggregationContract : AggregationBuiltinContract where
 def maxAtomAggregationEntry : ExecutionContractEntry :=
   .aggregationBuiltin maxAtomAggregationContract
 
+/--
+`quote` is a pure structural builtin that suppresses evaluation of its argument.
+
+Why grounded-host:
+- `(quote X)` returns `X` unevaluated — this is a host-side evaluation-suppression
+  primitive, not a space query or MM2 kernel operation
+- already formalized operationally in `PeTTaCore.lean` via `withQuoteFallback` and
+  `unwrapQuote`
+
+Why pureStructural:
+- quote performs no I/O, no space reads/writes — it is a purely structural operation
+  that prevents nested evaluation
+
+Why rawArgs:
+- the argument to `quote` must NOT be evaluated before `quote` sees it — that is the
+  entire point of the builtin
+
+Positive example:
+- `(quote (+ 1 2))` reduces to `(+ 1 2)` without evaluating the addition
+
+Negative example:
+- `(quote)` with no argument is an arity error
+-/
+def quoteGroundedContract : GroundedBuiltinContract where
+  head := "quote"
+  minArity := 1
+  maxArity := some 1
+  hostKind := .quoteTerm
+  owner := .groundedBuiltin
+  kernelClass := .ruleExec
+  effectClass := .pureStructural
+  resourceClass := .defaultAtomSpace
+  backendName := "grounded-host"
+  supportedMemoShapes := [.outcomeSet]
+  builtinDemand := .rawArgs
+  eligibility := .always
+  residualPolicy := .failClosed
+  theoremRefs := groundedReflectionTheoremRefs
+
+def quoteGroundedEntry : ExecutionContractEntry :=
+  .groundedBuiltin quoteGroundedContract
+
+/--
+`test` is a grounded assertion builtin that structurally compares two evaluated values,
+prints a formatted pass/fail result, and halts on failure.
+
+Why grounded-host:
+- `(test actual expected)` performs structural equivalence comparison (`=@=` in PeTTa's
+  Prolog core), formatted output, and conditional process halt — all host-side operations
+- defined in `metta.pl` line 172 as a core language builtin, auto-registered at startup
+
+Why oracleIO:
+- test produces observable I/O (formatted output) and may halt the process on mismatch
+- same effect class as `println!`
+
+Why structuralEqArgs:
+- both arguments must be fully evaluated before structural comparison
+- matches PeTTa's `=@=` semantics (structural equivalence, not unification)
+
+Positive example:
+- `!(test (+ 1 2) 3)` prints "is 3, should 3. ✅"
+
+Negative example:
+- `!(test (+ 1 2) 4)` prints "is 3, should 4. ❌" and halts with exit code 1
+-/
+def testGroundedContract : GroundedBuiltinContract where
+  head := "test"
+  minArity := 2
+  maxArity := some 2
+  hostKind := .testAssertion
+  owner := .groundedBuiltin
+  kernelClass := .oracle
+  effectClass := .oracleIO
+  resourceClass := .externalResource
+  backendName := "grounded-host"
+  supportedMemoShapes := []
+  builtinDemand := .structuralEqArgs
+  eligibility := .always
+  residualPolicy := .failClosed
+  theoremRefs := groundedIOTheoremRefs
+
+def testGroundedEntry : ExecutionContractEntry :=
+  .groundedBuiltin testGroundedContract
+
 def pettaExecutionContractArtifact : ExecutionContractArtifact where
   dialect := "petta"
   entries :=
@@ -828,6 +912,8 @@ def pettaExecutionContractArtifact : ExecutionContractArtifact where
     , maxAtomAggregationEntry
     , getTypeGroundedEntry
     , printlnGroundedEntry
+    , quoteGroundedEntry
+    , testGroundedEntry
     ] ++ pettaMm2IntrinsicEntries ++ pettaGroundedComparisonEntries
       ++ pettaGroundedTupleGeneratorEntries
       ++ pettaGroundedFloatPredicateEntries

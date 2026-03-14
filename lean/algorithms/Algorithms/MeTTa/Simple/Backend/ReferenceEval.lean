@@ -408,6 +408,26 @@ theorem evalWithStateCore_s_eq_of_passthrough_one_step
       simp only [h] at hPass
       exact hPass
 
+-- ─── Phase 2-D exact control lemmas ────────────────────────────────────────
+
+/-- One-step unfolding of `evalAuxStateful` when `intrinsicStateful` returns `none`:
+    takes one iteration of the work-queue loop, reducing via `I.step`. -/
+theorem evalAuxStateful_step_of_intrinsicNone
+    (I : Interface σ) (s s0 : σ) (term term0 : Pattern) (changed : Bool) (depth : Nat)
+    (rest : List (Pattern × Nat)) (normals : List Pattern) (fuel : Nat)
+    (hRNE : runNestedEffects I s true false term = (s0, term0, changed))
+    (hDepth : depth < I.maxSteps s)
+    (hIntr : I.intrinsicStateful s0 term0 = none) :
+    evalAuxStateful I s (fuel + 1) ((term, depth) :: rest) normals =
+    let reducts := I.step s0 term0
+    if reducts.isEmpty then
+      evalAuxStateful I s0 fuel rest (term0 :: normals)
+    else
+      evalAuxStateful I s0 fuel (I.enqueueNext rest (depth + 1) reducts) normals := by
+  have hNotDepth : ¬(depth ≥ I.maxSteps s) := by omega
+  simp only [evalAuxStateful, stepAux, hRNE, if_neg hNotDepth, hIntr]
+  cases (I.step s0 term0).isEmpty <;> simp
+
 def evalSequenceStateful (I : Interface σ) (s : σ)
     (terms : List Pattern) (acc : List Pattern) : σ × List Pattern :=
   match terms with

@@ -70,10 +70,13 @@ def matchAtoms (left right : Atom) (fuel : Nat) : List Bindings :=
           else []
         | _, _ => []
       else if ml == .symbol "Grounded" && mr == .symbol "Grounded" then
-        -- Both grounded → structural equality check.
-        -- Intentional abstraction: custom grounded matching (spec lines 426-429)
-        -- is deferred. Structural equality is sound but incomplete for grounded
-        -- atoms with custom match implementations.
+        -- Spec vs implementation divergence (author question):
+        -- The published spec (metta.md) returns `[{}]` here (always succeeds),
+        -- but this fallback is unreachable in practice because all grounded
+        -- atoms in interpreter.rs have custom matchers that use equality.
+        -- We follow the implementation behavior (structural equality) since
+        -- it matches `metta` CLI conformance testing. The spec's `[{}]`
+        -- fallback would make `(match 42 43)` succeed, which no user expects.
         if left == right then [Bindings.empty] else []
       else
         -- All other cases → no match

@@ -25,3 +25,8 @@ import Mettapedia.Languages.MeTTa.PeTTa.Artifacts
 import Mettapedia.Languages.MeTTa.PeTTa.CoreFragment
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceCoreFragment
 import Mettapedia.Languages.MeTTa.PeTTa.Unit
+import Mettapedia.Languages.MeTTa.PeTTa.StageIndex
+import Mettapedia.Languages.MeTTa.PeTTa.OSLFPackage
+import Mettapedia.Languages.MeTTa.PeTTa.StageFiber
+import Mettapedia.Languages.MeTTa.PeTTa.BoundaryContract
+import Mettapedia.Languages.MeTTa.PeTTa.SemanticBundle

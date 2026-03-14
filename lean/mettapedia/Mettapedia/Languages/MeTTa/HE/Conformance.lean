@@ -94,10 +94,11 @@ theorem eval_unit_typecast :
   · show _ ∈ typeCast _ _ _ _ fuel
     decide
 
-/-- Grounded atom → typeCast.
-    Spec line 123: `$metatype == Grounded` -/
+/-- Grounded atom → typeCast with matching type.
+    Spec line 123: `$metatype == Grounded`.
+    Grounded int has intrinsic type `Number` (from `Grounded::type_()`). -/
 theorem eval_grounded_typecast :
-    EvalAtom emptySpace noDispatch (.grounded (.int 42)) (.symbol "Foo") emptyB
+    EvalAtom emptySpace noDispatch (.grounded (.int 42)) (.symbol "Number") emptyB
       (.grounded (.int 42), emptyB) := by
   apply EvalAtom.type_cast (fuel := fuel)
   · rfl

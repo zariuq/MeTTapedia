@@ -91,6 +91,8 @@ inductive GroundedBuiltinHostKind where
   | printlnTerm
   | metaTypeOfTerm
   | typeOfTerm
+  | quoteTerm
+  | testAssertion
 deriving Repr, DecidableEq, BEq
 
 /-- How an aggregation lane packages collected backend results. -/

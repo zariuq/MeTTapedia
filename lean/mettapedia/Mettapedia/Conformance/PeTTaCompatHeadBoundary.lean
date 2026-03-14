@@ -407,6 +407,65 @@ theorem functionhead3Like_ruleShape_hasCompatHeadConstraintRule
   left
   rfl
 
+/-- For the deterministic singleton `functionhead3`-like compat-head fragment,
+the public Dispatch singleton bridge theorem applies directly on the
+rewrite-only interface. This is the first theorem in this file that connects
+the structural compat-head target to the owner-layer operational projection
+seam. -/
+theorem functionhead3Like_singleton_bridge
+    {ctor varX varY : String} {xs ys rhs : PeTTaPattern}
+    (hNoDollar : ctor.startsWith "$" = false) :
+    let valsState :=
+      Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
+        (rewriteOnlyDispatchInterface
+          [functionhead3LikeCoreRule ctor varX varY xs ys rhs])
+        ()
+        (.apply ctor (functionhead3LikeRawArgs varX varY xs ys))
+    let pairState :=
+      Algorithms.MeTTa.Simple.Semantics.Dispatch.constrainedCallBindingsAndValues
+        (rewriteOnlyDispatchInterface
+          [functionhead3LikeCoreRule ctor varX varY xs ys rhs])
+        ()
+        (.apply ctor (functionhead3LikeRawArgs varX varY xs ys))
+    valsState.1 = pairState.1 ∧ valsState.2 = pairState.2.map Prod.snd := by
+  let rule := functionhead3LikeCoreRule ctor varX varY xs ys rhs
+  let ruleArgs := functionhead3LikeRawArgs varX varY xs ys
+  have hEvalEq :
+      ∀ (s : Unit) (rhsPat : MeTTailCore.MeTTaIL.Syntax.Pattern),
+        (rewriteOnlyDispatchInterface [rule]).evalForRuleEnumeration s rhsPat =
+          (rewriteOnlyDispatchInterface [rule]).eval s rhsPat := by
+    intro s rhsPat
+    rfl
+  have hRules :
+      (rewriteOnlyDispatchInterface [rule]).premiseFreeRulesForHeadArity () ctor
+        ruleArgs.length = [rule] := by
+    simp [rewriteOnlyDispatchInterface, rule, ruleArgs, functionhead3LikeCoreRule,
+      functionhead3LikeRawArgs]
+  have hRuleLeft : rule.left = .apply ctor ruleArgs := by
+    rfl
+  have hLen : ruleArgs.length == ruleArgs.length := by
+    rfl
+  simpa [rule, ruleArgs] using
+    Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite_singleton_bridge
+      (rewriteOnlyDispatchInterface [rule])
+      hEvalEq
+      ()
+      ctor
+      ruleArgs
+      rule
+      ruleArgs
+      hRules
+      hNoDollar
+      hRuleLeft
+      hLen
+      (by
+        simpa [Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule,
+          rewriteOnlyDispatchInterface, rule, ruleArgs, functionhead3LikeCoreRule,
+          functionhead3LikeRawArgs] using
+          (functionhead3Like_ruleShape_hasCompatHeadConstraintRule
+            (ctor := ctor) (varX := varX) (varY := varY) (xs := xs) (ys := ys)
+            (rhs := rhs)))
+
 /-- Rule-shape instantiation of the two-witness boundary theorem for the
 `functionhead3` compat-head fragment.
 
@@ -483,6 +542,240 @@ theorem functionhead3Like_dispatchBridgeTarget
     functionhead3Like_ruleShape_hasCompatHeadConstraintRule
       (ctor := ctor) (varX := varX) (varY := varY) (xs := xs) (ys := ys) (rhs := rhs)
 
+/-- Exact deterministic contract that downstream runtimes are allowed to rely
+on for the current singleton `functionhead3`-like compat-head fragment.
+
+This contract is intentionally narrow:
+- the rule set is a singleton;
+- the rule head is compat-head by the real Dispatch classifier;
+- the constructor is a plain user head (not `$...`);
+- the observable compat-head outputs are exactly the `Prod.snd` projection of
+  the binding-carrying constrained-call outputs.
+
+It does not claim multiset/nondeterministic behavior, and it does not claim
+general compat-head support beyond this deterministic singleton slice. -/
+structure DeterministicFunctionhead3CompatContract
+    (ctor varX varY : String) (xs ys rhs : PeTTaPattern) : Prop where
+  noDollar : ctor.startsWith "$" = false
+  branchTarget :
+    Functionhead3LikeDispatchBridgeTarget ctor varX varY xs ys rhs
+      (specToCorePattern (.apply "in" [.fvar varX, xs]))
+      (specToCorePattern (.apply "in" [.fvar varY, ys]))
+  singletonProjection :
+    let valsState :=
+      Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite
+        (rewriteOnlyDispatchInterface
+          [functionhead3LikeCoreRule ctor varX varY xs ys rhs])
+        ()
+        (.apply ctor (functionhead3LikeRawArgs varX varY xs ys))
+    let pairState :=
+      Algorithms.MeTTa.Simple.Semantics.Dispatch.constrainedCallBindingsAndValues
+        (rewriteOnlyDispatchInterface
+          [functionhead3LikeCoreRule ctor varX varY xs ys rhs])
+        ()
+        (.apply ctor (functionhead3LikeRawArgs varX varY xs ys))
+    valsState.1 = pairState.1 ∧ valsState.2 = pairState.2.map Prod.snd
+
+/-- The deterministic singleton `functionhead3`-like fragment satisfies the
+exact compat-head contract downstream runtimes are allowed to consume. -/
+theorem functionhead3Like_deterministicCompatContract
+    {ctor varX varY : String} {xs ys rhs : PeTTaPattern}
+    (hNoDollar : ctor.startsWith "$" = false) :
+    DeterministicFunctionhead3CompatContract ctor varX varY xs ys rhs := by
+  refine ⟨hNoDollar, ?_, ?_⟩
+  · simpa using
+      (functionhead3Like_dispatchBridgeTarget
+        (ctor := ctor) (varX := varX) (varY := varY) (xs := xs) (ys := ys) (rhs := rhs)
+        (by simpa using hNoDollar))
+  · exact functionhead3Like_singleton_bridge
+      (ctor := ctor) (varX := varX) (varY := varY) (xs := xs) (ys := ys) (rhs := rhs)
+      hNoDollar
+
+/-!
+## Callable Inversion Oracle Contract (functionhead.metta)
+
+The `functionhead` pattern requires *symbolic inversion*: given an observed
+output and a rule head containing a function call `(f known_args $B)`, the
+runtime must enumerate input bindings `$B` such that `f(known_args, $B)`
+evaluates to the observed output.
+
+Example rule: `(= (h (myfunc (10) $B) $C) ($B $C))`
+Query: `(h (42 10 40) 42000)` — must find `$B = (40)` via inverting `myfunc`.
+
+This is strictly harder than tuple membership: the oracle must evaluate a
+user-defined function and solve for its free arguments.
+-/
+
+/-- Oracle contract for callable-argument inversion in compat-head position.
+
+Given a function head `funcHead`, the oracle can:
+1. Evaluate `(funcHead evaluatedArgs)` to produce witness results.
+2. The runtime unifies each witness result with the observed output to recover
+   bindings for free arguments (e.g., `$B` in `(myfunc (10) $B)`).
+
+This reuses `ExternalWitnessPhase` — callable inversion IS a witness phase
+where the generator is the user-defined function itself. -/
+structure CallableInversionOracleContract
+    (oracle : GroundedOracle) (funcHead : String) : Prop where
+  /-- The function head is evaluable by the oracle. -/
+  evaluable : oracle.isExecutable funcHead
+
+/-- Witness phase for callable inversion: the oracle evaluates `(funcHead args)`
+and the runtime unifies the result with the observed output to recover bindings
+for free arguments. -/
+theorem callableInversion_externalWitnessPhase
+    {oracle : GroundedOracle} {space : PeTTaSpace}
+    {funcHead : String}
+    (horacle : CallableInversionOracleContract oracle funcHead)
+    {rawArgs : List PeTTaPattern} {ty : PeTTaPattern}
+    {bindings finalBindings : Bindings}
+    {evaledArgs witnessResults : List PeTTaPattern}
+    (hargs : InterpretArgs space bindings rawArgs evaledArgs finalBindings)
+    (hcall : oracle.call funcHead evaledArgs witnessResults) :
+    ExternalWitnessPhase oracle space funcHead rawArgs ty
+      bindings finalBindings evaledArgs witnessResults := by
+  exact ⟨horacle.evaluable, hargs, hcall⟩
+
+/-- Core rule shape for `functionhead.metta`:
+`(= (ctor (funcHead knownArg $freeVar) $otherVar) rhs)`.
+Models e.g. `(= (h (myfunc (10) $B) $C) ($B $C))`. -/
+private def functionheadLikeCoreRule
+    (ctor funcHead freeVar otherVar : String)
+    (knownArg : PeTTaPattern) (rhs : PeTTaPattern) :
+    MeTTailCore.MeTTaIL.Syntax.RewriteRule :=
+  { name := s!"{ctor}_functionhead_shape"
+    typeContext := []
+    premises := []
+    left := MeTTailCore.MeTTaIL.Syntax.Pattern.apply ctor
+      [ MeTTailCore.MeTTaIL.Syntax.Pattern.apply funcHead
+          [specToCorePattern knownArg, .fvar freeVar]
+      , .fvar otherVar
+      ]
+    right := specToCorePattern rhs }
+
+/-- The actual structural compat-head classifier from `Dispatch.lean` recognizes
+the `functionhead` rule shape — any rule where a function call appears in an
+argument position is a compat-head rule. -/
+theorem functionheadLike_ruleShape_hasCompatHeadConstraintRule
+    {ctor funcHead freeVar otherVar : String}
+    {knownArg : PeTTaPattern} {rhs : PeTTaPattern} :
+    Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
+      (rewriteOnlyDispatchInterface
+        [functionheadLikeCoreRule ctor funcHead freeVar otherVar knownArg rhs]) () ctor 2 = true := by
+  simp [Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule,
+    rewriteOnlyDispatchInterface, functionheadLikeCoreRule]
+  left
+  rfl
+
+/-- Full staged lowering for the callable-inversion fragment: external witness
+production via callable inversion followed by residual MORK source firing. -/
+theorem callableInversion_twoPhaseLowering
+    {oracle : GroundedOracle} {space : PeTTaSpace} {workspace : Space}
+    {funcHead : String}
+    (horacle : CallableInversionOracleContract oracle funcHead)
+    {rawArgs : List PeTTaPattern} {ty : PeTTaPattern}
+    {bindings finalBindings : Bindings}
+    {evaledArgs witnessResults : List PeTTaPattern}
+    {sourceRule : SourceExecRule} {σ : Subst}
+    (hargs : InterpretArgs space bindings rawArgs evaledArgs finalBindings)
+    (hcall : oracle.call funcHead evaledArgs witnessResults)
+    (hr : ResidualMorkPhase workspace sourceRule σ) :
+    CompatHeadTwoPhaseLowering oracle space workspace
+      funcHead rawArgs ty
+      bindings finalBindings evaledArgs witnessResults
+      sourceRule σ := by
+  exact ⟨callableInversion_externalWitnessPhase horacle hargs hcall, hr⟩
+
+/-!
+## Nested Generator Composition Contract (functionhead2.metta)
+
+The `functionhead2` pattern chains generators: `(cat (animal $X))` where
+`(animal $X)` is itself a generator-style function producing results via
+constraint composition (e.g., `(only ((living $X) (being $X)) $X)`).
+
+The compat-head probe must: (1) evaluate the inner generator `(animal $X)` to
+collect witness bindings for `$X`, then (2) use those bindings to constrain the
+outer rule's arguments.
+
+Example rules:
+```
+(= (animal $X) (only ((living $X) (being $X)) $X))
+(= (cat (animal $X)) (only (small $X) $X))
+```
+Query: `(cat $X)` → expects `(cat42 garfield)`.
+
+This is strictly harder than callable inversion: the inner generator itself
+uses constraint composition, requiring recursive witness evaluation.
+-/
+
+/-- Oracle contract for nested generator composition in compat-head position.
+
+When a compat-head argument is itself a generator call `(innerHead args)`, the
+witness phase must evaluate the inner generator to collect witness bindings,
+then use those bindings to constrain the outer rule. -/
+structure NestedGeneratorCompositionContract
+    (oracle : GroundedOracle) (outerHead innerHead : String) : Prop where
+  /-- Both heads are evaluable by the oracle. -/
+  outerEvaluable : oracle.isExecutable outerHead
+  innerEvaluable : oracle.isExecutable innerHead
+
+/-- Core rule shape for `functionhead2.metta`:
+`(= (ctor (innerHead $freeVar)) rhs)`. -/
+private def functionhead2LikeCoreRule
+    (ctor innerHead freeVar : String) (rhs : PeTTaPattern) :
+    MeTTailCore.MeTTaIL.Syntax.RewriteRule :=
+  { name := s!"{ctor}_functionhead2_shape"
+    typeContext := []
+    premises := []
+    left := MeTTailCore.MeTTaIL.Syntax.Pattern.apply ctor
+      [ MeTTailCore.MeTTaIL.Syntax.Pattern.apply innerHead [.fvar freeVar] ]
+    right := specToCorePattern rhs }
+
+/-- The structural compat-head classifier recognizes the `functionhead2` rule
+shape — a nested function call in argument position. -/
+theorem functionhead2Like_ruleShape_hasCompatHeadConstraintRule
+    {ctor innerHead freeVar : String} {rhs : PeTTaPattern} :
+    Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule
+      (rewriteOnlyDispatchInterface
+        [functionhead2LikeCoreRule ctor innerHead freeVar rhs]) () ctor 1 = true := by
+  simp [Algorithms.MeTTa.Simple.Semantics.Dispatch.hasCompatHeadConstraintRule,
+    rewriteOnlyDispatchInterface, functionhead2LikeCoreRule]
+  rfl
+
+/-- Witness phase for nested generator composition: the oracle evaluates the
+inner generator to collect witness bindings. -/
+theorem nestedGenerator_externalWitnessPhase
+    {oracle : GroundedOracle} {space : PeTTaSpace}
+    {outerHead innerHead : String}
+    (horacle : NestedGeneratorCompositionContract oracle outerHead innerHead)
+    {rawArgs : List PeTTaPattern} {ty : PeTTaPattern}
+    {bindings finalBindings : Bindings}
+    {evaledArgs witnessResults : List PeTTaPattern}
+    (hargs : InterpretArgs space bindings rawArgs evaledArgs finalBindings)
+    (hcall : oracle.call innerHead evaledArgs witnessResults) :
+    ExternalWitnessPhase oracle space innerHead rawArgs ty
+      bindings finalBindings evaledArgs witnessResults := by
+  exact ⟨horacle.innerEvaluable, hargs, hcall⟩
+
+/-- Full staged lowering for nested generator composition: inner generator
+witness production followed by residual MORK source firing. -/
+theorem nestedGenerator_twoPhaseLowering
+    {oracle : GroundedOracle} {space : PeTTaSpace} {workspace : Space}
+    {outerHead innerHead : String}
+    (horacle : NestedGeneratorCompositionContract oracle outerHead innerHead)
+    {rawArgs : List PeTTaPattern} {ty : PeTTaPattern}
+    {bindings finalBindings : Bindings}
+    {evaledArgs witnessResults : List PeTTaPattern}
+    {sourceRule : SourceExecRule} {σ : Subst}
+    (hargs : InterpretArgs space bindings rawArgs evaledArgs finalBindings)
+    (hcall : oracle.call innerHead evaledArgs witnessResults)
+    (hr : ResidualMorkPhase workspace sourceRule σ) :
+    CompatHeadTwoPhaseLowering oracle space workspace
+      innerHead rawArgs ty
+      bindings finalBindings evaledArgs witnessResults
+      sourceRule σ := by
+  exact ⟨nestedGenerator_externalWitnessPhase horacle hargs hcall, hr⟩
+
 section Canaries
 
 #check @ExternalWitnessPhase
@@ -501,8 +794,20 @@ section Canaries
 #check @mergedSingletonWitnessBindings_preserve
 #check @tupleMembership_twoWitness_residual_sound_of_member
 #check @Algorithms.MeTTa.Simple.Semantics.Dispatch.compatMatchedBs_projection
+#check @Algorithms.MeTTa.Simple.Semantics.Dispatch.compatFunctionHeadRewrite_singleton_bridge
 #check @functionhead3Like_ruleShape_hasCompatHeadConstraintRule
+#check @functionhead3Like_singleton_bridge
+#check @DeterministicFunctionhead3CompatContract
+#check @functionhead3Like_deterministicCompatContract
 #check @functionhead3Like_ruleShape_twoWitnessBoundary_sound_of_member
+#check @CallableInversionOracleContract
+#check @callableInversion_externalWitnessPhase
+#check @callableInversion_twoPhaseLowering
+#check @functionheadLike_ruleShape_hasCompatHeadConstraintRule
+#check @NestedGeneratorCompositionContract
+#check @nestedGenerator_externalWitnessPhase
+#check @nestedGenerator_twoPhaseLowering
+#check @functionhead2Like_ruleShape_hasCompatHeadConstraintRule
 
 end Canaries
 
@@ -518,6 +823,12 @@ section AxiomAudit
 #print axioms tupleMembership_twoWitness_residual_sound_of_member
 #print axioms functionhead3Like_ruleShape_hasCompatHeadConstraintRule
 #print axioms functionhead3Like_ruleShape_twoWitnessBoundary_sound_of_member
+#print axioms callableInversion_externalWitnessPhase
+#print axioms callableInversion_twoPhaseLowering
+#print axioms functionheadLike_ruleShape_hasCompatHeadConstraintRule
+#print axioms nestedGenerator_externalWitnessPhase
+#print axioms nestedGenerator_twoPhaseLowering
+#print axioms functionhead2Like_ruleShape_hasCompatHeadConstraintRule
 
 end AxiomAudit
 

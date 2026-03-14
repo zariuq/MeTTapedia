@@ -90,26 +90,55 @@ end Space
 /-! ## Type Queries
 
 Ref: metta.md line 287 `<list of the types of the $atom from the $space>`.
-The HE spec collects types from:
-1. Explicit `(: atom type)` annotations in space
-2. Intrinsic meta-type if no annotations found
+Ref: `types.rs:get_atom_types` (ground truth).
+
+Type resolution dispatches by atom kind:
+1. **Variables** → no type (falls back to `%Undefined%`)
+2. **Grounded atoms** → intrinsic type from `Grounded::type_()` trait
+3. **Symbols** → explicit `(: atom type)` annotations in space
+4. **Expressions** → space annotations (application type inference deferred)
+
+If no type is found, returns `[%Undefined%]`.
 -/
 
-/-- Get all types for an atom from explicit `(: atom type)` annotations in space.
-    If no annotations found, returns `[%Undefined%]`.
-    Ref: `types.rs:get_atom_types`, metta.md line 287.
+/-- Get the intrinsic HE type of a grounded value.
+    Ref: `hyperon-atom/src/gnd/{number,bool,str}.rs` — `Grounded::type_()` impl.
+    HE uses `Number` (not `Int`) for all numeric grounded values. -/
+def getGroundedType : GroundedValue → Atom
+  | .int _       => .symbol "Number"
+  | .bool _      => .symbol "Bool"
+  | .string _    => .symbol "String"
+  | .custom t _  => .symbol t
 
-    Intentional abstraction: covers explicit `(: atom type)` annotations only.
-    Richer type inference for applications (function return types) and grounded
-    values (intrinsic types from `get_grounded_type`) is deferred. -/
-def getAtomTypes (space : Space) (a : Atom) : List Atom :=
-  let annotated := space.atoms.filterMap fun atom =>
+/-- Collect explicit `(: atom type)` annotations for an atom from space.
+    Ref: `types.rs:query_types`. -/
+def getAnnotatedTypes (space : Space) (a : Atom) : List Atom :=
+  space.atoms.filterMap fun atom =>
     match atom with
     | .expression [.symbol ":", a', ty] =>
       if a' == a then some ty else none
     | _ => none
-  if annotated.isEmpty then [Atom.undefinedType]
-  else annotated
+
+/-- Get all types for an atom from the space.
+    Ref: `types.rs:get_atom_types`, metta.md line 287.
+
+    Dispatches by atom kind following the Rust implementation:
+    - Variables: no type → `%Undefined%`
+    - Grounded: intrinsic type from `Grounded::type_()`
+    - Symbols: `(: atom type)` annotations in space
+    - Expressions: space annotations (application type inference deferred) -/
+def getAtomTypes (space : Space) (a : Atom) : List Atom :=
+  let types := match a with
+    | .var _ => []
+    | .grounded g =>
+      let ty := getGroundedType g
+      if ty == Atom.undefinedType then [] else [ty]
+    | .symbol _ => getAnnotatedTypes space a
+    | .expression es =>
+      if es.isEmpty then []
+      else getAnnotatedTypes space a
+  if types.isEmpty then [Atom.undefinedType]
+  else types
 
 /-! ## Equation Query
 
@@ -279,8 +308,18 @@ private def testSpace : Space :=
     .expression [.symbol "=", .symbol "foo", .grounded (.int 42)]
   ]
 
+-- Symbol with annotation → annotated type
 example : getAtomTypes testSpace (.symbol "foo") = [.symbol "Int"] := rfl
+-- Symbol without annotation → %Undefined%
 example : getAtomTypes testSpace (.symbol "baz") = [Atom.undefinedType] := rfl
+-- Grounded int → Number (intrinsic, not from space)
+example : getAtomTypes testSpace (.grounded (.int 42)) = [.symbol "Number"] := rfl
+-- Grounded bool → Bool
+example : getAtomTypes testSpace (.grounded (.bool true)) = [.symbol "Bool"] := rfl
+-- Grounded string → String
+example : getAtomTypes testSpace (.grounded (.string "hi")) = [.symbol "String"] := rfl
+-- Variable → %Undefined%
+example : getAtomTypes testSpace (.var "x") = [Atom.undefinedType] := rfl
 
 -- queryEquations
 example : queryEquations testSpace (.symbol "foo") =

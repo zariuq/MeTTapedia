@@ -227,4 +227,23 @@ theorem declReducesWithPremises_iff_langReducesWithPremises
       q ∈ rewriteWithContextWithPremises lang p :=
   ⟨engineWithPremises_complete, engineWithPremises_sound⟩
 
+/-! ## RelationEnv Monotonicity -/
+
+/-- `DeclReducesWithPremises` is monotone in the relation environment:
+    if `relEnv₁ ≤ relEnv₂`, then any reduction under `relEnv₁` is also
+    a reduction under `relEnv₂`. -/
+theorem declReducesWithPremises_mono_relEnv {lang : LanguageDef}
+    {relEnv₁ relEnv₂ : RelationEnv}
+    (hle : relEnv₁ ≤ relEnv₂)
+    {p q : Pattern}
+    (hred : DeclReducesWithPremises relEnv₁ lang p q) :
+    DeclReducesWithPremises relEnv₂ lang p q := by
+  induction hred with
+  | topRule r hr bs0 hbs0 bs hprem hq =>
+    exact .topRule r hr bs0 hbs0 bs
+      (applyPremisesWithEnv_mono_relEnv hle r.premises bs0 bs hprem) hq
+  | congElem hct i hi r hr bs0 hbs0 bs hprem hq =>
+    exact .congElem hct i hi r hr bs0 hbs0 bs
+      (applyPremisesWithEnv_mono_relEnv hle r.premises bs0 bs hprem) hq
+
 end Mettapedia.OSLF.MeTTaIL.DeclReducesPremises

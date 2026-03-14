@@ -13,6 +13,8 @@ def DeterministicAcceptedRaw (s : Session) (term : Pattern) : Prop :=
   Session.optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false ∧
   Session.optimizedBackendInterface.hasMultipleRootRuleChoices
     (Session.withCompiledIndexes s false) term = false ∧
+  Session.optimizedBackendInterface.noDeterministicReducerOverlap s = true ∧
+  Session.optimizedBackendInterface.noCoreBuiltinOverrides s = true ∧
   Session.optimizedBackendInterface.isResolvedDeterministicResult
     ((Session.optimizedBackendInterface.evalDeterministicCore s
       (Nat.max 4096 (Session.optimizedBackendInterface.maxNodes s)) term).2) = true ∧
@@ -43,6 +45,8 @@ theorem evalWithState_eq_reference_of_deterministic_agreement_raw_guard
         Session.optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         Session.optimizedBackendInterface.hasMultipleRootRuleChoices
           (Session.withCompiledIndexes s false) term = false →
+        Session.optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        Session.optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         Session.optimizedBackendInterface.isResolvedDeterministicResult
           ((Session.optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (Session.optimizedBackendInterface.maxNodes s)) term).2) = true →
@@ -52,9 +56,9 @@ theorem evalWithState_eq_reference_of_deterministic_agreement_raw_guard
         Algorithms.MeTTa.Simple.Backend.OptimizedEval.evalWithState
           Session.optimizedBackendInterface s term =
         Session.optimizedBackendInterface.evalWithStateCore s term := by
-    intro s term h1 h2 h3 h4 h5
+    intro s term h1 h2 h3 h4 h4b h5 h6
     rw [optimizedCoreEq s term]
-    exact hAgreeRaw s term ⟨h1, h2, h3, h4, h5⟩
+    exact hAgreeRaw s term ⟨h1, h2, h3, h4, h4b, h5, h6⟩
   have hEq :
       Session.evalWithState s term =
         Session.optimizedBackendInterface.evalWithStateCore s term :=
@@ -90,6 +94,8 @@ theorem wf_evalWithState_of_reference_and_deterministic_agreement
         Session.optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         Session.optimizedBackendInterface.hasMultipleRootRuleChoices
           (Session.withCompiledIndexes s false) term = false →
+        Session.optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        Session.optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         Session.optimizedBackendInterface.isResolvedDeterministicResult
           ((Session.optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (Session.optimizedBackendInterface.maxNodes s)) term).2) = true →
@@ -99,9 +105,9 @@ theorem wf_evalWithState_of_reference_and_deterministic_agreement
         Algorithms.MeTTa.Simple.Backend.OptimizedEval.evalWithState
           Session.optimizedBackendInterface s term =
         Session.optimizedBackendInterface.evalWithStateCore s term := by
-    intro s term h1 h2 h3 h4 h5
+    intro s term h1 h2 h3 h4 h4b h5 h6
     rw [optimizedCoreEq s term]
-    exact hAgreeRaw s term ⟨h1, h2, h3, h4, h5⟩
+    exact hAgreeRaw s term ⟨h1, h2, h3, h4, h4b, h5, h6⟩
   exact
     Session.compiledConsistent_evalWithState_of_reference_and_deterministic_agreement
       hCorePres' s term hs hAgreeRaw'
@@ -133,6 +139,8 @@ theorem wf_applyStmt_eval_of_reference_and_deterministic_agreement
         Session.optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         Session.optimizedBackendInterface.hasMultipleRootRuleChoices
           (Session.withCompiledIndexes s false) term = false →
+        Session.optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        Session.optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         Session.optimizedBackendInterface.isResolvedDeterministicResult
           ((Session.optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (Session.optimizedBackendInterface.maxNodes s)) term).2) = true →
@@ -142,9 +150,9 @@ theorem wf_applyStmt_eval_of_reference_and_deterministic_agreement
         Algorithms.MeTTa.Simple.Backend.OptimizedEval.evalWithState
           Session.optimizedBackendInterface s term =
         Session.optimizedBackendInterface.evalWithStateCore s term := by
-    intro s term h1 h2 h3 h4 h5
+    intro s term h1 h2 h3 h4 h4b h5 h6
     rw [optimizedCoreEq s term]
-    exact hAgreeRaw s term ⟨h1, h2, h3, h4, h5⟩
+    exact hAgreeRaw s term ⟨h1, h2, h3, h4, h4b, h5, h6⟩
   exact
     Session.compiledConsistent_applyStmt_eval_of_reference_and_deterministic_agreement
       hCorePres' s term hs hAgreeRaw'

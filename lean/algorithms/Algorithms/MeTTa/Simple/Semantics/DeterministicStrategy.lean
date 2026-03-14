@@ -58,4 +58,16 @@ def isMemoizableDeterministicCall : Pattern → Bool
       !hasAnyFVar (.apply ctor args)
   | _ => false
 
+/-- Heads handled by `intrinsicCompareRows` (fixed set from Relations.lean).
+    Used by `noDeterministicReducerOverlap` to prevent builtin/rule overlap. -/
+def intrinsicBuiltinHeads : List String :=
+  [ "=", "if", "and", "or", "not", "xor", "append", "is-member"
+  , "<", ">", "<=", ">=", "==", "!=", "+", "-", "*", "/", "%"
+  , "pow-math", "sqrt-math", "abs-math", "log-math"
+  , "trunc-math", "ceil-math", "floor-math", "round-math"
+  , "sin-math", "asin-math", "cos-math", "acos-math"
+  , "tan-math", "atan-math", "isnan-math", "isinf-math"
+  , "cons", "min-atom", "max-atom"
+  ]
+
 end Algorithms.MeTTa.Simple.Semantics.DeterministicStrategy

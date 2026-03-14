@@ -9,6 +9,8 @@ structure Interface (σ : Type) where
   shouldUseDeterministicInStrict : Pattern → Bool
   hasDeterministicBlockingRewriteBodies : σ → Bool
   hasMultipleRootRuleChoices : σ → Pattern → Bool
+  noDeterministicReducerOverlap : σ → Bool
+  noCoreBuiltinOverrides : σ → Bool
   evalDeterministicCore : σ → Nat → Pattern → σ × Pattern
   evalWithStateCore : σ → Pattern → σ × List Pattern
   isResolvedDeterministicResult : Pattern → Bool
@@ -17,7 +19,9 @@ structure Interface (σ : Type) where
 def evalWithState (I : Interface σ) (s : σ) (term : Pattern) : σ × List Pattern :=
   if I.shouldUseDeterministicInStrict term &&
      !I.hasDeterministicBlockingRewriteBodies s &&
-     !I.hasMultipleRootRuleChoices s term then
+     !I.hasMultipleRootRuleChoices s term &&
+     I.noDeterministicReducerOverlap s &&
+     I.noCoreBuiltinOverrides s then
     let detFuel := Nat.max 4096 (I.maxNodes s)
     let (sDet, outDet) := I.evalDeterministicCore s detFuel term
     if I.isResolvedDeterministicResult outDet &&

@@ -98,6 +98,13 @@ theorem pettaForwardFiber_lang (s : PeTTaSpace) (u : Unit) :
 - `pettaIdMorphism` — identity forward simulation
 - `pettaForwardFiber` — unit-indexed GSLT fiber
 - Diamond/Box characterizations for the fiber
+
+### Staged Fiber
+
+The unit-indexed fiber embeds as the `sourceCore` stage of the 4-stage
+`pettaStageFiber`. See `Mettapedia.Languages.MeTTa.PeTTa.StageFiber` for:
+- `pettaStageFiber_sourceCore_eq_forwardFiber` — compatibility bridge
+- `pettaStageOSLF_sourceCore_eq_pettaOSLF` — OSLF compatibility
 -/
 
 end Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex

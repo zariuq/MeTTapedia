@@ -1,0 +1,1622 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{listings}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\lstdefinelanguage{Lean4}{
+  morekeywords={
+    import,namespace,end,open,section,noncomputable,abbrev,structure,inductive,
+    def,theorem,lemma,where,match,with,if,then,else,by,fun,let,in,return,do,
+    simp,calc,have,show,exact,rcases,cases,constructor,intro,apply,
+    deriving,instance,class,extends,private,protected,mutual,partial,
+    Type,Prop,Sort,Nat,Bool,true,false,sorry,axiom
+  },
+  sensitive=true,
+  morecomment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  morestring=[b]"
+}
+
+\lstset{
+  language=Lean4,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries\color{blue!50!black},
+  commentstyle=\itshape\color{green!40!black},
+  stringstyle=\color{red!50!black},
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  framerule=0.3pt,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  keepspaces=true,
+  columns=fullflexible,
+  escapeinside={@}{@}
+}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Convenience
+\newcommand{\MORK}{\textup{MORK}}
+\newcommand{\MeTTa}{\textup{MeTTa}}
+\newcommand{\MeTTaIL}{\textup{MeTTaIL}}
+\newcommand{\PathMap}{\textup{PathMap}}
+
+\title{MORK, MM2, and PathMap: A Lean~4 Formalization\\
+\large Syntax, Space Semantics, Trie Data Structure,\\
+Conformance Testing, and Cross-System Bridges}
+\author{Zar \and Oru\v{z}i\footnote{%
+``Oru\v{z}i'' denotes AI-assisted collaboration
+using Claude Code (Anthropic), ChatGPT, and Codex (OpenAI).}}
+\date{March 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a Lean~4 formalization of the \MORK{} execution engine, its
+MM2 (Minimal \MeTTa{}~2) language, and the \PathMap{} trie data structure
+that underpins it.
+The formalization covers MM2 syntax, space semantics with pattern matching
+(including recursive expression matching), a three-phase priority-scheduled
+execution protocol, the \PathMap{} algebraic lattice hierarchy with a
+concrete finite trie instance (\texttt{FTrie\,V}) satisfying
+\texttt{PathMapQuantale}, a bridge to \MeTTaIL{}'s declarative reduction
+semantics, and a bridge to MQ-calculus COMM non-determinism.
+A conformance test suite of 47 kernel-checked theorems is verified against
+the \MORK{} CLI (\texttt{mork run}) on 9+ \texttt{.mm2} test programs.
+The \MORK{}/MM2 development comprises 9{,}456 lines across 17 files with
+0~sorries and 0~custom axioms.
+Since the initial formalization, the development has grown from 8 files
+(1{,}911 lines) to 17 files (9{,}456 lines), adding:
+a faithful work-queue scheduler with read-copy semantics,
+fold-level aggregation (\texttt{FoldAggregator}: selectAll, selectFirst,
+count, sum), an idempotent \texttt{head} sink, sink persistence theorems,
+N-ary fold non-determinism generalization, an execution boundary
+packaging (\texttt{morkTranslatable}), full scheduler-level
+correspondence between computable and spec-level work-queue execution
+(including multi-match firing, bounded-run equivalence, and an explicit
+\texttt{WorkQueueInvariant} bundle), source-side input semantics
+covering \texttt{BTM}, \texttt{==} (equality constraint), and
+\texttt{!=} (inequality/exclusion constraint) source factors,
+a multi-premise \MeTTaIL{} bridge with \texttt{PremiseChain} induction
+and freshness guards (\texttt{SourceGuard}), concrete PLN inference
+rules (transitivity, modus ponens, abduction, guarded deduction) as
+end-to-end GSLT routing witnesses, and a collection congruence bridge
+(\texttt{congElem}) proving that sub-element rewriting inside
+collections factors through a Huet zipper/lens decomposition
+(\texttt{AtomZipper}, \texttt{LensRel}) and corresponds to \MORK{}
+rule firings via ground atom self-matching,
+proven \texttt{matchAtom} round-trip theorems for compound command
+patterns (closing the \texttt{add-atom}/\texttt{remove-atom} MM2
+compiler invariant gap),
+a pattern normalization function (\texttt{normalize}) that eliminates
+\texttt{.subst} nodes via \texttt{openBVar},
+an extended \MeTTaIL{} bridge (\texttt{ExtendedBridge.lean})
+proving that rewrite rules whose RHS contains \texttt{.subst} nodes
+or rest-variable collections still fire through \MORK{}, by showing
+that \texttt{applyBindings} always produces \texttt{morkTranslatable}
+output (\texttt{morkTranslatable\_applyBindings}),
+and a runtime-kernel packaging layer (\texttt{RuntimeKernel.lean},
+\texttt{RuntimeResource.lean}) that bridges the \MORK{}/MM2 execution
+triad to the \texttt{EffectClass} hierarchy from \texttt{mettail-core}
+and classifies current proved fragments by effect class
+(\texttt{pureStructural}, \texttt{readOnlyLookup}, \texttt{writesState}),
+resource class (\texttt{defaultAtomSpace}), and backend provenance,
+with honest descriptors for not-yet-formalized resources (named
+atomspaces, Z3 solver, ACT external files).
+The \PathMap{} library adds 1{,}262 lines across 5 core files with
+54~theorems/instances.
+All proofs are checked by Lean~4.28 with Mathlib~v4.28.
+\end{abstract}
+
+\tableofcontents
+
+%% ============================================================
+\section{Introduction}
+\label{sec:intro}
+%% ============================================================
+
+\MORK{} (``\MeTTa{} Optimal Reduction Kernel'') is a parallel metagraph
+rewriting engine that executes programs written in MM2, a forward-chaining
+term-rewriting language over spaces of atoms~\cite{MeredithStayOSLF2020}.
+\MORK{} uses \PathMap{} as its underlying data structure for efficient
+graph and path representation, and serves as the execution substrate for
+\MeTTa{} implementations.
+
+This note documents a Lean~4 formalization of the \MORK{}/MM2/\PathMap{} stack,
+covering:
+\begin{enumerate}[nosep]
+  \item MM2 syntax: exec rules with prioritized pattern-template pairs,
+        including \texttt{head} (idempotent add) sinks and fold-level
+        aggregators (\S\ref{sec:syntax});
+  \item Space semantics: finite sets of ground atoms with substitution-based
+        pattern matching and sink application (\S\ref{sec:space});
+  \item A relational match specification with soundness and completeness
+        (\S\ref{sec:matchspec});
+  \item A three-phase execution protocol (unfold/base/fold) with
+        priority-band ordering and fold-level aggregation
+        (\S\ref{sec:threephase});
+  \item A faithful work-queue scheduler with read-copy semantics, exec-fact
+        extraction, and ground self-respawn (\S\ref{sec:workqueue});
+  \item Sink persistence: atoms persist through sink pipelines unless
+        explicitly removed (\S\ref{sec:persistence});
+  \item The \PathMap{} algebraic hierarchy: lattice, distributive lattice,
+        and quantale, with a concrete finite trie instance (\S\ref{sec:pathmap});
+  \item Algebraic correspondence between \MORK{} space transitions and
+        \PathMap{} join/subtract (\S\ref{sec:pathmapbridge});
+  \item A \MeTTaIL{} bridge: zero-premise, multi-premise,
+        freshness-guarded, and collection congruence (\texttt{congElem})
+        declarative reductions imply \MORK{} rule firings---the
+        \texttt{congElem} bridge uses a Huet zipper/lens factorization
+        (\texttt{LensRel}) as the primary congruence surface---with
+        concrete PLN inference rules as end-to-end
+        routing witnesses (\S\ref{sec:mettail});
+  \item An MQ-calculus bridge: binary and N-ary fold non-determinism
+        corresponds to \texttt{CommReduction} (\S\ref{sec:mqbridge});
+  \item A conformance test suite verified against the \MORK{} CLI
+        (\S\ref{sec:conformance});
+  \item An execution boundary packaging (\texttt{morkTranslatable}) that
+        delineates the proven fragment (\S\ref{sec:execboundary}).
+\end{enumerate}
+
+\noindent
+Tables~\ref{tab:morkfiles} and~\ref{tab:pathmapfiles} summarize the
+formal development.
+
+\begin{table}[ht]
+\centering
+\caption{\MORK{}/MM2 formalization files.}
+\label{tab:morkfiles}
+\begin{tabular}{@{}llrl@{}}
+\toprule
+\textbf{File} & \textbf{Key Content} & \textbf{Lines} \\
+\midrule
+\texttt{Syntax.lean}              & \texttt{Sink}, \texttt{FoldAggregator}, \texttt{ExecRule}, \texttt{SourceFactor}, \texttt{InputSpec} & 264 \\
+\texttt{Space.lean}               & \texttt{Space}, \texttt{matchAtom}, \texttt{applySink}, source-aware matching & 432 \\
+\texttt{MatchSpec.lean}           & \texttt{MatchAtomRel}, soundness/completeness & 133 \\
+\texttt{ThreePhaseExec.lean}      & Phase protocol, aggregator theorems, canaries & 381 \\
+\texttt{ThreePhaseRefinement.lean}& Sink persistence, phase$\leftrightarrow$scheduler & 230 \\
+\texttt{WorkQueueOrder.lean}      & \texttt{atomKey}, shortlex ordering, \texttt{lexLt\_iff\_lex} & 241 \\
+\texttt{WorkQueueExec.lean}       & Read-copy scheduler, source-aware firing, correspondence & 1{,}192 \\
+\texttt{MORKCommBridge.lean}      & MQ correspondence, N-ary generalization & 300 \\
+\texttt{PathMapBridge.lean}       & Base/fold = \texttt{pjoin}/\texttt{psubtract} & 174 \\
+\texttt{MeTTaILBridge.lean}       & Multi-premise bridge, \texttt{PremiseChain}, ext bridge & 1{,}624 \\
+\texttt{PLNRules.lean}            & Concrete PLN rules, guarded bridge instantiation & 383 \\
+\texttt{Conformance.lean}         & Computable evaluator, source conformance, correspondence & 1{,}694 \\
+\texttt{AtomZipper.lean}          & Huet zipper, \texttt{LensRel}, lens laws, collection specialization & 283 \\
+\texttt{CollectionBridge.lean}    & Zipper/lens \texttt{congElem} bridge, \texttt{declReduces\_implies\_mork\_fire\_full} & 319 \\
+\texttt{ExecutionBoundary.lean}   & \texttt{morkTranslatable} + scheduler + source + ext + zipper/lens re-exports & 439 \\
+\midrule
+\textbf{Total} & & \textbf{8{,}089} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{\PathMap{} library files (core theory).}
+\label{tab:pathmapfiles}
+\begin{tabular}{@{}llrl@{}}
+\toprule
+\textbf{File} & \textbf{Key Content} & \textbf{Lines} & \textbf{Thms/Inst} \\
+\midrule
+\texttt{Core.lean}              & \texttt{AlgebraicResult}, lattice hierarchy, \texttt{Finset} instance & 440 & 5 / 13 \\
+\texttt{CoinductiveTrie.lean}   & \texttt{CTrie V}, pointwise operations, bisimilarity laws & 226 & 30 \\
+\texttt{FiniteTrie.lean}        & \texttt{FTrie V}, computable trie operations & 224 & 5 \\
+\texttt{TrieRefinement.lean}    & \texttt{Sorted}, \texttt{join\_lookup}, \texttt{toCTrie} & 243 & 5 \\
+\texttt{TriePathMapInstance.lean} & \texttt{PathMapQuantale (FTrie V)}, \texttt{JoinIdem}, \texttt{MeetIdem} & 129 & 0 / 4 \\
+\midrule
+\textbf{Total} & & \textbf{1{,}262} & \textbf{45 + 17 inst} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All \MORK{}/MM2 files reside under
+\texttt{Mettapedia/Languages/ProcessCalculi/MORK/}.
+The \PathMap{} library is at \texttt{Mettapedia/OSLF/PathMap/}.
+
+%% ============================================================
+\section{MM2 Syntax}
+\label{sec:syntax}
+%% ============================================================
+
+MM2 programs consist of \emph{exec rules} that match atoms in a space and
+produce add/remove mutations.
+The grammar, as formalized in Lean following the MORK wiki spec, is:
+\begin{center}
+\begin{tabular}{@{}rcl@{}}
+\textit{ExecRule}  & $::=$ & \texttt{(exec (priority $n$ name) Pattern Template)} \\
+\textit{Pattern}   & $::=$ & \texttt{(, Atom$_1$ \ldots{} Atom$_n$)} \\
+\textit{Template}  & $::=$ & \texttt{(O Sink$_1$ \ldots{} Sink$_n$)} \\
+\textit{Sink}      & $::=$ & \texttt{(+ Atom)} $\mid$ \texttt{(- Atom)} $\mid$ \texttt{(head Atom)} \\
+\end{tabular}
+\end{center}
+
+\noindent
+A \emph{pattern} is a conjunction: all atoms must be present in the space
+for the rule to fire.
+A \emph{template} is a list of sinks applied simultaneously: \texttt{(+ a)}
+inserts atom~\texttt{a}, \texttt{(- a)} removes it, and \texttt{(head a)}
+performs an idempotent add (first-wins: no-op if already present).
+
+The Lean formalization uses the shared \texttt{Atom} type from
+\texttt{MeTTa.Core.Atom}, so \MORK{} S-expressions are a subset of \MeTTa{}
+atoms:
+
+\begin{lstlisting}[caption={MM2 syntax types (\texttt{Syntax.lean}).}]
+structure Pattern where
+  atoms : List Atom
+  deriving Repr, DecidableEq
+
+inductive Sink where
+  | add    : Atom -> Sink   -- (+ a)
+  | remove : Atom -> Sink   -- (- a)
+  | head   : Atom -> Sink   -- (head a): idempotent add
+  deriving Repr, DecidableEq
+
+structure Template where
+  sinks : List Sink
+  deriving Repr, DecidableEq
+
+structure ExecRule where
+  priority : Nat
+  name     : String
+  pat      : Pattern
+  tmpl     : Template
+  deriving Repr, DecidableEq
+\end{lstlisting}
+
+\subsection{Fold-Level Aggregation}
+
+Sub-results assembled during the fold phase are governed by a
+\texttt{FoldAggregator}:
+
+\begin{lstlisting}[caption={Fold aggregator (\texttt{Syntax.lean}).}]
+inductive FoldAggregator where
+  | selectAll   : FoldAggregator  -- non-deterministic (default)
+  | selectFirst : FoldAggregator  -- head only
+  | count       : FoldAggregator  -- (.grounded (.int N))
+  | sum         : FoldAggregator  -- sum of integer sub-results
+  deriving Repr, DecidableEq
+
+def applyAggregator (agg : FoldAggregator)
+    (subResults : List Atom) : Option Atom :=
+  match agg with
+  | .selectAll   => subResults.head?
+  | .selectFirst => subResults.head?
+  | .count       =>
+      some (.grounded (.int subResults.length))
+  | .sum         =>
+      let vals := subResults.filterMap extractInt
+      some (.grounded (.int (vals.foldl (. + .) 0)))
+\end{lstlisting}
+
+\noindent
+The \texttt{selectAll} and \texttt{selectFirst} cases both return
+\texttt{head?} at this level; the non-determinism of \texttt{selectAll} is
+captured by \texttt{NaryFoldPicksSubResult} in \texttt{MORKCommBridge.lean},
+not by \texttt{applyAggregator}.
+
+\begin{theorem}[\texttt{applyAggregator\_count}]
+\texttt{applyAggregator .count rs = some (.grounded (.int rs.length))}.
+\end{theorem}
+
+\begin{theorem}[\texttt{applyAggregator\_selectFirst}]
+For $\mathit{rs} = a :: \mathit{tl}$:
+\texttt{applyAggregator .selectFirst rs = some a}.
+\end{theorem}
+
+\begin{theorem}[\texttt{applyAggregator\_sum\_nil}]
+\texttt{applyAggregator .sum [] = some (.grounded (.int 0))}.
+\end{theorem}
+
+%% ============================================================
+\section{Space Semantics and Matching}
+\label{sec:space}
+%% ============================================================
+
+\subsection{Space and Substitution}
+
+A \MORK{} \emph{space} is a finite set of ground atoms.
+The Rust implementation uses \texttt{PathMap<()>}; the formalization abstracts
+this to \texttt{Finset Atom} for tractable reasoning:
+
+\begin{lstlisting}[caption={Space and substitution (\texttt{Space.lean}).}]
+abbrev Space := Finset Atom
+abbrev Subst := List (String * Atom)
+\end{lstlisting}
+
+Substitutions are association lists with first-match-wins lookup via
+\texttt{Subst.lookup}.
+
+\subsection{Pattern Matching}
+
+The spec-level function \texttt{matchAtom} implements first-order
+(non-unification) pattern matching on three atom kinds:
+
+\begin{itemize}[nosep]
+  \item \textbf{Variable} (\texttt{.var v}): if \texttt{v} is already bound
+    in the substitution, the concrete atom must equal the bound value;
+    otherwise, \texttt{v} is freshly bound.
+  \item \textbf{Symbol} (\texttt{.symbol s}): must match an identical symbol.
+  \item \textbf{Grounded} (\texttt{.grounded g}): must match an identical
+    grounded value.
+  \item \textbf{Expression} (\texttt{.expression es}): returns \texttt{none}
+    in the spec-level \texttt{matchAtom} (see \S\ref{sec:conformance} for
+    the computable evaluator that handles expressions).
+\end{itemize}
+
+\noindent
+The conjunctive match \texttt{matchPattern} threads the substitution through
+a list of pattern atoms, matching each against the space while tracking
+consumed atoms to prevent double-matching.
+
+\subsection{Sink Application and Rule Firing}
+
+A single sink mutates the space:
+
+\begin{lstlisting}[caption={Sink application (\texttt{Space.lean}).}]
+def applySink (s : Space) (sig : Subst) (sink : Sink)
+    : Space :=
+  match sink with
+  | .add a    =>
+    let a' := applySubst sig a
+    if isGroundAtom a' then s @$\cup$@ {a'} else s
+  | .remove a => s.erase (applySubst sig a)
+  | .head a   =>
+    let a' := applySubst sig a
+    if isGroundAtom a' then s @$\cup$@ {a'} else s
+\end{lstlisting}
+
+\noindent
+Non-ground add results are silently dropped (a guard for soundness).
+In the \texttt{Finset} model, \texttt{head} is definitionally equal to
+\texttt{add} (union is idempotent).  The distinction is operative in the
+computable reference evaluator (\texttt{Conformance.lean}), which uses
+\texttt{List Atom} where idempotence must be checked explicitly via
+\texttt{contains}.
+A template's sinks are applied left-to-right via \texttt{applySinks},
+and \texttt{fireRule} composes matching with template application.
+
+\subsection{Structural Lemmas}
+
+Four theorems characterize sink effects:
+
+\begin{theorem}[\texttt{applySink\_add\_card}]
+Adding a ground atom not already in the space increases cardinality by~1.
+\end{theorem}
+
+\begin{theorem}[\texttt{applySink\_remove\_card}]
+Removing an atom present in the space decreases cardinality by~1.
+\end{theorem}
+
+\begin{theorem}[\texttt{applySinks\_empty}]
+An empty template is the identity on the space.
+\end{theorem}
+
+\begin{theorem}[\texttt{applySink\_add\_mem}]
+Adding an atom preserves membership of all existing atoms.
+\end{theorem}
+
+%% ============================================================
+\section{Match Specification}
+\label{sec:matchspec}
+%% ============================================================
+
+The file \texttt{MatchSpec.lean} introduces a relational specification for
+pattern matching, separating the ``what'' from the ``how'':
+
+\begin{lstlisting}[caption={Match relation (\texttt{MatchSpec.lean}).}]
+inductive MatchAtomRel : Subst -> Atom -> Atom
+    -> Subst -> Prop where
+  | var_fresh  (hlookup : sig.lookup v = none) :
+      MatchAtomRel sig (.var v) a ((v, a) :: sig)
+  | var_bound  (hlookup : sig.lookup v = some a) :
+      MatchAtomRel sig (.var v) a sig
+  | symbol :  MatchAtomRel sig (.symbol s) (.symbol s) sig
+  | grounded : MatchAtomRel sig (.grounded g) (.grounded g) sig
+\end{lstlisting}
+
+The key result is an exact characterization:
+
+\begin{theorem}[\texttt{matchAtom\_iff}]
+For all substitutions $\sigma$, pattern atoms $p$, concrete atoms $c$, and
+result substitutions $\sigma'$:
+$
+  \mathtt{matchAtom}\;\sigma\;p\;c = \mathtt{some}\;\sigma'
+  \;\iff\;
+  \mathtt{MatchAtomRel}\;\sigma\;p\;c\;\sigma'
+$
+\end{theorem}
+
+\noindent
+This is proved via separate soundness and completeness theorems.
+Expression patterns are excluded: \texttt{matchAtom\_expression\_pattern\_none}
+proves that \texttt{matchAtom} on \texttt{.expression} always returns
+\texttt{none}.
+
+%% ============================================================
+\section{Three-Phase Execution}
+\label{sec:threephase}
+%% ============================================================
+
+\MORK{}'s execution protocol schedules rules by priority into three
+non-overlapping bands:
+
+\begin{definition}[Phase Bands]
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Phase} & \textbf{Priority Range} & \textbf{Role} \\
+\midrule
+Unfold & $0$--$31$   & Spawn $N$ sub-queries + wait token \\
+Base   & $32$--$63$  & Resolve leaf queries directly \\
+Fold   & $64$--$95$  & Wait for sub-results, assemble final result \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{definition}
+
+Each phase has a dedicated step type (\texttt{UnfoldStep}, \texttt{BaseStep},
+\texttt{FoldStep}) with a proof field witnessing that the step's priority
+falls within the correct band.
+The \texttt{FoldStep} structure carries an \texttt{aggregator :
+FoldAggregator} field (default \texttt{.selectAll}) governing how
+sub-results are assembled.
+Space transitions \texttt{applyUnfold}, \texttt{applyBase}, and
+\texttt{applyFold} implement each phase.
+
+\begin{theorem}[\texttt{phase\_ranges\_disjoint}]
+No priority belongs to two distinct phases.
+\end{theorem}
+
+\begin{theorem}[\texttt{phase\_priority\_monotone}]
+For any priorities $n_u$, $n_b$, $n_f$ in the unfold, base, and fold
+phases respectively: $n_u < n_b < n_f$.
+\end{theorem}
+
+\begin{theorem}[\texttt{foldStep\_default\_aggregator}]
+For a fold step with default aggregator (\texttt{.selectAll}):
+\texttt{applyAggregator fold.aggregator fold.subResults =
+fold.subResults.head?}.
+\end{theorem}
+
+%% ============================================================
+\section{Work-Queue Scheduler}
+\label{sec:workqueue}
+%% ============================================================
+
+The work-queue scheduler (\texttt{WorkQueueExec.lean}, 1{,}143~lines)
+formalizes \MORK{}'s actual runtime model from \texttt{mork\_backend.rs}.
+This replaces the abstract three-phase view with the concrete execution
+loop:
+
+\begin{enumerate}[nosep]
+\item \textbf{Pop} the next \texttt{(exec ...)} fact from the space
+  (sorted by \texttt{atomKey}: serialized key with shortlex ordering).
+\item \textbf{Remove} it from live space.
+\item \textbf{Read copy}: $\mathrm{live\_after\_remove} \cup
+  \{\mathrm{exec\_fact}\}$---re-insert so the rule can match itself.
+\item \textbf{Match} the pattern against the read copy.
+\item \textbf{Apply} template sinks to live space (not to read copy).
+\item \textbf{Repeat} until no exec facts remain or step limit reached.
+\end{enumerate}
+
+\noindent
+The read-copy semantics are critical: step~3 ensures that a rule can
+match its own exec fact (required for self-referential patterns).
+
+\begin{theorem}[\texttt{readCopy\_mem\_exec}]
+The exec fact is always a member of its own read copy.
+\end{theorem}
+
+\begin{theorem}[\texttt{readCopy\_eq\_of\_mem}]
+Remove + re-insert = identity on membership: if $a \in s$ then
+$a \in (s \setminus \{a\}) \cup \{a\}$.
+\end{theorem}
+
+\subsection{Exec-Fact Extraction}
+
+The function \texttt{extractExecFact} parses an \texttt{(exec loc pat tpl)}
+atom into a structured \texttt{ExecFact} with priority, name, pattern, and
+template fields.  Sink parsing handles \texttt{(+ ...)}, \texttt{(- ...)},
+and \texttt{(head ...)} forms.
+
+\subsection{Ordering}
+
+\texttt{WorkQueueOrder.lean} (119~lines) defines the
+\texttt{atomKey} serialization and \texttt{lexLt} comparison used to
+determine exec-fact firing order:
+
+\begin{theorem}[\texttt{order\_p0\_lt\_p1}]
+\texttt{atomKey} orders priority~0 before priority~1.
+\end{theorem}
+
+\begin{theorem}[\texttt{order\_1\_lt\_10}]
+Shortlex ordering: single-digit priorities fire before double-digit.
+\end{theorem}
+
+\subsection{Ground Self-Respawn}
+
+A canary theorem exercises the scheduler with a ground rule that
+re-adds its own exec fact via a \texttt{(+ ...)} sink:
+
+\begin{theorem}[\texttt{canary8\_ground\_self\_respawn}]
+A ground self-respawn rule fires exactly once---the second step finds
+no new match since the exec fact is already present in the space.
+\end{theorem}
+
+\begin{theorem}[\texttt{canary8\_second\_step\_no\_match}]
+Running the scheduler for 2 steps on the self-respawn rule yields
+the fired result plus the original exec fact, with step count~2.
+\end{theorem}
+
+\subsection{Scheduler-Level Correspondence}
+\label{sec:schedulercorr}
+
+The computable work-queue (\texttt{cWorkQueueStep}, \texttt{cWorkQueueRunN})
+operates on \texttt{List Atom}, while the spec-level definitions
+(\texttt{workQueueStep}, \texttt{workQueueRunN}) operate on
+\texttt{Finset Atom}.  The scheduler correspondence chain establishes
+that these agree at the \texttt{toFinset} level, building from per-piece
+soundness through full bounded-run equivalence.
+
+\paragraph{Per-sink correspondence.}
+Each computable sink step (\texttt{capplySinkStep}) agrees with the
+spec-level \texttt{applySink}, provided a \texttt{NodupSafe} invariant
+holds (no duplicates at each remove step during the foldl over sinks).
+This is the base layer.
+
+\paragraph{Multi-match foldl correspondence.}
+The general case lifts per-sink correspondence through the outer foldl
+over match results.  The predicate \texttt{FoldNodupSafe} ensures
+\texttt{NodupSafe} at every step of this outer fold:
+
+\begin{definition}[\texttt{FoldNodupSafe}]
+Given an accumulator $\mathit{acc}$, a list of match results
+$\mathit{ms}$, and a template $\mathit{tmpl}$:
+$\texttt{FoldNodupSafe}(\mathit{acc}, \mathit{ms}, \mathit{tmpl})$
+holds iff for every $i < |\mathit{ms}|$, the accumulator after
+folding the first $i$ results satisfies \texttt{NodupSafe} for
+the $i$-th substitution and the template's sinks.
+\end{definition}
+
+\begin{theorem}[\texttt{foldl\_capplySinks\_toFinset}]
+If the computable and spec match results have the same substitutions
+in the same order and \texttt{FoldNodupSafe} holds, then the foldls
+produce corresponding results at the \texttt{Finset} level.
+\end{theorem}
+
+\noindent
+The alignment hypothesis (same substitutions in same order) is explicit
+because \texttt{Finset.toList} has unspecified order.  For patterns that
+match at most once (the common MORK case), this is trivially satisfied.
+
+\paragraph{General firing correspondence.}
+
+\begin{theorem}[\texttt{cFireExecFact\_toFinset}]
+For any exec fact $\mathit{ef}$ with $\mathit{ef}.\mathit{atom} \in s$,
+if match results align and \texttt{FoldNodupSafe} holds,
+then $\texttt{cFireExecFact}(s, \mathit{ef}).\texttt{toFinset} =
+\texttt{fireExecFact}(s.\texttt{toFinset}, \mathit{ef})$.
+\end{theorem}
+
+\paragraph{Step and bounded-run correspondence.}
+
+\begin{theorem}[\texttt{cWorkQueueStep\_toFinset}]
+If the \texttt{WorkQueueInvariant} holds (bundling \texttt{Nodup},
+\texttt{KeyInjective}, and per-firing alignment), then the computable
+and spec work-queue steps agree:
+$(\texttt{cWorkQueueStep}\;s).\texttt{map}\;\texttt{toFinset}
+  = \texttt{workQueueStep}\;(s.\texttt{toFinset})$.
+\end{theorem}
+
+\begin{theorem}[\texttt{cWorkQueueRunN\_toFinset}]
+If the \texttt{WorkQueueInvariant} holds at every computably reachable
+state (formalized via the \texttt{CReachable} inductive), then
+$n$-step bounded execution agrees:
+\[
+  (\texttt{cWorkQueueRunN}\;n\;s).1.\texttt{toFinset}
+  = (\texttt{workQueueRunN}\;n\;(s.\texttt{toFinset})).1
+  \quad\text{and}\quad
+  (\texttt{cWorkQueueRunN}\;n\;s).2
+  = (\texttt{workQueueRunN}\;n\;(s.\texttt{toFinset})).2
+\]
+\end{theorem}
+
+\noindent
+The invariant-maintenance burden is explicit: for finite-state MORK
+programs (the common case), it can be verified by exhaustive enumeration.
+
+\subsection{Source-Side Input Semantics}
+\label{sec:source}
+
+MORK exec rules support two input modes: \emph{compat mode}
+\texttt{(, pat$_1$ \ldots pat$_n$)}, where all pattern atoms are matched
+against the workspace, and \emph{explicit source mode}
+\texttt{(I src$_1$ \ldots src$_n$)}, where each source factor specifies
+how its pattern is matched.
+
+The formalization covers three source factor types
+(\texttt{SourceFactor} in \texttt{Syntax.lean}):
+\begin{itemize}[nosep]
+\item \texttt{btm}: Match pattern against the workspace (equivalent to
+  compat-mode per-atom matching).
+\item \texttt{eqConstraint} (\texttt{==}): Substitute the first
+  sub-expression using current bindings, check if the result exists in
+  the space, and if so bind the witness to the found atom.
+\item \texttt{neqConstraint} (\texttt{!=}): Substitute the first
+  sub-expression, \emph{remove} it from the candidate set, then match
+  the witness against remaining atoms.  This implements the Rust
+  \texttt{CmpSource} with \texttt{cmp=1}.
+\end{itemize}
+
+\begin{theorem}[\texttt{fireSourceRule\_compat}]
+Source-aware firing on a compat-mode rule agrees with the standard
+\texttt{fireRule}: $\texttt{fireSourceRule}\;s\;(r.\texttt{toSourceRule})
+= \texttt{fireRule}\;s\;r$.
+\end{theorem}
+
+The computable evaluator (\texttt{cmatchInputSpec},
+\texttt{cfireSourceRule}, \texttt{cFireSourceExecFact}) mirrors the
+spec-level definitions, and 11 kernel-checked conformance tests
+(tests S1--S8 in \texttt{Conformance.lean} plus canaries 9--11 in
+\texttt{WorkQueueExec.lean}) verify the implementation against
+\texttt{mork run} ground truth, covering BTM matching, equality
+constraint success/failure, shared variable propagation,
+inequality exclusion, and multi-match non-determinism.
+
+%% ============================================================
+\section{Sink Persistence}
+\label{sec:persistence}
+%% ============================================================
+
+\texttt{ThreePhaseRefinement.lean} (212~lines) proves that atoms persist
+through sink pipelines unless explicitly removed:
+
+\begin{theorem}[\texttt{applySink\_mem\_of\_mem}]
+If $b \in s$ and the sink is not a remove of~$b$ (after substitution),
+then $b$ remains after applying the sink.  Handles all three sink
+constructors: \texttt{add}, \texttt{remove}, and \texttt{head}.
+\end{theorem}
+
+\begin{theorem}[\texttt{applySinks\_mem\_of\_mem}]
+If $b \in s$ and no sink in the template removes~$b$, then $b \in
+\texttt{applySinks}\;s\;\sigma\;\mathit{tmpl}$.
+\end{theorem}
+
+\noindent
+The proof proceeds inductively via a helper
+\texttt{foldl\_applySink\_mem} that threads the non-removal invariant
+through the \texttt{List.foldl} over sinks.
+
+\begin{theorem}[\texttt{applySink\_add\_ground\_mem}]
+Adding a ground atom via \texttt{Sink.add} guarantees the substituted
+atom is a member of the resulting space.
+\end{theorem}
+
+%% ============================================================
+\section{PathMap Algebraic Hierarchy}
+\label{sec:pathmap}
+%% ============================================================
+
+\PathMap{} is a trie-indexed data structure with algebraic operations that
+form a quantale.  The formalization provides both the abstract algebraic
+hierarchy and a concrete trie implementation.
+
+\subsection{AlgebraicResult and Typeclass Hierarchy}
+
+Operations on \PathMap{} values return an \texttt{AlgebraicResult\,V}, an
+inductive type that encodes structural sharing:
+
+\begin{lstlisting}[caption={\texttt{AlgebraicResult} (\texttt{Core.lean}).}]
+inductive AlgebraicResult (V : Type u) where
+  | none : AlgebraicResult V
+  | identity (isSelf : Bool) (isOther : Bool)
+      : AlgebraicResult V
+  | element : V -> AlgebraicResult V
+\end{lstlisting}
+
+\noindent
+The \texttt{identity} variant avoids allocation when the result equals one
+of the inputs.
+Three typeclasses form the hierarchy:
+
+\begin{itemize}[nosep]
+  \item \textbf{\texttt{PathMapLattice\,$\alpha$}}: \texttt{pjoin} (union)
+    and \texttt{pmeet} (intersection).
+  \item \textbf{\texttt{PathMapDistributiveLattice\,$\alpha$}}: adds
+    \texttt{psubtract} (set difference).
+  \item \textbf{\texttt{PathMapQuantale\,$\alpha$}}: adds \texttt{prestrict}
+    (prefix filter).
+\end{itemize}
+
+\noindent
+Algebraic law classes (\texttt{JoinComm}, \texttt{JoinIdem},
+\texttt{MeetComm}, \texttt{MeetIdem}, \texttt{Absorption}) are defined at
+the value level.
+
+\subsection{Finset Instance}
+
+\texttt{Core.lean} provides a \texttt{PathMapQuantale (Finset\,$\alpha$)}
+instance with all algebraic laws proved:
+
+\begin{itemize}[nosep]
+  \item \texttt{pjoin} = union with identity detection (\texttt{a = b},
+    \texttt{a $\subseteq$ b}, \texttt{b $\subseteq$ a}).
+  \item \texttt{pmeet} = intersection; returns \texttt{.none} if empty.
+  \item \texttt{psubtract} = set difference; returns \texttt{.none} if empty.
+  \item \texttt{prestrict} = subset check then intersection.
+\end{itemize}
+
+\noindent
+This is the instance used by \texttt{PathMapBridge.lean} for
+\texttt{Space = Finset Atom}.
+
+\subsection{Coinductive Trie (CTrie)}
+
+The file \texttt{CoinductiveTrie.lean} defines the semantic reference model:
+
+\begin{lstlisting}[caption={Coinductive trie (\texttt{CoinductiveTrie.lean}).}]
+abbrev CTrie V := List UInt8 -> Option V
+\end{lstlisting}
+
+\noindent
+A trie IS its lookup function.
+Pointwise operations (\texttt{union}, \texttt{inter}, \texttt{diff},
+\texttt{restrict}) are defined by lifting \texttt{Option} combinators, and
+30 theorems prove bisimilarity laws (idempotence, commutativity, identity
+elements, associativity).
+
+\subsection{Finite Trie (FTrie)}
+
+The concrete, computable trie:
+
+\begin{lstlisting}[caption={Finite trie (\texttt{FiniteTrie.lean}).}]
+inductive FTrie (V : Type u) where
+  | empty : FTrie V
+  | node (val : Option V)
+         (children : List (UInt8 * FTrie V))
+      : FTrie V
+\end{lstlisting}
+
+\noindent
+Operations (\texttt{lookup}, \texttt{join}, \texttt{meet}, \texttt{subtract},
+\texttt{restrict}) use mutual recursion with child-list helpers.
+A \texttt{Sorted} predicate (\texttt{TrieRefinement.lean}) ensures child
+keys are ordered, and refinement theorems prove that \texttt{FTrie}
+operations commute with \texttt{CTrie} operations:
+
+\begin{theorem}[\texttt{join\_lookup}]
+$(t_1.\mathtt{join}\;t_2).\mathtt{lookup}\;p
+  = t_1.\mathtt{lookup}\;p \mathbin{<\!|>} t_2.\mathtt{lookup}\;p$
+\quad (for \texttt{Sorted} tries).
+\end{theorem}
+
+\subsection{PathMapQuantale Instance for FTrie}
+
+\texttt{TriePathMapInstance.lean} provides:
+
+\begin{lstlisting}[caption={\texttt{PathMapQuantale} instance for \texttt{FTrie}.}]
+instance : PathMapQuantale (FTrie V) where
+  pjoin a b :=
+    if beqFTrie a b then .identity true true
+    else .element (a.join b)
+  pmeet a b := ...   -- similar with emptiness check
+  psubtract a b := ...
+  prestrict a b := ...
+\end{lstlisting}
+
+\noindent
+\texttt{JoinIdem} and \texttt{MeetIdem} are proved (via
+\texttt{beqFTrie\_refl}).
+Full commutativity holds for \texttt{V = Unit} (the \MORK{} use case where
+\texttt{PathMap<()>} stores set membership).
+
+%% ============================================================
+\section{MORK--PathMap Bridge}
+\label{sec:pathmapbridge}
+%% ============================================================
+
+\texttt{Space = Finset Atom} inherits the \texttt{PathMapQuantale} instance.
+The bridge file proves that \MORK{}'s space transitions decompose into
+algebraic operations:
+
+\begin{theorem}[\texttt{pjoin\_singleton\_resolves}]
+$\mathtt{PJ}\;s\;\{a\}$ resolves to $s \cup \{a\}$.
+\end{theorem}
+
+\begin{theorem}[\texttt{psubtract\_singleton\_erase}]
+$\mathtt{PS}\;s\;\{a\}$ resolves (with $\emptyset$ as default) to
+$s \setminus \{a\}$.
+\end{theorem}
+
+\begin{theorem}[\texttt{applyBase\_eq\_lattice\_ops}]
+\texttt{applyBase} = \texttt{PS} (remove query) then \texttt{PJ} (add result).
+\end{theorem}
+
+\begin{theorem}[\texttt{applyFold\_eq\_lattice\_ops}]
+\texttt{applyFold} = chained \texttt{PS} (remove wait + sub-results) then
+\texttt{PJ} (add assembled result).
+\end{theorem}
+
+These theorems confirm that \MORK{}'s operational transitions are expressible
+as algebraic operations on the \PathMap{} lattice, connecting the execution
+engine to the data-structural semantics.
+
+%% ============================================================
+\section{MeTTaIL Bridge}
+\label{sec:mettail}
+%% ============================================================
+
+The \MeTTaIL{} bridge (\texttt{MeTTaILBridge.lean}, 1{,}635~lines, plus
+\texttt{CollectionBridge.lean}, 217~lines) connects \MORK{}'s execution
+model to the declarative reduction semantics of \MeTTaIL{}
+(\texttt{DeclReduces} and \texttt{DeclReducesWithPremises}).
+
+The mutual recursive function \texttt{morkPatternToAtom} translates
+\MeTTaIL{} patterns to \MORK{} atoms.
+The predicate \texttt{morkTranslatable} identifies soundly translatable
+patterns (no beta-redex, no rest-variables).
+
+\subsection{Zero-Premise Bridge}
+
+\begin{theorem}[\texttt{declReduces\_implies\_mork\_fire}]
+\label{thm:bridge}
+If a \MeTTaIL{} declarative reduction applies a rule (with \texttt{r.left =
+.fvar x}, translatable RHS, ground result, and no collection-element
+rewriting), then the corresponding \MORK{} exec rule fires and the result
+space contains the translated output.
+\end{theorem}
+
+\subsection{Multi-Premise Bridge via PremiseChain}
+
+\MeTTaIL{} rules may have \emph{premises}: side-conditions that must be
+satisfied for the rule to fire.  The two premise types relevant to \MORK{}
+are \texttt{relationQuery} (workspace lookup) and \texttt{freshness}
+(variable-distinctness guard).
+
+A \texttt{PremiseChain} is an inductive proof that a list of premises
+can be satisfied by workspace atoms:
+
+\begin{lstlisting}[caption={PremiseChain inductive type.}]
+inductive PremiseChain (relEnv) (lang) (s : Space)
+    : Bindings -> List Premise -> List Atom -> Bindings -> Prop where
+  | nil  : PremiseChain relEnv lang s bs [] [] bs
+  | cons : (prem : Premise) -> (a : Atom) ->
+           a @$\in$@ s ->
+           matchAtom (@$\sigma_0$@) (premiseToAtomTotal prem) a = some @$\sigma_1$@ ->
+           @$b_1$@ @$\in$@ premiseStepWithEnv relEnv lang @$b_0$@ prem ->
+           PremiseChain relEnv lang s @$b_1$@ prems witnesses @$b_f$@ ->
+           PremiseChain relEnv lang s @$b_0$@ (prem :: prems)
+                                      (a :: witnesses) @$b_f$@
+  | guard : (prem : Premise) ->
+            premiseToSourceFactor prem = none ->
+            @$b_0$@ @$\in$@ premiseStepWithEnv relEnv lang @$b_0$@ prem ->
+            PremiseChain relEnv lang s @$b_0$@ prems witnesses @$b_f$@ ->
+            PremiseChain relEnv lang s @$b_0$@ (prem :: prems) witnesses @$b_f$@
+\end{lstlisting}
+
+\noindent
+The \texttt{cons} constructor handles \texttt{relationQuery} premises
+(consuming a workspace atom as witness), while \texttt{guard} handles
+\texttt{freshness} premises (checking a substitution-level condition without
+consuming workspace atoms).
+
+\begin{theorem}[\texttt{declReducesWithPremises\_multi\_implies\_mork\_fireSourceRule}]
+\label{thm:multibridge}
+If a \texttt{DeclReducesWithPremises} reduction fires using a rule whose
+premises are all \texttt{relationQuery} (\texttt{allPremisesTranslatable}),
+and a \texttt{PremiseChain} witness exists in the workspace, then the
+translated \texttt{SourceExecRule} fires in \texttt{fireSourceRule}.
+\end{theorem}
+
+\subsection{Freshness Guards and the Extended Bridge}
+
+\texttt{SourceGuard.freshness} encodes the condition that a variable does not
+occur free in a substituted term.  The correspondence theorem bridges
+\MeTTaIL{}'s sequential freshness checking to \MORK{}'s guard filtering:
+
+\begin{theorem}[\texttt{freshness\_premise\_correspond}]
+If \MeTTaIL{}'s freshness premise succeeds at bindings~$\beta$, then
+\texttt{matchSourceGuard ($\texttt{bindingsToSubst}\;\beta$) g = true}
+for the translated guard~$g$.
+\end{theorem}
+
+\noindent
+The extended bridge handles premise lists mixing \texttt{relationQuery}
+and \texttt{freshness}:
+
+\begin{theorem}[\texttt{declReducesWithPremises\_ext\_implies\_mork\_fireSourceRule}]
+\label{thm:extbridge}
+If a \texttt{DeclReducesWithPremises} reduction fires using a rule whose
+premises are all ext-translatable (\texttt{allPremisesTranslatableExt}),
+a \texttt{PremiseChain} witness exists, and the extracted guards pass at
+the final substitution, then the translated \texttt{SourceExecRule} (with
+guards) fires in \texttt{fireSourceRule}.
+\end{theorem}
+
+\noindent
+\textbf{Design note.}
+\MeTTaIL{} checks freshness guards \emph{sequentially} at the point each
+guard fires in the premise chain, while \MORK{}'s \texttt{fireSourceRule}
+checks guards at the \emph{final} substitution.  These semantics differ in
+general: extending a substitution can break a previously-satisfied freshness
+condition.  The bridge therefore accepts guard satisfaction at the final
+substitution as an explicit hypothesis.  For typical rules where guard
+variables are fully bound by earlier factor-matching premises (as in all
+concrete PLN rules below), this hypothesis is trivially dischargeable.
+
+\subsection{Concrete PLN Rules as GSLT Routing Witnesses}
+
+\texttt{PLNRules.lean} (379~lines, 23~theorems) instantiates the bridge for
+concrete PLN inference rules, providing end-to-end GSLT routing witnesses:
+
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Rule} & \textbf{Premises} & \textbf{Conclusion} & \textbf{Guards} \\
+\midrule
+Transitivity       & Inh(A,B), Inh(B,C)             & Inh(A,C)  & --- \\
+Modus ponens       & Impl(P,Q), Eval(P)              & Eval(Q)   & --- \\
+Inh$\to$Similarity & Inh(A,B)                        & Sim(A,B)  & --- \\
+Abduction          & Inh(A,B), Inh(C,B)              & Sim(A,C)  & --- \\
+Guarded trans.     & Inh(A,B), Inh(B,C)              & Inh(A,C)  & A\#C \\
+Double-guarded     & Inh(A,B), Inh(B,C)              & Inh(A,C)  & B\#A, B\#C \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+All translatability proofs are by \texttt{decide}.
+Two language definitions package these rules:
+\texttt{plnPremiseLanguageDef} (3~unguarded rules, using the strict bridge)
+and \texttt{plnGuardedPremiseLanguageDef} (3~guarded/mixed rules, using the
+ext bridge).  Concrete bridge instantiation theorems
+(\texttt{pln\_reduces\_implies\_mork\_fireSourceRule} and
+\texttt{pln\_guarded\_reduces\_implies\_mork\_fireSourceRule})
+demonstrate the full chain from \texttt{DeclReducesWithPremises} to
+\texttt{fireSourceRule} for each language definition.
+
+\begin{remark}[Honest Scope]
+The multi-premise and extended bridges handle flat rules where the LHS is
+a free variable.  Collection-element congruence (\texttt{congElem}) is
+handled separately via the collection bridge (\S\ref{sec:collbridge}).
+Beta-redex patterns and non-ground results remain outside the formalized
+boundary.
+\end{remark}
+
+\subsection{Collection Congruence Bridge}
+\label{sec:collbridge}
+
+\texttt{CollectionBridge.lean} (319~lines) and \texttt{AtomZipper.lean}
+(283~lines) prove that \MeTTaIL{}'s \texttt{congElem} constructor---which
+rewrites a single element inside a \texttt{.collection ct elems rest}---corresponds
+to a \MORK{}-side space update via a principled zipper/lens factorization.
+
+The bridge is organized in layers:
+
+\paragraph{Layers A--B: Structural infrastructure.}
+\texttt{morkPatternToAtomList} commutes with \texttt{List.set} (Layer~A),
+and ground atoms match themselves under any substitution (Layer~B):
+
+\begin{lstlisting}
+theorem morkPatternToAtomList_set (elems : List ILP)
+    (i : Nat) (q' : ILP) :
+    morkPatternToAtomList (elems.set i q') =
+    (morkPatternToAtomList elems).set i
+      (morkPatternToAtom q')
+
+theorem matchAtom_ground_self (@$\sigma$@ : Subst) (a : Atom)
+    (hg : isGroundAtom a = true) :
+    matchAtom @$\sigma$@ a a = some @$\sigma$@
+\end{lstlisting}
+
+\paragraph{Layer C: Ad-hoc collection-replace rule.}
+For a \texttt{congElem} step replacing element~$i$ in a collection,
+we construct an exec rule that matches the entire old collection
+atom and replaces it with the modified one.  Since both atoms are
+ground, self-matching and identity substitution guarantee correctness.
+
+\paragraph{Layer D (primary): Huet zipper and lens relation.}
+\texttt{AtomZipper.lean} formalizes a concrete Huet zipper over
+\texttt{Atom}, following \MORK{}'s Rust \texttt{ExprZipper}:
+
+\begin{lstlisting}
+structure AtomCrumb where
+  left  : List Atom   -- reversed left siblings
+  right : List Atom   -- right siblings
+
+abbrev AtomContext := List AtomCrumb
+structure AtomZipper where
+  focus : Atom
+  ctx   : AtomContext
+\end{lstlisting}
+
+\noindent
+Navigation (\texttt{descendExprChild?}, \texttt{ascend?}),
+path-indexed focus (\texttt{focusAtPath?}), and
+path-indexed replacement (\texttt{replaceAtPath?}) are proven
+to compose correctly.  A \texttt{LensRel} captures the
+get/put/put-put factorization:
+
+\begin{lstlisting}
+def LensRel (whole part newPart newWhole : Atom)
+    : Prop :=
+  @$\exists$@ z : AtomZipper,
+    rebuild z = whole @$\wedge$@ z.focus = part @$\wedge$@
+    rebuild (replaceFocus z newPart) = newWhole
+\end{lstlisting}
+
+\noindent
+Three classical lens laws are proven (0~sorries):
+\texttt{lensRel\_get\_put} (replace focus with itself is identity),
+\texttt{lensRel\_put\_get} (focus of replacement equals new value),
+and \texttt{lensRel\_put\_put} (consecutive replacements compose).
+
+The collection specialization \texttt{collection\_lensRel} proves
+that replacing element~$i$ in a \texttt{.expression (ctSym :: elems)}
+satisfies \texttt{LensRel}, connecting the zipper decomposition to
+\MeTTaIL{}'s \texttt{congElem} constructor.
+
+The canonical congruence bridge combines the structural and semantic layers:
+
+\begin{theorem}[\texttt{congElem\_implies\_mork\_zipper\_fire}]
+\label{thm:congelemzipper}
+For any \texttt{congElem} reduction step where the collection atom is
+in the \MORK{} space and both old and new atoms are ground, the
+element update factors through \texttt{LensRel} \emph{and} there exists
+an exec rule whose firing produces the updated space.
+\end{theorem}
+
+\paragraph{Layer E: Semantic-only corollary.}
+\texttt{congElem\_implies\_mork\_fire} provides the same exec-rule
+firing guarantee without the \texttt{LensRel} structural witness.
+
+\paragraph{Layer F: Full \texttt{DeclReduces} bridge.}
+\texttt{declReduces\_implies\_mork\_fire\_full} handles both
+\texttt{topRule} and \texttt{congElem} without the
+\texttt{hnotcollection} hypothesis, delegating to the appropriate
+bridge for each constructor.
+
+\paragraph{Source-rule provenance boundary.}
+The exec rule constructed for \texttt{congElem} is ad-hoc---it is
+\emph{not} drawn from \texttt{languageDefToExecRules}.  Source-aware
+bridges (\texttt{DeclReducesWithPremises} $\to$ \texttt{SourceExecRule})
+retain \texttt{hnotcoll} because their conclusions require a witness in
+\texttt{languageDefToSourceExecRules lang}.  This is a genuine
+source-language boundary, not a proof gap: encoding \texttt{congElem}
+as a \texttt{SourceExecRule} would require a path/focus-aware
+source-language extension (Restriction~\ref{sec:future}).
+
+\subsection{Compound Pattern Round-Trips}
+\label{sec:matchatom-roundtrip}
+
+The space-effect rules for \texttt{add-atom} and \texttt{remove-atom}
+(\texttt{SpaceEffectFragment.lean}, 193~lines) use compound command
+patterns like \texttt{(add-atom \&self \$x)}.  Previously, the
+correctness of matching these patterns against concrete command
+expressions was an MM2 compiler invariant expressed as a hypothesis.
+
+Using the \texttt{MatchAtomRel} relational specification
+(\texttt{MatchSpec.lean}), we now construct explicit derivations
+(\texttt{expr\_cons} / \texttt{symbol} / \texttt{var\_fresh}) and
+apply \texttt{matchAtom\_complete} to obtain proven round-trip
+theorems:
+
+\begin{theorem}[\texttt{matchAtom\_addAtomCmdAtom}]
+For any \MeTTaIL{} pattern $p$,
+\texttt{matchAtom [] addAtomCmdAtom (morkPatternToAtom (.apply "add-atom"
+[.apply "\&self" [], p]))} = \texttt{some [("x", morkPatternToAtom p)]}.
+\end{theorem}
+
+\noindent
+These are then lifted to source-rule firing level:
+
+\begin{theorem}[\texttt{addAtom\_fireSourceRule\_mem}]
+When the command atom is in the workspace, \texttt{addAtomSourceExecRule}
+fires and produces the \texttt{applySinks} result with binding
+\texttt{"x"~$\mapsto$~morkPatternToAtom~p}.
+\end{theorem}
+
+\noindent
+Symmetric theorems hold for \texttt{remove-atom}.
+
+\subsection{Extended Bridge: Beyond \texttt{morkTranslatable}}
+\label{sec:extendedbridge}
+
+The base \MeTTaIL{} bridge requires \texttt{morkTranslatable r.right}
+(no \texttt{.subst} nodes, no rest-variable collections).  The extended
+bridge (\texttt{ExtendedBridge.lean}, 83~lines, plus supporting
+infrastructure in \texttt{MeTTaILBridge.lean} and
+\texttt{Substitution.lean}) lifts this restriction by proving that
+\texttt{applyBindings} always normalizes these constructs away.
+
+\paragraph{Pattern normalization.}
+A mutual recursive function \texttt{normalize} / \texttt{normalizeList}
+eliminates all \texttt{.subst} nodes by evaluating them via
+\texttt{openBVar}.  The key property:
+
+\begin{theorem}[\texttt{noExplicitSubst\_normalize}]
+For all patterns $p$,
+\texttt{noExplicitSubst (normalize p) = true}.
+\end{theorem}
+
+\paragraph{\texttt{morkTranslatable} preservation under \texttt{openBVar}.}
+The theorem \texttt{morkTranslatable\_openBVar} proves that substituting
+a translatable term into a translatable pattern preserves translatability.
+This is proven by structural induction on \texttt{Pattern.inductionOn},
+with the \texttt{.subst} case vacuously true (no translatable
+\texttt{.subst} exists) and the \texttt{.collection} case requiring a
+match on the rest field.
+
+\paragraph{Core theorem.}
+\begin{theorem}[\texttt{morkTranslatable\_applyBindings}]
+\label{thm:applyBindings}
+For any bindings $\mathit{bs}$ and pattern $\mathit{rhs}$, if
+all values in $\mathit{bs}$ are \texttt{morkTranslatable}, then
+\texttt{morkTranslatable (applyBindings bs rhs) = true}.
+\end{theorem}
+
+\noindent
+Note: no \texttt{morkTranslatable rhs} hypothesis is needed.
+\texttt{applyBindings} eliminates \texttt{.subst} (via \texttt{openBVar})
+and resolves rest-variables (via lookup and splice with
+\texttt{rest = none}), so the output is always in the
+\texttt{morkTranslatable} fragment regardless of the input structure.
+
+The proof handles each \texttt{Pattern} constructor:
+\texttt{.fvar}~$x$ looks up in bindings (translatable by hypothesis
+or identity); \texttt{.subst} recurses on body and replacement, then
+applies \texttt{morkTranslatable\_openBVar}; \texttt{.collection}
+maps elements (IH), extracts rest-variable elements from bindings
+(translatable since the bound collection value is translatable),
+and appends via \texttt{morkTranslatableList\_append}.
+
+\paragraph{Extended fire theorems.}
+\begin{theorem}[\texttt{declReduces\_extended\_mork\_fire}]
+A \MeTTaIL{} rewrite step fires via an ad-hoc exec rule even when
+the rule's RHS uses \texttt{.subst} or rest-variables.  The witness
+uses \texttt{collectionReplaceRule} with groundness of both old and
+new atoms.
+\end{theorem}
+
+\noindent
+A source-rule variant \texttt{declReduces\_extended\_mork\_sourceRuleFire}
+provides the same guarantee at the \texttt{SourceExecRule} /
+\texttt{fireSourceRule} level.
+
+%% ============================================================
+\section{MQ-Calculus Bridge}
+\label{sec:mqbridge}
+%% ============================================================
+
+The file \texttt{MORKCommBridge.lean} formalizes the correspondence between
+\MORK{}'s binary fold steps and the MQ-calculus \texttt{CommReduction} rule.
+
+\begin{theorem}[\texttt{mork\_fold\_is\_comm}]
+For each binary fold outcome, there exists an MQ \texttt{CommReduction} with
+the matching branch selection.
+\end{theorem}
+
+\begin{theorem}[\texttt{mork\_fold\_both\_outcomes\_exist}]
+Both outcomes are constructively possible for any binary fold step:
+non-determinism is structural.
+\end{theorem}
+
+\begin{theorem}[\texttt{mork\_mq\_nondeterminism\_corresponds}]
+\MORK{}'s binary fold non-determinism (both sub-results reachable) is
+equivalent to MQ's \texttt{comm\_both\_outcomes}.
+\end{theorem}
+
+\subsection{N-ary Generalization}
+
+The binary case is a special case of N-ary fold non-determinism:
+
+\begin{theorem}[\texttt{nary\_fold\_all\_outcomes\_exist}]
+For any fold step with $N$ sub-results and any index $k < N$, there
+exists a fold step selecting sub-result~$k$ as the assembled output.
+\end{theorem}
+
+\begin{theorem}[\texttt{binary\_subResult0\_is\_nary}]
+Binary \texttt{FoldPicksSubResult} for sub-result~0 is equivalent to
+\texttt{NaryFoldPicksSubResult} at index~0.
+\end{theorem}
+
+\begin{theorem}[\texttt{nary\_fold\_has\_binary\_comm}]
+Any N-ary fold with $\geq 2$ sub-results has both COMM outcomes available.
+\end{theorem}
+
+\noindent
+Seven canary theorems protect these invariants.
+
+%% ============================================================
+\section{Conformance Testing}
+\label{sec:conformance}
+%% ============================================================
+
+The conformance test suite (\texttt{Conformance.lean}, 1{,}407 lines)
+provides 13 kernel-checked conformance theorems verified against the
+\MORK{} CLI (\texttt{mork run}), plus bidirectional match-pattern and
+fire-rule correspondence theorems between the computable and spec levels.
+
+\subsection{Computable Reference Evaluator}
+
+The spec-level \texttt{fireRule} is \texttt{noncomputable} (uses
+\texttt{Finset.toList}).  The computable reference evaluator mirrors
+these operations over \texttt{List Atom}:
+
+\begin{itemize}[nosep]
+  \item \texttt{cmatchAtom} / \texttt{cmatchAtomList}: mutual recursive
+    matcher that extends \texttt{matchAtom} to handle \texttt{.expression}
+    patterns by element-wise matching.
+  \item \texttt{cmatchPattern}: conjunctive matching over a list space.
+  \item \texttt{capplySinks}: sink application on list spaces (handles
+    \texttt{add}, \texttt{remove}, and \texttt{head} with explicit
+    membership check for idempotence).
+  \item \texttt{cfireRule}: end-to-end rule firing.
+\end{itemize}
+
+\noindent
+All operations reduce by \texttt{rfl} in the Lean kernel.
+
+\subsection{Test Fixtures}
+
+Each test is defined as an \texttt{ExecRule} applied to a concrete space,
+with a theorem asserting that \texttt{cfireRule} produces the expected
+output.  The corresponding \texttt{.mm2} file is run through
+\texttt{mork run} to obtain the ground-truth output.
+
+\begin{table}[ht]
+\centering
+\caption{Conformance test suite.  All theorems are proved by \texttt{rfl}.}
+\label{tab:conformance}
+\begin{tabular}{@{}clll@{}}
+\toprule
+\textbf{\#} & \textbf{Feature} & \textbf{MM2 Source} & \textbf{Theorem} \\
+\midrule
+1 & Expression add/remove  & \texttt{test\_add\_simple.mm2} & \texttt{conformance\_test1\_add\_simple} \\
+2 & Flat symbol add        & \texttt{test\_add\_constant.mm2} & \texttt{conformance\_test2\_add\_constant} \\
+3 & Variable binding       & \texttt{test3\_var\_binding.mm2} & \texttt{conformance\_test3\_var\_binding} \\
+4 & Conjunctive (shared var) & \texttt{test4\_conjunctive.mm2} & \texttt{conformance\_test4\_conjunctive} \\
+5 & Equality (\texttt{\$x \$x})  & \texttt{test5\_equal\_pair.mm2} & \texttt{conformance\_test5\_equal\_pair} \\
+6 & Pattern mismatch       & \texttt{test6\_no\_match.mm2} & \texttt{conformance\_test6\_no\_match} \\
+7 & Nested expressions     & \texttt{test7\_nested.mm2} & \texttt{conformance\_test7\_nested} \\
+8 & Multi-step fixpoint    & \texttt{test8\_multi\_step.mm2} & \texttt{conformance\_test8\_*} (5 thms) \\
+9 & Arity mismatch         & (inline) & \texttt{conformance\_test9\_arity\_mismatch} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+Test~8 exercises multi-step exhaustive execution: the rule fires three times,
+consuming each \texttt{(task $x$)} atom and producing \texttt{(done $x$)}.
+The formalization proves each step individually via \texttt{rfl} (the
+fixpoint function does not reduce definitionally, so a chain of one-step
+equalities is used instead).
+
+\subsection{Expression Matching}
+
+The spec-level \texttt{matchAtom} returns \texttt{none} on
+\texttt{.expression} patterns.  The computable evaluator's
+\texttt{cmatchAtom} extends this via mutual recursion:
+
+\begin{lstlisting}[caption={Expression matching (\texttt{Conformance.lean}).}]
+mutual
+def cmatchAtom (sig : Subst) (pat conc : Atom)
+    : Option Subst :=
+  match pat, conc with
+  | .expression ps, .expression cs =>
+    cmatchAtomList sig ps cs
+  | .var v, a => ...  -- same as matchAtom
+  | ...
+def cmatchAtomList (sig : Subst) (pats concs
+    : List Atom) : Option Subst :=
+  match pats, concs with
+  | [], [] => some sig
+  | p :: ps, c :: cs =>
+    match cmatchAtom sig p c with
+    | some sig' => cmatchAtomList sig' ps cs
+    | none => none
+  | _, _ => none
+end
+\end{lstlisting}
+
+\noindent
+This enables conformance tests with real MM2 S-expressions (tests 1, 3--8).
+
+%% ============================================================
+\section{Coverage and Open Gaps}
+\label{sec:gaps}
+%% ============================================================
+
+Table~\ref{tab:coverage} summarizes the boundary between formalized and
+unformalized aspects.
+
+\begin{table}[ht]
+\centering
+\caption{Formal coverage boundary.}
+\label{tab:coverage}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Aspect} & \textbf{Formalized} & \textbf{Not Formalized} \\
+\midrule
+MM2 syntax                     & add/remove/head sinks, FoldAggregator, SourceFactor & Remaining 11 Rust sink types \\
+Pattern matching (spec)        & Soundness + completeness (expressions) & Coreferential matching \\
+Pattern matching (evaluator)   & Expressions, nested, variables & --- \\
+Space transitions              & Yes + sink persistence & Nested collection rewrite \\
+Three-phase protocol           & Priority bands + aggregator & --- \\
+Work-queue scheduler           & Read-copy, self-respawn, ordering, full correspondence & Concurrent scheduling \\
+Source-side input              & BTM, == (equality), != (inequality) & ACT (external file), z3 \\
+Conformance testing            & 24 kernel-checked theorems, 9+ MM2 tests & --- \\
+\PathMap{} algebra             & Quantale hierarchy + laws & --- \\
+\PathMap{} trie (\texttt{FTrie}) & Join/meet/subtract/restrict + refinement & Full commutativity (non-Unit) \\
+\MORK{}--\PathMap{} bridge     & Algebraic (join/subtract) & --- \\
+\MeTTaIL{} bridge              & Flat rules (\texttt{.fvar}), multi-premise, freshness guards, \texttt{congElem} (zipper/lens + ad-hoc), \texttt{LensRel} laws, \texttt{matchAtom} round-trips for compound patterns, extended bridge (\texttt{.subst}/rest-var resolution via \texttt{applyBindings}) & Source-level positional congruence \\
+PLN routing witnesses          & 6 rules (transitivity, MP, abduction, guarded) & --- \\
+MQ bridge                      & Binary + N-ary fold $\leftrightarrow$ COMM & Real process witnesses \\
+Execution boundary             & \texttt{morkTranslatable} packaging, pattern normalization (\texttt{normalize}), \texttt{morkTranslatable\_applyBindings} & --- \\
+Runtime kernel packaging       & Effect-class bridge, classified fragments (exec/query/spaceEffect), memoization safety, resource descriptors (4 resources) & Named atomspace exec, Z3/ACT exec seams \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Notable Restrictions}
+
+\begin{enumerate}
+  \item \textbf{Expression matching.}
+    The spec-level \texttt{matchAtom} now handles expression patterns
+    (via mutual recursion with \texttt{matchAtomList}).
+    The biconditional \texttt{matchAtom\_iff} covers the
+    \texttt{morkTranslatable} fragment (excluding \texttt{.subst} and
+    rest-variable \texttt{.collection}).  However,
+    \texttt{morkTranslatable\_applyBindings}
+    (\S\ref{sec:extendedbridge}) proves that \texttt{applyBindings}
+    eliminates both constructs, so rule RHS patterns containing
+    \texttt{.subst} or rest-variables are fully handled at the
+    bridge level.
+
+  \item \textbf{Coreferential matching.}
+    \MORK{}'s Rust backend uses de~Bruijn-style coreferential matching with
+    byte capture (\texttt{\$ps}, \texttt{\$cs}).
+    The formalization uses first-order variable binding.
+
+  \item \textbf{Aggregation sinks.}
+    The formalization captures \texttt{add}, \texttt{remove}, \texttt{head},
+    and fold-level \texttt{count}/\texttt{sum}/\texttt{selectFirst}/\texttt{selectAll}.
+    The Rust backend's remaining 11 per-match sink types
+    (\texttt{min}, \texttt{max}, etc.) are not formalized.
+
+  \item \textbf{Aggregator enforcement.}
+    The \texttt{AggregatorConsistent} predicate
+    (re-exported via \texttt{ExecutionBoundary.aggregatorConsistency})
+    now connects fold-assembled results to aggregator semantics.
+    Its use as a runtime invariant is not yet enforced.
+
+  \item \textbf{Computability.}
+    The spec-level space operations are \texttt{noncomputable}
+    (\texttt{Finset.toList}).  The computable reference evaluator provides
+    a kernel-reducible alternative for conformance testing.
+    The scheduler correspondence chain
+    (\S\ref{sec:schedulercorr}) bridges the gap: under
+    \texttt{WorkQueueInvariant}, the computable scheduler agrees with
+    the spec through arbitrary bounded-run horizons.
+
+  \item \textbf{FTrie commutativity.}
+    \texttt{FTrie} join is left-biased (\texttt{v$_1$ <|> v$_2$ = v$_1$}),
+    so \texttt{JoinComm} does not hold in general.
+    For \texttt{V = Unit} (\MORK{}'s use case), commutativity is trivial.
+
+  \item \textbf{MQ bridge witnesses.}
+    The MQ-MORK bridge uses \texttt{Process.MQNil} witnesses---the
+    correspondence is structural but the witnesses carry no information
+    about the actual \MORK{} processes.
+
+  \item \textbf{Metatheory.}
+    Termination for ground removing programs and confluence for
+    deterministic rule sets are not yet formalized.
+
+  \item \textbf{Source-level positional congruence.}
+    \label{sec:future}
+    The zipper/lens layer provides the structural semantics for
+    sub-expression access.  The remaining gap is encoding
+    \texttt{congElem} as a genuine \texttt{SourceExecRule} with
+    path-aware source factors (\texttt{SourceFactor.focus}) and sink
+    actions (\texttt{SinkAction.replaceAtPath}), which would discharge
+    the \texttt{hnotcoll} hypothesis from source-aware bridges.
+\end{enumerate}
+
+%% ============================================================
+\section{Execution Boundary}
+\label{sec:execboundary}
+%% ============================================================
+
+\texttt{ExecutionBoundary.lean} (529~lines) provides a thin re-export
+surface packaging the proven \texttt{morkTranslatable} execution boundary,
+the scheduler correspondence chain, the extended bridge infrastructure,
+the zipper/lens congruence infrastructure (\texttt{AtomZipper},
+\texttt{LensRel}, lens laws), the collection congruence bridge, and
+the extended \texttt{.subst}/rest-variable bridge.
+The predicate \texttt{morkTranslatable} identifies the \MeTTaIL{} pattern
+fragment for which substitution commutation holds.  However, the
+extended bridge (\S\ref{sec:extendedbridge}) proves that patterns
+\emph{outside} this fragment (containing \texttt{.subst} or rest-variable
+collections) are still handled: \texttt{applyBindings} normalizes them
+into the fragment, and ad-hoc replace rules provide execution witnesses.
+
+This file re-exports key definitions (\texttt{morkTranslatable},
+\texttt{morkPatternToAtom}, pattern-to-space translation, rewrite-rule
+translation), scheduler correspondence theorems
+(\texttt{cFireExecFact\_toFinset}, \texttt{cWorkQueueStep\_toFinset},
+\texttt{cWorkQueueRunN\_toFinset}, \texttt{WorkQueueInvariant}),
+source guard infrastructure (\texttt{SourceGuard}, \texttt{matchSourceGuard},
+\texttt{matchSourceGuards}, \texttt{isAtomFresh},
+\texttt{freshness\_premise\_correspond}),
+extended bridge theorems (\texttt{premiseChain\-MatchFactorsExt},
+\texttt{multiPremiseExtBridge}, \texttt{fullExtBridge},
+\texttt{languageDefSourceRulesExt}),
+zipper/lens infrastructure (\texttt{AtomZipper}, \texttt{AtomCrumb},
+\texttt{LensRel}, lens laws, \texttt{collection\_lensRel}),
+collection congruence bridge theorems
+(\texttt{congElemZipperBridge}, \texttt{declReducesFullBridge},
+\texttt{groundSelfMatch}, \texttt{collectionReplaceFires},
+\texttt{congElemBridge}),
+and the extended bridge (\texttt{patternNormalize},
+\texttt{normalizeSubstFree},
+\texttt{openBVarPreservesTranslatable},
+\texttt{applyBindingsPreservesTranslatable},
+\texttt{extendedExecFire},
+\texttt{extendedSourceRuleFire})
+as public \texttt{abbrev}s, providing a stable API surface
+for downstream consumers.
+
+%% ============================================================
+\section{Runtime-Kernel Packaging}
+\label{sec:runtimekernel}
+%% ============================================================
+
+Two companion files above the \MORK{} layer package the current proved
+execution seams into a backend-neutral runtime-kernel object that the
+\texttt{ElaboratedCore} elaboration layer can target without importing
+scheduler internals.
+
+\subsection{Effect-Class Bridge (\texttt{RuntimeKernel.lean})}
+
+\texttt{RuntimeKernel.lean} (211~lines) bridges the \texttt{RuntimeKernelClass}
+enum (from \texttt{ElaboratedCoreBase.lean}) to the \texttt{EffectClass}
+hierarchy (from \texttt{mettail-core/EffectSafety.lean}).
+
+\begin{definition}[\texttt{RuntimeKernelClass.effectClass}]
+\begin{tabular}{@{}ll@{}}
+\texttt{.ruleExec} & $\mapsto$ \texttt{pureStructural} \\
+\texttt{.query} & $\mapsto$ \texttt{readOnlyLookup} \\
+\texttt{.spaceEffect} & $\mapsto$ \texttt{writesState} \\
+\texttt{.oracle} & $\mapsto$ \texttt{oracleIO} \\
+\texttt{.metaPhase} & $\mapsto$ \texttt{pureStructural}
+\end{tabular}
+\end{definition}
+
+\noindent
+A \texttt{ClassifiedFragment} pairs a kernel class with its effect class,
+resource class, and backend name.
+Three canonical fragments package the current \MORK{}/MM2-backed witnesses:
+\begin{itemize}[nosep]
+  \item \texttt{execFragment}: eval/evalc $\to$ \texttt{pureStructural} on \texttt{defaultAtomSpace}
+  \item \texttt{queryFragment}: match/get-atoms $\to$ \texttt{readOnlyLookup} on \texttt{defaultAtomSpace}
+  \item \texttt{spaceEffectFragment}: add-atom/remove-atom $\to$ \texttt{writesState} on \texttt{defaultAtomSpace}
+\end{itemize}
+
+\noindent
+A \texttt{RuntimeKernelPackage} bundles the \texttt{MeTTaRuntimeKernelTriad}
+with these classified fragments.  The canonical instance
+\texttt{morkRuntimeKernelPackage} uses all three.
+
+Memoization safety is kernel-checked:
+exec and query fragments support both scalar and outcome-set memoization;
+\texttt{spaceEffect} supports neither (by \texttt{decide}).
+All theorems have zero axioms.
+
+\subsection{Resource Layer (\texttt{RuntimeResource.lean})}
+
+\texttt{RuntimeResource.lean} (234~lines) adds an explicit resource layer
+classifying which resources the current \MORK{}/MM2 backend supports.
+
+\begin{definition}[\texttt{ResourceDescriptor}]
+A descriptor carries: resource class, supported kernel classes, effect
+envelope, backend name, and a Boolean \texttt{hasProvedExecSeam}.
+\end{definition}
+
+\noindent
+Four descriptors are defined, aligned with the \MORK{} Rust implementation:
+
+\begin{table}[ht]
+\centering
+\caption{Runtime resource descriptors.}
+\label{tab:resources}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Resource} & \textbf{Kernel Classes} & \textbf{Effect} & \textbf{Backend} & \textbf{Proved?} \\
+\midrule
+\texttt{defaultAtomSpace}  & ruleExec, query, spaceEffect & writesState & MORK/MM2 & yes \\
+\texttt{namedAtomSpace}    & (none)                       & writesState & none     & no  \\
+\texttt{solverResource}    & oracle                       & oracleIO    & MORK/MM2 & no  \\
+\texttt{externalResource}  & oracle                       & oracleIO    & MORK/MM2 & no  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+The \texttt{solverResource} and \texttt{externalResource} descriptors
+acknowledge that \MORK{}'s Rust runtime actively uses Z3 subprocesses
+(\texttt{ResourceRequest::Z3} in \texttt{space.rs}) and ACT
+file-backed external datasets, but their Lean formalization remains
+future work (\texttt{Syntax.lean}: ``NOT yet formalized: ACT, z3'').
+Named atomspaces are not supported by \MORK{}'s single-space-per-instance
+architecture.
+
+A \texttt{ResourceProfile} pairs a \texttt{RuntimeKernelPackage} with its
+resource descriptors and identifies the primary resource.
+The canonical \texttt{morkResourceProfile} uses \texttt{defaultAtomSpace}
+as the primary resource (the only one with a proved execution seam).
+
+All classification theorems (19 in \texttt{RuntimeKernel.lean},
+16 in \texttt{RuntimeResource.lean}) are proved by \texttt{rfl} or
+\texttt{decide} with axioms at most \texttt{[propext, Classical.choice,
+Quot.sound]}.
+
+%% ============================================================
+\section*{Acknowledgements}
+%% ============================================================
+
+The \MORK{}/MM2 design is due to Meredith, Stay, and
+collaborators~\cite{MeredithStayOSLF2020}.
+Luke Peterson designed and implemented the \MORK{} kernel and MM2 language.
+Adam Vandervorst created the \PathMap{} data structure and its Rust
+implementation.
+Remy Clarke contributed MM2 structuring patterns and example programs.
+The Lean~4 formalization was developed with AI assistance (Claude Code,
+ChatGPT, Codex).
+
+\begin{thebibliography}{9}
+
+\bibitem{MeredithStayOSLF2020}
+L.~G.~Meredith, M.~Stay, et~al.
+\newblock \emph{MORK: \MeTTa{} Optimal Reduction Kernel}.
+\newblock Design notes and Rust implementation, 2020--2026.
+
+\bibitem{ProcessCalculiPaper}
+Zar and Oru\v{z}i.
+\newblock Process calculi formalized in {Lean}~4: {Rho}, {Pi}, {MQ}, and
+  modal mu-calculus with cross-calculus bridges.
+\newblock Technical note, March 2026.
+
+\end{thebibliography}
+
+\end{document}

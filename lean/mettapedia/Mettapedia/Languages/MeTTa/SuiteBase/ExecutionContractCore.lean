@@ -154,6 +154,36 @@ def ExecutionContractEntry.arity : ExecutionContractEntry → Nat
   | .aggregationBuiltin entry => entry.minArity
   | .controlBuiltin entry => entry.minArity
 
+def ExecutionContractEntry.effectClass : ExecutionContractEntry → EffectClass
+  | .lookupQuery entry => entry.effectClass
+  | .spaceEffect entry => entry.effectClass
+  | .relationPremise entry => entry.effectClass
+  | .spaceEffectPayload entry => entry.effectClass
+  | .intrinsicBuiltin entry => entry.effectClass
+  | .groundedBuiltin entry => entry.effectClass
+  | .aggregationBuiltin entry => entry.effectClass
+  | .controlBuiltin entry => entry.effectClass
+
+def ExecutionContractEntry.resourceClass : ExecutionContractEntry → RuntimeResourceClass
+  | .lookupQuery entry => entry.resourceClass
+  | .spaceEffect entry => entry.resourceClass
+  | .relationPremise entry => entry.resourceClass
+  | .spaceEffectPayload entry => entry.resourceClass
+  | .intrinsicBuiltin entry => entry.resourceClass
+  | .groundedBuiltin entry => entry.resourceClass
+  | .aggregationBuiltin entry => entry.resourceClass
+  | .controlBuiltin entry => entry.resourceClass
+
+def ExecutionContractEntry.backendName : ExecutionContractEntry → String
+  | .lookupQuery entry => entry.backendName
+  | .spaceEffect entry => entry.backendName
+  | .relationPremise entry => entry.backendName
+  | .spaceEffectPayload entry => entry.backendName
+  | .intrinsicBuiltin entry => entry.backendName
+  | .groundedBuiltin entry => entry.backendName
+  | .aggregationBuiltin entry => entry.backendName
+  | .controlBuiltin entry => entry.backendName
+
 def ExecutionContractEntry.lookupFamily? : ExecutionContractEntry → Option LookupFamilyPlan
   | .lookupQuery entry => some entry.lookupFamily
   | .spaceEffect _ => none
@@ -207,6 +237,8 @@ def ExecutionContractEntry.sortKey : ExecutionContractEntry → String
         | .printlnTerm => "println_term"
         | .metaTypeOfTerm => "meta_type_of_term"
         | .typeOfTerm => "type_of_term"
+        | .quoteTerm => "quote_term"
+        | .testAssertion => "test_assertion"
       s!"grounded_builtin:{hostKey}:{entry.head}:{entry.minArity}"
   | .aggregationBuiltin entry =>
       let collectionKey :=

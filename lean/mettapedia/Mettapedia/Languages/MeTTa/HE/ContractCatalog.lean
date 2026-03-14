@@ -27,30 +27,34 @@ private def heControlKernelTheoremRefs : List String :=
   , "Mettapedia.Languages.MeTTa.RuntimeKernel.spaceEffect_not_memo_outcomeSet"
   ]
 
+-- Planned conformance theorems (not yet proven in Conformance.lean).
+-- These names document which witnesses are needed; the theorems themselves
+-- will be added once the switch/assert/case/unify EvalSpec constructors
+-- have full conformance witnesses.
 private def heSwitchControlTheoremRefs : List String :=
   heControlKernelTheoremRefs ++
-  [ "Mettapedia.Languages.MeTTa.HE.Conformance.extension_switch_minimal_first_match"
-  , "Mettapedia.Languages.MeTTa.HE.Conformance.extension_switch_no_match_empty"
-  , "Mettapedia.Languages.MeTTa.HE.Conformance.extension_switch_internal_first_match"
+  [ "Mettapedia.Languages.MeTTa.HE.Conformance.extension_switch_minimal_first_match"       -- planned
+  , "Mettapedia.Languages.MeTTa.HE.Conformance.extension_switch_no_match_empty"             -- planned
+  , "Mettapedia.Languages.MeTTa.HE.Conformance.extension_switch_internal_first_match"       -- planned
   ]
 
 private def heAssertControlTheoremRefs : List String :=
   heControlKernelTheoremRefs ++
-  [ "Mettapedia.Languages.MeTTa.HE.Conformance.extension_assert_true"
-  , "Mettapedia.Languages.MeTTa.HE.Conformance.extension_assert_false_error"
+  [ "Mettapedia.Languages.MeTTa.HE.Conformance.extension_assert_true"                      -- planned
+  , "Mettapedia.Languages.MeTTa.HE.Conformance.extension_assert_false_error"                -- planned
   ]
 
 private def heCaseControlTheoremRefs : List String :=
   heControlKernelTheoremRefs ++
-  [ "Mettapedia.Languages.MeTTa.HE.Conformance.extension_case_first_match"
-  , "Mettapedia.Languages.MeTTa.HE.Conformance.extension_switch_minimal_first_match"
+  [ "Mettapedia.Languages.MeTTa.HE.Conformance.extension_case_first_match"                 -- planned
+  , "Mettapedia.Languages.MeTTa.HE.Conformance.extension_switch_minimal_first_match"        -- planned
   ]
 
 private def heUnifyControlTheoremRefs : List String :=
   heControlKernelTheoremRefs ++
-  [ "Mettapedia.Languages.MeTTa.HE.Conformance.minimal_unify_match_then_branch"
-  , "Mettapedia.Languages.MeTTa.HE.Conformance.minimal_unify_match_substitutes_success"
-  , "Mettapedia.Languages.MeTTa.HE.Conformance.minimal_unify_no_match_else_branch"
+  [ "Mettapedia.Languages.MeTTa.HE.Conformance.minimal_unify_match_then_branch"             -- planned
+  , "Mettapedia.Languages.MeTTa.HE.Conformance.minimal_unify_match_substitutes_success"     -- planned
+  , "Mettapedia.Languages.MeTTa.HE.Conformance.minimal_unify_no_match_else_branch"          -- planned
   ]
 
 /-- First HE execution-contract entry: the derived `eqQuery` lookup family. -/

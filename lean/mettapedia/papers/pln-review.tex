@@ -1,0 +1,1351 @@
+%% pln-review: A Formal Review of Probabilistic Logic Networks
+%%
+%% Render with:
+%%   lualatex -shell-escape pln-review.tex && bibtex pln-review && lualatex -shell-escape pln-review.tex && lualatex -shell-escape pln-review.tex
+
+\documentclass[11pt,openany]{report}
+\usepackage{pln-common}
+
+\title{A Formal Review of\\
+  \emph{Probabilistic Logic Networks}\\[4pt]
+  Ben Goertzel, Matthew Ikl\'{e}, Izabela Freire Goertzel, Ari Heljakka (2009)\\[12pt]
+  \large\texttt{(DRAFT --- \today)}}
+\author{Zar and Oru\v{z}i\thanks{%
+  Oru\v{z}i denotes AI-assisted collaboration using ChatGPT, Codex, and Claude Code.}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document is a chapter-by-chapter formal review of the PLN
+book~\cite{goertzel2009pln}.  For each chapter, we evaluate what formalizes
+cleanly in Lean~4, what required correction, what fails outright
+(counterexamples), and what remains heuristic or operational.
+
+This review is \emph{book-relative}: it follows the PLN book's structure
+and uses the book as the reference against which the formalization is
+measured.  For the self-contained mathematical refoundation, see
+\emph{The World-Model Calculus}~\cite{xiPLN2026}.
+
+Every claim of ``formalized'' means: a Lean~4 theorem with zero
+\code{sorry}, building against Mathlib.  Every claim of ``corrected''
+means: the book's original statement is shown to be false in general,
+and a side-conditioned replacement is proved.  Every claim of
+``counterexample'' means: a concrete Lean witness that the stated property
+fails.
+\end{abstract}
+
+\tableofcontents
+
+
+%% ═══════════════════════════════════════════════════════════════════
+\chapter{How to Read This Review}
+\label{ch:methodology}
+%% ═══════════════════════════════════════════════════════════════════
+
+\section{Verdict Labels}
+
+Every theorem, formula, or claim from the PLN book is assigned one of five
+labels:
+
+\begin{description}
+\item[\verdictClean{}] The book's claim formalizes directly as stated, with
+  at most minor notational changes.
+
+\item[\verdictCorrected{}] The book's claim is incorrect as stated but
+  admits a corrected formulation with explicit side conditions.  The
+  original is false in general; the corrected version is proved.
+
+\item[\verdictAssumption{}] The claim holds under assumptions that the book
+  left implicit.  The formalization makes these assumptions explicit and
+  proves the claim conditional on them.
+
+\item[\verdictNoGo{}] A formal counterexample or no-go theorem showing
+  that the book's claim fails in general.  These are constructive Lean
+  witnesses.
+
+\item[\verdictHeuristic{}] The claim is operational, heuristic, or
+  otherwise not amenable to theorem-level formalization.  This includes
+  runtime strategies, performance observations, and system-engineering
+  advice.
+\end{description}
+
+\section{What Counts as ``Covered''}
+
+A PLN book chapter is \emph{covered} when:
+\begin{enumerate}
+\item Its core mathematical claims have been formalized (possibly with
+  corrections).
+\item Its boundary conditions have been identified (counterexamples where
+  claims fail).
+\item Its operational/heuristic content has been explicitly marked as such.
+\end{enumerate}
+
+A chapter is \emph{not} covered merely by having been read or discussed.
+Coverage requires theorem-level Lean artifacts.
+
+\section{Relation to \xiPLN{}}
+
+Full theorem statements and proofs live in the companion volume,
+\emph{The World-Model Calculus}~\cite{xiPLN2026}.
+This review provides:
+\begin{itemize}
+\item The book-relative context (what the original chapter was trying to do).
+\item The evaluation (what succeeded, what failed, what changed).
+\item Pointers to the corresponding \xiPLN{} chapters and Lean modules.
+\end{itemize}
+
+
+%% ═══════════════════════════════════════════════════════════════════
+\chapter{Global Summary}
+\label{ch:summary}
+%% ═══════════════════════════════════════════════════════════════════
+
+\begin{longtable}{p{0.08\textwidth}p{0.22\textwidth}p{0.22\textwidth}p{0.38\textwidth}}
+\textbf{Ch.} & \textbf{Topic} & \textbf{Verdict} & \textbf{Key finding} \\
+\hline
+1 & Introduction & \verdictClean{} & Conceptual framing formalized as explicit semantic stack split. \\
+2 & Knowledge repr. & \verdictClean{} & PLNQuery, WorldModel, WorldModelSigma capture the KR layer precisely. \\
+3 & Experiential sem. & \verdictClean{} & Evidence-as-counts and revision algebra formalized exactly. \\
+4 & Indefinite TVs & \verdictCorrected{} & Walley predictive and Bayesian credible intervals must be separated. \\
+5 & FO ext.\ inference & \verdictCorrected{} & Classical formulas survive in corrected scope: BN exactness under screening-off/positivity, with no-go results showing that scope is necessary. \\
+6 & FO ext.\ + ITV & \verdictClean{} & ITV transport through WM/OSLF bridge formalized. \\
+7 & Distributional TVs & \verdictClean{} & Beta/Dirichlet layer, Kyburg flattening, de~Finetti bridge. \\
+8 & Error magnification & \verdictCorrected{} & Threshold transport needs explicit boundary conditions. \\
+9 & Large-scale inf. & \verdictNoGo{} & Multiple no-go results; corrected positives under explicit assumptions. \\
+10 & Higher-order ext. & \verdictCorrected{} & Some unconditional equalities fail; side-conditioned replacements proved. \\
+11 & Quantifiers + ITV & \verdictAssumption{} & Stable finite-domain bundle formalized; arbitrary-domain infinitary semantics already exist, but full parity is future work. \\
+12 & Intensional inf. & \verdictCorrected{} & Settled in corrected typed three-channel form: ASSOC/PAT grounding, Solomonoff log-ratio bridge, selector endpoints, and explicit binary mixed-policy no-go. \\
+13 & Inference control & \verdictClean{} & Selector specs, ranking, coverage formalized with canaries. \\
+14 & Temporal/causal & \verdictClean{} & Event calculus grounding and temporal operators formalized. \\
+App.\ A & PLN vs.\ NARS & \verdictClean{} & Consolidated correspondence package with confidence transforms. \\
+\hline
+\end{longtable}
+
+
+%% ═══════════════════════════════════════════════════════════════════
+%% CHAPTER REVIEWS
+%% ═══════════════════════════════════════════════════════════════════
+
+\chapter{Chapter 1: Introduction}
+\label{ch:review-ch1}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~1 introduces PLN's ambitions: a general-purpose uncertain reasoner
+combining logical structure with probabilistic semantics.  It motivates
+truth values (strength and confidence), evidence-based reasoning, and the
+aspiration to handle deduction, induction, and abduction within a unified
+framework.
+
+\section{What Formalizes Cleanly}
+
+The conceptual framing---separating probabilistic semantics from evidence
+algebra from operational views---has been formalized as an explicit semantic
+stack split:
+
+\begin{itemize}
+\item \textbf{Layer 1} (world-model posterior): \codepath{Mettapedia/Logic/PLNWorldModel.lean}
+\item \textbf{Layer 2} (evidence algebra): \codepath{Mettapedia/Logic/EvidenceClass.lean},
+  \codepath{Mettapedia/Logic/EvidenceQuantale.lean}
+\item \textbf{Layer 3} (operational views): \codepath{Mettapedia/Logic/PLNIndefiniteTruth.lean}
+\item \textbf{Decision tree}: \codepath{Mettapedia/Logic/SemanticsDecisionTree.lean}
+\end{itemize}
+
+\section{What Required Correction}
+
+The book does not explicitly separate the three layers, leading to the
+``semantic drift'' discussed in \xiPLN{} Chapter~1.  The correction is
+not a change in formulas but a change in \emph{architecture}: making the
+layer boundaries explicit.
+
+\section{Counterexamples}
+
+None for this chapter.  The introduction is interpretive, not
+formula-bearing.
+
+\section{What Remains Heuristic}
+
+The book's motivational examples and historical context are expository
+and not subject to formalization.
+
+\section{Verdict}
+
+\verdictClean{}.  The introduction's conceptual content formalizes well
+once the three-layer separation is made explicit.  The refoundation is
+architecturally cleaner but preserves the original intuitions.
+
+
+\chapter{Chapter 2: Knowledge Representation}
+\label{ch:review-ch2}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~2 defines PLN's knowledge representation: atoms, links, truth
+values, and the Atomspace data structure.  It establishes how uncertain
+knowledge is stored and queried.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item \code{PLNQuery}: atoms, links, conditional links --- \codepath{Mettapedia/Logic/PLNWorldModel.lean}
+\item \code{WorldModel}: the query interface --- same file
+\item \code{WorldModelSigma}: side-condition-bundled models --- same file
+\item Rewrite judgments: \codepath{Mettapedia/Logic/PLNWorldModelCalculus.lean}
+\end{itemize}
+
+\section{What Required Correction}
+
+The book treats the Atomspace as a flat store of truth-valued links.
+The formalization adds:
+\begin{itemize}
+\item Typed query language separating prop/link/linkCond.
+\item Explicit side-condition contexts for structural assumptions.
+\item World-model revision as a first-class operation.
+\end{itemize}
+
+\section{Counterexamples}
+
+None.
+
+\section{What Remains Heuristic}
+
+The Atomspace as a software system (indexing, storage, concurrency) is
+not formalized.  The formalization captures the mathematical interface.
+
+\section{Verdict}
+
+\verdictClean{}.  The KR layer formalizes directly with natural type-theoretic
+representations.
+
+
+\chapter{Chapter 3: Experiential Semantics}
+\label{ch:review-ch3}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~3 introduces the idea that PLN truth values are grounded in
+\emph{evidence}: observations of positive and negative instances.
+The core representation is the evidence pair $(n^+, n^-)$ where
+$n^+$ counts positive observations and $n^-$ counts negative ones.
+Revision---combining two bodies of evidence---is componentwise addition:
+\[
+  (n_1^+, n_1^-) \hplus (n_2^+, n_2^-) = (n_1^+ + n_2^+,\; n_1^- + n_2^-)
+\]
+The \emph{strength} is the ratio $s = n^+ / (n^+ + n^-)$ and the
+\emph{confidence} is $c = n / (n + k)$ where $n = n^+ + n^-$.
+
+The book's insight---that evidence counts are the right primitive, not
+point probabilities---is exactly right.  De Finetti's theorem gives the
+mathematical justification: for exchangeable binary sequences, the counts
+are sufficient statistics.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item Evidence type $(n^+, n^-)$ with componentwise operations ---
+  \codepath{Mettapedia/Logic/EvidenceClass.lean}
+\item Revision as additive monoid (associative, commutative, unit $(0,0)$) ---
+  same file
+\item Information ordering (coordinatewise $\le$) --- same file
+\item Complete world-model posterior (Dirichlet pseudo-counts over $2^n$ worlds) ---
+  \codepath{Mettapedia/Logic/PLNJointEvidence.lean}
+\item Evidence compositionality:
+  $\mathrm{ev}(W_1 + W_2, q) = \mathrm{ev}(W_1, q) \hplus \mathrm{ev}(W_2, q)$ ---
+  \codepath{Mettapedia/Logic/PLNWorldModel.lean}
+\item Fr\'{e}chet bounds: $\max(0, s_A + s_B - 1) \le s_{A \wedge B} \le \min(s_A, s_B)$ ---
+  \codepath{Mettapedia/Logic/PLNFrechetBounds.lean}
+\end{itemize}
+
+\section{What Required Correction}
+
+The book is essentially correct here.  The formalization goes beyond
+the book by discovering additional algebraic structure:
+\begin{itemize}
+\item \textbf{Quantale structure:} a tensor product $\otimes$ on evidence
+  that distributes over joins, capturing compositional dependent-evidence
+  combination.
+\item \textbf{Heyting algebra:} a relative pseudo-complement
+  $a \Rightarrow b$ satisfying $c \le (a \Rightarrow b)$ iff $c \otimes a \le b$.
+  This means the evidence lattice supports intuitionistic logic.
+\item \textbf{Totality gate:} $\Evidence$ has incomparable elements
+  (e.g., $(3,1)$ and $(1,3)$), so no faithful order-embedding into $\mathbb{R}$
+  exists.  A single real number cannot capture all evidence information.
+\end{itemize}
+
+These are \emph{additions}, not corrections.  The book planted the seed;
+the formalization grew the full algebraic tree.
+
+\section{Counterexamples}
+
+\begin{itemize}
+\item \code{threshold\_or\_counterexample}: because evidence values can be
+  incomparable, disjunction threshold acceptance fails without assuming
+  total-order comparability.
+\end{itemize}
+
+\section{What Remains Heuristic}
+
+None.  This is the most naturally formal chapter in the book.
+
+\section{Verdict}
+
+\verdictClean{}.  The evidence algebra is the strongest part of the
+original PLN book, and it formalizes beautifully.  The formalization
+enriches it with quantale and Heyting structure that the book did not
+explore but that the evidence representation naturally supports.
+
+
+\chapter{Chapter 4: Indefinite Truth Values}
+\label{ch:review-ch4}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~4 introduces indefinite truth values (ITVs): interval-valued
+representations of uncertainty that go beyond point estimates.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item ITV core with lower/upper/width/credibility coordinates ---
+  \codepath{Mettapedia/Logic/PLNIndefiniteTruth.lean}
+\item Walley IDM predictive interval constructors ---
+  same file, explicit \code{walleyIDM} constructors
+\item ITV hypercube transport ---
+  \codepath{Mettapedia/Logic/PLNWorldModelITVHypercube.lean}
+\end{itemize}
+
+\section{What Required Correction}
+
+The book uses the notation $[L, U]$ without always specifying which
+interval semantics is intended.  The formalization \emph{insists} on
+explicit separation:
+
+\begin{itemize}
+\item \textbf{Bayesian credible intervals} (posterior-dependent, prior-sensitive).
+\item \textbf{Walley IDM predictive intervals} (prior-free, wider).
+\item \textbf{Typed selector choice}: the user declares which semantics.
+\end{itemize}
+
+This is a \emph{strengthening}: the formalization is more precise than
+the book, not a rejection of the book's ideas.
+
+\section{Counterexamples}
+
+\begin{itemize}
+\item \code{canary\_ch11\_rule4\_not\_equivalent\_itvPath}: certain ITV
+  transport paths are not equivalent, demonstrating that conflating
+  interval semantics can produce different results.
+\end{itemize}
+
+\section{What Remains Heuristic}
+
+The book's discussion of ``intuitively reasonable'' interval widths
+is expository rather than mathematical.
+
+\section{Verdict}
+
+\verdictCorrected{}.  The ITV idea was right; the formalization
+\emph{strengthens} it by separating semantics that the book conflated.
+
+
+\chapter{Chapter 5: First-Order Extensional Inference}
+\label{ch:review-ch5}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~5 presents the core PLN inference rules---deduction, induction,
+abduction, and revision---with strength formulas for computing truth values
+of derived links.  The deduction formula, for instance, computes
+$P(C \mid A)$ from $P(B \mid A)$, $P(C \mid B)$, $P(B)$, and $P(C)$:
+\[
+  s_{AC} = s_{AB} \cdot s_{BC} + (1 - s_{AB}) \cdot
+  \frac{s_C - s_B \cdot s_{BC}}{1 - s_B}
+\]
+under the assumption that $C$ is conditionally independent of $A$
+given $B$ and given $\lnot B$.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item Deduction strength formula: \code{plnDeductionStrength} ---
+  \codepath{Mettapedia/Logic/PLNDeduction.lean}
+\item Induction and abduction strength formulas ---
+  \codepath{Mettapedia/Logic/PLNDerivation.lean}
+\item Full inference rule set ---
+  \codepath{Mettapedia/Logic/PLNInferenceRules.lean}
+\item MeTTa truth function parity ---
+  \codepath{Mettapedia/Logic/PLNMettaTruthFunctions.lean}
+\item BN chain exactness: \code{chainBN\_plnDeductionStrength\_exact} ---
+  \codepath{Mettapedia/Logic/PLNBayesNetFastRules.lean}
+\item BN fork exactness: \code{forkBN\_plnDeductionStrength\_exact} ---
+  same file
+\end{itemize}
+
+The deduction formula is proved \emph{exact} for the chain BN
+$A \to B \to C$ and the fork BN $A \leftarrow B \to C$.  That is:
+under the respective d-separation conditions, the formula above equals
+$P(C \mid A)$ exactly---it is not an approximation.
+
+\section{What Required Correction}
+
+The book \emph{does} mention conditional independence as a motivation
+for the deduction formula (Section~5.1 discusses the total probability
+decomposition, which implicitly assumes screening-off).  However, the
+precise conditions under which each rule is exact are not always stated
+as formal hypotheses.  The formalization's contribution is to recover
+the correct theoremic scope of the classical formulas by making these
+conditions fully explicit:
+
+\begin{itemize}
+\item Each rule carries a $\Sigma$-context stating the required
+  conditional independences (e.g., $C \perp\!\!\!\perp A \mid B$ and
+  $C \perp\!\!\!\perp A \mid \lnot B$ for deduction).
+\item Positivity conditions ($s_B > 0$, $s_B < 1$) are stated as
+  explicit hypotheses rather than tacit assumptions.
+\item In BN model classes, the needed side conditions are discharged by
+  d-separation/local-Markov facts, so the rules are proved as
+  \emph{derived theorems} rather than treated as axioms or heuristics.
+\end{itemize}
+
+This is a corrected statement rather than an assumption patch.  The
+classical extensional formulas survive, but only in the precise scope
+determined by screening-off, d-separation, and positivity, with
+exactness recovered on the corresponding BN-derived envelopes.
+
+\section{Counterexamples}
+
+\begin{itemize}
+\item The local-completeness no-go theorem (\xiPLN{} Chapter~6) shows
+  that no function of five local evidence values computes exact link
+  evidence for \emph{arbitrary} world models.  This establishes that
+  the screening-off conditions are not merely convenient---they are
+  \emph{necessary} for correctness.
+\end{itemize}
+
+This is different in kind from Chapter~11's current finite-domain front
+door: Chapter~5's side conditions are the mathematical content of the
+exact theorem, not a packaging gap between the reviewed chapter and a
+deeper semantic layer.
+
+\section{What Remains Heuristic}
+
+The choice of \emph{when} to apply each rule (which links to try
+deduction on, in what order) is inference control, covered in
+Chapter~13.
+
+\section{Verdict}
+
+\verdictCorrected{}.  The book-era rule statements were too broad, but
+the classical extensional formulas survive in corrected form, with BN
+exactness theorems under explicit screening-off / d-separation /
+positivity conditions and no-go results showing that this scope is
+mathematically necessary.
+
+
+\chapter{Chapter 6: First-Order Extensional Inference with ITVs}
+\label{ch:review-ch6}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~6 extends the first-order rules to operate on indefinite truth
+values (intervals) rather than simple truth values.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item ITV semantics transported through WM rewrites ---
+  \codepath{Mettapedia/Logic/PLNWMOSLFBridgeITV.lean}
+\item One-call API bundles for ITV-coordinated inference ---
+  \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+\item Coordinate-specialized coherence theorems ---
+  same file
+\end{itemize}
+
+\section{What Required Correction}
+
+No fundamental correction needed.  The formalization adds:
+\begin{itemize}
+\item Typed OSLF bridge with explicit selector specialization.
+\item Coordinate-by-coordinate transport
+  (lower/upper/credibility/width/strength).
+\end{itemize}
+
+\section{Counterexamples}
+
+None for this chapter specifically.
+
+\section{What Remains Heuristic}
+
+None.
+
+\section{Verdict}
+
+\verdictClean{}.  The ITV extension of first-order rules formalizes
+via the typed bridge infrastructure.
+
+
+\chapter{Chapter 7: Distributional Truth Values}
+\label{ch:review-ch7}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~7 presents distributional truth values: truth values as entire
+distributions (Beta, Dirichlet) rather than point estimates or intervals.
+It introduces the Kyburg flattening operation.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item Context-aware strength as Beta posterior mean:
+  \code{strengthWith\_eq\_beta\_posterior\_meanENN} ---
+  \codepath{Mettapedia/Logic/HigherOrder/PLNKyburgReduction.lean}
+\item Evidence aggregation as conjugate update:
+  \code{hplus\_is\_bayesian\_update} --- same file
+\item Kyburg flattening: \code{kyburg\_flattening},
+  \code{expectation\_consistency}, \code{kyburg\_no\_advantage} ---
+  same file and \codepath{Mettapedia/ProbabilityTheory/HigherOrderProbability/KyburgFlattening.lean}
+\item Monad associativity for flattening:
+  \code{flatten\_associativity}, \code{flatten\_associativity\_kernel} ---
+  \codepath{Mettapedia/ProbabilityTheory/HigherOrderProbability/GiryMonad.lean}
+\item De~Finetti singleton bridge into Kyburg flattening ---
+  \codepath{Mettapedia/Logic/HigherOrder/PLNKyburgReduction.lean}
+\item Worked example (uniform prior, evidence 3:1) ---
+  same file
+\end{itemize}
+
+\subsection{Normal-Gamma Extension for Continuous Domains}
+
+The distributional story extends beyond Beta/Dirichlet to continuous
+observations via Normal-Gamma conjugate priors.  Evidence becomes the
+sufficient statistic $(n, \sum x_i, \sum x_i^2)$; revision is again
+componentwise addition.  The key compositionality theorem---batch
+replay equals sequential Bayesian update---is proven:
+
+\begin{quote}
+\code{posterior\_hplus\_of\_realizable}: \\
+$\text{posterior}(\pi, e_1 \hplus e_2)
+  = \text{posterior}(\text{posterior}(\pi, e_1), e_2)$
+\end{quote}
+
+See \codepath{Mettapedia/Logic/EvidenceNormalGamma.lean}.
+
+Six applied demos (broken sensor, widget factory, Kalman filter, gas
+sensor drift, steel faults, NAB anomaly) exercise these properties
+end-to-end on synthetic and real UCI/NAB data, totaling $\sim$2{,}500
+lines of Lean with 0~sorry; see the WM-PLN book, Ch.~7.  A seventh
+script-level case study extends the same update semantics to the public
+Good Judgment Project / ACE forecasting stream: reliability-weighted
+aggregation improves substantially over mean/median pooling on held-out
+year-4 questions, and it also improves Brier/log score over stronger
+top-$k$ log/logit pooling baselines while matching their accuracy.
+Empirically, the role split should be read as two flagships plus two
+supporting checks: GJP forecasting and Gas drift governance are the main
+applied stories, Steel is a supporting same-model-class abstention
+validation, and NAB is an honest negative boundary / case study.
+An explicit extremized-mean comparator is also weaker than the
+top-$k$ logit family, so the WM gain is not just an artifact of beating
+plain averaging.
+The same WM-weighted pools also improve selective prediction AURC over
+those stronger baselines, while WM-on-top-$k$ hybrids do not improve
+further, which is evidence that the gain comes from continuous
+reliability weighting rather than hard forecaster pruning.  Nightly
+batch consolidation matches online updates to machine precision, and
+scoped forgetting of older years continues to improve recalibration even
+for the stronger pooling family.  A small support-layer result also
+appears: on multi-option year-4 questions, gating the strong top-$k$
+log pool by WM agreement halves AURC from 0.001095 to 0.000541 while
+preserving accuracy, whereas the binary slice is an honest null because
+the strong top-$k$ and WM-weighted pools already coincide everywhere.
+That forecasting study is not a new
+Lean theorem block, but it is a clean applied demonstration of the same
+conjugate evidence and revision laws.
+
+\section{What Required Correction}
+
+The Kyburg ``no advantage'' result is a sharpening: the book presents
+distributional truth values as potentially more powerful than simple
+truth values, but the formalization shows that for expectation-based
+decisions, they are equivalent (the flattening preserves expectation).
+
+\section{Counterexamples}
+
+None.
+
+\section{What Remains Heuristic}
+
+The book's discussion of when distributional truth values are
+``worth the computational cost'' is a practical consideration,
+not a theorem.
+
+\section{Verdict}
+
+\verdictClean{}.  This is one of the strongest formalizations.
+The Kyburg flattening, de~Finetti bridge, conjugate-update story,
+and Normal-Gamma continuous extension all formalize beautifully.
+
+
+\chapter{Chapter 8: Error Magnification}
+\label{ch:review-ch8}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~8 discusses how errors accumulate through chains of inference
+(``error magnification'') and proposes diagnostic approaches.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item View transport under WM query equivalence: strength, confidence,
+  interpretation views all preserved ---
+  \codepath{Mettapedia/Logic/PLNWorldModelCalculus.lean}
+\item Confidence-threshold atom semantics and rewrite soundness ---
+  \codepath{Mettapedia/Logic/PLNErrorMagnificationGrounding.lean}
+\item One-call WM rewrite $\to$ OSLF truth transport $\to$ threshold
+  acceptance --- \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+\item WM consequence-rule layer with Kripke deontic lifts ---
+  \codepath{Mettapedia/Logic/PLNWorldModelKripkeConsequence.lean}
+\item Categorical WM transport (institution, hyperdoctrine,
+  Beck-Chevalley) ---
+  \codepath{Mettapedia/Logic/PLNWorldModelCategoricalBridge.lean}
+\item Kripke and neighborhood proof-theoretic closure (K, KT, KD, K4,
+  E, EMN, EMT, ED) ---
+  \codepath{Mettapedia/Logic/PLNWorldModelKripkeCompleteness.lean},
+  \codepath{Mettapedia/Logic/PLNWorldModelNeighborhoodCompleteness.lean}
+\end{itemize}
+
+\section{What Required Correction}
+
+The book's error magnification discussion is largely qualitative
+(graphs, chaos-plot intuitions).  The formalization replaces this with:
+
+\begin{itemize}
+\item Precise threshold transport theorems with explicit boundary conditions.
+\item Double-damping strict gap characterization.
+\item Explicit counterexamples for disjunction and diamond threshold
+  transport.
+\end{itemize}
+
+\section{Counterexamples}
+
+\begin{itemize}
+\item \code{threshold\_or\_counterexample}: disjunction threshold fails
+  without total-order comparability.
+\item \code{threshold\_dia\_fails}: diamond threshold requires finite
+  branching.
+\item \code{double\_damping\_strict\_lt}: composed thresholds are
+  strictly tighter than individual thresholds.
+\end{itemize}
+
+\section{What Remains Heuristic}
+
+The book's chaos plots, sensitivity diagrams, and qualitative
+error-propagation discussions are expository.  The formalized core is
+the threshold transport discipline with its precise boundaries.
+
+\section{Verdict}
+
+\verdictCorrected{}.  The book's qualitative discussion is replaced by
+precise transport theorems with explicit boundary conditions.  The
+formalization is significantly more precise than the original.
+
+
+\chapter{Chapter 9: Large-Scale Inference Strategies}
+\label{ch:review-ch9}
+
+This is the most complex chapter to review.  We break it into subsections
+corresponding to the book's major topics.
+
+\section{What the Book Is Trying to Do}
+
+Chapter~9 covers strategies for scaling PLN to large knowledge bases:
+batch inference, multideduction, BN augmentation, trail-free protocols,
+and evidence pooling.
+
+\subsection{9.2: Batch Inference / BRGI}
+
+\paragraph{What formalizes.}
+\begin{itemize}
+\item Finite BRGI object with policy-sensitive optimum characterization:
+  \code{exists\_optimal\_feasible\_set\_with\_policy\_characterization} ---
+  \codepath{Mettapedia/Logic/PremiseSelectionBRGI.lean}
+\item Graph-level BRGI with optimality-preserving refinement ---
+  same file
+\end{itemize}
+
+\paragraph{Verdict.}
+\verdictClean{} for the optimization-theoretic core.
+\verdictHeuristic{} for the runtime implementation.
+
+\subsection{9.3: Multideduction}
+
+The book proposes combining results from multiple deduction chains using
+inclusion-exclusion.  The first two terms of IE give:
+\[
+  |A \cup B| \approx |A| + |B| - |A \cap B|
+\]
+But the question is: can $|A \cup B|$ be determined from these two-term
+statistics alone?
+
+\paragraph{What formalizes.}
+\begin{itemize}
+\item \textbf{Identifiability no-go:}
+  \code{same\_first\_two\_terms\_different\_union} constructs two
+  probability distributions agreeing on all first-two-term statistics
+  but differing on $|A \cup B|$.  Therefore two-term IE is
+  \emph{not identifiable}. ---
+  \codepath{Mettapedia/Logic/PLNInclusionExclusionIdentifiability.lean}
+\item \textbf{No universal predictor:}
+  \code{no\_universal\_union\_predictor\_from\_first\_two\_terms} ---
+  same file.  No additive correction term works for all models.
+\item \textbf{Residual decomposition:}
+  $|A \cup B| = T_2(A,B) + R(A,B)$ where $T_2$ is the two-term estimate
+  and $R$ is the residual.  If $R$ is known or bounded, the corrected
+  estimate is exact:
+  \code{correctedEstimate\_agrees\_of\_residualAssumption} ---
+  \codepath{Mettapedia/Logic/PLNMultideductionResidual.lean}
+\item \textbf{N-way generalization:} the residual decomposition extends
+  to $n$-way unions. ---  same file
+\end{itemize}
+
+\paragraph{Verdict.}
+\verdictNoGo{} for two-term IE as an identifiable estimator.
+\verdictAssumption{} for the corrected residual-based approach (requires
+knowing or bounding the residual $R$).
+
+\subsection{9.4: BN Augmentation}
+
+\paragraph{What formalizes.}
+\begin{itemize}
+\item Class-packaged BN d-separation discharge ---
+  \codepath{Mettapedia/Logic/PLNBNLocalMarkovPackages.lean}
+\item One-call selector $\to$ rewrite $\to$ threshold composition ---
+  \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+\item Chain/fork/collider concrete endpoints ---
+  \codepath{Mettapedia/Logic/PLNXiDerivedBNRules.lean}
+\end{itemize}
+
+\paragraph{Verdict.}
+\verdictClean{}.  One of the strongest formalizations: exact BN query
+answering with class-packaged assumption discharge.
+
+\subsection{9.5: Trail-Free / OBI Protocols}
+
+The book proposes trail-free inference: updating truth values without
+tracking which inference paths contributed, to avoid exponential trail
+bookkeeping.  The hope is that repeated application converges to a
+fixed point.
+
+\paragraph{What formalizes.}
+\begin{itemize}
+\item \textbf{Non-stabilization counterexample:}
+  \code{orbit\_not\_eventually\_constant} constructs a two-state system
+  where the undamped trail-free update enters a 2-cycle
+  $s_0 \to s_1 \to s_0 \to \cdots$ and never reaches a fixed point.
+  The construction is explicit and decidable. ---
+  \codepath{Mettapedia/Logic/PLNTrailFreeDynamicsCounterexample.lean}
+\item \textbf{Damped convergence:} with a damping factor
+  $\alpha \in (0,1)$ and eventual fresh evidence, the orbit
+  eventually stabilizes:
+  \code{damped\_sp\_spn\_eventually\_constant\_of\_eventual\_fresh}.
+  The inconsistency measure drops to zero. ---
+  \codepath{Mettapedia/Logic/PLNTrailFreeDampedConvergence.lean}
+\item \textbf{Bounded-gap fairness:} if fresh evidence arrives with
+  bounded gaps (at most $g$ steps between arrivals), stabilization
+  occurs within an explicit bound:
+  \code{inconsistency\_zero\_within\_bound\_of\_boundedGapFresh}. ---
+  same file
+\item \textbf{No-fresh negative:} without fresh evidence, even the
+  damped protocol may not stabilize:
+  \code{dampedOrbit\_noFresh\_not\_eventually\_constant}. ---
+  same file
+\end{itemize}
+
+\paragraph{Verdict.}
+\verdictNoGo{} for undamped trail-free protocols.
+\verdictAssumption{} for damped variants (requires fresh evidence
+with bounded gaps).
+
+\subsection{Evidence Pooling}
+
+\paragraph{What formalizes.}
+\begin{itemize}
+\item Pooling axioms non-uniqueness:
+  \code{maxPoolingOperator\_ne\_fuse} ---
+  \codepath{Mettapedia/Logic/PremiseSelectionExternalBayesianity.lean}
+\item Corrected uniqueness: external Bayes + total additivity ---
+  same file
+\end{itemize}
+
+\paragraph{Verdict.}
+\verdictNoGo{} for pooling axioms alone.
+\verdictAssumption{} with external Bayesianity.
+
+\subsection{Stochastic Experiment Layer}
+
+\paragraph{What formalizes.}
+\begin{itemize}
+\item Blackwell factorization and expected utility ---
+  \codepath{Mettapedia/Logic/PLNWorldModelExperimentStochastic.lean}
+\item Weighted source policies and trusted-gate transfer ---
+  same file
+\end{itemize}
+
+\paragraph{Verdict.}
+\verdictClean{}.
+
+\section{Overall Chapter 9 Verdict}
+
+\verdictNoGo{} for several core claims (identifiability, trail-free
+stabilization, pooling uniqueness).  \verdictAssumption{} for
+corrected positive replacements.  \verdictClean{} for the BN
+augmentation track.  Operational runtime implementations remain
+\verdictHeuristic{}.
+
+
+\chapter{Chapter 10: Higher-Order Extensional Inference}
+\label{ch:review-ch10}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~10 extends PLN to reason about relationships between predicates
+and concepts (higher-order extensional inference), including satisfying
+sets and reductions from higher-order to first-order.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item HOI-to-FOI reduction via satisfying sets: for predicate $P$, the
+  satisfying set $\mathrm{Sat}(P) = \{x \mid P(x)\}$ bridges
+  higher-order and first-order ---
+  \codepath{Mettapedia/Logic/HigherOrder/HigherOrderReduction.lean}
+\item Weakness-based inheritance:
+  $\mathrm{Inheritance}(A, B, \mu) = \mathrm{weakness}(A \cap B) / \mathrm{weakness}(A)$
+  ---
+  \codepath{Mettapedia/Logic/HigherOrder/Basic.lean}
+\item Pointwise implication collapse: when $\forall x, R_1(A,x) \Rightarrow R_2(B,x)$
+  holds, inheritance equals~$1$ ---
+  same file
+\item Perfect inheritance corner ($\mathrm{pos} \ne 0$, $\mathrm{neg} = 0
+  \Rightarrow \mathrm{Inheritance} = \mathrm{pTrue}$) ---
+  same file
+\end{itemize}
+
+\section{What Required Correction}
+
+The book's higher-order composition rule
+$\mathrm{Inh}(A,C) = f(\mathrm{Inh}(A,B), \mathrm{Inh}(B,C))$ is
+stated unconditionally.  The formalization shows:
+\begin{itemize}
+\item The rule requires screening-off: $P(C \mid A, B) = P(C \mid B)$.
+\item Positivity conditions ($P(B) \in (0,1)$) must hold.
+\item The corrected version carries these as explicit hypotheses, matching
+  the structure of the first-order deduction correction.
+\end{itemize}
+
+\section{Counterexamples}
+
+Where the book's unconditional equalities fail, the formalization provides
+concrete witnesses with specific evidence values showing the failure mode.
+
+\section{What Remains Heuristic}
+
+None of the core mathematical content.
+
+\section{Verdict}
+
+\verdictCorrected{}.  The reduction is sound under stated conditions;
+several book-era unconditional claims are shown to need screening-off
+and positivity side conditions, paralleling the first-order story.
+
+
+\chapter{Chapter 11: Quantifiers with Indefinite Truth Values}
+\label{ch:review-ch11}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~11 extends PLN to quantified reasoning (``most birds fly,''
+``few cats swim'') using indefinite truth values for quantifier
+strength.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item Finite-model quantifier semantics with weakness connection ---
+  \codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierSemantics.lean}
+\item Soundness theorems ---
+  \codepath{Mettapedia/Logic/PLNFirstOrder/Soundness.lean}
+\item Fuzzy quantifier semantics (QFM) ---
+  \codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyQuantifierSemantics.lean}
+\item Fuzzy-to-ITV bridge ---
+  \codepath{Mettapedia/Logic/PLNFirstOrder/FuzzyITVBridge.lean}
+\item End-to-end canaries:
+  \code{canary\_ch11\_rule\_family\_end\_to\_end\_ext},
+  \code{fuzzyIntervalHolds\_strength\_of\_lower\_upper}
+\item Regression target:
+  \codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierRegression.lean}
+\end{itemize}
+
+\section{What Required Correction}
+
+No fundamental corrections.  The main clarification is scope: the
+reviewed chapter bundle is finite-domain, but an arbitrary-domain
+infinitary semantic layer already exists in Lean.
+
+\section{Counterexamples}
+
+\begin{itemize}
+\item \code{canary\_ch11\_rule4\_not\_equivalent\_itvPath}: certain ITV
+  transport paths are not equivalent, demonstrating that some book-era
+  assumptions about ITV composition are too strong.
+\end{itemize}
+
+\section{What Remains Heuristic}
+
+Arbitrary-domain infinitary semantics already exist in
+\codepath{Mettapedia/Logic/PLNFirstOrder/Infinite.lean}; what remains
+beyond the current reviewed scope is stronger metatheory, chapter-level
+canary/regression parity, and measure-theoretic strengthening for
+probabilistic infinite spaces.
+
+\section{Verdict}
+
+\verdictAssumption{}.  Solid finite-domain theorem bundle, plus a real
+arbitrary-domain infinitary semantic layer that is not yet promoted to
+full chapter-level parity.
+
+
+\chapter{Chapter 12: Intensional Inference}
+\label{ch:review-ch12}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~12 presents intensional inheritance: reasoning based on shared
+properties (intension) rather than shared instances (extension).
+It defines ASSOC and PAT channels and proposes mixing them with a
+parameter.  The formal result is not verbatim preservation of that
+binary presentation, but a corrected typed three-channel account with
+an explicit no-go against collapsing back to the old binary law.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item Typed WM grounding for intensional inheritance ---
+  \codepath{Mettapedia/Logic/PLNIntensionalWorldModel.lean}
+\item Solomonoff-linked semantic transport ---
+  \codepath{Mettapedia/Logic/IntensionalInheritanceSolomonoffBridge.lean}
+\item Canonical \code{AssocPatSemanticModel} packaging ---
+  \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+\item Selector-specialized end-to-end endpoints ---
+  same file
+\item Canary and regression targets ---
+  \codepath{Mettapedia/Logic/PLNIntensionalCanary.lean},
+  \codepath{Mettapedia/Logic/PLNIntensionalRegression.lean}
+\end{itemize}
+
+\section{What Required Correction}
+
+The book proposes mixing extensional and intensional inheritance with a
+single parameter~$\alpha$:
+\[
+  \mathrm{InhInt}(A, B) = \alpha \cdot \mathrm{Ext}(A, B)
+  + (1 - \alpha) \cdot \mathrm{IntAssoc}(A, B)
+\]
+
+The formalization shows this binary mixture is explicitly false as a
+general law in the corrected typed setting:
+
+\begin{itemize}
+\item The ASSOC channel uses mutual-information semantics:
+  $P_{\mathrm{ASSOC}}(W \mid F) = P(W) \cdot 2^{I(F;W)}$.
+\item The PAT channel captures structural pattern proximity that mutual
+  information misses.
+\item The concrete witness $W_{\mathrm{demo}}$ with scores $(3, 2, 1)$
+  for (ext, ASSOC, PAT) channels shows that the PAT channel contributes
+  nontrivially and the mixed result cannot be expressed as any function
+  of only the extensional and ASSOC values.
+\end{itemize}
+
+The corrected approach is not a patched binary rule.  It is a typed
+three-channel model (extensional, ASSOC, PAT) with separate evidence
+extraction per channel, a semantic model that packages all three, and a
+constructive no-go theorem retiring the old binary law.
+
+\section{Counterexamples}
+
+\begin{itemize}
+\item \code{binary\_mixed\_policy\_collapse\_no\_go}:
+  the old binary mixed law is explicitly false in the corrected typed
+  setting.  The constructive witness is
+  \code{no\_binary\_mixed\_policy\_for\_assocPat\_fixture}, where
+  $\mathrm{pat\_channel\_nontrivial}$ and
+  $\mathrm{mixed\_not\_assoc\_only}$ are both proved.
+\end{itemize}
+
+\section{Claim-by-Claim Audit}
+
+\begin{itemize}
+\item \textbf{$\mathrm{InheritanceSort} = \mathrm{extensional} \mid
+  \mathrm{intensionalAssoc} \mid \mathrm{intensionalPAT} \mid \mathrm{mixed}$,
+  with separate channel projections.} \textsc{Proved}.  Endpoints:
+  \code{InheritanceSort}, \code{InheritanceQueryFamily},
+  \code{extensionalEvidence}, \code{intensionalAssocEvidence},
+  \code{intensionalPATEvidence}, \code{mixedEvidence}.
+\item \textbf{$P_{\mathrm{ASSOC}}(W \mid F) = P(W) \cdot 2^{I(F;W)}$.}
+  \textsc{Strengthened}.  The abstract information-theoretic formula is
+  available as \code{goertzel\_formula}; the corrected typed WM layer
+  exports it through \code{AssocScoreCorrespondence} and
+  \code{assocEvidence\_eq\_scoreToEvidence\_of\_assocScore\_eq}.
+\item \textbf{PAT is a complementary structural channel, not reducible to
+  ASSOC syntax alone.} \textsc{Strengthened}.  Endpoints:
+  \code{PATScoreCorrespondence},
+  \code{patEvidence\_eq\_scoreToEvidence\_of\_patScore\_eq}, and
+  \code{AssocPatSemanticModel}.
+\item \textbf{Universal-mixture intensional inheritance is the
+  base-2 log ratio of conditionals.} \textsc{Proved}.  Endpoints:
+  \code{intensionalFromConditional\_eq\_log2\_ratio},
+  \code{intensionalFromXiSemimeasure\_eq\_log2\_ratio}, and
+  \code{intensionalFromXiGeom\_eq\_log2\_ratio}.
+\item \textbf{The chapter's Kolmogorov / normalized-information-distance gloss.}
+  \textsc{Strengthened}.  The exact formal endpoint is the
+  universal-mixture log-ratio theorem above; the complexity-distance
+  language is retained only as interpretation, not as the primary
+  theorem statement.
+\item \textbf{$\mathrm{InhInt}(A, B) = \alpha \cdot \mathrm{Ext}(A, B) +
+  (1 - \alpha) \cdot \mathrm{IntAssoc}(A, B)$.} \textsc{Disproved}.
+  Endpoints: \code{binary\_mixed\_policy\_collapse\_no\_go},
+  \code{mixed\_not\_assoc\_only}, and
+  \code{pat\_channel\_nontrivial}.
+\item \textbf{Concrete mixed projections and their divergence are explicit.}
+  \textsc{Proved}.  Endpoints:
+  \code{canary\_ch12\_mixed\_extensional\_projection},
+  \code{canary\_ch12\_mixed\_assoc\_projection}, and
+  \code{canary\_ch12\_mixed\_projection\_non\_equivalent}.
+\item \textbf{Typed ASSOC/PAT semantic packaging has selector-specialized
+  end-to-end endpoints.} \textsc{Proved}.  Endpoints:
+  \code{mixedPolicy\_assocPat},
+  \code{end\_to\_end\_assocPat\_bayesNormal\_lower},
+  \code{end\_to\_end\_assocPat\_bayesExact\_lower}, and
+  \code{end\_to\_end\_assocPat\_walley\_lower}.
+\end{itemize}
+
+\section{Settlement}
+
+No chapter-level formula above remains open: each is now explicitly
+marked as proved, strengthened to the corrected typed statement, or
+ruled out.  Any further alias polish would be presentational only and
+would not change the mathematical status of the chapter.
+
+\section{Verdict}
+
+\verdictCorrected{}.  The book's binary extensional+ASSOC mixture is too
+weak as stated.  In the corrected typed setting, ASSOC and PAT live as
+separate channels with explicit semantic packaging, Solomonoff linkage,
+selector-specialized endpoints, and a constructive no-go against
+collapsing them to a binary mixed policy.
+
+
+\chapter{Chapter 13: Aspects of Inference Control}
+\label{ch:review-ch13}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~13 discusses how to control PLN inference: which rules to apply,
+which premises to select, how to allocate computational resources.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item Formal selector specifications ---
+  \codepath{Mettapedia/Logic/PremiseSelectionSelectorSpec.lean}
+\item Ranking transfer (optimality under distribution shift) ---
+  \codepath{Mettapedia/Logic/PremiseSelectionOptimality.lean}
+\item Ranking stability ---
+  \codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean}
+\item Coverage/submodularity with greedy guarantee ---
+  \codepath{Mettapedia/Logic/PremiseSelectionCoverage.lean}
+\item Inference-control core composition ---
+  \codepath{Mettapedia/Logic/PLNInferenceControlCore.lean}
+\item Canary and regression targets ---
+  \codepath{Mettapedia/Logic/PLNInferenceControlCanary.lean},
+  \codepath{Mettapedia/Logic/PLNInferenceControlRegression.lean}
+\end{itemize}
+
+\section{What Required Correction}
+
+No fundamental corrections.  The formalization adds:
+\begin{itemize}
+\item Submodularity (not in the book) with the $(1-1/e)$ greedy
+  approximation guarantee.
+\item Coverage surrogate no-go: coverage and cardinality are insufficient
+  for risk-sensitive selection.
+\end{itemize}
+
+\section{Counterexamples}
+
+\begin{itemize}
+\item \code{sameCoverageAndCard\_differentFalsePositiveRisk}: coverage
+  surrogate limitation.
+\end{itemize}
+
+\section{What Remains Heuristic}
+
+The systems-engineering aspects of inference control (scheduling,
+resource allocation, attention) are operational and not theorem-level.
+
+\section{Verdict}
+
+\verdictClean{}.  The mathematical core of inference control formalizes
+well, with the submodularity story going beyond the book.
+
+
+\chapter{Chapter 14: Temporal and Causal Inference}
+\label{ch:review-ch14}
+
+\section{What the Book Is Trying to Do}
+
+Chapter~14 extends PLN to temporal reasoning (before/after/during) and
+causal inference (cause-effect relationships).
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item Temporal predicate type: $\mathrm{TemporalPred}(D, T) = D \to T \to \mathrm{Prop}$
+\item Simultaneous operators: $\mathrm{SimAND}(P, Q)(x, t) = P(x,t) \wedge Q(x,t)$
+\item Sequential operators:
+  $\mathrm{SeqAND}(P, Q)(x, t) = P(x, t) \wedge \exists \Delta > 0.\; Q(x, t + \Delta)$
+\item Predictive implication:
+  $\mathrm{PredImpl}(P, Q)(x, t) = P(x, t) \Rightarrow \exists \Delta.\; Q(x, t + \Delta)$
+\item 3-node predictive chain with temporal bounds ---
+  \codepath{Mettapedia/Logic/PLNTemporalCausalInference.lean}
+\item Probabilistic event calculus ($\mathrm{Happens}$, $\mathrm{Initiates}$,
+  $\mathrm{Terminates}$, $\mathrm{HoldsAt}$) ---
+  \codepath{Mettapedia/Logic/PLNProbabilisticEventCalculus.lean}
+\item One-call event endpoints ---
+  \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}
+\end{itemize}
+
+\section{What Required Correction}
+
+No corrections needed.  The formalization treats temporal/causal
+inference as another world-model instance rather than a separate
+ontology.  The key insight: temporal structure lives in the
+world-model state, temporal operators live in the query language,
+and the evidence/revision machinery operates unchanged.
+
+\section{Counterexamples}
+
+None.
+
+\section{What Remains Heuristic}
+
+The philosophical aspects of causation (interventionist vs.\
+counterfactual vs.\ probabilistic) are not resolved by formalization;
+the formalization provides the probabilistic-event-calculus substrate.
+Granger-style temporal precedence is used to distinguish causation from
+correlation within the world-model framework, but this is a pragmatic
+rather than metaphysical choice.
+
+\section{Verdict}
+
+\verdictClean{}.  Compact core that formalizes as a WM instance.  The
+temporal/causal layer is one of the cleanest demonstrations of the
+world-model approach: a single kernel, many instantiations.
+
+
+\chapter{Appendix A: Comparison of PLN and NARS}
+\label{ch:review-appA}
+
+\section{What the Book Is Trying to Do}
+
+Appendix~A compares PLN's inference rules with NARS (Non-Axiomatic
+Reasoning System), showing correspondences and differences.
+
+\section{What Formalizes Cleanly}
+
+\begin{itemize}
+\item Consolidated PLN$\leftrightarrow$NARS comparison package ---
+  \codepath{Mettapedia/Logic/PLNNARSRuleCorrespondence.lean}
+\item Confidence transforms between PLN and NARS evidence ---
+  \codepath{Mettapedia/Logic/NARSEvidenceBridge.lean}
+\item Galois connection between evidence algebras ---
+  \codepath{Mettapedia/Logic/NARSPLNGaloisConnection.lean}
+\end{itemize}
+
+\section{What Required Correction}
+
+None.  The comparison is straightforward once both systems are
+formalized.
+
+\section{Counterexamples}
+
+None.
+
+\section{What Remains Heuristic}
+
+The qualitative comparison of ``PLN philosophy vs.\ NARS philosophy''
+is not theorem-level.
+
+\section{Verdict}
+
+\verdictClean{}.  The rule correspondence and evidence bridge are
+fully formalized.
+
+
+%% ═══════════════════════════════════════════════════════════════════
+\appendix
+%% ═══════════════════════════════════════════════════════════════════
+
+\chapter{Full Theorem Ledger}
+\label{app:ledger}
+
+The complete theorem ledger is maintained in the Lean codebase.
+Key entry points:
+
+\begin{itemize}
+\item \codepath{Mettapedia/Logic/PLNCore.lean} --- umbrella module
+\item \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean} --- canonical API (3806 lines)
+\item \codepath{Mettapedia/Logic/README.md} --- status table and theorem index
+\item \codepath{Mettapedia/Implementation/PLNParityChecklist.lean} --- MeTTa parity
+\end{itemize}
+
+Chapter-specific regression scripts:
+\begin{itemize}
+\item \codepath{scripts/check\_ch8\_neighborhood.sh}
+\item \codepath{scripts/check\_ch9\_positive.sh}
+\item \codepath{scripts/check\_ch11\_quantifiers.sh}
+\item \codepath{scripts/check\_ch11\_fuzzy\_syllogism.sh}
+\item \codepath{scripts/check\_ch12\_intensional.sh}
+\item \codepath{scripts/check\_ch13\_inference\_control.sh}
+\end{itemize}
+
+
+\chapter{Corrected Formulas}
+\label{app:corrected}
+
+\begin{longtable}{p{0.30\textwidth}p{0.30\textwidth}p{0.30\textwidth}}
+\textbf{Book formula} & \textbf{Issue} & \textbf{Corrected version} \\
+\hline
+Deduction: $s_{AC} = f(s_{AB}, s_{BC}, s_B, s_C)$ unconditionally &
+Missing screening-off / positivity scope &
+Same formula, but only under explicit screening-off and positivity side conditions \\
+\hline
+ITV: $[L, U]$ (unspecified semantics) &
+Conflates Bayesian credible and Walley predictive intervals &
+Explicit selector: Bayes-normal, Bayes-exact, or Walley-IDM \\
+\hline
+Intensional: $\text{InhInt} = \alpha \cdot \text{Ext} + (1-\alpha) \cdot \text{Int}$ &
+Binary mixed policy insufficient &
+Typed ASSOC/PAT channels with separate endpoints \\
+\hline
+Multideduction: two-term IE suffices &
+Identifiability no-go &
+Residual decomposition: $|A \cup B| = T_2 + R$ \\
+\hline
+Trail-free: converges &
+2-cycle counterexample &
+Damped variant with fresh evidence \\
+\hline
+Pooling axioms: unique &
+Max-pooling satisfies axioms too &
+External Bayes + total additivity $\Rightarrow$ unique \\
+\hline
+\end{longtable}
+
+
+\chapter{Counterexample Catalogue}
+\label{app:counterexamples}
+
+\begin{longtable}{p{0.30\textwidth}p{0.25\textwidth}p{0.35\textwidth}}
+\textbf{Counterexample} & \textbf{Module} & \textbf{What it blocks} \\
+\hline
+\code{same\_first\_two\_terms\_different\_union} &
+PLNInclusionExclusionIdentifiability &
+Two-term IE identifying union mass \\
+\hline
+\code{orbit\_not\_eventually\_constant} &
+PLNTrailFreeDynamicsCounterexample &
+Trail-free stabilization without damping \\
+\hline
+\code{maxPoolingOperator\_ne\_fuse} &
+PremiseSelectionExternalBayesianity &
+Pooling axioms characterizing additive fusion \\
+\hline
+\code{sameCoverageAndCard\_differentFalsePositiveRisk} &
+PremiseSelectionCoverageCounterexamples &
+Coverage/cardinality surrogate for risk \\
+\hline
+\code{threshold\_or\_counterexample} &
+OSLFEvidenceSemantics &
+Disjunction threshold without total order \\
+\hline
+\code{threshold\_dia\_fails} &
+OSLFEvidenceSemantics &
+Diamond threshold without finite branching \\
+\hline
+\code{no\_binary\_mixed\_policy\_for\_assocPat\_fixture} &
+PLNIntensionalCanary &
+Collapsing ASSOC+PAT to binary law \\
+\hline
+No-go (local completeness) &
+PLNJointEvidenceNoGo &
+Computing exact link evidence from local premises \\
+\hline
+\end{longtable}
+
+
+\chapter{Deferred Claims}
+\label{app:deferred}
+
+\begin{longtable}{p{0.25\textwidth}p{0.35\textwidth}p{0.30\textwidth}}
+\textbf{Claim} & \textbf{Why deferred} & \textbf{Status} \\
+\hline
+Executable PLN engine &
+Requires MeTTa/Hyperon runtime &
+\verdictHeuristic{} \\
+\hline
+Arbitrary-domain quantifier parity &
+Basic infinitary semantics exist; full theorem/canary parity remains &
+Partial \\
+\hline
+Chapter~12 asserted claim set &
+No longer deferred: claim audit complete; chapter formulas are now explicitly proved, strengthened, or ruled out &
+Settled \\
+\hline
+Universal Prediction core &
+21-file WIP module &
+Not in stable narrative \\
+\hline
+Chapter~9 operational closure &
+Theorem-level complete; runtime pending &
+\verdictHeuristic{} \\
+\hline
+\end{longtable}
+
+
+\chapter{Notation Translation}
+\label{app:notation-translation}
+
+\begin{longtable}{p{0.25\textwidth}p{0.30\textwidth}p{0.35\textwidth}}
+\textbf{PLN book} & \textbf{Lean} & \textbf{\xiPLN{} notation} \\
+\hline
+$\langle s, c \rangle$ & \code{STV s c} & $\STV{s}{c}$ \\
+Strength $s$ & \code{queryStrength} & $\strength(W, q)$ \\
+Confidence $c$ & \code{queryConfidence} & $\confidence(W, q)$ \\
+Evidence $(n^+, n^-)$ & \code{Evidence.mk nPos nNeg} & $\Evidence$ \\
+Revision & \code{Evidence.add} & $e_1 \hplus e_2$ \\
+$P(B | A)$ & \code{link A B} query & $\code{link}(A, B)$ \\
+Inheritance $A \Rightarrow B$ & concept-side of \code{link} & Link query \\
+Implication & predicate-side of \code{link} & Link query \\
+World model & \code{WorldModel State Query} & $\WorldModel$ \\
+Side conditions & \code{WorldModelSigma.sigma} & $\Sigma$ \\
+Indefinite TV $[L, U]$ & \code{ITVSelector} choice & Typed ITV with selector \\
+\hline
+\end{longtable}
+
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

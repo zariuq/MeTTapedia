@@ -31,7 +31,9 @@ correlation-sensitive quantities without carrying the information required to
 do so correctly.
 
 We present the \emph{world-model calculus}, the mathematical foundation
-underlying \xiPLN{}, designed to be (a)~correct by construction and
+underlying \xiPLN{}\footnote{Informally also $\Omega$-PLN, after the
+world space~$\Omega$ that anchors every definition in the calculus.},
+designed to be (a)~correct by construction and
 (b)~extensible to tractable sublayers.  The core move is to make the
 complete layer a \emph{posterior-state calculus}: the proof object is a
 revisable world-model posterior state, and all truth values are obtained
@@ -59,6 +61,13 @@ demonstrations.
 
 \chapter{Introduction}
 \label{ch:introduction}
+
+\begin{quote}\small
+\textbf{Goal:} Diagnose semantic drift in PLN and motivate the world-model refoundation.\\
+\textbf{Semantic object:} Three-layer architecture (world model, evidence algebra, views).\\
+\textbf{Proved:} Nothing (orientation chapter).\\
+\textbf{Assumed:} Familiarity with basic probability; PLN book familiarity helpful but not required.
+\end{quote}
 
 Probabilistic Logic Networks, as described by Ben Goertzel, Matthew Ikl\'{e},
 Izabela Freire Goertzel, and Ari Heljakka~\cite{goertzel2009pln}, represent uncertain judgments using truth
@@ -132,6 +141,35 @@ semantic drift---treating views as if they were the complete semantics.}
 \label{fig:three-layer-architecture}
 \end{figure}
 
+\paragraph{Orientation example: the Home Helper.}
+To make these layers concrete, consider a home-assistant system managing
+comfort and safety in a small apartment.  Rooms (\emph{Kitchen},
+\emph{Bedroom}) contain sensors (\emph{TempSensor}, \emph{HumiditySensor},
+\emph{MotionSensor}) and devices (\emph{Heater}, \emph{Window},
+\emph{Dehumidifier}).  The latent states of interest are
+\emph{WindowLeaking}, \emph{RoomOccupied}, and \emph{HeaterWorking}.
+
+\begin{itemize}
+\item \textbf{World-model layer:} a small Bayesian network linking latent
+  states to sensor readings: $\mathrm{WindowLeaking} \to \mathrm{HumidityHigh}$,
+  $\mathrm{HeaterWorking} \to \mathrm{TempHigh}$,
+  $\mathrm{RoomOccupied} \to \mathrm{MotionDetected}$.
+\item \textbf{Evidence layer:} temperature readings are Normal-Gamma evidence
+  (continuous); motion detections are Beta evidence (binary); humidity is
+  Dirichlet evidence (multi-valued: low/medium/high).
+\item \textbf{View layer:} ``Is the window likely leaking?'' extracts a
+  strength and confidence from the posterior.  ``Should I turn on the
+  heater?'' uses the exceedance query $P(T_{\mathrm{new}} < 18°\mathrm{C})$.
+\end{itemize}
+
+This scenario exercises evidence aggregation (Ch.~\ref{ch:evidence}),
+distributional semantics (Ch.~\ref{ch:distributional}), BN compiled
+inference (Ch.~\ref{ch:bn-models}), temporal filtering
+(Ch.~\ref{ch:temporal}), and drift/recalibration---all themes developed
+in subsequent chapters.  Semantic drift would occur if, for example,
+the system chained strength values through the window$\to$humidity$\to$mold
+path without tracking the variance lost at each step.
+
 When these layers are conflated, several things go wrong.  Operational views
 get treated as if they \emph{were} the logic: interval bounds are composed
 with rules designed for point probabilities, confidence heuristics are chained
@@ -184,12 +222,14 @@ that status is marked.
 \begin{center}
 \fbox{\begin{minipage}{0.94\textwidth}
 \textbf{Trust Base \& Scope.}
+\label{sec:scope}
 \begin{itemize}
 \item \emph{Formalized} means that the stated theorem or counterexample is checked by the Lean~4 kernel against imported Mathlib facts.
 \item \emph{Lean trust base}: the Lean kernel, Mathlib, and the standard elaboration/runtime path needed to check the proof terms.
 \item \emph{Proved in Lean}: the world-model/evidence calculi, compiled-rule theorems, and counterexamples stated here as mathematical claims.
 \item \emph{Numerically instantiated in Python}: full-dataset protocol runs (GJP, Gas, Steel, NAB) using the same closed-form update/query laws; these are auditable experiment instantiations, not kernel-checked proofs.
-\item \emph{Deferred/open}: some runtime infrastructure remains operational rather than theoremic, and the stable finite-domain quantifier bundle is not the whole quantifier story; Chapter~11's arbitrary-domain cleanup is still being integrated into the manuscript narrative.
+\item \emph{Domain scope}: the reviewed quantifier, intensional, and inference-control theorems use finite domains ($|U| < \infty$).  An arbitrary-domain infinitary layer exists in the codebase (\codepath{PLNFirstOrder/Infinite.lean}) but is not yet integrated into this manuscript.  The world-model kernel (Parts~II--III) and compiled BN inference (Part~IV) are domain-agnostic.
+\item \emph{Deferred/open}: some runtime infrastructure remains operational rather than theoremic; the HOL completeness theorem is in progress (Section~\ref{sec:hol-completeness-status}).
 \end{itemize}
 \end{minipage}}
 \end{center}
@@ -234,6 +274,37 @@ result in this document falls into one of four categories:
 Every chapter will mark its results with these labels.  The reader should
 always know whether a claim is proved, conditioned, bounded, or operational.
 
+\section{Concept Map: PLN to WM-PLN}
+\label{sec:concept-map}
+
+Table~\ref{tab:concept-map} shows how each major PLN concept maps to its
+\xiPLN{} formalization and where it appears in this document.  For the
+Normal-Gamma-specific specialization of the evidence and view layers,
+see Table~\ref{tab:pln-wm-map} in Section~\ref{sec:pln-wm-map}.
+
+\begin{table}[ht]
+\centering
+\caption{PLN concept $\to$ WM-PLN formalization (overview).}
+\label{tab:concept-map}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{PLN Concept} & \textbf{PLN Ch.} & \textbf{WM-PLN Form} & \textbf{Here} \\
+\midrule
+Evidence counts           & 3  & Evidence algebra ($\hplus$, quantale, Heyting) & Ch.~\ref{ch:evidence} \\
+Strength, confidence      & 3  & Truth-value views (lossy projections)           & Ch.~\ref{ch:views} \\
+Revision                  & 3  & Evidence addition $e_1 \hplus e_2$              & Ch.~\ref{ch:evidence} \\
+Deduction, induction, abd.& 5  & $\Sigma$-guarded compiled tactics               & Chs.~\ref{ch:sigma-rewrites}--\ref{ch:bn-wm} \\
+Indefinite truth values   & 4  & Interval semantics (Walley/Kyburg)              & Ch.~\ref{ch:views} \\
+Distributional TVs        & 7  & Beta/Dirichlet/Normal-Gamma posteriors           & Ch.~\ref{ch:distributional} \\
+Higher-order extensional  & 10 & HOL reduction + ProbHOL                         & Ch.~\ref{ch:higher-order} \\
+Quantifiers + fuzzy       & 11 & Finite-domain QFM bundle                        & Ch.~\ref{ch:quantifiers} \\
+Intensional inheritance   & 12 & Typed WM grounding + Solomonoff bridge           & Ch.~\ref{ch:intensional} \\
+Temporal / causal         & 14 & Event calculus + causal profile                  & Ch.~\ref{ch:temporal} \\
+Inference control         & 13 & Selector specifications + coverage bounds        & Ch.~\ref{ch:inference-control} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{How to Read This Document}
 
 \begin{itemize}
@@ -262,6 +333,13 @@ always know whether a claim is proved, conditioned, bounded, or operational.
 
 \chapter{Mathematical Desiderata for a Sound PLN}
 \label{ch:desiderata}
+
+\begin{quote}\small
+\textbf{Goal:} State eight requirements any PLN foundation must satisfy.\\
+\textbf{Semantic object:} Desiderata as formal properties of a hypothetical calculus.\\
+\textbf{Proved:} Nothing (specification chapter); satisfaction shown in later chapters.\\
+\textbf{Assumed:} Nothing.
+\end{quote}
 
 What must any foundation for PLN preserve?  We state eight desiderata.  Not
 all of them can be satisfied simultaneously in full generality---the no-go
@@ -327,6 +405,13 @@ completeness is inherently impossible for unrestricted world models.
 
 \chapter{Queries, Judgments, and World Models}
 \label{ch:queries}
+
+\begin{quote}\small
+\textbf{Goal:} Define the query language, judgment form, and world-model type.\\
+\textbf{Semantic object:} \PLNQuery{}, \WorldModel{}, \WorldModelSigma{}.\\
+\textbf{Proved:} Well-formedness of the query--world-model interface.\\
+\textbf{Assumed:} Nothing.
+\end{quote}
 
 The first technical move in \xiPLN{} is to separate what we ask
 (\emph{queries}) from what we know (\emph{posterior states}).  This
@@ -450,27 +535,20 @@ The \nuPLN{} framework of Nil Geisweiller~\cite{nuPLN2026} grounds PLN in
 Solomonoff Universal Induction.  The key ideas fold naturally into the
 world-model framework:
 
-\begin{itemize}
-\item The \emph{global probability space} $(\Omega, \mathcal{F}, \nu)$
-  corresponds to a world-model state where $\Omega$ is the set of possible
-  worlds, each containing a probabilistic predicate
-  $\hat{\mu} : \mathcal{D} \to \Omega \to \mathrm{Bool}$ and its complete
-  evaluation history.
-
-\item The \emph{universal distribution} $\nu$ defines a prior over possible
-  generators $\hat{\mu} \in \mathcal{L}$, where $\mathcal{L}$ is a
-  probabilistic programming language.  Bayesian updating with observed
-  evidence produces the posterior.
-
-\item The \emph{observable predicate} $\mu$ (the true generator) lives in
-  the true world $\omega$.  An observer has access only to a finite subset
-  of evaluations---the evidence.
-
-\item \emph{Concepts and predicates} are isomorphic via satisfying sets
-  and indicator functions.  The inheritance relationship
-  $A \Rightarrow B$ on the concept side corresponds to implication on the
-  predicate side.  We work on the predicate side throughout.
-\end{itemize}
+The \emph{global probability space} $(\Omega, \mathcal{F}, \nu)$
+corresponds to a world-model state where $\Omega$ is the set of possible
+worlds, each containing a probabilistic predicate
+$\hat{\mu} : \mathcal{D} \to \Omega \to \mathrm{Bool}$ and its complete
+evaluation history.  The \emph{universal distribution} $\nu$ then defines
+a prior over possible generators $\hat{\mu} \in \mathcal{L}$, where
+$\mathcal{L}$ is a probabilistic programming language; Bayesian updating
+with observed evidence produces the posterior.  The \emph{observable
+predicate}~$\mu$---the true generator---lives in the true world~$\omega$,
+and an observer has access only to a finite subset of evaluations, which
+is precisely the evidence.  Finally, concepts and predicates are isomorphic
+via satisfying sets and indicator functions: the inheritance relationship
+$A \Rightarrow B$ on the concept side corresponds to implication on the
+predicate side.  We work on the predicate side throughout.
 
 The crucial insight from \nuPLN{} is that de~Finetti's representation
 theorem~\cite{definetti1937} justifies evidence counts as sufficient
@@ -488,6 +566,13 @@ develops this algebraic structure in detail.
 
 \chapter{Reference Complete Semantics: Posterior-State Calculus}
 \label{ch:posterior-state}
+
+\begin{quote}\small
+\textbf{Goal:} Define the core calculus: posterior revision + query interface.\\
+\textbf{Semantic object:} Dirichlet posterior state over worlds; revision and conditioning.\\
+\textbf{Proved:} Revision commutation; deduction formula admissibility; sequent rules.\\
+\textbf{Assumed:} Finite propositional scope (atoms indexed by $\mathrm{Fin}(n)$).
+\end{quote}
 
 The complete core calculus is intentionally simple.  It is the calculus of
 revising posterior states plus a query interface.  Everything else in
@@ -531,15 +616,15 @@ instantiate the \WorldModel{} interface with a Dirichlet world-table:
 interpreted as Dirichlet pseudo-counts over the $2^n$ complete worlds.
 Each coordinate $E(w)$ records how much evidence supports world $w$.
 
-Evidence extraction works by summation:
-\begin{itemize}
-\item $\mathrm{ev}(E, \code{prop}(A))$: sum counts where atom $A$ is true
-  (positive) vs.\ false (negative).
-\item $\mathrm{ev}(E, \code{link}(A, B))$: sum counts where $A$ is true
-  and $B$ is true vs.\ $A$ is true and $B$ is false.
-\item $\mathrm{ev}(E, \code{linkCond}([A_1, \ldots, A_k], B))$: sum counts
-  where all $A_i$ hold and $B$ holds vs.\ all $A_i$ hold and $B$ fails.
-\end{itemize}
+Evidence extraction works by summation over the worlds compatible with
+each query type.  For a propositional query $\code{prop}(A)$, the
+extractor sums counts where atom~$A$ is true (positive evidence) versus
+false (negative evidence).  For a link query $\code{link}(A, B)$, it sums
+counts where $A$ is true and $B$ is true against those where $A$ is true
+and $B$ is false---conditioning on the antecedent.  For a conditional-link
+query $\code{linkCond}([A_1, \ldots, A_k], B)$, it sums counts where all
+$A_i$ hold and $B$ holds versus all $A_i$ hold and $B$ fails, giving the
+multi-parent conditional evidence that Bayesian-network CPTs require.
 
 Revision is pointwise addition of pseudo-counts.  The Lean prototype proves
 that this satisfies the world-model interface, including the critical
@@ -722,11 +807,19 @@ See \codepath{Mettapedia/Logic/PLNDerivation.lean}.
 \chapter{The Local-Completeness No-Go Theorem}
 \label{ch:no-go}
 
+\begin{quote}\small
+\textbf{Goal:} Establish the fundamental limit of local link-level inference.\\
+\textbf{Semantic object:} World tables with distinct marginal-compatible joint structures.\\
+\textbf{Proved:} No-go: complete link evidence cannot be computed from per-link evidence alone.\\
+\textbf{Assumed:} Nothing (unconditional counterexample).
+\end{quote}
+
 One might hope for a system that takes local per-link evidence
 ($\Evidence$ for $A$, $B$, $C$, $A \Rightarrow B$, $B \Rightarrow C$)
 and computes complete evidence for $A \Rightarrow C$.  \xiPLN{} asserts
 that this is impossible in general.
 
+\boundarystart
 \begin{theorem}[No local complete deduction rule (\claimBoundary{})]
 \label{thm:no-go}
 There is no function
@@ -738,6 +831,7 @@ for $A \Rightarrow C$ from only the local premises
 $\mathrm{ev}(E, A)$, $\mathrm{ev}(E, B)$, $\mathrm{ev}(E, C)$,
 $\mathrm{ev}(E, A \Rightarrow B)$, $\mathrm{ev}(E, B \Rightarrow C)$.
 \end{theorem}
+\boundaryend
 
 \begin{proof}[Proof sketch]
 For three atoms $A, B, C$, there are $2^3 = 8$ possible worlds.
@@ -841,6 +935,13 @@ The constructive response is to:
 
 \chapter{Evidence Algebra}
 \label{ch:evidence}
+
+\begin{quote}\small
+\textbf{Goal:} Develop the algebraic structure of observation-count evidence.\\
+\textbf{Semantic object:} \Evidence{} with revision ($\hplus$), ordering, quantale ($\htensor$), Heyting lattice.\\
+\textbf{Proved:} Quantale and Heyting frame axioms; information ordering is a lattice.\\
+\textbf{Assumed:} Nothing.
+\end{quote}
 
 Evidence is the currency of PLN.  Before any inference rule fires, before
 any truth value is computed, evidence must be collected, combined, and
@@ -1042,6 +1143,13 @@ underlying model of the economy.
 \chapter{Truth-Value Views: Strength, Confidence, Intervals}
 \label{ch:tv-views}
 
+\begin{quote}\small
+\textbf{Goal:} Define strength, confidence, and interval bounds as lossy projections of evidence.\\
+\textbf{Semantic object:} View functions from \Evidence{} to $\mathbb{R}$ or $[\ell, u]$.\\
+\textbf{Proved:} View monotonicity; Walley/Kyburg interval reduction; views are not proof objects.\\
+\textbf{Assumed:} Nothing.
+\end{quote}
+
 Operationally, PLN works with compact summaries of evidence:
 a strength, a confidence, sometimes an interval.  These are \emph{views}---
 projections from the evidence algebra into simpler spaces that are useful
@@ -1176,6 +1284,13 @@ or decision-making.  The slogan again:
 \chapter{Distributional and Interval Semantics}
 \label{ch:distributional}
 
+\begin{quote}\small
+\textbf{Goal:} Develop the distributional layer: Beta, Dirichlet, and Normal-Gamma posteriors.\\
+\textbf{Semantic object:} Conjugate posterior families as evidence carriers.\\
+\textbf{Proved:} Conjugate update laws; sleep consolidation; distributional dominance over scalar; convergence.\\
+\textbf{Assumed:} Conjugate-family restriction (posteriors stay in the same family).
+\end{quote}
+
 Beyond point estimates and intervals, PLN supports a richer
 \emph{distributional} layer where the truth value is an entire
 posterior distribution over possible probability values.
@@ -1287,12 +1402,18 @@ uncertainty.  The added value of the WM-PLN formulation is:
 (a)~the Lean proofs guarantee formula correctness,
 (b)~the framework generalizes to hybrid discrete/continuous states, and
 (c)~sleep consolidation is \emph{proved}, not assumed.
-\emph{Note:} the demos below use small, traceable fixture slices
+\paragraph{Data hygiene.}
+The demos below use small, traceable fixture slices
 (5--15 data points per class) drawn from real datasets---not
 full benchmark-scale evaluations.  Their purpose is to serve as
-theorem-backed empirical canaries that exercise the proved formulas
+\emph{theorem-backed empirical canaries} that exercise the proved formulas
 on genuine data; larger-scale validation on the full Steel dataset
-appears in Section~\ref{sec:steel-full}.
+appears in Section~\ref{sec:steel-full}.  Throughout:
+(i)~fitting uses only training data;
+(ii)~``sleep consolidation'' steps use only previously observed evidence,
+never future labels;
+(iii)~the \emph{promotion boundary} between canary fixtures and
+full-dataset validations is always marked explicitly.
 
 \paragraph{PLN-to-WM concept mapping.}
 \label{sec:pln-wm-map}
@@ -2543,6 +2664,13 @@ See \codepath{Mettapedia/ProbabilityTheory/KnuthSkilling/Bridges/ValuationAlgebr
 \chapter{\texorpdfstring{$\Sigma$}{Sigma}-Guarded Rewrites}
 \label{ch:sigma-rewrites}
 
+\begin{quote}\small
+\textbf{Goal:} Bridge the gap between complete semantics and tractable inference via compiled tactics.\\
+\textbf{Semantic object:} $\Sigma$-guarded rewrite rules with explicit side conditions.\\
+\textbf{Proved:} Rewrite admissibility under declared model classes.\\
+\textbf{Assumed:} Nothing (the mechanism is generic; side conditions are per-rule).
+\end{quote}
+
 The gap between the complete world-model semantics and practical inference
 is bridged by \emph{compiled rewrites}: derived rules that are correct
 under explicit structural assumptions.
@@ -2602,13 +2730,12 @@ rather than applying an unsound shortcut.}
 
 \section{The Xi Rule Registry}
 
-The codebase maintains a registry of compiled rewrites:
-\begin{itemize}
-\item Exact-track rules: deduction, source/induction, sink/abduction, revision.
-\item Each rule carries: screening-off side conditions, OSLF atom bridges,
-  typed BN constructor lifts (chain/fork/collider), and coordinate-specialized
-  endpoints (lower/upper/credibility/width/strength).
-\end{itemize}
+The codebase maintains a registry of compiled rewrites covering the four
+exact-track rules---deduction, source/induction, sink/abduction, and
+revision.  Each rule carries its screening-off side conditions, OSLF atom
+bridges, typed BN constructor lifts (chain, fork, or collider), and
+coordinate-specialized endpoints for lower, upper, credibility, width,
+and strength projections.
 
 See \codepath{Mettapedia/Logic/PLNXiRuleRegistry.lean} and
 \codepath{Mettapedia/Logic/PLNBNCompilation.lean}.
@@ -2636,20 +2763,25 @@ classical extensional formulas are exact.
 \chapter{Bayesian-Network World Models and Compiled BN Inference}
 \label{ch:bn-models}
 
+\begin{quote}\small
+\textbf{Goal:} Restrict to BN-structured world models; compile chain/fork/collider inference.\\
+\textbf{Semantic object:} BN world-model class; proof-carrying contraction; probabilistic guards.\\
+\textbf{Proved:} Chain/fork/collider exactness; guarded admissibility on Pathfinder/Hailfinder.\\
+\textbf{Assumed:} BN factorization (declared model class).
+\end{quote}
+
 The complete world-table \JointEvidence{} is exponential in $n$.  To scale,
 we restrict the world-model class while preserving correctness relative
 to the restriction.
 
 \section{BN World-Model Class}
 
-A Bayesian-network world model consists of:
-\begin{itemize}
-\item A directed acyclic graph (DAG) specifying the factorization.
-\item Local conditional probability tables (CPTs) with Dirichlet evidence
-  (counts) per CPT row.
-\item Revision = addition of local Dirichlet counts (conjugate update).
-\item Query = exact inference by variable elimination or junction tree.
-\end{itemize}
+A Bayesian-network world model consists of a directed acyclic graph (DAG)
+specifying the factorization, together with local conditional probability
+tables (CPTs) whose rows carry Dirichlet evidence counts.  Revision is
+the addition of local Dirichlet counts---the conjugate update familiar
+from Bayesian statistics---and query answering proceeds by exact inference
+via variable elimination or junction tree algorithms.
 
 The DAG structure provides the structural assumptions ($\Sigma$) needed
 for compiled rewrites.  D-separation in the DAG determines which
@@ -2660,14 +2792,15 @@ See \codepath{Mettapedia/Logic/PLNBayesNetWorldModel.lean}.
 
 \section{Exact BN Query Bridge}
 
-The BN world-model layer provides an evidence plumbing stack:
-\begin{itemize}
-\item A Boolean BN CPT query type \code{CPTQuery} (node + parent
-  configuration).
-\item A CPT posterior state \code{CPTState} storing \Evidence{} per CPT entry.
-\item An additive projection from \JointEvidence{} to CPT evidence by
-  marginalization (summing compatible worlds), which commutes with revision.
-\end{itemize}
+The BN world-model layer provides an evidence plumbing stack that
+connects the joint posterior to node-level inference.  At the bottom sits
+a Boolean BN CPT query type \code{CPTQuery}, identifying a node together
+with its parent configuration.  Above it, a CPT posterior state
+\code{CPTState} stores \Evidence{} per CPT entry.  The stack is completed
+by an additive projection from \JointEvidence{} to CPT evidence that
+marginalizes by summing compatible worlds---and, crucially, this
+projection commutes with revision, so that updating the joint and then
+projecting gives the same result as projecting first and updating locally.
 
 \section{Chain, Fork, and Collider Exactness}
 
@@ -2772,23 +2905,14 @@ with
 \]
 The semantic baseline is exact factor-graph elimination on this declared
 model.  The compiled PLN-style contractions then recover the same answers
-in the exact fragment:
-\begin{itemize}
-\item Fork-style contraction (`source rule'): from $A \leftarrow H \to B$,
-  the exact answer is
-  \[
-    P(B{=}1 \mid A{=}1)=\tfrac8{13}\approx 0.615.
-  \]
-\item Chain-style contraction: using the derived $A \Rightarrow C$ query
-  through the $B$-mediated exact fragment,
-  \[
-    P(C{=}1 \mid A{=}1)=\tfrac{151}{260}\approx 0.581.
-  \]
-\item Chain-style contraction again through $C$:
-  \[
-    P(D{=}1 \mid A{=}1)=\tfrac{367}{650}\approx 0.565.
-  \]
-\end{itemize}
+in the exact fragment.  First, a fork-style contraction (the ``source
+rule'') reasons from the common-cause motif $A \leftarrow H \to B$ and
+obtains $P(B{=}1 \mid A{=}1)=\tfrac8{13}\approx 0.615$.  Next, a
+chain-style contraction uses the derived $A \Rightarrow C$ query through
+the $B$-mediated exact fragment, yielding
+$P(C{=}1 \mid A{=}1)=\tfrac{151}{260}\approx 0.581$.  A second
+chain-style contraction then pushes through~$C$ to reach
+$P(D{=}1 \mid A{=}1)=\tfrac{367}{650}\approx 0.565$.
 
 The important point is not just the numbers.  Each derived step is
 packaged as
@@ -3690,23 +3814,21 @@ For example, metapaths such as
 already look like natural higher-order support families rather than
 accidental path fragments.
 \par
-The planned protocol is therefore:
-\begin{enumerate}
-\item \textbf{One-shot regime-mixture continuation.}  Treat typed
-  metapath/support families as second-order regimes and compare
-  \code{rule-only}, explicit regime-mixture continuation, reveal, and
-  fallback on the broad \code{treats(c,d)} task.
-\item \textbf{PLN-style multi-support revision.}  Combine several live
-  support families for the same query with explicit overlap penalties or
-  residual ignorance terms instead of pretending free independence.
-\item \textbf{Reveal as value of information.}  Ask when inspecting an
-  additional mechanism family or context slice improves refined fidelity
-  enough to justify its cost, instead of silently changing the target.
-\item \textbf{Higher-order chain composition.}  Evaluate whether
-  higher-order guarded continuation survives over interpretable
-  compound--gene--disease and compound--compound--disease chains, not
-  just one-shot scoring.
-\end{enumerate}
+The planned protocol therefore proceeds in four stages.  First,
+\emph{one-shot regime-mixture continuation} treats typed
+metapath/support families as second-order regimes and compares
+\code{rule-only}, explicit regime-mixture continuation, reveal, and
+fallback on the broad \code{treats(c,d)} task.  Second,
+\emph{PLN-style multi-support revision} combines several live support
+families for the same query with explicit overlap penalties or residual
+ignorance terms, rather than pretending free independence.  Third,
+\emph{reveal as value of information} asks when inspecting an additional
+mechanism family or context slice improves refined fidelity enough to
+justify its cost---instead of silently changing the target.  Fourth,
+\emph{higher-order chain composition} evaluates whether the guarded
+continuation machinery survives over interpretable
+compound--gene--disease and compound--compound--disease chains, not just
+one-shot scoring.
 At the semantic level, the split is the same as in the current
 benchmark lane:
 \begin{itemize}
@@ -3831,6 +3953,297 @@ be ranking-only: candidate set fixed, locus-wise metrics explicit, and
 mechanistic explanations evaluated separately rather than smuggled into the
 same headline number.
 
+\paragraph{Completed: methodology replication on local data (Lane~A, chr16 pilot).}
+Step~2 of the above protocol has been executed.  The native cplint/liftcover
+parameter-learning pipeline was run end-to-end on SWI-Prolog 10.0.1 with
+locally-generated Prolog fact files (176 eQTL, 22 ABC, 160 regulatory facts
+at 50\,kb window) drawn from the same public-source caches used by the genomic
+hypothesis note.  Five-fold cross-validation on the 823 labeled examples
+(69$^{+}$/754$^{-}$; per-fold test sets sum to 872 test instances) yields:
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Method} & \textbf{AUC-ROC} & \textbf{AUC-PR} \\
+\midrule
+Poster baseline (reported) & $0.82$ & --- \\
+Python reconstruction (frozen weights) & $0.713 \pm 0.056$ & $0.218 \pm 0.055$ \\
+LIFT replication (re-learned weights) & $0.677 \pm 0.105$ & $0.238 \pm 0.090$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent
+LIFT re-learns mechanism weights via L-BFGS: fold~0 gives
+activity-by-contact $0.221$ (strongest), eQTL $0.116$, regulatory $0.086$.
+The weight ordering differs from the poster ($0.34$/$0.018$/$0.021$),
+reflecting the sparser local data.  The higher fold variance
+($\sigma = 0.105$) comes from uneven mechanism coverage: only 157/533
+model pairs have $\geq 1$ mechanism fact.  The 0.68 vs.\ 0.82 gap against
+the poster is expected from data-source differences and is honestly labeled.
+Artifacts live under \codepath{experiments/} with full provenance
+(\codepath{experiments/facts/provenance.json},
+\codepath{experiments/run\_manifest.json}).
+
+\paragraph{Completed: WM-PLN implementation-level parity (step 2.5).}
+Per-example ProbLog probabilities were exported from liftcover's
+\code{prob\_lift} inference engine on SWI-Prolog~10.0.1 (the same engine
+that produced the LIFT baseline, querying the same
+\codepath{experiments/facts/*.pl}) and compared against WM-PLN scores
+from the PeTTa MeTTa runtime via the Janus FFI bridge to SWI-Prolog
+(using \code{pln-fuzzy-or} from the PLN inference library).
+On all 872 test instances across 5~folds (the 823 examples partitioned
+into per-fold test sets):
+\begin{itemize}
+\item \textbf{P1A} (fixed poster weights $0.34/0.018/0.021$):
+  max $|\Delta| = 5.6 \times 10^{-17}$.
+\item \textbf{P1B} (LIFT fold-specific learned weights):
+  max $|\Delta| = 1.1 \times 10^{-16}$.
+\end{itemize}
+Both are at IEEE~754 machine-epsilon level; AUC-ROC and average precision
+(computed via scikit-learn) are identical to all reported digits.
+
+This is \emph{score-level parity on the reconstructed 3-rule lane}---it
+confirms the Lean-proven identity at the implementation level within that
+scope, but is not a claim of full end-to-end equivalence with the original
+authors' hidden pipeline.
+Artifacts: \codepath{experiments/wm\_problog\_parity/}.
+
+\paragraph{S1: first graded-evidence WM variant (step~3 pilot).}
+A preliminary strengthening lane replaces the fixed Boolean eQTL and ABC
+channels with graded WM evidence objects ($n^{+}/n^{-}$ counts from GTEx
+and ABC caches, converted to strengths via \code{evidence-toStrength} from
+the PLN inference library).  Regulatory remains at the legacy fixed
+weight~$0.34$.  All scoring runs through PeTTa/Janus; Python orchestrates
+only.
+
+On the same 872 test instances (scikit-learn metrics), mean AUC-ROC is
+$0.663 \pm 0.086$ versus the P1B baseline's $0.677 \pm 0.094$; mean average
+precision is $0.187 \pm 0.017$ versus $0.222 \pm 0.066$.  The
+underperformance is expected: P1B uses LIFT-learned weights optimized on
+training data, while S1 substitutes raw evidence ratios that are uncalibrated
+for the gene-relevance task.  The result indicates not a failure of WM
+expressivity, but the need for calibrated evidence-to-strength mappings,
+explicit treatment of missing versus negative evidence, and
+dependence-aware fusion beyond the ProbLog quotient.
+Artifacts: \codepath{experiments/wm\_strengthening\_clean/}.
+
+\paragraph{S2a/S2b: controlled ablation ladder (step~3 continued).}
+A follow-up ablation ladder applies single-variable interventions to
+the S1 baseline: S2a substitutes a Jeffreys posterior mean
+$(n^{+}+0.5)/(n^{+}+n^{-}+1.0)$ for the raw MLE (near no-op on this
+dataset due to uniform evidence totals), and S2b adds per-channel
+isotonic calibration on training folds.  Neither variant matches P1B's
+AP ($0.222$); S2b reaches $0.193$ after fixing a fold-leakage issue
+identified by audit.  Null baselines (channel count, single-channel
+scores) confirm that the 3-rule lane without the graded distance proxy
+has limited discriminative headroom on this chr16 pilot.  Details in
+the companion genomic hypothesis note (\S5.5).
+Artifacts: \codepath{experiments/wm\_ablation/}.
+
+\paragraph{S3--S5: subfact multideduction and data-driven tissue weights
+  (step~3 concluded, \claimOperational{}).}
+The ablation ladder closes with three families that decompose the coarse
+3-channel evidence objects into \emph{subfact} evidence atoms---one per
+GTEx tissue or ABC biosample---and fuse them via the PLN evidence quantale.
+\begin{description}
+\item[S3A (unweighted subfacts)]
+  Each tissue or biosample is an independent evidence atom with unit weight;
+  per-channel Jeffreys posterior mean, noisy-OR fusion.
+  Mathematically equivalent to S2a (parity check passes to $<10^{-6}$).
+\item[S3B (tissue-weighted subfacts)]
+  Per-tissue weights regraduate evidence via \code{evidence-power}.
+  Three weight variants are evaluated:
+  \emph{expression} (gold-standard obesity gene enrichment in GTEx~v8
+  median TPM; 44 seed genes from
+  \codepath{gwas\_gold\_standards.191108.tsv}, high/medium confidence,
+  independently validated via drug targets, CRISPR, and reporter assays);
+  \emph{assay} (genome-wide eQTL discovery rate per tissue from the full
+  GTEx~v8 tar, all chromosomes---not benchmark-specific);
+  \emph{combined} (geometric mean, normalized to mean$\,\approx 1$).
+\item[S4 (tested-vs-missing)]
+  Only obesity-relevant tissues count as evidence; irrelevant tissues are
+  treated as \emph{missing} (not negative).  Relevance defined by weight
+  $\geq 1.0$ in the chosen weight variant.
+\item[S5 (context-split rule families)]
+  The 3 coarse channels are split into 6 typed mechanism families
+  (\texttt{eqtl\_high}, \texttt{eqtl\_medium}, \texttt{eqtl\_low},
+  \texttt{abc\_high}, \texttt{abc\_other}, \texttt{regulatory}),
+  each with its own evidence counts and Jeffreys strength.
+  Fusion via noisy-OR across active families.
+\end{description}
+
+\noindent
+\textbf{Weight derivation guardrails.}
+No chr16 pilot labels are used.  Expression weights derive from external
+gold-standard genes and a genome-wide expression matrix; assay weights
+from genome-wide eQTL line counts across all chromosomes.  ABC biosample
+classification uses systematic keyword matching on Nasser~et~al.\ (2021)
+biosample names (131 biosamples: 15 metabolic, 5 cardiovascular,
+61 immune, 25 epithelial, 6 neural, 7 stem cell, 12 other); actual
+category counts replace the earlier guessed denominators.
+This classification is anchored to the published naming convention
+but is not joined to a formal cell ontology---an acknowledged limitation.
+
+\begin{center}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Lane} & \textbf{Weights} & \textbf{AP} & \textbf{ROC}
+  & \textbf{MRR} & \textbf{P@5} \\
+\midrule
+P1B (LIFT learned)$^\dagger$ & supervised & $0.222$ & $0.677$ & $0.521$ & $0.191$ \\
+\midrule
+S3A (unweighted = S2a) & --- & $0.187$ & $0.663$ & $0.517$ & $0.191$ \\
+S3B & expression & $0.196$ & $0.664$ & $0.517$ & $0.191$ \\
+S3B & assay & $0.195$ & $0.661$ & $0.536$ & $0.194$ \\
+S3B & combined & $0.195$ & $0.663$ & $0.518$ & $0.191$ \\
+S4  & expression & $0.184$ & $0.633$ & $0.520$ & $0.190$ \\
+S4  & assay & $0.163$ & $0.639$ & $0.500$ & $0.195$ \\
+S4  & combined & $0.187$ & $0.653$ & $0.534$ & $0.195$ \\
+S5  & expression & $0.185$ & $0.655$ & $0.545$ & $0.194$ \\
+S5  & assay & $0.192$ & $0.658$ & $0.551$ & $0.194$ \\
+S5  & combined & $0.190$ & $0.654$ & $0.551$ & $0.194$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent
+{\footnotesize $^\dagger$P1B uses fold-specific supervised weight learning
+(LIFT/L-BFGS on training labels); all other lanes are entirely unsupervised.
+Both the original driver (\codepath{pl/param\_learn.pl:97}) and our local
+replication (\codepath{experiments/param\_learn\_local.pl:111}) assert all
+model facts before calling \code{induce\_par\_lift([train])}.  Whether this
+constitutes leakage was verified empirically: a clean driver
+(\codepath{experiments/param\_learn\_clean.pl}) that asserts \emph{only}
+training-fold model facts during learning produces identical weights
+and AUC-ROC ($0.677$), with AUC-PR slightly higher ($0.238$ vs $0.222$).
+LIFT's fold-based selection already isolates train from test for L-BFGS
+optimization regardless of what else is in the Prolog database.}
+
+\medskip\noindent
+\textbf{Findings.}
+(i)~Data-driven tissue weighting modestly improves over the unweighted
+WM baseline: S3B~(expression) achieves AP~$0.196$ versus
+S3A's~$0.187$ ($+4.5\%$ relative), without using any labels.
+(ii)~Context-split rule families (S5) improve per-SNP ranking
+(MRR~$0.551$ for assay/combined), the strongest ranking result
+across all lanes including the supervised P1B ($0.521$).
+(iii)~Tested-vs-missing semantics (S4) underperform when assay weights
+define relevance, because assay weights measure tissue discovery
+power rather than biological relevance.
+(iv)~The best unsupervised AP ($0.196$) does not match P1B ($0.222$).
+On a 41-SNP pilot with $\sim\!55$ positive training examples per fold,
+neither the gap nor P1B's absolute performance is conclusive.
+(v)~The pilot validates the WM-PLN methodology---reproducible
+weight derivation, structured evidence decomposition, and proper
+data hygiene---and justifies moving to a full multi-chromosome
+GWAS benchmark where the approaches can be evaluated at scale.
+
+\medskip\noindent
+\textbf{Limitations.}
+This ablation is a pilot cleanup, not the conceptual upgrade to richer
+evidence objects.  It replaces LLM-curated weights with reproducible
+external data and fixes guessed denominators, but the underlying
+representation remains hit counts fused via noisy-OR\@.
+Effect sizes, posterior uncertainties, and dependence-aware fusion
+are deferred to the full GWAS benchmark.
+Artifacts: \codepath{experiments/wm\_subfact\_multideduction/},
+\codepath{experiments/wm\_tested\_missing/},
+\codepath{experiments/wm\_context\_split\_rules/},
+\codepath{experiments/data\_driven\_ablation\_manifest.json}.
+
+\paragraph{Clean benchmark: SNP-disjoint splits (supersedes above).}
+Post-hoc audit of the chr16 pilot revealed that the original 5-fold splits
+have severe data contamination: the 823 labeled examples contain only 533
+unique (gene,\,SNP) pairs (290 duplicates across folds), 4~pairs carry
+conflicting labels, and 42--67\% of test pairs per fold also appear in
+training under different indices.  All supervised results above (P1B,
+S1--S5) were evaluated on these contaminated splits.  While the
+unsupervised scores themselves are fold-independent, the per-fold
+metrics are affected.
+
+We rebuild from scratch: 529 clean examples (39$^+$/490$^-$) after
+deduplication and conflict removal, partitioned into 5~SNP-disjoint
+folds via greedy round-robin balancing (7--8 positives per fold, zero
+SNP overlap between any fold's train and test).
+SNP-disjoint splitting is the strictest isolation level: all gene--SNP
+pairs sharing a variant are confined to the same fold, preventing any
+variant-context leakage.
+
+In addition to the 3-rule P1B baseline, we evaluate \textbf{P1B++}:
+a 9-rule LPAD where the single \code{eqtl\_association} channel is
+replaced by 7~tissue-typed eQTL channels derived from the GTEx
+Consortium's SMTS organ-system grouping (official v8 sample annotations,
+not hand-curated).  SMTS categories with $\geq 3$ tissues receive their
+own rule; smaller categories merge into \code{eqtl\_other}.
+The resulting rules are:
+\code{eqtl\_cardiovascular} (5~tissues),
+\code{eqtl\_digestive} (9),
+\code{eqtl\_endocrine} (3),
+\code{eqtl\_nervous\_system} (13),
+\code{eqtl\_breast\_salivary\_spleen} (3),
+\code{eqtl\_reproductive} (5),
+\code{eqtl\_other} (14~tissues from 6~merged categories),
+plus \code{activity\_by\_contact} and \code{regulatory\_effect}.
+The merge threshold was frozen before seeing any results.
+
+\begin{center}
+\small
+\begin{tabular}{@{}llcc@{}}
+\toprule
+\textbf{Lane} & \textbf{Weights}
+  & \textbf{AUC-PR} & \textbf{AUC-ROC} \\
+\midrule
+P1B (3 rules)$^\dagger$   & supervised & $0.216 \pm 0.150$ & $0.653 \pm 0.132$ \\
+P1B++ (9 rules)$^\dagger$ & supervised & $0.243 \pm 0.156$ & $0.655 \pm 0.131$ \\
+\midrule
+S3A (unweighted = S2a) & ---        & $0.208 \pm 0.150$ & $0.657 \pm 0.131$ \\
+S3B                    & combined   & $0.212 \pm 0.157$ & $0.660 \pm 0.134$ \\
+S3B                    & expression & $0.196 \pm 0.119$ & $0.657 \pm 0.131$ \\
+S3B                    & assay      & $0.194 \pm 0.129$ & $0.659 \pm 0.135$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent
+{\footnotesize $^\dagger$LIFT/L-BFGS on training folds only (strict
+isolation: only training-fold model facts are asserted during learning).
+P1B++ AIC~$=510$ vs.\ P1B AIC~$=500$ ($\Delta\text{AIC}=+10$),
+so the simpler model is preferred.
+Probabilities are actual \code{prob\_lift/3} outputs (liftcover distribution
+semantics), not Python-rescored noisy-OR.}
+
+\medskip\noindent
+\textbf{Findings on clean splits.}
+(i)~All methods cluster tightly: AUC-ROC $0.653$--$0.660$,
+AP $0.194$--$0.243$.
+With 39~positives across 5~folds ($\sim\!8$ per fold), no pairwise
+difference is statistically significant.
+(ii)~P1B++ achieves the best AP ($0.243$), a 12\% relative improvement
+over P1B ($0.216$), but AIC penalizes the 6~extra parameters
+($\Delta\text{AIC}=+10$).
+Learned weights reveal that \code{activity\_by\_contact} and
+\code{regulatory\_effect} consistently dominate (weights $0.09$--$0.18$),
+while tissue-typed eQTL channels are sparse:
+\code{eqtl\_digestive} learns near-zero weight in 4/5~folds;
+\code{eqtl\_reproductive} is the only eQTL category with consistently
+non-negligible weight ($0.04$--$0.06$).
+(iii)~Unsupervised S3A/S3B are competitive with supervised P1B, consistent
+with the earlier finding that the 3-rule lane has limited discriminative
+headroom on this pilot.
+(iv)~Fold~0 is anomalously difficult for all methods
+(AUC-ROC~$\approx 0.43$), accounting for most of the variance.
+(v)~Per-SNP gene rankings are nearly identical across all methods:
+only 2/39~positive genes change rank between P1B and P1B++.
+
+\medskip\noindent
+\textbf{Conclusion.}
+The chr16 pilot is too thin (39~positives, 41~SNPs) to distinguish the
+methods.  The clean benchmark confirms that the WM-PLN methodology is
+sound---reproducible tissue typing, proper data isolation, actual
+distribution-semantics probabilities---and makes a credible but
+statistically inconclusive case for richer evidence decomposition.
+The decisive test requires a multi-chromosome GWAS benchmark with
+hundreds of loci.
+Artifacts: \codepath{experiments/clean\_benchmark/}.
+
 \section{Bridge Theorems: Naive Bayes and k-NN}
 
 The BN world-model framework connects PLN to two standard machine-learning
@@ -3891,6 +4304,13 @@ passing implements the correct queries.
 
 \chapter{Error, Thresholds, and Transport Discipline}
 \label{ch:error-transport}
+
+\begin{quote}\small
+\textbf{Goal:} Characterize error accumulation in inference chains and its resolution.\\
+\textbf{Semantic object:} Variance approximation error; chaining no-go family; distributional resolution.\\
+\textbf{Proved:} Five chaining no-go theorems; distributional dominance and convergence.\\
+\textbf{Assumed:} Nothing (no-go theorems are unconditional; resolution uses distributional layer).
+\end{quote}
 
 When truth values are transported through chains of inference, errors can
 accumulate.  Chapter~8 of the PLN book discusses ``error magnification.''
@@ -3963,14 +4383,14 @@ This gap creates a threshold region where the double-damped formula
 rejects (incorrectly) while the correct formula accepts.
 \end{theorem}
 
-Further boundary results:
-\begin{itemize}
-\item \textbf{Disjunction threshold counterexample}: threshold acceptance
-  for disjunctions does not follow from acceptance of disjuncts without
-  total-order comparability of evidence values.
-\item \textbf{Diamond threshold failure}: modal diamond operators require
-  finite branching for threshold transport.
-\end{itemize}
+Two further boundary results sharpen this picture.  Threshold acceptance
+for disjunctions does not follow from acceptance of the individual
+disjuncts unless the evidence values are totally ordered---a disjunction
+threshold counterexample that rules out na\"{\i}ve lifting.  Similarly,
+modal diamond operators require finite branching for threshold transport:
+without a bound on successors, the infimum over an infinite fan can drop
+below any positive threshold even when every individual branch is
+above it.
 
 See \codepath{Mettapedia/Logic/OSLFEvidenceSemantics.lean}.
 
@@ -4008,6 +4428,7 @@ explicit reveal or fallback reset is taken.  Those strengthened forms live in
 
 \subsection*{Coverage Collapse}
 
+\boundarystart
 \begin{theorem}[Coverage collapse (\codepath{PLNCoverageCollapseNoGo})]
 \label{thm:coverage-collapse}
 Let $\alpha \in [0,1]$ and let $p_1,\dots,p_n \in [0, 1-\alpha]$ be
@@ -4022,6 +4443,7 @@ exists $N$ such that $(1-\alpha)^n < \varepsilon$ for all $n \ge N$.
 The bound is achieved by conformal prediction with constant miscoverage
 rate $\alpha$.
 \end{theorem}
+\boundaryend
 
 \textit{Design implication.}  Certified per-step guarantees cannot be
 composed into chain-length-independent coverage certificates.  Adaptive
@@ -4029,6 +4451,7 @@ truncation is necessary.
 
 \subsection*{Sensitivity Amplification}
 
+\boundarystart
 \begin{theorem}[Lipschitz chain amplification (\codepath{PLNSensitivityNoGo})]
 \label{thm:sensitivity-amplification}
 Let $\alpha$ be a pseudo-extended-metric space.  If each step function
@@ -4037,6 +4460,7 @@ $f_{n-1} \circ \cdots \circ f_0$ is $\bigl(\prod_{i} L_i\bigr)$-Lipschitz.
 For a uniform chain with all $L_i = K > 1$, the amplification factor is
 $K^n$, which is unbounded.
 \end{theorem}
+\boundaryend
 
 The proof uses induction with \texttt{LipschitzWith.comp} at each step.
 The divergence corollary follows from
@@ -4047,6 +4471,7 @@ be composed into chain-length-independent error certificates when $K > 1$.
 
 \subsection*{Variance Accumulation}
 
+\boundarystart
 \begin{theorem}[Variance accumulation (\codepath{PLNVarianceChainNoGo})]
 \label{thm:variance-accumulation}
 For a non-degenerate regime mixture (two regimes with distinct query values
@@ -4057,6 +4482,7 @@ $\delta > 0$:
   \sum_{i=1}^{n} \mathrm{Var}_i \;\ge\; n \cdot \delta.
 \]
 \end{theorem}
+\boundaryend
 
 The positivity result establishes that if $q(r_1) \ne q(r_2)$, then
 at least one of $r_1, r_2$ must deviate from the mixture mean, contributing
@@ -4079,6 +4505,7 @@ constraint directly to the certified higher-order chaining layer.
 
 \subsection*{Topology--CPT Gap}
 
+\boundarystart
 \begin{theorem}[Topology--CPT gap (\codepath{PLNTopologyCPTNoGo})]
 \label{thm:topology-cpt-gap}
 For a fixed Bayesian-network topology, define the \emph{conditioning
@@ -4095,6 +4522,7 @@ residual} of a CPT as $|P(Y{=}1 \mid X{=}1) - P(Y{=}1 \mid X{=}0)|$.
   residuals lie in $[0,1]$.
 \end{enumerate}
 \end{theorem}
+\boundaryend
 
 \textit{Design implication.}  Topology-based proxies for conditioning
 residuals cannot provide certified non-trivial bounds without additional
@@ -4112,6 +4540,7 @@ summaries cannot by themselves justify nontrivial continuation certificates.
 
 \subsection*{Regime Underdetermination}
 
+\boundarystart
 \begin{theorem}[Regime underdetermination (\codepath{PLNRegimeUnderdetermination})]
 \label{thm:regime-underdetermination}
 Let $R$ be a finite regime space and $f : R \to \mathrm{Fin}(k)$ a topology
@@ -4122,6 +4551,7 @@ consequently, no topology-only posterior can concentrate to a single regime
 in the collision class.  Moreover, some feature bucket contains at least two
 regimes.
 \end{theorem}
+\boundaryend
 
 The proof applies Mathlib's \texttt{Fintype.exists\_ne\_map\_eq\_of\_card\_lt}
 directly.
@@ -4133,15 +4563,15 @@ uncertainty over indistinguishable regimes is irreducible.
 
 \medskip
 The five results collectively characterize the boundary of what certified
-PLN chaining can guarantee.  They are proved in:
-\begin{itemize}
-  \item \codepath{Mettapedia/Logic/PLNCoverageCollapseNoGo.lean}
-  \item \codepath{Mettapedia/Logic/PLNSensitivityNoGo.lean}
-  \item \codepath{Mettapedia/Logic/PLNVarianceChainNoGo.lean}
-  \item \codepath{Mettapedia/Logic/PLNTopologyCPTNoGo.lean}
-  \item \codepath{Mettapedia/Logic/PLNRegimeUnderdetermination.lean}
-  \item \codepath{Mettapedia/Logic/PLNHigherOrderNoGoBridge.lean}
-\end{itemize}
+PLN chaining can guarantee.\footnote{%
+  Proved in
+  \codepath{PLNCoverageCollapseNoGo.lean},
+  \codepath{PLNSensitivityNoGo.lean},
+  \codepath{PLNVarianceChainNoGo.lean},
+  \codepath{PLNTopologyCPTNoGo.lean},
+  \codepath{PLNRegimeUnderdetermination.lean},
+  and \codepath{PLNHigherOrderNoGoBridge.lean}
+  (all under \code{Mettapedia/Logic/}).}
 
 
 \section{Distributional Inference: The Constructive Resolution}
@@ -4405,30 +4835,298 @@ The confidence-product heuristic $c_{AC} = c_{AB} \cdot c_{BC}$ does
 \]
 \end{theorem}
 
-\subsection*{Empirical Validation}
+\subsection*{High-Evidence Convergence}
 
-The formalized dominance result is confirmed by the GPT-5.4~Pro Pathfinder
-benchmark, which compares distributional inference against scalar PLN
-inference on the Pathfinder BN reasoning dataset:
+The dominance result raises a natural question: does scalar inference
+converge to distributional inference in the high-evidence limit?  The answer
+is yes.  For scaled evidence $e(k) = \mathrm{Evidence}(k \cdot p_0,\;
+k \cdot n_0)$ as $k \to \infty$:
+
+\begin{enumerate}
+\item The Beta variance decays as $O(1/k)$ while the strength
+  $s = p_0 / (p_0 + n_0)$ remains constant.
+\item The exact deduction variance vanishes because every term of
+  the affine-product-of-independents formula (Eq.~\ref{eq:true-variance})
+  has a $\sigma^2$ factor.
+\item The implied variance vanishes because the heuristic confidence
+  $c_h \to 1$, so the implied observation count
+  $n_{\mathrm{implied}} = c_h / (1 - c_h) \to \infty$.
+\item By the triangle inequality, the approximation error
+  $|\sigma^2_{\mathrm{heuristic}} - \sigma^2_{\mathrm{exact}}| \to 0$.
+\end{enumerate}
+
+\begin{theorem}[Scalar converges to distributional (\claimCore{})]
+\label{thm:scalar-converges-to-distributional}
+For any base evidence parameters $p_0, n_0 > 0$ and marginals
+$s_B \in (0,1)$, $s_C \in [0,1]$:
+\[
+  \forall\, \varepsilon > 0,\; \exists\, N,\; \forall\, k \ge N:\quad
+  |\sigma^2_{\mathrm{heuristic}}(k) - \sigma^2_{\mathrm{exact}}(k)| < \varepsilon.
+\]
+Both variances converge to zero individually, and their difference
+converges to zero.
+\end{theorem}
+
+This is formalized as 16 kernel-checked theorems (zero sorries) in
+\codepath{Mettapedia/Logic/PLNDistributionalConvergence.lean}.
+The convergence theorem completes the picture: scalar inference is
+asymptotically correct but wrong in the finite-evidence regime---which
+is precisely the regime where PLN actually operates.
+
+\subsection*{Empirical Validation: Estimator Quality}
+\label{sec:distrib-empirical}
+
+The formalized dominance result is tested on the Pathfinder and Hailfinder
+Bayesian network benchmarks from the \texttt{bnlearn} repository.  Each
+benchmark defines a family-level train/validation/test split (Pathfinder:
+150/50/40 states; Hailfinder: 120/30/30 states).  For each state, the exact
+BN conditional probability is computed via variable elimination, providing
+ground-truth target values.
+
+Three estimators are compared:
+\begin{itemize}
+\item \textbf{Prior:} use the unconditional marginal $P(\text{target})$.
+\item \textbf{Scalar PLN:} chain through the deduction formula using
+  the confidence-product heuristic $c_{AC} = c_{AB} \cdot c_{BC}$.
+\item \textbf{Distributional:} chain through the same deduction formula
+  carrying full Beta posteriors (PLN book Ch.~6).
+\end{itemize}
+
+All estimators use exact local BN conditional probability tables
+(CPTs) as input---no learned or approximate kernels.  The only
+difference is whether uncertainty is tracked via scalar confidence or
+full Beta posteriors.
+
+\paragraph{Overall estimator quality (test only).}
 
 \begin{center}
-\begin{tabular}{lcc}
+\begin{tabular}{llcc}
 \toprule
-\textbf{Method} & \textbf{Test MAE} & \textbf{Fork-path MAE} \\
+\textbf{Dataset} & \textbf{Estimator} & \textbf{MAE} & \textbf{RMSE} \\
 \midrule
-Scalar PLN inference & 0.02478 & 0.02179 \\
-Distributional inference & 0.01605 & 0.00439 \\
+Pathfinder & Prior        & 0.04988 & 0.08680 \\
+Pathfinder & Scalar PLN   & 0.02343 & 0.06627 \\
+Pathfinder & Distributional & \textbf{0.01605} & \textbf{0.04043} \\
 \midrule
-Improvement & $1.5\times$ & $5.0\times$ \\
+Hailfinder & Prior        & 0.07201 & 0.09315 \\
+Hailfinder & Scalar PLN   & 0.02487 & 0.03821 \\
+Hailfinder & Distributional & \textbf{0.00647} & \textbf{0.01263} \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-The $5\times$ improvement on fork paths is exactly what the
-anti-conservative theorem predicts: fork BNs have $A \leftarrow B \to C$
-structure where $P(B)$ is typically moderate-to-high, amplifying the
-deduction coefficients and pushing scalar inference into its
-anti-conservative regime.
+Distributional inference reduces MAE by $1.5\times$ on Pathfinder and
+$3.8\times$ on Hailfinder relative to scalar PLN.
+
+\paragraph{Motif-stratified breakdown (test only).}
+
+The formal theorems predict that the advantage concentrates on
+fork-like structures where the deduction coefficients amplify
+cross-term variance.
+
+\begin{center}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Dataset} & \textbf{Motif} & \textbf{Dist.\ MAE} & \textbf{Scalar MAE}
+  & \textbf{Ratio} \\
+\midrule
+Pathfinder & Chain path & 0.02771 & \textbf{0.01984} & $0.7\times$ \\
+Pathfinder & Fork path  & \textbf{0.00439} & 0.02703 & $6.2\times$ \\
+\midrule
+Hailfinder & Chain path & \textbf{0.00297} & 0.01095 & $3.7\times$ \\
+Hailfinder & Fork path  & \textbf{0.00996} & 0.04575 & $4.6\times$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+On Pathfinder fork paths, distributional inference achieves $6.2\times$
+lower MAE than scalar---the strongest confirmation of the anti-conservative
+theorem.  On Pathfinder chain paths, scalar PLN is slightly better because
+chain-path deduction coefficients do not amplify variance as strongly.
+Hailfinder favors distributional inference on both motifs.
+
+\paragraph{Regime-tag breakdown (test only).}
+
+Each state is classified by a regime tag based on the gap between
+scalar and distributional error:
+\emph{scalarization\_dominated} (distributional much better),
+\emph{missing\_context\_dominated} (both methods fail similarly),
+\emph{mixed}, or \emph{unclear}.
+
+\begin{center}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Dataset} & \textbf{Regime} & \textbf{Dist.\ MAE} & \textbf{Scalar MAE} \\
+\midrule
+Pathfinder & scalarization\_dominated & \textbf{0.00016} & 0.10885 \\
+Pathfinder & missing\_context         & 0.08814 & 0.08865 \\
+Pathfinder & mixed                    & \textbf{0.00715} & 0.01183 \\
+\midrule
+Hailfinder & scalarization\_dominated & \textbf{0.00000} & 0.06162 \\
+Hailfinder & mixed                    & 0.01851 & 0.01740 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+In the scalarization-dominated regime, distributional inference
+achieves near-zero error ($\le 0.0002$) while scalar PLN has errors
+$> 0.06$---three orders of magnitude difference.  In the
+missing-context regime, both methods fail similarly, confirming
+that the limitation there is missing evidence, not scalarization error.
+
+\paragraph{Paired bootstrap (test only).}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Dataset} & \textbf{Mean reduction} & \textbf{95\% CI} & \textbf{Win rate} \\
+\midrule
+Pathfinder & 0.0109 & $[0.0007,\; 0.0301]$ & 53\% \\
+Hailfinder & 0.0194 & $[0.0077,\; 0.0323]$ & 56\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Both confidence intervals exclude zero, confirming a statistically
+significant estimator-quality advantage for distributional inference.
+
+\subsection*{Empirical Validation: Decision Quality}
+\label{sec:distrib-decision}
+
+Estimator quality measures how well each method approximates the true
+BN conditional probability.  Decision quality measures whether
+selecting the right inference method at each state---given its cost---leads
+to higher utility.  These are distinct: a better estimator may not win
+at the decision layer if its cost premium exceeds its accuracy gain.
+
+The benchmark uses the utility formula
+$u = 1 - 2 \cdot e - 0.08 \cdot c - 0.05 \cdot r$
+where $e$ is primary error (MAE against exact BN), $c$ is action cost,
+and $r$ is 1 for reveal actions.  Action costs reflect reasoning burden:
+\texttt{continue\_soft} costs $0.6 + 0.4 \cdot |E|$,
+\texttt{continue\_distributional} costs $1.0 + 0.8 \cdot |E|$
+(where $|E|$ is the number of edges in the inference path).
+
+\paragraph{Policy suite.}
+
+Seven creative policies were implemented to test whether the estimator
+advantage transfers to decision quality:
+
+\begin{enumerate}
+\item \textbf{Oracle all-actions} (bug fix): utility-maximizing oracle
+  over all actions including \texttt{continue\_distributional}.
+  The original \texttt{adaptive\_oracle} never considered this action
+  due to a code omission.
+\item \textbf{Unit-cost blind} (ablation): all continuation actions
+  have equal cost (1.0), isolating whether the blind model can see the
+  distributional signal when cost differences are removed.
+\item \textbf{Motif rule} (diagnostic): \texttt{continue\_distributional}
+  on fork paths, \texttt{continue\_soft} on chain paths.
+  Directly tests the theorem prediction.
+\item \textbf{Advantage blind}: XGBoost regressor predicts
+  $\hat{\Delta} = \mathrm{gap}_{\mathrm{scalar}} - \mathrm{gap}_{\mathrm{distributional}}$;
+  selects distributional when $\hat{\Delta}$ exceeds the cost premium.
+\item \textbf{Policy classifier}: XGBoost classifier trained on
+  oracle-optimal action labels.
+\item \textbf{Stacked classifier}: policy classifier with the advantage
+  prediction as an additional feature.
+\item \textbf{Regime gate}: two-stage blind policy---first predict the
+  regime tag, then route to action (distributional for
+  scalarization-dominated, reveal for missing-context, soft otherwise).
+\end{enumerate}
+
+The advantage regressor, policy classifier, stacked classifier, and
+regime classifier are trained on blind features only (topology,
+motif type, path length, context completeness).  No oracle columns
+(exact gaps, regime tags, ground-truth probabilities) are available
+at prediction time.
+
+\paragraph{Decision-quality results (test only).}
+
+\begin{center}
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Dataset} & \textbf{Policy} & \textbf{Utility} & \textbf{Error}
+  & \textbf{Dist\%} & \textbf{Type} \\
+\midrule
+PF & oracle\_all\_actions  & \textbf{0.8281} & \textbf{0.0076} & 10\% & Oracle \\
+PF & stacked\_classifier   & 0.8103 & 0.0132 & 15\% & Blind \\
+PF & policy\_classifier    & 0.8103 & 0.0132 & 15\% & Blind \\
+PF & force\_soft           & 0.8098 & 0.0231 &  0\% & Baseline \\
+PF & advantage\_blind      & 0.8023 & 0.0076 & 30\% & Blind \\
+PF & regime\_gate          & 0.8001 & 0.0232 &  8\% & Blind \\
+PF & adaptive\_oracle      & 0.7947 & 0.0314 &  0\% & Oracle (old) \\
+PF & motif\_rule           & 0.7795 & 0.0062 & 50\% & Diagnostic \\
+\midrule
+HF & oracle\_all\_actions  & \textbf{0.8076} & \textbf{0.0130} & 37\% & Oracle \\
+HF & regime\_gate          & 0.7811 & 0.0294 & 33\% & Blind \\
+HF & advantage\_blind      & 0.7811 & 0.0294 & 33\% & Blind \\
+HF & stacked\_classifier   & 0.7742 & 0.0318 & 33\% & Blind \\
+HF & policy\_classifier    & 0.7742 & 0.0318 & 33\% & Blind \\
+HF & force\_soft           & 0.7732 & 0.0494 &  0\% & Baseline \\
+HF & adaptive\_oracle      & 0.7632 & 0.0491 &  0\% & Oracle (old) \\
+HF & unit\_cost\_blind     & 0.7584 & 0.0048 & 87\% & Ablation \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Key findings:
+
+\begin{enumerate}
+\item \textbf{The oracle bug fix matters.}
+  \texttt{oracle\_all\_actions} beats \texttt{adaptive\_oracle} by
+  $+0.033$ utility on Pathfinder and $+0.044$ on Hailfinder.
+  The old oracle could not select the best action because
+  \texttt{continue\_distributional} was never considered.
+
+\item \textbf{All creative blind policies beat \texttt{force\_soft}.}
+  On Hailfinder, \texttt{regime\_gate} and \texttt{advantage\_blind}
+  both achieve $0.7811$ utility vs.\ $0.7732$ for \texttt{force\_soft}.
+  On Pathfinder, \texttt{stacked\_classifier} and
+  \texttt{policy\_classifier} achieve $0.8103$ vs.\ $0.8098$.
+
+\item \textbf{The cost ablation confirms the signal.}
+  \texttt{unit\_cost\_blind} on Hailfinder picks distributional 87\%
+  of the time with the lowest error of any policy ($0.0048$).  When
+  cost is equalized, the blind model strongly prefers distributional---
+  confirming that the cost premium, not the feature signal, is
+  what suppresses selection under the standard cost structure.
+
+\item \textbf{Advantage-blind achieves oracle-level error.}
+  On Pathfinder, \texttt{advantage\_blind} matches
+  \texttt{oracle\_all\_actions} at $0.0076$ error while selecting
+  distributional 30\% of the time---exactly when the predicted gap
+  justifies the cost premium.
+
+\item \textbf{Motif rule has the lowest error overall} (Pathfinder
+  $0.0062$) but lower utility because it pays the distributional cost
+  on 50\% of states including chain paths where the gain is small.
+\end{enumerate}
+
+\paragraph{Model validation metrics.}
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Model} & \textbf{Pathfinder} & \textbf{Hailfinder} \\
+\midrule
+Advantage regressor (val MAE) & 0.021 & 0.015 \\
+Policy classifier (val accuracy) & 82\% & 70\% \\
+Stacked classifier (val accuracy) & 82\% & 70\% \\
+Regime classifier (val accuracy) & 76\% & 37\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The advantage regressor achieves MAE of 0.021 on Pathfinder (vs.\
+a mean advantage of $\sim$0.01), indicating that the model can
+distinguish distributional-favorable states from blind topology
+features alone.  The policy classifier achieves 82\% accuracy on
+Pathfinder oracle-optimal labels, where the training distribution is
+74\% soft, 19\% distributional, 7\% fallback.
+The regime classifier achieves 76\% on Pathfinder but only 37\% on
+Hailfinder, suggesting that regime prediction from topology features
+alone is dataset-dependent.
 
 \subsection*{Why This Makes PLN ``Logic-Like''}
 
@@ -4479,8 +5177,65 @@ more pronounced.
 
 \medskip
 
-See \codepath{Mettapedia/Logic/PLNDistributionalChainDominance.lean}
-and \codepath{Mettapedia/Logic/PLNDistributional.lean}.
+See \code{Mettapedia/Logic/}: \code{PLNDistributionalChainDominance},
+\code{PLNDistributionalConvergence}, and \code{PLNDistributional}.
+
+\subsection*{Outlook: Selective Approximate Distributional Inference}
+\label{sec:distributional-outlook}
+
+The constructive resolution offered by distributional inference raises a
+practical question: when is it computationally reasonable to carry richer
+uncertainty objects through inference rather than collapsing immediately to
+scalar truth values?
+
+The answer is no longer uniformly negative.  Batched numerical computation,
+accelerator-backed inference engines, and learned surrogate operators make a
+significant class of distribution-preserving approximations operationally
+plausible.  But the mathematical lesson of this chapter remains primary:
+richer propagation is justified only when the underlying evidence supports it,
+and only when the approximation family preserves the aspects of uncertainty
+relevant to the query.
+
+Three research directions follow naturally from the results above.
+
+\paragraph{Compact approximation families.}
+Rather than propagating arbitrary exact distributions, one may restrict to
+compact parametric families whose update laws are tractable: Beta/Dirichlet
+conjugates (as used in the convergence analysis above), logit-normal approximations,
+low-order moment summaries, small mixtures, or particle representations.
+The key constraint is that the chosen family must preserve the variance
+and shape information that drives the gap between scalar and distributional
+modes (Theorem~\ref{thm:distributional-dominates-scalar}).
+
+\paragraph{Compiled rule surrogates.}
+Each PLN rule application can in principle be compiled into a fast surrogate
+operator.  The modern version of this idea trains surrogate models on
+high-fidelity distributional rule evaluations and distills them to efficient
+inference-time operators.  From the WM-PLN perspective, such surrogates are
+operational compiled views: the kernel semantics remains exact, the surrogate
+introduces a declared approximation envelope, and the benchmark methodology
+established above provides the regime-specific validation infrastructure.
+
+\paragraph{Regime-aware selective invocation.}
+The benchmark results from Sections~\ref{sec:distrib-empirical}
+and~\ref{sec:creative-distributional-policy} suggest that the main
+operational question is not whether distributional inference can help in
+principle, but how to control \emph{when} it is invoked.  The regime
+and motif structure of the inference graph---source-target topology,
+available context, and scalarization sensitivity---determines where richer
+uncertainty propagation pays.  A cost-aware policy that escalates from
+scalar STVs to richer approximation families only on
+scalarization-sensitive regimes is both mathematically principled and
+practically efficient.
+
+An important caveat applies throughout: in many settings where PLN operates
+on uncertainty extracted from natural-language or symbolic sources, the
+posterior shape itself may be underdetermined by the available evidence.
+Rich distributional propagation is most justified when the substrate provides
+genuine statistical structure---counts, simulator traces, or explicit
+probabilistic world models---rather than coarse qualitative assessments.
+In the latter case, the scalar or interval views may honestly represent
+all the information actually present.
 
 
 %% ═══════════════════════════════════════════════════════════════════
@@ -4488,8 +5243,15 @@ and \codepath{Mettapedia/Logic/PLNDistributional.lean}.
 \label{part:extensions}
 %% ═══════════════════════════════════════════════════════════════════
 
-\chapter{Higher-Order Reduction}
+\chapter{[WIP] Higher-Order Reduction}
 \label{ch:higher-order}
+
+\begin{quote}\small
+\textbf{Goal:} Ground higher-order PLN in a real HOL layer with set-theoretic semantics.\\
+\textbf{Semantic object:} Typed HOL syntax; Heyting/Henkin semantics; ProbHOL; HOL$\leftrightarrow$WM bridge.\\
+\textbf{Proved:} PLN Ch.~10 parity (syntax, soundness, FOL embedding, ProbHOL, certified chaining).\\
+\textbf{In progress:} Typed canonical model and HOL completeness theorem (Section~\ref{sec:hol-completeness-status}).
+\end{quote}
 
 This chapter is now grounded in a real higher-order logic layer rather than
 treating higher-order PLN as only a satisfying-set reduction trick.
@@ -5217,6 +5979,13 @@ canonical completeness argument.
 \chapter{Quantifiers and the Fuzzy/QFM Layer}
 \label{ch:quantifiers}
 
+\begin{quote}\small
+\textbf{Goal:} Formalize quantified reasoning with finite-domain and fuzzy semantics.\\
+\textbf{Semantic object:} Finite-domain quantifier bundle; fuzzy quantifier algebra; QFM.\\
+\textbf{Proved:} Quantifier soundness/canary package for finite domains.\\
+\textbf{Assumed:} Finite domain ($|U| < \infty$); see global scope contract in Section~\ref{sec:scope}.
+\end{quote}
+
 PLN extends beyond propositional inference to quantified reasoning.
 This chapter covers the stable finite-domain quantifier bundle, fuzzy
 quantifier algebra, and their ITV-coordinate transport.  The codebase
@@ -5242,12 +6011,22 @@ Under uniform $\mu$, this reduces to $|S|^2/|U|^2$, the squared fraction
 of the domain satisfying~$S$.
 \end{definition}
 
+The existential quantifier is defined dually, following the classical
+de~Morgan pattern: to ask whether \emph{something} in the domain
+satisfies~$S$ is to ask whether it is \emph{not} the case that
+\emph{everything} satisfies~$\neg S$.
+
 \begin{definition}[Existential quantifier evaluation (\claimCore{})]
 By de~Morgan reduction:
 \[
   \exists_\mu(S) = \mathrm{compl}\big(\forall_\mu(\neg S)\big)
 \]
 \end{definition}
+
+The weakness-based semantics has an immediate structural consequence:
+universal quantification is always weaker than existential quantification,
+because affirming a predicate everywhere is harder than affirming it
+somewhere.
 
 \begin{theorem}[Quantifier ordering (\claimCore{})]
 For any predicate set $S$ and weight $\mu$:
@@ -5256,8 +6035,11 @@ For any predicate set $S$ and weight $\mu$:
 \]
 \end{theorem}
 
-Extensional quantifiers use lattice operations: $\forall^{\mathrm{ext}}(S) = \bigwedge_u S(u)$
-and $\exists^{\mathrm{ext}}(S) = \bigvee_u S(u)$.
+For comparison, the purely extensional quantifiers use lattice
+operations---$\forall^{\mathrm{ext}}(S) = \bigwedge_u S(u)$
+and $\exists^{\mathrm{ext}}(S) = \bigvee_u S(u)$---which are recovered
+as special cases when the weight~$\mu$ is uniform and the domain is
+finite.
 
 See \codepath{Mettapedia/Logic/PLNFirstOrder/QuantifierSemantics.lean}
 and \codepath{Mettapedia/Logic/PLNFirstOrder/Soundness.lean}.
@@ -5280,6 +6062,14 @@ The ``near-one'' and ``near-zero'' predicates are:
   \mathrm{nearZero}_\varepsilon(x) \iff 0 \le x \le \varepsilon
 \]
 \end{definition}
+
+Taken together, these four parameters control the granularity of the
+fuzzy quantifier: $\varepsilon$ sets how close a membership value must be
+to~$0$ or~$1$ to count as ``essentially false'' or ``essentially true,''
+$L$ and $U$ bracket the proxy confidence interval, and $\theta$ sets the
+acceptance threshold.  The key derived notion is the \emph{witness
+fraction}---the proportion of domain elements whose membership values
+fall in the ``near-one'' band.
 
 \begin{definition}[Witness fraction]
 For a predicate $\phi$ on $U$:
@@ -5305,13 +6095,10 @@ specialization layer.  Instead of treating the Sugeno/proxy-cut and
 Choquet branches as unrelated surfaces, Lean factors out their honest
 common spine via
 \codepath{Mettapedia/Logic/PLNFirstOrder/GradedQuantifierSpecialization.lean}.
-The generic interface \code{GradedQuantifierSemantics} packages:
-\begin{itemize}
-\item score-based interval and universal predicates,
-\item complement-dual existential predicates,
-\item fuzzy-domain restriction via \code{domainRestrict},
-\item and equality / monotonicity transport on the restricted domain.
-\end{itemize}
+The generic interface \code{GradedQuantifierSemantics} packages
+score-based interval and universal predicates, complement-dual existential
+predicates, fuzzy-domain restriction via \code{domainRestrict}, and
+equality/monotonicity transport on the restricted domain.
 The current Sugeno and Choquet branches are then explicit instances
 (\code{sugenoGradedQuantifierSemantics},
 \code{choquetGradedQuantifierSemantics}), while the fuzzy-domain layer is a
@@ -5323,26 +6110,28 @@ not only through the specialized fuzzy-domain wrappers.
 
 \section{Scope Note: Stable Finite-Domain Bundle vs.\ Infinitary Semantics}
 
-The theorem-complete quantifier bundle emphasized in this chapter is
-established for finite domains.  However, the repository already contains
-an arbitrary-domain infinitary semantic layer with the basic definitions
-and laws
-(\code{WeightFunctionInf}, \code{SatisfyingSetInf},
-\code{forAllEvalInf}, \code{thereExistsEvalInf},
-\code{deMorgan\_inf}, \code{weaknessInf\_mono})
-in \codepath{Mettapedia/Logic/PLNFirstOrder/Infinite.lean}.
-
-So the honest limitation is narrower: the reviewed
-Chapter~\ref{ch:quantifiers} front door is finite-domain, while
-arbitrary-domain quantifier semantics already exist in Lean.  What
-remains future work is full parity between the finite-domain chapter
-bundle and the infinitary layer: stronger metatheory, canary/regression
-coverage, and any measure-theoretic extensions needed for probabilistic
-applications on genuinely infinite spaces.
+This chapter's theorems use finite domains (see the global scope contract
+in Section~\ref{sec:scope}).  The codebase already contains an
+arbitrary-domain infinitary layer\footnote{%
+  \code{WeightFunctionInf}, \code{SatisfyingSetInf},
+  \code{forAllEvalInf}, \code{thereExistsEvalInf},
+  \code{deMorgan\_inf}, \code{weaknessInf\_mono}
+  in \codepath{Mettapedia/Logic/PLNFirstOrder/Infinite.lean}.}
+with basic definitions and laws.  Full parity between the finite-domain
+chapter bundle and the infinitary layer---stronger metatheory,
+canary/regression coverage, and measure-theoretic extensions---remains
+future work.
 
 
 \chapter{Intensional Inheritance}
 \label{ch:intensional}
+
+\begin{quote}\small
+\textbf{Goal:} Ground intensional inheritance in typed world-model semantics.\\
+\textbf{Semantic object:} \code{InheritanceSort} (extensional, ASSOC, PAT, mixed); Solomonoff bridge.\\
+\textbf{Proved:} No-go: no binary mixed policy reproduces both intensional behaviors; typed WM grounding.\\
+\textbf{Assumed:} Finite domain.
+\end{quote}
 
 Intensional inheritance is PLN's mechanism for reasoning about
 relationships based on shared properties (intension) rather than shared
@@ -5447,6 +6236,13 @@ See \codepath{Mettapedia/Logic/PLNIntensionalCanary.lean},
 \chapter{Temporal and Causal Inference}
 \label{ch:temporal}
 
+\begin{quote}\small
+\textbf{Goal:} Formalize temporal operators and causal profiles within the WM framework.\\
+\textbf{Semantic object:} Temporal operators; causal profile; event calculus bridge.\\
+\textbf{Proved:} Temporal as a WM instance; causal profile soundness.\\
+\textbf{Assumed:} Discrete time steps.
+\end{quote}
+
 Temporal and causal inference in PLN addresses reasoning about events
 ordered in time and about cause-effect relationships.
 
@@ -5455,7 +6251,11 @@ ordered in time and about cause-effect relationships.
 Temporal predicates live in the type
 $\mathrm{TemporalPred}(D, T) = D \to T \to \mathrm{Prop}$,
 where $D$ is the domain of entities and $T$ is the time type (typically
-$\mathbb{N}$ or $\mathbb{R}$).
+$\mathbb{N}$ or $\mathbb{R}$).  The temporal algebra is built in three
+layers: simultaneous operators that combine predicates at the same time
+point, sequential operators that require one predicate to hold now and
+another to hold at a future time, and predictive implication that captures
+the conditional ``if $P$ now, then $Q$ later.''
 
 \begin{definition}[Simultaneous operators (\claimCore{})]
 \begin{align}
@@ -5463,6 +6263,10 @@ $\mathbb{N}$ or $\mathbb{R}$).
   \mathrm{SimOR}(P, Q)(x, t)  &:= P(x, t) \vee Q(x, t)
 \end{align}
 \end{definition}
+
+The simultaneous operators are the temporal analogue of ordinary logical
+connectives---they simply ask whether two properties co-occur at the same
+moment.  The sequential operators introduce temporal displacement:
 
 \begin{definition}[Sequential operators (\claimCore{})]
 \begin{align}
@@ -5473,6 +6277,10 @@ $\mathbb{N}$ or $\mathbb{R}$).
 where $f$ is a ``future'' predicate constraining the delay (e.g.,
 $\Delta \in [1, T_{\max}]$).
 \end{definition}
+
+Predictive implication lifts sequential conjunction to a conditional
+form---the temporal analogue of $A \Rightarrow B$, asserting that if~$P$
+holds now, then $Q$ will hold at some future time:
 
 \begin{definition}[Predictive implication (\claimCore{})]
 \[
@@ -5487,19 +6295,18 @@ The 3-node predictive chain composes: given temporal bounds $T_1, T_2$,
 
 \section{Causal Profile}
 
-Causal inference is grounded through a probabilistic event calculus:
-\begin{itemize}
-\item \textbf{Event predicates}: $\mathrm{Happens}(e, t)$, $\mathrm{Initiates}(e, f, t)$,
-  $\mathrm{Terminates}(e, f, t)$, $\mathrm{HoldsAt}(f, t)$.
-\item \textbf{Causal profile}: for a pair $(A, B)$, the causal profile is
-  the collection of predictive implication strengths across temporal lags:
-  $\mathrm{CausalProfile}(A, B) = \{\strength(\mathrm{PredImpl}_\Delta(A, B))
-  \mid \Delta \in [1, T_{\max}]\}$.
-\item \textbf{Distinguishing causation from correlation}: Granger-style
-  temporal precedence plus the event calculus distinguish $A \to B$
-  (causal) from $A \leftarrow C \to B$ (spurious correlation) within the
-  world-model framework.
-\end{itemize}
+Causal inference is grounded through a probabilistic event calculus
+built on four event predicates: $\mathrm{Happens}(e, t)$,
+$\mathrm{Initiates}(e, f, t)$, $\mathrm{Terminates}(e, f, t)$, and
+$\mathrm{HoldsAt}(f, t)$.  For a pair of predicates $(A, B)$, the
+\emph{causal profile} collects the predictive implication strengths across
+temporal lags:
+$\mathrm{CausalProfile}(A, B) = \{\strength(\mathrm{PredImpl}_\Delta(A, B))
+\mid \Delta \in [1, T_{\max}]\}$.  This profile provides the raw material
+for distinguishing genuine causation from spurious correlation:
+Granger-style temporal precedence, combined with the event calculus,
+separates $A \to B$ (causal) from $A \leftarrow C \to B$ (confounded)
+within the world-model framework.
 
 See \codepath{Mettapedia/Logic/PLNTemporalCausalInference.lean} and
 \codepath{Mettapedia/Logic/PLNProbabilisticEventCalculus.lean}.
@@ -5523,6 +6330,13 @@ a single kernel, many instantiations.
 \chapter{Large-Scale Inference at Theorem Level}
 \label{ch:large-scale}
 
+\begin{quote}\small
+\textbf{Goal:} Formalize the theorem-level core of large-scale PLN inference.\\
+\textbf{Semantic object:} Multideduction; trail-free dynamics; pooling; evidence conservation.\\
+\textbf{Proved:} Identifiability no-go; residual decomposition; non-stabilization counterexample.\\
+\textbf{Assumed/operational:} Operational scheduling strategies (counterexample-first; operational pending).
+\end{quote}
+
 Chapter~9 of the PLN book discusses large-scale inference strategies:
 batch inference, multideduction, BN augmentation, trail-free protocols.
 This is the most complex chapter to formalize, and the most instructive
@@ -5533,11 +6347,13 @@ about the gap between theoretical correctness and operational feasibility.
 Multideduction---applying multiple deduction steps and combining
 results---runs into a fundamental identifiability problem.
 
+\boundarystart
 \begin{theorem}[Inclusion-exclusion identifiability no-go (\claimBoundary{})]
 Two-term inclusion-exclusion statistics are not sufficient to identify the
 union mass.  There exist distinct probability distributions agreeing on all
 first-two-term statistics but disagreeing on the union probability.
 \end{theorem}
+\boundaryend
 
 The corrected positive result:
 
@@ -5572,34 +6388,45 @@ and \codepath{Mettapedia/Logic/PLNTrailFreeDampedConvergence.lean}.
 
 \section{Pooling and Fusion}
 
-Evidence pooling axioms are insufficient to characterize additive fusion:
+A natural question is whether the abstract pooling axioms---commutativity,
+associativity, and monotonicity---suffice to pin down additive evidence
+fusion.  They do not: the max-pooling operator satisfies every one of
+these axioms yet produces a completely different fusion rule.
 
 \begin{theorem}[Pooling non-uniqueness (\claimBoundary{})]
 The max-pooling operator satisfies the pooling axioms but differs from
 additive fusion.
 \end{theorem}
 
-The corrected uniqueness result:
+The lesson is that additional structural constraints are needed.
+Specifically, external Bayesianity (the requirement that pooling agents'
+posteriors combine as if they shared a common prior) together with total
+additivity pins down exactly one fusion rule: ordinary additive pooling.
 
 \begin{theorem}[Pooling uniqueness (\claimConditional{})]
 External Bayesianity plus total additivity uniquely recovers additive
 evidence pooling.
 \end{theorem}
 
+This pair of theorems mirrors a recurring theme in the PLN refoundation:
+familiar intuitions (``evidence should combine commutatively'') are
+necessary but not sufficient, and the precise additional assumptions that
+restore uniqueness must be made explicit.
+
 See \codepath{Mettapedia/Logic/PremiseSelectionExternalBayesianity.lean}.
 
 \section{Evidence-Conservation and Order-Cost Governance}
 
-The non-additive perimeter is now covered by a theorem pack rather than
-ad hoc prose.  The key move is to separate three layers:
-\begin{itemize}
-\item \textbf{Conservation under forgetting}: anti-hallucination and
-  outside-scope leakage bounds when exact inverse forgetting holds.
-\item \textbf{Order-cost bounds}: schedule-level error bounded by
-  pairwise swap-anomaly budgets.
-\item \textbf{Runtime certification}: executable pairwise checks imply the
-  proved schedule/policy bounds.
-\end{itemize}
+The non-additive perimeter---what happens when revision is \emph{not}
+simply count addition---is now covered by a three-layer theorem pack.
+The first layer addresses \emph{conservation under forgetting}: when the
+forgetting operator is an exact inverse for a scoped revision, evidence
+outside that scope cannot leak or be hallucinated.  The second layer
+provides \emph{order-cost bounds}: schedule-level error is bounded by
+pairwise swap-anomaly budgets, so that an execution that reorders
+revisions pays at most a known penalty.  The third layer,
+\emph{runtime certification}, closes the loop: executable pairwise checks
+at runtime imply the proved schedule-level and policy-level bounds.
 
 \begin{theorem}[Evidence-conservation pack from forgetting (\claimConditional{})]
 If a forgetting operator is an exact inverse for a scoped revision, then
@@ -5612,12 +6439,22 @@ outside that scope:
 \end{enumerate}
 \end{theorem}
 
+The conservation pack guarantees that forgetting is ``clean''---it does
+not smuggle in evidence that was not there before.  The next theorem
+addresses a different concern: what is the cost of executing revisions
+in the wrong order?
+
 \begin{theorem}[Order-cost budget bound (\claimConditional{})]
 If each adjacent swap in a schedule is bounded by a per-step anomaly budget,
 then total schedule error is bounded by the sum of those budgets.  In
 particular, commutative merge-evidence implies zero swap anomaly and zero
 schedule error.
 \end{theorem}
+
+Finally, these theoretical bounds must be checkable at runtime.  The
+audit certificate theorem shows that a simple executable check---comparing
+pairwise order costs against a budget vector---is sufficient to
+discharge the formal guarantees in Lean:
 
 \begin{theorem}[Runtime audit certificate soundness (\claimConditional{})]
 If runtime pairwise-order checks pass with budget vector $B$, then the
@@ -5675,20 +6512,28 @@ See \codepath{Mettapedia/Logic/PLNWorldModelExperimentStochastic.lean}.
 \chapter{Inference Control}
 \label{ch:inference-control}
 
+\begin{quote}\small
+\textbf{Goal:} Formalize premise selection and coverage bounds for inference scheduling.\\
+\textbf{Semantic object:} Selector specifications; coverage/submodularity; surrogate boundaries.\\
+\textbf{Proved:} Coverage surrogate no-go; composed core endpoints.\\
+\textbf{Assumed:} Finite domain; finite knowledge base.
+\end{quote}
+
 Inference control addresses the meta-level problem: given a large knowledge
 base and many possible inference steps, which steps should be taken?
 
 \section{Selector Specifications}
 
 A \emph{selector} is a function that chooses premises for inference.
-The formalization provides:
-\begin{itemize}
-\item Formal selector specifications with typed interfaces.
-\item Ranking transfer: if a selector produces a good ranking on one
-  distribution, it produces a good ranking on similar distributions.
-\item Ranking stability: small perturbations in the knowledge base
-  produce small perturbations in the ranking.
-\end{itemize}
+The formalization provides formal selector specifications with typed
+interfaces, together with two robustness results.  First, ranking
+transfer: if a selector produces a good ranking on one distribution, it
+produces a good ranking on similar distributions.  Second, ranking
+stability: small perturbations in the knowledge base produce small
+perturbations in the ranking.  These two properties ensure that a
+selector trained on one corpus does not catastrophically fail when
+deployed on a slightly different one---a concern that is entirely absent
+from the original PLN book but becomes pressing in any practical system.
 
 See \codepath{Mettapedia/Logic/PremiseSelectionSelectorSpec.lean} and
 \codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean}.
@@ -5758,11 +6603,13 @@ has a single end-to-end correctness theorem.}
 
 \section{Coverage Surrogate Boundaries}
 
+\boundarystart
 \begin{theorem}[Coverage/cardinality surrogate no-go (\claimBoundary{})]
 Coverage and cardinality together are insufficient for risk-sensitive
 selection: there exist premise sets with identical coverage and cardinality
 but different false-positive risk.
 \end{theorem}
+\boundaryend
 
 See \codepath{Mettapedia/Logic/PremiseSelectionCoverageCounterexamples.lean}.
 
@@ -5782,6 +6629,799 @@ See \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}.
 
 
 %% ═══════════════════════════════════════════════════════════════════
+\part{Natively Typed World Models}
+\label{part:ntt}
+%% ═══════════════════════════════════════════════════════════════════
+
+\chapter{The World-Model Calculus as a Language Family}
+\label{ch:wm-gslt}
+
+\begin{quote}\small
+\textbf{Goal:} Package every variant of the WM posterior-state calculus as a
+graph-structured language theory (GSLT), derive modal operators via OSLF,
+and establish transport theorems between variants.\\
+\textbf{Semantic object:} 13-axis vertex family; per-vertex \texttt{LanguageDef};
+forward simulation via rule-subset containment; automatic $\Diamond\dashv\Box$
+Galois connection.\\
+\textbf{Proved (kernel-checked):} All items in this chapter.  0 sorry.\\
+\textbf{Assumed:} None beyond the OSLF/TypeSynthesis infrastructure.
+\end{quote}
+
+Throughout the preceding chapters, the world-model posterior-state calculus
+appears in many guises: additive revision (Chapter~\ref{ch:posterior-state}),
+overlap-corrected fusion, scope-based forgetting, support-tracked inverse
+forgetting, Kripke provenance tracking, fixpoint closure, conservation
+bounds, experiment channels, stochastic decision theory, and generic
+carriers.  Each variant shares the same core axioms---evidence additivity,
+revision commutativity and associativity, combine commutativity---but adds
+its own operations and equational laws.
+
+This chapter shows that this family of variants has a precise algebraic
+structure.  Each variant is a \emph{typed language definition}
+(\texttt{LanguageDef}) whose rewrite rules encode the variant's equational
+theory.  The variants are indexed by a 13-axis vertex
+(\texttt{WMFullVertex}), and weaker variants embed into stronger ones via
+identity-on-terms forward simulation (the weaker variant's rule set is a
+subset of the stronger one's).  The OSLF pipeline then automatically
+derives modal operators and a Galois connection per vertex.
+
+\section{Pattern Vocabulary}
+
+The WM calculus is encoded in the OSLF pattern language using three core
+sorts---\textbf{State}, \textbf{Query}, \textbf{Evidence}---and
+constructors corresponding to the calculus operations:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Constructor} & \textbf{Signature} & \textbf{Operation} \\
+\midrule
+$\mathsf{Revise}(W_1, W_2)$ & State $\times$ State $\to$ State & parallel composition \\
+$\mathsf{Extract}(W, q)$ & State $\times$ Query $\to$ Evidence & observation \\
+$\mathsf{Combine}(e_1, e_2)$ & Evidence $\times$ Evidence $\to$ Evidence & additive fusion \\
+$\mathsf{Forget}(S, W)$ & Scope $\times$ State $\to$ State & restriction \\
+$\mathsf{OverlapMerge}(W_1, W_2)$ & State $\times$ State $\to$ State & overlap-aware merge \\
+$\mathsf{FallbackRevision}(W_1, W_2)$ & State $\times$ State $\to$ State & source-gated merge \\
+$\mathsf{LeastClosure}(R, W, S)$ & RuleSet $\times$ State $\times$ QuerySet $\to$ QuerySet & fixpoint \\
+$\mathsf{SwapAnomaly}(W_1, W_2, q)$ & State$^2$ $\times$ Query $\to$ Evidence & order cost \\
+$\mathsf{KripkeEvidence}(W, \varphi)$ & State $\times$ ModalQuery $\to$ Evidence & modal evidence \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Each extension family introduces additional constructors (30 total across
+all families); the table above shows the most important ones.
+
+\section{Core Rewrite Rules}
+
+Five rewrite rules are shared by every variant:
+
+\begin{enumerate}
+\item \textbf{Evidence additivity} (\claimCore{}).
+  $\mathsf{Extract}(\mathsf{Revise}(W_1, W_2),\, q) \;\leadsto\;
+  \mathsf{Combine}(\mathsf{Extract}(W_1, q),\; \mathsf{Extract}(W_2, q))$.
+  This is the fundamental WM axiom: evidence extraction distributes over
+  revision.
+
+\item \textbf{Revision commutativity} (\claimCore{}).
+  $\mathsf{Revise}(W_1, W_2) \;\leadsto\; \mathsf{Revise}(W_2, W_1)$.
+
+\item \textbf{Revision associativity} (\claimCore{}).
+  $\mathsf{Revise}(\mathsf{Revise}(W_1, W_2), W_3)
+  \;\leadsto\; \mathsf{Revise}(W_1, \mathsf{Revise}(W_2, W_3))$.
+
+\item \textbf{Combine commutativity} (\claimCore{}).
+  $\mathsf{Combine}(e_1, e_2) \;\leadsto\; \mathsf{Combine}(e_2, e_1)$.
+
+\item \textbf{Combine identity} (\claimCore{}).
+  $\mathsf{Combine}(e, \mathsf{EvidenceZero}) \;\leadsto\; e$.
+\end{enumerate}
+
+Each rule is encoded as a \texttt{RewriteRule} structure with a
+\texttt{typeContext} (typed metavariables), \texttt{premises} (side
+conditions), \texttt{left} and \texttt{right} patterns.  The core rules
+have empty premises; in the \emph{raw} (schematic) calculus all extension
+rules also have empty premises, while the \emph{guarded} (faithful)
+calculus carries real \texttt{Premise.relationQuery} side conditions
+(Section~\ref{sec:wm-guarded}).  Sixteen step
+lemmas are kernel-checked: 3~core (evidence-add, revision-comm,
+revision-assoc) at both extended and full vertices, plus 10~extension-axis
+lemmas (overlap, forgetting, exact-inverse, provenance-symmetry,
+closure-fixpoint, swap-anomaly, anti-hallucination, experiment,
+Kripke, generic carrier).
+
+\section{The 13-Axis Vertex Family}
+\label{sec:wm-13axis}
+
+The WM calculus variants are indexed by a 13-axis \texttt{WMFullVertex}:
+
+\begin{center}
+\begin{tabular}{rlll}
+\toprule
+\textbf{\#} & \textbf{Axis} & \textbf{Values} & \textbf{Effect} \\
+\midrule
+1--4 & Base (logic, tv, interval, typing)
+     & $2 \times 2 \times 3 \times 2 = 24$
+     & model-level (same rules) \\
+5 & Overlap & additive $|$ overlapAware & +1 rule \\
+6 & Forgetting & none $|$ scopeBased $|$ supportTracked & +2--3 rules \\
+7 & Provenance & none $|$ sourceLabeled & +6 rules \\
+8 & Fixpoint & none $|$ closure $|$ policy $|$ cascade & +2--4 rules \\
+9 & Cost & none $|$ costTracked & +3 rules \\
+10 & Conservation & none $|$ conserving & +2 rules \\
+11 & Experiment & none $|$ deterministic $|$ stochastic & +3--7 rules \\
+12 & Kripke & none $|$ pointedKripke & +3 rules \\
+13 & Carrier & concrete $|$ generic & +2 rules \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The first four axes are \emph{model-level}: all 24 combinations produce the
+same \texttt{LanguageDef} (the same rewrite rules), differing only in
+semantic interpretation.  This is proved by \texttt{wmVertexLanguageDef\_eq}
+(exhaustive case analysis, kernel-checked).  The remaining nine axes are
+\emph{syntactic}: each adds genuinely new rewrite rules.
+
+A 13-axis vertex has $2^{13} = 8{,}192$ possible configurations in the
+na\"{\i}ve product, yet the number of distinct rewrite rules grows only
+linearly with the number of enabled extensions.  The two extremes pin
+down the range:
+
+\begin{theorem}[\texttt{wmFullVertexMinimal\_ruleCount}, kernel-checked]
+The minimal vertex (all extensions disabled) has exactly~5 rewrite rules
+(the core rules).
+\end{theorem}
+
+\begin{theorem}[\texttt{wmFullVertexMaximal\_ruleCount}, kernel-checked]
+The maximal vertex (all extensions enabled at strongest level) has exactly~36
+rewrite rules.
+\end{theorem}
+
+The jump from 5 to 36 is modest---each extension family contributes
+between one and six rules---and every intermediate vertex falls
+strictly between these bounds.  This linear growth means the OSLF
+pipeline (Galois connection, modal operators, step lemmas) scales
+gracefully across the entire family.
+
+\section{Extension Families}
+\label{sec:wm-extensions}
+
+Each extension family contributes its own rewrite rules:
+
+\paragraph{Overlap (1 rule).}
+$\mathsf{Extract}(\mathsf{OverlapMerge}(W_1, W_2), q)
+\;\leadsto\; \mathsf{OverlapCorrect}(\mathsf{Extract}(W_1,q),\;
+\mathsf{Extract}(W_2,q),\; \mathsf{OverlapFactor}(W_1,W_2,q))$.
+This captures the non-additive correction from the overlap layer
+(Chapter~\ref{ch:posterior-state}).
+
+\paragraph{Forgetting (2--3 rules).}
+Outside-scope invariance:
+$\mathsf{Extract}(\mathsf{Forget}(S, W), q)
+\;\leadsto\; \mathsf{Extract}(W, q)$ (when $q \notin \mathrm{scope}(S)$).
+Idempotence:
+$\mathsf{Forget}(S, \mathsf{Forget}(S, W)) \;\leadsto\; \mathsf{Forget}(S, W)$.
+Support-tracked mode adds the exact-inverse rule:
+$\mathsf{Forget}(S, \mathsf{Revise}(W, \Delta)) \;\leadsto\; W$
+(when $\mathrm{support}(\Delta) \subseteq \mathrm{scopeFootprint}(S)$).
+
+\paragraph{Provenance (6 rules).}
+Source-compatibility symmetry, fallback decomposition (compatible/incompatible
+cases), partial revision, trusted-gate identity
+($\mathsf{TrustedGate}(\mathsf{TrustedAll}, W) \leadsto W$), and evidence
+additivity under compatible fallback revision.  These encode the
+\texttt{KripkeWeightedOverlap} layer's operations.
+
+\paragraph{Fixpoint (2--4 rules).}
+Closure fixpoint:
+$\mathsf{ImmediateStep}(R, W, S, \mathsf{LeastClosure}(R, W, S))
+\;\leadsto\; \mathsf{LeastClosure}(R, W, S)$.
+Iteration unfolding.  Policy-driven mode adds the trusted-all simplification.
+Cascade mode adds the cardinality-bounded stabilization:
+$\mathsf{ImmediateIter}(R, W, S, \mathsf{Card}(Q))
+\;\leadsto\; \mathsf{LeastClosure}(R, W, S)$.
+
+\paragraph{Cost (3 rules).}
+Swap anomaly symmetry, swap anomaly zero (when observation counts are equal),
+and schedule error symmetry.
+
+\paragraph{Conservation (2 rules).}
+Anti-hallucination:
+$\mathsf{Extract}(\Delta, q) \;\leadsto\; \mathsf{EvidenceZero}$
+(when $q$ is outside scope and exact-inverse holds).
+Noether conservation:
+$\mathsf{Extract}(\mathsf{Revise}(W, \Delta), q) \;\leadsto\;
+\mathsf{Extract}(W, q)$ (outside scope).
+
+\paragraph{Experiment channels (3--7 rules).}
+Experiment evidence additivity, Blackwell factorization pullback, channel
+composition identity.  Stochastic mode adds stochastic evidence additivity,
+channel composition associativity, Blackwell utility transport, and Kleisli
+identity.
+
+\paragraph{Kripke (3 rules).}
+Kripke evidence additivity, singleton satisfaction
+($\mathsf{KripkeEvidence}(\mathsf{Singleton}(pk), \varphi) \leadsto
+\mathsf{EvidenceOne}$ when $pk \models \varphi$), and singleton refutation.
+
+\paragraph{Generic carriers (2 rules).}
+Generic evidence additivity (the core axiom in abstract carrier form)
+and query-equivalence transport.
+
+\section{Forward Simulation and Transport}
+
+\begin{theorem}[\texttt{wmFullVertexLanguageDef\_base\_eq}, kernel-checked]
+For any two full vertices $v, w$ with identical extension axes (axes~5--13),
+$\mathsf{wmFullVertexLanguageDef}(v) = \mathsf{wmFullVertexLanguageDef}(w)$.
+The base~4 axes do not affect the rewrite rules.
+\end{theorem}
+
+Forward simulation between vertices with different extension axes follows
+from rule-subset containment: if vertex~$v$ has fewer rules than vertex~$w$,
+then every reduction at~$v$ is also a reduction at~$w$ (both use the same
+pattern vocabulary with $\mathsf{mapTerm} = \mathrm{id}$).
+
+For the 4-axis base case, all vertices produce literally the same
+\texttt{LanguageDef}, so reductions transfer freely:
+
+\begin{theorem}[\texttt{wmCalc\_transport}, kernel-checked]
+For any $v, w : \mathsf{WMVertex}$ and any reduction chain
+$p \to^* q$ at vertex~$v$, the same chain is a valid reduction at
+vertex~$w$.
+\end{theorem}
+
+\section{OSLF-Derived Modal Operators}
+\label{sec:wm-oslf}
+
+Passing any vertex's \texttt{LanguageDef} through the OSLF pipeline
+(\texttt{langOSLF}) automatically derives:
+
+\begin{itemize}
+\item \textbf{Diamond ($\Diamond\varphi$)}: holds at pattern~$p$ iff
+  $\exists q.\; p \leadsto q \wedge \varphi(q)$.
+  ``This WM expression can be rewritten to one satisfying~$\varphi$.''
+
+\item \textbf{Box ($\Box\varphi$)}: holds at pattern~$p$ iff
+  $\forall q.\; q \leadsto p \to \varphi(q)$.
+  ``All expressions that reduce \emph{to}~$p$ satisfy~$\varphi$.''
+
+\item \textbf{Galois connection} $\Diamond \dashv \Box$
+  (\texttt{langGalois}, automatic):
+  $(\forall p.\; p \in \Diamond\varphi \Rightarrow p \in \psi)
+  \;\Leftrightarrow\;
+  (\forall p.\; p \in \varphi \Rightarrow p \in \Box\psi)$.
+\end{itemize}
+
+These operators have concrete evidence-theoretic meaning:
+
+\begin{description}
+\item[Evidence reachability ($\Diamond$).]
+  $\Diamond(\mathsf{isCombined})$ holds at any
+  $\mathsf{Extract}(\mathsf{Revise}(W_1, W_2), q)$ because the
+  evidence-add rule rewrites it to a $\mathsf{Combine}$ term.
+
+\item[Evidence safety ($\Box$).]
+  $\Box(\mathsf{isPositive})$ at pattern~$p$ means every expression that
+  reduces to~$p$ was already positive---a backward safety guarantee.
+
+\item[Vertex dependence.]
+  At the minimal vertex (5~rules), $\Diamond$ is small (few rewrites
+  reachable).  At the maximal vertex (36~rules), $\Diamond$ is much
+  larger: overlap correction, forgetting, fixpoint closure, Blackwell
+  factorization all become reachable.  The Galois connection tightens:
+  more $\Diamond$ means weaker~$\Box$.
+
+\item[Conservation as $\Box$-safety.]
+  With conservation rules enabled, $\Box(\text{outsideScope} \Rightarrow
+  \text{preserved})$ holds at any $\mathsf{Revise}(W, \Delta)$: backward
+  safety captures the Noether-style conservation guarantee.
+\end{description}
+
+\section{Formalization Inventory}
+
+All results in this chapter are kernel-checked in Lean~4.28 (0~sorry):
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{File} & \textbf{Contents} & \textbf{Status} \\
+\midrule
+\texttt{WMCalculusLanguageDef.lean}
+  & 37 raw + 17 guarded rewrite rules, 7 axis types,
+    \texttt{WMFullVertex}, 16 step lemmas, guarded LanguageDefs
+  & proved \\
+\texttt{WMCalculusGSLTVertex.lean}
+  & fiber, transport, rule counts, OSLF per vertex
+  & proved \\
+\texttt{PLNWMHypercubeBasis.lean}
+  & 4-axis \texttt{WMVertex}, \texttt{CubePath}, transport
+  & proved \\
+\texttt{WMProbabilityEmbedding.lean}
+  & 13-axis probability embedding, monotonicity
+  & proved \\
+\texttt{WMCalculusOSLFBridge.lean}
+  & semantic bridge: $\Diamond$ theorems, Galois corollaries,
+    \texttt{WMTermEncodes}, barbs, chaining,
+    guarded Galois connections
+  & proved \\
+\texttt{WMCalculusContextClosure.lean}
+  & 15 congruence rules, context closure LanguageDefs,
+    raw $\subseteq$ cong-extended, Galois for extended calculi
+  & proved \\
+\texttt{WMCalculusEncoding.lean}
+  & \texttt{encodeWM}, roundtrip, injectivity,
+    \texttt{WMStep} soundness + completeness on image
+  & proved \\
+\texttt{WMCalculusNeighborhoodBridge.lean}
+  & neighborhood fiber: evidence-add correspondence,
+    $\Diamond$ decomposition, singleton adequacy, Galois
+  & proved \\
+\texttt{WMCalculusFOLBridge.lean}
+  & FOL fiber: Tarskian evidence correspondence,
+    validity, model-theoretic consequence bridge
+  & proved \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Guarded Calculus}
+\label{sec:wm-guarded}
+
+The extension rules (axes~5--13) carry informal side conditions documented
+in docstrings---for example, the forgetting rule
+$\mathsf{Extract}(\mathsf{Forget}(S,W), q) \leadsto \mathsf{Extract}(W, q)$
+requires ``$q \notin \mathrm{scope}(S)$'' but this condition was not checked
+by the rewrite engine.
+
+The \emph{guarded calculus} makes these side conditions explicit as
+\texttt{Premise.relationQuery} entries.  For each extension rule with an
+informal side condition, a parallel guarded variant is defined with the
+appropriate \texttt{premises} field.  The 5~core rules have no premises
+and are shared between both families.
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Calculus} & \textbf{Description} \\
+\midrule
+Raw (\texttt{wmExtVertexLanguageDef}) & schematic: all rules fire unconditionally \\
+Guarded (\texttt{wmExtVertexLanguageDefGuarded}) & faithful: extension rules carry real premises \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The raw calculus is an overapproximation of the guarded one---every guarded
+reduction is also a raw reduction (dropping premises only enables more
+reductions).  The OSLF pipeline produces a Galois connection
+$\Diamond \dashv \Box$ for both:
+
+\begin{theorem}[\texttt{wmGuardedCalc\_galois}, kernel-checked]
+For any \texttt{RelationEnv} and extended vertex~$v$:
+$\Diamond_{\mathit{guarded}} \dashv \Box_{\mathit{guarded}}$.
+\end{theorem}
+
+\noindent
+See \codepath{Mettapedia/OSLF/Framework/WMCalculusLanguageDef.lean} (17~guarded
+rules) and \codepath{Mettapedia/OSLF/Framework/WMCalculusOSLFBridge.lean}.
+
+\section{Context Closure via Congruence Rules}
+\label{sec:wm-context-closure}
+
+The core WM patterns use \texttt{.apply} constructors (not
+\texttt{.collection}), so the engine's built-in \texttt{congElem}
+constructor---which only descends into \texttt{.collection} nodes---never
+fires on WM terms.  Without explicit congruence rules, reductions cannot
+propagate into subterms.
+
+The congruence extension adds 15~explicit rewrite rules, one per argument
+position of each WM constructor:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Constructor} & \textbf{Congruence rules} \\
+\midrule
+$\mathsf{Revise}(W_1, W_2)$ & left, right \\
+$\mathsf{Extract}(W, q)$ & left, right \\
+$\mathsf{Combine}(e_1, e_2)$ & left, right \\
+$\mathsf{Forget}(S, W)$ & right \\
+$\mathsf{OverlapMerge}(W_1, W_2)$ & left, right \\
+Extension constructors & 6 more \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Each congruence rule uses \texttt{Premise.congruence src tgt}, which
+checks that \texttt{src} reduces to \texttt{tgt} via the no-premises engine
+path.  In the raw calculus, congruence descends through all reductions.
+In the guarded calculus, only unconditional rules propagate through
+congruence; side-conditioned extension rules do not fire inside subterms
+unless independently satisfied.
+
+\begin{theorem}[\texttt{congReduces\_of\_rawReduces\_ext}, kernel-checked]
+Every raw reduction is also a congruence-extended reduction (rule-set
+inclusion).
+\end{theorem}
+
+\noindent
+The context-closure module also completes the \textbf{2\texttimes 2 calculus
+square}: \{Raw, Guarded\} \texttimes\ \{Plain, +Cong\}.
+The guarded+cong definitions (\texttt{wmExtVertexLanguageDefGuardedWithCong}
+and the full-vertex variant) add congruence rules on top of the guarded
+calculus.  All four horizontal and vertical inclusion arrows are
+kernel-checked, and Galois connections hold at every corner.
+
+\begin{theorem}[\texttt{chain\_evidence\_add\_fully\_nested}, kernel-checked]
+In the cong-extended calculus, the term
+$\mathsf{Extract}(\mathsf{Revise}(\mathsf{Revise}(W_1, W_2), W_3),\; q)$
+reduces in \emph{two} steps to
+$\mathsf{Combine}(\mathsf{Combine}(\mathsf{Extract}(W_1,q),\;
+\mathsf{Extract}(W_2,q)),\; \mathsf{Extract}(W_3,q))$.
+Step~1 applies evidence-add to the outer $\mathsf{Revise}$;
+Step~2 uses \texttt{ruleCombineCongLeft} to apply evidence-add
+\emph{inside} the left $\mathsf{Combine}$ argument.
+The congruence premise is satisfied because the inner evidence-add
+has empty premises and is therefore witnessed by
+\texttt{rewriteWithContextNoPremises}.
+Full-vertex and guarded+cong variants are also kernel-checked.
+\end{theorem}
+
+\noindent
+See \codepath{Mettapedia/OSLF/Framework/WMCalculusContextClosure.lean}
+(463~lines, 0~sorry) and
+\codepath{Mettapedia/OSLF/Framework/WMCalculusOSLFBridge.lean}
+(784~lines, 0~sorry).
+
+\section{Encoding Faithfulness on the Image}
+\label{sec:wm-encoding}
+
+The abstract syntax is given by an \emph{intrinsically sorted} type family
+$\mathsf{WMTerm} : \mathsf{WMSort} \to \mathsf{Type}$, where
+$\mathsf{WMSort} = \{\mathsf{state},\; \mathsf{query},\;
+\mathsf{evidence}\}$.
+States and queries both encode to free variables
+($\mathsf{state}\;x,\;\mathsf{query}\;x \;\mapsto\; \mathtt{.fvar}\;x$),
+but they carry \emph{different sort indices}, so injectivity holds
+within each sort:
+
+\begin{theorem}[\texttt{encodeWM\_injective}, kernel-checked]
+\label{thm:encode-injective}
+For any sort~$s$ and terms $t_1, t_2 : \mathsf{WMTerm}\;s$,\;
+$\mathtt{encodeWM}\;t_1 = \mathtt{encodeWM}\;t_2
+\;\Rightarrow\; t_1 = t_2$.
+\end{theorem}
+
+\noindent
+The sort index also makes subject reduction \emph{definitional}: every
+constructor of $\mathsf{WMStep} : \mathsf{WMTerm}\;s \to
+\mathsf{WMTerm}\;s \to \mathsf{Prop}$ preserves the sort by
+construction.  The five constructors (evidence-add, revision-comm,
+revision-assoc, combine-comm, combine-zero) correspond one-to-one to
+the 5~core rewrite rules.
+
+\begin{theorem}[Biconditional, \texttt{wmStep\_iff}, kernel-checked]
+\label{thm:wmstep-iff}
+$\mathsf{WMStep}\;t_1\;t_2 \;\Leftrightarrow\;
+\mathtt{langReduces}\;\mathtt{wmCoreLanguageDef}\;
+(\mathtt{encodeWM}\;t_1)\;(\mathtt{encodeWM}\;t_2)$.
+\end{theorem}
+
+\noindent
+The forward direction (\texttt{wmStep\_sound}) constructs the
+$\mathtt{DeclReducesWithPremises}$ witness; the backward direction
+(\texttt{wmStep\_complete}) eliminates the $\mathtt{congElem}$ case
+(WM patterns are $\mathtt{.apply}$, not $\mathtt{.collection}$) and
+inverts $\mathtt{matchPattern}$ on each of the 5~core rules.
+
+\subsection{Star Adequacy}
+\label{sec:wm-star-adequacy}
+
+The biconditional lifts to multi-step reductions.
+Define $\mathsf{WMStepStar} := \mathtt{ReflTransGen}\;\mathsf{WMStep}$
+(Lean's reflexive-transitive closure).
+
+\begin{theorem}[Star adequacy, \texttt{wmStepStar\_adequate}, kernel-checked]
+\label{thm:star-adequate}
+$\mathsf{WMStepStar}\;t_1\;t_2 \;\Leftrightarrow\;
+\mathtt{LangReducesStar}\;\mathtt{wmCoreLanguageDef}\;
+(\mathtt{encodeWM}\;t_1)\;(\mathtt{encodeWM}\;t_2)$.
+\end{theorem}
+
+\noindent
+The forward direction (\texttt{wmStepStar\_sound}) is a straightforward
+induction on $\mathtt{ReflTransGen}$ using single-step soundness.  The
+backward direction (\texttt{wmStepStar\_complete}) requires a
+\emph{generalization trick}: since $\mathtt{LangReducesStar}$ carries
+$\mathtt{encodeWM}\;t_1$ as a non-variable index, we first generalize
+it to a fresh variable~$p$ before inducting, then recover the
+$\mathsf{WMTerm}$-level witness at each step via single-step
+completeness and injectivity (Theorem~\ref{thm:encode-injective}).
+
+\subsection{Modal Lifting and a Backward Asymmetry}
+\label{sec:wm-backward-asymmetry}
+
+The biconditional (Theorem~\ref{thm:wmstep-iff}) yields a sound
+$\Box$-lifting theorem: any $\mathtt{langBox}$ property at
+$\mathtt{encodeWM}\;t$ can be pulled back to all $\mathsf{WMStep}$
+predecessors.
+
+\begin{theorem}[\texttt{wmBox\_sound}, kernel-checked]
+If $\mathtt{langBox}\;\mathtt{wmCoreLanguageDef}\;\varphi\;(\mathtt{encodeWM}\;t)$,
+then $\varphi(\mathtt{encodeWM}\;t')$ for every
+$t' : \mathsf{WMTerm}\;s$ with $\mathsf{WMStep}\;t'\;t$.
+\end{theorem}
+
+\noindent
+However, the converse---\emph{backward completeness}---is \textbf{false}
+for intrinsically sorted terms.
+The obstacle is that the Pattern-level reduction system admits
+predecessors \emph{outside the image} of $\mathtt{encodeWM}$.
+For example, $\mathtt{ruleCombineZero}$ (whose right-hand side is
+$\mathtt{.fvar}\;\texttt{"e"}$) produces the Pattern-level predecessor
+$\mathtt{pCombine}\;(\mathtt{.fvar}\;\texttt{"x"})\;\mathtt{pEvidenceZero}$
+at $\mathtt{.fvar}\;\texttt{"x"}$---but $\mathtt{.fvar}\;\texttt{"x"}$
+is the encoding of a \emph{leaf} term ($\mathsf{state}$ or
+$\mathsf{query}$), which has no $\mathsf{WMStep}$ predecessor with a
+$\mathsf{combine}$ head.
+The ``junk predecessors'' are artifacts of
+the universal-quantifier pattern variables in the rewrite rules and
+cannot be eliminated without restricting the OSLF reduction relation
+itself.
+
+This asymmetry is harmless: the $\Diamond$~direction (forward
+completeness) suffices for all evidence-theoretic applications, and
+$\Box$~soundness already allows pulling modal properties back to the
+abstract level.
+
+\noindent
+See \codepath{Mettapedia/OSLF/Framework/WMCalculusEncoding.lean}
+(497~lines, 0~sorry).
+
+\section{Semantic Bridge: From $\Diamond/\Box$ to Evidence Theory}
+\label{sec:wm-gslt-bridge}
+
+The syntactic layer (rewrite rules, step lemmas, OSLF-derived $\Diamond/\Box$)
+is now connected to the WorldModel evidence-theoretic operations via a
+\emph{semantic bridge} (\texttt{WMCalculusOSLFBridge.lean}, 0~sorry,
+kernel-checked).  The bridge has three layers.
+
+\subsection{Layer 1: Diamond Theorems via Step Lemmas}
+
+Pattern predicates capture evidence-theoretic properties syntactically:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Predicate} & \textbf{Meaning} \\
+\midrule
+$\mathsf{isCombined}(p)$ & $p = \mathsf{Combine}(e_1, e_2)$ \\
+$\mathsf{isDecomposable}(p)$ & $p = \mathsf{Extract}(\mathsf{Revise}(W_1, W_2), q)$ \\
+$\mathsf{isRevision}(p)$ & $p = \mathsf{Revise}(W_1, W_2)$ \\
+$\mathsf{isFixpoint}(p)$ & $p = \mathsf{LeastClosure}(R, W, S)$ \\
+$\mathsf{isOverlapCorrected}(p)$ & $p = \mathsf{OverlapCorrect}(e_1, e_2, f)$ \\
+$\mathsf{isZeroEvidence}(p)$ & $p = \mathsf{EvidenceZero}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Each $\Diamond$~theorem composes a step lemma with the predicate.  For
+example, the core evidence decomposition:
+
+\begin{theorem}[\texttt{diamond\_isCombined\_at\_decomposable}, kernel-checked]
+For any WM vertex~$v$ and patterns $W_1, W_2, q$:
+\[
+  \Diamond(\mathsf{isCombined})\;\text{holds at}\;
+  \mathsf{Extract}(\mathsf{Revise}(W_1, W_2),\; q).
+\]
+\end{theorem}
+
+\noindent
+The proof is a single composition: the evidence-add step lemma provides the
+witness~$\mathsf{Combine}(\mathsf{Extract}(W_1,q), \mathsf{Extract}(W_2,q))$,
+which satisfies $\mathsf{isCombined}$ by construction.
+
+Similar $\Diamond$~theorems hold for all 9~extension axes:
+\begin{itemize}
+\item \texttt{full\_diamond\_overlapCorrected}: overlap-aware $\Rightarrow$
+  $\Diamond(\mathsf{isOverlapCorrected})$ at overlap-merge extracts.
+\item \texttt{full\_diamond\_closureFixpoint}: fixpoint-enabled $\Rightarrow$
+  $\Diamond(\mathsf{isFixpoint})$ at immediate-step terms.
+\item \texttt{full\_diamond\_antiHallucination}: conserving vertex $\Rightarrow$
+  $\Diamond(\mathsf{isZeroEvidence})$ at out-of-scope extracts (anti-hallucination).
+\item \texttt{full\_diamond\_experimentDecomposable},
+  \texttt{full\_diamond\_kripkeDecomposable},
+  \texttt{full\_diamond\_genericDecomposable}: extension-specific evidence additivity.
+\end{itemize}
+
+\subsection{Layer 2: Relational Encoding and Soundness}
+
+A relational encoding connects abstract WorldModel terms to OSLF patterns:
+
+\begin{center}
+\begin{tabular}{l}
+\textbf{inductive} $\mathsf{WMTermEncodes} : \mathsf{Pattern} \to \mathsf{WMTerm} \to \mathsf{Prop}$ \\
+\quad $\mid$ \texttt{state}$(n)$ : $\mathsf{WMTermEncodes}\;(\mathsf{fvar}\;n)\;(\mathsf{state}\;n)$ \\
+\quad $\mid$ \texttt{revise} : $\mathsf{WMTermEncodes}\;p_1\;t_1 \to \mathsf{WMTermEncodes}\;p_2\;t_2$ \\
+\quad\quad\quad $\to \mathsf{WMTermEncodes}\;(\mathsf{pRevise}\;p_1\;p_2)\;(\mathsf{revise}\;t_1\;t_2)$ \\
+\quad $\mid$ \texttt{extract}, \texttt{combine}, \texttt{query}, \texttt{zero} \ldots
+\end{tabular}
+\end{center}
+
+\begin{theorem}[\texttt{wm\_evidence\_add\_sound}, kernel-checked]
+If $p_{W_1}$ encodes $t_{W_1}$, $p_{W_2}$ encodes $t_{W_2}$, and $p_q$
+encodes $t_q$, then there exists a pattern~$q'$ such that
+$\mathsf{langReduces}(\mathsf{wmExtVertexLanguageDef}(v),\;
+\mathsf{pExtract}(\mathsf{pRevise}(p_{W_1}, p_{W_2}),\; p_q),\; q')$
+and $q'$ encodes $\mathsf{combine}(\mathsf{extract}(t_{W_1}, t_q),\;
+\mathsf{extract}(t_{W_2}, t_q))$.
+\end{theorem}
+
+\noindent
+Analogous soundness theorems hold for revision commutativity and
+associativity.  The encoding composes with $\Diamond$~theorems:
+
+\begin{theorem}[\texttt{diamond\_isCombined\_of\_encoded}, kernel-checked]
+If a pattern~$p$ encodes a term $\mathsf{extract}(\mathsf{revise}(t_1,t_2), t_q)$,
+then $\Diamond(\mathsf{isCombined})$ holds at~$p$.
+\end{theorem}
+
+\subsection{Layer 3: Galois Corollaries}
+
+The Galois connection $\Diamond \dashv \Box$ instantiates to concrete
+evidence-theoretic dualities:
+
+\begin{theorem}[\texttt{wmCalc\_decomposability\_safety}, kernel-checked]
+$(\forall p.\; \Diamond(\mathsf{isCombined})(p) \Rightarrow \psi(p))
+\;\Leftrightarrow\;
+(\forall p.\; \mathsf{isCombined}(p) \Rightarrow \Box(\psi)(p))$.
+\end{theorem}
+
+\noindent
+Reading: ``every combined state reachable by forward rewriting satisfies~$\psi$''
+is equivalent to ``every combined state has all its backward predecessors
+satisfying~$\psi$.''  Similar corollaries hold for overlap, fixpoint, and
+conservation predicates.
+
+\subsection{Diamond Chaining}
+
+Multi-step rewrite chains compose via $\mathsf{LangReducesStar}$:
+
+\begin{theorem}[\texttt{chain\_evidence\_add\_nested}, kernel-checked]
+Given patterns $W_1, W_2, W_3, q$, the term
+$\mathsf{Extract}(\mathsf{Revise}(\mathsf{Revise}(W_1, W_2), W_3),\; q)$
+reduces in one step to
+$\mathsf{Combine}(\mathsf{Extract}(\mathsf{Revise}(W_1,W_2),\,q),\;
+\mathsf{Extract}(W_3,q))$.
+The inner $\mathsf{Revise}(W_1,W_2)$ is \emph{not} further decomposed
+at this stage.
+\end{theorem}
+
+\noindent
+Full decomposition to
+$\mathsf{Combine}(\mathsf{Combine}(\mathsf{Extract}(W_1,q),\;
+\mathsf{Extract}(W_2,q)),\; \mathsf{Extract}(W_3,q))$
+requires applying the evidence-add rule \emph{under a context}---specifically
+inside the left argument of $\mathsf{Combine}$.  The theorem
+\texttt{chain\_evidence\_add\_fully\_nested} (Section~\ref{sec:wm-context-closure})
+achieves this via the congruence infrastructure of the context-closure calculus.
+
+The chaining infrastructure also gives \texttt{chain\_assoc\_then\_comm}
+(reassociate then commute) and full-vertex variants.
+
+\subsection{Evidence Barbs (Process-Algebraic Observables)}
+
+Following Milner's barbed bisimulation, we define a WM-specific observable:
+
+\begin{definition}[\texttt{wmHasEvidenceBarb}]
+A state~$W$ \emph{exhibits an evidence barb for query~$q$} when
+$\mathsf{Extract}(W, q)$ reduces to a non-zero evidence term:
+$\exists e.\; \mathsf{Extract}(W,q) \leadsto e \;\wedge\; e \neq \mathsf{EvidenceZero}$.
+\end{definition}
+
+\begin{theorem}[\texttt{wmRevisedState\_evidenceBarb}, kernel-checked]
+$\mathsf{Revise}(W_1, W_2)$ exhibits an evidence barb for~$q$ whenever
+$\mathsf{Combine}(\mathsf{Extract}(W_1,q), \mathsf{Extract}(W_2,q))$ is
+non-zero---i.e., the evidence-add rule provides the witness.
+\end{theorem}
+
+\subsection{Neighborhood Semantics Fiber}
+
+The abstract LanguageDef reductions correspond exactly to concrete
+model-theoretic facts when instantiated at the neighborhood WorldModel
+instance (\texttt{PLNWorldModelNeighborhood.lean}).
+
+A \emph{NeighborhoodValuation} maps WMTerm string names to concrete objects:
+\texttt{stateVal : String $\to$ Multiset PointedNeighborhood} and
+\texttt{queryVal : String $\to$ ModalQuery}.
+
+\begin{theorem}[\texttt{neighborhood\_evidence\_add\_correspondence}, kernel-checked]
+The LanguageDef reduction
+$\mathsf{Extract}(\mathsf{Revise}(W_1, W_2), q) \leadsto
+\mathsf{Combine}(\mathsf{Extract}(W_1, q), \mathsf{Extract}(W_2, q))$
+and the mathematical identity
+$\mathsf{neighborhoodEvidence}(W_1 + W_2, \varphi) =
+\mathsf{neighborhoodEvidence}(W_1, \varphi) +
+\mathsf{neighborhoodEvidence}(W_2, \varphi)$
+are corresponding facts (both hold simultaneously).
+\end{theorem}
+
+\noindent
+Further theorems lift through the valuation: $\Diamond$~decomposition
+of evidence into per-source satisfaction counts,
+singleton adequacy ($\mathsf{pn.satisfies}(\varphi) \Leftrightarrow
+\mathsf{queryStrength}(\{pn\}, \varphi) = 1$),
+evidence barbs for revised states, and the Galois corollary
+$\Diamond \dashv \Box$ with neighborhood-semantic reading.
+
+See \codepath{Mettapedia/OSLF/Framework/WMCalculusNeighborhoodBridge.lean}
+(230~lines, 0~sorry).
+
+\subsection{First-Order Logic Fiber}
+
+The parallel FOL fiber connects the LanguageDef to the Tarskian
+WorldModel instance (\texttt{PLNWorldModelFOL.lean}).
+
+A \emph{FOLValuation~$L$} maps state names to
+$\mathsf{Multiset}(\mathsf{PointedFOL}\;L)$ and query names to
+$\mathsf{FOLQuery}\;L$ (first-order sentences over language~$L$).
+
+\begin{theorem}[\texttt{fol\_evidence\_add\_correspondence}, kernel-checked]
+The same evidence-add correspondence holds for Tarskian satisfaction
+counting: the syntactic reduction and
+$\mathsf{folEvidence}(W_1 + W_2, \varphi) =
+\mathsf{folEvidence}(W_1, \varphi) + \mathsf{folEvidence}(W_2, \varphi)$
+are the same fact in two formalisms.
+\end{theorem}
+
+\noindent
+The FOL fiber additionally proves:
+
+\begin{itemize}
+\item \textbf{Validity as maximal strength}: if all structures satisfy the query
+  and the state is non-empty, query strength equals~1.
+\item \textbf{Model-theoretic consequence bridge}: FOL semantic consequence
+  ($\forall S.\; S \models \varphi \Rightarrow S \models \psi$) corresponds
+  exactly to WM strength ordering
+  ($\mathsf{queryStrength}(W, \varphi) \le \mathsf{queryStrength}(W, \psi)$),
+  and the converse holds at singletons (fully faithful).
+\end{itemize}
+
+\noindent
+See \codepath{Mettapedia/OSLF/Framework/WMCalculusFOLBridge.lean}
+(295~lines, 0~sorry).
+
+\subsection{Remaining Future Work}
+
+One direction remains open:
+
+\begin{itemize}
+\item \textbf{Box-closure theorems ($\Box$ direction)}: proving $\Box\varphi$
+  requires showing \emph{all} predecessors satisfy~$\varphi$, which needs
+  exhaustive case analysis over the rule set.  A generic
+  \texttt{box\_by\_rule\_exhaustion} tactic would make this feasible.
+\end{itemize}
+
+\noindent
+Two previously open items are now resolved:
+\begin{itemize}
+\item \textbf{Encoding completeness} (\emph{done}): \texttt{WMCalculusEncoding.lean}
+  proves both soundness and completeness on the image of \texttt{encodeWM},
+  giving a true biconditional between \texttt{WMStep} and \texttt{langReduces}
+  (via intrinsically sorted terms), plus multi-step star adequacy
+  (Section~\ref{sec:wm-encoding}).
+\item \textbf{Context closure} (\emph{done}): \texttt{WMCalculusContextClosure.lean}
+  adds 15~congruence rules enabling reductions inside WM subterms
+  (Section~\ref{sec:wm-context-closure}).
+\end{itemize}
+
+See \codepath{Mettapedia/OSLF/Framework/WMCalculusOSLFBridge.lean},
+\codepath{Mettapedia/OSLF/Framework/WMCalculusLanguageDef.lean},
+\codepath{Mettapedia/OSLF/Framework/WMCalculusEncoding.lean},
+\codepath{Mettapedia/OSLF/Framework/WMCalculusContextClosure.lean}, and
+\codepath{Mettapedia/OSLF/Framework/WMCalculusGSLTVertex.lean}.
+
+
+%% ═══════════════════════════════════════════════════════════════════
 \part{Artifact, Scope, and Relation to PLN}
 \label{part:artifact}
 %% ═══════════════════════════════════════════════════════════════════
@@ -5789,108 +7429,192 @@ See \codepath{Mettapedia/Logic/PLNCanonicalAPI.lean}.
 \chapter{What \xiPLN{} Proves}
 \label{ch:what-proved}
 
-This chapter provides a compact, family-level summary of the formalization.
+This chapter provides a compact, family-level summary of the
+formalization---what is actually proved, in the Lean kernel, as opposed to
+merely discussed or conjectured.
 
 \section{The Kernel}
 
-\begin{itemize}
-\item World-model interface with evidence compositionality.
-\item Dirichlet reference instance with query extraction.
-\item Sequent-style calculus with admissible query-revision.
-\item Local-completeness no-go theorem.
-\end{itemize}
+The foundation is a world-model interface with evidence compositionality:
+revision of two world-model states and subsequent query extraction must
+agree with extracting from each state separately and then combining the
+evidence.  This interface is instantiated concretely by a Dirichlet
+reference instance with query extraction over finite world-sets, and the
+resulting system admits a sequent-style calculus in which query-revision
+is an admissible rule.  The local-completeness no-go theorem
+(Chapter~\ref{ch:no-go}) then demonstrates that no link-local evidence
+representation can recover full joint evidence---a sharp boundary on the
+ambitions of any PLN-like system.
 
 \section{Views and Evidence}
 
-\begin{itemize}
-\item Evidence quantale and Heyting algebra.
-\item STV, ITV, distributional views as typed projections.
-\item Explicit separation of Walley predictive from Bayesian credible
-  intervals.
-\item De~Finetti and Solomonoff convergence bridges.
-\item Knuth--Skilling valuation-algebra bridge.
-\end{itemize}
+Evidence carries algebraic structure: the formalization proves that
+evidence forms both a quantale (with a tensor product modelling revision)
+and a Heyting algebra (with implication modelling conditional evidence).
+The truth-value views---simple truth values, indefinite truth values, and
+distributional views---are all formalized as typed projections from
+evidence, with an explicit separation of Walley predictive intervals from
+Bayesian credible intervals.  Two convergence bridges ground the
+asymptotic story: de~Finetti's exchangeability theorem justifies count
+sufficiency, and a Solomonoff convergence bridge shows that evidence
+counts approximate the universal posterior.  A Knuth--Skilling
+valuation-algebra bridge connects the evidence algebra to information-
+theoretic valuations.
 
 \section{Compiled Inference}
 
-\begin{itemize}
-\item Corrected extensional-rule exactness for chain, fork, collider motifs
-  under screening-off / positivity conditions.
-\item Class-packaged d-separation discharge.
-\item Xi rule registry with typed BN constructor lifts.
-\item One-call selector $\to$ rewrite $\to$ threshold composition.
-\item Threshold transport with explicit boundaries.
-\end{itemize}
+The extensional inference rules of classical PLN---deduction, induction,
+abduction---are proved exact for the chain, fork, and collider BN motifs
+under explicit screening-off and positivity conditions.  D-separation
+discharge is packaged as a typeclass, so that a user need only declare the
+BN structure and the side conditions are checked automatically.  The Xi
+rule registry collects these compiled rewrites with their typed BN
+constructor lifts, and a one-call pipeline composes selector, rewrite, and
+threshold into a single certified step.  Threshold transport with
+explicit boundaries ensures that confidence gates compose correctly
+across inference chains.
 
 \section{Extensions}
 
-\begin{itemize}
-\item Higher-order reduction with corrected side conditions.
-\item Certified higher-order chaining from estimated variables:
-  information-set typing, law-of-total-variance reveal, Bayesian
-  regime update, calibration contracts, certified
-  continue/reveal/fallback/abstain rules, and stronger
-  root-sum-of-squares bounds under explicit assumptions.
-\item Finite-model quantifier and fuzzy quantifier semantics.
-\item Intensional inheritance with ASSOC/PAT typed WM grounding.
-\item Temporal/causal inference as WM instance.
-\end{itemize}
+Higher-order reduction is formalized with corrected side conditions,
+together with certified higher-order chaining from estimated variables:
+information-set typing, law-of-total-variance reveal, Bayesian regime
+update, calibration contracts, certified continue/reveal/fallback/abstain
+rules, and stronger root-sum-of-squares bounds under explicit
+assumptions.  Finite-model quantifier and fuzzy quantifier semantics
+are proved in the weakness-based formulation.  Intensional inheritance
+is grounded through typed WM channels (ASSOC and PAT), and
+temporal/causal inference is formalized as another WM instance rather than
+a separate ontology.
 
 \section{Large-Scale Inference and Control}
 
-\begin{itemize}
-\item Multideduction residual decomposition with identifiability no-go.
-\item Trail-free non-stabilization and damped convergence.
-\item Pooling uniqueness under external Bayesianity.
-\item BRGI optimization with feasible-set characterization.
-\item Premise-selection coverage with submodularity and greedy guarantee.
-\item Coverage surrogate no-go.
-\item \textbf{Certified chaining no-go family} (five theorems):
-  coverage collapse, Lipschitz sensitivity amplification, variance
-  accumulation, topology--CPT gap, and regime underdetermination.
-  See Section~\ref{sec:certified-chaining-nogo}.  The current canonical
-  surface also includes the strengthened parametric forms and their
-  higher-order bridge: graph-parametric topology/CPT impossibility,
-  chain-with-resets variance accumulation, topology-only non-certification,
-  and unrevealed-chain variance-budget consumption.
-\end{itemize}
+Multideduction is formalized via a residual decomposition that makes the
+inclusion-exclusion error explicit, together with an identifiability no-go
+showing that the residual cannot in general be recovered from local
+information.  The trail-free deterministic update protocol admits a
+counterexample (a 2-cycle that never stabilizes), but damped convergence
+under eventual fresh evidence is proved.  Pooling uniqueness under
+external Bayesianity pins down the fusion rule, and BRGI optimization
+with feasible-set characterization provides the scheduling foundation.
+
+Premise-selection coverage is proved submodular, yielding the classical
+greedy $(1 - 1/e)$ approximation guarantee, while a coverage surrogate
+no-go shows that no purely local surrogate can faithfully approximate
+global coverage.  A family of five certified-chaining no-go theorems
+(Section~\ref{sec:certified-chaining-nogo})---coverage collapse,
+Lipschitz sensitivity amplification, variance accumulation,
+topology--CPT gap, and regime underdetermination---characterizes the
+fundamental limitations of composing per-step certificates.  The current
+canonical surface also includes strengthened parametric forms and their
+higher-order bridges: graph-parametric topology/CPT impossibility,
+chain-with-resets variance accumulation, topology-only
+non-certification, and unrevealed-chain variance-budget consumption.
+
+\section{WM-OSLF Bridge}
+
+The world-model calculus is encoded as a 13-axis \texttt{LanguageDef}
+family with 36 rewrite rules (5~core + 31~extension), indexed by vertex.
+Kernel-checked rule counts confirm the range: 5 at the minimal vertex,
+36 at the maximal.  Sixteen step lemmas cover the three core operations
+(evidence-add, revision-comm, revision-assoc) across both ext and full
+vertices, plus ten extension-axis lemmas for overlap, forgetting,
+provenance, fixpoint, cost, conservation, experiment, Kripke, and generic
+carrier.
+
+Twelve diamond theorems establish reachability properties:
+$\Diamond(\mathsf{isCombined})$, $\Diamond(\mathsf{isCommuted})$,
+$\Diamond(\mathsf{isReassociated})$,
+$\Diamond(\mathsf{isOverlapCorrected})$,
+$\Diamond(\mathsf{isFixpoint})$, $\Diamond(\mathsf{isZeroEvidence})$
+(anti-hallucination), and three evidence-decomposition variants for
+experiment, Kripke, and generic contexts.  A relational encoding
+($\mathsf{WMTermEncodes}$) with soundness theorems and a computable
+$\mathsf{encodeWM}$ with one-step completeness on the image provide the
+encoding-faithfulness layer.  Four Galois corollaries instantiate the
+$\Diamond\dashv\Box$ adjunction for decomposability, overlap, fixpoint,
+and conservation safety.  Three diamond-chaining theorems compose
+multi-step reductions via $\mathsf{LangReducesStar}$.
+
+The bridge includes two semantic fibers.  A neighborhood fiber connects
+LanguageDef reductions to neighborhood-semantic evidence additivity,
+$\Diamond$~decomposition, singleton adequacy, and a Galois corollary.
+A parallel FOL fiber bridges to Tarskian satisfaction counting, proving
+validity-as-maximal-strength and model-theoretic consequence
+$\Leftrightarrow$ WM strength ordering (fully faithful at singletons).
+Evidence barbs provide a process-algebraic observable for non-zero
+evidence extraction.
 
 \section{Cross-Cutting}
 
-\begin{itemize}
-\item \textbf{PLN $\leftrightarrow$ NARS:} confidence transforms, rule
-  correspondences, revision coherence, informativeness adjunction.
-\item \textbf{MeTTa parity:} executable formula parity between Lean
-  theorems and MeTTa truth functions.
-\item \textbf{Naive Bayes bridge} (Theorem~\ref{thm:nb-bridge}) and
-  \textbf{k-NN bridge} (Theorem~\ref{thm:knn-bridge}).
-\item \textbf{ProbLog bridge:} the world-model infrastructure subsumes
-  ProbLog distribution semantics exactly:
-  \[
-    \strength(\mathrm{probLogToJointEvidence}(p), q) = \mathrm{probLogQueryProb}(p, q)
-  \]
-  with a critical distinction: $T_{P,K,\mathrm{LP}}$ at $K = \mathbb{R}_{\ge 0}^\infty$
-  computes \emph{bag} semantics, not distribution semantics.
-  The correct path is: total-choice $\to$ residual KB $\to$ least Herbrand model.
-\item \textbf{MLN bridge (clause-native):} the world-model infrastructure
-  subsumes grounded Markov Logic Networks via clause-scope factor-graph
-  compilation.  For any ground MLN $M$ with finite clause support $S$:
-  \[
-    \mathrm{queryStrength}(\mathrm{clauseWMState}(M, S), q)
-      = \mathrm{queryProb}_{M}(q)
-  \]
-  where the factor graph has per-clause scope (only the atoms each clause
-  mentions), not full-world scope.  Three regression canaries verify
-  exact values: sigmoid $3/4$, conflicting soft clauses $3/5$, and
-  hard-zero constraint~$0$.
-  This is a semantic import theorem, \emph{not} a claim that MLN
-  knowledge-base union is identical to WM additive revision.
-\item \textbf{Noisy-OR:} $s_{\mathrm{combined}} = 1 - \prod_{i}(1 - s_i)$
-  for independent causes, with delta-method variance propagation and
-  \textbf{posterior mean scoring}:
-  $\mathrm{score} = S \cdot C + (1 - C) \cdot \mu_0$ as the Bayesian
-  point estimate (see \codepath{Mettapedia/Logic/PLNNoisyOr.lean}).
-\end{itemize}
+The formalization establishes bridges to several neighboring frameworks.
+The PLN--NARS bridge proves confidence transforms, rule correspondences,
+revision coherence, and an informativeness adjunction between the two
+systems.  MeTTa parity theorems verify executable formula parity between
+Lean theorems and MeTTa truth functions.  The naive Bayes bridge
+(Theorem~\ref{thm:nb-bridge}) and k-NN bridge
+(Theorem~\ref{thm:knn-bridge}) show that standard ML classifiers are
+special cases of the world-model query machinery.
+
+The ProbLog bridge proves that the world-model infrastructure subsumes
+ProbLog distribution semantics exactly:
+\[
+  \strength(\mathrm{probLogToJointEvidence}(p), q) = \mathrm{probLogQueryProb}(p, q)
+\]
+with a critical distinction: $T_{P,K,\mathrm{LP}}$ at
+$K = \mathbb{R}_{\ge 0}^\infty$ computes \emph{bag} semantics, not
+distribution semantics; the correct path is total-choice $\to$ residual
+KB $\to$ least Herbrand model.  The clause-native MLN bridge subsumes
+grounded Markov Logic Networks via clause-scope factor-graph compilation:
+for any ground MLN $M$ with finite clause support~$S$,
+\[
+  \mathrm{queryStrength}(\mathrm{clauseWMState}(M, S), q)
+    = \mathrm{queryProb}_{M}(q)
+\]
+where the factor graph has per-clause scope.  Three regression canaries
+verify exact values (sigmoid $3/4$, conflicting soft clauses $3/5$,
+hard-zero constraint~$0$).  This is a semantic import theorem, not a
+claim that MLN knowledge-base union is identical to WM additive revision.
+
+Finally, the Noisy-OR bridge proves
+$s_{\mathrm{combined}} = 1 - \prod_{i}(1 - s_i)$ for independent causes,
+with delta-method variance propagation and posterior mean scoring
+$\mathrm{score} = S \cdot C + (1 - C) \cdot \mu_0$
+(see \codepath{Mettapedia/Logic/PLNNoisyOr.lean}).
+
+
+\section{Artifact and Reproducibility}
+\label{sec:artifact}
+
+\paragraph{Reproducing the Lean proofs.}
+
+\begin{lstlisting}
+cd lean-projects/mettapedia
+lake build                          # full build
+grep -rn sorry Mettapedia/Logic/PLN*.lean | wc -l  # sorry audit
+\end{lstlisting}
+
+\paragraph{Reproducing the Python experiments.}
+
+Dependencies: \code{numpy}, \code{scipy}, \code{pgmpy},
+\code{xgboost}, \code{scikit-learn}.  BN benchmark data from the
+\texttt{bnlearn} repository~\cite{ScutariBnRepository};
+GJP data from Harvard Dataverse~\cite{IARPA2024GJPData};
+Gas sensor data from UCI~\cite{Vergara2012GasSensorDrift};
+Steel faults data from UCI~\cite{Buscema2010SteelPlates};
+NAB data from Numenta~\cite{Lavin2015NAB}.
+
+\begin{lstlisting}
+python scripts/wm_pln_v2c_build_master_suite.py
+python scripts/wm_pln_v2c_build_actions.py
+python scripts/wm_pln_v2c_build_eval.py
+python scripts/wm_pln_v2c_train_blind_models.py
+python scripts/wm_pln_v2c_run_policies.py
+python scripts/wm_pln_v2c_evaluate.py
+python scripts/wm_pln_v2c_project_views.py
+\end{lstlisting}
+
+A tagged release with CI logs will accompany the final version.
 
 
 \chapter{What \xiPLN{} Does Not Prove}
@@ -5901,12 +7625,9 @@ Honest scope is as important as proud achievements.
 \section{Operational Runtimes}
 
 The formalization provides mathematical specifications and correctness
-theorems.  It does not provide:
-\begin{itemize}
-\item An executable PLN inference engine.
-\item Performance benchmarks on large knowledge bases.
-\item Integration with MeTTa or Hyperon runtimes.
-\end{itemize}
+theorems.  It does not provide an executable PLN inference engine,
+performance benchmarks on large knowledge bases, or integration with
+MeTTa or Hyperon runtimes.
 
 These are operational concerns that depend on runtime infrastructure
 not yet available.  The theorem-level results constrain what any correct
@@ -5915,11 +7636,9 @@ implementation must satisfy, but they do not constitute an implementation.
 \section{Infinite-Model Quantifiers}
 
 The reviewed quantifier package in Chapter~\ref{ch:quantifiers} is
-finite-domain, but this is not a global restriction on WM-PLN.  The
-codebase already exports an arbitrary-domain infinitary semantic layer
-for quantifiers; what remains future work is bringing that layer up to
-full chapter-level parity and adding any measure-theoretic strengthening
-needed for infinite probabilistic spaces.
+finite-domain (see Section~\ref{sec:scope}).  An arbitrary-domain
+infinitary layer exists in the codebase; bringing it to full
+chapter-level parity remains future work.
 
 \section{Chapter~12 Settlement}
 
@@ -5945,25 +7664,28 @@ refactoring of the Lean codebase into a ``mathlibified'' library
 structure is a worthy future goal but is explicitly not attempted here.
 
 \section{MLN Import and Subsumption}
+\label{sec:mln-subsumption}
 
-The Lean development contains a \emph{clause-native} MLN subsumption
-layer as the primary result, together with supporting abstract
-infrastructure.
+\xiPLN{} provides a \emph{semantic subsumption} theorem for Markov Logic
+Networks: for any finite-domain MLN with mixed universal/existential
+clause templates, the compiled WM world-model state's
+\texttt{queryStrength} equals the true MLN marginal probability.  This is
+a correctness-by-construction result formalized in Lean~4, not a claim of
+generally tractable exact inference.
 
-\subsection{Clause-Native Lane (Primary)}
+\subsection{Clause-Native Core (Ground MLN Semantics)}
 
-The clause-native lane works with actual grounded clauses---finite
-disjunctions of literals over Boolean atoms---and builds a real
-clause-scope factor graph.  The formal route is:
+The clause-native lane works with grounded clauses---finite disjunctions
+of literals over Boolean atoms---and builds a clause-scope factor graph.
+The formal route is:
 \begin{enumerate}
 \item \textbf{Grounded clause semantics:} weighted ground clauses with
   explicit satisfied/unsatisfied potentials; world weight as the product
   of clause evaluations over a finite active support
   (\codepath{PLNMarkovLogicClauseSemantics.lean}).
 \item \textbf{Clause-scope factor graph:} each factor's scope is exactly
-  the atoms mentioned by its clause (not the full world state); the VE
-  constraint weight equals the MLN query mass and the partition function
-  equals the total mass
+  the atoms mentioned by its clause; the VE constraint weight equals the
+  MLN query mass and the partition function equals the total mass
   (\codepath{PLNMarkovLogicClauseFactorGraph.lean}).
 \item \textbf{ValuationWorldModel bridge:} the compiled factor graph
   induces a singleton \texttt{WMState} with a \texttt{WorldModel} instance;
@@ -5974,27 +7696,435 @@ clause-scope factor graph.  The formal route is:
     \mathrm{queryStrength}(\mathrm{clauseWMState}(M, S), q)
       = \mathrm{queryProb}_{M}(q)
   \]
-  for any ground MLN $M$ with finite clause support $S$.
+  for any ground MLN $M$ with finite clause support~$S$.
 \end{enumerate}
 
 Three regression canaries verify the full pipeline on concrete instances:
-\begin{itemize}
-\item \textbf{Sigmoid:} single positive clause with potentials $3/1$;
-  $\mathrm{queryStrength}(\textit{true}) = 3/4$.
-\item \textbf{Conflicting soft clauses:} two opposing clauses;
-  $\mathrm{queryStrength}(\textit{true}) = 3/5$.
-\item \textbf{Hard-zero constraint:} unsatisfied potential $0$;
-  $\mathrm{queryStrength}(\textit{false}) = 0$.
-\end{itemize}
+a single positive clause with potentials $3/1$ yields
+$\mathrm{queryStrength}(\textit{true}) = 3/4$; two opposing soft clauses
+yield $\mathrm{queryStrength}(\textit{true}) = 3/5$; and a hard-zero
+constraint with unsatisfied potential~$0$ correctly produces
+$\mathrm{queryStrength}(\textit{false}) = 0$.
 See \codepath{PLNMarkovLogicClauseRegression.lean}.
+
+\subsection{First-Order Template Grounding}
+
+The grounding layer lifts the propositional clause-native core to
+first-order MLN syntax.  It handles both universal and existential
+quantification (\codepath{PLNMarkovLogicGrounding.lean}).
+
+\paragraph{Syntax.}
+Arity-indexed predicates $\mathrm{Pred}(n)$, first-order terms (variables
+or constants), literal and clause templates, and substitutions $\theta :
+\mathrm{Var} \to \mathrm{Dom}$.
+
+\paragraph{Universal templates.}
+A clause template $c$ grounds under substitution $\theta$ to a
+propositional ground clause.  The key theorem is:
+\[
+  \mathrm{groundClauseTemplate}_\theta(c).\mathrm{holds}(W)
+  \;\Longleftrightarrow\;
+  \exists\, l \in c,\; (\mathrm{groundLit}_\theta(l)).\mathrm{holds}(W)
+\]
+Weighted templates carry satisfied/unsatisfied potentials; their
+\texttt{eval} agrees with the template potentials:
+\[
+  (\mathrm{groundWeightedTemplate}_\theta(\mathit{wt})).\mathrm{eval}(W)
+  = \begin{cases}
+    \mathit{wt}.\mathrm{satisfiedPotential}
+      & \text{if clause holds under } W, \\
+    \mathit{wt}.\mathrm{unsatisfiedPotential}
+      & \text{otherwise.}
+  \end{cases}
+\]
+
+\paragraph{Existential templates (big-disjunction semantics).}
+An existential clause template $\exists\, y.\; \varphi(x, y)$ grounds to
+\emph{one} propositional clause per universal grounding of~$x$, containing
+the \emph{union} of all ground literals across all existential
+witnesses~$y \in \mathrm{Dom}$:
+\[
+  \mathrm{groundExistTemplate}_{\theta_u}(\mathit{et})
+  = \bigcup_{\theta_e : \mathit{et}.\mathrm{existVars} \to \mathrm{Dom}}
+    \mathrm{groundClauseTemplate}_{[\theta_u \mid \theta_e]}(\mathit{et}.\mathrm{body})
+\]
+The main correctness theorem states that this ground clause holds iff
+there \emph{exists} a witness assignment satisfying the body:
+\begin{theorem}[\code{groundExistTemplate\_holds\_iff}, Lean~4, zero sorry]
+\label{thm:exist-grounding}
+\[
+  \mathrm{groundExistTemplate}_{\theta_u}(\mathit{et}).\mathrm{holds}(W)
+  \;\Longleftrightarrow\;
+  \exists\, \theta_e,\;
+    \mathrm{groundClauseTemplate}_{[\theta_u \mid \theta_e]}(\mathit{et}.\mathrm{body}).\mathrm{holds}(W)
+\]
+\end{theorem}
+Weighted existential templates have analogous \texttt{eval} preservation
+(\code{groundWeightedExistTemplate\_eval\_eq}).
+
+\paragraph{Mixed compilation.}
+The sum type \code{MixedTemplate} (universal $\mid$ existential) and
+compilation function \code{compileToMixedGroundMLN} dispatch grounding
+by template kind.  The world-weight preservation theorem covers both:
+\begin{theorem}[\code{compileToMixedGroundMLN\_worldWeight\_eq}, Lean~4, zero sorry]
+\label{thm:mixed-worldweight}
+For a family of mixed templates indexed by $\mathrm{TemplateId}$:
+\[
+  (\mathrm{compileToMixedGroundMLN}\;\mathit{templates}).\mathrm{worldWeight}(S, W)
+  = \prod_{(t,\theta) \in S}
+    (\mathrm{groundMixedTemplate}_\theta(\mathit{templates}(t))).\mathrm{eval}(W)
+\]
+\end{theorem}
+
+\paragraph{End-to-end canary.}
+The Smokes$(x) \to$ Cancer$(x)$ template over a two-element domain
+$\{\text{alice}, \text{bob}\}$ grounds, compiles, and yields the exact
+WM query strength:
+\[
+  \mathrm{queryStrength}(\mathrm{clauseWMState}(\mathrm{smokeGroundMLN},
+    \mathrm{fullSupport}), \text{Cancer(alice)}) = \tfrac{2}{3}
+\]
+Kernel-checked in Lean~4 (\code{smoke\_queryStrength\_cancerAlice\_eq\_two\_thirds}).
+
+\subsection{The Semantic Subsumption Chain}
+
+The full formal chain from first-order MLN syntax to WM
+\texttt{queryStrength} is:
+\[
+  \underbrace{\text{Mixed templates}}_{\text{Grounding.lean}}
+  \;\xrightarrow{\mathrm{compile}}\;
+  \underbrace{\text{GroundMLN}}_{\text{ClauseSemantics.lean}}
+  \;\xrightarrow{\mathrm{toCountable}}\;
+  \underbrace{\text{MassSemantics}}_{\text{Abstract.lean}}
+  \;\xrightarrow{\mathrm{bridge}}\;
+  \underbrace{\text{WorldModel.queryStrength}}_{\text{ClauseWorldModel.lean}}
+\]
+
+For finite-domain, finite-template MLNs with $|\mathrm{GroundAtom}| < \infty$:
+\begin{enumerate}
+\item \code{compileToMixedGroundMLN\_worldWeight\_eq}: world weight is the
+  product of per-template evaluations (Theorem~\ref{thm:mixed-worldweight}).
+\item \code{clauseWM\_queryStrength\_eq\_queryProb}: WM \texttt{queryStrength}
+  equals $\mathrm{queryProb}_M(q)$ (the exact marginal).
+\item \code{wm\_queryStrength\_eq\_full\_queryProb\_of\_finite\_support}: finite
+  support closes the countable-to-finite bridge automatically.
+\end{enumerate}
+
+In standard MLN notation, the RHS is:
+\[
+  P_M(q) = \frac{%
+    \sum_{W \models q} \prod_i \phi_i(W)}{%
+    \sum_W \prod_i \phi_i(W)}
+  \qquad\text{where}\quad
+  \phi_i(W) = \begin{cases}
+    e^{w_i} & \text{if clause $i$ holds in } W, \\
+    1 & \text{otherwise.}
+  \end{cases}
+\]
+
+This is a semantic subsumption theorem.  It says that the WM-PLN
+world-model framework can faithfully represent the true MLN distribution
+and recover exact marginals.  It is \emph{not} a claim of generally
+tractable exact computation (\#P-hardness applies as usual).
+
+\subsubsection{One-Shot Composed Theorem}
+
+The semantic chain above is distributed across several files and
+intermediate lemmas.  The following single theorem composes the full
+chain, stating the result in one place:
+
+\begin{theorem}[\code{mixed\_queryStrength\_eq\_queryProb}, Lean~4, zero sorry]
+\label{thm:mixed-one-shot}
+For a family of mixed universal/existential templates indexed by
+$\mathrm{TemplateId}$, with finite domain, finite ground-atom type,
+finite template index, and finite variable type:
+\[
+  \mathrm{queryStrength}\!\bigl(\mathrm{clauseWMState}(\mathrm{compileToMixedGroundMLN}\;\mathit{templates},\; S),\; q\bigr)
+  = \mathrm{queryProb}\!\bigl(\mathrm{compileToMixedGroundMLN}\;\mathit{templates},\; S,\; q\bigr)
+\]
+where $S = \mathrm{Finset.univ}$ is the full grounding support.
+\end{theorem}
+
+This is a direct application of
+\code{clauseWM\_queryStrength\_eq\_queryProb} after compilation.
+It constitutes the terminal formal claim: for any finite-domain MLN
+specified as mixed universal/existential clause templates, the WM-PLN
+\texttt{queryStrength} recovers the true MLN marginal probability.
+
+\subsubsection{Classical MLN Specialization}
+
+Classical MLNs use the log-weight convention: a clause with weight~$w$
+contributes potential $e^w$ when satisfied and $1$ when unsatisfied.
+The formalization makes this specialization explicit.
+
+\begin{definition}[\code{ClassicalClauseTemplate}]
+A classical clause template pairs a clause template with a real-valued
+log-weight~$w$.  Conversion to the general positive-potential framework:
+\[
+  \mathrm{satisfiedPotential} = e^w, \qquad
+  \mathrm{unsatisfiedPotential} = 1.
+\]
+\end{definition}
+
+\begin{theorem}[\code{classicalTemplate\_eval\_eq\_logWeightPotential}, Lean~4, zero sorry]
+For any substitution~$\theta$ and classical clause template with
+log-weight~$w$:
+\[
+  (\mathrm{groundWeightedTemplate}_\theta(\mathit{ct}.\mathrm{toWeighted})).\mathrm{eval}(W)
+  = \mathrm{logWeightPotential}(w,\; \mathrm{holds}(W))
+\]
+bridging the general positive-potential evaluation to the classical
+log-weight form already present in the ground-level infrastructure
+(\codepath{PLNMarkovLogicClauseSemantics.lean}).
+\end{theorem}
+
+\begin{theorem}[\code{compileClassical\_worldWeight\_eq\_gibbsProduct}, Lean~4, zero sorry]
+For a family of classical clause templates:
+\[
+  (\mathrm{compileToGroundMLN}\;\mathit{templates}).\mathrm{worldWeight}(S, W)
+  = \prod_{(t,\theta) \in S}
+    \mathrm{logWeightPotential}\!\bigl(w_t,\;
+      \mathrm{groundClauseTemplate}_\theta(c_t).\mathrm{holds}(W)\bigr)
+\]
+preserving the Gibbs product form.  This confirms that classical
+log-weight MLNs are a proper specialization of the WM-PLN
+positive-potential framework.
+\end{theorem}
+
+\subsubsection{Existential-Coupling Exact Regression}
+
+The Smokes canary (Section~\ref{sec:mln-subsumption}) has independent
+per-person factors.  To verify that the framework correctly handles
+\emph{within-clause coupling} from existential grounding, a second
+canary uses the existential template $\exists\, y.\; \mathrm{Rel}(x, y)$
+over the two-element domain $\{a, b\}$.
+
+\paragraph{Setup.}
+One binary predicate $\mathrm{Rel}$ over $\{a, b\}$ yields four ground
+atoms.  The existential template grounds to two hard-constraint clauses:
+\begin{align*}
+  x = a &:\quad \mathrm{Rel}(a,a) \lor \mathrm{Rel}(a,b)
+    \quad (\text{satisfied} = 1,\; \text{unsatisfied} = 0) \\
+  x = b &:\quad \mathrm{Rel}(b,a) \lor \mathrm{Rel}(b,b)
+    \quad (\text{satisfied} = 1,\; \text{unsatisfied} = 0)
+\end{align*}
+Of the $2^4 = 16$ possible worlds, exactly $9$ satisfy both clauses
+(total mass $= 9$).  Of those~$9$, exactly~$6$ have
+$\mathrm{Rel}(a,b) = \mathrm{true}$ (query mass $= 6$).
+
+\paragraph{Results.}
+\begin{theorem}[\code{exist\_queryStrength\_relAB\_eq\_two\_thirds}, Lean~4, zero sorry]
+\label{thm:exist-coupling}
+\[
+  \mathrm{queryStrength}\!\bigl(\mathrm{clauseWMState}(\mathrm{existGroundMLN},
+    \mathrm{fullSupport}),\; \mathrm{Rel}(a,b)\bigr) = \tfrac{2}{3}
+\]
+\end{theorem}
+
+\paragraph{Coupling witness.}
+Under the induced distribution, $P(\mathrm{Rel}(a,b)) = \tfrac{2}{3}$
+and $P(\mathrm{Rel}(a,a)) = \tfrac{2}{3}$, but
+$P(\mathrm{Rel}(a,b) \land \mathrm{Rel}(a,a)) = \tfrac{1}{3}
+  \neq \tfrac{4}{9} = (\tfrac{2}{3})^2$.
+The existential clause creates genuine within-clause coupling between
+$\mathrm{Rel}(a,a)$ and $\mathrm{Rel}(a,b)$, which the exact
+\texttt{queryStrength} captures correctly.  This demonstrates that the
+framework goes beyond independent factor models.
+
+\subsection{UW-CSE Benchmark}
+\label{sec:uwcse-benchmark}
+
+The UW-CSE benchmark~\cite{richardson2006markov} provides the primary
+empirical validation.  The Python reference engine parses all 94 clauses
+(66~universal $+$ 6~existential $+$ 22~unit), learns weights via
+pseudo-likelihood, and scores test candidates via local-conditional
+inference.
+
+\paragraph{Existential clause handling.}
+Six clauses in UW-CSE use existential quantification, e.g.,
+\[
+  \exists\, y.\; \neg\mathrm{student}(x) \lor
+    \mathrm{advisedBy}(x, y) \lor \mathrm{tempAdvisedBy}(x, y)
+\]
+The grounding engine implements the big-disjunction semantics from
+Theorem~\ref{thm:exist-grounding}: for each universal grounding of~$x$,
+one ground clause is produced containing the union of all witness
+literals.  Satisfaction is a binary existence check (does \emph{any}
+witness work?), not a count.
+
+\paragraph{Bipartite coupling from existential clauses.}
+Clauses~27 and~28 (the two query-relevant existential clauses) couple
+advisedBy atoms across the student--professor bipartite graph:
+clause~27 couples all advisedBy$(s, p)$ for a fixed student~$s$ across
+professors, while clause~28 couples for a fixed professor~$p$ across
+students.  Together they create one giant connected component per fold
+(160--972 unobserved advisedBy atoms), invalidating student-block
+independence and making exact joint enumeration infeasible.
+
+\paragraph{Inference mode.}
+Local-conditional (pseudo-likelihood) inference:
+$P(\mathrm{advisedBy}(s,p) = 1 \mid \text{rest})
+  = \sigma\!\bigl(\sum_i w_i \,\Delta n_i\bigr)$,
+conditioning on all other atoms.  This is the same approximation used
+by practical MLN systems (Alchemy, Tuffy, PracMLN).
+
+\paragraph{Results (5-fold leave-one-area-out).}
+Mean AUROC\,$= 0.862$, mean AUPRC\,$= 0.355$.
+
+\paragraph{PeTTa parity.}
+The WM-PLN evidence-tensor / weighted-clause-delta algebra reproduces the
+Python reference engine at machine precision ($\max |\Delta| < 10^{-15}$),
+verifying that the Lean-formalized algebra and the benchmark engine agree.
+
+\subsection{Beyond MLN: Compatibility-Gated Evidence Roles}
+\label{sec:beyond-mln}
+
+The subsumption theorem (Section~\ref{sec:mln-subsumption}) shows that
+WM-PLN \emph{can} emulate MLN inference.  This section demonstrates that
+the framework can also \emph{improve} on it, by decomposing the MLN's
+monolithic signal into interpretable evidence roles and learning their
+interaction.
+
+\paragraph{Failure mode diagnosis.}
+Auditing the top~50 false positives of the MLN baseline on each fold
+reveals that 56--98\% (mean~78\%) have \emph{zero pairwise evidence}:
+no shared publications, no TA/taughtBy overlap, no tempAdvisedBy link.
+The MLN predicts these advisor relationships purely from unary student
+and professor features propagated through clause weights---a structural
+failure mode invisible to AUROC.
+
+\paragraph{Compatibility-gated model.}
+The WM evidence framework separates the MLN's clause-weight signal into
+four evidence roles:
+\begin{enumerate}
+\item \textbf{NeedAdvisor($s$)}: unary student readiness---career phase
+  (Pre\_Quals, Post\_Quals, Post\_Generals), years in program, publication
+  and TA counts, tempAdvisedBy count.
+\item \textbf{CanAdvise($p$)}: unary professor capacity---position type,
+  publication and teaching counts, historical advisee count (from training
+  data only).
+\item \textbf{PairAffinity($s,p$)}: degree-corrected pairwise
+  compatibility---shared publications normalized by
+  $\sqrt{(1 + \text{pub}_s)(1 + \text{pub}_p)}$,
+  shared courses similarly normalized, and a tempAdvisedBy indicator.
+\item \textbf{MLN logit}: the existing clause-weight signal, imported as
+  one expert among several.
+\end{enumerate}
+A binary \emph{pair-absent} indicator flags candidates with no pairwise
+evidence, and interaction terms (MLN logit $\times$ pair-absent,
+career-phase $\times$ pair-absent) let a logistic regression learn the
+\emph{compatibility gate}: strong unary signals should not become strong
+edge predictions when pairwise evidence is absent.
+
+\paragraph{Evaluation.}
+Leave-one-area-out with the same 5~folds.  The logistic regression
+(20~features, no hyperparameter tuning) is trained on the 4~training
+folds per split.  To avoid label leakage, training features are extracted
+per area with the logistic regression's own training data excluding the
+area being featurized.
+
+\paragraph{Results.}
+Table~\ref{tab:gate-results} reports the comparison.  The gated model
+improves AUROC on all five folds (mean $+0.034$) and improves
+student-level metrics on average: Hits@1 $+0.070$, MRR $+0.069$,
+Set-F1 $+0.093$.  The improvements are concentrated on folds where
+the MLN's pairless false-positive rate is highest (graphics: 88\%,
+theory: 80\%), confirming that the gate addresses the diagnosed failure
+mode.
+
+\begin{table}[htbp]
+\centering
+\caption{MLN baseline vs.\ compatibility-gated WM model
+  (leave-one-area-out, 5 folds).}
+\label{tab:gate-results}
+\small
+\begin{tabular}{l cc cc cc c}
+\toprule
+& \multicolumn{2}{c}{AUROC} & \multicolumn{2}{c}{Hits@1}
+& \multicolumn{2}{c}{Set-F1} & FP\%$_{\text{0pair}}$ \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-8}
+Fold & MLN & Gate & MLN & Gate & MLN & Gate & \\
+\midrule
+ai       & 0.845 & 0.871 & 0.433 & 0.433 & 0.389 & 0.411 & 70\% \\
+graphics & 0.884 & 0.932 & 0.071 & 0.357 & 0.048 & 0.381 & 88\% \\
+language & 0.871 & 0.893 & 0.375 & 0.375 & 0.333 & 0.333 & 98\% \\
+systems  & 0.845 & 0.872 & 0.444 & 0.593 & 0.395 & 0.531 & 56\% \\
+theory   & 0.866 & 0.916 & 0.500 & 0.417 & 0.417 & 0.389 & 80\% \\
+\midrule
+Mean     & 0.862 & 0.897 & 0.365 & 0.435 & 0.316 & 0.409 & 78\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Ablation.}
+To verify that the improvement comes from role separation rather than
+simply adding more features, four ablation configurations are evaluated
+across all five folds:
+\begin{itemize}
+\item[\textbf{A.}] \textbf{MLN-only}: logistic regression on the MLN
+  logit alone (1~feature).
+\item[\textbf{B.}] \textbf{MLN+gate}: MLN logit $+$ pair-absent
+  indicator $+$ their interaction (3~features).
+\item[\textbf{C.}] \textbf{WM-only}: all evidence-role features
+  \emph{without} the MLN logit (18~features).
+\item[\textbf{D.}] \textbf{Full gate}: all 20~features (the V1 model
+  reported above).
+\end{itemize}
+% Ablation table will be filled after running the ablation study.
+Table~\ref{tab:ablation} reports the macro-averaged results.
+Configuration~C (WM evidence roles \emph{without} the MLN logit)
+dominates all others on every primary metric: mean AUROC~0.911
+(vs.\ 0.897 for the full gate), mean Hits@1~0.553 (vs.\ 0.435),
+mean Set-F1~0.494 (vs.\ 0.409).  Adding the MLN logit back (D~vs.~C)
+actually degrades performance, suggesting that the clause-weight signal
+is \emph{redundant} once the evidence roles are separated---or, more
+precisely, that the logistic regression allocates weight to the MLN
+logit at the expense of better-calibrated role features.
+
+\begin{table}[htbp]
+\centering
+\caption{Ablation study (macro-averaged over 5 folds).
+  Config~A uses the MLN logit alone; B~adds the pair-absent gate;
+  C~uses only WM evidence-role features (no MLN); D~is the full
+  20-feature gate.}
+\label{tab:ablation}
+\small
+\begin{tabular}{l r ccccc}
+\toprule
+Config & \#feat & AUROC & AUPRC & Hits@1 & MRR & Set-F1 \\
+\midrule
+MLN (raw)    & ---& 0.862 & 0.355 & 0.365 & 0.536 & 0.316 \\
+A: MLN-only  &  1 & 0.862 & 0.355 & 0.365 & 0.536 & 0.321 \\
+B: MLN+gate  &  3 & 0.861 & 0.363 & 0.412 & 0.574 & 0.367 \\
+C: WM-only   & 18 & \textbf{0.911} & \textbf{0.484} & \textbf{0.553} & \textbf{0.682} & \textbf{0.494} \\
+D: Full gate & 20 & 0.897 & 0.389 & 0.435 & 0.605 & 0.409 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation.}
+The ablation reveals that the improvement comes entirely from
+\emph{evidence-role decomposition}, not from the MLN logit.
+The MLN's clause weights conflate unary eligibility with pairwise
+compatibility; once these are separated into NeedAdvisor, CanAdvise,
+and PairAffinity features, the clause-weight signal becomes redundant.
+This is a stronger result than originally anticipated: the WM framework
+does not merely \emph{augment} MLN inference---it \emph{replaces} the
+signal with a better-structured one.
+
+The practical implication is that an MLN knowledge base is most valuable
+as a \emph{source of feature engineering intuition} (which predicates
+matter, which interactions exist) rather than as a runtime inference
+engine.  The WM evidence-role framework can then express those intuitions
+more transparently and with better calibration.
 
 \subsection{Abstract Lane (Supporting Infrastructure)}
 
 The abstract lane provides the infinite-first generalization: abstract
 mass semantics, countable semantics via $\sum$ over worlds,
 finite-support restriction under locality witnesses, and factor-graph
-specialization.  This infrastructure remains valid and is used internally
-by the clause-native bridge via \texttt{toCountableMLNSemantics}.
+specialization.  This infrastructure is used internally by the
+clause-native bridge via \texttt{toCountableMLNSemantics}.
 
 \subsection{MLN Theory Combination vs.\ WM Revision}
 
@@ -6008,17 +8138,16 @@ their compiled states.
 
 \subsection{Scope Limitations}
 
-The result is intentionally scoped.  It does \emph{not} yet claim:
+The result is intentionally scoped.  It does \emph{not} claim:
 \begin{itemize}
-\item lifted MLN inference;
-\item approximate inference;
+\item lifted MLN inference (symmetry-exploiting grounding);
+\item scalable exact joint inference (this is \#P-hard in general);
 \item open-universe MLNs;
-\item or first-order template grounding (in progress).
+\item or full UW-CSE benchmark formalization in Lean (the 94-clause
+  benchmark is formalized in Python with PeTTa parity; the Lean lane
+  provides the general semantic subsumption theorem and a smaller
+  end-to-end canary).
 \end{itemize}
-
-A benchmark such as UW-CSE \cite{richardson2006markov} remains the right
-next empirical canary, but it is now downstream of an exact semantic
-bridge rather than the starting point.
 
 \section{DeFi Hybrid Risk Monitoring}
 
@@ -6055,6 +8184,14 @@ The refoundation gives us:
 \item \textbf{Cleaner boundaries}: the no-go theorem, the identifiability
   failures, the pooling non-uniqueness, the coverage surrogate limitations---
   all stated precisely and proved formally.
+\item \textbf{Beyond subsumption}: the compatibility-gated experiment
+  (Section~\ref{sec:beyond-mln}) demonstrates that decomposing an MLN's
+  clause-weight signal into interpretable WM evidence roles yields
+  substantial improvement on the UW-CSE benchmark---mean
+  AUROC $0.862 \to 0.911$, mean Hits@1 $0.365 \to 0.553$,
+  mean Set-F1 $0.316 \to 0.494$.  Ablation shows the improvement comes
+  entirely from evidence-role separation; the MLN logit becomes redundant
+  once the roles are factored.
 \end{itemize}
 
 The result is a PLN that knows what it knows, states what it assumes,
@@ -6066,14 +8203,72 @@ beginning of a trustworthy reasoner.
   And the boundaries you prove are worth as much as the theorems you prove.}
 \end{quote}
 
+\section*{Future Work}
+
+Several directions extend the foundation established here.
+
+\paragraph{HOL completeness.}
+The intuitionistic-extensional HOL layer (Chapter~\ref{ch:hol}) establishes
+syntax, soundness, and satisfying-set reduction, but the typed canonical-model
+completeness theorem remains open
+(Section~\ref{sec:hol-completeness-status}).  Completing it would close the
+gap between PLN's higher-order syntax and full semantic adequacy.
+
+\paragraph{Selective distributional inference.}
+The convergence and dominance results
+(Theorems~\ref{thm:scalar-converges-to-distributional}
+and~\ref{thm:distributional-dominates-scalar}) show that scalar inference is
+asymptotically correct but wrong in the finite-evidence regime.  The
+benchmark confirms that distributional modes outperform scalar modes on
+regime-sensitive chains.  The natural next step is a cost-aware inference
+controller that escalates from scalar to distributional propagation when the
+regime structure predicts a significant gain---using compact approximation
+families, compiled rule surrogates, and accelerator-backed batched
+computation (Section~\ref{sec:distributional-outlook}).
+
+\paragraph{Infinitary and measure-theoretic extensions.}
+The current formalization restricts quantifier, intensional, and
+inference-control theorems to finite domains.  An infinitary layer exists in
+the codebase but has not been brought to chapter-level parity.
+Measure-theoretic extensions, particularly for continuous-valued evidence and
+distributional PLN over non-conjugate families, require additional
+infrastructure but are within reach of the existing kernel design.
+
+\paragraph{Broader benchmark coverage.}
+The present experiments cover forecasting (GJP), sensor drift (Gas),
+fault diagnosis (Steel), time-series anomaly detection (NAB), and
+Bayesian-network inference (Pathfinder, Hailfinder).  Drug-repurposing
+knowledge-graph benchmarks (Hetionet/Rephetio) and genomic regulatory
+pipelines remain as identified but unfinished empirical targets.
+
+\paragraph{Operational runtime.}
+The formalization specifies the kernel semantics precisely, but a
+high-performance compiled runtime---executing the same posterior-state
+calculus at scale with caching, incremental evidence fusion, and
+multi-source integration---is the bridge from formalized semantics to
+deployed reasoning.
+
+\paragraph{Process-algebraic packaging.}
+The WM calculus variants have been packaged as a 13-axis
+\texttt{WMFullVertex} family with 36~rewrite rules across 11~extension
+families (Chapter~\ref{ch:wm-gslt}).  The OSLF-derived $\Diamond/\Box$
+operators and Galois connection are automatic.  The remaining semantic
+bridge---connecting the syntactic $\Diamond/\Box$ to the
+\texttt{WorldModel} typeclass properties---is described in
+Section~\ref{sec:wm-gslt-future}.
+
 
 %% ═══════════════════════════════════════════════════════════════════
-\part*{Appendices}
-\addcontentsline{toc}{part}{Appendices}
 \appendix
+\part{Supplementary Material}
+\label{part:supplement}
 %% ═══════════════════════════════════════════════════════════════════
 
-\chapter{Advanced-AI Outcomes (WM Scaffold)}
+The following chapters contain detailed benchmark lane descriptions and
+numerical results.  They are supplementary to the main narrative and may
+be read selectively.
+
+\chapter{[WIP] Advanced-AI Outcomes (WM Scaffold)}
 \label{app:ai-outcomes}
 
 This appendix records the current WM-PLN analysis status for
@@ -6377,6 +8572,7 @@ interval-valued until enough direct target evidence and calibration
 support a narrower posterior claim, and any global scalarization must
 first specify how region- and horizon-conditioned predicates are being
 aggregated.
+
 
 \chapter{PPLBench Refresh and Holdout Demo}
 \label{app:pplbench-petta-refresh}

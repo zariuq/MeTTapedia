@@ -111,6 +111,18 @@ namespace RelationEnv
 def empty : RelationEnv where
   tuples := fun _ _ => []
 
+/-- Ordering on relation environments: `r₁ ≤ r₂` iff every tuple
+    returned by `r₁` is also returned by `r₂`. -/
+def le (r₁ r₂ : RelationEnv) : Prop :=
+  ∀ rel args, r₁.tuples rel args ⊆ r₂.tuples rel args
+
+instance : LE RelationEnv where le := RelationEnv.le
+
+/-- The empty relation environment is the bottom element. -/
+theorem empty_le (r : RelationEnv) : RelationEnv.empty ≤ r := by
+  intro rel args row h
+  simp [RelationEnv.empty] at h
+
 end RelationEnv
 
 /-- Built-in relation tuples derived from the executable engine.
@@ -121,7 +133,7 @@ end RelationEnv
       rule queries reduction inside its own premise list.
     - External premise-aware behavior should be added through `RelationEnv`
       tables, where recursion/fuel policies can be controlled explicitly. -/
-private def builtinRelationTuples (lang : LanguageDef) (rel : String) (args : List Pattern) :
+def builtinRelationTuples (lang : LanguageDef) (rel : String) (args : List Pattern) :
     List (List Pattern) :=
   match rel, args with
   | "reduces", [src, _] =>
@@ -132,7 +144,7 @@ private def builtinRelationTuples (lang : LanguageDef) (rel : String) (args : Li
 
 /-- Evaluate a relationQuery premise by matching query arguments against
     built-in and environment-provided relation tuples. -/
-private def relationQueryStep (relEnv : RelationEnv) (lang : LanguageDef)
+def relationQueryStep (relEnv : RelationEnv) (lang : LanguageDef)
     (bindings : Bindings) (rel : String) (args : List Pattern) : List Bindings :=
   let argPats := args.map (applyBindings bindings)
   let tuples := builtinRelationTuples lang rel argPats ++ relEnv.tuples rel argPats
@@ -404,6 +416,74 @@ theorem applyPremisesWithEnv_mono {lang₁ lang₂ : LanguageDef}
         rw [List.mem_flatMap] at hb ⊢
         obtain ⟨a, hamem, hbmem⟩ := hb
         exact ⟨a, hsub a hamem, premiseStepWithEnv_mono hrules hcong relEnv a prem b hbmem⟩
+      · exact hbs
+
+/-! ## RelationEnv Monotonicity
+
+If `relEnv₁ ≤ relEnv₂` (every tuple in `relEnv₁` is in `relEnv₂`),
+then premise evaluation with `relEnv₁` produces a subset of the bindings
+produced with `relEnv₂`. This is the relEnv-axis counterpart of the
+rule-monotonicity chain above. -/
+
+/-- `relationQueryStep` is monotone in the relation environment. -/
+private theorem relationQueryStep_mono_relEnv {lang : LanguageDef}
+    {relEnv₁ relEnv₂ : RelationEnv}
+    (hle : relEnv₁ ≤ relEnv₂)
+    (bindings : Bindings) (rel : String) (args : List Pattern) :
+    ∀ bs, bs ∈ relationQueryStep relEnv₁ lang bindings rel args →
+      bs ∈ relationQueryStep relEnv₂ lang bindings rel args := by
+  intro bs hbs
+  simp only [relationQueryStep] at hbs ⊢
+  rw [List.mem_flatMap] at hbs ⊢
+  obtain ⟨tuple, htmem, hbmem⟩ := hbs
+  refine ⟨tuple, ?_, hbmem⟩
+  rw [List.mem_append] at htmem ⊢
+  rcases htmem with hbuiltin | hext
+  · exact Or.inl hbuiltin
+  · exact Or.inr (hle rel _ hext)
+
+/-- `premiseStepWithEnv` is monotone in the relation environment. -/
+theorem premiseStepWithEnv_mono_relEnv {lang : LanguageDef}
+    {relEnv₁ relEnv₂ : RelationEnv}
+    (hle : relEnv₁ ≤ relEnv₂)
+    (bindings : Bindings) (prem : Premise) :
+    ∀ bs, bs ∈ premiseStepWithEnv relEnv₁ lang bindings prem →
+      bs ∈ premiseStepWithEnv relEnv₂ lang bindings prem := by
+  intro bs hbs
+  match prem with
+  | .freshness _ => exact hbs
+  | .congruence _ _ => exact hbs
+  | .relationQuery rel args =>
+      simp only [premiseStepWithEnv] at hbs ⊢
+      exact relationQueryStep_mono_relEnv hle bindings rel args bs hbs
+
+/-- `applyPremisesWithEnv` is monotone in the relation environment:
+    if `relEnv₁ ≤ relEnv₂`, then any binding set produced by premise
+    evaluation under `relEnv₁` is also produced under `relEnv₂`. -/
+theorem applyPremisesWithEnv_mono_relEnv {lang : LanguageDef}
+    {relEnv₁ relEnv₂ : RelationEnv}
+    (hle : relEnv₁ ≤ relEnv₂)
+    (premises : List Premise) (seed : Bindings) :
+    ∀ bs, bs ∈ applyPremisesWithEnv relEnv₁ lang premises seed →
+      bs ∈ applyPremisesWithEnv relEnv₂ lang premises seed := by
+  unfold applyPremisesWithEnv
+  suffices h : ∀ (acc₁ acc₂ : List Bindings),
+      (∀ b, b ∈ acc₁ → b ∈ acc₂) →
+      ∀ bs, bs ∈ premises.foldl
+        (fun acc prem => acc.flatMap fun bs => premiseStepWithEnv relEnv₁ lang bs prem) acc₁ →
+      bs ∈ premises.foldl
+        (fun acc prem => acc.flatMap fun bs => premiseStepWithEnv relEnv₂ lang bs prem) acc₂ by
+    exact h [seed] [seed] (fun b hb => hb)
+  induction premises with
+  | nil => intro acc₁ acc₂ hsub bs hbs; exact hsub bs hbs
+  | cons prem prems ih =>
+      intro acc₁ acc₂ hsub bs hbs
+      simp only [List.foldl_cons] at hbs ⊢
+      apply ih
+      · intro b hb
+        rw [List.mem_flatMap] at hb ⊢
+        obtain ⟨a, hamem, hbmem⟩ := hb
+        exact ⟨a, hsub a hamem, premiseStepWithEnv_mono_relEnv hle a prem b hbmem⟩
       · exact hbs
 
 /-- Apply a single rule using premise-aware filtering on bindings, with a

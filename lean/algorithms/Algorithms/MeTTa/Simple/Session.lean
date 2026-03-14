@@ -62,6 +62,7 @@ structure Session where
   translatorRuleHeads : List String := []
   stateCells : List (String × Pattern) := []
   vectorSpaces : List (String × VectorSpace) := []
+  coreBuiltinsUnmodified : Bool := true
   diag : Diagnostics := {}
 
 namespace Session
@@ -633,6 +634,43 @@ mutual
     | _ => []
 end
 
+-- ─── Transparent (non-partial) versions of intrinsicStep / intrinsicReduceArgs ──
+-- These are identical in behavior but provably terminating via sizeOf.
+-- Used in proof-mode to avoid the opacity of the partial def mutual block above.
+
+mutual
+  private def intrinsicReduceArgsT (s : Session) : List Pattern → List (List Pattern)
+    | [] => []
+    | arg :: rest =>
+        let headRed := intrinsicStepT s arg
+        if !headRed.isEmpty then
+          headRed.map (fun arg' => arg' :: rest)
+        else
+          (intrinsicReduceArgsT s rest).map (fun rest' => arg :: rest')
+  termination_by args => sizeOf args
+  decreasing_by
+    · simp_wf; omega
+    · simp_wf; omega
+
+  private def intrinsicStepT (s : Session) : Pattern → List Pattern
+    | .apply ctor args =>
+        if reduceArgsFirst ctor then
+          let reducedArgs := intrinsicReduceArgsT s args
+          if !reducedArgs.isEmpty then
+            reducedArgs.map (fun args' => .apply ctor args')
+          else
+            intrinsicDirect s ctor args
+        else
+          let direct := intrinsicDirect s ctor args
+          if !direct.isEmpty then
+            direct
+          else
+            (intrinsicReduceArgsT s args).map (fun args' => .apply ctor args')
+    | _ => []
+  termination_by term => sizeOf term
+  decreasing_by all_goals simp_wf; omega
+end
+
 def dedupPatterns (xs : List Pattern) : List Pattern :=
   (xs.foldl
     (fun acc x => if acc.contains x then acc else x :: acc)
@@ -651,7 +689,7 @@ private def translatorInterface : Algorithms.MeTTa.Simple.Semantics.TranslatorOp
 }
 
 def step (s : Session) (term : Pattern) : List Pattern :=
-  let intrinsic := intrinsicStep s term
+  let intrinsic := intrinsicStepT s term
   let translated :=
     Algorithms.MeTTa.Simple.Semantics.TranslatorOps.translateCall
       translatorInterface s s.translatorRuleHeads term
@@ -667,6 +705,86 @@ def step (s : Session) (term : Pattern) : List Pattern :=
       []
   let intrinsic' := if compat.isEmpty then intrinsic else []
   intrinsic' ++ translated ++ compat ++ generated
+
+-- ─── Step result-shape lemmas ────────────────────────────────────────────────
+
+/-- When translateCall, compatRewriteStep, and rewriteWithContext all return [],
+    `step` reduces to just `intrinsicStepT`. -/
+theorem step_eq_intrinsicStepT_of_no_external_reducts
+    (s : Session) (term : Pattern)
+    (hT : Algorithms.MeTTa.Simple.Semantics.TranslatorOps.translateCall
+            translatorInterface s s.translatorRuleHeads term = [])
+    (hC : Algorithms.MeTTa.Simple.Semantics.Dispatch.compatRewriteStep
+            compatRewriteInterface s term = [])
+    (hG : SpecBundle.rewriteWithContext s.bundle term = []) :
+    step s term = intrinsicStepT s term := by
+  simp only [step, hT, hC, hG, List.isEmpty_nil, Bool.true_and, ite_true,
+    List.append_nil]
+
+/-- When args have no reductions (i.e., `intrinsicStepT` returns [] for each arg),
+    `intrinsicReduceArgsT` returns []. -/
+theorem intrinsicReduceArgsT_empty_of_irreducible_args
+    (s : Session) (args : List Pattern)
+    (hIrred : ∀ a ∈ args, intrinsicStepT s a = []) :
+    intrinsicReduceArgsT s args = [] := by
+  induction args with
+  | nil => simp [intrinsicReduceArgsT]
+  | cons hd tl ih =>
+      simp [intrinsicReduceArgsT]
+      have hhd := hIrred hd List.mem_cons_self
+      simp [hhd]
+      exact ih (fun a ha => hIrred a (List.mem_cons_of_mem hd ha))
+
+/-- For a `reduceArgsFirst` head with irreducible args, `intrinsicStepT` returns
+    exactly `intrinsicDirect`. -/
+theorem intrinsicStepT_reduceFirst_irreducible
+    (s : Session) (ctor : String) (args : List Pattern)
+    (hRedFirst : reduceArgsFirst ctor = true)
+    (hIrred : ∀ a ∈ args, intrinsicStepT s a = []) :
+    intrinsicStepT s (.apply ctor args) = intrinsicDirect s ctor args := by
+  simp [intrinsicStepT, hRedFirst]
+  have hEmpty := intrinsicReduceArgsT_empty_of_irreducible_args s args hIrred
+  simp [hEmpty]
+
+/-- For a non-`reduceArgsFirst` head, if `intrinsicDirect` returns a non-empty list,
+    `intrinsicStepT` returns that list. -/
+theorem intrinsicStepT_direct_nonempty
+    (s : Session) (ctor : String) (args : List Pattern)
+    (hNotRedFirst : reduceArgsFirst ctor = false)
+    (hDirect : (intrinsicDirect s ctor args).isEmpty = false) :
+    intrinsicStepT s (.apply ctor args) = intrinsicDirect s ctor args := by
+  simp [intrinsicStepT, hNotRedFirst, hDirect]
+
+-- ─── Public proof API for DeterministicBridge layer ──────────────────────────
+-- Thin wrappers exposing private functions needed by the bridge proofs.
+-- The bridge layer (Backend/DeterministicBridge/) imports Session and uses these.
+-- NOTE: detEvalInterface and detEvalInterface_eq_standalone are placed later in
+-- this file (after evalWithStateCoreN) because they reference forward declarations.
+
+/-- The `translateCall` component of `step`, exposed for bridge proofs. -/
+def stepTranslateCall (s : Session) (term : Pattern) : List Pattern :=
+  Algorithms.MeTTa.Simple.Semantics.TranslatorOps.translateCall
+    translatorInterface s s.translatorRuleHeads term
+
+/-- The `compatRewriteStep` component of `step`, exposed for bridge proofs. -/
+def stepCompatRewrite (s : Session) (term : Pattern) : List Pattern :=
+  Algorithms.MeTTa.Simple.Semantics.Dispatch.compatRewriteStep
+    compatRewriteInterface s term
+
+/-- The `rewriteWithContext` component of `step`, exposed for bridge proofs. -/
+def stepGeneratedRewrite (s : Session) (term : Pattern) : List Pattern :=
+  SpecBundle.rewriteWithContext s.bundle term
+
+/-- Decomposition of `step` in terms of its public components. -/
+theorem step_eq_components (s : Session) (term : Pattern) :
+    step s term =
+      let intrinsic := intrinsicStepT s term
+      let translated := stepTranslateCall s term
+      let compat := if translated.isEmpty then stepCompatRewrite s term else []
+      let generated := if compat.isEmpty && translated.isEmpty then stepGeneratedRewrite s term else []
+      let intrinsic' := if compat.isEmpty then intrinsic else []
+      intrinsic' ++ translated ++ compat ++ generated := by
+  rfl
 
 private def withMessage (s : Session) (msg : String) : Session :=
   { s with diag := { s.diag with messages := msg :: s.diag.messages } }
@@ -2361,6 +2479,81 @@ mutual
 
 end
 
+-- ─── Public wrappers for private helpers (used by DeterministicBridge) ───────
+-- These expose private functions needed by the bridge proofs while keeping
+-- the originals private to Session.lean.
+
+/-- Public wrapper for `intrinsicDirect`. -/
+def intrinsicDirectPub (s : Session) (ctor : String) (args : List Pattern) : List Pattern :=
+  intrinsicDirect s ctor args
+
+/-- Public wrapper for `builtinPartialMinArity?`. -/
+def builtinPartialMinArityPub (ctor : String) : Option Nat :=
+  builtinPartialMinArity? ctor
+
+/-- Public wrapper for `firstRuleReduction?`. -/
+def firstRuleReductionPub (s : Session) (term : Pattern) : Option Pattern :=
+  firstRuleReduction? s term
+
+/-- Public wrapper for `rewriteAritiesForHead`. -/
+def rewriteAritiesForHeadPub (s : Session) (ctor : String) : List Nat :=
+  rewriteAritiesForHead s ctor
+
+/-- Public wrapper for `partialPattern`. -/
+def partialPatternPub (ctor : String) (args : List Pattern) : Pattern :=
+  partialPattern ctor args
+
+/-- If `step s a = []` then `intrinsicStepT s a = []`.
+    (intrinsicStepT is one component of step's concatenation.) -/
+private theorem intrinsicStepT_nil_of_step_nil
+    (s : Session) (a : Pattern) (hS : step s a = []) :
+    intrinsicStepT s a = [] := by
+  simp only [step] at hS
+  -- hS : (intrinsic' ++ translated ++ compat_branch) ++ generated_branch = []
+  rw [List.append_eq_nil_iff] at hS
+  have ⟨h123, _h4⟩ := hS
+  rw [List.append_eq_nil_iff] at h123
+  have ⟨h12, h3⟩ := h123
+  rw [List.append_eq_nil_iff] at h12
+  have ⟨h1, h2⟩ := h12
+  -- h2 : translated = []
+  -- h3 : compat_branch = [] (i.e., if translated.isEmpty then compatRewrite else [] = [])
+  -- h1 : intrinsic' = [] (i.e., if compat_branch.isEmpty then intrinsicStepT else [] = [])
+  -- Since translated = [] (h2), translated.isEmpty = true, so compat_branch = compatRewrite
+  -- Since compat_branch = [] (h3), compat_branch.isEmpty = true, so intrinsic' = intrinsicStepT
+  -- Since intrinsic' = [] (h1), intrinsicStepT = []
+  simp [h2, List.isEmpty] at h3
+  simp [h2, h3, List.isEmpty] at h1
+  exact h1
+
+/-- Under strict conditions (no external reducts, args irreducible),
+    `step` produces exactly `intrinsicDirectPub`.
+    This is the key shape lemma for the DeterministicBridge. -/
+theorem step_apply_eq_intrinsicDirectPub_of_strict
+    (s : Session) (ctor : String) (argsV : List Pattern)
+    (hT : stepTranslateCall s (.apply ctor argsV) = [])
+    (hC : stepCompatRewrite s (.apply ctor argsV) = [])
+    (hG : stepGeneratedRewrite s (.apply ctor argsV) = [])
+    (hIrred : ∀ a ∈ argsV, step s a = []) :
+    step s (.apply ctor argsV) = intrinsicDirectPub s ctor argsV := by
+  -- step = intrinsic' ++ translated ++ compat ++ generated
+  -- Under strict: translated=[], compat=[], generated=[]
+  -- So step = intrinsicStepT (since compat=[])
+  have hStep := step_eq_intrinsicStepT_of_no_external_reducts s (.apply ctor argsV) hT hC hG
+  rw [hStep]
+  -- Show args are intrinsicStepT-irreducible from step-irreducibility
+  have hIrredT : ∀ a ∈ argsV, intrinsicStepT s a = [] := by
+    intro a ha
+    exact intrinsicStepT_nil_of_step_nil s a (hIrred a ha)
+  -- intrinsicStepT with irreducible args = intrinsicDirect
+  unfold intrinsicDirectPub
+  by_cases hRed : reduceArgsFirst ctor = true
+  · exact intrinsicStepT_reduceFirst_irreducible s ctor argsV hRed hIrredT
+  · simp at hRed
+    simp [intrinsicStepT, hRed]
+    have hEmpty := intrinsicReduceArgsT_empty_of_irreducible_args s argsV hIrredT
+    simp [hEmpty]
+
 def intrinsicStateful (s : Session) (term : Pattern) :
     Option (Session × List Pattern) :=
   match term with
@@ -2473,7 +2666,7 @@ instance : Monad FuelResult where
 -- The only varying parts are evalCore and evalCallableApply (partial-def
 -- vs fuel-indexed).
 
-private def mkDeterministicEvalInterface
+def mkDeterministicEvalInterface
     (evalCore : Session → Pattern → Session × List Pattern)
     (evalCallableApply : Session → Pattern → List Pattern → Session × List Pattern) :
     Algorithms.MeTTa.Simple.Semantics.DeterministicEval.Interface Session := {
@@ -3143,7 +3336,7 @@ end
 -- `outerFuel` controls sub-expression evaluation depth (for Expr handling);
 -- `detFuel` controls the det evaluator's own recursion depth.
 
-private def referenceEvalDeterministicCoreNStandalone
+def referenceEvalDeterministicCoreNStandalone
     (outerFuel : Nat) (s : Session) (detFuel : Nat) (term : Pattern) : Session × Pattern :=
   Algorithms.MeTTa.Simple.Semantics.DeterministicEval.eval
     (mkDeterministicEvalInterface
@@ -8727,6 +8920,22 @@ theorem evalWithStateCoreN_preserves
     WF (evalWithStateCoreN fuel s term).1 :=
   compiledConsistent_of_referenceEvalWithStateCoreN fuel s term hs
 
+/-- The `DeterministicEval.Interface` used by the N-kernel deterministic evaluator.
+    Exposed for the DeterministicBridge proof layer. -/
+def detEvalInterface (outerFuel : Nat) :
+    Algorithms.MeTTa.Simple.Semantics.DeterministicEval.Interface Session :=
+  mkDeterministicEvalInterface
+    (fun s' t => evalWithStateCoreN outerFuel s' t)
+    (fun s' fn args => referenceEvalCallableApplyN outerFuel s' fn args)
+
+theorem detEvalInterface_eq_standalone (outerFuel : Nat) (s : Session) (detFuel : Nat)
+    (term : Pattern) :
+    Algorithms.MeTTa.Simple.Semantics.DeterministicEval.eval
+      (detEvalInterface outerFuel) s detFuel term =
+    referenceEvalDeterministicCoreNStandalone outerFuel s detFuel term := by
+  unfold detEvalInterface evalWithStateCoreN referenceEvalDeterministicCoreNStandalone
+  rfl
+
 /-- Fuel-indexed total reference intrinsic evaluator (no `partial def`, no `sorry`).
     Returns `none` when the term is not an intrinsic or when fuel is exhausted.
     Unconditionally preserves `WF` on `some` outputs. -/
@@ -9237,6 +9446,10 @@ private def hasMultipleRootRuleChoices (s : Session) (term : Pattern) : Bool :=
   Algorithms.MeTTa.Simple.Backend.SessionDeterministic.hasMultipleRootRuleChoices
     deterministicSearchInterface s term
 
+private def noDeterministicReducerOverlap (s : Session) : Bool :=
+  Algorithms.MeTTa.Simple.Backend.SessionDeterministic.noDeterministicReducerOverlap
+    deterministicSearchInterface s
+
 theorem premiseFreeRulesForHeadArity_eq_index_when_enabled
     (s : Session) (ctor : String) (arity : Nat)
     (hEnabled : s.useCompiledIndexes = true) :
@@ -9392,6 +9605,8 @@ def optimizedBackendInterface : Algorithms.MeTTa.Simple.Backend.OptimizedEval.In
     Algorithms.MeTTa.Simple.Semantics.DeterministicStrategy.shouldUseDeterministicInStrict
   hasDeterministicBlockingRewriteBodies := hasDeterministicBlockingRewriteBodies
   hasMultipleRootRuleChoices := hasMultipleRootRuleChoices
+  noDeterministicReducerOverlap := noDeterministicReducerOverlap
+  noCoreBuiltinOverrides := fun s => s.coreBuiltinsUnmodified
   evalDeterministicCore := fun s detFuel term =>
     referenceEvalDeterministicCoreNStandalone (referenceProofFuel s) s detFuel term
   evalWithStateCore := fun s term => referenceEvalWithStateCoreN (referenceProofFuel s) s term
@@ -9399,6 +9614,17 @@ def optimizedBackendInterface : Algorithms.MeTTa.Simple.Backend.OptimizedEval.In
     Algorithms.MeTTa.Simple.Semantics.DeterministicStrategy.isResolvedDeterministicResult
   acceptUnchangedDeterministic := acceptUnchangedDeterministic
 }
+
+/-- When `optimizedBackendInterface.noDeterministicReducerOverlap s = true`,
+    every rewrite rule satisfies `ruleDisjointFromBuiltins`. -/
+theorem noOverlap_implies_disjoint_rules (s : Session)
+    (h : optimizedBackendInterface.noDeterministicReducerOverlap s = true) :
+    ∀ r ∈ s.bundle.language.rewrites,
+      Algorithms.MeTTa.Simple.Backend.SessionDeterministic.ruleDisjointFromBuiltins r = true := by
+  simp only [optimizedBackendInterface, noDeterministicReducerOverlap,
+    Algorithms.MeTTa.Simple.Backend.SessionDeterministic.noDeterministicReducerOverlap,
+    deterministicSearchInterface] at h
+  exact List.all_eq_true.mp h
 
 def evalWithState (s : Session) (term : Pattern) : Session × List Pattern :=
   Algorithms.MeTTa.Simple.Backend.OptimizedEval.evalWithState optimizedBackendInterface s term
@@ -9422,6 +9648,8 @@ theorem evalWithState_eq_reference_of_guard_failure
       optimizedBackendInterface.shouldUseDeterministicInStrict term = false ∨
       optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = true ∨
       optimizedBackendInterface.hasMultipleRootRuleChoices s term = true ∨
+      optimizedBackendInterface.noDeterministicReducerOverlap s = false ∨
+      optimizedBackendInterface.noCoreBuiltinOverrides s = false ∨
       optimizedBackendInterface.isResolvedDeterministicResult
         ((optimizedBackendInterface.evalDeterministicCore s
           (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = false ∨
@@ -9439,6 +9667,8 @@ theorem evalWithState_eq_reference_of_deterministic_agreement
         optimizedBackendInterface.shouldUseDeterministicInStrict term = true →
         optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         optimizedBackendInterface.hasMultipleRootRuleChoices s term = false →
+        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         optimizedBackendInterface.isResolvedDeterministicResult
           ((optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →
@@ -9463,6 +9693,8 @@ theorem evalWithState_eq_reference_of_deterministic_agreement_raw_guard
         optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         optimizedBackendInterface.hasMultipleRootRuleChoices
           (withCompiledIndexes s false) term = false →
+        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         optimizedBackendInterface.isResolvedDeterministicResult
           ((optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →
@@ -9477,47 +9709,61 @@ theorem evalWithState_eq_reference_of_deterministic_agreement_raw_guard
   by_cases hStrict : optimizedBackendInterface.shouldUseDeterministicInStrict term = true
   · by_cases hBlocked : optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false
     · by_cases hMulti : optimizedBackendInterface.hasMultipleRootRuleChoices s term = false
-      · by_cases hResolved :
-          optimizedBackendInterface.isResolvedDeterministicResult
-            ((optimizedBackendInterface.evalDeterministicCore s
-              (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true
-        · by_cases hAccept :
-            (((optimizedBackendInterface.evalDeterministicCore s
-                (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-              optimizedBackendInterface.acceptUnchangedDeterministic term) = true
-          · have hEqRaw :
-                optimizedBackendInterface.hasMultipleRootRuleChoices s term =
-                  optimizedBackendInterface.hasMultipleRootRuleChoices
-                    (withCompiledIndexes s false) term :=
-              hasMultipleRootRuleChoices_eq_raw_of_compiledRules_consistent
-                (s := s) (term := term) hs
-            have hMultiRaw :
-                optimizedBackendInterface.hasMultipleRootRuleChoices
-                  (withCompiledIndexes s false) term = false := by
-              simpa [hMulti] using hEqRaw
-            exact hAgreeRaw s term hStrict hBlocked hMultiRaw hResolved hAccept
-          · have hAcceptFalse :
-                (((optimizedBackendInterface.evalDeterministicCore s
-                    (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-                  optimizedBackendInterface.acceptUnchangedDeterministic term) = false := by
-                cases hA :
-                  (((optimizedBackendInterface.evalDeterministicCore s
-                      (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-                    optimizedBackendInterface.acceptUnchangedDeterministic term) <;>
-                  simp [hA] at hAccept ⊢
-            exact evalWithState_eq_reference_of_guard_failure s term <|
-              Or.inr <| Or.inr <| Or.inr <| Or.inr hAcceptFalse
-        · have hResolvedFalse :
+      · by_cases hOverlap : optimizedBackendInterface.noDeterministicReducerOverlap s = true
+        · by_cases hCore : optimizedBackendInterface.noCoreBuiltinOverrides s = true
+          · by_cases hResolved :
               optimizedBackendInterface.isResolvedDeterministicResult
                 ((optimizedBackendInterface.evalDeterministicCore s
-                  (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = false := by
-              cases hR :
-                optimizedBackendInterface.isResolvedDeterministicResult
-                  ((optimizedBackendInterface.evalDeterministicCore s
-                    (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) <;>
-                simp [hR] at hResolved ⊢
+                  (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true
+            · by_cases hAccept :
+                (((optimizedBackendInterface.evalDeterministicCore s
+                    (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
+                  optimizedBackendInterface.acceptUnchangedDeterministic term) = true
+              · have hEqRaw :
+                    optimizedBackendInterface.hasMultipleRootRuleChoices s term =
+                      optimizedBackendInterface.hasMultipleRootRuleChoices
+                        (withCompiledIndexes s false) term :=
+                  hasMultipleRootRuleChoices_eq_raw_of_compiledRules_consistent
+                    (s := s) (term := term) hs
+                have hMultiRaw :
+                    optimizedBackendInterface.hasMultipleRootRuleChoices
+                      (withCompiledIndexes s false) term = false := by
+                  simpa [hMulti] using hEqRaw
+                exact hAgreeRaw s term hStrict hBlocked hMultiRaw hOverlap hCore hResolved hAccept
+              · have hAcceptFalse :
+                    (((optimizedBackendInterface.evalDeterministicCore s
+                        (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
+                      optimizedBackendInterface.acceptUnchangedDeterministic term) = false := by
+                    cases hA :
+                      (((optimizedBackendInterface.evalDeterministicCore s
+                          (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
+                        optimizedBackendInterface.acceptUnchangedDeterministic term) <;>
+                      simp [hA] at hAccept ⊢
+                exact evalWithState_eq_reference_of_guard_failure s term <|
+                  Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inr hAcceptFalse
+            · have hResolvedFalse :
+                  optimizedBackendInterface.isResolvedDeterministicResult
+                    ((optimizedBackendInterface.evalDeterministicCore s
+                      (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = false := by
+                  cases hR :
+                    optimizedBackendInterface.isResolvedDeterministicResult
+                      ((optimizedBackendInterface.evalDeterministicCore s
+                        (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) <;>
+                    simp [hR] at hResolved ⊢
+              exact evalWithState_eq_reference_of_guard_failure s term <|
+                Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inl hResolvedFalse
+          · have hCoreFalse :
+                optimizedBackendInterface.noCoreBuiltinOverrides s = false := by
+              cases hC : optimizedBackendInterface.noCoreBuiltinOverrides s <;>
+                simp [hC] at hCore ⊢
+            exact evalWithState_eq_reference_of_guard_failure s term <|
+              Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inl hCoreFalse
+        · have hOverlapFalse :
+              optimizedBackendInterface.noDeterministicReducerOverlap s = false := by
+            cases hO : optimizedBackendInterface.noDeterministicReducerOverlap s <;>
+              simp [hO] at hOverlap ⊢
           exact evalWithState_eq_reference_of_guard_failure s term <|
-            Or.inr <| Or.inr <| Or.inr <| Or.inl hResolvedFalse
+            Or.inr <| Or.inr <| Or.inr <| Or.inl hOverlapFalse
       · have hMultiTrue :
             optimizedBackendInterface.hasMultipleRootRuleChoices s term = true := by
           cases hM : optimizedBackendInterface.hasMultipleRootRuleChoices s term <;>
@@ -9549,6 +9795,8 @@ theorem compiledConsistent_evalWithState_of_reference_and_deterministic_agreemen
         optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         optimizedBackendInterface.hasMultipleRootRuleChoices
           (withCompiledIndexes s false) term = false →
+        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         optimizedBackendInterface.isResolvedDeterministicResult
           ((optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →
@@ -9748,7 +9996,12 @@ def applyStmt (s : Session) (stmt : SyntaxStmt) : Session × List Pattern :=
       let builtins' := addBuiltinTuple s.bundle.builtins row
       let bundle' : SpecBundle := { s.bundle with builtins := builtins' }
       let s0 := noteApplied (withBundleCompiled s bundle')
-      let s' := withMessage s0 s!"added builtin fact {rel}/{tuple.length}"
+      let s1 :=
+        if rel.startsWith "intrinsic:" then
+          { s0 with coreBuiltinsUnmodified := false }
+        else
+          s0
+      let s' := withMessage s1 s!"added builtin fact {rel}/{tuple.length}"
       (s', [])
   | .setFuel n =>
       let policy' : RuntimePolicy := { s.bundle.policy with maxFuel := n }
@@ -9854,6 +10107,8 @@ theorem compiledConsistent_applyStmt_eval_of_reference_and_deterministic_agreeme
         optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
         optimizedBackendInterface.hasMultipleRootRuleChoices
           (withCompiledIndexes s false) term = false →
+        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
+        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
         optimizedBackendInterface.isResolvedDeterministicResult
           ((optimizedBackendInterface.evalDeterministicCore s
             (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →
