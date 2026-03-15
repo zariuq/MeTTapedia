@@ -3175,6 +3175,7 @@ theorem for universal induction.%
   \codepath{Mettapedia/Logic/DeFinetti.lean}.}
 
 \section{Knuth--Skilling Foundations}
+\label{sec:knuth-skilling}
 
 Knuth--Skilling foundations of inference~\cite{KnuthSkilling2012} provide
 axioms for valuation schemes on logical lattices, extending Cox-style
@@ -3538,8 +3539,8 @@ models provenance as an enrichment of the evidence extraction:
 \[
   \code{State}
   \;\xrightarrow{\;\text{extract-with-provenance}\;}
-  (\code{Query} \to \text{Evidence-with-Provenance})
-  \;\xrightarrow{\;\text{forget provenance}\;}
+  (\code{Query} \to \text{Ev-with-Prov})
+  \;\xrightarrow{\;\text{forget prov.}\;}
   (\code{Query} \to \Evidence)
 \]
 
@@ -3568,6 +3569,72 @@ targeted rather than wholesale.}
 See \codepath{Mettapedia/Logic/PLNProvenanceTrackedState.lean}
 (241~lines, 0~sorry) and the \codepath{external/provenance-lean/}
 archive for the semiring-based provenance framework.
+
+\subsection{PLN Evidence Stamps as Provenance}
+\label{sec:pln-stamps}
+
+PLN v0.9\footnote{PLN v0.9 is the current MeTTa implementation:
+\texttt{github.com/trueagi-io/PLN}, tag \texttt{v0.9}.  It implements
+forward chaining with stamp-based evidence tracking in 430~lines of
+MeTTa.} tracks evidence provenance via \emph{stamps}: each sentence
+carries a sorted list of observation IDs, and before combining two
+sentences, the engine checks \texttt{StampDisjoint}---whether their
+stamps share any IDs.  If they do, the revision is blocked to prevent
+double-counting.
+
+This is exactly the discipline formalized above.  The correspondence
+is:
+
+\medskip
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{PLN v0.9 concept} & \textbf{WM calculus formal counterpart} \\
+\midrule
+\texttt{Sentence (Term, STV, Stamp)} & \code{ScopedTrackedWhichState} \\
+\texttt{StampDisjoint} check & \code{Finset.Disjoint} on scope supports \\
+\texttt{StampConcat} & \code{Finset.union} (proved = union) \\
+Forget a source & \code{forgetScopedByScope} \\
+Evidence ID in stamp & \code{Fin n} index in \code{TrackedWhichChunk} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\medskip
+
+\noindent
+The key difference: PLN v0.9 checks \texttt{StampDisjoint} at
+\emph{runtime}; the WM calculus proves it at \emph{compile time}
+via \code{decide}.  And PLN v0.9 has \emph{no forgetting}: once
+evidence enters a stamp, it cannot be retracted.  The WM calculus
+adds exact forgetting (\code{forgetScopedByScope\_exactInverse},
+Theorem~\ref{thm:conservation}) with proved conservation.
+
+The formalization verifies all three PLN v0.9 flagship examples
+(DeductionRevision, RavenInduction, FlyingRaven) with 20~conformance
+checks, all kernel-checked:
+
+\begin{itemize}
+\item \textbf{DeductionRevision}: two deduction paths A$\to$B$\to$D
+  and A$\to$C$\to$D have disjoint stamps $\{0,2\}$ and $\{1,3\}$;
+  revision is safe; combined stamp is $\{0,1,2,3\}$.
+  Forgetting observation~0 (A$\to$B) preserves path~2 but breaks path~1.
+
+\item \textbf{RavenInduction}: two ravens' data (stamps $\{0,2\}$ and
+  $\{1,3\}$) is independent; forgetting rv2 reduces the induction to
+  rv1's evidence alone.
+
+\item \textbf{FlyingRaven}: Sam's chain (stamps $\{0,3,4\}$) and
+  Pingu's chain (stamps $\{1,2\}$) are disjoint; forgetting Sam's
+  classification does not affect Pingu's.
+\end{itemize}
+
+\noindent
+See \codepath{Mettapedia/Logic/PLNProvenanceInference.lean} (general
+theory, 0~sorry),
+\codepath{Mettapedia/Logic/PLNClassicTruthFunctions.lean} (truth
+functions linked to evidence, 0~sorry), and
+\codepath{Mettapedia/Logic/PLNClassicExamples.lean} (20~conformance
+checks, 0~sorry).
 
 
 \part{Compiled Inference and Tractable Fragments}
@@ -3744,6 +3811,7 @@ projection commutes with revision, so that updating the joint and then
 projecting gives the same result as projecting first and updating locally.
 
 \section{Chain, Fork, and Collider Exactness}
+\label{sec:chain-fork-collider}
 
 The three fundamental BN motifs each yield exactness theorems for the
 corresponding PLN rule.  Recall the PLN deduction strength formula
@@ -4128,7 +4196,204 @@ The two align when rule factors are \emph{compiled} from a world-model
 class: each factor corresponds to a conditional in the BN, and message
 passing implements the correct queries.
 
+\section{PLN v0.9 Examples as WM Calculus Instances}
+\label{sec:pln-v09-examples}
 
+PLN v0.9~\cite{goertzel2009pln}\footnote{PLN v0.9: \texttt{github.com/trueagi-io/PLN}, tag \texttt{v0.9}.}
+provides three flagship examples that exercise the core inference rules:
+
+\begin{description}
+\item[DeductionRevision] (\texttt{DeductionRevision.metta}):
+  Given A$\to$B, A$\to$C, B$\to$D, C$\to$D, query A$\to$D.
+  Two deduction chains fire (via B and via C), then revision
+  combines their results.  PLN v0.9 reports
+  $\STV{0.125}{0.304}$ with stamp $\{1,2,3,4\}$.
+
+  In the WM calculus: each chain is a compiled BN chain motif
+  (Section~\ref{sec:chain-fork-collider}) firing under the
+  screening-off side condition.  The two results have disjoint
+  provenance (Section~\ref{sec:pln-stamps}), so revision
+  (= evidence addition) is safe.  The resulting truth value
+  is the strength/confidence view of the combined evidence.
+
+\item[RavenInduction] (\texttt{RavenInduction.metta}):
+  Given two ravens, one black and one not, induce ``ravens are black.''
+  PLN v0.9 applies the induction rule with $\STV{0.38}{0.654}$.
+
+  In the WM calculus: induction is the source-rule (cospan completion),
+  formalized as \code{truthInduction} with strength equal to
+  \code{plnInductionStrength}
+  (Theorem \code{truthInduction\_s\_eq}).
+
+\item[FlyingRaven] (\texttt{FlyingRaven.metta}):
+  Sam (a raven) should fly; Pingu (a penguin) should not.
+  Three-step chain Sam$\to$Raven$\to$Bird$\to$flies, plus
+  negation Penguin$\to\lnot$flies.
+
+  In the WM calculus: Sam's chain and Pingu's chain have
+  disjoint provenance stamps ($\{0,3,4\}$ vs.\ $\{1,2\}$).
+  Forgetting Sam$\to$Raven (observation~0) breaks Sam's
+  chain evidence but provably conserves Pingu's
+  (Theorem \code{fr\_forget\_sam\_preserves\_pingu}).
+\end{description}
+
+\noindent
+All three examples are verified with 20~kernel-checked conformance
+tests in \codepath{Mettapedia/Logic/PLNClassicExamples.lean}
+(0~sorry), covering PeTTa space queries, stamp disjointness,
+stamp union, and forgetting set-difference.
+
+The key result: every classic PLN inference pattern is a specific
+compiled BN rewrite with provenance tracking.  The WM calculus
+\emph{subsumes} PLN v0.9 and \emph{adds} forgetting with proved
+conservation---something PLN v0.9 cannot express.
+
+\subsection{Stepped Walkthrough: DeductionRevision with Provenance}
+
+We step through the DeductionRevision example in full detail.
+
+\paragraph{Step 1: The knowledge base.}
+Four observations, encoded as a PeTTa atomspace:
+
+\begin{lstlisting}
+-- The PLN v0.9 knowledge base as a PeTTa space
+def drKB : PeTTaSpace where
+  facts := [inh "A" "B",   -- obs 0
+            inh "A" "C",   -- obs 1
+            inh "B" "D",   -- obs 2
+            inh "C" "D"]   -- obs 3
+  rules := []
+\end{lstlisting}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  >=Stealth,
+  every node/.style={font=\small},
+  obs/.style={draw, circle, minimum size=8mm, inner sep=1pt},
+  link/.style={->, thick},
+  stamp/.style={font=\tiny, fill=yellow!20, draw, rounded corners=2pt,
+                inner sep=2pt},
+]
+% Nodes
+\node[obs, fill=blue!10] (A) at (0, 0) {A};
+\node[obs, fill=green!10] (B) at (-1.5, -1.5) {B};
+\node[obs, fill=green!10] (C) at (1.5, -1.5) {C};
+\node[obs, fill=red!10] (D) at (0, -3) {D};
+
+% Links with observation IDs
+\draw[link] (A) -- node[left, font=\tiny] {obs 0} (B);
+\draw[link] (A) -- node[right, font=\tiny] {obs 1} (C);
+\draw[link] (B) -- node[left, font=\tiny] {obs 2} (D);
+\draw[link] (C) -- node[right, font=\tiny] {obs 3} (D);
+
+% Paths
+\draw[->, very thick, blue!60, dashed, bend right=20]
+  (A) to node[left, font=\tiny, text=blue!70] {Path 1} (D);
+\draw[->, very thick, red!60, dashed, bend left=20]
+  (A) to node[right, font=\tiny, text=red!70] {Path 2} (D);
+
+% Stamps
+\node[stamp] at (-2.8, -1.5) {stamp$_1$ = \{0, 2\}};
+\node[stamp] at (2.8, -1.5) {stamp$_2$ = \{1, 3\}};
+
+% Disjoint annotation
+\node[font=\scriptsize, text=green!50!black] at (0, -4)
+  {stamp$_1 \cap$ stamp$_2 = \emptyset$ \quad (safe to revise)};
+\end{tikzpicture}
+\caption{DeductionRevision: two deduction paths from A to D with
+disjoint provenance stamps.  Path~1 (via B) uses observations
+$\{0, 2\}$; Path~2 (via C) uses $\{1, 3\}$.  Since the stamps are
+disjoint, revision is safe.}
+\label{fig:deduction-revision-stamps}
+\end{figure}
+
+\paragraph{Step 2: Stamp disjointness (kernel-checked).}
+Each deduction path tracks which observations it used:
+
+\begin{lstlisting}
+def dr_stamp1 : Finset (Fin 4) := {0, 2}  -- Path 1: A->B->D
+def dr_stamp2 : Finset (Fin 4) := {1, 3}  -- Path 2: A->C->D
+
+-- StampDisjoint: disjoint provenance (kernel-checked by decide)
+theorem dr_stamps_disjoint : Disjoint dr_stamp1 dr_stamp2 := by decide
+
+-- Combined stamp = union of all observations
+theorem dr_stamps_union :
+    dr_stamp1 ∪ dr_stamp2 = {0, 1, 2, 3} := by decide
+\end{lstlisting}
+
+\noindent
+The \code{decide} tactic delegates to the kernel: Lean verifies the
+set-disjointness computation at type-checking time, not at runtime.
+This is the compile-time version of PLN v0.9's runtime
+\texttt{StampDisjoint} check.
+
+\paragraph{Step 3: Forgetting with conservation.}
+PLN v0.9 cannot retract observations.  The WM calculus can:
+
+\begin{lstlisting}
+-- Forgetting obs 0 (A->B) does NOT affect Path 2
+theorem dr_obs0_disjoint_path2 :
+    Disjoint {0} dr_stamp2 := by decide
+
+-- After forgetting obs 0, Path 1 retains only obs 2 (B->D)
+theorem dr_path1_after_forget :
+    dr_stamp1 \ {0} = {2} := by decide
+\end{lstlisting}
+
+\noindent
+Forgetting observation~0 (the A$\to$B link) removes it from Path~1's stamp
+but \emph{provably} leaves Path~2 intact.  This is a concrete instance of
+the Noether conservation theorem (Section~\ref{sec:forgetting}): evidence
+outside the forgotten scope is preserved.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  >=Stealth,
+  every node/.style={font=\small},
+  obs/.style={draw, circle, minimum size=8mm, inner sep=1pt},
+  link/.style={->, thick},
+  stamp/.style={font=\tiny, fill=yellow!20, draw, rounded corners=2pt,
+                inner sep=2pt},
+  forgotten/.style={draw, circle, minimum size=8mm, inner sep=1pt,
+                    fill=gray!20, dashed},
+]
+% Before
+\node[font=\footnotesize\bfseries] at (-3.5, 0.5) {Before:};
+\node[obs, fill=blue!10] (A1) at (-3.5, -0.5) {\tiny A};
+\node[obs, fill=green!10] (B1) at (-4.5, -1.5) {\tiny B};
+\node[obs, fill=green!10] (C1) at (-2.5, -1.5) {\tiny C};
+\node[obs, fill=red!10] (D1) at (-3.5, -2.5) {\tiny D};
+\draw[link, blue!60] (A1) -- (B1);
+\draw[link, blue!60] (B1) -- (D1);
+\draw[link, red!60] (A1) -- (C1);
+\draw[link, red!60] (C1) -- (D1);
+\node[stamp] at (-5.3, -2.5) {\{0,1,2,3\}};
+
+% Arrow
+\node[font=\Large] at (0, -1.5) {$\xrightarrow{\text{forget obs 0}}$};
+
+% After
+\node[font=\footnotesize\bfseries] at (3.5, 0.5) {After:};
+\node[obs, fill=blue!10] (A2) at (3.5, -0.5) {\tiny A};
+\node[forgotten] (B2) at (2.5, -1.5) {\tiny B};
+\node[obs, fill=green!10] (C2) at (4.5, -1.5) {\tiny C};
+\node[obs, fill=red!10] (D2) at (3.5, -2.5) {\tiny D};
+\draw[link, gray!40, dashed] (A2) -- (B2);
+\draw[link, gray!40, dashed] (B2) -- (D2);
+\draw[link, red!60] (A2) -- (C2);
+\draw[link, red!60] (C2) -- (D2);
+\node[stamp] at (5.3, -2.5) {\{1,2,3\}};
+\node[font=\tiny, red!70!black] at (2.0, -0.8) {retracted};
+\node[font=\tiny, green!50!black] at (5.0, -1.5) {conserved};
+\end{tikzpicture}
+\caption{Forgetting observation~0 (A$\to$B).  Path~1 (via B) loses its
+first link; Path~2 (via C) is provably unaffected.  The stamp shrinks
+from $\{0,1,2,3\}$ to $\{1,2,3\}$.}
+\label{fig:deduction-revision-forget}
+\end{figure}
 
 \section{Applied BN Validation and Benchmark Lanes}
 \label{sec:bn-benchmarks}
@@ -5523,16 +5788,208 @@ that L2G's supervised weighting discounts.
 if WM-PLN is to compete on Lane~1, a supervised meta-model over
 WM evidence features is needed.
 
-\subparagraph{Limitations and next steps.}
-Model~B uses the same evidence \emph{types} as L2G but in raw form
-(no learned weighting, no distance features, no tissue-specific
-calibration).  The comparison is therefore asymmetric: L2G has
-strictly more information.  The fair next step is a supervised WM
-meta-model (Model~E) on the frozen Lane~1 feature table, using
-the same 5-fold protocol.  Lane~2 (mechanistic explanation chains)
-and a second platform release (for temporal validation) are deferred
-to Phase~2.
-Artifacts: \codepath{experiments/full\_gwas/}.
+\subparagraph{Limitations of v1.}
+Model~B uses the same evidence \emph{types} as L2G but in raw form:
+no learned weighting, no distance features, no tissue-specific
+calibration, no tested-vs-missing semantics.  The comparison is
+therefore asymmetric---L2G has strictly more information.
+This motivates the next round: a richer WM evidence table and
+a fair information-controlled decomposition.
+
+\subparagraph{WM-v2: enriched evidence table (7~feature families).}
+To close the information gap, we built a 27-feature evidence table
+(\emph{WM-v2}) from the same Platform~25.12 data, organized into
+seven frozen families:
+\begin{description}
+\item[Distance] $\log(|\text{distanceFromTss}|+1)$ and
+  $\log(|\text{distanceFromFootprint}|+1)$ per (variant,\,gene),
+  extracted from \code{variant.transcriptConsequences}.
+  Coverage: 100\% of labeled rows.
+\item[Neighbourhood] Gene counts within 50/100/250/500\,kb,
+  and neighbourhood-relative TSS advantage
+  ($\log(\min\text{dist}+1) - \log(\text{this\_gene\_dist}+1)$),
+  following the L2G distance-normalization pattern.
+\item[Credible-set confidence] Credible-set $\log_{10}$ Bayes factor,
+  purity ($\overline{R^2}$), sample size, finemapping method (SuSiE flag),
+  and 95\% CS variant count.  Coverage: 44\% have BF
+  (SuSiE-only feature).
+\item[Colocalisation (disaggregated)] Separate max~H4 per QTL type
+  (eQTL: 37\% of rows, pQTL: 14\%, sQTL: 14\%), plus QTL-type count.
+\item[E2G (disaggregated)] Max score, interval count, and datasource
+  count per (locus,\,gene).  Coverage: 61\%.
+\item[VEP (disaggregated)] Max normalised score from
+  \code{variantEffect} and most severe consequence score from
+  \code{transcriptConsequences}.  Coverage: 10\% (variantEffect),
+  100\% (consequenceScore).
+\item[Tested-vs-missing] Binary flags: \code{has\_coloc},
+  \code{has\_e2g}, \code{has\_vep}, \code{has\_distance},
+  \code{tested\_no\_coloc}, \code{tested\_no\_e2g}.
+  The ``tested but absent'' flags distinguish genuine negative
+  evidence from missing data.
+\end{description}
+\noindent
+Feature definitions were frozen before any model was trained
+(manifest: \codepath{results/model\_wm\_v2/feature\_manifest.json}).
+
+\subparagraph{Evaluation protocol: variant-disjoint folds.}
+An initial evaluation used studyLocusId-disjoint folds, but
+external review revealed that 260 of 917 unique lead variants
+spanned multiple folds, enabling a trivial memorization baseline
+(\code{variantId}+\code{geneId} lookup from training labels) to
+reach AUC-ROC~$0.952$---higher than any model.
+All headline results below therefore use \textbf{variant-disjoint}
+5-fold CV (\code{GroupKFold} by \code{variantId}; no variant appears
+in more than one fold).  Under this split the memorization baseline
+collapses to AUC-ROC~$0.500$ (zero test rows have a training match),
+confirming split integrity.
+Tier~1 (exact study+variant gold-standard match, 345~loci,
+284~variants) is the primary evaluation track; Tier~2
+(variant+disease overlap, 752~loci, 137~variants) is a secondary
+robustness check.
+All supervised models use fold-local imputation and scaling.
+
+\subparagraph{Information decomposition (variant-disjoint).}
+\label{tab:gwas-vd-results}
+
+\begin{center}
+\small
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Surface} & \textbf{Model}
+  & \textbf{AUC-ROC} & \textbf{AUC-PR} & \textbf{MRR} & \textbf{P@1} \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{V1 surface (3~channels)}} \\
+  & B (noisy-OR)
+  & $0.658 \pm 0.062$ & $0.618 \pm 0.100$
+  & $0.818 \pm 0.066$ & $0.673 \pm 0.104$ \\
+  & Logistic (3ch)
+  & $0.646 \pm 0.048$ & $0.584 \pm 0.075$
+  & $0.780 \pm 0.056$ & $0.600 \pm 0.093$ \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{V2 surface (27~features, 7~families)}} \\
+  & Nearest gene
+  & $0.583 \pm 0.073$ & $0.548 \pm 0.080$
+  & $0.764 \pm 0.069$ & $0.587 \pm 0.111$ \\
+  & Distance-only LR
+  & $0.658 \pm 0.074$ & $0.562 \pm 0.088$
+  & $0.801 \pm 0.059$ & $0.648 \pm 0.091$ \\
+  & Logistic (27 feat.)
+  & $0.762 \pm 0.048$ & $0.674 \pm 0.094$
+  & $0.853 \pm 0.044$ & $0.723 \pm 0.085$ \\
+  & XGBoost (27 feat.)
+  & $0.792 \pm 0.018$ & $0.726 \pm 0.052$
+  & $0.873 \pm 0.031$ & $0.766 \pm 0.047$ \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Interpretable WM (7~family summaries)}} \\
+  & Additive WM (L1 LR)
+  & $0.681 \pm 0.051$ & $0.632 \pm 0.089$
+  & $0.796 \pm 0.043$ & $0.632 \pm 0.069$ \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{L2G + WM stackers}} \\
+  & LR stacker
+  & $0.818 \pm 0.031$ & $0.760 \pm 0.060$
+  & $0.866 \pm 0.018$ & $0.754 \pm 0.030$ \\
+  & XGB stacker
+  & $\mathbf{0.830 \pm 0.022}$ & $\mathbf{0.772 \pm 0.058}$
+  & $0.863 \pm 0.019$ & $0.748 \pm 0.036$ \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Baselines}} \\
+  & A (L2G)
+  & $0.824 \pm 0.038$ & $0.784 \pm 0.058$
+  & $0.879 \pm 0.011$ & $0.777 \pm 0.015$ \\
+  & Memorization
+  & $0.500 \pm 0.000$ & $0.699 \pm 0.013$
+  & $0.684 \pm 0.013$ & $0.423 \pm 0.018$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\small
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Tier} & \textbf{Model}
+  & \textbf{AUC-ROC} & \textbf{AUC-PR} & \textbf{MRR} & \textbf{P@1} \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Tier~1 (345~loci, primary)}} \\
+  & A (L2G)
+  & $0.756 \pm 0.052$ & $0.675 \pm 0.075$
+  & $0.805 \pm 0.030$ & $0.645 \pm 0.057$ \\
+  & XGBoost (27 feat.)
+  & $0.738 \pm 0.034$ & $0.637 \pm 0.040$
+  & $0.823 \pm 0.019$ & $0.668 \pm 0.028$ \\
+  & XGB stacker
+  & $0.750 \pm 0.028$ & $0.676 \pm 0.040$
+  & $0.792 \pm 0.022$ & $0.619 \pm 0.040$ \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Tier~2 (752~loci, secondary)}} \\
+  & A (L2G)
+  & $0.861 \pm 0.054$ & $0.834 \pm 0.061$
+  & $0.914 \pm 0.020$ & $0.841 \pm 0.038$ \\
+  & XGBoost (27 feat.)
+  & $0.813 \pm 0.039$ & $0.758 \pm 0.075$
+  & $0.897 \pm 0.047$ & $0.814 \pm 0.071$ \\
+  & XGB stacker
+  & $0.868 \pm 0.033$ & $0.817 \pm 0.073$
+  & $0.897 \pm 0.032$ & $0.811 \pm 0.061$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The decomposition under clean generalization:
+\begin{enumerate}
+\item \textbf{Richer information helps substantially.}
+  V1 logistic ($0.646$) $\to$ V2 logistic ($0.762$) = $+11.6$~points.
+  Distance, neighbourhood, credible-set confidence, disaggregated
+  channels, and tested-vs-missing flags close most of the gap with L2G.
+\item \textbf{Flexible learning helps further.}
+  V2 logistic ($0.762$) $\to$ V2 XGBoost ($0.792$) = $+3.0$~points.
+  Under fair variant-disjoint evaluation, the nonlinear gain is
+  real but more modest than under the contaminated split.
+\item \textbf{L2G still leads.}
+  XGBoost on WM-v2 ($0.792$) vs.\ L2G ($0.824$) = $-3.2$~points.
+  The remaining gap likely reflects features L2G has (Hi-C,
+  promoter-capture, tissue-specific calibration) that WM-v2 does
+  not yet include.
+\item \textbf{Stacking adds modest complementarity.}
+  XGB stacker ($0.830$) vs.\ L2G alone ($0.824$) = $+0.6$~points.
+  WM-v2 features carry some information that L2G misses, but
+  the complementary signal is small.
+\item \textbf{Unsupervised WM is stable.}
+  Noisy-OR ($0.658$) is unchanged from the old split---unsupervised
+  models are unaffected by fold assignment.
+\end{enumerate}
+
+\subparagraph{Provenance note.}
+An earlier round of results used studyLocusId-disjoint folds, under
+which XGBoost on WM-v2 appeared to reach AUC-ROC~$0.878$, exceeding
+L2G ($0.823$).  That headline was retracted after the variant-repetition
+issue was identified: the memorization baseline confirmed the inflation.
+All results reported above use variant-disjoint folds with fold-local
+preprocessing.  The old results are preserved as diagnostic artifacts
+under \codepath{results/MANIFEST\_provisional.json}.
+
+\subparagraph{Interpretation and next steps.}
+The WM-v2 evidence table substantially narrows the gap to L2G using
+only publicly extractable evidence from Platform~25.12.  An open,
+interpretable evidence table reaching AUC-ROC~$0.792$---compared to
+L2G's $0.824$---is a meaningful result: it demonstrates that
+structured WM evidence captures most of the discriminative signal
+in a transparent, decomposable form.
+
+Three directions for the next round:
+(a)~\emph{Close the remaining gap}: add Hi-C / promoter-capture,
+  tissue-specific eQTL disaggregation, and literature co-mention
+  as additional frozen families.
+(b)~\emph{Improve the additive model}: intermediate-granularity
+  summaries (15--20 features) may recover both interpretability and
+  performance relative to the full 27-feature surface.
+(c)~\emph{Characterize rescue loci}: inspect cases where WM-v2
+  outranks L2G to determine whether the complementary signal is
+  biologically coherent (e.g., mechanism-specific rescue).
+Artifacts: \codepath{experiments/full\_gwas/},
+\codepath{results\_variant\_disjoint/}.
 
 \chapter{Error, Thresholds, and Transport Discipline}
 \label{ch:error-transport}
@@ -8828,7 +9285,7 @@ All results in this chapter are kernel-checked in Lean~4.28 (0~sorry):
 
 \subsection{Remaining Future Work}
 
-Two directions remain interesting but are not required for the
+Two near-term directions remain interesting but are not required for the
 core WM $\to$ GSLT $\to$ OSLF $\to$ NTT story:
 
 \begin{itemize}
@@ -8845,6 +9302,73 @@ core WM $\to$ GSLT $\to$ OSLF $\to$ NTT story:
   oracle-parametric hypothesis from the positive BN bridge theorems,
   enabling concrete instantiation for specific BN topologies.
 \end{itemize}
+
+\subsection{The Deeper Direction: WM as Universal Evidence for GSLTs}
+
+A more ambitious direction connects the WM evidence framework to a
+universal construction over graph-structured lambda theories.
+
+\paragraph{The universal WorldModel theorem (proven).}
+For any type~$T$, multiset ensembles $\mathsf{Multiset}\;T$ form
+a \texttt{WorldModel} when queried by decidable properties.  Evidence
+extraction counts satisfying/refuting entities, and additivity over
+ensemble union is automatic (\texttt{ensembleEvidence\_add},
+kernel-checked).  This means: every GSLT with parallel composition
+has a canonical WorldModel.  The Rho calculus instance is proved
+(\texttt{rhoWorldModel}, kernel-checked).%
+\footnote{Formalized in \codepath{Mettapedia/OSLF/Framework/GSLTWorldModel.lean}
+  and \codepath{Mettapedia/OSLF/Framework/RhoWorldModel.lean}.}
+
+\paragraph{The value-monoid generalization.}
+The construction is parameterized by a value monoid~$V$ via
+\texttt{GSLTEvidenceAssignment}.  When $V = \mathsf{Evidence}$
+(non-negative pairs), this gives Bayesian counting.  When
+$V = \mathbb{C}$, this gives L.~Gregory Meredith's weight
+map~\cite{MeredithCCC2026}---complex amplitudes assigned to
+rewrite steps, whose squared modulus is the transition probability.%
+\footnote{Formalized in \codepath{Mettapedia/OSLF/Framework/GSLTEvidence.lean}.}
+
+\paragraph{The amplitude $\to$ evidence chain (future work).}
+A \texttt{WeightedLanguageDef} extending \texttt{LanguageDef} with a
+weight map $w_r^+ : \mathsf{HML}(\mathcal{K}) \to \mathbb{C}$
+would give the full chain:
+\[
+  \texttt{LanguageDef} + \texttt{WeightMap}
+  \;\xrightarrow{\text{path integral}}\;
+  \text{amplitudes}
+  \;\xrightarrow{|\cdot|^2}\;
+  \text{probabilities}
+  \;\xrightarrow{\text{counting}}\;
+  \text{Evidence}
+\]
+The WM evidence framework would then be provably the Born-rule
+shadow of a richer amplitude structure.  This connects to the
+Knuth--Skilling valuation-algebra bridge
+(Section~\ref{sec:knuth-skilling}): both Knuth--Skilling and the
+amplitude chain derive probability from a simpler algebraic
+substrate---valuations on a lattice in one case, amplitudes on
+rewrite paths in the other.
+
+\paragraph{Bisimulation and reversibility (proven).}
+The infrastructure for this chain is partially in place:
+bisimulation morphisms with both forward and backward simulation
+(\texttt{BisimulationMorphism}, kernel-checked), the reversibility
+envelope $\mathcal{S}^\dagger$ with trace-recorded costs
+(\texttt{EnvelopeReduces}, kernel-checked), and the full
+Hennessy--Milner theorem connecting observational equivalence to
+bisimulation (\texttt{obsEq\_is\_stepBisimulation},
+kernel-checked).%
+\footnote{Formalized in
+  \codepath{Mettapedia/OSLF/Framework/BisimulationFiber.lean} and
+  \codepath{Mettapedia/OSLF/Framework/ReversibilityEnvelope.lean}.}
+
+\paragraph{The vision.}
+If completed, the amplitude chain would establish that the WM evidence
+framework is not merely \emph{a} way to do probabilistic reasoning over
+GSLTs but the \emph{canonical} one: the sufficient-statistic functor
+from the amplitude-weighted dynamics of any GSLT to the evidence profiles
+that PLN reasons over.  Every computational universe described by a
+GSLT would have a natural PLN over it.
 
 
 %% ═══════════════════════════════════════════════════════════════════
@@ -9640,6 +10164,35 @@ the evidence algebra is not a domain-specific tool but a
 general-purpose compositional substrate.%
 \footnote{Formalized in \codepath{Mettapedia/Logic/PLNNoisyOr.lean} (765~lines, 0~sorry).}
 
+
+\section{PLN v0.9 Subsumption}
+\label{sec:pln-v09-subsumption}
+
+PLN v0.9 (\texttt{lib\_pln.metta}, 430~lines, 73~functions) implements
+the classic PLN inference rules as MeTTa truth-value functions with
+stamp-based provenance tracking and priority-queue forward chaining.
+The WM calculus fully subsumes it:
+
+\begin{itemize}
+\item PLN v0.9's truth functions (\code{Truth\_Deduction},
+  \code{Truth\_Revision}, \code{Truth\_Induction},
+  \code{Truth\_Abduction}) are formalized as scalar views of
+  evidence-level operations (Sections~\ref{sec:pln-stamps}
+  and~\ref{sec:pln-v09-examples}).
+\item PLN v0.9's stamp mechanism is a runtime version of the
+  formal provenance discipline (Section~\ref{sec:pln-stamps}).
+\item PLN v0.9's confidence-to-weight transform \code{Truth\_c2w}
+  is exactly our \code{c2w} (Section~\ref{sec:two-notions}).
+\item PLN v0.9 has \emph{no forgetting}---once evidence enters a
+  stamp, it cannot be retracted.  The WM calculus adds exact
+  forgetting with proved conservation.
+\end{itemize}
+
+\noindent
+All three PLN v0.9 flagship examples (DeductionRevision,
+RavenInduction, FlyingRaven) are verified as WM calculus instances
+with 20~kernel-checked conformance tests
+(Section~\ref{sec:pln-v09-examples}).
 
 \section{PLN-NARS Bridge}
 \label{sec:pln-nars-bridge}
