@@ -54,6 +54,9 @@ def singletonWorldModelSigma (X : H.Obj) :
     simpa [WorldModelSigma.evidenceAt] using
       (WorldModelSigma.evidenceAt_add
         (State := State) (Srt := H.Obj) (Query := H.query) W₁ W₂ q.2)
+  evidence_zero q := by
+    letI : WorldModelSigma State H.Obj H.query := H.worldModel
+    exact WorldModelSigma.evidence_zero ⟨X, q.2⟩
 
 /-- Categorical endpoint surface combining institution transport and
 Beck-Chevalley transport. -/

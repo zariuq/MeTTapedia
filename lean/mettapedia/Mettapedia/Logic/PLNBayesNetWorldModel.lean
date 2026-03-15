@@ -71,6 +71,7 @@ noncomputable instance : WorldModel (CPTState (bn := bn)) (CPTQuery (bn := bn)) 
   evidence_add := by
     intro W₁ W₂ q
     rfl
+  evidence_zero q := rfl
 
 /-! ## Extracting CPT evidence from complete joint evidence -/
 
@@ -109,6 +110,9 @@ noncomputable instance : WorldModel (JointEvidence n) (CPTQuery (bn := bn)) wher
   evidence E q := cptEvidenceOfJoint (bn := bn) (n := n) (E := E) q.1 q.2
   evidence_add E₁ E₂ q := by
     simpa using cptEvidenceOfJoint_add (bn := bn) (n := n) (E₁ := E₁) (E₂ := E₂) q.1 q.2
+  evidence_zero q := by
+    simp only [cptEvidenceOfJoint, countWorld, Pi.zero_apply, ite_self,
+      Finset.sum_const_zero]; rfl
 
 end BoolBayesNet
 

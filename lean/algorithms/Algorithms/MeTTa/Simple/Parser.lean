@@ -229,6 +229,25 @@ private def stmtFromSExpr (cfg : ParserDialect) (sexpr : SExpr) : Except ParseEr
               | "setFuel", [.atom n] => do
                   let n' ← parseNatToken n
                   .ok (.setFuel n')
+              | "import", [path] => do
+                  let path' ← sexprToPattern path
+                  let defaultSpace := Pattern.apply
+                    cfg.syntaxSpec.programPolicy.defaultSpace []
+                  .ok (.import defaultSpace path')
+              | "import", [space, path] => do
+                  let space' ← sexprToPattern space
+                  let path' ← sexprToPattern path
+                  .ok (.import space' path')
+              | "newSpace", [.atom name] =>
+                  .ok (.newSpace name)
+              | "addAtom", [space, atom] => do
+                  let space' ← sexprToPattern space
+                  let atom' ← sexprToPattern atom
+                  .ok (.addAtom space' atom')
+              | "removeAtom", [space, atom] => do
+                  let space' ← sexprToPattern space
+                  let atom' ← sexprToPattern atom
+                  .ok (.removeAtom space' atom')
               | _, _ =>
                   fallbackFactOrError sexpr cfg.syntaxSpec.dispatchPolicy.fallbackUnsupportedCommandToFact
                     s!"unsupported command lowering: {cmd.command}" (near := some head)
@@ -444,5 +463,55 @@ def parseProgramWith (spec : SyntaxSpec) (text : String) : Except String (List (
 
 def parseProgram (text : String) : Except String (List (Nat × Stmt)) :=
   parseProgramWith MeTTailCore.MeTTaSyntax.petta text
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- Parser conformance: PeTTa command heads
+-- These tests make Parser.lean a verified oracle for the PeTTa surface
+-- syntax contract. Each test proves a specific SyntaxCommand is produced
+-- from the corresponding PeTTa surface form.
+-- ═══════════════════════════════════════════════════════════════════════
+
+section ParserConformance
+open MeTTailCore.MeTTaIL.Syntax
+
+private def assertParseOk (input : String) (expected : Stmt) : Bool :=
+  match parseStmt input with
+  | .ok cmd => cmd == expected
+  | .error _ => false
+
+#guard assertParseOk "(= (id $x) $x)"
+  (.defineEq (.apply "id" [.fvar "x"]) (.fvar "x"))
+
+#guard assertParseOk "(: foo Type)"
+  (.defineType (.apply "foo" []) (.apply "Type" []))
+
+#guard assertParseOk "(set-fuel 100)"
+  (.setFuel 100)
+
+#guard assertParseOk "(new-space! &tmp)"
+  (.newSpace "&tmp")
+
+#guard assertParseOk "(add-atom! &self (foo bar))"
+  (.addAtom (.apply "&self" []) (.apply "foo" [.apply "bar" []]))
+
+#guard assertParseOk "(remove-atom! &self (foo bar))"
+  (.removeAtom (.apply "&self" []) (.apply "foo" [.apply "bar" []]))
+
+-- import! 1-arg form (fills default space from ProgramPolicy)
+#guard assertParseOk "(import! lib)"
+  (.import (.apply "&self" []) (.apply "lib" []))
+
+-- import! 2-arg form (explicit target space)
+#guard assertParseOk "(import! &tmp lib)"
+  (.import (.apply "&tmp" []) (.apply "lib" []))
+
+#guard assertParseOk "(foo bar baz)"
+  (.fact (.apply "foo" [.apply "bar" [], .apply "baz" []]))
+
+-- Eval form (! prefix → SyntaxCommand.eval)
+#guard assertParseOk "! (+ 2 3)"
+  (.eval (.apply "+" [.apply "2" [], .apply "3" []]))
+
+end ParserConformance
 
 end Algorithms.MeTTa.Simple.Parser

@@ -5,6 +5,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.ContractCatalog
 import MeTTailCore.MeTTaIL.TransitionSpec
 import MeTTailCore.MeTTaIL.RewriteIR
 import MeTTailCore.MeTTaIL.EffectSafety
+import MeTTailCore.Crypto.SHA256
 
 /-!
 # PeTTa Semantic Bundle — Canonical GSLT Semantic Object
@@ -297,7 +298,7 @@ structure NativeProfileInputs where
 
 /-- The runtime-side native profile derived from a semantic bundle.
 
-    Schema version 2. This is the object Rust should load in strict mode.
+    Schema version 3. This is the object Rust should load in strict mode.
     It contains everything needed for lane selection without reconstructing
     semantics heuristically.
 
@@ -307,6 +308,10 @@ structure NativeProfileInputs where
 structure PeTTaNativeProfile where
   /-- The stage this profile was derived from. -/
   stage : PeTTaStage
+  /-- Explicit semantic variant tag.
+      Enables distinguishing semantic variants across runtimes and languages.
+      E.g., `"petta-2026-03-boundary-aware"`, `"he-impl-fluid-let"`. -/
+  semanticsVariant : String := "petta-2026-03-boundary-aware"
   /-- Input artifact checksums for stale-profile detection. -/
   inputs : NativeProfileInputs
   /-- Per-rule profiles from the rewrite IR. -/
@@ -426,6 +431,7 @@ private def boundaryArtifactChecksumString (ba : BoundaryContractArtifact) : Str
 def bundleNativeProfile (B : PeTTaSemanticBundle) :
     PeTTaNativeProfile where
   stage := B.stage
+  semanticsVariant := "petta-2026-03-boundary-aware"
   inputs :=
     { transitionSpecChecksum := B.transitionSpec.checksumString
     , rewriteIRChecksum := B.rewriteIR.checksumString
@@ -591,11 +597,12 @@ private def renderBoundaryProfile (b : BoundaryProfile) : String :=
     , "\"residual_lane\":" ++ residualLaneToJson b.residualLane
     ] ++ "}"
 
-/-- Render the native profile as a JSON string (schema v2). -/
+/-- Render the native profile as a JSON string (schema v3). -/
 def PeTTaNativeProfile.renderJson (p : PeTTaNativeProfile) : String :=
   "{" ++ String.intercalate ","
-    [ "\"schema_version\":2"
+    [ "\"schema_version\":3"
     , "\"dialect\":\"PeTTa\""
+    , "\"semantics_variant\":" ++ jsonStr p.semanticsVariant
     , "\"stage\":" ++ stageToJson p.stage
     , "\"inputs\":" ++ renderInputs p.inputs
     , "\"rule_profiles\":[" ++
@@ -608,9 +615,10 @@ def PeTTaNativeProfile.renderJson (p : PeTTaNativeProfile) : String :=
         String.intercalate "," (p.boundaryProfiles.map renderBoundaryProfile) ++ "]"
     ] ++ "}"
 
-/-- FNV-64 checksum of the rendered JSON. -/
+/-- SHA-256 checksum of the rendered JSON (schema v3).
+    Returns a 64-character lowercase hex string. -/
 def PeTTaNativeProfile.checksumString (p : PeTTaNativeProfile) : String :=
-  toString (checksumText p.renderJson)
+  MeTTailCore.Crypto.SHA256.sha256Hex p.renderJson
 
 /-- Export the native profile as JSON + checksum files.
 

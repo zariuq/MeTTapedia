@@ -29,6 +29,7 @@ instance : WorldModel TestState Pattern where
   evidence_add := by
     intro W₁ W₂ _
     simp
+  evidence_zero _ := rfl
 
 def t₁ : AbstractNode := mkApp1 "UseN" "N" "CN" (mkLeaf "house" "N")
 def t₂ : AbstractNode := mkApp1 "UseN" "N" "CN" (mkLeaf "house" "N")

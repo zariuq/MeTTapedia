@@ -202,6 +202,29 @@ noncomputable def worldModelOfAtomicEvidence
   letI : EvidenceType (Multiset Obs') := multisetEvidenceType Obs'
   exact
     { evidence := additiveExtension a
-      evidence_add := additiveExtension_add a }
+      evidence_add := additiveExtension_add a
+      evidence_zero := additiveExtension_zero a }
+
+/-! ## Profile-Level Bundling
+
+The generic additive extension is an `AddMonoidHom` from observations
+into the evidence-profile object `Query → Ev`.  This is the profile
+perspective: each observation multiset determines an entire answer
+profile, and the map is additive. -/
+
+/-- The generic additive extension bundled as an `AddMonoidHom` into
+    the evidence-profile object `Query → Ev`. -/
+noncomputable def genAdditiveExtensionProfileHom [AddCommMonoid Ev]
+    (a : GenAtomicEvidenceContribution Obs Query Ev) :
+    AddMonoidHom (Multiset Obs) (Query → Ev) where
+  toFun σ q := genAdditiveExtension a σ q
+  map_zero' := funext (genAdditiveExtension_zero a)
+  map_add' σ₁ σ₂ := funext (genAdditiveExtension_add a σ₁ σ₂)
+
+/-- The `Evidence`-specialized version. -/
+noncomputable def additiveExtensionProfileHom
+    (a : AtomicEvidenceContribution Obs' Query') :
+    AddMonoidHom (Multiset Obs') (Query' → Evidence) :=
+  genAdditiveExtensionProfileHom a
 
 end Mettapedia.Logic.PLNWorldModelAdditive

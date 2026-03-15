@@ -128,6 +128,14 @@ theorem propEvidence_add (E₁ E₂ : JointEvidence n) (A : Fin n) :
           simpa using linkEvidence_add (n := n) (E₁ := E₁) (E₂ := E₂) A B
       | linkCond as B =>
           simpa using linkCondEvidence_add (n := n) (E₁ := E₁) (E₂ := E₂) as B
+    evidence_zero q := by
+      cases q with
+      | prop A => simp only [propEvidence, countWorld, Pi.zero_apply, ite_self,
+          Finset.sum_const_zero]; rfl
+      | link A B => simp only [linkEvidence, countWorld, Pi.zero_apply, ite_self,
+          Finset.sum_const_zero]; rfl
+      | linkCond as B => simp only [linkCondEvidence, countWorld, Pi.zero_apply, ite_self,
+          Finset.sum_const_zero]; rfl
 
 /-! ### WTV/STV views (derived; not the core semantics) -/
 

@@ -194,4 +194,33 @@ theorem evidenceConservationPack_of_forgetting
       (State := State) (Scope := Scope) (Query := Query) (Ev := Ev)
       F hzero hout hne
 
+/-! ## Profile-Level Conservation
+
+The four conservation theorems unify into one profile-level statement:
+under exact inverse forgetting, the revision's evidence profile vanishes
+outside the scope AND the revised profile equals the base profile. -/
+
+/-- **Profile-level conservation**: under exact inverse forgetting,
+    (1) the revision's profile vanishes outside the scope, and
+    (2) the revised state's profile agrees with the base state's profile
+    outside the scope.
+
+    This is the single profile theorem from which all four per-query
+    conservation lemmas follow by projection. -/
+theorem profile_conservation_of_exactInverse
+    (F : ForgettingLayer State Scope Query Ev)
+    (hzero : GenericWorldModelZeroPreserving (State := State) (Query := Query) (Ev := Ev))
+    {S : Scope} {Δ : State}
+    (hinv : ∀ W : State, F.forget S (W + Δ) = W)
+    (q : Query) (hout : ¬ F.inScope S q) :
+    GenericWorldModel.evidence
+      (State := State) (Query := Query) (Ev := Ev) Δ q = 0 ∧
+    ∀ W : State,
+      GenericWorldModel.evidence
+        (State := State) (Query := Query) (Ev := Ev) (W + Δ) q =
+      GenericWorldModel.evidence
+        (State := State) (Query := Query) (Ev := Ev) W q :=
+  ⟨antiHallucination_outsideScope_of_exactInverse F hzero hinv q hout,
+   fun W => outsideScopeEvidence_conserved_of_exactInverse F hzero hinv W q hout⟩
+
 end Mettapedia.Logic

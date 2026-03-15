@@ -10013,9 +10013,9 @@ def applyStmt (s : Session) (stmt : SyntaxStmt) : Session × List Pattern :=
       let s0 := noteApplied s'
       let s'' := withMessage s0 s!"set max fuel to {n}"
       (s'', [])
-  | .import path =>
+  | .import _space _path =>
       let s0 := noteApplied s
-      let s' := withMessage s0 s!"import directive recorded (not yet implemented): {path}"
+      let s' := withMessage s0 s!"import directive recorded (not yet implemented)"
       (s', [])
   | .newSpace name =>
       let s0 := noteApplied s

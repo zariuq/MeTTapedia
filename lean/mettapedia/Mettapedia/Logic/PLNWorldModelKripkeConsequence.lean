@@ -67,6 +67,9 @@ theorem deonticKripkeEvidence_add
 noncomputable instance : WorldModel (Multiset (PointedDeonticKripke S)) DeonticQuery where
   evidence := deonticKripkeEvidence
   evidence_add := deonticKripkeEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [deonticKripkeEvidence, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 private theorem countP_le_countP_of_imp
     (W : Multiset (PointedDeonticKripke S))

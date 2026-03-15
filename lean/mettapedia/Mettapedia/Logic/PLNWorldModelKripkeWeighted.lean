@@ -108,6 +108,10 @@ theorem weightedEvidence_add
 noncomputable instance : WorldModel WeightedState ModalQuery where
   evidence := weightedEvidence
   evidence_add := weightedEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [weightedEvidence, weightedCountP, weightedExpansion,
+      Multiset.zero_bind, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 /-- Unit source label used by weight-1 specialization map. -/
 def unitSource : String := "unit"

@@ -50,6 +50,8 @@ class WorldModel (State : Type*) (Query : Type*) [EvidenceType State] where
   evidence : State → Query → Evidence
   /-- Extraction commutes with revision (`+`) in the world-model state. -/
   evidence_add : ∀ W₁ W₂ q, evidence (W₁ + W₂) q = evidence W₁ q + evidence W₂ q
+  /-- Zero state has zero evidence for every query. -/
+  evidence_zero : ∀ q, evidence 0 q = 0
 
 namespace WorldModel
 
@@ -88,6 +90,45 @@ theorem evidence_add' (W₁ W₂ : State) (q : Query) :
       WorldModel.evidence (State := State) (Query := Query) W₁ q +
         WorldModel.evidence (State := State) (Query := Query) W₂ q :=
   WorldModel.evidence_add (State := State) (Query := Query) W₁ W₂ q
+
+/-- **Universal property**: for each query `q`, evidence extraction is an
+    `AddMonoidHom` from revision states to the evidence monoid.
+
+    This is the categorical content of the WorldModel interface:
+    `fun W => evidence W q` is a morphism of additive commutative monoids.
+    All five core calculus rules (additivity, commutativity, associativity,
+    combine-commutativity, combine-identity) derive from this single
+    algebraic condition. -/
+noncomputable def evidenceHomAt (q : Query) : AddMonoidHom State Evidence where
+  toFun W := WorldModel.evidence (State := State) (Query := Query) W q
+  map_zero' := WorldModel.evidence_zero q
+  map_add' W₁ W₂ := evidence_add' W₁ W₂ q
+
+/-- **The bundled universal property**: evidence extraction is a single
+    `AddMonoidHom` from states to evidence profiles `Query → Evidence`.
+
+    This is the core categorical content of the WorldModel interface:
+    `WorldModel State Query ≃ AddMonoidHom State (Query → Evidence)`.
+    All individual `evidenceHomAt q` are projections of this one arrow. -/
+noncomputable def evidenceProfileHom :
+    AddMonoidHom State (Query → Evidence) where
+  toFun W q := WorldModel.evidence (State := State) (Query := Query) W q
+  map_zero' := funext (WorldModel.evidence_zero (State := State) (Query := Query))
+  map_add' W₁ W₂ := funext (WorldModel.evidence_add W₁ W₂)
+
+/-- Construct a `WorldModel` from a profile homomorphism (inverse direction). -/
+def ofProfileHom (F : AddMonoidHom State (Query → Evidence)) :
+    WorldModel State Query where
+  evidence W q := F W q
+  evidence_add W₁ W₂ q := congrFun (F.map_add W₁ W₂) q
+  evidence_zero q := congrFun F.map_zero q
+
+/-- `evidenceHomAt q` is evaluation-at-`q` composed with `evidenceProfileHom`. -/
+theorem evidenceHomAt_eq_eval_comp (q : Query) :
+    ∀ W, evidenceHomAt (State := State) (Query := Query) q W =
+      (Pi.evalAddMonoidHom (fun _ : Query => Evidence) q).comp
+        (evidenceProfileHom (State := State) (Query := Query)) W := by
+  intro W; rfl
 
 end WorldModel
 
@@ -368,6 +409,8 @@ class WorldModelSigma (State : Type*) (Srt : Type*) (Query : Srt → Type*)
   evidence : State → Sigma Query → Evidence
   /-- Extraction commutes with WM revision (`+`). -/
   evidence_add : ∀ W₁ W₂ q, evidence (W₁ + W₂) q = evidence W₁ q + evidence W₂ q
+  /-- Zero state has zero evidence for every query. -/
+  evidence_zero : ∀ q, evidence 0 q = 0
 
 namespace WorldModelSigma
 
@@ -577,6 +620,7 @@ def toWorldModelSigma
     WorldModel State (Sigma Query) where
   evidence := WorldModelSigma.evidence
   evidence_add := WorldModelSigma.evidence_add
+  evidence_zero := WorldModelSigma.evidence_zero
 
 /-- Any untyped WM over `Sigma Query` can be viewed as a typed WM. -/
 def ofWorldModelSigma
@@ -585,6 +629,7 @@ def ofWorldModelSigma
     WorldModelSigma State Srt Query where
   evidence := WorldModel.evidence
   evidence_add := WorldModel.evidence_add
+  evidence_zero := WorldModel.evidence_zero
 
 /-- Any untyped WM can be trivially typed with one sort (`PUnit`). -/
 def ofWorldModelUnit
@@ -593,6 +638,7 @@ def ofWorldModelUnit
     WorldModelSigma State PUnit (fun _ => Query) where
   evidence W q := WorldModel.evidence W q.2
   evidence_add W₁ W₂ q := WorldModel.evidence_add W₁ W₂ q.2
+  evidence_zero q := WorldModel.evidence_zero q.2
 
 end WorldModelSigma
 

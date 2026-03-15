@@ -52,8 +52,8 @@ def renderCommandWith (spec : SyntaxSpec) : SyntaxCommand → String
       s!"({spec.loweringHeads.builtinFactHead} {body})"
   | .setFuel n =>
       s!"(set-fuel {n})"
-  | .import path =>
-      s!"(import! {path})"
+  | .import space path =>
+      s!"(import! {renderPatternWith spec space} {renderPatternWith spec path})"
   | .newSpace name =>
       s!"(new-space! {name})"
   | .addAtom space atom =>

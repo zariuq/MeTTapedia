@@ -56,6 +56,9 @@ theorem kripkeEvidence_add (W₁ W₂ : Multiset PointedKripke) (φ : ModalQuery
 noncomputable instance : WorldModel (Multiset PointedKripke) ModalQuery where
   evidence := kripkeEvidence
   evidence_add := kripkeEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [kripkeEvidence, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 theorem kripkeEvidence_singleton_of_satisfies
     (pk : PointedKripke) (φ : ModalQuery) (h : pk.satisfies φ) :

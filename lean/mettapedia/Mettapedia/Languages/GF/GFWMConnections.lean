@@ -59,6 +59,8 @@ theorem gfNodeEvidence_add (W₁ W₂ : State) (t : AbstractNode) :
 noncomputable def gfNodeWorldModel : WorldModel State AbstractNode where
   evidence := gfNodeEvidence
   evidence_add := gfNodeEvidence_add
+  evidence_zero t := by
+    simp [gfNodeEvidence, WorldModel.evidence_zero]
 
 /-- Pattern equality implies WM query equality at the pattern-query layer. -/
 theorem queryEq_of_patternEq {p q : Pattern} (h : p = q) :

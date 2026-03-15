@@ -122,6 +122,9 @@ noncomputable instance
     WorldModel (StochasticState Θ) (StochasticExperimentQuery Θ Ω) where
   evidence := stochasticEvidence
   evidence_add := stochasticEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [stochasticEvidence, Pi.zero_apply, zero_mul, Finset.sum_const_zero]; rfl
 
 abbrev Prior (Θ : Type u) := PMF Θ
 abbrev DecisionRule (Ω : Type v) (A : Type w) := Ω → PMF A

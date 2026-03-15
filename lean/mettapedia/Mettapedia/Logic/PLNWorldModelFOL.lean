@@ -66,6 +66,9 @@ theorem folEvidence_add {L : Language.{u}}
 noncomputable instance {L : Language.{u}} : WorldModel (Multiset (PointedFOL L)) (FOLQuery L) where
   evidence := folEvidence
   evidence_add := folEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [folEvidence, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 theorem folEvidence_singleton_of_satisfies {L : Language.{u}}
     (S : PointedFOL L) (φ : FOLQuery L) (h : folSatisfies S φ) :

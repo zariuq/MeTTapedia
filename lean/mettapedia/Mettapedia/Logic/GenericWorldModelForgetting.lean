@@ -147,4 +147,47 @@ theorem no_exactInverse_revision_of_nonzero_outside_scope
 
 end ForgettingLayer
 
+/-! ## Profile-Level Restatements
+
+The per-query forgetting laws can be packaged as a single statement on
+evidence profiles `Query → Ev`.  This is the "answer profile" perspective
+from the categorical reorganization. -/
+
+/-- Two evidence profiles agree outside a scope. -/
+def profileAgreesOutsideScope
+    {Scope Query Ev : Type*}
+    (inScope : Scope → Query → Prop)
+    (S : Scope) (p₁ p₂ : Query → Ev) : Prop :=
+  ∀ q, ¬ inScope S q → p₁ q = p₂ q
+
+/-- Forgetting preserves the evidence profile outside the scope.
+    This is `outsideInvariant` lifted to a single profile-level statement. -/
+theorem ForgettingLayer.forget_profile_invariant
+    {State Scope Query Ev : Type*}
+    [EvidenceType State] [AddCommMonoid Ev] [GenericWorldModel State Query Ev]
+    (F : ForgettingLayer State Scope Query Ev)
+    (S : Scope) (W : State) :
+    profileAgreesOutsideScope F.inScope S
+      (fun q => GenericWorldModel.evidence
+        (State := State) (Query := Query) (Ev := Ev) (F.forget S W) q)
+      (fun q => GenericWorldModel.evidence
+        (State := State) (Query := Query) (Ev := Ev) W q) :=
+  fun q hq => F.outsideInvariant hq
+
+/-- Under exact inverse forgetting, a revision's evidence profile
+    vanishes outside the scope.  This is `exactInverse_revision_supported`
+    lifted to profile level. -/
+theorem ForgettingLayer.exactInverse_profile_vanishes
+    {State Scope Query Ev : Type*}
+    [EvidenceType State] [AddCommMonoid Ev] [GenericWorldModel State Query Ev]
+    (F : ForgettingLayer State Scope Query Ev)
+    (hzero : GenericWorldModelZeroPreserving (State := State) (Query := Query) (Ev := Ev))
+    {S : Scope} {Δ : State}
+    (hinv : ∀ W : State, F.forget S (W + Δ) = W) :
+    profileAgreesOutsideScope F.inScope S
+      (fun q => GenericWorldModel.evidence
+        (State := State) (Query := Query) (Ev := Ev) Δ q)
+      (fun _ => (0 : Ev)) :=
+  fun q hq => F.exactInverse_revision_supported hzero hinv q hq
+
 end Mettapedia.Logic

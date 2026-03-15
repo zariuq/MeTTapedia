@@ -81,6 +81,10 @@ def reindexWorldModelSigma
     simpa [mapSentence] using
       (WorldModelSigma.evidence_add (State := State) (Srt := sig2.Srt) (Query := sig2.Query)
         W1 W2 (mapSentence sigma q))
+  evidence_zero q := by
+    simpa [mapSentence] using
+      (WorldModelSigma.evidence_zero (State := State) (Srt := sig2.Srt) (Query := sig2.Query)
+        (mapSentence sigma q))
 
 /-- Evidence-valued satisfaction at a state for a signature sentence. -/
 def satEvidence
@@ -215,5 +219,74 @@ theorem sat_condition_strength
     congrArg Evidence.toStrength (I.sat_condition h W phi)
 
 end WMInstitution
+
+/-! ## Profile Natural Transformation View
+
+The institution's satisfaction condition is the naturality square for
+evidence extraction viewed as a natural transformation.
+
+For each signature `sig`, define the **evidence profile** of a state:
+
+    Prof(sig)(W) := fun phi => satEvidence sig W phi
+
+This is a function `Sentence sig → Evidence`, i.e., an element of
+`Prof(sig) := Sentence sig → Evidence`.
+
+A signature morphism `σ : sig₁ → sig₂` induces precomposition:
+
+    Prof(σ) : Prof(sig₂) → Prof(sig₁),  F ↦ F ∘ mapSentence(σ)
+
+The satisfaction condition says exactly that extraction commutes with
+this precomposition:
+
+    Prof(σ)(extract_sig₂(W)) = extract_sig₁(W)
+
+which is the naturality square for `extract : Δ(State) ⟹ Prof`. -/
+
+/-- Evidence profile at a signature: maps each sentence to its evidence. -/
+def evidenceProfile
+    (sig : WMSignature) [WorldModelSigma State sig.Srt sig.Query]
+    (W : State) : Sentence sig → Evidence :=
+  fun phi => satEvidence (State := State) sig W phi
+
+/-- Precomposition on profiles along a signature morphism. -/
+def profilePrecomp
+    {sig1 sig2 : WMSignature}
+    (sigma : WMSigMorphism sig1 sig2) :
+    (Sentence sig2 → Evidence) → (Sentence sig1 → Evidence) :=
+  fun F phi => F (mapSentence sigma phi)
+
+/-- **Naturality**: satisfaction condition = evidence extraction commutes
+    with profile precomposition.
+
+    This is the natural-transformation form of the institution law:
+    `extract : Δ(State) ⟹ Prof` where `Prof` is the contravariant
+    profile functor on signatures. -/
+theorem satisfactionCondition_is_naturality
+    {sig1 sig2 : WMSignature}
+    (sigma : WMSigMorphism sig1 sig2)
+    [WorldModelSigma State sig2.Srt sig2.Query]
+    (W : State) :
+    letI : WorldModelSigma State sig1.Srt sig1.Query :=
+      reindexWorldModelSigma (State := State) sigma
+    evidenceProfile (State := State) sig1 W =
+      profilePrecomp sigma (evidenceProfile (State := State) sig2 W) := by
+  funext phi
+  exact satisfactionCondition_evidence (State := State) sigma W phi
+
+/-- Profile precomposition is functorial: identity. -/
+theorem profilePrecomp_id (sig : WMSignature)
+    (F : Sentence sig → Evidence) :
+    profilePrecomp (id sig) F = F := by
+  funext phi; simp [profilePrecomp]
+
+/-- Profile precomposition is functorial: composition. -/
+theorem profilePrecomp_comp
+    {sig1 sig2 sig3 : WMSignature}
+    (sigma12 : WMSigMorphism sig1 sig2) (sigma23 : WMSigMorphism sig2 sig3)
+    (F : Sentence sig3 → Evidence) :
+    profilePrecomp (comp sigma12 sigma23) F =
+      profilePrecomp sigma12 (profilePrecomp sigma23 F) := by
+  funext phi; simp [profilePrecomp]
 
 end Mettapedia.Logic.PLNWorldModelInstitution

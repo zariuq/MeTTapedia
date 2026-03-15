@@ -58,6 +58,9 @@ noncomputable instance :
     WorldModel (Multiset (HenkinModel.{u, v, w} Base Const)) (HOLQuery Const) where
   evidence := holEvidence (Base := Base) (Const := Const)
   evidence_add := holEvidence_add (Base := Base) (Const := Const)
+  evidence_zero q := by
+    classical
+    simp only [holEvidence, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 theorem holEvidence_singleton_of_satisfies
     (M : HenkinModel.{u, v, w} Base Const) (φ : HOLQuery Const) (h : holSatisfies M φ) :

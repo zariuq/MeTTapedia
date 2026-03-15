@@ -68,6 +68,9 @@ theorem experimentEvidence_add
 noncomputable instance : WorldModel (Multiset Θ) (ExperimentQuery Θ Ω) where
   evidence := experimentEvidence
   evidence_add := experimentEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [experimentEvidence, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 /-- Blackwell-style factorization witness (`weak = κ ∘ strong`). -/
 def BlackwellFactorsThrough

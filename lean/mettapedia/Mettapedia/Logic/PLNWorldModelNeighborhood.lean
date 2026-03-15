@@ -59,6 +59,9 @@ theorem neighborhoodEvidence_add (W₁ W₂ : Multiset PointedNeighborhood) (φ 
 noncomputable instance : WorldModel (Multiset PointedNeighborhood) ModalQuery where
   evidence := neighborhoodEvidence
   evidence_add := neighborhoodEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [neighborhoodEvidence, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 theorem neighborhoodEvidence_singleton_of_satisfies
     (pn : PointedNeighborhood) (φ : ModalQuery) (h : pn.satisfies φ) :
