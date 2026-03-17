@@ -336,6 +336,17 @@ with compositional extraction into a carrier isomorphic to its views
 (e.g., $V = \mathbb{R}$ with extraction returning strength directly)
 satisfies D2 but violates D4.
 
+\maplecourt{%
+Two Maple Court humidity sensors report binary evidence for ``pipe
+leak in 3B'': sensor~north gives $(5, 1)$ and sensor~south gives
+$(2, 0)$.  Combined evidence is $(7, 1)$, yielding strength
+$s = 7/8 = 0.875$ and confidence $c = 8/10 = 0.8$.  A system
+satisfying D4 stores $(7, 1)$---not the scalar pair $(0.875, 0.8)$.
+Why?  Because if sensor~north is later found to be miscalibrated (D6),
+the system can retract $(5, 1)$ to recover $(2, 0)$; from the scalars
+alone, the retraction is impossible.  The evidence pair is the proof
+object; the strength--confidence view is the projection.}
+
 
 %% ═══════════════════════════════════════════════════════════════
 \section{D5: Explicit Side Conditions}

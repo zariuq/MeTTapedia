@@ -1,0 +1,73 @@
+\chapter{Limitations}
+\label{ch:limitations}
+
+This chapter states explicitly what the formalization does \emph{not}
+provide.
+
+\section{Operational Runtimes}
+
+The formalization provides mathematical specifications and correctness
+theorems.  It does not provide an executable PLN inference engine,
+performance benchmarks on large knowledge bases, or integration with
+MeTTa or Hyperon runtimes.
+
+These are operational concerns that depend on runtime infrastructure
+not yet available.  The theorem-level results constrain what any
+correct implementation must satisfy, but they do not constitute an
+implementation.  The gap between a certified specification and a
+deployable system is real, and we do not pretend otherwise.
+
+\section{Finite-Domain Restriction}
+
+The evidence carriers, view projections, and inference-control
+theorems are formalized over finite domains.  An infinitary layer
+exists in the codebase but has not been brought to chapter-level
+parity.  Measure-theoretic extensions---particularly for
+continuous-valued evidence and distributional inference over
+non-conjugate families---require additional infrastructure that is
+within reach of the existing kernel design but is not yet realized
+(see Chapter~\ref{ch:future}, \S\ref{sec:future-measure}).
+
+This restriction is not merely a matter of generality.  Several
+important applications---continuous sensor fusion, Gaussian process
+priors, density estimation---require the infinitary extension to be
+fully rigorous.  Until it is completed, claims about these domains
+must be understood as extrapolations from the finite theory.
+
+\section{Empirical Scope}
+
+The benchmark validation chapters
+(Chapters~\ref{ch:carrier-validation}--\ref{ch:pplbench}) cover a
+specific set of domains: forecasting, sensor drift, fault diagnosis,
+anomaly detection, and Bayesian-network inference.  However, several
+important application domains remain unvalidated:
+
+\begin{itemize}
+\item Drug-repurposing knowledge-graph benchmarks
+  (Hetionet/Rephetio)
+\item Genomic regulatory pipelines
+\item Large-scale knowledge-base reasoning
+\item Real-time streaming inference with concept drift
+\end{itemize}
+
+\noindent
+These gaps do not indicate theoretical limitations but reflect the
+practical scope of empirical validation completed to date.  The
+formalization provides the theoretical foundation for these
+applications, but the experimental demonstration is incomplete.
+
+\section{Universal Prediction}
+
+The Universal Prediction module explores connections between the
+world-model calculus and algorithmic information theory.  This module
+is work-in-progress and is not part of the stable core narrative.
+Its theorems are not referenced by the main development, and its
+sorry count is nonzero.
+
+\section{Codebase Organization}
+
+The Lean codebase reflects the history of the development rather than
+an idealized dependency graph.  A comprehensive refactoring into a
+``mathlibified'' library structure---with uniform naming conventions,
+minimal imports, and docstring coverage---is a worthy future goal but
+is explicitly not attempted here.

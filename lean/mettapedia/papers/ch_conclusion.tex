@@ -1,0 +1,125 @@
+\chapter{Conclusion}
+\label{ch:conclusion}
+
+The world-model calculus is not a replacement for PLN\@.  It is the
+mathematical foundation that PLN always needed.
+
+The central insight is that PLN's original instincts were largely
+correct: evidence counts as the fundamental representation, revision
+as the primary operation, and link-level rules as the practical
+inference mechanism.  What was missing was the explicit separation of
+layers and the honest statement of assumptions.  The passage from
+intuition to formalization required not new ideas so much as the
+discipline to say precisely what each idea means, what it assumes, and
+where it breaks.
+
+\section{What the Refoundation Gives Us}
+
+The calculus provides five things that the original PLN lacked:
+
+\begin{enumerate}
+\item \textbf{One kernel.}  The world-model posterior-state calculus,
+  with evidence compositionality as the fundamental law
+  (Chapter~\ref{ch:world-models}).  Every inference rule, every view
+  projection, every scaling result derives from this single interface.
+
+\item \textbf{Many views.}  Strength, confidence, intervals,
+  distributions---all as typed projections from the kernel
+  (Chapter~\ref{ch:views}).  The views are not competing
+  representations; they are different questions asked of the same
+  underlying state.
+
+\item \textbf{Explicit side conditions.}  Every compiled rule carries
+  its assumptions (Chapter~\ref{ch:sigma-rewrites}), with
+  counterexamples showing what happens when they are violated.  The
+  d-separation typeclass (Chapter~\ref{ch:bn-models}) automates the
+  checking, but the assumptions are always visible.
+
+\item \textbf{Cleaner boundaries.}  The no-go theorem
+  (Chapter~\ref{ch:no-go}), the identifiability failures, the pooling
+  non-uniqueness, the coverage surrogate limitations, the five
+  certified-chaining impossibilities
+  (Chapter~\ref{ch:scale-control})---all stated precisely and proved
+  formally.  These are not embarrassments; they are the most valuable
+  theorems in the development, because they tell you where not to
+  waste effort.
+
+\item \textbf{Beyond subsumption.}  The bridges to neighboring
+  frameworks are not merely compatibility results.  The
+  compatibility-gated experiment demonstrates that decomposing an
+  MLN's clause-weight signal into interpretable world-model evidence
+  roles yields substantial improvement---not by adding information,
+  but by factoring the information that was already there.
+\end{enumerate}
+
+\section{The Shape of the Result}
+
+The result is a PLN that knows what it knows, states what it assumes,
+and marks what it cannot do.  That is not a weakness.  That is the
+beginning of a trustworthy reasoner.
+
+The formalization is not complete---Chapter~\ref{ch:limitations}
+states what remains undone, and Chapter~\ref{ch:future} sketches the
+natural continuations.  But the kernel is stable, the evidence algebra
+is settled, the compiled inference rules are proved exact under their
+stated conditions, and the scaling theory identifies both the
+achievable guarantees and the fundamental impossibilities.
+
+The deepest insight is simple: inference systems should not confuse the
+map with the territory.  A truth value is a projected summary of
+evidence, not the evidence itself.  A probability is a query result,
+not what the system carries.  What the system carries is a revisable
+state of knowledge.  What the system produces is an extraction from
+that state.  What practitioners see is a view projection of that
+extraction.
+
+This distinction has practical consequences.  When evidence is primary:
+\begin{itemize}
+\item Revision becomes compositional (new evidence adds to old
+  evidence)
+\item Queries become principled (extraction is a homomorphism)
+\item Views become interchangeable (the same evidence supports
+  multiple operational summaries)
+\item Inference becomes modular (local computations compose globally)
+\item Uncertainty becomes transparent (we track what we know, not
+  what we guess)
+\end{itemize}
+
+\noindent
+When truth values are primary, these properties are difficult or
+impossible to achieve.  Different truth-value schemes
+(strength/confidence, fuzzy logic, interval arithmetic, probability
+values) require different combination rules, different query
+algorithms, and different validation approaches.  The result is
+fragmentation.  The world-model calculus reunifies this fragmented
+landscape by locating the common structure beneath the diverse surface
+phenomena.
+
+What remains is engineering, extension, and empirical validation.
+The mathematical foundation is in place.
+
+\section*{In Summary}
+
+The world-model calculus is a calculus of revisable uncertain state.
+A system stores what it knows in a posterior state, not in isolated
+truth values.  Queries ask questions of that state, and the raw
+answers are evidence values.  Strength, confidence, and intervals are
+useful summaries---views extracted for display, thresholding, and
+action---but they are not themselves the thing being stored or proved.
+
+The world-model calculus does not replace existing reasoning systems.
+It provides the semantic foundation they can share.  A ProbLog
+program, a Bayesian network, and a PLN rule base are no longer
+separate formalisms requiring separate toolchains.  They are different
+languages for specifying world models, and they share common semantics
+for revision, extraction, and view projection.
+
+This is the unity that reasoning systems have long needed: not the
+false unity of a single approach that claims to solve everything, but
+the true unity of a common foundation that reveals why different
+approaches work and how they relate.
+
+\begin{quote}
+\emph{Probability is what you query.  Evidence is what you carry.
+Everything else follows.}
+\end{quote}

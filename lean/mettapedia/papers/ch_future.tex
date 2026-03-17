@@ -1,0 +1,102 @@
+\chapter{Future Directions}
+\label{ch:future}
+
+The world-model calculus establishes a foundation.  Several directions
+extend it in ways that are natural continuations of the existing
+development rather than speculative leaps.
+
+\section{Measure-Theoretic Grounding}
+\label{sec:future-measure}
+
+The current formalization works over finite world-sets.
+Measure-theoretic extensions would ground the calculus on
+$\sigma$-algebras and probability measures, enabling continuous-valued
+evidence, non-conjugate distributional families, and integration with
+the broader mathematical probability literature.  The kernel's
+compositionality law generalizes naturally to the measure-theoretic
+setting; the technical challenge is in the evidence-carrier
+instantiation and the convergence bridges.
+
+\section{HOL Completeness}
+
+The natively typed world-model layer
+(Chapter~\ref{ch:typed}) establishes syntax, soundness, and type
+synthesis.  A typed canonical-model completeness theorem would close
+the gap between the calculus's higher-order syntax and full semantic
+adequacy.  The required construction---a term model over equivalence
+classes of typed evidence---is well understood in principle but
+technically demanding.
+
+\section{Selective Distributional Inference}
+
+The convergence and dominance results in the error-transport chapter
+(Chapter~\ref{ch:error-transport}) show that scalar inference is
+asymptotically correct but suboptimal in the finite-evidence regime.
+The natural next step is a cost-aware inference controller that
+escalates from scalar to distributional propagation when the regime
+structure predicts a significant gain---using compact approximation
+families, compiled rule surrogates, and accelerator-backed batched
+computation.
+
+\section{Non-Additive Regimes}
+
+The evidence algebra's additive structure
+(Chapter~\ref{ch:evidence}) is appropriate for independent
+observations but does not capture all forms of evidential
+combination.  Non-additive regimes---belief functions,
+possibility measures, imprecise probabilities beyond the Walley
+framework---represent a natural generalization.  The challenge is to
+preserve compositionality while relaxing additivity, and the
+quantale structure suggests a path: replace the additive monoid with
+a more general tensor.
+
+\section{Probability Hypercube}
+
+The current view projections extract one-dimensional summaries
+(strength, confidence) from the evidence space.  A probability
+hypercube representation would retain the full joint structure of
+multi-query evidence, enabling richer decision-making and more
+informative uncertainty quantification.  This connects to the
+infinitary extension: the hypercube is naturally a product measure
+space.
+
+\section{Universality}
+
+The typed world-model encoding
+(Chapter~\ref{ch:typed}) realizes the calculus as a specific
+language definition.  A universality result would show that any typed
+language definition satisfying certain compositionality axioms admits
+a world-model interpretation---establishing the calculus as a
+canonical representative of a broader class rather than one design
+among many.
+
+\section{Operational Runtime}
+
+The formalization specifies the kernel semantics precisely, but a
+high-performance compiled runtime---executing the same
+posterior-state calculus at scale with caching, incremental evidence
+fusion, and multi-source integration---is the bridge from formalized
+semantics to deployed reasoning.  The $\Sigma$-guarded rewrite
+system (Chapter~\ref{ch:sigma-rewrites}) provides a natural
+compilation target: each certified rewrite becomes a runtime
+primitive with machine-checked correctness.
+
+\section{Process-Algebraic and Multi-Agent Extensions}
+
+The typed world-model encoding currently covers single-agent
+reasoning.  Extending to multi-agent settings---where agents
+communicate partial evidence, negotiate under uncertainty, and
+maintain independent world models that must be fused---requires
+process-algebraic infrastructure: confluence modulo associativity and
+commutativity, communication protocols with evidence-typed channels,
+and compositional verification of multi-agent inference systems.
+
+\section{Broader Benchmark Coverage}
+
+The present empirical validation covers specific domains.
+Drug-repurposing knowledge-graph benchmarks (Hetionet/Rephetio),
+genomic regulatory pipelines, large-scale knowledge-base reasoning,
+and real-time sensor fusion at scale remain as identified but
+unfinished empirical targets.  Each connects to a specific
+theoretical capability of the calculus and would test the practical
+reach of the formal guarantees.

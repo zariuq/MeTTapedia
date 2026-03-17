@@ -1,0 +1,497 @@
+\chapter{What the Calculus Covers}
+\label{ch:covers}
+
+This chapter provides a compact, honest summary of what is actually
+formalized and proved in the World-Model Calculus, as opposed to merely
+discussed or conjectured.  It answers three questions: Which claims are
+kernel-checked?  Which desiderata
+(Chapter~\ref{ch:desiderata}) are fully discharged?  And where does the
+formalization stop?
+
+Every result in this chapter carries a formalization tier:
+\begin{description}
+\item[\textsc{Tier~A}:] Kernel-checked Lean~4 theorem, zero sorry, zero
+  axioms beyond standard foundations.
+\item[\textsc{Tier~B}:] Formalized in Lean~4 with sorry-free main
+  statement but possible sorry in auxiliary lemmas.
+\item[\textsc{Tier~C}:] Proof sketch with full statement in Lean but
+  unfinished proof term.
+\item[\textsc{Tier~D}:] Open program --- stated precisely, not yet
+  formalized.
+\end{description}
+
+\noindent
+The desiderata D1--D8 serve as the contract the calculus must
+fulfill.  The ledger at the end of this chapter
+(\S\ref{sec:covers-ledger}) records which desiderata are fully
+discharged by Tier~A/B results, which are partially discharged, and
+which remain open.
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{The Kernel}
+\label{sec:covers-kernel}
+%% ═══════════════════════════════════════════════════════════════
+
+The foundation is a world-model interface with evidence
+compositionality: revision of two world-model states and subsequent
+query extraction must agree with extracting from each state separately
+and then combining the evidence
+(Chapter~\ref{ch:world-models}).
+
+\paragraph{World-model interface (\textsc{Tier~A}, \claimCore{}).}
+The \code{WorldModel} typeclass defines three operations---\code{revise},
+\code{empty}, \code{extract}---over typed parameters
+$\mathrm{State}$, $\mathrm{Query}$, $V$.  This discharges
+\textbf{D1} (State Primacy): the system carries a revisable state as its
+primary representation, not a scalar summary.
+
+\paragraph{Additive regime and profile-hom equivalence
+  (\textsc{Tier~A}, \claimCore{}).}
+The \code{AdditiveWorldModel} subclass adds the decisive law
+$\mathrm{extract}(W_1 + W_2, q) = \mathrm{extract}(W_1, q) +
+\mathrm{extract}(W_2, q)$.  The profile-hom equivalence
+(Theorem~\ref{thm:universal-property}) shows that additive world models
+are exactly answer-profile generators: monoid homomorphisms from states
+to answer profiles.  This discharges \textbf{D2} (Compositional
+Extraction) in the additive regime.
+
+\paragraph{Dirichlet reference instance (\textsc{Tier~A}, \claimCore{}).}
+A concrete Dirichlet instance with query extraction over finite
+world-sets instantiates the interface, and the resulting system admits a
+sequent-style calculus in which query-revision is an admissible rule.
+
+\paragraph{Local-completeness no-go
+  (\textsc{Tier~A}, \claimBoundary{}).}
+The no-go theorem (Chapter~\ref{ch:no-go}) demonstrates that no
+link-local evidence representation can recover full joint evidence---a
+sharp boundary on the ambitions of any PLN-like system.  This is not a
+defect of the formalization; it is a theorem about the problem.  This
+contributes to discharging \textbf{D8} (Honest Boundaries).
+
+\maplecourt{%
+The kernel is visible in every Maple Court scenario: each apartment
+carries a state $(n^+, n^-)$ rather than a bare strength scalar; the
+building controller revises states additively as sensor reports arrive;
+and the no-go theorem explains why the building-level inference cannot
+reconstruct the full joint from per-apartment summaries alone.}
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{Evidence Carriers}
+\label{sec:covers-carriers}
+%% ═══════════════════════════════════════════════════════════════
+
+Evidence is not one fixed datatype.  The general pattern is that a
+carrier stores sufficient statistics for a conjugate family, and revision
+in the additive regime is addition of those sufficient statistics.
+
+\paragraph{Three formalized carriers (\textsc{Tier~A}, \claimCore{}).}
+Binary evidence $(n^+, n^-)$, Dirichlet evidence
+$(\alpha_1, \ldots, \alpha_k)$, and Normal-Gamma evidence
+$(n, \sum x_i, \sum x_i^2)$ are each proved to satisfy the
+\code{AddCommMonoid} laws under componentwise addition
+(Chapter~\ref{ch:evidence}).  All five algebraic rules hold for every
+carrier.  This discharges \textbf{D3} (Generic Carriers): the value
+type~$V$ is a parameter, not a fixed datatype.
+
+\paragraph{Quantale and Heyting structure
+  (\textsc{Tier~A}, \claimConditional{}).}
+For the binary carrier specifically, the formalization proves that
+evidence forms both a quantale (with a tensor product modelling revision)
+and a Heyting algebra (with implication modelling conditional evidence).
+These are \emph{binary-specific} structures: the quantale tensor and the
+Heyting implication do not generalize to all carriers.  They are
+formalized under the side condition that the carrier is binary.
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{Views and Projections}
+\label{sec:covers-views}
+%% ═══════════════════════════════════════════════════════════════
+
+The truth-value views---simple truth values, indefinite truth values,
+and distributional views---are all formalized as typed projections from
+evidence (Chapter~\ref{ch:views}).
+
+\paragraph{Views are not additive (\textsc{Tier~A}, \claimCore{}).}
+Strength, confidence, and interval bounds are proved to be non-additive
+projections from evidence carriers
+(Proposition~\ref{prop:overview-views-not-semantic-core}).  The strength
+non-monotonicity theorem shows that more evidence can yield lower
+strength.  This discharges \textbf{D4} (Evidence over Views): views are
+derived projections, not primary semantic objects.
+
+\paragraph{Walley--Bayesian interval separation
+  (\textsc{Tier~B}, \claimConditional{}).}
+An explicit separation of Walley predictive intervals from Bayesian
+credible intervals is formalized, preventing conflation of two
+structurally different interval concepts.
+
+\paragraph{Convergence bridges (\textsc{Tier~B/C}).}
+Two convergence bridges ground the asymptotic story:
+\begin{itemize}
+\item De~Finetti's exchangeability theorem justifies count sufficiency
+  (\textsc{Tier~B}).
+\item A Solomonoff convergence bridge shows that evidence counts
+  approximate the universal posterior (\textsc{Tier~C} --- the main
+  statement is in Lean; the convergence argument uses a sorry'd
+  measure-theory lemma).
+\end{itemize}
+A Knuth--Skilling valuation-algebra bridge connects the evidence algebra
+to information-theoretic valuations (\textsc{Tier~B}).
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{State Operations}
+\label{sec:covers-state-ops}
+%% ═══════════════════════════════════════════════════════════════
+
+State operations---forgetting, provenance tracking, and replay---belong
+near the kernel because they demonstrate what a posterior state can do
+that a bare truth value cannot: it can be updated, partially retracted,
+audited, and explained (Chapter~\ref{ch:state-ops}).
+
+\paragraph{Forgetting layer (\textsc{Tier~A}, \claimCore{}).}
+The \code{ForgettingLayer} structure provides scoped retraction: for
+every scope~$S$ and state~$W$, forgetting preserves all answers
+outside~$S$.  This discharges \textbf{D6} (Retractability).
+
+\paragraph{Conservation theorems (\textsc{Tier~A}, \claimCore{}).}
+The \code{EvidenceConservationPack} proves three conservation laws under
+exact-inverse forgetting: anti-hallucination, Noether conservation, and
+zero leakage.  The exact-inverse no-go theorem (\claimBoundary{}) shows
+that if evidence leaked, forgetting cannot exactly undo it.  Together
+these discharge \textbf{D7} (Evidence Conservation).
+
+\paragraph{Provenance tracking (\textsc{Tier~A}, \claimCore{}).}
+Provenance-tagged revision records the source of each evidence
+contribution, enabling the forgetting layer to retract specific sources
+while preserving others.
+
+\maplecourt{%
+Three hallway humidity alerts arrive, then sensor~3B-north is found to
+be miscalibrated.  The forgetting layer retracts $(3, 1)$ from
+sensor~3B-north, preserving the $(2, 0)$ from sensor~3B-south.  The
+conservation theorem guarantees that the building-level humidity answer
+for apartments other than 3B is unchanged.  Without provenance (D6) and
+conservation (D7), this surgical retraction is impossible.}
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{Compiled Inference}
+\label{sec:covers-compiled}
+%% ═══════════════════════════════════════════════════════════════
+
+The extensional inference rules of classical PLN---deduction,
+induction, abduction---are proved exact for the chain, fork, and
+collider BN motifs under explicit screening-off and positivity
+conditions (Chapter~\ref{ch:bn-models}).
+
+\paragraph{BN exactness theorems (\textsc{Tier~A}, \claimConditional{}).}
+D-separation discharge is packaged as a typeclass, so that a user need
+only declare the BN structure and the side conditions are checked
+automatically.  The compiled deduction formula agrees with full posterior
+extraction when and only when the screening-off side condition holds.
+
+\paragraph{$\Sigma$-guarded rewrite system
+  (\textsc{Tier~A}, \claimConditional{}).}
+The rewrite system (Chapter~\ref{ch:sigma-rewrites}) collects these
+compiled rewrites with their typed BN constructor lifts, and a one-call
+pipeline composes selector, rewrite, and threshold into a single
+certified step.  Every compiled rule carries its structural assumptions as
+a typed, machine-checkable predicate~$\Sigma$.  This discharges
+\textbf{D5} (Explicit Side Conditions): when $\Sigma$ holds, the
+shortcut is exact; when $\Sigma$ fails, the shortcut is not licensed.
+
+\paragraph{Threshold transport (\textsc{Tier~A}, \claimConditional{}).}
+Threshold transport with explicit error boundaries
+(Chapter~\ref{ch:error-transport}) ensures that confidence gates
+compose correctly across inference chains.
+
+\paragraph{Five chaining-limitation no-go theorems
+  (\textsc{Tier~A}, \claimBoundary{}).}
+Coverage collapse, Lipschitz sensitivity amplification, variance
+accumulation, topology--CPT gap, and regime underdetermination
+characterize the fundamental limitations of composing per-step
+certificates.  These are first-class contributions to \textbf{D8}
+(Honest Boundaries).
+
+\maplecourt{%
+The compiled chain rule for
+$\mathrm{PipeLeak} \to \mathrm{WallHumidity} \to \mathrm{MoldRisk}$
+carries side condition $\Sigma = \{\mathrm{ScreenOff}, 0 < s_B < 1\}$.
+The $\Sigma$-discipline (D5) ensures the rule fires only when the BN
+structure guarantees d-separation.  The chaining-limitation theorems
+(D8) tell the building controller that propagating only scalar
+summaries through longer chains inevitably loses information.}
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{Semantic Extensions}
+\label{sec:covers-extensions}
+%% ═══════════════════════════════════════════════════════════════
+
+Three semantic families extend the kernel beyond extensional
+propositional inference:
+
+\begin{itemize}
+\item \textbf{Intensional inheritance}
+  (Chapter~\ref{ch:intensional}, \textsc{Tier~A/B},
+  \claimConditional{}) is grounded through typed
+  world-model channels---extensional, ASSOC, and PAT---with the
+  Solomonoff log-ratio bridge as the semantic anchor.  A constructive
+  no-go (\claimBoundary{}) rules out collapsing the three-channel mixed
+  rule back to the original binary law.
+
+\item \textbf{Temporal inference}
+  (Chapter~\ref{ch:temporal}, \textsc{Tier~A/B},
+  \claimConditional{}) is formalized as another world-model instance
+  rather than a separate ontology.  Temporal evidence revision and the
+  temporal quantale with free transitivity theorems are Tier~A.  The
+  causal-intervention connection to do-calculus is stated as a
+  typed interface (\textsc{Tier~C}) --- the full do-calculus
+  formalization remains an open program.
+
+\item \textbf{Normative and governance reasoning}
+  (Chapter~\ref{ch:governance}, \textsc{Tier~B/C},
+  \claimConditional{}) demonstrates that deontic modalities,
+  preference aggregation, and governance constraints can be expressed
+  within the world-model framework.  The graded deontic evidence
+  structure is Tier~B; the temporal-deontic bridge is Tier~C.
+\end{itemize}
+
+\paragraph{Higher-order reduction (\textsc{Tier~B/C}).}
+Higher-order reduction is formalized with corrected side conditions.
+The typed formulation (Chapter~\ref{ch:typed}) provides
+root-sum-of-squares bounds under explicit assumptions (\textsc{Tier~B}).
+Finite-model quantifier and fuzzy quantifier semantics are proved in the
+weakness-based formulation (\textsc{Tier~B}).  The full 13-axis vertex
+family and OSLF modal operators are partially formalized
+(\textsc{Tier~C}).
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{Large-Scale Inference and Control}
+\label{sec:covers-scale}
+%% ═══════════════════════════════════════════════════════════════
+
+The formalization addresses how the calculus scales beyond single-step
+inference (Chapter~\ref{ch:scale-control}).
+
+\paragraph{Multideduction (\textsc{Tier~A}, \claimConditional{}).}
+Multideduction is formalized via a residual decomposition that makes
+the inclusion-exclusion error explicit, together with an
+identifiability no-go (\claimBoundary{}) showing that the residual
+cannot in general be recovered from local information.
+
+\paragraph{Trail-free protocol (\textsc{Tier~A}, \claimBoundary{}).}
+The trail-free deterministic update protocol admits a counterexample
+(a 2-cycle that never stabilizes), but damped convergence under
+eventual fresh evidence is proved.  Pooling uniqueness under external
+Bayesianity pins down the fusion rule.
+
+\paragraph{Inference control (\textsc{Tier~B}, \claimConditional{}).}
+BRGI optimization with feasible-set characterization provides the
+scheduling foundation.  Premise-selection coverage is proved
+submodular, yielding the classical greedy $(1 - 1/e)$ approximation
+guarantee, while a coverage surrogate no-go (\claimBoundary{}) shows
+that no purely local surrogate can faithfully approximate global
+coverage.
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{Cross-Cutting Bridges}
+\label{sec:covers-bridges}
+%% ═══════════════════════════════════════════════════════════════
+
+The formalization establishes bridges to eight neighboring inference
+frameworks (Chapter~\ref{ch:bridges}):
+\begin{enumerate}
+\item Markov Logic Networks --- log-linear embedding with profile-hom
+  correspondence (\textsc{Tier~A}, \claimCore{}).
+\item ProbLog --- distribution-semantics embedding under acyclicity
+  (\textsc{Tier~A}, \claimConditional{}).
+\item Probabilistic programming languages (Church, Stan, Pyro) ---
+  sufficient-statistic embedding under exchangeability
+  (\textsc{Tier~A}, \claimConditional{}).
+\item PLN v0.9 --- all seven classical rules as $\Sigma$-guarded
+  compiled rewrites (\textsc{Tier~A}, \claimConditional{}).
+\item NARS --- frequency-confidence bijection with binary evidence
+  (\textsc{Tier~A}, \claimCore{}).
+\item Classical FOL / set theory --- Boolean degenerate instance
+  (\textsc{Tier~A}, \claimCore{}).
+\item Markov categories --- profile-hom as commutative-monoid algebra
+  in a Markov category (\textsc{Tier~A}, \claimCore{}).
+\item $\rho$-calculus --- parallel composition as revision, barbs as
+  extraction (\textsc{Tier~A/B}, \claimCore{}).
+\end{enumerate}
+
+\noindent
+These are exact bridges, not analogies: each neighboring framework is
+shown to be a special case of the world-model calculus under explicit
+structural assumptions, and the assumptions are stated precisely
+enough that violations can be detected and diagnosed.  MeTTa parity
+theorems verify executable formula parity between Lean theorems and
+MeTTa truth functions.
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{Desiderata Discharge Ledger}
+\label{sec:covers-ledger}
+%% ═══════════════════════════════════════════════════════════════
+
+The eight desiderata of Chapter~\ref{ch:desiderata} constitute the
+contract the calculus must fulfill.  The following ledger records the
+discharge status of each.
+
+\begin{center}
+\begin{longtable}{clp{48mm}cl}
+\toprule
+\textbf{ID} & \textbf{Name} & \textbf{Discharge site}
+  & \textbf{Tier} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Name} & \textbf{Discharge site}
+  & \textbf{Tier} & \textbf{Status} \\
+\midrule
+\endhead
+D1 & State Primacy
+  & \code{WorldModel} typeclass (Ch~\ref{ch:world-models})
+  & A & \textsc{Full} \\
+D2 & Composition
+  & Profile-hom equivalence (Ch~\ref{ch:world-models})
+  & A & \textsc{Full} \\
+D3 & Generic Carriers
+  & Three carriers (Ch~\ref{ch:evidence})
+  & A & \textsc{Full} \\
+D4 & Evidence $>$ Views
+  & Lossy projections (Ch~\ref{ch:views})
+  & A & \textsc{Full} \\
+D5 & Explicit $\Sigma$
+  & $\Sigma$-guarded rewrites (Ch~\ref{ch:sigma-rewrites})
+  & A & \textsc{Full} \\
+D6 & Retractability
+  & Forgetting layer (Ch~\ref{ch:state-ops})
+  & A & \textsc{Full} \\
+D7 & Conservation
+  & Conservation pack (Ch~\ref{ch:state-ops})
+  & A & \textsc{Full} \\
+D8 & Honest Boundaries
+  & No-go catalog (Chs~\ref{ch:no-go},
+    \ref{ch:error-transport}, \ref{ch:scale-control})
+  & A & \textsc{Full} \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\noindent
+All eight desiderata are discharged at Tier~A (kernel-checked) for
+the additive regime.  Three caveats qualify this claim:
+\begin{enumerate}
+\item \textbf{D2} is discharged only in the additive regime.  The
+  overlap-aware, trust-gated, and coalition regimes do not satisfy
+  additive compositionality and are not covered by the current
+  discharge (Chapter~\ref{ch:world-models}).
+\item \textbf{D3} is discharged for three carriers (binary, Dirichlet,
+  Normal-Gamma).  The amplitude carrier $V = \mathbb{C}$ is formalized
+  as an additive monoid but does not yet have a full reference instance
+  (\textsc{Tier~C}).
+\item \textbf{D8} is discharged by a substantial catalog of no-go
+  theorems, but completeness of the boundary catalog is not itself
+  proved---there may be additional limitations not yet identified.
+\end{enumerate}
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{What the Calculus Does Not Cover}
+\label{sec:covers-stops}
+%% ═══════════════════════════════════════════════════════════════
+
+Honest boundaries (\textbf{D8}) require stating not only impossibility
+theorems but also the gaps in the formalization itself.
+
+\begin{description}
+\item[Non-additive regimes (\textsc{Tier~D}).]
+  The overlap-aware, trust-gated, and coalition revision regimes are
+  typed but not developed in full generality.  No profile-hom
+  equivalence is known outside the additive regime.
+
+\item[Measure-theoretic grounding (\textsc{Tier~D}).]
+  The Giry monad connection is stated but the terminal
+  $\code{WorldModel (Measure\;\Omega)\;Query}$ instance remains
+  future work.  The current formalization works with finitary carriers
+  and discrete state spaces.
+
+\item[Higher-order completeness (\textsc{Tier~D}).]
+  The calculus handles quantified and higher-order queries as instances
+  of the generic Query type, but no completeness theorem is proved for
+  the full higher-order fragment.
+
+\item[Computational complexity (\textsc{Tier~D}).]
+  The calculus says \emph{what} the correct answer is but does not
+  provide complexity bounds for computing it.  Exact BN inference is
+  \#P-hard in general; the WM calculus licenses compiled shortcuts but
+  does not analyze their computational cost.
+
+\item[The probability hypercube (\textsc{Tier~C}).]
+  The full classification of theories by which combination of merge-law
+  and carrier properties they satisfy is a work in progress.  The
+  29-file Lean formalization maps the axes but does not yet prove the
+  complete classification theorem.
+
+\item[Full do-calculus formalization (\textsc{Tier~C}).]
+  The temporal world-model instance and temporal quantale are
+  Tier~A.  The causal-intervention connection to do-calculus is
+  stated as a typed interface but not fully formalized.
+
+\item[GSLT universality (\textsc{Tier~C}).]
+  The multiset-ensemble canonical world model is Tier~A.  The full GSLT
+  universality conjecture---that every graph-structured lambda theory
+  induces an additive world model---is stated but not yet proved.
+\end{description}
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section{Artifact and Reproducibility}
+\label{sec:artifact}
+%% ═══════════════════════════════════════════════════════════════
+
+The complete formalization is implemented in Lean~4 with Mathlib
+dependencies.  All Tier~A theorems are kernel-checked with zero axioms
+beyond the standard foundations.
+
+\paragraph{Reproducing the Lean proofs.}
+
+\begin{lstlisting}
+cd lean-projects/mettapedia
+lake build
+\end{lstlisting}
+
+\noindent
+A sorry audit (\texttt{grep -rn sorry} over the relevant modules)
+should return zero for all Tier~A modules.
+
+\paragraph{Audit checklist.}
+\begin{itemize}
+\item \textbf{Lean toolchain:} version and Mathlib pinned in
+  \texttt{lean-toolchain} and \texttt{lakefile.lean}.
+\item \textbf{Sorry audit:} all Tier~A modules sorry-free.
+\item \textbf{Tier labels:} every theorem in the book carries a tier
+  label (A/B/C/D) so the reader can verify the formalization status
+  independently.
+\item \textbf{Holdout discipline:} every benchmark uses fixed
+  train/test splits with no hyperparameter tuning on test sets.
+\item \textbf{Tagged release:} a tagged commit with CI logs
+  accompanies the final version.
+\end{itemize}
+
+\maplecourt{%
+A reviewer auditing the Maple Court claims can verify each one:
+\texttt{lake build} checks the kernel theorems (D1--D2, D5--D7
+discharge); \texttt{grep -rn sorry} flags any incomplete proofs;
+the tier labels in this chapter map each claim to its formalization
+status.  The desiderata ledger (\S\ref{sec:covers-ledger}) shows
+that all eight desiderata are discharged at Tier~A for the additive
+regime, with three explicit caveats for the frontier directions.}
