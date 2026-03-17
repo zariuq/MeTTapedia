@@ -10,10 +10,10 @@ Golden PoC for the new Hyperseed front door:
 - the underlying sufficient-statistics world model is provably nontrivial.
 
 Positive example:
-- nonempty trace ⇒ `awareReady` is discovered and the WM state has nonzero count.
+- nonempty trace => `awareReady` is discovered and the WM state has nonzero count.
 
 Negative example:
-- empty trace ⇒ `awareReady` is not in closure.
+- empty trace => `awareReady` is not in closure.
 -/
 
 namespace Mettapedia.Hyperseed.Regression
@@ -23,7 +23,6 @@ open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.Logic.PLNWorldModelAdditive
-open Mettapedia.Logic.PLNWorldModelGeneric
 open Mettapedia.Logic.PLNWorldModelFixpointClosure
 open Mettapedia.Logic.PLNWorldModelFixpointCascade
 open Mettapedia.Logic.SufficientStatisticSurface
@@ -45,28 +44,28 @@ inductive AgentSignal where
   | introspection
   deriving DecidableEq, Fintype
 
-def unitPositiveEvidence : BinaryEvidence :=
+def unitPositiveEvidence : Evidence :=
   { pos := 1, neg := 0 }
 
 /-- The PoC surface uses the same one-unit positive evidence for every query.
 This keeps the Hyperseed example focused on observation ingestion and closure,
 while still living entirely on the additive WM foundations. -/
-def agentSurface : SufficientStatisticSurface AgentObservation AgentQuery BinaryEvidence :=
+def agentSurface : SufficientStatisticSurface AgentObservation AgentQuery Evidence :=
   SufficientStatisticSurface.ofObservationMap (fun _ => unitPositiveEvidence)
 
 theorem agentSurface_unitObservation :
     UnitObservation agentSurface := by
   intro o q
-  change (unitPositiveEvidence : BinaryEvidence).total = 1
-  simp [unitPositiveEvidence, BinaryEvidence.total]
+  change (unitPositiveEvidence : Evidence).total = 1
+  simp [unitPositiveEvidence, Evidence.total]
 
 noncomputable instance : EvidenceType (Multiset AgentObservation) :=
   multisetEvidenceType AgentObservation
 
-noncomputable instance : BinaryWorldModel (Multiset AgentObservation) AgentQuery :=
+noncomputable instance : WorldModel (Multiset AgentObservation) AgentQuery :=
   worldModelOfAtomicEvidence agentSurface.observe
 
-noncomputable instance : AdditiveWorldModel (Multiset AgentObservation) AgentQuery BinaryEvidence :=
+noncomputable instance : GenericWorldModel (Multiset AgentObservation) AgentQuery Evidence :=
   agentSurface.inducedWorldModel
 
 def agentFrontier (_ : AgentObservation) : Set AgentQuery :=
@@ -86,7 +85,7 @@ theorem agentSurface_aggregate_independent
 
 theorem agentWorldModel_evidence_eq_aggregate
     (σ : Multiset AgentObservation) (q : AgentQuery) :
-    BinaryWorldModel.evidence (State := Multiset AgentObservation) (Query := AgentQuery) σ q =
+    WorldModel.evidence (State := Multiset AgentObservation) (Query := AgentQuery) σ q =
       aggregate agentSurface σ q := by
   change additiveExtension agentSurface.observe σ q = aggregate agentSurface σ q
   exact (aggregate_eq_additiveExtension (S := agentSurface) σ q).symm
@@ -96,12 +95,12 @@ theorem agentQueryEq
     WMQueryEq (State := Multiset AgentObservation) (Query := AgentQuery) q₁ q₂ := by
   intro σ
   calc
-    BinaryWorldModel.evidence (State := Multiset AgentObservation) (Query := AgentQuery) σ q₁
+    WorldModel.evidence (State := Multiset AgentObservation) (Query := AgentQuery) σ q₁
         = aggregate agentSurface σ q₁ :=
           agentWorldModel_evidence_eq_aggregate σ q₁
     _ = aggregate agentSurface σ q₂ :=
           agentSurface_aggregate_independent σ q₁ q₂
-    _ = BinaryWorldModel.evidence (State := Multiset AgentObservation) (Query := AgentQuery) σ q₂ := by
+    _ = WorldModel.evidence (State := Multiset AgentObservation) (Query := AgentQuery) σ q₂ := by
           symm
           exact agentWorldModel_evidence_eq_aggregate σ q₂
 
@@ -436,8 +435,8 @@ theorem selfAware_golden_poc_of_nonempty
         closureFromTrace agentSurface agentFrontier agentRules σ ∧
       AgentQuery.awareReady ∈
         cascadeFromTrace agentSurface agentFrontier agentRules σ (Fintype.card AgentQuery) ∧
-      AdditiveWorldModel.queryObservationCount
-          (State := Multiset AgentObservation) (Query := AgentQuery) (Ev := BinaryEvidence)
+      GenericWorldModel.queryObservationCount
+          (State := Multiset AgentObservation) (Query := AgentQuery) (Ev := Evidence)
           σ AgentQuery.awareReady ≠ 0 ∧
       (σ + σ : Multiset AgentObservation) ≠ σ := by
   have hClosure := awareReady_in_closure_of_nonempty hσ
@@ -457,11 +456,24 @@ empty observation traces are exactly the count-zero / revision-idempotent case. 
 theorem selfAware_triviality_iff
     (σ : Multiset AgentObservation) :
     letI : EvidenceType (Multiset AgentObservation) := multisetEvidenceType AgentObservation
-    letI : AdditiveWorldModel (Multiset AgentObservation) AgentQuery BinaryEvidence := agentSurface.inducedWorldModel
-    ((σ + σ : Multiset AgentObservation) = σ ↔ σ = 0) ∧
-      (AdditiveWorldModel.queryObservationCount
-          (State := Multiset AgentObservation) (Query := AgentQuery) (Ev := BinaryEvidence)
-          σ AgentQuery.awareReady = 0 ↔ σ = 0) := by
-  exact wm_trivial_iff (S := agentSurface) agentSurface_unitObservation σ AgentQuery.awareReady
+    letI : GenericWorldModel (Multiset AgentObservation) AgentQuery Evidence := agentSurface.inducedWorldModel
+    σ = 0 ↔
+      GenericWorldModel.queryObservationCount
+          (State := Multiset AgentObservation) (Query := AgentQuery) (Ev := Evidence)
+          σ AgentQuery.awareReady = 0 ∧
+      (σ + σ : Multiset AgentObservation) = σ := by
+  letI : EvidenceType (Multiset AgentObservation) := multisetEvidenceType AgentObservation
+  letI : GenericWorldModel (Multiset AgentObservation) AgentQuery Evidence := agentSurface.inducedWorldModel
+  constructor
+  · intro hσ
+    constructor
+    · exact
+        (queryObservationCount_inducedWorldModel_eq_zero_iff_empty_of_unit
+          (S := agentSurface) agentSurface_unitObservation σ AgentQuery.awareReady).2 hσ
+    · simpa [hσ]
+  · intro h
+    exact
+      (revision_idempotent_inducedWorldModel_iff_empty_of_unit
+        (S := agentSurface) agentSurface_unitObservation σ AgentQuery.awareReady).1 h.2
 
 end Mettapedia.Hyperseed.Regression

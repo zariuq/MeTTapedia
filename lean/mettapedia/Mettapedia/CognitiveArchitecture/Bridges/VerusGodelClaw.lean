@@ -1,6 +1,7 @@
 import Mettapedia.CognitiveArchitecture.GodelClaw.PolicyKernel
 import Mettapedia.CognitiveArchitecture.GodelClaw.Mindlock
 import Mettapedia.CognitiveArchitecture.GodelClaw.GateChain
+import Mettapedia.CognitiveArchitecture.GodelClaw.ToolBroker
 
 /-!
 # Verus ↔ GodelClaw Lean Bridge
@@ -38,6 +39,7 @@ namespace Mettapedia.CognitiveArchitecture.Bridges.VerusGodelClaw
 open Mettapedia.CognitiveArchitecture.GodelClaw.PolicyKernel
 open Mettapedia.CognitiveArchitecture.GodelClaw.Mindlock
 open Mettapedia.CognitiveArchitecture.GodelClaw.GateChain
+open Mettapedia.CognitiveArchitecture.GodelClaw.ToolBroker
 
 /-! ## Tier correspondence
 
@@ -128,6 +130,30 @@ Key property correspondence:
 - `lemma_ingress_deny_blocks_even_if_primitive_allows` ↔ `sixGate_ingress_deny`
 -/
 
+/-! ## Tool broker & tool policy correspondence
+
+Verus: `spec_tool_authorized(in_list, wildcard)` = `wildcard || in_list`
+Lean:  `toolAuthorized inAllowlist wildcard` = `wildcard || inAllowlist`
+
+Verus: `spec_native_shadow_denied(is_brokered, matches)` = `!(is_brokered && matches)`
+Lean:  `nativeShadowDenied isBrokered displayNameMatchesNative` = same
+
+Verus: `spec_tool_gate_allows(...)` = shadow check ∧ authorization
+Lean:  `toolGateAllows (...)` = same
+
+Verus: `spec_capability_id_stable(prefix, server, tool)` = `prefix && server && tool`
+Lean:  `capabilityIdStable hasMcpPrefix hasServerName hasToolName` = same
+
+Key property correspondence:
+- `lemma_wildcard_allows_all` ↔ `wildcard_allows_all`
+- `lemma_unknown_capability_denied` ↔ `unknown_denied`
+- `lemma_listed_capability_authorized` ↔ `listed_authorized`
+- `lemma_native_shadow_always_denied` ↔ `shadow_collision_denied`
+- `lemma_non_colliding_brokered_not_denied` ↔ `non_colliding_brokered_ok`
+- `lemma_native_tools_not_shadow_denied` ↔ `native_not_shadow_denied`
+- Composition: `tool_gate_deny_blocks_chain` chains tool_policy → gate_chain
+-/
+
 /-! ## Coverage summary
 
 | Verus module        | Lean module       | Types | Specs | Proofs |
@@ -136,6 +162,8 @@ Key property correspondence:
 | channels.rs         | PolicyKernel.lean | ✓     | ✓     | ✓      |
 | mindlock.rs         | Mindlock.lean     | ✓     | ✓     | ✓      |
 | gate_chain.rs       | GateChain.lean    | ✓     | ✓     | ✓      |
+| tool_broker.rs      | ToolBroker.lean   | ✓     | ✓     | ✓      |
+| tool_policy.rs      | ToolBroker.lean   | ✓     | ✓     | ✓      |
 | ingress.rs          | (future)          |       |       |        |
 | egress.rs           | (future)          |       |       |        |
 | receipt.rs          | (future)          |       |       |        |
