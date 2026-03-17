@@ -47,9 +47,9 @@ theorem holProvImp_implies_pointwise {φ ψ : HOLQuery Const}
 theorem holProvImp_implies_singletonConsequence {φ ψ : HOLQuery Const}
     (h : HOLProvImp (Const := Const) φ ψ) :
     ∀ M : HenkinModel.{u, v, w} Base Const,
-      WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const)
+      BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const)
           ({M} : HOLState Base Const) φ ≤
-        WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const)
+        BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const)
           ({M} : HOLState Base Const) ψ :=
   (_root_.Mettapedia.Logic.PLNWorldModelHOLCompleteness.pointwiseImplies_iff_singletonConsequence
     (Base := Base) (Const := Const) (φ := φ) (ψ := ψ)).mp
@@ -59,8 +59,8 @@ theorem holProvImp_implies_singletonConsequence {φ ψ : HOLQuery Const}
 theorem holProvImp_implies_multisetConsequence {φ ψ : HOLQuery Const}
     (h : HOLProvImp (Const := Const) φ ψ) :
     ∀ W : HOLState Base Const,
-      WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ ≤
-        WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W ψ := by
+      BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ ≤
+        BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W ψ := by
   intro W
   exact _root_.Mettapedia.Logic.PLNWorldModelHOLCompleteness.multiset_strength_le_of_pointwise
     (Base := Base) (Const := Const) (W := W) (φ := φ) (ψ := ψ)
@@ -98,8 +98,8 @@ theorem holProvIff_implies_queryEq {φ ψ : HOLQuery Const}
 theorem holProvIff_implies_strengthEq {φ ψ : HOLQuery Const}
     (h : HOLProvIff (Const := Const) φ ψ) :
     ∀ W : HOLState Base Const,
-      WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ =
-        WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W ψ := by
+      BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ =
+        BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W ψ := by
   intro W
   exact WMQueryEq.to_queryStrength
     (State := HOLState Base Const) (Query := HOLQuery Const)

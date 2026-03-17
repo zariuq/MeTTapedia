@@ -77,59 +77,59 @@ def traceSeed (frontier : Obs → Set Query) (σ : Multiset Obs) : Set Query :=
 /-- Rule pool for Hyperseed over the binary WM induced by a sufficient-statistics
 surface. -/
 abbrev RulePool
-    (S : SufficientStatisticSurface Obs Query Evidence) :=
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence) :=
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
-  letI : WorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
+  letI : BinaryWorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
   RuleSet (Multiset Obs) Query
 
 /-- Hyperseed closure: observation-trace seeding plus WM fixpoint closure on the
 binary evidence world model induced by a sufficient-statistics surface. -/
 noncomputable def closureFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs) : Set Query :=
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
-  letI : WorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
+  letI : BinaryWorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
   leastRuleClosure R σ (traceSeed frontier σ)
 
 /-- Fair synchronous Hyperseed cascade from an observation trace. -/
 def cascadeFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs) : ℕ → Set Query :=
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
-  letI : WorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
+  letI : BinaryWorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
   immediateIter R σ (traceSeed frontier σ)
 
 theorem seed_subset_closureFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs) :
     traceSeed frontier σ ⊆ closureFromTrace S frontier R σ := by
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
-  letI : WorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
+  letI : BinaryWorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
   exact seed_subset_leastRuleClosure (R := R) (W := σ) (seed := traceSeed frontier σ)
 
 theorem mem_closureFromTrace_iff_mem_cascade_card_of_finite
     [Fintype Query]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs) (q : Query) :
     q ∈ closureFromTrace S frontier R σ ↔
       q ∈ cascadeFromTrace S frontier R σ (Fintype.card Query) := by
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
-  letI : WorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
+  letI : BinaryWorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
   exact
     mem_leastRuleClosure_iff_mem_immediateIter_card_of_finite
       (R := R) (W := σ) (seed := traceSeed frontier σ) q
 
 theorem mem_closureFromTrace_implies_eventualDiscovery_of_finite
     [Fintype Query]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -137,7 +137,7 @@ theorem mem_closureFromTrace_implies_eventualDiscovery_of_finite
     (hq : q ∈ closureFromTrace S frontier R σ) :
     ∃ N ≤ Fintype.card Query, q ∈ cascadeFromTrace S frontier R σ N := by
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
-  letI : WorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
+  letI : BinaryWorldModel (Multiset Obs) Query := worldModelOfAtomicEvidence S.observe
   exact
     mem_leastRuleClosure_implies_eventual_discovery_of_finite
       (R := R) (W := σ) (seed := traceSeed frontier σ) hq
@@ -146,7 +146,7 @@ theorem mem_closureFromTrace_implies_eventualDiscovery_of_finite
 engine but exposes the observer-relative/bounded slice visible from one
 perspective. -/
 def availableClosureFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -157,7 +157,7 @@ def availableClosureFromTrace
 
 /-- Perspective-filtered Hyperseed cascade. -/
 def availableCascadeFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -170,7 +170,7 @@ def availableCascadeFromTrace
 with the current trace/state. This is the minimal Route 2 bridge from Hyperseed
 into a regime-indexed WM semantics. -/
 def stateAvailableClosureFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -181,7 +181,7 @@ def stateAvailableClosureFromTrace
 
 /-- State-conditioned available cascade. -/
 def stateAvailableCascadeFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -193,7 +193,7 @@ def stateAvailableCascadeFromTrace
 /-- Stage-filtered Hyperseed closure. -/
 def stagedClosureFromTrace
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -204,7 +204,7 @@ def stagedClosureFromTrace
 /-- Stage-filtered Hyperseed cascade. -/
 def stagedCascadeFromTrace
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -213,7 +213,7 @@ def stagedCascadeFromTrace
   fun n => cascadeFromTrace S frontier R σ n ∩ F.region i
 
 theorem mem_availableClosureFromTrace_iff
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -227,7 +227,7 @@ theorem mem_availableClosureFromTrace_iff
 
 theorem mem_stagedClosureFromTrace_iff
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -239,7 +239,7 @@ theorem mem_stagedClosureFromTrace_iff
   rfl
 
 theorem mem_stateAvailableClosureFromTrace_iff
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -252,7 +252,7 @@ theorem mem_stateAvailableClosureFromTrace_iff
   rfl
 
 theorem availableClosureFromTrace_subset_closureFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -265,7 +265,7 @@ theorem availableClosureFromTrace_subset_closureFromTrace
   exact hq.1
 
 theorem availableClosureFromTrace_subset_availableRegion
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -278,7 +278,7 @@ theorem availableClosureFromTrace_subset_availableRegion
   exact hq.2
 
 theorem availableCascadeFromTrace_subset_cascadeFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -292,7 +292,7 @@ theorem availableCascadeFromTrace_subset_cascadeFromTrace
   exact hq.1
 
 theorem availableCascadeFromTrace_subset_availableRegion
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -306,7 +306,7 @@ theorem availableCascadeFromTrace_subset_availableRegion
   exact hq.2
 
 theorem stateAvailableClosureFromTrace_subset_closureFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -319,7 +319,7 @@ theorem stateAvailableClosureFromTrace_subset_closureFromTrace
   exact hq.1
 
 theorem stateAvailableClosureFromTrace_subset_availableRegionAt
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -332,7 +332,7 @@ theorem stateAvailableClosureFromTrace_subset_availableRegionAt
   exact hq.2
 
 theorem stateAvailableCascadeFromTrace_subset_cascadeFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -346,7 +346,7 @@ theorem stateAvailableCascadeFromTrace_subset_cascadeFromTrace
   exact hq.1
 
 theorem stateAvailableCascadeFromTrace_subset_availableRegionAt
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -361,7 +361,7 @@ theorem stateAvailableCascadeFromTrace_subset_availableRegionAt
 
 theorem stagedClosureFromTrace_subset_closureFromTrace
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -373,7 +373,7 @@ theorem stagedClosureFromTrace_subset_closureFromTrace
 
 theorem stagedClosureFromTrace_subset_region
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -385,7 +385,7 @@ theorem stagedClosureFromTrace_subset_region
 
 theorem stagedCascadeFromTrace_subset_cascadeFromTrace
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -398,7 +398,7 @@ theorem stagedCascadeFromTrace_subset_cascadeFromTrace
 
 theorem stagedCascadeFromTrace_subset_region
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -410,7 +410,7 @@ theorem stagedCascadeFromTrace_subset_region
   exact hq.2
 
 theorem availableClosureFromTrace_mono_budget
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -424,7 +424,7 @@ theorem availableClosureFromTrace_mono_budget
   exact ⟨hq.1, (availableRegion_mono_budget (P := P) (guard := guard) hB) hq.2⟩
 
 theorem availableCascadeFromTrace_mono_budget
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -439,7 +439,7 @@ theorem availableCascadeFromTrace_mono_budget
   exact ⟨hq.1, (availableRegion_mono_budget (P := P) (guard := guard) hB) hq.2⟩
 
 theorem availableClosureFromTrace_mono_guard
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -453,7 +453,7 @@ theorem availableClosureFromTrace_mono_guard
   exact ⟨hq.1, (availableRegion_mono_guard (P := P) (B := B) hguard) hq.2⟩
 
 theorem availableCascadeFromTrace_mono_guard
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -468,7 +468,7 @@ theorem availableCascadeFromTrace_mono_guard
   exact ⟨hq.1, (availableRegion_mono_guard (P := P) (B := B) hguard) hq.2⟩
 
 theorem stateAvailableClosureFromTrace_mono_budget
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -482,7 +482,7 @@ theorem stateAvailableClosureFromTrace_mono_budget
   exact ⟨hq.1, (availableRegionAt_mono_budget (P := P) (W := σ) guard hB) hq.2⟩
 
 theorem stateAvailableCascadeFromTrace_mono_budget
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -497,7 +497,7 @@ theorem stateAvailableCascadeFromTrace_mono_budget
   exact ⟨hq.1, (availableRegionAt_mono_budget (P := P) (W := σ) guard hB) hq.2⟩
 
 theorem stateAvailableClosureFromTrace_mono_guard
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -511,7 +511,7 @@ theorem stateAvailableClosureFromTrace_mono_guard
   exact ⟨hq.1, (availableRegionAt_mono_guard (P := P) (W := σ) (B := B) hguard) hq.2⟩
 
 theorem stateAvailableCascadeFromTrace_mono_guard
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -527,7 +527,7 @@ theorem stateAvailableCascadeFromTrace_mono_guard
 
 theorem stagedClosureFromTrace_mono
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -541,7 +541,7 @@ theorem stagedClosureFromTrace_mono
 
 theorem stagedCascadeFromTrace_mono
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -555,7 +555,7 @@ theorem stagedCascadeFromTrace_mono
   exact ⟨hq.1, (StagedView.region_mono F hij) hq.2⟩
 
 theorem closureFromTrace_eq_availableClosureFromTrace_of_subset_availableRegion
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -571,7 +571,7 @@ theorem closureFromTrace_eq_availableClosureFromTrace_of_subset_availableRegion
   · exact availableClosureFromTrace_subset_closureFromTrace S frontier R σ P B guard
 
 theorem cascadeFromTrace_eq_availableCascadeFromTrace_of_subset_availableRegion
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -588,7 +588,7 @@ theorem cascadeFromTrace_eq_availableCascadeFromTrace_of_subset_availableRegion
   · exact availableCascadeFromTrace_subset_cascadeFromTrace S frontier R σ P B guard n
 
 theorem stateAvailableClosureFromTrace_eq_availableClosureFromTrace_freezePerspective
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -600,7 +600,7 @@ theorem stateAvailableClosureFromTrace_eq_availableClosureFromTrace_freezePerspe
   rfl
 
 theorem stateAvailableCascadeFromTrace_eq_availableCascadeFromTrace_freezePerspective
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -613,7 +613,7 @@ theorem stateAvailableCascadeFromTrace_eq_availableCascadeFromTrace_freezePerspe
   rfl
 
 theorem closureFromTrace_eq_stateAvailableClosureFromTrace_of_subset_availableRegionAt
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -629,7 +629,7 @@ theorem closureFromTrace_eq_stateAvailableClosureFromTrace_of_subset_availableRe
   · exact stateAvailableClosureFromTrace_subset_closureFromTrace S frontier R σ P B guard
 
 theorem cascadeFromTrace_eq_stateAvailableCascadeFromTrace_of_subset_availableRegionAt
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -647,7 +647,7 @@ theorem cascadeFromTrace_eq_stateAvailableCascadeFromTrace_of_subset_availableRe
 
 theorem closureFromTrace_eq_stagedClosureFromTrace_of_subset_region
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -663,7 +663,7 @@ theorem closureFromTrace_eq_stagedClosureFromTrace_of_subset_region
 
 theorem cascadeFromTrace_eq_stagedCascadeFromTrace_of_subset_region
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -680,7 +680,7 @@ theorem cascadeFromTrace_eq_stagedCascadeFromTrace_of_subset_region
 
 theorem mem_availableClosureFromTrace_iff_mem_availableCascade_card_of_finite
     [Fintype Query]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -701,7 +701,7 @@ theorem mem_availableClosureFromTrace_iff_mem_availableCascade_card_of_finite
 theorem mem_stagedClosureFromTrace_iff_mem_stagedCascade_card_of_finite
     [Fintype Query]
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -720,7 +720,7 @@ theorem mem_stagedClosureFromTrace_iff_mem_stagedCascade_card_of_finite
 
 theorem mem_stateAvailableClosureFromTrace_iff_mem_stateAvailableCascade_card_of_finite
     [Fintype Query]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -740,7 +740,7 @@ theorem mem_stateAvailableClosureFromTrace_iff_mem_stateAvailableCascade_card_of
 
 /-- Budget-indexed available closure family for one fixed trace. -/
 def availableClosureApproximationFromTrace
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)
@@ -755,7 +755,7 @@ def availableClosureApproximationFromTrace
 /-- Stage-indexed closure family for one fixed trace. -/
 def stagedClosureApproximationFromTrace
     {Idx : Type*} [Preorder Idx]
-    (S : SufficientStatisticSurface Obs Query Evidence)
+    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : RulePool S)
     (σ : Multiset Obs)

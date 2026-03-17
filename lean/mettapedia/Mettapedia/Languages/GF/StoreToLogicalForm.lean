@@ -11,7 +11,7 @@ This module converts a `GrammarState` (term + semantic store) into a
 ## Pipeline position
 
 ```
-  GF tree → Pattern → V1-V4 → GrammarState → [THIS MODULE] → QFormula2 → Evidence
+  GF tree → Pattern → V1-V4 → GrammarState → [THIS MODULE] → QFormula2 → BinaryEvidence
 ```
 
 The store records meaning-bearing decisions (V1 quantifier intro, V2 scope

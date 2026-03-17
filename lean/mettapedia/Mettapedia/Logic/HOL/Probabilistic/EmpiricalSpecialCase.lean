@@ -73,14 +73,14 @@ private theorem holEvidence_total_eq_card
           (Multiset.countP
             (fun M : HenkinModel.{u, v, w} Base Const => ¬ holSatisfies M φ) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold holEvidence Evidence.total
+  unfold holEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 private theorem staticQueryStrength_eq_count_ratio
     (W : Multiset (HenkinModel.{u, v, w} Base Const))
     (hW : W ≠ 0)
     (φ : ClosedFormula Const) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W φ =
@@ -94,7 +94,7 @@ private theorem staticQueryStrength_eq_count_ratio
     exact hW (Multiset.card_eq_zero.mp hcard)
   have hcardENN : (W.card : ℝ≥0∞) ≠ 0 := by
     exact_mod_cast hcardNat
-  unfold WorldModel.queryStrength Evidence.toStrength
+  unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
   change
     (if (holEvidence (Base := Base) (Const := Const) W φ).total = 0 then 0
       else (holEvidence (Base := Base) (Const := Const) W φ).pos /
@@ -172,7 +172,7 @@ theorem empiricalSentenceProb_eq_staticQueryStrength
         (empiricalModelSpace (Base := Base) (Const := Const) W)
         (PMF.ofMultiset W hW).toMeasure
         φ =
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W φ := by
@@ -189,7 +189,7 @@ theorem empiricalProbQueryStrength_eq_staticQueryStrength
         (empiricalModelSpace (Base := Base) (Const := Const) W)
         (PMF.ofMultiset W hW).toMeasure
         φ =
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W φ := by

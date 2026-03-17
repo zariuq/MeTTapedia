@@ -45,7 +45,7 @@ namespace Mettapedia.Logic.StratifiedPLN
 ### Partition (Partition.lean)
 - `HistogramBins` - K-bin measurable partition
 - `binIndex` - Function mapping points to bins
-- `BinEvidence` - Evidence counts per bin
+- `BinEvidence` - BinaryEvidence counts per bin
 
 ### Local Exchangeability (LocalExchangeability.lean)
 - `binPLNStrength` - PLN strength for a bin

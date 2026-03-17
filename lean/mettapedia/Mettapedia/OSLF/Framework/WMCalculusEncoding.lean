@@ -136,7 +136,7 @@ Sort-preservation is enforced by the type indices: each constructor maps
 /-- One-step reduction on `WMTerm`, corresponding to the 5 core WM rules.
     Sort preservation is enforced by the type indices. -/
 inductive WMStep : WMTerm s → WMTerm s → Prop where
-  /-- Evidence extraction distributes over revision. -/
+  /-- BinaryEvidence extraction distributes over revision. -/
   | evidence_add (t₁ t₂ : WMTerm .state) (q : WMTerm .query) :
       WMStep (.extract (.revise t₁ t₂) q)
              (.combine (.extract t₁ q) (.extract t₂ q))
@@ -147,7 +147,7 @@ inductive WMStep : WMTerm s → WMTerm s → Prop where
   | revision_assoc (t₁ t₂ t₃ : WMTerm .state) :
       WMStep (.revise (.revise t₁ t₂) t₃)
              (.revise t₁ (.revise t₂ t₃))
-  /-- Evidence combination is commutative. -/
+  /-- BinaryEvidence combination is commutative. -/
   | combine_comm (e₁ e₂ : WMTerm .evidence) :
       WMStep (.combine e₁ e₂) (.combine e₂ e₁)
   /-- EvidenceZero is the identity for combination. -/

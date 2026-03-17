@@ -5,22 +5,22 @@ import Mathlib.Data.NNReal.Defs
 open scoped ENNReal NNReal
 
 /-!
-# Abstract Evidence Type Classes
+# Abstract BinaryEvidence Type Classes
 
 This file defines the abstract interfaces for PLN evidence types across domains.
 
-## Key Insight (Modal Evidence Theory)
+## Key Insight (Modal BinaryEvidence Theory)
 
 The PLN quantale structure is on **EVIDENCE**, not on truth values.
 The strength formula is a **VIEW** (interpretation) that requires context.
 
 This separates:
-- **Evidence** = observations (DATA) - forms a monoid under hplus
+- **BinaryEvidence** = observations (DATA) - forms a monoid under hplus
 - **Context** = hyperparameters (INTERPRETATION) - specifies how to interpret
 
 ## Main Definitions
 
-- `EvidenceType` : Evidence forms a commutative monoid under hplus
+- `EvidenceType` : BinaryEvidence forms a commutative monoid under hplus
 - `InterpretableEvidence` : Context-dependent interpretation (strength, mean, etc.)
 - `MetaLearnable` : Support for learning context from meta-evidence
 
@@ -42,17 +42,17 @@ The continuous case (n, Σx, Σx²) makes the context dependence obvious.
 
 namespace Mettapedia.Logic.EvidenceClass
 
-/-! ## Abstract Evidence Type Class
+/-! ## Abstract BinaryEvidence Type Class
 
-Evidence forms a commutative monoid under `hplus` (parallel aggregation).
+BinaryEvidence forms a commutative monoid under `hplus` (parallel aggregation).
 This captures the PLN revision rule: independent evidence combines additively.
 -/
 
-/-- Evidence aggregates independently of interpretation context.
+/-- BinaryEvidence aggregates independently of interpretation context.
     This is the monoid structure underlying PLN revision. -/
 class EvidenceType (Ev : Type*) extends AddCommMonoid Ev
 
-/-- Evidence with sequential composition (tensor product).
+/-- BinaryEvidence with sequential composition (tensor product).
     This captures evidence flow through deduction chains: A → B → C
 
     Note: The full quantale law (tensor_distrib_sup) requires SupSet on Ev,
@@ -76,7 +76,7 @@ class InterpretableEvidence (Ctx : Type*) (Ev : Type*) (Val : outParam Type*) wh
 /-- Notation for interpretation: ctx ⊢ e ↦ v means "under context ctx, evidence e interprets to v" -/
 notation:50 ctx " ⊢ " e " ↦ " v => InterpretableEvidence.interpret ctx e = v
 
-/-! ## Meta-Evidence for Hyperparameter Learning
+/-! ## Meta-BinaryEvidence for Hyperparameter Learning
 
 For AGI applications, hyperparameters themselves need to be learned.
 This requires evidence about evidence (meta-level).

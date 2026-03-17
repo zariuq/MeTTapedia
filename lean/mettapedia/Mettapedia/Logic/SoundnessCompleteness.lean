@@ -26,7 +26,7 @@ properties, including:
 
 3. **Bounds Preservation**: Deduction/Induction/Abduction outputs are in [0,1]
 
-4. **Monotonicity**: Evidence ordering preserved by all operations
+4. **Monotonicity**: BinaryEvidence ordering preserved by all operations
 
 ### COMPLETENESS FAILURES (✗ Counterexamples)
 
@@ -58,7 +58,7 @@ We reexport and document the soundness results that ARE proven.
 
 section SoundnessSummary
 
-/-! ### 1.1 Algebraic Soundness (Evidence Level) -/
+/-! ### 1.1 Algebraic Soundness (BinaryEvidence Level) -/
 
 /-- SOUNDNESS: Tensor composition gives strength lower bound.
 
@@ -68,8 +68,8 @@ section SoundnessSummary
     Interpretation: The strength of composed evidence is at least
     the product of individual strengths.
 -/
-theorem soundness_tensor_strength_bound (a b : Evidence) :
-    Evidence.toStrength (a ⊙ b) ≥ Evidence.toStrength a * Evidence.toStrength b :=
+theorem soundness_tensor_strength_bound (a b : BinaryEvidence) :
+    BinaryEvidence.toStrength (a ⊙ b) ≥ BinaryEvidence.toStrength a * BinaryEvidence.toStrength b :=
   tensor_strength_ge a b
 
 /-- SOUNDNESS: Tensor is monotonic in both arguments.
@@ -78,7 +78,7 @@ theorem soundness_tensor_strength_bound (a b : Evidence) :
 
     Interpretation: More evidence → more composed evidence.
 -/
-theorem soundness_tensor_monotone (a₁ a₂ b₁ b₂ : Evidence) (ha : a₁ ≤ a₂) (hb : b₁ ≤ b₂) :
+theorem soundness_tensor_monotone (a₁ a₂ b₁ b₂ : BinaryEvidence) (ha : a₁ ≤ a₂) (hb : b₁ ≤ b₂) :
     a₁ ⊙ b₁ ≤ a₂ ⊙ b₂ :=
   tensor_monotone a₁ a₂ b₁ b₂ ha hb
 
@@ -88,7 +88,7 @@ theorem soundness_tensor_monotone (a₁ a₂ b₁ b₂ : Evidence) (ha : a₁ �
 
     Interpretation: More evidence → more combined evidence.
 -/
-theorem soundness_par_monotone (a₁ a₂ b₁ b₂ : Evidence) (ha : a₁ ≤ a₂) (hb : b₁ ≤ b₂) :
+theorem soundness_par_monotone (a₁ a₂ b₁ b₂ : BinaryEvidence) (ha : a₁ ≤ a₂) (hb : b₁ ≤ b₂) :
     a₁ ⅋ b₁ ≤ a₂ ⅋ b₂ :=
   par_monotone a₁ a₂ b₁ b₂ ha hb
 
@@ -183,7 +183,7 @@ section CompletenessFailures
 
 /-- COUNTEREXAMPLE: Tensor composition loses information.
 
-    Evidence (2, 2) and (1, 1) have different total evidence but
+    BinaryEvidence (2, 2) and (1, 1) have different total evidence but
     identical strength (0.5). The tensor operation itself loses the
     "structure" of the operands. We cannot recover (2,2) vs (1,1)
     from their compositions.
@@ -193,15 +193,15 @@ section CompletenessFailures
 -/
 theorem completeness_failure_information_loss :
     -- Two distinct evidence values
-    let e₁ : Evidence := ⟨1, 1⟩
-    let e₂ : Evidence := ⟨2, 2⟩
+    let e₁ : BinaryEvidence := ⟨1, 1⟩
+    let e₂ : BinaryEvidence := ⟨2, 2⟩
     -- Same strength ratio (pos/total)
     e₁.pos * e₂.total = e₂.pos * e₁.total ∧
     -- But different total evidence
     e₁.total ≠ e₂.total ∧
     -- The evidence values are distinct
     e₁ ≠ e₂ := by
-  simp only [Evidence.total]
+  simp only [BinaryEvidence.total]
   constructor
   · -- Cross multiply: 1 * 4 = 2 * 2
     norm_num
@@ -210,7 +210,7 @@ theorem completeness_failure_information_loss :
     norm_num
   · -- ⟨1, 1⟩ ≠ ⟨2, 2⟩
     intro h
-    have hp := congrArg Evidence.pos h
+    have hp := congrArg BinaryEvidence.pos h
     norm_num at hp
 
 /-- COUNTEREXAMPLE: Zero evidence has no inverse.
@@ -218,10 +218,10 @@ theorem completeness_failure_information_loss :
     pNeither = (0, 0) has no inverse because 0 * anything = 0 ≠ 1.
 -/
 theorem completeness_failure_pNeither_no_inverse :
-    ¬∃ (inv : Evidence), pNeither ⊙ inv = Evidence.one := by
+    ¬∃ (inv : BinaryEvidence), pNeither ⊙ inv = BinaryEvidence.one := by
   intro ⟨inv, hinv⟩
-  simp only [pNeither, cdTensor, Evidence.tensor_def, Evidence.one] at hinv
-  have hp := congrArg Evidence.pos hinv
+  simp only [pNeither, cdTensor, BinaryEvidence.tensor_def, BinaryEvidence.one] at hinv
+  have hp := congrArg BinaryEvidence.pos hinv
   simp only [zero_mul] at hp
   -- hp: 0 = 1, which is false
   exact one_ne_zero hp.symm
@@ -275,7 +275,7 @@ theorem completeness_failure_independence_required :
 
 /-- COUNTEREXAMPLE: Same strength ratio, different confidence → different meanings.
 
-    Evidence (10, 10) and (1, 1) both have the same strength ratio (pos/total = 0.5).
+    BinaryEvidence (10, 10) and (1, 1) both have the same strength ratio (pos/total = 0.5).
     But they have different total evidence, which means different confidence.
 
     PLN operations on strength ALONE lose this confidence information.
@@ -283,15 +283,15 @@ theorem completeness_failure_independence_required :
     fully characterize the uncertainty.
 -/
 theorem completeness_failure_confidence_lost :
-    let e₁ : Evidence := ⟨1, 1⟩
-    let e₂ : Evidence := ⟨10, 10⟩
+    let e₁ : BinaryEvidence := ⟨1, 1⟩
+    let e₂ : BinaryEvidence := ⟨10, 10⟩
     -- Same strength ratio (pos/total)
     e₁.pos * e₂.total = e₂.pos * e₁.total ∧
     -- Different total evidence (which determines confidence)
     e₁.total ≠ e₂.total ∧
     -- Specifically: 2 ≠ 20
     e₁.total = 2 ∧ e₂.total = 20 := by
-  simp only [Evidence.total]
+  simp only [BinaryEvidence.total]
   norm_num
 
 /-! ### 2.4 Non-Invertibility of Inference Rules -/
@@ -372,8 +372,8 @@ structure EvidenceCompletenessRequirements where
     A "complete" inference system would allow recovering premises from conclusions.
     This requires operations to be injective, which tensor is NOT.
 -/
-def InverseCompleteness (f : Evidence → Evidence → Evidence) : Prop :=
-  ∀ a₁ a₂ b₁ b₂ : Evidence, f a₁ b₁ = f a₂ b₂ → a₁ = a₂ ∧ b₁ = b₂
+def InverseCompleteness (f : BinaryEvidence → BinaryEvidence → BinaryEvidence) : Prop :=
+  ∀ a₁ a₂ b₁ b₂ : BinaryEvidence, f a₁ b₁ = f a₂ b₂ → a₁ = a₂ ∧ b₁ = b₂
 
 /-- Tensor is NOT injective. -/
 theorem tensor_not_injective : ¬InverseCompleteness (· ⊙ ·) := by
@@ -386,7 +386,7 @@ theorem tensor_not_injective : ¬InverseCompleteness (· ⊙ ·) := by
   -- This would imply pTrue = pFalse, contradiction
   have hcontra : pTrue = pFalse := heq
   simp only [pTrue, pFalse] at hcontra
-  have hp := congrArg Evidence.pos hcontra
+  have hp := congrArg BinaryEvidence.pos hcontra
   exact one_ne_zero hp
 
 end CompletenessRequirements

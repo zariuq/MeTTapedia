@@ -82,7 +82,7 @@ def ruleExtractCongRight : RewriteRule := {
 /-- If e₁ reduces to e₁', then Combine(e₁, e₂) reduces to Combine(e₁', e₂). -/
 def ruleCombineCongLeft : RewriteRule := {
   name := "WM_CombineCongLeft"
-  typeContext := [("e1", .base "Evidence"), ("e1p", .base "Evidence"), ("e2", .base "Evidence")]
+  typeContext := [("e1", .base "BinaryEvidence"), ("e1p", .base "BinaryEvidence"), ("e2", .base "BinaryEvidence")]
   premises := [.congruence (.fvar "e1") (.fvar "e1p")]
   left := pCombine (.fvar "e1") (.fvar "e2")
   right := pCombine (.fvar "e1p") (.fvar "e2")
@@ -91,7 +91,7 @@ def ruleCombineCongLeft : RewriteRule := {
 /-- If e₂ reduces to e₂', then Combine(e₁, e₂) reduces to Combine(e₁, e₂'). -/
 def ruleCombineCongRight : RewriteRule := {
   name := "WM_CombineCongRight"
-  typeContext := [("e1", .base "Evidence"), ("e2", .base "Evidence"), ("e2p", .base "Evidence")]
+  typeContext := [("e1", .base "BinaryEvidence"), ("e2", .base "BinaryEvidence"), ("e2p", .base "BinaryEvidence")]
   premises := [.congruence (.fvar "e2") (.fvar "e2p")]
   left := pCombine (.fvar "e1") (.fvar "e2")
   right := pCombine (.fvar "e1") (.fvar "e2p")

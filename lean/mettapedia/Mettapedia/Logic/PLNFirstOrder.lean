@@ -37,7 +37,7 @@ import Mettapedia.Logic.PLNFirstOrder.FuzzySyllogismRegressionFin
 # PLN First-Order Quantifiers
 
 Complete formalization of PLN first-order quantifiers via:
-- **Subobject classifier pattern**: SatisfyingSet as χ : U → Ω where Ω = Evidence (Frame)
+- **Subobject classifier pattern**: SatisfyingSet as χ : U → Ω where Ω = BinaryEvidence (Frame)
 - **Goertzel's weakness theory**: ∀x:P(x) = weakness({(u,v) | P(u) ∧ P(v)})
 - **Integration with Foundation**: Architecture for full FOL bridge
 - **Arbitrary-domain infinitary semantics**: exported through `PLNFirstOrder.Infinite`
@@ -144,5 +144,5 @@ ulimit -v 6291456 && lake build Mettapedia.Logic.PLNFirstOrder
 - Plan file: /home/zar/.claude/plans/hashed-baking-bumblebee.md
 - Goertzel, "Weakness and Its Quantale"
 - QuantaleWeakness.lean (820+ proven lines)
-- EvidenceQuantale.lean (Evidence with Frame structure)
+- EvidenceQuantale.lean (BinaryEvidence with Frame structure)
 -/

@@ -9,26 +9,26 @@ open Mettapedia.Logic.PLNMettaTruthFunctions
 open scoped ENNReal
 
 /-!
-# nuPLN: Evidence-Quantale <-> MeTTa Truth-Value Bridge
+# nuPLN: BinaryEvidence-Quantale <-> MeTTa Truth-Value Bridge
 
 This file states and proves small "bridge" lemmas connecting:
 - the *numerical* truth-value formulas (as mirrored from `lib_pln.metta`), and
-- the Evidence semantics (`EvidenceQuantale.lean`) that interprets truth values as evidence counts.
+- the BinaryEvidence semantics (`EvidenceQuantale.lean`) that interprets truth values as evidence counts.
 
 The intended use is to make explicit (and checkable) the hypotheses under which the MeTTa-style
-truth-value calculations coincide with Evidence addition (`hplus`) and its `toSTV` view.
+truth-value calculations coincide with BinaryEvidence addition (`hplus`) and its `toSTV` view.
 -/
 
 namespace Bridge
 
-/-- Convert a MeTTa-style truth value to Evidence by interpreting confidence via the capped
+/-- Convert a MeTTa-style truth value to BinaryEvidence by interpreting confidence via the capped
 weight transform `w = c/(1-c)` (with a fixed prior parameter `κ`). -/
-noncomputable def TV.toEvidence (κ : ℝ≥0∞) (t : TV) : Evidence :=
-  Evidence.ofSTV (κ := κ) t.s (capConf t.c) (capConf_lt_one t.c)
+noncomputable def TV.toEvidence (κ : ℝ≥0∞) (t : TV) : BinaryEvidence :=
+  BinaryEvidence.ofSTV (κ := κ) t.s (capConf t.c) (capConf_lt_one t.c)
 
-/-- View Evidence as a MeTTa-style truth value `(strength, confidence)` in `ℝ`. -/
-noncomputable def Evidence.toTV (κ : ℝ≥0∞) (e : Evidence) : TV :=
-  ⟨(Evidence.toStrength e).toReal, (Evidence.toConfidence (κ := κ) e).toReal⟩
+/-- View BinaryEvidence as a MeTTa-style truth value `(strength, confidence)` in `ℝ`. -/
+noncomputable def BinaryEvidence.toTV (κ : ℝ≥0∞) (e : BinaryEvidence) : TV :=
+  ⟨(BinaryEvidence.toStrength e).toReal, (BinaryEvidence.toConfidence (κ := κ) e).toReal⟩
 
 end Bridge
 
@@ -96,10 +96,10 @@ theorem w2c_min_c2w (c1 c2 : ℝ) :
 end PLNMettaTruthFunctions
 
 /-
-## Bridge: Revision = Evidence Aggregation
+## Bridge: Revision = BinaryEvidence Aggregation
 
 Here we connect the MeTTa-style revision rule (weighted average by confidence-weights) to the
-Evidence semantics (`hplus` on evidence counts) under a *single* prior parameter `κ`.
+BinaryEvidence semantics (`hplus` on evidence counts) under a *single* prior parameter `κ`.
 -/
 
 namespace Bridge
@@ -108,13 +108,13 @@ open scoped ENNReal
 
 open Mettapedia.Logic.PLNMettaTruthFunctions
 
-/-- The `Evidence.ofSTV` "total evidence" matches the intended `κ * c / (1-c)` when
+/-- The `BinaryEvidence.ofSTV` "total evidence" matches the intended `κ * c / (1-c)` when
 `s ∈ [0,1]`. This makes confidence independent of strength, as in the PLN book formulas. -/
 theorem toEvidence_total (κ : ℝ≥0∞) (t : TV) (hs0 : 0 ≤ t.s) (hs1 : t.s ≤ 1) :
     (TV.toEvidence κ t).total =
       κ * ENNReal.ofReal (capConf t.c) / ENNReal.ofReal (1 - capConf t.c) := by
   -- Unfold the definition and reduce to `ofReal s + ofReal (1-s) = 1`.
-  simp [TV.toEvidence, Evidence.ofSTV, Evidence.total]
+  simp [TV.toEvidence, BinaryEvidence.ofSTV, BinaryEvidence.total]
   rw [← add_mul]
   have hs1' : 0 ≤ 1 - t.s := by linarith
   have hsum : ENNReal.ofReal t.s + ENNReal.ofReal (1 - t.s) = (1 : ℝ≥0∞) := by
@@ -141,7 +141,7 @@ theorem c2w_nonneg (c : ℝ) : 0 ≤ c2w c := by
   have hcc1pos : 0 < 1 - cc := by linarith
   simpa [cc] using div_nonneg hcc0 (le_of_lt hcc1pos)
 
-/-- Revision confidence agrees with `Evidence.toConfidence` after mapping STVs to evidence and
+/-- Revision confidence agrees with `BinaryEvidence.toConfidence` after mapping STVs to evidence and
 adding, assuming a single finite `κ`. -/
 theorem truthRevision_conf_eq_toConfidence
     (κ : ℝ≥0∞) (hκ0 : κ ≠ 0) (hκT : κ ≠ ⊤)
@@ -149,8 +149,8 @@ theorem truthRevision_conf_eq_toConfidence
     (hs1 : 0 ≤ t1.s) (hs1' : t1.s ≤ 1)
     (hs2 : 0 ≤ t2.s) (hs2' : t2.s ≤ 1) :
     (truthRevision t1 t2).c =
-      (Evidence.toConfidence (κ := κ) (TV.toEvidence κ t1 + TV.toEvidence κ t2)).toReal := by
-  -- Expand the Evidence side.
+      (BinaryEvidence.toConfidence (κ := κ) (TV.toEvidence κ t1 + TV.toEvidence κ t2)).toReal := by
+  -- Expand the BinaryEvidence side.
   have ht1 : (TV.toEvidence κ t1).total =
       κ * ENNReal.ofReal (capConf t1.c) / ENNReal.ofReal (1 - capConf t1.c) :=
     toEvidence_total κ t1 hs1 hs1'
@@ -161,7 +161,7 @@ theorem truthRevision_conf_eq_toConfidence
   have htot_add :
       (TV.toEvidence κ t1 + TV.toEvidence κ t2).total =
         (TV.toEvidence κ t1).total + (TV.toEvidence κ t2).total := by
-    simp [Evidence.total, Evidence.hplus_def, add_assoc, add_comm, add_left_comm]
+    simp [BinaryEvidence.total, BinaryEvidence.hplus_def, add_assoc, add_comm, add_left_comm]
   -- Compute the confidence in ENNReal, then convert to `ℝ` via `toReal`.
   -- Let `w1E`, `w2E` be the ENNReal weights.
   set w1E : ℝ≥0∞ := ENNReal.ofReal (capConf t1.c) / ENNReal.ofReal (1 - capConf t1.c)
@@ -180,9 +180,9 @@ theorem truthRevision_conf_eq_toConfidence
         rw [← mul_add]
   -- Now unfold `toConfidence` and cancel `κ`.
   have hconf :
-      Evidence.toConfidence (κ := κ) (TV.toEvidence κ t1 + TV.toEvidence κ t2)
+      BinaryEvidence.toConfidence (κ := κ) (TV.toEvidence κ t1 + TV.toEvidence κ t2)
         = (w1E + w2E) / (w1E + w2E + 1) := by
-    unfold Evidence.toConfidence
+    unfold BinaryEvidence.toConfidence
     -- Rewrite total using `htotSum`.
     rw [htotSum]
     -- Factor `κ` out of the denominator.
@@ -200,7 +200,7 @@ theorem truthRevision_conf_eq_toConfidence
   -- Convert the RHS to `ℝ` and match the MeTTa formula.
   have hw_nonneg : 0 ≤ c2w t1.c + c2w t2.c := by
     linarith [c2w_nonneg t1.c, c2w_nonneg t2.c]
-  -- Rewrite the Evidence-side `toReal` explicitly.
+  -- Rewrite the BinaryEvidence-side `toReal` explicitly.
   have hw1E_ne_top : w1E ≠ (⊤ : ℝ≥0∞) := by
     -- `a/b` is finite if `a` is finite and `b ≠ 0`.
     apply ENNReal.div_ne_top ENNReal.ofReal_ne_top
@@ -251,13 +251,13 @@ theorem truthRevision_conf_eq_toConfidence
       rw [div_le_iff₀ hden_pos]
       linarith
     simpa [min_eq_left hle]
-  -- Now expand both `truthRevision` and the Evidence side.
-  -- `hconf` rewrites the Evidence confidence to `((w1E+w2E)/(w1E+w2E+1)).toReal`.
+  -- Now expand both `truthRevision` and the BinaryEvidence side.
+  -- `hconf` rewrites the BinaryEvidence confidence to `((w1E+w2E)/(w1E+w2E+1)).toReal`.
   -- Then `toReal_div` + the `toReal_add` computations above finish.
   simp [truthRevision, hconf, ENNReal.toReal_div, hwsum_toReal, hwsum1_toReal,
     w2c_eq_div_of_nonneg _ hw_nonneg, hmin]
 
-/-- Revision strength agrees with `Evidence.toStrength` after mapping STVs to evidence and adding,
+/-- Revision strength agrees with `BinaryEvidence.toStrength` after mapping STVs to evidence and adding,
 assuming a single finite `κ` and strengths in `[0,1]`. -/
 theorem truthRevision_strength_eq_toStrength
     (κ : ℝ≥0∞) (hκ0 : κ ≠ 0) (hκT : κ ≠ ⊤)
@@ -265,7 +265,7 @@ theorem truthRevision_strength_eq_toStrength
     (hs1 : 0 ≤ t1.s) (hs1' : t1.s ≤ 1)
     (hs2 : 0 ≤ t2.s) (hs2' : t2.s ≤ 1) :
     (truthRevision t1 t2).s =
-      (Evidence.toStrength (TV.toEvidence κ t1 + TV.toEvidence κ t2)).toReal := by
+      (BinaryEvidence.toStrength (TV.toEvidence κ t1 + TV.toEvidence κ t2)).toReal := by
   -- Real weights used by the MeTTa revision formula.
   set w1 : ℝ := c2w t1.c
   set w2 : ℝ := c2w t2.c
@@ -299,7 +299,7 @@ theorem truthRevision_strength_eq_toStrength
   have lhs : (truthRevision t1 t2).s = safeDiv (w1 * t1.s + w2 * t2.s) w := by
     simp [truthRevision, w1, w2, w, hmin]
 
-  -- ENNReal weights (the Evidence-side analogue of `w1`, `w2`).
+  -- ENNReal weights (the BinaryEvidence-side analogue of `w1`, `w2`).
   set w1E : ℝ≥0∞ := ENNReal.ofReal (capConf t1.c) / ENNReal.ofReal (1 - capConf t1.c)
   set w2E : ℝ≥0∞ := ENNReal.ofReal (capConf t2.c) / ENNReal.ofReal (1 - capConf t2.c)
 
@@ -345,7 +345,7 @@ theorem truthRevision_strength_eq_toStrength
     simpa [w2E, mul_div_assoc] using this
   have htot_add : (TV.toEvidence κ t1 + TV.toEvidence κ t2).total =
       (TV.toEvidence κ t1).total + (TV.toEvidence κ t2).total := by
-    simp [Evidence.total, Evidence.hplus_def, add_assoc, add_comm, add_left_comm]
+    simp [BinaryEvidence.total, BinaryEvidence.hplus_def, add_assoc, add_comm, add_left_comm]
   have htotSum : (TV.toEvidence κ t1 + TV.toEvidence κ t2).total = κ * (w1E + w2E) := by
     calc
       (TV.toEvidence κ t1 + TV.toEvidence κ t2).total
@@ -356,13 +356,13 @@ theorem truthRevision_strength_eq_toStrength
   -- Positive evidence similarly factors as `κ * (...)`.
   have hpos1 : (TV.toEvidence κ t1).pos = κ * (ENNReal.ofReal t1.s * w1E) := by
     -- Unfold `ofSTV` and rewrite the internal `total` as `κ * w1E`.
-    simp [TV.toEvidence, Evidence.ofSTV, w1E, mul_left_comm, mul_div_assoc]
+    simp [TV.toEvidence, BinaryEvidence.ofSTV, w1E, mul_left_comm, mul_div_assoc]
   have hpos2 : (TV.toEvidence κ t2).pos = κ * (ENNReal.ofReal t2.s * w2E) := by
-    simp [TV.toEvidence, Evidence.ofSTV, w2E, mul_left_comm, mul_div_assoc]
+    simp [TV.toEvidence, BinaryEvidence.ofSTV, w2E, mul_left_comm, mul_div_assoc]
   have hposSum : (TV.toEvidence κ t1 + TV.toEvidence κ t2).pos =
       κ * (ENNReal.ofReal t1.s * w1E + ENNReal.ofReal t2.s * w2E) := by
-    -- Coordinatewise addition on `Evidence`.
-    simp [Evidence.hplus_def, hpos1, hpos2, mul_add]
+    -- Coordinatewise addition on `BinaryEvidence`.
+    simp [BinaryEvidence.hplus_def, hpos1, hpos2, mul_add]
 
   -- Now compare the two `if` branches: `safeDiv` uses `0 < w` while `toStrength` uses `total = 0`.
   by_cases htotal0 : (TV.toEvidence κ t1 + TV.toEvidence κ t2).total = 0
@@ -380,8 +380,8 @@ theorem truthRevision_strength_eq_toStrength
     calc
       (truthRevision t1 t2).s = safeDiv (w1 * t1.s + w2 * t2.s) w := lhs
       _ = 0 := hsafe0
-      _ = (Evidence.toStrength (TV.toEvidence κ t1 + TV.toEvidence κ t2)).toReal := by
-        simp [Evidence.toStrength, htotal0]
+      _ = (BinaryEvidence.toStrength (TV.toEvidence κ t1 + TV.toEvidence κ t2)).toReal := by
+        simp [BinaryEvidence.toStrength, htotal0]
   · -- Nonzero total evidence: both use ordinary division.
     have hw_ne0 : w ≠ 0 := by
       intro hw0
@@ -396,7 +396,7 @@ theorem truthRevision_strength_eq_toStrength
         safeDiv (w1 * t1.s + w2 * t2.s) w = (w1 * t1.s + w2 * t2.s) / w := by
       simp [safeDiv, hwpos]
 
-    -- Evidence strength: cancel the common `κ`.
+    -- BinaryEvidence strength: cancel the common `κ`.
     have hratio : (TV.toEvidence κ t1 + TV.toEvidence κ t2).pos /
         (TV.toEvidence κ t1 + TV.toEvidence κ t2).total =
         (ENNReal.ofReal t1.s * w1E + ENNReal.ofReal t2.s * w2E) / (w1E + w2E) := by
@@ -422,17 +422,17 @@ theorem truthRevision_strength_eq_toStrength
         simp [ENNReal.toReal_mul, ht2s, hw2E_toReal]
       simpa [hmul1, hmul2] using hadd
 
-    have rhs : (Evidence.toStrength (TV.toEvidence κ t1 + TV.toEvidence κ t2)).toReal =
+    have rhs : (BinaryEvidence.toStrength (TV.toEvidence κ t1 + TV.toEvidence κ t2)).toReal =
         (t1.s * w1 + t2.s * w2) / w := by
       -- `toStrength` becomes `pos/total` because total ≠ 0.
-      simp [Evidence.toStrength, htotal0, hratio, ENNReal.toReal_div, hnum_toReal, hwsum_toReal]
+      simp [BinaryEvidence.toStrength, htotal0, hratio, ENNReal.toReal_div, hnum_toReal, hwsum_toReal]
 
     -- Combine everything.
     calc
       (truthRevision t1 t2).s = safeDiv (w1 * t1.s + w2 * t2.s) w := lhs
       _ = (w1 * t1.s + w2 * t2.s) / w := by simp [hsafediv]
       _ = (t1.s * w1 + t2.s * w2) / w := by ring
-      _ = (Evidence.toStrength (TV.toEvidence κ t1 + TV.toEvidence κ t2)).toReal := by
+      _ = (BinaryEvidence.toStrength (TV.toEvidence κ t1 + TV.toEvidence κ t2)).toReal := by
         simpa using rhs.symm
 
 
@@ -442,28 +442,28 @@ theorem truthRevision_eq_toTV_hplus
     (t1 t2 : TV)
     (hs1 : 0 ≤ t1.s) (hs1' : t1.s ≤ 1)
     (hs2 : 0 ≤ t2.s) (hs2' : t2.s ≤ 1) :
-    truthRevision t1 t2 = Evidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2) := by
+    truthRevision t1 t2 = BinaryEvidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2) := by
   -- Reduce to equality of the two fields.
   have hs :
-      (truthRevision t1 t2).s = (Evidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2)).s := by
-    simpa [Evidence.toTV] using
+      (truthRevision t1 t2).s = (BinaryEvidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2)).s := by
+    simpa [BinaryEvidence.toTV] using
       (truthRevision_strength_eq_toStrength (κ := κ) hκ0 hκT t1 t2 hs1 hs1' hs2 hs2')
   have hc :
-      (truthRevision t1 t2).c = (Evidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2)).c := by
+      (truthRevision t1 t2).c = (BinaryEvidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2)).c := by
     -- `truthRevision_conf_eq_toConfidence` is stated directly against `toConfidence`, which is
-    -- exactly the confidence coordinate of `Evidence.toTV`.
-    simpa [Evidence.toTV] using
+    -- exactly the confidence coordinate of `BinaryEvidence.toTV`.
+    simpa [BinaryEvidence.toTV] using
       (truthRevision_conf_eq_toConfidence (κ := κ) hκ0 hκT t1 t2 hs1 hs1' hs2 hs2')
   -- Rebuild the `TV` from its coordinates on both sides.
   calc
     truthRevision t1 t2 = TV.mk (truthRevision t1 t2).s (truthRevision t1 t2).c := by
       symm
       exact TV.eta (truthRevision t1 t2)
-    _ = TV.mk (Evidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2)).s
-          (Evidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2)).c := by
+    _ = TV.mk (BinaryEvidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2)).s
+          (BinaryEvidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2)).c := by
       simp [hs, hc]
-    _ = Evidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2) := by
-      exact TV.eta (Evidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2))
+    _ = BinaryEvidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2) := by
+      exact TV.eta (BinaryEvidence.toTV κ (TV.toEvidence κ t1 + TV.toEvidence κ t2))
 
 end Bridge
 
@@ -473,7 +473,7 @@ end Bridge
 The induction and abduction rules use the confidence formula:
   `conf_out = w2c(min(c2w(c1), c2w(c2)))`
 
-This section proves why this is semantically correct from the Evidence perspective.
+This section proves why this is semantically correct from the BinaryEvidence perspective.
 
 ### Key Insight
 
@@ -482,9 +482,9 @@ When combining two pieces of evidence via induction or abduction:
 2. "Weaker" means less total evidence, which corresponds to lower WEIGHT (not lower confidence)
 3. Taking min in weight-space correctly identifies the limiting factor
 
-### Weight as Evidence Measure
+### Weight as BinaryEvidence Measure
 
-For Evidence `e` with prior `κ`:
+For BinaryEvidence `e` with prior `κ`:
 - `total = e.pos + e.neg` is the total evidence count
 - `confidence = total / (total + κ)` maps evidence to [0,1)
 - `weight = confidence / (1 - confidence) = total / κ` is the evidence-to-prior ratio
@@ -576,11 +576,11 @@ theorem inductionAbduction_conf_le_min (c1 c2 : ℝ) (hc1 : 0 ≤ c1) (hc2 : 0 �
       _ = c2 := max_eq_right hc2
   exact min_le_min h1 h2
 
-/-! ### Semantic Justification: Evidence Interpretation
+/-! ### Semantic Justification: BinaryEvidence Interpretation
 
-The weight-space minimum has a clean semantic interpretation in terms of Evidence:
+The weight-space minimum has a clean semantic interpretation in terms of BinaryEvidence:
 
-Given Evidence `e` with prior `κ`:
+Given BinaryEvidence `e` with prior `κ`:
 - `weight(e) = e.total / κ`
 - `confidence(e) = e.total / (e.total + κ) = weight / (weight + 1)`
 
@@ -591,7 +591,7 @@ When combining evidence via induction/abduction:
 - This is captured by `min` in weight (evidence) space
 -/
 
-/-- For Evidence with prior `κ`, weight = total / κ when confidence < MAX_CONF.
+/-- For BinaryEvidence with prior `κ`, weight = total / κ when confidence < MAX_CONF.
 
     This theorem shows that the c2w transform on confidence recovers the
     evidence-to-prior ratio, provided the confidence is below the MAX_CONF cap.
@@ -600,12 +600,12 @@ When combining evidence via induction/abduction:
     `confidence = total / (total + κ) < MAX_CONF`
     which is equivalent to `total < MAX_CONF * κ / (1 - MAX_CONF)`.
 -/
-theorem weight_eq_total_div_prior (κ : ℝ≥0∞) (e : Evidence) (hκ0 : κ ≠ 0) (hκT : κ ≠ ⊤)
+theorem weight_eq_total_div_prior (κ : ℝ≥0∞) (e : BinaryEvidence) (hκ0 : κ ≠ 0) (hκT : κ ≠ ⊤)
     (_he0 : e.total ≠ 0) (heT : e.total ≠ ⊤)
     (hconf_lt_max : (e.total / (e.total + κ)).toReal < MAX_CONF) :
     ENNReal.toReal (e.total / κ) =
-      c2w (Evidence.toConfidence (κ := κ) e).toReal := by
-  unfold Evidence.toConfidence c2w capConf
+      c2w (BinaryEvidence.toConfidence (κ := κ) e).toReal := by
+  unfold BinaryEvidence.toConfidence c2w capConf
   -- First show confidence is in valid range
   have hκ_pos : 0 < κ := pos_iff_ne_zero.mpr hκ0
   have htotκ_ne_zero : e.total + κ ≠ 0 := ne_of_gt (lt_of_lt_of_le hκ_pos le_add_self)

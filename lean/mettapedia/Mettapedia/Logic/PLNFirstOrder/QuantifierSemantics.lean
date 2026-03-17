@@ -9,7 +9,7 @@ This file defines the **semantic evaluation** of PLN quantifiers via Goertzel's 
 
 **Quantifiers = Weakness of Diagonal Relation**
 
-For predicate P : U → Evidence:
+For predicate P : U → BinaryEvidence:
 - ForAll($X : P($X)) = weakness({(u,v) | P(u) ∧ P(v)})
 - ThereExists($X : P($X)) = dual of weakness (via De Morgan)
 
@@ -47,7 +47,7 @@ This computes the probability that a random pair (u,v), weighted by μ,
 both satisfies the predicate P. -/
 noncomputable def forAllEval
     (S : SatisfyingSet U)
-    (μ : WeightFunction U Evidence) : Evidence :=
+    (μ : WeightFunction U BinaryEvidence) : BinaryEvidence :=
   weakness μ (SatisfyingSet.diagonal S)
 
 /-! ## Typicality Quantifier Aliases -/
@@ -55,48 +55,48 @@ noncomputable def forAllEval
 /-- Alias emphasizing the **PLN/typicality** reading of the universal quantifier. -/
 noncomputable def forAllEvalTypical
     (S : SatisfyingSet U)
-    (μ : WeightFunction U Evidence) : Evidence :=
+    (μ : WeightFunction U BinaryEvidence) : BinaryEvidence :=
   forAllEval S μ
 
 /-! ## Existential Quantifier Evaluation -/
 
 /-- Negation on SatisfyingSet: pointwise Heyting complement -/
 noncomputable def SatisfyingSet.neg (S : SatisfyingSet U) : SatisfyingSet U :=
-  ⟨fun u => Evidence.compl (S.pred u)⟩
+  ⟨fun u => BinaryEvidence.compl (S.pred u)⟩
 
 /-- Evaluate ∃x : P(x) via De Morgan: ∃x : P(x) = ¬(∀x : ¬P(x))
 
-This uses the Heyting algebra structure of Evidence:
+This uses the Heyting algebra structure of BinaryEvidence:
 1. Negate the predicate pointwise: ¬P = λu. compl(P(u))
 2. Evaluate ∀x : ¬P(x) via weakness
 3. Take Heyting complement of the result
 
-Note: Evidence is a Heyting algebra, not Boolean. So ¬¬e ≠ e in general.
+Note: BinaryEvidence is a Heyting algebra, not Boolean. So ¬¬e ≠ e in general.
 This is correct for PLN's paraconsistent logic (p-bits). -/
 noncomputable def thereExistsEval
     (S : SatisfyingSet U)
-    (μ : WeightFunction U Evidence) : Evidence :=
-  Evidence.compl (forAllEval (SatisfyingSet.neg S) μ)
+    (μ : WeightFunction U BinaryEvidence) : BinaryEvidence :=
+  BinaryEvidence.compl (forAllEval (SatisfyingSet.neg S) μ)
 
 /-! ## Typicality Quantifier Aliases -/
 
 /-- Alias emphasizing the **PLN/typicality** reading of the existential quantifier. -/
 noncomputable def thereExistsEvalTypical
     (S : SatisfyingSet U)
-    (μ : WeightFunction U Evidence) : Evidence :=
+    (μ : WeightFunction U BinaryEvidence) : BinaryEvidence :=
   thereExistsEval S μ
 
 @[simp] theorem forAllEvalTypical_eq
-    (S : SatisfyingSet U) (μ : WeightFunction U Evidence) :
+    (S : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) :
     forAllEvalTypical S μ = forAllEval S μ := rfl
 
 @[simp] theorem thereExistsEvalTypical_eq
-    (S : SatisfyingSet U) (μ : WeightFunction U Evidence) :
+    (S : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) :
     thereExistsEvalTypical S μ = thereExistsEval S μ := rfl
 
 @[simp] theorem thereExistsEval_deMorgan
-    (S : SatisfyingSet U) (μ : WeightFunction U Evidence) :
-    thereExistsEval S μ = Evidence.compl (forAllEval (SatisfyingSet.neg S) μ) := rfl
+    (S : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) :
+    thereExistsEval S μ = BinaryEvidence.compl (forAllEval (SatisfyingSet.neg S) μ) := rfl
 
 /-! ## Extensional (Meet/Join) Quantifier Views -/
 
@@ -104,25 +104,25 @@ noncomputable def thereExistsEvalTypical
 
 This treats `S.pred u` as the truth value at each individual and aggregates
 by lattice meet, aligning with a classical “all individuals satisfy” reading
-inside the Evidence lattice. -/
+inside the BinaryEvidence lattice. -/
 noncomputable def forAllEvalExt
-    (S : SatisfyingSet U) : Evidence :=
+    (S : SatisfyingSet U) : BinaryEvidence :=
   sInf { e | ∃ u : U, e = S.pred u }
 
 /-- **Extensional ∃**: join (sup) of all pointwise evidences.
 
 This treats `S.pred u` as the truth value at each individual and aggregates
 by lattice join, aligning with a classical “some individual satisfies” reading
-inside the Evidence lattice. -/
+inside the BinaryEvidence lattice. -/
 noncomputable def thereExistsEvalExt
-    (S : SatisfyingSet U) : Evidence :=
+    (S : SatisfyingSet U) : BinaryEvidence :=
   sSup { e | ∃ u : U, e = S.pred u }
 
 theorem forAllEvalExt_le_thereExistsEvalExt
     [Nonempty U] (S : SatisfyingSet U) :
     forAllEvalExt S ≤ thereExistsEvalExt S := by
   let u0 : U := Classical.choice ‹Nonempty U›
-  let A : Set Evidence := { e | ∃ u : U, e = S.pred u }
+  let A : Set BinaryEvidence := { e | ∃ u : U, e = S.pred u }
   have hu0 : S.pred u0 ∈ A := by
     exact ⟨u0, rfl⟩
   have hInf : sInf A ≤ S.pred u0 := sInf_le hu0
@@ -133,7 +133,7 @@ theorem forAllEvalExt_eq_top_of_isEmpty
     [IsEmpty U] (S : SatisfyingSet U) :
     forAllEvalExt S = ⊤ := by
   unfold forAllEvalExt
-  have hset : ({ e : Evidence | ∃ u : U, e = S.pred u } : Set Evidence) = ∅ := by
+  have hset : ({ e : BinaryEvidence | ∃ u : U, e = S.pred u } : Set BinaryEvidence) = ∅ := by
     ext e
     constructor
     · intro h
@@ -147,7 +147,7 @@ theorem thereExistsEvalExt_eq_bot_of_isEmpty
     [IsEmpty U] (S : SatisfyingSet U) :
     thereExistsEvalExt S = ⊥ := by
   unfold thereExistsEvalExt
-  have hset : ({ e : Evidence | ∃ u : U, e = S.pred u } : Set Evidence) = ∅ := by
+  have hset : ({ e : BinaryEvidence | ∃ u : U, e = S.pred u } : Set BinaryEvidence) = ∅ := by
     ext e
     constructor
     · intro h
@@ -160,7 +160,7 @@ theorem thereExistsEvalExt_eq_bot_of_isEmpty
 /-! ## Basic Properties -/
 
 /-- ForAll evaluation for constantTrue predicate gives supremum of all pairs -/
-theorem forAllEval_constantTrue (μ : WeightFunction U Evidence) :
+theorem forAllEval_constantTrue (μ : WeightFunction U BinaryEvidence) :
     forAllEval SatisfyingSet.constantTrue μ =
     sSup { e | ∃ (u : U) (v : U), e = μ.μ u * μ.μ v } := by
   unfold forAllEval weakness
@@ -168,7 +168,7 @@ theorem forAllEval_constantTrue (μ : WeightFunction U Evidence) :
   simp [Set.setOf_exists]
 
 /-- ForAll evaluation for constantFalse predicate gives bottom -/
-theorem forAllEval_constantFalse (μ : WeightFunction U Evidence) :
+theorem forAllEval_constantFalse (μ : WeightFunction U BinaryEvidence) :
     forAllEval SatisfyingSet.constantFalse μ = ⊥ := by
   unfold forAllEval weakness
   rw [SatisfyingSet.diagonal_constantFalse]
@@ -177,9 +177,9 @@ theorem forAllEval_constantFalse (μ : WeightFunction U Evidence) :
 
 /-! ## Well-Definedness -/
 
-/-- ForAll evaluation is well-defined: the result is always in Evidence -/
-theorem forAllEval_wellDefined (S : SatisfyingSet U) (μ : WeightFunction U Evidence) :
-    ∃ e : Evidence, forAllEval S μ = e :=
+/-- ForAll evaluation is well-defined: the result is always in BinaryEvidence -/
+theorem forAllEval_wellDefined (S : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) :
+    ∃ e : BinaryEvidence, forAllEval S μ = e :=
   ⟨forAllEval S μ, rfl⟩
 
 end Mettapedia.Logic.PLNFirstOrder

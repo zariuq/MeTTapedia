@@ -108,7 +108,7 @@ the direct set/HOL bridge sends the HOL-native higher-order reflexivity theorem
 to singleton strength `1` on every pointed set structure. -/
 theorem hol_native_higherOrderRefl_singleton_fixture
     (S : SetPointed) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) holNativeHigherOrderRefl = 1 := by
   have hsatisfies : setHolSatisfies S holNativeHigherOrderRefl := by
     simpa [setHolSatisfies] using
@@ -125,7 +125,7 @@ the HOL-native eta-equality query for the identity endofunction is valid on
 every directly grounded pointed set structure. -/
 theorem hol_native_eta_id_singleton_fixture
     (S : SetPointed) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) holNativeEtaIdEq = 1 := by
   have hsatisfies : setHolSatisfies S holNativeEtaIdEq := by
     simpa [setHolSatisfies] using
@@ -142,7 +142,7 @@ quantified predicate self-implication is valid on every directly grounded
 pointed set structure. -/
 theorem hol_native_pred_self_imp_singleton_fixture
     (S : SetPointed) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) holNativePredSelfImp = 1 := by
   have hsatisfies : setHolSatisfies S holNativePredSelfImp := by
     simpa [setHolSatisfies] using
@@ -159,7 +159,7 @@ eta-equality for the predicate identity endofunction is valid on every directly
 grounded pointed set structure. -/
 theorem hol_native_pred_eta_id_singleton_fixture
     (S : SetPointed) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) holNativePredEtaIdEq = 1 := by
   have hsatisfies : setHolSatisfies S holNativePredEtaIdEq := by
     simpa [setHolSatisfies] using
@@ -286,9 +286,9 @@ the higher-order left-conjunct rule induces multiset WM consequence directly on
 set-pointed states. -/
 theorem hol_native_and_left_multiset_fixture
     (W : SetState) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (.and holNativeHigherOrderRefl (.top : SetHOLQuery)) ≤
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         holNativeHigherOrderRefl := by
   have himp :
       ∀ S : SetPointed,
@@ -324,9 +324,9 @@ the higher-order left-conjunct rule also induces multiset WM consequence for a
 predicate-quantified higher-order query. -/
 theorem hol_native_pred_and_left_multiset_fixture
     (W : SetState) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (.and holNativePredSelfImp (.top : SetHOLQuery)) ≤
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         holNativePredSelfImp := by
   have himp :
       ∀ S : SetPointed,
@@ -362,9 +362,9 @@ the higher-order left disjunction-introduction rule induces multiset WM
 consequence directly on set-pointed states. -/
 theorem hol_native_or_intro_left_multiset_fixture
     (W : SetState) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         holNativeHigherOrderRefl ≤
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (.or holNativeHigherOrderRefl (.top : SetHOLQuery)) := by
   have himp :
       ∀ S : SetPointed,
@@ -400,9 +400,9 @@ the direct set/HOL/WM route also transports disjunction introduction for a
 genuinely predicate-quantified higher-order query. -/
 theorem hol_native_pred_or_intro_left_multiset_fixture
     (W : SetState) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         holNativePredSelfImp ≤
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (.or holNativePredSelfImp (.top : SetHOLQuery)) := by
   have himp :
       ∀ S : SetPointed,
@@ -453,7 +453,7 @@ theorem bool_flat_not_every_endo_fixes_every_point :
 the concrete Bool countermodel yields singleton strength `0` for the failing
 HOL-native higher-order query. -/
 theorem bool_flat_every_endo_fixes_every_point_singleton_zero :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({boolFlatPointed} : SetState) holNativeEveryEndoFixesEveryPoint = 0 := by
   exact
     queryStrength_singleton_of_not_satisfies
@@ -476,7 +476,7 @@ theorem bool_flat_not_every_pred_holds_everywhere :
 the concrete Bool countermodel yields singleton strength `0` for the failing
 predicate-quantified HOL-native query. -/
 theorem bool_flat_every_pred_holds_everywhere_singleton_zero :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({boolFlatPointed} : SetState) holNativeEveryPredHoldsEverywhere = 0 := by
   exact
     queryStrength_singleton_of_not_satisfies

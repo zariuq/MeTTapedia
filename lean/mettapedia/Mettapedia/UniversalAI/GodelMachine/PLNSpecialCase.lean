@@ -20,7 +20,7 @@ Solomonoff Induction (universal prediction)
 
 For exchangeable binary sequences:
 1. The Solomonoff prior M collapses to depend only on counts (n⁺, n⁻)
-2. PLN Evidence (n⁺, n⁻) = Beta(α, β) posterior under conjugacy
+2. PLN BinaryEvidence (n⁺, n⁻) = Beta(α, β) posterior under conjugacy
 3. PLN strength n⁺/(n⁺+n⁻) = posterior mean (asymptotically)
 
 This means a Gödel Machine using PLN for exchangeable domains achieves:
@@ -49,7 +49,7 @@ open Mettapedia.Logic.SolomonoffExchangeable
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceBeta
 
-/-! ## Part 1: PLN Evidence as Sufficient Statistic
+/-! ## Part 1: PLN BinaryEvidence as Sufficient Statistic
 
 For exchangeable binary sequences, all relevant information is captured
 by the counts (n⁺, n⁻).

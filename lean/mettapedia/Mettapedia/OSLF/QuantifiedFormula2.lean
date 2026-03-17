@@ -15,7 +15,7 @@ the atom vocabulary. In v2:
 - **`QTerm`** represents term syntax with variables, constants, and application.
 - **`QAtom`** bundles a predicate name with term arguments: `loves(x, y)`.
 - **`QFormula2`** uses `qatom QAtom` instead of `base (atom name)`.
-- **`QEvidenceAtomSem`** takes `String → List Pattern → Pattern → Evidence`:
+- **`QEvidenceAtomSem`** takes `String → List Pattern → Pattern → BinaryEvidence`:
   predicate name, evaluated arguments, evaluation point.
 
 ## Design
@@ -119,18 +119,18 @@ end
 
 /-- Atom semantics that receives the predicate name, evaluated arguments,
     and the evaluation point (world/pattern). -/
-def QEvidenceAtomSem := String → List Pattern → Pattern → Evidence
+def QEvidenceAtomSem := String → List Pattern → Pattern → BinaryEvidence
 
 /-- Domain: set of patterns over which quantifiers range. -/
 abbrev Domain2 := Set Pattern
 
-/-! ## Evidence Semantics v2
+/-! ## BinaryEvidence Semantics v2
 
 The key difference from v1: atoms are evaluated by passing the **evaluated argument
 patterns** to the atom interpretation, rather than hacking the atom name via the
 environment. -/
 
-/-- Evidence semantics for quantified formulas v2.
+/-- BinaryEvidence semantics for quantified formulas v2.
 
     `qsemE2 R I Dom env φ p` evaluates formula `φ` at pattern `p`, with:
     - `R` : accessibility relation (for dia/box)
@@ -138,7 +138,7 @@ environment. -/
     - `Dom` : quantifier domain
     - `env` : current variable bindings -/
 noncomputable def qsemE2 (R : Pattern → Pattern → Prop) (I : QEvidenceAtomSem)
-    (Dom : Domain2) (env : VarEnv2) : QFormula2 → Pattern → Evidence
+    (Dom : Domain2) (env : VarEnv2) : QFormula2 → Pattern → BinaryEvidence
   | .top, _ => ⊤
   | .bot, _ => ⊥
   | .qatom a, p =>

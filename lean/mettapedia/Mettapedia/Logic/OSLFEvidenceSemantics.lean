@@ -7,25 +7,25 @@ import Mathlib.Order.ConditionallyCompleteLattice.Finset
 # EvidenceQuantale Adapter for OSLF Semantics
 
 This module is an **adapter layer**: it interprets OSLF formulas in the
-canonical evidence carrier `EvidenceQuantale.Evidence`.
+canonical evidence carrier `EvidenceQuantale.BinaryEvidence`.
 
 Ownership boundary:
 - Canonical evidence semantics lives in `Mettapedia.Logic.EvidenceQuantale`
 - This file only lifts that evidence algebra into OSLF formula interpretation
 
-Evidence-valued formula interpretation uses Evidence's Frame (complete Heyting
+BinaryEvidence-valued formula interpretation uses BinaryEvidence's Frame (complete Heyting
 algebra) structure:
 
-- Evidence is a `Frame` (hence `HeytingAlgebra`, `CompleteLattice`)
-- OSLF formulas map to Evidence values via lattice operations
+- BinaryEvidence is a `Frame` (hence `HeytingAlgebra`, `CompleteLattice`)
+- OSLF formulas map to BinaryEvidence values via lattice operations
 - Threshold-Prop semantics (`sem`) is a corollary, not the foundation
 - The threshold bridge is PARTIAL: it fails for disjunction/diamond because
-  `τ ≤ x ⊔ y ⇏ τ ≤ x ∨ τ ≤ y` in Evidence's non-total order
+  `τ ≤ x ⊔ y ⇏ τ ≤ x ∨ τ ≤ y` in BinaryEvidence's non-total order
   (this IS the Knuth-Skilling imprecision gate)
 
 ## Interpretation Table
 
-| Formula   | Evidence semantics          |
+| Formula   | BinaryEvidence semantics          |
 |-----------|-----------------------------|
 | ⊤         | ⊤ (top evidence)            |
 | ⊥         | ⊥ (zero evidence)           |
@@ -52,22 +52,22 @@ open Mettapedia.Logic.PLNWorldModel
 
 open scoped ENNReal
 
-/-! ## Evidence-Valued Atom Semantics -/
+/-! ## BinaryEvidence-Valued Atom Semantics -/
 
-/-- Evidence-valued atom interpretation: maps atom names and patterns to Evidence. -/
-abbrev EvidenceAtomSem := String → Pattern → Evidence
+/-- BinaryEvidence-valued atom interpretation: maps atom names and patterns to BinaryEvidence. -/
+abbrev EvidenceAtomSem := String → Pattern → BinaryEvidence
 
-/-! ## Evidence-Valued Formula Semantics -/
+/-! ## BinaryEvidence-Valued Formula Semantics -/
 
-/-- Evidence-valued denotational semantics of OSLF formulas.
+/-- BinaryEvidence-valued denotational semantics of OSLF formulas.
 
-Uses Evidence's Frame structure:
+Uses BinaryEvidence's Frame structure:
 - `⊓` for conjunction (coordinatewise min)
 - `⊔` for disjunction (coordinatewise max)
 - `⇨` for Heyting implication (residuation)
 - `⨆`/`⨅` for modalities over step-related states -/
 noncomputable def semE (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem) :
-    OSLFFormula → Pattern → Evidence
+    OSLFFormula → Pattern → BinaryEvidence
   | .top, _ => ⊤
   | .bot, _ => ⊥
   | .atom a, p => I a p
@@ -154,13 +154,13 @@ theorem semE_imp_mp (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem)
 
 section WMConnection
 
-variable {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
 
-/-- Evidence atom semantics from a world-model state: the atom at pattern p
+/-- BinaryEvidence atom semantics from a world-model state: the atom at pattern p
 is the evidence extracted by querying `queryOfAtom a p`. -/
 noncomputable def wmEvidenceAtomSem
     (W : State) (queryOfAtom : String → Pattern → Pattern) : EvidenceAtomSem :=
-  fun a p => WorldModel.evidence W (queryOfAtom a p)
+  fun a p => BinaryWorldModel.evidence W (queryOfAtom a p)
 
 /-- WM revision lifts to evidence atoms: revising world states then
 extracting atom evidence = extracting from each and combining. -/
@@ -171,7 +171,7 @@ theorem semE_wm_atom_revision
       semE R (wmEvidenceAtomSem W₁ queryOfAtom) (.atom a) p +
       semE R (wmEvidenceAtomSem W₂ queryOfAtom) (.atom a) p := by
   simp only [semE_atom, wmEvidenceAtomSem]
-  exact WorldModel.evidence_add W₁ W₂ (queryOfAtom a p)
+  exact BinaryWorldModel.evidence_add W₁ W₂ (queryOfAtom a p)
 
 end WMConnection
 
@@ -179,7 +179,7 @@ end WMConnection
 
 The threshold bridge `τ ≤ semE R I φ p → sem R (threshI τ) φ p` works for
 the conjunctive fragment (top, atom, and, box) but FAILS for the
-disjunctive fragment (or, dia) because Evidence's order is non-total:
+disjunctive fragment (or, dia) because BinaryEvidence's order is non-total:
 `τ ≤ x ⊔ y ⇏ τ ≤ x ∨ τ ≤ y`.
 
 This is the formal expression of the Knuth-Skilling imprecision gate:
@@ -187,18 +187,18 @@ precise (Boolean) semantics can only be recovered on fragments where
 the Heyting algebra happens to be Boolean. -/
 
 /-- Threshold atom semantics: atom holds when evidence exceeds threshold. -/
-noncomputable def threshAtomSem (I : EvidenceAtomSem) (τ : Evidence) :
+noncomputable def threshAtomSem (I : EvidenceAtomSem) (τ : BinaryEvidence) :
     AtomSem :=
   fun a p => τ ≤ I a p
 
 /-- Threshold bridge for atoms: direct by definition. -/
-theorem threshold_atom (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pattern → Prop)
+theorem threshold_atom (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
     (a : String) (p : Pattern) :
     τ ≤ semE R I (.atom a) p ↔ sem R (threshAtomSem I τ) (.atom a) p := by
   rfl
 
 /-- Threshold bridge for conjunction. -/
-theorem threshold_and (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pattern → Prop)
+theorem threshold_and (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
     (φ ψ : OSLFFormula) (p : Pattern)
     (hφ : τ ≤ semE R I φ p → sem R (threshAtomSem I τ) φ p)
     (hψ : τ ≤ semE R I ψ p → sem R (threshAtomSem I τ) ψ p) :
@@ -209,12 +209,12 @@ theorem threshold_and (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pat
 
 /-- Threshold bridge FAILS for disjunction in general.
 
-Counterexample: I "a" = (1,0), I "b" = (0,1) are incomparable in Evidence.
+Counterexample: I "a" = (1,0), I "b" = (0,1) are incomparable in BinaryEvidence.
 Their join (1,0) ⊔ (0,1) = (1,1), but τ = (1,1) exceeds neither component.
 This is the imprecision gate in action: non-total order prevents Boolean
 reduction of disjunction. -/
 theorem threshold_or_counterexample :
-    ¬ (∀ (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pattern → Prop)
+    ¬ (∀ (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
        (φ ψ : OSLFFormula) (p : Pattern),
        τ ≤ semE R I (.or φ ψ) p →
        sem R (threshAtomSem I τ) (.or φ ψ) p) := by
@@ -223,12 +223,12 @@ theorem threshold_or_counterexample :
   let p₀ : Pattern := .apply "x" []
   let I : EvidenceAtomSem := fun a _ =>
     if a == "a" then ⟨1, 0⟩ else ⟨0, 1⟩
-  let τ₀ : Evidence := ⟨1, 1⟩
+  let τ₀ : BinaryEvidence := ⟨1, 1⟩
   let R₀ : Pattern → Pattern → Prop := fun _ _ => False
   have hle : τ₀ ≤ semE R₀ I (.or (.atom "a") (.atom "b")) p₀ := by
     simp only [semE_or, semE_atom]
-    show (⟨1, 1⟩ : Evidence) ≤ (⟨1, 0⟩ : Evidence) ⊔ (⟨0, 1⟩ : Evidence)
-    exact ⟨(@le_sup_left Evidence _ ⟨1, 0⟩ ⟨0, 1⟩).1, (@le_sup_right Evidence _ ⟨1, 0⟩ ⟨0, 1⟩).2⟩
+    show (⟨1, 1⟩ : BinaryEvidence) ≤ (⟨1, 0⟩ : BinaryEvidence) ⊔ (⟨0, 1⟩ : BinaryEvidence)
+    exact ⟨(@le_sup_left BinaryEvidence _ ⟨1, 0⟩ ⟨0, 1⟩).1, (@le_sup_right BinaryEvidence _ ⟨1, 0⟩ ⟨0, 1⟩).2⟩
   have habs := h I τ₀ R₀ (.atom "a") (.atom "b") p₀ hle
   simp only [sem, threshAtomSem] at habs
   have hnle : ¬ ((1 : ℝ≥0∞) ≤ (0 : ℝ≥0∞)) := by norm_num
@@ -243,17 +243,17 @@ The threshold bridge `τ ≤ semE ... → sem ...` works precisely for the
 **disjunctive/existential fragment** {∨, ◇}.
 
 This is the formal expression of the Knuth-Skilling totality axiom:
-point-valued (Boolean) semantics requires total order; Evidence's
+point-valued (Boolean) semantics requires total order; BinaryEvidence's
 non-total order forces Heyting default on disjunctive connectives. -/
 
 /-- Threshold bridge for ⊤: always works (vacuously). -/
-theorem threshold_top (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pattern → Prop)
+theorem threshold_top (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
     (p : Pattern) :
     τ ≤ semE R I .top p → sem R (threshAtomSem I τ) .top p := by
   intro _; trivial
 
 /-- Threshold bridge for ⊥: works by absurdity (τ ≤ ⊥ is impossible for τ > 0). -/
-theorem threshold_bot (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pattern → Prop)
+theorem threshold_bot (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
     (p : Pattern) (hτ : ⊥ < τ) :
     τ ≤ semE R I .bot p → sem R (threshAtomSem I τ) .bot p := by
   intro h; exact absurd (lt_of_lt_of_le hτ h) (lt_irrefl _)
@@ -264,7 +264,7 @@ If `τ ≤ φ ⇨ ψ` and `τ ≤ φ` then `τ ≤ ψ`. The second hypothesis is
 the evidence level (not Prop level) because the reverse bridge
 `sem (threshAtomSem I τ) φ p → τ ≤ semE R I φ p` fails for the
 disjunctive fragment. -/
-theorem threshold_imp (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pattern → Prop)
+theorem threshold_imp (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
     (φ ψ : OSLFFormula) (p : Pattern)
     (hψ : τ ≤ semE R I ψ p → sem R (threshAtomSem I τ) ψ p) :
     τ ≤ semE R I (.imp φ ψ) p →
@@ -277,7 +277,7 @@ theorem threshold_imp (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pat
     _ ≤ semE R I ψ p := himp_inf_le
 
 /-- Threshold bridge for box (□): works because ⊓ distributes over threshold. -/
-theorem threshold_box (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pattern → Prop)
+theorem threshold_box (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
     (φ : OSLFFormula) (p : Pattern)
     (hφ : ∀ q, R q p → τ ≤ semE R I φ q → sem R (threshAtomSem I τ) φ q) :
     τ ≤ semE R I (.box φ) p → sem R (threshAtomSem I τ) (.box φ) p := by
@@ -288,10 +288,10 @@ theorem threshold_box (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pat
 /-- Threshold bridge FAILS for diamond (◇) in general.
 
 Same mechanism as `threshold_or_counterexample`: `τ ≤ ⨆ ... ⇏ ∃ ..., τ ≤ ...`
-because Evidence is non-total. Two successors q₁, q₂ with incomparable evidence
+because BinaryEvidence is non-total. Two successors q₁, q₂ with incomparable evidence
 (1,0) and (0,1) have supremum (1,1), but no single successor exceeds (1,1). -/
 theorem threshold_dia_fails :
-    ¬ (∀ (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pattern → Prop)
+    ¬ (∀ (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
        (φ : OSLFFormula) (p : Pattern),
        τ ≤ semE R I (.dia φ) p →
        sem R (threshAtomSem I τ) (.dia φ) p) := by
@@ -301,7 +301,7 @@ theorem threshold_dia_fails :
   let q₂ : Pattern := .apply "q2" []
   let I : EvidenceAtomSem := fun _ q =>
     if q == q₁ then ⟨1, 0⟩ else ⟨0, 1⟩
-  let τ₀ : Evidence := ⟨1, 1⟩
+  let τ₀ : BinaryEvidence := ⟨1, 1⟩
   let R₀ : Pattern → Pattern → Prop := fun p q => p = p₀ ∧ (q = q₁ ∨ q = q₂)
   -- τ₀ = (1,1) ≤ (1,0) ⊔ (0,1) ≤ ⨆ over {q₁, q₂} by le_iSup + sup_le
   have hle : τ₀ ≤ semE R₀ I (.dia (.atom "a")) p₀ := by
@@ -324,7 +324,7 @@ theorem threshold_dia_fails :
 
 Under total order (`∀ a b, a ≤ b ∨ b ≤ a`), the threshold bridge works for ALL
 connectives — disjunction and diamond included. This is the formal expression of
-the Knuth-Skilling totality axiom: adding totality to the Evidence algebra
+the Knuth-Skilling totality axiom: adding totality to the BinaryEvidence algebra
 recovers Boolean/classical semantics.
 
 The projection theorem says: classical truth-conditional semantics (Montague) is
@@ -342,8 +342,8 @@ theorem le_sup_of_total {H : Type*} [SemilatticeSup H]
 
 /-- Under totality, threshold bridge works for disjunction. -/
 theorem threshold_or_total
-    (hTotal : ∀ a b : Evidence, a ≤ b ∨ b ≤ a)
-    (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pattern → Prop)
+    (hTotal : ∀ a b : BinaryEvidence, a ≤ b ∨ b ≤ a)
+    (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
     (φ ψ : OSLFFormula) (p : Pattern)
     (hφ : τ ≤ semE R I φ p → sem R (threshAtomSem I τ) φ p)
     (hψ : τ ≤ semE R I ψ p → sem R (threshAtomSem I τ) ψ p) :
@@ -390,8 +390,8 @@ private theorem iSup_lt_of_forall_lt_total {H : Type*} {ι : Type*}
 Uses `iSup_lt_of_forall_lt_total`: in a total order over a finite set,
 if every element is strictly below τ, then iSup < τ. -/
 theorem threshold_dia_total
-    (hTotal : ∀ a b : Evidence, a ≤ b ∨ b ≤ a)
-    (I : EvidenceAtomSem) (τ : Evidence) (R : Pattern → Pattern → Prop)
+    (hTotal : ∀ a b : BinaryEvidence, a ≤ b ∨ b ≤ a)
+    (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
     (φ : OSLFFormula) (p : Pattern)
     (hφ : ∀ q, R p q → τ ≤ semE R I φ q → sem R (threshAtomSem I τ) φ q)
     (hSucc : Set.Finite {q | R p q})
@@ -419,18 +419,18 @@ theorem threshold_dia_total
 /-- Reverse threshold bridge: `sem (threshAtomSem I τ) φ p → τ ≤ semE R I φ p`.
 Works for the imp-free fragment without totality. The reverse direction for
 implication genuinely requires Booleanness (not just totality). -/
-theorem threshold_reverse_atom (I : EvidenceAtomSem) (τ : Evidence)
+theorem threshold_reverse_atom (I : EvidenceAtomSem) (τ : BinaryEvidence)
     (R : Pattern → Pattern → Prop) (a : String) (p : Pattern) :
     sem R (threshAtomSem I τ) (.atom a) p → τ ≤ semE R I (.atom a) p := id
 
-theorem threshold_reverse_and (I : EvidenceAtomSem) (τ : Evidence)
+theorem threshold_reverse_and (I : EvidenceAtomSem) (τ : BinaryEvidence)
     (R : Pattern → Pattern → Prop) (φ ψ : OSLFFormula) (p : Pattern)
     (hφ : sem R (threshAtomSem I τ) φ p → τ ≤ semE R I φ p)
     (hψ : sem R (threshAtomSem I τ) ψ p → τ ≤ semE R I ψ p) :
     sem R (threshAtomSem I τ) (.and φ ψ) p → τ ≤ semE R I (.and φ ψ) p := by
   intro ⟨h1, h2⟩; exact le_inf (hφ h1) (hψ h2)
 
-theorem threshold_reverse_or (I : EvidenceAtomSem) (τ : Evidence)
+theorem threshold_reverse_or (I : EvidenceAtomSem) (τ : BinaryEvidence)
     (R : Pattern → Pattern → Prop) (φ ψ : OSLFFormula) (p : Pattern)
     (hφ : sem R (threshAtomSem I τ) φ p → τ ≤ semE R I φ p)
     (hψ : sem R (threshAtomSem I τ) ψ p → τ ≤ semE R I ψ p) :
@@ -450,7 +450,7 @@ theorem threshold_reverse_or (I : EvidenceAtomSem) (τ : Evidence)
 
 2. **Nonempty successors** (`hNonempty : ∃ q, R p q`): At deadlock states,
    `semE(◇φ, p) = ⊥` but `sem(◇φ, p)` requires a witness.  The bridge fails
-   because the Prop-level diamond is existential while the Evidence-level
+   because the Prop-level diamond is existential while the BinaryEvidence-level
    diamond is a supremum (which can be ⊥ over the empty set).
 
 Together with `threshold_atom`, `threshold_and`, `threshold_or_total`, and
@@ -463,7 +463,7 @@ witness that doesn't exist. This shows `hNonempty` is necessary. -/
 theorem threshold_dia_fails_at_deadlock :
     ∃ (I : EvidenceAtomSem) (R : Pattern → Pattern → Prop) (φ : OSLFFormula)
       (p : Pattern),
-      (⊥ : Evidence) ≤ semE R I (.dia φ) p ∧
+      (⊥ : BinaryEvidence) ≤ semE R I (.dia φ) p ∧
       ¬ sem R (threshAtomSem I ⊥) (.dia φ) p := by
   refine ⟨fun _ _ => ⊥, fun _ _ => False, .atom "a", .fvar "dead", bot_le, ?_⟩
   intro ⟨_, hR, _⟩; exact hR
@@ -483,7 +483,7 @@ def impFree : OSLFFormula → Prop
 
 /-- Reverse threshold bridge for ◇: no totality or finite branching needed.
 The existential witness in `sem(◇φ)` provides the evidence bound. -/
-theorem threshold_reverse_dia (I : EvidenceAtomSem) (τ : Evidence)
+theorem threshold_reverse_dia (I : EvidenceAtomSem) (τ : BinaryEvidence)
     (R : Pattern → Pattern → Prop) (φ : OSLFFormula) (p : Pattern)
     (hφ : ∀ q, R p q → sem R (threshAtomSem I τ) φ q → τ ≤ semE R I φ q) :
     sem R (threshAtomSem I τ) (.dia φ) p → τ ≤ semE R I (.dia φ) p := by
@@ -498,7 +498,7 @@ For imp-free formulas, `sem R (threshAtomSem I τ) φ p → τ ≤ semE R I φ p
 holds unconditionally.  This is the converse of the forward bridge restricted
 to the imp-free fragment; the forward direction for ∨/◇ needs totality, but
 the reverse does not. -/
-theorem threshold_reverse_impFree (I : EvidenceAtomSem) (τ : Evidence)
+theorem threshold_reverse_impFree (I : EvidenceAtomSem) (τ : BinaryEvidence)
     (R : Pattern → Pattern → Prop) (φ : OSLFFormula) (hImpFree : impFree φ)
     (p : Pattern) :
     sem R (threshAtomSem I τ) φ p → τ ≤ semE R I φ p := by
@@ -521,7 +521,7 @@ theorem threshold_reverse_impFree (I : EvidenceAtomSem) (τ : Evidence)
     intro hbox; simp only [semE_box]
     exact le_iInf fun ⟨q, hRq⟩ => ih hImpFree q (hbox q hRq)
 
-/-! ## Temporal Evidence Semantics
+/-! ## Temporal BinaryEvidence Semantics
 
 Temporal operators following Geisweiller & Yusuf, "Probabilistic Logic Networks
 for Temporal and Procedural Reasoning" (LNCS 2023).  Temporal predicates are
@@ -572,19 +572,19 @@ def temporalAtomQuery (baseAtomQuery : String → Pattern → Pattern)
     (a : String) (p : Pattern) (t : Int) : Pattern :=
   baseAtomQuery a (temporalPattern p t)
 
-/-- Evidence-valued temporal atom semantics.  Evaluates an atom at a given
+/-- BinaryEvidence-valued temporal atom semantics.  Evaluates an atom at a given
     time by embedding the time index into the query pattern. -/
 noncomputable def temporalEvidenceAtomSem
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (W : State) (baseAtomQuery : String → Pattern → Pattern)
     (t : Int) : EvidenceAtomSem :=
-  fun a p => WorldModel.evidence W (temporalAtomQuery baseAtomQuery a p t)
+  fun a p => BinaryWorldModel.evidence W (temporalAtomQuery baseAtomQuery a p t)
 
 /-- Lag operator (Geisweiller & Yusuf §3.1):
     `Lag(I, T)` shifts atom evaluation backward by T time units.
     "Brings the past into the present." -/
 noncomputable def lagAtomSem
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (W : State) (baseAtomQuery : String → Pattern → Pattern)
     (baseTime : Int) (lag : Int) : EvidenceAtomSem :=
   temporalEvidenceAtomSem W baseAtomQuery (baseTime - lag)
@@ -593,14 +593,14 @@ noncomputable def lagAtomSem
     `Lead(I, T)` shifts atom evaluation forward by T time units.
     "Brings the future into the present." -/
 noncomputable def leadAtomSem
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (W : State) (baseAtomQuery : String → Pattern → Pattern)
     (baseTime : Int) (lead : Int) : EvidenceAtomSem :=
   temporalEvidenceAtomSem W baseAtomQuery (baseTime + lead)
 
 /-- Lead(Lag(P, T), T) ≡ P : shifting back then forward by T is identity. -/
 theorem lagLeadIdentity
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (W : State) (baseAtomQuery : String → Pattern → Pattern)
     (baseTime : Int) (T : Int) :
     lagAtomSem W baseAtomQuery (baseTime + T) T =
@@ -611,11 +611,11 @@ theorem lagLeadIdentity
     `SequentialAnd(T, φ, ψ)` = φ holds now AND ψ holds T time units later.
     Realized as conjunction with the second formula evaluated under Lead. -/
 noncomputable def sequentialAndSemE
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (R : Pattern → Pattern → Prop)
     (W : State) (baseAtomQuery : String → Pattern → Pattern)
     (baseTime : Int) (T : Int)
-    (φ ψ : OSLFFormula) (p : Pattern) : Evidence :=
+    (φ ψ : OSLFFormula) (p : Pattern) : BinaryEvidence :=
   semE R (temporalEvidenceAtomSem W baseAtomQuery baseTime) φ p ⊓
   semE R (temporalEvidenceAtomSem W baseAtomQuery (baseTime + T)) ψ p
 
@@ -623,18 +623,18 @@ noncomputable def sequentialAndSemE
     `P ⇝ᵀ Q` = if P holds now then Q holds T time units later.
     Realized as implication with consequent evaluated under Lead. -/
 noncomputable def predictiveImplicationSemE
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (R : Pattern → Pattern → Prop)
     (W : State) (baseAtomQuery : String → Pattern → Pattern)
     (baseTime : Int) (T : Int)
-    (φ ψ : OSLFFormula) (p : Pattern) : Evidence :=
+    (φ ψ : OSLFFormula) (p : Pattern) : BinaryEvidence :=
   semE R (temporalEvidenceAtomSem W baseAtomQuery baseTime) φ p ⇨
   semE R (temporalEvidenceAtomSem W baseAtomQuery (baseTime + T)) ψ p
 
 /-- SequentialAnd is bounded by each component:
     `SequentialAnd(T, φ, ψ) ≤ semE(φ)` at the base time. -/
 theorem sequentialAnd_le_left
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (R : Pattern → Pattern → Prop)
     (W : State) (baseAtomQuery : String → Pattern → Pattern)
     (baseTime : Int) (T : Int)
@@ -646,7 +646,7 @@ theorem sequentialAnd_le_left
 /-- PredictiveImplication + antecedent evidence gives consequent evidence
     (modus ponens at the evidence level, using Heyting residuation). -/
 theorem predictiveImplication_mp
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (R : Pattern → Pattern → Prop)
     (W : State) (baseAtomQuery : String → Pattern → Pattern)
     (baseTime : Int) (T : Int)
@@ -662,16 +662,16 @@ theorem predictiveImplication_mp
     at the shifted time — shifting merely changes WHICH time we look at,
     not the evidence structure. -/
 theorem temporal_shift_atom
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (R : Pattern → Pattern → Prop)
     (W : State) (baseAtomQuery : String → Pattern → Pattern)
     (t : Int) (a : String) (p : Pattern) :
     semE R (temporalEvidenceAtomSem W baseAtomQuery t) (.atom a) p =
-    WorldModel.evidence W (temporalAtomQuery baseAtomQuery a p t) := rfl
+    BinaryWorldModel.evidence W (temporalAtomQuery baseAtomQuery a p t) := rfl
 
 end TemporalSemantics
 
-/-! ## Presupposition as Evidence Gating
+/-! ## Presupposition as BinaryEvidence Gating
 
 Presuppositions are backgrounded content that must be satisfied for an assertion
 to be felicitous (Strawson 1950, Heim 1983).  In evidence semantics, this is
@@ -694,7 +694,7 @@ The tensor product is the right choice (vs. conjunction ⊓) because:
   "The king of France is NOT bald" still presupposes France has a king.
 
 - **Conditional filtering**: In "If P then Q", presuppositions of Q are
-  filtered by P.  Evidence version: presup(Q) is gated by presup(P→Q).
+  filtered by P.  BinaryEvidence version: presup(Q) is gated by presup(P→Q).
 
 ### References
 
@@ -714,17 +714,17 @@ section Presupposition
     - assert: is_bald — the referent is bald
     - gated evidence: E_presup ⊗ E_assert -/
 noncomputable def presupGatedSemE (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem)
-    (presup assert : OSLFFormula) (p : Pattern) : Evidence :=
+    (presup assert : OSLFFormula) (p : Pattern) : BinaryEvidence :=
   semE R I presup p * semE R I assert p
 
 /-- When presupposition is fully satisfied (evidence = one), gating is transparent:
     `one ⊗ E_assert = E_assert`. -/
 theorem presupGated_one_presup (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem)
     (presup assert : OSLFFormula) (p : Pattern)
-    (h : semE R I presup p = Evidence.one) :
+    (h : semE R I presup p = BinaryEvidence.one) :
     presupGatedSemE R I presup assert p = semE R I assert p := by
   unfold presupGatedSemE
-  rw [h, Evidence.one_tensor]
+  rw [h, BinaryEvidence.one_tensor]
 
 /-- When presupposition fails completely (evidence = ⊥), the gated evidence
     collapses to ⊥.  This captures presupposition failure. -/
@@ -742,10 +742,10 @@ theorem presupGated_bot_presup (R : Pattern → Pattern → Prop) (I : EvidenceA
 theorem presupGated_le_assert_of_presup_le_one
     (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem)
     (presup assert : OSLFFormula) (p : Pattern)
-    (hp : semE R I presup p ≤ Evidence.one) :
+    (hp : semE R I presup p ≤ BinaryEvidence.one) :
     presupGatedSemE R I presup assert p ≤ semE R I assert p := by
   unfold presupGatedSemE
-  simp only [Evidence.le_def, Evidence.tensor_def, Evidence.one] at hp ⊢
+  simp only [BinaryEvidence.le_def, BinaryEvidence.tensor_def, BinaryEvidence.one] at hp ⊢
   exact ⟨mul_le_of_le_one_left (zero_le _) hp.1, mul_le_of_le_one_left (zero_le _) hp.2⟩
 
 /-- **Negation projection law**: Negation preserves presupposition.
@@ -772,7 +772,7 @@ theorem negation_preserves_presup (R : Pattern → Pattern → Prop) (I : Eviden
     P → Q is satisfied (≥ τ), then P → presupGated(presup_Q, Q) is also
     supported at level τ ⊗ τ. -/
 theorem conditional_filters_presup (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem)
-    (antecedent presup_q assertion_q : OSLFFormula) (p : Pattern) (τ : Evidence)
+    (antecedent presup_q assertion_q : OSLFFormula) (p : Pattern) (τ : BinaryEvidence)
     (h_presup : τ ≤ semE R I (.imp antecedent presup_q) p)
     (h_assert : τ ≤ semE R I (.imp antecedent assertion_q) p) :
     τ * τ ≤ semE R I (.imp antecedent presup_q) p *

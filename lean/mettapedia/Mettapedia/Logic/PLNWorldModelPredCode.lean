@@ -40,10 +40,10 @@ abbrev PredCodeState (U : Type*) := Multiset (PointedPredCode U)
 
 instance {U : Type*} : EvidenceType (PredCodeState U) where
 
-/-- Evidence extracted from a multiset of pointed predicate-code states:
+/-- BinaryEvidence extracted from a multiset of pointed predicate-code states:
 `pos` counts points satisfying `q`, `neg` counts points refuting `q`. -/
 noncomputable def predCodeEvidence {U : Type*}
-    (W : PredCodeState U) (q : PredCodeQuery U) : Evidence := by
+    (W : PredCodeState U) (q : PredCodeQuery U) : BinaryEvidence := by
   classical
   exact
     ⟨(Multiset.countP (fun pw => pw.satisfies q) W : ℝ≥0∞),
@@ -62,12 +62,12 @@ theorem predCodeEvidence_add {U : Type*}
     (W₁ W₂ : PredCodeState U) (q : PredCodeQuery U) :
     predCodeEvidence (W₁ + W₂) q = predCodeEvidence W₁ q + predCodeEvidence W₂ q := by
   classical
-  apply Evidence.ext'
-  · simp [predCodeEvidence, Multiset.countP_add, Evidence.hplus_def]
-  · simp [predCodeEvidence, Multiset.countP_add, Evidence.hplus_def]
+  apply BinaryEvidence.ext'
+  · simp [predCodeEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
+  · simp [predCodeEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
 
-/-- Concrete `WorldModel` instance induced by multiset predicate-code evidence counting. -/
-noncomputable instance {U : Type*} : WorldModel (PredCodeState U) (PredCodeQuery U) where
+/-- Concrete `BinaryWorldModel` instance induced by multiset predicate-code evidence counting. -/
+noncomputable instance {U : Type*} : BinaryWorldModel (PredCodeState U) (PredCodeQuery U) where
   evidence := predCodeEvidence
   evidence_add := predCodeEvidence_add
 
@@ -86,25 +86,25 @@ theorem predCodeEvidence_singleton_of_not_satisfies {U : Type*}
 /-- Singleton WM states recover crisp 0/1 query strength from predicate-code truth. -/
 theorem queryStrength_singleton_of_satisfies {U : Type*}
     (pw : PointedPredCode U) (q : PredCodeQuery U) (h : pw.satisfies q) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
         ({pw} : PredCodeState U) q = 1 := by
-  change Evidence.toStrength (predCodeEvidence ({pw} : PredCodeState U) q) = 1
+  change BinaryEvidence.toStrength (predCodeEvidence ({pw} : PredCodeState U) q) = 1
   rw [predCodeEvidence_singleton_of_satisfies pw q h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 theorem queryStrength_singleton_of_not_satisfies {U : Type*}
     (pw : PointedPredCode U) (q : PredCodeQuery U) (h : ¬ pw.satisfies q) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
         ({pw} : PredCodeState U) q = 0 := by
-  change Evidence.toStrength (predCodeEvidence ({pw} : PredCodeState U) q) = 0
+  change BinaryEvidence.toStrength (predCodeEvidence ({pw} : PredCodeState U) q) = 0
   rw [predCodeEvidence_singleton_of_not_satisfies pw q h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 /-- Singleton adequacy: predicate-code truth iff WM query strength is `1`. -/
 theorem singleton_adequacy_strength_one {U : Type*}
     (pw : PointedPredCode U) (q : PredCodeQuery U) :
     pw.satisfies q ↔
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
         ({pw} : PredCodeState U) q = 1 := by
   constructor
   · intro h
@@ -113,13 +113,13 @@ theorem singleton_adequacy_strength_one {U : Type*}
     by_cases hs : pw.satisfies q
     · exact hs
     · have h0 :
-          WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
+          BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
               ({pw} : PredCodeState U) q = 0 :=
         queryStrength_singleton_of_not_satisfies pw q hs
       have h01 : (0 : ℝ≥0∞) = 1 := by
         calc
           (0 : ℝ≥0∞) =
-              WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
+              BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
                 ({pw} : PredCodeState U) q := h0.symm
           _ = 1 := h
       exact False.elim (zero_ne_one h01)
@@ -129,10 +129,10 @@ an instance of the generic crisp-specialization theorem family. -/
 theorem singleton_adequacy_strength_one_is_crispSpecialization {U : Type*}
     (pw : PointedPredCode U) (q : PredCodeQuery U) :
     pw.satisfies q ↔
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
         ({pw} : PredCodeState U) q = 1 := by
   simpa [Mettapedia.Logic.PLNWorldModelCrispSpecialization.crispQueryStrength,
-    WorldModel.queryStrength, predCodeEvidence_eq_crispEvidence]
+    BinaryWorldModel.queryStrength, predCodeEvidence_eq_crispEvidence]
     using
       (Mettapedia.Logic.PLNWorldModelCrispSpecialization.singleton_adequacy_strength_one
         (satisfies := PointedPredCode.satisfies) pw q)
@@ -142,9 +142,9 @@ theorem singleton_adequacy_strength_one_is_crispSpecialization {U : Type*}
 /-- Singleton-strength consequence schema for predicate-code WM states. -/
 def singletonStrengthLE {U : Type*} (q₁ q₂ : PredCodeQuery U) : Prop :=
   ∀ pw : PointedPredCode U,
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
         ({pw} : PredCodeState U) q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
         ({pw} : PredCodeState U) q₂
 
 /-- Pointwise semantic implication is equivalent to singleton-strength consequence. -/
@@ -164,11 +164,11 @@ theorem pointwiseImplies_iff_singletonStrengthLE {U : Type*}
     by_contra hq₂
     have hsingleton := hle pw
     have h1 :
-        WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
+        BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
             ({pw} : PredCodeState U) q₁ = 1 :=
       queryStrength_singleton_of_satisfies pw q₁ hq₁
     have h0 :
-        WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
+        BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U)
             ({pw} : PredCodeState U) q₂ = 0 :=
       queryStrength_singleton_of_not_satisfies pw q₂ hq₂
     have h10 : (1 : ℝ≥0∞) ≤ 0 := by
@@ -211,32 +211,32 @@ private theorem predCodeEvidence_total {U : Type*}
         (Multiset.countP (fun pw : PointedPredCode U => pw.satisfies q) W : ℝ≥0∞) +
           (Multiset.countP (fun pw : PointedPredCode U => ¬ pw.satisfies q) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold predCodeEvidence Evidence.total
+  unfold predCodeEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 /-- Pointwise semantic implication lifts to WM strength inequality on multiset states. -/
 theorem queryStrength_le_of_pointwise {U : Type*}
     (W : PredCodeState U) (q₁ q₂ : PredCodeQuery U)
     (himp : ∀ pw : PointedPredCode U, pw.satisfies q₁ → pw.satisfies q₂) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ := by
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ := by
   let p₁ : PointedPredCode U → Prop := fun pw => pw.satisfies q₁
   let p₂ : PointedPredCode U → Prop := fun pw => pw.satisfies q₂
   letI : DecidablePred p₁ := Classical.decPred p₁
   letI : DecidablePred p₂ := Classical.decPred p₂
   have hq₁ :
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ =
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₁ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (predCodeEvidence W q₁).total = 0 then 0
       else (predCodeEvidence W q₁).pos / (predCodeEvidence W q₁).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₁ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
     rw [predCodeEvidence_total (W := W) (q := q₁)]
     simp [predCodeEvidence, p₁]
   have hq₂ :
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ =
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₂ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (predCodeEvidence W q₂).total = 0 then 0
       else (predCodeEvidence W q₂).pos / (predCodeEvidence W q₂).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₂ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
@@ -262,8 +262,8 @@ theorem queryStrength_le_of_pointwise {U : Type*}
 theorem multiset_strength_le_of_singletonStrengthLE {U : Type*}
     (W : PredCodeState U) (q₁ q₂ : PredCodeQuery U)
     (hsing : singletonStrengthLE q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ := by
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ := by
   have himp : ∀ pw : PointedPredCode U, pw.satisfies q₁ → pw.satisfies q₂ :=
     (pointwiseImplies_iff_singletonStrengthLE q₁ q₂).mpr hsing
   exact queryStrength_le_of_pointwise (W := W) (q₁ := q₁) (q₂ := q₂) himp

@@ -44,44 +44,44 @@ theorem agentSurface_aggregate_eq_card_unitPositiveEvidence
   induction σ using Multiset.induction_on with
   | empty =>
       rw [aggregate_zero]
-      apply Evidence.ext'
-      · change Evidence.pos Evidence.zero = ((0 : ℕ) : ℝ≥0∞)
-        simp [Evidence.zero]
-      · change Evidence.neg Evidence.zero = (0 : ℝ≥0∞)
-        simp [Evidence.zero]
+      apply BinaryEvidence.ext'
+      · change BinaryEvidence.pos BinaryEvidence.zero = ((0 : ℕ) : ℝ≥0∞)
+        simp [BinaryEvidence.zero]
+      · change BinaryEvidence.neg BinaryEvidence.zero = (0 : ℝ≥0∞)
+        simp [BinaryEvidence.zero]
   | @cons o σ ih =>
       rw [aggregate_cons]
       rw [ih]
-      apply Evidence.ext'
+      apply BinaryEvidence.ext'
       · simp [agentSurface, SufficientStatisticSurface.ofObservationMap,
-          unitPositiveEvidence, Evidence.hplus_def, add_comm]
+          unitPositiveEvidence, BinaryEvidence.hplus_def, add_comm]
       · simp [agentSurface, SufficientStatisticSurface.ofObservationMap,
-          unitPositiveEvidence, Evidence.hplus_def]
+          unitPositiveEvidence, BinaryEvidence.hplus_def]
 
 theorem agentWorldModel_queryStrength_eq_zero_of_empty
     (q : AgentQuery) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Multiset AgentObservation) (Query := AgentQuery)
         (0 : Multiset AgentObservation) q = 0 := by
-  unfold WorldModel.queryStrength
+  unfold BinaryWorldModel.queryStrength
   rw [agentWorldModel_evidence_eq_aggregate]
   rw [agentSurface_aggregate_eq_card_unitPositiveEvidence]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 theorem agentWorldModel_queryStrength_eq_one_of_nonempty
     {σ : Multiset AgentObservation}
     (hσ : σ ≠ 0) (q : AgentQuery) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Multiset AgentObservation) (Query := AgentQuery)
         σ q = 1 := by
-  unfold WorldModel.queryStrength
+  unfold BinaryWorldModel.queryStrength
   rw [agentWorldModel_evidence_eq_aggregate]
   rw [agentSurface_aggregate_eq_card_unitPositiveEvidence]
   have hcard : (σ.card : ℝ≥0∞) ≠ 0 := by
     have hcardNat : σ.card ≠ 0 := by
       simpa [Multiset.card_eq_zero] using hσ
     exact_mod_cast hcardNat
-  simp [Evidence.toStrength, Evidence.total, hcard]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total, hcard]
   exact ENNReal.div_self hcard (ENNReal.natCast_ne_top _)
 
 theorem agent_thresholdValid_univ_one_of_nonempty

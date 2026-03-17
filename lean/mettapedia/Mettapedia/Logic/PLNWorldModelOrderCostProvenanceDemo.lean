@@ -118,15 +118,15 @@ theorem provenanceSwapAnomalyCount_eq_zero_of_query_eq
     provenanceSwapAnomalyCount (σ := σ) (n := n) I₁ I₂ q = 0 := by
   unfold provenanceSwapAnomalyCount
   have hcount :
-      GenericWorldModel.queryObservationCount
+      AdditiveWorldModel.queryObservationCount
         (State := KRelation σ (Which (Fin n)))
         (Query := GroundAtom σ) (Ev := Which (Fin n))
         (provenanceRightBiasMerge (σ := σ) (n := n) I₁ I₂) q =
-      GenericWorldModel.queryObservationCount
+      AdditiveWorldModel.queryObservationCount
         (State := KRelation σ (Which (Fin n)))
         (Query := GroundAtom σ) (Ev := Which (Fin n))
         (provenanceRightBiasMerge (σ := σ) (n := n) I₂ I₁) q := by
-    simpa [GenericWorldModel.queryObservationCount, provenanceRightBiasMerge] using
+    simpa [AdditiveWorldModel.queryObservationCount, provenanceRightBiasMerge] using
       congrArg ConjugateEvidence.observationCount hq.symm
   exact swapAnomalyCount_zero_of_count_eq
     (State := KRelation σ (Which (Fin n)))
@@ -140,10 +140,10 @@ theorem provenanceSwapAnomalyCount_eq_top_of_zero_then_nonzero
     (h₁ : I₁ q = 0) (h₂ : I₂ q ≠ 0) :
     provenanceSwapAnomalyCount (σ := σ) (n := n) I₁ I₂ q = ⊤ := by
   have hcount₁ :
-      GenericWorldModel.queryObservationCount
+      AdditiveWorldModel.queryObservationCount
         (State := KRelation σ (Which (Fin n)))
         (Query := GroundAtom σ) (Ev := Which (Fin n)) I₁ q = 0 := by
-    simpa [GenericWorldModel.queryObservationCount] using
+    simpa [AdditiveWorldModel.queryObservationCount] using
       congrArg ConjugateEvidence.observationCount h₁
   cases hI₂ : I₂ q with
   | wbot =>
@@ -154,21 +154,21 @@ theorem provenanceSwapAnomalyCount_eq_top_of_zero_then_nonzero
       exact h₂ hzero
   | wset s =>
       have hcount₂ :
-          GenericWorldModel.queryObservationCount
+          AdditiveWorldModel.queryObservationCount
             (State := KRelation σ (Which (Fin n)))
             (Query := GroundAtom σ) (Ev := Which (Fin n)) I₂ q = ⊤ := by
-        unfold GenericWorldModel.queryObservationCount
+        unfold AdditiveWorldModel.queryObservationCount
         change ConjugateEvidence.observationCount (I₂ q) = ⊤
         rw [hI₂]
         rfl
       have hmerge₁₂ :
-          GenericWorldModel.queryObservationCount
+          AdditiveWorldModel.queryObservationCount
             (State := KRelation σ (Which (Fin n)))
             (Query := GroundAtom σ) (Ev := Which (Fin n))
             ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge I₁ I₂) q = ⊤ := by
         simpa [provenanceRightBiasOverlapLayer, provenanceRightBiasMerge] using hcount₂
       have hmerge₂₁ :
-          GenericWorldModel.queryObservationCount
+          AdditiveWorldModel.queryObservationCount
             (State := KRelation σ (Which (Fin n)))
             (Query := GroundAtom σ) (Ev := Which (Fin n))
             ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge I₂ I₁) q = 0 := by
@@ -184,10 +184,10 @@ theorem provenanceScheduleErrorCount_twoStep_eq_top_of_zero_then_nonzero
     (h₁ : I₁ q = 0) (h₂ : I₂ q ≠ 0) :
     provenanceScheduleErrorCount (σ := σ) (n := n) base [I₁, I₂] [I₂, I₁] q = ⊤ := by
   have hcount₁ :
-      GenericWorldModel.queryObservationCount
+      AdditiveWorldModel.queryObservationCount
         (State := KRelation σ (Which (Fin n)))
         (Query := GroundAtom σ) (Ev := Which (Fin n)) I₁ q = 0 := by
-    simpa [GenericWorldModel.queryObservationCount] using
+    simpa [AdditiveWorldModel.queryObservationCount] using
       congrArg ConjugateEvidence.observationCount h₁
   cases hI₂ : I₂ q with
   | wbot =>
@@ -198,22 +198,22 @@ theorem provenanceScheduleErrorCount_twoStep_eq_top_of_zero_then_nonzero
       exact h₂ hzero
   | wset s =>
       have hcount₂ :
-          GenericWorldModel.queryObservationCount
+          AdditiveWorldModel.queryObservationCount
             (State := KRelation σ (Which (Fin n)))
             (Query := GroundAtom σ) (Ev := Which (Fin n)) I₂ q = ⊤ := by
-        unfold GenericWorldModel.queryObservationCount
+        unfold AdditiveWorldModel.queryObservationCount
         change ConjugateEvidence.observationCount (I₂ q) = ⊤
         rw [hI₂]
         rfl
       have hstep₁₂ :
-          GenericWorldModel.queryObservationCount
+          AdditiveWorldModel.queryObservationCount
             (State := KRelation σ (Which (Fin n)))
             (Query := GroundAtom σ) (Ev := Which (Fin n))
             ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge
               ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge base I₁) I₂) q = ⊤ := by
         simpa [provenanceRightBiasOverlapLayer, provenanceRightBiasMerge] using hcount₂
       have hstep₂₁ :
-          GenericWorldModel.queryObservationCount
+          AdditiveWorldModel.queryObservationCount
             (State := KRelation σ (Which (Fin n)))
             (Query := GroundAtom σ) (Ev := Which (Fin n))
             ((provenanceRightBiasOverlapLayer (σ := σ) (n := n)).merge

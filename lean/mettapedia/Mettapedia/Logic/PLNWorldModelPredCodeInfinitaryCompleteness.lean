@@ -36,8 +36,8 @@ theorem pointwiseImplies_iff_singletonStrengthLE {U : Type*}
 theorem multiset_strength_le_of_pointwise {U : Type*}
     (W : PredCodeInfState U) (q₁ q₂ : PredCodeInfQuery U)
     (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₂ := by
+    BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₂ := by
   exact
     Mettapedia.Logic.PLNWorldModelPredCodeInfinitary.queryStrength_le_of_pointwise
       (W := W) (q₁ := q₁) (q₂ := q₂) himp
@@ -45,8 +45,8 @@ theorem multiset_strength_le_of_pointwise {U : Type*}
 theorem multiset_strength_le_of_singletonStrengthLE {U : Type*}
     (W : PredCodeInfState U) (q₁ q₂ : PredCodeInfQuery U)
     (hsing : singletonStrengthLE q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₂ := by
+    BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₂ := by
   have himp : pointwiseImplies q₁ q₂ :=
     (pointwiseImplies_iff_singletonStrengthLE (q₁ := q₁) (q₂ := q₂)).2 hsing
   exact multiset_strength_le_of_pointwise (W := W) (q₁ := q₁) (q₂ := q₂) himp

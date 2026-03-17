@@ -105,7 +105,7 @@ theorem closedPure_overlap_via_abc
 not by direct source-rule firing on `R_exec₀`. -/
 theorem closedPure_overlap_via_abc_to_wm
     {State Query : Type*}
-    [EvidenceType State] [WorldModel State Query]
+    [EvidenceType State] [BinaryWorldModel State Query]
     (I : PureJudgmentWMInterface State Query)
     {W : State} (hW : I.side W)
     {t u : PureTm 0} (h : PureOpStep t u) :

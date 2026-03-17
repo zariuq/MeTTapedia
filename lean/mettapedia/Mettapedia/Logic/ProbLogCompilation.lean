@@ -285,7 +285,7 @@ theorem compilation_or_toReal {σ : LPSignature} {n : ℕ}
 /-! ## §7 WM-PLN Strictly Extends the Compiled Fragment
 
 ProbLog's `queryProb` is a pure function of fixed weights. WM-PLN adds:
-- **Evidence revision** via `Evidence.hplus` (aggregate new observations)
+- **BinaryEvidence revision** via `BinaryEvidence.hplus` (aggregate new observations)
 - **Heterogeneous combination** (frequentist + expert + analogical)
 - **Higher-order evidence** (evidence about evidence)
 

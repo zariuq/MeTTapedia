@@ -4,11 +4,11 @@ import Mettapedia.Logic.EvidenceQuantale
 /-!
 # Fusion of Premise Selectors via PLN Revision
 
-This file defines a generic Evidence-valued premise selector and a fusion
+This file defines a generic BinaryEvidence-valued premise selector and a fusion
 operator that combines two selectors by PLN revision (hplus).
 
 It also records the exact strength formula (weighted average) for the fusion,
-reusing `Evidence.toStrength_hplus`.
+reusing `BinaryEvidence.toStrength_hplus`.
 -/
 
 namespace Mettapedia.Logic.PremiseSelection
@@ -16,9 +16,9 @@ namespace Mettapedia.Logic.PremiseSelection
 open scoped Classical ENNReal BigOperators
 open Mettapedia.Logic.EvidenceQuantale
 
-/-- Evidence-valued scoring for a goal/fact pair. -/
+/-- BinaryEvidence-valued scoring for a goal/fact pair. -/
 structure Scorer (Goal Fact : Type*) where
-  score : Goal -> Fact -> Evidence
+  score : Goal -> Fact -> BinaryEvidence
 
 /-- Fuse two scorers by PLN revision (hplus). -/
 noncomputable def fuse {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) : Scorer Goal Fact :=
@@ -29,15 +29,15 @@ noncomputable def fuse {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) : Scor
 
 @[simp] lemma fuse_pos {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) (g : Goal) (f : Fact) :
     ((fuse s₁ s₂).score g f).pos = (s₁.score g f).pos + (s₂.score g f).pos := by
-  simp [fuse, Evidence.hplus_def]
+  simp [fuse, BinaryEvidence.hplus_def]
 
 @[simp] lemma fuse_neg {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) (g : Goal) (f : Fact) :
     ((fuse s₁ s₂).score g f).neg = (s₁.score g f).neg + (s₂.score g f).neg := by
-  simp [fuse, Evidence.hplus_def]
+  simp [fuse, BinaryEvidence.hplus_def]
 
-@[simp] lemma evidence_total_add (x y : Evidence) :
+@[simp] lemma evidence_total_add (x y : BinaryEvidence) :
     (x + y).total = x.total + y.total := by
-  simp [Evidence.total, Evidence.hplus_def, add_left_comm, add_comm]
+  simp [BinaryEvidence.total, BinaryEvidence.hplus_def, add_left_comm, add_comm]
 
 @[simp] lemma fuse_total {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) (g : Goal) (f : Fact) :
     ((fuse s₁ s₂).score g f).total = (s₁.score g f).total + (s₂.score g f).total := by
@@ -51,11 +51,11 @@ theorem fuse_toStrength
     (h₁₂ : ((s₁.score g f + s₂.score g f).total) ≠ 0)
     (h₁_top : (s₁.score g f).total ≠ ⊤)
     (h₂_top : (s₂.score g f).total ≠ ⊤) :
-    Evidence.toStrength ((fuse s₁ s₂).score g f) =
-      ((s₁.score g f).total / (s₁.score g f + s₂.score g f).total) * Evidence.toStrength (s₁.score g f)
-      + ((s₂.score g f).total / (s₁.score g f + s₂.score g f).total) * Evidence.toStrength (s₂.score g f) := by
+    BinaryEvidence.toStrength ((fuse s₁ s₂).score g f) =
+      ((s₁.score g f).total / (s₁.score g f + s₂.score g f).total) * BinaryEvidence.toStrength (s₁.score g f)
+      + ((s₂.score g f).total / (s₁.score g f + s₂.score g f).total) * BinaryEvidence.toStrength (s₂.score g f) := by
   simpa [fuse] using
-    (Evidence.toStrength_hplus (s₁.score g f) (s₂.score g f) h₁ h₂ h₁₂ h₁_top h₂_top)
+    (BinaryEvidence.toStrength_hplus (s₁.score g f) (s₂.score g f) h₁ h₂ h₁₂ h₁_top h₂_top)
 
 /-! ### Core/bridge alias names (non-breaking) -/
 
@@ -67,9 +67,9 @@ theorem PLN_revisionStrength_eq_linearPool
     (h₁₂ : ((s₁.score g f + s₂.score g f).total) ≠ 0)
     (h₁_top : (s₁.score g f).total ≠ ⊤)
     (h₂_top : (s₂.score g f).total ≠ ⊤) :
-    Evidence.toStrength ((fuse s₁ s₂).score g f) =
-      ((s₁.score g f).total / (s₁.score g f + s₂.score g f).total) * Evidence.toStrength (s₁.score g f)
-      + ((s₂.score g f).total / (s₁.score g f + s₂.score g f).total) * Evidence.toStrength (s₂.score g f) := by
+    BinaryEvidence.toStrength ((fuse s₁ s₂).score g f) =
+      ((s₁.score g f).total / (s₁.score g f + s₂.score g f).total) * BinaryEvidence.toStrength (s₁.score g f)
+      + ((s₂.score g f).total / (s₁.score g f + s₂.score g f).total) * BinaryEvidence.toStrength (s₂.score g f) := by
   exact fuse_toStrength s₁ s₂ g f h₁ h₂ h₁₂ h₁_top h₂_top
 
 /-! ## Constant-weight specialization -/
@@ -81,9 +81,9 @@ theorem fuse_toStrength_const_weights
     (h₂ : ∀ f, (s₂.score g f).total = t₂)
     (h₁_ne : t₁ ≠ 0) (h₂_ne : t₂ ≠ 0) (h₁₂_ne : t₁ + t₂ ≠ 0)
     (h₁_top : t₁ ≠ ⊤) (h₂_top : t₂ ≠ ⊤) :
-    Evidence.toStrength ((fuse s₁ s₂).score g f) =
-      (t₁ / (t₁ + t₂)) * Evidence.toStrength (s₁.score g f) +
-      (t₂ / (t₁ + t₂)) * Evidence.toStrength (s₂.score g f) := by
+    BinaryEvidence.toStrength ((fuse s₁ s₂).score g f) =
+      (t₁ / (t₁ + t₂)) * BinaryEvidence.toStrength (s₁.score g f) +
+      (t₂ / (t₁ + t₂)) * BinaryEvidence.toStrength (s₂.score g f) := by
   have hx : (s₁.score g f).total ≠ 0 := by simpa [h₁ f] using h₁_ne
   have hy : (s₂.score g f).total ≠ 0 := by simpa [h₂ f] using h₂_ne
   have hsum : (s₁.score g f + s₂.score g f).total = t₁ + t₂ := by
@@ -106,9 +106,9 @@ theorem fuse_toStrength_proportional_weights
     (ha : a ≠ 0) (hb : b ≠ 0)
     (ht : ∀ f, t f ≠ 0)
     (ha_top : a ≠ ⊤) (hb_top : b ≠ ⊤) (ht_top : ∀ f, t f ≠ ⊤) :
-    Evidence.toStrength ((fuse s₁ s₂).score g f) =
-      (a / (a + b)) * Evidence.toStrength (s₁.score g f) +
-      (b / (a + b)) * Evidence.toStrength (s₂.score g f) := by
+    BinaryEvidence.toStrength ((fuse s₁ s₂).score g f) =
+      (a / (a + b)) * BinaryEvidence.toStrength (s₁.score g f) +
+      (b / (a + b)) * BinaryEvidence.toStrength (s₂.score g f) := by
   have hx : (s₁.score g f).total ≠ 0 := by
     have : a * t f ≠ 0 := by
       exact mul_ne_zero ha (ht f)
@@ -159,51 +159,51 @@ noncomputable def knnScorer {Fact : Type*} [DecidableEq Fact]
     (deps : DepSet Fact) (tau2 : ℝ≥0∞) : Scorer Fact Fact :=
   ⟨fun _ phi => plnKnnEvidence goal N near deps tau2 phi⟩
 
-/-- Generic NB-style scorer: user supplies a precomputed Evidence score. -/
-def nbScorer {Goal Fact : Type*} (score : Goal -> Fact -> Evidence) : Scorer Goal Fact :=
+/-- Generic NB-style scorer: user supplies a precomputed BinaryEvidence score. -/
+def nbScorer {Goal Fact : Type*} (score : Goal -> Fact -> BinaryEvidence) : Scorer Goal Fact :=
   ⟨score⟩
 
 /-! ## Normalization wrapper -/
 
 /-- Normalize evidence to a fixed total `t` while preserving strength. -/
-noncomputable def normalizeEvidence (t : ℝ≥0∞) (e : Evidence) : Evidence :=
-  let s := Evidence.toStrength e
+noncomputable def normalizeEvidence (t : ℝ≥0∞) (e : BinaryEvidence) : BinaryEvidence :=
+  let s := BinaryEvidence.toStrength e
   ⟨t * s, t * (1 - s)⟩
 
-lemma normalizeEvidence_total (t : ℝ≥0∞) (e : Evidence) :
+lemma normalizeEvidence_total (t : ℝ≥0∞) (e : BinaryEvidence) :
     (normalizeEvidence t e).total = t := by
   classical
-  have hs : Evidence.toStrength e ≤ 1 := Evidence.toStrength_le_one e
-  unfold normalizeEvidence Evidence.total
+  have hs : BinaryEvidence.toStrength e ≤ 1 := BinaryEvidence.toStrength_le_one e
+  unfold normalizeEvidence BinaryEvidence.total
   -- total = t * s + t * (1 - s) = t * (s + (1 - s)) = t
-  have hsum : Evidence.toStrength e + (1 - Evidence.toStrength e) = 1 := by
+  have hsum : BinaryEvidence.toStrength e + (1 - BinaryEvidence.toStrength e) = 1 := by
     simpa using (add_tsub_cancel_of_le hs)
   calc
-    t * Evidence.toStrength e + t * (1 - Evidence.toStrength e)
-        = t * (Evidence.toStrength e + (1 - Evidence.toStrength e)) := by
+    t * BinaryEvidence.toStrength e + t * (1 - BinaryEvidence.toStrength e)
+        = t * (BinaryEvidence.toStrength e + (1 - BinaryEvidence.toStrength e)) := by
             simp [mul_add]
     _ = t * 1 := by simp [hsum]
     _ = t := by simp
 
-lemma normalizeEvidence_toStrength (t : ℝ≥0∞) (e : Evidence)
+lemma normalizeEvidence_toStrength (t : ℝ≥0∞) (e : BinaryEvidence)
     (ht : t ≠ 0) (htop : t ≠ ⊤) :
-    Evidence.toStrength (normalizeEvidence t e) = Evidence.toStrength e := by
+    BinaryEvidence.toStrength (normalizeEvidence t e) = BinaryEvidence.toStrength e := by
   classical
-  set s : ℝ≥0∞ := Evidence.toStrength e
+  set s : ℝ≥0∞ := BinaryEvidence.toStrength e
   have hpos : (normalizeEvidence t e).pos = t * s := by
     simp [normalizeEvidence, s]
   have htot : (normalizeEvidence t e).total = t := normalizeEvidence_total t e
   have htot_ne : (normalizeEvidence t e).total ≠ 0 := by
     simpa [htot] using ht
   calc
-    Evidence.toStrength (normalizeEvidence t e)
+    BinaryEvidence.toStrength (normalizeEvidence t e)
         = (normalizeEvidence t e).pos / (normalizeEvidence t e).total := by
-            simp [Evidence.toStrength, htot_ne]
+            simp [BinaryEvidence.toStrength, htot_ne]
     _ = (t * s) / t := by
             simp [hpos, htot]
     _ = s := by
             simpa [mul_comm] using (ENNReal.mul_div_cancel_right (a := s) (b := t) ht htop)
-    _ = Evidence.toStrength e := by rfl
+    _ = BinaryEvidence.toStrength e := by rfl
 
 /-- Normalize a scorer so that every evidence total is fixed to `t`. -/
 noncomputable def normalizeScorer {Goal Fact : Type*}
@@ -217,18 +217,18 @@ lemma normalizeScorer_total {Goal Fact : Type*} (t : ℝ≥0∞) (s : Scorer Goa
 
 lemma normalizeScorer_toStrength {Goal Fact : Type*} (t : ℝ≥0∞) (s : Scorer Goal Fact)
     (g : Goal) (f : Fact) (ht : t ≠ 0) (htop : t ≠ ⊤) :
-    Evidence.toStrength ((normalizeScorer t s).score g f) =
-      Evidence.toStrength (s.score g f) := by
+    BinaryEvidence.toStrength ((normalizeScorer t s).score g f) =
+      BinaryEvidence.toStrength (s.score g f) := by
   simpa [normalizeScorer] using normalizeEvidence_toStrength t (s.score g f) ht htop
 
 theorem fuse_toStrength_normalized_const
     {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) (g : Goal) (f : Fact)
     (t : ℝ≥0∞) (ht : t ≠ 0) (htop : t ≠ ⊤) :
-    Evidence.toStrength
+    BinaryEvidence.toStrength
         ((fuse (normalizeScorer t s₁) (normalizeScorer t s₂)).score g f)
       =
-      (t / (t + t)) * Evidence.toStrength ((normalizeScorer t s₁).score g f)
-      + (t / (t + t)) * Evidence.toStrength ((normalizeScorer t s₂).score g f) := by
+      (t / (t + t)) * BinaryEvidence.toStrength ((normalizeScorer t s₁).score g f)
+      + (t / (t + t)) * BinaryEvidence.toStrength ((normalizeScorer t s₂).score g f) := by
   -- totals are constant t after normalization
   have h₁ : ∀ f, ((normalizeScorer t s₁).score g f).total = t := by
     intro f; simpa using normalizeScorer_total t s₁ g f
@@ -251,13 +251,13 @@ theorem fuse_toStrength_normalized_const
 theorem fuse_toStrength_normalized_const_toReal
     {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) (g : Goal) (f : Fact)
     (t : ℝ≥0∞) (ht : t ≠ 0) (htop : t ≠ ⊤) :
-    (Evidence.toStrength
+    (BinaryEvidence.toStrength
         ((fuse (normalizeScorer t s₁) (normalizeScorer t s₂)).score g f)).toReal
       =
       (t / (t + t)).toReal *
-          (Evidence.toStrength ((normalizeScorer t s₁).score g f)).toReal
+          (BinaryEvidence.toStrength ((normalizeScorer t s₁).score g f)).toReal
       + (t / (t + t)).toReal *
-          (Evidence.toStrength ((normalizeScorer t s₂).score g f)).toReal := by
+          (BinaryEvidence.toStrength ((normalizeScorer t s₂).score g f)).toReal := by
   have hbase :=
     fuse_toStrength_normalized_const (s₁ := s₁) (s₂ := s₂)
       (g := g) (f := f) t ht htop
@@ -268,20 +268,20 @@ theorem fuse_toStrength_normalized_const_toReal
     exact ht ht0
   have hw_ne_top : t / (t + t) ≠ ⊤ := ENNReal.div_ne_top htop hden
   have h₁_ne_top :
-      Evidence.toStrength ((normalizeScorer t s₁).score g f) ≠ ⊤ := by
-    have hle : Evidence.toStrength ((normalizeScorer t s₁).score g f) ≤ 1 :=
-      Evidence.toStrength_le_one _
+      BinaryEvidence.toStrength ((normalizeScorer t s₁).score g f) ≠ ⊤ := by
+    have hle : BinaryEvidence.toStrength ((normalizeScorer t s₁).score g f) ≤ 1 :=
+      BinaryEvidence.toStrength_le_one _
     exact ne_of_lt (lt_of_le_of_lt hle (by simp))
   have h₂_ne_top :
-      Evidence.toStrength ((normalizeScorer t s₂).score g f) ≠ ⊤ := by
-    have hle : Evidence.toStrength ((normalizeScorer t s₂).score g f) ≤ 1 :=
-      Evidence.toStrength_le_one _
+      BinaryEvidence.toStrength ((normalizeScorer t s₂).score g f) ≠ ⊤ := by
+    have hle : BinaryEvidence.toStrength ((normalizeScorer t s₂).score g f) ≤ 1 :=
+      BinaryEvidence.toStrength_le_one _
     exact ne_of_lt (lt_of_le_of_lt hle (by simp))
   have hleft_ne_top :
-      (t / (t + t)) * Evidence.toStrength ((normalizeScorer t s₁).score g f) ≠ ⊤ :=
+      (t / (t + t)) * BinaryEvidence.toStrength ((normalizeScorer t s₁).score g f) ≠ ⊤ :=
     ENNReal.mul_ne_top hw_ne_top h₁_ne_top
   have hright_ne_top :
-      (t / (t + t)) * Evidence.toStrength ((normalizeScorer t s₂).score g f) ≠ ⊤ :=
+      (t / (t + t)) * BinaryEvidence.toStrength ((normalizeScorer t s₂).score g f) ≠ ⊤ :=
     ENNReal.mul_ne_top hw_ne_top h₂_ne_top
   have hbase' := congrArg ENNReal.toReal hbase
   -- rewrite the sum/mul on ENNReal into ℝ
@@ -289,13 +289,13 @@ theorem fuse_toStrength_normalized_const_toReal
 
 theorem fuse_toStrength_normalized_const_toReal_one
     {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) (g : Goal) (f : Fact) :
-    (Evidence.toStrength
+    (BinaryEvidence.toStrength
         ((fuse (normalizeScorer 1 s₁) (normalizeScorer 1 s₂)).score g f)).toReal
       =
       ((1:ℝ≥0∞) / (1 + 1)).toReal *
-          (Evidence.toStrength ((normalizeScorer 1 s₁).score g f)).toReal
+          (BinaryEvidence.toStrength ((normalizeScorer 1 s₁).score g f)).toReal
       + ((1:ℝ≥0∞) / (1 + 1)).toReal *
-          (Evidence.toStrength ((normalizeScorer 1 s₂).score g f)).toReal := by
+          (BinaryEvidence.toStrength ((normalizeScorer 1 s₂).score g f)).toReal := by
   have ht : (1:ℝ≥0∞) ≠ 0 := by simp
   have htop : (1:ℝ≥0∞) ≠ ⊤ := by simp
   simpa using
@@ -309,11 +309,11 @@ theorem fuse_toStrength_normalized_totals
     (t₁ t₂ : ℝ≥0∞)
     (h₁_ne : t₁ ≠ 0) (h₂_ne : t₂ ≠ 0) (h₁₂_ne : t₁ + t₂ ≠ 0)
     (h₁_top : t₁ ≠ ⊤) (h₂_top : t₂ ≠ ⊤) :
-    Evidence.toStrength
+    BinaryEvidence.toStrength
         ((fuse (normalizeScorer t₁ s₁) (normalizeScorer t₂ s₂)).score g f)
       =
-      (t₁ / (t₁ + t₂)) * Evidence.toStrength ((normalizeScorer t₁ s₁).score g f)
-      + (t₂ / (t₁ + t₂)) * Evidence.toStrength ((normalizeScorer t₂ s₂).score g f) := by
+      (t₁ / (t₁ + t₂)) * BinaryEvidence.toStrength ((normalizeScorer t₁ s₁).score g f)
+      + (t₂ / (t₁ + t₂)) * BinaryEvidence.toStrength ((normalizeScorer t₂ s₂).score g f) := by
   have h₁ : ∀ f, ((normalizeScorer t₁ s₁).score g f).total = t₁ := by
     intro f
     simpa using normalizeScorer_total t₁ s₁ g f
@@ -332,13 +332,13 @@ theorem fuse_toStrength_normalized_totals_toReal
     (t₁ t₂ : ℝ≥0∞)
     (h₁_ne : t₁ ≠ 0) (h₂_ne : t₂ ≠ 0) (h₁₂_ne : t₁ + t₂ ≠ 0)
     (h₁_top : t₁ ≠ ⊤) (h₂_top : t₂ ≠ ⊤) :
-    (Evidence.toStrength
+    (BinaryEvidence.toStrength
         ((fuse (normalizeScorer t₁ s₁) (normalizeScorer t₂ s₂)).score g f)).toReal
       =
       (t₁ / (t₁ + t₂)).toReal *
-          (Evidence.toStrength ((normalizeScorer t₁ s₁).score g f)).toReal
+          (BinaryEvidence.toStrength ((normalizeScorer t₁ s₁).score g f)).toReal
       + (t₂ / (t₁ + t₂)).toReal *
-          (Evidence.toStrength ((normalizeScorer t₂ s₂).score g f)).toReal := by
+          (BinaryEvidence.toStrength ((normalizeScorer t₂ s₂).score g f)).toReal := by
   have hbase :=
     fuse_toStrength_normalized_totals
       (s₁ := s₁) (s₂ := s₂) (g := g) (f := f)
@@ -346,20 +346,20 @@ theorem fuse_toStrength_normalized_totals_toReal
   have hw₁_ne_top : t₁ / (t₁ + t₂) ≠ ⊤ := ENNReal.div_ne_top h₁_top h₁₂_ne
   have hw₂_ne_top : t₂ / (t₁ + t₂) ≠ ⊤ := ENNReal.div_ne_top h₂_top h₁₂_ne
   have hs₁_ne_top :
-      Evidence.toStrength ((normalizeScorer t₁ s₁).score g f) ≠ ⊤ := by
-    have hle : Evidence.toStrength ((normalizeScorer t₁ s₁).score g f) ≤ 1 :=
-      Evidence.toStrength_le_one _
+      BinaryEvidence.toStrength ((normalizeScorer t₁ s₁).score g f) ≠ ⊤ := by
+    have hle : BinaryEvidence.toStrength ((normalizeScorer t₁ s₁).score g f) ≤ 1 :=
+      BinaryEvidence.toStrength_le_one _
     exact ne_of_lt (lt_of_le_of_lt hle (by simp))
   have hs₂_ne_top :
-      Evidence.toStrength ((normalizeScorer t₂ s₂).score g f) ≠ ⊤ := by
-    have hle : Evidence.toStrength ((normalizeScorer t₂ s₂).score g f) ≤ 1 :=
-      Evidence.toStrength_le_one _
+      BinaryEvidence.toStrength ((normalizeScorer t₂ s₂).score g f) ≠ ⊤ := by
+    have hle : BinaryEvidence.toStrength ((normalizeScorer t₂ s₂).score g f) ≤ 1 :=
+      BinaryEvidence.toStrength_le_one _
     exact ne_of_lt (lt_of_le_of_lt hle (by simp))
   have hleft_ne_top :
-      (t₁ / (t₁ + t₂)) * Evidence.toStrength ((normalizeScorer t₁ s₁).score g f) ≠ ⊤ :=
+      (t₁ / (t₁ + t₂)) * BinaryEvidence.toStrength ((normalizeScorer t₁ s₁).score g f) ≠ ⊤ :=
     ENNReal.mul_ne_top hw₁_ne_top hs₁_ne_top
   have hright_ne_top :
-      (t₂ / (t₁ + t₂)) * Evidence.toStrength ((normalizeScorer t₂ s₂).score g f) ≠ ⊤ :=
+      (t₂ / (t₁ + t₂)) * BinaryEvidence.toStrength ((normalizeScorer t₂ s₂).score g f) ≠ ⊤ :=
     ENNReal.mul_ne_top hw₂_ne_top hs₂_ne_top
   have hbase' := congrArg ENNReal.toReal hbase
   simpa [ENNReal.toReal_add hleft_ne_top hright_ne_top, ENNReal.toReal_mul] using hbase'
@@ -388,11 +388,11 @@ noncomputable def fuseFamily {Goal Fact ι : Type*} [Fintype ι]
 @[simp] lemma fuseFamily_total {Goal Fact ι : Type*} [Fintype ι]
     (s : ι → Scorer Goal Fact) (g : Goal) (f : Fact) :
     ((fuseFamily s).score g f).total = ∑ i, ((s i).score g f).total := by
-  simp [Evidence.total, fuseFamily, Finset.sum_add_distrib]
+  simp [BinaryEvidence.total, fuseFamily, Finset.sum_add_distrib]
 
 @[simp] lemma normalizeScorer_pos {Goal Fact : Type*}
     (t : ℝ≥0∞) (s : Scorer Goal Fact) (g : Goal) (f : Fact) :
-    ((normalizeScorer t s).score g f).pos = t * Evidence.toStrength (s.score g f) := by
+    ((normalizeScorer t s).score g f).pos = t * BinaryEvidence.toStrength (s.score g f) := by
   simp [normalizeScorer, normalizeEvidence]
 
 /-- Finite `N`-expert normalized pooling law:
@@ -401,14 +401,14 @@ theorem fuseFamily_toStrength_normalized_totals
     {Goal Fact ι : Type*} [Fintype ι]
     (s : ι → Scorer Goal Fact) (t : ι → ℝ≥0∞) (g : Goal) (f : Fact)
     (htsum : (∑ i, t i) ≠ 0) :
-    Evidence.toStrength
+    BinaryEvidence.toStrength
       ((fuseFamily (fun i => normalizeScorer (t i) (s i))).score g f)
       =
-    (∑ i, t i * Evidence.toStrength ((s i).score g f)) / (∑ i, t i) := by
+    (∑ i, t i * BinaryEvidence.toStrength ((s i).score g f)) / (∑ i, t i) := by
   let sn : ι → Scorer Goal Fact := fun i => normalizeScorer (t i) (s i)
   have hpos :
       ((fuseFamily sn).score g f).pos
-        = ∑ i, t i * Evidence.toStrength ((s i).score g f) := by
+        = ∑ i, t i * BinaryEvidence.toStrength ((s i).score g f) := by
     simp [sn, fuseFamily, normalizeScorer, normalizeEvidence]
   have htot :
       ((fuseFamily sn).score g f).total = ∑ i, t i := by
@@ -427,14 +427,14 @@ theorem fuseFamily_toStrength_normalized_totals
     rw [← htot]
     exact h0
   have houter :
-      Evidence.toStrength ((fuseFamily sn).score g f)
+      BinaryEvidence.toStrength ((fuseFamily sn).score g f)
         = ((fuseFamily sn).score g f).pos / ((fuseFamily sn).score g f).total := by
-    unfold Evidence.toStrength
+    unfold BinaryEvidence.toStrength
     exact if_neg htot_ne
   calc
-    Evidence.toStrength ((fuseFamily sn).score g f)
+    BinaryEvidence.toStrength ((fuseFamily sn).score g f)
         = ((fuseFamily sn).score g f).pos / ((fuseFamily sn).score g f).total := houter
-    _ = (∑ i, t i * Evidence.toStrength ((s i).score g f)) / (∑ i, t i) := by
+    _ = (∑ i, t i * BinaryEvidence.toStrength ((s i).score g f)) / (∑ i, t i) := by
           rw [hpos, htot]
 
 end Mettapedia.Logic.PremiseSelection

@@ -68,9 +68,9 @@ abbrev PredCodeInfState (U : Type*) := Multiset (PointedPredCode U)
 
 instance {U : Type*} : EvidenceType (PredCodeInfState U) where
 
-/-- Evidence extraction for infinitary predicate-code queries by support/refutation counts. -/
+/-- BinaryEvidence extraction for infinitary predicate-code queries by support/refutation counts. -/
 noncomputable def predCodeInfEvidence {U : Type*}
-    (W : PredCodeInfState U) (q : PredCodeInfQuery U) : Evidence := by
+    (W : PredCodeInfState U) (q : PredCodeInfQuery U) : BinaryEvidence := by
   classical
   exact
     ⟨(Multiset.countP (fun pw => SatisfiesInf pw q) W : ℝ≥0∞),
@@ -80,11 +80,11 @@ theorem predCodeInfEvidence_add {U : Type*}
     (W₁ W₂ : PredCodeInfState U) (q : PredCodeInfQuery U) :
     predCodeInfEvidence (W₁ + W₂) q = predCodeInfEvidence W₁ q + predCodeInfEvidence W₂ q := by
   classical
-  apply Evidence.ext'
-  · simp [predCodeInfEvidence, Multiset.countP_add, Evidence.hplus_def]
-  · simp [predCodeInfEvidence, Multiset.countP_add, Evidence.hplus_def]
+  apply BinaryEvidence.ext'
+  · simp [predCodeInfEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
+  · simp [predCodeInfEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
 
-noncomputable instance {U : Type*} : WorldModel (PredCodeInfState U) (PredCodeInfQuery U) where
+noncomputable instance {U : Type*} : BinaryWorldModel (PredCodeInfState U) (PredCodeInfQuery U) where
   evidence := predCodeInfEvidence
   evidence_add := predCodeInfEvidence_add
 
@@ -102,24 +102,24 @@ theorem predCodeInfEvidence_singleton_of_not_satisfies {U : Type*}
 
 theorem queryStrength_singleton_of_satisfies {U : Type*}
     (pw : PointedPredCode U) (q : PredCodeInfQuery U) (h : SatisfiesInf pw q) :
-    WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
+    BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
         ({pw} : PredCodeInfState U) q = 1 := by
-  change Evidence.toStrength (predCodeInfEvidence ({pw} : PredCodeInfState U) q) = 1
+  change BinaryEvidence.toStrength (predCodeInfEvidence ({pw} : PredCodeInfState U) q) = 1
   rw [predCodeInfEvidence_singleton_of_satisfies pw q h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 theorem queryStrength_singleton_of_not_satisfies {U : Type*}
     (pw : PointedPredCode U) (q : PredCodeInfQuery U) (h : ¬ SatisfiesInf pw q) :
-    WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
+    BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
         ({pw} : PredCodeInfState U) q = 0 := by
-  change Evidence.toStrength (predCodeInfEvidence ({pw} : PredCodeInfState U) q) = 0
+  change BinaryEvidence.toStrength (predCodeInfEvidence ({pw} : PredCodeInfState U) q) = 0
   rw [predCodeInfEvidence_singleton_of_not_satisfies pw q h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 theorem singleton_adequacy_strength_one {U : Type*}
     (pw : PointedPredCode U) (q : PredCodeInfQuery U) :
     SatisfiesInf pw q ↔
-      WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
+      BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
         ({pw} : PredCodeInfState U) q = 1 := by
   constructor
   · intro h
@@ -128,13 +128,13 @@ theorem singleton_adequacy_strength_one {U : Type*}
     by_cases hs : SatisfiesInf pw q
     · exact hs
     · have h0 :
-          WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
+          BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
               ({pw} : PredCodeInfState U) q = 0 :=
         queryStrength_singleton_of_not_satisfies pw q hs
       have h01 : (0 : ℝ≥0∞) = 1 := by
         calc
           (0 : ℝ≥0∞) =
-              WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
+              BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
                 ({pw} : PredCodeInfState U) q := h0.symm
           _ = 1 := h
       exact False.elim (zero_ne_one h01)
@@ -144,9 +144,9 @@ def pointwiseImplies {U : Type*} (q₁ q₂ : PredCodeInfQuery U) : Prop :=
 
 def singletonStrengthLE {U : Type*} (q₁ q₂ : PredCodeInfQuery U) : Prop :=
   ∀ pw : PointedPredCode U,
-    WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
+    BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
         ({pw} : PredCodeInfState U) q₁ ≤
-      WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
+      BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
         ({pw} : PredCodeInfState U) q₂
 
 theorem pointwiseImplies_iff_singletonStrengthLE {U : Type*}
@@ -164,11 +164,11 @@ theorem pointwiseImplies_iff_singletonStrengthLE {U : Type*}
     by_contra hq₂
     have hsingleton := hle pw
     have h1 :
-        WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
+        BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
             ({pw} : PredCodeInfState U) q₁ = 1 :=
       queryStrength_singleton_of_satisfies pw q₁ hq₁
     have h0 :
-        WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
+        BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U)
             ({pw} : PredCodeInfState U) q₂ = 0 :=
       queryStrength_singleton_of_not_satisfies pw q₂ hq₂
     have h10 : (1 : ℝ≥0∞) ≤ 0 := by
@@ -212,31 +212,31 @@ private theorem predCodeInfEvidence_total {U : Type*}
         (Multiset.countP (fun pw : PointedPredCode U => SatisfiesInf pw q) W : ℝ≥0∞) +
           (Multiset.countP (fun pw : PointedPredCode U => ¬ SatisfiesInf pw q) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold predCodeInfEvidence Evidence.total
+  unfold predCodeInfEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 theorem queryStrength_le_of_pointwise {U : Type*}
     (W : PredCodeInfState U) (q₁ q₂ : PredCodeInfQuery U)
     (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₂ := by
+    BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₂ := by
   let p₁ : PointedPredCode U → Prop := fun pw => SatisfiesInf pw q₁
   let p₂ : PointedPredCode U → Prop := fun pw => SatisfiesInf pw q₂
   letI : DecidablePred p₁ := Classical.decPred p₁
   letI : DecidablePred p₂ := Classical.decPred p₂
   have hq₁ :
-      WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₁ =
+      BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₁ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₁ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (predCodeInfEvidence W q₁).total = 0 then 0
       else (predCodeInfEvidence W q₁).pos / (predCodeInfEvidence W q₁).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₁ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
     rw [predCodeInfEvidence_total (W := W) (q := q₁)]
     simp [predCodeInfEvidence, p₁]
   have hq₂ :
-      WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₂ =
+      BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W q₂ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₂ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (predCodeInfEvidence W q₂).total = 0 then 0
       else (predCodeInfEvidence W q₂).pos / (predCodeInfEvidence W q₂).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₂ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
@@ -275,16 +275,16 @@ theorem pointwise_component_to_iOr {U : Type*}
 /-- WM inequality endpoint for countable conjunction elimination. -/
 theorem queryStrength_le_iAnd_component {U : Type*}
     (W : PredCodeInfState U) (F : Nat → PredCodeInfQuery U) (n : Nat) :
-    WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W (.iAnd F) ≤
-      WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W (F n) :=
+    BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W (.iAnd F) ≤
+      BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W (F n) :=
   queryStrength_le_of_pointwise (W := W) (q₁ := .iAnd F) (q₂ := F n)
     (pointwise_iAnd_to_component (F := F) (n := n))
 
 /-- WM inequality endpoint for countable disjunction introduction. -/
 theorem queryStrength_le_iOr_of_component {U : Type*}
     (W : PredCodeInfState U) (F : Nat → PredCodeInfQuery U) (n : Nat) :
-    WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W (F n) ≤
-      WorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W (.iOr F) :=
+    BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W (F n) ≤
+      BinaryWorldModel.queryStrength (State := PredCodeInfState U) (Query := PredCodeInfQuery U) W (.iOr F) :=
   queryStrength_le_of_pointwise (W := W) (q₁ := F n) (q₂ := .iOr F)
     (pointwise_component_to_iOr (F := F) (n := n))
 

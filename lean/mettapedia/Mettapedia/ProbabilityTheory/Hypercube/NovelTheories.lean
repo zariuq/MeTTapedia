@@ -577,7 +577,7 @@ end QuantumCombination
 /-!
 ## Key Theorems of Quantum D-S
 
-1. **Order Dependence**: Evidence combination is non-commutative
+1. **Order Dependence**: BinaryEvidence combination is non-commutative
 2. **Entanglement Effects**: Correlated evidence behaves differently
 3. **Measurement Collapse**: Belief updates upon observation
 4. **Uncertainty Relations**: Complementary observables can't both be certain

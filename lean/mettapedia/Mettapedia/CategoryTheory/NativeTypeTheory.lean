@@ -58,7 +58,7 @@ We construct this directly as a sigma type.
 /-- The carrier type for Native Type Theory: pairs (X, e) of proposition types and evidence.
 
     This is the Grothendieck construction ∫ Sub where Sub is the subobject fibration.
-    Objects are: X : PLNObj (proposition type) and e : PLNFiber X = Evidence.
+    Objects are: X : PLNObj (proposition type) and e : PLNFiber X = BinaryEvidence.
     This implements "types as pairs (filter, sort)" from OSLF.
 -/
 abbrev NativeTypeBundle : Type :=
@@ -87,14 +87,14 @@ def fiber (obj : Obj) : PLNFiber (base obj) := obj.2
 
 /-- Morphisms in NT are order-preserving maps between evidence values.
 
-    With Evidence fibers, a morphism from (X, e₁) to (Y, e₂) witnesses
+    With BinaryEvidence fibers, a morphism from (X, e₁) to (Y, e₂) witnesses
     that e₁ ≤ e₂ in the evidence ordering.
 
     We lift this to Type using PLift so it can be used in a category.
 
     In the full Grothendieck construction, this would also include a base
     morphism f : X → Y, but for our simplified constant fibration (where
-    all fibers are Evidence), we only need the evidence comparison.
+    all fibers are BinaryEvidence), we only need the evidence comparison.
 -/
 def Hom (src tgt : Obj) : Type :=
   PLift (fiber src ≤ fiber tgt)
@@ -209,7 +209,7 @@ This enables:
 - ✅ Categorical proofs of modal composition
 - ✅ All mathlib category theory machinery!
 
-**Future refactoring**: Change `PLNFiber X = Prop` to `Evidence` or `[0,1]`
+**Future refactoring**: Change `PLNFiber X = Prop` to `BinaryEvidence` or `[0,1]`
 to match PLN's actual semantics (as proved in Phase 5E).
 
 **Status note**:

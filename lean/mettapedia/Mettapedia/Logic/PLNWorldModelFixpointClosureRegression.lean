@@ -61,10 +61,10 @@ theorem fixture_pullback_in_leastClosure :
 
 theorem fixture_pullback_threshold_from_seed :
     let τ :=
-      WorldModel.queryStrength (State := FState) (Query := FQuery)
+      BinaryWorldModel.queryStrength (State := FState) (Query := FQuery)
         fixtureState weakQuery
     τ ≤
-      WorldModel.queryStrength (State := FState) (Query := FQuery)
+      BinaryWorldModel.queryStrength (State := FState) (Query := FQuery)
         fixtureState strongPullbackQuery := by
   intro τ
   have hSeedValid :
@@ -98,13 +98,13 @@ theorem fixture_pullback_not_in_emptyRules_closure :
 
 /-! ## Explicit bounded-time stabilization fixture -/
 
-abbrev BState := Mettapedia.Logic.EvidenceQuantale.Evidence
+abbrev BState := Mettapedia.Logic.EvidenceQuantale.BinaryEvidence
 abbrev BQuery := Bool
 
 noncomputable instance : EvidenceType BState := inferInstance
 
 /-- Query-indexed evidence is state-only for the finite Bool fixture. -/
-noncomputable instance : WorldModel BState BQuery where
+noncomputable instance : BinaryWorldModel BState BQuery where
   evidence := fun W _q => W
   evidence_add := by
     intro W₁ W₂ _q

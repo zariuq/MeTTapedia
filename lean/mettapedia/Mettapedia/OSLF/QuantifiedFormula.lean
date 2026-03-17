@@ -19,7 +19,7 @@ over all domain elements d, evaluating φ with x→d added to the environment.
 
 ## Semantics (environment-based)
 
-| Formula   | Evidence semantics                                    |
+| Formula   | BinaryEvidence semantics                                    |
 |-----------|-------------------------------------------------------|
 | base φ    | semE R (I_env) φ p  (atoms resolved via environment)  |
 | ∀x. φ    | ⨅ d ∈ Domain, qsemE(env[x:=d], φ, p)                |
@@ -82,12 +82,12 @@ def envAtomSem (baseI : EvidenceAtomSem) (env : VarEnv) : EvidenceAtomSem :=
 /-- Domain type: a set of patterns over which quantifiers range. -/
 abbrev Domain := Set Pattern
 
-/-! ## Evidence-Valued Semantics for Quantified Formulas
+/-! ## BinaryEvidence-Valued Semantics for Quantified Formulas
 
 The semantics is structurally recursive on the formula, using environments
 to track variable bindings instead of substitution. -/
 
-/-- Evidence-valued semantics of quantified formulas.
+/-- BinaryEvidence-valued semantics of quantified formulas.
 
     `qsemE R baseI Dom env φ p` evaluates formula φ at pattern p, with
     quantifiers ranging over domain Dom, variable bindings in env,
@@ -97,7 +97,7 @@ to track variable bindings instead of substitution. -/
     - ∀x.φ = ⨅ over domain elements (env extended with x→d)
     - ∃x.φ = ⨆ over domain elements (env extended with x→d) -/
 noncomputable def qsemE (R : Pattern → Pattern → Prop) (baseI : EvidenceAtomSem)
-    (Dom : Domain) (env : VarEnv) : QFormula → Pattern → Evidence
+    (Dom : Domain) (env : VarEnv) : QFormula → Pattern → BinaryEvidence
   | .base φ, p => semE R (envAtomSem baseI env) φ p
   | .qand φ ψ, p => qsemE R baseI Dom env φ p ⊓ qsemE R baseI Dom env ψ p
   | .qor φ ψ, p => qsemE R baseI Dom env φ p ⊔ qsemE R baseI Dom env ψ p
@@ -159,7 +159,7 @@ def scopeNarrow (man woman loves : String) : QFormula :=
 /-- The narrow-scope (specific) reading entails the wide-scope (non-specific)
     reading.  This is the fundamental scope ordering, at the abstract level:
 
-    For any family of evidence values `f : Dom → Dom → Evidence`,
+    For any family of evidence values `f : Dom → Dom → BinaryEvidence`,
     `⨆ y, ⨅ x, f x y ≤ ⨅ x, ⨆ y, f x y`
 
     (Specific witness uniformly works vs. each x picks its own witness.)

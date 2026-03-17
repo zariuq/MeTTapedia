@@ -1,7 +1,7 @@
 import Mettapedia.Logic.PLNJointEvidence
 
 /-!
-# Joint Evidence → Probability Views (Posterior Means)
+# Joint BinaryEvidence → Probability Views (Posterior Means)
 
 `PLNJointEvidence.lean` defines the *theoretically correct* “complete” evidence object for a
 finite set of PLN propositions: a Dirichlet posterior over complete worlds.
@@ -12,7 +12,7 @@ from a `JointEvidence n`, we can read off posterior-mean probabilities for
 - links/conditionals `P(B | A)`
 
 These are *views* (projections) of the joint evidence, and are exactly the strengths obtained from
-the extracted `Evidence` objects (`propEvidence`, `linkEvidence`).
+the extracted `BinaryEvidence` objects (`propEvidence`, `linkEvidence`).
 -/
 
 namespace Mettapedia.Logic.PLNJointEvidenceProbability
@@ -30,11 +30,11 @@ variable {n : ℕ}
 
 /-- Posterior-mean probability for proposition `A`, read from joint evidence. -/
 noncomputable def probProp (E : JointEvidence n) (A : Fin n) : ℝ≥0∞ :=
-  Evidence.toStrength (propEvidence (n := n) (E := E) A)
+  BinaryEvidence.toStrength (propEvidence (n := n) (E := E) A)
 
 /-- Posterior-mean conditional probability for a link `A ⟹ B`, read from joint evidence. -/
 noncomputable def probLink (E : JointEvidence n) (A B : Fin n) : ℝ≥0∞ :=
-  Evidence.toStrength (linkEvidence (n := n) (E := E) A B)
+  BinaryEvidence.toStrength (linkEvidence (n := n) (E := E) A B)
 
 /-! ## Structural identities (totals) -/
 
@@ -47,7 +47,7 @@ theorem propEvidence_total (E : JointEvidence n) (A : Fin n) :
   have hfg : (fun w => f w + g w) = E := by
     funext w
     by_cases hA : worldToAssignment n w A <;> simp [f, g, hA]
-  unfold propEvidence Evidence.total total countWorld
+  unfold propEvidence BinaryEvidence.total total countWorld
   -- Rewrite `(∑ f) + (∑ g)` as `∑ (f+g)` and use `hfg`.
   calc
     (Finset.univ.sum f + Finset.univ.sum g)
@@ -69,7 +69,7 @@ theorem linkEvidence_total (E : JointEvidence n) (A B : Fin n) :
     funext w
     by_cases hA : worldToAssignment n w A <;> by_cases hB : worldToAssignment n w B <;>
       simp [f, g, h, hA, hB]
-  unfold linkEvidence Evidence.total countWorld
+  unfold linkEvidence BinaryEvidence.total countWorld
   calc
     (Finset.univ.sum f + Finset.univ.sum g)
         = Finset.univ.sum (fun w => f w + g w) := by
@@ -90,15 +90,15 @@ theorem probProp_eq (E : JointEvidence n) (A : Fin n) :
   unfold probProp
   have ht : (propEvidence (n := n) (E := E) A).total = total (n := n) (E := E) :=
     propEvidence_total (n := n) (E := E) A
-  -- Avoid unfolding `Evidence.total`, so the `if` condition stays as `e.total = 0`
+  -- Avoid unfolding `BinaryEvidence.total`, so the `if` condition stays as `e.total = 0`
   -- (rather than becoming `e.pos = 0 ∧ e.neg = 0`).
   calc
-    Evidence.toStrength (propEvidence (n := n) (E := E) A) =
+    BinaryEvidence.toStrength (propEvidence (n := n) (E := E) A) =
         if total (n := n) (E := E) = 0 then
           0
         else
           (propEvidence (n := n) (E := E) A).pos / total (n := n) (E := E) := by
-      simp [Evidence.toStrength, ht]
+      simp [BinaryEvidence.toStrength, ht]
     _ = _ := by
       simp [propEvidence]
 
@@ -116,15 +116,15 @@ theorem probLink_eq (E : JointEvidence n) (A B : Fin n) :
       (linkEvidence (n := n) (E := E) A B).total =
         countWorld (n := n) (E := E) (fun w => worldToAssignment n w A) :=
     linkEvidence_total (n := n) (E := E) A B
-  -- Avoid unfolding `Evidence.total` for the same reason as in `probProp_eq`.
+  -- Avoid unfolding `BinaryEvidence.total` for the same reason as in `probProp_eq`.
   calc
-    Evidence.toStrength (linkEvidence (n := n) (E := E) A B) =
+    BinaryEvidence.toStrength (linkEvidence (n := n) (E := E) A B) =
         if countWorld (n := n) (E := E) (fun w => worldToAssignment n w A) = 0 then
           0
         else
           (linkEvidence (n := n) (E := E) A B).pos /
             countWorld (n := n) (E := E) (fun w => worldToAssignment n w A) := by
-      simp [Evidence.toStrength, ht]
+      simp [BinaryEvidence.toStrength, ht]
     _ = _ := by
       simp [linkEvidence]
 

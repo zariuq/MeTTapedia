@@ -48,7 +48,7 @@ open Mettapedia.Logic.PLNMarkovLogicGrounding
 
 section Templates
 
-/-- Evidence-absorbed friend-influence: `¬Smokes(alice) ∨ Smokes(bob)`.
+/-- BinaryEvidence-absorbed friend-influence: `¬Smokes(alice) ∨ Smokes(bob)`.
 Both arguments use `Term.const`, so the clause is substitution-invariant. -/
 def friendsInfluenceABTemplate : WeightedClauseTemplate SmokePred X Person where
   clause := [
@@ -60,7 +60,7 @@ def friendsInfluenceABTemplate : WeightedClauseTemplate SmokePred X Person where
   satisfied_ne_top := by norm_num
   unsatisfied_ne_top := by norm_num
 
-/-- Evidence atom: `Smokes(alice)`, all terms constant. -/
+/-- BinaryEvidence atom: `Smokes(alice)`, all terms constant. -/
 def evidenceSmokesATemplate : WeightedClauseTemplate SmokePred X Person where
   clause := [
     .pos ⟨1, .smokes, fun _ => .const .alice⟩
@@ -497,7 +497,7 @@ theorem social_queryProb_cancerBob_eq_four_fifths :
 /-- **Social smoking canary**: P(Smokes(bob)) = 3/5 given evidence
 Friends(alice,bob)=T and Smokes(alice)=T with friend-influence weight 3:1. -/
 theorem social_queryStrength_smokesBob_eq_three_fifths :
-    WorldModel.queryStrength (clauseWMState socialGroundMLN socialFullSupport) smokesBobQuery =
+    BinaryWorldModel.queryStrength (clauseWMState socialGroundMLN socialFullSupport) smokesBobQuery =
       (3 : ENNReal) / 5 := by
   rw [clauseWM_queryStrength_eq_queryProb]
   exact social_queryProb_smokesBob_eq_three_fifths
@@ -506,7 +506,7 @@ theorem social_queryStrength_smokesBob_eq_three_fifths :
 Friends(alice,bob)=T and Smokes(alice)=T with friend-influence weight 3:1
 and hard constraint Smokes(x) → Cancer(x). -/
 theorem social_queryStrength_cancerBob_eq_four_fifths :
-    WorldModel.queryStrength (clauseWMState socialGroundMLN socialFullSupport) cancerBobQuery =
+    BinaryWorldModel.queryStrength (clauseWMState socialGroundMLN socialFullSupport) cancerBobQuery =
       (4 : ENNReal) / 5 := by
   rw [clauseWM_queryStrength_eq_queryProb]
   exact social_queryProb_cancerBob_eq_four_fifths

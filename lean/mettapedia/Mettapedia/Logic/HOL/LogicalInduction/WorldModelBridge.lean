@@ -41,14 +41,14 @@ noncomputable def priceComplement (p : Price01) : ℝ≥0∞ :=
 /-- WM-facing evidence extracted from a single belief day about a coded formula. -/
 noncomputable def beliefEvidence
     (B : BeliefDay Const)
-    (φ : ClosedFormulaCode Const) : Evidence :=
+    (φ : ClosedFormulaCode Const) : BinaryEvidence :=
   ⟨priceMass (B φ), priceComplement (B φ)⟩
 
 /-- WM-facing belief strength for a coded formula on one day. -/
 noncomputable def dayQueryStrength
     (B : BeliefDay Const)
     (φ : ClosedFormulaCode Const) : ℝ≥0∞ :=
-  Evidence.toStrength (beliefEvidence (Const := Const) B φ)
+  BinaryEvidence.toStrength (beliefEvidence (Const := Const) B φ)
 
 theorem beliefEvidence_total_one
     (B : BeliefDay Const)
@@ -60,7 +60,7 @@ theorem beliefEvidence_total_one
     exact_mod_cast (B φ).le_one
   have hcomp : 0 ≤ 1 - (((B φ : Price01) : Rat) : Real) := by
     linarith
-  simp [beliefEvidence, Evidence.total, priceMass, priceComplement]
+  simp [beliefEvidence, BinaryEvidence.total, priceMass, priceComplement]
   rw [← ENNReal.ofReal_add hp0 hcomp]
   ring_nf
   simp
@@ -69,7 +69,7 @@ theorem dayQueryStrength_eq_priceMass
     (B : BeliefDay Const)
     (φ : ClosedFormulaCode Const) :
     dayQueryStrength (Const := Const) B φ = priceMass (B φ) := by
-  unfold dayQueryStrength Evidence.toStrength
+  unfold dayQueryStrength BinaryEvidence.toStrength
   rw [beliefEvidence_total_one (Const := Const) B φ]
   simp [beliefEvidence, priceMass]
 

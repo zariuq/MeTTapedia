@@ -41,21 +41,21 @@ noncomputable def update {Goal Fact : Type*}
     (update prior likelihood).score g f = prior.score g f * likelihood.score g f := rfl
 
 /-- Scale an evidence value coordinatewise. -/
-noncomputable def scaleEvidence (w : ℝ≥0∞) (e : Evidence) : Evidence :=
+noncomputable def scaleEvidence (w : ℝ≥0∞) (e : BinaryEvidence) : BinaryEvidence :=
   ⟨w * e.pos, w * e.neg⟩
 
-@[simp] lemma scaleEvidence_pos (w : ℝ≥0∞) (e : Evidence) :
+@[simp] lemma scaleEvidence_pos (w : ℝ≥0∞) (e : BinaryEvidence) :
     (scaleEvidence w e).pos = w * e.pos := rfl
 
-@[simp] lemma scaleEvidence_neg (w : ℝ≥0∞) (e : Evidence) :
+@[simp] lemma scaleEvidence_neg (w : ℝ≥0∞) (e : BinaryEvidence) :
     (scaleEvidence w e).neg = w * e.neg := rfl
 
 /-- Regraduation via coordinatewise scaling preserves odds (finite nonzero scale). -/
-theorem toOdds_scaleEvidence (w : ℝ≥0∞) (e : Evidence)
+theorem toOdds_scaleEvidence (w : ℝ≥0∞) (e : BinaryEvidence)
     (hw0 : w ≠ 0) (hwTop : w ≠ ⊤) (hneg : e.neg ≠ 0) :
-    Evidence.toOdds (scaleEvidence w e) = Evidence.toOdds e := by
+    BinaryEvidence.toOdds (scaleEvidence w e) = BinaryEvidence.toOdds e := by
   have hscaled_neg : w * e.neg ≠ 0 := mul_ne_zero hw0 hneg
-  rw [Evidence.toOdds_eq_div _ hscaled_neg, Evidence.toOdds_eq_div _ hneg]
+  rw [BinaryEvidence.toOdds_eq_div _ hscaled_neg, BinaryEvidence.toOdds_eq_div _ hneg]
   have hcancel :
       (e.pos * w) / (e.neg * w) = e.pos / e.neg := by
     simpa [mul_comm, mul_left_comm, mul_assoc] using
@@ -63,10 +63,10 @@ theorem toOdds_scaleEvidence (w : ℝ≥0∞) (e : Evidence)
   simpa [mul_comm, mul_left_comm, mul_assoc] using hcancel
 
 /-- Log-odds are invariant under finite nonzero coordinatewise regraduation. -/
-theorem toLogOdds_scaleEvidence (w : ℝ≥0∞) (e : Evidence)
+theorem toLogOdds_scaleEvidence (w : ℝ≥0∞) (e : BinaryEvidence)
     (hw0 : w ≠ 0) (hwTop : w ≠ ⊤) (hneg : e.neg ≠ 0) :
-    Evidence.toLogOdds (scaleEvidence w e) = Evidence.toLogOdds e := by
-  simp [Evidence.toLogOdds, toOdds_scaleEvidence (w := w) (e := e) hw0 hwTop hneg]
+    BinaryEvidence.toLogOdds (scaleEvidence w e) = BinaryEvidence.toLogOdds e := by
+  simp [BinaryEvidence.toLogOdds, toOdds_scaleEvidence (w := w) (e := e) hw0 hwTop hneg]
 
 /-- Scale all outputs of a scorer by a fixed evidence weight. -/
 noncomputable def scaleScorer {Goal Fact : Type*}
@@ -80,11 +80,11 @@ noncomputable def scaleScorer {Goal Fact : Type*}
 /-- Regrade all outputs of a scorer via evidence power. -/
 noncomputable def regradeScorer {Goal Fact : Type*}
     (w : ℝ) (s : Scorer Goal Fact) : Scorer Goal Fact :=
-  ⟨fun g f => Evidence.power (s.score g f) w⟩
+  ⟨fun g f => BinaryEvidence.power (s.score g f) w⟩
 
 @[simp] lemma regradeScorer_score {Goal Fact : Type*}
     (w : ℝ) (s : Scorer Goal Fact) (g : Goal) (f : Fact) :
-    (regradeScorer w s).score g f = Evidence.power (s.score g f) w := rfl
+    (regradeScorer w s).score g f = BinaryEvidence.power (s.score g f) w := rfl
 
 /-- Regrade then inverse-regrade is identity on scorer outputs (nonzero exponent). -/
 @[simp] theorem regradeScorer_power_inv {Goal Fact : Type*}
@@ -92,8 +92,8 @@ noncomputable def regradeScorer {Goal Fact : Type*}
     regradeScorer w⁻¹ (regradeScorer w s) = s := by
   apply Scorer.ext
   intro g f
-  change Evidence.power (Evidence.power (s.score g f) w) w⁻¹ = s.score g f
-  simpa using (Evidence.power_power_inv (e := s.score g f) (w := w) hw)
+  change BinaryEvidence.power (BinaryEvidence.power (s.score g f) w) w⁻¹ = s.score g f
+  simpa using (BinaryEvidence.power_power_inv (e := s.score g f) (w := w) hw)
 
 /-- Weighted pooling family (linear pool in evidence space). -/
 noncomputable def weightedFuse {Goal Fact : Type*}
@@ -106,26 +106,26 @@ noncomputable def weightedFuse {Goal Fact : Type*}
       scaleEvidence w₁ (s₁.score g f) + scaleEvidence w₂ (s₂.score g f) := rfl
 
 /-- Zero scorer (no evidence). -/
-def zeroScorer {Goal Fact : Type*} : Scorer Goal Fact := ⟨fun _ _ => Evidence.zero⟩
+def zeroScorer {Goal Fact : Type*} : Scorer Goal Fact := ⟨fun _ _ => BinaryEvidence.zero⟩
 
 @[simp] lemma zeroScorer_score {Goal Fact : Type*} (g : Goal) (f : Fact) :
     (zeroScorer : Scorer Goal Fact).score g f = 0 := rfl
 
 /-- Unit scorer (unit evidence `(1,1)` everywhere). -/
-noncomputable def oneScorer {Goal Fact : Type*} : Scorer Goal Fact := ⟨fun _ _ => Evidence.one⟩
+noncomputable def oneScorer {Goal Fact : Type*} : Scorer Goal Fact := ⟨fun _ _ => BinaryEvidence.one⟩
 
 @[simp] lemma oneScorer_score {Goal Fact : Type*} (g : Goal) (f : Fact) :
     (oneScorer : Scorer Goal Fact).score g f = 1 := rfl
 
 /-- Constant scorer helper (same evidence for all goal/fact pairs). -/
-def constScorer {Goal Fact : Type*} (e : Evidence) : Scorer Goal Fact := ⟨fun _ _ => e⟩
+def constScorer {Goal Fact : Type*} (e : BinaryEvidence) : Scorer Goal Fact := ⟨fun _ _ => e⟩
 
 @[simp] lemma constScorer_score {Goal Fact : Type*}
-    (e : Evidence) (g : Goal) (f : Fact) :
+    (e : BinaryEvidence) (g : Goal) (f : Fact) :
     (constScorer (Goal := Goal) (Fact := Fact) e).score g f = e := rfl
 
 /-- Coordinatewise max on evidence (counterexample pooling kernel). -/
-noncomputable def maxEvidence (x y : Evidence) : Evidence :=
+noncomputable def maxEvidence (x y : BinaryEvidence) : BinaryEvidence :=
   ⟨max x.pos y.pos, max x.neg y.neg⟩
 
 /-- Pointwise max pooling on scorers. -/
@@ -153,9 +153,9 @@ theorem update_fuse_commute_left {Goal Fact : Type*}
     update (fuse s₁ s₂) likelihood = fuse (update s₁ likelihood) (update s₂ likelihood) := by
   apply Scorer.ext
   intro g f
-  apply Evidence.ext'
-  · simp [update, fuse, Evidence.hplus_def, Evidence.tensor_def, add_mul]
-  · simp [update, fuse, Evidence.hplus_def, Evidence.tensor_def, add_mul]
+  apply BinaryEvidence.ext'
+  · simp [update, fuse, BinaryEvidence.hplus_def, BinaryEvidence.tensor_def, add_mul]
+  · simp [update, fuse, BinaryEvidence.hplus_def, BinaryEvidence.tensor_def, add_mul]
 
 /-- Updating after pooling equals pooling updated experts (right distributivity form). -/
 theorem update_fuse_commute_right {Goal Fact : Type*}
@@ -163,9 +163,9 @@ theorem update_fuse_commute_right {Goal Fact : Type*}
     update prior (fuse l₁ l₂) = fuse (update prior l₁) (update prior l₂) := by
   apply Scorer.ext
   intro g f
-  apply Evidence.ext'
-  · simp [update, fuse, Evidence.hplus_def, Evidence.tensor_def, mul_add]
-  · simp [update, fuse, Evidence.hplus_def, Evidence.tensor_def, mul_add]
+  apply BinaryEvidence.ext'
+  · simp [update, fuse, BinaryEvidence.hplus_def, BinaryEvidence.tensor_def, mul_add]
+  · simp [update, fuse, BinaryEvidence.hplus_def, BinaryEvidence.tensor_def, mul_add]
 
 /-- External-Bayesianity style commutation (pool and update commute for common likelihood). -/
 theorem externalBayesianity_hplus_tensor {Goal Fact : Type*}
@@ -181,10 +181,10 @@ theorem externalBayesianity_weighted_hplus_tensor {Goal Fact : Type*}
       update (weightedFuse w₁ w₂ s₁ s₂) likelihood := by
   apply Scorer.ext
   intro g f
-  apply Evidence.ext'
-  · simp [weightedFuse, update, scaleScorer, scaleEvidence, Evidence.hplus_def, Evidence.tensor_def,
+  apply BinaryEvidence.ext'
+  · simp [weightedFuse, update, scaleScorer, scaleEvidence, BinaryEvidence.hplus_def, BinaryEvidence.tensor_def,
       add_mul, mul_assoc]
-  · simp [weightedFuse, update, scaleScorer, scaleEvidence, Evidence.hplus_def, Evidence.tensor_def,
+  · simp [weightedFuse, update, scaleScorer, scaleEvidence, BinaryEvidence.hplus_def, BinaryEvidence.tensor_def,
       add_mul, mul_assoc]
 
 /-- Staged two-expert posterior map used in selector pipelines:
@@ -228,9 +228,9 @@ theorem update_fuseFamily_commute_left {Goal Fact ι : Type*} [Fintype ι]
     update (fuseFamily s) likelihood = fuseFamily (fun i => update (s i) likelihood) := by
   apply Scorer.ext
   intro g f
-  apply Evidence.ext'
-  · simp [update, fuseFamily, Evidence.tensor_def, Finset.sum_mul]
-  · simp [update, fuseFamily, Evidence.tensor_def, Finset.sum_mul]
+  apply BinaryEvidence.ext'
+  · simp [update, fuseFamily, BinaryEvidence.tensor_def, Finset.sum_mul]
+  · simp [update, fuseFamily, BinaryEvidence.tensor_def, Finset.sum_mul]
 
 /-- Updating a prior with finite pooled likelihood experts equals pooling individual updates. -/
 theorem update_fuseFamily_commute_right {Goal Fact ι : Type*} [Fintype ι]
@@ -238,9 +238,9 @@ theorem update_fuseFamily_commute_right {Goal Fact ι : Type*} [Fintype ι]
     update prior (fuseFamily l) = fuseFamily (fun i => update prior (l i)) := by
   apply Scorer.ext
   intro g f
-  apply Evidence.ext'
-  · simp [update, fuseFamily, Evidence.tensor_def, Finset.mul_sum]
-  · simp [update, fuseFamily, Evidence.tensor_def, Finset.mul_sum]
+  apply BinaryEvidence.ext'
+  · simp [update, fuseFamily, BinaryEvidence.tensor_def, Finset.mul_sum]
+  · simp [update, fuseFamily, BinaryEvidence.tensor_def, Finset.mul_sum]
 
 /-- External-Bayesianity style commutation for finite expert families. -/
 theorem externalBayesianity_fuseFamily_tensor {Goal Fact ι : Type*} [Fintype ι]
@@ -289,10 +289,10 @@ theorem weightedFuse_unique_under_two_sided_neutrality
   have hRpos := congrArg (fun sc => (sc.score g0 f0).pos) (hR oneScorer)
   have hw₁ : w₁ = 1 := by
     simpa [weightedFuse, scaleScorer, scaleEvidence, zeroScorer, oneScorer,
-      Evidence.hplus_def, Evidence.one, Evidence.zero] using hLpos
+      BinaryEvidence.hplus_def, BinaryEvidence.one, BinaryEvidence.zero] using hLpos
   have hw₂ : w₂ = 1 := by
     simpa [weightedFuse, scaleScorer, scaleEvidence, zeroScorer, oneScorer,
-      Evidence.hplus_def, Evidence.one, Evidence.zero] using hRpos
+      BinaryEvidence.hplus_def, BinaryEvidence.one, BinaryEvidence.zero] using hRpos
   exact ⟨hw₁, hw₂⟩
 
 theorem weightedFuse_eq_fuse_of_two_sided_neutrality
@@ -303,7 +303,7 @@ theorem weightedFuse_eq_fuse_of_two_sided_neutrality
   rcases weightedFuse_unique_under_two_sided_neutrality
       (w₁ := w₁) (w₂ := w₂) (g0 := g0) (f0 := f0) hL hR with ⟨hw₁, hw₂⟩
   funext s₁ s₂
-  simp [weightedFuse, hw₁, hw₂, scaleScorer, scaleEvidence, fuse, Evidence.hplus_def]
+  simp [weightedFuse, hw₁, hw₂, scaleScorer, scaleEvidence, fuse, BinaryEvidence.hplus_def]
 
 /-- Abstract pooling operator for premise scorers. -/
 structure PoolingOperator (Goal Fact : Type*) where
@@ -335,33 +335,33 @@ noncomputable def maxPoolingOperator {Goal Fact : Type*} :
   · intro s₁ s₂
     apply Scorer.ext
     intro g f
-    apply Evidence.ext'
+    apply BinaryEvidence.ext'
     · simp [maxPool, maxEvidence, max_comm]
     · simp [maxPool, maxEvidence, max_comm]
   · intro s₁ s₂ s₃
     apply Scorer.ext
     intro g f
-    apply Evidence.ext'
+    apply BinaryEvidence.ext'
     · simp [maxPool, maxEvidence, max_assoc]
     · simp [maxPool, maxEvidence, max_assoc]
   · intro s
     apply Scorer.ext
     intro g f
-    apply Evidence.ext'
-    · simp [maxPool, maxEvidence, zeroScorer, Evidence.zero]
-    · simp [maxPool, maxEvidence, zeroScorer, Evidence.zero]
+    apply BinaryEvidence.ext'
+    · simp [maxPool, maxEvidence, zeroScorer, BinaryEvidence.zero]
+    · simp [maxPool, maxEvidence, zeroScorer, BinaryEvidence.zero]
   · intro s
     apply Scorer.ext
     intro g f
-    apply Evidence.ext'
-    · simp [maxPool, maxEvidence, zeroScorer, Evidence.zero]
-    · simp [maxPool, maxEvidence, zeroScorer, Evidence.zero]
+    apply BinaryEvidence.ext'
+    · simp [maxPool, maxEvidence, zeroScorer, BinaryEvidence.zero]
+    · simp [maxPool, maxEvidence, zeroScorer, BinaryEvidence.zero]
   · intro s₁ s₂ likelihood
     apply Scorer.ext
     intro g f
-    apply Evidence.ext'
-    · simp [maxPool, maxEvidence, update, Evidence.tensor_def, max_mul_mul_right]
-    · simp [maxPool, maxEvidence, update, Evidence.tensor_def, max_mul_mul_right]
+    apply BinaryEvidence.ext'
+    · simp [maxPool, maxEvidence, update, BinaryEvidence.tensor_def, max_mul_mul_right]
+    · simp [maxPool, maxEvidence, update, BinaryEvidence.tensor_def, max_mul_mul_right]
 
 /-- The current pooling axioms do not characterize `fuse`: `maxPool` is different. -/
 theorem maxPoolingOperator_ne_fuse
@@ -380,7 +380,7 @@ theorem maxPoolingOperator_ne_fuse
   have hPosRaw :
       max (2 : ℝ≥0∞) 3 = ((2 : ℝ≥0∞) + 3) := by
     simpa [maxPoolingOperator, maxPool, maxEvidence, fuse, s2, s3, g0, f0,
-      constScorer, Evidence.hplus_def] using congrArg Evidence.pos hAt
+      constScorer, BinaryEvidence.hplus_def] using congrArg BinaryEvidence.pos hAt
   have hRealRaw : (max (2 : ℝ) 3) = ((2 : ℝ) + 3) := by
     simpa using congrArg ENNReal.toReal hPosRaw
   norm_num at hRealRaw
@@ -398,19 +398,19 @@ noncomputable def fusePoolingOperator {Goal Fact : Type*} :
   · intro s₁ s₂
     apply Scorer.ext
     intro g f
-    simp [fuse, Evidence.hplus_def, add_comm]
+    simp [fuse, BinaryEvidence.hplus_def, add_comm]
   · intro s₁ s₂ s₃
     apply Scorer.ext
     intro g f
-    simp [fuse, Evidence.hplus_def, add_assoc]
+    simp [fuse, BinaryEvidence.hplus_def, add_assoc]
   · intro s
     apply Scorer.ext
     intro g f
-    simp [fuse, zeroScorer, Evidence.hplus_def, Evidence.zero]
+    simp [fuse, zeroScorer, BinaryEvidence.hplus_def, BinaryEvidence.zero]
   · intro s
     apply Scorer.ext
     intro g f
-    simp [fuse, zeroScorer, Evidence.hplus_def, Evidence.zero]
+    simp [fuse, zeroScorer, BinaryEvidence.hplus_def, BinaryEvidence.zero]
   · intro s₁ s₂ likelihood
     exact externalBayesianity_hplus_tensor s₁ s₂ likelihood
 
@@ -439,23 +439,23 @@ theorem weighted_poolingOperator_forces_fuse
   simpa [hP] using hEqWF
 
 /-- Mask selecting the positive-evidence coordinate under tensor. -/
-def maskPos : Evidence := ⟨1, 0⟩
+def maskPos : BinaryEvidence := ⟨1, 0⟩
 
 /-- Mask selecting the negative-evidence coordinate under tensor. -/
-def maskNeg : Evidence := ⟨0, 1⟩
+def maskNeg : BinaryEvidence := ⟨0, 1⟩
 
-@[simp] lemma tensor_maskPos (x : Evidence) :
+@[simp] lemma tensor_maskPos (x : BinaryEvidence) :
     x * maskPos = ⟨x.pos, 0⟩ := by
-  simp [maskPos, Evidence.tensor_def]
+  simp [maskPos, BinaryEvidence.tensor_def]
 
-@[simp] lemma tensor_maskNeg (x : Evidence) :
+@[simp] lemma tensor_maskNeg (x : BinaryEvidence) :
     x * maskNeg = ⟨0, x.neg⟩ := by
-  simp [maskNeg, Evidence.tensor_def]
+  simp [maskNeg, BinaryEvidence.tensor_def]
 
 /-- Corrected uniqueness theorem at evidence level:
 external-Bayesianity with respect to tensor + total additivity forces additive pooling. -/
 theorem poolE_eq_hplus_of_externalBayes_totalAdd
-    (poolE : Evidence → Evidence → Evidence)
+    (poolE : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (hexBayes : ∀ x y ℓ, poolE (x * ℓ) (y * ℓ) = poolE x y * ℓ)
     (htotal : ∀ x y, (poolE x y).total = x.total + y.total) :
     ∀ x y, poolE x y = x + y := by
@@ -463,50 +463,50 @@ theorem poolE_eq_hplus_of_externalBayes_totalAdd
   have hMaskPos := hexBayes x y maskPos
   have hMaskNeg := hexBayes x y maskNeg
   have hneg_left_posmask : (poolE (x * maskPos) (y * maskPos)).neg = 0 := by
-    simpa [maskPos, Evidence.tensor_def] using congrArg Evidence.neg hMaskPos
+    simpa [maskPos, BinaryEvidence.tensor_def] using congrArg BinaryEvidence.neg hMaskPos
   have htot_left_posmask :
       (poolE (x * maskPos) (y * maskPos)).total = x.pos + y.pos := by
     calc
       (poolE (x * maskPos) (y * maskPos)).total
           = (x * maskPos).total + (y * maskPos).total := htotal _ _
-      _ = x.pos + y.pos := by simp [maskPos, Evidence.tensor_def, Evidence.total]
+      _ = x.pos + y.pos := by simp [maskPos, BinaryEvidence.tensor_def, BinaryEvidence.total]
   have hpos_left_posmask :
       (poolE (x * maskPos) (y * maskPos)).pos = x.pos + y.pos := by
     have hsum :
         (poolE (x * maskPos) (y * maskPos)).pos
           + (poolE (x * maskPos) (y * maskPos)).neg = x.pos + y.pos := by
-      simpa [Evidence.total] using htot_left_posmask
+      simpa [BinaryEvidence.total] using htot_left_posmask
     rw [hneg_left_posmask, add_zero] at hsum
     exact hsum
   have hpos_xy :
       (poolE x y).pos = x.pos + y.pos := by
     have hpos_mask :
         (poolE (x * maskPos) (y * maskPos)).pos = (poolE x y).pos := by
-      simpa [maskPos, Evidence.tensor_def] using congrArg Evidence.pos hMaskPos
+      simpa [maskPos, BinaryEvidence.tensor_def] using congrArg BinaryEvidence.pos hMaskPos
     exact hpos_mask.symm.trans hpos_left_posmask
   have hpos_left_negmask : (poolE (x * maskNeg) (y * maskNeg)).pos = 0 := by
-    simpa [maskNeg, Evidence.tensor_def] using congrArg Evidence.pos hMaskNeg
+    simpa [maskNeg, BinaryEvidence.tensor_def] using congrArg BinaryEvidence.pos hMaskNeg
   have htot_left_negmask :
       (poolE (x * maskNeg) (y * maskNeg)).total = x.neg + y.neg := by
     calc
       (poolE (x * maskNeg) (y * maskNeg)).total
           = (x * maskNeg).total + (y * maskNeg).total := htotal _ _
-      _ = x.neg + y.neg := by simp [maskNeg, Evidence.tensor_def, Evidence.total]
+      _ = x.neg + y.neg := by simp [maskNeg, BinaryEvidence.tensor_def, BinaryEvidence.total]
   have hneg_left_negmask :
       (poolE (x * maskNeg) (y * maskNeg)).neg = x.neg + y.neg := by
     have hsum :
         (poolE (x * maskNeg) (y * maskNeg)).pos
           + (poolE (x * maskNeg) (y * maskNeg)).neg = x.neg + y.neg := by
-      simpa [Evidence.total] using htot_left_negmask
+      simpa [BinaryEvidence.total] using htot_left_negmask
     rw [hpos_left_negmask, zero_add] at hsum
     exact hsum
   have hneg_xy :
       (poolE x y).neg = x.neg + y.neg := by
     have hneg_mask :
         (poolE (x * maskNeg) (y * maskNeg)).neg = (poolE x y).neg := by
-      simpa [maskNeg, Evidence.tensor_def] using congrArg Evidence.neg hMaskNeg
+      simpa [maskNeg, BinaryEvidence.tensor_def] using congrArg BinaryEvidence.neg hMaskNeg
     exact hneg_mask.symm.trans hneg_left_negmask
-  exact Evidence.ext' hpos_xy hneg_xy
+  exact BinaryEvidence.ext' hpos_xy hneg_xy
 
 /-- Corrected scorer-level uniqueness:
 if a pooling operator is pointwise from `poolE`, and `poolE` is total-additive,
@@ -514,7 +514,7 @@ then external-Bayesianity forces `pool = fuse`. -/
 theorem poolingOperator_pointwise_unique_of_externalBayes_totalAdd
     {Goal Fact : Type*} [Nonempty Goal] [Nonempty Fact]
     (P : PoolingOperator Goal Fact)
-    (poolE : Evidence → Evidence → Evidence)
+    (poolE : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (hpointwise :
       ∀ s₁ s₂ g f, (P.pool s₁ s₂).score g f = poolE (s₁.score g f) (s₂.score g f))
     (htotal : ∀ x y, (poolE x y).total = x.total + y.total) :
@@ -546,7 +546,7 @@ theorem not_fuse_of_no_pointwise_lift
     {Goal Fact : Type*}
     (P : PoolingOperator Goal Fact)
     (hNoPointwise :
-      ¬ ∃ poolE : Evidence → Evidence → Evidence,
+      ¬ ∃ poolE : BinaryEvidence → BinaryEvidence → BinaryEvidence,
         ∀ s₁ s₂ g f, (P.pool s₁ s₂).score g f = poolE (s₁.score g f) (s₂.score g f)) :
     P.pool ≠ fuse := by
   intro hEq
@@ -585,13 +585,13 @@ theorem weightedFuse_weights_identifiable
       have hpos :=
         congrArg (fun sc : Scorer Goal Fact => (sc.score g0 f0).pos) hLeftScorer
       simpa [weightedFuse, scaleScorer, scaleEvidence, oneScorer, zeroScorer,
-        fuse, Evidence.hplus_def, Evidence.one, Evidence.zero] using hpos
+        fuse, BinaryEvidence.hplus_def, BinaryEvidence.one, BinaryEvidence.zero] using hpos
     have hw₂ :
         w₂ = w₂' := by
       have hpos :=
         congrArg (fun sc : Scorer Goal Fact => (sc.score g0 f0).pos) hRightScorer
       simpa [weightedFuse, scaleScorer, scaleEvidence, oneScorer, zeroScorer,
-        fuse, Evidence.hplus_def, Evidence.one, Evidence.zero] using hpos
+        fuse, BinaryEvidence.hplus_def, BinaryEvidence.one, BinaryEvidence.zero] using hpos
     exact ⟨hw₁, hw₂⟩
   · intro h
     rcases h with ⟨hw₁, hw₂⟩
@@ -602,31 +602,31 @@ theorem weightedFuse_weights_identifiable
 /-- Strength is invariant under pool/update order (commutation corollary). -/
 theorem externalBayesianity_strength {Goal Fact : Type*}
     (s₁ s₂ likelihood : Scorer Goal Fact) (g : Goal) (f : Fact) :
-    Evidence.toStrength ((fuse (update s₁ likelihood) (update s₂ likelihood)).score g f) =
-      Evidence.toStrength ((update (fuse s₁ s₂) likelihood).score g f) := by
+    BinaryEvidence.toStrength ((fuse (update s₁ likelihood) (update s₂ likelihood)).score g f) =
+      BinaryEvidence.toStrength ((update (fuse s₁ s₂) likelihood).score g f) := by
   simp [externalBayesianity_hplus_tensor (s₁ := s₁) (s₂ := s₂) (likelihood := likelihood)]
 
 /-- Confidence is invariant under pool/update order (commutation corollary). -/
 theorem externalBayesianity_confidence {Goal Fact : Type*}
     (κ : ℝ≥0∞) (s₁ s₂ likelihood : Scorer Goal Fact) (g : Goal) (f : Fact) :
-    Evidence.toConfidence κ
+    BinaryEvidence.toConfidence κ
       ((fuse (update s₁ likelihood) (update s₂ likelihood)).score g f) =
-      Evidence.toConfidence κ
+      BinaryEvidence.toConfidence κ
         ((update (fuse s₁ s₂) likelihood).score g f) := by
   simp [externalBayesianity_hplus_tensor (s₁ := s₁) (s₂ := s₂) (likelihood := likelihood)]
 
 /-- Strength is invariant under finite-family pool/update order. -/
 theorem externalBayesianity_fuseFamily_strength {Goal Fact ι : Type*} [Fintype ι]
     (s : ι → Scorer Goal Fact) (likelihood : Scorer Goal Fact) (g : Goal) (f : Fact) :
-    Evidence.toStrength ((fuseFamily (fun i => update (s i) likelihood)).score g f) =
-      Evidence.toStrength ((update (fuseFamily s) likelihood).score g f) := by
+    BinaryEvidence.toStrength ((fuseFamily (fun i => update (s i) likelihood)).score g f) =
+      BinaryEvidence.toStrength ((update (fuseFamily s) likelihood).score g f) := by
   simp [externalBayesianity_fuseFamily_tensor (s := s) (likelihood := likelihood)]
 
 /-- Confidence is invariant under finite-family pool/update order. -/
 theorem externalBayesianity_fuseFamily_confidence {Goal Fact ι : Type*} [Fintype ι]
     (κ : ℝ≥0∞) (s : ι → Scorer Goal Fact) (likelihood : Scorer Goal Fact) (g : Goal) (f : Fact) :
-    Evidence.toConfidence κ ((fuseFamily (fun i => update (s i) likelihood)).score g f) =
-      Evidence.toConfidence κ ((update (fuseFamily s) likelihood).score g f) := by
+    BinaryEvidence.toConfidence κ ((fuseFamily (fun i => update (s i) likelihood)).score g f) =
+      BinaryEvidence.toConfidence κ ((update (fuseFamily s) likelihood).score g f) := by
   simp [externalBayesianity_fuseFamily_tensor (s := s) (likelihood := likelihood)]
 
 end Mettapedia.Logic.PremiseSelection

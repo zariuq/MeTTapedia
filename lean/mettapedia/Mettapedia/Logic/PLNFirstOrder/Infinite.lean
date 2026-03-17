@@ -30,7 +30,7 @@ For **true first-order logic**, we need infinite domains where:
 
 The infinitary version uses the same mathematical definitions, just with different types:
 - `sSup` in a complete lattice already handles arbitrary suprema
-- Evidence (ℝ≥0∞ × ℝ≥0∞) is a complete lattice coordinatewise
+- BinaryEvidence (ℝ≥0∞ × ℝ≥0∞) is a complete lattice coordinatewise
 - No measure theory needed for basic quantifier semantics
 
 ## References
@@ -51,7 +51,7 @@ open scoped ENNReal
 
 For probability-theoretic applications, this would be a density function
 with respect to some measure on U. For pure logic, we just need it to
-assign Evidence values to domain elements. -/
+assign BinaryEvidence values to domain elements. -/
 structure WeightFunctionInf (U : Type*) (Q : Type*) [Monoid Q] where
   /-- The weight assignment μ : U → Q -/
   μ : U → Q
@@ -90,10 +90,10 @@ noncomputable def weaknessInf {U : Type*} {Q : Type*}
 /-- A Frame-valued predicate on arbitrary domain U.
 
 This is the infinitary version: no Fintype constraint.
-The predicate assigns Evidence values to each element of U. -/
+The predicate assigns BinaryEvidence values to each element of U. -/
 structure SatisfyingSetInf (U : Type*) where
-  /-- The predicate P : U → Evidence -/
-  pred : U → Evidence
+  /-- The predicate P : U → BinaryEvidence -/
+  pred : U → BinaryEvidence
 
 namespace SatisfyingSetInf
 
@@ -137,7 +137,7 @@ theorem diagonal_union_complement (S : SatisfyingSetInf U) :
 
 /-- Negation on SatisfyingSetInf: pointwise Heyting complement -/
 noncomputable def neg (S : SatisfyingSetInf U) : SatisfyingSetInf U :=
-  ⟨fun u => Evidence.compl (S.pred u)⟩
+  ⟨fun u => BinaryEvidence.compl (S.pred u)⟩
 
 /-! ## Constants -/
 
@@ -174,25 +174,25 @@ This computes the supremum over all pairs (u,v) where both satisfy P,
 weighted by the weight function μ. -/
 noncomputable def forAllEvalInf {U : Type*}
     (S : SatisfyingSetInf U)
-    (μ : WeightFunctionInf U Evidence) : Evidence :=
+    (μ : WeightFunctionInf U BinaryEvidence) : BinaryEvidence :=
   weaknessInf μ (SatisfyingSetInf.diagonal S)
 
 /-- Evaluate ∃x : P(x) via De Morgan: ∃x : P(x) = ¬(∀x : ¬P(x)) -/
 noncomputable def thereExistsEvalInf {U : Type*}
     (S : SatisfyingSetInf U)
-    (μ : WeightFunctionInf U Evidence) : Evidence :=
-  Evidence.compl (forAllEvalInf (SatisfyingSetInf.neg S) μ)
+    (μ : WeightFunctionInf U BinaryEvidence) : BinaryEvidence :=
+  BinaryEvidence.compl (forAllEvalInf (SatisfyingSetInf.neg S) μ)
 
 /-! ## Extensional (Meet/Join) Quantifier Views -/
 
 /-- **Extensional ∀** over an arbitrary domain: infimum of all pointwise evidences. -/
 noncomputable def forAllEvalExtInf {U : Type*}
-    (S : SatisfyingSetInf U) : Evidence :=
+    (S : SatisfyingSetInf U) : BinaryEvidence :=
   sInf { e | ∃ u : U, e = S.pred u }
 
 /-- **Extensional ∃** over an arbitrary domain: supremum of all pointwise evidences. -/
 noncomputable def thereExistsEvalExtInf {U : Type*}
-    (S : SatisfyingSetInf U) : Evidence :=
+    (S : SatisfyingSetInf U) : BinaryEvidence :=
   sSup { e | ∃ u : U, e = S.pred u }
 
 /-! ## Basic Theorems -/
@@ -200,7 +200,7 @@ noncomputable def thereExistsEvalExtInf {U : Type*}
 variable {U : Type*}
 
 /-- ForAll evaluation for constantTrue gives supremum of all pairs -/
-theorem forAllEvalInf_constantTrue (μ : WeightFunctionInf U Evidence) :
+theorem forAllEvalInf_constantTrue (μ : WeightFunctionInf U BinaryEvidence) :
     forAllEvalInf SatisfyingSetInf.constantTrue μ =
     sSup { e | ∃ (u : U) (v : U), e = μ.μ u * μ.μ v } := by
   unfold forAllEvalInf weaknessInf
@@ -216,7 +216,7 @@ theorem forAllEvalInf_constantTrue (μ : WeightFunctionInf U Evidence) :
     exact ⟨(u, v), Set.mem_univ _, he.symm⟩
 
 /-- ForAll evaluation for constantFalse gives bottom -/
-theorem forAllEvalInf_constantFalse (μ : WeightFunctionInf U Evidence) :
+theorem forAllEvalInf_constantFalse (μ : WeightFunctionInf U BinaryEvidence) :
     forAllEvalInf SatisfyingSetInf.constantFalse μ = ⊥ := by
   unfold forAllEvalInf weaknessInf
   rw [SatisfyingSetInf.diagonal_constantFalse]
@@ -229,14 +229,14 @@ theorem forAllEvalInf_constantFalse (μ : WeightFunctionInf U Evidence) :
   rw [h, sSup_empty]
 
 /-- De Morgan law holds by definition -/
-theorem deMorgan_inf (S : SatisfyingSetInf U) (μ : WeightFunctionInf U Evidence) :
+theorem deMorgan_inf (S : SatisfyingSetInf U) (μ : WeightFunctionInf U BinaryEvidence) :
     thereExistsEvalInf S μ =
-    Evidence.compl (forAllEvalInf (SatisfyingSetInf.neg S) μ) := rfl
+    BinaryEvidence.compl (forAllEvalInf (SatisfyingSetInf.neg S) μ) := rfl
 
 @[simp] theorem thereExistsEvalInf_deMorgan
-    (S : SatisfyingSetInf U) (μ : WeightFunctionInf U Evidence) :
+    (S : SatisfyingSetInf U) (μ : WeightFunctionInf U BinaryEvidence) :
     thereExistsEvalInf S μ =
-    Evidence.compl (forAllEvalInf (SatisfyingSetInf.neg S) μ) := rfl
+    BinaryEvidence.compl (forAllEvalInf (SatisfyingSetInf.neg S) μ) := rfl
 
 theorem forAllEvalExtInf_congr
     (S₁ S₂ : SatisfyingSetInf U)
@@ -310,7 +310,7 @@ theorem forAllEvalExtInf_eq_top_of_isEmpty
     [IsEmpty U] (S : SatisfyingSetInf U) :
     forAllEvalExtInf S = ⊤ := by
   unfold forAllEvalExtInf
-  have hset : ({ e : Evidence | ∃ u : U, e = S.pred u } : Set Evidence) = ∅ := by
+  have hset : ({ e : BinaryEvidence | ∃ u : U, e = S.pred u } : Set BinaryEvidence) = ∅ := by
     ext e
     constructor
     · intro he
@@ -324,7 +324,7 @@ theorem thereExistsEvalExtInf_eq_bot_of_isEmpty
     [IsEmpty U] (S : SatisfyingSetInf U) :
     thereExistsEvalExtInf S = ⊥ := by
   unfold thereExistsEvalExtInf
-  have hset : ({ e : Evidence | ∃ u : U, e = S.pred u } : Set Evidence) = ∅ := by
+  have hset : ({ e : BinaryEvidence | ∃ u : U, e = S.pred u } : Set BinaryEvidence) = ∅ := by
     ext e
     constructor
     · intro he
@@ -338,8 +338,8 @@ theorem forAllEvalExtInf_constantTrue
     [Nonempty U] :
     forAllEvalExtInf (SatisfyingSetInf.constantTrue : SatisfyingSetInf U) = pTrue := by
   have hset :
-      ({ e : Evidence | ∃ u : U, e = SatisfyingSetInf.constantTrue.pred u } : Set Evidence) =
-        ({ pTrue } : Set Evidence) := by
+      ({ e : BinaryEvidence | ∃ u : U, e = SatisfyingSetInf.constantTrue.pred u } : Set BinaryEvidence) =
+        ({ pTrue } : Set BinaryEvidence) := by
     ext e
     constructor
     · intro he
@@ -356,8 +356,8 @@ theorem thereExistsEvalExtInf_constantTrue
     [Nonempty U] :
     thereExistsEvalExtInf (SatisfyingSetInf.constantTrue : SatisfyingSetInf U) = pTrue := by
   have hset :
-      ({ e : Evidence | ∃ u : U, e = SatisfyingSetInf.constantTrue.pred u } : Set Evidence) =
-        ({ pTrue } : Set Evidence) := by
+      ({ e : BinaryEvidence | ∃ u : U, e = SatisfyingSetInf.constantTrue.pred u } : Set BinaryEvidence) =
+        ({ pTrue } : Set BinaryEvidence) := by
     ext e
     constructor
     · intro he
@@ -374,8 +374,8 @@ theorem forAllEvalExtInf_constantFalse
     [Nonempty U] :
     forAllEvalExtInf (SatisfyingSetInf.constantFalse : SatisfyingSetInf U) = pFalse := by
   have hset :
-      ({ e : Evidence | ∃ u : U, e = SatisfyingSetInf.constantFalse.pred u } : Set Evidence) =
-        ({ pFalse } : Set Evidence) := by
+      ({ e : BinaryEvidence | ∃ u : U, e = SatisfyingSetInf.constantFalse.pred u } : Set BinaryEvidence) =
+        ({ pFalse } : Set BinaryEvidence) := by
     ext e
     constructor
     · intro he
@@ -392,8 +392,8 @@ theorem thereExistsEvalExtInf_constantFalse
     [Nonempty U] :
     thereExistsEvalExtInf (SatisfyingSetInf.constantFalse : SatisfyingSetInf U) = pFalse := by
   have hset :
-      ({ e : Evidence | ∃ u : U, e = SatisfyingSetInf.constantFalse.pred u } : Set Evidence) =
-        ({ pFalse } : Set Evidence) := by
+      ({ e : BinaryEvidence | ∃ u : U, e = SatisfyingSetInf.constantFalse.pred u } : Set BinaryEvidence) =
+        ({ pFalse } : Set BinaryEvidence) := by
     ext e
     constructor
     · intro he

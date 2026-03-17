@@ -20,7 +20,7 @@ open Mettapedia.Logic.ConjugateEvidenceSurface
 open Mettapedia.Logic.PLNWorldModelGeneric
 
 variable {State Query Ev Ov : Type*}
-variable [EvidenceType State] [ConjugateEvidence Ev] [GenericWorldModel State Query Ev]
+variable [EvidenceType State] [ConjugateEvidence Ev] [AdditiveWorldModel State Query Ev]
 
 /-- Runtime pairwise order check: both directed count gaps are bounded. -/
 def RuntimePairwiseOrderCheck

@@ -4,12 +4,12 @@ import Mettapedia.Logic.PLNWorldModel
 import Mettapedia.Logic.IdentityEvidence
 
 /-!
-# Identity Evidence Transfer (Framework-Level)
+# Identity BinaryEvidence Transfer (Framework-Level)
 
 Generic OSLF semantic transfer wrapper for guarded identity-evidence layers.
 
 This module is intentionally independent of GF/Pi/Rho internals. It provides:
-- an identity-aware atom semantics constructor over any `WorldModel`,
+- an identity-aware atom semantics constructor over any `BinaryWorldModel`,
 - conservative disabled-mode equivalence (`enabled = false`),
 - checker-soundness reuse through the disabled-mode bridge.
 -/
@@ -30,7 +30,7 @@ open scoped ENNReal
 section Generic
 
 variable {State : Type*} [EvidenceType State]
-variable {Query Entity : Type*} [WorldModel State Query]
+variable {Query Entity : Type*} [BinaryWorldModel State Query]
 
 /-- Generic identity layer config for atom/query transport. -/
 structure IdentityAtomLayerConfig (Entity Query : Type*) where
@@ -45,24 +45,24 @@ noncomputable def transferAtomEvidence
     (cfg : IdentityAtomLayerConfig Entity Query)
     (W : State)
     (a : String)
-    (src dst : Pattern) : Evidence :=
+    (src dst : Pattern) : BinaryEvidence :=
   transportAcrossIdentityIf cfg.enabled cfg.idEvidence cfg.thresholds
     (cfg.entityOf src) (cfg.entityOf dst)
-    (WorldModel.evidence W (cfg.queryOfAtom a src))
+    (BinaryWorldModel.evidence W (cfg.queryOfAtom a src))
 
 /-- Base (non-identity) threshold atom semantics. -/
 noncomputable def atomSemBase
     (cfg : IdentityAtomLayerConfig Entity Query)
     (W : State)
     (threshold : ℝ≥0∞) : AtomSem :=
-  fun a p => threshold ≤ Evidence.toStrength (WorldModel.evidence W (cfg.queryOfAtom a p))
+  fun a p => threshold ≤ BinaryEvidence.toStrength (BinaryWorldModel.evidence W (cfg.queryOfAtom a p))
 
 /-- Identity-aware threshold atom semantics. -/
 noncomputable def atomSemWithIdentity
     (cfg : IdentityAtomLayerConfig Entity Query)
     (W : State)
     (threshold : ℝ≥0∞) : AtomSem :=
-  fun a p => threshold ≤ Evidence.toStrength (transferAtomEvidence cfg W a p p)
+  fun a p => threshold ≤ BinaryEvidence.toStrength (transferAtomEvidence cfg W a p p)
 
 /-- Pointwise-equivalent atom interpretations induce equivalent formula semantics. -/
 theorem sem_iff_of_atomSem_pointwise
@@ -107,7 +107,7 @@ theorem transferAtomEvidence_disabled
     (a : String)
     (src dst : Pattern) :
     transferAtomEvidence cfg W a src dst =
-      WorldModel.evidence W (cfg.queryOfAtom a src) := by
+      BinaryWorldModel.evidence W (cfg.queryOfAtom a src) := by
   simp [transferAtomEvidence, hdis, transportAcrossIdentityIf]
 
 theorem atomSemWithIdentity_disabled

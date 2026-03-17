@@ -5,31 +5,31 @@ import Mettapedia.Logic.PLNWorldModelNeighborhood
 # WM Calculus ↔ Neighborhood Semantics OSLF Bridge
 
 This module connects the OSLF LanguageDef modal operators (◇, □, ◇ ⊣ □) to the
-concrete `WorldModel (Multiset PointedNeighborhood) ModalQuery` instance from
+concrete `BinaryWorldModel (Multiset PointedNeighborhood) ModalQuery` instance from
 neighborhood semantics.
 
 ## Architecture — Valuation Fibers
 
 A `NeighborhoodValuation` assigns concrete mathematical meaning (pointed
 neighborhood models + modal formulas) to the abstract string names in `WMTerm`.
-This makes the neighborhood WorldModel instance a *fiber* over the generic
+This makes the neighborhood BinaryWorldModel instance a *fiber* over the generic
 WM calculus LanguageDef.
 
 The bridge proves:
-- **Evidence-add correspondence**: the LanguageDef reduction
+- **BinaryEvidence-add correspondence**: the LanguageDef reduction
   `Extract(Revise(W₁,W₂), q) → Combine(Extract(W₁,q), Extract(W₂,q))`
   is the syntactic shadow of `neighborhoodEvidence (W₁+W₂) φ = neighborhoodEvidence W₁ φ + neighborhoodEvidence W₂ φ`.
 - **Diamond interpretation**: ◇(isCombined) at decomposable terms means evidence
   can be decomposed into per-source neighborhood satisfaction counts.
 - **Singleton adequacy**: pointed-model satisfaction ↔ strength = 1 lifts through
   the valuation.
-- **Evidence barbs**: non-zero evidence from satisfying models.
+- **BinaryEvidence barbs**: non-zero evidence from satisfying models.
 - **Galois corollary**: forward evidence reachability ↔ backward model-theoretic safety.
 
 ## References
 
 - `WMCalculusOSLFBridge.lean` — generic bridge (WMTermEncodes, isCombined, diamond theorems)
-- `PLNWorldModelNeighborhood.lean` — `WorldModel (Multiset PointedNeighborhood) ModalQuery`
+- `PLNWorldModelNeighborhood.lean` — `BinaryWorldModel (Multiset PointedNeighborhood) ModalQuery`
 - `TypeSynthesis.lean` — `langDiamond`, `langBox`, `langGalois`
 -/
 
@@ -58,7 +58,7 @@ structure NeighborhoodValuation where
   /-- Maps query names to modal formulas. -/
   queryVal : String → ModalQuery
 
-/-! ## Section 2: Evidence-Add Correspondence
+/-! ## Section 2: BinaryEvidence-Add Correspondence
 
 The core bridge theorem: the LanguageDef reduction and the mathematical identity
 are the same fact expressed in two formalisms. -/
@@ -106,7 +106,7 @@ theorem neighborhood_diamond_evidence_decomposition
     langDiamond (wmExtVertexLanguageDef v) isCombined
       (pExtract (pRevise (.fvar s₁) (.fvar s₂)) (.fvar q)) ∧
     -- Semantic: evidence decomposes into per-source components
-    ∃ e₁ e₂ : Evidence,
+    ∃ e₁ e₂ : BinaryEvidence,
       e₁ = neighborhoodEvidence (val.stateVal s₁) (val.queryVal q) ∧
       e₂ = neighborhoodEvidence (val.stateVal s₂) (val.queryVal q) ∧
       neighborhoodEvidence (val.stateVal s₁ + val.stateVal s₂) (val.queryVal q) = e₁ + e₂ :=
@@ -137,13 +137,13 @@ theorem neighborhood_singleton_adequacy_lift
     (val : NeighborhoodValuation) (pn : PointedNeighborhood) (φ : ModalQuery)
     (s : String) (hs : val.stateVal s = {pn}) :
     pn.satisfies φ ↔
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         (val.stateVal s) φ = 1 := by
   rw [hs]
   exact singleton_adequacy_strength_one pn φ
 
-/-! ## Section 5: Evidence Barb (Process-Algebraic Observable)
+/-! ## Section 5: BinaryEvidence Barb (Process-Algebraic Observable)
 
 A revised neighborhood state exhibits an evidence barb when the combined
 evidence is non-zero — the topological observable. -/
@@ -159,7 +159,7 @@ theorem neighborhood_revised_barb (v : WMExtVertex) (s₁ s₂ q : String)
       (pRevise (.fvar s₁) (.fvar s₂)) (.fvar q) :=
   wmRevisedState_evidenceBarb v (.fvar s₁) (.fvar s₂) (.fvar q) hne
 
-/-! ## Section 6: Satisfying Model → Non-Zero Evidence
+/-! ## Section 6: Satisfying Model → Non-Zero BinaryEvidence
 
 If any pointed neighborhood model in the multiset satisfies the query,
 the evidence is non-zero. -/
@@ -196,9 +196,9 @@ theorem neighborhood_consequence_lifts
     (φ ψ : ModalQuery)
     (himp : ∀ pn : PointedNeighborhood, pn.satisfies φ → pn.satisfies ψ)
     (W : Multiset PointedNeighborhood) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ :=
   queryStrength_le_of_pointwise W φ ψ himp
 

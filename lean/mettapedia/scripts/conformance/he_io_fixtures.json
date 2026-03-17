@@ -1,0 +1,199 @@
+[
+  {
+    "id": "he_simple_rewrite",
+    "tier": "core_anchor",
+    "lean_theorem": "he_io_anchor_he_simple_rewrite",
+    "setup": [
+      "(= (f a) b)"
+    ],
+    "query": "!(f a)",
+    "expected": ["b"],
+    "source_note": "SimpleHE simple parity case"
+  },
+  {
+    "id": "he_nested_rewrite",
+    "tier": "core_anchor",
+    "lean_theorem": "he_io_anchor_he_nested_rewrite",
+    "setup": [
+      "(= (g a) (f a))",
+      "(= (f a) b)"
+    ],
+    "query": "!(g a)",
+    "expected": ["b"],
+    "source_note": "SimpleHE nested parity case"
+  },
+  {
+    "id": "he_nondet_choose_bag",
+    "tier": "core_anchor",
+    "lean_theorem": "he_io_anchor_he_nondet_choose_bag",
+    "setup": [
+      "(= (choose) red)",
+      "(= (choose) blue)"
+    ],
+    "query": "!(choose)",
+    "expected": ["red", "blue"],
+    "source_note": "Order-insensitive nondeterministic result set"
+  },
+  {
+    "id": "he_unknown_expr_preserved",
+    "tier": "core_anchor",
+    "lean_theorem": "he_io_anchor_he_unknown_expr_preserved",
+    "setup": [],
+    "query": "!(unknown arg)",
+    "expected": ["(unknown arg)"],
+    "source_note": "No rewrite path preserves expression"
+  },
+  {
+    "id": "he_pattern_variable_substitution",
+    "tier": "core_anchor",
+    "lean_theorem": "he_io_anchor_he_pattern_variable_substitution",
+    "setup": [
+      "(= (f $x) (result $x))"
+    ],
+    "query": "!(f hello)",
+    "expected": ["(result hello)"],
+    "source_note": "Variable binding substitution"
+  },
+  {
+    "id": "he_duplicate_multiplicity_preserved",
+    "tier": "core_anchor",
+    "lean_theorem": "he_io_anchor_he_duplicate_multiplicity_preserved",
+    "setup": [
+      "(= (dup) x)",
+      "(= (dup) x)"
+    ],
+    "query": "!(dup)",
+    "expected": ["x", "x"],
+    "source_note": "Bag semantics: multiplicity must be preserved"
+  },
+  {
+    "id": "he_ext_if_true",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "if",
+    "setup": [],
+    "query": "!(if True alpha beta)",
+    "expected": ["alpha"],
+    "source_note": "stdlib if rule"
+  },
+  {
+    "id": "he_ext_if_false",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "if",
+    "setup": [],
+    "query": "!(if False alpha beta)",
+    "expected": ["beta"],
+    "source_note": "stdlib if rule"
+  },
+  {
+    "id": "he_ext_case_empty_branch",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "case",
+    "setup": [],
+    "query": "!(case Empty ((ok ok) (Empty nok)))",
+    "expected": ["nok"],
+    "source_note": "stdlib case on Empty"
+  },
+  {
+    "id": "he_ext_case_reducing_rhs",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "case",
+    "setup": [],
+    "query": "!(case 5 ((4 False) (5 (+ 1 2))))",
+    "expected": ["3"],
+    "source_note": "case should evaluate selected branch"
+  },
+  {
+    "id": "he_ext_collapse_superpose_duplicates",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "collapse",
+    "setup": [],
+    "query": "!(collapse (superpose (a b a)))",
+    "expected": ["(a b a)"],
+    "source_note": "collapse collects nondet outcomes preserving duplicates"
+  },
+  {
+    "id": "he_ext_assert_true_unit",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "assert",
+    "setup": [],
+    "query": "!(assert True)",
+    "expected": ["()"],
+    "source_note": "assert success returns unit"
+  },
+  {
+    "id": "he_ext_assert_equal_unit",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "assertEqual",
+    "setup": [],
+    "query": "!(assertEqual (+ 1 2) 3)",
+    "expected": ["()"],
+    "source_note": "assertEqual success"
+  },
+  {
+    "id": "he_ext_assert_equal_to_result_unit",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "assertEqualToResult",
+    "setup": [],
+    "query": "!(assertEqualToResult (+ 1 2) (3))",
+    "expected": ["()"],
+    "source_note": "assertEqualToResult success"
+  },
+  {
+    "id": "he_ext_assert_failure_error_shape",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "assert",
+    "setup": [],
+    "query": "!(assert (and True False))",
+    "expected": ["(Error (assert (and True False)) ((and True False) not True))"],
+    "source_note": "assert failure error form"
+  },
+  {
+    "id": "he_ext_assert_equal_msg_failure",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "assertEqualMsg",
+    "setup": [],
+    "query": "!(assertEqualMsg (+ 1 2) 4 \"Test message\")",
+    "expected": ["(Error (assertEqualMsg (+ 1 2) 4) \"Test message\")"],
+    "source_note": "message-preserving assert failure"
+  },
+  {
+    "id": "he_ext_assert_equal_to_result_msg_failure",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P1",
+    "implementation_group": "assertEqualToResultMsg",
+    "setup": [],
+    "query": "!(assertEqualToResultMsg (+ 1 2) (4) \"Oops\")",
+    "expected": ["(Error (assertEqualToResultMsg (+ 1 2) (4)) \"Oops\")"],
+    "source_note": "message-preserving result-mode assert failure"
+  },
+  {
+    "id": "he_ext_assert_includes_unit",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P2",
+    "implementation_group": "assertIncludes",
+    "setup": [],
+    "query": "!(assertIncludes (superpose (41 42 43)) (42))",
+    "expected": ["()"],
+    "source_note": "assertIncludes success"
+  },
+  {
+    "id": "he_ext_assert_includes_failure",
+    "tier": "extension_impl_target",
+    "implementation_priority": "P2",
+    "implementation_group": "assertIncludes",
+    "setup": [],
+    "query": "!(assertIncludes (superpose (41 42 43)) (A))",
+    "expected": ["(Error (assertIncludes (superpose (41 42 43)) (A)) (assertIncludes error: (A) not included in result: (41 42 43)))"],
+    "source_note": "assertIncludes failure error form"
+  }
+]

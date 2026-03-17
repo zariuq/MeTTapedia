@@ -1,12 +1,12 @@
 /-
-# Normal-Gamma Evidence for Continuous PLN
+# Normal-Gamma BinaryEvidence for Continuous PLN
 
 This file extends PLN to continuous domains via Normal-Gamma conjugate priors.
 
 ## The Key Insight
 
 For Normal observations with unknown mean AND variance:
-- Evidence = sufficient statistics (n, sum, sumSq)
+- BinaryEvidence = sufficient statistics (n, sum, sumSq)
 - Prior: Normal-Gamma(μ₀, κ₀, α₀, β₀)
 - Posterior: Normal-Gamma(μₙ, κₙ, αₙ, βₙ) — by conjugacy
 - **hplus = coordinatewise addition = Bayesian update**
@@ -40,7 +40,7 @@ namespace Mettapedia.Logic.EvidenceNormalGamma
 
 open Mettapedia.Logic.EvidenceClass
 
-/-! ## Normal-Gamma Evidence Type
+/-! ## Normal-Gamma BinaryEvidence Type
 
 Sufficient statistics for observations from N(μ, 1/τ) with unknown μ and τ.
 -/
@@ -288,7 +288,7 @@ theorem toConfidence_lt_one (e : NormalGammaEvidence) (κ : ℝ) (hκ : 0 < κ) 
   rw [div_lt_one hden]
   linarith
 
-/-! ### Context-Aware Interpretation (Modal Evidence Theory)
+/-! ### Context-Aware Interpretation (Modal BinaryEvidence Theory)
 
 The mean and variance computations naturally require context (the prior).
 This section makes this explicit using the modal evidence theory framework.
@@ -653,16 +653,16 @@ theorem toMean_hplus (e₁ e₂ : NormalGammaEvidence)
 
 This file establishes that for continuous observations:
 
-**PLN Evidence aggregation IS Bayesian Normal-Gamma conjugate update**
+**PLN BinaryEvidence aggregation IS Bayesian Normal-Gamma conjugate update**
 
 The pattern:
-1. Evidence = sufficient statistic (n, sum, sumSq)
+1. BinaryEvidence = sufficient statistic (n, sum, sumSq)
 2. hplus = additive combination of sufficient statistics
 3. This equals the conjugate prior update rule
 
 | Aspect | Binary PLN | Continuous PLN |
 |--------|------------|----------------|
-| Evidence | (n⁺, n⁻) | (n, sum, sumSq) |
+| BinaryEvidence | (n⁺, n⁻) | (n, sum, sumSq) |
 | Prior | Beta(α,β) | Normal-Gamma(μ₀,κ₀,α₀,β₀) |
 | hplus | (n⁺₁+n⁺₂, n⁻₁+n⁻₂) | (n₁+n₂, sum₁+sum₂, ss₁+ss₂) |
 | Strength | n⁺/(n⁺+n⁻) | sum/n (sample mean) |

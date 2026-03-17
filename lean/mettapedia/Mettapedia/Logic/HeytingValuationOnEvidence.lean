@@ -1,19 +1,19 @@
 /-
-# Heyting Valuations and Evidence
+# Heyting Valuations and BinaryEvidence
 
 ## Overview
 
-This file connects Evidence to Heyting/KS probability theory via strength
+This file connects BinaryEvidence to Heyting/KS probability theory via strength
 valuations and credal sets.
 
-Evidence IS a Frame (complete Heyting algebra) — see `Order.Frame Evidence` in
+BinaryEvidence IS a Frame (complete Heyting algebra) — see `Order.Frame BinaryEvidence` in
 `EvidenceQuantale.lean`. It has a natural Heyting implication (`himp`) satisfying
 the residuation law `a ≤ b ⇨ c ↔ a ⊓ b ≤ c`.
 
-However, Evidence is NOT Boolean (no complement satisfying excluded middle),
+However, BinaryEvidence is NOT Boolean (no complement satisfying excluded middle),
 and the strength function s(e) = e.pos / (e.pos + e.neg) is NOT a modular
 valuation. The connection to KS probability is instead through:
-- Incomparable Evidence values represent epistemic uncertainty
+- Incomparable BinaryEvidence values represent epistemic uncertainty
 - This uncertainty maps to interval-valued probability (credal sets)
 - The interval width measures non-Boolean-ness (excluded middle gap)
 
@@ -38,21 +38,21 @@ namespace Mettapedia.Logic.HeytingValuationOnEvidence
 open scoped ENNReal
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceIntervalBounds
-open Evidence
+open BinaryEvidence
 
-/-! ## Evidence is a Frame (Complete Heyting Algebra)
+/-! ## BinaryEvidence is a Frame (Complete Heyting Algebra)
 
-Evidence = ℝ≥0∞ × ℝ≥0∞ with coordinatewise lattice operations.
-This is a Frame (`Order.Frame Evidence` in EvidenceQuantale.lean), hence
+BinaryEvidence = ℝ≥0∞ × ℝ≥0∞ with coordinatewise lattice operations.
+This is a Frame (`Order.Frame BinaryEvidence` in EvidenceQuantale.lean), hence
 a complete Heyting algebra with Heyting implication ⇨ satisfying residuation.
 It is NOT Boolean (no complement satisfying excluded middle for all elements).
 -/
 
-/-- Verify Evidence has DistribLattice structure (from EvidenceQuantale.lean) -/
-noncomputable example : DistribLattice Evidence := inferInstance
+/-- Verify BinaryEvidence has DistribLattice structure (from EvidenceQuantale.lean) -/
+noncomputable example : DistribLattice BinaryEvidence := inferInstance
 
-/-- Verify Evidence has BoundedOrder structure (from CompleteLattice) -/
-noncomputable example : BoundedOrder Evidence := inferInstance
+/-- Verify BinaryEvidence has BoundedOrder structure (from CompleteLattice) -/
+noncomputable example : BoundedOrder BinaryEvidence := inferInstance
 
 /-! ## Strength is NOT a Modular Valuation
 
@@ -83,11 +83,11 @@ Counterexample:
 Actually, let me prove this is always true for finite non-zero evidence...
 -/
 
-/-- Evidence with finite non-zero total evidence -/
-def FiniteNonzeroEvidence (e : Evidence) : Prop :=
+/-- BinaryEvidence with finite non-zero total evidence -/
+def FiniteNonzeroEvidence (e : BinaryEvidence) : Prop :=
   0 < e.pos + e.neg ∧ e.pos + e.neg < ⊤
 
-/-! ## Total Evidence Valuation
+/-! ## Total BinaryEvidence Valuation
 
 While strength is a ratio, total evidence (e.pos + e.neg) IS additive over
 parallel combination (hplus). However, it's unbounded, so we can normalize
@@ -95,7 +95,7 @@ by fixing a maximum total evidence.
 -/
 
 /-- Total evidence as a function -/
-noncomputable def totalEvidence (e : Evidence) : ℝ≥0∞ := e.pos + e.neg
+noncomputable def totalEvidence (e : BinaryEvidence) : ℝ≥0∞ := e.pos + e.neg
 
 /-- Total evidence is monotone on the partial order (more evidence = larger total) -/
 theorem totalEvidence_monotone : Monotone totalEvidence := by
@@ -104,24 +104,24 @@ theorem totalEvidence_monotone : Monotone totalEvidence := by
   exact add_le_add hp hn
 
 /-- Total evidence of join equals max of components when total is measured -/
-theorem totalEvidence_join (x y : Evidence) :
+theorem totalEvidence_join (x y : BinaryEvidence) :
     totalEvidence (x ⊔ y) = max x.pos y.pos + max x.neg y.neg := by
   rfl
 
 /-- Total evidence of meet equals min of components -/
-theorem totalEvidence_meet (x y : Evidence) :
+theorem totalEvidence_meet (x y : BinaryEvidence) :
     totalEvidence (x ⊓ y) = min x.pos y.pos + min x.neg y.neg := by
   rfl
 
-/-! ## Bounded Evidence Sublattice
+/-! ## Bounded BinaryEvidence Sublattice
 
 For a modular valuation, we need bounded values. We can work with
-Evidence where pos ≤ M and neg ≤ M for some bound M.
+BinaryEvidence where pos ≤ M and neg ≤ M for some bound M.
 -/
 
-/-- Evidence bounded by M in both components -/
+/-- BinaryEvidence bounded by M in both components -/
 structure BoundedEvidence (M : ℝ≥0∞) where
-  evidence : Evidence
+  evidence : BinaryEvidence
   pos_le : evidence.pos ≤ M
   neg_le : evidence.neg ≤ M
 
@@ -139,22 +139,22 @@ def BoundedEvidence.bot (M : ℝ≥0∞) : BoundedEvidence M where
 
 /-! ## Connecting to Heyting Bounds Through Uncertainty
 
-Evidence IS a Heyting algebra (Frame), but its Heyting implication alone doesn't
+BinaryEvidence IS a Heyting algebra (Frame), but its Heyting implication alone doesn't
 give us scalar probability. The connection to KS probability is through the
 epistemic interpretation:
 
-1. When we have a SET of possible Evidence values (representing uncertainty),
+1. When we have a SET of possible BinaryEvidence values (representing uncertainty),
    this induces an interval of possible strengths.
 
 2. The width of this interval is analogous to the "excluded middle gap" in
    Heyting K&S.
 
-3. When the set collapses to a single Evidence value, we get a point probability
+3. When the set collapses to a single BinaryEvidence value, we get a point probability
    (like Boolean K&S).
 -/
 
-/-- A "credal set" of Evidence values representing epistemic uncertainty -/
-abbrev CredalSet := Set Evidence
+/-- A "credal set" of BinaryEvidence values representing epistemic uncertainty -/
+abbrev CredalSet := Set BinaryEvidence
 
 /-- The strength interval induced by a credal set -/
 noncomputable def credalStrengthInterval (S : CredalSet) : Set ℝ :=
@@ -174,21 +174,21 @@ noncomputable def credalGap (S : CredalSet) : ℝ :=
 
 /-- Singleton credal sets have zero gap (point probability).
     This is because both the sup and inf over the singleton are the same value. -/
-theorem credalGap_singleton (e : Evidence) :
-    credalGap ({e} : Set Evidence) = 0 := by
+theorem credalGap_singleton (e : BinaryEvidence) :
+    credalGap ({e} : Set BinaryEvidence) = 0 := by
   unfold credalGap credalUpper credalLower
-  -- The subtype ({e} : Set Evidence) is a subsingleton
-  have hss : Subsingleton ({e} : Set Evidence) := by
+  -- The subtype ({e} : Set BinaryEvidence) is a subsingleton
+  have hss : Subsingleton ({e} : Set BinaryEvidence) := by
     constructor
     intro ⟨x, hx⟩ ⟨y, hy⟩
     simp only [Set.mem_singleton_iff] at hx hy
     simp only [hx, hy]
   -- The canonical element
-  let x₀ : ({e} : Set Evidence) := ⟨e, Set.mem_singleton e⟩
+  let x₀ : ({e} : Set BinaryEvidence) := ⟨e, Set.mem_singleton e⟩
   -- Both sup and inf equal the unique value
-  have h1 : ⨆ x : ({e} : Set Evidence), (strength x.val).toReal = (strength e).toReal := by
+  have h1 : ⨆ x : ({e} : Set BinaryEvidence), (strength x.val).toReal = (strength e).toReal := by
     rw [ciSup_subsingleton x₀]
-  have h2 : ⨅ x : ({e} : Set Evidence), (strength x.val).toReal = (strength e).toReal := by
+  have h2 : ⨅ x : ({e} : Set BinaryEvidence), (strength x.val).toReal = (strength e).toReal := by
     rw [ciInf_subsingleton x₀]
   rw [h1, h2, sub_self]
 
@@ -199,14 +199,14 @@ theorem credalGap_singleton (e : Evidence) :
 
 Note: This is a conceptual analogy, not a formal isomorphism. -/
 
-/-! ## The Evidence → Probability Projection
+/-! ## The BinaryEvidence → Probability Projection
 
-The strength function defines a projection from Evidence to [0,1].
+The strength function defines a projection from BinaryEvidence to [0,1].
 This is analogous to how Heyting bounds project interval bounds.
 -/
 
-/-- Strength maps Evidence to the unit interval [0,1] (when defined) -/
-theorem strength_in_unit_interval (e : Evidence) :
+/-- Strength maps BinaryEvidence to the unit interval [0,1] (when defined) -/
+theorem strength_in_unit_interval (e : BinaryEvidence) :
     0 ≤ (strength e).toReal ∧ (strength e).toReal ≤ 1 := by
   constructor
   · exact ENNReal.toReal_nonneg
@@ -215,28 +215,28 @@ theorem strength_in_unit_interval (e : Evidence) :
     · simp [htop]
     · exact ENNReal.toReal_le_of_le_ofReal one_pos.le (by simp only [ENNReal.ofReal_one]; exact h)
 
-/-- The strength interval [lower, upper] for a pair of comparable Evidence values -/
-noncomputable def comparableInterval (e₁ e₂ : Evidence) : Set ℝ :=
+/-- The strength interval [lower, upper] for a pair of comparable BinaryEvidence values -/
+noncomputable def comparableInterval (e₁ e₂ : BinaryEvidence) : Set ℝ :=
   Set.Icc (min (strength e₁).toReal (strength e₂).toReal)
           (max (strength e₁).toReal (strength e₂).toReal)
 
 /-- The comparable interval is non-empty -/
-theorem comparableInterval_nonempty (e₁ e₂ : Evidence) :
+theorem comparableInterval_nonempty (e₁ e₂ : BinaryEvidence) :
     (comparableInterval e₁ e₂).Nonempty := by
   use min (strength e₁).toReal (strength e₂).toReal
   simp only [comparableInterval, Set.mem_Icc, le_refl, min_le_max, and_self]
 
-/-! ## Non-Boolean Character of Evidence
+/-! ## Non-Boolean Character of BinaryEvidence
 
-Evidence is NOT a Boolean algebra (no complement satisfying a ⊔ ¬a = ⊤ for all a).
+BinaryEvidence is NOT a Boolean algebra (no complement satisfying a ⊔ ¬a = ⊤ for all a).
 This is analogous to Heyting algebras not satisfying excluded middle.
 -/
 
-/-- Evidence has no Boolean complement: for any proposed "complement" operation,
+/-- BinaryEvidence has no Boolean complement: for any proposed "complement" operation,
     there exist elements where a ⊔ compl(a) ≠ ⊤ or a ⊓ compl(a) ≠ ⊥.
 
-    This shows Evidence is not a Boolean algebra. -/
-theorem evidence_not_boolean : ∃ e : Evidence, ∀ c : Evidence, ¬(e ⊔ c = ⊤ ∧ e ⊓ c = ⊥) := by
+    This shows BinaryEvidence is not a Boolean algebra. -/
+theorem evidence_not_boolean : ∃ e : BinaryEvidence, ∀ c : BinaryEvidence, ¬(e ⊔ c = ⊤ ∧ e ⊓ c = ⊥) := by
   -- Take e = (1, 0). For e ⊔ c = ⊤ and e ⊓ c = ⊥ to both hold:
   -- e ⊔ c = ⊤ requires max(1, c.pos) = ⊤ and max(0, c.neg) = ⊤
   -- e ⊓ c = ⊥ requires min(1, c.pos) = 0 and min(0, c.neg) = 0
@@ -247,9 +247,9 @@ theorem evidence_not_boolean : ∃ e : Evidence, ∀ c : Evidence, ¬(e ⊔ c = 
   use ⟨1, 0⟩
   intro c ⟨hsup, hinf⟩
   -- Extract component info from sup = ⊤: e ⊔ c = (max 1 c.pos, max 0 c.neg) = (⊤, ⊤)
-  have h_pos_sup : max (1 : ℝ≥0∞) c.pos = ⊤ := congrArg Evidence.pos hsup
+  have h_pos_sup : max (1 : ℝ≥0∞) c.pos = ⊤ := congrArg BinaryEvidence.pos hsup
   -- Extract component info from inf = ⊥: e ⊓ c = (min 1 c.pos, min 0 c.neg) = (0, 0)
-  have h_pos_inf : min (1 : ℝ≥0∞) c.pos = 0 := congrArg Evidence.pos hinf
+  have h_pos_inf : min (1 : ℝ≥0∞) c.pos = 0 := congrArg BinaryEvidence.pos hinf
   -- From min(1, c.pos) = 0 with 1 > 0, we need c.pos = 0
   have hcpos : c.pos = 0 := by
     rcases min_eq_iff.mp h_pos_inf with ⟨h, _⟩ | ⟨h, _⟩
@@ -260,10 +260,10 @@ theorem evidence_not_boolean : ∃ e : Evidence, ∀ c : Evidence, ¬(e ⊔ c = 
   simp only [max_eq_left (zero_le (1 : ℝ≥0∞))] at h_pos_sup
   exact ENNReal.one_ne_top h_pos_sup
 
-/-! ## Evidence Has Strictly More Structure Than Intervals
+/-! ## BinaryEvidence Has Strictly More Structure Than Intervals
 
 A probability interval [p, p] (i.e., a point probability p ∈ [0,1]) can be
-represented by infinitely many Evidence values. This shows Evidence is
+represented by infinitely many BinaryEvidence values. This shows BinaryEvidence is
 RICHER than just interval probability.
 
 The key observation:
@@ -272,12 +272,12 @@ The key observation:
 - The extra dimension (total evidence k) captures CONFIDENCE
 -/
 
-/-- Two Evidence values with the same strength but different total evidence.
-    This demonstrates that Evidence captures more than just probability. -/
+/-- Two BinaryEvidence values with the same strength but different total evidence.
+    This demonstrates that BinaryEvidence captures more than just probability. -/
 theorem evidence_richer_than_strength :
-    ∃ e₁ e₂ : Evidence,
+    ∃ e₁ e₂ : BinaryEvidence,
       strength e₁ = strength e₂ ∧  -- Same probability
-      e₁ ≠ e₂ ∧                    -- But different Evidence
+      e₁ ≠ e₂ ∧                    -- But different BinaryEvidence
       totalEvidence e₁ ≠ totalEvidence e₂  -- Specifically: different confidence
     := by
   -- Take e₁ = (1, 1) and e₂ = (2, 2)
@@ -305,13 +305,13 @@ theorem evidence_richer_than_strength :
     rw [h1, h2]
   case different_evidence =>
     intro h
-    have hpos : (1 : ℝ≥0∞) = 2 := congrArg Evidence.pos h
+    have hpos : (1 : ℝ≥0∞) = 2 := congrArg BinaryEvidence.pos h
     norm_num at hpos
   case different_total =>
     simp only [totalEvidence]
     norm_num
 
-/-- The fiber over a single strength value contains infinitely many Evidence values.
+/-- The fiber over a single strength value contains infinitely many BinaryEvidence values.
     For any strength s ∈ (0,1) and any positive scaling k, (k·s, k·(1-s)) has strength s. -/
 theorem strength_fiber_infinite (s : ℝ≥0∞) (_hs_pos : 0 < s) (hs_lt : s < 1) :
     ∀ k : ℝ≥0∞, k ≠ 0 → k ≠ ⊤ →
@@ -329,14 +329,14 @@ theorem strength_fiber_infinite (s : ℝ≥0∞) (_hs_pos : 0 < s) (hs_lt : s < 
   rw [mul_comm k s]
   exact ENNReal.mul_div_cancel_right hk_nz hk_ntop
 
-/-- Evidence has extra structure: confidence (total evidence) distinguishes
-    Evidence values that intervals cannot distinguish.
+/-- BinaryEvidence has extra structure: confidence (total evidence) distinguishes
+    BinaryEvidence values that intervals cannot distinguish.
 
-    This makes Evidence suitable for evidence aggregation (via ⊕)
+    This makes BinaryEvidence suitable for evidence aggregation (via ⊕)
     where higher confidence should have more weight. -/
 theorem evidence_confidence_distinguishes :
     ∀ p : ℝ≥0∞, p ≠ 0 → p ≠ ⊤ → p < 1 →
-      ∃ e₁ e₂ : Evidence,
+      ∃ e₁ e₂ : BinaryEvidence,
         strength e₁ = p ∧
         strength e₂ = p ∧
         totalEvidence e₁ < totalEvidence e₂ := by
@@ -365,17 +365,17 @@ theorem evidence_confidence_distinguishes :
 
 This file establishes:
 
-1. Evidence is a Frame (complete Heyting algebra) — see `EvidenceQuantale.lean`
+1. BinaryEvidence is a Frame (complete Heyting algebra) — see `EvidenceQuantale.lean`
 2. Strength is NOT a modular valuation (it's a ratio, not additive)
-3. Credal sets of Evidence values induce strength intervals
+3. Credal sets of BinaryEvidence values induce strength intervals
 4. The credal gap is analogous to the Heyting excluded middle gap
-5. Evidence is NOT Boolean (no complement satisfies excluded middle)
-6. **Evidence is richer than intervals**: multiple Evidence values map to the
+5. BinaryEvidence is NOT Boolean (no complement satisfies excluded middle)
+6. **BinaryEvidence is richer than intervals**: multiple BinaryEvidence values map to the
    same strength, distinguished by total evidence (confidence)
 
-The key insight: Evidence IS a Heyting algebra but strength is not a modular
+The key insight: BinaryEvidence IS a Heyting algebra but strength is not a modular
 valuation on it. The epistemic interpretation provides the probability connection:
-- Uncertainty about Evidence → interval-valued probability
+- Uncertainty about BinaryEvidence → interval-valued probability
 - Point probability ↔ singleton credal set
 - Non-Boolean behavior ↔ non-trivial credal sets
 - **Extra structure**: Confidence (total evidence) enables proper aggregation

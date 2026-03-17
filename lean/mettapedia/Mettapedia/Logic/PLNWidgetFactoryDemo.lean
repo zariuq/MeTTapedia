@@ -59,7 +59,7 @@ structure FactoryState where
   /-- Sufficient statistics for machine B's feature distribution -/
   machineBEvidence : NormalGammaEvidence
   /-- Source attribution: pos = from A, neg = from B -/
-  sourceEvidence : Evidence
+  sourceEvidence : BinaryEvidence
 
 namespace FactoryState
 
@@ -67,7 +67,7 @@ namespace FactoryState
 def zero : FactoryState where
   machineAEvidence := NormalGammaEvidence.zero
   machineBEvidence := NormalGammaEvidence.zero
-  sourceEvidence := Evidence.zero
+  sourceEvidence := BinaryEvidence.zero
 
 /-- Componentwise addition (revision). -/
 noncomputable def add (s₁ s₂ : FactoryState) : FactoryState where
@@ -90,7 +90,7 @@ instance : Zero FactoryState where zero := zero
 @[simp] theorem zero_machineBEvidence :
     (zero : FactoryState).machineBEvidence = NormalGammaEvidence.zero := rfl
 @[simp] theorem zero_sourceEvidence :
-    (zero : FactoryState).sourceEvidence = Evidence.zero := rfl
+    (zero : FactoryState).sourceEvidence = BinaryEvidence.zero := rfl
 
 @[ext]
 theorem ext {s₁ s₂ : FactoryState}
@@ -104,25 +104,25 @@ theorem add_comm (s₁ s₂ : FactoryState) : s₁ + s₂ = s₂ + s₁ := by
   apply ext
   · exact NormalGammaEvidence.hplus_comm _ _
   · exact NormalGammaEvidence.hplus_comm _ _
-  · exact Evidence.hplus_comm _ _
+  · exact BinaryEvidence.hplus_comm _ _
 
 theorem add_assoc (s₁ s₂ s₃ : FactoryState) : s₁ + s₂ + s₃ = s₁ + (s₂ + s₃) := by
   apply ext
   · exact NormalGammaEvidence.hplus_assoc _ _ _
   · exact NormalGammaEvidence.hplus_assoc _ _ _
-  · exact Evidence.hplus_assoc _ _ _
+  · exact BinaryEvidence.hplus_assoc _ _ _
 
 theorem zero_add (s : FactoryState) : zero + s = s := by
   apply ext
   · exact NormalGammaEvidence.zero_hplus _
   · exact NormalGammaEvidence.zero_hplus _
-  · exact Evidence.zero_hplus _
+  · exact BinaryEvidence.zero_hplus _
 
 theorem add_zero (s : FactoryState) : s + zero = s := by
   apply ext
   · exact NormalGammaEvidence.hplus_zero _
   · exact NormalGammaEvidence.hplus_zero _
-  · exact Evidence.hplus_zero _
+  · exact BinaryEvidence.hplus_zero _
 
 noncomputable instance instAddCommMonoid : AddCommMonoid FactoryState where
   add_assoc := add_assoc
@@ -136,7 +136,7 @@ noncomputable instance instEvidenceType : EvidenceType FactoryState where
 
 end FactoryState
 
-/-! ## §3: Query Type and Evidence Extraction -/
+/-! ## §3: Query Type and BinaryEvidence Extraction -/
 
 /-- Queries against the factory state. -/
 inductive FactoryQuery where
@@ -148,7 +148,7 @@ inductive FactoryQuery where
 /-- Extract source attribution evidence for a given machine.
     For machine A: pos = from_A count, neg = from_B count.
     For machine B: swapped. -/
-def sourceQueryEvidence (s : FactoryState) (m : Machine) : Evidence :=
+def sourceQueryEvidence (s : FactoryState) (m : Machine) : BinaryEvidence :=
   match m with
   | .A => s.sourceEvidence
   | .B => ⟨s.sourceEvidence.neg, s.sourceEvidence.pos⟩
@@ -158,7 +158,7 @@ def sourceQueryEvidence (s : FactoryState) (m : Machine) : Evidence :=
     applies the exceedance spec to get P(feature > c). -/
 noncomputable def machineExceedanceEvidence
     (spec : ExceedanceSpec) (priorA priorB : NormalGammaPrior)
-    (s : FactoryState) (m : Machine) (c : ℝ) : Evidence :=
+    (s : FactoryState) (m : Machine) (c : ℝ) : BinaryEvidence :=
   let (ngEvid, prior) := match m with
     | .A => (s.machineAEvidence, priorA)
     | .B => (s.machineBEvidence, priorB)
@@ -170,7 +170,7 @@ noncomputable def machineExceedanceEvidence
 /-- Full evidence extraction for any factory query. -/
 noncomputable def factoryEvidence
     (spec : ExceedanceSpec) (priorA priorB : NormalGammaPrior)
-    (s : FactoryState) : FactoryQuery → Evidence
+    (s : FactoryState) : FactoryQuery → BinaryEvidence
   | .fromSource m => sourceQueryEvidence s m
   | .exceedance m c => machineExceedanceEvidence spec priorA priorB s m c
 
@@ -396,7 +396,7 @@ theorem canary_batchB_count : batchB.machineBEvidence.n = 3 := by
 theorem canary_source_total :
     fullProduction.sourceEvidence.pos + fullProduction.sourceEvidence.neg = 7 := by
   simp only [fullProduction, batchA, batchB, machineAObs, machineBObs,
-    FactoryState.add_sourceEvidence, Evidence.hplus_def]
+    FactoryState.add_sourceEvidence, BinaryEvidence.hplus_def]
   norm_num
 
 /-- Canary: batch A has no machine B observations. -/
@@ -416,7 +416,7 @@ theorem canary_source_counts :
     fullProduction.sourceEvidence.pos = 4 ∧
     fullProduction.sourceEvidence.neg = 3 := by
   simp only [fullProduction, batchA, batchB, machineAObs, machineBObs,
-    FactoryState.add_sourceEvidence, Evidence.hplus_def]
+    FactoryState.add_sourceEvidence, BinaryEvidence.hplus_def]
   norm_num
 
 end Mettapedia.Logic.PLNWidgetFactoryDemo

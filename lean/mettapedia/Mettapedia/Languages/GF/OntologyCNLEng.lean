@@ -150,7 +150,7 @@ private def ex_ifthen : OntStmt :=
 #eval linOntStmt ex_ifthen
 -- "if X is a subclass of PhysicalProcess then X hasParticipant PhysicalEntity"
 
--- Example 6: Evidence citation
+-- Example 6: BinaryEvidence citation
 private def ex_evidence : EvidenceStmt :=
   .cite {
     source := SourceLoc.mk "Merge.kif" 925

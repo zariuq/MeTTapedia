@@ -1,7 +1,7 @@
 /-
-# CPT Learning: Bridging PLN Evidence to Bayesian Network Parameters
+# CPT Learning: Bridging PLN BinaryEvidence to Bayesian Network Parameters
 
-This file connects PLN Evidence (from EvidenceBeta.lean) to CPT parameter estimation
+This file connects PLN BinaryEvidence (from EvidenceBeta.lean) to CPT parameter estimation
 for Boolean Bayesian network nodes. When all state spaces are Bool, each CPT entry
 is a Bernoulli parameter, and PLN evidence provides a principled way to estimate it
 via Beta posterior means.
@@ -38,7 +38,7 @@ namespace Mettapedia.ProbabilityTheory.BayesianNetworks.CPTLearning
 def IsBooleanBN {V : Type*} [Fintype V] (bn : BayesianNetwork V) : Prop :=
   ∀ v : V, bn.stateSpace v = Bool
 
-/-! ## CPT Learning from Evidence -/
+/-! ## CPT Learning from BinaryEvidence -/
 
 /-- A single CPT entry for a Boolean node: evidence counts for a specific parent configuration. -/
 structure BooleanCPTEntry where

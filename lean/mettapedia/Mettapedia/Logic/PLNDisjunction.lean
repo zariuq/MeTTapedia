@@ -15,7 +15,7 @@ the truth value of A ∨ B from the truth values of A and B.
 $$P(A ∨ B) = 1 - P(¬A ∧ ¬B)$$
 
 Using PLN negation (evidence swap) and conjunction:
-$$\text{Evidence}(A ∨ B) = ∼(\text{Evidence}(∼A ⊗ ∼B))$$
+$$\text{BinaryEvidence}(A ∨ B) = ∼(\text{BinaryEvidence}(∼A ⊗ ∼B))$$
 
 ### 2. Via Inclusion-Exclusion
 $$P(A ∨ B) = P(A) + P(B) - P(A ∧ B)$$
@@ -42,13 +42,13 @@ open Mettapedia.Logic.PLNNegation
 open Mettapedia.Logic.PLNConjunction
 open Mettapedia.ProbabilityTheory
 open MeasureTheory
-open Evidence
+open BinaryEvidence
 
 /-! ## Disjunction via De Morgan
 
 The fundamental approach: A ∨ B = ¬(¬A ∧ ¬B)
 
-In Evidence terms:
+In BinaryEvidence terms:
 - ∼e swaps positive and negative evidence
 - ⊗ (tensor) combines independent evidence
 - Disjunction = negate(tensor(negate(A), negate(B)))
@@ -58,23 +58,23 @@ In Evidence terms:
 
     A ∨ B = ¬(¬A ∧ ¬B)
 
-    Evidence(A ∨ B) = ∼(∼A ⊗ ∼B)
+    BinaryEvidence(A ∨ B) = ∼(∼A ⊗ ∼B)
 
     This uses:
     1. PLN negation: ∼e = (e.neg, e.pos)
     2. Independent conjunction: tensor product
 -/
-noncomputable def disjunctionDeMorgan (e_A e_B : Evidence) : Evidence :=
+noncomputable def disjunctionDeMorgan (e_A e_B : BinaryEvidence) : BinaryEvidence :=
   ∼(∼e_A * ∼e_B)
 
 /-- Disjunction is commutative -/
-theorem disjunctionDeMorgan_comm (e_A e_B : Evidence) :
+theorem disjunctionDeMorgan_comm (e_A e_B : BinaryEvidence) :
     disjunctionDeMorgan e_A e_B = disjunctionDeMorgan e_B e_A := by
   unfold disjunctionDeMorgan
   rw [tensor_comm]
 
 /-- Disjunction is associative -/
-theorem disjunctionDeMorgan_assoc (e_A e_B e_C : Evidence) :
+theorem disjunctionDeMorgan_assoc (e_A e_B e_C : BinaryEvidence) :
     disjunctionDeMorgan (disjunctionDeMorgan e_A e_B) e_C =
     disjunctionDeMorgan e_A (disjunctionDeMorgan e_B e_C) := by
   unfold disjunctionDeMorgan
@@ -88,7 +88,7 @@ theorem disjunctionDeMorgan_assoc (e_A e_B e_C : Evidence) :
     And ∼A ⊗ 0 = 0 (tensor with zero is zero)
     So ∼0 = 0
 -/
-theorem disjunctionDeMorgan_zero (e : Evidence) :
+theorem disjunctionDeMorgan_zero (e : BinaryEvidence) :
     disjunctionDeMorgan e 0 = ∼(∼e * 0) := rfl
 
 /-! ## Explicit Formula
@@ -107,12 +107,12 @@ Computing the evidence coordinates directly.
     Note: This is the SAME as tensor! Under De Morgan with PLN negation,
     disjunction and conjunction have the same evidence structure.
 -/
-theorem disjunctionDeMorgan_explicit (e_A e_B : Evidence) :
+theorem disjunctionDeMorgan_explicit (e_A e_B : BinaryEvidence) :
     disjunctionDeMorgan e_A e_B = ⟨e_A.pos * e_B.pos, e_A.neg * e_B.neg⟩ := by
   unfold disjunctionDeMorgan
   simp only [plnNeg, tensor_def]
 
-/-- Remarkable fact: Under PLN's Evidence algebra, disjunction via De Morgan
+/-- Remarkable fact: Under PLN's BinaryEvidence algebra, disjunction via De Morgan
     equals conjunction (tensor product)!
 
     This is because:
@@ -120,7 +120,7 @@ theorem disjunctionDeMorgan_explicit (e_A e_B : Evidence) :
     - Tensor multiplies coordinates
     - ∼(∼A ⊗ ∼B) = ∼((a⁻, a⁺) ⊗ (b⁻, b⁺)) = ∼(a⁻b⁻, a⁺b⁺) = (a⁺b⁺, a⁻b⁻) = A ⊗ B
 -/
-theorem disjunctionDeMorgan_eq_tensor (e_A e_B : Evidence) :
+theorem disjunctionDeMorgan_eq_tensor (e_A e_B : BinaryEvidence) :
     disjunctionDeMorgan e_A e_B = e_A * e_B := by
   simp only [disjunctionDeMorgan_explicit, tensor_def]
 
@@ -134,12 +134,12 @@ In classical probability with strength semantics:
 
 These are DIFFERENT.
 
-But in Evidence space (n⁺, n⁻):
+But in BinaryEvidence space (n⁺, n⁻):
 - The lattice structure represents information ordering (more evidence = higher)
 - The tensor product represents sequential/independent composition
 - De Morgan with evidence swap gives the SAME structure
 
-This suggests that Evidence is NOT a direct model of probability but rather
+This suggests that BinaryEvidence is NOT a direct model of probability but rather
 a model of uncertainty/confidence that has different algebraic properties.
 
 The PLN book (Chapter 10.6.2) discusses this tension between the logical
@@ -184,7 +184,7 @@ Alternative formulation using P(A ∨ B) = P(A) + P(B) - P(A ∧ B).
 
     Under independence: s_{A∨B} = s_A + s_B - s_A × s_B
 
-    Note: This formula works directly on strengths, not Evidence counts.
+    Note: This formula works directly on strengths, not BinaryEvidence counts.
 -/
 noncomputable def disjunctionInclusionExclusion (s_A s_B s_AB : ℝ≥0∞) : ℝ≥0∞ :=
   s_A + s_B - s_AB
@@ -193,29 +193,29 @@ noncomputable def disjunctionInclusionExclusion (s_A s_B s_AB : ℝ≥0∞) : �
 theorem inclusion_exclusion_independent (s_A s_B : ℝ≥0∞) :
     disjunctionInclusionExclusion s_A s_B (s_A * s_B) = s_A + s_B - s_A * s_B := rfl
 
-/-! ## Disjunction preserves Evidence properties -/
+/-! ## Disjunction preserves BinaryEvidence properties -/
 
 /-- Disjunction via De Morgan preserves total evidence monotonicity.
 
     If both inputs have bounded total, so does the output.
 -/
-theorem disjunctionDeMorgan_total (_e_A _e_B : Evidence)
+theorem disjunctionDeMorgan_total (_e_A _e_B : BinaryEvidence)
     (_h_A : _e_A.total ≠ ⊤) (_h_B : _e_B.total ≠ ⊤) :
     (disjunctionDeMorgan _e_A _e_B).total ≠ ⊤ := by
   -- `disjunctionDeMorgan` is definitional `tensor` (proved above), so this is a
   -- finiteness-of-total lemma for tensor/multiplication of evidence coordinates.
   have hA_pos : _e_A.pos ≠ ⊤ := by
     intro h
-    exact _h_A (by simp [Evidence.total, h])
+    exact _h_A (by simp [BinaryEvidence.total, h])
   have hA_neg : _e_A.neg ≠ ⊤ := by
     intro h
-    exact _h_A (by simp [Evidence.total, h])
+    exact _h_A (by simp [BinaryEvidence.total, h])
   have hB_pos : _e_B.pos ≠ ⊤ := by
     intro h
-    exact _h_B (by simp [Evidence.total, h])
+    exact _h_B (by simp [BinaryEvidence.total, h])
   have hB_neg : _e_B.neg ≠ ⊤ := by
     intro h
-    exact _h_B (by simp [Evidence.total, h])
+    exact _h_B (by simp [BinaryEvidence.total, h])
   -- Expand totals explicitly using the proven coordinate formula.
   rw [disjunctionDeMorgan_explicit]
   -- Products of finite `ENNReal`s are finite, and the sum of two finite values is finite.
@@ -231,7 +231,7 @@ theorem disjunctionDeMorgan_total (_e_A _e_B : Evidence)
 
 The PLN Disjunction rule reveals an interesting algebraic fact:
 
-**In Evidence space, disjunction via De Morgan equals conjunction (tensor product).**
+**In BinaryEvidence space, disjunction via De Morgan equals conjunction (tensor product).**
 
 This is a consequence of:
 1. PLN negation being an involutive swap: ∼∼e = e
@@ -239,13 +239,13 @@ This is a consequence of:
 3. The double negation undoing the coordinate swaps
 
 This does NOT mean disjunction = conjunction semantically. Rather, it shows
-that the Evidence algebra captures uncertainty differently from direct probability.
+that the BinaryEvidence algebra captures uncertainty differently from direct probability.
 
 For probabilistic semantics, one should use the strength formulas:
 - Conjunction: s_{A∧B} ≈ s_A × s_B (under independence)
 - Disjunction: s_{A∨B} ≈ s_A + s_B - s_A × s_B (inclusion-exclusion)
 
-The Evidence carrier is the quantale structure that enables both computations.
+The BinaryEvidence carrier is the quantale structure that enables both computations.
 -/
 
 end Mettapedia.Logic.PLNDisjunction

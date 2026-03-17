@@ -32,7 +32,7 @@ open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
 
 /-- WM interface for the first premise-bearing HE runtime fragment. -/
 structure HEPremiseCoreWMInterface
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query]
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv) where
   encode : Pattern → Query
   side : State → Prop := fun _ => True
@@ -45,7 +45,7 @@ structure HEPremiseCoreWMInterface
 namespace HEPremiseCoreWMInterface
 
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 variable {relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv}
 
 /-- Forget the HE premise-core wrapper back to the generic runtime WM interface. -/

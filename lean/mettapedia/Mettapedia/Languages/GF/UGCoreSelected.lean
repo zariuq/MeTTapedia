@@ -130,7 +130,7 @@ theorem UGCoreEq_selected_is_weakest
 
 section EnglishCzech
 
-variable {State : Type u} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type u} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- Finite selected invariant family for the current English/Czech UG-core
 instance. -/
@@ -165,7 +165,7 @@ noncomputable def englishCzechSelectedSignature
   Obs
     | .englishSem => Prop
     | .czechSem => Prop
-    | .evidence => Evidence
+    | .evidence => BinaryEvidence
     | .strength => ℝ≥0∞
     | .scopeNT => Sigma fun A : NativeTypeBundle => Sigma fun B : NativeTypeBundle => Hom A B
     | .closedNT₁ => NativeTypeBundle
@@ -178,7 +178,7 @@ noncomputable def englishCzechSelectedSignature
     | .evidence => fun t =>
         gfEvidenceDenote W t
     | .strength => fun t =>
-        WorldModel.queryStrength W (gfAbstractToPattern t)
+        BinaryWorldModel.queryStrength W (gfAbstractToPattern t)
     | .scopeNT => fun t =>
         let p := gfAbstractToPattern t
         ⟨ formulaToNT Rnt Int Dom envScope (.qexists y (.qforall x φscope)) p X
@@ -215,11 +215,11 @@ noncomputable def semanticCore_preserves_englishCzechSelected
           intro t
           rfl⟩
     | .evidence =>
-        ⟨fun p => WorldModel.evidence W p, by
+        ⟨fun p => BinaryWorldModel.evidence W p, by
           intro t
           rfl⟩
     | .strength =>
-        ⟨fun p => WorldModel.queryStrength W p, by
+        ⟨fun p => BinaryWorldModel.queryStrength W p, by
           intro t
           rfl⟩
     | .scopeNT =>
@@ -273,7 +273,7 @@ theorem EnglishCzech_factor_through_UGCore_selected
       englishCzechSelectedSignature W Isem φsem Rnt Int Dom envScope x y hne φscope X env₁ env₂ φclosed hcl
     ∃ engLift : Quotient (ugCoreSetoid sig) → Prop,
       ∃ czeLift : Quotient (ugCoreSetoid sig) → Prop,
-        ∃ evLift : Quotient (ugCoreSetoid sig) → Evidence,
+        ∃ evLift : Quotient (ugCoreSetoid sig) → BinaryEvidence,
           ∃ strLift : Quotient (ugCoreSetoid sig) → ℝ≥0∞,
             (∀ t, engLift (Quotient.mk (ugCoreSetoid sig) t) =
               sem (langReduces englishGFLanguageDef) Isem φsem (gfAbstractToPattern t)) ∧
@@ -281,7 +281,7 @@ theorem EnglishCzech_factor_through_UGCore_selected
               sem (langReduces czechGFLanguageDef) Isem φsem (gfAbstractToPattern t)) ∧
             (∀ t, evLift (Quotient.mk (ugCoreSetoid sig) t) = gfEvidenceDenote W t) ∧
             (∀ t, strLift (Quotient.mk (ugCoreSetoid sig) t) =
-              WorldModel.queryStrength W (gfAbstractToPattern t)) := by
+              BinaryWorldModel.queryStrength W (gfAbstractToPattern t)) := by
   dsimp
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · exact (englishCzechSelectedSignature

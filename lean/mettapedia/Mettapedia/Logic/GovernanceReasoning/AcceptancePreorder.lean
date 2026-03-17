@@ -22,18 +22,18 @@ open Mettapedia.Logic.GovernanceReasoning.TreatyKernel
 open Mettapedia.Logic.GovernanceReasoning.TreatyKernelAcceptance
 open scoped ENNReal
 
-/-! ## Evidence quality preorder -/
+/-! ## BinaryEvidence quality preorder -/
 
 /-- Quality preorder on evidence:
 `e₂` is at least as good as `e₁` if it has at least as much positive evidence and
 no more negative evidence. -/
-def EvidenceQualityLE (e₁ e₂ : Evidence) : Prop :=
+def EvidenceQualityLE (e₁ e₂ : BinaryEvidence) : Prop :=
   e₁.pos ≤ e₂.pos ∧ e₂.neg ≤ e₁.neg
 
-theorem EvidenceQualityLE.refl (e : Evidence) : EvidenceQualityLE e e := by
+theorem EvidenceQualityLE.refl (e : BinaryEvidence) : EvidenceQualityLE e e := by
   exact ⟨le_rfl, le_rfl⟩
 
-theorem EvidenceQualityLE.trans {e₁ e₂ e₃ : Evidence}
+theorem EvidenceQualityLE.trans {e₁ e₂ e₃ : BinaryEvidence}
     (h12 : EvidenceQualityLE e₁ e₂) (h23 : EvidenceQualityLE e₂ e₃) :
     EvidenceQualityLE e₁ e₃ := by
   exact ⟨le_trans h12.1 h23.1, le_trans h23.2 h12.2⟩
@@ -42,15 +42,15 @@ theorem EvidenceQualityLE.trans {e₁ e₂ e₃ : Evidence}
 
 /-- Acceptance policy monotone in the quality preorder. -/
 structure QualityMonotoneAcceptancePolicy where
-  accepts : Evidence → Prop
+  accepts : BinaryEvidence → Prop
   mono : ∀ {e₁ e₂}, EvidenceQualityLE e₁ e₂ → accepts e₁ → accepts e₂
 
 /-- Rectangular acceptance in `(pos, neg)` coordinates:
 minimum positive support and maximum tolerated negative support. -/
-def rectangularAccept (posMin negMax : ℝ≥0∞) (e : Evidence) : Prop :=
+def rectangularAccept (posMin negMax : ℝ≥0∞) (e : BinaryEvidence) : Prop :=
   posMin ≤ e.pos ∧ e.neg ≤ negMax
 
-theorem rectangularAccept_mono {posMin negMax : ℝ≥0∞} {e₁ e₂ : Evidence}
+theorem rectangularAccept_mono {posMin negMax : ℝ≥0∞} {e₁ e₂ : BinaryEvidence}
     (hLE : EvidenceQualityLE e₁ e₂)
     (hAcc : rectangularAccept posMin negMax e₁) :
     rectangularAccept posMin negMax e₂ := by

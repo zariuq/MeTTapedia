@@ -29,10 +29,10 @@ abbrev HOLWMQueryEq (φ ψ : HOLQuery Const) : Prop :=
 
 abbrev HOLWMStrengthEq (φ ψ : HOLQuery Const) : Prop :=
   ∀ W : Multiset (HenkinModel.{u, v, w} Base Const),
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const) W φ =
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const) W ψ
 
@@ -79,8 +79,8 @@ noncomputable def wmConsequenceRuleOn_of_holProvImp {φ ψ : HOLQuery Const}
 /-- Apply the proof-backed WM consequence rule directly at a world-model state. -/
 theorem holProvImp_to_WMConsequenceRuleOn_apply {φ ψ : HOLQuery Const}
     (h : HOLProvImp (Const := Const) φ ψ) (W : HOLState Base Const) :
-    WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ ≤
-      WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W ψ :=
+    BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ ≤
+      BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W ψ :=
   Mettapedia.Logic.PLNHigherOrderHOLSoundness.holProvImp_implies_multisetConsequence
     (Base := Base) (Const := Const) h W
 
@@ -90,7 +90,7 @@ noncomputable def wmRewriteRule_of_holProvIff {φ ψ : HOLQuery Const}
     WMRewriteRule (HOLState Base Const) (HOLQuery Const) where
   side := True
   conclusion := ψ
-  derive := fun W => WorldModel.evidence (State := HOLState Base Const) (Query := HOLQuery Const) W φ
+  derive := fun W => BinaryWorldModel.evidence (State := HOLState Base Const) (Query := HOLQuery Const) W φ
   sound := by
     intro _ W
     exact holProvIff_to_WMQueryEq (Base := Base) (Const := Const) h W

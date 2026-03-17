@@ -21,31 +21,31 @@ section ConcreteFixtures
 
 /-- Infinite-domain mixed fixture: even numbers are classically true, odd numbers contradictory. -/
 def natFixtureParity : SatisfyingSetInf Nat :=
-  ⟨fun n => if n % 2 = 0 then (⟨1, 0⟩ : Evidence) else (⟨0, 1⟩ : Evidence)⟩
+  ⟨fun n => if n % 2 = 0 then (⟨1, 0⟩ : BinaryEvidence) else (⟨0, 1⟩ : BinaryEvidence)⟩
 
 /-- Infinite-domain constant fixture for extensional canaries. -/
 def natFixtureConst : SatisfyingSetInf Nat :=
-  ⟨fun _ => (⟨2, 0⟩ : Evidence)⟩
+  ⟨fun _ => (⟨2, 0⟩ : BinaryEvidence)⟩
 
 /-- Uniform weight fixture over the infinite domain. -/
-def natWeightUnit : WeightFunctionInf Nat Evidence :=
-  ⟨fun _ => (⟨1, 0⟩ : Evidence)⟩
+def natWeightUnit : WeightFunctionInf Nat BinaryEvidence :=
+  ⟨fun _ => (⟨1, 0⟩ : BinaryEvidence)⟩
 
 /-- Even numbers receive boosted positive evidence while odd numbers keep unit weight. -/
-def natWeightBoostEven : WeightFunctionInf Nat Evidence :=
-  ⟨fun n => if n % 2 = 0 then (⟨2, 0⟩ : Evidence) else (⟨1, 0⟩ : Evidence)⟩
+def natWeightBoostEven : WeightFunctionInf Nat BinaryEvidence :=
+  ⟨fun n => if n % 2 = 0 then (⟨2, 0⟩ : BinaryEvidence) else (⟨1, 0⟩ : BinaryEvidence)⟩
 
 /-- De Morgan canary on a genuinely infinite domain. -/
 theorem canary_inf_nat_exists_deMorgan :
     thereExistsEvalInf natFixtureParity natWeightUnit =
-      Evidence.compl (forAllEvalInf (SatisfyingSetInf.neg natFixtureParity) natWeightUnit) :=
+      BinaryEvidence.compl (forAllEvalInf (SatisfyingSetInf.neg natFixtureParity) natWeightUnit) :=
   main_theorem_3_de_morgan_inf natFixtureParity natWeightUnit
 
 /-- Pointwise comparison needed for the monotonicity canary. -/
 theorem natWeightUnit_le_natWeightBoostEven (n : Nat) :
     natWeightUnit.μ n ≤ natWeightBoostEven.μ n := by
   by_cases h : n % 2 = 0 <;>
-    simp [natWeightUnit, natWeightBoostEven, h, Evidence.le_def]
+    simp [natWeightUnit, natWeightBoostEven, h, BinaryEvidence.le_def]
 
 /-- Monotonicity canary using two honest weights over the infinite domain. -/
 theorem canary_inf_nat_weight_monotonicity :
@@ -59,11 +59,11 @@ theorem canary_inf_nat_weight_monotonicity :
 
 /-- Constant-predicate extensional canary over the infinite domain. -/
 theorem canary_inf_nat_constant_extensional :
-    forAllEvalExtInf natFixtureConst = (⟨2, 0⟩ : Evidence) ∧
-      thereExistsEvalExtInf natFixtureConst = (⟨2, 0⟩ : Evidence) := by
+    forAllEvalExtInf natFixtureConst = (⟨2, 0⟩ : BinaryEvidence) ∧
+      thereExistsEvalExtInf natFixtureConst = (⟨2, 0⟩ : BinaryEvidence) := by
   have hset :
-      ({ e : Evidence | ∃ n : Nat, e = natFixtureConst.pred n } : Set Evidence) =
-        ({ (⟨2, 0⟩ : Evidence) } : Set Evidence) := by
+      ({ e : BinaryEvidence | ∃ n : Nat, e = natFixtureConst.pred n } : Set BinaryEvidence) =
+        ({ (⟨2, 0⟩ : BinaryEvidence) } : Set BinaryEvidence) := by
     ext e
     constructor
     · intro he
@@ -80,8 +80,8 @@ theorem canary_inf_nat_constant_extensional :
 
 /-- The parity fixture only takes two values, but does so on infinitely many even and odd numbers. -/
 theorem natFixtureParity_range :
-    ({ e : Evidence | ∃ n : Nat, e = natFixtureParity.pred n } : Set Evidence) =
-      ({ (⟨1, 0⟩ : Evidence), (⟨0, 1⟩ : Evidence) } : Set Evidence) := by
+    ({ e : BinaryEvidence | ∃ n : Nat, e = natFixtureParity.pred n } : Set BinaryEvidence) =
+      ({ (⟨1, 0⟩ : BinaryEvidence), (⟨0, 1⟩ : BinaryEvidence) } : Set BinaryEvidence) := by
   ext e
   constructor
   · intro he
@@ -95,23 +95,23 @@ theorem natFixtureParity_range :
 
 /-- Extensional `∀` canary for the infinite parity fixture. -/
 theorem canary_inf_nat_parity_forall_ext :
-    forAllEvalExtInf natFixtureParity = (⟨0, 0⟩ : Evidence) := by
+    forAllEvalExtInf natFixtureParity = (⟨0, 0⟩ : BinaryEvidence) := by
   unfold forAllEvalExtInf
   rw [natFixtureParity_range, sInf_pair]
-  show Evidence.inf (⟨1, 0⟩ : Evidence) (⟨0, 1⟩ : Evidence) = (⟨0, 0⟩ : Evidence)
-  unfold Evidence.inf
-  apply Evidence.ext'
+  show BinaryEvidence.inf (⟨1, 0⟩ : BinaryEvidence) (⟨0, 1⟩ : BinaryEvidence) = (⟨0, 0⟩ : BinaryEvidence)
+  unfold BinaryEvidence.inf
+  apply BinaryEvidence.ext'
   · simp
   · simp
 
 /-- Extensional `∃` canary for the infinite parity fixture. -/
 theorem canary_inf_nat_parity_exists_ext :
-    thereExistsEvalExtInf natFixtureParity = (⟨1, 1⟩ : Evidence) := by
+    thereExistsEvalExtInf natFixtureParity = (⟨1, 1⟩ : BinaryEvidence) := by
   unfold thereExistsEvalExtInf
   rw [natFixtureParity_range, sSup_pair]
-  show Evidence.sup (⟨1, 0⟩ : Evidence) (⟨0, 1⟩ : Evidence) = (⟨1, 1⟩ : Evidence)
-  unfold Evidence.sup
-  apply Evidence.ext'
+  show BinaryEvidence.sup (⟨1, 0⟩ : BinaryEvidence) (⟨0, 1⟩ : BinaryEvidence) = (⟨1, 1⟩ : BinaryEvidence)
+  unfold BinaryEvidence.sup
+  apply BinaryEvidence.ext'
   · simp
   · simp
 
@@ -124,11 +124,11 @@ theorem canary_inf_nat_parity_forall_le_exists_ext :
 theorem canary_inf_nat_parity_non_equivalence_extensional :
     forAllEvalExtInf natFixtureParity ≠ thereExistsEvalExtInf natFixtureParity := by
   intro hEq
-  have h0 : (⟨0, 0⟩ : Evidence) = (⟨1, 1⟩ : Evidence) := by
+  have h0 : (⟨0, 0⟩ : BinaryEvidence) = (⟨1, 1⟩ : BinaryEvidence) := by
     rw [← canary_inf_nat_parity_forall_ext, ← canary_inf_nat_parity_exists_ext]
     exact hEq
   have hpos : (0 : ENNReal) = 1 := by
-    simpa using congrArg Evidence.pos h0
+    simpa using congrArg BinaryEvidence.pos h0
   exact zero_ne_one hpos
 
 end ConcreteFixtures

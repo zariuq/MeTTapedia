@@ -32,7 +32,7 @@ this: I(heart; kidney) ≈ 1 because they're nearly perfectly correlated.
 ## Design for Hookability
 
 This POC is designed to connect to:
-1. `EvidenceQuantale.lean` - Evidence counts as concrete carrier
+1. `EvidenceQuantale.lean` - BinaryEvidence counts as concrete carrier
 2. `Optimality.lean` - Universal prediction / Bayes mixtures
 3. `MarkovExchangeability.lean` - Sufficient statistics
 4. Future Shannon/Kolmogorov entropy formalizations
@@ -220,7 +220,7 @@ theorem singleton_reduction {α : Type*} [GoertzelModel α] (F W : Concept α)
 These definitions provide hooks to connect with other modules.
 -/
 
-/-- Hook to PLN Evidence: Convert evidence counts to mutual information estimate.
+/-- Hook to PLN BinaryEvidence: Convert evidence counts to mutual information estimate.
 
     Given evidence (n⁺, n⁻), we can estimate mutual information via:
     - Strength s = n⁺/(n⁺+n⁻) estimates P(W|F)

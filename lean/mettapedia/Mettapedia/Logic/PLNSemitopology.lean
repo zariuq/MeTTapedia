@@ -188,7 +188,7 @@ theorem quorumSemitopology_intersection_not_actionable :
 open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.PLNWorldModelGeneric
 
-variable [EvidenceType State] [AddCommMonoid Ev] [GenericWorldModel State Query Ev]
+variable [EvidenceType State] [AddCommMonoid Ev] [AdditiveWorldModel State Query Ev]
 
 /-- Semitopology-driven independence: both supports are actionable and
 pairwise disjoint at the query in question. -/
@@ -210,11 +210,11 @@ theorem additive_of_semitopologyIndependent
         L.independent W₁ W₂ q)
     {W₁ W₂ : State} {q : Query}
     (hsemi : SemitopologyIndependent T support W₁ W₂ q) :
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := State) (Query := Query) (Ev := Ev) (L.merge W₁ W₂) q =
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := State) (Query := Query) (Ev := Ev) W₁ q +
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := State) (Query := Query) (Ev := Ev) W₂ q :=
   L.additive_of_independent' W₁ W₂ q (hind hsemi)
 

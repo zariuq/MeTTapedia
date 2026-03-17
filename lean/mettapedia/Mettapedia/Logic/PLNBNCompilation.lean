@@ -63,10 +63,10 @@ noncomputable def evalVE (cpt : bn.DiscreteCPT) [Fintype V] [DecidableEq V]
 /-- BN value-labeled atom (vertex + concrete value). -/
 abbrev Atom : Type _ := Σ v : V, bn.stateSpace v
 
-/-- BNQuery as a PLNQuery over value-labeled atoms. -/
-def toPLNQuery : BNQuery bn → PLNQuery (Atom bn)
-  | .prop v val => PLNQuery.prop ⟨v, val⟩
-  | .link a b valA valB => PLNQuery.link ⟨a, valA⟩ ⟨b, valB⟩
+/-- BNQuery as a AtomQuery over value-labeled atoms. -/
+def toPLNQuery : BNQuery bn → AtomQuery (Atom bn)
+  | .prop v val => AtomQuery.prop ⟨v, val⟩
+  | .link a b valA valB => AtomQuery.link ⟨a, valA⟩ ⟨b, valB⟩
 
 end BNQuery
 
@@ -104,11 +104,11 @@ abbrev Atom : Type _ := BNQuery.Atom (bn := bn)
 
 abbrev State : Type _ := Multiset (bn.DiscreteCPT)
 
-noncomputable def evidenceOfProb (p : ℝ≥0∞) : Evidence :=
+noncomputable def evidenceOfProb (p : ℝ≥0∞) : BinaryEvidence :=
   ⟨p, 1 - p⟩
 
 noncomputable def queryProb [Fintype V] [DecidableEq V] (cpt : bn.DiscreteCPT) :
-    PLNQuery (BNQuery.Atom (bn := bn)) → ℝ≥0∞
+    AtomQuery (BNQuery.Atom (bn := bn)) → ℝ≥0∞
   | .prop ⟨v, val⟩ =>
       BayesianNetwork.propProbVE (bn := bn) cpt v val
   | .link ⟨a, valA⟩ ⟨b, valB⟩ =>
@@ -117,11 +117,11 @@ noncomputable def queryProb [Fintype V] [DecidableEq V] (cpt : bn.DiscreteCPT) :
       BayesianNetwork.linkProbVECond (bn := bn) cpt as ⟨b, valB⟩
 
 noncomputable def queryEvidence [Fintype V] [DecidableEq V] (cpt : bn.DiscreteCPT)
-    (q : PLNQuery (BNQuery.Atom (bn := bn))) : Evidence :=
+    (q : AtomQuery (BNQuery.Atom (bn := bn))) : BinaryEvidence :=
   evidenceOfProb (queryProb (bn := bn) cpt q)
 
 noncomputable def evidence [Fintype V] [DecidableEq V] (W : State (bn := bn))
-    (q : PLNQuery (BNQuery.Atom (bn := bn))) : Evidence :=
+    (q : AtomQuery (BNQuery.Atom (bn := bn))) : BinaryEvidence :=
   (W.map (fun cpt => queryEvidence (bn := bn) cpt q)).sum
 
 instance : AddCommMonoid (State (bn := bn)) := by
@@ -132,7 +132,7 @@ instance : EvidenceType (State (bn := bn)) :=
   { toAddCommMonoid := inferInstance }
 
 noncomputable instance [Fintype V] [DecidableEq V] :
-    WorldModel (State (bn := bn)) (PLNQuery (BNQuery.Atom (bn := bn))) where
+    BinaryWorldModel (State (bn := bn)) (AtomQuery (BNQuery.Atom (bn := bn))) where
   evidence W q := evidence (bn := bn) W q
   evidence_add W₁ W₂ q := by
     classical
@@ -149,7 +149,7 @@ noncomputable instance [Fintype V] [DecidableEq V] :
 /-- For a singleton-CPT state, evidence reduces to the single CPT's evidence. -/
 lemma evidence_singleton [Fintype V] [DecidableEq V]
     (cpt : bn.DiscreteCPT)
-    (q : PLNQuery (BNQuery.Atom (bn := bn))) :
+    (q : AtomQuery (BNQuery.Atom (bn := bn))) :
     evidence (bn := bn) ({cpt} : Multiset (bn.DiscreteCPT)) q =
       queryEvidence (bn := bn) cpt q := by
   unfold evidence
@@ -159,20 +159,20 @@ lemma evidence_singleton [Fintype V] [DecidableEq V]
 This bridges the WM evidence layer to the probability layer.
 Requires `queryProb cpt q ≤ 1` (a probability bound). -/
 theorem queryStrength_singleton_eq_queryProb [Fintype V] [DecidableEq V]
-    (cpt : bn.DiscreteCPT) (q : PLNQuery (BNQuery.Atom (bn := bn)))
+    (cpt : bn.DiscreteCPT) (q : AtomQuery (BNQuery.Atom (bn := bn)))
     (hq : queryProb (bn := bn) cpt q ≤ 1) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       ({cpt} : Multiset (bn.DiscreteCPT)) q =
       queryProb (bn := bn) cpt q := by
-  unfold WorldModel.queryStrength
-  have hev : WorldModel.evidence ({cpt} : Multiset (bn.DiscreteCPT)) q =
+  unfold BinaryWorldModel.queryStrength
+  have hev : BinaryWorldModel.evidence ({cpt} : Multiset (bn.DiscreteCPT)) q =
       queryEvidence (bn := bn) cpt q := by
     show evidence (bn := bn) ({cpt} : Multiset (bn.DiscreteCPT)) q = _
     exact evidence_singleton cpt q
   rw [hev]
-  show Evidence.toStrength (evidenceOfProb (queryProb (bn := bn) cpt q)) = _
+  show BinaryEvidence.toStrength (evidenceOfProb (queryProb (bn := bn) cpt q)) = _
   -- toStrength (evidenceOfProb p) = p when p ≤ 1
-  unfold Evidence.toStrength evidenceOfProb Evidence.total
+  unfold BinaryEvidence.toStrength evidenceOfProb BinaryEvidence.total
   simp only
   split
   · rename_i h
@@ -195,7 +195,7 @@ lemma queryProb_prop_eq_jointMeasure [Fintype V] [DecidableEq V]
     [∀ v, MeasurableSingletonClass (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
     [DecidableRel bn.graph.edges]
     (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v) :
-    queryProb (bn := bn) cpt (PLNQuery.prop ⟨v, val⟩) =
+    queryProb (bn := bn) cpt (AtomQuery.prop ⟨v, val⟩) =
       cpt.jointMeasure (eventEq (bn := bn) v val) := by
   simp only [queryProb]
   rw [propProbVE_eq_jointMeasure_eventEq]
@@ -207,7 +207,7 @@ lemma queryProb_link_eq_jointMeasure [Fintype V] [DecidableEq V]
     [DecidableRel bn.graph.edges]
     (cpt : bn.DiscreteCPT) (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b)
     (ha : cpt.jointMeasure (eventEq (bn := bn) a valA) ≠ 0) :
-    queryProb (bn := bn) cpt (PLNQuery.link ⟨a, valA⟩ ⟨b, valB⟩) =
+    queryProb (bn := bn) cpt (AtomQuery.link ⟨a, valA⟩ ⟨b, valB⟩) =
       cpt.jointMeasure (eventEq (bn := bn) a valA ∩ eventEq (bn := bn) b valB) /
         cpt.jointMeasure (eventEq (bn := bn) a valA) := by
   simp only [queryProb]
@@ -223,7 +223,7 @@ lemma queryProb_prop_le_one [Fintype V] [DecidableEq V]
     [DecidableRel bn.graph.edges]
     (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)
     [IsProbabilityMeasure cpt.jointMeasure] :
-    queryProb (bn := bn) cpt (PLNQuery.prop ⟨v, val⟩) ≤ 1 := by
+    queryProb (bn := bn) cpt (AtomQuery.prop ⟨v, val⟩) ≤ 1 := by
   rw [queryProb_prop_eq_jointMeasure]; exact prob_le_one
 
 /-- `queryProb` for link is at most 1. -/
@@ -232,7 +232,7 @@ lemma queryProb_link_le_one [Fintype V] [DecidableEq V]
     [∀ v, MeasurableSingletonClass (bn.stateSpace v)] [∀ v, Nonempty (bn.stateSpace v)]
     [DecidableRel bn.graph.edges]
     (cpt : bn.DiscreteCPT) (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b) :
-    queryProb (bn := bn) cpt (PLNQuery.link ⟨a, valA⟩ ⟨b, valB⟩) ≤ 1 := by
+    queryProb (bn := bn) cpt (AtomQuery.link ⟨a, valA⟩ ⟨b, valB⟩) ≤ 1 := by
   simp only [queryProb]
   rw [linkProbVE_eq_jointMeasure_eventEq]
   split
@@ -247,9 +247,9 @@ lemma queryStrength_singleton_prop_toReal [Fintype V] [DecidableEq V]
     [DecidableRel bn.graph.edges]
     (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)
     [IsProbabilityMeasure cpt.jointMeasure] :
-    (WorldModel.queryStrength
+    (BinaryWorldModel.queryStrength
       ({cpt} : State (bn := bn))
-      (PLNQuery.prop (⟨v, val⟩ : BNQuery.Atom (bn := bn)))).toReal =
+      (AtomQuery.prop (⟨v, val⟩ : BNQuery.Atom (bn := bn)))).toReal =
     cpt.jointMeasure.real (eventEq (bn := bn) v val) := by
   rw [queryStrength_singleton_eq_queryProb _ _ (queryProb_prop_le_one cpt v val)]
   rw [queryProb_prop_eq_jointMeasure]
@@ -264,9 +264,9 @@ lemma queryStrength_singleton_link_toReal [Fintype V] [DecidableEq V]
     [DecidableRel bn.graph.edges]
     (cpt : bn.DiscreteCPT) (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b)
     (ha : cpt.jointMeasure (eventEq (bn := bn) a valA) ≠ 0) :
-    (WorldModel.queryStrength
+    (BinaryWorldModel.queryStrength
       ({cpt} : State (bn := bn))
-      (PLNQuery.link (⟨a, valA⟩ : BNQuery.Atom (bn := bn))
+      (AtomQuery.link (⟨a, valA⟩ : BNQuery.Atom (bn := bn))
                      (⟨b, valB⟩ : BNQuery.Atom (bn := bn)))).toReal =
     cpt.jointMeasure.real (eventEq (bn := bn) b valB ∩ eventEq (bn := bn) a valA) /
       cpt.jointMeasure.real (eventEq (bn := bn) a valA) := by
@@ -278,10 +278,10 @@ lemma queryStrength_singleton_link_toReal [Fintype V] [DecidableEq V]
 
 lemma wmqueryeq_of_prob_eq
     [Fintype V] [DecidableEq V]
-    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (q₁ q₂ : AtomQuery (BNQuery.Atom (bn := bn)))
     (h : ∀ cpt : bn.DiscreteCPT, queryProb (bn := bn) cpt q₁ = queryProb (bn := bn) cpt q₂) :
     WMQueryEq (State := State (bn := bn))
-      (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+      (Query := AtomQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
   intro W
   classical
   let f₁ := fun cpt => queryEvidence (bn := bn) cpt q₁
@@ -293,29 +293,29 @@ lemma wmqueryeq_of_prob_eq
       simp [queryEvidence, evidenceOfProb, h cpt]
     dsimp [f₁, f₂]
     exact this
-  simp [WorldModel.evidence, evidence, f₁, f₂, hmap]
+  simp [BinaryWorldModel.evidence, evidence, f₁, f₂, hmap]
 
 lemma wmqueryeq_of_dsep
     [Fintype V] [DecidableEq V]
     (cond : DSeparationCond V)
-    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (q₁ q₂ : AtomQuery (BNQuery.Atom (bn := bn)))
     (h : cond.holds (bn := bn) → ∀ cpt : bn.DiscreteCPT,
       queryProb (bn := bn) cpt q₁ = queryProb (bn := bn) cpt q₂) :
     cond.holds (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+        (Query := AtomQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
   intro hcond
   exact wmqueryeq_of_prob_eq (bn := bn) q₁ q₂ (h hcond)
 
 lemma wmqueryeq_of_dsepFull
     [Fintype V] [DecidableEq V]
     (cond : DSeparationCond V)
-    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (q₁ q₂ : AtomQuery (BNQuery.Atom (bn := bn)))
     (h : cond.holdsFull (bn := bn) → ∀ cpt : bn.DiscreteCPT,
       queryProb (bn := bn) cpt q₁ = queryProb (bn := bn) cpt q₂) :
     cond.holdsFull (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+        (Query := AtomQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
   intro hcond
   exact wmqueryeq_of_prob_eq (bn := bn) q₁ q₂ (h hcond)
 
@@ -330,7 +330,7 @@ variable (bn : BayesianNetwork V)
 abbrev BNAtom : Type _ := BNQuery.Atom (bn := bn)
 
 variable {State : Type*} [Mettapedia.Logic.EvidenceClass.EvidenceType State]
-  [WorldModel State (PLNQuery (BNAtom bn))]
+  [BinaryWorldModel State (AtomQuery (BNAtom bn))]
 
 /-- D-separation condition as a Σ side-condition for WM rewrites. -/
 def SigmaOfDsep (cond : DSeparationCond V) : Prop :=
@@ -338,10 +338,10 @@ def SigmaOfDsep (cond : DSeparationCond V) : Prop :=
 
 /-- Turn a d-separation condition into a WM rewrite rule (query-equivalence form). -/
 def rewrite_of_dsep
-    (cond : DSeparationCond V) (q₁ q₂ : PLNQuery (BNAtom bn))
+    (cond : DSeparationCond V) (q₁ q₂ : AtomQuery (BNAtom bn))
     (h : SigmaOfDsep (bn := bn) cond →
-      WMQueryEq (State := State) (Query := PLNQuery (BNAtom bn)) q₁ q₂) :
-    WMRewriteRule State (PLNQuery (BNAtom bn)) :=
+      WMQueryEq (State := State) (Query := AtomQuery (BNAtom bn)) q₁ q₂) :
+    WMRewriteRule State (AtomQuery (BNAtom bn)) :=
   dsep_rewrite (State := State) (Atom := BNAtom bn) q₁ q₂ (SigmaOfDsep (bn := bn) cond) h
 
 end WMRewriteBridge
@@ -434,7 +434,7 @@ noncomputable def evalVE (plan : CompiledPlan bn) (cpt : bn.DiscreteCPT)
 
 end CompiledPlan
 
-/-! ## Compiled-plan rewrites (BN WorldModel instance) -/
+/-! ## Compiled-plan rewrites (BN BinaryWorldModel instance) -/
 
 namespace BNCompiledRewrite
 
@@ -454,10 +454,10 @@ noncomputable def fromPlan
       plan.sideCond.holds (bn := bn) →
         WMQueryEq
           (State := State (bn := bn))
-          (Query := PLNQuery (BNQuery.Atom (bn := bn)))
+          (Query := AtomQuery (BNQuery.Atom (bn := bn)))
           (BNQuery.toPLNQuery (bn := bn) conclusion)
           (BNQuery.toPLNQuery (bn := bn) conclusion)) :
-    WMRewriteRule (State (bn := bn)) (PLNQuery (BNQuery.Atom (bn := bn))) :=
+    WMRewriteRule (State (bn := bn)) (AtomQuery (BNQuery.Atom (bn := bn))) :=
   rewrite_of_dsep (bn := bn) (State := State (bn := bn))
     plan.sideCond
     (BNQuery.toPLNQuery (bn := bn) conclusion)
@@ -538,7 +538,7 @@ This keeps bridge lemmas **explicitly assumption-bound** and avoids conflating
 PLN-typicality with classical quantifier readings. -/
 class CondIndepQueryEq
     (cond : DSeparationCond V)
-    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn))) : Prop where
+    (q₁ q₂ : AtomQuery (BNQuery.Atom (bn := bn))) : Prop where
   prob_eq :
     ∀ cpt : bn.DiscreteCPT,
       CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z →
@@ -546,7 +546,7 @@ class CondIndepQueryEq
 
 instance condIndepQueryEq_refl
     (cond : DSeparationCond V)
-    (q : PLNQuery (BNQuery.Atom (bn := bn))) :
+    (q : AtomQuery (BNQuery.Atom (bn := bn))) :
     CondIndepQueryEq (bn := bn) cond q q :=
   ⟨by intro _cpt _c; rfl⟩
 
@@ -572,17 +572,17 @@ class ScreeningOffProbEq
     ∀ cpt : bn.DiscreteCPT,
       CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V) →
         queryProb (bn := bn) cpt
-          (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
+          (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
         queryProb (bn := bn) cpt
-          (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+          (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
 
 instance condIndepQueryEq_screeningOff
     (A B C : V) (valA : bn.stateSpace A) (valB : bn.stateSpace B) (valC : bn.stateSpace C)
     [ScreeningOffProbEq (bn := bn) A B C valA valB valC] :
     CondIndepQueryEq (bn := bn)
       (cond := CompiledPlan.deductionSide A B C)
-      (q₁ := PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
-      (q₂ := PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) :=
+      (q₁ := AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+      (q₂ := AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) :=
   ⟨by
     intro cpt hci
     exact ScreeningOffProbEq.prob_eq (bn := bn) (A := A) (B := B) (C := C)
@@ -591,7 +591,7 @@ instance condIndepQueryEq_screeningOff
 /-- Use d-separation discharge to obtain a WMQueryEq, given a cond-indep ⇒ prob-eq lemma. -/
 theorem wmqueryeq_of_dsep_discharge
     (cond : DSeparationCond V)
-    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (q₁ q₂ : AtomQuery (BNQuery.Atom (bn := bn)))
     (hprob :
       ∀ cpt : bn.DiscreteCPT,
         CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z →
@@ -602,14 +602,14 @@ theorem wmqueryeq_of_dsep_discharge
           CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z) :
     cond.holds (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+        (Query := AtomQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
   intro hcond
   exact wmqueryeq_of_prob_eq (bn := bn) q₁ q₂ (fun cpt =>
     hprob cpt (hci cpt hcond))
 
 theorem wmqueryeq_of_dsepFull_discharge
     (cond : DSeparationCond V)
-    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (q₁ q₂ : AtomQuery (BNQuery.Atom (bn := bn)))
     (hprob :
       ∀ cpt : bn.DiscreteCPT,
         CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z →
@@ -620,7 +620,7 @@ theorem wmqueryeq_of_dsepFull_discharge
           CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z) :
     cond.holdsFull (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+        (Query := AtomQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
   intro hcond
   exact wmqueryeq_of_prob_eq (bn := bn) q₁ q₂ (fun cpt =>
     hprob cpt (hci cpt hcond))
@@ -629,7 +629,7 @@ theorem wmqueryeq_of_dsepFull_discharge
 
 theorem wmqueryeq_of_dsep_discharge_class
     (cond : DSeparationCond V)
-    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (q₁ q₂ : AtomQuery (BNQuery.Atom (bn := bn)))
     [CondIndepQueryEq (bn := bn) cond q₁ q₂]
     (hci :
       ∀ cpt : bn.DiscreteCPT,
@@ -637,21 +637,21 @@ theorem wmqueryeq_of_dsep_discharge_class
           CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z) :
     cond.holds (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+        (Query := AtomQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
   intro hcond
   exact wmqueryeq_of_prob_eq (bn := bn) q₁ q₂ (fun cpt =>
     CondIndepQueryEq.prob_eq (bn := bn) (cond := cond) cpt (hci cpt hcond))
 
 theorem wmqueryeq_of_dsep_discharge_via_soundness
     (cond : DSeparationCond V)
-    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (q₁ q₂ : AtomQuery (BNQuery.Atom (bn := bn)))
     [CondIndepQueryEq (bn := bn) cond q₁ q₂]
     [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
     (hLM : ∀ cpt : bn.DiscreteCPT, HasLocalMarkovProperty bn cpt.jointMeasure)
     (hSound : ∀ cpt : bn.DiscreteCPT, DSeparationSoundness bn cpt.jointMeasure) :
     cond.holds (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+        (Query := AtomQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
   exact wmqueryeq_of_dsep_discharge_class (bn := bn) (cond := cond) (q₁ := q₁) (q₂ := q₂)
     (hci := fun cpt hcond => by
       letI : HasLocalMarkovProperty bn cpt.jointMeasure := hLM cpt
@@ -660,7 +660,7 @@ theorem wmqueryeq_of_dsep_discharge_via_soundness
 
 theorem wmqueryeq_of_dsep_discharge_via_soundness_allLocalMarkov
     (cond : DSeparationCond V)
-    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (q₁ q₂ : AtomQuery (BNQuery.Atom (bn := bn)))
     [CondIndepQueryEq (bn := bn) cond q₁ q₂]
     [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
     [AllDiscreteCPTLocalMarkov (bn := bn)]
@@ -670,7 +670,7 @@ theorem wmqueryeq_of_dsep_discharge_via_soundness_allLocalMarkov
       DSeparationSoundness bn cpt.jointMeasure) :
     cond.holds (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
+        (Query := AtomQuery (BNQuery.Atom (bn := bn))) q₁ q₂ := by
   exact wmqueryeq_of_dsep_discharge_via_soundness
     (bn := bn) (cond := cond) (q₁ := q₁) (q₂ := q₂)
     (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := bn))
@@ -725,9 +725,9 @@ lemma linkProbVE_eq_propProbVE_of_condIndep
     (hci : CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ∅)
     (hpos : cpt.jointMeasure (eventEq (bn := bn) A valA) ≠ 0) :
     queryProb (bn := bn) cpt
-      (PLNQuery.link ⟨A, valA⟩ ⟨C, valC⟩) =
+      (AtomQuery.link ⟨A, valA⟩ ⟨C, valC⟩) =
     queryProb (bn := bn) cpt
-      (PLNQuery.prop ⟨C, valC⟩) := by
+      (AtomQuery.prop ⟨C, valC⟩) := by
   -- Rewrite VE queries to joint-measure form.
   have hlink :=
     Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.linkProbVE_eq_jointMeasure_eventEq
@@ -789,9 +789,9 @@ lemma linkProbVECond_eq_linkProbVE_of_mul_eq
           (eventEq (bn := bn) C valC ∩
             eventEq (bn := bn) B valB)) :
     queryProb (bn := bn) cpt
-      (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
+      (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
     queryProb (bn := bn) cpt
-      (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+      (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
   have hlinkCond :=
     Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.linkProbVECond_eq_jointMeasure_eventOfConstraints
         (bn := bn) (cpt := cpt)
@@ -925,9 +925,9 @@ lemma linkProbVECond_eq_linkProbVE_of_eventEq_mul
     [EventPosConstraints (bn := bn) [⟨A, valA⟩, ⟨B, valB⟩]]
     [ScreeningOffEventEq (bn := bn) A B C valA valB valC] :
     queryProb (bn := bn) cpt
-      (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
+      (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
     queryProb (bn := bn) cpt
-      (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+      (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
   have hmul :=
     ScreeningOffEventEq.mul_eq (bn := bn) (A := A) (B := B) (C := C)
       (valA := valA) (valB := valB) (valC := valC) cpt
@@ -945,9 +945,9 @@ lemma linkProbVECond_eq_linkProbVE_of_condIndepVertices
     [EventPosConstraints (bn := bn) [⟨A, valA⟩, ⟨B, valB⟩]]
     (hci : CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
     queryProb (bn := bn) cpt
-      (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
+      (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
     queryProb (bn := bn) cpt
-      (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+      (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
   have hcond :
       Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork.CondIndepOn
         (bn := bn) (μ := cpt.jointMeasure) A B C := by
@@ -972,9 +972,9 @@ lemma linkProbVECond_eq_linkProbVE_of_condIndepVertices_CA
     [EventPosConstraints (bn := bn) [⟨A, valA⟩, ⟨B, valB⟩]]
     (hciCA : CondIndepVertices bn cpt.jointMeasure ({C} : Set V) ({A} : Set V) ({B} : Set V)) :
     queryProb (bn := bn) cpt
-      (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
+      (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
     queryProb (bn := bn) cpt
-      (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+      (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
   have hci :
       CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V) :=
     condIndepVertices_symm (bn := bn) (μ := cpt.jointMeasure) hciCA
@@ -1032,8 +1032,8 @@ instance condIndepQueryEq_abduction_link_prop
     [EventPos (bn := bn) A valA] :
     CondIndepQueryEq (bn := bn)
       (cond := CompiledPlan.abductionSide A B C)
-      (q₁ := PLNQuery.link ⟨A, valA⟩ ⟨C, valC⟩)
-      (q₂ := PLNQuery.prop ⟨C, valC⟩) :=
+      (q₁ := AtomQuery.link ⟨A, valA⟩ ⟨C, valC⟩)
+      (q₂ := AtomQuery.prop ⟨C, valC⟩) :=
   ⟨by
     intro cpt hci
     exact linkProbVE_eq_propProbVE_of_condIndep (bn := bn)
@@ -1048,8 +1048,8 @@ instance condIndepQueryEq_deduction_linkCond_link
     [EventPosConstraints (bn := bn) [⟨A, valA⟩, ⟨B, valB⟩]] :
     CondIndepQueryEq (bn := bn)
       (cond := CompiledPlan.deductionSide A B C)
-      (q₁ := PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
-      (q₂ := PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) :=
+      (q₁ := AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+      (q₂ := AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) :=
   ⟨by
     intro cpt hci
     have hciCA :
@@ -1074,9 +1074,9 @@ theorem condIndep_linkProb_eq_of_eq
     CondIndepVertices bn μ ({A} : Set V) ({C} : Set V) ({B} : Set V) →
       ∀ cpt : bn.DiscreteCPT,
         queryProb (bn := bn) cpt
-          (PLNQuery.link ⟨A, valA⟩ ⟨C, valC⟩) =
+          (AtomQuery.link ⟨A, valA⟩ ⟨C, valC⟩) =
         queryProb (bn := bn) cpt
-          (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+          (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
   intro _hci cpt
   cases hAB
   cases hval
@@ -1095,13 +1095,13 @@ theorem wmqueryeq_screeningOff_of_dsep
           CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
     (CompiledPlan.deductionSide A B C).holds (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn)))
-        (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
-        (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := bn)))
+        (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+        (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
   exact wmqueryeq_of_dsep_discharge_class (bn := bn)
     (cond := CompiledPlan.deductionSide A B C)
-    (q₁ := PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
-    (q₂ := PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+    (q₁ := AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+    (q₂ := AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
     hci
 
 /-- Deduction-pattern WMQueryEq: d-sep discharge + a cond-indep ⇒ prob-eq lemma. -/
@@ -1111,22 +1111,22 @@ theorem wmqueryeq_screeningOff_of_dsep_with
       ∀ cpt : bn.DiscreteCPT,
         CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V) →
           queryProb (bn := bn) cpt
-            (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
+            (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩) =
           queryProb (bn := bn) cpt
-            (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩))
+            (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩))
     (hci :
       ∀ cpt : bn.DiscreteCPT,
         (CompiledPlan.deductionSide A B C).holds (bn := bn) →
           CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
     (CompiledPlan.deductionSide A B C).holds (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn)))
-        (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
-        (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := bn)))
+        (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+        (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
   intro hcond
   exact wmqueryeq_of_prob_eq (bn := bn)
-    (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
-    (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+    (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+    (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
     (fun cpt => hprob cpt (hci cpt hcond))
 
 theorem wmqueryeq_screeningOff_of_dsep_CA
@@ -1141,13 +1141,13 @@ theorem wmqueryeq_screeningOff_of_dsep_CA
           CondIndepVertices bn cpt.jointMeasure ({C} : Set V) ({A} : Set V) ({B} : Set V)) :
     (CompiledPlan.deductionSide A B C).holds (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn)))
-        (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
-        (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := bn)))
+        (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+        (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) := by
   intro hcond
   exact wmqueryeq_of_prob_eq (bn := bn)
-    (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
-    (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+    (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+    (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
     (fun cpt =>
       linkProbVECond_eq_linkProbVE_of_condIndepVertices_CA (bn := bn)
         (A := A) (B := B) (C := C)
@@ -1165,13 +1165,13 @@ theorem wmqueryeq_screeningOff_of_dsep_class
           CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
     (CompiledPlan.deductionSide A B C).holds (bn := bn) →
       WMQueryEq (State := State (bn := bn))
-        (Query := PLNQuery (BNQuery.Atom (bn := bn)))
-        (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
-        (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩) :=
+        (Query := AtomQuery (BNQuery.Atom (bn := bn)))
+        (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+        (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩) :=
   wmqueryeq_of_dsep_discharge_class (bn := bn)
     (cond := CompiledPlan.deductionSide A B C)
-    (q₁ := PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
-    (q₂ := PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+    (q₁ := AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+    (q₂ := AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
     hci
 
 end BNWorldModel
@@ -1204,11 +1204,11 @@ noncomputable def screeningOffRewrite_class
       ∀ cpt : bn.DiscreteCPT,
         (CompiledPlan.deductionSide A B C).holds (bn := bn) →
           CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
-    WMRewriteRule (State (bn := bn)) (PLNQuery (BNQuery.Atom (bn := bn))) :=
+    WMRewriteRule (State (bn := bn)) (AtomQuery (BNQuery.Atom (bn := bn))) :=
   WMRewriteBridge.rewrite_of_dsep (bn := bn) (State := State (bn := bn))
     (CompiledPlan.deductionSide A B C)
-    (PLNQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
-    (PLNQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
+    (AtomQuery.link ⟨B, valB⟩ ⟨C, valC⟩)
+    (AtomQuery.linkCond [⟨A, valA⟩, ⟨B, valB⟩] ⟨C, valC⟩)
     (fun hcond =>
       (BNWorldModel.wmqueryeq_screeningOff_of_dsep_class (bn := bn)
         A B C valA valB valC hci hcond).symm)
@@ -1221,7 +1221,7 @@ noncomputable def screeningOffRewrite
       ∀ cpt : bn.DiscreteCPT,
         (CompiledPlan.deductionSide A B C).holds (bn := bn) →
           CondIndepVertices bn cpt.jointMeasure ({A} : Set V) ({C} : Set V) ({B} : Set V)) :
-    WMRewriteRule (State (bn := bn)) (PLNQuery (BNQuery.Atom (bn := bn))) :=
+    WMRewriteRule (State (bn := bn)) (AtomQuery (BNQuery.Atom (bn := bn))) :=
   screeningOffRewrite_class (bn := bn) (A := A) (B := B) (C := C)
     (valA := valA) (valB := valB) (valC := valC) hci
 
@@ -1229,13 +1229,13 @@ noncomputable def screeningOffRewrite
 
 noncomputable def rewrite_of_dsep_class
     (cond : DSeparationCond V)
-    (q₁ q₂ : PLNQuery (BNQuery.Atom (bn := bn)))
+    (q₁ q₂ : AtomQuery (BNQuery.Atom (bn := bn)))
     [BNWorldModel.CondIndepQueryEq (bn := bn) cond q₁ q₂]
     (hci :
       ∀ cpt : bn.DiscreteCPT,
         cond.holds (bn := bn) →
           CondIndepVertices bn cpt.jointMeasure cond.X cond.Y cond.Z) :
-    WMRewriteRule (State (bn := bn)) (PLNQuery (BNQuery.Atom (bn := bn))) :=
+    WMRewriteRule (State (bn := bn)) (AtomQuery (BNQuery.Atom (bn := bn))) :=
   WMRewriteBridge.rewrite_of_dsep (bn := bn) (State := State (bn := bn))
     cond q₁ q₂
     (fun hcond =>
@@ -1444,9 +1444,9 @@ theorem chain_screeningOff_wmqueryeq_of_dsep
     (hLM : ∀ cpt : chainBN.DiscreteCPT, HasLocalMarkovProperty chainBN cpt.jointMeasure) :
     (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) →
       WMQueryEq (State := State (bn := chainBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
-        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
-        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := chainBN)))
+        (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   intro hcond
   exact wmqueryeq_screeningOff_of_dsep_CA (bn := chainBN)
     (A := Three.A) (B := Three.B) (C := Three.C)
@@ -1466,9 +1466,9 @@ theorem chain_screeningOff_wmqueryeq_of_dsep_allLocalMarkov
     [AllDiscreteCPTLocalMarkov (bn := chainBN)] :
     (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) →
       WMQueryEq (State := State (bn := chainBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
-        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
-        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := chainBN)))
+        (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   exact chain_screeningOff_wmqueryeq_of_dsep
     (valA := valA) (valB := valB) (valC := valC)
     (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := chainBN))
@@ -1485,9 +1485,9 @@ theorem chain_screeningOff_wmqueryeq_of_dsep_allLocalMarkov_of
     (hLM : ∀ cpt : chainBN.DiscreteCPT, HasLocalMarkovProperty chainBN cpt.jointMeasure) :
     (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) →
       WMQueryEq (State := State (bn := chainBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
-        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
-        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := chainBN)))
+        (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   letI : AllDiscreteCPTLocalMarkov (bn := chainBN) :=
     allDiscreteCPTLocalMarkov_of (bn := chainBN) hLM
   exact chain_screeningOff_wmqueryeq_of_dsep_allLocalMarkov
@@ -1506,28 +1506,28 @@ theorem chain_screeningOff_rewrite_applies_of_dsep
     (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) →
       ∀ W : State (bn := chainBN),
         ⊢q W ⇓
-          (PLNQuery.linkCond
+          (AtomQuery.linkCond
             ([ (⟨Three.A, valA⟩ : BNQuery.Atom (bn := chainBN))
              , (⟨Three.B, valB⟩ : BNQuery.Atom (bn := chainBN)) ])
             (⟨Three.C, valC⟩ : BNQuery.Atom (bn := chainBN))) ↦
-          (WorldModel.evidence
+          (BinaryWorldModel.evidence
             (State := State (bn := chainBN))
-            (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
+            (Query := AtomQuery (BNQuery.Atom (bn := chainBN)))
             W
-            (PLNQuery.link
+            (AtomQuery.link
               (⟨Three.B, valB⟩ : BNQuery.Atom (bn := chainBN))
               (⟨Three.C, valC⟩ : BNQuery.Atom (bn := chainBN)))) := by
   intro hcond W
-  let qLink : PLNQuery (BNQuery.Atom (bn := chainBN)) :=
-    PLNQuery.link
+  let qLink : AtomQuery (BNQuery.Atom (bn := chainBN)) :=
+    AtomQuery.link
       (⟨Three.B, valB⟩ : BNQuery.Atom (bn := chainBN))
       (⟨Three.C, valC⟩ : BNQuery.Atom (bn := chainBN))
-  let qLinkCond : PLNQuery (BNQuery.Atom (bn := chainBN)) :=
-    PLNQuery.linkCond
+  let qLinkCond : AtomQuery (BNQuery.Atom (bn := chainBN)) :=
+    AtomQuery.linkCond
       ([ (⟨Three.A, valA⟩ : BNQuery.Atom (bn := chainBN))
        , (⟨Three.B, valB⟩ : BNQuery.Atom (bn := chainBN)) ])
       (⟨Three.C, valC⟩ : BNQuery.Atom (bn := chainBN))
-  let r : WMRewriteRule (State (bn := chainBN)) (PLNQuery (BNQuery.Atom (bn := chainBN))) :=
+  let r : WMRewriteRule (State (bn := chainBN)) (AtomQuery (BNQuery.Atom (bn := chainBN))) :=
     WMRewriteBridge.rewrite_of_dsep (bn := chainBN) (State := State (bn := chainBN))
       (CompiledPlan.deductionSide Three.A Three.B Three.C) qLink qLinkCond
       (fun h =>
@@ -1549,20 +1549,20 @@ theorem chain_screeningOff_strength_eq_of_dsep
     (hLM : ∀ cpt : chainBN.DiscreteCPT, HasLocalMarkovProperty chainBN cpt.jointMeasure) :
     (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := chainBN) →
       ∀ W : State (bn := chainBN),
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
           (State := State (bn := chainBN))
-          (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
-          W (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+          (Query := AtomQuery (BNQuery.Atom (bn := chainBN)))
+          W (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
           =
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
           (State := State (bn := chainBN))
-          (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
-          W (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+          (Query := AtomQuery (BNQuery.Atom (bn := chainBN)))
+          W (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   intro hcond W
   have hEq :=
     chain_screeningOff_wmqueryeq_of_dsep
       (valA := valA) (valB := valB) (valC := valC) hLM hcond
-  simpa [WorldModel.queryStrength] using congrArg Evidence.toStrength (hEq W)
+  simpa [BinaryWorldModel.queryStrength] using congrArg BinaryEvidence.toStrength (hEq W)
 
 theorem chain_screeningOff_wmqueryeq_of_dsepFull
     (valA valB valC : Bool)
@@ -1577,9 +1577,9 @@ theorem chain_screeningOff_wmqueryeq_of_dsepFull
     Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparatedFull
       chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
       WMQueryEq (State := State (bn := chainBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
-        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
-        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := chainBN)))
+        (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   intro hcondFull
   exact wmqueryeq_screeningOff_of_dsep_CA (bn := chainBN)
     (A := Three.A) (B := Three.B) (C := Three.C)
@@ -1601,9 +1601,9 @@ theorem chain_screeningOff_wmqueryeq_of_moralSep
     Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.SeparatedInMoral
       chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
       WMQueryEq (State := State (bn := chainBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
-        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
-        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := chainBN)))
+        (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   intro hSep
   have hFull :
       Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparatedFull
@@ -1625,9 +1625,9 @@ theorem chain_screeningOff_wmqueryeq_of_moralSepAncestral
     Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.SeparatedInMoralAncestral
       chainGraph ({Three.A} : Set Three) ({Three.C} : Set Three) ({Three.B} : Set Three) →
       WMQueryEq (State := State (bn := chainBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := chainBN)))
-        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
-        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := chainBN)))
+        (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   intro hSepAnc
   have hFull :
       Mettapedia.ProbabilityTheory.BayesianNetworks.DSeparation.DSeparatedFull
@@ -1686,9 +1686,9 @@ theorem fork_screeningOff_wmqueryeq_of_dsep
     (hLM : ∀ cpt : forkBN.DiscreteCPT, HasLocalMarkovProperty forkBN cpt.jointMeasure) :
     (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := forkBN) →
       WMQueryEq (State := State (bn := forkBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
-        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
-        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := forkBN)))
+        (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   intro hcond
   exact wmqueryeq_screeningOff_of_dsep_CA (bn := forkBN)
     (A := Three.A) (B := Three.B) (C := Three.C)
@@ -1708,9 +1708,9 @@ theorem fork_screeningOff_wmqueryeq_of_dsep_allLocalMarkov
     [AllDiscreteCPTLocalMarkov (bn := forkBN)] :
     (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := forkBN) →
       WMQueryEq (State := State (bn := forkBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
-        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
-        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := forkBN)))
+        (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   exact fork_screeningOff_wmqueryeq_of_dsep
     (valA := valA) (valB := valB) (valC := valC)
     (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := forkBN))
@@ -1727,9 +1727,9 @@ theorem fork_screeningOff_wmqueryeq_of_dsep_allLocalMarkov_of
     (hLM : ∀ cpt : forkBN.DiscreteCPT, HasLocalMarkovProperty forkBN cpt.jointMeasure) :
     (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := forkBN) →
       WMQueryEq (State := State (bn := forkBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
-        (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
-        (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := forkBN)))
+        (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+        (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   letI : AllDiscreteCPTLocalMarkov (bn := forkBN) :=
     allDiscreteCPTLocalMarkov_of (bn := forkBN) hLM
   exact fork_screeningOff_wmqueryeq_of_dsep_allLocalMarkov
@@ -1747,20 +1747,20 @@ theorem fork_screeningOff_strength_eq_of_dsep
     (hLM : ∀ cpt : forkBN.DiscreteCPT, HasLocalMarkovProperty forkBN cpt.jointMeasure) :
     (CompiledPlan.deductionSide Three.A Three.B Three.C).holds (bn := forkBN) →
       ∀ W : State (bn := forkBN),
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
           (State := State (bn := forkBN))
-          (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
-          W (PLNQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
+          (Query := AtomQuery (BNQuery.Atom (bn := forkBN)))
+          W (AtomQuery.linkCond [⟨Three.A, valA⟩, ⟨Three.B, valB⟩] ⟨Three.C, valC⟩)
           =
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
           (State := State (bn := forkBN))
-          (Query := PLNQuery (BNQuery.Atom (bn := forkBN)))
-          W (PLNQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
+          (Query := AtomQuery (BNQuery.Atom (bn := forkBN)))
+          W (AtomQuery.link ⟨Three.B, valB⟩ ⟨Three.C, valC⟩) := by
   intro hcond W
   have hEq :=
     fork_screeningOff_wmqueryeq_of_dsep
       (valA := valA) (valB := valB) (valC := valC) hLM hcond
-  simpa [WorldModel.queryStrength] using congrArg Evidence.toStrength (hEq W)
+  simpa [BinaryWorldModel.queryStrength] using congrArg BinaryEvidence.toStrength (hEq W)
 
 end ForkExample
 
@@ -1818,13 +1818,13 @@ theorem collider_screeningOff_wmqueryeq_of_dsep
     (hLM : ∀ cpt : colliderBN.DiscreteCPT, HasLocalMarkovProperty colliderBN cpt.jointMeasure) :
     (CompiledPlan.abductionSide Three.A Three.C Three.B).holds (bn := colliderBN) →
       WMQueryEq (State := State (bn := colliderBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := colliderBN)))
-        (PLNQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
-        (PLNQuery.prop ⟨Three.B, valB⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := colliderBN)))
+        (AtomQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
+        (AtomQuery.prop ⟨Three.B, valB⟩) := by
   intro hcond
   exact wmqueryeq_of_prob_eq (bn := colliderBN)
-    (PLNQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
-    (PLNQuery.prop ⟨Three.B, valB⟩)
+    (AtomQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
+    (AtomQuery.prop ⟨Three.B, valB⟩)
     (fun cpt =>
       linkProbVE_eq_propProbVE_of_condIndep (bn := colliderBN)
         (A := Three.A) (C := Three.B) (valA := valA) (valC := valB)
@@ -1843,9 +1843,9 @@ theorem collider_screeningOff_wmqueryeq_of_dsep_allLocalMarkov
     [AllDiscreteCPTLocalMarkov (bn := colliderBN)] :
     (CompiledPlan.abductionSide Three.A Three.C Three.B).holds (bn := colliderBN) →
       WMQueryEq (State := State (bn := colliderBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := colliderBN)))
-        (PLNQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
-        (PLNQuery.prop ⟨Three.B, valB⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := colliderBN)))
+        (AtomQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
+        (AtomQuery.prop ⟨Three.B, valB⟩) := by
   exact collider_screeningOff_wmqueryeq_of_dsep
     (valA := valA) (valB := valB)
     (hLM := AllDiscreteCPTLocalMarkov.localMarkov (bn := colliderBN))
@@ -1861,9 +1861,9 @@ theorem collider_screeningOff_wmqueryeq_of_dsep_allLocalMarkov_of
     (hLM : ∀ cpt : colliderBN.DiscreteCPT, HasLocalMarkovProperty colliderBN cpt.jointMeasure) :
     (CompiledPlan.abductionSide Three.A Three.C Three.B).holds (bn := colliderBN) →
       WMQueryEq (State := State (bn := colliderBN))
-        (Query := PLNQuery (BNQuery.Atom (bn := colliderBN)))
-        (PLNQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
-        (PLNQuery.prop ⟨Three.B, valB⟩) := by
+        (Query := AtomQuery (BNQuery.Atom (bn := colliderBN)))
+        (AtomQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
+        (AtomQuery.prop ⟨Three.B, valB⟩) := by
   letI : AllDiscreteCPTLocalMarkov (bn := colliderBN) :=
     allDiscreteCPTLocalMarkov_of (bn := colliderBN) hLM
   exact collider_screeningOff_wmqueryeq_of_dsep_allLocalMarkov
@@ -1880,20 +1880,20 @@ theorem collider_screeningOff_strength_eq_of_dsep
     (hLM : ∀ cpt : colliderBN.DiscreteCPT, HasLocalMarkovProperty colliderBN cpt.jointMeasure) :
     (CompiledPlan.abductionSide Three.A Three.C Three.B).holds (bn := colliderBN) →
       ∀ W : State (bn := colliderBN),
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
           (State := State (bn := colliderBN))
-          (Query := PLNQuery (BNQuery.Atom (bn := colliderBN)))
-          W (PLNQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
+          (Query := AtomQuery (BNQuery.Atom (bn := colliderBN)))
+          W (AtomQuery.link ⟨Three.A, valA⟩ ⟨Three.B, valB⟩)
           =
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
           (State := State (bn := colliderBN))
-          (Query := PLNQuery (BNQuery.Atom (bn := colliderBN)))
-          W (PLNQuery.prop ⟨Three.B, valB⟩) := by
+          (Query := AtomQuery (BNQuery.Atom (bn := colliderBN)))
+          W (AtomQuery.prop ⟨Three.B, valB⟩) := by
   intro hcond W
   have hEq :=
     collider_screeningOff_wmqueryeq_of_dsep
       (valA := valA) (valB := valB) hLM hcond
-  simpa [WorldModel.queryStrength] using congrArg Evidence.toStrength (hEq W)
+  simpa [BinaryWorldModel.queryStrength] using congrArg BinaryEvidence.toStrength (hEq W)
 
 end ColliderExample
 

@@ -148,3 +148,5 @@ rg -n "sorry" Mettapedia/
 - the policy uses godelclaw forks as origin remotes.
 - the policy uses zariuq repos as upstream remotes.
 - the policy references EXTERNAL_REPOS.md for exact commands.
+
+Accountability trace: the CertifyingDatalog bridge at `/home/zar/claude/lean-projects/mettapedia/Mettapedia/Logic/LP/CertifyingDatalogBridge.lean` was reviewed by Codex 5.4 and Claude Code Opus 4.6.

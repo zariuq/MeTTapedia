@@ -1,5 +1,5 @@
 import Mettapedia.Logic.PLNBioHypothesisGeneration
-import Mettapedia.Logic.GenericWorldModel
+import Mettapedia.Logic.WorldModel
 import Mettapedia.Hyperseed.Basic
 
 /-!
@@ -54,10 +54,10 @@ inductive BioQuery where
   | relevant : CandidatePair → BioQuery
   deriving DecidableEq, Fintype
 
-def unitPositiveEvidence : Evidence :=
+def unitPositiveEvidence : BinaryEvidence :=
   { pos := 1, neg := 0 }
 
-def unitNegativeEvidence : Evidence :=
+def unitNegativeEvidence : BinaryEvidence :=
   { pos := 0, neg := 1 }
 
 def queryPair : BioQuery → CandidatePair
@@ -68,7 +68,7 @@ def queryPair : BioQuery → CandidatePair
 as positive evidence exactly for the matching candidate and as negative evidence
 otherwise. This keeps the WM count/confidence contract available while still
 letting candidate-specific strengths differ. -/
-def bioSurface : SufficientStatisticSurface BioObservation BioQuery Evidence where
+def bioSurface : SufficientStatisticSurface BioObservation BioQuery BinaryEvidence where
   observe o q := if o.pair = queryPair q then unitPositiveEvidence else unitNegativeEvidence
 
 theorem bioSurface_unitObservation :
@@ -85,14 +85,14 @@ theorem bioSurface_unitObservation :
 noncomputable instance : EvidenceType (Multiset BioObservation) :=
   multisetEvidenceType BioObservation
 
-noncomputable instance : WorldModel (Multiset BioObservation) BioQuery :=
+noncomputable instance : BinaryWorldModel (Multiset BioObservation) BioQuery :=
   worldModelOfAtomicEvidence bioSurface.observe
 
-noncomputable instance : GenericWorldModel (Multiset BioObservation) BioQuery Evidence :=
+noncomputable instance : WorldModel (Multiset BioObservation) BioQuery BinaryEvidence :=
   bioSurface.inducedWorldModel
 
-private noncomputable abbrev bioWMEvidence : Multiset BioObservation → BioQuery → Evidence :=
-  (inferInstance : GenericWorldModel (Multiset BioObservation) BioQuery Evidence).evidence
+private noncomputable abbrev bioWMEvidence : Multiset BioObservation → BioQuery → BinaryEvidence :=
+  (inferInstance : WorldModel (Multiset BioObservation) BioQuery BinaryEvidence).evidence
 
 theorem bioSurface_observe_eq_of_samePair
     (o : BioObservation) {q₁ q₂ : BioQuery}
@@ -311,15 +311,15 @@ theorem staticBioScore_eq_of_supportProfile_eq
 /-- Canonical evidence view for a probability weight: positive mass `w` and
 complement mass `1-w`. This is the exact evidence shape needed to feed the
 existing ProbLog-to-evidence noisy-OR theorem. -/
-noncomputable def evidenceOfWeight (w : ℝ≥0∞) : Evidence :=
+noncomputable def evidenceOfWeight (w : ℝ≥0∞) : BinaryEvidence :=
   ⟨w, 1 - w⟩
 
 theorem evidenceOfWeight_toStrength (w : ℝ≥0∞) (hw : w ≤ 1) :
-    Evidence.toStrength (evidenceOfWeight w) = w := by
+    BinaryEvidence.toStrength (evidenceOfWeight w) = w := by
   have htotal : (evidenceOfWeight w).total = 1 := by
-    unfold evidenceOfWeight Evidence.total
+    unfold evidenceOfWeight BinaryEvidence.total
     simpa [add_comm] using (tsub_add_cancel_of_le hw : 1 - w + w = 1)
-  unfold Evidence.toStrength
+  unfold BinaryEvidence.toStrength
   rw [if_neg]
   · rw [htotal]
     simp [evidenceOfWeight]
@@ -334,16 +334,16 @@ theorem projectedBioWeightsOfSupportProfile_le_one
       (bioMechanismWeight_le_one (bioMechanismOfIndex i))
   · simp [projectedBioWeightsOfSupportProfile, h]
 
-/-- Evidence-coded view of a support profile, suitable for the existing
+/-- BinaryEvidence-coded view of a support profile, suitable for the existing
 `queryProb_from_evidence` bridge. -/
 noncomputable def supportProfileEvidence
-    (profile : Finset Mechanism) : Fin 3 → Evidence :=
+    (profile : Finset Mechanism) : Fin 3 → BinaryEvidence :=
   fun i => evidenceOfWeight (projectedBioWeightsOfSupportProfile profile i)
 
 theorem supportProfileEvidence_matches_projectedBioWeights
     (profile : Finset Mechanism) (i : Fin 3) :
     projectedBioWeightsOfSupportProfile profile i =
-      Evidence.toStrength (supportProfileEvidence profile i) := by
+      BinaryEvidence.toStrength (supportProfileEvidence profile i) := by
   unfold supportProfileEvidence
   symm
   exact evidenceOfWeight_toStrength
@@ -358,7 +358,7 @@ theorem staticBioScoreOfSupportProfile_eq_supportProfileEvidence_noisyOr
       noisyOrMulti
         (List.ofFn
           (fun i : Fin 3 =>
-            (Evidence.toStrength (supportProfileEvidence profile i)).toReal)) := by
+            (BinaryEvidence.toStrength (supportProfileEvidence profile i)).toReal)) := by
   unfold staticBioScoreOfSupportProfile
   exact queryProb_from_evidence
     (supportProfileEvidence profile)
@@ -391,12 +391,12 @@ theorem bio_queryProb_from_evidence_via_supportProfile_univ :
       noisyOrMulti
         (List.ofFn
           (fun i : Fin 3 =>
-            (Evidence.toStrength
+            (BinaryEvidence.toStrength
               (supportProfileEvidence (Finset.univ : Finset Mechanism) i)).toReal)) := by
   have hp_match :
       ∀ i : Fin 3,
         bioWeights i =
-          Evidence.toStrength
+          BinaryEvidence.toStrength
             (supportProfileEvidence (Finset.univ : Finset Mechanism) i) := by
     intro i
     calc
@@ -405,7 +405,7 @@ theorem bio_queryProb_from_evidence_via_supportProfile_univ :
             symm
             exact congrArg (fun f => f i) projectedBioWeightsOfSupportProfile_univ_eq_bioWeights
       _ =
-          Evidence.toStrength
+          BinaryEvidence.toStrength
             (supportProfileEvidence (Finset.univ : Finset Mechanism) i) := by
             exact supportProfileEvidence_matches_projectedBioWeights
               (Finset.univ : Finset Mechanism) i
@@ -538,32 +538,32 @@ theorem relevant_pairA_discovered_by_card :
       relevant_pairA_in_total_closure
 
 theorem pairABatch₁_count :
-    GenericWorldModel.queryObservationCount
-        (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+    AdditiveWorldModel.queryObservationCount
+        (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
         pairABatch₁ (.relevant .pairA) = 1 := by
   simpa [pairABatch₁] using
     (wm_count_eq_card (S := bioSurface) bioSurface_unitObservation
       pairABatch₁ (.relevant .pairA))
 
 theorem pairATrace_count :
-    GenericWorldModel.queryObservationCount
-        (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+    AdditiveWorldModel.queryObservationCount
+        (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
         pairATrace (.relevant .pairA) = 2 := by
   simpa [pairATrace, pairABatch₁, pairABatch₂] using
     (wm_count_eq_card (S := bioSurface) bioSurface_unitObservation
       pairATrace (.relevant .pairA))
 
 theorem pairBTrace_count :
-    GenericWorldModel.queryObservationCount
-        (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+    AdditiveWorldModel.queryObservationCount
+        (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
         pairBTrace (.relevant .pairB) = 1 := by
   simpa [pairBTrace] using
     (wm_count_eq_card (S := bioSurface) bioSurface_unitObservation
       pairBTrace (.relevant .pairB))
 
 theorem pairARepeatEqtlTrace_count :
-    GenericWorldModel.queryObservationCount
-        (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+    AdditiveWorldModel.queryObservationCount
+        (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
         pairARepeatEqtlTrace (.relevant .pairA) = 2 := by
   simpa [pairARepeatEqtlTrace, pairABatch₁] using
     (wm_count_eq_card (S := bioSurface) bioSurface_unitObservation
@@ -574,8 +574,8 @@ theorem bio_rawWM_evidence_add
     (σ₁ σ₂ : Multiset BioObservation) (q : BioQuery) :
     bioWMEvidence (σ₁ + σ₂) q = bioWMEvidence σ₁ q + bioWMEvidence σ₂ q := by
   simpa [bioWMEvidence] using
-    (GenericWorldModel.evidence_add'
-      (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+    (WorldModel.evidence_add'
+      (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
       σ₁ σ₂ q)
 
 /-- Concrete batchwise = bulk raw-WM theorem for the accumulated pair-A trace. -/
@@ -586,8 +586,8 @@ theorem pairATrace_rawWM_evidence_eq_batches (q : BioQuery) :
     bio_rawWM_evidence_add pairABatch₁ pairABatch₂ q
 
 theorem pairATrace_nontrivial :
-    GenericWorldModel.queryObservationCount
-        (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+    AdditiveWorldModel.queryObservationCount
+        (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
         pairATrace (.relevant .pairA) ≠ 0 ∧
       (pairATrace + pairATrace : Multiset BioObservation) ≠ pairATrace := by
   have hTrace : pairATrace ≠ 0 := by
@@ -597,11 +597,11 @@ theorem pairATrace_nontrivial :
       (S := bioSurface) bioSurface_unitObservation hTrace (.relevant .pairA)
 
 theorem pairA_incremental_confidence_changes :
-    GenericWorldModel.queryObservationConfidence
-        (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+    AdditiveWorldModel.queryObservationConfidence
+        (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
         1 pairABatch₁ (.relevant .pairA) ≠
-      GenericWorldModel.queryObservationConfidence
-        (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+      AdditiveWorldModel.queryObservationConfidence
+        (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
         1 pairATrace (.relevant .pairA) := by
   rw [wm_confidence_eq_ratio (S := bioSurface) (κ := 1) bioSurface_unitObservation
       pairABatch₁ (.relevant .pairA),
@@ -621,17 +621,17 @@ theorem pairA_incremental_relevance_persists_and_count_increases :
         closureFromTrace bioSurface bioFrontier bioRules pairABatch₁ ∧
       BioQuery.relevant .pairA ∈
         closureFromTrace bioSurface bioFrontier bioRules pairATrace ∧
-      GenericWorldModel.queryObservationCount
-          (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+      AdditiveWorldModel.queryObservationCount
+          (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
           pairABatch₁ (.relevant .pairA) = 1 ∧
-      GenericWorldModel.queryObservationCount
-          (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+      AdditiveWorldModel.queryObservationCount
+          (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
           pairATrace (.relevant .pairA) = 2 ∧
-      GenericWorldModel.queryObservationConfidence
-          (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+      AdditiveWorldModel.queryObservationConfidence
+          (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
           1 pairABatch₁ (.relevant .pairA) ≠
-        GenericWorldModel.queryObservationConfidence
-          (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+        AdditiveWorldModel.queryObservationConfidence
+          (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
           1 pairATrace (.relevant .pairA) := by
   exact ⟨relevant_pairA_in_batch₁_closure, relevant_pairA_in_total_closure,
     pairABatch₁_count, pairATrace_count, pairA_incremental_confidence_changes⟩
@@ -644,11 +644,11 @@ theorem pairA_pairB_same_discovery_different_counts :
         closureFromTrace bioSurface bioFrontier bioRules pairATrace ∧
       BioQuery.relevant .pairB ∈
         closureFromTrace bioSurface bioFrontier bioRules pairBTrace ∧
-      GenericWorldModel.queryObservationCount
-          (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+      AdditiveWorldModel.queryObservationCount
+          (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
           pairATrace (.relevant .pairA) = 2 ∧
-      GenericWorldModel.queryObservationCount
-          (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+      AdditiveWorldModel.queryObservationCount
+          (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
           pairBTrace (.relevant .pairB) = 1 := by
   exact ⟨relevant_pairA_in_total_closure, relevant_pairB_in_closure,
     pairATrace_count, pairBTrace_count⟩
@@ -700,11 +700,11 @@ theorem pairA_static_vs_incremental_comparison :
         staticBioScore .pairA pairATrace ∧
       staticBioScore .pairA pairARepeatEqtlTrace =
         staticBioScore .pairA pairABatch₁ ∧
-      GenericWorldModel.queryObservationCount
-          (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+      AdditiveWorldModel.queryObservationCount
+          (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
           pairABatch₁ (.relevant .pairA) = 1 ∧
-      GenericWorldModel.queryObservationCount
-          (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+      AdditiveWorldModel.queryObservationCount
+          (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
           pairARepeatEqtlTrace (.relevant .pairA) = 2 := by
   exact ⟨pairABatch₁_staticScore_lt_pairATrace_staticScore,
     pairARepeatEqtlTrace_staticScore_eq_pairABatch₁,
@@ -716,11 +716,11 @@ the query observation count. Combined with `confidenceFromN_mono` (in
 confidence story: more observations → higher count → higher confidence. -/
 theorem queryObservationCount_mono_add
     (σ₁ σ₂ : Multiset BioObservation) (q : BioQuery) :
-    GenericWorldModel.queryObservationCount
-        (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+    AdditiveWorldModel.queryObservationCount
+        (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
         σ₁ q ≤
-      GenericWorldModel.queryObservationCount
-          (State := Multiset BioObservation) (Query := BioQuery) (Ev := Evidence)
+      AdditiveWorldModel.queryObservationCount
+          (State := Multiset BioObservation) (Query := BioQuery) (Ev := BinaryEvidence)
           (σ₁ + σ₂) q := by
   rw [wm_count_eq_card (S := bioSurface) bioSurface_unitObservation σ₁ q,
     wm_count_eq_card (S := bioSurface) bioSurface_unitObservation (σ₁ + σ₂) q,

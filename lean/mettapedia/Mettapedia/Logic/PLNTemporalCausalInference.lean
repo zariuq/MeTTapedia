@@ -155,7 +155,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Formula
 
 variable {State : Type*}
-variable [EvidenceType State] [WorldModel State Pattern]
+variable [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- Chapter-14 sequential conjunction at the evidence layer, grounded in
 the WM temporal atom semantics. -/

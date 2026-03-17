@@ -6,13 +6,13 @@ import Mathlib.Probability.CDF
 import Mathlib.Algebra.Order.Floor.Semiring
 
 /-!
-# Evidence-Beta Bridge
+# BinaryEvidence-Beta Bridge
 
-This file connects PLN Evidence to Beta-Bernoulli conjugacy, establishing that:
+This file connects PLN BinaryEvidence to Beta-Bernoulli conjugacy, establishing that:
 
-1. **PLN Evidence (n⁺, n⁻) corresponds to Beta(α, β) posterior**
+1. **PLN BinaryEvidence (n⁺, n⁻) corresponds to Beta(α, β) posterior**
 2. **PLN Strength n⁺/(n⁺+n⁻) = Beta posterior mean** (asymptotically)
-3. **Evidence aggregation (hplus) = Beta conjugate update**
+3. **BinaryEvidence aggregation (hplus) = Beta conjugate update**
 
 ## The Key Insight
 
@@ -22,13 +22,13 @@ For exchangeable binary observations:
 - Posterior: Beta(α₀+k, β₀+m) - by Beta-Bernoulli conjugacy
 - Posterior mean: (α₀+k)/(α₀+β₀+k+m)
 
-PLN Evidence (k, m) captures exactly the sufficient statistic, and:
+PLN BinaryEvidence (k, m) captures exactly the sufficient statistic, and:
 - PLN strength k/(k+m) = posterior mean when α₀=β₀=0 (improper prior)
 - For proper priors, strength → posterior mean as sample size → ∞
 
 ## Main Theorems
 
-* `evidenceToBeta` : Map Evidence to Beta distribution parameters
+* `evidenceToBeta` : Map BinaryEvidence to Beta distribution parameters
 * `toStrength_eq_beta_mean_limit` : PLN strength = Beta mean (asymptotically)
 * `evidence_hplus_eq_beta_update` : hplus = Beta conjugate update
 
@@ -36,7 +36,7 @@ PLN Evidence (k, m) captures exactly the sufficient statistic, and:
 
 - de Finetti's representation theorem (Exchangeability.lean)
 - Beta-Bernoulli conjugacy (BetaBernoulli.lean)
-- PLN Evidence quantale (EvidenceQuantale.lean)
+- PLN BinaryEvidence quantale (EvidenceQuantale.lean)
 
 -/
 
@@ -46,11 +46,11 @@ open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.Exchangeability
 open Mettapedia.ProbabilityTheory
 
-/-! ## Mapping Evidence to Beta Parameters -/
+/-! ## Mapping BinaryEvidence to Beta Parameters -/
 
 section EvidenceToBeta
 
-/-- Map PLN Evidence to Beta distribution parameters.
+/-- Map PLN BinaryEvidence to Beta distribution parameters.
 
     Given evidence (n⁺, n⁻) with prior parameter α₀ = β₀ = prior_param:
     - α = prior_param + n⁺
@@ -561,7 +561,7 @@ theorem not_beta_from_exchangeability_example :
 
 end Counterexample
 
-/-! ## Evidence Aggregation = Beta Update -/
+/-! ## BinaryEvidence Aggregation = Beta Update -/
 
 section AggregationUpdate
 
@@ -593,13 +593,13 @@ theorem evidence_aggregation_is_conjugate_update
   · simp only [Nat.cast_add]; ring
   · simp only [Nat.cast_add]; ring
 
-/-- The Evidence hplus operation corresponds to summing Beta sufficient statistics.
+/-- The BinaryEvidence hplus operation corresponds to summing Beta sufficient statistics.
 
     E₁ + E₂ = (n₁⁺ + n₂⁺, n₁⁻ + n₂⁻)
 
     corresponds to updating a Beta prior with additional observations.
 -/
-theorem hplus_is_beta_aggregation (e₁ e₂ : Evidence) :
+theorem hplus_is_beta_aggregation (e₁ e₂ : BinaryEvidence) :
     -- hplus sums the sufficient statistics, which is exactly what Bayesian
     -- updating does with the Beta conjugate prior
     (e₁ + e₂).pos = e₁.pos + e₂.pos ∧
@@ -612,15 +612,15 @@ end AggregationUpdate
 
 section MainTheorem
 
-/-- The main theorem connecting PLN Evidence to Beta-Bernoulli inference.
+/-- The main theorem connecting PLN BinaryEvidence to Beta-Bernoulli inference.
 
     For exchangeable binary observations:
-    1. Evidence (n⁺, n⁻) is the sufficient statistic (by de Finetti + sufficiency)
+    1. BinaryEvidence (n⁺, n⁻) is the sufficient statistic (by de Finetti + sufficiency)
     2. With Beta prior, posterior is Beta(α + n⁺, β + n⁻) (by conjugacy)
     3. Posterior mean = (α + n⁺) / (α + β + n⁺ + n⁻)
     4. PLN strength n⁺/(n⁺+n⁻) → posterior mean as sample size → ∞
 
-    Therefore: **PLN Evidence is the exact Bayesian sufficient statistic for
+    Therefore: **PLN BinaryEvidence is the exact Bayesian sufficient statistic for
     exchangeable binary inference, and PLN strength converges to the Bayes-optimal
     point estimate (posterior mean).**
 -/
@@ -631,7 +631,7 @@ theorem pln_is_bayes_optimal_for_exchangeable :
     (∀ ε : ℝ, 0 < ε → ∃ N : ℕ, ∀ n_pos n_neg : ℕ, n_pos + n_neg ≥ N → n_pos + n_neg ≠ 0 →
       |plnStrength n_pos n_neg - uniformPosteriorMean n_pos n_neg| < ε) := by
   constructor
-  · -- Evidence captures sufficient statistic
+  · -- BinaryEvidence captures sufficient statistic
     intros
     rfl
   · -- Convergence
@@ -671,7 +671,7 @@ section DeFinettiConnection
     1. de Finetti says it's a mixture of i.i.d. Bernoulli
     2. Given Bernoulli parameter θ, observations are conditionally i.i.d.
     3. Beta prior + Bernoulli observations = Beta posterior (conjugacy)
-    4. Sufficient statistic = (n⁺, n⁻) = PLN Evidence
+    4. Sufficient statistic = (n⁺, n⁻) = PLN BinaryEvidence
     5. Posterior mean → PLN strength as sample size grows
 
     This justifies PLN as the **exact optimal inference** for exchangeable binary domains.
@@ -681,7 +681,7 @@ theorem nupln_main_theorem :
     -- - InfiniteExchangeable → de Finetti representation
     -- - de Finetti representation → Beta-Bernoulli conjugacy applies
     -- - Conjugacy → (n⁺, n⁻) is sufficient
-    -- - Sufficiency → PLN Evidence captures all information
+    -- - Sufficiency → PLN BinaryEvidence captures all information
     (∀ n_pos n_neg : ℕ, evidenceFromCounts n_pos n_neg = (n_pos, n_neg)) ∧
       (∀ ε : ℝ, 0 < ε → ∃ N : ℕ, ∀ n_pos n_neg : ℕ, n_pos + n_neg ≥ N → n_pos + n_neg ≠ 0 →
         |plnStrength n_pos n_neg - uniformPosteriorMean n_pos n_neg| < ε) := by
@@ -692,7 +692,7 @@ end DeFinettiConnection
 /-! ## Beta Credible Intervals
 
 For IndefiniteTruthValue construction, we need credible intervals from Beta distributions.
-These give probability bounds [L, U] from Evidence counts (n⁺, n⁻).
+These give probability bounds [L, U] from BinaryEvidence counts (n⁺, n⁻).
 
 **Normal Approximation**: For large sample sizes (α+β > 10), the Beta distribution
 is well-approximated by a Normal distribution with:
@@ -875,9 +875,9 @@ noncomputable def betaCredibleInterval90_exactInvCDF
     (α β : ℝ) (hα : 0 < α) (hβ : 0 < β) : CredibleInterval :=
   betaCredibleInterval_exactInvCDF α β 0.90 hα hβ ⟨by norm_num, by norm_num⟩
 
-/-- Credible interval from Evidence counts and prior.
+/-- Credible interval from BinaryEvidence counts and prior.
 
-Given Evidence (n⁺, n⁻) with prior (α₀, β₀), compute the credible interval
+Given BinaryEvidence (n⁺, n⁻) with prior (α₀, β₀), compute the credible interval
 for the underlying Bernoulli parameter θ.
 -/
 noncomputable def credibleIntervalFromEvidenceWith

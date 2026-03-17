@@ -38,11 +38,11 @@ abbrev pointwiseImplies (φ ψ : HOLQuery (Base := Base) Const) : Prop :=
 /-- Public singleton-strength relation for closed HOL formulas. -/
 abbrev singletonStrengthLE (φ ψ : HOLQuery (Base := Base) Const) : Prop :=
   ∀ M : Mettapedia.Logic.HOL.HenkinModel.{u, v, w} Base Const,
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := HOLState (Base := Base) Const)
         (Query := HOLQuery (Base := Base) Const)
         ({M} : HOLState (Base := Base) Const) φ ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := HOLState (Base := Base) Const)
         (Query := HOLQuery (Base := Base) Const)
         ({M} : HOLState (Base := Base) Const) ψ
@@ -50,11 +50,11 @@ abbrev singletonStrengthLE (φ ψ : HOLQuery (Base := Base) Const) : Prop :=
 /-- Naming alias for the singleton-strength consequence relation. -/
 abbrev singletonConsequence (φ ψ : HOLQuery (Base := Base) Const) : Prop :=
   ∀ M : Mettapedia.Logic.HOL.HenkinModel.{u, v, w} Base Const,
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := HOLState (Base := Base) Const)
         (Query := HOLQuery (Base := Base) Const)
         ({M} : HOLState (Base := Base) Const) φ ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := HOLState (Base := Base) Const)
         (Query := HOLQuery (Base := Base) Const)
         ({M} : HOLState (Base := Base) Const) ψ

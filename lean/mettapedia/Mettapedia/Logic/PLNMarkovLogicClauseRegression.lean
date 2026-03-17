@@ -5,7 +5,7 @@ import Mettapedia.Logic.PLNMarkovLogicClauseWorldModel
 
 Concrete clause-native MLN instances exercising the full pipeline:
 
-  GroundMLN → compiledClauseFactorGraph → clauseWMState → WorldModel.queryStrength
+  GroundMLN → compiledClauseFactorGraph → clauseWMState → BinaryWorldModel.queryStrength
 
 Each regression verifies an exact `queryProb` value at a concrete MLN instantiation.
 
@@ -197,13 +197,13 @@ theorem sigmoid_queryProb_true_eq_three_fourths :
   rw [if_neg htotal_ne_zero, sigmoid_queryMass_true_eq_three, sigmoid_totalMass_eq_four]
 
 theorem sigmoid_queryStrength_true_eq_three_fourths :
-    WorldModel.queryStrength (clauseWMState sigmoidMLN ({()} : Finset Unit)) qTrue =
+    BinaryWorldModel.queryStrength (clauseWMState sigmoidMLN ({()} : Finset Unit)) qTrue =
       (3 : ENNReal) / 4 := by
   rw [clauseWM_queryStrength_eq_queryProb]
   exact sigmoid_queryProb_true_eq_three_fourths
 
 theorem sigmoid_evidence_true_eq_three_one :
-    WorldModel.evidence (clauseWMState sigmoidMLN ({()} : Finset Unit)) qTrue = ⟨3, 1⟩ := by
+    BinaryWorldModel.evidence (clauseWMState sigmoidMLN ({()} : Finset Unit)) qTrue = ⟨3, 1⟩ := by
   rw [clauseWM_evidence_eq_evidenceOfMasses]
   unfold MassSemantics.evidenceOfMasses
   rw [sigmoid_queryMass_true_eq_three, sigmoid_totalMass_eq_four]
@@ -289,7 +289,7 @@ theorem conflicting_queryProb_true_eq_three_fifths :
   rw [if_neg htotal_ne_zero, conflicting_queryMass_true_eq_three, conflicting_totalMass_eq_five]
 
 theorem conflicting_queryStrength_true_eq_three_fifths :
-    WorldModel.queryStrength (clauseWMState conflictingMLN (Finset.univ : Finset Bool)) qTrue =
+    BinaryWorldModel.queryStrength (clauseWMState conflictingMLN (Finset.univ : Finset Bool)) qTrue =
       (3 : ENNReal) / 5 := by
   rw [clauseWM_queryStrength_eq_queryProb]
   exact conflicting_queryProb_true_eq_three_fifths
@@ -370,7 +370,7 @@ theorem hardZero_queryProb_false_eq_zero :
   simp
 
 theorem hardZero_queryStrength_false_eq_zero :
-    WorldModel.queryStrength (clauseWMState hardZeroMLN ({()} : Finset Unit)) qFalse = 0 := by
+    BinaryWorldModel.queryStrength (clauseWMState hardZeroMLN ({()} : Finset Unit)) qFalse = 0 := by
   rw [clauseWM_queryStrength_eq_queryProb]
   exact hardZero_queryProb_false_eq_zero
 

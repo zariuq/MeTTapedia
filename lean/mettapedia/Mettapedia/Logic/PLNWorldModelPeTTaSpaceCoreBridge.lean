@@ -33,14 +33,14 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 /-- First WM-facing interface for the packaged PeTTa atomspace/query fragment. -/
 abbrev PeTTaSpaceCoreWMInterface
     (State Query : Type*)
-    [EvidenceType State] [WorldModel State Query]
+    [EvidenceType State] [BinaryWorldModel State Query]
     (s : PeTTaSpace) :=
   RuntimeJudgmentWMInterface State Query Pattern (PeTTaSpaceCoreQuery s)
 
 /-- Any packaged PeTTa atomspace/query step transports to a WM strength
 obligation once a WM interpretation interface is fixed. -/
 theorem pettaSpaceCoreQuery_to_wmStrengthObligation
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace}
     (I : PeTTaSpaceCoreWMInterface State Query s)
     {W : State} {p q : Pattern}
@@ -52,7 +52,7 @@ theorem pettaSpaceCoreQuery_to_wmStrengthObligation
 /-- Any star closure in the packaged PeTTa atomspace/query fragment transports
 to a WM strength obligation once a WM interpretation interface is fixed. -/
 theorem pettaSpaceCoreQueryStar_to_wmStrengthObligation
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace}
     (I : PeTTaSpaceCoreWMInterface State Query s)
     {W : State} {p q : Pattern}
@@ -64,7 +64,7 @@ theorem pettaSpaceCoreQueryStar_to_wmStrengthObligation
 /-- Package one PeTTa atomspace/query step as a WM consequence rule via the
 existing runtime-to-WM bridge. -/
 def wmConsequenceRuleOn_of_pettaSpaceCoreQuery
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace}
     (I : PeTTaSpaceCoreWMInterface State Query s)
     {p q : Pattern}
@@ -75,7 +75,7 @@ def wmConsequenceRuleOn_of_pettaSpaceCoreQuery
 /-- Package star closure in the PeTTa atomspace/query fragment as a WM
 consequence rule via the existing runtime-to-WM bridge. -/
 def wmConsequenceRuleOn_of_pettaSpaceCoreQueryStar
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace}
     (I : PeTTaSpaceCoreWMInterface State Query s)
     {p q : Pattern}

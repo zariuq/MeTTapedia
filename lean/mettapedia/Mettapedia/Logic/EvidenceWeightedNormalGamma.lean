@@ -17,7 +17,7 @@ abbrev DiscreteNormalGammaEvidence := Mettapedia.Logic.EvidenceNormalGamma.Norma
 abbrev NormalGammaPrior := Mettapedia.Logic.EvidenceNormalGamma.NormalGammaPrior
 
 /-!
-# Weighted Normal-Gamma Evidence
+# Weighted Normal-Gamma BinaryEvidence
 
 This file generalizes `EvidenceNormalGamma` from integer sample counts to
 nonnegative real-valued effective sample weights.

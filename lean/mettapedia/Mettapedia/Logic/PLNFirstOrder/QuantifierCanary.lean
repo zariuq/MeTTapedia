@@ -31,14 +31,14 @@ variable {U : Type*} [Fintype U]
 
 /-- Ch.11 canary: existential quantifier is the De Morgan dual of universal quantifier. -/
 theorem canary_ch11_exists_deMorgan
-    (S : SatisfyingSet U) (μ : WeightFunction U Evidence) :
-    thereExistsEval S μ = Evidence.compl (forAllEval (SatisfyingSet.neg S) μ) := by
+    (S : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) :
+    thereExistsEval S μ = BinaryEvidence.compl (forAllEval (SatisfyingSet.neg S) μ) := by
   simp [thereExistsEval_deMorgan]
 
 /-- Ch.11 quantifier-exchange canary (primary De Morgan form). -/
 theorem canary_ch11_quantifier_exchange
-    (S : SatisfyingSet U) (μ : WeightFunction U Evidence) :
-    thereExistsEval S μ = Evidence.compl (forAllEval (SatisfyingSet.neg S) μ) :=
+    (S : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) :
+    thereExistsEval S μ = BinaryEvidence.compl (forAllEval (SatisfyingSet.neg S) μ) :=
   canary_ch11_exists_deMorgan S μ
 
 /-- Ch.11 canary (extensional view): existential generalization.
@@ -63,8 +63,8 @@ theorem canary_ch11_universal_specification_ext
 
 Packages existential generalization + universal specification + exchange in one theorem. -/
 theorem canary_ch11_rule_family_end_to_end_ext
-    (S : SatisfyingSet U) (μ : WeightFunction U Evidence) (c : U) :
-    (thereExistsEval S μ = Evidence.compl (forAllEval (SatisfyingSet.neg S) μ)) ∧
+    (S : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) (c : U) :
+    (thereExistsEval S μ = BinaryEvidence.compl (forAllEval (SatisfyingSet.neg S) μ)) ∧
       (S.pred c ≤ thereExistsEvalExt S) ∧
       (forAllEvalExt S ≤ S.pred c) := by
   refine ⟨canary_ch11_quantifier_exchange S μ, ?_, ?_⟩
@@ -95,18 +95,18 @@ section ConcreteFixtures
 
 /-- Concrete Bool fixture with one classical-true and one contradictory witness. -/
 def boolFixtureMixed : SatisfyingSet Bool :=
-  ⟨fun b => if b then (⟨1, 0⟩ : Evidence) else (⟨0, 1⟩ : Evidence)⟩
+  ⟨fun b => if b then (⟨1, 0⟩ : BinaryEvidence) else (⟨0, 1⟩ : BinaryEvidence)⟩
 
 /-- Concrete Fin 2 fixture with a constant evidence value. -/
 def fin2FixtureConst : SatisfyingSet (Fin 2) :=
-  ⟨fun _ => (⟨2, 0⟩ : Evidence)⟩
+  ⟨fun _ => (⟨2, 0⟩ : BinaryEvidence)⟩
 
 /-- Bool fixture canary: extensional universal quantifier evaluates to `⟨0,0⟩`. -/
 theorem canary_fixture_bool_mixed_forall_ext :
-    forAllEvalExt boolFixtureMixed = (⟨0, 0⟩ : Evidence) := by
+    forAllEvalExt boolFixtureMixed = (⟨0, 0⟩ : BinaryEvidence) := by
   have hset :
-      ({ e : Evidence | ∃ u : Bool, e = boolFixtureMixed.pred u } : Set Evidence) =
-        ({ (⟨1, 0⟩ : Evidence), (⟨0, 1⟩ : Evidence) } : Set Evidence) := by
+      ({ e : BinaryEvidence | ∃ u : Bool, e = boolFixtureMixed.pred u } : Set BinaryEvidence) =
+        ({ (⟨1, 0⟩ : BinaryEvidence), (⟨0, 1⟩ : BinaryEvidence) } : Set BinaryEvidence) := by
     ext e
     constructor
     · intro h
@@ -121,18 +121,18 @@ theorem canary_fixture_bool_mixed_forall_ext :
         simpa [boolFixtureMixed] using h
   unfold forAllEvalExt
   rw [hset, sInf_pair]
-  show Evidence.inf (⟨1, 0⟩ : Evidence) (⟨0, 1⟩ : Evidence) = (⟨0, 0⟩ : Evidence)
-  unfold Evidence.inf
-  apply Evidence.ext'
+  show BinaryEvidence.inf (⟨1, 0⟩ : BinaryEvidence) (⟨0, 1⟩ : BinaryEvidence) = (⟨0, 0⟩ : BinaryEvidence)
+  unfold BinaryEvidence.inf
+  apply BinaryEvidence.ext'
   · simp
   · simp
 
 /-- Bool fixture canary: extensional existential quantifier evaluates to `⟨1,1⟩`. -/
 theorem canary_fixture_bool_mixed_exists_ext :
-    thereExistsEvalExt boolFixtureMixed = (⟨1, 1⟩ : Evidence) := by
+    thereExistsEvalExt boolFixtureMixed = (⟨1, 1⟩ : BinaryEvidence) := by
   have hset :
-      ({ e : Evidence | ∃ u : Bool, e = boolFixtureMixed.pred u } : Set Evidence) =
-        ({ (⟨1, 0⟩ : Evidence), (⟨0, 1⟩ : Evidence) } : Set Evidence) := by
+      ({ e : BinaryEvidence | ∃ u : Bool, e = boolFixtureMixed.pred u } : Set BinaryEvidence) =
+        ({ (⟨1, 0⟩ : BinaryEvidence), (⟨0, 1⟩ : BinaryEvidence) } : Set BinaryEvidence) := by
     ext e
     constructor
     · intro h
@@ -147,19 +147,19 @@ theorem canary_fixture_bool_mixed_exists_ext :
         simpa [boolFixtureMixed] using h
   unfold thereExistsEvalExt
   rw [hset, sSup_pair]
-  show Evidence.sup (⟨1, 0⟩ : Evidence) (⟨0, 1⟩ : Evidence) = (⟨1, 1⟩ : Evidence)
-  unfold Evidence.sup
-  apply Evidence.ext'
+  show BinaryEvidence.sup (⟨1, 0⟩ : BinaryEvidence) (⟨0, 1⟩ : BinaryEvidence) = (⟨1, 1⟩ : BinaryEvidence)
+  unfold BinaryEvidence.sup
+  apply BinaryEvidence.ext'
   · simp
   · simp
 
 /-- Fin-2 constant fixture canary: extensional ∀ and ∃ both evaluate to the constant. -/
 theorem canary_fixture_fin2_const_ext :
-    forAllEvalExt fin2FixtureConst = (⟨2, 0⟩ : Evidence) ∧
-      thereExistsEvalExt fin2FixtureConst = (⟨2, 0⟩ : Evidence) := by
+    forAllEvalExt fin2FixtureConst = (⟨2, 0⟩ : BinaryEvidence) ∧
+      thereExistsEvalExt fin2FixtureConst = (⟨2, 0⟩ : BinaryEvidence) := by
   have hset :
-      ({ e : Evidence | ∃ u : Fin 2, e = fin2FixtureConst.pred u } : Set Evidence) =
-        ({ (⟨2, 0⟩ : Evidence) } : Set Evidence) := by
+      ({ e : BinaryEvidence | ∃ u : Fin 2, e = fin2FixtureConst.pred u } : Set BinaryEvidence) =
+        ({ (⟨2, 0⟩ : BinaryEvidence) } : Set BinaryEvidence) := by
     ext e
     constructor
     · intro h
@@ -179,15 +179,15 @@ theorem canary_fixture_fin2_const_ext :
 theorem canary_ch11_non_equivalence_extensional_bool_mixed :
     forAllEvalExt boolFixtureMixed ≠ thereExistsEvalExt boolFixtureMixed := by
   intro hEq
-  have h0 : (⟨0, 0⟩ : Evidence) = (⟨1, 1⟩ : Evidence) := by
+  have h0 : (⟨0, 0⟩ : BinaryEvidence) = (⟨1, 1⟩ : BinaryEvidence) := by
     rw [← canary_fixture_bool_mixed_forall_ext, ← canary_fixture_bool_mixed_exists_ext]
     exact hEq
   have hpos : (0 : ENNReal) = 1 := by
-    simpa using congrArg Evidence.pos h0
+    simpa using congrArg BinaryEvidence.pos h0
   exact zero_ne_one hpos
 
 /-- Ch.11 regression canary in the ITV layer (Walley semantics):
-quantifier non-equivalence persists after Evidence→ITV mapping. -/
+quantifier non-equivalence persists after BinaryEvidence→ITV mapping. -/
 theorem canary_ch11_non_equivalence_itv_walley_bool_mixed
     (s : ℝ) (hs : 0 < s) :
     forAllEvalExt boolFixtureMixed ≠ thereExistsEvalExt boolFixtureMixed ∧
@@ -200,10 +200,10 @@ theorem canary_ch11_non_equivalence_itv_walley_bool_mixed
     have hpos : 0 < (2 : ℝ) / ((2 : ℝ) + s) := by
       exact div_pos (by norm_num) hs2
     have hleft :
-        (ITV.fromWalleyIDMPredictive (⟨0, 0⟩ : Evidence) s hs).credibility = 0 := by
+        (ITV.fromWalleyIDMPredictive (⟨0, 0⟩ : BinaryEvidence) s hs).credibility = 0 := by
       simp [ITV.fromWalleyIDMPredictive_credibility]
     have hright :
-        (ITV.fromWalleyIDMPredictive (⟨1, 1⟩ : Evidence) s hs).credibility =
+        (ITV.fromWalleyIDMPredictive (⟨1, 1⟩ : BinaryEvidence) s hs).credibility =
           (2 : ℝ) / ((2 : ℝ) + s) := by
       simp [ITV.fromWalleyIDMPredictive_credibility]
       norm_num
@@ -214,11 +214,11 @@ end ConcreteFixtures
 
 section NegativeCanaries
 
-/-- Negative canary: `isTrue` is not meet-preserving in Evidence.
+/-- Negative canary: `isTrue` is not meet-preserving in BinaryEvidence.
 
 This blocks naive classical-distributive rewrites in the `isTrue`-filtered quantifier semantics. -/
 theorem canary_not_isTrue_meet_preserving :
-    ¬ (∀ e₁ e₂ : Evidence,
+    ¬ (∀ e₁ e₂ : BinaryEvidence,
       isTrue (e₁ ⊓ e₂) → (isTrue e₁ ∧ isTrue e₂)) := by
   intro h
   rcases isTrue_meet_not_implies_both with ⟨e₁, e₂, hmeet, hnot⟩
@@ -226,12 +226,12 @@ theorem canary_not_isTrue_meet_preserving :
 
 /-- Negative canary with explicit witness pair used in Soundness.lean. -/
 theorem canary_isTrue_meet_counterexample_witness :
-    isTrue ((⟨1, 0⟩ : Evidence) ⊓ (⟨1, 1⟩ : Evidence)) ∧
-      ¬ (isTrue (⟨1, 0⟩ : Evidence) ∧ isTrue (⟨1, 1⟩ : Evidence)) := by
-  have h_meet : ((⟨1, 0⟩ : Evidence) ⊓ (⟨1, 1⟩ : Evidence)) = (⟨1, 0⟩ : Evidence) := by
-    show Evidence.inf (⟨1, 0⟩ : Evidence) (⟨1, 1⟩ : Evidence) = (⟨1, 0⟩ : Evidence)
-    unfold Evidence.inf
-    apply Evidence.ext'
+    isTrue ((⟨1, 0⟩ : BinaryEvidence) ⊓ (⟨1, 1⟩ : BinaryEvidence)) ∧
+      ¬ (isTrue (⟨1, 0⟩ : BinaryEvidence) ∧ isTrue (⟨1, 1⟩ : BinaryEvidence)) := by
+  have h_meet : ((⟨1, 0⟩ : BinaryEvidence) ⊓ (⟨1, 1⟩ : BinaryEvidence)) = (⟨1, 0⟩ : BinaryEvidence) := by
+    show BinaryEvidence.inf (⟨1, 0⟩ : BinaryEvidence) (⟨1, 1⟩ : BinaryEvidence) = (⟨1, 0⟩ : BinaryEvidence)
+    unfold BinaryEvidence.inf
+    apply BinaryEvidence.ext'
     · simp
     · simp
   constructor

@@ -9,8 +9,8 @@ The Bayesian shrinkage estimator:
   θ̂ⱼ = (1 - Bⱼ)·yⱼ + Bⱼ·μ̂    where Bⱼ = σⱼ²/(σⱼ² + τ²)
 
 is EXACTLY precision-weighted PLN revision:
-  - Evidence from observation: weight ∝ 1/σⱼ² (observation precision)
-  - Evidence from population: weight ∝ 1/τ² (population precision)
+  - BinaryEvidence from observation: weight ∝ 1/σⱼ² (observation precision)
+  - BinaryEvidence from population: weight ∝ 1/τ² (population precision)
 
 ## Main Rules
 
@@ -335,7 +335,7 @@ theorem shrinkage_between_y_and_mu'
 In PLN, confidence c = n/(n+κ) where n is evidence count and κ is a prior strength parameter.
 
 For continuous data:
-- Evidence "count" = precision = 1/σ²
+- BinaryEvidence "count" = precision = 1/σ²
 - Confidence measures certainty about the estimate
 -/
 

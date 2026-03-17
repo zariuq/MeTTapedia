@@ -34,7 +34,7 @@ open Mettapedia.OSLF.MeTTaIL.MatchSpec
 /-- HE-specialized runtime judgment interface using the interpreter-derived
 `LanguageDef` relation `DeclReducesRel mettaHE`. -/
 structure HEJudgmentWMInterface
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query] where
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query] where
   encode : Pattern → Query
   side : State → Prop := fun _ => True
   step_sound :
@@ -46,7 +46,7 @@ structure HEJudgmentWMInterface
 namespace HEJudgmentWMInterface
 
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- Forget the HE-specific wrapper back to the generic runtime WM interface. -/
 def toRuntimeJudgmentWMInterface

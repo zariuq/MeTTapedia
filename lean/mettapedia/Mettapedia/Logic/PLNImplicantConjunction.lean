@@ -45,7 +45,7 @@ open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNConjunction
 open Mettapedia.ProbabilityTheory
 open MeasureTheory
-open Evidence
+open BinaryEvidence
 
 /-! ## The Implicant Conjunction Formula
 
@@ -121,24 +121,24 @@ theorem implicantConjunctionStrengthCapped_le (s_AC s_BC s_C : ℝ≥0∞) :
     implicantConjunctionStrength s_AC s_BC s_C :=
   min_le_right 1 _
 
-/-! ## Evidence-Based Formulation
+/-! ## BinaryEvidence-Based Formulation
 
-Converting the strength formula to work on Evidence.
+Converting the strength formula to work on BinaryEvidence.
 -/
 
-/-- Implicant conjunction on Evidence.
+/-- Implicant conjunction on BinaryEvidence.
 
-    Given Evidence for A→C and B→C, plus the marginal strength of C,
-    compute Evidence for (A∧B)→C.
+    Given BinaryEvidence for A→C and B→C, plus the marginal strength of C,
+    compute BinaryEvidence for (A∧B)→C.
 
     This combines:
     1. The strength formula: s = s_AC × s_BC / s_C
     2. Total evidence from inputs (heuristic: minimum of the two totals)
 -/
 noncomputable def implicantConjunctionEvidence
-    (e_AC e_BC : Evidence) (s_C : ℝ≥0∞)
+    (e_AC e_BC : BinaryEvidence) (s_C : ℝ≥0∞)
     (_h_AC : e_AC.total ≠ 0) (_h_BC : e_BC.total ≠ 0)
-    (_h_sC : s_C ≠ 0) (_h_sC_top : s_C ≠ ⊤) : Evidence :=
+    (_h_sC : s_C ≠ 0) (_h_sC_top : s_C ≠ ⊤) : BinaryEvidence :=
   let s_AC := toStrength e_AC
   let s_BC := toStrength e_BC
   let s_result := min 1 (s_AC * s_BC / s_C)  -- Capped to [0,1]
@@ -261,7 +261,7 @@ Both are fundamental PLN inference patterns.
 /-- The implicant conjunction can be seen as a "merge" of two evidence
     paths to the same conclusion. -/
 theorem implicant_conjunction_is_merge
-    (e_AC e_BC : Evidence) (s_C : ℝ≥0∞)
+    (e_AC e_BC : BinaryEvidence) (s_C : ℝ≥0∞)
     (hAC : e_AC.total ≠ 0) (hBC : e_BC.total ≠ 0)
     (hsC : s_C ≠ 0) (hsC_top : s_C ≠ ⊤) :
     implicantConjunctionEvidence e_AC e_BC s_C hAC hBC hsC hsC_top =
@@ -277,7 +277,7 @@ Key points:
 1. **Formula**: s_{(A∧B)→C} = s_{A→C} × s_{B→C} / s_C
 2. **Requires independence**: A and B must be globally and conditionally independent
 3. **Caps at 1**: The raw formula can exceed 1 for rare conclusions
-4. **Evidence combination**: Uses strength formula with heuristic for total evidence
+4. **BinaryEvidence combination**: Uses strength formula with heuristic for total evidence
 
 This rule is essential for PLN reasoning about conjunctions of causes/premises.
 -/

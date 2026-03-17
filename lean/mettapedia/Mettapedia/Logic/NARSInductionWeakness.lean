@@ -164,8 +164,8 @@ theorem abduction_conf_le_half (t1 t2 : TV)
 
 The NARS induction/abduction confidence formulas arise from:
 
-1. **Evidence Quantale Foundation** (EvidenceQuantale.lean):
-   - Evidence = (n⁺, n⁻) with tensor product for composition
+1. **BinaryEvidence Quantale Foundation** (EvidenceQuantale.lean):
+   - BinaryEvidence = (n⁺, n⁻) with tensor product for composition
    - Confidence c = total/(total + k) represents evidence weight
 
 2. **Weight Transform** (NARSMettaTruthFunctions.lean):
@@ -178,7 +178,7 @@ The NARS induction/abduction confidence formulas arise from:
    - Quality = frequency of the relevant premise (f₁ or f₂)
    - Higher quality → more of M participates in inference path
 
-4. **Effective Evidence**:
+4. **Effective BinaryEvidence**:
    - effective_w = quality × c₁ × c₂
    - Combines tensor composition (c₁ × c₂) with reference class scaling
 

@@ -52,8 +52,8 @@ theorem pointwiseImplies_iff_singletonConsequence {U : Type*}
 theorem multiset_strength_le_of_pointwise {U : Type*}
     (W : PredCodeState U) (q₁ q₂ : PredCodeQuery U)
     (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ := by
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ := by
   exact
     Mettapedia.Logic.PLNWorldModelPredCode.queryStrength_le_of_pointwise
       (W := W) (q₁ := q₁) (q₂ := q₂) himp
@@ -62,8 +62,8 @@ theorem multiset_strength_le_of_pointwise {U : Type*}
 theorem multiset_consequence_of_pointwise {U : Type*}
     (W : PredCodeState U) (q₁ q₂ : PredCodeQuery U)
     (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
   multiset_strength_le_of_pointwise (W := W) (q₁ := q₁) (q₂ := q₂) himp
 
 /-- Categorical-aligned predicate-code implication closure wrapper. -/
@@ -73,16 +73,16 @@ theorem multiset_strength_le_of_pointwise_categorical {U : Type*}
     {X : H.Obj} (_φc : H.query X)
     (W : PredCodeState U) (q₁ q₂ : PredCodeQuery U)
     (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
   multiset_strength_le_of_pointwise (W := W) (q₁ := q₁) (q₂ := q₂) himp
 
 /-- Singleton-strength consequence lifts to multiset WM strength inequality. -/
 theorem multiset_strength_le_of_singletonStrengthLE {U : Type*}
     (W : PredCodeState U) (q₁ q₂ : PredCodeQuery U)
     (hsing : singletonStrengthLE q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ := by
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ := by
   exact
     Mettapedia.Logic.PLNWorldModelPredCode.multiset_strength_le_of_singletonStrengthLE
       (W := W) (q₁ := q₁) (q₂ := q₂) hsing
@@ -91,8 +91,8 @@ theorem multiset_strength_le_of_singletonStrengthLE {U : Type*}
 theorem multiset_consequence_of_singletonConsequence {U : Type*}
     (W : PredCodeState U) (q₁ q₂ : PredCodeQuery U)
     (hsing : singletonConsequence q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
   multiset_strength_le_of_singletonStrengthLE (W := W) (q₁ := q₁) (q₂ := q₂) hsing
 
 /-- Proof-system-agnostic bridge schema:
@@ -118,8 +118,8 @@ theorem multiset_consequence_of_externalImplication_sound {U : Type*}
     (hSound : ∀ {q₁ q₂}, ProvImp q₁ q₂ → pointwiseImplies q₁ q₂)
     (W : PredCodeState U) (q₁ q₂ : PredCodeQuery U)
     (hprov : ProvImp q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
   multiset_consequence_of_pointwise (W := W) (q₁ := q₁) (q₂ := q₂) (hSound hprov)
 
 /-- Categorical-aligned predicate-code singleton-strength closure wrapper. -/
@@ -129,8 +129,8 @@ theorem multiset_strength_le_of_singletonStrengthLE_categorical {U : Type*}
     {X : H.Obj} (_φc : H.query X)
     (W : PredCodeState U) (q₁ q₂ : PredCodeQuery U)
     (hsing : singletonStrengthLE q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
   multiset_strength_le_of_singletonStrengthLE (W := W) (q₁ := q₁) (q₂ := q₂) hsing
 
 /-- Implication-closure wrapper: package pointwise predicate-code implication as a

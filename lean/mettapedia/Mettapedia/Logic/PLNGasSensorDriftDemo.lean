@@ -177,7 +177,7 @@ noncomputable instance instEvidenceType : EvidenceType SensorArrayState where
 
 end SensorArrayState
 
-/-! ## §3: Evidence Extraction -/
+/-! ## §3: BinaryEvidence Extraction -/
 
 /-- Extract the Normal-Gamma evidence for a given gas type. -/
 def gasEvidence (s : SensorArrayState) : GasType → NormalGammaEvidence
@@ -198,7 +198,7 @@ def totalSourceCount (s : SensorArrayState) : ℕ :=
 /-- Per-gas exceedance evidence: P(sensor response > c | gas type g). -/
 noncomputable def gasExceedanceEvidence
     (spec : ExceedanceSpec) (priors : GasType → NormalGammaPrior)
-    (s : SensorArrayState) (g : GasType) (c : ℝ) : Evidence :=
+    (s : SensorArrayState) (g : GasType) (c : ℝ) : BinaryEvidence :=
   let ngEvid := gasEvidence s g
   let post := posterior (priors g) ngEvid
   let p := spec.exceedance post c

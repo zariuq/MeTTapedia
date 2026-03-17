@@ -32,7 +32,7 @@ For PLN, our key rewrite is:
   (A→B) ∧ (B→C) ⇝ (A→C)   [Deduction]
 
 This generates the modal type:
-  Π_{s_AB::Evidence} Π_{s_BC::Evidence} Evidence
+  Π_{s_AB::BinaryEvidence} Π_{s_BC::BinaryEvidence} BinaryEvidence
 
 which is exactly the PLN deduction formula!
 
@@ -73,10 +73,10 @@ inductive HSort where
 /-- A sort assignment assigns ∗ or □ to each slot -/
 abbrev SortAssignment := List HSort
 
-/-- The two sorts as Evidence values.
+/-- The two sorts as BinaryEvidence values.
     ∗^Pr = ⊤ (maximal evidence - always inhabited)
     □^Pr = ⊥ (minimal evidence - kinds are uninhabited) -/
-noncomputable def sortToEvidence : HSort → Evidence
+noncomputable def sortToEvidence : HSort → BinaryEvidence
   | HSort.star => ⊤  -- ∗ is inhabited
   | HSort.box => ⊥   -- □ is uninhabited (the kind level)
 
@@ -294,15 +294,15 @@ structure ModalType where
   /-- The generating subterm position -/
   position : SubtermPosition
   /-- Type assumptions A_k for free variables x_k -/
-  relies : List (String × Evidence)
+  relies : List (String × BinaryEvidence)
   /-- Result type B : Pr -/
-  resultType : Evidence
+  resultType : BinaryEvidence
 
 /-- Generate the modal type for PLN deduction from position 2 (A→B).
 
-    This gives us: ⟨[-] ∧ (B→C)⟩_{s_BC::Evidence} Evidence
+    This gives us: ⟨[-] ∧ (B→C)⟩_{s_BC::BinaryEvidence} BinaryEvidence
 
-    Which is essentially: Π_{s_BC : Evidence} Evidence
+    Which is essentially: Π_{s_BC : BinaryEvidence} BinaryEvidence
     (the type of functions from evidence to evidence!)
 -/
 noncomputable def deductionModalType_AB : ModalType where
@@ -312,7 +312,7 @@ noncomputable def deductionModalType_AB : ModalType where
 
 /-- Generate the modal type for PLN deduction from position 3 (B→C).
 
-    This gives us: ⟨(A→B) ∧ [-]⟩_{s_AB::Evidence} Evidence
+    This gives us: ⟨(A→B) ∧ [-]⟩_{s_AB::BinaryEvidence} BinaryEvidence
 -/
 noncomputable def deductionModalType_BC : ModalType where
   position := deductionPositions[2]!
@@ -342,14 +342,14 @@ This is the RELY-POSSIBLY reading:
     This is EXACTLY the PLN deduction formula!
 -/
 noncomputable def deductionRelyPossibly
-    (E_AB E_BC : Evidence)
+    (E_AB E_BC : BinaryEvidence)
     (pB pC : ENNReal)
     (hE_AB : E_AB.total ≠ 0)
     (hE_BC : E_BC.total ≠ 0)
-    (hpB : pB ≠ 1) : Evidence :=
-  Evidence.deductionEvidence E_AB E_BC pB pC hE_AB hE_BC hpB
+    (hpB : pB ≠ 1) : BinaryEvidence :=
+  BinaryEvidence.deductionEvidence E_AB E_BC pB pC hE_AB hE_BC hpB
 
-/-! ## The Key Theorem: Modal Composition = Evidence Composition
+/-! ## The Key Theorem: Modal Composition = BinaryEvidence Composition
 
 We've already proved this in PLNDeductionComposition.lean!
 The hypercube construction EXPLAINS why the formula works.
@@ -359,20 +359,20 @@ The hypercube construction EXPLAINS why the formula works.
 
     This connects:
     - Operational semantics: (A→B) ∧ (B→C) ⇝ (A→C)
-    - Type theory: Π_{s_AB} Π_{s_BC} Evidence
-    - Algebra: Evidence tensor product with direct/indirect paths
+    - Type theory: Π_{s_AB} Π_{s_BC} BinaryEvidence
+    - Algebra: BinaryEvidence tensor product with direct/indirect paths
 
     The hypercube construction shows this is SYSTEMATIC, not ad-hoc!
 -/
 theorem deduction_is_modal_composition :
     ∀ (s_AB s_BC pB pC : ENNReal),
-    Evidence.deductionStrength s_AB s_BC pB pC =
+    BinaryEvidence.deductionStrength s_AB s_BC pB pC =
     -- Direct path: s_AB * s_BC (tensor product)
     s_AB * s_BC +
     -- Indirect path: (1 - s_AB) * complement (Heyting implication)
-    (1 - s_AB) * Evidence.complementStrength pB pC s_BC := by
+    (1 - s_AB) * BinaryEvidence.complementStrength pB pC s_BC := by
   intros
-  unfold Evidence.deductionStrength Evidence.directPathStrength Evidence.indirectPathStrength
+  unfold BinaryEvidence.deductionStrength BinaryEvidence.directPathStrength BinaryEvidence.indirectPathStrength
   rfl
 
 /-! ## Section 4: Spatial Types from Term Constructors
@@ -392,9 +392,9 @@ This classifies terms whose head is f!
 -/
 structure ImplSpatialType where
   /-- Type of the antecedent -/
-  antecedentType : Evidence
+  antecedentType : BinaryEvidence
   /-- Type of the consequent -/
-  consequentType : Evidence
+  consequentType : BinaryEvidence
 
 /-- Spatial type for PLN conjunction constructor.
 
@@ -403,9 +403,9 @@ structure ImplSpatialType where
 -/
 structure ConjSpatialType where
   /-- Type of the left conjunct -/
-  leftType : Evidence
+  leftType : BinaryEvidence
   /-- Type of the right conjunct -/
-  rightType : Evidence
+  rightType : BinaryEvidence
 
 /-- The spatial type of the deduction redex.
 
@@ -413,8 +413,8 @@ structure ConjSpatialType where
     conj♯(impl♯(A, B), impl♯(B, C))
 -/
 noncomputable def deductionRedexSpatialType : ConjSpatialType where
-  leftType := ⊤   -- (A→B) as Evidence
-  rightType := ⊤  -- (B→C) as Evidence
+  leftType := ⊤   -- (A→B) as BinaryEvidence
+  rightType := ⊤  -- (B→C) as BinaryEvidence
 
 /-! ## Section 5: Equational Center
 

@@ -9,11 +9,11 @@ This module records the semantics-first core for the MLN→WM bridge.
 
 - `AbstractMLNSemantics` keeps the world/query/feature layer abstract.
 - `MassSemantics` packages the query-mass / total-mass interface.
-- `MassState` turns any such semantic source into an additive `WorldModel`.
+- `MassState` turns any such semantic source into an additive `BinaryWorldModel`.
 
 The key theorem is the generic transfer:
 
-`WorldModel.queryStrength = queryProb`
+`BinaryWorldModel.queryStrength = queryProb`
 
 whenever the extracted evidence matches the semantic query mass and total mass.
 -/
@@ -45,27 +45,27 @@ namespace MassSemantics
 
 variable {Query : Type*} (S : MassSemantics Query)
 
-/-- Semantic query probability, with the same `0` convention used by `Evidence.toStrength`
+/-- Semantic query probability, with the same `0` convention used by `BinaryEvidence.toStrength`
 when the total mass vanishes. -/
 noncomputable def queryProb (q : Query) : ENNReal :=
   if S.totalMass = 0 then 0 else S.queryMass q / S.totalMass
 
 /-- Convert semantic masses into binary evidence. -/
-noncomputable def evidenceOfMasses (q : Query) : Evidence :=
+noncomputable def evidenceOfMasses (q : Query) : BinaryEvidence :=
   ⟨S.queryMass q, S.totalMass - S.queryMass q⟩
 
 theorem evidenceOfMasses_total (q : Query) :
     (S.evidenceOfMasses q).total = S.totalMass := by
-  unfold evidenceOfMasses Evidence.total
+  unfold evidenceOfMasses BinaryEvidence.total
   rw [add_comm]
   exact tsub_add_cancel_of_le (S.queryMass_le_total q)
 
 theorem toStrength_evidenceOfMasses (q : Query) :
-    Evidence.toStrength (S.evidenceOfMasses q) = S.queryProb q := by
+    BinaryEvidence.toStrength (S.evidenceOfMasses q) = S.queryProb q := by
   by_cases hzero : S.totalMass = 0
-  · unfold Evidence.toStrength queryProb
+  · unfold BinaryEvidence.toStrength queryProb
     rw [S.evidenceOfMasses_total q, if_pos hzero, if_pos hzero]
-  · unfold Evidence.toStrength queryProb
+  · unfold BinaryEvidence.toStrength queryProb
     rw [S.evidenceOfMasses_total q, if_neg hzero, if_neg hzero]
     simp [evidenceOfMasses]
 
@@ -82,13 +82,13 @@ instance : EvidenceType (MassState Query) where
   toAddCommMonoid := inferInstance
 
 /-- Extract the evidence supplied by a multiset of semantic sources. -/
-noncomputable def evidence (W : MassState Query) (q : Query) : Evidence :=
+noncomputable def evidence (W : MassState Query) (q : Query) : BinaryEvidence :=
   (W.map fun src => src.evidenceOfMasses q).sum
 
-noncomputable instance : WorldModel (MassState Query) Query where
+noncomputable instance : BinaryWorldModel (MassState Query) Query where
   evidence W q := evidence W q
   evidence_add W₁ W₂ q := by
-    let f : MassSemantics Query → Evidence := fun src => src.evidenceOfMasses q
+    let f : MassSemantics Query → BinaryEvidence := fun src => src.evidenceOfMasses q
     have h :
         (Multiset.map f (W₁ + W₂)).sum =
           (Multiset.map f W₁).sum + (Multiset.map f W₂).sum := by
@@ -103,9 +103,9 @@ theorem evidence_singleton (S : MassSemantics Query) (q : Query) :
   simp [Multiset.map_singleton, Multiset.sum_singleton]
 
 theorem queryStrength_singleton_eq_queryProb (S : MassSemantics Query) (q : Query) :
-    WorldModel.queryStrength ({S} : MassState Query) q = S.queryProb q := by
-  unfold WorldModel.queryStrength
-  rw [show WorldModel.evidence ({S} : MassState Query) q = S.evidenceOfMasses q by
+    BinaryWorldModel.queryStrength ({S} : MassState Query) q = S.queryProb q := by
+  unfold BinaryWorldModel.queryStrength
+  rw [show BinaryWorldModel.evidence ({S} : MassState Query) q = S.evidenceOfMasses q by
       exact evidence_singleton S q]
   exact S.toStrength_evidenceOfMasses q
 
@@ -113,12 +113,12 @@ end MassState
 
 theorem queryStrength_eq_queryProb_of_evidence_eq
     {State Query : Type*}
-    [EvidenceType State] [WorldModel State Query]
+    [EvidenceType State] [BinaryWorldModel State Query]
     (W : State) (S : MassSemantics Query)
-    (hEvidence : ∀ q, WorldModel.evidence (State := State) (Query := Query) W q = S.evidenceOfMasses q)
+    (hEvidence : ∀ q, BinaryWorldModel.evidence (State := State) (Query := Query) W q = S.evidenceOfMasses q)
     (q : Query) :
-    WorldModel.queryStrength (State := State) (Query := Query) W q = S.queryProb q := by
-  unfold WorldModel.queryStrength
+    BinaryWorldModel.queryStrength (State := State) (Query := Query) W q = S.queryProb q := by
+  unfold BinaryWorldModel.queryStrength
   rw [hEvidence q]
   exact S.toStrength_evidenceOfMasses q
 

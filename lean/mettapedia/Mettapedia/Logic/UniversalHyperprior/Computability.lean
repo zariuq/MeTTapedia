@@ -29,7 +29,7 @@ open Mettapedia.Logic.UniversalHyperprior
 open Mettapedia.Logic.UniversalHyperprior.Dyadic
 open Mettapedia.Logic.EvidenceNormalGamma
 
-/-! ## Primcodable Instance for Evidence
+/-! ## Primcodable Instance for BinaryEvidence
 
 To apply Hutter's computability framework, we need evidence to be Primcodable.
 

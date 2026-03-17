@@ -40,11 +40,11 @@ def predCodeInfFixtureState :
 
 /-- Predicate-code infinitary fixture: conjunction-elimination transport via wrapper API. -/
 theorem predCodeInf_iAnd_component_fixture :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool)
         (Query := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool)
         predCodeInfFixtureState (.iAnd predCodeInfSeq) ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool)
         (Query := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool)
         predCodeInfFixtureState (predCodeInfSeq 0) := by
@@ -57,11 +57,11 @@ theorem predCodeInf_iAnd_component_fixture :
 
 /-- Predicate-code infinitary fixture: disjunction-introduction transport via wrapper API. -/
 theorem predCodeInf_component_iOr_fixture :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool)
         (Query := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool)
         predCodeInfFixtureState (predCodeInfSeq 0) ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfState Bool)
         (Query := Mettapedia.Logic.PLNWorldModelPredCodeInfinitaryCompleteness.PredCodeInfQuery Bool)
         predCodeInfFixtureState (.iOr predCodeInfSeq) := by
@@ -90,12 +90,12 @@ def folInfSeq {L : Language} :
 /-- FOL infinitary singleton fixture: conjunction-elimination transport via wrapper API. -/
 theorem folInf_iAnd_component_singleton_fixture
     {L : Language} (S : Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.PointedFOL L) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfState L)
         (Query := Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfQuery L)
         ({S} : Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfState L)
         (.iAnd (folInfSeq (L := L))) ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfState L)
         (Query := Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfQuery L)
         ({S} : Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfState L)
@@ -110,12 +110,12 @@ theorem folInf_iAnd_component_singleton_fixture
 /-- FOL infinitary singleton fixture: disjunction-introduction transport via wrapper API. -/
 theorem folInf_component_iOr_singleton_fixture
     {L : Language} (S : Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.PointedFOL L) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfState L)
         (Query := Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfQuery L)
         ({S} : Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfState L)
         (folInfSeq (L := L) 0) ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfState L)
         (Query := Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfQuery L)
         ({S} : Mettapedia.Logic.PLNWorldModelFOLInfinitaryCompleteness.FOLInfState L)

@@ -329,7 +329,7 @@ end WeightConversion
 
 section TopicInference
 
-/-- Evidence for a topic based on word observation.
+/-- BinaryEvidence for a topic based on word observation.
 
     If word w is connected to topic t with strength s:
     - w=1 (observed): positive evidence for t being active
@@ -750,7 +750,7 @@ end DeltaConfidenceBridge
    strength = 1 - exp(-weight)
    ```
 
-4. `topic_strength_converges`: Evidence aggregation converges at O(1/n) rate
+4. `topic_strength_converges`: BinaryEvidence aggregation converges at O(1/n) rate
 
 **Conclusion:**
 

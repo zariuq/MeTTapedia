@@ -13,14 +13,14 @@ import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 import Mettapedia.OSLF.QuantifiedFormula
 
 /-!
-# Evidence-Grounded Semantics for GF via World Models
+# BinaryEvidence-Grounded Semantics for GF via World Models
 
 This module bridges GF abstract syntax trees to evidence-valued denotations
 via the PLN world-model interface.  The key construction:
 
-  ⟦t⟧_W := WorldModel.evidence W (queryOfAtom a (gfAbstractToPattern t))
+  ⟦t⟧_W := BinaryWorldModel.evidence W (queryOfAtom a (gfAbstractToPattern t))
 
-World-model states W replace possible worlds; Evidence values (n⁺, n⁻)
+World-model states W replace possible worlds; BinaryEvidence values (n⁺, n⁻)
 replace truth values.  OSLF modalities (◇, □) still run over the rewrite
 graph, but atom meaning comes from evidence extraction.
 
@@ -29,7 +29,7 @@ graph, but atom meaning comes from evidence extraction.
 - **Query type**: `Query = Pattern` (patterns are the queries)
 - **Atom encoding**: `queryOfAtom : String → Pattern → Pattern` tags patterns
   with atom names, so different atoms at the same pattern get distinct queries
-- **Atom interpretation**: Prop-threshold on `Evidence.toStrength`
+- **Atom interpretation**: Prop-threshold on `BinaryEvidence.toStrength`
 
 ## Assumptions
 
@@ -57,12 +57,12 @@ open scoped ENNReal
 
 /-! ## 0. Canonical Semantics Interface
 
-The `GFSemantics` record bundles the four components of the GF → OSLF → Evidence
+The `GFSemantics` record bundles the four components of the GF → OSLF → BinaryEvidence
 pipeline into a single frozen interface:
 
 1. **Atom-query encoding**: how atom names and patterns become WM queries
 2. **Language definition**: the OSLF reduction relation source
-3. **Threshold policy**: how Evidence projects to Prop (via threshAtomSem)
+3. **Threshold policy**: how BinaryEvidence projects to Prop (via threshAtomSem)
 4. **Checker contract**: soundness of checkLangUsing w.r.t. sem/semE
 
 All derived operations (semE, sem, checker soundness, evidence bounds) are
@@ -71,7 +71,7 @@ methods on GFSemantics, eliminating parameter threading.
 **Design principle** (Stay/Baez/Knuth/Meredith compatible):
 `semE` is primary, Boolean truth is a projection/view via thresholding. -/
 
-/-- Canonical GF → OSLF → Evidence semantics configuration.
+/-- Canonical GF → OSLF → BinaryEvidence semantics configuration.
     Bundles atom-query encoding and language definition.  All derived
     semantics (semE, sem, checker soundness) flow from this record. -/
 structure GFSemantics where
@@ -85,30 +85,30 @@ structure GFSemantics where
 
 namespace GFSemantics
 
-variable {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- The reduction relation induced by this configuration's language. -/
 def reduces (cfg : GFSemantics) : Pattern → Pattern → Prop :=
   langReduces cfg.lang
 
-/-- Evidence-valued atom semantics from a world-model state. -/
+/-- BinaryEvidence-valued atom semantics from a world-model state. -/
 noncomputable def evidenceAtomSem (cfg : GFSemantics) (W : State) : EvidenceAtomSem :=
   wmEvidenceAtomSem W cfg.atomQuery
 
 /-- Full evidence-valued formula semantics (PRIMARY layer).
-    Maps formulas to Evidence via the Frame structure (⊓ ∧, ⊔ ∨, ⇨ →, ⨆ ◇, ⨅ □). -/
+    Maps formulas to BinaryEvidence via the Frame structure (⊓ ∧, ⊔ ∨, ⇨ →, ⨆ ◇, ⨅ □). -/
 noncomputable def formulaSemE (cfg : GFSemantics) (W : State)
-    (φ : OSLFFormula) (p : Pattern) : Evidence :=
+    (φ : OSLFFormula) (p : Pattern) : BinaryEvidence :=
   semE cfg.reduces (cfg.evidenceAtomSem W) φ p
 
 /-- Threshold-Prop atom semantics (DERIVED from evidence layer). -/
 noncomputable def thresholdAtomSem (cfg : GFSemantics) (W : State)
-    (τ : Evidence) : AtomSem :=
+    (τ : BinaryEvidence) : AtomSem :=
   threshAtomSem (cfg.evidenceAtomSem W) τ
 
 /-- Full Prop-valued formula semantics (DERIVED via threshold projection). -/
 noncomputable def formulaSem (cfg : GFSemantics) (W : State)
-    (τ : Evidence) (φ : OSLFFormula) (p : Pattern) : Prop :=
+    (τ : BinaryEvidence) (φ : OSLFFormula) (p : Pattern) : Prop :=
   sem cfg.reduces (cfg.thresholdAtomSem W τ) φ p
 
 /-- Checker soundness contract: if checkLangUsing returns .sat with a sound
@@ -122,10 +122,10 @@ theorem checkerSoundness (cfg : GFSemantics)
     sem cfg.reduces I_sem φ p :=
   checkLangUsing_sat_sound h_atoms h
 
-/-- Evidence bound contract: for imp-free formulas, checker .sat implies
+/-- BinaryEvidence bound contract: for imp-free formulas, checker .sat implies
     τ ≤ semE. No totality or finite-branching assumptions needed. -/
 theorem evidenceBound (cfg : GFSemantics)
-    {W : State} {τ : Evidence}
+    {W : State} {τ : BinaryEvidence}
     {I_check : AtomCheck}
     (h_atoms : ∀ a p, I_check a p = true →
       threshAtomSem (cfg.evidenceAtomSem W) τ a p)
@@ -191,15 +191,15 @@ theorem garden_path_queries_differ :
 
 section GFSemantics
 
-variable {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-! ## 2. Core Definitions -/
 
-/-- Evidence-valued denotation of a GF abstract tree in world-model state W.
+/-- BinaryEvidence-valued denotation of a GF abstract tree in world-model state W.
 
 `⟦t⟧_W = evidence(W, gfAbstractToPattern(t))`. -/
-noncomputable def gfEvidenceDenote (W : State) (t : AbstractNode) : Evidence :=
-  WorldModel.evidence W (gfAbstractToPattern t)
+noncomputable def gfEvidenceDenote (W : State) (t : AbstractNode) : BinaryEvidence :=
+  BinaryWorldModel.evidence W (gfAbstractToPattern t)
 
 /-- Threshold-based atom semantics grounded in a world-model state.
 
@@ -209,7 +209,7 @@ The atom name is part of the query, so different atoms can have
 different evidence. -/
 noncomputable def gfAtomSemFromWM (W : State) (threshold : ℝ≥0∞) : AtomSem :=
   fun atomName p =>
-    threshold ≤ Evidence.toStrength (WorldModel.evidence W (queryOfAtom atomName p))
+    threshold ≤ BinaryEvidence.toStrength (BinaryWorldModel.evidence W (queryOfAtom atomName p))
 
 /-- Full OSLF formula semantics grounded in a world-model state.
 
@@ -241,9 +241,9 @@ theorem oslf_sat_implies_wm_semantics
     gfWMFormulaSem W threshold φ p :=
   checkLangUsing_sat_sound h_atoms h
 
-/-! ## 4. Evidence Revision Preserves Denotation
+/-! ## 4. BinaryEvidence Revision Preserves Denotation
 
-Evidence extraction commutes with revision (`+`) in the world-model state.
+BinaryEvidence extraction commutes with revision (`+`) in the world-model state.
 This is the key structural property: combining evidence sources is coherent
 with denotation. -/
 
@@ -253,7 +253,7 @@ theorem evidence_denote_revision (W₁ W₂ : State) (t : AbstractNode) :
     gfEvidenceDenote (W₁ + W₂) t =
       gfEvidenceDenote W₁ t + gfEvidenceDenote W₂ t := by
   simp only [gfEvidenceDenote]
-  exact WorldModel.evidence_add W₁ W₂ (gfAbstractToPattern t)
+  exact BinaryWorldModel.evidence_add W₁ W₂ (gfAbstractToPattern t)
 
 /-! ## 5. Threshold Antitonicity
 
@@ -310,8 +310,8 @@ Combined with `garden_path_queries_differ`, this shows the two parses
 can be semantically distinguished by evidence. -/
 theorem garden_path_evidence_separable
     (W : State)
-    (h_disc : WorldModel.evidence W (gfAbstractToPattern gpParse1) ≠
-              WorldModel.evidence W (gfAbstractToPattern gpParse2)) :
+    (h_disc : BinaryWorldModel.evidence W (gfAbstractToPattern gpParse1) ≠
+              BinaryWorldModel.evidence W (gfAbstractToPattern gpParse2)) :
     gfEvidenceDenote W gpParse1 ≠ gfEvidenceDenote W gpParse2 :=
   h_disc
 
@@ -333,42 +333,42 @@ theorem wm_adjective_adds_lexical (adjName : String) (cn : AbstractNode) :
     containsLexical adjName (gfAbstractToPattern (addAdjModifier adjName cn)) = true :=
   adjModification_adds_adjective adjName cn
 
-/-! ## 9. Evidence-Valued GF Semantics (Primary Layer)
+/-! ## 9. BinaryEvidence-Valued GF Semantics (Primary Layer)
 
 The threshold-Prop semantics above (`gfWMFormulaSem`) is a derived view.
-The PRIMARY semantics maps formulas to Evidence values via `semE` from
-`OSLFEvidenceSemantics.lean`, using the Frame structure of Evidence
+The PRIMARY semantics maps formulas to BinaryEvidence values via `semE` from
+`OSLFEvidenceSemantics.lean`, using the Frame structure of BinaryEvidence
 (⊓ for ∧, ⊔ for ∨, ⇨ for →, ⨆ for ◇, ⨅ for □). -/
 
-/-- Evidence-valued atom semantics from a world-model state.
-Each atom name and pattern produces an Evidence value via WM query. -/
+/-- BinaryEvidence-valued atom semantics from a world-model state.
+Each atom name and pattern produces an BinaryEvidence value via WM query. -/
 noncomputable def gfEvidenceAtomSemFromWM (W : State) : EvidenceAtomSem :=
   wmEvidenceAtomSem W queryOfAtom
 
 /-- Full evidence-valued OSLF formula semantics for GF.
 
-This is the PRIMARY semantic layer: formulas map to Evidence, not Prop.
+This is the PRIMARY semantic layer: formulas map to BinaryEvidence, not Prop.
 The threshold-Prop semantics `gfWMFormulaSem` is a corollary obtained by
 thresholding this. -/
 noncomputable def gfWMFormulaSemE
-    (W : State) (φ : OSLFFormula) (p : Pattern) : Evidence :=
+    (W : State) (φ : OSLFFormula) (p : Pattern) : BinaryEvidence :=
   semE (langReduces gfRGLLanguageDef) (gfEvidenceAtomSemFromWM W) φ p
 
 /-- The threshold-Prop atom semantics is recovered by thresholding the
-evidence-valued atom semantics on `Evidence.toStrength`. -/
+evidence-valued atom semantics on `BinaryEvidence.toStrength`. -/
 theorem gfAtomSemFromWM_eq_threshold (W : State) (threshold : ℝ≥0∞)
     (a : String) (p : Pattern) :
     gfAtomSemFromWM W threshold a p ↔
-      threshold ≤ Evidence.toStrength (gfEvidenceAtomSemFromWM W a p) := by
+      threshold ≤ BinaryEvidence.toStrength (gfEvidenceAtomSemFromWM W a p) := by
   rfl
 
-/-- Evidence revision lifts to GF evidence atoms:
+/-- BinaryEvidence revision lifts to GF evidence atoms:
 combining world-model states then extracting = extracting then combining. -/
 theorem gfWMFormulaSemE_atom_revision (W₁ W₂ : State) (a : String) (p : Pattern) :
     gfWMFormulaSemE (W₁ + W₂) (.atom a) p =
       gfWMFormulaSemE W₁ (.atom a) p + gfWMFormulaSemE W₂ (.atom a) p := by
   simp only [gfWMFormulaSemE, semE_atom, gfEvidenceAtomSemFromWM, wmEvidenceAtomSem]
-  exact WorldModel.evidence_add W₁ W₂ (queryOfAtom a p)
+  exact BinaryWorldModel.evidence_add W₁ W₂ (queryOfAtom a p)
 
 /-- Conjunction in evidence semantics projects to components. -/
 theorem gfWMFormulaSemE_and_le_left (W : State) (φ ψ : OSLFFormula) (p : Pattern) :
@@ -386,7 +386,7 @@ through the atom-tagged query encoding. They share the same WM extraction
 mechanism but on different query patterns. -/
 theorem gfEvidenceDenote_as_evidence (W : State) (t : AbstractNode) :
     gfEvidenceDenote W t =
-      WorldModel.evidence W (gfAbstractToPattern t) := by
+      BinaryWorldModel.evidence W (gfAbstractToPattern t) := by
   rfl
 
 /-! ## 9b. Canonical GFSemantics Instance
@@ -416,8 +416,8 @@ theorem gfRGLSemantics_formulaSemE (W : State) (φ : OSLFFormula) (p : Pattern) 
     gfRGLSemantics.formulaSemE W φ p = gfWMFormulaSemE W φ p := rfl
 
 /-- Agreement: record Prop semantics = hand-written definition.
-    (threshold expressed as Evidence via Evidence.toStrength). -/
-theorem gfRGLSemantics_formulaSem (W : State) (τ : Evidence)
+    (threshold expressed as BinaryEvidence via BinaryEvidence.toStrength). -/
+theorem gfRGLSemantics_formulaSem (W : State) (τ : BinaryEvidence)
     (φ : OSLFFormula) (p : Pattern) :
     gfRGLSemantics.formulaSem W τ φ p =
       sem (langReduces gfRGLLanguageDef)
@@ -439,7 +439,7 @@ inner tree is accessible through the wrapper via ◇.
 
 DetCN, PredVP, AdjCN have no rewrites — their evidence is determined by the WM
 query on the composite pattern.  The decomposition lemmas are definitional
-equalities exposing the query shape; algebraic composition laws over Evidence
+equalities exposing the query shape; algebraic composition laws over BinaryEvidence
 would require additional WM axioms (e.g. subadditivity). -/
 
 open Mettapedia.OSLF.MeTTaIL.Match
@@ -605,21 +605,21 @@ theorem gfWMFormulaSemE_UseComp_transparent
 /-- DetCN structural: evidence for DetCN(det, cn) is WM query on composite. -/
 theorem gfEvidenceDenote_DetCN (W : State) (det cn : AbstractNode) :
     gfEvidenceDenote W (.apply FunctionSig.DetCN [det, cn]) =
-    WorldModel.evidence W (Pattern.apply "DetCN"
+    BinaryWorldModel.evidence W (Pattern.apply "DetCN"
       [gfAbstractToPattern det, gfAbstractToPattern cn]) := by
   simp [gfEvidenceDenote, FunctionSig.DetCN, List.map]
 
 /-- PredVP structural: evidence for PredVP(np, vp) is WM query on composite. -/
 theorem gfEvidenceDenote_PredVP (W : State) (np vp : AbstractNode) :
     gfEvidenceDenote W (.apply FunctionSig.PredVP [np, vp]) =
-    WorldModel.evidence W (Pattern.apply "PredVP"
+    BinaryWorldModel.evidence W (Pattern.apply "PredVP"
       [gfAbstractToPattern np, gfAbstractToPattern vp]) := by
   simp [gfEvidenceDenote, FunctionSig.PredVP, List.map]
 
 /-- AdjCN structural: evidence for AdjCN(ap, cn) is WM query on composite. -/
 theorem gfEvidenceDenote_AdjCN (W : State) (ap cn : AbstractNode) :
     gfEvidenceDenote W (.apply FunctionSig.AdjCN [ap, cn]) =
-    WorldModel.evidence W (Pattern.apply "AdjCN"
+    BinaryWorldModel.evidence W (Pattern.apply "AdjCN"
       [gfAbstractToPattern ap, gfAbstractToPattern cn]) := by
   simp [gfEvidenceDenote, FunctionSig.AdjCN, List.map]
 
@@ -627,7 +627,7 @@ theorem gfEvidenceDenote_AdjCN (W : State) (ap cn : AbstractNode) :
 
 ### Fragment bridge
 
-The checker `.sat` → `sem` (Prop) → `τ ≤ semE` (Evidence) chain works for the
+The checker `.sat` → `sem` (Prop) → `τ ≤ semE` (BinaryEvidence) chain works for the
 **implication-free fragment** without any totality or finite-branching
 assumptions.  The reverse bridge uses the existential witness in ◇ to provide
 the evidence bound directly.
@@ -651,7 +651,7 @@ No totality or finite-branching assumptions needed (reverse bridge direction).
 The forward bridge `semE → sem` for ∨/◇ requires totality + finite branching
 (see `threshold_or_total`, `threshold_dia_total`). -/
 theorem checker_sat_implies_evidence_bound
-    {I : EvidenceAtomSem} {τ : Evidence}
+    {I : EvidenceAtomSem} {τ : BinaryEvidence}
     {I_check : AtomCheck}
     (h_atoms : ∀ a p, I_check a p = true → threshAtomSem I τ a p)
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
@@ -668,7 +668,7 @@ the checker `.sat` + reverse bridge gives `τ ≤ semE (◇ is_house) (UseN hous
 
 Full chain: GF tree → Pattern → checker `.sat` → `sem` → `τ ≤ semE`. -/
 theorem useN_house_evidence_bound
-    (I : EvidenceAtomSem) (τ : Evidence)
+    (I : EvidenceAtomSem) (τ : BinaryEvidence)
     (hI : ∀ a, τ ≤ I a (.fvar "house")) :
     τ ≤ semE (langReduces gfRGLLanguageDef) I
       (.dia (.atom "is_house"))
@@ -1036,7 +1036,7 @@ where `E_∃(CN)` is the evidence that CN has a referent (from the WM) and
 
 /-- Existence presupposition atom: evidence that a CN has a referent.
     Encoded as atom "exists" at the CN pattern. -/
-noncomputable def existsPresupEvidence (W : State) (cn : Pattern) : Evidence :=
+noncomputable def existsPresupEvidence (W : State) (cn : Pattern) : BinaryEvidence :=
   gfWMFormulaSemE W (.atom "exists") cn
 
 /-- Presupposition-gated evidence for a definite description sentence.
@@ -1048,7 +1048,7 @@ noncomputable def existsPresupEvidence (W : State) (cn : Pattern) : Evidence :=
     - total:  E_∃ ⊗ E_assert -/
 noncomputable def definiteDescriptionEvidence
     (W : State) (cn_pattern : Pattern)
-    (assertFormula : OSLFFormula) (sentence_pattern : Pattern) : Evidence :=
+    (assertFormula : OSLFFormula) (sentence_pattern : Pattern) : BinaryEvidence :=
   existsPresupEvidence W cn_pattern *
   gfWMFormulaSemE W assertFormula sentence_pattern
 
@@ -1057,11 +1057,11 @@ noncomputable def definiteDescriptionEvidence
 theorem definiteDescription_presup_satisfied
     (W : State) (cn_pat sent_pat : Pattern)
     (assertFormula : OSLFFormula)
-    (h : existsPresupEvidence W cn_pat = Evidence.one) :
+    (h : existsPresupEvidence W cn_pat = BinaryEvidence.one) :
     definiteDescriptionEvidence W cn_pat assertFormula sent_pat =
     gfWMFormulaSemE W assertFormula sent_pat := by
   unfold definiteDescriptionEvidence
-  rw [h, Evidence.one_tensor]
+  rw [h, BinaryEvidence.one_tensor]
 
 /-- When existence evidence is ⊥ (presupposition failure), the definite
     description collapses to ⊥ regardless of assertion content. -/
@@ -1077,7 +1077,7 @@ theorem definiteDescription_presup_failure
 /-- **Negation projection**: The presupposition of "The CN is NOT VP" is the
     same existence presupposition as "The CN is VP".
 
-    Evidence version: the presupposition factor `E_∃(CN)` is identical
+    BinaryEvidence version: the presupposition factor `E_∃(CN)` is identical
     regardless of whether the assertion is negated (via `φ → ⊥`). -/
 theorem negation_preserves_definite_presup
     (W : State) (cn_pat : Pattern) (assertFormula : OSLFFormula) :
@@ -1157,11 +1157,11 @@ def inverseScopeReading : QFormula :=
     `⨆ j, ⨅ i, f i j ≤ ⨅ i, ⨆ j, f i j`
 
     This is the quantifier scope ordering: ∃y.∀x.P(x,y) → ∀x.∃y.P(x,y).
-    Instantiates to Evidence via `CompleteLattice Evidence`.
+    Instantiates to BinaryEvidence via `CompleteLattice BinaryEvidence`.
 
     Proved in `QuantifiedFormula.lean` as `iSup_iInf_le_iInf_iSup`. -/
 theorem inverse_scope_le_surface_scope_evidence {ι κ : Type*}
-    (f : ι → κ → Evidence) :
+    (f : ι → κ → BinaryEvidence) :
     (⨆ j, ⨅ i, f i j) ≤ (⨅ i, ⨆ j, f i j) :=
   iSup_iInf_le_iInf_iSup f
 
@@ -1283,7 +1283,7 @@ theorem checker_sat_atom_implies_wm_semantics
     Independent of the checker — purely a WM property. -/
 theorem atom_wm_query_judgment
     (W : State) (hW : WMJudgment W) (a : String) (p : Pattern) :
-    WMQueryJudgment W (queryOfAtom a p) (WorldModel.evidence W (queryOfAtom a p)) :=
+    WMQueryJudgment W (queryOfAtom a p) (BinaryWorldModel.evidence W (queryOfAtom a p)) :=
   ⟨hW, rfl⟩
 
 /-- **Combined: checker .sat on atom → WM semantics + WM query judgment.**
@@ -1298,7 +1298,7 @@ theorem checker_sat_atom_implies_wm_query_judgment
     {fuel : Nat} {p : Pattern} {a : String}
     (hSat : checkLangUsing .empty gfRGLLanguageDef I_check fuel p (.atom a) = .sat) :
     gfWMFormulaSem W threshold (.atom a) p ∧
-    WMQueryJudgment W (queryOfAtom a p) (WorldModel.evidence W (queryOfAtom a p)) :=
+    WMQueryJudgment W (queryOfAtom a p) (BinaryWorldModel.evidence W (queryOfAtom a p)) :=
   ⟨checker_sat_atom_implies_wm_semantics W threshold h_atoms hSat,
    atom_wm_query_judgment W hW a p⟩
 
@@ -1309,13 +1309,13 @@ theorem checker_sat_atom_implies_wm_query_judgment
 def LexicalEvidenceMonotone (W : State) : Prop :=
   ∀ p q : Pattern,
     (∀ name, containsLexical name p = true → containsLexical name q = true) →
-    WorldModel.evidence W p ≤ WorldModel.evidence W q
+    BinaryWorldModel.evidence W p ≤ BinaryWorldModel.evidence W q
 
 /-- **Positive example**: a WM state where evidence is constant (e.g., ⊤ for all
     patterns) satisfies `LexicalEvidenceMonotone` — the inclusion hypothesis is
     unused because `e ≤ e` always holds. -/
 theorem lexicalMono_of_const_evidence (W : State)
-    (hconst : ∀ p q : Pattern, WorldModel.evidence W p = WorldModel.evidence W q) :
+    (hconst : ∀ p q : Pattern, BinaryWorldModel.evidence W p = BinaryWorldModel.evidence W q) :
     LexicalEvidenceMonotone W :=
   fun p q _ => le_of_eq (hconst p q)
 
@@ -1324,7 +1324,7 @@ theorem lexicalMono_of_const_evidence (W : State)
     superset-pattern has strictly less evidence, the assumption fails. -/
 theorem lexicalMono_not_trivial (W : State) (p q : Pattern)
     (hlex : ∀ name, containsLexical name p = true → containsLexical name q = true)
-    (hlt : WorldModel.evidence W q < WorldModel.evidence W p) :
+    (hlt : BinaryWorldModel.evidence W q < BinaryWorldModel.evidence W p) :
     ¬ LexicalEvidenceMonotone W := by
   intro hmono
   exact lt_irrefl _ (lt_of_lt_of_le hlt (hmono p q hlex))

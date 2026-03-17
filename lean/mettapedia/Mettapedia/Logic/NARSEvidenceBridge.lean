@@ -8,17 +8,17 @@ open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.NARSMettaTruthFunctions
 
 /-!
-# NARS Evidence Bridge
+# NARS BinaryEvidence Bridge
 
 This file establishes the connection between NARS (Non-Axiomatic Reasoning System)
-and the Evidence quantale formalization.
+and the BinaryEvidence quantale formalization.
 
 ## Key Insight
 
 NARS and PLN share the same fundamental machinery:
 1. **Same weight transform**: `w = c/(1-c)`, `c = w/(w+k)`
 2. **Same revision rule**: weighted average by evidence weight
-3. **Evidence semantics**: counts (w⁺, w⁻) underlie both systems
+3. **BinaryEvidence semantics**: counts (w⁺, w⁻) underlie both systems
 
 The difference is philosophical:
 - **PLN**: Rules derived from probability theory (Bayes, conditional independence)
@@ -46,10 +46,10 @@ The difference is philosophical:
 
 /-! ## Bridge Structures -/
 
-/-- Convert NARS TV to Evidence.
+/-- Convert NARS TV to BinaryEvidence.
     In NARS, frequency f = w⁺/(w⁺ + w⁻) and confidence c = (w⁺ + w⁻)/(w⁺ + w⁻ + k).
     We use k = 1 as the standard "unit of evidence". -/
-noncomputable def TV.toEvidence (t : TV) : Evidence :=
+noncomputable def TV.toEvidence (t : TV) : BinaryEvidence :=
   -- w = c/(1-c) is the total evidence (with k=1)
   -- w⁺ = f·w, w⁻ = (1-f)·w
   let w := c2w t.c
@@ -57,8 +57,8 @@ noncomputable def TV.toEvidence (t : TV) : Evidence :=
   let wneg := (1 - t.f) * w
   ⟨ENNReal.ofReal wpos, ENNReal.ofReal wneg⟩
 
-/-- Convert Evidence to NARS TV. -/
-noncomputable def Evidence.toNARSTV (e : Evidence) : TV :=
+/-- Convert BinaryEvidence to NARS TV. -/
+noncomputable def BinaryEvidence.toNARSTV (e : BinaryEvidence) : TV :=
   let total := e.pos + e.neg
   let f := if total = 0 then 0.5 else (e.pos / total).toReal
   let c := (total / (total + 1)).toReal  -- k = 1
@@ -92,7 +92,7 @@ theorem c2w_w2c_id (w : ℝ) (hw : 0 ≤ w) : c2w (w2c w) = w := by
   rw [h1c, div_div]
   simp [hw1.ne']
 
-/-! ## Revision is Evidence Aggregation -/
+/-! ## Revision is BinaryEvidence Aggregation -/
 
 /-- NARS revision frequency is the weighted average of frequencies. -/
 theorem revision_frequency_weighted_avg (t1 t2 : TV)
@@ -167,7 +167,7 @@ theorem induction_freq_is_f1 (t1 t2 : TV) :
     (truthInduction t1 t2).f = t1.f := by
   simp [truthInduction, truthAbduction]
 
-/-! ## Connection to PLN Evidence -/
+/-! ## Connection to PLN BinaryEvidence -/
 
 /-- NARS and PLN use the same revision formula for confidence.
     This theorem states that NARS revision confidence matches w2c of total weight. -/
@@ -181,7 +181,7 @@ theorem nars_revision_freq_formula (t1 t2 : TV) (hw_pos : 0 < c2w t1.c + c2w t2.
     t2.f * (c2w t2.c / (c2w t1.c + c2w t2.c)) := by
   field_simp [hw_pos.ne']
 
-/-! ## Evidence Interpretation
+/-! ## BinaryEvidence Interpretation
 
 In both NARS and PLN, the confidence c encodes the "amount of evidence" via:
   w = c / (1 - c)
@@ -189,11 +189,11 @@ In both NARS and PLN, the confidence c encodes the "amount of evidence" via:
 This weight w represents the evidence-to-prior ratio. With prior k = 1:
   c = w / (w + 1)
 
-The Evidence quantale provides the semantic foundation:
-- **Evidence.hplus**: corresponds to NARS/PLN revision (additive combination)
-- **Evidence.tensor**: corresponds to sequential composition (multiplicative)
-- **Evidence.toStrength**: recovers frequency from evidence counts
-- **Evidence.toConfidence**: recovers confidence from evidence counts
+The BinaryEvidence quantale provides the semantic foundation:
+- **BinaryEvidence.hplus**: corresponds to NARS/PLN revision (additive combination)
+- **BinaryEvidence.tensor**: corresponds to sequential composition (multiplicative)
+- **BinaryEvidence.toStrength**: recovers frequency from evidence counts
+- **BinaryEvidence.toConfidence**: recovers confidence from evidence counts
 
 The key insight is that NARS's "experience-grounded" axioms, when formalized,
 yield the same algebraic structure as PLN's probability-derived rules.
@@ -209,7 +209,7 @@ theorem c2w_strict_mono (c1 c2 : ℝ) (_hc1 : 0 ≤ c1) (_hc1' : c1 < 1)
   rw [div_lt_div_iff₀ h1c1 h1c2]
   nlinarith
 
-/-- Summary: NARS revision equals Evidence aggregation (up to the min/max clamps).
+/-- Summary: NARS revision equals BinaryEvidence aggregation (up to the min/max clamps).
 
 The clamps in NARS revision:
 - `min 1 f` ensures frequency stays in [0,1]

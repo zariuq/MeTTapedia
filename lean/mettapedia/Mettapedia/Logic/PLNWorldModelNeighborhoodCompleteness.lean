@@ -36,9 +36,9 @@ def pointwiseImpliesOn (C : Neighborhood.FrameClass) (φ ψ : ModalQuery) : Prop
 /-- Singleton-strength consequence restricted to frame class `C`. -/
 def singletonStrengthLEOn (C : Neighborhood.FrameClass) (φ ψ : ModalQuery) : Prop :=
   ∀ pn : PointedNeighborhood, pn.model.toFrame ∈ C →
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         ({pn} : Multiset PointedNeighborhood) φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         ({pn} : Multiset PointedNeighborhood) ψ
 
 /-- Naming alias: singleton consequence on frame class `C`. -/
@@ -61,11 +61,11 @@ theorem pointwiseImpliesOn_iff_singletonStrengthLEOn
     by_contra hψ
     have hsingleton := hle pn hC
     have h1 :
-        WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+        BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
             ({pn} : Multiset PointedNeighborhood) φ = 1 :=
       queryStrength_singleton_of_satisfies pn φ hφ
     have h0 :
-        WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+        BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
             ({pn} : Multiset PointedNeighborhood) ψ = 0 :=
       queryStrength_singleton_of_not_satisfies pn ψ hψ
     have h10 : (1 : ℝ≥0∞) ≤ 0 := by
@@ -111,7 +111,7 @@ private theorem neighborhoodEvidence_total
         (Multiset.countP (fun pn : PointedNeighborhood => pn.satisfies φ) W : ℝ≥0∞) +
           (Multiset.countP (fun pn : PointedNeighborhood => ¬ pn.satisfies φ) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold neighborhoodEvidence Evidence.total
+  unfold neighborhoodEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 /-- Multiset strength inequality from frame-class-local pointwise implication. -/
@@ -120,25 +120,25 @@ theorem queryStrength_le_of_pointwise_on
     (W : Multiset PointedNeighborhood) (φ ψ : ModalQuery)
     (hW : ∀ pn ∈ W, pn.model.toFrame ∈ C)
     (himp : pointwiseImpliesOn C φ ψ) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
   let pφ : PointedNeighborhood → Prop := fun pn => pn.satisfies φ
   let pψ : PointedNeighborhood → Prop := fun pn => pn.satisfies ψ
   letI : DecidablePred pφ := Classical.decPred pφ
   letI : DecidablePred pψ := Classical.decPred pψ
   have hφ :
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ =
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pφ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (neighborhoodEvidence W φ).total = 0 then 0
       else (neighborhoodEvidence W φ).pos / (neighborhoodEvidence W φ).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pφ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
     rw [neighborhoodEvidence_total (W := W) (φ := φ)]
     simp [neighborhoodEvidence, pφ]
   have hψ :
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ =
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pψ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (neighborhoodEvidence W ψ).total = 0 then 0
       else (neighborhoodEvidence W ψ).pos / (neighborhoodEvidence W ψ).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pψ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
@@ -166,8 +166,8 @@ theorem multiset_strength_le_of_singletonStrengthLEOn
     (W : Multiset PointedNeighborhood) (φ ψ : ModalQuery)
     (hW : ∀ pn ∈ W, pn.model.toFrame ∈ C)
     (hsing : singletonStrengthLEOn C φ ψ) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
   have himp : pointwiseImpliesOn C φ ψ :=
     (pointwiseImpliesOn_iff_singletonStrengthLEOn C φ ψ).mpr hsing
   exact queryStrength_le_of_pointwise_on C W φ ψ hW himp
@@ -248,8 +248,8 @@ theorem multiset_strength_le_of_provable_imp
     {W : Multiset PointedNeighborhood} {φ ψ : ModalQuery}
     (hW : ∀ pn ∈ W, pn.model.toFrame ∈ C)
     (hprov : 𝓢 ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
   have hsing : singletonStrengthLEOn C φ ψ :=
     singletonStrengthLEOn_of_provable_imp (S := S) (𝓢 := 𝓢) (C := C) hprov
   exact multiset_strength_le_of_singletonStrengthLEOn C W φ ψ hW hsing
@@ -264,8 +264,8 @@ theorem multiset_consequence_of_provable_imp
     {W : Multiset PointedNeighborhood} {φ ψ : ModalQuery}
     (hW : ∀ pn ∈ W, pn.model.toFrame ∈ C)
     (hprov : 𝓢 ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ :=
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ :=
   multiset_strength_le_of_provable_imp (S := S) (𝓢 := 𝓢) (C := C) hW hprov
 
 /-! ## Concrete Foundation instantiations: E and EMN -/
@@ -288,8 +288,8 @@ theorem multiset_strength_le_of_provable_imp_E
     {W : Multiset PointedNeighborhood} {φ ψ : ModalQuery}
     (hW : ∀ pn ∈ W, pn.model.toFrame ∈ Neighborhood.FrameClass.E)
     (hprov : Modal.E ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
   exact
     multiset_strength_le_of_provable_imp
       (S := Logic ℕ) (𝓢 := Modal.E) (C := Neighborhood.FrameClass.E) hW hprov
@@ -298,8 +298,8 @@ theorem multiset_strength_le_of_provable_imp_EMN
     {W : Multiset PointedNeighborhood} {φ ψ : ModalQuery}
     (hW : ∀ pn ∈ W, pn.model.toFrame ∈ Neighborhood.FrameClass.EMN)
     (hprov : Modal.EMN ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
   exact
     multiset_strength_le_of_provable_imp
       (S := Logic ℕ) (𝓢 := Modal.EMN) (C := Neighborhood.FrameClass.EMN) hW hprov
@@ -324,8 +324,8 @@ theorem multiset_strength_le_of_provable_imp_EMT
     {W : Multiset PointedNeighborhood} {φ ψ : ModalQuery}
     (hW : ∀ pn ∈ W, pn.model.toFrame ∈ Neighborhood.FrameClass.EMT)
     (hprov : Modal.EMT ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
   exact
     multiset_strength_le_of_provable_imp
       (S := Logic ℕ) (𝓢 := Modal.EMT) (C := Neighborhood.FrameClass.EMT) hW hprov
@@ -334,8 +334,8 @@ theorem multiset_strength_le_of_provable_imp_ED
     {W : Multiset PointedNeighborhood} {φ ψ : ModalQuery}
     (hW : ∀ pn ∈ W, pn.model.toFrame ∈ Neighborhood.FrameClass.ED)
     (hprov : Modal.ED ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery) W ψ := by
   exact
     multiset_strength_le_of_provable_imp
       (S := Logic ℕ) (𝓢 := Modal.ED) (C := Neighborhood.FrameClass.ED) hW hprov

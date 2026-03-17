@@ -128,7 +128,7 @@ This module is a curated import surface for the currently theorem-complete PLN s
   (`PLN_tensorStrength_eq_nbPosterior`, `PLN_hplusPos_eq_knnRelevance`,
    `PLN_revisionStrength_eq_linearPool`)
 - Regraduation odds/log-odds power laws in the evidence carrier
-  (`Evidence.toOdds_power_rpow`, `Evidence.toLogOdds_power_mul`)
+  (`BinaryEvidence.toOdds_power_rpow`, `BinaryEvidence.toLogOdds_power_mul`)
 - PU-style weak-negative calibration lemmas (`PremiseSelectionPUCalibration`)
 - Ranking-stability theorems under bounded perturbations (`PremiseSelectionRankingStability`)
 - Selector-spec defaults linked to checklist assumptions (`PremiseSelectionSelectorSpec`)
@@ -180,7 +180,7 @@ This module is a curated import surface for the currently theorem-complete PLN s
 - Abstract infinite-first MLN semantics over countable worlds (supporting infrastructure),
   with finite-support restriction, extensional factor-graph specialization, and
   abstract MassState WM bridge
-  (`PLNMarkovLogic{Abstract,Countable,FiniteRestriction,FactorGraph,WorldModel}`,
+  (`PLNMarkovLogic{Abstract,Countable,FiniteRestriction,FactorGraph,BinaryWorldModel}`,
   regression canary in `PLNMarkovLogicRegression`)
 - Additive multiset WM singleton-surface classification / uniqueness
   (`SufficientStatisticSurface`)

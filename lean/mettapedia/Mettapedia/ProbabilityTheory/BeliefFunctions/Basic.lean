@@ -28,7 +28,7 @@ D-S sits at the (imprecise, commutative) vertex of the uncertainty hypercube.
 ## References
 
 - Dempster, A.P. "Upper and Lower Probabilities Induced by Multivalued Mapping" (1967)
-- Shafer, G. "A Mathematical Theory of Evidence" (1976)
+- Shafer, G. "A Mathematical Theory of BinaryEvidence" (1976)
 - Walley, P. "Statistical Reasoning with Imprecise Probabilities" (1991), §5
 -/
 

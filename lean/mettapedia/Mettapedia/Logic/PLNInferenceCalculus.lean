@@ -155,7 +155,7 @@ def negTV (tv : TV) : TV where
   confidence_nonneg := tv.confidence_nonneg
   confidence_le_one := tv.confidence_le_one
 
-/-! ## Weight-Confidence Conversions (Evidence-based) -/
+/-! ## Weight-Confidence Conversions (BinaryEvidence-based) -/
 
 /-- Confidence to weight: c/(1-c). Defined for c < 1.
 For c=1, we use a large constant to avoid division by zero. -/
@@ -182,12 +182,12 @@ lemma c2w_nonneg (c : ℝ) (hc : 0 ≤ c) (hc1 : c < 1) : 0 ≤ c2w c := by
   apply div_nonneg hc
   linarith
 
-/-- Conjunction (under independence): Evidence-based formula
+/-- Conjunction (under independence): BinaryEvidence-based formula
 
 P(A ∧ B) = P(A) · P(B) when A, B independent
 
 **Corrected confidence formula**: `w2c(w_A * w_B)` where `w_i = c2w(c_i)`
-This matches the tensor product of Evidence counts. -/
+This matches the tensor product of BinaryEvidence counts. -/
 noncomputable def conjTV (tvA tvB : TV) : TV where
   strength := tvA.strength * tvB.strength
   confidence := w2c (c2w tvA.confidence * c2w tvB.confidence)
@@ -224,7 +224,7 @@ The background term (≈ 0.02) represents prior probability of B
 independent of A. We use 0 here for simplicity.
 
 **Corrected confidence formula**: `w2c(w_AB * w_A)` where `w_i = c2w(c_i)`
-This is identical to conjunction - both are tensor products in Evidence space. -/
+This is identical to conjunction - both are tensor products in BinaryEvidence space. -/
 noncomputable def mpTV (tvAB tvA : TV) : TV where
   strength := clamp01 (tvAB.strength * tvA.strength)
   confidence := w2c (c2w tvAB.confidence * c2w tvA.confidence)
@@ -259,7 +259,7 @@ the combined estimate has:
 - confidence = increases (more evidence)
 
 **Corrected confidence formula**: `w2c(w₁ + w₂)` where `wᵢ = c2w(cᵢ)`
-This matches adding Evidence counts when sources are independent. -/
+This matches adding BinaryEvidence counts when sources are independent. -/
 noncomputable def revisionTV (tv₁ tv₂ : TV) : TV where
   strength :=
     let w₁ := c2w tv₁.confidence
@@ -637,9 +637,9 @@ This mismatch means:
 
 ### Correct Formulas (PLNCorrectedFormulas.lean)
 
-**Mathematically correct** confidence formulas derived from Evidence counts:
+**Mathematically correct** confidence formulas derived from BinaryEvidence counts:
 
-| Rule | Current (Heuristic) | Correct (Evidence-Based) |
+| Rule | Current (Heuristic) | Correct (BinaryEvidence-Based) |
 |------|-------------------|--------------------------|
 | Conjunction | `min(c₁, c₂)` | `w2c(w₁ * w₂)` where `wᵢ = c₁/(1-cᵢ)` |
 | Modus Ponens | `min(c₁, c₂)` | `w2c(w₁ * w₂)` |
@@ -727,19 +727,19 @@ lemma w2c_lipschitz (w1 w2 : ℝ) (hw1 : 0 ≤ w1) (hw2 : 0 ≤ w2) :
           apply div_le_div_of_nonneg_left (abs_nonneg _) (by norm_num) h_ge
       _ = |w1 - w2| := by ring
 
-/-- Evidence-based conjunction soundness (BLOCKER).
+/-- BinaryEvidence-based conjunction soundness (BLOCKER).
 
 For soundness we need: if |P_A - s_A| ≤ 1 - c_A and |P_B - s_B| ≤ 1 - c_B,
 then |P_A * P_B - s_A * s_B| ≤ 1 - c_out where c_out = w2c(w_A * w_B).
 
-The Evidence-based confidence formula c_out = w2c(c2w(c_A) * c2w(c_B)) comes from
-tensor product of Evidence counts: (n+_A * n+_B, n-_A * n-_B).
+The BinaryEvidence-based confidence formula c_out = w2c(c2w(c_A) * c2w(c_B)) comes from
+tensor product of BinaryEvidence counts: (n+_A * n+_B, n-_A * n-_B).
 
 Blocker: The product_error_bound lemma shows |PA*PB - sA*sB| ≤ (1-cA) + (1-cB).
 But we need (1-cA) + (1-cB) ≤ 1 - w2c(w_A * w_B), which doesn't hold generally.
 (Counterexample: cA=cB=0.5 gives 1 ≤ 0.5)
 
-This suggests the Evidence-theoretic confidence model may use a different soundness
+This suggests the BinaryEvidence-theoretic confidence model may use a different soundness
 condition than |P - s| ≤ 1 - c, or requires additional assumptions about how
 confidences relate to error bounds. -/
 lemma conjunction_soundness_with_evidence_confidence (PA PB sA sB cA cB : ℝ)
@@ -959,7 +959,7 @@ theorem conjunction_strength_product (tvA tvB : TV) :
     (conjTV tvA tvB).strength = tvA.strength * tvB.strength := by
   rfl
 
-/-- Conjunction confidence formula (Evidence-based). -/
+/-- Conjunction confidence formula (BinaryEvidence-based). -/
 theorem conjunction_confidence_formula (tvA tvB : TV) :
     (conjTV tvA tvB).confidence = w2c (c2w tvA.confidence * c2w tvB.confidence) := by
   rfl
@@ -969,7 +969,7 @@ theorem modusPonens_strength_product (tvAB tvA : TV) :
     (mpTV tvAB tvA).strength = clamp01 (tvAB.strength * tvA.strength) := by
   rfl
 
-/-- Modus ponens confidence formula (Evidence-based, same as conjunction). -/
+/-- Modus ponens confidence formula (BinaryEvidence-based, same as conjunction). -/
 theorem modusPonens_confidence_formula (tvAB tvA : TV) :
     (mpTV tvAB tvA).confidence = w2c (c2w tvAB.confidence * c2w tvA.confidence) := by
   rfl
@@ -983,7 +983,7 @@ theorem revision_weighted_average (tv₁ tv₂ : TV)
   unfold revisionTV
   simp [h]
 
-/-- Revision confidence formula (Evidence-based). -/
+/-- Revision confidence formula (BinaryEvidence-based). -/
 theorem revision_confidence_formula (tv₁ tv₂ : TV) :
     (revisionTV tv₁ tv₂).confidence =
       w2c (c2w tv₁.confidence + c2w tv₂.confidence) := by
@@ -1048,7 +1048,7 @@ See `pln_triad_uniform` in PLNDerivation.lean.
 
 1. Complete remaining soundness proofs (error bound propagation)
 2. Prove quasi-tightness (Frisch-Haddawy property)
-3. Connect to Evidence-based formulation (n⁺, n⁻)
+3. Connect to BinaryEvidence-based formulation (n⁺, n⁻)
 4. Add revision with separate contexts (index version)
 5. Formalize completeness (open research question)
 6. Add second-order probability for confidence propagation

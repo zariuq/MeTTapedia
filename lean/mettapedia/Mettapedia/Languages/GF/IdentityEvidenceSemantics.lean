@@ -2,7 +2,7 @@ import Mettapedia.Languages.GF.WorldModelSemantics
 import Mettapedia.Logic.IdentityEvidence
 
 /-!
-# GF Identity Evidence Semantics
+# GF Identity BinaryEvidence Semantics
 
 Identity-aware extension of the GF → OSLF → WM pipeline.
 
@@ -28,7 +28,7 @@ open scoped ENNReal
 
 section IdentityLayer
 
-variable {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
 variable {Entity : Type*}
 
 /-- Configuration for identity-aware semantic transport. -/
@@ -43,10 +43,10 @@ noncomputable def transferAtomEvidence
     (cfg : IdentityLayerConfig Entity)
     (W : State)
     (a : String)
-    (src dst : Pattern) : Evidence :=
+    (src dst : Pattern) : BinaryEvidence :=
   transportAcrossIdentityIf cfg.enabled cfg.idEvidence cfg.thresholds
     (cfg.entityOf src) (cfg.entityOf dst)
-    (WorldModel.evidence W (queryOfAtom a src))
+    (BinaryWorldModel.evidence W (queryOfAtom a src))
 
 /-- Identity-aware evidence atom semantics (self-transport at each queried pattern). -/
 noncomputable def gfEvidenceAtomSemFromWM_withIdentity
@@ -60,14 +60,14 @@ noncomputable def gfAtomSemFromWM_withIdentity
     (W : State)
     (threshold : ℝ≥0∞) : AtomSem :=
   fun a p =>
-    threshold ≤ Evidence.toStrength (gfEvidenceAtomSemFromWM_withIdentity cfg W a p)
+    threshold ≤ BinaryEvidence.toStrength (gfEvidenceAtomSemFromWM_withIdentity cfg W a p)
 
 /-- Identity-aware evidence-valued formula semantics. -/
 noncomputable def gfWMFormulaSemE_withIdentity
     (cfg : IdentityLayerConfig Entity)
     (W : State)
     (φ : OSLFFormula)
-    (p : Pattern) : Evidence :=
+    (p : Pattern) : BinaryEvidence :=
   semE (langReduces gfRGLLanguageDef) (gfEvidenceAtomSemFromWM_withIdentity cfg W) φ p
 
 /-- Identity-aware Prop-valued formula semantics. -/
@@ -122,7 +122,7 @@ theorem transferAtomEvidence_disabled
     (a : String)
     (src dst : Pattern) :
     transferAtomEvidence cfg W a src dst =
-      WorldModel.evidence W (queryOfAtom a src) := by
+      BinaryWorldModel.evidence W (queryOfAtom a src) := by
   simp [transferAtomEvidence, hdis, transportAcrossIdentityIf]
 
 theorem gfEvidenceAtomSemFromWM_withIdentity_disabled
@@ -146,7 +146,7 @@ theorem gfAtomSemFromWM_withIdentity_disabled
   simp [gfAtomSemFromWM_withIdentity, gfAtomSemFromWM,
     gfEvidenceAtomSemFromWM_withIdentity, transferAtomEvidence_disabled, hdis]
 
-/-- Conservative extension theorem (Evidence layer):
+/-- Conservative extension theorem (BinaryEvidence layer):
 identity disabled implies no change to existing evidence semantics. -/
 theorem gfWMFormulaSemE_withIdentity_disabled
     (cfg : IdentityLayerConfig Entity)

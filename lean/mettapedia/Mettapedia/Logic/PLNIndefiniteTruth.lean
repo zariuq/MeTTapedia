@@ -17,7 +17,7 @@ OpenCog/PLN literature (Goertzel et al. 2009).
 structure ITV where
   lower : ℝ              -- Lower probability bound
   upper : ℝ              -- Upper probability bound
-  credibility : ℝ        -- Evidence concentration (w/(w+1))
+  credibility : ℝ        -- BinaryEvidence concentration (w/(w+1))
 ```
 
 ## Key Property: Orthogonality
@@ -42,7 +42,7 @@ From `ProbabilityTheory/KnuthSkilling/Additive/*.lean`:
 
 ### Beta Distribution Bridge
 From `PLNKyburgReduction.lean` and `EvidenceBeta.lean`:
-- Evidence (n⁺, n⁻) encodes Beta(α₀+n⁺, β₀+n⁻)
+- BinaryEvidence (n⁺, n⁻) encodes Beta(α₀+n⁺, β₀+n⁻)
 - Intervals = Beta credible intervals (HPD or Normal approximation)
 - Credibility = Beta concentration = total/(total+κ) = w/(w+1) where w = total/κ
 
@@ -50,25 +50,25 @@ From `PLNKyburgReduction.lean` and `EvidenceBeta.lean`:
 From `PLNIntuitionisticBridge.lean`:
 - Intervals [L, U] form Heyting algebra
 - Operations: meet, join, implication (intuitionistic logic)
-- Evidence forms separate Heyting algebra (product of chains)
+- BinaryEvidence forms separate Heyting algebra (product of chains)
 
-### Evidence Quantale
+### BinaryEvidence Quantale
 From `EvidenceQuantale.lean`:
-- Evidence has quantale structure: tensor ⊗ and hplus ⊕
+- BinaryEvidence has quantale structure: tensor ⊗ and hplus ⊕
 - Credibility composes via quantale operations
 - **Separate from** interval arithmetic
 
 ## Resolution of PLNSoundnessCounterexample
 
 The counterexample in `PLNSoundnessCounterexample.lean` proved that
-Evidence-based confidence `c = w/(w+1)` and error bounds `|P-s| ≤ e`
+BinaryEvidence-based confidence `c = w/(w+1)` and error bounds `|P-s| ≤ e`
 cannot be unified via `e = 1-c` after combination.
 
 **This ITV model resolves the issue**:
 - Intervals [L, U] track probability bounds (from Beta credible intervals)
-- Credibility tracks Evidence amount (from quantale)
+- Credibility tracks BinaryEvidence amount (from quantale)
 - No forced relationship `width = 1 - credibility`
-- Both derived from same Evidence (n⁺, n⁻) via different pathways
+- Both derived from same BinaryEvidence (n⁺, n⁻) via different pathways
 
 ## References
 
@@ -91,7 +91,7 @@ open Mettapedia.Logic.PLNWeightTV
 
 **Semantics**:
 - True probability P ∈ [lower, upper] (with confidence level ~95% or specified)
-- credibility = w/(w+1) measures Evidence accumulation (quantale element)
+- credibility = w/(w+1) measures BinaryEvidence accumulation (quantale element)
 - Width (upper - lower) measures epistemic uncertainty
 - Credibility measures evidential support (how much data)
 
@@ -142,26 +142,26 @@ theorem width_le_one (itv : ITV) : itv.width ≤ 1 := by
   unfold width
   linarith [itv.lower_in_unit.1, itv.upper_in_unit.2]
 
-/-! ## Construction from Evidence -/
+/-! ## Construction from BinaryEvidence -/
 
-/-- Construct ITV from Evidence via Bayesian Beta credible interval backend.
+/-- Construct ITV from BinaryEvidence via Bayesian Beta credible interval backend.
 
-Given Evidence (n⁺, n⁻) with context (prior κ, etc.):
+Given BinaryEvidence (n⁺, n⁻) with context (prior κ, etc.):
 1. Map to Beta parameters: α = α₀ + n⁺, β = β₀ + n⁻
 2. Compute credible interval [L, U] (chosen backend)
 3. Compute credibility: c = (n⁺ + n⁻) / (n⁺ + n⁻ + κ) = w/(w+1)
 
 **Parameters**:
-- `e` : Evidence counts
+- `e` : BinaryEvidence counts
 - `ctx` : Binary context (prior parameters)
 - `level` : Confidence level for credible interval (e.g., 0.95)
 - `backend` : interval constructor (`normalApprox` or `exactInvCDF`)
 -/
 noncomputable def fromBayesCredibleWithBackend
     (backend : CredibleIntervalBackend)
-    (e : Evidence) (ctx : BinaryContext)
+    (e : BinaryEvidence) (ctx : BinaryContext)
     (level : ℝ) (hlevel : 0 < level ∧ level < 1) : ITV :=
-  -- Convert Evidence to Beta parameters
+  -- Convert BinaryEvidence to Beta parameters
   let n_pos := e.pos.toReal
   let n_neg := e.neg.toReal
   let α₀ := ctx.α₀.toReal
@@ -183,9 +183,9 @@ noncomputable def fromBayesCredibleWithBackend
     left
     norm_num
   let ci := betaCredibleInterval backend α_safe β_safe level hα hβ hlevel
-  -- Compute credibility from Evidence (κ = prior sample size = α₀ + β₀)
+  -- Compute credibility from BinaryEvidence (κ = prior sample size = α₀ + β₀)
   let κ := ctx.α₀ + ctx.β₀
-  let cred := Evidence.toConfidence κ e
+  let cred := BinaryEvidence.toConfidence κ e
   { lower := ci.lower
     upper := ci.upper
     credibility := cred.toReal
@@ -207,40 +207,40 @@ noncomputable def fromBayesCredibleWithBackend
       · apply ENNReal.toReal_nonneg
       · -- cred = e.total / (e.total + κ) ≤ 1
         -- Proof: numerator ≤ denominator, so cred.toReal ≤ 1
-        unfold cred Evidence.toConfidence κ
+        unfold cred BinaryEvidence.toConfidence κ
         apply ENNReal.toReal_le_of_le_ofReal (by norm_num : (0 : ℝ) ≤ 1)
         apply ENNReal.div_le_of_le_mul
         simp }
 
-/-- Construct ITV from Evidence via Bayesian Beta credible interval
+/-- Construct ITV from BinaryEvidence via Bayesian Beta credible interval
 using normal approximation. -/
-noncomputable def fromBayesCredibleNormalApprox (e : Evidence) (ctx : BinaryContext)
+noncomputable def fromBayesCredibleNormalApprox (e : BinaryEvidence) (ctx : BinaryContext)
     (level : ℝ) (hlevel : 0 < level ∧ level < 1) : ITV :=
   fromBayesCredibleWithBackend .normalApprox e ctx level hlevel
 
-/-- Construct ITV from Evidence via Bayesian Beta credible interval
+/-- Construct ITV from BinaryEvidence via Bayesian Beta credible interval
 using the exact-invCDF backend. -/
-noncomputable def fromBayesCredibleExactInvCDF (e : Evidence) (ctx : BinaryContext)
+noncomputable def fromBayesCredibleExactInvCDF (e : BinaryEvidence) (ctx : BinaryContext)
     (level : ℝ) (hlevel : 0 < level ∧ level < 1) : ITV :=
   fromBayesCredibleWithBackend .exactInvCDF e ctx level hlevel
 
 /-- Construct ITV at 95% confidence level -/
-noncomputable def fromBayesCredible95 (e : Evidence) (ctx : BinaryContext) : ITV :=
+noncomputable def fromBayesCredible95 (e : BinaryEvidence) (ctx : BinaryContext) : ITV :=
   fromBayesCredibleNormalApprox e ctx 0.95 ⟨by norm_num, by norm_num⟩
 
 /-- Construct ITV at 90% confidence level -/
-noncomputable def fromBayesCredible90 (e : Evidence) (ctx : BinaryContext) : ITV :=
+noncomputable def fromBayesCredible90 (e : BinaryEvidence) (ctx : BinaryContext) : ITV :=
   fromBayesCredibleNormalApprox e ctx 0.90 ⟨by norm_num, by norm_num⟩
 
 /-- Construct ITV at 95% confidence level (exact-invCDF backend). -/
-noncomputable def fromBayesCredible95ExactInvCDF (e : Evidence) (ctx : BinaryContext) : ITV :=
+noncomputable def fromBayesCredible95ExactInvCDF (e : BinaryEvidence) (ctx : BinaryContext) : ITV :=
   fromBayesCredibleExactInvCDF e ctx 0.95 ⟨by norm_num, by norm_num⟩
 
 /-- Construct ITV at 90% confidence level (exact-invCDF backend). -/
-noncomputable def fromBayesCredible90ExactInvCDF (e : Evidence) (ctx : BinaryContext) : ITV :=
+noncomputable def fromBayesCredible90ExactInvCDF (e : BinaryEvidence) (ctx : BinaryContext) : ITV :=
   fromBayesCredibleExactInvCDF e ctx 0.90 ⟨by norm_num, by norm_num⟩
 
-/-- Construct ITV from Evidence via Walley's IDM predictive bounds.
+/-- Construct ITV from BinaryEvidence via Walley's IDM predictive bounds.
 
 For binary outcomes with positive count `n⁺`, negative count `n⁻`, and IDM strength `s > 0`:
 - lower = `n⁺ / (n⁺ + n⁻ + s)`
@@ -249,7 +249,7 @@ For binary outcomes with positive count `n⁺`, negative count `n⁻`, and IDM s
 This is a predictive-interval semantics (IDM), distinct from Bayesian credible intervals.
 `credibility` is the precision proxy `n/(n+s)` where `n = n⁺ + n⁻`.
 -/
-noncomputable def fromWalleyIDMPredictive (e : Evidence) (s : ℝ) (hs : 0 < s) : ITV :=
+noncomputable def fromWalleyIDMPredictive (e : BinaryEvidence) (s : ℝ) (hs : 0 < s) : ITV :=
   let n_pos := e.pos.toReal
   let n_neg := e.neg.toReal
   let n_total := n_pos + n_neg
@@ -297,25 +297,25 @@ noncomputable def fromWalleyIDMPredictive (e : Evidence) (s : ℝ) (hs : 0 < s) 
     credibility_in_unit := ⟨h_cred_nonneg, h_cred_le_one⟩ }
 
 @[simp] theorem fromWalleyIDMPredictive_lower
-    (e : Evidence) (s : ℝ) (hs : 0 < s) :
+    (e : BinaryEvidence) (s : ℝ) (hs : 0 < s) :
     (fromWalleyIDMPredictive e s hs).lower =
       e.pos.toReal / (e.pos.toReal + e.neg.toReal + s) := by
   simp [fromWalleyIDMPredictive]
 
 @[simp] theorem fromWalleyIDMPredictive_upper
-    (e : Evidence) (s : ℝ) (hs : 0 < s) :
+    (e : BinaryEvidence) (s : ℝ) (hs : 0 < s) :
     (fromWalleyIDMPredictive e s hs).upper =
       (e.pos.toReal + s) / (e.pos.toReal + e.neg.toReal + s) := by
   simp [fromWalleyIDMPredictive]
 
 @[simp] theorem fromWalleyIDMPredictive_credibility
-    (e : Evidence) (s : ℝ) (hs : 0 < s) :
+    (e : BinaryEvidence) (s : ℝ) (hs : 0 < s) :
     (fromWalleyIDMPredictive e s hs).credibility =
       (e.pos.toReal + e.neg.toReal) / (e.pos.toReal + e.neg.toReal + s) := by
   simp [fromWalleyIDMPredictive]
 
 theorem fromWalleyIDMPredictive_width_eq
-    (e : Evidence) (s : ℝ) (hs : 0 < s) :
+    (e : BinaryEvidence) (s : ℝ) (hs : 0 < s) :
     (fromWalleyIDMPredictive e s hs).width =
       s / (e.pos.toReal + e.neg.toReal + s) := by
   unfold ITV.width
@@ -328,7 +328,7 @@ theorem fromWalleyIDMPredictive_width_eq
   ring
 
 theorem fromWalleyIDMPredictive_width_add_credibility
-    (e : Evidence) (s : ℝ) (hs : 0 < s) :
+    (e : BinaryEvidence) (s : ℝ) (hs : 0 < s) :
     (fromWalleyIDMPredictive e s hs).width +
       (fromWalleyIDMPredictive e s hs).credibility = 1 := by
   rw [fromWalleyIDMPredictive_width_eq, fromWalleyIDMPredictive_credibility]
@@ -340,7 +340,7 @@ theorem fromWalleyIDMPredictive_width_add_credibility
   ring
 
 theorem fromWalleyIDMPredictive_width_eq_one_sub_credibility
-    (e : Evidence) (s : ℝ) (hs : 0 < s) :
+    (e : BinaryEvidence) (s : ℝ) (hs : 0 < s) :
     (fromWalleyIDMPredictive e s hs).width =
       1 - (fromWalleyIDMPredictive e s hs).credibility := by
   have h := fromWalleyIDMPredictive_width_add_credibility e s hs
@@ -379,7 +379,7 @@ noncomputable def ofWTV (wtv : WTV) : ITV :=
 
 /-- Example: Balanced evidence (5 successes, 5 failures) with Jeffreys prior.
 Sanity check: all ITV components satisfy foundational bounds. -/
-example : let e : Evidence := ⟨5, 5⟩
+example : let e : BinaryEvidence := ⟨5, 5⟩
           let ctx := BinaryContext.jeffreys
           let itv := fromBayesCredible95 e ctx
           itv.strength ∈ Set.Icc 0 1 ∧
@@ -394,7 +394,7 @@ example : let e : Evidence := ⟨5, 5⟩
 
 /-- Example: Strong evidence (20 successes, 2 failures).
 Sanity check: interval endpoints are ordered and bounded. -/
-example : let e : Evidence := ⟨20, 2⟩
+example : let e : BinaryEvidence := ⟨20, 2⟩
           let ctx := BinaryContext.jeffreys
           let itv := fromBayesCredible95 e ctx
           itv.lower ≤ itv.upper ∧
@@ -409,7 +409,7 @@ example : let e : Evidence := ⟨20, 2⟩
 
 /-- Example: High-evidence symmetric case (`50/50` observations).
 Sanity check: credibility and width are both bounded in `[0,1]`. -/
-example : let e : Evidence := ⟨50, 50⟩
+example : let e : BinaryEvidence := ⟨50, 50⟩
           let ctx := BinaryContext.jeffreys
           let itv := fromBayesCredible95 e ctx
           itv.credibility ∈ Set.Icc 0 1 ∧
@@ -422,7 +422,7 @@ example : let e : Evidence := ⟨50, 50⟩
 /-! ## Heyting Operations
 
 Operations on intervals following Heyting algebra structure.
-Credibility composes separately via the Evidence quantale.
+Credibility composes separately via the BinaryEvidence quantale.
 -/
 
 /-- Conjunction for independent propositions.
@@ -522,7 +522,7 @@ noncomputable def disjunction (itv1 itv2 : ITV) : ITV where
 /-- Implication: Heyting arrow on intervals.
 
 **Intervals**: [L₁, U₁] → [L₂, U₂] = [max(0, L₂-U₁), min(1, 1-L₁+U₂)]
-**Credibility**: Requires conditional Evidence analysis (more complex)
+**Credibility**: Requires conditional BinaryEvidence analysis (more complex)
 -/
 noncomputable def implication (itv1 itv2 : ITV) : ITV where
   lower := max 0 (itv2.lower - itv1.upper)

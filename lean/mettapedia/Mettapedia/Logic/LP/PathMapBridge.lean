@@ -59,7 +59,7 @@ theorem mem_leastHerbrandModelFin_iff {σ : LPSignature}
     a ∈ leastHerbrandModelFin kb ↔ a ∈ leastHerbrandModel kb :=
   Set.Finite.mem_toFinset _
 
-/-! ## Section 3: Evidence counting -/
+/-! ## Section 3: BinaryEvidence counting -/
 
 /-- Count positive evidence: atoms in `I` satisfying query `q`. -/
 def positiveEvidence {σ : LPSignature}

@@ -11,8 +11,8 @@ compounding** from the Beta-Bernoulli perspective.
 ## The Key Insight
 
 For independent evidence sources:
-- Evidence E1 = (n1+, n1-) with confidence c1
-- Evidence E2 = (n2+, n2-) with confidence c2
+- BinaryEvidence E1 = (n1+, n1-) with confidence c1
+- BinaryEvidence E2 = (n2+, n2-) with confidence c2
 
 The tensor product E1 * E2 = (n1+ * n2+, n1- * n2-) captures:
 1. **Multiplicative combination** of likelihood ratios
@@ -38,7 +38,7 @@ independent Bayesian evidence.
 ## References
 
 - PLN tensor product (EvidenceQuantale.lean)
-- Evidence-Beta connection (EvidenceBeta.lean)
+- BinaryEvidence-Beta connection (EvidenceBeta.lean)
 - Bayesian independence and likelihood combination
 -/
 
@@ -48,7 +48,7 @@ open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceBeta
 open Mettapedia.Logic.HeytingValuationOnEvidence
 
-/-! ## Total Evidence and Tensor -/
+/-! ## Total BinaryEvidence and Tensor -/
 
 section TensorTotalEvidence
 
@@ -59,24 +59,24 @@ section TensorTotalEvidence
     Note: This is NOT equal to totalEvidence(E1) * totalEvidence(E2) in general,
     but it reflects the multiplicative nature of the tensor operation.
 -/
-theorem tensor_total_evidence_eq (e1 e2 : Evidence) :
+theorem tensor_total_evidence_eq (e1 e2 : BinaryEvidence) :
     totalEvidence (e1 * e2) = e1.pos * e2.pos + e1.neg * e2.neg := by
-  simp only [totalEvidence, Evidence.tensor_def]
+  simp only [totalEvidence, BinaryEvidence.tensor_def]
 
 /-- Tensor of unit evidence preserves total evidence. -/
-theorem tensor_one_total_evidence (e : Evidence) :
-    totalEvidence (e * Evidence.one) = totalEvidence e := by
-  simp only [Evidence.tensor_one]
+theorem tensor_one_total_evidence (e : BinaryEvidence) :
+    totalEvidence (e * BinaryEvidence.one) = totalEvidence e := by
+  simp only [BinaryEvidence.tensor_one]
 
 /-- The tensor product scales total evidence when one factor is uniform.
 
     For E = (n, n) (uniform evidence with strength 1/2):
     totalEvidence(E * F) = n * F.pos + n * F.neg
 -/
-theorem tensor_uniform_scaling (n : ENNReal) (e : Evidence) :
-    let uniform : Evidence := { pos := n, neg := n }
+theorem tensor_uniform_scaling (n : ENNReal) (e : BinaryEvidence) :
+    let uniform : BinaryEvidence := { pos := n, neg := n }
     totalEvidence (uniform * e) = n * e.pos + n * e.neg := by
-  simp only [totalEvidence, Evidence.tensor_def]
+  simp only [totalEvidence, BinaryEvidence.tensor_def]
 
 end TensorTotalEvidence
 
@@ -95,7 +95,7 @@ section LikelihoodRatios
 
     We represent this abstractly using the evidence counts directly.
 -/
-noncomputable def likelihoodExponent (e : Evidence) : ENNReal × ENNReal :=
+noncomputable def likelihoodExponent (e : BinaryEvidence) : ENNReal × ENNReal :=
   (e.pos, e.neg)
 
 /-- Tensor multiplies likelihood exponents componentwise.
@@ -104,11 +104,11 @@ noncomputable def likelihoodExponent (e : Evidence) : ENNReal × ENNReal :=
 
     This corresponds to: theta^(n1+*n2+) * (1-theta)^(n1-*n2-)
 -/
-theorem tensor_likelihood_exponent_mul (e1 e2 : Evidence) :
+theorem tensor_likelihood_exponent_mul (e1 e2 : BinaryEvidence) :
     likelihoodExponent (e1 * e2) =
       (e1.pos * e2.pos, e1.neg * e2.neg) := by
   unfold likelihoodExponent
-  simp only [Evidence.tensor_def]
+  simp only [BinaryEvidence.tensor_def]
 
 /-- The additive version: log-likelihood adds under tensor.
 
@@ -117,11 +117,11 @@ theorem tensor_likelihood_exponent_mul (e1 e2 : Evidence) :
 
     Then tensor corresponds to adding log-likelihoods (multiplying likelihoods).
 -/
-theorem tensor_log_likelihood_additive (e1 e2 : Evidence) :
+theorem tensor_log_likelihood_additive (e1 e2 : BinaryEvidence) :
     -- The evidence counts add logarithmically
     (e1 * e2).pos = e1.pos * e2.pos ∧
     (e1 * e2).neg = e1.neg * e2.neg := by
-  simp only [Evidence.tensor_def, and_self]
+  simp only [BinaryEvidence.tensor_def, and_self]
 
 end LikelihoodRatios
 
@@ -134,30 +134,30 @@ appropriately. The tensor operation achieves this.
 section ConfidenceCompounding
 
 /-- The tensor product of positive evidence has positive total evidence. -/
-theorem tensor_positive_total (e1 e2 : Evidence)
+theorem tensor_positive_total (e1 e2 : BinaryEvidence)
     (h1_pos : e1.pos ≠ 0) (h2_pos : e2.pos ≠ 0) :
     (e1 * e2).pos ≠ 0 := by
-  simp only [Evidence.tensor_def]
+  simp only [BinaryEvidence.tensor_def]
   exact mul_ne_zero h1_pos h2_pos
 
 /-- Tensor preserves non-negativity. -/
-theorem tensor_nonneg (e1 e2 : Evidence) :
+theorem tensor_nonneg (e1 e2 : BinaryEvidence) :
     0 ≤ (e1 * e2).pos ∧ 0 ≤ (e1 * e2).neg := by
-  simp only [Evidence.tensor_def]
+  simp only [BinaryEvidence.tensor_def]
   exact ⟨zero_le _, zero_le _⟩
 
 /-- The tensor product has non-zero positive when both inputs have non-zero positive. -/
-theorem tensor_pos_ne_zero (e1 e2 : Evidence)
+theorem tensor_pos_ne_zero (e1 e2 : BinaryEvidence)
     (h1 : e1.pos ≠ 0) (h2 : e2.pos ≠ 0) :
     (e1 * e2).pos ≠ 0 := by
-  simp only [Evidence.tensor_def]
+  simp only [BinaryEvidence.tensor_def]
   exact mul_ne_zero h1 h2
 
 /-- The tensor product has non-zero negative when both inputs have non-zero negative. -/
-theorem tensor_neg_ne_zero (e1 e2 : Evidence)
+theorem tensor_neg_ne_zero (e1 e2 : BinaryEvidence)
     (h1 : e1.neg ≠ 0) (h2 : e2.neg ≠ 0) :
     (e1 * e2).neg ≠ 0 := by
-  simp only [Evidence.tensor_def]
+  simp only [BinaryEvidence.tensor_def]
   exact mul_ne_zero h1 h2
 
 end ConfidenceCompounding
@@ -185,12 +185,12 @@ section SequentialInference
 -/
 theorem sequential_independent_inference :
     -- Tensor is associative (can chain multiple steps)
-    (∀ e1 e2 e3 : Evidence, (e1 * e2) * e3 = e1 * (e2 * e3)) ∧
+    (∀ e1 e2 e3 : BinaryEvidence, (e1 * e2) * e3 = e1 * (e2 * e3)) ∧
     -- Tensor is commutative (order doesn't matter for independent sources)
-    (∀ e1 e2 : Evidence, e1 * e2 = e2 * e1) ∧
+    (∀ e1 e2 : BinaryEvidence, e1 * e2 = e2 * e1) ∧
     -- Unit evidence is neutral
-    (∀ e : Evidence, e * Evidence.one = e) := by
-  exact ⟨Evidence.tensor_assoc, Evidence.tensor_comm, Evidence.tensor_one⟩
+    (∀ e : BinaryEvidence, e * BinaryEvidence.one = e) := by
+  exact ⟨BinaryEvidence.tensor_assoc, BinaryEvidence.tensor_comm, BinaryEvidence.tensor_one⟩
 
 /-- The tensor operation captures likelihood combination.
 
@@ -207,13 +207,13 @@ theorem sequential_independent_inference :
 
     Tensor captures the multiplicative composition.
 -/
-theorem tensor_captures_odds_composition (e1 e2 : Evidence)
+theorem tensor_captures_odds_composition (e1 e2 : BinaryEvidence)
     (h1_neg : e1.neg ≠ 0) (h2_neg : e2.neg ≠ 0) :
     -- If we define odds ratio as pos/neg (when neg is nonzero)
     -- Then tensor gives multiplicative composition
     (e1 * e2).pos / (e1 * e2).neg =
       (e1.pos / e1.neg) * (e2.pos / e2.neg) := by
-  simp only [Evidence.tensor_def]
+  simp only [BinaryEvidence.tensor_def]
   -- (e1.pos * e2.pos) / (e1.neg * e2.neg) = (e1.pos / e1.neg) * (e2.pos / e2.neg)
   -- Use: a/b * c/d = (a*c) / (b*d) (when b,d ≠ 0)
   rw [div_eq_mul_inv, div_eq_mul_inv, div_eq_mul_inv]
@@ -241,12 +241,12 @@ section BetaConnection
     2. We want to combine their "evidence weights"
     3. The combination should respect independence
 -/
-theorem tensor_independent_beta_interpretation (e1 e2 : Evidence) :
+theorem tensor_independent_beta_interpretation (e1 e2 : BinaryEvidence) :
     -- The tensor of two evidence values combines their "votes" multiplicatively
     -- This is appropriate for combining ODDS, not raw counts
     (e1 * e2).pos = e1.pos * e2.pos ∧
     (e1 * e2).neg = e1.neg * e2.neg := by
-  simp only [Evidence.tensor_def, and_self]
+  simp only [BinaryEvidence.tensor_def, and_self]
 
 /-- Contrast: hplus (+) vs tensor (*) for evidence combination.
 
@@ -261,7 +261,7 @@ theorem tensor_independent_beta_interpretation (e1 e2 : Evidence) :
     PLN uses tensor for deduction (composing conditional relationships)
     and hplus for revision (combining evidence about same proposition).
 -/
-theorem hplus_vs_tensor_contrast (e1 e2 : Evidence) :
+theorem hplus_vs_tensor_contrast (e1 e2 : BinaryEvidence) :
     -- hplus is additive
     ((e1 + e2).pos = e1.pos + e2.pos ∧ (e1 + e2).neg = e1.neg + e2.neg) ∧
     -- tensor is multiplicative
@@ -270,7 +270,7 @@ theorem hplus_vs_tensor_contrast (e1 e2 : Evidence) :
   · -- hplus adds
     constructor <;> rfl
   · -- tensor multiplies
-    simp only [Evidence.tensor_def, and_self]
+    simp only [BinaryEvidence.tensor_def, and_self]
 
 end BetaConnection
 
@@ -295,24 +295,24 @@ section MainTheorem
 -/
 theorem confidence_compounding_main :
     -- Tensor is the correct operation for independent evidence
-    (∀ e1 e2 : Evidence,
+    (∀ e1 e2 : BinaryEvidence,
       -- 1. Commutative (order of independent sources doesn't matter)
       e1 * e2 = e2 * e1) ∧
-    (∀ e1 e2 e3 : Evidence,
+    (∀ e1 e2 e3 : BinaryEvidence,
       -- 2. Associative (can chain multiple independent sources)
       (e1 * e2) * e3 = e1 * (e2 * e3)) ∧
-    (∀ e : Evidence,
+    (∀ e : BinaryEvidence,
       -- 3. Unit evidence is neutral
-      e * Evidence.one = e) ∧
-    (∀ e1 e2 : Evidence,
+      e * BinaryEvidence.one = e) ∧
+    (∀ e1 e2 : BinaryEvidence,
       -- 4. Correctly multiplies counts
       (e1 * e2).pos = e1.pos * e2.pos ∧ (e1 * e2).neg = e1.neg * e2.neg) := by
-  refine ⟨Evidence.tensor_comm, Evidence.tensor_assoc, Evidence.tensor_one, ?_⟩
+  refine ⟨BinaryEvidence.tensor_comm, BinaryEvidence.tensor_assoc, BinaryEvidence.tensor_one, ?_⟩
   intro e1 e2
-  simp only [Evidence.tensor_def, and_self]
+  simp only [BinaryEvidence.tensor_def, and_self]
 
 /-- Corollary: Odds ratio composition for non-zero denominators. -/
-theorem odds_ratio_composition (e1 e2 : Evidence)
+theorem odds_ratio_composition (e1 e2 : BinaryEvidence)
     (h1 : e1.neg ≠ 0) (h2 : e2.neg ≠ 0) :
     (e1 * e2).pos / (e1 * e2).neg = (e1.pos / e1.neg) * (e2.pos / e2.neg) := by
   exact tensor_captures_odds_composition e1 e2 h1 h2
@@ -323,7 +323,7 @@ end MainTheorem
 
 This file establishes:
 
-1. **Tensor Total Evidence**: The tensor product combines evidence multiplicatively
+1. **Tensor Total BinaryEvidence**: The tensor product combines evidence multiplicatively
 2. **Likelihood Ratios**: Tensor multiplies likelihood exponents
 3. **Confidence Compounding**: For independent sources, confidence compounds correctly
 4. **Sequential Inference**: Tensor captures sequential independent inference

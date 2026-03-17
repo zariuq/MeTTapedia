@@ -319,9 +319,9 @@ def zfWmRuleOfSumoFragmentTranslation : WMConsequenceRuleOn SetState SetQuery :=
 /-- Multiset WM inequality endpoint for the SUMO-fragment translation on ZF-model states. -/
 theorem zf_multiset_strength_le_of_sumo_fragment_translation
     (W : SetState) (hW : stateModelsZF W) :
-    WorldModel.queryStrength (State := SetState) (Query := SetQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) W
       (gfNodeToSetQuery sumoFragmentPremiseNode) ≤
-    WorldModel.queryStrength (State := SetState) (Query := SetQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) W
       (gfNodeToSetQuery sumoFragmentConclusionNode) := by
   exact (zfWmRuleOfSumoFragmentTranslation.sound hW)
 

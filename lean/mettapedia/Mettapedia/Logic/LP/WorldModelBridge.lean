@@ -3,14 +3,14 @@ import Mettapedia.OSLF.PathMap.WorldModelBridge
 import Mettapedia.OSLF.PathMap.PLNBridge
 
 /-!
-# LP ↔ WorldModel Bridge
+# LP ↔ BinaryWorldModel Bridge
 
 Port of `Mettapedia.Logic.Datalog.WorldModelBridge` onto LP types.
 
-Connects the LP least Herbrand model to the `WorldModel` / `multisetPathEvidence`
+Connects the LP least Herbrand model to the `BinaryWorldModel` / `multisetPathEvidence`
 infrastructure from `OSLF/PathMap/WorldModelBridge.lean`.
 
-Evidence for a conjunctive query `q : Finset (GroundAtom σ)` against the least model is:
+BinaryEvidence for a conjunctive query `q : Finset (GroundAtom σ)` against the least model is:
 
     ⟨|leastHerbrandModelFin kb ∩ q|, |leastHerbrandModelFin kb \ q|⟩
 
@@ -32,13 +32,13 @@ open Mettapedia.OSLF.PathMap.PLNBridge
 
 variable {σ : LPSignature} [IsEmpty σ.functionSymbols]
 
-/-! ## Section 1: LP model as a WorldModel store -/
+/-! ## Section 1: LP model as a BinaryWorldModel store -/
 
 /-- The multiset evidence for a query against the least Herbrand model. -/
 noncomputable def lpModelEvidence
     [Fintype σ.constants] [DecidableEq σ.constants]
     [Fintype σ.relationSymbols] [DecidableEq σ.relationSymbols]
-    (kb : KnowledgeBase σ) (q : Finset (GroundAtom σ)) : Evidence :=
+    (kb : KnowledgeBase σ) (q : Finset (GroundAtom σ)) : BinaryEvidence :=
   multisetPathEvidence (leastHerbrandModelFin kb).val q
 
 /-! ## Section 2: Agreement with finsetPathEvidence -/

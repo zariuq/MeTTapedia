@@ -24,7 +24,7 @@ The error is EXACTLY the violation of these independence assumptions:
 
 The decision of when to use fast vs complete PLN can be grounded in:
 1. **Information geometry**: Independence ↔ zero mutual information I(A;C|B) = 0
-2. **Lattice structure**: Evidence combination respects information ordering
+2. **Lattice structure**: BinaryEvidence combination respects information ordering
 3. **Divergence bounds**: Error bounded by KL-divergence from independence
 
 ## References
@@ -444,7 +444,7 @@ Use COMPLETE PLN when:
 The independence score relates to information-theoretic quantities:
 - I(A;C|B) = 0 implies positiveViolation = 0
 - Entropy bounds connect to error bounds
-- The lattice structure of Evidence respects these information relationships
+- The lattice structure of BinaryEvidence respects these information relationships
 -/
 
 end Mettapedia.Logic.Comparison.ErrorCharacterization

@@ -3,7 +3,7 @@ import Mettapedia.Logic.EvidenceQuantale
 /-!
 # PLN Semiring Quantale
 
-This file formalizes the semiring quantale structure on Evidence:
+This file formalizes the semiring quantale structure on BinaryEvidence:
 - ⊗ = componentwise multiplication (sequential composition)
 - ⊕ = componentwise addition (parallel aggregation)
 
@@ -26,33 +26,33 @@ open Mettapedia.Logic.EvidenceQuantale
 /-! ## Semiring Quantale Operations -/
 
 /-- Tensor product ⊗: sequential composition (componentwise multiplication) -/
-noncomputable def tensor (x y : Evidence) : Evidence :=
+noncomputable def tensor (x y : BinaryEvidence) : BinaryEvidence :=
   ⟨x.pos * y.pos, x.neg * y.neg⟩
 
 /-- Par ⊕: parallel aggregation (componentwise addition) -/
-noncomputable def par (x y : Evidence) : Evidence :=
+noncomputable def par (x y : BinaryEvidence) : BinaryEvidence :=
   ⟨x.pos + y.pos, x.neg + y.neg⟩
 
 /-! ## Algebraic Laws (Proven) -/
 
-theorem tensor_assoc (x y z : Evidence) :
+theorem tensor_assoc (x y z : BinaryEvidence) :
     tensor (tensor x y) z = tensor x (tensor y z) :=
-  Evidence.tensor_assoc x y z
+  BinaryEvidence.tensor_assoc x y z
 
-theorem par_assoc (x y z : Evidence) :
+theorem par_assoc (x y z : BinaryEvidence) :
     par (par x y) z = par x (par y z) :=
-  Evidence.hplus_assoc x y z
+  BinaryEvidence.hplus_assoc x y z
 
-theorem tensor_comm (x y : Evidence) :
+theorem tensor_comm (x y : BinaryEvidence) :
     tensor x y = tensor y x :=
-  Evidence.tensor_comm x y
+  BinaryEvidence.tensor_comm x y
 
-theorem par_comm (x y : Evidence) :
+theorem par_comm (x y : BinaryEvidence) :
     par x y = par y x :=
-  Evidence.hplus_comm x y
+  BinaryEvidence.hplus_comm x y
 
 /-- The quantale law: tensor distributes over par -/
-theorem tensor_par_distrib (x y z : Evidence) :
+theorem tensor_par_distrib (x y z : BinaryEvidence) :
     tensor x (par y z) = par (tensor x y) (tensor x z) := by
   simp only [tensor, par]
   ext
@@ -60,7 +60,7 @@ theorem tensor_par_distrib (x y z : Evidence) :
   · simp only [mul_add]
 
 /-- Right distributivity -/
-theorem par_tensor_distrib_right (x y z : Evidence) :
+theorem par_tensor_distrib_right (x y z : BinaryEvidence) :
     tensor (par x y) z = par (tensor x z) (tensor y z) := by
   simp only [tensor, par]
   ext
@@ -74,11 +74,11 @@ Given edges in an inference hypergraph, the weakness is:
 -/
 
 /-- Weakness of a single edge: μ(u) ⊗ μ(v) -/
-noncomputable def edgeWeakness (μu μv : Evidence) : Evidence :=
+noncomputable def edgeWeakness (μu μv : BinaryEvidence) : BinaryEvidence :=
   tensor μu μv
 
 /-- Weakness of two parallel edges -/
-noncomputable def twoEdgeWeakness (μ1u μ1v μ2u μ2v : Evidence) : Evidence :=
+noncomputable def twoEdgeWeakness (μ1u μ1v μ2u μ2v : BinaryEvidence) : BinaryEvidence :=
   par (edgeWeakness μ1u μ1v) (edgeWeakness μ2u μ2v)
 
 /-! ## Weakness Ordering (Proven)
@@ -91,18 +91,18 @@ Since par adds components, two-edge > one-edge.
 -/
 
 /-- One edge weakness for uniform valuation -/
-noncomputable def oneEdgeUniform (e : Evidence) : Evidence :=
+noncomputable def oneEdgeUniform (e : BinaryEvidence) : BinaryEvidence :=
   edgeWeakness e e
 
 /-- Two edge weakness for uniform valuation -/
-noncomputable def twoEdgeUniform (e : Evidence) : Evidence :=
+noncomputable def twoEdgeUniform (e : BinaryEvidence) : BinaryEvidence :=
   twoEdgeWeakness e e e e
 
 /-- Two edges have at least as much weakness as one edge (uniform case) -/
-theorem twoEdge_ge_oneEdge (e : Evidence) :
+theorem twoEdge_ge_oneEdge (e : BinaryEvidence) :
     oneEdgeUniform e ≤ twoEdgeUniform e := by
   unfold oneEdgeUniform twoEdgeUniform twoEdgeWeakness edgeWeakness par
-  simp only [Evidence.le_def]
+  simp only [BinaryEvidence.le_def]
   constructor
   · -- pos component: e.pos * e.pos ≤ e.pos * e.pos + e.pos * e.pos
     exact le_add_of_nonneg_right (zero_le _)
@@ -110,7 +110,7 @@ theorem twoEdge_ge_oneEdge (e : Evidence) :
     exact le_add_of_nonneg_right (zero_le _)
 
 /-- Two edges have strictly more weakness when evidence is positive and finite (`pos ≠ ⊤`). -/
-theorem twoEdge_gt_oneEdge (e : Evidence) (hpos : 0 < e.pos) (hfinite : e.pos ≠ ⊤) :
+theorem twoEdge_gt_oneEdge (e : BinaryEvidence) (hpos : 0 < e.pos) (hfinite : e.pos ≠ ⊤) :
     oneEdgeUniform e < twoEdgeUniform e := by
   refine ⟨twoEdge_ge_oneEdge e, ?_⟩
   intro hle
@@ -139,9 +139,9 @@ The PLN deduction formula decomposes into tensor and par:
 
 /-- The deduction formula IS a par of two tensor paths -/
 theorem deduction_as_semiring (s_AB s_BC pB pC : ENNReal) :
-    Evidence.deductionStrength s_AB s_BC pB pC =
-    s_AB * s_BC + (1 - s_AB) * Evidence.complementStrength pB pC s_BC := by
-  unfold Evidence.deductionStrength Evidence.directPathStrength Evidence.indirectPathStrength
+    BinaryEvidence.deductionStrength s_AB s_BC pB pC =
+    s_AB * s_BC + (1 - s_AB) * BinaryEvidence.complementStrength pB pC s_BC := by
+  unfold BinaryEvidence.deductionStrength BinaryEvidence.directPathStrength BinaryEvidence.indirectPathStrength
   rfl
 
 /-! ## Summary

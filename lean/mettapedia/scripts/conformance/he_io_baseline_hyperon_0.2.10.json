@@ -1,0 +1,123 @@
+{
+  "suite": "he_io",
+  "engine": "hyperon",
+  "version": "metta-0.2.10",
+  "generated_utc": "2026-03-05T14:22:37.009260+00:00",
+  "cases": [
+    {
+      "id": "he_duplicate_multiplicity_preserved",
+      "bag": {
+        "x": 2
+      }
+    },
+    {
+      "id": "he_ext_assert_equal_msg_failure",
+      "bag": {
+        "(Error (assertEqualMsg (+ 1 2) 4) \"Test message\")": 1
+      }
+    },
+    {
+      "id": "he_ext_assert_equal_to_result_msg_failure",
+      "bag": {
+        "(Error (assertEqualToResultMsg (+ 1 2) (4)) \"Oops\")": 1
+      }
+    },
+    {
+      "id": "he_ext_assert_equal_to_result_unit",
+      "bag": {
+        "()": 1
+      }
+    },
+    {
+      "id": "he_ext_assert_equal_unit",
+      "bag": {
+        "()": 1
+      }
+    },
+    {
+      "id": "he_ext_assert_failure_error_shape",
+      "bag": {
+        "(Error (assert (and True False)) ((and True False) not True))": 1
+      }
+    },
+    {
+      "id": "he_ext_assert_includes_failure",
+      "bag": {
+        "(Error (assertIncludes (superpose (41 42 43)) (A)) (assertIncludes error: (A) not included in result: (41 42 43)))": 1
+      }
+    },
+    {
+      "id": "he_ext_assert_includes_unit",
+      "bag": {
+        "()": 1
+      }
+    },
+    {
+      "id": "he_ext_assert_true_unit",
+      "bag": {
+        "()": 1
+      }
+    },
+    {
+      "id": "he_ext_case_empty_branch",
+      "bag": {
+        "nok": 1
+      }
+    },
+    {
+      "id": "he_ext_case_reducing_rhs",
+      "bag": {
+        "3": 1
+      }
+    },
+    {
+      "id": "he_ext_collapse_superpose_duplicates",
+      "bag": {
+        "(a b a)": 1
+      }
+    },
+    {
+      "id": "he_ext_if_false",
+      "bag": {
+        "beta": 1
+      }
+    },
+    {
+      "id": "he_ext_if_true",
+      "bag": {
+        "alpha": 1
+      }
+    },
+    {
+      "id": "he_nested_rewrite",
+      "bag": {
+        "b": 1
+      }
+    },
+    {
+      "id": "he_nondet_choose_bag",
+      "bag": {
+        "red": 1,
+        "blue": 1
+      }
+    },
+    {
+      "id": "he_pattern_variable_substitution",
+      "bag": {
+        "(result hello)": 1
+      }
+    },
+    {
+      "id": "he_simple_rewrite",
+      "bag": {
+        "b": 1
+      }
+    },
+    {
+      "id": "he_unknown_expr_preserved",
+      "bag": {
+        "(unknown arg)": 1
+      }
+    }
+  ]
+}

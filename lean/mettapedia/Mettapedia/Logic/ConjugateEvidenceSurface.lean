@@ -4,10 +4,10 @@ import Mettapedia.Logic.EvidenceDirichlet
 import Mettapedia.Logic.EvidenceNormalGamma
 
 /-!
-# Conjugate Evidence Surface
+# Conjugate BinaryEvidence Surface
 
 Minimal shared interface for conjugate-family evidence types, capturing only
-what Beta (`Evidence`), Dirichlet (`MultiEvidence k`), and Normal-Gamma
+what Beta (`BinaryEvidence`), Dirichlet (`MultiEvidence k`), and Normal-Gamma
 (`NormalGammaEvidence`) actually share:
 
 - `AddCommMonoid` (hplus = coordinatewise addition)
@@ -20,7 +20,7 @@ convergence theorem — those differ across families.
 
 ## Instances
 
-- `Evidence` (Beta-Bernoulli): count = `pos + neg`
+- `BinaryEvidence` (Beta-Bernoulli): count = `pos + neg`
 - `MultiEvidence k` (Dirichlet-Multinomial): count = `↑(∑ i, counts i)`
 - `NormalGammaEvidence` (Normal-Gamma): count = `↑n`
 
@@ -41,7 +41,7 @@ open Mettapedia.Logic.EvidenceNormalGamma
 open Mettapedia.Logic.PLNWorldModelAdditive
 open scoped ENNReal
 
-/-! ## Conjugate Evidence Class -/
+/-! ## Conjugate BinaryEvidence Class -/
 
 /-- Shared interface for conjugate-family evidence types.
 
@@ -86,7 +86,7 @@ theorem observationCount_eq_zero_of_add_idempotent {Ev : Type*} [ConjugateEviden
             rw [ConjugateEvidence.observationCount_add]
       _ = ConjugateEvidence.observationCount e := by simp [hidem]
   exact
-    Mettapedia.Logic.PLNWorldModelAdditiveNoGo.EvidenceQuantale.Evidence.finite_coord_add_idempotent_eq_zero
+    Mettapedia.Logic.PLNWorldModelAdditiveNoGo.EvidenceQuantale.BinaryEvidence.finite_coord_add_idempotent_eq_zero
       hfin hcountIdem
 
 theorem not_add_idempotent_of_finite_nonzero_observationCount {Ev : Type*}
@@ -100,14 +100,14 @@ theorem not_add_idempotent_of_finite_nonzero_observationCount {Ev : Type*}
 /-! ## Instances -/
 
 /-- Beta-Bernoulli: observation count = positive + negative evidence. -/
-noncomputable instance instConjugateEvidenceBeta : ConjugateEvidence Evidence where
+noncomputable instance instConjugateEvidenceBeta : ConjugateEvidence BinaryEvidence where
   observationCount e := e.pos + e.neg
   observationCount_add e₁ e₂ := by
     show (e₁ + e₂).pos + (e₁ + e₂).neg = (e₁.pos + e₁.neg) + (e₂.pos + e₂.neg)
-    simp only [Evidence.hplus_def]; ring
+    simp only [BinaryEvidence.hplus_def]; ring
   observationCount_zero := by
-    show Evidence.pos (Evidence.zero) + Evidence.neg (Evidence.zero) = 0
-    simp [Evidence.zero]
+    show BinaryEvidence.pos (BinaryEvidence.zero) + BinaryEvidence.neg (BinaryEvidence.zero) = 0
+    simp [BinaryEvidence.zero]
 
 /-- `Zero` instance for `MultiEvidence k`. -/
 instance instZeroMultiEvidence : Zero (MultiEvidence k) := ⟨MultiEvidence.zero⟩
@@ -165,7 +165,7 @@ posterior parameter equations. This is a current formalization gap.
 
 /-- Beta: hplus sums sufficient statistics (pos, neg).
     Alias for `EvidenceBeta.hplus_is_beta_aggregation`. -/
-theorem beta_hplus_is_aggregation (e₁ e₂ : Evidence) :
+theorem beta_hplus_is_aggregation (e₁ e₂ : BinaryEvidence) :
     (e₁ + e₂).pos = e₁.pos + e₂.pos ∧
     (e₁ + e₂).neg = e₁.neg + e₂.neg :=
   Mettapedia.Logic.EvidenceBeta.hplus_is_beta_aggregation e₁ e₂
@@ -244,10 +244,10 @@ theorem observationConfidence_genAdditiveExtension_of_unit
   simp [observationConfidence, observationCount_genAdditiveExtension_of_unit, hunit]
 
 /-- For binary PLN evidence, the abstract count-induced confidence is exactly the
-    existing `Evidence.toConfidence` view. -/
+    existing `BinaryEvidence.toConfidence` view. -/
 theorem beta_observationConfidence_eq_toConfidence
-    (κ : ℝ≥0∞) (e : Evidence) :
-    observationConfidence κ e = Evidence.toConfidence κ e := by
+    (κ : ℝ≥0∞) (e : BinaryEvidence) :
+    observationConfidence κ e = BinaryEvidence.toConfidence κ e := by
   rfl
 
 end Mettapedia.Logic.ConjugateEvidenceSurface

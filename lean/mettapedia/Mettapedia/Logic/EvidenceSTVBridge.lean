@@ -3,7 +3,7 @@ import Mettapedia.Logic.PLNDistributional
 import Mettapedia.Logic.EvidenceQuantale
 
 /-!
-# Evidence/STV Bridge
+# BinaryEvidence/STV Bridge
 
 Bridges the two STV record types currently used in PLN modules:
 
@@ -60,17 +60,17 @@ def stvEquiv : DistributionalSTV ≃ DeductionSTV where
   left_inv := distributional_roundtrip
   right_inv := deduction_roundtrip
 
-/-- Evidence view into deduction STV using the canonical evidence semantics. -/
-def evidenceToDeductionSTV (κ : ℝ≥0∞) (e : EvidenceQuantale.Evidence) : DeductionSTV where
-  strength := PLNDeduction.clamp01 ((EvidenceQuantale.Evidence.toStrength e).toReal)
-  confidence := PLNDeduction.clamp01 ((EvidenceQuantale.Evidence.toConfidence κ e).toReal)
+/-- BinaryEvidence view into deduction STV using the canonical evidence semantics. -/
+def evidenceToDeductionSTV (κ : ℝ≥0∞) (e : EvidenceQuantale.BinaryEvidence) : DeductionSTV where
+  strength := PLNDeduction.clamp01 ((EvidenceQuantale.BinaryEvidence.toStrength e).toReal)
+  confidence := PLNDeduction.clamp01 ((EvidenceQuantale.BinaryEvidence.toConfidence κ e).toReal)
   strength_nonneg := PLNDeduction.clamp01_nonneg _
   strength_le_one := PLNDeduction.clamp01_le_one _
   confidence_nonneg := PLNDeduction.clamp01_nonneg _
   confidence_le_one := PLNDeduction.clamp01_le_one _
 
-/-- Evidence view into distributional STV via the proven STV equivalence. -/
-def evidenceToDistributionalSTV (κ : ℝ≥0∞) (e : EvidenceQuantale.Evidence) : DistributionalSTV :=
+/-- BinaryEvidence view into distributional STV via the proven STV equivalence. -/
+def evidenceToDistributionalSTV (κ : ℝ≥0∞) (e : EvidenceQuantale.BinaryEvidence) : DistributionalSTV :=
   deductionToDistributional (evidenceToDeductionSTV κ e)
 
 end Mettapedia.Logic.EvidenceSTVBridge

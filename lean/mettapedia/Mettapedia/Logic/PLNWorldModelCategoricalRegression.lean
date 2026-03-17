@@ -81,11 +81,11 @@ theorem ch8_hol_categorical_wrapper_bool_fixture
       Mettapedia.Logic.PLNWorldModelHOLCompleteness.WMCategoricalEndpointSurface
         (Base := HOLFixtureBase) (Const := HOLFixtureConst) (H := H))
     {X : H.Obj} (φc : H.query X) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst))
         (Query := Mettapedia.Logic.HOL.WorldModel.HOLQuery HOLFixtureConst)
         holFixtureState holFalseQuery ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst))
         (Query := Mettapedia.Logic.HOL.WorldModel.HOLQuery HOLFixtureConst)
         holFixtureState holTrueQuery := by
@@ -106,12 +106,12 @@ theorem ch8_fol_categorical_consequence_singleton_fixture
       Mettapedia.Logic.PLNWorldModelFOLCompleteness.WMCategoricalEndpointSurface (H := H))
     {X : H.Obj} (φc : H.query X)
     (S : Mettapedia.Logic.PLNWorldModelFOLCompleteness.PointedFOL L) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
         (Query := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L)
         ({S} : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
         (⊥ : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L) ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
         (Query := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L)
         ({S} : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
@@ -143,12 +143,12 @@ singleton state. -/
 theorem ch8_fol_provable_bridge_rule_singleton_fixture
     {L : Language.{u}}
     (S : Mettapedia.Logic.PLNWorldModelFOLCompleteness.PointedFOL L) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
         (Query := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L)
         ({S} : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
         (⊥ : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L) ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)
         (Query := Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLQuery L)
         ({S} : Mettapedia.Logic.PLNWorldModelFOLCompleteness.FOLState L)

@@ -58,7 +58,7 @@ theorem fixture_policy_eventualFresh_endpoint_add_of_compatible_trustedAll
       (n, true) ∈
         leastRuleClosure (State := OrbitState) (Query := OrbitQuery)
           (orbitRules alwaysFresh true)
-          (WorldModel.evidence (State := PolicyWeightedState) (Query := PolicyModalQuery)
+          (BinaryWorldModel.evidence (State := PolicyWeightedState) (Query := PolicyModalQuery)
             ((leftState pkA) + (rightDisjointState pkB)) qPolicy)
           (orbitSeed false) := by
   exact

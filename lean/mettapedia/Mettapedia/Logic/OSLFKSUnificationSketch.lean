@@ -17,7 +17,7 @@ Core unification theorems connecting three layers:
 2. **Stay/Baez** — WM evidence semantics: threshold atoms, checker soundness,
    evidence revision, rewrite rule preservation
 3. **Knuth/Skilling** — Totality gate: faithful scalarization exists only for
-   total orders; Evidence is non-total (imprecision gate)
+   total orders; BinaryEvidence is non-total (imprecision gate)
 
 All theorems are fully proved (0 sorry).
 -/
@@ -244,24 +244,24 @@ theorem hm_converse_schema
   intro p q hpq
   exact ⟨OSLFObsEq R I, obsEq_is_stepBisimulation hImageFinite, hpq⟩
 
-/-! ## WM Evidence Semantics Layer -/
+/-! ## WM BinaryEvidence Semantics Layer -/
 
 /-- Thresholded atom semantics induced by WM evidence extraction. -/
 noncomputable def thresholdAtomSemOfWM
     {State : Type*}
     [Mettapedia.Logic.EvidenceClass.EvidenceType State]
-    [WorldModel State Pat]
+    [BinaryWorldModel State Pat]
     (W : State) (tau : ℝ≥0∞)
     (queryOfAtom : String → Pat → Pat) : AtomSem :=
   fun a p =>
-    tau ≤ Evidence.toStrength
-      (WorldModel.evidence (State := State) (Query := Pat) W (queryOfAtom a p))
+    tau ≤ BinaryEvidence.toStrength
+      (BinaryWorldModel.evidence (State := State) (Query := Pat) W (queryOfAtom a p))
 
 /-- End-to-end executable-to-denotational bridge under WM-threshold atoms. -/
 theorem checker_sat_implies_threshold_sem
     {State : Type*}
     [Mettapedia.Logic.EvidenceClass.EvidenceType State]
-    [WorldModel State Pat]
+    [BinaryWorldModel State Pat]
     (lang : LangDef) (relEnv : RelEnv)
     (W : State) (tau : ℝ≥0∞)
     (queryOfAtom : String → Pat → Pat)
@@ -283,27 +283,27 @@ theorem checker_sat_implies_threshold_sem
 theorem wm_evidence_revision
     {State : Type*}
     [Mettapedia.Logic.EvidenceClass.EvidenceType State]
-    [WorldModel State Pat]
+    [BinaryWorldModel State Pat]
     (W1 W2 : State) (q : Pat) :
-    WorldModel.evidence (State := State) (Query := Pat) (W1 + W2) q =
-      WorldModel.evidence (State := State) (Query := Pat) W1 q +
-      WorldModel.evidence (State := State) (Query := Pat) W2 q := by
+    BinaryWorldModel.evidence (State := State) (Query := Pat) (W1 + W2) q =
+      BinaryWorldModel.evidence (State := State) (Query := Pat) W1 q +
+      BinaryWorldModel.evidence (State := State) (Query := Pat) W2 q := by
   simpa using
-    (WorldModel.evidence_add' (State := State) (Query := Pat) W1 W2 q)
+    (BinaryWorldModel.evidence_add' (State := State) (Query := Pat) W1 W2 q)
 
 /-- WM rewrite soundness preserves thresholded query atoms. -/
 theorem wmRewriteRule_preserves_threshold
     {State : Type*}
     [Mettapedia.Logic.EvidenceClass.EvidenceType State]
-    [WorldModel State Pat]
+    [BinaryWorldModel State Pat]
     (r : WMRewriteRule State Pat)
     (hSide : r.side)
     (W : State) (tau : ℝ≥0∞)
-    (hDerive : tau ≤ Evidence.toStrength (r.derive W)) :
-    tau ≤ Evidence.toStrength
-      (WorldModel.evidence (State := State) (Query := Pat) W r.conclusion) := by
+    (hDerive : tau ≤ BinaryEvidence.toStrength (r.derive W)) :
+    tau ≤ BinaryEvidence.toStrength
+      (BinaryWorldModel.evidence (State := State) (Query := Pat) W r.conclusion) := by
   have hSound : r.derive W =
-      WorldModel.evidence (State := State) (Query := Pat) W r.conclusion :=
+      BinaryWorldModel.evidence (State := State) (Query := Pat) W r.conclusion :=
     r.sound hSide W
   simpa [hSound] using hDerive
 
@@ -322,9 +322,9 @@ theorem ks_regrading_boolean_fragment
     ∃ Theta : alpha → ℝ, ∀ a b : alpha, a ≤ b ↔ Theta a ≤ Theta b := by
   simpa [FaithfulPointRepresentation] using hFaithful
 
-/-- Evidence is a canonical non-total case: no faithful point-valued scalarization. -/
+/-- BinaryEvidence is a canonical non-total case: no faithful point-valued scalarization. -/
 theorem evidence_imprecision_gate :
-    ¬ FaithfulPointRepresentation Evidence := by
+    ¬ FaithfulPointRepresentation BinaryEvidence := by
   exact Mettapedia.Logic.PLN_KS_Bridge.evidence_no_faithfulPointRepresentation
 
 /-- Measurement factors through observational equivalence classes (schema). -/
@@ -341,7 +341,7 @@ theorem valuation_factors_through_obsEq
 /-- Grand composition schema (3 layers):
   1. Meredith: bisimulation → observational equivalence
   2. Stay/Baez: measurement factors through observational equivalence classes
-  3. Knuth/Skilling: imprecision gate (Evidence has no faithful point scalarization) -/
+  3. Knuth/Skilling: imprecision gate (BinaryEvidence has no faithful point scalarization) -/
 theorem oslf_ks_wm_unification_schema :
     -- Layer 1 (Meredith): bisimulation → observational equivalence
     (∀ (R : Pat → Pat → Prop) (I : AtomSem) (equiv : Pat → Pat → Prop),
@@ -354,7 +354,7 @@ theorem oslf_ks_wm_unification_schema :
       (∀ p q, equiv p q → mu p = mu q) →
       ∃ muQ : Quot (fun p q => equiv p q) → ℝ, ∀ p, muQ (Quot.mk _ p) = mu p) ∧
     -- Layer 3 (Knuth/Skilling): imprecision gate
-    (¬ FaithfulPointRepresentation Evidence) := by
+    (¬ FaithfulPointRepresentation BinaryEvidence) := by
   exact ⟨
     fun R I equiv hB hBR hA p q hpq φ => bisimulation_invariant_sem hB hBR hA hpq φ,
     fun mu equiv hC => (valuation_factors_through_obsEq mu equiv hC),

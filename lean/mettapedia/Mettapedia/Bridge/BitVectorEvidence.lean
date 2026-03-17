@@ -1,11 +1,11 @@
 /-
-# Bit Vector Evidence Bridge
+# Bit Vector BinaryEvidence Bridge
 
-This file establishes the geometric semantics of PLN Evidence through bit vectors.
+This file establishes the geometric semantics of PLN BinaryEvidence through bit vectors.
 
 ## Core Insight
 
-PLN Evidence counts (positive, negative) correspond exactly to known bits in a
+PLN BinaryEvidence counts (positive, negative) correspond exactly to known bits in a
 partial bit vector:
 - `positive` = number of known 1-bits
 - `negative` = number of known 0-bits
@@ -18,13 +18,13 @@ combinatorial interpretation of uncertainty in PLN.
 
 1. `completions_card`: |completions(v)| = 2^(countUnknown v)
 2. `completions_mean_weight`: Average Hamming weight equals (pos + unknown/2) / n
-3. `toEvidence_strength`: Evidence.strength = expected fraction of 1s
+3. `toEvidence_strength`: BinaryEvidence.strength = expected fraction of 1s
 
 ## Connection to PLNDistributional
 
-The Evidence structure from PLNDistributional is the continuous generalization:
+The BinaryEvidence structure from PLNDistributional is the continuous generalization:
 - Discrete: countPositive, countNegative are natural numbers
-- Continuous: Evidence.positive, Evidence.negative are reals (virtual evidence)
+- Continuous: BinaryEvidence.positive, BinaryEvidence.negative are reals (virtual evidence)
 
 The Beta distribution emerges as the limit distribution when N → ∞.
 
@@ -516,11 +516,11 @@ theorem completions_mean_weight (v : PartialVector n) (h : 0 < countUnknown v) :
   rw [h_sum_all_q, h_sum_none_q, h_card_true, h_card_none]
   field_simp
 
-/-! ## Connection to PLN Evidence
+/-! ## Connection to PLN BinaryEvidence
 
-The Evidence structure from PLNDistributional is the "continuous" version of
+The BinaryEvidence structure from PLNDistributional is the "continuous" version of
 our discrete counts. The key insight is that the discrete combinatorics
-(completions, Hamming weights) give an exact semantics for Evidence.
+(completions, Hamming weights) give an exact semantics for BinaryEvidence.
 -/
 
 open Mettapedia.Logic.PLN.Distributional
@@ -530,7 +530,7 @@ open Mettapedia.Logic.PLN.Distributional
 Note: We add 1 to get proper Beta distribution parameters (Laplace smoothing).
 Without the +1, a vector with all bits known would have degenerate evidence.
 -/
-def toDiscreteEvidence (v : PartialVector n) : Evidence where
+def toDiscreteEvidence (v : PartialVector n) : BinaryEvidence where
   positive := countPositive v + 1
   negative := countNegative v + 1
   positive_pos := by
@@ -546,7 +546,7 @@ def toDiscreteEvidence (v : PartialVector n) : Evidence where
 theorem toDiscreteEvidence_strength (v : PartialVector n) :
     (toDiscreteEvidence v).strength =
     (countPositive v + 1 : ℝ) / (countPositive v + countNegative v + 2) := by
-  simp only [toDiscreteEvidence, Evidence.strength, Evidence.total]
+  simp only [toDiscreteEvidence, BinaryEvidence.strength, BinaryEvidence.total]
   ring_nf
 
 /-! ## Bennett Weakness Connection

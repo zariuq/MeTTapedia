@@ -33,11 +33,11 @@ structure PyashGFCanaryNTTLink where
 
 /-- Canonical NTT anchor object for canary linkage witnesses. -/
 def pyashCanaryNTTAnchor : NativeTypeBundle :=
-  Sigma.mk (PLNObj.Concept "pyash_canary") (⊥ : Evidence)
+  Sigma.mk (PLNObj.Concept "pyash_canary") (⊥ : BinaryEvidence)
 
 /-- Canonical reflexive NTT morphism at the canary anchor. -/
 def pyashCanaryNTTAnchorId : Hom pyashCanaryNTTAnchor pyashCanaryNTTAnchor :=
-  PLift.up (le_rfl : (⊥ : Evidence) ≤ ⊥)
+  PLift.up (le_rfl : (⊥ : BinaryEvidence) ≤ ⊥)
 
 /-- Compact constructor for canary linkage rows. -/
 private def mkCanaryLink

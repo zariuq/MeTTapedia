@@ -96,7 +96,7 @@ theorem binwise_error_decreasing (n : ℕ) :
 
 end PLNPerBin
 
-/-! ## Aggregating Evidence Across Bins -/
+/-! ## Aggregating BinaryEvidence Across Bins -/
 
 section AggregateEvidence
 

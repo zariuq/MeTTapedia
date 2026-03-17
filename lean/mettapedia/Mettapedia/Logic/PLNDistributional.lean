@@ -561,9 +561,9 @@ theorem count_confidence_roundtrip (n : ℝ) (hn : 0 < n) :
   field_simp
   ring
 
-/-! ## Evidence-Based PLN (The Correct Approach)
+/-! ## BinaryEvidence-Based PLN (The Correct Approach)
 
-A Truth Value is not a pair (s, c) but a State of Evidence:
+A Truth Value is not a pair (s, c) but a State of BinaryEvidence:
 - α observations supporting the proposition
 - β observations against it
 
@@ -574,70 +574,70 @@ not as an arbitrary parameterization. This is the conjugate prior view.
 /-- Raw evidence counts. This is the primitive representation.
     Semantically: "We have observed α positive and β negative instances."
     The Beta(α, β) distribution represents our uncertainty about the true probability. -/
-structure Evidence where
+structure BinaryEvidence where
   positive : ℝ  -- α (can be fractional for "virtual" evidence)
   negative : ℝ  -- β
   positive_pos : 0 < positive
   negative_pos : 0 < negative
 
-namespace Evidence
+namespace BinaryEvidence
 
 /-- Total evidence count -/
-def total (e : Evidence) : ℝ := e.positive + e.negative
+def total (e : BinaryEvidence) : ℝ := e.positive + e.negative
 
-theorem total_pos (e : Evidence) : 0 < e.total :=
+theorem total_pos (e : BinaryEvidence) : 0 < e.total :=
   add_pos e.positive_pos e.negative_pos
 
-/-- Convert Evidence to BetaParams -/
-def toBeta (e : Evidence) : BetaParams where
+/-- Convert BinaryEvidence to BetaParams -/
+def toBeta (e : BinaryEvidence) : BetaParams where
   alpha := e.positive
   betaParam := e.negative
   alpha_pos := e.positive_pos
   beta_pos := e.negative_pos
 
 /-- Strength = Expected probability given evidence = α / (α + β) -/
-def strength (e : Evidence) : ℝ := e.positive / e.total
+def strength (e : BinaryEvidence) : ℝ := e.positive / e.total
 
-theorem strength_eq_expectedValue (e : Evidence) :
+theorem strength_eq_expectedValue (e : BinaryEvidence) :
     e.strength = e.toBeta.expectedValue := rfl
 
-theorem strength_mem_Ioo (e : Evidence) : e.strength ∈ Ioo 0 1 :=
+theorem strength_mem_Ioo (e : BinaryEvidence) : e.strength ∈ Ioo 0 1 :=
   e.toBeta.expectedValue_mem_Ioo
 
 /-- Variance of the Beta distribution induced by evidence -/
-def variance (e : Evidence) : ℝ := e.toBeta.variance
+def variance (e : BinaryEvidence) : ℝ := e.toBeta.variance
 
-theorem variance_pos (e : Evidence) : 0 < e.variance :=
+theorem variance_pos (e : BinaryEvidence) : 0 < e.variance :=
   e.toBeta.variance_pos
 
 /-- Revision: Combining independent evidence sources is ADDITION.
     This is the key insight: revision is trivially correct because
     Beta is the conjugate prior for Bernoulli observations. -/
-def revision (e₁ e₂ : Evidence) : Evidence where
+def revision (e₁ e₂ : BinaryEvidence) : BinaryEvidence where
   positive := e₁.positive + e₂.positive
   negative := e₁.negative + e₂.negative
   positive_pos := add_pos e₁.positive_pos e₂.positive_pos
   negative_pos := add_pos e₁.negative_pos e₂.negative_pos
 
 /-- Revision is commutative -/
-theorem revision_comm (e₁ e₂ : Evidence) :
+theorem revision_comm (e₁ e₂ : BinaryEvidence) :
     revision e₁ e₂ = revision e₂ e₁ := by
   simp only [revision, add_comm]
 
 /-- Revision preserves total evidence count -/
-theorem revision_total (e₁ e₂ : Evidence) :
+theorem revision_total (e₁ e₂ : BinaryEvidence) :
     (revision e₁ e₂).total = e₁.total + e₂.total := by
   simp only [revision, total]
   ring
 
 /-- Revision strength formula: strength of combined evidence.
     This is EXACT - no approximation needed for revision. -/
-theorem revision_strength (e₁ e₂ : Evidence) :
+theorem revision_strength (e₁ e₂ : BinaryEvidence) :
     (revision e₁ e₂).strength = (e₁.positive + e₂.positive) / (e₁.total + e₂.total) := by
   simp only [revision, strength, total]
   congr 1; ring
 
-end Evidence
+end BinaryEvidence
 
 /-! ## Auditing the PLN Heuristic
 
@@ -647,14 +647,14 @@ variables to the variance implied by PLN's confidence heuristic.
 
 /-- The TRUE variance of Z = X · Y where X, Y are independent.
     Var(XY) = E[X]²Var[Y] + E[Y]²Var[X] + Var[X]Var[Y] -/
-def trueProductVariance (e₁ e₂ : Evidence) : ℝ :=
+def trueProductVariance (e₁ e₂ : BinaryEvidence) : ℝ :=
   let s₁ := e₁.strength
   let s₂ := e₂.strength
   let v₁ := e₁.variance
   let v₂ := e₂.variance
   s₁^2 * v₂ + s₂^2 * v₁ + v₁ * v₂
 
-theorem trueProductVariance_pos (e₁ e₂ : Evidence) :
+theorem trueProductVariance_pos (e₁ e₂ : BinaryEvidence) :
     0 < trueProductVariance e₁ e₂ := by
   simp only [trueProductVariance]
   have hs₁ := e₁.strength_mem_Ioo
@@ -669,7 +669,7 @@ theorem trueProductVariance_pos (e₁ e₂ : Evidence) :
 /-- PLN's HEURISTIC confidence for deduction: c_AC = c_AB * c_BC.
     Given a lookahead parameter K, confidence c relates to count n via c = n/(n+K).
     The implied variance is then computed from the "fake" count. -/
-def plnHeuristicVariance (e₁ e₂ : Evidence) (K : ℝ) (_hK : 0 < K) : ℝ :=
+def plnHeuristicVariance (e₁ e₂ : BinaryEvidence) (K : ℝ) (_hK : 0 < K) : ℝ :=
   let n₁ := e₁.total
   let n₂ := e₂.total
   let c₁ := n₁ / (n₁ + K)
@@ -689,15 +689,15 @@ def plnHeuristicVariance (e₁ e₂ : Evidence) (K : ℝ) (_hK : 0 < K) : ℝ :=
     - True variance ≈ 0.05 (using product formula s₁²v₂ + s₂²v₁ + v₁v₂)
     - Heuristic variance ≈ 0.0625 (from s(1-s)/(n+1))
     The heuristic OVERESTIMATES variance in this case. -/
-theorem pln_heuristic_counterexample : ∃ e₁ e₂ : Evidence, ∃ K : ℝ, ∃ hK : 0 < K,
+theorem pln_heuristic_counterexample : ∃ e₁ e₂ : BinaryEvidence, ∃ K : ℝ, ∃ hK : 0 < K,
     trueProductVariance e₁ e₂ ≠ plnHeuristicVariance e₁ e₂ K hK := by
-  -- Take e₁ = e₂ = Evidence(2, 2) (uniform prior), K = 1
+  -- Take e₁ = e₂ = BinaryEvidence(2, 2) (uniform prior), K = 1
   use ⟨2, 2, by norm_num, by norm_num⟩
   use ⟨2, 2, by norm_num, by norm_num⟩
   use 1, by norm_num
   -- The two formulas give different algebraic expressions
-  simp only [trueProductVariance, plnHeuristicVariance, Evidence.strength,
-             Evidence.total, Evidence.variance, Evidence.toBeta,
+  simp only [trueProductVariance, plnHeuristicVariance, BinaryEvidence.strength,
+             BinaryEvidence.total, BinaryEvidence.variance, BinaryEvidence.toBeta,
              BetaParams.variance, BetaParams.n]
   -- norm_num verifies the expressions differ
   norm_num

@@ -3,11 +3,11 @@ import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.PLNWorldModel
 
 /-!
-# PLN Joint Evidence Semantics (Dirichlet over Worlds)
+# PLN Joint BinaryEvidence Semantics (Dirichlet over Worlds)
 
 This module prototypes the **theoretically correct** way to "pass evidence around" for PLN:
 
-*Evidence is not a per-link Beta posterior.*  Instead, the exact conjugate-prior evidence for a
+*BinaryEvidence is not a per-link Beta posterior.*  Instead, the exact conjugate-prior evidence for a
 finite collection of propositions is a **Dirichlet posterior over complete worlds**.
 
 Concretely, for `n` binary propositions there are `2^n` complete worlds.  A Dirichlet posterior is
@@ -73,15 +73,15 @@ theorem countWorld_add (E₁ E₂ : JointEvidence n) (P : Fin (2 ^ n) → Bool) 
   -- Rewrite with `h`, then distribute the sum.
   simp [h, Finset.sum_add_distrib]
 
-/-! ### Derived Evidence for propositions and links -/
+/-! ### Derived BinaryEvidence for propositions and links -/
 
-/-- Evidence for a proposition `A` (Beta parameters for `P(A)`), extracted from joint evidence. -/
-noncomputable def propEvidence (E : JointEvidence n) (A : Fin n) : Evidence :=
+/-- BinaryEvidence for a proposition `A` (Beta parameters for `P(A)`), extracted from joint evidence. -/
+noncomputable def propEvidence (E : JointEvidence n) (A : Fin n) : BinaryEvidence :=
   ⟨countWorld (n := n) (E := E) (fun w => worldToAssignment n w A),
    countWorld (n := n) (E := E) (fun w => !(worldToAssignment n w A))⟩
 
-  /-- Evidence for a link `A ⟹ B` (Beta parameters for `P(B|A)`), extracted from joint evidence. -/
-  noncomputable def linkEvidence (E : JointEvidence n) (A B : Fin n) : Evidence :=
+  /-- BinaryEvidence for a link `A ⟹ B` (Beta parameters for `P(B|A)`), extracted from joint evidence. -/
+  noncomputable def linkEvidence (E : JointEvidence n) (A B : Fin n) : BinaryEvidence :=
     ⟨countWorld (n := n) (E := E) (fun w => worldToAssignment n w A && worldToAssignment n w B),
      countWorld (n := n) (E := E) (fun w => worldToAssignment n w A && !(worldToAssignment n w B))⟩
 
@@ -89,10 +89,10 @@ noncomputable def propEvidence (E : JointEvidence n) (A : Fin n) : Evidence :=
   def allTrue (as : List (Fin n)) (w : Fin (2 ^ n)) : Bool :=
     as.all (fun a => worldToAssignment n w a)
 
-  /-- Evidence for a conditional with multiple antecedents.
+  /-- BinaryEvidence for a conditional with multiple antecedents.
       This is `P(B | A₁ ∧ ... ∧ A_k)` extracted from joint evidence. -/
   noncomputable def linkCondEvidence (E : JointEvidence n) (as : List (Fin n)) (B : Fin n) :
-      Evidence :=
+      BinaryEvidence :=
     ⟨countWorld (n := n) (E := E) (fun w => allTrue (n := n) as w && worldToAssignment n w B),
      countWorld (n := n) (E := E) (fun w => allTrue (n := n) as w && !(worldToAssignment n w B))⟩
 
@@ -103,19 +103,19 @@ instance instEvidenceType : EvidenceType (JointEvidence n) where
 theorem propEvidence_add (E₁ E₂ : JointEvidence n) (A : Fin n) :
     propEvidence (n := n) (E := E₁ + E₂) A =
       propEvidence (n := n) (E := E₁) A + propEvidence (n := n) (E := E₂) A := by
-  ext <;> simp [propEvidence, countWorld_add, Evidence.hplus_def]
+  ext <;> simp [propEvidence, countWorld_add, BinaryEvidence.hplus_def]
 
   theorem linkEvidence_add (E₁ E₂ : JointEvidence n) (A B : Fin n) :
       linkEvidence (n := n) (E := E₁ + E₂) A B =
         linkEvidence (n := n) (E := E₁) A B + linkEvidence (n := n) (E := E₂) A B := by
-    ext <;> simp [linkEvidence, countWorld_add, Evidence.hplus_def]
+    ext <;> simp [linkEvidence, countWorld_add, BinaryEvidence.hplus_def]
 
   theorem linkCondEvidence_add (E₁ E₂ : JointEvidence n) (as : List (Fin n)) (B : Fin n) :
       linkCondEvidence (n := n) (E := E₁ + E₂) as B =
         linkCondEvidence (n := n) (E := E₁) as B + linkCondEvidence (n := n) (E := E₂) as B := by
-    ext <;> simp [linkCondEvidence, countWorld_add, Evidence.hplus_def]
+    ext <;> simp [linkCondEvidence, countWorld_add, BinaryEvidence.hplus_def]
 
-  noncomputable instance instWorldModel : WorldModel (JointEvidence n) (PLNQuery (Fin n)) where
+  noncomputable instance instWorldModel : BinaryWorldModel (JointEvidence n) (AtomQuery (Fin n)) where
     evidence E
       | .prop A => JointEvidence.propEvidence (n := n) (E := E) A
       | .link A B => JointEvidence.linkEvidence (n := n) (E := E) A B
@@ -128,16 +128,24 @@ theorem propEvidence_add (E₁ E₂ : JointEvidence n) (A : Fin n) :
           simpa using linkEvidence_add (n := n) (E₁ := E₁) (E₂ := E₂) A B
       | linkCond as B =>
           simpa using linkCondEvidence_add (n := n) (E₁ := E₁) (E₂ := E₂) as B
+    evidence_zero q := by
+      cases q with
+      | prop A => simp only [propEvidence, countWorld, Pi.zero_apply, ite_self,
+          Finset.sum_const_zero]; rfl
+      | link A B => simp only [linkEvidence, countWorld, Pi.zero_apply, ite_self,
+          Finset.sum_const_zero]; rfl
+      | linkCond as B => simp only [linkCondEvidence, countWorld, Pi.zero_apply, ite_self,
+          Finset.sum_const_zero]; rfl
 
 /-! ### WTV/STV views (derived; not the core semantics) -/
 
-/-- Proposition view as WTV, using the canonical Evidence→WTV map with prior κ. -/
+/-- Proposition view as WTV, using the canonical BinaryEvidence→WTV map with prior κ. -/
 noncomputable def propWTV (κ : ℝ≥0∞) (E : JointEvidence n) (A : Fin n) : PLNWeightTV.WTV :=
-  Evidence.toWTV κ (propEvidence (n := n) (E := E) A)
+  BinaryEvidence.toWTV κ (propEvidence (n := n) (E := E) A)
 
-/-- Link view as WTV, using the canonical Evidence→WTV map with prior κ. -/
+/-- Link view as WTV, using the canonical BinaryEvidence→WTV map with prior κ. -/
 noncomputable def linkWTV (κ : ℝ≥0∞) (E : JointEvidence n) (A B : Fin n) : PLNWeightTV.WTV :=
-  Evidence.toWTV κ (linkEvidence (n := n) (E := E) A B)
+  BinaryEvidence.toWTV κ (linkEvidence (n := n) (E := E) A B)
 
 end JointEvidence
 

@@ -18,7 +18,7 @@ This file mirrors the *numerical* truth-value formulas used in the MeTTa PLN lib
 Design:
 - We keep this file purely about formulas and small algebraic facts.
 - We do **not** encode any "missing branch" behavior as `empty`; instead we use `Option`.
-- Derivations from probability / Evidence live in separate modules.
+- Derivations from probability / BinaryEvidence live in separate modules.
 -/
 
 /-! ## Simple Truth Values -/
@@ -42,7 +42,7 @@ end TV
 
 /-!
 We treat MeTTa confidences as lying in `[0,1]`, but the raw library may occasionally hand us
-out-of-range values (e.g. `c = 1` leading to division by zero). For νPLN / Evidence semantics,
+out-of-range values (e.g. `c = 1` leading to division by zero). For νPLN / BinaryEvidence semantics,
 we interpret confidence via the standard weight transform `w = c/(1-c)` with a hard cap
 `MAX_CONF < 1` and a floor at `0`.
 -/

@@ -150,9 +150,9 @@ def atK (k : ℤ) (σ_sq_num : ℕ) (σ_sq_denom_pow : ℕ) (h : 0 < σ_sq_num) 
 
 end DyadicContext
 
-/-! ## Dyadic Evidence
+/-! ## Dyadic BinaryEvidence
 
-Evidence represented with dyadic rationals for sample mean and variance.
+BinaryEvidence represented with dyadic rationals for sample mean and variance.
 -/
 
 structure DyadicEvidence where

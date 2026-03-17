@@ -79,7 +79,7 @@ def Theory.forget (T : Theory) : LO.Propositional.Theory ℕ :=
 /-! ## Embedding Functor: Foundation → PLN -/
 
 /-- Maximal positive evidence (used for axioms from theory) -/
-noncomputable def maxEvidence : Evidence := ⟨⊤, 0⟩
+noncomputable def maxEvidence : BinaryEvidence := ⟨⊤, 0⟩
 
 /-- Add maximal evidence to a formula -/
 noncomputable def Formula.withMaxEvidence (φ : Formula) : WeightedFormula :=
@@ -101,17 +101,17 @@ theorem forget_mem {Δ : WeightedSequent} {wf : WeightedFormula} (h : wf ∈ Δ)
     WeightedFormula.forget wf ∈ WeightedSequent.forget Δ :=
   List.mem_map.mpr ⟨wf, h, rfl⟩
 
-/-- Evidence meet with maximal evidence is identity -/
-theorem evidenceMeet_maxEvidence_left (e : Evidence) :
+/-- BinaryEvidence meet with maximal evidence is identity -/
+theorem evidenceMeet_maxEvidence_left (e : BinaryEvidence) :
     evidenceMeet maxEvidence e = e := by
   unfold evidenceMeet maxEvidence
-  apply Evidence.ext' <;> simp
+  apply BinaryEvidence.ext' <;> simp
 
-/-- Evidence meet with maximal evidence is identity (right) -/
-theorem evidenceMeet_maxEvidence_right (e : Evidence) :
+/-- BinaryEvidence meet with maximal evidence is identity (right) -/
+theorem evidenceMeet_maxEvidence_right (e : BinaryEvidence) :
     evidenceMeet e maxEvidence = e := by
   unfold evidenceMeet maxEvidence
-  apply Evidence.ext' <;> simp
+  apply BinaryEvidence.ext' <;> simp
 
 /-! ## Main Bridge Theorem -/
 
@@ -130,21 +130,21 @@ structure ForgetRuleSoundness (T : Theory) : Prop where
       (∀ wf ∈ Δ, wf ∈ Γ) →
       (Theory.forget T) ⟹! (WeightedSequent.forget Γ)
   andI :
-    ∀ {Δ : WeightedSequent} {φ ψ : Formula} {e₁ e₂ : Evidence},
+    ∀ {Δ : WeightedSequent} {φ ψ : Formula} {e₁ e₂ : BinaryEvidence},
       (Theory.forget T) ⟹! (WeightedSequent.forget (⟨φ, e₁⟩ :: Δ)) →
       (Theory.forget T) ⟹! (WeightedSequent.forget (⟨ψ, e₂⟩ :: Δ)) →
       (Theory.forget T) ⟹! (WeightedSequent.forget (⟨φ ⋏ ψ, evidenceMeet e₁ e₂⟩ :: Δ))
   orI :
-    ∀ {Δ : WeightedSequent} {φ ψ : Formula} {e : Evidence},
+    ∀ {Δ : WeightedSequent} {φ ψ : Formula} {e : BinaryEvidence},
       (Theory.forget T) ⟹! (WeightedSequent.forget (⟨φ, e⟩ :: ⟨ψ, e⟩ :: Δ)) →
       (Theory.forget T) ⟹! (WeightedSequent.forget (⟨φ ⋎ ψ, e⟩ :: Δ))
   em :
-    ∀ {Δ : WeightedSequent} {φ : Formula} {e : Evidence},
+    ∀ {Δ : WeightedSequent} {φ : Formula} {e : BinaryEvidence},
       ⟨φ, e⟩ ∈ Δ →
       ⟨∼φ, e⟩ ∈ Δ →
       (Theory.forget T) ⟹! (WeightedSequent.forget Δ)
   cut :
-    ∀ {Δ : WeightedSequent} {φ : Formula} {e₁ e₂ : Evidence},
+    ∀ {Δ : WeightedSequent} {φ : Formula} {e₁ e₂ : BinaryEvidence},
       (Theory.forget T) ⟹! (WeightedSequent.forget (⟨φ, e₁⟩ :: Δ)) →
       (Theory.forget T) ⟹! (WeightedSequent.forget (⟨∼φ, e₂⟩ :: Δ)) →
       (Theory.forget T) ⟹! (WeightedSequent.forget Δ)

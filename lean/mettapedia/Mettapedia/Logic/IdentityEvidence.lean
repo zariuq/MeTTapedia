@@ -1,10 +1,10 @@
 import Mettapedia.Logic.EvidenceQuantale
 
 /-!
-# Identity Evidence Layer
+# Identity BinaryEvidence Layer
 
 This module adds a guarded identity-evidence layer on top of the canonical
-`Evidence` carrier.
+`BinaryEvidence` carrier.
 
 The layer is intentionally conservative:
 - identity transport is guarded by assurance and contradiction thresholds,
@@ -19,7 +19,7 @@ open Mettapedia.Logic.EvidenceQuantale
 open scoped ENNReal
 
 /-- Identity evidence relation: evidence that two entities are identical. -/
-abbrev IdEvidence (Entity : Type*) := Entity → Entity → Evidence
+abbrev IdEvidence (Entity : Type*) := Entity → Entity → BinaryEvidence
 
 /-- Guard thresholds for identity-based transport. -/
 structure TransportThresholds where
@@ -27,24 +27,24 @@ structure TransportThresholds where
   contradictionMax : ℝ≥0∞
 
 /-- Assurance score used by transport guards. -/
-noncomputable def assurance (e : Evidence) : ℝ≥0∞ :=
-  Evidence.toStrength e
+noncomputable def assurance (e : BinaryEvidence) : ℝ≥0∞ :=
+  BinaryEvidence.toStrength e
 
 /-- Contradiction mass: normalized negative evidence ratio `n⁻/(n⁺+n⁻)`. -/
-noncomputable def contradictionMass (e : Evidence) : ℝ≥0∞ :=
+noncomputable def contradictionMass (e : BinaryEvidence) : ℝ≥0∞ :=
   if e.total = 0 then 0 else e.neg / e.total
 
 /-- Guard predicate for identity transport. -/
-noncomputable def transportGuard (τ : TransportThresholds) (e : Evidence) : Prop :=
+noncomputable def transportGuard (τ : TransportThresholds) (e : BinaryEvidence) : Prop :=
   τ.assuranceMin ≤ assurance e ∧ contradictionMass e ≤ τ.contradictionMax
 
 /-- Boolean guard for executable routing. -/
-noncomputable def transportGuardB (τ : TransportThresholds) (e : Evidence) : Bool :=
+noncomputable def transportGuardB (τ : TransportThresholds) (e : BinaryEvidence) : Bool :=
   by
     classical
     exact decide (transportGuard τ e)
 
-theorem transportGuardB_eq_true_iff (τ : TransportThresholds) (e : Evidence) :
+theorem transportGuardB_eq_true_iff (τ : TransportThresholds) (e : BinaryEvidence) :
     transportGuardB τ e = true ↔ transportGuard τ e := by
   classical
   simp [transportGuardB]
@@ -55,7 +55,7 @@ noncomputable def transportAcrossIdentity
     (idEv : IdEvidence Entity)
     (τ : TransportThresholds)
     (src dst : Entity)
-    (payload : Evidence) : Evidence :=
+    (payload : BinaryEvidence) : BinaryEvidence :=
   if transportGuardB τ (idEv src dst) then payload * idEv src dst else payload
 
 /-- Optional transport gate (`enabled = false` gives conservative no-op). -/
@@ -65,7 +65,7 @@ noncomputable def transportAcrossIdentityIf
     (idEv : IdEvidence Entity)
     (τ : TransportThresholds)
     (src dst : Entity)
-    (payload : Evidence) : Evidence :=
+    (payload : BinaryEvidence) : BinaryEvidence :=
   if enabled then transportAcrossIdentity idEv τ src dst payload else payload
 
 theorem transportAcrossIdentityIf_disabled
@@ -73,7 +73,7 @@ theorem transportAcrossIdentityIf_disabled
     (idEv : IdEvidence Entity)
     (τ : TransportThresholds)
     (src dst : Entity)
-    (payload : Evidence) :
+    (payload : BinaryEvidence) :
     transportAcrossIdentityIf false idEv τ src dst payload = payload := by
   simp [transportAcrossIdentityIf]
 
@@ -82,7 +82,7 @@ theorem transportAcrossIdentityIf_enabled
     (idEv : IdEvidence Entity)
     (τ : TransportThresholds)
     (src dst : Entity)
-    (payload : Evidence) :
+    (payload : BinaryEvidence) :
     transportAcrossIdentityIf true idEv τ src dst payload =
       transportAcrossIdentity idEv τ src dst payload := by
   simp [transportAcrossIdentityIf]
@@ -90,35 +90,35 @@ theorem transportAcrossIdentityIf_enabled
 /-- Identity-path composition via quantale tensor. -/
 noncomputable def pathEvidence
     {Entity : Type*}
-    (idEv : IdEvidence Entity) : List Entity → Evidence
-  | [] => Evidence.one
-  | [_] => Evidence.one
+    (idEv : IdEvidence Entity) : List Entity → BinaryEvidence
+  | [] => BinaryEvidence.one
+  | [_] => BinaryEvidence.one
   | src :: dst :: rest => idEv src dst * pathEvidence idEv (dst :: rest)
 
 @[simp] theorem pathEvidence_nil
     {Entity : Type*}
     (idEv : IdEvidence Entity) :
-    pathEvidence idEv [] = Evidence.one := rfl
+    pathEvidence idEv [] = BinaryEvidence.one := rfl
 
 @[simp] theorem pathEvidence_singleton
     {Entity : Type*}
     (idEv : IdEvidence Entity)
     (x : Entity) :
-    pathEvidence idEv [x] = Evidence.one := rfl
+    pathEvidence idEv [x] = BinaryEvidence.one := rfl
 
 theorem pathEvidence_pair
     {Entity : Type*}
     (idEv : IdEvidence Entity)
     (x y : Entity) :
     pathEvidence idEv [x, y] = idEv x y := by
-  simp [pathEvidence, Evidence.tensor_one]
+  simp [pathEvidence, BinaryEvidence.tensor_one]
 
 theorem pathEvidence_triple
     {Entity : Type*}
     (idEv : IdEvidence Entity)
     (x y z : Entity) :
     pathEvidence idEv [x, y, z] = idEv x y * idEv y z := by
-  simp [pathEvidence, Evidence.tensor_one]
+  simp [pathEvidence, BinaryEvidence.tensor_one]
 
 /-- Optional path transport (disabled mode is conservative no-op). -/
 noncomputable def transportAlongPathIf
@@ -126,28 +126,28 @@ noncomputable def transportAlongPathIf
     (enabled : Bool)
     (idEv : IdEvidence Entity)
     (path : List Entity)
-    (payload : Evidence) : Evidence :=
+    (payload : BinaryEvidence) : BinaryEvidence :=
   if enabled then payload * pathEvidence idEv path else payload
 
 theorem transportAlongPathIf_disabled
     {Entity : Type*}
     (idEv : IdEvidence Entity)
     (path : List Entity)
-    (payload : Evidence) :
+    (payload : BinaryEvidence) :
     transportAlongPathIf false idEv path payload = payload := by
   simp [transportAlongPathIf]
 
 /-- Additive revision of independent identity-path evidence. -/
-noncomputable def reviseIdentityEvidence (e₁ e₂ : Evidence) : Evidence :=
+noncomputable def reviseIdentityEvidence (e₁ e₂ : BinaryEvidence) : BinaryEvidence :=
   e₁ + e₂
 
-@[simp] theorem reviseIdentityEvidence_pos (e₁ e₂ : Evidence) :
+@[simp] theorem reviseIdentityEvidence_pos (e₁ e₂ : BinaryEvidence) :
     (reviseIdentityEvidence e₁ e₂).pos = e₁.pos + e₂.pos := by
-  simp [reviseIdentityEvidence, Evidence.hplus_def]
+  simp [reviseIdentityEvidence, BinaryEvidence.hplus_def]
 
-@[simp] theorem reviseIdentityEvidence_neg (e₁ e₂ : Evidence) :
+@[simp] theorem reviseIdentityEvidence_neg (e₁ e₂ : BinaryEvidence) :
     (reviseIdentityEvidence e₁ e₂).neg = e₁.neg + e₂.neg := by
-  simp [reviseIdentityEvidence, Evidence.hplus_def]
+  simp [reviseIdentityEvidence, BinaryEvidence.hplus_def]
 
 /-- Guarded identity alternatives from a candidate list. -/
 noncomputable def guardedAlternatives
@@ -193,7 +193,7 @@ def canaryIdEvidence : IdEvidence String := fun src dst =>
   if src = "alice" ∧ dst = "ally" then ⟨3, 2⟩
   else if src = "ally" ∧ dst = "alicia" then ⟨4, 1⟩
   else if src = "alice" ∧ dst = "alicia" then ⟨1, 3⟩
-  else Evidence.one
+  else BinaryEvidence.one
 
 /-- Loose thresholds: transport guard always passes. -/
 def canaryLooseThresholds : TransportThresholds :=
@@ -205,19 +205,19 @@ def canaryStrictThresholds : TransportThresholds :=
   { assuranceMin := 2
     contradictionMax := ⊤ }
 
-def canaryPayload : Evidence := ⟨5, 1⟩
+def canaryPayload : BinaryEvidence := ⟨5, 1⟩
 
-theorem canary_loose_guard_true (e : Evidence) :
+theorem canary_loose_guard_true (e : BinaryEvidence) :
     transportGuard canaryLooseThresholds e := by
   constructor
   · simp [canaryLooseThresholds, assurance]
   · simp [canaryLooseThresholds]
 
-theorem canary_strict_guard_false (e : Evidence) :
+theorem canary_strict_guard_false (e : BinaryEvidence) :
     ¬ transportGuard canaryStrictThresholds e := by
   intro h
   have hStrengthLeOne : assurance e ≤ 1 := by
-    simpa [assurance] using Evidence.toStrength_le_one e
+    simpa [assurance] using BinaryEvidence.toStrength_le_one e
   have hTwoLeOne : (2 : ℝ≥0∞) ≤ 1 := le_trans h.1 hStrengthLeOne
   norm_num at hTwoLeOne
 
@@ -225,18 +225,18 @@ theorem canary_strict_guard_false (e : Evidence) :
 theorem transport_enabled_canary_guard_pass :
     transportAcrossIdentityIf true canaryIdEvidence canaryLooseThresholds
       "alice" "ally" canaryPayload = ⟨15, 2⟩ := by
-  have hguard : transportGuard canaryLooseThresholds ((⟨3, 2⟩ : Evidence)) :=
+  have hguard : transportGuard canaryLooseThresholds ((⟨3, 2⟩ : BinaryEvidence)) :=
     canary_loose_guard_true _
-  have hguardB : transportGuardB canaryLooseThresholds ((⟨3, 2⟩ : Evidence)) = true :=
+  have hguardB : transportGuardB canaryLooseThresholds ((⟨3, 2⟩ : BinaryEvidence)) = true :=
     (transportGuardB_eq_true_iff _ _).2 hguard
   calc
     transportAcrossIdentityIf true canaryIdEvidence canaryLooseThresholds
       "alice" "ally" canaryPayload
-        = canaryPayload * (⟨3, 2⟩ : Evidence) := by
+        = canaryPayload * (⟨3, 2⟩ : BinaryEvidence) := by
             simp [transportAcrossIdentityIf, transportAcrossIdentity, hguardB,
               canaryIdEvidence, canaryPayload]
     _ = ⟨15, 2⟩ := by
-      ext <;> norm_num [Evidence.tensor_def, canaryPayload]
+      ext <;> norm_num [BinaryEvidence.tensor_def, canaryPayload]
 
 /-- Enabled transport canary: with strict thresholds, guard fails and payload is unchanged. -/
 theorem transport_enabled_canary_guard_fail :
@@ -255,7 +255,7 @@ theorem transport_enabled_canary_guard_fail :
 theorem transport_enabled_path_canary :
     transportAlongPathIf true canaryIdEvidence ["alice", "ally", "alicia"] canaryPayload =
       canaryPayload * (canaryIdEvidence "alice" "ally" * canaryIdEvidence "ally" "alicia") := by
-  simp [transportAlongPathIf, pathEvidence, canaryIdEvidence, Evidence.tensor_one]
+  simp [transportAlongPathIf, pathEvidence, canaryIdEvidence, BinaryEvidence.tensor_one]
 
 /-- Competing guarded identities remain distinct alternatives (no forced merge). -/
 theorem competing_identities_retained_canary :

@@ -32,7 +32,7 @@ Matches `eventuality_level.metta`. -/
 
 /-- An eventuality judgment: evidence that eventuality `e` has modality `m`.
 
-    For example: `⟨soaMoor, .obligatory, Evidence.mk 5 1⟩` means
+    For example: `⟨soaMoor, .obligatory, BinaryEvidence.mk 5 1⟩` means
     "there is evidence (5 positive, 1 negative) that mooring is obligatory". -/
 structure EventualityJudgment (Entity Pred : Type*) where
   /-- The eventuality being judged. -/
@@ -40,14 +40,14 @@ structure EventualityJudgment (Entity Pred : Type*) where
   /-- The deontic modality. -/
   modality : DeonticModality
   /-- The evidence for this judgment. -/
-  evidence : Evidence
+  evidence : BinaryEvidence
 
 namespace EventualityJudgment
 
 variable {Entity Pred : Type*}
 
 /-- Conjunction of two judgments on the same modality.
-    Evidence is the infimum (lattice meet): the weakest common evidence.
+    BinaryEvidence is the infimum (lattice meet): the weakest common evidence.
 
     Matches `eventuality_level.metta:58-66`:
     `∀ea,e1,e2[and(ea,e1,e2) ⇒ (ropom(ea) ⇔ (ropom(e1) ∧ ropom(e2)))]` -/
@@ -71,7 +71,7 @@ theorem conjoin_evidence_le_right (j₁ j₂ : EventualityJudgment Entity Pred)
   inf_le_right
 
 /-- Disjunction of two judgments on the same modality.
-    Evidence is the supremum (lattice join): the strongest available evidence.
+    BinaryEvidence is the supremum (lattice join): the strongest available evidence.
 
     Matches `eventuality_level.metta:85-98` and `statement_level.metta:155-188`. -/
 noncomputable def disjoin (j₁ j₂ : EventualityJudgment Entity Pred)
@@ -101,7 +101,7 @@ def negate (j : EventualityJudgment Entity Pred) :
     EventualityJudgment Entity Pred :=
   { eventuality := j.eventuality.negate
     modality := j.modality
-    evidence := Evidence.mk j.evidence.neg j.evidence.pos }
+    evidence := BinaryEvidence.mk j.evidence.neg j.evidence.pos }
 
 /-- Double negation returns to the original eventuality. -/
 theorem negate_negate_eventuality (j : EventualityJudgment Entity Pred) :
@@ -111,7 +111,7 @@ theorem negate_negate_eventuality (j : EventualityJudgment Entity Pred) :
 /-- Double negation returns to the original evidence. -/
 theorem negate_negate_evidence (j : EventualityJudgment Entity Pred) :
     (j.negate.negate).evidence = j.evidence := by
-  apply Evidence.ext' <;> simp [negate]
+  apply BinaryEvidence.ext' <;> simp [negate]
 
 end EventualityJudgment
 
@@ -157,7 +157,7 @@ def toJudgment : StatementJudgment Entity Pred → EventualityJudgment Entity Pr
   | rexistNeg j =>
     { eventuality := j.eventuality.negate
       modality := .rexist
-      evidence := Evidence.mk j.evidence.neg j.evidence.pos }
+      evidence := BinaryEvidence.mk j.evidence.neg j.evidence.pos }
 
 /-- DTS derive preserves evidence. -/
 theorem dtsDerive_evidence (j : EventualityJudgment Entity Pred) (m : DeonticModality) :

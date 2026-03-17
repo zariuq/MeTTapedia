@@ -111,18 +111,18 @@ theorem partitionedPriorNB_strength_ge_product
     (likelihood : Scorer Goal Fact)
     (tP tL : ℝ≥0∞)
     (g : Goal) (f : Fact) :
-    Evidence.toStrength
+    BinaryEvidence.toStrength
       ((partitionedPriorNBPosterior (Goal := Goal) (Fact := Fact)
           bins localPrior weight likelihood tP tL).score g f)
       ≥
-    Evidence.toStrength
+    BinaryEvidence.toStrength
       ((normalizeScorer tP
           (partitionedPrior (Goal := Goal) (Fact := Fact) bins localPrior weight)).score g f)
       *
-    Evidence.toStrength ((normalizeScorer tL likelihood).score g f) := by
+    BinaryEvidence.toStrength ((normalizeScorer tL likelihood).score g f) := by
   unfold partitionedPriorNBPosterior update
   simpa using
-    (Evidence.toStrength_tensor_ge
+    (BinaryEvidence.toStrength_tensor_ge
       ((normalizeScorer tP
           (partitionedPrior (Goal := Goal) (Fact := Fact) bins localPrior weight)).score g f)
       ((normalizeScorer tL likelihood).score g f))
@@ -139,7 +139,7 @@ theorem partitionedPriorNB_strength_formula
       (((normalizeScorer tP
           (partitionedPrior (Goal := Goal) (Fact := Fact) bins localPrior weight)).score g f)
         * ((normalizeScorer tL likelihood).score g f)).total ≠ 0) :
-    Evidence.toStrength
+    BinaryEvidence.toStrength
       ((partitionedPriorNBPosterior (Goal := Goal) (Fact := Fact)
           bins localPrior weight likelihood tP tL).score g f)
       =
@@ -156,7 +156,7 @@ theorem partitionedPriorNB_strength_formula
         * (((normalizeScorer tL likelihood).score g f).neg))) := by
   unfold partitionedPriorNBPosterior update
   have hmain :
-      Evidence.toStrength
+      BinaryEvidence.toStrength
         (((normalizeScorer tP
             (partitionedPrior (Goal := Goal) (Fact := Fact) bins localPrior weight)).score g f)
           * ((normalizeScorer tL likelihood).score g f))
@@ -168,8 +168,8 @@ theorem partitionedPriorNB_strength_formula
       ((((normalizeScorer tP
             (partitionedPrior (Goal := Goal) (Fact := Fact) bins localPrior weight)).score g f)
             * ((normalizeScorer tL likelihood).score g f)).total) := by
-    simp [Evidence.toStrength, hTot]
-  simpa [Evidence.tensor_def, Evidence.total] using hmain
+    simp [BinaryEvidence.toStrength, hTot]
+  simpa [BinaryEvidence.tensor_def, BinaryEvidence.total] using hmain
 
 /-! ## 1C. Ranking optimality transfer (partitioned composed score) -/
 
@@ -184,13 +184,13 @@ theorem partitionedPriorNB_ranking_optimal
     (hPosterior :
       ∃ fPost : ℝ → ℝ, StrictMono fPost ∧
         (fun x =>
-          (Evidence.toStrength
+          (BinaryEvidence.toStrength
             ((partitionedPriorNBPosterior (Goal := Goal) (Fact := Fact)
               bins localPrior weight likelihood tP tL).score g x)).toReal)
           = fun x => fPost (η x)) :
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((partitionedPriorNBPosterior (Goal := Goal) (Fact := Fact)
             bins localPrior weight likelihood tP tL).score g x)).toReal) := by
   rcases hPosterior with ⟨fPost, hfPost, hsPost⟩

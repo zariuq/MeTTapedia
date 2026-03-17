@@ -10,7 +10,7 @@ independent sources.
 
 The Revision Rule is the PLN mechanism for combining two estimates of the
 same relationship. It is mathematically equivalent to the `hplus` operation
-on Evidence:
+on BinaryEvidence:
 
     D₁ ⊕ D₂ = (n⁺₁ + n⁺₂, n⁻₁ + n⁻₂)
 
@@ -37,30 +37,30 @@ namespace Mettapedia.Logic.PLNRevision
 
 open scoped ENNReal
 open Mettapedia.Logic.EvidenceQuantale
-open Evidence
+open BinaryEvidence
 
 /-! ## Revision as hplus -/
 
 /-- The PLN Revision Rule: combine independent evidence sources.
     This is an alias for `hplus` (parallel aggregation). -/
-noncomputable abbrev revision (e₁ e₂ : Evidence) : Evidence := e₁ + e₂
+noncomputable abbrev revision (e₁ e₂ : BinaryEvidence) : BinaryEvidence := e₁ + e₂
 
 /-! ## Basic Properties (inherited from hplus) -/
 
 /-- Revision is commutative -/
-theorem revision_comm (e₁ e₂ : Evidence) : revision e₁ e₂ = revision e₂ e₁ :=
+theorem revision_comm (e₁ e₂ : BinaryEvidence) : revision e₁ e₂ = revision e₂ e₁ :=
   hplus_comm e₁ e₂
 
 /-- Revision is associative -/
-theorem revision_assoc (e₁ e₂ e₃ : Evidence) :
+theorem revision_assoc (e₁ e₂ e₃ : BinaryEvidence) :
     revision (revision e₁ e₂) e₃ = revision e₁ (revision e₂ e₃) :=
   hplus_assoc e₁ e₂ e₃
 
 /-- Revision with zero evidence -/
-theorem revision_zero (e : Evidence) : revision e 0 = e := hplus_zero e
+theorem revision_zero (e : BinaryEvidence) : revision e 0 = e := hplus_zero e
 
 /-- Zero evidence revised with e -/
-theorem zero_revision (e : Evidence) : revision 0 e = e := zero_hplus e
+theorem zero_revision (e : BinaryEvidence) : revision 0 e = e := zero_hplus e
 
 /-! ## Strength as Weighted Average
 
@@ -75,7 +75,7 @@ is a weighted average of the input strengths.
 
     where n₁ = total₁, n₂ = total₂, s₁ = strength₁, s₂ = strength₂
 -/
-theorem revision_strength_weighted_avg (e₁ e₂ : Evidence)
+theorem revision_strength_weighted_avg (e₁ e₂ : BinaryEvidence)
     (h₁ : e₁.total ≠ 0) (h₂ : e₂.total ≠ 0) (h₁₂ : (e₁ + e₂).total ≠ 0)
     (h₁_top : e₁.total ≠ ⊤) (h₂_top : e₂.total ≠ ⊤) :
     toStrength (revision e₁ e₂) =
@@ -89,15 +89,15 @@ More evidence leads to higher confidence.
 -/
 
 /-- Revision increases total evidence -/
-theorem revision_total (e₁ e₂ : Evidence) :
+theorem revision_total (e₁ e₂ : BinaryEvidence) :
     (revision e₁ e₂).total = e₁.total + e₂.total := by
   simp only [revision, hplus_def, total]
   ring
 
-/-! ## Revision preserves Evidence structure -/
+/-! ## Revision preserves BinaryEvidence structure -/
 
 /-- Revision of finite evidence is finite -/
-theorem revision_total_ne_top (e₁ e₂ : Evidence)
+theorem revision_total_ne_top (e₁ e₂ : BinaryEvidence)
     (h₁ : e₁.total ≠ ⊤) (h₂ : e₂.total ≠ ⊤) :
     (revision e₁ e₂).total ≠ ⊤ := by
   rw [revision_total]
@@ -114,7 +114,7 @@ theorem revision_total_ne_top (e₁ e₂ : Evidence)
     - tensor: multiplies coordinates
     So multiplication distributes over addition coordinatewise.
 -/
-theorem tensor_distrib_revision (e₁ e₂ e₃ : Evidence) :
+theorem tensor_distrib_revision (e₁ e₂ e₃ : BinaryEvidence) :
     (revision e₁ e₂) * e₃ = revision (e₁ * e₃) (e₂ * e₃) := by
   simp only [revision, hplus_def, tensor_def]
   ext
@@ -122,7 +122,7 @@ theorem tensor_distrib_revision (e₁ e₂ e₃ : Evidence) :
   · simp only [add_mul]
 
 /-- Right distribution -/
-theorem tensor_distrib_revision_right (e₁ e₂ e₃ : Evidence) :
+theorem tensor_distrib_revision_right (e₁ e₂ e₃ : BinaryEvidence) :
     e₁ * (revision e₂ e₃) = revision (e₁ * e₂) (e₁ * e₃) := by
   rw [tensor_comm, tensor_distrib_revision, tensor_comm e₂, tensor_comm e₃]
 

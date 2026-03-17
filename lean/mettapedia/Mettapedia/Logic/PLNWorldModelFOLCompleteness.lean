@@ -58,9 +58,9 @@ def pointwiseImpliesOnTheory {L : Language.{u}}
 def singletonStrengthLEOnTheory {L : Language.{u}}
     (T : Theory L) (φ ψ : FOLQuery L) : Prop :=
   ∀ S : PointedFOL L, S ⊧* T →
-    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+    BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
         ({S} : FOLState L) φ ≤
-      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+      BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
         ({S} : FOLState L) ψ
 
 /-- Naming alias: singleton consequence on models of `T`. -/
@@ -72,21 +72,21 @@ abbrev singletonConsequenceOnTheory {L : Language.{u}}
 implication at that structure. -/
 theorem singletonStrengthLE_singleton_iff_imp {L : Language.{u}}
     (S : PointedFOL L) (φ ψ : FOLQuery L) :
-    (WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+    (BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
         ({S} : FOLState L) φ ≤
-      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+      BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
         ({S} : FOLState L) ψ) ↔
       (folSatisfies S φ → folSatisfies S ψ) := by
   constructor
   · intro hle hφ
     by_contra hψ
     have h1 :
-        WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+        BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
             ({S} : FOLState L) φ = 1 :=
       Mettapedia.Logic.PLNWorldModelFOL.queryStrength_singleton_of_satisfies
         (S := S) (φ := φ) hφ
     have h0 :
-        WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
+        BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L)
             ({S} : FOLState L) ψ = 0 :=
       Mettapedia.Logic.PLNWorldModelFOL.queryStrength_singleton_of_not_satisfies
         (S := S) (φ := ψ) hψ
@@ -231,7 +231,7 @@ private theorem folEvidence_total {L : Language.{u}}
         (Multiset.countP (fun S : PointedFOL L => folSatisfies S φ) W : ℝ≥0∞) +
           (Multiset.countP (fun S : PointedFOL L => ¬ folSatisfies S φ) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold folEvidence Evidence.total
+  unfold folEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 /-- Multiset WM strength inequality from model-restricted pointwise implication. -/
@@ -240,25 +240,25 @@ theorem queryStrength_le_of_pointwise_on {L : Language.{u}}
     (W : FOLState L) (φ ψ : FOLQuery L)
     (hW : stateModelsTheory T W)
     (himp : pointwiseImpliesOnTheory T φ ψ) :
-    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
-      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ := by
+    BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
+      BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ := by
   let pφ : PointedFOL L → Prop := fun S => folSatisfies S φ
   let pψ : PointedFOL L → Prop := fun S => folSatisfies S ψ
   letI : DecidablePred pφ := Classical.decPred pφ
   letI : DecidablePred pψ := Classical.decPred pψ
   have hφ :
-      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ =
+      BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pφ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (folEvidence W φ).total = 0 then 0
       else (folEvidence W φ).pos / (folEvidence W φ).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pφ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
     rw [folEvidence_total (W := W) (φ := φ)]
     simp [folEvidence, pφ]
   have hψ :
-      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ =
+      BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pψ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (folEvidence W ψ).total = 0 then 0
       else (folEvidence W ψ).pos / (folEvidence W ψ).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pψ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
@@ -287,8 +287,8 @@ theorem multiset_strength_le_of_consequence {L : Language.{u}}
     (W : FOLState L) (φ ψ : FOLQuery L)
     (hW : stateModelsTheory T W)
     (hcons : T ⊨[SmallStruc L] (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
-      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ := by
+    BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
+      BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ := by
   have himp : pointwiseImpliesOnTheory T φ ψ :=
     pointwiseImpliesOnTheory_of_consequence (T := T) (φ := φ) (ψ := ψ) hcons
   exact queryStrength_le_of_pointwise_on (T := T) (W := W) (φ := φ) (ψ := ψ) hW himp
@@ -303,8 +303,8 @@ theorem multiset_strength_le_of_consequence_categorical {L : Language.{u}}
     (W : FOLState L) (φ ψ : FOLQuery L)
     (hW : stateModelsTheory T W)
     (hcons : T ⊨[SmallStruc L] (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
-      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ :=
+    BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
+      BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ :=
   multiset_strength_le_of_consequence (T := T) (W := W) (φ := φ) (ψ := ψ) hW hcons
 
 /-- Rule packaging for Foundation semantic consequence into WM inequalities. -/
@@ -338,8 +338,8 @@ theorem multiset_strength_le_of_provable_imp {L : Language.{u}}
     (W : FOLState L) (φ ψ : FOLQuery L)
     (hW : stateModelsTheory T W)
     (hprov : T ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
-      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ := by
+    BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
+      BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ := by
   exact
     multiset_strength_le_of_consequence
       (T := T) (W := W) (φ := φ) (ψ := ψ) hW (smallSound! hprov)
@@ -351,8 +351,8 @@ theorem multiset_consequence_of_provable_imp {L : Language.{u}}
     (W : FOLState L) (φ ψ : FOLQuery L)
     (hW : stateModelsTheory T W)
     (hprov : T ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
-      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ :=
+    BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
+      BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ :=
   multiset_strength_le_of_provable_imp (T := T) (W := W) (φ := φ) (ψ := ψ) hW hprov
 
 /-- Categorical-aligned FOL provability wrapper:
@@ -365,8 +365,8 @@ theorem multiset_strength_le_of_provable_imp_categorical {L : Language.{u}}
     (W : FOLState L) (φ ψ : FOLQuery L)
     (hW : stateModelsTheory T W)
     (hprov : T ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
-      WorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ :=
+    BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W φ ≤
+      BinaryWorldModel.queryStrength (State := FOLState L) (Query := FOLQuery L) W ψ :=
   multiset_strength_le_of_provable_imp (T := T) (W := W) (φ := φ) (ψ := ψ) hW hprov
 
 /-- Rule packaging for provable implication into WM consequence rules. -/

@@ -81,7 +81,7 @@ This formalization builds on:
    - Universal semimeasure dominance
 
 3. **EvidenceBeta** (PLN = Beta-Bernoulli)
-   - Evidence-posterior correspondence
+   - BinaryEvidence-posterior correspondence
    - Exchangeable collapse
 
 ## References

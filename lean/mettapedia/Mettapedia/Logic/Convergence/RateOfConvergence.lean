@@ -3,7 +3,7 @@ import Mettapedia.Logic.Convergence.ConfidenceConvergence
 import Mettapedia.Logic.EvidenceBeta
 
 /-!
-# Rate of Convergence for PLN Evidence
+# Rate of Convergence for PLN BinaryEvidence
 
 This file establishes quantitative convergence rates for PLN strength and confidence,
 connecting the abstract convergence results to explicit bounds.

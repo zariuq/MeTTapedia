@@ -22,10 +22,10 @@ noncomputable instance : EvidenceType (KRelation σ (Which (Fin n))) where
   toAddCommMonoid := inferInstance
 
 /-- Identity evidence extraction for `Which`-valued K-relations. -/
-noncomputable instance : GenericWorldModel
+noncomputable instance : AdditiveWorldModel
     (KRelation σ (Which (Fin n))) (GroundAtom σ) (Which (Fin n)) where
-  evidence := fun I q => I q
-  evidence_add := by
+  extract := fun I q => I q
+  extract_add := by
     intro I₁ I₂ q
     simp [Pi.add_apply]
 
@@ -71,7 +71,7 @@ theorem exactInverse_supported_outside_zero_of_whichSupport
     {S : Scope} {Δ : KRelation σ (Which (Fin n))}
     (hsupp : ∀ q, whichSupport (σ := σ) (n := n) Δ q ⊆ F.scopeFootprint S) :
     ∀ q, ¬ F.inScope S q →
-      GenericWorldModel.evidence
+      AdditiveWorldModel.extract
         (State := KRelation σ (Which (Fin n)))
         (Query := GroundAtom σ) (Ev := Which (Fin n)) Δ q = 0 := by
   have hsupp' : ∀ q, F.support Δ q ⊆ F.scopeFootprint S := by
@@ -151,7 +151,7 @@ theorem whichEmptyScope_revision_zero_of_supported
     (hsupp :
       ∀ q, whichSupportTagged (σ := σ) (n := n) Δ q ⊆ (∅ : Finset (Option (Fin n)))) :
     ∀ q,
-      GenericWorldModel.evidence
+      AdditiveWorldModel.extract
         (State := KRelation σ (Which (Fin n)))
         (Query := GroundAtom σ) (Ev := Which (Fin n)) Δ q = 0 := by
   intro q

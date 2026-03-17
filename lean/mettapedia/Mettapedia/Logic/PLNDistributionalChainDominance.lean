@@ -83,10 +83,10 @@ def impliedVariance (step : ScalarChainStep) : ℝ :=
 end ScalarChainStep
 
 /-- A single deduction step in distributional inference mode (PLN book Ch. 6):
-carry full Evidence (Beta posteriors) rather than collapsing to scalar STVs. -/
+carry full BinaryEvidence (Beta posteriors) rather than collapsing to scalar STVs. -/
 structure DistributionalChainStep where
-  evidence_AB : Evidence
-  evidence_BC : Evidence
+  evidence_AB : BinaryEvidence
+  evidence_BC : BinaryEvidence
   sB : ℝ
   sC : ℝ
   sB_pos : 0 < sB
@@ -111,7 +111,7 @@ def exactVariance (step : DistributionalChainStep) : ℝ :=
     step.evidence_AB.variance step.evidence_BC.variance
     step.sB step.sC step.sB_ne_one
 
-/-- Project to scalar by collapsing Evidence to STV. -/
+/-- Project to scalar by collapsing BinaryEvidence to STV. -/
 def toScalar (step : DistributionalChainStep) : ScalarChainStep where
   stv_AB := step.evidence_AB.toBeta.toSTV
   stv_BC := step.evidence_BC.toBeta.toSTV
@@ -130,10 +130,10 @@ def varianceApproximationError (step : DistributionalChainStep) : ℝ :=
 
 /-! ## Phase 2: One-Step Theorems -/
 
-/-- Evidence strength equals the projected STV strength. -/
-private theorem evidence_strength_eq_toSTV (e : Evidence) :
+/-- BinaryEvidence strength equals the projected STV strength. -/
+private theorem evidence_strength_eq_toSTV (e : BinaryEvidence) :
     e.strength = e.toBeta.toSTV.strength := by
-  simp [Evidence.strength, Evidence.toBeta, Evidence.total,
+  simp [BinaryEvidence.strength, BinaryEvidence.toBeta, BinaryEvidence.total,
         BetaParams.toSTV, BetaParams.expectedValue, BetaParams.n]
 
 /-- Both methods produce the same output strength because they use the
@@ -146,7 +146,7 @@ theorem same_strength_one_step (step : DistributionalChainStep) :
       evidence_strength_eq_toSTV step.evidence_BC]
 
 /-- Symmetric evidence (2,2) as a reusable test fixture. -/
-def symmetricEvidence : Evidence where
+def symmetricEvidence : BinaryEvidence where
   positive := 2
   negative := 2
   positive_pos := by norm_num
@@ -176,8 +176,8 @@ theorem heuristic_variance_ne_exact :
              trueFullDeductionVariance, plnDeductionCoeffs,
              varianceAffineProductIndep, varianceProductIndep,
              BetaParams.toSTV, BetaParams.expectedValue, BetaParams.n,
-             BetaParams.variance, Evidence.toBeta, Evidence.strength,
-             Evidence.variance, Evidence.total]
+             BetaParams.variance, BinaryEvidence.toBeta, BinaryEvidence.strength,
+             BinaryEvidence.variance, BinaryEvidence.total]
   norm_num
 
 /-- The heuristic can OVERESTIMATE variance (it is not tight). -/
@@ -192,8 +192,8 @@ theorem heuristic_can_overestimate :
              trueFullDeductionVariance, plnDeductionCoeffs,
              varianceAffineProductIndep, varianceProductIndep,
              BetaParams.toSTV, BetaParams.expectedValue, BetaParams.n,
-             BetaParams.variance, Evidence.toBeta, Evidence.strength,
-             Evidence.variance, Evidence.total]
+             BetaParams.variance, BinaryEvidence.toBeta, BinaryEvidence.strength,
+             BinaryEvidence.variance, BinaryEvidence.total]
   norm_num
 
 /-- A step with large sB (close to 1), which amplifies the deduction coefficients
@@ -226,8 +226,8 @@ theorem heuristic_not_conservative :
              trueFullDeductionVariance, plnDeductionCoeffs,
              varianceAffineProductIndep, varianceProductIndep,
              BetaParams.toSTV, BetaParams.expectedValue, BetaParams.n,
-             BetaParams.variance, Evidence.toBeta, Evidence.strength,
-             Evidence.variance, Evidence.total]
+             BetaParams.variance, BinaryEvidence.toBeta, BinaryEvidence.strength,
+             BinaryEvidence.variance, BinaryEvidence.total]
   norm_num
 
 /-- There exist steps where the heuristic approximation error is nonzero. -/
@@ -289,8 +289,8 @@ theorem distributional_dominates_scalar :
                trueFullDeductionVariance, plnDeductionCoeffs,
                varianceAffineProductIndep, varianceProductIndep,
                BetaParams.toSTV, BetaParams.expectedValue, BetaParams.n,
-               BetaParams.variance, Evidence.toBeta, Evidence.strength,
-               Evidence.variance, Evidence.total]
+               BetaParams.variance, BinaryEvidence.toBeta, BinaryEvidence.strength,
+               BinaryEvidence.variance, BinaryEvidence.total]
     norm_num
 
 /-! ## Phase 4: Heuristic Impossibility -/

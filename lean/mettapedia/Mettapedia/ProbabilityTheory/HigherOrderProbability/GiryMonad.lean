@@ -269,7 +269,7 @@ higher-order probability + functions. Phase 4 will formalize this.
 - Exchangeability = invariance under monad operations
 
 **PLN** (`PLNKyburgReduction.lean`):
-- Evidence aggregation = monadic composition
+- BinaryEvidence aggregation = monadic composition
 - Strength/confidence = derived from monad structure
 
 ### Next Steps

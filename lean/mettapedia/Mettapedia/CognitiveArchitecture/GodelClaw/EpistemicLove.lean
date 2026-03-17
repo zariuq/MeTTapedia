@@ -39,7 +39,7 @@ explodes classically when contradictory desires are known.
 
 ## PLN resolves the explosion
 
-PLN's Evidence type `⟨n⁺, n⁻⟩` is **naturally paraconsistent**:
+PLN's BinaryEvidence type `⟨n⁺, n⁻⟩` is **naturally paraconsistent**:
 - Both φ and ¬φ can have positive evidence simultaneously
 - Negation is evidence-swap `¬⟨n⁺, n⁻⟩ = ⟨n⁻, n⁺⟩`, NOT classical negation
 - Desires become graded: "desire φ with evidence ⟨10, 3⟩" is compatible
@@ -55,7 +55,7 @@ namespace Mettapedia.CognitiveArchitecture.GodelClaw.EpistemicLove
 
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.PLNNegation
-open Evidence
+open BinaryEvidence
 
 /-! ## Core definitions (mirroring FOET)
 
@@ -117,12 +117,12 @@ In classical logic, knowing contradictory desires leads to explosion
 (proved in FOET). But PLN's evidence-based desires are graded, so
 contradictions coexist peacefully. -/
 
-/-- Evidence-graded desire: how strongly an agent desires φ.
+/-- BinaryEvidence-graded desire: how strongly an agent desires φ.
 In PLN, this replaces the boolean `desires a φ w : Prop` with a
-graded `Evidence` value. -/
+graded `BinaryEvidence` value. -/
 structure GradedDesire where
   /-- Positive evidence for the desire -/
-  evidence : Evidence
+  evidence : BinaryEvidence
 
 /-- Two desires can be contradictory (one for φ, one for ¬φ) and both
 have positive evidence. This is the key paraconsistency property. -/
@@ -160,7 +160,7 @@ desires without explosion, because "desiring the fulfillment of φ" is
 weighted by evidence, not boolean.
 
 We don't formalize the full graded version of EpistemicUniversalLove here
-(that would require lifting `LoveSig.desires` to `Evidence`-valued).
+(that would require lifting `LoveSig.desires` to `BinaryEvidence`-valued).
 We just note: the classical version is the abstract ideal (`Core.lean`'s axiom),
 and PLN provides the computational substrate where it becomes tractable. -/
 

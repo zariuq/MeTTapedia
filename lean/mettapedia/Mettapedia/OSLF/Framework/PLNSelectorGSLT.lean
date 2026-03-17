@@ -73,7 +73,7 @@ end
 
 /-- Strength semantics used for rewrite soundness. -/
 noncomputable def strengthAt (e : PLNSelectorExpr Goal Fact) (g : Goal) (f : Fact) : ℝ≥0∞ :=
-  Evidence.toStrength ((eval e).score g f)
+  BinaryEvidence.toStrength ((eval e).score g f)
 
 @[simp] theorem eval_update (p l : PLNSelectorExpr Goal Fact) :
     eval (.update p l) =
@@ -109,11 +109,11 @@ theorem evalFamily_map_update
   | nil =>
       apply Scorer.ext
       intro g f
-      apply Evidence.ext'
+      apply BinaryEvidence.ext'
       · simp [evalFamily, Mettapedia.Logic.PremiseSelection.update,
-          zeroScorer, Evidence.tensor_def, Evidence.zero]
+          zeroScorer, BinaryEvidence.tensor_def, BinaryEvidence.zero]
       · simp [evalFamily, Mettapedia.Logic.PremiseSelection.update,
-          zeroScorer, Evidence.tensor_def, Evidence.zero]
+          zeroScorer, BinaryEvidence.tensor_def, BinaryEvidence.zero]
   | cons x xs ih =>
       calc
         evalFamily ((x :: xs).map (fun e => PLNSelectorExpr.update e l))
@@ -167,13 +167,13 @@ theorem reduces_sound_strength {e e' : PLNSelectorExpr Goal Fact}
         simpa [eval] using
           (externalBayesianity_hplus_tensor
             (s₁ := eval p) (s₂ := eval q) (likelihood := eval l)).symm
-      simpa [strengthAt] using congrArg (fun s : Scorer Goal Fact => Evidence.toStrength (s.score g f)) hEq
+      simpa [strengthAt] using congrArg (fun s : Scorer Goal Fact => BinaryEvidence.toStrength (s.score g f)) hEq
   | extBayesFamily xs l =>
       have hEq :
           eval (.update (.fuseFamily xs) l) =
             eval (.fuseFamily (xs.map (fun e => PLNSelectorExpr.update e l))) := by
         simpa [eval] using (evalFamily_map_update (xs := xs) (l := l)).symm
-      simpa [strengthAt] using congrArg (fun s : Scorer Goal Fact => Evidence.toStrength (s.score g f)) hEq
+      simpa [strengthAt] using congrArg (fun s : Scorer Goal Fact => BinaryEvidence.toStrength (s.score g f)) hEq
   | normalizeStrength t ht htop =>
       simpa [strengthAt, eval] using
         (normalizeScorer_toStrength

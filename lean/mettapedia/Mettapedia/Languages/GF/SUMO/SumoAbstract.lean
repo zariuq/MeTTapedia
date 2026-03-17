@@ -473,7 +473,7 @@ def sumoIndividualConstants : List FunctionSig :=
   , ⟨"sumo_ind_MorallyBad", SumoCategory.Ind "MoralValueAttribute"⟩
   , ⟨"sumo_ind_MorallyPermissible", SumoCategory.Ind "MoralValueAttribute"⟩
     -- Pain: reclassified from Process to EmotionalState (Decision 1, RESOLVED)
-    -- Evidence: IASP 2020, similarity-class 39:1, checkLang proven inconsistent
+    -- BinaryEvidence: IASP 2020, similarity-class 39:1, checkLang proven inconsistent
   , ⟨"sumo_ind_Pain", SumoCategory.Ind "Attribute"⟩     -- REPAIRED: EmotionalState ⊂ Attribute
   , ⟨"sumo_ind_Pleasure", SumoCategory.Ind "Attribute"⟩ -- EmotionalState ⊂ Attribute
     -- Schwartz values

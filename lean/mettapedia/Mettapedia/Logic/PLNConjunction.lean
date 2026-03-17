@@ -34,7 +34,7 @@ where p_A = a/n, p_B = b/n, and t = p_{A∧B}.
 When A and B are independent, the formula simplifies to:
 $$P(A ∧ B) = P(A) × P(B)$$
 
-In Evidence terms, under independence, tensor product gives conjunction:
+In BinaryEvidence terms, under independence, tensor product gives conjunction:
 $$(n_A^+, n_A^-) ⊗ (n_B^+, n_B^-) = (n_A^+ × n_B^+, n_A^- × n_B^-)$$
 
 ## References
@@ -47,7 +47,7 @@ namespace Mettapedia.Logic.PLNConjunction
 
 open scoped ENNReal
 open Mettapedia.Logic.EvidenceQuantale
-open Evidence
+open BinaryEvidence
 
 /-! ## Discrete Hypergeometric Distribution
 
@@ -198,7 +198,7 @@ theorem conjunction_upper_bound (n a b : ℕ) (_ha : a ≤ n) (_hb : b ≤ n) :
 /-! ## Independence Special Case
 
 When A and B are independent, P(A ∧ B) = P(A) × P(B).
-In Evidence terms, conjunction = tensor product.
+In BinaryEvidence terms, conjunction = tensor product.
 -/
 
 /-- Under independence, conjunction strength is product of strengths.
@@ -208,7 +208,7 @@ In Evidence terms, conjunction = tensor product.
 
     This corresponds to the tensor product of evidence.
 -/
-theorem conjunction_independent_strength (e_A e_B : Evidence)
+theorem conjunction_independent_strength (e_A e_B : BinaryEvidence)
     (_h_A : e_A.total ≠ 0) (_h_B : e_B.total ≠ 0)
     (_h_AB : (e_A * e_B).total ≠ 0)
     (_h_A_ne_top : e_A.total ≠ ⊤) (_h_B_ne_top : e_B.total ≠ ⊤) :
@@ -218,12 +218,12 @@ theorem conjunction_independent_strength (e_A e_B : Evidence)
 /-- Under independence, tensor product gives conjunction evidence.
 
     This is the key theorem: when A and B are independent,
-    the Evidence for A ∧ B is obtained by tensor (coordinatewise multiplication):
+    the BinaryEvidence for A ∧ B is obtained by tensor (coordinatewise multiplication):
 
-    Evidence(A ∧ B) = Evidence(A) ⊗ Evidence(B) = (n_A^+ × n_B^+, n_A^- × n_B^-)
+    BinaryEvidence(A ∧ B) = BinaryEvidence(A) ⊗ BinaryEvidence(B) = (n_A^+ × n_B^+, n_A^- × n_B^-)
 -/
-theorem conjunction_independent_evidence (e_A e_B : Evidence) :
-    ∃ e_AB : Evidence, e_AB = e_A * e_B ∧
+theorem conjunction_independent_evidence (e_A e_B : BinaryEvidence) :
+    ∃ e_AB : BinaryEvidence, e_AB = e_A * e_B ∧
       e_AB.pos = e_A.pos * e_B.pos ∧
       e_AB.neg = e_A.neg * e_B.neg := by
   use e_A * e_B
@@ -346,9 +346,9 @@ theorem hypergeometric_to_binomial_limit :
   intro b k _hk p _hp0 _hp1
   exact ⟨_, rfl⟩
 
-/-! ## Evidence Combination for Conjunction
+/-! ## BinaryEvidence Combination for Conjunction
 
-How to combine Evidence(A) and Evidence(B) to get Evidence(A ∧ B).
+How to combine BinaryEvidence(A) and BinaryEvidence(B) to get BinaryEvidence(A ∧ B).
 -/
 
 /-- The conjunction evidence under independence assumption.
@@ -359,35 +359,35 @@ How to combine Evidence(A) and Evidence(B) to get Evidence(A ∧ B).
 
     This is the tensor product, which represents sequential/independent composition.
 -/
-noncomputable def conjunctionIndependent (e_A e_B : Evidence) : Evidence := e_A * e_B
+noncomputable def conjunctionIndependent (e_A e_B : BinaryEvidence) : BinaryEvidence := e_A * e_B
 
 /-- Conjunction evidence is commutative (order of premises doesn't matter) -/
-theorem conjunctionIndependent_comm (e_A e_B : Evidence) :
+theorem conjunctionIndependent_comm (e_A e_B : BinaryEvidence) :
     conjunctionIndependent e_A e_B = conjunctionIndependent e_B e_A :=
   tensor_comm e_A e_B
 
 /-- Conjunction evidence is associative (A ∧ B) ∧ C = A ∧ (B ∧ C) -/
-theorem conjunctionIndependent_assoc (e_A e_B e_C : Evidence) :
+theorem conjunctionIndependent_assoc (e_A e_B e_C : BinaryEvidence) :
     conjunctionIndependent (conjunctionIndependent e_A e_B) e_C =
     conjunctionIndependent e_A (conjunctionIndependent e_B e_C) :=
   tensor_assoc e_A e_B e_C
 
 /-- Conjunction with unit evidence (everything true) returns original -/
-theorem conjunctionIndependent_one (e : Evidence) :
+theorem conjunctionIndependent_one (e : BinaryEvidence) :
     conjunctionIndependent e one = e := tensor_one e
 
 /-! ## Non-Independence: Full Formula
 
 When A and B are NOT independent, we need the full hypergeometric treatment.
-The Evidence for A ∧ B depends on their correlation structure.
+The BinaryEvidence for A ∧ B depends on their correlation structure.
 -/
 
-/-- For correlated (non-independent) A and B, the conjunction Evidence
+/-- For correlated (non-independent) A and B, the conjunction BinaryEvidence
     requires additional correlation information.
 
     Given:
-    - e_A: Evidence for A
-    - e_B: Evidence for B
+    - e_A: BinaryEvidence for A
+    - e_B: BinaryEvidence for B
     - ρ: A correlation parameter (0 = independent, positive = positive correlation)
 
     The conjunction evidence adjusts the independent case by the correlation.
@@ -396,8 +396,8 @@ The Evidence for A ∧ B depends on their correlation structure.
     which involves complex integrals. We provide the structure here.
 -/
 structure CorrelatedConjunctionInput where
-  e_A : Evidence
-  e_B : Evidence
+  e_A : BinaryEvidence
+  e_B : BinaryEvidence
   correlation : ℝ≥0∞  -- ρ parameter (simplified as non-negative)
 
 /-! ## Connection to PLN Book Formulas
@@ -413,7 +413,7 @@ strengths and confidences directly. Here we show the connection.
 
     The strength formula follows directly from tensor product.
 -/
-theorem pln_book_conjunction_strength (e_A e_B : Evidence)
+theorem pln_book_conjunction_strength (e_A e_B : BinaryEvidence)
     (_h_A : e_A.total ≠ 0) (_h_B : e_B.total ≠ 0)
     (_h_A_top : e_A.total ≠ ⊤) (_h_B_top : e_B.total ≠ ⊤) :
     -- Under independence, s_{A∧B} ≥ s_A × s_B
@@ -641,34 +641,34 @@ theorem conjunctionConditional_reduces_to_independent
   unfold conjunctionConditional
   rfl
 
-/-! ### Relation to Evidence
+/-! ### Relation to BinaryEvidence
 
-For Evidence-based conjunction with causal dependency, we need to:
-1. Extract strength s_A from Evidence(A)
-2. Extract strength s_{A→B} from Evidence(A→B)
+For BinaryEvidence-based conjunction with causal dependency, we need to:
+1. Extract strength s_A from BinaryEvidence(A)
+2. Extract strength s_{A→B} from BinaryEvidence(A→B)
 3. Apply the conditional formula
-4. Convert back to Evidence form
+4. Convert back to BinaryEvidence form
 
-This requires understanding the Evidence quantale structure for implications,
+This requires understanding the BinaryEvidence quantale structure for implications,
 which is developed in PLNDeduction.lean.
 -/
 
-/-- Conditional conjunction on Evidence (requires extracting strengths).
+/-- Conditional conjunction on BinaryEvidence (requires extracting strengths).
 
-    Given Evidence(A) and Evidence(A→B), compute Evidence(A ∧ B).
+    Given BinaryEvidence(A) and BinaryEvidence(A→B), compute BinaryEvidence(A ∧ B).
 
     Note: This is a simplified version. Full treatment requires:
-    - Evidence for implications (developed in PLNDeduction.lean)
+    - BinaryEvidence for implications (developed in PLNDeduction.lean)
     - Confidence propagation formula
     - Handling of dependencies in the evidence counts
 -/
 noncomputable def conjunctionConditionalEvidence
-    (e_A : Evidence) (s_AB : ℝ≥0∞) : ℝ≥0∞ :=
+    (e_A : BinaryEvidence) (s_AB : ℝ≥0∞) : ℝ≥0∞ :=
   toStrength e_A * s_AB
 
 /-- The conditional evidence formula matches the strength formula -/
 theorem conjunctionConditionalEvidence_eq_product
-    (e_A : Evidence) (s_AB : ℝ≥0∞) :
+    (e_A : BinaryEvidence) (s_AB : ℝ≥0∞) :
     conjunctionConditionalEvidence e_A s_AB = toStrength e_A * s_AB := rfl
 
 /-! ## Summary
@@ -676,7 +676,7 @@ theorem conjunctionConditionalEvidence_eq_product
 The PLN Conjunction Introduction rule has three main cases:
 
 1. **Independent A and B** (2-premise): Use tensor product
-   - Evidence(A ∧ B) = Evidence(A) ⊗ Evidence(B)
+   - BinaryEvidence(A ∧ B) = BinaryEvidence(A) ⊗ BinaryEvidence(B)
    - Strength: s_{A∧B} ≥ s_A × s_B (equality for concentrated distributions)
    - Use when: A and B are causally unrelated (e.g., coin flips)
 
@@ -687,11 +687,11 @@ The PLN Conjunction Introduction rule has three main cases:
 
 3. **Conditional A and B** (3-premise): Use causal dependency
    - Formula: s_{A∧B} = s_A × s_{A→B}
-   - Requires Evidence(A→B) giving P(B|A)
+   - Requires BinaryEvidence(A→B) giving P(B|A)
    - Use when: We have explicit causal/dependency information
    - **Most accurate when such evidence is available**
 
-The key insight is that the Evidence quantale structure (tensor product)
+The key insight is that the BinaryEvidence quantale structure (tensor product)
 naturally captures the independent case, while the non-independent case
 requires either full distributional treatment OR explicit causal information.
 

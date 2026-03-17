@@ -3,14 +3,14 @@ import Mettapedia.Logic.PLNWMOSLFBridge
 import Mettapedia.Logic.PLNBugAnalysis
 
 /-!
-# Error-Magnification Grounding (WM ↔ OSLF ↔ Evidence)
+# Error-Magnification Grounding (WM ↔ OSLF ↔ BinaryEvidence)
 
 Semantic grounding for the Chapter-8 error-magnification theme, without chapter
 labels in module names.
 
 This module connects three layers:
 
-1. Evidence-level confidence view (`Evidence.toConfidence`) on WM queries.
+1. BinaryEvidence-level confidence view (`BinaryEvidence.toConfidence`) on WM queries.
 2. WM rewrite/query-equivalence transport for confidence thresholds.
 3. OSLF atom semantics for confidence-threshold judgments.
 
@@ -32,11 +32,11 @@ open scoped ENNReal
 section Untyped
 
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- Confidence view for a WM query, derived from evidence totals. -/
 noncomputable def queryConfidence (κ : ℝ≥0∞) (W : State) (q : Query) : ℝ :=
-  (WorldModel.queryConfidence (State := State) (Query := Query) κ W q).toReal
+  (BinaryWorldModel.queryConfidence (State := State) (Query := Query) κ W q).toReal
 
 /-- Query equivalence transports the confidence view. -/
 theorem WMQueryEq.to_queryConfidence
@@ -73,12 +73,12 @@ theorem wmRewriteRule_confidence_atom_eq_derive
     (a : String) (p : Pattern)
     (hEnc : queryOfAtom a p = r.conclusion) :
     queryConfidence (State := State) (Query := Query) κ W (queryOfAtom a p) =
-      (Evidence.toConfidence κ (r.derive W)).toReal := by
+      (BinaryEvidence.toConfidence κ (r.derive W)).toReal := by
   rw [hEnc]
   have hEq :
-      WorldModel.queryConfidence (State := State) (Query := Query) κ W r.conclusion =
-        Evidence.toConfidence κ (r.derive W) := by
-    simp [WorldModel.queryConfidence, r.sound hSide W]
+      BinaryWorldModel.queryConfidence (State := State) (Query := Query) κ W r.conclusion =
+        BinaryEvidence.toConfidence κ (r.derive W) := by
+    simp [BinaryWorldModel.queryConfidence, r.sound hSide W]
   exact congrArg ENNReal.toReal hEq
 
 /-- Confidence-threshold consequence for an atom from a WM rewrite rule. -/
@@ -90,7 +90,7 @@ theorem wmRewriteRule_threshold_atom_confidence
     (queryOfAtom : String → Pattern → Query)
     (a : String) (p : Pattern)
     (hEnc : queryOfAtom a p = r.conclusion)
-    (hTau : tau ≤ (Evidence.toConfidence κ (r.derive W)).toReal) :
+    (hTau : tau ≤ (BinaryEvidence.toConfidence κ (r.derive W)).toReal) :
     sem R (thresholdAtomSemOfWMQConfidence (State := State) (Query := Query)
       κ W tau queryOfAtom) (.atom a) p := by
   show tau ≤ queryConfidence (State := State) (Query := Query) κ W (queryOfAtom a p)
@@ -190,12 +190,12 @@ theorem wmRewriteRuleSigma_confidence_atom_eq_derive
     (a : String) (p : Pattern)
     (hEnc : queryOfAtom a p = r.conclusion) :
     queryConfidenceSigma (State := State) (Srt := Srt) (Query := Query) κ W (queryOfAtom a p) =
-      (Evidence.toConfidence κ (r.derive W)).toReal := by
+      (BinaryEvidence.toConfidence κ (r.derive W)).toReal := by
   rw [hEnc]
   have hEq :
       WorldModelSigma.queryConfidence (State := State) (Srt := Srt) (Query := Query) κ W
           r.conclusion =
-        Evidence.toConfidence κ (r.derive W) := by
+        BinaryEvidence.toConfidence κ (r.derive W) := by
     simp [WorldModelSigma.queryConfidence, r.sound hSide W]
   exact congrArg ENNReal.toReal hEq
 
@@ -208,7 +208,7 @@ theorem wmRewriteRuleSigma_threshold_atom_confidence
     (queryOfAtom : String → Pattern → Sigma Query)
     (a : String) (p : Pattern)
     (hEnc : queryOfAtom a p = r.conclusion)
-    (hTau : tau ≤ (Evidence.toConfidence κ (r.derive W)).toReal) :
+    (hTau : tau ≤ (BinaryEvidence.toConfidence κ (r.derive W)).toReal) :
     sem R (thresholdAtomSemOfWMQSigmaConfidence (State := State) (Srt := Srt) (Query := Query)
       κ W tau queryOfAtom) (.atom a) p := by
   show tau ≤ queryConfidenceSigma (State := State) (Srt := Srt) (Query := Query) κ W (queryOfAtom a p)
@@ -228,7 +228,7 @@ theorem rewrite_then_queryEq_threshold_atom_confidence_sigma
     (hEq : WorldModelSigma.WMQueryEqSigma
       (State := State) (Srt := Srt) (Query := Query)
       (queryOfAtom₁ a p) (queryOfAtom₂ a p))
-    (hTau : tau ≤ (Evidence.toConfidence κ (r.derive W)).toReal) :
+    (hTau : tau ≤ (BinaryEvidence.toConfidence κ (r.derive W)).toReal) :
     sem R (thresholdAtomSemOfWMQSigmaConfidence
       (State := State) (Srt := Srt) (Query := Query)
       κ W tau queryOfAtom₂) (.atom a) p := by

@@ -6,7 +6,7 @@ import Mettapedia.OSLF.Framework.WMCalculusContextClosure
 # WM Calculus ↔ OSLF Bridge
 
 This module connects the OSLF-derived modal operators (◇, □, ◇ ⊣ □) back to
-the WorldModel typeclass properties from the PLN book.
+the BinaryWorldModel typeclass properties from the PLN book.
 
 ## Architecture — Two Layers
 
@@ -18,7 +18,7 @@ by composing `langDiamond_spec` with existing step lemmas from
 **Layer 2 (Semantic):** A `WMTerm` inductive with a relational encoding
 `WMTermEncodes : Pattern → WMTerm → Prop` (following `PLNSelectorLanguageDef`'s
 `ExprEncodes` pattern) plus soundness theorems: reductions on encoded terms
-correspond to WorldModel axiom applications.
+correspond to BinaryWorldModel axiom applications.
 
 ## Key Insight
 
@@ -32,7 +32,7 @@ backward safety (□) properties for free.
 - `TypeSynthesis.lean` — `langDiamond`, `langBox`, `langGalois`, `langDiamond_spec`, `langBox_spec`
 - `WMCalculusLanguageDef.lean` — pattern vocabulary, step lemmas
 - `WMCalculusGSLTVertex.lean` — vertex OSLF, transport
-- `PLNWorldModel.lean` — `WorldModel` class, `evidence_add`
+- `PLNWorldModel.lean` — `BinaryWorldModel` class, `evidence_add`
 - `PLNSelectorLanguageDef.lean` — `ExprEncodes` (relational encoding pattern)
 -/
 
@@ -144,7 +144,7 @@ theorem wmFullCalc_galois (v : WMFullVertex) :
       (langBox (wmFullVertexLanguageDef v)) :=
   langGalois (wmFullVertexLanguageDef v)
 
-/-- Evidence decomposability ↔ predecessor safety:
+/-- BinaryEvidence decomposability ↔ predecessor safety:
     "Every reduct of a combined-form pattern satisfies ψ"
     iff
     "Every combined-form pattern has all predecessors satisfying ψ".
@@ -170,18 +170,18 @@ theorem wmCalc_associativity_safety (v : WMExtVertex) (ψ : Pattern → Prop) :
 
 /-! ## Section 4: WMTerm Inductive (Layer 2)
 
-An abstract syntax for WorldModel terms, indexed by sort. Sort-correctness
+An abstract syntax for BinaryWorldModel terms, indexed by sort. Sort-correctness
 is enforced by the type index: `state`/`revise` produce `.state`, `query`
 produces `.query`, `extract`/`combine`/`zero` produce `.evidence`. -/
 
-/-- The three sorts of the WorldModel calculus. -/
+/-- The three sorts of the BinaryWorldModel calculus. -/
 inductive WMSort where
   | state    -- posterior states W
   | query    -- queries q
   | evidence -- evidence values e
   deriving DecidableEq, Repr
 
-/-- Abstract syntax for WorldModel terms, indexed by sort.
+/-- Abstract syntax for BinaryWorldModel terms, indexed by sort.
     Sort-correctness is enforced by the type index. -/
 inductive WMTerm : WMSort → Type where
   | state   (name : String)                                    : WMTerm .state
@@ -198,7 +198,7 @@ Following PLNSelectorLanguageDef's `ExprEncodes` pattern: a relational encoding
 `WMTermEncodes : Pattern → WMTerm s → Prop` says "Pattern p represents WMTerm t"
 without requiring a computable mapping from abstract states to patterns. -/
 
-/-- Relational encoding: "Pattern `p` represents WorldModel term `t`."
+/-- Relational encoding: "Pattern `p` represents BinaryWorldModel term `t`."
     Inductive constructors mirror the WMTerm structure. -/
 inductive WMTermEncodes : Pattern → WMTerm s → Prop where
   | state (name : String) :
@@ -220,10 +220,10 @@ inductive WMTermEncodes : Pattern → WMTerm s → Prop where
 /-! ## Section 6: Encoding Soundness (Layer 2)
 
 Soundness theorems: reductions on encoded terms correspond to
-WorldModel axiom applications.  Each theorem witnesses a LanguageDef
+BinaryWorldModel axiom applications.  Each theorem witnesses a LanguageDef
 reduction step together with a WMTermEncodes proof for the result. -/
 
-/-- Evidence-add soundness: if `pw₁` encodes `tw₁`, `pw₂` encodes `tw₂`, and
+/-- BinaryEvidence-add soundness: if `pw₁` encodes `tw₁`, `pw₂` encodes `tw₂`, and
     `pq` encodes `tq`, then the LanguageDef reduction
     `Extract(Revise(pw₁,pw₂), pq) ↦ Combine(Extract(pw₁,pq), Extract(pw₂,pq))`
     fires and the result encodes `combine(extract(tw₁,tq), extract(tw₂,tq))`. -/
@@ -268,7 +268,7 @@ theorem wm_revision_assoc_sound (v : WMExtVertex)
 /-! ## Section 7: Bridge Composition
 
 Composing Layer 1 (◇ theorems) with Layer 2 (encoding soundness) yields the
-full bridge: WorldModel axioms *mean* something about the OSLF-derived ◇/□. -/
+full bridge: BinaryWorldModel axioms *mean* something about the OSLF-derived ◇/□. -/
 
 /-- The encoding of `extract(revise(tw₁,tw₂), tq)` satisfies ◇(isCombined). -/
 theorem diamond_isCombined_of_encoded (v : WMExtVertex)
@@ -450,14 +450,14 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
 
-/-- Evidence-add fires in the cong-extended calculus (lifting raw step). -/
+/-- BinaryEvidence-add fires in the cong-extended calculus (lifting raw step). -/
 theorem wmCongLangReduces_evidenceAdd (v : WMExtVertex) (pw₁ pw₂ pq : Pattern) :
     langReduces (wmExtVertexLanguageDefWithCong v)
       (pExtract (pRevise pw₁ pw₂) pq)
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) :=
   congReduces_of_rawReduces_ext v _ _ (wmLangReduces_evidenceAdd v pw₁ pw₂ pq)
 
-/-- Evidence-add produces a reduct in `rewriteWithContextNoPremises` of the
+/-- BinaryEvidence-add produces a reduct in `rewriteWithContextNoPremises` of the
     cong-extended calculus. This is the executable witness needed for
     congruence premise satisfaction.
 

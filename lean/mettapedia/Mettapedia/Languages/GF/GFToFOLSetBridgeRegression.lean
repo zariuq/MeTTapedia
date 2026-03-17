@@ -20,9 +20,9 @@ consequence rule, consumed on singleton set-theory states. -/
 theorem canary_sumoStub_rule_singleton
     (S : SetPointed) (hS : S ⊧* 𝗭𝗙) :
     let rule := zfWmRuleOfSumoStubTranslation
-    WorldModel.queryStrength (State := SetState) (Query := SetQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery)
       ({S} : SetState) rule.premise ≤
-    WorldModel.queryStrength (State := SetState) (Query := SetQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery)
       ({S} : SetState) rule.conclusion := by
   intro rule
   have hW : rule.side ({S} : SetState) := by

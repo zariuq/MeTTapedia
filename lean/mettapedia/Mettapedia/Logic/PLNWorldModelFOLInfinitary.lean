@@ -73,9 +73,9 @@ theorem satisfiesInf_iOr_iff {L : Language.{u}}
 
 instance {L : Language.{u}} : EvidenceType (FOLInfState L) where
 
-/-- Evidence extraction for infinitary FOL queries by support/refutation counts. -/
+/-- BinaryEvidence extraction for infinitary FOL queries by support/refutation counts. -/
 noncomputable def folInfEvidence {L : Language.{u}}
-    (W : FOLInfState L) (q : FOLInfQuery L) : Evidence := by
+    (W : FOLInfState L) (q : FOLInfQuery L) : BinaryEvidence := by
   classical
   exact
     ⟨(Multiset.countP (fun S => SatisfiesInf S q) W : ℝ≥0∞),
@@ -85,11 +85,11 @@ theorem folInfEvidence_add {L : Language.{u}}
     (W₁ W₂ : FOLInfState L) (q : FOLInfQuery L) :
     folInfEvidence (W₁ + W₂) q = folInfEvidence W₁ q + folInfEvidence W₂ q := by
   classical
-  apply Evidence.ext'
-  · simp [folInfEvidence, Multiset.countP_add, Evidence.hplus_def]
-  · simp [folInfEvidence, Multiset.countP_add, Evidence.hplus_def]
+  apply BinaryEvidence.ext'
+  · simp [folInfEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
+  · simp [folInfEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
 
-noncomputable instance {L : Language.{u}} : WorldModel (FOLInfState L) (FOLInfQuery L) where
+noncomputable instance {L : Language.{u}} : BinaryWorldModel (FOLInfState L) (FOLInfQuery L) where
   evidence := folInfEvidence
   evidence_add := folInfEvidence_add
 
@@ -107,24 +107,24 @@ theorem folInfEvidence_singleton_of_not_satisfies {L : Language.{u}}
 
 theorem queryStrength_singleton_of_satisfies {L : Language.{u}}
     (S : PointedFOL L) (q : FOLInfQuery L) (h : SatisfiesInf S q) :
-    WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
+    BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
         ({S} : FOLInfState L) q = 1 := by
-  change Evidence.toStrength (folInfEvidence ({S} : FOLInfState L) q) = 1
+  change BinaryEvidence.toStrength (folInfEvidence ({S} : FOLInfState L) q) = 1
   rw [folInfEvidence_singleton_of_satisfies S q h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 theorem queryStrength_singleton_of_not_satisfies {L : Language.{u}}
     (S : PointedFOL L) (q : FOLInfQuery L) (h : ¬ SatisfiesInf S q) :
-    WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
+    BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
         ({S} : FOLInfState L) q = 0 := by
-  change Evidence.toStrength (folInfEvidence ({S} : FOLInfState L) q) = 0
+  change BinaryEvidence.toStrength (folInfEvidence ({S} : FOLInfState L) q) = 0
   rw [folInfEvidence_singleton_of_not_satisfies S q h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 theorem singleton_adequacy_strength_one {L : Language.{u}}
     (S : PointedFOL L) (q : FOLInfQuery L) :
     SatisfiesInf S q ↔
-      WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
+      BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
         ({S} : FOLInfState L) q = 1 := by
   constructor
   · intro h
@@ -133,13 +133,13 @@ theorem singleton_adequacy_strength_one {L : Language.{u}}
     by_cases hs : SatisfiesInf S q
     · exact hs
     · have h0 :
-          WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
+          BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
               ({S} : FOLInfState L) q = 0 :=
         queryStrength_singleton_of_not_satisfies S q hs
       have h01 : (0 : ℝ≥0∞) = 1 := by
         calc
           (0 : ℝ≥0∞) =
-              WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
+              BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
                 ({S} : FOLInfState L) q := h0.symm
           _ = 1 := h
       exact False.elim (zero_ne_one h01)
@@ -149,9 +149,9 @@ def pointwiseImplies {L : Language.{u}} (q₁ q₂ : FOLInfQuery L) : Prop :=
 
 def singletonStrengthLE {L : Language.{u}} (q₁ q₂ : FOLInfQuery L) : Prop :=
   ∀ S : PointedFOL L,
-    WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
+    BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
         ({S} : FOLInfState L) q₁ ≤
-      WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
+      BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
         ({S} : FOLInfState L) q₂
 
 theorem pointwiseImplies_iff_singletonStrengthLE {L : Language.{u}}
@@ -169,11 +169,11 @@ theorem pointwiseImplies_iff_singletonStrengthLE {L : Language.{u}}
     by_contra hq₂
     have hsingleton := hle S
     have h1 :
-        WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
+        BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
             ({S} : FOLInfState L) q₁ = 1 :=
       queryStrength_singleton_of_satisfies S q₁ hq₁
     have h0 :
-        WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
+        BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L)
             ({S} : FOLInfState L) q₂ = 0 :=
       queryStrength_singleton_of_not_satisfies S q₂ hq₂
     have h10 : (1 : ℝ≥0∞) ≤ 0 := by
@@ -217,31 +217,31 @@ private theorem folInfEvidence_total {L : Language.{u}}
         (Multiset.countP (fun S : PointedFOL L => SatisfiesInf S q) W : ℝ≥0∞) +
           (Multiset.countP (fun S : PointedFOL L => ¬ SatisfiesInf S q) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold folInfEvidence Evidence.total
+  unfold folInfEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 theorem queryStrength_le_of_pointwise {L : Language.{u}}
     (W : FOLInfState L) (q₁ q₂ : FOLInfQuery L)
     (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₁ ≤
-      WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₂ := by
+    BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₂ := by
   let p₁ : PointedFOL L → Prop := fun S => SatisfiesInf S q₁
   let p₂ : PointedFOL L → Prop := fun S => SatisfiesInf S q₂
   letI : DecidablePred p₁ := Classical.decPred p₁
   letI : DecidablePred p₂ := Classical.decPred p₂
   have hq₁ :
-      WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₁ =
+      BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₁ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₁ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (folInfEvidence W q₁).total = 0 then 0
       else (folInfEvidence W q₁).pos / (folInfEvidence W q₁).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₁ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
     rw [folInfEvidence_total (W := W) (q := q₁)]
     simp [folInfEvidence, p₁]
   have hq₂ :
-      WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₂ =
+      BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₂ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₂ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (folInfEvidence W q₂).total = 0 then 0
       else (folInfEvidence W q₂).pos / (folInfEvidence W q₂).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₂ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
@@ -280,16 +280,16 @@ theorem pointwise_component_to_iOr {L : Language.{u}}
 /-- WM inequality endpoint for countable conjunction elimination. -/
 theorem queryStrength_le_iAnd_component {L : Language.{u}}
     (W : FOLInfState L) (F : Nat → FOLInfQuery L) (n : Nat) :
-    WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W (.iAnd F) ≤
-      WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W (F n) :=
+    BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W (.iAnd F) ≤
+      BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W (F n) :=
   queryStrength_le_of_pointwise (W := W) (q₁ := .iAnd F) (q₂ := F n)
     (pointwise_iAnd_to_component (F := F) (n := n))
 
 /-- WM inequality endpoint for countable disjunction introduction. -/
 theorem queryStrength_le_iOr_of_component {L : Language.{u}}
     (W : FOLInfState L) (F : Nat → FOLInfQuery L) (n : Nat) :
-    WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W (F n) ≤
-      WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W (.iOr F) :=
+    BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W (F n) ≤
+      BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W (.iOr F) :=
   queryStrength_le_of_pointwise (W := W) (q₁ := F n) (q₂ := .iOr F)
     (pointwise_component_to_iOr (F := F) (n := n))
 

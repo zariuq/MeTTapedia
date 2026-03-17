@@ -2,17 +2,17 @@ import Mathlib.Data.Real.Basic
 import Mettapedia.Logic.PLNWeightTV
 
 /-!
-# PLN Soundness Counterexample: Evidence-Based Confidence vs Probability Error Bounds
+# PLN Soundness Counterexample: BinaryEvidence-Based Confidence vs Probability Error Bounds
 
-This file proves a formal counterexample showing that Evidence-based confidence formulas
+This file proves a formal counterexample showing that BinaryEvidence-based confidence formulas
 cannot satisfy the standard soundness condition `|P - s| ≤ 1 - c` when using
 error propagation through products.
 
 ## The Setup
 
-**Evidence-based confidence** (from tensor product):
+**BinaryEvidence-based confidence** (from tensor product):
 - `c_out = w2c(w_A * w_B)` where `w = c/(1-c)`
-- This comes from Evidence counts: `(n⁺_A * n⁺_B, n⁻_A * n⁻_B)`
+- This comes from BinaryEvidence counts: `(n⁺_A * n⁺_B, n⁻_A * n⁻_B)`
 
 **Standard error propagation** (proven in PLNInferenceCalculus):
 - If `|P_A - s_A| ≤ e_A` and `|P_B - s_B| ≤ e_B`
@@ -47,7 +47,7 @@ namespace Mettapedia.Logic.PLNSoundnessCounterexample
 
 open Mettapedia.Logic.PLNWeightTV
 
-/-! ## Step 1: Evidence-Based Confidence Computation -/
+/-! ## Step 1: BinaryEvidence-Based Confidence Computation -/
 
 /-- With cA = cB = 0.5, compute wA = c/(1-c) -/
 example : c2w 0.5 = 1 := by
@@ -105,11 +105,11 @@ theorem counterexample_cA_cB_half :
 
 We have three components:
 
-1. **Evidence-based formula** (correct by Evidence theory):
+1. **BinaryEvidence-based formula** (correct by BinaryEvidence theory):
    ```
    c_out = w2c(w_A * w_B) where w = c/(1-c) (normalized evidence amount)
    ```
-   This is the tensor product of Evidence counts.
+   This is the tensor product of BinaryEvidence counts.
 
 2. **Product error bound** (proven in PLNInferenceCalculus):
    ```
@@ -129,7 +129,7 @@ We have three components:
 
 The problem is that **confidence has two different meanings**:
 
-### Meaning 1: Evidence-theoretic (from Evidence counts)
+### Meaning 1: BinaryEvidence-theoretic (from BinaryEvidence counts)
 - `c = (n⁺ + n⁻) / (n⁺ + n⁻ + κ)` (total evidence relative to prior)
 - Or via weight: `c = w/(w+1)` where `w = c/(1-c) = (n⁺+n⁻)/κ` (for κ > 0)
 - **Interpretation**: "How much evidence we have"
@@ -138,11 +138,11 @@ The problem is that **confidence has two different meanings**:
 - `c = 1 - e` where `e` is the error bound `|P - s|`
 - **Interpretation**: "How tight our error bound is"
 
-**The Mismatch**: Evidence-theoretic confidence (Meaning 1) does NOT equal
+**The Mismatch**: BinaryEvidence-theoretic confidence (Meaning 1) does NOT equal
 error-bound confidence (Meaning 2) after product operations!
 
 For independent observations:
-- Evidence counts **multiply**: (n⁺_A·n⁺_B, n⁻_A·n⁻_B)
+- BinaryEvidence counts **multiply**: (n⁺_A·n⁺_B, n⁻_A·n⁻_B)
 - Error bounds **add**: e_out = e_A + e_B
 
 These two operations are incompatible for preserving `c = 1 - e`.
@@ -155,8 +155,8 @@ These two operations are incompatible for preserving `c = 1 - e`.
 2. **Weight-space soundness**: Define soundness directly in terms of weights,
    not confidence. E.g., `|P - s| ≤ g(w)` for some function `g`.
 
-3. **Separate error/confidence**: Track error bounds separately from Evidence
-   confidence. Evidence gives us `c` (how much evidence), error propagation
+3. **Separate error/confidence**: Track error bounds separately from BinaryEvidence
+   confidence. BinaryEvidence gives us `c` (how much evidence), error propagation
    gives us `e` (error bound), and they're related but not `c = 1 - e`.
 
 4. **Independence assumption fails**: The soundness condition `|P - s| ≤ 1 - c`
@@ -196,7 +196,7 @@ theorem product_error_specific (PA PB sA sB : ℝ)
 
 **Error propagation is correct**: e_out = e_A + e_B = 0.5 + 0.5 = 1
 
-**Evidence-based confidence is correct**: c_out = w2c(1) = 0.5
+**BinaryEvidence-based confidence is correct**: c_out = w2c(1) = 0.5
 
 **The inconsistency**: We cannot have both:
 - e_out = 1 - c_out (soundness condition)
@@ -205,14 +205,14 @@ theorem product_error_specific (PA PB sA sB : ℝ)
 Because `1 ≠ 1 - 0.5 = 0.5`.
 
 This proves that the soundness condition `e = 1 - c` **cannot hold** after
-combining independent evidence sources using Evidence-theoretic formulas.
+combining independent evidence sources using BinaryEvidence-theoretic formulas.
 
 ## Next Steps
 
 We need to investigate EvidenceQuantale.lean and PLNDeduction.lean to understand:
-1. What soundness condition SHOULD hold for Evidence-based TVs?
-2. Is there a different error model that matches Evidence theory?
-3. Should we track error bounds separately from Evidence confidence?
+1. What soundness condition SHOULD hold for BinaryEvidence-based TVs?
+2. Is there a different error model that matches BinaryEvidence theory?
+3. Should we track error bounds separately from BinaryEvidence confidence?
 -/
 
 end Mettapedia.Logic.PLNSoundnessCounterexample

@@ -3,7 +3,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Fintype.BigOperators
 
 /-!
-# No-Go: Complete Deduction Cannot Be Based on Local (Per-Link) Evidence Alone
+# No-Go: Complete Deduction Cannot Be Based on Local (Per-Link) BinaryEvidence Alone
 
 This file formalizes a key design fact for PLN:
 
@@ -204,7 +204,7 @@ theorem conclusion_diff :
   intro hEq
   have hpos :
       (linkEvidence (n := 3) (E := E₁) A C).pos = (linkEvidence (n := 3) (E := E₂) A C).pos :=
-    congrArg Evidence.pos hEq
+    congrArg BinaryEvidence.pos hEq
   -- Compute the two positive counts: 2 vs 0.
   simp [linkEvidence, countWorld_E₁, countWorld_E₂, card_AC_pos, card_AC_pos_S] at hpos
 
@@ -213,7 +213,7 @@ theorem conclusion_diff :
 /-- There is no "complete deduction" function which computes `A ⟹ C` evidence from only local
 premises `A,B,C, A⟹B, B⟹C`, for all joint evidence models. -/
 theorem no_local_complete_deduction
-    (f : Evidence → Evidence → Evidence → Evidence → Evidence → Evidence) :
+    (f : BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence) :
     ¬ (∀ E : JointEvidence 3,
         f (propEvidence (n := 3) (E := E) A)
           (propEvidence (n := 3) (E := E) B)

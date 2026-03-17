@@ -279,7 +279,7 @@ variable [Monoid Q'] [CompleteLattice Q']
 /-- Pattern valuation obtained from a typed WM atom encoder and state. -/
 noncomputable def wmPatternValuation
     (W : State) (queryOfAtom : String → Pattern → Sigma Query)
-    (a : String) : Pattern → Evidence :=
+    (a : String) : Pattern → BinaryEvidence :=
   fun p =>
     WorldModelSigma.evidence
       (State := State) (Srt := Srt) (Query := Query) W (queryOfAtom a p)
@@ -312,7 +312,7 @@ theorem language_quantale_coherence_wmITV_threshold_atom
     (hVal : ∀ p, dstVal (m.mapTerm p) = f (srcVal p))
     (itvSem₁ : ITVSemantics Ctx₁) (ctx₁ : Ctx₁)
     (itvSem₂ : ITVSemantics Ctx₂) (ctx₂ : Ctx₂)
-    (itvOfSrc : Q → Evidence) (itvOfDst : Q' → Evidence)
+    (itvOfSrc : Q → BinaryEvidence) (itvOfDst : Q' → BinaryEvidence)
     (coord : ITVCoord) (tau : ℝ)
     (a0 : String)
     (hITV : ∀ p, itvSem₂.eval ctx₂ (itvOfDst (dstVal (m.mapTerm p))) =
@@ -348,7 +348,7 @@ theorem language_quantale_coherence_wmITV_threshold_atom
 theorem language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
-    (f : QuantaleHom Evidence Evidence)
+    (f : QuantaleHom BinaryEvidence BinaryEvidence)
     (itvSem₁ : ITVSemantics Ctx₁) (ctx₁ : Ctx₁)
     (itvSem₂ : ITVSemantics Ctx₂) (ctx₂ : Ctx₂)
     (W₁ W₂ : State)
@@ -426,7 +426,7 @@ theorem language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
 theorem language_quantale_coherence_wmITV_lower_threshold_atom_of_queryEncoders
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
-    (f : QuantaleHom Evidence Evidence)
+    (f : QuantaleHom BinaryEvidence BinaryEvidence)
     (itvSem₁ : ITVSemantics Ctx₁) (ctx₁ : Ctx₁)
     (itvSem₂ : ITVSemantics Ctx₂) (ctx₂ : Ctx₂)
     (W₁ W₂ : State)
@@ -481,7 +481,7 @@ theorem language_quantale_coherence_wmITV_lower_threshold_atom_of_queryEncoders
 theorem language_quantale_coherence_wmITV_upper_threshold_atom_of_queryEncoders
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
-    (f : QuantaleHom Evidence Evidence)
+    (f : QuantaleHom BinaryEvidence BinaryEvidence)
     (itvSem₁ : ITVSemantics Ctx₁) (ctx₁ : Ctx₁)
     (itvSem₂ : ITVSemantics Ctx₂) (ctx₂ : Ctx₂)
     (W₁ W₂ : State)
@@ -536,7 +536,7 @@ theorem language_quantale_coherence_wmITV_upper_threshold_atom_of_queryEncoders
 theorem language_quantale_coherence_wmITV_credibility_threshold_atom_of_queryEncoders
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
-    (f : QuantaleHom Evidence Evidence)
+    (f : QuantaleHom BinaryEvidence BinaryEvidence)
     (itvSem₁ : ITVSemantics Ctx₁) (ctx₁ : Ctx₁)
     (itvSem₂ : ITVSemantics Ctx₂) (ctx₂ : Ctx₂)
     (W₁ W₂ : State)
@@ -591,7 +591,7 @@ theorem language_quantale_coherence_wmITV_credibility_threshold_atom_of_queryEnc
 theorem language_quantale_coherence_wmITV_width_threshold_atom_of_queryEncoders
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
-    (f : QuantaleHom Evidence Evidence)
+    (f : QuantaleHom BinaryEvidence BinaryEvidence)
     (itvSem₁ : ITVSemantics Ctx₁) (ctx₁ : Ctx₁)
     (itvSem₂ : ITVSemantics Ctx₂) (ctx₂ : Ctx₂)
     (W₁ W₂ : State)
@@ -646,7 +646,7 @@ theorem language_quantale_coherence_wmITV_width_threshold_atom_of_queryEncoders
 theorem language_quantale_coherence_wmITV_strength_threshold_atom_of_queryEncoders
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
-    (f : QuantaleHom Evidence Evidence)
+    (f : QuantaleHom BinaryEvidence BinaryEvidence)
     (itvSem₁ : ITVSemantics Ctx₁) (ctx₁ : Ctx₁)
     (itvSem₂ : ITVSemantics Ctx₂) (ctx₂ : Ctx₂)
     (W₁ W₂ : State)
@@ -749,7 +749,7 @@ theorem language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_id
   simpa using
     (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
       (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (f := QuantaleHom.id (Q := Evidence))
+      (R := R) (m := m) (f := QuantaleHom.id (Q := BinaryEvidence))
       (itvSem₁ := itvSem) (ctx₁ := ctx)
       (itvSem₂ := itvSem) (ctx₂ := ctx)
       (W₁ := W₁) (W₂ := W₂)

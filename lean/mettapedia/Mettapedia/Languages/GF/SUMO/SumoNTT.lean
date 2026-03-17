@@ -514,12 +514,12 @@ def decision10Analysis : IO Unit := do
   IO.println "│"
   IO.println "│  FIX A: (attribute ?AGENT VirtuousAgent) → (instance ?AGENT VirtuousAgent)"
   IO.println "│    Semantics: 'agent has property VirtuousAgent' → 'agent IS-A VirtuousAgent'"
-  IO.println "│    Evidence FOR:"
+  IO.println "│    BinaryEvidence FOR:"
   IO.println "│      • VirtuousAgent is a class (FOET:1147): (subclass VirtuousAgent AutonomousAgent)"
   IO.println "│      • (instance ?AGENT VirtuousAgent) already used at FOET:1155, 1158"
   IO.println "│      • ViciousAgent (symmetric concept) has NO (attribute _ ViciousAgent) usage"
   IO.println "│      • Definition says 'agent who HAS and EXERCISES virtues' → membership, not property"
-  IO.println "│    Evidence AGAINST:"
+  IO.println "│    BinaryEvidence AGAINST:"
   IO.println "│      • Changes meaning: 'obligatory to have attribute' → 'obligatory to be member'"
   IO.println "│      • modalAttribute(attribute(...), Obligation) pattern suggests attribute was intended"
   IO.println "│    Axioms preserved: all — (instance ?AGENT VirtuousAgent) is already well-formed"
@@ -530,12 +530,12 @@ def decision10Analysis : IO Unit := do
   IO.println "│  FIX B: Create (instance Virtuousness VirtueAttribute),"
   IO.println "│         replace with (attribute ?AGENT Virtuousness)"
   IO.println "│    Semantics: 'agent has property VirtuousAgent-class' → 'agent has Virtuousness quality'"
-  IO.println "│    Evidence FOR:"
+  IO.println "│    BinaryEvidence FOR:"
   IO.println "│      • Follows the Pietas pattern exactly (FOET:4739,4743)"
   IO.println "│      • (attribute ?AGENT Pietas) is well-typed — Pietas : VirtueAttribute ⊂ Attribute"
   IO.println "│      • Preserves the (attribute _ _) pattern in modalAttribute context"
   IO.println "│      • FOET:1157-1162 defines VirtuousAgent AS an agent with VirtueAttribute(s)"
-  IO.println "│    Evidence AGAINST:"
+  IO.println "│    BinaryEvidence AGAINST:"
   IO.println "│      • Introduces a new individual (Virtuousness) not in the original ontology"
   IO.println "│      • VirtuousAgent at FOET:1157 already links agents TO virtues via existential"
   IO.println "│    Axioms preserved: all + preserves modalAttribute pattern"
@@ -546,12 +546,12 @@ def decision10Analysis : IO Unit := do
   IO.println "│  FIX C: Replace (attribute ?AGENT VirtuousAgent) with the"
   IO.println "│         FOET:1157 pattern: ∃VIRTUE. (instance VIRTUE VirtueAttribute) ∧ (attribute AGENT VIRTUE)"
   IO.println "│    Semantics: 'agent has VirtuousAgent' → 'agent has some virtue'"
-  IO.println "│    Evidence FOR:"
+  IO.println "│    BinaryEvidence FOR:"
   IO.println "│      • This IS what VirtuousAgent means (FOET:1157-1162 defines it exactly this way)"
   IO.println "│      • No new individuals needed"
   IO.println "│      • Every term is well-typed: ?VIRTUE : VirtueAttribute ⊂ Attribute ✓"
   IO.println "│      • Semantically most faithful to the original intent"
-  IO.println "│    Evidence AGAINST:"
+  IO.println "│    BinaryEvidence AGAINST:"
   IO.println "│      • More verbose — replaces atomic formula with existential"
   IO.println "│      • Changes the modal scope: modalAttribute(∃..., Obligation) vs modalAttribute(atomic, Obligation)"
   IO.println "│    Axioms preserved: all"
@@ -591,7 +591,7 @@ def decision10Analysis : IO Unit := do
 
 end RepairAnalysis
 
-/-! ## WM Evidence Evaluation for Repair Candidates
+/-! ## WM BinaryEvidence Evaluation for Repair Candidates
 
 For each repair candidate φ, we construct `qsem(¬φ)` — an evidence query
 against the world model. If the WM produces a counterexample, φ is too strong.
@@ -626,7 +626,7 @@ structure EvidenceEvaluatedCandidate where
     does the world model contain counterexamples? -/
 def decision1_Pain_evidence : IO Unit := do
   IO.println "╔══════════════════════════════════════════════════════════╗"
-  IO.println "║   Decision 1: Pain — WM Evidence Evaluation             ║"
+  IO.println "║   Decision 1: Pain — WM BinaryEvidence Evaluation             ║"
   IO.println "╚══════════════════════════════════════════════════════════╝"
   IO.println ""
 
@@ -638,7 +638,7 @@ def decision1_Pain_evidence : IO Unit := do
 
   IO.println "=== Candidate (a): Pain : PathologicProcess (status quo) ==="
   IO.println "  qsem(¬a) = 'Is there evidence Pain is NOT a process?'"
-  IO.println "  Evidence AGAINST (a):"
+  IO.println "  BinaryEvidence AGAINST (a):"
   IO.println "    [strong] SUMO contraryAttribute axiom: all args must be Attribute instances"
   IO.println "    [strong] IASP 2020: 'An unpleasant sensory and emotional EXPERIENCE'"
   IO.println "    [strong] IASP: 'Pain and nociception are different phenomena'"
@@ -646,7 +646,7 @@ def decision1_Pain_evidence : IO Unit := do
   IO.println "    [moderate] SUMO documentation: 'A physical SENSATION of discomfort'"
   IO.println "    [moderate] SNOMED CT: pain under 'clinical finding', 'sensation quality'"
   IO.println "    [strong] SUMO itself: (attribute ?P Pain) used in Medicine.kif"
-  IO.println "  Evidence FOR (a):"
+  IO.println "  BinaryEvidence FOR (a):"
   IO.println "    [weak] SUMO WordNet mapping: pain mapped to PathologicProcess"
   IO.println "    [moderate] 5 Process-like axiom uses (instance, located, WhenFn)"
   IO.println "  → REFUTED: 7 strong/moderate against vs 2 weak/moderate for"
@@ -654,10 +654,10 @@ def decision1_Pain_evidence : IO Unit := do
 
   IO.println "=== Candidate (b): Pain : EmotionalState (Enache's silent repair) ==="
   IO.println "  qsem(¬b) = 'Is there evidence Pain is NOT an EmotionalState?'"
-  IO.println "  Evidence AGAINST (b):"
+  IO.println "  BinaryEvidence AGAINST (b):"
   IO.println "    [moderate] IASP: 'sensory AND emotional' — not purely emotional"
   IO.println "    [moderate] Physical pain (e.g., burn) has strong sensory component"
-  IO.println "  Evidence FOR (b):"
+  IO.println "  BinaryEvidence FOR (b):"
   IO.println "    [strong] Pleasure : EmotionalState — similarity-class match"
   IO.println "    [strong] (contraryAttribute Pleasure Pain) type-checks"
   IO.println "    [moderate] Wikipedia: pain as 'distressing feeling'"
@@ -666,9 +666,9 @@ def decision1_Pain_evidence : IO Unit := do
 
   IO.println "=== Candidate (c): Pain : StateOfMind (broader than EmotionalState) ==="
   IO.println "  qsem(¬c) = 'Is there evidence Pain is NOT a state of mind?'"
-  IO.println "  Evidence AGAINST (c):"
+  IO.println "  BinaryEvidence AGAINST (c):"
   IO.println "    [weak] Some argue physical pain is 'bodily', not 'mental'"
-  IO.println "  Evidence FOR (c):"
+  IO.println "  BinaryEvidence FOR (c):"
   IO.println "    [strong] IASP: pain is a 'psychological state'"
   IO.println "    [strong] StateOfMind ⊂ PsychologicalAttribute ⊂ ... ⊂ Attribute ✓"
   IO.println "    [strong] Broader than EmotionalState, captures sensory+emotional"
@@ -679,11 +679,11 @@ def decision1_Pain_evidence : IO Unit := do
   IO.println ("=== Candidate (d): Split — PainSensation : StateOfMind, " ++
     "PainProcess : PathologicProcess ===")
   IO.println "  qsem(¬d) = 'Is there evidence the split is unnecessary?'"
-  IO.println "  Evidence AGAINST (d):"
+  IO.println "  BinaryEvidence AGAINST (d):"
   IO.println "    [moderate] Adds complexity — two concepts where one might suffice"
   IO.println "    [moderate] IASP explicitly says pain ≠ nociception, so the process"
   IO.println "               side might not be 'Pain' at all but 'Nociception'"
-  IO.println "  Evidence FOR (d):"
+  IO.println "  BinaryEvidence FOR (d):"
   IO.println "    [strong] Preserves ALL existing axioms (process ones use PainProcess)"
   IO.println "    [strong] Clean separation of sensation from its biological cause"
   IO.println "  → VIABLE but may over-engineer"

@@ -17,12 +17,12 @@ open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.PLNWorldModelGeneric
 
 variable {State Scope Query Ev Supp : Type*}
-variable [EvidenceType State] [AddCommMonoid Ev] [GenericWorldModel State Query Ev]
+variable [EvidenceType State] [AddCommMonoid Ev] [AdditiveWorldModel State Query Ev]
 
 /-- Forgetting layer enriched with support tracking and exact inverse law under
 support containment. -/
 structure SupportTrackedForgettingLayer (State Scope Query Ev Supp : Type*)
-    [EvidenceType State] [AddCommMonoid Ev] [GenericWorldModel State Query Ev]
+    [EvidenceType State] [AddCommMonoid Ev] [AdditiveWorldModel State Query Ev]
     extends ForgettingLayer State Scope Query Ev where
   scopeFootprint : Scope → Finset Supp
   support : State → Query → Finset Supp
@@ -33,7 +33,7 @@ structure SupportTrackedForgettingLayer (State Scope Query Ev Supp : Type*)
 namespace SupportTrackedForgettingLayer
 
 variable {State Scope Query Ev Supp : Type*}
-variable [EvidenceType State] [AddCommMonoid Ev] [GenericWorldModel State Query Ev]
+variable [EvidenceType State] [AddCommMonoid Ev] [AdditiveWorldModel State Query Ev]
 
 theorem exactInverse_revision_of_support_subset
     (F : SupportTrackedForgettingLayer State Scope Query Ev Supp)
@@ -48,7 +48,7 @@ theorem exactInverse_revision_supported_outside_zero
     {S : Scope} {Δ : State}
     (hsupp : ∀ q, F.support Δ q ⊆ F.scopeFootprint S) :
     ∀ q, ¬ F.inScope S q →
-      GenericWorldModel.evidence
+      AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) Δ q = 0 := by
   intro q hout
   exact ForgettingLayer.exactInverse_revision_supported
@@ -62,7 +62,7 @@ theorem no_exactInverse_revision_of_nonzero_outside_scope_of_supported
     (hsupp : ∀ q, F.support Δ q ⊆ F.scopeFootprint S)
     (hout : ¬ F.inScope S q)
     (hne :
-      GenericWorldModel.evidence
+      AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) Δ q ≠ 0) :
     False := by
   exact

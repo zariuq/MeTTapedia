@@ -43,22 +43,24 @@ universe u
 
 section GenericWM
 
-variable {State : Type u} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type u} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- GF-tree evidence as a direct WM query projection through `gfAbstractToPattern`. -/
-noncomputable def gfNodeEvidence (W : State) (t : AbstractNode) : Evidence :=
-  WorldModel.evidence W (gfAbstractToPattern t)
+noncomputable def gfNodeEvidence (W : State) (t : AbstractNode) : BinaryEvidence :=
+  BinaryWorldModel.evidence W (gfAbstractToPattern t)
 
 /-- Revising WM states commutes with GF-tree evidence extraction. -/
 theorem gfNodeEvidence_add (W₁ W₂ : State) (t : AbstractNode) :
     gfNodeEvidence (W₁ + W₂) t = gfNodeEvidence W₁ t + gfNodeEvidence W₂ t := by
   simpa [gfNodeEvidence] using
-    (WorldModel.evidence_add (State := State) (Query := Pattern) W₁ W₂ (gfAbstractToPattern t))
+    (BinaryWorldModel.evidence_add (State := State) (Query := Pattern) W₁ W₂ (gfAbstractToPattern t))
 
 /-- Lift a base `Pattern`-query WM into a GF-`AbstractNode`-query WM. -/
-noncomputable def gfNodeWorldModel : WorldModel State AbstractNode where
+noncomputable def gfNodeWorldModel : BinaryWorldModel State AbstractNode where
   evidence := gfNodeEvidence
   evidence_add := gfNodeEvidence_add
+  evidence_zero t := by
+    simp [gfNodeEvidence, BinaryWorldModel.evidence_zero]
 
 /-- Pattern equality implies WM query equality at the pattern-query layer. -/
 theorem queryEq_of_patternEq {p q : Pattern} (h : p = q) :
@@ -76,8 +78,8 @@ theorem queryEq_of_treePatternEq {t₁ t₂ : AbstractNode}
 /-- Pattern equality transport to WM strength equality for all states. -/
 theorem strengthEq_of_patternEq {p q : Pattern} (h : p = q) :
     ∀ W : State,
-      WorldModel.queryStrength (State := State) (Query := Pattern) W p =
-        WorldModel.queryStrength (State := State) (Query := Pattern) W q :=
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W p =
+        BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W q :=
   WMQueryEq.to_queryStrength (State := State) (Query := Pattern)
     (queryEq_of_patternEq (State := State) h)
 
@@ -85,8 +87,8 @@ theorem strengthEq_of_patternEq {p q : Pattern} (h : p = q) :
 theorem strengthEq_of_treePatternEq {t₁ t₂ : AbstractNode}
     (hPat : gfAbstractToPattern t₁ = gfAbstractToPattern t₂) :
     ∀ W : State,
-      WorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₁) =
-        WorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₂) :=
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₁) =
+        BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₂) :=
   strengthEq_of_patternEq (State := State) hPat
 
 /-- Frege-strong syntactic compositionality transports directly to WM query equality. -/
@@ -103,9 +105,9 @@ theorem fregeStrong_to_strengthEq (f : FunctionSig)
     (args₁ args₂ : List AbstractNode)
     (hargs : args₁.map gfAbstractToPattern = args₂.map gfAbstractToPattern) :
     ∀ W : State,
-      WorldModel.queryStrength (State := State) (Query := Pattern) W
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W
         (gfAbstractToPattern (.apply f args₁)) =
-      WorldModel.queryStrength (State := State) (Query := Pattern) W
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W
         (gfAbstractToPattern (.apply f args₂)) :=
   strengthEq_of_patternEq (State := State) (frege_strong f args₁ args₂ hargs)
 
@@ -114,15 +116,15 @@ theorem translation_preserves_strength_allW
     {t₁ t₂ : AbstractNode}
     (hPat : gfAbstractToPattern t₁ = gfAbstractToPattern t₂) :
     ∀ W : State,
-      WorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₁) =
-      WorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₂) :=
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₁) =
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₂) :=
   strengthEq_of_treePatternEq (State := State) hPat
 
 end GenericWM
 
 section Categorical
 
-variable {State : Type u} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type u} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- Object layer for the thin GF syntactic category. -/
 structure GFSyntaxObj where
@@ -184,7 +186,7 @@ def syntaxToWMFunctor : CategoryTheory.Functor GFSyntaxObj (GFWMObj State) where
     refine PLift.up ?_
     intro W
     simpa [wmQuery, syntaxQuery] using
-      congrArg (WorldModel.evidence (State := State) (Query := Pattern) W) f.down
+      congrArg (BinaryWorldModel.evidence (State := State) (Query := Pattern) W) f.down
   map_id := by
     intro A
     rfl
@@ -204,9 +206,9 @@ theorem syntaxToWMFunctor_map_queryEq {A B : GFSyntaxObj} (f : A ⟶ B) :
 /-- Functorial map soundness at the WM-strength layer. -/
 theorem syntaxToWMFunctor_map_strengthEq {A B : GFSyntaxObj} (f : A ⟶ B) :
     ∀ W : State,
-      WorldModel.queryStrength (State := State) (Query := Pattern) W
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W
         (wmQuery (State := State) (syntaxToWMFunctor.obj A)) =
-      WorldModel.queryStrength (State := State) (Query := Pattern) W
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W
         (wmQuery (State := State) (syntaxToWMFunctor.obj B)) :=
   WMQueryEq.to_queryStrength (State := State) (Query := Pattern)
     (syntaxToWMFunctor_map_queryEq (State := State) f)
@@ -214,8 +216,8 @@ theorem syntaxToWMFunctor_map_strengthEq {A B : GFSyntaxObj} (f : A ⟶ B) :
 /-- Any syntactic hom induces a concrete WM strength inequality endpoint. -/
 theorem wmStrengthLE_of_syntaxHom {A B : GFSyntaxObj} (f : A ⟶ B) :
     ∀ W : State,
-      WorldModel.queryStrength (State := State) (Query := Pattern) W (syntaxQuery A) ≤
-      WorldModel.queryStrength (State := State) (Query := Pattern) W (syntaxQuery B) :=
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W (syntaxQuery A) ≤
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W (syntaxQuery B) :=
   WMQueryEq.to_strengthLE (State := State) (Query := Pattern)
     (syntaxToWMFunctor_map_queryEq (State := State) f)
 
@@ -229,8 +231,8 @@ def syntaxHom_of_treePatternEq {t₁ t₂ : AbstractNode}
 theorem wmStrengthLE_of_treePatternEq {t₁ t₂ : AbstractNode}
     (hPat : gfAbstractToPattern t₁ = gfAbstractToPattern t₂) :
     ∀ W : State,
-      WorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₁) ≤
-      WorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₂) :=
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₁) ≤
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W (gfAbstractToPattern t₂) :=
   wmStrengthLE_of_syntaxHom (State := State)
     (syntaxHom_of_treePatternEq (hPat := hPat))
 
@@ -301,16 +303,16 @@ end VisibleAndNTT
 
 section Canaries
 
-variable {State : Type u} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type u} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- Positive canary: compositional argument-pattern equality preserves WM strength. -/
 theorem canary_fregeStrong_strength
     (f : FunctionSig) (args₁ args₂ : List AbstractNode)
     (hargs : args₁.map gfAbstractToPattern = args₂.map gfAbstractToPattern) :
     ∀ W : State,
-      WorldModel.queryStrength (State := State) (Query := Pattern) W
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W
         (gfAbstractToPattern (.apply f args₁)) =
-      WorldModel.queryStrength (State := State) (Query := Pattern) W
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W
         (gfAbstractToPattern (.apply f args₂)) :=
   fregeStrong_to_strengthEq (State := State) f args₁ args₂ hargs
 
@@ -324,8 +326,8 @@ theorem canary_lexicalMonotone_not_trivial
     (W : State) (p q : Pattern)
     (hlex : ∀ name, Mettapedia.Languages.GF.LinguisticInvariance.containsLexical name p = true →
       Mettapedia.Languages.GF.LinguisticInvariance.containsLexical name q = true)
-    (hlt : WorldModel.evidence (State := State) (Query := Pattern) W q <
-      WorldModel.evidence (State := State) (Query := Pattern) W p) :
+    (hlt : BinaryWorldModel.evidence (State := State) (Query := Pattern) W q <
+      BinaryWorldModel.evidence (State := State) (Query := Pattern) W p) :
     ¬ LexicalEvidenceMonotone (State := State) W :=
   lexicalMono_not_trivial (State := State) W p q hlex hlt
 

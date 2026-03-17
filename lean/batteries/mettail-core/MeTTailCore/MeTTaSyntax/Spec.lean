@@ -31,6 +31,12 @@ structure CommandDispatchPolicy where
   fallbackUnsupportedCommandToFact : Bool := true
 deriving Repr, DecidableEq, BEq
 
+structure ProgramPolicy where
+  explicitQueryOnly : Bool := true
+  allowImplicitLastQuery : Bool := false
+  defaultSpace : String := "&self"
+deriving Repr, DecidableEq, BEq
+
 structure CommandHead where
   head : String
   command : String
@@ -52,12 +58,13 @@ structure EvalSpaceAlias where
 deriving Repr, DecidableEq, BEq
 
 structure SyntaxSpec where
-  schemaVersion : Nat := 2
+  schemaVersion : Nat := 3
   dialect : String
   lexer : LexerSpec
   evalPrefix : EvalPrefixPolicy
   loweringHeads : LoweringHeads := {}
   dispatchPolicy : CommandDispatchPolicy := {}
+  programPolicy : ProgramPolicy := {}
   commandHeads : List CommandHead := []
   headAliases : List SugarAlias := []
   evalSpaceAliases : List EvalSpaceAlias := []
@@ -188,6 +195,11 @@ def SyntaxSpec.renderJson (s : SyntaxSpec) : String :=
   ++ "\"fallback_unknown_head_to_fact\":" ++ jsonBool s.dispatchPolicy.fallbackUnknownHeadToFact ++ ","
   ++ "\"fallback_arity_mismatch_to_fact\":" ++ jsonBool s.dispatchPolicy.fallbackArityMismatchToFact ++ ","
   ++ "\"fallback_unsupported_command_to_fact\":" ++ jsonBool s.dispatchPolicy.fallbackUnsupportedCommandToFact
+  ++ "},"
+  ++ "\"program_policy\":{"
+  ++ "\"explicit_query_only\":" ++ jsonBool s.programPolicy.explicitQueryOnly ++ ","
+  ++ "\"allow_implicit_last_query\":" ++ jsonBool s.programPolicy.allowImplicitLastQuery ++ ","
+  ++ "\"default_space\":" ++ jsonStr s.programPolicy.defaultSpace
   ++ "},"
   ++ "\"command_heads\":" ++ cmdJson ++ ","
   ++ "\"head_aliases\":" ++ aliasJson ++ ","
@@ -372,14 +384,24 @@ def heGrammar : GrammarSpec :=
 def pettaCommandHeads : List CommandHead :=
   [ { head := "=", command := "defineEq", arityMin := 2, arityMax := some 2 }
   , { head := ":", command := "defineType", arityMin := 2, arityMax := some 2 }
+  , { head := "import!", command := "import", arityMin := 1, arityMax := some 2 }
+  , { head := "add-atom!", command := "addAtom", arityMin := 2, arityMax := some 2 }
+  , { head := "remove-atom!", command := "removeAtom", arityMin := 2, arityMax := some 2 }
+  , { head := "new-space!", command := "newSpace", arityMin := 1, arityMax := some 1 }
+  , { head := "set-fuel", command := "setFuel", arityMin := 1, arityMax := some 1 }
   ]
 
-/-- PeTTa syntax spec as implemented in current reference runtime. -/
+/-- PeTTa syntax spec — unified surface authority (schema v3).
+    Command heads include all recognized PeTTa surface forms.
+    Program policy: explicit query only (no implicit-last-query). -/
 def petta : SyntaxSpec :=
   { dialect := "PeTTa"
     lexer := {}
     evalPrefix := { bangPrefixedWordIsSymbol := false }
     commandHeads := pettaCommandHeads
+    programPolicy := { explicitQueryOnly := true
+                       allowImplicitLastQuery := false
+                       defaultSpace := "&self" }
     predicateSpecialHeads := commonPredicateSpecialHeads }
 
 def pettaGrammar : GrammarSpec :=

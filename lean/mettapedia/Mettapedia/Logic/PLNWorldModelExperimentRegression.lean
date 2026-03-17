@@ -66,9 +66,9 @@ def fixtureState : Multiset Hypothesis :=
 /-- Concrete theorem: Blackwell-style pullback gives exact WM strength equality
 on the finite fixture state. -/
 theorem fixture_strength_eq_blackwell_pullback :
-    WorldModel.queryStrength (State := Multiset Hypothesis) (Query := ExperimentQuery Hypothesis Obs)
+    BinaryWorldModel.queryStrength (State := Multiset Hypothesis) (Query := ExperimentQuery Hypothesis Obs)
       fixtureState weakQuery =
-    WorldModel.queryStrength (State := Multiset Hypothesis) (Query := ExperimentQuery Hypothesis Obs)
+    BinaryWorldModel.queryStrength (State := Multiset Hypothesis) (Query := ExperimentQuery Hypothesis Obs)
       fixtureState strongPullbackQuery := by
   exact
     queryStrength_eq_of_blackwellFactor
@@ -82,9 +82,9 @@ def fixtureBlackwellRule :
 /-- Regression endpoint: applying the Blackwell rule on the fixture state yields
 the expected WM consequence inequality. -/
 theorem fixture_rule_apply_strength_le :
-    WorldModel.queryStrength (State := Multiset Hypothesis) (Query := ExperimentQuery Hypothesis Obs)
+    BinaryWorldModel.queryStrength (State := Multiset Hypothesis) (Query := ExperimentQuery Hypothesis Obs)
       fixtureState weakQuery ≤
-    WorldModel.queryStrength (State := Multiset Hypothesis) (Query := ExperimentQuery Hypothesis Obs)
+    BinaryWorldModel.queryStrength (State := Multiset Hypothesis) (Query := ExperimentQuery Hypothesis Obs)
       fixtureState strongPullbackQuery := by
   exact
     WMConsequenceRule.apply

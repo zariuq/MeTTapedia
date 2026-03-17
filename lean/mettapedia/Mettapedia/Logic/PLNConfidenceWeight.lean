@@ -39,7 +39,7 @@ This theorem explains the PLN bug discovered in early 2025 where
 
 - `PLNConjunction.lean`: Hypergeometric distribution and mode bounds
 - `PLNFrechetBounds.lean`: Measure-theoretic Fréchet bounds (proven)
-- `EvidenceQuantale.lean`: Quantale structure on Evidence
+- `EvidenceQuantale.lean`: Quantale structure on BinaryEvidence
 -/
 
 namespace Mettapedia.Logic.PLNConfidenceWeight
@@ -173,9 +173,9 @@ structure ProperTruthValue where
   strength : ℝ≥0∞      -- s = n⁺ / (n⁺ + n⁻)
   weight : ℝ≥0∞        -- w = n⁺ + n⁻ (total evidence)
 
-/-- Convert Evidence to ProperTruthValue -/
-noncomputable def toProperTV (e : Evidence) : ProperTruthValue where
-  strength := Evidence.toStrength e
+/-- Convert BinaryEvidence to ProperTruthValue -/
+noncomputable def toProperTV (e : BinaryEvidence) : ProperTruthValue where
+  strength := BinaryEvidence.toStrength e
   weight := e.total
 
 /-- Correct confidence combination using ProperTruthValue -/
@@ -214,7 +214,7 @@ The hypergeometric mode bound `mode ≤ min(a, b)` justifies:
 4. **Error magnitude**: Up to 50% underestimation for high-confidence inputs
 5. **Practical rule**: Always track weight (or equivalently, total evidence count)
 
-The PLN Evidence structure `(n⁺, n⁻)` correctly tracks this information.
+The PLN BinaryEvidence structure `(n⁺, n⁻)` correctly tracks this information.
 The lesson: confidence is a DERIVED quantity, computed from weight when needed.
 Never use confidence as a primary storage format for PLN inference!
 -/

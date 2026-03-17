@@ -9,7 +9,7 @@ to the canonical factorized world model (`ValuationWorldModel`):
 
 - A ground MLN with finite clause support compiles to a factor graph.
 - The factor graph's factor list is a `WMSource`.
-- The singleton `WMState` induces a `WorldModel` instance.
+- The singleton `WMState` induces a `BinaryWorldModel` instance.
 - `queryStrength` on this WM state equals the MLN `queryProb`.
 
 This routes through the real factorized WM instance (VE-backed evidence),
@@ -53,7 +53,7 @@ noncomputable def clauseMassSemantics
     MassSemantics (ConstraintQuery Atom) :=
   (M.toCountableMLNSemantics (Query := ConstraintQuery Atom) support constraintQueryHolds).toMassSemantics
 
-/-- The `WorldModel` instance for clause WM state over constraint queries.
+/-- The `BinaryWorldModel` instance for clause WM state over constraint queries.
 
 `ConstraintQuery Atom = List (Σ _ : Atom, Bool)` is definitionally equal to
 `List (Σ v, (compiledClauseFactorGraph M support).stateSpace v)` since the compiled
@@ -61,7 +61,7 @@ factor graph sets `stateSpace _ := Bool`. This instance witnesses that unificati
 noncomputable instance clauseWorldModel
     (M : GroundMLN Atom ClauseId)
     (support : Finset ClauseId) :
-    WorldModel
+    BinaryWorldModel
       (ValuationWorldModel.WMState (compiledClauseFactorGraph M support))
       (ConstraintQuery Atom) :=
   have : ConstraintQuery Atom =
@@ -114,12 +114,12 @@ theorem clauseWM_sourceEvidence_eq_evidenceOfMasses
   unfold ValuationWorldModel.sourceEvidence MassSemantics.evidenceOfMasses
   rw [clauseWM_weight_eq_queryMass, clauseWM_total_eq_totalMass]
 
-/-- Evidence from the singleton clause WM state matches the semantic mass evidence. -/
+/-- BinaryEvidence from the singleton clause WM state matches the semantic mass evidence. -/
 theorem clauseWM_evidence_eq_evidenceOfMasses
     (M : GroundMLN Atom ClauseId)
     (support : Finset ClauseId)
     (constraints : ConstraintQuery Atom) :
-    WorldModel.evidence (clauseWMState M support) constraints =
+    BinaryWorldModel.evidence (clauseWMState M support) constraints =
       (clauseMassSemantics M support).evidenceOfMasses constraints := by
   show ValuationWorldModel.evidence
     (fg := compiledClauseFactorGraph M support)
@@ -133,7 +133,7 @@ theorem clauseWM_queryStrength_eq_queryProb
     (M : GroundMLN Atom ClauseId)
     (support : Finset ClauseId)
     (q : ConstraintQuery Atom) :
-    WorldModel.queryStrength (clauseWMState M support) q =
+    BinaryWorldModel.queryStrength (clauseWMState M support) q =
       (clauseMassSemantics M support).queryProb q :=
   queryStrength_eq_queryProb_of_evidence_eq
     (clauseWMState M support)

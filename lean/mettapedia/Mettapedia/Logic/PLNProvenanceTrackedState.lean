@@ -10,7 +10,7 @@ import Mathlib.Data.Finset.Lattice.Basic
 
 Concrete provenance-history state for `Which`-valued world-model experiments.
 
-Each query carries a multiset of provenance chunks. Evidence unions the active
+Each query carries a multiset of provenance chunks. BinaryEvidence unions the active
 chunks, preserving the crucial `Which` distinction between:
 
 - `wbot` via the empty multiset / empty union;
@@ -125,10 +125,10 @@ theorem trackedPayloadSupport_eq_empty_of_union_empty
   ext i
   simp [trackedPayloadSupport, h]
 
-noncomputable instance : GenericWorldModel
+noncomputable instance : AdditiveWorldModel
     (TrackedWhichState σ n) (GroundAtom σ) (Which (Fin n)) where
-  evidence := trackedEvidence
-  evidence_add := by
+  extract := trackedEvidence
+  extract_add := by
     intro W₁ W₂ q
     by_cases h₁ : trackedUnionSupport W₁ q = ∅
     · by_cases h₂ : trackedUnionSupport W₂ q = ∅
@@ -204,7 +204,7 @@ theorem toTracked_payloadSupport_eq_whichSupport
 
 theorem toTracked_evidence_eq
     (I : KRelation σ (Which (Fin n))) (q : GroundAtom σ) :
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := TrackedWhichState σ n) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (toTrackedWhichState I) q = I q := by
   cases hI : I q with
@@ -223,14 +223,14 @@ theorem toTracked_evidence_eq
 theorem toTracked_revision_preserves_add
     (I₁ I₂ : KRelation σ (Which (Fin n))) :
     ∀ q,
-      GenericWorldModel.evidence
+      AdditiveWorldModel.extract
         (State := TrackedWhichState σ n) (Query := GroundAtom σ) (Ev := Which (Fin n))
         (toTrackedWhichState (fun a => I₁ a + I₂ a)) q =
-      GenericWorldModel.evidence
+      AdditiveWorldModel.extract
         (State := TrackedWhichState σ n) (Query := GroundAtom σ) (Ev := Which (Fin n))
         (toTrackedWhichState I₁ + toTrackedWhichState I₂) q := by
   intro q
-  rw [toTracked_evidence_eq, GenericWorldModel.evidence_add',
+  rw [toTracked_evidence_eq, AdditiveWorldModel.extract_add',
     toTracked_evidence_eq, toTracked_evidence_eq]
 
 theorem toTracked_forget_exactInverse

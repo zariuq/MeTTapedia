@@ -370,11 +370,11 @@ def logicReadmeBlocks : List ReadmeBlock :=
       , claimBullet .unificationThesisStatesExchangeableCollapse
       ]
   , .codeBlock ""
-      "PLN Evidence (n+, n-)\n  -> Quantale (tensor)\n  -> Heyting frame\n  -> Beta statistic\n  -> Solomonoff exchangeable binary collapse"
+      "PLN BinaryEvidence (n+, n-)\n  -> Quantale (tensor)\n  -> Heyting frame\n  -> Beta statistic\n  -> Solomonoff exchangeable binary collapse"
   , .heading 2 (renderLogicHeading .criticalProvenTheorems)
   , .claimBullets [claimBullet .criticalTheoremsSectionSummarizesAnchors]
   , .codeBlock ""
-      "| Theorem | File |\n|---------|------|\n| Frechet bounds | PLNFrechetBounds.lean |\n| PLN consistency | PLNFrechetBounds.lean |\n| Weight-space min | PLNConfidenceWeight.lean |\n| Evidence not boolean | HeytingValuationOnEvidence.lean |\n| Quantale transitivity | EvidenceQuantale.lean |\n| Solomonoff collapse | SolomonoffExchangeable.lean |\n| De Finetti | DeFinetti.lean |"
+      "| Theorem | File |\n|---------|------|\n| Frechet bounds | PLNFrechetBounds.lean |\n| PLN consistency | PLNFrechetBounds.lean |\n| Weight-space min | PLNConfidenceWeight.lean |\n| BinaryEvidence not boolean | HeytingValuationOnEvidence.lean |\n| Quantale transitivity | EvidenceQuantale.lean |\n| Solomonoff collapse | SolomonoffExchangeable.lean |\n| De Finetti | DeFinetti.lean |"
   , .heading 2 (renderLogicHeading .proofsForNbAndKnn)
   , .claimBullets
       [ claimBullet .nbBridgeTheoremExists

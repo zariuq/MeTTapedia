@@ -22,7 +22,7 @@ open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.PLNWorldModelFixpointClosure
 open scoped ENNReal
 
-variable {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+variable {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- On finite query spaces, the fair synchronous cascade reaches the full least
 rule closure by time `card(Query)`. -/
@@ -101,7 +101,7 @@ theorem leastRuleClosure_target_threshold_of_seed
       thresholdValid (State := State) (Query := Query) W τ seed)
     {q : Query}
     (hq : q ∈ leastRuleClosure (State := State) (Query := Query) R W seed) :
-    τ ≤ WorldModel.queryStrength (State := State) (Query := Query) W q := by
+    τ ≤ BinaryWorldModel.queryStrength (State := State) (Query := Query) W q := by
   exact
     leastRuleClosure_thresholdValid
       (State := State) (Query := Query)
@@ -118,7 +118,7 @@ theorem bounded_cascade_threshold_of_finite
     {q : Query}
     (hq : q ∈ leastRuleClosure (State := State) (Query := Query) R W seed) :
     q ∈ immediateIter (State := State) (Query := Query) R W seed (Fintype.card Query) ∧
-      τ ≤ WorldModel.queryStrength (State := State) (Query := Query) W q := by
+      τ ≤ BinaryWorldModel.queryStrength (State := State) (Query := Query) W q := by
   refine ⟨?_, ?_⟩
   · exact
       (mem_leastRuleClosure_iff_mem_immediateIter_card_of_finite

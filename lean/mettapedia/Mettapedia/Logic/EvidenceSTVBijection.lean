@@ -4,7 +4,7 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
 import Mathlib.Data.ENNReal.Inv
 
 /-!
-# Evidence ↔ SimpleTruthValue Bijection
+# BinaryEvidence ↔ SimpleTruthValue Bijection
 
 This file formalizes the precise relationship between PLN's 2D evidence counts
 and 1D representations (strength, confidence, valuations).
@@ -18,7 +18,7 @@ and 1D representations (strength, confidence, valuations).
 ## The Story
 
 ```
-Evidence (n⁺, n⁻)  ←——bijection——→  (strength s, confidence c)
+BinaryEvidence (n⁺, n⁻)  ←——bijection——→  (strength s, confidence c)
          ↓                                    ↓
          ↓  loses confidence                  ↓  loses confidence
          ↓                                    ↓
@@ -38,17 +38,17 @@ open Mettapedia.ProbabilityTheory.KnuthSkilling
 section StrengthFiber
 
 /-- The "fiber" of strength s: all evidence with the same strength value. -/
-def strengthFiber (s : ENNReal) : Set Evidence :=
-  { e | Evidence.toStrength e = s }
+def strengthFiber (s : ENNReal) : Set BinaryEvidence :=
+  { e | BinaryEvidence.toStrength e = s }
 
 /-- Two evidence values with the same strength can have different totals.
     This is the key "information loss" when projecting to strength. -/
 theorem same_strength_different_total :
-    ∃ e₁ e₂ : Evidence, Evidence.toStrength e₁ = Evidence.toStrength e₂ ∧ e₁.total ≠ e₂.total := by
+    ∃ e₁ e₂ : BinaryEvidence, BinaryEvidence.toStrength e₁ = BinaryEvidence.toStrength e₂ ∧ e₁.total ≠ e₂.total := by
   use ⟨1, 1⟩, ⟨2, 2⟩
   constructor
   · -- Same strength: both are 1/2
-    unfold Evidence.toStrength Evidence.total
+    unfold BinaryEvidence.toStrength BinaryEvidence.total
     have h1 : (1 : ENNReal) + 1 ≠ 0 := by norm_num
     have h2 : (2 : ENNReal) + 2 ≠ 0 := by norm_num
     simp only [h1, h2, ↓reduceIte]
@@ -66,17 +66,17 @@ theorem same_strength_different_total :
       simp only [one_mul]
     rw [eq1, eq2]
   · -- Different totals: 2 ≠ 4
-    unfold Evidence.total
+    unfold BinaryEvidence.total
     norm_num
 
 /-- Different evidence values can have the same strength but differ.
     Concrete example: (1,1) and (2,2) have same strength but are different. -/
 theorem nonunique_strength :
-    ∃ e₁ e₂ : Evidence, Evidence.toStrength e₁ = Evidence.toStrength e₂ ∧ e₁ ≠ e₂ := by
+    ∃ e₁ e₂ : BinaryEvidence, BinaryEvidence.toStrength e₁ = BinaryEvidence.toStrength e₂ ∧ e₁ ≠ e₂ := by
   use ⟨1, 1⟩, ⟨2, 2⟩
   constructor
   · -- Same strength (copy the proof from above)
-    unfold Evidence.toStrength Evidence.total
+    unfold BinaryEvidence.toStrength BinaryEvidence.total
     have h1 : (1 : ENNReal) + 1 ≠ 0 := by norm_num
     have h2 : (2 : ENNReal) + 2 ≠ 0 := by norm_num
     simp only [h1, h2, ↓reduceIte]
@@ -94,7 +94,7 @@ theorem nonunique_strength :
     rw [eq1, eq2]
   · -- Different evidence
     intro h
-    have : (1 : ENNReal) = 2 := congrArg Evidence.pos h
+    have : (1 : ENNReal) = 2 := congrArg BinaryEvidence.pos h
     norm_num at this
 
 end StrengthFiber
@@ -103,26 +103,26 @@ end StrengthFiber
 
 section ValuationLoss
 
-/-- Any K&S valuation must map Evidence to totally ordered reals.
+/-- Any K&S valuation must map BinaryEvidence to totally ordered reals.
     This destroys the partial order structure. -/
-theorem valuation_destroys_incomparability (v : Valuation Evidence) :
-    ∀ e₁ e₂ : Evidence, v.val e₁ ≤ v.val e₂ ∨ v.val e₂ ≤ v.val e₁ :=
+theorem valuation_destroys_incomparability (v : Valuation BinaryEvidence) :
+    ∀ e₁ e₂ : BinaryEvidence, v.val e₁ ≤ v.val e₂ ∨ v.val e₂ ≤ v.val e₁ :=
   fun e₁ e₂ => le_total (v.val e₁) (v.val e₂)
 
-/-- Concrete example: (2, 0) and (0, 2) are incomparable in Evidence
+/-- Concrete example: (2, 0) and (0, 2) are incomparable in BinaryEvidence
     but any valuation must order them. -/
-theorem incomparable_forced_comparable (v : Valuation Evidence) :
-    let e₁ : Evidence := ⟨2, 0⟩
-    let e₂ : Evidence := ⟨0, 2⟩
+theorem incomparable_forced_comparable (v : Valuation BinaryEvidence) :
+    let e₁ : BinaryEvidence := ⟨2, 0⟩
+    let e₂ : BinaryEvidence := ⟨0, 2⟩
     (¬(e₁ ≤ e₂) ∧ ¬(e₂ ≤ e₁)) ∧ (v.val e₁ ≤ v.val e₂ ∨ v.val e₂ ≤ v.val e₁) := by
   constructor
   · constructor
     · intro h
-      simp only [Evidence.le_def] at h
+      simp only [BinaryEvidence.le_def] at h
       have : (2 : ENNReal) ≤ 0 := h.1
       norm_num at this
     · intro h
-      simp only [Evidence.le_def] at h
+      simp only [BinaryEvidence.le_def] at h
       have : (2 : ENNReal) ≤ 0 := h.2
       norm_num at this
   · exact le_total _ _
@@ -133,17 +133,17 @@ end ValuationLoss
 
 /-- **Main Information Hierarchy Theorem**
 
-    Evidence (n⁺, n⁻) contains strictly more information than strength alone.
+    BinaryEvidence (n⁺, n⁻) contains strictly more information than strength alone.
 
     Specifically:
     1. Strength alone has non-unique preimages
     2. Any valuation destroys the partial order structure
-    3. But (strength, confidence) together recover Evidence (see toSTV/ofSTV in EvidenceQuantale) -/
+    3. But (strength, confidence) together recover BinaryEvidence (see toSTV/ofSTV in EvidenceQuantale) -/
 theorem information_hierarchy :
     -- 1. Strength alone has non-unique preimages
-    (∃ e₁ e₂ : Evidence, Evidence.toStrength e₁ = Evidence.toStrength e₂ ∧ e₁ ≠ e₂) ∧
+    (∃ e₁ e₂ : BinaryEvidence, BinaryEvidence.toStrength e₁ = BinaryEvidence.toStrength e₂ ∧ e₁ ≠ e₂) ∧
     -- 2. Valuations destroy incomparability
-    (∀ v : Valuation Evidence, ∃ e₁ e₂ : Evidence,
+    (∀ v : Valuation BinaryEvidence, ∃ e₁ e₂ : BinaryEvidence,
       ¬(e₁ ≤ e₂) ∧ ¬(e₂ ≤ e₁) ∧ (v.val e₁ ≤ v.val e₂ ∨ v.val e₂ ≤ v.val e₁)) := by
   refine ⟨?_, ?_⟩
   · -- Part 1: Non-unique strength preimages

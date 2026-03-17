@@ -120,18 +120,18 @@ theorem bestPosterior_strength_linear_pooling
     (localPriorByBin : Bin → Scorer Goal Fact)
     (likelihood : Scorer Goal Fact)
     (g : Goal) (f : Fact) :
-    Evidence.toStrength
+    BinaryEvidence.toStrength
       ((fuse
           (normalizeScorer cfg.tPrior
             (bestPooledPrior (Goal := Goal) (Fact := Fact) cfg globalPrior localPriorByBin))
           (normalizeScorer cfg.tLik likelihood)).score g f)
       =
       (cfg.tPrior / (cfg.tPrior + cfg.tLik))
-          * Evidence.toStrength
+          * BinaryEvidence.toStrength
               ((normalizeScorer cfg.tPrior
                 (bestPooledPrior (Goal := Goal) (Fact := Fact) cfg globalPrior localPriorByBin)).score g f)
       + (cfg.tLik / (cfg.tPrior + cfg.tLik))
-          * Evidence.toStrength ((normalizeScorer cfg.tLik likelihood).score g f) := by
+          * BinaryEvidence.toStrength ((normalizeScorer cfg.tLik likelihood).score g f) := by
   exact
     fuse_toStrength_normalized_totals
       (s₁ := bestPooledPrior (Goal := Goal) (Fact := Fact) cfg globalPrior localPriorByBin)
@@ -156,13 +156,13 @@ theorem bestPosterior_ranking_optimal
     (hPosterior :
       ∃ fPost : ℝ → ℝ, StrictMono fPost ∧
         (fun x =>
-          (Evidence.toStrength
+          (BinaryEvidence.toStrength
             ((bestPosterior (Goal := Goal) (Fact := Fact)
               cfg globalPrior localPriorByBin likelihood).score g x)).toReal)
           = fun x => fPost (η x)) :
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((bestPosterior (Goal := Goal) (Fact := Fact)
             cfg globalPrior localPriorByBin likelihood).score g x)).toReal) := by
   rcases hPosterior with ⟨fPost, hfPost, hsPost⟩
@@ -208,9 +208,9 @@ theorem bestPLN_revisionLinearPool_available
     (h₁₂ : ((s₁.score g f + s₂.score g f).total) ≠ 0)
     (h₁_top : (s₁.score g f).total ≠ ⊤)
     (h₂_top : (s₂.score g f).total ≠ ⊤) :
-    Evidence.toStrength ((fuse s₁ s₂).score g f) =
-      ((s₁.score g f).total / (s₁.score g f + s₂.score g f).total) * Evidence.toStrength (s₁.score g f)
-      + ((s₂.score g f).total / (s₁.score g f + s₂.score g f).total) * Evidence.toStrength (s₂.score g f) := by
+    BinaryEvidence.toStrength ((fuse s₁ s₂).score g f) =
+      ((s₁.score g f).total / (s₁.score g f + s₂.score g f).total) * BinaryEvidence.toStrength (s₁.score g f)
+      + ((s₂.score g f).total / (s₁.score g f + s₂.score g f).total) * BinaryEvidence.toStrength (s₂.score g f) := by
   exact PLN_revisionStrength_eq_linearPool s₁ s₂ g f h₁ h₂ h₁₂ h₁_top h₂_top
 
 end Mettapedia.Logic.PremiseSelection

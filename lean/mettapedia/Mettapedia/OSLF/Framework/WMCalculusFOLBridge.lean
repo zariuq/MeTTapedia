@@ -5,24 +5,24 @@ import Mettapedia.Logic.PLNWorldModelFOL
 # WM Calculus ↔ FOL Semantics OSLF Bridge
 
 This module connects the OSLF LanguageDef modal operators (◇, □, ◇ ⊣ □) to the
-concrete `WorldModel (Multiset (PointedFOL L)) (FOLQuery L)` instance from
+concrete `BinaryWorldModel (Multiset (PointedFOL L)) (FOLQuery L)` instance from
 first-order Tarskian semantics.
 
 ## Architecture — Valuation Fibers
 
 A `FOLValuation L` assigns concrete mathematical meaning (pointed FOL structures
 + first-order sentences) to the abstract string names in `WMTerm`. This makes
-the FOL WorldModel instance a *fiber* over the generic WM calculus LanguageDef.
+the FOL BinaryWorldModel instance a *fiber* over the generic WM calculus LanguageDef.
 
 The bridge proves:
-- **Evidence-add correspondence**: the LanguageDef reduction
+- **BinaryEvidence-add correspondence**: the LanguageDef reduction
   `Extract(Revise(W₁,W₂), q) → Combine(Extract(W₁,q), Extract(W₂,q))`
   is the syntactic shadow of `folEvidence (W₁+W₂) φ = folEvidence W₁ φ + folEvidence W₂ φ`.
 - **Diamond interpretation**: ◇(isCombined) at decomposable terms means evidence
   can be decomposed into per-source Tarskian satisfaction counts.
 - **Singleton adequacy**: sentence truth ↔ strength = 1 lifts through
   the valuation.
-- **Evidence barbs**: non-zero evidence from satisfying structures.
+- **BinaryEvidence barbs**: non-zero evidence from satisfying structures.
 - **Satisfiability as evidence**: any satisfying structure yields non-zero evidence.
 - **Validity as maximal strength**: all structures satisfying → strength = 1.
 - **Model-theoretic consequence**: FOL semantic consequence ↔ WM strength ordering.
@@ -31,7 +31,7 @@ The bridge proves:
 ## References
 
 - `WMCalculusOSLFBridge.lean` — generic bridge (WMTermEncodes, isCombined, diamond theorems)
-- `PLNWorldModelFOL.lean` — `WorldModel (Multiset (PointedFOL L)) (FOLQuery L)`
+- `PLNWorldModelFOL.lean` — `BinaryWorldModel (Multiset (PointedFOL L)) (FOLQuery L)`
 - `TypeSynthesis.lean` — `langDiamond`, `langBox`, `langGalois`, `langOSLF`
 -/
 
@@ -63,7 +63,7 @@ structure FOLValuation (L : Language.{u}) where
   /-- Maps query names to first-order sentences. -/
   queryVal : String → FOLQuery L
 
-/-! ## Section 2: Evidence-Add Correspondence
+/-! ## Section 2: BinaryEvidence-Add Correspondence
 
 The core bridge theorem: the LanguageDef reduction and the mathematical identity
 are the same fact expressed in two formalisms. -/
@@ -111,7 +111,7 @@ theorem fol_diamond_evidence_decomposition {L : Language.{u}}
     langDiamond (wmExtVertexLanguageDef v) isCombined
       (pExtract (pRevise (.fvar s₁) (.fvar s₂)) (.fvar q)) ∧
     -- Semantic: evidence decomposes into per-source components
-    ∃ e₁ e₂ : Evidence,
+    ∃ e₁ e₂ : BinaryEvidence,
       e₁ = folEvidence (val.stateVal s₁) (val.queryVal q) ∧
       e₂ = folEvidence (val.stateVal s₂) (val.queryVal q) ∧
       folEvidence (val.stateVal s₁ + val.stateVal s₂) (val.queryVal q) = e₁ + e₂ :=
@@ -142,13 +142,13 @@ theorem fol_singleton_adequacy_lift {L : Language.{u}}
     (val : FOLValuation L) (S : PointedFOL L) (φ : FOLQuery L)
     (s : String) (hs : val.stateVal s = {S}) :
     folSatisfies S φ ↔
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (PointedFOL L)) (Query := FOLQuery L)
         (val.stateVal s) φ = 1 := by
   rw [hs]
   exact singleton_adequacy_strength_one S φ
 
-/-! ## Section 5: Evidence Barb (Process-Algebraic Observable)
+/-! ## Section 5: BinaryEvidence Barb (Process-Algebraic Observable)
 
 A revised FOL state exhibits an evidence barb when the combined
 evidence is non-zero — the topological observable. -/
@@ -164,7 +164,7 @@ theorem fol_revised_barb (v : WMExtVertex) (s₁ s₂ q : String)
       (pRevise (.fvar s₁) (.fvar s₂)) (.fvar q) :=
   wmRevisedState_evidenceBarb v (.fvar s₁) (.fvar s₂) (.fvar q) hne
 
-/-! ## Section 6: Satisfying Structure → Non-Zero Evidence
+/-! ## Section 6: Satisfying Structure → Non-Zero BinaryEvidence
 
 If any pointed FOL structure in the multiset satisfies the query,
 the evidence is non-zero. -/
@@ -201,9 +201,9 @@ theorem fol_consequence_lifts {L : Language.{u}}
     (φ ψ : FOLQuery L)
     (himp : ∀ S : PointedFOL L, folSatisfies S φ → folSatisfies S ψ)
     (W : Multiset (PointedFOL L)) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       (State := Multiset (PointedFOL L)) (Query := FOLQuery L) W φ ≤
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       (State := Multiset (PointedFOL L)) (Query := FOLQuery L) W ψ :=
   queryStrength_le_of_pointwise W φ ψ himp
 
@@ -244,7 +244,7 @@ theorem fol_strength_one_of_validity {L : Language.{u}}
     (W : Multiset (PointedFOL L)) (φ : FOLQuery L)
     (hvalid : ∀ S ∈ W, folSatisfies S φ)
     (hne : W ≠ 0) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       (State := Multiset (PointedFOL L)) (Query := FOLQuery L) W φ = 1 := by
   classical
   -- All structures satisfy φ, so countP = card and strength = card/card = 1
@@ -260,10 +260,10 @@ theorem fol_strength_one_of_validity {L : Language.{u}}
     apply Multiset.countP_eq_zero.mpr
     intro S hS habs
     exact habs (hvalid S hS)
-  change Evidence.toStrength (folEvidence W φ) = 1
-  simp only [Evidence.toStrength, folEvidence, hcount, hcountNeg]
+  change BinaryEvidence.toStrength (folEvidence W φ) = 1
+  simp only [BinaryEvidence.toStrength, folEvidence, hcount, hcountNeg]
   have hne0 : (W.card : ℝ≥0∞) ≠ 0 := by positivity
-  simp [Evidence.total, hne0]
+  simp [BinaryEvidence.total, hne0]
   exact ENNReal.div_self hne0 (ENNReal.natCast_ne_top W.card)
 
 /-! ## Section 10: FOL Model-Theoretic Consequence Bridge
@@ -278,9 +278,9 @@ theorem fol_model_theoretic_consequence_is_strength_le {L : Language.{u}}
     (φ ψ : FOLQuery L)
     (hcons : ∀ S : PointedFOL L, folSatisfies S φ → folSatisfies S ψ)
     (W : Multiset (PointedFOL L)) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       (State := Multiset (PointedFOL L)) (Query := FOLQuery L) W φ ≤
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       (State := Multiset (PointedFOL L)) (Query := FOLQuery L) W ψ :=
   queryStrength_le_of_pointwise W φ ψ hcons
 

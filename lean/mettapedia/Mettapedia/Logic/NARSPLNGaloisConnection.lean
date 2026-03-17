@@ -64,10 +64,10 @@ def toTV (n : NARSTruthValue) : TV := ⟨n.f, n.c⟩
 theorem isProbTV (n : NARSTruthValue) : IsProbTV n.toTV :=
   ⟨n.f_nonneg, n.f_le_one, n.c_nonneg, n.c_lt_one⟩
 
-/-- Evidence weight of a NARS truth value. -/
+/-- BinaryEvidence weight of a NARS truth value. -/
 noncomputable def weight (n : NARSTruthValue) : ℝ := c2w n.c
 
-/-- Evidence weight is non-negative. -/
+/-- BinaryEvidence weight is non-negative. -/
 theorem weight_nonneg (n : NARSTruthValue) : 0 ≤ n.weight := by
   unfold weight c2w
   have h : 0 < 1 - n.c := sub_pos.mpr n.c_lt_one
@@ -94,7 +94,7 @@ The informativeness order is based on total evidence count.
 
 /-- A PLN belief: evidence + prior context. -/
 structure PLNBelief where
-  evidence : Evidence
+  evidence : BinaryEvidence
   prior : BinaryContext
 
 namespace PLNBelief
@@ -185,7 +185,7 @@ noncomputable def U (b : PLNBelief) : NARSTruthValue where
 This is the key property that connects NARS confidence to PLN evidence. -/
 theorem L_total_eq_weight (n : NARSTruthValue) :
     (L n).totalEvidence = ENNReal.ofReal (c2w n.c) := by
-  simp only [L, PLNBelief.totalEvidence, Evidence.total]
+  simp only [L, PLNBelief.totalEvidence, BinaryEvidence.total]
   -- pos + neg = f*w + (1-f)*w = w
   have hf : 0 ≤ n.f := n.f_nonneg
   have h1f : 0 ≤ 1 - n.f := sub_nonneg.mpr n.f_le_one
@@ -235,7 +235,7 @@ theorem U_weight_eq_total (b : PLNBelief) (htop : b.evidence.total ≠ ⊤) :
 
 /-- Round-trip: U ∘ L preserves confidence. -/
 theorem U_L_conf_round_trip (n : NARSTruthValue) : (U (L n)).c = n.c := by
-  simp only [U, L, Evidence.total]
+  simp only [U, L, BinaryEvidence.total]
   have hw : c2w n.c ≥ 0 := n.weight_nonneg
   have hf : 0 ≤ n.f := n.f_nonneg
   have h1f : 0 ≤ 1 - n.f := sub_nonneg.mpr n.f_le_one
@@ -259,7 +259,7 @@ theorem U_L_conf_round_trip (n : NARSTruthValue) : (U (L n)).c = n.c := by
 
 /-- Round-trip: U ∘ L preserves frequency (when c > 0). -/
 theorem U_L_freq_round_trip (n : NARSTruthValue) (hc : n.c > 0) : (U (L n)).f = n.f := by
-  simp only [U, L, Evidence.total]
+  simp only [U, L, BinaryEvidence.total]
   have hw : c2w n.c ≥ 0 := n.weight_nonneg
   have hf : 0 ≤ n.f := n.f_nonneg
   have h1f : 0 ≤ 1 - n.f := sub_nonneg.mpr n.f_le_one

@@ -1,7 +1,7 @@
 import Mettapedia.Logic.GovernanceReasoning.Bridge
 
 /-!
-# Evidence-Graded Actuality and Acceptance Policy
+# BinaryEvidence-Graded Actuality and Acceptance Policy
 
 Replaces the metaphysical "really exists" reading of `rexist` with a
 two-layer semantics:
@@ -25,7 +25,7 @@ certainty-1 truth. This follows the formal-belief literature's separation
 of graded belief from categorical acceptance.
 
 Three bridge strengths form a hierarchy:
-- **Evidence equality** (`RexistBridge` / `WMQueryEq`) — strongest
+- **BinaryEvidence equality** (`RexistBridge` / `WMQueryEq`) — strongest
 - **Strength agreement** — intermediate (future work)
 - **Acceptance agreement** (`AcceptanceBridge`) — weakest, most realistic
 
@@ -45,37 +45,37 @@ open Mettapedia.Logic.GovernanceReasoning.Core
 open Mettapedia.Logic.GovernanceReasoning.Bridge
 open scoped ENNReal
 
-/-! ## §1 Eventuality Evidence
+/-! ## §1 Eventuality BinaryEvidence
 
 Thin wrappers giving the clean "occurrence / obtains" vocabulary
 over the existing `modalEvidence … .rexist` channel. -/
 
 variable {State Entity Pred Query : Type*}
-  [EvidenceType State] [WorldModel State Query]
+  [EvidenceType State] [BinaryWorldModel State Query]
 
-/-- Evidence that an eventuality obtained / occurred.
+/-- BinaryEvidence that an eventuality obtained / occurred.
 
     Semantically: "how much evidence is there that this eventuality
     occurred in world-model state W?" This replaces the metaphysical
     "really exists" reading of `rexist`. -/
 def eventualityEvidence
     (W : State) (enc : DeonticQueryEncoder Entity Pred Query)
-    (e : Eventuality Entity Pred) : Evidence :=
+    (e : Eventuality Entity Pred) : BinaryEvidence :=
   DeonticQueryEncoder.modalEvidence (State := State) W enc .rexist e
 
 /-- Short alias for `eventualityEvidence`. -/
 abbrev eventEvidence := @eventualityEvidence
 
-/-! ## §2 Projection Evidence
+/-! ## §2 Projection BinaryEvidence
 
 Aliases giving the "projection" vocabulary over the existing
 `groundEvidence` / `groundQuery` channel. A projection query asks:
 "what structured fact-shadow of the eventuality is supported?" -/
 
-/-- Evidence for a structured factual projection (CT-triple) of an eventuality. -/
+/-- BinaryEvidence for a structured factual projection (CT-triple) of an eventuality. -/
 def projectionEvidence
     (W : State) (enc : DeonticQueryEncoder Entity Pred Query)
-    (t : CTTriple Entity Pred) : Evidence :=
+    (t : CTTriple Entity Pred) : BinaryEvidence :=
   DeonticQueryEncoder.groundEvidence (State := State) W enc t
 
 /-- Alias: projection query = ground query with cleaner semantics. -/
@@ -94,7 +94,7 @@ categorical governance reasoning. -/
     for categorical acceptance in governance reasoning. -/
 structure AcceptancePolicy where
   /-- Whether the policy accepts the given evidence as sufficient. -/
-  accepts : Evidence → Prop
+  accepts : BinaryEvidence → Prop
 
 /-- An eventuality is accepted as having occurred under policy `π`. -/
 def acceptedOccurrence
@@ -149,16 +149,16 @@ theorem acceptanceBridge_of_rexistBridge
 
 /-! ## §5 Support/Confidence Preorder Family
 
-A parameterized preorder on `Evidence` that compares both support (strength)
+A parameterized preorder on `BinaryEvidence` that compares both support (strength)
 and confidence simultaneously. Unlike the raw coordinatewise order `≤` on
-Evidence (which includes more negative evidence), this preorder captures the
+BinaryEvidence (which includes more negative evidence), this preorder captures the
 intended meaning: "at least as supported and at least as confident."
 
 This is one member of a **family** of preorders, parameterized by a prior
 context `ctx` and a confidence parameter `κ`. Different governance applications
 may choose different (ctx, κ) pairs.
 
-### Why not a global order on Evidence?
+### Why not a global order on BinaryEvidence?
 
 The coordinatewise order `e₁ ≤ e₂ ↔ pos₁ ≤ pos₂ ∧ neg₁ ≤ neg₂` is wrong
 for strength-based acceptance: `⟨8,1⟩ ≤ ⟨8,100⟩` but the latter has much
@@ -171,18 +171,18 @@ Foley, "Degrees of Belief".) -/
     confidence as `e₁`, relative to prior context `ctx` and confidence
     parameter `κ`.  Equivalently, `e₁` is no stronger than `e₂`. -/
 noncomputable def supportConfidenceLE
-    (ctx : BinaryContext) (κ : ℝ≥0∞) (e₁ e₂ : Evidence) : Prop :=
-  Evidence.strengthWith ctx e₁ ≤ Evidence.strengthWith ctx e₂ ∧
-  Evidence.toConfidence κ e₁ ≤ Evidence.toConfidence κ e₂
+    (ctx : BinaryContext) (κ : ℝ≥0∞) (e₁ e₂ : BinaryEvidence) : Prop :=
+  BinaryEvidence.strengthWith ctx e₁ ≤ BinaryEvidence.strengthWith ctx e₂ ∧
+  BinaryEvidence.toConfidence κ e₁ ≤ BinaryEvidence.toConfidence κ e₂
 
 theorem supportConfidenceLE_refl
-    (ctx : BinaryContext) (κ : ℝ≥0∞) (e : Evidence) :
+    (ctx : BinaryContext) (κ : ℝ≥0∞) (e : BinaryEvidence) :
     supportConfidenceLE ctx κ e e :=
   ⟨le_refl _, le_refl _⟩
 
 theorem supportConfidenceLE_trans
     (ctx : BinaryContext) (κ : ℝ≥0∞)
-    {e₁ e₂ e₃ : Evidence}
+    {e₁ e₂ e₃ : BinaryEvidence}
     (h₁₂ : supportConfidenceLE ctx κ e₁ e₂)
     (h₂₃ : supportConfidenceLE ctx κ e₂ e₃) :
     supportConfidenceLE ctx κ e₁ e₃ :=

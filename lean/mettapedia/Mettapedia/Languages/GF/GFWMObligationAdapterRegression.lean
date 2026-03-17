@@ -22,13 +22,14 @@ open Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open scoped ENNReal
 
-abbrev TestState := Evidence
+abbrev TestState := BinaryEvidence
 
-instance : WorldModel TestState Pattern where
+instance : BinaryWorldModel TestState Pattern where
   evidence := fun W _ => W
   evidence_add := by
     intro W₁ W₂ _
     simp
+  evidence_zero _ := rfl
 
 def t₁ : AbstractNode := mkApp1 "UseN" "N" "CN" (mkLeaf "house" "N")
 def t₂ : AbstractNode := mkApp1 "UseN" "N" "CN" (mkLeaf "house" "N")
@@ -45,10 +46,10 @@ def testPureInterface : PureJudgmentWMInterface TestState Pattern where
   profileStep_sound := by
     intro W p q _ _
     have hEv :
-        WorldModel.evidence (State := TestState) (Query := Pattern) W p =
-          WorldModel.evidence (State := TestState) (Query := Pattern) W q := by
+        BinaryWorldModel.evidence (State := TestState) (Query := Pattern) W p =
+          BinaryWorldModel.evidence (State := TestState) (Query := Pattern) W q := by
       rfl
-    exact le_of_eq (congrArg Evidence.toStrength hEv)
+    exact le_of_eq (congrArg BinaryEvidence.toStrength hEv)
 
 /-- Direct GF syntactic transport consumed as a pure-style WM obligation. -/
 theorem canary_gfSyntaxHom_to_pureStyleObligation (W : TestState) :
@@ -92,8 +93,8 @@ theorem canary_notFull_constantEvidence :
     ¬ CategoryTheory.Functor.Full (syntaxToWMFunctor (State := TestState)) := by
   have hconst :
       ∀ W : TestState, ∀ p q : Pattern,
-        WorldModel.evidence (State := TestState) (Query := Pattern) W p =
-        WorldModel.evidence (State := TestState) (Query := Pattern) W q := by
+        BinaryWorldModel.evidence (State := TestState) (Query := Pattern) W p =
+        BinaryWorldModel.evidence (State := TestState) (Query := Pattern) W q := by
     intro W p q
     rfl
   let A0 : GFSyntaxObj := ⟨mkLeaf "house" "N"⟩

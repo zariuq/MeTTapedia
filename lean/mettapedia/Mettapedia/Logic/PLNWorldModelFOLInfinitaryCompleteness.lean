@@ -40,8 +40,8 @@ theorem pointwiseImplies_iff_singletonStrengthLE {L : Language.{u}}
 theorem multiset_strength_le_of_pointwise {L : Language.{u}}
     (W : FOLInfState L) (q₁ q₂ : FOLInfQuery L)
     (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₁ ≤
-      WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₂ := by
+    BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₂ := by
   exact
     Mettapedia.Logic.PLNWorldModelFOLInfinitary.queryStrength_le_of_pointwise
       (W := W) (q₁ := q₁) (q₂ := q₂) himp
@@ -49,8 +49,8 @@ theorem multiset_strength_le_of_pointwise {L : Language.{u}}
 theorem multiset_strength_le_of_singletonStrengthLE {L : Language.{u}}
     (W : FOLInfState L) (q₁ q₂ : FOLInfQuery L)
     (hsing : singletonStrengthLE q₁ q₂) :
-    WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₁ ≤
-      WorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₂ := by
+    BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := FOLInfState L) (Query := FOLInfQuery L) W q₂ := by
   have himp : pointwiseImplies q₁ q₂ :=
     (pointwiseImplies_iff_singletonStrengthLE (q₁ := q₁) (q₂ := q₂)).2 hsing
   exact multiset_strength_le_of_pointwise (W := W) (q₁ := q₁) (q₂ := q₂) himp

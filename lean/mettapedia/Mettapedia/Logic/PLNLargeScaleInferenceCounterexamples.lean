@@ -51,9 +51,9 @@ theorem ch9_poolingAxioms_notUnique
   maxPoolingOperator_ne_fuse
 
 theorem ch9_poolingUnique_of_externalBayes_totalAdd
-    (poolE : Mettapedia.Logic.EvidenceQuantale.Evidence →
-      Mettapedia.Logic.EvidenceQuantale.Evidence →
-      Mettapedia.Logic.EvidenceQuantale.Evidence)
+    (poolE : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence →
+      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence →
+      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence)
     (hexBayes : ∀ x y ℓ, poolE (x * ℓ) (y * ℓ) = poolE x y * ℓ)
     (htotal : ∀ x y, (poolE x y).total = x.total + y.total) :
     ∀ x y, poolE x y = x + y :=

@@ -25,7 +25,7 @@ omit [DecidableEq World] in
 theorem wm_queryStrength_eq_restricted_queryProb
     (M : CountableMLNSemantics World Query Feature)
     {support : Finset World} (hs : FiniteSupportWitness M support) (q : Query) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       ({compiledMassSemantics M hs} : MassState Query) q =
       (restrictedMassSemantics M hs).queryProb q := by
   rw [MassState.queryStrength_singleton_eq_queryProb]
@@ -35,7 +35,7 @@ omit [DecidableEq World] in
 theorem wm_queryStrength_eq_full_queryProb_of_finite_support
     (M : CountableMLNSemantics World Query Feature)
     {support : Finset World} (hs : FiniteSupportWitness M support) (q : Query) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       ({compiledMassSemantics M hs} : MassState Query) q =
       (M.toMassSemantics.queryProb q) := by
   rw [wm_queryStrength_eq_restricted_queryProb M hs q]

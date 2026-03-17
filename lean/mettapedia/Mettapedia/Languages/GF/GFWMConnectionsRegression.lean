@@ -23,13 +23,14 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.QuantifiedFormula2
 open scoped ENNReal
 
-abbrev TestState := Evidence
+abbrev TestState := BinaryEvidence
 
-instance : WorldModel TestState Pattern where
+instance : BinaryWorldModel TestState Pattern where
   evidence := fun W _ => W
   evidence_add := by
     intro W₁ W₂ _
     simp
+  evidence_zero _ := rfl
 
 def t₁ : AbstractNode := mkApp1 "UseN" "N" "CN" (mkLeaf "house" "N")
 def t₂ : AbstractNode := mkApp1 "UseN" "N" "CN" (mkLeaf "house" "N")
@@ -41,9 +42,9 @@ def hAB : A ⟶ B := PLift.up rfl
 
 /-- Categorical map from GF syntax to WM semantics gives concrete strength equality. -/
 theorem canary_syntaxToWM_strength (W : TestState) :
-    WorldModel.queryStrength (State := TestState) (Query := Pattern) W
+    BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W
       (wmQuery (State := TestState) (syntaxToWMFunctor.obj A)) =
-    WorldModel.queryStrength (State := TestState) (Query := Pattern) W
+    BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W
       (wmQuery (State := TestState) (syntaxToWMFunctor.obj B)) := by
   simpa [A, B, hAB] using
     (syntaxToWMFunctor_map_strengthEq (State := TestState) (A := A) (B := B) hAB W)
@@ -51,22 +52,22 @@ theorem canary_syntaxToWM_strength (W : TestState) :
 /-- The WM consequence-rule wrapper built from a GF syntactic transport is consumable. -/
 theorem canary_syntaxHom_rule_apply (W : TestState) :
     let rule := wmConsequenceRuleOn_of_syntaxHom (State := TestState) (A := A) (B := B) hAB
-    WorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.premise ≤
-      WorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.conclusion := by
+    BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.premise ≤
+      BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.conclusion := by
   intro rule
   exact rule.sound (W := W) trivial
 
 /-- Direct WM-strength endpoint from a syntactic hom is consumable. -/
 theorem canary_syntaxHom_strengthLE (W : TestState) :
-    WorldModel.queryStrength (State := TestState) (Query := Pattern) W (syntaxQuery A) ≤
-      WorldModel.queryStrength (State := TestState) (Query := Pattern) W (syntaxQuery B) := by
+    BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W (syntaxQuery A) ≤
+      BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W (syntaxQuery B) := by
   exact wmStrengthLE_of_syntaxHom (State := TestState) (A := A) (B := B) hAB W
 
 /-- Tree-pattern equality wrapper endpoint is consumable as a WM rule. -/
 theorem canary_treePatternEq_rule_apply (W : TestState) :
     let rule := wmConsequenceRuleOn_of_treePatternEq (State := TestState) (t₁ := t₁) (t₂ := t₂) rfl
-    WorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.premise ≤
-      WorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.conclusion := by
+    BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.premise ≤
+      BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.conclusion := by
   intro rule
   exact rule.sound (W := W) trivial
 
@@ -82,9 +83,9 @@ theorem canary_scopeOrderingNTBridge_nonempty
 
 /-- Positive canary for Frege-strong compositional transport. -/
 theorem canary_fregeStrong_strength_fixture (W : TestState) :
-    WorldModel.queryStrength (State := TestState) (Query := Pattern) W
+    BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W
       (gfAbstractToPattern (.apply FunctionSig.UseN [mkLeaf "house" "N"])) =
-    WorldModel.queryStrength (State := TestState) (Query := Pattern) W
+    BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W
       (gfAbstractToPattern (.apply FunctionSig.UseN [mkLeaf "house" "N"])) := by
   exact
     (Mettapedia.Languages.GF.GFWMConnections.canary_fregeStrong_strength (State := TestState)
@@ -94,8 +95,8 @@ theorem canary_fregeStrong_strength_fixture (W : TestState) :
 theorem canary_fregeStrong_rule_fixture (W : TestState) :
     let rule := wmConsequenceRuleOn_of_fregeStrong (State := TestState)
       FunctionSig.UseN [mkLeaf "house" "N"] [mkLeaf "house" "N"] rfl
-    WorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.premise ≤
-      WorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.conclusion := by
+    BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.premise ≤
+      BinaryWorldModel.queryStrength (State := TestState) (Query := Pattern) W rule.conclusion := by
   intro rule
   exact rule.sound (W := W) trivial
 

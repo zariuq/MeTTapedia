@@ -81,7 +81,7 @@ theorem hierarchical_regression_empirical_probStrength_eq_static :
           (empiricalModelSpace (Base := FixtureBase) (Const := FixtureConst) empiricalPair)
           empiricalPairMeasure)
         flagSentence =
-      Mettapedia.Logic.PLNWorldModel.WorldModel.queryStrength
+      Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel FixtureBase FixtureConst))
         (Query := Mettapedia.Logic.HOL.WorldModel.HOLQuery FixtureConst)
         empiricalPair

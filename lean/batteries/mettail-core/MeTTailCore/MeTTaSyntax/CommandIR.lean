@@ -22,8 +22,9 @@ inductive SyntaxCommand where
   | builtinFact : String → List Pattern → SyntaxCommand
   /-- `(set-fuel n)` or equivalent runtime tuning command. -/
   | setFuel : Nat → SyntaxCommand
-  /-- `(import! "path")` / `(import! module)` style command. -/
-  | import : String → SyntaxCommand
+  /-- `(import! path)` or `(import! space path)` — canonical import command.
+      First arg = target space, second arg = import path/module. -/
+  | import : Pattern → Pattern → SyntaxCommand
   /-- `(new-space! name)` style command. -/
   | newSpace : String → SyntaxCommand
   /-- `(add-atom! space atom)` style command. -/

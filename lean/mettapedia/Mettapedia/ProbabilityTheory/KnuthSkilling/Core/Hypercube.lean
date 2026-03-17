@@ -160,8 +160,8 @@ The "gate" is NOT about incomparability forcing intervals.
 The gate is about complement behavior determining whether
 the natural bounds [ν(a), 1 - ν(¬a)] collapse to a point.
 
-PLN Evidence sits at Heyting + 2D because:
-- Evidence is NOT Boolean (incomparable states exist)
+PLN BinaryEvidence sits at Heyting + 2D because:
+- BinaryEvidence is NOT Boolean (incomparable states exist)
 - The 2D representation (n⁺, n⁻) tracks positive/negative evidence separately
 - Collapsing to 1D loses the non-Boolean structure
 -/

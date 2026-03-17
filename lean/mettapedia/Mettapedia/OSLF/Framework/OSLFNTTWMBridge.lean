@@ -34,7 +34,7 @@ open Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine
 section AtomTriangle
 
 variable {State : Type*}
-variable [EvidenceType State] [WorldModel State Pattern]
+variable [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /--
 Atom-level OSLF -> NTT -> WM triangle endpoint.
@@ -49,7 +49,7 @@ theorem oslf_atom_ntt_wm_triangle
     (relEnv : MeTTaIL.Engine.RelationEnv)
     (W : State)
     (Ξ : XiPLN (State := State) (Query := Pattern))
-    (a : String) (p : Pattern) (X : PLNObj) (e : Evidence)
+    (a : String) (p : Pattern) (X : PLNObj) (e : BinaryEvidence)
     (hDer : XiDerivesAtomEvidence Ξ W a p e)
     (hW : WMJudgment W) :
     semE (Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv MeTTaToNTT.mettaFull)
@@ -63,7 +63,7 @@ theorem oslf_atom_ntt_wm_triangle
       (R := Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv MeTTaToNTT.mettaFull)
       hDer
 
-  have hAtomEq : WorldModel.evidence W (Ξ.queryOfAtom a p) = e := by
+  have hAtomEq : BinaryWorldModel.evidence W (Ξ.queryOfAtom a p) = e := by
     simpa [wmEvidenceAtomSemQ] using hSem
 
   have hQ : WMQueryJudgment W (Ξ.queryOfAtom a p) e :=
@@ -74,7 +74,7 @@ theorem oslf_atom_ntt_wm_triangle
     (MeTTaToNTT.mettaFormulaToNT relEnv W Ξ.queryOfAtom (.atom a) p X).2
         = MeTTaToNTT.mettaSemE relEnv W Ξ.queryOfAtom (.atom a) p := by
             rfl
-    _ = WorldModel.evidence W (Ξ.queryOfAtom a p) := by
+    _ = BinaryWorldModel.evidence W (Ξ.queryOfAtom a p) := by
           simp [MeTTaToNTT.mettaSemE, wmEvidenceAtomSem]
     _ = e := hAtomEq
 
@@ -90,7 +90,7 @@ theorem oslf_atom_ntt_wm_triangle_categorical
     (relEnv : MeTTaIL.Engine.RelationEnv)
     (W : State)
     (Ξ : XiPLN (State := State) (Query := Pattern))
-    (a : String) (p : Pattern) (X : PLNObj) (e : Evidence)
+    (a : String) (p : Pattern) (X : PLNObj) (e : BinaryEvidence)
     (hDer : XiDerivesAtomEvidence Ξ W a p e)
     (hW : WMJudgment W) :
     semE (Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv MeTTaToNTT.mettaFull)
@@ -106,7 +106,7 @@ end AtomTriangle
 section FormulaTriangle
 
 variable {State : Type*}
-variable [EvidenceType State] [WorldModel State Pattern]
+variable [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /--
 Formula-level OSLF -> NTT evidence-component endpoint.
@@ -248,7 +248,7 @@ end FormulaTriangle
 section FormulaCategoricalEndpoint
 
 variable {State : Type*}
-variable [EvidenceType State] [WorldModel State Pattern]
+variable [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- Formula-level endpoint surface reused by categorical wrappers. -/
 abbrev FormulaGraphEndpoint

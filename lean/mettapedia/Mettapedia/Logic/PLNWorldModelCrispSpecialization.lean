@@ -37,7 +37,7 @@ variable {Point : Type u} {Query : Type v}
 crisp satisfaction predicate. -/
 noncomputable def crispEvidence
     (satisfies : Point → Query → Prop)
-    (W : Multiset Point) (q : Query) : Evidence := by
+    (W : Multiset Point) (q : Query) : BinaryEvidence := by
   classical
   exact
     ⟨(Multiset.countP (fun x => satisfies x q) W : ℝ≥0∞),
@@ -47,7 +47,7 @@ noncomputable def crispEvidence
 noncomputable def crispQueryStrength
     (satisfies : Point → Query → Prop)
     (W : Multiset Point) (q : Query) : ℝ≥0∞ :=
-  Evidence.toStrength (crispEvidence satisfies W q)
+  BinaryEvidence.toStrength (crispEvidence satisfies W q)
 
 /-- Singleton-strength consequence schema for a crisp specialization. -/
 def singletonStrengthLE
@@ -57,7 +57,7 @@ def singletonStrengthLE
     crispQueryStrength satisfies ({x} : Multiset Point) q₁ ≤
       crispQueryStrength satisfies ({x} : Multiset Point) q₂
 
-/-- Evidence-level query equivalence for a crisp specialization. -/
+/-- BinaryEvidence-level query equivalence for a crisp specialization. -/
 def CrispQueryEq
     (satisfies : Point → Query → Prop)
     (q₁ q₂ : Query) : Prop :=
@@ -69,9 +69,9 @@ theorem crispEvidence_add
     crispEvidence satisfies (W₁ + W₂) q =
       crispEvidence satisfies W₁ q + crispEvidence satisfies W₂ q := by
   classical
-  apply Evidence.ext'
-  · simp [crispEvidence, Multiset.countP_add, Evidence.hplus_def]
-  · simp [crispEvidence, Multiset.countP_add, Evidence.hplus_def]
+  apply BinaryEvidence.ext'
+  · simp [crispEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
+  · simp [crispEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
 
 theorem crispEvidence_singleton_of_satisfies
     (satisfies : Point → Query → Prop)
@@ -94,7 +94,7 @@ theorem queryStrength_singleton_of_satisfies
     crispQueryStrength satisfies ({x} : Multiset Point) q = 1 := by
   unfold crispQueryStrength
   rw [crispEvidence_singleton_of_satisfies satisfies x q h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 /-- Singleton states recover crisp strength `0` from refutation. -/
 theorem queryStrength_singleton_of_not_satisfies
@@ -103,7 +103,7 @@ theorem queryStrength_singleton_of_not_satisfies
     crispQueryStrength satisfies ({x} : Multiset Point) q = 0 := by
   unfold crispQueryStrength
   rw [crispEvidence_singleton_of_not_satisfies satisfies x q h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 /-- Singleton adequacy: truth iff singleton strength is `1`. -/
 theorem singleton_adequacy_strength_one
@@ -190,7 +190,7 @@ private theorem crispEvidence_total
         (Multiset.countP (fun x : Point => satisfies x q) W : ℝ≥0∞) +
           (Multiset.countP (fun x : Point => ¬ satisfies x q) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold crispEvidence Evidence.total
+  unfold crispEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 /-- Pointwise semantic implication lifts to multiset strength inequality. -/
@@ -206,13 +206,13 @@ theorem queryStrength_le_of_pointwise
   have hq₁ :
       crispQueryStrength satisfies W q₁ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₁ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold crispQueryStrength Evidence.toStrength
+    unfold crispQueryStrength BinaryEvidence.toStrength
     rw [crispEvidence_total satisfies (W := W) (q := q₁)]
     simp [crispEvidence, p₁]
   have hq₂ :
       crispQueryStrength satisfies W q₂ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP p₂ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold crispQueryStrength Evidence.toStrength
+    unfold crispQueryStrength BinaryEvidence.toStrength
     rw [crispEvidence_total satisfies (W := W) (q := q₂)]
     simp [crispEvidence, p₂]
   by_cases hcard : (W.card : ℝ≥0∞) = 0
@@ -251,7 +251,7 @@ theorem queryEq_of_pointwiseIff
   classical
   ext <;> simp [crispEvidence, hiff]
 
-/-- Evidence-level query equivalence transports crisp query strength. -/
+/-- BinaryEvidence-level query equivalence transports crisp query strength. -/
 theorem queryEq_to_queryStrength
     (satisfies : Point → Query → Prop)
     {q₁ q₂ : Query}
@@ -259,7 +259,7 @@ theorem queryEq_to_queryStrength
     (W : Multiset Point) :
     crispQueryStrength satisfies W q₁ = crispQueryStrength satisfies W q₂ := by
   unfold crispQueryStrength
-  simpa using congrArg Evidence.toStrength (hEq W)
+  simpa using congrArg BinaryEvidence.toStrength (hEq W)
 
 /-- Pointwise semantic equivalence yields equality of multiset strengths. -/
 theorem queryStrength_eq_of_pointwiseIff

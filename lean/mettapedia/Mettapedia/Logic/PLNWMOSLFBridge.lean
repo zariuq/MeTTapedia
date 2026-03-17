@@ -43,25 +43,25 @@ open scoped ENNReal
 section CoreBridge
 
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- Generic atom-evidence semantics from WM queries.
 
 Unlike `wmEvidenceAtomSem` (which hardcodes `Query = Pattern`), this works
-with arbitrary `Query` types (e.g. `PLNQuery Atom`). -/
+with arbitrary `Query` types (e.g. `AtomQuery Atom`). -/
 noncomputable def wmEvidenceAtomSemQ
     (W : State) (queryOfAtom : String → Pattern → Query) : EvidenceAtomSem :=
-  fun a p => WorldModel.evidence W (queryOfAtom a p)
+  fun a p => BinaryWorldModel.evidence W (queryOfAtom a p)
 
 /-- Strength-level threshold atom semantics from WM queries.
 
 An atom holds when the posterior-mean strength of the corresponding WM query
 exceeds threshold `tau`. This connects to `WMStrengthRule.derive` (which
 returns `ℝ≥0∞`), unlike the evidence-level `threshAtomSem` (which uses
-`τ : Evidence`). -/
+`τ : BinaryEvidence`). -/
 noncomputable def thresholdAtomSemOfWMQ
     (W : State) (tau : ℝ≥0∞) (queryOfAtom : String → Pattern → Query) : AtomSem :=
-  fun a p => tau ≤ Evidence.toStrength (WorldModel.evidence W (queryOfAtom a p))
+  fun a p => tau ≤ BinaryEvidence.toStrength (BinaryWorldModel.evidence W (queryOfAtom a p))
 
 /-- Atom unfolding: `semE` of an atom under `wmEvidenceAtomSemQ` is the WM evidence
 for the encoded query. -/
@@ -70,14 +70,14 @@ for the encoded query. -/
     (W : State) (queryOfAtom : String → Pattern → Query)
     (a : String) (p : Pattern) :
     semE R (wmEvidenceAtomSemQ W queryOfAtom) (.atom a) p =
-      WorldModel.evidence W (queryOfAtom a p) := rfl
+      BinaryWorldModel.evidence W (queryOfAtom a p) := rfl
 
 /-- `WMQueryJudgment` gives the exact OSLF atom evidence when encoded via
 `queryOfAtom`. -/
 theorem wmQueryJudgment_semE_atom
     (R : Pattern → Pattern → Prop)
     (W : State) (queryOfAtom : String → Pattern → Query)
-    (a : String) (p : Pattern) (e : Evidence)
+    (a : String) (p : Pattern) (e : BinaryEvidence)
     (hQ : WMQueryJudgment W (queryOfAtom a p) e) :
     semE R (wmEvidenceAtomSemQ W queryOfAtom) (.atom a) p = e := by
   simp [wmEvidenceAtomSemQ, hQ.2]
@@ -113,9 +113,9 @@ theorem wmRewriteRule_threshold_atom
     (queryOfAtom : String → Pattern → Query)
     (a : String) (p : Pattern)
     (hEnc : queryOfAtom a p = r.conclusion)
-    (hTau : tau ≤ Evidence.toStrength (r.derive W)) :
+    (hTau : tau ≤ BinaryEvidence.toStrength (r.derive W)) :
     sem R (thresholdAtomSemOfWMQ W tau queryOfAtom) (.atom a) p := by
-  show tau ≤ Evidence.toStrength (WorldModel.evidence W (queryOfAtom a p))
+  show tau ≤ BinaryEvidence.toStrength (BinaryWorldModel.evidence W (queryOfAtom a p))
   rw [hEnc, (r.sound hSide W).symm]
   exact hTau
 
@@ -131,8 +131,8 @@ theorem wmStrengthRule_threshold_atom
     (hEnc : queryOfAtom a p = r.conclusion)
     (hTau : tau ≤ r.derive W) :
     sem R (thresholdAtomSemOfWMQ W tau queryOfAtom) (.atom a) p := by
-  show tau ≤ Evidence.toStrength (WorldModel.evidence W (queryOfAtom a p))
-  rw [hEnc, ← WorldModel.queryStrength, ← r.sound hSide W]
+  show tau ≤ BinaryEvidence.toStrength (BinaryWorldModel.evidence W (queryOfAtom a p))
+  rw [hEnc, ← BinaryWorldModel.queryStrength, ← r.sound hSide W]
   exact hTau
 
 /-- Revision commutation at atom level for the generic query encoder:
@@ -145,21 +145,21 @@ theorem semE_wm_atom_revision_q
     semE R (wmEvidenceAtomSemQ (W₁ + W₂) queryOfAtom) (.atom a) p =
       semE R (wmEvidenceAtomSemQ W₁ queryOfAtom) (.atom a) p +
       semE R (wmEvidenceAtomSemQ W₂ queryOfAtom) (.atom a) p := by
-  simp [wmEvidenceAtomSemQ, WorldModel.evidence_add]
+  simp [wmEvidenceAtomSemQ, BinaryWorldModel.evidence_add]
 
 /-! ### Compatibility with existing Pattern-specialized bridge -/
 
 /-- The generic bridge specializes to the existing `wmEvidenceAtomSem` when
 `Query = Pattern`. -/
 theorem wmEvidenceAtomSemQ_pattern_eq
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (W : State) (queryOfAtom : String → Pattern → Pattern) :
     wmEvidenceAtomSemQ W queryOfAtom = wmEvidenceAtomSem W queryOfAtom := rfl
 
 /-- The generic revision theorem specializes to `semE_wm_atom_revision` when
 `Query = Pattern`. -/
 theorem semE_wm_atom_revision_q_pattern_eq
-    {State : Type*} [EvidenceType State] [WorldModel State Pattern]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pattern]
     (W₁ W₂ : State) (queryOfAtom : String → Pattern → Pattern)
     (R : Pattern → Pattern → Prop) (a : String) (p : Pattern) :
     semE_wm_atom_revision_q R W₁ W₂ queryOfAtom a p =
@@ -172,7 +172,7 @@ end CoreBridge
 section XiPLN
 
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- ξPLN packages a PLN configuration: Σ-guarded WM rules + an OSLF atom→query encoder.
 
@@ -181,16 +181,16 @@ WM calculus) and OSLF formula evaluation (operating on atom names + patterns). -
 structure XiPLN where
   /-- Maps OSLF atom names + patterns to WM queries. -/
   queryOfAtom : String → Pattern → Query
-  /-- Evidence-level rewrite rules available in this PLN configuration. -/
+  /-- BinaryEvidence-level rewrite rules available in this PLN configuration. -/
   rulesE : Set (WMRewriteRule State Query)
   /-- Strength-level rules available. -/
   rulesS : Set (WMStrengthRule State Query)
 
-/-- Evidence-level ξPLN atom derivation judgment: some rewrite rule in `Ξ`
+/-- BinaryEvidence-level ξPLN atom derivation judgment: some rewrite rule in `Ξ`
 derives evidence `e` for atom `a` at pattern `p`. -/
 def XiDerivesAtomEvidence
     (Ξ : XiPLN (State := State) (Query := Query))
-    (W : State) (a : String) (p : Pattern) (e : Evidence) : Prop :=
+    (W : State) (a : String) (p : Pattern) (e : BinaryEvidence) : Prop :=
   ∃ r, r ∈ Ξ.rulesE ∧ r.side ∧
     Ξ.queryOfAtom a p = r.conclusion ∧
     e = r.derive W
@@ -209,7 +209,7 @@ evidence `e` for atom `a`, then `semE` of that atom = `e`. -/
 theorem xiDerivesAtomEvidence_sound
     (Ξ : XiPLN (State := State) (Query := Query))
     (R : Pattern → Pattern → Prop)
-    {W : State} {a : String} {p : Pattern} {e : Evidence}
+    {W : State} {a : String} {p : Pattern} {e : BinaryEvidence}
     (hDer : XiDerivesAtomEvidence Ξ W a p e) :
     semE R (wmEvidenceAtomSemQ W Ξ.queryOfAtom) (.atom a) p = e := by
   obtain ⟨r, _, hside, henc, rfl⟩ := hDer
@@ -243,7 +243,7 @@ derivable. This is the key "PLN ↔ WM" statement: a ξPLN derivation witnesses
 both OSLF atom equality AND a WM query judgment. -/
 theorem xiDerivesAtomEvidence_to_wmQueryJudgment
     (Ξ : XiPLN (State := State) (Query := Query))
-    {W : State} {a : String} {p : Pattern} {e : Evidence}
+    {W : State} {a : String} {p : Pattern} {e : BinaryEvidence}
     (hDer : XiDerivesAtomEvidence Ξ W a p e)
     (hW : WMJudgment W) :
     WMQueryJudgment W (Ξ.queryOfAtom a p) e := by
@@ -261,14 +261,14 @@ while preserving all OSLF soundness properties. -/
 section XiPLNCtx
 
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- ξPLN evidence derivations lift to `WMQueryJudgmentCtx` when the WM state is
 derivable from context Γ. Preserves provenance: the conclusion is only as
 trustworthy as the sources in Γ. -/
 theorem xiDerivesAtomEvidence_to_wmQueryJudgmentCtx
     (Ξ : XiPLN (State := State) (Query := Query))
-    {Γ : Set State} {W : State} {a : String} {p : Pattern} {e : Evidence}
+    {Γ : Set State} {W : State} {a : String} {p : Pattern} {e : BinaryEvidence}
     (hDer : XiDerivesAtomEvidence Ξ W a p e)
     (hW : WMJudgmentCtx Γ W) :
     WMQueryJudgmentCtx Γ W (Ξ.queryOfAtom a p) e := by
@@ -281,7 +281,7 @@ directly from the context-free version. -/
 theorem xiDerivesAtomEvidence_sound_ctx
     (Ξ : XiPLN (State := State) (Query := Query))
     (R : Pattern → Pattern → Prop)
-    {Γ : Set State} {W : State} {a : String} {p : Pattern} {e : Evidence}
+    {Γ : Set State} {W : State} {a : String} {p : Pattern} {e : BinaryEvidence}
     (hDer : XiDerivesAtomEvidence Ξ W a p e)
     (_hW : WMJudgmentCtx Γ W) :
     semE R (wmEvidenceAtomSemQ W Ξ.queryOfAtom) (.atom a) p = e :=
@@ -320,14 +320,14 @@ WM rewrite → atom evidence → `semE` consequence. -/
 
 section ConcreteExample
 
-variable {Atom State : Type*} [EvidenceType State] [WorldModel State (PLNQuery Atom)]
+variable {Atom State : Type*} [EvidenceType State] [BinaryWorldModel State (AtomQuery Atom)]
 
 /-- Example ξPLN with a single d-separation rewrite rule. -/
 noncomputable def xiDsepExample
-    (q₁ q₂ : PLNQuery Atom) (Sigma : Prop)
-    (h : Sigma → WMQueryEq (State := State) (Query := PLNQuery Atom) q₁ q₂)
-    (enc : String → Pattern → PLNQuery Atom) :
-    XiPLN (State := State) (Query := PLNQuery Atom) :=
+    (q₁ q₂ : AtomQuery Atom) (Sigma : Prop)
+    (h : Sigma → WMQueryEq (State := State) (Query := AtomQuery Atom) q₁ q₂)
+    (enc : String → Pattern → AtomQuery Atom) :
+    XiPLN (State := State) (Query := AtomQuery Atom) :=
   { queryOfAtom := enc
     rulesE := {dsep_rewrite (State := State) q₁ q₂ Sigma h}
     rulesS := ∅ }
@@ -335,14 +335,14 @@ noncomputable def xiDsepExample
 /-- End-to-end: if the atom encodes `q₂` and Σ holds, the atom evidence
 equals the evidence for `q₁` (the rewritten query). -/
 theorem xiDsepExample_atom_eq
-    (q₁ q₂ : PLNQuery Atom) (Sigma : Prop)
-    (h : Sigma → WMQueryEq (State := State) (Query := PLNQuery Atom) q₁ q₂)
-    (enc : String → Pattern → PLNQuery Atom)
+    (q₁ q₂ : AtomQuery Atom) (Sigma : Prop)
+    (h : Sigma → WMQueryEq (State := State) (Query := AtomQuery Atom) q₁ q₂)
+    (enc : String → Pattern → AtomQuery Atom)
     (R : Pattern → Pattern → Prop)
     (a : String) (p : Pattern)
     (hEnc : enc a p = q₂) (hSigma : Sigma) (W : State) :
     semE R (wmEvidenceAtomSemQ W enc) (.atom a) p =
-      WorldModel.evidence (State := State) (Query := PLNQuery Atom) W q₁ := by
+      BinaryWorldModel.evidence (State := State) (Query := AtomQuery Atom) W q₁ := by
   simp [wmEvidenceAtomSemQ, hEnc]
   exact (h hSigma W).symm
 
@@ -387,7 +387,7 @@ noncomputable def thresholdAtomSemOfWMQSigma
     (W : State) (tau : ℝ≥0∞)
     (queryOfAtom : String → Pattern → Sigma Query) : AtomSem :=
   fun a p =>
-    tau ≤ Evidence.toStrength
+    tau ≤ BinaryEvidence.toStrength
       (WorldModelSigma.evidence (State := State) (Srt := Srt) (Query := Query) W (queryOfAtom a p))
 
 @[simp] theorem semE_atom_wmEvidenceAtomSemQSigma
@@ -402,7 +402,7 @@ noncomputable def thresholdAtomSemOfWMQSigma
 theorem wmQueryJudgmentSigma_semE_atom
     (R : Pattern → Pattern → Prop)
     (W : State) (queryOfAtom : String → Pattern → Sigma Query)
-    (a : String) (p : Pattern) (e : Evidence)
+    (a : String) (p : Pattern) (e : BinaryEvidence)
     (hQ : WorldModelSigma.WMQueryJudgmentSigma (State := State) (Srt := Srt) (Query := Query)
       W (queryOfAtom a p) e) :
     semE R (wmEvidenceAtomSemQSigma (State := State) (Srt := Srt) (Query := Query) W queryOfAtom)
@@ -430,11 +430,11 @@ theorem wmRewriteRuleSigma_threshold_atom
     (queryOfAtom : String → Pattern → Sigma Query)
     (a : String) (p : Pattern)
     (hEnc : queryOfAtom a p = r.conclusion)
-    (hTau : tau ≤ Evidence.toStrength (r.derive W)) :
+    (hTau : tau ≤ BinaryEvidence.toStrength (r.derive W)) :
     sem R
       (thresholdAtomSemOfWMQSigma (State := State) (Srt := Srt) (Query := Query) W tau queryOfAtom)
       (.atom a) p := by
-  show tau ≤ Evidence.toStrength
+  show tau ≤ BinaryEvidence.toStrength
     (WorldModelSigma.evidence (State := State) (Srt := Srt) (Query := Query) W (queryOfAtom a p))
   rw [hEnc, (r.sound hSide W).symm]
   exact hTau
@@ -452,12 +452,12 @@ theorem wmStrengthRuleSigma_threshold_atom
     sem R
       (thresholdAtomSemOfWMQSigma (State := State) (Srt := Srt) (Query := Query) W tau queryOfAtom)
       (.atom a) p := by
-  show tau ≤ Evidence.toStrength
+  show tau ≤ BinaryEvidence.toStrength
     (WorldModelSigma.evidence (State := State) (Srt := Srt) (Query := Query) W (queryOfAtom a p))
   rw [hEnc]
   have hs :
       r.derive W =
-        Evidence.toStrength
+        BinaryEvidence.toStrength
           (WorldModelSigma.evidence (State := State) (Srt := Srt) (Query := Query) W r.conclusion) := by
     simpa [WorldModelSigma.queryStrength] using (r.sound hSide W)
   rw [← hs]
@@ -498,7 +498,7 @@ structure XiPLNSigma where
 /-- Typed evidence-level ξ-derivation judgment. -/
 def XiDerivesAtomEvidenceSigma
     (Ξ : XiPLNSigma (State := State) (Srt := Srt) (Query := Query))
-    (W : State) (a : String) (p : Pattern) (e : Evidence) : Prop :=
+    (W : State) (a : String) (p : Pattern) (e : BinaryEvidence) : Prop :=
   ∃ r, r ∈ Ξ.rulesE ∧ r.side ∧
     Ξ.queryOfAtom a p = r.conclusion ∧
     e = r.derive W
@@ -515,7 +515,7 @@ def XiDerivesAtomStrengthSigma
 theorem xiDerivesAtomEvidenceSigma_sound
     (Ξ : XiPLNSigma (State := State) (Srt := Srt) (Query := Query))
     (R : Pattern → Pattern → Prop)
-    {W : State} {a : String} {p : Pattern} {e : Evidence}
+    {W : State} {a : String} {p : Pattern} {e : BinaryEvidence}
     (hDer : XiDerivesAtomEvidenceSigma Ξ W a p e) :
     semE R
       (wmEvidenceAtomSemQSigma (State := State) (Srt := Srt) (Query := Query) W Ξ.queryOfAtom)
@@ -541,7 +541,7 @@ theorem xiDerivesAtomStrengthSigma_threshold_sound
 /-- Typed ξ derivations lift to typed WM query judgments. -/
 theorem xiDerivesAtomEvidenceSigma_to_wmQueryJudgment
     (Ξ : XiPLNSigma (State := State) (Srt := Srt) (Query := Query))
-    {W : State} {a : String} {p : Pattern} {e : Evidence}
+    {W : State} {a : String} {p : Pattern} {e : BinaryEvidence}
     (hDer : XiDerivesAtomEvidenceSigma Ξ W a p e)
     (hW : WMJudgment W) :
     WorldModelSigma.WMQueryJudgmentSigma (State := State) (Srt := Srt) (Query := Query)
@@ -552,7 +552,7 @@ theorem xiDerivesAtomEvidenceSigma_to_wmQueryJudgment
 /-- Typed ξ derivations lift to typed context-indexed WM query judgments. -/
 theorem xiDerivesAtomEvidenceSigma_to_wmQueryJudgmentCtx
     (Ξ : XiPLNSigma (State := State) (Srt := Srt) (Query := Query))
-    {Γ : Set State} {W : State} {a : String} {p : Pattern} {e : Evidence}
+    {Γ : Set State} {W : State} {a : String} {p : Pattern} {e : BinaryEvidence}
     (hDer : XiDerivesAtomEvidenceSigma Ξ W a p e)
     (hW : WMJudgmentCtx Γ W) :
     WorldModelSigma.WMQueryJudgmentCtxSigma (State := State) (Srt := Srt) (Query := Query)

@@ -175,10 +175,10 @@ theorem modalCompose_is_meet
 /-- Structural decomposition of PLN deduction strength into direct+indirect paths. -/
 theorem pln_deduction_structural_decomposition
     (sAB sBC pB pC : ENNReal) :
-    Evidence.deductionStrength sAB sBC pB pC =
-      Evidence.directPathStrength sAB sBC +
-      Evidence.indirectPathStrength sAB pB pC sBC := by
-  unfold Evidence.deductionStrength
+    BinaryEvidence.deductionStrength sAB sBC pB pC =
+      BinaryEvidence.directPathStrength sAB sBC +
+      BinaryEvidence.indirectPathStrength sAB pB pC sBC := by
+  unfold BinaryEvidence.deductionStrength
   rfl
 
 end Mettapedia.CategoryTheory.ModalTypes

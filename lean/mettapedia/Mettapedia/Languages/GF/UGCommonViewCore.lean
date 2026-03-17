@@ -202,7 +202,7 @@ theorem quotientMap_of_familyGrowth_surjective
 
 section EnglishCzechViews
 
-variable {State : Type u} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type u} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 inductive EnglishCzechViewLabel where
   | sharedPattern
@@ -229,14 +229,14 @@ noncomputable def englishCzechViewUniverse (W : State) : UGViewUniverse where
   Label := EnglishCzechViewLabel
   Obs
     | .sharedPattern => Pattern
-    | .evidence => Evidence
+    | .evidence => BinaryEvidence
     | .strength => ℝ≥0∞
     | .englishHouseSem => Prop
     | .czechHouseSem => Prop
   observe
     | .sharedPattern => gfAbstractToPattern
     | .evidence => gfEvidenceDenote W
-    | .strength => fun t => WorldModel.queryStrength W (gfAbstractToPattern t)
+    | .strength => fun t => BinaryWorldModel.queryStrength W (gfAbstractToPattern t)
     | .englishHouseSem => fun t =>
         sem (langReduces englishGFLanguageDef) (gfAtomSem_isName "house")
           (.dia (.atom "is_house")) (gfAbstractToPattern t)

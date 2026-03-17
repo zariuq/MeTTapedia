@@ -91,13 +91,13 @@ theorem priorNB_ranking_commutation_normalization_iff
     (g : Goal) (t : ℝ≥0∞) :
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((normalizeScorer t
             (priorNBPosterior globalPrior localPrior likelihood)).score g x)).toReal)
       ↔
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((normalizeScorer t
             (priorNBPosteriorTwoStage globalPrior localPrior likelihood)).score g x)).toReal) := by
   simpa [priorNBPosterior, priorNBPosteriorTwoStage] using
@@ -127,13 +127,13 @@ theorem priorNB_assumptionChecklist_ranking_transfer
     A.localExchangeabilityInBin →
       (BayesOptimalRanking η
         (fun x =>
-          (Evidence.toStrength
+          (BinaryEvidence.toStrength
             ((normalizeScorer t
               (priorNBPosterior globalPrior localPrior likelihood)).score g x)).toReal)
         ↔
       BayesOptimalRanking η
         (fun x =>
-          (Evidence.toStrength
+          (BinaryEvidence.toStrength
             ((normalizeScorer t
               (priorNBPosteriorTwoStage globalPrior localPrior likelihood)).score g x)).toReal)) := by
   intro _hLocalEx
@@ -171,13 +171,13 @@ theorem PLN_PriorNBRankingTransfer
     (g : Goal) (t : ℝ≥0∞) :
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((normalizeScorer t
             (priorNBPosterior globalPrior localPrior likelihood)).score g x)).toReal)
       ↔
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((normalizeScorer t
             (priorNBPosteriorTwoStage globalPrior localPrior likelihood)).score g x)).toReal) := by
   exact priorNB_ranking_commutation_normalization_iff η globalPrior localPrior likelihood g t

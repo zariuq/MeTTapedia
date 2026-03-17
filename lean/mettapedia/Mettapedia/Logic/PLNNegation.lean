@@ -1,9 +1,9 @@
 import Mettapedia.Logic.EvidenceQuantale
 
 /-!
-# PLN Negation: Evidence Swap
+# PLN Negation: BinaryEvidence Swap
 
-This file defines the **probabilistic negation** for PLN Evidence.
+This file defines the **probabilistic negation** for PLN BinaryEvidence.
 
 ## Key Insight
 
@@ -25,13 +25,13 @@ namespace Mettapedia.Logic.PLNNegation
 
 open scoped ENNReal
 open Mettapedia.Logic.EvidenceQuantale
-open Evidence
+open BinaryEvidence
 
 /-! ## PLN Negation Definition -/
 
 /-- PLN probabilistic negation: swap positive and negative evidence.
     ¬(n⁺, n⁻) = (n⁻, n⁺) -/
-def plnNeg (e : Evidence) : Evidence :=
+def plnNeg (e : BinaryEvidence) : BinaryEvidence :=
   ⟨e.neg, e.pos⟩
 
 /-- Notation for PLN negation -/
@@ -41,19 +41,19 @@ scoped prefix:max "∼" => plnNeg
 
 /-- PLN negation is involutive (unlike Heyting complement) -/
 @[simp]
-theorem plnNeg_plnNeg (e : Evidence) : ∼(∼e) = e := by
+theorem plnNeg_plnNeg (e : BinaryEvidence) : ∼(∼e) = e := by
   simp only [plnNeg]
 
 /-- PLN negation preserves total evidence -/
-theorem plnNeg_total (e : Evidence) : (∼e).total = e.total := by
+theorem plnNeg_total (e : BinaryEvidence) : (∼e).total = e.total := by
   simp only [plnNeg, total, add_comm]
 
 /-- PLN negation swaps pos and neg -/
 @[simp]
-theorem plnNeg_pos (e : Evidence) : (∼e).pos = e.neg := rfl
+theorem plnNeg_pos (e : BinaryEvidence) : (∼e).pos = e.neg := rfl
 
 @[simp]
-theorem plnNeg_neg (e : Evidence) : (∼e).neg = e.pos := rfl
+theorem plnNeg_neg (e : BinaryEvidence) : (∼e).neg = e.pos := rfl
 
 /-! ## Strength Transformation -/
 
@@ -61,7 +61,7 @@ theorem plnNeg_neg (e : Evidence) : (∼e).neg = e.pos := rfl
     s(¬A) = n⁻/(n⁺+n⁻) and s(A) = n⁺/(n⁺+n⁻)
     So s(¬A) + s(A) = 1 when total ≠ 0 and total ≠ ⊤
 -/
-theorem plnNeg_strength_add (e : Evidence) (h : e.total ≠ 0) (hne_top : e.total ≠ ⊤) :
+theorem plnNeg_strength_add (e : BinaryEvidence) (h : e.total ≠ 0) (hne_top : e.total ≠ ⊤) :
     toStrength (∼e) + toStrength e = 1 := by
   unfold toStrength
   have htot : (∼e).total = e.total := plnNeg_total e
@@ -71,7 +71,7 @@ theorem plnNeg_strength_add (e : Evidence) (h : e.total ≠ 0) (hne_top : e.tota
   exact ENNReal.div_self h hne_top
 
 /-- Negation preserves confidence (same total evidence) -/
-theorem plnNeg_confidence (kappa : ℝ≥0∞) (e : Evidence) :
+theorem plnNeg_confidence (kappa : ℝ≥0∞) (e : BinaryEvidence) :
     toConfidence kappa (∼e) = toConfidence kappa e := by
   unfold toConfidence
   rw [plnNeg_total]
@@ -79,17 +79,17 @@ theorem plnNeg_confidence (kappa : ℝ≥0∞) (e : Evidence) :
 /-! ## Negation and Tensor/Hplus -/
 
 /-- Negation distributes over tensor (coordinatewise multiplication). -/
-theorem plnNeg_tensor (a b : Evidence) : ∼(a * b) = ∼a * ∼b := by
+theorem plnNeg_tensor (a b : BinaryEvidence) : ∼(a * b) = ∼a * ∼b := by
   simp only [plnNeg, tensor_def, mul_comm a.neg b.neg, mul_comm a.pos b.pos]
 
 /-- Negation distributes over hplus (coordinatewise addition). -/
-theorem plnNeg_hplus (a b : Evidence) : ∼(a + b) = ∼a + ∼b := by
+theorem plnNeg_hplus (a b : BinaryEvidence) : ∼(a + b) = ∼a + ∼b := by
   simp only [plnNeg, hplus_def, add_comm a.neg b.neg, add_comm a.pos b.pos]
 
 /-! ## Order Properties -/
 
 /-- Negation relation to order -/
-theorem plnNeg_le_plnNeg_iff (a b : Evidence) :
+theorem plnNeg_le_plnNeg_iff (a b : BinaryEvidence) :
     ∼a ≤ ∼b ↔ a.neg ≤ b.neg ∧ a.pos ≤ b.pos := by
   simp only [le_def, plnNeg_pos, plnNeg_neg]
 
@@ -97,7 +97,7 @@ theorem plnNeg_le_plnNeg_iff (a b : Evidence) :
 
 /-- Negation of zero evidence -/
 @[simp]
-theorem plnNeg_zero : ∼(0 : Evidence) = 0 := by
+theorem plnNeg_zero : ∼(0 : BinaryEvidence) = 0 := by
   unfold plnNeg
   rfl
 
@@ -108,7 +108,7 @@ theorem plnNeg_one : ∼one = one := by
 
 /-- Negation of top -/
 @[simp]
-theorem plnNeg_top : ∼(⊤ : Evidence) = ⊤ := by
+theorem plnNeg_top : ∼(⊤ : BinaryEvidence) = ⊤ := by
   unfold plnNeg
   rfl
 
@@ -129,16 +129,16 @@ theorem plnNeg_bijective : Function.Bijective plnNeg := by
 
 /-- PLN negation is NOT the same as Heyting complement.
     Example: ∼⟨1,2⟩ = ⟨2,1⟩ but compl ⟨1,2⟩ = ⟨0,0⟩ -/
-theorem plnNeg_ne_compl_example : ∃ e : Evidence,
-    ∼e ≠ Evidence.compl e := by
+theorem plnNeg_ne_compl_example : ∃ e : BinaryEvidence,
+    ∼e ≠ BinaryEvidence.compl e := by
   use ⟨1, 2⟩
   intro heq
   -- ∼⟨1,2⟩ = ⟨2,1⟩, so (∼⟨1,2⟩).pos = 2
   -- compl ⟨1,2⟩ = himp ⟨1,2⟩ ⊥ = ⟨if 1≤0 then ⊤ else 0, if 2≤0 then ⊤ else 0⟩ = ⟨0,0⟩
   -- So if heq, then 2 = 0, contradiction
-  have h1 : (∼(⟨1, 2⟩ : Evidence)).pos = 2 := rfl
-  have h2 : (Evidence.compl (⟨1, 2⟩ : Evidence)).pos = 0 := by
-    simp only [Evidence.compl, Evidence.himp, Bot.bot]
+  have h1 : (∼(⟨1, 2⟩ : BinaryEvidence)).pos = 2 := rfl
+  have h2 : (BinaryEvidence.compl (⟨1, 2⟩ : BinaryEvidence)).pos = 0 := by
+    simp only [BinaryEvidence.compl, BinaryEvidence.himp, Bot.bot]
     have : ¬((1 : ℝ≥0∞) ≤ 0) := by
       push_neg
       exact zero_lt_one

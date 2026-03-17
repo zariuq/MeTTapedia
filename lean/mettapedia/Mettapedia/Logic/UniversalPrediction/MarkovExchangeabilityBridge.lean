@@ -5,7 +5,7 @@ import Mettapedia.Logic.UniversalPrediction.MarkovDirichletPredictor
 import Mettapedia.Logic.UniversalPrediction.FiniteAlphabet.SolomonoffBridge
 
 /-!
-# Markov Exchangeability Bridge (Domain Test ⇒ Transition-Count Evidence)
+# Markov Exchangeability Bridge (Domain Test ⇒ Transition-Count BinaryEvidence)
 
 This file connects the “domain restriction” notion of **Markov exchangeability** (probabilities
 depend only on the initial state and the transition-count matrix) to the concrete

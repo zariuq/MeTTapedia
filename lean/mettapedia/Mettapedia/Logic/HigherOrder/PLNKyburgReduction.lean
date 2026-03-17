@@ -9,7 +9,7 @@ import Mettapedia.ProbabilityTheory.HigherOrderProbability.DeFinettiConnection
 
 This module exposes a theorem-level, sorry-free bridge between:
 
-- PLN evidence/distributional semantics (`Evidence`, Beta-style updates), and
+- PLN evidence/distributional semantics (`BinaryEvidence`, Beta-style updates), and
 - Kyburg higher-order flattening (`ParametrizedDistribution`, flattening/expectation laws).
 
 It is intentionally lightweight and re-exports proved theorems from:
@@ -31,22 +31,22 @@ abbrev BinaryContext := Mettapedia.Logic.EvidenceClass.BinaryContext
 abbrev ParametrizedDistribution :=
   Mettapedia.ProbabilityTheory.HigherOrderProbability.ParametrizedDistribution
 
-/-! ## Evidence-side bridge lemmas -/
+/-! ## BinaryEvidence-side bridge lemmas -/
 
 /-- Context-aware PLN strength is exactly a Beta posterior-mean form over
 shifted pseudo-count coordinates in `ℝ≥0∞`. -/
-theorem strengthWith_eq_beta_posterior_meanENN (e : Evidence) (ctx : BinaryContext) :
-    Mettapedia.Logic.EvidenceQuantale.Evidence.strengthWith ctx e =
+theorem strengthWith_eq_beta_posterior_meanENN (e : BinaryEvidence) (ctx : BinaryContext) :
+    Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.strengthWith ctx e =
       (ctx.α₀ + e.pos) / ((ctx.α₀ + e.pos) + (ctx.β₀ + e.neg)) := by
-  simp [Mettapedia.Logic.EvidenceQuantale.Evidence.strengthWith, add_comm, add_left_comm]
+  simp [Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.strengthWith, add_comm, add_left_comm]
 
-/-- Evidence determines the shifted Beta pseudo-count coordinates used by
+/-- BinaryEvidence determines the shifted Beta pseudo-count coordinates used by
 `strengthWith`; this is the compact sufficient-statistic encoding view. -/
-theorem evidence_encodes_beta_parameters (e : Evidence) (ctx : BinaryContext) :
+theorem evidence_encodes_beta_parameters (e : BinaryEvidence) (ctx : BinaryContext) :
     ∃ α β : ℝ≥0∞,
       α = ctx.α₀ + e.pos ∧
       β = ctx.β₀ + e.neg ∧
-      Mettapedia.Logic.EvidenceQuantale.Evidence.strengthWith ctx e = α / (α + β) := by
+      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.strengthWith ctx e = α / (α + β) := by
   refine ⟨ctx.α₀ + e.pos, ctx.β₀ + e.neg, rfl, rfl, ?_⟩
   simpa [add_assoc, add_comm, add_left_comm] using
     strengthWith_eq_beta_posterior_meanENN (e := e) (ctx := ctx)
@@ -107,13 +107,13 @@ abbrev deFinetti_flatten_apply_singleton :=
 with uniform Beta prior `(α₀,β₀)=(1,1)` and observed evidence `(n⁺,n⁻)=(3,1)`,
 the context-aware PLN strength is exactly the corresponding posterior-mean ratio. -/
 theorem chapter7_worked_example_strength_uniform_3_1 :
-    Mettapedia.Logic.EvidenceQuantale.Evidence.strengthWith
+    Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.strengthWith
         Mettapedia.Logic.EvidenceClass.BinaryContext.uniform
-        ({ pos := (3 : ℝ≥0∞), neg := (1 : ℝ≥0∞) } : Evidence) =
+        ({ pos := (3 : ℝ≥0∞), neg := (1 : ℝ≥0∞) } : BinaryEvidence) =
       ((1 : ℝ≥0∞) + 3) / (((1 : ℝ≥0∞) + 3) + ((1 : ℝ≥0∞) + 1)) := by
   simpa [Mettapedia.Logic.EvidenceClass.BinaryContext.uniform] using
     strengthWith_eq_beta_posterior_meanENN
-      ({ pos := (3 : ℝ≥0∞), neg := (1 : ℝ≥0∞) } : Evidence)
+      ({ pos := (3 : ℝ≥0∞), neg := (1 : ℝ≥0∞) } : BinaryEvidence)
       Mettapedia.Logic.EvidenceClass.BinaryContext.uniform
 
 /-! ## Chapter-7-facing aggregate statement -/
@@ -121,7 +121,7 @@ theorem chapter7_worked_example_strength_uniform_3_1 :
 /-- Compact chapter-facing bundle: PLN evidence aggregation + Kyburg flattening
 decision-equivalence are both available as proved endpoints in the core stack. -/
 theorem chapter7_distributional_kyburg_bridge_available :
-    (∀ e₁ e₂ : Evidence,
+    (∀ e₁ e₂ : BinaryEvidence,
       (e₁ + e₂).pos = e₁.pos + e₂.pos ∧ (e₁ + e₂).neg = e₁.neg + e₂.neg) ∧
     (∀ {Θ X : Type*} [MeasurableSpace Θ] [MeasurableSpace X]
         (pd : ParametrizedDistribution Θ X) (A : Set X),

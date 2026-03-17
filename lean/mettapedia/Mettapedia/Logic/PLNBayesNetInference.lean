@@ -5,14 +5,14 @@ import Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
 import Mettapedia.ProbabilityTheory.BayesianNetworks.VariableElimination
 
 /-!
-# Exact BN Query Answering from PLN CPT Evidence (Boolean Case)
+# Exact BN Query Answering from PLN CPT BinaryEvidence (Boolean Case)
 
 This module connects the PLN BN world-model sublayer (CPT evidence counts)
 to **exact BN query answering** via variable elimination.
 
 Key idea:
-* CPT evidence is stored as `Evidence` per CPT entry.
-* Convert each CPT entry into a Bernoulli PMF using `Evidence.toStrength`.
+* CPT evidence is stored as `BinaryEvidence` per CPT entry.
+* Convert each CPT entry into a Bernoulli PMF using `BinaryEvidence.toStrength`.
 * Use the existing VE engine to answer prop/link queries exactly for the BN class.
 
 This is the first concrete instance of the “BN sublayer = tractable WM class” story.
@@ -38,14 +38,14 @@ noncomputable def bernoulliPMF (p : ℝ≥0∞) (hp : p ≤ 1) : PMF Bool :=
       simpa [add_comm] using (tsub_add_cancel_of_le hp)
     simp [hsum'])
 
-/-! ## Binary Naive Bayes as Evidence-Product -/
+/-! ## Binary Naive Bayes as BinaryEvidence-Product -/
 
 section NaiveBayes
 
 variable {ι : Type*}
 
 /-- Binary NB in evidence form: prior evidence multiplied by per-feature likelihood evidence. -/
-noncomputable def nbEvidence [Fintype ι] (prior : Evidence) (likelihood : ι → Evidence) : Evidence :=
+noncomputable def nbEvidence [Fintype ι] (prior : BinaryEvidence) (likelihood : ι → BinaryEvidence) : BinaryEvidence :=
   prior * ∏ i, likelihood i
 
 /-- Textbook binary NB posterior from class masses and conditionally-independent features. -/
@@ -56,48 +56,48 @@ noncomputable def nbPosterior
   let numNeg := priorNeg * ∏ i, likeNeg i
   if numPos + numNeg = 0 then 0 else numPos / (numPos + numNeg)
 
-private lemma prod_pos (s : Finset ι) (f : ι → Evidence) :
+private lemma prod_pos (s : Finset ι) (f : ι → BinaryEvidence) :
     (Finset.prod s f).pos = Finset.prod s (fun i => (f i).pos) := by
   classical
   induction s using Finset.induction with
   | empty =>
       rfl
   | @insert a s ha ih =>
-      simp [ha, ih, Evidence.tensor_def]
+      simp [ha, ih, BinaryEvidence.tensor_def]
 
-private lemma prod_neg (s : Finset ι) (f : ι → Evidence) :
+private lemma prod_neg (s : Finset ι) (f : ι → BinaryEvidence) :
     (Finset.prod s f).neg = Finset.prod s (fun i => (f i).neg) := by
   classical
   induction s using Finset.induction with
   | empty =>
       rfl
   | @insert a s ha ih =>
-      simp [ha, ih, Evidence.tensor_def]
+      simp [ha, ih, BinaryEvidence.tensor_def]
 
-theorem nbEvidence_pos [Fintype ι] (prior : Evidence) (likelihood : ι → Evidence) :
+theorem nbEvidence_pos [Fintype ι] (prior : BinaryEvidence) (likelihood : ι → BinaryEvidence) :
     (nbEvidence prior likelihood).pos =
       prior.pos * Finset.univ.prod (fun i => (likelihood i).pos) := by
   classical
   unfold nbEvidence
-  simp [Evidence.tensor_def, prod_pos]
+  simp [BinaryEvidence.tensor_def, prod_pos]
 
-theorem nbEvidence_neg [Fintype ι] (prior : Evidence) (likelihood : ι → Evidence) :
+theorem nbEvidence_neg [Fintype ι] (prior : BinaryEvidence) (likelihood : ι → BinaryEvidence) :
     (nbEvidence prior likelihood).neg =
       prior.neg * Finset.univ.prod (fun i => (likelihood i).neg) := by
   classical
   unfold nbEvidence
-  simp [Evidence.tensor_def, prod_neg]
+  simp [BinaryEvidence.tensor_def, prod_neg]
 
 private lemma toOdds_prod_finset
-    (s : Finset ι) (likelihood : ι → Evidence)
+    (s : Finset ι) (likelihood : ι → BinaryEvidence)
     (hneg : ∀ i, i ∈ s → (likelihood i).neg ≠ 0) :
-    Evidence.toOdds (Finset.prod s (fun i => likelihood i)) =
-      Finset.prod s (fun i => Evidence.toOdds (likelihood i)) := by
+    BinaryEvidence.toOdds (Finset.prod s (fun i => likelihood i)) =
+      Finset.prod s (fun i => BinaryEvidence.toOdds (likelihood i)) := by
   classical
   induction s using Finset.induction with
   | empty =>
-      change Evidence.toOdds ({ pos := 1, neg := 1 } : Evidence) = 1
-      simp [Evidence.toOdds]
+      change BinaryEvidence.toOdds ({ pos := 1, neg := 1 } : BinaryEvidence) = 1
+      simp [BinaryEvidence.toOdds]
   | @insert a s ha ih =>
       have ha_neg : (likelihood a).neg ≠ 0 := hneg a (by simp)
       have hs_neg : ∀ i, i ∈ s → (likelihood i).neg ≠ 0 := by
@@ -110,35 +110,35 @@ private lemma toOdds_prod_finset
           exact hs_neg i hi
         simpa [prod_neg] using hs_prod_ne_zero
       rw [Finset.prod_insert ha, Finset.prod_insert ha]
-      rw [Evidence.toOdds_tensor_mul
+      rw [BinaryEvidence.toOdds_tensor_mul
         (x := likelihood a)
         (y := Finset.prod s (fun i => likelihood i))
         ha_neg hprod_neg]
       rw [ih hs_neg]
 
 private lemma toLogOdds_prod_finset
-    (s : Finset ι) (likelihood : ι → Evidence)
+    (s : Finset ι) (likelihood : ι → BinaryEvidence)
     (hneg : ∀ i, i ∈ s → (likelihood i).neg ≠ 0)
-    (hodds0 : ∀ i, i ∈ s → Evidence.toOdds (likelihood i) ≠ 0)
-    (hoddsTop : ∀ i, i ∈ s → Evidence.toOdds (likelihood i) ≠ ⊤) :
-    Evidence.toLogOdds (Finset.prod s (fun i => likelihood i)) =
-      Finset.sum s (fun i => Evidence.toLogOdds (likelihood i)) := by
+    (hodds0 : ∀ i, i ∈ s → BinaryEvidence.toOdds (likelihood i) ≠ 0)
+    (hoddsTop : ∀ i, i ∈ s → BinaryEvidence.toOdds (likelihood i) ≠ ⊤) :
+    BinaryEvidence.toLogOdds (Finset.prod s (fun i => likelihood i)) =
+      Finset.sum s (fun i => BinaryEvidence.toLogOdds (likelihood i)) := by
   classical
   induction s using Finset.induction with
   | empty =>
-      change Evidence.toLogOdds ({ pos := 1, neg := 1 } : Evidence) = 0
-      simp [Evidence.toLogOdds, Evidence.toOdds]
+      change BinaryEvidence.toLogOdds ({ pos := 1, neg := 1 } : BinaryEvidence) = 0
+      simp [BinaryEvidence.toLogOdds, BinaryEvidence.toOdds]
   | @insert a s ha ih =>
       have ha_neg : (likelihood a).neg ≠ 0 := hneg a (by simp)
-      have ha_odds0 : Evidence.toOdds (likelihood a) ≠ 0 := hodds0 a (by simp)
-      have ha_oddsTop : Evidence.toOdds (likelihood a) ≠ ⊤ := hoddsTop a (by simp)
+      have ha_odds0 : BinaryEvidence.toOdds (likelihood a) ≠ 0 := hodds0 a (by simp)
+      have ha_oddsTop : BinaryEvidence.toOdds (likelihood a) ≠ ⊤ := hoddsTop a (by simp)
       have hs_neg : ∀ i, i ∈ s → (likelihood i).neg ≠ 0 := by
         intro i hi
         exact hneg i (by simp [hi])
-      have hs_odds0 : ∀ i, i ∈ s → Evidence.toOdds (likelihood i) ≠ 0 := by
+      have hs_odds0 : ∀ i, i ∈ s → BinaryEvidence.toOdds (likelihood i) ≠ 0 := by
         intro i hi
         exact hodds0 i (by simp [hi])
-      have hs_oddsTop : ∀ i, i ∈ s → Evidence.toOdds (likelihood i) ≠ ⊤ := by
+      have hs_oddsTop : ∀ i, i ∈ s → BinaryEvidence.toOdds (likelihood i) ≠ ⊤ := by
         intro i hi
         exact hoddsTop i (by simp [hi])
       have hprod_neg : (Finset.prod s (fun i => likelihood i)).neg ≠ 0 := by
@@ -148,41 +148,41 @@ private lemma toLogOdds_prod_finset
           exact hs_neg i hi
         simpa [prod_neg] using hs_prod_ne_zero
       have hprod_odds :
-          Evidence.toOdds (Finset.prod s (fun i => likelihood i))
-            = Finset.prod s (fun i => Evidence.toOdds (likelihood i)) :=
+          BinaryEvidence.toOdds (Finset.prod s (fun i => likelihood i))
+            = Finset.prod s (fun i => BinaryEvidence.toOdds (likelihood i)) :=
         toOdds_prod_finset (s := s) (likelihood := likelihood) hs_neg
-      have hprod_odds0 : Evidence.toOdds (Finset.prod s (fun i => likelihood i)) ≠ 0 := by
+      have hprod_odds0 : BinaryEvidence.toOdds (Finset.prod s (fun i => likelihood i)) ≠ 0 := by
         rw [hprod_odds]
         refine Finset.prod_ne_zero_iff.mpr ?_
         intro i hi
         exact hs_odds0 i hi
-      have hprod_oddsTop : Evidence.toOdds (Finset.prod s (fun i => likelihood i)) ≠ ⊤ := by
+      have hprod_oddsTop : BinaryEvidence.toOdds (Finset.prod s (fun i => likelihood i)) ≠ ⊤ := by
         rw [hprod_odds]
         exact ENNReal.prod_ne_top (by
           intro i hi
           exact hs_oddsTop i hi)
       calc
-        Evidence.toLogOdds (Finset.prod (insert a s) (fun i => likelihood i))
-            = Evidence.toLogOdds (likelihood a * (Finset.prod s (fun i => likelihood i))) := by
+        BinaryEvidence.toLogOdds (Finset.prod (insert a s) (fun i => likelihood i))
+            = BinaryEvidence.toLogOdds (likelihood a * (Finset.prod s (fun i => likelihood i))) := by
                 simp [Finset.prod_insert, ha]
-        _ = Evidence.toLogOdds (likelihood a) + Evidence.toLogOdds (Finset.prod s (fun i => likelihood i)) := by
-              exact Evidence.toLogOdds_tensor_add
+        _ = BinaryEvidence.toLogOdds (likelihood a) + BinaryEvidence.toLogOdds (Finset.prod s (fun i => likelihood i)) := by
+              exact BinaryEvidence.toLogOdds_tensor_add
                 (x := likelihood a) (y := Finset.prod s (fun i => likelihood i))
                 ha_neg hprod_neg ha_odds0 hprod_odds0 ha_oddsTop hprod_oddsTop
-        _ = Evidence.toLogOdds (likelihood a) + Finset.sum s (fun i => Evidence.toLogOdds (likelihood i)) := by
+        _ = BinaryEvidence.toLogOdds (likelihood a) + Finset.sum s (fun i => BinaryEvidence.toLogOdds (likelihood i)) := by
               rw [ih hs_neg hs_odds0 hs_oddsTop]
-        _ = Finset.sum (insert a s) (fun i => Evidence.toLogOdds (likelihood i)) := by
+        _ = Finset.sum (insert a s) (fun i => BinaryEvidence.toLogOdds (likelihood i)) := by
               simp [Finset.sum_insert, ha]
 
 /-- Odds decomposition for binary NB evidence:
 prior odds times product of per-feature odds. -/
 theorem toOdds_nbEvidence_mul
     [Fintype ι]
-    (prior : Evidence) (likelihood : ι → Evidence)
+    (prior : BinaryEvidence) (likelihood : ι → BinaryEvidence)
     (hprior_neg : prior.neg ≠ 0)
     (hlik_neg : ∀ i, (likelihood i).neg ≠ 0) :
-    Evidence.toOdds (nbEvidence prior likelihood)
-      = Evidence.toOdds prior * ∏ i, Evidence.toOdds (likelihood i) := by
+    BinaryEvidence.toOdds (nbEvidence prior likelihood)
+      = BinaryEvidence.toOdds prior * ∏ i, BinaryEvidence.toOdds (likelihood i) := by
   classical
   unfold nbEvidence
   have hprod_neg : (∏ i, likelihood i).neg ≠ 0 := by
@@ -191,7 +191,7 @@ theorem toOdds_nbEvidence_mul
       intro i hi
       exact hlik_neg i
     simpa [prod_neg] using hs_prod_ne_zero
-  rw [Evidence.toOdds_tensor_mul (x := prior) (y := ∏ i, likelihood i) hprior_neg hprod_neg]
+  rw [BinaryEvidence.toOdds_tensor_mul (x := prior) (y := ∏ i, likelihood i) hprior_neg hprod_neg]
   rw [toOdds_prod_finset (s := Finset.univ) (likelihood := likelihood) (by
     intro i hi
     exact hlik_neg i)]
@@ -200,15 +200,15 @@ theorem toOdds_nbEvidence_mul
 prior log-odds plus sum of per-feature log-odds. -/
 theorem toLogOdds_nbEvidence_add
     [Fintype ι]
-    (prior : Evidence) (likelihood : ι → Evidence)
+    (prior : BinaryEvidence) (likelihood : ι → BinaryEvidence)
     (hprior_neg : prior.neg ≠ 0)
-    (hprior_odds0 : Evidence.toOdds prior ≠ 0)
-    (hprior_oddsTop : Evidence.toOdds prior ≠ ⊤)
+    (hprior_odds0 : BinaryEvidence.toOdds prior ≠ 0)
+    (hprior_oddsTop : BinaryEvidence.toOdds prior ≠ ⊤)
     (hlik_neg : ∀ i, (likelihood i).neg ≠ 0)
-    (hlik_odds0 : ∀ i, Evidence.toOdds (likelihood i) ≠ 0)
-    (hlik_oddsTop : ∀ i, Evidence.toOdds (likelihood i) ≠ ⊤) :
-    Evidence.toLogOdds (nbEvidence prior likelihood)
-      = Evidence.toLogOdds prior + ∑ i, Evidence.toLogOdds (likelihood i) := by
+    (hlik_odds0 : ∀ i, BinaryEvidence.toOdds (likelihood i) ≠ 0)
+    (hlik_oddsTop : ∀ i, BinaryEvidence.toOdds (likelihood i) ≠ ⊤) :
+    BinaryEvidence.toLogOdds (nbEvidence prior likelihood)
+      = BinaryEvidence.toLogOdds prior + ∑ i, BinaryEvidence.toLogOdds (likelihood i) := by
   classical
   unfold nbEvidence
   have hprod_neg : (∏ i, likelihood i).neg ≠ 0 := by
@@ -218,27 +218,27 @@ theorem toLogOdds_nbEvidence_add
       exact hlik_neg i
     simpa [prod_neg] using hs_prod_ne_zero
   have hprod_odds :
-      Evidence.toOdds (∏ i, likelihood i) = ∏ i, Evidence.toOdds (likelihood i) :=
+      BinaryEvidence.toOdds (∏ i, likelihood i) = ∏ i, BinaryEvidence.toOdds (likelihood i) :=
     toOdds_prod_finset (s := Finset.univ) (likelihood := likelihood) (by
       intro i hi
       exact hlik_neg i)
-  have hprod_odds0 : Evidence.toOdds (∏ i, likelihood i) ≠ 0 := by
+  have hprod_odds0 : BinaryEvidence.toOdds (∏ i, likelihood i) ≠ 0 := by
     rw [hprod_odds]
     refine Finset.prod_ne_zero_iff.mpr ?_
     intro i hi
     exact hlik_odds0 i
-  have hprod_oddsTop : Evidence.toOdds (∏ i, likelihood i) ≠ ⊤ := by
+  have hprod_oddsTop : BinaryEvidence.toOdds (∏ i, likelihood i) ≠ ⊤ := by
     rw [hprod_odds]
     exact ENNReal.prod_ne_top (by
       intro i hi
       exact hlik_oddsTop i)
   calc
-    Evidence.toLogOdds (prior * ∏ i, likelihood i)
-        = Evidence.toLogOdds prior + Evidence.toLogOdds (∏ i, likelihood i) := by
-            exact Evidence.toLogOdds_tensor_add
+    BinaryEvidence.toLogOdds (prior * ∏ i, likelihood i)
+        = BinaryEvidence.toLogOdds prior + BinaryEvidence.toLogOdds (∏ i, likelihood i) := by
+            exact BinaryEvidence.toLogOdds_tensor_add
               (x := prior) (y := ∏ i, likelihood i)
               hprior_neg hprod_neg hprior_odds0 hprod_odds0 hprior_oddsTop hprod_oddsTop
-    _ = Evidence.toLogOdds prior + ∑ i, Evidence.toLogOdds (likelihood i) := by
+    _ = BinaryEvidence.toLogOdds prior + ∑ i, BinaryEvidence.toLogOdds (likelihood i) := by
       rw [toLogOdds_prod_finset
             (s := Finset.univ) (likelihood := likelihood)
             (hneg := by intro i hi; exact hlik_neg i)
@@ -249,22 +249,22 @@ theorem toLogOdds_nbEvidence_add
 NB log-odds become the pure sum of feature log-odds. -/
 theorem toLogOdds_nbEvidence_likelihoodOnly
     [Fintype ι]
-    (likelihood : ι → Evidence)
+    (likelihood : ι → BinaryEvidence)
     (hlik_neg : ∀ i, (likelihood i).neg ≠ 0)
-    (hlik_odds0 : ∀ i, Evidence.toOdds (likelihood i) ≠ 0)
-    (hlik_oddsTop : ∀ i, Evidence.toOdds (likelihood i) ≠ ⊤) :
-    Evidence.toLogOdds (nbEvidence ({ pos := 1, neg := 1 } : Evidence) likelihood)
-      = ∑ i, Evidence.toLogOdds (likelihood i) := by
-  have hone_neg : ({ pos := 1, neg := 1 } : Evidence).neg ≠ 0 := by simp
-  have hone_odds0 : Evidence.toOdds ({ pos := 1, neg := 1 } : Evidence) ≠ 0 := by
-    simp [Evidence.toOdds]
-  have hone_oddsTop : Evidence.toOdds ({ pos := 1, neg := 1 } : Evidence) ≠ ⊤ := by
-    simp [Evidence.toOdds]
-  have hone_log : Evidence.toLogOdds ({ pos := 1, neg := 1 } : Evidence) = 0 := by
-    simp [Evidence.toLogOdds, Evidence.toOdds]
+    (hlik_odds0 : ∀ i, BinaryEvidence.toOdds (likelihood i) ≠ 0)
+    (hlik_oddsTop : ∀ i, BinaryEvidence.toOdds (likelihood i) ≠ ⊤) :
+    BinaryEvidence.toLogOdds (nbEvidence ({ pos := 1, neg := 1 } : BinaryEvidence) likelihood)
+      = ∑ i, BinaryEvidence.toLogOdds (likelihood i) := by
+  have hone_neg : ({ pos := 1, neg := 1 } : BinaryEvidence).neg ≠ 0 := by simp
+  have hone_odds0 : BinaryEvidence.toOdds ({ pos := 1, neg := 1 } : BinaryEvidence) ≠ 0 := by
+    simp [BinaryEvidence.toOdds]
+  have hone_oddsTop : BinaryEvidence.toOdds ({ pos := 1, neg := 1 } : BinaryEvidence) ≠ ⊤ := by
+    simp [BinaryEvidence.toOdds]
+  have hone_log : BinaryEvidence.toLogOdds ({ pos := 1, neg := 1 } : BinaryEvidence) = 0 := by
+    simp [BinaryEvidence.toLogOdds, BinaryEvidence.toOdds]
   have hmain :=
     toLogOdds_nbEvidence_add
-      (prior := ({ pos := 1, neg := 1 } : Evidence)) (likelihood := likelihood)
+      (prior := ({ pos := 1, neg := 1 } : BinaryEvidence)) (likelihood := likelihood)
       (hprior_neg := hone_neg)
       (hprior_odds0 := hone_odds0)
       (hprior_oddsTop := hone_oddsTop)
@@ -289,13 +289,13 @@ The right-hand side is exactly
 -/
 theorem toStrength_nbEvidence_eq_nbPosterior
     [Fintype ι]
-    (prior : Evidence) (likelihood : ι → Evidence) :
-    Evidence.toStrength (nbEvidence prior likelihood) =
+    (prior : BinaryEvidence) (likelihood : ι → BinaryEvidence) :
+    BinaryEvidence.toStrength (nbEvidence prior likelihood) =
       nbPosterior prior.pos prior.neg
         (fun i => (likelihood i).pos) (fun i => (likelihood i).neg) := by
   classical
-  unfold Evidence.toStrength nbPosterior
-  simp [Evidence.total, nbEvidence_pos, nbEvidence_neg]
+  unfold BinaryEvidence.toStrength nbPosterior
+  simp [BinaryEvidence.total, nbEvidence_pos, nbEvidence_neg]
 
 /-! ### Core/bridge alias names (non-breaking)
 
@@ -321,8 +321,8 @@ which is exactly `nbPosterior p+ p- (fun i => li+) (fun i => li-)`.
 -/
 theorem PLN_tensorStrength_eq_nbPosterior
     [Fintype ι]
-    (prior : Evidence) (likelihood : ι → Evidence) :
-    Evidence.toStrength (nbEvidence prior likelihood) =
+    (prior : BinaryEvidence) (likelihood : ι → BinaryEvidence) :
+    BinaryEvidence.toStrength (nbEvidence prior likelihood) =
       nbPosterior prior.pos prior.neg
         (fun i => (likelihood i).pos) (fun i => (likelihood i).neg) := by
   exact toStrength_nbEvidence_eq_nbPosterior prior likelihood
@@ -361,7 +361,7 @@ def parentConfigOfAssignment (v : Fin n) (pa : ParentAssignment (bn := bn) v) :
 /-! ## CPT evidence → CPT probabilities -/
 
 noncomputable def cptEvidenceOfState (W : CPTState (bn := bn)) (v : Fin n)
-    (pa : ParentAssignment (bn := bn) v) : Evidence :=
+    (pa : ParentAssignment (bn := bn) v) : BinaryEvidence :=
   W ⟨v, parentConfigOfAssignment (bn := bn) v pa⟩
 
 noncomputable def cptOfState (W : CPTState (bn := bn)) :
@@ -369,7 +369,7 @@ noncomputable def cptOfState (W : CPTState (bn := bn)) :
   { cpt := fun v pa =>
       let e := cptEvidenceOfState (bn := bn) W v pa
       Mettapedia.Logic.PLNBayesNetInference.bernoulliPMF
-        (Evidence.toStrength e) (Evidence.toStrength_le_one e) }
+        (BinaryEvidence.toStrength e) (BinaryEvidence.toStrength_le_one e) }
 
 /-! ## Exact BN query answering via VE (prop/link) -/
 

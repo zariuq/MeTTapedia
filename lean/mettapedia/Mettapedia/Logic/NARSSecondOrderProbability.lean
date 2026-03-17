@@ -11,7 +11,7 @@ import Mettapedia.Logic.NARSEvidenceBridge
 This file provides a **semantics layer** for NARS truth values:
 
 * A NARS truth value `t : TV` is treated as a view of underlying **evidence counts**
-  `(n⁺, n⁻) : Evidence`.
+  `(n⁺, n⁻) : BinaryEvidence`.
 * Revision is **evidence aggregation** (`hplus`) under this semantics.
 
 We intentionally keep `Mettapedia.Logic.NARSMettaTruthFunctions` as a faithful mirror of
@@ -45,7 +45,7 @@ theorem c_lt_one {t : TV} (ht : IsProbTV t) : t.c < 1 := ht.2.2.2
 
 end IsProbTV
 
-/-! ## View functions: TV ↔ Evidence -/
+/-! ## View functions: TV ↔ BinaryEvidence -/
 
 namespace TV
 
@@ -57,24 +57,24 @@ This is exactly the PLN `ofSTV` map:
 * `n⁺ = f * n`, `n⁻ = (1-f) * n`
 
 When `k = 1`, this matches the usual NARS `c2w`/`w2c` convention. -/
-noncomputable def toEvidenceWithK (k : ℝ≥0∞) (t : TV) (hc : t.c < 1) : Evidence :=
-  Evidence.ofSTV (κ := k) t.f t.c hc
+noncomputable def toEvidenceWithK (k : ℝ≥0∞) (t : TV) (hc : t.c < 1) : BinaryEvidence :=
+  BinaryEvidence.ofSTV (κ := k) t.f t.c hc
 
 end TV
 
-namespace Evidence
+namespace BinaryEvidence
 
 /-- Interpret evidence counts as a NARS truth value (frequency + confidence), using prior/scale `k`.
 
 We follow the NARS convention that frequency is arbitrary when total evidence is zero; we pick `0.5`.
 -/
-noncomputable def toNARSTVWithK (k : ℝ≥0∞) (e : Evidence) : TV :=
+noncomputable def toNARSTVWithK (k : ℝ≥0∞) (e : BinaryEvidence) : TV :=
   let total := e.total
   let f := if total = 0 then 0.5 else (e.pos / total).toReal
   let c := (total / (total + k)).toReal
   ⟨f, c⟩
 
-end Evidence
+end BinaryEvidence
 
 /-! ## Core semantic theorems -/
 
@@ -90,11 +90,11 @@ theorem toEvidenceWithK_one_eq_bridge_toEvidence (t : TV) (ht : IsProbTV t) :
     simpa [c2w] using (ENNReal.ofReal_div_of_pos hden (x := t.c) (y := 1 - t.c)).symm
   have h1mf : 0 ≤ 1 - t.f := by linarith [ht.f_le_one]
   ext <;>
-    simp [TV.toEvidenceWithK, Mettapedia.Logic.NARSEvidenceBridge.TV.toEvidence, Evidence.ofSTV,
+    simp [TV.toEvidenceWithK, Mettapedia.Logic.NARSEvidenceBridge.TV.toEvidence, BinaryEvidence.ofSTV,
       hdiv, ENNReal.ofReal_mul ht.f_nonneg, ENNReal.ofReal_mul h1mf]
 
-theorem toNARSTVWithK_one_eq_bridge_toNARSTV (e : Evidence) :
-    Evidence.toNARSTVWithK 1 e = Mettapedia.Logic.NARSEvidenceBridge.Evidence.toNARSTV e := by
+theorem toNARSTVWithK_one_eq_bridge_toNARSTV (e : BinaryEvidence) :
+    BinaryEvidence.toNARSTVWithK 1 e = Mettapedia.Logic.NARSEvidenceBridge.BinaryEvidence.toNARSTV e := by
   rfl
 
 /-! ## Core revision (no clamps) and evidence aggregation -/
@@ -229,8 +229,8 @@ theorem truthRevisionCore_toEvidence
         ENNReal.ofReal (t1.f * w1) + ENNReal.ofReal (t2.f * w2) := by
       simpa [add_comm, add_left_comm, add_assoc] using (ENNReal.ofReal_add hterm1 hterm2)
     -- Reduce to a clean ENNReal equality.
-    simp [TV.toEvidenceWithK, Evidence.ofSTV, truthRevisionCore, w1, w2, w,
-      htot t1 ht1.c_lt_one, htot t2 ht2.c_lt_one, htot_rev, Evidence.hplus_def]
+    simp [TV.toEvidenceWithK, BinaryEvidence.ofSTV, truthRevisionCore, w1, w2, w,
+      htot t1 ht1.c_lt_one, htot t2 ht2.c_lt_one, htot_rev, BinaryEvidence.hplus_def]
     -- Convert products/sums into a single `ofReal`, then use the real cancellation `hw_cancel`.
     rw [← ENNReal.ofReal_mul hf_rev_nonneg]
     rw [← ENNReal.ofReal_mul ht1.f_nonneg]
@@ -280,8 +280,8 @@ theorem truthRevisionCore_toEvidence
               -- Expand `w = w1 + w2` and collect terms.
               simp [w]; ring
 
-    simp [TV.toEvidenceWithK, Evidence.ofSTV, truthRevisionCore, w1, w2, w,
-      htot t1 ht1.c_lt_one, htot t2 ht2.c_lt_one, htot_rev, Evidence.hplus_def]
+    simp [TV.toEvidenceWithK, BinaryEvidence.ofSTV, truthRevisionCore, w1, w2, w,
+      htot t1 ht1.c_lt_one, htot t2 ht2.c_lt_one, htot_rev, BinaryEvidence.hplus_def]
     rw [← ENNReal.ofReal_mul h1mf_rev_nonneg]
     rw [← ENNReal.ofReal_mul h1mf1]
     rw [← ENNReal.ofReal_mul h1mf2]

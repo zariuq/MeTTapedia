@@ -31,7 +31,7 @@ where k = #{i : xᵢ = 1}.
 
 1. **Sufficient Statistics**: The counts (k, n-k) capture all information
 2. **Beta-Bernoulli**: With Beta prior on θ, posterior is Beta(α+k, β+n-k)
-3. **PLN Evidence**: (n⁺, n⁻) = (k, n-k) is exactly the sufficient statistic
+3. **PLN BinaryEvidence**: (n⁺, n⁻) = (k, n-k) is exactly the sufficient statistic
 
 ## Main Definitions
 
@@ -943,7 +943,7 @@ theorem deFinetti_infinite (X : ℕ → Ω → Bool) (μ : Measure Ω)
     This is the key result we actually need for PLN, independent of constructing
     the de Finetti mixing measure. It's a direct corollary of exchangeability.
 
-    **For νPLN**: This justifies that PLN Evidence = (n⁺, n⁻) captures all relevant
+    **For νPLN**: This justifies that PLN BinaryEvidence = (n⁺, n⁻) captures all relevant
     information when observations are exchangeable binary.
 -/
 theorem exchangeable_counts_sufficient_practical (X : ℕ → Ω → Bool) (μ : Measure Ω)
@@ -1015,9 +1015,9 @@ section SufficientStatistics
 
 /-- For a Bernoulli mixture, (k, n-k) is a sufficient statistic.
 
-    This is the formal justification for PLN Evidence:
+    This is the formal justification for PLN BinaryEvidence:
     - Observe n binary outcomes with k positives
-    - Evidence = (k, n-k)
+    - BinaryEvidence = (k, n-k)
     - This captures ALL information about θ (the mixing parameter)
 -/
 theorem counts_sufficient_for_mixture (M : BernoulliMixture) (_n : ℕ) :
@@ -1050,7 +1050,7 @@ section NuPLN
 
     **Step 1 (De Finetti)**: Exchangeable sequence → Bernoulli mixture representation
     **Step 2 (Sufficiency)**: Bernoulli mixture → Counts (n⁺, n⁻) are sufficient statistics
-    **Step 3 (PLN Evidence)**: PLN Evidence = (n⁺, n⁻) captures this sufficiency
+    **Step 3 (PLN BinaryEvidence)**: PLN BinaryEvidence = (n⁺, n⁻) captures this sufficiency
     **Step 4 (Convergence)**: PLN strength → Bayesian posterior mean
 
     Each step explicitly invokes the corresponding theorem, making the chain verifiable.
@@ -1066,7 +1066,7 @@ theorem nupln_master_chain {Ω : Type*} [MeasurableSpace Ω]
     -- Part 2: Counts are sufficient for the mixture
     (∀ (n : ℕ) (xs₁ xs₂ : Fin n → Bool),
       countTrue xs₁ = countTrue xs₂ → M.prob xs₁ = M.prob xs₂) ∧
-    -- Part 3: PLN Evidence captures this sufficiency
+    -- Part 3: PLN BinaryEvidence captures this sufficiency
     (∀ n_pos n_neg : ℕ, evidenceFromCounts n_pos n_neg = (n_pos, n_neg)) ∧
     -- Part 4: PLN strength converges to Bayesian posterior mean
     (∀ ε : ℝ, 0 < ε → ∃ N : ℕ, ∀ n_pos n_neg : ℕ,
@@ -1078,7 +1078,7 @@ theorem nupln_master_chain {Ω : Type*} [MeasurableSpace Ω]
   -- Step 2: Counts sufficient (from BernoulliMixture.prob_depends_only_on_counts)
   · intro n xs₁ xs₂ hcount
     exact M.prob_depends_only_on_counts xs₁ xs₂ hcount
-  -- Step 3: Evidence = counts (by definition)
+  -- Step 3: BinaryEvidence = counts (by definition)
   · intros; rfl
   -- Step 4: PLN convergence (from EvidenceBeta.pln_is_bayes_optimal_for_exchangeable)
   · exact (Mettapedia.Logic.EvidenceBeta.pln_is_bayes_optimal_for_exchangeable).2

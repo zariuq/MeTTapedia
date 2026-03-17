@@ -4,24 +4,24 @@ import Mettapedia.ProbabilityTheory.KnuthSkilling.Core.Basic
 import Mathlib.Data.ENNReal.Inv
 
 /-!
-# Intuitionistic Probability on Evidence
+# Intuitionistic Probability on BinaryEvidence
 
-This file develops K&S-style probability theory on Evidence at the PlausibilitySpace level,
+This file develops K&S-style probability theory on BinaryEvidence at the PlausibilitySpace level,
 deriving the "intuitionistic" (Heyting) versions of probability rules.
 
 ## Key Results
 
-1. **Valuations on Evidence**: K&S valuations exist and satisfy standard properties
+1. **Valuations on BinaryEvidence**: K&S valuations exist and satisfy standard properties
 2. **Intuitionistic Rules**: Boolean equalities become inequalities
-3. **Precision Loss**: Examples where 2D Evidence is strictly more informative than 1D valuations
-4. **PLN Connection**: How PLN formulas relate to K&S valuations on Evidence
+3. **Precision Loss**: Examples where 2D BinaryEvidence is strictly more informative than 1D valuations
+4. **PLN Connection**: How PLN formulas relate to K&S valuations on BinaryEvidence
 
 ## The Core Insight
 
 K&S at Boolean level:   P(¬A) = 1 - P(A)         (equality)
 K&S at Heyting level:   P(¬A) ≤ 1 - P(A)         (inequality - less precise!)
 
-PLN's 2D Evidence keeps BOTH (n⁺, n⁻), avoiding the precision loss.
+PLN's 2D BinaryEvidence keeps BOTH (n⁺, n⁻), avoiding the precision loss.
 -/
 
 namespace Mettapedia.Logic.EvidenceIntuitionisticProbability
@@ -29,21 +29,21 @@ namespace Mettapedia.Logic.EvidenceIntuitionisticProbability
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.ProbabilityTheory.KnuthSkilling
 
-/-! ## K&S Valuations on Evidence
+/-! ## K&S Valuations on BinaryEvidence
 
-Since Evidence is a PlausibilitySpace, we can define K&S-style valuations on it.
+Since BinaryEvidence is a PlausibilitySpace, we can define K&S-style valuations on it.
 Here we show that valuations exist and explore their properties.
 -/
 
-/-- Evidence ⊥ is (0, 0). -/
-theorem evidence_bot_eq : (⊥ : Evidence) = ⟨0, 0⟩ := rfl
+/-- BinaryEvidence ⊥ is (0, 0). -/
+theorem evidence_bot_eq : (⊥ : BinaryEvidence) = ⟨0, 0⟩ := rfl
 
-/-- Evidence ⊤ is (⊤, ⊤). -/
-theorem evidence_top_eq : (⊤ : Evidence) = ⟨⊤, ⊤⟩ := rfl
+/-- BinaryEvidence ⊤ is (⊤, ⊤). -/
+theorem evidence_top_eq : (⊤ : BinaryEvidence) = ⟨⊤, ⊤⟩ := rfl
 
 /-- The trivial valuation that maps ⊥ → 0, everything else → 1.
     This is always monotone (and always exists on any bounded lattice). -/
-noncomputable def trivialValuation : Valuation Evidence where
+noncomputable def trivialValuation : Valuation BinaryEvidence where
   val := fun e => if (e.pos = 0 ∧ e.neg = 0) then 0 else 1
   monotone := fun x y hle => by
     by_cases hx : x.pos = 0 ∧ x.neg = 0
@@ -53,7 +53,7 @@ noncomputable def trivialValuation : Valuation Evidence where
     · by_cases hy : y.pos = 0 ∧ y.neg = 0
       · exfalso
         push_neg at hx
-        simp only [Evidence.le_def] at hle
+        simp only [BinaryEvidence.le_def] at hle
         by_cases hp : x.pos = 0
         · -- x.pos = 0, so x.neg ≠ 0 (from hx)
           have hn : x.neg ≠ 0 := hx hp
@@ -70,10 +70,10 @@ noncomputable def trivialValuation : Valuation Evidence where
         simp only [hx, hy, ite_false, le_refl]
   val_bot := by
     -- ⊥ = ⟨0, 0⟩, so condition is true
-    have h : (⊥ : Evidence).pos = 0 ∧ (⊥ : Evidence).neg = 0 := ⟨rfl, rfl⟩
+    have h : (⊥ : BinaryEvidence).pos = 0 ∧ (⊥ : BinaryEvidence).neg = 0 := ⟨rfl, rfl⟩
     exact if_pos h
   val_top := by
-    have h : ¬((⊤ : Evidence).pos = 0 ∧ (⊤ : Evidence).neg = 0) := by
+    have h : ¬((⊤ : BinaryEvidence).pos = 0 ∧ (⊤ : BinaryEvidence).neg = 0) := by
       simp only [not_and]
       intro _
       exact ENNReal.top_ne_zero
@@ -86,13 +86,13 @@ At the Heyting (non-Boolean) level, equalities become inequalities.
 
 section IntuitionisticRules
 
-variable (v : Valuation Evidence)
+variable (v : Valuation BinaryEvidence)
 
 /-- In a Heyting algebra, the negation bound is an INEQUALITY, not equality.
     The trivial bound: v(¬A) ≤ 1 always holds.
 
-    For Evidence, this is typically NOT tight because LEM fails. -/
-theorem heyting_negation_trivial_bound (a : Evidence) :
+    For BinaryEvidence, this is typically NOT tight because LEM fails. -/
+theorem heyting_negation_trivial_bound (a : BinaryEvidence) :
     v.val (aᶜ) ≤ 1 := v.le_one _
 
 /-- The "excluded middle gap": a ⊔ ¬a ≠ ⊤ in general for Heyting algebras.
@@ -100,29 +100,29 @@ theorem heyting_negation_trivial_bound (a : Evidence) :
 
     We prove this by showing a ⊔ aᶜ ≠ ⊤ for a specific choice of a. -/
 theorem excludedMiddle_gap_positive :
-    ∃ a : Evidence, a ⊔ aᶜ ≠ ⊤ := by
+    ∃ a : BinaryEvidence, a ⊔ aᶜ ≠ ⊤ := by
   -- Use (1, 1). Its complement under Heyting implication is (0, 0)
   use ⟨1, 1⟩
   intro h
-  have hpos : ((⟨1, 1⟩ : Evidence) ⊔ (⟨1, 1⟩ : Evidence)ᶜ).pos = (⊤ : Evidence).pos :=
-    congrArg Evidence.pos h
+  have hpos : ((⟨1, 1⟩ : BinaryEvidence) ⊔ (⟨1, 1⟩ : BinaryEvidence)ᶜ).pos = (⊤ : BinaryEvidence).pos :=
+    congrArg BinaryEvidence.pos h
   have h1_not_le_0 := not_le.mpr (zero_lt_one (α := ENNReal))
-  have hcompl_pos : ((⟨1, 1⟩ : Evidence)ᶜ).pos = 0 := by
-    show (Evidence.himp ⟨1, 1⟩ ⊥).pos = 0
-    simp only [Evidence.himp]
-    -- Goal: (if 1 ≤ (⊥ : Evidence).pos then ⊤ else (⊥ : Evidence).pos) = 0
+  have hcompl_pos : ((⟨1, 1⟩ : BinaryEvidence)ᶜ).pos = 0 := by
+    show (BinaryEvidence.himp ⟨1, 1⟩ ⊥).pos = 0
+    simp only [BinaryEvidence.himp]
+    -- Goal: (if 1 ≤ (⊥ : BinaryEvidence).pos then ⊤ else (⊥ : BinaryEvidence).pos) = 0
     -- Since ⊥.pos = 0 and ¬(1 ≤ 0), this is 0 = 0
-    have hbot_pos : (⊥ : Evidence).pos = 0 := rfl
+    have hbot_pos : (⊥ : BinaryEvidence).pos = 0 := rfl
     simp only [hbot_pos, h1_not_le_0, ↓reduceIte]
-  have hsup_pos : ((⟨1, 1⟩ : Evidence) ⊔ (⟨1, 1⟩ : Evidence)ᶜ).pos = (1 : ENNReal) := by
-    show max (1 : ENNReal) ((⟨1, 1⟩ : Evidence)ᶜ).pos = 1
+  have hsup_pos : ((⟨1, 1⟩ : BinaryEvidence) ⊔ (⟨1, 1⟩ : BinaryEvidence)ᶜ).pos = (1 : ENNReal) := by
+    show max (1 : ENNReal) ((⟨1, 1⟩ : BinaryEvidence)ᶜ).pos = 1
     rw [hcompl_pos]
     simp
   rw [hsup_pos] at hpos
   exact ENNReal.one_ne_top hpos
 
 /-- The chain rule for conditional valuations holds even in Heyting algebras. -/
-theorem heyting_chain_rule (a b c : Evidence)
+theorem heyting_chain_rule (a b c : BinaryEvidence)
     (hc : v.val c ≠ 0) (hbc : v.val (b ⊓ c) ≠ 0) :
     v.condVal (a ⊓ b) c = v.condVal a (b ⊓ c) * v.condVal b c := by
   unfold Valuation.condVal
@@ -135,7 +135,7 @@ end IntuitionisticRules
 
 /-! ## Precision Loss Examples
 
-Here we show concrete cases where the 2D Evidence structure captures distinctions
+Here we show concrete cases where the 2D BinaryEvidence structure captures distinctions
 that ANY 1D valuation must collapse.
 -/
 
@@ -145,16 +145,16 @@ private theorem two_pos_ennreal : (0 : ENNReal) < 2 := zero_lt_two
 
 private theorem two_gt_one_ennreal : (1 : ENNReal) < 2 := by norm_cast
 
-/-- Two Evidence values that are incomparable in the partial order. -/
+/-- Two BinaryEvidence values that are incomparable in the partial order. -/
 theorem incomparable_evidence_exists :
-    ∃ e₁ e₂ : Evidence, ¬(e₁ ≤ e₂) ∧ ¬(e₂ ≤ e₁) := by
+    ∃ e₁ e₂ : BinaryEvidence, ¬(e₁ ≤ e₂) ∧ ¬(e₂ ≤ e₁) := by
   use ⟨2, 0⟩, ⟨0, 2⟩
   constructor
   · intro h
-    simp only [Evidence.le_def] at h
+    simp only [BinaryEvidence.le_def] at h
     exact not_le.mpr two_pos_ennreal h.1
   · intro h
-    simp only [Evidence.le_def] at h
+    simp only [BinaryEvidence.le_def] at h
     exact not_le.mpr two_pos_ennreal h.2
 
 /-- The key example: "more but mixed" vs "less but pure" evidence.
@@ -165,8 +165,8 @@ theorem incomparable_evidence_exists :
     These are INCOMPARABLE in the partial order because:
     - mixed ≤ pure requires 2 ≤ 3 ∧ 2 ≤ 0 - FALSE (2 ≰ 0)
     - pure ≤ mixed requires 3 ≤ 2 ∧ 0 ≤ 2 - FALSE (3 ≰ 2) -/
-def mixedEvidence : Evidence := ⟨2, 2⟩
-def pureEvidence : Evidence := ⟨3, 0⟩
+def mixedEvidence : BinaryEvidence := ⟨2, 2⟩
+def pureEvidence : BinaryEvidence := ⟨3, 0⟩
 
 private theorem three_gt_two_ennreal : (2 : ENNReal) < 3 := by norm_cast
 
@@ -174,16 +174,16 @@ theorem mixed_pure_incomparable :
     ¬(mixedEvidence ≤ pureEvidence) ∧ ¬(pureEvidence ≤ mixedEvidence) := by
   constructor
   · intro h
-    simp only [mixedEvidence, pureEvidence, Evidence.le_def] at h
+    simp only [mixedEvidence, pureEvidence, BinaryEvidence.le_def] at h
     exact not_le.mpr two_pos_ennreal h.2
   · intro h
-    simp only [mixedEvidence, pureEvidence, Evidence.le_def] at h
+    simp only [mixedEvidence, pureEvidence, BinaryEvidence.le_def] at h
     exact not_le.mpr three_gt_two_ennreal h.1
 
 /-- Mixed evidence has lower strength despite more total evidence. -/
 theorem mixed_lower_strength :
     mixedEvidence.toStrength < pureEvidence.toStrength := by
-  simp only [mixedEvidence, pureEvidence, Evidence.toStrength, Evidence.total]
+  simp only [mixedEvidence, pureEvidence, BinaryEvidence.toStrength, BinaryEvidence.total]
   -- mixedEvidence.toStrength = 2/4 = 0.5
   -- pureEvidence.toStrength = 3/3 = 1
   have h1 : ((2 : ENNReal) + 2 = 4) := by norm_cast
@@ -203,7 +203,7 @@ theorem mixed_lower_strength :
 /-- Mixed evidence has higher confidence (more observations). -/
 theorem mixed_higher_confidence :
     mixedEvidence.toConfidence 1 > pureEvidence.toConfidence 1 := by
-  simp only [mixedEvidence, pureEvidence, Evidence.toConfidence, Evidence.total]
+  simp only [mixedEvidence, pureEvidence, BinaryEvidence.toConfidence, BinaryEvidence.total]
   -- mixedEvidence.toConfidence 1 = 4 / (4 + 1) = 4/5
   -- pureEvidence.toConfidence 1 = 3 / (3 + 1) = 3/4
   -- Need: 4/5 > 3/4, i.e., 3/4 < 4/5, i.e., 3*5 < 4*4, i.e., 15 < 16
@@ -234,9 +234,9 @@ theorem mixed_higher_confidence :
 
 /-- For any monotone valuation, incomparable elements can have arbitrary value relationships.
     This shows the INFORMATION LOSS: a 1D valuation cannot faithfully represent
-    the 2D Evidence structure. -/
-theorem valuation_loses_info (v : Valuation Evidence) :
-    ∃ e₁ e₂ : Evidence,
+    the 2D BinaryEvidence structure. -/
+theorem valuation_loses_info (v : Valuation BinaryEvidence) :
+    ∃ e₁ e₂ : BinaryEvidence,
       ¬(e₁ ≤ e₂) ∧ ¬(e₂ ≤ e₁) ∧
       (v.val e₁ ≤ v.val e₂ ∨ v.val e₂ ≤ v.val e₁) := by
   use mixedEvidence, pureEvidence
@@ -247,7 +247,7 @@ end PrecisionLoss
 
 /-! ## Connection to PLN Formulas
 
-How do PLN's formulas relate to K&S valuations on Evidence?
+How do PLN's formulas relate to K&S valuations on BinaryEvidence?
 -/
 
 section PLNConnection
@@ -255,12 +255,12 @@ section PLNConnection
 /-- PLN strength is NOT a K&S valuation (not monotone).
     But it captures different information than any valuation can. -/
 theorem strength_not_valuation_compatible :
-    ∃ e₁ e₂ : Evidence, e₁ ≤ e₂ ∧ e₁.toStrength > e₂.toStrength := by
+    ∃ e₁ e₂ : BinaryEvidence, e₁ ≤ e₂ ∧ e₁.toStrength > e₂.toStrength := by
   use ⟨1, 0⟩, ⟨1, 1⟩
   constructor
-  · simp only [Evidence.le_def]
+  · simp only [BinaryEvidence.le_def]
     constructor <;> simp
-  · simp only [Evidence.toStrength, Evidence.total]
+  · simp only [BinaryEvidence.toStrength, BinaryEvidence.total]
     have h1 : ((1 : ENNReal) + 0 = 1) := by simp
     have h2 : ((1 : ENNReal) + 1 = 2) := by norm_cast
     have h1ne0 : (1 : ENNReal) ≠ 0 := by simp
@@ -280,10 +280,10 @@ theorem strength_not_valuation_compatible :
     We require e₂.total ≠ ⊤ because in ENNReal, ⊤/(⊤+κ) = 0,
     which breaks monotonicity at the boundary. -/
 theorem confidence_monotone_in_total (hκ_ne_top : κ ≠ ⊤) :
-    ∀ e₁ e₂ : Evidence, e₂.total ≠ ⊤ → e₁.total ≤ e₂.total →
+    ∀ e₁ e₂ : BinaryEvidence, e₂.total ≠ ⊤ → e₁.total ≤ e₂.total →
     e₁.toConfidence κ ≤ e₂.toConfidence κ := by
   intro e₁ e₂ h2_ne_top h
-  simp only [Evidence.toConfidence]
+  simp only [BinaryEvidence.toConfidence]
   -- t₁/(t₁+κ) ≤ t₂/(t₂+κ) when t₁ ≤ t₂ (and t₂ ≠ ⊤)
   set t₁ := e₁.total with ht1_def
   set t₂ := e₂.total with ht2_def
@@ -324,22 +324,22 @@ theorem confidence_monotone_in_total (hκ_ne_top : κ ≠ ⊤) :
 /-- The PLN 2D structure (strength, confidence) captures STRICTLY MORE
     information than any single K&S valuation.
 
-    Proof: valuations collapse incomparable Evidence to comparable reals,
+    Proof: valuations collapse incomparable BinaryEvidence to comparable reals,
     but (strength, confidence) pairs remain distinguishable. -/
 theorem pln_2d_more_informative :
-    ∃ e₁ e₂ : Evidence,
+    ∃ e₁ e₂ : BinaryEvidence,
       ¬(e₁ ≤ e₂) ∧ ¬(e₂ ≤ e₁) ∧
       (e₁.toStrength ≠ e₂.toStrength ∨ e₁.toConfidence 1 ≠ e₂.toConfidence 1) := by
   use ⟨2, 0⟩, ⟨0, 2⟩
   refine ⟨?_, ?_, ?_⟩
   · intro h
-    simp only [Evidence.le_def] at h
+    simp only [BinaryEvidence.le_def] at h
     exact not_le.mpr two_pos_ennreal h.1
   · intro h
-    simp only [Evidence.le_def] at h
+    simp only [BinaryEvidence.le_def] at h
     exact not_le.mpr two_pos_ennreal h.2
   · left
-    simp only [Evidence.toStrength, Evidence.total, ne_eq]
+    simp only [BinaryEvidence.toStrength, BinaryEvidence.total, ne_eq]
     have h1 : ((2 : ENNReal) + 0 = 2) := by simp
     have h2 : ((0 : ENNReal) + 2 = 2) := by simp
     have h2ne0 : (2 : ENNReal) ≠ 0 := by simp
@@ -348,13 +348,13 @@ theorem pln_2d_more_informative :
     rw [ENNReal.zero_div]
     exact one_ne_zero
 
-/-- Summary: The PLN Evidence framework gives TIGHTER bounds than K&S valuations alone.
+/-- Summary: The PLN BinaryEvidence framework gives TIGHTER bounds than K&S valuations alone.
 
     - K&S valuation: collapses 2D to 1D, loses incomparability info
     - PLN (strength, confidence): preserves 2D structure
     - PLN (n⁺, n⁻): preserves FULL structure -/
 theorem pln_avoids_heyting_precision_loss :
-    ∀ v : Valuation Evidence, ∀ a : Evidence,
+    ∀ v : Valuation BinaryEvidence, ∀ a : BinaryEvidence,
       0 ≤ v.val a ∧ v.val a ≤ 1 ∧
       (a.pos, a.neg) = (a.pos, a.neg) := by
   intro v a
@@ -364,9 +364,9 @@ end PLNConnection
 
 /-! ## What K&S Gives Us at the Heyting Level
 
-Summary of derived rules at PlausibilitySpace (Evidence) level:
+Summary of derived rules at PlausibilitySpace (BinaryEvidence) level:
 
-1. ✅ Valuations exist: monotone v : Evidence → [0,1]
+1. ✅ Valuations exist: monotone v : BinaryEvidence → [0,1]
 2. ✅ Conditional valuations: v(a|b) = v(a ⊓ b) / v(b)
 3. ✅ Chain rule: v(a ⊓ b | c) = v(a | b ⊓ c) · v(b | c)
 4. ⚠️ Negation: v(¬a) ≤ 1 (INEQUALITY, not v(¬a) = 1 - v(a))

@@ -18,17 +18,17 @@ When restricted to **exchangeable binary** sequences:
 
 1. Exchangeability implies probabilities depend only on counts (combinatorics).
 2. Therefore the Solomonoff-style predictor `μ(x++[b]) / μ(x)` depends only on `(n⁺, n⁻)`.
-3. Evidence accumulation is just `hplus` on evidence counts.
+3. BinaryEvidence accumulation is just `hplus` on evidence counts.
 
 Note: The full measure-theoretic de Finetti representation theorem IS formalized in
 `Mettapedia.Logic.DeFinetti` (with zero sorries), including the Hausdorff moment theorem.
 This file focuses on the semimeasure-level predictor collapse, which is the direct
-justification for PLN Evidence.
+justification for PLN BinaryEvidence.
 
 ## Domain Characterization
 
 **Theorem (predictor form)**: For the class of exchangeable binary environments, Solomonoff
-prediction collapses from "arbitrary program mixture state" to just `(n⁺, n⁻)` (Evidence).
+prediction collapses from "arbitrary program mixture state" to just `(n⁺, n⁻)` (BinaryEvidence).
 
 **Full de Finetti** (proven in `DeFinetti.lean`): Exchangeable ↔ Bernoulli mixture representation.
 This gives the closed form of the predictor (Beta-Bernoulli conjugacy).
@@ -259,7 +259,7 @@ end RestrictedSolomonoffPrior
     via `mu_same_counts`. Note: the full de Finetti theorem IS formalized in
     `Mettapedia.Logic.DeFinetti` and gives the closed-form Beta-Bernoulli representation.
 
-    **This justifies PLN Evidence = (n⁺, n⁻) for exchangeable binary domains.**
+    **This justifies PLN BinaryEvidence = (n⁺, n⁻) for exchangeable binary domains.**
 -/
 theorem solomonoff_exchangeable_counts_sufficient (M : RestrictedSolomonoffPrior) :
     ∀ (n : ℕ) (xs₁ xs₂ : Fin n → Bool),
@@ -283,22 +283,22 @@ theorem solomonoff_exchangeable_predictBit_same_counts (M : RestrictedSolomonoff
   exact Mettapedia.Logic.SolomonoffExchangeable.RestrictedSolomonoffPrior.predictBit_ofFn_same_counts
     (M := M) xs₁ xs₂ hcount b
 
-/-! ### Evidence View: Count Update = `hplus`
+/-! ### BinaryEvidence View: Count Update = `hplus`
 
-The Evidence quantale uses `hplus` to aggregate independent observations:
+The BinaryEvidence quantale uses `hplus` to aggregate independent observations:
 adding one `true` increments `n⁺`; adding one `false` increments `n⁻`.
 -/
 
-/-- Convert natural count statistics to Evidence counts. -/
-def evidenceOfCounts (n_pos n_neg : ℕ) : Evidence :=
+/-- Convert natural count statistics to BinaryEvidence counts. -/
+def evidenceOfCounts (n_pos n_neg : ℕ) : BinaryEvidence :=
   ⟨(n_pos : ℝ≥0∞), (n_neg : ℝ≥0∞)⟩
 
-/-- Evidence contributed by a single observation bit. -/
-def evidenceOfBit (b : Bool) : Evidence :=
+/-- BinaryEvidence contributed by a single observation bit. -/
+def evidenceOfBit (b : Bool) : BinaryEvidence :=
   if b then ⟨1, 0⟩ else ⟨0, 1⟩
 
-/-- Evidence corresponding to a length-`n` observation vector. -/
-def evidenceOfFn {n : ℕ} (xs : Fin n → Bool) : Evidence :=
+/-- BinaryEvidence corresponding to a length-`n` observation vector. -/
+def evidenceOfFn {n : ℕ} (xs : Fin n → Bool) : BinaryEvidence :=
   evidenceOfCounts (countTrue xs) (countFalse xs)
 
 /-- `evidenceOfFn xs` is equivalent to knowing only `countTrue xs` (since `countFalse` is determined
@@ -309,7 +309,7 @@ theorem evidenceOfFn_eq_iff_countTrue_eq {n : ℕ} (xs₁ xs₂ : Fin n → Bool
   · intro heq
     have hpos :
         ((countTrue xs₁ : ℕ) : ℝ≥0∞) = ((countTrue xs₂ : ℕ) : ℝ≥0∞) := by
-      simpa [evidenceOfFn, evidenceOfCounts] using congrArg Evidence.pos heq
+      simpa [evidenceOfFn, evidenceOfCounts] using congrArg BinaryEvidence.pos heq
     exact Nat.cast_injective hpos
   · intro hcount
     have hfalse : countFalse xs₁ = countFalse xs₂ := by
@@ -326,8 +326,8 @@ theorem evidenceOfFn_eq_iff_countTrue_eq {n : ℕ} (xs₁ xs₂ : Fin n → Bool
       exact Nat.add_left_cancel hsum'
     ext <;> simp [evidenceOfFn, evidenceOfCounts, hcount, hfalse]
 
-/-- **νPLN core (Evidence form)**: For an exchangeable restricted Solomonoff prior, the
-Solomonoff-style predictor depends only on the Evidence state `evidenceOfFn xs`.
+/-- **νPLN core (BinaryEvidence form)**: For an exchangeable restricted Solomonoff prior, the
+Solomonoff-style predictor depends only on the BinaryEvidence state `evidenceOfFn xs`.
 
 This is the clean “state compression” statement: in the exchangeable-binary setting, the
 predictor factors through the sufficient statistic `(n⁺, n⁻)`. -/
@@ -337,10 +337,10 @@ theorem solomonoff_exchangeable_predictBit_same_evidence (M : RestrictedSolomono
       ∀ b : Bool,
         M.predictBit (List.ofFn xs₁) b = M.predictBit (List.ofFn xs₂) b := by
   intro n xs₁ xs₂ heq b
-  -- Extract equality of `countTrue` from the equality of Evidence states.
+  -- Extract equality of `countTrue` from the equality of BinaryEvidence states.
   have hpos :
       ((countTrue xs₁ : ℕ) : ℝ≥0∞) = ((countTrue xs₂ : ℕ) : ℝ≥0∞) := by
-    simpa [evidenceOfFn, evidenceOfCounts] using congrArg Evidence.pos heq
+    simpa [evidenceOfFn, evidenceOfCounts] using congrArg BinaryEvidence.pos heq
   have hcount : countTrue xs₁ = countTrue xs₂ := by
     exact Nat.cast_injective hpos
   exact solomonoff_exchangeable_predictBit_same_counts (M := M) xs₁ xs₂ hcount b
@@ -499,7 +499,7 @@ theorem evidenceOfFn_snoc {n : ℕ} (xs : Fin n → Bool) (b : Bool) :
           _ = countTrue xs + (countFalse xs + 1) := by
               simpa using hpart₁'.symm
       exact Nat.add_left_cancel heq
-    ext <;> simp [Evidence.hplus_def, htrue, hfalse, Nat.cast_add]
+    ext <;> simp [BinaryEvidence.hplus_def, htrue, hfalse, Nat.cast_add]
   | true =>
     unfold evidenceOfFn evidenceOfCounts evidenceOfBit
     have htrue :
@@ -535,7 +535,7 @@ theorem evidenceOfFn_snoc {n : ℕ} (xs : Fin n → Bool) (b : Bool) :
           _ = (countTrue xs + 1) + countFalse xs := by
               simpa using hpart₁'.symm
       exact Nat.add_left_cancel heq
-    ext <;> simp [Evidence.hplus_def, htrue, hfalse, Nat.cast_add]
+    ext <;> simp [BinaryEvidence.hplus_def, htrue, hfalse, Nat.cast_add]
 
 end RestrictedSolomonoff
 
@@ -546,7 +546,7 @@ section DomainCharacterization
 /- TODO: Domain characterization narrative.
 
    This section should eventually contain *precise* theorems stating:
-   - when the (counts-only) Evidence/Beta update is optimal (exchangeable binary),
+   - when the (counts-only) BinaryEvidence/Beta update is optimal (exchangeable binary),
    - when it is not (non-exchangeable / correlated / non-binary),
    - and simple diagnostic conditions/tests that detect departures from exchangeability.
 -/

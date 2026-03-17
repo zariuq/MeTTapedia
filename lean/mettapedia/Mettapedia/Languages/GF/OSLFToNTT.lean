@@ -15,10 +15,10 @@ Composes the OSLF evidence semantics with NativeTypeTheory (Grothendieck
 construction ∫ Sub), completing the pipeline:
 
 ```
-  GF → Pattern → GrammarState → QFormula2 → Evidence → NativeTypeTheory
+  GF → Pattern → GrammarState → QFormula2 → BinaryEvidence → NativeTypeTheory
 ```
 
-The bridge exploits `PLNFiber X = Evidence`, making the Grothendieck
+The bridge exploits `PLNFiber X = BinaryEvidence`, making the Grothendieck
 fiber directly the evidence value from `qsemE2`/`gsemE2Full`.
 -/
 
@@ -35,24 +35,24 @@ open Mettapedia.CategoryTheory.NativeTypeTheory
 open Mettapedia.Languages.GF.Examples.EveryManWalks
 open Mettapedia.Logic.EvidenceQuantale
 
-/-! ## 1. Evidence → NT Object -/
+/-! ## 1. BinaryEvidence → NT Object -/
 
 /-- Construct an NT object from a PLN proposition type and an evidence value. -/
-def evidenceToNT (X : PLNObj) (e : Evidence) : NativeTypeBundle :=
+def evidenceToNT (X : PLNObj) (e : BinaryEvidence) : NativeTypeBundle :=
   Sigma.mk X e
 
-theorem evidenceToNT_fst (X : PLNObj) (e : Evidence) :
+theorem evidenceToNT_fst (X : PLNObj) (e : BinaryEvidence) :
     (evidenceToNT X e).1 = X := rfl
 
-theorem evidenceToNT_snd (X : PLNObj) (e : Evidence) :
+theorem evidenceToNT_snd (X : PLNObj) (e : BinaryEvidence) :
     (evidenceToNT X e).2 = e := rfl
 
-/-- Evidence ordering lifts to NT morphisms. -/
-def evidenceToNT_hom (X : PLNObj) (e₁ e₂ : Evidence) (h : e₁ ≤ e₂) :
+/-- BinaryEvidence ordering lifts to NT morphisms. -/
+def evidenceToNT_hom (X : PLNObj) (e₁ e₂ : BinaryEvidence) (h : e₁ ≤ e₂) :
     Hom (evidenceToNT X e₁) (evidenceToNT X e₂) :=
   PLift.up h
 
-/-! ## 2. QFormula2 → NT via Evidence Evaluation -/
+/-! ## 2. QFormula2 → NT via BinaryEvidence Evaluation -/
 
 /-- Evaluate a quantified formula to an NT object. -/
 noncomputable def formulaToNT (R : Pattern → Pattern → Prop) (I : QEvidenceAtomSem)
@@ -100,7 +100,7 @@ theorem grammarStateToNT_snd (cfg : VisibleCfg) (π : WorldModelSemantics.Tempor
 /-! ## 4. Pipeline Composition Theorems -/
 
 /-- ⊥ evidence always lifts: morphism from `⟨X, ⊥⟩` to any `⟨X, e⟩`. -/
-def evidenceToNT_bot_hom (X : PLNObj) (e : Evidence) :
+def evidenceToNT_bot_hom (X : PLNObj) (e : BinaryEvidence) :
     Hom (evidenceToNT X ⊥) (evidenceToNT X e) :=
   PLift.up bot_le
 
@@ -177,8 +177,8 @@ theorem closed_frame_NT_eq
   languagePresheafLambdaTheory gfRGLLanguageDef   -- Presheaf category (OSLF)
          ↓ languageSortFiber                      -- Sort-fiber extraction
   languageSortFiber gfRGLLanguageDef s            -- Subobjects at sort s
-         ↓ qsemE2 evaluation                     -- Evidence semantics
-  Evidence                                         -- Frame-valued truth
+         ↓ qsemE2 evaluation                     -- BinaryEvidence semantics
+  BinaryEvidence                                         -- Frame-valued truth
          ↓ evidenceToNT                           -- Grothendieck pairing
   NativeTypeTheory                                 -- NTT category (∫ Sub)
 ```

@@ -2,15 +2,15 @@ import Mettapedia.Logic.EvidenceQuantale
 import Mettapedia.Logic.PLNMeTTaCore
 
 /-!
-# Evidence-STV Bridge
+# BinaryEvidence-STV Bridge
 
 This module bridges the gap between:
-1. **Evidence** (quantale carrier from EvidenceQuantale.lean)
+1. **BinaryEvidence** (quantale carrier from EvidenceQuantale.lean)
 2. **STV** (bounded truth values from PLNMeTTaCore.lean)
 
 ## Key Insight
 
-Evidence counts `(n⁺, n⁻) ∈ ℝ≥0∞ × ℝ≥0∞` are the fundamental carrier,
+BinaryEvidence counts `(n⁺, n⁻) ∈ ℝ≥0∞ × ℝ≥0∞` are the fundamental carrier,
 while STV `(s, c) ∈ [0,1] × [0,1]` is a *view* into this space.
 
 The mapping:
@@ -19,12 +19,12 @@ The mapping:
 
 ## Main Results
 
-1. `evidenceToSTV`: Convert Evidence to bounded STV
-2. `evidence_hplus_revision`: Evidence hplus = weighted averaging (revision)
+1. `evidenceToSTV`: Convert BinaryEvidence to bounded STV
+2. `evidence_hplus_revision`: BinaryEvidence hplus = weighted averaging (revision)
 
 ## References
 
-- EvidenceQuantale.lean: Evidence quantale with toStrength, toConfidence
+- EvidenceQuantale.lean: BinaryEvidence quantale with toStrength, toConfidence
 - PLNMeTTaCore.lean: STV operations with soundness proofs
 -/
 
@@ -37,88 +37,88 @@ open Mettapedia.Logic.PLNMeTTaCore
 open Mettapedia.Logic.PLNDeduction
 open Mettapedia.Logic.PLN
 
-/-! ## Evidence to STV Conversion
+/-! ## BinaryEvidence to STV Conversion
 
-Convert Evidence to bounded STV using clamp01 for safety. -/
+Convert BinaryEvidence to bounded STV using clamp01 for safety. -/
 
-/-- Convert Evidence to STV with a given prior κ.
+/-- Convert BinaryEvidence to STV with a given prior κ.
 
     The strength is `n⁺ / (n⁺ + n⁻)` and confidence is `total / (total + κ)`.
     We use clamp01 to ensure bounds, which is the identity for valid evidence. -/
-noncomputable def evidenceToSTV (κ : ℝ≥0∞) (e : Evidence) : STV :=
-  let s := (Evidence.toStrength e).toReal
-  let c := (Evidence.toConfidence κ e).toReal
+noncomputable def evidenceToSTV (κ : ℝ≥0∞) (e : BinaryEvidence) : STV :=
+  let s := (BinaryEvidence.toStrength e).toReal
+  let c := (BinaryEvidence.toConfidence κ e).toReal
   ⟨clamp01 s, clamp01 c,
    clamp01_nonneg s, clamp01_le_one s,
    clamp01_nonneg c, clamp01_le_one c⟩
 
-/-- Evidence strength is non-negative as a real (follows from ENNReal.toReal_nonneg). -/
-theorem evidence_strength_real_nonneg (e : Evidence) :
-    0 ≤ (Evidence.toStrength e).toReal :=
+/-- BinaryEvidence strength is non-negative as a real (follows from ENNReal.toReal_nonneg). -/
+theorem evidence_strength_real_nonneg (e : BinaryEvidence) :
+    0 ≤ (BinaryEvidence.toStrength e).toReal :=
   ENNReal.toReal_nonneg
 
-/-- Evidence confidence is non-negative as a real. -/
-theorem evidence_confidence_real_nonneg (κ : ℝ≥0∞) (e : Evidence) :
-    0 ≤ (Evidence.toConfidence κ e).toReal :=
+/-- BinaryEvidence confidence is non-negative as a real. -/
+theorem evidence_confidence_real_nonneg (κ : ℝ≥0∞) (e : BinaryEvidence) :
+    0 ≤ (BinaryEvidence.toConfidence κ e).toReal :=
   ENNReal.toReal_nonneg
 
-/-! ## Evidence hplus corresponds to Revision
+/-! ## BinaryEvidence hplus corresponds to Revision
 
 The key theorem: combining evidence via hplus gives weighted averaging,
 which is exactly what PLN revision does. -/
 
-/-- Evidence hplus gives weighted average of strengths.
+/-- BinaryEvidence hplus gives weighted average of strengths.
     This is the core revision property from EvidenceQuantale.lean. -/
-theorem evidence_hplus_weighted_avg (e₁ e₂ : Evidence)
+theorem evidence_hplus_weighted_avg (e₁ e₂ : BinaryEvidence)
     (h₁ : e₁.total ≠ 0) (h₂ : e₂.total ≠ 0) (h₁₂ : (e₁ + e₂).total ≠ 0)
     (h₁_top : e₁.total ≠ ⊤) (h₂_top : e₂.total ≠ ⊤) :
-    Evidence.toStrength (e₁ + e₂) =
-      (e₁.total / (e₁ + e₂).total) * Evidence.toStrength e₁ +
-      (e₂.total / (e₁ + e₂).total) * Evidence.toStrength e₂ :=
-  Evidence.toStrength_hplus e₁ e₂ h₁ h₂ h₁₂ h₁_top h₂_top
+    BinaryEvidence.toStrength (e₁ + e₂) =
+      (e₁.total / (e₁ + e₂).total) * BinaryEvidence.toStrength e₁ +
+      (e₂.total / (e₁ + e₂).total) * BinaryEvidence.toStrength e₂ :=
+  BinaryEvidence.toStrength_hplus e₁ e₂ h₁ h₂ h₁₂ h₁_top h₂_top
 
 /-! ## Confidence increases with evidence -/
 
 /-- Total evidence after hplus equals sum of totals. -/
-theorem evidence_hplus_total (e₁ e₂ : Evidence) :
+theorem evidence_hplus_total (e₁ e₂ : BinaryEvidence) :
     (e₁ + e₂).total = e₁.total + e₂.total := by
-  simp only [Evidence.hplus_def, Evidence.total]
+  simp only [BinaryEvidence.hplus_def, BinaryEvidence.total]
   ring
 
 /-! ## Tensor product for sequential composition -/
 
 /-- Tensor is defined coordinatewise. -/
-theorem evidence_tensor_def (e₁ e₂ : Evidence) :
+theorem evidence_tensor_def (e₁ e₂ : BinaryEvidence) :
     e₁ * e₂ = ⟨e₁.pos * e₂.pos, e₁.neg * e₂.neg⟩ :=
-  Evidence.tensor_def e₁ e₂
+  BinaryEvidence.tensor_def e₁ e₂
 
 /-- Tensor strength is at least the product of strengths.
     This shows sequential composition preserves evidence. -/
-theorem evidence_tensor_strength_ge (e₁ e₂ : Evidence) :
-    Evidence.toStrength (e₁ * e₂) ≥ Evidence.toStrength e₁ * Evidence.toStrength e₂ :=
-  Evidence.toStrength_tensor_ge e₁ e₂
+theorem evidence_tensor_strength_ge (e₁ e₂ : BinaryEvidence) :
+    BinaryEvidence.toStrength (e₁ * e₂) ≥ BinaryEvidence.toStrength e₁ * BinaryEvidence.toStrength e₂ :=
+  BinaryEvidence.toStrength_tensor_ge e₁ e₂
 
-/-! ## Unit Evidence -/
+/-! ## Unit BinaryEvidence -/
 
 /-- The tensor unit (1, 1) has strength 1/2. -/
 theorem evidence_one_strength :
-    Evidence.toStrength Evidence.one = 1 / 2 := by
-  unfold Evidence.toStrength Evidence.total Evidence.one
+    BinaryEvidence.toStrength BinaryEvidence.one = 1 / 2 := by
+  unfold BinaryEvidence.toStrength BinaryEvidence.total BinaryEvidence.one
   norm_num
 
 /-- Zero evidence (0, 0) has strength 0 (by convention). -/
 theorem evidence_zero_strength :
-    Evidence.toStrength ⟨0, 0⟩ = 0 := by
-  unfold Evidence.toStrength Evidence.total
+    BinaryEvidence.toStrength ⟨0, 0⟩ = 0 := by
+  unfold BinaryEvidence.toStrength BinaryEvidence.total
   simp
 
 /-! ## Summary
 
-This module establishes the bridge between Evidence and STV:
+This module establishes the bridge between BinaryEvidence and STV:
 
 ### Key Results (All Proved, 0 Sorries)
 
-1. **`evidenceToSTV`**: Convert Evidence to bounded STV
+1. **`evidenceToSTV`**: Convert BinaryEvidence to bounded STV
 2. **`evidence_hplus_weighted_avg`**: hplus = weighted average (revision formula)
 3. **`evidence_hplus_total`**: Total evidence is additive under hplus
 4. **`evidence_tensor_strength_ge`**: Tensor preserves strength (lower bound)
@@ -128,7 +128,7 @@ This module establishes the bridge between Evidence and STV:
 ### Architecture
 
 ```
-Evidence (ℝ≥0∞ × ℝ≥0∞)       [EvidenceQuantale.lean - quantale]
+BinaryEvidence (ℝ≥0∞ × ℝ≥0∞)       [EvidenceQuantale.lean - quantale]
     │
     │ toStrength, toConfidence
     ↓
@@ -143,7 +143,7 @@ STV (ℝ × ℝ with [0,1])      [PLNMeTTaCore.lean]
 Correct PLN inference
 ```
 
-The Evidence layer provides the algebraic foundation (quantale with hplus, tensor),
+The BinaryEvidence layer provides the algebraic foundation (quantale with hplus, tensor),
 while the STV layer provides bounded operational semantics.
 -/
 

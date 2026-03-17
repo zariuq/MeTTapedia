@@ -46,10 +46,10 @@ def queryHolds (θ : Θ) (q : ExperimentQuery Θ Ω) : Prop :=
 
 instance : EvidenceType (Multiset Θ) where
 
-/-- Evidence for an experiment query:
+/-- BinaryEvidence for an experiment query:
 positive count = satisfying hypotheses; negative count = refuting hypotheses. -/
 noncomputable def experimentEvidence
-    (W : Multiset Θ) (q : ExperimentQuery Θ Ω) : Evidence := by
+    (W : Multiset Θ) (q : ExperimentQuery Θ Ω) : BinaryEvidence := by
   classical
   exact
     ⟨(Multiset.countP (fun θ : Θ => queryHolds θ q) W : ℝ≥0∞),
@@ -60,14 +60,17 @@ theorem experimentEvidence_add
     experimentEvidence (W₁ + W₂) q =
       experimentEvidence W₁ q + experimentEvidence W₂ q := by
   classical
-  apply Evidence.ext'
-  · simp [experimentEvidence, Multiset.countP_add, Evidence.hplus_def]
-  · simp [experimentEvidence, Multiset.countP_add, Evidence.hplus_def]
+  apply BinaryEvidence.ext'
+  · simp [experimentEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
+  · simp [experimentEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
 
 /-- WM instance induced by multiset counting over hypotheses. -/
-noncomputable instance : WorldModel (Multiset Θ) (ExperimentQuery Θ Ω) where
+noncomputable instance : BinaryWorldModel (Multiset Θ) (ExperimentQuery Θ Ω) where
   evidence := experimentEvidence
   evidence_add := experimentEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [experimentEvidence, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 /-- Blackwell-style factorization witness (`weak = κ ∘ strong`). -/
 def BlackwellFactorsThrough
@@ -106,9 +109,9 @@ theorem wmQueryEq_of_blackwellFactor
         (fun θ : Θ => ¬ p (κ (strong.run θ))) := by
     funext θ
     simpa [hpred] using congrArg Not (congrArg p (hfactor θ))
-  apply Evidence.ext'
-  · simp [WorldModel.evidence, experimentEvidence, queryOf, pullbackQuery, queryHolds, hpred]
-  · simp [WorldModel.evidence, experimentEvidence, queryOf, pullbackQuery, queryHolds, hpredNeg]
+  apply BinaryEvidence.ext'
+  · simp [BinaryWorldModel.evidence, experimentEvidence, queryOf, pullbackQuery, queryHolds, hpred]
+  · simp [BinaryWorldModel.evidence, experimentEvidence, queryOf, pullbackQuery, queryHolds, hpredNeg]
 
 /-- Strength equality transport for Blackwell-style factorization. -/
 theorem queryStrength_eq_of_blackwellFactor
@@ -117,9 +120,9 @@ theorem queryStrength_eq_of_blackwellFactor
     (hfactor : BlackwellFactorsThrough strong weak κ)
     (p : Ω → Prop)
     (W : Multiset Θ) :
-    WorldModel.queryStrength (State := Multiset Θ) (Query := ExperimentQuery Θ Ω)
+    BinaryWorldModel.queryStrength (State := Multiset Θ) (Query := ExperimentQuery Θ Ω)
         W (queryOf weak p) =
-      WorldModel.queryStrength (State := Multiset Θ) (Query := ExperimentQuery Θ Ω)
+      BinaryWorldModel.queryStrength (State := Multiset Θ) (Query := ExperimentQuery Θ Ω)
         W (pullbackQuery strong κ p) := by
   exact
     WMQueryEq.to_queryStrength
@@ -135,9 +138,9 @@ theorem queryStrength_le_of_blackwellFactor
     (hfactor : BlackwellFactorsThrough strong weak κ)
     (p : Ω → Prop)
     (W : Multiset Θ) :
-    WorldModel.queryStrength (State := Multiset Θ) (Query := ExperimentQuery Θ Ω)
+    BinaryWorldModel.queryStrength (State := Multiset Θ) (Query := ExperimentQuery Θ Ω)
         W (queryOf weak p) ≤
-      WorldModel.queryStrength (State := Multiset Θ) (Query := ExperimentQuery Θ Ω)
+      BinaryWorldModel.queryStrength (State := Multiset Θ) (Query := ExperimentQuery Θ Ω)
         W (pullbackQuery strong κ p) := by
   exact le_of_eq (queryStrength_eq_of_blackwellFactor strong weak κ hfactor p W)
 

@@ -28,12 +28,12 @@ abbrev HOLLinkJudgment :=
 
 /-- A term judgment holds at strength `s` exactly when the HOL WM state extracts that strength. -/
 def holdsTermWM (W : HOLState Base Const) (φ : HOLQuery Const) (s : ℝ≥0∞) : Prop :=
-  WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ = s
+  BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ = s
 
 /-- A higher-order link holds in a WM state when the source query is no stronger than the target. -/
 def holdsLinkWM (W : HOLState Base Const) (φ ψ : HOLQuery Const) : Prop :=
-  WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ ≤
-    WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W ψ
+  BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ ≤
+    BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W ψ
 
 /-- Any proved HOL implication yields a valid higher-order link at every WM state. -/
 theorem holdsLinkWM_mono_of_holProvImp {φ ψ : HOLQuery Const}
@@ -55,9 +55,9 @@ theorem holdsTermWM_transport_of_holProvIff {φ ψ : HOLQuery Const}
       (Base := Base) (Const := Const) h W
   dsimp [holdsTermWM] at hφ ⊢
   calc
-    WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W ψ
+    BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W ψ
         =
-      WorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ :=
+      BinaryWorldModel.queryStrength (State := HOLState Base Const) (Query := HOLQuery Const) W φ :=
         hEq.symm
     _ = s := hφ
 

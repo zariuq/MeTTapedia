@@ -11,7 +11,7 @@ import Mettapedia.Logic.EvidenceCounts
 # Exchangeability for Binary Sequences
 
 This file defines exchangeability for sequences of binary random variables, a key concept
-for connecting PLN Evidence to de Finetti's representation theorem.
+for connecting PLN BinaryEvidence to de Finetti's representation theorem.
 
 ## The Core Insight (from νPLN via de Finetti)
 
@@ -20,7 +20,7 @@ represented as a mixture of i.i.d. Bernoulli sequences (de Finetti's theorem).
 
 This means for exchangeable binary data:
 - **Counts (n⁺, n⁻) are sufficient statistics** - order doesn't matter!
-- PLN Evidence = (n⁺, n⁻) is exactly what captures all relevant information
+- PLN BinaryEvidence = (n⁺, n⁻) is exactly what captures all relevant information
 - PLN strength n⁺/(n⁺+n⁻) = Beta posterior mean (with uniform prior)
 
 ## Main Definitions
@@ -261,7 +261,7 @@ theorem exchangeable_same_counts_same_prob
 
 /-- Corollary: The probability of k successes in n trials only depends on k.
 
-    This justifies why PLN Evidence (n⁺, n⁻) = (k, n-k) captures all relevant information
+    This justifies why PLN BinaryEvidence (n⁺, n⁻) = (k, n-k) captures all relevant information
     about exchangeable binary observations.
 -/
 theorem exchangeable_prob_only_depends_on_k
@@ -289,7 +289,7 @@ def countStatistic (X : Fin n → Ω → Bool) : Ω → ℕ × ℕ :=
 /-- Informal statement: (countTrue, countFalse) is a sufficient statistic for exchangeable binary.
 
     This means: given the counts, the conditional distribution is uniform over all
-    sequences with those counts. This is the precise sense in which PLN Evidence
+    sequences with those counts. This is the precise sense in which PLN BinaryEvidence
     (n⁺, n⁻) captures "all the information" for exchangeable observations.
 -/
 theorem counts_sufficient_informal
@@ -420,11 +420,11 @@ theorem infinite_exchangeable_finite_prefix {Ω : Type*} [MeasurableSpace Ω]
 
 end InfiniteExchangeable
 
-/-! ## Connection to PLN Evidence -/
+/-! ## Connection to PLN BinaryEvidence -/
 
 section PLNConnection
 
-/-- Given n observations with k positive and (n-k) negative, the PLN Evidence is (k, n-k).
+/-- Given n observations with k positive and (n-k) negative, the PLN BinaryEvidence is (k, n-k).
 
     This is exactly the sufficient statistic for exchangeable binary observations.
 -/
@@ -457,7 +457,7 @@ theorem plnStrength_eq_improper_mean (n_pos n_neg : ℕ) (h : n_pos + n_neg ≠ 
 `Mettapedia.Logic.EvidenceBeta.pln_is_bayes_optimal_for_exchangeable`.
 
 The full chain: InfiniteExchangeable → de Finetti → Beta-Bernoulli conjugacy →
-counts sufficient → PLN Evidence captures all information → PLN strength → posterior mean. -/
+counts sufficient → PLN BinaryEvidence captures all information → PLN strength → posterior mean. -/
 theorem evidenceFromCounts_is_sufficient (n_pos n_neg : ℕ) :
     evidenceFromCounts n_pos n_neg = (n_pos, n_neg) := rfl
 

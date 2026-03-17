@@ -130,10 +130,10 @@ theorem pureClosedTheoryBridge_to_star
 
 /-- Local WM strength obligation for a fixed state/query pair. -/
 abbrev WMStrengthObligation
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query]
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
     (W : State) (q₁ q₂ : Query) : Prop :=
-  WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-    WorldModel.queryStrength (State := State) (Query := Query) W q₂
+  BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+    BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂
 
 /-- Alias for the unified categorical endpoint surface used by WM wrappers. -/
 abbrev WMCategoricalEndpointSurface
@@ -148,7 +148,7 @@ abbrev WMCategoricalEndpointSurface
 the corresponding WM strength inequality under `side` conditions.
 -/
 structure PureJudgmentWMInterface
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query] where
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query] where
   encode : Pattern → Query
   side : State → Prop := fun _ => True
   profileStep_sound :
@@ -160,7 +160,7 @@ structure PureJudgmentWMInterface
 namespace PureJudgmentWMInterface
 
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- C1 star closure transports to WM inequalities by transitivity. -/
 theorem profileStepStar_sound
@@ -178,7 +178,7 @@ theorem profileStepStar_sound
 end PureJudgmentWMInterface
 
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- One-step closed PureKernel reduction transports to a WM strength obligation,
 provided an explicit closed bridge theorem is supplied. -/

@@ -7,7 +7,7 @@ import Mettapedia.Hyperseed.Ultrainfinitism
 This module bridges Route 2 Hyperseed regimes into the WM layer.
 
 - `availableRegionAt` supplies state-conditioned accessibility/admissibility.
-- `WorldModel.queryStrength` supplies the WM-side semantic threshold.
+- `BinaryWorldModel.queryStrength` supplies the WM-side semantic threshold.
 - `thresholdValid` packages threshold transport over arbitrary query sets.
 
 The result is a small, theorem-friendly notion of regime-sensitive admissibility
@@ -24,19 +24,19 @@ open Mettapedia.Hyperseed
 open scoped ENNReal
 
 variable {State Query Signal Cost : Type*}
-variable [EvidenceType State] [WorldModel State Query] [Preorder Cost]
+variable [EvidenceType State] [BinaryWorldModel State Query] [Preorder Cost]
 
 /-- WM threshold region at state `W`: the queries whose extracted strength meets
 threshold `τ`. -/
 def wmThresholdRegion (W : State) (τ : ℝ≥0∞) : Set Query :=
-  { q | τ ≤ WorldModel.queryStrength (State := State) (Query := Query) W q }
+  { q | τ ≤ BinaryWorldModel.queryStrength (State := State) (Query := Query) W q }
 
 /-- Regime-sensitive WM admissibility at one state/query. -/
 def wmAdmissibleAt
     (P : StatefulPerspective State Query Signal Cost)
     (W : State) (B : Cost) (guard : Set Query) (τ : ℝ≥0∞) (q : Query) : Prop :=
   q ∈ availableRegionAt P W B guard ∧
-    τ ≤ WorldModel.queryStrength (State := State) (Query := Query) W q
+    τ ≤ BinaryWorldModel.queryStrength (State := State) (Query := Query) W q
 
 /-- Set of WM queries admissible at one state under both a regime filter and a
 semantic threshold. -/
@@ -48,7 +48,7 @@ def wmAdmissibleRegionAt
 theorem mem_wmThresholdRegion_iff
     (W : State) (τ : ℝ≥0∞) (q : Query) :
     q ∈ wmThresholdRegion (State := State) (Query := Query) W τ ↔
-      τ ≤ WorldModel.queryStrength (State := State) (Query := Query) W q := by
+      τ ≤ BinaryWorldModel.queryStrength (State := State) (Query := Query) W q := by
   rfl
 
 theorem wmAdmissibleAt_iff
@@ -56,7 +56,7 @@ theorem wmAdmissibleAt_iff
     (W : State) (B : Cost) (guard : Set Query) (τ : ℝ≥0∞) (q : Query) :
     wmAdmissibleAt (State := State) (Query := Query) P W B guard τ q ↔
       q ∈ availableRegionAt P W B guard ∧
-        τ ≤ WorldModel.queryStrength (State := State) (Query := Query) W q := by
+        τ ≤ BinaryWorldModel.queryStrength (State := State) (Query := Query) W q := by
   rfl
 
 theorem mem_wmAdmissibleRegionAt_iff

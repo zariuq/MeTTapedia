@@ -153,20 +153,20 @@ theorem hierarchicalSentenceProb_ofDeterministic_eq_sentenceProb
 /-- WM-style evidence induced by a hierarchical sentence probability. -/
 noncomputable def hierarchicalProbEvidence
     (H : HierarchicalState.{u, v, w, x} Base Const)
-    (φ : ClosedFormula Const) : Evidence :=
+    (φ : ClosedFormula Const) : BinaryEvidence :=
   ⟨hierarchicalSentenceProb H φ, 1 - hierarchicalSentenceProb H φ⟩
 
 /-- WM-style strength induced by a hierarchical sentence probability. -/
 noncomputable def hierarchicalProbQueryStrength
     (H : HierarchicalState.{u, v, w, x} Base Const)
     (φ : ClosedFormula Const) : ℝ≥0∞ :=
-  Evidence.toStrength (hierarchicalProbEvidence H φ)
+  BinaryEvidence.toStrength (hierarchicalProbEvidence H φ)
 
 theorem hierarchicalProbEvidence_total_one
     (H : HierarchicalState.{u, v, w, x} Base Const)
     (φ : ClosedFormula Const) :
     (hierarchicalProbEvidence H φ).total = 1 := by
-  unfold hierarchicalProbEvidence Evidence.total
+  unfold hierarchicalProbEvidence BinaryEvidence.total
   have hle :
       hierarchicalSentenceProb H φ ≤ 1 := by
     simpa [hierarchicalSentenceProb, HierarchicalState.flattenedModelMeasure] using
@@ -195,7 +195,7 @@ theorem hierarchicalProbQueryStrength_eq_sentenceProb
           infer_instance)
         (φ := φ)
   simpa [hierarchicalProbEvidence, p] using
-    (Evidence.toStrength_of_scaled (s := p) (t := 1) hp one_ne_zero ENNReal.one_ne_top)
+    (BinaryEvidence.toStrength_of_scaled (s := p) (t := 1) hp one_ne_zero ENNReal.one_ne_top)
 
 theorem hierarchicalProbQueryStrength_mono_of_pointwiseImplies
     (H : HierarchicalState.{u, v, w, x} Base Const)

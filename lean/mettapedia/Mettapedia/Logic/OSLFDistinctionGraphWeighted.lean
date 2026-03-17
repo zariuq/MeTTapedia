@@ -8,8 +8,8 @@ import Mettapedia.Logic.HeytingValuationOnEvidence
 
 Extends the distinction graph with two edge-weight types:
 
-1. **Evidence-lattice weight** (`indistWeightE`): Heyting implication over all formulas.
-   Lives in `Evidence` (complete Heyting algebra / Frame). Order-theoretic, preserves
+1. **BinaryEvidence-lattice weight** (`indistWeightE`): Heyting implication over all formulas.
+   Lives in `BinaryEvidence` (complete Heyting algebra / Frame). Order-theoretic, preserves
    the full imprecision structure.
 
 2. **Strength-scalar weight** (`indistWeightS`): Projects to `ℝ≥0∞` via `toStrength`.
@@ -45,22 +45,22 @@ abbrev Pat := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 
 /-! ## Weighted Edge Definitions -/
 
-/-- Evidence-lattice edge weight: measures how well φ-truth at p implies φ-truth at q,
-across all formulas φ. Uses the Heyting implication `⇨` in Evidence's Frame.
+/-- BinaryEvidence-lattice edge weight: measures how well φ-truth at p implies φ-truth at q,
+across all formulas φ. Uses the Heyting implication `⇨` in BinaryEvidence's Frame.
 
 High weight (close to ⊤) = very indistinguishable.
 Low weight (close to ⊥) = easily distinguished.
 
-This is the "imprecise" (2D) view that preserves full Evidence structure. -/
+This is the "imprecise" (2D) view that preserves full BinaryEvidence structure. -/
 noncomputable def indistWeightE (R : Pat → Pat → Prop) (I : EvidenceAtomSem)
-    (p q : Pat) : Evidence :=
+    (p q : Pat) : BinaryEvidence :=
   ⨅ φ : OSLFFormula, semE R I φ p ⇨ semE R I φ q
 
-/-- Strength-scalar edge weight: projects the Evidence-lattice weight to [0,∞] via
+/-- Strength-scalar edge weight: projects the BinaryEvidence-lattice weight to [0,∞] via
 `toStrength`. This is the "scalar" (1D) view that loses the pos/neg decomposition. -/
 noncomputable def indistWeightS (R : Pat → Pat → Prop) (I : EvidenceAtomSem)
     (p q : Pat) : ℝ≥0∞ :=
-  Evidence.toStrength (indistWeightE R I p q)
+  BinaryEvidence.toStrength (indistWeightE R I p q)
 
 /-! ## Basic Properties -/
 
@@ -83,7 +83,7 @@ When all evidence values have `pos + neg = const`, the scalar view preserves ord
 
 This repackages `total_monotone` from EvidenceKSBridge for the graph context. -/
 theorem gate_total_monotone :
-    ∀ e₁ e₂ : Evidence, e₁ ≤ e₂ → e₁.total ≤ e₂.total :=
+    ∀ e₁ e₂ : BinaryEvidence, e₁ ≤ e₂ → e₁.total ≤ e₂.total :=
   total_monotone
 
 /-- **Gate (negative direction)**: `toStrength` is NOT monotone in general.
@@ -91,7 +91,7 @@ Adding negative evidence increases in the lattice order but decreases strength.
 
 This repackages `strength_not_monotone` from EvidenceKSBridge. -/
 theorem gate_strength_not_monotone :
-    ∃ e₁ e₂ : Evidence, e₁ ≤ e₂ ∧ e₂.toStrength < e₁.toStrength :=
+    ∃ e₁ e₂ : BinaryEvidence, e₁ ≤ e₂ ∧ e₂.toStrength < e₁.toStrength :=
   strength_not_monotone
 
 /-- **The KS Gate Theorem for distinction graphs**: the scalar weight `indistWeightS`
@@ -100,29 +100,29 @@ is NOT order-preserving in general.
 
 Specifically:
 - `toStrength` preserves total evidence ordering (monotone on `total`)
-- `toStrength` does NOT preserve the lattice order on Evidence
+- `toStrength` does NOT preserve the lattice order on BinaryEvidence
 
 This means: two distinction graphs may be ordered lattice-wise (one refines the other)
 but their scalar projections may NOT preserve that ordering. -/
 theorem gate_theorem :
     -- Positive: total is monotone
-    (∀ e₁ e₂ : Evidence, e₁ ≤ e₂ → e₁.total ≤ e₂.total) ∧
+    (∀ e₁ e₂ : BinaryEvidence, e₁ ≤ e₂ → e₁.total ≤ e₂.total) ∧
     -- Negative: strength is not monotone
-    (∃ e₁ e₂ : Evidence, e₁ ≤ e₂ ∧ e₂.toStrength < e₁.toStrength) :=
+    (∃ e₁ e₂ : BinaryEvidence, e₁ ≤ e₂ ∧ e₂.toStrength < e₁.toStrength) :=
   ⟨total_monotone, strength_not_monotone⟩
 
-/-- Evidence has no Boolean complement: there exists an evidence value with no
+/-- BinaryEvidence has no Boolean complement: there exists an evidence value with no
 complement. This is the fundamental reason the gate is one-way. -/
 theorem gate_no_boolean_complement :
-    ∃ e : Evidence, ∀ c : Evidence, ¬(e ⊔ c = ⊤ ∧ e ⊓ c = ⊥) :=
+    ∃ e : BinaryEvidence, ∀ c : BinaryEvidence, ¬(e ⊔ c = ⊤ ∧ e ⊓ c = ⊥) :=
   evidence_not_boolean
 
 /-! ## Structural Properties -/
 
-/-- The bidirectional Evidence weight: min of both implication directions.
+/-- The bidirectional BinaryEvidence weight: min of both implication directions.
 This gives a symmetric measure of "mutual indistinguishability". -/
 noncomputable def indistWeightE_sym (R : Pat → Pat → Prop) (I : EvidenceAtomSem)
-    (p q : Pat) : Evidence :=
+    (p q : Pat) : BinaryEvidence :=
   indistWeightE R I p q ⊓ indistWeightE R I q p
 
 /-- The symmetric weight is truly symmetric. -/
@@ -135,10 +135,10 @@ theorem indistWeightE_sym_self_top (R : Pat → Pat → Prop) (I : EvidenceAtomS
     (p : Pat) : indistWeightE_sym R I p p = ⊤ := by
   simp [indistWeightE_sym, indistWeightE_self_top]
 
-/-- Evidence-richer-than-strength: same strength can correspond to
+/-- BinaryEvidence-richer-than-strength: same strength can correspond to
 different lattice weights with different confidence. The scalar view is lossy. -/
 theorem scalar_view_lossy :
-    ∃ e₁ e₂ : Evidence,
+    ∃ e₁ e₂ : BinaryEvidence,
       EvidenceIntervalBounds.strength e₁ = EvidenceIntervalBounds.strength e₂ ∧
       e₁ ≠ e₂ ∧ totalEvidence e₁ ≠ totalEvidence e₂ :=
   evidence_richer_than_strength

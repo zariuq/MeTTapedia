@@ -75,7 +75,7 @@ def renderLanguagesClaim : LanguagesClaim → String
         (complV2 (mkV2 (regV "include")) (properNameNP "full clause construction with tense, aspect, polarity, do-support, and relative clauses"))
   | .gfSemanticBridgePipeline =>
       mkPresPos (properNameNP "The semantic bridge")
-        (copulaNP (properNameNP "GF -> Pattern -> Store -> QFormula -> Evidence -> NTT"))
+        (copulaNP (properNameNP "GF -> Pattern -> Store -> QFormula -> BinaryEvidence -> NTT"))
   | .gfProofStatus =>
       mkPresNeg (properNameNP "The GF module")
         (complV2 (mkV2 (regV "contain")) (properNameNP "sorries or axioms"))

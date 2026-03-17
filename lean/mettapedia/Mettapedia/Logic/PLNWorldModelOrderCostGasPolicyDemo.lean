@@ -6,7 +6,7 @@ import Mettapedia.Logic.PLNWorldModelOrderCostAuditCertificate
 
 Application-lane theorem bridge for Gas Sensor Drift:
 
-- instantiate `GenericWorldModel` on `SensorArrayState`,
+- instantiate `WorldModel` on `SensorArrayState`,
 - instantiate order-cost semantics via additive merge,
 - prove theorem-backed budget policy for batch-order swapping.
 
@@ -24,7 +24,7 @@ open Mettapedia.Logic.PLNGasSensorDriftDemo
 
 /-- Generic WM view for gas states: query extraction is per-gas Normal-Gamma evidence. -/
 noncomputable instance instGenericWorldModelGasSensorArray :
-    GenericWorldModel SensorArrayState GasType NormalGammaEvidence where
+    WorldModel SensorArrayState GasType NormalGammaEvidence where
   evidence := gasEvidence
   evidence_add := by
     intro s₁ s₂ q
@@ -40,12 +40,12 @@ noncomputable def gasAdditiveOverlapLayer :
   evidence_merge := by
     intro s₁ s₂ q
     simpa using
-      (GenericWorldModel.evidence_add'
+      (WorldModel.evidence_add'
         (State := SensorArrayState) (Query := GasType) (Ev := NormalGammaEvidence) s₁ s₂ q)
   additive_of_independent := by
     intro s₁ s₂ q _hind
     simpa using
-      (GenericWorldModel.evidence_add'
+      (WorldModel.evidence_add'
         (State := SensorArrayState) (Query := GasType) (Ev := NormalGammaEvidence) s₁ s₂ q)
 
 /-- Gas-lane schedule error wrapper. -/
@@ -119,7 +119,7 @@ theorem gasRuntimePairwiseOrderCheck_batchSwap_zero
       simp [runMergeSchedule, gasAdditiveOverlapLayer, add_comm, add_left_comm]
     exact congrArg
       (fun s =>
-        GenericWorldModel.queryObservationCount
+        AdditiveWorldModel.queryObservationCount
           (State := SensorArrayState) (Query := GasType) (Ev := NormalGammaEvidence) s g) hstate
   constructor <;> simp [hcount]
 

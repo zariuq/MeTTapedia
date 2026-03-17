@@ -57,29 +57,29 @@ noncomputable def total
 
 end Generic
 
-/-! ## Evidence extraction for ENNReal factors -/
+/-! ## BinaryEvidence extraction for ENNReal factors -/
 
 section ENNReal
 
 variable {V : Type*} [DecidableEq V]
 variable {fg : FactorGraph V ENNReal}
 
-/-- Evidence for a single factorized source: pos = constrained weight, neg = remainder. -/
+/-- BinaryEvidence for a single factorized source: pos = constrained weight, neg = remainder. -/
 noncomputable def sourceEvidence
     (W : WMSource fg)
     (constraints : List (Σ v : V, fg.stateSpace v))
     [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)] :
-    Evidence :=
+    BinaryEvidence :=
   let pos := weight (fg := fg) (W := W) constraints
   let tot := total (fg := fg) (W := W)
   ⟨pos, tot - pos⟩
 
-/-- Evidence for a WM ledger: sum evidence from each independent source. -/
+/-- BinaryEvidence for a WM ledger: sum evidence from each independent source. -/
 noncomputable def evidence
     (W : WMState fg)
     (constraints : List (Σ v : V, fg.stateSpace v))
     [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)] :
-    Evidence :=
+    BinaryEvidence :=
   (W.map (fun src => sourceEvidence (fg := fg) (W := src) constraints)).sum
 
 instance : AddCommMonoid (WMState fg) := by
@@ -89,10 +89,10 @@ instance : AddCommMonoid (WMState fg) := by
 instance : EvidenceType (WMState fg) :=
   { toAddCommMonoid := inferInstance }
 
-/-- Factorized WM as a `WorldModel` instance (ledger-of-sources semantics). -/
+/-- Factorized WM as a `BinaryWorldModel` instance (ledger-of-sources semantics). -/
 noncomputable instance
     [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [∀ v, DecidableEq (fg.stateSpace v)] :
-    WorldModel (WMState fg) (List (Σ v : V, fg.stateSpace v)) where
+    BinaryWorldModel (WMState fg) (List (Σ v : V, fg.stateSpace v)) where
   evidence W q := evidence (fg := fg) (W := W) q
   evidence_add W₁ W₂ q := by
     classical

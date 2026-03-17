@@ -117,7 +117,7 @@ theorem ideal_not_true_in_every_live_world :
   simp [demoQueryHolds] at h1
 
 theorem wm_queryStrength_ideal_eq_two_thirds :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
       DemoQuery.ideal = (2 : ENNReal) / 3 := by
   rw [wm_queryStrength_eq_restricted_queryProb demoMLN demo_supportWitness]
@@ -133,7 +133,7 @@ theorem wm_queryStrength_ideal_eq_two_thirds :
   rw [demo_restrictedQueryMass_ideal_eq_two, demo_restrictedTotalMass_eq_three]
 
 theorem wm_queryStrength_reachable_eq_one :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
       DemoQuery.reachable = 1 := by
   rw [wm_queryStrength_eq_restricted_queryProb demoMLN demo_supportWitness]
@@ -150,7 +150,7 @@ theorem wm_queryStrength_reachable_eq_one :
   rw [ENNReal.div_self (by norm_num : (3 : ENNReal) ≠ 0) (by norm_num : (3 : ENNReal) ≠ ⊤)]
 
 theorem wm_queryStrength_impossible_eq_zero :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
       DemoQuery.impossible = 0 := by
   rw [wm_queryStrength_eq_restricted_queryProb demoMLN demo_supportWitness]
@@ -167,7 +167,7 @@ theorem wm_queryStrength_impossible_eq_zero :
   simp
 
 theorem singleton_evidence_ideal_eq_two_one :
-    WorldModel.evidence
+    BinaryWorldModel.evidence
       ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
       DemoQuery.ideal = ⟨2, 1⟩ := by
   change MassState.evidence
@@ -179,61 +179,61 @@ theorem singleton_evidence_ideal_eq_two_one :
     ({ pos := compiledQueryMass demoMLN (Finset.univ : Finset DemoWorld) DemoQuery.ideal,
        neg := compiledPartition demoMLN (Finset.univ : Finset DemoWorld) -
          compiledQueryMass demoMLN (Finset.univ : Finset DemoWorld) DemoQuery.ideal } :
-      Mettapedia.Logic.EvidenceQuantale.Evidence) = ⟨2, 1⟩
+      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence) = ⟨2, 1⟩
   rw [demo_compiledQueryMass_ideal_eq_two, demo_compiledPartition_eq_three]
   ext <;> simp
   exact (ENNReal.eq_sub_of_add_eq (a := (1 : ENNReal)) (b := (3 : ENNReal)) (c := (2 : ENNReal))
     (by norm_num) (by norm_num)).symm
 
 theorem doubled_evidence_ideal_eq_four_two :
-    WorldModel.evidence
+    BinaryWorldModel.evidence
       (({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery) +
         {compiledMassSemantics demoMLN demo_supportWitness})
       DemoQuery.ideal = ⟨4, 2⟩ := by
   calc
-    WorldModel.evidence
+    BinaryWorldModel.evidence
         (({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery) +
           {compiledMassSemantics demoMLN demo_supportWitness})
         DemoQuery.ideal
-      = WorldModel.evidence
+      = BinaryWorldModel.evidence
           ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
           DemoQuery.ideal +
-        WorldModel.evidence
+        BinaryWorldModel.evidence
           ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
           DemoQuery.ideal := by
             simpa using
-              (WorldModel.evidence_add' (State := MassState DemoQuery) (Query := DemoQuery)
+              (BinaryWorldModel.evidence_add' (State := MassState DemoQuery) (Query := DemoQuery)
                 ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
                 ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
                 DemoQuery.ideal)
     _ = ⟨4, 2⟩ := by
       have hpos :
-          (WorldModel.evidence
+          (BinaryWorldModel.evidence
             ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
             DemoQuery.ideal).pos = 2 := by
         simpa using
-          congrArg Mettapedia.Logic.EvidenceQuantale.Evidence.pos
+          congrArg Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.pos
             singleton_evidence_ideal_eq_two_one
       have hneg :
-          (WorldModel.evidence
+          (BinaryWorldModel.evidence
             ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
             DemoQuery.ideal).neg = 1 := by
         simpa using
-          congrArg Mettapedia.Logic.EvidenceQuantale.Evidence.neg
+          congrArg Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.neg
             singleton_evidence_ideal_eq_two_one
-      ext <;> simp [Mettapedia.Logic.EvidenceQuantale.Evidence.hplus_def, hpos, hneg] <;> norm_num
+      ext <;> simp [Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.hplus_def, hpos, hneg] <;> norm_num
 
 theorem additive_revision_changes_evidence :
-    WorldModel.evidence
+    BinaryWorldModel.evidence
       (({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery) +
         {compiledMassSemantics demoMLN demo_supportWitness})
       DemoQuery.ideal ≠
-    WorldModel.evidence
+    BinaryWorldModel.evidence
       ({compiledMassSemantics demoMLN demo_supportWitness} : MassState DemoQuery)
       DemoQuery.ideal := by
   intro hEq
   have hPos :=
-    congrArg Mettapedia.Logic.EvidenceQuantale.Evidence.pos hEq
+    congrArg Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.pos hEq
   rw [doubled_evidence_ideal_eq_four_two, singleton_evidence_ideal_eq_two_one] at hPos
   norm_num at hPos
 

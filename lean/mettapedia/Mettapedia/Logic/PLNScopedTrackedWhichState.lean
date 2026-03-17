@@ -137,10 +137,10 @@ theorem scopedTrackedPayloadSupport_eq_empty_of_union_empty
   ext i
   simp [scopedTrackedPayloadSupport, h]
 
-noncomputable instance : GenericWorldModel
+noncomputable instance : AdditiveWorldModel
     (ScopedTrackedWhichState σ n m) (GroundAtom σ) (Which (Fin n)) where
-  evidence := scopedTrackedEvidence
-  evidence_add := by
+  extract := scopedTrackedEvidence
+  extract_add := by
     intro W₁ W₂ q
     by_cases h₁ : scopedTrackedUnionSupport W₁ q = ∅
     · by_cases h₂ : scopedTrackedUnionSupport W₂ q = ∅

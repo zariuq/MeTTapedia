@@ -96,7 +96,7 @@ noncomputable def eventProbCompl
 noncomputable def stochasticEvidence
     {Θ : Type u} {Ω : Type v}
     [Fintype Θ] [Fintype Ω]
-    (W : StochasticState Θ) (q : StochasticExperimentQuery Θ Ω) : Evidence := by
+    (W : StochasticState Θ) (q : StochasticExperimentQuery Θ Ω) : BinaryEvidence := by
   classical
   exact
     ⟨∑ θ, W θ * eventProb q θ,
@@ -109,19 +109,22 @@ theorem stochasticEvidence_add
     stochasticEvidence (W₁ + W₂) q =
       stochasticEvidence W₁ q + stochasticEvidence W₂ q := by
   classical
-  apply Evidence.ext'
+  apply BinaryEvidence.ext'
   ·
-    simp [stochasticEvidence, eventProb, Evidence.hplus_def, add_mul, Finset.sum_add_distrib, Pi.add_apply]
+    simp [stochasticEvidence, eventProb, BinaryEvidence.hplus_def, add_mul, Finset.sum_add_distrib, Pi.add_apply]
   ·
-    simp [stochasticEvidence, eventProbCompl, Evidence.hplus_def, add_mul, Finset.sum_add_distrib, Pi.add_apply]
+    simp [stochasticEvidence, eventProbCompl, BinaryEvidence.hplus_def, add_mul, Finset.sum_add_distrib, Pi.add_apply]
 
 /-- WM instance for finite weighted states with stochastic experiment queries. -/
 noncomputable instance
     {Θ : Type u} {Ω : Type v}
     [Fintype Θ] [Fintype Ω] :
-    WorldModel (StochasticState Θ) (StochasticExperimentQuery Θ Ω) where
+    BinaryWorldModel (StochasticState Θ) (StochasticExperimentQuery Θ Ω) where
   evidence := stochasticEvidence
   evidence_add := stochasticEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [stochasticEvidence, Pi.zero_apply, zero_mul, Finset.sum_const_zero]; rfl
 
 abbrev Prior (Θ : Type u) := PMF Θ
 abbrev DecisionRule (Ω : Type v) (A : Type w) := Ω → PMF A

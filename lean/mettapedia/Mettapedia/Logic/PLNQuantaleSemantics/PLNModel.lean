@@ -4,19 +4,19 @@ import Mettapedia.Logic.PLNQuantaleSemantics.CDLogic
 # PLN Formal Model Theory
 
 This file defines what a "PLN model" is formally: a compositional assignment
-of Evidence values to propositions that respects logical structure.
+of BinaryEvidence values to propositions that respects logical structure.
 
 ## Key Definitions
 
-1. **Model**: Assigns Evidence to propositions compositionally
+1. **Model**: Assigns BinaryEvidence to propositions compositionally
 2. **Monotonicity**: Logical entailment implies evidence ordering
 3. **Compositional laws**: Meet/join preserved by evidence assignment
 
 ## Design Principle
 
 We define models abstractly over any proposition type α. The key insight is that
-PLN models are Evidence-enriched: instead of Boolean truth values, propositions
-have Evidence values that track both positive and negative support.
+PLN models are BinaryEvidence-enriched: instead of Boolean truth values, propositions
+have BinaryEvidence values that track both positive and negative support.
 
 ## References
 
@@ -33,19 +33,19 @@ open scoped ENNReal
 
 /-! ## Basic Model Definition -/
 
-/-- A PLN model assigns Evidence to propositions of type α.
+/-- A PLN model assigns BinaryEvidence to propositions of type α.
 
     The key property is that evidence assignment respects the lattice structure:
     if we know A entails B (in the model), then evidence for A should imply
     evidence for B in the information ordering.
 -/
 structure PLNModel (α : Type*) where
-  /-- Evidence assignment: each proposition gets an Evidence value -/
-  evidence : α → Evidence
+  /-- BinaryEvidence assignment: each proposition gets an BinaryEvidence value -/
+  evidence : α → BinaryEvidence
 
 variable {α : Type*}
 
-/-! ## Evidence-Based Validity -/
+/-! ## BinaryEvidence-Based Validity -/
 
 /-- A proposition is "valid" in a model if it has positive evidence and no negative evidence.
     This corresponds to the pTrue corner of the p-bit square. -/
@@ -82,7 +82,7 @@ theorem valid_not_contradictory (M : PLNModel α) (p : α) (h : isValid M p) : �
 
 /-- The strength of a proposition in a model: ratio of positive to total evidence -/
 noncomputable def strength (M : PLNModel α) (p : α) : ℝ≥0∞ :=
-  Evidence.toStrength (M.evidence p)
+  BinaryEvidence.toStrength (M.evidence p)
 
 /-- The total evidence for a proposition -/
 noncomputable def totalEvidence (M : PLNModel α) (p : α) : ℝ≥0∞ :=
@@ -92,7 +92,7 @@ noncomputable def totalEvidence (M : PLNModel α) (p : α) : ℝ≥0∞ :=
 theorem strength_of_valid (M : PLNModel α) (p : α) (h : isValid M p)
     (hfin : (M.evidence p).pos ≠ ⊤) :
     strength M p = 1 := by
-  unfold strength Evidence.toStrength Evidence.total isValid PBit.isTrue at *
+  unfold strength BinaryEvidence.toStrength BinaryEvidence.total isValid PBit.isTrue at *
   obtain ⟨hpos, hneg⟩ := h
   simp only [hneg, add_zero]
   have hne : (M.evidence p).pos ≠ 0 := ne_of_gt hpos
@@ -102,7 +102,7 @@ theorem strength_of_valid (M : PLNModel α) (p : α) (h : isValid M p)
 /-- Strength is 0 for invalid propositions (pure negative evidence) -/
 theorem strength_of_invalid (M : PLNModel α) (p : α) (h : isInvalid M p) :
     strength M p = 0 := by
-  unfold strength Evidence.toStrength Evidence.total isInvalid PBit.isFalse at *
+  unfold strength BinaryEvidence.toStrength BinaryEvidence.total isInvalid PBit.isFalse at *
   obtain ⟨hpos, _⟩ := h
   simp only [hpos, zero_add]
   -- Need to check if total = 0
@@ -162,7 +162,7 @@ theorem tensorCompose_assoc (M₁ M₂ M₃ : PLNModel α) (p : α) :
     (tensorCompose M₁ (tensorCompose M₂ M₃)).evidence p :=
   cdTensor_assoc _ _ _
 
-/-! ## Par Composition (Independent Evidence)
+/-! ## Par Composition (Independent BinaryEvidence)
 
 When we have independent evidence sources, they combine via par (⅋).
 This corresponds to evidence aggregation from independent observations.
@@ -187,7 +187,7 @@ theorem parCompose_assoc (M₁ M₂ M₃ : PLNModel α) (p : α) :
 
 /-! ## Tensor Distributes over Join (Quantale Law)
 
-This is the key property that makes Evidence a quantale: tensor distributes over join.
+This is the key property that makes BinaryEvidence a quantale: tensor distributes over join.
 In model terms: composing with the join of two models equals the join of compositions.
 -/
 
@@ -241,7 +241,7 @@ theorem cdNegate_contradictory_iff (M : PLNModel α) (p : α) :
 
 This file establishes:
 
-1. **PLNModel**: A structure assigning Evidence to propositions
+1. **PLNModel**: A structure assigning BinaryEvidence to propositions
 
 2. **Validity States**: Four mutually exclusive states based on p-bit quadrants
    - Valid: positive evidence only

@@ -12,7 +12,7 @@ with evidence-assessed events and provenance-aware acceptance filtering.
 An orchestrator O subcontracts specialist S. Multiple candidate events
 arrive from different sources with varying reliability:
 
-| Event | Attestor | Evidence | Accepted? |
+| Event | Attestor | BinaryEvidence | Accepted? |
 |-------|----------|----------|-----------|
 | Self-claimed delivery | specialist | ⟨2,2⟩ | NO (self-report, weak) |
 | Hash-verified delivery | hash-verifier | ⟨8,0⟩ | YES (strong, trusted) |
@@ -59,8 +59,8 @@ structure AssessedTreatyEvent (Entity Pred Time Party : Type*) where
   id : String
   /-- The underlying treaty event. -/
   base : TreatyEvent Entity Pred Time Party
-  /-- Evidence assessment for this event. -/
-  ev : Evidence
+  /-- BinaryEvidence assessment for this event. -/
+  ev : BinaryEvidence
 
 /-! ## §2 Concrete Assessed Events
 
@@ -113,7 +113,7 @@ def rawAssessedTrace : List (AssessedTreatyEvent String SubcallPred Nat String) 
 
 The acceptance rule combines two checks:
 1. **Provenance gate**: only events from trusted attestors are considered.
-2. **Evidence quality gate**: sufficient positive evidence (pos ≥ 3) and
+2. **BinaryEvidence quality gate**: sufficient positive evidence (pos ≥ 3) and
    low negative evidence (neg ≤ 1).
 
 Both gates must pass for an event to be admitted to the accepted trace.
@@ -134,8 +134,8 @@ def trustedAttestor : String → Bool
   | "monitor" => true
   | _ => false
 
-/-- Evidence quality gate: positive evidence ≥ 3, negative evidence ≤ 1. -/
-noncomputable def evidenceAcceptable (ev : Evidence) : Bool :=
+/-- BinaryEvidence quality gate: positive evidence ≥ 3, negative evidence ≤ 1. -/
+noncomputable def evidenceAcceptable (ev : BinaryEvidence) : Bool :=
   if (3 : ℝ≥0∞) ≤ ev.pos ∧ ev.neg ≤ 1 then true else false
 
 /-- Acceptance predicate: trusted attestor AND acceptable evidence quality. -/

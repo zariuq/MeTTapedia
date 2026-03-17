@@ -159,7 +159,7 @@ To connect the DAG structure to an explicit joint measure `μ`, we will eventual
 - add a CPT layer (Markov kernels per node, indexed by parent configurations), and
 - build / characterize the induced joint measure.
 
-This is where “Bayesian networks meet Beta-Bernoulli / Evidence” lives.
+This is where “Bayesian networks meet Beta-Bernoulli / BinaryEvidence” lives.
 -/
 
 end ProbabilisticInterfaces

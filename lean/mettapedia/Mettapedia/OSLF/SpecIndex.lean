@@ -706,7 +706,7 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.PathMap.OSLFInstance.pathMapGalois
 -- NTT soundness theorems (pathMap_pjoin_diamond / pathMap_pmeet_diamond pending)
 
--- PathMap ↔ PLN Evidence bridge (K&S / WorldModel grounded)
+-- PathMap ↔ PLN BinaryEvidence bridge (K&S / BinaryWorldModel grounded)
 #check @Mettapedia.OSLF.PathMap.PLNBridge.finsetPathEvidence
 #check @Mettapedia.OSLF.PathMap.PLNBridge.pjoin_evidence_additive
 #check @Mettapedia.OSLF.PathMap.PLNBridge.prestrict_evidence_partition
@@ -733,7 +733,7 @@ open Mettapedia.OSLF
 -- ZipperComplexity — formal O(k) / O(depth) depth-bound contracts
 #check @Mettapedia.PathMap.ZipperComplexity
 
--- WorldModel bridge: Multiset α is the free commutative monoid solution
+-- BinaryWorldModel bridge: Multiset α is the free commutative monoid solution
 #check @Mettapedia.OSLF.PathMap.WorldModelBridge.multisetPathWorldModel
 #check @Mettapedia.OSLF.PathMap.WorldModelBridge.multisetPathEvidence_additive
 #check @Mettapedia.OSLF.PathMap.WorldModelBridge.finset_multiset_evidence_agree

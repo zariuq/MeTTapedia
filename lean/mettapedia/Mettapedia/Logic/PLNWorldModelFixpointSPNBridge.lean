@@ -25,7 +25,7 @@ open Mettapedia.Logic.PLNWorldModelFixpointPolicy
 open scoped ENNReal
 
 abbrev TVState := Mettapedia.Logic.PLNTrailFreeDampedConvergence.TVState
-abbrev OrbitState := Evidence
+abbrev OrbitState := BinaryEvidence
 abbrev OrbitQuery := Nat × TVState
 abbrev PolicyWeightedState := Mettapedia.Logic.PLNWorldModelFixpointPolicy.WeightedState
 abbrev PolicyModalQuery := Mettapedia.Logic.PLNWorldModelFixpointPolicy.ModalQuery
@@ -34,7 +34,7 @@ noncomputable instance : EvidenceType OrbitState := inferInstance
 
 /-- World-model used for orbit-rule closure:
 queries are tracked structurally, while evidence is state-only. -/
-noncomputable instance : WorldModel OrbitState OrbitQuery where
+noncomputable instance : BinaryWorldModel OrbitState OrbitQuery where
   evidence := fun W _q => W
   evidence_add := by
     intro W₁ W₂ _q
@@ -160,7 +160,7 @@ states at a selected modal query witness. -/
 noncomputable def policyOrbitState
     (trusted : String → Prop) [DecidablePred trusted]
     (W₁ W₂ : PolicyWeightedState) (qPolicy : PolicyModalQuery) : OrbitState :=
-  WorldModel.evidence (State := PolicyWeightedState) (Query := PolicyModalQuery)
+  BinaryWorldModel.evidence (State := PolicyWeightedState) (Query := PolicyModalQuery)
     (policyRevisedState trusted W₁ W₂) qPolicy
 
 /-- Single policy-aware SP/SPN endpoint:
@@ -193,7 +193,7 @@ theorem dampedOrbit_eventualFresh_to_fixpointClosure_endpoint_policy_add_of_comp
       (n, freshState) ∈
         leastRuleClosure (State := OrbitState) (Query := OrbitQuery)
           (orbitRules freshAt freshState)
-          (WorldModel.evidence (State := PolicyWeightedState) (Query := PolicyModalQuery)
+          (BinaryWorldModel.evidence (State := PolicyWeightedState) (Query := PolicyModalQuery)
             (W₁ + W₂) qPolicy) (orbitSeed x0) := by
   rcases
     dampedOrbit_eventualFresh_to_fixpointClosure_endpoint_policy
@@ -204,7 +204,7 @@ theorem dampedOrbit_eventualFresh_to_fixpointClosure_endpoint_policy_add_of_comp
   intro n hn
   have hState :
       policyOrbitState trustedAll W₁ W₂ qPolicy =
-        WorldModel.evidence (State := PolicyWeightedState) (Query := PolicyModalQuery)
+        BinaryWorldModel.evidence (State := PolicyWeightedState) (Query := PolicyModalQuery)
           (W₁ + W₂) qPolicy := by
     simp [policyOrbitState,
       policyRevisedState_eq_add_of_compatible_trustedAll (hcompat := hcompat)]

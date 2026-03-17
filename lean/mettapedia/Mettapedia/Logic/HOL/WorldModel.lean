@@ -35,9 +35,9 @@ def holSatisfies
 
 instance : EvidenceType (Multiset (HenkinModel.{u, v, w} Base Const)) where
 
-/-- Evidence extracted from a multiset of pointed Henkin models. -/
+/-- BinaryEvidence extracted from a multiset of pointed Henkin models. -/
 noncomputable def holEvidence
-    (W : Multiset (HenkinModel.{u, v, w} Base Const)) (φ : HOLQuery Const) : Evidence := by
+    (W : Multiset (HenkinModel.{u, v, w} Base Const)) (φ : HOLQuery Const) : BinaryEvidence := by
   classical
   exact
     ⟨(Multiset.countP (fun M => holSatisfies M φ) W : ℝ≥0∞),
@@ -49,15 +49,18 @@ theorem holEvidence_add
       holEvidence (Base := Base) (Const := Const) W₁ φ +
         holEvidence (Base := Base) (Const := Const) W₂ φ := by
   classical
-  apply Evidence.ext'
-  · simp [holEvidence, Multiset.countP_add, Evidence.hplus_def]
-  · simp [holEvidence, Multiset.countP_add, Evidence.hplus_def]
+  apply BinaryEvidence.ext'
+  · simp [holEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
+  · simp [holEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
 
 /-- World-model instance induced by multiset Henkin evidence counting. -/
 noncomputable instance :
-    WorldModel (Multiset (HenkinModel.{u, v, w} Base Const)) (HOLQuery Const) where
+    BinaryWorldModel (Multiset (HenkinModel.{u, v, w} Base Const)) (HOLQuery Const) where
   evidence := holEvidence (Base := Base) (Const := Const)
   evidence_add := holEvidence_add (Base := Base) (Const := Const)
+  evidence_zero q := by
+    classical
+    simp only [holEvidence, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 theorem holEvidence_singleton_of_satisfies
     (M : HenkinModel.{u, v, w} Base Const) (φ : HOLQuery Const) (h : holSatisfies M φ) :
@@ -75,35 +78,35 @@ theorem holEvidence_singleton_of_not_satisfies
 
 theorem queryStrength_singleton_of_satisfies
     (M : HenkinModel.{u, v, w} Base Const) (φ : HOLQuery Const) (h : holSatisfies M φ) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ = 1 := by
   change
-    Evidence.toStrength
+    BinaryEvidence.toStrength
       (holEvidence (Base := Base) (Const := Const)
         ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ) = 1
   rw [holEvidence_singleton_of_satisfies (Base := Base) (Const := Const) M φ h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 theorem queryStrength_singleton_of_not_satisfies
     (M : HenkinModel.{u, v, w} Base Const) (φ : HOLQuery Const) (h : ¬ holSatisfies M φ) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ = 0 := by
   change
-    Evidence.toStrength
+    BinaryEvidence.toStrength
       (holEvidence (Base := Base) (Const := Const)
         ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ) = 0
   rw [holEvidence_singleton_of_not_satisfies (Base := Base) (Const := Const) M φ h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 /-- Singleton adequacy: sentence truth iff singleton query strength is `1`. -/
 theorem singleton_adequacy_strength_one
     (M : HenkinModel.{u, v, w} Base Const) (φ : HOLQuery Const) :
     holSatisfies M φ ↔
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Multiset (HenkinModel.{u, v, w} Base Const))
           (Query := HOLQuery Const)
           ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ = 1 := by
@@ -114,7 +117,7 @@ theorem singleton_adequacy_strength_one
     by_cases hs : holSatisfies M φ
     · exact hs
     · have h0 :
-          WorldModel.queryStrength
+          BinaryWorldModel.queryStrength
               (State := Multiset (HenkinModel.{u, v, w} Base Const))
               (Query := HOLQuery Const)
               ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ = 0 :=
@@ -122,7 +125,7 @@ theorem singleton_adequacy_strength_one
       have h01 : (0 : ℝ≥0∞) = 1 := by
         calc
           (0 : ℝ≥0∞) =
-              WorldModel.queryStrength
+              BinaryWorldModel.queryStrength
                   (State := Multiset (HenkinModel.{u, v, w} Base Const))
                   (Query := HOLQuery Const)
                   ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ := h0.symm
@@ -132,11 +135,11 @@ theorem singleton_adequacy_strength_one
 theorem pointwiseImplies_iff_singletonStrengthLE (φ ψ : HOLQuery Const) :
     (∀ M : HenkinModel.{u, v, w} Base Const, holSatisfies M φ → holSatisfies M ψ) ↔
       (∀ M : HenkinModel.{u, v, w} Base Const,
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
             (State := Multiset (HenkinModel.{u, v, w} Base Const))
             (Query := HOLQuery Const)
             ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ ≤
-          WorldModel.queryStrength
+          BinaryWorldModel.queryStrength
             (State := Multiset (HenkinModel.{u, v, w} Base Const))
             (Query := HOLQuery Const)
             ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) ψ) := by
@@ -152,13 +155,13 @@ theorem pointwiseImplies_iff_singletonStrengthLE (φ ψ : HOLQuery Const) :
     by_contra hψ
     have hsingleton := hle M
     have h1 :
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
             (State := Multiset (HenkinModel.{u, v, w} Base Const))
             (Query := HOLQuery Const)
             ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ = 1 :=
       queryStrength_singleton_of_satisfies (Base := Base) (Const := Const) M φ hφ
     have h0 :
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
             (State := Multiset (HenkinModel.{u, v, w} Base Const))
             (Query := HOLQuery Const)
             ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) ψ = 0 :=
@@ -178,17 +181,17 @@ theorem queryEq_of_pointwiseIff
       (Query := HOLQuery Const) φ ψ := by
   intro W
   classical
-  ext <;> simp [WorldModel.evidence, holEvidence, hiff]
+  ext <;> simp [BinaryWorldModel.evidence, holEvidence, hiff]
 
 /-- Pointwise semantic equivalence yields equality of WM query strengths. -/
 theorem queryStrength_eq_of_pointwiseIff
     (W : Multiset (HenkinModel.{u, v, w} Base Const))
     (φ ψ : HOLQuery Const)
     (hiff : ∀ M : HenkinModel.{u, v, w} Base Const, holSatisfies M φ ↔ holSatisfies M ψ) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const) W φ =
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const) W ψ := by
   exact
@@ -232,7 +235,7 @@ private theorem holEvidence_total
         (Multiset.countP (fun M : HenkinModel.{u, v, w} Base Const => holSatisfies M φ) W : ℝ≥0∞) +
           (Multiset.countP (fun M : HenkinModel.{u, v, w} Base Const => ¬ holSatisfies M φ) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold holEvidence Evidence.total
+  unfold holEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 /-- Pointwise semantic implication lifts to WM strength inequality on multiset states. -/
@@ -240,11 +243,11 @@ theorem queryStrength_le_of_pointwise
     (W : Multiset (HenkinModel.{u, v, w} Base Const))
     (φ ψ : HOLQuery Const)
     (himp : ∀ M : HenkinModel.{u, v, w} Base Const, holSatisfies M φ → holSatisfies M ψ) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W φ ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W ψ := by
@@ -253,12 +256,12 @@ theorem queryStrength_le_of_pointwise
   letI : DecidablePred pφ := Classical.decPred pφ
   letI : DecidablePred pψ := Classical.decPred pψ
   have hφ :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Multiset (HenkinModel.{u, v, w} Base Const))
           (Query := HOLQuery Const)
           W φ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pφ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change
       (if (holEvidence (Base := Base) (Const := Const) W φ).total = 0 then 0
         else (holEvidence (Base := Base) (Const := Const) W φ).pos /
@@ -267,12 +270,12 @@ theorem queryStrength_le_of_pointwise
     rw [holEvidence_total (Base := Base) (Const := Const) (W := W) (φ := φ)]
     simp [holEvidence, pφ]
   have hψ :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Multiset (HenkinModel.{u, v, w} Base Const))
           (Query := HOLQuery Const)
           W ψ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pψ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change
       (if (holEvidence (Base := Base) (Const := Const) W ψ).total = 0 then 0
         else (holEvidence (Base := Base) (Const := Const) W ψ).pos /
@@ -299,19 +302,19 @@ theorem multiset_strength_le_of_singletonStrengthLE
     (W : Multiset (HenkinModel.{u, v, w} Base Const))
     (φ ψ : HOLQuery Const)
     (hsing : ∀ M : HenkinModel.{u, v, w} Base Const,
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Multiset (HenkinModel.{u, v, w} Base Const))
           (Query := HOLQuery Const)
           ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ ≤
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
           (State := Multiset (HenkinModel.{u, v, w} Base Const))
           (Query := HOLQuery Const)
           ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) ψ) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W φ ≤
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W ψ := by

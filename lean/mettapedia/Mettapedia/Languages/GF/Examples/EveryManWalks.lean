@@ -10,14 +10,14 @@ import Mettapedia.OSLF.QuantifiedFormula2
 /-!
 # End-to-End Example: "Every man walks"
 
-This module threads a single sentence through the entire GF → OSLF → Evidence
+This module threads a single sentence through the entire GF → OSLF → BinaryEvidence
 pipeline, proving correctness at each stage:
 
 1. **GF tree**: `PredVP(DetCN(every_Det, UseN(man_N)), UseV(walk_V))`
 2. **GF → Pattern**: `gfAbstractToPattern` converts to OSLF pattern
 3. **V1 step**: NP replacement produces `⊛NPVar(q1)` + store atom
 4. **Store → QFormula2**: Assembly yields `∀q1. man_N(q1) → walk_V(q1)`
-5. **Evidence structure**: `qsemE2` unfolds to `⨅ d, I "man_N" [d] p ⇨ I "walk_V" [d] p`
+5. **BinaryEvidence structure**: `qsemE2` unfolds to `⨅ d, I "man_N" [d] p ⇨ I "walk_V" [d] p`
 
 This is the first worked example demonstrating the complete horizontal wiring.
 -/
@@ -130,7 +130,7 @@ theorem emw_closed : closedQF2 emw_formula := by
   simp [closedQF2, emw_formula, freeVarsQF2, freeVarsAtom,
         freeVarsTerms, freeVarsTerm]
 
-/-! ## Stage 6: Evidence Structure
+/-! ## Stage 6: BinaryEvidence Structure
 
 Evaluating the formula under `qsemE2` with empty environment unfolds to
 an infimum over the domain: for each domain element d, the evidence that
@@ -163,7 +163,7 @@ The complete pipeline for "every man walks":
        ↓ storeToQFormula2_ordered
   QFormula2:     ∀q1. man_N(q1) → walk_V(q1)
        ↓ qsemE2 R I Dom emptyEnv2
-  Evidence:      ⨅ d : Dom, I "man_N" [d] p ⇨ I "walk_V" [d] p
+  BinaryEvidence:      ⨅ d : Dom, I "man_N" [d] p ⇨ I "walk_V" [d] p
 ```
 
 All steps proven; no proof gaps.

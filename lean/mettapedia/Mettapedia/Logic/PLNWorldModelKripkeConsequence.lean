@@ -43,10 +43,10 @@ variable {S : Type*}
 
 instance : EvidenceType (Multiset (PointedDeonticKripke S)) where
 
-/-- Evidence from a multiset of pointed deontic models:
+/-- BinaryEvidence from a multiset of pointed deontic models:
 positive count = satisfying points; negative count = refuting points. -/
 noncomputable def deonticKripkeEvidence
-    (W : Multiset (PointedDeonticKripke S)) (φ : DeonticQuery) : Evidence := by
+    (W : Multiset (PointedDeonticKripke S)) (φ : DeonticQuery) : BinaryEvidence := by
   classical
   exact
     ⟨(Multiset.countP (fun pk : PointedDeonticKripke S =>
@@ -59,14 +59,17 @@ theorem deonticKripkeEvidence_add
     deonticKripkeEvidence (W₁ + W₂) φ =
       deonticKripkeEvidence W₁ φ + deonticKripkeEvidence W₂ φ := by
   classical
-  apply Evidence.ext'
-  · simp [deonticKripkeEvidence, Multiset.countP_add, Evidence.hplus_def]
-  · simp [deonticKripkeEvidence, Multiset.countP_add, Evidence.hplus_def]
+  apply BinaryEvidence.ext'
+  · simp [deonticKripkeEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
+  · simp [deonticKripkeEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
 
-/-- `WorldModel` instance induced by multiset counting of deontic satisfaction. -/
-noncomputable instance : WorldModel (Multiset (PointedDeonticKripke S)) DeonticQuery where
+/-- `BinaryWorldModel` instance induced by multiset counting of deontic satisfaction. -/
+noncomputable instance : BinaryWorldModel (Multiset (PointedDeonticKripke S)) DeonticQuery where
   evidence := deonticKripkeEvidence
   evidence_add := deonticKripkeEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [deonticKripkeEvidence, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 private theorem countP_le_countP_of_imp
     (W : Multiset (PointedDeonticKripke S))
@@ -103,7 +106,7 @@ private theorem deonticKripkeEvidence_total
         (Multiset.countP (fun pk : PointedDeonticKripke S => PointedDeonticKripke.satisfies pk φ) W : ℝ≥0∞) +
           (Multiset.countP (fun pk : PointedDeonticKripke S => ¬ PointedDeonticKripke.satisfies pk φ) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold deonticKripkeEvidence Evidence.total
+  unfold deonticKripkeEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 /-- If each pointed model satisfying `φ` also satisfies `ψ`,
@@ -111,8 +114,8 @@ then WM query strength for `φ` is bounded by that of `ψ`. -/
 theorem queryStrength_le_of_pointwise
     (W : Multiset (PointedDeonticKripke S)) (φ ψ : DeonticQuery)
     (himp : ∀ pk : PointedDeonticKripke S, pk.satisfies φ → pk.satisfies ψ) :
-    WorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery) W φ ≤
-      WorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery) W ψ := by
   let pφ : PointedDeonticKripke S → Prop :=
     fun pk => PointedDeonticKripke.satisfies pk φ
   let pψ : PointedDeonticKripke S → Prop :=
@@ -120,18 +123,18 @@ theorem queryStrength_le_of_pointwise
   letI : DecidablePred pφ := Classical.decPred pφ
   letI : DecidablePred pψ := Classical.decPred pψ
   have hφ :
-      WorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery) W φ =
+      BinaryWorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery) W φ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pφ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (deonticKripkeEvidence W φ).total = 0 then 0
       else (deonticKripkeEvidence W φ).pos / (deonticKripkeEvidence W φ).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pφ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
     rw [deonticKripkeEvidence_total (W := W) (φ := φ)]
     simp [deonticKripkeEvidence, pφ]
   have hψ :
-      WorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery) W ψ =
+      BinaryWorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery) W ψ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pψ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (deonticKripkeEvidence W ψ).total = 0 then 0
       else (deonticKripkeEvidence W ψ).pos / (deonticKripkeEvidence W ψ).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pψ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
@@ -157,9 +160,9 @@ theorem queryStrength_le_of_pointwise
 theorem wm_rexist_reflexive_strength_le
     (W : Multiset (PointedDeonticKripke S)) (φ : DeonticQuery)
     (hrefl : ∀ pk : PointedDeonticKripke S, ∀ s, pk.lts.trans s .rexist s) :
-    WorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery)
+    BinaryWorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery)
         W (rexistFormula φ) ≤
-      WorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery)
+      BinaryWorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery)
         W φ := by
   apply queryStrength_le_of_pointwise (W := W) (φ := rexistFormula φ) (ψ := φ)
   intro pk hsat
@@ -171,9 +174,9 @@ theorem wm_dts_ob_pe_strength_le
     (W : Multiset (PointedDeonticKripke S)) (φ : DeonticQuery)
     (hser : ∀ pk : PointedDeonticKripke S, DeonticSeriality pk.lts)
     (htotal : ∀ pk : PointedDeonticKripke S, ∀ s, ∃ s', pk.lts.trans s .obligatory s') :
-    WorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery)
+    BinaryWorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery)
         W (obFormula φ) ≤
-      WorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery)
+      BinaryWorldModel.queryStrength (State := Multiset (PointedDeonticKripke S)) (Query := DeonticQuery)
         W (peFormula φ) := by
   apply queryStrength_le_of_pointwise (W := W) (φ := obFormula φ) (ψ := peFormula φ)
   intro pk hsat

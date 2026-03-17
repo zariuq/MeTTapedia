@@ -30,10 +30,10 @@ open Mettapedia.Languages.MeTTa.RuntimeSpec
 
 /-- Local WM strength obligation for a fixed state/query pair. -/
 abbrev WMStrengthObligation
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query]
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
     (W : State) (q₁ q₂ : Query) : Prop :=
-  WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-    WorldModel.queryStrength (State := State) (Query := Query) W q₂
+  BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+    BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂
 
 /-- First runtime-facing `C*` interface target.
 
@@ -44,7 +44,7 @@ how a concrete runtime relation lands on WM obligations.
 -/
 structure RuntimeJudgmentWMInterface
     (State Query Cfg : Type*)
-    [EvidenceType State] [WorldModel State Query]
+    [EvidenceType State] [BinaryWorldModel State Query]
     (step : Cfg → Cfg → Prop) where
   spec : MeTTaRuntimeSpec
   encode : Cfg → Query
@@ -58,7 +58,7 @@ structure RuntimeJudgmentWMInterface
 namespace RuntimeJudgmentWMInterface
 
 variable {State Query Cfg : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 variable {step : Cfg → Cfg → Prop}
 
 /-- Star closure of runtime steps transports to WM inequalities by transitivity. -/

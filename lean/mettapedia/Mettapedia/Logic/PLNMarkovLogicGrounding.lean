@@ -280,7 +280,7 @@ end SmokesRegression
 /-! ## Canary: Smokes(x) → Cancer(x) queryStrength via First-Order Grounding
 
 End-to-end demonstration that `smokeGroundMLN` (compiled via `compileToGroundMLN`)
-yields `WorldModel.queryStrength = 2/3` for Cancer(alice) and strength 0 for the
+yields `BinaryWorldModel.queryStrength = 2/3` for Cancer(alice) and strength 0 for the
 impossible query [Smokes(alice)=T, Cancer(alice)=F].
 
 Key obstacle: `toCountableMLNSemantics` requires `[Fintype Atom]`.
@@ -628,9 +628,9 @@ theorem smoke_queryProb_cancerAlice_eq_two_thirds :
 
 /-- **First-order MLN canary**: The compiled Smokes(x)→Cancer(x) template over
 {alice, bob} yields `queryStrength = 2/3` for `Cancer(alice)`, showing that the
-first-order grounding pipeline correctly propagates to `WorldModel.queryStrength`. -/
+first-order grounding pipeline correctly propagates to `BinaryWorldModel.queryStrength`. -/
 theorem smoke_queryStrength_cancerAlice_eq_two_thirds :
-    WorldModel.queryStrength (clauseWMState smokeGroundMLN smokeFullSupport) cancerAliceQuery =
+    BinaryWorldModel.queryStrength (clauseWMState smokeGroundMLN smokeFullSupport) cancerAliceQuery =
       (2 : ENNReal) / 3 := by
   rw [clauseWM_queryStrength_eq_queryProb]
   exact smoke_queryProb_cancerAlice_eq_two_thirds
@@ -638,7 +638,7 @@ theorem smoke_queryStrength_cancerAlice_eq_two_thirds :
 /-- **Negative canary**: The impossible query [Smokes(alice)=T, Cancer(alice)=F]
 has strength 0 (the hard constraint rules it out). -/
 theorem smoke_queryStrength_impossible_eq_zero :
-    WorldModel.queryStrength (clauseWMState smokeGroundMLN smokeFullSupport) impossibleAliceQuery = 0 := by
+    BinaryWorldModel.queryStrength (clauseWMState smokeGroundMLN smokeFullSupport) impossibleAliceQuery = 0 := by
   rw [clauseWM_queryStrength_eq_queryProb]
   have htotal : (clauseMassSemantics smokeGroundMLN smokeFullSupport).totalMass ≠ 0 := by
     rw [smoke_totalMass_eq_nine]; norm_num
@@ -812,7 +812,7 @@ theorem groundMixedTemplate_existential_eval_eq [Fintype Dom]
 For finite-domain MLNs with mixed universal/existential templates, the compiled
 WM world-model state's `queryStrength` equals the exact MLN `queryProb`.
 This composes the full chain:
-  mixed templates → GroundMLN → CountableMLNSemantics → MassSemantics → WorldModel
+  mixed templates → GroundMLN → CountableMLNSemantics → MassSemantics → BinaryWorldModel
 -/
 
 open PLNMarkovLogicClauseWorldModel PLNMarkovLogicClauseFactorGraph PLNWorldModel
@@ -829,7 +829,7 @@ theorem mixed_queryStrength_eq_queryProb
     [Fintype TemplateId] [Fintype Var]
     (templates : TemplateId → MixedTemplate Pred Var Dom)
     (q : ConstraintQuery (GroundAtom Pred Dom)) :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
       (clauseWMState (compileToMixedGroundMLN templates) Finset.univ) q =
       (clauseMassSemantics (compileToMixedGroundMLN templates) Finset.univ).queryProb q :=
   clauseWM_queryStrength_eq_queryProb _ Finset.univ q
@@ -1152,7 +1152,7 @@ same ground clause.  Under the induced distribution:
   P(Rel(a,b)=T ∧ Rel(a,a)=T) = 3/9 = 1/3 ≠ 4/9 = (2/3)².
 The exact `queryStrength` captures this coupling correctly. -/
 theorem exist_queryStrength_relAB_eq_two_thirds :
-    WorldModel.queryStrength (clauseWMState existGroundMLN existFullSupport)
+    BinaryWorldModel.queryStrength (clauseWMState existGroundMLN existFullSupport)
       existRelABQuery = (2 : ENNReal) / 3 := by
   rw [clauseWM_queryStrength_eq_queryProb]
   exact exist_queryProb_relAB_eq_two_thirds

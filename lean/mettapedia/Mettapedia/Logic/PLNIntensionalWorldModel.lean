@@ -61,18 +61,18 @@ end InheritanceQueryFamily
 /-- Canonical typed WM adapter over inheritance channels from an untyped WM. -/
 def worldModelSigmaInheritanceFromUntyped
     (State Query : Type)
-    [EvidenceType State] [WorldModel State Query] :
+    [EvidenceType State] [BinaryWorldModel State Query] :
     WorldModelSigma State InheritanceSort (InheritanceQueryFamily Query) where
   evidence W q :=
-    WorldModel.evidence (State := State) (Query := Query) W (InheritanceQueryFamily.erase q.2)
+    BinaryWorldModel.evidence (State := State) (Query := Query) W (InheritanceQueryFamily.erase q.2)
   evidence_add W₁ W₂ q :=
-    WorldModel.evidence_add (State := State) (Query := Query) W₁ W₂
+    BinaryWorldModel.evidence_add (State := State) (Query := Query) W₁ W₂
       (InheritanceQueryFamily.erase q.2)
 
 /-- Global typed WMΣ instance for inheritance channels, induced from an untyped WM. -/
 instance instWorldModelSigmaInheritanceFromUntyped
     (State Query : Type)
-    [EvidenceType State] [WorldModel State Query] :
+    [EvidenceType State] [BinaryWorldModel State Query] :
     WorldModelSigma State InheritanceSort (InheritanceQueryFamily Query) :=
   worldModelSigmaInheritanceFromUntyped (State := State) (Query := Query)
 
@@ -127,27 +127,27 @@ variable {State Atom Query : Type}
 variable [EvidenceType State]
 variable [WorldModelSigma State InheritanceSort (InheritanceQueryFamily Query)]
 
-/-- Evidence projection for extensional inheritance queries. -/
+/-- BinaryEvidence projection for extensional inheritance queries. -/
 def extensionalEvidence
-    (W : State) (enc : InheritanceQueryBuilder Atom Query) (a b : Atom) : Evidence :=
+    (W : State) (enc : InheritanceQueryBuilder Atom Query) (a b : Atom) : BinaryEvidence :=
   WorldModelSigma.evidence (State := State) (Srt := InheritanceSort)
     (Query := InheritanceQueryFamily Query) W (extQ enc a b)
 
-/-- Evidence projection for intensional-ASSOC inheritance queries. -/
+/-- BinaryEvidence projection for intensional-ASSOC inheritance queries. -/
 def intensionalAssocEvidence
-    (W : State) (enc : InheritanceQueryBuilder Atom Query) (a b : Atom) : Evidence :=
+    (W : State) (enc : InheritanceQueryBuilder Atom Query) (a b : Atom) : BinaryEvidence :=
   WorldModelSigma.evidence (State := State) (Srt := InheritanceSort)
     (Query := InheritanceQueryFamily Query) W (assocQ enc a b)
 
-/-- Evidence projection for intensional-PAT inheritance queries. -/
+/-- BinaryEvidence projection for intensional-PAT inheritance queries. -/
 def intensionalPATEvidence
-    (W : State) (enc : InheritanceQueryBuilder Atom Query) (a b : Atom) : Evidence :=
+    (W : State) (enc : InheritanceQueryBuilder Atom Query) (a b : Atom) : BinaryEvidence :=
   WorldModelSigma.evidence (State := State) (Srt := InheritanceSort)
     (Query := InheritanceQueryFamily Query) W (patQ enc a b)
 
-/-- Evidence projection for mixed inheritance queries. -/
+/-- BinaryEvidence projection for mixed inheritance queries. -/
 def mixedEvidence
-    (W : State) (enc : InheritanceQueryBuilder Atom Query) (a b : Atom) : Evidence :=
+    (W : State) (enc : InheritanceQueryBuilder Atom Query) (a b : Atom) : BinaryEvidence :=
   WorldModelSigma.evidence (State := State) (Srt := InheritanceSort)
     (Query := InheritanceQueryFamily Query) W (mixedQ enc a b)
 
@@ -190,7 +190,7 @@ def mixedEvidence
 /-- Side condition: mixed evidence is extensional+ASSOC composition. -/
 def MixedPolicyAssoc
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence) : Prop :=
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence) : Prop :=
   ∀ (W : State) (a b : Atom),
     mixedEvidence W enc a b =
       combine (extensionalEvidence W enc a b) (intensionalAssocEvidence W enc a b)
@@ -198,7 +198,7 @@ def MixedPolicyAssoc
 /-- Side condition: mixed evidence is extensional+ASSOC+PAT composition. -/
 def MixedPolicyAssocPat
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence → Evidence) : Prop :=
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence) : Prop :=
   ∀ (W : State) (a b : Atom),
     mixedEvidence W enc a b =
       combine
@@ -211,7 +211,7 @@ typed ASSOC evidence equals a lifted real-valued score. -/
 def AssocScoreCorrespondence
     (enc : InheritanceQueryBuilder Atom Query)
     (assocScore : State → Atom → Atom → ℝ)
-    (scoreToEvidence : ℝ → Evidence) : Prop :=
+    (scoreToEvidence : ℝ → BinaryEvidence) : Prop :=
   ∀ (W : State) (a b : Atom),
     intensionalAssocEvidence W enc a b = scoreToEvidence (assocScore W a b)
 
@@ -220,7 +220,7 @@ typed PAT evidence equals a lifted real-valued score. -/
 def PATScoreCorrespondence
     (enc : InheritanceQueryBuilder Atom Query)
     (patScore : State → Atom → Atom → ℝ)
-    (scoreToEvidence : ℝ → Evidence) : Prop :=
+    (scoreToEvidence : ℝ → BinaryEvidence) : Prop :=
   ∀ (W : State) (a b : Atom),
     intensionalPATEvidence W enc a b = scoreToEvidence (patScore W a b)
 
@@ -232,7 +232,7 @@ structure IntensionalScoreModel
     (enc : InheritanceQueryBuilder Atom Query) where
   assocScore : State → Atom → Atom → ℝ
   patScore : State → Atom → Atom → ℝ
-  scoreToEvidence : ℝ → Evidence
+  scoreToEvidence : ℝ → BinaryEvidence
   scoreToEvidence_mono : Monotone scoreToEvidence
   assoc_sound :
     AssocScoreCorrespondence
@@ -249,7 +249,7 @@ at `(W,a,b)` is exactly `scoreToEvidence s`. -/
 theorem assocEvidence_eq_scoreToEvidence_of_assocScore_eq
     (enc : InheritanceQueryBuilder Atom Query)
     (assocScore : State → Atom → Atom → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hAssoc :
       AssocScoreCorrespondence
         (State := State) (Atom := Atom) (Query := Query)
@@ -265,7 +265,7 @@ at `(W,a,b)` is exactly `scoreToEvidence s`. -/
 theorem patEvidence_eq_scoreToEvidence_of_patScore_eq
     (enc : InheritanceQueryBuilder Atom Query)
     (patScore : State → Atom → Atom → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hPat :
       PATScoreCorrespondence
         (State := State) (Atom := Atom) (Query := Query)
@@ -293,7 +293,7 @@ def PATSubsetSemantics
   ∀ (W : State) (a b c d : Atom),
     subsetRel W a b c d → model.patScore W a b ≤ model.patScore W c d
 
-/-- Evidence-level ASSOC monotonicity induced by subset semantics and score monotonicity. -/
+/-- BinaryEvidence-level ASSOC monotonicity induced by subset semantics and score monotonicity. -/
 theorem assocEvidence_mono_of_subsetSemantics
     (enc : InheritanceQueryBuilder Atom Query)
     (model : IntensionalScoreModel (State := State) (Atom := Atom) (Query := Query) enc)
@@ -312,7 +312,7 @@ theorem assocEvidence_mono_of_subsetSemantics
     _ = intensionalAssocEvidence W enc c d :=
       (model.assoc_sound W c d).symm
 
-/-- Evidence-level PAT monotonicity induced by subset semantics and score monotonicity. -/
+/-- BinaryEvidence-level PAT monotonicity induced by subset semantics and score monotonicity. -/
 theorem patEvidence_mono_of_subsetSemantics
     (enc : InheritanceQueryBuilder Atom Query)
     (model : IntensionalScoreModel (State := State) (Atom := Atom) (Query := Query) enc)
@@ -383,9 +383,9 @@ theorem patEvidence_mono_of_extensionalSubsetSemantics
 /-- Concrete mixed-channel correspondence for extensional+ASSOC composition. -/
 def MixedAssocScoreCorrespondence
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Atom → Atom → ℝ)
-    (scoreToEvidence : ℝ → Evidence) : Prop :=
+    (scoreToEvidence : ℝ → BinaryEvidence) : Prop :=
   ∀ (W : State) (a b : Atom),
     mixedEvidence W enc a b =
       combine
@@ -395,9 +395,9 @@ def MixedAssocScoreCorrespondence
 /-- Concrete mixed-channel correspondence for extensional+ASSOC+PAT composition. -/
 def MixedAssocPatScoreCorrespondence
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore patScore : State → Atom → Atom → ℝ)
-    (scoreToEvidence : ℝ → Evidence) : Prop :=
+    (scoreToEvidence : ℝ → BinaryEvidence) : Prop :=
   ∀ (W : State) (a b : Atom),
     mixedEvidence W enc a b =
       combine
@@ -408,9 +408,9 @@ def MixedAssocPatScoreCorrespondence
 /-- Build `MixedPolicyAssoc` from concrete ASSOC-score correspondences. -/
 theorem mixedPolicyAssoc_of_assocScoreCorrespondence
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Atom → Atom → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       MixedAssocScoreCorrespondence enc combine assocScore scoreToEvidence)
     (hAssoc :
@@ -422,9 +422,9 @@ theorem mixedPolicyAssoc_of_assocScoreCorrespondence
 /-- Build `MixedPolicyAssocPat` from concrete ASSOC/PAT-score correspondences. -/
 theorem mixedPolicyAssocPat_of_assocPatScoreCorrespondence
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore patScore : State → Atom → Atom → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       MixedAssocPatScoreCorrespondence enc combine assocScore patScore scoreToEvidence)
     (hAssoc :
@@ -438,7 +438,7 @@ theorem mixedPolicyAssocPat_of_assocPatScoreCorrespondence
 /-- Build `MixedPolicyAssoc` from a canonical intensional score model. -/
 theorem mixedPolicyAssoc_of_scoreModel
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (model : IntensionalScoreModel (State := State) (Atom := Atom) (Query := Query) enc)
     (hMixed :
       MixedAssocScoreCorrespondence
@@ -452,7 +452,7 @@ theorem mixedPolicyAssoc_of_scoreModel
 /-- Build `MixedPolicyAssocPat` from a canonical intensional score model. -/
 theorem mixedPolicyAssocPat_of_scoreModel
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (model : IntensionalScoreModel (State := State) (Atom := Atom) (Query := Query) enc)
     (hMixed :
       MixedAssocPatScoreCorrespondence
@@ -469,7 +469,7 @@ bundles score-model channels with the concrete mixed ASSOC correspondence. -/
 structure AssocSemanticModel
     (enc : InheritanceQueryBuilder Atom Query) where
   scoreModel : IntensionalScoreModel (State := State) (Atom := Atom) (Query := Query) enc
-  combine : Evidence → Evidence → Evidence
+  combine : BinaryEvidence → BinaryEvidence → BinaryEvidence
   mixed_sound :
     MixedAssocScoreCorrespondence
       (State := State) (Atom := Atom) (Query := Query)
@@ -480,7 +480,7 @@ bundles score-model channels with the concrete mixed ASSOC+PAT correspondence. -
 structure AssocPatSemanticModel
     (enc : InheritanceQueryBuilder Atom Query) where
   scoreModel : IntensionalScoreModel (State := State) (Atom := Atom) (Query := Query) enc
-  combine : Evidence → Evidence → Evidence → Evidence
+  combine : BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence
   mixed_sound :
     MixedAssocPatScoreCorrespondence
       (State := State) (Atom := Atom) (Query := Query)
@@ -508,7 +508,7 @@ theorem mixedPolicyAssocPat_of_assocPatSemanticModel
 /-- Typed mixed-channel rewrite constructor (extensional + ASSOC). -/
 noncomputable def mixedRewriteRule_of_assoc
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (Side : Prop)
     (hSound : Side → MixedPolicyAssoc (State := State) (Atom := Atom) (Query := Query) enc combine)
     (a b : Atom) :
@@ -523,7 +523,7 @@ noncomputable def mixedRewriteRule_of_assoc
 /-- Typed mixed-channel rewrite constructor (extensional + ASSOC + PAT). -/
 noncomputable def mixedRewriteRule_of_assoc_pat
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (Side : Prop)
     (hSound : Side → MixedPolicyAssocPat (State := State) (Atom := Atom) (Query := Query) enc combine)
     (a b : Atom) :
@@ -542,7 +542,7 @@ noncomputable def mixedRewriteRule_of_assoc_pat
 /-- Admissibility helper for `mixedRewriteRule_of_assoc`. -/
 theorem mixedRewriteRule_of_assoc_apply
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (Side : Prop)
     (hSound : Side → MixedPolicyAssoc (State := State) (Atom := Atom) (Query := Query) enc combine)
     (a b : Atom)
@@ -561,7 +561,7 @@ theorem mixedRewriteRule_of_assoc_apply
 /-- Admissibility helper for `mixedRewriteRule_of_assoc_pat`. -/
 theorem mixedRewriteRule_of_assoc_pat_apply
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (Side : Prop)
     (hSound : Side →
       MixedPolicyAssocPat (State := State) (Atom := Atom) (Query := Query) enc combine)
@@ -589,7 +589,7 @@ section ConcreteMixedPolicies
 
 variable {State Atom Query : Type}
 variable [EvidenceType State]
-variable [WorldModel State Query]
+variable [BinaryWorldModel State Query]
 
 /-- Concrete inheritance query builder with `mixed = extensional`. -/
 def mixedAsExtensional
@@ -620,12 +620,12 @@ theorem mixedPolicyAssoc_mixedAsExtensional
     worldModelSigmaInheritanceFromUntyped (State := State) (Query := Query)
   intro W a b
   change
-    WorldModel.evidence (State := State) (Query := Query) W
+    BinaryWorldModel.evidence (State := State) (Query := Query) W
       (InheritanceQueryFamily.erase (InheritanceQueryFamily.mix (extensional a b))) =
       (fun e _ => e)
-        (WorldModel.evidence (State := State) (Query := Query) W
+        (BinaryWorldModel.evidence (State := State) (Query := Query) W
           (InheritanceQueryFamily.erase (InheritanceQueryFamily.ext (extensional a b))))
-        (WorldModel.evidence (State := State) (Query := Query) W
+        (BinaryWorldModel.evidence (State := State) (Query := Query) W
           (InheritanceQueryFamily.erase (InheritanceQueryFamily.assoc (intensionalAssoc a b))))
   rfl
 
@@ -640,12 +640,12 @@ theorem mixedPolicyAssoc_mixedAsAssoc
     worldModelSigmaInheritanceFromUntyped (State := State) (Query := Query)
   intro W a b
   change
-    WorldModel.evidence (State := State) (Query := Query) W
+    BinaryWorldModel.evidence (State := State) (Query := Query) W
       (InheritanceQueryFamily.erase (InheritanceQueryFamily.mix (intensionalAssoc a b))) =
       (fun _ e => e)
-        (WorldModel.evidence (State := State) (Query := Query) W
+        (BinaryWorldModel.evidence (State := State) (Query := Query) W
           (InheritanceQueryFamily.erase (InheritanceQueryFamily.ext (extensional a b))))
-        (WorldModel.evidence (State := State) (Query := Query) W
+        (BinaryWorldModel.evidence (State := State) (Query := Query) W
           (InheritanceQueryFamily.erase (InheritanceQueryFamily.assoc (intensionalAssoc a b))))
   rfl
 
@@ -687,9 +687,9 @@ noncomputable def mixedRewriteRule_assocProjection
 (`Side := True`). -/
 noncomputable def mixedRewriteRule_assocSemantic
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Atom → Atom → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       MixedAssocScoreCorrespondence
         (State := State) (Atom := Atom) (Query := Query)
@@ -714,9 +714,9 @@ noncomputable def mixedRewriteRule_assocSemantic
 (`Side := True`). -/
 noncomputable def mixedRewriteRule_assocPatSemantic
     (enc : InheritanceQueryBuilder Atom Query)
-    (combine : Evidence → Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore patScore : State → Atom → Atom → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       MixedAssocPatScoreCorrespondence
         (State := State) (Atom := Atom) (Query := Query)

@@ -36,8 +36,8 @@ theorem pointwiseImplies_iff_singletonConsequence {U : Type*}
 theorem multiset_strength_le_of_pointwise {U : Type*}
     (W : PredCodeState U) (q₁ q₂ : PredCodeQuery U)
     (himp : pointwiseImplies q₁ q₂) :
-    WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
-      WorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
+    BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₁ ≤
+      BinaryWorldModel.queryStrength (State := PredCodeState U) (Query := PredCodeQuery U) W q₂ :=
   Mettapedia.Logic.PLNWorldModelPredCodeCompleteness.multiset_strength_le_of_pointwise
     (W := W) (q₁ := q₁) (q₂ := q₂) himp
 

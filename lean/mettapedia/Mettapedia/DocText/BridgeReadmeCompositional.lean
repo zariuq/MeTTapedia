@@ -56,7 +56,7 @@ def renderBridgeClaim : BridgeClaim → String
         (copulaNP (properNameNP "average Hamming weight = (pos + unknown/2) / n"))
   | .evidenceStrengthLaw =>
       mkPresPos (properNameNP "toEvidence_strength")
-        (copulaNP (properNameNP "Evidence.strength = expected fraction of 1s"))
+        (copulaNP (properNameNP "BinaryEvidence.strength = expected fraction of 1s"))
   | .bridgeToContinuousBetaTheory =>
       mkPresPos (properNameNP "This bridge")
         (complV2 (mkV2 (regV "connect")) (properNameNP "discrete evidence to continuous Beta distribution theory"))
@@ -124,7 +124,7 @@ def bridgeReadmeBlocks : List ReadmeBlock :=
           pattern := .infix (.quoted "average Hamming weight") "="
             (.infix (.infix (.ident "pos") "+" (.infix (.ident "unknown") "/" (.ident "2"))) "/" (.ident "n")) }
       , { label := "toEvidence_strength"
-          pattern := .infix (.ident "Evidence.strength") "=" (.quoted "expected fraction of 1s") }
+          pattern := .infix (.ident "BinaryEvidence.strength") "=" (.quoted "expected fraction of 1s") }
       ]
   , .claimBullets
       [ claimBullet .completionsCardinalityLaw

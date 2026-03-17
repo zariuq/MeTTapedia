@@ -1,0 +1,102 @@
+%% pln-common.sty — Shared macros for wm-pln-book and pln-review
+%% Both documents should \usepackage{pln-common}
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{pln-common}[2026/03/09 Shared PLN macros]
+
+%% ── Package dependencies ──────────────────────────────────────────
+\RequirePackage{amsfonts}
+\RequirePackage{amsmath}
+\RequirePackage{amsthm}
+\RequirePackage{url}
+\RequirePackage[hyperindex,breaklinks,bookmarksnumbered]{hyperref}
+%% breakurl conflicts with tectonic/xelatex (\pdf@box undefined)
+%% \IfFileExists{breakurl.sty}{\RequirePackage{breakurl}}{}
+\RequirePackage{listings}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,frame=single}
+\RequirePackage{float}
+\restylefloat{table}
+\RequirePackage{longtable}
+\RequirePackage{booktabs}
+\RequirePackage{graphicx}
+\RequirePackage[font=small,labelfont=bf]{caption}
+\RequirePackage[skip=0pt]{subcaption}
+\RequirePackage{unicode-math}
+\IfFileExists{newunicodechar.sty}{%
+  \RequirePackage{newunicodechar}%
+  \newunicodechar{∘}{\ensuremath{\circ}}%
+}{}
+\IfFontExistsTF{Stix Two Math}{\setmathfont{Stix Two Math}}{\setmathfont{STIX Math}}
+
+% Compatibility fallback for older TeX bundles
+\makeatletter
+\providecommand{\headerps@out}{}
+\makeatother
+
+%% ── Theorem environments ──────────────────────────────────────────
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+%% ── Named macros ──────────────────────────────────────────────────
+\newcommand{\nuPLN}{\texorpdfstring{$\nu$}{nu}\textup{PLN}}
+\newcommand{\xiPLN}{WM-PLN}  % was ξPLN; unified to WM-PLN
+
+%% ── Type/code macros ──────────────────────────────────────────────
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\codepath}[1]{\path{#1}}
+\newcommand{\ty}[1]{\ensuremath{\mathtt{#1}}}
+
+%% ── Domain types ──────────────────────────────────────────────────
+\newcommand{\Evidence}{\ty{Evidence}}
+\newcommand{\JointEvidence}{\ty{JointEvidence}}
+\newcommand{\WorldModel}{\ty{WorldModel}}
+\newcommand{\PLNQuery}{\ty{PLNQuery}}
+\newcommand{\WorldModelSigma}{\ty{WorldModelSigma}}
+\newcommand{\STV}[2]{\langle #1,\, #2 \rangle}
+
+%% ── Operators ─────────────────────────────────────────────────────
+\newcommand{\hplus}{\ensuremath{\oplus}}        % evidence revision
+\newcommand{\htensor}{\ensuremath{\otimes}}     % quantale tensor
+\newcommand{\strength}{\mathsf{strength}}
+\newcommand{\confidence}{\mathsf{confidence}}
+\newcommand{\neff}{n_{\mathrm{eff}}}
+
+%% ── Claim taxonomy labels ─────────────────────────────────────────
+\newcommand{\claimCore}{\textsc{Core}}
+\newcommand{\claimConditional}{\textsc{Conditional}}
+\newcommand{\claimBoundary}{\textsc{Boundary}}
+\newcommand{\claimOperational}{\textsc{Operational}}
+
+%% ── Domain scope marker ──────────────────────────────────────────
+\newcommand{\finitedomain}{\textsc{[fin]}}
+
+%% ── Boundary theorem styling ─────────────────────────────────────
+\newcommand{\boundarytheoremcolor}{orange!10}
+\newcommand{\boundarystart}{\par\medskip\noindent\hfill\textcolor{orange!50}{\rule{0.96\textwidth}{0.4pt}}\par\smallskip}
+\newcommand{\boundaryend}{\par\smallskip\noindent\hfill\textcolor{orange!50}{\rule{0.96\textwidth}{0.4pt}}\par\medskip}
+
+%% ── Running-example styling (Maple Court) ──────────────────────
+\newcommand{\maplecourt}[1]{%
+  \par\medskip\noindent
+  \textcolor{teal!60!black}{\rule{0.96\textwidth}{0.3pt}}%
+  \par\smallskip\noindent
+  \textbf{\textcolor{teal!70!black}{Maple Court:}} #1%
+  \par\smallskip\noindent
+  \textcolor{teal!60!black}{\rule{0.96\textwidth}{0.3pt}}%
+  \par\medskip}
+
+%% ── Review verdict labels ─────────────────────────────────────────
+\newcommand{\verdictClean}{\textsc{Formalized Cleanly}}
+\newcommand{\verdictCorrected}{\textsc{Corrected Statement}}
+\newcommand{\verdictAssumption}{\textsc{Explicit Assumptions}}
+\newcommand{\verdictNoGo}{\textsc{Counterexample / No-Go}}
+\newcommand{\verdictHeuristic}{\textsc{Heuristic / Operational}}
+
+\endinput

@@ -1,7 +1,7 @@
 import Mettapedia.Languages.GF.Core
 
 /-!
-# SUMO Repair Evidence Model
+# SUMO Repair BinaryEvidence Model
 
 Structured evidence framework for the SUMO ontology repair pipeline.
 Designed for multi-agent review (Claude Code, Codex, GPT-5.2 Pro, human)
@@ -9,7 +9,7 @@ with PLN-compatible truth values and Beta-distribution assurance scoring.
 
 ## Architecture
 
-Evidence atoms from heterogeneous sources (checkLang, stratum scans,
+BinaryEvidence atoms from heterogeneous sources (checkLang, stratum scans,
 KIF citations, literature, LLM reviews, human reviews, English docs)
 are normalized into a common schema. Each atom carries source type,
 strength, confidence, and an independence group (to avoid
@@ -22,7 +22,7 @@ Assurance is computed via weighted Beta aggregation:
 
 ## Compatibility
 
-- Evidence counts (n⁺, n⁻) align with `Mettapedia.Logic.EvidenceQuantale`
+- BinaryEvidence counts (n⁺, n⁻) align with `Mettapedia.Logic.EvidenceQuantale`
 - Strength/confidence align with PLN SimpleTruthValue
 - Review votes are meta-evidence with source_type = llmReview/humanReview
 
@@ -58,7 +58,7 @@ def archetypePrior : RepairArchetype → Float × Float
   | .ontologyReclassification => (4.0, 4.0)
   | .worldSemanticClaim       => (3.0, 5.0)
 
-/-! ## Evidence Sources -/
+/-! ## BinaryEvidence Sources -/
 
 inductive SourceType where
   | checkLang    -- proven-sound reachability test (checkLangUsing_sat_sound)
@@ -120,7 +120,7 @@ structure WMWitness where
   note : String := ""
   deriving Repr
 
-/-! ## Evidence Atoms (normalized, all types)
+/-! ## BinaryEvidence Atoms (normalized, all types)
 
 Every piece of evidence — whether from checkLang, a KIF citation,
 a literature source, an LLM review, or an English doc extraction —

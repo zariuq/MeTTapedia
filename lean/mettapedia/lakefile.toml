@@ -63,3 +63,8 @@ path = "../algorithms"
 [[require]]
 name = "mettail_core"
 path = "../batteries/mettail-core"
+
+# CertifyingDatalog (Tantow et al., ITP 2025) — local dependency
+[[require]]
+name = "certifyingDatalog"
+path = "Mettapedia/external/CertifyingDatalog"

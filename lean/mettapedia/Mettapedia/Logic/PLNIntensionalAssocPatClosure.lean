@@ -17,13 +17,13 @@ namespace Mettapedia.Logic.PLNCanonical
 theorem intensional_mixed_assocPat_threshold_atom_of_interval
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (Side : Prop)
     (hSound : Side →
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedPolicyAssocPat
@@ -72,7 +72,7 @@ theorem intensional_mixed_assocPat_threshold_atom_of_interval
 theorem intensional_mixed_assocPat_threshold_atom_of_interval_of_assocPatSemanticModel
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
@@ -145,7 +145,7 @@ theorem intensional_mixed_assocPat_threshold_atom_of_interval_of_assocPatSemanti
 theorem intensional_mixed_assocPat_threshold_atom_bayesNormal_of_assocPatSemanticModel
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval .bayesNormal)
@@ -180,7 +180,7 @@ theorem intensional_mixed_assocPat_threshold_atom_bayesNormal_of_assocPatSemanti
 theorem intensional_mixed_assocPat_threshold_atom_bayesExact_of_assocPatSemanticModel
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval .bayesExact)
@@ -215,7 +215,7 @@ theorem intensional_mixed_assocPat_threshold_atom_bayesExact_of_assocPatSemantic
 theorem intensional_mixed_assocPat_threshold_atom_walley_of_assocPatSemanticModel
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval .walleyIDM)
@@ -274,11 +274,11 @@ abbrev ConcreteState := ScoreChannel × ScoreChannel × ScoreChannel
 noncomputable instance : EvidenceType ConcreteState where
   toAddCommMonoid := inferInstance
 
-/-- Evidence embedding for nonnegative scores. -/
-def scoreToEvidenceNNReal (r : NNReal) : EvidenceQuantale.Evidence := ⟨(r : ℝ≥0∞), 0⟩
+/-- BinaryEvidence embedding for nonnegative scores. -/
+def scoreToEvidenceNNReal (r : NNReal) : EvidenceQuantale.BinaryEvidence := ⟨(r : ℝ≥0∞), 0⟩
 
 /-- Real-valued evidence embedding (used by score-model interfaces). -/
-def scoreToEvidenceReal (s : ℝ) : EvidenceQuantale.Evidence := ⟨ENNReal.ofReal s, 0⟩
+def scoreToEvidenceReal (s : ℝ) : EvidenceQuantale.BinaryEvidence := ⟨ENNReal.ofReal s, 0⟩
 
 @[simp] theorem scoreToEvidenceReal_ofNNReal (r : NNReal) :
     scoreToEvidenceReal (r : ℝ) = scoreToEvidenceNNReal r := by
@@ -286,10 +286,10 @@ def scoreToEvidenceReal (s : ℝ) : EvidenceQuantale.Evidence := ⟨ENNReal.ofRe
 
 /-- Nontrivial mixed law: extensional + ASSOC + PAT evidence aggregation. -/
 noncomputable def combineAssocPatSum
-    (eExt eAssoc ePat : EvidenceQuantale.Evidence) : EvidenceQuantale.Evidence :=
+    (eExt eAssoc ePat : EvidenceQuantale.BinaryEvidence) : EvidenceQuantale.BinaryEvidence :=
   eExt + eAssoc + ePat
 
-noncomputable instance : WorldModel ConcreteState ConcreteQuery where
+noncomputable instance : BinaryWorldModel ConcreteState ConcreteQuery where
   evidence W q :=
     match q with
     | .ext a b => scoreToEvidenceNNReal (W.1 a b)
@@ -377,9 +377,9 @@ theorem pat_channel_nontrivial :
     PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalPATEvidence
         (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery)
         Wdemo enc (Pattern.fvar "a0") (Pattern.fvar "p") ≠ 0 := by
-  have h1 : scoreToEvidenceNNReal 1 ≠ (0 : EvidenceQuantale.Evidence) := by
+  have h1 : scoreToEvidenceNNReal 1 ≠ (0 : EvidenceQuantale.BinaryEvidence) := by
     intro h
-    have h10 := congrArg EvidenceQuantale.Evidence.pos h
+    have h10 := congrArg EvidenceQuantale.BinaryEvidence.pos h
     change (1 : ℝ≥0∞) = 0 at h10
     exact one_ne_zero h10
   simpa [Wdemo, constScore, scoreToEvidenceNNReal,
@@ -421,8 +421,8 @@ theorem mixed_not_assoc_only :
         scoreToEvidenceNNReal 3 + scoreToEvidenceNNReal 2 := by
     simpa [hmix, hext, hassoc] using hEq
   have h65 : (6 : ℝ≥0∞) = 5 := by
-    simpa [scoreToEvidenceNNReal, Evidence.hplus_def, add_assoc, add_left_comm, add_comm] using
-      congrArg EvidenceQuantale.Evidence.pos hEq''
+    simpa [scoreToEvidenceNNReal, BinaryEvidence.hplus_def, add_assoc, add_left_comm, add_comm] using
+      congrArg EvidenceQuantale.BinaryEvidence.pos hEq''
   norm_num at h65
 
 /-- Two-state witness with identical ext/ASSOC channels and different PAT channel. -/
@@ -437,7 +437,7 @@ def Wpat1 : ConcreteState :=
 there is no binary mixed law over `(extensional, ASSOC)` that can reproduce the
 concrete ASSOC+PAT mixed channel on all states. -/
 theorem no_binary_mixed_policy_for_assocPat_fixture :
-    ¬ ∃ combine2 : EvidenceQuantale.Evidence → EvidenceQuantale.Evidence → EvidenceQuantale.Evidence,
+    ¬ ∃ combine2 : EvidenceQuantale.BinaryEvidence → EvidenceQuantale.BinaryEvidence → EvidenceQuantale.BinaryEvidence,
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedPolicyAssoc
         (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery) enc combine2 := by
   intro h
@@ -510,8 +510,8 @@ theorem no_binary_mixed_policy_for_assocPat_fixture :
         PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedEvidence,
         PLNIntensionalWorldModel.InheritanceQueryBuilder.mixedQ, enc] using hEq
     have hPosEq : (2 + 3 : ENNReal) = 1 + (2 + 3) := by
-      simpa [scoreToEvidenceNNReal, Evidence.hplus_def, add_assoc, add_left_comm, add_comm] using
-        congrArg EvidenceQuantale.Evidence.pos h01
+      simpa [scoreToEvidenceNNReal, BinaryEvidence.hplus_def, add_assoc, add_left_comm, add_comm] using
+        congrArg EvidenceQuantale.BinaryEvidence.pos h01
     have hPosNe : (2 + 3 : ENNReal) ≠ 1 + (2 + 3) := by
       norm_num
     exact hPosNe hPosEq
@@ -521,7 +521,7 @@ theorem no_binary_mixed_policy_for_assocPat_fixture :
 the corrected three-channel mixed law cannot collapse to any binary
 extensional+ASSOC policy on the concrete Chapter-12 fixture family. -/
 theorem binary_mixed_policy_collapse_no_go :
-    ¬ ∃ combine2 : EvidenceQuantale.Evidence → EvidenceQuantale.Evidence → EvidenceQuantale.Evidence,
+    ¬ ∃ combine2 : EvidenceQuantale.BinaryEvidence → EvidenceQuantale.BinaryEvidence → EvidenceQuantale.BinaryEvidence,
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedPolicyAssoc
         (State := ConcreteState) (Atom := Pattern) (Query := ConcreteQuery) enc combine2 :=
   no_binary_mixed_policy_for_assocPat_fixture

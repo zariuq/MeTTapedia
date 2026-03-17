@@ -16,7 +16,7 @@ Show that our Inheritance definition is compatible with the existing
 ## Status (Week 1-2)
 
 **What we CAN prove now**:
-- Structural compatibility: Our Inheritance definition uses Evidence division
+- Structural compatibility: Our Inheritance definition uses BinaryEvidence division
 - Member predicate matches: `Member X S = S.pred X` (definitional)
 
 **What we CANNOT prove yet** (blockers documented):
@@ -61,11 +61,11 @@ Our Inheritance definition structurally matches the conditional probability
 interpretation: P(B|A) = P(A∩B) / P(A).
 
 This confirms we're using the right mathematical structure, even though
-the exact formula match requires Evidence/STV conversion.
+the exact formula match requires BinaryEvidence/STV conversion.
 -/
 theorem inheritance_uses_conditional_prob_structure
-    (A B : SatisfyingSet U) (μ : WeightFunction U Evidence) :
-    ∃ (numerator denominator : Evidence),
+    (A B : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) :
+    ∃ (numerator denominator : BinaryEvidence),
       Inheritance A B μ = numerator / denominator := by
   unfold Inheritance
   use weakness μ (Finset.univ.filter (fun (u, v) =>
@@ -77,7 +77,7 @@ theorem inheritance_uses_conditional_prob_structure
 
 To prove that our Inheritance exactly matches `memberToInheritance`, we need:
 
-1. **Evidence ↔ SimpleTruthValue bridge use**:
+1. **BinaryEvidence ↔ SimpleTruthValue bridge use**:
    - Reuse `EvidenceSTVBridge.stvEquiv`
    - Reuse `EvidenceQuantale.toSTV` / `EvidenceQuantale.ofSTV`
    - Instantiate bridge at the exact rule inputs in this file
@@ -93,7 +93,7 @@ To prove that our Inheritance exactly matches `memberToInheritance`, we need:
 **Expected theorem (once infrastructure ready)**:
 ```lean
 theorem inheritance_matches_member_conversion
-    (S : SatisfyingSet U) (x : U) (μ : WeightFunction U Evidence) (k : ℝ) :
+    (S : SatisfyingSet U) (x : U) (μ : WeightFunction U BinaryEvidence) (k : ℝ) :
     let member_ev := Member x S
     let inh_ev := Inheritance ⟨fun _ => S.pred x⟩ S μ
     toSTV inh_ev = memberToInheritance (toSTV member_ev).1 (toSTV member_ev).2 k

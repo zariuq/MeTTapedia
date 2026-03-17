@@ -9,9 +9,9 @@ This module adds a compact, evidence-valued event-calculus layer over the
 existing PLN world-model calculus.
 
 Core ideas:
-- Event predicates (`hold`, `initiate`, `terminate`) return `Evidence`.
+- Event predicates (`hold`, `initiate`, `terminate`) return `BinaryEvidence`.
 - Interval operators are lattice aggregations (`iInf`/`iSup`) over time sets.
-- WM grounding is via query encoders and `WorldModel.evidence`.
+- WM grounding is via query encoders and `BinaryWorldModel.evidence`.
 - Rewrite integration is explicit via `WMRewriteRule` / `WMRewriteRuleSigma`.
 -/
 
@@ -23,42 +23,42 @@ open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open scoped ENNReal
 
-/-! ## Evidence-Valued Event Calculus -/
+/-! ## BinaryEvidence-Valued Event Calculus -/
 
 structure ProbEventCalculus (Event Time : Type*) where
-  hold : Event → Time → Evidence
-  initiate : Event → Time → Evidence
-  terminate : Event → Time → Evidence
+  hold : Event → Time → BinaryEvidence
+  initiate : Event → Time → BinaryEvidence
+  terminate : Event → Time → BinaryEvidence
 
 namespace ProbEventCalculus
 
 variable {Event Time : Type*}
 
-def holdsAt (E : ProbEventCalculus Event Time) (e : Event) (t : Time) : Evidence :=
+def holdsAt (E : ProbEventCalculus Event Time) (e : Event) (t : Time) : BinaryEvidence :=
   E.hold e t
 
-def initiatedAt (E : ProbEventCalculus Event Time) (e : Event) (t : Time) : Evidence :=
+def initiatedAt (E : ProbEventCalculus Event Time) (e : Event) (t : Time) : BinaryEvidence :=
   E.initiate e t
 
-def terminatedAt (E : ProbEventCalculus Event Time) (e : Event) (t : Time) : Evidence :=
+def terminatedAt (E : ProbEventCalculus Event Time) (e : Event) (t : Time) : BinaryEvidence :=
   E.terminate e t
 
-noncomputable def holdsThroughout (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : Evidence :=
+noncomputable def holdsThroughout (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : BinaryEvidence :=
   ⨅ t : I, E.hold e t.1
 
-noncomputable def initiatedThroughout (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : Evidence :=
+noncomputable def initiatedThroughout (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : BinaryEvidence :=
   ⨅ t : I, E.initiate e t.1
 
-noncomputable def terminatedThroughout (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : Evidence :=
+noncomputable def terminatedThroughout (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : BinaryEvidence :=
   ⨅ t : I, E.terminate e t.1
 
-noncomputable def holdsSometimeIn (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : Evidence :=
+noncomputable def holdsSometimeIn (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : BinaryEvidence :=
   ⨆ t : I, E.hold e t.1
 
-noncomputable def initiatedSometimeIn (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : Evidence :=
+noncomputable def initiatedSometimeIn (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : BinaryEvidence :=
   ⨆ t : I, E.initiate e t.1
 
-noncomputable def terminatedSometimeIn (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : Evidence :=
+noncomputable def terminatedSometimeIn (E : ProbEventCalculus Event Time) (e : Event) (I : Set Time) : BinaryEvidence :=
   ⨆ t : I, E.terminate e t.1
 
 theorem holdsThroughout_le_holdsAt
@@ -102,23 +102,23 @@ structure EventQueryEncoder (Event Time Query : Type*) where
 namespace EventQueryEncoder
 
 variable {State Event Time Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 def holdsAtEvidence (W : State) (enc : EventQueryEncoder Event Time Query)
-    (e : Event) (t : Time) : Evidence :=
-  WorldModel.evidence (State := State) (Query := Query) W (enc.holdsAt e t)
+    (e : Event) (t : Time) : BinaryEvidence :=
+  BinaryWorldModel.evidence (State := State) (Query := Query) W (enc.holdsAt e t)
 
 def initiatedAtEvidence (W : State) (enc : EventQueryEncoder Event Time Query)
-    (e : Event) (t : Time) : Evidence :=
-  WorldModel.evidence (State := State) (Query := Query) W (enc.initiatedAt e t)
+    (e : Event) (t : Time) : BinaryEvidence :=
+  BinaryWorldModel.evidence (State := State) (Query := Query) W (enc.initiatedAt e t)
 
 def terminatedAtEvidence (W : State) (enc : EventQueryEncoder Event Time Query)
-    (e : Event) (t : Time) : Evidence :=
-  WorldModel.evidence (State := State) (Query := Query) W (enc.terminatedAt e t)
+    (e : Event) (t : Time) : BinaryEvidence :=
+  BinaryWorldModel.evidence (State := State) (Query := Query) W (enc.terminatedAt e t)
 
 noncomputable def holdsAtStrength (W : State) (enc : EventQueryEncoder Event Time Query)
     (e : Event) (t : Time) : ℝ≥0∞ :=
-  Evidence.toStrength (holdsAtEvidence (State := State) W enc e t)
+  BinaryEvidence.toStrength (holdsAtEvidence (State := State) W enc e t)
 
 theorem holdsAtEvidence_add (W₁ W₂ : State)
     (enc : EventQueryEncoder Event Time Query) (e : Event) (t : Time) :
@@ -126,7 +126,7 @@ theorem holdsAtEvidence_add (W₁ W₂ : State)
       holdsAtEvidence (State := State) W₁ enc e t +
         holdsAtEvidence (State := State) W₂ enc e t := by
   simpa [holdsAtEvidence] using
-    (WorldModel.evidence_add (State := State) (Query := Query) W₁ W₂ (enc.holdsAt e t))
+    (BinaryWorldModel.evidence_add (State := State) (Query := Query) W₁ W₂ (enc.holdsAt e t))
 
 theorem initiatedAtEvidence_add (W₁ W₂ : State)
     (enc : EventQueryEncoder Event Time Query) (e : Event) (t : Time) :
@@ -134,7 +134,7 @@ theorem initiatedAtEvidence_add (W₁ W₂ : State)
       initiatedAtEvidence (State := State) W₁ enc e t +
         initiatedAtEvidence (State := State) W₂ enc e t := by
   simpa [initiatedAtEvidence] using
-    (WorldModel.evidence_add (State := State) (Query := Query) W₁ W₂ (enc.initiatedAt e t))
+    (BinaryWorldModel.evidence_add (State := State) (Query := Query) W₁ W₂ (enc.initiatedAt e t))
 
 theorem terminatedAtEvidence_add (W₁ W₂ : State)
     (enc : EventQueryEncoder Event Time Query) (e : Event) (t : Time) :
@@ -142,7 +142,7 @@ theorem terminatedAtEvidence_add (W₁ W₂ : State)
       terminatedAtEvidence (State := State) W₁ enc e t +
         terminatedAtEvidence (State := State) W₂ enc e t := by
   simpa [terminatedAtEvidence] using
-    (WorldModel.evidence_add (State := State) (Query := Query) W₁ W₂ (enc.terminatedAt e t))
+    (BinaryWorldModel.evidence_add (State := State) (Query := Query) W₁ W₂ (enc.terminatedAt e t))
 
 def temporalRewriteOfQueryEq
     (Side : Prop) (qDerived qConclusion : Query)
@@ -150,7 +150,7 @@ def temporalRewriteOfQueryEq
     WMRewriteRule State Query :=
   { side := Side
     conclusion := qConclusion
-    derive := fun W => WorldModel.evidence (State := State) (Query := Query) W qDerived
+    derive := fun W => BinaryWorldModel.evidence (State := State) (Query := Query) W qDerived
     sound := by
       intro hSide W
       exact hEq hSide W }
@@ -197,7 +197,7 @@ variable {State Event Time Srt : Type*} {Query : Srt → Type*}
 variable [EvidenceType State] [WorldModelSigma State Srt Query]
 
 def holdsAtEvidence (W : State) (enc : EventQueryEncoderSigma Event Time Srt Query)
-    (e : Event) (t : Time) : Evidence :=
+    (e : Event) (t : Time) : BinaryEvidence :=
   WorldModelSigma.evidence W (enc.holdsAt e t)
 
 def temporalRewriteOfQueryEq
@@ -272,23 +272,23 @@ def patternEventQueryEncoderSigma :
 /-- Native event-sort-indexed WMΣ instance induced from untyped pattern WM evidence. -/
 def worldModelSigmaPatternEventFromUntyped
     (State : Type*)
-    [EvidenceType State] [WorldModel State Pattern] :
+    [EvidenceType State] [BinaryWorldModel State Pattern] :
     WorldModelSigma State EventCalcSort PatternEventQueryFamily where
   evidence W q := by
     cases q with
     | mk s qs =>
         cases s <;>
-          exact WorldModel.evidence (State := State) (Query := Pattern) W qs
+          exact BinaryWorldModel.evidence (State := State) (Query := Pattern) W qs
   evidence_add W₁ W₂ q := by
     cases q with
     | mk s qs =>
         cases s <;>
           simpa using
-            (WorldModel.evidence_add (State := State) (Query := Pattern) W₁ W₂ qs)
+            (BinaryWorldModel.evidence_add (State := State) (Query := Pattern) W₁ W₂ qs)
 
 instance instWorldModelSigmaPatternEvent
     (State : Type*)
-    [EvidenceType State] [WorldModel State Pattern] :
+    [EvidenceType State] [BinaryWorldModel State Pattern] :
     WorldModelSigma State EventCalcSort PatternEventQueryFamily :=
   worldModelSigmaPatternEventFromUntyped (State := State)
 
@@ -310,7 +310,7 @@ def patternEventQueryOfAtom_terminated :
 section PatternTypedRules
 
 variable {State : Type*}
-variable [EvidenceType State] [WorldModel State Pattern]
+variable [EvidenceType State] [BinaryWorldModel State Pattern]
 
 local instance : WorldModelSigma State EventCalcSort PatternEventQueryFamily :=
   worldModelSigmaPatternEventFromUntyped (State := State)
@@ -389,7 +389,7 @@ def sigmaEventQueryPattern : Sigma PatternEventQueryFamily → Pattern
 section TypedConstructors
 
 variable {State : Type*}
-variable [EvidenceType State] [WorldModel State Pattern]
+variable [EvidenceType State] [BinaryWorldModel State Pattern]
 
 local instance : WorldModelSigma State EventCalcSort PatternEventQueryFamily :=
   worldModelSigmaPatternEventFromUntyped (State := State)

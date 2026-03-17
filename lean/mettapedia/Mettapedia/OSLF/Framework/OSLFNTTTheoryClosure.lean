@@ -30,7 +30,7 @@ open Mettapedia.Logic.PLNWorldModelCategoricalBridge.WMHyperdoctrine
 
 universe u v x
 
-variable {State : Type x} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type x} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- Theory-level one-step relation for OSLF formulas over MeTTaFull constructors. -/
 abbrev OSLFTheoryStep (relEnv : RelationEnv) : Pattern → Pattern → Prop :=
@@ -152,10 +152,10 @@ theorem formulaCategoricalEndpointBridge_of_components
 
 /-- Local WM strength obligation for a fixed state/query pair. -/
 abbrev WMStrengthObligation
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query]
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
     (W : State) (q₁ q₂ : Query) : Prop :=
-  WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-    WorldModel.queryStrength (State := State) (Query := Query) W q₂
+  BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+    BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂
 
 /-- Local WM evidence obligation for a fixed state/query pair.
 
@@ -163,14 +163,14 @@ This is the evidence-level counterpart of `WMStrengthObligation`, used when
 `toStrength` monotonicity is not available from the ambient semantics.
 -/
 abbrev WMEvidenceObligation
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query]
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
     (W : State) (q₁ q₂ : Query) : Prop :=
-  WorldModel.evidence (State := State) (Query := Query) W q₁ ≤
-    WorldModel.evidence (State := State) (Query := Query) W q₂
+  BinaryWorldModel.evidence (State := State) (Query := Query) W q₁ ≤
+    BinaryWorldModel.evidence (State := State) (Query := Query) W q₂
 
 /-- State-indexed WM evidence consequence rule. -/
 structure WMEvidenceConsequenceRuleOn
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query] where
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query] where
   side : State → Prop := fun _ => True
   premise : Query
   conclusion : Query
@@ -178,12 +178,12 @@ structure WMEvidenceConsequenceRuleOn
     ∀ {W : State}, side W →
       WMEvidenceObligation State Query W premise conclusion
 
-/-- Evidence-level interface: theory-level OSLF steps discharge WM evidence
+/-- BinaryEvidence-level interface: theory-level OSLF steps discharge WM evidence
 obligations. Strength-level obligations can then be recovered separately when a
 state/query family has a proved strength-monotone transport. -/
 structure OSLFNTTWMEvidenceInterface
     (relEnv : RelationEnv)
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query] where
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query] where
   encode : Pattern → Query
   side : State → Prop := fun _ => True
   step_sound :
@@ -196,7 +196,7 @@ namespace OSLFNTTWMEvidenceInterface
 
 variable {relEnv : RelationEnv}
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- Reflexive-transitive closure transport to WM evidence obligations. -/
 theorem stepStar_sound
@@ -216,7 +216,7 @@ end OSLFNTTWMEvidenceInterface
 /-- Interface: how theory-level OSLF steps discharge WM obligations. -/
 structure OSLFNTTWMInterface
     (relEnv : RelationEnv)
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query] where
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query] where
   encode : Pattern → Query
   side : State → Prop := fun _ => True
   step_sound :
@@ -229,7 +229,7 @@ namespace OSLFNTTWMInterface
 
 variable {relEnv : RelationEnv}
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- Reflexive-transitive closure transport to WM obligations. -/
 theorem stepStar_sound
@@ -252,15 +252,15 @@ side-condition. -/
 def OSLFNTTWMEvidenceInterface.to_strengthInterface
     {relEnv : RelationEnv}
     {State Query : Type*}
-    [EvidenceType State] [WorldModel State Query]
+    [EvidenceType State] [BinaryWorldModel State Query]
     (I : OSLFNTTWMEvidenceInterface relEnv State Query)
     (hStrengthMono :
       ∀ {W : State} {q₁ q₂ : Query},
         I.side W →
-        WorldModel.evidence (State := State) (Query := Query) W q₁ ≤
-          WorldModel.evidence (State := State) (Query := Query) W q₂ →
-        WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-          WorldModel.queryStrength (State := State) (Query := Query) W q₂) :
+        BinaryWorldModel.evidence (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.evidence (State := State) (Query := Query) W q₂ →
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂) :
     OSLFNTTWMInterface relEnv State Query where
   encode := I.encode
   side := I.side
@@ -269,7 +269,7 @@ def OSLFNTTWMEvidenceInterface.to_strengthInterface
     exact hStrengthMono hW (I.step_sound hW hstep)
 
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- Package one theory step as a state-indexed WM consequence rule. -/
 def wmConsequenceRuleOn_of_oslfTheoryStep
@@ -335,10 +335,10 @@ def WMEvidenceConsequenceRuleOn.toStrengthRuleOn
     (hStrengthMono :
       ∀ {W : State} {q₁ q₂ : Query},
         r.side W →
-        WorldModel.evidence (State := State) (Query := Query) W q₁ ≤
-          WorldModel.evidence (State := State) (Query := Query) W q₂ →
-        WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-          WorldModel.queryStrength (State := State) (Query := Query) W q₂) :
+        BinaryWorldModel.evidence (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.evidence (State := State) (Query := Query) W q₂ →
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂) :
     WMConsequenceRuleOn State Query where
   side := r.side
   premise := r.premise
@@ -349,7 +349,7 @@ def WMEvidenceConsequenceRuleOn.toStrengthRuleOn
 
 /-- Rule pools over evidence-level consequence rules. -/
 abbrev WMEvidenceRuleSet
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query] :=
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query] :=
   Set (WMEvidenceConsequenceRuleOn State Query)
 
 /-- Convert an evidence-rule pool into a strength-rule pool using a global
@@ -358,10 +358,10 @@ def WMEvidenceRuleSet.toStrengthRuleSet
     (R : WMEvidenceRuleSet State Query)
     (hStrengthMono :
       ∀ {W : State} {q₁ q₂ : Query},
-        WorldModel.evidence (State := State) (Query := Query) W q₁ ≤
-          WorldModel.evidence (State := State) (Query := Query) W q₂ →
-        WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-          WorldModel.queryStrength (State := State) (Query := Query) W q₂) :
+        BinaryWorldModel.evidence (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.evidence (State := State) (Query := Query) W q₂ →
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂) :
     Mettapedia.Logic.PLNWorldModelFixpointClosure.RuleSet State Query :=
   { r | ∃ re ∈ R,
       r = re.toStrengthRuleOn
@@ -371,10 +371,10 @@ theorem WMEvidenceRuleSet.mem_toStrengthRuleSet
     (R : WMEvidenceRuleSet State Query)
     (hStrengthMono :
       ∀ {W : State} {q₁ q₂ : Query},
-        WorldModel.evidence (State := State) (Query := Query) W q₁ ≤
-          WorldModel.evidence (State := State) (Query := Query) W q₂ →
-        WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-          WorldModel.queryStrength (State := State) (Query := Query) W q₂)
+        BinaryWorldModel.evidence (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.evidence (State := State) (Query := Query) W q₂ →
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂)
     {re : WMEvidenceConsequenceRuleOn State Query}
     (hre : re ∈ R) :
     re.toStrengthRuleOn
@@ -388,10 +388,10 @@ theorem immediateIter_subset_leastRuleClosure_of_evidenceRuleSet
     (R : WMEvidenceRuleSet State Query)
     (hStrengthMono :
       ∀ {W : State} {q₁ q₂ : Query},
-        WorldModel.evidence (State := State) (Query := Query) W q₁ ≤
-          WorldModel.evidence (State := State) (Query := Query) W q₂ →
-        WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-          WorldModel.queryStrength (State := State) (Query := Query) W q₂)
+        BinaryWorldModel.evidence (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.evidence (State := State) (Query := Query) W q₂ →
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂)
     (W : State) (seed : Set Query) (n : ℕ) :
     Mettapedia.Logic.PLNWorldModelFixpointClosure.immediateIter
       (State := State) (Query := Query)
@@ -414,10 +414,10 @@ theorem leastRuleClosure_rule_closed_of_evidenceRuleSet
     (R : WMEvidenceRuleSet State Query)
     (hStrengthMono :
       ∀ {W : State} {q₁ q₂ : Query},
-        WorldModel.evidence (State := State) (Query := Query) W q₁ ≤
-          WorldModel.evidence (State := State) (Query := Query) W q₂ →
-        WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-          WorldModel.queryStrength (State := State) (Query := Query) W q₂)
+        BinaryWorldModel.evidence (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.evidence (State := State) (Query := Query) W q₂ →
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂)
     (W : State) (seed : Set Query)
     {re : WMEvidenceConsequenceRuleOn State Query}
     (hre : re ∈ R)
@@ -464,10 +464,10 @@ def wmConsequenceRuleOn_of_oslfTheoryStepStar_viaEvidence
     (hStrengthMono :
       ∀ {W : State} {q₁ q₂ : Query},
         I.side W →
-        WorldModel.evidence (State := State) (Query := Query) W q₁ ≤
-          WorldModel.evidence (State := State) (Query := Query) W q₂ →
-        WorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
-          WorldModel.queryStrength (State := State) (Query := Query) W q₂)
+        BinaryWorldModel.evidence (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.evidence (State := State) (Query := Query) W q₂ →
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
+          BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂)
     {p q : Pattern}
     (hstar : OSLFTheoryStepStar relEnv p q) :
     WMConsequenceRuleOn State Query :=
@@ -478,14 +478,14 @@ def wmConsequenceRuleOn_of_oslfTheoryStepStar_viaEvidence
 section FormulaEvidenceFragment
 
 /-- Pointwise evidence model used for semE-induced closure in this fragment. -/
-abbrev SemEState := Pattern → Mettapedia.Logic.EvidenceQuantale.Evidence
+abbrev SemEState := Pattern → Mettapedia.Logic.EvidenceQuantale.BinaryEvidence
 /-- Query type for the semE pointwise model. -/
 abbrev SemEQuery := Pattern
 
 noncomputable instance semEStateEvidenceType : EvidenceType SemEState := by
   exact { toAddCommMonoid := inferInstance }
 
-instance semEStateWorldModel : WorldModel SemEState SemEQuery where
+instance semEStateWorldModel : BinaryWorldModel SemEState SemEQuery where
   evidence W q := W q
   evidence_add W₁ W₂ q := by
     simp
@@ -611,12 +611,12 @@ theorem semEState_step_evidence_mono
     (hstep : OSLFTheoryStep relEnv p q) :
     WMEvidenceObligation SemEState SemEQuery
       (semEState relEnv I φ) p q := by
-  simpa [WMEvidenceObligation, WorldModel.evidence, semEState] using
+  simpa [WMEvidenceObligation, BinaryWorldModel.evidence, semEState] using
     (semE_step_mono_of_atom_step_mono
       (relEnv := relEnv) (I := I) (hAtom := hAtom)
       (hφ := hφ) (p := p) (q := q) hstep)
 
-/-- Evidence-level interface induced by a semE state over the positive fragment.
+/-- BinaryEvidence-level interface induced by a semE state over the positive fragment.
 
 `side` pins the state to the canonical semantic state `semEState relEnv I φ`.
 This avoids pretending that arbitrary states satisfy formula-specific monotonicity.
@@ -1071,23 +1071,23 @@ theorem semEState_evidence_mono_not_strength_mono :
         (semEState relEnv I (.atom "a")) p q := by
   let p : Pattern := .fvar "p"
   let q : Pattern := .fvar "q"
-  let hi : Mettapedia.Logic.EvidenceQuantale.Evidence := ⟨1, 0⟩
-  let lo : Mettapedia.Logic.EvidenceQuantale.Evidence := ⟨1, 1⟩
+  let hi : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence := ⟨1, 0⟩
+  let lo : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence := ⟨1, 1⟩
   let I : EvidenceAtomSem :=
-    fun _ r => if r = p then hi else if r = q then lo else (⊥ : Mettapedia.Logic.EvidenceQuantale.Evidence)
+    fun _ r => if r = p then hi else if r = q then lo else (⊥ : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence)
   let relEnv : RelationEnv := RelationEnv.empty
   refine ⟨relEnv, I, p, q, ?_, ?_⟩
   · change hi ≤ lo
-    simp [hi, lo, Mettapedia.Logic.EvidenceQuantale.Evidence.le_def]
+    simp [hi, lo, Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.le_def]
   · intro h
     have hle' :
-        Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength hi ≤
-          Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength lo := by
-      simpa [WMStrengthObligation, WorldModel.queryStrength, semEState, semE_atom, I, p, q, hi, lo] using h
+        Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength hi ≤
+          Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength lo := by
+      simpa [WMStrengthObligation, BinaryWorldModel.queryStrength, semEState, semE_atom, I, p, q, hi, lo] using h
     have hnum : ((1 : ENNReal) + 1) ≤ (1 : ENNReal) := by
       simpa [hi, lo,
-        Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength,
-        Mettapedia.Logic.EvidenceQuantale.Evidence.total] using hle'
+        Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength,
+        Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.total] using hle'
     have hfalse : ¬ (((1 : ENNReal) + 1) ≤ (1 : ENNReal)) := by
       norm_num
     exact hfalse hnum
@@ -1098,13 +1098,13 @@ section ConcretePointwiseModel
 
 /-- Concrete state/query model for closure testing:
 state is a pointwise evidence assignment over patterns, and queries are patterns. -/
-abbrev StepState := Pattern → Mettapedia.Logic.EvidenceQuantale.Evidence
+abbrev StepState := Pattern → Mettapedia.Logic.EvidenceQuantale.BinaryEvidence
 abbrev StepQuery := Pattern
 
 noncomputable instance stepStateEvidenceType : EvidenceType StepState := by
   exact { toAddCommMonoid := inferInstance }
 
-instance stepStateWorldModel : WorldModel StepState StepQuery where
+instance stepStateWorldModel : BinaryWorldModel StepState StepQuery where
   evidence W q := W q
   evidence_add W₁ W₂ q := by
     simp
@@ -1114,8 +1114,8 @@ the state is monotone in query-strength along OSLF one-step reduction. -/
 def pointwiseStepSide (relEnv : RelationEnv) (W : StepState) : Prop :=
   ∀ {p q : Pattern},
     OSLFTheoryStep relEnv p q →
-      WorldModel.queryStrength (State := StepState) (Query := StepQuery) W p ≤
-        WorldModel.queryStrength (State := StepState) (Query := StepQuery) W q
+      BinaryWorldModel.queryStrength (State := StepState) (Query := StepQuery) W p ≤
+        BinaryWorldModel.queryStrength (State := StepState) (Query := StepQuery) W q
 
 /-- Canonical concrete interface instance for the pointwise model. -/
 def pointwiseStepInterface (relEnv : RelationEnv) :
@@ -1136,15 +1136,15 @@ theorem pointwiseStepSide_not_automatic
     (hstep : OSLFTheoryStep relEnv p q) :
     ∃ W : StepState, ¬ pointwiseStepSide relEnv W := by
   classical
-  let hi : Mettapedia.Logic.EvidenceQuantale.Evidence := ⟨1, 0⟩
-  let lo : Mettapedia.Logic.EvidenceQuantale.Evidence := ⟨1, 1⟩
+  let hi : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence := ⟨1, 0⟩
+  let lo : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence := ⟨1, 1⟩
   let W : StepState :=
-    fun r => if r = p then hi else if r = q then lo else (⊥ : Mettapedia.Logic.EvidenceQuantale.Evidence)
+    fun r => if r = p then hi else if r = q then lo else (⊥ : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence)
   refine ⟨W, ?_⟩
   intro hmono
   have hle :
-      WorldModel.queryStrength (State := StepState) (Query := StepQuery) W p ≤
-        WorldModel.queryStrength (State := StepState) (Query := StepQuery) W q :=
+      BinaryWorldModel.queryStrength (State := StepState) (Query := StepQuery) W p ≤
+        BinaryWorldModel.queryStrength (State := StepState) (Query := StepQuery) W q :=
     hmono hstep
   have hneq' : q ≠ p := by
     intro hqp
@@ -1154,13 +1154,13 @@ theorem pointwiseStepSide_not_automatic
   have hWq : W q = lo := by
     simp [W, hneq']
   have hle' :
-      Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength hi ≤
-        Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength lo := by
-    simpa [WorldModel.queryStrength, stepStateWorldModel, hWp, hWq] using hle
+      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength hi ≤
+        Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength lo := by
+    simpa [BinaryWorldModel.queryStrength, stepStateWorldModel, hWp, hWq] using hle
   have hnum : ((1 : ENNReal) + 1) ≤ (1 : ENNReal) := by
     simpa [hi, lo,
-      Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength,
-      Mettapedia.Logic.EvidenceQuantale.Evidence.total] using hle'
+      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength,
+      Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.total] using hle'
   have hfalse : ¬ (((1 : ENNReal) + 1) ≤ (1 : ENNReal)) := by
     norm_num
   exact hfalse hnum

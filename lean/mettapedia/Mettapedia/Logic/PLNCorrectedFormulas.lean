@@ -4,7 +4,7 @@ import Mathlib.Data.Real.Basic
 # PLN Corrected Confidence Formulas
 
 This file provides **mathematically correct** confidence formulas for PLN inference rules,
-derived from Evidence counts rather than heuristic approximations.
+derived from BinaryEvidence counts rather than heuristic approximations.
 
 ## Key Insight (from PLNBugAnalysis.lean)
 
@@ -15,7 +15,7 @@ The evidence-based approach uses:
 
 ## Corrected Formulas
 
-| Rule | Naive (Buggy) | Correct (Evidence-Based) |
+| Rule | Naive (Buggy) | Correct (BinaryEvidence-Based) |
 |------|---------------|--------------------------|
 | Conjunction | `min(c₁, c₂)` | `w2c(w₁ * w₂)` |
 | Modus Ponens | `min(c₁, c₂)` | `w2c(w₁ * w₂)` |
@@ -33,7 +33,7 @@ These corrected formulas ensure that error bounds compose correctly:
 ## References
 
 - PLNBugAnalysis.lean: Formal proofs of bugs in naive formulas
-- EvidenceQuantale.lean: Evidence count definitions and tensor product
+- EvidenceQuantale.lean: BinaryEvidence count definitions and tensor product
 -/
 
 namespace Mettapedia.Logic.PLNCorrectedFormulas
@@ -116,7 +116,7 @@ on weights (which compose multiplicatively) rather than directly on confidences.
 The corrected formulas:
 1. **Preserve soundness**: Error bounds compose correctly
 2. **Are more optimistic**: Give higher confidence than naive min
-3. **Match evidence counts**: Derived from tensor product on Evidence
+3. **Match evidence counts**: Derived from tensor product on BinaryEvidence
 
 This resolves the mismatch discovered in PLNInferenceCalculus.lean soundness proofs.
 -/

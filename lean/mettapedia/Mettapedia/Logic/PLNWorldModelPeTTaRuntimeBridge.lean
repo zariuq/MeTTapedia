@@ -37,7 +37,7 @@ This is the first concrete `R_spec -> C*` specialization:
 - the runtime profile/spec is fixed to `pettaRuntimeSpec`
 -/
 structure PeTTaJudgmentWMInterface
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query]
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
     (s : PeTTaSpace) where
   encode : Pattern → Query
   side : State → Prop := fun _ => True
@@ -50,7 +50,7 @@ structure PeTTaJudgmentWMInterface
 namespace PeTTaJudgmentWMInterface
 
 variable {State Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 variable {s : PeTTaSpace}
 
 /-- Forget the PeTTa-specific wrapper back to the generic runtime WM interface. -/

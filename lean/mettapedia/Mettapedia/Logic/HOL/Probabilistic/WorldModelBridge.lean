@@ -6,7 +6,7 @@ import Mettapedia.Logic.PLNWorldModel
 # Thin WM-Facing Bridge for Probabilistic HOL Semantics
 
 This module turns semantic `ProbHOL` sentence probabilities into the same
-`Evidence`/strength views used elsewhere in the PLN world-model interface.
+`BinaryEvidence`/strength views used elsewhere in the PLN world-model interface.
 
 The bridge is intentionally thin:
 
@@ -30,12 +30,12 @@ universe u v w x
 
 variable {Base : Type u} {Const : Ty Base → Type v}
 
-/-- Evidence view of semantic sentence probability: positive mass and the
+/-- BinaryEvidence view of semantic sentence probability: positive mass and the
 complementary negative mass. -/
 noncomputable def probEvidence
     (S : ModelSpace.{u, v, w, x} Base Const)
     (μ : MeasureTheory.Measure S.Idx)
-    (φ : ClosedFormula Const) : Evidence :=
+    (φ : ClosedFormula Const) : BinaryEvidence :=
   ⟨sentenceProb S μ φ, 1 - sentenceProb S μ φ⟩
 
 /-- WM-style strength view of semantic sentence probability. -/
@@ -43,7 +43,7 @@ noncomputable def probQueryStrength
     (S : ModelSpace.{u, v, w, x} Base Const)
     (μ : MeasureTheory.Measure S.Idx)
     (φ : ClosedFormula Const) : ℝ≥0∞ :=
-  Evidence.toStrength (probEvidence S μ φ)
+  BinaryEvidence.toStrength (probEvidence S μ φ)
 
 theorem probEvidence_total_one
     (S : ModelSpace.{u, v, w, x} Base Const)
@@ -51,7 +51,7 @@ theorem probEvidence_total_one
     (φ : ClosedFormula Const) :
     (probEvidence S μ φ).total = 1 := by
   letI : MeasureTheory.IsProbabilityMeasure μ := hμ
-  unfold probEvidence Evidence.total
+  unfold probEvidence BinaryEvidence.total
   simpa using add_tsub_cancel_of_le (sentenceProb_le_one S μ hμ φ)
 
 theorem probQueryStrength_eq_sentenceProb
@@ -63,7 +63,7 @@ theorem probQueryStrength_eq_sentenceProb
   let p := sentenceProb S μ φ
   have hp : p ≤ 1 := sentenceProb_le_one S μ hμ φ
   simpa [probEvidence, p] using
-    (Evidence.toStrength_of_scaled (s := p) (t := 1) hp one_ne_zero ENNReal.one_ne_top)
+    (BinaryEvidence.toStrength_of_scaled (s := p) (t := 1) hp one_ne_zero ENNReal.one_ne_top)
 
 theorem probQueryStrength_mono_of_pointwiseImplies
     (S : ModelSpace.{u, v, w, x} Base Const)

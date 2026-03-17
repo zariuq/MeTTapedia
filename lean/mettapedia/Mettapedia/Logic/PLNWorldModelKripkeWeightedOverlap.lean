@@ -283,9 +283,9 @@ theorem weighted_strength_le_of_provable_imp_fallback
     (hcompat : compatible W₁ W₂)
     (hW : ∀ pk ∈ weightedExpansion (W₁ + W₂), pk.model.toFrame ∈ C)
     (hprov : 𝓢 ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (fallbackRevision W₁ W₂) φ ≤
-      WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (fallbackRevision W₁ W₂) ψ := by
   rw [fallbackRevision_eq_add_of_compatible (hcompat := hcompat)]
   exact weighted_strength_le_of_provable_imp
@@ -302,9 +302,9 @@ theorem trustedGate_ob_pe_strength_le_of_provable_fallback
     (hcompat : compatible W₁ W₂)
     (hW : ∀ pk ∈ weightedExpansion (trustedGate trusted (W₁ + W₂)), pk.model.toFrame ∈ C)
     (hprov : 𝓢 ⊢ (□φ ➝ ◇φ)) :
-    WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (trustedGate trusted (fallbackRevision W₁ W₂)) (□φ) ≤
-      WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (trustedGate trusted (fallbackRevision W₁ W₂)) (◇φ) := by
   rw [fallbackRevision_eq_add_of_compatible (hcompat := hcompat)]
   exact trustedGate_ob_pe_strength_le_of_provable
@@ -333,9 +333,9 @@ def wmTrustedGateObPeConsequenceRule_fallback
     intro W₁ hSide
     rcases hSide with ⟨hcompat, hclosed, hW⟩
     have hfb :
-        WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+        BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
             (trustedGate trusted (fallbackRevision W₁ W₂)) (□φ) ≤
-          WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+          BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
             (trustedGate trusted (fallbackRevision W₁ W₂)) (◇φ) :=
       trustedGate_ob_pe_strength_le_of_provable_fallback
       (S := S) (𝓢 := 𝓢) (C := C)

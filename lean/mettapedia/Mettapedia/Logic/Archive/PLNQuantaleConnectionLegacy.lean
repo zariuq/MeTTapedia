@@ -269,7 +269,7 @@ For a full quantale, SimpleTruthValue needs a complete lattice structure.
 - This gives modal types from reductions: ⟨Cj⟩_{xk::Ak} B with rely-possibly semantics
 
 For PLN, the connection is:
-- Evidence type ≅ (filter, sort) pair from OSLF
+- BinaryEvidence type ≅ (filter, sort) pair from OSLF
 - Residuation (right adjoint to tensor) captures the indirect path ¬B term
 - The topos structure provides complete Heyting algebra homs
 

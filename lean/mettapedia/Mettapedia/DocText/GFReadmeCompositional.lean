@@ -256,7 +256,7 @@ private def gfArchitectureBlock : String :=
     , "Concrete.lean        Inflection tables and morphophonological operations"
     , "Typing.lean          GF-to-OSLF type checking and compositionality"
     , "OSLFBridge.lean      GF abstract syntax as OSLF LanguageDef"
-    , "WorldModelSem.lean   Evidence-valued denotational semantics for GF trees"
+    , "WorldModelSem.lean   BinaryEvidence-valued denotational semantics for GF trees"
     , "English/             English morphology and clause construction"
     , "Czech/               Czech morphology engine"
     , "Examples/            End-to-end pipeline examples"
@@ -273,7 +273,7 @@ private def symbolPatternItems : List SyntaxItem :=
         , .ident "Pattern"
         , .ident "Store"
         , .ident "QFormula"
-        , .ident "Evidence"
+        , .ident "BinaryEvidence"
         ] " -> " }
   ]
 

@@ -273,7 +273,7 @@ theorem activeClause_passiveAtom_false :
 
 section EnglishCzechNontrivial
 
-variable {State : Type u} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type u} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- The selected English/Czech signature is nontrivial: even with the same
 shared abstract machinery, the chosen OSLF observation family distinguishes

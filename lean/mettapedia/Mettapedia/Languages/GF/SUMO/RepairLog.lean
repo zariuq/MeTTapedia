@@ -85,7 +85,7 @@ structure RepairDecision where
   status : RepairStatus := .logged    -- default: logged but not yet fixed
   -- Repair archetype (determines Beta prior for assurance scoring)
   archetype : EvidenceModel.RepairArchetype := .worldSemanticClaim
-  -- Evidence model fields (persisted WM evidence from SumoNTT audit)
+  -- BinaryEvidence model fields (persisted WM evidence from SumoNTT audit)
   reviewState : EvidenceModel.ReviewState := .pendingReview
   witnesses : List EvidenceModel.WMWitness := []
   assuranceLower95 : Float := 0.0
@@ -1601,7 +1601,7 @@ private def statusLabel : RepairStatus → String
     IO.println s!"    Enache says: {d.enacheClass}"
     IO.println s!"    We say: {d.ourClass}"
     IO.println s!"    Recommended: {d.recommendedClass}"
-    IO.println s!"    Evidence: {d.evidenceFor.length} for, {d.evidenceAgainst.length} against"
+    IO.println s!"    BinaryEvidence: {d.evidenceFor.length} for, {d.evidenceAgainst.length} against"
     IO.println s!"    Confidence: {d.confidence}"
     IO.println s!"    Automatable: {d.automatable}"
     IO.println s!"    WM witnesses: {d.witnesses.length}"
@@ -1630,7 +1630,7 @@ private def wmWitnessToAtom (did : Nat) (arch : EvidenceModel.RepairArchetype)
   , artifactHash := "" }
 
 #eval! do
-  IO.println "=== English-Doc Evidence + Assurance Scoring ==="
+  IO.println "=== English-Doc BinaryEvidence + Assurance Scoring ==="
   IO.println s!"Total english-doc atoms: {DocEvidence.englishDocAtomCount}"
   IO.println ""
   for d in repairDecisions do

@@ -71,7 +71,7 @@ noncomputable abbrev colliderExactWhenScreeningOff :=
 section Generic
 
 variable {State Query : Type*}
-variable [EvidenceClass.EvidenceType State] [PLNWorldModel.WorldModel State Query]
+variable [EvidenceClass.EvidenceType State] [PLNWorldModel.BinaryWorldModel State Query]
 
 theorem wmRewriteRuleCtx
     {r : PLNWorldModel.WMRewriteRule State Query} {Γ : Set State} {W : State}

@@ -33,7 +33,7 @@ theorem canary_hol_higherOrderRefl_provable :
   .allI (.eqRefl (.var .vz))
 
 theorem canary_hol_higherOrderRefl_singleton_strength_one :
-    WorldModel.queryStrength
+    BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
         (Query := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLQuery
           (Base := FixtureBase) FixtureConst)
@@ -135,7 +135,7 @@ theorem canary_hol_not_queryEq_top_bot :
       hEq ({fixtureModel} :
         Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
   have htop :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
           (Query := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLQuery
             (Base := FixtureBase) FixtureConst)
@@ -146,7 +146,7 @@ theorem canary_hol_not_queryEq_top_bot :
       (Base := FixtureBase) (Const := FixtureConst) fixtureModel .top
       (HenkinModel.models_top fixtureModel)
   have hbot :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
           (Query := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLQuery
             (Base := FixtureBase) FixtureConst)
@@ -179,7 +179,7 @@ theorem canary_hol_not_queryEq_and_top_bot_top :
     have hpairs := (HenkinModel.models_and fixtureModel).mp hAnd
     exact HenkinModel.models_bot fixtureModel hpairs.2
   have hand :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
           (Query := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLQuery
             (Base := FixtureBase) FixtureConst)
@@ -190,7 +190,7 @@ theorem canary_hol_not_queryEq_and_top_bot_top :
       (Base := FixtureBase) (Const := FixtureConst) fixtureModel
       (.and (.top : ClosedFormula FixtureConst) .bot) hAndNot
   have htop :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
           (Query := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLQuery
             (Base := FixtureBase) FixtureConst)
@@ -205,13 +205,13 @@ theorem canary_hol_not_queryEq_and_top_bot_top :
 
 theorem canary_hol_not_singletonConsequence_top_bot :
     ¬ ∀ M : HenkinModel FixtureBase FixtureConst,
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
           (Query := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLQuery
             (Base := FixtureBase) FixtureConst)
           ({M} : Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
           (.top : ClosedFormula FixtureConst) ≤
-        WorldModel.queryStrength
+        BinaryWorldModel.queryStrength
           (State := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
           (Query := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLQuery
             (Base := FixtureBase) FixtureConst)
@@ -219,7 +219,7 @@ theorem canary_hol_not_singletonConsequence_top_bot :
           (.bot : ClosedFormula FixtureConst) := by
   intro h
   have htop :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
           (Query := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLQuery
             (Base := FixtureBase) FixtureConst)
@@ -230,7 +230,7 @@ theorem canary_hol_not_singletonConsequence_top_bot :
       (Base := FixtureBase) (Const := FixtureConst) fixtureModel .top
       (HenkinModel.models_top fixtureModel)
   have hbot :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLState FixtureBase FixtureConst)
           (Query := Mettapedia.Logic.PLNHigherOrderHOLCore.HOLQuery
             (Base := FixtureBase) FixtureConst)

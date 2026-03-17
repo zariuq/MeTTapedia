@@ -79,7 +79,7 @@ noncomputable def mkWeightedValuation {α : Type*} [DecidableEq α]
   weight_empty := by simp
   weight_additive W₁ W₂ h := Finset.sum_union h
 
-/-! ## Section 4: Connection to Evidence -/
+/-! ## Section 4: Connection to BinaryEvidence -/
 
 /-- K&S sum rule for weighted valuations: the weight of a store equals the sum
     of positive and negative evidence for any query.

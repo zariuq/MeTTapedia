@@ -53,19 +53,19 @@ theorem knnRelevanceENN_eq_paper {Fact : Type*} [DecidableEq Fact]
 
 /-! ## PLN evidence aggregation -/
 
-noncomputable def posEvidence (w : ℝ≥0∞) : Evidence :=
+noncomputable def posEvidence (w : ℝ≥0∞) : BinaryEvidence :=
   ⟨w, 0⟩
 
 @[simp] lemma posEvidence_pos (w : ℝ≥0∞) : (posEvidence w).pos = w := rfl
 @[simp] lemma posEvidence_neg (w : ℝ≥0∞) : (posEvidence w).neg = 0 := rfl
 
-@[simp] lemma evidence_pos_add (x y : Evidence) : (x + y).pos = x.pos + y.pos := by
-  simp [Evidence.hplus_def]
+@[simp] lemma evidence_pos_add (x y : BinaryEvidence) : (x + y).pos = x.pos + y.pos := by
+  simp [BinaryEvidence.hplus_def]
 
-@[simp] lemma evidence_neg_add (x y : Evidence) : (x + y).neg = x.neg + y.neg := by
-  simp [Evidence.hplus_def]
+@[simp] lemma evidence_neg_add (x y : BinaryEvidence) : (x + y).neg = x.neg + y.neg := by
+  simp [BinaryEvidence.hplus_def]
 
-@[simp] lemma evidence_pos_sum {α : Type*} [DecidableEq α] (s : Finset α) (f : α → Evidence) :
+@[simp] lemma evidence_pos_sum {α : Type*} [DecidableEq α] (s : Finset α) (f : α → BinaryEvidence) :
     (Finset.sum s f).pos = Finset.sum s (fun a => (f a).pos) := by
   classical
   refine Finset.induction_on s ?h0 ?hstep
@@ -73,7 +73,7 @@ noncomputable def posEvidence (w : ℝ≥0∞) : Evidence :=
   · intro a s ha hs
     simp [Finset.sum_insert, ha, hs]
 
-@[simp] lemma evidence_neg_sum {α : Type*} [DecidableEq α] (s : Finset α) (f : α → Evidence) :
+@[simp] lemma evidence_neg_sum {α : Type*} [DecidableEq α] (s : Finset α) (f : α → BinaryEvidence) :
     (Finset.sum s f).neg = Finset.sum s (fun a => (f a).neg) := by
   classical
   refine Finset.induction_on s ?h0 ?hstep
@@ -84,14 +84,14 @@ noncomputable def posEvidence (w : ℝ≥0∞) : Evidence :=
 /-- PLN-style evidence aggregation for k-NN relevance. -/
 noncomputable def plnKnnEvidence {Fact : Type*} [DecidableEq Fact]
     (goal : Fact) (N : Finset Fact) (near : Fact -> Fact -> ℝ≥0∞)
-    (deps : DepSet Fact) (tau2 : ℝ≥0∞) (phi : Fact) : Evidence :=
+    (deps : DepSet Fact) (tau2 : ℝ≥0∞) (phi : Fact) : BinaryEvidence :=
   let depEv :=
     Finset.sum N (fun chi =>
       posEvidence
         (if phi ∈ deps chi then
           tau2 * (near chi goal / ((deps chi).card : ℝ≥0∞))
         else 0))
-  let selfEv : Evidence :=
+  let selfEv : BinaryEvidence :=
     if phi ∈ N then posEvidence (near phi goal) else 0
   depEv + selfEv
 

@@ -1,7 +1,7 @@
 import Mettapedia.Logic.PLNTrailFreeDynamicsCounterexample
 
 /-!
-# Damped SP/SPN Dynamics with Fresh-Evidence Convergence
+# Damped SP/SPN Dynamics with Fresh-BinaryEvidence Convergence
 
 This module adds a positive Chapter-9 counterpart to the trail-free non-convergence
 counterexample:

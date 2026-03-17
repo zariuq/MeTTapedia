@@ -9,13 +9,13 @@ This file formalizes **SatisfyingSet** as the subobject classifier pattern for P
 
 In topos theory, subobjects are classified by characteristic morphisms χ : X → Ω.
 For PLN:
-- Ω = Evidence (which IS a Frame = complete Heyting algebra)
-- SatisfyingSet wraps a predicate P : U → Evidence
+- Ω = BinaryEvidence (which IS a Frame = complete Heyting algebra)
+- SatisfyingSet wraps a predicate P : U → BinaryEvidence
 - The diagonal relation D_P = {(u,v) | P(u) ∧ P(v)} is the key to quantifier evaluation
 
 ## Diagonal Relation
 
-For predicate P : U → Evidence, the diagonal D_P consists of pairs (u,v) where BOTH:
+For predicate P : U → BinaryEvidence, the diagonal D_P consists of pairs (u,v) where BOTH:
 - u satisfies P (isTrue(P(u)))
 - v satisfies P (isTrue(P(v)))
 
@@ -40,11 +40,11 @@ open Classical
 
 /-- A Frame-valued predicate on a finite type U.
 
-This is the characteristic morphism χ : U → Ω where Ω = Evidence (Frame).
+This is the characteristic morphism χ : U → Ω where Ω = BinaryEvidence (Frame).
 In topos-theoretic terms, this classifies a subobject of U. -/
 structure SatisfyingSet (U : Type*) [Fintype U] where
-  /-- The predicate P : U → Evidence (Frame-valued) -/
-  pred : U → Evidence
+  /-- The predicate P : U → BinaryEvidence (Frame-valued) -/
+  pred : U → BinaryEvidence
 
 namespace SatisfyingSet
 
@@ -128,10 +128,10 @@ The theorem `diagonal S₁ ⊆ diagonal S₂` from `∀ u, S₁.pred u ≤ S₂.
 - We have S₁.pred u ≤ S₂.pred u (coordinatewise: 1≤1, 0≤1)
 - But isTrue (S₁.pred u) and ¬isTrue (S₂.pred u)
 
-**Reason**: `isTrue` requires BOTH pos > 0 AND neg = 0. The Evidence lattice order
+**Reason**: `isTrue` requires BOTH pos > 0 AND neg = 0. The BinaryEvidence lattice order
 allows neg to increase (gaining negative evidence), which breaks the isTrue property.
 
-This is a feature, not a bug! Evidence is a **Heyting algebra** (paraconsistent logic),
+This is a feature, not a bug! BinaryEvidence is a **Heyting algebra** (paraconsistent logic),
 not a Boolean algebra. The "true" corner and "both" corner are different points.
 
 For monotonicity in PLN quantifiers, we instead use monotonicity of the **weakness function**

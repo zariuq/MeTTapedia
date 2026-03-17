@@ -18,7 +18,7 @@ and provides computationally tractable corrections.
 ## References
 
 - MeTTa implementation: `hyperon/PeTTa/lib/lib_pln.metta`
-- Lean PLN Evidence: `Mettapedia.Logic.EvidenceQuantale`
+- Lean PLN BinaryEvidence: `Mettapedia.Logic.EvidenceQuantale`
 -/
 
 namespace Mettapedia.Logic.PLNBugAnalysis
@@ -139,13 +139,13 @@ With **inconsistent κ** (prior parameters) across evidence sources.
 
 section ConfidenceFloorBug
 
-/-- Evidence-based revision strength (weighted average) -/
+/-- BinaryEvidence-based revision strength (weighted average) -/
 noncomputable def revisionStrength (s1 c1 s2 c2 : ℝ) : ℝ :=
   let w1 := c2w' c1
   let w2 := c2w' c2
   (w1 * s1 + w2 * s2) / (w1 + w2)
 
-/-- Evidence-based revision confidence (from combined weight) -/
+/-- BinaryEvidence-based revision confidence (from combined weight) -/
 noncomputable def revisionConfEvidence (c1 c2 : ℝ) : ℝ :=
   let w1 := c2w' c1
   let w2 := c2w' c2
@@ -202,7 +202,7 @@ theorem evidence_conf_ge_inputs (c1 c2 : ℝ)
     -- w2 * (w1 + w2 + 1) ≤ (w2 + 1) * (w1 + w2)
     nlinarith
 
-/-- The max clamp is redundant under consistent Evidence semantics -/
+/-- The max clamp is redundant under consistent BinaryEvidence semantics -/
 theorem max_clamp_redundant (c1 c2 : ℝ)
     (hc1 : 0 < c1) (hc1_lt1 : c1 < 1)
     (hc2 : 0 < c2) (hc2_lt1 : c2 < 1) :

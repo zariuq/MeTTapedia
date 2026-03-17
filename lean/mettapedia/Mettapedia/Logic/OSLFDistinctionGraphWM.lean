@@ -7,8 +7,8 @@ import Mettapedia.Logic.OSLFKSUnificationSketch
 
 Connects the weighted distinction graph to world-model dynamics:
 
-- **`wmEvidenceAtomSem`**: Constructs an `EvidenceAtomSem` from a WorldModel state,
-  using full Evidence values (not threshold projections).
+- **`wmEvidenceAtomSem`**: Constructs an `EvidenceAtomSem` from a BinaryWorldModel state,
+  using full BinaryEvidence values (not threshold projections).
 - **`dynamicEdgeWeight`**: Distinction graph weight parameterized by WM state.
 - **Revision law**: WM revision (`W₁ + W₂`) affects atom evidence additively
   via `evidence_add`.
@@ -39,16 +39,16 @@ open scoped ENNReal
 
 abbrev Pat := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 
-/-! ## WM-Induced Evidence Atom Semantics -/
+/-! ## WM-Induced BinaryEvidence Atom Semantics -/
 
-/-- Evidence-valued atom semantics from a WorldModel state.
-Maps atom names and patterns to Evidence via a query constructor.
+/-- BinaryEvidence-valued atom semantics from a BinaryWorldModel state.
+Maps atom names and patterns to BinaryEvidence via a query constructor.
 Unlike `thresholdAtomSemOfWM` (which thresholds to Prop), this preserves
-the full Evidence structure. -/
+the full BinaryEvidence structure. -/
 noncomputable def wmEvidenceAtomSem
-    {State : Type*} [EvidenceType State] [WorldModel State Pat]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pat]
     (W : State) (queryOfAtom : String → Pat → Pat) : EvidenceAtomSem :=
-  fun a p => WorldModel.evidence (State := State) (Query := Pat) W (queryOfAtom a p)
+  fun a p => BinaryWorldModel.evidence (State := State) (Query := Pat) W (queryOfAtom a p)
 
 /-! ## Dynamic Distinction Graph -/
 
@@ -56,23 +56,23 @@ noncomputable def wmEvidenceAtomSem
 The weight measures how indistinguishable two patterns are according to
 formulas whose atoms are grounded in the world model. -/
 noncomputable def dynamicEdgeWeight
-    {State : Type*} [EvidenceType State] [WorldModel State Pat]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pat]
     (W : State) (R : Pat → Pat → Prop) (queryOfAtom : String → Pat → Pat)
-    (p q : Pat) : Evidence :=
+    (p q : Pat) : BinaryEvidence :=
   indistWeightE R (wmEvidenceAtomSem W queryOfAtom) p q
 
 /-- Dynamic scalar edge weight. -/
 noncomputable def dynamicEdgeWeightS
-    {State : Type*} [EvidenceType State] [WorldModel State Pat]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pat]
     (W : State) (R : Pat → Pat → Prop) (queryOfAtom : String → Pat → Pat)
     (p q : Pat) : ℝ≥0∞ :=
-  Evidence.toStrength (dynamicEdgeWeight W R queryOfAtom p q)
+  BinaryEvidence.toStrength (dynamicEdgeWeight W R queryOfAtom p q)
 
 /-! ## Self-Edge Properties -/
 
 /-- Self-edge weight is ⊤ at any WM state. -/
 theorem dynamicEdge_self_top
-    {State : Type*} [EvidenceType State] [WorldModel State Pat]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pat]
     (W : State) (R : Pat → Pat → Prop) (queryOfAtom : String → Pat → Pat)
     (p : Pat) : dynamicEdgeWeight W R queryOfAtom p p = ⊤ :=
   indistWeightE_self_top R (wmEvidenceAtomSem W queryOfAtom) p
@@ -82,24 +82,24 @@ theorem dynamicEdge_self_top
 /-- WM revision decomposes atom evidence additively.
 At a revised state `W₁ + W₂`, the atom evidence is the sum of individual evidences. -/
 theorem wmAtomSem_revision
-    {State : Type*} [EvidenceType State] [WorldModel State Pat]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pat]
     (W₁ W₂ : State) (queryOfAtom : String → Pat → Pat) (a : String) (p : Pat) :
     wmEvidenceAtomSem (W₁ + W₂) queryOfAtom a p =
       wmEvidenceAtomSem W₁ queryOfAtom a p + wmEvidenceAtomSem W₂ queryOfAtom a p := by
   simp only [wmEvidenceAtomSem]
-  exact WorldModel.evidence_add (State := State) (Query := Pat) W₁ W₂ (queryOfAtom a p)
+  exact BinaryWorldModel.evidence_add (State := State) (Query := Pat) W₁ W₂ (queryOfAtom a p)
 
 /-! ## Bridge to Threshold Semantics -/
 
-/-- The threshold projection of WM Evidence atom semantics gives the
-existing `thresholdAtomSemOfWM`. This connects the imprecise (Evidence-valued)
+/-- The threshold projection of WM BinaryEvidence atom semantics gives the
+existing `thresholdAtomSemOfWM`. This connects the imprecise (BinaryEvidence-valued)
 graph to the classical (Prop-valued) semantics. -/
 theorem wmAtomSem_threshold_bridge
-    {State : Type*} [EvidenceType State] [WorldModel State Pat]
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pat]
     (W : State) (tau : ℝ≥0∞) (queryOfAtom : String → Pat → Pat)
     (a : String) (p : Pat) :
     thresholdAtomSemOfWM W tau queryOfAtom a p ↔
-      tau ≤ Evidence.toStrength (wmEvidenceAtomSem W queryOfAtom a p) :=
+      tau ≤ BinaryEvidence.toStrength (wmEvidenceAtomSem W queryOfAtom a p) :=
   Iff.rfl
 
 /-! ## Extended Unification -/
@@ -108,9 +108,9 @@ theorem wmAtomSem_threshold_bridge
 1. Meredith: bisimulation → observational equivalence
 2. Stay/Baez: measurement factors through equivalence classes
 3. Knuth/Skilling: imprecision gate (no faithful scalar collapse)
-4. Distinction graph: weighted edges via Evidence-valued Heyting implication -/
+4. Distinction graph: weighted edges via BinaryEvidence-valued Heyting implication -/
 theorem oslf_ks_wm_graph_unification
-    {State : Type*} [EvidenceType State] [WorldModel State Pat] :
+    {State : Type*} [EvidenceType State] [BinaryWorldModel State Pat] :
     -- Layer 1 (Meredith): bisim → obs eq (from existing schema)
     (∀ (R : Pat → Pat → Prop) (I : AtomSem) (equiv : Pat → Pat → Prop),
       StepBisimulation R equiv →
@@ -122,7 +122,7 @@ theorem oslf_ks_wm_graph_unification
       (∀ p q, equiv p q → mu p = mu q) →
       ∃ muQ : Quot (fun p q => equiv p q) → ℝ, ∀ p, muQ (Quot.mk _ p) = mu p) ∧
     -- Layer 3 (Knuth/Skilling): imprecision gate
-    (¬ FaithfulPointRepresentation Evidence) ∧
+    (¬ FaithfulPointRepresentation BinaryEvidence) ∧
     -- Layer 4 (Graph): self-edge is ⊤ + revision decomposes additively
     (∀ (W : State) (R : Pat → Pat → Prop) (qoa : String → Pat → Pat) (p : Pat),
       dynamicEdgeWeight W R qoa p p = ⊤) ∧

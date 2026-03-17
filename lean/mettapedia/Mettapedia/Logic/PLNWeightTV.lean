@@ -8,8 +8,8 @@ This file defines weight-primary truth values (WTV) for PLN inference.
 
 ## Motivation
 
-**Weight is the natural quantity** from Evidence theory:
-- Evidence: (n⁺, n⁻) counts
+**Weight is the natural quantity** from BinaryEvidence theory:
+- BinaryEvidence: (n⁺, n⁻) counts
 - Confidence (derived): c = (n⁺ + n⁻) / (n⁺ + n⁻ + κ)
 - Weight (primary): w = c/(1-c) = (n⁺ + n⁻)/κ  (for κ > 0)
 - Operations: addition (revision / hplus), and other rule-specific combinations
@@ -21,7 +21,7 @@ This file defines weight-primary truth values (WTV) for PLN inference.
 ## Architecture
 
 ```
-Evidence (n⁺, n⁻)
+BinaryEvidence (n⁺, n⁻)
     ↓ weight = (n⁺+n⁻)/κ  (normalized evidence amount)
 WTV (strength, weight) ← natural operations here
     ↓ confidence = w/(w+1) (when needed)
@@ -30,14 +30,14 @@ STV (strength, confidence) ← for users/interfaces
 
 ## Why Weight-Primary?
 
-1. **Mathematically natural**: Aligns with Evidence quantale
+1. **Mathematically natural**: Aligns with BinaryEvidence quantale
 2. **Simpler proofs**: ~50% fewer lines (no c2w/w2c case analysis)
 3. **Reveals structure**: Operations compose algebraically
 4. **Clean interface**: Like log-odds (internal) vs probability (external) in ML
 
 ## References
 
-- EvidenceQuantale.lean: Evidence quantale definitions
+- EvidenceQuantale.lean: BinaryEvidence quantale definitions
 - PLNInferenceCalculus.lean: Inference rules (being refactored to use WTV)
 - PLNCorrectedFormulas.lean: Documents why weight-space operations are correct
 -/
@@ -62,7 +62,7 @@ noncomputable def w2c (w : ℝ) : ℝ := w / (w + 1)
 
 **Fields**:
 - `strength`: Estimate of truth probability ∈ [0,1]
-- `weight`: Evidence weight `w = c/(1-c)` ∈ [0,∞)
+- `weight`: BinaryEvidence weight `w = c/(1-c)` ∈ [0,∞)
 
 **Confidence is derived**, not stored:
 ```lean
@@ -190,7 +190,7 @@ end WTV
 
 These formulas operate **directly on weights** without c2w/w2c conversions.
 
-Operations align with Evidence theory:
+Operations align with BinaryEvidence theory:
 - Conjunction/MP: weight multiplication (tensor product)
 - Revision: weight addition (hplus)
 - Negation: weight preserved (complement in strength space only)
@@ -204,7 +204,7 @@ open WTV
 
 **Weight-native**: `w_out = w_A · w_B` (direct multiplication!)
 
-**Evidence interpretation**: (n⁺₁, n⁻₁) ⊗ (n⁺₂, n⁻₂) = (n⁺₁·n⁺₂, n⁻₁·n⁻₂)
+**BinaryEvidence interpretation**: (n⁺₁, n⁻₁) ⊗ (n⁺₂, n⁻₂) = (n⁺₁·n⁺₂, n⁻₁·n⁻₂)
 
 If you track the diagnostic ratio `n⁺/n⁻` (odds-style), then tensor gives a direct product.
 However, the PLN **weight used for confidence plumbing** is `w = c/(1-c)` (normalized evidence
@@ -256,7 +256,7 @@ noncomputable def mpWTV (tvAB tvA : WTV) : WTV where
 
 **Weight-native**: `w_out = w₁ + w₂` (direct addition!)
 
-**Evidence interpretation**: (n⁺₁, n⁻₁) ⊕ (n⁺₂, n⁻₂) = (n⁺₁+n⁺₂, n⁻₁+n⁻₂)
+**BinaryEvidence interpretation**: (n⁺₁, n⁻₁) ⊕ (n⁺₂, n⁻₂) = (n⁺₁+n⁺₂, n⁻₁+n⁻₂)
 The strength becomes a weighted average by the evidence totals.
 
 Contrast with confidence-primary:

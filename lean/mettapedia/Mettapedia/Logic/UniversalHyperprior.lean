@@ -21,7 +21,7 @@ countable family of τ₀² values with computable weights.
 ## PLN Justification
 
 This IS the correct PLN approach because:
-1. **Evidence/Context separation**: Same evidence (n, Σx, Σx²), multiple contexts
+1. **BinaryEvidence/Context separation**: Same evidence (n, Σx, Σx²), multiple contexts
 2. **Second-order probability**: Uncertainty about τ₀² is explicitly modeled
 3. **Modal reasoning**: Each C_k is a possible world; weights are beliefs
 4. **Dominance**: Guaranteed regret bound vs any fixed context
@@ -479,11 +479,11 @@ theorem weight_codelength_bound (k : ℤ) : -Real.log (weight k) ≤ (|k| + 2) *
       ≤ (|k| + 1 : ℝ) * Real.log 2 + Real.log 2 := by linarith [h32_le_2]
     _ = (|k| + 2 : ℝ) * Real.log 2 := by ring
 
-/-! ## Connection to PLN Modal Evidence Theory
+/-! ## Connection to PLN Modal BinaryEvidence Theory
 
 This formalization justifies the PLN approach where:
 
-1. **Evidence** = (n, Σx, Σx²) - context-free sufficient statistics
+1. **BinaryEvidence** = (n, Σx, Σx²) - context-free sufficient statistics
 2. **Context** = (μ₀, τ₀², σ²) - interpretation parameters
 3. **Universal Hyperprior** = mixture over {(0, 2^k, σ²) : k ∈ ℤ}
 
@@ -568,7 +568,7 @@ theorem mixture_var_ge_expected_var (σ_sq : ℝ) (hσ : 0 < σ_sq)
 The Universal Hyperprior mixture approach is the **theoretically correct** PLN solution for
 single-level Normal-Normal inference because:
 
-1. **Evidence aggregates context-free**: hplus on (n, Σx, Σx²) is a monoid operation
+1. **BinaryEvidence aggregates context-free**: hplus on (n, Σx, Σx²) is a monoid operation
    that doesn't depend on τ₀². This is the foundation of PLN.
 
 2. **Context is modal**: Different τ₀² values represent different "possible worlds"

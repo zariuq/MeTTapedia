@@ -1,24 +1,24 @@
 /-
-# Evidence-Dirichlet Bridge: Generalized Conjugate Prior Aggregation
+# BinaryEvidence-Dirichlet Bridge: Generalized Conjugate Prior Aggregation
 
-This file generalizes the Evidence-Beta bridge (EvidenceBeta.lean) to the
+This file generalizes the BinaryEvidence-Beta bridge (EvidenceBeta.lean) to the
 Dirichlet-Multinomial case, showing that PLN-style evidence aggregation
 is the natural sufficient-statistic aggregation for conjugate priors.
 
 ## The Key Insight
 
 For k-ary outcomes (generalizing binary True/False):
-- Evidence = count vector (n₁, n₂, ..., nₖ) ∈ ℕᵏ
+- BinaryEvidence = count vector (n₁, n₂, ..., nₖ) ∈ ℕᵏ
 - Prior: Dirichlet(α₁, ..., αₖ)
 - Posterior: Dirichlet(α₁+n₁, ..., αₖ+nₖ) — by Dirichlet-Multinomial conjugacy
 - **hplus = coordinatewise addition = Bayesian update**
 
 This is the k-ary generalization of:
-- k=2: Evidence (n⁺, n⁻) with Beta(α+n⁺, β+n⁻) posterior (EvidenceBeta.lean)
+- k=2: BinaryEvidence (n⁺, n⁻) with Beta(α+n⁺, β+n⁻) posterior (EvidenceBeta.lean)
 
 ## Main Definitions
 
-- `MultiEvidence k`: Evidence counts for k outcomes
+- `MultiEvidence k`: BinaryEvidence counts for k outcomes
 - `DirichletParams k`: Dirichlet distribution parameters
 - `evidence_aggregation_is_dirichlet_update`: hplus = Dirichlet conjugate update
 
@@ -26,7 +26,7 @@ This is the k-ary generalization of:
 
 The common abstraction across conjugate prior families:
 
-| Family | Evidence Type | Prior | Posterior | hplus |
+| Family | BinaryEvidence Type | Prior | Posterior | hplus |
 |--------|---------------|-------|-----------|-------|
 | Beta-Bernoulli | (n⁺, n⁻) | Beta(α,β) | Beta(α+n⁺, β+n⁻) | coordinatewise + |
 | Dirichlet-Multinomial | (n₁,...,nₖ) | Dir(α₁,...,αₖ) | Dir(α₁+n₁,...,αₖ+nₖ) | coordinatewise + |
@@ -50,11 +50,11 @@ namespace Mettapedia.Logic.EvidenceDirichlet
 open Mettapedia.Logic.EvidenceBeta
 open BigOperators
 
-/-! ## Multi-Outcome Evidence (k-ary generalization) -/
+/-! ## Multi-Outcome BinaryEvidence (k-ary generalization) -/
 
-/-- Evidence counts for k possible outcomes.
-    This generalizes binary Evidence (n⁺, n⁻) to k outcomes (n₁, ..., nₖ).
-    For k=2 with outcomes {True, False}, this reduces to standard PLN Evidence. -/
+/-- BinaryEvidence counts for k possible outcomes.
+    This generalizes binary BinaryEvidence (n⁺, n⁻) to k outcomes (n₁, ..., nₖ).
+    For k=2 with outcomes {True, False}, this reduces to standard PLN BinaryEvidence. -/
 @[ext]
 structure MultiEvidence (k : ℕ) where
   counts : Fin k → ℕ
@@ -142,12 +142,12 @@ noncomputable def jeffreysPrior (hk : 0 < k) : DirichletParams k :=
 
 end DirichletParams
 
-/-! ## Evidence to Dirichlet Posterior -/
+/-! ## BinaryEvidence to Dirichlet Posterior -/
 
 /-- Combine MultiEvidence with a Dirichlet prior to get posterior parameters.
     This is the Dirichlet-Multinomial conjugate update:
     Prior: Dir(α₁, ..., αₖ)
-    Evidence: (n₁, ..., nₖ)
+    BinaryEvidence: (n₁, ..., nₖ)
     Posterior: Dir(α₁+n₁, ..., αₖ+nₖ) -/
 structure EvidenceDirichletParams (k : ℕ) where
   prior : DirichletParams k
@@ -197,12 +197,12 @@ end EvidenceDirichletParams
 
 /-! ## Main Theorem: hplus = Dirichlet Conjugate Update -/
 
-/-- **Main Theorem**: Evidence aggregation (hplus) corresponds to Dirichlet conjugate update.
+/-- **Main Theorem**: BinaryEvidence aggregation (hplus) corresponds to Dirichlet conjugate update.
 
 If we have:
 - Prior: Dirichlet(α₁, ..., αₖ)
-- Evidence₁: (n₁₁, ..., n₁ₖ) giving posterior Dir(α₁+n₁₁, ..., αₖ+n₁ₖ)
-- Evidence₂: (n₂₁, ..., n₂ₖ)
+- BinaryEvidence₁: (n₁₁, ..., n₁ₖ) giving posterior Dir(α₁+n₁₁, ..., αₖ+n₁ₖ)
+- BinaryEvidence₂: (n₂₁, ..., n₂ₖ)
 
 Then the combined evidence (n₁₁+n₂₁, ..., n₁ₖ+n₂ₖ) gives
 Dir(α₁+n₁₁+n₂₁, ..., αₖ+n₁ₖ+n₂ₖ)
@@ -457,9 +457,9 @@ theorem one_le_sum_idmUpper (ctx : IDMPredictiveContext) {k : ℕ} (hk : 0 < k)
 
 end IDMPredictiveIntervals
 
-/-! ## Connection to Binary Evidence (k=2 case) -/
+/-! ## Connection to Binary BinaryEvidence (k=2 case) -/
 
-/-- For k=2, MultiEvidence reduces to binary Evidence. -/
+/-- For k=2, MultiEvidence reduces to binary BinaryEvidence. -/
 def binaryEvidence_to_multi (n_pos n_neg : ℕ) : MultiEvidence 2 :=
   ⟨![n_pos, n_neg]⟩
 
@@ -476,15 +476,15 @@ theorem binary_hplus_matches_multi (n₁_pos n₁_neg n₂_pos n₂_neg : ℕ) :
 
 This file establishes the key generalization:
 
-**PLN Evidence aggregation IS Bayesian conjugate prior update**
+**PLN BinaryEvidence aggregation IS Bayesian conjugate prior update**
 
 The pattern:
-1. Evidence = sufficient statistic for the likelihood
+1. BinaryEvidence = sufficient statistic for the likelihood
 2. hplus = additive combination of sufficient statistics
 3. This equals the conjugate prior update rule
 
 For k outcomes:
-- Evidence: (n₁, ..., nₖ) = multinomial sufficient statistic
+- BinaryEvidence: (n₁, ..., nₖ) = multinomial sufficient statistic
 - Prior: Dirichlet(α₁, ..., αₖ)
 - Posterior: Dirichlet(α₁+n₁, ..., αₖ+nₖ)
 - hplus(e₁, e₂) = coordinatewise addition = Bayesian update

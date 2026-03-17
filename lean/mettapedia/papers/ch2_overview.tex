@@ -1,0 +1,396 @@
+\chapter{The World-Model Calculus: An Overview}
+\label{chap:overview}
+
+This chapter presents the world-model calculus in miniature.  It does not try
+to prove every theorem or develop every branch of the formalization.  Instead,
+it states the main semantic objects, the main exact regime, the main boundary,
+and the role of typed structure and compiled inference.  A reader who studies
+this chapter should be able to see how the whole book fits together before
+entering the deeper technical developments.
+
+The guiding idea is simple.  A reasoner should not treat truth-value
+summaries as if they were the thing being stored or proved.  It should
+carry a revisable state of knowledge, ask queries of that state, extract
+answers valued in an appropriate carrier, and only then project those
+answers into operational views such as strength, confidence, or interval
+bounds.  This material began in the formalization of Probabilistic Logic
+Networks (PLN), and along the way we found a clean, general presentation
+in terms of world models.  This book develops that presentation
+precisely.
+
+\section{The Core Picture}
+\label{sec:overview-core-picture}
+
+At the highest level, the calculus has three typed parameters:
+\[
+  \textit{State}, \qquad \textit{Query}, \qquad V.
+\]
+A state is what the system currently carries.  A query is what the
+system may ask.  The value type~$V$ is the carrier in which extracted
+answers live.  It can be any type suitable for the application:
+sufficient statistics for statistical inference, probability values,
+interval-valued assessments, or even complex amplitudes for
+quantum-like frameworks.
+
+The most general world-model interface records only three operations:
+
+\begin{lstlisting}[language={}]
+class WorldModel (State Query V : Type*) where
+  revise  : State -> State -> State
+  empty   : State
+  extract : State -> Query -> V
+\end{lstlisting}
+
+This interface is intentionally minimal.  It says only that a world model is a
+revisable state space equipped with query extraction.  No additivity,
+commutativity, overlap law, or probabilistic interpretation is assumed at this
+top level.  Those laws belong to later subclasses and later chapters.
+
+The book works mostly in one especially important specialization: the
+\emph{additive regime}.  There, state revision is additive, the value carrier is
+an additive commutative monoid, and extraction commutes with additive
+revision.  This is the regime in which the profile-hom equivalence,
+Bayesian-network exactness theorems, provenance-tracked revision results, and
+most of the current Lean development live.  But it is not presented as the
+whole theory.  It is the main exact specialization of a broader family.
+
+\maplecourt{Maple Court Community Commons is our running example.  Each
+apartment carries a private posterior state over questions such as whether a
+pipe is leaking, whether the shower is running, or whether motion indicates
+occupancy.  Shared spaces carry a building-level state over hallway humidity,
+laundry-room availability, and elevator health.  The same architecture appears
+at both scales: revise the state as reports and sensor updates arrive, query the
+state for evidence, and project that evidence into views only when a decision
+must be made.}
+
+\section{Revision Regimes and the Additive Powerhouse}
+\label{sec:overview-regimes}
+
+The calculus does not assume that all revision behaves the same way.  It is
+useful to distinguish several regimes.
+
+\begin{description}
+\item[Additive revision.]  Independent updates compose by addition.
+  In Maple Court: two independent sensor reports about a pipe leak
+  add their evidence counts.
+
+\item[Overlap-aware revision.]  When two sources share information,
+  naive addition double-counts.  In Maple Court: two apartments'
+  humidity sensors both pick up the same hallway vent.
+
+\item[Trust-gated revision.]  The merge depends on source authority.
+  In Maple Court: a tenant's verbal report contradicts an automated
+  sensor; the system must weigh trust.
+
+\item[Coalition revision.]  Not every merge is valid; consensus
+  requires an actionable coalition.  In Maple Court: a majority of
+  apartments must agree before updating the building's elevator-health
+  assessment.
+\end{description}
+
+Only the first of these is developed theoremically in full generality in the
+present book.  The others already appear in the typed family and in the
+formalization landscape, but they are treated as frontier directions rather than
+as fully developed kernels.
+
+The additive regime is captured by the following shape:
+
+\begin{lstlisting}[language={}]
+class AdditiveWorldModel (State Query V : Type*)
+    [AddCommMonoid State] [AddCommMonoid V]
+    extends WorldModel State Query V where
+  revise_eq_add : forall W1 W2, revise W1 W2 = W1 + W2
+  empty_eq_zero : empty = 0
+  extract_add   : forall W1 W2 q,
+    extract (W1 + W2) q = extract W1 q + extract W2 q
+  extract_zero  : forall q, extract 0 q = 0
+\end{lstlisting}
+
+The decisive law is \code{extract\_add}.  It says that in the additive regime,
+revising states and then extracting is the same as extracting first and then
+combining answers in the carrier~$V$.  This is the exact algebraic condition
+behind the cleanest part of the calculus.
+
+\begin{theorem}[Additive answer-profile form]
+\label{thm:overview-profile-hom}
+For additive world models, currying the extractor yields an additive monoid
+homomorphism
+\[
+  \widehat{\mathrm{extract}} : \textit{State} \to^+ (\textit{Query} \to V),
+  \qquad
+  W \mapsto (q \mapsto \mathrm{extract}(W,q)).
+\]
+Conversely, every additive monoid homomorphism
+\(\textit{State} \to^+ (\textit{Query} \to V)\) determines an additive world
+model.  Thus additive world models are exactly answer-profile generators.
+\end{theorem}
+
+This theorem is the categorical and algebraic center of the additive regime.
+It says that, once additivity is assumed, a world model is one
+structure-preserving arrow into an answer-profile object.  The extensional
+model \(\textit{Query} \to V\) is terminal among additive world models over the
+same query space: every additive world model maps canonically to its answer
+profile.
+
+This does \emph{not} trivialize the subject.  The hard work is in choosing
+expressive state spaces, proving when compiled shortcuts are exact, and
+showing where local summaries fail.  But it does make the kernel visible.
+
+\section{Evidence Carriers}
+\label{sec:overview-carriers}
+
+Evidence is not one fixed datatype.  The general pattern is that a carrier
+stores sufficient statistics for a conjugate family or other compositional value
+system, and revision in the additive regime is addition of those sufficient
+statistics.
+
+Three carriers are central.
+
+\begin{description}
+\item[Binary evidence.]  A two-channel carrier recording positive and negative
+  support.  This is the historical PLN carrier, now treated as one instance
+  among others.
+\item[Dirichlet evidence.]  A multi-valued carrier recording category counts.
+  This is the right instance for questions with more than two alternatives.
+\item[Normal--Gamma evidence.]  A continuous-domain carrier storing the
+  sufficient statistics needed for unknown mean and variance.
+\end{description}
+
+In Maple Court these arise naturally.  Leak alarms and motion detections are
+binary.  Elevator health and laundry status are multi-valued.  Hallway
+humidity and temperature are continuous.  The calculus does not change across
+these cases; only the carrier does.
+
+The additive regime explains why revision is so simple in these families:
+counts add, sufficient statistics add, and the extractor commutes with that
+addition.  Some additional algebraic structure can then be studied on top of
+particular carriers.  For binary evidence, the current development includes a
+quantale tensor and a Heyting structure.  Those are mathematically real, but
+they are \emph{binary-specific} and do not generalize to all carriers.
+
+\section{States Are Primary: Revise, Query, Forget, Explain}
+\label{sec:overview-four-verbs}
+
+The book revolves around four verbs:
+\emph{revise}, \emph{query}, \emph{forget}, and \emph{explain}.
+
+Revision and querying are the minimal kernel operations.  Forgetting and
+explanation show why the kernel stores states rather than floating truth values.
+A state can be updated, partially retracted, audited, replayed, and explained in
+a way that a naked scalar view cannot.
+
+\maplecourt{Suppose three hallway humidity alerts arrive, then one sensor is
+found to be faulty.  If the system carries only a strength estimate such as
+$0.83$, it is unclear how to retract just the faulty source.  If the system carries
+a revisable state with provenance, forgetting can remove the appropriate
+contribution while preserving answers outside the forgotten scope.  The same
+state can also explain why the building robot now believes the hallway needs
+mopping: not because the confidence number crossed an arbitrary threshold in
+the abstract, but because specific reports and sensors revised the building
+state in a tracked way.}
+
+This is why provenance is not ``mere metadata.''  It is part of the structure of
+stateful reasoning.  Likewise, forgetting is not an optional convenience.  It is a
+semantic operation that clarifies what kind of proof object a world-model
+state really is.
+
+\section{Information, Support, and Views}
+\label{sec:overview-views}
+
+One of the deepest distinctions in the book is that evidence can improve in
+more than one sense.  It can become \emph{more informed}, and it can become
+\emph{more supportive} of a query.  These are not the same order.
+
+For binary evidence, compare
+\[
+  e_1 = (1,0),
+  \qquad
+  e_2 = (1,1).
+\]
+The second state is more informative than the first in the ordinary
+information-order sense: it contains at least as much positive and at least as
+much negative evidence.  But it is less supportive of the positive claim,
+because the negative channel has increased as well.  A strength view therefore
+decreases even as total evidence increases.
+
+This distinction drives the architecture.
+
+\begin{proposition}[Views are not additive semantics]
+\label{prop:overview-views-not-semantic-core}
+In the current development, total evidence is additive, but central operational
+views such as strength are not.  More generally, useful readouts from evidence
+may be informative, calibrated, or decision-relevant without preserving the
+revision law of the underlying carrier.
+\end{proposition}
+
+So a view is not a proof object.  It is a projection.  This is why the book keeps
+views after evidence and state operations, not before them.  The semantics lives
+in state and extraction; views are derived interfaces for display, thresholding,
+and action.
+
+\section{Natively Typed World Models}
+\label{sec:overview-typed}
+
+The calculus is typed from the beginning.  Its primary sorts are already
+visible in the kernel:
+\[
+  \textit{State}, \qquad \textit{Query}, \qquad V.
+\]
+What later chapters develop in more detail is not a second semantics but a
+full native typed realization of the same calculus: a rewrite family whose
+terms, rules, and native types expose the same mathematical structure from
+inside.
+
+In the additive regime, the core rewrite system is organized by a 2\(\times\)2
+calculus square: raw versus guarded, and plain versus congruence-aware.
+That square gives the current formalized typed face of the additive calculus.
+Later, the typed development expands this to the 13-axis vertex family,
+OSLF modal operators, intrinsic adequacy, and native type synthesis.
+The encoding is proved biconditionally adequate: the typed and algebraic
+presentations agree exactly.  For any type~$T$, multiset ensembles
+give a canonical world model---suggesting the framework may be
+universal for typed rewrite systems.
+
+Logical structure appears wherever the query space carries it.  Quantified and
+higher-order queries are not presented as ``extensions'' to a lower theory.
+They are simply instances of the general \textit{Query} parameter when one wants
+logical structure rich enough to express those questions.
+
+\section{Compiled Inference and the PLN Connection}
+\label{sec:overview-compiled}
+
+The calculus does not treat deduction, induction, and abduction as primitive
+truth-value algebra.  It treats them as \emph{compiled rewrites}: certified
+shortcuts that are exact under explicit side conditions within declared model
+classes.
+
+This is where the book most visibly overlaps with the PLN tradition.  The
+derived link calculus and the compiled Bayesian-network rules formalize,
+sharpen, and delimit the classical PLN rule family.  The point is not to deny
+that those rules can be useful.  The point is to state exactly when they are
+correct, what they compute, and what they leave out.
+
+\maplecourt{Suppose the building model contains the chain
+\(\textit{PipeLeak} \to \textit{WallHumidity} \to \textit{MoldRisk}\).
+A maintenance agent wants to answer a leak-related query quickly.  Rather
+than recomputing the full posterior from scratch, the system may use a
+compiled chain rule justified by the BN factorization and screening-off
+assumptions attached to that model class.  When those side conditions hold,
+the compiled answer agrees with the full extractor on the covered query
+family.  When they do not hold, the rewrite is not licensed.}
+
+That is the modernized meaning of a PLN rule: not a free-standing law
+of truth values, but a typed and side-conditioned shortcut to a result
+already determined by the underlying world model.
+
+The most exact form of chaining propagates the \emph{full posterior
+distribution} through the chain---not just scalar strength and
+confidence.  This distributional approach is the primary one; scalar
+chaining (propagating only summary statistics) is a useful but lossy
+approximation whose cost is made precise by five chaining-limitation
+theorems and a distributional dominance result
+(Chapter~\ref{ch:error-transport}).
+
+\section{The Boundary: Why Local Chaining Cannot Be Complete}
+\label{sec:overview-boundary}
+
+The book's main negative result explains why compiled inference must be
+handled so carefully.
+
+\begin{theorem}[No-go for unrestricted local link completeness]
+\label{thm:overview-no-go}
+In general, complete link evidence cannot be recovered from local per-link
+surrogates alone.  Two world-model states can agree on all chosen local link
+summaries while differing on the complete evidence needed for the target
+query.
+\end{theorem}
+
+This boundary theorem is not an embarrassment.  It is a design theorem.  It
+says that unrestricted local chaining cannot replace a complete semantics.  It
+also explains why structural side conditions matter so much: compiled shards
+become exact only inside model classes that carry enough global structure for
+those shortcuts to commute with full extraction.
+
+The no-go theorem is also one reason the non-additive frontier matters.  When
+sources overlap, correlations matter, or trust gates revision, naive local
+summary propagation is even less likely to preserve the required structure.
+The additive regime is powerful precisely because it identifies a large,
+tractable class in which the profile-hom story, carrier algebra, and compiled
+rules all fit cleanly together.
+
+\section{A Compact End-to-End Picture}
+\label{sec:overview-end-to-end}
+
+The overview can now be summarized in one pipeline:
+
+%% Safe tikz width: ~148mm text width for 11pt report.
+%% This diagram is ~155mm — slightly wider, centered symmetrically in margins.
+\medskip
+\noindent
+\makebox[\textwidth][c]{%
+\begin{tikzpicture}[
+  >=Latex,
+  every node/.style={font=\footnotesize},
+  box/.style={draw, rounded corners=3pt, minimum width=30mm,
+              minimum height=9mm, align=center}
+]
+  \node[box, fill=blue!8] (state) {state $W$};
+  \node[box, fill=green!8, right=10mm of state] (query) {query $q$};
+  \node[box, fill=yellow!12, right=10mm of query] (extract) {extract$(W,q)$};
+  \node[box, fill=orange!12, right=10mm of extract] (view) {view / decision};
+  \node[box, fill=purple!8, below=10mm of extract] (rewrite) {compiled rewrite};
+
+  \draw[->, thick] (state) -- (query);
+  \draw[->, thick] (query) -- (extract);
+  \draw[->, thick] (extract) -- (view);
+  \draw[->, thick] (state) |- (rewrite);
+  \draw[->, thick] (rewrite) -- node[right, font=\scriptsize]
+    {$\Sigma$-shortcut} (extract);
+\end{tikzpicture}}
+\medskip
+
+The state is primary.  Queries interrogate the state.  Extraction returns values
+in a carrier.  Views project from those values.  Compiled rewrites accelerate
+families of queries under explicit side conditions.  Boundaries tell us where
+such shortcuts cannot be complete.
+
+That is the whole book in compressed form.
+
+\section{How the Rest of the Book Unfolds}
+\label{sec:overview-rest}
+
+The remaining chapters slow this compact picture down.
+
+\begin{itemize}
+\item The next chapters develop the calculus and its additive regime in full
+  detail, prove the profile-hom equivalence, and state the precise typed rules.
+\item The carrier chapter develops the generic evidence pattern and the
+  formalized instances.
+\item The state-operations chapter develops forgetting, provenance,
+  explanation, and conservation.
+\item The views chapter explains why information order and support order
+  must be distinguished, and why views are not proof objects.
+\item The typed-development chapter develops the 13-axis family, native
+  types, OSLF bridge, and the GSLT horizon.
+\item The compiled-inference chapters show how the PLN rule family and the
+  BN exactness results become side-conditioned rewrites.
+\item The final parts map the current scope, validate the framework on
+  substantial benchmarks, and mark the frontier: non-additive regimes,
+  measure-theoretic grounding, higher-order completeness, GSLT universality,
+  and the probability hypercube.
+\end{itemize}
+
+The intended reading experience is therefore two-layered.  This overview
+shows the crystal.  The rest of the book turns the crystal in the light,
+proves its faces, and follows each face into deeper mathematics and larger
+applications.
+
+\paragraph{PLN heritage.}
+This book is not a historical commentary on PLN, but neither is it detached
+from that lineage.  Its derived link calculus and compiled Bayesian-network
+rules formalize and extend the classical probabilistic deduction,
+induction, abduction, and revision story of PLN.  Where that earlier rule
+family is correct, the present calculus proves it correct under explicit
+assumptions.  Where it is incomplete or semantically unstable, the present
+calculus states the boundary and replaces the heuristic with a typed,
+side-conditioned construction.

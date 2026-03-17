@@ -41,7 +41,7 @@ def mapState (E : KripkeToNeighborhoodEmbedding)
     (Wk : Multiset PointedKripke) : Multiset PointedNeighborhood :=
   Wk.map E.toNeighborhood
 
-/-- Evidence equality under Kripke-to-neighborhood embedding map. -/
+/-- BinaryEvidence equality under Kripke-to-neighborhood embedding map. -/
 theorem evidence_mapState_eq
     (E : KripkeToNeighborhoodEmbedding)
     (Wk : Multiset PointedKripke) (φ : ModalQuery) :
@@ -97,12 +97,12 @@ theorem evidence_mapState_eq
 theorem queryStrength_mapState_eq
     (E : KripkeToNeighborhoodEmbedding)
     (Wk : Multiset PointedKripke) (φ : ModalQuery) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         (mapState E Wk) φ =
-      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
         Wk φ := by
-  change (WorldModel.evidence (mapState E Wk) φ).toStrength =
-      (WorldModel.evidence Wk φ).toStrength
+  change (BinaryWorldModel.evidence (mapState E Wk) φ).toStrength =
+      (BinaryWorldModel.evidence Wk φ).toStrength
   exact congrArg (fun e => e.toStrength)
     (evidence_mapState_eq (E := E) (Wk := Wk) (φ := φ))
 
@@ -110,17 +110,17 @@ theorem queryStrength_mapState_eq
 theorem singletonStrengthLEOnEmbedding_iff_kripke
     (E : KripkeToNeighborhoodEmbedding) (φ ψ : ModalQuery) :
     (∀ pk : PointedKripke,
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         ({E.toNeighborhood pk} : Multiset PointedNeighborhood) φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         ({E.toNeighborhood pk} : Multiset PointedNeighborhood) ψ)
       ↔ Mettapedia.Logic.PLNWorldModelKripke.singletonStrengthLE φ ψ := by
   constructor
   · intro h pk
     have hpkN :
-        WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+        BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
             (mapState E ({pk} : Multiset PointedKripke)) φ ≤
-          WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+          BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
             (mapState E ({pk} : Multiset PointedKripke)) ψ := by
       simpa [mapState] using h pk
     simpa [queryStrength_mapState_eq (E := E) (Wk := ({pk} : Multiset PointedKripke))
@@ -129,14 +129,14 @@ theorem singletonStrengthLEOnEmbedding_iff_kripke
       (φ := ψ)] using hpkN
   · intro h pk
     have hpkK :
-        WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+        BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
             ({pk} : Multiset PointedKripke) φ ≤
-          WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+          BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
             ({pk} : Multiset PointedKripke) ψ := h pk
     have hpkN :
-        WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+        BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
             (mapState E ({pk} : Multiset PointedKripke)) φ ≤
-          WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+          BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
             (mapState E ({pk} : Multiset PointedKripke)) ψ := by
       simpa [queryStrength_mapState_eq (E := E) (Wk := ({pk} : Multiset PointedKripke))
         (φ := φ),
@@ -149,13 +149,13 @@ theorem mapState_strength_le_of_kripke
     (E : KripkeToNeighborhoodEmbedding)
     (Wk : Multiset PointedKripke) (φ ψ : ModalQuery)
     (hK :
-      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
           Wk φ ≤
-        WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+        BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
           Wk ψ) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         (mapState E Wk) φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         (mapState E Wk) ψ := by
   simpa [queryStrength_mapState_eq (E := E) (Wk := Wk) (φ := φ),
     queryStrength_mapState_eq (E := E) (Wk := Wk) (φ := ψ)] using hK
@@ -165,17 +165,17 @@ theorem kripke_neighborhood_parallel_of_kripke
     (E : KripkeToNeighborhoodEmbedding)
     (Wk : Multiset PointedKripke) (φ ψ : ModalQuery)
     (hK :
-      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
           Wk φ ≤
-        WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+        BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
           Wk ψ) :
-    (WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+    (BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
         Wk φ ≤
-      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
         Wk ψ) ∧
-    (WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+    (BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         (mapState E Wk) φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         (mapState E Wk) ψ) := by
   exact ⟨hK, mapState_strength_le_of_kripke (E := E) (Wk := Wk) (φ := φ) (ψ := ψ) hK⟩
 
@@ -189,14 +189,14 @@ theorem mapState_strength_le_of_provable_imp
     (Wk : Multiset PointedKripke) (φ ψ : ModalQuery)
     (hW : ∀ pk ∈ Wk, pk.model.toFrame ∈ C)
     (hprov : 𝓢 ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         (mapState E Wk) φ ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         (mapState E Wk) ψ := by
   have hK :
-      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
           Wk φ ≤
-        WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+        BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
           Wk ψ :=
     multiset_strength_le_of_provable_imp
       (S := S) (𝓢 := 𝓢) (C := C) (W := Wk) (φ := φ) (ψ := ψ) hW hprov
@@ -230,9 +230,9 @@ theorem mapState_governance_ob_pe_strength_le_of_provable
     (Wk : Multiset PointedKripke) (φ : ModalQuery)
     (hW : ∀ pk ∈ Wk, pk.model.toFrame ∈ C)
     (hprov : 𝓢 ⊢ (□φ ➝ ◇φ)) :
-    WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         (mapState E Wk) (governanceModalityToModalQuery .obligatory φ) ≤
-      WorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedNeighborhood) (Query := ModalQuery)
         (mapState E Wk) (governanceModalityToModalQuery .permitted φ) := by
   simpa [governanceModalityToModalQuery] using
     (mapState_strength_le_of_provable_imp

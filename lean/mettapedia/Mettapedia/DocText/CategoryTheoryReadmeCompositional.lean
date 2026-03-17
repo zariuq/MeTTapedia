@@ -93,7 +93,7 @@ def renderCategoryTheoryClaim : CategoryTheoryClaim → String
         (complV2 (mkV2 (regV "define")) (properNameNP "the H_Sigma endofunctor for modal type generation"))
   | .plnSemiringQuantaleFileRole =>
       mkPresPos (properNameNP "PLNSemiringQuantale.lean")
-        (complV2 (mkV2 (regV "define")) (properNameNP "a semiring quantale on Evidence with tensor and plus"))
+        (complV2 (mkV2 (regV "define")) (properNameNP "a semiring quantale on BinaryEvidence with tensor and plus"))
   | .deFinettiCategoricalInterfaceFileRole =>
       mkPresPos (properNameNP "DeFinettiCategoricalInterface.lean")
         (complV2 (mkV2 (regV "define")) (properNameNP "a qualitative factorization interface"))

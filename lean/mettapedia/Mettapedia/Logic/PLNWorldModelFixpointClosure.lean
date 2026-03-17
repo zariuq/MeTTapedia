@@ -20,10 +20,10 @@ open Mettapedia.Logic.PLNWorldModel
 open Mettapedia.Logic.EvidenceClass
 open scoped ENNReal
 
-variable {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+variable {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- Rule pool used by the closure operator. -/
-abbrev RuleSet (State Query : Type*) [EvidenceType State] [WorldModel State Query] :=
+abbrev RuleSet (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query] :=
   Set (WMConsequenceRuleOn State Query)
 
 /-- One-step rule consequences from a query set `S` at state `W`. -/
@@ -134,7 +134,7 @@ theorem leastRuleClosure_least_of_seed_and_rules
 /-- Query obligations valid at threshold `τ` in state `W`. -/
 def thresholdValid (W : State) (τ : ℝ≥0∞) (S : Set Query) : Prop :=
   ∀ q, q ∈ S →
-    τ ≤ WorldModel.queryStrength (State := State) (Query := Query) W q
+    τ ≤ BinaryWorldModel.queryStrength (State := State) (Query := Query) W q
 
 theorem thresholdValid_mono
     (W : State) (τ : ℝ≥0∞) {S₁ S₂ : Set Query}
@@ -162,14 +162,14 @@ theorem immediateStep_thresholdValid
     · exact hSeed q hq
   · rcases hq with ⟨r, _hrR, hside, hprem, hqEq⟩
     have hpremτ :
-        τ ≤ WorldModel.queryStrength (State := State) (Query := Query) W r.premise :=
+        τ ≤ BinaryWorldModel.queryStrength (State := State) (Query := Query) W r.premise :=
       hS r.premise hprem
     have hrc :
-        WorldModel.queryStrength (State := State) (Query := Query) W r.premise ≤
-          WorldModel.queryStrength (State := State) (Query := Query) W r.conclusion :=
+        BinaryWorldModel.queryStrength (State := State) (Query := Query) W r.premise ≤
+          BinaryWorldModel.queryStrength (State := State) (Query := Query) W r.conclusion :=
       r.sound hside
     have hconc :
-        τ ≤ WorldModel.queryStrength (State := State) (Query := Query) W r.conclusion :=
+        τ ≤ BinaryWorldModel.queryStrength (State := State) (Query := Query) W r.conclusion :=
       le_trans hpremτ hrc
     simpa [hqEq] using hconc
 
@@ -183,7 +183,7 @@ theorem leastRuleClosure_thresholdValid
     thresholdValid (State := State) (Query := Query) W τ
       (leastRuleClosure (State := State) (Query := Query) R W seed) := by
   let goodSet : Set Query :=
-    { q | τ ≤ WorldModel.queryStrength (State := State) (Query := Query) W q }
+    { q | τ ≤ BinaryWorldModel.queryStrength (State := State) (Query := Query) W q }
   have hPref : immediateStep (State := State) (Query := Query) R W seed goodSet ⊆ goodSet := by
     intro q hq
     exact

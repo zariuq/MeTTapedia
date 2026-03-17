@@ -170,31 +170,31 @@ end SemanticViews
 
 section GenericWM
 
-variable {State : Type u} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type u} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- World-model evidence as a semantic-core view. -/
-noncomputable def evidenceView (W : State) : GrammarInterface Mettapedia.Logic.EvidenceQuantale.Evidence where
+noncomputable def evidenceView (W : State) : GrammarInterface Mettapedia.Logic.EvidenceQuantale.BinaryEvidence where
   observe := fun t => gfEvidenceDenote W t
 
 theorem evidenceView_factorsThrough_semanticCore (W : State) :
     FactorsThrough semanticCore.observe (evidenceView W).observe := by
-  refine ⟨fun p => WorldModel.evidence W p, ?_⟩
+  refine ⟨fun p => BinaryWorldModel.evidence W p, ?_⟩
   intro t
   rfl
 
-/-- Evidence extraction at a fixed state is a semantics-preserving interface. -/
+/-- BinaryEvidence extraction at a fixed state is a semantics-preserving interface. -/
 noncomputable def evidenceInterface (W : State) :
-    SemanticsPreservingInterface Mettapedia.Logic.EvidenceQuantale.Evidence where
+    SemanticsPreservingInterface Mettapedia.Logic.EvidenceQuantale.BinaryEvidence where
   observe := (evidenceView W).observe
   factorsThroughSemanticCore := evidenceView_factorsThrough_semanticCore W
 
 /-- World-model strength as a semantic-core view. -/
 noncomputable def strengthView (W : State) : GrammarInterface ℝ≥0∞ where
-  observe := fun t => WorldModel.queryStrength W (gfAbstractToPattern t)
+  observe := fun t => BinaryWorldModel.queryStrength W (gfAbstractToPattern t)
 
 theorem strengthView_factorsThrough_semanticCore (W : State) :
     FactorsThrough semanticCore.observe (strengthView W).observe := by
-  refine ⟨fun p => WorldModel.queryStrength W p, ?_⟩
+  refine ⟨fun p => BinaryWorldModel.queryStrength W p, ?_⟩
   intro t
   rfl
 
@@ -223,7 +223,7 @@ theorem semanticCoreEq_implies_queryEq
   have hPat : gfAbstractToPattern t₁ = gfAbstractToPattern t₂ := by
     simpa [semanticCore] using hCore
   intro W
-  simpa [semanticCore] using congrArg (WorldModel.evidence W) hPat
+  simpa [semanticCore] using congrArg (BinaryWorldModel.evidence W) hPat
 
 /-- Core equality preserves evidence in every world-model state. -/
 theorem semanticCoreEq_implies_evidenceAgreement
@@ -239,12 +239,12 @@ theorem semanticCoreEq_implies_strengthAgreement
     {t₁ t₂ : AbstractNode}
     (hCore : semanticCore.observe t₁ = semanticCore.observe t₂) :
     ∀ W : State,
-      WorldModel.queryStrength W (semanticCore.observe t₁) =
-        WorldModel.queryStrength W (semanticCore.observe t₂) := by
+      BinaryWorldModel.queryStrength W (semanticCore.observe t₁) =
+        BinaryWorldModel.queryStrength W (semanticCore.observe t₂) := by
   have hPat : gfAbstractToPattern t₁ = gfAbstractToPattern t₂ := by
     simpa [semanticCore] using hCore
   intro W
-  simpa [semanticCore] using congrArg (WorldModel.queryStrength W) hPat
+  simpa [semanticCore] using congrArg (BinaryWorldModel.queryStrength W) hPat
 
 end GenericWM
 

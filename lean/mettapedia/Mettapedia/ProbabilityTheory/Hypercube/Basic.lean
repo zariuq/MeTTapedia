@@ -51,7 +51,7 @@ This framework helps answer whether K&S is "natural":
 - Stay & Wells, "Generating Hypercubes of Type Systems"
 - Cox, "Probability, Frequency and Reasonable Expectation" (1946)
 - Knuth & Skilling, "Foundations of Inference" (2012)
-- Shafer, "A Mathematical Theory of Evidence" (1976)
+- Shafer, "A Mathematical Theory of BinaryEvidence" (1976)
 - von Neumann, "Mathematical Foundations of Quantum Mechanics" (1932)
 -/
 
@@ -454,12 +454,12 @@ PLN occupies a special position in the hypercube:
    - Extends Walley's imprecise probabilities
    - Adds lookahead parameter k for future evidence
 
-3. **Evidence PLN** (Evidence counts): different *semantics layer*
-   - Carrier: `Evidence := (n⁺, n⁻)` with the coordinatewise (partial) order
+3. **BinaryEvidence PLN** (BinaryEvidence counts): different *semantics layer*
+   - Carrier: `BinaryEvidence := (n⁺, n⁻)` with the coordinatewise (partial) order
    - Incomparables are fundamental ("more positive evidence but less negative evidence")
-   - Therefore there is **no faithful** point-valued representation `Θ : Evidence → ℝ`
+   - Therefore there is **no faithful** point-valued representation `Θ : BinaryEvidence → ℝ`
      (formalized in `Mettapedia.Logic.PLN_KS_Bridge`)
-   - `toStrength : Evidence → [0,1]` is a lossy *view* (a forgetful projection), not an identification
+   - `toStrength : BinaryEvidence → [0,1]` is a lossy *view* (a forgetful projection), not an identification
 
 The PLN deduction formula:
   sAC = sAB * sBC + (1 - sAB) * (pC - pB * sBC) / (1 - pB)
@@ -1376,7 +1376,7 @@ The hypercube has a deep connection to quantale theory:
 
 - The canonical “PLN” value space in this repo is **evidence** `(n⁺, n⁻)` (see
   `Mettapedia.Logic.EvidenceQuantale`). This carrier has a natural *partial order* with incomparable
-  elements, so it does **not** admit a faithful point-valued representation `Θ : Evidence → ℝ`
+  elements, so it does **not** admit a faithful point-valued representation `Θ : BinaryEvidence → ℝ`
   (see `Mettapedia.Logic.PLN_KS_Bridge`).
 
 - The familiar strength-level formulas in `[0,1]` are therefore best treated as **views/projections**
@@ -1401,8 +1401,8 @@ probability/conditioning and can express deduction in the usual `[0,1]` formulas
 - `Mettapedia.Logic.PLNDeduction` - Core deduction formula (numeric)
 - `Mettapedia.Logic.PLNDerivation` - Measure-theoretic derivation (explicit independence)
 - `Mettapedia.Logic.PLNInferenceRules` - Chapter 5-style rules (similarity, MP, etc.)
-- `Mettapedia.Logic.EvidenceQuantale` - Evidence counts as a (Heyting/Frame) truth-value carrier
-- `Mettapedia.Logic.PLN_KS_Bridge` - Totality gate: no faithful `Θ : Evidence → ℝ`
+- `Mettapedia.Logic.EvidenceQuantale` - BinaryEvidence counts as a (Heyting/Frame) truth-value carrier
+- `Mettapedia.Logic.PLN_KS_Bridge` - Totality gate: no faithful `Θ : BinaryEvidence → ℝ`
 - `Mettapedia.Implementation.MettaVerification` - MeTTa parity (deduction + consistency helpers)
 - `Mettapedia.Algebra.QuantaleWeakness` - Abstract quantale theory
 
@@ -1498,8 +1498,8 @@ is the enrichment of that operad over [0,1] or ℝ≥0.
 - `Mettapedia.Algebra.QuantaleWeakness` - Quantale morphisms + weakness transport (`map_weakness`)
 - `Mettapedia.ProbabilityTheory.Hypercube.QuantaleSemantics` - Concrete quantale value spaces + morphisms
 - `Mettapedia.ProbabilityTheory.FreeProbability.Basic` - Noncrossing partitions
-- `Mettapedia.Logic.EvidenceQuantale` - Evidence truth values (partial order + tensor + Heyting ops)
-- `Mettapedia.Logic.PLN_KS_Bridge` - Totality gate: no faithful `Θ : Evidence → ℝ`
+- `Mettapedia.Logic.EvidenceQuantale` - BinaryEvidence truth values (partial order + tensor + Heyting ops)
+- `Mettapedia.Logic.PLN_KS_Bridge` - Totality gate: no faithful `Θ : BinaryEvidence → ℝ`
 - Future: `Mettapedia.Algebra.IntervalQuantale` - Imprecise probability
 - Future: `Mettapedia.Algebra.FreeQuantale` - Free probability quantale
 -/
@@ -1686,7 +1686,7 @@ For vertices with `quantaleTypeOf v = .commutative`:
 |---------------|-------------------|---------|
 | Strength composition | ⊗ (tensor) | s_{AC} = s_{AB} ⊗ s_{BC} + ... |
 | Bayes inversion | Residuation (→) | P(A\|B) = P(B\|A) · P(A) / P(B) |
-| Evidence revision | Join (⊔) | Combine independent sources |
+| BinaryEvidence revision | Join (⊔) | Combine independent sources |
 | Confidence bound | Residuation inequality | From adjunction |
 
 For vertices with `quantaleTypeOf v = .interval`:

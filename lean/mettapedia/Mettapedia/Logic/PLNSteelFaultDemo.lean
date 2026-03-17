@@ -166,7 +166,7 @@ noncomputable instance instEvidenceType : EvidenceType FaultState where
 
 end FaultState
 
-/-! ## §3: Evidence Extraction -/
+/-! ## §3: BinaryEvidence Extraction -/
 
 /-- Extract the Normal-Gamma evidence for a given fault type. -/
 def faultEvidence (s : FaultState) : FaultType → NormalGammaEvidence
@@ -187,7 +187,7 @@ def totalSourceCount (s : FaultState) : ℕ :=
 /-- Per-fault exceedance evidence. -/
 noncomputable def faultExceedanceEvidence
     (spec : ExceedanceSpec) (priors : FaultType → NormalGammaPrior)
-    (s : FaultState) (f : FaultType) (c : ℝ) : Evidence :=
+    (s : FaultState) (f : FaultType) (c : ℝ) : BinaryEvidence :=
   let ngEvid := faultEvidence s f
   let post := posterior (priors f) ngEvid
   let p := spec.exceedance post c

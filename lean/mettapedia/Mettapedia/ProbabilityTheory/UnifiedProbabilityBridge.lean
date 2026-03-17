@@ -16,7 +16,7 @@ This file serves as the master bridge connecting four perspectives on probabilit
 and inference:
 
 1. **Bayesian Networks** - DAG structure, conditional independence, d-separation
-2. **PLN Evidence** - commutative quantale, deduction rules, compositional inference
+2. **PLN BinaryEvidence** - commutative quantale, deduction rules, compositional inference
 3. **Heyting K&S** - interval bounds, excluded middle gap, epistemic uncertainty
 4. **Beta Distribution** - conjugate updating, evidence aggregation, Bayesian learning
 
@@ -28,7 +28,7 @@ and inference:
 2. **Heyting to Uncertainty**: Non-Boolean elements (excluded middle gap > 0)
    naturally represent epistemic uncertainty and interval-valued probabilities.
 
-3. **Beta to Learning**: The Beta-Bernoulli conjugacy makes Evidence a sufficient
+3. **Beta to Learning**: The Beta-Bernoulli conjugacy makes BinaryEvidence a sufficient
    statistic for Bayesian learning, with hplus capturing conjugate updates.
 
 4. **BN to Structure**: Bayesian networks provide the graphical structure for
@@ -78,44 +78,44 @@ theorem dsep_is_symmetric (V : Type*) (G : DirectedGraph V) (X Y Z : Set V) :
 
 end BayesianNetworks
 
-/-! ## Pillar 2: PLN Evidence - Quantale - Deduction -/
+/-! ## Pillar 2: PLN BinaryEvidence - Quantale - Deduction -/
 
 section PLNQuantale
 
-/-- Evidence has a CommSemigroup structure (tensor is commutative). -/
-noncomputable example : CommSemigroup Evidence := inferInstance
+/-- BinaryEvidence has a CommSemigroup structure (tensor is commutative). -/
+noncomputable example : CommSemigroup BinaryEvidence := inferInstance
 
-/-- Evidence has a CompleteLattice structure. -/
-noncomputable example : CompleteLattice Evidence := inferInstance
+/-- BinaryEvidence has a CompleteLattice structure. -/
+noncomputable example : CompleteLattice BinaryEvidence := inferInstance
 
-/-- Evidence forms a frame (complete Heyting algebra). -/
-noncomputable example : Order.Frame Evidence := inferInstance
+/-- BinaryEvidence forms a frame (complete Heyting algebra). -/
+noncomputable example : Order.Frame BinaryEvidence := inferInstance
 
 /-- Tensor is associative (chaining inference steps). -/
 theorem tensor_associativity :
-    ∀ e1 e2 e3 : Evidence, (e1 * e2) * e3 = e1 * (e2 * e3) :=
-  Evidence.tensor_assoc
+    ∀ e1 e2 e3 : BinaryEvidence, (e1 * e2) * e3 = e1 * (e2 * e3) :=
+  BinaryEvidence.tensor_assoc
 
 /-- Tensor is commutative (order-independence of evidence). -/
 theorem tensor_commutativity :
-    ∀ e1 e2 : Evidence, e1 * e2 = e2 * e1 :=
-  Evidence.tensor_comm
+    ∀ e1 e2 : BinaryEvidence, e1 * e2 = e2 * e1 :=
+  BinaryEvidence.tensor_comm
 
 /-- Unit evidence is neutral. -/
 theorem tensor_unit :
-    ∀ e : Evidence, e * Evidence.one = e :=
-  Evidence.tensor_one
+    ∀ e : BinaryEvidence, e * BinaryEvidence.one = e :=
+  BinaryEvidence.tensor_one
 
 /-- The main confidence compounding theorem for independent sources. -/
 theorem confidence_compounds_correctly :
-    (∀ e1 e2 : Evidence, e1 * e2 = e2 * e1) ∧
-    (∀ e1 e2 e3 : Evidence, (e1 * e2) * e3 = e1 * (e2 * e3)) ∧
-    (∀ e : Evidence, e * Evidence.one = e) ∧
-    (∀ e1 e2 : Evidence, (e1 * e2).pos = e1.pos * e2.pos ∧ (e1 * e2).neg = e1.neg * e2.neg) :=
+    (∀ e1 e2 : BinaryEvidence, e1 * e2 = e2 * e1) ∧
+    (∀ e1 e2 e3 : BinaryEvidence, (e1 * e2) * e3 = e1 * (e2 * e3)) ∧
+    (∀ e : BinaryEvidence, e * BinaryEvidence.one = e) ∧
+    (∀ e1 e2 : BinaryEvidence, (e1 * e2).pos = e1.pos * e2.pos ∧ (e1 * e2).neg = e1.neg * e2.neg) :=
   confidence_compounding_main
 
 /-- Odds ratios compose multiplicatively under tensor. -/
-theorem odds_compose (e1 e2 : Evidence) (h1 : e1.neg ≠ 0) (h2 : e2.neg ≠ 0) :
+theorem odds_compose (e1 e2 : BinaryEvidence) (h1 : e1.neg ≠ 0) (h2 : e2.neg ≠ 0) :
     (e1 * e2).pos / (e1 * e2).neg = (e1.pos / e1.neg) * (e2.pos / e2.neg) :=
   odds_ratio_composition e1 e2 h1 h2
 
@@ -126,17 +126,17 @@ end PLNQuantale
 section HeytingIntervals
 
 /-- Total evidence function. -/
-noncomputable example (e : Evidence) : ENNReal := totalEvidence e
+noncomputable example (e : BinaryEvidence) : ENNReal := totalEvidence e
 
 /-- Strength function for evidence. -/
-noncomputable example (e : Evidence) : ENNReal := strength e
+noncomputable example (e : BinaryEvidence) : ENNReal := strength e
 
 /-- Credal gap measures uncertainty (returns 0 for singletons). -/
-example (e : Evidence) : credalGap {e} = 0 := credalGap_singleton e
+example (e : BinaryEvidence) : credalGap {e} = 0 := credalGap_singleton e
 
-/-- Evidence is richer than just strength intervals. -/
+/-- BinaryEvidence is richer than just strength intervals. -/
 theorem evidence_richer :
-    ∃ e1 e2 : Evidence,
+    ∃ e1 e2 : BinaryEvidence,
       strength e1 = strength e2 ∧ e1 ≠ e2 ∧ totalEvidence e1 ≠ totalEvidence e2 :=
   evidence_richer_than_strength
 
@@ -146,9 +146,9 @@ end HeytingIntervals
 
 section BetaLearning
 
-/-- Evidence is a sufficient statistic for Beta-Bernoulli inference. -/
+/-- BinaryEvidence is a sufficient statistic for Beta-Bernoulli inference. -/
 theorem evidence_is_sufficient_stat :
-    ∀ e : Evidence, ∀ prior_α prior_β : ENNReal,
+    ∀ e : BinaryEvidence, ∀ prior_α prior_β : ENNReal,
       let posterior_α := e.pos + prior_α
       let posterior_β := e.neg + prior_β
       posterior_α + posterior_β = e.pos + e.neg + prior_α + prior_β := by
@@ -157,25 +157,25 @@ theorem evidence_is_sufficient_stat :
 
 /-- hplus corresponds to combining evidence from the same phenomenon. -/
 theorem hplus_adds_counts :
-    ∀ e1 e2 : Evidence,
+    ∀ e1 e2 : BinaryEvidence,
       (e1 + e2).pos = e1.pos + e2.pos ∧ (e1 + e2).neg = e1.neg + e2.neg := by
   intro e1 e2
   constructor <;> rfl
 
 /-- tensor corresponds to combining independent evidence (odds multiply). -/
 theorem tensor_multiplies_counts :
-    ∀ e1 e2 : Evidence,
+    ∀ e1 e2 : BinaryEvidence,
       (e1 * e2).pos = e1.pos * e2.pos ∧ (e1 * e2).neg = e1.neg * e2.neg := by
   intro e1 e2
-  simp only [Evidence.tensor_def, and_self]
+  simp only [BinaryEvidence.tensor_def, and_self]
 
 /-- Contrast: hplus vs tensor interpretation. -/
 theorem hplus_vs_tensor :
-    (∀ e1 e2 : Evidence, (e1 + e2).pos = e1.pos + e2.pos) ∧
-    (∀ e1 e2 : Evidence, (e1 * e2).pos = e1.pos * e2.pos) := by
+    (∀ e1 e2 : BinaryEvidence, (e1 + e2).pos = e1.pos + e2.pos) ∧
+    (∀ e1 e2 : BinaryEvidence, (e1 * e2).pos = e1.pos * e2.pos) := by
   constructor
   · intro e1 e2; rfl
-  · intro e1 e2; simp only [Evidence.tensor_def]
+  · intro e1 e2; simp only [BinaryEvidence.tensor_def]
 
 end BetaLearning
 
@@ -185,25 +185,25 @@ section GrandUnification
 
 /-- The four pillars are mathematically compatible.
 
-    1. **Quantale structure**: (Evidence, *, +, ≤) forms a commutative quantale
+    1. **Quantale structure**: (BinaryEvidence, *, +, ≤) forms a commutative quantale
     2. **Deduction semantics**: Tensor captures compositional inference
     3. **Uncertainty representation**: Credal sets give interval bounds
     4. **Bayesian semantics**: hplus/tensor correspond to conjugate/independent updates
 -/
 theorem four_pillars_unified :
-    -- Pillar 1: Evidence has CommSemigroup and CompleteLattice
-    Nonempty (CommSemigroup Evidence) ∧
-    Nonempty (CompleteLattice Evidence) ∧
+    -- Pillar 1: BinaryEvidence has CommSemigroup and CompleteLattice
+    Nonempty (CommSemigroup BinaryEvidence) ∧
+    Nonempty (CompleteLattice BinaryEvidence) ∧
     -- Pillar 2: Tensor is the correct composition operation
-    (∀ e1 e2 : Evidence, (e1 * e2).pos = e1.pos * e2.pos ∧ (e1 * e2).neg = e1.neg * e2.neg) ∧
+    (∀ e1 e2 : BinaryEvidence, (e1 * e2).pos = e1.pos * e2.pos ∧ (e1 * e2).neg = e1.neg * e2.neg) ∧
     -- Pillar 3: Credal gaps measure uncertainty (singleton has gap 0)
-    (∀ e : Evidence, credalGap {e} = 0) ∧
+    (∀ e : BinaryEvidence, credalGap {e} = 0) ∧
     -- Pillar 4: hplus adds, tensor multiplies
-    (∀ e1 e2 : Evidence, (e1 + e2).pos = e1.pos + e2.pos ∧ (e1 * e2).pos = e1.pos * e2.pos) := by
+    (∀ e1 e2 : BinaryEvidence, (e1 + e2).pos = e1.pos + e2.pos ∧ (e1 * e2).pos = e1.pos * e2.pos) := by
   refine ⟨⟨inferInstance⟩, ⟨inferInstance⟩, ?_, ?_, ?_⟩
   · -- Tensor structure
     intro e1 e2
-    simp only [Evidence.tensor_def, and_self]
+    simp only [BinaryEvidence.tensor_def, and_self]
   · -- Credal gap for singletons
     intro e
     exact credalGap_singleton e
@@ -211,7 +211,7 @@ theorem four_pillars_unified :
     intro e1 e2
     constructor
     · rfl
-    · simp only [Evidence.tensor_def]
+    · simp only [BinaryEvidence.tensor_def]
 
 end GrandUnification
 
@@ -223,7 +223,7 @@ in this project are mathematically compatible:
 1. **Bayesian Networks**: DAG structure, conditional independence, d-separation
    - Files: DirectedGraph.lean, BayesianNetwork.lean, DSeparation.lean
 
-2. **PLN Evidence Quantale**: Commutative quantale, frame, deduction
+2. **PLN BinaryEvidence Quantale**: Commutative quantale, frame, deduction
    - Files: EvidenceQuantale.lean, EvidenceQuantale.lean, PLNDeduction.lean
 
 3. **Heyting K&S**: Interval bounds, excluded middle gap, uncertainty
@@ -232,7 +232,7 @@ in this project are mathematically compatible:
 4. **Beta-Bernoulli**: Conjugate updating, evidence aggregation
    - Files: EvidenceBeta.lean, ConfidenceCompoundingTheorem.lean
 
-The key insight is that PLN's 2D Evidence structure (n+, n-) naturally supports:
+The key insight is that PLN's 2D BinaryEvidence structure (n+, n-) naturally supports:
 - Quantale tensor for composing conditional relationships
 - hplus for aggregating same-phenomenon evidence
 - Strength function for point probabilities

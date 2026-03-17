@@ -1,7 +1,7 @@
 import Mathlib.Data.Real.Basic
 
 /-!
-# Evidence Counts Views
+# BinaryEvidence Counts Views
 
 Shared count-based views for binary evidence.
 

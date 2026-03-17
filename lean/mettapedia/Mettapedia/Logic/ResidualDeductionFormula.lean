@@ -4,7 +4,7 @@ import Mettapedia.Logic.EvidenceQuantale
 /-!
 # Residual Deduction Formula
 
-This file shows how the residuation operation (Heyting implication) in the Evidence
+This file shows how the residuation operation (Heyting implication) in the BinaryEvidence
 quantale captures the **indirect path** in PLN deduction.
 
 ## The Deduction Decomposition
@@ -24,7 +24,7 @@ Where:
 ## Key Insight
 
 In a quantale/frame, residuation `a ⊸ b` is the largest element `c` such that
-`a * c ≤ b`. For Evidence, this captures:
+`a * c ≤ b`. For BinaryEvidence, this captures:
 - Given evidence for A→B with strength s
 - What's the maximal compatible evidence for the indirect B→C path?
 
@@ -40,20 +40,20 @@ namespace Mettapedia.Logic.ResidualDeductionFormula
 open Mettapedia.Logic.EvidenceQuantale
 open Mettapedia.Logic.EvidenceQuantale
 
-/-! ## Residuation in Evidence -/
+/-! ## Residuation in BinaryEvidence -/
 
 section Residuation
 
-/-- The residuation (Heyting implication) in Evidence.
+/-- The residuation (Heyting implication) in BinaryEvidence.
 
     For a frame, `a ⊸ b = ⊔ {c | a * c ≤ b}`.
 
-    In Evidence terms: given evidence E_AB for A→B, and target E_BC for B→C,
+    In BinaryEvidence terms: given evidence E_AB for A→B, and target E_BC for B→C,
     the residuated value represents the maximal compatible indirect contribution.
 -/
-noncomputable def residuate (a b : Evidence) : Evidence :=
+noncomputable def residuate (a b : BinaryEvidence) : BinaryEvidence :=
   -- In a frame, this is the Heyting implication a ⟹ b
-  -- For Evidence with tensor = componentwise multiplication:
+  -- For BinaryEvidence with tensor = componentwise multiplication:
   -- (a ⊸ b).pos = sup {c.pos | a.pos * c.pos ≤ b.pos}
   -- When a.pos > 0: (a ⊸ b).pos = b.pos / a.pos
   -- When a.pos = 0: (a ⊸ b).pos = ⊤
@@ -67,12 +67,12 @@ noncomputable def residuate (a b : Evidence) : Evidence :=
     This is the defining property of residuation in a quantale.
     Requires a ≠ 0 and b ≠ ⊤ componentwise for clean equivalence.
 -/
-theorem residuate_adjoint' (a b c : Evidence)
+theorem residuate_adjoint' (a b c : BinaryEvidence)
     (ha_pos : a.pos ≠ 0) (ha_neg : a.neg ≠ 0)
     (hb_pos : b.pos ≠ ⊤) (hb_neg : b.neg ≠ ⊤) :
     a * c ≤ b ↔ c ≤ residuate a b := by
-  rw [Evidence.le_def, Evidence.le_def]
-  simp only [Evidence.tensor_def, residuate, ha_pos, ha_neg, ↓reduceIte]
+  rw [BinaryEvidence.le_def, BinaryEvidence.le_def]
+  simp only [BinaryEvidence.tensor_def, residuate, ha_pos, ha_neg, ↓reduceIte]
   constructor
   · intro ⟨hpos, hneg⟩
     constructor
@@ -94,12 +94,12 @@ theorem residuate_adjoint' (a b c : Evidence)
     Note: The forward direction fails when a = ⊤ and b = ⊤ (since ⊤/⊤ = 0 in ENNReal).
     For the full iff with hypotheses avoiding this edge case, see `residuate_adjoint'`.
 -/
-theorem residuate_adjoint_mp (a b c : Evidence) :
+theorem residuate_adjoint_mp (a b c : BinaryEvidence) :
     c ≤ residuate a b → a * c ≤ b := by
   intro h
-  rw [Evidence.le_def] at h
-  rw [Evidence.le_def]
-  simp only [Evidence.tensor_def, residuate] at h ⊢
+  rw [BinaryEvidence.le_def] at h
+  rw [BinaryEvidence.le_def]
+  simp only [BinaryEvidence.tensor_def, residuate] at h ⊢
   obtain ⟨hpos, hneg⟩ := h
   constructor
   · by_cases ha : a.pos = 0
@@ -116,22 +116,22 @@ theorem residuate_adjoint_mp (a b c : Evidence) :
       · rw [ENNReal.le_div_iff_mul_le (Or.inl ha) (Or.inr hb), mul_comm] at hneg; exact hneg
 
 /-- Residuation with unit is identity. -/
-theorem residuate_one (b : Evidence) :
-    residuate Evidence.one b = b := by
-  simp only [residuate, Evidence.one]
+theorem residuate_one (b : BinaryEvidence) :
+    residuate BinaryEvidence.one b = b := by
+  simp only [residuate, BinaryEvidence.one]
   ext
   · simp only [one_ne_zero, ↓reduceIte, div_one]
   · simp only [one_ne_zero, ↓reduceIte, div_one]
 
 /-- Version with hypotheses: a * (a ⊸ b) ≤ b. -/
-theorem tensor_residuate_le' (a b : Evidence)
+theorem tensor_residuate_le' (a b : BinaryEvidence)
     (ha_pos : a.pos ≠ 0) (ha_neg : a.neg ≠ 0)
     (hb_pos : b.pos ≠ ⊤) (hb_neg : b.neg ≠ ⊤) :
     a * (residuate a b) ≤ b := by
   exact (residuate_adjoint' a b (residuate a b) ha_pos ha_neg hb_pos hb_neg).mpr le_rfl
 
 /-- Tensor distributes over residuation: a * (a ⊸ b) ≤ b -/
-theorem tensor_residuate_le (a b : Evidence) :
+theorem tensor_residuate_le (a b : BinaryEvidence) :
     a * (residuate a b) ≤ b := by
   exact residuate_adjoint_mp a b (residuate a b) le_rfl
 
@@ -152,10 +152,10 @@ section IndirectPath
 
     In quantale terms, this relates to residuation of the direct path.
 -/
-noncomputable def indirectPathContribution (E_AB E_BC_neg : Evidence) : Evidence :=
+noncomputable def indirectPathContribution (E_AB E_BC_neg : BinaryEvidence) : BinaryEvidence :=
   -- The indirect path contribution is weighted by P(¬B|A) = 1 - s_AB
   -- where s_AB is the strength of E_AB
-  let s_AB := Evidence.toStrength E_AB
+  let s_AB := BinaryEvidence.toStrength E_AB
   let complement_weight := 1 - s_AB  -- ENNReal truncated subtraction
   ⟨complement_weight * E_BC_neg.pos, complement_weight * E_BC_neg.neg⟩
 
@@ -164,9 +164,9 @@ noncomputable def indirectPathContribution (E_AB E_BC_neg : Evidence) : Evidence
     The intuition: if we know A→B has strength s, then the "leftover" for
     the indirect path A→¬B→C is captured by residuating the direct path.
 -/
-theorem indirect_path_via_residuate (E_AB E_BC E_BC_neg : Evidence) :
+theorem indirect_path_via_residuate (E_AB E_BC E_BC_neg : BinaryEvidence) :
     -- The indirect contribution relates to residuation
-    ∃ (indirect : Evidence),
+    ∃ (indirect : BinaryEvidence),
       indirect ≤ residuate E_AB E_BC ∧
       -- The indirect path uses E_BC_neg
       indirect ≤ E_BC_neg := by
@@ -194,9 +194,9 @@ section DeductionDecomposition
     The key insight is that these two components are "orthogonal" in the
     sense that they cover the full probability space via B and ¬B.
 -/
-theorem deduction_decomposition (E_AB E_BC E_BC_neg : Evidence) :
+theorem deduction_decomposition (E_AB E_BC E_BC_neg : BinaryEvidence) :
     -- The full deduction can be bounded by direct + indirect
-    ∃ (E_AC : Evidence),
+    ∃ (E_AC : BinaryEvidence),
       -- E_AC is at least the direct path
       E_AB * E_BC ≤ E_AC ∧
       -- The bound is meaningful (not just ⊤)
@@ -204,8 +204,8 @@ theorem deduction_decomposition (E_AB E_BC E_BC_neg : Evidence) :
   use E_AB * E_BC + indirectPathContribution E_AB E_BC_neg
   constructor
   · -- E_AB * E_BC ≤ E_AB * E_BC + indirect (component-wise for ENNReal)
-    rw [Evidence.le_def]
-    simp only [Evidence.hplus_def]
+    rw [BinaryEvidence.le_def]
+    simp only [BinaryEvidence.hplus_def]
     constructor <;> exact le_self_add
   · exact le_rfl
 
@@ -214,11 +214,11 @@ theorem deduction_decomposition (E_AB E_BC E_BC_neg : Evidence) :
     When we compose A→B with B→C via tensor, we get the "through B" contribution.
     This is multiplicative in the odds/counts interpretation.
 -/
-theorem direct_path_is_tensor (E_AB E_BC : Evidence) :
+theorem direct_path_is_tensor (E_AB E_BC : BinaryEvidence) :
     -- The direct path contribution
     (E_AB * E_BC).pos = E_AB.pos * E_BC.pos ∧
     (E_AB * E_BC).neg = E_AB.neg * E_BC.neg := by
-  simp only [Evidence.tensor_def, and_self]
+  simp only [BinaryEvidence.tensor_def, and_self]
 
 /-- Residuation captures the maximal indirect contribution (non-degenerate case).
 
@@ -227,11 +227,11 @@ theorem direct_path_is_tensor (E_AB E_BC : Evidence) :
 
     Note: Requires a ≠ 0 and b ≠ ⊤ for the equivalence to hold.
 -/
-theorem residuate_bounds_indirect (E_AB E_target : Evidence)
+theorem residuate_bounds_indirect (E_AB E_target : BinaryEvidence)
     (ha_pos : E_AB.pos ≠ 0) (ha_neg : E_AB.neg ≠ 0)
     (ht_pos : E_target.pos ≠ ⊤) (ht_neg : E_target.neg ≠ ⊤) :
     -- For any valid indirect contribution c satisfying a * c ≤ target
-    ∀ c : Evidence, E_AB * c ≤ E_target →
+    ∀ c : BinaryEvidence, E_AB * c ≤ E_target →
       c ≤ residuate E_AB E_target := by
   intro c hle
   exact (residuate_adjoint' E_AB E_target c ha_pos ha_neg ht_pos ht_neg).mp hle
@@ -244,7 +244,7 @@ section HeytingConnection
 
 /-- In a frame (complete Heyting algebra), residuation equals Heyting implication.
 
-    For Evidence as a frame:
+    For BinaryEvidence as a frame:
       a ⊸ b = a ⟹ b = ⊔ {c | a ⊓ c ≤ b}
 
     But since our tensor is multiplication (not meet), we use the quantale version:
@@ -253,7 +253,7 @@ section HeytingConnection
     Note: The "largest c" property requires a ≠ 0 and b ≠ ⊤ for the forward direction.
     The backward direction (a * (residuate a b) ≤ b) always holds.
 -/
-theorem residuate_is_quantale_himp (a b : Evidence)
+theorem residuate_is_quantale_himp (a b : BinaryEvidence)
     (ha_pos : a.pos ≠ 0) (ha_neg : a.neg ≠ 0)
     (hb_pos : b.pos ≠ ⊤) (hb_neg : b.neg ≠ ⊤) :
     -- residuate a b is the largest c with a * c ≤ b
@@ -263,7 +263,7 @@ theorem residuate_is_quantale_himp (a b : Evidence)
   · exact fun c hle => (residuate_adjoint' a b c ha_pos ha_neg hb_pos hb_neg).mp hle
   · exact tensor_residuate_le a b
 
-/-- The frame structure on Evidence has both meet-based and tensor-based implications.
+/-- The frame structure on BinaryEvidence has both meet-based and tensor-based implications.
 
     - Heyting implication (meet): a ⟹ b = ⊔ {c | a ⊓ c ≤ b}
     - Quantale residuation (tensor): a ⊸ b = ⊔ {c | a * c ≤ b}
@@ -275,11 +275,11 @@ theorem residuate_is_quantale_himp (a b : Evidence)
     For the non-degenerate case, see `residuate_adjoint'`.
 -/
 theorem frame_has_both_implications :
-    -- Evidence has frame (Heyting) structure
-    Nonempty (Order.Frame Evidence) ∧
+    -- BinaryEvidence has frame (Heyting) structure
+    Nonempty (Order.Frame BinaryEvidence) ∧
     -- And quantale residuation via tensor (non-degenerate case)
-    (∀ a b : Evidence, a.pos ≠ 0 → a.neg ≠ 0 → b.pos ≠ ⊤ → b.neg ≠ ⊤ →
-      ∃ r : Evidence, ∀ c, a * c ≤ b ↔ c ≤ r) := by
+    (∀ a b : BinaryEvidence, a.pos ≠ 0 → a.neg ≠ 0 → b.pos ≠ ⊤ → b.neg ≠ ⊤ →
+      ∃ r : BinaryEvidence, ∀ c, a * c ≤ b ↔ c ≤ r) := by
   constructor
   · exact ⟨inferInstance⟩
   · intro a b ha_pos ha_neg hb_pos hb_neg
@@ -293,7 +293,7 @@ end HeytingConnection
 
 This file establishes:
 
-1. **Residuation in Evidence**: The quantale residuation a ⊸ b
+1. **Residuation in BinaryEvidence**: The quantale residuation a ⊸ b
 2. **Adjointness**: a * c ≤ b ↔ c ≤ (a ⊸ b)
 3. **Indirect Path**: Residuation captures the indirect deduction contribution
 4. **Deduction Decomposition**: Full deduction = direct (tensor) + indirect (residual)
@@ -303,7 +303,7 @@ The key insight is that PLN deduction naturally decomposes into:
 - **Direct path** (through B): captured by tensor composition
 - **Indirect path** (through ¬B): bounded by residuation
 
-This connects the algebraic structure of Evidence (quantale/frame) to the
+This connects the algebraic structure of BinaryEvidence (quantale/frame) to the
 probabilistic semantics of PLN deduction rules.
 -/
 

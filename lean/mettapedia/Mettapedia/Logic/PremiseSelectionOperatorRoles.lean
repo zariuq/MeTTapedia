@@ -58,11 +58,11 @@ structure OperatorRoleTheoryFiniteNormalized (Goal Fact : Type*)
   likelihood_normalize_closed_finite :
     ∀ t l, t ≠ 0 → t ≠ ⊤ → IsLikelihood l → IsLikelihood (normalizeScorer t l)
 
-/-- Evidence totals are finite (not `⊤`) at every goal/fact point. -/
+/-- BinaryEvidence totals are finite (not `⊤`) at every goal/fact point. -/
 def IsFiniteScorer {Goal Fact : Type*} (s : Scorer Goal Fact) : Prop :=
   ∀ g f, (s.score g f).total ≠ ⊤
 
-/-- Evidence totals are finite and nonzero at every goal/fact point. -/
+/-- BinaryEvidence totals are finite and nonzero at every goal/fact point. -/
 def IsFiniteNonzeroScorer {Goal Fact : Type*} (s : Scorer Goal Fact) : Prop :=
   ∀ g f, (s.score g f).total ≠ 0 ∧ (s.score g f).total ≠ ⊤
 
@@ -147,7 +147,7 @@ theorem gatedPooledPrior_zero_local
   apply Scorer.ext
   intro g f
   simp [gatedPooledPrior, fuse, scaleScorer, scaleEvidence]
-  have hz : ({ pos := 0, neg := 0 } : Mettapedia.Logic.EvidenceQuantale.Evidence) = 0 := rfl
+  have hz : ({ pos := 0, neg := 0 } : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence) = 0 := rfl
   simp [hz] at *
 
 theorem gatedPosterior_zero_local
@@ -173,10 +173,10 @@ noncomputable def partitionedPrior
       = zeroScorer := by
   apply Scorer.ext
   intro g f
-  change (0 : Mettapedia.Logic.EvidenceQuantale.Evidence) =
+  change (0 : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence) =
       (zeroScorer : Scorer Goal Fact).score g f
-  change (0 : Mettapedia.Logic.EvidenceQuantale.Evidence) =
-      ({ pos := 0, neg := 0 } : Mettapedia.Logic.EvidenceQuantale.Evidence)
+  change (0 : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence) =
+      ({ pos := 0, neg := 0 } : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence)
   rfl
 
 @[simp] theorem partitionedPrior_zero_weights
@@ -193,7 +193,7 @@ noncomputable def partitionedPrior
   intro b hb
   have hb0 : weight b = 0 := hzero b hb
   simp [scaleEvidence, hb0]
-  show ({ pos := 0, neg := 0 } : Mettapedia.Logic.EvidenceQuantale.Evidence) = 0
+  show ({ pos := 0, neg := 0 } : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence) = 0
   rfl
 
 /-- Permutation/order invariance for partitioned pooling (Finset extensionality). -/
@@ -222,9 +222,9 @@ the class is realizable with semantics-first constraints (not `True` placeholder
 def IsNegOnlyScorer {Goal Fact : Type*} (s : Scorer Goal Fact) : Prop :=
   ∀ g f, (s.score g f).pos = 0
 
-lemma toStrength_eq_zero_of_pos_zero (e : Evidence) (hpos : e.pos = 0) :
-    Evidence.toStrength e = 0 := by
-  unfold Evidence.toStrength
+lemma toStrength_eq_zero_of_pos_zero (e : BinaryEvidence) (hpos : e.pos = 0) :
+    BinaryEvidence.toStrength e = 0 := by
+  unfold BinaryEvidence.toStrength
   by_cases htot : e.total = 0
   · simp [htot]
   · simp [htot, hpos]
@@ -237,21 +237,21 @@ noncomputable def negOnlyOperatorRoleTheoryNormalized (Goal Fact : Type*) :
   IsPosterior := IsNegOnlyScorer
   prior_fuse_closed := by
     intro p₁ p₂ hp₁ hp₂ g f
-    simp [fuse, Evidence.hplus_def, hp₁ g f, hp₂ g f]
+    simp [fuse, BinaryEvidence.hplus_def, hp₁ g f, hp₂ g f]
   posterior_from_update := by
     intro p l hp hl g f
-    simp [update, Evidence.tensor_def, hp g f, hl g f]
+    simp [update, BinaryEvidence.tensor_def, hp g f, hl g f]
   prior_scale_closed := by
     intro w p hp g f
     simp [scaleScorer, scaleEvidence, hp g f]
   prior_normalize_closed := by
     intro t p hp g f
-    have hs : Evidence.toStrength (p.score g f) = 0 :=
+    have hs : BinaryEvidence.toStrength (p.score g f) = 0 :=
       toStrength_eq_zero_of_pos_zero (e := p.score g f) (hp g f)
     simp [normalizeScorer, normalizeEvidence, hs]
   likelihood_normalize_closed := by
     intro t l hl g f
-    have hs : Evidence.toStrength (l.score g f) = 0 :=
+    have hs : BinaryEvidence.toStrength (l.score g f) = 0 :=
       toStrength_eq_zero_of_pos_zero (e := l.score g f) (hl g f)
     simp [normalizeScorer, normalizeEvidence, hs]
 
@@ -262,7 +262,7 @@ theorem negOnlyOperatorRoleTheoryNormalized_exists_prior
       (negOnlyOperatorRoleTheoryNormalized Goal Fact).IsPrior p := by
   refine ⟨zeroScorer, ?_⟩
   intro g f
-  simp [zeroScorer, Evidence.zero]
+  simp [zeroScorer, BinaryEvidence.zero]
 
 /-- The concrete role model is non-vacuous: not every scorer is a prior. -/
 theorem negOnlyOperatorRoleTheoryNormalized_not_all_priors
@@ -315,13 +315,13 @@ noncomputable def finiteNonzeroOperatorRoleTheoryFiniteNormalized (Goal Fact : T
     have hpTot_lt : (p.score g f).total < ⊤ := lt_top_iff_ne_top.mpr hpTop
     have hlTot_lt : (l.score g f).total < ⊤ := lt_top_iff_ne_top.mpr hlTop
     have hpPos_le : (p.score g f).pos ≤ (p.score g f).total := by
-      simp [Evidence.total]
+      simp [BinaryEvidence.total]
     have hpNeg_le : (p.score g f).neg ≤ (p.score g f).total := by
-      simp [Evidence.total]
+      simp [BinaryEvidence.total]
     have hlPos_le : (l.score g f).pos ≤ (l.score g f).total := by
-      simp [Evidence.total]
+      simp [BinaryEvidence.total]
     have hlNeg_le : (l.score g f).neg ≤ (l.score g f).total := by
-      simp [Evidence.total]
+      simp [BinaryEvidence.total]
     have hpPos_top : (p.score g f).pos ≠ ⊤ := ne_of_lt (lt_of_le_of_lt hpPos_le hpTot_lt)
     have hpNeg_top : (p.score g f).neg ≠ ⊤ := ne_of_lt (lt_of_le_of_lt hpNeg_le hpTot_lt)
     have hlPos_top : (l.score g f).pos ≠ ⊤ := ne_of_lt (lt_of_le_of_lt hlPos_le hlTot_lt)
@@ -333,7 +333,7 @@ noncomputable def finiteNonzeroOperatorRoleTheoryFiniteNormalized (Goal Fact : T
     have hsum_top :
         (p.score g f).pos * (l.score g f).pos + (p.score g f).neg * (l.score g f).neg ≠ ⊤ := by
       exact WithTop.add_ne_top.mpr ⟨hmulPos_top, hmulNeg_top⟩
-    simpa [update, Evidence.tensor_def, Evidence.total] using hsum_top
+    simpa [update, BinaryEvidence.tensor_def, BinaryEvidence.total] using hsum_top
   prior_normalize_closed_finite := by
     intro t p ht0 htTop _hp g f
     refine ⟨?_, ?_⟩
@@ -368,7 +368,7 @@ theorem finiteNonzeroOperatorRoleTheoryFiniteNormalized_not_all_priors
   refine ⟨zeroScorer, ?_⟩
   intro hs
   have h0 : ((zeroScorer : Scorer Goal Fact).score g0 f0).total ≠ 0 := (hs g0 f0).1
-  exact h0 (by simp [zeroScorer, Evidence.zero, Evidence.total])
+  exact h0 (by simp [zeroScorer, BinaryEvidence.zero, BinaryEvidence.total])
 
 /-- Practical closure lemma: normalization by finite nonzero total yields a prior in this model. -/
 theorem finiteNonzeroOperatorRoleTheoryFiniteNormalized_prior_from_normalize

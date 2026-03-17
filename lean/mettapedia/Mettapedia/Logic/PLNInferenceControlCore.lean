@@ -31,7 +31,7 @@ noncomputable def ch13ScorePooled
     (globalPrior localPrior likelihood : Scorer Goal Fact)
     (g : Goal) : Fact → ℝ :=
   fun x =>
-    (Evidence.toStrength
+    (BinaryEvidence.toStrength
       ((normalizeScorer (selectorDefaults_halfGate Goal Fact).tPrior
         (priorNBPosterior globalPrior localPrior likelihood)).score g x)).toReal
 
@@ -42,7 +42,7 @@ noncomputable def ch13ScoreTwoStage
     (globalPrior localPrior likelihood : Scorer Goal Fact)
     (g : Goal) : Fact → ℝ :=
   fun x =>
-    (Evidence.toStrength
+    (BinaryEvidence.toStrength
       ((normalizeScorer (selectorDefaults_halfGate Goal Fact).tPrior
         (priorNBPosteriorTwoStage globalPrior localPrior likelihood)).score g x)).toReal
 

@@ -2,7 +2,7 @@ import Mettapedia.Languages.GF.VisibleLayer
 import Mettapedia.OSLF.QuantifiedFormula2
 
 /-!
-# Store-Aware Semantic Bridge: VisibleLayer ↔ Evidence Semantics
+# Store-Aware Semantic Bridge: VisibleLayer ↔ BinaryEvidence Semantics
 
 Bridges the `gfReducesFull` 3-layer reduction (syntax + temporal + visible V1-V4)
 to evidence-valued quantified semantics (`qsemE2`) via **store-native** evaluation.
@@ -18,7 +18,7 @@ to evidence-valued quantified semantics (`qsemE2`) via **store-native** evaluati
 
 3. **V2 is conservative**: Scope choice commits to one quantifier nesting.
    The inverse reading ∃y.∀x is provably ≤ the surface reading ∀x.∃y
-   in the Evidence lattice.
+   in the BinaryEvidence lattice.
 
 4. **State-native semantics**: `gsemE2` evaluates formulas directly over
    `GrammarState`, using the store for variable bindings and the term as
@@ -103,7 +103,7 @@ theorem storeResolves_monotone {s1 s2 : Multiset StoreAtom}
   obtain ⟨r, hbind, href⟩ := h
   exact ⟨r, Multiset.mem_of_le hle hbind, Multiset.mem_of_le hle href⟩
 
-/-! ## 3. Evidence Activation: V4 Changes Evidence from ⊥ to Real
+/-! ## 3. BinaryEvidence Activation: V4 Changes BinaryEvidence from ⊥ to Real
 
 The key semantic claim: `qsemE2` at a `.qatom` with an unbound variable
 evaluates to `⊥` (the `none` branch in `evalTerms`). After V4 binds the
@@ -137,7 +137,7 @@ theorem bound_var_atom_real
     I pred [d] p := by
   simp [qsemE2, evalTerms, evalTerm, extendEnv2]
 
-/-! ## 4. V4 Full Evidence Bridge
+/-! ## 4. V4 Full BinaryEvidence Bridge
 
 Combines the operational step (V4 is reachable) with the semantic transition
 (evidence jumps from `⊥` to `I pred [pos] p`).
@@ -228,7 +228,7 @@ theorem storeToEnv_after_V4 (store : Multiset StoreAtom) (pr r : String)
     - The **store**-derived environment for variable bindings
     - `R : Pattern → Pattern → Prop` for modal accessibility (on terms) -/
 noncomputable def gsemE2 (R : Pattern → Pattern → Prop) (I : QEvidenceAtomSem)
-    (Dom : Domain2) (φ : QFormula2) (s : GrammarState) : Evidence :=
+    (Dom : Domain2) (φ : QFormula2) (s : GrammarState) : BinaryEvidence :=
   qsemE2 R I Dom (storeToEnv s.store) φ s.term
 
 /-! ## 6. V4 Changes gsemE2 (Culminating State-Native Theorem)
@@ -268,7 +268,7 @@ theorem V4_changes_gsemE2
       (Multiset.mem_add.mpr (Or.inr (Multiset.mem_singleton_self _)))
       (Multiset.mem_add.mpr (Or.inl hpos))
 
-/-! ## 7. Scope Ordering in Evidence Semantics
+/-! ## 7. Scope Ordering in BinaryEvidence Semantics
 
 The lattice-level ordering `∃y.∀x ≤ ∀x.∃y` (from `iSup_iInf_le_iInf_iSup`)
 connects V2 scope choice to the quantifier strength ordering in `qsemE2`. -/
@@ -351,7 +351,7 @@ theorem pronounBind_witnesses_exists
     qsemE2 R I Dom env (.qexists pr φ) p :=
   qsemE2_exists_le R I Dom env pr φ p d hd
 
-/-! ## 9. V2 Scope Evidence Bridge (End-to-End)
+/-! ## 9. V2 Scope BinaryEvidence Bridge (End-to-End)
 
 Combines the operational nondeterminism of V2 with the semantic ordering. -/
 
@@ -479,7 +479,7 @@ def gfTermAccessible (cfg : VisibleCfg) (π : TemporalPolicy) :
     actual rewrite/temporal/visible steps, not an arbitrary relation. -/
 noncomputable abbrev gsemE2Full (cfg : VisibleCfg) (π : TemporalPolicy)
     (I : QEvidenceAtomSem) (Dom : Domain2) (φ : QFormula2)
-    (s : GrammarState) : Evidence :=
+    (s : GrammarState) : BinaryEvidence :=
   gsemE2 (gfTermAccessible cfg π) I Dom φ s
 
 /-- Syntax rewrites give term-level accessibility. -/
@@ -633,7 +633,7 @@ theorem storeToEnv_add_bind_ne
       exact h ⟨rx, posx, bind_back rx hb, ref_back rx posx hr⟩
     rw [h1, h2]
 
-/-! ## 14. Frame: Store Atom Addition Preserves Closed Evidence
+/-! ## 14. Frame: Store Atom Addition Preserves Closed BinaryEvidence
 
 The locality principle: visible-layer updates (V1–V4) only change evidence for
 formulas that mention the affected variable. Closed formulas — those with

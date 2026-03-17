@@ -14,7 +14,7 @@ This module packages the world-model posterior-state calculus as a family of
 The WM calculus has three sorts:
 - **State**: world-model posterior states (revisable via `+`)
 - **Query**: evidence queries (propositions, links, conditionals)
-- **Evidence**: extracted evidence values
+- **BinaryEvidence**: extracted evidence values
 
 Core rewrite rules encode the WM axioms:
 - `evidence_add`: `Extract(Revise(W₁,W₂), q) ↦ Combine(Extract(W₁,q), Extract(W₂,q))`
@@ -28,7 +28,7 @@ along the weakness order is `id`-on-terms with rule-subset containment.
 
 ## References
 
-- `PLNWorldModel.lean` — `WorldModel` class, `WMJudgment`, `WMQueryJudgment`
+- `PLNWorldModel.lean` — `BinaryWorldModel` class, `WMJudgment`, `WMQueryJudgment`
 - `PLNWorldModelCalculus.lean` — query-rewrite layer
 - `PLNWorldModelOverlap.lean` — `OverlapLayer`
 - `GenericWorldModelForgetting.lean` — `ForgettingLayer`
@@ -50,13 +50,13 @@ open Mettapedia.OSLF.Framework.PLNWMHypercubeBasis
 /-- Revision (parallel composition of posterior states). -/
 def pRevise (w₁ w₂ : Pattern) : Pattern := .apply "Revise" [w₁, w₂]
 
-/-- Evidence extraction (observation). -/
+/-- BinaryEvidence extraction (observation). -/
 def pExtract (w q : Pattern) : Pattern := .apply "Extract" [w, q]
 
-/-- Evidence combination (additive fusion). -/
+/-- BinaryEvidence combination (additive fusion). -/
 def pCombine (e₁ e₂ : Pattern) : Pattern := .apply "Combine" [e₁, e₂]
 
-/-- Evidence zero (identity for combination). -/
+/-- BinaryEvidence zero (identity for combination). -/
 def pEvidenceZero : Pattern := .apply "EvidenceZero" []
 
 /-- Scalar strength projection. -/
@@ -113,10 +113,10 @@ def ruleRevisionAssoc : RewriteRule := {
 }
 
 /-- `combine_comm`: Combine(e₁,e₂) ↦ Combine(e₂,e₁)
-    Evidence combination is commutative. -/
+    BinaryEvidence combination is commutative. -/
 def ruleCombineComm : RewriteRule := {
   name := "WM_CombineComm"
-  typeContext := [("e1", .base "Evidence"), ("e2", .base "Evidence")]
+  typeContext := [("e1", .base "BinaryEvidence"), ("e2", .base "BinaryEvidence")]
   premises := []
   left := pCombine (.fvar "e1") (.fvar "e2")
   right := pCombine (.fvar "e2") (.fvar "e1")
@@ -126,7 +126,7 @@ def ruleCombineComm : RewriteRule := {
     EvidenceZero is identity for combination. -/
 def ruleCombineZero : RewriteRule := {
   name := "WM_CombineZero"
-  typeContext := [("e", .base "Evidence")]
+  typeContext := [("e", .base "BinaryEvidence")]
   premises := []
   left := pCombine (.fvar "e") pEvidenceZero
   right := .fvar "e"
@@ -143,7 +143,7 @@ def coreRules : List RewriteRule :=
     LanguageDef for encoding faithfulness (WMStep ↔ langReduces). -/
 def wmCoreLanguageDef : LanguageDef := {
   name := "WMCalculusCore"
-  types := ["State", "Query", "Evidence"]
+  types := ["State", "Query", "BinaryEvidence"]
   terms := []
   equations := []
   rewrites := coreRules
@@ -267,7 +267,7 @@ def forgettingRules : WMForgettingMode → List RewriteRule
   | .scopeBased => [ruleForgetOutside, ruleForgetIdempotent]
   | .supportTracked => [ruleForgetOutside, ruleForgetIdempotent]
       -- supportTracked adds the exact-inverse theorem but that is a
-      -- WorldModel-level theorem, not a new rewrite rule
+      -- BinaryWorldModel-level theorem, not a new rewrite rule
 
 /-! ## Support-Tracked Forgetting Rules -/
 
@@ -310,7 +310,7 @@ def pForgetSources (drop w : Pattern) : Pattern :=
 /-- Universal trust policy (trusts all sources). -/
 def pTrustedAll : Pattern := .apply "TrustedAll" []
 
-/-- Evidence value one (positive singleton). -/
+/-- BinaryEvidence value one (positive singleton). -/
 def pEvidenceOne : Pattern := .apply "EvidenceOne" []
 
 /-- Fixpoint closure operators. -/
@@ -446,7 +446,7 @@ def ruleTrustedGateAll : RewriteRule := {
   right := .fvar "W"
 }
 
-/-- Evidence additivity under compatible fallback revision.
+/-- BinaryEvidence additivity under compatible fallback revision.
     Extract(FallbackRevision(W₁,W₂), q) ↦ Combine(Extract(W₁,q), Extract(W₂,q))
     [when compatible] -/
 def ruleSourceEvidenceAdd : RewriteRule := {
@@ -789,7 +789,7 @@ def kripkeRules : WMKripkeMode → List RewriteRule
 
 /-- Carrier axis: concrete (ℝ≥0∞ pairs) vs generic (AddCommMonoid). -/
 inductive WMCarrierMode where
-  | concrete : WMCarrierMode  -- fixed Evidence = (ℝ≥0∞ × ℝ≥0∞)
+  | concrete : WMCarrierMode  -- fixed BinaryEvidence = (ℝ≥0∞ × ℝ≥0∞)
   | generic  : WMCarrierMode  -- polymorphic over AddCommMonoid
   deriving DecidableEq, Repr
 
@@ -801,7 +801,7 @@ instance : Preorder WMCarrierMode where
   le_refl a := by cases a <;> simp [LE.le]
   le_trans a b c := by cases a <;> cases b <;> cases c <;> simp [LE.le]
 
-/-- Generic evidence additivity (the core WorldModel axiom in abstract form):
+/-- Generic evidence additivity (the core BinaryWorldModel axiom in abstract form):
     GenericEvidence(Revise(W₁,W₂), q) ↦ Combine(GenericEvidence(W₁,q), GenericEvidence(W₂,q)) -/
 def ruleGenericEvidenceAdd : RewriteRule := {
   name := "WM_GenericEvidenceAdd"
@@ -1170,12 +1170,12 @@ def wmExtToFull (v : WMExtVertex) : WMFullVertex := {
 /-- All types used by the WM calculus at a given vertex. -/
 def wmTypes (v : WMExtVertex) : List String :=
   match v.forgetting with
-  | .none => ["State", "Query", "Evidence"]
-  | _ => ["State", "Query", "Evidence", "Scope"]
+  | .none => ["State", "Query", "BinaryEvidence"]
+  | _ => ["State", "Query", "BinaryEvidence", "Scope"]
 
 /-- All types used by the full WM calculus. -/
 def wmFullTypes (v : WMFullVertex) : List String :=
-  let base := ["State", "Query", "Evidence"]
+  let base := ["State", "Query", "BinaryEvidence"]
   let scope := match v.forgetting with | .none => [] | _ => ["Scope"]
   let source := match v.provenance with | .none => [] | _ => ["Source", "Policy"]
   let ruleset := match v.fixpoint with | .none => [] | _ => ["RuleSet", "QuerySet", "Nat"]

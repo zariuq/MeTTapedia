@@ -19,7 +19,7 @@ For now, we:
 
 Full integration requires:
 - Define `PLNSemiformula : ℕ → Type` graded by free variables
-- Implement `eval : PLNSemiformula n → (Fin n → U) → WeightFunction U Evidence → Evidence`
+- Implement `eval : PLNSemiformula n → (Fin n → U) → WeightFunction U BinaryEvidence → BinaryEvidence`
 - Instantiate `UnivQuantifier PLNSemiformula` and `ExQuantifier PLNSemiformula`
 - Prove De Morgan laws, distributivity, functoriality
 
@@ -68,13 +68,13 @@ instance : ExQuantifier (PLNSemiformula U) where
 noncomputable def eval {n : ℕ}
     (φ : PLNSemiformula U n)
     (σ : Fin n → U)
-    (μ : WeightFunction U Evidence) : Evidence :=
+    (μ : WeightFunction U BinaryEvidence) : BinaryEvidence :=
   match φ with
   | .atom S => forAllEval S μ  -- Closed formula
   | .freeVar i => μ.μ (σ i)     -- Free variable
-  | .and φ₁ φ₂ => eval φ₁ σ μ ⊓ eval φ₂ σ μ  -- Evidence meet
-  | .or φ₁ φ₂ => eval φ₁ σ μ ⊔ eval φ₂ σ μ   -- Evidence join
-  | .implies φ₁ φ₂ => Evidence.himp (eval φ₁ σ μ) (eval φ₂ σ μ)  -- Heyting implication
+  | .and φ₁ φ₂ => eval φ₁ σ μ ⊓ eval φ₂ σ μ  -- BinaryEvidence meet
+  | .or φ₁ φ₂ => eval φ₁ σ μ ⊔ eval φ₂ σ μ   -- BinaryEvidence join
+  | .implies φ₁ φ₂ => BinaryEvidence.himp (eval φ₁ σ μ) (eval φ₂ σ μ)  -- Heyting implication
   | .all φ' => forAllEval (satisfyingSetOf φ' σ) μ
   | .ex φ' => thereExistsEval (satisfyingSetOf φ' σ) μ
 ```
@@ -87,7 +87,7 @@ This is the ARCHITECTURE we're building toward. The key achievement so far:
 /-! ## Current Status
 
 **Completed**:
-1. ✅ SatisfyingSet (χ : U → Ω where Ω = Evidence)
+1. ✅ SatisfyingSet (χ : U → Ω where Ω = BinaryEvidence)
 2. ✅ forAllEval via weakness of diagonal
 3. ✅ Explicit connection to QuantaleWeakness (forAll_is_weakness_of_diagonal)
 4. ✅ Monotonicity theorems (forAllEval_mono_weights, weakness_mono_subset)

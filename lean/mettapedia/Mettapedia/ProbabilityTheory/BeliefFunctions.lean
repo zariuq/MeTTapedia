@@ -18,6 +18,6 @@ of imprecise probability.
 
 ## References
 
-- Shafer, G. "A Mathematical Theory of Evidence" (1976)
+- Shafer, G. "A Mathematical Theory of BinaryEvidence" (1976)
 - Dempster, A.P. "Upper and Lower Probabilities" (1967)
 -/

@@ -120,7 +120,7 @@ theorem whichSupport_forgetWhichOverlap_add
 theorem toTracked_evidence_forgetWhichSupportBy
     (S : GroundAtom σ → Finset (Fin n))
     (I : KRelation σ (Which (Fin n))) (q : GroundAtom σ) :
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := TrackedWhichState σ n) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (toTrackedWhichState (forgetWhichSupportBy S I)) q =
     forgetWhichSupportBy S I q := by
@@ -209,19 +209,19 @@ def scopedScopeSupportSet
 
 theorem scopedTrackedEvidence_after_forgetting_overlap_add
     (W₁ W₂ : ScopedTrackedWhichState σ n m) (q : GroundAtom σ) :
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := ScopedTrackedWhichState σ n m) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (forgetScopedByScope
         (scopedOverlapFootprint (σ := σ) (n := n) (m := m) W₁ W₂ q) (W₁ + W₂)) q =
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := ScopedTrackedWhichState σ n m) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (forgetScopedByScope
         (scopedOverlapFootprint (σ := σ) (n := n) (m := m) W₁ W₂ q) W₁) q +
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := ScopedTrackedWhichState σ n m) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (forgetScopedByScope
         (scopedOverlapFootprint (σ := σ) (n := n) (m := m) W₁ W₂ q) W₂) q := by
-  rw [forgetScopedByScope_add, GenericWorldModel.evidence_add']
+  rw [forgetScopedByScope_add, AdditiveWorldModel.extract_add']
 
 theorem scopedRemainderScopeSupports_disjoint_after_forgetting_overlap
     (W₁ W₂ : ScopedTrackedWhichState σ n m) (q : GroundAtom σ) :
@@ -276,14 +276,14 @@ theorem additive_recovery_after_forgetting_nonactionable_overlap
     (T : Semitopology (Fin m))
     (W₁ W₂ : ScopedTrackedWhichState σ n m) (q : GroundAtom σ)
     (hsep : ScopedSemitopologySeparatedByOverlap (σ := σ) (n := n) (m := m) T W₁ W₂ q) :
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := ScopedTrackedWhichState σ n m) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (forgetScopedByScope
         (scopedOverlapFootprint (σ := σ) (n := n) (m := m) W₁ W₂ q) (W₁ + W₂)) q =
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := ScopedTrackedWhichState σ n m) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (scopedRemainderLeft (σ := σ) (n := n) (m := m) W₁ W₂ q) q +
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := ScopedTrackedWhichState σ n m) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (scopedRemainderRight (σ := σ) (n := n) (m := m) W₁ W₂ q) q := by
   have _ :=

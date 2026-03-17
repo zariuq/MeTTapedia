@@ -5,7 +5,7 @@ import Mettapedia.Logic.PLNJointEvidenceProbability
 # ProbLog Distribution Semantics → WM Correspondence
 
 This module formalizes the **distribution semantics** underlying ProbLog and proves
-that it corresponds exactly to the existing `JointEvidence`-based WorldModel.
+that it corresponds exactly to the existing `JointEvidence`-based BinaryWorldModel.
 
 ## Background
 
@@ -109,7 +109,7 @@ noncomputable def queryProb (p : ProbAssignment n) (Q : Fin (2 ^ n) → Bool) : 
 
 /-! ## §3 WM Correspondence: Propositions
 
-The `JointEvidence`-based `WorldModel` already defines `queryStrength` as the
+The `JointEvidence`-based `BinaryWorldModel` already defines `queryStrength` as the
 ratio `n⁺ / (n⁺ + n⁻)` of extracted evidence. For proposition queries, this
 equals the ProbLog query probability. -/
 
@@ -128,20 +128,20 @@ theorem propEvidence_total_eq_totalMass (p : ProbAssignment n) (A : Fin n) :
   exact propEvidence_total (probLogToJointEvidence p) A
 
 /-- Helper: `toStrength` applied to evidence whose total equals `T` gives `pos / T`. -/
-private theorem toStrength_of_total_eq {e : Evidence} {T : ℝ≥0∞} (hT : e.total = T) :
-    Evidence.toStrength e = e.pos / T := by
-  unfold Evidence.toStrength
+private theorem toStrength_of_total_eq {e : BinaryEvidence} {T : ℝ≥0∞} (hT : e.total = T) :
+    BinaryEvidence.toStrength e = e.pos / T := by
+  unfold BinaryEvidence.toStrength
   split
   · -- total = 0 means pos / total = 0 too
     rename_i h
     have : T = 0 := by rwa [← hT]
     subst this
-    simp [Evidence.total] at h
+    simp [BinaryEvidence.total] at h
     simp [h.1]
   · rw [hT]
 
 theorem queryStrength_prop_eq_queryProb (p : ProbAssignment n) (A : Fin n) :
-    Evidence.toStrength (propEvidence (n := n) (E := probLogToJointEvidence p) A) =
+    BinaryEvidence.toStrength (propEvidence (n := n) (E := probLogToJointEvidence p) A) =
       queryProb p (fun w => worldToAssignment n w A) := by
   rw [toStrength_of_total_eq (propEvidence_total_eq_totalMass p A)]
   rfl
@@ -151,16 +151,16 @@ theorem linkEvidence_total_eq (p : ProbAssignment n) (A B : Fin n) :
     (linkEvidence (n := n) (E := probLogToJointEvidence p) A B).total =
       queryMass p (fun w => worldToAssignment n w A && worldToAssignment n w B) +
       queryMass p (fun w => worldToAssignment n w A && !(worldToAssignment n w B)) := by
-  unfold Evidence.total linkEvidence queryMass probLogToJointEvidence countWorld
+  unfold BinaryEvidence.total linkEvidence queryMass probLogToJointEvidence countWorld
   rfl
 
 /-- WM `queryStrength` for a link equals ProbLog conditional query probability. -/
 theorem queryStrength_link_eq_queryProb (p : ProbAssignment n) (A B : Fin n) :
-    Evidence.toStrength (linkEvidence (n := n) (E := probLogToJointEvidence p) A B) =
+    BinaryEvidence.toStrength (linkEvidence (n := n) (E := probLogToJointEvidence p) A B) =
       queryMass p (fun w => worldToAssignment n w A && worldToAssignment n w B) /
       (queryMass p (fun w => worldToAssignment n w A && worldToAssignment n w B) +
        queryMass p (fun w => worldToAssignment n w A && !(worldToAssignment n w B))) := by
-  unfold Evidence.toStrength
+  unfold BinaryEvidence.toStrength
   rw [linkEvidence_total_eq]
   unfold linkEvidence queryMass probLogToJointEvidence countWorld
   split <;> simp_all
@@ -209,25 +209,25 @@ theorem probLogToJointEvidence_add_comm (p : ProbAssignment n) (A : Fin n) :
 
 /-! ## §6 WM Interface Compatibility
 
-The ProbLog-compiled `JointEvidence` already satisfies the `WorldModel` interface
+The ProbLog-compiled `JointEvidence` already satisfies the `BinaryWorldModel` interface
 via the existing `instWorldModel` instance. We record this explicitly. -/
 
 /-- The ProbLog-compiled state is a valid WM state for the standard PLN query type. -/
 noncomputable example (p : ProbAssignment (n + 1)) :
-    WorldModel.evidence
-      (State := JointEvidence (n + 1)) (Query := PLNQuery (Fin (n + 1)))
+    BinaryWorldModel.evidence
+      (State := JointEvidence (n + 1)) (Query := AtomQuery (Fin (n + 1)))
       (probLogToJointEvidence p)
-      (PLNQuery.prop ⟨0, Nat.zero_lt_succ n⟩) =
+      (AtomQuery.prop ⟨0, Nat.zero_lt_succ n⟩) =
     propEvidence (n := n + 1) (E := probLogToJointEvidence p) ⟨0, Nat.zero_lt_succ n⟩ := by
   rfl
 
 /-- Full WM queryStrength for a ProbLog-compiled state, via the standard interface. -/
 noncomputable example (p : ProbAssignment n) (A : Fin n) :
-    WorldModel.queryStrength
-      (State := JointEvidence n) (Query := PLNQuery (Fin n))
+    BinaryWorldModel.queryStrength
+      (State := JointEvidence n) (Query := AtomQuery (Fin n))
       (probLogToJointEvidence p)
-      (PLNQuery.prop A) =
-    Evidence.toStrength (propEvidence (n := n) (E := probLogToJointEvidence p) A) := by
+      (AtomQuery.prop A) =
+    BinaryEvidence.toStrength (propEvidence (n := n) (E := probLogToJointEvidence p) A) := by
   rfl
 
 #check @probLogToJointEvidence

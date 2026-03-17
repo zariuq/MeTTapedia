@@ -63,15 +63,15 @@ theorem selectorSpec_defaults_match_checklist
 fusion formula (real-valued form). -/
 theorem selectorSpec_default_equalMix_toReal
     {Goal Fact : Type*} (s₁ s₂ : Scorer Goal Fact) (g : Goal) (f : Fact) :
-    (Evidence.toStrength
+    (BinaryEvidence.toStrength
         ((fuse (normalizeScorer (selectorDefaults_halfGate Goal Fact).tPrior s₁)
                (normalizeScorer (selectorDefaults_halfGate Goal Fact).tLik s₂)).score g f)).toReal
       =
       ((1:ℝ≥0∞) / (1 + 1)).toReal
-          * (Evidence.toStrength
+          * (BinaryEvidence.toStrength
               ((normalizeScorer (selectorDefaults_halfGate Goal Fact).tPrior s₁).score g f)).toReal
       + ((1:ℝ≥0∞) / (1 + 1)).toReal
-          * (Evidence.toStrength
+          * (BinaryEvidence.toStrength
               ((normalizeScorer (selectorDefaults_halfGate Goal Fact).tLik s₂).score g f)).toReal := by
   simpa [selectorDefaults_halfGate] using
     (fuse_toStrength_normalized_const_toReal_one (s₁ := s₁) (s₂ := s₂) (g := g) (f := f))
@@ -92,13 +92,13 @@ theorem selectorSpec_default_priorNB_ranking_transfer
     ∧
     (BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((normalizeScorer (selectorDefaults_halfGate Goal Fact).tPrior
             (priorNBPosterior globalPrior localPrior likelihood)).score g x)).toReal)
       ↔
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((normalizeScorer (selectorDefaults_halfGate Goal Fact).tPrior
             (priorNBPosteriorTwoStage globalPrior localPrior likelihood)).score g x)).toReal)) := by
   have hdefaults := selectorSpec_defaults_match_checklist (A := A)

@@ -158,9 +158,9 @@ theorem Refines.trans {K₁ K₂ K₃ : ℕ} {P₁ : HistogramBins X K₁}
   obtain ⟨i₁, h₁⟩ := h₁₂ i₂
   exact ⟨i₁, subset_trans h₂ h₁⟩
 
-/-! ## Evidence per Bin -/
+/-! ## BinaryEvidence per Bin -/
 
-/-- Evidence counts for each bin in a K-bin partition.
+/-- BinaryEvidence counts for each bin in a K-bin partition.
     This is what PLN uses for stratified inference. -/
 structure BinEvidence (K : ℕ) where
   /-- Positive evidence count per bin -/

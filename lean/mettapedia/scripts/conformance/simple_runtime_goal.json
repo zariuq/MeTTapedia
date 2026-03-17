@@ -1,0 +1,32 @@
+{
+  "goal_id": "simple_runtime_done_v1",
+  "summary": "simpleMeTTa evaluates HE/PeTTa programs correctly and within acceptable slowdown.",
+  "acceptance_criteria": [
+    {
+      "id": "scope_coverage",
+      "requirement": "HE core profile features are executable in simple runtime."
+    },
+    {
+      "id": "behavioral_conformance",
+      "requirement": "HE fixture parity against Hyperon uses bag equivalence (order-insensitive, multiplicity-preserving)."
+    },
+    {
+      "id": "backend_stability",
+      "requirement": "reference vs compiled path has zero semantic drift on strict targets."
+    },
+    {
+      "id": "performance_bound",
+      "requirement": "heavy-corpus runtime is <=10x PeTTa baseline (agreed median ratio gate)."
+    },
+    {
+      "id": "proof_hygiene",
+      "requirement": "No unresolved proof placeholders in touched conformance/theory files."
+    }
+  ],
+  "primary_gates": [
+    "/home/zar/claude/lean-projects/mettapedia/scripts/conformance/run_unified_conformance.sh",
+    "/home/zar/claude/lean-projects/mettapedia/scripts/conformance/run_he_io_conformance.sh",
+    "/home/zar/claude/lean-projects/algorithms/artifacts/strict_subset_targets",
+    "/home/zar/claude/lean-projects/algorithms/artifacts/strict_subset_heavy"
+  ]
+}

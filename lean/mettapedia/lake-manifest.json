@@ -3,6 +3,13 @@
  "packages":
  [{"type": "path",
    "scope": "",
+   "name": "certifyingDatalog",
+   "manifestFile": "lake-manifest.json",
+   "inherited": false,
+   "dir": "Mettapedia/external/CertifyingDatalog",
+   "configFile": "lakefile.lean"},
+  {"type": "path",
+   "scope": "",
    "name": "mettail_core",
    "manifestFile": "lake-manifest.json",
    "inherited": false,

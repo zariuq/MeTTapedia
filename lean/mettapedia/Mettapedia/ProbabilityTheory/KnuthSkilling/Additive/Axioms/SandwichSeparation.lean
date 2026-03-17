@@ -542,7 +542,7 @@ multiset of atoms (n copies of x and n copies of y). This means:
 - `xy_succ_gt_yx`: (x⊕y)^{k+1} > (y⊕x)^k for k ≥ 1
 - `xy_pow_gt_yx_pow`: (x⊕y)^n > (y⊕x)^m for n > m ≥ 1
 
-**Supporting Evidence**:
+**Supporting BinaryEvidence**:
 - Example: an Archimedean noncommutative ordered monoid fails full `KSSeparation`
   (`Additive/Counterexamples/SemidirectNoSeparation.lean`)
 - Example: a commutative non-Archimedean ordered monoid fails `KSSeparation`

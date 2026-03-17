@@ -22,8 +22,8 @@ and execute it on a singleton set-theory WM state. -/
 theorem zf_bottom_to_top_rule_singleton_fixture
     (S : SetPointed)
     (hS : S ⊧* 𝗭𝗙) :
-    WorldModel.queryStrength (State := SetState) (Query := SetQuery) ({S} : SetState) (⊥ : SetQuery) ≤
-      WorldModel.queryStrength (State := SetState) (Query := SetQuery) ({S} : SetState) (⊤ : SetQuery) := by
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) ({S} : SetState) (⊥ : SetQuery) ≤
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) ({S} : SetState) (⊤ : SetQuery) := by
   let φ : SetQuery := (⊥ : SetQuery)
   let ψ : SetQuery := (⊤ : SetQuery)
   have hpoint : pointwiseImpliesOnTheory 𝗭𝗙 φ ψ := by
@@ -51,8 +51,8 @@ theorem zf_bottom_to_top_categorical_singleton_fixture
     {X : H.Obj} (φc : H.query X)
     (S : SetPointed)
     (hS : S ⊧* 𝗭𝗙) :
-    WorldModel.queryStrength (State := SetState) (Query := SetQuery) ({S} : SetState) (⊥ : SetQuery) ≤
-      WorldModel.queryStrength (State := SetState) (Query := SetQuery) ({S} : SetState) (⊤ : SetQuery) := by
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) ({S} : SetState) (⊥ : SetQuery) ≤
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) ({S} : SetState) (⊤ : SetQuery) := by
   let φ : SetQuery := (⊥ : SetQuery)
   let ψ : SetQuery := (⊤ : SetQuery)
   have hpoint : pointwiseImpliesOnTheory 𝗭𝗙 φ ψ := by
@@ -80,9 +80,9 @@ theorem zf_provable_iff_all_model_singleton_strength_fixture
     (φ ψ : SetQuery) :
     (𝗭𝗙 ⊢ (φ ➝ ψ)) ↔
       ∀ S : SetPointed, S ⊧* 𝗭𝗙 →
-        WorldModel.queryStrength (State := SetState) (Query := SetQuery)
+        BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery)
             ({S} : SetState) φ ≤
-          WorldModel.queryStrength (State := SetState) (Query := SetQuery)
+          BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery)
             ({S} : SetState) ψ := by
   simpa using
     (provable_imp_iff_all_model_singleton_strength (T := 𝗭𝗙) (φ := φ) (ψ := ψ))
@@ -93,9 +93,9 @@ theorem zf_outside_scope_top_bottom_counterexample_fixture
     (S : SetPointed)
     (hNotModel : ¬ S ⊧* 𝗭𝗙) :
     ¬ stateModelsZF ({S} : SetState) ∧
-      ¬ (WorldModel.queryStrength (State := SetState) (Query := SetQuery)
+      ¬ (BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery)
             ({S} : SetState) (⊤ : SetQuery) ≤
-          WorldModel.queryStrength (State := SetState) (Query := SetQuery)
+          BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery)
             ({S} : SetState) (⊥ : SetQuery)) := by
   have hTop : Mettapedia.Logic.PLNWorldModelFOL.folSatisfies S (⊤ : SetQuery) := by
     simp [Mettapedia.Logic.PLNWorldModelFOL.folSatisfies]
@@ -113,8 +113,8 @@ theorem zf_provable_to_multiset_and_endpoint_surface_fixture
     (φ ψ : SetQuery)
     (hprov : 𝗭𝗙 ⊢ (φ ➝ ψ)) :
     (∀ W : SetState, stateModelsZF W →
-      WorldModel.queryStrength (State := SetState) (Query := SetQuery) W φ ≤
-        WorldModel.queryStrength (State := SetState) (Query := SetQuery) W ψ)
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) W φ ≤
+        BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) W ψ)
     ∧
     EndpointSurface (H := H) := by
   simpa [stateModelsZF] using

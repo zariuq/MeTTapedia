@@ -27,14 +27,14 @@ open Mettapedia.Logic.LP
 section Conservation
 
 variable {State Scope Query Ev : Type*}
-variable [EvidenceType State] [AddCommMonoid Ev] [GenericWorldModel State Query Ev]
+variable [EvidenceType State] [AddCommMonoid Ev] [AdditiveWorldModel State Query Ev]
 
 /-- Audit predicate: revision `Δ` contributes no evidence outside forgotten scope `S`. -/
 def NoHallucinationOutsideScope
     (F : ForgettingLayer State Scope Query Ev)
     (S : Scope) (Δ : State) : Prop :=
   ∀ q, ¬ F.inScope S q →
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := State) (Query := Query) (Ev := Ev) Δ q = 0
 
 theorem noHallucinationOutsideScope_of_exactInverse
@@ -54,7 +54,7 @@ end Conservation
 section ConservationCount
 
 variable {State Scope Query Ev : Type*}
-variable [EvidenceType State] [ConjugateEvidence Ev] [GenericWorldModel State Query Ev]
+variable [EvidenceType State] [ConjugateEvidence Ev] [AdditiveWorldModel State Query Ev]
 
 theorem zeroLeakageOutsideScope_of_exactInverse
     (F : ForgettingLayer State Scope Query Ev)
@@ -62,16 +62,16 @@ theorem zeroLeakageOutsideScope_of_exactInverse
     {S : Scope} {Δ : State}
     (hinv : ∀ W : State, F.forget S (W + Δ) = W) :
     ∀ q, ¬ F.inScope S q →
-      GenericWorldModel.queryObservationCount
+      AdditiveWorldModel.queryObservationCount
         (State := State) (Query := Query) (Ev := Ev) Δ q = 0 := by
   intro q hout
   have hEv :
-      GenericWorldModel.evidence
+      AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) Δ q = 0 :=
     ForgettingLayer.exactInverse_revision_supported
       (State := State) (Scope := Scope) (Query := Query) (Ev := Ev)
       F hzero hinv q hout
-  unfold GenericWorldModel.queryObservationCount
+  unfold AdditiveWorldModel.queryObservationCount
   simpa [hEv] using (ConjugateEvidence.observationCount_zero (Ev := Ev))
 
 end ConservationCount
@@ -79,16 +79,16 @@ end ConservationCount
 section OrderCost
 
 variable {State Query Ev Ov : Type*}
-variable [EvidenceType State] [ConjugateEvidence Ev] [GenericWorldModel State Query Ev]
+variable [EvidenceType State] [ConjugateEvidence Ev] [AdditiveWorldModel State Query Ev]
 
 /-- Order-cost signal: evidence extracted from `merge W₁ W₂` differs from
 `merge W₂ W₁` at query `q`. -/
 def SwapDefect
     (L : OverlapLayer State Query Ev Ov)
     (W₁ W₂ : State) (q : Query) : Prop :=
-  GenericWorldModel.evidence
+  AdditiveWorldModel.extract
       (State := State) (Query := Query) (Ev := Ev) (L.merge W₁ W₂) q ≠
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := State) (Query := Query) (Ev := Ev) (L.merge W₂ W₁) q
 
 /-- Layer-level order sensitivity witness. -/
@@ -100,9 +100,9 @@ theorem not_orderSensitive_of_commutativeMergeEvidence
     (L : OverlapLayer State Query Ev Ov)
     (hcomm :
       ∀ W₁ W₂ q,
-        GenericWorldModel.evidence
+        AdditiveWorldModel.extract
           (State := State) (Query := Query) (Ev := Ev) (L.merge W₁ W₂) q =
-        GenericWorldModel.evidence
+        AdditiveWorldModel.extract
           (State := State) (Query := Query) (Ev := Ev) (L.merge W₂ W₁) q) :
     ¬ OrderSensitive (State := State) (Query := Query) (Ev := Ev) (Ov := Ov) L := by
   intro hsens
@@ -116,9 +116,9 @@ theorem swapAnomalyCount_zero_of_notSwapDefect
     Mettapedia.Logic.SwapAnomalyCount
       (State := State) (Query := Query) (Ev := Ev) (Ov := Ov) L W₁ W₂ q = 0 := by
   have hEq :
-      GenericWorldModel.evidence
+      AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) (L.merge W₁ W₂) q =
-      GenericWorldModel.evidence
+      AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) (L.merge W₂ W₁) q :=
     not_ne_iff.mp hdef
   simpa using
@@ -165,14 +165,14 @@ theorem additiveRecovery_of_overlapSeparatedAudit
     (T : Semitopology (Fin m))
     (W₁ W₂ : ScopedTrackedWhichState σ n m) (q : GroundAtom σ)
     (haudit : OverlapSeparatedAudit (σ := σ) (n := n) (m := m) T W₁ W₂ q) :
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := ScopedTrackedWhichState σ n m) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (forgetScopedByScope
         (scopedOverlapFootprint (σ := σ) (n := n) (m := m) W₁ W₂ q) (W₁ + W₂)) q =
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := ScopedTrackedWhichState σ n m) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (scopedRemainderLeft (σ := σ) (n := n) (m := m) W₁ W₂ q) q +
-    GenericWorldModel.evidence
+    AdditiveWorldModel.extract
       (State := ScopedTrackedWhichState σ n m) (Query := GroundAtom σ) (Ev := Which (Fin n))
       (scopedRemainderRight (σ := σ) (n := n) (m := m) W₁ W₂ q) q :=
   additive_recovery_after_forgetting_nonactionable_overlap

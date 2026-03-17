@@ -5,34 +5,34 @@ namespace Mettapedia.Logic.EvidenceQuantale
 open Classical
 
 /-!
-# Derived PLN Rules from Evidence
+# Derived PLN Rules from BinaryEvidence
 
 This file collects small, semantics-first facts:
-- which PLN/NARS truth rules correspond directly to operations on the Evidence carrier, and
+- which PLN/NARS truth rules correspond directly to operations on the BinaryEvidence carrier, and
 - the exact algebraic statements we have proven in Lean.
 
 It is intentionally lightweight and does not depend on the probability-derivation files.
 -/
 
-namespace Evidence
+namespace BinaryEvidence
 
 /-! ## Negation-as-polarity-swap
 
 PLN/NARS "negation" at the STV level typically maps `(s,c)` to `(1-s,c)`.
-On Evidence counts `(n⁺, n⁻)`, the corresponding operation is swapping the components.
+On BinaryEvidence counts `(n⁺, n⁻)`, the corresponding operation is swapping the components.
 
 This is *not* Heyting negation `compl`; it is a polarity swap preserving total evidence.
 -/
 
 /-- Swap positive and negative evidence. -/
-def flip (e : Evidence) : Evidence :=
+def flip (e : BinaryEvidence) : BinaryEvidence :=
   ⟨e.neg, e.pos⟩
 
-theorem flip_total (e : Evidence) : (flip e).total = e.total := by
+theorem flip_total (e : BinaryEvidence) : (flip e).total = e.total := by
   -- total is `pos + neg`, and addition is commutative.
-  simp [flip, Evidence.total, add_comm]
+  simp [flip, BinaryEvidence.total, add_comm]
 
-theorem toStrength_flip (e : Evidence) (ht0 : e.total ≠ 0) (htT : e.total ≠ ⊤) :
+theorem toStrength_flip (e : BinaryEvidence) (ht0 : e.total ≠ 0) (htT : e.total ≠ ⊤) :
     toStrength (flip e) = 1 - toStrength e := by
   -- Unfold `toStrength` and compute in `ℝ≥0∞`.
   unfold toStrength
@@ -45,7 +45,7 @@ theorem toStrength_flip (e : Evidence) (ht0 : e.total ≠ 0) (htT : e.total ≠ 
   have hposT : e.pos ≠ (⊤ : ENNReal) := by
     intro h
     apply htT
-    simp [Evidence.total, h]
+    simp [BinaryEvidence.total, h]
   have h_total_sub : e.total - e.pos = e.neg := by
     -- `total = pos + neg`, and `pos` is finite, so we can cancel it.
     -- This is the `ENNReal`-specialized cancellation lemma.
@@ -56,6 +56,6 @@ theorem toStrength_flip (e : Evidence) (ht0 : e.total ≠ 0) (htT : e.total ≠ 
   -- `neg/total = (total - pos)/total = 1 - pos/total`.
   rw [← h_total_sub, hsub, ENNReal.div_self ht0 htT]
 
-end Evidence
+end BinaryEvidence
 
 end Mettapedia.Logic.EvidenceQuantale

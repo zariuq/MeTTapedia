@@ -30,8 +30,8 @@ Boolean algebras have this property. Many finite and infinite Heyting algebras d
 ## Ramifications for Probability Theory
 
 1. **Boolean (Classical) Probability**: P(A) + P(Aᶜ) = 1 depends on A ∪ Aᶜ = Ω
-2. **Finite Evidence**: Regular evidence satisfies pseudo-LEM
-3. **Continuous Evidence**: Even "regular-looking" evidence may fail LEM
+2. **Finite BinaryEvidence**: Regular evidence satisfies pseudo-LEM
+3. **Continuous BinaryEvidence**: Even "regular-looking" evidence may fail LEM
    - This justifies interval-valued probability in continuous settings
 
 ## References

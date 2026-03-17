@@ -103,7 +103,7 @@ theorem regression_empiricalDayStrength_eq_staticQueryStrength
     (φ : ClosedFormulaCode Const) :
     dayQueryStrength (Const := Const)
       (empiricalBeliefDay (Base := Base) (Const := Const) W) φ =
-      Mettapedia.Logic.PLNWorldModel.WorldModel.queryStrength
+      Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := Mettapedia.Logic.HOL.WorldModel.HOLQuery Const)
         W (decodeClosedFormula φ) :=

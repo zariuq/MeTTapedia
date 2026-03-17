@@ -187,7 +187,7 @@ theorem regression_empirical_probStrength_eq_static :
         (empiricalModelSpace (Base := FixtureBase) (Const := FixtureConst) empiricalPair)
         (PMF.ofMultiset empiricalPair empiricalPair_ne_zero).toMeasure
         flagSentence =
-      Mettapedia.Logic.PLNWorldModel.WorldModel.queryStrength
+      Mettapedia.Logic.PLNWorldModel.BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel FixtureBase FixtureConst))
         (Query := HOLQuery FixtureConst)
         empiricalPair

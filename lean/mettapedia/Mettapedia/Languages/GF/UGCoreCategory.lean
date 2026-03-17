@@ -144,7 +144,7 @@ open Mettapedia.OSLF.QuantifiedFormula2
 open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.PLNWorldModel
 
-variable {State : Type u} [EvidenceType State] [WorldModel State Mettapedia.OSLF.MeTTaIL.Syntax.Pattern]
+variable {State : Type u} [EvidenceType State] [BinaryWorldModel State Mettapedia.OSLF.MeTTaIL.Syntax.Pattern]
 
 /-- The English/Czech selected core admits the same terminal-object packaging. -/
 noncomputable def englishCzechSelectedCore_isTerminal

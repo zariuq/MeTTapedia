@@ -33,7 +33,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 /-- Any PeTTa core step transports to a WM strength obligation once a PeTTa
 runtime interpretation interface is fixed. -/
 theorem pettaCoreStep_to_wmStrengthObligation
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace}
     (I : PeTTaJudgmentWMInterface State Query s)
     {W : State} {p q : Pattern}
@@ -46,7 +46,7 @@ theorem pettaCoreStep_to_wmStrengthObligation
 /-- Any star closure in the PeTTa core fragment transports to a WM strength
 obligation once a PeTTa runtime interpretation interface is fixed. -/
 theorem pettaCoreStepStar_to_wmStrengthObligation
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace}
     (I : PeTTaJudgmentWMInterface State Query s)
     {W : State} {p q : Pattern}
@@ -59,7 +59,7 @@ theorem pettaCoreStepStar_to_wmStrengthObligation
 /-- Package one PeTTa core step as a WM consequence rule via the existing
 runtime-to-WM bridge. -/
 def wmConsequenceRuleOn_of_pettaCoreStep
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace}
     (I : PeTTaJudgmentWMInterface State Query s)
     {p q : Pattern}
@@ -70,7 +70,7 @@ def wmConsequenceRuleOn_of_pettaCoreStep
 /-- Package PeTTa core star closure as a WM consequence rule via the existing
 runtime-to-WM bridge. -/
 def wmConsequenceRuleOn_of_pettaCoreStepStar
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace}
     (I : PeTTaJudgmentWMInterface State Query s)
     {p q : Pattern}

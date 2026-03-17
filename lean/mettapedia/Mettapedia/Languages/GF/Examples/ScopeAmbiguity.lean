@@ -10,7 +10,7 @@ import Mettapedia.OSLF.QuantifiedFormula2
 /-!
 # End-to-End Example: "Every man loves a woman" (Scope Ambiguity)
 
-This module demonstrates the complete GF → OSLF → Evidence pipeline for a
+This module demonstrates the complete GF → OSLF → BinaryEvidence pipeline for a
 sentence with **two quantifiers**, producing two genuinely distinct readings
 via V2 scope choice:
 
@@ -27,7 +27,7 @@ The two readings are ordered: inverse ≤ surface (by `scope_ordering_qsemE2`).
 2. **V1 × 2**: Two NP replacements (q1 for subject, q2 for object)
 3. **V2**: Scope choice — surface `scope q1 q2` or inverse `scope q2 q1`
 4. **Store → QFormula2**: Two distinct logical forms
-5. **Evidence ordering**: `∃∀ ≤ ∀∃`
+5. **BinaryEvidence ordering**: `∃∀ ≤ ∀∃`
 -/
 
 namespace Mettapedia.Languages.GF.Examples.ScopeAmbiguity
@@ -256,7 +256,7 @@ theorem inverseScope_closed : closedQF2 inverseScope := by
         freeVarsTerms, freeVarsTerm]
   decide
 
-/-! ## Stage 7: Evidence Structure -/
+/-! ## Stage 7: BinaryEvidence Structure -/
 
 /-- Surface scope unfolds to ⨅q1. (man(q1) ⇨ ⨆q2. (woman(q2) ⊓ love(q1,q2))). -/
 theorem surfaceScope_evidence
@@ -316,7 +316,7 @@ theorem emla_scope_ordering
        ↓ V2 (scope choice — nondeterministic)
   Surface:       scope q1 q2 → ∀q1. man(q1) → ∃q2. woman(q2) ∧ loves(q1,q2)
   Inverse:       scope q2 q1 → ∃q2. woman(q2) ∧ ∀q1. man(q1) → loves(q1,q2)
-       ↓ Evidence
+       ↓ BinaryEvidence
   Ordering:      ∃∀ ≤ ∀∃ (inverse implies surface)
 ```
 

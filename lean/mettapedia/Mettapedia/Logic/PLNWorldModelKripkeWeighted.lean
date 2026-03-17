@@ -89,7 +89,7 @@ theorem weightedCountP_cons
         simp [weightedCountP_singleton, Nat.add_comm]
 
 /-- Weighted evidence extraction for Kripke modal queries. -/
-noncomputable def weightedEvidence (W : WeightedState) (φ : ModalQuery) : Evidence := by
+noncomputable def weightedEvidence (W : WeightedState) (φ : ModalQuery) : BinaryEvidence := by
   classical
   let p : PointedKripke → Prop := fun pk => pk.satisfies φ
   let q : PointedKripke → Prop := fun pk => ¬ pk.satisfies φ
@@ -100,14 +100,18 @@ theorem weightedEvidence_add
     weightedEvidence (W₁ + W₂) φ =
       weightedEvidence W₁ φ + weightedEvidence W₂ φ := by
   classical
-  apply Evidence.ext'
-  · simp [weightedEvidence, weightedCountP_add, Evidence.hplus_def]
-  · simp [weightedEvidence, weightedCountP_add, Evidence.hplus_def]
+  apply BinaryEvidence.ext'
+  · simp [weightedEvidence, weightedCountP_add, BinaryEvidence.hplus_def]
+  · simp [weightedEvidence, weightedCountP_add, BinaryEvidence.hplus_def]
 
-/-- Weighted/source-aware `WorldModel` instance. -/
-noncomputable instance : WorldModel WeightedState ModalQuery where
+/-- Weighted/source-aware `BinaryWorldModel` instance. -/
+noncomputable instance : BinaryWorldModel WeightedState ModalQuery where
   evidence := weightedEvidence
   evidence_add := weightedEvidence_add
+  evidence_zero q := by
+    classical
+    simp only [weightedEvidence, weightedCountP, weightedExpansion,
+      Multiset.zero_bind, Multiset.countP_zero, Nat.cast_zero]; rfl
 
 /-- Unit source label used by weight-1 specialization map. -/
 def unitSource : String := "unit"
@@ -150,19 +154,19 @@ theorem weightedEvidence_toWeightOne_eq_kripkeEvidence
     (W : Multiset PointedKripke) (φ : ModalQuery) :
     weightedEvidence (toWeightOne W) φ = kripkeEvidence W φ := by
   classical
-  apply Evidence.ext'
+  apply BinaryEvidence.ext'
   · simp [weightedEvidence, kripkeEvidence, weightedCountP_toWeightOne_eq_countP]
   · simp [weightedEvidence, kripkeEvidence, weightedCountP_toWeightOne_eq_countP]
 
 /-- Weight-1 specialization preserves query strength exactly. -/
 theorem queryStrength_toWeightOne_eq_kripke
     (W : Multiset PointedKripke) (φ : ModalQuery) :
-    WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (toWeightOne W) φ =
-      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
         W φ := by
-  change (WorldModel.evidence (toWeightOne W) φ).toStrength =
-      (WorldModel.evidence W φ).toStrength
+  change (BinaryWorldModel.evidence (toWeightOne W) φ).toStrength =
+      (BinaryWorldModel.evidence W φ).toStrength
   exact congrArg (fun e => e.toStrength)
     (weightedEvidence_toWeightOne_eq_kripkeEvidence (W := W) (φ := φ))
 
@@ -171,18 +175,18 @@ theorem weightedEvidence_eq_kripkeEvidence_expansion
     (W : WeightedState) (φ : ModalQuery) :
     weightedEvidence W φ = kripkeEvidence (weightedExpansion W) φ := by
   classical
-  apply Evidence.ext'
+  apply BinaryEvidence.ext'
   · simp [weightedEvidence, weightedCountP, kripkeEvidence]
   · simp [weightedEvidence, weightedCountP, kripkeEvidence]
 
 /-- Weighted query strength is exactly Kripke query strength of the weighted expansion. -/
 theorem queryStrength_eq_kripkeExpansion
     (W : WeightedState) (φ : ModalQuery) :
-    WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery) W φ =
-      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery) W φ =
+      BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
         (weightedExpansion W) φ := by
-  change (WorldModel.evidence W φ).toStrength =
-      (WorldModel.evidence (weightedExpansion W) φ).toStrength
+  change (BinaryWorldModel.evidence W φ).toStrength =
+      (BinaryWorldModel.evidence (weightedExpansion W) φ).toStrength
   exact congrArg (fun e => e.toStrength)
     (weightedEvidence_eq_kripkeEvidence_expansion (W := W) (φ := φ))
 
@@ -195,12 +199,12 @@ theorem weighted_strength_le_of_provable_imp
     (W : WeightedState) (φ ψ : ModalQuery)
     (hW : ∀ pk ∈ weightedExpansion W, pk.model.toFrame ∈ C)
     (hprov : 𝓢 ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery) W φ ≤
-      WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery) W ψ := by
   have hK :
-      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
           (weightedExpansion W) φ ≤
-        WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
+        BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery)
           (weightedExpansion W) ψ :=
     multiset_strength_le_of_provable_imp
       (S := S) (𝓢 := 𝓢) (C := C)
@@ -212,11 +216,11 @@ theorem weighted_strength_le_of_provable_imp
 theorem queryStrength_le_toWeightOne_of_kripke
     (W : Multiset PointedKripke) (φ ψ : ModalQuery)
     (hK :
-      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery) W φ ≤
-        WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery) W ψ) :
-    WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery) W φ ≤
+        BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery) W ψ) :
+    BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (toWeightOne W) φ ≤
-      WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (toWeightOne W) ψ := by
   simpa [queryStrength_toWeightOne_eq_kripke (W := W) (φ := φ),
     queryStrength_toWeightOne_eq_kripke (W := W) (φ := ψ)] using hK
@@ -230,13 +234,13 @@ theorem toWeightOne_strength_le_of_provable_imp
     (W : Multiset PointedKripke) (φ ψ : ModalQuery)
     (hW : ∀ pk ∈ W, pk.model.toFrame ∈ C)
     (hprov : 𝓢 ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (toWeightOne W) φ ≤
-      WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (toWeightOne W) ψ := by
   have hK :
-      WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery) W φ ≤
-        WorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery) W ψ :=
+      BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery) W φ ≤
+        BinaryWorldModel.queryStrength (State := Multiset PointedKripke) (Query := ModalQuery) W ψ :=
     multiset_strength_le_of_provable_imp
       (S := S) (𝓢 := 𝓢) (C := C)
       (W := W) (φ := φ) (ψ := ψ) hW hprov
@@ -259,9 +263,9 @@ theorem trustedGate_ob_pe_strength_le_of_provable
     (W : WeightedState) (φ : ModalQuery)
     (hW : ∀ pk ∈ weightedExpansion (trustedGate trusted W), pk.model.toFrame ∈ C)
     (hprov : 𝓢 ⊢ (□φ ➝ ◇φ)) :
-    WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+    BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (trustedGate trusted W) (□φ) ≤
-      WorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
+      BinaryWorldModel.queryStrength (State := WeightedState) (Query := ModalQuery)
         (trustedGate trusted W) (◇φ) := by
   exact
     weighted_strength_le_of_provable_imp

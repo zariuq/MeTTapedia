@@ -53,7 +53,7 @@ the probability mass that "leaks" when a hypothesis only predicts finite prefixe
 - Wyeth, Cole & Hutter, Marcus (2025). "Value Under Ignorance in Universal
   Artificial Intelligence". arXiv:2512.17086v1.
 - Hutter, Marcus (2005). "Universal Artificial Intelligence", Chapters 4-5.
-- Shafer, Glenn (1976). "A Mathematical Theory of Evidence" (Choquet integrals).
+- Shafer, Glenn (1976). "A Mathematical Theory of BinaryEvidence" (Choquet integrals).
 
 ## Implementation Notes
 
@@ -171,7 +171,7 @@ This allows computing expected utilities when probability is imprecise.
     to Lebesgue measure on ℝ.
 
     **References:**
-    - Shafer (1976). "A Mathematical Theory of Evidence", §5.1
+    - Shafer (1976). "A Mathematical Theory of BinaryEvidence", §5.1
     - Denneberg (1994). "Non-Additive Measure and Integral", Chapter 3
     - Grabisch et al. (2009). "Aggregation Functions", §5.3
 -/

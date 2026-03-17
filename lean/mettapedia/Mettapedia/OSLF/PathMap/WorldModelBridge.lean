@@ -3,15 +3,15 @@ import Mettapedia.Logic.PLNWorldModel
 import Mathlib.Data.Multiset.Filter
 
 /-!
-# PathMap → WorldModel Bridge
+# PathMap → BinaryWorldModel Bridge
 
-This module shows how PathMap evidence connects to the `WorldModel` typeclass
+This module shows how PathMap evidence connects to the `BinaryWorldModel` typeclass
 (`PLNWorldModel.lean`) — overcoming the obstacle that `Finset α` union is idempotent.
 
 ## The Obstacle
 
 `PathMapWorldModel` (PLNBridge) only guarantees additivity for **disjoint** stores.
-`WorldModel` requires additivity for **all** states.  The gap: `Finset α` union is
+`BinaryWorldModel` requires additivity for **all** states.  The gap: `Finset α` union is
 idempotent (`W ∪ W = W`), so `ev(W ∪ W, q) = ev(W, q) ≠ ev(W, q) + ev(W, q)`.
 
 ## The Fix: `Multiset α`
@@ -19,7 +19,7 @@ idempotent (`W ∪ W = W`), so `ev(W ∪ W, q) = ev(W, q) ≠ ev(W, q) + ev(W, q
 `Multiset α` is the **free commutative monoid** on `α`: multiset sum `+` is
 non-idempotent, so `evidence_add` holds for ALL pairs.
 
-Evidence extraction counts multiset elements by (non)membership in query `q`:
+BinaryEvidence extraction counts multiset elements by (non)membership in query `q`:
 - `pos = #{elements of m in q}`
 - `neg = #{elements of m not in q}`
 
@@ -28,7 +28,7 @@ embedding `Finset.val : Finset α → Multiset α` (see `finset_multiset_evidenc
 
 ## Main results
 
-- `multisetPathWorldModel` — `WorldModel (Multiset α) (Finset α)` instance
+- `multisetPathWorldModel` — `BinaryWorldModel (Multiset α) (Finset α)` instance
 - `finset_multiset_evidence_agree` — embedding compatibility
 
 ## Weighted / Finsupp case
@@ -54,16 +54,16 @@ open scoped ENNReal
 instance {α : Type*} : EvidenceType (Multiset α) where
   toAddCommMonoid := inferInstance
 
-/-! ## Section 2: Evidence Extraction from Multiset -/
+/-! ## Section 2: BinaryEvidence Extraction from Multiset -/
 
-/-- Evidence extraction from a `Multiset α` store for query `q : Finset α`.
+/-- BinaryEvidence extraction from a `Multiset α` store for query `q : Finset α`.
 
     - `pos` = number of elements of `m` lying in `q` (with multiplicity)
     - `neg` = number of elements of `m` not in `q` (with multiplicity)
 
     For a Finset store W, use `m = W.val` (the underlying nodup multiset). -/
 noncomputable def multisetPathEvidence {α : Type*} [DecidableEq α]
-    (m : Multiset α) (q : Finset α) : Evidence :=
+    (m : Multiset α) (q : Finset α) : BinaryEvidence :=
   ⟨(m.filter (· ∈ q)).card, (m.filter (· ∉ q)).card⟩
 
 @[simp]
@@ -97,7 +97,7 @@ theorem multisetPathEvidence_additive {α : Type*} [DecidableEq α]
     (m₁ m₂ : Multiset α) (q : Finset α) :
     multisetPathEvidence (m₁ + m₂) q =
     multisetPathEvidence m₁ q + multisetPathEvidence m₂ q := by
-  simp only [multisetPathEvidence, Evidence.hplus_def, Evidence.mk.injEq]
+  simp only [multisetPathEvidence, BinaryEvidence.hplus_def, BinaryEvidence.mk.injEq]
   constructor
   · -- pos: |filter (·∈q) (m₁+m₂)| = |filter (·∈q) m₁| + |filter (·∈q) m₂|
     rw [Multiset.filter_add]
@@ -106,28 +106,28 @@ theorem multisetPathEvidence_additive {α : Type*} [DecidableEq α]
     rw [Multiset.filter_add]
     exact_mod_cast Multiset.card_add _ _
 
-/-! ## Section 4: WorldModel Instance -/
+/-! ## Section 4: BinaryWorldModel Instance -/
 
-/-- `Multiset α` stores form a full `WorldModel` — the correct solution to the
+/-- `Multiset α` stores form a full `BinaryWorldModel` — the correct solution to the
     idempotency obstacle that blocks the `Finset α` instance.
 
     The key difference from `PathMapWorldModel`:
     - `PathMapWorldModel (Finset α)` : additivity only for disjoint stores
-    - `WorldModel (Multiset α)`      : additivity for ALL pairs (free monoid structure) -/
+    - `BinaryWorldModel (Multiset α)`      : additivity for ALL pairs (free monoid structure) -/
 noncomputable instance multisetPathWorldModel {α : Type*} [DecidableEq α] :
-    WorldModel (Multiset α) (Finset α) where
+    BinaryWorldModel (Multiset α) (Finset α) where
   evidence := multisetPathEvidence
   evidence_add := multisetPathEvidence_additive
 
-/-! ## Section 5: Embedding Finset into the WorldModel -/
+/-! ## Section 5: Embedding Finset into the BinaryWorldModel -/
 
 /-- The embedding `Finset.val : Finset α → Multiset α` preserves evidence.
     A Finset store W gives the same evidence whether viewed via `finsetPathEvidence`
-    or via the `Multiset WorldModel`. -/
+    or via the `Multiset BinaryWorldModel`. -/
 theorem finset_multiset_evidence_agree {α : Type*} [DecidableEq α]
     (W q : Finset α) :
     multisetPathEvidence W.val q = finsetPathEvidence W q := by
-  simp only [multisetPathEvidence, finsetPathEvidence, Evidence.mk.injEq]
+  simp only [multisetPathEvidence, finsetPathEvidence, BinaryEvidence.mk.injEq]
   constructor
   · -- pos: |W.val.filter (·∈q)| = (W ∩ q).card
     have h1 : W.val.filter (· ∈ q) = (W.filter (· ∈ q)).val :=
@@ -142,10 +142,10 @@ theorem finset_multiset_evidence_agree {α : Type*} [DecidableEq α]
       ext x; simp [Finset.mem_filter, Finset.mem_sdiff]
     simp [h1, h2, Finset.card_def]
 
-/-- WorldModel evidence query for a Finset-backed store equals `finsetPathEvidence`. -/
+/-- BinaryWorldModel evidence query for a Finset-backed store equals `finsetPathEvidence`. -/
 theorem multisetWorldModel_finset_eq {α : Type*} [DecidableEq α]
     (W q : Finset α) :
-    WorldModel.evidence (State := Multiset α) W.val q = finsetPathEvidence W q :=
+    BinaryWorldModel.evidence (State := Multiset α) W.val q = finsetPathEvidence W q :=
   finset_multiset_evidence_agree W q
 
 end Mettapedia.OSLF.PathMap.WorldModelBridge

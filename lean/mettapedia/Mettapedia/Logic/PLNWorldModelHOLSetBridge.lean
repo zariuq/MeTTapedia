@@ -50,10 +50,10 @@ def setHolSatisfies (S : SetPointed) (φ : SetHOLQuery) : Prop :=
 
 instance : EvidenceType SetState where
 
-/-- Evidence extracted from a multiset of pointed set structures, using the
+/-- BinaryEvidence extracted from a multiset of pointed set structures, using the
 directly induced HOL semantics. -/
 noncomputable def setHolEvidence
-    (W : SetState) (φ : SetHOLQuery) : Evidence := by
+    (W : SetState) (φ : SetHOLQuery) : BinaryEvidence := by
   classical
   exact
     ⟨(Multiset.countP (fun S => setHolSatisfies S φ) W : ℝ≥0∞),
@@ -73,12 +73,12 @@ theorem setHolEvidence_add
     setHolEvidence (W₁ + W₂) φ =
       setHolEvidence W₁ φ + setHolEvidence W₂ φ := by
   classical
-  apply Evidence.ext'
-  · simp [setHolEvidence, Multiset.countP_add, Evidence.hplus_def]
-  · simp [setHolEvidence, Multiset.countP_add, Evidence.hplus_def]
+  apply BinaryEvidence.ext'
+  · simp [setHolEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
+  · simp [setHolEvidence, Multiset.countP_add, BinaryEvidence.hplus_def]
 
 /-- World-model instance induced by direct set-based HOL evidence counting. -/
-noncomputable instance : WorldModel SetState SetHOLQuery where
+noncomputable instance : BinaryWorldModel SetState SetHOLQuery where
   evidence := setHolEvidence
   evidence_add := setHolEvidence_add
 
@@ -96,25 +96,25 @@ theorem setHolEvidence_singleton_of_not_satisfies
 
 theorem queryStrength_singleton_of_satisfies
     (S : SetPointed) (φ : SetHOLQuery) (h : setHolSatisfies S φ) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) φ = 1 := by
-  change Evidence.toStrength (setHolEvidence ({S} : SetState) φ) = 1
+  change BinaryEvidence.toStrength (setHolEvidence ({S} : SetState) φ) = 1
   rw [setHolEvidence_singleton_of_satisfies (S := S) (φ := φ) h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 theorem queryStrength_singleton_of_not_satisfies
     (S : SetPointed) (φ : SetHOLQuery) (h : ¬ setHolSatisfies S φ) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) φ = 0 := by
-  change Evidence.toStrength (setHolEvidence ({S} : SetState) φ) = 0
+  change BinaryEvidence.toStrength (setHolEvidence ({S} : SetState) φ) = 0
   rw [setHolEvidence_singleton_of_not_satisfies (S := S) (φ := φ) h]
-  simp [Evidence.toStrength, Evidence.total]
+  simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 /-- Singleton adequacy for the direct set-based HOL semantics. -/
 theorem singleton_adequacy_strength_one
     (S : SetPointed) (φ : SetHOLQuery) :
     setHolSatisfies S φ ↔
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) φ = 1 := by
   constructor
   · intro h
@@ -123,13 +123,13 @@ theorem singleton_adequacy_strength_one
     by_cases hs : setHolSatisfies S φ
     · exact hs
     · have h0 :
-          WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+          BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
             ({S} : SetState) φ = 0 :=
         queryStrength_singleton_of_not_satisfies (S := S) (φ := φ) hs
       have h01 : (0 : ℝ≥0∞) = 1 := by
         calc
           (0 : ℝ≥0∞) =
-              WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+              BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
                 ({S} : SetState) φ := h0.symm
           _ = 1 := h
       exact False.elim (zero_ne_one h01)
@@ -140,10 +140,10 @@ family. -/
 theorem singleton_adequacy_strength_one_is_crispSpecialization
     (S : SetPointed) (φ : SetHOLQuery) :
     setHolSatisfies S φ ↔
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState) φ = 1 := by
   simpa [Mettapedia.Logic.PLNWorldModelCrispSpecialization.crispQueryStrength,
-    WorldModel.queryStrength, setHolEvidence_eq_crispEvidence]
+    BinaryWorldModel.queryStrength, setHolEvidence_eq_crispEvidence]
     using
       (Mettapedia.Logic.PLNWorldModelCrispSpecialization.singleton_adequacy_strength_one
         (satisfies := setHolSatisfies) S φ)
@@ -154,9 +154,9 @@ theorem pointwiseImplies_iff_singletonStrengthLE
     (φ ψ : SetHOLQuery) :
     (∀ S : SetPointed, setHolSatisfies S φ → setHolSatisfies S ψ) ↔
       (∀ S : SetPointed,
-        WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+        BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
             ({S} : SetState) φ ≤
-          WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+          BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
             ({S} : SetState) ψ) := by
   constructor
   · intro himp S
@@ -170,11 +170,11 @@ theorem pointwiseImplies_iff_singletonStrengthLE
     by_contra hψ
     have hsingleton := hle S
     have h1 :
-        WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+        BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
             ({S} : SetState) φ = 1 :=
       queryStrength_singleton_of_satisfies (S := S) (φ := φ) hφ
     have h0 :
-        WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+        BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
             ({S} : SetState) ψ = 0 :=
       queryStrength_singleton_of_not_satisfies (S := S) (φ := ψ) hψ
     have h10 : (1 : ℝ≥0∞) ≤ 0 := by
@@ -191,15 +191,15 @@ theorem queryEq_of_pointwiseIff
     WMQueryEq (State := SetState) (Query := SetHOLQuery) φ ψ := by
   intro W
   classical
-  ext <;> simp [WorldModel.evidence, setHolEvidence, hiff]
+  ext <;> simp [BinaryWorldModel.evidence, setHolEvidence, hiff]
 
 /-- Pointwise semantic equivalence yields equality of direct set/HOL query
 strengths. -/
 theorem queryStrength_eq_of_pointwiseIff
     (W : SetState) (φ ψ : SetHOLQuery)
     (hiff : ∀ S : SetPointed, setHolSatisfies S φ ↔ setHolSatisfies S ψ) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W φ =
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W φ =
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W ψ := by
   exact
     WMQueryEq.to_queryStrength
       (State := SetState) (Query := SetHOLQuery)
@@ -241,7 +241,7 @@ private theorem setHolEvidence_total
         (Multiset.countP (fun S : SetPointed => setHolSatisfies S φ) W : ℝ≥0∞) +
           (Multiset.countP (fun S : SetPointed => ¬ setHolSatisfies S φ) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold setHolEvidence Evidence.total
+  unfold setHolEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 /-- Pointwise semantic implication lifts to multiset WM consequence for the
@@ -249,25 +249,25 @@ directly grounded set-based HOL semantics. -/
 theorem queryStrength_le_of_pointwise
     (W : SetState) (φ ψ : SetHOLQuery)
     (himp : ∀ S : SetPointed, setHolSatisfies S φ → setHolSatisfies S ψ) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W φ ≤
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W ψ := by
   let pφ : SetPointed → Prop := fun S => setHolSatisfies S φ
   let pψ : SetPointed → Prop := fun S => setHolSatisfies S ψ
   letI : DecidablePred pφ := Classical.decPred pφ
   letI : DecidablePred pψ := Classical.decPred pψ
   have hφ :
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W φ =
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W φ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pφ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (setHolEvidence W φ).total = 0 then 0
       else (setHolEvidence W φ).pos / (setHolEvidence W φ).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pφ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
     rw [setHolEvidence_total (W := W) (φ := φ)]
     simp [setHolEvidence, pφ]
   have hψ :
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W ψ =
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W ψ =
         if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pψ W : ℝ≥0∞) / (W.card : ℝ≥0∞) := by
-    unfold WorldModel.queryStrength Evidence.toStrength
+    unfold BinaryWorldModel.queryStrength BinaryEvidence.toStrength
     change (if (setHolEvidence W ψ).total = 0 then 0
       else (setHolEvidence W ψ).pos / (setHolEvidence W ψ).total)
         = if (W.card : ℝ≥0∞) = 0 then 0 else (Multiset.countP pψ W : ℝ≥0∞) / (W.card : ℝ≥0∞)
@@ -293,12 +293,12 @@ theorem queryStrength_le_of_pointwise
 theorem multiset_strength_le_of_singletonStrengthLE
     (W : SetState) (φ ψ : SetHOLQuery)
     (hsing : ∀ S : SetPointed,
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
           ({S} : SetState) φ ≤
-        WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+        BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
           ({S} : SetState) ψ) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W φ ≤
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W ψ := by
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W φ ≤
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W ψ := by
   have himp : ∀ S : SetPointed, setHolSatisfies S φ → setHolSatisfies S ψ :=
     (pointwiseImplies_iff_singletonStrengthLE (φ := φ) (ψ := ψ)).2 hsing
   exact queryStrength_le_of_pointwise (W := W) (φ := φ) (ψ := ψ) himp
@@ -319,14 +319,14 @@ theorem pointwiseIff_iff_queryEq
     constructor
     · intro hφ
       have hleft :
-          WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+          BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
               ({S} : SetState) φ = 1 :=
         queryStrength_singleton_of_satisfies (S := S) (φ := φ) hφ
       rw [hleft] at hStrength
       exact (singleton_adequacy_strength_one (S := S) (φ := ψ)).2 hStrength.symm
     · intro hψ
       have hright :
-          WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+          BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
               ({S} : SetState) ψ = 1 :=
         queryStrength_singleton_of_satisfies (S := S) (φ := ψ) hψ
       rw [hright] at hStrength
@@ -393,14 +393,14 @@ theorem setHolSatisfies_embedSentence_iff
     (Mettapedia.Logic.HOL.Semantics.SetBased.pointed_denote_embedSentence_iff
       (S := S) (φ := φ))
 
-/-- Evidence for embedded set-theory sentences agrees exactly between the direct
+/-- BinaryEvidence for embedded set-theory sentences agrees exactly between the direct
 `Set -> HOL -> WM` route and the older `Set -> FOL -> WM` route. -/
 theorem setHolEvidence_embedSentence_eq_folEvidence
     (W : SetState) (φ : LO.FirstOrder.Sentence SetLang) :
     setHolEvidence W (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence φ) =
       Mettapedia.Logic.PLNWorldModelFOL.folEvidence W φ := by
   classical
-  apply Evidence.ext'
+  apply BinaryEvidence.ext'
   · simp [setHolEvidence, Mettapedia.Logic.PLNWorldModelFOL.folEvidence,
       setHolSatisfies_embedSentence_iff]
   · simp [setHolEvidence, Mettapedia.Logic.PLNWorldModelFOL.folEvidence,
@@ -445,7 +445,7 @@ theorem setHolEvidence_eq_of_mutual_consequence_embed
     refine Multiset.countP_congr rfl ?_
     intro S hS
     exact propext (not_congr (hiff S hS))
-  apply Evidence.ext'
+  apply BinaryEvidence.ext'
   · simpa [setHolEvidence] using congrArg (fun n : Nat => (n : ℝ≥0∞)) hpos
   · simpa [setHolEvidence] using congrArg (fun n : Nat => (n : ℝ≥0∞)) hneg
 
@@ -466,16 +466,16 @@ theorem setHolEvidence_eq_of_mutual_provable_imp_embed
 direct HOL-routed bridge and the older FOL-routed bridge. -/
 theorem queryStrength_embedSentence_eq_setQueryStrength
     (W : SetState) (φ : LO.FirstOrder.Sentence SetLang) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence φ) =
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Mettapedia.Logic.PLNWorldModelSetTheoryBridge.SetState)
         (Query := SetQuery) W φ := by
   change
-    Evidence.toStrength
+    BinaryEvidence.toStrength
       (setHolEvidence W (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence φ)) =
-    Evidence.toStrength (Mettapedia.Logic.PLNWorldModelFOL.folEvidence W φ)
-  exact congrArg Evidence.toStrength
+    BinaryEvidence.toStrength (Mettapedia.Logic.PLNWorldModelFOL.folEvidence W φ)
+  exact congrArg BinaryEvidence.toStrength
     (setHolEvidence_embedSentence_eq_folEvidence (W := W) (φ := φ))
 
 /-- On theory-model states, mutually implied embedded set-theory sentences have
@@ -486,15 +486,15 @@ theorem queryStrength_eq_of_mutual_consequence_embed
     (hW : stateModelsTheory T W)
     (hφψ : T ⊨[SmallStruc SetLang] (φ ➝ ψ))
     (hψφ : T ⊨[SmallStruc SetLang] (ψ ➝ φ)) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence φ) =
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence ψ) := by
-  change Evidence.toStrength
+  change BinaryEvidence.toStrength
       (setHolEvidence W (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence φ)) =
-    Evidence.toStrength
+    BinaryEvidence.toStrength
       (setHolEvidence W (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence ψ))
-  exact congrArg Evidence.toStrength <|
+  exact congrArg BinaryEvidence.toStrength <|
     setHolEvidence_eq_of_mutual_consequence_embed
       (T := T) (W := W) (φ := φ) (ψ := ψ) hW hφψ hψφ
 
@@ -506,9 +506,9 @@ theorem queryStrength_eq_of_mutual_provable_imp_embed
     (hW : stateModelsTheory T W)
     (hφψ : T ⊢ (φ ➝ ψ))
     (hψφ : T ⊢ (ψ ➝ φ)) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence φ) =
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence ψ) := by
   exact queryStrength_eq_of_mutual_consequence_embed
     (T := T) (W := W) (φ := φ) (ψ := ψ) hW (smallSound! hφψ) (smallSound! hψφ)
@@ -519,10 +519,10 @@ theorem consequence_iff_singletonStrengthLEOnTheory_embed
     (T : SetTheory) (φ ψ : LO.FirstOrder.Sentence SetLang) :
     T ⊨[SmallStruc SetLang] (φ ➝ ψ) ↔
       ∀ S : SetPointed, S ⊧* T →
-        WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+        BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
             ({S} : SetState)
             (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence φ) ≤
-          WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+          BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
             ({S} : SetState)
             (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence ψ) := by
   constructor
@@ -535,11 +535,11 @@ theorem consequence_iff_singletonStrengthLEOnTheory_embed
   · intro hhol
     have hfol :
         ∀ S : SetPointed, S ⊧* T →
-          WorldModel.queryStrength
+          BinaryWorldModel.queryStrength
               (State := Mettapedia.Logic.PLNWorldModelSetTheoryBridge.SetState)
               (Query := SetQuery)
               ({S} : SetState) φ ≤
-            WorldModel.queryStrength
+            BinaryWorldModel.queryStrength
               (State := Mettapedia.Logic.PLNWorldModelSetTheoryBridge.SetState)
               (Query := SetQuery)
               ({S} : SetState) ψ := by
@@ -557,10 +557,10 @@ theorem provable_imp_iff_singletonStrengthLEOnTheory_embed
     (T : SetTheory) (φ ψ : LO.FirstOrder.Sentence SetLang) :
     (T ⊢ (φ ➝ ψ)) ↔
       ∀ S : SetPointed, S ⊧* T →
-        WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+        BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
             ({S} : SetState)
             (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence φ) ≤
-          WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+          BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
             ({S} : SetState)
             (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence ψ) := by
   constructor
@@ -580,9 +580,9 @@ theorem multiset_strength_le_of_consequence_embed
     (T : SetTheory) (W : SetState) (φ ψ : LO.FirstOrder.Sentence SetLang)
     (hW : stateModelsTheory T W)
     (hcons : T ⊨[SmallStruc SetLang] (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence φ) ≤
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence ψ) := by
   rw [queryStrength_embedSentence_eq_setQueryStrength (W := W) (φ := φ)]
   rw [queryStrength_embedSentence_eq_setQueryStrength (W := W) (φ := ψ)]
@@ -596,9 +596,9 @@ theorem multiset_strength_le_of_provable_imp_embed
     (T : SetTheory) (W : SetState) (φ ψ : LO.FirstOrder.Sentence SetLang)
     (hW : stateModelsTheory T W)
     (hprov : T ⊢ (φ ➝ ψ)) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence φ) ≤
-      WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
+      BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery) W
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence ψ) := by
   rw [queryStrength_embedSentence_eq_setQueryStrength (W := W) (φ := φ)]
   rw [queryStrength_embedSentence_eq_setQueryStrength (W := W) (φ := ψ)]
@@ -638,7 +638,7 @@ def wmConsequenceRuleOn_of_provable_imp_embed
 direct HOL-routed set bridge. -/
 theorem canary_singleton_embedTruth_strength_one
     (S : SetPointed) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState)
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence (⊤ : LO.FirstOrder.Sentence SetLang)) = 1 := by
   rw [queryStrength_embedSentence_eq_setQueryStrength (W := ({S} : SetState))
@@ -652,7 +652,7 @@ theorem canary_singleton_embedTruth_strength_one
 the direct HOL-routed set bridge. -/
 theorem canary_singleton_embedFalsum_strength_zero
     (S : SetPointed) :
-    WorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
+    BinaryWorldModel.queryStrength (State := SetState) (Query := SetHOLQuery)
         ({S} : SetState)
         (Mettapedia.Logic.HOL.Embedding.FirstOrder.embedSentence (⊥ : LO.FirstOrder.Sentence SetLang)) = 0 := by
   rw [queryStrength_embedSentence_eq_setQueryStrength (W := ({S} : SetState))

@@ -6,7 +6,7 @@ import Mettapedia.Logic.EvidenceWeightedNormalGamma
 import Mettapedia.Logic.WeightedNormalGammaSurface
 
 /-!
-# Finite Gaussian-Mixture E/M Layer over Weighted WM Evidence
+# Finite Gaussian-Mixture E/M Layer over Weighted WM BinaryEvidence
 
 This file adds a first honest finite Gaussian-mixture E/M layer on top of the
 weighted Normal-Gamma evidence carrier.

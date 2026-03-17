@@ -131,10 +131,10 @@ open Mettapedia.Logic.PLNXiDerivedBNRules.Typed
 open Mettapedia.ProbabilityTheory.BayesianNetworks
 open Mettapedia.ProbabilityTheory.BayesianNetworks.Examples
 
-/-! ## Canonical Evidence Carriers -/
+/-! ## Canonical BinaryEvidence Carriers -/
 
 /-- Canonical evidence carrier for PLN in this repository. -/
-abbrev Evidence := EvidenceQuantale.Evidence
+abbrev BinaryEvidence := EvidenceQuantale.BinaryEvidence
 
 /-- Canonical STV record used by rule-level formulas. -/
 abbrev STV := PLNDeduction.STV
@@ -1937,22 +1937,22 @@ theorem sinkRule_eq_abduction (s_AB s_CB s_A s_B s_C : ℝ) :
 
 abbrev WMQueryEq {State Query : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
+    [PLNWorldModel.BinaryWorldModel State Query] :=
   PLNWorldModel.WMQueryEq (State := State) (Query := Query)
 
 abbrev WMEvidenceLE {State Query : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
+    [PLNWorldModel.BinaryWorldModel State Query] :=
   PLNWorldModel.WMEvidenceLE (State := State) (Query := Query)
 
 abbrev WMViewEq {State Query : Type*} {α : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
+    [PLNWorldModel.BinaryWorldModel State Query] :=
   PLNWorldModel.WMViewEq (State := State) (Query := Query) (α := α)
 
 abbrev WMRewriteRule (State Query : Type*)
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
+    [PLNWorldModel.BinaryWorldModel State Query] :=
   PLNWorldModel.WMRewriteRule State Query
 
 abbrev WMQueryEqSigma {State Srt : Type*} {Query : Srt → Type*}
@@ -1995,19 +1995,19 @@ Use `wmQueryEq*_to_*` aliases for transport/equivalence lemmas on those core vie
 
 noncomputable abbrev wmQueryStrengthWith {State Query : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
-  PLNWorldModel.WorldModel.queryStrengthWith (State := State) (Query := Query)
+    [PLNWorldModel.BinaryWorldModel State Query] :=
+  PLNWorldModel.BinaryWorldModel.queryStrengthWith (State := State) (Query := Query)
 
 noncomputable abbrev wmQueryConfidenceENN {State Query : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
-  PLNWorldModel.WorldModel.queryConfidence (State := State) (Query := Query)
+    [PLNWorldModel.BinaryWorldModel State Query] :=
+  PLNWorldModel.BinaryWorldModel.queryConfidence (State := State) (Query := Query)
 
 abbrev wmQueryInterpret {State Query : Type*} {Ctx Val : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
-    [EvidenceClass.InterpretableEvidence Ctx Evidence Val] :=
-  PLNWorldModel.WorldModel.queryInterpret
+    [PLNWorldModel.BinaryWorldModel State Query]
+    [EvidenceClass.InterpretableEvidence Ctx BinaryEvidence Val] :=
+  PLNWorldModel.BinaryWorldModel.queryInterpret
     (State := State) (Query := Query) (Ctx := Ctx) (Val := Val)
 
 noncomputable abbrev wmQueryStrengthWithSigma {State Srt : Type*} {Query : Srt → Type*}
@@ -2025,7 +2025,7 @@ noncomputable abbrev wmQueryConfidenceSigmaENN {State Srt : Type*} {Query : Srt 
 abbrev wmQueryInterpretSigma {State Srt : Type*} {Query : Srt → Type*} {Ctx Val : Type*}
     [EvidenceClass.EvidenceType State]
     [PLNWorldModel.WorldModelSigma State Srt Query]
-    [EvidenceClass.InterpretableEvidence Ctx Evidence Val] :=
+    [EvidenceClass.InterpretableEvidence Ctx BinaryEvidence Val] :=
   PLNWorldModel.WorldModelSigma.queryInterpret
     (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx) (Val := Val)
 
@@ -2063,7 +2063,7 @@ abbrev wmQueryEqSigma_to_queryInterpret :=
 
 noncomputable abbrev queryConfidence {State Query : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
+    [PLNWorldModel.BinaryWorldModel State Query] :=
   @PLNErrorMagnificationGrounding.queryConfidence
 
 noncomputable abbrev queryConfidenceSigma {State Srt : Type*} {Query : Srt → Type*}
@@ -2073,7 +2073,7 @@ noncomputable abbrev queryConfidenceSigma {State Srt : Type*} {Query : Srt → T
 
 noncomputable abbrev thresholdAtomSemOfWMQConfidence {State Query : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
+    [PLNWorldModel.BinaryWorldModel State Query] :=
   @PLNErrorMagnificationGrounding.thresholdAtomSemOfWMQConfidence
 
 noncomputable abbrev thresholdAtomSemOfWMQSigmaConfidence {State Srt : Type*}
@@ -2109,8 +2109,8 @@ abbrev IDMPredictiveContext := PLNWorldModel.IDMPredictiveContext
 
 noncomputable abbrev queryITV {State Query Ctx : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
-  PLNWorldModel.WorldModel.queryITV (State := State) (Query := Query) (Ctx := Ctx)
+    [PLNWorldModel.BinaryWorldModel State Query] :=
+  PLNWorldModel.BinaryWorldModel.queryITV (State := State) (Query := Query) (Ctx := Ctx)
 
 noncomputable abbrev queryITVSigma {State Srt Ctx : Type*} {Query : Srt → Type*}
     [EvidenceClass.EvidenceType State]
@@ -2120,14 +2120,14 @@ noncomputable abbrev queryITVSigma {State Srt Ctx : Type*} {Query : Srt → Type
 
 abbrev WMITVJudgment {State Query Ctx : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
-  PLNWorldModel.WorldModel.WMITVJudgment
+    [PLNWorldModel.BinaryWorldModel State Query] :=
+  PLNWorldModel.BinaryWorldModel.WMITVJudgment
     (State := State) (Query := Query) (Ctx := Ctx)
 
 abbrev WMITVJudgmentCtx {State Query Ctx : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
-  PLNWorldModel.WorldModel.WMITVJudgmentCtx
+    [PLNWorldModel.BinaryWorldModel State Query] :=
+  PLNWorldModel.BinaryWorldModel.WMITVJudgmentCtx
     (State := State) (Query := Query) (Ctx := Ctx)
 
 abbrev WMITVJudgmentSigma {State Srt Ctx : Type*} {Query : Srt → Type*}
@@ -2201,33 +2201,33 @@ noncomputable def queryITVSigmaWalleyIDMDefault {State Srt : Type*} {Query : Srt
 theorem queryITVWalley_width_add_credibility
     {State Query : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (ctx : IDMPredictiveContext) (W : State) (q : Query) :
-    PLNWorldModel.WorldModel.queryITVWidth
+    PLNWorldModel.BinaryWorldModel.queryITVWidth
       (State := State) (Query := Query)
       PLNWorldModel.ITVSemantics.walleyIDMPredictive ctx W q
       +
-      PLNWorldModel.WorldModel.queryITVCredibility
+      PLNWorldModel.BinaryWorldModel.queryITVCredibility
         (State := State) (Query := Query)
         PLNWorldModel.ITVSemantics.walleyIDMPredictive ctx W q
       = 1 :=
-  PLNWorldModel.WorldModel.queryITVWidth_add_queryITVCredibility_walley
+  PLNWorldModel.BinaryWorldModel.queryITVWidth_add_queryITVCredibility_walley
     (State := State) (Query := Query) ctx W q
 
 theorem queryITVWalley_width_eq_one_sub_credibility
     {State Query : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (ctx : IDMPredictiveContext) (W : State) (q : Query) :
-    PLNWorldModel.WorldModel.queryITVWidth
+    PLNWorldModel.BinaryWorldModel.queryITVWidth
       (State := State) (Query := Query)
       PLNWorldModel.ITVSemantics.walleyIDMPredictive ctx W q
       =
       1 -
-      PLNWorldModel.WorldModel.queryITVCredibility
+      PLNWorldModel.BinaryWorldModel.queryITVCredibility
         (State := State) (Query := Query)
         PLNWorldModel.ITVSemantics.walleyIDMPredictive ctx W q :=
-  PLNWorldModel.WorldModel.queryITVWidth_eq_one_sub_queryITVCredibility_walley
+  PLNWorldModel.BinaryWorldModel.queryITVWidth_eq_one_sub_queryITVCredibility_walley
     (State := State) (Query := Query) ctx W q
 
 theorem queryITVSigmaWalley_width_add_credibility
@@ -3361,13 +3361,13 @@ def patternInheritanceQueryOfAtom_mixed
 theorem intensional_mixed_assoc_threshold_atom_of_interval
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (Side : Prop)
     (hSound : Side →
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedPolicyAssoc
@@ -3411,13 +3411,13 @@ theorem intensional_mixed_assoc_threshold_atom_of_interval
 theorem intensional_mixed_assoc_threshold_atom_of_interval_of_solomonoff
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (Side : Prop)
     (hSound : Side →
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedPolicyAssoc
@@ -3429,7 +3429,7 @@ theorem intensional_mixed_assoc_threshold_atom_of_interval_of_solomonoff
     (hSide : Side)
     (ξ : Mettapedia.Logic.SolomonoffInduction.Semimeasure)
     (x F Wc : Mettapedia.Logic.SolomonoffPrior.BinString)
-    (liftScore : ℝ → Evidence)
+    (liftScore : ℝ → BinaryEvidence)
     (hAssocLift :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalAssocEvidence
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -3482,16 +3482,16 @@ consumes ASSOC-score correspondences instead of a direct `hAssocLift`. -/
 theorem intensional_mixed_assoc_threshold_atom_of_interval_of_solomonoff_semantic
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -3558,7 +3558,7 @@ theorem intensional_mixed_assoc_threshold_atom_of_interval_of_solomonoff_semanti
 abbrev InheritanceIntensionalScoreModel
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query) :=
   PLNIntensionalWorldModel.InheritanceQueryBuilder.IntensionalScoreModel
     (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern) (Query := Query) enc
@@ -3574,7 +3574,7 @@ structure SolomonoffAssocContext where
 structure SolomonoffAssocLinkedModel
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query) where
   scoreModel : InheritanceIntensionalScoreModel (State := State) (Query := Query) enc
   contextOf : State → String → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
@@ -3594,10 +3594,10 @@ obligations, removing common Chapter-12 call-site hypotheses. -/
 structure SolomonoffAssocLinkedModelStrong
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query) where
   linked : SolomonoffAssocLinkedModel (State := State) (Query := Query) enc
-  combine : Evidence → Evidence → Evidence
+  combine : BinaryEvidence → BinaryEvidence → BinaryEvidence
   mixed_sound :
     PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
       (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -3622,13 +3622,13 @@ same theorem as `..._semantic`, but consumes a canonical score model. -/
 theorem intensional_mixed_assoc_threshold_atom_of_interval_of_solomonoff_semantic_model
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (model : InheritanceIntensionalScoreModel (State := State) (Query := Query) enc)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
@@ -3672,13 +3672,13 @@ theorem intensional_mixed_assoc_threshold_atom_of_interval_of_solomonoff_semanti
 theorem intensional_mixed_assoc_threshold_atom_of_interval_of_solomonoff_semantic_linked
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (model : SolomonoffAssocLinkedModel (State := State) (Query := Query) enc)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
@@ -3750,7 +3750,7 @@ carried by `SolomonoffAssocLinkedModelStrong`. -/
 theorem intensional_mixed_assoc_threshold_atom_of_interval_of_solomonoff_semantic_linked_strong
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
@@ -3796,7 +3796,7 @@ theorem intensional_mixed_assoc_threshold_atom_of_interval_of_solomonoff_semanti
 theorem intensional_mixed_assoc_threshold_atom_bayesNormal_of_solomonoff_semantic_linked_strong
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval .bayesNormal)
@@ -3837,7 +3837,7 @@ theorem intensional_mixed_assoc_threshold_atom_bayesNormal_of_solomonoff_semanti
 theorem intensional_mixed_assoc_threshold_atom_bayesExact_of_solomonoff_semantic_linked_strong
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval .bayesExact)
@@ -3878,7 +3878,7 @@ theorem intensional_mixed_assoc_threshold_atom_bayesExact_of_solomonoff_semantic
 theorem intensional_mixed_assoc_threshold_atom_walley_of_solomonoff_semantic_linked_strong
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval .walleyIDM)
@@ -3919,15 +3919,15 @@ theorem intensional_mixed_assoc_threshold_atom_walley_of_solomonoff_semantic_lin
 theorem intensional_mixed_assoc_threshold_atom_bayesNormal_of_solomonoff_semantic
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval .bayesNormal)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -3972,15 +3972,15 @@ theorem intensional_mixed_assoc_threshold_atom_bayesNormal_of_solomonoff_semanti
 theorem intensional_mixed_assoc_threshold_atom_bayesExact_of_solomonoff_semantic
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval .bayesExact)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -4025,15 +4025,15 @@ theorem intensional_mixed_assoc_threshold_atom_bayesExact_of_solomonoff_semantic
 theorem intensional_mixed_assoc_threshold_atom_walley_of_solomonoff_semantic
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval .walleyIDM)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -4078,16 +4078,16 @@ theorem intensional_mixed_assoc_threshold_atom_walley_of_solomonoff_semantic
 theorem intensional_mixed_assoc_lower_threshold_atom_of_interval_of_solomonoff_semantic
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -4132,16 +4132,16 @@ theorem intensional_mixed_assoc_lower_threshold_atom_of_interval_of_solomonoff_s
 theorem intensional_mixed_assoc_upper_threshold_atom_of_interval_of_solomonoff_semantic
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -4186,16 +4186,16 @@ theorem intensional_mixed_assoc_upper_threshold_atom_of_interval_of_solomonoff_s
 theorem intensional_mixed_assoc_credibility_threshold_atom_of_interval_of_solomonoff_semantic
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -4240,16 +4240,16 @@ theorem intensional_mixed_assoc_credibility_threshold_atom_of_interval_of_solomo
 theorem intensional_mixed_assoc_width_threshold_atom_of_interval_of_solomonoff_semantic
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -4294,16 +4294,16 @@ theorem intensional_mixed_assoc_width_threshold_atom_of_interval_of_solomonoff_s
 theorem intensional_mixed_assoc_strength_threshold_atom_of_interval_of_solomonoff_semantic
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (assocScore : State → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
       Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → ℝ)
-    (scoreToEvidence : ℝ → Evidence)
+    (scoreToEvidence : ℝ → BinaryEvidence)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
         (State := State) (Atom := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
@@ -4549,14 +4549,14 @@ This endpoint composes:
 def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linked_of_interval
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     {L₁ L₂ : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef}
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (m : Mettapedia.OSLF.Framework.LangMorphism.LanguageMorphism L₁ L₂ Eq)
     (ctx : CtxOfInterval i)
     (enc : InheritanceQueryBuilder Mettapedia.OSLF.MeTTaIL.Syntax.Pattern Query)
-    (combine : Evidence → Evidence → Evidence)
+    (combine : BinaryEvidence → BinaryEvidence → BinaryEvidence)
     (model : SolomonoffAssocLinkedModel (State := State) (Query := Query) enc)
     (hMixed :
       PLNIntensionalWorldModel.InheritanceQueryBuilder.MixedAssocScoreCorrespondence
@@ -4768,7 +4768,7 @@ positivity obligations are internalized in the model object. -/
 def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_of_interval
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     {L₁ L₂ : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef}
     (i : WMIntervalSemantics)
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
@@ -4846,7 +4846,7 @@ def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance
 def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_bayesNormal
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     {L₁ L₂ : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef}
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (m : Mettapedia.OSLF.Framework.LangMorphism.LanguageMorphism L₁ L₂ Eq)
@@ -4916,7 +4916,7 @@ def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance
 def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_bayesExact
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     {L₁ L₂ : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef}
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (m : Mettapedia.OSLF.Framework.LangMorphism.LanguageMorphism L₁ L₂ Eq)
@@ -4986,7 +4986,7 @@ def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance
 def end_to_end_quantale_selector_rewrite_query_threshold_finalBundle_inheritance_solomonoff_semantic_linkedStrong_walley
     {State Query : Type}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query]
+    [PLNWorldModel.BinaryWorldModel State Query]
     {L₁ L₂ : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef}
     (R : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (m : Mettapedia.OSLF.Framework.LangMorphism.LanguageMorphism L₁ L₂ Eq)
@@ -5238,12 +5238,12 @@ theorem end_to_end_temporal_hypercube_event_threshold_bundle_of_interval
 
 abbrev XiPLN {State Query : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
+    [PLNWorldModel.BinaryWorldModel State Query] :=
   PLNWMOSLFBridge.XiPLN (State := State) (Query := Query)
 
 noncomputable abbrev wmEvidenceAtomSemQ {State Query : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State Query] :=
+    [PLNWorldModel.BinaryWorldModel State Query] :=
   PLNWMOSLFBridge.wmEvidenceAtomSemQ (State := State) (Query := Query)
 
 abbrev XiPLNSigma {State Srt : Type*} {Query : Srt → Type*}
@@ -5320,7 +5320,7 @@ Import `Mettapedia.Logic.PLNXiDerivedBNRules` and use directly:
   Consumes: singleton bridge + VEBridge + Tier B.
 
 **Tier B**: Bernoulli-PLN (measure → formula bridge)
-- `toStrength_evidenceOfProb` — `Evidence.toStrength ∘ evidenceOfProb = id` (for p ≤ 1)
+- `toStrength_evidenceOfProb` — `BinaryEvidence.toStrength ∘ evidenceOfProb = id` (for p ≤ 1)
 - `xi_deduction_plnStrength_exact_of_chainBN` — P(C|A) = plnDeductionStrength(...)
 
 **Tier C**: Beta-Bernoulli (computable from evidence counts)
@@ -5411,24 +5411,24 @@ namespace Schema
 
 abbrev DeductionScreeningOff {Atom State : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State (PLNWorldModel.PLNQuery Atom)] :=
+    [PLNWorldModel.BinaryWorldModel State (PLNWorldModel.AtomQuery Atom)] :=
   PLNXiRuleRegistry.DeductionScreeningOff (Atom := Atom) (State := State)
 
 abbrev SourceRuleScreeningOff {Atom State : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State (PLNWorldModel.PLNQuery Atom)] :=
+    [PLNWorldModel.BinaryWorldModel State (PLNWorldModel.AtomQuery Atom)] :=
   PLNXiRuleRegistry.SourceRuleScreeningOff (Atom := Atom) (State := State)
 
 abbrev SinkRuleScreeningOff {Atom State : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State (PLNWorldModel.PLNQuery Atom)] :=
+    [PLNWorldModel.BinaryWorldModel State (PLNWorldModel.AtomQuery Atom)] :=
   PLNXiRuleRegistry.SinkRuleScreeningOff (Atom := Atom) (State := State)
 
 /-! ### Carrier family template -/
 
 abbrev CarrierFamily {Atom State : Type*}
     [EvidenceClass.EvidenceType State]
-    [PLNWorldModel.WorldModel State (PLNWorldModel.PLNQuery Atom)] :=
+    [PLNWorldModel.BinaryWorldModel State (PLNWorldModel.AtomQuery Atom)] :=
   PLNXiCarrierScreening.CarrierFamily (Atom := Atom) (State := State)
 
 end Schema

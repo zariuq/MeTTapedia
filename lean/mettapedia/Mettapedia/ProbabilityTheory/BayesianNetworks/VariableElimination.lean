@@ -15,7 +15,7 @@ It is intended as the "exact query answering" backend for the BN world-model sub
 Key design choices:
 * We work with factor graphs whose potentials are nonnegative (ENNReal),
   but the core algorithm is parametric in `K`.
-* Evidence constraints are represented as **indicator factors**.
+* BinaryEvidence constraints are represented as **indicator factors**.
 * Exact answers are computed by summing out all variables in a chosen elimination order.
 
 This is an **exact** algorithm for the declared model class; its complexity is governed

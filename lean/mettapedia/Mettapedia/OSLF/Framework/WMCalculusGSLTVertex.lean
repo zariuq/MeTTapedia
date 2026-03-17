@@ -51,7 +51,7 @@ theorem wmVertexLanguageDef_eq (v w : WMVertex) :
     wmVertexLanguageDef v = wmVertexLanguageDef w := by
   simp only [wmVertexLanguageDef, wmExtVertexLanguageDef, wmTypes]
   -- All axis-dependent rule lists are [], so rewrites = coreRules ++ [] ++ ... ++ []
-  -- and types = ["State", "Query", "Evidence"] for both
+  -- and types = ["State", "Query", "BinaryEvidence"] for both
   cases hL : v .logic <;> cases hL' : w .logic <;>
     cases hT : v .truthValue <;> cases hT' : w .truthValue <;>
     cases hI : v .interval <;> cases hI' : w .interval <;>
@@ -141,6 +141,18 @@ noncomputable def wmVertexOSLF (v : WMVertex) :=
 theorem wmVertexOSLF_eq (v w : WMVertex) :
     wmVertexLanguageDef v = wmVertexLanguageDef w :=
   wmVertexLanguageDef_eq v w
+
+/-! ## NTT Scope: Base Axes are Invisible -/
+
+/-- The current pure NTT extraction is blind to the 4 model-level axes.
+    All 24 base-axis combinations produce the same native type because
+    they produce the same LanguageDef.  Therefore the NTT pass is exact
+    for the 9 syntactic axes and intentionally insensitive to the
+    4 model-level axes (logic, truth-value, interval, typing). -/
+theorem wmVertexNativeType_eq (ρ : MeTTaIL.Engine.RelationEnv) (v w : WMVertex) :
+    langNativeTypeUsing ρ (wmVertexLanguageDef v) =
+    langNativeTypeUsing ρ (wmVertexLanguageDef w) := by
+  rw [wmVertexLanguageDef_eq v w]
 
 /-! ## Extended 6-Axis Vertex LanguageDef -/
 

@@ -3,10 +3,10 @@ import Mettapedia.Logic.EvidenceQuantale
 import Mathlib.Data.Finset.Card
 
 /-!
-# PathMap ↔ PLN Evidence Bridge
+# PathMap ↔ PLN BinaryEvidence Bridge
 
 This module proves the formal connection between PathMap's algebraic operations
-(`pjoin`, `pmeet`, `psubtract`, `prestrict` on `Finset α`) and PLN's Evidence
+(`pjoin`, `pmeet`, `psubtract`, `prestrict` on `Finset α`) and PLN's BinaryEvidence
 type (`(n⁺, n⁻) : ℝ≥0∞ × ℝ≥0∞`).
 
 ## Core Insight
@@ -21,7 +21,7 @@ finsetPathEvidence W q = ⟨|W ∩ q|, |W \ q|⟩
 - `n⁻ = |W \ q|` — store paths that do NOT match (negative evidence)
 - `n⁺ + n⁻ = |W|` — K&S sum rule: all store paths are classified
 
-This definition (with `n⁻ = |W \ q|` rather than `|q \ W|`) makes Evidence
+This definition (with `n⁻ = |W \ q|` rather than `|q \ W|`) makes BinaryEvidence
 additivity hold cleanly for disjoint stores, proving the World-Model Calculus
 paper's key claim:
 
@@ -38,23 +38,23 @@ The function satisfies the Knuth–Skilling valuation axioms on the lattice
 
 ## Connection to AlgebraicResult
 
-Each PathMap operation corresponds to an Evidence relationship:
+Each PathMap operation corresponds to an BinaryEvidence relationship:
 - `pjoin`  (union)        : additive for disjoint stores (independence)
 - `pmeet`  (intersection) : sub-infimum (conjunction weakens evidence)
 - `prestrict` (prefix-filter) : partition of evidence by context
 - `psubtract` (difference): evidence-decreasing (monotone)
 
-## Relationship to `WorldModel` (PLNWorldModel.lean)
+## Relationship to `BinaryWorldModel` (PLNWorldModel.lean)
 
-The `WorldModel` typeclass (`PLNWorldModel.lean`) requires `evidence_add` to hold for
+The `BinaryWorldModel` typeclass (`PLNWorldModel.lean`) requires `evidence_add` to hold for
 **all** store combinations: `ev(W₁ + W₂, q) = ev(W₁, q) ⊕ ev(W₂, q)`.
 
 `PathMapWorldModel` only requires additivity for **disjoint** stores (`pmeet = .none`).
 This is the correct restriction because `Finset α` union (`W₁ ∪ W₂`) is *idempotent*
 (`W ∪ W = W`), so it does not form a free additive monoid.  In particular,
-`ev(W ∪ W, q) = ev(W, q) ≠ 2 · ev(W, q)` in general — the full `WorldModel` law fails.
+`ev(W ∪ W, q) = ev(W, q) ≠ 2 · ev(W, q)` in general — the full `BinaryWorldModel` law fails.
 
-To obtain a true `WorldModel` instance, replace `Finset α` with `Multiset α` (allowing
+To obtain a true `BinaryWorldModel` instance, replace `Finset α` with `Multiset α` (allowing
 duplicates), where `+` is genuine multiset sum and disjoint-union coincides with `+`.
 This extension is left for future work.
 -/
@@ -65,16 +65,16 @@ open Mettapedia.PathMap
 open Mettapedia.Logic.EvidenceQuantale
 open scoped ENNReal
 
-/-! ## Section 1: Evidence Extraction -/
+/-! ## Section 1: BinaryEvidence Extraction -/
 
-/-- Extract PLN Evidence from a PathMap store `W` for query `q`.
+/-- Extract PLN BinaryEvidence from a PathMap store `W` for query `q`.
 
     - `pos = |W ∩ q|` : store paths that match the query
     - `neg = |W \ q|` : store paths that refute the query (in store, not in query)
 
     The key design choice: `neg = |W \ q|` (not `|q \ W|`) gives `pos + neg = |W|`,
     the K&S sum rule. Strength `= |W∩q|/|W|` is the empirical hit rate. -/
-noncomputable def finsetPathEvidence {α : Type*} [DecidableEq α] (W q : Finset α) : Evidence :=
+noncomputable def finsetPathEvidence {α : Type*} [DecidableEq α] (W q : Finset α) : BinaryEvidence :=
   ⟨(W ∩ q).card, (W \ q).card⟩
 
 /-! ### Boundary conditions (K&S valuation axioms) -/
@@ -103,19 +103,19 @@ theorem finsetPathEvidence_total {α : Type*} [DecidableEq α] (W q : Finset α)
   simp only [finsetPathEvidence]
   exact_mod_cast Finset.card_inter_add_card_sdiff W q
 
-/-- Evidence extraction is monotone: larger store yields more evidence (coordinatewise).
+/-- BinaryEvidence extraction is monotone: larger store yields more evidence (coordinatewise).
     K&S valuation axiom: adding observations cannot decrease evidence. -/
 theorem finsetPathEvidence_lattice_monotone {α : Type*} [DecidableEq α]
     {W₁ W₂ : Finset α} (h : W₁ ⊆ W₂) (q : Finset α) :
     finsetPathEvidence W₁ q ≤ finsetPathEvidence W₂ q := by
-  simp only [finsetPathEvidence, Evidence.le_def]
+  simp only [finsetPathEvidence, BinaryEvidence.le_def]
   constructor
   · exact_mod_cast Finset.card_le_card (Finset.inter_subset_inter_right h)
   · exact_mod_cast Finset.card_le_card (Finset.sdiff_subset_sdiff h (le_refl q))
 
 /-! ## Section 3: pjoin Additivity — Main Bridge Theorem -/
 
-/-- For **disjoint** PathMap stores, pjoin (set union) produces additive Evidence.
+/-- For **disjoint** PathMap stores, pjoin (set union) produces additive BinaryEvidence.
 
     This is the Lean formalization of the World-Model Calculus paper's semantic spine:
       `ev(W₁ ⊕ W₂, q) = ev(W₁, q) ⊕ ev(W₂, q)`
@@ -127,7 +127,7 @@ theorem pjoin_evidence_additive {α : Type*} [DecidableEq α]
     (W₁ W₂ q : Finset α) (hDisj : Disjoint W₁ W₂) :
     finsetPathEvidence (W₁ ∪ W₂) q =
     finsetPathEvidence W₁ q + finsetPathEvidence W₂ q := by
-  simp only [finsetPathEvidence, Evidence.hplus_def, Evidence.mk.injEq]
+  simp only [finsetPathEvidence, BinaryEvidence.hplus_def, BinaryEvidence.mk.injEq]
   constructor
   · -- pos: |(W₁∪W₂)∩q| = |W₁∩q| + |W₂∩q|
     rw [Finset.union_inter_distrib_right]
@@ -142,7 +142,7 @@ theorem pjoin_evidence_additive {α : Type*} [DecidableEq α]
 
     Conditioning on two stores simultaneously gives evidence no stronger
     than either store alone. This reflects that conjunction is weaker
-    than either conjunct in the Evidence lattice. -/
+    than either conjunct in the BinaryEvidence lattice. -/
 theorem pmeet_evidence_le_inf {α : Type*} [DecidableEq α]
     (W₁ W₂ q : Finset α) :
     finsetPathEvidence (W₁ ∩ W₂) q ≤
@@ -153,7 +153,7 @@ theorem pmeet_evidence_le_inf {α : Type*} [DecidableEq α]
 
 /-! ## Section 5: prestrict — Bayesian Conditioning Partition -/
 
-/-- Evidence from a full store partitions along any context boundary:
+/-- BinaryEvidence from a full store partitions along any context boundary:
       `ev(W, q) = ev(W ∩ ctx, q) + ev(W \ ctx, q)`
 
     K&S interpretation: restricting to context `ctx` partitions the store into
@@ -188,7 +188,7 @@ theorem prestrict_evidence_le {α : Type*} [DecidableEq α]
     finsetPathEvidence (W ∩ ctx) q ≤ finsetPathEvidence W q :=
   finsetPathEvidence_lattice_monotone Finset.inter_subset_left q
 
-/-! ## Section 6: psubtract — Evidence Monotone -/
+/-! ## Section 6: psubtract — BinaryEvidence Monotone -/
 
 /-- psubtract (set difference) decreases evidence: removing paths from a store
     can only reduce the evidence it provides. -/
@@ -202,15 +202,15 @@ theorem psubtract_evidence_le {α : Type*} [DecidableEq α]
 open Mettapedia.PathMap in
 /-- A PathMap store `α` with queries `Q` acts as a World-Model when equipped with
     an evidence extraction function satisfying:
-    - pjoin of disjoint stores gives additive Evidence (independence law)
+    - pjoin of disjoint stores gives additive BinaryEvidence (independence law)
 
-    This mirrors the World-Model Calculus typeclass `WorldModel.evidence_add`,
+    This mirrors the World-Model Calculus typeclass `BinaryWorldModel.evidence_add`,
     restricted to the disjoint case (which is the PathMap notion of independent
     observations). -/
 class PathMapWorldModel (α : Type*) (Q : Type*)
     [PathMapDistributiveLattice α] where
-  /-- Extract Evidence for query q from store W. -/
-  extract : α → Q → Evidence
+  /-- Extract BinaryEvidence for query q from store W. -/
+  extract : α → Q → BinaryEvidence
   /-- pjoin of disjoint stores (pmeet = .none) gives additive evidence. -/
   pjoin_disjoint_additive : ∀ (W₁ W₂ : α) (q : Q),
     PathMapLattice.pmeet W₁ W₂ = .none →
@@ -267,7 +267,7 @@ noncomputable instance {α : Type*} [DecidableEq α] :
 theorem finsetPathEvidence_strength {α : Type*} [DecidableEq α] (W q : Finset α)
     (hW : (W.card : ℝ≥0∞) ≠ 0) :
     (finsetPathEvidence W q).toStrength = (W ∩ q).card / W.card := by
-  simp only [Evidence.toStrength, finsetPathEvidence, Evidence.total]
+  simp only [BinaryEvidence.toStrength, finsetPathEvidence, BinaryEvidence.total]
   have hTotal : ((W ∩ q).card : ℝ≥0∞) + (W \ q).card = W.card := by
     exact_mod_cast Finset.card_inter_add_card_sdiff W q
   rw [if_neg (by rw [hTotal]; exact hW), hTotal]

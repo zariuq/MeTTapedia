@@ -9,16 +9,16 @@ Heyting evidence in PLN. The key insight:
 - Boolean σ-algebras are where EVENTS live (ground truth)
 - Heyting algebras are where EVIDENCE lives (epistemic states)
 - There's a forgetful functor: Boolean → Heyting (any Boolean is a Heyting)
-- And a "sufficient statistic" map: Events × Observations → Evidence
+- And a "sufficient statistic" map: Events × Observations → BinaryEvidence
 
 ## Connection to PLN
 
 The two-level architecture:
 1. Event level: Boolean σ-algebra (Ω, 𝓕, P) with standard probability
-2. Evidence level: Heyting lattice of Evidence (n⁺, n⁻) values
+2. BinaryEvidence level: Heyting lattice of BinaryEvidence (n⁺, n⁻) values
 
 De Finetti's theorem provides the bridge: exchangeable observations
-(from Boolean events) collapse to counts (Evidence).
+(from Boolean events) collapse to counts (BinaryEvidence).
 
 ## References
 
@@ -141,17 +141,17 @@ def forget_preserves_morphisms {α β : Type*}
     (f : BooleanHom α β) : HeytingHom α β :=
   f.toHeytingHom
 
-/-! ## Evidence as Collapse of Boolean Events
+/-! ## BinaryEvidence as Collapse of Boolean Events
 
 The key bridge in PLN: Boolean events (from σ-algebra) collapse to
-Evidence counts via sufficient statistics.
+BinaryEvidence counts via sufficient statistics.
 
 For exchangeable Boolean observations X₁, X₂, ..., Xₙ:
 - Each Xᵢ ∈ {True, False} (Boolean)
 - Sufficient statistic: (count True, count False) = (n⁺, n⁻)
-- This is the Evidence value!
+- This is the BinaryEvidence value!
 
-The Evidence lattice is Heyting (not Boolean), so we have:
+The BinaryEvidence lattice is Heyting (not Boolean), so we have:
 Boolean events → (sufficient statistic) → Heyting evidence
 -/
 
@@ -197,7 +197,7 @@ instance : PartialOrder ObservationCounts where
     · exact le_antisymm h₁₂.1 h₂₁.1
     · exact le_antisymm h₁₂.2 h₂₁.2
 
-/-- Evidence (3, 2) and (2, 3) are incomparable -/
+/-- BinaryEvidence (3, 2) and (2, 3) are incomparable -/
 theorem counts_incomparable :
     let c₁ : ObservationCounts := ⟨3, 2⟩
     let c₂ : ObservationCounts := ⟨2, 3⟩
@@ -278,25 +278,25 @@ theorem countsOfList_permutation (l₁ l₂ : List Bool) (h : l₁.Perm l₂) :
    - Morphisms: Boolean homomorphisms
    - This is where probability rules are derived (K&S product/sum rules)
 
-2. **Heyting level** (Evidence):
-   - Objects: Heyting algebras (Evidence lattices)
+2. **Heyting level** (BinaryEvidence):
+   - Objects: Heyting algebras (BinaryEvidence lattices)
    - Morphisms: Heyting homomorphisms
    - This is where epistemic states live
 
 3. **The Bridge** (Sufficient Statistics):
    - Boolean observations → counts (n⁺, n⁻)
    - Exchangeability → order doesn't matter (de Finetti)
-   - Evidence is the sufficient statistic for Beta posterior
+   - BinaryEvidence is the sufficient statistic for Beta posterior
 
 4. **The Forgetful Functor**:
    - Boolean algebras embed into Heyting algebras
    - Every Boolean hom becomes a Heyting hom
    - This shows Boolean is a special case of Heyting
 
-5. **Evidence is MORE GENERAL**:
-   - Evidence has incomparable elements (Boolean doesn't)
+5. **BinaryEvidence is MORE GENERAL**:
+   - BinaryEvidence has incomparable elements (Boolean doesn't)
    - The 2D structure (n⁺, n⁻) captures more than 1D probability
-   - This is WHY PLN uses Evidence, not just probabilities
+   - This is WHY PLN uses BinaryEvidence, not just probabilities
 -/
 
 end Mettapedia.Logic.BooleanHeytingBridge

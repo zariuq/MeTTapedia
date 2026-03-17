@@ -35,7 +35,7 @@ structure RelRef where
   name : String
   deriving DecidableEq, Repr, Inhabited
 
-/-- Evidence strength levels -/
+/-- BinaryEvidence strength levels -/
 inductive Strength where
   | strong
   | moderate
@@ -81,7 +81,7 @@ inductive OntStmt where
   | relArity (rel : RelRef) (arity : Nat)
   deriving Repr
 
-/-! ## Evidence Items -/
+/-! ## BinaryEvidence Items -/
 
 /-- An evidence citation: source, what it supports, and how strongly -/
 structure EvidenceItem where
@@ -91,7 +91,7 @@ structure EvidenceItem where
   note : String := ""
   deriving Repr
 
-/-- Evidence-bearing statements -/
+/-- BinaryEvidence-bearing statements -/
 inductive EvidenceStmt where
   /-- "source S supports classification as C (strength)" -/
   | cite (item : EvidenceItem)

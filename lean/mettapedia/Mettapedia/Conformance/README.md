@@ -92,3 +92,20 @@ Two-phase compat-head lowering architecture:
 Proves binding-flow soundness: witness bindings instantiate the residual
 body the same way MORK's substitution does.
 `TupleMembershipOracleContract` grounds the external witness phase.
+
+### Maple Court PeTTa Conformance (`artifacts/conformance/maple_court_simple.metta`)
+
+End-to-end conformance between the PeTTa runtime and the Lean algebraic
+world model for the book's running example.  6 tests covering:
+
+- Evidence revision (`evidence-hplus`) = Lean `BinaryEvidence.hplus`
+- Strength view = Lean `BinaryEvidence.toStrength`
+- Commutativity, zero identity
+- Three-way sleep consolidation (batch = sequential)
+
+Run: `cd hyperon/PeTTa && ./run.sh <path>/maple_court_simple.metta --silent`
+
+Lean side: `PLNMapleCourtDemo.lean` (34 theorems, 0 sorry) proves the
+same operations algebraically.  The two sides agree by construction —
+PeTTa's `pln_evidence.metta` implements the same formulas as Lean's
+`BinaryEvidence`.

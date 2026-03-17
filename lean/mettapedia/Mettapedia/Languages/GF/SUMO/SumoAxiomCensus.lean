@@ -1,5 +1,5 @@
 /-
-# SUMO Axiom Census — Per-Concept Usage Evidence
+# SUMO Axiom Census — Per-Concept Usage BinaryEvidence
 
 For each concept flagged by SumoRepairRunner as disagreeing between SUMO KIF,
 Enache's GF encoding, and our Lean encoding, this module records:
@@ -10,7 +10,7 @@ Enache's GF encoding, and our Lean encoding, this module records:
 
 This evidence feeds into the RepairLog decisions.
 
-## Evidence Source Key
+## BinaryEvidence Source Key
 - Merge.kif lines cited directly
 - Mid-level-ontology.kif (MLO) lines cited directly
 - emotion.kif, FOET seed ontology lines cited where applicable
@@ -52,7 +52,7 @@ instance : ToString ConceptEvidence where
     s!"  Recommendation: {e.recommendation}\n" ++
     s!"  Automatable: {e.automatable}\n"
 
-/-! ## Evidence for Flagged Concepts -/
+/-! ## BinaryEvidence for Flagged Concepts -/
 
 def flaggedConceptEvidence : List ConceptEvidence :=
   [

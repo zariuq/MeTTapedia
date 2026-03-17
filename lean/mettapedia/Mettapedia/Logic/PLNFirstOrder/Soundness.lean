@@ -4,7 +4,7 @@ import Mettapedia.Logic.PLNIntuitionisticBridge
 /-!
 ## PLN as Semantic Model (Not Proof System)
 
-PLN Evidence is a **semantic model** (a Heyting algebra), NOT a proof calculus.
+PLN BinaryEvidence is a **semantic model** (a Heyting algebra), NOT a proof calculus.
 There is no "PLN sequent calculus" or "PLN proof system" - PLN provides truth values.
 
 ### CRITICAL SCOPE LIMITATION: Finite Model Theory Only
@@ -21,8 +21,8 @@ True FO modeling would require an infinitary extension (dropping Fintype).
 
 ### Propositional Level (via PLNIntuitionisticBridge.lean)
 
-- Soundness: LC ⊢ φ → Evidence ⊧ φ (PROVEN: `pln_soundness` + `evidence_dummett`)
-- Completeness: Evidence ⊧ φ → LC ⊢ φ (NOT PROVEN)
+- Soundness: LC ⊢ φ → BinaryEvidence ⊧ φ (PROVEN: `pln_soundness` + `evidence_dummett`)
+- Completeness: BinaryEvidence ⊧ φ → LC ⊢ φ (NOT PROVEN)
 -/
 
 /-!
@@ -31,7 +31,7 @@ True FO modeling would require an infinitary extension (dropping Fintype).
 This file proves the **5 critical theorems** establishing the correctness of PLN quantifiers:
 
 1. **Goertzel's Insight**: forAll_is_weakness_of_diagonal (✅ proven in WeaknessConnection.lean)
-2. **Monotonicity**: forAllEval respects Evidence lattice structure (✅ proven in WeaknessConnection.lean)
+2. **Monotonicity**: forAllEval respects BinaryEvidence lattice structure (✅ proven in WeaknessConnection.lean)
 3. **De Morgan Laws**: ∀¬φ = ¬∃φ and dual (✅ NOW PROVEN!)
 4. **Frame Distributivity**: ∀(φ ⊓ ψ) = ∀φ ⊓ ∀ψ
 5. **Functoriality**: f(∀φ) = ∀(f∘φ) for QuantaleHom f (✅ PROVEN!)
@@ -46,7 +46,7 @@ This file proves the **5 critical theorems** establishing the correctness of PLN
 
 - Plan file (hashed-baking-bumblebee.md), "Critical Theorems (All Must Be Proven)"
 - QuantaleWeakness.lean (820+ proven lines)
-- EvidenceQuantale.lean (Evidence with Frame structure)
+- EvidenceQuantale.lean (BinaryEvidence with Frame structure)
 -/
 
 namespace Mettapedia.Logic.PLNFirstOrder
@@ -63,14 +63,14 @@ variable {U : Type*} [Fintype U]
 /-- THEOREM 1 (Goertzel's Insight): ForAll IS weakness of diagonal.
 Proven in WeaknessConnection.lean via definitional equality. -/
 theorem main_theorem_1_forAll_is_weakness :
-    ∀ (S : SatisfyingSet U) (μ : WeightFunction U Evidence),
+    ∀ (S : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence),
     forAllEval S μ = weakness μ (SatisfyingSet.diagonal S) :=
   forAll_is_weakness_of_diagonal
 
 /-- THEOREM 2 (Monotonicity): ForAll respects weight function ordering.
-Proven in WeaknessConnection.lean via Evidence lattice structure. -/
+Proven in WeaknessConnection.lean via BinaryEvidence lattice structure. -/
 theorem main_theorem_2_monotonicity :
-    ∀ (S : SatisfyingSet U) (μ₁ μ₂ : WeightFunction U Evidence),
+    ∀ (S : SatisfyingSet U) (μ₁ μ₂ : WeightFunction U BinaryEvidence),
     (∀ u, μ₁.μ u ≤ μ₂.μ u) →
     forAllEval S μ₁ ≤ forAllEval S μ₂ :=
   forAllEval_mono_weights
@@ -80,13 +80,13 @@ theorem main_theorem_2_monotonicity :
 /-- THEOREM 3 (De Morgan): ∃x = ¬∀x.¬
 
 This is TRUE BY DEFINITION! Our thereExistsEval is DEFINED as:
-  thereExistsEval S μ := Evidence.compl (forAllEval (SatisfyingSet.neg S) μ)
+  thereExistsEval S μ := BinaryEvidence.compl (forAllEval (SatisfyingSet.neg S) μ)
 
 So the De Morgan law holds definitionally. -/
 theorem main_theorem_3_de_morgan
-    (S : SatisfyingSet U) (μ : WeightFunction U Evidence) :
+    (S : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) :
     thereExistsEval S μ =
-    Evidence.compl (forAllEval (SatisfyingSet.neg S) μ) :=
+    BinaryEvidence.compl (forAllEval (SatisfyingSet.neg S) μ) :=
   rfl  -- By definition!
 
 /-! ## Critical Theorem 4: Frame Distributivity (NOT PROVABLE as stated!) -/
@@ -101,7 +101,7 @@ noncomputable def SatisfyingSet.meet (S₁ S₂ : SatisfyingSet U) : SatisfyingS
 
 This proves that diagonal(meet S₁ S₂) ⊉ diagonal(S₁) ∩ diagonal(S₂) in general. -/
 theorem isTrue_meet_not_implies_both :
-    ∃ (e₁ e₂ : Evidence),
+    ∃ (e₁ e₂ : BinaryEvidence),
     PLNQuantaleSemantics.PBit.isTrue (e₁ ⊓ e₂) ∧
     ¬(PLNQuantaleSemantics.PBit.isTrue e₁ ∧ PLNQuantaleSemantics.PBit.isTrue e₂) := by
   -- Counter-example: e₁ = ⟨1, 0⟩ (true), e₂ = ⟨1, 1⟩ (not true: neg ≠ 0)
@@ -109,13 +109,13 @@ theorem isTrue_meet_not_implies_both :
   constructor
   · -- Show PLNQuantaleSemantics.PBit.isTrue (⟨1,0⟩ ⊓ ⟨1,1⟩)
     -- inf is coordinatewise min: ⟨min 1 1, min 0 1⟩ = ⟨1, 0⟩
-    let e1 : Evidence := ⟨1, 0⟩
-    let e2 : Evidence := ⟨1, 1⟩
+    let e1 : BinaryEvidence := ⟨1, 0⟩
+    let e2 : BinaryEvidence := ⟨1, 1⟩
     -- First show e1 ⊓ e2 = ⟨1, 0⟩
     have h_meet : e1 ⊓ e2 = ⟨1, 0⟩ := by
-      show Evidence.inf e1 e2 = ⟨1, 0⟩
-      unfold Evidence.inf
-      apply Evidence.ext'
+      show BinaryEvidence.inf e1 e2 = ⟨1, 0⟩
+      unfold BinaryEvidence.inf
+      apply BinaryEvidence.ext'
       · simp [e1, e2]
       · simp [e1, e2]
     -- Now show isTrue ⟨1, 0⟩
@@ -134,9 +134,9 @@ theorem isTrue_meet_not_implies_both :
 /-- THEOREM 5 (Functoriality): Quantifiers respect QuantaleHom morphisms -/
 theorem main_theorem_5_functoriality
     {Q : Type*} [CommMonoid Q] [CompleteLattice Q] [IsCommQuantale Q]
-    (f : QuantaleHom Evidence Q)
+    (f : QuantaleHom BinaryEvidence Q)
     (S : SatisfyingSet U)
-    (μ : WeightFunction U Evidence) :
+    (μ : WeightFunction U BinaryEvidence) :
     f (forAllEval S μ) =
     weakness (WeightFunction.map f μ) (SatisfyingSet.diagonal S) := by
   unfold forAllEval weakness
@@ -162,7 +162,7 @@ theorem main_theorem_5_functoriality
 For any two predicates P, Q over the same domain and any element u:
   (P(u) ⇨ Q(u)) ⊔ (Q(u) ⇨ P(u)) = ⊤
 
-This follows directly from Evidence satisfying Dummett's axiom (`evidence_dummett`). -/
+This follows directly from BinaryEvidence satisfying Dummett's axiom (`evidence_dummett`). -/
 theorem fo_dummett_pointwise (P Q : SatisfyingSet U) (u : U) :
     (P.pred u ⇨ Q.pred u) ⊔ (Q.pred u ⇨ P.pred u) = ⊤ :=
   Mettapedia.Logic.PLNIntuitionisticBridge.evidence_dummett (P.pred u) (Q.pred u)
@@ -174,7 +174,7 @@ For any two predicates P, Q over the same domain and weight function μ:
 
 This shows that FO PLN validates the Dummett axiom at the quantifier level,
 meaning FO PLN is a model of **quantified Gödel-Dummett logic** (not just IPL). -/
-theorem fo_dummett_quantifiers (P Q : SatisfyingSet U) (μ : WeightFunction U Evidence) :
+theorem fo_dummett_quantifiers (P Q : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) :
     (forAllEval P μ ⇨ forAllEval Q μ) ⊔ (forAllEval Q μ ⇨ forAllEval P μ) = ⊤ :=
   Mettapedia.Logic.PLNIntuitionisticBridge.evidence_dummett (forAllEval P μ) (forAllEval Q μ)
 
@@ -194,7 +194,7 @@ This is finite model theory, NOT general first-order logic.
 **❓ OPEN PROBLEM**:
 - **Frame Distributivity**: ∀(φ ⊓ ψ) = ∀φ ⊓ ∀ψ status unclear
 
-**What This Means**: Over finite U, Dummett axiom holds because Evidence is a Heyting algebra.
+**What This Means**: Over finite U, Dummett axiom holds because BinaryEvidence is a Heyting algebra.
 The "quantifier" results are about finite conjunctions/disjunctions, not true FO quantifiers.
 
 **For True FO/HO**: Would need infinitary extension (drop Fintype, use measure-theoretic integration).

@@ -539,7 +539,7 @@ theorem bioGeneRelevance_eq_noisyOr :
 
 /-- The bio model's WM queryStrength (via the ProbLog bridge) equals its noisy-OR probability. -/
 theorem bioQueryStrength_eq_noisyOr :
-    Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength
+    Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength
       (propEvidence (n := 3) (E := bioJointEvidence) regulatoryEffect) =
     queryProb bioWeights (fun w => worldToAssignment 3 w regulatoryEffect) := by
   exact queryStrength_prop_eq_queryProb bioWeights regulatoryEffect
@@ -602,12 +602,12 @@ open Mettapedia.Logic.EvidenceQuantale in
 /-- When ProbLog weights equal empirical evidence strengths, the distribution-semantics
     noisy-OR probability agrees with the evidence-calculus noisy-OR. -/
 theorem queryProb_from_evidence
-    (evidence : Fin n → Evidence)
+    (evidence : Fin n → BinaryEvidence)
     (p : ProbAssignment n)
-    (hp_match : ∀ i, p i = Evidence.toStrength (evidence i))
+    (hp_match : ∀ i, p i = BinaryEvidence.toStrength (evidence i))
     (hp_le : ∀ i, p i ≤ 1) (hn : 0 < 2 ^ n) :
     (queryProb p (anyTrue (List.finRange n))).toReal =
-      noisyOrMulti (List.ofFn (fun i => (Evidence.toStrength (evidence i)).toReal)) := by
+      noisyOrMulti (List.ofFn (fun i => (BinaryEvidence.toStrength (evidence i)).toReal)) := by
   have h := queryProb_anyTrue_toReal_eq_noisyOrMulti p hp_le hn
   simp only [hp_match] at h
   exact h
@@ -616,10 +616,10 @@ open Mettapedia.Logic.EvidenceQuantale in
 /-- Concrete bio instantiation: when the 3 ProbLog weights match evidence strengths,
     the WM noisy-OR score equals the PLN benchmark's noisy-OR. -/
 theorem bio_queryProb_from_evidence
-    (evidence : Fin 3 → Evidence)
-    (hp_match : ∀ i, bioWeights i = Evidence.toStrength (evidence i)) :
+    (evidence : Fin 3 → BinaryEvidence)
+    (hp_match : ∀ i, bioWeights i = BinaryEvidence.toStrength (evidence i)) :
     (queryProb bioWeights geneRelevantQuery).toReal =
-      noisyOrMulti (List.ofFn (fun i : Fin 3 => (Evidence.toStrength (evidence i)).toReal)) := by
+      noisyOrMulti (List.ofFn (fun i : Fin 3 => (BinaryEvidence.toStrength (evidence i)).toReal)) := by
   have hq : geneRelevantQuery = anyTrue (List.finRange 3) := by
     unfold geneRelevantQuery regulatoryEffect eqtlAssociation activityByContact anyTrue
     funext w; simp [List.finRange, List.any]

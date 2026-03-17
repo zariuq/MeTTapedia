@@ -56,7 +56,7 @@ def moduleNameOfTerm? : Pattern → Option String
   | _ => none
 
 def moduleNameOfStmt? : SyntaxCommand → Option String
-  | .import path => normalizeModuleName path
+  | .import _space path => moduleNameOfPathPattern? path
   | .eval term => moduleNameOfTerm? term
   | _ => none
 

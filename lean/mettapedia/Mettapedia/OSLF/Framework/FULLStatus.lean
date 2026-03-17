@@ -104,32 +104,32 @@ def tracker : List Milestone :=
       status := .done
       codeRef := "Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean: presheaf_beckChevalley_square_direct / representable_patternPred_beckChevalley / representable_commDi_patternPred_beckChevalley / representable_commDi_patternPred_beckChevalley_of_pathSemLiftPkg / representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg / commDi_diamond_graphObj_square_direct; Mettapedia/OSLF/Framework/TinyMLInstance.lean: tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph / tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq; Mettapedia/OSLF/Framework/MeTTaMinimalInstance.lean: mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph / mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq / mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto; Mettapedia/OSLF/Framework/MeTTaFullInstance.lean: mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph / mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto / mettaFull_checkLangUsing_sat_sound_specAtoms"
       note := "Lifted-base substitution square is consumed end-to-end through package-based COMM/path-semantics transport with concrete non-rho checker→fiber→PathSemClosed BC+graph theorems for TinyML, MeTTaMinimal, and MeTTaFull." }
-  , { area := "GF Evidence Semantics"
-      title := "GF → OSLF → Evidence pipeline with canonical interface"
+  , { area := "GF BinaryEvidence Semantics"
+      title := "GF → OSLF → BinaryEvidence pipeline with canonical interface"
       status := .done
       codeRef := "Mettapedia/Languages/GF/WorldModelSemantics.lean: GFSemantics / gfRGLSemantics / gfWMFormulaSemE"
-      note := "Canonical GFSemantics record bundles atomQuery + lang + injective proof. Evidence and threshold semantics derived. Active-passive evidence transparency proved." }
-  , { area := "GF Evidence Semantics"
+      note := "Canonical GFSemantics record bundles atomQuery + lang + injective proof. BinaryEvidence and threshold semantics derived. Active-passive evidence transparency proved." }
+  , { area := "GF BinaryEvidence Semantics"
       title := "Temporal tense bridge (past/present/future)"
       status := .done
       codeRef := "Mettapedia/Languages/GF/WorldModelSemantics.lean: langReduces_pastTense / gfWMFormulaSemE_pastTense_transparent / past_present_patterns_differ / temporal_irreducible / present_does_not_entail_past_sem"
-      note := "Tense rewrites TPast→⊛temporal(cl,-1), TPres→⊛temporal(cl,0), TFut→⊛temporal(cl,1). Evidence transparency and structural separation proved." }
-  , { area := "GF Evidence Semantics"
+      note := "Tense rewrites TPast→⊛temporal(cl,-1), TPres→⊛temporal(cl,0), TFut→⊛temporal(cl,1). BinaryEvidence transparency and structural separation proved." }
+  , { area := "GF BinaryEvidence Semantics"
       title := "Presupposition as evidence tensor-gating"
       status := .done
       codeRef := "Mettapedia/Logic/OSLFEvidenceSemantics.lean: presupGatedSemE / presupGated_one_presup / presupGated_bot_presup; Mettapedia/Languages/GF/WorldModelSemantics.lean: definiteDescriptionEvidence / negation_preserves_definite_presup / conditional_filters_definite_presup"
       note := "Presupposition = tensor gating. Projection laws: negation preserves, conditional filters. Definite description bridge with existence presupposition." }
-  , { area := "GF Evidence Semantics"
+  , { area := "GF BinaryEvidence Semantics"
       title := "Quantified formulas with scope ambiguity"
       status := .done
       codeRef := "Mettapedia/OSLF/QuantifiedFormula.lean: QFormula / qsemE / iSup_iInf_le_iInf_iSup; Mettapedia/Languages/GF/WorldModelSemantics.lean: surfaceScopeReading / inverseScopeReading / inverse_scope_le_surface_scope_evidence"
       note := "QFormula extends OSLFFormula with ∀/∃. Environment-based semantics. Scope ordering: inverse (specific) ≤ surface (non-specific)." }
-  , { area := "GF Evidence Semantics"
+  , { area := "GF BinaryEvidence Semantics"
       title := "Anaphora as variable binding"
       status := .done
       codeRef := "Mettapedia/Languages/GF/WorldModelSemantics.lean: anaphoricDiscourse / nonAnaphoricDiscourse / iSup_inf_le_inf_iSup"
       note := "Coreference modeled via shared variable binding in QFormula. Anaphoric reading ≤ non-anaphoric (same entity is stronger than different entities)." }
-  , { area := "Identity Evidence Semantics"
+  , { area := "Identity BinaryEvidence Semantics"
       title := "Guarded identity transport extension with conservative fallback and framework transfer wrapper"
       status := .done
       codeRef := "Mettapedia/Logic/IdentityEvidence.lean: transport_enabled_canary_guard_pass / transport_enabled_canary_guard_fail / transport_enabled_path_canary / competing_identities_retained_canary; Mettapedia/Languages/GF/IdentityEvidenceSemantics.lean: gfWMFormulaSem_withIdentity_disabled / oslf_sat_implies_wm_semantics_withIdentity_unused; Mettapedia/OSLF/Framework/IdentityEvidenceTransfer.lean: sem_withIdentity_disabled_iff / checkLangUsing_sat_sound_withIdentity_unused / identity_semantic_transfer_endpoint"
@@ -431,7 +431,7 @@ These checks tie tracker statements to concrete constants in the codebase.
 #check @Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
 #check @Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull_checkLangUsing_sat_sound_specAtoms
 
--- GF Evidence Semantics pipeline
+-- GF BinaryEvidence Semantics pipeline
 #check @Mettapedia.Languages.GF.WorldModelSemantics.GFSemantics
 #check @Mettapedia.Languages.GF.WorldModelSemantics.gfRGLSemantics
 #check @Mettapedia.Languages.GF.WorldModelSemantics.gfWMFormulaSemE

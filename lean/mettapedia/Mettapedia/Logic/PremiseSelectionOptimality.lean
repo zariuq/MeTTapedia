@@ -194,25 +194,25 @@ lemma fusion_ranking_after_normalization_toReal
     (hw : 0 < (t / (t + t)).toReal)
     (h₁ : ∃ f, StrictMono f ∧
       (fun x =>
-        (Evidence.toStrength ((normalizeScorer t s₁).score g x)).toReal)
+        (BinaryEvidence.toStrength ((normalizeScorer t s₁).score g x)).toReal)
         = fun x => f (η x))
     (h₂ : ∃ f, StrictMono f ∧
       (fun x =>
-        (Evidence.toStrength ((normalizeScorer t s₂).score g x)).toReal)
+        (BinaryEvidence.toStrength ((normalizeScorer t s₂).score g x)).toReal)
         = fun x => f (η x)) :
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((fuse (normalizeScorer t s₁) (normalizeScorer t s₂)).score g x)).toReal) := by
   -- rewrite fused strength to a positive linear combination of normalized strengths
   set w : ℝ := (t / (t + t)).toReal
   have h_fuse :
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((fuse (normalizeScorer t s₁) (normalizeScorer t s₂)).score g x)).toReal)
         = fun x =>
-          w * (Evidence.toStrength ((normalizeScorer t s₁).score g x)).toReal
-          + w * (Evidence.toStrength ((normalizeScorer t s₂).score g x)).toReal := by
+          w * (BinaryEvidence.toStrength ((normalizeScorer t s₁).score g x)).toReal
+          + w * (BinaryEvidence.toStrength ((normalizeScorer t s₂).score g x)).toReal := by
     funext x
     have hbase :=
       fuse_toStrength_normalized_const_toReal
@@ -220,10 +220,10 @@ lemma fusion_ranking_after_normalization_toReal
     simpa [w] using hbase
   -- apply the generic fusion optimality lemma
   exact fusion_ranking_after_normalization η
-    (s₁ := fun x => (Evidence.toStrength ((normalizeScorer t s₁).score g x)).toReal)
-    (s₂ := fun x => (Evidence.toStrength ((normalizeScorer t s₂).score g x)).toReal)
+    (s₁ := fun x => (BinaryEvidence.toStrength ((normalizeScorer t s₁).score g x)).toReal)
+    (s₂ := fun x => (BinaryEvidence.toStrength ((normalizeScorer t s₂).score g x)).toReal)
     (s_fuse := fun x =>
-      (Evidence.toStrength
+      (BinaryEvidence.toStrength
         ((fuse (normalizeScorer t s₁) (normalizeScorer t s₂)).score g x)).toReal)
     (a := w) (b := w) hw hw h₁ h₂ h_fuse
 
@@ -231,15 +231,15 @@ lemma fusion_ranking_after_normalization_toReal_one
     {Goal Fact : Type*} (η : Fact -> ℝ) (s₁ s₂ : Scorer Goal Fact) (g : Goal)
     (h₁ : ∃ f, StrictMono f ∧
       (fun x =>
-        (Evidence.toStrength ((normalizeScorer 1 s₁).score g x)).toReal)
+        (BinaryEvidence.toStrength ((normalizeScorer 1 s₁).score g x)).toReal)
         = fun x => f (η x))
     (h₂ : ∃ f, StrictMono f ∧
       (fun x =>
-        (Evidence.toStrength ((normalizeScorer 1 s₂).score g x)).toReal)
+        (BinaryEvidence.toStrength ((normalizeScorer 1 s₂).score g x)).toReal)
         = fun x => f (η x)) :
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((fuse (normalizeScorer 1 s₁) (normalizeScorer 1 s₂)).score g x)).toReal) := by
   have ht : (1:ℝ≥0∞) ≠ 0 := by simp
   have htop : (1:ℝ≥0∞) ≠ ⊤ := by simp
@@ -262,25 +262,25 @@ lemma fusion_ranking_after_normalization_toReal_totals
     (hw₂ : 0 < (t₂ / (t₁ + t₂)).toReal)
     (h₁ : ∃ f, StrictMono f ∧
       (fun x =>
-        (Evidence.toStrength ((normalizeScorer t₁ s₁).score g x)).toReal)
+        (BinaryEvidence.toStrength ((normalizeScorer t₁ s₁).score g x)).toReal)
         = fun x => f (η x))
     (h₂ : ∃ f, StrictMono f ∧
       (fun x =>
-        (Evidence.toStrength ((normalizeScorer t₂ s₂).score g x)).toReal)
+        (BinaryEvidence.toStrength ((normalizeScorer t₂ s₂).score g x)).toReal)
         = fun x => f (η x)) :
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((fuse (normalizeScorer t₁ s₁) (normalizeScorer t₂ s₂)).score g x)).toReal) := by
   set w₁ : ℝ := (t₁ / (t₁ + t₂)).toReal
   set w₂ : ℝ := (t₂ / (t₁ + t₂)).toReal
   have h_fuse :
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((fuse (normalizeScorer t₁ s₁) (normalizeScorer t₂ s₂)).score g x)).toReal)
         = fun x =>
-          w₁ * (Evidence.toStrength ((normalizeScorer t₁ s₁).score g x)).toReal
-          + w₂ * (Evidence.toStrength ((normalizeScorer t₂ s₂).score g x)).toReal := by
+          w₁ * (BinaryEvidence.toStrength ((normalizeScorer t₁ s₁).score g x)).toReal
+          + w₂ * (BinaryEvidence.toStrength ((normalizeScorer t₂ s₂).score g x)).toReal := by
     funext x
     have hbase :=
       fuse_toStrength_normalized_totals_toReal
@@ -289,10 +289,10 @@ lemma fusion_ranking_after_normalization_toReal_totals
         h₁_ne h₂_ne h₁₂_ne h₁_top h₂_top
     simpa [w₁, w₂] using hbase
   exact fusion_ranking_after_normalization η
-    (s₁ := fun x => (Evidence.toStrength ((normalizeScorer t₁ s₁).score g x)).toReal)
-    (s₂ := fun x => (Evidence.toStrength ((normalizeScorer t₂ s₂).score g x)).toReal)
+    (s₁ := fun x => (BinaryEvidence.toStrength ((normalizeScorer t₁ s₁).score g x)).toReal)
+    (s₂ := fun x => (BinaryEvidence.toStrength ((normalizeScorer t₂ s₂).score g x)).toReal)
     (s_fuse := fun x =>
-      (Evidence.toStrength
+      (BinaryEvidence.toStrength
         ((fuse (normalizeScorer t₁ s₁) (normalizeScorer t₂ s₂)).score g x)).toReal)
     (a := w₁) (b := w₂) hw₁ hw₂ h₁ h₂ h_fuse
 
@@ -303,20 +303,20 @@ lemma ranking_after_commutation_normalization_iff
     (p₁ p₂ likelihood : Scorer Goal Fact) (g : Goal) (t : ℝ≥0∞) :
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((normalizeScorer t (update (fuse p₁ p₂) likelihood)).score g x)).toReal)
       ↔
     BayesOptimalRanking η
       (fun x =>
-        (Evidence.toStrength
+        (BinaryEvidence.toStrength
           ((normalizeScorer t (fuse (update p₁ likelihood) (update p₂ likelihood))).score g x)).toReal) := by
   let sPoolThenUpdate : Fact → ℝ :=
     fun x =>
-      (Evidence.toStrength
+      (BinaryEvidence.toStrength
         ((normalizeScorer t (update (fuse p₁ p₂) likelihood)).score g x)).toReal
   let sUpdateThenPool : Fact → ℝ :=
     fun x =>
-      (Evidence.toStrength
+      (BinaryEvidence.toStrength
         ((normalizeScorer t (fuse (update p₁ likelihood) (update p₂ likelihood))).score g x)).toReal
   have hs :
       sPoolThenUpdate = sUpdateThenPool := by

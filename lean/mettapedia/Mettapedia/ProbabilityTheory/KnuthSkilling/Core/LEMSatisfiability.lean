@@ -13,7 +13,7 @@ Equivalently: If more than 2/3 of elements satisfy LEM, the algebra is Boolean.
 
 ## Connection to PLN
 
-This provides a precise threshold for when Evidence "looks Boolean enough":
+This provides a precise threshold for when BinaryEvidence "looks Boolean enough":
 - If a high proportion of evidence states satisfy excluded middle, classical
   probability rules are approximately valid
 - Below 2/3, we're genuinely in Heyting territory

@@ -11,7 +11,7 @@ proving the complete operational + semantic chain:
 
 1. **V3** (referent intro): Introduce referent `r1` at position `john_PN`
 2. **V4** (pronoun bind): Bind pronoun `pr1` to referent `r1` (he → John)
-3. **Evidence**: Before V4, evidence for `sleep_V(pr1)` = ⊥; after V4, = real
+3. **BinaryEvidence**: Before V4, evidence for `sleep_V(pr1)` = ⊥; after V4, = real
 
 Working at the `GrammarState` level with explicit patterns, this complements:
 - `EveryManWalks.lean` (single quantifier, V1)
@@ -106,7 +106,7 @@ theorem ana_uniqueRef_state2 : uniqueRef ana_state2.store := by
   simp [ana_state2, john_pos] at h1 h2
   rw [h1.2, h2.2]
 
-/-! ## Stage 5: Semantic Change — ⊥ to Real Evidence
+/-! ## Stage 5: Semantic Change — ⊥ to Real BinaryEvidence
 
 Before V4, the pronoun `pr1` is unbound: evidence for `sleep_V(pr1)` = ⊥.
 After V4, `pr1` resolves to `john_pos`: evidence = `I "sleep_V" [john_pos] term`.
@@ -165,7 +165,7 @@ theorem ana_V4_not_base {π : WorldModelSemantics.TemporalPolicy} :
 
   Store resolves: pr1 → r1 → john_pos ✓
 
-  Evidence transition:
+  BinaryEvidence transition:
     Before V4:   gsemE2Full ... (.qatom ⟨"sleep_V", [.var "pr1"]⟩) = ⊥
     After V4:    gsemE2Full ... (.qatom ⟨"sleep_V", [.var "pr1"]⟩) = I "sleep_V" [john_pos] term
 

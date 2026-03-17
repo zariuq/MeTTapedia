@@ -50,14 +50,14 @@ structure SensorState where
   /-- Sufficient statistics for temperature observations -/
   tempEvidence : NormalGammaEvidence
   /-- Binary evidence for cooling system failure -/
-  coolFailEvidence : Evidence
+  coolFailEvidence : BinaryEvidence
 
 namespace SensorState
 
 /-- Zero state: no observations of either kind. -/
 def zero : SensorState where
   tempEvidence := NormalGammaEvidence.zero
-  coolFailEvidence := Evidence.zero
+  coolFailEvidence := BinaryEvidence.zero
 
 /-- Componentwise addition (revision). -/
 noncomputable def add (s₁ s₂ : SensorState) : SensorState where
@@ -75,7 +75,7 @@ instance : Zero SensorState where zero := zero
 
 @[simp] theorem zero_tempEvidence : (zero : SensorState).tempEvidence = NormalGammaEvidence.zero := rfl
 
-@[simp] theorem zero_coolFailEvidence : (zero : SensorState).coolFailEvidence = Evidence.zero := rfl
+@[simp] theorem zero_coolFailEvidence : (zero : SensorState).coolFailEvidence = BinaryEvidence.zero := rfl
 
 @[ext]
 theorem ext {s₁ s₂ : SensorState}
@@ -87,22 +87,22 @@ theorem ext {s₁ s₂ : SensorState}
 theorem add_comm (s₁ s₂ : SensorState) : s₁ + s₂ = s₂ + s₁ := by
   apply ext
   · exact NormalGammaEvidence.hplus_comm _ _
-  · exact Evidence.hplus_comm _ _
+  · exact BinaryEvidence.hplus_comm _ _
 
 theorem add_assoc (s₁ s₂ s₃ : SensorState) : s₁ + s₂ + s₃ = s₁ + (s₂ + s₃) := by
   apply ext
   · exact NormalGammaEvidence.hplus_assoc _ _ _
-  · exact Evidence.hplus_assoc _ _ _
+  · exact BinaryEvidence.hplus_assoc _ _ _
 
 theorem zero_add (s : SensorState) : zero + s = s := by
   apply ext
   · exact NormalGammaEvidence.zero_hplus _
-  · exact Evidence.zero_hplus _
+  · exact BinaryEvidence.zero_hplus _
 
 theorem add_zero (s : SensorState) : s + zero = s := by
   apply ext
   · exact NormalGammaEvidence.hplus_zero _
-  · exact Evidence.hplus_zero _
+  · exact BinaryEvidence.hplus_zero _
 
 noncomputable instance instAddCommMonoid : AddCommMonoid SensorState where
   add_assoc := add_assoc
@@ -147,12 +147,12 @@ inductive SensorQuery where
   /-- Temperature exceeds threshold c? (Gaussian) -/
   | exceedance (c : ℝ)
 
-/-! ## §4: Evidence Extraction
+/-! ## §4: BinaryEvidence Extraction
 
-Given a prior and exceedance spec, extract binary Evidence for each query. -/
+Given a prior and exceedance spec, extract binary BinaryEvidence for each query. -/
 
 /-- Extract binary evidence for cooling failure: directly from the Boolean component. -/
-def coolFailEvidence (s : SensorState) : Evidence :=
+def coolFailEvidence (s : SensorState) : BinaryEvidence :=
   s.coolFailEvidence
 
 /-- Effective sample size for converting exceedance probability to binary evidence.
@@ -165,13 +165,13 @@ def exceedanceEffectiveSampleSize (s : SensorState) : ℕ :=
     Given a prior π and exceedance spec φ:
     1. Compute posterior: π' = posterior(π, tempEvidence)
     2. Compute P(X > c) = φ.exceedance(π', c)
-    3. Convert to binary Evidence with effective sample size n
+    3. Convert to binary BinaryEvidence with effective sample size n
 
     The strength of the resulting evidence is the exceedance probability.
     The effective sample size is the number of temperature observations. -/
 noncomputable def exceedanceEvidence
     (spec : ExceedanceSpec) (prior : NormalGammaPrior) (s : SensorState) (c : ℝ) :
-    Evidence :=
+    BinaryEvidence :=
   let post := posterior prior s.tempEvidence
   let p := spec.exceedance post c
   let n := s.tempEvidence.n
@@ -182,7 +182,7 @@ noncomputable def exceedanceEvidence
 /-- Full evidence extraction for any sensor query. -/
 noncomputable def sensorEvidence
     (spec : ExceedanceSpec) (prior : NormalGammaPrior) (s : SensorState) :
-    SensorQuery → Evidence
+    SensorQuery → BinaryEvidence
   | .coolFail => coolFailEvidence s
   | .exceedance c => exceedanceEvidence spec prior s c
 
@@ -207,7 +207,7 @@ def criticalThreshold : ℝ := 30
 /-- A single temperature observation. -/
 noncomputable def tempObs (x : ℝ) : SensorState where
   tempEvidence := NormalGammaEvidence.single x
-  coolFailEvidence := Evidence.zero
+  coolFailEvidence := BinaryEvidence.zero
 
 /-- A single cooling-failure observation (positive = failure seen). -/
 def coolFailObs (failed : Bool) : SensorState where
@@ -375,7 +375,7 @@ theorem coolFail_evidence_add (s₁ s₂ : SensorState) :
     (s₁ + s₂).coolFailEvidence = s₁.coolFailEvidence + s₂.coolFailEvidence := rfl
 
 /-- A pure temperature observation does not affect cooling evidence. -/
-theorem tempObs_coolFail_zero (x : ℝ) : (tempObs x).coolFailEvidence = Evidence.zero := rfl
+theorem tempObs_coolFail_zero (x : ℝ) : (tempObs x).coolFailEvidence = BinaryEvidence.zero := rfl
 
 /-- A cooling observation does not affect temperature evidence. -/
 theorem coolFailObs_temp_zero (b : Bool) :
@@ -407,14 +407,14 @@ theorem canary_fullDay_temp_count : fullDay.tempEvidence.n = 10 := by
 theorem canary_fullDay_coolFail_total :
     fullDay.coolFailEvidence.pos + fullDay.coolFailEvidence.neg = 100 := by
   simp only [fullDay, coolFailHistory, morningShift, nightShift, tempObs,
-    SensorState.add_coolFailEvidence, Evidence.hplus_def, Evidence.zero]
+    SensorState.add_coolFailEvidence, BinaryEvidence.hplus_def, BinaryEvidence.zero]
   norm_num
 
 /-- Canary: pure temperature observations don't pollute cooling evidence. -/
 theorem canary_temp_only_no_coolFail :
-    (morningShift + nightShift).coolFailEvidence = Evidence.zero := by
+    (morningShift + nightShift).coolFailEvidence = BinaryEvidence.zero := by
   simp only [morningShift, nightShift, tempObs,
-    SensorState.add_coolFailEvidence, Evidence.hplus_def, Evidence.zero]
+    SensorState.add_coolFailEvidence, BinaryEvidence.hplus_def, BinaryEvidence.zero]
   ext <;> simp
 
 end Mettapedia.Logic.PLNBrokenSensorDemo

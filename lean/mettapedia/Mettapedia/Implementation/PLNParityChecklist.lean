@@ -28,15 +28,15 @@ It is intentionally *not* a prose paper section (no `.md`), just a compiler-chec
   - Lean bounds and equivalence: `Mettapedia.Logic.PLNFrechetBounds.frechet_bounds_iff_consistency`
   - MeTTa inner-expression check: `Mettapedia.Implementation.MettaVerification.smallest_intersection_correct`
 
-## Evidence Semantics (Quantale/Heyting layer)
+## BinaryEvidence Semantics (Quantale/Heyting layer)
 
-- Evidence carrier and operations: `Mettapedia.Logic.EvidenceQuantale`
-  - `Evidence` (counts `(nPlus, nMinus)`), `toStrength`, `toConfidence`
-  - revision-style aggregation lemma: `Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength_hplus`
-  - polarity-swap negation rule: `Mettapedia.Logic.EvidenceQuantale.Evidence.toStrength_flip`
+- BinaryEvidence carrier and operations: `Mettapedia.Logic.EvidenceQuantale`
+  - `BinaryEvidence` (counts `(nPlus, nMinus)`), `toStrength`, `toConfidence`
+  - revision-style aggregation lemma: `Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength_hplus`
+  - polarity-swap negation rule: `Mettapedia.Logic.EvidenceQuantale.BinaryEvidence.toStrength_flip`
     (defined in `Mettapedia.Logic.PLNDerivedFromEvidence`)
 
-- KS vs Evidence (totality gate, “no faithful point semantics”)
+- KS vs BinaryEvidence (totality gate, “no faithful point semantics”)
   - `Mettapedia.Logic.PLN_KS_Bridge.evidence_no_point_representation`
 
 ## Additional PLN book-style rules (partial coverage)
@@ -89,7 +89,7 @@ Lean mirror: `Mettapedia.Logic.NARSMettaTruthFunctions`
 ## TODO (next derivation targets)
 
 - Derive *all* truth-value rules in `lib_pln` from the same semantic base:
-  - start from `Evidence` + a semantics map (and explicit independence assumptions),
+  - start from `BinaryEvidence` + a semantics map (and explicit independence assumptions),
   - keep `[0,1]` strength/confidence as a lossy *view*, not the foundational carrier.
 
 - NARS parity:

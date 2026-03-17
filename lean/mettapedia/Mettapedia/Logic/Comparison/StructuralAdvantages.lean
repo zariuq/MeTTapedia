@@ -13,7 +13,7 @@ probabilistic logic frameworks (ProbLog, Markov Logic Networks).
 1. **Paraconsistency**: PLN represents contradictory evidence explicitly
 2. **Epistemic distinction**: PLN distinguishes ignorance from balanced evidence
 3. **Quantale structure**: PLN has complete lattice + monoidal structure
-4. **Information tracking**: Evidence captures both strength AND confidence
+4. **Information tracking**: BinaryEvidence captures both strength AND confidence
 
 ## Classical vs PLN
 
@@ -22,7 +22,7 @@ ProbLog and MLN both use classical probability:
 - P = 0.5 could mean "balanced evidence" OR "no evidence"
 - Contradiction collapses to P (needs special handling)
 
-PLN uses Evidence = (pos, neg : ℝ≥0∞):
+PLN uses BinaryEvidence = (pos, neg : ℝ≥0∞):
 - Two-dimensional representation
 - (0, 0) = ignorance (NEITHER), (1, 1) = contradiction (BOTH)
 - Quantale algebraic structure
@@ -48,10 +48,10 @@ open scoped ENNReal
     In PLN, the BOTH corner (pos > 0, neg > 0) represents it naturally.
 -/
 theorem pln_represents_contradiction :
-    ∃ e : Evidence, isBoth e ∧ e.pos > 0 ∧ e.neg > 0 :=
+    ∃ e : BinaryEvidence, isBoth e ∧ e.pos > 0 ∧ e.neg > 0 :=
   ⟨pBoth, pBoth_isBoth, zero_lt_one, zero_lt_one⟩
 
-/-- All four corners are distinct Evidence values -/
+/-- All four corners are distinct BinaryEvidence values -/
 theorem pln_corners_distinct :
     pTrue ≠ pFalse ∧ pTrue ≠ pNeither ∧ pTrue ≠ pBoth ∧
     pFalse ≠ pNeither ∧ pFalse ≠ pBoth ∧
@@ -60,8 +60,8 @@ theorem pln_corners_distinct :
   all_goals
     simp only [pTrue, pFalse, pNeither, pBoth, ne_eq]
     intro h
-    have hp := congrArg Evidence.pos h
-    have hn := congrArg Evidence.neg h
+    have hp := congrArg BinaryEvidence.pos h
+    have hn := congrArg BinaryEvidence.neg h
     first | exact one_ne_zero hp | exact one_ne_zero hn |
             exact (one_ne_zero hp.symm) | exact (one_ne_zero hn.symm)
 
@@ -84,7 +84,7 @@ theorem pln_ignorance_distinct_from_balanced :
   constructor
   · simp only [pNeither, pBoth, ne_eq]
     intro h
-    have hp := congrArg Evidence.pos h
+    have hp := congrArg BinaryEvidence.pos h
     exact one_ne_zero hp.symm
   · simp only [pNeither, pBoth, and_self]
 
@@ -92,29 +92,29 @@ theorem pln_ignorance_distinct_from_balanced :
 theorem pln_evidence_total_distinguishes :
     pNeither.total = 0 ∧ pBoth.total > 0 := by
   constructor
-  · simp only [pNeither, Evidence.total]
+  · simp only [pNeither, BinaryEvidence.total]
     norm_num
-  · simp only [pBoth, Evidence.total]
+  · simp only [pBoth, BinaryEvidence.total]
     norm_num
 
 /-! ## Quantale/Frame Structure -/
 
-/-- PLN Evidence forms a complete lattice (information ordering).
+/-- PLN BinaryEvidence forms a complete lattice (information ordering).
 
     ProbLog: probabilities are just real numbers, no lattice structure
     MLN: weights are real numbers, no lattice structure
-    PLN: Evidence forms a complete lattice under information ordering
+    PLN: BinaryEvidence forms a complete lattice under information ordering
 -/
 theorem pln_has_complete_lattice_structure :
-    ∃ _ : CompleteLattice Evidence, True := ⟨inferInstance, trivial⟩
+    ∃ _ : CompleteLattice BinaryEvidence, True := ⟨inferInstance, trivial⟩
 
-/-- PLN Evidence forms a Frame (complete Heyting algebra).
+/-- PLN BinaryEvidence forms a Frame (complete Heyting algebra).
 
     This gives PLN intuitionistic implication for reasoning about evidence.
     ProbLog/MLN have no such structure.
 -/
 theorem pln_has_frame_structure :
-    ∃ _ : Order.Frame Evidence, True := ⟨inferInstance, trivial⟩
+    ∃ _ : Order.Frame BinaryEvidence, True := ⟨inferInstance, trivial⟩
 
 /-- PLN has monoidal structure via tensor product.
 
@@ -123,17 +123,17 @@ theorem pln_has_frame_structure :
     MLN: only has weight addition (no monoidal structure as formalized)
 -/
 theorem pln_has_tensor_monoid :
-    ∃ _ : CommMonoid Evidence, True := ⟨inferInstance, trivial⟩
+    ∃ _ : CommMonoid BinaryEvidence, True := ⟨inferInstance, trivial⟩
 
 /-- PLN has additive structure via hplus for independent evidence -/
 theorem pln_has_hplus :
-    ∃ _ : Add Evidence, True := ⟨inferInstance, trivial⟩
+    ∃ _ : Add BinaryEvidence, True := ⟨inferInstance, trivial⟩
 
 /-- Combined: PLN has quantale-like algebraic structure -/
 theorem pln_quantale_structure :
-    (∃ _ : CommMonoid Evidence, True) ∧
-    (∃ _ : CompleteLattice Evidence, True) ∧
-    (∃ _ : Order.Frame Evidence, True) :=
+    (∃ _ : CommMonoid BinaryEvidence, True) ∧
+    (∃ _ : CompleteLattice BinaryEvidence, True) ∧
+    (∃ _ : Order.Frame BinaryEvidence, True) :=
   ⟨pln_has_tensor_monoid, pln_has_complete_lattice_structure, pln_has_frame_structure⟩
 
 /-! ## Information Preservation -/
@@ -145,24 +145,24 @@ theorem pln_quantale_structure :
     PLN: (1, 1) ≠ (10, 10) even though both have strength 0.5
 -/
 theorem pln_preserves_total_evidence :
-    ∃ e₁ e₂ : Evidence,
+    ∃ e₁ e₂ : BinaryEvidence,
       e₁.pos * e₂.total = e₂.pos * e₁.total ∧  -- same ratio (strength)
       e₁.total ≠ e₂.total := by                -- different total evidence
   use ⟨1, 1⟩, ⟨2, 2⟩
   constructor
-  · simp only [Evidence.total]
+  · simp only [BinaryEvidence.total]
     ring
-  · simp only [Evidence.total, ne_eq]
+  · simp only [BinaryEvidence.total, ne_eq]
     norm_num
 
-/-- Evidence with same strength but different totals are distinct -/
+/-- BinaryEvidence with same strength but different totals are distinct -/
 theorem pln_same_strength_different_evidence :
-    let e₁ : Evidence := ⟨1, 1⟩
-    let e₂ : Evidence := ⟨2, 2⟩
+    let e₁ : BinaryEvidence := ⟨1, 1⟩
+    let e₂ : BinaryEvidence := ⟨2, 2⟩
     e₁ ≠ e₂ := by
   simp only [ne_eq]
   intro h
-  have hp := congrArg Evidence.pos h
+  have hp := congrArg BinaryEvidence.pos h
   norm_num at hp
 
 /-! ## Comparison Summary -/
@@ -180,17 +180,17 @@ theorem pln_same_strength_different_evidence :
 -/
 theorem pln_advantages_summary :
     -- Paraconsistency: can represent contradiction
-    (∃ e : Evidence, isBoth e) ∧
+    (∃ e : BinaryEvidence, isBoth e) ∧
     -- Epistemic: distinguishes ignorance from balance
     (pNeither ≠ pBoth) ∧
     -- Complete lattice structure
-    (∃ _ : CompleteLattice Evidence, True) ∧
+    (∃ _ : CompleteLattice BinaryEvidence, True) ∧
     -- Frame structure
-    (∃ _ : Order.Frame Evidence, True) ∧
+    (∃ _ : Order.Frame BinaryEvidence, True) ∧
     -- Monoidal structure (tensor for combining dependent evidence)
-    (∃ _ : CommMonoid Evidence, True) ∧
+    (∃ _ : CommMonoid BinaryEvidence, True) ∧
     -- Information preservation (same strength, different evidence)
-    (∃ e₁ e₂ : Evidence, e₁.total ≠ e₂.total ∧
+    (∃ e₁ e₂ : BinaryEvidence, e₁.total ≠ e₂.total ∧
        e₁.pos * e₂.total = e₂.pos * e₁.total) := by
   refine ⟨⟨pBoth, pBoth_isBoth⟩, ?_, ?_, ?_, ?_, ?_⟩
   · exact (pln_corners_distinct).2.2.2.2.2
@@ -199,9 +199,9 @@ theorem pln_advantages_summary :
   · exact pln_has_tensor_monoid
   · use ⟨1, 1⟩, ⟨2, 2⟩
     constructor
-    · simp only [Evidence.total, ne_eq]
+    · simp only [BinaryEvidence.total, ne_eq]
       norm_num
-    · simp only [Evidence.total]
+    · simp only [BinaryEvidence.total]
       ring
 
 /-! ## Summary
@@ -218,13 +218,13 @@ This file establishes that PLN has fundamental structural advantages:
    - Classical probability conflates P = 0.5 for both cases
 
 3. **Algebraic structure** (Theorem `pln_quantale_structure`):
-   - Complete lattice: information ordering on Evidence
+   - Complete lattice: information ordering on BinaryEvidence
    - Frame: intuitionistic implication (Heyting algebra)
    - Monoidal: tensor product for combining independent evidence
    - ProbLog/MLN have none of these formal algebraic structures
 
 4. **Information preservation** (Theorem `pln_preserves_total_evidence`):
-   - Evidence (1, 1) and (10, 10) have the same strength (0.5)
+   - BinaryEvidence (1, 1) and (10, 10) have the same strength (0.5)
    - But they are distinct: different total evidence
    - Classical probability loses this information
 

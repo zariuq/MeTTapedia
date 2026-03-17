@@ -31,13 +31,13 @@ The fundamental duality operation: swap positive and negative evidence.
 -/
 
 /-- CD Negation: swap positive and negative evidence -/
-def cdNeg (e : Evidence) : Evidence := ⟨e.neg, e.pos⟩
+def cdNeg (e : BinaryEvidence) : BinaryEvidence := ⟨e.neg, e.pos⟩
 
 /-- CD negation notation -/
 prefix:100 "∼" => cdNeg
 
 /-- CD negation is an involution: ∼∼e = e -/
-theorem cdNeg_involution (e : Evidence) : ∼(∼e) = e := by
+theorem cdNeg_involution (e : BinaryEvidence) : ∼(∼e) = e := by
   simp only [cdNeg]
 
 /-- CD negation swaps true and false corners -/
@@ -56,21 +56,21 @@ theorem cdNeg_pBoth : ∼pBoth = pBoth := by
   simp only [cdNeg, pBoth]
 
 /-- CD negation reverses the truth quadrant -/
-theorem cdNeg_isTrue_iff_isFalse (e : Evidence) : PBit.isTrue (∼e) ↔ PBit.isFalse e := by
+theorem cdNeg_isTrue_iff_isFalse (e : BinaryEvidence) : PBit.isTrue (∼e) ↔ PBit.isFalse e := by
   simp only [cdNeg, PBit.isTrue, PBit.isFalse]
   constructor <;> (intro ⟨h1, h2⟩; exact ⟨h2, h1⟩)
 
-theorem cdNeg_isFalse_iff_isTrue (e : Evidence) : PBit.isFalse (∼e) ↔ PBit.isTrue e := by
+theorem cdNeg_isFalse_iff_isTrue (e : BinaryEvidence) : PBit.isFalse (∼e) ↔ PBit.isTrue e := by
   simp only [cdNeg, PBit.isTrue, PBit.isFalse]
   constructor <;> (intro ⟨h1, h2⟩; exact ⟨h2, h1⟩)
 
 /-- CD negation preserves the "neither" status -/
-theorem cdNeg_isNeither_iff (e : Evidence) : PBit.isNeither (∼e) ↔ PBit.isNeither e := by
+theorem cdNeg_isNeither_iff (e : BinaryEvidence) : PBit.isNeither (∼e) ↔ PBit.isNeither e := by
   simp only [cdNeg, PBit.isNeither]
   constructor <;> (intro ⟨h1, h2⟩; exact ⟨h2, h1⟩)
 
 /-- CD negation preserves the "both" status -/
-theorem cdNeg_isBoth_iff (e : Evidence) : PBit.isBoth (∼e) ↔ PBit.isBoth e := by
+theorem cdNeg_isBoth_iff (e : BinaryEvidence) : PBit.isBoth (∼e) ↔ PBit.isBoth e := by
   simp only [cdNeg, PBit.isBoth]
   constructor <;> (intro ⟨h1, h2⟩; exact ⟨h2, h1⟩)
 
@@ -80,25 +80,25 @@ The tensor product ⊗ is coordinatewise multiplication.
 -/
 
 /-- CD Tensor: coordinatewise multiplication -/
-noncomputable def cdTensor (a b : Evidence) : Evidence := a * b
+noncomputable def cdTensor (a b : BinaryEvidence) : BinaryEvidence := a * b
 
 /-- CD tensor notation -/
 infixl:70 " ⊙ " => cdTensor
 
 /-- CD tensor is commutative -/
-theorem cdTensor_comm (a b : Evidence) : a ⊙ b = b ⊙ a :=
-  Evidence.tensor_comm a b
+theorem cdTensor_comm (a b : BinaryEvidence) : a ⊙ b = b ⊙ a :=
+  BinaryEvidence.tensor_comm a b
 
 /-- CD tensor is associative -/
-theorem cdTensor_assoc (a b c : Evidence) : (a ⊙ b) ⊙ c = a ⊙ (b ⊙ c) :=
-  Evidence.tensor_assoc a b c
+theorem cdTensor_assoc (a b c : BinaryEvidence) : (a ⊙ b) ⊙ c = a ⊙ (b ⊙ c) :=
+  BinaryEvidence.tensor_assoc a b c
 
-/-- Evidence.one is the tensor unit -/
-theorem cdTensor_one (a : Evidence) : a ⊙ Evidence.one = a :=
-  Evidence.tensor_one a
+/-- BinaryEvidence.one is the tensor unit -/
+theorem cdTensor_one (a : BinaryEvidence) : a ⊙ BinaryEvidence.one = a :=
+  BinaryEvidence.tensor_one a
 
-theorem one_cdTensor (a : Evidence) : Evidence.one ⊙ a = a :=
-  Evidence.one_tensor a
+theorem one_cdTensor (a : BinaryEvidence) : BinaryEvidence.one ⊙ a = a :=
+  BinaryEvidence.one_tensor a
 
 /-! ## CD Par (Additive Disjunction)
 
@@ -107,33 +107,33 @@ This corresponds to combining independent evidence.
 -/
 
 /-- CD Par: coordinatewise addition (independent evidence combination) -/
-noncomputable def cdPar (a b : Evidence) : Evidence := a + b
+noncomputable def cdPar (a b : BinaryEvidence) : BinaryEvidence := a + b
 
 /-- CD par notation -/
 infixl:65 " ⅋ " => cdPar
 
 /-- CD par is commutative -/
-theorem cdPar_comm (a b : Evidence) : a ⅋ b = b ⅋ a :=
-  Evidence.hplus_comm a b
+theorem cdPar_comm (a b : BinaryEvidence) : a ⅋ b = b ⅋ a :=
+  BinaryEvidence.hplus_comm a b
 
 /-- CD par is associative -/
-theorem cdPar_assoc (a b c : Evidence) : (a ⅋ b) ⅋ c = a ⅋ (b ⅋ c) :=
-  Evidence.hplus_assoc a b c
+theorem cdPar_assoc (a b c : BinaryEvidence) : (a ⅋ b) ⅋ c = a ⅋ (b ⅋ c) :=
+  BinaryEvidence.hplus_assoc a b c
 
-/-- Evidence.zero is the par unit -/
-theorem cdPar_zero (a : Evidence) : a ⅋ Evidence.zero = a :=
-  Evidence.hplus_zero a
+/-- BinaryEvidence.zero is the par unit -/
+theorem cdPar_zero (a : BinaryEvidence) : a ⅋ BinaryEvidence.zero = a :=
+  BinaryEvidence.hplus_zero a
 
-theorem zero_cdPar (a : Evidence) : Evidence.zero ⅋ a = a :=
-  Evidence.zero_hplus a
+theorem zero_cdPar (a : BinaryEvidence) : BinaryEvidence.zero ⅋ a = a :=
+  BinaryEvidence.zero_hplus a
 
 /-! ## CD Negation and Lattice Operations -/
 
 /-- CD negation swaps inf components -/
-theorem cdNeg_inf (a b : Evidence) : ∼(a ⊓ b) = (∼a) ⊓ (∼b) := rfl
+theorem cdNeg_inf (a b : BinaryEvidence) : ∼(a ⊓ b) = (∼a) ⊓ (∼b) := rfl
 
 /-- CD negation swaps sup components -/
-theorem cdNeg_sup (a b : Evidence) : ∼(a ⊔ b) = (∼a) ⊔ (∼b) := rfl
+theorem cdNeg_sup (a b : BinaryEvidence) : ∼(a ⊔ b) = (∼a) ⊔ (∼b) := rfl
 
 /-! ## Tensor Distributes over Join (Quantale Law)
 
@@ -147,16 +147,16 @@ theorem ENNReal_mul_max (a b c : ℝ≥0∞) : a * max b c = max (a * b) (a * c)
   · simp only [max_eq_left hcb, max_eq_left (mul_le_mul_left' hcb a)]
 
 /-- Tensor distributes over binary join -/
-theorem cdTensor_sup_left (a b c : Evidence) :
+theorem cdTensor_sup_left (a b c : BinaryEvidence) :
     a ⊙ (b ⊔ c) = (a ⊙ b) ⊔ (a ⊙ c) := by
-  simp only [cdTensor, Evidence.tensor_def]
+  simp only [cdTensor, BinaryEvidence.tensor_def]
   ext
   · -- pos component: a.pos * max b.pos c.pos = max (a.pos * b.pos) (a.pos * c.pos)
     exact ENNReal_mul_max a.pos b.pos c.pos
   · -- neg component
     exact ENNReal_mul_max a.neg b.neg c.neg
 
-theorem cdTensor_sup_right (a b c : Evidence) :
+theorem cdTensor_sup_right (a b c : BinaryEvidence) :
     (a ⊔ b) ⊙ c = (a ⊙ c) ⊔ (b ⊙ c) := by
   rw [cdTensor_comm, cdTensor_sup_left, cdTensor_comm a c, cdTensor_comm b c]
 
@@ -170,12 +170,12 @@ This file establishes:
 
 2. **CD Tensor** (⊙): Multiplicative conjunction (coordinatewise ×)
    - Commutative, associative
-   - Unit is Evidence.one = ⟨1, 1⟩
+   - Unit is BinaryEvidence.one = ⟨1, 1⟩
    - Distributes over join (quantale law)
 
 3. **CD Par** (⅋): Additive disjunction (coordinatewise +)
    - Commutative, associative
-   - Unit is Evidence.zero = ⟨0, 0⟩
+   - Unit is BinaryEvidence.zero = ⟨0, 0⟩
    - Corresponds to independent evidence aggregation
 
 4. **Lattice preservation**: CD negation preserves meet/join structure

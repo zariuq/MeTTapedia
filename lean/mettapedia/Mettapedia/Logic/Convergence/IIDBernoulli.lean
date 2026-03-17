@@ -7,12 +7,12 @@ import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 # IID Bernoulli Observations
 
 This file formalizes independent identically distributed (IID) Bernoulli observations
-and connects them to PLN Evidence.
+and connects them to PLN BinaryEvidence.
 
 ## Key Definitions
 
 - `IIDBernoulli`: Structure for IID Bernoulli observations with parameter θ
-- `evidenceFromObservations`: Convert n IID observations to Evidence (k, n-k)
+- `evidenceFromObservations`: Convert n IID observations to BinaryEvidence (k, n-k)
 - `strengthFromObservations`: The empirical frequency k/n
 
 ## The IID Setting
@@ -22,7 +22,7 @@ For IID Bernoulli(θ) observations X₁, X₂, ..., Xₙ:
 - The observations are mutually independent
 - The sufficient statistic is k = Σᵢ Xᵢ (count of successes)
 
-PLN Evidence (k, n-k) captures exactly this sufficient statistic.
+PLN BinaryEvidence (k, n-k) captures exactly this sufficient statistic.
 
 ## References
 
@@ -123,29 +123,29 @@ theorem frequency_mem_unit (obs : BernoulliObservations) :
 
 end BernoulliObservations
 
-/-! ## Conversion to PLN Evidence -/
+/-! ## Conversion to PLN BinaryEvidence -/
 
-/-- Convert Bernoulli observations to PLN Evidence.
+/-- Convert Bernoulli observations to PLN BinaryEvidence.
 
-    Observations (k successes, n total) become Evidence (k, n-k).
+    Observations (k successes, n total) become BinaryEvidence (k, n-k).
 -/
-def observationsToEvidence (obs : BernoulliObservations) : Evidence :=
+def observationsToEvidence (obs : BernoulliObservations) : BinaryEvidence :=
   ⟨obs.successes, obs.failures⟩
 
 /-- The evidence total equals the observation total -/
 theorem observationsToEvidence_total (obs : BernoulliObservations) :
     (observationsToEvidence obs).total = obs.total := by
-  unfold observationsToEvidence Evidence.total BernoulliObservations.failures
+  unfold observationsToEvidence BinaryEvidence.total BernoulliObservations.failures
   -- Goal: (obs.successes : ℝ≥0∞) + (obs.total - obs.successes : ℝ≥0∞) = (obs.total : ℝ≥0∞)
   have hle := obs.successes_le
   simp only [← Nat.cast_add (R := ℝ≥0∞)]
   congr 1
   omega
 
-/-- Evidence strength equals empirical frequency (for nonzero observations) -/
+/-- BinaryEvidence strength equals empirical frequency (for nonzero observations) -/
 theorem observationsToEvidence_strength (obs : BernoulliObservations) (h : obs.total ≠ 0) :
-    (Evidence.toStrength (observationsToEvidence obs)).toReal = obs.frequency := by
-  unfold observationsToEvidence Evidence.toStrength Evidence.total BernoulliObservations.frequency
+    (BinaryEvidence.toStrength (observationsToEvidence obs)).toReal = obs.frequency := by
+  unfold observationsToEvidence BinaryEvidence.toStrength BinaryEvidence.total BernoulliObservations.frequency
          BernoulliObservations.failures
   simp only [h, ↓reduceIte]
   have hle := obs.successes_le
@@ -164,7 +164,7 @@ theorem observationsToEvidence_combine (obs₁ obs₂ : BernoulliObservations) :
     observationsToEvidence (BernoulliObservations.combine obs₁ obs₂) =
     observationsToEvidence obs₁ + observationsToEvidence obs₂ := by
   unfold observationsToEvidence BernoulliObservations.combine BernoulliObservations.failures
-  rw [Evidence.hplus_def]
+  rw [BinaryEvidence.hplus_def]
   have h₁ := obs₁.successes_le
   have h₂ := obs₂.successes_le
   -- Key arithmetic fact: (t₁+t₂) - (s₁+s₂) = (t₁-s₁) + (t₂-s₂) when s₁≤t₁ and s₂≤t₂
@@ -269,8 +269,8 @@ This file establishes:
    - `total`: total observations
    - `frequency`: empirical frequency k/n
 
-2. **observationsToEvidence**: Convert observations to PLN Evidence
-   - Observations (k, n) → Evidence (k, n-k)
+2. **observationsToEvidence**: Convert observations to PLN BinaryEvidence
+   - Observations (k, n) → BinaryEvidence (k, n-k)
    - Frequency corresponds to PLN strength
 
 3. **IIDBernoulliParams**: Theoretical model parameters

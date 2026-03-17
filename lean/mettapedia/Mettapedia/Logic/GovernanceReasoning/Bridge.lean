@@ -5,7 +5,7 @@ import Mettapedia.Logic.PLNWorldModelCalculus
 # Governance Reasoning: WM Calculus Bridge
 
 Links the governance-reasoning types (eventualities, modalities, DTS) to the
-PLN world-model calculus (`WorldModel`, `WMRewriteRule`, `Evidence`).
+PLN world-model calculus (`BinaryWorldModel`, `WMRewriteRule`, `BinaryEvidence`).
 
 ## Architecture
 
@@ -50,22 +50,22 @@ structure DeonticQueryEncoder (Entity Pred Query : Type*) where
 namespace DeonticQueryEncoder
 
 variable {State Entity Pred Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- Extract evidence for a modal judgment from a WM state. -/
 def modalEvidence (W : State) (enc : DeonticQueryEncoder Entity Pred Query)
-    (m : DeonticModality) (e : Eventuality Entity Pred) : Evidence :=
-  WorldModel.evidence (State := State) (Query := Query) W (enc.modalQuery m e)
+    (m : DeonticModality) (e : Eventuality Entity Pred) : BinaryEvidence :=
+  BinaryWorldModel.evidence (State := State) (Query := Query) W (enc.modalQuery m e)
 
 /-- Extract evidence for a ground triple from a WM state. -/
 def groundEvidence (W : State) (enc : DeonticQueryEncoder Entity Pred Query)
-    (t : CTTriple Entity Pred) : Evidence :=
-  WorldModel.evidence (State := State) (Query := Query) W (enc.groundQuery t)
+    (t : CTTriple Entity Pred) : BinaryEvidence :=
+  BinaryWorldModel.evidence (State := State) (Query := Query) W (enc.groundQuery t)
 
 /-- Extract posterior-mean strength for a modal judgment. -/
 noncomputable def modalStrength (W : State) (enc : DeonticQueryEncoder Entity Pred Query)
     (m : DeonticModality) (e : Eventuality Entity Pred) : ℝ≥0∞ :=
-  Evidence.toStrength (modalEvidence (State := State) W enc m e)
+  BinaryEvidence.toStrength (modalEvidence (State := State) W enc m e)
 
 /-- Modal evidence commutes with revision. -/
 theorem modalEvidence_add (W₁ W₂ : State)
@@ -74,7 +74,7 @@ theorem modalEvidence_add (W₁ W₂ : State)
     modalEvidence (State := State) (W₁ + W₂) enc m e =
       modalEvidence (State := State) W₁ enc m e +
         modalEvidence (State := State) W₂ enc m e := by
-  simp [modalEvidence, WorldModel.evidence_add]
+  simp [modalEvidence, BinaryWorldModel.evidence_add]
 
 /-- Ground evidence commutes with revision. -/
 theorem groundEvidence_add (W₁ W₂ : State)
@@ -83,7 +83,7 @@ theorem groundEvidence_add (W₁ W₂ : State)
     groundEvidence (State := State) (W₁ + W₂) enc t =
       groundEvidence (State := State) W₁ enc t +
         groundEvidence (State := State) W₂ enc t := by
-  simp [groundEvidence, WorldModel.evidence_add]
+  simp [groundEvidence, BinaryWorldModel.evidence_add]
 
 end DeonticQueryEncoder
 
@@ -101,7 +101,7 @@ bridge hypothesis: rexist evidence equals ground evidence. -/
 section RexistBridge
 
 variable {State Entity Pred Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- The Hobbs Rexist bridge hypothesis for an eventuality:
     rexist-evidence for `e` equals ground-evidence for the corresponding ct-triple.
@@ -126,7 +126,7 @@ def rexistBridgeRule
     WMRewriteRule State Query :=
   { side := True
     conclusion := enc.groundQuery t
-    derive := fun W => WorldModel.evidence (State := State) (Query := Query) W (enc.modalQuery .rexist e)
+    derive := fun W => BinaryWorldModel.evidence (State := State) (Query := Query) W (enc.modalQuery .rexist e)
     sound := by
       intro _ W
       exact hBridge W }
@@ -138,15 +138,15 @@ theorem rexistBridge_zero_ground
     (e : Eventuality Entity Pred) (t : CTTriple Entity Pred)
     (hBridge : RexistBridge (State := State) enc e t)
     (W : State)
-    (hZero : WorldModel.evidence (State := State) (Query := Query) W (enc.groundQuery t) = 0) :
-    WorldModel.evidence (State := State) (Query := Query) W (enc.modalQuery .rexist e) = 0 := by
+    (hZero : BinaryWorldModel.evidence (State := State) (Query := Query) W (enc.groundQuery t) = 0) :
+    BinaryWorldModel.evidence (State := State) (Query := Query) W (enc.modalQuery .rexist e) = 0 := by
   rw [hBridge W, hZero]
 
 end RexistBridge
 
-/-! ## §3 DTS Evidence Bridge
+/-! ## §3 DTS BinaryEvidence Bridge
 
-Evidence-level versions of the DTS axioms under a "consistent deontic WM" hypothesis.
+BinaryEvidence-level versions of the DTS axioms under a "consistent deontic WM" hypothesis.
 
 A consistent deontic WM ensures that obligation-evidence for `e` and obligation-evidence
 for `¬e` cannot both be positive (mirroring `DTS.consistent`). -/
@@ -154,7 +154,7 @@ for `¬e` cannot both be positive (mirroring `DTS.consistent`). -/
 section DTSEvidence
 
 variable {State Entity Pred Query : Type*}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- A consistent deontic world model: if obligation evidence for `e` is positive,
     then obligation evidence for `¬e` is zero.

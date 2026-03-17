@@ -80,7 +80,7 @@ theorem familyEq_iff_commonEq
 
 section EnglishCzechShared
 
-variable {State : Type u} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type u} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 inductive EnglishCzechSharedLabel where
   | sharedPattern
@@ -93,12 +93,12 @@ noncomputable def englishCzechSharedSelectedSignature (W : State) : UGSignature 
   Label := EnglishCzechSharedLabel
   Obs
     | .sharedPattern => Pattern
-    | .evidence => Evidence
+    | .evidence => BinaryEvidence
     | .strength => ℝ≥0∞
   observe
     | .sharedPattern => gfAbstractToPattern
     | .evidence => gfEvidenceDenote W
-    | .strength => fun t => WorldModel.queryStrength W (gfAbstractToPattern t)
+    | .strength => fun t => BinaryWorldModel.queryStrength W (gfAbstractToPattern t)
 
 /-- Family of shared selected signatures: both English and Czech demand the same
 shared invariant package. -/

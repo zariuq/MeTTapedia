@@ -32,7 +32,7 @@ universe u v x
 abbrev WMHyper (State : Type x) [EvidenceType State] :=
   Mettapedia.Logic.PLNWorldModelHyperdoctrine.WMHyperdoctrine.{u, v, 0, x} State
 
-variable {State : Type x} [EvidenceType State] [WorldModel State Pattern]
+variable {State : Type x} [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- Formula-level regression fixture: consume the graph-triangle endpoint directly. -/
 theorem formula_graph_triangle_fixture
@@ -265,8 +265,8 @@ theorem oslf_stepStar_rule_sound_fixture
     let r : WMConsequenceRuleOn State Pattern :=
       wmConsequenceRuleOn_of_oslfTheoryStepStar (State := State) (Query := Pattern)
         (I := I) hstar
-    WorldModel.queryStrength (State := State) (Query := Pattern) W r.premise ≤
-      WorldModel.queryStrength (State := State) (Query := Pattern) W r.conclusion := by
+    BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W r.premise ≤
+      BinaryWorldModel.queryStrength (State := State) (Query := Pattern) W r.conclusion := by
   intro r
   exact r.sound hW
 
@@ -279,8 +279,8 @@ theorem pointwise_interface_step_fixture
     {p q : Pattern}
     (hstep : OSLFTheoryStep relEnv p q) :
     let I := pointwiseStepInterface relEnv
-    WorldModel.queryStrength (State := StepState) (Query := StepQuery) W (I.encode p) ≤
-      WorldModel.queryStrength (State := StepState) (Query := StepQuery) W (I.encode q) := by
+    BinaryWorldModel.queryStrength (State := StepState) (Query := StepQuery) W (I.encode p) ≤
+      BinaryWorldModel.queryStrength (State := StepState) (Query := StepQuery) W (I.encode q) := by
   intro I
   simpa using (I.step_sound (W := W) (p := p) (q := q) hW hstep)
 
@@ -901,9 +901,9 @@ theorem canonical_compact_rule_constructor_fixture
         (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
         (p := p) (q := q) (hstar := hstar) (φcat := φcat)
         (hStrengthFromEvidence := hStrengthFromEvidence)
-    WorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
+    BinaryWorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
       (semEState ctx.relEnv ctx.I fa.φf) r.premise ≤
-    WorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
+    BinaryWorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
       (semEState ctx.relEnv ctx.I fa.φf) r.conclusion := by
   intro r
   let goal : CanonicalGoalArgs ctx cat fa := {
@@ -913,11 +913,11 @@ theorem canonical_compact_rule_constructor_fixture
     φcat := φcat
     hStrengthFromEvidence := hStrengthFromEvidence
   }
-  change WorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
+  change BinaryWorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
       (semEState ctx.relEnv ctx.I fa.φf)
       ((canonicalConsequenceRuleOn_compact_of_goal
         (ctx := ctx) (modal := modal) (cat := cat) (fa := fa) (goal := goal)).premise)
-    ≤ WorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
+    ≤ BinaryWorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
       (semEState ctx.relEnv ctx.I fa.φf)
       ((canonicalConsequenceRuleOn_compact_of_goal
         (ctx := ctx) (modal := modal) (cat := cat) (fa := fa) (goal := goal)).conclusion)
@@ -940,9 +940,9 @@ theorem canonical_compact_goal_rule_constructor_fixture
     let r : WMConsequenceRuleOn SemEState SemEQuery :=
       canonicalConsequenceRuleOn_compact_of_goal
         (ctx := ctx) (modal := modal) (cat := cat) (fa := fa) (goal := goal)
-    WorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
+    BinaryWorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
       (semEState ctx.relEnv ctx.I fa.φf) r.premise ≤
-    WorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
+    BinaryWorldModel.queryStrength (State := SemEState) (Query := SemEQuery)
       (semEState ctx.relEnv ctx.I fa.φf) r.conclusion := by
   intro r
   have hSide : r.side (semEState ctx.relEnv ctx.I fa.φf) := rfl

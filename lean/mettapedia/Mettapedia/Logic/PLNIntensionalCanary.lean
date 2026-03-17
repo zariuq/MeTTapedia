@@ -28,12 +28,12 @@ inductive ToyInheritanceQuery where
   deriving DecidableEq, Repr
 
 /-- Triple-state fixture: extensional / ASSOC / PAT evidence channels. -/
-abbrev ToyState := Evidence × Evidence × Evidence
+abbrev ToyState := BinaryEvidence × BinaryEvidence × BinaryEvidence
 
 noncomputable instance : EvidenceType ToyState where
   toAddCommMonoid := inferInstance
 
-instance : WorldModel ToyState ToyInheritanceQuery where
+instance : BinaryWorldModel ToyState ToyInheritanceQuery where
   evidence W q :=
     match q with
     | .ext _ _ => W.1
@@ -93,7 +93,7 @@ theorem canary_ch12_mixed_projection_non_equivalent :
         Wsplit encMixedAssoc true false := by
   intro hEq
   have hpos : (3 : ℝ≥0∞) = 1 := by
-    exact congrArg Evidence.pos (by simpa [Wsplit, encMixedExtensional, encMixedAssoc,
+    exact congrArg BinaryEvidence.pos (by simpa [Wsplit, encMixedExtensional, encMixedAssoc,
       InheritanceQueryBuilder.mixedEvidence, InheritanceQueryBuilder.mixedQ,
       InheritanceQueryBuilder.mixedAsExtensional, InheritanceQueryBuilder.mixedAsAssoc,
       toyExt, toyAssoc] using hEq)
@@ -106,7 +106,7 @@ inductive ToyPatternInheritanceQuery where
   | pat : Pattern → Pattern → ToyPatternInheritanceQuery
   deriving DecidableEq, Repr
 
-instance : WorldModel ToyState ToyPatternInheritanceQuery where
+instance : BinaryWorldModel ToyState ToyPatternInheritanceQuery where
   evidence W q :=
     match q with
     | .ext _ _ => W.1

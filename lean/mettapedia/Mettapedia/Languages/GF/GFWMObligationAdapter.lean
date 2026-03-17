@@ -37,7 +37,7 @@ universe u v
 section PureAlignedAdapters
 
 variable {State : Type u} {Query : Type v}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- A GF syntactic transport can be consumed directly as a
 `PureJudgmentWMInterface`-style WM obligation witness. -/
@@ -106,7 +106,7 @@ end PureAlignedAdapters
 section CategoricalEndpointLink
 
 variable {State : Type u} {Query : Type v}
-variable [EvidenceType State] [WorldModel State Query]
+variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- Unified endpoint that packages:
 1) GF syntactic transport consumed as a pure-interface WM obligation, and
@@ -141,7 +141,7 @@ end CategoricalEndpointLink
 section CategoryCharacterization
 
 variable {State : Type u}
-variable [EvidenceType State] [WorldModel State Pattern]
+variable [EvidenceType State] [BinaryWorldModel State Pattern]
 
 /-- The GF syntax→WM functor is faithful (thin-domain transport is conservative). -/
 instance syntaxToWMFunctor_faithful :
@@ -181,8 +181,8 @@ theorem syntaxToWMFunctor_positive_full_of_queryEq_reflects_patternEq
 functor has semantic morphisms with no syntactic preimage (non-fullness witness). -/
 theorem syntaxToWMFunctor_not_full_witness_of_constant_evidence
     (hconst : ∀ W : State, ∀ p q : Pattern,
-      WorldModel.evidence (State := State) (Query := Pattern) W p =
-      WorldModel.evidence (State := State) (Query := Pattern) W q)
+      BinaryWorldModel.evidence (State := State) (Query := Pattern) W p =
+      BinaryWorldModel.evidence (State := State) (Query := Pattern) W q)
     {A B : GFSyntaxObj}
     (hneq : syntaxQuery A ≠ syntaxQuery B) :
     ∃ (f : (syntaxToWMFunctor (State := State)).obj A
@@ -199,8 +199,8 @@ theorem syntaxToWMFunctor_not_full_witness_of_constant_evidence
 the GF syntax→WM functor is not full. -/
 theorem syntaxToWMFunctor_not_full_of_constant_evidence
     (hconst : ∀ W : State, ∀ p q : Pattern,
-      WorldModel.evidence (State := State) (Query := Pattern) W p =
-      WorldModel.evidence (State := State) (Query := Pattern) W q)
+      BinaryWorldModel.evidence (State := State) (Query := Pattern) W p =
+      BinaryWorldModel.evidence (State := State) (Query := Pattern) W q)
     {A B : GFSyntaxObj}
     (hneq : syntaxQuery A ≠ syntaxQuery B) :
     ¬ CategoryTheory.Functor.Full (syntaxToWMFunctor (State := State)) := by
@@ -215,8 +215,8 @@ if evidence collapses queries globally and syntax has a distinct query pair,
 GF→WM cannot be full. -/
 theorem syntaxToWMFunctor_not_full_of_constant_evidence_and_nontrivial_syntax
     (hconst : ∀ W : State, ∀ p q : Pattern,
-      WorldModel.evidence (State := State) (Query := Pattern) W p =
-      WorldModel.evidence (State := State) (Query := Pattern) W q)
+      BinaryWorldModel.evidence (State := State) (Query := Pattern) W p =
+      BinaryWorldModel.evidence (State := State) (Query := Pattern) W q)
     (hneq : ∃ A B : GFSyntaxObj, syntaxQuery A ≠ syntaxQuery B) :
     ¬ CategoryTheory.Functor.Full (syntaxToWMFunctor (State := State)) := by
   rcases hneq with ⟨A, B, hAB⟩
@@ -227,8 +227,8 @@ theorem syntaxToWMFunctor_not_full_of_constant_evidence_and_nontrivial_syntax
 faithful always; non-full under global evidence collapse + nontrivial syntax. -/
 theorem syntaxToWMFunctor_expressivity_split_of_constant_evidence
     (hconst : ∀ W : State, ∀ p q : Pattern,
-      WorldModel.evidence (State := State) (Query := Pattern) W p =
-      WorldModel.evidence (State := State) (Query := Pattern) W q)
+      BinaryWorldModel.evidence (State := State) (Query := Pattern) W p =
+      BinaryWorldModel.evidence (State := State) (Query := Pattern) W q)
     (hneq : ∃ A B : GFSyntaxObj, syntaxQuery A ≠ syntaxQuery B) :
     CategoryTheory.Functor.Faithful (syntaxToWMFunctor (State := State))
     ∧ ¬ CategoryTheory.Functor.Full (syntaxToWMFunctor (State := State)) := by

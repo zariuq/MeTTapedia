@@ -107,32 +107,32 @@ private theorem holEvidence_total_eq_card
             (fun M : HenkinModel.{u, v, w} Base Const =>
               ¬ holSatisfies (Base := Base) (Const := Const) M (decodeClosedFormula φ)) W : ℝ≥0∞) := by
     exact_mod_cast hcardNat
-  unfold holEvidence Evidence.total
+  unfold holEvidence BinaryEvidence.total
   simpa using hcard.symm
 
 theorem staticQueryStrength_toReal_eq_empiricalPrice
     (W : Multiset (HenkinModel.{u, v, w} Base Const))
     (φ : ClosedFormulaCode Const) :
-    (WorldModel.queryStrength
+    (BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W (decodeClosedFormula φ)).toReal =
       (((empiricalBeliefDay (Base := Base) (Const := Const) W φ : Price01) : Rat) : Real) := by
   classical
   change
-    (Evidence.toStrength
+    (BinaryEvidence.toStrength
       (holEvidence (Base := Base) (Const := Const) W (decodeClosedFormula φ))).toReal =
       (((empiricalBeliefDay (Base := Base) (Const := Const) W φ : Price01) : Rat) : Real)
   by_cases hcard : W.card = 0
   · have hstrength :
-        Evidence.toStrength
+        BinaryEvidence.toStrength
           (holEvidence (Base := Base) (Const := Const) W (decodeClosedFormula φ)) = 0 := by
-      rw [Evidence.toStrength, holEvidence_total_eq_card (Base := Base) (Const := Const) W φ]
+      rw [BinaryEvidence.toStrength, holEvidence_total_eq_card (Base := Base) (Const := Const) W φ]
       simp [hcard]
     rw [hstrength]
     simp [empiricalBeliefDay, empiricalPrice, hcard]
   ·
-    rw [Evidence.toStrength, holEvidence_total_eq_card (Base := Base) (Const := Const) W φ]
+    rw [BinaryEvidence.toStrength, holEvidence_total_eq_card (Base := Base) (Const := Const) W φ]
     have hcardENN : (W.card : ℝ≥0∞) ≠ 0 := by
       exact_mod_cast hcard
     rw [if_neg hcardENN, ENNReal.toReal_div]
@@ -143,7 +143,7 @@ theorem empiricalDayStrength_eq_staticQueryStrength
     (φ : ClosedFormulaCode Const) :
     dayQueryStrength (Const := Const)
       (empiricalBeliefDay (Base := Base) (Const := Const) W) φ =
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W (decodeClosedFormula φ) := by
@@ -152,16 +152,16 @@ theorem empiricalDayStrength_eq_staticQueryStrength
         (empiricalBeliefDay (Base := Base) (Const := Const) W) φ ≠ ⊤ := by
     simp [dayQueryStrength_eq_price]
   have hright_le :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W (decodeClosedFormula φ) ≤ 1 := by
     change
-      Evidence.toStrength
+      BinaryEvidence.toStrength
         (holEvidence (Base := Base) (Const := Const) W (decodeClosedFormula φ)) ≤ 1
-    exact Evidence.toStrength_le_one _
+    exact BinaryEvidence.toStrength_le_one _
   have hright :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
         (State := Multiset (HenkinModel.{u, v, w} Base Const))
         (Query := HOLQuery Const)
         W (decodeClosedFormula φ) ≠ ⊤ := by
@@ -191,7 +191,7 @@ theorem empiricalBeliefDay_singleton_of_satisfies
     empiricalBeliefDay (Base := Base) (Const := Const)
       ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ = Price01.one := by
   have hstrength :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Multiset (HenkinModel.{u, v, w} Base Const))
           (Query := HOLQuery Const)
           ({M} : Multiset (HenkinModel.{u, v, w} Base Const))
@@ -233,7 +233,7 @@ theorem empiricalBeliefDay_singleton_of_not_satisfies
     empiricalBeliefDay (Base := Base) (Const := Const)
       ({M} : Multiset (HenkinModel.{u, v, w} Base Const)) φ = Price01.zero := by
   have hstrength :
-      WorldModel.queryStrength
+      BinaryWorldModel.queryStrength
           (State := Multiset (HenkinModel.{u, v, w} Base Const))
           (Query := HOLQuery Const)
           ({M} : Multiset (HenkinModel.{u, v, w} Base Const))

@@ -32,7 +32,7 @@ noncomputable abbrev holEvidence := @Mettapedia.Logic.HOL.WorldModel.holEvidence
 abbrev holEvidence_add := @Mettapedia.Logic.HOL.WorldModel.holEvidence_add
 
 noncomputable instance {Base : Type _} {Const : Mettapedia.Logic.HOL.Ty Base → Type _} :
-    WorldModel (HOLState Base Const) (HOLQuery (Base := Base) Const) :=
+    BinaryWorldModel (HOLState Base Const) (HOLQuery (Base := Base) Const) :=
   inferInstance
 
 abbrev holEvidence_singleton_of_satisfies :=

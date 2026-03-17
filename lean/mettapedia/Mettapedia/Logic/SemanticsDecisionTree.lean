@@ -4,7 +4,7 @@ import Mettapedia.Logic.NARSSecondOrderProbability
 import Mettapedia.ProbabilityTheory.Hypercube.Basic
 
 /-!
-# Evidence/Probability Decision Tree (PLN + NARS)
+# BinaryEvidence/Probability Decision Tree (PLN + NARS)
 
 This note is a compact "which semantics should I use?" guide.
 
@@ -14,7 +14,7 @@ Use the strongest layer justified by assumptions:
 
 1. **Probability layer** (scalar `[0,1]` formulas)
    - Use when comparability/precision gates are justified.
-2. **Evidence/Heyting layer** (default)
+2. **BinaryEvidence/Heyting layer** (default)
    - Use when evidence values can be incomparable or assumptions are uncertain.
 3. **Interval/imprecise layer** (weaker-than-KS setting)
    - Use when precision is explicitly imprecise (bounds, credal style semantics).
@@ -43,7 +43,7 @@ namespace Mettapedia.Logic.SemanticsDecisionTree
 inductive KnowledgeProfile where
   /-- Total/precise regime where scalar probability is justified. -/
   | preciseComparable
-  /-- Evidence may be incomparable; use evidence-level semantics directly. -/
+  /-- BinaryEvidence may be incomparable; use evidence-level semantics directly. -/
   | evidentialIncomparable
   /-- Explicitly imprecise regime (interval/credal semantics). -/
   | impreciseInterval
@@ -101,8 +101,8 @@ theorem gate_example_dempsterShafer :
 
 /-- If evidence values are incomparable, no faithful scalar order map exists. -/
 theorem evidence_blocks_faithful_scalarization :
-    ¬ ∃ Θ : Mettapedia.Logic.EvidenceQuantale.Evidence → ℝ,
-      ∀ a b : Mettapedia.Logic.EvidenceQuantale.Evidence, a ≤ b ↔ Θ a ≤ Θ b :=
+    ¬ ∃ Θ : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence → ℝ,
+      ∀ a b : Mettapedia.Logic.EvidenceQuantale.BinaryEvidence, a ≤ b ↔ Θ a ≤ Θ b :=
   Mettapedia.Logic.PLN_KS_Bridge.evidence_no_point_representation
 
 /-- K&S sits in the standard commutative quantale inference slice. -/

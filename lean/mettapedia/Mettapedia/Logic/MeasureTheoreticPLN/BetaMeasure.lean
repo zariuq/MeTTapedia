@@ -2,17 +2,17 @@ import Mettapedia.Logic.MeasureTheoreticPLN.Basic
 import Mathlib.Probability.Distributions.Beta
 
 /-!
-# Beta Measure for PLN Evidence
+# Beta Measure for PLN BinaryEvidence
 
-This file connects Mathlib's Beta distribution to PLN Evidence interpretation.
+This file connects Mathlib's Beta distribution to PLN BinaryEvidence interpretation.
 
 ## Key Results
 
-- `evidenceBetaMeasure`: Beta measure induced by Evidence and prior
+- `evidenceBetaMeasure`: Beta measure induced by BinaryEvidence and prior
 - `evidenceBetaMeasure_isProbability`: It's a proper probability measure
-- Connection between Evidence strength and Beta mean
+- Connection between BinaryEvidence strength and Beta mean
 
-## The Beta-Evidence Connection
+## The Beta-BinaryEvidence Connection
 
 Given evidence `e = (n⁺, n⁻)` with prior `(α₀, β₀)`:
 - Posterior distribution is Beta(α₀ + n⁺, β₀ + n⁻)
@@ -42,20 +42,20 @@ noncomputable abbrev betaPdf := ProbabilityTheory.betaPDF
 /-- The Beta probability measure on ℝ (concentrated on (0,1)) -/
 noncomputable abbrev betaMeasureReal := ProbabilityTheory.betaMeasure
 
-/-! ## Evidence-Induced Beta Measure -/
+/-! ## BinaryEvidence-Induced Beta Measure -/
 
-/-- Beta measure induced by Evidence with given interpretation.
+/-- Beta measure induced by BinaryEvidence with given interpretation.
 
-    Given Evidence `e = (n⁺, n⁻)` and prior interpretation `(α₀, β₀)`,
+    Given BinaryEvidence `e = (n⁺, n⁻)` and prior interpretation `(α₀, β₀)`,
     returns the Beta(α₀ + n⁺, β₀ + n⁻) measure.
 -/
-noncomputable def evidenceBetaMeasure (e : Evidence) (interp : EvidenceInterpretation)
+noncomputable def evidenceBetaMeasure (e : BinaryEvidence) (interp : EvidenceInterpretation)
     (hpos_fin : e.pos ≠ ⊤) (hneg_fin : e.neg ≠ ⊤) : Measure ℝ :=
   let bp := evidenceToBetaParams e interp hpos_fin hneg_fin
   betaMeasureReal bp.alpha bp.beta
 
 /-- The evidence-induced Beta measure is a probability measure -/
-theorem evidenceBetaMeasure_isProbability (e : Evidence) (interp : EvidenceInterpretation)
+theorem evidenceBetaMeasure_isProbability (e : BinaryEvidence) (interp : EvidenceInterpretation)
     (hpos_fin : e.pos ≠ ⊤) (hneg_fin : e.neg ≠ ⊤) :
     IsProbabilityMeasure (evidenceBetaMeasure e interp hpos_fin hneg_fin) := by
   unfold evidenceBetaMeasure
@@ -80,7 +80,7 @@ theorem jeffreysPriorMeasure_isProbability :
     IsProbabilityMeasure jeffreysPriorMeasure :=
   isProbabilityMeasureBeta (by norm_num) (by norm_num)
 
-/-! ## Evidence from Natural Numbers -/
+/-! ## BinaryEvidence from Natural Numbers -/
 
 /-- Beta measure for evidence given as natural number counts -/
 noncomputable def natEvidenceBetaMeasure (npos nneg : ℕ) (interp : EvidenceInterpretation) :
@@ -101,7 +101,7 @@ theorem natEvidenceBetaMeasure_eq (npos nneg : ℕ) (interp : EvidenceInterpreta
   unfold natEvidenceBetaMeasure evidenceBetaMeasure evidenceToBetaParams evidenceFromNat
   simp only [ENNReal.toReal_natCast]
 
-/-! ## Beta Mean and Evidence Strength Connection -/
+/-! ## Beta Mean and BinaryEvidence Strength Connection -/
 
 /-- The Beta mean α/(α+β) -/
 noncomputable def betaMean (α β : ℝ) : ℝ := α / (α + β)
@@ -117,8 +117,8 @@ theorem betaMean_mem_unit (α β : ℝ) (hα : 0 < α) (hβ : 0 < β) :
   · rw [div_le_one (by linarith : 0 < α + β)]
     linarith
 
-/-- The Evidence-induced Beta mean matches our BetaParams.mean -/
-theorem evidenceBetaParams_mean_eq (e : Evidence) (interp : EvidenceInterpretation)
+/-- The BinaryEvidence-induced Beta mean matches our BetaParams.mean -/
+theorem evidenceBetaParams_mean_eq (e : BinaryEvidence) (interp : EvidenceInterpretation)
     (hpos_fin : e.pos ≠ ⊤) (hneg_fin : e.neg ≠ ⊤) :
     let bp := evidenceToBetaParams e interp hpos_fin hneg_fin
     bp.mean = betaMean bp.alpha bp.beta := by
@@ -133,8 +133,8 @@ This file establishes:
    - `betaPdf`: Beta PDF
    - `betaMeasureReal`: Beta measure on ℝ
 
-2. **Evidence-induced measures**:
-   - `evidenceBetaMeasure`: Evidence + prior → Beta measure
+2. **BinaryEvidence-induced measures**:
+   - `evidenceBetaMeasure`: BinaryEvidence + prior → Beta measure
    - `natEvidenceBetaMeasure`: Natural number evidence → Beta measure
 
 3. **Prior measures**:
@@ -147,7 +147,7 @@ This file establishes:
 
 ## Next Steps
 
-- `EvidenceSemantics.lean`: Define probability kernel Evidence → distributions
+- `EvidenceSemantics.lean`: Define probability kernel BinaryEvidence → distributions
 - Integration bounds connecting Beta mean to PLN strength
 -/
 

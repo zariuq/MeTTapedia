@@ -5,18 +5,18 @@ import Mathlib.Topology.UnitInterval
 /-!
 # Measure-Theoretic PLN Semantics: Basic Definitions
 
-This file establishes the core definitions connecting PLN Evidence to measure-theoretic
+This file establishes the core definitions connecting PLN BinaryEvidence to measure-theoretic
 probability via the Beta distribution interpretation.
 
 ## Key Definitions
 
-- `EvidenceInterpretation`: Parameters specifying how Evidence maps to Beta distributions
-- `Evidence.toBetaParams`: Convert Evidence (n⁺, n⁻) to Beta(α, β) parameters
+- `EvidenceInterpretation`: Parameters specifying how BinaryEvidence maps to Beta distributions
+- `BinaryEvidence.toBetaParams`: Convert BinaryEvidence (n⁺, n⁻) to Beta(α, β) parameters
 - `ThetaSpace`: The sample space [0,1] for Bernoulli parameter θ
 
 ## The Main Interpretation
 
-Evidence `(n⁺, n⁻)` represents:
+BinaryEvidence `(n⁺, n⁻)` represents:
 - `n⁺` positive observations (successes)
 - `n⁻` negative observations (failures)
 
@@ -53,9 +53,9 @@ abbrev ThetaSpace := Set.Icc (0 : ℝ) 1
 /-- ThetaSpace is nonempty (contains 0 and 1) -/
 theorem thetaSpace_nonempty : (Set.Icc (0 : ℝ) 1).Nonempty := Set.nonempty_Icc.mpr (by norm_num)
 
-/-! ## Evidence Interpretation Parameters -/
+/-! ## BinaryEvidence Interpretation Parameters -/
 
-/-- Parameters specifying how Evidence maps to probability distributions.
+/-- Parameters specifying how BinaryEvidence maps to probability distributions.
 
     The key parameters are the prior pseudo-counts for the Beta distribution:
     - `prior_alpha`: pseudo-count for positive evidence (α₀)
@@ -104,11 +104,11 @@ theorem totalPrior_pos (interp : EvidenceInterpretation) : 0 < interp.totalPrior
 
 end EvidenceInterpretation
 
-/-! ## Converting Evidence to Beta Parameters -/
+/-! ## Converting BinaryEvidence to Beta Parameters -/
 
-/-- Beta distribution parameters derived from Evidence and prior.
+/-- Beta distribution parameters derived from BinaryEvidence and prior.
 
-    Given Evidence `(n⁺, n⁻)` and prior `(α₀, β₀)`:
+    Given BinaryEvidence `(n⁺, n⁻)` and prior `(α₀, β₀)`:
     - α = α₀ + n⁺
     - β = β₀ + n⁻
 -/
@@ -161,16 +161,16 @@ theorem variance_nonneg (p : BetaParams) : 0 ≤ p.variance := by
 
 end BetaParams
 
-/-! ## Evidence to Beta Conversion -/
+/-! ## BinaryEvidence to Beta Conversion -/
 
-/-- Convert Evidence to Beta parameters with given prior.
+/-- Convert BinaryEvidence to Beta parameters with given prior.
 
     Given evidence `e = (n⁺, n⁻)` and interpretation `interp = (α₀, β₀)`:
     Returns BetaParams with α = α₀ + n⁺, β = β₀ + n⁻
 
     Requires: n⁺ and n⁻ are finite (not ⊤)
 -/
-noncomputable def evidenceToBetaParams (e : Evidence) (interp : EvidenceInterpretation)
+noncomputable def evidenceToBetaParams (e : BinaryEvidence) (interp : EvidenceInterpretation)
     (_hpos_fin : e.pos ≠ ⊤) (_hneg_fin : e.neg ≠ ⊤) : BetaParams where
   alpha := interp.prior_alpha + e.pos.toReal
   beta := interp.prior_beta + e.neg.toReal
@@ -191,7 +191,7 @@ noncomputable def evidenceToBetaParams (e : Evidence) (interp : EvidenceInterpre
 
     This is proven more carefully in `EvidenceBeta.lean`.
 -/
-theorem evidenceToBetaParams_mean (e : Evidence) (interp : EvidenceInterpretation)
+theorem evidenceToBetaParams_mean (e : BinaryEvidence) (interp : EvidenceInterpretation)
     (hpos_fin : e.pos ≠ ⊤) (hneg_fin : e.neg ≠ ⊤) :
     let bp := evidenceToBetaParams e interp hpos_fin hneg_fin
     bp.mean = (interp.prior_alpha + e.pos.toReal) /
@@ -199,45 +199,45 @@ theorem evidenceToBetaParams_mean (e : Evidence) (interp : EvidenceInterpretatio
   simp only [evidenceToBetaParams, BetaParams.mean, BetaParams.total,
              EvidenceInterpretation.totalPrior]
   congr 1
-  unfold Evidence.total
+  unfold BinaryEvidence.total
   rw [ENNReal.toReal_add hpos_fin hneg_fin]
   ring
 
-/-- Evidence with finite components yields well-defined Beta parameters -/
-theorem evidenceToBetaParams_total (e : Evidence) (interp : EvidenceInterpretation)
+/-- BinaryEvidence with finite components yields well-defined Beta parameters -/
+theorem evidenceToBetaParams_total (e : BinaryEvidence) (interp : EvidenceInterpretation)
     (hpos_fin : e.pos ≠ ⊤) (hneg_fin : e.neg ≠ ⊤) :
     (evidenceToBetaParams e interp hpos_fin hneg_fin).total =
     interp.totalPrior + e.total.toReal := by
   simp only [evidenceToBetaParams, BetaParams.total, EvidenceInterpretation.totalPrior,
-             Evidence.total]
+             BinaryEvidence.total]
   rw [ENNReal.toReal_add hpos_fin hneg_fin]
   ring
 
-/-! ## Finite Evidence -/
+/-! ## Finite BinaryEvidence -/
 
 /-- Predicate for evidence with finite components (necessary for measure-theoretic interpretation) -/
-def EvidenceIsFinite (e : Evidence) : Prop := e.pos ≠ ⊤ ∧ e.neg ≠ ⊤
+def EvidenceIsFinite (e : BinaryEvidence) : Prop := e.pos ≠ ⊤ ∧ e.neg ≠ ⊤
 
 /-- Zero evidence is finite -/
-theorem evidenceIsFinite_zero : EvidenceIsFinite Evidence.zero := by
-  simp [EvidenceIsFinite, Evidence.zero]
+theorem evidenceIsFinite_zero : EvidenceIsFinite BinaryEvidence.zero := by
+  simp [EvidenceIsFinite, BinaryEvidence.zero]
 
 /-- One evidence is finite -/
-theorem evidenceIsFinite_one : EvidenceIsFinite Evidence.one := by
-  simp [EvidenceIsFinite, Evidence.one]
+theorem evidenceIsFinite_one : EvidenceIsFinite BinaryEvidence.one := by
+  simp [EvidenceIsFinite, BinaryEvidence.one]
 
 /-- hplus preserves finiteness when both inputs are finite -/
-theorem evidenceIsFinite_hplus {e₁ e₂ : Evidence} (h₁ : EvidenceIsFinite e₁) (h₂ : EvidenceIsFinite e₂) :
+theorem evidenceIsFinite_hplus {e₁ e₂ : BinaryEvidence} (h₁ : EvidenceIsFinite e₁) (h₂ : EvidenceIsFinite e₂) :
     EvidenceIsFinite (e₁ + e₂) := by
-  simp only [EvidenceIsFinite, Evidence.hplus_def] at *
+  simp only [EvidenceIsFinite, BinaryEvidence.hplus_def] at *
   constructor
   · exact ENNReal.add_ne_top.mpr ⟨h₁.1, h₂.1⟩
   · exact ENNReal.add_ne_top.mpr ⟨h₁.2, h₂.2⟩
 
 /-- Construct evidence from natural numbers (always finite) -/
-def evidenceFromNat (npos nneg : ℕ) : Evidence := ⟨npos, nneg⟩
+def evidenceFromNat (npos nneg : ℕ) : BinaryEvidence := ⟨npos, nneg⟩
 
-/-- Evidence from natural numbers is finite -/
+/-- BinaryEvidence from natural numbers is finite -/
 theorem evidenceFromNat_isFinite (npos nneg : ℕ) : EvidenceIsFinite (evidenceFromNat npos nneg) := by
   unfold EvidenceIsFinite evidenceFromNat
   constructor <;> exact ENNReal.natCast_ne_top _
@@ -256,14 +256,14 @@ This file establishes:
    - `mean`: Expected value α/(α+β)
    - `variance`: Variance αβ/((α+β)²(α+β+1))
 
-4. **Evidence.toBetaParams**: Convert evidence (n⁺, n⁻) to Beta(α₀+n⁺, β₀+n⁻)
+4. **BinaryEvidence.toBetaParams**: Convert evidence (n⁺, n⁻) to Beta(α₀+n⁺, β₀+n⁻)
 
-5. **Evidence.IsFinite**: Predicate for finite evidence (required for measure-theoretic ops)
+5. **BinaryEvidence.IsFinite**: Predicate for finite evidence (required for measure-theoretic ops)
 
 ## Next Steps
 
 - `BetaMeasure.lean`: Construct the actual Beta measure on [0,1]
-- `EvidenceSemantics.lean`: Define the probability kernel Evidence → Measure ThetaSpace
+- `EvidenceSemantics.lean`: Define the probability kernel BinaryEvidence → Measure ThetaSpace
 - Integration with Convergence module for LLN proofs
 -/
 

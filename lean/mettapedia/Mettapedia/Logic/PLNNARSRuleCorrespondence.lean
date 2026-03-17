@@ -121,7 +121,7 @@ theorem ruleCorrespondenceBundle : RuleCorrespondenceBundle := by
     simpa using
       Mettapedia.Logic.PLNMettaTruthFunctions.truthAbduction_s_eq a b c ab cb
 
-/-! ## Bundle 3: Revision/Evidence Coherence -/
+/-! ## Bundle 3: Revision/BinaryEvidence Coherence -/
 
 structure RevisionCoherenceBundle : Prop where
   nars_revision_conf_formula :

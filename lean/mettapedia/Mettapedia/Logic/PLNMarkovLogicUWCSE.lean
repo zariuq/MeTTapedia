@@ -148,7 +148,7 @@ inductive UWClauseId where
   -- ¬advisedBy(x,x), 2 groundings
   | noSelf_3   -- x=335
   | noSelf_4   -- x=429
-  -- Evidence
+  -- BinaryEvidence
   | evStudent429
   | evProfessor335
 deriving DecidableEq, Fintype
@@ -236,7 +236,7 @@ noncomputable def uwcseGroundMLN :
       unsatisfiedPotential := 0
       satisfied_ne_top := by norm_num
       unsatisfied_ne_top := by norm_num }
-  -- Evidence: student(429), professor(335)
+  -- BinaryEvidence: student(429), professor(335)
   | .evStudent429 => {
       clause := {.pos s429}
       satisfiedPotential := 1
@@ -574,7 +574,7 @@ from uw.mln.
 This is the first canary exercising mixed-arity predicates (unary + binary).
 Real entities from the UW-CSE language area (Richardson & Domingos 2006). -/
 theorem uwcse_queryStrength_advisedBy429_335_eq_half :
-    WorldModel.queryStrength (clauseWMState uwcseGroundMLN uwcseFullSupport)
+    BinaryWorldModel.queryStrength (clauseWMState uwcseGroundMLN uwcseFullSupport)
       advisedBy429_335Query = (1 : ENNReal) / 2 := by
   rw [clauseWM_queryStrength_eq_queryProb]
   exact uwcse_queryProb_advisedBy_eq_half

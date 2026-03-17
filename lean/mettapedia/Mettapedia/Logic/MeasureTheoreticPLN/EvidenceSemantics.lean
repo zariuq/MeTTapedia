@@ -3,19 +3,19 @@ import Mettapedia.Logic.EvidenceBeta
 import Mathlib.Probability.Kernel.Basic
 
 /-!
-# Evidence Semantics: Probability Kernel Interpretation
+# BinaryEvidence Semantics: Probability Kernel Interpretation
 
-This file defines the probability kernel that maps PLN Evidence to probability
+This file defines the probability kernel that maps PLN BinaryEvidence to probability
 distributions over the parameter space θ ∈ [0,1].
 
 ## Key Definitions
 
-- `EvidenceKernel`: Maps Evidence to Beta distributions
+- `EvidenceKernel`: Maps BinaryEvidence to Beta distributions
 - `evidenceSemantics`: The main semantic interpretation function
 
 ## The Kernel Interpretation
 
-Given Evidence `e = (n⁺, n⁻)` with prior interpretation `(α₀, β₀)`:
+Given BinaryEvidence `e = (n⁺, n⁻)` with prior interpretation `(α₀, β₀)`:
 - The posterior distribution is Beta(α₀ + n⁺, β₀ + n⁻)
 - This is a probability measure on [0,1]
 - The mean converges to the "true" θ as evidence grows
@@ -23,7 +23,7 @@ Given Evidence `e = (n⁺, n⁻)` with prior interpretation `(α₀, β₀)`:
 ## Categorical Semantics
 
 The kernel structure gives PLN a categorical semantics:
-- Objects: Evidence values
+- Objects: BinaryEvidence values
 - Morphisms: Probability kernels (Markov kernels)
 - Composition: Chapman-Kolmogorov equation
 
@@ -43,24 +43,24 @@ open Mettapedia.Logic.EvidenceBeta
 open MeasureTheory ProbabilityTheory
 open scoped ENNReal NNReal
 
-/-! ## Evidence Semantics Function -/
+/-! ## BinaryEvidence Semantics Function -/
 
-/-- The semantic interpretation of finite Evidence as a Beta measure.
+/-- The semantic interpretation of finite BinaryEvidence as a Beta measure.
 
-    This is the core semantic function: Evidence → Measure ℝ
+    This is the core semantic function: BinaryEvidence → Measure ℝ
     Given evidence (n⁺, n⁻) with prior (α₀, β₀), returns Beta(α₀+n⁺, β₀+n⁻).
 -/
 noncomputable def evidenceSemantics (interp : EvidenceInterpretation) :
-    (e : Evidence) → (hpos : e.pos ≠ ⊤) → (hneg : e.neg ≠ ⊤) → Measure ℝ :=
+    (e : BinaryEvidence) → (hpos : e.pos ≠ ⊤) → (hneg : e.neg ≠ ⊤) → Measure ℝ :=
   fun e hpos hneg => evidenceBetaMeasure e interp hpos hneg
 
 /-- The semantics yields a probability measure -/
 theorem evidenceSemantics_isProbability (interp : EvidenceInterpretation)
-    (e : Evidence) (hpos : e.pos ≠ ⊤) (hneg : e.neg ≠ ⊤) :
+    (e : BinaryEvidence) (hpos : e.pos ≠ ⊤) (hneg : e.neg ≠ ⊤) :
     IsProbabilityMeasure (evidenceSemantics interp e hpos hneg) :=
   evidenceBetaMeasure_isProbability e interp hpos hneg
 
-/-! ## Natural Number Evidence Semantics -/
+/-! ## Natural Number BinaryEvidence Semantics -/
 
 /-- Simplified semantics for natural number evidence counts -/
 noncomputable def natEvidenceSemantics (interp : EvidenceInterpretation) (npos nneg : ℕ) :
@@ -198,12 +198,12 @@ theorem semanticallyEquivalent_symm (interp : EvidenceInterpretation) (n₁ m₁
 This file establishes:
 
 1. **Core semantics**:
-   - `evidenceSemantics`: Evidence → Beta measure
+   - `evidenceSemantics`: BinaryEvidence → Beta measure
    - `natEvidenceSemantics`: Simplified version for ℕ counts
 
 2. **Semantic properties**:
    - `natEvidenceSemantics_zero`: Zero evidence gives prior
-   - `natEvidenceSemantics_add`: Evidence addition is Bayesian updating
+   - `natEvidenceSemantics_add`: BinaryEvidence addition is Bayesian updating
 
 3. **Connection to PLN strength**:
    - `evidencePosteriorMean`: The Beta mean
@@ -215,11 +215,11 @@ This file establishes:
 ## Categorical Interpretation
 
 The semantics can be viewed categorically:
-- Evidence forms a monoid under `hplus`
+- BinaryEvidence forms a monoid under `hplus`
 - The semantics is a functor to the category of probability measures
 - Markov kernels give the morphisms
 
-This connects to the quantale semantics where Evidence has Frame structure.
+This connects to the quantale semantics where BinaryEvidence has Frame structure.
 -/
 
 end Mettapedia.Logic.MeasureTheoreticPLN

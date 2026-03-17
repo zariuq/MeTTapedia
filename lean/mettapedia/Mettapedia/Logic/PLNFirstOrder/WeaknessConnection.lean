@@ -41,7 +41,7 @@ This is definitional equality - true by construction of forAllEval.
 This theorem makes explicit the deep connection between:
 - PLN quantifiers (first-order logic)
 - Quantale weakness (Goertzel's information theory)
-- Subobject classifier (topos theory: χ : U → Ω where Ω = Evidence)
+- Subobject classifier (topos theory: χ : U → Ω where Ω = BinaryEvidence)
 
 **Interpretation**:
 - Left side: "For all x, P(x)" in PLN
@@ -49,7 +49,7 @@ This theorem makes explicit the deep connection between:
 - Meaning: Universal quantification = generality measure via diagonal weakness
 -/
 theorem forAll_is_weakness_of_diagonal
-    (S : SatisfyingSet U) (μ : WeightFunction U Evidence) :
+    (S : SatisfyingSet U) (μ : WeightFunction U BinaryEvidence) :
     forAllEval S μ =
     weakness μ (SatisfyingSet.diagonal S) :=
   rfl  -- By definition!
@@ -61,7 +61,7 @@ theorem forAll_is_weakness_of_diagonal
 This follows from the monotonicity of weakness with respect to the weight function. -/
 theorem forAllEval_mono_weights
     (S : SatisfyingSet U)
-    (μ₁ μ₂ : WeightFunction U Evidence)
+    (μ₁ μ₂ : WeightFunction U BinaryEvidence)
     (h : ∀ u, μ₁.μ u ≤ μ₂.μ u) :
     forAllEval S μ₁ ≤ forAllEval S μ₂ := by
   unfold forAllEval weakness
@@ -75,13 +75,13 @@ theorem forAllEval_mono_weights
   -- by showing μ₁ uv.1 * μ₁ uv.2 ≤ μ₂ uv.1 * μ₂ uv.2 which is in the set
   have h1 := h uv.1
   have h2 := h uv.2
-  -- μ₁ uv.1 * μ₁ uv.2 ≤ μ₂ uv.1 * μ₂ uv.2 by Evidence coordinatewise multiplication
+  -- μ₁ uv.1 * μ₁ uv.2 ≤ μ₂ uv.1 * μ₂ uv.2 by BinaryEvidence coordinatewise multiplication
   have hmul : μ₁.μ uv.1 * μ₁.μ uv.2 ≤ μ₂.μ uv.1 * μ₂.μ uv.2 := by
-    rw [Evidence.le_def] at h1 h2 ⊢
+    rw [BinaryEvidence.le_def] at h1 h2 ⊢
     constructor
-    · simp only [Evidence.tensor_def]
+    · simp only [BinaryEvidence.tensor_def]
       exact mul_le_mul' h1.1 h2.1
-    · simp only [Evidence.tensor_def]
+    · simp only [BinaryEvidence.tensor_def]
       exact mul_le_mul' h1.2 h2.2
   -- Now show the bound
   apply le_trans hmul
@@ -95,7 +95,7 @@ theorem forAllEval_mono_weights
 
 This is a general weakness theory lemma, but we state it here for clarity. -/
 theorem weakness_mono_subset
-    (μ : WeightFunction U Evidence)
+    (μ : WeightFunction U BinaryEvidence)
     (H₁ H₂ : Finset (U × U))
     (h : H₁ ⊆ H₂) :
     weakness μ H₁ ≤ weakness μ H₂ := by
@@ -112,14 +112,14 @@ theorem weakness_mono_subset
 
 /-- Universal quantifier over constantTrue is supremum of all pair products -/
 theorem forAll_constantTrue_eq_sup_all
-    (μ : WeightFunction U Evidence) :
+    (μ : WeightFunction U BinaryEvidence) :
     forAllEval SatisfyingSet.constantTrue μ =
     sSup { e | ∃ (u : U) (v : U), e = μ.μ u * μ.μ v } :=
   forAllEval_constantTrue μ
 
 /-- Universal quantifier over constantFalse is bottom (no evidence) -/
 theorem forAll_constantFalse_eq_bot
-    (μ : WeightFunction U Evidence) :
+    (μ : WeightFunction U BinaryEvidence) :
     forAllEval SatisfyingSet.constantFalse μ = ⊥ :=
   forAllEval_constantFalse μ
 
@@ -128,12 +128,12 @@ theorem forAll_constantFalse_eq_bot
 This file establishes the explicit connection between PLN quantifiers and weakness theory:
 
 1. **Goertzel's Insight** (forAll_is_weakness_of_diagonal): Definitional equality
-2. **Monotonicity** (forAllEval_mono_weights): Inherited from Evidence lattice structure
+2. **Monotonicity** (forAllEval_mono_weights): Inherited from BinaryEvidence lattice structure
 3. **Subset monotonicity** (weakness_mono_subset): From weakness theory
 4. **Sanity checks**: constantTrue → full supremum, constantFalse → ⊥
 
 The key achievement: PLN's quantifiers are PROVEN to be instances of Goertzel's weakness theory,
-with Evidence (820+ proven lines) as the quantale carrier.
+with BinaryEvidence (820+ proven lines) as the quantale carrier.
 -/
 
 end Mettapedia.Logic.PLNFirstOrder

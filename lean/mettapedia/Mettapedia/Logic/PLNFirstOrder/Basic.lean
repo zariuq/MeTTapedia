@@ -9,7 +9,7 @@ import Mathlib.Data.Finset.Basic
 # PLN First-Order Quantifiers - Basic Definitions
 
 Formalization of PLN first-order quantifiers via:
-- **SatisfyingSet** as subobject classifier (χ : U → Ω where Ω = Evidence)
+- **SatisfyingSet** as subobject classifier (χ : U → Ω where Ω = BinaryEvidence)
 - **Quantifier evaluation** via Goertzel's quantale weakness theory
 - **Integration** with Foundation's first-order logic infrastructure
 
@@ -17,7 +17,7 @@ Formalization of PLN first-order quantifiers via:
 
 Quantifiers = Weakness of Diagonal Relation
 
-For predicate P : U → Evidence:
+For predicate P : U → BinaryEvidence:
 - ForAll($X : P($X)) = weakness({(u,v) | P(u) ∧ P(v)})
 - High weakness = many satisfiers = general statement
 - Low weakness = few satisfiers = specific statement
@@ -29,7 +29,7 @@ This gives PLN's third-order probability interpretation naturally.
 ```
 Foundation FOL          PLN Semantics          Quantale Weakness
    (syntax)      →    (Frame-valued)    →     (computation)
-      ∀', ∃'             Evidence              weakness(H)
+      ∀', ∃'             BinaryEvidence              weakness(H)
 ```
 
 ## References

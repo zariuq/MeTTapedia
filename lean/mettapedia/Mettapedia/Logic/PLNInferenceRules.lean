@@ -466,7 +466,7 @@ theorem inference_triad_unified (s1 s2 s_A s_B s_C : ℝ) :
 /-! ## §6: Quantale Connection
 
 Consistent story:
-- The foundational carrier in this repo is `Evidence := (n⁺, n⁻)` with a partial order and tensor
+- The foundational carrier in this repo is `BinaryEvidence := (n⁺, n⁻)` with a partial order and tensor
   (see `Mettapedia.Logic.EvidenceQuantale` and `Mettapedia.Logic.PLN_KS_Bridge`).
 - Strength-level `[0,1]` formulas are views/projections of that richer semantics.
 - The former exploratory strength-level packaging is archived at

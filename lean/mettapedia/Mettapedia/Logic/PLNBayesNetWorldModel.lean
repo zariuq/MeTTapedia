@@ -3,16 +3,16 @@ import Mettapedia.Logic.PLNJointEvidence
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DirectedGraph
 
 /-!
-# Bayesian-Network-Style World Models for PLN (Boolean CPT Evidence)
+# Bayesian-Network-Style World Models for PLN (Boolean CPT BinaryEvidence)
 
-This module adds a first tractable sublayer under the `PLNWorldModel.WorldModel` interface:
+This module adds a first tractable sublayer under the `PLNWorldModel.BinaryWorldModel` interface:
 
 * A Bayesian-network-style posterior state is represented by **CPT evidence**:
-  for each node `v` and each configuration of its parents, we store binary `Evidence`
+  for each node `v` and each configuration of its parents, we store binary `BinaryEvidence`
   (counts supporting `v=true` vs `v=false` under that parent configuration).
 
 This is still *evidence-first*: revision is additive (monoid `+`), and queries extract
-`Evidence`.  The key bridge to the complete joint layer is an additive projection:
+`BinaryEvidence`.  The key bridge to the complete joint layer is an additive projection:
 
 * from `JointEvidence n` (Dirichlet pseudo-counts over all `2^n` worlds),
   we can extract CPT evidence for any fixed BN graph by summing over compatible worlds.
@@ -60,17 +60,18 @@ abbrev CPTQuery : Type :=
 
 /-- A Bayesian-network-style posterior state: evidence for each CPT entry. -/
 abbrev CPTState : Type :=
-  CPTQuery (bn := bn) → Evidence
+  CPTQuery (bn := bn) → BinaryEvidence
 
 noncomputable instance : EvidenceType (CPTState (bn := bn)) where
 
 /-! ## World-model instance (lookup) -/
 
-noncomputable instance : WorldModel (CPTState (bn := bn)) (CPTQuery (bn := bn)) where
+noncomputable instance : BinaryWorldModel (CPTState (bn := bn)) (CPTQuery (bn := bn)) where
   evidence W q := W q
   evidence_add := by
     intro W₁ W₂ q
     rfl
+  evidence_zero q := rfl
 
 /-! ## Extracting CPT evidence from complete joint evidence -/
 
@@ -80,7 +81,7 @@ def parentsMatch (v : Fin n) (pa : ParentConfig (bn := bn) v) (w : Fin (2 ^ n)) 
 
 /-- CPT evidence for a node `v` under a parent configuration `pa`, extracted from joint evidence. -/
 noncomputable def cptEvidenceOfJoint (E : JointEvidence n) (v : Fin n)
-    (pa : ParentConfig (bn := bn) v) : Evidence :=
+    (pa : ParentConfig (bn := bn) v) : BinaryEvidence :=
   ⟨countWorld (n := n) (E := E) (fun w => parentsMatch (bn := bn) v pa w && worldToAssignment n w v),
    countWorld (n := n) (E := E)
       (fun w => parentsMatch (bn := bn) v pa w && !(worldToAssignment n w v))⟩
@@ -90,7 +91,7 @@ theorem cptEvidenceOfJoint_add (E₁ E₂ : JointEvidence n) (v : Fin n)
     cptEvidenceOfJoint (bn := bn) (n := n) (E := E₁ + E₂) v pa =
       cptEvidenceOfJoint (bn := bn) (n := n) (E := E₁) v pa +
         cptEvidenceOfJoint (bn := bn) (n := n) (E := E₂) v pa := by
-  ext <;> simp [cptEvidenceOfJoint, countWorld_add, Evidence.hplus_def]
+  ext <;> simp [cptEvidenceOfJoint, countWorld_add, BinaryEvidence.hplus_def]
 
 /-- Project a complete joint-evidence state to BN CPT evidence by marginalization. -/
 noncomputable def toCPTState (E : JointEvidence n) : CPTState (bn := bn) :=
@@ -105,10 +106,13 @@ theorem toCPTState_add (E₁ E₂ : JointEvidence n) :
 
 /-! ## Joint evidence as a world model for CPT queries -/
 
-noncomputable instance : WorldModel (JointEvidence n) (CPTQuery (bn := bn)) where
+noncomputable instance : BinaryWorldModel (JointEvidence n) (CPTQuery (bn := bn)) where
   evidence E q := cptEvidenceOfJoint (bn := bn) (n := n) (E := E) q.1 q.2
   evidence_add E₁ E₂ q := by
     simpa using cptEvidenceOfJoint_add (bn := bn) (n := n) (E₁ := E₁) (E₂ := E₂) q.1 q.2
+  evidence_zero q := by
+    simp only [cptEvidenceOfJoint, countWorld, Pi.zero_apply, ite_self,
+      Finset.sum_const_zero]; rfl
 
 end BoolBayesNet
 

@@ -3,7 +3,7 @@ import Mettapedia.Logic.SolomonoffPrior
 import Mathlib.Data.Finset.Basic
 
 /-!
-# SolomonoffBridge: Weighted PathMap Evidence
+# SolomonoffBridge: Weighted PathMap BinaryEvidence
 
 This module generalises `finsetPathEvidence` (uniform counting weights) to
 **arbitrary weight functions** `w : α → ℝ≥0∞` and instantiates the result
@@ -38,9 +38,9 @@ open Mettapedia.OSLF.PathMap.PLNBridge
 open scoped ENNReal
 open Finset BigOperators
 
-/-! ## Section 1: Weighted Evidence -/
+/-! ## Section 1: Weighted BinaryEvidence -/
 
-/-- Extract PLN Evidence from a PathMap store `W` for query `q` using weight `w`.
+/-- Extract PLN BinaryEvidence from a PathMap store `W` for query `q` using weight `w`.
 
     - `pos = ∑_{p ∈ W ∩ q} w p`  — total weight of matching store paths
     - `neg = ∑_{p ∈ W \ q} w p`  — total weight of refuting store paths
@@ -48,7 +48,7 @@ open Finset BigOperators
     Choosing `w = fun _ => 1` recovers `finsetPathEvidence` (uniform counting).
     Choosing `w = ENNReal.ofReal ∘ sm.μ` yields the Solomonoff posterior. -/
 noncomputable def weightedPathEvidence {α : Type*} [DecidableEq α]
-    (w : α → ℝ≥0∞) (W q : Finset α) : Evidence :=
+    (w : α → ℝ≥0∞) (W q : Finset α) : BinaryEvidence :=
   ⟨∑ p ∈ W ∩ q, w p, ∑ p ∈ W \ q, w p⟩
 
 /-! ### Boundary conditions -/
@@ -90,7 +90,7 @@ theorem weightedPathEvidence_total {α : Type*} [DecidableEq α]
 theorem weightedPathEvidence_monotone {α : Type*} [DecidableEq α]
     (w : α → ℝ≥0∞) {W₁ W₂ : Finset α} (h : W₁ ⊆ W₂) (q : Finset α) :
     weightedPathEvidence w W₁ q ≤ weightedPathEvidence w W₂ q := by
-  simp only [weightedPathEvidence, Evidence.le_def]
+  simp only [weightedPathEvidence, BinaryEvidence.le_def]
   constructor
   · apply Finset.sum_le_sum_of_subset
     exact Finset.inter_subset_inter_right h
@@ -99,7 +99,7 @@ theorem weightedPathEvidence_monotone {α : Type*} [DecidableEq α]
 
 /-! ## Section 2: Main Bridge Theorems -/
 
-/-- For **disjoint** stores, weighted pjoin (union) gives additive Evidence.
+/-- For **disjoint** stores, weighted pjoin (union) gives additive BinaryEvidence.
 
     Weighted generalisation of `pjoin_evidence_additive`:
       `ev_w(W₁ ∪ W₂, q) = ev_w(W₁, q) ⊕ ev_w(W₂, q)` for W₁ ⊥ W₂.
@@ -111,7 +111,7 @@ theorem weightedPathEvidence_additive {α : Type*} [DecidableEq α]
     (w : α → ℝ≥0∞) (W₁ W₂ q : Finset α) (hDisj : Disjoint W₁ W₂) :
     weightedPathEvidence w (W₁ ∪ W₂) q =
     weightedPathEvidence w W₁ q + weightedPathEvidence w W₂ q := by
-  simp only [weightedPathEvidence, Evidence.hplus_def, Evidence.mk.injEq]
+  simp only [weightedPathEvidence, BinaryEvidence.hplus_def, BinaryEvidence.mk.injEq]
   constructor
   · rw [Finset.union_inter_distrib_right]
     exact Finset.sum_union (hDisj.mono inter_subset_left inter_subset_left)
@@ -129,21 +129,21 @@ theorem weightedPathEvidence_partition {α : Type*} [DecidableEq α]
   exact weightedPathEvidence_additive w (W ∩ ctx) (W \ ctx) q
     (disjoint_sdiff_self_right.mono_left inter_subset_right)
 
-/-! ## Section 3: Uniform Weight = Counting Evidence -/
+/-! ## Section 3: Uniform Weight = Counting BinaryEvidence -/
 
 /-- Setting `w = fun _ => 1` recovers the uniform counting evidence of `PLNBridge`. -/
 theorem finsetPathEvidence_eq_uniform {α : Type*} [DecidableEq α] (W q : Finset α) :
-    (finsetPathEvidence W q : Evidence) =
+    (finsetPathEvidence W q : BinaryEvidence) =
     weightedPathEvidence (fun _ => (1 : ℝ≥0∞)) W q := by
-  simp only [finsetPathEvidence, weightedPathEvidence, Evidence.mk.injEq]
+  simp only [finsetPathEvidence, weightedPathEvidence, BinaryEvidence.mk.injEq]
   exact ⟨by exact_mod_cast Finset.card_eq_sum_ones _,
          by exact_mod_cast Finset.card_eq_sum_ones _⟩
 
-/-! ## Section 4: Solomonoff Evidence -/
+/-! ## Section 4: Solomonoff BinaryEvidence -/
 
 open Mettapedia.Logic.SolomonoffPrior
 
-/-- Evidence from a PathMap store weighted by Solomonoff semimeasure `sm`.
+/-- BinaryEvidence from a PathMap store weighted by Solomonoff semimeasure `sm`.
 
     - `pos = ∑_{p ∈ W ∩ q} M(p)` — Solomonoff weight of matching programs
     - `neg = ∑_{p ∈ W \ q} M(p)` — Solomonoff weight of refuting programs
@@ -151,7 +151,7 @@ open Mettapedia.Logic.SolomonoffPrior
     The weight function `ENNReal.ofReal (sm.μ p)` is well-defined since
     `sm.nonneg p : 0 ≤ sm.μ p` ensures non-negativity. -/
 noncomputable def solomonoffPathEvidence (sm : Semimeasure)
-    (W q : Finset BinString) : Evidence :=
+    (W q : Finset BinString) : BinaryEvidence :=
   weightedPathEvidence (fun p => ENNReal.ofReal (sm.μ p)) W q
 
 /-- K&S sum rule for Solomonoff evidence. -/
@@ -191,8 +191,8 @@ theorem solomonoffPathEvidence_strength (sm : Semimeasure)
     (solomonoffPathEvidence sm W q).toStrength =
     (∑ p ∈ W ∩ q, ENNReal.ofReal (sm.μ p)) /
     (∑ p ∈ W, ENNReal.ofReal (sm.μ p)) := by
-  simp only [Evidence.toStrength, solomonoffPathEvidence, weightedPathEvidence,
-             Evidence.total]
+  simp only [BinaryEvidence.toStrength, solomonoffPathEvidence, weightedPathEvidence,
+             BinaryEvidence.total]
   -- Connect the unfolded sum (pos + neg) back to W-sum via weightedPathEvidence_total
   have hTotal : ∑ x ∈ W ∩ q, ENNReal.ofReal (sm.μ x) +
       ∑ x ∈ W \ q, ENNReal.ofReal (sm.μ x) =

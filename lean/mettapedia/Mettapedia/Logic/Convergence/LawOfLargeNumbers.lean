@@ -5,7 +5,7 @@ import Mathlib.Topology.Order.Basic
 import Mathlib.Order.Filter.AtTopBot.Basic
 
 /-!
-# Law of Large Numbers for PLN Evidence
+# Law of Large Numbers for PLN BinaryEvidence
 
 This file proves convergence results for PLN strength and confidence
 as the number of observations grows.
@@ -150,13 +150,13 @@ theorem confidence_convergence (κ : ℝ) (hκ : 0 < κ) :
     Tendsto (GrowingObservations.confidenceAt κ) atTop (𝓝 1) :=
   confidence_tendsto_one κ hκ
 
-/-! ## Connecting to Evidence -/
+/-! ## Connecting to BinaryEvidence -/
 
-/-- Convert observations to Evidence -/
-def GrowingObservations.toEvidence (obs : GrowingObservations) (n : ℕ) : Evidence :=
+/-- Convert observations to BinaryEvidence -/
+def GrowingObservations.toEvidence (obs : GrowingObservations) (n : ℕ) : BinaryEvidence :=
   observationsToEvidence (obs.atStep n)
 
-/-- Evidence total equals n -/
+/-- BinaryEvidence total equals n -/
 theorem GrowingObservations.evidence_total (obs : GrowingObservations) (n : ℕ) :
     (obs.toEvidence n).total = n := by
   unfold toEvidence

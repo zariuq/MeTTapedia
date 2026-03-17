@@ -4,7 +4,7 @@ import Mettapedia.Logic.PLNWorldModelPeTTaRuntimeBridge
 # First Concrete PeTTa Runtime-to-WM Instance
 
 Provides the first concrete inhabitant of `PeTTaJudgmentWMInterface`:
-given any encoding `encode : Pattern → Query` and any `WorldModel` instance,
+given any encoding `encode : Pattern → Query` and any `BinaryWorldModel` instance,
 the bridge holds under the side condition that evaluation steps are
 strength-monotone.
 
@@ -40,7 +40,7 @@ Negative example:
 -/
 
 /-- Pointwise runtime WM state: each configuration carries explicit evidence. -/
-abbrev PeTTaRuntimeEvidenceState := Pattern → Evidence
+abbrev PeTTaRuntimeEvidenceState := Pattern → BinaryEvidence
 
 /-- Flat PeTTa runtime WM state: every runtime pattern receives the same evidence.
 
@@ -50,20 +50,20 @@ Positive example:
 
 Negative example:
 - it is a baseline interpretation, not yet a semantics of PeTTa prediction. -/
-def flatPeTTaRuntimeEvidenceState (e : Evidence) : PeTTaRuntimeEvidenceState :=
+def flatPeTTaRuntimeEvidenceState (e : BinaryEvidence) : PeTTaRuntimeEvidenceState :=
   fun _ => e
 
 noncomputable instance : EvidenceType PeTTaRuntimeEvidenceState where
   toAddCommMonoid := inferInstance
 
-instance : WorldModel PeTTaRuntimeEvidenceState Pattern where
+instance : BinaryWorldModel PeTTaRuntimeEvidenceState Pattern where
   evidence W q := W q
   evidence_add _ _ _ := rfl
 
 @[simp] theorem pointwise_queryStrength
     (W : PeTTaRuntimeEvidenceState) (p : Pattern) :
-    WorldModel.queryStrength (State := PeTTaRuntimeEvidenceState) (Query := Pattern) W p =
-      Evidence.toStrength (W p) := rfl
+    BinaryWorldModel.queryStrength (State := PeTTaRuntimeEvidenceState) (Query := Pattern) W p =
+      BinaryEvidence.toStrength (W p) := rfl
 
 /-! ## Monotonicity Predicates -/
 
@@ -72,34 +72,34 @@ instance : WorldModel PeTTaRuntimeEvidenceState Pattern where
 
     This is the specification target for future WM-specific verification. -/
 def PeTTaStepMonotone
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query]
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
     (s : PeTTaSpace) (encode : Pattern → Query) (W : State) : Prop :=
   ∀ {p q : Pattern}, MeTTaStep s p q →
-    WorldModel.queryStrength (State := State) (Query := Query) W (encode p) ≤
-      WorldModel.queryStrength (State := State) (Query := Query) W (encode q)
+    BinaryWorldModel.queryStrength (State := State) (Query := Query) W (encode p) ≤
+      BinaryWorldModel.queryStrength (State := State) (Query := Query) W (encode q)
 
 /-- Sufficient condition restricted to the `evalStep` constructor:
     rule application is strength-monotone. This is the core case since
     evalStep (and evalcStep) are the only constructors that use space rules. -/
 def PeTTaEvalStepMonotone
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query]
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
     (s : PeTTaSpace) (encode : Pattern → Query) (W : State) : Prop :=
   ∀ (r : RewriteRule) (bs : Bindings) (p q : Pattern),
     r ∈ s.rules → r.premises = [] →
     bs ∈ matchPattern r.left p → applyBindings bs r.right = q →
-    WorldModel.queryStrength (State := State) (Query := Query) W
+    BinaryWorldModel.queryStrength (State := State) (Query := Query) W
       (encode (.apply "eval" [p])) ≤
-      WorldModel.queryStrength (State := State) (Query := Query) W (encode q)
+      BinaryWorldModel.queryStrength (State := State) (Query := Query) W (encode q)
 
 /-- Concrete monotonicity side condition for the pointwise runtime WM state. -/
 def PeTTaPointwiseStepMonotone (s : PeTTaSpace) (W : PeTTaRuntimeEvidenceState) : Prop :=
   ∀ {p q : Pattern}, MeTTaStep s p q →
-    WorldModel.queryStrength (State := PeTTaRuntimeEvidenceState) (Query := Pattern) W p ≤
-      WorldModel.queryStrength (State := PeTTaRuntimeEvidenceState) (Query := Pattern) W q
+    BinaryWorldModel.queryStrength (State := PeTTaRuntimeEvidenceState) (Query := Pattern) W p ≤
+      BinaryWorldModel.queryStrength (State := PeTTaRuntimeEvidenceState) (Query := Pattern) W q
 
 /-- The flat pointwise PeTTa WM state is monotone for every runtime step. -/
 theorem flatPeTTaPointwiseStepMonotone
-    (s : PeTTaSpace) (e : Evidence) :
+    (s : PeTTaSpace) (e : BinaryEvidence) :
     PeTTaPointwiseStepMonotone s (flatPeTTaRuntimeEvidenceState e) := by
   intro p q _hstep
   simp [flatPeTTaRuntimeEvidenceState, pointwise_queryStrength]
@@ -108,11 +108,11 @@ theorem flatPeTTaPointwiseStepMonotone
 
 /-- First concrete `PeTTaJudgmentWMInterface` inhabitant.
 
-    For any encoding function and any WorldModel, the interface is satisfied
+    For any encoding function and any BinaryWorldModel, the interface is satisfied
     under the `PeTTaStepMonotone` side condition. The proof of `step_sound`
     is trivial: it directly applies the side condition. -/
 def pettaWMInterface
-    (State Query : Type*) [EvidenceType State] [WorldModel State Query]
+    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
     (s : PeTTaSpace) (encode : Pattern → Query) :
     PeTTaJudgmentWMInterface State Query s where
   encode := encode
@@ -132,7 +132,7 @@ def pettaPointwiseWMInterface
 
 /-- The flat PeTTa runtime WM state yields a concrete star-closure WM obligation. -/
 theorem flatPeTTaPointwiseStepStar_wmStrength
-    {s : PeTTaSpace} {e : Evidence} {p q : Pattern}
+    {s : PeTTaSpace} {e : BinaryEvidence} {p q : Pattern}
     (hstar : Relation.ReflTransGen (MeTTaStep s) p q) :
     WMStrengthObligation PeTTaRuntimeEvidenceState Pattern
       (flatPeTTaRuntimeEvidenceState e) p q :=
@@ -140,12 +140,12 @@ theorem flatPeTTaPointwiseStepStar_wmStrength
     (flatPeTTaPointwiseStepMonotone s e) hstar
 
 @[simp] theorem pettaWMInterface_encode
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace} {encode : Pattern → Query} :
     (pettaWMInterface State Query s encode).encode = encode := rfl
 
 @[simp] theorem pettaWMInterface_side
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace} {encode : Pattern → Query} :
     (pettaWMInterface State Query s encode).side =
       PeTTaStepMonotone State Query s encode := rfl
@@ -155,7 +155,7 @@ theorem flatPeTTaPointwiseStepStar_wmStrength
 /-- Star closure of PeTTa steps transports to WM strength inequality
     under the step-monotonicity side condition. -/
 theorem pettaStepStar_wmStrength
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace} {encode : Pattern → Query}
     {W : State} {p q : Pattern}
     (hW : PeTTaStepMonotone State Query s encode W)
@@ -174,7 +174,7 @@ theorem pettaPointwiseStepStar_wmStrength
 
 /-- A single PeTTa step yields a WM consequence rule under step-monotonicity. -/
 def pettaStep_wmConsequenceRule
-    {State Query : Type*} [EvidenceType State] [WorldModel State Query]
+    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {s : PeTTaSpace} {encode : Pattern → Query}
     {p q : Pattern} (hstep : MeTTaStep s p q) :
     WMConsequenceRuleOn State Query :=

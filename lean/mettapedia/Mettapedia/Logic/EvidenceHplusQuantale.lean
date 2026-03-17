@@ -9,27 +9,27 @@ EvidenceHplusQuantale
 This file packages the **parallel aggregation** operation `hplus` as a quantale.
 
 Key point:
-`hplus` does *not* distribute over the usual Evidence join (coordinatewise max),
+`hplus` does *not* distribute over the usual BinaryEvidence join (coordinatewise max),
 because addition does not preserve `sSup` with `⊥ = 0`. To make hplus a quantale,
 we use the **order-dual lattice**: `≤` is reversed, so `sSup` becomes coordinatewise `sInf`.
 
-This keeps the tensor-quantale on `Evidence` unchanged, while giving a clean, sound
+This keeps the tensor-quantale on `BinaryEvidence` unchanged, while giving a clean, sound
 quantale instance for the additive (parallel) combination on a separate type.
 -/
 
 namespace Mettapedia.Logic.EvidenceQuantale
 
-/-- Evidence with the **order-dual** lattice. -/
-abbrev EvidenceHplus := OrderDual Evidence
+/-- BinaryEvidence with the **order-dual** lattice. -/
+abbrev EvidenceHplus := OrderDual BinaryEvidence
 
 namespace EvidenceHplus
 
-@[simp] lemma ofDual_toEvidence (x : EvidenceHplus) : OrderDual.ofDual x = (x : Evidence) := rfl
+@[simp] lemma ofDual_toEvidence (x : EvidenceHplus) : OrderDual.ofDual x = (x : BinaryEvidence) := rfl
 
-@[simp] lemma toDual_ofEvidence (e : Evidence) : (OrderDual.toDual e : EvidenceHplus) = e := rfl
+@[simp] lemma toDual_ofEvidence (e : BinaryEvidence) : (OrderDual.toDual e : EvidenceHplus) = e := rfl
 
 @[simp] lemma pos_image_toDual_preimage (S : Set EvidenceHplus) :
-    Evidence.pos '' (OrderDual.toDual ⁻¹' S)
+    BinaryEvidence.pos '' (OrderDual.toDual ⁻¹' S)
       = (fun b : EvidenceHplus => (OrderDual.ofDual b).pos) '' S := by
   ext x
   constructor
@@ -41,7 +41,7 @@ namespace EvidenceHplus
     simpa using hb
 
 @[simp] lemma neg_image_toDual_preimage (S : Set EvidenceHplus) :
-    Evidence.neg '' (OrderDual.toDual ⁻¹' S)
+    BinaryEvidence.neg '' (OrderDual.toDual ⁻¹' S)
       = (fun b : EvidenceHplus => (OrderDual.ofDual b).neg) '' S := by
   ext x
   constructor
@@ -52,7 +52,7 @@ namespace EvidenceHplus
     refine ⟨OrderDual.ofDual b, ?_, rfl⟩
     simpa using hb
 
-@[simp] lemma image_toDual_preimage {β} (f : Evidence → β) (S : Set EvidenceHplus) :
+@[simp] lemma image_toDual_preimage {β} (f : BinaryEvidence → β) (S : Set EvidenceHplus) :
     f '' (OrderDual.toDual ⁻¹' S) = (fun b : EvidenceHplus => f (OrderDual.ofDual b)) '' S := by
   ext y
   constructor
@@ -66,17 +66,17 @@ namespace EvidenceHplus
 @[simp] lemma pos_sInf_toDual_preimage (S : Set EvidenceHplus) :
     (sInf (OrderDual.toDual ⁻¹' S)).pos =
       sInf ((fun b : EvidenceHplus => (OrderDual.ofDual b).pos) '' S) := by
-  -- unfold the sInf on Evidence and rewrite the image
-  change (Evidence.evidenceSInf (OrderDual.toDual ⁻¹' S)).pos =
+  -- unfold the sInf on BinaryEvidence and rewrite the image
+  change (BinaryEvidence.evidenceSInf (OrderDual.toDual ⁻¹' S)).pos =
     sInf ((fun b : EvidenceHplus => (OrderDual.ofDual b).pos) '' S)
-  simp [Evidence.evidenceSInf, image_toDual_preimage]
+  simp [BinaryEvidence.evidenceSInf, image_toDual_preimage]
 
 @[simp] lemma neg_sInf_toDual_preimage (S : Set EvidenceHplus) :
     (sInf (OrderDual.toDual ⁻¹' S)).neg =
       sInf ((fun b : EvidenceHplus => (OrderDual.ofDual b).neg) '' S) := by
-  change (Evidence.evidenceSInf (OrderDual.toDual ⁻¹' S)).neg =
+  change (BinaryEvidence.evidenceSInf (OrderDual.toDual ⁻¹' S)).neg =
     sInf ((fun b : EvidenceHplus => (OrderDual.ofDual b).neg) '' S)
-  simp [Evidence.evidenceSInf, image_toDual_preimage]
+  simp [BinaryEvidence.evidenceSInf, image_toDual_preimage]
 
 /-- Parallel aggregation as multiplication on the dual lattice. -/
 noncomputable def hplus (x y : EvidenceHplus) : EvidenceHplus :=
@@ -94,15 +94,15 @@ noncomputable instance : Mul EvidenceHplus := ⟨hplus⟩
   rfl
 
 lemma hplus_assoc (x y z : EvidenceHplus) : (x * y) * z = x * (y * z) := by
-  -- reduce to Evidence.hplus_assoc on the underlying type
+  -- reduce to BinaryEvidence.hplus_assoc on the underlying type
   change OrderDual.ofDual ((x * y) * z) = OrderDual.ofDual (x * (y * z))
   calc
     OrderDual.ofDual ((x * y) * z)
         = OrderDual.ofDual (x * y) + OrderDual.ofDual z := rfl
     _   = (OrderDual.ofDual x + OrderDual.ofDual y) + OrderDual.ofDual z := rfl
     _   = OrderDual.ofDual x + (OrderDual.ofDual y + OrderDual.ofDual z) := by
-            simpa [Evidence.hplus_def] using
-              (Evidence.hplus_assoc (x := OrderDual.ofDual x)
+            simpa [BinaryEvidence.hplus_def] using
+              (BinaryEvidence.hplus_assoc (x := OrderDual.ofDual x)
                                     (y := OrderDual.ofDual y)
                                     (z := OrderDual.ofDual z))
     _   = OrderDual.ofDual x + OrderDual.ofDual (y * z) := rfl
@@ -113,8 +113,8 @@ lemma hplus_comm (x y : EvidenceHplus) : x * y = y * x := by
   calc
     OrderDual.ofDual (x * y) = OrderDual.ofDual x + OrderDual.ofDual y := rfl
     _ = OrderDual.ofDual y + OrderDual.ofDual x := by
-          simpa [Evidence.hplus_def] using
-            (Evidence.hplus_comm (x := OrderDual.ofDual x) (y := OrderDual.ofDual y))
+          simpa [BinaryEvidence.hplus_def] using
+            (BinaryEvidence.hplus_comm (x := OrderDual.ofDual x) (y := OrderDual.ofDual y))
     _ = OrderDual.ofDual (y * x) := rfl
 
 noncomputable instance : Semigroup EvidenceHplus where
@@ -128,18 +128,18 @@ noncomputable instance : CommSemigroup EvidenceHplus where
 lemma hplus_sSup_right (a : EvidenceHplus) (S : Set EvidenceHplus) :
     a * sSup S = ⨆ b ∈ S, a * b := by
   classical
-  -- work in Evidence via OrderDual.ofDual
+  -- work in BinaryEvidence via OrderDual.ofDual
   change OrderDual.ofDual (a * sSup S) = OrderDual.ofDual (⨆ b ∈ S, a * b)
   -- reduce to coordinatewise ENNReal facts
-  apply Evidence.ext'
+  apply BinaryEvidence.ext'
   · -- pos coordinate
-    let s : Set ℝ≥0∞ := Evidence.pos '' (OrderDual.toDual ⁻¹' S)
+    let s : Set ℝ≥0∞ := BinaryEvidence.pos '' (OrderDual.toDual ⁻¹' S)
     have hleft :
         (OrderDual.ofDual (a * sSup S)).pos = (OrderDual.ofDual a).pos + sInf s := by
-      -- expand hplus and the dual sSup into Evidence-level operations
+      -- expand hplus and the dual sSup into BinaryEvidence-level operations
       change ((OrderDual.ofDual a) + (OrderDual.ofDual (sSup S))).pos =
         (OrderDual.ofDual a).pos + sInf s
-      simp [Evidence.hplus_def, s, image_toDual_preimage]
+      simp [BinaryEvidence.hplus_def, s, image_toDual_preimage]
     have hright :
         (OrderDual.ofDual (⨆ b ∈ S, a * b)).pos =
           sInf ((fun b : EvidenceHplus => (OrderDual.ofDual a).pos + (OrderDual.ofDual b).pos) '' S) := by
@@ -172,12 +172,12 @@ lemma hplus_sSup_right (a : EvidenceHplus) (S : Set EvidenceHplus) :
       _ = (OrderDual.ofDual (⨆ b ∈ S, a * b)).pos := by
             symm; exact hright
   · -- neg coordinate
-    let s : Set ℝ≥0∞ := Evidence.neg '' (OrderDual.toDual ⁻¹' S)
+    let s : Set ℝ≥0∞ := BinaryEvidence.neg '' (OrderDual.toDual ⁻¹' S)
     have hleft :
         (OrderDual.ofDual (a * sSup S)).neg = (OrderDual.ofDual a).neg + sInf s := by
       change ((OrderDual.ofDual a) + (OrderDual.ofDual (sSup S))).neg =
         (OrderDual.ofDual a).neg + sInf s
-      simp [Evidence.hplus_def, s, image_toDual_preimage]
+      simp [BinaryEvidence.hplus_def, s, image_toDual_preimage]
     have hright :
         (OrderDual.ofDual (⨆ b ∈ S, a * b)).neg =
           sInf ((fun b : EvidenceHplus => (OrderDual.ofDual a).neg + (OrderDual.ofDual b).neg) '' S) := by

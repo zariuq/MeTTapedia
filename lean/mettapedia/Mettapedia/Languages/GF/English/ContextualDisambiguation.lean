@@ -99,7 +99,7 @@ theorem telescope_shared_lexical_profile :
 
 abbrev GFPattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 
-abbrev TelescopeState := Evidence × Evidence
+abbrev TelescopeState := BinaryEvidence × BinaryEvidence
 
 noncomputable instance : EvidenceType TelescopeState :=
   { inferInstanceAs (AddCommMonoid TelescopeState) with }
@@ -115,7 +115,7 @@ private theorem telescopeVPQuery_ne_telescopeNPQuery :
   intro h
   exact telescope_patterns_differ h.symm
 
-noncomputable instance : WorldModel TelescopeState GFPattern where
+noncomputable instance : BinaryWorldModel TelescopeState GFPattern where
   evidence W q :=
     if q = telescopeNPQuery then W.1
     else if q = telescopeVPQuery then W.2
@@ -133,7 +133,7 @@ noncomputable instance : WorldModel TelescopeState GFPattern where
         simp [telescopeVPQuery_ne_telescopeNPQuery]
       · simp [hnp, hvp]
 
-def ev (p n : Nat) : Evidence := ⟨p, n⟩
+def ev (p n : Nat) : BinaryEvidence := ⟨p, n⟩
 
 def telescopeInstrumentScene : TelescopeState := (ev 1 2, ev 3 0)
 def telescopeModifierScene : TelescopeState := (ev 3 0, ev 1 2)
@@ -238,7 +238,7 @@ theorem anna_shared_lexical_profile :
       annaNPAttachmentTree, annaVPAttachmentTree,
       englishAnnaAbstractNode1, englishAnnaAbstractNode2]
 
-/-! ## Evidence-Sensitive Anna Worlds -/
+/-! ## BinaryEvidence-Sensitive Anna Worlds -/
 
 private def annaNPQuery : GFPattern := gfAbstractToPattern annaNPAttachmentTree
 private def annaVPQuery : GFPattern := gfAbstractToPattern annaVPAttachmentTree
@@ -251,12 +251,12 @@ private theorem annaVPQuery_ne_annaNPQuery :
   intro h
   exact anna_patterns_differ h.symm
 
-abbrev AnnaState := Evidence × Evidence
+abbrev AnnaState := BinaryEvidence × BinaryEvidence
 
 noncomputable instance : EvidenceType AnnaState :=
   { inferInstanceAs (AddCommMonoid AnnaState) with }
 
-noncomputable instance : WorldModel AnnaState GFPattern where
+noncomputable instance : BinaryWorldModel AnnaState GFPattern where
   evidence W q :=
     if q = annaNPQuery then W.1
     else if q = annaVPQuery then W.2
