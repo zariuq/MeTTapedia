@@ -48,6 +48,27 @@ def AllCounterexampleAxioms : ClosedTheorySet (HInf Base Const) :=
     ∃ (n : Nat) (σ : Ty Base) (φ : Formula (HenkinConstStage Base Const n) [σ]),
       ψ = allCounterexampleAxiom (Base := Base) (Const := Const) φ
 
+/-- The existential Henkin axioms generated specifically from stage `n` formulas. -/
+def ExWitnessAxiomsAtStage (n : Nat) : ClosedTheorySet (HInf Base Const) :=
+  fun ψ =>
+    ∃ (σ : Ty Base) (φ : Formula (HenkinConstStage Base Const n) [σ]),
+      ψ = exWitnessAxiom (Base := Base) (Const := Const) φ
+
+/-- The universal counterexample Henkin axioms generated specifically from stage `n` formulas. -/
+def AllCounterexampleAxiomsAtStage (n : Nat) : ClosedTheorySet (HInf Base Const) :=
+  fun ψ =>
+    ∃ (σ : Ty Base) (φ : Formula (HenkinConstStage Base Const n) [σ]),
+      ψ = allCounterexampleAxiom (Base := Base) (Const := Const) φ
+
+/-- The cumulative Henkin axioms generated specifically from stage `n` formulas. -/
+def HenkinAxiomsAtStage (n : Nat) : ClosedTheorySet (HInf Base Const) :=
+  ExWitnessAxiomsAtStage (Base := Base) (Const := Const) n ∪
+    AllCounterexampleAxiomsAtStage (Base := Base) (Const := Const) n
+
+/-- The cumulative Henkin axioms generated up to stage `n`. -/
+def HenkinAxiomsUpTo (n : Nat) : ClosedTheorySet (HInf Base Const) :=
+  fun ψ => ∃ k : Nat, k ≤ n ∧ ψ ∈ HenkinAxiomsAtStage (Base := Base) (Const := Const) k
+
 /-- The full cumulative Henkin axiom family. -/
 def HenkinAxioms : ClosedTheorySet (HInf Base Const) :=
   ExWitnessAxioms ∪ AllCounterexampleAxioms
@@ -64,6 +85,19 @@ theorem allCounterexampleAxiom_mem_allCounterexampleAxioms {n : Nat} {σ : Ty Ba
       AllCounterexampleAxioms :=
   ⟨n, σ, φ, rfl⟩
 
+theorem exWitnessAxiom_mem_exWitnessAxiomsAtStage {n : Nat} {σ : Ty Base}
+    (φ : Formula (HenkinConstStage Base Const n) [σ]) :
+    exWitnessAxiom (Base := Base) (Const := Const) φ ∈
+      ExWitnessAxiomsAtStage (Base := Base) (Const := Const) n :=
+  ⟨σ, φ, rfl⟩
+
+theorem allCounterexampleAxiom_mem_allCounterexampleAxiomsAtStage
+    {n : Nat} {σ : Ty Base}
+    (φ : Formula (HenkinConstStage Base Const n) [σ]) :
+    allCounterexampleAxiom (Base := Base) (Const := Const) φ ∈
+      AllCounterexampleAxiomsAtStage (Base := Base) (Const := Const) n :=
+  ⟨σ, φ, rfl⟩
+
 theorem exWitnessAxiom_mem_henkinAxioms {n : Nat} {σ : Ty Base}
     (φ : Formula (HenkinConstStage Base Const n) [σ]) :
     exWitnessAxiom (Base := Base) (Const := Const) φ ∈
@@ -77,6 +111,112 @@ theorem allCounterexampleAxiom_mem_henkinAxioms {n : Nat} {σ : Ty Base}
   Or.inr
     (allCounterexampleAxiom_mem_allCounterexampleAxioms
       (Base := Base) (Const := Const) φ)
+
+theorem exWitnessAxiomsAtStage_subset_henkinAxioms (n : Nat) :
+    ExWitnessAxiomsAtStage (Base := Base) (Const := Const) n ⊆
+      HenkinAxioms (Base := Base) (Const := Const) := by
+  intro ψ hψ
+  rcases hψ with ⟨σ, φ, rfl⟩
+  exact exWitnessAxiom_mem_henkinAxioms (Base := Base) (Const := Const) φ
+
+theorem allCounterexampleAxiomsAtStage_subset_henkinAxioms (n : Nat) :
+    AllCounterexampleAxiomsAtStage (Base := Base) (Const := Const) n ⊆
+      HenkinAxioms (Base := Base) (Const := Const) := by
+  intro ψ hψ
+  rcases hψ with ⟨σ, φ, rfl⟩
+  exact allCounterexampleAxiom_mem_henkinAxioms (Base := Base) (Const := Const) φ
+
+theorem henkinAxiomsAtStage_subset_henkinAxioms (n : Nat) :
+    HenkinAxiomsAtStage (Base := Base) (Const := Const) n ⊆
+      HenkinAxioms (Base := Base) (Const := Const) := by
+  intro ψ hψ
+  rcases hψ with hψ | hψ
+  · exact exWitnessAxiomsAtStage_subset_henkinAxioms (Base := Base) (Const := Const) n hψ
+  · exact
+      allCounterexampleAxiomsAtStage_subset_henkinAxioms
+        (Base := Base) (Const := Const) n hψ
+
+theorem henkinAxiomsAtStage_subset_henkinAxiomsUpTo {m n : Nat} (hmn : m ≤ n) :
+    HenkinAxiomsAtStage (Base := Base) (Const := Const) m ⊆
+      HenkinAxiomsUpTo (Base := Base) (Const := Const) n := by
+  intro ψ hψ
+  exact ⟨m, hmn, hψ⟩
+
+theorem henkinAxiomsUpTo_mono {m n : Nat} (hmn : m ≤ n) :
+    HenkinAxiomsUpTo (Base := Base) (Const := Const) m ⊆
+      HenkinAxiomsUpTo (Base := Base) (Const := Const) n := by
+  intro ψ hψ
+  rcases hψ with ⟨k, hkm, hkψ⟩
+  exact ⟨k, Nat.le_trans hkm hmn, hkψ⟩
+
+theorem henkinAxiomsUpTo_subset_henkinAxioms (n : Nat) :
+    HenkinAxiomsUpTo (Base := Base) (Const := Const) n ⊆
+      HenkinAxioms (Base := Base) (Const := Const) := by
+  intro ψ hψ
+  rcases hψ with ⟨k, -, hkψ⟩
+  exact henkinAxiomsAtStage_subset_henkinAxioms (Base := Base) (Const := Const) k hkψ
+
+theorem mem_henkinAxioms_iff_exists_stage
+    {ψ : ClosedFormula (HInf Base Const)} :
+    ψ ∈ HenkinAxioms (Base := Base) (Const := Const) ↔
+      ∃ n : Nat, ψ ∈ HenkinAxiomsAtStage (Base := Base) (Const := Const) n := by
+  constructor
+  · intro hψ
+    rcases hψ with hψ | hψ
+    · rcases hψ with ⟨n, σ, φ, rfl⟩
+      exact ⟨n, Or.inl ⟨σ, φ, rfl⟩⟩
+    · rcases hψ with ⟨n, σ, φ, rfl⟩
+      exact ⟨n, Or.inr ⟨σ, φ, rfl⟩⟩
+  · rintro ⟨n, hψ⟩
+    exact henkinAxiomsAtStage_subset_henkinAxioms (Base := Base) (Const := Const) n hψ
+
+theorem mem_henkinAxiomsUpTo_iff_exists_stage_le
+    {n : Nat} {ψ : ClosedFormula (HInf Base Const)} :
+    ψ ∈ HenkinAxiomsUpTo (Base := Base) (Const := Const) n ↔
+      ∃ k : Nat, k ≤ n ∧ ψ ∈ HenkinAxiomsAtStage (Base := Base) (Const := Const) k := by
+  rfl
+
+theorem exists_henkinAxiomsUpTo_list_bound
+    (Γ : List (ClosedFormula (HInf Base Const))) :
+    ∃ n : Nat,
+      ∀ {ψ : ClosedFormula (HInf Base Const)},
+        ψ ∈ Γ →
+        ψ ∈ HenkinAxioms (Base := Base) (Const := Const) →
+        ψ ∈ HenkinAxiomsUpTo (Base := Base) (Const := Const) n := by
+  induction Γ with
+  | nil =>
+      refine ⟨0, ?_⟩
+      intro ψ hψ
+      cases hψ
+  | cons ψ Γ ih =>
+      rcases ih with ⟨n, hn⟩
+      by_cases hψHenkin : ψ ∈ HenkinAxioms (Base := Base) (Const := Const)
+      · rcases (mem_henkinAxioms_iff_exists_stage (Base := Base) (Const := Const) (ψ := ψ)).1 hψHenkin with
+          ⟨k, hk⟩
+        refine ⟨max k n, ?_⟩
+        intro ξ hξ hξHenkin
+        rcases List.mem_cons.mp hξ with hEq | hξ
+        · exact
+            henkinAxiomsAtStage_subset_henkinAxiomsUpTo
+              (Base := Base)
+              (Const := Const)
+              (m := k)
+              (n := max k n)
+              (Nat.le_max_left _ _)
+              (by simpa [hEq] using hk)
+        · exact
+            henkinAxiomsUpTo_mono
+              (Base := Base)
+              (Const := Const)
+              (m := n)
+              (n := max k n)
+              (Nat.le_max_right _ _)
+              (hn hξ hξHenkin)
+      · refine ⟨n, ?_⟩
+        intro ξ hξ hξHenkin
+        rcases List.mem_cons.mp hξ with hEq | hξ
+        · exact False.elim (hψHenkin (by simpa [hEq] using hξHenkin))
+        · exact hn hξ hξHenkin
 
 theorem exists_witness_of_containsExWitnessAxioms
     {T : ClosedTheorySet (HInf Base Const)}

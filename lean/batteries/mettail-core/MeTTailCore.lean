@@ -13,3 +13,6 @@ import MeTTailCore.MeTTaSyntax.CommandIR
 import MeTTailCore.MeTTaSyntax.Spec
 import MeTTailCore.MeTTaSyntax.Pretty
 import MeTTailCore.Crypto.SHA256
+import MeTTailCore.EvalIR
+import MeTTailCore.EvalIRMachine
+import MeTTailCore.EvalIRRefinement

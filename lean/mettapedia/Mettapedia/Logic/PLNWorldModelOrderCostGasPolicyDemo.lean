@@ -1,4 +1,4 @@
-import Mettapedia.Logic.PLNGasSensorDriftDemo
+import Mettapedia.Logic.WMGasSensorDriftDemo
 import Mettapedia.Logic.PLNWorldModelOrderCostAuditCertificate
 
 /-!
@@ -20,7 +20,7 @@ open scoped ENNReal
 open Mettapedia.Logic.EvidenceClass
 open Mettapedia.Logic.PLNWorldModelGeneric
 open Mettapedia.Logic.EvidenceNormalGamma
-open Mettapedia.Logic.PLNGasSensorDriftDemo
+open Mettapedia.Logic.WMGasSensorDriftDemo
 
 /-- Generic WM view for gas states: query extraction is per-gas Normal-Gamma evidence. -/
 noncomputable instance instGenericWorldModelGasSensorArray :

@@ -1,12 +1,13 @@
 /-
 # GFCore.Syntax — Core types for the GF ↔ Lean AST bridge
 
-Three-layer architecture:
-  RawTree       — wire format (JSON from GF runtime, untyped)
+Four-layer architecture:
+  RawTerm       — wire format (JSON from GF runtime, untyped)
   CheckedExpr   — Lean-verified GF AST (typed against GrammarSig)
-  (semantics)   — downstream consumers operate on CheckedExpr
+  RGLView       — readable semantic core (peeled RGL wrappers)
+  Meaning       — semantic interpretation with grounding
 
-Reference: GPT-5.4 Pro review of GF-Lean plan, 2026-03-17
+Reference: GPT-5.4 Pro reviews, 2026-03-17 through 2026-03-19
 -/
 
 import Std.Data.HashMap
@@ -70,41 +71,42 @@ def categories (sig : GrammarSig) : Array String :=
 
 end GrammarSig
 
-/-- Raw tree from GF runtime — untyped, string-tagged.
-    This is the JSON wire format between GF and Lean. -/
-inductive RawTree where
-  | node (funName : String) (catHint? : Option String) (args : Array RawTree)
+/-- Raw term from GF runtime — the JSON wire format between GF and Lean.
+    Renamed from RawTree; structurally identical but with clearer naming.
+    Literal support (str/int/float/meta) will be added when needed via
+    a separate GFLiteral type — not as additional constructors, due to
+    Lean 4 nested inductive limitations with pattern matching. -/
+inductive RawTerm where
+  | app (funName : String) (catHint? : Option String) (args : Array RawTerm)
   deriving Repr, Inhabited
 
-/-- Convenience constructor: leaf node (no cat hint, no args). -/
-def RawTree.leaf (funName : String) : RawTree := .node funName none #[]
+def RawTerm.leaf (funName : String) : RawTerm := .app funName none #[]
 
-/-- Convenience constructor: node with args but no cat hint. -/
-def RawTree.mk (funName : String) (args : Array RawTree) : RawTree := .node funName none args
+def RawTerm.mk (funName : String) (args : Array RawTerm) : RawTerm := .app funName none args
 
-namespace RawTree
+namespace RawTerm
 
-def funName : RawTree → String
-  | .node f _ _ => f
+def funName : RawTerm → String
+  | .app f _ _ => f
 
-def args : RawTree → Array RawTree
-  | .node _ _ as => as
+def args : RawTerm → Array RawTerm
+  | .app _ _ as => as
 
-def catHint? : RawTree → Option String
-  | .node _ c _ => c
+def catHint? : RawTerm → Option String
+  | .app _ c _ => c
 
-/-- A leaf is a zero-argument node. -/
-def isLeaf : RawTree → Bool
-  | .node _ _ as => as.isEmpty
+def isLeaf : RawTerm → Bool
+  | .app _ _ as => as.isEmpty
 
-end RawTree
+end RawTerm
 
 /-- A parse candidate from GF runtime: surface text + parsed tree + metadata. -/
 structure ParseCandidate where
   language : String
   surface  : String
   prob?    : Option Float := none
-  tree     : RawTree
+  tree     : RawTerm
+
   deriving Repr, Inhabited
 
 /-- A checked expression: GF abstract tree verified against a GrammarSig.
@@ -135,7 +137,7 @@ def isLeaf (e : CheckedExpr) : Bool := e.args.isEmpty
 
 end CheckedExpr
 
-/-- Errors that can occur when checking a RawTree against a GrammarSig. -/
+/-- Errors that can occur when checking a RawTerm against a GrammarSig. -/
 inductive CheckError where
   | unknownFun (name : String)
   | wrongArity (funName : String) (expected got : Nat)

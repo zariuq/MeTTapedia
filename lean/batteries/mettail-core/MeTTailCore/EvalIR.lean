@@ -18,7 +18,7 @@ namespace MeTTailCore.EvalIR
 inductive EvalValue where
   | int : Int → EvalValue
   | bool : Bool → EvalValue
-deriving Repr, DecidableEq, BEq
+deriving Repr, DecidableEq, BEq, ReflBEq, LawfulBEq
 
 /-- Evaluator IR nodes. Supports the recursive evaluation fragment:
     integer/boolean literals, if-then-else, equality, addition, subtraction,
@@ -49,6 +49,93 @@ deriving Repr
     Used consistently across eval, evalMemo, EvalSem, and EvalTrace. -/
 def lookupRule (rules : List EvalRule) (head : String) (arity : Nat) : Option EvalRule :=
   rules.find? (fun r => r.head == head && r.params.length == arity)
+
+/-- If the head and arity match the first rule, `lookupRule` returns it immediately. -/
+theorem lookupRule_cons_match {rule : EvalRule} {rules : List EvalRule}
+    {head : String} {arity : Nat}
+    (hHead : rule.head = head) (hArity : rule.params.length = arity) :
+    lookupRule (rule :: rules) head arity = some rule := by
+  simp [lookupRule, hHead, hArity]
+
+/-- If the first rule does not match on head or arity, `lookupRule` skips it. -/
+theorem lookupRule_cons_skip {rule : EvalRule} {rules : List EvalRule}
+    {head : String} {arity : Nat}
+    (hSkip : rule.head ≠ head ∨ rule.params.length ≠ arity) :
+    lookupRule (rule :: rules) head arity = lookupRule rules head arity := by
+  cases hSkip with
+  | inl hHead =>
+      simp [lookupRule, hHead]
+  | inr hArity =>
+      simp [lookupRule, hArity]
+
+/-- If `lookupRule` succeeds, the returned rule is in the list and matches the
+    requested head and arity. -/
+theorem lookupRule_some_spec {rules : List EvalRule} {head : String} {arity : Nat}
+    {rule : EvalRule} (h : lookupRule rules head arity = some rule) :
+    rule ∈ rules ∧ rule.head = head ∧ rule.params.length = arity := by
+  induction rules with
+  | nil =>
+      simp [lookupRule] at h
+  | cons r rs ih =>
+      by_cases hHead : r.head = head
+      · by_cases hArity : r.params.length = arity
+        · have hfirst : lookupRule (r :: rs) head arity = some r := by
+            exact lookupRule_cons_match hHead hArity
+          rw [hfirst] at h
+          cases h
+          exact ⟨by simp, hHead, hArity⟩
+        · have hskip : lookupRule (r :: rs) head arity = lookupRule rs head arity := by
+            exact lookupRule_cons_skip (rule := r) (rules := rs) (head := head)
+              (arity := arity) (Or.inr hArity)
+          rw [hskip] at h
+          rcases ih h with ⟨hMem, hHead', hArity'⟩
+          exact ⟨by simp [hMem], hHead', hArity'⟩
+      · have hskip : lookupRule (r :: rs) head arity = lookupRule rs head arity := by
+          exact lookupRule_cons_skip (rule := r) (rules := rs) (head := head)
+            (arity := arity) (Or.inl hHead)
+        rw [hskip] at h
+        rcases ih h with ⟨hMem, hHead', hArity'⟩
+        exact ⟨by simp [hMem], hHead', hArity'⟩
+
+/-- If `lookupRule` fails, then every rule in the list disagrees on head or arity. -/
+theorem lookupRule_none_spec {rules : List EvalRule} {head : String} {arity : Nat}
+    (h : lookupRule rules head arity = none) :
+    ∀ rule ∈ rules, rule.head ≠ head ∨ rule.params.length ≠ arity := by
+  induction rules with
+  | nil =>
+      intro rule hMem
+      cases hMem
+  | cons r rs ih =>
+      by_cases hHead : r.head = head
+      · by_cases hArity : r.params.length = arity
+        · have hfirst : lookupRule (r :: rs) head arity = some r := by
+            exact lookupRule_cons_match hHead hArity
+          rw [hfirst] at h
+          contradiction
+        · have hskip : lookupRule (r :: rs) head arity = lookupRule rs head arity := by
+            exact lookupRule_cons_skip (rule := r) (rules := rs) (head := head)
+              (arity := arity) (Or.inr hArity)
+          rw [hskip] at h
+          intro rule hMem
+          simp at hMem
+          cases hMem with
+          | inl hEq =>
+              subst hEq
+              exact Or.inr hArity
+          | inr hMem =>
+              exact ih h rule hMem
+      · have hskip : lookupRule (r :: rs) head arity = lookupRule rs head arity := by
+          exact lookupRule_cons_skip (rule := r) (rules := rs) (head := head)
+            (arity := arity) (Or.inl hHead)
+        rw [hskip] at h
+        intro rule hMem
+        simp at hMem
+        cases hMem with
+        | inl hEq =>
+            subst hEq
+            exact Or.inl hHead
+        | inr hMem =>
+            exact ih h rule hMem
 
 -- Substitution: replace free variable references in a node with values.
 -- Variables are represented as `userCall varName []` (nullary calls).
@@ -1097,7 +1184,7 @@ inductive ReqId where
   | sub1 : ReqId → ReqId      -- right sub-request (second arg of binary op)
   | cond : ReqId → ReqId      -- condition sub-request (for ifCond)
   | arg : Nat → ReqId → ReqId -- argument sub-request (for userCall arg evaluation)
-deriving Repr, DecidableEq, BEq
+deriving Repr, DecidableEq, BEq, ReflBEq, LawfulBEq
 
 /-- An MM2 fact in the request/result protocol.
     These are the atoms that live in MORK's PathMap during evaluation.
@@ -1320,40 +1407,59 @@ partial def tryMemoHit (facts : List MM2Fact) : Option (List MM2Fact) :=
       | none => none
     | _ => none
 
-/-- Try user-unfold with arg evaluation and memoization.
-    Protocol:
-    1. (req id (userCall HEAD [arg0, arg1, ...])) where args are NOT all literals
-       → create sub-requests to evaluate each arg
-       → emit (waitUser id HEAD nArgs) to collect results
-    2. (waitUser id HEAD nArgs) + all (res (arg i id) val_i) present
-       → reconstruct call with evaluated args: (req id (userCall HEAD [intLit v0, ...]))
-    3. (req id (userCall HEAD [intLit v0, intLit v1, ...])) where ALL args are literals
-       → check memo → if hit, produce result directly
-       → if miss, expand body + emit memoPending -/
-partial def tryUserUnfold (rules : List EvalRule) (facts : List MM2Fact) : Option (List MM2Fact) :=
-  -- Phase A: check for waitUser + all arg results (collect evaluated args)
-  (facts.findSome? fun f =>
+-- Try user-unfold with arg evaluation and memoization.
+-- Protocol:
+-- 1. (req id (userCall HEAD [arg0, arg1, ...])) where args are NOT all literals
+--    → create sub-requests to evaluate each arg
+--    → emit (waitUser id HEAD nArgs) to collect results
+-- 2. (waitUser id HEAD nArgs) + all (res (arg i id) val_i) present
+--    → reconstruct call with evaluated args: (req id (userCall HEAD [intLit v0, ...]))
+-- 3. (req id (userCall HEAD [intLit v0, intLit v1, ...])) where ALL args are literals
+--    → check memo → if hit, produce result directly
+--    → if miss, expand body + emit memoPending
+/-- Collect evaluated argument values for a `waitUser` frame if and only if every
+    arg-subrequest has already produced a value.
+
+    Positive example: if `(res (arg 0 id) 4)` and `(res (arg 1 id) 3)` are both
+    present, this returns `some [.int 4, .int 3]`.
+    Negative example: if any arg result is still missing, this returns `none`
+    and no canonical call key is formed yet. -/
+def collectedArgValues? (facts : List MM2Fact) (reqId : ReqId) (argCount : Nat) :
+    Option (List EvalValue) :=
+  let argResults := (List.range argCount).map fun i =>
+    facts.findSome? fun g =>
+      match g with
+      | .res rid v => if rid == .arg i reqId then some v else none
+      | _ => none
+  if argResults.all Option.isSome then
+    some (argResults.filterMap fun x => x)
+  else
+    none
+
+/-- Phase A of user-call handling: once a `waitUser` frame has all arg results,
+    reconstruct the canonical literal-arg request. This is the Lean authority for
+    the literal-guarded req-to-need bridge. -/
+partial def tryCollectUserArgs (facts : List MM2Fact) : Option (List MM2Fact) :=
+  facts.findSome? fun f =>
     match f with
     | .waitUser reqId head argCount =>
-      -- Try to find all arg results
-      let argResults := (List.range argCount).map fun i =>
-        facts.findSome? fun g =>
-          match g with
-          | .res rid v => if rid == .arg i reqId then some v else none
-          | _ => none
-      if argResults.all Option.isSome then
-        let vals := argResults.filterMap fun x => x
+      match collectedArgValues? facts reqId argCount with
+      | some vals =>
         let newArgs := vals.map EvalValue.toNode
         let consumed := [.waitUser reqId head argCount] ++
           (List.range argCount).filterMap fun i =>
-            match argResults[i]? with
-            | some (some v) => some (.res (.arg i reqId) v)
-            | _ => none
+            match vals[i]? with
+            | some v => some (.res (.arg i reqId) v)
+            | none => none
         some (removeFacts facts consumed ++ [.req reqId (.userCall head newArgs)])
-      else none
-    | _ => none)
-  -- Phase B: userCall with all-literal args → memo check then body expand
-  <|> (facts.findSome? fun f =>
+      | none => none
+    | _ => none
+
+/-- Phase B1 of user-call handling: a literal-arg user call can expand directly to
+    a body request plus a value-keyed `memoPending` fact. -/
+partial def tryExpandLiteralUserCall (rules : List EvalRule) (facts : List MM2Fact) :
+    Option (List MM2Fact) :=
+  facts.findSome? fun f =>
     match f with
     | .req id (.userCall head args) =>
       match argsToValues? args with
@@ -1364,11 +1470,26 @@ partial def tryUserUnfold (rules : List EvalRule) (facts : List MM2Fact) : Optio
           let body' := substNode env rule.body
           some (removeFacts facts [f] ++ [.req id body', .memoPending id head argVals])
         | none => none
+      | none => none
+    | _ => none
+
+/-- Phase B2 of user-call handling: if args are not all literals yet, spawn
+    subrequests and a `waitUser` frame to collect them later. -/
+partial def trySpawnUserArgReqs (facts : List MM2Fact) : Option (List MM2Fact) :=
+  facts.findSome? fun f =>
+    match f with
+    | .req id (.userCall head args) =>
+      match argsToValues? args with
+      | some _ => none
       | none =>
-        -- Args not all literals → evaluate them via sub-requests
         let argReqs := (args.zip (List.range args.length)).map fun (a, i) => .req (.arg i id) a
         some (removeFacts facts [f] ++ argReqs ++ [.waitUser id head args.length])
-    | _ => none)
+    | _ => none
+
+/-- Combined user-unfold handler: first try to collect a fully-evaluated call from
+    `waitUser`, then fall back to literal expansion / arg spawning on raw requests. -/
+partial def tryUserUnfold (rules : List EvalRule) (facts : List MM2Fact) : Option (List MM2Fact) :=
+  tryCollectUserArgs facts <|> tryExpandLiteralUserCall rules facts <|> trySpawnUserArgReqs facts
 
 /-- Try to find and apply a compound-unfold step for binary operations. -/
 partial def tryBinopUnfold (facts : List MM2Fact) : Option (List MM2Fact) :=
@@ -1550,6 +1671,151 @@ partial def morkRunToFixpoint (userRules : List EvalRule)
     | some (facts', execs') => morkRunToFixpoint userRules facts' execs' fuel'
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- § Clause-Compiled Recursive Dispatch
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Richer same-head recursive clause dispatch is compiled DOWN into the core
+-- `EvalRule` contract above: first matching head/arity. This keeps the proved
+-- evaluator core stable while broadening the front-end recursive fragment.
+
+/-- Restricted clause-pattern language compiled into core `EvalRule`. -/
+inductive EvalParamPattern where
+  | intLit : Int → EvalParamPattern
+  | boolLit : Bool → EvalParamPattern
+  | var : String → EvalParamPattern
+deriving Repr, DecidableEq, BEq
+
+/-- A front-end recursive clause before compilation into core `EvalRule`. -/
+structure EvalClause where
+  head : String
+  patterns : List EvalParamPattern
+  body : EvalNode
+deriving Repr
+
+/-- Sentinel node for "no clause matched". Since no rule is defined for this
+    head, evaluation fails cleanly with `none`. -/
+def dispatchFailNode : EvalNode := .userCall "__dispatch_fail__" []
+
+/-- Shared parameter names used when compiling a same-head clause group into a
+    single core `EvalRule`. -/
+def sharedClauseParamName (i : Nat) : String := s!"__arg{i}"
+
+def sharedClauseParamNames (arity : Nat) : List String :=
+  (List.range arity).map sharedClauseParamName
+
+/-- Boolean NOT encoded in the current EvalIR fragment. -/
+def boolNotNode (node : EvalNode) : EvalNode :=
+  .ifCond node (.boolLit false) (.boolLit true)
+
+/-- Boolean AND encoded in the current EvalIR fragment. -/
+def boolAndNode (lhs rhs : EvalNode) : EvalNode :=
+  .ifCond lhs rhs (.boolLit false)
+
+/-- Collect the variable names bound by a clause-pattern list. -/
+def clauseVarNames : List EvalParamPattern → List String
+  | [] => []
+  | .var name :: rest => name :: clauseVarNames rest
+  | _ :: rest => clauseVarNames rest
+
+/-- Check that a list of strings contains no duplicates. -/
+def allDistinctStrings : List String → Bool
+  | [] => true
+  | s :: ss => !(ss.contains s) && allDistinctStrings ss
+
+/-- Clause variables must be distinct in the current compiled-dispatch fragment. -/
+def clauseVarsDistinct (patterns : List EvalParamPattern) : Bool :=
+  allDistinctStrings (clauseVarNames patterns)
+
+/-- Guard generated by one pattern against one shared compiled parameter. -/
+def patternGuard? (pattern : EvalParamPattern) (paramName : String) : Option EvalNode :=
+  let paramRef := .userCall paramName []
+  match pattern with
+  | .intLit n => some (.eqInt paramRef (.intLit n))
+  | .boolLit true => some paramRef
+  | .boolLit false => some (boolNotNode paramRef)
+  | .var _ => none
+
+/-- Compile one clause case into the nested-dispatch body for its group. -/
+def compileClauseCase
+    (clause : EvalClause) (sharedParams : List String) (fallback : EvalNode) :
+    Option EvalNode :=
+  if clause.patterns.length == sharedParams.length && clauseVarsDistinct clause.patterns then
+    let env :=
+      (clause.patterns.zip sharedParams).filterMap fun
+        | (.var name, paramName) => some (name, .userCall paramName [])
+        | _ => none
+    let body := substNode env clause.body
+    let guards :=
+      (clause.patterns.zip sharedParams).filterMap fun
+        | (pattern, paramName) => patternGuard? pattern paramName
+    match guards with
+    | [] => some body
+    | g :: gs =>
+      let guard := gs.foldl boolAndNode g
+      some (.ifCond guard body fallback)
+  else
+    none
+
+/-- Compile the nested body for one same-head clause group. -/
+def compileClauseGroupBody (sharedParams : List String) : List EvalClause → Option EvalNode
+  | [] => some dispatchFailNode
+  | clause :: rest => do
+    let fallback <- compileClauseGroupBody sharedParams rest
+    compileClauseCase clause sharedParams fallback
+
+/-- Check that every clause in a group has the same dispatch key. -/
+def allSameClauseKey (head : String) (arity : Nat) : List EvalClause → Bool
+  | [] => true
+  | clause :: rest =>
+    clause.head == head && clause.patterns.length == arity && allSameClauseKey head arity rest
+
+/-- Compile one same-head clause group into a single core `EvalRule`. -/
+def compileClauseGroup : List EvalClause → Option EvalRule
+  | [] => none
+  | clause :: rest =>
+    let arity := clause.patterns.length
+    if allSameClauseKey clause.head arity rest then
+      let sharedParams := sharedClauseParamNames arity
+      let group := clause :: rest
+      do
+        let body <- compileClauseGroupBody sharedParams group
+        some { head := clause.head, params := sharedParams, body := body }
+    else
+      none
+
+/-- Extract the later clauses sharing the same dispatch key. -/
+def takeClauseGroupTail (head : String) (arity : Nat) : List EvalClause → List EvalClause
+  | [] => []
+  | clause :: rest =>
+    if clause.head == head && clause.patterns.length == arity then
+      clause :: takeClauseGroupTail head arity rest
+    else
+      takeClauseGroupTail head arity rest
+
+/-- Track which `(head, arity)` clause groups have already been compiled. -/
+def clauseKeySeen (seen : List (String × Nat)) (head : String) (arity : Nat) : Bool :=
+  seen.any fun key => key.1 == head && key.2 == arity
+
+/-- Structural helper for compiled-dispatch programs: recurse only on the list tail,
+    skipping clause groups once their `(head, arity)` key is already in `seen`. -/
+def compileClauseProgramAux (seen : List (String × Nat)) : List EvalClause → Option (List EvalRule)
+  | [] => some []
+  | clause :: rest =>
+    let arity := clause.patterns.length
+    if clauseKeySeen seen clause.head arity then
+      compileClauseProgramAux seen rest
+    else
+      let group := clause :: takeClauseGroupTail clause.head arity rest
+      do
+        let compiled <- compileClauseGroup group
+        let more <- compileClauseProgramAux ((clause.head, arity) :: seen) rest
+        some (compiled :: more)
+
+/-- Compile a whole clause program into core `EvalRule`s, preserving the first
+    occurrence order of each `(head, arity)` dispatch key. -/
+def compileClauseProgram (clauses : List EvalClause) : Option (List EvalRule) :=
+  compileClauseProgramAux [] clauses
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- § Exemplar Programs
 -- ═══════════════════════════════════════════════════════════════════════════
 
@@ -1573,6 +1839,71 @@ def fibRules : List EvalRule :=
        (.ifCond (.eqInt (.userCall "n" []) (.intLit 1)) (.intLit 1)
          (.addInt (.userCall "fib" [.subInt (.userCall "n" []) (.intLit 1)])
                   (.userCall "fib" [.subInt (.userCall "n" []) (.intLit 2)]))) }]
+
+/-- Mutual recursion exemplar:
+    even(n) = if n==0 then true else odd(n-1)
+    odd(n)  = if n==0 then false else even(n-1). -/
+def evenOddRules : List EvalRule :=
+  [ { head := "even"
+    , params := ["n"]
+    , body := .ifCond (.eqInt (.userCall "n" []) (.intLit 0)) (.boolLit true)
+        (.userCall "odd" [.subInt (.userCall "n" []) (.intLit 1)]) }
+  , { head := "odd"
+    , params := ["n"]
+    , body := .ifCond (.eqInt (.userCall "n" []) (.intLit 0)) (.boolLit false)
+        (.userCall "even" [.subInt (.userCall "n" []) (.intLit 1)]) }
+  ]
+
+/-- Multi-argument symbolic recursion exemplar:
+    addDown(a, b) = if a==0 then b else addDown(a-1, b+1). -/
+def addDownRules : List EvalRule :=
+  [{ head := "addDown"
+   , params := ["a", "b"]
+   , body := .ifCond (.eqInt (.userCall "a" []) (.intLit 0)) (.userCall "b" [])
+       (.userCall "addDown"
+         [ .subInt (.userCall "a" []) (.intLit 1)
+         , .addInt (.userCall "b" []) (.intLit 1)
+         ]) }]
+
+/-- Dispatch-contract exemplar:
+    `lookupRule` currently picks the first matching rule by head and arity. -/
+def chooseRules : List EvalRule :=
+  [ { head := "choose", params := ["x"], body := .intLit 1 }
+  , { head := "choose", params := ["y"], body := .intLit 2 }
+  ]
+
+/-- Same-head literal/variable dispatch compiled above core `EvalRule`. -/
+def chooseClauses : List EvalClause :=
+  [ { head := "choose", patterns := [.intLit 0], body := .intLit 1 }
+  , { head := "choose", patterns := [.var "x"], body := .intLit 2 }
+  ]
+
+/-- Same-head boolean dispatch compiled above core `EvalRule`. -/
+def pickClauses : List EvalClause :=
+  [ { head := "pick", patterns := [.boolLit true], body := .intLit 1 }
+  , { head := "pick", patterns := [.boolLit false], body := .intLit 0 }
+  ]
+
+/-- Mutual recursion expressed with same-head clause dispatch rather than an
+    explicit `if` inside each rule body. -/
+def evenOddClauses : List EvalClause :=
+  [ { head := "even", patterns := [.intLit 0], body := .boolLit true }
+  , { head := "even", patterns := [.var "n"]
+    , body := .userCall "odd" [.subInt (.userCall "n" []) (.intLit 1)] }
+  , { head := "odd", patterns := [.intLit 0], body := .boolLit false }
+  , { head := "odd", patterns := [.var "n"]
+    , body := .userCall "even" [.subInt (.userCall "n" []) (.intLit 1)] }
+  ]
+
+/-- Multi-argument symbolic recursion expressed with same-head clause dispatch. -/
+def addDownClauses : List EvalClause :=
+  [ { head := "addDown", patterns := [.intLit 0, .var "b"], body := .userCall "b" [] }
+  , { head := "addDown", patterns := [.var "a", .var "b"]
+    , body := .userCall "addDown"
+        [ .subInt (.userCall "a" []) (.intLit 1)
+        , .addInt (.userCall "b" []) (.intLit 1)
+        ] }
+  ]
 
 end MeTTailCore.EvalIR
 
@@ -1599,6 +1930,46 @@ open MeTTailCore.EvalIR in
 #eval
   let r := eval fibRules 100000 (.userCall "fib" [.intLit 20])
   if r == some (EvalValue.int 6765) then "fib(20) = 6765 ✓" else "FAIL"
+
+open MeTTailCore.EvalIR in
+#eval
+  let r := eval evenOddRules 200 (.userCall "odd" [.intLit 25])
+  if r == some (EvalValue.bool true) then "odd(25) = true ✓" else s!"FAIL: {repr r}"
+
+open MeTTailCore.EvalIR in
+#eval
+  let r := eval addDownRules 100
+    (.userCall "addDown" [.subInt (.intLit 5) (.intLit 1), .addInt (.intLit 2) (.intLit 3)])
+  if r == some (EvalValue.int 9) then "addDown((5-1),(2+3)) = 9 ✓" else s!"FAIL: {repr r}"
+
+open MeTTailCore.EvalIR in
+#eval
+  match lookupRule chooseRules "choose" 1 with
+  | some { body := .intLit 1, .. } => "lookupRule: first head/arity match wins ✓"
+  | some other => s!"FAIL: wrong rule chosen {repr other}"
+  | none => "FAIL: no rule chosen"
+
+open MeTTailCore.EvalIR in
+#eval
+  match compileClauseProgram chooseClauses with
+  | some rules =>
+    let r0 := eval rules 20 (.userCall "choose" [.intLit 0])
+    let r7 := eval rules 20 (.userCall "choose" [.intLit 7])
+    if rules.length == 1 && r0 == some (EvalValue.int 1) && r7 == some (EvalValue.int 2)
+    then "compiled clauses: choose/1 same-head dispatch ✓"
+    else s!"FAIL: choose clauses compiled to {repr rules} with results {repr r0} / {repr r7}"
+  | none => "FAIL: choose clauses did not compile"
+
+open MeTTailCore.EvalIR in
+#eval
+  match compileClauseProgram pickClauses with
+  | some rules =>
+    let rt := eval rules 20 (.userCall "pick" [.boolLit true])
+    let rf := eval rules 20 (.userCall "pick" [.boolLit false])
+    if rt == some (EvalValue.int 1) && rf == some (EvalValue.int 0)
+    then "compiled clauses: bool literal dispatch ✓"
+    else s!"FAIL: pick clauses results {repr rt} / {repr rf}"
+  | none => "FAIL: pick clauses did not compile"
 
 -- GroundedStep validation
 open MeTTailCore.EvalIR in
@@ -1670,6 +2041,34 @@ open MeTTailCore.EvalIR in
 
 open MeTTailCore.EvalIR in
 #eval
+  let facts := [MM2Fact.req .root (.userCall "odd" [.intLit 25])]
+  let result := runToFixpoint evenOddRules facts 5000
+  match extractResult result with
+  | some (.bool true) => "scheduler: odd(25) = true ✓"
+  | other => s!"FAIL: {repr other}"
+
+open MeTTailCore.EvalIR in
+#eval
+  let facts := [MM2Fact.req .root
+    (.userCall "addDown" [.subInt (.intLit 5) (.intLit 1), .addInt (.intLit 2) (.intLit 3)])]
+  let result := runToFixpoint addDownRules facts 3000
+  match extractResult result with
+  | some (.int 9) => "scheduler: addDown((5-1),(2+3)) = 9 ✓"
+  | other => s!"FAIL: {repr other}"
+
+open MeTTailCore.EvalIR in
+#eval
+  match compileClauseProgram evenOddClauses with
+  | some rules =>
+    let facts := [MM2Fact.req .root (.userCall "odd" [.intLit 25])]
+    let result := runToFixpoint rules facts 5000
+    match extractResult result with
+    | some (.bool true) => "scheduler: compiled even/odd clauses = true ✓"
+    | other => s!"FAIL: {repr other}"
+  | none => "FAIL: even/odd clauses did not compile"
+
+open MeTTailCore.EvalIR in
+#eval
   match hybridStep fibRules [MM2Fact.req .root (.userCall "fib" [.intLit 5])] with
   | some (.scheduler, _) => "hybridStep: fib root call owned by scheduler ✓"
   | some (.backend, _) => "FAIL: fib root call should not be backend-owned"
@@ -1706,6 +2105,33 @@ open MeTTailCore.EvalIR in
   match r with
   | some (.int 3628800) => s!"evalMemo: facF(10) = 3628800 ✓ (memo entries: {memo.length})"
   | other => s!"FAIL: {repr other}"
+
+open MeTTailCore.EvalIR in
+#eval
+  let (r, memo) := evalMemo evenOddRules 200 [] (.userCall "odd" [.intLit 25])
+  match r with
+  | some (.bool true) => s!"evalMemo: odd(25) = true ✓ (memo entries: {memo.length})"
+  | other => s!"FAIL: {repr other}"
+
+open MeTTailCore.EvalIR in
+#eval
+  let (r, memo) := evalMemo addDownRules 100 []
+    (.userCall "addDown" [.subInt (.intLit 5) (.intLit 1), .addInt (.intLit 2) (.intLit 3)])
+  match r with
+  | some (.int 9) => s!"evalMemo: addDown((5-1),(2+3)) = 9 ✓ (memo entries: {memo.length})"
+  | other => s!"FAIL: {repr other}"
+
+open MeTTailCore.EvalIR in
+#eval
+  match compileClauseProgram addDownClauses with
+  | some rules =>
+    let (r, memo) := evalMemo rules 100 []
+      (.userCall "addDown" [.subInt (.intLit 5) (.intLit 1), .addInt (.intLit 2) (.intLit 3)])
+    match r with
+    | some (.int 9) =>
+        s!"evalMemo: compiled addDown clauses = 9 ✓ (memo entries: {memo.length})"
+    | other => s!"FAIL: {repr other}"
+  | none => "FAIL: addDown clauses did not compile"
 
 -- Scheduler fib(20): works correctly but Lean #eval is too slow for large
 -- step counts. Validated for fib(3)=2 with 4 memo entries. The Rust/MORK

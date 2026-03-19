@@ -39,16 +39,258 @@
 \chapter{Introduction}
 \label{ch:introduction}
 
-%% TODO: pull from v2_trash Ch 1 (architecture figure, Maple Court BN,
-%% five layers, claim taxonomy, reading guide)
-%% ADAPT: use general WorldModel language, not additive-as-default
+Probabilistic Logic Networks (PLN) has always computed with
+truth values: strength, confidence, and the formulas that combine
+them.  Every PLN implementation builds on the same foundation---combine
+truth values via inference rules, derive new truth values,
+threshold for decisions.  This book asks: \emph{what if truth
+values are not the right foundation?}
 
-%% ─────────────────────────────────────────────────────────────────
+The answer is the world-model calculus.  Instead of truth values,
+the system carries a revisable state of knowledge---sufficient
+statistics, not summaries.  Instead of truth-value combination
+formulas, it uses additive revision.  Instead of ad hoc
+confidence measures, it extracts answers via homomorphisms that
+commute with revision.  Truth values are still available---as
+\emph{views}, lossy projections of a richer underlying state.
 
-%% GPT-5.4 Pro's overview draft — the crystal of the whole book
-\input{ch2_overview}
+The result is a calculus where:
+\begin{itemize}
+\item Revision is compositional: new evidence adds to old evidence.
+\item Queries are principled: extraction is a homomorphism.
+\item Forgetting is provenance-aware: you can retract a specific
+  source's contribution without recomputing from scratch.
+\item Every formal claim is machine-verified: 601~theorems in
+  Lean~4, 0~sorry, 0~\code{native\_decide}.
+\end{itemize}
 
-%% ─────────────────────────────────────────────────────────────────
+\noindent
+Eight desiderata (D1--D8, Chapter~\ref{ch:desiderata}) constrain
+the design.  A running example---Maple Court, an apartment building
+with sensors, tenants, and an elevator---instantiates all eight
+and appears throughout the book in teal-boxed asides.
+
+This book is not a PLN tutorial or a replacement for the PLN
+book~\cite{Goertzel2008PLN}.  It is a mathematical refoundation
+with formal verification, aimed at researchers who want to
+understand PLN's semantic commitments and extend the calculus to
+new domains.  The empirical validation
+(Part~\ref{part:applications}) covers gas sensor drift, steel
+fault classification, geopolitical forecasting, Bayesian network
+benchmarks, genomic hypothesis generation, and nine PPLBench
+lanes---but the core contribution is the algebra, not any single
+application.
+
+The remainder of this chapter presents the world-model calculus
+in miniature: the core picture, revision regimes, evidence
+carriers, the boundary, and how the rest of the book unfolds.
+
+%% ─── Overview (formerly ch2_overview.tex, inlined) ───────────────
+
+\section{The Core Picture}
+\label{sec:overview-core-picture}
+
+At the highest level, the calculus has three typed parameters:
+\[
+  \textit{State}, \qquad \textit{Query}, \qquad V.
+\]
+A state is what the system currently carries.  A query is what the
+system may ask.  The value type~$V$ is the carrier in which extracted
+answers live.
+
+The most general world-model interface records only three operations:
+
+\begin{lstlisting}[language={}]
+class WorldModel (State Query V : Type*) where
+  revise  : State -> State -> State
+  empty   : State
+  extract : State -> Query -> V
+\end{lstlisting}
+
+\noindent
+This interface is intentionally minimal.  No additivity,
+commutativity, or probabilistic interpretation is assumed at this
+top level.
+
+The book works mostly in one important specialization: the
+\emph{additive regime}.  There, state revision is additive, the
+value carrier is an additive commutative monoid, and extraction
+commutes with revision:
+
+\begin{lstlisting}[language={}]
+class AdditiveWorldModel (State Query V : Type*)
+    [AddCommMonoid State] [AddCommMonoid V]
+    extends WorldModel State Query V where
+  extract_add : forall W1 W2 q,
+    extract (W1 + W2) q = extract W1 q + extract W2 q
+\end{lstlisting}
+
+\noindent
+The decisive law is \code{extract\_add}.  It says that revising
+states and then extracting is the same as extracting first and
+combining in~$V$.
+
+\begin{theorem}[Profile-hom equivalence]
+\label{thm:overview-profile-hom}
+Additive world models are exactly additive monoid homomorphisms
+$\textit{State} \to^+ (\textit{Query} \to V)$.
+\end{theorem}
+
+\maplecourt{Maple Court Community Commons is our running example.
+Each apartment carries a private posterior state over questions
+such as whether a pipe is leaking, whether the shower is running,
+or whether motion indicates occupancy.  Shared spaces carry a
+building-level state over hallway humidity, laundry-room
+availability, and elevator health.  The same architecture appears
+at both scales: revise the state as reports and sensor updates
+arrive, query the state for evidence, and project into views only
+when a decision must be made.}
+
+
+\section{Revision Regimes}
+\label{sec:overview-regimes}
+
+The calculus distinguishes several regimes:
+
+\begin{description}
+\item[Additive revision.]  Independent updates compose by addition.
+\item[Overlap-aware revision.]  Shared information prevents naive addition.
+\item[Trust-gated revision.]  The merge depends on source authority.
+\item[Coalition revision.]  Consensus requires an actionable coalition.
+\end{description}
+
+\noindent
+Only the first is developed in full generality in this book.
+
+
+\section{Evidence Carriers}
+\label{sec:overview-carriers}
+
+Three carriers are central: \emph{binary} (positive/negative
+counts), \emph{Dirichlet} (category counts), and
+\emph{Normal-Gamma} (continuous sufficient statistics).  In Maple
+Court these arise naturally: leak alarms are binary, elevator
+health is multi-valued, hallway humidity is continuous.  The
+calculus does not change across these cases; only the carrier
+does.
+
+
+\section{Four Verbs: Revise, Query, Forget, Explain}
+\label{sec:overview-four-verbs}
+
+The book revolves around four verbs:
+\emph{revise}, \emph{query}, \emph{forget}, and \emph{explain}.
+A state can be updated, partially retracted, audited, replayed,
+and explained in a way that a naked scalar view cannot.
+
+\maplecourt{Suppose three hallway humidity alerts arrive, then
+one sensor is found to be faulty.  If the system carries only a
+strength estimate $0.83$, it is unclear how to retract just the
+faulty source.  If the system carries a revisable state with
+provenance, forgetting removes the appropriate contribution while
+preserving answers outside the forgotten scope.}
+
+
+\section{Information, Support, and Views}
+\label{sec:overview-views}
+
+Evidence can improve in more than one sense.  It can become
+\emph{more informed} and \emph{more supportive}---these are not
+the same order.  Compare $e_1 = (1,0)$ and $e_2 = (1,1)$: the
+second is more informative but less supportive of the positive
+claim.  A view is a projection, not a proof object.
+
+
+\section{Compiled Inference and the PLN Connection}
+\label{sec:overview-compiled}
+
+The calculus treats deduction, induction, and abduction as
+\emph{compiled rewrites}: certified shortcuts that are exact
+under explicit side conditions within declared model classes.
+
+\maplecourt{The building model contains the chain
+$\textit{PipeLeak} \to \textit{WallHumidity} \to
+\textit{MoldRisk}$.  Rather than recomputing the full posterior,
+the system uses a compiled chain rule justified by the BN
+factorization.  When the side conditions hold, the compiled answer
+agrees with the full extractor.  When they do not, the rewrite is
+not licensed.}
+
+
+\section{The Boundary}
+\label{sec:overview-boundary}
+
+\begin{theorem}[No-go for unrestricted local link completeness]
+\label{thm:overview-no-go}
+Complete link evidence cannot in general be recovered from local
+per-link surrogates alone.
+\end{theorem}
+
+\noindent
+This boundary theorem explains why structural side conditions
+matter: compiled shortcuts become exact only inside model classes
+that carry enough global structure for those shortcuts to commute
+with full extraction.
+
+
+\section{The End-to-End Pipeline}
+\label{sec:overview-end-to-end}
+
+\medskip
+\noindent
+\makebox[\textwidth][c]{%
+\begin{tikzpicture}[
+  >=Latex,
+  every node/.style={font=\footnotesize},
+  box/.style={draw, rounded corners=3pt, minimum width=30mm,
+              minimum height=9mm, align=center}
+]
+  \node[box, fill=blue!8] (state) {state $W$};
+  \node[box, fill=green!8, right=10mm of state] (query) {query $q$};
+  \node[box, fill=yellow!12, right=10mm of query] (extract) {extract$(W,q)$};
+  \node[box, fill=orange!12, right=10mm of extract] (view) {view / decision};
+  \node[box, fill=purple!8, below=10mm of extract] (rewrite) {compiled rewrite};
+
+  \draw[->, thick] (state) -- (query);
+  \draw[->, thick] (query) -- (extract);
+  \draw[->, thick] (extract) -- (view);
+  \draw[->, thick] (state) |- (rewrite);
+  \draw[->, thick] (rewrite) -- node[right, font=\scriptsize]
+    {$\Sigma$-shortcut} (extract);
+\end{tikzpicture}}
+\medskip
+
+\noindent
+The state is primary.  Queries interrogate the state.  Extraction
+returns values in a carrier.  Views project from those values.
+Compiled rewrites accelerate families of queries under explicit
+side conditions.  Boundaries tell us where such shortcuts cannot
+be complete.
+
+\paragraph{PLN heritage.}
+This book is not a historical commentary on PLN, but neither is it
+detached from that lineage.  Where the earlier rule family is
+correct, the present calculus proves it correct under explicit
+assumptions.  Where it is incomplete or semantically unstable, the
+present calculus states the boundary and replaces the heuristic
+with a typed, side-conditioned construction.
+
+\section*{How the Rest of the Book Unfolds}
+
+Part~I (this chapter and the desiderata) gives the orientation.
+Part~II develops the calculus in depth: evidence carriers,
+state operations, views, and natively typed world models.
+Part~III covers compiled inference, BN exactness, the no-go
+theorem, and large-scale inference control.
+Part~IV extends to temporal, causal, and normative reasoning.
+Part~V bridges to neighboring frameworks (MLNs, ProbLog, NARS,
+FOL, Giry monad, $\rho$-calculus, ontology repair) and states
+the limitations.
+Part~VI validates the framework on real benchmarks: gas sensor
+drift, steel faults, anomaly detection, geopolitical forecasting,
+Bayesian networks, genomics, nine PPLBench lanes, and an
+exploratory AI-outcomes analysis.
+
 
 \chapter{Desiderata}
 \label{ch:desiderata}
@@ -200,9 +442,14 @@ sufficient statistics add: $(n_1^+, n_1^-) + (n_2^+, n_2^-) =
 (n_1^+ + n_2^+, n_1^- + n_2^-)$.  The Solomonoff--de~Finetti
 foundation (Chapter~\ref{ch:world-models}, \S``The Solomonoff--De
 Finetti Foundation'') establishes the categorical necessity chain:
-exchangeability $\to$ de~Finetti mixture $\to$ Kyburg flattening $\to$
-Giry bind $\to$ evidence sufficiency.  D2 is the algebraic shadow of
-this necessity.
+%
+\begin{center}
+exchangeability $\to$ de~Finetti mixture $\to$
+Kyburg flattening $\to$ Giry bind $\to$ evidence sufficiency.
+\end{center}
+%
+\noindent
+D2 is the algebraic shadow of this necessity.
 
 \paragraph{What D2 rules out.}
 Any system whose query answers depend on the \emph{order} of evidence
@@ -523,7 +770,10 @@ provenance, the data point is lost in the aggregate.
 \paragraph{Discharge.}
 D6 is discharged by the \code{ForgettingLayer} structure and the
 outside-invariant law of Chapter~\ref{ch:state-ops},
-\S\ref{sec:forgetting}.
+\S\ref{sec:forgetting}.  Its practical value is demonstrated in
+Chapter~\ref{ch:carrier-validation}, \S\ref{sec:gjp-forecasting}:
+forgetting stale forecaster reliability weights improves
+prediction on regime-change questions.
 
 \paragraph{Independence witness.}
 An append-only evidence store (states grow monotonically, no
@@ -935,7 +1185,7 @@ empty, extract---appear at both scales.}
 
 \section{Revision Regimes}
 
-Chapter~\ref{chap:overview} introduced four revision regimes.  Here
+Chapter~\ref{ch:introduction} introduced four revision regimes.  Here
 we develop the additive regime in depth and situate the others
 concretely.
 
@@ -961,12 +1211,159 @@ concretely.
 \end{description}
 
 \noindent
-Only the additive regime is developed in full generality in this book.
-The others already appear in the typed family and the Lean
-formalization, but they are treated as frontier directions.%
-\footnote{Lean: \code{MonoidalWorldModel}, \code{OverlapWorldModel},
-\code{TrustGatedWorldModel}, \code{CoalitionWorldModel} in
-\codepath{Mettapedia/Logic/WorldModelBase.lean}.}
+The additive regime is developed in full generality in this book.
+The others are formalized in Lean and treated here in less depth,
+but they are \emph{not} future work---the key theorems are
+proved, and this section presents them.
+
+
+\section{The Non-Additive Perimeter}
+\label{sec:non-additive}
+
+The non-additive regimes are not afterthoughts.  They formalize
+the situations where naive evidence addition fails: correlated
+sources, trust-weighted merges, and quorum-based consensus.  The
+Lean formalization contains $\sim$90 theorems across these
+regimes, all kernel-checked with 0~sorry.
+
+\subsection{The Overlap Extraction Law}
+
+When two evidence sources share information, addition
+double-counts the shared component.  The
+\code{OverlapWorldModel} replaces the additive extraction law
+with an overlap-corrected version:
+\[
+  \mathrm{extract}(\mathrm{revise}(W_1, W_2), q)
+  = \mathrm{combine}\bigl(
+      \mathrm{extract}(W_1, q),\;
+      \mathrm{extract}(W_2, q),\;
+      \mathrm{overlap}(W_1, W_2, q)
+    \bigr).
+\]
+When the overlap function returns zero (independent sources),
+this reduces to the additive law.  When overlap is nonzero, the
+correction prevents double-counting.
+
+\begin{theorem}[Additivity recovery under independence
+  (\claimCore{})]
+\label{thm:additive-of-independent}
+If $\mathrm{overlap}(W_1, W_2, q)$ is trivial for all~$q$, then
+the overlap extraction law reduces to the additive extraction
+law: $\mathrm{extract}(\mathrm{revise}(W_1, W_2), q) =
+\mathrm{extract}(W_1, q) + \mathrm{extract}(W_2, q)$.
+\end{theorem}
+
+\noindent
+This theorem is the formal boundary between the additive and
+overlap regimes: additivity is not assumed---it is
+\emph{recovered} when the independence condition holds.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/WorldModelOverlap.lean}
+(70~lines, 2~theorems, 0~sorry).}
+
+In the probability hypercube
+(Knuth--Skilling~\cite{KnuthSkilling2012}), the overlap regime
+corresponds to the Dempster-Shafer vertex (subadditive belief
+functions), where $\mathrm{bel}(A \cup B) \ge
+\mathrm{bel}(A) + \mathrm{bel}(B) - \mathrm{bel}(A \cap B)$:
+
+\medskip
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Hypercube vertex} & \textbf{WM subclass} &
+  \textbf{Extraction law} \\
+\midrule
+Kolmogorov ($\sigma$-additive) & \code{AdditiveWorldModel} &
+  extract distributes over $+$ \\
+Dempster-Shafer (subadditive) & \code{OverlapWorldModel} &
+  overlap correction \\
+Quantum (non-commutative) & (future) &
+  interference terms \\
+\bottomrule
+\end{tabular}
+\end{center}
+\medskip
+
+\noindent
+The carrier axis is orthogonal: binary, Dirichlet, and
+Normal-Gamma carriers are all formalized and compose with any
+merge-law vertex.%
+\footnote{Hypercube positions are kernel-checked in
+\codepath{Mettapedia/ProbabilityTheory/KnuthSkilling/Examples/%
+PreciseVsImpreciseGrounded.lean}
+(1071~lines, 26~theorems, 0~sorry).}
+
+
+\subsection{Coalition Revision and Semitopology}
+
+The \code{CoalitionWorldModel} requires a proof of
+$\mathrm{actionable}(W_1, W_2)$ before revision can fire.
+The actionable sets form a \emph{semitopology}: a family closed
+under union but \emph{not} under intersection---strictly weaker
+than a topology.
+
+\begin{example}[Quorum semitopology]
+Three agents $\{0, 1, 2\}$.  Coalitions $\{0,1\}$ and $\{0,2\}$
+are both actionable (two-agent quorum).  But their intersection
+$\{0\}$ is \emph{not} actionable---a single agent cannot force
+revision.  This is the formal content of ``a majority must agree.''
+\end{example}
+
+\begin{theorem}[Additivity recovery under semitopological
+  independence (\claimCore{})]
+\label{thm:additive-of-semitopo}
+If both states' supports are actionable and disjoint, then the
+coalition extraction law reduces to the additive extraction law.
+\end{theorem}
+
+\noindent
+The deepest result connects overlap to coalitions:
+
+\begin{theorem}[Additivity recovery after forgetting
+  non-actionable overlap (\claimCore{})]
+\label{thm:additive-recovery}
+When the overlap footprint between two states is non-actionable
+(the shared evidence does not form a legitimate coalition),
+forgetting the overlap recovers additivity on the remainders.
+\end{theorem}
+
+\noindent
+This is the formal answer to ``when can we safely treat
+correlated sources as independent?''---when the correlation
+structure is below the actionability threshold.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/PLNSemitopology.lean}
+(241~lines, 23~theorems) and
+\codepath{Mettapedia/Logic/PLNSemitopologyProvenanceBridge.lean}
+(294~lines, 22~theorems).  Both 0~sorry.}
+
+\maplecourt{%
+Two apartments share a hallway humidity vent.  Their sensor
+readings are correlated---naive addition double-counts the shared
+signal.  The overlap layer explicitly tracks this correlation.
+When the building steward forgets the shared vent's contribution,
+the remaining per-apartment evidence is independent, and
+additivity recovers.  The quorum structure matters too: if the
+building requires two apartments to agree before revising the
+hallway humidity state, a single apartment's reading cannot force
+an update---that is the semitopological actionability constraint.}
+
+\subsection{The Additive Regime as the Main Powerhouse}
+
+The non-additive perimeter is formalized because it is
+\emph{real}---correlated sensors exist, quorum requirements
+exist, and the book would be dishonest to pretend otherwise.
+But the additive regime remains the main powerhouse for two
+reasons: (1)~it is where the profile-hom equivalence, BN
+exactness, provenance tracking, and compiled inference all live,
+and (2)~the recovery theorems above show that the additive
+regime is \emph{approached} whenever overlap is small or
+non-actionable.  The rest of this chapter develops the additive
+regime in depth; the non-additive theorems appear again when
+needed (multideduction overlap in
+Chapter~\ref{ch:scale-control}; forgetting in
+Chapter~\ref{ch:state-ops}).
 
 
 \section{The Additive Regime}
@@ -1482,7 +1879,10 @@ For all three carriers:
 $\mathrm{posterior}(\pi, e_1 \hplus e_2)
 = \mathrm{posterior}(\mathrm{posterior}(\pi, e_1), e_2)$.
 Batch replay of deferred observations yields the same posterior as
-sequential updating.
+sequential updating.  This guarantee is exercised on real data in
+Chapter~\ref{ch:carrier-validation}: gas sensor drift
+(\S\ref{sec:gas-drift}), Kalman temporal filtering, and GJP
+forecast aggregation (\S\ref{sec:gjp-forecasting}).
 \end{theorem}
 
 \maplecourt{%
@@ -1838,6 +2238,24 @@ structure of quantum mechanics from epistemological first principles.
 This connects to the non-commutative vertex of the probability
 hypercube (Chapter~\ref{ch:future}).}
 
+\paragraph{Forgetting in the non-additive perimeter.}
+The conservation and exact-inverse theorems above assume additive
+revision.  In the overlap regime
+(\S\ref{sec:non-additive}), exact forgetting requires stronger
+conditions: the \code{SupportTrackedForgettingLayer} proves that
+exact inverse is possible \emph{only} when the revision evidence
+vanishes outside the forgotten scope.  The semitopology bridge
+provides the recovery theorem
+(Theorem~\ref{thm:additive-recovery}): when the overlap footprint
+is non-actionable, forgetting the overlap recovers additivity on
+the remainder---and the conservation laws apply to the
+remainder.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/GenericWorldModelForgetting.lean}
+(193~lines, 6~theorems) and
+\codepath{Mettapedia/Logic/PLNWorldModelSupportForgetting.lean}
+(75~lines, 3~theorems).  Both 0~sorry.}
+
 
 \section{Provenance and Explanation}
 \label{sec:provenance}
@@ -2103,7 +2521,7 @@ WM extraction, and supports scoped forgetting with proved
 conservation.  Every equation below is kernel-checked (28~theorems,
 0~sorry).%
 \footnote{Full source:
-\codepath{Mettapedia/Logic/PLNDerivationTrackingDemo.lean}.}
+\codepath{Mettapedia/Logic/WMDerivationTrackingDemo.lean}.}
 
 \paragraph{The scenario.}
 Apartment~3B has two independent sensors: a pipe-leak detector
@@ -2565,6 +2983,17 @@ sample size: more evidence always means higher confidence.  But
 confidence says nothing about whether the evidence supports the claim.
 A high-confidence negative result is still informative.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{../results/figures/confidence_curves.pdf}
+\caption{Confidence as a function of sample size for the three
+  carriers.  All three are monotone: more evidence always means
+  higher confidence.  The PPLBench comparison
+  (Chapter~\ref{ch:pplbench}) validates these curves against
+  Stan's NUTS sampler.}
+\label{fig:confidence-curves}
+\end{figure}
+
 
 \section{Indefinite Truth Values}
 
@@ -2908,6 +3337,7 @@ guaranteed to reduce according to that vertex's rules.
 
 
 \section{World Models from GSLTs}
+\label{sec:gslt-wm}
 \label{sec:gslt-open-program}
 
 For any type~$T$, multiset ensembles of~$T$ form a world model when
@@ -3055,6 +3485,11 @@ $P(\text{leak})$ and $P(\text{humidity})$ but different
 $P(\text{mold} \mid \text{humidity}, \text{leak})$.  No amount of
 per-link evidence distinguishes them.  The BN DAG structure --- a
 side condition $\Sigma$ --- is what breaks the degeneracy.}
+
+\noindent
+The constructive resolution of this limitation---distributional
+inference, certified chaining bounds, and view transport---appears
+in Chapter~\ref{ch:error-transport}.
 
 
 %% ═══════════════════════════════════════════════════════════════════
@@ -3715,6 +4150,19 @@ in \codepath{Mettapedia/Logic/PLNMultideductionResidual.lean}.}
 In the compiled rule registry, multideduction is therefore
 certified only under residual-known, residual-bounded, or
 structurally-zero overlap conditions.
+
+\paragraph{Connection to the overlap regime.}
+The inclusion-exclusion gap is the additive regime's encounter
+with overlap.  When multiple derivation paths share intermediate
+steps, the union-of-proofs semantics requires an overlap
+correction---exactly the structure captured by
+\code{OverlapWorldModel}
+(\S\ref{sec:non-additive}).  The residual $\rho_{ij}$ of the
+residual decomposition theorem is a concrete instantiation of the
+\code{overlap} function.  The recovery theorem
+(Theorem~\ref{thm:additive-of-independent}) says that when paths
+are independent---no shared intermediate steps---the overlap
+vanishes and the additive law applies.
 
 \paragraph{Why this matters for inference control.}
 The gap is not about a pathological corner case.  It says
@@ -4674,7 +5122,12 @@ framework.  The state includes temporal structure (event histories);
 the query language includes temporal operators (SimAND, SeqAND,
 PredImpl); extraction and revision operate unchanged.  This keeps
 the foundational theory unified: a single kernel, many
-instantiations.
+instantiations.%
+\footnote{The Kalman sleep demo
+(Chapter~\ref{ch:carrier-validation}) provides the concrete
+formal grounding for temporal filtering: batch replay of deferred
+observations yields the same posterior as sequential online
+processing.}
 
 \maplecourt{%
 The chain PipeLeak $\to$ WallHumidity $\to$ MoldRisk has temporal
@@ -4944,7 +5397,13 @@ quarantined.%
 (0~sorry).  The UW-CSE social-smoking benchmark is in
 \codepath{Mettapedia/Logic/PLNMarkovLogicSocialSmoking.lean}
 and
-\codepath{Mettapedia/Logic/PLNMarkovLogicUWCSE.lean}.}
+\codepath{Mettapedia/Logic/PLNMarkovLogicUWCSE.lean}.
+The compatibility-gate demo
+(\codepath{Mettapedia/Logic/WMUWCSEGateDemo.lean},
+12~theorems, 0~sorry) kernel-checks the gate structure:
+PairAffinity is the critical discriminator with marginal
+contribution $4 > 3 > 2$; forgetting it drops prediction from
+$6{:}1$ to $4{:}1$.}
 
 \maplecourt{%
 Maple Court's building model can be expressed as an MLN:
@@ -5312,6 +5771,39 @@ measure-theoretic grounding are identified as open programs,
 not hand-waved away.
 
 
+\section{Ontology Repair as Evidence Aggregation}
+
+The Pain reclassification case study
+(\S\ref{sec:pain-evidence-wm}) demonstrates a bridge that applies
+to any domain where multiple authoritative sources contribute
+conflicting evidence about a classification decision.  The
+\code{EvidentialLedger} framework is generic---parameterized by
+source and candidate types---and the same \code{aggregate},
+\code{forget}, and \code{toState\_append} operations drive the
+SUMO ontology repair and the Maple Court sensor analysis alike.
+
+The bridge to ontology engineering is: an ontology repair decision
+(``should Pain be reclassified from PathologicProcess to
+StateOfMind?'') is a query against a world-model state built from
+curated evidence sources (IASP, SNOMED~CT, Stanford~SEP, SUMO
+axioms).  The WM calculus adds three things that a spreadsheet
+does not: (1)~kernel-checked ranking via cross-multiplication
+(\code{stateofmind\_beats\_emotional}), (2)~sensitivity analysis
+via forgetting (\code{ranking\_preserved\_noWiki},
+\code{iasp\_is\_critical\_discriminator}), and (3)~compositionality
+via \code{toState\_append}---evidence from two groups of sources
+combines additively.
+
+\maplecourt{The building's maintenance manual classifies the
+elevator motor as ``industrial equipment.''  Three sources
+disagree: the manufacturer's spec sheet calls it ``precision
+machinery,'' the insurance policy calls it ``building
+infrastructure,'' and the city inspector calls it ``public
+conveyance equipment.''  The EvidentialLedger aggregates, ranks,
+and answers: ``which reclassification does the evidence support,
+and which source is critical?''}
+
+
 %% ─────────────────────────────────────────────────────────────────
 
 %% "What the Calculus Covers" — removed.
@@ -5571,6 +6063,9 @@ natural continuations.  But the kernel is stable, the evidence algebra
 is settled, the compiled inference rules are proved exact under their
 stated conditions, and the scaling theory identifies both the
 achievable guarantees and the fundamental impossibilities.
+The entire development is machine-verified: 601~theorems in Lean~4,
+0~sorry, 0~\code{native\_decide}, across six application domains
+(Appendix~\ref{app:theorem-map}).
 
 The deepest insight is simple: inference systems should not confuse the
 map with the territory.  A truth value is a projected summary of
@@ -5666,6 +6161,18 @@ update.  Confidence grows monotonically with observations.%
 \footnote{Formalized in
 \codepath{Mettapedia/Logic/PLNBrokenSensorDemo.lean} (420~lines).}
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{../results/figures/broken_sensor.pdf}
+\caption{Broken sensor demo.  Gray dashed: prior predictive.
+  Blue: posterior after morning shift ($\sim$16\textdegree{}C).
+  Red: posterior after night shift ($\sim$22\textdegree{}C).
+  Green dashed: consolidated posterior.  Data tick marks on
+  the $x$-axis.  Sleep consolidation is verified: sequential
+  and batch processing yield the same posterior.}
+\label{fig:broken-sensor}
+\end{figure}
+
 \paragraph{Widget factory.}
 Two machines with per-source Gaussian evidence.  The new result:
 mixture exceedance validity---a weighted combination of per-source
@@ -5710,7 +6217,7 @@ confidence monotonicity.  The sleep consolidation guarantee holds
 posterior regardless of whether the underlying distribution has
 shifted.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNGasSensorDriftDemo.lean} (652~lines,
+\codepath{Mettapedia/Logic/WMGasSensorDriftDemo.lean} (652~lines,
 0~sorry).}
 
 \paragraph{Full-dataset drift protocols.}
@@ -5723,6 +6230,26 @@ substantially below specialized drift-compensation methods
 drift degrades accuracy, and replaying additional batches into the
 posterior partially recovers it \emph{without changing the
 underlying update laws}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/gas_sensor_drift.pdf}
+\caption{Gas sensor array drift.  Solid curves: batch~1
+  posterior predictive (2007).  Dashed: consolidated posterior
+  after both batches.  Toluene shows dramatic drift: batch~10
+  responses cluster near zero, far from the batch~1
+  distribution.}
+\label{fig:gas-sensor-drift}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/gas_drift_protocols.pdf}
+\caption{Gas sensor drift protocols on the full 128-feature
+  representation.  Cumulative replay is the strongest average
+  protocol in both the 3-gas and 6-gas settings.}
+\label{fig:gas-drift-protocols}
+\end{figure}
 
 \paragraph{The governance story.}
 The WM calculus is not a replacement for XGBoost.  It is a
@@ -5742,11 +6269,27 @@ governance layer supplying a second epistemic signal.  On the
 \end{itemize}
 
 \noindent
+The gas lane connects to the PPLBench noisy-OR topic model
+(Chapter~\ref{ch:pplbench}): both use additive log-likelihood
+messages as carried state, and both distinguish exact semantic
+kernels from operational schedulers.
 The formal order-cost layer certifies that zero-threshold batch-swap
 composition is safe for this lane.%
 \footnote{Formalized in
 \codepath{Mettapedia/Logic/PLNWorldModelOrderCostGasPolicyDemo.lean}
 (155~lines, 0~sorry).}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/gas_policy_frontier.pdf}
+\caption{Sequential gas-drift governance policies.  Each point
+  is a batch-level retraining policy over batches~2\ldots10,
+  trading sample-weighted accuracy against label budget.
+  XGBoost confidence is the best cheap trigger; WM/XGBoost
+  agreement is the strongest high-accuracy trigger when labels
+  are inexpensive.}
+\label{fig:gas-policy-frontier}
+\end{figure}
 
 \maplecourt{%
 The building's air-quality sensors drift over months as filters
@@ -5775,7 +6318,22 @@ K\_Scratch faults have characteristically larger defect areas
 cleanly on this feature, and exceedance queries---``is
 $P(\mathrm{LogOfAreas} > 3.0 \mid \text{K\_Scratch})$
 substantially higher than for Bumps?''---are answered directly by
-the evidence algebra.
+the evidence algebra.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/WMSteelFaultDemo.lean}
+(568~lines, 45~theorems, 0~sorry).}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/steel_classification.pdf}
+\caption{Steel fault classification.  \emph{Left:} Student-$t$
+  predictive densities for each fault type after 5~observations;
+  K\_Scratch (red) is clearly separated rightward.  \emph{Right:}
+  exceedance probability $P(X_{\mathrm{new}} > c)$ as a function
+  of threshold; at $c = 3.0$ (dashed), K\_Scratch has
+  $\sim$75\% exceedance vs.\ $\sim$20\% for the others.}
+\label{fig:steel-classification}
+\end{figure}
 
 
 \section{NAB Machine Temperature Anomaly Detection}
@@ -5792,7 +6350,20 @@ The same sleep $=$ wake theorem from the Kalman demo applies:
 batch replay of overnight temperature readings yields the same
 posterior as sequential processing.  The anomaly detection quality
 depends on the process-noise and observation-noise parameters,
-which are set from the training portion of the NAB stream.
+which are set from the training portion of the NAB stream.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/WMNABSleepDemo.lean}
+(344~lines, 30~theorems, 0~sorry).}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/nab_kalman_tracking.pdf}
+\caption{NAB machine temperature: Kalman tracking with anomaly
+  detection.  The posterior predictive interval (shaded)
+  narrows as evidence accumulates; observations outside the
+  interval trigger anomaly flags.}
+\label{fig:nab-kalman}
+\end{figure}
 
 
 \section{Good Judgment Project Forecast Aggregation}
@@ -5807,35 +6378,53 @@ years.
 
 \paragraph{The WM framing.}
 Each forecaster's prediction is an evidence contribution.  The
-WM calculus aggregates them via reliability-weighted revision:
+WM calculus aggregates them via reliability-weighted revision
+(the pooling framework of Chapter~\ref{ch:scale-control},
+\S\ref{sec:pooling}):
 more reliable forecasters contribute more evidence weight.
 The reliability weights are themselves evidence---they are
 updated over time as forecasters' track records accumulate.
 
-\paragraph{Key results.}
-On year-4 Brier and log scores, WM reliability weighting
-improves over stronger top-$k$ log/logit pooling baselines
-while matching accuracy.  On the multi-option forecasting slice,
-a WM agreement gate improves the area under the risk--coverage
-curve (AURC) on top of a strong top-$k$ pool.  The
-sleep $=$ online property holds to machine precision: batch
+\paragraph{Key results (year-4 test, 94 binary + 43 multi-option questions).}
+On binary questions, WM reliability-weighted logit pooling
+achieves Brier score $0.026$ and log score $0.051$---improving
+over unweighted logit pooling ($0.063$ / $0.110$) and top-$k$
+logit pooling ($0.036$ / $0.070$).  On multi-option questions,
+WM log pooling achieves Brier $0.036$, improving over
+unweighted log pooling ($0.159$) and matching top-$k$ ($0.044$).
+The sleep $=$ online property holds to machine precision: batch
 processing of a season's forecasts produces the same aggregated
 state as sequential online processing.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/gjp_forecasting.pdf}
+\caption{GJP forecast aggregation.  WM reliability weighting
+  improves Brier and log scores over unweighted and top-$k$
+  pooling baselines on year-4 binary and multi-option questions.}
+\label{fig:gjp-forecasting}
+\end{figure}
+
 \paragraph{The forgetting ablation.}
-The most revealing experiment is the forgetting ablation: what
-happens when old reliability weights are discarded?  The result
-is that WM-PLN with scoped forgetting (retaining only recent
-reliability history) outperforms WM-PLN with full history on
-regime-change questions---precisely the setting where old track
-records become misleading.  This is D6 (Retractability) earning
-its keep in a real forecasting context.%
-\footnote{The GJP experiments are implemented in 11~Python
-scripts under
-\codepath{scripts/wm\_pln\_gjp\_*.py}
-with results in \codepath{results/forecasting\_gjp/}.
-Lean formalization of the aggregation algebra is a natural
-next target.}
+The most revealing experiment: what happens when old reliability
+weights are discarded?  WM-PLN with recent-only reliability
+history achieves Brier $0.024$, improving over full-history
+WM-PLN's $0.026$ and top-$k$'s $0.033$.  Forgetting year-1
+profiles gives an intermediate $0.025$.  The improvement is
+small but consistent and in the right direction: old track
+records become misleading after regime changes, and scoped
+forgetting removes exactly the stale signal.  This is D6
+(Retractability) earning its keep in a real forecasting
+context.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/GJPForecastDemo.lean}
+(255~lines, 14~theorems, 0~sorry).  The Lean fixture
+kernel-checks sleep $=$ online, reliability-weighted
+aggregation (via \code{WeightedSourceItem}), forgetting
+compositionality, and the end-to-end property that
+calibrated sources dominate after forgetting baselines.
+The Python experiment scripts are in
+\codepath{scripts/wm\_pln\_gjp\_*.py}.}
 
 
 \section{Interpretation}
@@ -5989,6 +6578,17 @@ inference-control quality:
 \item Carrying distributional evidence instead of scalar summaries
   improves accuracy by $1.5$--$3.8\times$ on the tested motifs.
 \end{itemize}
+
+\maplecourt{%
+The building's elevator inspection system uses a small BN:
+maintenance history $\to$ component state $\to$ inspection
+outcome.  The Hailfinder-like forecast chain (maintenance
+schedule $\to$ expected component wear $\to$ inspection
+prediction) fires exactly when the screening-off condition holds.
+When the building changes its maintenance contractor (hidden
+context), the Pathfinder-like stress test applies: the same
+inference path must be tracked across context-missing and
+context-complete regimes.}
 
 %% ─────────────────────────────────────────────────────────────────
 
@@ -6292,6 +6892,16 @@ we?'') are views of the same carried state.  After 12 months,
 the WM posterior matches what Stan's MCMC would produce---but
 the WM update took constant time, not $O(N)$ MCMC samples.}
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/pplbench_normal_holdout.pdf}
+\caption{Normal-Normal holdout comparison.  Stan (NUTS) vs.\
+  WM-PLN on held-out data: identical posteriors, $O(1)$~vs.\
+  $O(N)$ updates.  The PLL difference is $< 10^{-10}$ across
+  all holdout points.}
+\label{fig:pplbench-holdout}
+\end{figure}
+
 
 \section{Hook-B Adaptive Normal-Normal}
 
@@ -6433,6 +7043,15 @@ produces consistent posteriors across Stan and NumPyro on the
 same model.  This rules out backend-specific artifacts in the
 comparison.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/pplbench_refresh_checks.pdf}
+\caption{Cross-lane refresh verification.  All nine lanes pass
+  numerical agreement checks between the Python reference
+  implementation and the Lean-specified carrier semantics.}
+\label{fig:pplbench-refresh}
+\end{figure}
+
 
 \section{Interpretation}
 
@@ -6473,10 +7092,246 @@ entire inference pipeline as an opaque black box.
 
 %% ─────────────────────────────────────────────────────────────────
 
-\chapter{[WIP] Advanced-AI Outcomes}
+\chapter{Advanced-AI Outcomes: An Exploratory Application}
 \label{ch:ai-outcomes}
 
-%% TODO: pull from v1
+This chapter applies the WM calculus to a domain where
+overclaiming is dangerous: forecasting the societal outcomes of
+advanced AI systems.  The formal substrate is the GSLT
+world-model construction of Chapter~\ref{ch:governance},
+\S\ref{sec:gslt-wm}; the evidence carriers and revision algebra
+are those of Chapters~\ref{ch:evidence}--\ref{ch:state-ops}.
+The treatment is deliberately austere.
+The calculus provides the machinery; the data determines what
+can be said---and in this domain, the honest answer is mostly
+``not much yet.''
+
+The chapter is included not because the results are strong,
+but because the \emph{methodology} illustrates what
+evidence-first reasoning looks like when applied to a topic
+that is usually discussed with more confidence than the evidence
+warrants.
+
+
+\section{The Query Form}
+
+The current evidence does \emph{not} justify a single exclusive
+global terminal-outcome atom.  Different regions can instantiate
+different governance regimes simultaneously, and benefit, lock-in,
+and catastrophic pressures can co-occur across jurisdictions and
+time horizons.  The world-model state is therefore a structured
+situation:
+\[
+  S = (g, t, G, A, I, U, F),
+\]
+where $g$ is geography/region, $t$ is horizon, $G$ is
+governance/auditability, $A$ is authoritarian/lock-in pressure,
+$I$ is the incident/harm surface, $U$ is the benefit-side
+capability surface, and $F$ is the forecast-target/reliability
+layer.  Given prior state $W_0$, evidence bundle $E$, and a
+declared scenario-regime scaffold $\mathcal{R}$:
+\[
+  W_E := \mathrm{revise}(W_0, E; \mathcal{R}),
+  \qquad
+  q_{\varphi} := P(\varphi(S) \mid W_E).
+\]
+The familiar labels---\code{beneficial\_pluralistic\_transition},
+\code{authoritarian\_lock\_in}, \code{extinction}---are used as
+\emph{coarse reporting lenses} over $S$, not as primitive
+exhaustive atoms.  Derived queries use Fréchet-safe union
+bounds:
+\[
+  \max\!\bigl(0,\;L_c + L_e - 1\bigr)
+  \le p_{\mathrm{doom}}(t) \le
+  \min\!\bigl(1,\;U_c + U_e\bigr).
+\]
+
+
+\section{What the Data Supports}
+
+The normalized evidence bundle consists of six tables:
+
+\begin{table}[htbp]
+\centering
+\caption{Normalized datasets: what each table is, what it
+supports, and its main limitation.}
+\label{tab:ai-outcomes-dataset-inventory}
+\IfFileExists{../results/ai_outcomes/ai_outcomes_dataset_inventory_table.tex}{%
+  \input{../results/ai_outcomes/ai_outcomes_dataset_inventory_table.tex}
+}{%
+  \small\emph{Artifact missing; regenerate via
+  \code{scripts/wm\_pln\_ai\_outcomes\_aggregate.py}.}
+}
+\end{table}
+
+\noindent
+The forecast substrate is highly imbalanced:
+\code{mixed\_outcomes} $= 627$,
+\code{beneficial\_pluralistic\_transition} $= 40$,
+\code{extinction} $= 12$,
+\code{authoritarian\_lock\_in} $= 10$,
+\code{catastrophic\_disempowerment} $= 8$.
+This is enough for factor-level analysis but not for sharp
+posteriors over exclusive world-histories.
+
+\begin{table}[htbp]
+\centering
+\caption{Factor families directly supported by the current
+evidence bundle.}
+\label{tab:ai-outcomes-factor-support}
+\IfFileExists{../results/ai_outcomes/ai_outcomes_factor_support_table.tex}{%
+  \input{../results/ai_outcomes/ai_outcomes_factor_support_table.tex}
+}{%
+  \small\emph{Artifact missing.}
+}
+\end{table}
+
+
+\section{The Assumption Ladder}
+
+The key contribution is not a number but a \emph{ladder}: an
+explicit separation of what can be said at each level of
+assumption strength.
+
+\begin{description}
+\item[A0 (evidence only):] Lens intervals at full width $[0,1]$.
+  No direct-target numerics used.
+\item[A1 (weak direct-target hull):] Convex hull of parsed
+  direct-target numeric summaries.  Extinction narrows to
+  $[0.02, 0.50]$; authoritarian lock-in to $[0.10, 0.20]$;
+  beneficial transition to $[0.02, 0.43]$.  The Fréchet-safe
+  $p_{\mathrm{doom}}$ upper bound tightens to $0.90$.
+\item[A2 (reliability-filtered):] Restrict A1 to sources with
+  resolved/calibrated reliability signals.  In the current
+  bundle, this \emph{reopens} most intervals to $[0,1]$---the
+  calibration substrate is too thin.
+\item[A3 (monotone regime ordering):] Add directional claims
+  from the scenario scaffold without converting proxy channels
+  into posterior numbers.
+\end{description}
+
+\begin{table}[htbp]
+\centering
+\caption{Assumption ladder.  Only weak direct-target numerics
+narrow intervals; reliability filtering mostly reopens them.}
+\label{tab:ai-outcomes-assumption-ladder}
+\IfFileExists{../results/ai_outcomes/ai_outcomes_assumption_ladder.tex}{%
+  \input{../results/ai_outcomes/ai_outcomes_assumption_ladder.tex}
+}{%
+  \small\emph{Artifact missing.}
+}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/ai_outcomes_assumption_ladder.pdf}
+\caption{Assumption ladder.  At A1, weak direct-target numerics
+  narrow some lenses (colored intervals).  At A2, requiring
+  calibrated sources reopens them to full width---the calculus
+  honestly reporting insufficient calibration support.}
+\label{fig:ai-outcomes-assumption-ladder}
+\end{figure}
+
+\noindent
+The strongest conclusion is not a sharp posterior.  It is an
+explicit frontier between data-driven narrowing and
+assumption-driven rhetoric.  At A1, weak heterogeneous summaries
+give some narrowing.  At A2, requiring calibrated sources,
+the same lenses reopen
+(Figure~\ref{fig:ai-outcomes-assumption-ladder}).
+The gap between A1 and A2 is itself
+informative: it tells us exactly how much of the apparent
+precision comes from taking source numbers at face value versus
+from verified forecasting track records.%
+\footnote{The assumption ladder is also kernel-checked:
+\codepath{Mettapedia/Logic/AIOutcomesDemo.lean}
+(13~theorems, 0~sorry) verifies the A0--A3 interval
+containment properties and Fréchet union bounds.}
+
+
+\section{Region-Conditioned Queries}
+
+The region-conditioned form is better-founded than a single
+scalar ``world'' summary.  But the present evidence is
+asymmetric: forecast rows are mostly global, incident channels
+are region-specific but not posterior-identifying, and
+benefit-side support is largely global.
+
+\begin{table}[htbp]
+\centering
+\caption{Region-horizon surface.  Numeric hull columns are
+global horizon-conditioned intervals; the ordering column records
+assumption-driven directional claims only.}
+\label{tab:ai-outcomes-region-horizon}
+\IfFileExists{../results/ai_outcomes/ai_outcomes_region_horizon_table.tex}{%
+  \input{../results/ai_outcomes/ai_outcomes_region_horizon_table.tex}
+}{%
+  \small\emph{Artifact missing.}
+}
+\end{table}
+
+
+\section{Interpretation Rule}
+
+This chapter should be read with one strict discipline:
+\begin{quote}
+\emph{Do not interpret operational confidence scores or
+sparse-coverage snapshots as semantic posteriors.}
+\end{quote}
+The world-model remains the truthmaker.  Coarse-lens outputs
+stay interval-valued until enough direct-target evidence and
+calibration support a narrower claim.  Any global scalarization
+must first specify how region- and horizon-conditioned predicates
+are being aggregated---and the current evidence does not yet
+calibrate that aggregation functional.
+
+
+\section{What the WM Calculus Contributes Here}
+
+The substantive contribution is not any particular number but
+the methodology:
+\begin{enumerate}
+\item \textbf{Explicit evidence separation.}  The six
+  normalized tables are auditable: each row has provenance,
+  granularity, and declared WM role.  A reviewer can check
+  what went in and trace what came out.
+\item \textbf{Assumption transparency.}  The ladder (A0--A3)
+  makes the dependence on assumptions visible.  Moving from A1
+  to A2 \emph{widens} intervals---this is the calculus honestly
+  reporting that calibration support is insufficient.
+\item \textbf{Abstention as a first-class output.}  Full-width
+  $[0,1]$ is not a failure mode; it is the correct answer when
+  the evidence is thin.  The GJP forecasting chapter
+  (\S\ref{sec:gjp-forecasting}) showed that WM-PLN with scoped
+  forgetting outperforms full-history aggregation on regime
+  changes.  The same principle applies here: better to abstain
+  than to anchor on stale or poorly calibrated evidence.
+\item \textbf{Compositional structure.}  As new evidence
+  sources are normalized (e.g., resolved forecasting questions,
+  post-hoc incident analyses, governance audit reports), they
+  compose additively into the existing state via the same
+  revision algebra used throughout this book.
+\end{enumerate}
+
+\paragraph{What would narrow the intervals most?}
+The forecast substrate is the bottleneck.  Of the 1,195 forecast
+rows, 627 are tagged \code{mixed\_outcomes} and only 12 concern
+extinction.  Resolved, calibrated forecasting questions with
+direct-target framing---especially from platforms with verified
+track records (GJP-quality, not social-media polls)---would move
+intervals at A2, not just A1.  Governance audit reports with
+quantified compliance scores would strengthen the $G$ component.
+Incident analyses with standardized severity scales would
+strengthen the $I$ component.  All of these compose additively
+into the existing state.
+
+\medskip\noindent
+The chapter demonstrates that the WM calculus can be applied to
+contested high-stakes domains without abandoning its core
+discipline.  The price is wide intervals and frequent
+abstention.  The reward is that every claim is traceable to
+its evidence, and the gap between what is known and what is
+assumed is never hidden.
 
 
 %% ═══════════════════════════════════════════════════════════════════
@@ -6484,11 +7339,246 @@ entire inference pipeline as an opaque black box.
 \label{part:appendices}
 %% ═══════════════════════════════════════════════════════════════════
 
+%% ───────────────────────────────────────────────────
 \chapter{Notation and Symbol Glossary}
+\label{app:notation}
+
+\section*{Evidence Algebra}
+
+\begin{longtable}{@{}lp{0.55\textwidth}l@{}}
+\toprule
+Symbol & Meaning & Introduced \\
+\midrule
+$\hplus$ & Evidence revision (additive combination) & Ch~\ref{ch:world-models} \\
+$\htensor$ & Quantale tensor (compositional product) & Ch~\ref{ch:evidence} \\
+$\Evidence$ & Evidence type & Ch~\ref{ch:evidence} \\
+$\JointEvidence$ & Joint evidence type & Ch~\ref{ch:evidence} \\
+$\WorldModel$ & World-model type & Ch~\ref{ch:world-models} \\
+$\WorldModelSigma$ & $\Sigma$-annotated world model & Ch~\ref{ch:sigma-rewrites} \\
+$\STV{s}{c}$ & Simple truth value $\langle s, c \rangle$ & Ch~\ref{ch:views} \\
+$\strength$ & Strength view projection & Ch~\ref{ch:views} \\
+$\confidence$ & Confidence view projection & Ch~\ref{ch:views} \\
+$\neff$ & Effective sample size ($\mathrm{pos} + \mathrm{neg}$) & Ch~\ref{ch:evidence} \\
+$\Sigma$ & Side-condition context & Ch~\ref{ch:sigma-rewrites} \\
+\bottomrule
+\end{longtable}
+
+\section*{Claim Taxonomy}
+
+Every formal result carries one of the following labels:
+
+\begin{longtable}{@{}lp{0.65\textwidth}@{}}
+\toprule
+Label & Meaning \\
+\midrule
+\claimCore{} & Theorem-backed, no external assumptions \\
+\claimConditional{} & Requires declared finite-domain or structural assumption \\
+\claimBoundary{} & Boundary theorem (orange-boxed): the claim is \emph{false} without its stated condition \\
+\claimOperational{} & Heuristic or governance layer; not a semantic theorem \\
+\finitedomain{} & Marks finite-domain restriction \\
+\bottomrule
+\end{longtable}
+
+\section*{Review Verdicts}
+
+Applied when the book reviews a claim from PLN~v0.9 or the literature:
+
+\begin{longtable}{@{}lp{0.60\textwidth}@{}}
+\toprule
+Label & Meaning \\
+\midrule
+\verdictClean{} & The original claim formalizes as stated \\
+\verdictCorrected{} & The original claim was wrong; a corrected version is proved \\
+\verdictAssumption{} & Proved under explicitly declared assumptions \\
+\verdictNoGo{} & The original claim is \emph{false} (counterexample or no-go) \\
+\verdictHeuristic{} & Not a theorem; governance or operational layer \\
+\bottomrule
+\end{longtable}
+
+\section*{Named Systems and Conventions}
+
+\begin{longtable}{@{}lp{0.65\textwidth}@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+\xiPLN{} & The refounded calculus presented in this book \\
+D1--D8 & The eight desiderata (Chapter~\ref{ch:desiderata}) \\
+\maplecourt{\ldots} & Maple Court apartment example (teal-boxed running example) \\
+\bottomrule
+\end{longtable}
+
+
+%% ───────────────────────────────────────────────────
 \chapter{Compact Theorem Map}
+\label{app:theorem-map}
+
+The following table lists the Lean~4 files directly referenced in
+this book, with exact theorem counts from the current codebase
+(Lean~4.28.0, Mathlib~v4.28.0).  All files have 0~sorry.
+
+\begin{longtable}{@{}p{0.42\textwidth}rrp{0.25\textwidth}@{}}
+\toprule
+File & Lines & Thm & Backs \\
+\midrule
+\endfirsthead
+\toprule
+File & Lines & Thm & Backs \\
+\midrule
+\endhead
+\multicolumn{4}{@{}l}{\emph{Foundations (Part~II)}} \\
+\midrule
+\code{Logic/PLNWorldModelGeneric} & 254 & 12 & Ch~3--4 \\
+\code{Logic/BinaryEvidence} & 1597 & 44 & Ch~4 \\
+\code{Logic/PLNNoisyOr} & 765 & 50 & Ch~4, 22 \\
+\code{Logic/PLNMapleCourtDemo} & 906 & 47 & Ch~2--6 \\
+\code{Logic/WMDerivationTrackingDemo} & 453 & 31 & Ch~5 \\
+\code{Logic/EvidentialLedger} & 114 & 2 & Ch~5 \\
+\code{Languages/GF/SUMO/PainEvidenceWM} & 192 & 10 & Ch~5 \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Core Theory (Part~III)}} \\
+\midrule
+\code{Logic/PLNBayesNetInference} & 404 & 7 & Ch~10 \\
+\code{Logic/DDLPlus/Core} & 410 & 11 & Ch~15 \\
+\code{Logic/DDLPlus/Theorems} & 319 & 31 & Ch~15 \\
+\code{Ethics/GewirthPGC} & 491 & 4 & Ch~15 \\
+\code{OSLF/Framework/GovernanceInstance} & 268 & 11 & Ch~15 \\
+\code{Logic/LP/RangeRestriction} & 197 & 9 & Ch~16 \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Applications (Part~VI)}} \\
+\midrule
+\code{Logic/PLNBrokenSensorDemo} & 420 & 31 & Ch~20 \\
+\code{Logic/PLNWidgetFactoryDemo} & 422 & 30 & Ch~20 \\
+\code{Logic/PLNKalmanSleepDemo} & 374 & 35 & Ch~20 \\
+\code{Logic/WMGasSensorDriftDemo} & 652 & 58 & Ch~20 \\
+\code{Logic/WMSteelFaultDemo} & 568 & 46 & Ch~20 \\
+\code{Logic/WMNABSleepDemo} & 344 & 30 & Ch~20 \\
+\code{Logic/GJPForecastDemo} & 255 & 14 & Ch~20 \\
+\code{Logic/PLNWorldModelOrderCostGasPolicyDemo} & 155 & 6 & Ch~20 \\
+\code{Logic/PLNBioHypothesisGeneration} & 635 & 39 & Ch~22 \\
+\code{Logic/PLNGWASHigherOrderBridge} & 310 & 17 & Ch~22 \\
+\code{Logic/WMUWCSEGateDemo} & 177 & 12 & Ch~16 \\
+\code{Logic/AIOutcomesDemo} & 280 & 13 & Ch~24 \\
+\midrule
+\textbf{Total (book-referenced files)} & \textbf{9,962} & \textbf{601} & \\
+\bottomrule
+\end{longtable}
+
+\noindent
+Additional project files (Datalog formalization, rho-calculus,
+OSLF framework, MeTTa HE spec, HOL completeness) bring the
+full project to $\sim$700 theorems.  The entire formalization
+has 0~sorry and 0~\code{native\_decide}.
+
+
+%% ───────────────────────────────────────────────────
 \chapter{Code Navigation Guide}
+\label{app:code-nav}
+
+The formalization lives in the Lean~4 project at
+\code{lean-projects/mettapedia/}, built with Lean~4.28.0 and
+Mathlib~v4.28.0 (\code{lake build}).
+
+\begin{description}
+\item[\code{Mettapedia/Logic/}] Core WM algebra, evidence
+  carriers, PLN demos, BN inference, noisy-OR, Datalog.
+\item[\code{Mettapedia/OSLF/}] OSLF framework, rho-calculus,
+  PeTTa grounded oracle, GSLT world models.
+\item[\code{Mettapedia/Ethics/}] Gewirth PGC bridge, governance
+  norms.
+\item[\code{Mettapedia/Languages/}] MeTTa HE specification,
+  GF/SUMO ontology repair.
+\item[\code{scripts/}] Python experiment drivers
+  (\code{wm\_pln\_*.py}).
+\item[\code{results/}] Generated figures, tables, and JSON
+  artifacts.
+\item[\code{papers/}] This book and its bibliography.
+\end{description}
+
+\noindent
+Each chapter's footnotes point to the specific Lean file(s)
+backing its formal claims.  Appendix~\ref{app:theorem-map}
+provides the complete cross-reference.
+
+
+%% ───────────────────────────────────────────────────
 \chapter{Selected Proof Ideas}
+\label{app:proof-ideas}
+
+Five proof techniques recur throughout the formalization.
+
+\paragraph{1.\ Kernel reflection via \code{decide}.}
+Computations over \code{BinEvNat} (natural-number evidence
+pairs) are closed terms that the Lean kernel can evaluate
+directly.  The Pain reclassification case study
+(\S\ref{sec:pain-evidence-wm}) proves all 10~theorems---totals,
+ranking, sensitivity---by \code{decide}, with zero tactic
+overhead.  The same pattern drives the Maple Court conformance
+checker: write a simple Boolean predicate, close with
+\code{decide}, and the kernel does the work.
+
+\paragraph{2.\ Accumulator shift for \code{foldl}.}
+The compositionality theorem \code{toState\_append}
+(Evidential Ledger, Chapter~\ref{ch:state-ops}) depends on a
+helper:
+\[
+  \mathtt{l.foldl}\;(+)\;\mathit{init}
+  \;=\; \mathit{init} + \mathtt{l.foldl}\;(+)\;0.
+\]
+The proof is by list induction with \code{add\_assoc} from the
+\code{AddCommMonoid} instance.  This one lemma unlocks all
+append-based compositionality results.
+
+\paragraph{3.\ Cross-multiplication for fraction comparison.}
+Comparing evidence strengths $\langle 12, 1\rangle$ vs.\
+$\langle 10, 3\rangle$ without floating-point: test
+$s_1 \cdot (s_2 + n_2) > s_2 \cdot (s_1 + n_1)$, which is a
+closed \code{Nat} inequality checkable by \code{decide}.
+Used in the Pain ranking theorems and the gas sensor drift
+demo.
+
+\paragraph{4.\ $\Sigma$-guarded rewrite compilation.}
+Chapters~\ref{ch:sigma-rewrites}--\ref{ch:bn-models} compile
+each PLN rule into a pair: a side condition $\Sigma$ and an
+exact rewrite body.  The chain, fork, and collider rules for
+Bayesian networks all follow this pattern.  The side condition
+is a \emph{first-class object}: it can be checked, weakened,
+bounded, or discharged, and the rewrite fires only when the
+condition holds.
+
+\paragraph{5.\ Sleep $=$ Wake via \code{List.foldl\_append}.}
+The Kalman sleep consolidation theorem shows that batch replay
+of deferred observations yields the same posterior as sequential
+online filtering.  The key step:
+\code{List.foldl\_append} rewrites
+$\mathtt{foldl}\;f\;a\;(l_1 \mathbin{+\!+} l_2)$ to
+$\mathtt{foldl}\;f\;(\mathtt{foldl}\;f\;a\;l_1)\;l_2$.
+The same algebraic trick appears in the gas sensor, NAB
+anomaly, steel fault, and GJP forecast demos.
+
+
+%% ───────────────────────────────────────────────────
 \chapter{Coverage Map}
+\label{app:coverage-map}
+
+The eight desiderata of Chapter~\ref{ch:desiderata} are
+formally discharged as follows:
+
+\begin{longtable}{@{}p{0.09\textwidth}p{0.20\textwidth}p{0.32\textwidth}p{0.28\textwidth}@{}}
+\toprule
+ & Desideratum & Formal discharge & Key location \\
+\midrule
+D1 & State Primacy & \code{AdditiveWorldModel} structure & Ch~\ref{ch:world-models}--\ref{ch:evidence} \\
+D2 & Compositional Extraction & \code{extract\_add} homomorphism & Ch~\ref{ch:world-models}--\ref{ch:evidence} \\
+D3 & Generic Carriers & Binary, Dirichlet, Normal-Gamma instances & Ch~\ref{ch:evidence} \\
+D4 & Evidence over Views & Views as lossy projections of state & Ch~\ref{ch:views} \\
+D5 & Explicit Side Conditions & $\Sigma$-guarded rewrite rules & Ch~\ref{ch:sigma-rewrites}--\ref{ch:bn-models} \\
+D6 & Retractability & \code{ForgettingLayer}, outside-invariant & Ch~\ref{ch:state-ops}; GJP ablation, Ch~\ref{ch:carrier-validation} \\
+D7 & Conservation & \code{inside\_outside\_conservation} & Ch~\ref{ch:state-ops} \\
+D8 & Honest Boundaries & No-go theorem; boundary theorems & Ch~\ref{ch:no-go}, Ch~\ref{ch:error-transport} \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Running example}} & Maple Court instantiates all 8 & Ch~\ref{ch:desiderata}--\ref{ch:carrier-validation} \\
+\bottomrule
+\end{longtable}
 
 \bibliographystyle{plain}
 \bibliography{references}

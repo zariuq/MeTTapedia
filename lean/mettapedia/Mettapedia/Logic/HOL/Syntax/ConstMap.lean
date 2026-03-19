@@ -2,10 +2,11 @@ import Mettapedia.Logic.HOL.Syntax.Closed
 
 namespace Mettapedia.Logic.HOL
 
-universe u v w
+universe u v w x
 
 variable {Base : Type u}
 variable {Const : Ty Base → Type v} {Const' : Ty Base → Type w}
+variable {Const'' : Ty Base → Type x}
 
 /-- Map the constant symbols in a typed HOL term, leaving variables untouched. -/
 def mapConst (f : ∀ {τ : Ty Base}, Const τ → Const' τ) :
@@ -38,6 +39,47 @@ def mapConst (f : ∀ {τ : Ty Base}, Const τ → Const' τ) :
   | var v => rfl
   | const c => rfl
   | app g t hg ht => simp [mapConst, hg, ht]
+  | lam t ih => simp [mapConst, ih]
+  | top => rfl
+  | bot => rfl
+  | and φ ψ hφ hψ => simp [mapConst, hφ, hψ]
+  | or φ ψ hφ hψ => simp [mapConst, hφ, hψ]
+  | imp φ ψ hφ hψ => simp [mapConst, hφ, hψ]
+  | not φ hφ => simp [mapConst, hφ]
+  | eq t u ht hu => simp [mapConst, ht, hu]
+  | all φ hφ => simp [mapConst, hφ]
+  | ex φ hφ => simp [mapConst, hφ]
+
+@[simp] theorem mapConst_comp
+    (g : ∀ {τ : Ty Base}, Const' τ → Const'' τ)
+    (f : ∀ {τ : Ty Base}, Const τ → Const' τ)
+    (t : Term Const Γ τ) :
+    mapConst g (mapConst f t) =
+      mapConst (fun c => g (f c)) t := by
+  induction t with
+  | var v => rfl
+  | const c => rfl
+  | app g' t hg ht => simp [mapConst, hg, ht]
+  | lam t ih => simp [mapConst, ih]
+  | top => rfl
+  | bot => rfl
+  | and φ ψ hφ hψ => simp [mapConst, hφ, hψ]
+  | or φ ψ hφ hψ => simp [mapConst, hφ, hψ]
+  | imp φ ψ hφ hψ => simp [mapConst, hφ, hψ]
+  | not φ hφ => simp [mapConst, hφ]
+  | eq t u ht hu => simp [mapConst, ht, hu]
+  | all φ hφ => simp [mapConst, hφ]
+  | ex φ hφ => simp [mapConst, hφ]
+
+theorem mapConst_ext
+    {f g : ∀ {τ : Ty Base}, Const τ → Const' τ}
+    (hfg : ∀ {τ : Ty Base} (c : Const τ), f c = g c)
+    (t : Term Const Γ τ) :
+    mapConst f t = mapConst g t := by
+  induction t with
+  | var v => rfl
+  | const c => simp [mapConst, hfg c]
+  | app g' t hg ht => simp [mapConst, hg, ht]
   | lam t ih => simp [mapConst, ih]
   | top => rfl
   | bot => rfl

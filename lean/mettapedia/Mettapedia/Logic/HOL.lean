@@ -22,6 +22,8 @@ import Mettapedia.Logic.HOL.HenkinAxiomsInfinity
 import Mettapedia.Logic.HOL.CanonicalKripke
 import Mettapedia.Logic.HOL.CanonicalSemantics
 import Mettapedia.Logic.HOL.CanonicalModel
+import Mettapedia.Logic.HOL.IntuitionisticCompleteness
+import Mettapedia.Logic.HOL.OriginalReflectionReduction
 import Mettapedia.Logic.HOL.IntuitionisticSoundness
 import Mettapedia.Logic.HOL.Soundness
 import Mettapedia.Logic.HOL.Embedding.FirstOrder
@@ -54,14 +56,20 @@ Public entrypoint for the real Church-style HOL layer:
 - a canonical truth-event semantics for closed formulas over those worlds,
 - a typed companion canonical model semantics over closed substitutions into the
   cumulative Henkin language,
+- an internal finite closed-context completeness theorem for the cumulative
+  Henkin language over canonical Henkin worlds,
+- a proof-theoretic reduction theorem isolating the exact remaining original
+  reflection blockers as finite-stage reduction plus one-step stage reflection,
 - first-order embedding,
 - and the world-model bridge over pointed Henkin models.
 
 Important status boundary:
 
 - the corrected intuitionistic-extensional HOL core, soundness layer, cumulative
-  Henkinization infrastructure, and world-level canonical truth machinery are real;
-- a typed canonical model and HOL completeness theorem are still in progress;
+  Henkinization infrastructure, world-level canonical truth machinery, and an
+  internal cumulative-Henkin finite-context completeness theorem are real;
+- the final typed original-signature canonical-model bridge and HOL completeness
+  theorem are still in progress;
 - the logical-induction and planner-facing belief/process files imported here are
   experimental overlays rather than part of the mature HOL metatheory.
 -/

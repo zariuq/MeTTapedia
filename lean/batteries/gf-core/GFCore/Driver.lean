@@ -164,8 +164,8 @@ def parseRaw (d : GFDriver) (lang : String) (cat : String) (surface : String)
   pure output.trees
 
 /-- Parse a GF abstract tree string like "PredVP (UsePN john_PN) (UseV walk_V)"
-    into a RawTree. GF uses space-separated application syntax. -/
-partial def parseGFExpr (s : String) : Except String RawTree := do
+    into a RawTerm. GF uses space-separated application syntax. -/
+partial def parseGFExpr (s : String) : Except String RawTerm := do
   let tokens := tokenize s.toList []
   match parseExpr tokens with
   | .ok (tree, []) => pure tree
@@ -192,7 +192,7 @@ where
       else
         tokenize cs (c :: acc)
 
-  parseExpr : List String → Except String (RawTree × List String)
+  parseExpr : List String → Except String (RawTerm × List String)
     | [] => throw "unexpected end of input"
     | "(" :: rest => do
       let (tree, rest) ← parseExpr rest
@@ -200,8 +200,8 @@ where
       | ")" :: rest => pure (tree, rest)
       | _ => throw "expected ')'"
     | name :: rest => do
-      let rec collectArgs (remaining : List String) (args : Array RawTree)
-          : Except String (Array RawTree × List String) :=
+      let rec collectArgs (remaining : List String) (args : Array RawTerm)
+          : Except String (Array RawTerm × List String) :=
         match remaining with
         | "(" :: _ => do
           let (arg, r) ← parseExpr remaining
@@ -212,16 +212,16 @@ where
           if tok == ")" || tok == "(" then
             pure (args, remaining)
           else
-            collectArgs r (args.push (RawTree.leaf tok))
+            collectArgs r (args.push (RawTerm.leaf tok))
       let result ← collectArgs rest #[]
-      pure (.node name none result.1, result.2)
+      pure (.app name none result.1, result.2)
 
-/-- Parse a surface string into RawTrees. Parse failures for individual
+/-- Parse a surface string into RawTerms. Parse failures for individual
     tree expressions are collected and returned alongside successes. -/
 def parseWithErrors (d : GFDriver) (lang : String) (cat : String) (surface : String)
-    : IO (Array RawTree × Array String) := do
+    : IO (Array RawTerm × Array String) := do
   let output ← d.parseRawStructured lang cat surface
-  let mut trees : Array RawTree := #[]
+  let mut trees : Array RawTerm := #[]
   let mut errors : Array String := output.errors
   for s in output.trees do
     match parseGFExpr s with
@@ -229,9 +229,9 @@ def parseWithErrors (d : GFDriver) (lang : String) (cat : String) (surface : Str
     | .error e => errors := errors.push s!"GF expr parse error: {e} (input: '{s}')"
   pure (trees, errors)
 
-/-- Parse a surface string into RawTrees (convenience, discards errors). -/
+/-- Parse a surface string into RawTerms (convenience, discards errors). -/
 def parse (d : GFDriver) (lang : String) (cat : String) (surface : String)
-    : IO (Array RawTree) := do
+    : IO (Array RawTerm) := do
   let (trees, _) ← d.parseWithErrors lang cat surface
   pure trees
 
@@ -241,23 +241,23 @@ def parseToCandidate (d : GFDriver) (lang : String) (cat : String) (surface : St
   let trees ← d.parse lang cat surface
   pure (trees.map fun t => { language := lang, surface, prob? := none, tree := t })
 
-/-- Convert a RawTree to GF expression string syntax. -/
-private partial def rawTreeToGFExpr : RawTree → String
-  | .node f _ args =>
+/-- Convert a RawTerm to GF expression string syntax. -/
+private partial def rawTermToGFExpr : RawTerm → String
+  | .app f _ args =>
     if args.isEmpty then f
     else
       let argStrs := args.map fun a =>
-        let s := rawTreeToGFExpr a
+        let s := rawTermToGFExpr a
         if s.contains ' ' then s!"({s})" else s
       f ++ " " ++ (String.intercalate " " argStrs.toList)
 
-/-- Linearize a RawTree to a surface string in the given language. -/
-def linearize (d : GFDriver) (lang : String) (tree : RawTree) : IO String := do
-  let exprStr := rawTreeToGFExpr tree
+/-- Linearize a RawTerm to a surface string in the given language. -/
+def linearize (d : GFDriver) (lang : String) (tree : RawTerm) : IO String := do
+  let exprStr := rawTermToGFExpr tree
   let cmd := s!"l -lang={lang} {exprStr}"
   d.runCommand cmd
 
-/-- Linearize a CheckedExpr (erases to RawTree first). -/
+/-- Linearize a CheckedExpr (erases to RawTerm first). -/
 def linearizeChecked (d : GFDriver) (lang : String) (e : CheckedExpr) : IO String := do
   let raw := erase e
   d.linearize lang raw

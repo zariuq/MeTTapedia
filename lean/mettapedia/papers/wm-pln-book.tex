@@ -2562,7 +2562,7 @@ The module also exposes gas-specific zero-threshold endpoints for
 ethanol, ammonia, and toluene.%
 \footnote{Formalized in
   \codepath{Mettapedia/Logic/PLNWorldModelOrderCostGasPolicyDemo.lean} and
-  \codepath{Mettapedia/Logic/PLNGasSensorDriftDemo.lean} (652~lines).}
+  \codepath{Mettapedia/Logic/WMGasSensorDriftDemo.lean} (652~lines).}
 
 \subsection{Applied Example: Steel Plates Fault Classification}
 
@@ -2648,7 +2648,7 @@ $-2.07$, Bumps $-2.17$); at $x = 2.0$, Bumps ($-0.71$) and Pastry
 the same fixture agrees on the dominant K\_Scratch regime but can
 differ at ambiguous boundary points, since it uses ML point estimates
 rather than the full posterior predictive.%
-\footnote{Formalized in \codepath{Mettapedia/Logic/PLNSteelFaultDemo.lean} (568~lines).}
+\footnote{Formalized in \codepath{Mettapedia/Logic/WMSteelFaultDemo.lean} (568~lines).}
 
 \paragraph{Full-dataset validation.}
 \label{sec:steel-full}
@@ -2905,7 +2905,7 @@ contributes chiefly as audit/governance instrumentation:
   \code{runtimePairwiseOrderCheck\_certifies\_policyThreshold},
 \item escalation hooks (abstain/retrain/review) when certified order-cost
   budgets are violated near anomaly windows.%
-  \footnote{Formalized in \codepath{Mettapedia/Logic/PLNNABSleepDemo.lean} (344~lines).}
+  \footnote{Formalized in \codepath{Mettapedia/Logic/WMNABSleepDemo.lean} (344~lines).}
 \end{enumerate}
 
 \subsection{Applied Example: Good Judgment Project Forecast Aggregation}
@@ -12763,7 +12763,7 @@ increasing complexity:
   sleep consolidation, and 3-way source weight normalization.
   Demonstrates sensor drift: posteriors from batch~1 (2007) vs.\
   batch~10 (2011) capture genuine distributional shift.\\
-  \codepath{Mettapedia/Logic/PLNGasSensorDriftDemo.lean}
+  \codepath{Mettapedia/Logic/WMGasSensorDriftDemo.lean}
 
 \item \textbf{Steel Plates Faults} (568~lines).
   Real UCI data (current UCI DOI~10.24432/C5J88N): 3~fault types (Pastry,
@@ -12771,7 +12771,7 @@ increasing complexity:
   Normal-Gamma posteriors, 3-way mixture exceedance validity,
   cross-fault independence, and source weight normalization.
   Manufacturing quality-control application of the WM calculus.\\
-  \codepath{Mettapedia/Logic/PLNSteelFaultDemo.lean}
+  \codepath{Mettapedia/Logic/WMSteelFaultDemo.lean}
 
 \item \textbf{NAB Machine Temperature Anomaly} (344~lines).
   Real NAB benchmark data (MIT License): machine temperature sensor
@@ -12779,7 +12779,7 @@ increasing complexity:
   regimes (calm~$\sim$85\textdegree{}F, hot~$\sim$101\textdegree{}F,
   anomaly~$\sim$30\textdegree{}F).  Kalman wake/sleep on real
   time series, multi-regime composition, anomaly exceedance ordering.\\
-  \codepath{Mettapedia/Logic/PLNNABSleepDemo.lean}
+  \codepath{Mettapedia/Logic/WMNABSleepDemo.lean}
 \end{enumerate}
 
 \noindent
@@ -12788,9 +12788,9 @@ Build all six:
 lake build Mettapedia.Logic.PLNBrokenSensorDemo \
            Mettapedia.Logic.PLNWidgetFactoryDemo \
            Mettapedia.Logic.PLNKalmanSleepDemo \
-           Mettapedia.Logic.PLNGasSensorDriftDemo \
-           Mettapedia.Logic.PLNSteelFaultDemo \
-           Mettapedia.Logic.PLNNABSleepDemo
+           Mettapedia.Logic.WMGasSensorDriftDemo \
+           Mettapedia.Logic.WMSteelFaultDemo \
+           Mettapedia.Logic.WMNABSleepDemo
 \end{lstlisting}
 
 \section{Regression Targets}

@@ -1,4 +1,5 @@
 import Mettapedia.Logic.HOL.Henkinization
+import Mettapedia.Logic.HOL.DerivationExtensionality
 
 namespace Mettapedia.Logic.HOL
 
@@ -68,6 +69,133 @@ abbrev liftClosedFormula {m n : Nat} (h : m ≤ n) :
     ClosedFormula (HenkinConstStage Base Const m) →
       ClosedFormula (HenkinConstStage Base Const n) :=
   mapConst (lift (Base := Base) (Const := Const) h)
+
+/-- Lift original-signature terms directly into stage `n`. -/
+abbrev liftBaseTerm (n : Nat) {Γ : Ctx Base} {τ : Ty Base} :
+    Term Const Γ τ → Term (HenkinConstStage Base Const n) Γ τ :=
+  mapConst (fun c =>
+    lift (Base := Base) (Const := Const) (Nat.zero_le n)
+      (ofBase (Base := Base) c))
+
+/-- Lift original-signature formulas directly into stage `n`. -/
+abbrev liftBaseFormula (n : Nat) {Γ : Ctx Base} :
+    Formula Const Γ → Formula (HenkinConstStage Base Const n) Γ :=
+  mapConst (fun c =>
+    lift (Base := Base) (Const := Const) (Nat.zero_le n)
+      (ofBase (Base := Base) c))
+
+/-- Lift original-signature closed formulas directly into stage `n`. -/
+abbrev liftBaseClosedFormula (n : Nat) :
+    ClosedFormula Const → ClosedFormula (HenkinConstStage Base Const n) :=
+  mapConst (fun c =>
+    lift (Base := Base) (Const := Const) (Nat.zero_le n)
+      (ofBase (Base := Base) c))
+
+@[simp] theorem down_lift_ofBase_zero {τ : Ty Base} (c : Const τ) :
+    (lift (Base := Base) (Const := Const) (Nat.zero_le 0)
+      (ofBase (Base := Base) c)).down = c := by
+  simp [lift, ofBase, HenkinConstStage.liftOffset]
+
+@[simp] theorem reflectZero_liftBaseTerm
+    {Γ : Ctx Base} {τ : Ty Base}
+    (t : Term Const Γ τ) :
+    Mettapedia.Logic.HOL.mapConst (fun c => c.down)
+      (liftBaseTerm (Base := Base) (Const := Const) 0 t) = t := by
+  rw [liftBaseTerm, Mettapedia.Logic.HOL.mapConst_comp]
+  simp [Mettapedia.Logic.HOL.mapConst_id, ofBase, lift,
+    HenkinConstStage.liftOffset]
+
+@[simp] theorem reflectZero_liftBaseFormula
+    {Γ : Ctx Base}
+    (φ : Formula Const Γ) :
+    Mettapedia.Logic.HOL.mapConst (fun c => c.down)
+      (liftBaseFormula (Base := Base) (Const := Const) 0 φ) = φ :=
+  reflectZero_liftBaseTerm (Base := Base) (Const := Const) φ
+
+@[simp] theorem reflectZero_liftBaseClosedFormula
+    (φ : ClosedFormula Const) :
+    Mettapedia.Logic.HOL.mapClosedFormula (fun c => c.down)
+      (liftBaseClosedFormula (Base := Base) (Const := Const) 0 φ) = φ :=
+  reflectZero_liftBaseFormula (Base := Base) (Const := Const) φ
+
+@[simp] theorem reflectZero_liftBaseClosedTheory
+    (Δ : List (ClosedFormula Const)) :
+    List.map
+      ((Mettapedia.Logic.HOL.mapClosedFormula (fun c => c.down)) ∘
+        liftBaseClosedFormula (Base := Base) (Const := Const) 0)
+      Δ = Δ := by
+  induction Δ with
+  | nil => rfl
+  | cons φ Δ ih =>
+      simp [Function.comp, ih]
+
+theorem liftBase_formulaProvable
+    {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ : Formula Const Γ}
+    (n : Nat) (d : ExtDerivation Const Δ φ) :
+    ExtDerivation (HenkinConstStage Base Const n)
+      (Δ.map (liftBaseFormula (Base := Base) (Const := Const) n))
+      (liftBaseFormula (Base := Base) (Const := Const) n φ) := by
+  simpa [liftBaseFormula, Mettapedia.Logic.HOL.mapConst] using
+    (ExtDerivation.mapConst
+      (Base := Base)
+      (Const := Const)
+      (Const' := HenkinConstStage Base Const n)
+      (f := fun c =>
+        lift (Base := Base) (Const := Const) (Nat.zero_le n)
+          (ofBase (Base := Base) c))
+      (Δ := Δ)
+      (φ := φ)
+      d)
+
+theorem reflectZero_formulaProvable
+    {Γ : Ctx Base}
+    {Δ : List (Formula (HenkinConstStage Base Const 0) Γ)}
+    {φ : Formula (HenkinConstStage Base Const 0) Γ}
+    (d : ExtDerivation (HenkinConstStage Base Const 0) Δ φ) :
+    ExtDerivation Const
+      (Δ.map (Mettapedia.Logic.HOL.mapConst (fun c => c.down)))
+      (Mettapedia.Logic.HOL.mapConst (fun c => c.down) φ) := by
+  simpa [Mettapedia.Logic.HOL.mapConst] using
+    (ExtDerivation.mapConst
+      (Base := Base)
+      (Const := HenkinConstStage Base Const 0)
+      (Const' := Const)
+      (f := fun c => c.down)
+      (Δ := Δ)
+      (φ := φ)
+      d)
+
+theorem liftBase_closedTheory_zero_of_original
+    {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+    (d : ExtDerivation Const Δ φ) :
+    ExtDerivation (HenkinConstStage Base Const 0)
+      (Δ.map (liftBaseClosedFormula (Base := Base) (Const := Const) 0))
+      (liftBaseClosedFormula (Base := Base) (Const := Const) 0 φ) :=
+  liftBase_formulaProvable (Base := Base) (Const := Const) 0 d
+
+theorem original_closedTheory_of_stageZero
+    {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+    (d : ExtDerivation (HenkinConstStage Base Const 0)
+      (Δ.map (liftBaseClosedFormula (Base := Base) (Const := Const) 0))
+      (liftBaseClosedFormula (Base := Base) (Const := Const) 0 φ)) :
+    ExtDerivation Const Δ φ := by
+  have h' : ExtDerivation Const
+      ((Δ.map (liftBaseClosedFormula (Base := Base) (Const := Const) 0)).map
+        (Mettapedia.Logic.HOL.mapClosedFormula (fun c => c.down)))
+      (Mettapedia.Logic.HOL.mapClosedFormula (fun c => c.down)
+        (liftBaseClosedFormula (Base := Base) (Const := Const) 0 φ)) :=
+    reflectZero_formulaProvable (Base := Base) (Const := Const) d
+  simpa [Mettapedia.Logic.HOL.mapClosedFormula, List.map_map, Function.comp] using h'
+
+theorem original_closedTheory_iff_stageZero
+    {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const} :
+    ExtDerivation Const Δ φ ↔
+      ExtDerivation (HenkinConstStage Base Const 0)
+        (Δ.map (liftBaseClosedFormula (Base := Base) (Const := Const) 0))
+        (liftBaseClosedFormula (Base := Base) (Const := Const) 0 φ) := by
+  constructor
+  · exact liftBase_closedTheory_zero_of_original (Base := Base) (Const := Const)
+  · exact original_closedTheory_of_stageZero (Base := Base) (Const := Const)
 
 /-- The designated existential witness term at the next Henkin stage. -/
 def exWitnessTerm {n : Nat} {σ : Ty Base}

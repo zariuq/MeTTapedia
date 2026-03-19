@@ -21,6 +21,10 @@ root = "Algorithms.GF.GenSig"
 name = "gfGenLex"
 root = "Algorithms.GF.GenLex"
 
+[[lean_exe]]
+name = "gfDemo"
+root = "Algorithms.GF.Demo"
+
 [[require]]
 name = "mettail_core"
 path = "../batteries/mettail-core"

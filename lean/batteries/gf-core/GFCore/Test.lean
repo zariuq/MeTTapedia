@@ -44,10 +44,10 @@ private def tinySig : GrammarSig := {
 }
 
 -- Raw tree: PredVP(UsePN(john_PN), UseV(walk_V))
-private def rawJohnWalks : RawTree :=
-  .node "PredVP" none #[
-    .node "UsePN" none #[.node "john_PN" none #[]],
-    .node "UseV" none #[.node "walk_V" none #[]]
+private def rawJohnWalks : RawTerm :=
+  .app "PredVP" none #[
+    .app "UsePN" none #[.app "john_PN" none #[]],
+    .app "UseV" none #[.app "walk_V" none #[]]
   ]
 
 -- ============================================================
@@ -76,7 +76,7 @@ private def rawJohnWalks : RawTree :=
 -- ============================================================
 
 #eval do
-  let badTree := RawTree.node "PredVP" none #[RawTree.leaf "john_PN"]  -- 1 arg, needs 2
+  let badTree := RawTerm.app "PredVP" none #[RawTerm.leaf "john_PN"]  -- 1 arg, needs 2
   match check tinySig badTree with
   | .ok _ => IO.println "UNEXPECTED: should have failed" ; assert! false
   | .error (.wrongArity f e g) =>
@@ -89,7 +89,7 @@ private def rawJohnWalks : RawTree :=
 -- ============================================================
 
 #eval do
-  let badTree := RawTree.leaf "nonexistent_fun"
+  let badTree := RawTerm.leaf "nonexistent_fun"
   match check tinySig badTree with
   | .ok _ => assert! false
   | .error (.unknownFun n) =>
@@ -103,9 +103,9 @@ private def rawJohnWalks : RawTree :=
 
 #eval do
   -- PredVP expects (NP, VP) but we give (VP, NP)
-  let badTree := RawTree.node "PredVP" none #[
-    .node "UseV" none #[.node "walk_V" none #[]],   -- VP, not NP
-    .node "UsePN" none #[.node "john_PN" none #[]]   -- NP, not VP
+  let badTree := RawTerm.app "PredVP" none #[
+    .app "UseV" none #[.app "walk_V" none #[]],   -- VP, not NP
+    .app "UsePN" none #[.app "john_PN" none #[]]   -- NP, not VP
   ]
   match check tinySig badTree with
   | .ok _ => assert! false
@@ -131,7 +131,7 @@ private def rawJohnWalks : RawTree :=
   | .error e => IO.println s!"initial check failed: {e}" ; assert! false
 
 -- ============================================================
--- Test: JSON round-trip for RawTree
+-- Test: JSON round-trip for RawTerm
 -- ============================================================
 
 open Lean in
@@ -141,7 +141,7 @@ open Lean in
   IO.println s!"JSON:\n{jsonStr}"
   match Json.parse jsonStr with
   | .ok parsed =>
-    match fromJson? (α := RawTree) parsed with
+    match fromJson? (α := RawTerm) parsed with
     | .ok decoded =>
       -- Re-encode and compare
       let reEncoded := (toJson decoded).pretty

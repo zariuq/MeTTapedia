@@ -1,10 +1,10 @@
 /-
 # GFCore.Json — JSON codecs for GF wire types
 
-Encodes/decodes RawTree, ParseCandidate, FunDecl, GrammarSig
+Encodes/decodes RawTerm, ParseCandidate, FunDecl, GrammarSig
 using Lean.Data.Json (available in Lean core, no external deps).
 
-JSON format for RawTree (matches GF PGF export):
+JSON format for RawTerm (matches GF PGF export):
   {"fun": "PredVP", "args": [...]}
   {"fun": "PredVP", "cat": "S", "args": [...]}   -- with optional cat hint
 
@@ -20,29 +20,29 @@ namespace GFCore
 open Lean (Json ToJson FromJson toJson fromJson?)
 
 -- ============================================================
--- RawTree JSON
+-- RawTerm JSON
 -- ============================================================
 
-partial def rawTreeToJson (t : RawTree) : Json :=
+partial def rawTermToJson (t : RawTerm) : Json :=
   let fields : List (String × Json) := [("fun", toJson t.funName)]
   let fields := match t.catHint? with
     | some c => fields ++ [("cat", toJson c)]
     | none   => fields
-  let fields := fields ++ [("args", Json.arr (t.args.map rawTreeToJson))]
+  let fields := fields ++ [("args", Json.arr (t.args.map rawTermToJson))]
   Json.mkObj fields
 
-partial def rawTreeFromJson (j : Json) : Except String RawTree := do
+partial def rawTermFromJson (j : Json) : Except String RawTerm := do
   let funName ← j.getObjValAs? String "fun"
   let catHint? : Option String := (j.getObjValAs? String "cat").toOption
   let argsJson ← j.getObjValAs? (Array Json) "args"
-  let args ← argsJson.mapM rawTreeFromJson
-  pure (.node funName catHint? args)
+  let args ← argsJson.mapM rawTermFromJson
+  pure (.app funName catHint? args)
 
-instance : ToJson RawTree where
-  toJson := rawTreeToJson
+instance : ToJson RawTerm where
+  toJson := rawTermToJson
 
-instance : FromJson RawTree where
-  fromJson? := rawTreeFromJson
+instance : FromJson RawTerm where
+  fromJson? := rawTermFromJson
 
 -- ============================================================
 -- ParseCandidate JSON
@@ -65,7 +65,7 @@ instance : FromJson ParseCandidate where
     let language ← j.getObjValAs? String "language"
     let surface ← j.getObjValAs? String "surface"
     let prob? : Option Float := (j.getObjValAs? Float "prob").toOption
-    let tree ← j.getObjValAs? RawTree "tree"
+    let tree ← j.getObjValAs? RawTerm "tree"
     pure { language, surface, prob?, tree }
 
 -- ============================================================
@@ -149,19 +149,19 @@ def ParseCandidate.readFromFile (path : System.FilePath) : IO (Array ParseCandid
   let json ← IO.ofExcept (Json.parse contents)
   IO.ofExcept (fromJson? json)
 
-/-- Read a JSON file containing a single RawTree or array of RawTrees. -/
-def RawTree.readFromFile (path : System.FilePath) : IO (Array RawTree) := do
+/-- Read a JSON file containing a single RawTerm or array of RawTerms. -/
+def RawTerm.readFromFile (path : System.FilePath) : IO (Array RawTerm) := do
   let contents ← IO.FS.readFile path
   let json ← IO.ofExcept (Json.parse contents)
-  match fromJson? (α := Array RawTree) json with
+  match fromJson? (α := Array RawTerm) json with
   | .ok trees => pure trees
   | .error _ =>
-    match fromJson? (α := RawTree) json with
+    match fromJson? (α := RawTerm) json with
     | .ok tree => pure #[tree]
     | .error e => throw (IO.userError e)
 
-/-- Write RawTrees to a JSON file. -/
-def RawTree.writeToFile (trees : Array RawTree) (path : System.FilePath) : IO Unit := do
+/-- Write RawTerms to a JSON file. -/
+def RawTerm.writeToFile (trees : Array RawTerm) (path : System.FilePath) : IO Unit := do
   let json := toJson trees
   IO.FS.writeFile path json.pretty
 
@@ -213,7 +213,7 @@ instance : ToJson Analysis where
   toJson
     | .exact _expr source => Json.mkObj [
         ("status", "exact"), ("source", toJson source)]
-        -- Note: CheckedExpr not serialized (it's reconstructed from RawTree + sig)
+        -- Note: CheckedExpr not serialized (it's reconstructed from RawTerm + sig)
     | .opaque surface reason => Json.mkObj [
         ("status", "opaque"), ("surface", toJson surface), ("reason", toJson reason)]
 
@@ -225,6 +225,6 @@ instance : FromJson Analysis where
       let surface ← j.getObjValAs? String "surface"
       let reason ← j.getObjValAs? FailureClass "reason"
       pure (.opaque surface reason)
-    | _ => throw "Analysis.exact cannot be deserialized (needs GrammarSig + RawTree)"
+    | _ => throw "Analysis.exact cannot be deserialized (needs GrammarSig + RawTerm)"
 
 end GFCore

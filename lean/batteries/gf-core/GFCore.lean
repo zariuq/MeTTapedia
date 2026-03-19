@@ -5,3 +5,5 @@ import GFCore.Export
 import GFCore.Driver
 import GFCore.SigGen
 import GFCore.LexGen
+import GFCore.Repair
+import GFCore.RGLView

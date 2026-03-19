@@ -40,8 +40,8 @@ partial def checkedExprToAbstractNode (e : GFCore.CheckedExpr) : AbstractNode :=
       | none => ⟨name, arrowTypeOfDecl e.decl⟩
     .apply sig (e.args.toList.map checkedExprToAbstractNode)
 
-/-- Convert a GFCore.RawTree to ExportedTree (legacy format). -/
-partial def rawTreeToExported (t : GFCore.RawTree) : ExportedTree :=
+/-- Convert a GFCore.RawTerm to ExportedTree (legacy format). -/
+partial def rawTreeToExported (t : GFCore.RawTerm) : ExportedTree :=
   .node t.funName (t.args.toList.map rawTreeToExported)
 
 structure SurfaceWitness where

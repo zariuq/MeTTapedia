@@ -9145,7 +9145,11 @@ theorem referenceIntrinsicStatefulN_none_of_builtin_strict
   -- 2. referenceIntrinsicApplyFallbackN / referenceIntrinsicApplyDispatchTailN unfolding
   -- 3. hNoCompat, hNoConstraint, hIrreducible, hNoPartialArity, hNoArityPartial all applied
   -- Give simp_all large heartbeat budget for the ~50 branches + foldl simplification.
-  simp_all [referenceIntrinsicApplyFallbackN, referenceIntrinsicApplyDispatchTailN]
+  -- Do NOT use simp_all for the fallback — it normalizes terms in ways that break
+  -- later rw/simp steps. Instead, use simp_all ONLY for the ~50-head match,
+  -- then handle the fallback manually.
+  simp_all
+  -- After simp_all: goal is referenceIntrinsicApplyFallbackN fuel s ctor argsV = none
   -- GPT-5.4 Pro Package A (Response #4): close the foldl + arity tail
   have hFilterNilOfAllEq :
       ∀ {base : Pattern} {xs : List Pattern},
@@ -9172,44 +9176,59 @@ theorem referenceIntrinsicStatefulN_none_of_builtin_strict
     have hAll : ∀ a₂, a₂ ∈ redAt i → a₂ = argsV[i]?.getD (Pattern.apply "" []) := by
       intro a₂ ha₂; simpa [redAt] using (hIrreducible (argsV[i]?.getD (Pattern.apply "" [])) hiMem a₂ ha₂)
     simp [branchAt, hFilterNilOfAllEq hAll]
-  have hMapNil : List.map branchAt (List.range argsV.length) =
-      List.map (fun _ => ([] : List Pattern)) (List.range argsV.length) := by
-    exact List.map_congr rfl (fun i hi => hBranchNil i hi)
-  have hFlatNil0 :
-      (List.map (fun _ => ([] : List Pattern)) (List.range argsV.length)).flatten = [] := by
-    induction List.range argsV.length with
-    | nil => rfl
-    | cons x xs ih => simp [ih]
-  have hFlatNil : (List.map branchAt (List.range argsV.length)).flatten = [] := by
-    simpa [hMapNil] using hFlatNil0
-  have hFlatNil' :
-      (List.map (fun x2 =>
-          List.map (fun a' => Pattern.apply ctor (List.take x2 argsV ++ a' :: List.drop (x2 + 1) argsV))
-            (List.filter (fun a' => a' != argsV[x2]?.getD (Pattern.apply "" []))
-              (match referenceIntrinsicStatefulN fuel s (argsV[x2]?.getD (Pattern.apply "" [])) with
-               | some (_sA, outA) => if outA = [] then s.step (argsV[x2]?.getD (Pattern.apply "" [])) else outA
-               | none => s.step (argsV[x2]?.getD (Pattern.apply "" [])))))
-        (List.range argsV.length)).flatten = [] := by
-    simpa [redAt, branchAt] using hFlatNil
-  cases hMin : builtinPartialMinArity? ctor with
-  | none =>
-    by_cases hPA :
-      ((∃ x, x ∈ s.rewriteAritiesForHead ctor ∧ argsV.length < x) ∧
-        (∀ x, x ∈ s.rewriteAritiesForHead ctor → ¬ x = argsV.length)) ∧ ¬ argsV = []
-    · exfalso
-      rcases hPA with ⟨⟨x, hxMem, hxLt⟩, hNoExact, hNonempty⟩
-      exact hNonempty (hNoArityPartial x hxMem hxLt hNoExact)
-    · simp [hMin, hFlatNil', hPA]
-  | some minArity =>
-    have hGe : minArity ≤ argsV.length := by simpa [hMin] using hNoPartialArity
-    have hNotLt : ¬ argsV.length < minArity := Nat.not_lt.mpr hGe
-    by_cases hPA :
-      ((∃ x, x ∈ s.rewriteAritiesForHead ctor ∧ argsV.length < x) ∧
-        (∀ x, x ∈ s.rewriteAritiesForHead ctor → ¬ x = argsV.length)) ∧ ¬ argsV = []
-    · exfalso
-      rcases hPA with ⟨⟨x, hxMem, hxLt⟩, hNoExact, hNonempty⟩
-      exact hNonempty (hNoArityPartial x hxMem hxLt hNoExact)
-    · simp [hMin, hNotLt, hFlatNil', hPA]
+  -- GPT-5.4 Pro #2 approach: prove hDispatchNone separately, then close.
+  have hArityGuardFalse :
+      (((s.rewriteAritiesForHead ctor).any (fun n => decide (n > argsV.length)) &&
+        !((s.rewriteAritiesForHead ctor).any (fun n => n == argsV.length)) &&
+        !argsV.isEmpty) = false) := by
+    by_cases hEmpty : argsV = []
+    · simp [hEmpty]
+    · by_cases hHasLarger :
+        (s.rewriteAritiesForHead ctor).any (fun n => decide (n > argsV.length)) = true
+      · by_cases hHasExact :
+          (s.rewriteAritiesForHead ctor).any (fun n => n == argsV.length) = true
+        · simp [hHasLarger, hHasExact]
+        · have hHasLarger' := hHasLarger
+          rw [List.any_eq_true] at hHasLarger'
+          obtain ⟨x, hxMem, hxGt⟩ := hHasLarger'
+          have hxLt : argsV.length < x := by simpa using hxGt
+          have hNoExact' := hHasExact
+          rw [List.any_eq_true, not_exists] at hNoExact'
+          have hNoExact : ∀ y, y ∈ s.rewriteAritiesForHead ctor → ¬ y = argsV.length := by
+            intro y hy hyEq
+            exact hNoExact' y ⟨hy, by simpa [hyEq]⟩
+          exact False.elim (hEmpty (hNoArityPartial x hxMem hxLt hNoExact))
+      · simp [hHasLarger]
+  have hDispatchNone :
+      referenceIntrinsicApplyDispatchTailN fuel
+        { rewrites := fun s => s.bundle.language.rewrites
+          premiseFreeRulesForHeadArity := premiseFreeRulesForHeadArity
+          eval := fun s term => referenceEvalWithStateCoreN fuel s term
+          evalForRuleEnumeration := fun s expr => referenceEvalForRuleEnumerationN fuel s expr
+          applyBindings := applyBindingsCompat
+          matchPattern := matchPatternMeTTa
+          normalizePattern := normalizeDollarVars
+          dedupBindings := dedupBindings }
+        s ctor argsV = none := by
+    unfold referenceIntrinsicApplyDispatchTailN
+    -- After unfold + simp [hNoCompat, hNoConstraint], the foldl was reduced to map/flatten.
+    -- hFoldlNil talks about foldl, so use branchAt-based hFlat instead.
+    have hFlat : (List.map branchAt (List.range argsV.length)).flatten = [] := by
+      rw [List.flatten_eq_nil_iff]
+      intro l hl
+      rw [List.mem_map] at hl
+      obtain ⟨i, hi, rfl⟩ := hl
+      exact hBranchNil i hi
+    simp [hNoCompat, hNoConstraint, hFlat, hArityGuardFalse, branchAt, redAt]
+  show referenceIntrinsicApplyFallbackN fuel s ctor argsV = none
+  unfold referenceIntrinsicApplyFallbackN
+  split
+  · rename_i minA hMinA
+    have hGe : argsV.length ≥ minA := by simp [hMinA] at hNoPartialArity; exact hNoPartialArity
+    have hNotLt : ¬ argsV.length < minA := Nat.not_lt_of_ge hGe
+    simpa [hNotLt, hDispatchNone]
+  · simpa [hDispatchNone]
+
 
 /-- Unconditional session-WF preservation for the fuel-indexed evaluator. -/
 theorem evalWithStateCoreN_preserves
@@ -9981,136 +10000,15 @@ theorem evalWithState_eq_reference_of_deterministic_agreement
     Algorithms.MeTTa.Simple.Backend.OptimizedRefinement.evalWithState_eq_reference_of_deterministic_agreement
       (I := optimizedBackendInterface) hAgree s term
 
-theorem evalWithState_eq_reference_of_deterministic_agreement_raw_guard
-    (s : Session) (term : Pattern)
-    (hs : CompiledConsistent s)
-    (hAgreeRaw :
-      ∀ (s : Session) (term : Pattern),
-        optimizedBackendInterface.shouldUseDeterministicInStrict term = true →
-        optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
-        optimizedBackendInterface.hasMultipleRootRuleChoices
-          (withCompiledIndexes s false) term = false →
-        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
-        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
-        optimizedBackendInterface.isResolvedDeterministicResult
-          ((optimizedBackendInterface.evalDeterministicCore s
-            (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →
-        (((optimizedBackendInterface.evalDeterministicCore s
-            (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-        optimizedBackendInterface.acceptUnchangedDeterministic term) = true →
-        Algorithms.MeTTa.Simple.Backend.OptimizedEval.evalWithState
-          optimizedBackendInterface s term =
-        optimizedBackendInterface.evalWithStateCore s term)
-    :
-    evalWithState s term = optimizedBackendInterface.evalWithStateCore s term := by
-  by_cases hStrict : optimizedBackendInterface.shouldUseDeterministicInStrict term = true
-  · by_cases hBlocked : optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false
-    · by_cases hMulti : optimizedBackendInterface.hasMultipleRootRuleChoices s term = false
-      · by_cases hOverlap : optimizedBackendInterface.noDeterministicReducerOverlap s = true
-        · by_cases hCore : optimizedBackendInterface.noCoreBuiltinOverrides s = true
-          · by_cases hResolved :
-              optimizedBackendInterface.isResolvedDeterministicResult
-                ((optimizedBackendInterface.evalDeterministicCore s
-                  (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true
-            · by_cases hAccept :
-                (((optimizedBackendInterface.evalDeterministicCore s
-                    (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-                  optimizedBackendInterface.acceptUnchangedDeterministic term) = true
-              · have hEqRaw :
-                    optimizedBackendInterface.hasMultipleRootRuleChoices s term =
-                      optimizedBackendInterface.hasMultipleRootRuleChoices
-                        (withCompiledIndexes s false) term :=
-                  hasMultipleRootRuleChoices_eq_raw_of_compiledRules_consistent
-                    (s := s) (term := term) hs
-                have hMultiRaw :
-                    optimizedBackendInterface.hasMultipleRootRuleChoices
-                      (withCompiledIndexes s false) term = false := by
-                  simpa [hMulti] using hEqRaw
-                exact hAgreeRaw s term hStrict hBlocked hMultiRaw hOverlap hCore hResolved hAccept
-              · have hAcceptFalse :
-                    (((optimizedBackendInterface.evalDeterministicCore s
-                        (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-                      optimizedBackendInterface.acceptUnchangedDeterministic term) = false := by
-                    cases hA :
-                      (((optimizedBackendInterface.evalDeterministicCore s
-                          (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-                        optimizedBackendInterface.acceptUnchangedDeterministic term) <;>
-                      simp [hA] at hAccept ⊢
-                exact evalWithState_eq_reference_of_guard_failure s term <|
-                  Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inr hAcceptFalse
-            · have hResolvedFalse :
-                  optimizedBackendInterface.isResolvedDeterministicResult
-                    ((optimizedBackendInterface.evalDeterministicCore s
-                      (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = false := by
-                  cases hR :
-                    optimizedBackendInterface.isResolvedDeterministicResult
-                      ((optimizedBackendInterface.evalDeterministicCore s
-                        (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) <;>
-                    simp [hR] at hResolved ⊢
-              exact evalWithState_eq_reference_of_guard_failure s term <|
-                Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inl hResolvedFalse
-          · have hCoreFalse :
-                optimizedBackendInterface.noCoreBuiltinOverrides s = false := by
-              cases hC : optimizedBackendInterface.noCoreBuiltinOverrides s <;>
-                simp [hC] at hCore ⊢
-            exact evalWithState_eq_reference_of_guard_failure s term <|
-              Or.inr <| Or.inr <| Or.inr <| Or.inr <| Or.inl hCoreFalse
-        · have hOverlapFalse :
-              optimizedBackendInterface.noDeterministicReducerOverlap s = false := by
-            cases hO : optimizedBackendInterface.noDeterministicReducerOverlap s <;>
-              simp [hO] at hOverlap ⊢
-          exact evalWithState_eq_reference_of_guard_failure s term <|
-            Or.inr <| Or.inr <| Or.inr <| Or.inl hOverlapFalse
-      · have hMultiTrue :
-            optimizedBackendInterface.hasMultipleRootRuleChoices s term = true := by
-          cases hM : optimizedBackendInterface.hasMultipleRootRuleChoices s term <;>
-            simp [hM] at hMulti ⊢
-        exact evalWithState_eq_reference_of_guard_failure s term <|
-          Or.inr <| Or.inr <| Or.inl hMultiTrue
-    · have hBlockedTrue :
-          optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = true := by
-        cases hB : optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s <;>
-          simp [hB] at hBlocked ⊢
-      exact evalWithState_eq_reference_of_guard_failure s term <|
-        Or.inr <| Or.inl hBlockedTrue
-  · have hStrictFalse :
-        optimizedBackendInterface.shouldUseDeterministicInStrict term = false := by
-      cases hS : optimizedBackendInterface.shouldUseDeterministicInStrict term <;>
-        simp [hS] at hStrict ⊢
-    exact evalWithState_eq_reference_of_guard_failure s term <| Or.inl hStrictFalse
-
-theorem compiledConsistent_evalWithState_of_reference_and_deterministic_agreement
-    (hCorePres :
-      ∀ (s : Session) (term : Pattern),
-        CompiledConsistent s →
-        CompiledConsistent (optimizedBackendInterface.evalWithStateCore s term).1)
-    (s : Session) (term : Pattern)
-    (hs : CompiledConsistent s)
-    (hAgreeRaw :
-      ∀ (s : Session) (term : Pattern),
-        optimizedBackendInterface.shouldUseDeterministicInStrict term = true →
-        optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
-        optimizedBackendInterface.hasMultipleRootRuleChoices
-          (withCompiledIndexes s false) term = false →
-        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
-        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
-        optimizedBackendInterface.isResolvedDeterministicResult
-          ((optimizedBackendInterface.evalDeterministicCore s
-            (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →
-        (((optimizedBackendInterface.evalDeterministicCore s
-            (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-        optimizedBackendInterface.acceptUnchangedDeterministic term) = true →
-        Algorithms.MeTTa.Simple.Backend.OptimizedEval.evalWithState
-          optimizedBackendInterface s term =
-        optimizedBackendInterface.evalWithStateCore s term)
-    :
-    CompiledConsistent (evalWithState s term).1 := by
-  have hEq :
-      evalWithState s term = optimizedBackendInterface.evalWithStateCore s term :=
-    evalWithState_eq_reference_of_deterministic_agreement_raw_guard
-      (s := s) (term := term) hs hAgreeRaw
-  simpa [hEq] using hCorePres s term hs
-
+-- REMOVED (truth audit 2026-03-17): 3 theorems deleted here:
+--   evalWithState_eq_reference_of_deterministic_agreement_raw_guard
+--   compiledConsistent_evalWithState_of_reference_and_deterministic_agreement
+--   compiledConsistent_applyStmt_eval_of_reference_and_deterministic_agreement
+-- hAgreeRaw was confirmed false (3rd falsity vector: translateCall + reducible args).
+-- Replaced by pointwise FastPathEq in Backend/SessionRefinement.lean.
+-- The guard-failure theorem (evalWithState_eq_reference_of_guard_failure) is retained above.
+-- The generic evalWithState_eq_reference_of_deterministic_agreement is retained (it correctly
+-- takes hAgree as a parameter — the caller must provide a true agreement hypothesis).
 def eval (s : Session) (term : Pattern) : List Pattern :=
   (evalWithState s term).2
 
@@ -10390,39 +10288,6 @@ theorem compiledConsistent_applyStmt_eval
             have hApplied : CompiledConsistent (noteApplied s0) :=
               compiledConsistent_noteApplied s0 hs0
             simpa [applyStmt, hRes] using hApplied
-
-theorem compiledConsistent_applyStmt_eval_of_reference_and_deterministic_agreement
-    (hCorePres :
-      ∀ (s : Session) (term : Pattern),
-        CompiledConsistent s →
-        CompiledConsistent (optimizedBackendInterface.evalWithStateCore s term).1)
-    (s : Session) (term : Pattern)
-    (hs : CompiledConsistent s)
-    (hAgreeRaw :
-      ∀ (s : Session) (term : Pattern),
-        optimizedBackendInterface.shouldUseDeterministicInStrict term = true →
-        optimizedBackendInterface.hasDeterministicBlockingRewriteBodies s = false →
-        optimizedBackendInterface.hasMultipleRootRuleChoices
-          (withCompiledIndexes s false) term = false →
-        optimizedBackendInterface.noDeterministicReducerOverlap s = true →
-        optimizedBackendInterface.noCoreBuiltinOverrides s = true →
-        optimizedBackendInterface.isResolvedDeterministicResult
-          ((optimizedBackendInterface.evalDeterministicCore s
-            (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2) = true →
-        (((optimizedBackendInterface.evalDeterministicCore s
-            (Nat.max 4096 (optimizedBackendInterface.maxNodes s)) term).2 != term) ||
-        optimizedBackendInterface.acceptUnchangedDeterministic term) = true →
-        Algorithms.MeTTa.Simple.Backend.OptimizedEval.evalWithState
-          optimizedBackendInterface s term =
-        optimizedBackendInterface.evalWithStateCore s term)
-    :
-    CompiledConsistent (applyStmt s (.eval term)).1 := by
-  exact
-    compiledConsistent_applyStmt_eval
-      (fun s term hs =>
-        compiledConsistent_evalWithState_of_reference_and_deterministic_agreement
-          hCorePres s term hs hAgreeRaw)
-      s term hs
 
 def evalExpr (s : Session) (input : String) : Except String (Session × List Pattern) := do
   let expr ← Algorithms.MeTTa.Simple.Parser.parseExpr input

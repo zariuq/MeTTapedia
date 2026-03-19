@@ -1,10 +1,12 @@
 import Mettapedia.Logic.HOL.Derivation
+import Mettapedia.Logic.HOL.Syntax.ConstMap
 
 namespace Mettapedia.Logic.HOL
 
-universe u v
+universe u v w
 
-variable {Base : Type u} {Const : Ty Base → Type v}
+variable {Base : Type u}
+variable {Const : Ty Base → Type v} {Const' : Ty Base → Type w}
 
 /--
 An extensional overlay of the small HOL derivation core.
@@ -137,6 +139,18 @@ variable {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ ψ : Formula Const �
 abbrev Theorem (Const : Ty Base → Type v) (φ : ClosedFormula Const) : Prop :=
   ExtDerivation Const ([] : List (ClosedFormula Const)) φ
 
+@[simp] theorem mapConst_weakenHyps
+    (f : ∀ {τ : Ty Base}, Const τ → Const' τ)
+    (Δ : List (Formula Const Γ)) :
+    weakenHyps
+        (Base := Base)
+        (Const := Const')
+        (σ := σ)
+        (Δ.map (Mettapedia.Logic.HOL.mapConst f)) =
+      (weakenHyps (Base := Base) (Const := Const) (σ := σ) Δ).map
+        (Mettapedia.Logic.HOL.mapConst f) := by
+  simp [weakenHyps, List.map_map, Function.comp, Mettapedia.Logic.HOL.mapConst_weaken]
+
 def ofBase {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ : Formula Const Γ} :
     Derivation Const Δ φ → ExtDerivation Const Δ φ
   | .hyp h => .hyp h
@@ -164,6 +178,108 @@ def ofBase {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ : Formula Const Γ
   | .funExt h => .funExt (ofBase h)
   | .beta t u => .beta t u
   | .eta f => .eta f
+
+theorem mapConst
+    (f : ∀ {τ : Ty Base}, Const τ → Const' τ) :
+    ExtDerivation Const Δ φ →
+      ExtDerivation Const'
+        (Δ.map (Mettapedia.Logic.HOL.mapConst f))
+        (Mettapedia.Logic.HOL.mapConst f φ) := by
+  intro d
+  induction d with
+  | hyp hmem =>
+      exact .hyp (List.mem_map.mpr ⟨_, hmem, rfl⟩)
+  | topI =>
+      exact .topI
+  | botE h ih =>
+      exact .botE ih
+  | andI hφ hψ ihφ ihψ =>
+      exact .andI ihφ ihψ
+  | andEL h ih =>
+      exact .andEL ih
+  | andER h ih =>
+      exact .andER ih
+  | orIL h ih =>
+      exact .orIL ih
+  | orIR h ih =>
+      exact .orIR ih
+  | orE hor hφ hψ ihor ihφ ihψ =>
+      exact .orE ihor ihφ ihψ
+  | impI h ih =>
+      exact .impI ih
+  | impE hφψ hφ ihφψ ihφ =>
+      exact .impE ihφψ ihφ
+  | notI h ih =>
+      exact .notI ih
+  | notE hnot hφ ihnot ihφ =>
+      exact .notE ihnot ihφ
+  | allI h ih =>
+      exact .allI (by
+        simpa [mapConst_weakenHyps] using ih)
+  | allE t h ih =>
+      simpa [Mettapedia.Logic.HOL.mapConst_instantiate] using
+        (.allE (Mettapedia.Logic.HOL.mapConst f t) ih)
+  | exI t h ih =>
+      rename_i Γ' Δ' σ body
+      have ih' : ExtDerivation Const'
+          (Δ'.map (Mettapedia.Logic.HOL.mapConst f))
+          (instantiate (Base := Base)
+            (Mettapedia.Logic.HOL.mapConst f t)
+            (Mettapedia.Logic.HOL.mapConst f body)) := by
+        simpa [Mettapedia.Logic.HOL.mapConst_instantiate] using ih
+      exact .exI (Mettapedia.Logic.HOL.mapConst f t) ih'
+  | exE hex hbody ihex ihbody =>
+      exact .exE ihex (by
+        simpa [mapConst_weakenHyps, Mettapedia.Logic.HOL.mapConst_weaken] using ihbody)
+  | eqRefl t =>
+      exact .eqRefl (Mettapedia.Logic.HOL.mapConst f t)
+  | eqSymm h ih =>
+      exact .eqSymm ih
+  | eqTrans htu huv ihtu ihuv =>
+      exact .eqTrans ihtu ihuv
+  | eqPropI hpq hqp ihpq ihqp =>
+      exact .eqPropI ihpq ihqp
+  | eqPropEL hpq ihpq =>
+      exact .eqPropEL ihpq
+  | eqPropER hpq ihpq =>
+      exact .eqPropER ihpq
+  | eqApp t h ih =>
+      exact .eqApp (Mettapedia.Logic.HOL.mapConst f t) ih
+  | eqAppArg g h ih =>
+      exact .eqAppArg (Mettapedia.Logic.HOL.mapConst f g) ih
+  | eqLam h ih =>
+      exact .eqLam (by
+        simpa [mapConst_weakenHyps] using ih)
+  | funExt h ih =>
+      exact .funExt (by
+        simpa [Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.mapConst_weaken] using ih)
+  | beta t u =>
+      simpa [Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.mapConst_instantiate] using
+        (.beta (Mettapedia.Logic.HOL.mapConst f t)
+          (Mettapedia.Logic.HOL.mapConst f u))
+  | eta g =>
+      simpa [Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.mapConst_weaken] using
+        (.eta (Mettapedia.Logic.HOL.mapConst f g))
+
+theorem closedTheory_mapConst
+    (f : ∀ {τ : Ty Base}, Const τ → Const' τ)
+    {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+    (h : ExtDerivation Const Δ φ) :
+    ExtDerivation Const'
+      (Δ.map (Mettapedia.Logic.HOL.mapClosedFormula f))
+      (Mettapedia.Logic.HOL.mapClosedFormula f φ) := by
+  simpa [Mettapedia.Logic.HOL.mapClosedFormula] using
+    (mapConst (Base := Base) (Const := Const) (Const' := Const')
+      (Δ := Δ) (φ := φ) f h)
+
+theorem theorem_mapConst
+    (f : ∀ {τ : Ty Base}, Const τ → Const' τ)
+    {φ : ClosedFormula Const}
+    (h : Theorem Const φ) :
+    Theorem Const' (Mettapedia.Logic.HOL.mapClosedFormula f φ) := by
+  simpa [Theorem, Mettapedia.Logic.HOL.mapClosedFormula] using
+    (mapConst (Base := Base) (Const := Const) (Const' := Const')
+      (Δ := ([] : List (ClosedFormula Const))) (φ := φ) f h)
 
 theorem imp_mp
     (hImp : ExtDerivation Const Δ (.imp φ ψ))

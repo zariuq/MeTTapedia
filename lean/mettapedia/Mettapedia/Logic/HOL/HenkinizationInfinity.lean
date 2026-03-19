@@ -1,4 +1,5 @@
 import Mettapedia.Logic.HOL.HenkinizationStages
+import Mettapedia.Logic.HOL.DerivationExtensionality
 
 namespace Mettapedia.Logic.HOL
 
@@ -50,6 +51,29 @@ theorem ofStage_liftOffset :
           ofStage c
       exact ofStage_liftOffset k c
 
+@[simp] theorem ofStage_ofBase {τ : Ty Base} (c : Const τ) :
+    ofStage (HenkinConstStage.ofBase (Base := Base) c) = .base c := rfl
+
+/-- Directly lift an original-signature term into the cumulative Henkin signature. -/
+abbrev liftBaseTerm {Γ : Ctx Base} {τ : Ty Base} :
+    Term Const Γ τ → Term (HenkinConstInfinity Base Const) Γ τ :=
+  mapConst HenkinConstInfinity.base
+
+/-- Directly lift an original-signature formula into the cumulative Henkin signature. -/
+abbrev liftBaseFormula {Γ : Ctx Base} :
+    Formula Const Γ → Formula (HenkinConstInfinity Base Const) Γ :=
+  mapConst HenkinConstInfinity.base
+
+/-- Directly lift an original-signature closed term into the cumulative Henkin signature. -/
+abbrev liftBaseClosedTerm {τ : Ty Base} :
+    ClosedTerm Const τ → ClosedTerm (HenkinConstInfinity Base Const) τ :=
+  mapConst HenkinConstInfinity.base
+
+/-- Directly lift an original-signature closed formula into the cumulative Henkin signature. -/
+abbrev liftBaseClosedFormula :
+    ClosedFormula Const → ClosedFormula (HenkinConstInfinity Base Const) :=
+  mapConst HenkinConstInfinity.base
+
 /-- Lift a finite-stage term into the canonical cumulative Henkin signature. -/
 abbrev liftTerm {n : Nat} {Γ : Ctx Base} {τ : Ty Base} :
     Term (HenkinConstStage Base Const n) Γ τ →
@@ -67,6 +91,40 @@ abbrev liftClosedFormula {n : Nat} :
     ClosedFormula (HenkinConstStage Base Const n) →
       ClosedFormula (HenkinConstInfinity Base Const) :=
   mapConst (ofStage (Base := Base) (Const := Const))
+
+@[simp] theorem liftBaseTerm_eq_liftTerm_zero
+    {Γ : Ctx Base} {τ : Ty Base} (t : Term Const Γ τ) :
+    liftBaseTerm (Base := Base) (Const := Const) t =
+      liftTerm (Base := Base) (Const := Const)
+        (mapConst (HenkinConstStage.ofBase (Base := Base) (Const := Const)) t) := by
+  induction t with
+  | var v => rfl
+  | const c => rfl
+  | app g t hg ht => simp only [liftBaseTerm, liftTerm, mapConst, hg, ht]
+  | lam t ih => simp only [liftBaseTerm, liftTerm, mapConst, ih]
+  | top => rfl
+  | bot => rfl
+  | and φ ψ hφ hψ => simp only [liftBaseTerm, liftTerm, mapConst, hφ, hψ]
+  | or φ ψ hφ hψ => simp only [liftBaseTerm, liftTerm, mapConst, hφ, hψ]
+  | imp φ ψ hφ hψ => simp only [liftBaseTerm, liftTerm, mapConst, hφ, hψ]
+  | not φ hφ => simp only [liftBaseTerm, liftTerm, mapConst, hφ]
+  | eq t u ht hu => simp only [liftBaseTerm, liftTerm, mapConst, ht, hu]
+  | all φ hφ => simp only [liftBaseTerm, liftTerm, mapConst, hφ]
+  | ex φ hφ => simp only [liftBaseTerm, liftTerm, mapConst, hφ]
+
+@[simp] theorem liftBaseFormula_eq_liftFormula_zero
+    {Γ : Ctx Base} (φ : Formula Const Γ) :
+    liftBaseFormula (Base := Base) (Const := Const) φ =
+      liftFormula (Base := Base) (Const := Const)
+        (mapConst (HenkinConstStage.ofBase (Base := Base) (Const := Const)) φ) :=
+  liftBaseTerm_eq_liftTerm_zero (Base := Base) (Const := Const) φ
+
+@[simp] theorem liftBaseClosedFormula_eq_liftClosedFormula_zero
+    (φ : ClosedFormula Const) :
+    liftBaseClosedFormula (Base := Base) (Const := Const) φ =
+      liftClosedFormula (Base := Base) (Const := Const)
+        (mapConst (HenkinConstStage.ofBase (Base := Base) (Const := Const)) φ) :=
+  liftBaseFormula_eq_liftFormula_zero (Base := Base) (Const := Const) φ
 
 /-- Raise a finite-stage term by `k` additional Henkinization stages. -/
 abbrev stageBumpTerm (k : Nat) {n : Nat} {Γ : Ctx Base} {τ : Ty Base} :
@@ -346,11 +404,151 @@ theorem exists_stage_formula {Γ : Ctx Base}
       liftFormula (Base := Base) (Const := Const) φ' = φ :=
   exists_stage_term (Base := Base) (Const := Const) φ
 
+theorem exists_stage_formulaList {Γ : Ctx Base}
+    (Δ : List (Formula (HenkinConstInfinity Base Const) Γ)) :
+    ∃ n, ∃ Δ' : List (Formula (HenkinConstStage Base Const n) Γ),
+      Δ'.map (liftFormula (Base := Base) (Const := Const)) = Δ := by
+  induction Δ with
+  | nil =>
+      exact ⟨0, [], rfl⟩
+  | cons φ Δ ih =>
+      rcases exists_stage_formula (Base := Base) (Const := Const) φ with
+        ⟨nφ, φ', hφ⟩
+      rcases ih with ⟨nΔ, Δ', hΔ⟩
+      let φ'' : Formula (HenkinConstStage Base Const (nφ + nΔ)) Γ :=
+        stageBumpFormula (Base := Base) (Const := Const) nΔ φ'
+      let Δ'' : List (Formula (HenkinConstStage Base Const (nφ + nΔ)) Γ) :=
+        Δ'.map (fun ψ =>
+          castStageTerm (Base := Base) (Const := Const)
+            (Nat.add_comm nΔ nφ)
+            (stageBumpFormula (Base := Base) (Const := Const) nφ ψ))
+      have hφ'' :
+          liftFormula (Base := Base) (Const := Const) φ'' = φ := by
+        simpa [φ'', hφ] using
+          (liftTerm_stageBump (Base := Base) (Const := Const) nΔ φ')
+      have hΔ'' :
+          Δ''.map (liftFormula (Base := Base) (Const := Const)) = Δ := by
+        have hmaplift :
+            ∀ Λ : List (Formula (HenkinConstStage Base Const nΔ) Γ),
+              Λ.map (fun ψ =>
+                liftFormula (Base := Base) (Const := Const)
+                  (castStageTerm (Base := Base) (Const := Const)
+                    (Nat.add_comm nΔ nφ)
+                    (stageBumpFormula (Base := Base) (Const := Const) nφ ψ))) =
+                Λ.map (liftFormula (Base := Base) (Const := Const)) := by
+          intro Λ
+          induction Λ with
+          | nil => rfl
+          | cons ψ Λ ih =>
+              simp only [List.map]
+              rw [List.cons.injEq]
+              refine ⟨?_, ih⟩
+              calc
+                liftFormula (Base := Base) (Const := Const)
+                    (castStageTerm (Base := Base) (Const := Const)
+                      (Nat.add_comm nΔ nφ)
+                      (stageBumpFormula (Base := Base) (Const := Const) nφ ψ))
+                    =
+                  liftFormula (Base := Base) (Const := Const)
+                    (stageBumpFormula (Base := Base) (Const := Const) nφ ψ) := by
+                      simpa using
+                        (liftTerm_castStageTerm (Base := Base) (Const := Const)
+                          (Nat.add_comm nΔ nφ)
+                          (stageBumpFormula (Base := Base) (Const := Const) nφ ψ))
+                _ =
+                  liftFormula (Base := Base) (Const := Const) ψ := by
+                    simpa using
+                      (liftTerm_stageBump (Base := Base) (Const := Const) nφ ψ)
+        calc
+          Δ''.map (liftFormula (Base := Base) (Const := Const))
+              = Δ'.map (fun ψ =>
+                  liftFormula (Base := Base) (Const := Const)
+                    (castStageTerm (Base := Base) (Const := Const)
+                      (Nat.add_comm nΔ nφ)
+                      (stageBumpFormula (Base := Base) (Const := Const) nφ ψ))) := by
+                  simp [Δ'']
+          _ = Δ'.map (liftFormula (Base := Base) (Const := Const)) := hmaplift Δ'
+          _ = Δ := hΔ
+      refine ⟨nφ + nΔ, φ'' :: Δ'', ?_⟩
+      simp [hφ'', hΔ'']
+
 theorem exists_stage_closedFormula
     (φ : ClosedFormula (HenkinConstInfinity Base Const)) :
     ∃ n, ∃ φ' : ClosedFormula (HenkinConstStage Base Const n),
       liftClosedFormula (Base := Base) (Const := Const) φ' = φ :=
   exists_stage_formula (Base := Base) (Const := Const) φ
+
+theorem exists_stage_closedTheory
+    (Δ : List (ClosedFormula (HenkinConstInfinity Base Const))) :
+    ∃ n, ∃ Δ' : List (ClosedFormula (HenkinConstStage Base Const n)),
+      Δ'.map (liftClosedFormula (Base := Base) (Const := Const)) = Δ :=
+  exists_stage_formulaList (Base := Base) (Const := Const) Δ
+
+theorem exists_stage_judgement {Γ : Ctx Base}
+    (Δ : List (Formula (HenkinConstInfinity Base Const) Γ))
+    (φ : Formula (HenkinConstInfinity Base Const) Γ) :
+    ∃ n, ∃ Δ' : List (Formula (HenkinConstStage Base Const n) Γ),
+      ∃ φ' : Formula (HenkinConstStage Base Const n) Γ,
+        Δ'.map (liftFormula (Base := Base) (Const := Const)) = Δ ∧
+        liftFormula (Base := Base) (Const := Const) φ' = φ := by
+  rcases exists_stage_formulaList (Base := Base) (Const := Const) (φ :: Δ) with
+    ⟨n, Θ, hΘ⟩
+  cases Θ with
+  | nil =>
+      simp at hΘ
+  | cons φ' Δ' =>
+      have hsplit :
+          liftFormula (Base := Base) (Const := Const) φ' = φ ∧
+            Δ'.map (liftFormula (Base := Base) (Const := Const)) = Δ := by
+        simpa using hΘ
+      exact ⟨n, Δ', φ', hsplit.2, hsplit.1⟩
+
+theorem exists_stage_closedJudgement
+    (Δ : List (ClosedFormula (HenkinConstInfinity Base Const)))
+    (φ : ClosedFormula (HenkinConstInfinity Base Const)) :
+    ∃ n, ∃ Δ' : List (ClosedFormula (HenkinConstStage Base Const n)),
+      ∃ φ' : ClosedFormula (HenkinConstStage Base Const n),
+        Δ'.map (liftClosedFormula (Base := Base) (Const := Const)) = Δ ∧
+        liftClosedFormula (Base := Base) (Const := Const) φ' = φ :=
+  exists_stage_judgement (Base := Base) (Const := Const) Δ φ
+
+theorem mem_liftFormula_preimage
+    {Γ : Ctx Base} {n : Nat}
+    {Δ : List (Formula (HenkinConstStage Base Const n) Γ)}
+    {φ : Formula (HenkinConstInfinity Base Const) Γ}
+    (hφ : φ ∈ Δ.map (liftFormula (Base := Base) (Const := Const))) :
+    ∃ φ' : Formula (HenkinConstStage Base Const n) Γ,
+      φ' ∈ Δ ∧ liftFormula (Base := Base) (Const := Const) φ' = φ := by
+  rcases List.mem_map.mp hφ with ⟨φ', hφ', hEq⟩
+  exact ⟨φ', hφ', hEq⟩
+
+theorem stageLift_formulaProvable
+    {Γ : Ctx Base} {m n : Nat} (h : m ≤ n)
+    {Δ : List (Formula (HenkinConstStage Base Const m) Γ)}
+    {φ : Formula (HenkinConstStage Base Const m) Γ}
+    (d : ExtDerivation (HenkinConstStage Base Const m) Δ φ) :
+    ExtDerivation (HenkinConstStage Base Const n)
+      (Δ.map (HenkinConstStage.liftFormula (Base := Base) (Const := Const) h))
+      (HenkinConstStage.liftFormula (Base := Base) (Const := Const) h φ) := by
+  simpa [HenkinConstStage.liftFormula, Mettapedia.Logic.HOL.mapConst] using
+    (ExtDerivation.mapConst
+      (Base := Base)
+      (Const := HenkinConstStage Base Const m)
+      (Const' := HenkinConstStage Base Const n)
+      (f := HenkinConstStage.lift (Base := Base) (Const := Const) h)
+      (Δ := Δ)
+      (φ := φ)
+      d)
+
+theorem stageLift_closedTheoryProvable
+    {m n : Nat} (h : m ≤ n)
+    {Δ : List (ClosedFormula (HenkinConstStage Base Const m))}
+    {φ : ClosedFormula (HenkinConstStage Base Const m)}
+    (d : ExtDerivation (HenkinConstStage Base Const m) Δ φ) :
+    ExtDerivation (HenkinConstStage Base Const n)
+      (Δ.map (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) h))
+      (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) h φ) := by
+  exact stageLift_formulaProvable (Base := Base) (Const := Const) h d
 
 /-- Every cumulative-signature formula has a designated witness term one stage above some support stage. -/
 theorem exists_stage_witness_term {σ : Ty Base}

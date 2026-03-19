@@ -1,7 +1,7 @@
 /-
 # GF Integration Test
 
-End-to-end test: GF parse → RawTree → check → CheckedExpr → erase → linearize.
+End-to-end test: GF parse → RawTerm → check → CheckedExpr → erase → linearize.
 Uses the PaperAmbiguity grammar with "John sees the man with the telescope".
 -/
 
@@ -60,7 +60,7 @@ private def telescopeGFExpr1 : String :=
 private def telescopeGFExpr2 : String :=
   "UseCl (TTAnt TPres ASimul) PPos (PredVP (UsePN john_PN) (ComplSlash (SlashV2a see_V2) (DetCN the_Det (AdvCN (UseN man_N) (PrepNP with_Prep (DetCN the_Det (UseN telescope_N)))))))"
 
--- Test: parse GF expression → RawTree
+-- Test: parse GF expression → RawTerm
 #eval do
   match GFDriver.parseGFExpr telescopeGFExpr1 with
   | .ok tree =>
@@ -134,6 +134,32 @@ private def telescopeGFExpr2 : String :=
         IO.println "erase → re-check round-trip OK"
 
 -- ============================================================
+-- Test: RGLView on telescope parses
+-- ============================================================
+
+#eval do
+  -- VP attachment parse
+  match GFDriver.parseGFExpr telescopeGFExpr1 with
+  | .error e => IO.println s!"parse failed: {e}" ; assert! false
+  | .ok rawTerm =>
+    match check paperAmbiguitySig rawTerm with
+    | .error e => IO.println s!"check failed: {e}" ; assert! false
+    | .ok expr =>
+      let view := toRGLView expr
+      IO.println s!"VP attachment RGLView: {view.pretty}"
+
+#eval do
+  -- NP attachment parse
+  match GFDriver.parseGFExpr telescopeGFExpr2 with
+  | .error e => IO.println s!"parse failed: {e}" ; assert! false
+  | .ok rawTerm =>
+    match check paperAmbiguitySig rawTerm with
+    | .error e => IO.println s!"check failed: {e}" ; assert! false
+    | .ok expr =>
+      let view := toRGLView expr
+      IO.println s!"NP attachment RGLView: {view.pretty}"
+
+-- ============================================================
 -- Test: JSON round-trip for checked telescope parse
 -- ============================================================
 
@@ -146,10 +172,14 @@ open Lean in
     let json := toJson rawTree
     let jsonStr := json.pretty
     -- Decode back
-    match Json.parse jsonStr >>= fromJson? (α := RawTree) with
+    match Json.parse jsonStr >>= fromJson? (α := RawTerm) with
     | .error e => IO.println s!"JSON round-trip failed: {e}" ; assert! false
     | .ok decoded =>
       -- Check the decoded tree
       match check paperAmbiguitySig decoded with
       | .error e => IO.println s!"check after JSON failed: {e}" ; assert! false
-      | .ok _ => IO.println "JSON → decode → check OK"
+      | .ok checked =>
+        IO.println "JSON → decode → check OK"
+        -- Test RGLView
+        let view := toRGLView checked
+        IO.println s!"RGLView: {view.pretty}"

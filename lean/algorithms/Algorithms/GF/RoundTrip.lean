@@ -1,7 +1,7 @@
 /-
 # GF Round-Trip Test (executable)
 
-Full pipeline: English → GF parse → RawTree → check → CheckedExpr → erase → GF linearize → English/Czech
+Full pipeline: English → GF parse → RawTerm → check → CheckedExpr → erase → GF linearize → English/Czech
 
 Run with: lake exe gfRoundTrip
 -/
@@ -37,7 +37,7 @@ def main (args : List String) : IO Unit := do
   for h : i in [:trees.size] do
     let tree := trees[i]
     IO.println s!"\n--- Parse {i} ---"
-    IO.println s!"RawTree root: {tree.funName}"
+    IO.println s!"RawTerm root: {tree.funName}"
 
     match check sig tree with
     | .error e =>
@@ -53,7 +53,7 @@ def main (args : List String) : IO Unit := do
       else if vp.funName == "ComplSlash" then
         IO.println "  Interpretation: NP attachment (sees the man with the telescope)"
 
-      -- Step 3: Erase back to RawTree
+      -- Step 3: Erase back to RawTerm
       let erased := erase checkedExpr
 
       -- Step 4: Linearize through GF → English
