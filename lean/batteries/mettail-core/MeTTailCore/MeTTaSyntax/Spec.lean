@@ -383,6 +383,7 @@ def heGrammar : GrammarSpec :=
 
 def pettaCommandHeads : List CommandHead :=
   [ { head := "=", command := "defineEq", arityMin := 2, arityMax := some 2 }
+  , { head := "rule!", command := "defineRule", arityMin := 2, arityMax := none }
   , { head := ":", command := "defineType", arityMin := 2, arityMax := some 2 }
   , { head := "import!", command := "import", arityMin := 1, arityMax := some 2 }
   , { head := "add-atom!", command := "addAtom", arityMin := 2, arityMax := some 2 }

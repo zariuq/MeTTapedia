@@ -227,6 +227,22 @@ def allCounterexampleInstance {n : Nat} {σ : Ty Base}
     (allCounterexampleTerm (Base := Base) (Const := Const) φ)
     (liftFormula (Base := Base) (Const := Const) (Nat.le_succ n) φ)
 
+/-- The existential Henkin axiom generated from a stage-`n` formula. -/
+def exWitnessAxiom {n : Nat} {σ : Ty Base}
+    (φ : Formula (HenkinConstStage Base Const n) [σ]) :
+    ClosedFormula (HenkinConstStage Base Const (n + 1)) :=
+  .imp
+    (.ex (liftFormula (Base := Base) (Const := Const) (Nat.le_succ n) φ))
+    (exWitnessInstance (Base := Base) (Const := Const) φ)
+
+/-- The universal counterexample Henkin axiom generated from a stage-`n` formula. -/
+def allCounterexampleAxiom {n : Nat} {σ : Ty Base}
+    (φ : Formula (HenkinConstStage Base Const n) [σ]) :
+    ClosedFormula (HenkinConstStage Base Const (n + 1)) :=
+  .imp
+    (allCounterexampleInstance (Base := Base) (Const := Const) φ)
+    (.all (liftFormula (Base := Base) (Const := Const) (Nat.le_succ n) φ))
+
 end HenkinConstStage
 
 end Mettapedia.Logic.HOL

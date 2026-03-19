@@ -6,6 +6,7 @@ import Mathlib.Algebra.Ring.Hom.Defs
 import Mathlib.Data.Fintype.Pi
 import Mathlib.Algebra.BigOperators.Group.List.Lemmas
 import Mathlib.Data.Set.Basic
+import Mathlib.Topology.Algebra.InfiniteSum.Basic
 
 /-!
 # LP Provenance: Semiring Annotations (K-Relations)
@@ -158,7 +159,84 @@ theorem T_P_K_LP_seeded_hom {σ : LPSignature}
   · rw [map_list_prod, List.map_map]; rfl
   · rfl
 
-/-! ## Section 5: Support and Boolean collapse -/
+/-! ## Section 5: Countable-grounding variants
+
+The finite variants above require `[Fintype σ.vars]` and `[Fintype σ.constants]`.
+The countable variants below replace `Finset.sum` with `tsum`, removing the
+finiteness constraint. A `Summable` hypothesis is required instead.
+
+The bridge theorem `T_P_K_LP_countable_eq_finite` shows the countable variant
+recovers the finite variant when groundings are finite. -/
+
+/-- IDB contribution for a single ground atom: the sum over groundings of
+    clause-match products. This is the inner term of T_P_K_LP without the EDB part. -/
+noncomputable def idbContribution {σ : LPSignature}
+    [DecidableEq (GroundAtom σ)]
+    (K : Type*) [CommSemiring K]
+    (prog : Program σ) (I : KRelation σ K) (a : GroundAtom σ) (g : Grounding σ) : K :=
+  (prog.map (fun r =>
+    if g.groundAtom r.head = a then
+      (r.body.map (fun b => I (g.groundAtom b))).prod
+    else 0)).sum
+
+/-- T_P_K_LP over potentially infinite groundings, using `tsum`.
+    Requires `Summable` instead of `Fintype`. No finiteness constraint on
+    variables or constants — the framework works for countable or larger domains. -/
+noncomputable def T_P_K_LP_countable {σ : LPSignature}
+    [IsEmpty σ.functionSymbols]
+    [DecidableEq (GroundAtom σ)]
+    (K : Type*) [CommSemiring K] [TopologicalSpace K]
+    (kb : FinKnowledgeBase σ) (I : KRelation σ K)
+    (_hsum : ∀ a, Summable (idbContribution K kb.prog I a)) : KRelation σ K :=
+  fun (a : GroundAtom σ) =>
+    (if a ∈ kb.db then (1 : K) else 0) + ∑' g, idbContribution K kb.prog I a g
+
+/-- Seeded countable variant. -/
+noncomputable def T_P_K_LP_seeded_countable {σ : LPSignature}
+    [IsEmpty σ.functionSymbols]
+    [DecidableEq (GroundAtom σ)]
+    (K : Type*) [CommSemiring K] [TopologicalSpace K]
+    (prog : Program σ) (seed I : KRelation σ K)
+    (_hsum : ∀ a, Summable (idbContribution K prog I a)) : KRelation σ K :=
+  fun (a : GroundAtom σ) =>
+    seed a + ∑' g, idbContribution K prog I a g
+
+/-- Bridge: on finite groundings, the countable variant recovers the finite one. -/
+theorem T_P_K_LP_countable_eq_finite {σ : LPSignature}
+    [IsEmpty σ.functionSymbols]
+    [Fintype σ.vars] [DecidableEq σ.vars]
+    [Fintype σ.constants] [DecidableEq σ.constants]
+    [DecidableEq σ.relationSymbols]
+    [DecidableEq (GroundAtom σ)]
+    (K : Type*) [CommSemiring K] [TopologicalSpace K] [T1Space K]
+    (kb : FinKnowledgeBase σ) (I : KRelation σ K)
+    (_hsum : ∀ a, Summable (idbContribution K kb.prog I a)) :
+    T_P_K_LP_countable K kb I _hsum = T_P_K_LP K kb I := by
+  funext a
+  letI : DecidableEq (GroundAtom σ) := instDecidableEqGroundAtomOfConstantsOfRelationSymbols
+  by_cases hmem : a ∈ kb.db
+  · simp [T_P_K_LP_countable, T_P_K_LP, idbContribution, hmem, tsum_fintype]
+    rfl
+  · simp [T_P_K_LP_countable, T_P_K_LP, idbContribution, hmem, tsum_fintype]
+    rfl
+
+/-- Bridge for seeded variant. -/
+theorem T_P_K_LP_seeded_countable_eq_finite {σ : LPSignature}
+    [IsEmpty σ.functionSymbols]
+    [Fintype σ.vars] [DecidableEq σ.vars]
+    [Fintype σ.constants] [DecidableEq σ.constants]
+    [DecidableEq σ.relationSymbols]
+    [DecidableEq (GroundAtom σ)]
+    (K : Type*) [CommSemiring K] [TopologicalSpace K] [T1Space K]
+    (prog : Program σ) (seed I : KRelation σ K)
+    (_hsum : ∀ a, Summable (idbContribution K prog I a)) :
+    T_P_K_LP_seeded_countable K prog seed I _hsum = T_P_K_LP_seeded K prog seed I := by
+  funext a
+  letI : DecidableEq (GroundAtom σ) := instDecidableEqGroundAtomOfConstantsOfRelationSymbols
+  simp [T_P_K_LP_seeded_countable, T_P_K_LP_seeded, idbContribution, tsum_fintype]
+  rfl
+
+/-! ## Section 6: Support and Boolean collapse -/
 
 /-- The support of a K-relation: atoms with nonzero weight. -/
 noncomputable def KRelation.support {σ : LPSignature} {K : Type*} [Zero K] [DecidableEq K]

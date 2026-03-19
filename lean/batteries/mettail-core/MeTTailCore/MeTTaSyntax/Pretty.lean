@@ -41,6 +41,10 @@ def renderCommandWith (spec : SyntaxSpec) : SyntaxCommand → String
   | .defineEq lhs rhs =>
       let head := spec.displayCommandHead "="
       s!"({head} {renderPatternWith spec lhs} {renderPatternWith spec rhs})"
+  | .defineRule lhs rhs premises =>
+      let rendered := [renderPatternWith spec lhs, renderPatternWith spec rhs]
+        ++ premises.map (renderPatternWith spec)
+      s!"(rule! {renderList rendered})"
   | .defineType lhs rhs =>
       let head := spec.displayCommandHead ":"
       s!"({head} {renderPatternWith spec lhs} {renderPatternWith spec rhs})"

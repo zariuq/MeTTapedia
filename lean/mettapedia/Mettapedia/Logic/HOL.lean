@@ -24,6 +24,8 @@ import Mettapedia.Logic.HOL.CanonicalSemantics
 import Mettapedia.Logic.HOL.CanonicalModel
 import Mettapedia.Logic.HOL.IntuitionisticCompleteness
 import Mettapedia.Logic.HOL.OriginalReflectionReduction
+import Mettapedia.Logic.HOL.OriginalReflectionObstruction
+import Mettapedia.Logic.HOL.OriginalReflectionWitnessed
 import Mettapedia.Logic.HOL.IntuitionisticSoundness
 import Mettapedia.Logic.HOL.Soundness
 import Mettapedia.Logic.HOL.Embedding.FirstOrder
@@ -60,6 +62,11 @@ Public entrypoint for the real Church-style HOL layer:
   Henkin language over canonical Henkin worlds,
 - a proof-theoretic reduction theorem isolating the exact remaining original
   reflection blockers as finite-stage reduction plus one-step stage reflection,
+- a certified obstruction showing that naive constant-based original reflection
+  is false for empty-signature source semantics with empty admissible domains,
+- a witnessed-source replacement layer showing that base-type source witnesses
+  recursively yield closed terms at every simple type and recover existential
+  source theorems of the form `∃ x : τ, ⊤`,
 - first-order embedding,
 - and the world-model bridge over pointed Henkin models.
 
@@ -68,8 +75,13 @@ Important status boundary:
 - the corrected intuitionistic-extensional HOL core, soundness layer, cumulative
   Henkinization infrastructure, world-level canonical truth machinery, and an
   internal cumulative-Henkin finite-context completeness theorem are real;
-- the final typed original-signature canonical-model bridge and HOL completeness
-  theorem are still in progress;
+- the old constant-based original-signature reflection target is now formally
+  known to fail against the current source semantics;
+- the mathematically clean replacement target is a witnessed-source
+  original-signature theorem, and the witness infrastructure for that restated
+  target is now formalized;
+- the final typed original-signature canonical-model bridge and restated HOL
+  completeness theorem are still in progress;
 - the logical-induction and planner-facing belief/process files imported here are
   experimental overlays rather than part of the mature HOL metatheory.
 -/

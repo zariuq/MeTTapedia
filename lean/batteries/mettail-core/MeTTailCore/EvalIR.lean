@@ -14,15 +14,16 @@ namespace MeTTailCore.EvalIR
 -- § Core IR Types
 -- ═══════════════════════════════════════════════════════════════════════════
 
-/-- Values produced by the evaluator: integers or booleans. -/
+/-- Values produced by the evaluator: integers, booleans, or strings. -/
 inductive EvalValue where
   | int : Int → EvalValue
   | bool : Bool → EvalValue
+  | str : String → EvalValue
 deriving Repr, DecidableEq, BEq, ReflBEq, LawfulBEq
 
 /-- Evaluator IR nodes. Supports the recursive evaluation fragment:
-    integer/boolean literals, if-then-else, equality, addition, subtraction,
-    multiplication, and user-defined function calls. -/
+    integer/boolean/string literals, conditionals, scalar equality, arithmetic,
+    and user-defined function calls. -/
 inductive EvalNode where
   | intLit : Int → EvalNode
   | boolLit : Bool → EvalNode
@@ -32,6 +33,8 @@ inductive EvalNode where
   | subInt : EvalNode → EvalNode → EvalNode
   | mulInt : EvalNode → EvalNode → EvalNode
   | userCall : String → List EvalNode → EvalNode
+  | strLit : String → EvalNode
+  | eqStr : EvalNode → EvalNode → EvalNode
 deriving Repr, BEq
 
 /-- A user-defined rule: head name, parameter names, body expression. -/
@@ -156,6 +159,8 @@ mutual
         | some (_, replacement) => replacement
         | none => .userCall head []
       | _ => .userCall head (substNodeList env args)
+    | .strLit s => .strLit s
+    | .eqStr a b => .eqStr (substNode env a) (substNode env b)
 
   def substNodeList (env : List (String × EvalNode)) : List EvalNode → List EvalNode
     | [] => []
@@ -166,6 +171,7 @@ end
 def EvalValue.toNode : EvalValue → EvalNode
   | .int n => .intLit n
   | .bool b => .boolLit b
+  | .str s => .strLit s
 
 -- Reference evaluator — the semantic oracle.
 -- Fuel-bounded: fuel consumed only by userCall.
@@ -210,6 +216,11 @@ mutual
             let env := rule.params.zip argNodes
             let body' := substNode env rule.body
             eval rules fuel' body'
+    | .strLit s => some (.str s)
+    | .eqStr a b =>
+      match eval rules fuel a, eval rules fuel b with
+      | some (.str va), some (.str vb) => some (.bool (va == vb))
+      | _, _ => none
   termination_by (fuel, sizeOf node)
 
   def evalList (rules : List EvalRule) (fuel : Nat) (nodes : List EvalNode) : List (Option EvalValue) :=
@@ -302,6 +313,13 @@ mutual
               match result with
               | some v => (some v, (head, vals, v) :: memo)
               | none => (none, memo)
+    | .strLit s => (some (.str s), memo)
+    | .eqStr a b =>
+      let (av, memo) := evalMemo rules fuel memo a
+      let (bv, memo) := evalMemo rules fuel memo b
+      match av, bv with
+      | some (.str va), some (.str vb) => (some (.bool (va == vb)), memo)
+      | _, _ => (none, memo)
   termination_by (fuel, sizeOf node)
 
   def evalMemoList (rules : List EvalRule) (fuel : Nat) (memo : MemoTable)
@@ -329,8 +347,11 @@ mutual
   inductive EvalSem (rules : List EvalRule) : EvalNode → EvalValue → Prop where
     | litInt : EvalSem rules (.intLit n) (.int n)
     | litBool : EvalSem rules (.boolLit b) (.bool b)
+    | litStr : EvalSem rules (.strLit s) (.str s)
     | eqOp : EvalSem rules a (.int va) → EvalSem rules b (.int vb) →
              EvalSem rules (.eqInt a b) (.bool (va == vb))
+    | eqStrOp : EvalSem rules a (.str va) → EvalSem rules b (.str vb) →
+                EvalSem rules (.eqStr a b) (.bool (va == vb))
     | addOp : EvalSem rules a (.int va) → EvalSem rules b (.int vb) →
               EvalSem rules (.addInt a b) (.int (va + vb))
     | subOp : EvalSem rules a (.int va) → EvalSem rules b (.int vb) →
@@ -374,6 +395,7 @@ theorem evalSem_toNode {rules : List EvalRule} :
     ∀ v : EvalValue, EvalSem rules v.toNode v
   | .int _ => .litInt
   | .bool _ => .litBool
+  | .str _ => .litStr
 
 theorem evalSemList_map_toNode {rules : List EvalRule} :
     ∀ vs : List EvalValue, EvalSemList rules (vs.map EvalValue.toNode) vs
@@ -517,13 +539,26 @@ theorem eval_sound {rules : List EvalRule} :
       -- Use congrArg to transport
       exact hFilter ▸ this
     exact .userCall hSemArgs ih_args hSemBody
+  | case18 fuel s =>
+    intro v h
+    simp [eval] at h
+    subst h
+    exact .litStr
+  | case19 fuel a b va vb hb ha ih_a ih_b =>
+    intro v h
+    simp [eval, ha, hb] at h
+    subst h
+    exact .eqStrOp (ih_a _ ha) (ih_b _ hb)
+  | case20 =>
+    intro v h
+    simp [eval] at h
   -- evalList cases
-  | case18 =>
+  | case21 =>
     rename_i fuel vs h
     cases vs with
     | nil => exact .nil
     | cons => simp [evalList] at h
-  | case19 fuel a as ih_a ih_as =>
+  | case22 fuel a as ih_a ih_as =>
     rename_i vs h
     cases vs with
     | nil => simp [evalList] at h
@@ -563,8 +598,14 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
     constructor
     · intro v h; simp [evalMemo] at h
     · simp [evalMemo]; exact hm
-  -- case20: evalMemoList nil (motive2 — hm already in context)
+  -- case20: strLit
   | case20 =>
+    intro hm
+    constructor
+    · intro v h; simp [evalMemo] at h; subst h; exact .litStr
+    · simp [evalMemo]; exact hm
+  -- case23: evalMemoList nil (motive2 — hm already in context)
+  | case23 =>
     rename_i fuel memo hm
     constructor
     · intro vs h; simp [evalMemoList] at h; cases vs <;> simp at h; exact .nil
@@ -575,8 +616,8 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
     rename_i fuel memo₀ c t e cv memo₁ hc hnt hnf ih_c
     intro hm; have ⟨_, hCp⟩ := ih_c hm
     constructor
-    · intro v h; simp [evalMemo, hc, hnt, hnf] at h
-    · simp [evalMemo, hc, hnt, hnf]; simpa [hc] using hCp
+    · intro v h; simp [evalMemo, hc] at h
+    · simp [evalMemo, hc]; simpa [hc] using hCp
   -- case7: eqInt fail — not both ints
   | case7 =>
     rename_i fuel memo₀ a b cv_a memo₁ ha cv_b memo₂ hb hfail ih_a ih_b
@@ -585,8 +626,8 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
     have hpres_a : MemoSoundSem rules memo₁ := by simpa [ha] using hAp
     have ⟨_, hBp⟩ := ih_b hpres_a
     constructor
-    · intro v h; simp [evalMemo, ha, hb, hfail] at h
-    · simp [evalMemo, ha, hb, hfail]; simpa [hb] using hBp
+    · intro v h; simp [evalMemo, ha, hb] at h
+    · simp [evalMemo, ha, hb]; simpa [hb] using hBp
   -- case9: addInt fail
   | case9 =>
     rename_i fuel memo₀ a b cv_a memo₁ ha cv_b memo₂ hb hfail ih_a ih_b
@@ -595,8 +636,8 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
     have hpres_a : MemoSoundSem rules memo₁ := by simpa [ha] using hAp
     have ⟨_, hBp⟩ := ih_b hpres_a
     constructor
-    · intro v h; simp [evalMemo, ha, hb, hfail] at h
-    · simp [evalMemo, ha, hb, hfail]; simpa [hb] using hBp
+    · intro v h; simp [evalMemo, ha, hb] at h
+    · simp [evalMemo, ha, hb]; simpa [hb] using hBp
   -- case11: subInt fail
   | case11 =>
     rename_i fuel memo₀ a b cv_a memo₁ ha cv_b memo₂ hb hfail ih_a ih_b
@@ -605,8 +646,8 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
     have hpres_a : MemoSoundSem rules memo₁ := by simpa [ha] using hAp
     have ⟨_, hBp⟩ := ih_b hpres_a
     constructor
-    · intro v h; simp [evalMemo, ha, hb, hfail] at h
-    · simp [evalMemo, ha, hb, hfail]; simpa [hb] using hBp
+    · intro v h; simp [evalMemo, ha, hb] at h
+    · simp [evalMemo, ha, hb]; simpa [hb] using hBp
   -- case13: mulInt fail
   | case13 =>
     rename_i fuel memo₀ a b cv_a memo₁ ha cv_b memo₂ hb hfail ih_a ih_b
@@ -615,8 +656,18 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
     have hpres_a : MemoSoundSem rules memo₁ := by simpa [ha] using hAp
     have ⟨_, hBp⟩ := ih_b hpres_a
     constructor
-    · intro v h; simp [evalMemo, ha, hb, hfail] at h
-    · simp [evalMemo, ha, hb, hfail]; simpa [hb] using hBp
+    · intro v h; simp [evalMemo, ha, hb] at h
+    · simp [evalMemo, ha, hb]; simpa [hb] using hBp
+  -- case22: eqStr fail
+  | case22 =>
+    rename_i fuel memo₀ a b cv_a memo₁ ha cv_b memo₂ hb hfail ih_a ih_b
+    intro hm
+    have ⟨_, hAp⟩ := ih_a hm
+    have hpres_a : MemoSoundSem rules memo₁ := by simpa [ha] using hAp
+    have ⟨_, hBp⟩ := ih_b hpres_a
+    constructor
+    · intro v h; simp [evalMemo, ha, hb] at h
+    · simp [evalMemo, ha, hb]; simpa [hb] using hBp
   -- case15: userCall — args have none
   | case15 =>
     rename_i memo₀ head args fuel' argVals memo₁ hargs hany ih_args
@@ -635,7 +686,7 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
     rename_i memo₀ head args fuel' argVals memo₁ hargs hnoany vals hmiss hrule ih_args
     intro hm; have ⟨_, hAp⟩ := ih_args hm
     have hres : evalMemo rules (fuel' + 1) memo₀ (.userCall head args) = (none, memo₁) := by
-      unfold evalMemo; simp [hargs, hnoany, hmiss, hrule]
+      unfold evalMemo; simp [hargs, hnoany, hrule]
       -- remaining: match on memoLookup with let-bound vals
       show (match memoLookup memo₁ head (List.filterMap (fun x => x) argVals) with
         | some cached => (some cached, memo₁) | none => (none, memo₁)) = _
@@ -711,6 +762,17 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
     · intro v h; simp [evalMemo, ha, hb] at h; subst h
       exact .mulOp (hAs _ (by simp [ha])) (hBs _ (by simp [hb]))
     · simp [evalMemo, ha, hb]; simpa [hb] using hBp
+  -- case21: eqStr success
+  | case21 =>
+    rename_i fuel memo₀ a b memo₁ memo₂ va vb ha hb ih_a ih_b
+    intro hm
+    have ⟨hAs, hAp⟩ := ih_a hm
+    have hpres_a : MemoSoundSem rules memo₁ := by simpa [ha] using hAp
+    have ⟨hBs, hBp⟩ := ih_b hpres_a
+    constructor
+    · intro v h; simp [evalMemo, ha, hb] at h; subst h
+      exact .eqStrOp (hAs _ (by simp [ha])) (hBs _ (by simp [hb]))
+    · simp [evalMemo, ha, hb]; simpa [hb] using hBp
   -- ── Batch D: If-branch and list cons ─────────────────────────────────
   -- case3: ifCond true
   | case3 =>
@@ -734,8 +796,8 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
     · intro v h; simp [evalMemo, hc] at h
       exact .ifFalse (hCs _ (by simp [hc])) (hEs v h)
     · simp [evalMemo, hc]; exact hEp
-  -- case21: evalMemoList cons (motive2 — hm already in context)
-  | case21 =>
+  -- case24: evalMemoList cons (motive2 — hm already in context)
+  | case24 =>
     rename_i fuel memo₀ a as cv memo₁ ha argVals memo₂ has ih_a ih_as hm
     have ⟨hAs, hAp⟩ := ih_a hm
     have hpres : MemoSoundSem rules memo₁ := by simpa [ha] using hAp
@@ -787,7 +849,7 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
           List.filterMap (fun x => x) (xs.map some) = xs := by
         intro xs; induction xs with
         | nil => rfl
-        | cons x xs ih => simp [List.filterMap, ih]
+        | cons x xs ih => simp [ih]
       have hValsEq : vals = realVals := by
         show List.filterMap (fun x => x) argVals = realVals
         rw [hRealVals, filterMap_id_map_some]
@@ -818,7 +880,7 @@ theorem evalMemo_sound_and_preserves {rules : List EvalRule} :
         List.filterMap (fun x => x) (xs.map some) = xs := by
       intro xs; induction xs with
       | nil => rfl
-      | cons x xs ih => simp [List.filterMap, ih]
+      | cons x xs ih => simp [ih]
     have hValsEq : vals = realVals := by
       show List.filterMap (fun x => x) argVals = realVals
       rw [hRealVals, filterMap_id_map_some]
@@ -898,7 +960,13 @@ theorem eval_complete_of_sem {rules : List EvalRule} {node : EvalNode} {v : Eval
     (⟨0, fun _ _ => by simp [eval]⟩)
     -- litBool: threshold = 0
     (⟨0, fun _ _ => by simp [eval]⟩)
+    -- litStr: threshold = 0
+    (⟨0, fun _ _ => by simp [eval]⟩)
     -- eqOp: threshold = max(fa, fb)
+    (fun _ha _hb ⟨fa, ha'⟩ ⟨fb, hb'⟩ =>
+      ⟨fa.max fb, fun fuel hle => by
+        simp [eval, ha' fuel (Nat.le_trans (Nat.le_max_left _ _) hle), hb' fuel (Nat.le_trans (Nat.le_max_right _ _) hle)]⟩)
+    -- eqStrOp: threshold = max(fa, fb)
     (fun _ha _hb ⟨fa, ha'⟩ ⟨fb, hb'⟩ =>
       ⟨fa.max fb, fun fuel hle => by
         simp [eval, ha' fuel (Nat.le_trans (Nat.le_max_left _ _) hle), hb' fuel (Nat.le_trans (Nat.le_max_right _ _) hle)]⟩)
@@ -976,9 +1044,13 @@ mutual
       : EvalNode → EvalValue → MemoTable → MemoTable → Type where
     | litInt : EvalTrace rules (.intLit n) (.int n) m m
     | litBool : EvalTrace rules (.boolLit b) (.bool b) m m
+    | litStr : EvalTrace rules (.strLit s) (.str s) m m
     | eqOp : EvalTrace rules a (.int va) m m₁ →
              EvalTrace rules b (.int vb) m₁ m₂ →
              EvalTrace rules (.eqInt a b) (.bool (va == vb)) m m₂
+    | eqStrOp : EvalTrace rules a (.str va) m m₁ →
+                EvalTrace rules b (.str vb) m₁ m₂ →
+                EvalTrace rules (.eqStr a b) (.bool (va == vb)) m m₂
     | addOp : EvalTrace rules a (.int va) m m₁ →
               EvalTrace rules b (.int vb) m₁ m₂ →
               EvalTrace rules (.addInt a b) (.int (va + vb)) m m₂
@@ -1020,8 +1092,8 @@ end
 -- Count the number of callMiss nodes (= unique computations)
 mutual
   def EvalTrace.callMissCount : EvalTrace rules node v m m' → Nat
-    | .litInt | .litBool => 0
-    | .eqOp ta tb | .addOp ta tb | .subOp ta tb | .mulOp ta tb =>
+    | .litInt | .litBool | .litStr => 0
+    | .eqOp ta tb | .eqStrOp ta tb | .addOp ta tb | .subOp ta tb | .mulOp ta tb =>
         ta.callMissCount + tb.callMissCount
     | .ifTrue tc tt => tc.callMissCount + tt.callMissCount
     | .ifFalse tc te => tc.callMissCount + te.callMissCount
@@ -1037,8 +1109,8 @@ end
 -- Total step count (every trace node = 1 step)
 mutual
   def EvalTrace.stepCount : EvalTrace rules node v m m' → Nat
-    | .litInt | .litBool => 1
-    | .eqOp ta tb | .addOp ta tb | .subOp ta tb | .mulOp ta tb =>
+    | .litInt | .litBool | .litStr => 1
+    | .eqOp ta tb | .eqStrOp ta tb | .addOp ta tb | .subOp ta tb | .mulOp ta tb =>
         1 + ta.stepCount + tb.stepCount + 1  -- unfold + subs + fold
     | .ifTrue tc tt => 1 + tc.stepCount + 1 + tt.stepCount  -- unfold + cond + dispatch + branch
     | .ifFalse tc te => 1 + tc.stepCount + 1 + te.stepCount
@@ -1065,7 +1137,10 @@ mutual
     match t with
     | .litInt => .litInt
     | .litBool => .litBool
+    | .litStr => .litStr
     | .eqOp ta tb => .eqOp (trace_implies_sem hm ta) (trace_implies_sem (trace_preserves_sem hm ta) tb)
+    | .eqStrOp ta tb =>
+        .eqStrOp (trace_implies_sem hm ta) (trace_implies_sem (trace_preserves_sem hm ta) tb)
     | .addOp ta tb => .addOp (trace_implies_sem hm ta) (trace_implies_sem (trace_preserves_sem hm ta) tb)
     | .subOp ta tb => .subOp (trace_implies_sem hm ta) (trace_implies_sem (trace_preserves_sem hm ta) tb)
     | .mulOp ta tb => .mulOp (trace_implies_sem hm ta) (trace_implies_sem (trace_preserves_sem hm ta) tb)
@@ -1096,7 +1171,9 @@ mutual
     match t with
     | .litInt => hm
     | .litBool => hm
+    | .litStr => hm
     | .eqOp ta tb => trace_preserves_sem (trace_preserves_sem hm ta) tb
+    | .eqStrOp ta tb => trace_preserves_sem (trace_preserves_sem hm ta) tb
     | .addOp ta tb => trace_preserves_sem (trace_preserves_sem hm ta) tb
     | .subOp ta tb => trace_preserves_sem (trace_preserves_sem hm ta) tb
     | .mulOp ta tb => trace_preserves_sem (trace_preserves_sem hm ta) tb
@@ -1333,12 +1410,15 @@ partial def tryLeafStep (facts : List MM2Fact) : Option (List MM2Fact) :=
       some (removeFacts facts [.req id (.intLit n)] ++ [.res id (.int n)])
     | .req id (.boolLit b) =>
       some (removeFacts facts [.req id (.boolLit b)] ++ [.res id (.bool b)])
+    | .req id (.strLit s) =>
+      some (removeFacts facts [.req id (.strLit s)] ++ [.res id (.str s)])
     | _ => none
 
 /-- Extract evaluated value from an EvalNode if it's a literal. -/
 def evalNodeToValue? : EvalNode → Option EvalValue
   | .intLit n => some (.int n)
   | .boolLit b => some (.bool b)
+  | .strLit s => some (.str s)
   | _ => none
 
 /-- Convert a list of argument nodes into evaluated values, if and only if every
@@ -1374,6 +1454,11 @@ theorem argsToValues?_sound {args : List EvalNode} {vs : List EvalValue}
         cases h
         simp [EvalValue.toNode, ih hRest]
     case boolLit b =>
+      cases hRest : argsToValues? rest <;> simp [hRest] at h
+      case some restVs =>
+        cases h
+        simp [EvalValue.toNode, ih hRest]
+    case strLit s =>
       cases hRest : argsToValues? rest <;> simp [hRest] at h
       case some restVs =>
         cases h
@@ -1681,6 +1766,7 @@ partial def morkRunToFixpoint (userRules : List EvalRule)
 inductive EvalParamPattern where
   | intLit : Int → EvalParamPattern
   | boolLit : Bool → EvalParamPattern
+  | strLit : String → EvalParamPattern
   | var : String → EvalParamPattern
 deriving Repr, DecidableEq, BEq
 
@@ -1688,6 +1774,7 @@ deriving Repr, DecidableEq, BEq
 structure EvalClause where
   head : String
   patterns : List EvalParamPattern
+  guard? : Option EvalNode := none
   body : EvalNode
 deriving Repr
 
@@ -1732,6 +1819,7 @@ def patternGuard? (pattern : EvalParamPattern) (paramName : String) : Option Eva
   | .intLit n => some (.eqInt paramRef (.intLit n))
   | .boolLit true => some paramRef
   | .boolLit false => some (boolNotNode paramRef)
+  | .strLit s => some (.eqStr paramRef (.strLit s))
   | .var _ => none
 
 /-- Compile one clause case into the nested-dispatch body for its group. -/
@@ -1747,6 +1835,10 @@ def compileClauseCase
     let guards :=
       (clause.patterns.zip sharedParams).filterMap fun
         | (pattern, paramName) => patternGuard? pattern paramName
+    let guards :=
+      match clause.guard? with
+      | some guard => guards ++ [substNode env guard]
+      | none => guards
     match guards with
     | [] => some body
     | g :: gs =>
@@ -1884,6 +1976,31 @@ def pickClauses : List EvalClause :=
   , { head := "pick", patterns := [.boolLit false], body := .intLit 0 }
   ]
 
+/-- Same-head string dispatch compiled above core `EvalRule`. -/
+def greetClauses : List EvalClause :=
+  [ { head := "greet", patterns := [.strLit "Alice"], body := .strLit "Hello, Alice" }
+  , { head := "greet", patterns := [.strLit "Bob"], body := .strLit "Hi, Bob" }
+  , { head := "greet", patterns := [.var "name"], body := .strLit "Hello" }
+  ]
+
+/-- Factorial expressed in idiomatic same-head recursive clauses. -/
+def factorialClauses : List EvalClause :=
+  [ { head := "fac", patterns := [.intLit 0], body := .intLit 1 }
+  , { head := "fac", patterns := [.var "n"]
+    , body := .mulInt (.userCall "n" [])
+        (.userCall "fac" [.subInt (.userCall "n" []) (.intLit 1)]) }
+  ]
+
+/-- Fibonacci expressed in idiomatic same-head recursive clauses. -/
+def fibClausesIR : List EvalClause :=
+  [ { head := "fibC", patterns := [.intLit 0], body := .intLit 0 }
+  , { head := "fibC", patterns := [.intLit 1], body := .intLit 1 }
+  , { head := "fibC", patterns := [.var "n"]
+    , body := .addInt
+        (.userCall "fibC" [.subInt (.userCall "n" []) (.intLit 1)])
+        (.userCall "fibC" [.subInt (.userCall "n" []) (.intLit 2)]) }
+  ]
+
 /-- Mutual recursion expressed with same-head clause dispatch rather than an
     explicit `if` inside each rule body. -/
 def evenOddClauses : List EvalClause :=
@@ -1902,6 +2019,33 @@ def addDownClauses : List EvalClause :=
     , body := .userCall "addDown"
         [ .subInt (.userCall "a" []) (.intLit 1)
         , .addInt (.userCall "b" []) (.intLit 1)
+        ] }
+  ]
+
+/-- Guarded same-head dispatch compiled above core `EvalRule`:
+    `eqChoice(x, y)` returns `1` when `x == y`, otherwise `0`. -/
+def eqChoiceClauses : List EvalClause :=
+  [ { head := "eqChoice"
+    , patterns := [.var "x", .var "y"]
+    , guard? := some (.eqInt (.userCall "x" []) (.userCall "y" []))
+    , body := .intLit 1 }
+  , { head := "eqChoice"
+    , patterns := [.var "x", .var "y"]
+    , body := .intLit 0 }
+  ]
+
+/-- Guarded recursive same-head dispatch:
+    `alignDown(x, y)` stops when `x == y`, otherwise recurs on `(x-1, y+1)`. -/
+def alignDownClauses : List EvalClause :=
+  [ { head := "alignDown"
+    , patterns := [.var "x", .var "y"]
+    , guard? := some (.eqInt (.userCall "x" []) (.userCall "y" []))
+    , body := .userCall "x" [] }
+  , { head := "alignDown"
+    , patterns := [.var "x", .var "y"]
+    , body := .userCall "alignDown"
+        [ .subInt (.userCall "x" []) (.intLit 1)
+        , .addInt (.userCall "y" []) (.intLit 1)
         ] }
   ]
 
@@ -1970,6 +2114,52 @@ open MeTTailCore.EvalIR in
     then "compiled clauses: bool literal dispatch ✓"
     else s!"FAIL: pick clauses results {repr rt} / {repr rf}"
   | none => "FAIL: pick clauses did not compile"
+
+open MeTTailCore.EvalIR in
+#eval
+  match compileClauseProgram greetClauses with
+  | some rules =>
+    let ra := eval rules 20 (.userCall "greet" [.strLit "Alice"])
+    let rz := eval rules 20 (.userCall "greet" [.strLit "Zar"])
+    if ra == some (EvalValue.str "Hello, Alice") && rz == some (EvalValue.str "Hello")
+    then "compiled clauses: string literal dispatch ✓"
+    else s!"FAIL: greet clauses results {repr ra} / {repr rz}"
+  | none => "FAIL: greet clauses did not compile"
+
+open MeTTailCore.EvalIR in
+#eval
+  match compileClauseProgram factorialClauses with
+  | some rules =>
+    let r := eval rules 100 (.userCall "fac" [.intLit 10])
+    if r == some (EvalValue.int 3628800)
+    then "compiled clauses: fac/1 same-head recursive dispatch ✓"
+    else s!"FAIL: factorial clauses result {repr r}"
+  | none => "FAIL: factorial clauses did not compile"
+
+open MeTTailCore.EvalIR in
+#eval
+  match compileClauseProgram fibClausesIR with
+  | some rules =>
+    let r := eval rules 200 (.userCall "fibC" [.intLit 10])
+    if r == some (EvalValue.int 55)
+    then "compiled clauses: fib/1 same-head recursive dispatch ✓"
+    else s!"FAIL: fib clauses result {repr r}"
+  | none => "FAIL: fib clauses did not compile"
+
+open MeTTailCore.EvalIR in
+#eval
+  match compileClauseProgram eqChoiceClauses with
+  | some rules =>
+    let re :=
+      eval rules 40
+        (.userCall "eqChoice" [.addInt (.intLit 2) (.intLit 3), .intLit 5])
+    let rne :=
+      eval rules 40
+        (.userCall "eqChoice" [.addInt (.intLit 2) (.intLit 3), .intLit 4])
+    if re == some (EvalValue.int 1) && rne == some (EvalValue.int 0)
+    then "compiled clauses: guarded eq dispatch ✓"
+    else s!"FAIL: eqChoice clauses results {repr re} / {repr rne}"
+  | none => "FAIL: eqChoice clauses did not compile"
 
 -- GroundedStep validation
 open MeTTailCore.EvalIR in
@@ -2069,6 +2259,19 @@ open MeTTailCore.EvalIR in
 
 open MeTTailCore.EvalIR in
 #eval
+  match compileClauseProgram alignDownClauses with
+  | some rules =>
+    let facts := [MM2Fact.req .root
+      (.userCall "alignDown"
+        [.addInt (.intLit 2) (.intLit 3), .addInt (.intLit 0) (.intLit 1)])]
+    let result := runToFixpoint rules facts 4000
+    match extractResult result with
+    | some (.int 3) => "scheduler: guarded recursive alignDown clauses = 3 ✓"
+    | other => s!"FAIL: {repr other}"
+  | none => "FAIL: alignDown clauses did not compile"
+
+open MeTTailCore.EvalIR in
+#eval
   match hybridStep fibRules [MM2Fact.req .root (.userCall "fib" [.intLit 5])] with
   | some (.scheduler, _) => "hybridStep: fib root call owned by scheduler ✓"
   | some (.backend, _) => "FAIL: fib root call should not be backend-owned"
@@ -2133,12 +2336,25 @@ open MeTTailCore.EvalIR in
     | other => s!"FAIL: {repr other}"
   | none => "FAIL: addDown clauses did not compile"
 
+open MeTTailCore.EvalIR in
+#eval
+  match compileClauseProgram alignDownClauses with
+  | some rules =>
+    let (r, memo) := evalMemo rules 120 []
+      (.userCall "alignDown"
+        [.addInt (.intLit 2) (.intLit 3), .addInt (.intLit 0) (.intLit 1)])
+    match r with
+    | some (.int 3) =>
+        s!"evalMemo: guarded recursive alignDown clauses = 3 ✓ (memo entries: {memo.length})"
+    | other => s!"FAIL: {repr other}"
+  | none => "FAIL: alignDown clauses did not compile"
+
 -- Scheduler fib(20): works correctly but Lean #eval is too slow for large
 -- step counts. Validated for fib(3)=2 with 4 memo entries. The Rust/MORK
 -- implementation is the practical execution target for fib(20).
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- § COUNTEREXAMPLE: evalMemo_agrees is FALSE
+-- § EXPECTED COUNTEREXAMPLE: evalMemo_agrees is FALSE
 -- ═══════════════════════════════════════════════════════════════════════════
 -- GPT-5.4 Pro found: memo keys omit fuel, so a cache entry created at high
 -- remaining fuel can be reused at low remaining fuel where eval would timeout.
@@ -2156,4 +2372,4 @@ open MeTTailCore.EvalIR in
   let e := eval counterRules 3 (.userCall "f" [])
   let m := (evalMemo counterRules 3 [] (.userCall "f" [])).1
   if e == m then s!"SAME: eval={repr e} evalMemo={repr m}"
-  else s!"DIFFERENT! eval={repr e} evalMemo={repr m} — evalMemo_agrees IS FALSE"
+  else s!"EXPECTED DIFFERENCE: eval={repr e} evalMemo={repr m} — evalMemo_agrees is intentionally false because memo keys omit fuel"

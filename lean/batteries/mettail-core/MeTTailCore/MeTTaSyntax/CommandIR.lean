@@ -14,6 +14,8 @@ inductive SyntaxCommand where
   | fact : Pattern → SyntaxCommand
   /-- `(= lhs rhs)` -/
   | defineEq : Pattern → Pattern → SyntaxCommand
+  /-- `(rule! lhs rhs premise1 ...)` — explicit premise-bearing rule definition. -/
+  | defineRule : Pattern → Pattern → List Pattern → SyntaxCommand
   /-- `(: atom ty)` -/
   | defineType : Pattern → Pattern → SyntaxCommand
   /-- `(relation! rel a b ...)` fact insertion into relation env. -/

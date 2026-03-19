@@ -39,53 +39,192 @@
 \chapter{Introduction}
 \label{ch:introduction}
 
-Probabilistic Logic Networks (PLN) has always computed with
-truth values: strength, confidence, and the formulas that combine
-them.  Every PLN implementation builds on the same foundation---combine
-truth values via inference rules, derive new truth values,
-threshold for decisions.  This book asks: \emph{what if truth
-values are not the right foundation?}
+\section{The Problem}
 
-The answer is the world-model calculus.  Instead of truth values,
-the system carries a revisable state of knowledge---sufficient
-statistics, not summaries.  Instead of truth-value combination
-formulas, it uses additive revision.  Instead of ad hoc
-confidence measures, it extracts answers via homomorphisms that
-commute with revision.  Truth values are still available---as
-\emph{views}, lossy projections of a richer underlying state.
+Any system that reasons under uncertainty must decide what to
+store.  One family of answers---the one used by most PLN
+implementations to date---stores \emph{truth values}: a strength
+$s \in [0,1]$ and a confidence $c \in [0,1]$ attached to each
+proposition.  Inference rules combine these pairs, producing new
+truth values from old ones.
 
-The result is a calculus where:
-\begin{itemize}
-\item Revision is compositional: new evidence adds to old evidence.
-\item Queries are principled: extraction is a homomorphism.
-\item Forgetting is provenance-aware: you can retract a specific
-  source's contribution without recomputing from scratch.
-\item Every formal claim is machine-verified: 601~theorems in
-  Lean~4, 0~sorry, 0~\code{native\_decide}.
-\end{itemize}
+This works until you ask what happens when evidence arrives from
+two sources that share a common cause, or when you need to retract
+a faulty sensor's contribution, or when you want to explain
+\emph{why} the system believes what it believes.  At that point,
+the truth value is silent: it has already thrown away the structure
+needed to answer.
+
+The underlying issue is a conflation of three layers that should
+be separate:
+\begin{enumerate}
+\item A \textbf{probabilistic world-model state}---the complete
+  semantic object.
+\item An \textbf{evidence algebra} for compositional
+  aggregation---the carrier in which evidence lives.
+\item \textbf{Operational truth-value views}---strength,
+  confidence, intervals---which are derived summaries of the
+  evidence, not the evidence itself.
+\end{enumerate}
+When these layers are collapsed into a single $(s, c)$ pair, the
+result is what we call \emph{semantic drift}: algebraic operators
+are treated as if they were the logic itself, and link-level
+inference propagates correlation-sensitive quantities without
+carrying the information required to do so correctly.
+
+A one-line example makes the cost visible.  Consider two evidence
+states: $e_1 = (1, 0)$ and $e_2 = (1, 1)$.  The second is more
+\emph{informed} than the first---it contains strictly more
+data---but less \emph{supportive} of the positive claim, because
+the negative channel has increased.  A system that stores only
+strength cannot distinguish ``strongly supported on little
+evidence'' from ``weakly supported on much evidence.''  That
+distinction is the subject of this book.
+
+
+\section{The Move}
+
+Replace truth values with \textbf{carried evidence state}.
+The system stores sufficient statistics---not summaries---and
+derives truth values as lossy projections (\emph{views}) only
+when a decision must be made.
+
+This is not a new idea.  It is what Bayesian statistics has always
+done.  The contribution of this book is to make the move precise
+for PLN-style uncertain reasoning, with eight normative
+requirements (desiderata D1--D8, Chapter~\ref{ch:desiderata}),
+a formal algebra, and machine-verified proofs.
+
+Four verbs organize the calculus: \emph{revise} (incorporate new
+evidence), \emph{query} (extract answers from the current state),
+\emph{forget} (retract a source's contribution while preserving
+the rest), and \emph{explain} (trace which evidence supports each
+conclusion).  The next chapter presents the full calculus in
+miniature.
+
+
+\section{Four Distinctions}
+
+Four distinctions recur throughout the book.  They are worth
+stating here so the reader can watch for them:
+
+\begin{description}
+\item[State vs.\ view.]  The state is what the system carries
+  (sufficient statistics, provenance, scope labels).  A view
+  (strength, confidence, interval) is a lossy projection from
+  the state.  Views are useful for display and thresholding;
+  they are not proof objects.
+
+\item[Semantics vs.\ compiled shortcut.]  The world model is the
+  truthmaker.  A compiled rule (deduction, induction, abduction)
+  is a certified shortcut that is exact under explicit side
+  conditions.  When the conditions fail, the shortcut is not
+  licensed.
+
+\item[More information vs.\ more support.]  Evidence can improve
+  in two senses that are not the same.  $(1, 1)$ is more informed
+  than $(1, 0)$ but less supportive.  The book formalizes both
+  orders and proves they are distinct
+  (Chapter~\ref{ch:views}).
+
+\item[Claim taxonomy.]  Every formal result in this book carries
+  one of four labels:
+  \claimCore{} (theorem-backed, no assumptions),
+  \claimConditional{} (proved under declared assumptions),
+  \claimBoundary{} (the claim is \emph{false} without its stated
+  condition), or
+  \claimOperational{} (heuristic or governance layer).
+  Boundary results are among the most valuable: they tell you
+  where not to waste effort.
+\end{description}
+
+
+\section{PLN Heritage}
+
+This book grows out of the formalization of Probabilistic Logic
+Networks~\cite{Goertzel2008PLN}.  The derived link calculus and
+the compiled Bayesian-network constructions recover, sharpen, and
+delimit classical PLN-style deduction, induction, and abduction
+under explicit structural assumptions.
+
+Where the original PLN rule family is correct, the present
+calculus proves it correct and states the conditions.  Where it is
+incomplete or semantically unstable, the present calculus states
+the boundary and provides a typed, side-conditioned replacement.
+The eight desiderata (Chapter~\ref{ch:desiderata}) are
+requirements \emph{on} the calculus, not axioms \emph{of} it.
+They come from lessons learned across PLN implementations---what
+should have been true, and what went wrong when it was not.
+
+
+\section{Maple Court}
+
+\maplecourt{%
+Maple Court Community Commons is the book's running example.
+Each apartment carries a private evidence state over questions
+such as whether a pipe is leaking (binary: $(n^+, n^-)$ alarm
+counts), whether the elevator is healthy (categorical: Dirichlet
+counts over normal/slow/faulty), and what the hallway temperature
+is (continuous: Normal-Gamma sufficient statistics).  Shared
+spaces carry a building-level state.  Throughout the book, Maple
+Court instantiates abstract concepts in teal-boxed asides like
+this one.  All eight desiderata, all three carriers, and the
+forgetting, provenance, and conservation theorems have Maple Court
+examples.}
+
+
+\section{Formal Verification}
+
+The entire development is formalized in Lean~4 (version~4.28.0)
+with Mathlib~v4.28.0.  The book-referenced files contain
+651~theorems with 0~sorry and 0~\code{native\_decide}
+(Appendix~\ref{app:theorem-map}).  Six application domains---gas
+sensor drift, steel fault classification, NAB anomaly detection,
+GJP geopolitical forecasting, Bayesian-network inference, and
+genomic hypothesis generation---have kernel-checked Lean fixtures.
+
+This is not a decorative appendix.  It is the backbone.
+Every ``Formalized in \ldots'' footnote in the text points to a
+specific Lean file; a reader can build the file and verify the
+claim in minutes.
+
+
+\section{How to Read This Book}
+
+The next chapter (Chapter~\ref{chap:overview}) presents the
+entire calculus in miniature.  A reader who studies that chapter
+will see how the whole book fits together before entering the
+deeper technical development.  The remaining parts are:
+
+\begin{description}
+\item[Part~II] develops the calculus in depth: evidence
+  carriers, state operations, views, and natively typed models.
+\item[Part~III] covers compiled inference, Bayesian-network
+  exactness, the no-go theorem, and large-scale inference control.
+\item[Part~IV] extends to temporal, causal, and normative
+  reasoning.
+\item[Part~V] bridges to seven neighboring frameworks and states
+  the limitations honestly.
+\item[Part~VI] validates the framework on real benchmarks across
+  six domains.
+\end{description}
 
 \noindent
-Eight desiderata (D1--D8, Chapter~\ref{ch:desiderata}) constrain
-the design.  A running example---Maple Court, an apartment building
-with sensors, tenants, and an elevator---instantiates all eight
-and appears throughout the book in teal-boxed asides.
-
 This book is not a PLN tutorial or a replacement for the PLN
-book~\cite{Goertzel2008PLN}.  It is a mathematical refoundation
-with formal verification, aimed at researchers who want to
-understand PLN's semantic commitments and extend the calculus to
-new domains.  The empirical validation
-(Part~\ref{part:applications}) covers gas sensor drift, steel
-fault classification, geopolitical forecasting, Bayesian network
-benchmarks, genomic hypothesis generation, and nine PPLBench
-lanes---but the core contribution is the algebra, not any single
-application.
+book.  It is a mathematical refoundation with formal
+verification, aimed at researchers who want to understand PLN's
+semantic commitments and extend the calculus to new domains.
 
-The remainder of this chapter presents the world-model calculus
-in miniature: the core picture, revision regimes, evidence
-carriers, the boundary, and how the rest of the book unfolds.
 
-%% ─── Overview (formerly ch2_overview.tex, inlined) ───────────────
+\chapter{The World-Model Calculus: An Overview}
+\label{chap:overview}
+
+This chapter presents the world-model calculus in miniature.
+It states the main semantic objects, the main exact regime, the
+main boundary, and the role of typed structure and compiled
+inference.  A reader who studies this chapter should see how the
+whole book fits together before entering the deeper technical
+developments.
 
 \section{The Core Picture}
 \label{sec:overview-core-picture}
@@ -94,9 +233,11 @@ At the highest level, the calculus has three typed parameters:
 \[
   \textit{State}, \qquad \textit{Query}, \qquad V.
 \]
-A state is what the system currently carries.  A query is what the
-system may ask.  The value type~$V$ is the carrier in which extracted
-answers live.
+A state is what the system currently carries.  A query is what the system may
+ask.  The value type~$V$ is the carrier in which extracted answers live.  In
+many applications $V$ will be a sufficient-statistic carrier such as binary
+counts, Dirichlet counts, or Normal--Gamma statistics; in future work it may
+also be probability-valued, interval-valued, or amplitude-valued.
 
 The most general world-model interface records only three operations:
 
@@ -107,134 +248,295 @@ class WorldModel (State Query V : Type*) where
   extract : State -> Query -> V
 \end{lstlisting}
 
-\noindent
-This interface is intentionally minimal.  No additivity,
-commutativity, or probabilistic interpretation is assumed at this
-top level.
+This interface is intentionally minimal.  It says only that a world model is a
+revisable state space equipped with query extraction.  No additivity,
+commutativity, overlap law, or probabilistic interpretation is assumed at this
+top level.  Those laws belong to later subclasses and later chapters.
 
-The book works mostly in one important specialization: the
-\emph{additive regime}.  There, state revision is additive, the
-value carrier is an additive commutative monoid, and extraction
-commutes with revision:
+The book works mostly in one especially important specialization: the
+\emph{additive regime}.  There, state revision is additive, the value carrier is
+an additive commutative monoid, and extraction commutes with additive
+revision.  This is the regime in which the profile-hom equivalence,
+Bayesian-network exactness theorems, provenance-tracked revision results, and
+most of the current Lean development live.  But it is not presented as the
+whole theory.  It is the main exact specialization of a broader family.
+
+\maplecourt{Maple Court Community Commons is our running example.  Each
+apartment carries a private posterior state over questions such as whether a
+pipe is leaking, whether the shower is running, or whether motion indicates
+occupancy.  Shared spaces carry a building-level state over hallway humidity,
+laundry-room availability, and elevator health.  The same architecture appears
+at both scales: revise the state as reports and sensor updates arrive, query the
+state for evidence, and project that evidence into views only when a decision
+must be made.}
+
+\section{Revision Regimes and the Additive Powerhouse}
+\label{sec:overview-regimes}
+
+The calculus does not assume that all revision behaves the same way.  It is
+useful to distinguish several regimes.
+
+\begin{description}
+\item[Additive revision.]  Independent or screening-off updates compose by
+  addition.  This is the main tractable regime of the book.
+\item[Overlap-aware revision.]  Two states may share information, so naive
+  addition would double-count.  A correction or explicit overlap structure is
+  required.
+\item[Trust-gated revision.]  The merge operation depends on source trust or
+  authority, so revision need not be symmetric or additive.
+\item[Coalition or semitopological revision.]  Consensus is constrained by
+  which coalitions are actionable; not every merge is valid.
+\end{description}
+
+Only the first of these is developed theoremically in full generality in the
+present book.  The others already appear in the typed family and in the
+formalization landscape, but they are treated as frontier directions rather than
+as fully developed kernels.  Chapter~\ref{ch:world-models},
+\S\ref{sec:non-additive} develops the \emph{non-additive perimeter}
+in more detail: the overlap extraction law, semitopological coalitions,
+and the recovery theorem showing that additivity is regained when
+overlap is small or non-actionable ($\sim$90~theorems, 0~sorry).
+
+The additive regime is captured by the following shape:
 
 \begin{lstlisting}[language={}]
 class AdditiveWorldModel (State Query V : Type*)
     [AddCommMonoid State] [AddCommMonoid V]
     extends WorldModel State Query V where
-  extract_add : forall W1 W2 q,
+  revise_eq_add : forall W1 W2, revise W1 W2 = W1 + W2
+  empty_eq_zero : empty = 0
+  extract_add   : forall W1 W2 q,
     extract (W1 + W2) q = extract W1 q + extract W2 q
+  extract_zero  : forall q, extract 0 q = 0
 \end{lstlisting}
 
-\noindent
-The decisive law is \code{extract\_add}.  It says that revising
-states and then extracting is the same as extracting first and
-combining in~$V$.
+The decisive law is \code{extract\_add}.  It says that in the additive regime,
+revising states and then extracting is the same as extracting first and then
+combining answers in the carrier~$V$.  This is the exact algebraic condition
+behind the cleanest part of the calculus.
 
-\begin{theorem}[Profile-hom equivalence]
+\begin{theorem}[Additive answer-profile form]
 \label{thm:overview-profile-hom}
-Additive world models are exactly additive monoid homomorphisms
-$\textit{State} \to^+ (\textit{Query} \to V)$.
+For additive world models, currying the extractor yields an additive monoid
+homomorphism
+\[
+  \widehat{\mathrm{extract}} : \textit{State} \to^+ (\textit{Query} \to V),
+  \qquad
+  W \mapsto (q \mapsto \mathrm{extract}(W,q)).
+\]
+Conversely, every additive monoid homomorphism
+\(\textit{State} \to^+ (\textit{Query} \to V)\) determines an additive world
+model.  Thus additive world models are exactly answer-profile generators.
 \end{theorem}
 
-\maplecourt{Maple Court Community Commons is our running example.
-Each apartment carries a private posterior state over questions
-such as whether a pipe is leaking, whether the shower is running,
-or whether motion indicates occupancy.  Shared spaces carry a
-building-level state over hallway humidity, laundry-room
-availability, and elevator health.  The same architecture appears
-at both scales: revise the state as reports and sensor updates
-arrive, query the state for evidence, and project into views only
-when a decision must be made.}
+This theorem is the categorical and algebraic center of the additive regime.
+It says that, once additivity is assumed, a world model is one
+structure-preserving arrow into an answer-profile object.  The extensional
+model \(\textit{Query} \to V\) is terminal among additive world models over the
+same query space: every additive world model maps canonically to its answer
+profile.
 
-
-\section{Revision Regimes}
-\label{sec:overview-regimes}
-
-The calculus distinguishes several regimes:
-
-\begin{description}
-\item[Additive revision.]  Independent updates compose by addition.
-\item[Overlap-aware revision.]  Shared information prevents naive addition.
-\item[Trust-gated revision.]  The merge depends on source authority.
-\item[Coalition revision.]  Consensus requires an actionable coalition.
-\end{description}
-
-\noindent
-Only the first is developed in full generality in this book.
-
+This does \emph{not} trivialize the subject.  The hard work is in choosing
+expressive state spaces, proving when compiled shortcuts are exact, and
+showing where local summaries fail.  But it does make the kernel visible.
 
 \section{Evidence Carriers}
 \label{sec:overview-carriers}
 
-Three carriers are central: \emph{binary} (positive/negative
-counts), \emph{Dirichlet} (category counts), and
-\emph{Normal-Gamma} (continuous sufficient statistics).  In Maple
-Court these arise naturally: leak alarms are binary, elevator
-health is multi-valued, hallway humidity is continuous.  The
-calculus does not change across these cases; only the carrier
-does.
+Evidence is not one fixed datatype.  The general pattern is that a carrier
+stores sufficient statistics for a conjugate family or other compositional value
+system, and revision in the additive regime is addition of those sufficient
+statistics.
+
+In the current development three carriers are central.
+
+\begin{description}
+\item[Binary evidence.]  A two-channel carrier recording positive and negative
+  support.  This is the historical PLN carrier, now treated as one instance
+  among others.
+\item[Dirichlet evidence.]  A multi-valued carrier recording category counts.
+  This is the right instance for questions with more than two alternatives.
+\item[Normal--Gamma evidence.]  A continuous-domain carrier storing the
+  sufficient statistics needed for unknown mean and variance.
+\end{description}
+
+In Maple Court these arise naturally.  Leak alarms and motion detections are
+binary.  Elevator health and laundry status are multi-valued.  Hallway
+humidity and temperature are continuous.  The calculus does not change across
+these cases; only the carrier does.
+
+The additive regime explains why revision is so simple in these families:
+counts add, sufficient statistics add, and the extractor commutes with that
+addition.  Some additional algebraic structure can then be studied on top of
+particular carriers.  For binary evidence, the current development includes a
+quantale tensor and a Heyting structure.  Those are mathematically real, but
+they are \emph{binary-specific} and do not generalize to all carriers.
+
+Evidence items also carry an \emph{epistemic kind} label
+(empirical, expert-elicited, model-derived, text-interpreted,
+logically derived) that records where the evidence came from.
+The same pseudo-count means different things depending on whether
+it arose from sensor data or expert judgment
+(Chapter~\ref{ch:state-ops}).  When conjugacy holds, sufficient
+statistics are lossless compressions of the raw observations; the
+raw data can optionally be retained for model switching, auditing,
+or distributional queries that exceed the carrier's resolution.
 
 
-\section{Four Verbs: Revise, Query, Forget, Explain}
+\section{States Are Primary: Revise, Query, Forget, Explain}
 \label{sec:overview-four-verbs}
 
 The book revolves around four verbs:
 \emph{revise}, \emph{query}, \emph{forget}, and \emph{explain}.
-A state can be updated, partially retracted, audited, replayed,
-and explained in a way that a naked scalar view cannot.
 
-\maplecourt{Suppose three hallway humidity alerts arrive, then
-one sensor is found to be faulty.  If the system carries only a
-strength estimate $0.83$, it is unclear how to retract just the
-faulty source.  If the system carries a revisable state with
-provenance, forgetting removes the appropriate contribution while
-preserving answers outside the forgotten scope.}
+Revision and querying are the minimal kernel operations.  Forgetting and
+explanation show why the kernel stores states rather than floating truth values.
+A state can be updated, partially retracted, audited, replayed, and explained in
+a way that a naked scalar view cannot.
 
+\maplecourt{Suppose three hallway humidity alerts arrive, then one sensor is
+found to be faulty.  If the system carries only a strength estimate such as
+$0.83$, it is unclear how to retract just the faulty source.  If the system carries
+a revisable state with provenance, forgetting can remove the appropriate
+contribution while preserving answers outside the forgotten scope.  The same
+state can also explain why the building robot now believes the hallway needs
+mopping: not because the confidence number crossed an arbitrary threshold in
+the abstract, but because specific reports and sensors revised the building
+state in a tracked way.}
+
+This is why provenance is not ``mere metadata.''  It is part of the structure of
+stateful reasoning.  Likewise, forgetting is not an optional convenience.  It is a
+semantic operation that clarifies what kind of proof object a world-model
+state really is.
 
 \section{Information, Support, and Views}
 \label{sec:overview-views}
 
-Evidence can improve in more than one sense.  It can become
-\emph{more informed} and \emph{more supportive}---these are not
-the same order.  Compare $e_1 = (1,0)$ and $e_2 = (1,1)$: the
-second is more informative but less supportive of the positive
-claim.  A view is a projection, not a proof object.
+One of the deepest distinctions in the book is that evidence can improve in
+more than one sense.  It can become \emph{more informed}, and it can become
+\emph{more supportive} of a query.  These are not the same order.
 
+For binary evidence, compare
+\[
+  e_1 = (1,0),
+  \qquad
+  e_2 = (1,1).
+\]
+The second state is more informative than the first in the ordinary
+information-order sense: it contains at least as much positive and at least as
+much negative evidence.  But it is less supportive of the positive claim,
+because the negative channel has increased as well.  A strength view therefore
+decreases even as total evidence increases.
+
+This distinction drives the architecture.
+
+\begin{proposition}[Views are not additive semantics]
+\label{prop:overview-views-not-semantic-core}
+In the current development, total evidence is additive, but central operational
+views such as strength are not.  More generally, useful readouts from evidence
+may be informative, calibrated, or decision-relevant without preserving the
+revision law of the underlying carrier.
+\end{proposition}
+
+So a view is not a proof object.  It is a projection.  This is why the book keeps
+views after evidence and state operations, not before them.  The semantics lives
+in state and extraction; views are derived interfaces for display, thresholding,
+and action.
+
+\section{Natively Typed World Models}
+\label{sec:overview-typed}
+
+The calculus is typed from the beginning.  Its primary sorts are already
+visible in the kernel:
+\[
+  \textit{State}, \qquad \textit{Query}, \qquad V.
+\]
+What later chapters develop in more detail is not a second semantics but a
+full native typed realization of the same calculus: a rewrite family whose
+terms, rules, and native types expose the same mathematical structure from
+inside.
+
+In the additive regime, the core rewrite system is organized by a
+$2 \times 2$ calculus square: raw versus guarded, and plain versus
+congruence-aware.  Later chapters expand this to a richer typed
+family, prove the encoding is biconditionally adequate (the typed
+and algebraic presentations agree exactly), and show that for any
+type~$T$, multiset ensembles give a canonical world
+model---suggesting the framework may be universal for typed
+rewrite systems (Chapter~\ref{ch:typed}).
+
+Logical structure appears wherever the query space carries it.  Quantified and
+higher-order queries are not presented as ``extensions'' to a lower theory.
+They are simply instances of the general \textit{Query} parameter when one wants
+logical structure rich enough to express those questions.
 
 \section{Compiled Inference and the PLN Connection}
 \label{sec:overview-compiled}
 
-The calculus treats deduction, induction, and abduction as
-\emph{compiled rewrites}: certified shortcuts that are exact
-under explicit side conditions within declared model classes.
+The calculus does not treat deduction, induction, and abduction as primitive
+truth-value algebra.  It treats them as \emph{compiled rewrites}: certified
+shortcuts that are exact under explicit side conditions within declared model
+classes.
 
-\maplecourt{The building model contains the chain
-$\textit{PipeLeak} \to \textit{WallHumidity} \to
-\textit{MoldRisk}$.  Rather than recomputing the full posterior,
-the system uses a compiled chain rule justified by the BN
-factorization.  When the side conditions hold, the compiled answer
-agrees with the full extractor.  When they do not, the rewrite is
-not licensed.}
+This is where the book most visibly overlaps with the PLN tradition.  The
+derived link calculus and the compiled Bayesian-network rules formalize,
+sharpen, and delimit the classical PLN rule family.  The point is not to deny
+that those rules can be useful.  The point is to state exactly when they are
+correct, what they compute, and what they leave out.
 
+\maplecourt{Suppose the building model contains the chain
+\(\textit{PipeLeak} \to \textit{WallHumidity} \to \textit{MoldRisk}\).
+A maintenance agent wants to answer a leak-related query quickly.  Rather
+than recomputing the full posterior from scratch, the system may use a
+compiled chain rule justified by the BN factorization and screening-off
+assumptions attached to that model class.  When those side conditions hold,
+the compiled answer agrees with the full extractor on the covered query
+family.  When they do not hold, the rewrite is not licensed.}
 
-\section{The Boundary}
+That is the modernized meaning of a PLN rule inside WM-PLN:
+not a free-standing law of truth values, but a typed and side-conditioned
+shortcut to a result already determined by the underlying world model.
+The most exact form of chaining propagates the \emph{full posterior
+distribution} through the chain, not just scalar strength and
+confidence.  Five certified-chaining limitation theorems
+(Chapter~\ref{ch:error-transport}) make the cost of the scalar
+approximation precise.  Demand-directed backward chaining
+(Chapter~\ref{ch:scale-control}) complements forward supply:
+demand propagation identifies which premises are most worth
+investigating, and the demand contracts after supply fills the
+information gap.
+
+\section{The Boundary: Why Local Chaining Cannot Be Complete}
 \label{sec:overview-boundary}
+
+The book's main negative result explains why compiled inference must be
+handled so carefully.
 
 \begin{theorem}[No-go for unrestricted local link completeness]
 \label{thm:overview-no-go}
-Complete link evidence cannot in general be recovered from local
-per-link surrogates alone.
+In general, complete link evidence cannot be recovered from local per-link
+surrogates alone.  Two world-model states can agree on all chosen local link
+summaries while differing on the complete evidence needed for the target
+query.
 \end{theorem}
 
-\noindent
-This boundary theorem explains why structural side conditions
-matter: compiled shortcuts become exact only inside model classes
-that carry enough global structure for those shortcuts to commute
-with full extraction.
+This boundary theorem is not an embarrassment.  It is a design theorem.  It
+says that unrestricted local chaining cannot replace a complete semantics.  It
+also explains why structural side conditions matter so much: compiled shards
+become exact only inside model classes that carry enough global structure for
+those shortcuts to commute with full extraction.
 
+The no-go theorem is also one reason the non-additive frontier matters.  When
+sources overlap, correlations matter, or trust gates revision, naive local
+summary propagation is even less likely to preserve the required structure.
+The additive regime is powerful precisely because it identifies a large,
+tractable class in which the profile-hom story, carrier algebra, and compiled
+rules all fit cleanly together.
 
-\section{The End-to-End Pipeline}
+\section{A Compact End-to-End Picture}
 \label{sec:overview-end-to-end}
+
+The overview can now be summarized in one pipeline:
 
 \medskip
 \noindent
@@ -242,13 +544,13 @@ with full extraction.
 \begin{tikzpicture}[
   >=Latex,
   every node/.style={font=\footnotesize},
-  box/.style={draw, rounded corners=3pt, minimum width=30mm,
+  box/.style={draw, rounded corners=3pt, minimum width=26mm,
               minimum height=9mm, align=center}
 ]
   \node[box, fill=blue!8] (state) {state $W$};
-  \node[box, fill=green!8, right=10mm of state] (query) {query $q$};
-  \node[box, fill=yellow!12, right=10mm of query] (extract) {extract$(W,q)$};
-  \node[box, fill=orange!12, right=10mm of extract] (view) {view / decision};
+  \node[box, fill=green!8, right=8mm of state] (query) {query $q$};
+  \node[box, fill=yellow!12, right=8mm of query] (extract) {extract$(W,q)$};
+  \node[box, fill=orange!12, right=8mm of extract] (view) {view / decision};
   \node[box, fill=purple!8, below=10mm of extract] (rewrite) {compiled rewrite};
 
   \draw[->, thick] (state) -- (query);
@@ -260,36 +562,58 @@ with full extraction.
 \end{tikzpicture}}
 \medskip
 
-\noindent
-The state is primary.  Queries interrogate the state.  Extraction
-returns values in a carrier.  Views project from those values.
-Compiled rewrites accelerate families of queries under explicit
-side conditions.  Boundaries tell us where such shortcuts cannot
-be complete.
+The state is primary.  Queries interrogate the state.  Extraction returns values
+in a carrier.  Views project from those values.  Compiled rewrites accelerate
+families of queries under explicit side conditions.  Boundaries tell us where
+such shortcuts cannot be complete.
+
+The computational story is layered: revision is $O(1)$ (add
+sufficient statistics); single-query extraction is $O(1)$; but
+full joint inference over many correlated queries is as hard as
+the underlying model class (\#P-hard for general Bayesian
+networks).  The calculus does not make this cheaper.  What it does
+is make the cost \emph{visible}: the $\Sigma$-guard tells you
+exactly which queries admit cheap compiled shortcuts, the no-go
+theorem tells you which do not, and the demand layer tells you
+where to spend your computational budget.
+
+That is the whole book in compressed form.
+
+\section{What the Calculus Does in Practice}
+
+The applications (Part~\ref{part:applications}) test the
+calculus on real data: gas sensor drift across 36~months
+(governance question: when to retrain?), geopolitical forecast
+aggregation (forgetting stale reliability weights improves
+prediction), Bayesian-network benchmarks (distributional inference
+reduces MAE by $1.5$--$3.8\times$), and nine PPLBench lanes
+(matching Stan's posteriors at $O(1)$ per update).  The empirical
+contribution is not raw accuracy but inference-control quality:
+exact where licensed, bounded where partially licensed, abstaining
+where not.
+
+\section{How the Rest of the Book Unfolds}
+\label{sec:overview-rest}
+
+The remaining chapters slow this compact picture down.
+Part~II develops the algebra and its instances in full.
+Part~III formalizes compiled inference, BN exactness, and
+large-scale inference control.
+Parts~IV--V extend to temporal, causal, and normative reasoning,
+bridge to seven neighboring frameworks, and state the limitations
+honestly.
+Part~VI validates the framework empirically across six domains.
+
+The intended reading experience is two-layered.  This overview
+shows the crystal.  The rest of the book turns the crystal in the
+light, proves its faces, and follows each face into deeper
+mathematics and larger applications.
 
 \paragraph{PLN heritage.}
-This book is not a historical commentary on PLN, but neither is it
-detached from that lineage.  Where the earlier rule family is
-correct, the present calculus proves it correct under explicit
-assumptions.  Where it is incomplete or semantically unstable, the
-present calculus states the boundary and replaces the heuristic
-with a typed, side-conditioned construction.
-
-\section*{How the Rest of the Book Unfolds}
-
-Part~I (this chapter and the desiderata) gives the orientation.
-Part~II develops the calculus in depth: evidence carriers,
-state operations, views, and natively typed world models.
-Part~III covers compiled inference, BN exactness, the no-go
-theorem, and large-scale inference control.
-Part~IV extends to temporal, causal, and normative reasoning.
-Part~V bridges to neighboring frameworks (MLNs, ProbLog, NARS,
-FOL, Giry monad, $\rho$-calculus, ontology repair) and states
-the limitations.
-Part~VI validates the framework on real benchmarks: gas sensor
-drift, steel faults, anomaly detection, geopolitical forecasting,
-Bayesian networks, genomics, nine PPLBench lanes, and an
-exploratory AI-outcomes analysis.
+The relationship of this material to the PLN
+tradition---what it recovers, what it corrects, what it
+delimits---is discussed in the Introduction
+(Chapter~\ref{ch:introduction}).
 
 
 \chapter{Desiderata}
@@ -444,8 +768,10 @@ foundation (Chapter~\ref{ch:world-models}, \S``The Solomonoff--De
 Finetti Foundation'') establishes the categorical necessity chain:
 %
 \begin{center}
-exchangeability $\to$ de~Finetti mixture $\to$
-Kyburg flattening $\to$ Giry bind $\to$ evidence sufficiency.
+\begin{tabular}{@{}c@{}}
+exchangeability $\to$ de~Finetti mixture $\to$ Kyburg flattening \\
+$\to$ Giry bind $\to$ evidence sufficiency.
+\end{tabular}
 \end{center}
 %
 \noindent
@@ -552,8 +878,9 @@ instance among several (Chapter~\ref{ch:evidence}).
 
 \paragraph{Discharge.}
 D3 is discharged by the parametric definition
-$\code{WorldModel (State Query V : Type*)}$ with $V$ constrained
-only by \code{[AddCommMonoid V]} in the additive regime.  The three
+\code{WorldModel}\allowbreak\code{ (State Query V : Type*)}
+with $V$ constrained only by
+\code{[AddCommMonoid V]} in the additive regime.  The three
 formalized carriers (binary, Dirichlet, Normal-Gamma) are concrete
 instances (Chapter~\ref{ch:evidence}).
 
@@ -848,7 +1175,7 @@ twice.
 
 \paragraph{Discharge.}
 D7 is discharged by the evidence conservation pack
-(\code{EvidenceConservationPack} in
+(\code{Evidence\-Conservation\-Pack} in
 Chapter~\ref{ch:state-ops}, \S``Conservation Theorems'') and the
 exact-inverse no-go theorem (if evidence leaked, forgetting cannot
 exactly undo it).
@@ -997,9 +1324,12 @@ developed in this book:
 \item \textbf{Non-additive regimes}: D2 holds only in the additive
   regime; overlap-aware and trust-gated revision need their own
   algebraic discipline.
-\item \textbf{Measure-theoretic grounding}: the current development
-  works with finitary carriers; the terminal measure-valued world
-  model is an open program.
+\item \textbf{Measure-theoretic grounding}: the evidence carriers
+  operate over the extended reals ($\mathbb{R}_{\ge 0}^\infty$
+  for binary evidence, $\mathbb{R}$ for Normal-Gamma), not
+  over finite types.  The terminal measure-valued world model
+  connecting these carriers to formal probability measures is an
+  open program.
 \end{itemize}
 These are recorded as frontier directions (Chapter~\ref{ch:future}),
 not as current desiderata.  The eight listed here are the contract
@@ -1023,26 +1353,26 @@ statement of what that machinery is for.
               minimum height=10mm, align=center},
 ]
   % Kernel layer
-  \node[dbox, fill=blue!8] (d1) at (0, 4) {D1: State Primacy};
-  \node[dbox, fill=blue!8] (d2) at (5, 4) {D2: Composition};
+  \node[dbox, fill=blue!8] (d1) at (0, 5) {D1: State Primacy};
+  \node[dbox, fill=blue!8] (d2) at (5, 5) {D2: Composition};
 
   % Evidence layer
-  \node[dbox, fill=green!8] (d3) at (0, 2.5) {D3: Generic Carriers};
-  \node[dbox, fill=green!8] (d4) at (5, 2.5) {D4: Evidence $>$ Views};
+  \node[dbox, fill=green!8] (d3) at (0, 3.3) {D3: Generic Carriers};
+  \node[dbox, fill=green!8] (d4) at (5, 3.3) {D4: Evidence $>$ Views};
 
   % Inference layer
-  \node[dbox, fill=yellow!12] (d5) at (0, 1) {D5: Explicit $\Sigma$};
-  \node[dbox, fill=yellow!12] (d6) at (5, 1) {D6: Retractability};
+  \node[dbox, fill=yellow!12] (d5) at (0, 1.6) {D5: Explicit $\Sigma$};
+  \node[dbox, fill=yellow!12] (d6) at (5, 1.6) {D6: Retractability};
 
   % Meta layer
-  \node[dbox, fill=orange!10] (d7) at (0, -0.5) {D7: Conservation};
-  \node[dbox, fill=orange!10] (d8) at (5, -0.5) {D8: Honest Boundaries};
+  \node[dbox, fill=orange!10] (d7) at (0, -0.1) {D7: Conservation};
+  \node[dbox, fill=orange!10] (d8) at (5, -0.1) {D8: Honest Boundaries};
 
-  % Layer labels
-  \node[font=\scriptsize, text=blue!60!black, rotate=90] at (-2.8, 3.25) {kernel};
-  \node[font=\scriptsize, text=green!50!black, rotate=90] at (-2.8, 2.5) {evidence};
-  \node[font=\scriptsize, text=yellow!60!black, rotate=90] at (-2.8, 1) {inference};
-  \node[font=\scriptsize, text=orange!60!black, rotate=90] at (-2.8, -0.5) {integrity};
+  % Layer labels (placed further left, vertically centered on each row)
+  \node[font=\scriptsize, text=blue!60!black] at (-3.2, 5) {kernel};
+  \node[font=\scriptsize, text=green!50!black] at (-3.2, 3.3) {evidence};
+  \node[font=\scriptsize, text=yellow!60!black] at (-3.2, 1.6) {inference};
+  \node[font=\scriptsize, text=orange!60!black] at (-3.2, -0.1) {integrity};
 
   % Dependency arrows
   \draw[->, thick, gray!50] (d1) -- (d6);
@@ -1051,12 +1381,11 @@ statement of what that machinery is for.
   \draw[->, thick, gray!50] (d6) -- (d7);
   \draw[->, thick, gray!50] (d5) -- (d8);
 
-  % Annotation
-  \node[font=\scriptsize, text=gray, text width=40mm, align=center]
-    at (2.5, -1.8) {Arrows show enablement:\\
-    D1 enables D6 (states enable retraction);\\
-    D2 enables D5 (composition enables shortcuts);\\
-    D6 enables D7 (retraction enables conservation).};
+  % Annotation — placed well below the D7/D8 boxes
+  \node[font=\scriptsize, text=gray, text width=65mm, align=left]
+    at (2.5, -1.5) {Arrows: D1 $\to$ D6 (states enable retraction),
+    D2 $\to$ D5 (composition enables shortcuts),
+    D6 $\to$ D7 (retraction enables conservation).};
 \end{tikzpicture}
 \caption{The eight desiderata organized by layer.  Arrows show
 enablement relationships: D1 (state primacy) enables D6
@@ -1185,7 +1514,7 @@ empty, extract---appear at both scales.}
 
 \section{Revision Regimes}
 
-Chapter~\ref{ch:introduction} introduced four revision regimes.  Here
+Chapter~\ref{chap:overview} introduced four revision regimes.  Here
 we develop the additive regime in depth and situate the others
 concretely.
 
@@ -1365,6 +1694,14 @@ needed (multideduction overlap in
 Chapter~\ref{ch:scale-control}; forgetting in
 Chapter~\ref{ch:state-ops}).
 
+To be explicit: the book's strongest exact theorems---profile-hom
+equivalence, BN chain/fork/collider exactness, evidence
+conservation, sleep consolidation---are additive-regime theorems.
+The non-additive regimes are real and formalized ($\sim$90
+theorems, 0~sorry), but they are not yet developed to comparable
+breadth.  This asymmetry is not weakness; it is intellectual
+hygiene about what has been proved and what remains open.
+
 
 \section{The Additive Regime}
 \label{sec:additive-regime}
@@ -1497,9 +1834,9 @@ concrete incarnation as pattern-matching rewrite rules.
   \claimBoundary{} = impossibility / no-go result;
   \claimOperational{} = implementation-level property.
   These categories are used throughout the book.}
-  $\mathrm{extract}(\mathrm{revise}(W_1, W_2),\, q)
-  = \mathrm{combine}(\mathrm{extract}(W_1, q),\;
-                       \mathrm{extract}(W_2, q))$.
+  \[\mathrm{extract}(\mathrm{revise}(W_1, W_2),\, q)
+    = \mathrm{combine}(\mathrm{extract}(W_1, q),\;
+                         \mathrm{extract}(W_2, q)).\]
 
 \item \textbf{Zero extraction} (\claimCore{}).
   $\mathrm{extract}(0, q) = 0$.
@@ -2119,6 +2456,21 @@ The correlations, the causal structure, the joint distribution over
 worlds---those live in the state, not in the per-query counts.  This
 is why the calculus stores states and extracts evidence, rather than
 storing evidence directly.
+
+\paragraph{Raw data vs.\ sufficient statistics.}
+A system may also store the raw observations themselves---a
+\emph{data-backed state}---and compress to sufficient statistics
+on demand.  The compositionality theorem
+\code{compress\_append} proves that compression is a monoid
+homomorphism: compressing two raw-data batches separately and
+adding the results gives the same sufficient statistics as
+compressing the concatenated batch.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/EvidentialLedger.lean}.}
+This means the system can keep raw data for model switching or
+distributional queries while using compressed statistics for
+efficient $O(1)$ revision---the two representations are provably
+compatible.
 
 %% ─────────────────────────────────────────────────────────────────
 
@@ -3352,14 +3704,15 @@ $\code{AdditiveWorldModel}\;(\code{Multiset}\;T)\;(\code{DecProp}\;T)$.%
 \end{theorem}
 
 \noindent
-This means: every computational system with parallel composition---every
-graph-structured lambda theory (GSLT) in
+This means: every computational system with parallel
+composition---every graph-structured lambda theory (GSLT) in
 Meredith's~\cite{meredith2026ccc} sense---has a canonical additive
-world model.  The WM calculus is not specific to probabilistic
-logic; it is the natural evidence framework for any typed rewrite
-system.
+world model via multiset counting.
 
-The open conjecture: every \code{LanguageDef} (i.e., every vertex
+\begin{conjecture}[WM universality for typed rewrite systems]
+The WM calculus is not specific to probabilistic logic; it is the
+natural evidence framework for any typed rewrite system.  Every
+\code{LanguageDef} (i.e., every vertex
 of the typed family) gives an additive world model via the
 OSLF-derived modal operators.  Replacing $V$ with $\mathbb{C}$ gives
 Meredith's amplitude framework; replacing $V$ with
@@ -3367,7 +3720,9 @@ $\mathbb{R}_{\ge 0}^\infty$ gives the Knuth--Skilling probability
 framework.  The probability
 hypercube~\cite{StayWells2026} classifies theories by which
 combination of merge-law and carrier properties they satisfy
-(Chapter~\ref{ch:future}).%
+(Chapter~\ref{ch:future}).
+\end{conjecture}
+%
 \footnote{Open program: the full LanguageDef $\to$ AdditiveWorldModel
 construction, the StatefulValuation typeclass unifying state-side and
 obs-side laws, and the grand theorem connecting WM + KS + Meredith as
@@ -4022,6 +4377,13 @@ into two halves:
   surrogate limits, and the end-to-end composed pipeline.
 \end{itemize}
 
+\noindent
+The chapter is the book's densest.  Readers interested primarily
+in the overlap/multideduction gap may focus on
+\S\ref{sec:multideduction}; those interested in pooling on
+\S\ref{sec:pooling}; and those interested in premise selection
+and ATP connections on \S\ref{sec:selectors}--\S\ref{sec:atp}.
+
 
 
 %% ═══════════════════════════════════════════════════════
@@ -4591,6 +4953,36 @@ any practical system.%
 \codepath{Mettapedia/Logic/PremiseSelectionRankingStability.lean}
 }
 
+\paragraph{Demand-directed backward chaining.}
+An orthogonal approach to premise selection: instead of scoring
+premises by relevance, propagate \emph{demand} backward from the
+query through the factor graph.  Each premise receives a demand
+score proportional to its information need (how uncertain it is)
+and its sensitivity (how much the query answer depends on it).
+The unknown intermediate Dog(Lassie) in a chain
+Collie $\to$ Dog $\to$ Mammal gets demand $1000$ (maximum: both
+maximally uncertain and maximally sensitive), while the well-known
+Collie gets demand~$50$.  After forward supply fills Dog's
+confidence, demand \emph{contracts} from $1000$ to $240$
+(Proposition~2 of~\cite{Goertzel2026BackwardChaining}).
+Forgetting an observation reopens demand at the affected
+premise---the same \code{forget} pattern used throughout the
+evidence algebra.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/WMDemandDemo.lean}
+(258~lines, 27~theorems, 0~sorry).  The demo kernel-checks
+forward supply, information need, sensitivity, demand ordering
+$(1000 > 210 > 191 > 50)$, demand contraction after supply, and
+demand reopening after forgetting.}
+On a fork+chain topology with a hidden common cause
+($A \leftarrow H \to B \to C \to D$), the same framework
+exercises multi-path demand aggregation: when the fork arm~$A$ is
+observed, the chain path carries all the demand; forgetting~$A$
+activates the fork arm and rebalances demand across both paths.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/WMForkDemandDemo.lean}
+(23~theorems, 0~sorry).}
+
 
 \section{Coverage and Submodularity}
 \label{sec:coverage}
@@ -4751,6 +5143,7 @@ are justified by the same theorem.
 
 
 \section{Connections to Automated Theorem Proving}
+\label{sec:atp}
 
 The coverage objective $f(S) = |S \cap D|$ and the greedy
 $(1 - 1/e)$ approximation are not specific to PLN.  They are the
@@ -4822,7 +5215,9 @@ profile tell you about $B$?  Classical PLN treats these as separate
 channels with a scalar mixing parameter.  The formalization shows
 that this is both less and more than what the mathematics supports:
 the scalar mixture is refuted, but a clean information-theoretic
-unification replaces it.
+unification replaces it.  The result connects to the evidence
+carriers of Chapter~\ref{ch:evidence} and the typed world-model
+grounding of Chapter~\ref{ch:typed}.
 
 
 \section{The Information-Theoretic Unification}
@@ -4997,8 +5392,11 @@ where $f$ constrains the delay (e.g., $\Delta \in [1, T_{\max}]$).
   \exists \Delta > 0.\; Q(x, t + \Delta)
 \]
 The 3-node predictive chain composes:
-$\mathrm{PredChain}_3(T_1, T_2, A, B, C) :=
-\mathrm{SeqAND}_{T_1}(A,\; \mathrm{SeqAND}_{T_2}(B, C))$.%
+\[
+  \mathrm{PredChain}_3(T_1, T_2, A, B, C) :=
+  \mathrm{SeqAND}_{T_1}\!\bigl(A,\;
+    \mathrm{SeqAND}_{T_2}(B, C)\bigr).
+\]%
 \footnote{Formalized in
 \codepath{Mettapedia/Logic/PLNTemporalCausalInference.lean}
 }
@@ -5344,6 +5742,36 @@ The pattern is a functor from the neighboring framework into
 the WM interface.  The side conditions are what make each
 bridge exact.  Every bridge below is formalized in Lean~4
 with zero sorry.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Bridge matrix: how each neighboring framework maps to
+  the WM interface.}
+\label{tab:bridge-matrix}
+\begin{tabular}{@{}lp{0.18\textwidth}p{0.14\textwidth}p{0.12\textwidth}p{0.22\textwidth}@{}}
+\toprule
+Framework & State & Query & $V$ & Bridge type \\
+\midrule
+MLN & clause-weight vector & ground atom &
+  $\mathbb{R}_{\ge 0}$ & exact (compatibility-gated) \\
+ProbLog & annotated-fact set & ground query &
+  $[0,1]$ & exact (\finitedomain{}) \\
+NARS & $(f,c)$ pairs & term &
+  $(f,c)$ & Galois connection \\
+PLN v0.9 & $(s,c)$ pairs & link &
+  $(s,c)$ & subsumption \\
+Classical FOL & theory & sentence &
+  $\{0,1\}$ & degenerate instance \\
+Giry monad & probability measure & measurable set &
+  $[0,1]$ & categorical \\
+$\rho$-calculus & process term & name &
+  behav.\ equiv. & structural congruence \\
+Ontology repair & evidence ledger & candidate &
+  \code{BinEvNat} & additive aggregation \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 
 %% ═══════════════════════════════════════════════════════════════
@@ -5833,22 +6261,42 @@ correct implementation must satisfy, but they do not constitute an
 implementation.  The gap between a certified specification and a
 deployable system is real, and we do not pretend otherwise.
 
-\section{Finite-Domain Restriction}
+\section{Domain Generality: What Is Finite and What Is Not}
 
-The evidence carriers, view projections, and inference-control
-theorems are formalized over finite domains.  An infinitary layer
-exists in the codebase but has not been brought to chapter-level
-parity.  Measure-theoretic extensions---particularly for
-continuous-valued evidence and distributional inference over
-non-conjugate families---require additional infrastructure that is
-within reach of the existing kernel design but is not yet realized
+The formalization operates at three tiers of generality:
+
+\begin{description}
+\item[Tier~1: Generic / infinite (formalized now).]
+  The core WM algebra (\code{AdditiveWorldModel},
+  \code{extract\_add}) is parameterized over arbitrary types---no
+  finiteness constraint.  The evidence carriers (binary over
+  $\mathbb{R}_{\ge 0}^\infty$, Normal-Gamma over~$\mathbb{R}$)
+  and view projections are explicitly continuous.  The infinitary
+  MLN layer (77~theorems, 0~sorry) and FOL/PredCode infinitary
+  completeness theorems (34~theorems) demonstrate extension to
+  countable and uncountable domains.  The gas sensor, steel
+  fault, and NAB application demos all use $\mathbb{R}$-valued
+  Gaussian beliefs.
+
+\item[Tier~2: Finite now, countable within reach.]
+  The LP provenance operator and compiled BN factor-graph rules
+  require finite groundings (\code{Fintype}), because they use
+  \code{Finset.sum}.  Lifting to countable sums (\code{tsum} +
+  \code{Summable} hypotheses) is standard mathlib work that does
+  not require redesigning the algebra.
+
+\item[Tier~3: Genuinely open.]
+  The measure-valued terminal world model (connecting evidence
+  carriers to \code{MeasureTheory.Measure}), continuous-domain BN
+  compilation with infinite state spaces, and quantale/Heyting
+  generalization beyond binary evidence.
+\end{description}
+
+\noindent
+The architecture is intentionally layered: the semantics is more
+general than the compilation, so that extending the compilation
+does not require redesigning the semantics
 (see Chapter~\ref{ch:future}, \S\ref{sec:future-measure}).
-
-This restriction is not merely a matter of generality.  Several
-important applications---continuous sensor fusion, Gaussian process
-priors, density estimation---require the infinitary extension to be
-fully rigorous.  Until it is completed, claims about these domains
-must be understood as extrapolations from the finite theory.
 
 \section{Empirical Scope}
 
@@ -5901,14 +6349,19 @@ development rather than speculative leaps.
 \section{Measure-Theoretic Grounding}
 \label{sec:future-measure}
 
-The current formalization works over finite world-sets.
-Measure-theoretic extensions would ground the calculus on
-$\sigma$-algebras and probability measures, enabling continuous-valued
-evidence, non-conjugate distributional families, and integration with
-the broader mathematical probability literature.  The kernel's
-compositionality law generalizes naturally to the measure-theoretic
-setting; the technical challenge is in the evidence-carrier
-instantiation and the convergence bridges.
+The core algebra and evidence carriers already operate over
+$\mathbb{R}_{\ge 0}^\infty$ and~$\mathbb{R}$; the infinitary
+MLN and FOL layers extend to countable domains.
+The remaining measure-theoretic step is to ground the calculus on
+$\sigma$-algebras and probability measures, enabling formal
+integration with the broader mathematical probability literature
+and non-conjugate distributional families.
+\emph{Proved:} the Solomonoff--de~Finetti foundation and the Giry
+monad bridge (Chapter~\ref{ch:bridges}).
+\emph{Missing:} $\sigma$-algebra-valued carriers with
+measure-theoretic extraction.
+\emph{Sought:} a \code{MeasurableWorldModel} typeclass with
+$\sigma$-finite evidence carriers and Radon--Nikodym extraction.
 
 \section{HOL Completeness}
 
@@ -5919,6 +6372,11 @@ the gap between the calculus's higher-order syntax and full semantic
 adequacy.  The required construction---a term model over equivalence
 classes of typed evidence---is well understood in principle but
 technically demanding.
+\emph{Proved:} syntax, soundness, type synthesis, intrinsic adequacy.
+\emph{Missing:} the term-model construction over typed evidence
+equivalence classes.
+\emph{Sought:} \code{hol\_completeness} in
+\codepath{Mettapedia/Logic/HOL.lean}.
 
 \section{Selective Distributional Inference}
 
@@ -5942,6 +6400,13 @@ framework---represent a natural generalization.  The challenge is to
 preserve compositionality while relaxing additivity, and the
 quantale structure suggests a path: replace the additive monoid with
 a more general tensor.
+\emph{Proved:} overlap extraction law, semitopological
+independence, additivity recovery after forgetting non-actionable
+overlap ($\sim$90 theorems).
+\emph{Missing:} deep development of overlap and trust-gated
+carriers comparable to the additive regime's profile-hom theory.
+\emph{Sought:} overlap-regime profile-hom analogue; trust-gated
+conservation theorems.
 
 \section{Probability Hypercube}
 
@@ -5962,6 +6427,12 @@ language definition satisfying certain compositionality axioms admits
 a world-model interpretation---establishing the calculus as a
 canonical representative of a broader class rather than one design
 among many.
+\emph{Proved:} \code{universalEnsembleWorldModel} for any type
+with decidable properties.
+\emph{Missing:} the general LanguageDef $\to$
+AdditiveWorldModel construction.
+\emph{Sought:} Conjecture~\ref{thm:additive-recovery} generalized
+to arbitrary typed rewrite systems.
 
 \section{Operational Runtime}
 
@@ -6014,7 +6485,7 @@ where it breaks.
 
 \section{What the Refoundation Gives Us}
 
-The calculus provides five things that the original PLN lacked:
+The calculus provides six things that the original PLN lacked:
 
 \begin{enumerate}
 \item \textbf{One kernel.}  The world-model posterior-state calculus,
@@ -6049,6 +6520,14 @@ The calculus provides five things that the original PLN lacked:
   MLN's clause-weight signal into interpretable world-model evidence
   roles yields substantial improvement---not by adding information,
   but by factoring the information that was already there.
+
+\item \textbf{Demand-directed inference control.}
+  Backward demand propagation identifies which premises are most
+  worth investigating (Chapter~\ref{ch:scale-control}).  The
+  demand contracts after forward supply fills the information gap,
+  and forgetting an observation reopens demand at the affected
+  premise---the same \code{forget} pattern that drives the
+  evidence algebra throughout.
 \end{enumerate}
 
 \section{The Shape of the Result}
@@ -6063,7 +6542,7 @@ natural continuations.  But the kernel is stable, the evidence algebra
 is settled, the compiled inference rules are proved exact under their
 stated conditions, and the scaling theory identifies both the
 achievable guarantees and the fundamental impossibilities.
-The entire development is machine-verified: 601~theorems in Lean~4,
+The entire development is machine-verified: 651~theorems in Lean~4,
 0~sorry, 0~\code{native\_decide}, across six application domains
 (Appendix~\ref{app:theorem-map}).
 
@@ -6464,7 +6943,14 @@ conditional probability tables.  The primary artifact is the BIF
 network file (providing exact ground truth via variable
 elimination), and the benchmark question is inference-control
 quality: given a query and a context, should the controller fire
-the exact rewrite, bound the violation, or abstain?
+the exact rewrite, bound the violation, or abstain?%
+\footnote{The BN exactness theorems underlying this chapter are
+formalized in
+\codepath{Mettapedia/Logic/PLNBayesNetInference.lean}
+(404~lines, 7~theorems, 0~sorry).  The benchmark evaluation
+scripts are in
+\codepath{scripts/wm\_pln\_hailfinder\_*.py} and
+\codepath{scripts/wm\_pln\_pathfinder\_*.py}.}
 
 \section{Three-Mode Guarded Admissibility}
 
@@ -7166,11 +7652,21 @@ supports, and its main limitation.}
 
 \noindent
 The forecast substrate is highly imbalanced:
-\code{mixed\_outcomes} $= 627$,
-\code{beneficial\_pluralistic\_transition} $= 40$,
-\code{extinction} $= 12$,
-\code{authoritarian\_lock\_in} $= 10$,
-\code{catastrophic\_disempowerment} $= 8$.
+
+\smallskip
+\begin{center}
+\footnotesize
+\begin{tabular}{lr}
+\code{mixed\_outcomes} & 627 \\
+\code{beneficial\_pluralistic\_transition} & 40 \\
+\code{extinction} & 12 \\
+\code{authoritarian\_lock\_in} & 10 \\
+\code{catastrophic\_disempowerment} & 8 \\
+\end{tabular}
+\end{center}
+\smallskip
+
+\noindent
 This is enough for factor-level analysis but not for sharp
 posteriors over exclusive world-histories.
 
@@ -7372,7 +7868,7 @@ Every formal result carries one of the following labels:
 Label & Meaning \\
 \midrule
 \claimCore{} & Theorem-backed, no external assumptions \\
-\claimConditional{} & Requires declared finite-domain or structural assumption \\
+\claimConditional{} & Requires declared structural assumption (e.g., screening-off, independence, or finite grounding) \\
 \claimBoundary{} & Boundary theorem (orange-boxed): the claim is \emph{false} without its stated condition \\
 \claimOperational{} & Heuristic or governance layer; not a semantic theorem \\
 \finitedomain{} & Marks finite-domain restriction \\
@@ -7403,7 +7899,7 @@ Symbol & Meaning \\
 \midrule
 \xiPLN{} & The refounded calculus presented in this book \\
 D1--D8 & The eight desiderata (Chapter~\ref{ch:desiderata}) \\
-\maplecourt{\ldots} & Maple Court apartment example (teal-boxed running example) \\
+\emph{teal box} & Maple Court running example (apartment building with sensors) \\
 \bottomrule
 \end{longtable}
 
@@ -7456,10 +7952,12 @@ File & Lines & Thm & Backs \\
 \code{Logic/PLNWorldModelOrderCostGasPolicyDemo} & 155 & 6 & Ch~20 \\
 \code{Logic/PLNBioHypothesisGeneration} & 635 & 39 & Ch~22 \\
 \code{Logic/PLNGWASHigherOrderBridge} & 310 & 17 & Ch~22 \\
+\code{Logic/WMDemandDemo} & 258 & 27 & Ch~12 \\
+\code{Logic/WMForkDemandDemo} & $\sim$300 & 23 & Ch~12 \\
 \code{Logic/WMUWCSEGateDemo} & 177 & 12 & Ch~16 \\
 \code{Logic/AIOutcomesDemo} & 280 & 13 & Ch~24 \\
 \midrule
-\textbf{Total (book-referenced files)} & \textbf{9,962} & \textbf{601} & \\
+\textbf{Total (book-referenced files)} & \textbf{$\sim$10,520} & \textbf{651} & \\
 \bottomrule
 \end{longtable}
 

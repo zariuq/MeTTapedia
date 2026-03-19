@@ -1,0 +1,26 @@
+\scriptsize
+\begin{tabular}{p{0.16\textwidth}lrlp{0.36\textwidth}}
+\toprule
+Lens & Level & Rows & Interval & Note \\
+\midrule
+beneficial & A0 & 40 & $[0, 1]$ & Full width (no numerics used). \\
+beneficial & A1 & 40 & $[0.02, 0.43]$ & Convex hull of weak direct-target numerics. \\
+beneficial & A2 & 40 & $[0, 1]$ & Reopens: no reliability-qualified rows. \\
+beneficial & A3 & 40 & $[0, 1]$ & Ordering claims only (non-numeric). \\
+\midrule
+lock-in & A0 & 10 & $[0, 1]$ & Full width. \\
+lock-in & A1 & 10 & $[0.10, 0.20]$ & Weak direct-target hull. \\
+lock-in & A2 & 10 & $[0, 1]$ & Reopens. \\
+lock-in & A3 & 10 & $[0, 1]$ & Ordering claims only. \\
+\midrule
+extinction & A0 & 12 & $[0, 1]$ & Full width. \\
+extinction & A1 & 12 & $[0.02, 0.50]$ & Weak direct-target hull. \\
+extinction & A2 & 12 & $[0, 1]$ & Reopens. \\
+extinction & A3 & 12 & $[0, 1]$ & Ordering claims only. \\
+\midrule
+$p_{\mathrm{doom}}$ & A0 & 20 & $[0, 1]$ & Fr\'{e}chet-safe union bound. \\
+$p_{\mathrm{doom}}$ & A1 & 20 & $[0, 0.90]$ & Fr\'{e}chet bound tightens. \\
+$p_{\mathrm{doom}}$ & A2 & 20 & $[0, 1]$ & Reopens. \\
+$p_{\mathrm{doom}}$ & A3 & 20 & $[0, 1]$ & Fr\'{e}chet bound (ordering adds nothing). \\
+\bottomrule
+\end{tabular}
