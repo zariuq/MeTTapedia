@@ -351,6 +351,86 @@ theorem exactStepHenkinAxioms_subset_stageLanguageHenkinAxioms_succ
     refine ⟨n, Nat.le_refl (n + 1), Or.inr ?_⟩
     exact ⟨σ, φ, by simp⟩
 
+theorem internalStageProvable_succ_partition
+    {n : Nat}
+    {Θ : List (ClosedFormula (HenkinConstStage Base Const (n + 1)))}
+    {ψ : ClosedFormula (HenkinConstStage Base Const (n + 1))} :
+    InternalStageProvable (Base := Base) (Const := Const) (n + 1) Θ ψ →
+      ∃ Γprior Γexact : List (ClosedFormula (HenkinConstStage Base Const (n + 1))),
+        (∀ {χ : ClosedFormula (HenkinConstStage Base Const (n + 1))},
+            χ ∈ Γprior → χ ∈ PriorStepHenkinAxioms (Base := Base) (Const := Const) n) ∧
+        (∀ {χ : ClosedFormula (HenkinConstStage Base Const (n + 1))},
+            χ ∈ Γexact → χ ∈ ExactStepHenkinAxioms (Base := Base) (Const := Const) n) ∧
+        ExtDerivation (HenkinConstStage Base Const (n + 1))
+          (Θ ++ Γprior ++ Γexact)
+          ψ := by
+  classical
+  rintro ⟨Γ, hΓ, hDeriv⟩
+  let Γprior : List (ClosedFormula (HenkinConstStage Base Const (n + 1))) :=
+    Γ.filter (fun χ => χ ∈ PriorStepHenkinAxioms (Base := Base) (Const := Const) n)
+  let Γexact : List (ClosedFormula (HenkinConstStage Base Const (n + 1))) :=
+    Γ.filter (fun χ => χ ∈ ExactStepHenkinAxioms (Base := Base) (Const := Const) n)
+  refine ⟨Γprior, Γexact, ?_, ?_, ?_⟩
+  · intro χ hχ
+    simpa using (List.mem_filter.mp hχ).2
+  · intro χ hχ
+    simpa using (List.mem_filter.mp hχ).2
+  · refine ExtDerivation.mono ?_ hDeriv
+    intro χ hχ
+    rcases List.mem_append.mp hχ with hχ | hχ
+    · show χ ∈ (Θ ++ Γprior) ++ Γexact
+      exact List.mem_append.mpr <| Or.inl (List.mem_append.mpr <| Or.inl hχ)
+    · have hsplit :=
+        stageLanguageHenkinAxioms_succ_split
+          (Base := Base) (Const := Const) (n := n) (ψ := χ) (hΓ hχ)
+      rcases hsplit with hprior | hexact
+      · show χ ∈ (Θ ++ Γprior) ++ Γexact
+        exact List.mem_append.mpr <| Or.inl <| List.mem_append.mpr <| Or.inr <|
+          List.mem_filter.mpr ⟨hχ, by simpa using hprior⟩
+      · show χ ∈ (Θ ++ Γprior) ++ Γexact
+        exact List.mem_append.mpr <| Or.inr <|
+          List.mem_filter.mpr ⟨hχ, by simpa using hexact⟩
+
+/--
+Stage-`n+1` provability split into inherited earlier-stage axioms and the
+genuinely fresh axioms added exactly at stage `n`.
+
+This is the right intermediate theorem boundary between the structural
+partition theorem and the future exact-step reflection theorem.
+-/
+def SplitStepProvable
+    (n : Nat)
+    (Θ : List (ClosedFormula (HenkinConstStage Base Const n)))
+    (ψ : ClosedFormula (HenkinConstStage Base Const n)) : Prop :=
+  ∃ Γprior Γexact : List (ClosedFormula (HenkinConstStage Base Const (n + 1))),
+    (∀ {χ : ClosedFormula (HenkinConstStage Base Const (n + 1))},
+        χ ∈ Γprior → χ ∈ PriorStepHenkinAxioms (Base := Base) (Const := Const) n) ∧
+    (∀ {χ : ClosedFormula (HenkinConstStage Base Const (n + 1))},
+        χ ∈ Γexact → χ ∈ ExactStepHenkinAxioms (Base := Base) (Const := Const) n) ∧
+    ExtDerivation (HenkinConstStage Base Const (n + 1))
+      (Θ.map
+          (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+            (Nat.le_succ n)) ++
+        Γprior ++ Γexact)
+      (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+        (Nat.le_succ n) ψ)
+
+theorem internalStageProvable_succ_to_splitStepProvable
+    {n : Nat}
+    {Θ : List (ClosedFormula (HenkinConstStage Base Const n))}
+    {ψ : ClosedFormula (HenkinConstStage Base Const n)} :
+    InternalStageProvable (Base := Base) (Const := Const) (n + 1)
+      (Θ.map
+        (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+          (Nat.le_succ n)))
+      (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+        (Nat.le_succ n) ψ) →
+      SplitStepProvable (Base := Base) (Const := Const) n Θ ψ := by
+  intro h
+  rcases internalStageProvable_succ_partition (Base := Base) (Const := Const) h with
+    ⟨Γprior, Γexact, hprior, hexact, hDeriv⟩
+  exact ⟨Γprior, Γexact, hprior, hexact, hDeriv⟩
+
 /--
 One-step stage-local provability from only the genuinely fresh axioms added at
 the next Henkin stage.
@@ -405,6 +485,70 @@ theorem stageLanguageProvable_iff_internalStageProvable
         (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ) :=
   Iff.rfl
 
+@[simp] theorem liftClosedFormula_succ_liftBaseClosedFormula
+    {n : Nat}
+    (φ : ClosedFormula Const) :
+    HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+      (Nat.le_succ n)
+      (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ) =
+      HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) (n + 1) φ := by
+  rw [HenkinConstStage.liftClosedFormula, HenkinConstStage.liftBaseClosedFormula,
+    Mettapedia.Logic.HOL.mapConst_comp]
+  apply Mettapedia.Logic.HOL.mapConst_ext
+  intro τ c
+  simp [HenkinConstStage.lift, HenkinConstStage.ofBase, HenkinConstStage.liftOffset]
+
+@[simp] theorem map_liftClosedFormula_succ_liftBaseClosedTheory
+    {n : Nat}
+    (Δ : List (ClosedFormula Const)) :
+    (Δ.map (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n)).map
+      (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) (Nat.le_succ n)) =
+      Δ.map (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) (n + 1)) := by
+  induction Δ with
+  | nil => rfl
+  | cons φ Δ ih =>
+      simp [ih]
+
+theorem internalStageProvable_of_derivation
+    {n : Nat}
+    {Θ : List (ClosedFormula (HenkinConstStage Base Const n))}
+    {ψ : ClosedFormula (HenkinConstStage Base Const n)} :
+    ExtDerivation (HenkinConstStage Base Const n) Θ ψ →
+      InternalStageProvable (Base := Base) (Const := Const) n Θ ψ := by
+  intro h
+  refine ⟨[], ?_, ?_⟩
+  · intro χ hχ
+    exact False.elim (by simpa using hχ)
+  · simpa using h
+
+theorem stageLanguageProvable_succ_to_splitStepProvable
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    StageLanguageProvable (Base := Base) (Const := Const) (n + 1) Δ φ →
+      SplitStepProvable (Base := Base) (Const := Const) n
+        (Δ.map (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n))
+        (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ) := by
+  intro h
+  have h' :
+      InternalStageProvable (Base := Base) (Const := Const) (n + 1)
+        ((Δ.map
+          (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n)).map
+          (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+            (Nat.le_succ n)))
+        (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+          (Nat.le_succ n)
+          (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ)) := by
+    simpa [StageLanguageProvable, map_liftClosedFormula_succ_liftBaseClosedTheory] using h
+  simpa using
+    (internalStageProvable_succ_to_splitStepProvable
+      (Base := Base)
+      (Const := Const)
+      (Θ := Δ.map
+        (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n))
+      (ψ := HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ)
+      h')
+
 theorem not_mem_stageLanguageHenkinAxioms_zero
     {ψ : ClosedFormula (HenkinConstStage Base Const 0)} :
     ψ ∉ StageLanguageHenkinAxioms (Base := Base) (Const := Const) 0 := by
@@ -438,6 +582,19 @@ def StageLanguageOneStepReflectionGoal : Prop :=
     (StageLanguageProvable (Base := Base) (Const := Const))
 
 /--
+Future absorption theorem for the inherited part of a stage-`n+1` derivation.
+
+Once this is proved, only the genuinely fresh axioms remain, and the future
+exact-step reflection theorem can finish the one-step stage reflection argument.
+-/
+def PriorStepReductionGoal : Prop :=
+  ∀ (n : Nat)
+    {Θ : List (ClosedFormula (HenkinConstStage Base Const n))}
+    {ψ : ClosedFormula (HenkinConstStage Base Const n)},
+      SplitStepProvable (Base := Base) (Const := Const) n Θ ψ →
+        ExactStepProvable (Base := Base) (Const := Const) n Θ ψ
+
+/--
 Concrete finite-stage reduction goal for the corrected stage-language bridge.
 
 This is the remaining descent theorem specialized to the first real
@@ -446,6 +603,21 @@ stage-language predicate, rather than to an abstract placeholder.
 def StageLanguageFiniteReductionGoal : Prop :=
   FiniteStageReduction (Base := Base) (Const := Const)
     (StageLanguageProvable (Base := Base) (Const := Const))
+
+theorem stageLanguageOneStepReflection_of_priorStepReduction_and_exactStepReflection
+    (hPrior : PriorStepReductionGoal (Base := Base) (Const := Const))
+    (hExact : ExactStepReflectionGoal (Base := Base) (Const := Const)) :
+    StageLanguageOneStepReflectionGoal (Base := Base) (Const := Const) := by
+  intro n Δ φ hStage
+  have hSplit :=
+    stageLanguageProvable_succ_to_splitStepProvable
+      (Base := Base) (Const := Const) (n := n) (Δ := Δ) (φ := φ) hStage
+  have hExactProv :
+      ExactStepProvable (Base := Base) (Const := Const) n
+        (Δ.map (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n))
+        (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ) :=
+    hPrior n hSplit
+  exact internalStageProvable_of_derivation (Base := Base) (Const := Const) (hExact n hExactProv)
 
 /--
 If lifted `HInf` provability always reduces to some finite stage, and finite

@@ -6495,11 +6495,18 @@ The formalization operates at three tiers of generality:
   \code{Summable} hypotheses) is standard mathlib work that does
   not require redesigning the algebra.
 
-\item[Tier~3: Genuinely open.]
-  The measure-valued terminal world model (connecting evidence
-  carriers to \code{MeasureTheory.Measure}), continuous-domain BN
-  compilation with infinite state spaces, and quantale/Heyting
-  generalization beyond binary evidence.
+\item[Tier~3: Frontier with first foothold.]
+  The measure-valued terminal world model has its first concrete
+  result: for finite query spaces, every additive world model
+  induces a discrete \code{MeasureTheory.Measure}, and the
+  induction respects revision
+  (\code{evidenceToMeasure\_add}).%
+  \footnote{Formalized in
+  \codepath{Mettapedia/Logic/EvidenceToMeasure.lean}
+  (0~sorry).}
+  The full program---continuous-domain BN compilation with
+  infinite state spaces, and the general $\sigma$-finite
+  construction---remains open.
 \end{description}
 
 \noindent
@@ -6566,10 +6573,14 @@ The remaining measure-theoretic step is to ground the calculus on
 $\sigma$-algebras and probability measures, enabling formal
 integration with the broader mathematical probability literature
 and non-conjugate distributional families.
-\emph{Proved:} the Solomonoff--de~Finetti foundation and the Giry
-monad bridge (Chapter~\ref{ch:bridges}).
-\emph{Missing:} $\sigma$-algebra-valued carriers with
-measure-theoretic extraction.
+\emph{Proved:} the Solomonoff--de~Finetti foundation, the Giry
+monad bridge (Chapter~\ref{ch:bridges}), and the first concrete
+bridge: \code{evidenceToMeasure} constructs a discrete
+\code{MeasureTheory.Measure} from any additive WM state over
+finite queries, with \code{evidenceToMeasure\_add} proving
+that the construction respects revision.
+\emph{Missing:} the general $\sigma$-finite construction for
+infinite query spaces.
 \emph{Sought:} a \code{MeasurableWorldModel} typeclass with
 $\sigma$-finite evidence carriers and Radon--Nikodym extraction.
 

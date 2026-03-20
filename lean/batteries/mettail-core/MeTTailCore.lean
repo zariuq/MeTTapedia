@@ -3,6 +3,7 @@ import MeTTailCore.MeTTaIL.Substitution
 import MeTTailCore.MeTTaIL.Match
 import MeTTailCore.MeTTaIL.Engine
 import MeTTailCore.MeTTaIL.RecursiveSpecialize
+import MeTTailCore.MeTTaIL.RecursiveConstructors
 import MeTTailCore.MeTTaIL.Profile
 import MeTTailCore.MeTTaIL.LookupPlan
 import MeTTailCore.MeTTaIL.EffectSafety
