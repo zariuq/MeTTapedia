@@ -4,6 +4,7 @@ import MeTTailCore.MeTTaIL.Match
 import MeTTailCore.MeTTaIL.Engine
 import MeTTailCore.MeTTaIL.RecursiveSpecialize
 import MeTTailCore.MeTTaIL.RecursiveConstructors
+import MeTTailCore.MeTTaIL.RecursiveAnswerSets
 import MeTTailCore.MeTTaIL.Profile
 import MeTTailCore.MeTTaIL.LookupPlan
 import MeTTailCore.MeTTaIL.EffectSafety
@@ -18,4 +19,5 @@ import MeTTailCore.MeTTaSyntax.RuleSurface
 import MeTTailCore.Crypto.SHA256
 import MeTTailCore.EvalIR
 import MeTTailCore.EvalIRMachine
+import MeTTailCore.EvalIRTablingMachine
 import MeTTailCore.EvalIRRefinement

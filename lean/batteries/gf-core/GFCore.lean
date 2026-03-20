@@ -10,3 +10,6 @@ import GFCore.RGLView
 import GFCore.Frame
 import GFCore.FrameExtract
 import GFCore.Entailment
+import GFCore.Term
+import GFCore.Atom
+import GFCore.NormClause

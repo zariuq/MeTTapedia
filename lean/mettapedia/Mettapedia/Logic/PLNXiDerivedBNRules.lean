@@ -1428,6 +1428,7 @@ instance instWorldModelSigmaUnit
     WorldModelSigma State PUnit (fun _ : PUnit => Query) where
   evidence W q := BinaryWorldModel.evidence W q.2
   evidence_add W₁ W₂ q := BinaryWorldModel.evidence_add W₁ W₂ q.2
+  evidence_zero q := BinaryWorldModel.evidence_zero q.2
 
 /-- Lift an untyped WM rewrite rule into the typed WM layer with one sort. -/
 noncomputable def wmRewriteRuleToSigmaUnit
@@ -1458,6 +1459,7 @@ def worldModelSigmaConstFromUntyped
     WorldModelSigma State Srt (fun _ : Srt => Query) where
   evidence W q := BinaryWorldModel.evidence W q.2
   evidence_add W₁ W₂ q := BinaryWorldModel.evidence_add W₁ W₂ q.2
+  evidence_zero q := BinaryWorldModel.evidence_zero q.2
 
 /-- Convenience type alias for non-`PUnit` constant-family typed rewrite rules. -/
 abbrev WMRewriteRuleSigmaConst
@@ -1517,6 +1519,7 @@ def worldModelSigmaIndexedFromUntyped
     WorldModelSigma State Srt (IndexedQuery Srt Query) where
   evidence W q := BinaryWorldModel.evidence W (IndexedQuery.erase q.2)
   evidence_add W₁ W₂ q := BinaryWorldModel.evidence_add W₁ W₂ (IndexedQuery.erase q.2)
+  evidence_zero q := BinaryWorldModel.evidence_zero (IndexedQuery.erase q.2)
 
 instance instWorldModelSigmaIndexed
     (State Srt Query : Type)
@@ -1594,6 +1597,11 @@ def worldModelSigmaThreeNativeFromUntyped
     | mk s qs =>
         cases s <;>
           simpa using (BinaryWorldModel.evidence_add (State := State) (Query := Query) W₁ W₂ qs)
+  evidence_zero q := by
+    cases q with
+    | mk s qs =>
+        cases s <;>
+          simpa using (BinaryWorldModel.evidence_zero (State := State) (Query := Query) qs)
 
 /-- Global native `Three`-indexed WMΣ instance (no erase bridge). -/
 instance instWorldModelSigmaThreeNative
@@ -1683,6 +1691,19 @@ def worldModelSigmaThreeNativeTaggedFromUntyped
         | atC qc =>
             simpa using
               (BinaryWorldModel.evidence_add (State := State) (Query := Query) W₁ W₂ qc)
+  evidence_zero q := by
+    cases q with
+    | mk _ qs =>
+        cases qs with
+        | atA qa =>
+            simpa using
+              (BinaryWorldModel.evidence_zero (State := State) (Query := Query) qa)
+        | atB qb =>
+            simpa using
+              (BinaryWorldModel.evidence_zero (State := State) (Query := Query) qb)
+        | atC qc =>
+            simpa using
+              (BinaryWorldModel.evidence_zero (State := State) (Query := Query) qc)
 
 /-- Global native `Three`-indexed WMΣ instance for `ThreeNativeTaggedQueryFamily`. -/
 instance instWorldModelSigmaThreeNativeTagged
@@ -1764,6 +1785,7 @@ def worldModelSigmaSortTaggedFromUntyped
     WorldModelSigma State MeTTaSortTag (SortTaggedQuery Query) where
   evidence W q := BinaryWorldModel.evidence W (SortTaggedQuery.erase q.2)
   evidence_add W₁ W₂ q := BinaryWorldModel.evidence_add W₁ W₂ (SortTaggedQuery.erase q.2)
+  evidence_zero q := BinaryWorldModel.evidence_zero (SortTaggedQuery.erase q.2)
 
 /-- Global OSLF sort-tagged dependent WMΣ instance from an untyped WM. -/
 instance instWorldModelSigmaSortTagged

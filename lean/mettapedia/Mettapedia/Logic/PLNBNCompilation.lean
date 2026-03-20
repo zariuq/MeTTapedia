@@ -143,6 +143,9 @@ noncomputable instance [Fintype V] [DecidableEq V] :
       rw [Multiset.map_add, Multiset.sum_add]
     dsimp [evidence]
     exact h
+  evidence_zero q := by
+    classical
+    simp [evidence]
 
 /-! ### Singleton-CPT bridge -/
 

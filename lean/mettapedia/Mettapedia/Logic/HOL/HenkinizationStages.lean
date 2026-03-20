@@ -182,6 +182,22 @@ theorem liftOffset_comp : LiftOffsetCompGoal (Base := Base) (Const := Const) := 
           hih
       simpa [liftOffset, Nat.add_assoc] using hcast.trans hbase
 
+theorem liftOffset_comp_cast
+    {n k₁ k₂ : Nat} {τ : Ty Base}
+    (c : HenkinConstStage Base Const n τ) :
+    cast (congrArg (fun t => HenkinConstStage Base Const t τ)
+      (Nat.add_assoc n k₁ k₂).symm)
+      (liftOffset (Base := Base) (Const := Const) (k₁ + k₂) c) =
+    (liftOffset (Base := Base) (Const := Const) k₂
+      (liftOffset (Base := Base) (Const := Const) k₁ c) :
+        HenkinConstStage Base Const (n + k₁ + k₂) τ) := by
+  have h := congrArg
+    (fun x : HenkinConstStage Base Const (n + (k₁ + k₂)) τ =>
+      cast (congrArg (fun t => HenkinConstStage Base Const t τ)
+        (Nat.add_assoc n k₁ k₂).symm) x)
+    ((liftOffset_comp (Base := Base) (Const := Const) k₁ k₂ c).symm)
+  simpa [Nat.add_assoc] using h
+
 theorem liftTerm_comp_of_liftComp
     (hComp : LiftCompGoal (Base := Base) (Const := Const))
     {l m n : Nat} (hlm : l ≤ m) (hmn : m ≤ n)

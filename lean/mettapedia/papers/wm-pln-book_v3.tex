@@ -23,7 +23,11 @@
 \title{The World-Model Calculus\\[6pt]
   \large A Sprout from the Formalization of PLN\\[12pt]
   \normalsize\texttt{(v3 --- \today)}}
-\author{Zar and Oru\v{z}i}
+\author{Zar Goertzel\thanks{%
+  Oru\v{z}i denotes AI-assisted collaboration using
+  Claude Opus~4.6 (Anthropic),
+  GPT-5.4~Pro (OpenAI),
+  and Codex~5.4 (OpenAI).}}
 \date{}
 
 \begin{document}
@@ -1693,7 +1697,10 @@ vertex.%
 
 The carrier axis is orthogonal: binary, Dirichlet, and
 Normal-Gamma carriers are all formalized and compose with any
-merge-law vertex.%
+merge-law vertex.  The quantum/classical boundary is whether the
+carrier has a lattice ordering: $\mathbb{C}$ does not, placing
+quantum inference at a distinct vertex
+(\code{quantum\_not\_classical}).%
 \footnote{Hypercube positions are kernel-checked in
 \codepath{Mettapedia/ProbabilityTheory/KnuthSkilling/Examples/%
 PreciseVsImpreciseGrounded.lean}

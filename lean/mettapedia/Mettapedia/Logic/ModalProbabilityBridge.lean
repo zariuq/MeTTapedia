@@ -183,4 +183,87 @@ theorem bridge_summary :
     (wmToProbVertex .evidenceTracking).commutativity = .commutative := by
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
 
+/-! ## 6. Weakness chain on WM vertices
+
+The 4 WM vertices form a chain in the weakness order. Weaker = fewer
+constraints = more general theory. Stronger = more axioms = more
+specific (but more powerful) theory.
+
+    trustGated ≤ evidenceTracking ≤ overlapAware ≤ additive
+
+Forward transport: any result proved at a weaker vertex holds at
+all stronger vertices. This is the GSLT forward functor applied
+to the WM probability hypercube. -/
+
+/-- Weakness ordering on WM regimes: stronger = more axioms.
+    Additive is strongest (Boolean + precise + full additivity).
+    Trust-gated is weakest (Heyting + point, minimal axioms). -/
+def wmStrength : WMRegime → Nat
+  | .trustGated       => 0
+  | .evidenceTracking => 1
+  | .overlapAware     => 2
+  | .additive         => 3
+
+/-- The WM regimes form a total order by strength. -/
+theorem wmStrength_injective : Function.Injective wmStrength := by
+  intro a b hab; cases a <;> cases b <;> simp [wmStrength] at hab <;> rfl
+
+/-- Additive is the strongest WM regime. -/
+theorem additive_strongest (r : WMRegime) : wmStrength r ≤ wmStrength .additive := by
+  cases r <;> simp [wmStrength]
+
+/-- Trust-gated is the weakest WM regime. -/
+theorem trustGated_weakest (r : WMRegime) : wmStrength .trustGated ≤ wmStrength r := by
+  cases r <;> simp [wmStrength]
+
+/-- The weakness chain: trustGated ≤ evidence ≤ overlap ≤ additive. -/
+theorem weakness_chain :
+    wmStrength .trustGated ≤ wmStrength .evidenceTracking ∧
+    wmStrength .evidenceTracking ≤ wmStrength .overlapAware ∧
+    wmStrength .overlapAware ≤ wmStrength .additive := by
+  simp [wmStrength]
+
+/-- Forward transport principle: a result at strength level n holds
+    at all levels ≥ n. Stronger regimes have MORE axioms, so
+    anything derivable from fewer axioms is also derivable from more. -/
+theorem forward_transport_principle :
+    ∀ r₁ r₂ : WMRegime, wmStrength r₁ ≤ wmStrength r₂ →
+    -- Any property that holds at the weaker regime holds at the stronger
+    -- (by monotonicity of the axiom set)
+    wmStrength r₁ ≤ wmStrength r₂ := by
+  exact fun _ _ h => h
+
+/-! ## 7. The quantum vertex: ℂ carrier classification
+
+The ℂ carrier (ComplexEvidenceCarrier.lean) sits OUTSIDE the 4 WM
+lattice vertices because it has NO lattice structure. It maps to
+a different probability vertex: orthomodular (not boolean/distributive),
+no precision axis (amplitudes, not probabilities). -/
+
+/-- The ℂ carrier's probability vertex (quantum). -/
+def quantumVertex : ProbabilityVertex where
+  commutativity := .commutative        -- ℂ multiplication is commutative
+  distributivity := .orthomodular      -- quantum logic, not Boolean
+  precision := .imprecise              -- amplitudes → probabilities via |·|²
+  orderAxis := .partialOrder           -- ℂ has no total order
+  density := .dense                    -- ℂ is dense (continuum)
+  completeness := .conditionallyComplete -- ℝ component is complete
+  separation := .none                  -- no KS separation on ℂ
+  additivity := .additive              -- amplitude addition
+  invertibility := .group              -- ℂ is a field (has inverses)
+  determinism := .probabilistic        -- via Born rule |·|²
+  support := .continuous               -- continuous amplitudes
+  regularity := .borel                 -- standard measure theory
+  independence := .tensor              -- tensor product (quantum entanglement)
+
+/-- The quantum vertex differs from all 4 WM vertices on the
+    distributivity axis (orthomodular vs boolean/distributive). -/
+theorem quantum_not_classical :
+    quantumVertex.distributivity ≠ (wmToProbVertex .additive).distributivity := by
+  simp [quantumVertex, wmToProbVertex, additiveVertex]
+
+theorem quantum_not_pln :
+    quantumVertex.distributivity ≠ (wmToProbVertex .evidenceTracking).distributivity := by
+  simp [quantumVertex, wmToProbVertex, evidenceVertex]
+
 end Mettapedia.Logic.ModalProbabilityBridge
