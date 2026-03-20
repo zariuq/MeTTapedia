@@ -25,9 +25,9 @@
   \normalsize\texttt{(v3 --- \today)}}
 \author{Zar Goertzel\thanks{%
   Oru\v{z}i denotes AI-assisted collaboration using
-  Claude Opus~4.6 (Anthropic),
-  GPT-5.4~Pro (OpenAI),
-  and Codex~5.4 (OpenAI).}}
+  Claude Opus~4.* (Anthropic),
+  GPT-5.*~Pro (OpenAI),
+  and Codex~5.* (OpenAI).}}
 \date{}
 
 \begin{document}
@@ -219,7 +219,7 @@ counts over normal/slow/faulty), and what the hallway temperature
 is (continuous: Normal-Gamma sufficient statistics).  Shared
 spaces carry a building-level state.  Throughout the book, Maple
 Court instantiates abstract concepts in teal-boxed asides like
-this one.  All eight desiderata, all three carriers, and the
+this one.  All eight desiderata, all three primary carriers, and the
 forgetting, provenance, and conservation theorems have Maple Court
 examples.}
 
@@ -346,7 +346,7 @@ as fully developed kernels.  Chapter~\ref{ch:world-models},
 \S\ref{sec:non-additive} develops the \emph{non-additive perimeter}
 in more detail: the overlap extraction law, semitopological coalitions,
 and the recovery theorem showing that additivity is regained when
-overlap is small or non-actionable ($\sim$90~theorems, 0~sorry).
+overlap is small or non-actionable ($\sim$60~theorems, 0~sorry).
 
 The additive regime is captured by the following shape:
 
@@ -645,7 +645,7 @@ calculus on real data: gas sensor drift across 36~months
 (governance question: when to retrain?), geopolitical forecast
 aggregation (forgetting stale reliability weights improves
 prediction), Bayesian-network benchmarks (distributional inference
-reduces MAE by $1.5$--$3.8\times$), and nine PPLBench lanes
+reduces MAE by $1.5$--$3.8\times$), and eight PPLBench lanes
 (matching Stan's posteriors at $O(1)$ per update).  The empirical
 contribution is not raw accuracy but inference-control quality:
 exact where licensed, bounded where partially licensed, abstaining
@@ -948,7 +948,7 @@ PLN v0.9 (with binary evidence only) satisfies D1, D2, D4--D8 but
 violates D3: the carrier is not generic.
 
 \maplecourt{%
-Maple Court uses all three formalized carriers simultaneously:
+Maple Court uses all three primary carriers simultaneously:
 binary $(n^+, n^-)$ for leak alarms and occupancy; Dirichlet
 $(\alpha_1, \alpha_2, \alpha_3)$ for the three-valued elevator
 health and laundry status; Normal-Gamma $(n, \sum x_i, \sum x_i^2)$
@@ -1540,10 +1540,11 @@ instances of the generic \code{Query} parameter, not extensions to a
 lower theory.
 
 The generality of this interface is genuine.  Seven neighboring
-frameworks---Markov Logic Networks, ProbLog, NARS, PLN v0.9,
+frameworks---Markov Logic Networks, ProbLog, PLN v0.9,
 classical FOL, the Giry monad, and the $\rho$-calculus---are
-each shown to be \code{WorldModel} instances with proved
-extraction agreements (Chapter~\ref{ch:bridges}).
+shown to be \code{WorldModel} instances with proved
+extraction agreements; NARS has a proved Galois connection
+to PLN evidence (Chapter~\ref{ch:bridges}).
 Pearl's structural
 causal models~\cite{Pearl2009} are also \code{WorldModel} instances: the
 state is a system of structural equations $X_i = f_i(\mathrm{pa}(X_i),
@@ -1608,7 +1609,7 @@ proved, and this section presents them.
 The non-additive regimes are not afterthoughts.  They formalize
 the situations where naive evidence addition fails: correlated
 sources, trust-weighted merges, and quorum-based consensus.  The
-Lean formalization contains $\sim$90 theorems across these
+Lean formalization contains $\sim$60 theorems across these
 regimes, all kernel-checked with 0~sorry.
 
 \subsection{The Overlap Extraction Law}
@@ -1678,7 +1679,7 @@ Overlap-aware & Boolean & bounds &
 Evidence-tracking & Heyting & 2D bounds &
   PLN evidence \\
 Trust-gated & Heyting & point &
-  Heyting-point KS \\
+  weighted trust \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1966,6 +1967,7 @@ concrete typed rewrite rules over the 13-axis vertex family.
 
 
 \section{The Sequent-Calculus Presentation}
+\label{sec:sequent-calculus}
 
 The additive regime has a natural sequent-calculus presentation.
 Two contexts: an \emph{evidence context}~$\Gamma$ (a finite multiset
@@ -1996,6 +1998,126 @@ then $\Gamma \uplus \Delta \vdash q \Downarrow (e + e')$.
 Links are \emph{queries}, not connectives: $A \Rightarrow B$ is a
 query $\mathrm{link}(A, B)$ against the revised world model, not an
 object-level implication.
+
+
+\section{The Evidence Proof System}
+\label{sec:evidence-proof-system}
+
+The four rules of \S\ref{sec:sequent-calculus} are not arbitrary.
+Under the Curry-Howard correspondence---the identification of proofs
+with programs and propositions with types---the evidence calculus is a
+classical proof system.  The evidence state is the proof term, the
+query is the proposition, and the four rules are the four structural
+rules of sequent calculus.
+
+\medskip
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Proof Theory}   & \textbf{Evidence Algebra} \\
+\midrule
+Proof term (context)     & Evidence state $W$ \\
+Proposition (judgment)   & Query $q$ \\
+Cut rule                 & Revision ($W_1 + W_2$) \\
+Evaluation               & Extraction ($\mathrm{extract}(W, q)$) \\
+Weakening                & Forgetting \\
+Exchange                 & Commutativity ($W_1 + W_2 = W_2 + W_1$) \\
+Contraction              & Self-revision ($W + W$) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\medskip
+
+\noindent
+Reading the table downward:
+
+\begin{description}
+\item[Cut.]  The Rev rule combines two evidence judgments into one.
+  In proof theory, cut combines two sequent proofs by matching a
+  conclusion with a hypothesis.  In the evidence calculus, cut
+  matches exactly: the combined evidence for query~$q$ equals the
+  sum of the parts, $\mathrm{extract}(W_1 + W_2, q) =
+  \mathrm{extract}(W_1, q) + \mathrm{extract}(W_2, q)$.  This is
+  \code{extract\_add}---the defining law of the additive regime.
+
+\item[Weakening.]  Discarding a hypothesis without affecting the
+  remaining conclusions.  In the evidence calculus, forgetting a
+  source's contribution $W_{\mathrm{forget}}$ from a combined state
+  $W_{\mathrm{keep}} + W_{\mathrm{forget}}$ leaves valid evidence
+  for $W_{\mathrm{keep}}$ alone.  The evidence may decrease but does
+  not become invalid.
+
+\item[Exchange.]  Reordering hypotheses.  Addition in
+  \code{AddCommMonoid} is commutative, so
+  $W_1 + W_2 = W_2 + W_1$.  The order of evidence composition
+  is irrelevant.
+
+\item[Contraction.]  Using a hypothesis more than once.
+  Self-revision $W + W$ doubles the evidence sample size
+  ($\mathrm{ess}(W + W) = 2 \cdot \mathrm{ess}(W)$) without
+  changing the strength ratio.  This is contraction: the same
+  evidence source may be cited twice, yielding more certainty
+  but the same posterior mean.
+\end{description}
+
+\begin{theorem}[Structural completeness (\claimCore{})]
+\label{thm:structural-rules}
+The additive evidence algebra over \code{BinEvNat} satisfies all four
+structural rules of classical sequent calculus: cut, weakening,
+exchange, and contraction.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/EvidenceProofSystem.lean}
+(10~theorems, 0~sorry).}
+\end{theorem}
+
+\noindent
+The word \emph{classical} is precise.  An intuitionistic proof system
+satisfies cut, weakening, and exchange, but not contraction: using a
+hypothesis twice may change the proof.  The evidence algebra satisfies
+all four.  This is because addition is idempotent in information
+content (the posterior ratio $n^+ / (n^+ + n^-)$ is invariant under
+$W \mapsto W + W$), even though the raw counts double.  A linear
+proof system would drop weakening (every hypothesis must be used
+exactly once); the evidence calculus allows forgetting, so it is not
+linear.
+
+\paragraph{A worked example.}
+Let $e_1 = (3, 1)$ and $e_2 = (2, 2)$.
+
+\smallskip
+\begin{description}
+\item[Cut:]  $e_1 + e_2 = (5, 3)$.  Total evidence
+  $\mathrm{ess} = 8 = 4 + 4$.
+\item[Weakening:]  Forget $e_2$: the remaining evidence
+  $e_1 = (3, 1)$ is still valid, with $\mathrm{ess} = 4$.
+\item[Exchange:]  $e_2 + e_1 = (5, 3) = e_1 + e_2$.
+\item[Contraction:]  $e_1 + e_1 = (6, 2)$, with
+  $\mathrm{ess} = 8 = 2 \times 4$.  The strength
+  $6/8 = 3/4$ equals the original $3/4$.
+\end{description}
+
+\paragraph{The runtime consequence.}
+A runtime implementation of evidence operations (whether in
+mettail-c, mettail-rust, or any other backend) proves a single
+property---\code{RuntimeSound}, which says that its revision and
+extraction agree with the algebraic specification---and all four
+structural rules transfer automatically.  The proof of
+\code{RuntimeSound} is the certification that the runtime correctly
+implements the evidence proof system.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/RuntimeSoundnessBridge.lean}
+(5~theorems, 0~sorry).  See also~\codepath{Mettapedia/Logic/%
+PLNProofSystemShowcase.lean} for the unified entry point.}
+
+\paragraph{What this means.}
+The evidence calculus is not merely an algebraic bookkeeping system
+with inference heuristics attached.  It is a proof system in the
+technical sense: it has judgments (evidence for queries), structural
+rules (the four above), and a cut-elimination direction (revision
+increases total evidence, the normalization direction).  The
+propositions-as-types reading is available to anyone who wants it:
+the evidence state \emph{is} the proof, the query \emph{is} the
+proposition, and the extraction \emph{is} the evaluation.
 
 
 \section{The Profile-Hom Equivalence}
@@ -2235,8 +2357,12 @@ and the pointwise lattice gives a complete Heyting algebra for
 all~$k$.%
 \footnote{Formalized in
 \codepath{Mettapedia/Logic/EvidenceDirichletQuantale.lean}
-(13~theorems, 0~sorry).  Extension to Normal-Gamma carriers
-remains an open program.}
+(13~theorems, 0~sorry).  Normal-Gamma carriers have a
+formalized information partial order
+(\codepath{Mettapedia/Logic/EvidenceNormalGammaLattice.lean},
+10~theorems, 0~sorry) but intentionally no quantale tensor ---
+sufficient statistics for unknown mean and variance are not
+counts.}
 
 Every exponential family with sufficient statistics instantiates this
 pattern:
@@ -2301,7 +2427,7 @@ domain does.
 
 \begin{theorem}[Sleep consolidation (\claimCore{})]
 \label{thm:sleep-consolidation}
-For all three carriers:
+For each of the three primary carriers:
 $\mathrm{posterior}(\pi, e_1 \hplus e_2)
 = \mathrm{posterior}(\mathrm{posterior}(\pi, e_1), e_2)$.
 Batch replay of deferred observations yields the same posterior as
@@ -2344,7 +2470,7 @@ corresponds to Bayesian conjugate updating:
   \text{Beta}(\alpha + n_1^+ + n_2^+, \beta + n_1^- + n_2^-)
 \]
 Revision is addition because it is the algebraic shadow of conjugate
-updating.  The same pattern extends to all three carriers:
+updating.  The same pattern extends to all three primary carriers:
 \begin{align*}
   \text{Dirichlet:}\quad
   &(\alpha_1, \ldots, \alpha_k) \hplus (\beta_1, \ldots, \beta_k)
@@ -4070,7 +4196,8 @@ The rule is a theorem, not a heuristic.
 The side condition $\Sigma$ is not optional.  When it fails, the
 rule does not apply.  The system falls back to the full posterior.%
 \footnote{Formalized in
-\codepath{Mettapedia/Logic/PLNCompiledRewrites.lean}.}
+\codepath{Mettapedia/Logic/PLNBayesNetFastRules.lean} and
+\codepath{Mettapedia/Logic/PLNDerivation.lean}.}
 
 \section{The Compiled Rule Catalog}
 
@@ -6119,6 +6246,43 @@ the bottleneck in GJP forecasting
 (177~lines, 12~theorems, 0~sorry).  The social-smoking benchmark
 is in \codepath{Mettapedia/Logic/PLNMarkovLogicUWCSE.lean}.}
 
+\paragraph{Full benchmark results.}
+On the full UW-CSE dataset (5-fold leave-one-area-out), the
+compatibility-gated model improves over the MLN baseline on all
+metrics:
+
+\begin{table}[htbp]
+\centering
+\caption{MLN baseline vs.\ compatibility-gated WM model
+  (leave-one-area-out, 5 folds).}
+\label{tab:uwcse-gate-results}
+\footnotesize
+\begin{tabular}{l cc cc cc}
+\toprule
+& \multicolumn{2}{c}{AUROC} & \multicolumn{2}{c}{Hits@1}
+& \multicolumn{2}{c}{Set-F1} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Fold & MLN & Gate & MLN & Gate & MLN & Gate \\
+\midrule
+ai       & 0.845 & 0.871 & 0.433 & 0.433 & 0.389 & 0.411 \\
+graphics & 0.884 & 0.932 & 0.071 & 0.357 & 0.048 & 0.381 \\
+language & 0.871 & 0.893 & 0.375 & 0.375 & 0.333 & 0.333 \\
+systems  & 0.845 & 0.872 & 0.444 & 0.593 & 0.395 & 0.531 \\
+theory   & 0.866 & 0.916 & 0.500 & 0.417 & 0.417 & 0.389 \\
+\midrule
+Mean & 0.862 & \textbf{0.897} & 0.365 & \textbf{0.435}
+     & 0.316 & \textbf{0.409} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+The improvement is not from adding data---it is from
+\emph{factoring} the existing clause-weight signal into
+interpretable evidence roles.  The gains are concentrated on
+folds where the MLN's pairless false-positive rate is highest
+(graphics: 88\%, theory: 80\%).
+
 \maplecourt{%
 Maple Court's building model can be expressed as an MLN:
 ``\emph{If wall humidity is high, mold risk is elevated}''
@@ -6758,7 +6922,7 @@ quantale structure suggests a path: replace the additive monoid with
 a more general tensor.
 \emph{Proved:} overlap extraction law, semitopological
 independence, additivity recovery after forgetting non-actionable
-overlap ($\sim$90 theorems).
+overlap ($\sim$60 theorems).
 \emph{Missing:} deep development of overlap and trust-gated
 carriers comparable to the additive regime's profile-hom theory.
 \emph{Sought:} overlap-regime profile-hom analogue; trust-gated
@@ -6903,6 +7067,15 @@ The calculus provides six things that the original PLN lacked:
   and forgetting an observation reopens demand at the affected
   premise---the same \code{forget} pattern that drives the
   evidence algebra throughout.
+
+\item \textbf{A proof system.}
+  The evidence calculus satisfies all four structural rules of
+  classical sequent calculus---cut, weakening, exchange, and
+  contraction---under the Curry-Howard correspondence
+  (\S\ref{sec:evidence-proof-system}).  Runtime implementations
+  that prove soundness inherit these rules automatically.
+  PLN is not just an inference engine; it is a proof system in the
+  technical sense.
 \end{enumerate}
 
 \section{The Shape of the Result}
@@ -7075,14 +7248,29 @@ shifted.%
 0~sorry).}
 
 \paragraph{Full-dataset drift protocols.}
-On the full 128-feature representation: cumulative sleep replay
-(train batches 1\ldots$k{-}1$, test batch~$k$) reaches 73.6\% on
-the 3-gas task and 53.2\% on the 6-gas task, modestly exceeding
-GaussianNB baselines (71.2\% and 52.5\%).  These figures are
-substantially below specialized drift-compensation methods
-(BDA:~81\%~\cite{Jiang2021BDA}).  The point is qualitative: late-batch
-drift degrades accuracy, and replaying additional batches into the
-posterior partially recovers it \emph{without changing the
+On the full 128-feature representation:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{lcccc}
+\toprule
+& \multicolumn{2}{c}{3-gas} & \multicolumn{2}{c}{6-gas} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Protocol & WM-PLN & GaussianNB & WM-PLN & GaussianNB \\
+\midrule
+Setting~1 (train batch~1) & 68.4\% & 68.2\% & 47.3\% & 47.3\% \\
+Setting~2 (train $k{-}1$) & 72.1\% & 75.8\% & 53.0\% & 51.2\% \\
+Cumulative replay & \textbf{73.6\%} & 71.2\% & \textbf{53.2\%} & 52.5\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+These figures are substantially below specialized
+drift-compensation methods
+(BDA:~81\%~\cite{Jiang2021BDA}).  The point is qualitative:
+late-batch drift degrades accuracy, and cumulative replay into
+the posterior partially recovers it \emph{without changing the
 underlying update laws}.
 
 \begin{figure}[htbp]
@@ -7188,6 +7376,14 @@ the evidence algebra.%
   $\sim$75\% exceedance vs.\ $\sim$20\% for the others.}
 \label{fig:steel-classification}
 \end{figure}
+
+\paragraph{Full-dataset validation.}
+On the full 1,941-instance dataset (70/30 split): 3-class
+accuracy 74.7\% (WM-PLN) vs.\ 73.9\% (GaussianNB).  With all
+27~features: 86.6\% vs.\ 75.0\%.  Selective prediction
+(confidence-aware abstention): 3-class AURC 0.035 (WM-PLN) vs.\
+0.106 (GaussianNB)---the WM confidence signal is three times
+more reliable for abstention.
 
 
 \section{NAB Machine Temperature Anomaly Detection}
@@ -7401,6 +7597,14 @@ chaining ever work?'' but ``what happens to the same local
 contraction when hidden diagnostic context is omitted, partially
 restored, or completed?''
 
+\paragraph{Concrete example: Pathfinder context regimes.}
+A fork motif with context-complete $\Sigma$: exact BN value
+$= 0.400$, compiled rewrite fires.  With context-missing
+$\Sigma$ (diagnostic context omitted): exact value $= 0.150$,
+hard gate blocks, bounded mode returns $[0.150, 0.475]$,
+soft mode returns $0.286$.  The three modes give the controller
+distinct options: stop, bound, or mix.
+
 \paragraph{Distributional vs.\ scalar.}
 When all estimators use exact local BN CPTs and differ only in
 whether they carry scalar confidence or full Beta posteriors,
@@ -7504,12 +7708,14 @@ by SNP.  Clause weights are learned by LIFT (L-BFGS parameter
 learning in SWI-Prolog's \code{liftcover} library).
 
 Score-level parity between ProbLog's \code{prob\_lift/2}
-inference and the WM noisy-OR scorer has been verified:
+inference and the WM noisy-OR scorer has been verified at
+machine-epsilon precision:
 \[
   \max_{(s, g)} \bigl| P_{\mathrm{ProbLog}}(s, g) -
-    P_{\mathrm{WM}}(s, g) \bigr| < 10^{-10}
+    P_{\mathrm{WM}}(s, g) \bigr| < 5.6 \times 10^{-17}
 \]
-across all 823 examples.  Three Lean theorems back the bridge:
+across all 823 examples.  The Python replication of the ProbLog
+baseline achieves AUC-ROC $0.713 \pm 0.056$ (5-fold CV).  Three Lean theorems back the bridge:
 \code{compilation\_or\_noisyOr} (ProbLog distribution semantics
 reduces to noisy-OR for independent clauses),
 \code{queryStrength\_prop\_eq\_queryProb} (WM strength view =
@@ -7554,7 +7760,7 @@ is the next empirical target.
 
 %% ─────────────────────────────────────────────────────────────────
 
-\chapter{PPLBench: Nine-Lane Validation}
+\chapter{PPLBench: Eight-Lane Validation}
 \label{ch:pplbench}
 
 The evidence algebra makes a concrete prediction: on conjugate
@@ -7609,7 +7815,7 @@ We label each lane with one of two promotion tags:
 
 \section{Cross-Lane Summary}
 
-Table~\ref{tab:pplbench-cross-lane} gives the nine-lane overview.
+Table~\ref{tab:pplbench-cross-lane} gives the eight-lane overview.
 
 \begin{table}[htbp]
 \centering
@@ -7912,7 +8118,7 @@ comparison.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{../results/figures/pplbench_refresh_checks.pdf}
-\caption{Cross-lane refresh verification.  All nine lanes pass
+\caption{Cross-lane refresh verification.  All eight lanes pass
   numerical agreement checks between the Python reference
   implementation and the Lean-specified carrier semantics.}
 \label{fig:pplbench-refresh}
@@ -7921,7 +8127,7 @@ comparison.
 
 \section{Interpretation}
 
-The nine lanes tell a clear story:
+The eight lanes tell a clear story:
 
 \begin{enumerate}
 \item On exact conjugate families (Normal-Normal, Dirichlet,
@@ -8332,7 +8538,7 @@ File & Lines & Thm & Backs \\
 \code{Logic/WMNABSleepDemo} & 344 & 30 & Ch~20 \\
 \code{Logic/GJPForecastDemo} & 255 & 14 & Ch~20 \\
 \code{Logic/PLNWorldModelOrderCostGasPolicyDemo} & 155 & 6 & Ch~20 \\
-\code{Logic/PLNBioHypothesisGeneration} & 635 & 39 & Ch~22 \\
+\code{Logic/PLNBioHypothesisGeneration} & 635 & 36 & Ch~22 \\
 \code{Logic/PLNGWASHigherOrderBridge} & 310 & 17 & Ch~22 \\
 \code{Logic/WMDemandDemo} & 258 & 27 & Ch~12 \\
 \code{Logic/WMForkDemandDemo} & $\sim$300 & 23 & Ch~12 \\

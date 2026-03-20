@@ -10,6 +10,10 @@ name = "simpleMeTTa"
 root = "Algorithms.MeTTa.Simple.Main"
 
 [[lean_exe]]
+name = "leanPeTTa"
+root = "Algorithms.MeTTa.Eval.Main"
+
+[[lean_exe]]
 name = "gfRoundTrip"
 root = "Algorithms.GF.RoundTrip"
 
@@ -34,6 +38,10 @@ name = "gfEntailEval"
 root = "Algorithms.GF.EntailmentEval"
 
 [[lean_exe]]
+name = "gfAtomDemo"
+root = "Algorithms.GF.AtomDemo"
+
+[[lean_exe]]
 name = "gfEntailPoC"
 root = "Algorithms.GF.EntailmentPoC"
 
@@ -44,3 +52,7 @@ path = "../batteries/mettail-core"
 [[require]]
 name = "gf_core"
 path = "../batteries/gf-core"
+
+[[lean_exe]]
+name = "gfEntailEval2"
+root = "Algorithms.GF.EntailmentEval2"

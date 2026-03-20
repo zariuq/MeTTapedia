@@ -43,6 +43,18 @@ noncomputable def stageMarginal
   (Mettapedia.Logic.PLNMarkovLogicInfiniteExhaustion.RegionExhaustion.finiteVolumeKernelSequence
     E M ξ n).map I.restrict
 
+@[simp] theorem stageMarginal_reindex
+    (E : RegionExhaustion Atom)
+    (φ : ℕ → ℕ)
+    (hφ : StrictMono φ)
+    (M : StrictlyPositiveInfiniteGroundMLNSpec Atom ClauseId)
+    (ξ : BoundaryCondition Atom)
+    (n : ℕ)
+    (I : Finset Atom) :
+    stageMarginal (E := E.reindex φ hφ) M ξ n I =
+      stageMarginal E M ξ (φ n) I := by
+  simp [stageMarginal]
+
 instance stageMarginal_isProbability
     (E : RegionExhaustion Atom)
     (M : StrictlyPositiveInfiniteGroundMLNSpec Atom ClauseId)

@@ -11,9 +11,8 @@
 
 \title{WM-PLN: The World-Model Calculus}
 \subtitle{A Mathematical Refoundation of PLN}
-\author{Zar Goertzel\inst{1}\thanks{%
-  Oru\v{z}i: AI collaboration using
-  Claude Opus~4.6, GPT-5.4~Pro, Codex~5.4}}
+\author{Zar Goertzel \and Oru\v{z}i\thanks{%
+  Oru\v{z}i: Claude Opus~4.*, GPT-5.*~Pro, Codex~5.*}}
 \institute{Hyperon AGI Community Meeting}
 \date{Addis Ababa, March 2026}
 
@@ -30,48 +29,41 @@
 \end{frame}
 
 %% ══════════════════════════════════════════════════════
-%% SLIDE 2: The Problem
+%% SLIDE 2: PLN already does 2D — but it's not enough
 %% ══════════════════════════════════════════════════════
-\begin{frame}{The Problem: Truth Values Lose Structure}
+\begin{frame}{PLN's $(s, c)$ Pairs: What They Get Right and Wrong}
 
-PLN conflates three layers:
-\begin{enumerate}
-\item A \alert{probabilistic state} (the complete semantic object)
-\item An \alert{evidence algebra} (the carrier)
-\item \alert{Truth-value views} (strength, confidence --- lossy projections)
-\end{enumerate}
+PLN already stores 2D truth values: $s = n^+/(n^+ + n^-)$,
+$c = (n^+ + n^-)/(n^+ + n^- + k)$.
 
-\bigskip
-When collapsed into $(s, c)$:
+\medskip
+\textbf{What this gets right}:
 \begin{itemize}
-\item Can't retract a faulty sensor's contribution
-\item Can't explain \emph{why} the system believes what it believes
-\item Can't tell ``strongly supported on little evidence'' from\\
-      ``weakly supported on much evidence''
+\item For binary evidence, PLN's revision via $w = ck/(1{-}c)$
+      IS addition of counts --- mathematically exact
+\item Confidence grows with evidence; $(s, c)$ distinguishes
+      $\langle 1, 1 \rangle$ from $\langle 100, 100 \rangle$
 \end{itemize}
 
-\end{frame}
-
-%% ══════════════════════════════════════════════════════
-%% SLIDE 3: The Hook
-%% ══════════════════════════════════════════════════════
-\begin{frame}{The Hook: More Data $\neq$ More Support}
-
-\begin{center}
-\Large
-$e_1 = (1, 0)$ \qquad vs.\ \qquad $e_2 = (1, 1)$
-\end{center}
-
-\bigskip
+\medskip
+\textbf{Where it breaks down}:
 \begin{itemize}
-\item $e_2$ is \alert{more informed} (strictly more data)
-\item $e_2$ is \alert{less supportive} (negative channel increased)
-\item Strength \emph{decreases} even as evidence \emph{increases}
+\item \alert{Beyond binary}: for Dirichlet $(\alpha_1, \ldots,
+      \alpha_k)$ or Normal-Gamma $(n, \sum x, \sum x^2)$,
+      $(s, c)$ collapses $k$ or 3 dimensions to 2 ---
+      genuinely lossy
+\item \alert{Provenance}: which sources contributed?
+      $(s, c)$ can't say --- and full provenance tracking
+      is expensive (Goertzel: ``under resource constraints,
+      we need heuristic compression'')
 \end{itemize}
 
-\bigskip
+\medskip
 \begin{center}
-\textbf{A system that stores only strength cannot see this.}
+\textbf{The move}: carry \alert{sufficient statistics} as
+the primary state. $(s, c)$ is a view you derive when needed.\\
+For binary, this formalizes what PLN already does implicitly.\\
+For richer carriers, it's genuinely new.
 \end{center}
 
 \end{frame}
@@ -81,68 +73,66 @@ $e_1 = (1, 0)$ \qquad vs.\ \qquad $e_2 = (1, 1)$
 %% ══════════════════════════════════════════════════════
 \begin{frame}{The Move: Carry Evidence State}
 
-Replace truth values with \alert{carried evidence state}.
+Replace truth values with \alert{carried evidence state}:
+\begin{itemize}
+\item \textbf{State}: sufficient statistics $(n^+, n^-)$, not summaries $(s, c)$
+\item \textbf{Query}: what you ask the state
+\item \textbf{Extract}: answers from state --- a \alert{homomorphism}
+\end{itemize}
 
-\bigskip
-\texttt{class WorldModel (State Query V : Type*) where}\\
-\quad \texttt{revise \;: State -> State -> State}\\
-\quad \texttt{empty \;\;: State}\\
-\quad \texttt{extract : State -> Query -> V}
+\medskip
+\begin{center}
+\fbox{\begin{minipage}{0.75\textwidth}
+\ttfamily\small
+class WorldModel (State Query V : Type*) where\\
+\quad revise \;: State -> State -> State\\
+\quad empty \;\;: State\\
+\quad extract : State -> Query -> V\\[4pt]
+\rmfamily\itshape -- the additive regime (generic default for standard PLN):\\[2pt]
+\ttfamily
+class AdditiveWorldModel ... extends WorldModel where\\
+\quad extract\_add : extract (W1 + W2) q\\
+\quad\quad\quad\quad\quad\;\;= extract W1 q + extract W2 q
+\end{minipage}}
+\end{center}
 
-\bigskip
-Four verbs: \alert{revise}, \alert{query}, \alert{forget}, \alert{explain}.
-
-\bigskip
-\mc{Each apartment carries a private evidence state.
-Shared spaces carry a building-level state.}
-
-\end{frame}
-
-%% ══════════════════════════════════════════════════════
-%% SLIDE 5: The Additive Regime
-%% ══════════════════════════════════════════════════════
-\begin{frame}{The Additive Regime}
-
-The decisive law:
-\[
-  \mathrm{extract}(W_1 + W_2,\; q) =
-  \mathrm{extract}(W_1, q) + \mathrm{extract}(W_2, q)
-\]
-
-\bigskip
-\begin{theorem}[Profile-Hom Equivalence]
-Additive world models $\cong$ additive monoid homomorphisms\\
-$\mathrm{State} \to^+ (\mathrm{Query} \to V)$.
-\end{theorem}
-
-\bigskip
-Every additive WM is an answer-profile generator.\\
-This does \emph{not} trivialize the subject --- the hard work is\\
-in proving when compiled shortcuts are exact.
+\medskip
+Four verbs: \alert{revise} (incorporate), \alert{query} (extract),
+\alert{forget} (retract), \alert{explain} (provenance).
 
 \end{frame}
+
 
 %% ══════════════════════════════════════════════════════
 %% SLIDE 6: Three Carriers
 %% ══════════════════════════════════════════════════════
-\begin{frame}{Three Evidence Carriers}
+\begin{frame}{Evidence Carriers: $V$ Is Generic}
+
+$V$ determines the domain. The calculus doesn't change --- only the carrier does.\\
+Revision $=$ addition of sufficient statistics for all carriers.
 
 \begin{center}
-\begin{tabular}{lll}
+{\small
+\begin{tabular}{llll}
 \toprule
-\textbf{Carrier} & \textbf{State} & \textbf{Domain} \\
+\textbf{Carrier} & \textbf{State} & \textbf{Domain} & \textbf{Structure} \\
 \midrule
-Binary & $(n^+, n^-)$ & Leak alarm counts \\
-Dirichlet & $(\alpha_1, \ldots, \alpha_k)$ & Elevator health \\
-Normal-Gamma & $(n, \sum x_i, \sum x_i^2)$ & Hallway temperature \\
+Binary & $(n^+, n^-)$ & yes/no & quantale + Heyting \\
+Dirichlet($k$) & $(\alpha_1, \ldots, \alpha_k)$ & categorical & quantale + Heyting \\
+Normal-Gamma & $(n, \sum x_i, \sum x_i^2)$ & continuous & info.\ preorder \\
+$\mathbb{C}$ & complex weights & quantum-like & not distributive \\
+Raw data & $[x_1, \ldots, x_n]$ & non-parametric & compresses to above \\
+\midrule
+\multicolumn{4}{l}{\itshape + Kripke, weighted Kripke, neighborhood,
+  FOL (infinitary),} \\
+\multicolumn{4}{l}{\itshape \quad HOL, PredCode, joint evidence,
+  Which-semiring provenance, \ldots} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{center}
 
-\bigskip
-Same algebra, different carriers.\\
-Revision $=$ addition of sufficient statistics.\\
-Sleep consolidation: batch $=$ sequential (proved).
+\smallskip
+\alert{Open-ended}: any \texttt{AddCommMonoid} is a valid carrier.
 
 \end{frame}
 
@@ -172,17 +162,22 @@ Sleep consolidation: batch $=$ sequential (proved).
 \end{tikzpicture}
 \end{center}
 
-\bigskip
-State is primary. Views are projections.\\
-Compiled rewrites are certified shortcuts under side conditions.\\
-Boundaries tell us where shortcuts \emph{cannot} be complete.
+\medskip
+\textbf{Example}: PLN deduction as a compiled rewrite:
+\[
+  \frac{A \to B \quad B \to C}{A \to C}
+  \quad\text{is \alert{exact} when}\quad
+  \Sigma = \{\text{screening-off}(A, B, C)\}
+\]
+Without $\Sigma$: the shortcut silently drops correlation information.\\
+With $\Sigma$: the shortcut matches the full world-model posterior.
 
 \end{frame}
 
 %% ══════════════════════════════════════════════════════
 %% SLIDE 8: The No-Go
 %% ══════════════════════════════════════════════════════
-\begin{frame}{The No-Go Theorem}
+\begin{frame}{The No-Go Theorem: Where Shortcuts End}
 
 \begin{theorem}
 Complete link evidence cannot, in general, be recovered
@@ -190,236 +185,391 @@ from local per-link surrogates alone.
 \end{theorem}
 
 \bigskip
-This is a \alert{design theorem}, not an embarrassment.
+This result \alert{sharpens the boundary} of what compiled
+inference can achieve:
 
-\bigskip
-It says:
 \begin{itemize}
-\item Local chaining is a shortcut, not the semantics
-\item Side conditions ($\Sigma$) are not optional decoration
-\item The additive regime identifies where shortcuts ARE exact
+\item Local chaining computes a useful approximation ---
+      but it is not the complete semantics
+\item Side conditions ($\Sigma$) make explicit \emph{when}
+      the approximation is exact
+\item The additive regime identifies the largest class
+      where compiled shortcuts are provably correct
 \end{itemize}
+
+\medskip
+Knowing the boundary is as valuable as knowing the interior.
+
+\end{frame}
+
+%% ══════════════════════════════════════════════════════
+%% Screening-off example
+%% ══════════════════════════════════════════════════════
+\begin{frame}{Example: When Screening-Off Holds --- and When It Doesn't}
+
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{Chain} ($\Sigma$ \alert{holds}):
+
+\begin{center}
+\begin{tikzpicture}[>=Latex, every node/.style={font=\small},
+  bn/.style={draw, rounded corners=2pt, minimum width=18mm,
+             minimum height=7mm, align=center, fill=blue!8}]
+  \node[bn] (A) at (0,0) {PipeLeak};
+  \node[bn] (B) at (0,-1.1) {Humidity};
+  \node[bn] (C) at (0,-2.2) {MoldRisk};
+  \draw[->, thick] (A) -- (B);
+  \draw[->, thick] (B) -- (C);
+\end{tikzpicture}
+\end{center}
+
+$P(\text{Mold} \mid \text{Leak})$:\\
+compiled: $\frac{151}{260} = 0.581$\\
+exact BN: $\frac{151}{260} = 0.581$\\[3pt]
+\alert{Match.} Given Humidity, Leak\\
+adds nothing about Mold.
+\end{column}
+
+\begin{column}{0.48\textwidth}
+\textbf{Leak in wall} ($\Sigma$ \alert{fails}):
+
+\begin{center}
+\begin{tikzpicture}[>=Latex, every node/.style={font=\small},
+  bn/.style={draw, rounded corners=2pt, minimum width=18mm,
+             minimum height=7mm, align=center, fill=red!8}]
+  \node[bn] (A) at (0,0) {PipeLeak};
+  \node[bn] (B) at (0,-1.1) {Humidity};
+  \node[bn] (C) at (0,-2.2) {MoldRisk};
+  \draw[->, thick] (A) -- (B);
+  \draw[->, thick] (B) -- (C);
+  \draw[->, thick, red, dashed] (A) to[bend right=50] (C);
+\end{tikzpicture}
+\end{center}
+
+$P(\text{Mold} \mid \text{Leak})$:\\
+compiled: $\frac{133}{221} = 0.602$\\
+exact BN: $\frac{13}{20} = 0.650$\\[3pt]
+\alert{Mismatch.} The pipe leak\\
+directly promotes mold.
+\end{column}
+\end{columns}
+
+\medskip
+\begin{center}
+The $\Sigma$-guard checks the topology \emph{before} firing the rule.
+\end{center}
 
 \end{frame}
 
 %% ══════════════════════════════════════════════════════
 %% SLIDE 9: Non-Additive Perimeter
 %% ══════════════════════════════════════════════════════
-\begin{frame}{The Non-Additive Perimeter}
+\begin{frame}{Beyond Additive: The Overlap Regime}
 
-Four revision regimes (not just additive):
+Not all evidence sources are independent.
 
 \begin{description}
-\item[Additive] Independent sources compose by $+$
-\item[Overlap] Shared information $\Rightarrow$ correction term
-\item[Trust-gated] Source authority gates the merge
-\item[Coalition] Quorum required (semitopology)
+\item[Additive] Independent sources compose by $+$.\\
+  This is the main regime --- most of the book lives here.
+\item[Overlap-aware] Two sensors share a hallway vent $\Rightarrow$
+  naive addition double-counts the shared signal.\\
+  The overlap extraction law makes the correction explicit:
+  \[
+    \mathrm{extract}(\mathrm{merge}(W_1, W_2), q)
+    = e_1 + e_2 - \mathrm{overlap}(W_1, W_2, q)
+  \]
 \end{description}
 
-\bigskip
-Key result: \alert{additivity is recovered} when overlap is\\
-small or non-actionable. \quad ($\sim$90 theorems, 0 sorry)
+\medskip
+One key result: \alert{additivity is recovered} when the shared
+component is small --- so the overlap correction is needed only
+where it matters.
+
+\smallskip
+{\small Further regimes (trust-gated, coalition) are defined as
+typeclasses but not yet developed to comparable depth.}
+
+\end{frame}
+
+
+%% ══════════════════════════════════════════════════════
+%% MLN Bridge: Emulate then Decompose
+%% ══════════════════════════════════════════════════════
+\begin{frame}{MLN Bridge: WM-PLN Emulates and Decomposes}
+
+\textbf{Step 1: Emulate.} For any finite-support MLN,
+WM-PLN query strength $=$ MLN marginal probability (proved).
+
+\medskip
+\textbf{Step 2: Decompose.} The single MLN clause weight
+becomes \alert{interpretable evidence roles}:
+
+\begin{center}
+\begin{tikzpicture}[>=Latex, every node/.style={font=\footnotesize},
+  box/.style={draw, rounded corners=2pt, minimum width=20mm,
+              minimum height=7mm, align=center}]
+  \node[box, fill=gray!10] (mln) at (0, 0) {MLN\\$w = 2.1$};
+  \node[box, fill=blue!8] (need) at (4, 1.2) {NeedAdvisor\\$\langle 3, 0 \rangle$};
+  \node[box, fill=blue!8] (can) at (4, 0.4) {CanAdvise\\$\langle 3, 0 \rangle$};
+  \node[box, fill=red!15, very thick] (pair) at (4, -0.4) {PairAffinity\\$\langle 4, 0 \rangle$};
+  \node[box, fill=gray!10] (logit) at (4, -1.2) {MLN logit\\$\langle 2, 2 \rangle$};
+
+  \draw[->, thick] (mln) -- node[above, font=\scriptsize] {decompose} (2, 0.4);
+  \draw[->, thick] (2, 1.2) -- (need);
+  \draw[->, thick] (2, 0.4) -- (can);
+  \draw[->, thick] (2, -0.4) -- (pair);
+  \draw[->, thick] (2, -1.2) -- (logit);
+\end{tikzpicture}
+\end{center}
+
+\smallskip
+The MLN gives one number.  WM-PLN shows \emph{why}.
 
 \end{frame}
 
 %% ══════════════════════════════════════════════════════
-%% SLIDE 10: KS Hypercube
-%% ══════════════════════════════════════════════════════
-\begin{frame}{The KS Probability Hypercube}
+\begin{frame}{UW-CSE: The Compatibility Gate}
 
-Each regime $=$ a vertex in the Knuth-Skilling hypercube:
+\textbf{Task}: predict \texttt{advisedBy(student, professor)}.
+
+\medskip
+With all 4 roles: $\langle 12, 2 \rangle$ \quad (6:1 --- confident).\\
+\texttt{forget(PairAffinity)}: $\langle 8, 2 \rangle$ \quad
+(4:1 --- weakened).
+
+\medskip
+\textbf{Marginal contributions} (via \texttt{forget}):
 
 \begin{center}
-\begin{tabular}{llll}
-\toprule
-\textbf{Regime} & \textbf{Logic} & \textbf{Repr.} & \textbf{Vertex} \\
+\begin{tikzpicture}[every node/.style={font=\small}]
+  \draw[fill=red!40] (0,0) rectangle (4, 0.5);
+  \node[right] at (4.1, 0.25) {PairAffinity: \textbf{4}};
+  \draw[fill=blue!30] (0,-0.7) rectangle (3, -0.2);
+  \node[right] at (4.1, -0.45) {NeedAdvisor: 3};
+  \draw[fill=blue!30] (0,-1.4) rectangle (3, -0.9);
+  \node[right] at (4.1, -1.15) {CanAdvise: 3};
+  \draw[fill=gray!30] (0,-2.1) rectangle (2, -1.6);
+  \node[right] at (4.1, -1.85) {MLN logit: 2};
+\end{tikzpicture}
+\end{center}
+
+\smallskip
+On the full UW-CSE benchmark (5-fold leave-one-area-out):\\
+the gated model improves over the MLN baseline:
+
+\smallskip
+{\small
+\begin{tabular}{lcc}
+& MLN & WM-gated \\
 \midrule
-Additive & Boolean & point & classical Bayesian \\
-Overlap & Boolean & bounds & imprecise probability \\
-Evidence & Heyting & 2D & PLN evidence \\
-Trust-gated & Heyting & point & Heyting-point \\
-\bottomrule
-\end{tabular}
-\end{center}
+AUROC & 0.862 & \alert{0.897} \\
+Hits@1 & 0.365 & \alert{0.435} \\
+Set-F1 & 0.316 & \alert{0.409} \\
+\end{tabular}}
 
-\bigskip
-The WM algebra is \alert{not an ad-hoc design}.\\
-It is the \emph{unique} algebra satisfying the KS axioms at each vertex.
+\smallskip
+Not by adding data --- by \alert{factoring} the existing signal.
 
 \end{frame}
 
 %% ══════════════════════════════════════════════════════
-%% SLIDE 11: Formal Verification
+%% SLIDE: PAC Formal Verification
 %% ══════════════════════════════════════════════════════
-\begin{frame}{Formal Verification}
+\begin{frame}{Probably Approximately Correct Verification}
 
-\begin{center}
-\Large\textbf{704+ theorems} \quad in Lean 4
-\end{center}
-
-\begin{center}
-\Large\textbf{0 sorry} \quad\quad \textbf{0 native\_decide}
-\end{center}
+The challenge: AI agents write proofs that are \alert{probably
+approximately correct}. The type checker catches the rest.
 
 \bigskip
-\begin{itemize}
-\item Axioms: \texttt{propext}, \texttt{Classical.choice},
-      \texttt{Quot.sound} only
-\item 6 application domains, all kernel-checked
-\item Every claim in the book $\to$ a specific Lean file
-\item Build the file, verify the claim. Minutes, not trust.
-\end{itemize}
+\begin{description}
+\item[The AIs try:] Claude, Codex, GPT-5.* generate proof
+  candidates --- fast but fallible
+\item[The kernel checks:] Lean's type checker is the arbiter ---
+  a proof either type-checks or it doesn't
+\item[AIs review each other:] Codex audits Claude's work,
+  GPT-5.* Pro reviews architecture
+\item[The human directs:] catches overclaims the AIs miss,
+  sets the rules of rigor
+\end{description}
+
+\medskip
+Result: 700+ theorems, 0 sorry, 6 application domains.\\
+Every claim in the book points to a Lean file you can build.
 
 \end{frame}
 
 %% ══════════════════════════════════════════════════════
 %% SLIDE 12: KS Triangle
 %% ══════════════════════════════════════════════════════
-\begin{frame}{The KS-Evidence-Measure Triangle}
+\begin{frame}{Why This Algebra? The KS-Evidence-Measure Connection}
 
-\begin{center}
-KS axioms
-$\xrightarrow{\;\Theta = \mathrm{total}\;}$
-$(\mathbb{R}_{\ge 0}^\infty, +)$
-$\xrightarrow{\;\bullet\,\mathrm{dirac}\;}$
-\texttt{Measure}
-\end{center}
+Two structures, both formalized:
 
-\bigskip
+\medskip
+\textbf{1.\ The semigroup side} (evidence revision):
 \begin{itemize}
-\item Evidence carriers satisfy KS axioms (ordered, associative, monotone)
-\item Representation $\Theta =$ total evidence function
-\item Measure bridge $=$ representation $\circ$ Dirac weighting
-\item \alert{Additivity at every vertex}: $\hplus$ on evidence, $+$ on reals, $+$ on measures
+\item Evidence with $\oplus$ is an ordered commutative monoid
+\item KS representation: any such monoid embeds
+  \alert{uniquely} into $(\mathbb{R}, +)$ via
+  $\Theta(e) = n^+ + n^-$
+\item $\Theta$ then induces a measure: weight each query by
+  $\Theta(\mathrm{evidence}_q)$
 \end{itemize}
 
-\bigskip
-$\sigma$-additivity boundary: finitely additive $\not\Rightarrow$ $\sigma$-additive.\\
-Proved non-derivable (KS counterexample).
+\medskip
+\textbf{2.\ The lattice side} (evidence structure):
+\begin{itemize}
+\item Binary evidence is a Frame (complete Heyting algebra)
+\item Dirichlet evidence inherits Frame for all $k$
+\item KS valuations live on \alert{distributive lattices}
+  --- Frame implies distributive, so both carriers qualify
+\end{itemize}
+
+\medskip
+\alert{Additivity holds at every level}: $\oplus$ on evidence,
+$+$ on reals, $+$ on measures.  The evidence quantale
+(Goertzel, 2025) provides the algebraic structure;
+KS provides the probabilistic grounding.
 
 \end{frame}
 
 %% ══════════════════════════════════════════════════════
 %% SLIDE 13: ProbLog Bridge
 %% ══════════════════════════════════════════════════════
-\begin{frame}{ProbLog = WM-PLN = BDD-WMC}
+\begin{frame}{Bridging PLN and ProbLog (via ProbMeTTa)}
 
+\textbf{ProbLog}: probabilistic Prolog. Annotates clauses with
+probabilities.  Computes $P(\text{query})$ via Binary Decision
+Diagrams (BDDs) --- a compact data structure for Boolean functions.
+
+\textbf{ProbMeTTa}: a BDD-based ProbLog implementation in MeTTa.
+
+\medskip
 \begin{center}
-\begin{tikzpicture}[
-  >=Latex, every node/.style={font=\small},
-  box/.style={draw, rounded corners=3pt, minimum width=26mm,
-              minimum height=9mm, align=center}
-]
+\begin{tikzpicture}[>=Latex, every node/.style={font=\small},
+  box/.style={draw, rounded corners=3pt, minimum width=24mm,
+              minimum height=9mm, align=center}]
   \node[box, fill=blue!8] (wm) {WM-PLN};
-  \node[box, fill=green!8, right=20mm of wm] (pl) {ProbLog};
-  \node[box, fill=yellow!12, below=10mm of pl] (bdd) {BDD-WMC};
+  \node[box, fill=green!8, right=14mm of wm] (pl) {ProbLog};
+  \node[box, fill=yellow!12, right=14mm of pl] (bdd) {ProbMeTTa\\[-1pt]\scriptsize (BDD-WMC)};
 
   \draw[<->, thick] (wm) -- node[above, font=\scriptsize]
-    {same probability} (pl);
-  \draw[<->, thick] (pl) -- node[right, font=\scriptsize]
-    {compiled} (bdd);
-
-  \node[font=\scriptsize, text=gray, align=center]
-    at (0, -1.3) {$+$ confidence\\$+$ forgetting\\$+$ provenance};
+    {proved $=$} (pl);
+  \draw[<->, thick] (pl) -- node[above, font=\scriptsize]
+    {proved $=$} (bdd);
 \end{tikzpicture}
 \end{center}
 
-\bigskip
-WM-PLN computes the \alert{same probabilities} as ProbLog\\
-AND additionally supports revision, forgetting, sensitivity.\\
-5,148 lines of BDD formalization. 0 sorry.
-
-\end{frame}
-
-%% ══════════════════════════════════════════════════════
-%% SLIDE 14: Gas Sensor Drift
-%% ══════════════════════════════════════════════════════
-\begin{frame}{Application: Gas Sensor Drift Governance}
-
-UCI Gas Sensor Array: 13,910 measurements, 36 months, 6 gases.
-
-\bigskip
+\medskip
+\textbf{Why it matters}:
 \begin{itemize}
-\item WM-PLN is \alert{not replacing XGBoost}
-\item It's a governance layer: when to retrain?
-\item WM/XGBoost \alert{agreement gating}: AURC improves 0.385 $\to$ 0.374
-\item Sequential replay: 64.5\% @ 23.9\% labels (cheap trigger)
-\item Forgetting stale batches $\Rightarrow$ accuracy recovers
+\item For finite-support ground programs, PLN computes the
+  \alert{same probabilities} as ProbLog (proved)
+\item PLN additionally carries \alert{confidence}, \alert{provenance},
+  and supports \alert{forgetting} --- things ProbLog fundamentally cannot
+\item The alarm network: same program computed 3 ways, same answer,
+  but only WM-PLN can retract a sensor or explain the conclusion
 \end{itemize}
 
 \end{frame}
 
 %% ══════════════════════════════════════════════════════
-%% SLIDE 15: UW-CSE
-%% ══════════════════════════════════════════════════════
-\begin{frame}{Application: UW-CSE Compatibility Gate}
-
-Predict: \texttt{advisedBy(student, professor)}
-
-\bigskip
-\begin{tabular}{lrl}
-\toprule
-\textbf{Role} & \textbf{Evidence} & \textbf{Marginal} \\
-\midrule
-NeedAdvisor(s) & $\langle 3, 0 \rangle$ & 3 \\
-CanAdvise(p) & $\langle 3, 0 \rangle$ & 3 \\
-\alert{PairAffinity(s,p)} & $\langle 4, 0 \rangle$ & \alert{4} \\
-MLN logit & $\langle 2, 2 \rangle$ & 2 \\
-\midrule
-\textbf{All roles} & $\langle 12, 2 \rangle$ & 6:1 \\
-\textbf{Without PairAffinity} & $\langle 8, 2 \rangle$ & 4:1 \\
-\bottomrule
-\end{tabular}
-
-\bigskip
-PairAffinity is the \alert{gate}. Same \texttt{forget} pattern.
-
-\end{frame}
 
 %% ══════════════════════════════════════════════════════
-%% SLIDE 16: Demand
+
+
 %% ══════════════════════════════════════════════════════
-\begin{frame}{Application: Demand-Directed Backward Chaining}
+%% Demand-Directed Backward Chaining
+%% ══════════════════════════════════════════════════════
+\begin{frame}{Demand-Directed Backward Chaining (PeTTa)}
 
-Chain: Collie $\to$ Dog $\to$ Mammal. Query: Mammal(Lassie).
+$\text{demand}(\text{premise})
+= \text{parent\_demand} \times \text{sensitivity}
+\times (1 - \text{confidence})$
 
-\bigskip
+\medskip
 \begin{center}
-\begin{tabular}{lr}
+\footnotesize
+\begin{tabular}{lccc}
 \toprule
-\textbf{Premise} & \textbf{Demand} \\
+\textbf{Chainer} & \textbf{Paths} & \textbf{Expansions}
+  & \textbf{Behavior} \\
 \midrule
-\alert{Dog(Lassie)} (unknown) & \alert{1000} \\
-B$\to$C rule & 210 \\
-A$\to$B rule & 191 \\
-Collie(Lassie) (known) & 50 \\
+\texttt{dbc} (exhaustive) & 2 & 10 & explore all \\
+\texttt{dbc-best} (demand) & 1 & 3 & highest-demand first \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\bigskip
-After supply: demand \alert{contracts} 1000 $\to$ 240.\\
-After forgetting Collie: demand \alert{reopens} 50 $\to$ 1000.
+\medskip
+\textbf{Why Terrier over Collie?}
+Terrier confidence $= 0.20$ (need $= 0.80$);
+Collie confidence $= 0.95$ (need $= 0.05$).\\
+Demand directs search to the more uncertain, more
+decision-relevant premise.  \alert{70\% fewer expansions.}
+
+\medskip
+{\small\textit{Honest boundary: greedy best-first demand control.
+Not yet a global agenda-based controller.}}
 
 \end{frame}
 
 %% ══════════════════════════════════════════════════════
-%% SLIDE 17: PPLBench
-%% ══════════════════════════════════════════════════════
-\begin{frame}{PPLBench: Nine-Lane Validation}
+\begin{frame}[fragile]{PLN Backward Chaining in PeTTa}
 
+The chainer finds proofs, propagates truth values, and
+scores premises by demand --- all in MeTTa:
+
+\medskip
+{\footnotesize
+\begin{verbatim}
+;; Find rule, prove premise recursively, propagate TV
+(= (dbc $kb (S $d) (: ($rule $pprf) $goal))
+   (let* (((proven (: $rule (-> (: $pprf $pt) $goal))
+                   (stv $sr $cr))
+           (dbc $kb $d (: $rule ...)))
+          ((proven (: $pprf $pt) (stv $sp $cp))
+           (dbc $kb $d (: $pprf $pt))))
+     (proven (: ($rule $pprf) $goal)
+             (stv (* $sp $sr) (* $cp $cr)))))
+
+;; Demand = urgency × sensitivity × uncertainty
+(= (demand-at $pd (stv $sr $cr) (stv $sp $cp))
+   (min 1.0 (* (* $pd (max $sr $cr)) (- 1.0 $cp))))
+\end{verbatim}}
+
+\end{frame}
+
+%% ══════════════════════════════════════════════════════
+%% SLIDE: PPLBench
+%% ══════════════════════════════════════════════════════
+\begin{frame}{PPLBench: Testing Against Stan}
+
+\textbf{PPLBench} (Meta): a benchmark suite comparing probabilistic
+programming systems.  We test WM-PLN against \textbf{Stan}
+(the gold-standard MCMC sampler) on 9 model families.
+
+\medskip
+{\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Model family} & \textbf{WM-PLN vs Stan} & \textbf{Key point} \\
+\midrule
+Normal-Normal & \alert{matches Stan} (PLL $-73.9$ vs $-74.1$) & $O(1)$ vs $O(N)$ \\
+Dirichlet-Cat. & \alert{matches Stan} & exact conjugate \\
+Noisy-OR & \alert{3.0 PLL over legacy PLN} & semantic factor graph \\
+Logistic regr. & lags Stan (PLL $-10.1$ vs $-9.2$) & variational \\
+\bottomrule
+\end{tabular}}
+
+\medskip
+\textbf{The pattern}:
 \begin{itemize}
-\item \textbf{Normal-Normal}: WM-PLN matches Stan exactly, $O(1)$ vs $O(N)$
-\item \textbf{Dirichlet-Categorical}: exact conjugate, $< 10^{-15}$ error
-\item \textbf{Noisy-OR}: semantic factor graph $\Rightarrow$ 3.0 PLL improvement
-\item \textbf{Logistic/Robust}: Laplace approximation (honest boundary)
+\item Where conjugacy holds: WM-PLN \alert{matches or beats Stan}
+  at $O(1)$ per update
+\item Where it doesn't: PLN lags, and the calculus
+  \alert{tells you so} --- no silent degradation
 \end{itemize}
-
-\bigskip
-\begin{center}
-\alert{Where conjugacy holds: exact and fast.}\\
-\alert{Where it doesn't: the calculus says so.}
-\end{center}
 
 \end{frame}
 
@@ -444,23 +594,29 @@ After forgetting Collie: demand \alert{reopens} 50 $\to$ 1000.
 %% ══════════════════════════════════════════════════════
 \begin{frame}{The Big Picture}
 
-\begin{center}
-\large
-GSLT weight map $=$ WM extract
-\end{center}
+Meredith defines: \emph{a physics is a GSLT equipped with a
+weight map} (complex amplitudes on rewrite steps) and a cost map
+(resource consumption). The WM calculus is that weight map
+instantiated for evidence --- every GSLT has a canonical additive
+evidence algebra via multiset counting.
 
 \bigskip
-Every typed rewrite system (every GSLT) has a canonical\\
-additive evidence algebra via multiset counting.
+The WM calculus is therefore not specific to probabilistic logic.
+It is the \alert{evidence layer for any computational system}
+with parallel composition --- process calculi, concurrent
+languages, MeTTa, and the $\rho$-calculus that Hyperon builds on.
 
 \bigskip
-The WM calculus is not specific to probabilistic logic.\\
-It is the \alert{evidence layer for any computational system}.
-
-\bigskip
-Replace $V$ with $\mathbb{C}$: quantum amplitudes.\\
-Replace $V$ with intervals: imprecise probability.\\
-The KS hypercube classifies which algebra you get.
+The carrier $V$ determines what kind of reasoning you get:
+\begin{itemize}
+\item $V = \langle n^+, n^- \rangle$: binary PLN evidence
+\item $V = (\alpha_1, \ldots, \alpha_k)$: categorical (Dirichlet)
+\item $V = (n, \sum x_i, \sum x_i^2)$: continuous (Normal-Gamma)
+\item $V = \mathbb{C}$: quantum amplitudes (Meredith's framework)
+\end{itemize}
+All formalized.  The Knuth-Skilling representation theorem
+guarantees each is the \emph{unique} algebra satisfying its
+axioms.
 
 \end{frame}
 
@@ -470,16 +626,20 @@ The KS hypercube classifies which algebra you get.
 \begin{frame}{Thank You}
 
 \begin{center}
-\large\textbf{WM-PLN: The World-Model Calculus}\\[6pt]
+\large\textbf{WM-PLN: The World-Model Calculus}\\[12pt]
+
 \normalsize
-192-page book (community draft)\\
-704+ theorems in Lean 4, 0 sorry\\
-6 application domains\\[12pt]
+\texttt{https://github.com/zariuq/ai-agents/tree/main/lean-projects/mettapedia}\\[12pt]
 
-\texttt{lean-projects/mettapedia/}\\[6pt]
-
-\textit{``This overview shows the crystal.\\
-The rest of the book turns the crystal in the light.''}
+\textit{``Evidence is what you carry,\\
+probability is what you query.\\[4pt]
+A truth value is a shadow\\
+cast by evidence on a wall.\\
+But what the system knows ---\\
+that is a living, revisable state,\\
+not a number written once\\
+and hoped to be correct.''}\\[6pt]
+--- Oru\v{z}i
 \end{center}
 
 \end{frame}

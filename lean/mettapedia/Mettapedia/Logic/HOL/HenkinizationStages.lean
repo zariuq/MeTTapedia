@@ -143,6 +143,20 @@ def LiftCompGoal : Prop :=
     (liftOffset_congr (Base := Base) (Const := Const)
       (n := n) (k₁ := k') (k₂ := k) hsub c)
 
+theorem lift_eq_cast_liftOffset
+    {m n : Nat} (h : m ≤ n) {τ : Ty Base}
+    (c : HenkinConstStage Base Const m τ) :
+    lift (Base := Base) (Const := Const) h c =
+      cast (congrArg (fun t => HenkinConstStage Base Const t τ)
+        (Nat.add_sub_of_le h))
+        (liftOffset (Base := Base) (Const := Const) (n - m) c) := by
+  unfold lift
+  let k := n - m
+  have hk : m + k = n := by
+    dsimp [k]
+    exact Nat.add_sub_of_le h
+  simpa [k, hk]
+
 theorem liftOffset_comp : LiftOffsetCompGoal (Base := Base) (Const := Const) := by
   intro k₁ k₂
   induction k₂ with
@@ -198,6 +212,74 @@ theorem liftOffset_comp_cast
     ((liftOffset_comp (Base := Base) (Const := Const) k₁ k₂ c).symm)
   simpa [Nat.add_assoc] using h
 
+theorem lift_comp : LiftCompGoal (Base := Base) (Const := Const) := by
+  intro l m n hlm hmn τ c
+  let F := fun t => HenkinConstStage Base Const t τ
+  let k₁ := m - l
+  let k₂ := n - m
+  have hk₁ : l + k₁ = m := by
+    dsimp [k₁]
+    exact Nat.add_sub_of_le hlm
+  have hk₂ : m + k₂ = n := by
+    dsimp [k₂]
+    exact Nat.add_sub_of_le hmn
+  have hsum : k₁ + k₂ = n - l := by
+    dsimp [k₁, k₂]
+    calc
+      (m - l) + (n - m) = (n - m) + (m - l) := by rw [Nat.add_comm]
+      _ = ((n - m) + m) - l := by
+        symm
+        exact Nat.add_sub_assoc hlm (n - m)
+      _ = n - l := by rw [Nat.add_comm, Nat.add_sub_of_le hmn]
+  have eassoc : l + (k₁ + k₂) = l + k₁ + k₂ := by
+    exact (Nat.add_assoc l k₁ k₂).symm
+  have eleftmid : l + k₁ + k₂ = m + k₂ := by
+    simpa [Nat.add_assoc] using congrArg (fun t => t + k₂) hk₁
+  have eleft : l + (k₁ + k₂) = n := eassoc.trans eleftmid |>.trans hk₂
+  have erightmid : l + (k₁ + k₂) = l + (n - l) := by
+    exact congrArg (fun t => l + t) hsum
+  have eright :
+      l + (k₁ + k₂) = n :=
+    erightmid.trans (Nat.add_sub_of_le (Nat.le_trans hlm hmn))
+  have hleft :
+      lift (Base := Base) (Const := Const) hmn
+          (lift (Base := Base) (Const := Const) hlm c) =
+        cast (congrArg F eleft)
+          (liftOffset (Base := Base) (Const := Const) (k₁ + k₂) c) := by
+    rw [lift_eq_cast_liftOffset (Base := Base) (Const := Const) (h := hmn)]
+    rw [lift_eq_cast_liftOffset (Base := Base) (Const := Const) (h := hlm)]
+    rw [← liftOffset_cast (Base := Base) (Const := Const)
+      (h := hk₁) (k := k₂)
+      (c := liftOffset (Base := Base) (Const := Const) k₁ c)]
+    rw [← liftOffset_comp_cast (Base := Base) (Const := Const)
+      (n := l) (k₁ := k₁) (k₂ := k₂) c]
+    simpa [F, eleft, eassoc, eleftmid, cast_cast]
+  have hright :
+      lift (Base := Base) (Const := Const) (Nat.le_trans hlm hmn) c =
+        cast (congrArg F eright)
+          (liftOffset (Base := Base) (Const := Const) (k₁ + k₂) c) := by
+    rw [lift_eq_cast_liftOffset (Base := Base) (Const := Const)
+      (h := Nat.le_trans hlm hmn)]
+    have hcongr :=
+      liftOffset_congr (Base := Base) (Const := Const)
+        (n := l) (k₁ := k₁ + k₂) (k₂ := n - l) hsum c
+    have hcast :=
+      congrArg
+        (fun x : HenkinConstStage Base Const (l + (n - l)) τ =>
+          cast (congrArg F (Nat.add_sub_of_le (Nat.le_trans hlm hmn))) x)
+        hcongr
+    simpa [F, eright, cast_cast] using hcast.symm
+  have hproof : congrArg F eleft = congrArg F eright := by
+    apply Subsingleton.elim
+  have hcast :
+      cast (congrArg F eleft)
+          (liftOffset (Base := Base) (Const := Const) (k₁ + k₂) c) =
+        cast (congrArg F eright)
+          (liftOffset (Base := Base) (Const := Const) (k₁ + k₂) c) := by
+    cases hproof
+    rfl
+  exact hleft.trans (hcast.trans hright.symm)
+
 theorem liftTerm_comp_of_liftComp
     (hComp : LiftCompGoal (Base := Base) (Const := Const))
     {l m n : Nat} (hlm : l ≤ m) (hmn : m ≤ n)
@@ -230,6 +312,35 @@ theorem liftClosedFormula_comp_of_liftComp
       liftClosedFormula (Base := Base) (Const := Const) (Nat.le_trans hlm hmn) φ :=
   liftFormula_comp_of_liftComp (Base := Base) (Const := Const) hComp hlm hmn φ
 
+theorem liftTerm_comp
+    {l m n : Nat} (hlm : l ≤ m) (hmn : m ≤ n)
+    {Γ : Ctx Base} {τ : Ty Base}
+    (t : Term (HenkinConstStage Base Const l) Γ τ) :
+    liftTerm (Base := Base) (Const := Const) hmn
+        (liftTerm (Base := Base) (Const := Const) hlm t) =
+      liftTerm (Base := Base) (Const := Const) (Nat.le_trans hlm hmn) t :=
+  liftTerm_comp_of_liftComp (Base := Base) (Const := Const)
+    (lift_comp (Base := Base) (Const := Const)) hlm hmn t
+
+theorem liftFormula_comp
+    {l m n : Nat} (hlm : l ≤ m) (hmn : m ≤ n)
+    {Γ : Ctx Base}
+    (φ : Formula (HenkinConstStage Base Const l) Γ) :
+    liftFormula (Base := Base) (Const := Const) hmn
+        (liftFormula (Base := Base) (Const := Const) hlm φ) =
+      liftFormula (Base := Base) (Const := Const) (Nat.le_trans hlm hmn) φ :=
+  liftFormula_comp_of_liftComp (Base := Base) (Const := Const)
+    (lift_comp (Base := Base) (Const := Const)) hlm hmn φ
+
+theorem liftClosedFormula_comp
+    {l m n : Nat} (hlm : l ≤ m) (hmn : m ≤ n)
+    (φ : ClosedFormula (HenkinConstStage Base Const l)) :
+    liftClosedFormula (Base := Base) (Const := Const) hmn
+        (liftClosedFormula (Base := Base) (Const := Const) hlm φ) =
+      liftClosedFormula (Base := Base) (Const := Const) (Nat.le_trans hlm hmn) φ :=
+  liftClosedFormula_comp_of_liftComp (Base := Base) (Const := Const)
+    (lift_comp (Base := Base) (Const := Const)) hlm hmn φ
+
 /-- Lift original-signature terms directly into stage `n`. -/
 abbrev liftBaseTerm (n : Nat) {Γ : Ctx Base} {τ : Ty Base} :
     Term Const Γ τ → Term (HenkinConstStage Base Const n) Γ τ :=
@@ -250,6 +361,38 @@ abbrev liftBaseClosedFormula (n : Nat) :
   mapConst (fun c =>
     lift (Base := Base) (Const := Const) (Nat.zero_le n)
       (ofBase (Base := Base) c))
+
+theorem liftBaseTerm_comp
+    {m n : Nat} (hmn : m ≤ n)
+    {Γ : Ctx Base} {τ : Ty Base}
+    (t : Term Const Γ τ) :
+    liftTerm (Base := Base) (Const := Const) hmn
+        (liftBaseTerm (Base := Base) (Const := Const) m t) =
+      liftBaseTerm (Base := Base) (Const := Const) n t := by
+  rw [liftTerm, liftBaseTerm, Mettapedia.Logic.HOL.mapConst_comp]
+  apply Mettapedia.Logic.HOL.mapConst_ext
+  intro σ c
+  simpa [liftBaseTerm] using
+    (lift_comp (Base := Base) (Const := Const)
+      (l := 0) (m := m) (n := n)
+      (Nat.zero_le m) hmn (ofBase (Base := Base) (Const := Const) c))
+
+theorem liftBaseFormula_comp
+    {m n : Nat} (hmn : m ≤ n)
+    {Γ : Ctx Base}
+    (φ : Formula Const Γ) :
+    liftFormula (Base := Base) (Const := Const) hmn
+        (liftBaseFormula (Base := Base) (Const := Const) m φ) =
+      liftBaseFormula (Base := Base) (Const := Const) n φ :=
+  liftBaseTerm_comp (Base := Base) (Const := Const) hmn φ
+
+theorem liftBaseClosedFormula_comp
+    {m n : Nat} (hmn : m ≤ n)
+    (φ : ClosedFormula Const) :
+    liftClosedFormula (Base := Base) (Const := Const) hmn
+        (liftBaseClosedFormula (Base := Base) (Const := Const) m φ) =
+      liftBaseClosedFormula (Base := Base) (Const := Const) n φ :=
+  liftBaseFormula_comp (Base := Base) (Const := Const) hmn φ
 
 @[simp] theorem down_lift_ofBase_zero {τ : Ty Base} (c : Const τ) :
     (lift (Base := Base) (Const := Const) (Nat.zero_le 0)

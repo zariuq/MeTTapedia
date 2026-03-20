@@ -37,6 +37,29 @@ namespace RegionExhaustion
 
 variable {Atom ClauseId : Type*} [DecidableEq Atom] [DecidableEq ClauseId]
 
+/-- Reindex an exhaustion along a strictly monotone subsequence. -/
+def reindex
+    (E : RegionExhaustion Atom)
+    (φ : ℕ → ℕ)
+    (hφ : StrictMono φ) :
+    RegionExhaustion Atom where
+  region := fun n => E.region (φ n)
+  monotone := fun a b hab => E.monotone (hφ.monotone hab)
+  exhaustive := by
+    intro a
+    rcases E.exhaustive a with ⟨N, hN⟩
+    refine ⟨N, ?_⟩
+    exact E.monotone (hφ.id_le N) hN
+
+omit [DecidableEq Atom] in
+@[simp] theorem reindex_region
+    (E : RegionExhaustion Atom)
+    (φ : ℕ → ℕ)
+    (hφ : StrictMono φ)
+    (n : ℕ) :
+    (E.reindex φ hφ).region n = E.region (φ n) :=
+  rfl
+
 /-- Every finite atom set is eventually contained in some stage of an
 exhaustion. -/
 theorem exists_stage_subset
@@ -82,6 +105,17 @@ noncomputable def finiteVolumeKernelSequence
   fun n =>
     StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumeWorldMeasure
       M (E.region n) ξ
+
+@[simp] theorem finiteVolumeKernelSequence_reindex
+    (E : RegionExhaustion Atom)
+    (φ : ℕ → ℕ)
+    (hφ : StrictMono φ)
+    (M : StrictlyPositiveInfiniteGroundMLNSpec Atom ClauseId)
+    (ξ : BoundaryCondition Atom)
+    (n : ℕ) :
+    finiteVolumeKernelSequence (E.reindex φ hφ) M ξ n =
+      finiteVolumeKernelSequence E M ξ (φ n) := by
+  simp [finiteVolumeKernelSequence, reindex]
 
 instance finiteVolumeKernelSequence_isProbability
     (E : RegionExhaustion Atom)

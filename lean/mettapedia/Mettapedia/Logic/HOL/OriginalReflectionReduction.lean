@@ -497,6 +497,89 @@ def RecursiveStageProvable
     (RecursiveStageTheory (Base := Base) (Const := Const) n Δ)
     (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ)
 
+theorem recursiveStageTheory_lift_mem
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {ψ : ClosedFormula (HenkinConstStage Base Const n)} :
+    ψ ∈ RecursiveStageTheory (Base := Base) (Const := Const) n Δ →
+      HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+        (Nat.le_succ n) ψ ∈
+        RecursiveStageTheory (Base := Base) (Const := Const) (n + 1) Δ := by
+  intro hψ
+  exact Or.inl ⟨ψ, hψ, rfl⟩
+
+theorem liftBaseClosedFormula_mem_recursiveStageTheory
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hφ : φ ∈ Δ) :
+    HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ ∈
+      RecursiveStageTheory (Base := Base) (Const := Const) n Δ := by
+  induction n with
+  | zero =>
+      exact List.mem_map.mpr ⟨φ, hφ, rfl⟩
+  | succ n ih =>
+      have hLift :
+          HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+              (Nat.le_succ n)
+              (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ) ∈
+            RecursiveStageTheory (Base := Base) (Const := Const) (n + 1) Δ :=
+        recursiveStageTheory_lift_mem (Base := Base) (Const := Const) ih
+      simpa using
+        (HenkinConstStage.liftBaseClosedFormula_comp
+          (Base := Base) (Const := Const) (m := n) (n := n + 1)
+          (Nat.le_succ n) φ).symm ▸ hLift
+
+theorem stageLanguageHenkinAxioms_mem_recursiveStageTheory
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {ψ : ClosedFormula (HenkinConstStage Base Const n)} :
+    ψ ∈ StageLanguageHenkinAxioms (Base := Base) (Const := Const) n →
+      ψ ∈ RecursiveStageTheory (Base := Base) (Const := Const) n Δ := by
+  induction n with
+  | zero =>
+      intro hψ
+      rcases hψ with ⟨m, hm, _⟩
+      exact (Nat.not_succ_le_zero m hm).elim
+  | succ n ih =>
+      intro hψ
+      rcases stageLanguageHenkinAxioms_succ_split
+          (Base := Base) (Const := Const) (n := n) (ψ := ψ) hψ with
+        hprior | hexact
+      · rcases hprior with ⟨m, hm, hprior⟩
+        rcases hprior with hprior | hprior
+        · rcases hprior with ⟨σ, φ, rfl⟩
+          let χ : ClosedFormula (HenkinConstStage Base Const n) :=
+            HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) hm
+              (HenkinConstStage.exWitnessAxiom (Base := Base) (Const := Const) φ)
+          have hχstage : χ ∈ StageLanguageHenkinAxioms (Base := Base) (Const := Const) n :=
+            ⟨m, hm, Or.inl ⟨σ, φ, rfl⟩⟩
+          have hχrec : χ ∈ RecursiveStageTheory (Base := Base) (Const := Const) n Δ :=
+            ih hχstage
+          have hχlift :
+              HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+                  (Nat.le_succ n) χ ∈
+                RecursiveStageTheory (Base := Base) (Const := Const) (n + 1) Δ :=
+            recursiveStageTheory_lift_mem (Base := Base) (Const := Const) hχrec
+          simpa [χ, HenkinConstStage.liftClosedFormula_comp
+            (Base := Base) (Const := Const) hm (Nat.le_succ n)] using hχlift
+        · rcases hprior with ⟨σ, φ, rfl⟩
+          let χ : ClosedFormula (HenkinConstStage Base Const n) :=
+            HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) hm
+              (HenkinConstStage.allCounterexampleAxiom (Base := Base) (Const := Const) φ)
+          have hχstage : χ ∈ StageLanguageHenkinAxioms (Base := Base) (Const := Const) n :=
+            ⟨m, hm, Or.inr ⟨σ, φ, rfl⟩⟩
+          have hχrec : χ ∈ RecursiveStageTheory (Base := Base) (Const := Const) n Δ :=
+            ih hχstage
+          have hχlift :
+              HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+                  (Nat.le_succ n) χ ∈
+                RecursiveStageTheory (Base := Base) (Const := Const) (n + 1) Δ :=
+            recursiveStageTheory_lift_mem (Base := Base) (Const := Const) hχrec
+          simpa [χ, HenkinConstStage.liftClosedFormula_comp
+            (Base := Base) (Const := Const) hm (Nat.le_succ n)] using hχlift
+      · exact Or.inr hexact
+
 theorem recursiveStageProvable_zero
     {Δ : List (ClosedFormula Const)}
     {φ : ClosedFormula Const} :
@@ -581,6 +664,139 @@ theorem stageLanguageProvable_iff_internalStageProvable
         (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ) :=
   Iff.rfl
 
+/--
+Direct supported finite-stage proof object for `OriginalLiftProvable`.
+
+This is the council-backed concrete proof object for the >69% route: instead of
+first proving a fully general cumulative support theorem, we directly package
+the finite stage, a stage-local context, a classification of each staged
+assumption, and a derivation of the lifted original conclusion.
+-/
+structure SupportedOriginalLiftStageProof
+    (Δ : List (ClosedFormula Const))
+    (φ : ClosedFormula Const) where
+  stage : Nat
+  context : List (ClosedFormula (HenkinConstStage Base Const stage))
+  classify :
+    ∀ {ψ : ClosedFormula (HenkinConstStage Base Const stage)},
+      ψ ∈ context →
+        ψ ∈ Δ.map
+          (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) stage) ∨
+        ψ ∈ StageLanguageHenkinAxioms (Base := Base) (Const := Const) stage
+  deriv :
+    ExtDerivation (HenkinConstStage Base Const stage)
+      context
+      (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) stage φ)
+
+theorem stageLanguageHenkinAxioms_lift_mem
+    {m n : Nat} (hmn : m ≤ n)
+    {ψ : ClosedFormula (HenkinConstStage Base Const m)} :
+    ψ ∈ StageLanguageHenkinAxioms (Base := Base) (Const := Const) m →
+      HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) hmn ψ ∈
+        StageLanguageHenkinAxioms (Base := Base) (Const := Const) n := by
+  intro hψ
+  rcases hψ with ⟨k, hk, hψ⟩
+  refine ⟨k, Nat.le_trans hk hmn, ?_⟩
+  rcases hψ with hψ | hψ
+  · rcases hψ with ⟨σ, φ, rfl⟩
+    left
+    refine ⟨σ, φ, ?_⟩
+    simpa using
+      (HenkinConstStage.liftClosedFormula_comp
+        (Base := Base) (Const := Const) hk hmn
+        (HenkinConstStage.exWitnessAxiom (Base := Base) (Const := Const) φ))
+  · rcases hψ with ⟨σ, φ, rfl⟩
+    right
+    refine ⟨σ, φ, ?_⟩
+    simpa using
+      (HenkinConstStage.liftClosedFormula_comp
+        (Base := Base) (Const := Const) hk hmn
+        (HenkinConstStage.allCounterexampleAxiom (Base := Base) (Const := Const) φ))
+
+theorem SupportedOriginalLiftStageProof.toStageLanguageProvable
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (P : SupportedOriginalLiftStageProof (Base := Base) (Const := Const) Δ φ) :
+    StageLanguageProvable (Base := Base) (Const := Const) P.stage Δ φ := by
+  classical
+  let Γ : List (ClosedFormula (HenkinConstStage Base Const P.stage)) :=
+    P.context.filter (fun ψ =>
+      ψ ∈ StageLanguageHenkinAxioms (Base := Base) (Const := Const) P.stage)
+  refine ⟨Γ, ?_, ?_⟩
+  · intro χ hχ
+    simpa using (List.mem_filter.mp hχ).2
+  · refine ExtDerivation.mono ?_ P.deriv
+    intro χ hχ
+    rcases P.classify hχ with hBase | hStage
+    · exact List.mem_append.mpr (Or.inl hBase)
+    · exact List.mem_append.mpr
+        (Or.inr (List.mem_filter.mpr ⟨hχ, by simpa using hStage⟩))
+
+theorem stageLanguageProvable_nonempty_supportedOriginalLiftStageProof
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (h :
+      StageLanguageProvable (Base := Base) (Const := Const) n Δ φ) :
+    Nonempty
+      (SupportedOriginalLiftStageProof
+        (Base := Base) (Const := Const) Δ φ) := by
+  rcases h with ⟨Γ, hΓ, hDeriv⟩
+  exact ⟨
+    { stage := n
+      context :=
+        Δ.map (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n) ++ Γ
+      classify := by
+        intro ψ hψ
+        rcases List.mem_append.mp hψ with hBase | hStage
+        · exact Or.inl hBase
+        · exact Or.inr (hΓ hStage)
+      deriv := hDeriv }⟩
+
+def SupportedOriginalLiftStageProof.lift
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (P : SupportedOriginalLiftStageProof (Base := Base) (Const := Const) Δ φ)
+    {n : Nat} (hmn : P.stage ≤ n) :
+    SupportedOriginalLiftStageProof (Base := Base) (Const := Const) Δ φ := by
+  refine
+    { stage := n
+      context := P.context.map
+        (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) hmn)
+      classify := ?_
+      deriv := ?_ }
+  · intro ψ hψ
+    rcases List.mem_map.mp hψ with ⟨χ, hχ, rfl⟩
+    rcases P.classify hχ with hχ | hχ
+    · left
+      rcases List.mem_map.mp hχ with ⟨θ, hθ, rfl⟩
+      exact List.mem_map.mpr ⟨θ, hθ, by
+        simpa using
+          (HenkinConstStage.liftBaseClosedFormula_comp
+            (Base := Base) (Const := Const) hmn θ).symm⟩
+    · right
+      exact stageLanguageHenkinAxioms_lift_mem
+        (Base := Base) (Const := Const) hmn hχ
+  · have hDeriv :=
+      stageLift_closedTheoryProvable
+        (Base := Base) (Const := Const) hmn P.deriv
+    simpa using
+      (HenkinConstStage.liftBaseClosedFormula_comp
+        (Base := Base) (Const := Const) hmn φ).symm ▸ hDeriv
+
+/--
+Direct supported-stage construction target for the new >69% route.
+
+The finite-stage reduction problem is reduced to constructing this supported
+object directly from `OriginalLiftProvable`.
+-/
+def SupportedOriginalLiftConstructionGoal : Prop :=
+  ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+    OriginalLiftProvable (Base := Base) (Const := Const) Δ φ →
+      Nonempty
+        (SupportedOriginalLiftStageProof
+          (Base := Base) (Const := Const) Δ φ)
+
 theorem internalStageProvable_of_derivation
     {n : Nat}
     {Θ : List (ClosedFormula (HenkinConstStage Base Const n))}
@@ -615,6 +831,24 @@ theorem stageLanguageProvable_zero
       not_mem_stageLanguageHenkinAxioms_zero (Base := Base) (Const := Const)
         (ψ := ψ) (hΓ hψ)
 
+theorem stageLanguageProvable_to_recursiveStageProvable
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    StageLanguageProvable (Base := Base) (Const := Const) n Δ φ →
+      RecursiveStageProvable (Base := Base) (Const := Const) n Δ φ := by
+  rintro ⟨Γ, hΓ, hDeriv⟩
+  refine ⟨Δ.map
+      (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n) ++ Γ,
+    ?_, ?_⟩
+  · intro ψ hψ
+    rcases List.mem_append.mp hψ with hψ | hψ
+    · rcases List.mem_map.mp hψ with ⟨φ, hφ, rfl⟩
+      exact liftBaseClosedFormula_mem_recursiveStageTheory
+        (Base := Base) (Const := Const) hφ
+    · exact stageLanguageHenkinAxioms_mem_recursiveStageTheory
+        (Base := Base) (Const := Const) (Δ := Δ) (hΓ hψ)
+  · simpa [StageLanguageProvable] using hDeriv
 
 /--
 Concrete reformulation of the remaining hard theorem:
@@ -665,6 +899,49 @@ stage-language predicate, rather than to an abstract placeholder.
 def StageLanguageFiniteReductionGoal : Prop :=
   FiniteStageReduction (Base := Base) (Const := Const)
     (StageLanguageProvable (Base := Base) (Const := Const))
+
+theorem stageLanguageFiniteReduction_of_supportedOriginalLift
+    (hSupported :
+      SupportedOriginalLiftConstructionGoal (Base := Base) (Const := Const)) :
+    StageLanguageFiniteReductionGoal (Base := Base) (Const := Const) := by
+  intro Δ φ hLift
+  rcases hSupported hLift with ⟨P⟩
+  exact ⟨P.stage, P.toStageLanguageProvable⟩
+
+theorem supportedOriginalLiftConstruction_of_stageLanguageFiniteReduction
+    (hFinite :
+      StageLanguageFiniteReductionGoal (Base := Base) (Const := Const)) :
+    SupportedOriginalLiftConstructionGoal (Base := Base) (Const := Const) := by
+  intro Δ φ hLift
+  rcases hFinite hLift with ⟨n, hStage⟩
+  exact stageLanguageProvable_nonempty_supportedOriginalLiftStageProof
+    (Base := Base) (Const := Const) (n := n) hStage
+
+theorem stageLanguageFiniteReductionGoal_iff_supportedOriginalLiftConstructionGoal :
+    StageLanguageFiniteReductionGoal (Base := Base) (Const := Const) ↔
+      SupportedOriginalLiftConstructionGoal (Base := Base) (Const := Const) := by
+  constructor
+  · exact supportedOriginalLiftConstruction_of_stageLanguageFiniteReduction
+      (Base := Base) (Const := Const)
+  · exact stageLanguageFiniteReduction_of_supportedOriginalLift
+      (Base := Base) (Const := Const)
+
+theorem recursiveStageFiniteReduction_of_stageLanguage
+    (hFinite : StageLanguageFiniteReductionGoal (Base := Base) (Const := Const)) :
+    RecursiveStageFiniteReductionGoal (Base := Base) (Const := Const) := by
+  intro Δ φ hLift
+  rcases hFinite hLift with ⟨n, hStage⟩
+  exact ⟨n, stageLanguageProvable_to_recursiveStageProvable
+    (Base := Base) (Const := Const) hStage⟩
+
+theorem recursiveStageFiniteReduction_of_supportedOriginalLift
+    (hSupported :
+      SupportedOriginalLiftConstructionGoal (Base := Base) (Const := Const)) :
+    RecursiveStageFiniteReductionGoal (Base := Base) (Const := Const) := by
+  exact recursiveStageFiniteReduction_of_stageLanguage
+    (Base := Base) (Const := Const)
+    (stageLanguageFiniteReduction_of_supportedOriginalLift
+      (Base := Base) (Const := Const) hSupported)
 
 theorem stageLanguageOneStepReflection_of_priorStepReduction_and_exactStepReflection
     (hSplit : SplitStageLanguageReductionGoal (Base := Base) (Const := Const))

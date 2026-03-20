@@ -104,7 +104,8 @@ theory produces at least as much.
 This corresponds to: if a WM regime at vertex v has evidence for a query,
 any stricter regime at vertex w ≥ v also has evidence. -/
 
-/-- The weakness preorder on WM regimes, induced by the hypercube. -/
+/-- The weakness preorder on WM regimes, induced by the hypercube.
+    Equivalent to `ModalProbabilityBridge.wmStrength r₂ ≤ wmStrength r₁`. -/
 def regimeWeaker : WMRegime → WMRegime → Prop
   | .additive, _ => True                    -- additive is strongest (most axioms)
   | .overlapAware, .overlapAware => True

@@ -1584,6 +1584,114 @@ negative canary demonstrating that the \code{hClosed} assumption does real work.
   of $i \dashv c$).
 \end{enumerate}
 
+\section{PLN as a Proof System}
+\label{sec:pln-proof-system}
+
+The WM-PLN evidence algebra is formalized as a \emph{classical proof system}
+under the Curry-Howard correspondence, with KS axiom foundations, hypercube
+classification, GSLT weight-map bridge, and certifiable runtime implementations.
+The showcase file \codepath{Logic/PLNProofSystemShowcase.lean} (0~sorries) serves
+as the single entry point, importing 10 core files and re-exporting 15 key theorems
+with narrative documentation.
+
+\subsection{Curry-Howard Correspondence for Evidence}
+
+\codepath{Logic/EvidenceProofSystem.lean} (0~sorries) establishes that the
+WM evidence algebra satisfies all four structural rules of classical sequent
+calculus:
+
+\begin{center}
+\begin{tabular}{lll}
+\textbf{Proof Rule}  & \textbf{Evidence Operation} & \textbf{Theorem} \\
+\hline
+Cut                  & Revision (addition)         & \code{cut\_rule} \\
+Weakening            & Forgetting                  & \code{weakening\_preserves\_validity} \\
+Exchange             & Commutativity               & \code{exchange\_rule} \\
+Contraction          & Self-revision               & \code{contraction\_doubles\_ess}
+\end{tabular}
+\end{center}
+
+\begin{theorem}[\code{structural\_rules\_summary}, 0~sorries]
+The evidence algebra satisfies cut, weakening, exchange, and contraction
+over \code{BinEvNat}.
+\end{theorem}
+
+\subsection{KS-Evidence-Measure Triangle}
+
+\codepath{Logic/KSEvidenceMeasureBridge.lean} (0~sorries) connects the
+evidence algebra to the Knuth-Skilling axiomatization and measure theory:
+
+\begin{enumerate}
+\item \code{BinEvNat} with hplus is an ordered commutative monoid satisfying
+  the KS axioms (monotone, associative, separating).
+\item The representation $\Theta(e) = e.\mathit{pos} + e.\mathit{neg}$ is
+  additive (\code{$\Theta$\_additive}) and normalized (\code{$\Theta$\_zero}).
+\item The measure bridge factors through $\Theta$ via Dirac weighting:
+  $\mu_W = \sum_q \Theta(\mathrm{extract}~W~q) \cdot \delta_q$.
+\item $\sigma$-additivity requires countable additivity---the finitely additive
+  case does NOT extend (\code{sigma\_additivity\_boundary}, imported from
+  the KS counterexample formalization).
+\end{enumerate}
+
+\subsection{Probability Hypercube Classification}
+
+\codepath{Logic/WMHypercubeClassification.lean} and
+\codepath{Logic/ModalProbabilityBridge.lean} (0~sorries each) classify
+4~WM regimes at 4~probability vertices:
+
+\begin{center}
+\begin{tabular}{lll}
+\textbf{WM Regime}       & \textbf{Logic}      & \textbf{Representation} \\
+\hline
+Additive (classical)      & Boolean             & Point \\
+Overlap-aware             & Boolean             & Bounds \\
+Evidence-tracking (PLN)   & Heyting             & Bounds \\
+Trust-gated               & Heyting             & Point
+\end{tabular}
+\end{center}
+
+\begin{theorem}[\code{full\_classification\_injective}, 0~sorries]
+The map from 4~WM regimes to 13-axis probability vertices is injective.
+\end{theorem}
+
+The $\mathbb{C}$ carrier (\codepath{Logic/ComplexEvidenceCarrier.lean}, 0~sorries)
+sits at the quantum vertex: \code{orthomodular} distributivity, no lattice structure.
+The \code{AdditiveWorldModel} works unchanged over $\mathbb{C}$; probability
+is recovered via the Born rule $|\cdot|^2$.
+
+\subsection{GSLT Weight Map Bridge}
+
+\codepath{Logic/GSLTWeightMapBridge.lean} (0~sorries) shows that the GSLT
+weight map on rewrite states IS the WM extract function:
+\code{EvidenceAssignment.weight} = \code{AdditiveWorldModel.extract},
+with \code{weight\_add} = \code{extract\_add}.
+
+\subsection{Runtime Certification}
+
+\codepath{Logic/RuntimeSoundnessBridge.lean} (0~sorries) defines the
+certification path for runtime implementations:
+
+\begin{enumerate}
+\item Define \code{EvidenceRuntime State Query Ev} (the implementation interface).
+\item Prove \code{RuntimeSound} (revision = addition, extraction = algebraic extract).
+\item All algebraic properties transfer automatically:
+  \code{extract\_add}, sequential composition, zero preservation.
+\end{enumerate}
+
+\begin{theorem}[\code{soundness\_guarantees}, 0~sorries]
+A sound runtime inherits extraction correctness, revision correctness, and
+the \code{extract\_add} law from the WM algebra.
+\end{theorem}
+
+\subsection{Universality and Empirical Validation}
+
+\codepath{Logic/UniversalEnsembleWM.lean} (0~sorries) proves that every typed
+observation space generates a unique additive world model (existence + uniqueness).
+\codepath{Logic/SourceReliability.lean} (0~sorries) adds a Dawid-Skene reliability
+layer with per-source accuracy profiles.
+\codepath{Logic/PLNClassicExamples.lean} (0~sorries) validates deduction-revision,
+raven induction, and frame/relevance examples with kernel-checked stamp disjointness.
+
 \section{Conclusion}
 
 We have presented the first machine-checked formalization of the \OSLF{} algorithm,

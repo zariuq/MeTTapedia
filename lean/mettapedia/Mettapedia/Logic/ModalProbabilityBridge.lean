@@ -223,15 +223,9 @@ theorem weakness_chain :
     wmStrength .overlapAware ≤ wmStrength .additive := by
   simp [wmStrength]
 
-/-- Forward transport principle: a result at strength level n holds
-    at all levels ≥ n. Stronger regimes have MORE axioms, so
-    anything derivable from fewer axioms is also derivable from more. -/
-theorem forward_transport_principle :
-    ∀ r₁ r₂ : WMRegime, wmStrength r₁ ≤ wmStrength r₂ →
-    -- Any property that holds at the weaker regime holds at the stronger
-    -- (by monotonicity of the axiom set)
-    wmStrength r₁ ≤ wmStrength r₂ := by
-  exact fun _ _ h => h
+-- Note: the weakness ordering here (wmStrength) encodes the same
+-- total order as GSLTWeightMapBridge.regimeWeaker:
+--   regimeWeaker r₁ r₂ ↔ wmStrength r₂ ≤ wmStrength r₁
 
 /-! ## 7. The quantum vertex: ℂ carrier classification
 

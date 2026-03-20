@@ -13,3 +13,6 @@ import GFCore.Entailment
 import GFCore.Term
 import GFCore.Atom
 import GFCore.NormClause
+import GFCore.TermExtract
+import GFCore.AtomExtract
+import GFCore.AtomEntailment
