@@ -2341,6 +2341,20 @@ noncomputable def finiteRegionAssignmentProbabilityDiscrepancy
     (x : LocalAssignment Atom Δ) : ℝ :=
   M.finiteRegionSetProbabilityDiscrepancy μ ν Δ ({x} : Set (LocalAssignment Atom Δ))
 
+/-- The finite-region `L1` discrepancy of the assignment marginals. -/
+noncomputable def finiteRegionAssignmentL1Discrepancy
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom) : ℝ :=
+  ∑ x : LocalAssignment Atom Δ, M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x
+
+/-- The finite-region total-variation-style discrepancy of the assignment marginals. -/
+noncomputable def finiteRegionAssignmentTotalVariation
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom) : ℝ :=
+  (1 / 2 : ℝ) * M.finiteRegionAssignmentL1Discrepancy μ ν Δ
+
 /-- Expected indicator mismatch of a finite-region event under a coupling. -/
 noncomputable def finiteRegionCouplingExpectedEventDisagreement
     {Δ : Region Atom}
@@ -2374,6 +2388,23 @@ theorem finiteRegionAssignmentProbabilityDiscrepancy_nonneg
     (x : LocalAssignment Atom Δ) :
     0 ≤ M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x := by
   exact M.finiteRegionSetProbabilityDiscrepancy_nonneg μ ν Δ ({x} : Set (LocalAssignment Atom Δ))
+
+theorem finiteRegionAssignmentL1Discrepancy_nonneg
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom) :
+    0 ≤ M.finiteRegionAssignmentL1Discrepancy μ ν Δ := by
+  unfold finiteRegionAssignmentL1Discrepancy
+  exact Finset.sum_nonneg fun x hx =>
+    M.finiteRegionAssignmentProbabilityDiscrepancy_nonneg μ ν Δ x
+
+theorem finiteRegionAssignmentTotalVariation_nonneg
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom) :
+    0 ≤ M.finiteRegionAssignmentTotalVariation μ ν Δ := by
+  unfold finiteRegionAssignmentTotalVariation
+  exact mul_nonneg (by norm_num) (M.finiteRegionAssignmentL1Discrepancy_nonneg μ ν Δ)
 
 theorem finiteRegionSetProbability_eq_sum_indicator_limitMarginal
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
@@ -2487,6 +2518,278 @@ theorem finiteRegionLocalQueryDiscrepancy_le_of_limitMarginalCoupling
   rw [M.finiteRegionLocalQueryDiscrepancy_eq_setProbabilityDiscrepancy μ ν Δ qv]
   exact M.finiteRegionSetProbabilityDiscrepancy_le_of_limitMarginalCoupling
     μ ν Δ (localConstraintSet Δ qv) q hqfst hqsnd
+
+theorem finiteRegionAssignmentProbabilityDiscrepancy_eq_abs_sub_limitMarginalToReal
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (x : LocalAssignment Atom Δ) :
+    M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x =
+      |ENNReal.toReal
+          (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+            (μ : Measure (InfiniteWorld Atom)) Δ).toPMF) x) -
+        ENNReal.toReal
+          (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+            (ν : Measure (InfiniteWorld Atom)) Δ).toPMF) x)| := by
+  unfold finiteRegionAssignmentProbabilityDiscrepancy finiteRegionSetProbabilityDiscrepancy
+    finiteRegionSetProbability
+  simp [MeasureTheory.Measure.toPMF_apply]
+
+theorem finiteRegionSetProbabilityDiscrepancy_le_assignmentL1Discrepancy
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (S : Set (LocalAssignment Atom Δ)) :
+    M.finiteRegionSetProbabilityDiscrepancy μ ν Δ S ≤
+      M.finiteRegionAssignmentL1Discrepancy μ ν Δ := by
+  let p : LocalAssignment Atom Δ → ℝ := fun x =>
+    ENNReal.toReal
+      (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+        (μ : Measure (InfiniteWorld Atom)) Δ).toPMF) x)
+  let q : LocalAssignment Atom Δ → ℝ := fun x =>
+    ENNReal.toReal
+      (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+        (ν : Measure (InfiniteWorld Atom)) Δ).toPMF) x)
+  have hsum :
+      |(∑ x : LocalAssignment Atom Δ, finiteRegionEventIndicator (Atom := Atom) S x * p x) -
+          (∑ x : LocalAssignment Atom Δ, finiteRegionEventIndicator (Atom := Atom) S x * q x)| ≤
+        ∑ x : LocalAssignment Atom Δ, |p x - q x| := by
+    calc
+      |(∑ x : LocalAssignment Atom Δ, finiteRegionEventIndicator (Atom := Atom) S x * p x) -
+          (∑ x : LocalAssignment Atom Δ, finiteRegionEventIndicator (Atom := Atom) S x * q x)|
+        = |∑ x : LocalAssignment Atom Δ,
+              (finiteRegionEventIndicator (Atom := Atom) S x * p x -
+                finiteRegionEventIndicator (Atom := Atom) S x * q x)| := by
+              rw [← Finset.sum_sub_distrib]
+      _ ≤ ∑ x : LocalAssignment Atom Δ,
+            |finiteRegionEventIndicator (Atom := Atom) S x * p x -
+              finiteRegionEventIndicator (Atom := Atom) S x * q x| := by
+            exact Finset.abs_sum_le_sum_abs _ _
+      _ ≤ ∑ x : LocalAssignment Atom Δ, |p x - q x| := by
+            refine Finset.sum_le_sum ?_
+            intro x hx
+            by_cases hxS : x ∈ S
+            · simp [finiteRegionEventIndicator, hxS, p, q]
+            · simp [finiteRegionEventIndicator, hxS, p, q]
+  calc
+    M.finiteRegionSetProbabilityDiscrepancy μ ν Δ S
+      = |(∑ x : LocalAssignment Atom Δ, finiteRegionEventIndicator (Atom := Atom) S x * p x) -
+          (∑ x : LocalAssignment Atom Δ, finiteRegionEventIndicator (Atom := Atom) S x * q x)| := by
+            rw [finiteRegionSetProbabilityDiscrepancy,
+              M.finiteRegionSetProbability_eq_sum_indicator_limitMarginal μ Δ S,
+              M.finiteRegionSetProbability_eq_sum_indicator_limitMarginal ν Δ S]
+      _ ≤ ∑ x : LocalAssignment Atom Δ, |p x - q x| := hsum
+      _ = M.finiteRegionAssignmentL1Discrepancy μ ν Δ := by
+            unfold finiteRegionAssignmentL1Discrepancy
+            refine Finset.sum_congr rfl ?_
+            intro x hx
+            symm
+            exact M.finiteRegionAssignmentProbabilityDiscrepancy_eq_abs_sub_limitMarginalToReal μ ν Δ x
+
+theorem finiteRegionLocalQueryDiscrepancy_le_assignmentL1Discrepancy
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (q : LocalConstraintQuery Atom Δ) :
+    M.finiteRegionLocalQueryDiscrepancy μ ν Δ q ≤
+      M.finiteRegionAssignmentL1Discrepancy μ ν Δ := by
+  rw [M.finiteRegionLocalQueryDiscrepancy_eq_setProbabilityDiscrepancy μ ν Δ q]
+  exact M.finiteRegionSetProbabilityDiscrepancy_le_assignmentL1Discrepancy
+    μ ν Δ (localConstraintSet Δ q)
+
+theorem finiteRegionSetProbabilityDiscrepancy_le_two_mul_assignmentTotalVariation
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (S : Set (LocalAssignment Atom Δ)) :
+    M.finiteRegionSetProbabilityDiscrepancy μ ν Δ S ≤
+      2 * M.finiteRegionAssignmentTotalVariation μ ν Δ := by
+  calc
+    M.finiteRegionSetProbabilityDiscrepancy μ ν Δ S ≤
+        M.finiteRegionAssignmentL1Discrepancy μ ν Δ :=
+      M.finiteRegionSetProbabilityDiscrepancy_le_assignmentL1Discrepancy μ ν Δ S
+    _ = 2 * M.finiteRegionAssignmentTotalVariation μ ν Δ := by
+      unfold finiteRegionAssignmentTotalVariation
+      ring
+
+theorem finiteRegionLocalQueryDiscrepancy_le_two_mul_assignmentTotalVariation
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (q : LocalConstraintQuery Atom Δ) :
+    M.finiteRegionLocalQueryDiscrepancy μ ν Δ q ≤
+      2 * M.finiteRegionAssignmentTotalVariation μ ν Δ := by
+  calc
+    M.finiteRegionLocalQueryDiscrepancy μ ν Δ q ≤
+        M.finiteRegionAssignmentL1Discrepancy μ ν Δ :=
+      M.finiteRegionLocalQueryDiscrepancy_le_assignmentL1Discrepancy μ ν Δ q
+    _ = 2 * M.finiteRegionAssignmentTotalVariation μ ν Δ := by
+      unfold finiteRegionAssignmentTotalVariation
+      ring
+
+theorem limitMarginal_toPMF_eq_of_assignmentProbabilityDiscrepancy_eq_zero
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (hassign : ∀ x : LocalAssignment Atom Δ,
+      M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x = 0) :
+    (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+      (μ : Measure (InfiniteWorld Atom)) Δ).toPMF =
+      (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+        (ν : Measure (InfiniteWorld Atom)) Δ).toPMF := by
+  apply PMF.ext
+  intro x
+  have hsub :
+      M.finiteRegionSetProbability μ Δ ({x} : Set (LocalAssignment Atom Δ)) -
+        M.finiteRegionSetProbability ν Δ ({x} : Set (LocalAssignment Atom Δ)) = 0 := by
+    exact abs_eq_zero.mp (by
+      simpa [finiteRegionAssignmentProbabilityDiscrepancy, finiteRegionSetProbabilityDiscrepancy]
+        using hassign x)
+  have hreal :
+      M.finiteRegionSetProbability μ Δ ({x} : Set (LocalAssignment Atom Δ)) =
+        M.finiteRegionSetProbability ν Δ ({x} : Set (LocalAssignment Atom Δ)) :=
+    sub_eq_zero.mp hsub
+  have hmeasure :
+      (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+        (μ : Measure (InfiniteWorld Atom)) Δ) ({x} : Set (LocalAssignment Atom Δ)) =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (ν : Measure (InfiniteWorld Atom)) Δ) ({x} : Set (LocalAssignment Atom Δ)) := by
+    exact
+      (ENNReal.toReal_eq_toReal_iff'
+        (measure_ne_top _ _)
+        (measure_ne_top _ _)).mp (by
+          simpa [finiteRegionSetProbability] using hreal)
+  rw [MeasureTheory.Measure.toPMF_apply, MeasureTheory.Measure.toPMF_apply]
+  exact hmeasure
+
+theorem limitMarginal_eq_of_assignmentProbabilityDiscrepancy_eq_zero
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (hassign : ∀ x : LocalAssignment Atom Δ,
+      M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x = 0) :
+    Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+      (μ : Measure (InfiniteWorld Atom)) Δ =
+        Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (ν : Measure (InfiniteWorld Atom)) Δ := by
+  have hpmf := M.limitMarginal_toPMF_eq_of_assignmentProbabilityDiscrepancy_eq_zero μ ν Δ hassign
+  have hmeasure := congrArg PMF.toMeasure hpmf
+  simpa using hmeasure
+
+theorem finiteRegionSetProbability_eq_of_assignmentProbabilityDiscrepancy_eq_zero
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (S : Set (LocalAssignment Atom Δ))
+    (hassign : ∀ x : LocalAssignment Atom Δ,
+      M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x = 0) :
+    M.finiteRegionSetProbability μ Δ S = M.finiteRegionSetProbability ν Δ S := by
+  have hlim := M.limitMarginal_eq_of_assignmentProbabilityDiscrepancy_eq_zero μ ν Δ hassign
+  have hset :=
+    congrArg (fun ρ : Measure (LocalAssignment Atom Δ) => ENNReal.toReal (ρ S)) hlim
+  simpa [finiteRegionSetProbability] using hset
+
+theorem finiteRegionSetProbabilityDiscrepancy_eq_zero_of_assignmentProbabilityDiscrepancy_eq_zero
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (S : Set (LocalAssignment Atom Δ))
+    (hassign : ∀ x : LocalAssignment Atom Δ,
+      M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x = 0) :
+    M.finiteRegionSetProbabilityDiscrepancy μ ν Δ S = 0 := by
+  unfold finiteRegionSetProbabilityDiscrepancy
+  rw [M.finiteRegionSetProbability_eq_of_assignmentProbabilityDiscrepancy_eq_zero μ ν Δ S hassign]
+  simp
+
+theorem finiteRegionLocalQueryDiscrepancy_eq_zero_of_assignmentProbabilityDiscrepancy_eq_zero
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (q : LocalConstraintQuery Atom Δ)
+    (hassign : ∀ x : LocalAssignment Atom Δ,
+      M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x = 0) :
+    M.finiteRegionLocalQueryDiscrepancy μ ν Δ q = 0 := by
+  rw [M.finiteRegionLocalQueryDiscrepancy_eq_setProbabilityDiscrepancy μ ν Δ q]
+  exact M.finiteRegionSetProbabilityDiscrepancy_eq_zero_of_assignmentProbabilityDiscrepancy_eq_zero
+    μ ν Δ (localConstraintSet Δ q) hassign
+
+theorem eq_of_limitMarginal_eq_all_regions
+    (_M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (hlim : ∀ Δ : Region Atom,
+      Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+        (μ : Measure (InfiniteWorld Atom)) Δ =
+          Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+            (ν : Measure (InfiniteWorld Atom)) Δ) :
+    (μ : Measure (InfiniteWorld Atom)) = (ν : Measure (InfiniteWorld Atom)) := by
+  let P :
+      ∀ Δ : Region Atom,
+        Measure (LocalAssignment Atom Δ) :=
+    Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+      (Atom := Atom) (μ : Measure (InfiniteWorld Atom))
+  have hμP :
+      MeasureTheory.IsProjectiveLimit
+        (ι := Atom) (α := fun _ : Atom => Bool)
+        (μ : Measure (InfiniteWorld Atom)) P := by
+    intro Δ
+    rfl
+  have hνP :
+      MeasureTheory.IsProjectiveLimit
+        (ι := Atom) (α := fun _ : Atom => Bool)
+        (ν : Measure (InfiniteWorld Atom)) P := by
+    intro Δ
+    simpa [P] using (hlim Δ).symm
+  exact MeasureTheory.IsProjectiveLimit.unique
+    (ι := Atom) (α := fun _ : Atom => Bool)
+    (P := P)
+    (μ := (μ : Measure (InfiniteWorld Atom)))
+    (ν := (ν : Measure (InfiniteWorld Atom)))
+    hμP hνP
+
+theorem eq_of_finiteRegionAssignmentProbabilityDiscrepancy_eq_zero
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (hassign : ∀ Δ : Region Atom, ∀ x : LocalAssignment Atom Δ,
+      M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x = 0) :
+    (μ : Measure (InfiniteWorld Atom)) = (ν : Measure (InfiniteWorld Atom)) := by
+  refine M.eq_of_limitMarginal_eq_all_regions μ ν ?_
+  intro Δ
+  exact M.limitMarginal_eq_of_assignmentProbabilityDiscrepancy_eq_zero μ ν Δ (hassign Δ)
+
+theorem finiteRegionAssignmentProbabilityDiscrepancy_eq_zero_of_totalVariation_eq_zero
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (htv : M.finiteRegionAssignmentTotalVariation μ ν Δ = 0) :
+    ∀ x : LocalAssignment Atom Δ,
+      M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x = 0 := by
+  have hl1 : M.finiteRegionAssignmentL1Discrepancy μ ν Δ = 0 := by
+    unfold finiteRegionAssignmentTotalVariation at htv
+    have hnonneg := M.finiteRegionAssignmentL1Discrepancy_nonneg μ ν Δ
+    nlinarith
+  have hall :
+      ∀ x : LocalAssignment Atom Δ,
+        M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x = 0 := by
+    have hsum :
+        ∑ x : LocalAssignment Atom Δ,
+          M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x = 0 := by
+      simpa [finiteRegionAssignmentL1Discrepancy] using hl1
+    have hzero :=
+      (Finset.sum_eq_zero_iff_of_nonneg
+        (fun x hx => M.finiteRegionAssignmentProbabilityDiscrepancy_nonneg μ ν Δ x)).1 hsum
+    intro x
+    exact hzero x (Finset.mem_univ x)
+  exact hall
+
+theorem eq_of_finiteRegionAssignmentTotalVariation_eq_zero
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (htv : ∀ Δ : Region Atom, M.finiteRegionAssignmentTotalVariation μ ν Δ = 0) :
+    (μ : Measure (InfiniteWorld Atom)) = (ν : Measure (InfiniteWorld Atom)) := by
+  refine M.eq_of_finiteRegionAssignmentProbabilityDiscrepancy_eq_zero μ ν ?_
+  intro Δ x
+  exact M.finiteRegionAssignmentProbabilityDiscrepancy_eq_zero_of_totalVariation_eq_zero
+    μ ν Δ (htv Δ) x
 
 theorem singletonTrueProbabilityDiscrepancy_le_pairwiseDobrushinOperator_of_boundarySupportCoupling
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)

@@ -1069,6 +1069,137 @@ theorem stageJudgement_context_preimage
     (Base := Base) (Const := Const)
     ⟨S.stage, S.context, S.soundContext⟩ hψ
 
+theorem supportedStageDerivation_hyp
+    {Γ : Ctx Base}
+    {Δ : List (Formula (HenkinConstInfinity Base Const) Γ)}
+    {φ : Formula (HenkinConstInfinity Base Const) Γ}
+    (hφ : φ ∈ Δ) :
+    Nonempty
+      (SupportedStageDerivation (Base := Base) (Const := Const) Δ φ) := by
+  let S := stageJudgement (Base := Base) (Const := Const) Δ φ
+  rcases stageJudgement_context_preimage
+      (Base := Base) (Const := Const) (Δ := Δ) (ψ := φ) hφ with
+    ⟨φ', hφ', hlift⟩
+  have hEq : φ' = S.formula :=
+    liftFormula_injective (Base := Base) (Const := Const) (n := S.stage)
+      (hlift.trans S.soundFormula.symm)
+  exact ⟨
+    { stage := S.stage
+      context := S.context
+      formula := S.formula
+      soundContext := S.soundContext
+      soundFormula := S.soundFormula
+      deriv := by
+        subst hEq
+        exact ExtDerivation.hyp hφ' }⟩
+
+theorem supportedStageDerivation_topI
+    {Γ : Ctx Base}
+    {Δ : List (Formula (HenkinConstInfinity Base Const) Γ)} :
+    Nonempty
+      (SupportedStageDerivation (Base := Base) (Const := Const) Δ (.top : Formula _ Γ)) := by
+  let S := stageJudgement (Base := Base) (Const := Const) Δ (.top : Formula _ Γ)
+  have hEq : S.formula = (.top : Formula (HenkinConstStage Base Const S.stage) Γ) :=
+    liftFormula_injective (Base := Base) (Const := Const) (n := S.stage)
+      (S.soundFormula.trans rfl.symm)
+  exact ⟨
+    { stage := S.stage
+      context := S.context
+      formula := S.formula
+      soundContext := S.soundContext
+      soundFormula := S.soundFormula
+      deriv := by
+        simpa [hEq] using
+          (ExtDerivation.topI :
+            ExtDerivation (HenkinConstStage Base Const S.stage) S.context
+              (.top : Formula (HenkinConstStage Base Const S.stage) Γ)) }⟩
+
+structure AndLiftWitness
+    {n : Nat} {Γ : Ctx Base}
+    (θ : Formula (HenkinConstStage Base Const n) Γ)
+    (φ ψ : Formula (HenkinConstInfinity Base Const) Γ) where
+  left : Formula (HenkinConstStage Base Const n) Γ
+  right : Formula (HenkinConstStage Base Const n) Γ
+  shape : θ = .and left right
+  soundLeft :
+    HenkinConstInfinity.liftFormula (Base := Base) (Const := Const) left = φ
+  soundRight :
+    HenkinConstInfinity.liftFormula (Base := Base) (Const := Const) right = ψ
+
+def liftFormula_eq_and_inv
+    {n : Nat} {Γ : Ctx Base}
+    {θ : Formula (HenkinConstStage Base Const n) Γ}
+    {φ ψ : Formula (HenkinConstInfinity Base Const) Γ}
+    (h : HenkinConstInfinity.liftFormula (Base := Base) (Const := Const) θ = .and φ ψ) :
+    AndLiftWitness (Base := Base) (Const := Const) θ φ ψ := by
+  cases θ with
+  | var v => cases h
+  | const c => cases h
+  | app f t => cases h
+  | top => cases h
+  | bot => cases h
+  | and φ' ψ' =>
+      simp [HenkinConstInfinity.liftFormula, liftFormula, Mettapedia.Logic.HOL.mapConst] at h
+      exact ⟨φ', ψ', rfl, h.1, h.2⟩
+  | or φ' ψ' => cases h
+  | imp φ' ψ' => cases h
+  | not φ' => cases h
+  | eq t u => cases h
+  | all φ' => cases h
+  | ex φ' => cases h
+
+def SupportedStageDerivation.andEL
+    {Γ : Ctx Base}
+    {Δ : List (Formula (HenkinConstInfinity Base Const) Γ)}
+    {φ ψ : Formula (HenkinConstInfinity Base Const) Γ}
+    (S : SupportedStageDerivation (Base := Base) (Const := Const) Δ (.and φ ψ)) :
+    SupportedStageDerivation (Base := Base) (Const := Const) Δ φ := by
+  let shp :=
+    liftFormula_eq_and_inv (Base := Base) (Const := Const) S.soundFormula
+  let φ' := shp.left
+  let ψ' := shp.right
+  have hshape : S.formula = .and φ' ψ' := shp.shape
+  have hφ :
+      HenkinConstInfinity.liftFormula (Base := Base) (Const := Const) φ' = φ :=
+    shp.soundLeft
+  refine
+    { stage := S.stage
+      context := S.context
+      formula := φ'
+      soundContext := S.soundContext
+      soundFormula := hφ
+      deriv := ?_ }
+  have hderiv :
+      ExtDerivation (HenkinConstStage Base Const S.stage) S.context (.and φ' ψ') := by
+    simpa [hshape] using S.deriv
+  exact ExtDerivation.andEL hderiv
+
+def SupportedStageDerivation.andER
+    {Γ : Ctx Base}
+    {Δ : List (Formula (HenkinConstInfinity Base Const) Γ)}
+    {φ ψ : Formula (HenkinConstInfinity Base Const) Γ}
+    (S : SupportedStageDerivation (Base := Base) (Const := Const) Δ (.and φ ψ)) :
+    SupportedStageDerivation (Base := Base) (Const := Const) Δ ψ := by
+  let shp :=
+    liftFormula_eq_and_inv (Base := Base) (Const := Const) S.soundFormula
+  let φ' := shp.left
+  let ψ' := shp.right
+  have hshape : S.formula = .and φ' ψ' := shp.shape
+  have hψ :
+      HenkinConstInfinity.liftFormula (Base := Base) (Const := Const) ψ' = ψ :=
+    shp.soundRight
+  refine
+    { stage := S.stage
+      context := S.context
+      formula := ψ'
+      soundContext := S.soundContext
+      soundFormula := hψ
+      deriv := ?_ }
+  have hderiv :
+      ExtDerivation (HenkinConstStage Base Const S.stage) S.context (.and φ' ψ') := by
+    simpa [hshape] using S.deriv
+  exact ExtDerivation.andER hderiv
+
 theorem exists_stage_judgement {Γ : Ctx Base}
     (Δ : List (Formula (HenkinConstInfinity Base Const) Γ))
     (φ : Formula (HenkinConstInfinity Base Const) Γ) :
