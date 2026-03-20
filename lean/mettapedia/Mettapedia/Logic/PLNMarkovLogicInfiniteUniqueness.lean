@@ -31,6 +31,9 @@ open scoped BigOperators ENNReal
 open MeasureTheory
 open Mettapedia.Logic.PLNMarkovLogicClauseSemantics
 open Mettapedia.Logic.PLNMarkovLogicInfiniteSpecification
+open Mettapedia.Logic.PLNMarkovLogicInfiniteFiniteVolume
+open Mettapedia.Logic.PLNMarkovLogicInfiniteWorldMeasures
+open Mettapedia.Logic.PLNMarkovLogicInfiniteCylinders
 open Mettapedia.Logic.PLNMarkovLogicInfinitePositive
 open Mettapedia.Logic.PLNMarkovLogicInfiniteFixedRegionDLR
 open Mettapedia.Logic.PLNMarkovLogicInfiniteExistence
@@ -1409,6 +1412,21 @@ noncomputable def pairwiseDobrushinOperator
     (d : Atom → ℝ) : Atom → ℝ :=
   fun a => Finset.sum Λ (fun b => M.pairwiseDobrushinCoefficient a b * d b)
 
+theorem pairwiseDobrushinOperator_mono
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    {Λ : Finset Atom}
+    {d₁ d₂ : Atom → ℝ}
+    (hmono : ∀ b ∈ Λ, d₁ b ≤ d₂ b)
+    (a : Atom) :
+    M.pairwiseDobrushinOperator Λ d₁ a ≤
+      M.pairwiseDobrushinOperator Λ d₂ a := by
+  unfold pairwiseDobrushinOperator
+  refine Finset.sum_le_sum ?_
+  intro b hb
+  exact mul_le_mul_of_nonneg_left
+    (hmono b hb)
+    (M.pairwiseDobrushinCoefficient_nonneg a b)
+
 theorem singletonKernelBernoulliL1Sensitivity_patch_le_pairwiseDobrushinOperator_disagreementIndicator
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
     (a : Atom)
@@ -2075,6 +2093,500 @@ theorem finiteRegionSupSeminorm_finiteRegionCouplingExpectedBernoulliUpdateSensi
   exact lt_of_le_of_lt
     (M.finiteRegionSupSeminorm_finiteRegionCouplingExpectedBernoulliUpdateSensitivity_le_constant ξ q)
     (M.finiteRegionPairwiseDobrushinConstant_lt_one hM Δ)
+
+theorem singletonTrueProbability_toReal_eq_boundaryPMFExpectation_of_fixedRegionDLR
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ : ProbabilityMeasure (InfiniteWorld Atom))
+    (hμ : FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ : Measure (InfiniteWorld Atom)))
+    (a : Atom) :
+    let J : Region Atom :=
+      cylinderBoundarySupportRegion
+        M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+        ({a} : Region Atom) ({a} : Region Atom)
+    ((μ : Measure (InfiniteWorld Atom))
+        (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal =
+      ∑ x : LocalAssignment Atom J,
+        M.singletonKernelTrueProb a (patch J x (fun _ => false)) *
+          ENNReal.toReal
+            (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+              (μ : Measure (InfiniteWorld Atom)) J).toPMF) x) := by
+  let M' := M.toStrictlyPositiveInfiniteGroundMLNSpec
+  let J : Region Atom :=
+    cylinderBoundarySupportRegion
+      M'.toInfiniteGroundMLNSpec ({a} : Region Atom) ({a} : Region Atom)
+  let S : Set (LocalAssignment Atom ({a} : Region Atom)) := singletonTrueAssignmentSet a
+  have hS : MeasurableSet S := measurableSet_singletonTrueAssignmentSet a
+  have hdlr :
+      ∫⁻ ω,
+        StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumeWorldMeasure M' ({a} : Region Atom) ω
+          (MeasureTheory.cylinder ({a} : Region Atom) S) ∂ (μ : Measure (InfiniteWorld Atom)) =
+        (μ : Measure (InfiniteWorld Atom)) (MeasureTheory.cylinder ({a} : Region Atom) S) := by
+    exact hμ ({a} : Region Atom) ({a} : Region Atom) S hS
+  have hlim :
+      ∫⁻ x,
+        StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue M'
+          ({a} : Region Atom) ({a} : Region Atom) S x
+          ∂ Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+            (μ : Measure (InfiniteWorld Atom)) J =
+        ∫⁻ ω,
+          StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumeWorldMeasure M' ({a} : Region Atom) ω
+            (MeasureTheory.cylinder ({a} : Region Atom) S) ∂ (μ : Measure (InfiniteWorld Atom)) := by
+    simpa [J, S] using
+      (Mettapedia.Logic.PLNMarkovLogicInfiniteFixedRegionDLR.RegionExhaustion.limitMarginal_lintegral_cylinderBoundaryKernelValue
+        M' (μ : Measure (InfiniteWorld Atom))
+        ({a} : Region Atom) ({a} : Region Atom) S hS)
+  have hEq :
+      (μ : Measure (InfiniteWorld Atom)) (MeasureTheory.cylinder ({a} : Region Atom) S) =
+        ∑ x : LocalAssignment Atom J,
+          StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue M'
+            ({a} : Region Atom) ({a} : Region Atom) S x *
+              (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                (μ : Measure (InfiniteWorld Atom)) J).toPMF) x) := by
+    calc
+      (μ : Measure (InfiniteWorld Atom)) (MeasureTheory.cylinder ({a} : Region Atom) S)
+        = ∫⁻ x,
+            StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue M'
+              ({a} : Region Atom) ({a} : Region Atom) S x
+              ∂ Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                (μ : Measure (InfiniteWorld Atom)) J := by
+                exact Eq.symm (hlim.trans hdlr)
+      _ = ∑ x : LocalAssignment Atom J,
+            StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue M'
+              ({a} : Region Atom) ({a} : Region Atom) S x *
+                (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                  (μ : Measure (InfiniteWorld Atom)) J).toPMF) x) := by
+                rw [MeasureTheory.lintegral_fintype]
+                simp [Measure.toPMF_apply]
+  have hne_top :
+      ∀ x : LocalAssignment Atom J,
+        StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue M'
+          ({a} : Region Atom) ({a} : Region Atom) S x *
+            (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+              (μ : Measure (InfiniteWorld Atom)) J).toPMF) x) ≠ (⊤ : ENNReal) := by
+    intro x
+    exact ENNReal.mul_ne_top
+      (StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue_ne_top
+        M' ({a} : Region Atom) ({a} : Region Atom) S x)
+      ((((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+        (μ : Measure (InfiniteWorld Atom)) J).toPMF)).apply_ne_top x)
+  calc
+    ((μ : Measure (InfiniteWorld Atom))
+        (MeasureTheory.cylinder ({a} : Region Atom) S)).toReal
+      = ENNReal.toReal
+          (∑ x : LocalAssignment Atom J,
+            StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue M'
+              ({a} : Region Atom) ({a} : Region Atom) S x *
+                (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                  (μ : Measure (InfiniteWorld Atom)) J).toPMF) x)) := by
+                  simp [hEq]
+    _ = ∑ x : LocalAssignment Atom J,
+          ENNReal.toReal
+            (StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue M'
+              ({a} : Region Atom) ({a} : Region Atom) S x *
+                (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                  (μ : Measure (InfiniteWorld Atom)) J).toPMF) x)) := by
+                  rw [ENNReal.toReal_sum]
+                  intro x hx
+                  exact hne_top x
+    _ = ∑ x : LocalAssignment Atom J,
+          M.singletonKernelTrueProb a (patch J x (fun _ => false)) *
+            ENNReal.toReal
+              (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                (μ : Measure (InfiniteWorld Atom)) J).toPMF) x) := by
+              refine Finset.sum_congr rfl ?_
+              intro x hx
+              calc
+                ENNReal.toReal
+                    (StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue M'
+                      ({a} : Region Atom) ({a} : Region Atom) S x *
+                      (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                        (μ : Measure (InfiniteWorld Atom)) J).toPMF) x))
+                  =
+                    ENNReal.toReal
+                      (StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue M'
+                        ({a} : Region Atom) ({a} : Region Atom) S x) *
+                    ENNReal.toReal
+                      (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                        (μ : Measure (InfiniteWorld Atom)) J).toPMF) x) := by
+                          rw [ENNReal.toReal_mul]
+                _ =
+                    M.singletonKernelTrueProb a (patch J x (fun _ => false)) *
+                    ENNReal.toReal
+                      (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                        (μ : Measure (InfiniteWorld Atom)) J).toPMF) x) := by
+                          simp [M', J, S, ClassicalInfiniteGroundMLNSpec.singletonKernelTrueProb,
+                            StrictlyPositiveInfiniteGroundMLNSpec.cylinderBoundaryKernelValue]
+
+theorem singletonTrueProbability_discrepancy_le_of_limitMarginalCoupling
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (hμ : FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ : Measure (InfiniteWorld Atom)))
+    (hν : FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
+      (ν : Measure (InfiniteWorld Atom)))
+    (a : Atom)
+    (q : PMF
+      (LocalAssignment Atom
+        (cylinderBoundarySupportRegion
+          M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+          ({a} : Region Atom) ({a} : Region Atom)) ×
+       LocalAssignment Atom
+        (cylinderBoundarySupportRegion
+          M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+          ({a} : Region Atom) ({a} : Region Atom))))
+    (hqfst :
+      q.map Prod.fst =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (μ : Measure (InfiniteWorld Atom))
+          (cylinderBoundarySupportRegion
+            M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+            ({a} : Region Atom) ({a} : Region Atom))).toPMF)
+    (hqsnd :
+      q.map Prod.snd =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (ν : Measure (InfiniteWorld Atom))
+          (cylinderBoundarySupportRegion
+            M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+            ({a} : Region Atom) ({a} : Region Atom))).toPMF) :
+    |((μ : Measure (InfiniteWorld Atom))
+        (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal -
+      ((ν : Measure (InfiniteWorld Atom))
+        (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal| ≤
+      M.finiteRegionCouplingExpectedBernoulliUpdateSensitivity (fun _ => false) q a := by
+  let J : Region Atom :=
+    cylinderBoundarySupportRegion
+      M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+      ({a} : Region Atom) ({a} : Region Atom)
+  have hμ' :
+      ((μ : Measure (InfiniteWorld Atom))
+          (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal =
+        ∑ x : LocalAssignment Atom J,
+          M.singletonKernelTrueProb a (patch J x (fun _ => false)) *
+            ENNReal.toReal ((q.map Prod.fst) x) := by
+    simpa [J, hqfst] using
+      (M.singletonTrueProbability_toReal_eq_boundaryPMFExpectation_of_fixedRegionDLR μ hμ a)
+  have hν' :
+      ((ν : Measure (InfiniteWorld Atom))
+          (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal =
+        ∑ y : LocalAssignment Atom J,
+          M.singletonKernelTrueProb a (patch J y (fun _ => false)) *
+            ENNReal.toReal ((q.map Prod.snd) y) := by
+    simpa [J, hqsnd] using
+      (M.singletonTrueProbability_toReal_eq_boundaryPMFExpectation_of_fixedRegionDLR ν hν a)
+  calc
+    |((μ : Measure (InfiniteWorld Atom))
+        (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal -
+      ((ν : Measure (InfiniteWorld Atom))
+        (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal|
+      = |(∑ x : LocalAssignment Atom J,
+            M.singletonKernelTrueProb a (patch J x (fun _ => false)) *
+              ENNReal.toReal ((q.map Prod.fst) x)) -
+          (∑ y : LocalAssignment Atom J,
+            M.singletonKernelTrueProb a (patch J y (fun _ => false)) *
+              ENNReal.toReal ((q.map Prod.snd) y))| := by
+              rw [hμ', hν']
+    _ ≤ M.finiteRegionCouplingExpectedBernoulliUpdateSensitivity (fun _ => false) q a := by
+          exact M.abs_sub_le_finiteRegionCouplingExpectedBernoulliUpdateSensitivity_of_pmfCoupling
+            (ξ := fun _ => false) q a
+
+/-- Singleton true-cylinder discrepancy between two candidate global measures. -/
+noncomputable def singletonTrueProbabilityDiscrepancy
+    (_M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom)) : Atom → ℝ :=
+  fun a =>
+    |((μ : Measure (InfiniteWorld Atom))
+        (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal -
+      ((ν : Measure (InfiniteWorld Atom))
+        (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal|
+
+theorem singletonTrueProbabilityDiscrepancy_nonneg
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (a : Atom) :
+    0 ≤ M.singletonTrueProbabilityDiscrepancy μ ν a := by
+  unfold singletonTrueProbabilityDiscrepancy
+  exact abs_nonneg _
+
+/-- Real-valued indicator of a finite-region assignment event. -/
+noncomputable def finiteRegionEventIndicator
+    {Δ : Region Atom}
+    (S : Set (LocalAssignment Atom Δ)) :
+    LocalAssignment Atom Δ → ℝ := by
+  classical
+  exact fun x => if x ∈ S then 1 else 0
+
+/-- Finite-region event probability read from the limiting marginal. -/
+noncomputable def finiteRegionSetProbability
+    (_M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (S : Set (LocalAssignment Atom Δ)) : ℝ :=
+  (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+      (μ : Measure (InfiniteWorld Atom)) Δ) S)).toReal
+
+/-- Finite-region event discrepancy between two candidate global measures. -/
+noncomputable def finiteRegionSetProbabilityDiscrepancy
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (S : Set (LocalAssignment Atom Δ)) : ℝ :=
+  |M.finiteRegionSetProbability μ Δ S - M.finiteRegionSetProbability ν Δ S|
+
+/-- Pointwise finite-region assignment probability discrepancy. -/
+noncomputable def finiteRegionAssignmentProbabilityDiscrepancy
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (x : LocalAssignment Atom Δ) : ℝ :=
+  M.finiteRegionSetProbabilityDiscrepancy μ ν Δ ({x} : Set (LocalAssignment Atom Δ))
+
+/-- Expected indicator mismatch of a finite-region event under a coupling. -/
+noncomputable def finiteRegionCouplingExpectedEventDisagreement
+    {Δ : Region Atom}
+    (q : PMF (LocalAssignment Atom Δ × LocalAssignment Atom Δ))
+    (S : Set (LocalAssignment Atom Δ)) : ℝ :=
+  ∑ z, |finiteRegionEventIndicator (Atom := Atom) S z.1 -
+      finiteRegionEventIndicator (Atom := Atom) S z.2| * ENNReal.toReal (q z)
+
+theorem finiteRegionSetProbability_nonneg
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (S : Set (LocalAssignment Atom Δ)) :
+    0 ≤ M.finiteRegionSetProbability μ Δ S := by
+  unfold finiteRegionSetProbability
+  exact ENNReal.toReal_nonneg
+
+theorem finiteRegionSetProbabilityDiscrepancy_nonneg
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (S : Set (LocalAssignment Atom Δ)) :
+    0 ≤ M.finiteRegionSetProbabilityDiscrepancy μ ν Δ S := by
+  unfold finiteRegionSetProbabilityDiscrepancy
+  exact abs_nonneg _
+
+theorem finiteRegionAssignmentProbabilityDiscrepancy_nonneg
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (x : LocalAssignment Atom Δ) :
+    0 ≤ M.finiteRegionAssignmentProbabilityDiscrepancy μ ν Δ x := by
+  exact M.finiteRegionSetProbabilityDiscrepancy_nonneg μ ν Δ ({x} : Set (LocalAssignment Atom Δ))
+
+theorem finiteRegionSetProbability_eq_sum_indicator_limitMarginal
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (S : Set (LocalAssignment Atom Δ)) :
+    M.finiteRegionSetProbability μ Δ S =
+      ∑ x : LocalAssignment Atom Δ,
+        finiteRegionEventIndicator (Atom := Atom) S x *
+          ENNReal.toReal
+            (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+              (μ : Measure (InfiniteWorld Atom)) Δ).toPMF) x) := by
+  calc
+    M.finiteRegionSetProbability μ Δ S
+      = ENNReal.toReal
+          ((((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+            (μ : Measure (InfiniteWorld Atom)) Δ).toPMF).toMeasure) S) := by
+              rw [finiteRegionSetProbability, Measure.toPMF_toMeasure]
+    _ = ENNReal.toReal
+          (∑ x : LocalAssignment Atom Δ,
+            S.indicator
+              (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                (μ : Measure (InfiniteWorld Atom)) Δ).toPMF)) x) := by
+              rw [PMF.toMeasure_apply_fintype]
+    _ = ∑ x : LocalAssignment Atom Δ,
+          ENNReal.toReal
+            (S.indicator
+              (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                (μ : Measure (InfiniteWorld Atom)) Δ).toPMF)) x) := by
+              rw [ENNReal.toReal_sum]
+              intro x hx
+              by_cases hxS : x ∈ S
+              · simp [Set.indicator, hxS,
+                  (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                    (μ : Measure (InfiniteWorld Atom)) Δ).toPMF)).apply_ne_top x]
+              · simp [Set.indicator, hxS]
+    _ = ∑ x : LocalAssignment Atom Δ,
+          finiteRegionEventIndicator (Atom := Atom) S x *
+            ENNReal.toReal
+              (((Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+                (μ : Measure (InfiniteWorld Atom)) Δ).toPMF) x) := by
+              refine Finset.sum_congr rfl ?_
+              intro x hx
+              by_cases hxS : x ∈ S
+              · simp [finiteRegionEventIndicator, Set.indicator, hxS]
+              · simp [finiteRegionEventIndicator, Set.indicator, hxS]
+
+theorem finiteRegionSetProbabilityDiscrepancy_le_of_limitMarginalCoupling
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (S : Set (LocalAssignment Atom Δ))
+    (q : PMF (LocalAssignment Atom Δ × LocalAssignment Atom Δ))
+    (hqfst :
+      q.map Prod.fst =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (μ : Measure (InfiniteWorld Atom)) Δ).toPMF)
+    (hqsnd :
+      q.map Prod.snd =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (ν : Measure (InfiniteWorld Atom)) Δ).toPMF) :
+    M.finiteRegionSetProbabilityDiscrepancy μ ν Δ S ≤
+      finiteRegionCouplingExpectedEventDisagreement (Atom := Atom) q S := by
+  unfold finiteRegionSetProbabilityDiscrepancy finiteRegionCouplingExpectedEventDisagreement
+  rw [M.finiteRegionSetProbability_eq_sum_indicator_limitMarginal μ Δ S,
+    M.finiteRegionSetProbability_eq_sum_indicator_limitMarginal ν Δ S,
+    ← hqfst, ← hqsnd]
+  exact abs_sub_le_sum_mul_abs_of_pmfCoupling
+    (q := q)
+    (f := finiteRegionEventIndicator (Atom := Atom) S)
+    (g := finiteRegionEventIndicator (Atom := Atom) S)
+
+/-- Finite-region local-query discrepancy between two candidate global measures. -/
+noncomputable def finiteRegionLocalQueryDiscrepancy
+    (_M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (q : LocalConstraintQuery Atom Δ) : ℝ :=
+  |((μ : Measure (InfiniteWorld Atom)) (localQueryEvent Δ q)).toReal -
+    ((ν : Measure (InfiniteWorld Atom)) (localQueryEvent Δ q)).toReal|
+
+theorem finiteRegionLocalQueryDiscrepancy_eq_setProbabilityDiscrepancy
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (q : LocalConstraintQuery Atom Δ) :
+    M.finiteRegionLocalQueryDiscrepancy μ ν Δ q =
+      M.finiteRegionSetProbabilityDiscrepancy μ ν Δ (localConstraintSet Δ q) := by
+  unfold finiteRegionLocalQueryDiscrepancy finiteRegionSetProbabilityDiscrepancy finiteRegionSetProbability
+  rw [Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal_apply_localConstraintSet
+      (μ := (μ : Measure (InfiniteWorld Atom))) (Λ := Δ) (q := q),
+    Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal_apply_localConstraintSet
+      (μ := (ν : Measure (InfiniteWorld Atom))) (Λ := Δ) (q := q)]
+
+theorem finiteRegionLocalQueryDiscrepancy_le_of_limitMarginalCoupling
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (Δ : Region Atom)
+    (qv : LocalConstraintQuery Atom Δ)
+    (q : PMF (LocalAssignment Atom Δ × LocalAssignment Atom Δ))
+    (hqfst :
+      q.map Prod.fst =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (μ : Measure (InfiniteWorld Atom)) Δ).toPMF)
+    (hqsnd :
+      q.map Prod.snd =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (ν : Measure (InfiniteWorld Atom)) Δ).toPMF) :
+    M.finiteRegionLocalQueryDiscrepancy μ ν Δ qv ≤
+      finiteRegionCouplingExpectedEventDisagreement (Atom := Atom) q (localConstraintSet Δ qv) := by
+  rw [M.finiteRegionLocalQueryDiscrepancy_eq_setProbabilityDiscrepancy μ ν Δ qv]
+  exact M.finiteRegionSetProbabilityDiscrepancy_le_of_limitMarginalCoupling
+    μ ν Δ (localConstraintSet Δ qv) q hqfst hqsnd
+
+theorem singletonTrueProbabilityDiscrepancy_le_pairwiseDobrushinOperator_of_boundarySupportCoupling
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (hμ : FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ : Measure (InfiniteWorld Atom)))
+    (hν : FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
+      (ν : Measure (InfiniteWorld Atom)))
+    (a : Atom)
+    (q : PMF
+      (LocalAssignment Atom
+        (cylinderBoundarySupportRegion
+          M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+          ({a} : Region Atom) ({a} : Region Atom)) ×
+       LocalAssignment Atom
+        (cylinderBoundarySupportRegion
+          M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+          ({a} : Region Atom) ({a} : Region Atom))))
+    (hqfst :
+      q.map Prod.fst =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (μ : Measure (InfiniteWorld Atom))
+          (cylinderBoundarySupportRegion
+            M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+            ({a} : Region Atom) ({a} : Region Atom))).toPMF)
+    (hqsnd :
+      q.map Prod.snd =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (ν : Measure (InfiniteWorld Atom))
+          (cylinderBoundarySupportRegion
+            M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+            ({a} : Region Atom) ({a} : Region Atom))).toPMF) :
+    M.singletonTrueProbabilityDiscrepancy μ ν a ≤
+      M.pairwiseDobrushinOperator
+        (cylinderBoundarySupportRegion
+          M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+          ({a} : Region Atom) ({a} : Region Atom))
+        (finiteRegionCouplingExpectedDisagreement q) a := by
+  have hbase' :
+      |((μ : Measure (InfiniteWorld Atom))
+          (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal -
+        ((ν : Measure (InfiniteWorld Atom))
+          (MeasureTheory.cylinder ({a} : Region Atom) (singletonTrueAssignmentSet a))).toReal| ≤
+        M.finiteRegionCouplingExpectedBernoulliUpdateSensitivity (fun _ => false) q a := by
+    exact M.singletonTrueProbability_discrepancy_le_of_limitMarginalCoupling
+      μ ν hμ hν a q hqfst hqsnd
+  have hbase :
+      M.singletonTrueProbabilityDiscrepancy μ ν a ≤
+        M.finiteRegionCouplingExpectedBernoulliUpdateSensitivity (fun _ => false) q a := by
+    simpa [singletonTrueProbabilityDiscrepancy] using hbase'
+  exact le_trans hbase
+    (M.finiteRegionCouplingExpectedBernoulliUpdateSensitivity_le_pairwiseDobrushinOperator
+      (ξ := fun _ => false) (q := q) a)
+
+theorem singletonTrueProbabilityDiscrepancy_le_pairwiseDobrushinOperator_of_boundarySupportCoupling_mono
+    (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
+    (μ ν : ProbabilityMeasure (InfiniteWorld Atom))
+    (hμ : FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
+      (μ : Measure (InfiniteWorld Atom)))
+    (hν : FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
+      (ν : Measure (InfiniteWorld Atom)))
+    (a : Atom)
+    (q : PMF
+      (LocalAssignment Atom
+        (cylinderBoundarySupportRegion
+          M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+          ({a} : Region Atom) ({a} : Region Atom)) ×
+       LocalAssignment Atom
+        (cylinderBoundarySupportRegion
+          M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+          ({a} : Region Atom) ({a} : Region Atom))))
+    (hqfst :
+      q.map Prod.fst =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (μ : Measure (InfiniteWorld Atom))
+          (cylinderBoundarySupportRegion
+            M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+            ({a} : Region Atom) ({a} : Region Atom))).toPMF)
+    (hqsnd :
+      q.map Prod.snd =
+        (Mettapedia.Logic.PLNMarkovLogicInfiniteLimitFamily.RegionExhaustion.limitMarginal
+          (ν : Measure (InfiniteWorld Atom))
+          (cylinderBoundarySupportRegion
+            M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+            ({a} : Region Atom) ({a} : Region Atom))).toPMF)
+    {d : Atom → ℝ}
+    (hd : ∀ b ∈
+      cylinderBoundarySupportRegion
+        M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+        ({a} : Region Atom) ({a} : Region Atom),
+      finiteRegionCouplingExpectedDisagreement q b ≤ d b) :
+    M.singletonTrueProbabilityDiscrepancy μ ν a ≤
+      M.pairwiseDobrushinOperator
+        (cylinderBoundarySupportRegion
+          M.toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+          ({a} : Region Atom) ({a} : Region Atom)) d a := by
+  refine le_trans
+    (M.singletonTrueProbabilityDiscrepancy_le_pairwiseDobrushinOperator_of_boundarySupportCoupling
+      μ ν hμ hν a q hqfst hqsnd)
+    (M.pairwiseDobrushinOperator_mono hd a)
 
 theorem finiteRegion_eq_zero_of_nonneg_le_sum_of_rowSums_lt_one
     {Λ : Finset Atom}

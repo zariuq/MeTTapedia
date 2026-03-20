@@ -1666,20 +1666,20 @@ weight map on rewrite states IS the WM extract function:
 \code{EvidenceAssignment.weight} = \code{AdditiveWorldModel.extract},
 with \code{weight\_add} = \code{extract\_add}.
 
-\subsection{Runtime Certification}
+\subsection{Calculus Soundness}
 
-\codepath{Logic/RuntimeSoundnessBridge.lean} (0~sorries) defines the
-certification path for runtime implementations:
+\codepath{Logic/WMCalculusSoundness.lean} (0~sorries) defines the
+soundness criterion for the WM calculus:
 
 \begin{enumerate}
-\item Define \code{EvidenceRuntime State Query Ev} (the implementation interface).
-\item Prove \code{RuntimeSound} (revision = addition, extraction = algebraic extract).
+\item Define \code{WMCalculus State Query Ev} (the operational rules: revise, extract, forget).
+\item Prove \code{CalculusSound} (revision = addition, extraction = algebraic extract).
 \item All algebraic properties transfer automatically:
   \code{extract\_add}, sequential composition, zero preservation.
 \end{enumerate}
 
 \begin{theorem}[\code{soundness\_guarantees}, 0~sorries]
-A sound runtime inherits extraction correctness, revision correctness, and
+A sound calculus inherits extraction correctness, revision correctness, and
 the \code{extract\_add} law from the WM algebra.
 \end{theorem}
 

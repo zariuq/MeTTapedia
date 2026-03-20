@@ -3,7 +3,7 @@ import Mettapedia.Logic.KSEvidenceMeasureBridge
 import Mettapedia.Logic.WMHypercubeClassification
 import Mettapedia.Logic.ModalProbabilityBridge
 import Mettapedia.Logic.GSLTWeightMapBridge
-import Mettapedia.Logic.RuntimeSoundnessBridge
+import Mettapedia.Logic.WMCalculusSoundness
 import Mettapedia.Logic.ComplexEvidenceCarrier
 import Mettapedia.Logic.UniversalEnsembleWM
 import Mettapedia.Logic.SourceReliability
@@ -24,8 +24,8 @@ READ THIS FILE. It is the single entry point for the entire formalization.
    The ℂ carrier sits at the quantum vertex (no lattice → amplitude inference).
    KS axioms provide the foundation; the representation theorem gives uniqueness.
 
-3. Runtime implementations prove `RuntimeSound` to get ALL algebraic properties
-   for free — the certification path for mettail-c and mettail-rust.
+3. Implementations of the WM calculus prove `CalculusSound` to get ALL algebraic
+   properties for free — the certification path for any backend.
 
 ## Files (0 sorry across all)
 
@@ -36,7 +36,7 @@ READ THIS FILE. It is the single entry point for the entire formalization.
 | `WMHypercubeClassification`   |       10 | 4 regimes → 4 vertices (injective)     |
 | `ModalProbabilityBridge`      |       14 | 13-axis classification + quantum       |
 | `GSLTWeightMapBridge`         |        6 | GSLT weight map = WM extract           |
-| `RuntimeSoundnessBridge`      |        5 | Sound runtimes inherit all properties   |
+| `WMCalculusSoundness`         |        5 | Sound calculi inherit all properties    |
 | `ComplexEvidenceCarrier`      |        8 | ℂ carrier: quantum vertex              |
 | `UniversalEnsembleWM`         |        5 | Universality: existence + uniqueness    |
 | `SourceReliability`           |        8 | Dawid-Skene reliability layer           |
@@ -102,13 +102,14 @@ weight_add = extract_add. The bridge is definitional. -/
 #check @GSLTWeightMapBridge.full_picture_summary
   -- classification + weakness ordering
 
-/-! ## 5. Runtime Certification
+/-! ## 5. Calculus Soundness
 
-Define `EvidenceRuntime`. Prove `RuntimeSound`. Get ALL algebraic
-properties (extract_add, sequential composition, zero preservation)
-for free. This is the certification path for mettail-c and mettail-rust. -/
+Define `WMCalculus` (the operational rules: revise, extract, forget).
+Prove `CalculusSound` (the calculus agrees with the model). Get ALL
+algebraic properties (extract_add, sequential composition, zero
+preservation) for free. -/
 
-#check @RuntimeSoundnessBridge.soundness_guarantees
+#check @WMCalculusSoundness.soundness_guarantees
   -- extraction ∧ revision ∧ extract_add — all transfer from soundness
 
 /-! ## 6. Universality and Breadth
@@ -144,7 +145,7 @@ PLN is a classical proof system with:
 - KS foundations (uniqueness of evidence representation)
 - Hypercube classification (4 regimes at 4 probability vertices)
 - GSLT connection (weight map = extract, forward transport)
-- Certifiable runtime implementations (prove RuntimeSound, get all properties)
+- Calculus soundness (prove CalculusSound, get all properties for free)
 - Universality (every typed observation space → unique world model)
 - Quantum extension (ℂ carrier at the orthomodular vertex)
 

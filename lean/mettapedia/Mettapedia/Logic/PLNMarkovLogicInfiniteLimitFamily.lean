@@ -44,6 +44,14 @@ noncomputable def limitMarginal
     (I : Finset Atom) : Measure (∀ i : I, BoolCoord Atom i) :=
   μ.map I.restrict
 
+instance limitMarginal_isProbability
+    (μ : Measure (InfiniteWorld Atom))
+    [IsProbabilityMeasure μ]
+    (I : Finset Atom) :
+    IsProbabilityMeasure (limitMarginal (Atom := Atom) μ I) := by
+  dsimp [limitMarginal]
+  exact Measure.isProbabilityMeasure_map (Finset.measurable_restrict I).aemeasurable
+
 /-- For a countable atom type, a projective family of finite-dimensional
 marginals induces a canonical candidate global measure via the generic
 countable projective-limit theorem. -/

@@ -784,6 +784,112 @@ def SupportedOriginalLiftStageProof.lift
       (HenkinConstStage.liftBaseClosedFormula_comp
         (Base := Base) (Const := Const) hmn φ).symm ▸ hDeriv
 
+theorem mem_stageLiftedOriginalAssumptions_of_lift_mem
+    {n : Nat}
+    {Δ : List (ClosedFormula Const)}
+    {ψ : ClosedFormula (HenkinConstStage Base Const n)}
+    (hψ :
+      HenkinConstInfinity.liftClosedFormula (Base := Base) (Const := Const) ψ ∈
+        Δ.map (HenkinConstInfinity.liftBaseClosedFormula (Base := Base) (Const := Const))) :
+    ψ ∈ Δ.map
+      (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n) := by
+  rcases List.mem_map.mp hψ with ⟨θ, hθ, hEq⟩
+  have hsound :
+      HenkinConstInfinity.liftClosedFormula (Base := Base) (Const := Const)
+          (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n θ) =
+        HenkinConstInfinity.liftBaseClosedFormula (Base := Base) (Const := Const) θ :=
+    HenkinConstInfinity.liftBaseClosedFormula_sound
+      (Base := Base) (Const := Const) n θ
+  have hψEq :
+      HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n θ = ψ :=
+    HenkinConstInfinity.liftClosedFormula_injective
+      (Base := Base) (Const := Const) (n := n) (hsound.trans hEq)
+  exact List.mem_map.mpr ⟨θ, hθ, hψEq⟩
+
+theorem lift_stage_exWitnessAxiom
+    {m n : Nat} (hmn : m + 1 ≤ n) {σ : Ty Base}
+    (φ : Formula (HenkinConstStage Base Const m) [σ]) :
+    HenkinConstInfinity.liftClosedFormula (Base := Base) (Const := Const)
+        (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) hmn
+          (HenkinConstStage.exWitnessAxiom (Base := Base) (Const := Const) φ)) =
+      HenkinConstInfinity.exWitnessAxiom (Base := Base) (Const := Const) φ := by
+  rw [HenkinConstInfinity.liftClosedFormula, HenkinConstStage.liftClosedFormula,
+    Mettapedia.Logic.HOL.mapConst_comp]
+  have hmap :
+      Mettapedia.Logic.HOL.mapConst
+          (fun {τ} c =>
+            HenkinConstInfinity.ofStage (Base := Base) (Const := Const)
+              (HenkinConstStage.lift (Base := Base) (Const := Const) hmn c))
+          (HenkinConstStage.exWitnessAxiom (Base := Base) (Const := Const) φ) =
+        Mettapedia.Logic.HOL.mapConst
+          (fun {τ} c =>
+            HenkinConstInfinity.ofStage (Base := Base) (Const := Const) c)
+          (HenkinConstStage.exWitnessAxiom (Base := Base) (Const := Const) φ) := by
+    apply Mettapedia.Logic.HOL.mapConst_ext
+    intro τ c
+    exact HenkinConstInfinity.ofStage_lift
+      (Base := Base) (Const := Const) hmn c
+  rw [hmap]
+  simp [HenkinConstInfinity.exWitnessAxiom, HenkinConstStage.exWitnessAxiom,
+    HenkinConstStage.exWitnessInstance, HenkinConstInfinity.liftFormula,
+    HenkinConstInfinity.liftTerm, Mettapedia.Logic.HOL.mapConst]
+  have hφlift :
+      Mettapedia.Logic.HOL.mapConst
+          (fun {τ} c =>
+            HenkinConstInfinity.ofStage (Base := Base) (Const := Const)
+              (HenkinConstStage.liftOffset (Base := Base) (Const := Const) 1 c)) φ =
+        Mettapedia.Logic.HOL.mapConst
+          (fun {τ} c =>
+            HenkinConstInfinity.ofStage (Base := Base) (Const := Const) c) φ := by
+    simpa [HenkinConstInfinity.stageBumpFormula, HenkinConstInfinity.liftFormula]
+      using
+        (HenkinConstInfinity.liftFormula_stageBump
+          (Base := Base) (Const := Const) 1 φ)
+  exact ⟨hφlift, by simpa [hφlift]⟩
+
+theorem lift_stage_allCounterexampleAxiom
+    {m n : Nat} (hmn : m + 1 ≤ n) {σ : Ty Base}
+    (φ : Formula (HenkinConstStage Base Const m) [σ]) :
+    HenkinConstInfinity.liftClosedFormula (Base := Base) (Const := Const)
+        (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) hmn
+          (HenkinConstStage.allCounterexampleAxiom (Base := Base) (Const := Const) φ)) =
+      HenkinConstInfinity.allCounterexampleAxiom (Base := Base) (Const := Const) φ := by
+  rw [HenkinConstInfinity.liftClosedFormula, HenkinConstStage.liftClosedFormula,
+    Mettapedia.Logic.HOL.mapConst_comp]
+  have hmap :
+      Mettapedia.Logic.HOL.mapConst
+          (fun {τ} c =>
+            HenkinConstInfinity.ofStage (Base := Base) (Const := Const)
+              (HenkinConstStage.lift (Base := Base) (Const := Const) hmn c))
+          (HenkinConstStage.allCounterexampleAxiom (Base := Base) (Const := Const) φ) =
+        Mettapedia.Logic.HOL.mapConst
+          (fun {τ} c =>
+            HenkinConstInfinity.ofStage (Base := Base) (Const := Const) c)
+          (HenkinConstStage.allCounterexampleAxiom (Base := Base) (Const := Const) φ) := by
+    apply Mettapedia.Logic.HOL.mapConst_ext
+    intro τ c
+    exact HenkinConstInfinity.ofStage_lift
+      (Base := Base) (Const := Const) hmn c
+  rw [hmap]
+  simp [HenkinConstInfinity.allCounterexampleAxiom,
+    HenkinConstStage.allCounterexampleAxiom,
+    HenkinConstStage.allCounterexampleInstance,
+    HenkinConstInfinity.liftFormula, HenkinConstInfinity.liftTerm,
+    Mettapedia.Logic.HOL.mapConst]
+  have hφlift :
+      Mettapedia.Logic.HOL.mapConst
+          (fun {τ} c =>
+            HenkinConstInfinity.ofStage (Base := Base) (Const := Const)
+              (HenkinConstStage.liftOffset (Base := Base) (Const := Const) 1 c)) φ =
+        Mettapedia.Logic.HOL.mapConst
+          (fun {τ} c =>
+            HenkinConstInfinity.ofStage (Base := Base) (Const := Const) c) φ := by
+    simpa [HenkinConstInfinity.stageBumpFormula, HenkinConstInfinity.liftFormula]
+      using
+        (HenkinConstInfinity.liftFormula_stageBump
+          (Base := Base) (Const := Const) 1 φ)
+  exact ⟨by simpa [hφlift], hφlift⟩
+
 /--
 Direct supported-stage construction target for the new >69% route.
 

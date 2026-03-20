@@ -2096,19 +2096,6 @@ Let $e_1 = (3, 1)$ and $e_2 = (2, 2)$.
   $6/8 = 3/4$ equals the original $3/4$.
 \end{description}
 
-\paragraph{The runtime consequence.}
-A runtime implementation of evidence operations (whether in
-mettail-c, mettail-rust, or any other backend) proves a single
-property---\code{RuntimeSound}, which says that its revision and
-extraction agree with the algebraic specification---and all four
-structural rules transfer automatically.  The proof of
-\code{RuntimeSound} is the certification that the runtime correctly
-implements the evidence proof system.%
-\footnote{Formalized in
-\codepath{Mettapedia/Logic/RuntimeSoundnessBridge.lean}
-(5~theorems, 0~sorry).  See also~\codepath{Mettapedia/Logic/%
-PLNProofSystemShowcase.lean} for the unified entry point.}
-
 \paragraph{What this means.}
 The evidence calculus is not merely an algebraic bookkeeping system
 with inference heuristics attached.  It is a proof system in the
@@ -2118,6 +2105,117 @@ increases total evidence, the normalization direction).  The
 propositions-as-types reading is available to anyone who wants it:
 the evidence state \emph{is} the proof, the query \emph{is} the
 proposition, and the extraction \emph{is} the evaluation.
+
+
+\section{Model, Calculus, and Soundness}
+\label{sec:calculus-soundness}
+
+Every formal system has two faces.  The \emph{model} says what
+things mean: \code{AdditiveWorldModel} defines extraction
+semantically.  The \emph{calculus} says what you can do: three
+operational rules that manipulate evidence states.  The
+\emph{soundness theorem} says these two faces agree.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  >=Latex, every node/.style={font=\footnotesize},
+  box/.style={draw, rounded corners=3pt, minimum width=30mm,
+              minimum height=9mm, align=center}
+]
+  \node[box, fill=blue!8] (model) at (0, 0)
+    {\code{AdditiveWorldModel}\\[-1pt]\scriptsize the model};
+  \node[box, fill=green!8] (calc) at (5, 0)
+    {\code{WMCalculus}\\[-1pt]\scriptsize the calculus};
+  \node[box, fill=orange!10] (impl) at (5, -1.5)
+    {mettail-c / rust\\[-1pt]\scriptsize the runtime};
+
+  \draw[<->, very thick] (model) -- node[above, font=\scriptsize]
+    {\code{CalculusSound}} (calc);
+  \draw[->, thick, dashed] (calc) -- node[right, font=\scriptsize]
+    {implementation} (impl);
+\end{tikzpicture}
+\caption{Three layers, two boundaries.  The book proves the upper
+  boundary (\code{CalculusSound}).  The lower boundary
+  (implementation correctness) is the implementor's responsibility.}
+\label{fig:model-calculus-soundness}
+\end{figure}
+
+The calculus is a structure with three fields:
+
+\begin{lstlisting}[language={}]
+structure WMCalculus (State Query Ev : Type*) where
+  revise  : State -> State -> State       -- the cut rule
+  extract : State -> Query -> Ev          -- the evaluation rule
+  forget  : Option (State -> State -> State) -- the weakening rule
+\end{lstlisting}
+
+\noindent
+An implementor provides three functions.  The soundness property
+says they agree with the algebraic model:
+
+\begin{lstlisting}[language={}]
+structure CalculusSound (wmc : WMCalculus State Query Ev) where
+  revise_correct  : forall W1 W2, wmc.revise W1 W2 = W1 + W2
+  extract_correct : forall W q,   wmc.extract W q  = extract W q
+\end{lstlisting}
+
+\noindent
+Two equalities.  The calculus's revision is the model's addition.
+The calculus's extraction is the model's extraction.
+
+\begin{theorem}[\code{CalculusSound} inheritance (\claimCore{})]
+\label{thm:calculus-sound-inheritance}
+If \code{wmc} satisfies \code{CalculusSound}, then:
+\begin{enumerate}
+\item \code{extract\_add} holds for the calculus (evidence
+  revision is compositional).
+\item Sequential composition works (multi-step revision is
+  associative).
+\item Zero preservation holds (empty state gives empty evidence).
+\item All four structural rules (cut, weakening, exchange,
+  contraction) transfer from the model to the calculus.
+\end{enumerate}
+The proof is four rewrites.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/WMCalculusSoundness.lean}
+(5~theorems, 0~sorry).}
+\end{theorem}
+
+\noindent
+The mathematical tower---KS foundations, measure theory,
+hypercube classification, 700+ theorems---does not need to be
+re-proved.  It transfers by soundness.
+
+\paragraph{A concrete example.}
+Suppose mettail-rust implements \code{revise} as integer addition
+on $(n^+, n^-)$ pairs and \code{extract} as field projection.
+The implementor proves two equalities: addition agrees,
+projection agrees.  From that proof, every theorem in this book
+that mentions \code{extract\_add} becomes a theorem about the
+Rust implementation.  The implementor never opens a Lean file
+about measure theory or the KS representation.  Those results
+arrive by soundness.
+
+\paragraph{The philosophical point.}
+There is one boundary between mathematics and engineering.
+\code{CalculusSound} is that boundary.  On one side: the entire
+algebraic and measure-theoretic development.  On the other side:
+three functions in C or Rust.  Cross the boundary once, correctly,
+and the entire mathematical tower transfers.  The proof of
+\code{CalculusSound} is the smallest possible obligation with the
+largest possible payoff.
+
+\paragraph{GSLT connection.}
+In Meredith's GSLT framework, the calculus is the rewrite system
+and the model is the denotational semantics.
+\code{CalculusSound} is the standard soundness theorem: rewrites
+agree with denotations.
+
+\paragraph{Decentralized agents.}
+If two agents both prove \code{CalculusSound} for their (possibly
+different) implementations, their evidence composes---not by
+policy, but by theorem.  Trust becomes a mathematical property.
 
 
 \section{The Profile-Hom Equivalence}
@@ -6769,6 +6867,10 @@ not yet available.  The theorem-level results constrain what any
 correct implementation must satisfy, but they do not constitute an
 implementation.  The gap between a certified specification and a
 deployable system is real, and we do not pretend otherwise.
+The \code{CalculusSound} property
+(\S\ref{sec:calculus-soundness}) bounds this gap precisely: it
+is two equalities (revision $=$ addition, extraction $=$
+extraction), not a re-derivation of the entire algebra.
 
 \section{Domain Generality: What Is Finite and What Is Not}
 
@@ -7072,8 +7174,8 @@ The calculus provides six things that the original PLN lacked:
   The evidence calculus satisfies all four structural rules of
   classical sequent calculus---cut, weakening, exchange, and
   contraction---under the Curry-Howard correspondence
-  (\S\ref{sec:evidence-proof-system}).  Runtime implementations
-  that prove soundness inherit these rules automatically.
+  (\S\ref{sec:evidence-proof-system}).  Implementations that prove
+  \code{CalculusSound} inherit these rules automatically.
   PLN is not just an inference engine; it is a proof system in the
   technical sense.
 \end{enumerate}
