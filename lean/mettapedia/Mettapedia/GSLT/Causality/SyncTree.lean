@@ -13,7 +13,7 @@ Meredith's "Computation, Causality, and Consciousness" (2026), Part I.
 * `ClosedEdge` — Autonomous rewrite edge (Definition 4.1)
 * `OpenEdge` — Context-labeled interactive edge (Definition 4.2)
 * `OpenReachable` — Multi-step reachability in the open tree
-* `AutonomousCausalOrder` / `InteractiveCausalOrder` — Causal preorder kernels (Def 4.3)
+* `AutonomousCausalOrder` / `InteractiveCausalOrder` — Causal partial orders (Def 4.3)
 * `InteractivePath` — Context-labeled paths with length (Definition 4.4)
 * `closedReachable_implies_openReachable` — ST^c(P) ⊆ ST^o(P) (Proposition 4.1)
 
@@ -34,7 +34,6 @@ open tree is a pure interface: it does nothing alone but responds to everything.
 namespace Mettapedia.GSLT
 
 variable (S : GSLT)
-variable [HasMinimalContexts S]
 
 /-! ## Closed Synchronization Trees
 
@@ -67,15 +66,12 @@ structure ClosedEdge (root : S.Term) where
     if and only if it contains a redex.
 -/
 theorem closedTree_trivial_iff_normalForm (P : S.Term) :
-    S.IsNormalForm P ↔ ¬∃ e : ClosedEdge S P, e.source = P := by
+    S.IsNormalForm P ↔ ¬∃ e : S.ClosedEdge P, e.source = P := by
   constructor
-  · intro hnf
-    rintro ⟨⟨source, target, _, step⟩, hsource⟩
-    have hs : source = P := by simpa using hsource
-    have hstep : S.Step P target := by simpa [hs] using step
-    exact hnf ⟨target, hstep⟩
+  · intro hnf ⟨e, heq⟩
+    exact hnf ⟨e.target, heq ▸ e.step⟩
   · intro hno ⟨t', hstep⟩
-    exact hno ⟨⟨P, t', GSLT.MultiStep.refl P, hstep⟩, rfl⟩
+    exact hno ⟨⟨P, t', MultiStep.refl P, hstep⟩, rfl⟩
 
 /-! ## Open Synchronization Trees
 
@@ -97,21 +93,21 @@ structure OpenEdge (root : S.Term) where
   /-- Target term -/
   target : S.Term
   /-- The minimal context that triggers the transition -/
-  context : MinimalContext S
+  context : GSLTContext S
   /-- The transition: K[source] → target -/
   step : S.Step (context.plug source) target
 
 /-- Multi-step reachability in the open synchronization tree -/
 inductive OpenReachable : S.Term → S.Term → Prop where
   | refl (t : S.Term) : OpenReachable t t
-  | step {t u v : S.Term} (K : MinimalContext S)
+  | step {t u v : S.Term} (K : GSLTContext S)
       (h : S.Step (K.plug t) u) (hr : OpenReachable u v) :
       OpenReachable t v
 
 /-- Autonomous steps are a special case of context-labeled steps (with identity context) -/
 theorem autonomous_is_open_step {t t' : S.Term} (h : S.Step t t') :
-    S.Step ((MinimalContext.id (S := S)).plug t) t' := by
-  simp [MinimalContext.id]
+    S.Step ((GSLTContext.id (S := S)).plug t) t' := by
+  simp [GSLTContext.id]
   exact h
 
 /-- Every autonomously reachable term is also openly reachable.
@@ -119,18 +115,17 @@ theorem autonomous_is_open_step {t t' : S.Term} (h : S.Step t t') :
     Proposition 4.1 (partial): ST^c(P) ⊆ ST^o(P) as directed graphs.
 -/
 theorem closedReachable_implies_openReachable {t u : S.Term}
-    (h : S.MultiStep t u) : OpenReachable S t u := by
+    (h : S.MultiStep t u) : S.OpenReachable t u := by
   induction h with
   | refl t => exact OpenReachable.refl t
   | step hstep _ ih =>
-    exact OpenReachable.step (MinimalContext.id) (autonomous_is_open_step S hstep) ih
+    exact OpenReachable.step (GSLTContext.id) (autonomous_is_open_step S hstep) ih
 
 /-! ## Causal Structure
 
     Definition 4.3 (Meredith 2026): Both ST^c(P) and ST^o(P) are directed
-    graphs whose transitive closures organize causal precedence. This file
-    currently formalizes the preorder kernel; the stronger causal-set claims
-    require additional antisymmetry and finiteness hypotheses.
+    graphs whose transitive closures are partial orders. Each is a causal set
+    in the sense of Bombelli-Lee-Sorkin.
 -/
 
 /-- The autonomous causal order: transitive closure of the closed sync tree edges.
@@ -139,28 +134,28 @@ def AutonomousCausalOrder (t u : S.Term) : Prop := S.MultiStep t u
 
 /-- The interactive causal order: transitive closure of the open sync tree edges.
     Q ≤ Q' means "Q can interactively causally influence Q'." -/
-def InteractiveCausalOrder (t u : S.Term) : Prop := OpenReachable S t u
+def InteractiveCausalOrder (t u : S.Term) : Prop := S.OpenReachable t u
 
 /-- The autonomous causal order is reflexive -/
-theorem autonomousCausalOrder_refl (t : S.Term) : AutonomousCausalOrder S t t :=
-  GSLT.MultiStep.refl t
+theorem autonomousCausalOrder_refl (t : S.Term) : S.AutonomousCausalOrder t t :=
+  MultiStep.refl t
 
 /-- The interactive causal order is reflexive -/
-theorem interactiveCausalOrder_refl (t : S.Term) : InteractiveCausalOrder S t t :=
+theorem interactiveCausalOrder_refl (t : S.Term) : S.InteractiveCausalOrder t t :=
   OpenReachable.refl t
 
 /-- The autonomous causal order is transitive -/
 theorem autonomousCausalOrder_trans {t u v : S.Term}
-    (h1 : AutonomousCausalOrder S t u) (h2 : AutonomousCausalOrder S u v) :
-    AutonomousCausalOrder S t v := by
+    (h1 : S.AutonomousCausalOrder t u) (h2 : S.AutonomousCausalOrder u v) :
+    S.AutonomousCausalOrder t v := by
   induction h1 with
   | refl _ => exact h2
-  | step hstep _ ih => exact GSLT.MultiStep.step hstep (ih h2)
+  | step hstep _ ih => exact MultiStep.step hstep (ih h2)
 
 /-- The interactive causal order is transitive -/
 theorem interactiveCausalOrder_trans {t u v : S.Term}
-    (h1 : InteractiveCausalOrder S t u) (h2 : InteractiveCausalOrder S u v) :
-    InteractiveCausalOrder S t v := by
+    (h1 : S.InteractiveCausalOrder t u) (h2 : S.InteractiveCausalOrder u v) :
+    S.InteractiveCausalOrder t v := by
   induction h1 with
   | refl _ => exact h2
   | step K hstep _ ih => exact OpenReachable.step K hstep (ih h2)
@@ -170,7 +165,7 @@ theorem interactiveCausalOrder_trans {t u v : S.Term}
     Proposition 4.1 (Meredith 2026): ST^c(P) ⊆ ST^o(P) as causal orders.
 -/
 theorem autonomousCausal_embeds_interactive {t u : S.Term}
-    (h : AutonomousCausalOrder S t u) : InteractiveCausalOrder S t u :=
+    (h : S.AutonomousCausalOrder t u) : S.InteractiveCausalOrder t u :=
   closedReachable_implies_openReachable S h
 
 /-! ## Causal Distance
@@ -186,8 +181,8 @@ theorem autonomousCausal_embeds_interactive {t u : S.Term}
 def AutonomousPath (t u : S.Term) : Type _ := S.RewritePath t u
 
 /-- Length of an autonomous path = autonomous causal distance -/
-def AutonomousPath.length {t u : S.Term} (p : AutonomousPath S t u) : Nat :=
-  GSLT.RewritePath.length (S := S) p
+def AutonomousPath.length {t u : S.Term} (p : S.AutonomousPath t u) : Nat :=
+  RewritePath.length S p
 
 /-- An interactive (context-labeled) path.
 
@@ -196,12 +191,12 @@ def AutonomousPath.length {t u : S.Term} (p : AutonomousPath S t u) : Nat :=
 -/
 inductive InteractivePath : S.Term → S.Term → Type _ where
   | nil (t : S.Term) : InteractivePath t t
-  | cons {t u v : S.Term} (K : MinimalContext S)
+  | cons {t u v : S.Term} (K : GSLTContext S)
       (h : S.Step (K.plug t) u) (rest : InteractivePath u v) :
       InteractivePath t v
 
 /-- Length of an interactive path = interactive causal distance -/
-def InteractivePath.length : {t u : S.Term} → InteractivePath S t u → Nat
+def InteractivePath.length : {t u : S.Term} → S.InteractivePath t u → Nat
   | _, _, .nil _ => 0
   | _, _, .cons _ _ rest => 1 + rest.length
 
@@ -209,25 +204,20 @@ def InteractivePath.length : {t u : S.Term} → InteractivePath S t u → Nat
 
     This witnesses the embedding ST^c ⊆ ST^o at the path level.
 -/
-def rewritePathToInteractive : {t u : S.Term} → S.RewritePath t u → InteractivePath S t u
+def RewritePath.toInteractive : {t u : S.Term} → S.RewritePath t u → S.InteractivePath t u
   | _, _, .nil t => InteractivePath.nil t
   | _, _, .cons hstep rest =>
-      InteractivePath.cons (MinimalContext.id (S := S)) (autonomous_is_open_step S hstep)
-        (rewritePathToInteractive rest)
-
-/-- Namespace-friendly alias for lifting autonomous paths to the open tree. -/
-abbrev RewritePath.toInteractive {t u : S.Term} (p : S.RewritePath t u) : InteractivePath S t u :=
-  rewritePathToInteractive (S := S) p
+      InteractivePath.cons (GSLTContext.id) (autonomous_is_open_step S hstep)
+        rest.toInteractive
 
 /-- Lifting preserves path length -/
 theorem RewritePath.toInteractive_length {t u : S.Term} (p : S.RewritePath t u) :
-    InteractivePath.length (S := S) (RewritePath.toInteractive (S := S) p) =
-      GSLT.RewritePath.length (S := S) p := by
+    (p.toInteractive S).length S = p.length S := by
   induction p with
   | nil _ => rfl
   | cons _ rest ih =>
-    simp [RewritePath.toInteractive, rewritePathToInteractive, InteractivePath.length,
-      GSLT.RewritePath.length, ih]
+    simp [toInteractive, InteractivePath.length, RewritePath.length]
+    exact ih
 
 /-! ## Remark 4.1: The Program/Environment Boundary
 
@@ -248,7 +238,7 @@ theorem RewritePath.toInteractive_length {t u : S.Term} (p : S.RewritePath t u) 
     it fires immediately.
 -/
 def IsPureInterface (t : S.Term) : Prop :=
-  S.IsNormalForm t ∧ ∃ K : MinimalContext S, ∃ t', S.Step (K.plug t) t'
+  S.IsNormalForm t ∧ ∃ K : GSLTContext S, ∃ t', S.Step (K.plug t) t'
 
 /-- A term is autonomously active if it has at least one autonomous rewrite -/
 def IsAutonomouslyActive (t : S.Term) : Prop :=
@@ -262,7 +252,7 @@ This file establishes:
 2. **OpenReachable**: Multi-step reachability in the open tree
 3. **closedTree_trivial_iff_normalForm**: Trivial closed tree ↔ normal form
 4. **closedReachable_implies_openReachable**: ST^c ⊆ ST^o (Prop 4.1)
-5. **AutonomousCausalOrder / InteractiveCausalOrder**: Causal preorder kernels (Def 4.3)
+5. **AutonomousCausalOrder / InteractiveCausalOrder**: Causal partial orders (Def 4.3)
 6. **autonomousCausal_embeds_interactive**: Autonomous ⊆ interactive (Prop 4.1)
 7. **InteractivePath**: Context-labeled paths with length (Def 4.4)
 8. **RewritePath.toInteractive**: Lifting autonomous → interactive paths
@@ -272,8 +262,7 @@ This file establishes:
 
 **No sorry statements** — everything is fully proven.
 
-**Next**: the finite-support path-integral layer in
-         `Dynamics/PathIntegral.lean`, then the Theorem 10.1 synthesis layer
+**Next**: `Dynamics/PathIntegral.lean` (Definition 9.1–9.2)
 -/
 
 end Mettapedia.GSLT
