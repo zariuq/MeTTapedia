@@ -22,6 +22,18 @@ private def renderCollType : CollType → String
   | .hashBag => "HashBag"
   | .hashSet => "HashSet"
 
+private def renderTypeDecl (typeDecl : TypeDecl) : String :=
+  match typeDecl.carrier with
+  | .ast => typeDecl.name
+  | .tokenLabel => s!"![label] as {typeDecl.name}"
+  | .tokenRaw => s!"![raw] as {typeDecl.name}"
+  | .tokenProof => s!"![proofTok] as {typeDecl.name}"
+  | .tokenPath => s!"![path] as {typeDecl.name}"
+  -- CarrierKind models "builtin integer" abstractly; Rust export picks i64 as default.
+  | .builtinInt => s!"![i64] as {typeDecl.name}"
+  | .builtinString => s!"![str] as {typeDecl.name}"
+  | .builtinBool => s!"![bool] as {typeDecl.name}"
+
 partial def renderTypeExpr : TypeExpr → String
   | .base n => n
   | .arrow d c => s!"[{renderTypeExpr d} -> {renderTypeExpr c}]"
@@ -167,11 +179,12 @@ private def renderSection (title : String) (lines : List String) : String :=
 
 /-- Collect (relation-name, arity) pairs from all premises in a language. -/
 private def collectRelationArities (lang : LanguageDef) : List (String × Nat) :=
+  let rec fromPremise : Premise → List (String × Nat)
+    | .relationQuery rel args => [(rel, args.length)]
+    | .forAll _ _ body => fromPremise body
+    | _ => []
   let fromPremises (ps : List Premise) : List (String × Nat) :=
-    ps.filterMap fun p =>
-      match p with
-      | .relationQuery rel args => some (rel, args.length)
-      | _ => none
+    (ps.map fromPremise).flatten
   let fromEqs := (lang.equations.map (fun e => fromPremises e.premises)).flatten
   let fromRws := (lang.rewrites.map (fun r => fromPremises r.premises)).flatten
   fromEqs ++ fromRws
@@ -187,7 +200,7 @@ private def overloadedRelations (lang : LanguageDef) : List String :=
 /-- Render a Lean `LanguageDef` into Rust `language! { ... }` macro text. -/
 def renderLanguage (lang : LanguageDef) : String :=
   let overloaded := overloadedRelations lang
-  let typeLines := lang.types.map (fun t => s!"        {t}")
+  let typeLines := lang.types.map (fun t => s!"        {renderTypeDecl t}")
   let termLines := lang.terms.map renderGrammarRule
   let eqLines := (indexed lang.equations).map (fun (idx, eqn) => renderEquation overloaded idx eqn)
   let rwLines := (indexed lang.rewrites).map (fun (idx, rw) => renderRewrite overloaded idx rw)
@@ -209,7 +222,7 @@ def renderLanguage (lang : LanguageDef) : String :=
 using `syntaxPattern` for concrete term parsing when provided. -/
 def renderLanguageWithUserSyntax (lang : LanguageDef) : String :=
   let overloaded := overloadedRelations lang
-  let typeLines := lang.types.map (fun t => s!"        {t}")
+  let typeLines := lang.types.map (fun t => s!"        {renderTypeDecl t}")
   let termLines := lang.terms.map renderGrammarRuleWithUserSyntax
   let eqLines := (indexed lang.equations).map (fun (idx, eqn) => renderEquation overloaded idx eqn)
   let rwLines := (indexed lang.rewrites).map (fun (idx, rw) => renderRewrite overloaded idx rw)

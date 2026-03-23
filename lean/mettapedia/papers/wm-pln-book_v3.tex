@@ -1760,7 +1760,12 @@ the remaining per-apartment evidence is independent, and
 additivity recovers.  The quorum structure matters too: if the
 building requires two apartments to agree before revising the
 hallway humidity state, a single apartment's reading cannot force
-an update---that is the semitopological actionability constraint.}
+an update---that is the semitopological actionability constraint.}%
+\footnote{Both examples kernel-checked:
+\codepath{Mettapedia/Logic/PLNMapleCourtOverlapDemo.lean}
+(8~theorems) and
+\codepath{Mettapedia/Logic/PLNMapleCourtCoalitionDemo.lean}
+(13~theorems), both 0~sorry.}
 
 \subsection{The Additive Regime as the Main Powerhouse}
 
@@ -6235,6 +6240,58 @@ The side condition is finite support (the grounding set must be
 finite).  Under this condition, the MLN marginal probability IS
 the WM strength view---not an approximation, but an identity.
 
+\paragraph{There are now two certified MLN cases.}
+The current formalization separates the MLN story into two mathematically
+different regimes:
+\begin{enumerate}
+\item \textbf{Finite-support / ground MLNs.}  Here the partition function is
+  finite, and the WM bridge is an exact identity on query probabilities
+  (Theorem~\ref{thm:mln-wm-strength}).
+\item \textbf{Countably infinite MLNs.}  Here the semantics is no longer a
+  single finite normalization problem; it becomes a Gibbs/DLR measure
+  problem.  The formalization now proves an existence theorem for the
+  classical weighted-clause surface and a uniqueness theorem under a uniform
+  Dobrushin contraction hypothesis.
+\end{enumerate}
+
+\begin{theorem}[Infinite MLN existence on countable domains (\claimConditional{})]
+\label{thm:infinite-mln-existence}
+Fix a countable atom type presented by $e : \mathbb{N} \simeq \mathrm{Atom}$,
+an exhaustion of finite regions, and a boundary condition $\xi$.  Then a
+classical infinite MLN induces a probability measure $\mu$ satisfying the
+fixed-region cylinder DLR equations for the associated strictly positive Gibbs
+specification.%
+\footnote{Formalized as
+\code{exists\_fixedRegionCylinderDLR\_of\_equiv} in
+\codepath{Mettapedia/Logic/PLNMarkovLogicInfiniteUniqueness.lean},
+transferring the compactness packaging from
+\codepath{Mettapedia/Logic/PLNMarkovLogicInfiniteExistence.lean}
+(0~sorry in the current slice).}
+\end{theorem}
+
+\begin{theorem}[Infinite MLN uniqueness under uniform small total influence (\claimConditional{})]
+\label{thm:infinite-mln-uniqueness}
+If an infinite classical MLN satisfies a uniform Dobrushin bound
+\[
+  \exists C < 1 \;\; \forall a,\;
+  \sum_b C(a,b) \le C,
+\]
+then it has at most one fixed-region cylinder DLR probability measure.%
+\footnote{Formalized as
+\code{paperUniformSmallTotalInfluence\_implies\_paperUniqueMeasure}
+in \codepath{Mettapedia/Logic/PLNMarkovLogicInfiniteUniqueness.lean}
+(0~sorry in the current slice).}
+\end{theorem}
+
+\noindent
+So the finite and infinite cases certify different kinds of statements.
+The finite theorem says: \emph{the extracted WM strength is exactly the MLN
+marginal}.  The infinite theorem says: \emph{the local Gibbs laws extend to a
+global probability measure, and under the uniform Dobrushin condition that
+global semantics is unique}.  This is the right abstraction shift: exact
+probabilities in the finite case, well-posed Gibbs semantics in the infinite
+case.
+
 \paragraph{Compatibility-gated evidence roles.}
 The more interesting result is not the identity but the
 \emph{decomposition}.  An MLN clause weight is a single number;
@@ -6389,6 +6446,38 @@ a BN-compatible evidence contribution (the chain
 WallHumidity $\to$ MoldRisk) and a residual.  The compatibility
 gate certifies that the chain structure holds, licensing the
 compiled deduction rewrite.}
+
+\paragraph{Worked example: the infinite belief line.}
+The infinite MLN example
+\codepath{Mettapedia/Logic/PLNMarkovLogicInfiniteBeliefLineExample.lean}
+models an unbounded line of agents indexed by $\mathbb{N}$.  Each site has a
+soft prior clause favoring belief, and each edge carries a soft influence
+clause
+\[
+  \mathrm{Believes}(n) \to \mathrm{Believes}(n{+}1).
+\]
+The existence theorem gives a global Gibbs measure for this open-ended social
+system, while the local DLR corollary shows that resampling the neighborhood
+around site~$n$ preserves the marginal belief probability at~$n$.%
+\footnote{Formalized as
+\code{exists\_beliefLine\_fixedRegionCylinderDLR} and
+\code{beliefLine\_singleAgentBelief\_fixedRegionDLR} in
+\codepath{Mettapedia/Logic/PLNMarkovLogicInfiniteBeliefLineExample.lean}.}
+
+\noindent
+This matters for modeling because many relational systems are not naturally
+finite.  Positive examples include an indefinitely long hallway of
+Maple-Court-style apartments with local leak--humidity influence, an
+open-ended trust or rumor-propagation chain, or a supply line where each site
+depends mainly on nearby sites.  The infinite MLN formalization says when such
+local log-linear laws define a \emph{global} semantics rather than merely a
+sequence of finite approximations.
+
+\noindent
+Negative example: the current uniqueness theorem does \emph{not} say that
+every infinite MLN has a unique global measure.  If the total incoming
+influence is not uniformly below~$1$, the proved theorem does not apply, and
+boundary-dependent or phase-transition-like behavior remains possible.
 
 
 %% ═══════════════════════════════════════════════════════════════
@@ -8092,6 +8181,15 @@ assign computable weights, and form a mixture that competes with
 each component up to the log inverse weight.  The lane is E/E:
 both the carrier and the full inference procedure are exact.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{../results/figures/pplbench_normal_normal_adaptive_pll.png}
+\caption{Hook-B Adaptive Normal-Normal: mixture posterior over
+  prior-variance hypotheses.  The adaptive lane matches the
+  universal prediction bound.}
+\label{fig:pplbench-adaptive}
+\end{figure}
+
 
 \section{Exact Dirichlet-Categorical}
 
@@ -8115,6 +8213,14 @@ $(40, 8, 2)$, the posterior probability of ``faulty'' is
 $2/50 = 0.04$ with high confidence.  This is the same
 algebraic discipline as binary evidence---only the carrier
 dimension changes.}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{../results/figures/pplbench_dirichlet_categorical_pll.png}
+\caption{Dirichlet-Categorical lane: WM-PLN predictive
+  log-likelihood matches the analytical conjugate posterior.}
+\label{fig:pplbench-dirichlet}
+\end{figure}
 
 
 \section{Noisy-OR Topic Model}
@@ -8155,7 +8261,7 @@ substantial:
 \fill[red!40] (0, 0) rectangle (10mm, {(-8.16-\baseline)*\pllscale});
 \node[font=\scriptsize, anchor=south] at (5mm, {(-8.16-\baseline)*\pllscale})
   {$-8.16$};
-\node[font=\scriptsize, anchor=north] at (5mm, -2mm) {Legacy\\[-1pt]PLN};
+\node[font=\scriptsize, anchor=north, align=center] at (5mm, -2mm) {Legacy\\[-1pt]PLN};
 % Stan: -5.33 → height ~35.9mm
 \fill[blue!30] (15mm, 0) rectangle (25mm, {(-5.33-\baseline)*\pllscale});
 \node[font=\scriptsize, anchor=south] at (20mm, {(-5.33-\baseline)*\pllscale})
@@ -8165,7 +8271,7 @@ substantial:
 \fill[green!40] (30mm, 0) rectangle (40mm, {(-5.17-\baseline)*\pllscale});
 \node[font=\scriptsize, anchor=south] at (35mm, {(-5.17-\baseline)*\pllscale})
   {$-5.17$};
-\node[font=\scriptsize, anchor=north] at (35mm, -2mm) {Semantic\\[-1pt]WM-PLN};
+\node[font=\scriptsize, anchor=north, align=center] at (35mm, -2mm) {Semantic\\[-1pt]WM-PLN};
 % Axis
 \draw[->] (-2mm, 0) -- (-2mm, 42mm) node[above, font=\tiny] {PLL $\uparrow$};
 \draw (-3mm, 0) -- (-1mm, 0);
@@ -8208,6 +8314,34 @@ Weighted Gaussian evidence with residual scale.  The scheduler
 runs iterative reweighting.  The main limitation is that the
 degrees-of-freedom parameter $\nu$ is fixed, not carried as
 part of the evidence state.
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{../results/figures/pplbench_crowd_sourced_annotation_pll.png}
+\end{minipage}\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{../results/figures/pplbench_n_schools_pll.png}
+\end{minipage}
+
+\medskip
+\begin{minipage}{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{../results/figures/pplbench_logistic_regression_pll.png}
+\end{minipage}\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{../results/figures/pplbench_robust_regression_pll.png}
+\end{minipage}
+\caption{Remaining PPLBench lanes.
+  \emph{Top left:} crowd-sourced annotation (EM scheduler).
+  \emph{Top right:} hierarchical $n$-schools (coordinate residual).
+  \emph{Bottom left:} logistic regression (variational, lags Stan).
+  \emph{Bottom right:} robust regression (iterative reweighting).}
+\label{fig:pplbench-remaining}
+\end{figure}
 
 
 \section{Cross-Backend Check}
@@ -8630,6 +8764,13 @@ File & Lines & Thm & Backs \\
 \code{OSLF/Framework/GovernanceInstance} & 268 & 11 & Ch~15 \\
 \code{Logic/LP/RangeRestriction} & 197 & 9 & Ch~16 \\
 \midrule
+\multicolumn{4}{@{}l}{\emph{Bridge Files (Part~V)}} \\
+\midrule
+\code{Logic/PLNMarkovLogicWorldModel} & 44 & 2 & Ch~16 \\
+\code{Logic/PLNMarkovLogicInfiniteExistence} & 146 & 3 & Ch~16 \\
+\code{Logic/PLNMarkovLogicInfiniteUniqueness} & 6758 & 236 & Ch~16 \\
+\code{Logic/PLNMarkovLogicInfiniteBeliefLineExample} & 241 & 6 & Ch~16 \\
+\midrule
 \multicolumn{4}{@{}l}{\emph{Applications (Part~VI)}} \\
 \midrule
 \code{Logic/PLNBrokenSensorDemo} & 420 & 31 & Ch~20 \\
@@ -8652,14 +8793,14 @@ File & Lines & Thm & Backs \\
 \code{Logic/BooleanHeytingBridge} & $\sim$100 & 4 & Ch~4 \\
 \code{Logic/AIOutcomesDemo} & 280 & 13 & Ch~24 \\
 \midrule
-\textbf{Total (book-referenced files)} & \textbf{$\sim$11,700} & \textbf{704} & \\
+\textbf{Total (book-referenced files)} & \textbf{$\sim$18,900} & \textbf{951} & \\
 \bottomrule
 \end{longtable}
 
 \noindent
 Additional project files (Datalog formalization, rho-calculus,
 OSLF framework, MeTTa HE spec, HOL completeness) bring the
-full project to $\sim$700 theorems.  The entire formalization
+full project well beyond the book-referenced slice.  The entire formalization
 has 0~sorry and 0~\code{native\_decide}.
 
 

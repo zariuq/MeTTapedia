@@ -7,6 +7,8 @@ import GFCore.SigGen
 import GFCore.LexGen
 import GFCore.Repair
 import GFCore.RGLView
+import GFCore.ConceptId
+import GFCore.Grounding
 import GFCore.Frame
 import GFCore.FrameExtract
 import GFCore.Entailment
@@ -16,3 +18,5 @@ import GFCore.NormClause
 import GFCore.TermExtract
 import GFCore.AtomExtract
 import GFCore.AtomEntailment
+import GFCore.Background
+import GFCore.Variance

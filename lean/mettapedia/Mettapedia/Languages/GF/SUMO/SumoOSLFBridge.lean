@@ -23,7 +23,7 @@ LanguageDef, which then automatically gets:
 -/
 
 import Mettapedia.Languages.GF.SUMO.SumoAbstract
-import Mettapedia.Languages.GF.OSLFBridge
+import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 import Mettapedia.OSLF.MeTTaIL.Engine
 
 namespace Mettapedia.Languages.GF.SUMO.SumoOSLFBridge

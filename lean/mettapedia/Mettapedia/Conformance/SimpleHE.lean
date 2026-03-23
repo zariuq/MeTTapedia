@@ -1,4 +1,4 @@
-import Algorithms.MeTTa.HE.Lowering
+import Algorithms.MeTTa.HE.LegacySessionBridge
 import Mettapedia.Languages.MeTTa.HE.EvalSpec
 
 namespace Mettapedia.Conformance.SimpleHE

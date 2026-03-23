@@ -30,6 +30,38 @@ inductive CollType where
   | hashSet  : CollType  -- HashSet(T): set (no duplicates)
 deriving DecidableEq, Repr
 
+/-! ## Type Declarations and Carriers -/
+
+/-- Carrier class for declared language types. -/
+inductive CarrierKind where
+  | ast
+  | tokenLabel
+  | tokenRaw
+  | tokenProof
+  | tokenPath
+  | builtinInt
+  | builtinString
+  | builtinBool
+deriving DecidableEq, Repr
+
+/-- Named type declaration in the authored language definition. -/
+structure TypeDecl where
+  name : String
+  carrier : CarrierKind := .ast
+deriving DecidableEq, Repr
+
+namespace TypeDecl
+
+def plain (typeName : String) : TypeDecl := { name := typeName }
+
+end TypeDecl
+
+instance : Coe String TypeDecl := ⟨TypeDecl.plain⟩
+instance : ToString TypeDecl := ⟨TypeDecl.name⟩
+
+instance : Membership String (List TypeDecl) where
+  mem decls typeName := typeName ∈ decls.map (·.name)
+
 /-! ## Type Expressions -/
 
 /-- Type expressions in MeTTaIL -/
@@ -336,6 +368,7 @@ inductive Premise where
   | freshness : FreshnessCondition → Premise
   | congruence : Pattern → Pattern → Premise
   | relationQuery : String → List Pattern → Premise
+  | forAll : String → String → Premise → Premise
 deriving Repr
 
 def Premise.renderJson : Premise → String
@@ -348,6 +381,10 @@ def Premise.renderJson : Premise → String
   | .relationQuery rel args =>
       "{\"kind\":\"relation_query\",\"relation\":" ++ jsonStrSyntax rel
         ++ ",\"args\":[" ++ String.intercalate "," (args.map Pattern.renderJson) ++ "]}"
+  | .forAll collection param body =>
+      "{\"kind\":\"for_all\",\"collection\":" ++ jsonStrSyntax collection
+        ++ ",\"param\":" ++ jsonStrSyntax param
+        ++ ",\"body\":" ++ body.renderJson ++ "}"
 
 /-! ## Equations -/
 
@@ -373,17 +410,47 @@ deriving Repr
 
 /-! ## Complete Language Definition -/
 
-/-- A complete MeTTaIL language definition -/
+/-- Signature for a derived relation declaration in the logic layer. -/
+structure LogicRelationDecl where
+  name : String
+  argTypes : List TypeExpr
+deriving Repr
+
+/-- Backend-agnostic logic declarations authored alongside rules.
+    `ruleText` is intentionally plain text for now so we can migrate authoring
+    style first without forcing an immediate backend-specific AST. -/
+inductive LogicDecl where
+  | relation : LogicRelationDecl → LogicDecl
+  | ruleText : String → LogicDecl
+deriving Repr
+
+/-- Signature for host/runtime-provided oracle operations. -/
+structure OracleDecl where
+  name : String
+  argTypes : List TypeExpr
+  resultType : TypeExpr
+deriving Repr
+
+/-- New primary language definition surface (authoritative). -/
 structure LanguageDef where
   name : String
-  types : List String
+  types : List TypeDecl
   terms : List GrammarRule
   equations : List Equation
   rewrites : List RewriteRule
   /-- Collection shapes where one-step congruence descent is permitted.
       This controls subterm/context rewriting in the generic engine.
-      By default all collection kinds are enabled. -/
-  congruenceCollections : List CollType := [.vec, .hashBag, .hashSet]
+      Default is empty: each language should opt in explicitly. -/
+  congruenceCollections : List CollType := []
+  logic : List LogicDecl := []
+  oracles : List OracleDecl := []
+deriving Repr
+
+/-- Legacy compatibility wrapper.
+    Direction is intentional: legacy depends on the new LanguageDef,
+    never the other way around. -/
+structure LegacyLanguageDef extends LanguageDef where
+  legacyCompatOnly : Unit := ()
 deriving Repr
 
 namespace LanguageDef
@@ -391,8 +458,20 @@ namespace LanguageDef
 def empty (name : String) : LanguageDef :=
   { name, types := [], terms := [], equations := [], rewrites := [] }
 
-def addType (lang : LanguageDef) (ty : String) : LanguageDef :=
-  { lang with types := lang.types ++ [ty] }
+def addType (lang : LanguageDef) (typeName : String) : LanguageDef :=
+  { lang with types := lang.types ++ [TypeDecl.plain typeName] }
+
+def addTypeDecl (lang : LanguageDef) (typeDecl : TypeDecl) : LanguageDef :=
+  { lang with types := lang.types ++ [typeDecl] }
+
+def typeNames (lang : LanguageDef) : List String :=
+  lang.types.map (·.name)
+
+def hasTypeNamed (lang : LanguageDef) (typeName : String) : Prop :=
+  typeName ∈ lang.types
+
+def addTypeNamed (lang : LanguageDef) (typeName : String) : LanguageDef :=
+  addType lang typeName
 
 def addTerm (lang : LanguageDef) (rule : GrammarRule) : LanguageDef :=
   { lang with terms := lang.terms ++ [rule] }
@@ -411,6 +490,22 @@ instance (lang : LanguageDef) (ct : CollType) :
     Decidable (LanguageDef.allowsCongruenceIn lang ct) := by
   unfold LanguageDef.allowsCongruenceIn
   infer_instance
+
+/-- Forgetful lowering from the new language surface to legacy core. -/
+def toLegacy (lang : LanguageDef) : LegacyLanguageDef :=
+  { toLanguageDef := lang }
+
+/-- Compatibility embedding from legacy core into the new language surface. -/
+def fromLegacy (legacy : LegacyLanguageDef) : LanguageDef :=
+  legacy.toLanguageDef
+
+@[simp] theorem toLegacy_fromLegacy (legacy : LegacyLanguageDef) :
+    toLegacy (fromLegacy legacy) = legacy := by
+  cases legacy
+  rfl
+
+@[simp] theorem fromLegacy_toLegacy (lang : LanguageDef) :
+    fromLegacy (toLegacy lang) = lang := rfl
 
 end LanguageDef
 

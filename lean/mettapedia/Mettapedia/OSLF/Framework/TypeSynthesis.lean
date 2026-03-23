@@ -93,6 +93,31 @@ theorem exec_to_langReducesUsing (relEnv : RelationEnv) (lang : LanguageDef)
 def langReduces (lang : LanguageDef) (p q : Pattern) : Prop :=
   langReducesUsing RelationEnv.empty lang p q
 
+/-! ## Step 1b: Legacy Compatibility Bridge
+
+These lemmas make the compatibility layer explicit:
+lowering via `LanguageDef.toLegacy` preserves executable/declarative
+reduction semantics definitionally.
+-/
+
+@[simp] theorem langReducesExecUsing_toLegacy_iff
+    (relEnv : RelationEnv) (lang : LanguageDef) (p q : Pattern) :
+    langReducesExecUsing relEnv (LanguageDef.toLegacy lang).toLanguageDef p q
+      ↔ langReducesExecUsing relEnv lang p q := by
+  rfl
+
+@[simp] theorem langReducesUsing_toLegacy_iff
+    (relEnv : RelationEnv) (lang : LanguageDef) (p q : Pattern) :
+    langReducesUsing relEnv (LanguageDef.toLegacy lang).toLanguageDef p q
+      ↔ langReducesUsing relEnv lang p q := by
+  rfl
+
+@[simp] theorem langReduces_toLegacy_iff
+    (lang : LanguageDef) (p q : Pattern) :
+    langReduces (LanguageDef.toLegacy lang).toLanguageDef p q
+      ↔ langReduces lang p q := by
+  rfl
+
 /-! ## Step 2: RewriteSystem from LanguageDef -/
 
 /-- Convert a LanguageDef into a RewriteSystem, parameterized by relation env.
@@ -116,6 +141,18 @@ def langRewriteSystemUsing (relEnv : RelationEnv) (lang : LanguageDef)
 def langRewriteSystem (lang : LanguageDef) (procSort : String := "Proc") :
     RewriteSystem :=
   langRewriteSystemUsing RelationEnv.empty lang procSort
+
+@[simp] theorem langRewriteSystemUsing_toLegacy_eq
+    (relEnv : RelationEnv) (lang : LanguageDef) (procSort : String := "Proc") :
+    langRewriteSystemUsing relEnv (LanguageDef.toLegacy lang).toLanguageDef procSort
+      = langRewriteSystemUsing relEnv lang procSort := by
+  rfl
+
+@[simp] theorem langRewriteSystem_toLegacy_eq
+    (lang : LanguageDef) (procSort : String := "Proc") :
+    langRewriteSystem (LanguageDef.toLegacy lang).toLanguageDef procSort
+      = langRewriteSystem lang procSort := by
+  rfl
 
 /-! ## Step 3: Reduction Span -/
 
@@ -251,6 +288,18 @@ def langOSLF (lang : LanguageDef) (procSort : String := "Proc") :
 /-- `langOSLF` is definitionally equal to `langOSLFUsing RelationEnv.empty`. -/
 theorem langOSLF_eq_langOSLFUsing_empty (lang : LanguageDef) (procSort : String) :
     langOSLF lang procSort = langOSLFUsing RelationEnv.empty lang procSort := rfl
+
+@[simp] theorem langOSLFUsing_toLegacy_eq
+    (relEnv : RelationEnv) (lang : LanguageDef) (procSort : String := "Proc") :
+    langOSLFUsing relEnv (LanguageDef.toLegacy lang).toLanguageDef procSort
+      = langOSLFUsing relEnv lang procSort := by
+  rfl
+
+@[simp] theorem langOSLF_toLegacy_eq
+    (lang : LanguageDef) (procSort : String := "Proc") :
+    langOSLF (LanguageDef.toLegacy lang).toLanguageDef procSort
+      = langOSLF lang procSort := by
+  rfl
 
 /-! ## Step 6: Native Types -/
 

@@ -182,10 +182,10 @@ instance constructorCategory (lang : LanguageDef) : Category (ConstructorObj lan
 /-! ## ρ-Calculus Instantiation -/
 
 /-- The process sort of rhoCalc -/
-def rhoProc : LangSort rhoCalc := ⟨"Proc", List.Mem.head _⟩
+def rhoProc : LangSort rhoCalc := ⟨"Proc", by decide⟩
 
 /-- The name sort of rhoCalc -/
-def rhoName : LangSort rhoCalc := ⟨"Name", List.Mem.tail _ (List.Mem.head _)⟩
+def rhoName : LangSort rhoCalc := ⟨"Name", by decide⟩
 
 /-- rhoCalc Proc as a constructor category object -/
 def rhoProcObj : ConstructorObj rhoCalc := ⟨rhoProc⟩

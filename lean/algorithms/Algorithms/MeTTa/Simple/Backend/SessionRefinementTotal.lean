@@ -4,6 +4,9 @@ import Algorithms.MeTTa.Simple.Backend.SessionReferenceFaithful
 import Algorithms.MeTTa.Simple.Backend.SessionReferenceTotal
 import Algorithms.MeTTa.Simple.Backend.SessionRefinement
 
+/-! QUARANTINED: Transport theorems depending on SessionRefinement.
+Valid conditional theorems but the conditions (FastPathEq) are not instantiated. -/
+
 namespace Algorithms.MeTTa.Simple.Backend.SessionRefinementTotal
 
 open MeTTailCore.MeTTaIL.Syntax

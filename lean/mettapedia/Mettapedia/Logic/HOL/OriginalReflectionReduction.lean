@@ -180,6 +180,50 @@ structure WitnessedOriginalReflectionTarget where
         ExtDerivation Const Δ φ
 
 /--
+The corrected one-step conservativity theorem boundary (GPT-5.4 Pro route).
+
+Parameterized by `BaseWitnesses` to avoid the empty-signature obstruction.
+Uses `ClosedTheorySet.Provable` (not list-based) so it composes directly
+with `RecursiveStageTheory`.
+
+This is the single remaining hard theorem for original-signature completeness.
+-/
+def WitnessedTheoryConservativityGoal
+    (W : BaseWitnesses Base Const) : Prop :=
+  ∀ {T : ClosedTheorySet Const} {φ : ClosedFormula Const},
+    ClosedTheorySet.Provable
+      (Const := OneStepHenkinConst Base Const)
+      (fun ψ =>
+        (∃ χ : ClosedFormula Const,
+            χ ∈ T ∧
+            OneStepHenkinConst.liftClosedFormula
+              (Base := Base) (Const := Const) χ = ψ) ∨
+          ψ ∈ OneStepHenkinConst.ExactHenkinAxioms
+            (Base := Base) (Const := Const))
+      (OneStepHenkinConst.liftClosedFormula
+        (Base := Base) (Const := Const) φ) →
+    ClosedTheorySet.Provable (Const := Const) T φ
+
+/-- Lift base witnesses through the recursive Henkin stage tower.
+    At each stage, the source witnesses are embedded into the larger signature. -/
+def baseWitnessesOf (W : BaseWitnesses Base Const) :
+    ∀ n, BaseWitnesses Base (HenkinConstStage Base Const n)
+  | 0 => ⟨fun b =>
+      mapConst (HenkinConstStage.ofBase (Base := Base) (Const := Const)) (W.witness b)⟩
+  | n + 1 => ⟨fun b =>
+      mapConst (HenkinConstStage.lift (Base := Base) (Const := Const) (Nat.le_succ n))
+        ((baseWitnessesOf W n).witness b)⟩
+
+-- The adapter from WitnessedTheoryConservativityGoal to
+-- RecursiveStageOneStepReflectionGoal and the final composition theorem
+-- (witnessedOriginalReflectionTarget_proved) go here once the hard
+-- theorem is proved. The composition uses:
+-- - witnessedOriginalReflection_of_stageReduction (line 1140+)
+-- - recursiveStageFiniteReduction_of_supportedOriginalLift (line 1077+)
+-- - supportedOriginalLiftConstructionGoal_proved (line 1402+)
+-- - recursiveStageProvable_zero_iff_originalProvable (line 631+)
+
+/--
 Corrected stage/reflection package after the obstruction theorem.
 
 This is the new abstraction layer that future bridge work should target:
@@ -996,6 +1040,20 @@ def SplitStageLanguageReductionGoal : Prop :=
           (Δ.map (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n))
           (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ)
 
+theorem splitStageLanguageReductionGoal_proved :
+    SplitStageLanguageReductionGoal (Base := Base) (Const := Const) := by
+  intro n Δ φ hStage
+  apply internalStageProvable_succ_to_splitStepProvable (Base := Base) (Const := Const)
+  have hlist :
+      List.map
+        (HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) (Nat.le_succ n))
+        (List.map (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n) Δ) =
+      List.map (HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) (n + 1)) Δ := by
+    rw [List.map_map]; congr 1; ext ψ
+    exact HenkinConstStage.liftBaseClosedFormula_comp (Nat.le_succ n) ψ
+  rw [hlist, HenkinConstStage.liftBaseClosedFormula_comp (Nat.le_succ n)]
+  exact hStage
+
 /--
 Concrete finite-stage reduction goal for the corrected stage-language bridge.
 
@@ -1232,6 +1290,225 @@ def stageLanguageWitnessedOriginalReflectionTarget
     (Const := Const)
     W
     hFinite).toWitnessedOriginalReflectionTarget hStep
+
+/-- Vacuous existential witness axiom: `⊢ ∃x.φ → φ` when φ doesn't use x
+    (i.e., φ = weaken θ for some closed θ). -/
+theorem vacuous_exWitness_axiom_theorem
+    {n : Nat} {σ : Ty Base}
+    (θ : ClosedFormula (HenkinConstStage Base Const n)) :
+    ExtDerivation (HenkinConstStage Base Const n) []
+      (.imp (.ex (weaken (Base := Base) (Const := HenkinConstStage Base Const n) (σ := σ) θ)) θ) := by
+  apply ExtDerivation.impI
+  apply ExtDerivation.exE
+    (σ := σ)
+    (φ := weaken (Base := Base) (Const := HenkinConstStage Base Const n) (σ := σ) θ)
+    (ψ := θ)
+  · exact .hyp (by simp)
+  · exact .hyp (by simp [weakenHyps])
+
+/-- Vacuous universal counterexample axiom: `⊢ φ → ∀x.φ` when φ doesn't use x. -/
+theorem vacuous_allCounterexample_axiom_theorem
+    {n : Nat} {σ : Ty Base}
+    (θ : ClosedFormula (HenkinConstStage Base Const n)) :
+    ExtDerivation (HenkinConstStage Base Const n) []
+      (.imp θ (.all (weaken (Base := Base) (Const := HenkinConstStage Base Const n) (σ := σ) θ))) := by
+  apply ExtDerivation.impI
+  apply ExtDerivation.allI
+  -- context is: weakenHyps [θ] = [weaken θ]
+  -- need to derive: weaken θ
+  exact .hyp (by simp [weakenHyps])
+
+-- The structural vacuity lemma `weaken_of_instantiate_const_noOccurrence`
+-- lives in Subst.lean. It says: if `instantiate (.const c) φ = θ` and `c`
+-- doesn't occur in `θ`, then `φ = weaken θ`. Used below for vacuous axioms.
+
+/-- True classification: if a stage-n formula's HInf lift is a Henkin axiom,
+    then either it's a stage-language Henkin axiom OR it's a theorem
+    (derivable from empty context) at stage n.
+
+    The second case handles vacuous axioms like `∃x.⊤ → ⊤` where the
+    witness constant disappears after instantiation. -/
+theorem lift_mem_henkinAxioms_stage_or_theorem
+    {n : Nat}
+    {ψ : ClosedFormula (HenkinConstStage Base Const n)}
+    (h :
+      HenkinConstInfinity.liftClosedFormula (Base := Base) (Const := Const) ψ ∈
+        HenkinConstInfinity.HenkinAxioms (Base := Base) (Const := Const)) :
+    ψ ∈ StageLanguageHenkinAxioms (Base := Base) (Const := Const) n ∨
+    ExtDerivation (HenkinConstStage Base Const n) [] ψ := by
+  rcases h with ⟨k, σ, φ_k, hEq⟩ | ⟨k, σ, φ_k, hEq⟩
+  · -- ExWitness case
+    by_cases hkn : k + 1 ≤ n
+    · -- Non-vacuous: stage-language axiom
+      left
+      have hψEq : ψ =
+          HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) hkn
+            (HenkinConstStage.exWitnessAxiom (Base := Base) (Const := Const) φ_k) :=
+        HenkinConstInfinity.liftClosedFormula_injective
+          (Base := Base) (Const := Const) (n := n)
+          (hEq.trans (lift_stage_exWitnessAxiom
+            (Base := Base) (Const := Const) hkn φ_k).symm)
+      exact ⟨k, hkn, Or.inl ⟨σ, φ_k, hψEq⟩⟩
+    · -- Vacuous: witness constant can't appear at stage n, formula is a theorem
+      right
+      -- Decompose ψ into .imp antecedent consequent
+      let impW := HenkinConstInfinity.liftFormula_eq_imp_inv
+        (Base := Base) (Const := Const) hEq
+      -- antecedent lifts to .ex (liftFormula φ_k)
+      let exW := HenkinConstInfinity.liftFormula_eq_ex_inv
+        (Base := Base) (Const := Const) (σ := σ) impW.soundAntecedent
+      have hnk : n ≤ k := by omega
+      -- The consequent's lift has no occurrence of the future witness constant
+      have hno : NoConstOccurrence (.exWitness (n := k) φ_k)
+          (HenkinConstInfinity.liftFormula (Base := Base) (Const := Const)
+            impW.consequent) :=
+        noConstOccurrence_liftTerm_exWitness_future hnk φ_k impW.consequent
+      -- instantiate(.const(exWitness), liftFormula exW.body) = liftFormula impW.consequent
+      have h_inst : instantiate (Base := Base)
+          (.const (.exWitness (n := k) φ_k))
+          (HenkinConstInfinity.liftFormula (Base := Base) (Const := Const) exW.body) =
+        HenkinConstInfinity.liftFormula (Base := Base) (Const := Const)
+          impW.consequent := by
+        conv_lhs => rw [exW.soundBody]
+        exact impW.soundConsequent.symm
+      -- By vacuity: exW.body = weaken impW.consequent at HInf level
+      have hbody_weaken := weaken_of_instantiate_const_noOccurrence
+        (HenkinConstInfinity.exWitness (n := k) φ_k) _ _ h_inst hno
+      -- Pull back to stage n via liftFormula injectivity
+      have hbody_stage : exW.body =
+          weaken (Base := Base) (σ := σ) impW.consequent :=
+        HenkinConstInfinity.liftFormula_injective
+          (Base := Base) (Const := Const) (n := n)
+          (hbody_weaken.trans (mapConst_weaken _ _).symm)
+      -- Reconstruct ψ and apply the vacuous axiom theorem
+      rw [impW.shape, exW.shape, hbody_stage]
+      exact vacuous_exWitness_axiom_theorem (σ := σ) impW.consequent
+  · -- AllCounterexample case (symmetric)
+    by_cases hkn : k + 1 ≤ n
+    · left
+      have hψEq : ψ =
+          HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const) hkn
+            (HenkinConstStage.allCounterexampleAxiom (Base := Base) (Const := Const) φ_k) :=
+        HenkinConstInfinity.liftClosedFormula_injective
+          (Base := Base) (Const := Const) (n := n)
+          (hEq.trans (lift_stage_allCounterexampleAxiom
+            (Base := Base) (Const := Const) hkn φ_k).symm)
+      exact ⟨k, hkn, Or.inr ⟨σ, φ_k, hψEq⟩⟩
+    · right
+      let impW := HenkinConstInfinity.liftFormula_eq_imp_inv
+        (Base := Base) (Const := Const) hEq
+      let allW := HenkinConstInfinity.liftFormula_eq_all_inv
+        (Base := Base) (Const := Const) (σ := σ) impW.soundConsequent
+      have hnk : n ≤ k := by omega
+      have hno : NoConstOccurrence (.allCounterexample (n := k) φ_k)
+          (HenkinConstInfinity.liftFormula (Base := Base) (Const := Const)
+            impW.antecedent) :=
+        noConstOccurrence_liftTerm_allCounterexample_future hnk φ_k impW.antecedent
+      have h_inst : instantiate (Base := Base)
+          (.const (.allCounterexample (n := k) φ_k))
+          (HenkinConstInfinity.liftFormula (Base := Base) (Const := Const) allW.body) =
+        HenkinConstInfinity.liftFormula (Base := Base) (Const := Const)
+          impW.antecedent := by
+        conv_lhs => rw [allW.soundBody]
+        exact impW.soundAntecedent.symm
+      have hbody_weaken := weaken_of_instantiate_const_noOccurrence
+        (HenkinConstInfinity.allCounterexample (n := k) φ_k) _ _ h_inst hno
+      have hbody_stage : allW.body =
+          weaken (Base := Base) (σ := σ) impW.antecedent :=
+        HenkinConstInfinity.liftFormula_injective
+          (Base := Base) (Const := Const) (n := n)
+          (hbody_weaken.trans (mapConst_weaken _ _).symm)
+      rw [impW.shape, allW.shape, hbody_stage]
+      exact vacuous_allCounterexample_axiom_theorem (σ := σ) impW.antecedent
+
+/-- The consumer theorem: `supportedStageDerivation_of_deriv` implies
+    `SupportedOriginalLiftConstructionGoal`. -/
+theorem supportedOriginalLiftConstructionGoal_proved :
+    SupportedOriginalLiftConstructionGoal (Base := Base) (Const := Const) := by
+  intro Δ φ hLift
+  rcases hLift with ⟨GammaInf, hGammaInf, dInf⟩
+  -- Get the staged derivation
+  obtain ⟨S⟩ := supportedStageDerivation_of_deriv (Base := Base) (Const := Const) dInf
+  -- Pre-classify: each element of S.context has its HInf lift in GammaInf
+  -- and GammaInf's membership guarantees classify it.
+  -- We extract the classify function WITHOUT rewriting GammaInf.
+  -- 3-way classify: each ψ ∈ S.context is base-lift, stage-axiom, or theorem
+  have h3way :
+      ∀ ψ ∈ S.context,
+        ψ ∈ Δ.map (HenkinConstStage.liftBaseClosedFormula
+          (Base := Base) (Const := Const) S.stage) ∨
+        ψ ∈ StageLanguageHenkinAxioms (Base := Base) (Const := Const) S.stage ∨
+        ExtDerivation (HenkinConstStage Base Const S.stage) [] ψ := by
+    intro ψ hψ
+    have hlift : HenkinConstInfinity.liftFormula (Base := Base) (Const := Const) ψ ∈
+        S.context.map (HenkinConstInfinity.liftFormula (Base := Base) (Const := Const)) :=
+      List.mem_map.mpr ⟨ψ, hψ, rfl⟩
+    have hmem : HenkinConstInfinity.liftFormula (Base := Base) (Const := Const) ψ ∈ GammaInf :=
+      cast (by rw [S.soundContext]) hlift
+    rcases hGammaInf _ hmem with hBase | hHenkin
+    · exact Or.inl (mem_stageLiftedOriginalAssumptions_of_lift_mem
+        (Base := Base) (Const := Const) hBase)
+    · rcases lift_mem_henkinAxioms_stage_or_theorem
+        (Base := Base) (Const := Const) hHenkin with hStage | hThm
+      · exact Or.inr (Or.inl hStage)
+      · exact Or.inr (Or.inr hThm)
+  -- Discharge theorem elements from the derivation, keeping only base-lifts and stage-axioms
+  -- Use discharge_head_theorem iteratively
+  have hφEq : S.formula =
+      HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) S.stage φ :=
+    HenkinConstInfinity.liftClosedFormula_injective
+      (Base := Base) (Const := Const) (n := S.stage)
+      (S.soundFormula.trans (HenkinConstInfinity.liftBaseClosedFormula_sound
+        (Base := Base) (Const := Const) S.stage φ).symm)
+  -- Discharge theorem elements using accumulator induction
+  suffices hDischarge :
+      ∀ (acc Θ : List (ClosedFormula (HenkinConstStage Base Const S.stage))),
+        (∀ ψ ∈ Θ,
+          ψ ∈ Δ.map (HenkinConstStage.liftBaseClosedFormula
+            (Base := Base) (Const := Const) S.stage) ∨
+          ψ ∈ StageLanguageHenkinAxioms (Base := Base) (Const := Const) S.stage ∨
+          ExtDerivation (HenkinConstStage Base Const S.stage) [] ψ) →
+        ExtDerivation (HenkinConstStage Base Const S.stage) (acc ++ Θ)
+          (HenkinConstStage.liftBaseClosedFormula
+            (Base := Base) (Const := Const) S.stage φ) →
+        ∃ Θ' : List (ClosedFormula (HenkinConstStage Base Const S.stage)),
+          (∀ ψ ∈ Θ',
+            ψ ∈ Δ.map (HenkinConstStage.liftBaseClosedFormula
+              (Base := Base) (Const := Const) S.stage) ∨
+            ψ ∈ StageLanguageHenkinAxioms (Base := Base) (Const := Const) S.stage) ∧
+          ExtDerivation (HenkinConstStage Base Const S.stage) (acc ++ Θ')
+            (HenkinConstStage.liftBaseClosedFormula
+              (Base := Base) (Const := Const) S.stage φ) by
+    have ⟨ctx', hcl, d'⟩ := hDischarge [] S.context h3way (by simpa using hφEq ▸ S.deriv)
+    exact ⟨⟨S.stage, ctx', fun hψ => hcl _ hψ, by simpa using d'⟩⟩
+  intro acc Θ hΘ d
+  induction Θ generalizing acc with
+  | nil => exact ⟨[], by simp, d⟩
+  | cons χ rest ih =>
+      have hχ_class := hΘ χ (by simp)
+      have hrest : ∀ ψ ∈ rest, _ := fun ψ hψ => hΘ ψ (List.mem_cons_of_mem _ hψ)
+      have heq_fwd : acc ++ χ :: rest = (acc ++ [χ]) ++ rest := by
+        simp [List.append_assoc]
+      have heq_bwd : ∀ Θ', (acc ++ [χ]) ++ Θ' = acc ++ (χ :: Θ') := by
+        intro Θ'; simp [List.append_assoc]
+      rcases hχ_class with hKeep | hKeep | hThm
+      · -- base-lift: keep χ, move to accumulator
+        have ⟨Θ', hP', d''⟩ := ih (acc ++ [χ]) hrest (heq_fwd ▸ d)
+        exact ⟨χ :: Θ', fun ψ hψ => by
+          rcases List.mem_cons.mp hψ with rfl | hψ'
+          · exact Or.inl hKeep
+          · exact hP' ψ hψ', heq_bwd Θ' ▸ d''⟩
+      · -- stage-axiom: keep χ, same
+        have ⟨Θ', hP', d''⟩ := ih (acc ++ [χ]) hrest (heq_fwd ▸ d)
+        exact ⟨χ :: Θ', fun ψ hψ => by
+          rcases List.mem_cons.mp hψ with rfl | hψ'
+          · exact Or.inr hKeep
+          · exact hP' ψ hψ', heq_bwd Θ' ▸ d''⟩
+      · -- theorem: discharge χ by reordering to head then cutting
+        have d_reorder : ExtDerivation _ (χ :: (acc ++ rest)) _ :=
+          ExtDerivation.mono (fun {ψ} hψ => by
+            simp only [List.mem_append, List.mem_cons] at hψ ⊢; tauto) d
+        exact ih acc hrest (ExtDerivation.discharge_head_theorem hThm d_reorder)
 
 end HenkinConstInfinity
 

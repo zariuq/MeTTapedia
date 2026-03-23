@@ -151,6 +151,24 @@ def ConservativityGoal : Prop :=
       (liftClosedFormula (Base := Base) (Const := Const) φ) →
         ExtDerivation Const Δ φ
 
+/--
+**Obstruction witness**: The one-step extension of an empty signature can prove
+`∃x:b. ⊤` using the fresh `.exWitness` constant, even with no Henkin axioms.
+
+This demonstrates that raw `ConservativityGoal` (without `BaseWitnesses`) is the
+wrong theorem target — the one-step extension is NOT conservative over signatures
+that lack constants at some base type.
+-/
+theorem emptySignature_oneStep_existsTop :
+    ExtDerivation
+      (OneStepHenkinConst Unit (fun _ => PEmpty)) []
+      (liftClosedFormula (Base := Unit) (Const := fun _ => PEmpty)
+        (.ex (.top : Formula (fun _ => PEmpty) [.base ()]))) := by
+  apply ExtDerivation.exI
+    (.const (.exWitness (.top : Formula (fun _ => PEmpty) [.base ()])))
+  simp [mapConst, instantiate, subst]
+  exact ExtDerivation.topI
+
 end OneStepHenkinConst
 
 end Mettapedia.Logic.HOL

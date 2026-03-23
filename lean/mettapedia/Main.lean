@@ -8,6 +8,7 @@ import Mettapedia.Languages.MeTTa.HE.ScopeContract
 import Mettapedia.Languages.MeTTa.HE.NativeProfile
 import Mettapedia.Languages.MeTTa.HE.RuntimeContract
 import Mettapedia.Languages.MeTTa.HE.ArtifactBundle
+import Mettapedia.Languages.Metamath.ArtifactBundle
 
 private def usage : String :=
   String.intercalate "\n"
@@ -50,6 +51,10 @@ private def usage : String :=
     , "  runtime-contract check-he            (default out-dir: artifacts/transition)"
     , "  bundle export-he"
     , "  bundle check-he"
+    , "  metamath export-all <out-dir>"
+    , "  metamath export-all          (default out-dir: artifacts/metamath-full-bridge)"
+    , "  metamath check-all <out-dir>"
+    , "  metamath check-all           (default out-dir: artifacts/metamath-full-bridge)"
     ]
 
 private def defaultLookupOutDir : System.FilePath :=
@@ -60,6 +65,9 @@ private def defaultTransitionOutDir : System.FilePath :=
 
 private def defaultSyntaxOutDir : System.FilePath :=
   "artifacts/syntax"
+
+private def defaultMetamathOutDir : System.FilePath :=
+  "artifacts/metamath-full-bridge"
 
 def main (args : List String) : IO UInt32 := do
   match args with
@@ -141,6 +149,14 @@ def main (args : List String) : IO UInt32 := do
   | ["bundle", "check-he"] =>
       Mettapedia.Languages.MeTTa.HE.ArtifactBundle.checkHeManifest
         defaultTransitionOutDir defaultLookupOutDir defaultSyntaxOutDir
+  | ["metamath", "export-all", outDir] =>
+      Mettapedia.Languages.Metamath.ArtifactBundle.exportMetamathManifest outDir
+  | ["metamath", "export-all"] =>
+      Mettapedia.Languages.Metamath.ArtifactBundle.exportMetamathManifest defaultMetamathOutDir
+  | ["metamath", "check-all", outDir] =>
+      Mettapedia.Languages.Metamath.ArtifactBundle.checkMetamathManifest outDir
+  | ["metamath", "check-all"] =>
+      Mettapedia.Languages.Metamath.ArtifactBundle.checkMetamathManifest defaultMetamathOutDir
   | _ =>
       IO.println usage
       pure 1

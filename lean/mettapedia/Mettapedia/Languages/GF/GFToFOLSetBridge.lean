@@ -1,4 +1,4 @@
-import Mettapedia.Languages.GF.OSLFBridge
+import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 import Mettapedia.Languages.GF.SUMO.SumoAbstract
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.Logic.PLNWorldModelSetTheoryBridge

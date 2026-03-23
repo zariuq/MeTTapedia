@@ -1,4 +1,3 @@
-import Algorithms.MeTTa.Simple.Session
 import Algorithms.MeTTa.Simple.Relations
 
 namespace Algorithms.MeTTa.PeTTa
@@ -164,8 +163,5 @@ theorem toSpecBundle_spaceMatch_contains_fact_row
     row ∈ (toSpecBundle cfg).builtins.relation "spaceMatch" args := by
   unfold toSpecBundle builtinsOfConfig
   simp [mergeBuiltinTables, hrow]
-
-def toSession (cfg : FrozenPeTTaConfig) : Algorithms.MeTTa.Simple.Session :=
-  (Algorithms.MeTTa.Simple.Session.new (toSpecBundle cfg)).withBounds cfg.maxSteps cfg.maxNodes
 
 end Algorithms.MeTTa.PeTTa

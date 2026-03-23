@@ -9,9 +9,6 @@ name = "Algorithms"
 name = "simpleMeTTa"
 root = "Algorithms.MeTTa.Simple.Main"
 
-[[lean_exe]]
-name = "leanPeTTa"
-root = "Algorithms.MeTTa.Eval.Main"
 
 [[lean_exe]]
 name = "gfRoundTrip"
@@ -56,3 +53,7 @@ path = "../batteries/gf-core"
 [[lean_exe]]
 name = "gfEntailEval2"
 root = "Algorithms.GF.EntailmentEval2"
+
+[[lean_exe]]
+name = "gfEntailEval3"
+root = "Algorithms.GF.EntailmentEval3"

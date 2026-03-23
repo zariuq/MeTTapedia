@@ -1,4 +1,3 @@
-import Algorithms.MeTTa.Simple.Session
 import Algorithms.MeTTa.Simple.Relations
 
 /-
@@ -7,11 +6,11 @@ Lowering from frozen HE atoms to the shared MeTTaIL runtime.
 Semantics note:
 - HE lowering uses explicit `Sym`/`Expr` constructors to preserve HE surface intent
   from `hyperon/hyperon-experimental/docs/metta.md`.
-- `toSession` selects `MeTTaSyntax.he`, and Session evaluation provides a
-  Sym-headed `Expr` rewrite fallback so HE-style equations keep reducing when
-  tuple intrinsic evaluation is a no-op.
-- This keeps the runtime path spec-driven while remaining isolated from PeTTa
-  command-head behavior.
+- The lowering target here is data only: `LanguageDef` + `SpecBundle`.
+- Legacy `Simple.Session` execution now lives in
+  `Algorithms.MeTTa.HE.LegacySessionBridge`.
+- This keeps the forward lowering path spec-driven while isolating the
+  deprecated runtime bridge from the reusable lowering artifacts.
 -/
 
 namespace Algorithms.MeTTa.HE
@@ -115,10 +114,5 @@ def toSpecBundle (cfg : FrozenHEConfig) : SpecBundle := {
     normalizeToFixedPoint := false
   }
 }
-
-def toSession (cfg : FrozenHEConfig) : Algorithms.MeTTa.Simple.Session :=
-  let s0 := Algorithms.MeTTa.Simple.Session.new (toSpecBundle cfg)
-  let s1 := Algorithms.MeTTa.Simple.Session.withSyntax s0 MeTTailCore.MeTTaSyntax.he
-  Algorithms.MeTTa.Simple.Session.withBounds s1 cfg.maxSteps cfg.maxNodes
 
 end Algorithms.MeTTa.HE
