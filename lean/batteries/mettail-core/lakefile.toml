@@ -1,6 +1,9 @@
 name = "mettail_core"
 version = "0.1.0"
+<<<<<<< Updated upstream
 defaultTargets = ["MeTTailCore"]
+=======
+>>>>>>> Stashed changes
 
 [[lean_lib]]
 name = "MeTTailCore"
