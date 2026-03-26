@@ -763,6 +763,121 @@ def SourceCollapseGoal : Prop :=
         (Base := Base) (Const := Const) φ) →
     ClosedTheorySet.Provable (Const := Const) T φ
 
+/-- Collapse one-step Henkin constants back to closed source terms using base
+witnesses for the fresh cases. -/
+def collapseConstTerm
+    (W : BaseWitnesses Base Const) :
+    ∀ {τ : Ty Base}, OneStepHenkinConst Base Const τ → ClosedTerm Const τ
+  | _, .base c => .const c
+  | τ, .exWitness _ => BaseWitnesses.witnessTerm W τ
+  | τ, .allCounterexample _ => BaseWitnesses.witnessTerm W τ
+
+@[simp] theorem substConst_collapse_liftTerm
+    (W : BaseWitnesses Base Const)
+    {Γ : Ctx Base} {τ : Ty Base}
+    (t : Term Const Γ τ) :
+    Mettapedia.Logic.HOL.substConst
+        (collapseConstTerm (Base := Base) (Const := Const) W)
+        (OneStepHenkinConst.liftTerm (Base := Base) (Const := Const) t) = t := by
+  induction t with
+  | var v =>
+      rfl
+  | const c =>
+      simp [OneStepHenkinConst.liftTerm, WitnessProvider.liftTerm,
+        OneStepHenkinConst.witnessProvider, OneStepHenkinConst.lift,
+        Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.substConst,
+        collapseConstTerm, weakenCtx_const]
+  | app f t hf ht =>
+      simp [OneStepHenkinConst.liftTerm, WitnessProvider.liftTerm,
+        Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.substConst, hf, ht]
+  | lam body ih =>
+      simp [OneStepHenkinConst.liftTerm, WitnessProvider.liftTerm,
+        Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.substConst, ih]
+  | top =>
+      rfl
+  | bot =>
+      rfl
+  | and p q hp hq =>
+      simp [OneStepHenkinConst.liftTerm, WitnessProvider.liftTerm,
+        Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.substConst, hp, hq]
+  | or p q hp hq =>
+      simp [OneStepHenkinConst.liftTerm, WitnessProvider.liftTerm,
+        Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.substConst, hp, hq]
+  | imp p q hp hq =>
+      simp [OneStepHenkinConst.liftTerm, WitnessProvider.liftTerm,
+        Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.substConst, hp, hq]
+  | not p hp =>
+      simp [OneStepHenkinConst.liftTerm, WitnessProvider.liftTerm,
+        Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.substConst, hp]
+  | eq t u ht hu =>
+      simp [OneStepHenkinConst.liftTerm, WitnessProvider.liftTerm,
+        Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.substConst, ht, hu]
+  | all p hp =>
+      simp [OneStepHenkinConst.liftTerm, WitnessProvider.liftTerm,
+        Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.substConst, hp]
+  | ex p hp =>
+      simp [OneStepHenkinConst.liftTerm, WitnessProvider.liftTerm,
+        Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.substConst, hp]
+
+@[simp] theorem substConst_collapse_liftFormula
+    (W : BaseWitnesses Base Const)
+    {Γ : Ctx Base}
+    (φ : Formula Const Γ) :
+    Mettapedia.Logic.HOL.substConst
+        (collapseConstTerm (Base := Base) (Const := Const) W)
+        (OneStepHenkinConst.liftFormula (Base := Base) (Const := Const) φ) = φ := by
+  simpa [OneStepHenkinConst.liftFormula, WitnessProvider.liftFormula] using
+    (substConst_collapse_liftTerm (Base := Base) (Const := Const) W φ)
+
+@[simp] theorem substConst_collapse_liftClosedFormula
+    (W : BaseWitnesses Base Const)
+    (φ : ClosedFormula Const) :
+    Mettapedia.Logic.HOL.substConst
+        (collapseConstTerm (Base := Base) (Const := Const) W)
+        (OneStepHenkinConst.liftClosedFormula (Base := Base) (Const := Const) φ) = φ := by
+  simpa [OneStepHenkinConst.liftClosedFormula, WitnessProvider.liftClosedFormula] using
+    (substConst_collapse_liftFormula (Base := Base) (Const := Const) W φ)
+
+theorem sourceCollapseGoal_proved
+    (W : BaseWitnesses Base Const) :
+    SourceCollapseGoal (Base := Base) (Const := Const) := by
+  intro T φ hProv
+  rcases hProv with ⟨Γ, hΓ, d⟩
+  have d' :=
+    ExtDerivation.substConst_derivation
+      (Base := Base)
+      (Const := OneStepHenkinConst Base Const)
+      (Const' := Const)
+      (collapseConstTerm (Base := Base) (Const := Const) W)
+      d
+  refine ClosedTheorySet.provable_of_closedTheory
+    (Const := Const)
+    (T := T)
+    (Δ := Γ.map (Mettapedia.Logic.HOL.substConst
+      (collapseConstTerm (Base := Base) (Const := Const) W)))
+    ?_ ?_
+  · intro ψ hψ
+    rcases List.mem_map.mp hψ with ⟨χ, hχ, rfl⟩
+    rcases hΓ χ hχ with ⟨θ, hθT, hθeq⟩
+    rw [← hθeq]
+    simpa using hθT
+  · simpa using
+      ((substConst_collapse_liftClosedFormula
+        (Base := Base)
+        (Const := Const)
+        W
+        φ).symm ▸ d')
+
+theorem schemeReflectionGoal_of_sourceCollapse
+    (W : BaseWitnesses Base Const)
+    (hCollapse : SourceCollapseGoal (Base := Base) (Const := Const)) :
+    SchemeReflectionGoal (Base := Base) (Const := Const) W := by
+  intro T φ hProv
+  exact hCollapse
+    (T := fun ψ => ψ ∈ T ∨ ψ ∈ SourceStepSchemes (Base := Base) (Const := Const))
+    (φ := φ)
+    (liftedSchemeElimination (Base := Base) (Const := Const) W hProv)
+
 /--
 Corrected stage/reflection package after the obstruction theorem.
 
