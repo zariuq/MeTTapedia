@@ -883,13 +883,11 @@ private theorem vFrame_term_fundamental :
       · intro ρ hρ
         trivial
       · intro e ρ ν hrel hρ hν
-        let sigma := σ✝
-        let D := {x : VD sigma // vAdm sigma x}
-        let pρ : D → VΩ :=
+        let pρ : {x : _ // vAdm _ x} → VΩ :=
           fun x =>
             HeytingPreModel.denote vFramePreModel body
               (HeytingPreModel.extend vFramePreModel ρ x.1)
-        let pν : D → VΩ :=
+        let pν : {x : _ // vAdm _ x} → VΩ :=
           fun x =>
             HeytingPreModel.denote vFramePreModel body
               (HeytingPreModel.extend vFramePreModel ν x.1)
@@ -928,7 +926,8 @@ private theorem vFrame_term_fundamental :
             _ ≤ HeytingPreModel.anyAdmissible vFramePreModel pν := by
               refine HeytingPreModel.anyAdmissible_le vFramePreModel ?_
               intro x
-              exact hbodyEach x
+              exact (hbodyEach x).trans
+                (HeytingPreModel.le_anyAdmissible vFramePreModel (p := pν) x)
         · rw [le_himp_iff]
           change
             e ⊓ HeytingPreModel.anyAdmissible vFramePreModel pν ≤
@@ -963,7 +962,8 @@ private theorem vFrame_term_fundamental :
             _ ≤ HeytingPreModel.anyAdmissible vFramePreModel pρ := by
               refine HeytingPreModel.anyAdmissible_le vFramePreModel ?_
               intro x
-              exact hbodyEach x
+              exact (hbodyEach x).trans
+                (HeytingPreModel.le_anyAdmissible vFramePreModel (p := pρ) x)
 
 open OneStepHenkinConst in
 /-- Fundamental lemma: term denotation is admissible and respects equality. -/
