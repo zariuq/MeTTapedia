@@ -41,8 +41,8 @@ Alpha-equivalent terms are syntactically identical in this representation.
 | `unifyFailure` | `(unify a pat thenB elseB)` | `elseB` |
 | `deconsStep` | `(decons-atom (c hd args...))` | `(cons hd [args...])` |
 | `consStep` | `(cons-atom h ct[tl...])` | `(cons h tl...)` |
-| `lambdaAbstract` | `(|-> $var body)` | `.lambda (closeFVar 0 var body)` |
-| `betaReduce` | `(app (.lambda lcBody) arg)` | `openBVar 0 arg lcBody` |
+| `lambdaAbstract` | `(|-> $var body)` | `.lambda none (closeFVar 0 var body)` |
+| `betaReduce` | `(app (.lambda none lcBody) arg)` | `openBVar 0 arg lcBody` |
 
 ## References
 
@@ -125,23 +125,23 @@ inductive MeTTaStep (s : PeTTaSpace) : Pattern → Pattern → Prop where
   /-- **lambda abstraction** (`|->`): abstract the free variable `var` in `body`
       using `closeFVar`, producing a locally-nameless lambda value.
 
-      `(|-> $var body)` → `.lambda (closeFVar 0 var body)`
+      `(|-> $var body)` → `.lambda none (closeFVar 0 var body)`
 
       Free variables in `body` other than `var` persist as fvars —
       capture-avoidance is automatic in locally nameless. -/
   | lambdaAbstract (var : String) (body : Pattern) :
       MeTTaStep s (.apply "|->" [.fvar var, body])
-        (.lambda (closeFVar 0 var body))
+        (.lambda none (closeFVar 0 var body))
 
   /-- **beta reduction** (`app`): apply a lambda value to an argument.
 
-      `(app (.lambda lcBody) arg)` → `openBVar 0 arg lcBody`
+      `(app (.lambda none lcBody) arg)` → `openBVar 0 arg lcBody`
 
       `openBVar 0 arg lcBody` replaces the de Bruijn index `0` in `lcBody`
       with `arg`, which is the standard locally-nameless beta step. -/
   | betaReduce (lcBody arg result : Pattern)
       (hresult : result = openBVar 0 arg lcBody) :
-      MeTTaStep s (.apply "app" [.lambda lcBody, arg]) result
+      MeTTaStep s (.apply "app" [.lambda none lcBody, arg]) result
 
   /-- **function return**: `(return val)` → `val`.
 
@@ -278,13 +278,13 @@ theorem betaReduce_correct_at (k : Nat) (var : String) (body arg : Pattern)
     intro q hq
     simp only [Function.comp]
     exact ih q hq k (lc_at_list_mem hlc hq) (allNoExplicitSubst_mem hnes hq)
-  | hlambda body' ih =>
+  | hlambda _ body' ih =>
     simp only [lc_at] at hlc
     simp only [noExplicitSubst] at hnes
     simp only [closeFVar, openBVar, applySubst]
     congr 1
     exact ih (k + 1) hlc hnes
-  | hmultiLambda n body' ih =>
+  | hmultiLambda n _ body' ih =>
     simp only [lc_at] at hlc
     simp only [noExplicitSubst] at hnes
     simp only [closeFVar, openBVar, applySubst]
@@ -342,13 +342,13 @@ theorem example_unify_success (s : PeTTaSpace) (a thenB elseB : Pattern) :
     are valid `MeTTaStep`s.
 
     Given a locally-closed `body` (at level 0):
-    1. `(|-> $var body)` → `.lambda (closeFVar 0 var body)` (abstraction)
-    2. `(app (.lambda (closeFVar 0 var body)) arg)` → `openBVar 0 arg (closeFVar 0 var body)`
+    1. `(|-> $var body)` → `.lambda none (closeFVar 0 var body)` (abstraction)
+    2. `(app (.lambda none (closeFVar 0 var body)) arg)` → `openBVar 0 arg (closeFVar 0 var body)`
        (beta reduction, which equals `applyBindings [(var, arg)] body` by
        `betaReduce_correct`) -/
 theorem lambdaAbstract_betaReduce (s : PeTTaSpace) (var : String) (body arg : Pattern) :
-    MeTTaStep s (.apply "|->" [.fvar var, body]) (.lambda (closeFVar 0 var body)) ∧
-    ∃ result, MeTTaStep s (.apply "app" [.lambda (closeFVar 0 var body), arg]) result ∧
+    MeTTaStep s (.apply "|->" [.fvar var, body]) (.lambda none (closeFVar 0 var body)) ∧
+    ∃ result, MeTTaStep s (.apply "app" [.lambda none (closeFVar 0 var body), arg]) result ∧
               result = openBVar 0 arg (closeFVar 0 var body) :=
   ⟨MeTTaStep.lambdaAbstract var body,
    openBVar 0 arg (closeFVar 0 var body),
@@ -366,8 +366,8 @@ theorem lambdaAbstract_betaReduce (s : PeTTaSpace) (var : String) (body arg : Pa
 - `unifyFailure` — conditional failure: `(unify a pat thenB elseB)` → else-branch
 - `deconsStep` — head/tail split: `(decons-atom (c hd args...))` → `(cons hd [args...])`
 - `consStep` — cons: `(cons-atom h ct[tl...])` → `(cons h tl...)`
-- `lambdaAbstract` — abstraction: `(|-> $var body)` → `.lambda (closeFVar 0 var body)`
-- `betaReduce` — beta: `(app (.lambda lcBody) arg)` → `openBVar 0 arg lcBody`
+- `lambdaAbstract` — abstraction: `(|-> $var body)` → `.lambda none (closeFVar 0 var body)`
+- `betaReduce` — beta: `(app (.lambda none lcBody) arg)` → `openBVar 0 arg lcBody`
 - `functionReturn` — return frame: `(return val)` → `val`
 - `emptyStep` — no-result marker: `(empty)` → `Empty`
 - `evalcStep` — contextual eval: `(evalc p)` → `q` via matching rule (like evalStep)

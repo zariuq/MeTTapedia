@@ -146,7 +146,7 @@ theorem engineWithPremisesUsing_sound {relEnv : RelationEnv}
     match p with
     | .collection ct elems rest =>
       exact rewriteInCollectionWithPremisesUsing_sound h_cong
-    | .bvar _ | .fvar _ | .apply _ _ | .lambda _ | .multiLambda _ _ | .subst _ _ =>
+    | .bvar _ | .fvar _ | .apply _ _ | .lambda _ _ | .multiLambda _ _ _ | .subst _ _ =>
       simp at h_cong
 
 /-- **Soundness (default env)**: every result of `rewriteWithContextWithPremises`

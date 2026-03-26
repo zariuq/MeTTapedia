@@ -338,8 +338,8 @@ private def specToCorePattern : PeTTaPattern → MeTTailCore.MeTTaIL.Syntax.Patt
   | .bvar n => .bvar n
   | .fvar x => .fvar x
   | .apply ctor args => .apply ctor (args.map specToCorePattern)
-  | .lambda body => .lambda (specToCorePattern body)
-  | .multiLambda n body => .multiLambda n (specToCorePattern body)
+  | .lambda _ body => .lambda (specToCorePattern body)
+  | .multiLambda n _ body => .multiLambda n (specToCorePattern body)
   | .subst body repl => .subst (specToCorePattern body) (specToCorePattern repl)
   | .collection ct elems rest =>
       .collection (specToCoreCollType ct) (elems.map specToCorePattern) rest

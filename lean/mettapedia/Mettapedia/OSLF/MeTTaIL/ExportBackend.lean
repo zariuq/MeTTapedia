@@ -314,7 +314,7 @@ These seed the Ascent relations so premise rules can bind values. -/
 
 /-- Get the category type of a TermParam. -/
 private def paramCategory : TermParam → String
-  | .simple _ ty | .abstraction _ ty | .multiAbstraction _ ty =>
+  | .simple _ ty | .abstractionNamed _ _ ty | .multiAbstractionNamed _ _ ty =>
       match ty with | .base c => c | _ => ""
 
 /-- Find the state constructor (category == first type in lang.types). -/

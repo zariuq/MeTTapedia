@@ -57,7 +57,7 @@ perform a COMM step. -/
 theorem comm_exists_from_parComponents_src
     {src : Pattern} {x body q : Pattern}
     (hmemIn :
-      Pattern.apply "PInput" [x, .lambda body] ∈
+      Pattern.apply "PInput" [x, .lambda none body] ∈
         Mettapedia.Languages.ProcessCalculi.RhoCalculus.Context.parComponents src)
     (hmemOut :
       Pattern.apply "POutput" [x, q] ∈
@@ -66,17 +66,17 @@ theorem comm_exists_from_parComponents_src
   rcases Mettapedia.Languages.ProcessCalculi.RhoCalculus.Context.parComponentsSpec src with
     hpc | ⟨elems, hsrc, hpc⟩
   · have hmemIn' :
-        Pattern.apply "PInput" [x, .lambda body] ∈ [src] := by
+        Pattern.apply "PInput" [x, .lambda none body] ∈ [src] := by
         simpa [hpc] using hmemIn
     have hmemOut' :
         Pattern.apply "POutput" [x, q] ∈ [src] := by
         simpa [hpc] using hmemOut
-    have hinEq : Pattern.apply "PInput" [x, .lambda body] = src := by
+    have hinEq : Pattern.apply "PInput" [x, .lambda none body] = src := by
       simpa using hmemIn'
     have houtEq : Pattern.apply "POutput" [x, q] = src := by
       simpa using hmemOut'
     have hneq :
-        Pattern.apply "PInput" [x, .lambda body] ≠
+        Pattern.apply "PInput" [x, .lambda none body] ≠
           Pattern.apply "POutput" [x, q] := by
       intro h
       injection h with hname _hargs
@@ -85,12 +85,12 @@ theorem comm_exists_from_parComponents_src
     have : False := by
       apply hneq
       calc
-        Pattern.apply "PInput" [x, .lambda body] = src := hinEq
+        Pattern.apply "PInput" [x, .lambda none body] = src := hinEq
         _ = Pattern.apply "POutput" [x, q] := by
           simp [houtEq]
     exact this.elim
   · have hmemIn' :
-        Pattern.apply "PInput" [x, .lambda body] ∈ elems := by
+        Pattern.apply "PInput" [x, .lambda none body] ∈ elems := by
         simpa [hpc] using hmemIn
     have hmemOut' :
         Pattern.apply "POutput" [x, q] ∈ elems := by
@@ -126,7 +126,7 @@ a COMM step on the original source (via `canInteract` + SC transport). -/
 theorem comm_exists_from_parComponents
     {src : Pattern} {x body q : Pattern}
     (hin :
-      .apply "PInput" [x, .lambda body] ∈
+      .apply "PInput" [x, .lambda none body] ∈
         Mettapedia.Languages.ProcessCalculi.RhoCalculus.Context.parComponents src)
     (hout :
       .apply "POutput" [x, q] ∈
@@ -152,13 +152,13 @@ theorem comm_exists_from_parComponents
 
 /-- Canonical ν-listener source bag used for COMM decomposition. -/
 def nuListenerSource (x : Name) (P : Process) (n v : String) (listenerBody : Pattern) : Pattern :=
-  rhoPar (encode (.nu x P) n v) (.apply "PInput" [.fvar v, .lambda listenerBody])
+  rhoPar (encode (.nu x P) n v) (.apply "PInput" [.fvar v, .lambda none listenerBody])
 
 /-- Canonical ν-listener COMM-redex shape. -/
 def nuListenerPreComm (x : Name) (P : Process) (n v : String) (listenerBody : Pattern) : Pattern :=
   .collection .hashBag
     [rhoOutput (.fvar v) (.fvar n),
-     .apply "PInput" [.fvar v, .lambda listenerBody],
+     .apply "PInput" [.fvar v, .lambda none listenerBody],
      rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v)] none
 
 /-- Canonical ν-listener COMM target. -/
@@ -174,7 +174,7 @@ theorem nu_listener_source_eq_bag
       .collection .hashBag
         [rhoOutput (.fvar v) (.fvar n),
          rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v),
-         .apply "PInput" [.fvar v, .lambda listenerBody]] none := by
+         .apply "PInput" [.fvar v, .lambda none listenerBody]] none := by
   simp [nuListenerSource, encode, rhoPar, rhoInput, rhoOutput]
 
 /-- Permutation from flattened ν source to COMM-ready shape. -/
@@ -182,14 +182,14 @@ theorem nu_listener_comm_shape_perm
     (x : Name) (P : Process) (n v : String) (listenerBody : Pattern) :
     ([rhoOutput (.fvar v) (.fvar n),
       rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v),
-      .apply "PInput" [.fvar v, .lambda listenerBody]] : List Pattern).Perm
+      .apply "PInput" [.fvar v, .lambda none listenerBody]] : List Pattern).Perm
     [rhoOutput (.fvar v) (.fvar n),
-     .apply "PInput" [.fvar v, .lambda listenerBody],
+     .apply "PInput" [.fvar v, .lambda none listenerBody],
      rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v)] := by
   refine List.Perm.cons _ ?_
   simpa using (List.Perm.swap
     (rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v))
-    (.apply "PInput" [.fvar v, .lambda listenerBody])
+    (.apply "PInput" [.fvar v, .lambda none listenerBody])
     ([] : List Pattern)).symm
 
 /-- SC bridge: ν-listener source into COMM-ready shape. -/
@@ -203,7 +203,7 @@ theorem nu_listener_source_sc_comm_shape
         .collection .hashBag
           [rhoOutput (.fvar v) (.fvar n),
            rhoInput (.fvar n) x (encode P (n ++ "_" ++ n) v),
-           .apply "PInput" [.fvar v, .lambda listenerBody]] none := by
+           .apply "PInput" [.fvar v, .lambda none listenerBody]] none := by
             simpa using nu_listener_source_eq_bag x P n v listenerBody
     _ ≡ nuListenerPreComm x P n v listenerBody := by
             exact
@@ -238,13 +238,13 @@ theorem nu_listener_comm_decompose
 
 /-- Canonical name-server listener source bag used for COMM decomposition. -/
 def nameServerListenerSource (x z v s : String) (listenerBody : Pattern) : Pattern :=
-  rhoPar (nameServer x z v s) (.apply "PInput" [.fvar z, .lambda listenerBody])
+  rhoPar (nameServer x z v s) (.apply "PInput" [.fvar z, .lambda none listenerBody])
 
 /-- Canonical name-server listener COMM-redex shape. -/
 def nameServerListenerPreComm (x z v s : String) (listenerBody : Pattern) : Pattern :=
   .collection .hashBag
     [rhoOutput (.fvar z) (.apply "PDrop" [.fvar s]),
-     .apply "PInput" [.fvar z, .lambda listenerBody],
+     .apply "PInput" [.fvar z, .lambda none listenerBody],
      rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
      dropOperation x] none
 
@@ -263,7 +263,7 @@ theorem nameServer_listener_source_eq_bag
         [rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
          dropOperation x,
          rhoOutput (.fvar z) (.apply "PDrop" [.fvar s]),
-         .apply "PInput" [.fvar z, .lambda listenerBody]] none := by
+         .apply "PInput" [.fvar z, .lambda none listenerBody]] none := by
   simp [nameServerListenerSource, nameServer, rhoPar, rhoReplicate, dropOperation, rhoOutput]
 
 /-- Permutation from flattened seed-listener source to COMM-ready shape. -/
@@ -272,15 +272,15 @@ theorem nameServer_listener_comm_shape_perm
     ([rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
       dropOperation x,
       rhoOutput (.fvar z) (.apply "PDrop" [.fvar s]),
-      .apply "PInput" [.fvar z, .lambda listenerBody]] : List Pattern).Perm
+      .apply "PInput" [.fvar z, .lambda none listenerBody]] : List Pattern).Perm
     [rhoOutput (.fvar z) (.apply "PDrop" [.fvar s]),
-     .apply "PInput" [.fvar z, .lambda listenerBody],
+     .apply "PInput" [.fvar z, .lambda none listenerBody],
      rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
      dropOperation x] := by
   simpa using
     (show (([rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v), dropOperation x] ++
-        [rhoOutput (.fvar z) (.apply "PDrop" [.fvar s]), .apply "PInput" [.fvar z, .lambda listenerBody]]) : List Pattern).Perm
-        (([rhoOutput (.fvar z) (.apply "PDrop" [.fvar s]), .apply "PInput" [.fvar z, .lambda listenerBody]] ++
+        [rhoOutput (.fvar z) (.apply "PDrop" [.fvar s]), .apply "PInput" [.fvar z, .lambda none listenerBody]]) : List Pattern).Perm
+        (([rhoOutput (.fvar z) (.apply "PDrop" [.fvar s]), .apply "PInput" [.fvar z, .lambda none listenerBody]] ++
           [rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v), dropOperation x]) : List Pattern) from
       List.perm_append_comm)
 
@@ -296,7 +296,7 @@ theorem nameServer_listener_source_sc_comm_shape
           [rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
            dropOperation x,
            rhoOutput (.fvar z) (.apply "PDrop" [.fvar s]),
-           .apply "PInput" [.fvar z, .lambda listenerBody]] none := by
+           .apply "PInput" [.fvar z, .lambda none listenerBody]] none := by
             simpa using nameServer_listener_source_eq_bag x z v s listenerBody
     _ ≡ nameServerListenerPreComm x z v s listenerBody := by
             exact

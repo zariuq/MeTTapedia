@@ -173,8 +173,8 @@ def hasDerivedHead : Pattern → Bool
   | .apply "PReplicate" _ => true
   | .apply "PNu" _ => true
   | .apply _ args => (args.map hasDerivedHead).any (fun b => b)
-  | .lambda body => hasDerivedHead body
-  | .multiLambda _ body => hasDerivedHead body
+  | .lambda _nm body => hasDerivedHead body
+  | .multiLambda _ _nms body => hasDerivedHead body
   | .subst body repl => hasDerivedHead body || hasDerivedHead repl
   | .collection _ elems _ => (elems.map hasDerivedHead).any (fun b => b)
 
@@ -276,7 +276,7 @@ theorem hasDerivedHead_SC {p q : Pattern}
       simpa [hasDerivedHead] using hpermMap.any_eq
   | set_cong elems₁ elems₂ hlen _ ih =>
       simpa [hasDerivedHead] using hasDerivedHead_any_of_pointwise_eq hlen ih
-  | lambda_cong _ _ _ ih =>
+  | lambda_cong _ _ _ _ ih =>
       simpa [hasDerivedHead] using ih
   | apply_cong f args₁ args₂ hlen _ ih =>
       by_cases hrep : f = "PReplicate"
@@ -287,7 +287,7 @@ theorem hasDerivedHead_SC {p q : Pattern}
         simpa [hasDerivedHead, hrep, hnu] using hargs
   | collection_general_cong _ elems₁ elems₂ _ hlen _ ih =>
       simpa [hasDerivedHead] using hasDerivedHead_any_of_pointwise_eq hlen ih
-  | multiLambda_cong _ _ _ _ ih =>
+  | multiLambda_cong _ _ _ _ _ ih =>
       simpa [hasDerivedHead] using ih
   | subst_cong _ _ _ _ _ _ ih₁ ih₂ =>
       simp [hasDerivedHead, ih₁, ih₂]
@@ -348,7 +348,7 @@ theorem hasDerivedHead_openBVar_false {k : Nat} {u p : Pattern}
           hasDerivedHead_map_openBVar_any_false hargs ih
         simpa [Mettapedia.OSLF.MeTTaIL.Substitution.openBVar, hasDerivedHead, hrep, hnu] using
           hargsOpen
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       intro k hp'
       have hbody : hasDerivedHead body = false := by
         simpa [hasDerivedHead] using hp'
@@ -356,7 +356,7 @@ theorem hasDerivedHead_openBVar_false {k : Nat} {u p : Pattern}
           hasDerivedHead (Mettapedia.OSLF.MeTTaIL.Substitution.openBVar (k + 1) u body) = false :=
         ih (k + 1) hbody
       simpa [Mettapedia.OSLF.MeTTaIL.Substitution.openBVar, hasDerivedHead] using hopen
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       intro k hp'
       have hbody : hasDerivedHead body = false := by
         simpa [hasDerivedHead] using hp'
@@ -443,12 +443,12 @@ theorem coreCanonical_of_core_step {p q : Pattern}
       have hOut : CoreCanonical (.apply "POutput" [n, q]) :=
         coreCanonical_elem_of_collection
           (ct := .hashBag)
-          (elems := [.apply "POutput" [n, q], .apply "PInput" [n, .lambda p]] ++ rest)
+          (elems := [.apply "POutput" [n, q], .apply "PInput" [n, .lambda none p]] ++ rest)
           hc (by simp)
-      have hIn : CoreCanonical (.apply "PInput" [n, .lambda p]) :=
+      have hIn : CoreCanonical (.apply "PInput" [n, .lambda none p]) :=
         coreCanonical_elem_of_collection
           (ct := .hashBag)
-          (elems := [.apply "POutput" [n, q], .apply "PInput" [n, .lambda p]] ++ rest)
+          (elems := [.apply "POutput" [n, q], .apply "PInput" [n, .lambda none p]] ++ rest)
           hc (by simp)
       have hq : hasDerivedHead q = false := by
         have hOut' : hasDerivedHead (.apply "POutput" [n, q]) = false := hOut
@@ -456,15 +456,15 @@ theorem coreCanonical_of_core_step {p q : Pattern}
           simpa [hasDerivedHead, Bool.or_eq_false_iff] using hOut'
         exact hParts.2
       have hpBody : hasDerivedHead p = false := by
-        have hIn' : hasDerivedHead (.apply "PInput" [n, .lambda p]) = false := hIn
-        have hParts : hasDerivedHead n = false ∧ hasDerivedHead (.lambda p) = false := by
+        have hIn' : hasDerivedHead (.apply "PInput" [n, .lambda none p]) = false := hIn
+        have hParts : hasDerivedHead n = false ∧ hasDerivedHead (.lambda none p) = false := by
           simpa [hasDerivedHead, Bool.or_eq_false_iff] using hIn'
         simpa [hasDerivedHead] using hParts.2
       have hrestAll : ∀ e ∈ rest, hasDerivedHead e = false := by
         intro e he
         exact coreCanonical_elem_of_collection
           (ct := .hashBag)
-          (elems := [.apply "POutput" [n, q], .apply "PInput" [n, .lambda p]] ++ rest)
+          (elems := [.apply "POutput" [n, q], .apply "PInput" [n, .lambda none p]] ++ rest)
           hc (by simp [he])
       have hrestAny : (rest.map hasDerivedHead).any (fun b => b) = false :=
         hasDerivedHead_any_false_of_forall_false hrestAll

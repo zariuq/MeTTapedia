@@ -61,8 +61,8 @@ def wrapperCount : Pattern → Nat
   | .bvar _ => 0
   | .apply f args =>
       (if isKernelWrapperName f && args.length = 1 then 1 else 0) + wrapperCountList args
-  | .lambda body => wrapperCount body
-  | .multiLambda _ body => wrapperCount body
+  | .lambda _nm body => wrapperCount body
+  | .multiLambda _ _nms body => wrapperCount body
   | .subst a b => wrapperCount a + wrapperCount b
   | .collection _ elems _ => wrapperCountList elems
 
@@ -130,8 +130,8 @@ def normalizeKernel : Pattern → Pattern
       match args' with
       | [p] => if isKernelWrapperName f then p else .apply f [p]
       | _ => .apply f args'
-  | .lambda body => .lambda (normalizeKernel body)
-  | .multiLambda names body => .multiLambda names (normalizeKernel body)
+  | .lambda nm body => .lambda nm (normalizeKernel body)
+  | .multiLambda n nms body => .multiLambda n nms (normalizeKernel body)
   | .subst a b => .subst (normalizeKernel a) (normalizeKernel b)
   | .collection k elems a => .collection k (elems.map normalizeKernel) a
 

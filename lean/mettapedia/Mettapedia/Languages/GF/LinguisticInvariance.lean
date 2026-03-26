@@ -53,8 +53,8 @@ def containsLexical (name : String) : Pattern → Bool
   | .fvar n => n == name
   | .apply _ args => containsLexical.go name args
   | .bvar _ => false
-  | .lambda body => containsLexical name body
-  | .multiLambda _ body => containsLexical name body
+  | .lambda _nm body => containsLexical name body
+  | .multiLambda _ _nms body => containsLexical name body
   | .subst a b => containsLexical name a || containsLexical name b
   | .collection _ elems _ => containsLexical.go name elems
 where

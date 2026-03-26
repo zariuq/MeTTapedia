@@ -471,7 +471,7 @@ instance : ToString Pattern := ⟨patternToString⟩
   let x := Pattern.fvar "x"
   let term : Pattern := .collection .hashBag [
     .apply "POutput" [x, .apply "PZero" []],
-    .apply "PInput" [x, .lambda (.bvar 0)]
+    .apply "PInput" [x, .lambda none (.bvar 0)]
   ] none
   let reducts := rewriteWithContextWithPremises rhoCalc term
   IO.println s!"langReduces rhoCalc COMM test:"
@@ -486,7 +486,7 @@ instance : ToString Pattern := ⟨patternToString⟩
   let x := Pattern.fvar "x"
   let p : Pattern := .collection .hashBag [
     .apply "POutput" [x, .apply "PZero" []],
-    .apply "PInput" [x, .lambda (.bvar 0)]
+    .apply "PInput" [x, .lambda none (.bvar 0)]
   ] none
   -- diamond (fun _ => True) p should be True (p can reduce to something)
   let canReduce := !(rewriteWithContextWithPremises rhoCalc p).isEmpty

@@ -185,9 +185,9 @@ mutual
           .symbol ctor
         else
           .expression (.symbol ctor :: patternToCoreAtomList args)
-    | .lambda body =>
+    | .lambda _ body =>
         .expression [.symbol "λ", patternToCoreAtom body]
-    | .multiLambda n body =>
+    | .multiLambda n _ body =>
         .expression [.symbol "λ*", .grounded (.int n), patternToCoreAtom body]
     | .subst body repl =>
         .expression [.symbol "subst", patternToCoreAtom body, patternToCoreAtom repl]

@@ -75,34 +75,222 @@ rewrites, language definitions) are in
 \codepath{Mettapedia/OSLF/MeTTaIL/Syntax.lean}.
 
 \begin{lstlisting}[language={},caption={Core MeTTaIL structures (excerpt)}]
+inductive CarrierKind where
+  | ast | tokenLabel | tokenRaw | tokenProof
+  | tokenPath | builtinInt | builtinString | builtinBool
+
+structure TypeDecl where
+  name : String
+  carrier : CarrierKind := .ast
+
 inductive Pattern where
   | bvar : Nat -> Pattern
   | fvar : String -> Pattern
   | apply : String -> List Pattern -> Pattern
-  | lambda : Pattern -> Pattern
-  | multiLambda : Nat -> Pattern -> Pattern
+  | lambda : Option String -> Pattern -> Pattern      -- authored binder name
+  | multiLambda : Nat -> List String -> Pattern -> Pattern
   | subst : Pattern -> Pattern -> Pattern
   | collection : CollType -> List Pattern -> Option String -> Pattern
+
+inductive SyntaxPatternOp where             -- Rust-style metasyntax
+  | var : String -> SyntaxPatternOp
+  | sep : String -> String -> Option SyntaxPatternOp -> SyntaxPatternOp
+  | zip : String -> String -> SyntaxPatternOp
+  | map : SyntaxPatternOp -> List String -> List SyntaxItem -> SyntaxPatternOp
+  | opt : List SyntaxItem -> SyntaxPatternOp
 
 inductive Premise where
   | freshness : FreshnessCondition -> Premise
   | congruence : Pattern -> Pattern -> Premise
   | relationQuery : String -> List Pattern -> Premise
-
-structure RewriteRule where
-  name : String
-  typeContext : List (String x TypeExpr)
-  premises : List Premise
-  left : Pattern
-  right : Pattern
+  | forAll : String -> String -> Premise -> Premise    -- quantified premises
 
 structure LanguageDef where
   name : String
-  types : List String
+  types : List TypeDecl                     -- carrier-aware type declarations
   terms : List GrammarRule
   equations : List Equation
   rewrites : List RewriteRule
+  congruenceCollections : List CollType := []  -- opt-in per language
+  logic : List LogicDecl := []
+  oracles : List OracleDecl := []
 \end{lstlisting}
+
+Key design choices, each reaching council quorum:
+\begin{itemize}
+\item \textbf{Carrier-aware types} (\code{TypeDecl} with \code{CarrierKind}):
+  Metamath surface syntax requires raw lexical carriers (\code{![raw] as Sym},
+  \code{![label] as Label}). Rust already supports these via
+  \code{LangType.carrier\_kind}; Lean now matches.
+\item \textbf{Authored binder names} (\code{Pattern.lambda : Option String}):
+  The human-facing name is preserved for export and diagnostics.
+  The locally nameless core uses \code{none}; proofs are unaffected.
+\item \textbf{Syntax operators} (\code{SyntaxPatternOp}):
+  Rust's \code{*sep}, \code{*zip}, \code{*map}, \code{*opt} are first-class
+  authored data, not flattened to terminal/nonTerminal strings.
+\item \textbf{Quantified premises} (\code{Premise.forAll}):
+  Required for scope-extrusion rules like
+  \code{xs.*map(|x| x \# ...rest)}.
+\item \textbf{Default congruence is empty}:
+  Each language opts in explicitly; no hidden reduction behavior.
+\item \textbf{Semantic validation} (\code{LanguageDef.validate}):
+  Checks for unknown types, duplicate constructors, unbound syntax parameters,
+  unknown relations, and arity mismatches---all at definition time.
+\end{itemize}
+
+\subsection{The \code{languageDef!} Authored Surface}
+
+The Rust side uses a \code{language!} procedural macro to let humans author
+language definitions in a single readable block.  Lean now has a matching
+\code{languageDef!} macro that parses the \emph{same} surface syntax into the
+\emph{same} \code{LanguageDef} type---no separate ``surface AST'' is introduced.
+The macro \emph{is} the surface layer; the single \code{LanguageDef} is the
+core.
+
+\begin{lstlisting}[language={},caption={Lean \code{languageDef!} example
+  (\codepath{LanguageDefDSLTests.lean})}]
+def smokeLang : LanguageDef :=
+  languageDef! {
+    name : "SmokeLang"
+    types {
+      Expr
+      Env
+      Result
+      ![raw] as Sym                       -- carrier-aware type
+    }
+    terms {
+      SymLeaf . tok:Sym |- tok : Expr;
+      Lam . ^ x . body : [Expr -> Expr]   -- binder name preserved
+        |- "lam" body : Expr;
+    }
+    equations {
+      EqSym . tok:Sym |- SymLeaf(tok) = SymLeaf(tok);
+    }
+    rewrites {
+      Beta . env:Env | knownSymbol(SymLeaf(tok))
+        |- Lam(SymLeaf(tok)) ~> SymLeaf(tok);
+    }
+    logic {
+      relation knownSymbol(Expr);
+      rule "knownSymbol(x) <-- true";
+    }
+    oracles {
+      external evalExpr(Expr, Env) -> Result;
+    }
+    congruenceCollections { HashBag }
+  }
+\end{lstlisting}
+
+The Rust and Lean term-declaration surfaces are intentionally identical:
+%
+\begin{center}
+\begin{tabular}{@{}l@{\qquad}l@{}}
+\textbf{Rust \code{language!}} & \textbf{Lean \code{languageDef!}} \\[2pt]
+\code{PPar~.~ps:HashBag(Proc)} & \code{PPar~.~ps:HashBag(Proc)} \\
+\code{~~|- "\{" ps.*sep("|") "\}" : Proc;}
+  & \code{~~|- "\{" ps.*sep("|") "\}" : Proc;}
+\end{tabular}
+\end{center}
+
+Three additional layers support the authored surface:
+\begin{enumerate}
+\item \textbf{Validation.}
+  \code{LanguageDef.validate} checks types, constructors, relations,
+  syntax parameters, and duplicates at definition time (kernel-checked by
+  \code{native\_decide} in test examples).
+\item \textbf{Fail-fast core bridge.}
+  \code{CoreSyntaxBridge.specToCoreLanguage} returns \code{Except String}
+  and rejects unsupported features (e.g.\ \code{forAll} premises,
+  non-AST carriers, syntax metasyntax) rather than silently erasing them.
+\item \textbf{Faithful export.}
+  \code{Export.renderLanguageWithUserSyntax} preserves authored binder names,
+  \code{...rest} collection remainders, and syntax operators---no invented
+  \code{C\_} prefixes or synthetic binder names.
+\end{enumerate}
+
+\noindent
+The overall architecture is a single pipeline with two host languages:
+
+\begin{center}
+\begin{tabular}{c}
+\textbf{Human-Authored Source} \\
+Rust \code{language!} / Lean \code{languageDef!} \\[4pt]
+$\downarrow$ \\[4pt]
+\textbf{ONE \code{LanguageDef}} \\
+(types, terms, equations, rewrites, logic, oracles) \\[4pt]
+$\swarrow$ \hspace{4em} $\searrow$ \\[4pt]
+\begin{tabular}{c}
+\textbf{Rust Runtime} \\
+MORK/MM2, Ascent, \\
+tree-sitter parser
+\end{tabular}
+\hspace{2em}
+\begin{tabular}{c}
+\textbf{Lean Verification} \\
+Proofs, OSLF typing, \\
+validated export
+\end{tabular}
+\end{tabular}
+\end{center}
+
+\subsection{RhoCalc as the \code{LanguageDef} Parity Pressure Test}
+
+The $\rho$-calculus (Meredith \& Stay) is the flagship language instance for both
+the Rust \code{language!} macro and the Lean \code{languageDef!} surface.  The
+Rust definition in \codepath{hyperon/mettail-rust/languages/src/rhocalc.rs}
+(${\sim}380$ lines) covers the full process calculus including native arithmetic,
+string operations, and fold terms.
+
+Lean now has a directly authored process fragment
+(\codepath{Languages/ProcessCalculi/RhoCalculus/LanguageDefDSL.lean})
+covering the pure process kernel:
+
+\begin{lstlisting}[language={},caption={RhoCalc process fragment in Lean
+  \code{languageDef!} form (excerpt)}]
+def rhoCalcProcessFragment : LanguageDef :=
+  languageDef! {
+    name : "RhoCalc"
+    types { Proc; Name }
+    terms {
+      PZero  . |- "{}" : Proc;
+      PDrop  . n:Name |- "*" "(" n ")" : Proc;
+      PPar   . ps:HashBag(Proc) |- "{" ps.*sep("|") "}" : Proc;
+      POutput. n:Name, q:Proc |- n "!" "(" q ")" : Proc;
+      PInputs. ns:Vec(Name), ^[xs].p:[Name* -> Proc]
+        |- "(" *zip(ns,xs).*map(|n,x| n "?" x).*sep(",") ")"
+           "." "{" p "}" : Proc;
+      NQuote . p:Proc |- "@" "(" p ")" : Name;
+      PNew   . ^[xs].p:[Name* -> Proc]
+        |- "new" "(" xs.*sep(",") ")" "in" "{" p "}" : Proc;
+    }
+    equations {
+      QuoteDrop . N:Name |- NQuote(PDrop(N)) = N;
+    }
+    rewrites {
+      Exec    . P:Proc |- PDrop(NQuote(P)) ~> P;
+      ParCong . | S ~> T
+        |- PPar({S, ...rest}) ~> PPar({T, ...rest});
+      NewCong . | S ~> T
+        |- PNew(^[xs].S) ~> PNew(^[xs].T);
+    }
+    congruenceCollections { HashBag }
+  }
+\end{lstlisting}
+
+All structural properties are kernel-checked: \code{LanguageDef.validate}
+returns \code{[]} (proved by \code{native\_decide}), and export substring
+checks confirm that the Lean-rendered text matches the Rust surface.
+
+\paragraph{Honest boundary.}
+Two Rust rules cannot yet be authored in Lean:
+\begin{itemize}
+\item \textbf{Comm} requires \code{*zip(ns,qs).*map(...)} in \emph{pattern}
+  position (not just syntax-pattern position) and a direct \code{(eval cont ...)}
+  substitution form.
+\item \textbf{Extrude} requires \code{xs.*map(|x| x \# ...rest)} in
+  \emph{premise} position---quantified freshness over a collection.
+\end{itemize}
+These are the next DSL extensions needed for full parity.
 
 \subsection{Premise-Aware Declarative Semantics and Engine Equivalence}
 
@@ -256,6 +444,124 @@ Additional PeTTa modules include:
 \item \code{Effects.lean} / \code{MinimalInstructions.lean}: effect tracking and instruction set
 \item \code{TranslateExpr.lean}: expression-to-pattern translation
 \end{itemize}
+
+\subsection{Metaprogramming and Dialect Translation}
+\label{sec:metaprog}
+
+An experimental HE$\leftrightarrow$PeTTa translator
+(\codepath{hyperon/translators/}) revealed a fundamental difference in
+how the three MeTTa runtimes handle code-as-data during structural
+rewriting.  All three runtimes can load source atoms into a space and
+use \code{match} to inspect them without evaluation.  However, when a
+match template \emph{reconstructs} the matched term with rewritten
+subexpressions, the three runtimes diverge:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Runtime & Output of chain$\to$let rewrite & Variable handling \\
+\midrule
+CeTTa (C) & \code{(= (sq \$x) (* (+ \$x 1) (+ \$x 1)))} & Unified/inlined \\
+HE (Rust) & \code{(= (sq \$x) (* (+ \$x 1) (+ \$x 1)))} & Unified/inlined \\
+PeTTa (Prolog) & \code{(= (sq \$x) (let \$y (+ \$x 1) (* \$y \$y)))} & Preserved \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All three outputs are \textbf{semantically equivalent} (they compute the
+same function), but PeTTa produces the \textbf{syntactically faithful}
+translation while HE/CeTTa produce a \textbf{beta-reduced} expansion.
+The cause: MeTTa's \code{match} performs full unification across the
+entire pattern.  When a template variable \code{\$v} binds to a source
+variable \code{\$y}, all occurrences of \code{\$y} in the template are
+also unified, effectively inlining the binding.  PeTTa's Prolog-based
+matching uses \code{copy\_term} and fresh variable generation, which
+preserves syntactic structure.
+
+\paragraph{Implications.}
+\begin{itemize}
+\item Pattern mining, backward chaining, and other metaprogramming tasks
+  that require structural inspection of code are naturally easier in
+  PeTTa.  This may explain why PeTTa's pattern miner finds all results
+  where HE's has edge-case failures.
+\item For exact source-to-source translation, the translator should be
+  written in PeTTa (primary) with a semantic-equivalence version in
+  HE/CeTTa.
+\item A future MeTTa-Pure could address this with an explicit quoting
+  mechanism, de~Bruijn indices, or meta-level separation (as formalized
+  in the $\rho$-calculus layer of MeTTaIL).
+\end{itemize}
+
+\paragraph{Bidirectional Prolog translator.}
+
+The practical translator is implemented in SWI-Prolog
+(\codepath{hyperon/translators/he\_to\_petta.pl},
+\codepath{petta\_to\_he.pl}), where term manipulation is native and
+variable scoping is handled correctly by Prolog's \code{copy\_term}.
+Each translation rule is a single, auditable \code{translate\_term/2}
+clause:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Direction & Rule & Clause \\
+\midrule
+HE$\to$PeTTa & \code{chain}$\to$\code{let} & \code{translate\_term([chain,E,V,B], [let,V,TE,TB])} \\
+HE$\to$PeTTa & \code{collapse-bind}$\to$\code{collapse} & \code{translate\_term([collapse-bind,X], [collapse,TX])} \\
+HE$\to$PeTTa & \code{superpose-bind}$\to$\code{superpose} & \code{translate\_term([superpose-bind,X], [superpose,TX])} \\
+HE$\to$PeTTa & \code{switch}$\to$\code{case} & \code{translate\_term([switch,S,B], [case,TS,B])} \\
+HE$\to$PeTTa & \code{atom-subst}$\to$\code{let} & \code{translate\_term([atom-subst,A,V,T], [let,V,TA,TT])} \\
+HE$\to$PeTTa & \code{function/return} & unwrap \\
+HE$\to$PeTTa & \code{nop}$\to$\code{let \$\_} & side-effect wrapper \\
+\midrule
+PeTTa$\to$HE & \code{progn}$\to$nested \code{let \$\_} & 2- and 3-argument forms \\
+PeTTa$\to$HE & \code{prog1}$\to$\code{let+let} & save-first pattern \\
+PeTTa$\to$HE & \code{@<}$\to$\code{<s} & string comparison \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All rules recursively translate subexpressions via \code{maplist(translate\_term)};
+shared constructs (\code{if}, \code{let}, \code{case}, \code{match},
+\code{superpose}, \code{collapse}, arithmetic) pass through unchanged.
+
+The translator is validated on the full corpus of real \code{.metta} files:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+Direction & Files tested & Passed \\
+\midrule
+HE$\to$PeTTa (CeTTa test suite) & 93 & 93 \\
+PeTTa$\to$HE (PeTTa examples + miner) & 344 & 344 \\
+\midrule
+\textbf{Total} & \textbf{437} & \textbf{437} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+A correct-by-construction MeTTa S-expression parser
+(\codepath{hyperon/translators/metta\_parser.pl}) handles all MeTTa token
+types: \code{\$variables}, \code{\%types\%}, \code{"strings"}, numbers,
+operators, and nested S-expressions.  The lexer rule is minimal: tokens
+are delimited by whitespace and parentheses only.
+
+\paragraph{Towards a pure MeTTa translator.}
+
+The Prolog translator works but lives outside MeTTa.  A pure MeTTa
+implementation would close the bootstrapping loop (MeTTa translating
+MeTTa).  The challenge documented in
+\code{metaprogramming\_challenges.metta} is that MeTTa's
+unification-based \code{match} prevents exact syntactic rewriting.
+PeTTa's Prolog backend naturally avoids this via \code{copy\_term}, so a
+PeTTa-native translator using \code{import\_prolog\_functions\_from\_file}
+is the most promising path.  This would let PeTTa call the Prolog
+translator rules directly from MeTTa code, combining MeTTa's space-based
+program loading with Prolog's faithful term manipulation.
+
+The translator corpus is at \codepath{hyperon/translators/}, with
+\code{metaprogramming\_challenges.metta} documenting five approaches
+and their failure modes.
 
 \subsection{Governance Refinement Proofs}
 \label{sec:governance}
@@ -463,6 +769,75 @@ return_step_reaches_done_state
 default_registry_contains_mettafull
 \end{lstlisting}
 
+\subsection{Metamath as a Three-Way Conformance Target}
+
+Metamath is the first language where three independently developed artifacts
+can be connected through \code{LanguageDef}:
+
+\begin{center}
+\begin{tabular}{c}
+\code{metamath.rs} \\
+(Rust \code{language!} macro) \\[4pt]
+$\swarrow$ \hspace{6em} $\searrow$ \\[4pt]
+\begin{tabular}{c}
+\code{LanguageDefDSL.lean} \\
+(Lean \code{languageDef!})
+\end{tabular}
+\hspace{2em}
+\begin{tabular}{c}
+\code{mm-lean4} \\
+(verified implementation)
+\end{tabular} \\[4pt]
+$\searrow$ \hspace{6em} $\swarrow$ \\[4pt]
+\textbf{Conformance theorem} \\
+(future work)
+\end{tabular}
+\end{center}
+
+The Rust \code{metamath.rs} defines the full Metamath surface---\code{Database},
+\code{Stmt}, \code{MathString}, \code{ProofString}---with carrier-aware
+type declarations (\code{![label] as Label}, \code{![raw] as Sym},
+\code{![proofTok] as ProofTok}, \code{![path] as IncludePath}) and explicit
+term constructors for every \code{\$c}, \code{\$v}, \code{\$f}, \code{\$e},
+\code{\$a}, \code{\$p} declaration form.
+
+The Lean side currently has a core-step fragment in
+\codepath{Languages/Metamath/LanguageDSL.lean} exercising carrier types and
+the direct authored DSL surface, but not the full Metamath grammar.
+
+The \code{mm-lean4} project (\codepath{hyperon/metamath/mm-lean4/}) provides
+a complete, sorry-free, axiom-free verification of the Metamath proof checker:
+\begin{itemize}
+\item \code{DeclarativeSpec.lean}: \code{CN} (constants), \code{VR} (variables),
+  \code{Expr} (expressions), \code{Provable} (proof validity).
+\item End-to-end biconditional:
+  \code{verify\_parser\_acceptance\_iff\_spec\_provable}---raw bytes
+  $\leftrightarrow$ \code{Spec.Provable}, with 0 sorries and 0 axioms.
+\end{itemize}
+
+The types correspond across all three artifacts:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Rust \code{metamath.rs}} & \textbf{Lean \code{LanguageDef}} & \textbf{mm-lean4 \code{DeclarativeSpec}} \\
+\midrule
+\code{Sym} (carrier: raw)   & \code{TypeDecl "Sym" .tokenRaw}   & \code{CN} / \code{VR} \\
+\code{Label} (carrier: label) & \code{TypeDecl "Label" .tokenLabel} & labels in frame \\
+\code{MathString}            & grammar rule chain                 & \code{Expr} \\
+\code{Database}              & \code{DbMore} / \code{DbOne}       & parsed DB structure \\
+\code{ProofString}           & proof token chain                  & proof witness \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{What remains.}
+The formal conformance theorem---showing that the \code{LanguageDef} rewrite
+semantics agree with \code{mm-lean4}'s operational verification---is future
+work.  The type correspondence above provides the skeleton; the hard part
+is proving that the stack-machine semantics of Metamath proof verification
+agree with the term-rewriting semantics of the \code{LanguageDef} engine.
+
 \section{MQ-Calculus as a Formalized Verification Target}
 
 MQ-calculus (Stay \& Meredith 2026) is a process calculus in which communication
@@ -604,6 +979,11 @@ The reviewer anchor in
 \textbf{Covered now:}
 \begin{itemize}
 \item MeTTaIL syntax + declarative/executable semantics bridge (sound and complete).
+\item \code{languageDef!} macro with block-syntax parsing, carrier-aware types,
+  authored binder preservation, syntax metasyntax operators, semantic validation,
+  fail-fast core bridge, and faithful export.
+\item RhoCalc and Metamath as acceptance-test \code{LanguageDef} instances
+  (process fragment and core-step fragment, respectively).
 \item MeTTaCore state machine + core progress/confluence-facing properties.
 \item MeTTaMinimal/MeTTaFull OSLF instance endpoints.
 \item HE MeTTa: computable recursive interpreter, 37 conformance theorems,
@@ -619,6 +999,10 @@ The reviewer anchor in
 
 \textbf{Not yet full end-to-end by construction:}
 \begin{itemize}
+\item Full RhoCalc \code{languageDef!} parity: COMM and Extrude require
+  premise-side \code{*map(...)} and pattern-side \code{*zip(...).*map(...)}.
+\item Metamath \code{LanguageDef}-to-\code{mm-lean4} conformance theorem
+  (type correspondence exists; semantic bridge is future work).
 \item Fully automatic Lean-to-Rust export without any manual adaptation
   (field-name hygiene and builtin rendering still require hand-editing).
 \item Standalone PeTTa Rust backend (currently delegates to MeTTaFullState).
@@ -630,6 +1014,10 @@ The reviewer anchor in
 \section{Immediate Next Steps}
 
 \begin{enumerate}
+\item Extend \code{languageDef!} with premise-side \code{*map(...)} and
+  pattern-side \code{*zip(...).*map(...)} to close the RhoCalc COMM/Extrude gap.
+\item Prove the Metamath conformance bridge: \code{LanguageDef} rewrite semantics
+  agree with \code{mm-lean4}'s \code{verify\_parser\_acceptance\_iff\_spec\_provable}.
 \item Run the HE test suite against the Rust MeTTaHE backend to validate
   semantic correctness of the generated premise rules.
 \item Build a standalone PeTTa Rust backend from the Lean PeTTa specs,

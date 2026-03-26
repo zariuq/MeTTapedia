@@ -30,8 +30,8 @@ def substFVar (x : String) (u : Pattern) : Pattern → Pattern
   | .bvar n => .bvar n
   | .fvar y => if y = x then u else .fvar y
   | .apply c args => .apply c (args.map (substFVar x u))
-  | .lambda body => .lambda (substFVar x u body)
-  | .multiLambda n body => .multiLambda n (substFVar x u body)
+  | .lambda nm body => .lambda nm (substFVar x u body)
+  | .multiLambda n nms body => .multiLambda n nms (substFVar x u body)
   | .subst body repl => .subst (substFVar x u body) (substFVar x u repl)
   | .collection ct elems rest => .collection ct (elems.map (substFVar x u)) rest
 termination_by p => sizeOf p
@@ -66,12 +66,12 @@ theorem isFresh_of_collection_mem {x : String} {ct : CollType}
   exact fun h => hfresh (List.contains_iff_mem.mpr
     (List.mem_flatMap.mpr ⟨p, hp, List.contains_iff_mem.mp h⟩))
 
-theorem isFresh_of_lambda {x : String} {body : Pattern}
-    (hfresh : isFresh x (.lambda body) = true) : isFresh x body = true := by
+theorem isFresh_of_lambda {x : String} {nm : Option String} {body : Pattern}
+    (hfresh : isFresh x (.lambda nm body) = true) : isFresh x body = true := by
   simp only [isFresh, freeVars] at hfresh ⊢; exact hfresh
 
-theorem isFresh_of_multiLambda {x : String} {n : Nat} {body : Pattern}
-    (hfresh : isFresh x (.multiLambda n body) = true) : isFresh x body = true := by
+theorem isFresh_of_multiLambda {x : String} {n : Nat} {nms : List String} {body : Pattern}
+    (hfresh : isFresh x (.multiLambda n nms body) = true) : isFresh x body = true := by
   simp only [isFresh, freeVars] at hfresh ⊢; exact hfresh
 
 theorem isFresh_of_subst_body {x : String} {body repl : Pattern}
@@ -155,9 +155,9 @@ theorem substFVar_fresh {x : String} {u : Pattern} {p : Pattern}
   | happly c args ih =>
     unfold substFVar; congr 1
     exact list_map_eq_self fun a ha => ih a ha (isFresh_of_apply_mem hfresh ha)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     unfold substFVar; congr 1; exact ih (isFresh_of_lambda hfresh)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     unfold substFVar; congr 1; exact ih (isFresh_of_multiLambda hfresh)
   | hsubst body repl ihb ihr =>
     unfold substFVar; congr 1
@@ -235,10 +235,10 @@ theorem substFVar_intro {x : String} {u : Pattern} (p : Pattern)
     congr 1; apply List.map_congr_left; intro a ha
     simp only [Function.comp]
     exact ih a ha (isFresh_of_apply_mem hfresh ha) k
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [openBVar, substFVar]; congr 1
     exact ih (isFresh_of_lambda hfresh) (k + 1)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [openBVar, substFVar]; congr 1
     exact ih (isFresh_of_multiLambda hfresh) (k + n)
   | hsubst body repl ihb ihr =>
@@ -273,11 +273,11 @@ theorem substFVar_openBVar_comm {x : String} {u a p : Pattern} {k : Nat}
       simp only [openBVar, substFVar, List.map_map]
       congr 1
       exact List.map_congr_left (fun q hq => ih q hq (k := k) hlc)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       simp only [openBVar, substFVar]
       congr 1
       exact ih (k := k + 1) (lc_at_mono hlc (Nat.le_add_right k 1))
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       simp only [openBVar, substFVar]
       congr 1
       exact ih (k := k + n) (lc_at_mono hlc (Nat.le_add_right k n))
@@ -383,8 +383,8 @@ def closeBVar (k : Nat) (x : String) : Pattern → Pattern
   | .bvar n => .bvar n
   | .fvar y => if y = x then .bvar k else .fvar y
   | .apply c args => .apply c (args.map (closeBVar k x))
-  | .lambda body => .lambda (closeBVar (k + 1) x body)
-  | .multiLambda n body => .multiLambda n (closeBVar (k + n) x body)
+  | .lambda nm body => .lambda nm (closeBVar (k + 1) x body)
+  | .multiLambda n nms body => .multiLambda n nms (closeBVar (k + n) x body)
   | .subst body repl => .subst (closeBVar (k + 1) x body) (closeBVar k x repl)
   | .collection ct elems rest => .collection ct (elems.map (closeBVar k x)) rest
 termination_by p => sizeOf p
@@ -408,9 +408,9 @@ theorem isFresh_closeBVar (k : Nat) (x : String) (p : Pattern) :
     simp only [isFresh, Bool.not_eq_true'] at this
     rw [Bool.eq_false_iff] at this
     exact this (List.contains_iff_mem.mpr hxq)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [closeBVar, isFresh, freeVars]; exact ih (k + 1)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [closeBVar, isFresh, freeVars]; exact ih (k + n)
   | hsubst body repl ihb ihr =>
     unfold closeBVar
@@ -453,10 +453,10 @@ theorem openBVar_closeBVar_cancel {k : Nat} {x : String} {p : Pattern}
     simp only [closeBVar, openBVar, List.map_map]
     congr 1; exact list_map_eq_self fun a ha =>
       ih a ha (lc_at_list_mem (by simpa [lc_at] using hlc) ha)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [closeBVar, openBVar]; congr 1
     exact ih (by simpa [lc_at] using hlc)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [closeBVar, openBVar]; congr 1
     exact ih (by simpa [lc_at] using hlc)
   | hsubst body repl ihb ihr =>
@@ -484,10 +484,10 @@ theorem lc_at_substFVar {k : Nat} {x : String} {u p : Pattern}
       simp only [List.map_cons, lc_at_list, Bool.and_eq_true] at hp ⊢
       exact ⟨ih a List.mem_cons_self hp.1 hu,
              ihas (fun q hq => ih q (List.mem_cons_of_mem _ hq)) hp.2⟩
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [substFVar, lc_at] at hp ⊢
     exact ih hp (lc_at_mono hu (Nat.le_add_right k 1))
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [substFVar, lc_at] at hp ⊢
     exact ih hp (lc_at_mono hu (Nat.le_add_right k n))
   | hsubst body repl ihb ihr =>
@@ -528,10 +528,10 @@ theorem lc_at_of_openBVar {k : Nat} {u : Pattern} {p : Pattern}
       simp only [List.map_cons, lc_at_list, Bool.and_eq_true] at h ⊢
       exact ⟨ih a List.mem_cons_self h.1,
              ihas (fun p hp => ih p (List.mem_cons_of_mem _ hp)) h.2⟩
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [openBVar, lc_at] at h ⊢
     exact ih h
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [openBVar, lc_at] at h ⊢
     have step := ih h
     rwa [Nat.add_right_comm] at step
@@ -564,10 +564,10 @@ theorem lc_at_closeBVar {k : Nat} {x : String} {p : Pattern}
       simp only [List.map_cons, lc_at_list, Bool.and_eq_true] at hlc ⊢
       exact ⟨ih a List.mem_cons_self hlc.1,
              ihas (fun p hp => ih p (List.mem_cons_of_mem _ hp)) hlc.2⟩
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [closeBVar, lc_at] at hlc ⊢
     exact ih hlc
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [closeBVar, lc_at] at hlc ⊢
     have step := ih hlc
     rwa [Nat.add_right_comm] at step
@@ -597,9 +597,9 @@ theorem substFVar_self (x : String) (p : Pattern) :
   | happly c args ih =>
     unfold substFVar; congr 1
     exact list_map_eq_self fun a ha => ih a ha
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [substFVar, ih]
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [substFVar, ih]
   | hsubst body repl ihb ihr =>
     simp [substFVar, ihb, ihr]
@@ -728,10 +728,10 @@ theorem closeBVar_openBVar_cancel {k : Nat} {x : String} {p : Pattern}
     simp only [openBVar, closeBVar, List.map_map]
     congr 1; exact list_map_eq_self fun a ha =>
       ih a ha (isFresh_of_apply_mem hf ha)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [openBVar, closeBVar]; congr 1
     exact ih (isFresh_of_lambda hf)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [openBVar, closeBVar]; congr 1
     exact ih (isFresh_of_multiLambda hf)
   | hsubst body repl ihb ihr =>

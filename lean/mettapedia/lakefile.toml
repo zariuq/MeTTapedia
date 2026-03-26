@@ -73,3 +73,8 @@ path = "../batteries/gf-core"
 [[require]]
 name = "certifyingDatalog"
 path = "Mettapedia/external/CertifyingDatalog"
+
+# Verified Metamath checker (local dependency)
+[[require]]
+name = "mm-lean4"
+path = "../../hyperon/metamath/mm-lean4"

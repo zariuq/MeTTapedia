@@ -82,8 +82,8 @@ def interpretPatternShallow (L : LanguageDef) (ctx : PatternContext L) :
       | some ty => .term ty
       | none => .error s!"Invalid constructor type: {constructor}"
     | none => .error s!"Unknown constructor: {constructor}"
-  | .lambda _ => .error "Lambda not supported in shallow interpretation"
-  | .multiLambda _ _ => .error "MultiLambda not supported in shallow interpretation"
+  | .lambda _ _ => .error "Lambda not supported in shallow interpretation"
+  | .multiLambda _ _ _ => .error "MultiLambda not supported in shallow interpretation"
   | .subst _ _ => .error "Subst not supported in shallow interpretation"
   | .collection _ _ _ => .error "Collection not supported in shallow interpretation"
 

@@ -131,8 +131,8 @@ theorem noExplicitSubst_closeFVar {k : Nat} {x : String} {p : Pattern}
   | happly c args ih =>
     simp only [closeFVar, noExplicitSubst]
     exact allNoExplicitSubst_map h fun q hq hnes => ih q hq (k := k) hnes
-  | hlambda body ih => simp only [closeFVar, noExplicitSubst]; exact ih h
-  | hmultiLambda _ body ih => simp only [closeFVar, noExplicitSubst]; exact ih h
+  | hlambda _ body ih => simp only [closeFVar, noExplicitSubst]; exact ih h
+  | hmultiLambda _ _ body ih => simp only [closeFVar, noExplicitSubst]; exact ih h
   | hsubst _ _ _ _ => exact absurd h Bool.false_ne_true
   | hcollection ct elems rest ih =>
     simp only [closeFVar, noExplicitSubst]
@@ -158,8 +158,8 @@ private theorem not_mem_freeVars_closeFVar_self (k : Nat) (y : String) (p : Patt
     rw [List.mem_map] at hsub_mem
     obtain ⟨a, ha, rfl⟩ := hsub_mem
     exact ih a ha k
-  | hlambda body ih => simp only [closeFVar, freeVars]; exact ih (k + 1)
-  | hmultiLambda n body ih => simp only [closeFVar, freeVars]; exact ih (k + n)
+  | hlambda _ body ih => simp only [closeFVar, freeVars]; exact ih (k + 1)
+  | hmultiLambda n _ body ih => simp only [closeFVar, freeVars]; exact ih (k + n)
   | hsubst body repl ihb ihr =>
     simp only [closeFVar, freeVars, List.mem_append]; push_neg
     exact ⟨ihb (k + 1), ihr k⟩
@@ -223,9 +223,9 @@ theorem applySubst_closeFVar_comm_single
   | happly c args ih =>
     simp only [closeFVar, applySubst, List.map_map]; congr 1
     exact list_map_eq_map fun a ha => ih a ha (allNoExplicitSubst_mem hnes ha)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [closeFVar, applySubst]; congr 1; exact ih hnes
-  | hmultiLambda _ body ih =>
+  | hmultiLambda _ _ body ih =>
     simp only [closeFVar, applySubst]; congr 1; exact ih hnes
   | hsubst _ _ _ _ => exact absurd hnes Bool.false_ne_true
   | hcollection ct elems rest ih =>
@@ -252,10 +252,10 @@ theorem openBVar_SC_replacement {u u' : Pattern}
     simp only [List.length_map] at h₁ h₂
     simp only [List.get_eq_getElem, List.getElem_map]
     exact ih _ (List.getElem_mem h₁) k
-  | hlambda body ih =>
-    simp only [openBVar]; exact lambda_cong _ _ (ih (k + 1))
-  | hmultiLambda n body ih =>
-    simp only [openBVar]; exact multiLambda_cong n _ _ (ih (k + n))
+  | hlambda _ body ih =>
+    simp only [openBVar]; exact lambda_cong _ _ _ (ih (k + 1))
+  | hmultiLambda n _ body ih =>
+    simp only [openBVar]; exact multiLambda_cong n _ _ _ (ih (k + n))
   | hsubst body repl ihb ihr =>
     simp only [openBVar]; exact subst_cong _ _ _ _ (ihb (k + 1)) (ihr k)
   | hcollection ct elems rest ih =>
@@ -308,7 +308,7 @@ theorem encode_noExplicitSubst (P : Process) (n v : String) :
     exact noExplicitSubst_rhoPar (ihP (n ++ "_L")) (ihQ (n ++ "_R"))
   | input x y Q ih =>
     show noExplicitSubst (.apply "PInput" [piNameToRhoName x,
-           .lambda (closeFVar 0 y (encode Q n v))]) = true
+           .lambda none (closeFVar 0 y (encode Q n v))]) = true
     simp only [noExplicitSubst, allNoExplicitSubst, piNameToRhoName, Bool.true_and,
                Bool.and_eq_true]
     exact ⟨noExplicitSubst_closeFVar (ih n), trivial⟩
@@ -346,12 +346,12 @@ theorem lc_at_closeFVar {k : Nat} {x : String} {p : Pattern}
       rw [List.mem_map] at hq
       obtain ⟨a, ha, rfl⟩ := hq
       exact ih a ha (lc_at_list_mem hlc ha)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [closeFVar, lc_at] at hlc ⊢
     have : k + 1 + 1 = (k + 1) + 1 := by omega
     rw [this]
     exact ih hlc
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [closeFVar, lc_at] at hlc ⊢
     have : k + 1 + n = (k + n) + 1 := by omega
     rw [this]
@@ -401,7 +401,7 @@ theorem encode_rf_lc {P : Process} (hrf : RestrictionFree P) (n v : String) :
     exact lc_at_rhoPar (ihP hrf.1 (n ++ "_L")) (ihQ hrf.2 (n ++ "_R"))
   | input x y Q ih =>
     show lc_at 0 (.apply "PInput" [piNameToRhoName x,
-           .lambda (closeFVar 0 y (encode Q n v))]) = true
+           .lambda none (closeFVar 0 y (encode Q n v))]) = true
     simp only [lc_at, lc_at_list, piNameToRhoName, Bool.true_and, Bool.and_true]
     exact lc_at_closeFVar (ih hrf n)
   | output x z =>
@@ -541,8 +541,8 @@ private theorem applySubst_fvar_preserves_non_hashBag {y z : String} {P : Patter
     · simp only [applySubst, SubstEnv.find_extend_empty_ne (Ne.symm hxy)] at heq
       exact nomatch heq
   | apply c args => simp only [applySubst] at heq; cases heq
-  | lambda body => simp only [applySubst] at heq; cases heq
-  | multiLambda n body => simp only [applySubst] at heq; cases heq
+  | lambda _ body => simp only [applySubst] at heq; cases heq
+  | multiLambda n _ body => simp only [applySubst] at heq; cases heq
   | subst body repl => exact absurd hnes Bool.false_ne_true
   | collection ct elems rest =>
     simp only [applySubst] at heq; cases heq
@@ -600,7 +600,7 @@ theorem encode_rf_subst_fvar {Q : Process} (hrf : RestrictionFree Q)
   | input x w R ih =>
     have ⟨hyw, hzw, hbR⟩ := hb
     show applySubst _ (.apply "PInput" [piNameToRhoName x,
-           .lambda (closeFVar 0 w (encode R n v))]) = _
+           .lambda none (closeFVar 0 w (encode R n v))]) = _
     simp only [applySubst, List.map_cons, List.map_nil, piNameToRhoName]
     -- Body: applySubst commutes with closeFVar 0 w (since y ≠ w and z ≠ w)
     have hbody : applySubst (SubstEnv.extend SubstEnv.empty y (.fvar z))
@@ -1230,10 +1230,10 @@ theorem rep_comm_after_unfold (n q p : Pattern) :
     Nonempty
       ((.collection .hashBag
           [.apply "POutput" [n, q],
-           .apply "PReplicate" [.apply "PInput" [n, .lambda p]]] none) ⇝ᵈ*
+           .apply "PReplicate" [.apply "PInput" [n, .lambda none p]]] none) ⇝ᵈ*
         (.collection .hashBag
-          [commSubst p q, .apply "PReplicate" [.apply "PInput" [n, .lambda p]]] none)) := by
-  let inp : Pattern := .apply "PInput" [n, .lambda p]
+          [commSubst p q, .apply "PReplicate" [.apply "PInput" [n, .lambda none p]]] none)) := by
+  let inp : Pattern := .apply "PInput" [n, .lambda none p]
   let rep : Pattern := .apply "PReplicate" [inp]
   let src : Pattern := .collection .hashBag [.apply "POutput" [n, q], rep] none
   let mid : Pattern := .collection .hashBag [.apply "POutput" [n, q], .collection .hashBag [inp, rep] none] none
@@ -1251,7 +1251,7 @@ theorem rep_comm_after_unfold (n q p : Pattern) :
           (.collection .hashBag [commSubst p q, rep] none) := by
       simpa [inp, rep] using
         (show (.collection .hashBag
-            ([.apply "POutput" [n, q], .apply "PInput" [n, .lambda p]] ++ [rep]) none) ⇝
+            ([.apply "POutput" [n, q], .apply "PInput" [n, .lambda none p]] ++ [rep]) none) ⇝
               (.collection .hashBag ([commSubst p q] ++ [rep]) none) from
           (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces.comm
             (n := n) (q := q) (p := p) (rest := [rep])))

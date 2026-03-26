@@ -30,16 +30,16 @@ import Mettapedia.Logic.PLNHigherOrderCertifiedChainingRegression
 import Mettapedia.Logic.PLNTopologyCPTNoGo
 import Mettapedia.Logic.PLNVarianceChainNoGo
 import Mettapedia.Logic.PLNHigherOrderNoGoBridge
-import Mettapedia.Logic.PLNMarkovLogicAbstract
-import Mettapedia.Logic.PLNMarkovLogicCountable
-import Mettapedia.Logic.PLNMarkovLogicFiniteRestriction
-import Mettapedia.Logic.PLNMarkovLogicFactorGraph
-import Mettapedia.Logic.PLNMarkovLogicWorldModel
-import Mettapedia.Logic.PLNMarkovLogicRegression
-import Mettapedia.Logic.PLNMarkovLogicClauseSemantics
-import Mettapedia.Logic.PLNMarkovLogicClauseFactorGraph
-import Mettapedia.Logic.PLNMarkovLogicClauseWorldModel
-import Mettapedia.Logic.PLNMarkovLogicClauseRegression
+import Mettapedia.Logic.MarkovLogicAbstract
+import Mettapedia.Logic.MarkovLogicCountable
+import Mettapedia.Logic.MarkovLogicFiniteRestriction
+import Mettapedia.Logic.MarkovLogicFactorGraph
+import Mettapedia.Logic.MarkovLogicWorldModel
+import Mettapedia.Logic.MarkovLogicRegression
+import Mettapedia.Logic.MarkovLogicClauseSemantics
+import Mettapedia.Logic.MarkovLogicClauseFactorGraph
+import Mettapedia.Logic.MarkovLogicClauseWorldModel
+import Mettapedia.Logic.MarkovLogicClauseRegression
 import Mettapedia.Logic.PLNProbabilisticEventCalculus
 import Mettapedia.Logic.PLNColliderSingletonBridge
 import Mettapedia.Logic.PLNErrorMagnificationGrounding
@@ -1033,135 +1033,135 @@ two MLN knowledge bases corresponds to WM revision of their compiled states. -/
 
 -- Types
 abbrev PLNAtomValuation :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseSemantics.AtomValuation
+  @_root_.Mettapedia.Logic.MarkovLogicClauseSemantics.AtomValuation
 
 abbrev PLNLiteral :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseSemantics.Literal
+  @_root_.Mettapedia.Logic.MarkovLogicClauseSemantics.Literal
 
 abbrev PLNGroundClause :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseSemantics.GroundClause
+  @_root_.Mettapedia.Logic.MarkovLogicClauseSemantics.GroundClause
 
 abbrev PLNWeightedGroundClause :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseSemantics.WeightedGroundClause
+  @_root_.Mettapedia.Logic.MarkovLogicClauseSemantics.WeightedGroundClause
 
 abbrev PLNGroundMLN :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseSemantics.GroundMLN
+  @_root_.Mettapedia.Logic.MarkovLogicClauseSemantics.GroundMLN
 
 abbrev PLNClassicalGroundMLN :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseSemantics.ClassicalGroundMLN
+  @_root_.Mettapedia.Logic.MarkovLogicClauseSemantics.ClassicalGroundMLN
 
 abbrev PLNConstraintQuery :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseFactorGraph.ConstraintQuery
+  @_root_.Mettapedia.Logic.MarkovLogicClauseFactorGraph.ConstraintQuery
 
 -- Core bridge
 noncomputable abbrev pln_mln_clause_compiledClauseFactorGraph :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseFactorGraph.GroundMLN.compiledClauseFactorGraph
+  @_root_.Mettapedia.Logic.MarkovLogicClauseFactorGraph.GroundMLN.compiledClauseFactorGraph
 
 noncomputable abbrev pln_mln_clause_clauseWMState :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseWorldModel.clauseWMState
+  @_root_.Mettapedia.Logic.MarkovLogicClauseWorldModel.clauseWMState
 
 noncomputable abbrev pln_mln_clause_clauseMassSemantics :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseWorldModel.clauseMassSemantics
+  @_root_.Mettapedia.Logic.MarkovLogicClauseWorldModel.clauseMassSemantics
 
 -- Main theorem
 abbrev pln_mln_clause_queryStrength_eq_queryProb :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseWorldModel.clauseWM_queryStrength_eq_queryProb
+  @_root_.Mettapedia.Logic.MarkovLogicClauseWorldModel.clauseWM_queryStrength_eq_queryProb
 
 -- Bridge lemmas
 abbrev pln_mln_clause_weight_eq_queryMass :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseWorldModel.clauseWM_weight_eq_queryMass
+  @_root_.Mettapedia.Logic.MarkovLogicClauseWorldModel.clauseWM_weight_eq_queryMass
 
 abbrev pln_mln_clause_total_eq_totalMass :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseWorldModel.clauseWM_total_eq_totalMass
+  @_root_.Mettapedia.Logic.MarkovLogicClauseWorldModel.clauseWM_total_eq_totalMass
 
 abbrev pln_mln_clause_evidence_eq_evidenceOfMasses :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseWorldModel.clauseWM_evidence_eq_evidenceOfMasses
+  @_root_.Mettapedia.Logic.MarkovLogicClauseWorldModel.clauseWM_evidence_eq_evidenceOfMasses
 
 -- Factor graph bridge
 abbrev pln_mln_clause_unnormalizedJoint_eq_worldWeight :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseFactorGraph.GroundMLN.compiledClauseFactorGraph_unnormalizedJoint_eq_worldWeight
+  @_root_.Mettapedia.Logic.MarkovLogicClauseFactorGraph.GroundMLN.compiledClauseFactorGraph_unnormalizedJoint_eq_worldWeight
 
 abbrev pln_mln_clause_weightOfConstraints_eq_queryMass :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseFactorGraph.GroundMLN.weightOfConstraints_eq_queryMass
+  @_root_.Mettapedia.Logic.MarkovLogicClauseFactorGraph.GroundMLN.weightOfConstraints_eq_queryMass
 
 abbrev pln_mln_clause_partitionFunction_eq_totalMass :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseFactorGraph.GroundMLN.partitionFunction_eq_totalMass
+  @_root_.Mettapedia.Logic.MarkovLogicClauseFactorGraph.GroundMLN.partitionFunction_eq_totalMass
 
 -- Classical MLN bridge
 abbrev pln_mln_clause_worldWeight_eq_gibbsProduct :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseSemantics.ClassicalGroundMLN.worldWeight_eq_gibbsProduct
+  @_root_.Mettapedia.Logic.MarkovLogicClauseSemantics.ClassicalGroundMLN.worldWeight_eq_gibbsProduct
 
 -- Regression canaries
 abbrev pln_mln_clause_regression_sigmoid_queryStrength_eq_three_fourths :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseRegression.sigmoid_queryStrength_true_eq_three_fourths
+  @_root_.Mettapedia.Logic.MarkovLogicClauseRegression.sigmoid_queryStrength_true_eq_three_fourths
 
 abbrev pln_mln_clause_regression_conflicting_queryStrength_eq_three_fifths :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseRegression.conflicting_queryStrength_true_eq_three_fifths
+  @_root_.Mettapedia.Logic.MarkovLogicClauseRegression.conflicting_queryStrength_true_eq_three_fifths
 
 abbrev pln_mln_clause_regression_hardZero_queryStrength_eq_zero :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseRegression.hardZero_queryStrength_false_eq_zero
+  @_root_.Mettapedia.Logic.MarkovLogicClauseRegression.hardZero_queryStrength_false_eq_zero
 
 abbrev pln_mln_clause_regression_conflicting_not_entailed :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicClauseRegression.conflicting_true_not_entailed_by_live_worlds
+  @_root_.Mettapedia.Logic.MarkovLogicClauseRegression.conflicting_true_not_entailed_by_live_worlds
 
 /-! ## Abstract MLN Endpoints (infinite-first, abstract world/query types) -/
 
 abbrev PLNAbstractMLNSemantics :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicAbstract.AbstractMLNSemantics
+  @_root_.Mettapedia.Logic.MarkovLogicAbstract.AbstractMLNSemantics
 
 abbrev PLNMLNMassSemantics :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicAbstract.MassSemantics
+  @_root_.Mettapedia.Logic.MarkovLogicAbstract.MassSemantics
 
 abbrev PLNMLNMassState :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicAbstract.MassState
+  @_root_.Mettapedia.Logic.MarkovLogicAbstract.MassState
 
 abbrev PLNCountableMLNSemantics :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicCountable.CountableMLNSemantics
+  @_root_.Mettapedia.Logic.MarkovLogicCountable.CountableMLNSemantics
 
 abbrev PLNFiniteSupportWitness :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicFiniteRestriction.FiniteSupportWitness
+  @_root_.Mettapedia.Logic.MarkovLogicFiniteRestriction.FiniteSupportWitness
 
 abbrev PLNRestrictedMLNWorld :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicFiniteRestriction.RestrictedWorld
+  @_root_.Mettapedia.Logic.MarkovLogicFiniteRestriction.RestrictedWorld
 
 abbrev pln_mln_queryStrength_eq_queryProb_of_evidence_eq :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicAbstract.queryStrength_eq_queryProb_of_evidence_eq
+  @_root_.Mettapedia.Logic.MarkovLogicAbstract.queryStrength_eq_queryProb_of_evidence_eq
 
 noncomputable abbrev pln_mln_logWeightPotential :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicCountable.logWeightPotential
+  @_root_.Mettapedia.Logic.MarkovLogicCountable.logWeightPotential
 
 abbrev pln_mln_restricted_queryProb_eq_full_queryProb_of_finite_support :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicFiniteRestriction.restricted_queryProb_eq_full_queryProb_of_finite_support
+  @_root_.Mettapedia.Logic.MarkovLogicFiniteRestriction.restricted_queryProb_eq_full_queryProb_of_finite_support
 
 abbrev pln_mln_compiledJoint_eq_restrictedWorldWeight :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicFactorGraph.compiledJoint_eq_restrictedWorldWeight
+  @_root_.Mettapedia.Logic.MarkovLogicFactorGraph.compiledJoint_eq_restrictedWorldWeight
 
 abbrev pln_mln_compiledQueryMass_eq_restrictedQueryMass :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicFactorGraph.compiledQueryMass_eq_restrictedQueryMass
+  @_root_.Mettapedia.Logic.MarkovLogicFactorGraph.compiledQueryMass_eq_restrictedQueryMass
 
 abbrev pln_mln_compiledPartition_eq_restrictedTotalMass :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicFactorGraph.compiledPartition_eq_restrictedTotalMass
+  @_root_.Mettapedia.Logic.MarkovLogicFactorGraph.compiledPartition_eq_restrictedTotalMass
 
 abbrev pln_mln_wm_queryStrength_eq_restricted_queryProb :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicWorldModel.wm_queryStrength_eq_restricted_queryProb
+  @_root_.Mettapedia.Logic.MarkovLogicWorldModel.wm_queryStrength_eq_restricted_queryProb
 
 abbrev pln_mln_wm_queryStrength_eq_full_queryProb_of_finite_support :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicWorldModel.wm_queryStrength_eq_full_queryProb_of_finite_support
+  @_root_.Mettapedia.Logic.MarkovLogicWorldModel.wm_queryStrength_eq_full_queryProb_of_finite_support
 
 abbrev pln_mln_regression_demo_compiledPartition_eq_three :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicRegression.demo_compiledPartition_eq_three
+  @_root_.Mettapedia.Logic.MarkovLogicRegression.demo_compiledPartition_eq_three
 
 abbrev pln_mln_regression_wm_queryStrength_ideal_eq_two_thirds :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicRegression.wm_queryStrength_ideal_eq_two_thirds
+  @_root_.Mettapedia.Logic.MarkovLogicRegression.wm_queryStrength_ideal_eq_two_thirds
 
 abbrev pln_mln_regression_wm_queryStrength_reachable_eq_one :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicRegression.wm_queryStrength_reachable_eq_one
+  @_root_.Mettapedia.Logic.MarkovLogicRegression.wm_queryStrength_reachable_eq_one
 
 abbrev pln_mln_regression_wm_queryStrength_impossible_eq_zero :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicRegression.wm_queryStrength_impossible_eq_zero
+  @_root_.Mettapedia.Logic.MarkovLogicRegression.wm_queryStrength_impossible_eq_zero
 
 abbrev pln_mln_regression_additive_revision_changes_evidence :=
-  @_root_.Mettapedia.Logic.PLNMarkovLogicRegression.additive_revision_changes_evidence
+  @_root_.Mettapedia.Logic.MarkovLogicRegression.additive_revision_changes_evidence
 
 /-! ## Logical-Induction-Ready HOL Belief Endpoints -/
 

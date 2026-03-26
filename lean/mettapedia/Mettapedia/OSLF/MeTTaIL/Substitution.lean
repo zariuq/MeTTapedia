@@ -33,8 +33,8 @@ def openBVar (k : Nat) (u : Pattern) : Pattern → Pattern
   | .bvar n => if n == k then u else .bvar n
   | .fvar x => .fvar x
   | .apply c args => .apply c (args.map (openBVar k u))
-  | .lambda body => .lambda (openBVar (k + 1) u body)
-  | .multiLambda n body => .multiLambda n (openBVar (k + n) u body)
+  | .lambda nm body => .lambda nm (openBVar (k + 1) u body)
+  | .multiLambda n nms body => .multiLambda n nms (openBVar (k + n) u body)
   | .subst body repl => .subst (openBVar (k + 1) u body) (openBVar k u repl)
   | .collection ct elems rest =>
     .collection ct (elems.map (openBVar k u)) rest
@@ -45,8 +45,8 @@ def closeFVar (k : Nat) (x : String) : Pattern → Pattern
   | .bvar n => .bvar n
   | .fvar y => if y == x then .bvar k else .fvar y
   | .apply c args => .apply c (args.map (closeFVar k x))
-  | .lambda body => .lambda (closeFVar (k + 1) x body)
-  | .multiLambda n body => .multiLambda n (closeFVar (k + n) x body)
+  | .lambda nm body => .lambda nm (closeFVar (k + 1) x body)
+  | .multiLambda n nms body => .multiLambda n nms (closeFVar (k + n) x body)
   | .subst body repl => .subst (closeFVar (k + 1) x body) (closeFVar k x repl)
   | .collection ct elems rest =>
     .collection ct (elems.map (closeFVar k x)) rest
@@ -57,8 +57,8 @@ def liftBVars (cutoff shift : Nat) : Pattern → Pattern
   | .bvar n => if n >= cutoff then .bvar (n + shift) else .bvar n
   | .fvar x => .fvar x
   | .apply c args => .apply c (args.map (liftBVars cutoff shift))
-  | .lambda body => .lambda (liftBVars (cutoff + 1) shift body)
-  | .multiLambda n body => .multiLambda n (liftBVars (cutoff + n) shift body)
+  | .lambda nm body => .lambda nm (liftBVars (cutoff + 1) shift body)
+  | .multiLambda n nms body => .multiLambda n nms (liftBVars (cutoff + n) shift body)
   | .subst body repl =>
     .subst (liftBVars (cutoff + 1) shift body) (liftBVars cutoff shift repl)
   | .collection ct elems rest =>
@@ -100,11 +100,11 @@ def applySubst (env : SubstEnv) : Pattern → Pattern
     | none => .fvar name
   | .apply constructor args =>
     .apply constructor (args.map (applySubst env))
-  | .lambda body =>
+  | .lambda nm body =>
     -- NO filtering! De Bruijn indices prevent capture.
-    .lambda (applySubst env body)
-  | .multiLambda n body =>
-    .multiLambda n (applySubst env body)
+    .lambda nm (applySubst env body)
+  | .multiLambda n nms body =>
+    .multiLambda n nms (applySubst env body)
   | .subst body replacement =>
     -- Explicit substitution: apply env to both parts, then openBVar
     let body' := applySubst env body
@@ -123,8 +123,8 @@ def freeVars : Pattern → List String
   | .bvar _ => []
   | .fvar name => [name]
   | .apply _ args => args.flatMap freeVars
-  | .lambda body => freeVars body
-  | .multiLambda _ body => freeVars body
+  | .lambda _ body => freeVars body
+  | .multiLambda _ _ body => freeVars body
   | .subst body replacement => freeVars body ++ freeVars replacement
   | .collection _ elements _ => elements.flatMap freeVars
 termination_by p => sizeOf p
@@ -161,8 +161,8 @@ mutual
     | .bvar _ => true
     | .fvar _ => true
     | .apply _ args => allNoExplicitSubst args
-    | .lambda body => noExplicitSubst body
-    | .multiLambda _ body => noExplicitSubst body
+    | .lambda _ body => noExplicitSubst body
+    | .multiLambda _ _ body => noExplicitSubst body
     | .subst _ _ => false
     | .collection _ elems _ => allNoExplicitSubst elems
 
@@ -190,8 +190,8 @@ mutual
     | k, .bvar n => n < k
     | _, .fvar _ => true
     | k, .apply _ args => lc_at_list k args
-    | k, .lambda body => lc_at (k + 1) body
-    | k, .multiLambda n body => lc_at (k + n) body
+    | k, .lambda _ body => lc_at (k + 1) body
+    | k, .multiLambda n _ body => lc_at (k + n) body
     | k, .subst body repl => lc_at (k + 1) body && lc_at k repl
     | k, .collection _ elems _ => lc_at_list k elems
 
@@ -238,10 +238,10 @@ theorem subst_empty (p : Pattern) (h : noExplicitSubst p) :
     unfold noExplicitSubst at h
     simp only [applySubst]; congr 1
     exact list_map_eq_self (fun q hq => ih q hq (allNoExplicitSubst_mem h hq))
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     unfold noExplicitSubst at h
     simp only [applySubst]; congr 1; exact ih h
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     unfold noExplicitSubst at h
     simp only [applySubst]; congr 1; exact ih h
   | hsubst body repl _ _ =>
@@ -260,9 +260,9 @@ theorem liftBVars_zero (p : Pattern) (cutoff : Nat) :
   | happly c args ih =>
     simp only [liftBVars]; congr 1
     exact list_map_eq_self (fun q hq => ih q hq cutoff)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [liftBVars]; congr 1; exact ih (cutoff + 1)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [liftBVars]; congr 1; exact ih (cutoff + n)
   | hsubst body repl ihb ihr =>
     simp only [liftBVars]; congr 1
@@ -287,10 +287,10 @@ theorem openBVar_lc_at (k : Nat) (u : Pattern) (p : Pattern)
     simp only [lc_at] at hlc
     simp only [openBVar]; congr 1
     exact list_map_eq_self (fun q hq => ih q hq k (lc_at_list_mem hlc hq))
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [lc_at] at hlc
     simp only [openBVar]; congr 1; exact ih (k + 1) hlc
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [lc_at] at hlc
     simp only [openBVar]; congr 1; exact ih (k + n) hlc
   | hsubst body repl ihb ihr =>
@@ -323,10 +323,10 @@ theorem close_open_id (k : Nat) (x : String) (p : Pattern)
     simp only [openBVar, closeFVar, List.map_map]; congr 1
     exact list_map_eq_self fun q hq => ih q hq k
       (fun hxq => hfresh (List.mem_flatMap.mpr ⟨q, hq, hxq⟩))
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [freeVars] at hfresh
     simp only [openBVar, closeFVar]; congr 1; exact ih (k + 1) hfresh
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [freeVars] at hfresh
     simp only [openBVar, closeFVar]; congr 1; exact ih (k + n) hfresh
   | hsubst body repl ihb ihr =>
@@ -361,10 +361,10 @@ theorem open_close_id (k : Nat) (x : String) (p : Pattern)
     simp only [lc_at] at hlc
     simp only [closeFVar, openBVar, List.map_map]; congr 1
     exact list_map_eq_self fun q hq => ih q hq k (lc_at_list_mem hlc hq)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [lc_at] at hlc
     simp only [closeFVar, openBVar]; congr 1; exact ih (k + 1) hlc
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [lc_at] at hlc
     simp only [closeFVar, openBVar]; congr 1; exact ih (k + n) hlc
   | hsubst body repl ihb ihr =>
@@ -426,9 +426,9 @@ theorem lc_at_mono {k k' : Nat} {p : Pattern}
     have hmono : ∀ q ∈ args, lc_at k' q = true := fun q hq =>
       ih q hq (lc_at_list_mem hlc hq) hle
     exact lc_at_list_of_forall hmono
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     unfold lc_at at hlc ⊢; exact ih hlc (Nat.add_le_add_right hle 1)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     unfold lc_at at hlc ⊢; exact ih hlc (Nat.add_le_add_right hle n)
   | hsubst body repl ihb ihr =>
     simp only [lc_at, Bool.and_eq_true] at hlc ⊢
@@ -507,11 +507,11 @@ theorem applySubst_fresh_single {x : String} {q : Pattern} {p : Pattern}
     simp only [applySubst]; congr 1
     exact list_map_eq_self fun a ha =>
       ih a ha (isFresh_mem_of_flatMap hfresh ha) (allNoExplicitSubst_mem (by exact hnes) ha)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [applySubst]; congr 1
     simp only [isFresh, freeVars] at hfresh
     exact ih hfresh (by exact hnes)
-  | hmultiLambda _ body ih =>
+  | hmultiLambda _ _ body ih =>
     simp only [applySubst]; congr 1
     simp only [isFresh, freeVars] at hfresh
     exact ih hfresh (by exact hnes)
@@ -525,13 +525,13 @@ theorem applySubst_fresh_single {x : String} {q : Pattern} {p : Pattern}
 
 /-- Helper: applySubst on PInput -/
 theorem applySubst_input (env : SubstEnv) (n : Pattern) (body : Pattern) :
-    applySubst env (.apply "PInput" [n, .lambda body]) =
-      .apply "PInput" [applySubst env n, .lambda (applySubst env body)] := by
+    applySubst env (.apply "PInput" [n, .lambda none body]) =
+      .apply "PInput" [applySubst env n, .lambda none (applySubst env body)] := by
   simp only [applySubst, List.map_cons, List.map_nil]
 
 /-- Helper: applySubst on lambda -/
 theorem applySubst_lambda (env : SubstEnv) (body : Pattern) :
-    applySubst env (.lambda body) = .lambda (applySubst env body) := by
+    applySubst env (.lambda nm body) = .lambda nm (applySubst env body) := by
   simp only [applySubst]
 
 /-- Helper: applySubst on collection -/
@@ -584,11 +584,11 @@ theorem subst_intro {z : String} {u : Pattern} {p : Pattern}
     exact list_map_eq_map fun a ha =>
       ih a ha (isFresh_mem_of_flatMap hfresh ha)
         (allNoExplicitSubst_mem (by exact hnes) ha) k
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [openBVar, applySubst]; congr 1
     simp only [isFresh, freeVars] at hfresh
     exact ih hfresh (by exact hnes) (k + 1)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [openBVar, applySubst]; congr 1
     simp only [isFresh, freeVars] at hfresh
     exact ih hfresh (by exact hnes) (k + n)
@@ -612,7 +612,7 @@ theorem isFresh_fvar_neq {x y : String} (h : isFresh x (.fvar y) = true) : x ≠
 
 /-- Freshness for lambda: x fresh in `.lambda body` iff x fresh in body. -/
 theorem isFresh_lambda_iff {x : String} {body : Pattern} :
-    isFresh x (.lambda body) = isFresh x body := by
+    isFresh x (.lambda _nm body) = isFresh x body := by
   simp only [isFresh, freeVars]
 
 /-! ## Opening Preserves noExplicitSubst -/
@@ -650,11 +650,11 @@ theorem noExplicitSubst_openBVar {k : Nat} {u : Pattern} {p : Pattern}
     simp only [openBVar]
     change allNoExplicitSubst (args.map (openBVar k u)) = true
     exact allNoExplicitSubst_map_openBVar hnes' hnes_u ih
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     intro k hnes'
     simp only [openBVar, noExplicitSubst]
     exact ih (k + 1) hnes'
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     intro k hnes'
     simp only [openBVar, noExplicitSubst]
     exact ih (k + n) hnes'
@@ -715,11 +715,11 @@ theorem applySubst_openBVar_comm {x : String} {q : Pattern} {z : String}
     congr 1
     exact list_map_eq_map fun a ha =>
       ih a ha k (allNoExplicitSubst_mem hnes' ha) hlc'
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     intro k hnes' hlc'
     simp only [openBVar, applySubst]; congr 1
     exact ih (k + 1) hnes' (lc_at_mono hlc' (Nat.le_add_right k 1))
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     intro k hnes' hlc'
     simp only [openBVar, applySubst]; congr 1
     exact ih (k + n) hnes' (lc_at_mono hlc' (Nat.le_add_right k n))
@@ -771,14 +771,14 @@ private theorem freeVars_forward_single {x : String} {q : Pattern} {z : String}
     simp only [applySubst, freeVars, List.mem_flatMap]
     exact ⟨applySubst _ a, List.mem_map.mpr ⟨a, ha, rfl⟩,
            ih a ha (allNoExplicitSubst_mem hnes ha) hz_a⟩
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [freeVars] at hz_in
-    show z ∈ freeVars (applySubst _ (.lambda body))
+    show z ∈ freeVars (applySubst _ (.lambda _ body))
     simp only [applySubst, freeVars]
     exact ih hnes hz_in
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [freeVars] at hz_in
-    show z ∈ freeVars (applySubst _ (.multiLambda n body))
+    show z ∈ freeVars (applySubst _ (.multiLambda n _ body))
     simp only [applySubst, freeVars]
     exact ih hnes hz_in
   | hsubst body repl _ _ => exact absurd hnes Bool.false_ne_true
@@ -836,10 +836,10 @@ theorem isFresh_applySubst_single {x : String} {q : Pattern} {z : String}
     have := ih a ha ha_nes ha_fresh
     simp only [isFresh, Bool.not_eq_true'] at this
     exact absurd (contains_of_list_mem hz_mapped) (Bool.eq_false_iff.mp this)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [applySubst, isFresh, freeVars] at *
     exact ih hnes hfresh_p
-  | hmultiLambda _ body ih =>
+  | hmultiLambda _ _ body ih =>
     simp only [applySubst, isFresh, freeVars] at *
     exact ih hnes hfresh_p
   | hsubst body repl _ _ => exact absurd hnes Bool.false_ne_true
@@ -880,10 +880,10 @@ theorem noExplicitSubst_of_openBVar {k : Nat} {u : Pattern} {p : Pattern}
       simp only [List.map_cons, allNoExplicitSubst, Bool.and_eq_true] at h ⊢
       exact ⟨ih a (List.mem_cons.mpr (Or.inl rfl)) h.1,
              ih_list (fun q hq => ih q (List.mem_cons.mpr (Or.inr hq))) h.2⟩
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [openBVar, noExplicitSubst] at h ⊢
     exact ih h
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [openBVar, noExplicitSubst] at h ⊢
     exact ih h
   | hsubst body repl _ _ =>
@@ -925,11 +925,11 @@ theorem lc_at_openBVar_result {k : Nat} {u body : Pattern}
       simp only [lc_at, lc_at_list, Bool.and_eq_true] at hbody
       exact ⟨ih a List.mem_cons_self hbody.1 hu,
              ihas (fun p hp => ih p (List.mem_cons_of_mem _ hp)) hbody.2⟩
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [openBVar, lc_at]
     simp only [lc_at] at hbody
     exact ih hbody (lc_at_mono hu (Nat.le_add_right k 1))
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [openBVar, lc_at]
     simp only [lc_at] at hbody
     have hbody' : lc_at ((k + n) + 1) body = true := by rwa [Nat.add_right_comm] at hbody

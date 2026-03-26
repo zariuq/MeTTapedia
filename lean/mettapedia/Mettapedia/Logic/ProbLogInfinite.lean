@@ -1,7 +1,7 @@
 import Mathlib.Probability.ProductMeasure
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Mettapedia.Logic.PLNMarkovLogicAbstract
+import Mettapedia.Logic.MarkovLogicAbstract
 
 /-!
 # ProbLog Distribution Semantics for Countably Infinite Facts
@@ -134,14 +134,14 @@ theorem infiniteFactMeasure_total (p : ℕ → ℝ≥0) (hp : ∀ i, p i ≤ 1) 
 /-! ## §5 Bridge to MassSemantics
 
 The infinite product measure induces a `MassSemantics` object (from
-`PLNMarkovLogicAbstract.lean`), which bridges to WM-PLN via
+`MarkovLogicAbstract.lean`), which bridges to WM-PLN via
 `queryStrength_eq_queryProb_of_evidence_eq`. -/
 
 /-- Convert the infinite product measure semantics into a `MassSemantics`
     for a specific measurable query. -/
 noncomputable def infiniteMassSemantics (p : ℕ → ℝ≥0) (hp : ∀ i, p i ≤ 1)
     (Q : Set (ℕ → Bool)) (hQ : MeasurableSet Q) :
-    PLNMarkovLogicAbstract.MassSemantics Unit where
+    MarkovLogicAbstract.MassSemantics Unit where
   queryMass := fun _ => infiniteFactMeasure p hp Q
   totalMass := 1
   queryMass_le_total := fun _ =>
@@ -152,7 +152,7 @@ noncomputable def infiniteMassSemantics (p : ℕ → ℝ≥0) (hp : ∀ i, p i �
 theorem infiniteMassSemantics_queryProb (p : ℕ → ℝ≥0) (hp : ∀ i, p i ≤ 1)
     (Q : Set (ℕ → Bool)) (hQ : MeasurableSet Q) :
     (infiniteMassSemantics p hp Q hQ).queryProb () = infiniteFactMeasure p hp Q := by
-  simp [PLNMarkovLogicAbstract.MassSemantics.queryProb, infiniteMassSemantics,
+  simp [MarkovLogicAbstract.MassSemantics.queryProb, infiniteMassSemantics,
         infiniteFactMeasure_total, div_one]
 
 /-! ## §6 Crown Theorem
@@ -171,9 +171,9 @@ the measure-theoretic foundation. -/
 theorem wm_queryStrength_eq_infiniteQueryProb (p : ℕ → ℝ≥0) (hp : ∀ i, p i ≤ 1)
     (Q : Set (ℕ → Bool)) (hQ : MeasurableSet Q) :
     BinaryWorldModel.queryStrength
-      ({infiniteMassSemantics p hp Q hQ} : PLNMarkovLogicAbstract.MassState Unit) ()
+      ({infiniteMassSemantics p hp Q hQ} : MarkovLogicAbstract.MassState Unit) ()
     = infiniteFactMeasure p hp Q := by
-  rw [PLNMarkovLogicAbstract.MassState.queryStrength_singleton_eq_queryProb]
+  rw [MarkovLogicAbstract.MassState.queryStrength_singleton_eq_queryProb]
   exact infiniteMassSemantics_queryProb p hp Q hQ
 
 end Mettapedia.Logic.ProbLogInfinite

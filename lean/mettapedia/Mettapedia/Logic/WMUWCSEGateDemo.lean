@@ -36,7 +36,7 @@ alone is insufficient for confident edge prediction.
 ## Fixture Provenance
 
 Data: scripts/wm_pln_uwcse_compatibility_gate.py
-Reference: PLNMarkovLogicUWCSE.lean (585 lines, 0 sorry — basic MLN canary)
+Reference: MarkovLogicUWCSE.lean (585 lines, 0 sorry — basic MLN canary)
 
 0 sorry.
 -/
@@ -63,7 +63,7 @@ inductive LinkOutcome
 
 /-! ## §2: Evidence ledger for a strong-signal pair
 
-Person429 and Person335 from PLNMarkovLogicUWCSE.lean:
+Person429 and Person335 from MarkovLogicUWCSE.lean:
 - Student is in late phase, has publications, has TA experience
 - Professor is active, has advisees, shares publications with student
 - They share 2 publications and 1 course

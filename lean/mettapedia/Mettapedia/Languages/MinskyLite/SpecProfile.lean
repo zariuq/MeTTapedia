@@ -22,6 +22,7 @@ private def terminalsOfRule (g : GrammarRule) : List String :=
   g.syntaxPattern.filterMap (fun
     | .terminal t => some t
     | .separator t => some t
+    | .op _ => none
     | _ => none)
 
 private def premiseRelations : List String :=

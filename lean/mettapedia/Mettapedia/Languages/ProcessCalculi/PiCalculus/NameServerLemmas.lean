@@ -22,12 +22,12 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu
 theorem nameServer_request_response_progress_general
     (x z v s : String) (body : Pattern) :
     Nonempty
-      ((rhoPar (nameServer x z v s) (.apply "PInput" [.fvar z, .lambda body])) ⇝ᵈ*
+      ((rhoPar (nameServer x z v s) (.apply "PInput" [.fvar z, .lambda none body])) ⇝ᵈ*
         (.collection .hashBag
           [Mettapedia.OSLF.MeTTaIL.Substitution.commSubst body (.apply "PDrop" [.fvar s]),
            rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v),
            dropOperation x] none)) := by
-  let listener : Pattern := .apply "PInput" [.fvar z, .lambda body]
+  let listener : Pattern := .apply "PInput" [.fvar z, .lambda none body]
   let rep : Pattern := rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody x z v)
   let dropX : Pattern := dropOperation x
   let out : Pattern := rhoOutput (.fvar z) (.apply "PDrop" [.fvar s])

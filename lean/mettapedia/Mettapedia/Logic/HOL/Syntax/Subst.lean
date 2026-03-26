@@ -862,6 +862,93 @@ theorem noConstOccurrence_of_rename
       cases h with
       | ex hb => exact .ex (noConstOccurrence_of_rename (Rename.lift ρ) φ hb)
 
+/-- NoConstOccurrence is preserved forward through renaming. -/
+theorem noConstOccurrence_rename
+    {σ : Ty Base} {c : Const σ} {Γ' Δ' : Ctx Base} (ρ : Rename Base Γ' Δ') :
+    ∀ {τ : Ty Base} (t : Term Const Γ' τ),
+      NoConstOccurrence c t → NoConstOccurrence c (rename ρ t)
+  | _, .var _, _ => .var
+  | _, .const _, h => by
+      cases h with
+      | const_diff_type hne => exact .const_diff_type hne _
+      | const_same_ne _ hne => exact .const_same_ne _ hne
+  | _, .app f' t', h => by cases h with | app hf ht =>
+      exact .app (noConstOccurrence_rename ρ f' hf) (noConstOccurrence_rename ρ t' ht)
+  | _, .lam body, h => by cases h with | lam hb =>
+      exact .lam (noConstOccurrence_rename (Rename.lift ρ) body hb)
+  | _, .top, _ => .top
+  | _, .bot, _ => .bot
+  | _, .and φ' ψ', h => by cases h with | and h1 h2 =>
+      exact .and (noConstOccurrence_rename ρ φ' h1) (noConstOccurrence_rename ρ ψ' h2)
+  | _, .or φ' ψ', h => by cases h with | or h1 h2 =>
+      exact .or (noConstOccurrence_rename ρ φ' h1) (noConstOccurrence_rename ρ ψ' h2)
+  | _, .imp φ' ψ', h => by cases h with | imp h1 h2 =>
+      exact .imp (noConstOccurrence_rename ρ φ' h1) (noConstOccurrence_rename ρ ψ' h2)
+  | _, .not φ', h => by cases h with | not h1 =>
+      exact .not (noConstOccurrence_rename ρ φ' h1)
+  | _, .eq t' u', h => by cases h with | eq h1 h2 =>
+      exact .eq (noConstOccurrence_rename ρ t' h1) (noConstOccurrence_rename ρ u' h2)
+  | _, .all φ', h => by cases h with | all hb =>
+      exact .all (noConstOccurrence_rename (Rename.lift ρ) φ' hb)
+  | _, .ex φ', h => by cases h with | ex hb =>
+      exact .ex (noConstOccurrence_rename (Rename.lift ρ) φ' hb)
+
+/-- NoConstOccurrence through substitution: if `c` doesn't occur in any image of `s`
+    and doesn't occur in `t`, then it doesn't occur in `subst s t`. -/
+theorem noConstOccurrence_subst
+    {σ : Ty Base} {c : Const σ} {Γ' Δ' : Ctx Base}
+    {s : ∀ {τ : Ty Base}, Var Δ' τ → Term Const Γ' τ}
+    (hs : ∀ {τ} (v : Var Δ' τ), NoConstOccurrence c (s v)) :
+    ∀ {τ : Ty Base} (t : Term Const Δ' τ),
+      NoConstOccurrence c t → NoConstOccurrence c (subst s t)
+  | _, .var v, _ => hs v
+  | _, .const _, h => by
+      cases h with
+      | const_diff_type hne => exact .const_diff_type hne _
+      | const_same_ne _ hne => exact .const_same_ne _ hne
+  | _, .app f' t', h => by cases h with | app hf ht =>
+      exact .app (noConstOccurrence_subst hs f' hf) (noConstOccurrence_subst hs t' ht)
+  | _, .lam body, h => by cases h with | lam hb =>
+      exact .lam (noConstOccurrence_subst
+        (fun v => by cases v with
+          | vz => exact .var
+          | vs v => exact noConstOccurrence_rename Rename.weaken _ (hs v))
+        body hb)
+  | _, .top, _ => .top
+  | _, .bot, _ => .bot
+  | _, .and φ' ψ', h => by cases h with | and h1 h2 =>
+      exact .and (noConstOccurrence_subst hs φ' h1) (noConstOccurrence_subst hs ψ' h2)
+  | _, .or φ' ψ', h => by cases h with | or h1 h2 =>
+      exact .or (noConstOccurrence_subst hs φ' h1) (noConstOccurrence_subst hs ψ' h2)
+  | _, .imp φ' ψ', h => by cases h with | imp h1 h2 =>
+      exact .imp (noConstOccurrence_subst hs φ' h1) (noConstOccurrence_subst hs ψ' h2)
+  | _, .not φ', h => by cases h with | not h1 =>
+      exact .not (noConstOccurrence_subst hs φ' h1)
+  | _, .eq t' u', h => by cases h with | eq h1 h2 =>
+      exact .eq (noConstOccurrence_subst hs t' h1) (noConstOccurrence_subst hs u' h2)
+  | _, .all φ', h => by cases h with | all hb =>
+      exact .all (noConstOccurrence_subst
+        (fun v => by cases v with
+          | vz => exact .var
+          | vs v => exact noConstOccurrence_rename Rename.weaken _ (hs v))
+        φ' hb)
+  | _, .ex φ', h => by cases h with | ex hb =>
+      exact .ex (noConstOccurrence_subst
+        (fun v => by cases v with
+          | vz => exact .var
+          | vs v => exact noConstOccurrence_rename Rename.weaken _ (hs v))
+        φ' hb)
+
+/-- Specialization: NoConstOccurrence through instantiation. -/
+theorem noConstOccurrence_instantiate
+    {σ σ' : Ty Base} {c : Const σ}
+    {t : Term Const [] σ'} {body : Term Const [σ'] τ}
+    (ht : NoConstOccurrence c t) (hbody : NoConstOccurrence c body) :
+    NoConstOccurrence c (instantiate (Base := Base) t body) :=
+  noConstOccurrence_subst
+    (fun v => by cases v with | vz => exact ht | vs v => cases v)
+    body hbody
+
 /-- Rename that inserts σ after prefix Ξ: maps (Ξ ++ Γ) into (Ξ ++ σ :: Γ). -/
 def insertRen
     {Γ : Ctx Base} {σ : Ty Base} :
@@ -1224,14 +1311,142 @@ def insertRenAt
       (abstractConstAt (Base := Base) c Ξ t) := by
   exact abstractConstAt_insertRenAt (c := c) [] Ξ t
 
--- abstractConstAt_weakenHyps: goes in DerivationExtensionality.lean
--- abstractConstAt_instantiate: needs Subst.lift/Subst.single commutation for binder cases
+/-- Split-point substitution: substitute a term from the lower suffix `Ξ₂ ++ Γ`
+    into the distinguished `σ`-slot sitting between an upper prefix `Ξ₁` and
+    the lower suffix `Ξ₂`.
 
--- abstractConstAt_instantiate: var/const/top/bot cases close with simp.
--- app/and/or/imp/not/eq cases close after dsimp [instantiate, subst, abstractConstAt].
--- lam/all/ex binder cases need: subst_ext to convert Subst.lift (Subst.single t)
--- to Subst.single (weaken t), then abstractConstAt_weaken, then recursive call.
--- The dsimp/simp interaction with the IH needs careful ordering (dsimp first to
--- expose constructors, then apply IH). Work in progress.
+    The recursion follows the upper prefix `Ξ₁`, so binder cases can extend the
+    split structurally without any `List.append_assoc` casts. -/
+def substAt
+    {Γ : Ctx Base} {σ : Ty Base} :
+    (Ξ₁ Ξ₂ : Ctx Base) →
+      Term Const (Ξ₂ ++ Γ) σ →
+      Subst Const (((Ξ₁ ++ (σ :: Ξ₂)) ++ Γ)) (((Ξ₁ ++ Ξ₂) ++ Γ))
+  | [], _, t => Subst.single t
+  | _ :: Ξ₁, Ξ₂, t => Subst.lift (substAt (Γ := Γ) Ξ₁ Ξ₂ t)
+
+/-- Substituting at the split point preserves the abstracted-variable depth:
+    the distinguished `ρ`-variable remains the same distinguished variable after
+    eliminating the separate `σ` slot. -/
+@[simp] theorem substAt_varAtDepth
+    {Γ : Ctx Base} {ρ σ : Ty Base}
+    (Ξ₁ Ξ₂ : Ctx Base)
+    (t : Term Const (Ξ₂ ++ ρ :: Γ) σ) :
+    substAt (Base := Base) (Const := Const) (Γ := ρ :: Γ) (σ := σ) Ξ₁ Ξ₂ t
+      (varAtDepth (Γ := Γ) (σ := ρ) (Ξ₁ ++ (σ :: Ξ₂))) =
+    .var (varAtDepth (Γ := Γ) (σ := ρ) (Ξ₁ ++ Ξ₂)) := by
+  induction Ξ₁ with
+  | nil =>
+      rfl
+  | cons α Ξ₁ ih =>
+      simpa [substAt, varAtDepth, weaken] using
+        congrArg (weaken (Base := Base) (Const := Const) (σ := α)) ih
+
+/-- Variable case of split-point substitution commutation:
+    abstracting `c` below the split commutes with substituting a lower-suffix
+    term into the `σ`-slot above it. -/
+theorem abstractConstAt_substAt_var
+    {Γ : Ctx Base} {ρ σ τ : Ty Base}
+    {c : Const ρ} :
+    ∀ (Ξ₁ Ξ₂ : Ctx Base)
+      (t : Term Const (Ξ₂ ++ Γ) σ)
+      (v : Var (((Ξ₁ ++ (σ :: Ξ₂)) ++ Γ)) τ),
+      abstractConstAt (Base := Base) (Γ := Γ) c (Ξ₁ ++ Ξ₂)
+        (substAt (Base := Base) (Const := Const) (Γ := Γ) Ξ₁ Ξ₂ t v) =
+      (substAt (Base := Base) (Const := Const) (Γ := ρ :: Γ) Ξ₁ Ξ₂
+        (abstractConstAt (Base := Base) (Γ := Γ) c Ξ₂ t))
+        (insertRen (Γ := Γ) (σ := ρ) (Ξ₁ ++ (σ :: Ξ₂)) v)
+  | [], Ξ₂, t, .vz => by
+      rfl
+  | [], Ξ₂, t, .vs v => by
+      change abstractConstAt (Base := Base) (Γ := Γ) c Ξ₂ (.var v) =
+        (substAt (Base := Base) (Const := Const) (Γ := ρ :: Γ) [] Ξ₂
+          (abstractConstAt (Base := Base) (Γ := Γ) c Ξ₂ t))
+          (insertRen (Γ := Γ) (σ := ρ) ([] ++ (σ :: Ξ₂)) (.vs v))
+      simp [substAt, abstractConstAt, insertRen, List.nil_append, Subst.single, Rename.lift]
+  | _ :: Ξ₁, Ξ₂, t, .vz => by
+      change abstractConstAt (Base := Base) (Γ := Γ) c (_ :: (Ξ₁ ++ Ξ₂)) (.var .vz) =
+        (substAt (Base := Base) (Const := Const) (Γ := ρ :: Γ) (_ :: Ξ₁) Ξ₂
+          (abstractConstAt (Base := Base) (Γ := Γ) c Ξ₂ t))
+          (insertRen (Γ := Γ) (σ := ρ) ((_ :: Ξ₁) ++ (σ :: Ξ₂)) (.vz))
+      simp [substAt, abstractConstAt, insertRen, List.cons_append, Subst.lift, Rename.lift]
+  | α :: Ξ₁, Ξ₂, t, .vs v => by
+      calc
+        abstractConstAt (Base := Base) (Γ := Γ) c ((α :: Ξ₁) ++ Ξ₂)
+            (substAt (Base := Base) (Const := Const) (Γ := Γ) (α :: Ξ₁) Ξ₂ t (.vs v))
+            =
+          abstractConstAt (Base := Base) (Γ := Γ) c (α :: (Ξ₁ ++ Ξ₂))
+            (weaken (Base := Base) (Const := Const) (σ := α)
+              (substAt (Base := Base) (Const := Const) (Γ := Γ) Ξ₁ Ξ₂ t v)) := by
+                rfl
+        _ =
+          weaken (Base := Base) (Const := Const) (σ := α)
+            (abstractConstAt (Base := Base) (Γ := Γ) c (Ξ₁ ++ Ξ₂)
+              (substAt (Base := Base) (Const := Const) (Γ := Γ) Ξ₁ Ξ₂ t v)) := by
+                simp [List.cons_append]
+        _ =
+          weaken (Base := Base) (Const := Const) (σ := α)
+            ((substAt (Base := Base) (Const := Const) (Γ := ρ :: Γ) Ξ₁ Ξ₂
+              (abstractConstAt (Base := Base) (Γ := Γ) c Ξ₂ t))
+              (insertRen (Γ := Γ) (σ := ρ) (Ξ₁ ++ (σ :: Ξ₂)) v)) := by
+                exact congrArg
+                  (weaken (Base := Base) (Const := Const) (σ := α))
+                  (abstractConstAt_substAt_var (c := c) Ξ₁ Ξ₂ t v)
+        _ =
+          (substAt (Base := Base) (Const := Const) (Γ := ρ :: Γ) (α :: Ξ₁) Ξ₂
+            (abstractConstAt (Base := Base) (Γ := Γ) c Ξ₂ t))
+            (insertRen (Γ := Γ) (σ := ρ) ((α :: Ξ₁) ++ (σ :: Ξ₂)) (.vs v)) := by
+              rfl
+
+/-- Full commutation: abstractConstAt commutes with split-point substitution.
+    Variable case proved by CodeX (abstractConstAt_substAt_var).
+    Structural cases by match recursion (same pattern as abstractConstAt_insertRenAt). -/
+theorem abstractConstAt_substAt {c : Const ρ} :
+    ∀ (Ξ₁ Ξ₂ : Ctx Base) {σ τ : Ty Base}
+      (t : Term Const ((Ξ₂ ++ Γ)) σ)
+      (u : Term Const (((Ξ₁ ++ (σ :: Ξ₂)) ++ Γ)) τ),
+      abstractConstAt (Base := Base) c (Ξ₁ ++ Ξ₂)
+        (subst (substAt (Γ := Γ) Ξ₁ Ξ₂ t) u) =
+      subst (substAt (Γ := ρ :: Γ) Ξ₁ Ξ₂ (abstractConstAt (Base := Base) c Ξ₂ t))
+        (abstractConstAt (Base := Base) c (Ξ₁ ++ (σ :: Ξ₂)) u)
+  | Ξ₁, Ξ₂, _, _, t, .var v => by simp only [subst, abstractConstAt]; exact abstractConstAt_substAt_var Ξ₁ Ξ₂ t v
+  | _, _, _, _, _, .const d => by
+      simp only [subst, abstractConstAt]; split
+      · next h => have hτ := congrArg Sigma.fst h; subst hτ; simp [cast_eq, subst, substAt_varAtDepth]
+      · rfl
+  | Ξ₁, Ξ₂, _, _, t, .app f u => by
+      simp only [subst, abstractConstAt, abstractConstAt_substAt Ξ₁ Ξ₂ t f, abstractConstAt_substAt Ξ₁ Ξ₂ t u]
+  | Ξ₁, Ξ₂, _, _, t, .lam body => by
+      simp only [subst, abstractConstAt, substAt]
+      congr 1; exact abstractConstAt_substAt (_ :: Ξ₁) Ξ₂ t body
+  | _, _, _, _, _, .top => by simp [subst, abstractConstAt]
+  | _, _, _, _, _, .bot => by simp [subst, abstractConstAt]
+  | Ξ₁, Ξ₂, _, _, t, .and p q => by
+      simp only [subst, abstractConstAt, abstractConstAt_substAt Ξ₁ Ξ₂ t p, abstractConstAt_substAt Ξ₁ Ξ₂ t q]
+  | Ξ₁, Ξ₂, _, _, t, .or p q => by
+      simp only [subst, abstractConstAt, abstractConstAt_substAt Ξ₁ Ξ₂ t p, abstractConstAt_substAt Ξ₁ Ξ₂ t q]
+  | Ξ₁, Ξ₂, _, _, t, .imp p q => by
+      simp only [subst, abstractConstAt, abstractConstAt_substAt Ξ₁ Ξ₂ t p, abstractConstAt_substAt Ξ₁ Ξ₂ t q]
+  | Ξ₁, Ξ₂, _, _, t, .not p => by
+      simp only [subst, abstractConstAt]; congr 1; exact abstractConstAt_substAt Ξ₁ Ξ₂ t p
+  | Ξ₁, Ξ₂, _, _, t, .eq a b => by
+      simp only [subst, abstractConstAt, abstractConstAt_substAt Ξ₁ Ξ₂ t a, abstractConstAt_substAt Ξ₁ Ξ₂ t b]
+  | Ξ₁, Ξ₂, _, _, t, .all body => by
+      simp only [subst, abstractConstAt, substAt]
+      congr 1; exact abstractConstAt_substAt (_ :: Ξ₁) Ξ₂ t body
+  | Ξ₁, Ξ₂, _, _, t, .ex body => by
+      simp only [subst, abstractConstAt, substAt]
+      congr 1; exact abstractConstAt_substAt (_ :: Ξ₁) Ξ₂ t body
+
+/-- Specialization: abstractConstAt commutes with instantiation (Ξ₁=[], Ξ₂=Ξ). -/
+@[simp] theorem abstractConstAt_instantiate {c : Const ρ}
+    (Ξ : Ctx Base) {σ τ : Ty Base}
+    (t : Term Const ((Ξ ++ Γ)) σ)
+    (u : Term Const (((σ :: Ξ) ++ Γ)) τ) :
+    abstractConstAt (Base := Base) c Ξ (instantiate (Base := Base) t u) =
+    instantiate (Base := Base)
+      (abstractConstAt (Base := Base) c Ξ t)
+      (abstractConstAt (Base := Base) c (σ :: Ξ) u) :=
+  abstractConstAt_substAt [] Ξ t u
 
 end Mettapedia.Logic.HOL

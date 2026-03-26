@@ -63,9 +63,9 @@ def patternToAtom : Pattern → Atom
   | .fvar name => .var name
   | .apply constructor args =>
       .expression (.symbol constructor :: args.map patternToAtom)
-  | .lambda body =>
+  | .lambda _nm body =>
       .expression [.symbol "λ", patternToAtom body]
-  | .multiLambda n body =>
+  | .multiLambda n _nms body =>
       .expression [.symbol "λ*", .symbol (toString n), patternToAtom body]
   | .subst body repl =>
       .expression [.symbol "subst", patternToAtom body, patternToAtom repl]
@@ -82,7 +82,7 @@ def atomToPattern : Atom → Option Pattern
   | .expression (.symbol constructor :: args) =>
       if constructor == "λ" then
         match args with
-        | [body] => atomToPattern body |>.map .lambda
+        | [body] => atomToPattern body |>.map (.lambda none)
         | _ => none
       else if constructor == "subst" then
         match args with
@@ -159,7 +159,7 @@ theorem patternToAtom_apply_example :
 
 /-- Pattern conversion preserves lambda abstractions (concrete example) -/
 theorem patternToAtom_lambda_example :
-    patternToAtom (.lambda (.bvar 0)) =
+    patternToAtom (.lambda none (.bvar 0)) =
     .expression [.symbol "λ", .var ("#b" ++ toString 0)] := by
   simp [patternToAtom]
 
@@ -229,7 +229,7 @@ example : patternToAtom (.apply "Cons" [.fvar "h", .fvar "t"]) =
   simp [patternToAtom]
 
 -- Lambda conversion (locally nameless: one arg)
-example : patternToAtom (.lambda (.bvar 0)) =
+example : patternToAtom (.lambda none (.bvar 0)) =
           .expression [.symbol "λ", .var ("#b" ++ toString 0)] := by
   simp [patternToAtom]
 

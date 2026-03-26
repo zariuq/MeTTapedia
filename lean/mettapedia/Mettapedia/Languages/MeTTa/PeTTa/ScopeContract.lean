@@ -272,8 +272,8 @@ private def patternFuel : Pattern → Nat
   | .fvar _ => 1
   | .apply _ args =>
       1 + args.foldl (fun acc arg => acc + patternFuel arg) 0
-  | .lambda body => 1 + patternFuel body
-  | .multiLambda _ body => 1 + patternFuel body
+  | .lambda _nm body => 1 + patternFuel body
+  | .multiLambda _ _nms body => 1 + patternFuel body
   | .subst body repl => 1 + patternFuel body + patternFuel repl
   | .collection _ elements rest =>
       1 + elements.foldl (fun acc element => acc + patternFuel element) 0
@@ -407,9 +407,9 @@ private def orderedScopedFreeVarsWithFuel
               vars
       | none =>
           orderedUniq (args.flatMap (orderedScopedFreeVarsWithFuel fuel bound))
-    | .lambda body =>
+    | .lambda _nm body =>
         orderedScopedFreeVarsWithFuel fuel bound body
-    | .multiLambda _ body =>
+    | .multiLambda _ _nms body =>
         orderedScopedFreeVarsWithFuel fuel bound body
     | .subst body repl =>
       orderedUniq

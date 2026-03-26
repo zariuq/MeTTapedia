@@ -90,7 +90,7 @@ inductive MinimalStep (dispatch : GroundedDispatch) :
       (h_not_empty : evalResult.1 ≠ Atom.empty) :
       MinimalStep dispatch s
         (.expression [.symbol "chain", a, .var v, template]) ib
-        s ((evalResult.2.assign v evalResult.1).apply template, evalResult.2.assign v evalResult.1)
+        s ((evalResult.2.assign v evalResult.1).applyDefault template, evalResult.2.assign v evalResult.1)
 
   /-- `(chain <atom> <var> <template>)` — Atom evaluates to Empty → return Empty. -/
   | chain_empty (s : Space) (a : Atom) (v : String) (template : Atom)
@@ -112,7 +112,7 @@ inductive MinimalStep (dispatch : GroundedDispatch) :
       (h_no_loop : merged.hasLoop = false) :
       MinimalStep dispatch s
         (.expression [.symbol "unify", atom, pattern, thenBranch, _elseBranch]) ib
-        s (merged.apply thenBranch, merged)
+        s (merged.applyDefault thenBranch, merged)
 
   /-- `(unify <atom> <pattern> <then> <else>)` — Unify fails.
       Match fails → return `else` unchanged.

@@ -1108,7 +1108,7 @@ private def pdrop' (n : Pattern) : Pattern := .apply "PDrop" [n]
 private def nquote' (p : Pattern) : Pattern := .apply "NQuote" [p]
 private def poutput' (n q : Pattern) : Pattern := .apply "POutput" [n, q]
 private def pinput' (n : Pattern) (_x : String) (body : Pattern) : Pattern :=
-  .apply "PInput" [n, .lambda body]
+  .apply "PInput" [n, .lambda none body]
 private def ppar' (elems : List Pattern) : Pattern :=
   .collection .hashBag elems none
 

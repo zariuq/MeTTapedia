@@ -1,6 +1,6 @@
 import GFCore.Syntax
+import Mettapedia.Languages.GF.SemanticKernelDSL
 import Mettapedia.OSLF.MeTTaIL.Syntax
-import Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.CategoryBridge
@@ -40,6 +40,7 @@ open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
 open GFCore
+open Mettapedia.Languages.GF.SemanticKernelDSL
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Phase 1: Core bridge functions
@@ -82,116 +83,70 @@ def gfFunDeclToGrammarRule (d : FunDecl) : GrammarRule :=
   , syntaxPattern := synPat }
 
 -- ═══════════════════════════════════════════════════════════════════
--- Phase 2: Rewrite rules (RGL-universal, no HandCrafted dependency)
+-- Phase 2: Shared GF semantic kernel (authored via languageDef!)
 -- ═══════════════════════════════════════════════════════════════════
 
-/-- UseN elimination: UseN(x) ~> x.
-    In Czech, N = CN (no articles), so UseN is identity. -/
-def useNElimRewrite : RewriteRule :=
-  { name := "UseNElim"
-  , typeContext := [("x", TypeExpr.base "N")]
-  , premises := []
-  , left := .apply "UseN" [.fvar "x"]
-  , right := .fvar "x" }
-
-/-- PositA elimination: PositA(x) ~> x.
-    Positive adjective degree is identity. -/
-def positAElimRewrite : RewriteRule :=
-  { name := "PositAElim"
-  , typeContext := [("x", TypeExpr.base "A")]
-  , premises := []
-  , left := .apply "PositA" [.fvar "x"]
-  , right := .fvar "x" }
+/-- Shared GF semantic-kernel fragment authored in direct `languageDef!` form. -/
+@[reducible] def gfSemanticKernelLanguageDef : LanguageDef :=
+  SemanticKernelDSL.gfSemanticKernelLanguageDef
 
 /-- UseN identity equation: UseN(x) = x (bidirectional). -/
-def useNIdentityEquation : Equation :=
-  { name := "UseNIdentity"
-  , typeContext := [("x", TypeExpr.base "N")]
-  , premises := []
-  , left := .apply "UseN" [.fvar "x"]
-  , right := .fvar "x" }
+@[reducible] def useNIdentityEquation : Equation :=
+  SemanticKernelDSL.useNIdentityEquation
+
+/-- UseN elimination: UseN(x) ~> x. -/
+@[reducible] def useNElimRewrite : RewriteRule :=
+  SemanticKernelDSL.useNElimRewrite
+
+/-- PositA elimination: PositA(x) ~> x. -/
+@[reducible] def positAElimRewrite : RewriteRule :=
+  SemanticKernelDSL.positAElimRewrite
 
 /-- UseComp elimination: UseComp(x) ~> x. -/
-def useCompElimRewrite : RewriteRule :=
-  { name := "UseCompElim"
-  , typeContext := [("x", TypeExpr.base "Comp")]
-  , premises := []
-  , left := .apply "UseComp" [.fvar "x"]
-  , right := .fvar "x" }
+@[reducible] def useCompElimRewrite : RewriteRule :=
+  SemanticKernelDSL.useCompElimRewrite
 
 /-- UseV elimination: UseV(x) ~> x. -/
-def useVElimRewrite : RewriteRule :=
-  { name := "UseVElim"
-  , typeContext := [("x", TypeExpr.base "V")]
-  , premises := []
-  , left := .apply "UseV" [.fvar "x"]
-  , right := .fvar "x" }
+@[reducible] def useVElimRewrite : RewriteRule :=
+  SemanticKernelDSL.useVElimRewrite
 
 /-- UseN2 elimination: UseN2(x) ~> x. -/
-def useN2ElimRewrite : RewriteRule :=
-  { name := "UseN2Elim"
-  , typeContext := [("x", TypeExpr.base "N2")]
-  , premises := []
-  , left := .apply "UseN2" [.fvar "x"]
-  , right := .fvar "x" }
+@[reducible] def useN2ElimRewrite : RewriteRule :=
+  SemanticKernelDSL.useN2ElimRewrite
 
 /-- UseA2 elimination: UseA2(x) ~> x. -/
-def useA2ElimRewrite : RewriteRule :=
-  { name := "UseA2Elim"
-  , typeContext := [("x", TypeExpr.base "A2")]
-  , premises := []
-  , left := .apply "UseA2" [.fvar "x"]
-  , right := .fvar "x" }
+@[reducible] def useA2ElimRewrite : RewriteRule :=
+  SemanticKernelDSL.useA2ElimRewrite
 
-/-- All identity-wrapper elimination rewrites.
-    These give ◇/□ non-vacuous behavioral content. -/
-def allIdentityRewrites : List RewriteRule :=
-  [ useNElimRewrite, positAElimRewrite, useCompElimRewrite
-  , useVElimRewrite, useN2ElimRewrite, useA2ElimRewrite ]
+/-- All identity-wrapper elimination rewrites. -/
+@[reducible] def allIdentityRewrites : List RewriteRule :=
+  SemanticKernelDSL.allIdentityRewrites
 
 /-- Active-passive rewrite:
     PredVP(np1, ComplSlash(SlashV2a(v), np2)) ⇝ PredVP(np2, PassV2(v)).
     Direction: active → passive (converse does not hold). -/
-def activePassiveRewrite : RewriteRule :=
-  { name := "ActivePassive"
-  , typeContext := [("v", TypeExpr.base "V2"), ("np1", TypeExpr.base "NP"),
-                    ("np2", TypeExpr.base "NP")]
-  , premises := []
-  , left := .apply "PredVP" [.fvar "np1",
-              .apply "ComplSlash" [.apply "SlashV2a" [.fvar "v"], .fvar "np2"]]
-  , right := .apply "PredVP" [.fvar "np2", .apply "PassV2" [.fvar "v"]] }
+@[reducible] def activePassiveRewrite : RewriteRule :=
+  SemanticKernelDSL.activePassiveRewrite
 
 /-- Present tense: UseCl(TTAnt(TPres, ASimul), PPos, cl) ⇝ ⊛temporal(cl, 0). -/
-def presentTenseRewrite : RewriteRule :=
-  { name := "PresentTense"
-  , typeContext := [("cl", TypeExpr.base "Cl")]
-  , premises := []
-  , left := .apply "UseCl" [.apply "TTAnt" [.apply "TPres" [], .apply "ASimul" []], .apply "PPos" [], .fvar "cl"]
-  , right := .apply "⊛temporal" [.fvar "cl", .apply "0" []] }
+@[reducible] def presentTenseRewrite : RewriteRule :=
+  SemanticKernelDSL.presentTenseRewrite
 
 /-- Past tense: UseCl(TTAnt(TPast, ASimul), PPos, cl) ⇝ ⊛temporal(cl, -1). -/
-def pastTenseRewrite : RewriteRule :=
-  { name := "PastTense"
-  , typeContext := [("cl", TypeExpr.base "Cl")]
-  , premises := []
-  , left := .apply "UseCl" [.apply "TTAnt" [.apply "TPast" [], .apply "ASimul" []], .apply "PPos" [], .fvar "cl"]
-  , right := .apply "⊛temporal" [.fvar "cl", .apply "-1" []] }
+@[reducible] def pastTenseRewrite : RewriteRule :=
+  SemanticKernelDSL.pastTenseRewrite
 
 /-- Future tense: UseCl(TTAnt(TFut, ASimul), PPos, cl) ⇝ ⊛temporal(cl, 1). -/
-def futureTenseRewrite : RewriteRule :=
-  { name := "FutureTense"
-  , typeContext := [("cl", TypeExpr.base "Cl")]
-  , premises := []
-  , left := .apply "UseCl" [.apply "TTAnt" [.apply "TFut" [], .apply "ASimul" []], .apply "PPos" [], .fvar "cl"]
-  , right := .apply "⊛temporal" [.fvar "cl", .apply "1" []] }
+@[reducible] def futureTenseRewrite : RewriteRule :=
+  SemanticKernelDSL.futureTenseRewrite
 
 /-- All tense rewrites. -/
-def allTenseRewrites : List RewriteRule :=
-  [ presentTenseRewrite, pastTenseRewrite, futureTenseRewrite ]
+@[reducible] def allTenseRewrites : List RewriteRule :=
+  SemanticKernelDSL.allTenseRewrites
 
 /-- All semantic entailment rewrites (identity + active-passive + tense). -/
-def allSemanticRewrites : List RewriteRule :=
-  allIdentityRewrites ++ [ activePassiveRewrite ] ++ allTenseRewrites
+@[reducible] def allSemanticRewrites : List RewriteRule :=
+  SemanticKernelDSL.allSemanticRewrites
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Phase 3: LanguageDef construction from GrammarSig
@@ -208,17 +163,15 @@ def gfSigToLanguageDef
     acc ++ d.argCats.toList ++ [d.resultCat]
   let termRules := sig.funs.fold (init := []) fun acc _ d =>
       gfFunDeclToGrammarRule d :: acc
-  open scoped Mettapedia.OSLF.MeTTaIL.LanguageDefDSL in
-  languageDef! {
-    name : sig.grammar,
-    types : allCats.eraseDups,
-    terms : termRules,
-    equations : eqRules,
-    rewrites : rwRules,
-    logic : [],
-    oracles : [],
-    congruenceCollections : [.vec, .hashBag, .hashSet]
-  }
+  LanguageDef.mk
+    sig.grammar
+    (allCats.eraseDups.map TypeDecl.plain)
+    termRules
+    eqRules
+    rwRules
+    [.vec, .hashBag, .hashSet]
+    []
+    []
 
 /-- Build the RGL LanguageDef with standard semantic rewrites. -/
 def gfRGLLanguageDef (sig : GrammarSig) : LanguageDef :=

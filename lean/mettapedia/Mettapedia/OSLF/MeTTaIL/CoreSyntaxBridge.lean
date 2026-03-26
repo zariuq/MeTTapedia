@@ -35,12 +35,16 @@ abbrev SpecRewriteRule := Mettapedia.OSLF.MeTTaIL.Syntax.RewriteRule
 
 abbrev CoreLanguageDef := MeTTailCore.MeTTaIL.Syntax.LanguageDef
 abbrev SpecLanguageDef := Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef
+abbrev SpecTypeDecl := Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl
 
 private def coreToSpecTypeDecl (typeName : String) : Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl :=
   Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl.plain typeName
 
-private def specToCoreTypeName (typeDecl : Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl) : String :=
-  typeDecl.name
+private def specToCoreTypeName (typeDecl : SpecTypeDecl) : Except String String := do
+  match typeDecl.carrier with
+  | .ast => pure typeDecl.name
+  | carrier =>
+      throw s!"Cannot lower type '{typeDecl.name}' with non-AST carrier '{repr carrier}' to core LanguageDef.types : List String."
 
 def specToCoreCollType : SpecCollType → CoreCollType
   | .vec => .vec
@@ -55,62 +59,109 @@ def specToCoreTypeExpr : SpecTypeExpr → CoreTypeExpr
 
 def specToCoreTermParam : SpecTermParam → CoreTermParam
   | .simple x t => .simple x (specToCoreTypeExpr t)
-  | .abstraction x t => .abstraction x (specToCoreTypeExpr t)
-  | .multiAbstraction x t => .multiAbstraction x (specToCoreTypeExpr t)
+  | .abstractionNamed _ x t => .abstraction x (specToCoreTypeExpr t)
+  | .multiAbstractionNamed _ x t => .multiAbstraction x (specToCoreTypeExpr t)
 
-def specToCoreSyntaxItem : SpecSyntaxItem → CoreSyntaxItem
-  | .terminal s => .terminal s
-  | .nonTerminal s => .nonTerminal s
-  | .separator s => .separator s
-  | .delimiter a b => .delimiter a b
+def specToCoreSyntaxItem : SpecSyntaxItem → Except String CoreSyntaxItem
+  | .terminal s => pure (.terminal s)
+  | .nonTerminal s => pure (.nonTerminal s)
+  | .separator s => pure (.separator s)
+  | .delimiter a b => pure (.delimiter a b)
+  | .op _ =>
+      throw "Cannot lower syntax metasyntax operators (*zip/*map/*opt/*sep chains) to core SyntaxItem; core only supports flat syntax items."
 
-def specToCoreGrammarRule (g : SpecGrammarRule) : CoreGrammarRule :=
-  { label := g.label
-    category := g.category
-    params := g.params.map specToCoreTermParam
-    syntaxPattern := g.syntaxPattern.map specToCoreSyntaxItem }
+def specToCoreGrammarRule (g : SpecGrammarRule) : Except String CoreGrammarRule := do
+  let syntaxPattern ← g.syntaxPattern.mapM specToCoreSyntaxItem
+  pure
+    { label := g.label
+      category := g.category
+      params := g.params.map specToCoreTermParam
+      syntaxPattern := syntaxPattern }
 
-def specToCorePattern : SpecPattern → CorePattern
-  | .bvar n => .bvar n
-  | .fvar x => .fvar x
-  | .apply c args => .apply c (args.map specToCorePattern)
-  | .lambda body => .lambda (specToCorePattern body)
-  | .multiLambda n body => .multiLambda n (specToCorePattern body)
-  | .subst body repl => .subst (specToCorePattern body) (specToCorePattern repl)
+def specToCorePattern : SpecPattern → Except String CorePattern
+  | .bvar n => pure (.bvar n)
+  | .fvar x => pure (.fvar x)
+  | pat@(.apply c args) =>
+      match Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.zipArgs? pat with
+      | some _ =>
+          throw "Cannot lower rule-pattern *zip(...) to core Pattern; core only supports first-order constructor patterns."
+      | none =>
+          match Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.mapArgs? pat with
+          | some _ =>
+              throw "Cannot lower rule-pattern .*map(|...| ...) to core Pattern; core only supports first-order constructor patterns."
+          | none =>
+              match Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.evalArgs? pat with
+              | some _ =>
+                  throw "Cannot lower authored eval(...) pattern to core Pattern; core only supports explicit subst nodes."
+              | none =>
+                  do
+                    let args' ← args.mapM specToCorePattern
+                    pure (.apply c args')
+  | .lambda _ body => do
+      let body' ← specToCorePattern body
+      pure (.lambda body')
+  | .multiLambda n _ body => do
+      let body' ← specToCorePattern body
+      pure (.multiLambda n body')
+  | .subst body repl => do
+      let body' ← specToCorePattern body
+      let repl' ← specToCorePattern repl
+      pure (.subst body' repl')
   | .collection ct elems rest =>
-      .collection (specToCoreCollType ct) (elems.map specToCorePattern) rest
+      do
+        let elems' ← elems.mapM specToCorePattern
+        pure (.collection (specToCoreCollType ct) elems' rest)
 
-def specToCoreFreshness (fc : SpecFreshnessCondition) : CoreFreshnessCondition :=
-  { varName := fc.varName
-    term := specToCorePattern fc.term }
+def specToCoreFreshnessChecked (fc : SpecFreshnessCondition) :
+    Except String CoreFreshnessCondition := do
+  match fc.term.collectionRestName? with
+  | some rest =>
+      throw s!"Cannot lower freshness target `...{rest}` to core FreshnessCondition; core only supports direct pattern freshness."
+  | none =>
+      pure { varName := fc.varName, term := ← specToCorePattern fc.term }
 
-def specToCorePremise : SpecPremise → CorePremise
-  | .freshness fc => .freshness (specToCoreFreshness fc)
-  | .congruence a b => .congruence (specToCorePattern a) (specToCorePattern b)
-  | .relationQuery rel args => .relationQuery rel (args.map specToCorePattern)
-  | .forAll _ _ body => specToCorePremise body
+def specToCorePremise : SpecPremise → Except String CorePremise
+  | .freshness fc => return .freshness (← specToCoreFreshnessChecked fc)
+  | .congruence a b => do
+      let a' ← specToCorePattern a
+      let b' ← specToCorePattern b
+      pure (.congruence a' b')
+  | .relationQuery rel args => do
+      let args' ← args.mapM specToCorePattern
+      pure (.relationQuery rel args')
+  | .forAll collection _ _ =>
+      throw s!"Cannot lower forAll premise over collection `{collection}` to core Premise; core has no quantified premise form."
 
-def specToCoreEquation (eqn : SpecEquation) : CoreEquation :=
-  { name := eqn.name
-    typeContext := eqn.typeContext.map (fun (x, t) => (x, specToCoreTypeExpr t))
-    premises := eqn.premises.map specToCorePremise
-    left := specToCorePattern eqn.left
-    right := specToCorePattern eqn.right }
+def specToCoreEquation (eqn : SpecEquation) : Except String CoreEquation := do
+  let premises ← eqn.premises.mapM specToCorePremise
+  pure
+    { name := eqn.name
+      typeContext := eqn.typeContext.map (fun (x, t) => (x, specToCoreTypeExpr t))
+      premises := premises
+      left := ← specToCorePattern eqn.left
+      right := ← specToCorePattern eqn.right }
 
-def specToCoreRewriteRule (r : SpecRewriteRule) : CoreRewriteRule :=
-  { name := r.name
-    typeContext := r.typeContext.map (fun (x, t) => (x, specToCoreTypeExpr t))
-    premises := r.premises.map specToCorePremise
-    left := specToCorePattern r.left
-    right := specToCorePattern r.right }
+def specToCoreRewriteRule (r : SpecRewriteRule) : Except String CoreRewriteRule := do
+  let premises ← r.premises.mapM specToCorePremise
+  pure
+    { name := r.name
+      typeContext := r.typeContext.map (fun (x, t) => (x, specToCoreTypeExpr t))
+      premises := premises
+      left := ← specToCorePattern r.left
+      right := ← specToCorePattern r.right }
 
-def specToCoreLanguage (lang : SpecLanguageDef) : CoreLanguageDef :=
-  { name := lang.name
-    types := lang.types.map specToCoreTypeName
-    terms := lang.terms.map specToCoreGrammarRule
-    equations := lang.equations.map specToCoreEquation
-    rewrites := lang.rewrites.map specToCoreRewriteRule
-    congruenceCollections := lang.congruenceCollections.map
-      (fun ct => ({ collectionType := specToCoreCollType ct } : MeTTailCore.MeTTaIL.Syntax.CongruenceCollection)) }
+def specToCoreLanguage (lang : SpecLanguageDef) : Except String CoreLanguageDef := do
+  let coreTypes ← lang.types.mapM specToCoreTypeName
+  let coreTerms ← lang.terms.mapM specToCoreGrammarRule
+  let coreEquations ← lang.equations.mapM specToCoreEquation
+  let coreRewrites ← lang.rewrites.mapM specToCoreRewriteRule
+  pure
+    { name := lang.name
+      types := coreTypes
+      terms := coreTerms
+      equations := coreEquations
+      rewrites := coreRewrites
+      congruenceCollections := lang.congruenceCollections.map
+        (fun ct => ({ collectionType := specToCoreCollType ct } : MeTTailCore.MeTTaIL.Syntax.CongruenceCollection)) }
 
 end Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge

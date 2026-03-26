@@ -121,8 +121,8 @@ def isFullyGround : Pattern → Prop
   | .bvar _           => True
   | .fvar _           => False
   | .apply _ args     => ∀ a ∈ args, isFullyGround a
-  | .lambda body      => isFullyGround body
-  | .multiLambda _ b  => isFullyGround b
+  | .lambda _ _       => False  -- matchPattern ignores binder names; ground uniqueness breaks
+  | .multiLambda _ _ _  => False  -- matchPattern ignores binder names; ground uniqueness breaks
   | .subst _ _        => False
   | .collection _ _ _ => False
 
@@ -130,12 +130,12 @@ private theorem isFullyGround_apply_iff {c args} :
     isFullyGround (.apply c args) ↔ ∀ a ∈ args, isFullyGround a := by
   simp [isFullyGround]
 
-private theorem isFullyGround_lambda_iff {body} :
-    isFullyGround (.lambda body) ↔ isFullyGround body := by
+private theorem isFullyGround_lambda_false {nm body} :
+    ¬ isFullyGround (.lambda nm body) := by
   simp [isFullyGround]
 
-private theorem isFullyGround_multiLambda_iff {n body} :
-    isFullyGround (.multiLambda n body) ↔ isFullyGround body := by
+private theorem isFullyGround_multiLambda_false {n nms body} :
+    ¬ isFullyGround (.multiLambda n nms body) := by
   simp [isFullyGround]
 
 /-! ## Section 4: `applyBindings` is Identity on Fully-Ground Patterns -/
@@ -163,14 +163,8 @@ theorem applyBindings_fully_ground (bs : Bindings) (p : Pattern)
     apply list_map_eq_self
     intro a ha
     exact ih a ha bs (hg' a ha)
-  | hlambda body ih =>
-    have hg' := isFullyGround_lambda_iff.mp hg
-    simp only [applyBindings]
-    exact congrArg Pattern.lambda (ih bs hg')
-  | hmultiLambda n body ih =>
-    have hg' := isFullyGround_multiLambda_iff.mp hg
-    simp only [applyBindings]
-    exact congrArg (Pattern.multiLambda n) (ih bs hg')
+  | hlambda _ _ _ => exact absurd hg (by simp [isFullyGround])
+  | hmultiLambda _ _ _ _ => exact absurd hg (by simp [isFullyGround])
   | hsubst _ _ _ _ => exact absurd hg (by simp [isFullyGround])
   | hcollection _ _ _ _ => exact absurd hg (by simp [isFullyGround])
 
@@ -234,11 +228,11 @@ theorem encodeReducesFF_mem_lhm_iff (s : PeTTaSpace) (p q : Pattern) :
 private theorem sizeOf_args_lt_apply (c : String) (args : List Pattern) :
     sizeOf args < sizeOf (Pattern.apply c args) := by simp_wf
 
-private theorem sizeOf_body_lt_lambda (body : Pattern) :
-    sizeOf body < sizeOf (Pattern.lambda body) := by simp_wf
+private theorem sizeOf_body_lt_lambda (nm : Option String) (body : Pattern) :
+    sizeOf body < sizeOf (Pattern.lambda nm body) := by simp_wf
 
-private theorem sizeOf_body_lt_multiLambda (n : Nat) (body : Pattern) :
-    sizeOf body < sizeOf (Pattern.multiLambda n body) := by simp_wf
+private theorem sizeOf_body_lt_multiLambda (n : Nat) (nms : List String) (body : Pattern) :
+    sizeOf body < sizeOf (Pattern.multiLambda n nms body) := by simp_wf
 
 private theorem sizeOf_pattern_pos (p : Pattern) : 0 < sizeOf p := by
   cases p <;> simp [sizeOf, Pattern._sizeOf_1]
@@ -287,14 +281,8 @@ private theorem ground_match_joint (n : Nat) :
         have hg' := isFullyGround_apply_iff.mp hg
         simp only [matchPattern, beq_self_eq_true, Bool.true_and, ↓reduceIte]
         exact ih_self_args args (by have := sizeOf_args_lt_apply c args; omega) hg'
-      | lambda body =>
-        simp only [matchPattern]
-        exact ih_self_pat body (by have := sizeOf_body_lt_lambda body; omega)
-          (isFullyGround_lambda_iff.mp hg)
-      | multiLambda n body =>
-        simp only [matchPattern, beq_self_eq_true, ↓reduceIte]
-        exact ih_self_pat body (by have := sizeOf_body_lt_multiLambda n body; omega)
-          (isFullyGround_multiLambda_iff.mp hg)
+      | lambda _ _ => exact absurd hg (by simp [isFullyGround])
+      | multiLambda _ _ _ => exact absurd hg (by simp [isFullyGround])
       | subst _ _ => exact absurd hg (by simp [isFullyGround])
       | collection _ _ _ => exact absurd hg (by simp [isFullyGround])
     · -- Self-match for matchArgs
@@ -335,27 +323,8 @@ private theorem ground_match_joint (n : Nat) :
             exact ⟨by rw [hceq], rfl⟩
           · simp at hm
         | _ => simp [matchPattern] at hm
-      | lambda body =>
-        have hg' := isFullyGround_lambda_iff.mp hg
-        cases q with
-        | lambda q' =>
-          simp only [matchPattern] at hm
-          obtain ⟨heq, hbs⟩ := ih_uniq_pat body q' bs
-            (by have := sizeOf_body_lt_lambda body; omega) hg' hm
-          exact ⟨by rw [heq], hbs⟩
-        | _ => simp [matchPattern] at hm
-      | multiLambda n body =>
-        have hg' := isFullyGround_multiLambda_iff.mp hg
-        cases q with
-        | multiLambda m' q' =>
-          simp only [matchPattern] at hm
-          split at hm
-          · next hneq =>
-            obtain ⟨heq, hbs⟩ := ih_uniq_pat body q' bs
-              (by have := sizeOf_body_lt_multiLambda n body; omega) hg' hm
-            exact ⟨by rw [heq, beq_iff_eq.mp hneq], hbs⟩
-          · simp at hm
-        | _ => simp [matchPattern] at hm
+      | lambda _ _ => exact absurd hg (by simp [isFullyGround])
+      | multiLambda _ _ _ => exact absurd hg (by simp [isFullyGround])
       | subst _ _ => exact absurd hg (by simp [isFullyGround])
       | collection _ _ _ => exact absurd hg (by simp [isFullyGround])
     · -- Uniqueness for matchArgs

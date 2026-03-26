@@ -104,8 +104,8 @@ def removeAssignment (b : Bindings) (v : String) : Bindings :=
   { b with assignments := b.assignments.filter fun (k, _) => k != v }
 
 /-- Resolve a variable to its final value, following variable chains.
-    Uses fuel to handle potential cycles. -/
-def resolve (b : Bindings) (v : String) (fuel : Nat := 100) : Option Atom :=
+    Uses explicit fuel to handle potential cycles in the trusted path. -/
+def resolve (b : Bindings) (v : String) (fuel : Nat) : Option Atom :=
   match fuel with
   | 0 => none
   | n + 1 =>
@@ -114,12 +114,17 @@ def resolve (b : Bindings) (v : String) (fuel : Nat := 100) : Option Atom :=
     | some (.var w) => b.resolve w n
     | some a => some a
 
+/-- Convenience wrapper for callers outside the trusted theorem boundary. -/
+def resolveDefault (b : Bindings) (v : String) : Option Atom :=
+  b.resolve v 100
+
 /-- Get all variable names that are bound (have assignments). -/
 def boundVars (b : Bindings) : List String :=
   b.assignments.map Prod.fst
 
-/-- Apply bindings to an atom, substituting variables with their values. -/
-def apply (b : Bindings) (a : Atom) (fuel : Nat := 100) : Atom :=
+/-- Apply bindings to an atom, substituting variables with their values.
+    Uses explicit fuel in the trusted path. -/
+def apply (b : Bindings) (a : Atom) (fuel : Nat) : Atom :=
   match fuel with
   | 0 => a
   | n + 1 =>
@@ -130,6 +135,10 @@ def apply (b : Bindings) (a : Atom) (fuel : Nat := 100) : Atom :=
       | none => a
     | .expression es => .expression (es.map (b.apply · n))
     | other => other
+
+/-- Convenience wrapper for callers outside the trusted theorem boundary. -/
+def applyDefault (b : Bindings) (a : Atom) : Atom :=
+  b.apply a 100
 
 /-- Check if bindings contain a variable loop.
     Ref: metta.md line 616 "filter(lambda $b: <$b doesn't have variable loops>)". -/

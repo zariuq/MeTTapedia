@@ -48,7 +48,7 @@ notation "□" => EvalContext.hole
 def fillEvalContext : EvalContext → Pattern → Pattern
   | .hole, p => p
   | .input chan k, p =>
-      .apply "PInput" [chan, .lambda (fillEvalContext k p)]
+      .apply "PInput" [chan, .lambda none (fillEvalContext k p)]
   | .output chan k, p =>
       .apply "POutput" [chan, fillEvalContext k p]
   | .par q k, p =>
@@ -61,7 +61,7 @@ def freeNames : Pattern → Set Pattern
   | .apply "PInput" [n, _] => {n}
   | .apply "POutput" [n, _] => {n}
   | .collection _ elems _ => elems.foldl (fun acc p => acc ∪ freeNames p) ∅
-  | .lambda body => freeNames body
+  | .lambda _nm body => freeNames body
   | .apply _ args => args.foldl (fun acc p => acc ∪ freeNames p) ∅
   | _ => ∅
 
@@ -69,10 +69,10 @@ notation:50 "FN(" p ")" => freeNames p
 
 /-- All names in a pattern (including bound names). -/
 def allNames : Pattern → Set Pattern
-  | .apply "PInput" [n, .lambda body] => {n} ∪ allNames body
+  | .apply "PInput" [n, .lambda _nm body] => {n} ∪ allNames body
   | .apply "POutput" [n, q] => {n} ∪ allNames q
   | .collection _ elems _ => elems.foldl (fun acc p => acc ∪ allNames p) ∅
-  | .lambda body => allNames body
+  | .lambda _nm body => allNames body
   | .apply _ args => args.foldl (fun acc p => acc ∪ allNames p) ∅
   | _ => ∅
 
@@ -87,7 +87,7 @@ notation:50 "N(" p ")" => allNames p
 def canInteract (p : Pattern) (x : Pattern) : Prop :=
   match p with
   | .collection .hashBag elems none =>
-      (∃ body, .apply "PInput" [x, .lambda body] ∈ elems) ∧
+      (∃ body, .apply "PInput" [x, .lambda none body] ∈ elems) ∧
       (∃ q, .apply "POutput" [x, q] ∈ elems)
   | _ => False
 
@@ -100,7 +100,7 @@ inductive LabeledTransition : Pattern → EvalContext → Pattern → Type where
   /-- Input transitions via output context. -/
   | comm_input {p q : Pattern} {x : Pattern} :
       LabeledTransition
-        (.apply "PInput" [x, .lambda p])
+        (.apply "PInput" [x, .lambda none p])
         (.par (.apply "POutput" [x, q]) .hole)
         (commSubst p q)
 
@@ -108,7 +108,7 @@ inductive LabeledTransition : Pattern → EvalContext → Pattern → Type where
   | comm_output {p q : Pattern} {x : Pattern} :
       LabeledTransition
         (.apply "POutput" [x, q])
-        (.par (.apply "PInput" [x, .lambda p]) .hole)
+        (.par (.apply "PInput" [x, .lambda none p]) .hole)
         (commSubst p q)
 
   /-- General labeled transition from reduction. -/
@@ -185,7 +185,7 @@ theorem canInteract_implies_freeNames {p x : Pattern} :
     obtain ⟨body, hmem⟩ := hinput
     simp only [freeNames]
     rw [Mettapedia.Lists.SetFold.Set.mem_foldl_union]
-    refine ⟨.apply "PInput" [x, .lambda body], hmem, ?_⟩
+    refine ⟨.apply "PInput" [x, .lambda none body], hmem, ?_⟩
     simp [freeNames]
   · exact False.elim h
 
@@ -207,7 +207,7 @@ theorem reduces_of_canInteract {elems : List Pattern} {x : Pattern}
     ∃ q, Nonempty (Reduces (.collection .hashBag elems none) q) := by
   simp only [canInteract] at hcan
   obtain ⟨⟨p_body, h_input⟩, ⟨q_payload, h_output⟩⟩ := hcan
-  let input_proc := Pattern.apply "PInput" [x, .lambda p_body]
+  let input_proc := Pattern.apply "PInput" [x, .lambda none p_body]
   let output_proc := Pattern.apply "POutput" [x, q_payload]
   have h_ne : output_proc ≠ input_proc := by
     intro h; injection h with h_name _; exact absurd h_name (by decide)

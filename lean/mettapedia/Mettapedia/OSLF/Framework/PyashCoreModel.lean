@@ -587,8 +587,8 @@ partial def renderPyashCtorPattern : Pattern → String
   | .apply c [] => "C_" ++ c
   | .apply c args =>
       "C_" ++ c ++ "(" ++ String.intercalate "," (args.map renderPyashCtorPattern) ++ ")"
-  | .lambda body => s!"lambda({renderPyashCtorPattern body})"
-  | .multiLambda n body => s!"multilambda({n},{renderPyashCtorPattern body})"
+  | .lambda _nm body => s!"lambda({renderPyashCtorPattern body})"
+  | .multiLambda n _nms body => s!"multilambda({n},{renderPyashCtorPattern body})"
   | .subst body repl =>
       s!"subst({renderPyashCtorPattern body},{renderPyashCtorPattern repl})"
   | .collection .vec elems _ =>

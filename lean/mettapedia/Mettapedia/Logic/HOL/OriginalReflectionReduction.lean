@@ -189,7 +189,7 @@ with `RecursiveStageTheory`.
 This is the single remaining hard theorem for original-signature completeness.
 -/
 def WitnessedTheoryConservativityGoal
-    (W : BaseWitnesses Base Const) : Prop :=
+    (_W : BaseWitnesses Base Const) : Prop :=
   ∀ {T : ClosedTheorySet Const} {φ : ClosedFormula Const},
     ClosedTheorySet.Provable
       (Const := OneStepHenkinConst Base Const)
@@ -204,6 +204,19 @@ def WitnessedTheoryConservativityGoal
         (Base := Base) (Const := Const) φ) →
     ClosedTheorySet.Provable (Const := Const) T φ
 
+/- 
+`WitnessedTheoryConservativityGoal` is kept as the parameterized theorem
+boundary for the final reflection bridge, but it is not proved here.
+
+The earlier attempt to prove it by direct fresh-constant retraction was the
+wrong abstraction, and the newer obstruction analysis in
+`OriginalReflectionObstruction.lean` indicates that this candidate may still be
+too strong even with `BaseWitnesses`.
+
+Downstream composition remains parameterized by any future corrected
+conservativity theorem.
+-/
+
 /-- Lift base witnesses through the recursive Henkin stage tower.
     At each stage, the source witnesses are embedded into the larger signature. -/
 def baseWitnessesOf (W : BaseWitnesses Base Const) :
@@ -214,14 +227,541 @@ def baseWitnessesOf (W : BaseWitnesses Base Const) :
       mapConst (HenkinConstStage.lift (Base := Base) (Const := Const) (Nat.le_succ n))
         ((baseWitnessesOf W n).witness b)⟩
 
--- The adapter from WitnessedTheoryConservativityGoal to
--- RecursiveStageOneStepReflectionGoal and the final composition theorem
--- (witnessedOriginalReflectionTarget_proved) go here once the hard
--- theorem is proved. The composition uses:
--- - witnessedOriginalReflection_of_stageReduction (line 1140+)
--- - recursiveStageFiniteReduction_of_supportedOriginalLift (line 1077+)
--- - supportedOriginalLiftConstructionGoal_proved (line 1402+)
--- - recursiveStageProvable_zero_iff_originalProvable (line 631+)
+/--
+The Hilbert-epsilon scheme (Hε) / independence of premise.
+For each one-variable formula φ : Formula Const [σ]:
+
+  ∃x:σ. (∃y:σ. φ(y)) → φ(x)
+
+This is the source-language principle forced by the `exWitness` axiom
+after abstracting the fresh witness constant. NOT intuitionistically provable.
+-/
+def HεScheme {σ : Ty Base} (φ : Formula Const [σ]) : ClosedFormula Const :=
+  .ex (.imp (weaken (Base := Base) (σ := σ) (.ex φ)) φ)
+
+/--
+The drinker paradox scheme (DP).
+For each one-variable formula φ : Formula Const [σ]:
+
+  ∃x:σ. φ(x) → ∀y:σ. φ(y)
+
+This is the source-language principle forced by the `allCounterexample` axiom
+after abstracting the fresh counterexample constant. NOT intuitionistically provable.
+-/
+def DPScheme {σ : Ty Base} (φ : Formula Const [σ]) : ClosedFormula Const :=
+  .ex (.imp φ (weaken (Base := Base) (σ := σ) (.all φ)))
+
+/-- The set of all source-language Hε and DP scheme instances. -/
+def SourceStepSchemes : ClosedTheorySet Const :=
+  fun ψ =>
+    (∃ (σ : Ty Base) (φ : Formula Const [σ]), ψ = HεScheme (Base := Base) φ) ∨
+    (∃ (σ : Ty Base) (φ : Formula Const [σ]), ψ = DPScheme (Base := Base) φ)
+
+/-- Original-signature provability with the Route 2 source schemes available
+as additional assumptions. -/
+def SourceSchemeProvable
+    (Δ : List (ClosedFormula Const))
+    (φ : ClosedFormula Const) : Prop :=
+  ClosedTheorySet.Provable
+    (Const := Const)
+    (fun ψ => ψ ∈ Δ ∨ ψ ∈ SourceStepSchemes (Base := Base) (Const := Const))
+    φ
+
+/--
+Route 2 final target: reflection back to the original signature lands in
+source HOL augmented by the Hε / DP schemes forced by one-step Henkinization.
+-/
+structure SchemeExtendedReflectionTarget where
+  witnesses : BaseWitnesses Base Const
+  reflect :
+    ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+      OriginalLiftProvable (Base := Base) (Const := Const) Δ φ →
+        SourceSchemeProvable (Base := Base) (Const := Const) Δ φ
+
+/--
+The corrected one-step reflection theorem boundary (GPT-5.4 Pro route).
+
+Replaces `WitnessedTheoryConservativityGoal` (which is FALSE for intuitionistic HOL).
+The conclusion lands in source HOL + Hε + DP, not plain source HOL.
+
+This is the closest TRUE theorem to the original conservativity target:
+- exact witness axioms eliminate to source Hε instances,
+- exact counterexample axioms eliminate to source DP instances,
+- fresh-constant abstraction removes the named constants but preserves the principles.
+-/
+def SchemeReflectionGoal
+    (_W : BaseWitnesses Base Const) : Prop :=
+  ∀ {T : ClosedTheorySet Const} {φ : ClosedFormula Const},
+    ClosedTheorySet.Provable
+      (Const := OneStepHenkinConst Base Const)
+      (fun ψ =>
+        (∃ χ : ClosedFormula Const,
+            χ ∈ T ∧
+            OneStepHenkinConst.liftClosedFormula
+              (Base := Base) (Const := Const) χ = ψ) ∨
+          ψ ∈ OneStepHenkinConst.ExactHenkinAxioms
+            (Base := Base) (Const := Const))
+      (OneStepHenkinConst.liftClosedFormula
+        (Base := Base) (Const := Const) φ) →
+    ClosedTheorySet.Provable
+      (Const := Const)
+      (fun ψ => ψ ∈ T ∨ ψ ∈ SourceStepSchemes (Base := Base) (Const := Const))
+      φ
+/-- The abstraction of the exWitness axiom equals the Hε body. -/
+theorem abstractConst_exWitnessAxiom
+    {σ : Ty Base} (φ : Formula Const [σ]) :
+    abstractConstAt
+      (OneStepHenkinConst.exWitness (Base := Base) (Const := Const) φ)
+      ([] : Ctx Base)
+      (Term.imp
+        (.ex (OneStepHenkinConst.liftFormula (Base := Base) (Const := Const) φ))
+        (OneStepHenkinConst.exWitnessInstance (Base := Base) (Const := Const) φ)) =
+    Term.imp
+      (weaken (Base := Base) (σ := σ) (.ex (OneStepHenkinConst.liftFormula φ)))
+      (OneStepHenkinConst.liftFormula φ) := by
+  unfold abstractConstAt; congr 1
+  · exact abstractConstAt_noOccurrence [] _
+      (.ex (OneStepHenkinConst.noConstOccurrence_liftTerm _ (OneStepHenkinConst.exWitness_ne_base φ) _))
+  · show abstractConstAt _ [] (instantiate (.const (.exWitness φ)) (OneStepHenkinConst.liftFormula φ)) = _
+    rw [abstractConstAt_instantiate]
+    simp [abstractConstAt, abstractConstAt_noOccurrence,
+      OneStepHenkinConst.noConstOccurrence_liftTerm, OneStepHenkinConst.exWitness_ne_base]
+    simp only [varAtDepth, insertRen, instantiate]
+    rw [subst_rename (Base := Base) (Const := OneStepHenkinConst Base Const)]
+    convert subst_id (OneStepHenkinConst.liftFormula (Base := Base) (Const := Const) φ) using 2
+    ext τ v; cases v with | vz => rfl | vs v => cases v
+
+/-- The Hε scheme lifts to .ex of the abstracted axiom body. -/
+theorem liftClosedFormula_HεScheme
+    {σ : Ty Base} (φ : Formula Const [σ]) :
+    OneStepHenkinConst.liftClosedFormula (Base := Base) (Const := Const)
+      (HεScheme (Base := Base) φ) =
+    .ex (Term.imp
+      (weaken (Base := Base) (σ := σ) (.ex (OneStepHenkinConst.liftFormula φ)))
+      (OneStepHenkinConst.liftFormula φ)) := by
+  simp only [HεScheme, OneStepHenkinConst.liftClosedFormula,
+    WitnessProvider.liftClosedFormula, mapConst]
+  congr 1; congr 1
+  exact mapConst_rename OneStepHenkinConst.lift Rename.weaken (.ex φ)
+
+theorem exWitness_axiom_to_scheme
+    (_W : BaseWitnesses Base Const) {σ : Ty Base}
+    (φ : Formula Const [σ])
+    {Γ : List (ClosedFormula (OneStepHenkinConst Base Const))}
+    (hΓ : ∀ ψ ∈ Γ, NoConstOccurrence
+      (OneStepHenkinConst.exWitness (Base := Base) φ) ψ)
+    {ψ : ClosedFormula (OneStepHenkinConst Base Const)}
+    (hψ : NoConstOccurrence (OneStepHenkinConst.exWitness (Base := Base) φ) ψ)
+    (d : ExtDerivation (OneStepHenkinConst Base Const)
+      (Γ ++ [.imp (.ex (OneStepHenkinConst.liftFormula (Base := Base) (Const := Const) φ))
+                    (OneStepHenkinConst.exWitnessInstance (Base := Base) (Const := Const) φ)])
+      ψ) :
+    ExtDerivation (OneStepHenkinConst Base Const)
+      (Γ ++ [OneStepHenkinConst.liftClosedFormula (Base := Base) (Const := Const)
+                (HεScheme (Base := Base) φ)])
+      ψ := by
+  -- Step 1: move the axiom A from context to consequent
+  let A := Term.imp (.ex (OneStepHenkinConst.liftFormula φ))
+    (OneStepHenkinConst.exWitnessInstance φ)
+  let c := OneStepHenkinConst.exWitness (Base := Base) (Const := Const) φ
+  -- Step 2: impI moves A to the right
+  have d_reorder : ExtDerivation _ (A :: Γ) ψ :=
+    ExtDerivation.mono (fun {χ} hχ => by
+      simp only [List.mem_cons, List.mem_append] at hχ ⊢; tauto) d
+  have d1 : ExtDerivation _ Γ (.imp A ψ) := ExtDerivation.impI d_reorder
+  -- Step 3: abstract the fresh constant c
+  -- Step 3: abstract the fresh constant c from the derivation
+  have d2 := ExtDerivation.abstractConstAt_deriv (Γ := []) (Ξ := []) c d1
+  -- d2 : ExtD (Γ.map (abstractConst c)) (abstractConst c (A.imp ψ))
+  -- This is in context [σ] (abstractConst adds σ to the context).
+  --
+  -- Key equations (need proofs):
+  -- (a) Γ.map (abstractConst c) = weakenHyps Γ  [by noOccurrence on each element]
+  -- (b) abstractConst c (A.imp ψ) = (abstractConst c A).imp (weaken ψ)  [by abstractConst on .imp + noOcc on ψ]
+  -- (c) abstractConst c A = body where body is the Hε body  [the hard computation]
+  -- (d) lift(HεScheme φ) = .ex body  [connecting the scheme to the body]
+  --
+  -- Equation (a): Γ.map (abstractConst c) = weakenHyps Γ
+  have heq_ctx : List.map (abstractConstAt c ([] : Ctx Base)) Γ =
+      weakenHyps (Base := Base) (Const := OneStepHenkinConst Base Const) (σ := σ) Γ := by
+    simp only [weakenHyps]
+    apply List.map_congr_left
+    intro χ hχ
+    exact abstractConstAt_noOccurrence [] χ (hΓ χ hχ)
+  -- Equation (b): abstractConst c ψ = weaken ψ
+  have heq_ψ : abstractConstAt c ([] : Ctx Base) ψ = weaken (σ := σ) ψ :=
+    abstractConstAt_noOccurrence [] ψ hψ
+  rw [heq_ctx] at d2
+  -- Rewrite d2's conclusion: abstractConstAt c [] (.imp A ψ) = .imp (body) (weaken ψ)
+  have heq_concl : abstractConstAt c ([] : Ctx Base) (Term.imp A ψ) =
+      Term.imp (abstractConstAt c [] A) (weaken (σ := σ) ψ) := by
+    conv_lhs => unfold abstractConstAt; rw [heq_ψ]
+  rw [heq_concl] at d2
+  -- d2 : ExtD (weakenHyps Γ) (.imp (abstractConstAt c [] A) (weaken ψ))
+  -- Connect to HεScheme
+  let body := abstractConstAt c ([] : Ctx Base) A
+  rw [liftClosedFormula_HεScheme, ← abstractConst_exWitnessAxiom φ]
+  -- Goal: ExtD (Γ ++ [.ex body]) ψ
+  apply ExtDerivation.exE (σ := σ) (φ := body) (ψ := ψ)
+  · exact ExtDerivation.hyp (List.mem_append.mpr (Or.inr (List.mem_singleton.mpr rfl)))
+  · apply ExtDerivation.impE (φ := body)
+    · exact ExtDerivation.mono (fun hχ => by
+        simp only [weakenHyps, List.map_append, List.map_cons, List.map_nil,
+          List.mem_cons, List.mem_append] at hχ ⊢
+        tauto) d2
+    · exact ExtDerivation.hyp (List.mem_cons.mpr (Or.inl rfl))
+
+/-- The abstraction of the allCounterexample axiom equals the DP body. -/
+theorem abstractConst_allCounterexampleAxiom
+    {σ : Ty Base} (φ : Formula Const [σ]) :
+    abstractConstAt
+      (OneStepHenkinConst.allCounterexample (Base := Base) (Const := Const) φ)
+      ([] : Ctx Base)
+      (Term.imp
+        (OneStepHenkinConst.allCounterexampleInstance (Base := Base) (Const := Const) φ)
+        (.all (OneStepHenkinConst.liftFormula (Base := Base) (Const := Const) φ))) =
+    Term.imp
+      (OneStepHenkinConst.liftFormula φ)
+      (weaken (Base := Base) (σ := σ) (.all (OneStepHenkinConst.liftFormula φ))) := by
+  unfold abstractConstAt; congr 1
+  · show abstractConstAt _ [] (instantiate (.const (.allCounterexample φ)) (OneStepHenkinConst.liftFormula φ)) = _
+    rw [abstractConstAt_instantiate]
+    simp [abstractConstAt, abstractConstAt_noOccurrence,
+      OneStepHenkinConst.noConstOccurrence_liftTerm, OneStepHenkinConst.allCounterexample_ne_base]
+    simp only [varAtDepth, insertRen, instantiate]
+    rw [subst_rename (Base := Base) (Const := OneStepHenkinConst Base Const)]
+    convert subst_id (OneStepHenkinConst.liftFormula (Base := Base) (Const := Const) φ) using 2
+    ext τ v; cases v with | vz => rfl | vs v => cases v
+  · exact abstractConstAt_noOccurrence [] _
+      (.all (OneStepHenkinConst.noConstOccurrence_liftTerm _ (OneStepHenkinConst.allCounterexample_ne_base φ) _))
+
+/-- The DP scheme lifts to .ex of the abstracted axiom body. -/
+theorem liftClosedFormula_DPScheme
+    {σ : Ty Base} (φ : Formula Const [σ]) :
+    OneStepHenkinConst.liftClosedFormula (Base := Base) (Const := Const)
+      (DPScheme (Base := Base) φ) =
+    .ex (Term.imp
+      (OneStepHenkinConst.liftFormula φ)
+      (weaken (Base := Base) (σ := σ) (.all (OneStepHenkinConst.liftFormula φ)))) := by
+  simp only [DPScheme, OneStepHenkinConst.liftClosedFormula,
+    WitnessProvider.liftClosedFormula, mapConst]
+  congr 1; congr 1
+  exact mapConst_rename OneStepHenkinConst.lift Rename.weaken (.all φ)
+
+/-- Step 1b: A single allCounterexample axiom eliminates to a DP scheme instance. -/
+theorem allCounterexample_axiom_to_scheme
+    (_W : BaseWitnesses Base Const) {σ : Ty Base}
+    (φ : Formula Const [σ])
+    {Γ : List (ClosedFormula (OneStepHenkinConst Base Const))}
+    (hΓ : ∀ ψ ∈ Γ, NoConstOccurrence
+      (OneStepHenkinConst.allCounterexample (Base := Base) φ) ψ)
+    {ψ : ClosedFormula (OneStepHenkinConst Base Const)}
+    (hψ : NoConstOccurrence (OneStepHenkinConst.allCounterexample (Base := Base) φ) ψ)
+    (d : ExtDerivation (OneStepHenkinConst Base Const)
+      (Γ ++ [.imp (OneStepHenkinConst.allCounterexampleInstance (Base := Base) (Const := Const) φ)
+                    (.all (OneStepHenkinConst.liftFormula (Base := Base) (Const := Const) φ))])
+      ψ) :
+    ExtDerivation (OneStepHenkinConst Base Const)
+      (Γ ++ [OneStepHenkinConst.liftClosedFormula (Base := Base) (Const := Const)
+                (DPScheme (Base := Base) φ)])
+      ψ := by
+  let A := Term.imp
+    (OneStepHenkinConst.allCounterexampleInstance φ)
+    (.all (OneStepHenkinConst.liftFormula φ))
+  let c := OneStepHenkinConst.allCounterexample (Base := Base) (Const := Const) φ
+  have d_reorder : ExtDerivation _ (A :: Γ) ψ :=
+    ExtDerivation.mono (fun {χ} hχ => by
+      simp only [List.mem_cons, List.mem_append] at hχ ⊢; tauto) d
+  have d1 : ExtDerivation _ Γ (.imp A ψ) := ExtDerivation.impI d_reorder
+  have d2 := ExtDerivation.abstractConstAt_deriv (Γ := []) (Ξ := []) c d1
+  have heq_ctx : List.map (abstractConstAt c ([] : Ctx Base)) Γ =
+      weakenHyps (Base := Base) (Const := OneStepHenkinConst Base Const) (σ := σ) Γ := by
+    simp only [weakenHyps]
+    apply List.map_congr_left
+    intro χ hχ
+    exact abstractConstAt_noOccurrence [] χ (hΓ χ hχ)
+  have heq_ψ : abstractConstAt c ([] : Ctx Base) ψ = weaken (σ := σ) ψ :=
+    abstractConstAt_noOccurrence [] ψ hψ
+  rw [heq_ctx] at d2
+  have heq_concl : abstractConstAt c ([] : Ctx Base) (Term.imp A ψ) =
+      Term.imp (abstractConstAt c [] A) (weaken (σ := σ) ψ) := by
+    conv_lhs => unfold abstractConstAt; rw [heq_ψ]
+  rw [heq_concl] at d2
+  let body := abstractConstAt c ([] : Ctx Base) A
+  rw [liftClosedFormula_DPScheme, ← abstractConst_allCounterexampleAxiom φ]
+  apply ExtDerivation.exE (σ := σ) (φ := body) (ψ := ψ)
+  · exact ExtDerivation.hyp (List.mem_append.mpr (Or.inr (List.mem_singleton.mpr rfl)))
+  · apply ExtDerivation.impE (φ := body)
+    · exact ExtDerivation.mono (fun hχ => by
+        simp only [weakenHyps, List.map_append, List.map_cons, List.map_nil,
+          List.mem_cons, List.mem_append] at hχ ⊢
+        tauto) d2
+    · exact ExtDerivation.hyp (List.mem_cons.mpr (Or.inl rfl))
+
+/--
+Lifted one-step scheme elimination (Route 2 core theorem).
+
+From provability in the one-step language using lifted source axioms plus
+exact Henkin axioms, produce provability using lifted source axioms plus
+lifted Hε/DP scheme instances. Stays entirely in `OneStepHenkinConst`.
+
+Council: Brown, Carneiro, McBride, Pfenning, Weirich, Coquand, Knuth, Tao, Tang.
+Dedup-aware accumulator: duplicate axioms removed via `mono` before elimination.
+-/
+theorem liftedSchemeElimination
+    (W : BaseWitnesses Base Const)
+    {T : ClosedTheorySet Const} {φ : ClosedFormula Const}
+    (hProv : ClosedTheorySet.Provable
+      (Const := OneStepHenkinConst Base Const)
+      (fun ψ =>
+        (∃ χ : ClosedFormula Const,
+            χ ∈ T ∧
+            OneStepHenkinConst.liftClosedFormula
+              (Base := Base) (Const := Const) χ = ψ) ∨
+          ψ ∈ OneStepHenkinConst.ExactHenkinAxioms
+            (Base := Base) (Const := Const))
+      (OneStepHenkinConst.liftClosedFormula
+        (Base := Base) (Const := Const) φ)) :
+    ClosedTheorySet.Provable
+      (Const := OneStepHenkinConst Base Const)
+      (fun ψ =>
+        ∃ χ : ClosedFormula Const,
+          (χ ∈ T ∨ χ ∈ SourceStepSchemes (Base := Base) (Const := Const)) ∧
+            OneStepHenkinConst.liftClosedFormula
+              (Base := Base) (Const := Const) χ = ψ)
+      (OneStepHenkinConst.liftClosedFormula
+        (Base := Base) (Const := Const) φ) := by
+  rcases hProv with ⟨Γ, hΓ, d⟩
+  -- Accumulator induction: process Γ, replacing exact axioms with schemes.
+  -- Invariant: acc has only lifted (source ∪ schemes); rest has lifted source ∪ exact axioms.
+  suffices hElim :
+      ∀ (acc rest : List (ClosedFormula (OneStepHenkinConst Base Const))),
+        (∀ ψ ∈ acc,
+          ∃ χ : ClosedFormula Const,
+            (χ ∈ T ∨ χ ∈ SourceStepSchemes (Base := Base) (Const := Const)) ∧
+              OneStepHenkinConst.liftClosedFormula
+                (Base := Base) (Const := Const) χ = ψ) →
+        (∀ ψ ∈ rest,
+          (∃ χ : ClosedFormula Const,
+              χ ∈ T ∧
+              OneStepHenkinConst.liftClosedFormula
+                (Base := Base) (Const := Const) χ = ψ) ∨
+            ψ ∈ OneStepHenkinConst.ExactHenkinAxioms
+              (Base := Base) (Const := Const)) →
+        ExtDerivation (OneStepHenkinConst Base Const) (acc ++ rest)
+          (OneStepHenkinConst.liftClosedFormula
+            (Base := Base) (Const := Const) φ) →
+        ∃ Γ' : List (ClosedFormula (OneStepHenkinConst Base Const)),
+          (∀ ψ ∈ Γ',
+            ∃ χ : ClosedFormula Const,
+              (χ ∈ T ∨ χ ∈ SourceStepSchemes (Base := Base) (Const := Const)) ∧
+                OneStepHenkinConst.liftClosedFormula
+                  (Base := Base) (Const := Const) χ = ψ) ∧
+          ExtDerivation (OneStepHenkinConst Base Const) Γ'
+            (OneStepHenkinConst.liftClosedFormula
+              (Base := Base) (Const := Const) φ) by
+    have ⟨Γ', hΓ', d'⟩ := hElim [] Γ (by simp) hΓ (by simpa using d)
+    exact ⟨Γ', fun ψ hψ => hΓ' ψ hψ, d'⟩
+  intro acc rest hAcc hRest d
+  induction rest generalizing acc with
+  | nil => exact ⟨acc, hAcc, by simpa using d⟩
+  | cons χ rest ih =>
+      have hχ_class := hRest χ (by simp)
+      have hrest := fun ψ hψ => hRest ψ (List.mem_cons_of_mem _ hψ)
+      have heq : acc ++ χ :: rest = (acc ++ [χ]) ++ rest := by
+        simp [List.append_assoc]
+      rcases hχ_class with ⟨χ_src, hχ_src, hχ_eq⟩ | hχ_exact
+      · -- Case 1: χ is a lifted source formula → move to acc
+        exact ih (acc ++ [χ])
+          (by intro ψ hψ
+              simp only [List.mem_append, List.mem_singleton] at hψ
+              rcases hψ with hψ | rfl
+              · exact hAcc ψ hψ
+              · exact ⟨χ_src, Or.inl hχ_src, hχ_eq⟩)
+          hrest
+          (heq ▸ d)
+      · -- Case 2/3: χ is an exact axiom
+        -- Check if χ appears later in rest (dedup check via Classical)
+        by_cases hdup : χ ∈ rest
+        · -- Case 2: duplicate → remove via mono
+          exact ih acc hAcc hrest (ExtDerivation.mono (fun {ψ} hψ => by
+            simp only [List.mem_append, List.mem_cons] at hψ ⊢
+            rcases hψ with h | rfl | h
+            · exact Or.inl h
+            · exact Or.inr hdup
+            · exact Or.inr h) d)
+        · -- Case 3: last copy → eliminate using local lemma
+          -- Reorder: move χ from middle to end
+          have d_reorder : ExtDerivation _ ((acc ++ rest) ++ [χ])
+              (OneStepHenkinConst.liftClosedFormula φ) :=
+            ExtDerivation.mono (fun {ψ} hψ => by
+              simp only [List.mem_append, List.mem_cons, List.mem_singleton] at hψ ⊢
+              tauto) d
+          -- Classify the exact axiom
+          rcases hχ_exact with ⟨σ₀, φ₀, hχ_eq_ex⟩ | ⟨σ₀, φ₀, hχ_eq_all⟩
+          · -- exWitness axiom for φ₀
+            subst hχ_eq_ex
+            -- Establish NoConstOccurrence for the fresh constant
+            have hΓ_no : ∀ ψ ∈ acc ++ rest,
+                NoConstOccurrence (OneStepHenkinConst.exWitness (Base := Base) φ₀) ψ := by
+              intro ψ hψ
+              simp only [List.mem_append] at hψ
+              rcases hψ with hψ_acc | hψ_rest
+              · -- ψ ∈ acc: all lifted source/scheme formulas
+                rcases hAcc ψ hψ_acc with ⟨χ_s, _, hχ_s_eq⟩
+                rw [← hχ_s_eq]
+                exact OneStepHenkinConst.noConstOccurrence_liftTerm _
+                  (OneStepHenkinConst.exWitness_ne_base φ₀) _
+              · -- ψ ∈ rest: lifted source or exact axiom, but NOT a copy of χ
+                rcases hrest ψ hψ_rest with ⟨χ_s, _, hχ_s_eq⟩ | hψ_ax
+                · -- lifted source
+                  rw [← hχ_s_eq]
+                  exact OneStepHenkinConst.noConstOccurrence_liftTerm _
+                    (OneStepHenkinConst.exWitness_ne_base φ₀) _
+                · -- exact axiom, different from χ
+                  -- ψ is an exact axiom different from χ (since χ ∉ rest but ψ ∈ rest)
+                  rcases hψ_ax with ⟨σ₁, φ₁, hψ_ex⟩ | ⟨σ₁, φ₁, hψ_all⟩
+                  · -- exWitness axiom for φ₁ — .exWitness φ₀ doesn't appear
+                    subst hψ_ex
+                    -- NoConstOccurrence on .const (.exWitness φ₁)
+                    have hconst_no : NoConstOccurrence
+                        (OneStepHenkinConst.exWitness (Base := Base) φ₀)
+                        (Term.const (OneStepHenkinConst.exWitness (Base := Base) φ₁) :
+                          Term _ [] σ₁) := by
+                      by_cases hσ : σ₁ = σ₀
+                      · subst hσ
+                        apply NoConstOccurrence.const_same_ne
+                        intro heq; cases heq; exact hdup hψ_rest
+                      · exact .const_diff_type (Ne.symm hσ) _
+                    exact .imp
+                      (.ex (OneStepHenkinConst.noConstOccurrence_liftTerm _ (OneStepHenkinConst.exWitness_ne_base φ₀) φ₁))
+                      (noConstOccurrence_instantiate hconst_no
+                        (OneStepHenkinConst.noConstOccurrence_liftTerm _ (OneStepHenkinConst.exWitness_ne_base φ₀) φ₁))
+                  · -- allCounterexample axiom — .exWitness φ₀ doesn't appear
+                    subst hψ_all
+                    have hconst_no : NoConstOccurrence
+                        (OneStepHenkinConst.exWitness (Base := Base) φ₀)
+                        (Term.const (OneStepHenkinConst.allCounterexample (Base := Base) φ₁) :
+                          Term _ [] σ₁) := by
+                      by_cases hσ : σ₁ = σ₀
+                      · subst hσ
+                        exact .const_same_ne _ (by intro h; cases h)
+                      · exact .const_diff_type (Ne.symm hσ) _
+                    exact .imp
+                      (noConstOccurrence_instantiate hconst_no
+                        (OneStepHenkinConst.noConstOccurrence_liftTerm _ (OneStepHenkinConst.exWitness_ne_base φ₀) φ₁))
+                      (.all (OneStepHenkinConst.noConstOccurrence_liftTerm _ (OneStepHenkinConst.exWitness_ne_base φ₀) φ₁))
+            have hψ_no : NoConstOccurrence
+                (OneStepHenkinConst.exWitness (Base := Base) φ₀)
+                (OneStepHenkinConst.liftClosedFormula φ) :=
+              OneStepHenkinConst.noConstOccurrence_liftTerm _
+                (OneStepHenkinConst.exWitness_ne_base φ₀) _
+            -- Apply the local lemma
+            have d_scheme := exWitness_axiom_to_scheme W φ₀ hΓ_no hψ_no d_reorder
+            -- d_scheme : ExtD ((acc ++ rest) ++ [lift(HεScheme φ₀)]) liftφ
+            -- Continue induction with scheme in acc
+            have d_rearr : ExtDerivation _ ((acc ++ [OneStepHenkinConst.liftClosedFormula
+                (HεScheme φ₀)]) ++ rest) (OneStepHenkinConst.liftClosedFormula φ) :=
+              ExtDerivation.mono (fun {ψ} hψ => by
+                simp only [List.mem_append, List.mem_singleton] at hψ ⊢
+                tauto) d_scheme
+            exact ih (acc ++ [OneStepHenkinConst.liftClosedFormula (HεScheme φ₀)])
+              (by intro ψ hψ
+                  simp only [List.mem_append, List.mem_singleton] at hψ
+                  rcases hψ with hψ | rfl
+                  · exact hAcc ψ hψ
+                  · exact ⟨HεScheme φ₀,
+                      Or.inr (Or.inl ⟨σ₀, φ₀, rfl⟩), rfl⟩)
+              hrest
+              d_rearr
+          · -- allCounterexample axiom for φ₀ (symmetric to exWitness)
+            subst hχ_eq_all
+            -- NoConstOccurrence for .allCounterexample φ₀ across acc ++ rest
+            have hΓ_no : ∀ ψ ∈ acc ++ rest,
+                NoConstOccurrence (OneStepHenkinConst.allCounterexample (Base := Base) φ₀) ψ := by
+              intro ψ hψ
+              simp only [List.mem_append] at hψ
+              rcases hψ with hψ_acc | hψ_rest'
+              · rcases hAcc ψ hψ_acc with ⟨χ_s, _, hχ_s_eq⟩
+                rw [← hχ_s_eq]
+                exact OneStepHenkinConst.noConstOccurrence_liftTerm _
+                  (OneStepHenkinConst.allCounterexample_ne_base φ₀) _
+              · rcases hrest ψ hψ_rest' with ⟨χ_s, _, hχ_s_eq⟩ | hψ_ax
+                · rw [← hχ_s_eq]
+                  exact OneStepHenkinConst.noConstOccurrence_liftTerm _
+                    (OneStepHenkinConst.allCounterexample_ne_base φ₀) _
+                · rcases hψ_ax with ⟨σ₁, φ₁, hψ_ex⟩ | ⟨σ₁, φ₁, hψ_all⟩
+                  · -- exWitness axiom — .allCounterexample φ₀ doesn't appear
+                    subst hψ_ex
+                    have hconst_no : NoConstOccurrence
+                        (OneStepHenkinConst.allCounterexample (Base := Base) φ₀)
+                        (Term.const (OneStepHenkinConst.exWitness (Base := Base) φ₁) :
+                          Term _ [] σ₁) := by
+                      by_cases hσ : σ₁ = σ₀
+                      · subst hσ
+                        exact .const_same_ne _ (by intro h; cases h)
+                      · exact .const_diff_type (Ne.symm hσ) _
+                    exact .imp
+                      (.ex (OneStepHenkinConst.noConstOccurrence_liftTerm _ (OneStepHenkinConst.allCounterexample_ne_base φ₀) φ₁))
+                      (noConstOccurrence_instantiate hconst_no
+                        (OneStepHenkinConst.noConstOccurrence_liftTerm _ (OneStepHenkinConst.allCounterexample_ne_base φ₀) φ₁))
+                  · -- allCounterexample axiom for φ₁ — different from φ₀'s axiom
+                    subst hψ_all
+                    have hconst_no : NoConstOccurrence
+                        (OneStepHenkinConst.allCounterexample (Base := Base) φ₀)
+                        (Term.const (OneStepHenkinConst.allCounterexample (Base := Base) φ₁) :
+                          Term _ [] σ₁) := by
+                      by_cases hσ : σ₁ = σ₀
+                      · subst hσ
+                        apply NoConstOccurrence.const_same_ne
+                        intro heq; cases heq; exact hdup hψ_rest'
+                      · exact .const_diff_type (Ne.symm hσ) _
+                    exact .imp
+                      (noConstOccurrence_instantiate hconst_no
+                        (OneStepHenkinConst.noConstOccurrence_liftTerm _ (OneStepHenkinConst.allCounterexample_ne_base φ₀) φ₁))
+                      (.all (OneStepHenkinConst.noConstOccurrence_liftTerm _ (OneStepHenkinConst.allCounterexample_ne_base φ₀) φ₁))
+            have hψ_no : NoConstOccurrence
+                (OneStepHenkinConst.allCounterexample (Base := Base) φ₀)
+                (OneStepHenkinConst.liftClosedFormula φ) :=
+              OneStepHenkinConst.noConstOccurrence_liftTerm _
+                (OneStepHenkinConst.allCounterexample_ne_base φ₀) _
+            have d_scheme := allCounterexample_axiom_to_scheme W φ₀ hΓ_no hψ_no d_reorder
+            have d_rearr : ExtDerivation _ ((acc ++ [OneStepHenkinConst.liftClosedFormula
+                (DPScheme φ₀)]) ++ rest) (OneStepHenkinConst.liftClosedFormula φ) :=
+              ExtDerivation.mono (fun {ψ} hψ => by
+                simp only [List.mem_append, List.mem_singleton] at hψ ⊢
+                tauto) d_scheme
+            exact ih (acc ++ [OneStepHenkinConst.liftClosedFormula (DPScheme φ₀)])
+              (by intro ψ hψ
+                  simp only [List.mem_append, List.mem_singleton] at hψ
+                  rcases hψ with hψ | rfl
+                  · exact hAcc ψ hψ
+                  · exact ⟨DPScheme φ₀,
+                      Or.inr (Or.inr ⟨σ₀, φ₀, rfl⟩), rfl⟩)
+              hrest
+              d_rearr
+
+/--
+The remaining blocker for full Route 2 reflection: collapsing a one-step derivation
+whose hypotheses and conclusion are all in the image of `liftClosedFormula` back to
+a source-language derivation.
+
+Known approaches:
+- `substConst` infrastructure (term-level constant-to-term substitution using `witnessTerm`)
+- `retractDerivation` with `[∀ τ, Nonempty (Const τ)]` assumption (already proved)
+- Derivation-level induction with `NoFreshConst` invariant
+-/
+def SourceCollapseGoal : Prop :=
+  ∀ {T : ClosedTheorySet Const} {φ : ClosedFormula Const},
+    ClosedTheorySet.Provable
+      (Const := OneStepHenkinConst Base Const)
+      (fun ψ => ∃ χ : ClosedFormula Const,
+        χ ∈ T ∧
+          OneStepHenkinConst.liftClosedFormula
+            (Base := Base) (Const := Const) χ = ψ)
+      (OneStepHenkinConst.liftClosedFormula
+        (Base := Base) (Const := Const) φ) →
+    ClosedTheorySet.Provable (Const := Const) T φ
 
 /--
 Corrected stage/reflection package after the obstruction theorem.
@@ -681,6 +1221,175 @@ def RecursiveStageOneStepReflectionGoal : Prop :=
     (RecursiveStageProvable (Base := Base) (Const := Const))
 
 /--
+The recursive-stage one-step reflection theorem is an immediate specialization
+of the generic witnessed one-step conservativity goal at each stage.
+
+This is the council-backed cleaner route: instead of forcing the proof through
+the stage-language exact/prior split wrappers, instantiate the generic
+one-step theorem directly on `RecursiveStageTheory n Δ`.
+-/
+theorem recursiveStageOneStepReflection_of_witnessedTheoryConservativity
+    (W : BaseWitnesses Base Const)
+    (hCons :
+      ∀ n : Nat,
+        WitnessedTheoryConservativityGoal
+          (Base := Base)
+          (Const := HenkinConstStage Base Const n)
+          (baseWitnessesOf (Base := Base) (Const := Const) W n)) :
+    RecursiveStageOneStepReflectionGoal (Base := Base) (Const := Const) := by
+  intro n Δ φ hStep
+  let T : ClosedTheorySet (HenkinConstStage Base Const n) :=
+    RecursiveStageTheory (Base := Base) (Const := Const) n Δ
+  let ψ : ClosedFormula (HenkinConstStage Base Const n) :=
+    HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) n φ
+  have hliftSucc {τ : Ty Base} (c : HenkinConstStage Base Const n τ) :
+      HenkinConstStage.lift (Base := Base) (Const := Const) (Nat.le_succ n) c =
+        (OneStepHenkinConst.base c : HenkinConstStage Base Const (n + 1) τ) := by
+    simp [HenkinConstStage.lift, HenkinConstStage.liftOffset]
+  have hliftFormulaEq {Γ : Ctx Base}
+      (χ : Formula (HenkinConstStage Base Const n) Γ) :
+      OneStepHenkinConst.liftFormula (Base := Base)
+        (Const := HenkinConstStage Base Const n) χ =
+      HenkinConstStage.liftFormula (Base := Base) (Const := Const)
+        (Nat.le_succ n) χ := by
+    rw [OneStepHenkinConst.liftFormula, WitnessProvider.liftFormula, HenkinConstStage.liftFormula]
+    apply Mettapedia.Logic.HOL.mapConst_ext
+    intro τ c
+    simpa using hliftSucc c
+  have hliftClosedEq
+      (χ : ClosedFormula (HenkinConstStage Base Const n)) :
+      OneStepHenkinConst.liftClosedFormula (Base := Base)
+        (Const := HenkinConstStage Base Const n) χ =
+      HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+        (Nat.le_succ n) χ := by
+    simpa using hliftFormulaEq χ
+  have hExInstanceEq {σ : Ty Base}
+      (χ : Formula (HenkinConstStage Base Const n) [σ]) :
+      OneStepHenkinConst.exWitnessInstance (Base := Base)
+        (Const := HenkinConstStage Base Const n) χ =
+      HenkinConstStage.exWitnessInstance (Base := Base) (Const := Const) χ := by
+    unfold OneStepHenkinConst.exWitnessInstance WitnessProvider.exWitnessInstance
+    unfold HenkinConstStage.exWitnessInstance HenkinConstStage.exWitnessTerm
+    simp [OneStepHenkinConst.witnessProvider]
+    simpa [OneStepHenkinConst.liftFormula, WitnessProvider.liftFormula] using
+      congrArg
+        (instantiate (Base := Base) (Term.const (OneStepHenkinConst.exWitness χ)))
+        (hliftFormulaEq χ)
+  have hAllInstanceEq {σ : Ty Base}
+      (χ : Formula (HenkinConstStage Base Const n) [σ]) :
+      OneStepHenkinConst.allCounterexampleInstance (Base := Base)
+        (Const := HenkinConstStage Base Const n) χ =
+      HenkinConstStage.allCounterexampleInstance (Base := Base) (Const := Const) χ := by
+    unfold OneStepHenkinConst.allCounterexampleInstance
+      WitnessProvider.allCounterexampleInstance
+    unfold HenkinConstStage.allCounterexampleInstance
+      HenkinConstStage.allCounterexampleTerm
+    simp [OneStepHenkinConst.witnessProvider]
+    simpa [OneStepHenkinConst.liftFormula, WitnessProvider.liftFormula] using
+      congrArg
+        (instantiate (Base := Base) (Term.const (OneStepHenkinConst.allCounterexample χ)))
+        (hliftFormulaEq χ)
+  have hliftClosedRefl
+      (χ : ClosedFormula (HenkinConstStage Base Const (n + 1))) :
+      HenkinConstStage.liftClosedFormula (Base := Base) (Const := Const)
+        (Nat.le_refl (n + 1)) χ = χ := by
+    rw [HenkinConstStage.liftClosedFormula]
+    calc
+      mapConst (fun {τ} c =>
+          HenkinConstStage.lift (Base := Base) (Const := Const)
+            (Nat.le_refl (n + 1)) c) χ
+        =
+      mapConst (fun {τ} c => c) χ := by
+          apply Mettapedia.Logic.HOL.mapConst_ext
+          intro τ c
+          simpa using
+            (HenkinConstStage.lift_add_right_eq_liftOffset
+              (Base := Base) (Const := Const)
+              (n := n + 1) (k := 0) c)
+      _ = χ := Mettapedia.Logic.HOL.mapConst_id χ
+  have hExactEq :
+      OneStepHenkinConst.ExactHenkinAxioms (Base := Base)
+        (Const := HenkinConstStage Base Const n) =
+      ExactStepHenkinAxioms (Base := Base) (Const := Const) n := by
+    funext ξ
+    apply propext
+    constructor <;> intro h
+    · rcases h with h | h
+      · rcases h with ⟨σ, χ, hχ⟩
+        left
+        refine ⟨σ, χ, ?_⟩
+        simpa [HenkinConstStage.exWitnessAxiom, OneStepHenkinConst.ExactHenkinAxioms,
+          ExactStepHenkinAxioms, hliftFormulaEq, hExInstanceEq, hliftClosedRefl] using hχ
+      · rcases h with ⟨σ, χ, hχ⟩
+        right
+        refine ⟨σ, χ, ?_⟩
+        simpa [HenkinConstStage.allCounterexampleAxiom, OneStepHenkinConst.ExactHenkinAxioms,
+          ExactStepHenkinAxioms, hliftFormulaEq, hAllInstanceEq, hliftClosedRefl] using hχ
+    · rcases h with h | h
+      · rcases h with ⟨σ, χ, hχ⟩
+        left
+        refine ⟨σ, χ, ?_⟩
+        simpa [HenkinConstStage.exWitnessAxiom, OneStepHenkinConst.ExactHenkinAxioms,
+          ExactStepHenkinAxioms, hliftFormulaEq, hExInstanceEq, hliftClosedRefl] using hχ
+      · rcases h with ⟨σ, χ, hχ⟩
+        right
+        refine ⟨σ, χ, ?_⟩
+        simpa [HenkinConstStage.allCounterexampleAxiom, OneStepHenkinConst.ExactHenkinAxioms,
+          ExactStepHenkinAxioms, hliftFormulaEq, hAllInstanceEq, hliftClosedRefl] using hχ
+  have hTheoryEq :
+      (fun ξ =>
+        (∃ χ : ClosedFormula (HenkinConstStage Base Const n),
+            χ ∈ T ∧
+            OneStepHenkinConst.liftClosedFormula (Base := Base)
+              (Const := HenkinConstStage Base Const n) χ = ξ) ∨
+          ξ ∈ OneStepHenkinConst.ExactHenkinAxioms (Base := Base)
+            (Const := HenkinConstStage Base Const n)) =
+      RecursiveStageTheory (Base := Base) (Const := Const) (n + 1) Δ := by
+    funext ξ
+    apply propext
+    constructor <;> intro h
+    · rcases h with h | h
+      · left
+        rcases h with ⟨χ, hχT, hχξ⟩
+        exact ⟨χ, hχT, by simpa [hliftClosedEq χ] using hχξ⟩
+      · right
+        simpa [hExactEq] using h
+    · rcases h with h | h
+      · left
+        rcases h with ⟨χ, hχT, hχξ⟩
+        exact ⟨χ, hχT, by simpa [hliftClosedEq χ] using hχξ⟩
+      · right
+        simpa [hExactEq] using h
+  have hψEq :
+      OneStepHenkinConst.liftClosedFormula (Base := Base)
+        (Const := HenkinConstStage Base Const n) ψ =
+      HenkinConstStage.liftBaseClosedFormula (Base := Base) (Const := Const) (n + 1) φ := by
+    exact (hliftClosedEq ψ).trans
+      (HenkinConstStage.liftBaseClosedFormula_comp
+        (Base := Base) (Const := Const) (m := n) (n := n + 1)
+        (Nat.le_succ n) φ)
+  have hStep' :
+      ClosedTheorySet.Provable
+        (Const := OneStepHenkinConst Base (HenkinConstStage Base Const n))
+        (fun ξ =>
+          (∃ χ : ClosedFormula (HenkinConstStage Base Const n),
+              χ ∈ T ∧
+              OneStepHenkinConst.liftClosedFormula (Base := Base)
+                (Const := HenkinConstStage Base Const n) χ = ξ) ∨
+            ξ ∈ OneStepHenkinConst.ExactHenkinAxioms (Base := Base)
+              (Const := HenkinConstStage Base Const n))
+        (OneStepHenkinConst.liftClosedFormula (Base := Base)
+          (Const := HenkinConstStage Base Const n) ψ) := by
+    simpa [RecursiveStageProvable, hTheoryEq, hψEq]
+      using hStep
+  change
+    ClosedTheorySet.Provable
+      (Const := HenkinConstStage Base Const n)
+      T
+      ψ
+  exact (hCons n) hStep'
+
+/--
 Concrete stage-language provability candidate for the witnessed-source bridge.
 
 At stage `n`, we ask for a derivation in the actual stage language from:
@@ -889,7 +1598,7 @@ theorem lift_stage_exWitnessAxiom
       using
         (HenkinConstInfinity.liftFormula_stageBump
           (Base := Base) (Const := Const) 1 φ)
-  exact ⟨hφlift, by simpa [hφlift]⟩
+  exact ⟨hφlift, by simp [hφlift]⟩
 
 theorem lift_stage_allCounterexampleAxiom
     {m n : Nat} (hmn : m + 1 ≤ n) {σ : Ty Base}
@@ -932,7 +1641,7 @@ theorem lift_stage_allCounterexampleAxiom
       using
         (HenkinConstInfinity.liftFormula_stageBump
           (Base := Base) (Const := Const) 1 φ)
-  exact ⟨by simpa [hφlift], hφlift⟩
+  exact ⟨by simp [hφlift], hφlift⟩
 
 /--
 Direct supported-stage construction target for the new >69% route.
@@ -1155,6 +1864,72 @@ theorem originalProvable_of_stageReduction
         exact ih (hStep n hStage)
   exact hCollapse hn
 
+theorem sourceSchemeProvable_of_original
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const}
+    (hProv : ExtDerivation Const Δ φ) :
+    SourceSchemeProvable (Base := Base) (Const := Const) Δ φ := by
+  exact
+    ClosedTheorySet.provable_of_closedTheory
+      (Const := Const)
+      (T := fun ψ =>
+        ψ ∈ Δ ∨ ψ ∈ SourceStepSchemes (Base := Base) (Const := Const))
+      (Δ := Δ)
+      (hΔ := by
+        intro ψ hψ
+        exact Or.inl hψ)
+      (hφ := hProv)
+
+theorem sourceSchemeProvable_of_stageZero
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    StageZeroLiftedProvable (Base := Base) (Const := Const) Δ φ →
+      SourceSchemeProvable (Base := Base) (Const := Const) Δ φ := by
+  intro hStage
+  exact sourceSchemeProvable_of_original
+    (Base := Base)
+    (Const := Const)
+    ((stageZeroLiftedProvable_iff_originalProvable
+      (Base := Base)
+      (Const := Const)
+      (Δ := Δ)
+      (φ := φ)).1 hStage)
+
+/--
+Route 2 analogue of `originalProvable_of_stageReduction`:
+if stage-`0` collapses to source HOL plus the step schemes, then the finite-stage
+bridge yields scheme-extended original-signature reflection.
+-/
+theorem sourceSchemeProvable_of_stageReduction
+    (StageProvable : Nat → List (ClosedFormula Const) → ClosedFormula Const → Prop)
+    (hZero :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        StageProvable 0 Δ φ →
+          SourceSchemeProvable (Base := Base) (Const := Const) Δ φ)
+    (hFinite :
+      FiniteStageReduction (Base := Base) (Const := Const) StageProvable)
+    (hStep :
+      OneStepStageReflection (Base := Base) (Const := Const) StageProvable)
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalLiftProvable (Base := Base) (Const := Const) Δ φ →
+      SourceSchemeProvable (Base := Base) (Const := Const) Δ φ := by
+  intro hLift
+  rcases hFinite hLift with ⟨n, hn⟩
+  have hCollapse :
+      ∀ {n : Nat} {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        StageProvable n Δ φ →
+          SourceSchemeProvable (Base := Base) (Const := Const) Δ φ := by
+    intro n
+    induction n with
+    | zero =>
+        intro Δ φ hStage
+        exact hZero hStage
+    | succ n ih =>
+        intro Δ φ hStage
+        exact ih (hStep n hStage)
+  exact hCollapse hn
+
 /--
 Witnessed-source restatement of `originalProvable_of_stageReduction`.
 
@@ -1175,6 +1950,35 @@ def witnessedOriginalReflection_of_stageReduction
   refine ⟨W, ?_⟩
   intro Δ φ hLift
   exact originalProvable_of_stageReduction
+    (Base := Base)
+    (Const := Const)
+    StageProvable
+    hZero
+    hFinite
+    hStep
+    hLift
+
+/--
+Route 2 witnessed-source restatement of `sourceSchemeProvable_of_stageReduction`.
+
+This is the generic transport theorem once the stage package collapses at
+stage `0` to source provability with the Hε / DP schemes available.
+-/
+def schemeExtendedReflection_of_stageReduction
+    (W : BaseWitnesses Base Const)
+    (StageProvable : Nat → List (ClosedFormula Const) → ClosedFormula Const → Prop)
+    (hZero :
+      ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+        StageProvable 0 Δ φ →
+          SourceSchemeProvable (Base := Base) (Const := Const) Δ φ)
+    (hFinite :
+      FiniteStageReduction (Base := Base) (Const := Const) StageProvable)
+    (hStep :
+      OneStepStageReflection (Base := Base) (Const := Const) StageProvable) :
+    SchemeExtendedReflectionTarget (Base := Base) (Const := Const) := by
+  refine ⟨W, ?_⟩
+  intro Δ φ hLift
+  exact sourceSchemeProvable_of_stageReduction
     (Base := Base)
     (Const := Const)
     StageProvable
@@ -1262,6 +2066,42 @@ def WitnessedStageReductionPackage.toWitnessedOriginalReflectionTarget
     P.finite
     hStep
     P.zero
+
+/--
+Route 2 stage-reduction package: the stage-`0` collapse lands in source HOL
+with the Hε / DP schemes available as assumptions.
+-/
+structure SchemeStageReductionPackage where
+  witnesses : BaseWitnesses Base Const
+  StageProvable : Nat → List (ClosedFormula Const) → ClosedFormula Const → Prop
+  finite :
+    FiniteStageReduction (Base := Base) (Const := Const) StageProvable
+  zero :
+    ∀ {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const},
+      StageProvable 0 Δ φ →
+        SourceSchemeProvable (Base := Base) (Const := Const) Δ φ
+
+/-- Route 2 reformulation of the remaining stage-reflection blocker. -/
+def OneStepSchemeStageReflectionGoal
+    (P : SchemeStageReductionPackage (Base := Base) (Const := Const)) : Prop :=
+  OneStepStageReflection (Base := Base) (Const := Const) P.StageProvable
+
+/--
+Once the Route 2 one-step stage reflection theorem is proved for a corrected
+stage package, the final scheme-extended reflection target follows immediately.
+-/
+def SchemeStageReductionPackage.toSchemeExtendedReflectionTarget
+    (P : SchemeStageReductionPackage (Base := Base) (Const := Const))
+    (hStep : OneStepSchemeStageReflectionGoal (Base := Base) (Const := Const) P) :
+    SchemeExtendedReflectionTarget (Base := Base) (Const := Const) :=
+  schemeExtendedReflection_of_stageReduction
+    (Base := Base)
+    (Const := Const)
+    P.witnesses
+    P.StageProvable
+    P.zero
+    P.finite
+    hStep
 
 /--
 The concrete witnessed-source reduction package built from the new stage-language
@@ -1505,10 +2345,150 @@ theorem supportedOriginalLiftConstructionGoal_proved :
           · exact Or.inr hKeep
           · exact hP' ψ hψ', heq_bwd Θ' ▸ d''⟩
       · -- theorem: discharge χ by reordering to head then cutting
-        have d_reorder : ExtDerivation _ (χ :: (acc ++ rest)) _ :=
-          ExtDerivation.mono (fun {ψ} hψ => by
-            simp only [List.mem_append, List.mem_cons] at hψ ⊢; tauto) d
+        have d_reorder :
+            ExtDerivation (HenkinConstStage Base Const S.stage)
+              (χ :: (acc ++ rest))
+              (HenkinConstStage.liftBaseClosedFormula
+                (Base := Base) (Const := Const) S.stage φ) :=
+          by
+            refine ExtDerivation.mono ?_ d
+            intro ψ hψ
+            simp only [List.mem_append, List.mem_cons] at hψ ⊢
+            tauto
         exact ih acc hrest (ExtDerivation.discharge_head_theorem hThm d_reorder)
+
+/--
+The concrete witnessed-source reduction package built from the recursive stage
+predicate.
+
+At this point all ingredients except one-step witnessed conservativity are
+already proved:
+- finite reduction comes from the supported original-lift construction theorem,
+- stage `0` collapses to the original signature via the established bridge.
+-/
+def recursiveStageWitnessedStageReductionPackage
+    (W : BaseWitnesses Base Const) :
+    WitnessedStageReductionPackage (Base := Base) (Const := Const) where
+  witnesses := W
+  StageProvable := RecursiveStageProvable (Base := Base) (Const := Const)
+  finite :=
+    recursiveStageFiniteReduction_of_supportedOriginalLift
+      (Base := Base) (Const := Const)
+      (supportedOriginalLiftConstructionGoal_proved
+        (Base := Base) (Const := Const))
+  zero := recursiveStageProvable_zero (Base := Base) (Const := Const)
+
+/--
+Concrete Route 2 stage-reduction package built from the recursive stage
+predicate. The finite reduction is unchanged; only the stage-`0` collapse now
+lands in source HOL plus the Hε / DP schemes.
+-/
+def recursiveStageSchemeReductionPackage
+    (W : BaseWitnesses Base Const) :
+    SchemeStageReductionPackage (Base := Base) (Const := Const) where
+  witnesses := W
+  StageProvable := RecursiveStageProvable (Base := Base) (Const := Const)
+  finite :=
+    recursiveStageFiniteReduction_of_supportedOriginalLift
+      (Base := Base) (Const := Const)
+      (supportedOriginalLiftConstructionGoal_proved
+        (Base := Base) (Const := Const))
+  zero := by
+    intro Δ φ hStage
+    exact sourceSchemeProvable_of_original
+      (Base := Base)
+      (Const := Const)
+      ((recursiveStageProvable_zero_iff_originalProvable
+        (Base := Base)
+        (Const := Const)
+        (Δ := Δ)
+        (φ := φ)).1 hStage)
+
+/--
+Council-backed final composition theorem for Route 2 proof-theoretic reflection.
+
+Once the recursive stage package is available, the only remaining hypothesis is
+the Route 2 one-step stage reflection theorem. The conclusion lands in source
+HOL plus the Hε / DP schemes, not plain source HOL.
+-/
+def schemeExtendedReflectionTarget_proved
+    (W : BaseWitnesses Base Const)
+    (hStep :
+      OneStepSchemeStageReflectionGoal
+        (Base := Base)
+        (Const := Const)
+        (recursiveStageSchemeReductionPackage
+          (Base := Base)
+          (Const := Const)
+          W)) :
+    SchemeExtendedReflectionTarget (Base := Base) (Const := Const) :=
+  (recursiveStageSchemeReductionPackage
+    (Base := Base)
+    (Const := Const)
+    W).toSchemeExtendedReflectionTarget hStep
+
+/--
+Pointwise Route 2 corollary of the final scheme-extended reflection target.
+-/
+theorem sourceSchemeProvable_of_recursiveStageSchemeReflection
+    (W : BaseWitnesses Base Const)
+    (hStep :
+      OneStepSchemeStageReflectionGoal
+        (Base := Base)
+        (Const := Const)
+        (recursiveStageSchemeReductionPackage
+          (Base := Base)
+          (Const := Const)
+          W))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalLiftProvable (Base := Base) (Const := Const) Δ φ →
+      SourceSchemeProvable (Base := Base) (Const := Const) Δ φ :=
+  (schemeExtendedReflectionTarget_proved
+    (Base := Base)
+    (Const := Const)
+    W
+    hStep).reflect
+
+/--
+Council-backed final composition theorem for original-signature reflection.
+
+Once the generic witnessed one-step conservativity theorem is available at each
+recursive stage, all remaining bridge work is pure composition.
+-/
+def witnessedOriginalReflectionTarget_proved
+    (W : BaseWitnesses Base Const)
+    (hCons :
+      ∀ n : Nat,
+        WitnessedTheoryConservativityGoal
+          (Base := Base)
+          (Const := HenkinConstStage Base Const n)
+          (baseWitnessesOf (Base := Base) (Const := Const) W n)) :
+    WitnessedOriginalReflectionTarget (Base := Base) (Const := Const) :=
+  (recursiveStageWitnessedStageReductionPackage
+    (Base := Base)
+    (Const := Const)
+    W).toWitnessedOriginalReflectionTarget
+    (recursiveStageOneStepReflection_of_witnessedTheoryConservativity
+      (Base := Base) (Const := Const) W hCons)
+
+/--
+Pointwise corollary of the final witnessed reflection target.
+-/
+theorem originalProvable_of_witnessedTheoryConservativity
+    (W : BaseWitnesses Base Const)
+    (hCons :
+      ∀ n : Nat,
+        WitnessedTheoryConservativityGoal
+          (Base := Base)
+          (Const := HenkinConstStage Base Const n)
+          (baseWitnessesOf (Base := Base) (Const := Const) W n))
+    {Δ : List (ClosedFormula Const)}
+    {φ : ClosedFormula Const} :
+    OriginalLiftProvable (Base := Base) (Const := Const) Δ φ →
+      ExtDerivation Const Δ φ :=
+  (witnessedOriginalReflectionTarget_proved
+    (Base := Base) (Const := Const) W hCons).reflect
 
 end HenkinConstInfinity
 

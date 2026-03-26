@@ -79,7 +79,7 @@ def rhoPar (P Q : Pattern) : Pattern :=
     In locally nameless, `closeFVar 0 x P` replaces free occurrences of `x`
     in `P` with `BVar 0`, then wraps in `.lambda`. -/
 def rhoInput (n : Pattern) (x : String) (P : Pattern) : Pattern :=
-  .apply "PInput" [n, .lambda (closeFVar 0 x P)]
+  .apply "PInput" [n, .lambda none (closeFVar 0 x P)]
 
 /-- Output in ρ-calculus: n!(q) -/
 def rhoOutput (n q : Pattern) : Pattern :=
@@ -89,7 +89,7 @@ def rhoOutput (n q : Pattern) : Pattern :=
 def rhoNu (x : String) (P : Pattern) : Pattern :=
   -- In ρ-calculus, restriction is typically encoded using input on a fresh channel
   -- For now, represent as a direct restriction pattern (may need refinement)
-  .apply "PNu" [.lambda (closeFVar 0 x P)]
+  .apply "PNu" [.lambda none (closeFVar 0 x P)]
 
 /-- Replication in ρ-calculus: !P -/
 def rhoReplicate (P : Pattern) : Pattern :=

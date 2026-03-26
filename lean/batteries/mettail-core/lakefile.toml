@@ -1,0 +1,6 @@
+name = "mettail_core"
+version = "0.1.0"
+defaultTargets = ["MeTTailCore"]
+
+[[lean_lib]]
+name = "MeTTailCore"

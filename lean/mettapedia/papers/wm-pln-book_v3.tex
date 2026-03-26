@@ -228,7 +228,7 @@ examples.}
 
 The entire development is formalized in Lean~4 (version~4.28.0)
 with Mathlib~v4.28.0.  The book-referenced files contain
-704~theorems with 0~sorry and 0~\code{native\_decide}
+hundreds of kernel-checked theorems with 0~sorry and 0~\code{native\_decide}
 (Appendix~\ref{app:theorem-map}).  Six application domains---gas
 sensor drift, steel fault classification, NAB anomaly detection,
 GJP geopolitical forecasting, Bayesian-network inference, and
@@ -1829,7 +1829,6 @@ on top of it.
 Extraction is additive for \emph{every} choice of $V$.  But downstream
 projections (strength, confidence, Born rule $|\cdot|^2$) are
 \emph{not} additive---they are lossy views.%
-\label{prop:overview-views-not-semantic-core}
 This asymmetry determines
 the inference architecture and is developed in
 Chapter~\ref{ch:views}.%
@@ -3185,7 +3184,7 @@ theorem dr_stamps_disjoint :
     Disjoint dr_stamp1 dr_stamp2 := by decide
 
 theorem dr_stamps_union :
-    dr_stamp1 ∪ dr_stamp2 = {0, 1, 2, 3} := by decide
+    Finset.union dr_stamp1 dr_stamp2 = {0, 1, 2, 3} := by decide
 \end{lstlisting}
 
 \noindent
@@ -6232,7 +6231,7 @@ where the left side is the WM strength view and the right side is
 the MLN marginal probability.%
 \footnote{Formalized:
 \code{wm\_queryStrength\_eq\_full\_queryProb\_of\_finite\_support}
-in \codepath{Mettapedia/Logic/PLNMarkovLogicWorldModel.lean}.}
+in \codepath{Mettapedia/Logic/MarkovLogicWorldModel.lean}.}
 \end{theorem}
 
 \noindent
@@ -6240,57 +6239,163 @@ The side condition is finite support (the grounding set must be
 finite).  Under this condition, the MLN marginal probability IS
 the WM strength view---not an approximation, but an identity.
 
-\paragraph{There are now two certified MLN cases.}
-The current formalization separates the MLN story into two mathematically
-different regimes:
-\begin{enumerate}
-\item \textbf{Finite-support / ground MLNs.}  Here the partition function is
-  finite, and the WM bridge is an exact identity on query probabilities
-  (Theorem~\ref{thm:mln-wm-strength}).
-\item \textbf{Countably infinite MLNs.}  Here the semantics is no longer a
-  single finite normalization problem; it becomes a Gibbs/DLR measure
-  problem.  The formalization now proves an existence theorem for the
-  classical weighted-clause surface and a uniqueness theorem under a uniform
-  Dobrushin contraction hypothesis.
-\end{enumerate}
+\paragraph{Why infinite MLNs matter.}
+Many relational systems have no natural finite boundary.  A social network
+grows as new users join; a sensor grid expands as new devices are deployed;
+an AGI knowledge base accumulates concepts without a fixed ontology.  In each
+case the underlying Markov logic specification---a set of weighted first-order
+clauses---is well-defined, but the standard finite normalization
+$Z = \sum_{\omega}\exp(\sum_j w_j f_j(\omega))$ becomes a sum over an infinite
+Boolean product space and may diverge.  The question is: \emph{does the
+specification still define a probability distribution?}
+
+The answer, due to Dobrushin, Lanford, and Ruelle, is that one must replace
+the partition-function viewpoint with the language of Gibbs measures.  A
+\emph{DLR measure} $\mu$ satisfies local consistency equations: for every
+finite region~$\Lambda$, the conditional of~$\mu$ given the exterior agrees
+with the finite-volume Gibbs kernel on~$\Lambda$.  Existence of such measures
+follows from compactness arguments; uniqueness is a deeper property that
+depends on the interaction strength.
+
+The formalization certifies both sides of this story.  For
+\emph{finite-support} MLNs the partition function is finite and the WM bridge
+is an exact identity (Theorem~\ref{thm:mln-wm-strength}).  For
+\emph{countably infinite} MLNs the semantics becomes a Gibbs/DLR measure
+problem, and the formalization proves existence, uniqueness under a uniform
+contraction condition, and a bridge theorem connecting the Gibbs probability
+back to WM-PLN query strength.
+
+A caveat before the theorems: the formalization certifies
+\emph{well-posedness}, not closed-form computation.  For a concrete weight
+such as $w=0.4$, it proves that $P(\mathrm{Believes}(42)=\mathsf{true})$
+exists and is unique, and that the WM query strength is unambiguous.  It does
+\emph{not} symbolically compute that number; obtaining a numerical value
+requires Gibbs sampling, mean-field approximation, or a similar inference
+scheme.  The formalization certifies the \emph{target} of computation --- that
+it is well-defined --- but leaves the approximation algorithm to the runtime.
+
+\medskip
+\noindent
+The first of the three infinite-case theorems establishes that the Gibbs
+specification always admits at least one global probability measure.
 
 \begin{theorem}[Infinite MLN existence on countable domains (\claimConditional{})]
 \label{thm:infinite-mln-existence}
 Fix a countable atom type presented by $e : \mathbb{N} \simeq \mathrm{Atom}$,
-an exhaustion of finite regions, and a boundary condition $\xi$.  Then a
-classical infinite MLN induces a probability measure $\mu$ satisfying the
+an exhaustion of finite regions, and a boundary condition~$\xi$.  Then a
+classical infinite MLN induces a probability measure~$\mu$ satisfying the
 fixed-region cylinder DLR equations for the associated strictly positive Gibbs
 specification.%
 \footnote{Formalized as
 \code{exists\_fixedRegionCylinderDLR\_of\_equiv} in
-\codepath{Mettapedia/Logic/PLNMarkovLogicInfiniteUniqueness.lean},
+\codepath{Mettapedia/Logic/MarkovLogicInfiniteUniqueness.lean},
 transferring the compactness packaging from
-\codepath{Mettapedia/Logic/PLNMarkovLogicInfiniteExistence.lean}
+\codepath{Mettapedia/Logic/MarkovLogicInfiniteExistence.lean}
 (0~sorry in the current slice).}
 \end{theorem}
+
+\noindent
+Existence alone does not settle the semantics: an MLN may admit multiple
+Gibbs measures with distinct marginals (this is exactly the phenomenon of
+\emph{phase transitions} in statistical mechanics).  The next theorem gives a
+sufficient condition for uniqueness.  The condition is Dobrushin's (1968):
+if the total interaction arriving at every atom is uniformly bounded below the
+critical threshold, the specification admits at most one Gibbs measure.
 
 \begin{theorem}[Infinite MLN uniqueness under uniform small total influence (\claimConditional{})]
 \label{thm:infinite-mln-uniqueness}
 If an infinite classical MLN satisfies a uniform Dobrushin bound
 \[
-  \exists C < 1 \;\; \forall a,\;
-  \sum_b C(a,b) \le C,
+  \exists\, C \in [0,1) \;\;\text{such that}\;\;
+  \forall a,\;\;
+  \sum_b C(a,b) \;\le\; C,
 \]
-then it has at most one fixed-region cylinder DLR probability measure.%
+where $C(a,b) = \tfrac{1}{2}\sum_{j:\,a,b\in\mathrm{clause}_j}|w_j|$ is the
+pairwise Dobrushin coefficient, then it has at most one fixed-region cylinder
+DLR probability measure.%
 \footnote{Formalized as
 \code{paperUniformSmallTotalInfluence\_implies\_paperUniqueMeasure}
-in \codepath{Mettapedia/Logic/PLNMarkovLogicInfiniteUniqueness.lean}
+in \codepath{Mettapedia/Logic/MarkovLogicInfiniteUniqueness.lean}
+(0~sorry in the current slice).  The proof uses a descending-shell
+contraction argument on iterated interaction neighborhoods in the classical
+Dobrushin--Georgii style.}
+\end{theorem}
+
+\noindent
+\textbf{What this means intuitively.}  Every atom in an infinite knowledge
+base participates in some clauses that connect it to other atoms.  The
+Dobrushin coefficient $C(a,b)$ measures how much flipping atom~$b$'s truth
+value can shift atom~$a$'s probability; the row sum $\sum_b C(a,b)$ is the
+\emph{total incoming influence} on~$a$ from the rest of the universe.  The
+condition $\sum_b C(a,b) \le C < 1$ says: \emph{every atom is more
+determined by its own prior than by the combined pull of all its neighbors.}
+No atom is a slave to its context.
+
+When this holds, local disagreements cannot amplify as they propagate through
+the interaction graph---they \emph{attenuate}.  Two hypothetical global
+measures that disagree somewhere must agree everywhere, because any local
+discrepancy shrinks geometrically as it crosses each layer of the network.
+
+For the modeler, the theorem provides an \emph{interaction-strength budget}.
+As long as the total clause weight arriving at each atom stays below the
+threshold, the semantics of the infinite knowledge base is unambiguous:
+every finite query has exactly one answer, and that answer is robust to
+the boundary conditions at infinity.  Exceeding the budget does not
+necessarily break the system, but it places the semantics beyond what
+the current theorem can guarantee---the possibility of multiple coexisting
+equilibria (phase transitions) opens up.
+
+\medskip
+\noindent
+Once a DLR measure exists, it can be fed into the WM-PLN bridge.  The
+construction is elementary: a probability measure has total mass~$1$, so
+the \texttt{MassSemantics} record from the WM interface is immediate, and the
+query strength reduces to the Gibbs probability of the query's cylinder event.
+
+\begin{theorem}[Infinite MLN world-model bridge (\claimConditional{})]
+\label{thm:infinite-mln-worldmodel}
+Let $\mu$ be a fixed-region cylinder DLR measure for an infinite classical
+MLN and let $q$ be a finite constraint query.  Then the induced WM state has
+\[
+  \mathrm{queryStrength}(\mu, q)
+  \;=\; \mu\!\bigl(\{\omega \mid \omega \text{ satisfies } q\}\bigr).
+\]
+Under the same uniform Dobrushin hypothesis as
+Theorem~\ref{thm:infinite-mln-uniqueness}, this query strength is uniquely
+determined by the MLN specification~$M$ and does not depend on the choice of
+DLR measure.%
+\footnote{Formalized as
+\code{infiniteMLN\_queryStrength\_eq\_gibbsProb} and
+\code{infiniteMLN\_queryStrength\_unique\_of\_uniform} in
+\codepath{Mettapedia/Logic/MarkovLogicInfiniteWorldModel.lean}
 (0~sorry in the current slice).}
 \end{theorem}
 
 \noindent
-So the finite and infinite cases certify different kinds of statements.
-The finite theorem says: \emph{the extracted WM strength is exactly the MLN
-marginal}.  The infinite theorem says: \emph{the local Gibbs laws extend to a
-global probability measure, and under the uniform Dobrushin condition that
-global semantics is unique}.  This is the right abstraction shift: exact
-probabilities in the finite case, well-posed Gibbs semantics in the infinite
-case.
+Together, the three infinite-case theorems establish the right abstraction
+shift: exact probabilities in the finite case, well-posed Gibbs semantics in
+the infinite case, and a clean return map from Gibbs measures back into the
+algebraic WM interface.
+
+\paragraph{The formalization chain.}
+The infinite story is certified across twelve sorry-free files in three
+layers:
+\begin{description}
+\item[Theory.]  \codepath{MarkovLogicInfiniteExistence.lean} (DLR existence
+  via compactness), \codepath{MarkovLogicInfiniteUniqueness.lean} (Dobrushin
+  uniqueness via descending-shell contraction, 6{,}758~lines).
+\item[Bridge.]  \codepath{MarkovLogicInfiniteWorldModel.lean} (Gibbs
+  $\to$ \texttt{MassSemantics} $\to$ \texttt{queryStrength}),
+  \codepath{MarkovLogicInfiniteBoundaryStability.lean} (geometric shell
+  decay), \codepath{MarkovLogicOntologyGrowth.lean} (cross-specification
+  exact invariance), \codepath{MarkovLogicIndividuation.lean} (individuated
+  subsystems and the capstone WM-stability theorem).
+\item[Examples.]  Belief line (1D chain), 2D grid (Ising lattice),
+  knowledge ladder, world of views (unidirectional, bidirectional, and
+  variable-neighborhood variants), the trust-triangle capstone, and
+  self-transcendence paths --- eight files, each reusing the same
+  pipeline.
+\end{description}
 
 \paragraph{Compatibility-gated evidence roles.}
 The more interesting result is not the identity but the
@@ -6302,7 +6407,7 @@ clause's evidence is compatible with the BN structure---if so,
 the compiled BN rewrite applies; if not, the evidence is
 quarantined.%
 \footnote{Formalized across 13 files:
-\codepath{Mettapedia/Logic/PLNMarkovLogic*.lean}
+\codepath{Mettapedia/Logic/MarkovLogic*.lean}
 (0~sorry).}
 
 \paragraph{Worked example: UW-CSE advisedBy prediction.}
@@ -6399,7 +6504,7 @@ the bottleneck in GJP forecasting
 \footnote{Formalized in
 \codepath{Mettapedia/Logic/WMUWCSEGateDemo.lean}
 (177~lines, 12~theorems, 0~sorry).  The social-smoking benchmark
-is in \codepath{Mettapedia/Logic/PLNMarkovLogicUWCSE.lean}.}
+is in \codepath{Mettapedia/Logic/MarkovLogicUWCSE.lean}.}
 
 \paragraph{Full benchmark results.}
 On the full UW-CSE dataset (5-fold leave-one-area-out), the
@@ -6447,37 +6552,504 @@ WallHumidity $\to$ MoldRisk) and a residual.  The compatibility
 gate certifies that the chain structure holds, licensing the
 compiled deduction rewrite.}
 
+\paragraph{The semantic pipeline: from specification to truth value.}
+The full chain from an infinite MLN specification to a PLN truth value
+passes through four stages.  Each stage is a single, sorry-free Lean
+definition or theorem; together they form the return map from Gibbs
+semantics back into the algebraic WM interface.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  >=Latex,
+  every node/.style={font=\small},
+  stage/.style={draw, rounded corners=4pt, minimum width=56mm,
+               minimum height=11mm, align=center},
+  arrow/.style={->, thick},
+  note/.style={font=\scriptsize, text=gray!60!black, align=left},
+]
+  \node[stage, fill=blue!8] (spec) at (0, 5.0)
+    {\texttt{ClassicalInfiniteGroundMLNSpec}\;$M$};
+  \node[stage, fill=green!8] (meas) at (0, 3.3)
+    {\texttt{ProbabilityMeasure}\;$\mu$};
+  \node[stage, fill=orange!8] (mass) at (0, 1.6)
+    {\texttt{MassSemantics}\quad
+     $\mathrm{totalMass} = 1$};
+  \node[stage, fill=yellow!12] (wm) at (0, 0)
+    {$\mathrm{queryStrength} = \mu(q)$};
+
+  \draw[arrow] (spec) -- (meas)
+    node[midway, right=10mm, note] {DLR existence};
+  \draw[arrow] (meas) -- (mass)
+    node[midway, right=10mm, note] {$\mu$ is a probability measure};
+  \draw[arrow] (mass) -- (wm)
+    node[midway, right=10mm, note]
+    {$\langle\mu(q),\;1{-}\mu(q)\rangle$};
+
+  % Uniqueness brace
+  \draw[thick, red!60!black, decorate,
+        decoration={brace, amplitude=6pt, mirror}]
+    (-3.8, -0.3) -- (-3.8, 5.3)
+    node[midway, left=10pt, font=\scriptsize, text=red!60!black, align=right]
+    {Dobrushin\\uniqueness:\\single $\mu$,\\single answer};
+\end{tikzpicture}
+\caption{The infinite MLN $\to$ WM semantic pipeline.  Each arrow is a
+  Lean definition or theorem; the left brace marks the scope of the
+  Dobrushin uniqueness guarantee.}
+\label{fig:infinite-mln-pipeline}
+\end{figure}
+
 \paragraph{Worked example: the infinite belief line.}
-The infinite MLN example
-\codepath{Mettapedia/Logic/PLNMarkovLogicInfiniteBeliefLineExample.lean}
-models an unbounded line of agents indexed by $\mathbb{N}$.  Each site has a
-soft prior clause favoring belief, and each edge carries a soft influence
-clause
+Consider an unbounded chain of agents indexed by $\mathbb{N}$, each holding a
+Boolean belief.  A soft prior clause favors belief at every site, and a soft
+influence clause
 \[
-  \mathrm{Believes}(n) \to \mathrm{Believes}(n{+}1).
+  \mathrm{Believes}(n) \;\to\; \mathrm{Believes}(n{+}1)
 \]
-The existence theorem gives a global Gibbs measure for this open-ended social
-system, while the local DLR corollary shows that resampling the neighborhood
-around site~$n$ preserves the marginal belief probability at~$n$.%
+couples each pair of adjacent agents.  (The logical direction of the implication
+does not limit the statistical interaction: at the Dobrushin level, flipping
+either agent's value shifts the other's conditional probability.)  No finite
+truncation captures the full system: cutting at~$N$ introduces an artificial
+boundary whose choice affects marginals near the cut.
+
+The infinite MLN formalization resolves this in three stages:
+\begin{enumerate}
+\item \textbf{Existence.}  A global Gibbs measure exists for the entire chain,
+  and resampling the neighborhood around site~$n$ preserves the marginal belief
+  probability at~$n$ (local DLR consistency).
+\item \textbf{Uniqueness.}  If the influence weight satisfies $|w| < 1$, the
+  Dobrushin row sum is uniformly bounded by~$|w|$, and the global measure is
+  the only one.  For example, $w = 0.4$ means each neighbor multiplies belief
+  odds by about $e^{0.4} \approx 1.49$---strong enough to matter, with total
+  incoming influence 0.4 per agent, well within the budget.
+\item \textbf{WM bridge.}  The unique Gibbs measure feeds into the pipeline of
+  Figure~\ref{fig:infinite-mln-pipeline}: the WM query strength for any finite
+  query (e.g., ``does agent~42 believe?'') is uniquely determined by the
+  specification alone.
+\end{enumerate}
+\noindent
+The corresponding negative example is equally instructive.  The original
+``triple the odds'' influence weight $w = \log 3 \approx 1.1$ exceeds the
+Dobrushin budget.  Existence still holds, but the uniqueness theorem no longer
+applies: two boundary conditions at infinity could in principle yield different
+global measures.%
 \footnote{Formalized as
-\code{exists\_beliefLine\_fixedRegionCylinderDLR} and
-\code{beliefLine\_singleAgentBelief\_fixedRegionDLR} in
-\codepath{Mettapedia/Logic/PLNMarkovLogicInfiniteBeliefLineExample.lean}.}
+\code{exists\_beliefLine\_fixedRegionCylinderDLR},
+\code{beliefLineClassicalSpec\_uniformSmallTotalInfluence},
+\code{beliefLine\_uniqueMeasure}, and
+\code{beliefLine\_wmBridge\_unique} in
+\codepath{Mettapedia/Logic/MarkovLogicInfiniteBeliefLineExample.lean}
+(0~sorry).}
+
+\paragraph{Applications: where infinite MLNs arise naturally.}
+The belief line is a proxy for any system whose relational structure has no
+natural finite boundary:
+
+\smallskip\noindent\textbf{Physical systems.}
+\begin{description}
+\item[Apartment corridors.]  Humidity in unit~$n$ raises mold risk in
+  unit~$n{+}1$.  Query: risk at apartment~42, without pretending the building
+  stops at some arbitrary wall.
+\item[2D sensor grids.]  Sensor fields, floor plans, and crop lattices
+  on $\mathbb{N}\times\mathbb{N}$.  Each interior node has four neighbours;
+  the uniqueness budget becomes $2|w|<1$.
+\item[Supply-chain cascades.]  Delay at stage~$n$ raises disruption risk at
+  stage~$n{+}1$.  Query: disruption probability at depot~50.
+\end{description}
+
+\smallskip\noindent\textbf{Social systems.}
+\begin{description}
+\item[Rumor and trust relays.]  Agent~$n$ adopting a claim nudges
+  agent~$n{+}1$.  Query: the probability that the claim reaches reviewer~100.
+\item[Worlds of views~\cite{VeitasWeinbaum2015}.]  Agents with heterogeneous
+  priors and directed trust weights.  The bidirectional variant allows mutual
+  reinforcement or skepticism, as long as the combined trust budget remains
+  uniformly subcritical.
+\item[Variable-neighborhood sense-making.]  A countable agent society with
+  finite but nonuniform local neighborhoods.  Some agents trust three peers,
+  some one, some none; uniqueness still follows whenever each agent's total
+  incoming-plus-outgoing trust budget remains uniformly below~1.
+\end{description}
+
+\smallskip\noindent\textbf{Computational / AGI systems.}
+\begin{description}
+\item[Open-ended knowledge graphs.]  New concepts keep arriving.  The theorem
+  does not require the graph to be finite in advance; it only requires that
+  each node's incoming interaction budget stay uniformly controlled.
+\item[Bounded-degree concept ladders.]  Two infinite concept tracks with local
+  inheritance and bounded cross-track bridges.
+\end{description}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  >=Latex,
+  every node/.style={font=\footnotesize},
+  site/.style={circle, draw, inner sep=1.5pt, minimum size=6mm, fill=blue!8},
+  query/.style={circle, draw, very thick, inner sep=1.5pt, minimum size=6mm,
+                fill=yellow!20},
+  edge/.style={-, thick, gray!60},
+]
+  % Grid nodes
+  \foreach \i in {0,...,4} {
+    \foreach \j in {0,...,3} {
+      \pgfmathtruncatemacro{\isquery}{ifthenelse(\i==2 && \j==1, 1, 0)}
+      \ifnum\isquery=1
+        \node[query] (n\i\j) at (1.3*\i, 1.3*\j) {\tiny $(\i,\j)$};
+      \else
+        \node[site] (n\i\j) at (1.3*\i, 1.3*\j) {};
+      \fi
+    }
+  }
+  % Horizontal edges
+  \foreach \i [evaluate=\i as \inext using int(\i+1)] in {0,...,3} {
+    \foreach \j in {0,...,3} {
+      \draw[edge] (n\i\j) -- (n\inext\j);
+    }
+  }
+  % Vertical edges
+  \foreach \i in {0,...,4} {
+    \foreach \j [evaluate=\j as \jnext using int(\j+1)] in {0,...,2} {
+      \draw[edge] (n\i\j) -- (n\i\jnext);
+    }
+  }
+  % Budget annotation
+  \node[draw, rounded corners=2pt, fill=white, font=\small] at (2.6, -0.8)
+    {Interior node: 4 neighbours $\Rightarrow$ row sum $= 2|w|$};
+  % Query annotation
+  \draw[->, thick, red!70!black] (3.8, 1.3) -- (n21)
+    node[pos=0, right, font=\small, text=red!70!black] {query};
+  % Boundary annotation
+  \draw[dashed, thick, blue!40] (-0.5, -0.4) rectangle (5.7, 4.3);
+  \node[font=\scriptsize, text=blue!50] at (5.2, 4.0) {$\to \infty$};
+\end{tikzpicture}
+\caption{The 2D grid MLN on $\mathbb{N}\times\mathbb{N}$.  Each interior
+  node (blue) has four nearest neighbours.  The yellow node marks a query
+  site; the dashed boundary recedes to infinity.  Under $2|w|<1$, the
+  query probability is uniquely determined.}
+\label{fig:grid-mln}
+\end{figure}
 
 \noindent
-This matters for modeling because many relational systems are not naturally
-finite.  Positive examples include an indefinitely long hallway of
-Maple-Court-style apartments with local leak--humidity influence, an
-open-ended trust or rumor-propagation chain, or a supply line where each site
-depends mainly on nearby sites.  The infinite MLN formalization says when such
-local log-linear laws define a \emph{global} semantics rather than merely a
-sequence of finite approximations.
+The 2D grid makes the \emph{dimensional cost} of interaction concrete.  With
+$w = 0.2$ (each neighbour multiplies odds by $e^{0.2}\approx 1.22$), the
+Dobrushin budget is $2\times 0.2 = 0.4$, safely below~$1$.  The probability
+that sensor~$(15,23)$ reads high is uniquely determined by the specification,
+regardless of boundary conditions at infinity.  But with $w = 0.6$, the budget
+$2\times 0.6 = 1.2$ exceeds the threshold---this is the regime of the
+classical 2D Ising model at low temperature, the most studied phase transition
+in all of statistical mechanics.  Existence of a Gibbs measure still holds, but
+the proved uniqueness theorem no longer applies: coexisting $+$ and $-$
+equilibria become possible.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/MarkovLogicInfiniteGridExample.lean}
+(430~lines, 0~sorry).  The proof reuses the full pipeline:
+\code{gridClassicalSpec\_uniformSmallTotalInfluence},
+\code{grid\_uniqueMeasure},
+\code{grid\_wmBridge\_unique}.}
+
+\medskip
+\noindent
+In each case the infinite MLN formalization answers the same question:
+\emph{when do local log-linear interaction laws compose into a coherent global
+semantics, rather than merely a sequence of finite approximations?}
+
+\paragraph{Open-ended ontology stability.}
+There are now two formal layers to the ontology-growth story.
+
+First, the descending-shell contraction argument yields a reusable
+same-specification stability theorem.  If a finite query region $\Delta$ sits
+inside a countably infinite knowledge graph satisfying the uniform Dobrushin
+budget $C < 1$, then disagreement between two admissible DLR completions of
+that \emph{same} specification decays geometrically with shell depth:
+\[
+  \mathrm{TV}_{\Delta}(\mu,\nu) \;\le\; |\Delta|\,C^n,
+  \qquad
+  \bigl|\Pr_{\mu}(q)-\Pr_{\nu}(q)\bigr|
+  \;\le\; 2\,|\Delta|\,C^n
+\]
+after $n$ interaction-neighborhood shells.  This is the precise formal
+content behind the slogan that an ontology may keep growing ``at infinity''
+while local query answers remain stable, provided every node's incoming
+interaction budget stays uniformly subcritical.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/MarkovLogicInfiniteBoundaryStability.lean}
+via
+\code{finiteRegionAssignmentTotalVariation\_le\_geometric\_of\_uniformSmallTotalInfluence}
+and
+\code{finiteRegionLocalQueryDiscrepancy\_le\_geometric\_of\_uniformSmallTotalInfluence}
+(0~sorry).}
 
 \noindent
-Negative example: the current uniqueness theorem does \emph{not} say that
-every infinite MLN has a unique global measure.  If the total incoming
-influence is not uniformly below~$1$, the proved theorem does not apply, and
-boundary-dependent or phase-transition-like behavior remains possible.
+Second, the cross-specification ontology-growth theorem now proves the exact
+invariance claim that motivated the section.  If two MLN specifications agree
+on every clause touching an interaction-closed region $\Gamma$ containing the
+query atoms, then adding or modifying clauses \emph{outside} that zone does
+not change the query answer at all:
+\[
+  \Pr_{M_1,\mu_1}(q) \;=\; \Pr_{M_2,\mu_2}(q).
+\]
+This is stronger than shell decay.  It says that once the local clause support
+is literally unchanged, the finite-volume Gibbs kernel on $\Gamma$ is
+identical, and the DLR equation forces exact local agreement.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/MarkovLogicOntologyGrowth.lean}
+via
+\code{agreesOnBoundarySupport\_of\_interactionClosed},
+\code{finiteVolumeQueryProb\_eq\_of\_specAgreesOnRegion},
+and
+\code{queryProb\_stable\_of\_extension\_outside}
+(0~sorry).}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  >=Latex,
+  every node/.style={font=\footnotesize},
+  old/.style={circle, draw, fill=blue!12, inner sep=2pt, minimum size=7mm},
+  new/.style={circle, draw, dashed, fill=green!12, inner sep=2pt, minimum size=7mm},
+  query/.style={circle, draw, very thick, fill=yellow!25, inner sep=2pt, minimum size=7mm},
+  oldedge/.style={-, thick, blue!40},
+  newedge/.style={-, thick, dashed, green!50!black},
+]
+  % Old spec atoms
+  \node[old] (a) at (0, 0) {$a$};
+  \node[old] (b) at (1.4, 0) {$b$};
+  \node[query] (q) at (2.8, 0) {$q$};
+  \node[old] (c) at (4.2, 0) {$c$};
+  \node[old] (d) at (5.6, 0) {$d$};
+
+  % Old edges
+  \draw[oldedge] (a) -- (b);
+  \draw[oldedge] (b) -- (q);
+  \draw[oldedge] (q) -- (c);
+  \draw[oldedge] (c) -- (d);
+
+  % Interaction-closed region
+  \draw[rounded corners=8pt, thick, blue!60]
+    (-0.6, -0.7) rectangle (6.2, 0.7);
+  \node[font=\scriptsize, text=blue!60] at (2.8, -1.0)
+    {interaction-closed region $\Gamma$};
+
+  % New atoms added outside
+  \node[new] (e) at (7.2, 0.5) {$e$};
+  \node[new] (f) at (8.4, 0) {$f$};
+  \node[new] (g) at (7.2, -0.5) {$g$};
+
+  % New edges (only among new atoms, or to d at boundary)
+  \draw[newedge] (d) -- (e);
+  \draw[newedge] (e) -- (f);
+  \draw[newedge] (f) -- (g);
+  \draw[newedge] (g) -- (e);
+
+  % Labels
+  \node[font=\scriptsize, text=green!50!black] at (7.8, -1.0)
+    {new clauses (outside $\Gamma$)};
+  \draw[->, thick, red!70!black] (2.8, 1.2) -- (q)
+    node[pos=0, above, font=\small, text=red!70!black]
+    {query: unchanged};
+\end{tikzpicture}
+\caption{Ontology growth stability.  The query node $q$ sits inside the
+  interaction-closed region $\Gamma$ (blue).  New atoms $e,f,g$ and their
+  clauses (green, dashed) are added outside $\Gamma$.  Since no new clause
+  touches $\Gamma$'s interior, the cross-specification theorem guarantees
+  the query probability is exactly preserved.}
+\label{fig:ontology-growth}
+\end{figure}
+
+\noindent
+Positive example: adding far-away schema refinements to a bounded-interaction
+knowledge graph leaves every local query exactly unchanged
+(Figure~\ref{fig:ontology-growth}).
+Negative example: if a newly added hub concept injects a clause \emph{into}
+the query region's interaction neighbourhood, exact agreement fails
+immediately; and if the total incoming budget becomes unbounded, even the
+geometric stability theorem no longer applies.
+
+\paragraph{Individuated subsystems and the capstone theorem.}
+The ontology-growth and boundary-stability results can be bundled into a
+single concept that connects to the philosophical literature on open-ended
+intelligence: an \emph{individuated subsystem}~\cite{WeinbaumVeitas2015}.
+An interaction-closed region $\Gamma$ of an infinite MLN has three formal
+properties that together constitute a rigorous analogue of
+Simondon--Weinbaum individuation:
+\begin{enumerate}
+\item \textbf{Query stability.}  Any query supported on $\Gamma$ has
+  answer-discrepancy that decays geometrically with shell depth:
+  $|\Pr_\mu(q) - \Pr_\nu(q)| \le 2|\Gamma|C^n$.
+\item \textbf{Ontology robustness.}  Adding clauses outside $\Gamma$ does
+  not change the subsystem's query answers --- exactly, not approximately.
+\item \textbf{WM bridge uniqueness.}  The subsystem's truth values
+  ($\mathrm{queryStrength} = \mu(q)$) are specification-determined under
+  the Dobrushin budget.
+\end{enumerate}
+Together these say: an individuated subsystem has a \emph{stable identity}
+(its query answers) that \emph{persists under perturbation} (ontology growth)
+and is \emph{uniquely determined} (Dobrushin uniqueness).
+
+The capstone theorem makes the WM punchline fully explicit:
+
+\begin{theorem}[WM truth-value stability under ontology extension (\claimConditional{})]
+\label{thm:wm-ontology-stability}
+Let $\Gamma$ be an individuated subsystem (interaction-closed, nonempty) of two
+infinite MLN specifications $M_1, M_2$ that agree on all clauses touching
+$\Gamma$ and both satisfy the uniform Dobrushin budget.  Then for every
+query $q$ supported on $\Gamma$:
+\[
+  \mathrm{queryStrength}_{M_1}(q) \;=\; \mathrm{queryStrength}_{M_2}(q).
+\]
+In particular, adding or modifying clauses outside the protected core does not
+change the WM truth value of any query inside it.%
+\footnote{Formalized as
+\code{wmStrength\_stable\_under\_extension} in
+\codepath{Mettapedia/Logic/MarkovLogicIndividuation.lean}
+(0~sorry).  The proof composes ontology-growth invariance with the
+\texttt{MassState.queryStrength\_singleton\_eq\_queryProb} bridge.}
+\end{theorem}
+
+\noindent
+This is the formal content behind the ``open-ended intelligence''
+desideratum of Weinbaum and Veitas~\cite{WeinbaumVeitas2015}: a system that
+keeps generating new structure without collapsing the coherence of existing
+knowledge.  The Dobrushin budget is the quantitative price of coherence;
+the individuated subsystem is its formal manifestation; and the capstone
+theorem says that the price is paid at the level of WM truth values, not just
+raw probabilities.
+
+The formalization captures the \emph{static criterion} for individuation ---
+when a subsystem IS individuated --- but does not yet formalize the
+\emph{process} by which a subsystem emerges (dynamic individuation), which
+remains a future direction.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/MarkovLogicIndividuation.lean}
+via \code{IndividuatedSubsystem}, \code{queryDiscrepancy\_le\_geometric},
+\code{queryProb\_invariant\_under\_extension},
+\code{wmQueryStrength\_unique}, and the capstone
+\code{wmStrength\_stable\_under\_extension} (0~sorry).}
+
+\paragraph{Worked capstone: a protected trust triangle.}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  >=Latex,
+  every node/.style={font=\footnotesize},
+  agent/.style={circle, draw, fill=blue!15, inner sep=2pt, minimum size=9mm,
+                font=\small\bfseries},
+  chain/.style={circle, draw, fill=gray!10, inner sep=2pt, minimum size=7mm},
+  trust/.style={-, very thick, blue!60},
+  chainedge/.style={-, thick, gray!40},
+  querylabel/.style={font=\small, text=red!70!black},
+]
+  % Trust triangle
+  \node[agent] (a0) at (0, 0) {0};
+  \node[agent] (a1) at (2, 0) {1};
+  \node[agent] (a2) at (1, 1.6) {2};
+
+  \draw[trust] (a0) -- (a1) node[midway, below, font=\scriptsize] {$w_t$};
+  \draw[trust] (a1) -- (a2) node[midway, right, font=\scriptsize] {$w_t$};
+  \draw[trust] (a2) -- (a0) node[midway, left, font=\scriptsize] {$w_t$};
+
+  % Interaction-closed boundary
+  \draw[rounded corners=12pt, thick, blue!50, dashed]
+    (-0.7, -0.6) rectangle (2.7, 2.2);
+  \node[font=\scriptsize, text=blue!50] at (1, -0.9)
+    {interaction-closed core $\Gamma$};
+
+  % Chain (disconnected)
+  \node[chain] (c3) at (4.5, 0.8) {3};
+  \node[chain] (c4) at (5.7, 0.8) {4};
+  \node[chain] (c5) at (6.9, 0.8) {5};
+  \node[font=\scriptsize, text=gray] at (7.8, 0.8) {$\cdots$};
+
+  \draw[chainedge] (c3) -- (c4) node[midway, above, font=\scriptsize] {$w_c$};
+  \draw[chainedge] (c4) -- (c5) node[midway, above, font=\scriptsize] {$w_c$};
+
+  % No connection between triangle and chain
+  \node[font=\scriptsize, text=red!60, align=center] at (3.5, 1.8)
+    {no clause\\crosses};
+
+  % Query arrow
+  \draw[->, thick, red!70!black] (2.0, -0.9) -- (a1)
+    node[pos=0, below, querylabel] {query $q$};
+
+  % Spec labels
+  \node[draw, rounded corners=3pt, fill=green!8, font=\scriptsize,
+        align=center] at (5.7, -0.3)
+    {$M_1$: $w_c = 0.15$\\$M_2$: $w_c = 0.3$};
+\end{tikzpicture}
+\caption{The trust triangle.  Agents $\{0,1,2\}$ form an interaction-closed
+  core (blue, dashed boundary).  An infinite chain $\{3,4,5,\ldots\}$ operates
+  independently --- no clause crosses the boundary.  Specifications $M_1$ and
+  $M_2$ share the triangle weight $w_t$ but differ on the chain weight $w_c$.
+  Theorem: $\mathrm{queryStrength}_{M_1}(q) = \mathrm{queryStrength}_{M_2}(q)$.}
+\label{fig:trust-triangle}
+\end{figure}
+
+\noindent
+The generic theorem above is now instantiated by a concrete Lean example.
+Let $\Gamma = \{0,1,2\}$ be a trust triangle with internal weight $w_t$.
+Outside the triangle sits an infinite trust chain, with chain weight $w_{c1}$
+under specification $M_1$ and $w_{c2}$ under specification $M_2$.  The two
+specifications agree exactly on the triangle and may differ arbitrarily on the
+tail.  Let $q$ be the query ``does agent~1 endorse the claim?''  Then, under
+$|w_t|<\tfrac12$, $|w_{c1}|<\tfrac12$, and $|w_{c2}|<\tfrac12$:
+\begin{enumerate}
+\item Both $M_1$ and $M_2$ admit DLR measures (existence).
+\item Both satisfy the Dobrushin budget (uniform contraction).
+\item The DLR measures are unique for each spec (uniqueness).
+\item The WM query strength of $q$ is $\mu_1(q)$ for $M_1$ and $\mu_2(q)$
+  for $M_2$ (bridge).
+\item Since $M_1$ and $M_2$ agree on $\Gamma$ and $\Gamma$ is
+  interaction-closed, Theorem~\ref{thm:wm-ontology-stability} gives
+  $\mathrm{queryStrength}_{M_1}(q) = \mathrm{queryStrength}_{M_2}(q)$.
+\end{enumerate}
+The distant new agents do not change agent~1's truth value.  This is the
+formal content of
+\code{trust\_triangle\_wmStrength\_stable} in
+\codepath{Mettapedia/Logic/MarkovLogicTrustTriangleExample.lean}.
+The threshold $\tfrac12$ is not cosmetic: in this directed trust model each
+agent pays for both incoming and outgoing local influence, so the honest row
+budget is $2|w|$, not $|w|$.  Positive example: with $w_t = 0.2$ and
+$w_{c1}=w_{c2}=0.15$, the theorem applies.  Negative example: with
+$w_t = 0.7$, the local triangle alone already lies outside the proved
+uniqueness regime.
+
+\paragraph{Self-transcendence as preserved identity under growth.}
+The next step is no longer a single extension but a whole path of coherent
+extensions.  A \emph{transcendence step} grows a specification while preserving
+an old protected core.  A \emph{transcendence path} is a finite chain of such
+steps together with a coherence condition saying that every later protected
+core still contains the original one.  Under that hypothesis, the theorem
+\code{TranscendencePath.original\_queries\_stable} proves that any query on the
+\emph{original} core has exactly the same WM truth value at the end of the
+path as it had at the start.  This is the formal analogue of static
+self-transcendence in the Weinbaum--Veitas sense: the system may keep growing,
+but its earlier identity is preserved rather than overwritten.  Positive
+example: a community adds new collaborators and new topics while leaving its
+founding trust core semantically intact.  Negative example: if a later growth
+step rewrites clauses inside the original core, or if the path is not coherent,
+exact preservation is no longer guaranteed by the theorem.%
+\footnote{Formalized in
+\codepath{Mettapedia/Logic/MarkovLogicSelfTranscendence.lean}
+via \code{TranscendenceStep.old\_queries\_preserved} and
+\code{TranscendencePath.original\_queries\_stable} (0~sorry).}
+
+\paragraph{What the theorem does not say.}
+The uniqueness result is genuinely conditional, and the boundary of its
+applicability is mathematically sharp.  If the total incoming Dobrushin
+influence is not uniformly bounded below~$1$---for instance, if clause weights
+grow without bound as new atoms are added---the proved theorem does not apply.
+In statistical mechanics this is the regime of \emph{phase transitions}: the
+Ising model at low temperature admits coexisting $+$ and $-$ Gibbs measures
+with distinct singleton marginals, and no contraction argument can rule them
+out.  The WM bridge still operates for each measure individually, but different
+measures yield different query strengths.
+
+Making this boundary explicit is a feature of the formalization, not a
+limitation.  It tells the modeler exactly what interaction-strength budget
+is available before the semantics becomes ambiguous---and it tells the
+theorist exactly where the next theorem needs to begin.
 
 
 %% ═══════════════════════════════════════════════════════════════
@@ -6489,6 +7061,20 @@ ProbLog~\cite{DeRaedt2007ProbLog} annotates Prolog clauses with
 probabilities.  The distribution semantics assigns each query a
 probability by summing over explanations (sets of probabilistic
 facts that entail the query).
+
+\paragraph{What ProbMeTTa is.}
+For new readers, it helps to separate three layers.  \emph{ProbLog} is the
+source language and its distribution semantics.  \emph{ProbMeTTa} is the
+MeTTa implementation that compiles ProbLog-style goals to BDDs and evaluates
+them by weighted model counting.  \emph{WM-PLN} is the target evidence
+calculus: it recovers the same query probability, while also tracking
+confidence, forgetting, revision, and provenance.  So the formal story is not
+``WM-PLN replaces ProbLog'' but rather ``ProbLog semantics, ProbMeTTa
+execution, and WM-PLN evidence semantics are now tied together by proved bridge
+theorems.''  In the alarm example below, the same question
+``does the alarm sound?'' appears as a ProbLog query, as a ProbMeTTa
+BDD-WMC computation, and as a WM-PLN evidence state whose strength is the
+same probability but whose confidence can still be revised.
 
 \begin{theorem}[ProbLog probability = WM strength (\claimConditional{})]
 \label{thm:problog-wm-strength}
@@ -6519,12 +7105,17 @@ weights (used in the WM proof) to the assignment-indexed weights
 (used in BDD compilation).  A concrete revision example
 demonstrates the ``beyond ProbLog'' value: combining two
 independent sensor sources via $\hplus$ produces correctly
-weighted evidence with increasing confidence.%
+weighted evidence with increasing confidence.  The ground crown theorem is
+\code{problog\_full\_ground\_equivalence}; the first-order structured crown
+theorem is \code{surface\_equivalence\_of\_structured}; and the
+``beyond ProbLog'' WM behavior is demonstrated by
+\code{revision\_example} and \code{revision\_confidence\_increases}.%
 \footnote{Formalized in
+\codepath{Mettapedia/Logic/BDD/ProbMeTTaBridge.lean},
+\codepath{Mettapedia/Logic/BDD/FirstOrderADTranslation.lean}, and
 \codepath{Mettapedia/Logic/BDD/WMPLNBridge.lean}
-(4~theorems, 0~sorry).  The full BDD compilation chain
-(5,148~lines across 13~files, 0~sorry) is in
-\codepath{Mettapedia/Logic/BDD/}.}
+(all 0~sorry in the current slice).  The full BDD compilation chain
+is in \codepath{Mettapedia/Logic/BDD/}.}
 
 \begin{figure}[htbp]
 \centering
@@ -6588,13 +7179,15 @@ The WM calculus adds two things:
 \end{itemize}
 
 \paragraph{Status.}
-The ProbLog--WM bridge is under active investigation.
-Score-level parity between ProbLog's \code{prob\_lift/2} and
-the WM noisy-OR scorer has been verified on a chr16 GWAS
-gene-relevance benchmark (823 examples, 5-fold CV,
-max~$|\mathrm{ProbLog} - \mathrm{WM}| < 10^{-10}$).  A full
-native WM-PLN genomics pipeline---replacing ProbLog's inference
-engine entirely---is future work.
+The core semantic chain is now complete: ProbLog distribution semantics,
+ProbMeTTa's BDD-WMC execution, and WM-PLN query strength are connected by
+kernel-checked theorems, and the first-order structured/AD surface is included
+in the proved story.  What remains is not the semantics but the broader
+application pipeline.  Score-level parity between ProbLog's
+\code{prob\_lift/2} and the WM noisy-OR scorer has been verified on a chr16
+GWAS gene-relevance benchmark (823 examples, 5-fold CV,
+max~$|\mathrm{ProbLog} - \mathrm{WM}| < 10^{-10}$), while a full native
+WM-PLN genomics workflow remains future engineering work.
 
 
 %% ═══════════════════════════════════════════════════════════════
@@ -8731,16 +9324,20 @@ D1--D8 & The eight desiderata (Chapter~\ref{ch:desiderata}) \\
 \label{app:theorem-map}
 
 The following table lists the Lean~4 files directly referenced in
-this book, with exact theorem counts from the current codebase
-(Lean~4.28.0, Mathlib~v4.28.0).  All files have 0~sorry.
+this book, with current line and theorem counts from the codebase
+(Lean~4.28.0, Mathlib~v4.28.0).  A tilde marks rows or totals that are
+intentionally approximate because those files are still moving quickly.
+All files listed here have 0~sorry.
 
-\begin{longtable}{@{}p{0.42\textwidth}rrp{0.25\textwidth}@{}}
+{\footnotesize
+\renewcommand{\code}[1]{\path{#1}}
+\begin{longtable}{@{}p{0.44\textwidth}rrp{0.21\textwidth}@{}}
 \toprule
-File & Lines & Thm & Backs \\
+Path & Lines & Thms & Book refs \\
 \midrule
 \endfirsthead
 \toprule
-File & Lines & Thm & Backs \\
+Path & Lines & Thms & Book refs \\
 \midrule
 \endhead
 \multicolumn{4}{@{}l}{\emph{Foundations (Part~II)}} \\
@@ -8766,10 +9363,21 @@ File & Lines & Thm & Backs \\
 \midrule
 \multicolumn{4}{@{}l}{\emph{Bridge Files (Part~V)}} \\
 \midrule
-\code{Logic/PLNMarkovLogicWorldModel} & 44 & 2 & Ch~16 \\
-\code{Logic/PLNMarkovLogicInfiniteExistence} & 146 & 3 & Ch~16 \\
-\code{Logic/PLNMarkovLogicInfiniteUniqueness} & 6758 & 236 & Ch~16 \\
-\code{Logic/PLNMarkovLogicInfiniteBeliefLineExample} & 241 & 6 & Ch~16 \\
+\code{Logic/MarkovLogicWorldModel} & 44 & 2 & Ch~16 \\
+\code{Logic/MarkovLogicInfiniteExistence} & 146 & 3 & Ch~16 \\
+\code{Logic/MarkovLogicInfiniteBoundaryStability} & 139 & 4 & Ch~16 \\
+\code{Logic/MarkovLogicOntologyGrowth} & 386 & 7 & Ch~16 \\
+\code{Logic/MarkovLogicIndividuation} & 286 & 6 & Ch~16 \\
+\code{Logic/MarkovLogicTrustTriangleExample} & 353 & 11 & Ch~16 \\
+\code{Logic/MarkovLogicSelfTranscendence} & 308 & 5 & Ch~16 \\
+\code{Logic/MarkovLogicInfiniteUniqueness} & 6768 & 233 & Ch~16 \\
+\code{Logic/MarkovLogicInfiniteBeliefLineExample} & 359 & 9 & Ch~16 \\
+\code{Logic/MarkovLogicInfiniteBidirectionalWorldOfViews} & 378 & 12 & Ch~16 \\
+\code{Logic/MarkovLogicInfiniteBoundedGraphExample} & 322 & 13 & Ch~16 \\
+\code{Logic/MarkovLogicInfiniteGridExample} & 430 & 13 & Ch~16 \\
+\code{Logic/MarkovLogicInfiniteVariableNeighborhoodWorldOfViews} & 369 & 6 & Ch~16 \\
+\code{Logic/MarkovLogicInfiniteWorldOfViews} & 187 & 5 & Ch~16 \\
+\code{Logic/MarkovLogicInfiniteWorldModel} & 177 & 2 & Ch~16 \\
 \midrule
 \multicolumn{4}{@{}l}{\emph{Applications (Part~VI)}} \\
 \midrule
@@ -8793,9 +9401,10 @@ File & Lines & Thm & Backs \\
 \code{Logic/BooleanHeytingBridge} & $\sim$100 & 4 & Ch~4 \\
 \code{Logic/AIOutcomesDemo} & 280 & 13 & Ch~24 \\
 \midrule
-\textbf{Total (book-referenced files)} & \textbf{$\sim$18,900} & \textbf{951} & \\
+\textbf{Total (book-referenced files)} & \textbf{$\sim$19,000+} & \textbf{$\sim$950} & \\
 \bottomrule
 \end{longtable}
+}
 
 \noindent
 Additional project files (Datalog formalization, rho-calculus,
@@ -8882,8 +9491,8 @@ condition holds.
 \paragraph{5.\ Sleep $=$ Wake via \code{List.foldl\_append}.}
 The Kalman sleep consolidation theorem shows that batch replay
 of deferred observations yields the same posterior as sequential
-online filtering.  The key step:
-\code{List.foldl\_append} rewrites
+online filtering.  The key lemma,
+\code{List.foldl\_append}, rewrites
 $\mathtt{foldl}\;f\;a\;(l_1 \mathbin{+\!+} l_2)$ to
 $\mathtt{foldl}\;f\;(\mathtt{foldl}\;f\;a\;l_1)\;l_2$.
 The same algebraic trick appears in the gas sensor, NAB
@@ -8897,7 +9506,7 @@ anomaly, steel fault, and GJP forecast demos.
 The eight desiderata of Chapter~\ref{ch:desiderata} are
 formally discharged as follows:
 
-\begin{longtable}{@{}p{0.09\textwidth}p{0.20\textwidth}p{0.32\textwidth}p{0.28\textwidth}@{}}
+\begin{longtable}{@{}p{0.09\textwidth}p{0.20\textwidth}p{0.36\textwidth}p{0.24\textwidth}@{}}
 \toprule
  & Desideratum & Formal discharge & Key location \\
 \midrule

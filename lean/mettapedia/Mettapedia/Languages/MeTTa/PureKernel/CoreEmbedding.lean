@@ -57,7 +57,7 @@ private def betaPiRule : RewriteRule :=
   { name := "BetaPi",
     typeContext := [("body", .base "Tm"), ("a", .base "Tm")],
     premises := [],
-    left := .apply "App" [.apply "Lam" [.lambda (.fvar "body")], .fvar "a"],
+    left := .apply "App" [.apply "Lam" [.lambda none (.fvar "body")], .fvar "a"],
     right := .subst (.fvar "body") (.fvar "a") }
 
 private def betaSigmaFstRule : RewriteRule :=

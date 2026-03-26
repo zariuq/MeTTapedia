@@ -50,11 +50,11 @@ import Mettapedia.Logic.PLNUntrustedOracleAdapterRegression
 import Mettapedia.Logic.PLNTopologyCPTNoGo
 import Mettapedia.Logic.PLNVarianceChainNoGo
 import Mettapedia.Logic.PLNHigherOrderNoGoBridge
-import Mettapedia.Logic.PLNMarkovLogicRegression
-import Mettapedia.Logic.PLNMarkovLogicClauseSemantics
-import Mettapedia.Logic.PLNMarkovLogicClauseFactorGraph
-import Mettapedia.Logic.PLNMarkovLogicClauseWorldModel
-import Mettapedia.Logic.PLNMarkovLogicClauseRegression
+import Mettapedia.Logic.MarkovLogicRegression
+import Mettapedia.Logic.MarkovLogicClauseSemantics
+import Mettapedia.Logic.MarkovLogicClauseFactorGraph
+import Mettapedia.Logic.MarkovLogicClauseWorldModel
+import Mettapedia.Logic.MarkovLogicClauseRegression
 import Mettapedia.Logic.SoundnessCompleteness
 import Mettapedia.Logic.PLNErrorMagnificationGrounding
 import Mettapedia.Logic.PLNCanonicalAPI
@@ -176,12 +176,12 @@ This module is a curated import surface for the currently theorem-complete PLN s
 - Clause-native MLN subsumption (primary MLN result): grounded clause semantics,
   clause-scope factor-graph compilation, ValuationWorldModel bridge, and
   `queryStrength = queryProb` with three regression canaries (3/4, 3/5, 0)
-  (`PLNMarkovLogicClause*`, canonical aliases in `PLNCanonicalAPI`)
+  (`MarkovLogicClause*`, canonical aliases in `PLNCanonicalAPI`)
 - Abstract infinite-first MLN semantics over countable worlds (supporting infrastructure),
   with finite-support restriction, extensional factor-graph specialization, and
   abstract MassState WM bridge
-  (`PLNMarkovLogic{Abstract,Countable,FiniteRestriction,FactorGraph,BinaryWorldModel}`,
-  regression canary in `PLNMarkovLogicRegression`)
+  (`MarkovLogic{Abstract,Countable,FiniteRestriction,FactorGraph,BinaryWorldModel}`,
+  regression canary in `MarkovLogicRegression`)
 - Additive multiset WM singleton-surface classification / uniqueness
   (`SufficientStatisticSurface`)
 - Forgetting layer with scope invariance and scoped no-go for exact inverse forgetting

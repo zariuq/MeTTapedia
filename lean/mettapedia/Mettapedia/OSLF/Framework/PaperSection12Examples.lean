@@ -43,8 +43,8 @@ def raceBody2 : Pattern := .apply "PDrop" [.apply "NQuote" [.bvar 0]]
 /-- Bag with one output and two competing inputs on the same channel. -/
 def raceElems : List Pattern :=
   [ .apply "POutput" [raceChan, racePayload]
-  , .apply "PInput" [raceChan, .lambda raceBody1]
-  , .apply "PInput" [raceChan, .lambda raceBody2]
+  , .apply "PInput" [raceChan, .lambda none raceBody1]
+  , .apply "PInput" [raceChan, .lambda none raceBody2]
   ]
 
 /-- Packed pattern for the race bag. -/
@@ -85,7 +85,7 @@ def pzero : Pattern := .apply "PZero" []
 def secrecyAgent : Pattern :=
   .collection .hashBag [
     .apply "POutput" [secretChan, pzero],
-    .apply "PInput" [secretChan, .lambda (.bvar 0)]
+    .apply "PInput" [secretChan, .lambda none (.bvar 0)]
   ] none
 
 /-- Environment that does not mention the private channel. -/
