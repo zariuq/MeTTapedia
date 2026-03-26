@@ -1,6 +1,10 @@
 import Algorithms.MeTTa.Simple.Session
 import Algorithms.MeTTa.Simple.Backend.SessionReference
 
+/-! QUARANTINED: FastPathEq/AgreementOn transport layer.
+hAgreeRaw was confirmed false (truth audit 2026-03-17).
+Pointwise FastPathEq is honest but uninhabited — no theorem instantiates it. -/
+
 namespace Algorithms.MeTTa.Simple.Backend.SessionRefinement
 
 open MeTTailCore.MeTTaIL.Syntax

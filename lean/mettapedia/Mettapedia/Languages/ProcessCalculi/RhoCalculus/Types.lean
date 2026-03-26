@@ -54,11 +54,11 @@ open Mettapedia.OSLF.MeTTaIL.Semantics
 
 /-- The process object in the ρ-calculus -/
 def ProcObj : InterpObj rhoCalc :=
-  ⟨"Proc", by simp [rhoCalc]⟩
+  ⟨"Proc", by decide⟩
 
 /-- The name object in the ρ-calculus -/
 def NameObj : InterpObj rhoCalc :=
-  ⟨"Name", by simp [rhoCalc]⟩
+  ⟨"Name", by decide⟩
 
 /-! ## Name Predicates (Namespaces)
 

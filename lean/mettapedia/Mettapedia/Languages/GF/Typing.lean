@@ -24,7 +24,7 @@ AbstractNode →[gfNodeCategory]→ String (sort)
 - TypeSynthesis.lean: langOSLF, langNativeType, NativeTypeOf
 -/
 
-import Mettapedia.Languages.GF.OSLFBridge
+import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 
 namespace Mettapedia.Languages.GF.Typing
 

@@ -1,4 +1,4 @@
-import Algorithms.MeTTa.PeTTa.Lowering
+import Algorithms.MeTTa.PeTTa.LegacySessionBridge
 import Algorithms.MeTTa.ProfileChecksum
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
 import Mettapedia.OSLF.MeTTaIL.Engine
@@ -43,6 +43,12 @@ abbrev SRewriteRule := Mettapedia.OSLF.MeTTaIL.Syntax.RewriteRule
 abbrev CCongruenceCollection := MeTTailCore.MeTTaIL.Syntax.CongruenceCollection
 abbrev CLanguageDef := MeTTailCore.MeTTaIL.Syntax.LanguageDef
 abbrev SLanguageDef := Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef
+
+private def coreToSpecTypeDecl (typeName : String) : Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl :=
+  Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl.plain typeName
+
+private def specToCoreTypeName (typeDecl : Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl) : String :=
+  typeDecl.name
 
 private def coreToSpecCollType : CCollType → SCollType
   | .vec => .vec
@@ -137,6 +143,7 @@ private def specToCorePremise : SPremise → CPremise
   | .freshness fc => .freshness (specToCoreFreshness fc)
   | .congruence a b => .congruence (specToCorePattern a) (specToCorePattern b)
   | .relationQuery rel args => .relationQuery rel (args.map specToCorePattern)
+  | .forAll _ _ body => specToCorePremise body
 
 private def coreToSpecEquation (eqn : CEquation) : SEquation :=
   { name := eqn.name
@@ -168,7 +175,7 @@ private def specToCoreRewriteRule (r : SRewriteRule) : CRewriteRule :=
 
 private def coreToSpecLanguage (lang : CLanguageDef) : SLanguageDef :=
   { name := lang.name
-    types := lang.types
+    types := lang.types.map coreToSpecTypeDecl
     terms := lang.terms.map coreToSpecGrammarRule
     equations := lang.equations.map coreToSpecEquation
     rewrites := lang.rewrites.map coreToSpecRewriteRule
@@ -176,7 +183,7 @@ private def coreToSpecLanguage (lang : CLanguageDef) : SLanguageDef :=
 
 private def specToCoreLanguage (lang : SLanguageDef) : CLanguageDef :=
   { name := lang.name
-    types := lang.types
+    types := lang.types.map specToCoreTypeName
     terms := lang.terms.map specToCoreGrammarRule
     equations := lang.equations.map specToCoreEquation
     rewrites := lang.rewrites.map specToCoreRewriteRule

@@ -1,6 +1,6 @@
 import Mettapedia.Languages.GF.HandCrafted.Core
 import Mettapedia.Languages.GF.HandCrafted.Abstract
-import Mettapedia.Languages.GF.OSLFBridge
+import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 import Mettapedia.Languages.GF.Typing
 import Mettapedia.Languages.GF.LinguisticInvariance
 import Mettapedia.Logic.PLNWorldModel

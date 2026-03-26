@@ -41,7 +41,11 @@ def mk? (L : LanguageDef) (name : String) : Option (InterpObj L) :=
 
 /-- The first type is the "process" type by convention -/
 def procType (L : LanguageDef) (h : L.types ≠ []) : InterpObj L :=
-  ⟨L.types.head h, List.head_mem h⟩
+  let d := L.types.head h
+  let hmem : d.name ∈ L.types := by
+    show d.name ∈ L.types.map (·.name)
+    exact List.mem_map.mpr ⟨d, List.head_mem h, rfl⟩
+  ⟨d.name, hmem⟩
 
 end InterpObj
 
@@ -104,7 +108,7 @@ theorem rhoCalc_has_two_types : rhoCalc.types.length = 2 := by
 /-- The process type in ρ-calculus is "Proc" -/
 theorem rhoCalc_proc_type :
     (InterpObj.procType rhoCalc rhoCalc_wellFormed.hasTypes).name = "Proc" := by
-  simp [InterpObj.procType, rhoCalc]
+  simp [InterpObj.procType, rhoCalc, TypeDecl.plain]
 
 /-- The ρ-calculus has 6 constructors -/
 theorem rhoCalc_has_six_constructors : rhoCalc.terms.length = 6 := by

@@ -319,19 +319,19 @@ private def paramCategory : TermParam → String
 
 /-- Find the state constructor (category == first type in lang.types). -/
 private def findStateRule (lang : LanguageDef) : Option GrammarRule :=
-  match lang.types with
+  match LanguageDef.typeNames lang with
   | stateType :: _ => lang.terms.find? (·.category == stateType)
   | _ => none
 
 /-- Find all instruction-category constructors. -/
 private def findInstrRules (lang : LanguageDef) : List GrammarRule :=
-  match lang.types with
+  match LanguageDef.typeNames lang with
   | _ :: instrType :: _ => lang.terms.filter (·.category == instrType)
   | _ => []
 
 /-- Type names for state, instr, atom from lang.types. -/
 private def langTypeNames (lang : LanguageDef) : String × String × String :=
-  match lang.types with
+  match LanguageDef.typeNames lang with
   | st :: instr :: atom :: _ => (st, instr, atom)
   | st :: instr :: _ => (st, instr, "Atom")
   | st :: _ => (st, "Instr", "Atom")

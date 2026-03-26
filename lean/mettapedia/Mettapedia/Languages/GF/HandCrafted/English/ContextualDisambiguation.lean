@@ -1,5 +1,5 @@
 import Mettapedia.Languages.GF.HandCrafted.English.Examples
-import Mettapedia.Languages.GF.OSLFBridge
+import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 import Mettapedia.Languages.GF.Typing
 import Mettapedia.Languages.GF.LinguisticInvariance
 import Mettapedia.Languages.GF.WorldModelSemantics

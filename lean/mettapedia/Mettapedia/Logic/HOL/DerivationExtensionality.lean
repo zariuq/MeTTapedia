@@ -151,6 +151,99 @@ abbrev Theorem (Const : Ty Base → Type v) (φ : ClosedFormula Const) : Prop :=
         (Mettapedia.Logic.HOL.mapConst f) := by
   simp [weakenHyps, List.map_map, Function.comp, Mettapedia.Logic.HOL.mapConst_weaken]
 
+@[simp] theorem rename_weaken
+    {Γ' : Ctx Base}
+    (ρ : Rename Base Γ Γ')
+    (t : Term Const Γ τ) :
+    Mettapedia.Logic.HOL.rename
+        (Rename.lift (Base := Base) (σ := σ) ρ)
+        (weaken (Base := Base) (Const := Const) (σ := σ) t) =
+      weaken (Base := Base) (Const := Const) (σ := σ)
+        (Mettapedia.Logic.HOL.rename ρ t) := by
+  calc
+    Mettapedia.Logic.HOL.rename
+        (Rename.lift (Base := Base) (σ := σ) ρ)
+        (weaken (Base := Base) (Const := Const) (σ := σ) t) =
+      Mettapedia.Logic.HOL.rename
+        (fun {τ} v =>
+          Rename.lift (Base := Base) (σ := σ) ρ
+            (Rename.weaken (Base := Base) (Γ := Γ) (σ := σ) v))
+        t := by
+          simp [weaken, rename_comp]
+    _ =
+      Mettapedia.Logic.HOL.rename
+        (fun {τ} v =>
+          Rename.weaken (Base := Base) (Γ := Γ') (σ := σ) (ρ v))
+        t := by
+          apply rename_ext
+          intro τ v
+          rfl
+    _ =
+      weaken (Base := Base) (Const := Const) (σ := σ)
+        (Mettapedia.Logic.HOL.rename ρ t) := by
+          symm
+          simp [weaken, rename_comp]
+
+@[simp] theorem rename_weakenHyps
+    {Γ' : Ctx Base}
+    (ρ : Rename Base Γ Γ')
+    (Δ : List (Formula Const Γ)) :
+    weakenHyps
+        (Base := Base)
+        (Const := Const)
+        (σ := σ)
+        (Δ.map (Mettapedia.Logic.HOL.rename ρ)) =
+      (weakenHyps (Base := Base) (Const := Const) (σ := σ) Δ).map
+        (Mettapedia.Logic.HOL.rename (Rename.lift (Base := Base) (σ := σ) ρ)) := by
+  simp [weakenHyps, List.map_map, Function.comp, rename_weaken]
+
+@[simp] theorem rename_instantiate
+    {Γ' : Ctx Base}
+    (ρ : Rename Base Γ Γ')
+    (t : Term Const Γ σ) (u : Term Const (σ :: Γ) τ) :
+    Mettapedia.Logic.HOL.rename ρ (instantiate (Base := Base) t u) =
+      instantiate (Base := Base)
+        (Mettapedia.Logic.HOL.rename ρ t)
+        (Mettapedia.Logic.HOL.rename
+          (Rename.lift (Base := Base) (σ := σ) ρ) u) := by
+  unfold instantiate
+  calc
+    Mettapedia.Logic.HOL.rename ρ
+        (subst (Subst.single (Base := Base) (Const := Const) t) u) =
+      subst
+        (fun {τ} v =>
+          Mettapedia.Logic.HOL.rename ρ
+            ((Subst.single (Base := Base) (Const := Const) t) v))
+        u := by
+          exact rename_subst (Base := Base) (Const := Const)
+            (ρ := ρ)
+            (σs := Subst.single (Base := Base) (Const := Const) t)
+            (t := u)
+    _ =
+      subst
+        (fun {τ} v =>
+          (Subst.single (Base := Base) (Const := Const)
+            (Mettapedia.Logic.HOL.rename ρ t))
+            ((Rename.lift (Base := Base) (σ := σ) ρ) v))
+        u := by
+          apply subst_ext
+          intro τ v
+          cases v with
+          | vz => rfl
+          | vs v => rfl
+    _ =
+      subst
+        (Subst.single (Base := Base) (Const := Const)
+          (Mettapedia.Logic.HOL.rename ρ t))
+        (Mettapedia.Logic.HOL.rename
+          (Rename.lift (Base := Base) (σ := σ) ρ) u) := by
+          symm
+          exact subst_rename (Base := Base) (Const := Const)
+            (σs := Subst.single (Base := Base) (Const := Const)
+              (Mettapedia.Logic.HOL.rename ρ t))
+            (ρ := Rename.lift (Base := Base) (σ := σ) ρ)
+            (t := u)
+
 def ofBase {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ : Formula Const Γ} :
     Derivation Const Δ φ → ExtDerivation Const Δ φ
   | .hyp h => .hyp h
@@ -260,6 +353,106 @@ theorem mapConst
   | eta g =>
       simpa [Mettapedia.Logic.HOL.mapConst, Mettapedia.Logic.HOL.mapConst_weaken] using
         (.eta (Mettapedia.Logic.HOL.mapConst f g))
+
+theorem rename
+    {Γ' : Ctx Base}
+    (ρ : Rename Base Γ Γ') :
+    ExtDerivation Const Δ φ →
+      ExtDerivation Const
+        (Δ.map (Mettapedia.Logic.HOL.rename ρ))
+        (Mettapedia.Logic.HOL.rename ρ φ) := by
+  intro d
+  induction d generalizing Γ' with
+  | hyp hmem =>
+      exact .hyp (List.mem_map.mpr ⟨_, hmem, rfl⟩)
+  | topI =>
+      exact .topI
+  | botE h ih =>
+      exact .botE (ih ρ)
+  | andI hφ hψ ihφ ihψ =>
+      exact .andI (ihφ ρ) (ihψ ρ)
+  | andEL h ih =>
+      exact .andEL (ih ρ)
+  | andER h ih =>
+      exact .andER (ih ρ)
+  | orIL h ih =>
+      exact .orIL (ih ρ)
+  | orIR h ih =>
+      exact .orIR (ih ρ)
+  | orE hor hφ hψ ihor ihφ ihψ =>
+      refine .orE (ihor ρ) ?_ ?_
+      · simpa [List.map] using ihφ ρ
+      · simpa [List.map] using ihψ ρ
+  | impI h ih =>
+      exact .impI (by
+        simpa [List.map] using ih ρ)
+  | impE himp hφ ihimp ihφ =>
+      exact .impE (ihimp ρ) (ihφ ρ)
+  | notI h ih =>
+      exact .notI (by
+        simpa [List.map] using ih ρ)
+  | notE hnot hφ ihnot ihφ =>
+      exact .notE (ihnot ρ) (ihφ ρ)
+  | allI h ih =>
+      rename_i Γ₀ Δ₀ σ body
+      exact .allI (by
+        simpa [rename_weakenHyps] using
+          ih (Rename.lift (Base := Base) (σ := σ) ρ))
+  | allE t h ih =>
+      simpa [rename_instantiate] using
+        (.allE (Mettapedia.Logic.HOL.rename ρ t) (ih ρ))
+  | exI t h ih =>
+      rename_i Γ₀ Δ₀ σ body
+      have ih' :
+          ExtDerivation Const
+            (Δ₀.map (Mettapedia.Logic.HOL.rename ρ))
+            (instantiate (Base := Base)
+              (Mettapedia.Logic.HOL.rename ρ t)
+              (Mettapedia.Logic.HOL.rename
+                (Rename.lift (Base := Base) (σ := σ) ρ) body)) := by
+        simpa [rename_instantiate (Base := Base) (Const := Const) (ρ := ρ) t body] using
+          ih ρ
+      exact .exI (Mettapedia.Logic.HOL.rename ρ t) ih'
+  | exE hex hbody ihex ihbody =>
+      rename_i Γ₀ Δ₀ σ body ψ
+      refine .exE (ihex ρ) ?_
+      simpa [List.map, rename_weakenHyps, rename_weaken] using
+        ihbody (Rename.lift (Base := Base) (σ := σ) ρ)
+  | eqRefl t =>
+      exact .eqRefl (Mettapedia.Logic.HOL.rename ρ t)
+  | eqSymm h ih =>
+      exact .eqSymm (ih ρ)
+  | eqTrans htu huv ihtu ihuv =>
+      exact .eqTrans (ihtu ρ) (ihuv ρ)
+  | eqPropI hpq hqp ihpq ihqp =>
+      exact .eqPropI (ihpq ρ) (ihqp ρ)
+  | eqPropEL hpq ihpq =>
+      exact .eqPropEL (ihpq ρ)
+  | eqPropER hpq ihpq =>
+      exact .eqPropER (ihpq ρ)
+  | eqApp t h ih =>
+      exact .eqApp (Mettapedia.Logic.HOL.rename ρ t) (ih ρ)
+  | eqAppArg f h ih =>
+      exact .eqAppArg (Mettapedia.Logic.HOL.rename ρ f) (ih ρ)
+  | eqLam h ih =>
+      rename_i Γ₀ Δ₀ σ τ t u
+      exact .eqLam (by
+        simpa [rename_weakenHyps] using
+          ih (Rename.lift (Base := Base) (σ := σ) ρ))
+  | funExt h ih =>
+      rename_i Γ₀ Δ₀ σ τ f g
+      exact .funExt (by
+        simpa [Mettapedia.Logic.HOL.rename, rename_weaken] using ih ρ)
+  | beta t u =>
+      rename_i Γ₀ Δ₀ σ τ
+      simpa [Mettapedia.Logic.HOL.rename, rename_instantiate] using
+        (.beta (Mettapedia.Logic.HOL.rename ρ t)
+          (Mettapedia.Logic.HOL.rename
+            (Rename.lift (Base := Base) (σ := σ) ρ) u))
+  | eta f =>
+      rename_i Γ₀ Δ₀ σ τ
+      simpa [Mettapedia.Logic.HOL.rename, rename_weaken] using
+        (.eta (Mettapedia.Logic.HOL.rename ρ f))
 
 theorem closedTheory_mapConst
     (f : ∀ {τ : Ty Base}, Const τ → Const' τ)
@@ -444,6 +637,35 @@ theorem eqAppCongrSelf {Γ : Ctx Base} {Δ : List (Formula Const Γ)}
     (htu : ExtDerivation Const Δ (.eq t u)) :
     ExtDerivation Const Δ (.eq (.app f t) (.app f u)) :=
   .eqAppArg f htu
+
+/-- Discharge a theorem assumption from the head of the context.
+    If χ is provable from nothing, any derivation using χ as an
+    assumption can eliminate it. -/
+theorem discharge_head_theorem
+    {Γ : Ctx Base} {Δ : List (Formula Const Γ)}
+    {χ φ : Formula Const Γ}
+    (hχ : ExtDerivation Const [] χ)
+    (d : ExtDerivation Const (χ :: Δ) φ) :
+    ExtDerivation Const Δ φ := by
+  apply ExtDerivation.impE (.impI d)
+  exact mono (fun h => absurd h List.not_mem_nil) hχ
+
+/-- Discharge a list of theorem assumptions from the front of the context. -/
+theorem discharge_theorem_list
+    {Γ : Ctx Base} {Θ Δ : List (Formula Const Γ)}
+    {φ : Formula Const Γ}
+    (hΘ : ∀ {χ : Formula Const Γ}, χ ∈ Θ → ExtDerivation Const [] χ)
+    (d : ExtDerivation Const (Θ ++ Δ) φ) :
+    ExtDerivation Const Δ φ := by
+  induction Θ with
+  | nil => simpa using d
+  | cons χ Θ ih =>
+      have hχ : ExtDerivation Const [] χ := hΘ List.mem_cons_self
+      have d' : ExtDerivation Const (Θ ++ Δ) φ :=
+        discharge_head_theorem hχ (by simpa [List.cons_append] using d)
+      have hΘ' : ∀ {ψ : Formula Const Γ}, ψ ∈ Θ → ExtDerivation Const [] ψ :=
+        fun hψ => hΘ (List.mem_cons_of_mem _ hψ)
+      exact ih hΘ' d'
 
 end ExtDerivation
 

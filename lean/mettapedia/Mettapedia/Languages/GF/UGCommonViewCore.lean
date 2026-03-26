@@ -1,5 +1,5 @@
 import Mettapedia.Languages.GF.UGCoreFamily
-import Mettapedia.Languages.GF.OSLFBridge
+import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 
 /-!
 # Common-View UG Core

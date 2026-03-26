@@ -1,4 +1,4 @@
-import Mettapedia.Languages.GF.OSLFBridge
+import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 import Mettapedia.Languages.GF.HandCrafted.English.InterfaceContrast
 import Mettapedia.OSLF.Framework.TypeSynthesis
 

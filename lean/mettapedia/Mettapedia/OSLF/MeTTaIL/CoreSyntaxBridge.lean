@@ -36,6 +36,12 @@ abbrev SpecRewriteRule := Mettapedia.OSLF.MeTTaIL.Syntax.RewriteRule
 abbrev CoreLanguageDef := MeTTailCore.MeTTaIL.Syntax.LanguageDef
 abbrev SpecLanguageDef := Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef
 
+private def coreToSpecTypeDecl (typeName : String) : Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl :=
+  Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl.plain typeName
+
+private def specToCoreTypeName (typeDecl : Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl) : String :=
+  typeDecl.name
+
 def specToCoreCollType : SpecCollType → CoreCollType
   | .vec => .vec
   | .hashBag => .hashBag
@@ -82,6 +88,7 @@ def specToCorePremise : SpecPremise → CorePremise
   | .freshness fc => .freshness (specToCoreFreshness fc)
   | .congruence a b => .congruence (specToCorePattern a) (specToCorePattern b)
   | .relationQuery rel args => .relationQuery rel (args.map specToCorePattern)
+  | .forAll _ _ body => specToCorePremise body
 
 def specToCoreEquation (eqn : SpecEquation) : CoreEquation :=
   { name := eqn.name
@@ -99,7 +106,7 @@ def specToCoreRewriteRule (r : SpecRewriteRule) : CoreRewriteRule :=
 
 def specToCoreLanguage (lang : SpecLanguageDef) : CoreLanguageDef :=
   { name := lang.name
-    types := lang.types
+    types := lang.types.map specToCoreTypeName
     terms := lang.terms.map specToCoreGrammarRule
     equations := lang.equations.map specToCoreEquation
     rewrites := lang.rewrites.map specToCoreRewriteRule

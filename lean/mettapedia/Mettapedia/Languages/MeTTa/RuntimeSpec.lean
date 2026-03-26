@@ -82,7 +82,7 @@ structure MeTTaRuntimeSpec where
 
 /-- Lightweight audit predicate: the named sort appears in the chosen `LanguageDef`. -/
 def languageHasTypeNamed (lang : LanguageDef) (ty : String) : Prop :=
-  ty ∈ lang.types
+  LanguageDef.hasTypeNamed lang ty
 
 /-- Lightweight audit predicate: the premise program exports a relation of this name. -/
 def premiseProgramHasRelationNamed

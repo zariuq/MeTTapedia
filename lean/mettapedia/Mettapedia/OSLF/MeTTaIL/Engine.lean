@@ -172,6 +172,8 @@ def premiseStepWithEnv (relEnv : RelationEnv) (lang : LanguageDef) (bindings : B
           mergeBindings bindings bPrem
   | .relationQuery rel args =>
       relationQueryStep relEnv lang bindings rel args
+  | .forAll _ _ _ =>
+      []
 
 /-- Default premise step (built-ins only, no external relation environment). -/
 def premiseStep (lang : LanguageDef) (bindings : Bindings) : Premise → List Bindings :=
@@ -385,6 +387,8 @@ theorem premiseStepWithEnv_mono {lang₁ lang₂ : LanguageDef}
   | .relationQuery rel args =>
       simp only [premiseStepWithEnv] at hbs ⊢
       exact relationQueryStep_mono hrules hcong relEnv bindings rel args bs hbs
+  | .forAll _ _ _ =>
+      simp [premiseStepWithEnv] at hbs ⊢
 
 /-- `applyPremisesWithEnv` is monotone in the rule set:
     if every rule of `lang₁` is in `lang₂`, then any binding set
@@ -456,6 +460,8 @@ theorem premiseStepWithEnv_mono_relEnv {lang : LanguageDef}
   | .relationQuery rel args =>
       simp only [premiseStepWithEnv] at hbs ⊢
       exact relationQueryStep_mono_relEnv hle bindings rel args bs hbs
+  | .forAll _ _ _ =>
+      simp [premiseStepWithEnv] at hbs ⊢
 
 /-- `applyPremisesWithEnv` is monotone in the relation environment:
     if `relEnv₁ ≤ relEnv₂`, then any binding set produced by premise
