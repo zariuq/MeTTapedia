@@ -166,9 +166,9 @@ inductive StructuralCongruence : Pattern → Pattern → Prop where
         (.collection .hashSet elems₁ none)
         (.collection .hashSet elems₂ none)
 
-  | lambda_cong (p q : Pattern) :
+  | lambda_cong (nm : Option String) (p q : Pattern) :
       StructuralCongruence p q →
-      StructuralCongruence (.lambda p) (.lambda q)
+      StructuralCongruence (.lambda nm p) (.lambda nm q)
 
   | apply_cong (f : String) (args₁ args₂ : List Pattern) :
       (args₁.length = args₂.length) →
@@ -186,9 +186,9 @@ inductive StructuralCongruence : Pattern → Pattern → Prop where
       (∀ i h₁ h₂, StructuralCongruence (elems₁.get ⟨i, h₁⟩) (elems₂.get ⟨i, h₂⟩)) →
       StructuralCongruence (.collection ct elems₁ g) (.collection ct elems₂ g)
 
-  | multiLambda_cong (n : Nat) (p q : Pattern) :
+  | multiLambda_cong (n : Nat) (nms : List String) (p q : Pattern) :
       StructuralCongruence p q →
-      StructuralCongruence (.multiLambda n p) (.multiLambda n q)
+      StructuralCongruence (.multiLambda n nms p) (.multiLambda n nms q)
 
   | subst_cong (p₁ p₂ : Pattern) (a₁ a₂ : Pattern) :
       StructuralCongruence p₁ p₂ →

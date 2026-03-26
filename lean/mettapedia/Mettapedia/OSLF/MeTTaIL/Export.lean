@@ -15,7 +15,7 @@ private def quote (s : String) : String :=
   "\"" ++ (s.replace "\\" "\\\\").replace "\"" "\\\"" ++ "\""
 
 private def ctorName (raw : String) : String :=
-  "C_" ++ raw
+  raw
 
 private def renderCollType : CollType → String
   | .vec => "Vec"
@@ -42,13 +42,29 @@ partial def renderTypeExpr : TypeExpr → String
 
 private def renderParamSyntaxTokens (idx : Nat) : TermParam → List String
   | .simple n _ => [n]
-  | .abstraction n _ => [quote "^", s!"x{idx}", quote ".", n]
-  | .multiAbstraction n _ => [quote "^[", s!"xs{idx}", quote "].", n]
+  | .abstractionNamed binder? n _ =>
+      let binder := binder?.getD s!"x{idx}"
+      [quote "^", binder, quote ".", n]
+  | .multiAbstractionNamed binders n _ =>
+      let renderedBinders :=
+        if binders.isEmpty then
+          s!"xs{idx}"
+        else
+          String.intercalate "," binders
+      [quote s!"^[{renderedBinders}].", n]
 
 private def renderTermParam (idx : Nat) : TermParam → String
   | .simple n t => s!"{n}:{renderTypeExpr t}"
-  | .abstraction n t => s!"^x{idx}.{n}:{renderTypeExpr t}"
-  | .multiAbstraction n t => s!"^[xs{idx}].{n}:{renderTypeExpr t}"
+  | .abstractionNamed binder? n t =>
+      let binder := binder?.getD s!"x{idx}"
+      s!"^{binder}.{n}:{renderTypeExpr t}"
+  | .multiAbstractionNamed binders n t =>
+      let renderedBinders :=
+        if binders.isEmpty then
+          s!"xs{idx}"
+        else
+          String.intercalate "," binders
+      s!"^[{renderedBinders}].{n}:{renderTypeExpr t}"
 
 private def indexed {α : Type} (xs : List α) : List (Nat × α) :=
   let rec go (i : Nat) : List α → List (Nat × α)
@@ -70,11 +86,29 @@ private def renderCtorSyntax (label : String) (params : List TermParam) : String
       let args := commaJoin paramTokens
       String.intercalate " " ([quote (ctorName label), quote "("] ++ args ++ [quote ")"])
 
-private def renderSyntaxItem : SyntaxItem → String
+mutual
+
+private partial def renderSyntaxOp : SyntaxPatternOp → String
+  | .var name => name
+  | .sep collection separator none => s!"{collection}.*sep({quote separator})"
+  | .sep _ separator (some source) => s!"{renderSyntaxOp source}.*sep({quote separator})"
+  | .zip left right => s!"*zip({left}, {right})"
+  | .map source params body =>
+      let renderedParams := String.intercalate ", " params
+      let renderedBody := String.intercalate " " (body.map renderSyntaxItem)
+      s!"{renderSyntaxOp source}.*map(|{renderedParams}| {renderedBody})"
+  | .opt inner =>
+      let renderedInner := String.intercalate " " (inner.map renderSyntaxItem)
+      s!"*opt({renderedInner})"
+
+private partial def renderSyntaxItem : SyntaxItem → String
   | .terminal t => quote t
   | .nonTerminal n => n
   | .separator s => quote s
   | .delimiter l r => String.intercalate " " [quote l, quote r]
+  | .op op => renderSyntaxOp op
+
+end
 
 private def renderUserSyntax (rule : GrammarRule) : String :=
   let tokens := rule.syntaxPattern.map renderSyntaxItem
@@ -86,12 +120,30 @@ private def renderUserSyntax (rule : GrammarRule) : String :=
 partial def renderPattern : Pattern → String
   | .bvar n => s!"bvar{n}"
   | .fvar x => x
-  | .apply c [] => ctorName c
-  | .apply c args =>
-      let renderedArgs := args.map renderPattern
-      s!"({ctorName c} {String.intercalate " " renderedArgs})"
-  | .lambda body => s!"^x.{renderPattern body}"
-  | .multiLambda _ body => s!"^[xs].{renderPattern body}"
+  | pat@(.apply c args) =>
+      match Pattern.zipArgs? pat with
+      | some (first, second) =>
+          s!"*zip({renderPattern first}, {renderPattern second})"
+      | none =>
+          match Pattern.mapArgs? pat with
+          | some (source, params, body) =>
+              let renderedParams := String.intercalate ", " params
+              s!"{renderPattern source}.*map(|{renderedParams}| {renderPattern body})"
+          | none =>
+              match Pattern.evalArgs? pat with
+              | some (scope, repl) =>
+                  s!"(eval {renderPattern scope} {renderPattern repl})"
+              | none =>
+                  match args with
+                  | [] => ctorName c
+                  | _ =>
+                      let renderedArgs := args.map renderPattern
+                      s!"({ctorName c} {String.intercalate " " renderedArgs})"
+  | .lambda (some nm) body => s!"^{nm}.{renderPattern body}"
+  | .lambda none body => s!"^x.{renderPattern body}"
+  | .multiLambda _ nms body =>
+      let renderedBinders := if nms.isEmpty then "xs" else String.intercalate "," nms
+      s!"^[{renderedBinders}].{renderPattern body}"
   | .subst body repl => s!"(eval {renderPattern body} {renderPattern repl})"
   | .collection .hashBag elems rest =>
       let rendered := elems.map renderPattern
@@ -124,14 +176,33 @@ partial def renderPattern : Pattern → String
           else
             "#{" ++ core ++ ", ..." ++ r ++ "}"
 
+private def renderFreshnessTarget (pat : Pattern) : String :=
+  match pat.collectionRestName? with
+  | some rest => s!"...{rest}"
+  | none => renderPattern pat
+
 /-- Render a premise, disambiguating overloaded relation names by arity.
     `overloaded` is the set of relation names that appear with multiple arities. -/
 private def renderPremise (overloaded : List String) : Premise → String
-  | .freshness fc => s!"{fc.varName} # {renderPattern fc.term}"
+  | .freshness fc => s!"{fc.varName} # {renderFreshnessTarget fc.term}"
   | .congruence src tgt => s!"{renderPattern src} ~> {renderPattern tgt}"
   | .relationQuery rel args =>
       let name := if overloaded.contains rel then s!"{rel}{args.length}" else rel
       s!"{name}({String.intercalate ", " (args.map renderPattern)})"
+  | .forAll collection param body =>
+      s!"forAll({collection}, {param}, {renderPremise overloaded body})"
+
+private def renderPremisesWithSurface (overloaded : List String) (premises : List Premise)
+    (surface : List String) : String :=
+  if premises.isEmpty then
+    "|-"
+  else
+    let rendered :=
+      if surface.length = premises.length then
+        surface
+      else
+        premises.map (renderPremise overloaded)
+    s!"| {String.intercalate ", " rendered} |-"
 
 private def renderGrammarRule (rule : GrammarRule) : String :=
   let renderedParams := (indexed rule.params).map fun (idx, p) => renderTermParam idx p
@@ -153,21 +224,17 @@ private def renderGrammarRuleWithUserSyntax (rule : GrammarRule) : String :=
   let syntaxText := renderUserSyntax rule
   s!"        {ctorName rule.label} . {paramBlock}|- {syntaxText} : {rule.category};"
 
-private def renderEquation (overloaded : List String) (idx : Nat) (eqn : Equation) : String :=
-  let gate :=
-    if eqn.premises.isEmpty then
-      "|-"
-    else
-      s!"| {String.intercalate ", " (eqn.premises.map (renderPremise overloaded))} |-"
-  s!"        E{idx} . {gate} {renderPattern eqn.left} = {renderPattern eqn.right};"
+private def renderEquation (overloaded : List String) (_idx : Nat) (eqn : Equation) : String :=
+  let gate := renderPremisesWithSurface overloaded eqn.premises eqn.premiseSurface
+  let lhs := eqn.leftSurface?.getD (renderPattern eqn.left)
+  let rhs := eqn.rightSurface?.getD (renderPattern eqn.right)
+  s!"        {eqn.name} . {gate} {lhs} = {rhs};"
 
-private def renderRewrite (overloaded : List String) (idx : Nat) (rw : RewriteRule) : String :=
-  let gate :=
-    if rw.premises.isEmpty then
-      "|-"
-    else
-      s!"| {String.intercalate ", " (rw.premises.map (renderPremise overloaded))} |-"
-  s!"        R{idx} . {gate} {renderPattern rw.left} ~> {renderPattern rw.right};"
+private def renderRewrite (overloaded : List String) (_idx : Nat) (rw : RewriteRule) : String :=
+  let gate := renderPremisesWithSurface overloaded rw.premises rw.premiseSurface
+  let lhs := rw.leftSurface?.getD (renderPattern rw.left)
+  let rhs := rw.rightSurface?.getD (renderPattern rw.right)
+  s!"        {rw.name} . {gate} {lhs} ~> {rhs};"
 
 private def renderSection (title : String) (lines : List String) : String :=
   let body :=

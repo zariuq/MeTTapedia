@@ -181,16 +181,21 @@ inductive InterpretExpression (space : Space) (dispatch : GroundedDispatch) :
       ```
       if <$op is an atom with incorrect type>:
           return <list of (Error $op (BadArgType ...))>
-      ``` -/
+      ```
+      `errAtom` is tied to an actual failing `checkIfFunctionTypeIsApplicable` result
+      via `failedType` and `errs`. This prevents vacuous instantiation (e.g. fuel=0). -/
   | op_type_error (atom type_ : Atom) (b : Bindings) (op : Atom) (args : List Atom)
-      (errAtom : Atom) (fuel : Nat)
+      (errAtom : Atom) (fuel : Nat) (failedType : Atom) (errs : List Atom)
       (h_shape : atom = .expression (op :: args))
       (h_all_fail : ∀ ft ∈ getAtomTypes space op,
         isFunctionType ft = true →
         ∃ errs, checkIfFunctionTypeIsApplicable atom ft type_ space b fuel = .inl errs)
       (h_no_non_func : ∀ t ∈ getAtomTypes space op,
         isFunctionType t = true ∧ t ≠ Atom.undefinedType)
-      (h_err : isErrorAtom errAtom = true) :
+      (h_failed_type : failedType ∈ getAtomTypes space op)
+      (h_failed_func : isFunctionType failedType = true)
+      (h_check_fail : checkIfFunctionTypeIsApplicable atom failedType type_ space b fuel = .inl errs)
+      (h_err_mem : errAtom ∈ errs) :
       InterpretExpression space dispatch atom type_ b (errAtom, b)
 
 /-- Interpret a function call (evaluate head, then args).
@@ -447,7 +452,7 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (h_query : (rhs, queryBindings) ∈ queryEquations space atom fuel)
       (h_merge : merged ∈ mergeBindings queryBindings b fuel)
       (h_no_loop : merged.hasLoop = false)
-      (h_recurse : EvalAtom space dispatch (merged.apply rhs) type_ merged finalResult) :
+      (h_recurse : EvalAtom space dispatch (merged.apply rhs fuel) type_ merged finalResult) :
       MettaCall space dispatch atom type_ b finalResult
   /-- Spec lines 383-384: Non-grounded, no equation matches → return unchanged.
       ```
@@ -486,18 +491,17 @@ The spec (lines 129-136) returns successes over errors. Since this requires
 a negative condition ("no success derivation exists"), it cannot live inside
 the mutual inductive. We define it as a separate Prop. -/
 
-/-- `EvalAtom` with the spec's success-priority filtering.
+/-- Global filtered soundness (completeness target).
     A result is "filtered-valid" if either:
     1. It's a success (non-error) result from `interpret_success`, OR
     2. It's an error result AND no success derivation exists for this input.
-    For non-interpret constructors (empty_or_error, type_pass, type_cast),
-    filtering is vacuous — all results are valid. -/
+    Requires: fuel-indexed filtered + completeness + monotonicity.
+    Not provable from soundness alone — see Codex counterexample:
+    `evalAtom ... fuel=7` → error, `evalAtom ... fuel=11` → success. -/
 def EvalAtomFiltered (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) (r : ResultPair) : Prop :=
   EvalAtom space dispatch atom type_ b r ∧
   (isErrorAtom r.1 = true →
-    -- If the result is an error, then no non-error derivation exists.
-    -- Note: Empty is NOT an error per spec lines 129-136.
     ∀ r' : ResultPair,
       InterpretExpression space dispatch atom type_ b r' →
       isErrorAtom r'.1 = true)

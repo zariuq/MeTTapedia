@@ -397,8 +397,8 @@ def multiOpenAtStaging (d : Nat) {n : Nat} (ρ : QuoteEnv n) : Pattern → Patte
         .bvar j
   | .fvar x => .fvar x
   | .apply c args => .apply c (args.map (multiOpenAtStaging d ρ))
-  | .lambda body => .lambda (multiOpenAtStaging (d + 1) ρ body)
-  | .multiLambda m body => .multiLambda m (multiOpenAtStaging (d + m) ρ body)
+  | .lambda nm body => .lambda nm (multiOpenAtStaging (d + 1) ρ body)
+  | .multiLambda m nms body => .multiLambda m nms (multiOpenAtStaging (d + m) ρ body)
   | .subst body repl => .subst (multiOpenAtStaging (d + 1) ρ body) (multiOpenAtStaging d ρ repl)
   | .collection ct elems rest =>
       .collection ct (elems.map (multiOpenAtStaging d ρ)) rest
@@ -475,11 +475,11 @@ theorem closeFVar_multiOpenAt_envCons_staging
       have hargs : ∀ a ∈ args, freeVars a = [] :=
         List.flatMap_eq_nil_iff.mp (show args.flatMap freeVars = [] by simpa [freeVars] using hfresh)
       exact List.map_eq_map_iff.mpr fun a ha => ih a ha d (hargs a ha)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       simp only [multiOpenAtStaging, closeFVar]
       congr 1
       exact ih (d + 1) (by simpa [freeVars] using hfresh)
-  | hmultiLambda m body ih =>
+  | hmultiLambda m _ body ih =>
       simp only [multiOpenAtStaging, closeFVar]
       have heq : d + 1 + m = d + m + 1 := by omega
       rw [heq]
@@ -548,7 +548,7 @@ theorem quoteTmWith_eq_multiOpenAt_quoteRaw_staging
       congr 1
       congr 1
       rw [ih (k + 1) (envCons (ν k) ρ) hcompat']
-      simpa using congrArg Pattern.lambda
+      simpa using congrArg (Pattern.lambda none)
         (closeFVar_multiOpenAt_envCons_staging 0 (ν k) ρ (quoteRaw b)
           (freeVars_quoteRaw_staging b)
           (fun i => hcompat.2 i k (by omega)))
@@ -560,7 +560,7 @@ theorem quoteTmWith_eq_multiOpenAt_quoteRaw_staging
       congr 1
       congr 1
       rw [ihB (k + 1) (envCons (ν k) ρ) hcompat']
-      simpa using congrArg Pattern.lambda
+      simpa using congrArg (Pattern.lambda none)
         (closeFVar_multiOpenAt_envCons_staging 0 (ν k) ρ (quoteRaw B)
           (freeVars_quoteRaw_staging B)
           (fun i => hcompat.2 i k (by omega)))
@@ -572,7 +572,7 @@ theorem quoteTmWith_eq_multiOpenAt_quoteRaw_staging
       congr 1
       congr 1
       rw [ihB (k + 1) (envCons (ν k) ρ) hcompat']
-      simpa using congrArg Pattern.lambda
+      simpa using congrArg (Pattern.lambda none)
         (closeFVar_multiOpenAt_envCons_staging 0 (ν k) ρ (quoteRaw B)
           (freeVars_quoteRaw_staging B)
           (fun i => hcompat.2 i k (by omega)))

@@ -63,8 +63,8 @@ def morkPatternToAtom : ILP → Atom
   | .fvar x           => .var x
   | .bvar n           => .symbol s!"bvar{n}"
   | .apply c args     => .expression (.symbol c :: morkPatternToAtomList args)
-  | .lambda body      => .expression [.symbol "λ", morkPatternToAtom body]
-  | .multiLambda n body =>
+  | .lambda _ body      => .expression [.symbol "λ", morkPatternToAtom body]
+  | .multiLambda n _ body =>
       .expression (.symbol "λ*" :: .symbol (toString n) :: [morkPatternToAtom body])
   | .subst body repl  =>
       .expression [.symbol "subst", morkPatternToAtom body, morkPatternToAtom repl]
@@ -93,8 +93,8 @@ def morkTranslatable : ILP → Bool
   | .fvar _             => true
   | .bvar _             => true
   | .apply _ args       => morkTranslatableList args
-  | .lambda body        => morkTranslatable body
-  | .multiLambda _ body => morkTranslatable body
+  | .lambda _ body        => morkTranslatable body
+  | .multiLambda _ _ body => morkTranslatable body
   | .subst _ _          => false
   | .collection _ elems none     => morkTranslatableList elems
   | .collection _ _    (some _) => false
@@ -209,7 +209,7 @@ theorem applySubst_commutes (bs : ILBind) (rhs : ILP) (h_mt : morkTranslatable r
                Mettapedia.OSLF.MeTTaIL.Match.applyBindings, applySubst, applySubst.applySubstList]
     congr 1; congr 1
     exact applySubstList_commutes bs args h_args ih
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     intro h_mt
     have h_body : morkTranslatable body = true := by
       simp only [morkTranslatable] at h_mt; exact h_mt
@@ -217,7 +217,7 @@ theorem applySubst_commutes (bs : ILBind) (rhs : ILP) (h_mt : morkTranslatable r
                Mettapedia.OSLF.MeTTaIL.Match.applyBindings,
                applySubst, applySubst.applySubstList]
     exact congrArg (fun a => Atom.expression [Atom.symbol "λ", a]) (ih h_body)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     intro h_mt
     have h_body : morkTranslatable body = true := by
       simp only [morkTranslatable] at h_mt; exact h_mt
@@ -717,7 +717,7 @@ theorem morkPatternToAtom_freeVars (p : ILP) (h : morkTranslatable p = true) :
       rw [ih a ha_mem ha]
       simp only [List.nil_append]
       simpa using ih_as (fun q hq => ih q (List.mem_cons.mpr (.inr hq))) has
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     intro h
     simp only [morkTranslatable] at h
     simp only [morkPatternToAtom, ilFreeVars,
@@ -725,7 +725,7 @@ theorem morkPatternToAtom_freeVars (p : ILP) (h : morkTranslatable p = true) :
     simp only [atomFreeVars, atomFreeVars.atomFreeVarsList]
     simp only [List.append_nil]
     exact ih h
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     intro h
     simp only [morkTranslatable] at h
     simp only [morkPatternToAtom, ilFreeVars,
@@ -825,11 +825,11 @@ theorem freshness_premise_correspond
       have : False := by
         simpa [hlookup] using hresolved
       cases this
-    | lambda body =>
+    | lambda _ body =>
       have : False := by
         simpa [hlookup] using hresolved
       cases this
-    | multiLambda n body =>
+    | multiLambda n _ body =>
       have : False := by
         simpa [hlookup] using hresolved
       cases this
@@ -1111,6 +1111,8 @@ private theorem premiseChain_matchSourceFactorsExt_go_aux {relEnv : ILRelEnv} {l
         (fun a' ha' => hwit_not_consumed a' (List.mem_cons_of_mem a ha'))
     | congruence _ _ =>
       simp [allPremisesTranslatableExt, List.all_cons, premiseToFactorOrGuard] at htrans
+    | forAll _ _ _ =>
+      simp [allPremisesTranslatableExt, List.all_cons, premiseToFactorOrGuard] at htrans
   | @guard bs0' bs_final' prems' witnesses' prem hnotfactor hstep htail ih =>
     have htrans_rest : allPremisesTranslatableExt prems' = true := by
       simp only [allPremisesTranslatableExt, List.all_eq_true] at htrans ⊢
@@ -1123,6 +1125,8 @@ private theorem premiseChain_matchSourceFactorsExt_go_aux {relEnv : ILRelEnv} {l
     | freshness fc =>
       rw [premisesToSourceFactorsExt_cons_freshness]
       exact ih htrans_rest hnodup consumed hwit_not_consumed
+    | forAll _ _ _ =>
+      simp [allPremisesTranslatableExt, List.all_cons, premiseToFactorOrGuard] at htrans
 
 /-- Core lemma (ext): `PremiseChain` implies membership in `matchSourceFactors`
     for the extended factor list. -/

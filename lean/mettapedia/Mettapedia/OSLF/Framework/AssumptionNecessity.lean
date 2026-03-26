@@ -152,7 +152,7 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
     received name), sent value = `PZero`. -/
 def commPredSourceGeneric (channel : Pattern) : Pattern :=
   .collection .hashBag [
-    .apply "PInput" [channel, .lambda (.bvar 0)],
+    .apply "PInput" [channel, .lambda none (.bvar 0)],
     .apply "POutput" [channel, zeroPat]
   ] none
 
@@ -190,7 +190,7 @@ private def commRule : RewriteRule where
   typeContext := [("n", TypeExpr.name), ("p", TypeExpr.proc), ("q", TypeExpr.proc)]
   premises := []
   left := .collection .hashBag [
-    .apply "PInput" [.fvar "n", .lambda (.fvar "p")],
+    .apply "PInput" [.fvar "n", .lambda none (.fvar "p")],
     .apply "POutput" [.fvar "n", .fvar "q"]
   ] (some "rest")
   right := .collection .hashBag [
@@ -225,7 +225,7 @@ theorem commPredSourceGeneric_langReduces (channel : Pattern) :
     show [("q", zeroPat), ("rest", Pattern.collection .hashBag [] none),
           ("p", Pattern.bvar 0), ("n", channel)] ∈ matchPattern
       (.collection .hashBag [
-        .apply "PInput" [.fvar "n", .lambda (.fvar "p")],
+        .apply "PInput" [.fvar "n", .lambda none (.fvar "p")],
         .apply "POutput" [.fvar "n", .fvar "q"]
       ] (some "rest"))
       (commPredSourceGeneric channel)

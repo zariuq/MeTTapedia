@@ -54,10 +54,11 @@ inductive MatchRel : Pattern → Pattern → Bindings → Prop where
       MatchRel (.apply c pargs) (.apply c targs) bs
   | lambda :
       MatchRel bodyPat bodyConcrete bs →
-      MatchRel (.lambda bodyPat) (.lambda bodyConcrete) bs
+      MatchRel (.lambda _nm bodyPat) (.lambda _nm' bodyConcrete) bs
   | multiLambda :
       MatchRel bodyPat bodyConcrete bs →
-      MatchRel (.multiLambda n bodyPat) (.multiLambda n bodyConcrete) bs
+      MatchRel (.multiLambda n _nms bodyPat) (.multiLambda n _nms' bodyConcrete) bs
+
   | collection :
       MatchBagRel pelems rest ct telems bs →
       MatchRel (.collection ct pelems rest) (.collection ct telems rest₂) bs
@@ -128,11 +129,11 @@ private theorem eq_nil_of_isEmpty {α : Type} {l : List α}
 These lemmas establish the strict subterm ordering. `simp_wf` handles
 single-field constructors; multi-field ones need `; omega`. -/
 
-private theorem sizeOf_body_lt_lambda (body : Pattern) :
-    sizeOf body < sizeOf (Pattern.lambda body) := by simp_wf
+private theorem sizeOf_body_lt_lambda (nm : Option String) (body : Pattern) :
+    sizeOf body < sizeOf (Pattern.lambda nm body) := by simp_wf
 
-private theorem sizeOf_body_lt_multiLambda (n : Nat) (body : Pattern) :
-    sizeOf body < sizeOf (Pattern.multiLambda n body) := by simp_wf
+private theorem sizeOf_body_lt_multiLambda (n : Nat) (nms : List String) (body : Pattern) :
+    sizeOf body < sizeOf (Pattern.multiLambda n nms body) := by simp_wf
 
 private theorem sizeOf_args_lt_apply (c : String) (args : List Pattern) :
     sizeOf args < sizeOf (Pattern.apply c args) := by simp_wf
@@ -215,8 +216,8 @@ private theorem sound_all (n : Nat) :
           have := beq_iff_eq.mp heq; subst this
           simp only [List.mem_singleton] at hmem; subst hmem; exact .bvar
         next => simp at hmem
-      | .bvar _, .fvar _ | .bvar _, .apply _ _ | .bvar _, .lambda _
-      | .bvar _, .multiLambda _ _ | .bvar _, .subst _ _ | .bvar _, .collection _ _ _ =>
+      | .bvar _, .fvar _ | .bvar _, .apply _ _ | .bvar _, .lambda _ _
+      | .bvar _, .multiLambda _ _ _ | .bvar _, .subst _ _ | .bvar _, .collection _ _ _ =>
         simp [matchPattern] at hmem
       | .apply c1 pargs, .apply c2 targs =>
         unfold matchPattern at hmem
@@ -229,30 +230,30 @@ private theorem sound_all (n : Nat) :
           exact .apply (ih_args pargs targs bs
             (by have := sizeOf_args_lt_apply c1 pargs; omega) hmem) hlen
         next => simp at hmem
-      | .apply _ _, .bvar _ | .apply _ _, .fvar _ | .apply _ _, .lambda _
-      | .apply _ _, .multiLambda _ _ | .apply _ _, .subst _ _
+      | .apply _ _, .bvar _ | .apply _ _, .fvar _ | .apply _ _, .lambda _ _
+      | .apply _ _, .multiLambda _ _ _ | .apply _ _, .subst _ _
       | .apply _ _, .collection _ _ _ =>
         simp [matchPattern] at hmem
-      | .lambda bodyPat, .lambda bodyConcrete =>
+      | .lambda nm bodyPat, .lambda _ bodyConcrete =>
         unfold matchPattern at hmem
         exact .lambda (ih_pat bodyPat bodyConcrete bs
-          (by have := sizeOf_body_lt_lambda bodyPat; omega) hmem)
-      | .lambda _, .bvar _ | .lambda _, .fvar _ | .lambda _, .apply _ _
-      | .lambda _, .multiLambda _ _ | .lambda _, .subst _ _
-      | .lambda _, .collection _ _ _ =>
+          (by have := sizeOf_body_lt_lambda nm bodyPat; omega) hmem)
+      | .lambda _ _, .bvar _ | .lambda _ _, .fvar _ | .lambda _ _, .apply _ _
+      | .lambda _ _, .multiLambda _ _ _ | .lambda _ _, .subst _ _
+      | .lambda _ _, .collection _ _ _ =>
         simp [matchPattern] at hmem
-      | .multiLambda npat bodyPat, .multiLambda nconc bodyConcrete =>
+      | .multiLambda npat nms bodyPat, .multiLambda nconc _ bodyConcrete =>
         unfold matchPattern at hmem
         split at hmem
         next heq =>
           have hnn := beq_iff_eq.mp heq; subst hnn
           -- After subst, nconc is gone (subst eliminates the RHS). Use npat.
           exact .multiLambda (ih_pat bodyPat bodyConcrete bs
-            (by have := sizeOf_body_lt_multiLambda npat bodyPat; omega) hmem)
+            (by have := sizeOf_body_lt_multiLambda npat nms bodyPat; omega) hmem)
         next => simp at hmem
-      | .multiLambda _ _, .bvar _ | .multiLambda _ _, .fvar _
-      | .multiLambda _ _, .apply _ _ | .multiLambda _ _, .lambda _
-      | .multiLambda _ _, .subst _ _ | .multiLambda _ _, .collection _ _ _ =>
+      | .multiLambda _ _ _, .bvar _ | .multiLambda _ _ _, .fvar _
+      | .multiLambda _ _ _, .apply _ _ | .multiLambda _ _ _, .lambda _ _
+      | .multiLambda _ _ _, .subst _ _ | .multiLambda _ _ _, .collection _ _ _ =>
         simp [matchPattern] at hmem
       | .collection ct1 pelems rest1, .collection ct2 telems _rest2 =>
         unfold matchPattern at hmem
@@ -263,8 +264,8 @@ private theorem sound_all (n : Nat) :
             (by have := sizeOf_elems_lt_collection ct1 pelems rest1; omega) hmem)
         next => simp at hmem
       | .collection _ _ _, .bvar _ | .collection _ _ _, .fvar _
-      | .collection _ _ _, .apply _ _ | .collection _ _ _, .lambda _
-      | .collection _ _ _, .multiLambda _ _ | .collection _ _ _, .subst _ _ =>
+      | .collection _ _ _, .apply _ _ | .collection _ _ _, .lambda _ _
+      | .collection _ _ _, .multiLambda _ _ _ | .collection _ _ _, .subst _ _ =>
         simp [matchPattern] at hmem
       | .subst pbody prepl, .subst tbody trepl =>
         unfold matchPattern at hmem
@@ -279,7 +280,7 @@ private theorem sound_all (n : Nat) :
             (by have := sizeOf_prepl_lt_subst pbody prepl; omega) hb2_mem)
           hmerge
       | .subst _ _, .bvar _ | .subst _ _, .fvar _ | .subst _ _, .apply _ _
-      | .subst _ _, .lambda _ | .subst _ _, .multiLambda _ _
+      | .subst _ _, .lambda _ _ | .subst _ _, .multiLambda _ _ _
       | .subst _ _, .collection _ _ _ =>
         simp [matchPattern] at hmem
     -- matchArgs soundness
@@ -386,14 +387,14 @@ private theorem complete_all (n : Nat) :
         simp only [beq_self_eq_true, beq_iff_eq.mpr hlen, Bool.true_and, ↓reduceIte]
         exact ih_args pargs targs _ (by have := sizeOf_args_lt_apply c pargs; omega) hargs
       | lambda hmatch =>
-        rename_i bodyPat bodyConcrete
+        rename_i bodyPat bodyConcrete nm _nm'
         unfold matchPattern
-        exact ih_pat bodyPat bodyConcrete _ (by have := sizeOf_body_lt_lambda bodyPat; omega) hmatch
+        exact ih_pat bodyPat bodyConcrete _ (by have := sizeOf_body_lt_lambda nm bodyPat; omega) hmatch
       | multiLambda hmatch =>
-        rename_i bodyPat bodyConcrete n'
+        rename_i bodyPat bodyConcrete n' nms _nms'
         unfold matchPattern
         simp only [beq_self_eq_true, ↓reduceIte]
-        exact ih_pat bodyPat bodyConcrete _ (by have := sizeOf_body_lt_multiLambda n' bodyPat; omega) hmatch
+        exact ih_pat bodyPat bodyConcrete _ (by have := sizeOf_body_lt_multiLambda n' nms bodyPat; omega) hmatch
       | collection hbag =>
         rename_i pelems rest ct telems rest₂
         unfold matchPattern
@@ -711,18 +712,8 @@ private theorem correct_all_strong (n : Nat) :
         exact ih_args pargs targs bs
           (by have := sizeOf_args_lt_apply c pargs; omega)
           ((isMatchCorrectListAux_iff_forall pargs).mp hmc) hargs bs' hext
-      | lambda hmatch =>
-        rename_i bodyPat bodyConcrete
-        simp only [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
-        simp only [applyBindings]; congr 1
-        exact ih_pat bodyPat bodyConcrete bs
-          (by have := sizeOf_body_lt_lambda bodyPat; omega) hmc hmatch bs' hext
-      | multiLambda hmatch =>
-        rename_i bodyPat bodyConcrete n'
-        simp only [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
-        simp only [applyBindings]; congr 1
-        exact ih_pat bodyPat bodyConcrete bs
-          (by have := sizeOf_body_lt_multiLambda n' bodyPat; omega) hmc hmatch bs' hext
+      | lambda _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
+      | multiLambda _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
       | collection _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
       | subst _ _ _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
     -- MatchArgsRel case

@@ -147,7 +147,7 @@ def tinyML : LanguageDef := {
     { name := "Beta",
       typeContext := [("body", .base "Expr"), ("v", .base "Val")],
       premises := [],
-      left := .apply "App" [.apply "Inject" [.apply "Lam" [.lambda (.fvar "body")]],
+      left := .apply "App" [.apply "Inject" [.apply "Lam" [.lambda none (.fvar "body")]],
                              .apply "Inject" [.fvar "v"]],
       right := .subst (.fvar "body") (.fvar "v") },
     -- Force: Inject(Thunk(e)) ~> e
@@ -332,7 +332,7 @@ private def snd (e : Pattern) : Pattern := .apply "Snd" [e]
 private def inject (v : Pattern) : Pattern := .apply "Inject" [v]
 private def boolT : Pattern := .apply "BoolT" []
 private def boolF : Pattern := .apply "BoolF" []
-private def lam (body : Pattern) : Pattern := .apply "Lam" [.lambda body]
+private def lam (body : Pattern) : Pattern := .apply "Lam" [.lambda none body]
 private def pairV (a b : Pattern) : Pattern := .apply "PairV" [a, b]
 private def thunk (e : Pattern) : Pattern := .apply "Thunk" [e]
 
@@ -348,7 +348,7 @@ private partial def exprToString : Pattern → String
   | .apply "Inject" [v] => exprToString v
   | .apply "BoolT" [] => "true"
   | .apply "BoolF" [] => "false"
-  | .apply "Lam" [.lambda body] => "(λ." ++ exprToString body ++ ")"
+  | .apply "Lam" [.lambda _nm body] => "(λ." ++ exprToString body ++ ")"
   | .apply "PairV" [a, b] => "(" ++ exprToString a ++ ", " ++ exprToString b ++ ")"
   | .apply "Thunk" [e] => "(thunk " ++ exprToString e ++ ")"
   | p => repr p |>.pretty

@@ -41,7 +41,7 @@ def matchOutput (p : Pattern) : Option (Pattern × Pattern) :=
     and return `(n, body)`. In locally nameless, no binder name is stored. -/
 def matchInput (p : Pattern) : Option (Pattern × Pattern) :=
   match p with
-  | .apply "PInput" [n, .lambda body] => some (n, body)
+  | .apply "PInput" [n, .lambda none body] => some (n, body)
   | _ => none
 
 /-- Try to find a COMM partner for an output `(n, q)` in a list of elements.
@@ -163,14 +163,14 @@ private theorem matchOutput_spec {p n q : Pattern}
 
 /-- matchInput specification (locally nameless: returns channel and body, no binder name) -/
 private theorem matchInput_spec {p : Pattern} {n : Pattern} {body : Pattern}
-    (h : matchInput p = some (n, body)) : p = .apply "PInput" [n, .lambda body] := by
+    (h : matchInput p = some (n, body)) : p = .apply "PInput" [n, .lambda none body] := by
   unfold matchInput at h; split at h <;> simp_all
 
 /-- findInputPartner specification -/
 private theorem findInputPartner_spec {n : Pattern} {elems : List Pattern}
     {j : Nat} {body : Pattern}
     (h : (j, body) ∈ findInputPartner n elems) :
-    ∃ (hj : j < elems.length), elems[j] = .apply "PInput" [n, .lambda body] := by
+    ∃ (hj : j < elems.length), elems[j] = .apply "PInput" [n, .lambda none body] := by
   unfold findInputPartner at h
   rw [List.mem_filterMap] at h
   obtain ⟨⟨elem, k⟩, hmem, hfilt⟩ := h
@@ -210,7 +210,7 @@ private theorem comm_at_positions (elems : List Pattern) (i : Nat) (j : Nat)
     (hi : i < elems.length)
     (hj : j < (elems.eraseIdx i).length)
     (hout : elems[i] = .apply "POutput" [n, q])
-    (hinp : (elems.eraseIdx i)[j] = .apply "PInput" [n, .lambda body]) :
+    (hinp : (elems.eraseIdx i)[j] = .apply "PInput" [n, .lambda none body]) :
     Nonempty (Reduces (.collection .hashBag elems none)
       (.collection .hashBag ([commSubst body q] ++ (elems.eraseIdx i).eraseIdx j) none)) := by
   have hperm := perm_extract_two elems i j hi hj
@@ -225,7 +225,7 @@ private theorem findAllComm_spec {elems : List Pattern} {r : Pattern}
     ∃ (i : Nat) (hi : i < elems.length) (j : Nat) (hj : j < (elems.eraseIdx i).length)
       (n q : Pattern) (body : Pattern),
       elems[i] = .apply "POutput" [n, q] ∧
-      (elems.eraseIdx i)[j] = .apply "PInput" [n, .lambda body] ∧
+      (elems.eraseIdx i)[j] = .apply "PInput" [n, .lambda none body] ∧
       r = .collection .hashBag ([commSubst body q] ++ (elems.eraseIdx i).eraseIdx j) none := by
   unfold findAllComm at hr
   rw [List.mem_flatten] at hr
@@ -294,8 +294,8 @@ theorem reduceStep_sound (p q : Pattern) (fuel : Nat)
     exact ⟨h⟩
   | _ + 1, .bvar _ => simp [reduceStep] at h
   | _ + 1, .fvar _ => simp [reduceStep] at h
-  | _ + 1, .lambda _ => simp [reduceStep] at h
-  | _ + 1, .multiLambda _ _ => simp [reduceStep] at h
+  | _ + 1, .lambda _ _ => simp [reduceStep] at h
+  | _ + 1, .multiLambda _ _ _ => simp [reduceStep] at h
   | _ + 1, .subst _ _ => simp [reduceStep] at h
   | _ + 1, .collection _ _ (some _) => simp [reduceStep] at h
   | _ + 1, .collection .vec _ none => simp [reduceStep] at h
@@ -328,17 +328,17 @@ partial def patternToString : Pattern → String
     let ns := patternToString n
     let qs := patternToString q
     s!"{ns}!({qs})"
-  | .apply "PInput" [n, .lambda body] =>
+  | .apply "PInput" [n, .lambda none body] =>
     let ns := patternToString n
     let bs := patternToString body
     ns ++ "?" ++ "." ++ "{" ++ bs ++ "}"
   | .apply c args =>
     let argsStr := args.map patternToString |>.intersperse ", " |> String.join
     s!"{c}({argsStr})"
-  | .lambda body =>
+  | .lambda _ body =>
     let bs := patternToString body
     "λ." ++ bs
-  | .multiLambda n body =>
+  | .multiLambda n _ body =>
     let bs := patternToString body
     "λ[" ++ toString n ++ "]." ++ bs
   | .subst body repl =>
@@ -363,7 +363,7 @@ private def pdrop (n : Pattern) : Pattern := .apply "PDrop" [n]
 private def nquote (p : Pattern) : Pattern := .apply "NQuote" [p]
 private def poutput (n q : Pattern) : Pattern := .apply "POutput" [n, q]
 private def pinput (n : Pattern) (body : Pattern) : Pattern :=
-  .apply "PInput" [n, .lambda body]
+  .apply "PInput" [n, .lambda none body]
 private def ppar (elems : List Pattern) : Pattern :=
   .collection .hashBag elems none
 

@@ -188,7 +188,7 @@ inductive DerivedHasType (lang : LanguageDef) (procSort : String := "Proc") :
       (∀ z, z ∉ L →
         DerivedHasType lang procSort (Γ.extend z ⟨sort₁, α, hs₁⟩)
           (openBVar 0 (.fvar z) body) ⟨resultSort, φ, hr⟩) →
-      DerivedHasType lang procSort Γ (.apply label [n, .lambda body])
+      DerivedHasType lang procSort Γ (.apply label [n, .lambda none body])
         ⟨resultSort, topPred, hr⟩
 
   /-- Parallel composition: all elements typed at the same sort. -/

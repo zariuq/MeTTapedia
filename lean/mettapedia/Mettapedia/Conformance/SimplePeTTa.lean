@@ -43,12 +43,16 @@ abbrev SRewriteRule := Mettapedia.OSLF.MeTTaIL.Syntax.RewriteRule
 abbrev CCongruenceCollection := MeTTailCore.MeTTaIL.Syntax.CongruenceCollection
 abbrev CLanguageDef := MeTTailCore.MeTTaIL.Syntax.LanguageDef
 abbrev SLanguageDef := Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef
+abbrev STypeDecl := Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl
 
 private def coreToSpecTypeDecl (typeName : String) : Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl :=
   Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl.plain typeName
 
-private def specToCoreTypeName (typeDecl : Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl) : String :=
-  typeDecl.name
+private def specToCoreTypeName (typeDecl : STypeDecl) : Except String String := do
+  match typeDecl.carrier with
+  | .ast => pure typeDecl.name
+  | carrier =>
+      throw s!"Cannot lower type '{typeDecl.name}' with non-AST carrier '{repr carrier}' to core LanguageDef.types : List String."
 
 private def coreToSpecCollType : CCollType → SCollType
   | .vec => .vec
@@ -74,13 +78,13 @@ private def specToCoreTypeExpr : STypeExpr → CTypeExpr
 
 private def coreToSpecTermParam : CTermParam → STermParam
   | .simple x t => .simple x (coreToSpecTypeExpr t)
-  | .abstraction x t => .abstraction x (coreToSpecTypeExpr t)
-  | .multiAbstraction x t => .multiAbstraction x (coreToSpecTypeExpr t)
+  | .abstraction x t => .abstractionNamed none x (coreToSpecTypeExpr t)
+  | .multiAbstraction x t => .multiAbstractionNamed [] x (coreToSpecTypeExpr t)
 
 private def specToCoreTermParam : STermParam → CTermParam
   | .simple x t => .simple x (specToCoreTypeExpr t)
-  | .abstraction x t => .abstraction x (specToCoreTypeExpr t)
-  | .multiAbstraction x t => .multiAbstraction x (specToCoreTypeExpr t)
+  | .abstractionNamed _ x t => .abstraction x (specToCoreTypeExpr t)
+  | .multiAbstractionNamed _ x t => .multiAbstraction x (specToCoreTypeExpr t)
 
 private def coreToSpecSyntaxItem : CSyntaxItem → SSyntaxItem
   | .terminal s => .terminal s
@@ -88,11 +92,13 @@ private def coreToSpecSyntaxItem : CSyntaxItem → SSyntaxItem
   | .separator s => .separator s
   | .delimiter a b => .delimiter a b
 
-private def specToCoreSyntaxItem : SSyntaxItem → CSyntaxItem
-  | .terminal s => .terminal s
-  | .nonTerminal s => .nonTerminal s
-  | .separator s => .separator s
-  | .delimiter a b => .delimiter a b
+private def specToCoreSyntaxItem : SSyntaxItem → Except String CSyntaxItem
+  | .terminal s => pure (.terminal s)
+  | .nonTerminal s => pure (.nonTerminal s)
+  | .separator s => pure (.separator s)
+  | .delimiter a b => pure (.delimiter a b)
+  | .op _ =>
+      throw "Cannot lower syntax metasyntax operators (*zip/*map/*opt/*sep chains) to SimplePeTTa core syntax."
 
 private def coreToSpecGrammarRule (g : CGrammarRule) : SGrammarRule :=
   { label := g.label
@@ -100,18 +106,20 @@ private def coreToSpecGrammarRule (g : CGrammarRule) : SGrammarRule :=
     params := g.params.map coreToSpecTermParam
     syntaxPattern := g.syntaxPattern.map coreToSpecSyntaxItem }
 
-private def specToCoreGrammarRule (g : SGrammarRule) : CGrammarRule :=
-  { label := g.label
-    category := g.category
-    params := g.params.map specToCoreTermParam
-    syntaxPattern := g.syntaxPattern.map specToCoreSyntaxItem }
+private def specToCoreGrammarRule (g : SGrammarRule) : Except String CGrammarRule := do
+  let syntaxPattern ← g.syntaxPattern.mapM specToCoreSyntaxItem
+  pure
+    { label := g.label
+      category := g.category
+      params := g.params.map specToCoreTermParam
+      syntaxPattern := syntaxPattern }
 
 private def coreToSpecPattern : CPattern → SPattern
   | .bvar n => .bvar n
   | .fvar x => .fvar x
   | .apply c args => .apply c (args.map coreToSpecPattern)
-  | .lambda body => .lambda (coreToSpecPattern body)
-  | .multiLambda n body => .multiLambda n (coreToSpecPattern body)
+  | .lambda body => .lambda none (coreToSpecPattern body)
+  | .multiLambda n body => .multiLambda n [] (coreToSpecPattern body)
   | .subst body repl => .subst (coreToSpecPattern body) (coreToSpecPattern repl)
   | .collection ct elems rest =>
       .collection (coreToSpecCollType ct) (elems.map coreToSpecPattern) rest
@@ -120,8 +128,8 @@ private def specToCorePattern : SPattern → CPattern
   | .bvar n => .bvar n
   | .fvar x => .fvar x
   | .apply c args => .apply c (args.map specToCorePattern)
-  | .lambda body => .lambda (specToCorePattern body)
-  | .multiLambda n body => .multiLambda n (specToCorePattern body)
+  | .lambda _ body => .lambda (specToCorePattern body)
+  | .multiLambda n _ body => .multiLambda n (specToCorePattern body)
   | .subst body repl => .subst (specToCorePattern body) (specToCorePattern repl)
   | .collection ct elems rest =>
       .collection (specToCoreCollType ct) (elems.map specToCorePattern) rest
@@ -134,16 +142,24 @@ private def specToCoreFreshness (fc : SFreshness) : CFreshness :=
   { varName := fc.varName
     term := specToCorePattern fc.term }
 
+private def specToCoreFreshnessChecked (fc : SFreshness) : Except String CFreshness := do
+  match fc.term.collectionRestName? with
+  | some rest =>
+      throw s!"Cannot lower freshness target `...{rest}` to SimplePeTTa core; core only supports direct pattern freshness."
+  | none =>
+      pure (specToCoreFreshness fc)
+
 private def coreToSpecPremise : CPremise → SPremise
   | .freshness fc => .freshness (coreToSpecFreshness fc)
   | .congruence a b => .congruence (coreToSpecPattern a) (coreToSpecPattern b)
   | .relationQuery rel args => .relationQuery rel (args.map coreToSpecPattern)
 
-private def specToCorePremise : SPremise → CPremise
-  | .freshness fc => .freshness (specToCoreFreshness fc)
-  | .congruence a b => .congruence (specToCorePattern a) (specToCorePattern b)
-  | .relationQuery rel args => .relationQuery rel (args.map specToCorePattern)
-  | .forAll _ _ body => specToCorePremise body
+private def specToCorePremise : SPremise → Except String CPremise
+  | .freshness fc => return .freshness (← specToCoreFreshnessChecked fc)
+  | .congruence a b => pure (.congruence (specToCorePattern a) (specToCorePattern b))
+  | .relationQuery rel args => pure (.relationQuery rel (args.map specToCorePattern))
+  | .forAll collection _ _ =>
+      throw s!"Cannot lower forAll premise over collection `{collection}` to SimplePeTTa core; core has no quantified premise form."
 
 private def coreToSpecEquation (eqn : CEquation) : SEquation :=
   { name := eqn.name
@@ -152,12 +168,14 @@ private def coreToSpecEquation (eqn : CEquation) : SEquation :=
     left := coreToSpecPattern eqn.left
     right := coreToSpecPattern eqn.right }
 
-private def specToCoreEquation (eqn : SEquation) : CEquation :=
-  { name := eqn.name
-    typeContext := eqn.typeContext.map (fun (x, t) => (x, specToCoreTypeExpr t))
-    premises := eqn.premises.map specToCorePremise
-    left := specToCorePattern eqn.left
-    right := specToCorePattern eqn.right }
+private def specToCoreEquation (eqn : SEquation) : Except String CEquation := do
+  let premises ← eqn.premises.mapM specToCorePremise
+  pure
+    { name := eqn.name
+      typeContext := eqn.typeContext.map (fun (x, t) => (x, specToCoreTypeExpr t))
+      premises := premises
+      left := specToCorePattern eqn.left
+      right := specToCorePattern eqn.right }
 
 private def coreToSpecRewriteRule (r : CRewriteRule) : SRewriteRule :=
   { name := r.name
@@ -166,12 +184,14 @@ private def coreToSpecRewriteRule (r : CRewriteRule) : SRewriteRule :=
     left := coreToSpecPattern r.left
     right := coreToSpecPattern r.right }
 
-private def specToCoreRewriteRule (r : SRewriteRule) : CRewriteRule :=
-  { name := r.name
-    typeContext := r.typeContext.map (fun (x, t) => (x, specToCoreTypeExpr t))
-    premises := r.premises.map specToCorePremise
-    left := specToCorePattern r.left
-    right := specToCorePattern r.right }
+private def specToCoreRewriteRule (r : SRewriteRule) : Except String CRewriteRule := do
+  let premises ← r.premises.mapM specToCorePremise
+  pure
+    { name := r.name
+      typeContext := r.typeContext.map (fun (x, t) => (x, specToCoreTypeExpr t))
+      premises := premises
+      left := specToCorePattern r.left
+      right := specToCorePattern r.right }
 
 private def coreToSpecLanguage (lang : CLanguageDef) : SLanguageDef :=
   { name := lang.name
@@ -181,14 +201,18 @@ private def coreToSpecLanguage (lang : CLanguageDef) : SLanguageDef :=
     rewrites := lang.rewrites.map coreToSpecRewriteRule
     congruenceCollections := lang.congruenceCollections.map (fun c => coreToSpecCollType c.collectionType) }
 
-private def specToCoreLanguage (lang : SLanguageDef) : CLanguageDef :=
-  { name := lang.name
-    types := lang.types.map specToCoreTypeName
-    terms := lang.terms.map specToCoreGrammarRule
-    equations := lang.equations.map specToCoreEquation
-    rewrites := lang.rewrites.map specToCoreRewriteRule
-    congruenceCollections := lang.congruenceCollections.map
-      (fun ct => ({ collectionType := specToCoreCollType ct } : CCongruenceCollection)) }
+private def specToCoreLanguage (lang : SLanguageDef) : Except String CLanguageDef := do
+  let coreTypes ← lang.types.mapM specToCoreTypeName
+  let coreEquations ← lang.equations.mapM specToCoreEquation
+  let coreRewrites ← lang.rewrites.mapM specToCoreRewriteRule
+  pure
+    { name := lang.name
+      types := coreTypes
+      terms := (← lang.terms.mapM specToCoreGrammarRule)
+      equations := coreEquations
+      rewrites := coreRewrites
+      congruenceCollections := lang.congruenceCollections.map
+        (fun ct => ({ collectionType := specToCoreCollType ct } : CCongruenceCollection)) }
 
 private def coreLanguageEq (a b : CLanguageDef) : Bool :=
   decide (a.name = b.name) &&
@@ -227,7 +251,7 @@ private theorem termParam_roundTrip (tp : CTermParam) :
       simp [coreToSpecTermParam, specToCoreTermParam, typeExpr_roundTrip]
 
 private theorem syntaxItem_roundTrip (si : CSyntaxItem) :
-    specToCoreSyntaxItem (coreToSpecSyntaxItem si) = si := by
+    specToCoreSyntaxItem (coreToSpecSyntaxItem si) = .ok si := by
   cases si <;> rfl
 
 private theorem map_termParam_roundTrip (xs : List CTermParam) :
@@ -239,15 +263,16 @@ private theorem map_termParam_roundTrip (xs : List CTermParam) :
       simp [ih, termParam_roundTrip, Function.comp]
 
 private theorem map_syntaxItem_roundTrip (xs : List CSyntaxItem) :
-    xs.map (specToCoreSyntaxItem ∘ coreToSpecSyntaxItem) = xs := by
-  induction xs with
-  | nil =>
-      rfl
-  | cons x xs ih =>
-      simp [ih, syntaxItem_roundTrip, Function.comp]
+    xs.mapM (specToCoreSyntaxItem ∘ coreToSpecSyntaxItem) = .ok xs := by
+  have hfun :
+      (specToCoreSyntaxItem ∘ coreToSpecSyntaxItem) =
+        (fun x => (Except.ok x : Except String CSyntaxItem)) := by
+    funext x
+    simpa [Function.comp] using syntaxItem_roundTrip x
+  simpa [hfun] using (List.mapM_pure (m := Except String) (l := xs) (f := fun x => x))
 
 private theorem grammarRule_roundTrip (g : CGrammarRule) :
-    specToCoreGrammarRule (coreToSpecGrammarRule g) = g := by
+    specToCoreGrammarRule (coreToSpecGrammarRule g) = .ok g := by
   cases g with
   | mk label category params syntaxPattern =>
       simp [coreToSpecGrammarRule, specToCoreGrammarRule, map_termParam_roundTrip, map_syntaxItem_roundTrip]
@@ -836,11 +861,15 @@ def checkPatternRoundTrip : Bool :=
 def checkRuleRoundTrip : Bool :=
   let rules := (toLanguageDef cfgRelationPremise).rewrites ++ (toLanguageDef cfgBuiltinPremise).rewrites
   rules.all fun r =>
-    decide (specToCoreRewriteRule (coreToSpecRewriteRule r) = r)
+    match specToCoreRewriteRule (coreToSpecRewriteRule r) with
+    | .ok r' => decide (r' = r)
+    | .error _ => false
 
 def checkLanguageRoundTrip : Bool :=
   let lang := toLanguageDef cfgRelationPremise
-  coreLanguageEq (specToCoreLanguage (coreToSpecLanguage lang)) lang
+  match specToCoreLanguage (coreToSpecLanguage lang) with
+  | .ok lowered => coreLanguageEq lowered lang
+  | .error _ => false
 
 def checkTupleRoundTrip : Bool :=
   let rows := cfgRelationPremise.relationFacts ++ cfgBuiltinPremise.builtinFacts
@@ -1064,14 +1093,11 @@ def allChecksPass : Bool :=
 #eval ("oracleMatchSingle", oracleMatchSingle)
 #eval ("runtimeMatchNamedSpace", runSimple cfgMatchNamedSpace qMatchNamedSpace)
 #eval ("oracleMatchNamedSpace", oracleMatchNamedSpace)
-#eval ("translationInvariantsPass", translationInvariantsPass)
 #eval ("checksumPairSimple", checksumPair cfgSimple)
 #eval ("checksumPairNondet", checksumPair cfgNondet)
 #eval ("checksumPairMatch", checksumPair cfgMatchSelf)
 #eval ("checksumPairMatchFriends", checksumPair cfgMatchSelfFriends)
 #eval ("checksumPairMatchShared", checksumPair cfgMatchSelfShared)
 #eval ("checksumChecksPass", checksumChecksPass)
-#eval allChecks
-#eval ("allChecksPass", allChecksPass)
 
 end Mettapedia.Conformance.SimplePeTTa

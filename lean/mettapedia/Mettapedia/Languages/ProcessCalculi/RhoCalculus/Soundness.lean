@@ -119,7 +119,7 @@ inductive HasType : TypingContext → Pattern → NativeType → Prop where
       HasType Γ n ⟨"Name", α, by simp⟩ →
       (∀ z, z ∉ L →
         HasType (Γ.extend z ⟨"Name", α, by simp⟩) (openBVar 0 (.fvar z) p) ⟨"Proc", φ, by simp⟩) →
-      HasType Γ (.apply "PInput" [n, .lambda p]) ⟨"Proc", fun _ => True, by simp⟩
+      HasType Γ (.apply "PInput" [n, .lambda none p]) ⟨"Proc", fun _ => True, by simp⟩
 
   /-- Parallel: all elements must be well-typed processes -/
   | par {Γ : TypingContext} {ps : List Pattern} :
@@ -253,10 +253,10 @@ theorem freeVars_openBVar_subset {k : Nat} {u : Pattern} {p : Pattern} {x : Stri
     cases ih a ha hx_in with
     | inl h => exact Or.inl ⟨a, ha, h⟩
     | inr h => exact Or.inr h
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [openBVar, freeVars] at hx ⊢
     exact ih hx
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [openBVar, freeVars] at hx ⊢
     exact ih hx
   | hsubst body repl ihb ihr =>
@@ -347,7 +347,7 @@ theorem HasType.noExplicitSubst {Γ : TypingContext} {p : Pattern} {τ : NativeT
     show allNoExplicitSubst [_, _] = true
     simp only [allNoExplicitSubst, ih1, ih2, Bool.and_self]
   | @input _ n p' α φ L _ hbody ih_n ih_body =>
-    show allNoExplicitSubst [_, .lambda _] = true
+    show allNoExplicitSubst [_, .lambda _ _] = true
     simp only [allNoExplicitSubst, Mettapedia.OSLF.MeTTaIL.Substitution.noExplicitSubst,
                ih_n, Bool.true_and, Bool.and_true]
     obtain ⟨z, hz⟩ := exists_fresh L

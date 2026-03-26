@@ -171,7 +171,7 @@ def equationMatchClause (space : Space) (dispatch : GroundedDispatch)
   (rhs, queryBindings) ∈ queryEquations space atom fuel ∧
   merged ∈ mergeBindings queryBindings b fuel ∧
   merged.hasLoop = false ∧
-  EvalAtom space dispatch (merged.apply rhs) type_ merged result ∧
+  EvalAtom space dispatch (merged.apply rhs fuel) type_ merged result ∧
   MettaCall space dispatch atom type_ b result
 
 /-- Clause: No equations match (spec lines 383-384). -/

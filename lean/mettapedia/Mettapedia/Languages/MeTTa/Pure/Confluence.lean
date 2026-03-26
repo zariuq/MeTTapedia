@@ -586,10 +586,10 @@ private theorem openBVar_comm_fvar {j k : Nat} {x y : String} (hjk : j ≠ k)
   | happly c args ih =>
     simp only [openBVar, List.map_map]
     congr 1; exact List.map_congr_left fun a ha => ih a ha hjk
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [openBVar]; congr 1
     exact ih (by omega : j + 1 ≠ k + 1)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [openBVar]; congr 1
     exact ih (by omega : j + n ≠ k + n)
   | hsubst body repl ihb ihr =>
@@ -636,12 +636,12 @@ private theorem openBVar_open_comp_lc {j k : Nat} {u v p : Pattern}
     simp only [List.map_map]
     exact List.map_congr_left (fun a ha =>
       ih a ha (j := j) (k := k) hlcU (lc_at_list_mem hlcP ha))
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [openBVar, lc_at] at hlcP ⊢
     have hlcU' : lc_at (j + 1) u = true := lc_at_mono hlcU (Nat.le_add_right j 1)
     simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
       ih (j := j + 1) (k := k) hlcU' hlcP
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [openBVar, lc_at] at hlcP ⊢
     have hlcU' : lc_at (j + n) u = true := lc_at_mono hlcU (Nat.le_add_right j n)
     have hlcBody : lc_at (j + n + 1) body = true := by

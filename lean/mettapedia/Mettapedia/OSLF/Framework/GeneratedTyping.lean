@@ -166,7 +166,7 @@ inductive GenHasType (lang : LanguageDef) :
       GenHasType lang Γ n ⟨nameSort, α, hname⟩ →
       (∀ z, z ∉ L → GenHasType lang (Γ.extend z ⟨nameSort, α, hname⟩)
         (openBVar 0 (.fvar z) p) ⟨procSort, φ, hproc⟩) →
-      GenHasType lang Γ (.apply "PInput" [n, .lambda p]) ⟨procSort, topPred, hproc⟩
+      GenHasType lang Γ (.apply "PInput" [n, .lambda none p]) ⟨procSort, topPred, hproc⟩
 
   /-- Parallel composition: all elements must be well-typed. -/
   | par {Γ : GenTypingContext lang} {ps : List Pattern}

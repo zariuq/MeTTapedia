@@ -57,8 +57,8 @@ def coreToSpecPattern : CPattern → SPattern
   | .bvar n => .bvar n
   | .fvar x => .fvar x
   | .apply c args => .apply c (args.map coreToSpecPattern)
-  | .lambda body => .lambda (coreToSpecPattern body)
-  | .multiLambda n body => .multiLambda n (coreToSpecPattern body)
+  | .lambda body => .lambda none (coreToSpecPattern body)
+  | .multiLambda n body => .multiLambda n [] (coreToSpecPattern body)
   | .subst body repl => .subst (coreToSpecPattern body) (coreToSpecPattern repl)
   | .collection ct elems rest =>
       .collection (coreToSpecCollType ct) (elems.map coreToSpecPattern) rest
@@ -67,8 +67,8 @@ def specToCorePattern : SPattern → CPattern
   | .bvar n => .bvar n
   | .fvar x => .fvar x
   | .apply c args => .apply c (args.map specToCorePattern)
-  | .lambda body => .lambda (specToCorePattern body)
-  | .multiLambda n body => .multiLambda n (specToCorePattern body)
+  | .lambda _ body => .lambda (specToCorePattern body)
+  | .multiLambda n _ body => .multiLambda n (specToCorePattern body)
   | .subst body repl => .subst (specToCorePattern body) (specToCorePattern repl)
   | .collection ct elems rest =>
       .collection (specToCoreCollType ct) (elems.map specToCorePattern) rest
@@ -86,10 +86,12 @@ def coreToSpecPremise : CPremise → SPremise
   | .congruence a b => .congruence (coreToSpecPattern a) (coreToSpecPattern b)
   | .relationQuery rel args => .relationQuery rel (args.map coreToSpecPattern)
 
-def specToCorePremise : SPremise → CPremise
-  | .freshness fc => .freshness (specToCoreFreshness fc)
-  | .congruence a b => .congruence (specToCorePattern a) (specToCorePattern b)
-  | .relationQuery rel args => .relationQuery rel (args.map specToCorePattern)
+def specToCorePremise : SPremise → Except String CPremise
+  | .freshness fc => .ok (.freshness (specToCoreFreshness fc))
+  | .congruence a b => .ok (.congruence (specToCorePattern a) (specToCorePattern b))
+  | .relationQuery rel args => .ok (.relationQuery rel (args.map specToCorePattern))
+  | .forAll collection _ _ =>
+      throw s!"Cannot lower forAll premise over collection `{collection}` to PeTTa core; core has no quantified premise form."
 
 def coreToSpecRewriteRule (r : CRewriteRule) : SRewriteRule :=
   { name := r.name
@@ -98,12 +100,14 @@ def coreToSpecRewriteRule (r : CRewriteRule) : SRewriteRule :=
     left := coreToSpecPattern r.left
     right := coreToSpecPattern r.right }
 
-def specToCoreRewriteRule (r : SRewriteRule) : CRewriteRule :=
-  { name := r.name
-    typeContext := r.typeContext.map (fun (x, t) => (x, specToCoreTypeExpr t))
-    premises := r.premises.map specToCorePremise
-    left := specToCorePattern r.left
-    right := specToCorePattern r.right }
+def specToCoreRewriteRule (r : SRewriteRule) : Except String CRewriteRule := do
+  let premises ← r.premises.mapM specToCorePremise
+  pure
+    { name := r.name
+      typeContext := r.typeContext.map (fun (x, t) => (x, specToCoreTypeExpr t))
+      premises := premises
+      left := specToCorePattern r.left
+      right := specToCorePattern r.right }
 
 theorem collType_roundTrip (ct : CCollType) :
     specToCoreCollType (coreToSpecCollType ct) = ct := by
@@ -155,7 +159,7 @@ theorem freshness_roundTrip (fc : CFreshness) :
   simp [coreToSpecFreshness, specToCoreFreshness, pattern_roundTrip]
 
 theorem premise_roundTrip (prem : CPremise) :
-    specToCorePremise (coreToSpecPremise prem) = prem := by
+    specToCorePremise (coreToSpecPremise prem) = .ok prem := by
   cases prem with
   | freshness fc =>
       simp [coreToSpecPremise, specToCorePremise, freshness_roundTrip]
@@ -164,8 +168,13 @@ theorem premise_roundTrip (prem : CPremise) :
   | relationQuery rel args =>
       simp [coreToSpecPremise, specToCorePremise, pattern_list_roundTrip]
 
+theorem premise_list_roundTrip (premises : List CPremise) :
+    premises.mapM (fun prem => specToCorePremise (coreToSpecPremise prem)) = .ok premises := by
+  simpa [premise_roundTrip] using
+    (List.mapM_pure (m := Except String) (l := premises) (f := fun prem => prem))
+
 theorem rewriteRule_roundTrip (r : CRewriteRule) :
-    specToCoreRewriteRule (coreToSpecRewriteRule r) = r := by
+    specToCoreRewriteRule (coreToSpecRewriteRule r) = .ok r := by
   cases r with
   | mk name typeContext premises left right =>
       have hTypes :
@@ -179,21 +188,18 @@ theorem rewriteRule_roundTrip (r : CRewriteRule) :
             cases x
             simp [Function.comp, typeExpr_roundTrip, ih]
       have hPremises :
-          premises.map (specToCorePremise ∘ coreToSpecPremise) = premises := by
-        induction premises with
-        | nil =>
-            rfl
-        | cons prem prems ih =>
-            simp [Function.comp, premise_roundTrip, ih]
-      simp [coreToSpecRewriteRule, specToCoreRewriteRule, hTypes, hPremises,
-        pattern_roundTrip]
+          premises.mapM (fun prem => specToCorePremise (coreToSpecPremise prem)) = .ok premises := by
+        simpa using premise_list_roundTrip premises
+      have hPremises' :
+          premises.mapM (specToCorePremise ∘ coreToSpecPremise) = .ok premises := by
+        simpa [Function.comp] using hPremises
+      simp [coreToSpecRewriteRule, specToCoreRewriteRule, hTypes, pattern_roundTrip]
+      rw [hPremises']
+      rfl
 
 theorem rewriteRule_list_roundTrip (rs : List CRewriteRule) :
-    rs.map (specToCoreRewriteRule ∘ coreToSpecRewriteRule) = rs := by
-  induction rs with
-  | nil =>
-      rfl
-  | cons r rs ih =>
-      simp [Function.comp, rewriteRule_roundTrip, ih]
+    rs.mapM (fun r => specToCoreRewriteRule (coreToSpecRewriteRule r)) = .ok rs := by
+  simpa [rewriteRule_roundTrip] using
+    (List.mapM_pure (m := Except String) (l := rs) (f := fun r => r))
 
 end Mettapedia.Languages.MeTTa.PeTTa.ProfileBridge

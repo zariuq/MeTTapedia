@@ -112,7 +112,7 @@ def piCalc : LanguageDef := {
                       ("z", TypeExpr.base "Proc")],
       premises := [],
       left := .collection .hashBag [
-        .apply "PiInp" [.fvar "x", .lambda (.fvar "body")],
+        .apply "PiInp" [.fvar "x", .lambda none (.fvar "body")],
         .apply "PiOut" [.fvar "x", .fvar "z"]
       ] (some "rest"),
       right := .collection .hashBag [
@@ -155,10 +155,10 @@ MeTTaIL `Pattern` type used by the OSLF engine. -/
 def piToPattern : Process → Pattern
   | .nil => .apply "PiNil" []
   | .par P Q => piPar (piToPattern P) (piToPattern Q)
-  | .input x y P => .apply "PiInp" [.fvar x, .lambda (closeFVar 0 y (piToPattern P))]
+  | .input x y P => .apply "PiInp" [.fvar x, .lambda none (closeFVar 0 y (piToPattern P))]
   | .output x z => .apply "PiOut" [.fvar x, .fvar z]
-  | .nu x P => .apply "PiNu" [.lambda (closeFVar 0 x (piToPattern P))]
-  | .replicate x y P => .apply "PiRep" [.fvar x, .lambda (closeFVar 0 y (piToPattern P))]
+  | .nu x P => .apply "PiNu" [.lambda none (closeFVar 0 x (piToPattern P))]
+  | .replicate x y P => .apply "PiRep" [.fvar x, .lambda none (closeFVar 0 y (piToPattern P))]
 
 /-! ## OSLF Type System (automatic) -/
 
@@ -188,7 +188,7 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
 -- Demo 1: COMM — x(y).0 | x<z> → 0
 -- In MeTTaIL: {PiInp(.fvar "x", λ.PiNil), PiOut(.fvar "x", .fvar "z")} → {0}
 #eval
-  let inp := Pattern.apply "PiInp" [.fvar "x", .lambda (.apply "PiNil" [])]
+  let inp := Pattern.apply "PiInp" [.fvar "x", .lambda none (.apply "PiNil" [])]
   let out := Pattern.apply "PiOut" [.fvar "x", .fvar "z"]
   let process := Pattern.collection .hashBag [inp, out] none
   rewriteWithContext piCalc process
@@ -198,7 +198,7 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
 -- Input body uses BVar 0 (the bound y), which gets substituted with z
 #eval
   let body := Pattern.apply "PiOut" [.bvar 0, .fvar "w"]  -- y<w> in LN
-  let inp := Pattern.apply "PiInp" [.fvar "x", .lambda body]
+  let inp := Pattern.apply "PiInp" [.fvar "x", .lambda none body]
   let out := Pattern.apply "PiOut" [.fvar "x", .fvar "z"]
   let process := Pattern.collection .hashBag [inp, out] none
   rewriteWithContext piCalc process
@@ -206,7 +206,7 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
 
 -- Demo 3: COMM with rest — x(y).0 | x<z> | P → 0 | P
 #eval
-  let inp := Pattern.apply "PiInp" [.fvar "x", .lambda (.apply "PiNil" [])]
+  let inp := Pattern.apply "PiInp" [.fvar "x", .lambda none (.apply "PiNil" [])]
   let out := Pattern.apply "PiOut" [.fvar "x", .fvar "z"]
   let extra := Pattern.apply "PiOut" [.fvar "a", .fvar "b"]
   let process := Pattern.collection .hashBag [inp, out, extra] none
@@ -215,7 +215,7 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
 
 -- Demo 4: No reduction — mismatched channels
 #eval
-  let inp := Pattern.apply "PiInp" [.fvar "x", .lambda (.apply "PiNil" [])]
+  let inp := Pattern.apply "PiInp" [.fvar "x", .lambda none (.apply "PiNil" [])]
   let out := Pattern.apply "PiOut" [.fvar "y", .fvar "z"]  -- different channel!
   let process := Pattern.collection .hashBag [inp, out] none
   rewriteWithContext piCalc process

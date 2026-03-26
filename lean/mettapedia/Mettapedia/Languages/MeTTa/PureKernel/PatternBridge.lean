@@ -365,9 +365,9 @@ theorem applySubst_extend_fvar_self_of_find_none
       simp [applySubst]
       intro a ha
       exact ih a ha
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       simpa [applySubst] using ih
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       simpa [applySubst] using ih
   | hsubst body repl ihb ihr =>
       simp [applySubst, ihb, ihr]
@@ -473,9 +473,9 @@ theorem applySubst_of_isIdentity
   | happly c args ih =>
       simp [applySubst]
       exact list_map_eq_self_local (fun a ha => ih a ha (allNoExplicitSubst_mem hnes ha))
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       simpa [applySubst, noExplicitSubst] using ih (by simpa [noExplicitSubst] using hnes)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       simpa [applySubst, noExplicitSubst] using ih (by simpa [noExplicitSubst] using hnes)
   | hsubst body repl ihb ihr =>
       exact absurd hnes Bool.false_ne_true
@@ -594,9 +594,9 @@ mutual
     | happly c args ih =>
         simpa [closeFVar, noExplicitSubst] using
           allNoExplicitSubst_map_closeFVar k x args ih
-    | hlambda body ih =>
+    | hlambda _ body ih =>
         simpa [closeFVar, noExplicitSubst] using ih (k + 1)
-    | hmultiLambda n body ih =>
+    | hmultiLambda n _ body ih =>
         simpa [closeFVar, noExplicitSubst] using ih (k + n)
     | hsubst body repl ihb ihr =>
         simp [closeFVar, noExplicitSubst]
@@ -636,10 +636,10 @@ theorem lc_at_closeFVar_of_lt {k l : Nat} (x : String) (p : Pattern)
           simp only [List.map_cons, lc_at_list, Bool.and_eq_true] at hp ⊢
           exact ⟨ih a List.mem_cons_self hl hp.1,
                  ihas (fun q hq => ih q (List.mem_cons_of_mem _ hq)) hp.2⟩
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       simp only [closeFVar, lc_at] at hp ⊢
       exact ih (Nat.succ_lt_succ hl) hp
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       simp only [closeFVar, lc_at] at hp ⊢
       exact ih (Nat.add_lt_add_right hl n) hp
   | hsubst body repl ihb ihr =>
@@ -671,9 +671,9 @@ theorem not_mem_freeVars_closeFVar_self (k : Nat) (x : String) (p : Pattern) :
       simp [closeFVar, freeVars, List.mem_flatMap] at hx
       rcases hx with ⟨a, ha, hxa⟩
       exact (ih a ha k) hxa
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       simpa [closeFVar, freeVars] using ih (k + 1)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       simpa [closeFVar, freeVars] using ih (k + n)
   | hsubst body repl ihb ihr =>
       intro hx
@@ -727,10 +727,10 @@ theorem closeFVar_fresh_id (k : Nat) (x : String) (p : Pattern)
       simp [closeFVar]
       exact list_map_eq_self (fun a ha => by
         simpa using ih a ha k (isFresh_mem_of_flatMap hfresh ha))
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       intro k hfresh
       simpa [closeFVar, isFresh_lambda_iff] using ih (k + 1) (by simpa [isFresh_lambda_iff] using hfresh)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       intro k hfresh
       have hbody : isFresh x body = true := by simpa [isFresh, freeVars] using hfresh
       simpa [closeFVar] using ih (k + n) hbody
@@ -765,9 +765,9 @@ theorem closeFVar_comm (k : Nat) {x y : String} (hxy : x ≠ y) (p : Pattern) :
       simp [closeFVar]
       intro a ha
       exact ih a ha k
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       simpa [closeFVar] using ih (k + 1)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       simpa [closeFVar] using ih (k + n)
   | hsubst body repl ihb ihr =>
       simp [closeFVar, ihb (k + 1), ihr k]
@@ -806,10 +806,10 @@ theorem applySubst_single_closeFVar_comm
       simp [applySubst, closeFVar]
       intro a ha
       simpa using ih a ha k (allNoExplicitSubst_mem hnes ha)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       intro k hnes
       simpa [applySubst, closeFVar] using ih (k + 1) (by simpa [noExplicitSubst] using hnes)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       intro k hnes
       simpa [applySubst, closeFVar] using ih (k + n) (by simpa [noExplicitSubst] using hnes)
   | hsubst body repl _ _ =>
@@ -839,11 +839,11 @@ theorem freeVars_closeFVar_mem_of_ne (k : Nat) {x z : String} (p : Pattern)
       simp [closeFVar, freeVars, List.mem_flatMap] at hz ⊢
       rcases hz with ⟨a, ha, hza⟩
       exact ⟨a, ha, ih a ha k hza⟩
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       intro hz
       simp [closeFVar, freeVars] at hz
       simpa [freeVars] using ih (k + 1) hz
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       intro hz
       simp [closeFVar, freeVars] at hz
       simpa [freeVars] using ih (k + n) hz
@@ -1109,10 +1109,10 @@ theorem applySubst_quoteSubstEnv_closeFVar_comm_future
       simp [applySubst, closeFVar]
       intro a ha
       simpa using ih a ha ℓ (allNoExplicitSubst_mem hnes ha)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
       intro ℓ hnes
       simpa [applySubst, closeFVar] using ih (ℓ + 1) (by simpa [noExplicitSubst] using hnes)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
       intro ℓ hnes
       simpa [applySubst, closeFVar] using ih (ℓ + n) (by simpa [noExplicitSubst] using hnes)
   | hsubst body repl _ _ =>

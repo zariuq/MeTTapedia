@@ -55,12 +55,12 @@ theorem isFresh_of_collection_mem {x : String} {ct : CollType}
   exact fun h => hfresh (List.contains_iff_mem.mpr
     (List.mem_flatMap.mpr ⟨p, hp, List.contains_iff_mem.mp h⟩))
 
-theorem isFresh_of_lambda {x : String} {body : Pattern}
-    (hfresh : isFresh x (.lambda body) = true) : isFresh x body = true := by
+theorem isFresh_of_lambda {x : String} {nm : Option String} {body : Pattern}
+    (hfresh : isFresh x (.lambda nm body) = true) : isFresh x body = true := by
   simpa only [isFresh, freeVars] using hfresh
 
-theorem isFresh_of_multiLambda {x : String} {n : Nat} {body : Pattern}
-    (hfresh : isFresh x (.multiLambda n body) = true) : isFresh x body = true := by
+theorem isFresh_of_multiLambda {x : String} {n : Nat} {nms : List String} {body : Pattern}
+    (hfresh : isFresh x (.multiLambda n nms body) = true) : isFresh x body = true := by
   simpa only [isFresh, freeVars] using hfresh
 
 theorem isFresh_of_subst_body {x : String} {body repl : Pattern}
@@ -146,9 +146,9 @@ theorem isFresh_closeBVar (k : Nat) (x : String) (p : Pattern) :
     simp only [isFresh, Bool.not_eq_true'] at this
     rw [Bool.eq_false_iff] at this
     exact this (List.contains_iff_mem.mpr hxq)
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simpa only [closeBVar, closeFVar, isFresh, freeVars] using ih (k + 1)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simpa only [closeBVar, closeFVar, isFresh, freeVars] using ih (k + n)
   | hsubst body repl ihb ihr =>
     unfold closeBVar closeFVar
@@ -194,11 +194,11 @@ theorem openBVar_closeBVar_cancel {k : Nat} {x : String} {p : Pattern}
     congr 1
     exact list_map_eq_self (fun a ha =>
       ih a ha (lc_at_list_mem (by simpa [lc_at] using hlc) ha))
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [closeBVar, closeFVar, openBVar]
     congr 1
     exact ih (by simpa [lc_at] using hlc)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [closeBVar, closeFVar, openBVar]
     congr 1
     exact ih (by simpa [lc_at] using hlc)
@@ -238,11 +238,11 @@ theorem closeBVar_openBVar_cancel {k : Nat} {x : String} {p : Pattern}
     simp only [openBVar, closeBVar, closeFVar, List.map_map]
     congr 1
     exact list_map_eq_self (fun a ha => ih a ha (isFresh_of_apply_mem hf ha))
-  | hlambda body ih =>
+  | hlambda _ body ih =>
     simp only [openBVar, closeBVar, closeFVar]
     congr 1
     exact ih (isFresh_of_lambda hf)
-  | hmultiLambda n body ih =>
+  | hmultiLambda n _ body ih =>
     simp only [openBVar, closeBVar, closeFVar]
     congr 1
     exact ih (isFresh_of_multiLambda hf)

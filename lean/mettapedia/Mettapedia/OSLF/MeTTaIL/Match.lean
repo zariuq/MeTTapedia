@@ -99,9 +99,9 @@ def matchPattern (pat term : Pattern) : List Bindings :=
     if c1 == c2 && pargs.length == targs.length then
       matchArgs pargs targs
     else []
-  | .lambda bodyPat, .lambda bodyConcrete =>
+  | .lambda _ bodyPat, .lambda _ bodyConcrete =>
     matchPattern bodyPat bodyConcrete
-  | .multiLambda npat bodyPat, .multiLambda nconc bodyConcrete =>
+  | .multiLambda npat _ bodyPat, .multiLambda nconc _ bodyConcrete =>
     if npat == nconc then matchPattern bodyPat bodyConcrete
     else []
   | .collection ct1 pelems rest1, .collection ct2 telems _rest2 =>
@@ -129,10 +129,10 @@ def applyBindings (bindings : Bindings) (rhs : Pattern) : Pattern :=
   | .bvar n => .bvar n
   | .apply c args =>
     .apply c (args.map (applyBindings bindings))
-  | .lambda body =>
-    .lambda (applyBindings bindings body)
-  | .multiLambda n body =>
-    .multiLambda n (applyBindings bindings body)
+  | .lambda nm body =>
+    .lambda nm (applyBindings bindings body)
+  | .multiLambda n nms body =>
+    .multiLambda n nms (applyBindings bindings body)
   | .subst body repl =>
     -- Apply bindings to both parts, then substitute via openBVar
     let body' := applyBindings bindings body
@@ -156,8 +156,8 @@ def isMatchCorrectAux : Pattern → Bool
   | .fvar _           => true
   | .bvar _           => true
   | .apply _ args     => isMatchCorrectListAux args
-  | .lambda body      => isMatchCorrectAux body
-  | .multiLambda _ b  => isMatchCorrectAux b
+  | .lambda _ _       => false  -- matchPattern ignores binder names; correctness breaks
+  | .multiLambda _ _ _  => false  -- matchPattern ignores binder names; correctness breaks
   | .subst _ _        => false
   | .collection _ _ _ => false
 

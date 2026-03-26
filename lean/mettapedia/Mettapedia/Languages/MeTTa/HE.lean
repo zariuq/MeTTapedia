@@ -13,6 +13,8 @@ import Mettapedia.Languages.MeTTa.HE.ExecutionContract
 import Mettapedia.Languages.MeTTa.HE.TransitionSpec
 import Mettapedia.Languages.MeTTa.HE.RewriteIR
 import Mettapedia.Languages.MeTTa.HE.RewriteIRV2
+import Mettapedia.Languages.MeTTa.HE.Eval
+import Mettapedia.Languages.MeTTa.HE.Correctness
 import Mettapedia.Languages.MeTTa.HE.CoreFragment
 
 /-!

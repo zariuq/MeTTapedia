@@ -55,8 +55,8 @@ def sourceKeyOfPattern : Pattern → SourceKey
   | .apply head args => { headTag := head, arity := args.length }
   | .fvar _ => { headTag := "$fvar", arity := 0 }
   | .bvar _ => { headTag := "$bvar", arity := 0 }
-  | .lambda _ => { headTag := "$lambda", arity := 1 }
-  | .multiLambda n _ => { headTag := s!"$multiLambda{n}", arity := 1 }
+  | .lambda _ _ => { headTag := "$lambda", arity := 1 }
+  | .multiLambda n _ _ => { headTag := s!"$multiLambda{n}", arity := 1 }
   | .subst _ _ => { headTag := "$subst", arity := 2 }
   | .collection ct elems rest =>
       let collTag :=

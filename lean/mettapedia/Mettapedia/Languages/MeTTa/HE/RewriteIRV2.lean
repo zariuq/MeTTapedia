@@ -26,6 +26,8 @@ private def premiseVars : Premise → List String
       orderedUniq (freeVars lhs ++ freeVars rhs)
   | .relationQuery _ args =>
       orderedUniq (args.flatMap freeVars)
+  | .forAll collection param body =>
+      orderedUniq (collection :: param :: premiseVars body)
 
 private def premiseVarFlowAux
     (seen : List String) (idx : Nat) : List Premise → List PremiseVarFlow

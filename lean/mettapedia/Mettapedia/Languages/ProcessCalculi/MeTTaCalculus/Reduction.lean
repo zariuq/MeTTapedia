@@ -38,8 +38,8 @@ def occursFVar (x : String) : Pattern → Bool
   | .bvar _ => false
   | .fvar y => x == y
   | .apply _ args => occursFVarList x args
-  | .lambda b => occursFVar x b
-  | .multiLambda _ b => occursFVar x b
+  | .lambda _nm b => occursFVar x b
+  | .multiLambda _ _nms b => occursFVar x b
   | .subst b r => occursFVar x b || occursFVar x r
   | .collection _ elems rest =>
       occursFVarList x elems ||
@@ -81,9 +81,9 @@ private def unifyLoop : Nat → List (Pattern × Pattern) → Bindings → Optio
               unifyLoop fuel (List.zip args1 args2 ++ eqs) σ
             else
               none
-        | .lambda b1, .lambda b2 =>
+        | .lambda _nm1 b1, .lambda _nm2 b2 =>
             unifyLoop fuel ((b1, b2) :: eqs) σ
-        | .multiLambda n1 b1, .multiLambda n2 b2 =>
+        | .multiLambda n1 _nms1 b1, .multiLambda n2 _nms2 b2 =>
             if n1 == n2 then unifyLoop fuel ((b1, b2) :: eqs) σ else none
         | .subst b1 r1, .subst b2 r2 =>
             unifyLoop fuel ((b1, b2) :: (r1, r2) :: eqs) σ

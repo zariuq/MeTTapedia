@@ -64,7 +64,7 @@ inductive Reduces : Pattern → Pattern → Type where
   | comm {n q p : Pattern} {rest : List Pattern} :
       Reduces
         (.collection .hashBag ([.apply "POutput" [n, q],
-                                .apply "PInput" [n, .lambda p]] ++ rest) none)
+                                .apply "PInput" [n, .lambda none p]] ++ rest) none)
         (.collection .hashBag ([commSubst p q] ++ rest) none)
 
   /-- DROP: *(@p) ⇝ p -/
@@ -146,7 +146,7 @@ theorem rely_pointwise (φ : ProcessPred) (p : Pattern) :
 /-- COMM reduces synchronizable terms (constructive witness). -/
 def comm_reduces {n q p : Pattern} :
     Σ r, (.collection .hashBag [.apply "POutput" [n, q],
-                                .apply "PInput" [n, .lambda p]] none) ⇝ r := by
+                                .apply "PInput" [n, .lambda none p]] none) ⇝ r := by
   use .collection .hashBag [commSubst p q] none
   have h := @Reduces.comm n q p []
   simp only [List.append_nil] at h
@@ -187,8 +187,8 @@ noncomputable def ioCount : Pattern → Nat
   | .apply "POutput" args => 1 + (args.map ioCount).sum
   | .apply "PInput" args => 1 + (args.map ioCount).sum
   | .apply _ args => (args.map ioCount).sum
-  | .lambda b => ioCount b
-  | .multiLambda _ b => ioCount b
+  | .lambda _nm b => ioCount b
+  | .multiLambda _ _nms b => ioCount b
   | .subst b r => ioCount b + ioCount r
   | .collection _ elems _ => (elems.map ioCount).sum
 
@@ -242,7 +242,7 @@ theorem ioCount_SC {P Q : Pattern}
     simp only [ioCount]; exact (hperm.map ioCount).sum_eq
   | set_cong es₁ es₂ hlen _ ih =>
     simp only [ioCount]; exact ioCount_list_SC hlen ih
-  | lambda_cong _ _ _ ih => simp only [ioCount]; exact ih
+  | lambda_cong _ _ _ _ ih => simp only [ioCount]; exact ih
   | apply_cong f args₁ args₂ hlen _ ih =>
     have hargs := ioCount_list_SC hlen ih
     -- ioCount (.apply f args) depends on whether f = "POutput"/"PInput"
@@ -253,7 +253,7 @@ theorem ioCount_SC {P Q : Pattern}
     split <;> split <;> simp_all
   | collection_general_cong _ es₁ es₂ _ hlen _ ih =>
     simp only [ioCount]; exact ioCount_list_SC hlen ih
-  | multiLambda_cong _ _ _ _ ih => simp only [ioCount]; exact ih
+  | multiLambda_cong _ _ _ _ _ ih => simp only [ioCount]; exact ih
   | subst_cong _ _ _ _ _ _ ih₁ ih₂ => simp only [ioCount]; omega
   | quote_drop n =>
     -- ioCount(NQuote[PDrop[n]]) = ioCount(n)
@@ -285,8 +285,8 @@ def redWeight : Pattern → Nat
       if f = "PZero" then 0
       else if f = "NQuote" then Nat.pred s
       else s + 1
-  | .lambda b => redWeight b
-  | .multiLambda _ b => redWeight b
+  | .lambda _nm b => redWeight b
+  | .multiLambda _ _nms b => redWeight b
   | .subst b r => redWeight b + redWeight r
   | .collection _ elems _ => (elems.map redWeight).sum
 
@@ -344,7 +344,7 @@ theorem redWeight_SC {P Q : Pattern}
   | set_cong es₁ es₂ hlen _ ih =>
     simp only [redWeight]
     exact redWeight_list_SC hlen ih
-  | lambda_cong _ _ _ ih =>
+  | lambda_cong _ _ _ _ ih =>
     simpa [redWeight] using ih
   | apply_cong f args₁ args₂ hlen _ ih =>
     have hargs := redWeight_list_SC hlen ih
@@ -353,7 +353,7 @@ theorem redWeight_SC {P Q : Pattern}
   | collection_general_cong _ es₁ es₂ _ hlen _ ih =>
     simp only [redWeight]
     exact redWeight_list_SC hlen ih
-  | multiLambda_cong _ _ _ _ ih =>
+  | multiLambda_cong _ _ _ _ _ ih =>
     simpa [redWeight] using ih
   | subst_cong _ _ _ _ _ _ ih₁ ih₂ =>
     simp [redWeight, ih₁, ih₂]

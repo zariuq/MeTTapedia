@@ -50,9 +50,9 @@ theorem nonRF_admin_correspondence_umbrella_fresh {N : Finset String}
       Nonempty
         ((.collection .hashBag
           [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody]),
+             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
            rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody]),
+             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
            encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
           (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
       (.collection .hashBag [Tnu, Tseed] none ≡
@@ -72,10 +72,10 @@ theorem nonRF_admin_correspondence_umbrella_fresh {N : Finset String}
           (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody])) ∧
+        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody])) ∧
+        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (encode (.replicate xr yr Pr) n v) := by
   simpa using
@@ -103,9 +103,9 @@ theorem nonRF_admin_correspondence_umbrella_fresh_of_obsSuperset
       Nonempty
         ((.collection .hashBag
           [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody]),
+             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
            rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody]),
+             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
            encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
           (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
       (.collection .hashBag [Tnu, Tseed] none ≡
@@ -125,10 +125,10 @@ theorem nonRF_admin_correspondence_umbrella_fresh_of_obsSuperset
           (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody])) ∧
+        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody])) ∧
+        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (encode (.replicate xr yr Pr) n v) := by
   have hsup :=
@@ -175,9 +175,9 @@ theorem calculus_correspondence_nonRF_admin_package_fresh_umbrella
       Nonempty
         ((.collection .hashBag
           [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody]),
+             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
            rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody]),
+             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
            encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
           (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
       (.collection .hashBag [Tnu, Tseed] none ≡
@@ -197,10 +197,10 @@ theorem calculus_correspondence_nonRF_admin_package_fresh_umbrella
           (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody])) ∧
+        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody])) ∧
+        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (encode (.replicate xr yr Pr) n v) := by
   exact nonRF_admin_correspondence_umbrella_fresh
@@ -262,9 +262,9 @@ theorem calculus_correspondence_prelude_complete_package_umbrella
       Nonempty
         ((.collection .hashBag
           [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody]),
+             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
            rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody]),
+             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
            encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
           (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
       (.collection .hashBag [Tnu, Tseed] none ≡
@@ -284,10 +284,10 @@ theorem calculus_correspondence_prelude_complete_package_umbrella
           (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody])) ∧
+        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody])) ∧
+        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (encode (.replicate xr yr Pr) n v)) := by
   refine ⟨?_, ?_, ?_, ?_⟩
@@ -410,9 +410,9 @@ abbrev CalcNonRFAdminFreshClause
     Nonempty
       ((.collection .hashBag
         [rhoPar (encode (.nu x P) "n_init" "v_init")
-           (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody]),
+           (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
          rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-           (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody]),
+           (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
          encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
         (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
     (.collection .hashBag [Tnu, Tseed] none ≡
@@ -432,10 +432,10 @@ abbrev CalcNonRFAdminFreshClause
         (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
   BackwardAdminReflection.WeakBackwardOutcome N
     (rhoPar (encode (.nu x P) "n_init" "v_init")
-      (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody])) ∧
+      (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
   BackwardAdminReflection.WeakBackwardOutcome N
     (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-      (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody])) ∧
+      (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
   BackwardAdminReflection.WeakBackwardOutcome N
     (encode (.replicate xr yr Pr) n v))
 
@@ -1124,9 +1124,9 @@ theorem calculus_correspondence_prelude_complete_package_userObs
       Nonempty
         ((.collection .hashBag
           [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody]),
+             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
            rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody]),
+             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
            encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
           (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
       (.collection .hashBag [Tnu, Tseed] none ≡
@@ -1146,10 +1146,10 @@ theorem calculus_correspondence_prelude_complete_package_userObs
           (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda nuListenerBody])) ∧
+        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda seedListenerBody])) ∧
+        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
     BackwardAdminReflection.WeakBackwardOutcome N
       (encode (.replicate xr yr Pr) n v))) := by
   refine ⟨obs_disjoint_reserved_of_subset_freeNames (P := P) (N := N) hobs hfresh, ?_⟩
@@ -1607,11 +1607,11 @@ theorem nonRF_admin_seed_canary_nonempty_from_fresh_umbrella_obs_superset_regres
     BackwardAdminReflection.WeakBackwardOutcome
       ({ "ns_z", "aux" } : Finset String)
       (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda rhoNil])) →
+        (.apply "PInput" [.fvar "ns_z", .lambda none rhoNil])) →
     BackwardAdminReflection.WeakBackwardOutcome
       ({ "ns_z" } : Finset String)
       (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda rhoNil])) := by
+        (.apply "PInput" [.fvar "ns_z", .lambda none rhoNil])) := by
   intro h
   exact BackwardAdminReflection.WeakBackwardOutcome.mono
     h

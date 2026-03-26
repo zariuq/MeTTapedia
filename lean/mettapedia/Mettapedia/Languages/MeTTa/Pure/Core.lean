@@ -128,7 +128,7 @@ def mettaPure : LanguageDef := {
     { name := "BetaPi",
       typeContext := [("body", .base "Tm"), ("a", .base "Tm")],
       premises := [],
-      left := .apply "App" [.apply "Lam" [.lambda (.fvar "body")], .fvar "a"],
+      left := .apply "App" [.apply "Lam" [.lambda none (.fvar "body")], .fvar "a"],
       right := .subst (.fvar "body") (.fvar "a") },
     -- BetaSigmaFst: Fst(Pair(a, b)) ~> a
     { name := "BetaSigmaFst",
@@ -155,16 +155,16 @@ def u1 : Pattern := .apply "U1" []
 
 /-- Dependent function type `Π(x : A). B`. The body `B` should contain
     `.bvar 0` for references to the bound variable. -/
-def mkPi (A B : Pattern) : Pattern := .apply "Pi" [A, .lambda B]
+def mkPi (A B : Pattern) : Pattern := .apply "Pi" [A, .lambda none B]
 
 /-- Dependent pair type `Σ(x : A). B`. -/
-def mkSigma (A B : Pattern) : Pattern := .apply "Sigma" [A, .lambda B]
+def mkSigma (A B : Pattern) : Pattern := .apply "Sigma" [A, .lambda none B]
 
 /-- Identity type `Id_A(a, b)`. -/
 def mkId (A a b : Pattern) : Pattern := .apply "Id" [A, a, b]
 
 /-- Lambda abstraction `λx. body`. -/
-def mkLam (body : Pattern) : Pattern := .apply "Lam" [.lambda body]
+def mkLam (body : Pattern) : Pattern := .apply "Lam" [.lambda none body]
 
 /-- Application `f a`. -/
 def mkApp (f a : Pattern) : Pattern := .apply "App" [f, a]

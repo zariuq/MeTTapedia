@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.HE.MinimalMeTTa
+import Mettapedia.Languages.MeTTa.HE.Eval
 
 /-!
 # HE MeTTa Conformance
@@ -198,7 +199,7 @@ theorem mettaCall_error_passthrough :
 
 /-- Equation match: `(= (f a) result)` in space, calling `(f a)`.
     Spec lines 376-382: query equations, merge bindings, recurse.
-    Note: RHS is ground (`.symbol "result"`), so `merged.apply rhs = rhs`. -/
+    Note: RHS is ground (`.symbol "result"`), so `merged.apply rhs fuel = rhs`. -/
 theorem mettaCall_equation_match :
     let space := Space.ofList [
       .expression [.symbol "=", .expression [.symbol "f", .symbol "a"], .symbol "result"]]
@@ -213,7 +214,7 @@ theorem mettaCall_equation_match :
   case h_merge => decide
   case h_no_loop => rfl
   case h_recurse =>
-    -- merged.apply (.symbol "result") = .symbol "result" (ground, no vars)
+    -- merged.apply (.symbol "result") fuel = .symbol "result" (ground, no vars)
     apply EvalAtom.type_cast (fuel := fuel)
     · rfl
     · decide
@@ -260,7 +261,7 @@ theorem mettaCall_symbol_rhs :
 
 The equation `(= (id $x) $x)` with input `(id hello)` must produce `hello`,
 not the raw freshened variable `$x#0`. This is the key regression test for
-the `merged.apply rhs` fix in `MettaCall.equation_match`. -/
+the `merged.apply rhs fuel` fix in `MettaCall.equation_match`. -/
 
 /-- Verify queryEquations returns freshened variable as RHS. -/
 theorem queryEquations_id_pattern :
@@ -270,8 +271,8 @@ theorem queryEquations_id_pattern :
     [(.var "x#0", emptyB.assign "x#0" (.symbol "hello"))] := rfl
 
 /-- Equation `(= (id $x) $x)` with input `(id hello)` produces `hello`.
-    After merging, `merged = { x#0 → hello }`, so `merged.apply (.var "x#0") = hello`.
-    This would FAIL without the `merged.apply rhs` fix. -/
+    After merging, `merged = { x#0 → hello }`, so `merged.apply (.var "x#0") fuel = hello`.
+    This would FAIL without the `merged.apply rhs fuel` fix. -/
 theorem mettaCall_equation_rhs_substitution :
     let space := Space.ofList [
       .expression [.symbol "=", .expression [.symbol "id", .var "x"], .var "x"]]
@@ -288,7 +289,7 @@ theorem mettaCall_equation_rhs_substitution :
   case h_merge => decide
   case h_no_loop => rfl
   case h_recurse =>
-    -- merged.apply (.var "x#0") = .symbol "hello" by kernel reduction
+    -- merged.apply (.var "x#0") fuel = .symbol "hello" by kernel reduction
     change EvalAtom _ _ (.symbol "hello") _ _ _
     apply EvalAtom.type_cast (fuel := fuel)
     · rfl
@@ -348,5 +349,33 @@ All zero-sorry, zero-axiom. Derivation witnesses are explicit proof terms
 showing that the declarative spec (EvalSpec.lean) allows exactly the
 expected derivations for each test case.
 -/
+
+/-! ## 8. Fuel-Sensitivity Regression Witness
+
+Counterexample showing that `EvalAtomFiltered` (global, non-fuel-indexed) is NOT
+provable from soundness alone. The same atom produces an error at low fuel and a
+non-error at high fuel, so a low-fuel error does NOT justify "no non-error derivation
+exists at any depth."
+
+This witness prevents regression to the false global filtered soundness claim.
+The honest fuel-indexed version is `EvalAtomFilteredAtFuel` in Correctness.lean. -/
+
+private def fuelTestSpace := Space.ofList [
+  .expression [.symbol ":", .symbol "x", .symbol "Int"],
+  .expression [.symbol ":", .symbol "f",
+    .expression [.symbol "->", .symbol "Int", .symbol "Int"]]
+]
+
+private def fuelTestAtom := Atom.expression [.symbol "f", .symbol "x"]
+
+/-- At low fuel (7), evalAtom returns an error result. -/
+example : (evalAtom fuelTestSpace GroundedDispatch.none
+    fuelTestAtom Atom.undefinedType Bindings.empty 7).any
+    (fun r => isErrorAtom r.1) = true := by decide
+
+/-- At high fuel (11), evalAtom returns a non-error result. -/
+example : (evalAtom fuelTestSpace GroundedDispatch.none
+    fuelTestAtom Atom.undefinedType Bindings.empty 11).any
+    (fun r => !isErrorAtom r.1) = true := by decide
 
 end Mettapedia.Languages.MeTTa.HE.Conformance

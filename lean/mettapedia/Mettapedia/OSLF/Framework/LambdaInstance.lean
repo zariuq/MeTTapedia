@@ -79,7 +79,7 @@ def lambdaCalc : LanguageDef := {
     { name := "Beta",
       typeContext := [("body", .base "Term"), ("arg", .base "Term")],
       premises := [],
-      left := .apply "App" [.apply "Lam" [.lambda (.fvar "body")], .fvar "arg"],
+      left := .apply "App" [.apply "Lam" [.lambda none (.fvar "body")], .fvar "arg"],
       right := .subst (.fvar "body") (.fvar "arg") }
   ]
 }
@@ -102,14 +102,14 @@ private def app (f a : Pattern) : Pattern := .apply "App" [f, a]
 
 /-- Lambda abstraction: `λ.body` (locally nameless: bound var is BVar 0) -/
 private def lam (body : Pattern) : Pattern :=
-  .apply "Lam" [.lambda body]
+  .apply "Lam" [.lambda none body]
 
 /-- Simple display for lambda terms -/
 private partial def termToString : Pattern → String
   | .fvar x => x
   | .bvar n => s!"#{n}"
   | .apply "App" [f, a] => "(" ++ termToString f ++ " " ++ termToString a ++ ")"
-  | .apply "Lam" [.lambda body] => "(λ." ++ termToString body ++ ")"
+  | .apply "Lam" [.lambda _nm body] => "(λ." ++ termToString body ++ ")"
   | p => repr p |>.pretty
 
 private instance : ToString Pattern := ⟨termToString⟩

@@ -139,8 +139,8 @@ def patternToLPTerm (p : ILPat) : Term mettailLPSig :=
   | .fvar x             => Term.var x
   | .bvar n             => Term.const s!"bv:{n}"
   | .apply c args       => pairTerm (Term.const s!"f_{c}") (patternListToLPSpine args)
-  | .lambda body        => pairTerm (Term.const "lambda") (patternToLPTerm body)
-  | .multiLambda n body => pairTerm (Term.const s!"mlam_{n}") (patternToLPTerm body)
+  | .lambda _nm body        => pairTerm (Term.const "lambda") (patternToLPTerm body)
+  | .multiLambda n _nms body => pairTerm (Term.const s!"mlam_{n}") (patternToLPTerm body)
   | .subst body repl    => pairTerm (pairTerm (Term.const "subst") (patternToLPTerm body))
                                     (patternToLPTerm repl)
   | .collection ct elems none  => pairTerm (Term.const s!"coll_{mettailCtStr ct}")
@@ -163,8 +163,8 @@ def patternToLPGroundTerm (p : ILPat) : GroundTerm mettailLPSig :=
   | .fvar x             => GroundTerm.const s!"fv:{x}"
   | .bvar n             => GroundTerm.const s!"bv:{n}"
   | .apply c args       => pairGround (GroundTerm.const s!"f_{c}") (patternListToLPGroundSpine args)
-  | .lambda body        => pairGround (GroundTerm.const "lambda") (patternToLPGroundTerm body)
-  | .multiLambda n body => pairGround (GroundTerm.const s!"mlam_{n}") (patternToLPGroundTerm body)
+  | .lambda _nm body        => pairGround (GroundTerm.const "lambda") (patternToLPGroundTerm body)
+  | .multiLambda n _nms body => pairGround (GroundTerm.const s!"mlam_{n}") (patternToLPGroundTerm body)
   | .subst body repl    => pairGround (pairGround (GroundTerm.const "subst") (patternToLPGroundTerm body))
                                       (patternToLPGroundTerm repl)
   | .collection ct elems none  => pairGround (GroundTerm.const s!"coll_{mettailCtStr ct}")
@@ -267,12 +267,12 @@ private theorem commute_pat (bs : ILBind) (p : ILPat) (hmt : morkTranslatable p 
                patternToLPGroundTerm, groundTerm_pairTerm, Grounding.groundTerm]
     congr 1
     exact commute_list bs args hmt
-  | .lambda body =>
+  | .lambda _nm body =>
     simp only [morkTranslatable] at hmt
     simp only [patternToLPTerm, ilApplyBindings, Mettapedia.OSLF.MeTTaIL.Match.applyBindings,
                patternToLPGroundTerm, groundTerm_pairTerm, Grounding.groundTerm]
     exact congrArg (pairGround (GroundTerm.const "lambda")) (commute_pat bs body hmt)
-  | .multiLambda n body =>
+  | .multiLambda n _ body =>
     simp only [morkTranslatable] at hmt
     simp only [patternToLPTerm, ilApplyBindings, Mettapedia.OSLF.MeTTaIL.Match.applyBindings,
                patternToLPGroundTerm, groundTerm_pairTerm, Grounding.groundTerm]
@@ -618,39 +618,39 @@ private theorem lp_complete_congElem_none {lang : ILLang} {ct : ILCT}
 /-- Regression: `.lambda` pattern commutes with LP grounding/applyBindings translation. -/
 theorem regression_commute_lambda (bs : ILBind) :
     (bindingsToGrounding bs).groundTerm
-        (patternToLPTerm (.lambda (.apply "f" [.fvar "x", .bvar 0]))) =
+        (patternToLPTerm (.lambda none (.apply "f" [.fvar "x", .bvar 0]))) =
     patternToLPGroundTerm
-      (ilApplyBindings bs (.lambda (.apply "f" [.fvar "x", .bvar 0]))) := by
-  have hmt : morkTranslatable (.lambda (.apply "f" [.fvar "x", .bvar 0])) = true := by
+      (ilApplyBindings bs (.lambda none (.apply "f" [.fvar "x", .bvar 0]))) := by
+  have hmt : morkTranslatable (.lambda none (.apply "f" [.fvar "x", .bvar 0])) = true := by
     simp [morkTranslatable, morkTranslatableList]
   simpa using
     groundTerm_commutes_applyBindings bs
-      (.lambda (.apply "f" [.fvar "x", .bvar 0])) hmt
+      (.lambda none (.apply "f" [.fvar "x", .bvar 0])) hmt
 
 /-- Regression: `.multiLambda` pattern commutes with LP grounding/applyBindings translation. -/
 theorem regression_commute_multiLambda (bs : ILBind) :
     (bindingsToGrounding bs).groundTerm
-      (patternToLPTerm (.multiLambda 2 (.apply "g" [.fvar "x"]))) =
+      (patternToLPTerm (.multiLambda 2 [] (.apply "g" [.fvar "x"]))) =
     patternToLPGroundTerm
-      (ilApplyBindings bs (.multiLambda 2 (.apply "g" [.fvar "x"]))) := by
-  have hmt : morkTranslatable (.multiLambda 2 (.apply "g" [.fvar "x"])) = true := by
+      (ilApplyBindings bs (.multiLambda 2 [] (.apply "g" [.fvar "x"]))) := by
+  have hmt : morkTranslatable (.multiLambda 2 [] (.apply "g" [.fvar "x"])) = true := by
     simp [morkTranslatable, morkTranslatableList]
   simpa using
     groundTerm_commutes_applyBindings bs
-      (.multiLambda 2 (.apply "g" [.fvar "x"])) hmt
+      (.multiLambda 2 [] (.apply "g" [.fvar "x"])) hmt
 
 /-- Regression: `.collection _ _ none` pattern commutes with LP grounding/applyBindings translation. -/
 theorem regression_commute_collection_none (bs : ILBind) :
     (bindingsToGrounding bs).groundTerm
-      (patternToLPTerm (.collection .vec [.fvar "x", .bvar 1, .lambda (.fvar "y")] none)) =
+      (patternToLPTerm (.collection .vec [.fvar "x", .bvar 1, .lambda none (.fvar "y")] none)) =
     patternToLPGroundTerm
-      (ilApplyBindings bs (.collection .vec [.fvar "x", .bvar 1, .lambda (.fvar "y")] none)) := by
+      (ilApplyBindings bs (.collection .vec [.fvar "x", .bvar 1, .lambda none (.fvar "y")] none)) := by
   have hmt :
-      morkTranslatable (.collection .vec [.fvar "x", .bvar 1, .lambda (.fvar "y")] none) = true := by
+      morkTranslatable (.collection .vec [.fvar "x", .bvar 1, .lambda none (.fvar "y")] none) = true := by
     simp [morkTranslatable, morkTranslatableList]
   simpa using
     groundTerm_commutes_applyBindings bs
-      (.collection .vec [.fvar "x", .bvar 1, .lambda (.fvar "y")] none) hmt
+      (.collection .vec [.fvar "x", .bvar 1, .lambda none (.fvar "y")] none) hmt
 
 /-- Negative sanity check: rest-variable collections are outside the translatable fragment. -/
 theorem regression_nonTranslatable_collection_some :

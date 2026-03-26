@@ -389,4 +389,129 @@ abbrev mapClosedFormula (f : ∀ {τ : Ty Base}, Const τ → Const' τ)
     (φ : ClosedFormula Const) : ClosedFormula Const' :=
   mapConst f φ
 
+/-- Weaken a closed term to an arbitrary context by iterated weakening. -/
+def weakenCtx : (Γ : Ctx Base) → ClosedTerm Const τ → Term Const Γ τ
+  | [], t => t
+  | _ :: Γ, t => weaken (weakenCtx Γ t)
+
+@[simp] theorem weakenCtx_nil (t : ClosedTerm Const τ) :
+    weakenCtx ([] : Ctx Base) t = t := rfl
+
+@[simp] theorem weakenCtx_cons (t : ClosedTerm Const τ) :
+    weakenCtx (σ :: Γ) t = weaken (weakenCtx Γ t) := rfl
+
+theorem weakenCtx_weaken (t : ClosedTerm Const τ) :
+    weaken (Base := Base) (σ := σ) (weakenCtx Γ t) = weakenCtx (σ :: Γ) t := rfl
+
+/-- Replace each constant in a term with its image under `f`, weakened to the context.
+
+    Unlike `mapConst` which maps constants to constants, `substConst` maps each
+    constant `c : Const τ` to a closed term `f c : ClosedTerm Const' τ`, then
+    weakens it to the current context. -/
+def substConst (f : ∀ {τ : Ty Base}, Const τ → ClosedTerm Const' τ) :
+    {Γ : Ctx Base} → Term Const Γ τ → Term Const' Γ τ
+  | _, .var v => .var v
+  | Γ, .const c => weakenCtx Γ (f c)
+  | _, .app g t => .app (substConst f g) (substConst f t)
+  | _, .lam t => .lam (substConst f t)
+  | _, .top => .top
+  | _, .bot => .bot
+  | _, .and φ ψ => .and (substConst f φ) (substConst f ψ)
+  | _, .or φ ψ => .or (substConst f φ) (substConst f ψ)
+  | _, .imp φ ψ => .imp (substConst f φ) (substConst f ψ)
+  | _, .not φ => .not (substConst f φ)
+  | _, .eq t u => .eq (substConst f t) (substConst f u)
+  | _, .all φ => .all (substConst f φ)
+  | _, .ex φ => .ex (substConst f φ)
+
+@[simp] theorem substConst_var (f : ∀ {τ : Ty Base}, Const τ → ClosedTerm Const' τ)
+    (v : Var Γ τ) :
+    substConst f (.var v : Term Const Γ τ) = .var v := rfl
+
+/-- `weakenCtx` commutes with `rename` on closed terms.
+    Both `rename ρ (weakenCtx Γ t)` and `weakenCtx Δ t` are the same closed term
+    embedded into context Δ. -/
+private theorem rename_closed_vacuous
+    {τ : Ty Base} (t : ClosedTerm Const τ)
+    (Δ' : Ctx Base) (ρ : Rename Base [] Δ') :
+    rename ρ t = weakenCtx Δ' t := by
+  revert ρ
+  induction Δ' with
+  | nil =>
+      intro ρ
+      simp only [weakenCtx]
+      have h :
+          rename ρ t = rename (Rename.id (Base := Base) (Γ := [])) t := by
+        apply rename_ext
+        intro τ v
+        nomatch v
+      simpa [rename_id] using h
+  | cons σ Δ ih =>
+      intro ρ
+      simp only [weakenCtx, weaken]
+      have vacuous : Rename Base [] Δ := fun v => nomatch (v : Var [] _)
+      calc
+        rename ρ t
+            = rename (fun {τ} v => Rename.weaken (Γ := Δ) (σ := σ) (vacuous v)) t :=
+          @rename_ext Base Const [] (σ :: Δ) τ ρ _ (fun v => nomatch (v : Var [] _)) t
+        _ = rename Rename.weaken (rename vacuous t) :=
+          (rename_comp Rename.weaken vacuous t).symm
+        _ = rename Rename.weaken (weakenCtx Δ t) := by
+          rw [ih vacuous]
+        _ = weakenCtx (σ :: Δ) t := rfl
+
+theorem rename_weakenCtx {Γ' Δ' : Ctx Base} (ρ : Rename Base Γ' Δ')
+    {τ : Ty Base} (t : ClosedTerm Const τ) :
+    rename ρ (weakenCtx Γ' t) = weakenCtx Δ' t := by
+  induction Γ' generalizing Δ' with
+  | nil =>
+      simp only [weakenCtx]
+      exact rename_closed_vacuous t Δ' ρ
+  | cons σ' Γ ih =>
+      simp only [weakenCtx, weaken, rename_comp]
+      exact ih (fun {_τ} v => ρ (Rename.weaken v))
+
+/-- substConst commutes with rename. -/
+theorem substConst_rename (f : ∀ {τ : Ty Base}, Const τ → ClosedTerm Const' τ)
+    {Γ' Δ' : Ctx Base} (ρ : Rename Base Γ' Δ') :
+    ∀ {τ : Ty Base} (t : Term Const Γ' τ),
+      substConst f (rename ρ t) = rename ρ (substConst f t)
+  | _, .var _ => rfl
+  | _, .const c => (rename_weakenCtx ρ (f c)).symm
+  | _, .app g t => by
+      simp only [rename, substConst]
+      exact congr (congrArg Term.app (substConst_rename f ρ g)) (substConst_rename f ρ t)
+  | _, .lam body => by
+      simp only [rename, substConst]
+      exact congrArg Term.lam (substConst_rename f (Rename.lift ρ) body)
+  | _, .top => rfl
+  | _, .bot => rfl
+  | _, .and φ ψ => by
+      simp only [rename, substConst]
+      exact congr (congrArg Term.and (substConst_rename f ρ φ)) (substConst_rename f ρ ψ)
+  | _, .or φ ψ => by
+      simp only [rename, substConst]
+      exact congr (congrArg Term.or (substConst_rename f ρ φ)) (substConst_rename f ρ ψ)
+  | _, .imp φ ψ => by
+      simp only [rename, substConst]
+      exact congr (congrArg Term.imp (substConst_rename f ρ φ)) (substConst_rename f ρ ψ)
+  | _, .not φ => by
+      simp only [rename, substConst]
+      exact congrArg Term.not (substConst_rename f ρ φ)
+  | _, .eq t u => by
+      simp only [rename, substConst]
+      exact congr (congrArg Term.eq (substConst_rename f ρ t)) (substConst_rename f ρ u)
+  | _, .all φ => by
+      simp only [rename, substConst]
+      exact congrArg Term.all (substConst_rename f (Rename.lift ρ) φ)
+  | _, .ex φ => by
+      simp only [rename, substConst]
+      exact congrArg Term.ex (substConst_rename f (Rename.lift ρ) φ)
+
+@[simp] theorem substConst_weaken (f : ∀ {τ : Ty Base}, Const τ → ClosedTerm Const' τ)
+    {Γ' : Ctx Base} {σ' : Ty Base} (t : Term Const Γ' τ) :
+    substConst f (weaken (Base := Base) (σ := σ') t) =
+      weaken (Base := Base) (σ := σ') (substConst f t) :=
+  substConst_rename f Rename.weaken t
+
 end Mettapedia.Logic.HOL

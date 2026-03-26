@@ -197,6 +197,22 @@ abbrev Theorem (Const : Ty Base → Type v) (φ : ClosedFormula Const) : Prop :=
         (Mettapedia.Logic.HOL.rename (Rename.lift (Base := Base) (σ := σ) ρ)) := by
   simp [weakenHyps, List.map_map, Function.comp, rename_weaken]
 
+theorem abstractConstAt_weakenHyps
+    {ρ : Ty Base} {c : Const ρ}
+    (Ξ : Ctx Base)
+    (Δ : List (Formula Const (Ξ ++ Γ))) :
+    weakenHyps
+        (Base := Base)
+        (Const := Const)
+        (σ := σ)
+        (Δ.map
+          (fun ψ =>
+            abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c Ξ ψ)) =
+      (weakenHyps (Base := Base) (Const := Const) (σ := σ) Δ).map
+        (fun ψ =>
+          abstractConstAt (Base := Base) (Γ := Γ) (τ := .prop) c (σ :: Ξ) ψ) := by
+  simp [weakenHyps, List.map_map, Function.comp]
+
 @[simp] theorem rename_instantiate
     {Γ' : Ctx Base}
     (ρ : Rename Base Γ Γ')
@@ -453,6 +469,217 @@ theorem rename
       rename_i Γ₀ Δ₀ σ τ
       simpa [Mettapedia.Logic.HOL.rename, rename_weaken] using
         (.eta (Mettapedia.Logic.HOL.rename ρ f))
+
+/-- The theorem on constants: abstracting a constant from a derivation.
+    Transforms a derivation by replacing constant `c` with a bound variable
+    at depth |Ξ| in all terms. -/
+theorem abstractConstAt_deriv
+    {Γ : Ctx Base} {Ξ : Ctx Base} {ρ : Ty Base}
+    (c : Const ρ)
+    {Δ : List (Formula Const ((Ξ ++ Γ)))}
+    {φ : Formula Const ((Ξ ++ Γ))}
+    (d : ExtDerivation Const Δ φ) :
+    ExtDerivation Const
+      (Δ.map (abstractConstAt (Base := Base) (Γ := Γ) c Ξ))
+      (abstractConstAt (Base := Base) (Γ := Γ) c Ξ φ) := by
+  let go :
+      ∀ {Γ₀ : Ctx Base} {Δ₀ : List (Formula Const Γ₀)} {φ₀ : Formula Const Γ₀},
+        ExtDerivation Const Δ₀ φ₀ →
+        ∀ {Γ : Ctx Base} {Ξ : Ctx Base} {ρ : Ty Base}
+          (hctx : Γ₀ = Ξ ++ Γ) (c : Const ρ),
+          ExtDerivation Const
+            ((hctx ▸ Δ₀).map (abstractConstAt (Base := Base) (Γ := Γ) c Ξ))
+            (abstractConstAt (Base := Base) (Γ := Γ) c Ξ (hctx ▸ φ₀)) := by
+    intro Γ₀ Δ₀ φ₀ d
+    induction d with
+    | hyp hmem =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        exact .hyp (List.mem_map.mpr ⟨_, hmem, rfl⟩)
+    | topI =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simp [abstractConstAt]
+        exact .topI
+    | botE h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        exact .botE (by simpa [abstractConstAt] using ih rfl c)
+    | andI hφ hψ ihφ ihψ =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.andI
+            (by simpa [abstractConstAt] using ihφ rfl c)
+            (by simpa [abstractConstAt] using ihψ rfl c))
+    | andEL h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        exact .andEL (by simpa [abstractConstAt] using ih rfl c)
+    | andER h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        exact .andER (by simpa [abstractConstAt] using ih rfl c)
+    | orIL h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.orIL (by simpa [abstractConstAt] using ih rfl c))
+    | orIR h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.orIR (by simpa [abstractConstAt] using ih rfl c))
+    | orE hor hφ hψ ihor ihφ ihψ =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        exact .orE
+          (by simpa [abstractConstAt] using ihor rfl c)
+          (by simpa [List.map, abstractConstAt] using ihφ rfl c)
+          (by simpa [List.map, abstractConstAt] using ihψ rfl c)
+    | impI h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.impI (by simpa [List.map, abstractConstAt] using ih rfl c))
+    | impE himp hφ ihimp ihφ =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        exact .impE
+          (by simpa [abstractConstAt] using ihimp rfl c)
+          (by simpa [abstractConstAt] using ihφ rfl c)
+    | notI h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.notI (by simpa [List.map, abstractConstAt] using ih rfl c))
+    | notE hnot hφ ihnot ihφ =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.notE
+            (by simpa [abstractConstAt] using ihnot rfl c)
+            (by simpa [abstractConstAt] using ihφ rfl c))
+    | allI h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        rename_i _ σ Δ φ
+        have ih' :
+            ExtDerivation Const
+              (weakenHyps (Base := Base) (Const := Const) (σ := σ)
+                (Δ.map (abstractConstAt (Base := Base) (Γ := Γ) c Ξ)))
+              (abstractConstAt (Base := Base) (Γ := Γ) c (σ :: Ξ) φ) := by
+          simpa [abstractConstAt_weakenHyps] using
+            (ih (Γ := Γ) (Ξ := σ :: Ξ) rfl c)
+        simpa [abstractConstAt] using (.allI ih')
+    | allE t h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt_instantiate] using
+          (.allE (abstractConstAt (Base := Base) (Γ := Γ) c Ξ t)
+            (by simpa [abstractConstAt] using ih rfl c))
+    | exI t h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt, abstractConstAt_instantiate] using
+          (.exI (abstractConstAt (Base := Base) (Γ := Γ) c Ξ t)
+            (by simpa [abstractConstAt_instantiate] using ih rfl c))
+    | exE hex hbody ihex ihbody =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        rename_i _ σ Δ φ ψ
+        have hex' :
+            ExtDerivation Const
+              (Δ.map (abstractConstAt (Base := Base) (Γ := Γ) c Ξ))
+              (.ex (abstractConstAt (Base := Base) (Γ := Γ) c (σ :: Ξ) φ)) := by
+          simpa [abstractConstAt] using ihex rfl c
+        have hbody' :
+            ExtDerivation Const
+              (abstractConstAt (Base := Base) (Γ := Γ) c (σ :: Ξ) φ ::
+                weakenHyps (Base := Base) (Const := Const) (σ := σ)
+                  (Δ.map (abstractConstAt (Base := Base) (Γ := Γ) c Ξ)))
+              (weaken (Base := Base) (Const := Const) (σ := σ)
+                (abstractConstAt (Base := Base) (Γ := Γ) c Ξ ψ)) := by
+          simpa [List.map, abstractConstAt_weakenHyps, abstractConstAt_weaken] using
+            (ihbody (Γ := Γ) (Ξ := σ :: Ξ) rfl c)
+        exact .exE hex' hbody'
+    | eqRefl t =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simp [abstractConstAt]
+        exact .eqRefl (abstractConstAt (Base := Base) (Γ := Γ) c Ξ t)
+    | eqSymm h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.eqSymm (by simpa [abstractConstAt] using ih rfl c))
+    | eqTrans htu huv ihtu ihuv =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.eqTrans
+            (by simpa [abstractConstAt] using ihtu rfl c)
+            (by simpa [abstractConstAt] using ihuv rfl c))
+    | eqPropI hpq hqp ihpq ihqp =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.eqPropI
+            (by simpa [abstractConstAt] using ihpq rfl c)
+            (by simpa [abstractConstAt] using ihqp rfl c))
+    | eqPropEL hpq ihpq =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.eqPropEL (by simpa [abstractConstAt] using ihpq rfl c))
+    | eqPropER hpq ihpq =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.eqPropER (by simpa [abstractConstAt] using ihpq rfl c))
+    | eqApp t h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.eqApp (abstractConstAt (Base := Base) (Γ := Γ) c Ξ t)
+            (by simpa [abstractConstAt] using ih rfl c))
+    | eqAppArg f h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt] using
+          (.eqAppArg (abstractConstAt (Base := Base) (Γ := Γ) c Ξ f)
+            (by simpa [abstractConstAt] using ih rfl c))
+    | eqLam h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        rename_i _ σ τ Δ t u
+        have ih' :
+            ExtDerivation Const
+              (weakenHyps (Base := Base) (Const := Const) (σ := σ)
+                (Δ.map (abstractConstAt (Base := Base) (Γ := Γ) c Ξ)))
+              (.eq (abstractConstAt (Base := Base) (Γ := Γ) c (σ :: Ξ) t)
+                (abstractConstAt (Base := Base) (Γ := Γ) c (σ :: Ξ) u)) := by
+          simpa [abstractConstAt, abstractConstAt_weakenHyps] using
+            (ih (Γ := Γ) (Ξ := σ :: Ξ) rfl c)
+        simpa [abstractConstAt] using (.eqLam ih')
+    | funExt h ih =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt, abstractConstAt_weaken] using
+          (.funExt (by
+            simpa [abstractConstAt, abstractConstAt_weaken] using ih rfl c))
+    | beta t u =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt, abstractConstAt_instantiate] using
+          (.beta (abstractConstAt (Base := Base) (Γ := Γ) c Ξ t)
+            (abstractConstAt (Base := Base) (Γ := Γ) c (_ :: Ξ) u))
+    | eta f =>
+        intro Γ Ξ ρ hctx c
+        subst hctx
+        simpa [abstractConstAt, abstractConstAt_weaken] using
+          (.eta (abstractConstAt (Base := Base) (Γ := Γ) c Ξ f))
+  simpa using go d rfl c
 
 theorem closedTheory_mapConst
     (f : ∀ {τ : Ty Base}, Const τ → Const' τ)

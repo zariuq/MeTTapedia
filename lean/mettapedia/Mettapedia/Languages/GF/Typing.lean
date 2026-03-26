@@ -131,8 +131,8 @@ theorem gfConstructorCheck_iff (label : String) (p : Pattern) :
     | .bvar _ => simp [gfConstructorCheck] at h
     | .fvar _ => simp [gfConstructorCheck] at h
     | .collection _ _ _ => simp [gfConstructorCheck] at h
-    | .lambda _ => simp [gfConstructorCheck] at h
-    | .multiLambda _ _ => simp [gfConstructorCheck] at h
+    | .lambda _ _ => simp [gfConstructorCheck] at h
+    | .multiLambda _ _ _ => simp [gfConstructorCheck] at h
     | .subst _ _ => simp [gfConstructorCheck] at h
   · rintro ⟨args, hp⟩
     subst hp

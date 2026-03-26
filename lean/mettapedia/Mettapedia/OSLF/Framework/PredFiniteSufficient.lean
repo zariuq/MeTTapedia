@@ -49,12 +49,12 @@ private theorem freeVars_apply (c : String) (args : List Pattern) :
     freeVars (.apply c args) = args.flatMap freeVars := by
   conv_lhs => rw [freeVars.eq_def]
 
-private theorem freeVars_lambda (body : Pattern) :
-    freeVars (.lambda body) = freeVars body := by
+private theorem freeVars_lambda (nm : Option String) (body : Pattern) :
+    freeVars (.lambda nm body) = freeVars body := by
   conv_lhs => rw [freeVars.eq_def]
 
-private theorem freeVars_multiLambda (k : Nat) (body : Pattern) :
-    freeVars (.multiLambda k body) = freeVars body := by
+private theorem freeVars_multiLambda (k : Nat) (nms : List String) (body : Pattern) :
+    freeVars (.multiLambda k nms body) = freeVars body := by
   conv_lhs => rw [freeVars.eq_def]
 
 private theorem applyBindings_bvar (bs : Bindings) (k : Nat) :
@@ -65,12 +65,12 @@ private theorem applyBindings_apply (bs : Bindings) (c : String) (args : List Pa
     applyBindings bs (.apply c args) = .apply c (args.map (applyBindings bs)) := by
   conv_lhs => rw [applyBindings.eq_def]
 
-private theorem applyBindings_lambda (bs : Bindings) (body : Pattern) :
-    applyBindings bs (.lambda body) = .lambda (applyBindings bs body) := by
+private theorem applyBindings_lambda (bs : Bindings) (nm : Option String) (body : Pattern) :
+    applyBindings bs (.lambda nm body) = .lambda nm (applyBindings bs body) := by
   conv_lhs => rw [applyBindings.eq_def]
 
-private theorem applyBindings_multiLambda (bs : Bindings) (k : Nat) (body : Pattern) :
-    applyBindings bs (.multiLambda k body) = .multiLambda k (applyBindings bs body) := by
+private theorem applyBindings_multiLambda (bs : Bindings) (k : Nat) (nms : List String) (body : Pattern) :
+    applyBindings bs (.multiLambda k nms body) = .multiLambda k nms (applyBindings bs body) := by
   conv_lhs => rw [applyBindings.eq_def]
 
 private theorem matchPattern_fvar (x : String) (t : Pattern) :
@@ -86,12 +86,12 @@ private theorem matchPattern_apply (c1 c2 : String) (pargs targs : List Pattern)
     if (c1 == c2 && pargs.length == targs.length) = true then matchArgs pargs targs else [] := by
   conv_lhs => rw [matchPattern.eq_def]
 
-private theorem matchPattern_lambda (bp bc : Pattern) :
-    matchPattern (.lambda bp) (.lambda bc) = matchPattern bp bc := by
+private theorem matchPattern_lambda (nm nm' : Option String) (bp bc : Pattern) :
+    matchPattern (.lambda nm bp) (.lambda nm' bc) = matchPattern bp bc := by
   conv_lhs => rw [matchPattern.eq_def]
 
-private theorem matchPattern_multiLambda (np nc : Nat) (bp bc : Pattern) :
-    matchPattern (.multiLambda np bp) (.multiLambda nc bc) =
+private theorem matchPattern_multiLambda (np nc : Nat) (nms nms' : List String) (bp bc : Pattern) :
+    matchPattern (.multiLambda np nms bp) (.multiLambda nc nms' bc) =
     if (np == nc) = true then matchPattern bp bc else [] := by
   conv_lhs => rw [matchPattern.eq_def]
 
@@ -256,22 +256,8 @@ private theorem matchPattern_complete_aux (n : Nat) :
             omega
           exact ih_args args bs hle' hargs_mc
         · simp [List.length_map]
-      | .lambda body =>
-        simp only [isMatchCorrectAux] at hmc
-        rw [applyBindings_lambda, matchPattern_lambda]
-        have hle' : sizeOf body ≤ m := by
-          have : sizeOf body < sizeOf (Pattern.lambda body) := by
-            decreasing_trivial
-          omega
-        exact ih_pat body bs hle' hmc
-      | .multiLambda k body =>
-        simp only [isMatchCorrectAux] at hmc
-        rw [applyBindings_multiLambda, matchPattern_multiLambda, if_pos (beq_self_eq_true k)]
-        have hle' : sizeOf body ≤ m := by
-          have : sizeOf body < sizeOf (Pattern.multiLambda k body) := by
-            decreasing_trivial
-          omega
-        exact ih_pat body bs hle' hmc
+      | .lambda _ _ => simp [isMatchCorrectAux] at hmc
+      | .multiLambda _ _ _ => simp [isMatchCorrectAux] at hmc
       | .subst _ _ => simp [isMatchCorrectAux] at hmc
       | .collection _ _ _ => simp [isMatchCorrectAux] at hmc
     -- Args case
@@ -354,26 +340,8 @@ private theorem applyBindings_inj_aux (n : Nat) :
           omega
         exact ih_args args bs1 bs2 hle'
           ((isMatchCorrectListAux_iff args).mp hmc) hargs_eq x hx
-      | .lambda body =>
-        simp only [isMatchCorrectAux] at hmc
-        rw [applyBindings_lambda, applyBindings_lambda] at heq
-        have hbody_eq := Pattern.lambda.inj heq
-        rw [freeVars_lambda] at hx
-        have hle' : sizeOf body ≤ m := by
-          have : sizeOf body < sizeOf (Pattern.lambda body) := by
-            decreasing_trivial
-          omega
-        exact ih_pat body bs1 bs2 hle' hmc hbody_eq x hx
-      | .multiLambda k body =>
-        simp only [isMatchCorrectAux] at hmc
-        rw [applyBindings_multiLambda, applyBindings_multiLambda] at heq
-        have hbody_eq := (Pattern.multiLambda.inj heq).2
-        rw [freeVars_multiLambda] at hx
-        have hle' : sizeOf body ≤ m := by
-          have : sizeOf body < sizeOf (Pattern.multiLambda k body) := by
-            decreasing_trivial
-          omega
-        exact ih_pat body bs1 bs2 hle' hmc hbody_eq x hx
+      | .lambda _ _ => simp [isMatchCorrectAux] at hmc
+      | .multiLambda _ _ _ => simp [isMatchCorrectAux] at hmc
       | .subst _ _ => simp [isMatchCorrectAux] at hmc
       | .collection _ _ _ => simp [isMatchCorrectAux] at hmc
     -- Args case
@@ -453,26 +421,8 @@ private theorem applyBindings_dep_aux (n : Nat) :
         exact ih_args args bs1 bs2 hle'
           ((isMatchCorrectListAux_iff args).mp hmc)
           (fun x hx => hagree x (by rw [freeVars_apply]; exact hx))
-      | .lambda body =>
-        simp only [isMatchCorrectAux] at hmc
-        rw [applyBindings_lambda, applyBindings_lambda]
-        congr 1
-        have hle' : sizeOf body ≤ m := by
-          have : sizeOf body < sizeOf (Pattern.lambda body) := by
-            decreasing_trivial
-          omega
-        exact ih_pat body bs1 bs2 hle' hmc
-          (fun x hx => hagree x (by rw [freeVars_lambda]; exact hx))
-      | .multiLambda k body =>
-        simp only [isMatchCorrectAux] at hmc
-        rw [applyBindings_multiLambda, applyBindings_multiLambda]
-        congr 1
-        have hle' : sizeOf body ≤ m := by
-          have : sizeOf body < sizeOf (Pattern.multiLambda k body) := by
-            decreasing_trivial
-          omega
-        exact ih_pat body bs1 bs2 hle' hmc
-          (fun x hx => hagree x (by rw [freeVars_multiLambda]; exact hx))
+      | .lambda _ _ => simp [isMatchCorrectAux] at hmc
+      | .multiLambda _ _ _ => simp [isMatchCorrectAux] at hmc
       | .subst _ _ => simp [isMatchCorrectAux] at hmc
       | .collection _ _ _ => simp [isMatchCorrectAux] at hmc
     -- Args case

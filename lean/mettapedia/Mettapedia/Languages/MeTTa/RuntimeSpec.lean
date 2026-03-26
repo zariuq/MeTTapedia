@@ -84,6 +84,11 @@ structure MeTTaRuntimeSpec where
 def languageHasTypeNamed (lang : LanguageDef) (ty : String) : Prop :=
   LanguageDef.hasTypeNamed lang ty
 
+instance languageHasTypeNamedDecidable
+    (lang : LanguageDef) (ty : String) : Decidable (languageHasTypeNamed lang ty) := by
+  unfold languageHasTypeNamed
+  infer_instance
+
 /-- Lightweight audit predicate: the premise program exports a relation of this name. -/
 def premiseProgramHasRelationNamed
     (prog : Mettapedia.OSLF.MeTTaIL.PremiseDatalog.PremiseProgram)
@@ -212,8 +217,7 @@ theorem heRuntimeSpec_state_context_fact :
     heRuntimeSpec.contextSurface = .explicitStateAndSpace ∧
     languageHasTypeNamed Mettapedia.Languages.MeTTa.HE.LanguageDef.mettaHE "State" ∧
     languageHasTypeNamed Mettapedia.Languages.MeTTa.HE.LanguageDef.mettaHE "Space" := by
-  simp [heRuntimeSpec, languageHasTypeNamed,
-    Mettapedia.Languages.MeTTa.HE.LanguageDef.mettaHE]
+  native_decide
 
 /-- HE's result carrier is concretely a list of `(Atom × Bindings)` pairs, so
 bindings and explicit alternatives are part of the formal semantic surface. -/

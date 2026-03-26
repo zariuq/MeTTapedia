@@ -169,6 +169,102 @@ theorem emptySignature_oneStep_existsTop :
   simp [mapConst, instantiate, subst]
   exact ExtDerivation.topI
 
+/-- Lifted source terms have no occurrence of any fresh constant.
+    Every constant in `liftTerm t` is `.base c`, so `.exWitness` and
+    `.allCounterexample` constants never appear. -/
+theorem noConstOccurrence_liftTerm
+    {σ : Ty Base} (d : OneStepHenkinConst Base Const σ)
+    (hfresh : ∀ (c : Const σ), d ≠ .base c) :
+    ∀ {Γ : Ctx Base} {τ : Ty Base}
+      (t : Term Const Γ τ),
+      NoConstOccurrence d
+        (liftTerm (Base := Base) (Const := Const) t)
+  | _, _, .var _ => .var
+  | _, _, .const c => by
+      simp only [liftTerm, mapConst]
+      by_cases hτ : σ = ‹Ty Base›
+      · subst hτ; exact .const_same_ne _ (hfresh c).symm
+      · exact .const_diff_type hτ _
+  | _, _, .app f t => .app (noConstOccurrence_liftTerm d hfresh f) (noConstOccurrence_liftTerm d hfresh t)
+  | _, _, .lam body => .lam (noConstOccurrence_liftTerm d hfresh body)
+  | _, _, .top => .top
+  | _, _, .bot => .bot
+  | _, _, .and p q => .and (noConstOccurrence_liftTerm d hfresh p) (noConstOccurrence_liftTerm d hfresh q)
+  | _, _, .or p q => .or (noConstOccurrence_liftTerm d hfresh p) (noConstOccurrence_liftTerm d hfresh q)
+  | _, _, .imp p q => .imp (noConstOccurrence_liftTerm d hfresh p) (noConstOccurrence_liftTerm d hfresh q)
+  | _, _, .not p => .not (noConstOccurrence_liftTerm d hfresh p)
+  | _, _, .eq t u => .eq (noConstOccurrence_liftTerm d hfresh t) (noConstOccurrence_liftTerm d hfresh u)
+  | _, _, .all body => .all (noConstOccurrence_liftTerm d hfresh body)
+  | _, _, .ex body => .ex (noConstOccurrence_liftTerm d hfresh body)
+
+/-- `.exWitness` constants are fresh (not `.base`). -/
+theorem exWitness_ne_base (φ : Formula Const [σ]) (c : Const σ) :
+    (OneStepHenkinConst.exWitness φ : OneStepHenkinConst Base Const σ) ≠ .base c := by
+  intro h; cases h
+
+/-- `.allCounterexample` constants are fresh (not `.base`). -/
+theorem allCounterexample_ne_base (φ : Formula Const [σ]) (c : Const σ) :
+    (OneStepHenkinConst.allCounterexample φ : OneStepHenkinConst Base Const σ) ≠ .base c := by
+  intro h; cases h
+
+/--
+Retraction from the one-step Henkin signature back to the source.
+
+Under the assumption that `Const τ` is nonempty at every type, maps `.base c ↦ c`
+and fresh constants to an arbitrary value via `Classical.choice`. The fresh-constant
+values are never encountered when retracting derivations whose constants are all `.base`.
+
+Council notes (Brown, Buzzard, Carneiro, Henkin):
+  This assumption is trivially satisfied in Henkin-saturated signatures (the intended
+  application). A future `substConst` infrastructure would remove it.
+-/
+noncomputable def retractConst
+    [inst : ∀ (τ : Ty Base), Nonempty (Const τ)] :
+    ∀ {τ : Ty Base}, OneStepHenkinConst Base Const τ → Const τ
+  | _, .base c => c
+  | τ, .exWitness _ => Classical.choice (inst τ)
+  | τ, .allCounterexample _ => Classical.choice (inst τ)
+
+theorem retractConst_lift
+    [inst : ∀ (τ : Ty Base), Nonempty (Const τ)]
+    {τ : Ty Base} (c : Const τ) :
+    retractConst (Base := Base) (lift c) = c := rfl
+
+@[simp] theorem mapConst_retractConst_liftClosedFormula
+    [inst : ∀ (τ : Ty Base), Nonempty (Const τ)]
+    (φ : ClosedFormula Const) :
+    Mettapedia.Logic.HOL.mapConst (fun {_τ} => retractConst (Base := Base))
+      (liftClosedFormula (Base := Base) (Const := Const) φ) = φ := by
+  simp only [liftClosedFormula, WitnessProvider.liftClosedFormula]
+  rw [Mettapedia.Logic.HOL.mapConst_comp]
+  exact Mettapedia.Logic.HOL.mapConst_id φ
+
+/--
+Retract a derivation in the one-step language back to the source language.
+
+If the derivation's hypotheses are all `liftClosedFormula` of source formulas
+and the conclusion is `liftClosedFormula φ`, applying `mapConst retractConst`
+strips the `.base` wrappers and produces a source-language derivation.
+-/
+theorem retractDerivation
+    [inst : ∀ (τ : Ty Base), Nonempty (Const τ)]
+    {Δ : List (ClosedFormula Const)} {φ : ClosedFormula Const}
+    (d : ExtDerivation (OneStepHenkinConst Base Const)
+      (Δ.map (liftClosedFormula (Base := Base) (Const := Const)))
+      (liftClosedFormula (Base := Base) (Const := Const) φ)) :
+    ExtDerivation Const Δ φ := by
+  have d' := ExtDerivation.mapConst
+    (fun {τ} => retractConst (Base := Base) (inst := inst))
+    d
+  have hΔ : (Δ.map liftClosedFormula).map
+      (Mettapedia.Logic.HOL.mapConst fun {τ} => retractConst (Base := Base) (inst := inst)) = Δ := by
+    rw [List.map_map]
+    conv_rhs => rw [← List.map_id Δ]
+    exact List.map_congr_left fun χ _ => mapConst_retractConst_liftClosedFormula χ
+  rw [hΔ] at d'
+  convert d' using 1
+  exact (mapConst_retractConst_liftClosedFormula φ).symm
+
 end OneStepHenkinConst
 
 end Mettapedia.Logic.HOL

@@ -57,17 +57,18 @@ theorem frozenConfigToPeTTaSpace_facts_roundTrip
 
 theorem frozenConfigToPeTTaSpace_rewrites_roundTrip
     (cfg : Algorithms.MeTTa.PeTTa.FrozenPeTTaConfig) :
-    (frozenConfigToPeTTaSpace cfg).rules.map specToCoreRewriteRule =
-      (Algorithms.MeTTa.PeTTa.toLanguageDef cfg).rewrites := by
-  simp [frozenConfigToPeTTaSpace, rewriteRule_list_roundTrip]
+    (frozenConfigToPeTTaSpace cfg).rules.mapM specToCoreRewriteRule =
+      .ok (Algorithms.MeTTa.PeTTa.toLanguageDef cfg).rewrites := by
+  simpa [frozenConfigToPeTTaSpace, Function.comp] using
+    rewriteRule_list_roundTrip ((Algorithms.MeTTa.PeTTa.toLanguageDef cfg).rewrites)
 
 theorem frozenConfigToPeTTaSpace_rewrites_eq_runtimeLowering
     (cfg : Algorithms.MeTTa.PeTTa.FrozenPeTTaConfig) :
     ((Mettapedia.Languages.MeTTa.PeTTa.LPSoundness.pettaSpaceToLangDef
-      (frozenConfigToPeTTaSpace cfg)).rewrites).map specToCoreRewriteRule =
-        (Algorithms.MeTTa.PeTTa.toLanguageDef cfg).rewrites := by
-  simp [Mettapedia.Languages.MeTTa.PeTTa.LPSoundness.pettaSpaceToLangDef,
-    frozenConfigToPeTTaSpace_rewrites_roundTrip]
+      (frozenConfigToPeTTaSpace cfg)).rewrites).mapM specToCoreRewriteRule =
+        .ok (Algorithms.MeTTa.PeTTa.toLanguageDef cfg).rewrites := by
+  simpa [Mettapedia.Languages.MeTTa.PeTTa.LPSoundness.pettaSpaceToLangDef] using
+    frozenConfigToPeTTaSpace_rewrites_roundTrip cfg
 
 def exportFrozenPeTTaArtifacts
     (outDir : System.FilePath)
